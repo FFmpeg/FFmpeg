@@ -351,6 +351,15 @@ int ff_amf_encode_init(AVCodecContext *avctx)
         AMF_RETURN_IF_FALSE(ctx, ret == 0, ret, "Failed to create  hardware device context (AMF) : %s\n", av_err2str(ret));
     }
 
+    if (ctx->pa_lookahead_buffer_depth >= ctx->hwsurfaces_in_queue_max) {
+        av_log(avctx, AV_LOG_WARNING,
+               "async_depth (%d) too small for lookahead (%d), increasing to (%d)\n",
+                ctx->hwsurfaces_in_queue_max,
+                ctx->pa_lookahead_buffer_depth,
+                ctx->pa_lookahead_buffer_depth + 1);
+        ctx->hwsurfaces_in_queue_max = ctx->pa_lookahead_buffer_depth + 1;
+    }
+
     if ((ret = amf_init_encoder(avctx)) == 0) {
         return 0;
     }
