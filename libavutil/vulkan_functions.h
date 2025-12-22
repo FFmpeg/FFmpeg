@@ -155,6 +155,7 @@ typedef uint64_t FFVulkanExtensions;
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              CmdCopyImageToBuffer)                    \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              CmdClearColorImage)                                    \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              CmdCopyBuffer)                                         \
+    MACRO(1, 1, FF_VK_EXT_NO_FLAG,              CmdUpdateBuffer)                                       \
                                                                                          \
     /* Buffer */                                                                         \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              GetBufferMemoryRequirements2)            \
