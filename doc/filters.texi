@@ -7768,6 +7768,12 @@ The destination format string; it could be "text" (only the transcribed text
 will be sent to the destination), "srt" (subtitle format) or "json".
 Default value: @code{"text"}
 
+@item max_len
+Maximum segment length in characters. When set to a value greater than 0,
+transcription segments will be split to not exceed this length. This is useful
+for generating subtitles with shorter lines.
+Default value: @code{"0"}
+
 @item vad_model
 Path to the VAD model file. If set, the filter will load an additional voice
 activity detection module (https://github.com/snakers4/silero-vad) that will be

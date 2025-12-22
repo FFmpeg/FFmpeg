@@ -52,6 +52,7 @@ typedef struct WhisperContext {
     int64_t queue;
     char *destination;
     char *format;
+    int max_len;
 
     struct whisper_context *ctx_wsp;
     struct whisper_vad_context *ctx_vad;
@@ -204,6 +205,8 @@ static void run_transcription(AVFilterContext *ctx, AVFrame *frame, int samples)
     params.print_progress = 0;
     params.print_realtime = 0;
     params.print_timestamps = 0;
+    params.max_len = wctx->max_len;
+    params.token_timestamps = (wctx->max_len > 0);
 
     if (whisper_full(wctx->ctx_wsp, params, wctx->audio_buffer, samples) != 0) {
         av_log(ctx, AV_LOG_ERROR, "Failed to process audio with whisper.cpp\n");
@@ -220,6 +223,14 @@ static void run_transcription(AVFilterContext *ctx, AVFrame *frame, int samples)
         char *text_cleaned = av_strireplace(text, "[BLANK_AUDIO]", "");
 
         if (av_strnlen(text_cleaned, 1) == 0) {
+            av_freep(&text_cleaned);
+            continue;
+        }
+
+        // Skip segments that are parts of [BLANK_AUDIO] when max_len splits them
+        if (wctx->max_len > 0 && (strcmp(text_cleaned, "[") == 0 || strcmp(text_cleaned, "]") == 0 ||
+                                  strcmp(text_cleaned, "BLANK") == 0 || strcmp(text_cleaned, "_") == 0 ||
+                                  strcmp(text_cleaned, "AUDIO") == 0)) {
             av_freep(&text_cleaned);
             continue;
         }
@@ -437,6 +448,7 @@ static const AVOption whisper_options[] = {
     { "gpu_device", "GPU device to use", OFFSET(gpu_device), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, .flags = FLAGS },
     { "destination", "Output destination", OFFSET(destination), AV_OPT_TYPE_STRING, {.str = ""}, .flags = FLAGS },
     { "format", "Output format (text|srt|json)", OFFSET(format), AV_OPT_TYPE_STRING, {.str = "text"},.flags = FLAGS },
+    { "max_len", "Max segment length in characters", OFFSET(max_len), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, .flags = FLAGS },
     { "vad_model", "Path to the VAD model file", OFFSET(vad_model_path), AV_OPT_TYPE_STRING,.flags = FLAGS },
     { "vad_threshold", "VAD threshold", OFFSET(vad_threshold), AV_OPT_TYPE_FLOAT, {.dbl = 0.5}, 0.0, 1.0, .flags = FLAGS },
     { "vad_min_speech_duration", "Minimum speech duration for VAD", OFFSET(vad_min_speech_duration), AV_OPT_TYPE_DURATION, {.i64 = 100000}, 20000, HOURS, .flags = FLAGS },
