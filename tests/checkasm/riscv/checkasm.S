@@ -155,9 +155,13 @@ func checkasm_get_wrapper, v
         ret
 
 5:
+        # checkasm_fail_func() needs valid SP, GP and TP. Restore them.
+        ld      sp,  8(t0)
+        ld      gp, 16(t0)
+        ld      tp, 24(t0)
         lla     a0, fail_rsvd_reg
         call    checkasm_fail_func
-        tail    abort /* The test harness would probably crash anyway */
+        j       4b
 
 6:
         lla     a0, fail_s_reg
