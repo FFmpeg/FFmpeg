@@ -975,6 +975,10 @@ static int parse_playlist(HLSContext *c, const char *url,
             ptr = strchr(ptr, '@');
             if (ptr)
                 seg_offset = strtoll(ptr+1, NULL, 10);
+            if (seg_size < 0 ||  seg_offset > INT64_MAX - seg_size) {
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
+            }
         } else if (av_strstart(line, "#", NULL)) {
             av_log(c->ctx, AV_LOG_VERBOSE, "Skip ('%s')\n", line);
             continue;
