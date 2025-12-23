@@ -206,6 +206,7 @@ libswscale/.* @haasn
 # tools
 # =====
 fftools/ffplay_renderer.* @haasn
+tools/target_dec_fuzzer.c @michaelni
 
 # doc
 # ===
