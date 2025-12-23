@@ -49,10 +49,7 @@ static int alloc_base_frame(void *logctx, FFLCEVCContext *lcevc,
 {
     LCEVC_PictureDesc desc;
     LCEVC_ColorFormat fmt = map_format(frame->format);
-    LCEVC_PictureLockHandle lock;
-    uint8_t *data[4] = { NULL };
-    int linesizes[4] = { 0 };
-    uint32_t planes;
+    LCEVC_PicturePlaneDesc planes[AV_VIDEO_MAX_PLANES] = { 0 };
     LCEVC_ReturnCode res;
 
     res = LCEVC_DefaultPictureDesc(&desc, fmt, frame->width, frame->height);
@@ -66,36 +63,16 @@ static int alloc_base_frame(void *logctx, FFLCEVCContext *lcevc,
     desc.sampleAspectRatioNum  = frame->sample_aspect_ratio.num;
     desc.sampleAspectRatioDen  = frame->sample_aspect_ratio.den;
 
+    for (int i = 0; i < AV_VIDEO_MAX_PLANES; i++) {
+        planes[i].firstSample = frame->data[i];
+        planes[i].rowByteStride = frame->linesize[i];
+    }
+
     /* Allocate LCEVC Picture */
-    res = LCEVC_AllocPicture(lcevc->decoder, &desc, picture);
+    res = LCEVC_AllocPictureExternal(lcevc->decoder, &desc, NULL, planes, picture);
     if (res != LCEVC_Success) {
         return AVERROR_EXTERNAL;
     }
-    res = LCEVC_LockPicture(lcevc->decoder, *picture, LCEVC_Access_Write, &lock);
-    if (res != LCEVC_Success)
-        return AVERROR_EXTERNAL;
-
-    res = LCEVC_GetPicturePlaneCount(lcevc->decoder, *picture, &planes);
-    if (res != LCEVC_Success)
-        return AVERROR_EXTERNAL;
-
-    for (unsigned i = 0; i < planes; i++) {
-        LCEVC_PicturePlaneDesc plane;
-
-        res = LCEVC_GetPictureLockPlaneDesc(lcevc->decoder, lock, i, &plane);
-        if (res != LCEVC_Success)
-            return AVERROR_EXTERNAL;
-
-        data[i] = plane.firstSample;
-        linesizes[i] = plane.rowByteStride;
-    }
-
-    av_image_copy2(data, linesizes, frame->data, frame->linesize,
-                   frame->format, frame->width, frame->height);
-
-    res = LCEVC_UnlockPicture(lcevc->decoder, lock);
-    if (res != LCEVC_Success)
-        return AVERROR_EXTERNAL;
 
     return 0;
 }
