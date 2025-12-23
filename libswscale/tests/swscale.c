@@ -70,7 +70,11 @@ const SwsFlags flags[] = {
 };
 
 static FFSFC64 prng_state;
-static SwsContext *sws[3]; /* reused between tests for efficiency */
+
+/* reused between tests for efficiency */
+static SwsContext *sws_ref_src;
+static SwsContext *sws_src_dst;
+static SwsContext *sws_dst_out;
 
 static double speedup_logavg;
 static double speedup_min = 1e10;
@@ -287,17 +291,17 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
     dst->width  = dst_w;
     dst->height = dst_h;
 
-    if (sws_scale_frame(sws[0], src, ref) < 0) {
+    if (sws_scale_frame(sws_ref_src, src, ref) < 0) {
         av_log(NULL, AV_LOG_ERROR, "Failed %s ---> %s\n",
                av_get_pix_fmt_name(ref->format), av_get_pix_fmt_name(src->format));
         goto error;
     }
 
-    sws[1]->flags  = mode->flags;
-    sws[1]->dither = mode->dither;
-    sws[1]->threads = opts->threads;
+    sws_src_dst->flags  = mode->flags;
+    sws_src_dst->dither = mode->dither;
+    sws_src_dst->threads = opts->threads;
 
-    if (sws_frame_setup(sws[1], dst, src) < 0) {
+    if (sws_frame_setup(sws_src_dst, dst, src) < 0) {
         av_log(NULL, AV_LOG_ERROR, "Failed to setup %s ---> %s\n",
                av_get_pix_fmt_name(src->format), av_get_pix_fmt_name(dst->format));
         goto error;
@@ -307,7 +311,7 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
 
     for (int i = 0; i < opts->iters; i++) {
         unref_buffers(dst);
-        if (sws_scale_frame(sws[1], dst, src) < 0) {
+        if (sws_scale_frame(sws_src_dst, dst, src) < 0) {
             av_log(NULL, AV_LOG_ERROR, "Failed %s ---> %s\n",
                    av_get_pix_fmt_name(src->format), av_get_pix_fmt_name(dst->format));
             goto error;
@@ -316,7 +320,7 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
 
     time = av_gettime_relative() - time;
 
-    if (sws_scale_frame(sws[2], out, dst) < 0) {
+    if (sws_scale_frame(sws_dst_out, out, dst) < 0) {
         av_log(NULL, AV_LOG_ERROR, "Failed %s ---> %s\n",
                av_get_pix_fmt_name(dst->format), av_get_pix_fmt_name(out->format));
         goto error;
@@ -353,7 +357,7 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
             goto error;
         }
 
-        if (sws_scale_frame(sws[2], out, dst) < 0)
+        if (sws_scale_frame(sws_dst_out, out, dst) < 0)
             goto error;
 
         get_ssim(ssim_sws, out, ref, comps);
@@ -674,12 +678,14 @@ int main(int argc, char **argv)
     ff_sfc64_init(&prng_state, 0, 0, 0, 12);
     signal(SIGINT, exit_handler);
 
-    for (int i = 0; i < 3; i++) {
-        sws[i] = sws_alloc_context();
-        if (!sws[i])
-            goto error;
-        sws[i]->flags = SWS_BILINEAR;
-    }
+    sws_ref_src = sws_alloc_context();
+    sws_src_dst = sws_alloc_context();
+    sws_dst_out = sws_alloc_context();
+    if (!sws_ref_src || !sws_src_dst || !sws_dst_out)
+        goto error;
+    sws_ref_src->flags = SWS_BILINEAR;
+    sws_src_dst->flags = SWS_BILINEAR;
+    sws_dst_out->flags = SWS_BILINEAR;
 
     ref = av_frame_alloc();
     if (!ref)
@@ -696,8 +702,9 @@ int main(int argc, char **argv)
 
     /* fall through */
 error:
-    for (int i = 0; i < 3; i++)
-        sws_free_context(&sws[i]);
+    sws_free_context(&sws_ref_src);
+    sws_free_context(&sws_src_dst);
+    sws_free_context(&sws_dst_out);
     av_frame_free(&ref);
     if (fp)
         fclose(fp);
