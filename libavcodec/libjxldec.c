@@ -450,9 +450,8 @@ static int libjxl_receive_frame(AVCodecContext *avctx, AVFrame *frame)
                     av_log(avctx, AV_LOG_ERROR, "Unexpected end of JXL codestream\n");
                     return AVERROR_INVALIDDATA;
                 } else if (ctx->frame_complete) {
-                    libjxl_finalize_frame(avctx, frame, ctx->frame);
                     ctx->jret = JXL_DEC_SUCCESS;
-                    return 0;
+                    goto success;
                 }
                 return AVERROR_EOF;
             }
@@ -591,6 +590,7 @@ static int libjxl_receive_frame(AVCodecContext *avctx, AVFrame *frame)
              * but it will also be fired when the next image of
              * an image2pipe sequence is loaded up
              */
+success:
             libjxl_finalize_frame(avctx, frame, ctx->frame);
             JxlDecoderReset(ctx->decoder);
             libjxl_init_jxl_decoder(avctx);
