@@ -126,8 +126,10 @@ static int lcevc_send_frame(void *logctx, FFLCEVCFrame *frame_ctx, const AVFrame
         return ret;
 
     res = LCEVC_SendDecoderBase(lcevc->decoder, in->pts, picture, -1, NULL);
-    if (res != LCEVC_Success)
+    if (res != LCEVC_Success) {
+        LCEVC_FreePicture(lcevc->decoder, picture);
         return AVERROR_EXTERNAL;
+    }
 
     memset(&picture, 0, sizeof(picture));
     ret = alloc_enhanced_frame(logctx, frame_ctx, &picture);
@@ -135,8 +137,10 @@ static int lcevc_send_frame(void *logctx, FFLCEVCFrame *frame_ctx, const AVFrame
         return ret;
 
     res = LCEVC_SendDecoderPicture(lcevc->decoder, picture);
-    if (res != LCEVC_Success)
+    if (res != LCEVC_Success) {
+        LCEVC_FreePicture(lcevc->decoder, picture);
         return AVERROR_EXTERNAL;
+    }
 
     return 0;
 }
@@ -154,8 +158,10 @@ static int generate_output(void *logctx, FFLCEVCFrame *frame_ctx, AVFrame *out)
         return AVERROR_EXTERNAL;
 
     res = LCEVC_GetPictureDesc(lcevc->decoder, picture, &desc);
-    if (res != LCEVC_Success)
+    if (res != LCEVC_Success) {
+        LCEVC_FreePicture(lcevc->decoder, picture);
         return AVERROR_EXTERNAL;
+    }
 
     out->crop_top = desc.cropTop;
     out->crop_bottom = desc.cropBottom;
