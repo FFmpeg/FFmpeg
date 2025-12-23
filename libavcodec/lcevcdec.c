@@ -48,9 +48,11 @@ static int alloc_base_frame(void *logctx, FFLCEVCContext *lcevc,
     LCEVC_PictureDesc desc;
     LCEVC_ColorFormat fmt = map_format(frame->format);
     LCEVC_PicturePlaneDesc planes[AV_VIDEO_MAX_PLANES] = { 0 };
+    int width = frame->width - frame->crop_left - frame->crop_right;
+    int height = frame->height - frame->crop_top - frame->crop_bottom;
     LCEVC_ReturnCode res;
 
-    res = LCEVC_DefaultPictureDesc(&desc, fmt, frame->width, frame->height);
+    res = LCEVC_DefaultPictureDesc(&desc, fmt, width, height);
     if (res != LCEVC_Success)
         return AVERROR_EXTERNAL;
 
