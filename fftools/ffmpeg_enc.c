@@ -728,7 +728,7 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame,
         }
     }
 
-    av_assert0(0);
+    av_unreachable("encode_frame() loop should return");
 }
 
 static enum AVPictureType forced_kf_apply(void *logctx, KeyframeForceCtx *kf,
