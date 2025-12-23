@@ -48,9 +48,6 @@ layout (push_constant, scalar) uniform pushConstants {
    uint8_t  depth;
    uint8_t  alpha_info;
    uint8_t  bottom_field;
-
-   uint8_t  qmat_luma  [8*8];
-   uint8_t  qmat_chroma[8*8];
 };
 
 /**

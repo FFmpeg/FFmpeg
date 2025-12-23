@@ -42,8 +42,8 @@ typedef struct ProresVulkanDecodePicture {
     uint32_t bitstream_size;
     uint32_t slice_num;
 
-    uint32_t slice_offsets_sz,  mb_params_sz;
-    uint32_t slice_offsets_off, mb_params_off;
+    uint32_t slice_offsets_sz,  qmat_sz,  mb_params_sz;
+    uint32_t slice_offsets_off, qmat_off, mb_params_off;
 } ProresVulkanDecodePicture;
 
 typedef struct ProresVulkanDecodeContext {
@@ -68,9 +68,6 @@ typedef struct ProresVkParameters {
     uint8_t  depth;
     uint8_t  alpha_info;
     uint8_t  bottom_field;
-
-    uint8_t  qmat_luma  [64];
-    uint8_t  qmat_chroma[64];
 } ProresVkParameters;
 
 static int vk_prores_start_frame(AVCodecContext          *avctx,
@@ -88,10 +85,13 @@ static int vk_prores_start_frame(AVCodecContext          *avctx,
     int err;
 
     pp->slice_offsets_sz = (pr->slice_count + 1) * sizeof(uint32_t);
+    pp->qmat_sz          = sizeof(pr->qmat_luma) + sizeof(pr->qmat_chroma);
     pp->mb_params_sz     = pr->mb_width * pr->mb_height * sizeof(uint8_t);
 
     pp->slice_offsets_off = 0;
-    pp->mb_params_off     = FFALIGN(pp->slice_offsets_off + pp->slice_offsets_sz,
+    pp->qmat_off          = FFALIGN(pp->slice_offsets_off + pp->slice_offsets_sz,
+                                    ctx->s.props.properties.limits.minStorageBufferOffsetAlignment);
+    pp->mb_params_off     = FFALIGN(pp->qmat_off + pp->qmat_sz,
                                     ctx->s.props.properties.limits.minStorageBufferOffsetAlignment);
 
     /* Host map the input slices data if supported */
@@ -198,8 +198,10 @@ static int vk_prores_end_frame(AVCodecContext *avctx)
         .bottom_field     = pr->first_field ^ (pr->frame_type == 1),
     };
 
-    memcpy(pd.qmat_luma,   pr->qmat_luma,   sizeof(pd.qmat_luma  ));
-    memcpy(pd.qmat_chroma, pr->qmat_chroma, sizeof(pd.qmat_chroma));
+    memcpy(metadata->mapped_mem + pp->qmat_off,
+           pr->qmat_luma,   sizeof(pr->qmat_luma));
+    memcpy(metadata->mapped_mem + pp->qmat_off + sizeof(pr->qmat_luma),
+           pr->qmat_chroma, sizeof(pr->qmat_chroma));
 
     FFVkExecContext *exec = ff_vk_exec_get(&ctx->s, &ctx->exec_pool);
     RET(ff_vk_exec_start(&ctx->s, exec));
@@ -230,7 +232,6 @@ static int vk_prores_end_frame(AVCodecContext *avctx)
                             VK_ACCESS_2_TRANSFER_WRITE_BIT,
                             VK_IMAGE_LAYOUT_GENERAL,
                             VK_QUEUE_FAMILY_IGNORED);
-
         vk->CmdPipelineBarrier2(exec->buf, &(VkDependencyInfo) {
             .sType                    = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
             .pBufferMemoryBarriers    = buf_bar,
@@ -261,7 +262,6 @@ static int vk_prores_end_frame(AVCodecContext *avctx)
                         VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
                         VK_IMAGE_LAYOUT_GENERAL,
                         VK_QUEUE_FAMILY_IGNORED);
-
     ff_vk_buf_barrier(buf_bar[nb_buf_bar++], metadata,
                       ALL_COMMANDS_BIT, NONE_KHR, NONE_KHR,
                       COMPUTE_SHADER_BIT, SHADER_WRITE_BIT, NONE_KHR,
@@ -310,7 +310,6 @@ static int vk_prores_end_frame(AVCodecContext *avctx)
                         VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
                         VK_IMAGE_LAYOUT_GENERAL,
                         VK_QUEUE_FAMILY_IGNORED);
-
     ff_vk_buf_barrier(buf_bar[nb_buf_bar++], metadata,
                       COMPUTE_SHADER_BIT, SHADER_WRITE_BIT, NONE_KHR,
                       COMPUTE_SHADER_BIT, SHADER_READ_BIT, NONE_KHR,
@@ -331,9 +330,15 @@ static int vk_prores_end_frame(AVCodecContext *avctx)
                                     pp->mb_params_off,
                                     pp->mb_params_sz,
                                     VK_FORMAT_UNDEFINED);
+    ff_vk_shader_update_desc_buffer(&ctx->s, exec, &pv->idct,
+                                    0, 1, 0,
+                                    metadata,
+                                    pp->qmat_off,
+                                    pp->qmat_sz,
+                                    VK_FORMAT_UNDEFINED);
     ff_vk_shader_update_img_array(&ctx->s, exec, &pv->idct,
                                   f, vp->view.out,
-                                  0, 1,
+                                  0, 2,
                                   VK_IMAGE_LAYOUT_GENERAL,
                                   VK_NULL_HANDLE);
 
@@ -434,13 +439,18 @@ static int init_idct_shader(AVCodecContext *avctx, FFVulkanContext *s,
             .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
         },
         {
+            .name        = "qmat_buf",
+            .type        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
+        },
+        {
             .name       = "dst",
             .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
             .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
             .elems      = av_pix_fmt_count_planes(dec_frames_ctx->sw_format),
         },
     };
-    RET(ff_vk_shader_add_descriptor_set(s, shd, desc_set, 2, 0, 0));
+    RET(ff_vk_shader_add_descriptor_set(s, shd, desc_set, 3, 0, 0));
 
     RET(ff_vk_shader_link(s, shd,
                           ff_prores_idct_comp_spv_data,

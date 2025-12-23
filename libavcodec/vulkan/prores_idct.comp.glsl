@@ -28,7 +28,10 @@ layout (constant_id = 0) const bool interlaced = false;
 layout (set = 0, binding = 0) readonly buffer quant_idx_buf {
     uint8_t quant_idx[];
 };
-layout (set = 0, binding = 1) uniform uimage2D dst[];
+layout (set = 0, binding = 1) readonly buffer qmat_buf {
+    uint8_t qmat[];
+};
+layout (set = 0, binding = 2) uniform uimage2D dst[];
 
 layout (push_constant, scalar) uniform pushConstants {
    u8buf    slice_data;
@@ -45,9 +48,6 @@ layout (push_constant, scalar) uniform pushConstants {
    uint8_t  depth;
    uint8_t  alpha_info;
    uint8_t  bottom_field;
-
-   uint8_t  qmat_luma  [8*8];
-   uint8_t  qmat_chroma[8*8];
 };
 
 uint get_px(uint tex_idx, ivec2 pos)
@@ -79,21 +79,14 @@ void main(void)
 
     /* Coalesced load of DCT coeffs in shared memory, inverse quantization */
     if (act) {
-        /**
-         * According to the VK spec indexing an array in push constant memory with
-         * a non-dynamically uniform value is illegal ($15.9.1 in v1.4.326),
-         * so copy the whole matrix locally.
-         */
-        uint8_t[64] qmat = comp == 0 ? qmat_luma : qmat_chroma;
-
         /* Table 15 */
         uint8_t qidx = quant_idx[(gid.y >> 1) * mb_width + (gid.x >> (4 - chroma_shift))];
-        int qscale = qidx > 128 ? (qidx - 96) << 2 : qidx;
+        int qscale = qidx > 128 ? (qidx - 96) << 2 : qidx, mat = int(gid.z != 0) << 6;
 
         [[unroll]] for (uint i = 0; i < 8; ++i) {
             uint cidx = (i << 3) + idx;
             int   c = sign_extend(int(get_px(comp, ivec2(gid.x, (gid.y << 3) + i))), 16);
-            float v = float(c * qscale * int(qmat[cidx])) * norm;
+            float v = float(c * qscale * int(qmat[mat + cidx])) * norm;
             blocks[block][i * 9 + idx] = v * idct_scale[cidx];
         }
     }
