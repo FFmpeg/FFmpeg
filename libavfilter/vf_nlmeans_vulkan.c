@@ -740,8 +740,6 @@ static int denoise_pass(NLMeansVulkanContext *s, FFVkExecContext *exec,
 {
     FFVulkanContext *vkctx = &s->vkctx;
     FFVulkanFunctions *vk = &vkctx->vkfn;
-    VkBufferMemoryBarrier2 buf_bar[2];
-    int nb_buf_bar = 0;
 
     DenoisePushData pd = {
         { comp_offs[0], comp_offs[1], comp_offs[2], comp_offs[3] },
@@ -761,26 +759,17 @@ static int denoise_pass(NLMeansVulkanContext *s, FFVkExecContext *exec,
                                    VK_SHADER_STAGE_COMPUTE_BIT,
                                    0, sizeof(pd), &pd);
 
-    buf_bar[nb_buf_bar++] = (VkBufferMemoryBarrier2) {
-        .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2,
-        .srcStageMask = ws_vk->stage,
-        .dstStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-        .srcAccessMask = ws_vk->access,
-        .dstAccessMask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
-        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .buffer = ws_vk->buf,
-        .size = ws_vk->size,
-        .offset = 0,
-    };
-
+    VkBufferMemoryBarrier2 buf_bar;
+    ff_vk_buf_barrier(buf_bar, ws_vk,
+                      COMPUTE_SHADER_BIT, SHADER_STORAGE_READ_BIT,
+                                          SHADER_STORAGE_WRITE_BIT,
+                      COMPUTE_SHADER_BIT, SHADER_STORAGE_READ_BIT, NONE_KHR,
+                      0, VK_WHOLE_SIZE);
     vk->CmdPipelineBarrier2(exec->buf, &(VkDependencyInfo) {
             .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-            .pBufferMemoryBarriers = buf_bar,
-            .bufferMemoryBarrierCount = nb_buf_bar,
+            .pBufferMemoryBarriers = &buf_bar,
+            .bufferMemoryBarrierCount = 1,
         });
-    ws_vk->stage = buf_bar[0].dstStageMask;
-    ws_vk->access = buf_bar[0].dstAccessMask;
 
     /* End of denoise pass */
     vk->CmdDispatch(exec->buf,
@@ -924,20 +913,14 @@ static int nlmeans_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
                         VK_IMAGE_LAYOUT_GENERAL,
                         VK_QUEUE_FAMILY_IGNORED);
 
-    nb_buf_bar = 0;
-    buf_bar[nb_buf_bar++] = (VkBufferMemoryBarrier2) {
-        .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2,
-        .srcStageMask = ws_vk->stage,
-        .dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-        .srcAccessMask = ws_vk->access,
-        .dstAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .buffer = ws_vk->buf,
-        .size = ws_vk->size,
-        .offset = 0,
-    };
-
+    ff_vk_buf_barrier(buf_bar[nb_buf_bar++], ws_vk,
+                      ALL_COMMANDS_BIT, NONE_KHR, NONE_KHR,
+                      TRANSFER_BIT,     TRANSFER_WRITE_BIT, NONE_KHR,
+                      0, VK_WHOLE_SIZE);
+    ff_vk_buf_barrier(buf_bar[nb_buf_bar++], integral_vk,
+                      ALL_COMMANDS_BIT,   NONE_KHR, NONE_KHR,
+                      COMPUTE_SHADER_BIT, SHADER_STORAGE_READ_BIT, NONE_KHR,
+                      0, VK_WHOLE_SIZE);
     vk->CmdPipelineBarrier2(exec->buf, &(VkDependencyInfo) {
             .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
             .pImageMemoryBarriers = img_bar,
@@ -945,8 +928,8 @@ static int nlmeans_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
             .pBufferMemoryBarriers = buf_bar,
             .bufferMemoryBarrierCount = nb_buf_bar,
         });
-    ws_vk->stage = buf_bar[0].dstStageMask;
-    ws_vk->access = buf_bar[0].dstAccessMask;
+    nb_buf_bar = 0;
+    nb_img_bar = 0;
 
     /* Buffer zeroing */
     vk->CmdFillBuffer(exec->buf, ws_vk->buf, 0, ws_vk->size, 0x0);
@@ -976,10 +959,10 @@ static int nlmeans_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
                                         ws_vk, ws_size * s-> opts.t, ws_size * s-> opts.t,
                                         VK_FORMAT_UNDEFINED));
 
+    VkPipelineStageFlagBits2 ws_stage = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+    VkAccessFlagBits2 ws_access = VK_ACCESS_2_TRANSFER_WRITE_BIT;
     do {
         int wg_invoc = FFMIN((s->nb_offsets - offsets_dispatched)/TYPE_ELEMS, s->opts.t);
-
-        /* Integral pipeline */
         IntegralPushData pd = {
             { plane_widths[0], plane_widths[1], plane_widths[2], plane_widths[3] },
             { plane_heights[0], plane_heights[1], plane_heights[2], plane_heights[3] },
@@ -993,55 +976,68 @@ static int nlmeans_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
             desc->nb_components,
         };
 
-        ff_vk_exec_bind_shader(vkctx, exec, &s->shd_vertical);
-        ff_vk_shader_update_push_const(vkctx, exec, &s->shd_vertical,
-                                       VK_SHADER_STAGE_COMPUTE_BIT,
-                                       0, sizeof(pd), &pd);
-
-        nb_buf_bar = 0;
-        buf_bar[nb_buf_bar++] = (VkBufferMemoryBarrier2) {
-            .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2,
-            .srcStageMask = integral_vk->stage,
-            .dstStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-            .srcAccessMask = integral_vk->access,
-            .dstAccessMask = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
-            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .buffer = integral_vk->buf,
-            .size = integral_vk->size,
-            .offset = 0,
-        };
+        /* Vertical pass */
+        ff_vk_buf_barrier(buf_bar[nb_buf_bar++], integral_vk,
+                          COMPUTE_SHADER_BIT, SHADER_STORAGE_READ_BIT, NONE_KHR,
+                          COMPUTE_SHADER_BIT, SHADER_STORAGE_WRITE_BIT, NONE_KHR,
+                          0, VK_WHOLE_SIZE);
         vk->CmdPipelineBarrier2(exec->buf, &(VkDependencyInfo) {
             .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
             .pBufferMemoryBarriers = buf_bar,
             .bufferMemoryBarrierCount = nb_buf_bar,
         });
-        integral_vk->stage = buf_bar[0].dstStageMask;
-        integral_vk->access = buf_bar[0].dstAccessMask;
+        nb_buf_bar = 0;
 
-        /* End of vertical pass */
+        ff_vk_exec_bind_shader(vkctx, exec, &s->shd_vertical);
+        ff_vk_shader_update_push_const(vkctx, exec, &s->shd_vertical,
+                                       VK_SHADER_STAGE_COMPUTE_BIT,
+                                       0, sizeof(pd), &pd);
         vk->CmdDispatch(exec->buf,
-                        FFALIGN(vkctx->output_width, s->shd_vertical.lg_size[0])/s->shd_vertical.lg_size[0],
+                        FFALIGN(vkctx->output_width, s->shd_vertical.lg_size[0]) /
+                            s->shd_vertical.lg_size[0],
                         desc->nb_components,
                         wg_invoc);
+
+        /* Horizontal pass */
+        ff_vk_buf_barrier(buf_bar[nb_buf_bar++], integral_vk,
+                          COMPUTE_SHADER_BIT, SHADER_STORAGE_WRITE_BIT, NONE_KHR,
+                          COMPUTE_SHADER_BIT, SHADER_STORAGE_READ_BIT,
+                                              SHADER_STORAGE_WRITE_BIT,
+                          0, VK_WHOLE_SIZE);
+        vk->CmdPipelineBarrier2(exec->buf, &(VkDependencyInfo) {
+            .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+            .pBufferMemoryBarriers = buf_bar,
+            .bufferMemoryBarrierCount = nb_buf_bar,
+        });
+        nb_buf_bar = 0;
 
         ff_vk_exec_bind_shader(vkctx, exec, &s->shd_horizontal);
         ff_vk_shader_update_push_const(vkctx, exec, &s->shd_horizontal,
                                        VK_SHADER_STAGE_COMPUTE_BIT,
                                        0, sizeof(pd), &pd);
+        vk->CmdDispatch(exec->buf,
+                        FFALIGN(vkctx->output_height, s->shd_horizontal.lg_size[0]) /
+                            s->shd_horizontal.lg_size[0],
+                        desc->nb_components,
+                        wg_invoc);
 
-        nb_buf_bar = 0;
+        /* Weights pass */
+        ff_vk_buf_barrier(buf_bar[nb_buf_bar++], integral_vk,
+                          COMPUTE_SHADER_BIT, SHADER_STORAGE_READ_BIT,
+                                              SHADER_STORAGE_WRITE_BIT,
+                          COMPUTE_SHADER_BIT, SHADER_STORAGE_READ_BIT, NONE_KHR,
+                          0, VK_WHOLE_SIZE);
         buf_bar[nb_buf_bar++] = (VkBufferMemoryBarrier2) {
             .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2,
-            .srcStageMask = integral_vk->stage,
+            .srcStageMask = ws_stage,
             .dstStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-            .srcAccessMask = integral_vk->access,
+            .srcAccessMask = ws_access,
             .dstAccessMask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT |
                                 VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .buffer = integral_vk->buf,
-            .size = integral_vk->size,
+            .buffer = ws_vk->buf,
+            .size = ws_vk->size,
             .offset = 0,
         };
         vk->CmdPipelineBarrier2(exec->buf, &(VkDependencyInfo) {
@@ -1049,16 +1045,10 @@ static int nlmeans_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
             .pBufferMemoryBarriers = buf_bar,
             .bufferMemoryBarrierCount = nb_buf_bar,
         });
-        integral_vk->stage = buf_bar[0].dstStageMask;
-        integral_vk->access = buf_bar[0].dstAccessMask;
+        nb_buf_bar = 0;
+        ws_stage = buf_bar[1].dstStageMask;
+        ws_access = buf_bar[1].dstAccessMask;
 
-        /* End of horizontal pass */
-        vk->CmdDispatch(exec->buf,
-                        FFALIGN(vkctx->output_height, s->shd_horizontal.lg_size[0])/s->shd_horizontal.lg_size[0],
-                        desc->nb_components,
-                        wg_invoc);
-
-        /* Weights pipeline */
         WeightsPushData wpd = {
             { plane_widths[0], plane_widths[1], plane_widths[2], plane_widths[3] },
             { plane_heights[0], plane_heights[1], plane_heights[2], plane_heights[3] },
@@ -1075,52 +1065,15 @@ static int nlmeans_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
             ws_count,
             desc->nb_components,
         };
-
         ff_vk_exec_bind_shader(vkctx, exec, &s->shd_weights);
         ff_vk_shader_update_push_const(vkctx, exec, &s->shd_weights,
                                         VK_SHADER_STAGE_COMPUTE_BIT,
                                         0, sizeof(wpd), &wpd);
-
-        nb_buf_bar = 0;
-        buf_bar[nb_buf_bar++] = (VkBufferMemoryBarrier2) {
-            .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2,
-            .srcStageMask = integral_vk->stage,
-            .dstStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-            .srcAccessMask = integral_vk->access,
-            .dstAccessMask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
-            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .buffer = integral_vk->buf,
-            .size = integral_vk->size,
-            .offset = 0,
-        };
-        buf_bar[nb_buf_bar++] = (VkBufferMemoryBarrier2) {
-            .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2,
-            .srcStageMask = ws_vk->stage,
-            .dstStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-            .srcAccessMask = ws_vk->access,
-            .dstAccessMask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT |
-                                VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
-            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .buffer = ws_vk->buf,
-            .size = ws_vk->size,
-            .offset = 0,
-        };
-        vk->CmdPipelineBarrier2(exec->buf, &(VkDependencyInfo) {
-            .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-            .pBufferMemoryBarriers = buf_bar,
-            .bufferMemoryBarrierCount = nb_buf_bar,
-        });
-        integral_vk->stage = buf_bar[0].dstStageMask;
-        integral_vk->access = buf_bar[0].dstAccessMask;
-        ws_vk->stage = buf_bar[1].dstStageMask;
-        ws_vk->access = buf_bar[1].dstAccessMask;
-
-        /* End of weights pass */
         vk->CmdDispatch(exec->buf,
-                        FFALIGN(vkctx->output_width, s->shd_weights.lg_size[0])/s->shd_weights.lg_size[0],
-                        FFALIGN(vkctx->output_height, s->shd_weights.lg_size[1])/s->shd_weights.lg_size[1],
+                        FFALIGN(vkctx->output_width, s->shd_weights.lg_size[0]) /
+                            s->shd_weights.lg_size[0],
+                        FFALIGN(vkctx->output_height, s->shd_weights.lg_size[1]) /
+                            s->shd_weights.lg_size[1],
                         wg_invoc * desc->nb_components);
 
         offsets_dispatched += wg_invoc * TYPE_ELEMS;
