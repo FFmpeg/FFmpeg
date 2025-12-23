@@ -2654,7 +2654,7 @@ static int task_cleanup(Scheduler *sch, SchedulerNode node)
     case SCH_NODE_TYPE_DEC:         return dec_done   (sch, node.idx);
     case SCH_NODE_TYPE_ENC:         return enc_done   (sch, node.idx);
     case SCH_NODE_TYPE_FILTER_IN:   return filter_done(sch, node.idx);
-    default: av_assert0(0);
+    default: av_unreachable("Invalid node type?");
     }
 }
 
