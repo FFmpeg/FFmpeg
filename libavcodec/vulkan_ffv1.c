@@ -38,7 +38,6 @@ extern const char *ff_source_ffv1_dec_comp;
 
 const FFVulkanDecodeDescriptor ff_vk_dec_ffv1_desc = {
     .codec_id         = AV_CODEC_ID_FFV1,
-    .decode_extension = FF_VK_EXT_PUSH_DESCRIPTOR,
     .queue_flags      = VK_QUEUE_COMPUTE_BIT,
 };
 

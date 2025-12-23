@@ -31,7 +31,6 @@ extern const char *ff_source_dpx_copy_comp;
 
 const FFVulkanDecodeDescriptor ff_vk_dec_dpx_desc = {
     .codec_id         = AV_CODEC_ID_DPX,
-    .decode_extension = FF_VK_EXT_PUSH_DESCRIPTOR,
     .queue_flags      = VK_QUEUE_COMPUTE_BIT,
 };
 
