@@ -1061,12 +1061,14 @@ static int put_flac_codecpriv(AVFormatContext *s, AVIOContext *pb,
                              "Lavf" : LIBAVFORMAT_IDENT;
         AVDictionary *dict = NULL;
         uint8_t buf[32];
-        int64_t len;
+        int len;
 
         snprintf(buf, sizeof(buf), "0x%"PRIx64, par->ch_layout.u.mask);
         av_dict_set(&dict, "WAVEFORMATEXTENSIBLE_CHANNEL_MASK", buf, 0);
 
         len = ff_vorbiscomment_length(dict, vendor, NULL, 0);
+        if (len < 0)
+            return len;
         av_assert1(len < (1 << 24) - 4);
 
         avio_w8(pb, 0x84);

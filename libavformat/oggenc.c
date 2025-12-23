@@ -295,7 +295,10 @@ static uint8_t *ogg_write_vorbiscomment(int64_t offset, int bitexact,
 
     ff_metadata_conv(m, ff_vorbiscomment_metadata_conv, NULL);
 
-    size = offset + ff_vorbiscomment_length(*m, vendor, chapters, nb_chapters) + framing_bit;
+    size = ff_vorbiscomment_length(*m, vendor, chapters, nb_chapters);
+    if (size < 0)
+        return NULL;
+    size += offset + framing_bit;
     if (size > INT_MAX)
         return NULL;
     p = av_mallocz(size);

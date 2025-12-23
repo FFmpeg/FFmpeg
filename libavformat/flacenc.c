@@ -64,11 +64,13 @@ static int flac_write_block_comment(AVIOContext *pb, AVDictionary **m,
                                     int last_block, int bitexact)
 {
     const char *vendor = bitexact ? "ffmpeg" : LIBAVFORMAT_IDENT;
-    int64_t len;
+    int len;
 
     ff_metadata_conv(m, ff_vorbiscomment_metadata_conv, NULL);
 
     len = ff_vorbiscomment_length(*m, vendor, NULL, 0);
+    if (len < 0)
+        return len;
     if (len >= ((1<<24) - 4))
         return AVERROR(EINVAL);
 

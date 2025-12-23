@@ -34,8 +34,8 @@
  * For no string, set to an empty string.
  * @return The length in bytes.
  */
-int64_t ff_vorbiscomment_length(const AVDictionary *m, const char *vendor_string,
-                                AVChapter **chapters, unsigned int nb_chapters);
+int ff_vorbiscomment_length(const AVDictionary *m, const char *vendor_string,
+                            AVChapter **chapters, unsigned int nb_chapters);
 
 /**
  * Write a VorbisComment into an AVIOContext. The output size can be obtained

@@ -20,6 +20,7 @@
  */
 
 #include "avio.h"
+#include "avio_internal.h"
 #include "avformat.h"
 #include "metadata.h"
 #include "vorbiscomment.h"
@@ -38,27 +39,21 @@ const AVMetadataConv ff_vorbiscomment_metadata_conv[] = {
     { 0 }
 };
 
-int64_t ff_vorbiscomment_length(const AVDictionary *m, const char *vendor_string,
-                                AVChapter **chapters, unsigned int nb_chapters)
+int ff_vorbiscomment_length(const AVDictionary *m, const char *vendor_string,
+                            AVChapter **chapters, unsigned int nb_chapters)
 {
-    int64_t len = 8;
-    len += strlen(vendor_string);
-    if (chapters && nb_chapters) {
-        for (int i = 0; i < nb_chapters; i++) {
-            const AVDictionaryEntry *tag = NULL;
-            len += 4 + 12 + 1 + 10;
-            while ((tag = av_dict_iterate(chapters[i]->metadata, tag))) {
-                int64_t len1 = !strcmp(tag->key, "title") ? 4 : strlen(tag->key);
-                len += 4 + 10 + len1 + 1 + strlen(tag->value);
-            }
-        }
-    }
-    if (m) {
-        const AVDictionaryEntry *tag = NULL;
-        while ((tag = av_dict_iterate(m, tag))) {
-            len += 4 +strlen(tag->key) + 1 + strlen(tag->value);
-        }
-    }
+    AVIOContext *avio_buf;
+    int ret, len;
+
+    ret = ffio_open_null_buf(&avio_buf);
+    if (ret < 0)
+        return ret;
+
+    ret = ff_vorbiscomment_write(avio_buf, m, vendor_string, chapters, nb_chapters);
+    len = ffio_close_null_buf(avio_buf);
+    if (ret < 0)
+        return ret;
+
     return len;
 }
 
