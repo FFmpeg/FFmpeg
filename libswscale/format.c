@@ -906,8 +906,11 @@ int ff_sws_decode_pixfmt(SwsOpList *ops, enum AVPixelFormat fmt)
 
     /* Set baseline pixel content flags */
     const int integer = ff_sws_pixel_type_is_int(raw_type);
-    for (int i = 0; i < rw_op.elems; i++)
-        comps.flags[i] = (integer ? SWS_COMP_EXACT : 0);
+    const int swapped = (desc->flags & AV_PIX_FMT_FLAG_BE) != NATIVE_ENDIAN_FLAG;
+    for (int i = 0; i < rw_op.elems; i++) {
+        comps.flags[i] = (integer ? SWS_COMP_EXACT   : 0) |
+                         (swapped ? SWS_COMP_SWAPPED : 0);
+    }
 
     /* Generate value range information for simple unpacked formats */
     if (integer && !unpack.pattern[0]) {
@@ -931,7 +934,7 @@ int ff_sws_decode_pixfmt(SwsOpList *ops, enum AVPixelFormat fmt)
         .comps = comps,
     }));
 
-    if ((desc->flags & AV_PIX_FMT_FLAG_BE) != NATIVE_ENDIAN_FLAG) {
+    if (swapped) {
         RET(ff_sws_op_list_append(ops, &(SwsOp) {
             .op   = SWS_OP_SWAP_BYTES,
             .type = raw_type,

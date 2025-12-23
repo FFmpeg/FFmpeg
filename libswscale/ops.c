@@ -274,11 +274,14 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
                 op->comps.max[i]   = prev.max[i];
             }
             break;
+        case SWS_OP_SWAP_BYTES:
+            for (int i = 0; i < 4; i++)
+                op->comps.flags[i] = prev.flags[i] ^ SWS_COMP_SWAPPED;
+            break;
         case SWS_OP_WRITE:
             for (int i = 0; i < op->rw.elems; i++)
                 av_assert1(!(prev.flags[i] & SWS_COMP_GARBAGE));
             /* fall through */
-        case SWS_OP_SWAP_BYTES:
         case SWS_OP_LSHIFT:
         case SWS_OP_RSHIFT:
         case SWS_OP_MIN:
@@ -620,6 +623,8 @@ static char describe_comp_flags(unsigned flags)
         return 'X';
     else if (flags & SWS_COMP_ZERO)
         return '0';
+    else if (flags & SWS_COMP_SWAPPED)
+        return 'z';
     else if (flags & SWS_COMP_EXACT)
         return '+';
     else
@@ -763,7 +768,7 @@ void ff_sws_op_list_print(void *log, int lev, const SwsOpList *ops)
 
     }
 
-    av_log(log, lev, "    (X = unused, + = exact, 0 = zero)\n");
+    av_log(log, lev, "    (X = unused, z = byteswapped, + = exact, 0 = zero)\n");
 }
 
 int ff_sws_ops_compile_backend(SwsContext *ctx, const SwsOpBackend *backend,

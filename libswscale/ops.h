@@ -73,6 +73,7 @@ enum SwsCompFlags {
     SWS_COMP_GARBAGE = 1 << 0, /* contents are undefined / garbage data */
     SWS_COMP_EXACT   = 1 << 1, /* value is an exact integer */
     SWS_COMP_ZERO    = 1 << 2, /* known to be a constant zero */
+    SWS_COMP_SWAPPED = 1 << 3, /* byte order is swapped */
 };
 
 typedef union SwsConst {
