@@ -76,11 +76,49 @@ static void log_stdout(void *avcl, int level, const char *fmt, va_list vl)
 
 int main(int argc, char **argv)
 {
+    enum AVPixelFormat src_fmt_min = 0;
+    enum AVPixelFormat dst_fmt_min = 0;
+    enum AVPixelFormat src_fmt_max = AV_PIX_FMT_NB - 1;
+    enum AVPixelFormat dst_fmt_max = AV_PIX_FMT_NB - 1;
     int ret = 1;
 
 #ifdef _WIN32
     _setmode(_fileno(stdout), _O_BINARY);
 #endif
+
+    for (int i = 1; i < argc; i += 2) {
+        if (!strcmp(argv[i], "-help") || !strcmp(argv[i], "--help")) {
+            fprintf(stderr,
+                    "sws_ops [options...]\n"
+                    "   -help\n"
+                    "       This text\n"
+                    "   -dst <pixfmt>\n"
+                    "       Only test the specified destination pixel format\n"
+                    "   -src <pixfmt>\n"
+                    "       Only test the specified source pixel format\n"
+            );
+            return 0;
+        }
+        if (argv[i][0] != '-' || i + 1 == argc)
+            goto bad_option;
+        if (!strcmp(argv[i], "-src")) {
+            src_fmt_min = src_fmt_max = av_get_pix_fmt(argv[i + 1]);
+            if (src_fmt_min == AV_PIX_FMT_NONE) {
+                fprintf(stderr, "invalid pixel format %s\n", argv[i + 1]);
+                goto error;
+            }
+        } else if (!strcmp(argv[i], "-dst")) {
+            dst_fmt_min = dst_fmt_max = av_get_pix_fmt(argv[i + 1]);
+            if (dst_fmt_min == AV_PIX_FMT_NONE) {
+                fprintf(stderr, "invalid pixel format %s\n", argv[i + 1]);
+                goto error;
+            }
+        } else {
+bad_option:
+            fprintf(stderr, "bad option or argument missing (%s) see -help\n", argv[i]);
+            goto error;
+        }
+    }
 
     SwsContext *ctx = sws_alloc_context();
     AVFrame *frame = av_frame_alloc();
@@ -90,7 +128,13 @@ int main(int argc, char **argv)
 
     av_log_set_callback(log_stdout);
     for (const AVPixFmtDescriptor *src = NULL; (src = av_pix_fmt_desc_next(src));) {
+        enum AVPixelFormat src_fmt = av_pix_fmt_desc_get_id(src);
+        if (src_fmt < src_fmt_min || src_fmt > src_fmt_max)
+            continue;
         for (const AVPixFmtDescriptor *dst = NULL; (dst = av_pix_fmt_desc_next(dst));) {
+            enum AVPixelFormat dst_fmt = av_pix_fmt_desc_get_id(dst);
+            if (dst_fmt < dst_fmt_min || dst_fmt > dst_fmt_max)
+                continue;
             int err = run_test(ctx, frame, src, dst);
             if (err < 0)
                 goto fail;
@@ -102,4 +146,7 @@ fail:
     av_frame_free(&frame);
     sws_free_context(&ctx);
     return ret;
+
+error:
+    return AVERROR(EINVAL);
 }
