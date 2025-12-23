@@ -91,10 +91,6 @@ typedef struct FFVkBuffer {
     size_t size;
     VkDeviceAddress address;
 
-    /* Local use only */
-    VkPipelineStageFlags2 stage;
-    VkAccessFlags2 access;
-
     /* Only valid when allocated via ff_vk_get_pooled_buffer with HOST_VISIBLE or
      * via ff_vk_host_map_buffer */
     uint8_t *mapped_mem;

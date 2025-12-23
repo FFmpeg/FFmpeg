@@ -1309,8 +1309,6 @@ int ff_vk_get_pooled_buffer(FFVulkanContext *ctx, AVBufferPool **buf_pool,
         return AVERROR(ENOMEM);
 
     data = (FFVkBuffer *)ref->data;
-    data->stage = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
-    data->access = VK_ACCESS_2_NONE;
 
     if (data->size >= size)
         return 0;
