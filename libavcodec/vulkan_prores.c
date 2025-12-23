@@ -42,7 +42,8 @@ typedef struct ProresVulkanDecodePicture {
     uint32_t bitstream_size;
     uint32_t slice_num;
 
-    uint32_t slice_offsets_sz, mb_params_sz;
+    uint32_t slice_offsets_sz,  mb_params_sz;
+    uint32_t slice_offsets_off, mb_params_off;
 } ProresVulkanDecodePicture;
 
 typedef struct ProresVulkanDecodeContext {
@@ -89,6 +90,10 @@ static int vk_prores_start_frame(AVCodecContext          *avctx,
     pp->slice_offsets_sz = (pr->slice_count + 1) * sizeof(uint32_t);
     pp->mb_params_sz     = pr->mb_width * pr->mb_height * sizeof(uint8_t);
 
+    pp->slice_offsets_off = 0;
+    pp->mb_params_off     = FFALIGN(pp->slice_offsets_off + pp->slice_offsets_sz,
+                                    ctx->s.props.properties.limits.minStorageBufferOffsetAlignment);
+
     /* Host map the input slices data if supported */
     if (!vp->slices_buf && ctx->s.extensions & FF_VK_EXT_EXTERNAL_HOST_MEMORY)
         RET(ff_vk_host_map_buffer(&ctx->s, &vp->slices_buf, buffer_ref->data,
@@ -96,11 +101,11 @@ static int vk_prores_start_frame(AVCodecContext          *avctx,
                                   VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                                   VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT));
 
-    /* Allocate slice offsets buffer */
+    /* Allocate metadata buffer */
     RET(ff_vk_get_pooled_buffer(&ctx->s, &pv->metadata_pool,
                                 &pp->metadata_buf,
                                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-                                NULL, pp->slice_offsets_sz + pp->mb_params_sz,
+                                NULL, pp->mb_params_off + pp->mb_params_sz,
                                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
 
@@ -273,12 +278,14 @@ static int vk_prores_end_frame(AVCodecContext *avctx)
     /* Entropy decode */
     ff_vk_shader_update_desc_buffer(&ctx->s, exec, &pv->vld,
                                     0, 0, 0,
-                                    metadata, 0,
+                                    metadata,
+                                    pp->slice_offsets_off,
                                     pp->slice_offsets_sz,
                                     VK_FORMAT_UNDEFINED);
     ff_vk_shader_update_desc_buffer(&ctx->s, exec, &pv->vld,
                                     0, 1, 0,
-                                    metadata, pp->slice_offsets_sz,
+                                    metadata,
+                                    pp->mb_params_off,
                                     pp->mb_params_sz,
                                     VK_FORMAT_UNDEFINED);
     ff_vk_shader_update_img_array(&ctx->s, exec, &pv->vld,
@@ -320,7 +327,8 @@ static int vk_prores_end_frame(AVCodecContext *avctx)
     /* Inverse transform */
     ff_vk_shader_update_desc_buffer(&ctx->s, exec, &pv->idct,
                                     0, 0, 0,
-                                    metadata, pp->slice_offsets_sz,
+                                    metadata,
+                                    pp->mb_params_off,
                                     pp->mb_params_sz,
                                     VK_FORMAT_UNDEFINED);
     ff_vk_shader_update_img_array(&ctx->s, exec, &pv->idct,
