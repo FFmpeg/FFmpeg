@@ -63,30 +63,32 @@ void main(void)
     uint8_t qmat_buf[64] = qmat;
 
     [[unroll]]
-    for (uint i = gl_LocalInvocationID.x; i < 64; i += gl_WorkGroupSize.x) {
-        int v = int(imageLoad(dst, offs + 2*ivec2(BLOCK_ID*8, 0) + scan[i])[0]);
+    for (uint y = 0; y < 8; y++) {
+        uint block_off = y*8 + ROW_ID;
+        int v = int(imageLoad(dst, offs + 2*ivec2(BLOCK_ID*8, 0) + scan[block_off])[0]);
         float vf = float(sign_extend(v, 16)) / 32768.0;
-        vf *= qmat_buf[i] * qscale;
-        blocks[BLOCK_ID][COMP_ID*64 + i] = (vf / (64*4.56)) *
-                                           idct_scale[i];
+        vf *= qmat_buf[block_off] * qscale;
+        blocks[BLOCK_ID][COMP_ID*72 + y*9 + ROW_ID] = (vf / (64*4.56)) *
+                                                      idct_scale[block_off];
     }
 
+    /* Column-wise iDCT */
+    idct8(BLOCK_ID, COMP_ID*72 + ROW_ID, 9);
     barrier();
-    idct8(BLOCK_ID, COMP_ID*64 + ROW_ID*8, 1);
 
-    blocks[BLOCK_ID][COMP_ID*64 + ROW_ID] += 0.5;
+    blocks[BLOCK_ID][COMP_ID*72 + ROW_ID * 9] += 0.5f;
 
+    /* Row-wise iDCT */
+    idct8(BLOCK_ID, COMP_ID*72 + ROW_ID * 9, 1);
     barrier();
-    idct8(BLOCK_ID, COMP_ID*64 + ROW_ID, 8);
 
-    barrier();
     [[unroll]]
-    for (uint i = gl_LocalInvocationID.x; i < 64; i += gl_WorkGroupSize.x) {
-        int v = int(round(blocks[BLOCK_ID][COMP_ID*64 + i]*4095.0));
+    for (uint y = 0; y < 8; y++) {
+        int v = int(round(blocks[BLOCK_ID][COMP_ID*72 + y*9 + ROW_ID]*4095.0));
         v = clamp(v, 0, 4095);
         v <<= 4;
         imageStore(dst,
-                   offs + 2*ivec2(BLOCK_ID*8 + (i & 7), i >> 3),
+                   offs + 2*ivec2(BLOCK_ID*8 + ROW_ID, y),
                    ivec4(v));
     }
 }
