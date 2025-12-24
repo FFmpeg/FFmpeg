@@ -77,8 +77,8 @@ cglobal add_bytes_l2, 4, 6, 2, dst, src1, src2, wa, w, i
     jl .loop_s
     RET
 
-%macro ADD_PAETH_PRED_FN 1
-cglobal png_add_paeth_prediction, 5, 7, %1, dst, src, top, w, bpp, end, cntr
+INIT_MMX ssse3
+cglobal png_add_paeth_prediction, 5, 7, 0, dst, src, top, w, bpp, end, cntr
 %if ARCH_X86_64
     movsxd            bppq, bppd
     movsxd              wq, wd
@@ -109,21 +109,9 @@ cglobal png_add_paeth_prediction, 5, 7, %1, dst, src, top, w, bpp, end, cntr
     psubw               m4, m0
     mova                m5, m3
     paddw               m5, m4
-%if cpuflag(ssse3)
     pabsw               m3, m3
     pabsw               m4, m4
     pabsw               m5, m5
-%else ; !cpuflag(ssse3)
-    psubw               m7, m5
-    pmaxsw              m5, m7
-    pxor                m6, m6
-    pxor                m7, m7
-    psubw               m6, m3
-    psubw               m7, m4
-    pmaxsw              m3, m6
-    pmaxsw              m4, m7
-    pxor                m7, m7
-%endif ; cpuflag(ssse3)
     mova                m6, m4
     pminsw              m6, m5
     pcmpgtw             m3, m6
@@ -153,10 +141,3 @@ cglobal png_add_paeth_prediction, 5, 7, %1, dst, src, top, w, bpp, end, cntr
     POP               dstq
     emms
     RET
-%endmacro
-
-INIT_MMX mmxext
-ADD_PAETH_PRED_FN 0
-
-INIT_MMX ssse3
-ADD_PAETH_PRED_FN 0
