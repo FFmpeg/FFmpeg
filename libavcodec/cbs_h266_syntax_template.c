@@ -3248,6 +3248,12 @@ static int FUNC(slice_header) (CodedBitstreamContext *ctx, RWContext *rw,
                     FFMIN(ref_pic_lists->rpl_ref_list[i].num_ref_entries,
                         pps->pps_num_ref_idx_default_active_minus1[i] + 1);
             }
+
+            if (current->num_ref_idx_active[i] <= 0) {
+                av_log(ctx->log_ctx, AV_LOG_ERROR,
+                       "Inter slice but no reference pictures available for RPL%d.\n", i);
+                return AVERROR_INVALIDDATA;
+            }
         } else {
             current->num_ref_idx_active[i] = 0;
         }
