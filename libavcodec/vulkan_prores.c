@@ -250,27 +250,17 @@ static int vk_prores_end_frame(AVCodecContext *avctx)
 
     /* Input barrier, or synchronization between clear and vld shader */
     ff_vk_frame_barrier(&ctx->s, exec, f, img_bar, &nb_img_bar,
-                        pr->first_field ? VK_PIPELINE_STAGE_2_CLEAR_BIT : VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                        pr->first_field ? VK_PIPELINE_STAGE_2_CLEAR_BIT :
+                                          VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
                         VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                         VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
                         VK_IMAGE_LAYOUT_GENERAL,
                         VK_QUEUE_FAMILY_IGNORED);
 
-    buf_bar[nb_buf_bar++] = (VkBufferMemoryBarrier2) {
-        .sType               = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2,
-        .srcStageMask        = metadata->stage,
-        .dstStageMask        = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-        .srcAccessMask       = metadata->access,
-        .dstAccessMask       = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
-        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .buffer              = metadata->buf,
-        .offset              = pp->slice_offsets_sz,
-        .size                = pp->mb_params_sz,
-    };
-    metadata->stage  = buf_bar[0].dstStageMask;
-    metadata->access = buf_bar[0].dstAccessMask;
-
+    ff_vk_buf_barrier(buf_bar[nb_buf_bar++], metadata,
+                      ALL_COMMANDS_BIT, NONE_KHR, NONE_KHR,
+                      COMPUTE_SHADER_BIT, SHADER_WRITE_BIT, NONE_KHR,
+                      pp->slice_offsets_sz, pp->mb_params_sz);
     vk->CmdPipelineBarrier2(exec->buf, &(VkDependencyInfo) {
         .sType                    = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
         .pBufferMemoryBarriers    = buf_bar,
@@ -302,7 +292,8 @@ static int vk_prores_end_frame(AVCodecContext *avctx)
                                    VK_SHADER_STAGE_COMPUTE_BIT,
                                    0, sizeof(pd), &pd);
 
-    vk->CmdDispatch(exec->buf, AV_CEIL_RSHIFT(pr->slice_count / pr->mb_height, 3), AV_CEIL_RSHIFT(pr->mb_height, 3),
+    vk->CmdDispatch(exec->buf, AV_CEIL_RSHIFT(pr->slice_count / pr->mb_height, 3),
+                    AV_CEIL_RSHIFT(pr->mb_height, 3),
                     3 + !!pr->alpha_info);
 
     /* Synchronize vld and idct shaders */
@@ -313,21 +304,10 @@ static int vk_prores_end_frame(AVCodecContext *avctx)
                         VK_IMAGE_LAYOUT_GENERAL,
                         VK_QUEUE_FAMILY_IGNORED);
 
-    buf_bar[nb_buf_bar++] = (VkBufferMemoryBarrier2) {
-        .sType               = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2,
-        .srcStageMask        = metadata->stage,
-        .dstStageMask        = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-        .srcAccessMask       = metadata->access,
-        .dstAccessMask       = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
-        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .buffer              = metadata->buf,
-        .offset              = pp->slice_offsets_sz,
-        .size                = pp->mb_params_sz,
-    };
-    metadata->stage  = buf_bar[0].dstStageMask;
-    metadata->access = buf_bar[0].dstAccessMask;
-
+    ff_vk_buf_barrier(buf_bar[nb_buf_bar++], metadata,
+                      COMPUTE_SHADER_BIT, SHADER_WRITE_BIT, NONE_KHR,
+                      COMPUTE_SHADER_BIT, SHADER_READ_BIT, NONE_KHR,
+                      pp->slice_offsets_sz, pp->mb_params_sz);
     vk->CmdPipelineBarrier2(exec->buf, &(VkDependencyInfo) {
         .sType                    = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
         .pBufferMemoryBarriers    = buf_bar,
