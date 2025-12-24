@@ -977,7 +977,7 @@ static int parse_playlist(HLSContext *c, const char *url,
             ptr = strchr(ptr, '@');
             if (ptr)
                 seg_offset = strtoll(ptr+1, NULL, 10);
-            if (seg_size < 0 ||  seg_offset > INT64_MAX - seg_size) {
+            if (seg_size < 0 || seg_offset > INT64_MAX - seg_size) {
                 ret = AVERROR_INVALIDDATA;
                 goto fail;
             }
