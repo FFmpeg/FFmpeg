@@ -798,13 +798,15 @@ int av_exif_write(void *logctx, const AVExifMetadata *ifd, AVBufferRef **buffer,
         tput32(&pb, le, 8);
     }
 
-    int extras;
-    for (extras = 0; extras < FF_ARRAY_ELEMS(extra_ifds); extras++) {
+    int extras = 0;
+    for (int i = 0; i < FF_ARRAY_ELEMS(extra_ifds); i++) {
         AVExifEntry *extra_entry = NULL;
-        uint16_t extra_tag = 0xFFFCu - extras;
+        uint16_t extra_tag = 0xFFFCu - i;
         ret = av_exif_get_entry(logctx, (AVExifMetadata *) ifd, extra_tag, 0, &extra_entry);
-        if (ret <= 0)
+        if (ret < 0)
             break;
+        if (!ret)
+            continue;
         av_log(logctx, AV_LOG_DEBUG, "found extra IFD tag: %04x\n", extra_tag);
         if (!ifd_new) {
             ifd_new = av_exif_clone_ifd(ifd);
@@ -816,7 +818,7 @@ int av_exif_write(void *logctx, const AVExifMetadata *ifd, AVBufferRef **buffer,
         AVExifMetadata *cloned = av_exif_clone_ifd(&extra_entry->value.ifd);
         if (!cloned)
             break;
-        extra_ifds[extras] = *cloned;
+        extra_ifds[extras++] = *cloned;
         /* don't use av_exif_free here, we want to preserve internals */
         av_free(cloned);
         ret = av_exif_remove_entry(logctx, ifd_new, extra_tag, 0);
@@ -824,12 +826,16 @@ int av_exif_write(void *logctx, const AVExifMetadata *ifd, AVBufferRef **buffer,
             break;
     }
 
+    if (ret < 0) {
+        av_log(logctx, AV_LOG_ERROR, "error popping additional IFD: %s\n", av_err2str(ret));
+        goto end;
+    }
+
     next = bytestream2_tell_p(&pb);
     ret = exif_write_ifd(logctx, &pb, le, 0, ifd);
     if (ret < 0) {
-        av_buffer_unref(&buf);
         av_log(logctx, AV_LOG_ERROR, "error writing EXIF data: %s\n", av_err2str(ret));
-        return ret;
+        goto end;
     }
     next += ret;
 
@@ -840,8 +846,10 @@ int av_exif_write(void *logctx, const AVExifMetadata *ifd, AVBufferRef **buffer,
         tput32(&pb, le, next);
         bytestream2_seek_p(&pb, next, SEEK_SET);
         ret = exif_write_ifd(logctx, &pb, le, 0, &extra_ifds[i]);
-        if (ret < 0)
-            break;
+        if (ret < 0) {
+            av_log(logctx, AV_LOG_ERROR, "error writing additional IFD: %s\n", av_err2str(ret));
+            goto end;
+        }
         next += ret;
     }
 
@@ -853,6 +861,8 @@ end:
     av_freep(&ifd_new);
     for (int i = 0; i < FF_ARRAY_ELEMS(extra_ifds); i++)
         av_exif_free(&extra_ifds[i]);
+    if (ret < 0)
+        av_buffer_unref(&buf);
 
     return ret;
 }
