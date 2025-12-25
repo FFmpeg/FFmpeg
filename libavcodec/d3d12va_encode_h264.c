@@ -211,6 +211,18 @@ static int d3d12va_encode_h264_init_sequence_params(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_DEBUG, "D3D12 video encode on this device uses texture array mode.\n");
     }
 
+    // Check if the configuration with DELTA_QP is supported
+    if (support.SupportFlags & D3D12_VIDEO_ENCODER_SUPPORT_FLAG_RATE_CONTROL_DELTA_QP_AVAILABLE) {
+        base_ctx->roi_allowed = 1;
+        // Store the QP map region size from resolution limits
+        ctx->qp_map_region_size = ctx->res_limits.QPMapRegionPixelsSize;
+        av_log(avctx, AV_LOG_DEBUG, "ROI encoding is supported via delta QP "
+               "(QP map region size: %d pixels).\n", ctx->qp_map_region_size);
+    } else {
+        base_ctx->roi_allowed = 0;
+        av_log(avctx, AV_LOG_DEBUG, "ROI encoding not supported by hardware for current rate control mode \n");
+    }
+
     desc = av_pix_fmt_desc_get(base_ctx->input_frames->sw_format);
     av_assert0(desc);
 
@@ -376,6 +388,7 @@ static void d3d12va_encode_h264_free_picture_params(D3D12VAEncodePicture *pic)
 static int d3d12va_encode_h264_init_picture_params(AVCodecContext *avctx,
                                                    FFHWBaseEncodePicture *base_pic)
 {
+    FFHWBaseEncodeContext  *base_ctx = avctx->priv_data;
     D3D12VAEncodeH264Context    *ctx = avctx->priv_data;
     D3D12VAEncodePicture        *pic = base_pic->priv;
     D3D12VAEncodeH264Picture    *hpic = base_pic->codec_priv;
@@ -469,6 +482,12 @@ static int d3d12va_encode_h264_init_picture_params(AVCodecContext *avctx,
     pic->pic_ctl.pH264PicData->pList1ReferenceFrames = ref_list1;
     pic->pic_ctl.pH264PicData->ReferenceFramesReconPictureDescriptorsCount = idx;
     pic->pic_ctl.pH264PicData->pReferenceFramesReconPictureDescriptors = pd;
+
+    // Process ROI side data if present and supported
+    if (base_ctx->roi_allowed && pic->qp_map && pic->qp_map_size > 0) {
+        pic->pic_ctl.pH264PicData->QPMapValuesCount  = pic->qp_map_size;
+        pic->pic_ctl.pH264PicData->pRateControlQPMap = (INT8 *)pic->qp_map;
+    }
 
     return 0;
 }

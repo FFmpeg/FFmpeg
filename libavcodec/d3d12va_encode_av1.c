@@ -590,6 +590,18 @@ static int d3d12va_encode_av1_init_sequence_params(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_DEBUG, "D3D12 video encode on this device uses texture array mode.\n");
     }
 
+    // Check if the configuration with DELTA_QP is supported
+    if (support.SupportFlags & D3D12_VIDEO_ENCODER_SUPPORT_FLAG_RATE_CONTROL_DELTA_QP_AVAILABLE) {
+        base_ctx->roi_allowed = 1;
+        // Store the QP map region size from resolution limits
+        ctx->qp_map_region_size = ctx->res_limits.QPMapRegionPixelsSize;
+        av_log(avctx, AV_LOG_DEBUG, "ROI encoding is supported via delta QP "
+               "(QP map region size: %d pixels).\n", ctx->qp_map_region_size);
+    } else {
+        base_ctx->roi_allowed = 0;
+        av_log(avctx, AV_LOG_DEBUG, "ROI encoding not supported by hardware for current rate control mode \n");
+    }
+
     memset(seqheader_obu, 0, sizeof(*seqheader_obu));
     seq->seq_profile = profile;
     seq->seq_level_idx[0] = level.Level;
@@ -990,6 +1002,12 @@ static int d3d12va_encode_av1_init_picture_params(AVCodecContext *avctx,
     if (pic->type == FF_HW_PICTURE_TYPE_P) {
         for (i = 0; i < AV1_REFS_PER_FRAME; i++)
             d3d12va_pic->pic_ctl.pAV1PicData->ReferenceIndices[i] = fh->ref_frame_idx[i];
+    }
+
+    // Process ROI side data if present and supported
+    if (base_ctx->roi_allowed && d3d12va_pic->qp_map && d3d12va_pic->qp_map_size > 0) {
+        d3d12va_pic->pic_ctl.pAV1PicData->QPMapValuesCount  = d3d12va_pic->qp_map_size;
+        d3d12va_pic->pic_ctl.pAV1PicData->pRateControlQPMap = (INT16 *)d3d12va_pic->qp_map;
     }
 
     return av_fifo_write(priv->picture_header_list, &priv->units.raw_frame_header, 1);
