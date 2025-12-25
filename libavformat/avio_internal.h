@@ -259,7 +259,7 @@ int ffio_open_whitelist(AVIOContext **s, const char *url, int flags,
  * Close a null buffer.
  *
  * @param s an IO context opened by ffio_open_null_buf
- * @return the number of bytes written to the null buffer
+ * @return the number of bytes written to the null buffer, negative on error
  */
 int ffio_close_null_buf(AVIOContext *s);
 

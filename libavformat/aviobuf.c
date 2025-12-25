@@ -1451,6 +1451,8 @@ static int null_buf_write(void *opaque, const uint8_t *buf, int buf_size)
 {
     DynBuffer *d = opaque;
 
+    if ((unsigned)d->pos + (unsigned)buf_size > INT_MAX)
+        return AVERROR(ERANGE);
     d->pos += buf_size;
     if (d->pos > d->size)
         d->size = d->pos;
@@ -1474,7 +1476,7 @@ int ffio_close_null_buf(AVIOContext *s)
 
     avio_flush(s);
 
-    size = d->size;
+    size = s->error ? s->error : d->size;
 
     avio_context_free(&s);
 
