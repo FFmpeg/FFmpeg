@@ -406,6 +406,7 @@ static int scalable_channel_layout_config(void *s, AVIOContext *pb,
         int substream_count, coupled_substream_count;
         int expanded_loudspeaker_layout = -1;
         int ret, byte = avio_r8(pb);
+        int channels;
 
         layer = av_iamf_audio_element_add_layer(audio_element->element);
         if (!layer)
@@ -455,7 +456,13 @@ static int scalable_channel_layout_config(void *s, AVIOContext *pb,
                                                           .nb_channels = substream_count +
                                                                          coupled_substream_count };
 
-        if (i && ch_layout.nb_channels <= audio_element->element->layers[i-1]->ch_layout.nb_channels)
+        channels = ch_layout.nb_channels;
+        if (i) {
+            if (ch_layout.nb_channels <= audio_element->element->layers[i-1]->ch_layout.nb_channels)
+                return AVERROR_INVALIDDATA;
+            channels -= audio_element->element->layers[i-1]->ch_layout.nb_channels;
+        }
+        if (channels != substream_count + coupled_substream_count)
             return AVERROR_INVALIDDATA;
 
         for (int j = 0; j < substream_count; j++) {
