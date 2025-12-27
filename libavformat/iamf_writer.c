@@ -670,12 +670,12 @@ static int ambisonics_config(const IAMFAudioElement *audio_element,
     avio_w8(dyn_bc, audio_element->nb_substreams); // substream_count
 
     if (layer->ambisonics_mode == AV_IAMF_AMBISONICS_MODE_MONO) {
-    if (layer->ch_layout.order == AV_CHANNEL_ORDER_AMBISONIC)
-        for (int i = 0; i < layer->ch_layout.nb_channels; i++)
-            avio_w8(dyn_bc, i);
-    else
-        for (int i = 0; i < layer->ch_layout.nb_channels; i++)
-            avio_w8(dyn_bc, layer->ch_layout.u.map[i].id);
+        if (layer->ch_layout.order == AV_CHANNEL_ORDER_AMBISONIC)
+            for (int i = 0; i < layer->ch_layout.nb_channels; i++)
+                avio_w8(dyn_bc, i);
+        else
+            for (int i = 0; i < layer->ch_layout.nb_channels; i++)
+                avio_w8(dyn_bc, layer->ch_layout.u.map[i].id);
     } else {
         int nb_demixing_matrix = (ilayer->coupled_substream_count + ilayer->substream_count) * layer->ch_layout.nb_channels;
         if (nb_demixing_matrix != layer->nb_demixing_matrix)
