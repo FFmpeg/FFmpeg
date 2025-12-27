@@ -451,16 +451,18 @@ static int update_settings(AVFilterContext *ctx)
         .temperature = (s->temperature - 6500.0) / 3500.0,
     };
 
-    opts->peak_detect_params = *pl_peak_detect_params(
+    opts->peak_detect_params = (struct pl_peak_detect_params) {
+        PL_PEAK_DETECT_DEFAULTS
         .smoothing_period = s->smoothing,
         .scene_threshold_low = s->scene_low,
         .scene_threshold_high = s->scene_high,
 #if PL_API_VER >= 263
         .percentile = s->percentile,
 #endif
-    );
+    };
 
-    opts->color_map_params = *pl_color_map_params(
+    opts->color_map_params = (struct pl_color_map_params) {
+        PL_COLOR_MAP_DEFAULTS
         .tone_mapping_function = get_tonemapping_func(s->tonemapping),
         .tone_mapping_param = s->tonemapping_param,
         .inverse_tone_mapping = s->inverse_tonemapping,
@@ -469,7 +471,7 @@ static int update_settings(AVFilterContext *ctx)
         .contrast_recovery = s->contrast_recovery,
         .contrast_smoothness = s->contrast_smoothness,
 #endif
-    );
+    };
 
     set_gamut_mode(&opts->color_map_params, gamut_mode);
 
@@ -484,7 +486,8 @@ static int update_settings(AVFilterContext *ctx)
         .strength = s->cone_str,
     );
 
-    opts->params = *pl_render_params(
+    opts->params = (struct pl_render_params) {
+        PL_RENDER_DEFAULTS
         .antiringing_strength = s->antiringing,
         .background_transparency = 1.0f - (float) s->fillcolor[3] / UINT8_MAX,
         .background_color = {
@@ -513,7 +516,7 @@ static int update_settings(AVFilterContext *ctx)
         .disable_builtin_scalers = s->disable_builtin,
         .force_dither = s->force_dither,
         .disable_fbos = s->disable_fbos,
-    );
+    };
 
     RET(find_scaler(ctx, &opts->params.upscaler, s->upscaler, 0));
     RET(find_scaler(ctx, &opts->params.downscaler, s->downscaler, 0));
