@@ -239,6 +239,8 @@ AVIAMFParamDefinition *av_iamf_param_definition_alloc(enum AVIAMFParamDefinition
 //
 // Audio Element
 //
+static const AVOptionArrayDef demixing_matrix_def = { .def = "0|0", .size_max = (255 + 255) * 255, .sep = '|' };
+
 #undef OFFSET
 #define OFFSET(x) offsetof(AVIAMFLayer, x)
 static const AVOption layer_options[] = {
@@ -269,6 +271,8 @@ static const AVOption layer_options[] = {
                    { .i64 = AV_IAMF_AMBISONICS_MODE_MONO },       .unit = "ambisonics_mode" },
         { "projection", NULL, 0, AV_OPT_TYPE_CONST,
                    { .i64 = AV_IAMF_AMBISONICS_MODE_PROJECTION }, .unit = "ambisonics_mode" },
+    { "demixing_matrix", "set demixing_matrix", OFFSET(demixing_matrix), AV_OPT_TYPE_RATIONAL | AV_OPT_TYPE_FLAG_ARRAY,
+            { .arr = &demixing_matrix_def }, -1.0, 1.0, FLAGS },
     { NULL },
 };
 
