@@ -18,6 +18,7 @@ version <next>:
 - JPEG-XS parser
 - JPEG-XS decoder and encoder through libsvtjpegxs
 - JPEG-XS raw bitstream muxer and demuxer
+- IAMF Projection mode Ambisonic Audio Elements muxing and demuxing
 
 
 version 8.0:
