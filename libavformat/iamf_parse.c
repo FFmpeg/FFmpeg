@@ -555,7 +555,7 @@ static int ambisonics_config(void *s, AVIOContext *pb,
             return AVERROR(ENOMEM);
 
         for (int i = 0; i < demixing_matrix_size; i++)
-            layer->demixing_matrix[i] = av_make_q(sign_extend(avio_rb16(pb), 16), 1 << 8);
+            layer->demixing_matrix[i] = av_make_q(sign_extend(avio_rb16(pb), 16), 1 << 15);
 
         for (int i = 0; i < substream_count; i++) {
             IAMFSubStream *substream = &audio_element->substreams[i];
