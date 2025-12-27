@@ -576,17 +576,19 @@ static int ambisonics_config(void *s, AVIOContext *pb,
             return ret;
     } else {
         int coupled_substream_count = avio_r8(pb);  // M
-        int nb_demixing_matrix = substream_count + coupled_substream_count;
-        int demixing_matrix_size = nb_demixing_matrix * output_channel_count;
+        int count = substream_count + coupled_substream_count;
+        int nb_demixing_matrix = count * output_channel_count;
 
         audio_element->layers->coupled_substream_count = coupled_substream_count;
 
         layer->ch_layout = (AVChannelLayout){ .order = AV_CHANNEL_ORDER_AMBISONIC, .nb_channels = output_channel_count };
-        layer->demixing_matrix = av_malloc_array(demixing_matrix_size, sizeof(*layer->demixing_matrix));
+        layer->demixing_matrix = av_malloc_array(nb_demixing_matrix, sizeof(*layer->demixing_matrix));
         if (!layer->demixing_matrix)
             return AVERROR(ENOMEM);
 
-        for (int i = 0; i < demixing_matrix_size; i++)
+        layer->nb_demixing_matrix = nb_demixing_matrix;
+
+        for (int i = 0; i < layer->nb_demixing_matrix; i++)
             layer->demixing_matrix[i] = av_make_q(sign_extend(avio_rb16(pb), 16), 1 << 15);
 
         for (int i = 0; i < substream_count; i++) {
