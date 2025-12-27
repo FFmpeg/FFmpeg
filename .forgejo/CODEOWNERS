@@ -231,3 +231,7 @@ tests/ref/fate/sub-mcc.* @programmerjake
 # Forgejo
 # =======
 .forgejo/CODEOWNERS @michaelni
+
+# /
+# =
+MAINTAINERS @michaelni
