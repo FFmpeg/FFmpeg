@@ -662,8 +662,8 @@ static int ambisonics_config(const IAMFAudioElement *audio_element,
     const AVIAMFLayer *layer = element->layers[0];
 
     ffio_write_leb(dyn_bc, 0); // ambisonics_mode
-    ffio_write_leb(dyn_bc, layer->ch_layout.nb_channels); // output_channel_count
-    ffio_write_leb(dyn_bc, audio_element->nb_substreams); // substream_count
+    avio_w8(dyn_bc, layer->ch_layout.nb_channels); // output_channel_count
+    avio_w8(dyn_bc, audio_element->nb_substreams); // substream_count
 
     if (layer->ch_layout.order == AV_CHANNEL_ORDER_AMBISONIC)
         for (int i = 0; i < layer->ch_layout.nb_channels; i++)
