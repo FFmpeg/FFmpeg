@@ -227,3 +227,7 @@ doc/.* @GyanD
 tests/checkasm/riscv/.* @Courmisch
 tests/ref/.*drawvg.* @ayosec
 tests/ref/fate/sub-mcc.* @programmerjake
+
+# Forgejo
+# =======
+.forgejo/CODEOWNERS @michaelni
