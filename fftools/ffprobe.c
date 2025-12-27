@@ -2078,6 +2078,10 @@ static void print_iamf_param_definition(AVTextFormatContext *tfc, const char *na
 static void print_iamf_audio_element_params(AVTextFormatContext *tfc, const AVStreamGroup *stg,
                                             const AVIAMFAudioElement *audio_element)
 {
+    AVBPrint pbuf;
+
+    av_bprint_init(&pbuf, 1, AV_BPRINT_SIZE_UNLIMITED);
+
     avtext_print_section_header(tfc, stg, SECTION_ID_STREAM_GROUP_COMPONENT);
     print_int("nb_layers",          audio_element->nb_layers);
     print_int("audio_element_type", audio_element->audio_element_type);
@@ -2092,8 +2096,12 @@ static void print_iamf_audio_element_params(AVTextFormatContext *tfc, const AVSt
         if (audio_element->audio_element_type == AV_IAMF_AUDIO_ELEMENT_TYPE_CHANNEL) {
             print_int("output_gain_flags", layer->output_gain_flags);
             print_q("output_gain",         layer->output_gain, '/');
-        } else if (audio_element->audio_element_type == AV_IAMF_AUDIO_ELEMENT_TYPE_SCENE)
+        } else if (audio_element->audio_element_type == AV_IAMF_AUDIO_ELEMENT_TYPE_SCENE) {
             print_int("ambisonics_mode",   layer->ambisonics_mode);
+            if (layer->ambisonics_mode == AV_IAMF_AMBISONICS_MODE_PROJECTION)
+                print_list_fmt("demixing_matrix", "%d/%d", layer->nb_demixing_matrix, 1, layer->demixing_matrix[idx].num,
+                                                                                         layer->demixing_matrix[idx].den);
+        }
         avtext_print_section_footer(tfc); // SECTION_ID_STREAM_GROUP_SUBCOMPONENT
     }
     if (audio_element->demixing_info)
@@ -2104,6 +2112,8 @@ static void print_iamf_audio_element_params(AVTextFormatContext *tfc, const AVSt
                                     SECTION_ID_STREAM_GROUP_SUBCOMPONENT);
     avtext_print_section_footer(tfc); // SECTION_ID_STREAM_GROUP_SUBCOMPONENTS
     avtext_print_section_footer(tfc); // SECTION_ID_STREAM_GROUP_COMPONENT
+
+    av_bprint_finalize(&pbuf, NULL);
 }
 
 static void print_iamf_submix_params(AVTextFormatContext *tfc, const AVIAMFSubmix *submix)
