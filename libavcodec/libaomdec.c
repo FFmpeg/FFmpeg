@@ -71,9 +71,12 @@ static int set_pix_fmt(AVCodecContext *avctx, struct aom_image *img)
         AVCOL_RANGE_MPEG, AVCOL_RANGE_JPEG
     };
     avctx->color_range = color_ranges[img->range];
-    avctx->color_primaries = (enum AVColorPrimaries)img->cp;
-    avctx->colorspace  = (enum AVColorSpace)img->mc;
-    avctx->color_trc   = (enum AVColorTransferCharacteristic)img->tc;
+    if (img->cp != AOM_CICP_CP_UNSPECIFIED)
+        avctx->color_primaries = (enum AVColorPrimaries)img->cp;
+    if (img->mc != AOM_CICP_MC_UNSPECIFIED)
+        avctx->colorspace  = (enum AVColorSpace)img->mc;
+    if (img->tc != AOM_CICP_TC_UNSPECIFIED)
+        avctx->color_trc   = (enum AVColorTransferCharacteristic)img->tc;
 
     switch (img->fmt) {
     case AOM_IMG_FMT_I420:
