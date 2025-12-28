@@ -622,6 +622,14 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
     return n;
 }
 
+static void decode_flush(AVCodecContext *avctx)
+{
+    InterplayACMContext *s = avctx->priv_data;
+
+    s->bitstream_size = 0;
+    s->bitstream_index = 0;
+}
+
 static av_cold int decode_close(AVCodecContext *avctx)
 {
     InterplayACMContext *s = avctx->priv_data;
@@ -641,6 +649,7 @@ const FFCodec ff_interplay_acm_decoder = {
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_INTERPLAY_ACM,
     .init           = decode_init,
+    .flush          = decode_flush,
     .close          = decode_close,
     FF_CODEC_DECODE_CB(decode_frame),
     .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1,
