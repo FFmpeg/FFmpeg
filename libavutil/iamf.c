@@ -239,7 +239,7 @@ AVIAMFParamDefinition *av_iamf_param_definition_alloc(enum AVIAMFParamDefinition
 //
 // Audio Element
 //
-static const AVOptionArrayDef demixing_matrix_def = { .def = "0|0", .size_max = (255 + 255) * 255, .sep = '|' };
+static const AVOptionArrayDef demixing_matrix_def = { .size_max = (255 + 255) * 255, .sep = '|' };
 
 #undef OFFSET
 #define OFFSET(x) offsetof(AVIAMFLayer, x)
