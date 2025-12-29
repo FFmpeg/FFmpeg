@@ -2171,35 +2171,35 @@ static int mjpeg_decode_com(MJpegDecodeContext *s)
     if (!len)
         return 0;
 
-        int i;
-        char *cbuf = av_malloc(len + 1);
-        if (!cbuf)
-            return AVERROR(ENOMEM);
+    int i;
+    char *cbuf = av_malloc(len + 1);
+    if (!cbuf)
+        return AVERROR(ENOMEM);
 
-        for (i = 0; i < len; i++)
-            cbuf[i] = get_bits(&s->gb, 8);
-        if (cbuf[i - 1] == '\n')
-            cbuf[i - 1] = 0;
-        else
-            cbuf[i] = 0;
+    for (i = 0; i < len; i++)
+        cbuf[i] = get_bits(&s->gb, 8);
+    if (cbuf[i - 1] == '\n')
+        cbuf[i - 1] = 0;
+    else
+        cbuf[i] = 0;
 
-        if (s->avctx->debug & FF_DEBUG_PICT_INFO)
-            av_log(s->avctx, AV_LOG_INFO, "comment: '%s'\n", cbuf);
+    if (s->avctx->debug & FF_DEBUG_PICT_INFO)
+        av_log(s->avctx, AV_LOG_INFO, "comment: '%s'\n", cbuf);
 
-        /* buggy avid, it puts EOI only at every 10th frame */
-        if (!strncmp(cbuf, "AVID", 4)) {
-            parse_avid(s, cbuf, len);
-        } else if (!strcmp(cbuf, "CS=ITU601"))
-            s->cs_itu601 = 1;
-        else if ((!strncmp(cbuf, "Intel(R) JPEG Library, version 1", 32) && s->avctx->codec_tag) ||
-                 (!strncmp(cbuf, "Metasoft MJPEG Codec", 20)))
-            s->flipped = 1;
-        else if (!strcmp(cbuf, "MULTISCOPE II")) {
-            s->avctx->sample_aspect_ratio = (AVRational) { 1, 2 };
-            s->multiscope = 2;
-        }
+    /* buggy avid, it puts EOI only at every 10th frame */
+    if (!strncmp(cbuf, "AVID", 4)) {
+        parse_avid(s, cbuf, len);
+    } else if (!strcmp(cbuf, "CS=ITU601"))
+        s->cs_itu601 = 1;
+    else if ((!strncmp(cbuf, "Intel(R) JPEG Library, version 1", 32) && s->avctx->codec_tag) ||
+             (!strncmp(cbuf, "Metasoft MJPEG Codec", 20)))
+        s->flipped = 1;
+    else if (!strcmp(cbuf, "MULTISCOPE II")) {
+        s->avctx->sample_aspect_ratio = (AVRational) { 1, 2 };
+        s->multiscope = 2;
+    }
 
-        av_free(cbuf);
+    av_free(cbuf);
 
     return 0;
 }
