@@ -373,6 +373,8 @@ int av_crc_init(AVCRC *ctx, int le, int bits, uint32_t poly, int ctx_size)
 
 const AVCRC *av_crc_get_table(AVCRCId crc_id)
 {
+    if ((unsigned)crc_id >= AV_CRC_MAX)
+        return NULL;
 #if !CONFIG_HARDCODED_TABLES
     switch (crc_id) {
     case AV_CRC_8_ATM:      CRC_INIT_TABLE_ONCE(AV_CRC_8_ATM); break;
@@ -383,7 +385,7 @@ const AVCRC *av_crc_get_table(AVCRCId crc_id)
     case AV_CRC_32_IEEE:    CRC_INIT_TABLE_ONCE(AV_CRC_32_IEEE); break;
     case AV_CRC_32_IEEE_LE: CRC_INIT_TABLE_ONCE(AV_CRC_32_IEEE_LE); break;
     case AV_CRC_16_ANSI_LE: CRC_INIT_TABLE_ONCE(AV_CRC_16_ANSI_LE); break;
-    default: av_assert0(0);
+    default: av_unreachable("already checked");
     }
 #endif
     return av_crc_table[crc_id];
