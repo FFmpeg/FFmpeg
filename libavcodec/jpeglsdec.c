@@ -376,7 +376,6 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s)
     cur  = s->picture_ptr->data[0];
 
     /* initialize JPEG-LS state from JPEG parameters */
-    memset(state, 0, sizeof(*state));
     state->near   = near;
     state->bpp    = (s->bits < 2) ? 2 : s->bits;
     state->maxval = s->maxval;

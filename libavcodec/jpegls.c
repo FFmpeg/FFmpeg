@@ -49,6 +49,10 @@ void ff_jpegls_init_state(JLSState *state)
         state->A[i] = FFMAX(state->range + 32 >> 6, 2);
         state->N[i] = 1;
     }
+
+    memset(state->B, 0, sizeof(state->B));
+    memset(state->C, 0, sizeof(state->C));
+    memset(state->run_index, 0, sizeof(state->run_index));
 }
 
 /**
