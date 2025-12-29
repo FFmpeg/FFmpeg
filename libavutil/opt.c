@@ -2602,6 +2602,8 @@ int av_opt_is_set_to_default(void *obj, const AVOption *o)
             ret = 0;
         else if (val)
             ret = !strcmp(val, def);
+        else
+            ret = 1;
 
         av_freep(&val);
 
