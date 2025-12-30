@@ -290,14 +290,21 @@ StdVideoAV1Profile ff_vk_av1_profile_to_vk(int profile)
 
 int ff_vk_create_view(FFVulkanContext *s, FFVkVideoCommon *common,
                       VkImageView *view, VkImageAspectFlags *aspect,
-                      AVVkFrame *src, VkFormat vkf, int is_dpb)
+                      AVVkFrame *src, VkFormat vkf, VkImageUsageFlags usage)
 {
     VkResult ret;
     FFVulkanFunctions *vk = &s->vkfn;
     VkImageAspectFlags aspect_mask = ff_vk_aspect_bits_from_vkfmt(vkf);
+    int is_dpb = usage & (VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR |
+                          VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR);
 
+    VkImageViewUsageCreateInfo usage_create_info = {
+        .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO,
+        .usage = usage,
+    };
     VkSamplerYcbcrConversionInfo yuv_sampler_info = {
         .sType = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO,
+        .pNext = &usage_create_info,
         .conversion = common->yuv_sampler,
     };
     VkImageViewCreateInfo img_view_create_info = {

@@ -71,7 +71,7 @@ static int vulkan_encode_init(AVCodecContext *avctx, FFHWBaseEncodePicture *pic)
     /* Input image view */
     err = ff_vk_create_view(&ctx->s, &ctx->common,
                             &vp->in.view, &vp->in.aspect,
-                            vkf, vkfc->format[0], 0);
+                            vkf, vkfc->format[0], VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR);
     if (err < 0)
         return err;
 
@@ -81,7 +81,7 @@ static int vulkan_encode_init(AVCodecContext *avctx, FFHWBaseEncodePicture *pic)
         AVVkFrame *rvkf = (AVVkFrame *)rf->data[0];
         err = ff_vk_create_view(&ctx->s, &ctx->common,
                                 &vp->dpb.view, &vp->dpb.aspect,
-                                rvkf, ctx->pic_format, 1);
+                                rvkf, ctx->pic_format, VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR);
         if (err < 0)
             return err;
     } else {
@@ -635,7 +635,7 @@ static int vulkan_encode_create_dpb(AVCodecContext *avctx, FFVulkanEncodeContext
                                 &ctx->common.layered_view,
                                 &ctx->common.layered_aspect,
                                 (AVVkFrame *)ctx->common.layered_frame->data[0],
-                                hwfc->format[0], 1);
+                                hwfc->format[0], VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR);
         if (err < 0)
             return err;
 
