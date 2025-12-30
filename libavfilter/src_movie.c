@@ -521,24 +521,26 @@ static int decode_packet(AVFilterContext *ctx, int i)
     AVPacket *pkt = movie->pkt;
     int ret = 0;
 
-    // submit the packet to the decoder
-    if (!movie->eof) {
+    // do not output more than 1 frame per iteration,
+    // so try to receive_frame first
+    ret = avcodec_receive_frame(dec, frame);
+    if (!movie->eof && ret == AVERROR(EAGAIN)) {
         ret = avcodec_send_packet(dec, pkt);
+        av_packet_unref(pkt);
         if (ret < 0)
             return ret;
+        ret = avcodec_receive_frame(dec, frame);
+    }
+    if (ret < 0) {
+        // those two return values are special and mean there is no output
+        // frame available, but there were no errors during decoding
+        if (ret == AVERROR_EOF || ret == AVERROR(EAGAIN))
+            return 0;
+        return ret;
     }
 
-    // get all the available frames from the decoder
+    // output a single frame
     if (ret >= 0) {
-        ret = avcodec_receive_frame(dec, frame);
-        if (ret < 0) {
-            // those two return values are special and mean there is no output
-            // frame available, but there were no errors during decoding
-            if (ret == AVERROR_EOF || ret == AVERROR(EAGAIN))
-                return 0;
-            return ret;
-        }
-
         frame->pts = frame->best_effort_timestamp;
         if (frame->pts != AV_NOPTS_VALUE) {
             if (movie->ts_offset)
@@ -568,7 +570,7 @@ static int decode_packet(AVFilterContext *ctx, int i)
 static int activate(AVFilterContext *ctx)
 {
     MovieContext *movie = ctx->priv;
-    int wanted = 0, ret;
+    int wanted = 0, ret = 0;
 
     for (int i = 0; i < ctx->nb_outputs; i++) {
         if (ff_outlink_frame_wanted(ctx->outputs[i]))
@@ -579,7 +581,8 @@ static int activate(AVFilterContext *ctx)
         return FFERROR_NOT_READY;
 
     if (!movie->eof) {
-        ret = av_read_frame(movie->format_ctx, movie->pkt);
+        if (!movie->pkt->buf)
+            ret = av_read_frame(movie->format_ctx, movie->pkt);
         if (ret < 0) {
             movie->eof = 1;
             for (int i = 0; i < ctx->nb_outputs; i++)
@@ -592,8 +595,9 @@ static int activate(AVFilterContext *ctx)
 
             if (pkt_out_id >= 0) {
                 ret = decode_packet(ctx, pkt_out_id);
+            } else {
+                av_packet_unref(movie->pkt);
             }
-            av_packet_unref(movie->pkt);
             ff_filter_set_ready(ctx, 100);
             return (ret <= 0) ? ret : 0;
         }
