@@ -2957,6 +2957,9 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
     const struct FFVkFormatEntry *fmt;
     int disable_multiplane = p->disable_multiplane ||
                              (hwctx->flags & AV_VK_FRAME_FLAG_DISABLE_MULTIPLANE);
+    int is_lone_dpb = ((hwctx->usage & VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR) ||
+                       ((hwctx->usage & VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR) &&
+                        !(hwctx->usage & VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR)));
 
     /* Defaults */
     if (!hwctx->nb_layers)
@@ -3009,37 +3012,37 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
             return err;
     }
 
-    /* Image usage flags */
-    hwctx->usage |= supported_usage & (VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-                                       VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
-                                       VK_IMAGE_USAGE_STORAGE_BIT      |
-                                       VK_IMAGE_USAGE_SAMPLED_BIT);
+    /* Lone DPB images do not need additional flags. */
+    if (!is_lone_dpb) {
+        /* Image usage flags */
+        hwctx->usage |= supported_usage & (VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                                           VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+                                           VK_IMAGE_USAGE_STORAGE_BIT      |
+                                           VK_IMAGE_USAGE_SAMPLED_BIT);
 
-    if (p->vkctx.extensions & FF_VK_EXT_HOST_IMAGE_COPY &&
-        !(p->dprops.driverID == VK_DRIVER_ID_NVIDIA_PROPRIETARY) &&
-        !(p->dprops.driverID == VK_DRIVER_ID_MOLTENVK))
-        hwctx->usage |= supported_usage & VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT;
+        if (p->vkctx.extensions & FF_VK_EXT_HOST_IMAGE_COPY &&
+            !(p->dprops.driverID == VK_DRIVER_ID_NVIDIA_PROPRIETARY) &&
+            !(p->dprops.driverID == VK_DRIVER_ID_MOLTENVK))
+            hwctx->usage |= supported_usage & VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT;
 
-    /* Enables encoding of images, if supported by format and extensions */
-    if ((supported_usage & VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR) &&
-        (p->vkctx.extensions & (FF_VK_EXT_VIDEO_ENCODE_QUEUE |
-                                FF_VK_EXT_VIDEO_MAINTENANCE_1)))
-        hwctx->usage |= VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR;
+        /* Enables encoding of images, if supported by format and extensions */
+        if ((supported_usage & VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR) &&
+            (p->vkctx.extensions & (FF_VK_EXT_VIDEO_ENCODE_QUEUE |
+                                    FF_VK_EXT_VIDEO_MAINTENANCE_1)))
+            hwctx->usage |= VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR;
 
-    /* Image creation flags.
-     * Only fill them in automatically if the image is not going to be used as
-     * a DPB-only image, and we have SAMPLED/STORAGE bits set. */
-    if (!hwctx->img_flags) {
-        int is_lone_dpb = ((hwctx->usage & VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR) ||
-                           ((hwctx->usage & VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR) &&
-                            !(hwctx->usage & VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR)));
-        int sampleable = hwctx->usage & (VK_IMAGE_USAGE_SAMPLED_BIT |
-                                         VK_IMAGE_USAGE_STORAGE_BIT);
-        hwctx->img_flags = VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
-        if (sampleable && !is_lone_dpb) {
-            hwctx->img_flags |= VK_IMAGE_CREATE_ALIAS_BIT;
-            if ((fmt->vk_planes > 1) && (hwctx->format[0] == fmt->vkf))
-                hwctx->img_flags |= VK_IMAGE_CREATE_EXTENDED_USAGE_BIT;
+        /* Image creation flags.
+         * Only fill them in automatically if the image is not going to be used as
+         * a DPB-only image, and we have SAMPLED/STORAGE bits set. */
+        if (!hwctx->img_flags) {
+            int sampleable = hwctx->usage & (VK_IMAGE_USAGE_SAMPLED_BIT |
+                                             VK_IMAGE_USAGE_STORAGE_BIT);
+            hwctx->img_flags = VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
+            if (sampleable) {
+                hwctx->img_flags |= VK_IMAGE_CREATE_ALIAS_BIT;
+                if ((fmt->vk_planes > 1) && (hwctx->format[0] == fmt->vkf))
+                    hwctx->img_flags |= VK_IMAGE_CREATE_EXTENDED_USAGE_BIT;
+            }
         }
     }
 
