@@ -20,6 +20,38 @@
 
 #include "libavutil/riscv/asm.S"
 
+#if (__riscv_xlen == 32)
+.macro  lx      rd, addr
+        lw      \rd, \addr
+.endm
+
+.macro  sx      rs, addr
+        sw      \rs, \addr
+.endm
+#define REG_MAGIC 0xdeadbeef
+#elif (__riscv_xlen == 64)
+.macro  lx      rd, addr
+        ld      \rd, \addr
+.endm
+
+.macro  sx      rs, addr
+        sd      \rs, \addr
+.endm
+#define REG_MAGIC 0xdeadbeef0badf00d
+#else
+.macro  lx      rd, addr
+        lq      \rd, \addr
+.endm
+
+.macro  sx      rs, addr
+        sq      \rs, \addr
+.endm
+#define REG_MAGIC 0xdeadbeef0badf00daaaabbbbccccdddd
+#endif
+#define XSZ             (__riscv_xlen / 8)
+#define STACK_ALIGN     16
+#define STACK_SPACE(sz) (((sz) + (STACK_ALIGN - 1)) & -STACK_ALIGN)
+
 #if defined(__riscv_float_abi_soft)
 .macro  flf     rd, addr
 .endm
@@ -54,38 +86,33 @@
 #error "Unknown float ABI"
 #endif
 
-#if (__riscv_xlen == 64)
-
         .pushsection .tbss, "waT"
-        .align  3
-        .hidden checked_func
-
-checked_func:
-        .quad   0
-
-        .align  3
+        .align  4
+.Lchecked_func:
+        .fill   1, XSZ, 0
+        .align  4
 .Lsaved_xregs:
-        .fill   4 + 12, 8, 0 // RA, SP, GP, TP, S0-S11
+        .fill   4 + 12, XSZ, 0 // RA, SP, GP, TP, S0-S11
         .align  4
 .Lsaved_fregs:
         .fill   12, FSZ, 0 // FS0-FS11
-        .fill   1, 8, 0 // RA
+        .fill   1, XSZ, 0 // RA
         .popsection
 
 func checkasm_set_function
         lpad    0
-        la.tls.ie t0, checked_func
+        la.tls.ie t0, .Lchecked_func
         add     t0, tp, t0
-        sd      a0, (t0)
+        sx      a0, (t0)
         ret
 endfunc
 
 func checkasm_get_wrapper, v
         lpad    0
-        addi    sp, sp, -16
-        sd      fp,  (sp)
-        sd      ra, 8(sp)
-        addi    fp, sp, 16
+        addi    sp, sp, -STACK_SPACE(2 * XSZ)
+        sx      fp,     (sp)
+        sx      ra, XSZ(sp)
+        addi    fp, sp, STACK_SPACE(2 * XSZ)
 
         call    av_get_cpu_flags
         andi    t0, a0, 8 /* AV_CPU_FLAG_RVV_I32 */
@@ -101,8 +128,8 @@ func checkasm_get_wrapper, v
 #endif
         lla     a0, checkasm_checked_call_ifv
 1:
-        ld      ra, 8(sp)
-        ld      fp,  (sp)
+        lx      ra, XSZ(sp)
+        lx      fp,    (sp)
         addi    sp, sp, 16
         ret
 endfunc
@@ -135,44 +162,46 @@ func checkasm_checked_call_i
         /* Save RA, unallocatable and callee-saved registers */
         la.tls.ie t0, .Lsaved_xregs
         add     t0, tp, t0
-        sd      ra,   (t0)
-        sd      sp,  8(t0)
-        sd      gp, 16(t0)
-        sd      tp, 24(t0)
+        sx      ra,        (t0)
+        sx      sp, 1 * XSZ(t0)
+        sx      gp, 2 * XSZ(t0)
+        sx      tp, 3 * XSZ(t0)
         .irp    n, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
-        sd      s\n, (32 + (8 * \n))(t0)
+        sx      s\n, (4 + \n) * XSZ(t0)
         .endr
 
         /* Clobber the stack space right below SP */
-        li      t0, 0xdeadbeef1badf00d
-        .rept   16
-        addi    sp, sp, -16
-        sd      t0,  (sp)
-        sd      t0, 8(sp)
-        .endr
-        addi    sp, sp, 256
+        li      t1, REG_MAGIC
+        li      t0, 16
+1:
+        addi    sp, sp, -XSZ
+        addi    t0, t0, -1
+        sx      t1, (sp)
+        bnez    t0, 1b
 
-        /* Clobber the saved and temporary registers */
+        addi    sp, sp, 16 * XSZ
+        # Clobber temporary registers (except T2, FE-CFI label)
+        .irp    n, 0, 1, 3, 4, 5, 6
+        mv      t\n, t1
+        .endr
+        # Clobber the saved registers
         .irp    n, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
-        .if (\n > 1 && \n < 7)
-        mv      t\n, t0
-        .endif
-        mv      s\n, t0
+        mv      s\n, t1
         .endr
 
         /* Call the tested function */
-        la.tls.ie t0, checked_func
+        la.tls.ie t0, .Lchecked_func
         add     t0, tp, t0
-        ld      t3, (t0)
-        sd      zero, (t0)
+        lx      t3, (t0)
+        sx      zero, (t0)
         jalr    t3
 
         /* Check special register values */
         la.tls.ie t0, .Lsaved_xregs
         add     t0, tp, t0
-        ld      t2,  8(t0) // SP
-        ld      t3, 16(t0) // GP
-        ld      t4, 24(t0) // TP
+        lx      t2, 1 * XSZ(t0) // SP
+        lx      t3, 2 * XSZ(t0) // GP
+        lx      t4, 3 * XSZ(t0) // TP
         li      t1, 'S'
         bne     t2, sp, .Lfail_xp
         li      t1, 'G'
@@ -181,7 +210,7 @@ func checkasm_checked_call_i
         bne     t4, tp, .Lfail_xp
 
         /* Check value of saved registers */
-        li      t0, 0xdeadbeef1badf00d
+        li      t0, REG_MAGIC
         .irp    n, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
         li      t1, \n
         bne     t0, s\n, .Lfail_s
@@ -191,17 +220,17 @@ func checkasm_checked_call_i
         /* Restore RA and saved registers */
         la.tls.ie t0, .Lsaved_xregs
         add     t0, tp, t0
-        ld      ra,   (t0)
+        lx      ra, (t0)
         .irp    n, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
-        ld      s\n, (32 + (8 * \n))(t0)
+        lx      s\n, (4 + \n) * XSZ(t0)
         .endr
         ret
 
 .Lfail_xp:
         # checkasm_fail_func() needs valid SP, GP and TP. Restore them.
-        ld      sp,  8(t0)
-        ld      gp, 16(t0)
-        ld      tp, 24(t0)
+        lx      sp, 1 * XSZ(t0)
+        lx      gp, 2 * XSZ(t0)
+        lx      tp, 3 * XSZ(t0)
         lla     a0, .Lfail_rsvd_reg
         mv      a1, t1
         call    checkasm_fail_func
@@ -306,4 +335,3 @@ func checkasm_checked_call_ifv, zve32x
         csrwi   vxsat, 1     /* Saturation:    encountered */
         jr      t0
 endfunc
-#endif
