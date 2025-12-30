@@ -312,14 +312,18 @@ static int file_open(URLContext *h, const char *filename, int flags)
 
     h->is_streamed = !fstat(fd, &st) && S_ISFIFO(st.st_mode);
 
-    /* Buffer writes more than the default 32k to improve throughput especially
-     * with networked file systems */
-    if (!h->is_streamed) {
-        if (flags & AVIO_FLAG_WRITE)
-            h->min_packet_size = h->max_packet_size = c->pkt_size ? c->pkt_size : 262144;
-        else if (flags & AVIO_FLAG_READ && c->pkt_size)
-            h->max_packet_size = c->pkt_size;
+    if (c->pkt_size) {
+        h->max_packet_size = c->pkt_size;
+    } else {
+        /* Buffer writes more than the default 32k to improve throughput especially
+         * with networked file systems */
+        if (!h->is_streamed && flags & AVIO_FLAG_WRITE)
+             h->max_packet_size = 262144;
     }
+    /* Disable per-packet flushing by default to improve throughput especially
+     * with networked file systems */
+    if (!h->is_streamed && flags & AVIO_FLAG_WRITE)
+        h->min_packet_size = h->max_packet_size;
 
     if (c->seekable >= 0)
         h->is_streamed = !c->seekable;

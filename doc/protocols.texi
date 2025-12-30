@@ -354,13 +354,15 @@ overriding this might speed up opening certain files at the cost of losing some
 features (e.g. accurate seeking).
 
 @item pkt_size
-Set the maximum packet size used for file I/O.
+Set the maximum packet size used for file I/O. A smaller value may reduce
+memory usage. A higher value may increase throughput especially with networked
+filesystems.
 
-For writing, this sets the size of each write operation. The default is
-262144 bytes.
 For reading, if explicitly set, it overrides the default internal buffer size
-(32768 bytes) and limits the maximum amount of data read per operation.
-Setting a smaller value may reduce memory usage when reading files sequentially.
+(32 KB) and limits the maximum amount of data read per operation.
+
+For writing, this sets the size of each write operation. The default is 256 KB
+for regular files, 32 KB otherwise.
 @end table
 
 @section ftp
