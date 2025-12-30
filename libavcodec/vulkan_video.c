@@ -295,8 +295,8 @@ int ff_vk_create_view(FFVulkanContext *s, FFVkVideoCommon *common,
     VkResult ret;
     FFVulkanFunctions *vk = &s->vkfn;
     VkImageAspectFlags aspect_mask = ff_vk_aspect_bits_from_vkfmt(vkf);
-    int is_dpb = usage & (VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR |
-                          VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR);
+    int is_video_dpb = usage & (VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR |
+                                VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR);
 
     VkImageViewUsageCreateInfo usage_create_info = {
         .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO,
@@ -310,7 +310,7 @@ int ff_vk_create_view(FFVulkanContext *s, FFVkVideoCommon *common,
     VkImageViewCreateInfo img_view_create_info = {
         .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
         .pNext = &yuv_sampler_info,
-        .viewType = common->layered_dpb && is_dpb ?
+        .viewType = common->layered_dpb && is_video_dpb ?
                     VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D,
         .format = vkf,
         .image = src->img[0],
@@ -323,7 +323,7 @@ int ff_vk_create_view(FFVulkanContext *s, FFVkVideoCommon *common,
         .subresourceRange = (VkImageSubresourceRange) {
             .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
             .baseArrayLayer = 0,
-            .layerCount     = common->layered_dpb && is_dpb ?
+            .layerCount     = common->layered_dpb && is_video_dpb ?
                               VK_REMAINING_ARRAY_LAYERS : 1,
             .levelCount     = 1,
         },
