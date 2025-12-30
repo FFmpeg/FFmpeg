@@ -21,9 +21,11 @@
 #include "libavutil/mips/cpu.h"
 #include "config.h"
 #include "libavutil/attributes.h"
+#include "libavcodec/idctdsp.h"
+#include "libavcodec/wmv2dsp.h"
 #include "wmv2dsp_mips.h"
 
-av_cold void ff_wmv2dsp_init_mips(WMV2DSPContext *c)
+av_cold void ff_wmv2dsp_init_mips(IDCTDSPContext *c)
 {
     int cpu_flags = av_get_cpu_flags();
 

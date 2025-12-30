@@ -437,7 +437,7 @@ static void x8_ac_compensation(IntraX8Context *const w, const int direction,
                                const int dc_level)
 {
     int t;
-#define B(x,y)  w->block[w->idct_permutation[(x) + (y) * 8]]
+#define B(x,y)  w->block[w->idsp.idct_permutation[(x) + (y) * 8]]
 #define T(x)  ((x) * dc_level + 0x8000) >> 16;
     switch (direction) {
     case 0:
@@ -637,7 +637,7 @@ static int x8_decode_intra_mb(IntraX8Context *const w, const int chroma)
                                                w->frame->linesize[!!chroma]);
     }
     if (!zeros_only)
-        w->wdsp.idct_add(w->dest[chroma],
+        w->idsp.idct_add(w->dest[chroma],
                          w->frame->linesize[!!chroma],
                          w->block);
 
@@ -693,17 +693,14 @@ av_cold int ff_intrax8_common_init(AVCodecContext *avctx,
     if (!w->prediction_table)
         return AVERROR(ENOMEM);
 
-    ff_wmv2dsp_init(&w->wdsp);
-
-    ff_init_scantable_permutation(w->idct_permutation,
-                                  w->wdsp.idct_perm);
+    ff_wmv2dsp_init(&w->idsp);
 
     ff_permute_scantable(w->permutated_scantable[0], ff_wmv1_scantable[0],
-                         w->idct_permutation);
+                         w->idsp.idct_permutation);
     ff_permute_scantable(w->permutated_scantable[1], ff_wmv1_scantable[2],
-                         w->idct_permutation);
+                         w->idsp.idct_permutation);
     ff_permute_scantable(w->permutated_scantable[2], ff_wmv1_scantable[3],
-                         w->idct_permutation);
+                         w->idsp.idct_permutation);
 
     ff_intrax8dsp_init(&w->dsp);
     ff_blockdsp_init(&w->bdsp);

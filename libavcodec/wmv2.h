@@ -21,8 +21,9 @@
 #ifndef AVCODEC_WMV2_H
 #define AVCODEC_WMV2_H
 
-#include "mpegvideo.h"
-#include "wmv2dsp.h"
+#include <stdint.h>
+
+#include "libavutil/attributes.h"
 
 #define SKIP_TYPE_NONE 0
 #define SKIP_TYPE_MPEG 1
@@ -31,11 +32,8 @@
 
 
 typedef struct WMV2Context {
-    WMV2DSPContext wdsp;
     int hshift;
 } WMV2Context;
-
-void ff_wmv2_common_init(MpegEncContext *s);
 
 static av_always_inline int wmv2_get_cbp_table_index(int qscale, int cbp_index)
 {

@@ -44,7 +44,7 @@
 #include "mpeg4videodata.h"
 #include "msmpeg4data.h"
 #include "msmpeg4_vc1_data.h"
-#include "wmv2.h"
+#include "wmv2dsp.h"
 
 /*
  * You can also call this codec: MPEG-4 with a twist!
@@ -140,7 +140,7 @@ av_cold void ff_msmpeg4_common_init(MpegEncContext *s)
         break;
 #if CONFIG_WMV2_DECODER || CONFIG_WMV2_ENCODER
     case MSMP4_WMV2:
-        ff_wmv2_common_init(s);
+        ff_wmv2dsp_init(&s->idsp);
         // fallthrough
 #endif
     case MSMP4_WMV1:

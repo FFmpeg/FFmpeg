@@ -139,13 +139,16 @@ static void wmv2_idct_put_c(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
     }
 }
 
-av_cold void ff_wmv2dsp_init(WMV2DSPContext *c)
+av_cold void ff_wmv2dsp_init(IDCTDSPContext *c)
 {
     c->idct_add  = wmv2_idct_add_c;
     c->idct_put  = wmv2_idct_put_c;
-    c->idct_perm = FF_IDCT_PERM_NONE;
+    c->idct      = NULL;
+    c->perm_type = FF_IDCT_PERM_NONE;
 
 #if ARCH_MIPS
     ff_wmv2dsp_init_mips(c);
 #endif
+    ff_init_scantable_permutation(c->idct_permutation,
+                                  c->perm_type);
 }

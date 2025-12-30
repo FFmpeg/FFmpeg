@@ -19,17 +19,9 @@
 #ifndef AVCODEC_WMV2DSP_H
 #define AVCODEC_WMV2DSP_H
 
-#include <stddef.h>
-#include <stdint.h>
+struct IDCTDSPContext;
 
-typedef struct WMV2DSPContext {
-    void (*idct_add)(uint8_t *dest, ptrdiff_t line_size, int16_t *block);
-    void (*idct_put)(uint8_t *dest, ptrdiff_t line_size, int16_t *block);
-
-    int idct_perm;
-} WMV2DSPContext;
-
-void ff_wmv2dsp_init(WMV2DSPContext *c);
-void ff_wmv2dsp_init_mips(WMV2DSPContext *c);
+void ff_wmv2dsp_init(struct IDCTDSPContext *c);
+void ff_wmv2dsp_init_mips(struct IDCTDSPContext *c);
 
 #endif /* AVCODEC_WMV2DSP_H */

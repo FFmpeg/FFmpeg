@@ -277,7 +277,7 @@ static void wmv2_add_block(WMV2DecContext *w, int16_t blocks1[][64],
         int16_t *block1 = blocks1[n];
         switch (w->abt_type_table[n]) {
         case 0:
-            w->common.wdsp.idct_add(dst, stride, block1);
+            h->c.idsp.idct_add(dst, stride, block1);
             break;
         case 1:
             ff_simple_idct84_add(dst, stride, block1);

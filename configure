@@ -2963,6 +2963,7 @@ msmpeg4dec_select="h263_decoder"
 msmpeg4enc_select="h263_encoder"
 vc1dsp_select="h264chroma startcode"
 vvc_sei_select="atsc_a53 golomb"
+wmv2dsp_select="idctdsp"
 
 # decoders / encoders
 aac_decoder_select="adts_header mpeg4audio sinewin"
