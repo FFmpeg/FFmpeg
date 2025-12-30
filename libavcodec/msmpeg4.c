@@ -30,6 +30,7 @@
 #include "config.h"
 #include "config_components.h"
 
+#include "libavutil/avassert.h"
 #include "libavutil/thread.h"
 #if ARCH_X86
 #include "libavutil/x86/asm.h"
@@ -122,6 +123,8 @@ av_cold void ff_msmpeg4_common_init(MpegEncContext *s)
     static AVOnce init_static_once = AV_ONCE_INIT;
 
     switch(s->msmpeg4_version){
+    default:
+        av_unreachable("ff_msmpeg4_common_init only called by MSMP4 1-3 and WMV1/2");
     case MSMP4_V1:
     case MSMP4_V2:
         // Correct *_dc_scale_tables (ff_mpeg1_dc_scale_table) is the default
