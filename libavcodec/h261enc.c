@@ -58,8 +58,6 @@ static uint8_t h261_mv_codes[64][2];
 typedef struct H261EncContext {
     MPVMainEncContext s;
 
-    H261Context common;
-
     int gob_number;
     enum {
         H261_QCIF = 0,
@@ -232,12 +230,11 @@ static void h261_encode_mb(MPVEncContext *const s, int16_t block[6][64],
     /* The following is only allowed because this encoder
      * does not use slice threading. */
     H261EncContext *const h = (H261EncContext *)s;
-    H261Context *const com = &h->common;
     int mvd, mv_diff_x, mv_diff_y, i, cbp;
     cbp = 63; // avoid warning
     mvd = 0;
 
-    com->mtype = 0;
+    s->c.mtype = 0;
 
     if (!s->c.mb_intra) {
         /* compute cbp */
@@ -264,34 +261,34 @@ static void h261_encode_mb(MPVEncContext *const s, int16_t block[6][64],
 
     /* calculate MTYPE */
     if (!s->c.mb_intra) {
-        com->mtype++;
+        s->c.mtype++;
 
         if (mvd || s->loop_filter)
-            com->mtype += 3;
+            s->c.mtype += 3;
         if (s->loop_filter)
-            com->mtype += 3;
+            s->c.mtype += 3;
         if (cbp)
-            com->mtype++;
-        av_assert1(com->mtype > 1);
+            s->c.mtype++;
+        av_assert1(s->c.mtype > 1);
     }
 
     if (s->dquant && cbp) {
-        com->mtype++;
+        s->c.mtype++;
     } else
         s->c.qscale -= s->dquant;
 
     put_bits(&s->pb,
-             ff_h261_mtype_bits[com->mtype],
-             ff_h261_mtype_code[com->mtype]);
+             ff_h261_mtype_bits[s->c.mtype],
+             ff_h261_mtype_code[s->c.mtype]);
 
-    com->mtype = ff_h261_mtype_map[com->mtype];
+    s->c.mtype = ff_h261_mtype_map[s->c.mtype];
 
-    if (IS_QUANT(com->mtype)) {
+    if (IS_QUANT(s->c.mtype)) {
         ff_set_qscale(&s->c, s->c.qscale + s->dquant);
         put_bits(&s->pb, 5, s->c.qscale);
     }
 
-    if (IS_16X16(com->mtype)) {
+    if (IS_16X16(s->c.mtype)) {
         mv_diff_x       = (motion_x >> 1) - s->c.last_mv[0][0][0];
         mv_diff_y       = (motion_y >> 1) - s->c.last_mv[0][0][1];
         s->c.last_mv[0][0][0] = (motion_x >> 1);
@@ -300,7 +297,7 @@ static void h261_encode_mb(MPVEncContext *const s, int16_t block[6][64],
         h261_encode_motion(&s->pb, mv_diff_y);
     }
 
-    if (HAS_CBP(com->mtype)) {
+    if (HAS_CBP(s->c.mtype)) {
         av_assert1(cbp > 0);
         put_bits(&s->pb,
                  ff_h261_cbp_tab[cbp - 1][1],
@@ -310,7 +307,7 @@ static void h261_encode_mb(MPVEncContext *const s, int16_t block[6][64],
         /* encode each block */
         h261_encode_block(h, block[i], i);
 
-    if (!IS_16X16(com->mtype)) {
+    if (!IS_16X16(s->c.mtype)) {
         s->c.last_mv[0][0][0] = 0;
         s->c.last_mv[0][0][1] = 0;
     }
@@ -370,7 +367,6 @@ static av_cold int h261_encode_init(AVCodecContext *avctx)
                avctx->width, avctx->height);
         return AVERROR(EINVAL);
     }
-    s->c.private_ctx = &h->common;
     h->s.encode_picture_header = h261_encode_picture_header;
     s->encode_mb               = h261_encode_mb;
 

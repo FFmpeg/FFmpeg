@@ -80,9 +80,6 @@ typedef struct MpegEncContext {
      *          offsets used in ASM. */
 
     struct AVCodecContext *avctx;
-    /* The following pointer is intended for codecs sharing code
-     * between decoder and encoder and in need of a common context to do so. */
-    void *private_ctx;
     /* the following parameters must be initialized before encoding */
     int width, height;///< picture size. must be a multiple of 16
     enum OutputFormat out_format; ///< output format
@@ -209,6 +206,9 @@ typedef struct MpegEncContext {
     /* error concealment / resync */
     int resync_mb_x;                 ///< x position of last resync marker
     int resync_mb_y;                 ///< y position of last resync marker
+
+    /* H.261 specific */
+    int mtype;
 
     /* H.263 specific */
     int obmc;                       ///< overlapped block motion compensation

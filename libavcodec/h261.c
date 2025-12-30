@@ -60,14 +60,13 @@ static void h261_loop_filter(uint8_t *src, ptrdiff_t stride)
 
 void ff_h261_loop_filter(MpegEncContext *s)
 {
-    H261Context *const h = s->private_ctx;
     const ptrdiff_t linesize   = s->linesize;
     const ptrdiff_t uvlinesize = s->uvlinesize;
     uint8_t *dest_y      = s->dest[0];
     uint8_t *dest_cb     = s->dest[1];
     uint8_t *dest_cr     = s->dest[2];
 
-    if (!(IS_FIL(h->mtype)))
+    if (!(IS_FIL(s->mtype)))
         return;
 
     h261_loop_filter(dest_y,                    linesize);

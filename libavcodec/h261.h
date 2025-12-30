@@ -31,13 +31,6 @@
 #include "mpegutils.h"
 #include "rl.h"
 
-/**
- * H261Context
- */
-typedef struct H261Context {
-    int mtype;
-} H261Context;
-
 #define MB_TYPE_H261_FIL MB_TYPE_CODEC_SPECIFIC
 
 extern const uint8_t ff_h261_mba_code[35];
