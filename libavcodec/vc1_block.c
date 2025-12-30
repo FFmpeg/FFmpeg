@@ -476,8 +476,7 @@ static inline int ff_vc1_pred_dc(MpegEncContext *s, int overlap, int pq, int n,
  * @{
  */
 
-static inline int vc1_coded_block_pred(MpegEncContext * s, int n,
-                                       uint8_t **coded_block_ptr)
+static inline int vc1_coded_block_pred(MPVContext *const s, int n, int diff)
 {
     int xy, wrap, pred, a, b, c;
 
@@ -498,9 +497,9 @@ static inline int vc1_coded_block_pred(MpegEncContext * s, int n,
     }
 
     /* store value */
-    *coded_block_ptr = &s->coded_block[xy];
+    s->coded_block[xy] = pred ^ diff;
 
-    return pred;
+    return pred ^ diff;
 }
 
 /**
@@ -2507,7 +2506,6 @@ static void vc1_decode_i_blocks(VC1Context *v)
     int k, j;
     MpegEncContext *s = &v->s;
     int cbp, val;
-    uint8_t *coded_val;
     int mb_pos;
 
     /* select coding mode used for VLC tables selection */
@@ -2566,11 +2564,8 @@ static void vc1_decode_i_blocks(VC1Context *v)
 
                 val = ((cbp >> (5 - k)) & 1);
 
-                if (k < 4) {
-                    int pred   = vc1_coded_block_pred(&v->s, k, &coded_val);
-                    val        = val ^ pred;
-                    *coded_val = val;
-                }
+                if (k < 4)
+                    val = vc1_coded_block_pred(&v->s, k, val);
                 cbp |= val << (5 - k);
 
                 vc1_decode_i_block(v, v->block[v->cur_blk_idx][block_map[k]], k, val, (k < 4) ? v->codingset : v->codingset2);
@@ -2627,7 +2622,6 @@ static int vc1_decode_i_blocks_adv(VC1Context *v)
     MpegEncContext *s = &v->s;
     GetBitContext *const gb = &v->gb;
     int cbp, val;
-    uint8_t *coded_val;
     int mb_pos;
     int mquant;
     int mqdiff;
@@ -2712,11 +2706,8 @@ static int vc1_decode_i_blocks_adv(VC1Context *v)
 
                 val = ((cbp >> (5 - k)) & 1);
 
-                if (k < 4) {
-                    int pred   = vc1_coded_block_pred(&v->s, k, &coded_val);
-                    val        = val ^ pred;
-                    *coded_val = val;
-                }
+                if (k < 4)
+                    val = vc1_coded_block_pred(&v->s, k, val);
                 cbp |= val << (5 - k);
 
                 v->a_avail = !s->first_slice_line || (k == 2 || k == 3);
