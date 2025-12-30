@@ -34,8 +34,6 @@ typedef struct FFVkVideoSession {
     VkDeviceMemory *mem;
     uint32_t nb_mem;
 
-    VkSamplerYcbcrConversion yuv_sampler;
-
     AVBufferRef *dpb_hwfc_ref;
     int layered_dpb;
     AVFrame *layered_frame;

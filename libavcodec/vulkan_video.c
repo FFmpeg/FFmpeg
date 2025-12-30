@@ -302,14 +302,9 @@ int ff_vk_create_view(FFVulkanContext *s, FFVkVideoCommon *common,
         .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO,
         .usage = usage,
     };
-    VkSamplerYcbcrConversionInfo yuv_sampler_info = {
-        .sType = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO,
-        .pNext = &usage_create_info,
-        .conversion = common->yuv_sampler,
-    };
     VkImageViewCreateInfo img_view_create_info = {
         .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-        .pNext = &yuv_sampler_info,
+        .pNext = &usage_create_info,
         .viewType = common->layered_dpb && is_video_dpb ?
                     VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D,
         .format = vkf,
@@ -365,12 +360,6 @@ av_cold void ff_vk_video_common_uninit(FFVulkanContext *s,
     av_frame_free(&common->layered_frame);
 
     av_buffer_unref(&common->dpb_hwfc_ref);
-
-    if (common->yuv_sampler) {
-        vk->DestroySamplerYcbcrConversion(s->hwctx->act_dev, common->yuv_sampler,
-                                          s->hwctx->alloc);
-        common->yuv_sampler = VK_NULL_HANDLE;
-    }
 }
 
 av_cold int ff_vk_video_common_init(AVCodecContext *avctx, FFVulkanContext *s,
@@ -382,25 +371,6 @@ av_cold int ff_vk_video_common_init(AVCodecContext *avctx, FFVulkanContext *s,
     FFVulkanFunctions *vk = &s->vkfn;
     VkVideoSessionMemoryRequirementsKHR *mem = NULL;
     VkBindVideoSessionMemoryInfoKHR *bind_mem = NULL;
-
-    int cxpos = 0, cypos = 0;
-    VkSamplerYcbcrConversionCreateInfo yuv_sampler_info = {
-        .sType      = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO,
-        .components = ff_comp_identity_map,
-        .ycbcrModel = VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY,
-        .ycbcrRange = avctx->color_range == AVCOL_RANGE_MPEG, /* Ignored */
-        .format     = session_create->pictureFormat,
-    };
-
-    /* Create identity YUV sampler
-     * (VkImageViews of YUV image formats require it, even if it does nothing) */
-    av_chroma_location_enum_to_pos(&cxpos, &cypos, avctx->chroma_sample_location);
-    yuv_sampler_info.xChromaOffset = cxpos >> 7;
-    yuv_sampler_info.yChromaOffset = cypos >> 7;
-    ret = vk->CreateSamplerYcbcrConversion(s->hwctx->act_dev, &yuv_sampler_info,
-                                           s->hwctx->alloc, &common->yuv_sampler);
-    if (ret != VK_SUCCESS)
-        return AVERROR_EXTERNAL;
 
     /* Create session */
     ret = vk->CreateVideoSessionKHR(s->hwctx->act_dev, session_create,

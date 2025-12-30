@@ -1385,8 +1385,7 @@ int ff_vk_decode_init(AVCodecContext *avctx)
                                                            VK_STRUCTURE_TYPE_VIDEO_PROFILE_LIST_INFO_KHR);
         dpb_hwfc->format[0]    = s->hwfc->format[0];
         dpb_hwfc->tiling       = VK_IMAGE_TILING_OPTIMAL;
-        dpb_hwfc->usage        = VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR |
-                                 VK_IMAGE_USAGE_SAMPLED_BIT; /* Shuts validator up. */
+        dpb_hwfc->usage        = VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR;
 
         if (ctx->common.layered_dpb)
             dpb_hwfc->nb_layers = ctx->caps.maxDpbSlots;
