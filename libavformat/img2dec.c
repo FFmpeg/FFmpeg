@@ -365,8 +365,10 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
     VideoDemuxData *s = s1->priv_data;
     AVBPrint filename;
     int i, res;
-    int size[3]           = { 0 }, ret[3] = { 0 };
-    AVIOContext *f[3]     = { NULL };
+    int ret[3] = { 0 };
+    int64_t size[3] = { 0 };
+    int64_t total_size;
+    AVIOContext *f[3] = { NULL };
     AVCodecParameters *par = s1->streams[0]->codecpar;
 
     av_bprint_init(&filename, 0, AV_BPRINT_SIZE_UNLIMITED);
@@ -456,7 +458,17 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
         }
     }
 
-    res = av_new_packet(pkt, size[0] + size[1] + size[2]);
+    total_size = size[0];
+    if (total_size > INT64_MAX - size[1])
+        return AVERROR_INVALIDDATA;
+    total_size += size[1];
+    if (total_size > INT64_MAX - size[2])
+        return AVERROR_INVALIDDATA;
+    total_size += size[2];
+    if (total_size > INT_MAX)
+        return AVERROR_INVALIDDATA;
+
+    res = av_new_packet(pkt, total_size);
     if (res < 0) {
         goto fail;
     }
