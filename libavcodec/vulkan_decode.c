@@ -1054,8 +1054,8 @@ static int vulkan_decode_get_profile(AVCodecContext *avctx, AVBufferRef *frames_
                               VK_IMAGE_USAGE_TRANSFER_SRC_BIT         |
                               VK_IMAGE_USAGE_SAMPLED_BIT;
 
-        if (ctx->s.extensions & (FF_VK_EXT_VIDEO_ENCODE_QUEUE |
-                                 FF_VK_EXT_VIDEO_MAINTENANCE_1))
+        if ((ctx->s.extensions & FF_VK_EXT_VIDEO_ENCODE_QUEUE) &&
+            (ctx->s.extensions & FF_VK_EXT_VIDEO_MAINTENANCE_1))
             fmt_info.imageUsage |= VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR;
     }
 
@@ -1229,8 +1229,8 @@ int ff_vk_frame_params(AVCodecContext *avctx, AVBufferRef *hw_frames_ctx)
             hwfc->usage |= VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR;
 
         ctx = dec->shared_ctx;
-        if (ctx->s.extensions & (FF_VK_EXT_VIDEO_ENCODE_QUEUE |
-                                 FF_VK_EXT_VIDEO_MAINTENANCE_1))
+        if ((ctx->s.extensions & FF_VK_EXT_VIDEO_ENCODE_QUEUE) &&
+            (ctx->s.extensions & FF_VK_EXT_VIDEO_MAINTENANCE_1))
             hwfc->usage |= VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR;
     }
 
