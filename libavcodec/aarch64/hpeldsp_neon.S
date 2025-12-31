@@ -50,12 +50,13 @@
 .endm
 
 .macro  pixels16_x2     rnd=1, avg=0
-1:      ld1             {v0.16b, v1.16b}, [x1], x2
-        ld1             {v2.16b, v3.16b}, [x1], x2
+1:
+        ldur            q1, [x1, #1]
+        ld1             {v0.16b}, [x1], x2
         subs            w3,  w3,  #2
-        ext             v1.16b,  v0.16b,  v1.16b,  #1
+        ldur            q3, [x1, #1]
+        ld1             {v2.16b}, [x1], x2
         avg             v0.16b,  v0.16b,  v1.16b
-        ext             v3.16b,  v2.16b,  v3.16b,  #1
         avg             v2.16b,  v2.16b,  v3.16b
   .if \avg
         ld1             {v1.16b}, [x0], x2
@@ -108,20 +109,20 @@
 
 .macro  pixels16_xy2    rnd=1, avg=0
         sub             w3,  w3,  #2
-        ld1             {v0.16b, v1.16b}, [x1], x2
-        ld1             {v4.16b, v5.16b}, [x1], x2
+        ldur            q1, [x1, #1]
+        ld1             {v0.16b}, [x1], x2
 NRND    movi            v26.8H, #1
-        ext             v1.16b,  v0.16b,  v1.16b,  #1
-        ext             v5.16b,  v4.16b,  v5.16b,  #1
+        ldur            q5, [x1, #1]
+        ld1             {v4.16b}, [x1], x2
         uaddl           v16.8h,  v0.8b,   v1.8b
         uaddl2          v20.8h,  v0.16b,  v1.16b
         uaddl           v18.8h,  v4.8b,   v5.8b
         uaddl2          v22.8h,  v4.16b,  v5.16b
 1:      subs            w3,  w3,  #2
-        ld1             {v0.16b, v1.16b}, [x1], x2
+        ldur            q30, [x1, #1]
+        ld1             {v0.16b}, [x1], x2
         add             v24.8h,  v16.8h,  v18.8h
 NRND    add             v24.8H,  v24.8H,  v26.8H
-        ext             v30.16b, v0.16b,  v1.16b,  #1
         add             v1.8h,   v20.8h,  v22.8h
         mshrn           v28.8b,  v24.8h,  #2
 NRND    add             v1.8H,   v1.8H,   v26.8H
@@ -131,12 +132,12 @@ NRND    add             v1.8H,   v1.8H,   v26.8H
         urhadd          v28.16b, v28.16b, v16.16b
   .endif
         uaddl           v16.8h,  v0.8b,   v30.8b
-        ld1             {v2.16b, v3.16b}, [x1], x2
+        ldur            q3, [x1, #1]
+        ld1             {v2.16b}, [x1], x2
         uaddl2          v20.8h,  v0.16b,  v30.16b
         st1             {v28.16b},        [x0], x2
         add             v24.8h,  v16.8h,  v18.8h
 NRND    add             v24.8H,  v24.8H,  v26.8H
-        ext             v3.16b,  v2.16b,  v3.16b,  #1
         add             v0.8h,   v20.8h,  v22.8h
         mshrn           v30.8b,  v24.8h,  #2
 NRND    add             v0.8H,   v0.8H,   v26.8H
@@ -150,10 +151,10 @@ NRND    add             v0.8H,   v0.8H,   v26.8H
         st1             {v30.16b},        [x0], x2
         b.gt            1b
 
-        ld1             {v0.16b, v1.16b}, [x1], x2
+        ldur            q30, [x1, #1]
+        ld1             {v0.16b}, [x1], x2
         add             v24.8h,  v16.8h,  v18.8h
 NRND    add             v24.8H,  v24.8H,  v26.8H
-        ext             v30.16b, v0.16b,  v1.16b,  #1
         add             v1.8h,   v20.8h,  v22.8h
         mshrn           v28.8b,  v24.8h,  #2
 NRND    add             v1.8H,   v1.8H,   v26.8H
@@ -206,10 +207,11 @@ NRND    add             v0.8H,   v0.8H,   v26.8H
 .endm
 
 .macro  pixels8_x2      rnd=1, avg=0
-1:      ld1             {v0.8b, v1.8b}, [x1], x2
-        ext             v1.8b,  v0.8b,  v1.8b,  #1
-        ld1             {v2.8b, v3.8b}, [x1], x2
-        ext             v3.8b,  v2.8b,  v3.8b,  #1
+1:
+        ldur            d1, [x1, #1]
+        ld1             {v0.8b}, [x1], x2
+        ldur            d3, [x1, #1]
+        ld1             {v2.8b}, [x1], x2
         subs            w3,  w3,  #2
         avg             v0.8b,   v0.8b,   v1.8b
         avg             v2.8b,   v2.8b,   v3.8b
@@ -263,22 +265,23 @@ NRND    add             v0.8H,   v0.8H,   v26.8H
 .endm
 
 .macro  pixels8_xy2     rnd=1, avg=0
+        ldur            d4, [x1, #1]
         sub             w3,  w3,  #2
-        ld1             {v0.16b},     [x1], x2
-        ld1             {v1.16b},     [x1], x2
+        ld1             {v0.8b}, [x1], x2
 NRND    movi            v19.8H, #1
-        ext             v4.16b,  v0.16b,  v4.16b,  #1
-        ext             v6.16b,  v1.16b,  v6.16b,  #1
+        ldur            d6, [x1, #1]
+        ld1             {v1.8b}, [x1], x2
         uaddl           v16.8h,  v0.8b,  v4.8b
         uaddl           v17.8h,  v1.8b,  v6.8b
 1:      subs            w3,  w3,  #2
-        ld1             {v0.16b},     [x1], x2
+        ldur            d4, [x1, #1]
+        ld1             {v0.8b}, [x1], x2
         add             v18.8h, v16.8h,  v17.8h
-        ext             v4.16b,  v0.16b,  v4.16b,  #1
 NRND    add             v18.8H, v18.8H, v19.8H
         uaddl           v16.8h,  v0.8b,  v4.8b
         mshrn           v5.8b,  v18.8h, #2
-        ld1             {v1.16b},     [x1], x2
+        ldur            d6, [x1, #1]
+        ld1             {v1.8b}, [x1], x2
         add             v18.8h, v16.8h,  v17.8h
   .if \avg
         ld1             {v7.8b},     [x0]
@@ -291,14 +294,13 @@ NRND    add             v18.8H, v18.8H, v19.8H
         ld1             {v5.8b},     [x0]
         urhadd          v7.8b,  v7.8b,  v5.8b
   .endif
-        ext             v6.16b,  v1.16b,  v6.16b,  #1
         uaddl           v17.8h,  v1.8b,   v6.8b
         st1             {v7.8b},     [x0], x2
         b.gt            1b
 
-        ld1             {v0.16b},     [x1], x2
+        ldur            d4, [x1, #1]
+        ld1             {v0.8b}, [x1], x2
         add             v18.8h, v16.8h, v17.8h
-        ext             v4.16b, v0.16b, v4.16b,  #1
 NRND    add             v18.8H, v18.8H, v19.8H
         uaddl           v16.8h,  v0.8b, v4.8b
         mshrn           v5.8b,  v18.8h, #2
