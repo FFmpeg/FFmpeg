@@ -74,8 +74,8 @@ int ff_vk_filter_init_context(AVFilterContext *avctx, FFVulkanContext *s,
         /* If format supports hardware encoding, make sure
          * the context includes it. */
         if (vk_frames->format[1] == VK_FORMAT_UNDEFINED &&
-            (s->extensions & (FF_VK_EXT_VIDEO_ENCODE_QUEUE |
-                              FF_VK_EXT_VIDEO_MAINTENANCE_1))) {
+            (s->extensions & FF_VK_EXT_VIDEO_ENCODE_QUEUE) &&
+            (s->extensions & FF_VK_EXT_VIDEO_MAINTENANCE_1)) {
             VkFormatProperties3 fprops = {
                 .sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3,
             };
