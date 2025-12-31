@@ -3025,8 +3025,8 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
 
         /* Enables encoding of images, if supported by format and extensions */
         if ((supported_usage & VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR) &&
-            (p->vkctx.extensions & (FF_VK_EXT_VIDEO_ENCODE_QUEUE |
-                                    FF_VK_EXT_VIDEO_MAINTENANCE_1)))
+            (p->vkctx.extensions & FF_VK_EXT_VIDEO_ENCODE_QUEUE) &&
+            (p->vkctx.extensions & FF_VK_EXT_VIDEO_MAINTENANCE_1))
             hwctx->usage |= VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR;
 
         /* Image creation flags.
@@ -3049,8 +3049,8 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
      * If there's no profile list, or it has no encode operations,
      * then allow creating the image with no specific profile. */
     if ((hwctx->usage & VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR) &&
-        (p->vkctx.extensions & (FF_VK_EXT_VIDEO_ENCODE_QUEUE |
-                                FF_VK_EXT_VIDEO_MAINTENANCE_1))) {
+        (p->vkctx.extensions & FF_VK_EXT_VIDEO_ENCODE_QUEUE) &&
+        (p->vkctx.extensions & FF_VK_EXT_VIDEO_MAINTENANCE_1)) {
         const VkVideoProfileListInfoKHR *pl;
         pl = ff_vk_find_struct(hwctx->create_pnext, VK_STRUCTURE_TYPE_VIDEO_PROFILE_LIST_INFO_KHR);
         if (!pl) {
