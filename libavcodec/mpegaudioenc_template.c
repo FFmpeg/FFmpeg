@@ -782,4 +782,3 @@ static const AVCodecDefault mp2_defaults[] = {
     { "b", "0" },
     { NULL },
 };
-

@@ -334,4 +334,3 @@ int ff_msmpeg4_pred_dc(MpegEncContext *s, int n,
     *dc_val_ptr = &dc_val[0];
     return pred;
 }
-

@@ -259,4 +259,3 @@ av_cold int ff_dvvideo_init(AVCodecContext *avctx)
 
     return 0;
 }
-

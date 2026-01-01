@@ -127,4 +127,3 @@ struct Resampler const swri_soxr_resampler={
     create, destroy, process, flush, NULL /* set_compensation */, get_delay,
     invert_initial_buffer, get_out_samples
 };
-

@@ -1554,4 +1554,3 @@ void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size)
     case 0: lc->pu.mvd.y = 0;                       break;
     }
 }
-

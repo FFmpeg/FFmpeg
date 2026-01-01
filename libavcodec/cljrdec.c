@@ -91,4 +91,3 @@ AVCodec ff_cljr_decoder = {
     .decode         = decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
 };
-

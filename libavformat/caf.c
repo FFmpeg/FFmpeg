@@ -77,4 +77,3 @@ const AVCodecTag ff_codec_caf_tags[] = {
     { AV_CODEC_ID_PCM_F64BE,    MKTAG('l','p','c','m') },
     { AV_CODEC_ID_NONE,            0 },
 };
-

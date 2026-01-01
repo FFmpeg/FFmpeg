@@ -192,4 +192,3 @@ static inline int RENAME(yuv420_bgr24)(SwsContext *c, const uint8_t *src[],
     }
     return srcSliceH;
 }
-

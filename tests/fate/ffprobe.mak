@@ -32,4 +32,3 @@ fate-ffprobe_xml: CMD = run $(FFPROBE_COMMAND) -of xml
 FATE_FFPROBE += $(FATE_FFPROBE-yes)
 
 fate-ffprobe: $(FATE_FFPROBE)
-
