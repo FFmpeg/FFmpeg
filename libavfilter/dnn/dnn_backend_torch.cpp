@@ -25,6 +25,10 @@
 
 #include <torch/torch.h>
 #include <torch/script.h>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <atomic>
 
 extern "C" {
 #include "dnn_io_proc.h"
@@ -42,6 +46,11 @@ typedef struct THModel {
     SafeQueue *request_queue;
     Queue *task_queue;
     Queue *lltask_queue;
+    SafeQueue *pending_queue;       ///< requests waiting for inference
+    std::thread *worker_thread;     ///< background worker thread
+    std::mutex *mutex;              ///< mutex for the condition variable
+    std::condition_variable *cond;  ///< condition variable for worker wakeup
+    std::atomic<bool> worker_stop;  ///< signal for thread exit
 } THModel;
 
 typedef struct THInferRequest {
@@ -315,6 +324,28 @@ err:
     if (ff_safe_queue_push_back(th_model->request_queue, request) < 0) {
         destroy_request_item(&request);
         av_log(th_model->ctx, AV_LOG_ERROR, "Unable to push back request_queue when failed to start inference.\n");
+    }
+}
+
+static void th_worker_thread(THModel *th_model) {
+    while (true) {
+        THRequestItem *request = NULL;
+        {
+            std::unique_lock<std::mutex> lock(*th_model->mutex);
+            th_model->cond->wait(lock, [&]{
+                return th_model->worker_stop || ff_safe_queue_size(th_model->pending_queue) > 0;
+            });
+
+            if (th_model->worker_stop && ff_safe_queue_size(th_model->pending_queue) == 0)
+                break;
+
+            request = (THRequestItem *)ff_safe_queue_pop_front(th_model->pending_queue);
+        }
+
+        if (request) {
+            th_start_inference(request);
+            infer_completion_callback(request);
+        }
     }
 }
 
