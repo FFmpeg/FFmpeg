@@ -375,14 +375,12 @@ static int execute_model_th(THRequestItem *request, Queue *lltask_queue)
         goto err;
     }
     if (task->async) {
-        avpriv_report_missing_feature(th_model->ctx, "LibTorch async");
-    } else {
-        ret = th_start_inference((void *)(request));
-        if (ret != 0) {
-            goto err;
+        std::lock_guard<std::mutex> lock(*th_model->mutex);
+        if (ff_safe_queue_push_back(th_model->pending_queue, request) < 0) {
+            return AVERROR(ENOMEM);
         }
-        infer_completion_callback(request);
-        return (task->inference_done == task->inference_todo) ? 0 : DNN_GENERIC_ERROR;
+        th_model->cond->notify_one();
+        return 0;
     }
 
 err:
