@@ -127,27 +127,70 @@ static void dnn_free_model_th(DNNModel **model)
     if (!model || !*model)
         return;
 
-    th_model = (THModel *) (*model);
-    while (ff_safe_queue_size(th_model->request_queue) != 0) {
-        THRequestItem *item = (THRequestItem *)ff_safe_queue_pop_front(th_model->request_queue);
-        destroy_request_item(&item);
-    }
-    ff_safe_queue_destroy(th_model->request_queue);
+    th_model = (THModel *)(*model);
 
-    while (ff_queue_size(th_model->lltask_queue) != 0) {
-        LastLevelTaskItem *item = (LastLevelTaskItem *)ff_queue_pop_front(th_model->lltask_queue);
-        av_freep(&item);
+    /* 1. Stop and join the worker thread if it exists */
+    if (th_model->worker_thread) {
+        {
+            std::lock_guard<std::mutex> lock(*th_model->mutex);
+            th_model->worker_stop = true;
+        }
+        th_model->cond->notify_all();
+        th_model->worker_thread->join();
+        delete th_model->worker_thread;
+        th_model->worker_thread = NULL;
     }
-    ff_queue_destroy(th_model->lltask_queue);
 
-    while (ff_queue_size(th_model->task_queue) != 0) {
-        TaskItem *item = (TaskItem *)ff_queue_pop_front(th_model->task_queue);
-        av_frame_free(&item->in_frame);
-        av_frame_free(&item->out_frame);
-        av_freep(&item);
+    /* 2. Safely delete C++ synchronization objects */
+    if (th_model->mutex) {
+        delete th_model->mutex;
+        th_model->mutex = NULL;
     }
-    ff_queue_destroy(th_model->task_queue);
-    delete th_model->jit_model;
+    if (th_model->cond) {
+        delete th_model->cond;
+        th_model->cond = NULL;
+    }
+
+    /* 3. Clean up the pending queue */
+    if (th_model->pending_queue) {
+        while (ff_safe_queue_size(th_model->pending_queue) > 0) {
+            THRequestItem *item = (THRequestItem *)ff_safe_queue_pop_front(th_model->pending_queue);
+            destroy_request_item(&item);
+        }
+        ff_safe_queue_destroy(th_model->pending_queue);
+    }
+
+    /* 4. Clean up standard backend queues */
+    if (th_model->request_queue) {
+        while (ff_safe_queue_size(th_model->request_queue) != 0) {
+            THRequestItem *item = (THRequestItem *)ff_safe_queue_pop_front(th_model->request_queue);
+            destroy_request_item(&item);
+        }
+        ff_safe_queue_destroy(th_model->request_queue);
+    }
+
+    if (th_model->lltask_queue) {
+        while (ff_queue_size(th_model->lltask_queue) != 0) {
+            LastLevelTaskItem *item = (LastLevelTaskItem *)ff_queue_pop_front(th_model->lltask_queue);
+            av_freep(&item);
+        }
+        ff_queue_destroy(th_model->lltask_queue);
+    }
+
+    if (th_model->task_queue) {
+        while (ff_queue_size(th_model->task_queue) != 0) {
+            TaskItem *item = (TaskItem *)ff_queue_pop_front(th_model->task_queue);
+            av_frame_free(&item->in_frame);
+            av_frame_free(&item->out_frame);
+            av_freep(&item);
+        }
+        ff_queue_destroy(th_model->task_queue);
+    }
+
+    /* 5. Final model cleanup */
+    if (th_model->jit_model)
+        delete th_model->jit_model;
+
     av_freep(&th_model);
     *model = NULL;
 }
@@ -512,6 +555,16 @@ static DNNModel *dnn_load_model_th(DnnContext *ctx, DNNFunctionType func_type, A
     if (!th_model->lltask_queue) {
         goto fail;
     }
+
+    th_model->pending_queue = ff_safe_queue_create();
+    if (!th_model->pending_queue) {
+        goto fail;
+    }
+
+    th_model->mutex = new std::mutex();
+    th_model->cond = new std::condition_variable();
+    th_model->worker_stop = false;
+    th_model->worker_thread = new std::thread(th_worker_thread, th_model);
 
     model->get_input = &get_input_th;
     model->get_output = &get_output_th;
