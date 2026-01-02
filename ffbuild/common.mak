@@ -27,7 +27,7 @@ BIN2C = $(BIN2CEXE)
 ifndef V
 Q      = @
 ECHO   = printf "$(1)\t%s\n" $(2)
-BRIEF  = CC CXX OBJCC HOSTCC HOSTLD AS X86ASM AR LD LDXX STRIP CP WINDRES NVCC BIN2C METALCC METALLIB
+BRIEF  = CC CXX OBJCC HOSTCC HOSTLD AS X86ASM AR LD LDXX STRIP CP WINDRES GLSLC NVCC BIN2C METALCC METALLIB
 SILENT = DEPCC DEPCXX DEPHOSTCC DEPAS DEPX86ASM RANLIB RM
 
 MSG    = $@
@@ -68,6 +68,7 @@ COMPILE_S = $(call COMPILE,AS)
 COMPILE_M = $(call COMPILE,OBJCC)
 COMPILE_X86ASM = $(call COMPILE,X86ASM)
 COMPILE_HOSTC = $(call COMPILE,HOSTCC)
+COMPILE_GLSLC = $(call COMPILE,GLSLC)
 COMPILE_NVCC = $(call COMPILE,NVCC)
 COMPILE_MMI = $(call COMPILE,CC,MMIFLAGS)
 COMPILE_MSA = $(call COMPILE,CC,MSAFLAGS)
@@ -129,6 +130,12 @@ RUN_GZIP  = $(M)gzip -nc9 $(patsubst $(SRC_PATH)/%,$(SRC_LINK)/%,$<) >$@
 RUN_MINIFY = $(M)sed 's!/\\*.*\\*/!!g' $< | tr '\n' ' ' | tr -s ' ' | sed 's/^ //; s/ $$//' > $@
 %.gz: TAG = GZIP
 %.min: TAG = MINIFY
+
+%.spv: %.glsl
+	$(COMPILE_GLSLC)
+
+%.spv.c: %.spv $(BIN2CEXE)
+	$(RUN_BIN2C)
 
 %.metal.air: %.metal
 	$(METALCC) $< -o $@
@@ -228,10 +235,11 @@ ALLHEADERS := $(subst $(SRC_DIR)/,$(SUBDIR),$(wildcard $(SRC_DIR)/*.h $(SRC_DIR)
 SKIPHEADERS += $(ARCH_HEADERS:%=$(ARCH)/%) $(SKIPHEADERS-)
 SKIPHEADERS := $(SKIPHEADERS:%=$(SUBDIR)%)
 HOBJS        = $(filter-out $(SKIPHEADERS:.h=.h.o),$(ALLHEADERS:.h=.h.o))
+SPVOBJS      = $(filter %.spv.o,$(OBJS))
 PTXOBJS      = $(filter %.ptx.o,$(OBJS))
 $(HOBJS):     CCFLAGS += $(CFLAGS_HEADERS)
 checkheaders: $(HOBJS)
-.SECONDARY:   $(HOBJS:.o=.c) $(PTXOBJS:.o=.c) $(PTXOBJS:.o=.gz) $(PTXOBJS:.o=)
+.SECONDARY:   $(HOBJS:.o=.c) $(SPVOBJS:.o=.c) $(SPVOBJS:.o=) $(PTXOBJS:.o=.c) $(PTXOBJS:.o=.gz) $(PTXOBJS:.o=)
 alltools: $(TOOLS)
 
 $(HOSTOBJS): %.o: %.c
@@ -250,7 +258,7 @@ $(TOOLOBJS): | tools
 
 OUTDIRS := $(OUTDIRS) $(dir $(OBJS) $(HOBJS) $(HOSTOBJS) $(SHLIBOBJS) $(STLIBOBJS) $(TESTOBJS))
 
-CLEANSUFFIXES     = *.d *.gcda *.gcno *.h.c *.ho *.map *.o *.objs *.pc *.ptx *.ptx.gz *.ptx.c *.ver *.version *.html.gz *.html.c *.css.min.gz *.css.min *.css.c  *$(DEFAULT_X86ASMD).asm *~ *.ilk *.pdb
+CLEANSUFFIXES     = *.d *.gcda *.gcno *.h.c *.ho *.map *.o *.objs *.pc *.ptx *.ptx.gz *.ptx.c *.spv *.spv.c *.ver *.version *.html.gz *.html.c *.css.min.gz *.css.min *.css.c  *$(DEFAULT_X86ASMD).asm *~ *.ilk *.pdb
 LIBSUFFIXES       = *.a *.lib *.so *.so.* *.dylib *.dll *.def *.dll.a
 
 define RULES
@@ -260,4 +268,4 @@ endef
 
 $(eval $(RULES))
 
--include $(wildcard $(OBJS:.o=.d) $(HOSTOBJS:.o=.d) $(TESTOBJS:.o=.d) $(HOBJS:.o=.d) $(SHLIBOBJS:.o=.d) $(STLIBOBJS:.o=.d)) $(OBJS:.o=$(DEFAULT_X86ASMD).d)
+-include $(wildcard $(OBJS:.o=.d) $(HOSTOBJS:.o=.d) $(TESTOBJS:.o=.d) $(HOBJS:.o=.d) $(SHLIBOBJS:.o=.d) $(STLIBOBJS:.o=.d) $(SPVOBJS:.spv.o=.d)) $(OBJS:.o=$(DEFAULT_X86ASMD).d)

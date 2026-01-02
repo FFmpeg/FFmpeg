@@ -237,7 +237,7 @@ External library support:
   --enable-libfreetype     enable libfreetype, needed for drawtext filter [no]
   --enable-libfribidi      enable libfribidi, improves drawtext filter [no]
   --enable-libharfbuzz     enable libharfbuzz, needed for drawtext filter [no]
-  --enable-libglslang      enable GLSL->SPIRV compilation via libglslang [no]
+  --enable-libglslang      enable runtime GLSL->SPIRV compilation via libglslang [no]
   --enable-libgme          enable Game Music Emu via libgme [no]
   --enable-libgsm          enable GSM de/encoding via libgsm [no]
   --enable-libiec61883     enable iec61883 via libiec61883 [no]
@@ -272,7 +272,7 @@ External library support:
   --enable-librsvg         enable SVG rasterization via librsvg [no]
   --enable-librubberband   enable rubberband needed for rubberband filter [no]
   --enable-librtmp         enable RTMP[E] support via librtmp [no]
-  --enable-libshaderc      enable GLSL->SPIRV compilation via libshaderc [no]
+  --enable-libshaderc      enable runtime GLSL->SPIRV compilation via libshaderc [no]
   --enable-libshine        enable fixed-point MP3 encoding via libshine [no]
   --enable-libsmbclient    enable Samba protocol via libsmbclient [no]
   --enable-libsnappy       enable Snappy compression, needed for hap encoding [no]
@@ -405,6 +405,7 @@ Toolchain options:
   --stdcxx=STDCXX          use C standard STDCXX [$stdcxx_default]
   --objcc=OCC              use ObjC compiler OCC [$cc_default]
   --dep-cc=DEPCC           use dependency generator DEPCC [$cc_default]
+  --glslc=GLSLC            use GLSL compiler GLSLC [$glslc_default]
   --nvcc=NVCC              use Nvidia CUDA compiler NVCC or clang [$nvcc_default]
   --ld=LD                  use linker LD [$ld_default]
   --metalcc=METALCC        use metal compiler METALCC [$metalcc_default]
@@ -429,6 +430,7 @@ Toolchain options:
   --extra-libs=ELIBS       add ELIBS [$ELIBS]
   --extra-version=STRING   version string suffix []
   --optflags=OPTFLAGS      override optimization-related compiler flags
+  --glslcflags=GLSLCFLAGS  extra glslc flags [$glslcflags_default]
   --nvccflags=NVCCFLAGS    override nvcc flags [$nvccflags_default]
   --build-suffix=SUFFIX    library name suffix []
   --enable-pic             build position-independent code
@@ -1074,6 +1076,10 @@ hostcc_o(){
     eval printf '%s\\n' $HOSTCC_O
 }
 
+glslc_o(){
+    eval printf '%s\\n' $GLSLC_O
+}
+
 nvcc_o(){
     eval printf '%s\\n' $NVCC_O
 }
@@ -1097,6 +1103,27 @@ test_objcc(){
     cat > $TMPM
     log_file $TMPM
     test_cmd $objcc -Werror=missing-prototypes $CPPFLAGS $CFLAGS $OBJCFLAGS "$@" $OBJCC_C $(cc_o $TMPO) $TMPM
+}
+
+test_glslc(){
+    log test_glslc "$@"
+    cat > $TMPGLSL
+    log_file $TMPGLSL
+    test_cmd $glslc $GLSLCFLAGS $glslcflags "$@" $(glslc_o $TMPO) $TMPGLSL
+}
+
+check_glslc(){
+    log check_glslc "$@"
+    name=$1
+    shift 1
+    disabled $name && return
+    disable $name
+    test_glslc "$@" <<EOF && enable $name
+#version 460
+#pragma shader_stage(compute)
+#extension GL_GOOGLE_include_directive : require
+void main(void) {}
+EOF
 }
 
 test_nvcc(){
@@ -2791,6 +2818,8 @@ CMDLINE_SET="
     ln_s
     logfile
     malloc_prefix
+    glslc
+    glslcflags
     metalcc
     metallib
     nm
@@ -4270,6 +4299,7 @@ host_cc_default="gcc"
 doxygen_default="doxygen"
 install="install"
 ln_s_default="ln -s -f"
+glslc_default="glslc"
 metalcc_default="xcrun -sdk macosx metal"
 metallib_default="xcrun -sdk macosx metallib"
 nm_default="nm -g"
@@ -4372,6 +4402,7 @@ HOSTCC_C='-c'
 HOSTCC_E='-E -o $@'
 HOSTCC_O='-o $@'
 HOSTLD_O='-o $@'
+GLSLC_O='-o $@'
 NVCC_C='-c'
 NVCC_O='-o $@'
 
@@ -4904,7 +4935,7 @@ if enabled cuda_nvcc; then
 fi
 
 set_default arch cc cxx doxygen pkg_config ranlib strip sysinclude \
-    target_exec x86asmexe metalcc metallib stdc stdcxx
+    target_exec x86asmexe glslc metalcc metallib stdc stdcxx
 enabled cross_compile || host_cc_default=$cc
 set_default host_cc
 
@@ -4976,6 +5007,7 @@ tmpfile TMPE   $EXESUF
 tmpfile TMPH   .h
 tmpfile TMPM   .m
 tmpfile TMPCU  .cu
+tmpfile TMPGLSL .comp.glsl
 tmpfile TMPO   .o
 tmpfile TMPS   .S
 tmpfile TMPSH  .sh
@@ -7638,6 +7670,7 @@ enabled vdpau &&
 enabled vdpau &&
     check_lib vdpau_x11 "vdpau/vdpau.h vdpau/vdpau_x11.h" vdp_device_create_x11 -lvdpau -lX11
 
+# Check for the Vulkan headers
 if enabled_all vulkan vulkan_static; then
     check_pkg_config vulkan "vulkan >= 1.3.277" "vulkan/vulkan.h" "defined VK_VERSION_1_3" ||
         check_lib vulkan "vulkan/vulkan.h" vkGetInstanceProcAddr -lvulkan
@@ -7646,11 +7679,50 @@ elif enabled vulkan; then
         check_cpp_condition vulkan "vulkan/vulkan.h" "defined(VK_VERSION_1_4) || (defined(VK_VERSION_1_3) && VK_HEADER_VERSION >= 277)"
 fi
 
+probe_glslc(){
+    glslc_probe=$1
+    if test_cmd $glslc_probe -v; then
+        # glslang/glslangValidator
+        glslc=$glslc_probe
+        glslcflags="-V --target-env spirv1.6"
+        glslc_opt_speed=""
+        glslc_opt_size="-Os"
+        glslc_opt_none="-Od"
+        glslc_debug="-gVS"
+        GLSLC_DEPFLAGS='--depfile $(@:.spv=.d)'
+    elif test_cmd $glslc_probe --version; then
+        # glslc
+        glslc=$glslc_probe
+        glslcflags="--target-env=vulkan1.4 --target-spv=spv1.6"
+        glslc_opt_speed="-O"
+        glslc_opt_size="-Os"
+        glslc_opt_none="-O0"
+        glslc_debug="-g"
+        GLSLC_DEPFLAGS='-MD -MF $(@:.spv=.d) -MT $@'
+    else
+        return 1
+    fi
+    check_glslc vulkan
+}
+
+if enabled vulkan; then
+    for program in $glslc glslc glslang glslangValidator; do
+        probe_glslc $program && break
+    done
+    disabled vulkan && warn "glslc/glslang not found or too old, disabling Vulkan."
+    append GLSLCFLAGS $glslcflags
+    if enabled small; then
+        append GLSLCFLAGS $glslc_opt_size
+    elif enabled optimizations; then
+        append GLSLCFLAGS $glslc_opt_speed
+    else
+        append GLSLCFLAGS $glslc_opt_none
+    fi
+    enabled debug && append GLSLCFLAGS $glslc_debug
+fi
+
 if disabled vulkan; then
     disable libglslang libshaderc spirv_library
-else
-    check_pkg_config_header_only vulkan_1_4 "vulkan >= 1.4.317" "vulkan/vulkan.h" "defined VK_VERSION_1_4" ||
-        check_cpp_condition vulkan_1_4 "vulkan/vulkan.h" "defined(VK_VERSION_1_5) || (defined(VK_VERSION_1_4) && VK_HEADER_VERSION >= 317)"
 fi
 
 if enabled x86; then
@@ -8400,6 +8472,7 @@ RESPONSE_FILES=$response_files
 AR_O=$ar_o
 AR_CMD=$ar
 NM_CMD=$nm
+GLSLC=$glslc
 METALCC=$metalcc
 METALLIB=$metallib
 RANLIB=$ranlib
@@ -8413,6 +8486,7 @@ CFLAGS=$CFLAGS
 CXXFLAGS=$CXXFLAGS
 OBJCFLAGS=$OBJCFLAGS
 ASFLAGS=$ASFLAGS
+GLSLCFLAGS=$GLSLCFLAGS
 NVCCFLAGS=$nvccflags
 AS_C=$AS_C
 AS_O=$AS_O
@@ -8424,6 +8498,7 @@ CC_E=$CC_E
 CC_O=$CC_O
 CXX_C=$CXX_C
 CXX_O=$CXX_O
+GLSLC_O=$GLSLC_O
 NVCC_C=$NVCC_C
 NVCC_O=$NVCC_O
 LD_O=$LD_O
@@ -8464,6 +8539,7 @@ CXX_DEPFLAGS=$CXX_DEPFLAGS
 OBJCC_DEPFLAGS=$OBJC_DEPFLAGS
 AS_DEPFLAGS=$AS_DEPFLAGS
 X86ASM_DEPFLAGS=$X86ASM_DEPFLAGS
+GLSLC_DEPFLAGS=$GLSLC_DEPFLAGS
 HOSTCC=$host_cc
 HOSTLD=$host_ld
 HOSTCFLAGS=$host_cflags

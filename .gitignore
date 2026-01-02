@@ -23,6 +23,8 @@
 *.metal.air
 *.metallib
 *.metallib.c
+*.spv
+*.spv.c
 *.ptx
 *.ptx.c
 *.ptx.gz

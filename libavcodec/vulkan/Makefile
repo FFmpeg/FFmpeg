@@ -1,7 +1,5 @@
-GEN_CLEANSUFFIXES = *.o *.c *.d
-
 clean::
-	$(RM) $(GEN_CLEANSUFFIXES:%=libavcodec/vulkan/%)
+	$(RM) $(CLEANSUFFIXES:%=libavcodec/vulkan/%)
 
 OBJS-$(CONFIG_FFV1_VULKAN_ENCODER)  +=  vulkan/common.o \
 					vulkan/rangecoder.o vulkan/ffv1_vlc.o \
