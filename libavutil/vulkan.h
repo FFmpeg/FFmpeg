@@ -28,6 +28,8 @@
 #include "hwcontext.h"
 #include "vulkan_functions.h"
 #include "hwcontext_vulkan.h"
+#include "avassert.h"
+#include "intreadwrite.h"
 
 /* GLSL management macros */
 #define INDENT(N) INDENT_##N
@@ -68,6 +70,36 @@
         if ((err = (x)) < 0)                                                   \
             goto fail;                                                         \
     } while (0)
+
+/* Convenience macros for specialization lists */
+#define SPEC_LIST_MAX 256
+#define SPEC_LIST_CREATE(name, max_length, max_size)           \
+    av_assert1((max_length) < (SPEC_LIST_MAX - 3));            \
+    uint8_t name##_data[(max_size) + 3*sizeof(uint32_t)];      \
+    VkSpecializationMapEntry name##_entries[(max_length) + 3]; \
+    VkSpecializationInfo name##_info = {                       \
+        .pMapEntries = name##_entries,                         \
+        .pData = name##_data,                                  \
+    };                                                         \
+    VkSpecializationInfo *name = &name##_info;
+
+#define SPEC_LIST_ADD(name, idx, val_bits, val)                \
+do {                                                           \
+    unsigned int name##_cnt = name->mapEntryCount;             \
+    size_t name##_off = name->dataSize;                        \
+    uint8_t *name##_dp = (uint8_t *)name->pData;               \
+    void *name##_ep = (void *)&name->pMapEntries[name##_cnt];  \
+    AV_WN(val_bits, name##_dp + name##_off, (val));            \
+    VkSpecializationMapEntry name##_new_entry = {              \
+        .constantID = (idx),                                   \
+        .offset = name##_off,                                  \
+        .size = val_bits >> 3,                                 \
+    };                                                         \
+    memcpy(name##_ep, &name##_new_entry,                       \
+           sizeof(VkSpecializationMapEntry));                  \
+    name->dataSize = name##_off + (val_bits >> 3);             \
+    name->mapEntryCount = name##_cnt + 1;                      \
+} while (0)
 
 #define DUP_SAMPLER(x) { x, x, x, x }
 
@@ -194,11 +226,15 @@ typedef struct FFVulkanShader {
     /* Name for id/debugging purposes */
     const char *name;
 
+    /* Whether shader is precompiled or not */
+    int precompiled;
+    VkSpecializationInfo *specialization_info;
+
     /* Shader text */
     AVBPrint src;
 
     /* Compute shader local group sizes */
-    int lg_size[3];
+    uint32_t lg_size[3];
 
     /* Shader bind point/type */
     VkPipelineStageFlags stage;
@@ -609,6 +645,15 @@ int ff_vk_shader_init(FFVulkanContext *s, FFVulkanShader *shd, const char *name,
                       uint32_t required_subgroup_size);
 
 /**
+ * Initialize a shader object.
+ * If spec is non-null, it must have been created with SPEC_LIST_CREATE().
+ * The IDs for the workgroup size must be 253, 254, 255.
+ */
+int ff_vk_shader_load(FFVulkanShader *shd,
+                      VkPipelineStageFlags stage, VkSpecializationInfo *spec,
+                      uint32_t wg_size[3], uint32_t required_subgroup_size);
+
+/**
  * Output the shader code as logging data, with a specific
  * priority.
  */
@@ -618,7 +663,7 @@ void ff_vk_shader_print(void *ctx, FFVulkanShader *shd, int prio);
  * Link a shader into an executable.
  */
 int ff_vk_shader_link(FFVulkanContext *s, FFVulkanShader *shd,
-                      uint8_t *spirv, size_t spirv_len,
+                      const char *spirv, size_t spirv_len,
                       const char *entrypoint);
 
 /**
