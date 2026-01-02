@@ -1,7 +1,7 @@
 clean::
 	$(RM) $(CLEANSUFFIXES:%=libavfilter/vulkan/%)
 
-OBJS-$(CONFIG_BWDIF_VULKAN_FILTER) += vulkan/bwdif.o
+OBJS-$(CONFIG_BWDIF_VULKAN_FILTER) += vulkan/bwdif.comp.spv.o
 OBJS-$(CONFIG_SCALE_VULKAN_FILTER) += vulkan/debayer.o
 
 VULKAN = $(subst $(SRC_PATH)/,,$(wildcard $(SRC_PATH)/libavfilter/vulkan/*.comp))
