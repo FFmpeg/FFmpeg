@@ -72,6 +72,7 @@ FATE_CHECKASM = fate-checkasm-aacencdsp                                 \
                 fate-checkasm-vf_fspp                                   \
                 fate-checkasm-vf_gblur                                  \
                 fate-checkasm-vf_hflip                                  \
+                fate-checkasm-vf_idet                                   \
                 fate-checkasm-vf_nlmeans                                \
                 fate-checkasm-vf_threshold                              \
                 fate-checkasm-vf_sobel                                  \
