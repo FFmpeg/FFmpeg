@@ -1,3 +1,5 @@
+name: Test
+
 on:
   push:
     branches:
@@ -6,6 +8,7 @@ on:
 
 jobs:
   run_fate:
+    name: Fate (${{ matrix.runner }}, ${{ matrix.shared }}, ${{ matrix.bits }} bit)
     strategy:
       fail-fast: false
       matrix:
@@ -55,6 +58,7 @@ jobs:
       - name: Run Fate
         run: LD_LIBRARY_PATH="$(printf "%s:" "$PWD"/lib*)$PWD" make fate fate-build SAMPLES=$PWD/fate-suite -j$(nproc)
   compile_only:
+    name: Fate (Win64, Build-Only)
     strategy:
       fail-fast: false
       matrix:
