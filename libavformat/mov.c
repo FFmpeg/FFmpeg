@@ -1729,6 +1729,8 @@ static int64_t get_frag_time(AVFormatContext *s, AVStream *dst_st,
     }
 
     for (i = 0; i < frag_index->item[index].nb_stream_info; i++) {
+        if (dst_st->id != frag_index->item[index].stream_info[i].id)
+            continue;
         AVStream *frag_stream = NULL;
         frag_stream_info = &frag_index->item[index].stream_info[i];
         for (j = 0; j < s->nb_streams; j++) {

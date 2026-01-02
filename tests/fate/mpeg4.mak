@@ -21,5 +21,11 @@ fate-m4v:     CMD = framecrc -flags +bitexact -idct simple -i $(TARGET_SAMPLES)/
 FATE_MPEG4-$(call FRAMECRC, M4V, MPEG4, MPEG4VIDEO_PARSER FPS_FILTER) += fate-m4v-cfr
 fate-m4v-cfr: CMD = framecrc -flags +bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg4/demo.m4v -vf fps=5
 
+# Test seeking in fragmented MP4 with separate audio/video fragments
+# Seeks to 1.04s and extracts 1 frame - should land on I-frame at 1.0s with fix,
+# lands at start (0s) without fix due to get_frag_time() bug
+FATE_MPEG4-$(call FRAMECRC, MOV, H264, AAC_DECODER) += fate-mpeg4-fragmented-seek
+fate-mpeg4-fragmented-seek: CMD = framecrc -use_mfra_for pts -ss 1.04 -copyts -noaccurate_seek -i $(TARGET_SAMPLES)/mpeg4/fragmented.mp4 -frames:v 1 -an
+
 FATE_SAMPLES_AVCONV += $(FATE_MPEG4-yes)
 fate-mpeg4: $(FATE_MPEG4-yes)
