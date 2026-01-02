@@ -533,7 +533,7 @@ Developer options (useful when working on FFmpeg itself):
   --enable-linux-perf      enable Linux Performance Monitor API
   --enable-macos-kperf     enable macOS kperf (private) API
   --disable-large-tests    disable tests that use a large amount of memory
-  --disable-ptx-compression don't compress CUDA PTX code even when possible
+  --disable-shader-compression don't compress shader code even when possible
   --disable-resource-compression don't compress resources even when possible
   --disable-version-tracking don't include the git/release version in the build
 
@@ -2205,7 +2205,7 @@ CONFIG_LIST="
     neon_clobber_test
     ossfuzz
     pic
-    ptx_compression
+    shader_compression
     resource_compression
     thumb
     valgrind_backtrace
@@ -4345,7 +4345,7 @@ enable faan faandct faanidct
 enable iamf
 enable large_tests
 enable optimizations
-enable ptx_compression
+enable shader_compression
 enable resource_compression
 enable runtime_cpudetect
 enable safe_bitstream_reader
@@ -7137,7 +7137,7 @@ EOF
 
 [ -x "$(command -v gzip)" ] && enable gzip
 
-enabled zlib_gzip && enabled gzip || disable ptx_compression
+enabled zlib_gzip && enabled gzip || disable shader_compression
 
 enabled zlib_gzip && enabled gzip || disable resource_compression
 

@@ -23,7 +23,7 @@
 #include "libavutil/cuda_check.h"
 #include "libavutil/mem.h"
 
-#if CONFIG_PTX_COMPRESSION
+#if CONFIG_SHADER_COMPRESSION
 #include <zlib.h>
 #define CHUNK_SIZE 1024 * 64
 #endif
@@ -37,7 +37,7 @@ int ff_cuda_load_module(void *avctx, AVCUDADeviceContext *hwctx, CUmodule *cu_mo
 {
     CudaFunctions *cu = hwctx->internal->cuda_dl;
 
-#if CONFIG_PTX_COMPRESSION
+#if CONFIG_SHADER_COMPRESSION
     z_stream stream = { 0 };
     uint8_t *buf, *tmp;
     uint64_t buf_size;

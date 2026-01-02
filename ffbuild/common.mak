@@ -149,7 +149,7 @@ RUN_MINIFY = $(M)sed 's!/\\*.*\\*/!!g' $< | tr '\n' ' ' | tr -s ' ' | sed 's/^ /
 %.ptx: %.cu $(SRC_PATH)/compat/cuda/cuda_runtime.h
 	$(COMPILE_NVCC)
 
-ifdef CONFIG_PTX_COMPRESSION
+ifdef CONFIG_SHADER_COMPRESSION
 %.ptx.gz: %.ptx
 	$(RUN_GZIP)
 
