@@ -1,3 +1,5 @@
+name: Autolabel
+
 on:
   pull_request_target:
     types: [opened, edited, synchronize, closed, assigned, labeled, unlabeled]
@@ -8,6 +10,7 @@ on:
 
 jobs:
   pr_labeler:
+    name: Labeler
     runs-on: utilities
     if: ${{ github.event.sender.login != 'ffmpeg-devel' }}
     steps:

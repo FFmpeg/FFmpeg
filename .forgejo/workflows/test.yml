@@ -1,3 +1,5 @@
+name: Test
+
 on:
   push:
     branches:
@@ -6,6 +8,7 @@ on:
 
 jobs:
   run_fate:
+    name: Fate (${{ matrix.runner }}, ${{ matrix.shared }}, ${{ matrix.bits }} bit)
     strategy:
       fail-fast: false
       matrix:
@@ -58,6 +61,7 @@ jobs:
           find . -name "*.err" -exec printf '::group::%s\n' {} \; -exec cat {} \; -exec printf '::endgroup::\n' \;
           exit ${FATERES:-0}
   run_fate_full:
+    name: Fate (Full, ${{ matrix.target_exec }})
     strategy:
       fail-fast: false
       matrix:
