@@ -304,7 +304,7 @@ int ff_vk_filter_process_simple(FFVulkanContext *vkctx, FFVkExecPool *e,
     vk->CmdDispatch(exec->buf,
                     FFALIGN(vkctx->output_width,  shd->lg_size[0])/shd->lg_size[0],
                     FFALIGN(vkctx->output_height, shd->lg_size[1])/shd->lg_size[1],
-                    shd->lg_size[2]);
+                    1);
 
     return ff_vk_exec_submit(vkctx, exec);
 fail:
@@ -395,7 +395,7 @@ int ff_vk_filter_process_2pass(FFVulkanContext *vkctx, FFVkExecPool *e,
         vk->CmdDispatch(exec->buf,
                         FFALIGN(vkctx->output_width,  shd->lg_size[0])/shd->lg_size[0],
                         FFALIGN(vkctx->output_height, shd->lg_size[1])/shd->lg_size[1],
-                        shd->lg_size[2]);
+                        1);
     }
 
     return ff_vk_exec_submit(vkctx, exec);
@@ -474,7 +474,7 @@ int ff_vk_filter_process_Nin(FFVulkanContext *vkctx, FFVkExecPool *e,
     vk->CmdDispatch(exec->buf,
                     FFALIGN(vkctx->output_width,  shd->lg_size[0])/shd->lg_size[0],
                     FFALIGN(vkctx->output_height, shd->lg_size[1])/shd->lg_size[1],
-                    shd->lg_size[2]);
+                    1);
 
     return ff_vk_exec_submit(vkctx, exec);
 fail:
