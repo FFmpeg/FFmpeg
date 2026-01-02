@@ -1,3 +1,5 @@
+name: Autolabel
+
 on:
   pull_request_target:
     types: [opened, edited, synchronize]
@@ -6,6 +8,7 @@ on:
 
 jobs:
   pr_labeler:
+    name: Labeler
     runs-on: utilities
     steps:
       - name: Checkout
