@@ -20,6 +20,30 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#version 460
+#pragma shader_stage(compute)
+#extension GL_GOOGLE_include_directive : require
+
+#include "common.comp"
+
+struct TileData {
+   ivec2 pos;
+   uint offset;
+   uint size;
+};
+
+layout (set = 0, binding = 0) uniform writeonly uimage2D dst;
+layout (set = 0, binding = 1, scalar) readonly buffer frame_data_buf {
+    TileData tile_data[];
+};
+
+layout (push_constant, scalar) uniform pushConstants {
+   u8buf pkt_data;
+   ivec2 frame_size;
+   ivec2 tile_size;
+   uint8_t qmat[64];
+};
+
 #define COMP_ID (gl_LocalInvocationID.x)
 
 GetBitContext gb;

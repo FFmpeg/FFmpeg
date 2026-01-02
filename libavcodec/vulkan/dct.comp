@@ -31,12 +31,22 @@
  * IEEE Transactions on Communications, Vol. 25, No. 9, pp 1004-1009, Sept. 1977
  */
 
+#ifndef VULKAN_DCT_H
+#define VULKAN_DCT_H
+
+#ifndef NB_BLOCKS
+#define NB_BLOCKS 1
+#endif
+
 #ifndef NB_COMPONENTS
 #define NB_COMPONENTS 1
 #endif
 
+layout (constant_id = 16) const uint32_t nb_blocks = NB_BLOCKS;
+layout (constant_id = 17) const uint32_t nb_components = NB_COMPONENTS;
+
 /* Padded by 1 row to avoid bank conflicts */
-shared float blocks[NB_BLOCKS][NB_COMPONENTS*8*(8 + 1)];
+shared float blocks[nb_blocks][nb_components*8*(8 + 1)];
 
 const float idct_scale[64] = {
     0.1250000000000000, 0.1733799806652684, 0.1633203706095471, 0.1469844503024199,
@@ -117,3 +127,5 @@ void idct8(uint block, uint offset, uint stride)
     blocks[block][6*stride + offset] = u6;
     blocks[block][7*stride + offset] = u7;
 }
+
+#endif /* VULKAN_DCT_H */
