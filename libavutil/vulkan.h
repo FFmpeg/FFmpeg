@@ -71,6 +71,12 @@
 
 #define DUP_SAMPLER(x) { x, x, x, x }
 
+#define FF_VK_MAX_DESCRIPTOR_SETS 4
+#define FF_VK_MAX_DESCRIPTOR_BINDINGS 16
+#define FF_VK_MAX_DESCRIPTOR_TYPES 16
+#define FF_VK_MAX_PUSH_CONSTS 4
+#define FF_VK_MAX_SHADERS 16
+
 typedef struct FFVulkanDescriptorSetBinding {
     const char         *name;
     VkDescriptorType    type;
@@ -175,8 +181,9 @@ typedef struct FFVulkanDescriptorSet {
     VkDeviceSize aligned_size; /* descriptorBufferOffsetAlignment */
     VkBufferUsageFlags usage;
 
-    VkDescriptorSetLayoutBinding *binding;
-    VkDeviceSize *binding_offset;
+    VkDescriptorSetLayoutBinding binding[FF_VK_MAX_DESCRIPTOR_BINDINGS];
+    VkDeviceSize binding_offset[FF_VK_MAX_DESCRIPTOR_BINDINGS];
+
     int nb_bindings;
 
     /* Descriptor set is shared between all submissions */
@@ -208,20 +215,20 @@ typedef struct FFVulkanShader {
     VkPipelineLayout pipeline_layout;
 
     /* Push consts */
-    VkPushConstantRange *push_consts;
+    VkPushConstantRange push_consts[FF_VK_MAX_PUSH_CONSTS];
     int push_consts_num;
 
     /* Descriptor sets */
-    FFVulkanDescriptorSet *desc_set;
+    FFVulkanDescriptorSet desc_set[FF_VK_MAX_DESCRIPTOR_SETS];
     int nb_descriptor_sets;
 
     /* Descriptor buffer */
-    VkDescriptorSetLayout *desc_layout;
-    uint32_t *bound_buffer_indices;
+    VkDescriptorSetLayout desc_layout[FF_VK_MAX_DESCRIPTOR_SETS];
+    uint32_t bound_buffer_indices[FF_VK_MAX_DESCRIPTOR_SETS];
 
     /* Descriptor pool */
     int use_push;
-    VkDescriptorPoolSize *desc_pool_size;
+    VkDescriptorPoolSize desc_pool_size[FF_VK_MAX_DESCRIPTOR_TYPES];
     int nb_desc_pool_size;
 } FFVulkanShader;
 
@@ -237,8 +244,8 @@ typedef struct FFVulkanShaderData {
     int nb_descriptor_sets;
 
     /* Descriptor buffer */
-    FFVulkanDescriptorSetData *desc_set_buf;
-    VkDescriptorBufferBindingInfoEXT *desc_bind;
+    FFVulkanDescriptorSetData desc_set_buf[FF_VK_MAX_DESCRIPTOR_SETS];
+    VkDescriptorBufferBindingInfoEXT desc_bind[FF_VK_MAX_DESCRIPTOR_SETS];
 
     /* Descriptor pools */
     VkDescriptorSet *desc_sets;
@@ -263,7 +270,7 @@ typedef struct FFVkExecPool {
     size_t qd_size;
 
     /* Registered shaders' data */
-    FFVulkanShaderData *reg_shd;
+    FFVulkanShaderData reg_shd[FF_VK_MAX_SHADERS];
     int nb_reg_shd;
 } FFVkExecPool;
 
@@ -624,7 +631,7 @@ int ff_vk_shader_add_push_const(FFVulkanShader *shd, int offset, int size,
  * Add descriptor to a shader. Must be called before shader init.
  */
 int ff_vk_shader_add_descriptor_set(FFVulkanContext *s, FFVulkanShader *shd,
-                                    FFVulkanDescriptorSetBinding *desc, int nb,
+                                    const FFVulkanDescriptorSetBinding *desc, int nb,
                                     int singular, int print_to_shader_only);
 
 /**

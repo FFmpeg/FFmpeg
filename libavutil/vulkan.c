@@ -333,12 +333,8 @@ void ff_vk_exec_pool_free(FFVulkanContext *s, FFVkExecPool *pool)
             vk->DestroyDescriptorPool(s->hwctx->act_dev, sd->desc_pool,
                                       s->hwctx->alloc);
 
-        av_freep(&sd->desc_set_buf);
-        av_freep(&sd->desc_bind);
         av_freep(&sd->desc_sets);
     }
-
-    av_freep(&pool->reg_shd);
 
     for (int i = 0; i < pool->pool_size; i++) {
         if (pool->cmd_buf_pools[i])
@@ -1492,21 +1488,11 @@ int ff_vk_host_map_buffer(FFVulkanContext *s, AVBufferRef **dst,
 int ff_vk_shader_add_push_const(FFVulkanShader *shd, int offset, int size,
                                 VkShaderStageFlagBits stage)
 {
-    VkPushConstantRange *pc;
-
-    shd->push_consts = av_realloc_array(shd->push_consts,
-                                        sizeof(*shd->push_consts),
-                                        shd->push_consts_num + 1);
-    if (!shd->push_consts)
-        return AVERROR(ENOMEM);
-
-    pc = &shd->push_consts[shd->push_consts_num++];
-    memset(pc, 0, sizeof(*pc));
-
+    VkPushConstantRange *pc = &shd->push_consts[shd->push_consts_num++];
+    av_assert1(shd->push_consts_num < FF_VK_MAX_PUSH_CONSTS);
     pc->stageFlags = stage;
     pc->offset = offset;
     pc->size = size;
-
     return 0;
 }
 
@@ -2329,11 +2315,6 @@ static int init_descriptors(FFVulkanContext *s, FFVulkanShader *shd)
     VkResult ret;
     FFVulkanFunctions *vk = &s->vkfn;
 
-    shd->desc_layout = av_malloc_array(shd->nb_descriptor_sets,
-                                       sizeof(*shd->desc_layout));
-    if (!shd->desc_layout)
-        return AVERROR(ENOMEM);
-
     if (!(s->extensions & FF_VK_EXT_DESCRIPTOR_BUFFER)) {
         int has_singular = 0;
         int max_descriptors = 0;
@@ -2405,11 +2386,6 @@ int ff_vk_shader_link(FFVulkanContext *s, FFVulkanShader *shd,
         return err;
 
     if (s->extensions & FF_VK_EXT_DESCRIPTOR_BUFFER) {
-        shd->bound_buffer_indices = av_calloc(shd->nb_descriptor_sets,
-                                              sizeof(*shd->bound_buffer_indices));
-        if (!shd->bound_buffer_indices)
-            return AVERROR(ENOMEM);
-
         for (int i = 0; i < shd->nb_descriptor_sets; i++)
             shd->bound_buffer_indices[i] = i;
     }
@@ -2465,35 +2441,17 @@ static const struct descriptor_props {
 };
 
 int ff_vk_shader_add_descriptor_set(FFVulkanContext *s, FFVulkanShader *shd,
-                                    FFVulkanDescriptorSetBinding *desc, int nb,
+                                    const FFVulkanDescriptorSetBinding *desc, int nb,
                                     int singular, int print_to_shader_only)
 {
     int has_sampler = 0;
-    FFVulkanDescriptorSet *set;
 
     if (print_to_shader_only)
         goto print;
 
-    /* Actual layout allocated for the pipeline */
-    set = av_realloc_array(shd->desc_set,
-                           sizeof(*shd->desc_set),
-                           shd->nb_descriptor_sets + 1);
-    if (!set)
-        return AVERROR(ENOMEM);
-    shd->desc_set = set;
-
-    set = &set[shd->nb_descriptor_sets];
-    memset(set, 0, sizeof(*set));
-
-    set->binding = av_calloc(nb, sizeof(*set->binding));
-    if (!set->binding)
-        return AVERROR(ENOMEM);
-
-    set->binding_offset = av_calloc(nb, sizeof(*set->binding_offset));
-    if (!set->binding_offset) {
-        av_freep(&set->binding);
-        return AVERROR(ENOMEM);
-    }
+    FFVulkanDescriptorSet *set = &shd->desc_set[shd->nb_descriptor_sets++];
+    av_assert1(shd->nb_descriptor_sets < FF_VK_MAX_DESCRIPTOR_SETS);
+    av_assert1(nb < FF_VK_MAX_DESCRIPTOR_BINDINGS);
 
     for (int i = 0; i < nb; i++) {
         set->binding[i].binding            = i;
@@ -2515,20 +2473,12 @@ int ff_vk_shader_add_descriptor_set(FFVulkanContext *s, FFVulkanShader *shd,
     if (!(s->extensions & FF_VK_EXT_DESCRIPTOR_BUFFER)) {
         for (int i = 0; i < nb; i++) {
             int j;
-            VkDescriptorPoolSize *desc_pool_size;
             for (j = 0; j < shd->nb_desc_pool_size; j++)
                 if (shd->desc_pool_size[j].type == desc[i].type)
                     break;
             if (j >= shd->nb_desc_pool_size) {
-                desc_pool_size = av_realloc_array(shd->desc_pool_size,
-                                                  sizeof(*desc_pool_size),
-                                                  shd->nb_desc_pool_size + 1);
-                if (!desc_pool_size)
-                    return AVERROR(ENOMEM);
-
-                shd->desc_pool_size = desc_pool_size;
                 shd->nb_desc_pool_size++;
-                memset(&desc_pool_size[j], 0, sizeof(VkDescriptorPoolSize));
+                av_assert1(shd->nb_desc_pool_size < FF_VK_MAX_DESCRIPTOR_TYPES);
             }
             shd->desc_pool_size[j].type             = desc[i].type;
             shd->desc_pool_size[j].descriptorCount += FFMAX(desc[i].elems, 1);
@@ -2537,7 +2487,6 @@ int ff_vk_shader_add_descriptor_set(FFVulkanContext *s, FFVulkanShader *shd,
 
     set->singular = singular;
     set->nb_bindings = nb;
-    shd->nb_descriptor_sets++;
 
 print:
     /* Write shader info */
@@ -2604,33 +2553,17 @@ int ff_vk_shader_register_exec(FFVulkanContext *s, FFVkExecPool *pool,
                                FFVulkanShader *shd)
 {
     int err;
-    FFVulkanShaderData *sd;
 
     if (!shd->nb_descriptor_sets)
         return 0;
 
-    sd = av_realloc_array(pool->reg_shd,
-                          sizeof(*pool->reg_shd),
-                          pool->nb_reg_shd + 1);
-    if (!sd)
-        return AVERROR(ENOMEM);
-
-    pool->reg_shd = sd;
-    sd = &sd[pool->nb_reg_shd++];
-    memset(sd, 0, sizeof(*sd));
+    FFVulkanShaderData *sd = &pool->reg_shd[pool->nb_reg_shd++];
+    av_assert1(pool->nb_reg_shd < FF_VK_MAX_SHADERS);
 
     sd->shd = shd;
     sd->nb_descriptor_sets = shd->nb_descriptor_sets;
 
     if (s->extensions & FF_VK_EXT_DESCRIPTOR_BUFFER) {
-        sd->desc_bind = av_malloc_array(sd->nb_descriptor_sets, sizeof(*sd->desc_bind));
-        if (!sd->desc_bind)
-            return AVERROR(ENOMEM);
-
-        sd->desc_set_buf = av_calloc(sd->nb_descriptor_sets, sizeof(*sd->desc_set_buf));
-        if (!sd->desc_set_buf)
-            return AVERROR(ENOMEM);
-
         for (int i = 0; i < sd->nb_descriptor_sets; i++) {
             FFVulkanDescriptorSet *set = &shd->desc_set[i];
             FFVulkanDescriptorSetData *sdb = &sd->desc_set_buf[i];
@@ -2717,8 +2650,8 @@ int ff_vk_shader_register_exec(FFVulkanContext *s, FFVkExecPool *pool,
     return 0;
 }
 
-static inline FFVulkanShaderData *get_shd_data(FFVkExecContext *e,
-                                               FFVulkanShader *shd)
+static inline const FFVulkanShaderData *get_shd_data(FFVkExecContext *e,
+                                                     FFVulkanShader *shd)
 {
     for (int i = 0; i < e->parent->nb_reg_shd; i++)
         if (e->parent->reg_shd[i].shd == shd)
@@ -2734,7 +2667,7 @@ static inline void update_set_descriptor(FFVulkanContext *s, FFVkExecContext *e,
 {
     FFVulkanFunctions *vk = &s->vkfn;
     FFVulkanDescriptorSet *desc_set = &shd->desc_set[set];
-    FFVulkanShaderData *sd = get_shd_data(e, shd);
+    const FFVulkanShaderData *sd = get_shd_data(e, shd);
     const size_t exec_offset = desc_set->singular ? 0 : desc_set->aligned_size*e->idx;
 
     void *desc = sd->desc_set_buf[set].desc_mem +     /* Base */
@@ -2751,7 +2684,7 @@ static inline void update_set_pool_write(FFVulkanContext *s, FFVkExecContext *e,
 {
     FFVulkanFunctions *vk = &s->vkfn;
     FFVulkanDescriptorSet *desc_set = &shd->desc_set[set];
-    FFVulkanShaderData *sd = get_shd_data(e, shd);
+    const FFVulkanShaderData *sd = get_shd_data(e, shd);
 
     if (desc_set->singular) {
         for (int i = 0; i < e->parent->pool_size; i++) {
@@ -2931,7 +2864,7 @@ void ff_vk_exec_bind_shader(FFVulkanContext *s, FFVkExecContext *e,
 {
     FFVulkanFunctions *vk = &s->vkfn;
     VkDeviceSize offsets[1024];
-    FFVulkanShaderData *sd = get_shd_data(e, shd);
+    const FFVulkanShaderData *sd = get_shd_data(e, shd);
 
     if (s->extensions & FF_VK_EXT_SHADER_OBJECT) {
         VkShaderStageFlagBits stages = shd->stage;
@@ -2943,12 +2876,15 @@ void ff_vk_exec_bind_shader(FFVulkanContext *s, FFVkExecContext *e,
     if (sd && sd->nb_descriptor_sets) {
         if (s->extensions & FF_VK_EXT_DESCRIPTOR_BUFFER) {
             for (int i = 0; i < sd->nb_descriptor_sets; i++)
-                offsets[i] = shd->desc_set[i].singular ? 0 : shd->desc_set[i].aligned_size*e->idx;
+                offsets[i] = shd->desc_set[i].singular ?
+                             0 : shd->desc_set[i].aligned_size*e->idx;
 
             /* Bind descriptor buffers */
-            vk->CmdBindDescriptorBuffersEXT(e->buf, sd->nb_descriptor_sets, sd->desc_bind);
+            vk->CmdBindDescriptorBuffersEXT(e->buf, sd->nb_descriptor_sets,
+                                            sd->desc_bind);
             /* Binding offsets */
-            vk->CmdSetDescriptorBufferOffsetsEXT(e->buf, shd->bind_point, shd->pipeline_layout,
+            vk->CmdSetDescriptorBufferOffsetsEXT(e->buf, shd->bind_point,
+                                                 shd->pipeline_layout,
                                                  0, sd->nb_descriptor_sets,
                                                  shd->bound_buffer_indices, offsets);
         } else if (!shd->use_push) {
@@ -2980,25 +2916,10 @@ void ff_vk_shader_free(FFVulkanContext *s, FFVulkanShader *shd)
         vk->DestroyPipelineLayout(s->hwctx->act_dev, shd->pipeline_layout,
                                   s->hwctx->alloc);
 
-    for (int i = 0; i < shd->nb_descriptor_sets; i++) {
-        FFVulkanDescriptorSet *set = &shd->desc_set[i];
-        av_free(set->binding);
-        av_free(set->binding_offset);
-    }
-
-    if (shd->desc_layout) {
-        for (int i = 0; i < shd->nb_descriptor_sets; i++)
-            if (shd->desc_layout[i])
-                vk->DestroyDescriptorSetLayout(s->hwctx->act_dev, shd->desc_layout[i],
-                                               s->hwctx->alloc);
-    }
-
-    av_freep(&shd->desc_pool_size);
-    av_freep(&shd->desc_layout);
-    av_freep(&shd->desc_set);
-    av_freep(&shd->bound_buffer_indices);
-    av_freep(&shd->push_consts);
-    shd->push_consts_num = 0;
+    for (int i = 0; i < shd->nb_descriptor_sets; i++)
+        if (shd->desc_layout[i])
+            vk->DestroyDescriptorSetLayout(s->hwctx->act_dev, shd->desc_layout[i],
+                                           s->hwctx->alloc);
 }
 
 void ff_vk_uninit(FFVulkanContext *s)
