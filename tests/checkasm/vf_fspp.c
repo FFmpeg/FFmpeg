@@ -165,6 +165,9 @@ static void check_column_fidct(void)
 void checkasm_check_vf_fspp(void)
 {
     check_store_slice();
+    report("store_slice");
     check_mul_thrmat();
+    report("mul_thrmat");
     check_column_fidct();
+    report("column_fidct");
 }

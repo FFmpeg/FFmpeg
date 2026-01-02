@@ -116,4 +116,5 @@ static void check_cavs_qpeldsp(void)
 void checkasm_check_cavsdsp(void)
 {
     check_cavs_qpeldsp();
+    report("qpeldsp");
 }

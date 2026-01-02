@@ -90,4 +90,5 @@ void checkasm_check_vp6dsp(void)
             fail();
         bench_new(dst_new, src, stride, h_weights, v_weights);
     }
+    report("filter_diag4");
 }

@@ -113,4 +113,5 @@ static void vp3_check_loop_filter(void)
 void checkasm_check_vp3dsp(void)
 {
     vp3_check_loop_filter();
+    report("loop_filter");
 }

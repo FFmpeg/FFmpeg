@@ -118,4 +118,5 @@ void checkasm_check_hpeldsp(void)
             }
         }
     }
+    report("hpeldsp");
 }

@@ -269,5 +269,6 @@ void checkasm_check_mpegvideo_unquantize(void)
 
             bench_new(&new, block_new, n, qscale);
         }
+        report("%s", tests[i].name);
     }
 }

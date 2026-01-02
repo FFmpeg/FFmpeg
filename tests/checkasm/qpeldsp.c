@@ -105,4 +105,5 @@ void checkasm_check_qpeldsp(void)
             }
         }
     }
+    report("mpeg4_qpeldsp");
 }
