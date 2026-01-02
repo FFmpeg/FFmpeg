@@ -3054,7 +3054,7 @@ exr_decoder_select="bswapdsp"
 exr_encoder_deps="zlib"
 ffv1_decoder_select="rangecoder"
 ffv1_encoder_select="rangecoder"
-ffv1_vulkan_encoder_select="vulkan spirv_compiler"
+ffv1_vulkan_encoder_select="vulkan spirv_library"
 ffvhuff_decoder_select="huffyuv_decoder"
 ffvhuff_encoder_select="huffyuv_encoder"
 fic_decoder_select="golomb"
@@ -3287,9 +3287,9 @@ av1_videotoolbox_hwaccel_deps="videotoolbox"
 av1_videotoolbox_hwaccel_select="av1_decoder"
 av1_vulkan_hwaccel_deps="vulkan"
 av1_vulkan_hwaccel_select="av1_decoder"
-dpx_vulkan_hwaccel_deps="vulkan spirv_compiler"
+dpx_vulkan_hwaccel_deps="vulkan spirv_library"
 dpx_vulkan_hwaccel_select="dpx_decoder"
-ffv1_vulkan_hwaccel_deps="vulkan spirv_compiler"
+ffv1_vulkan_hwaccel_deps="vulkan spirv_library"
 ffv1_vulkan_hwaccel_select="ffv1_decoder"
 h263_vaapi_hwaccel_deps="vaapi"
 h263_vaapi_hwaccel_select="h263_decoder"
@@ -3367,9 +3367,9 @@ mpeg4_videotoolbox_hwaccel_deps="videotoolbox"
 mpeg4_videotoolbox_hwaccel_select="mpeg4_decoder"
 prores_videotoolbox_hwaccel_deps="videotoolbox"
 prores_videotoolbox_hwaccel_select="prores_decoder"
-prores_raw_vulkan_hwaccel_deps="vulkan spirv_compiler"
+prores_raw_vulkan_hwaccel_deps="vulkan spirv_library"
 prores_raw_vulkan_hwaccel_select="prores_raw_decoder"
-prores_vulkan_hwaccel_deps="vulkan spirv_compiler"
+prores_vulkan_hwaccel_deps="vulkan spirv_library"
 prores_vulkan_hwaccel_select="prores_decoder"
 vc1_d3d11va_hwaccel_deps="d3d11va"
 vc1_d3d11va_hwaccel_select="vc1_decoder"
@@ -4006,19 +4006,19 @@ aresample_filter_deps="swresample"
 asr_filter_deps="pocketsphinx"
 ass_filter_deps="libass"
 avgblur_opencl_filter_deps="opencl"
-avgblur_vulkan_filter_deps="vulkan spirv_compiler"
+avgblur_vulkan_filter_deps="vulkan spirv_library"
 azmq_filter_deps="libzmq"
-blackdetect_vulkan_filter_deps="vulkan spirv_compiler"
+blackdetect_vulkan_filter_deps="vulkan spirv_library"
 blackframe_filter_deps="gpl"
-blend_vulkan_filter_deps="vulkan spirv_compiler"
+blend_vulkan_filter_deps="vulkan spirv_library"
 boxblur_filter_deps="gpl"
 boxblur_opencl_filter_deps="opencl gpl"
 bs2b_filter_deps="libbs2b"
 bwdif_cuda_filter_deps="ffnvcodec"
 bwdif_cuda_filter_deps_any="cuda_nvcc cuda_llvm"
-bwdif_vulkan_filter_deps="vulkan spirv_compiler"
-chromaber_vulkan_filter_deps="vulkan spirv_compiler"
-color_vulkan_filter_deps="vulkan spirv_compiler"
+bwdif_vulkan_filter_deps="vulkan spirv_library"
+chromaber_vulkan_filter_deps="vulkan spirv_library"
+color_vulkan_filter_deps="vulkan spirv_library"
 colorkey_opencl_filter_deps="opencl"
 colormatrix_filter_deps="gpl"
 convolution_opencl_filter_deps="opencl"
@@ -4047,7 +4047,7 @@ elbg_filter_deps="avcodec"
 eq_filter_deps="gpl"
 erosion_opencl_filter_deps="opencl"
 find_rect_filter_deps="avcodec avformat gpl"
-flip_vulkan_filter_deps="vulkan spirv_compiler"
+flip_vulkan_filter_deps="vulkan spirv_library"
 flite_filter_deps="libflite threads"
 framerate_filter_select="scene_sad"
 freezedetect_filter_select="scene_sad"
@@ -4056,15 +4056,15 @@ frei0r_filter_deps="frei0r"
 frei0r_src_filter_deps="frei0r"
 fspp_filter_deps="gpl"
 fsync_filter_deps="avformat"
-gblur_vulkan_filter_deps="vulkan spirv_compiler"
-hflip_vulkan_filter_deps="vulkan spirv_compiler"
+gblur_vulkan_filter_deps="vulkan spirv_library"
+hflip_vulkan_filter_deps="vulkan spirv_library"
 histeq_filter_deps="gpl"
 hqdn3d_filter_deps="gpl"
 iccdetect_filter_deps="lcms2"
 iccgen_filter_deps="lcms2"
 identity_filter_select="scene_sad"
 interlace_filter_deps="gpl"
-interlace_vulkan_filter_deps="vulkan spirv_compiler"
+interlace_vulkan_filter_deps="vulkan spirv_library"
 kerndeint_filter_deps="gpl"
 ladspa_filter_deps="ladspa libdl"
 lcevc_filter_deps="liblcevc_dec"
@@ -4081,7 +4081,7 @@ mptestsrc_filter_deps="gpl"
 msad_filter_select="scene_sad"
 negate_filter_deps="lut_filter"
 nlmeans_opencl_filter_deps="opencl"
-nlmeans_vulkan_filter_deps="vulkan spirv_compiler"
+nlmeans_vulkan_filter_deps="vulkan spirv_library"
 nnedi_filter_deps="gpl"
 ocr_filter_deps="libtesseract"
 ocv_filter_deps="libopencv"
@@ -4093,7 +4093,7 @@ overlay_opencl_filter_deps="opencl"
 overlay_qsv_filter_deps="libmfx"
 overlay_qsv_filter_select="qsvvpp"
 overlay_vaapi_filter_deps="vaapi VAProcPipelineCaps_blend_flags"
-overlay_vulkan_filter_deps="vulkan spirv_compiler"
+overlay_vulkan_filter_deps="vulkan spirv_library"
 owdenoise_filter_deps="gpl"
 pad_opencl_filter_deps="opencl"
 pan_filter_deps="swresample"
@@ -4117,7 +4117,7 @@ vpp_amf_filter_deps="amf"
 scale_qsv_filter_deps="libmfx"
 scale_qsv_filter_select="qsvvpp"
 scdet_filter_select="scene_sad"
-scdet_vulkan_filter_deps="vulkan spirv_compiler"
+scdet_vulkan_filter_deps="vulkan spirv_library"
 select_filter_select="scene_sad"
 sharpness_vaapi_filter_deps="vaapi"
 showcqt_filter_deps="avformat swscale"
@@ -4143,11 +4143,11 @@ tonemap_opencl_filter_deps="opencl const_nan"
 transpose_opencl_filter_deps="opencl"
 transpose_vaapi_filter_deps="vaapi VAProcPipelineCaps_rotation_flags"
 transpose_vt_filter_deps="videotoolbox VTPixelRotationSessionCreate"
-transpose_vulkan_filter_deps="vulkan spirv_compiler"
+transpose_vulkan_filter_deps="vulkan spirv_library"
 unsharp_opencl_filter_deps="opencl"
 uspp_filter_deps="gpl avcodec"
 vaguedenoiser_filter_deps="gpl"
-vflip_vulkan_filter_deps="vulkan spirv_compiler"
+vflip_vulkan_filter_deps="vulkan spirv_library"
 vidstabdetect_filter_deps="libvidstab"
 vidstabtransform_filter_deps="libvidstab"
 libvmaf_filter_deps="libvmaf"
@@ -4157,11 +4157,11 @@ zoompan_filter_deps="swscale"
 zscale_filter_deps="libzimg const_nan"
 scale_vaapi_filter_deps="vaapi"
 scale_vt_filter_deps="videotoolbox VTPixelTransferSessionCreate"
-scale_vulkan_filter_deps="vulkan spirv_compiler"
+scale_vulkan_filter_deps="vulkan spirv_library"
 vpp_qsv_filter_deps="libmfx"
 vpp_qsv_filter_select="qsvvpp"
 xfade_opencl_filter_deps="opencl"
-xfade_vulkan_filter_deps="vulkan spirv_compiler"
+xfade_vulkan_filter_deps="vulkan spirv_library"
 yadif_cuda_filter_deps="ffnvcodec"
 yadif_cuda_filter_deps_any="cuda_nvcc cuda_llvm"
 yadif_videotoolbox_filter_deps="metal corevideo videotoolbox"
@@ -4210,11 +4210,11 @@ cws2fws_extralibs="zlib_extralibs"
 
 # libraries, in any order
 avcodec_deps="avutil"
-avcodec_suggest="libm stdatomic spirv_compiler"
+avcodec_suggest="libm stdatomic spirv_library"
 avdevice_deps="avformat avcodec avutil"
 avdevice_suggest="libm stdatomic"
 avfilter_deps="avutil"
-avfilter_suggest="libm stdatomic spirv_compiler"
+avfilter_suggest="libm stdatomic spirv_library"
 avformat_deps="avcodec avutil"
 avformat_suggest="libm network zlib stdatomic"
 avutil_suggest="clock_gettime ffnvcodec gcrypt libm libdrm libmfx opencl openssl user32 vaapi vulkan videotoolbox corefoundation corevideo coremedia bcrypt stdatomic"
@@ -6800,14 +6800,14 @@ if test -n "$custom_allocator"; then
     add_extralibs "$custom_allocator_extralibs"
 fi
 
-# Unlike other feature flags or libraries, spirv_compiler is not defined
+# Unlike other feature flags or libraries, spirv_library is not defined
 # within any of our predefined categories of components.
 # It gets defined if either libshaderc or libglslang check succeeds.
 # As such, its in a state of neither being explicitly enabled, nor
 # explicitly disabled, but even in this state, being mentioned in
 # _deps results in it always passing.
 # Disable it explicitly to fix this.
-disable spirv_compiler
+disable spirv_library
 
 check_func_headers malloc.h _aligned_malloc     && enable aligned_malloc
 check_func  ${malloc_prefix}memalign            && enable memalign
@@ -7175,10 +7175,10 @@ enabled libharfbuzz       && require_pkg_config libharfbuzz harfbuzz hb.h hb_buf
 if enabled libglslang; then
     spvremap="-lSPVRemapper"
     require_headers "glslang/build_info.h" && { test_cpp_condition glslang/build_info.h "GLSLANG_VERSION_MAJOR >= 16" && spvremap="" ; }
-    check_lib spirv_compiler glslang/Include/glslang_c_interface.h glslang_initialize_process \
+    check_lib spirv_library glslang/Include/glslang_c_interface.h glslang_initialize_process \
                             -lglslang -lMachineIndependent -lGenericCodeGen \
                             ${spvremap} -lSPIRV -lSPIRV-Tools-opt -lSPIRV-Tools -lstdc++ $libm_extralibs $pthreads_extralibs ||
-                        require spirv_compiler glslang/Include/glslang_c_interface.h glslang_initialize_process \
+                        require spirv_library glslang/Include/glslang_c_interface.h glslang_initialize_process \
                             -lglslang -lMachineIndependent -lOSDependent -lHLSL -lOGLCompiler -lGenericCodeGen \
                             ${spvremap} -lSPIRV -lSPIRV-Tools-opt -lSPIRV-Tools -lstdc++ $libm_extralibs $pthreads_extralibs ;
 fi
@@ -7270,7 +7270,7 @@ enabled librist           && require_pkg_config librist "librist >= 0.2.7" libri
 enabled librsvg           && require_pkg_config librsvg librsvg-2.0 librsvg-2.0/librsvg/rsvg.h rsvg_handle_new_from_data
 enabled librtmp           && require_pkg_config librtmp librtmp librtmp/rtmp.h RTMP_Socket
 enabled librubberband     && require_pkg_config librubberband "rubberband >= 1.8.1" rubberband/rubberband-c.h rubberband_new -lstdc++ && append librubberband_extralibs "-lstdc++"
-enabled libshaderc        && require_pkg_config spirv_compiler "shaderc >= 2019.1" shaderc/shaderc.h shaderc_compiler_initialize
+enabled libshaderc        && require_pkg_config spirv_library "shaderc >= 2019.1" shaderc/shaderc.h shaderc_compiler_initialize
 enabled libshine          && require_pkg_config libshine shine shine/layer3.h shine_encode_buffer
 enabled libsmbclient      && { check_pkg_config libsmbclient smbclient libsmbclient.h smbc_init ||
                                require libsmbclient libsmbclient.h smbc_init -lsmbclient; }
@@ -7647,7 +7647,7 @@ elif enabled vulkan; then
 fi
 
 if disabled vulkan; then
-    disable libglslang libshaderc spirv_compiler
+    disable libglslang libshaderc spirv_library
 else
     check_pkg_config_header_only vulkan_1_4 "vulkan >= 1.4.317" "vulkan/vulkan.h" "defined VK_VERSION_1_4" ||
         check_cpp_condition vulkan_1_4 "vulkan/vulkan.h" "defined(VK_VERSION_1_5) || (defined(VK_VERSION_1_4) && VK_HEADER_VERSION >= 317)"
