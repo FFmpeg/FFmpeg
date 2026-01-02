@@ -31,7 +31,7 @@
 #media_type 4: video
 #codec_id 4: av1
 #dimensions 4: 1920x1080
-#sar 4: 0/1
+#sar 4: 1/1
 #tb 5: 1/1000
 #media_type 5: audio
 #codec_id 5: flac
