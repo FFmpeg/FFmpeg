@@ -399,7 +399,7 @@ static av_cold int vc1_decode_init_alloc_tables(VC1Context *v)
     v->mb_type = v->mb_type_base + s->b8_stride + 1;
 
     /* allocate memory to store block level MV info */
-    v->blk_mv_type_base = av_mallocz(     s->b8_stride * (mb_height * 2 + 1) + s->mb_stride * (mb_height + 1) * 2);
+    v->blk_mv_type_base = av_mallocz(     s->b8_stride * (mb_height * 2 + 1));
     if (!v->blk_mv_type_base)
         return AVERROR(ENOMEM);
     v->blk_mv_type      = v->blk_mv_type_base + s->b8_stride + 1;
