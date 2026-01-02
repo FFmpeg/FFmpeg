@@ -15,9 +15,8 @@ OBJS-$(CONFIG_FFV1_VULKAN_HWACCEL)  +=  vulkan/common.o \
 OBJS-$(CONFIG_PRORES_RAW_VULKAN_HWACCEL) += vulkan/prores_raw_decode.comp.spv.o \
                                             vulkan/prores_raw_idct.comp.spv.o
 
-OBJS-$(CONFIG_PRORES_VULKAN_HWACCEL) += vulkan/common.o vulkan/dct.o \
-                                        vulkan/prores_vld.o \
-                                        vulkan/prores_idct.o
+OBJS-$(CONFIG_PRORES_VULKAN_HWACCEL) += vulkan/prores_vld.comp.spv.o \
+                                        vulkan/prores_idct.comp.spv.o
 
 OBJS-$(CONFIG_DPX_VULKAN_HWACCEL) += vulkan/common.o \
                                      vulkan/dpx_unpack.o \

@@ -34,16 +34,8 @@
 #ifndef VULKAN_DCT_H
 #define VULKAN_DCT_H
 
-#ifndef NB_BLOCKS
-#define NB_BLOCKS 1
-#endif
-
-#ifndef NB_COMPONENTS
-#define NB_COMPONENTS 1
-#endif
-
-layout (constant_id = 16) const uint32_t nb_blocks = NB_BLOCKS;
-layout (constant_id = 17) const uint32_t nb_components = NB_COMPONENTS;
+layout (constant_id = 16) const uint32_t nb_blocks = 1;
+layout (constant_id = 17) const uint32_t nb_components = 1;
 
 /* Padded by 1 row to avoid bank conflicts */
 shared float blocks[nb_blocks][nb_components*8*(8 + 1)];

@@ -16,6 +16,43 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#version 460
+#pragma shader_stage(compute)
+#extension GL_GOOGLE_include_directive : require
+
+#define GET_BITS_SMEM 4
+#include "common.comp"
+
+layout (constant_id = 0) const bool interlaced = false;
+
+layout (set = 0, binding = 0) readonly buffer slice_offsets_buf {
+    uint32_t slice_offsets[];
+};
+layout (set = 0, binding = 1) writeonly buffer quant_idx_buf {
+    uint8_t quant_idx[];
+};
+layout (set = 0, binding = 2) uniform writeonly uimage2D dst[];
+
+layout (push_constant, scalar) uniform pushConstants {
+   u8buf    slice_data;
+   uint     bitstream_size;
+
+   uint16_t width;
+   uint16_t height;
+   uint16_t mb_width;
+   uint16_t mb_height;
+   uint16_t slice_width;
+   uint16_t slice_height;
+   uint8_t  log2_slice_width;
+   uint8_t  log2_chroma_w;
+   uint8_t  depth;
+   uint8_t  alpha_info;
+   uint8_t  bottom_field;
+
+   uint8_t  qmat_luma  [8*8];
+   uint8_t  qmat_chroma[8*8];
+};
+
 /**
  * Table 9, encoded as (last_rice_q << 0) | (krice or kexp << 4) | ((kexp or kexp + 1) << 8)
  * According to the SMPTE document, abs(prev_dc_diff) should be used
@@ -36,31 +73,29 @@ const uint16_t k_ac_level_codebook[] = { U16(0x202), U16(0x101), U16(0x102), U16
                                          U16(0x210), U16(0x210), U16(0x210), U16(0x210),
                                          U16(0x320) };
 
-#ifndef INTERLACED
-    /* Figure 4, encoded as (x << 0) | (y << 4) */
-    const uint8_t k_scan_tbl[] = {
-        U8(0x00), U8(0x01), U8(0x10), U8(0x11), U8(0x02), U8(0x03), U8(0x12), U8(0x13),
-        U8(0x20), U8(0x21), U8(0x30), U8(0x31), U8(0x22), U8(0x23), U8(0x32), U8(0x33),
-        U8(0x04), U8(0x05), U8(0x14), U8(0x24), U8(0x15), U8(0x06), U8(0x07), U8(0x16),
-        U8(0x25), U8(0x34), U8(0x35), U8(0x26), U8(0x17), U8(0x27), U8(0x36), U8(0x37),
-        U8(0x40), U8(0x41), U8(0x50), U8(0x60), U8(0x51), U8(0x42), U8(0x43), U8(0x52),
-        U8(0x61), U8(0x70), U8(0x71), U8(0x62), U8(0x53), U8(0x44), U8(0x45), U8(0x54),
-        U8(0x63), U8(0x72), U8(0x73), U8(0x64), U8(0x55), U8(0x46), U8(0x47), U8(0x56),
-        U8(0x65), U8(0x74), U8(0x75), U8(0x66), U8(0x57), U8(0x67), U8(0x76), U8(0x77),
-    };
-#else
-    /* Figure 5 */
-    const uint8_t k_scan_tbl[] = {
-        U8(0x00), U8(0x10), U8(0x01), U8(0x11), U8(0x20), U8(0x30), U8(0x21), U8(0x31),
-        U8(0x02), U8(0x12), U8(0x03), U8(0x13), U8(0x22), U8(0x32), U8(0x23), U8(0x33),
-        U8(0x40), U8(0x50), U8(0x41), U8(0x42), U8(0x51), U8(0x60), U8(0x70), U8(0x61),
-        U8(0x52), U8(0x43), U8(0x53), U8(0x62), U8(0x71), U8(0x72), U8(0x63), U8(0x73),
-        U8(0x04), U8(0x14), U8(0x05), U8(0x06), U8(0x15), U8(0x24), U8(0x34), U8(0x25),
-        U8(0x16), U8(0x07), U8(0x17), U8(0x26), U8(0x35), U8(0x44), U8(0x54), U8(0x45),
-        U8(0x36), U8(0x27), U8(0x37), U8(0x46), U8(0x55), U8(0x64), U8(0x74), U8(0x65),
-        U8(0x56), U8(0x47), U8(0x57), U8(0x66), U8(0x75), U8(0x76), U8(0x67), U8(0x77),
-    };
-#endif
+/* Figure 4, encoded as (x << 0) | (y << 4) */
+const uint8_t k_scan_tbl[] = {
+    U8(0x00), U8(0x01), U8(0x10), U8(0x11), U8(0x02), U8(0x03), U8(0x12), U8(0x13),
+    U8(0x20), U8(0x21), U8(0x30), U8(0x31), U8(0x22), U8(0x23), U8(0x32), U8(0x33),
+    U8(0x04), U8(0x05), U8(0x14), U8(0x24), U8(0x15), U8(0x06), U8(0x07), U8(0x16),
+    U8(0x25), U8(0x34), U8(0x35), U8(0x26), U8(0x17), U8(0x27), U8(0x36), U8(0x37),
+    U8(0x40), U8(0x41), U8(0x50), U8(0x60), U8(0x51), U8(0x42), U8(0x43), U8(0x52),
+    U8(0x61), U8(0x70), U8(0x71), U8(0x62), U8(0x53), U8(0x44), U8(0x45), U8(0x54),
+    U8(0x63), U8(0x72), U8(0x73), U8(0x64), U8(0x55), U8(0x46), U8(0x47), U8(0x56),
+    U8(0x65), U8(0x74), U8(0x75), U8(0x66), U8(0x57), U8(0x67), U8(0x76), U8(0x77),
+};
+
+/* Figure 5 */
+const uint8_t k_scan_tbl_interlaced[] = {
+    U8(0x00), U8(0x10), U8(0x01), U8(0x11), U8(0x20), U8(0x30), U8(0x21), U8(0x31),
+    U8(0x02), U8(0x12), U8(0x03), U8(0x13), U8(0x22), U8(0x32), U8(0x23), U8(0x33),
+    U8(0x40), U8(0x50), U8(0x41), U8(0x42), U8(0x51), U8(0x60), U8(0x70), U8(0x61),
+    U8(0x52), U8(0x43), U8(0x53), U8(0x62), U8(0x71), U8(0x72), U8(0x63), U8(0x73),
+    U8(0x04), U8(0x14), U8(0x05), U8(0x06), U8(0x15), U8(0x24), U8(0x34), U8(0x25),
+    U8(0x16), U8(0x07), U8(0x17), U8(0x26), U8(0x35), U8(0x44), U8(0x54), U8(0x45),
+    U8(0x36), U8(0x27), U8(0x37), U8(0x46), U8(0x55), U8(0x64), U8(0x74), U8(0x65),
+    U8(0x56), U8(0x47), U8(0x57), U8(0x66), U8(0x75), U8(0x76), U8(0x67), U8(0x77),
+};
 
 shared uint16_t dc_codebook      [k_dc_codebook      .length()],
                 ac_run_codebook  [k_ac_run_codebook  .length()],
@@ -70,11 +105,9 @@ shared uint8_t  scan_tbl[k_scan_tbl.length()];
 
 void put_px(uint tex_idx, ivec2 pos, uint v)
 {
-#ifndef INTERLACED
-    imageStore(dst[tex_idx], pos, uvec4(uint16_t(v)));
-#else
-    imageStore(dst[tex_idx], ivec2(pos.x, (pos.y << 1) + bottom_field), uvec4(uint16_t(v)));
-#endif
+    if (interlaced)
+        pos = ivec2(pos.x, (pos.y << 1) + bottom_field);
+    imageStore(dst[nonuniformEXT(tex_idx)], pos, uvec4(uint16_t(v)));
 }
 
 /* 7.5.3 Pixel Arrangement */
@@ -287,7 +320,10 @@ void main(void)
     ac_run_codebook   = k_ac_run_codebook;
     ac_level_codebook = k_ac_level_codebook;
 
-    scan_tbl = k_scan_tbl;
+    if (!interlaced)
+        scan_tbl = k_scan_tbl;
+    else
+        scan_tbl = k_scan_tbl_interlaced;
 
     /**
      * 4 ProRes Frame Structure

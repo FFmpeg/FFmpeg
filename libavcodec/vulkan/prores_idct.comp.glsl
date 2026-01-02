@@ -16,22 +16,52 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#version 460
+#pragma shader_stage(compute)
+#extension GL_GOOGLE_include_directive : require
+
+#include "common.comp"
+#include "dct.comp"
+
+layout (constant_id = 0) const bool interlaced = false;
+
+layout (set = 0, binding = 0) readonly buffer quant_idx_buf {
+    uint8_t quant_idx[];
+};
+layout (set = 0, binding = 1) uniform uimage2D dst[];
+
+layout (push_constant, scalar) uniform pushConstants {
+   u8buf    slice_data;
+   uint     bitstream_size;
+
+   uint16_t width;
+   uint16_t height;
+   uint16_t mb_width;
+   uint16_t mb_height;
+   uint16_t slice_width;
+   uint16_t slice_height;
+   uint8_t  log2_slice_width;
+   uint8_t  log2_chroma_w;
+   uint8_t  depth;
+   uint8_t  alpha_info;
+   uint8_t  bottom_field;
+
+   uint8_t  qmat_luma  [8*8];
+   uint8_t  qmat_chroma[8*8];
+};
+
 uint get_px(uint tex_idx, ivec2 pos)
 {
-#ifndef INTERLACED
-    return imageLoad(dst[tex_idx], pos).x;
-#else
-    return imageLoad(dst[tex_idx], ivec2(pos.x, (pos.y << 1) + bottom_field)).x;
-#endif
+    if (interlaced)
+        pos = ivec2(pos.x, (pos.y << 1) + bottom_field);
+    return uint(imageLoad(dst[nonuniformEXT(tex_idx)], pos).x);
 }
 
 void put_px(uint tex_idx, ivec2 pos, uint v)
 {
-#ifndef INTERLACED
-    imageStore(dst[tex_idx], pos, uvec4(v));
-#else
-    imageStore(dst[tex_idx], ivec2(pos.x, (pos.y << 1) + bottom_field), uvec4(v));
-#endif
+    if (interlaced)
+        pos = ivec2(pos.x, (pos.y << 1) + bottom_field);
+    imageStore(dst[nonuniformEXT(tex_idx)], pos, uvec4(v));
 }
 
 void main(void)

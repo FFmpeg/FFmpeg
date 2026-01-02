@@ -21,12 +21,12 @@
 #include "hwaccel_internal.h"
 #include "libavutil/mem.h"
 #include "libavutil/vulkan.h"
-#include "libavutil/vulkan_spirv.h"
 
-extern const char *ff_source_common_comp;
-extern const char *ff_source_dct_comp;
-extern const char *ff_source_prores_vld_comp;
-extern const char *ff_source_prores_idct_comp;
+extern const unsigned char ff_prores_vld_comp_spv_data[];
+extern const unsigned int ff_prores_vld_comp_spv_len;
+
+extern const unsigned char ff_prores_idct_comp_spv_data[];
+extern const unsigned int ff_prores_idct_comp_spv_len;
 
 const FFVulkanDecodeDescriptor ff_vk_dec_prores_desc = {
     .codec_id    = AV_CODEC_ID_PRORES,
@@ -342,171 +342,95 @@ fail:
     return err;
 }
 
-static int add_push_data(FFVulkanShader *shd)
-{
-    GLSLC(0, layout(push_constant, scalar) uniform pushConstants { );
-    GLSLC(1,    u8buf    slice_data;                               );
-    GLSLC(1,    uint     bitstream_size;                           );
-    GLSLC(0,                                                       );
-    GLSLC(1,    uint16_t width;                                    );
-    GLSLC(1,    uint16_t height;                                   );
-    GLSLC(1,    uint16_t mb_width;                                 );
-    GLSLC(1,    uint16_t mb_height;                                );
-    GLSLC(1,    uint16_t slice_width;                              );
-    GLSLC(1,    uint16_t slice_height;                             );
-    GLSLC(1,    uint8_t  log2_slice_width;                         );
-    GLSLC(1,    uint8_t  log2_chroma_w;                            );
-    GLSLC(1,    uint8_t  depth;                                    );
-    GLSLC(1,    uint8_t  alpha_info;                               );
-    GLSLC(1,    uint8_t  bottom_field;                             );
-    GLSLC(0,                                                       );
-    GLSLC(1,    uint8_t  qmat_luma  [8*8];                         );
-    GLSLC(1,    uint8_t  qmat_chroma[8*8];                         );
-    GLSLC(0, };                                                    );
-
-    return ff_vk_shader_add_push_const(shd, 0, sizeof(ProresVkParameters),
-                                       VK_SHADER_STAGE_COMPUTE_BIT);
-}
-
 static int init_decode_shader(AVCodecContext *avctx, FFVulkanContext *s,
-                              FFVkExecPool *pool, FFVkSPIRVCompiler *spv,
-                              FFVulkanShader *shd, int max_num_mbs,
-                              int interlaced)
+                              FFVkExecPool *pool, FFVulkanShader *shd,
+                              int max_num_mbs, int interlaced)
 {
     int err;
     AVHWFramesContext *dec_frames_ctx;
     dec_frames_ctx = (AVHWFramesContext *)avctx->hw_frames_ctx->data;
 
-    uint8_t *spv_data;
-    size_t spv_len;
-    void *spv_opaque = NULL;
+    SPEC_LIST_CREATE(sl, 1, 1*sizeof(uint32_t))
+    SPEC_LIST_ADD(sl, 0, 32, interlaced);
 
-    RET(ff_vk_shader_init(s, shd, "prores_vld",
-                          VK_SHADER_STAGE_COMPUTE_BIT,
-                          (const char *[]) { "GL_EXT_buffer_reference",
-                                             "GL_EXT_buffer_reference2" }, 2,
-                          8, 8, 1,
-                          0));
+    ff_vk_shader_load(shd,
+                      VK_SHADER_STAGE_COMPUTE_BIT, sl,
+                      (uint32_t []) { 8, 8, 1 }, 0);
 
-    av_bprintf(&shd->src, "#define GET_BITS_SMEM %d\n", 4);
-
-    if (interlaced)
-        av_bprintf(&shd->src, "#define INTERLACED\n");
-
-    /* Common codec header */
-    GLSLD(ff_source_common_comp);
-
-    RET(add_push_data(shd));
+    ff_vk_shader_add_push_const(shd, 0, sizeof(ProresVkParameters),
+                                VK_SHADER_STAGE_COMPUTE_BIT);
 
     FFVulkanDescriptorSetBinding desc_set[] = {
         {
             .name        = "slice_offsets_buf",
             .type        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
             .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
-            .mem_quali   = "readonly",
-            .buf_content = "uint32_t slice_offsets",
-            .buf_elems   = max_num_mbs + 1,
         },
         {
             .name        = "quant_idx_buf",
             .type        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
             .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
-            .mem_quali   = "writeonly",
-            .buf_content = "uint8_t quant_idx",
-            .buf_elems   = max_num_mbs,
         },
         {
             .name       = "dst",
             .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-            .dimensions = 2,
-            .mem_layout = ff_vk_shader_rep_fmt(dec_frames_ctx->sw_format,
-                                               FF_VK_REP_NATIVE),
-            .mem_quali  = "writeonly",
-            .elems      = av_pix_fmt_count_planes(dec_frames_ctx->sw_format),
             .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
+            .elems      = av_pix_fmt_count_planes(dec_frames_ctx->sw_format),
         },
     };
-    RET(ff_vk_shader_add_descriptor_set(s, shd, desc_set, 3, 0, 0));
+    ff_vk_shader_add_descriptor_set(s, shd, desc_set, 3, 0, 0);
 
-    GLSLD(ff_source_prores_vld_comp);
-
-    RET(spv->compile_shader(s, spv, shd, &spv_data, &spv_len, "main",
-                            &spv_opaque));
-    RET(ff_vk_shader_link(s, shd, spv_data, spv_len, "main"));
+    RET(ff_vk_shader_link(s, shd,
+                          ff_prores_vld_comp_spv_data,
+                          ff_prores_vld_comp_spv_len, "main"));
 
     RET(ff_vk_shader_register_exec(s, pool, shd));
 
 fail:
-    if (spv_opaque)
-        spv->free_shader(spv, &spv_opaque);
-
     return 0;
 }
 
 static int init_idct_shader(AVCodecContext *avctx, FFVulkanContext *s,
-                            FFVkExecPool *pool, FFVkSPIRVCompiler *spv,
-                            FFVulkanShader *shd, int max_num_mbs,
-                            int interlaced)
+                            FFVkExecPool *pool, FFVulkanShader *shd,
+                            int max_num_mbs, int interlaced)
 {
     int err;
     AVHWFramesContext *dec_frames_ctx;
     dec_frames_ctx = (AVHWFramesContext *)avctx->hw_frames_ctx->data;
 
-    uint8_t *spv_data;
-    size_t spv_len;
-    void *spv_opaque = NULL;
+    SPEC_LIST_CREATE(sl, 2, 2*sizeof(uint32_t))
+    SPEC_LIST_ADD(sl,  0, 32, interlaced);
+    SPEC_LIST_ADD(sl, 16, 32, 4*2); /* nb_blocks */
 
-    RET(ff_vk_shader_init(s, shd, "prores_idct",
-                          VK_SHADER_STAGE_COMPUTE_BIT,
-                          (const char *[]) { "GL_EXT_buffer_reference",
-                                             "GL_EXT_buffer_reference2" }, 2,
-                          32, 2, 1,
-                          0));
+    ff_vk_shader_load(shd,
+                      VK_SHADER_STAGE_COMPUTE_BIT, sl,
+                      (uint32_t []) { 32, 2, 1 }, 0);
 
-    if (interlaced)
-        av_bprintf(&shd->src, "#define INTERLACED\n");
-
-    /* Common codec header */
-    GLSLD(ff_source_common_comp);
-
-    RET(add_push_data(shd));
+    ff_vk_shader_add_push_const(shd, 0, sizeof(ProresVkParameters),
+                                VK_SHADER_STAGE_COMPUTE_BIT);
 
     FFVulkanDescriptorSetBinding desc_set[] = {
         {
             .name        = "quant_idx_buf",
             .type        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
             .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
-            .mem_quali   = "readonly",
-            .buf_content = "uint8_t quant_idx",
-            .buf_elems   = max_num_mbs,
         },
         {
             .name       = "dst",
             .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-            .dimensions = 2,
-            .mem_layout = ff_vk_shader_rep_fmt(dec_frames_ctx->sw_format,
-                                               FF_VK_REP_NATIVE),
-            .elems      = av_pix_fmt_count_planes(dec_frames_ctx->sw_format),
             .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
+            .elems      = av_pix_fmt_count_planes(dec_frames_ctx->sw_format),
         },
     };
     RET(ff_vk_shader_add_descriptor_set(s, shd, desc_set, 2, 0, 0));
 
-    GLSLC(0, #define NB_BLOCKS 4*2);
-    GLSLD(ff_source_dct_comp);
-
-    GLSLD(ff_source_prores_idct_comp);
-
-    RET(spv->compile_shader(s, spv, shd, &spv_data, &spv_len, "main",
-                            &spv_opaque));
-    RET(ff_vk_shader_link(s, shd, spv_data, spv_len, "main"));
+    RET(ff_vk_shader_link(s, shd,
+                          ff_prores_idct_comp_spv_data,
+                          ff_prores_idct_comp_spv_len, "main"));
 
     RET(ff_vk_shader_register_exec(s, pool, shd));
 
 fail:
-    if (spv_opaque)
-        spv->free_shader(spv, &spv_opaque);
-
     return 0;
 }
 
@@ -529,16 +453,9 @@ static int vk_decode_prores_init(AVCodecContext *avctx)
     ProresContext          *pr = avctx->priv_data;
 
     ProresVulkanDecodeContext *pv;
-    FFVkSPIRVCompiler *spv;
     int max_num_mbs, err;
 
     max_num_mbs = (avctx->coded_width >> 4) * (avctx->coded_height >> 4);
-
-    spv = ff_vk_spirv_init();
-    if (!spv) {
-        av_log(avctx, AV_LOG_ERROR, "Unable to initialize SPIR-V compiler!\n");
-        return AVERROR_EXTERNAL;
-    }
 
     err = ff_vk_decode_init(avctx);
     if (err < 0)
@@ -554,15 +471,11 @@ static int vk_decode_prores_init(AVCodecContext *avctx)
     ctx->sd_ctx_free = vk_decode_prores_uninit;
 
     RET(init_decode_shader(avctx, &ctx->s, &ctx->exec_pool,
-                           spv, &pv->vld, max_num_mbs, pr->frame_type != 0));
+                           &pv->vld, max_num_mbs, pr->frame_type != 0));
     RET(init_idct_shader(avctx, &ctx->s, &ctx->exec_pool,
-                         spv, &pv->idct, max_num_mbs, pr->frame_type != 0));
-
-    err = 0;
+                         &pv->idct, max_num_mbs, pr->frame_type != 0));
 
 fail:
-    spv->uninit(&spv);
-
     return err;
 }
 
