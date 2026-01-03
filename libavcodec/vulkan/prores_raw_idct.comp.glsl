@@ -25,7 +25,7 @@
 #extension GL_GOOGLE_include_directive : require
 
 #include "common.comp"
-#include "dct.comp"
+#include "dct.glsl"
 
 struct TileData {
    ivec2 pos;

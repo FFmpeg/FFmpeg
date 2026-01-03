@@ -21,7 +21,7 @@
 #extension GL_GOOGLE_include_directive : require
 
 #include "common.comp"
-#include "dct.comp"
+#include "dct.glsl"
 
 layout (constant_id = 0) const bool interlaced = false;
 
