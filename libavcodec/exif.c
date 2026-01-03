@@ -673,9 +673,7 @@ static size_t exif_get_ifd_size(const AVExifMetadata *ifd)
     for (size_t i = 0; i < ifd->count; i++) {
         const AVExifEntry *entry = &ifd->entries[i];
         if (entry->type == AV_TIFF_IFD) {
-            /* this is an extra IFD, not an entry, so we don't need to add base tag size */
-            size_t base_size = entry->id > 0xFFECu && entry->id <= 0xFFFCu ? 0 : BASE_TAG_SIZE;
-            total_size += base_size + exif_get_ifd_size(&entry->value.ifd) + entry->ifd_offset;
+            total_size += BASE_TAG_SIZE + exif_get_ifd_size(&entry->value.ifd) + entry->ifd_offset;
         } else {
             size_t payload_size = entry->count * exif_sizes[entry->type];
             total_size += BASE_TAG_SIZE + (payload_size > 4 ? payload_size : 0);
@@ -776,11 +774,10 @@ int av_exif_write(void *logctx, const AVExifMetadata *ifd, AVBufferRef **buffer,
             headsize = 0;
             break;
     }
-    buf = av_buffer_alloc(size + off + headsize);
-    if (!buf) {
-        ret = AVERROR(ENOMEM);
+
+    ret = av_buffer_realloc(&buf, size + off + headsize);
+    if (ret < 0)
         goto end;
-    }
 
     if (header_mode == AV_EXIF_EXIF00) {
         AV_WL32(buf->data, MKTAG('E','x','i','f'));
@@ -852,6 +849,12 @@ int av_exif_write(void *logctx, const AVExifMetadata *ifd, AVBufferRef **buffer,
         }
         next += ret;
     }
+
+    /* shrink the buffer to the amount of data we actually used */
+    /* extras don't contribute the initial BASE_TAG_SIZE each */
+    ret = av_buffer_realloc(&buf, buf->size - BASE_TAG_SIZE * extras);
+    if (ret < 0)
+        goto end;
 
     *buffer = buf;
     ret = 0;
