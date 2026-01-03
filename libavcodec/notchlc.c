@@ -79,7 +79,7 @@ static int lz4_decompress(AVCodecContext *avctx,
                           PutByteContext *pb)
 {
     unsigned reference_pos, delta, pos = 0;
-    uint8_t history[HISTORY_SIZE];
+    uint8_t history[HISTORY_SIZE] = { 0 };
     int match_length;
 
     while (bytestream2_get_bytes_left(gb) > 0) {
