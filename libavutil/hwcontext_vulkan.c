@@ -83,6 +83,10 @@ typedef struct VulkanDeviceFeatures {
     VkPhysicalDeviceHostImageCopyFeaturesEXT host_image_copy;
     VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR explicit_mem_layout;
 
+#ifdef VK_EXT_shader_replicated_composites
+    VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT replicated_composites;
+#endif
+
 #ifdef VK_EXT_zero_initialize_device_memory
     VkPhysicalDeviceZeroInitializeDeviceMemoryFeaturesEXT zero_initialize;
 #endif
@@ -227,6 +231,11 @@ static void device_features_init(AVHWDeviceContext *ctx, VulkanDeviceFeatures *f
     FF_VK_STRUCT_EXT(s, &feats->device, &feats->host_image_copy, FF_VK_EXT_HOST_IMAGE_COPY,
                      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_IMAGE_COPY_FEATURES_EXT);
 
+#ifdef VK_EXT_shader_replicated_composites
+    FF_VK_STRUCT_EXT(s, &feats->device, &feats->replicated_composites, FF_VK_EXT_REPLICATED_COMPOSITES,
+                     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_REPLICATED_COMPOSITES_FEATURES_EXT);
+#endif
+
 #ifdef VK_EXT_zero_initialize_device_memory
     FF_VK_STRUCT_EXT(s, &feats->device, &feats->zero_initialize, FF_VK_EXT_ZERO_INITIALIZE,
                      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ZERO_INITIALIZE_DEVICE_MEMORY_FEATURES_EXT);
@@ -321,6 +330,10 @@ static void device_features_copy_needed(VulkanDeviceFeatures *dst, VulkanDeviceF
     COPY_VAL(timeline_semaphore.timelineSemaphore);
     COPY_VAL(subgroup_rotate.shaderSubgroupRotate);
     COPY_VAL(host_image_copy.hostImageCopy);
+
+#ifdef VK_EXT_shader_replicated_composites
+    COPY_VAL(replicated_composites.shaderReplicatedComposites);
+#endif
 
 #ifdef VK_EXT_zero_initialize_device_memory
     COPY_VAL(zero_initialize.zeroInitializeDeviceMemory);
@@ -664,6 +677,9 @@ static const VulkanOptExtension optional_device_exts[] = {
     { VK_KHR_SHADER_SUBGROUP_ROTATE_EXTENSION_NAME,           FF_VK_EXT_SUBGROUP_ROTATE        },
     { VK_EXT_HOST_IMAGE_COPY_EXTENSION_NAME,                  FF_VK_EXT_HOST_IMAGE_COPY        },
     { VK_KHR_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_EXTENSION_NAME, FF_VK_EXT_EXPLICIT_MEM_LAYOUT    },
+#ifdef VK_EXT_shader_replicated_composites
+    { VK_EXT_SHADER_REPLICATED_COMPOSITES_EXTENSION_NAME,     FF_VK_EXT_REPLICATED_COMPOSITES  },
+#endif
 #ifdef VK_EXT_zero_initialize_device_memory
     { VK_EXT_ZERO_INITIALIZE_DEVICE_MEMORY_EXTENSION_NAME,    FF_VK_EXT_ZERO_INITIALIZE        },
 #endif

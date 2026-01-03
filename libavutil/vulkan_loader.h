@@ -61,6 +61,9 @@ static inline uint64_t ff_vk_extensions_to_mask(const char * const *extensions,
         { VK_KHR_SHADER_SUBGROUP_ROTATE_EXTENSION_NAME,    FF_VK_EXT_SUBGROUP_ROTATE        },
         { VK_EXT_HOST_IMAGE_COPY_EXTENSION_NAME,           FF_VK_EXT_HOST_IMAGE_COPY        },
         { VK_KHR_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_EXTENSION_NAME, FF_VK_EXT_EXPLICIT_MEM_LAYOUT },
+#ifdef VK_EXT_shader_replicated_composites
+        { VK_EXT_SHADER_REPLICATED_COMPOSITES_EXTENSION_NAME, FF_VK_EXT_REPLICATED_COMPOSITES   },
+#endif
 #ifdef VK_EXT_zero_initialize_device_memory
         { VK_EXT_ZERO_INITIALIZE_DEVICE_MEMORY_EXTENSION_NAME, FF_VK_EXT_ZERO_INITIALIZE    },
 #endif
