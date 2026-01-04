@@ -230,6 +230,8 @@ static int config_output(AVFilterLink *outlink)
                 item->y[1] = item->y[2] = AV_CEIL_RSHIFT(height, s->desc->log2_chroma_h);
                 item->y[0] = item->y[3] = height;
 
+                if (height > INT_MAX - ctx->inputs[i]->h)
+                    return AVERROR(EINVAL);
                 height += ctx->inputs[i]->h;
             }
         }
@@ -255,6 +257,8 @@ static int config_output(AVFilterLink *outlink)
                     return ret;
                 }
 
+                if (width > INT_MAX - ctx->inputs[i]->w)
+                    return AVERROR(EINVAL);
                 width += ctx->inputs[i]->w;
             }
         }
@@ -290,8 +294,13 @@ static int config_output(AVFilterLink *outlink)
 
                 item->y[1] = item->y[2] = AV_CEIL_RSHIFT(inh, s->desc->log2_chroma_h);
                 item->y[0] = item->y[3] = inh;
+
+                if (inw > INT_MAX - ctx->inputs[k]->w)
+                    return AVERROR(EINVAL);
                 inw += ctx->inputs[k]->w;
             }
+            if (height > INT_MAX - row_height)
+                return AVERROR(EINVAL);
             height += row_height;
             if (!i)
                 width = inw;
@@ -343,26 +352,41 @@ static int config_output(AVFilterLink *outlink)
                         if (size == i || size < 0 || size >= s->nb_inputs)
                             return AVERROR(EINVAL);
 
-                        if (!j)
+                        if (!j) {
+                            if (inw > INT_MAX - ctx->inputs[size]->w)
+                                return AVERROR(EINVAL);
                             inw += ctx->inputs[size]->w;
-                        else
+                        } else {
+                            if (inh > INT_MAX - ctx->inputs[size]->w)
+                                return AVERROR(EINVAL);
                             inh += ctx->inputs[size]->w;
+                        }
                     } else if (sscanf(arg3, "h%d", &size) == 1) {
                         if (size == i || size < 0 || size >= s->nb_inputs)
                             return AVERROR(EINVAL);
 
-                        if (!j)
+                        if (!j) {
+                            if (inw > INT_MAX - ctx->inputs[size]->h)
+                                return AVERROR(EINVAL);
                             inw += ctx->inputs[size]->h;
-                        else
+                        } else {
+                            if (inh > INT_MAX - ctx->inputs[size]->h)
+                                return AVERROR(EINVAL);
                             inh += ctx->inputs[size]->h;
+                        }
                     } else if (sscanf(arg3, "%d", &size) == 1) {
                         if (size < 0)
                             return AVERROR(EINVAL);
 
-                        if (!j)
+                        if (!j) {
+                            if (inw > INT_MAX - size)
+                                return AVERROR(EINVAL);
                             inw += size;
-                        else
+                        } else {
+                            if (inh > INT_MAX - size)
+                                return AVERROR(EINVAL);
                             inh += size;
+                        }
                     } else {
                         return AVERROR(EINVAL);
                     }
@@ -376,6 +400,8 @@ static int config_output(AVFilterLink *outlink)
             item->y[1] = item->y[2] = AV_CEIL_RSHIFT(inh, s->desc->log2_chroma_h);
             item->y[0] = item->y[3] = inh;
 
+            if (inlink->w > INT_MAX - inw || inlink->h > INT_MAX - inh)
+                return AVERROR(EINVAL);
             width  = FFMAX(width,  inlink->w + inw);
             height = FFMAX(height, inlink->h + inh);
         }
