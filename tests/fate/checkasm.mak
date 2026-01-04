@@ -45,6 +45,7 @@ FATE_CHECKASM = fate-checkasm-aacencdsp                                 \
                 fate-checkasm-mpegvideoencdsp                           \
                 fate-checkasm-opusdsp                                   \
                 fate-checkasm-pixblockdsp                               \
+                fate-checkasm-png                                       \
                 fate-checkasm-qpeldsp                                   \
                 fate-checkasm-sbrdsp                                    \
                 fate-checkasm-rv34dsp                                   \

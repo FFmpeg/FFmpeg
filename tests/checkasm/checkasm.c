@@ -231,6 +231,9 @@ static const struct {
     #if CONFIG_PIXBLOCKDSP
         { "pixblockdsp", checkasm_check_pixblockdsp },
     #endif
+    #if CONFIG_PNG_DECODER
+        { "png", checkasm_check_png },
+    #endif
     #if CONFIG_QPELDSP
         { "qpeldsp", checkasm_check_qpeldsp },
     #endif
