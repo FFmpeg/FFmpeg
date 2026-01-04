@@ -946,15 +946,12 @@ fail:
 
 int print_filtergraph(FilterGraph *fg, AVFilterGraph *graph)
 {
+    av_assert2(fg);
+
     GraphPrintContext *gpc = NULL;
     AVTextFormatContext *tfc;
     AVBPrint *target_buf = &fg->graph_print_buf;
     int ret;
-
-    if (!fg) {
-        av_log(NULL, AV_LOG_ERROR, "Invalid filter graph provided\n");
-        return AVERROR(EINVAL);
-    }
 
     if (target_buf->len)
         av_bprint_finalize(target_buf, NULL);
