@@ -11,7 +11,7 @@ API changes, most recent first:
 2025-12-29 - xxxxxxxxxx - lavu 60.21.100 - iamf.h
   Add nb_demixing_matrix to AVIAMFLayer
 
-2025-12-xx - xxxxxxxxxx - lavc 62.23.100 - coedc_id.h
+2025-12-13 - b8ee68cffe - lavc 62.23.100 - codec_id.h
   Add AV_CODEC_ID_JPEGXS.
 
 2025-12-xx - xxxxxxxxxx - lavf 62.x.xxx - avformat.h
