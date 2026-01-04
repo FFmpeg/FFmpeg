@@ -963,11 +963,6 @@ int print_filtergraph(FilterGraph *fg, AVFilterGraph *graph)
     if (ret)
         return ret;
 
-    if (!gpc) {
-        av_log(NULL, AV_LOG_ERROR, "Failed to initialize graph print context\n");
-        return AVERROR(ENOMEM);
-    }
-
     tfc = gpc->tfc;
 
     // Due to the threading model each graph needs to print itself into a buffer
@@ -1003,11 +998,6 @@ static int print_filtergraphs_priv(FilterGraph **graphs, int nb_graphs, InputFil
     ret = init_graphprint(&gpc, &target_buf);
     if (ret)
         goto cleanup;
-
-    if (!gpc) {
-        ret = AVERROR(ENOMEM);
-        goto cleanup;
-    }
 
     tfc = gpc->tfc;
 
