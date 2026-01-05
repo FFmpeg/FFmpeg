@@ -351,6 +351,10 @@ int main(int argc, char **argv)
     }
     setting_number = (argc - 5) / 2;
     dynamic_setting = av_malloc(setting_number * sizeof(*dynamic_setting));
+    if (!dynamic_setting) {
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
     current_setting_number = 0;
     for (int i = 0; i < setting_number; i++) {
         dynamic_setting[i].frame_number = atoi(argv[i*2 + 5]);
