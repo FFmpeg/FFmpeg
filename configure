@@ -7858,6 +7858,7 @@ check_warning -Wundef
 check_warning -Wempty-body
 check_c_warning -Wmissing-prototypes
 check_c_warning -Wstrict-prototypes
+check_c_warning -Wunterminated-string-initialization
 
 if enabled extra_warnings; then
     check_warning -Wcast-qual
