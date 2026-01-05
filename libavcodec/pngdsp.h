@@ -41,6 +41,7 @@ void ff_png_add_paeth_prediction(uint8_t *dst, const uint8_t *src,
                                  const uint8_t *top, int w, int bpp);
 
 void ff_pngdsp_init(PNGDSPContext *dsp);
+void ff_pngdsp_init_aarch64(PNGDSPContext *dsp);
 void ff_pngdsp_init_x86(PNGDSPContext *dsp);
 FF_VISIBILITY_POP_HIDDEN
 

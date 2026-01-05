@@ -87,7 +87,9 @@ av_cold void ff_pngdsp_init(PNGDSPContext *dsp)
     dsp->add_bytes_l2         = add_bytes_l2_c;
     dsp->add_paeth_prediction = ff_png_add_paeth_prediction;
 
-#if ARCH_X86 && HAVE_X86ASM
+#if ARCH_AARCH64
+    ff_pngdsp_init_aarch64(dsp);
+#elif ARCH_X86 && HAVE_X86ASM
     ff_pngdsp_init_x86(dsp);
 #endif
 }
