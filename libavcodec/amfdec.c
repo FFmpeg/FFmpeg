@@ -644,9 +644,8 @@ static int amf_decode_frame(AVCodecContext *avctx, struct AVFrame *frame)
                 return AVERROR(EINVAL);
             }
             int ret = amf_init_frames_context(avctx, av_amf_to_av_format(format_var.int64Value), avctx->coded_width, avctx->coded_height);
-
-            if (res < 0)
-                return AVERROR(EINVAL);
+            if (ret < 0)
+                return ret;
         }else
             return AVERROR_EOF;
     } else {
