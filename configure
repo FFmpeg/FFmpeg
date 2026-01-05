@@ -7829,30 +7829,41 @@ for lang in c cxx objc; do
         append unknown_warning_${lang}flags "-Werror=unknown-warning-option"
 done
 
-# add some useful compiler flags if supported
-check_allcflags -Wall
-check_allcflags -Wdisabled-optimization
-check_allcflags -Wpointer-arith
-check_allcflags -Wredundant-decls
-check_allcflags -Wwrite-strings
-check_allcflags -Wtype-limits
-check_allcflags -Wundef
-check_allcflags -Wempty-body
-check_cflags -Wmissing-prototypes
-check_cflags -Wstrict-prototypes
-
-if enabled extra_warnings; then
-    check_allcflags -Wcast-qual
-    check_allcflags -Wextra
-    check_allcflags -Wpedantic
-fi
+check_warning(){
+    warning_flag=$1
+    flag_to_add=${2:-$1}
+    test_cflags $unknown_warning_cflags $warning_flag && add_cflags $flag_to_add
+    test_cxxflags -Werror $unknown_warning_cxxflags $warning_flag && add_cxxflags $flag_to_add
+    test_objcflags $unknown_warning_objcflags $warning_flag && add_objcflags $flag_to_add
+}
 
 check_disable_warning(){
     warning_flag=-W${1#-Wno-}
-    test_cflags $unknown_warning_cflags $warning_flag && add_cflags $1
-    test_cxxflags -Werror $unknown_warning_cxxflags $warning_flag && add_cxxflags $1
-    test_objcflags $unknown_warning_objcflags $warning_flag && add_objcflags $1
+    check_warning $warning_flag $1
 }
+
+check_c_warning(){
+    warning_flag=$1
+    test_cflags $unknown_warning_cflags $warning_flag && add_cflags $warning_flag
+}
+
+# add some useful compiler flags if supported
+check_warning -Wall
+check_warning -Wdisabled-optimization
+check_warning -Wpointer-arith
+check_warning -Wredundant-decls
+check_warning -Wwrite-strings
+check_warning -Wtype-limits
+check_warning -Wundef
+check_warning -Wempty-body
+check_c_warning -Wmissing-prototypes
+check_c_warning -Wstrict-prototypes
+
+if enabled extra_warnings; then
+    check_warning -Wcast-qual
+    check_warning -Wextra
+    check_warning -Wpedantic
+fi
 
 check_disable_warning -Wno-parentheses
 check_disable_warning -Wno-switch
@@ -7866,7 +7877,7 @@ check_disable_warning -Wno-microsoft-enum-forward-reference
 
 check_disable_warning_headers(){
     warning_flag=-W${1#-Wno-}
-    test_cflags $warning_flag && add_cflags_headers $1
+    test_cflags $unknown_warning_cflags $warning_flag && add_cflags_headers $1
 }
 
 check_disable_warning_headers -Wno-deprecated-declarations
