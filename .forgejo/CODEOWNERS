@@ -45,6 +45,7 @@ libavcodec/.*jxl.* @lynne @Traneptora
 libavcodec/.*lcms2.* @haasn
 libavcodec/lead.* @pross
 libavcodec/mediacodec* @quink
+libavcodec/mjpeg* @michaelni
 libavcodec/mmvideo.* @pross
 libavcodec/msp2.* @pross
 libavcodec/mvc.* @pross
