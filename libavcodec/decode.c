@@ -987,7 +987,6 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
 enum AVPixelFormat avcodec_default_get_format(struct AVCodecContext *avctx,
                                               const enum AVPixelFormat *fmt)
 {
-    const AVPixFmtDescriptor *desc;
     const AVCodecHWConfig *config;
     int i, n;
 
@@ -1014,12 +1013,13 @@ enum AVPixelFormat avcodec_default_get_format(struct AVCodecContext *avctx,
     // No device or other setup, so we have to choose from things which
     // don't any other external information.
 
-    // If the last element of the list is a software format, choose it
+    // Choose the first software format
     // (this should be best software format if any exist).
-    for (n = 0; fmt[n] != AV_PIX_FMT_NONE; n++);
-    desc = av_pix_fmt_desc_get(fmt[n - 1]);
-    if (!(desc->flags & AV_PIX_FMT_FLAG_HWACCEL))
-        return fmt[n - 1];
+    for (n = 0; fmt[n] != AV_PIX_FMT_NONE; n++) {
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt[n]);
+        if (!(desc->flags & AV_PIX_FMT_FLAG_HWACCEL))
+            return fmt[n];
+    }
 
     // Finally, traverse the list in order and choose the first entry
     // with no external dependencies (if there is no hardware configuration

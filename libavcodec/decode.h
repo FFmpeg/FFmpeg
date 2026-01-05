@@ -111,8 +111,10 @@ int ff_set_sar(AVCodecContext *avctx, AVRational sar);
  * instead of calling get_format() directly.
  *
  * The list of pixel formats must contain at least one valid entry, and is
- * terminated with AV_PIX_FMT_NONE.  If it is possible to decode to software,
- * the last entry in the list must be the most accurate software format.
+ * terminated with AV_PIX_FMT_NONE. If it is possible to decode to software,
+ * the first entry after the last hwaccel one in the list must be the most
+ * accurate software format, followed by less accurate ones in order of
+ * preference.
  * If it is not possible to decode to software, AVCodecContext.sw_pix_fmt
  * must be set before calling this function.
  */
