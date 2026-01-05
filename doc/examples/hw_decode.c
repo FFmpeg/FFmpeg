@@ -215,8 +215,10 @@ int main(int argc, char *argv[])
         return AVERROR(ENOMEM);
 
     video = input_ctx->streams[video_stream];
-    if (avcodec_parameters_to_context(decoder_ctx, video->codecpar) < 0)
+    if (avcodec_parameters_to_context(decoder_ctx, video->codecpar) < 0) {
+        avcodec_free_context(&decoder_ctx);
         return -1;
+    }
 
     decoder_ctx->get_format  = get_hw_format;
 
