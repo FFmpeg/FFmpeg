@@ -109,6 +109,7 @@ static int open_codec_context(AVFormatContext *fmt_ctx, enum AVMediaType type)
         ret = avcodec_parameters_to_context(dec_ctx, st->codecpar);
         if (ret < 0) {
             fprintf(stderr, "Failed to copy codec parameters to codec context\n");
+            avcodec_free_context(&dec_ctx);
             return ret;
         }
 
