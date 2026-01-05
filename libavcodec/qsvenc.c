@@ -683,6 +683,8 @@ static int check_enc_param(AVCodecContext *avctx, QSVEncContext *q)
             av_log(avctx, AV_LOG_ERROR, "Selected ratecontrol mode is unsupported\n");
         if (UNMATCH(LowPower))
               av_log(avctx, AV_LOG_ERROR, "Low power mode is unsupported\n");
+        if (UNMATCH(CodecLevel))
+            av_log(avctx, AV_LOG_ERROR, "Current codec level is unsupported\n");
         if (UNMATCH(FrameInfo.FrameRateExtN) || UNMATCH(FrameInfo.FrameRateExtD))
               av_log(avctx, AV_LOG_ERROR, "Current frame rate is unsupported\n");
         if (UNMATCH(FrameInfo.PicStruct))
