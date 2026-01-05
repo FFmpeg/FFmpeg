@@ -31,8 +31,10 @@
 
 #include <stdint.h>
 
-static const uint8_t gif87a_sig[6] = "GIF87a";
-static const uint8_t gif89a_sig[6] = "GIF89a";
+#include "libavutil/attributes_internal.h"
+
+static attribute_nonstring const uint8_t gif87a_sig[6] = "GIF87a";
+static attribute_nonstring const uint8_t gif89a_sig[6] = "GIF89a";
 
 #define GCE_DISPOSAL_NONE       0
 #define GCE_DISPOSAL_INPLACE    1

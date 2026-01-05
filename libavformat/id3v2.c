@@ -32,6 +32,7 @@
 #include <zlib.h>
 #endif
 
+#include "libavutil/attributes_internal.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
 #include "libavutil/dict.h"
@@ -87,7 +88,7 @@ static const AVMetadataConv id3v2_2_metadata_conv[] = {
     { 0 }
 };
 
-const char ff_id3v2_tags[][4] = {
+attribute_nonstring const char ff_id3v2_tags[][4] = {
     "TALB", "TBPM", "TCOM", "TCON", "TCOP", "TDLY", "TENC", "TEXT",
     "TFLT", "TIT1", "TIT2", "TIT3", "TKEY", "TLAN", "TLEN", "TMED",
     "TOAL", "TOFN", "TOLY", "TOPE", "TOWN", "TPE1", "TPE2", "TPE3",
@@ -95,13 +96,13 @@ const char ff_id3v2_tags[][4] = {
     { 0 },
 };
 
-const char ff_id3v2_4_tags[][4] = {
+attribute_nonstring  const char ff_id3v2_4_tags[][4] = {
     "TDEN", "TDOR", "TDRC", "TDRL", "TDTG", "TIPL", "TMCL", "TMOO",
     "TPRO", "TSOA", "TSOP", "TSOT", "TSST",
     { 0 },
 };
 
-const char ff_id3v2_3_tags[][4] = {
+attribute_nonstring const char ff_id3v2_3_tags[][4] = {
     "TDAT", "TIME", "TORY", "TRDA", "TSIZ", "TYER",
     { 0 },
 };

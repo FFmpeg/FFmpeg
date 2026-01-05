@@ -60,6 +60,7 @@
  * @author Zane van Iperen <zane@zanevaniperen.com>
  */
 
+#include "attributes_internal.h"
 #include "uuid.h"
 #include "error.h"
 #include "avstring.h"
@@ -112,7 +113,7 @@ int av_uuid_parse_range(const char *in_start, const char *in_end, AVUUID uu)
     return 0;
 }
 
-static const char hexdigits_lower[16] = "0123456789abcdef";
+static attribute_nonstring const char hexdigits_lower[16] = "0123456789abcdef";
 
 void av_uuid_unparse(const AVUUID uuid, char *out)
 {

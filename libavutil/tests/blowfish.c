@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "libavutil/attributes_internal.h"
 #include "libavutil/mem.h"
 #include "libavutil/blowfish.h"
 
@@ -109,9 +110,9 @@ static const uint32_t ciphertext_r[NUM_VARIABLE_KEY_TESTS] = {
 };
 
 /* plaintext bytes */
-static const uint8_t plaintext[8] = "BLOWFISH";
+static attribute_nonstring const uint8_t plaintext[8] = "BLOWFISH";
 
-static const uint8_t plaintext2[16] = "BLOWFISHBLOWFISH";
+static attribute_nonstring const uint8_t plaintext2[16] = "BLOWFISHBLOWFISH";
 
 /* ciphertext bytes */
 static const uint8_t ciphertext[8] = {

@@ -33,4 +33,13 @@
 
 #define EXTERN extern attribute_visibility_hidden
 
+#if (AV_HAS_ATTRIBUTE(nonstring) && (AV_GCC_VERSION_AT_LEAST(15,1) || defined(__clang__)))
+// Attribute to mark a variable initialized via a string literal as not
+// containing string data to suppress warnings about unterminated strings
+// in situations like char fourcc[4] = "TALB".
+#define attribute_nonstring __attribute__((nonstring))
+#else
+#define attribute_nonstring
+#endif
+
 #endif /* AVUTIL_ATTRIBUTES_INTERNAL_H */

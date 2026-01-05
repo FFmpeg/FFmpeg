@@ -26,6 +26,7 @@
 #include "libavcodec/bytestream.h"
 #include "libavcodec/codec_id.h"
 #include "libavcodec/smpte_436m.h"
+#include "libavutil/attributes_internal.h"
 #include "libavutil/avstring.h"
 #include "libavutil/avutil.h"
 #include "libavutil/error.h"
@@ -84,7 +85,7 @@ typedef struct alias {
 #define CCPAD "\xFA\x0\x0"
 #define CCPAD3 CCPAD CCPAD CCPAD
 
-static const char cc_pad[27] = CCPAD3 CCPAD3 CCPAD3;
+static attribute_nonstring const char cc_pad[27] = CCPAD3 CCPAD3 CCPAD3;
 
 static const alias aliases[20] = {
     // clang-format off

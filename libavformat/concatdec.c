@@ -18,6 +18,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes_internal.h"
 #include "libavutil/avstring.h"
 #include "libavutil/avassert.h"
 #include "libavutil/bprint.h"
@@ -419,7 +420,7 @@ static int concat_read_close(AVFormatContext *avf)
 
 typedef struct ParseSyntax {
     const char *keyword;
-    char args[MAX_ARGS];
+    attribute_nonstring char args[MAX_ARGS];
     uint8_t flags;
 } ParseSyntax;
 
