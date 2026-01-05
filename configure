@@ -7822,6 +7822,13 @@ fi
 
 enabled debug && add_allcflags -g"$debuglevel" && add_asflags -g"$debuglevel"
 
+for lang in c cxx objc; do
+    test_${lang}flags -Werror=unused-command-line-argument &&
+        append unknown_warning_${lang}flags "-Werror=unused-command-line-argument"
+    test_${lang}flags -Werror=unknown-warning-option &&
+        append unknown_warning_${lang}flags "-Werror=unknown-warning-option"
+done
+
 # add some useful compiler flags if supported
 check_allcflags -Wall
 check_allcflags -Wdisabled-optimization
@@ -7842,15 +7849,10 @@ fi
 
 check_disable_warning(){
     warning_flag=-W${1#-Wno-}
-    test_cflags $unknown_warning_flags $warning_flag && add_cflags $1
-    test_cxxflags -Werror $unknown_warning_flags $warning_flag && add_cxxflags $1
-    test_objcflags $unknown_warning_flags $warning_flag && add_objcflags $1
+    test_cflags $unknown_warning_cflags $warning_flag && add_cflags $1
+    test_cxxflags -Werror $unknown_warning_cxxflags $warning_flag && add_cxxflags $1
+    test_objcflags $unknown_warning_objcflags $warning_flag && add_objcflags $1
 }
-
-test_cflags -Werror=unused-command-line-argument &&
-    append unknown_warning_flags "-Werror=unused-command-line-argument"
-test_cflags -Werror=unknown-warning-option &&
-    append unknown_warning_flags "-Werror=unknown-warning-option"
 
 check_disable_warning -Wno-parentheses
 check_disable_warning -Wno-switch
