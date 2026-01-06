@@ -40,6 +40,7 @@ libavcodec/h26x/.* @frankplow @NuoMi @jianhuaw
 libavcodec/.*h274.* @haasn
 libavcodec/iff.* @pross
 libavcodec/.*jpegxl.* @lynne @Traneptora
+libavcodec/jpeg2000htdec.* @cae
 libavcodec/jv.* @pross
 libavcodec/.*jxl.* @lynne @Traneptora
 libavcodec/.*lcms2.* @haasn
