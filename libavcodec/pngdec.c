@@ -306,7 +306,7 @@ void ff_png_filter_row(PNGDSPContext *dsp, uint8_t *dst, int filter_type,
                 i = w;
             }
         }
-        ff_add_png_paeth_prediction(dst + i, src + i, last + i, size - i, bpp);
+        ff_png_add_paeth_prediction(dst + i, src + i, last + i, size - i, bpp);
         break;
     }
 }

@@ -37,7 +37,7 @@ typedef struct PNGDSPContext {
 } PNGDSPContext;
 
 FF_VISIBILITY_PUSH_HIDDEN
-void ff_add_png_paeth_prediction(uint8_t *dst, const uint8_t *src,
+void ff_png_add_paeth_prediction(uint8_t *dst, const uint8_t *src,
                                  const uint8_t *top, int w, int bpp);
 
 void ff_pngdsp_init(PNGDSPContext *dsp);
