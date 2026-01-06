@@ -326,6 +326,9 @@ typedef struct FFVulkanContext {
     VkPhysicalDeviceCooperativeMatrixPropertiesKHR coop_matrix_props;
     VkPhysicalDevicePushDescriptorPropertiesKHR push_desc_props;
     VkPhysicalDeviceOpticalFlowPropertiesNV optical_flow_props;
+#ifdef VK_EXT_shader_long_vector
+    VkPhysicalDeviceShaderLongVectorPropertiesEXT long_vector_props;
+#endif
     VkQueueFamilyQueryResultStatusPropertiesKHR *query_props;
     VkQueueFamilyVideoPropertiesKHR *video_props;
     VkQueueFamilyProperties2 *qf_props;

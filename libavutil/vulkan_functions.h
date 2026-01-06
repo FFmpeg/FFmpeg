@@ -53,6 +53,7 @@ typedef uint64_t FFVulkanExtensions;
 #define FF_VK_EXT_ZERO_INITIALIZE        (1ULL << 19) /* VK_EXT_zero_initialize_device_memory */
 #define FF_VK_EXT_EXPLICIT_MEM_LAYOUT    (1ULL << 20) /* VK_KHR_workgroup_memory_explicit_layout */
 #define FF_VK_EXT_REPLICATED_COMPOSITES  (1ULL << 21) /* VK_EXT_shader_replicated_composites */
+#define FF_VK_EXT_LONG_VECTOR            (1ULL << 22) /* VK_EXT_shader_long_vector */
 
 /* Video extensions */
 #define FF_VK_EXT_VIDEO_QUEUE            (1ULL << 36) /* VK_KHR_video_queue */
