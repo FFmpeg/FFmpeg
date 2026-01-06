@@ -28,16 +28,17 @@
 
 typedef struct PNGDSPContext {
     void (*add_bytes_l2)(uint8_t *dst,
-                         uint8_t *src1 /* align 16 */,
-                         uint8_t *src2, int w);
+                         const uint8_t *src1 /* align 16 */,
+                         const uint8_t *src2, int w);
 
     /* this might write to dst[w] */
-    void (*add_paeth_prediction)(uint8_t *dst, uint8_t *src,
-                                 uint8_t *top, int w, int bpp);
+    void (*add_paeth_prediction)(uint8_t *dst, const uint8_t *src,
+                                 const uint8_t *top, int w, int bpp);
 } PNGDSPContext;
 
 FF_VISIBILITY_PUSH_HIDDEN
-void ff_add_png_paeth_prediction(uint8_t *dst, uint8_t *src, uint8_t *top, int w, int bpp);
+void ff_add_png_paeth_prediction(uint8_t *dst, const uint8_t *src,
+                                 const uint8_t *top, int w, int bpp);
 
 void ff_pngdsp_init(PNGDSPContext *dsp);
 void ff_pngdsp_init_x86(PNGDSPContext *dsp);

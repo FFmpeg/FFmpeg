@@ -42,7 +42,8 @@ typedef uint32_t uint_native;
 #define pb_7f (~(uint_native)0 / 255 * 0x7f)
 #define pb_80 (~(uint_native)0 / 255 * 0x80)
 
-static void add_bytes_l2_c(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w)
+static void add_bytes_l2_c(uint8_t *dst, const uint8_t *src1,
+                           const uint8_t *src2, int w)
 {
     long i;
     for (i = 0; i <= w - (int) sizeof(uint_native); i += sizeof(uint_native)) {
@@ -54,8 +55,8 @@ static void add_bytes_l2_c(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w)
         dst[i] = src1[i] + src2[i];
 }
 
-void ff_add_png_paeth_prediction(uint8_t *dst, uint8_t *src, uint8_t *top,
-                                 int w, int bpp)
+void ff_add_png_paeth_prediction(uint8_t *dst, const uint8_t *src,
+                                 const uint8_t *top, int w, int bpp)
 {
     for (int i = 0; i < w; ++i) {
         int a, b, c, p, pa, pb, pc;

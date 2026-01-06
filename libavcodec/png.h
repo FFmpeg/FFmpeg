@@ -58,6 +58,6 @@ int ff_png_get_nb_channels(int color_type);
 int ff_png_pass_row_size(int pass, int bits_per_pixel, int width);
 
 void ff_png_filter_row(PNGDSPContext *dsp, uint8_t *dst, int filter_type,
-                       uint8_t *src, uint8_t *last, int size, int bpp);
+                       const uint8_t *src, const uint8_t *last, int size, int bpp);
 
 #endif /* AVCODEC_PNG_H */

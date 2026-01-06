@@ -257,7 +257,7 @@ static void png_put_interlaced_row(uint8_t *dst, int width,
 
 /* NOTE: 'dst' can be equal to 'last' */
 void ff_png_filter_row(PNGDSPContext *dsp, uint8_t *dst, int filter_type,
-                       uint8_t *src, uint8_t *last, int size, int bpp)
+                       const uint8_t *src, const uint8_t *last, int size, int bpp)
 {
     int i, p, r, g, b, a;
 
@@ -271,7 +271,7 @@ void ff_png_filter_row(PNGDSPContext *dsp, uint8_t *dst, int filter_type,
         if (bpp == 4) {
             p = *(int *)dst;
             for (; i < size; i += bpp) {
-                unsigned s = *(int *)(src + i);
+                unsigned s = *(const int *)(src + i);
                 p = ((s & 0x7f7f7f7f) + (p & 0x7f7f7f7f)) ^ ((s ^ p) & 0x80808080);
                 *(int *)(dst + i) = p;
             }
