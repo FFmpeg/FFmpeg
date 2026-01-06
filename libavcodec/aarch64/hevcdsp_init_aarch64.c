@@ -22,6 +22,7 @@
 #include <stdint.h>
 
 #include "libavutil/attributes.h"
+#include "libavutil/avassert.h"
 #include "libavutil/cpu.h"
 #include "libavutil/aarch64/cpu.h"
 #include "libavcodec/aarch64/h26x/dsp.h"
@@ -97,6 +98,22 @@ void ff_hevc_idct_16x16_dc_12_neon(int16_t *coeffs);
 void ff_hevc_idct_32x32_dc_12_neon(int16_t *coeffs);
 void ff_hevc_transform_luma_4x4_neon_8(int16_t *coeffs);
 
+void ff_hevc_dequant_4x4_8_neon(int16_t *coeffs);
+void ff_hevc_dequant_8x8_8_neon(int16_t *coeffs);
+void ff_hevc_dequant_16x16_8_neon(int16_t *coeffs);
+void ff_hevc_dequant_32x32_8_neon(int16_t *coeffs);
+
+static void hevc_dequant_8_neon(int16_t *coeffs, int16_t log2_size)
+{
+    switch (log2_size) {
+    case 2: ff_hevc_dequant_4x4_8_neon(coeffs); break;
+    case 3: ff_hevc_dequant_8x8_8_neon(coeffs); break;
+    case 4: ff_hevc_dequant_16x16_8_neon(coeffs); break;
+    case 5: ff_hevc_dequant_32x32_8_neon(coeffs); break;
+    default: av_unreachable("log2_size must be 2, 3, 4 or 5");
+    }
+}
+
 #define NEON8_FNASSIGN(member, v, h, fn, ext) \
         member[1][v][h] = ff_hevc_put_hevc_##fn##4_8_neon##ext;  \
         member[2][v][h] = ff_hevc_put_hevc_##fn##6_8_neon##ext;  \
@@ -168,6 +185,7 @@ av_cold void ff_hevc_dsp_init_aarch64(HEVCDSPContext *c, const int bit_depth)
         c->idct_dc[2]                  = ff_hevc_idct_16x16_dc_8_neon;
         c->idct_dc[3]                  = ff_hevc_idct_32x32_dc_8_neon;
         c->transform_4x4_luma          = ff_hevc_transform_luma_4x4_neon_8;
+        c->dequant                     = hevc_dequant_8_neon;
         c->sao_band_filter[0]          = ff_h26x_sao_band_filter_8x8_8_neon;
         c->sao_band_filter[1]          =
         c->sao_band_filter[2]          =
