@@ -270,6 +270,10 @@ AVStream *avformat_new_stream(AVFormatContext *s, const AVCodec *c)
 
     sti->fmtctx = s;
 
+    sti->parse_pkt = av_packet_alloc();
+    if (!sti->parse_pkt)
+        goto fail;
+
     if (s->iformat) {
         sti->avctx = avcodec_alloc_context3(NULL);
         if (!sti->avctx)

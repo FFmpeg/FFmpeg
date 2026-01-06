@@ -1175,9 +1175,9 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt,
 {
     FormatContextInternal *const fci = ff_fc_internal(s);
     FFFormatContext *const si = &fci->fc;
-    AVPacket *out_pkt = si->parse_pkt;
     AVStream *st = s->streams[stream_index];
     FFStream *const sti = ffstream(st);
+    AVPacket *out_pkt = sti->parse_pkt;
     const AVPacketSideData *sd = NULL;
     const uint8_t *data = pkt->data;
     uint8_t *extradata = sti->avctx->extradata;

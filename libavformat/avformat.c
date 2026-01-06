@@ -59,6 +59,8 @@ void ff_free_stream(AVStream **pst)
     av_freep(&sti->index_entries);
     av_freep(&sti->probe_data.buf);
 
+    av_packet_free(&sti->parse_pkt);
+
     av_bsf_free(&sti->extract_extradata.bsf);
 
     if (sti->info) {
