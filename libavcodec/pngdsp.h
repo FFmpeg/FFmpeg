@@ -24,6 +24,8 @@
 
 #include <stdint.h>
 
+#include "libavutil/attributes_internal.h"
+
 typedef struct PNGDSPContext {
     void (*add_bytes_l2)(uint8_t *dst,
                          uint8_t *src1 /* align 16 */,
@@ -34,7 +36,11 @@ typedef struct PNGDSPContext {
                                  uint8_t *top, int w, int bpp);
 } PNGDSPContext;
 
+FF_VISIBILITY_PUSH_HIDDEN
+void ff_add_png_paeth_prediction(uint8_t *dst, uint8_t *src, uint8_t *top, int w, int bpp);
+
 void ff_pngdsp_init(PNGDSPContext *dsp);
 void ff_pngdsp_init_x86(PNGDSPContext *dsp);
+FF_VISIBILITY_POP_HIDDEN
 
 #endif /* AVCODEC_PNGDSP_H */

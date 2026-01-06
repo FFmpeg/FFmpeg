@@ -19,11 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdlib.h>
+
 #include "config.h"
 #include "libavutil/attributes.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/macros.h"
-#include "png.h"
 #include "pngdsp.h"
 
 #if HAVE_FAST_64BIT
@@ -51,6 +52,33 @@ static void add_bytes_l2_c(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w)
     }
     for (; i < w; i++)
         dst[i] = src1[i] + src2[i];
+}
+
+void ff_add_png_paeth_prediction(uint8_t *dst, uint8_t *src, uint8_t *top,
+                                 int w, int bpp)
+{
+    for (int i = 0; i < w; ++i) {
+        int a, b, c, p, pa, pb, pc;
+
+        a = dst[i - bpp];
+        b = top[i];
+        c = top[i - bpp];
+
+        p  = b - c;
+        pc = a - c;
+
+        pa = abs(p);
+        pb = abs(pc);
+        pc = abs(p + pc);
+
+        if (pa <= pb && pa <= pc)
+            p = a;
+        else if (pb <= pc)
+            p = b;
+        else
+            p = c;
+        dst[i] = p + src[i];
+    }
 }
 
 av_cold void ff_pngdsp_init(PNGDSPContext *dsp)
