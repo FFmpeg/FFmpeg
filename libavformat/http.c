@@ -242,6 +242,16 @@ static int http_open_cnx_internal(URLContext *h, AVDictionary **options)
                  proxy_path && av_strstart(proxy_path, "http://", NULL);
     freeenv_utf8(env_no_proxy);
 
+    if (h->protocol_whitelist && av_match_list(proto, h->protocol_whitelist, ',') <= 0) {
+        av_log(h, AV_LOG_ERROR, "Protocol '%s' not on whitelist '%s'!\n", proto, h->protocol_whitelist);
+        return AVERROR(EINVAL);
+    }
+
+    if (h->protocol_blacklist && av_match_list(proto, h->protocol_blacklist, ',') > 0) {
+        av_log(h, AV_LOG_ERROR, "Protocol '%s' on blacklist '%s'!\n", proto, h->protocol_blacklist);
+        return AVERROR(EINVAL);
+    }
+
     if (!strcmp(proto, "https")) {
         lower_proto = "tls";
         use_proxy   = 0;
