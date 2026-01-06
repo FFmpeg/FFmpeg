@@ -1226,6 +1226,13 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt,
 
         got_output = !!out_pkt->size;
 
+        if (pkt->side_data && !out_pkt->side_data) {
+            out_pkt->side_data       = pkt->side_data;
+            out_pkt->side_data_elems = pkt->side_data_elems;
+            pkt->side_data          = NULL;
+            pkt->side_data_elems    = 0;
+        }
+
         if (!out_pkt->size)
             continue;
 
@@ -1243,13 +1250,6 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt,
             ret = av_packet_make_refcounted(out_pkt);
             if (ret < 0)
                 goto fail;
-        }
-
-        if (pkt->side_data) {
-            out_pkt->side_data       = pkt->side_data;
-            out_pkt->side_data_elems = pkt->side_data_elems;
-            pkt->side_data          = NULL;
-            pkt->side_data_elems    = 0;
         }
 
         /* set the duration */
