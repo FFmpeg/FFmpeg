@@ -37,38 +37,6 @@ cextern pb_0
 cextern pb_1
 cextern pb_3
 
-%define PASS8ROWS(base, base3, stride, stride3, offset) \
-    PASS8ROWS(base+offset, base3+offset, stride, stride3)
-
-; in: 8 rows of 4 bytes in %4..%11
-; out: 4 rows of 8 bytes in m0..m3
-%macro TRANSPOSE4x8_LOAD 11
-    movh       m0, %4
-    movh       m2, %5
-    movh       m1, %6
-    movh       m3, %7
-    punpckl%1  m0, m2
-    punpckl%1  m1, m3
-    mova       m2, m0
-    punpckl%2  m0, m1
-    punpckh%2  m2, m1
-
-    movh       m4, %8
-    movh       m6, %9
-    movh       m5, %10
-    movh       m7, %11
-    punpckl%1  m4, m6
-    punpckl%1  m5, m7
-    mova       m6, m4
-    punpckl%2  m4, m5
-    punpckh%2  m6, m5
-
-    punpckh%3  m1, m0, m4
-    punpckh%3  m3, m2, m6
-    punpckl%3  m0, m4
-    punpckl%3  m2, m6
-%endmacro
-
 ; in: 4 rows of 8 bytes in m0..m3
 ; out: 8 rows of 4 bytes in %1..%8
 %macro TRANSPOSE8x4B_STORE 8
@@ -98,10 +66,6 @@ cextern pb_3
     movh       %7, m4
     punpckhdq  m4, m4
     movh       %8, m4
-%endmacro
-
-%macro TRANSPOSE4x8B_LOAD 8
-    TRANSPOSE4x8_LOAD bw, wd, dq, %1, %2, %3, %4, %5, %6, %7, %8
 %endmacro
 
 %macro SBUTTERFLY3 4
