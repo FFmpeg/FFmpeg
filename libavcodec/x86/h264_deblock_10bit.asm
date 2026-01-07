@@ -600,9 +600,8 @@ cglobal deblock_h_luma_intra_10, 4,7,16,mmsize
     %define p2 m13
     %define p3 m4
     %define spill [rsp]
-    lea     r4, [r1*4]
+    lea     r4, [r0+r1*4] ; pix+4*stride
     lea     r5, [r1*3] ; 3*stride
-    add     r4, r0     ; pix+4*stride
     mov     r6, 2
     mova    m0, [pw_2]
     shl    r2d, 2
@@ -687,9 +686,8 @@ cglobal deblock_v_luma_intra_10, 4,7,8,-3*mmsize
 ;-----------------------------------------------------------------------------
 cglobal deblock_h_luma_intra_10, 4,7,8,-8*mmsize
     LUMA_INTRA_INIT 8
-    lea     r4, [r1*4]
+    lea     r4, [r0+r1*4]
     lea     r5, [r1*3] ; 3*stride
-    add     r4, r0     ; pix+4*stride
     mov     r6, 32/mmsize
     shl    r2d, 2
     shl    r3d, 2
