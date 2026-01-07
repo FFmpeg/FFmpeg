@@ -1905,6 +1905,8 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
             4bytes      field_size_less_padding
         */
             s->buggy_avid = 1;
+        if (len < 1)
+            goto out;
         i = bytestream2_get_byteu(&s->gB); len--;
         av_log(s->avctx, AV_LOG_DEBUG, "polarity %d\n", i);
         goto out;
@@ -1969,6 +1971,8 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
         if (s->avctx->debug & FF_DEBUG_PICT_INFO)
             av_log(s->avctx, AV_LOG_INFO,
                    "Pegasus lossless jpeg header found\n");
+        if (len < 9)
+            goto out;
         bytestream2_skipu(&s->gB, 2); /* version ? */
         bytestream2_skipu(&s->gB, 2); /* unknown always 0? */
         bytestream2_skipu(&s->gB, 2); /* unknown always 0? */
@@ -2163,7 +2167,7 @@ out:
     if (len < 0)
         av_log(s->avctx, AV_LOG_ERROR,
                "mjpeg: error, decode_app parser read over the end\n");
-    if (len)
+    if (len > 0)
         bytestream2_skipu(&s->gB, len);
 
     return 0;
