@@ -219,14 +219,14 @@ cextern pb_3
     pavgb   m3, m5
     mova    m6, [pb_A1]
     paddusb m3, m4       ; d+128+33
-    psubusb m6, m3
-    psubusb m3, [pb_A1]
-    pminub  m6, m7
+    psubusb m4, m6, m3
+    psubusb m3, m6
+    pminub  m4, m7
     pminub  m3, m7
-    psubusb m1, m6
+    psubusb m1, m4
     psubusb m2, m3
     paddusb m1, m3
-    paddusb m2, m6
+    paddusb m2, m4
 %endmacro
 
 ; in: m1=p0 m2=q0
