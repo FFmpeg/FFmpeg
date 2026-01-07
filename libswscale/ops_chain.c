@@ -66,7 +66,7 @@ int ff_sws_op_chain_append(SwsOpChain *chain, SwsFuncPtr func,
  *
  * If `ref->comps` has any flags set, they must be set in `op` as well.
  * Likewise, if `ref->comps` has any components marked as unused, they must be
- * marked as as unused in `ops` as well.
+ * marked as unused in `ops` as well.
  *
  * For SWS_OP_LINEAR, `ref->linear.mask` must be a strict superset of
  * `op->linear.mask`, but may not contain any columns explicitly ignored by

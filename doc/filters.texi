@@ -4413,7 +4413,7 @@ Add a chorus effect to the audio.
 Can make a single vocal sound like a chorus, but can also be applied to instrumentation.
 
 Chorus resembles an echo effect with a short delay, but whereas with echo the delay is
-constant, with chorus, it is varied using using sinusoidal or triangular modulation.
+constant, with chorus, it is varied using sinusoidal or triangular modulation.
 The modulation depth defines the range the modulated delay is played before or after
 the delay. Hence the delayed sound will sound slower or faster, that is the delayed
 sound tuned around the original one, like in a chorus where some vocals are slightly
@@ -13111,7 +13111,7 @@ Path of the file to load the script source.
 
 Since Cairo only supports RGB images, if the input video is something else (like
 YUV 4:2:0), before executing the script the video is converted to a format
-compatible with Cairo. Then, you have to use use either the @ref{format} filter,
+compatible with Cairo. Then, you have to use either the @ref{format} filter,
 or the @code{-pix_fmt} option, to convert it to the expected format in the
 output.
 

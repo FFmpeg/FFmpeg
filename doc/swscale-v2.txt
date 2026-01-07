@@ -62,7 +62,7 @@ This overall approach has a considerable number of benefits:
    multiple levels of complicated, interwoven format handling code that is
    legacy swscale.
 
-2. Because most of the brains lives inside the the powerful optimizer, we get
+2. Because most of the brains lives inside the powerful optimizer, we get
    fast paths "for free" for any suitable format conversion, rather than having
    to enumerate them one by one. SIMD code itself can be written in a very
    general way and does need to be tied to specific pixel formats - subsequent
