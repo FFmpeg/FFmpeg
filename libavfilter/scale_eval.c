@@ -83,18 +83,27 @@ int ff_scale_eval_dimensions(void *log_ctx,
     av_expr_parse_and_eval(&res, (expr = w_expr),
                            var_names, var_values,
                            NULL, NULL, NULL, NULL, NULL, 0, log_ctx);
-    eval_w = var_values[VAR_OUT_W] = var_values[VAR_OW] = (int) res == 0 ? inlink->w : (int) res;
+    var_values[VAR_OUT_W] = var_values[VAR_OW] = res == 0 ? inlink->w : trunc(res);
 
     if ((ret = av_expr_parse_and_eval(&res, (expr = h_expr),
                                       var_names, var_values,
                                       NULL, NULL, NULL, NULL, NULL, 0, log_ctx)) < 0)
         goto fail;
+    if (!(res >= INT32_MIN && res <= INT32_MAX)) {
+        ret = AVERROR(EINVAL);
+        goto fail;
+    }
+
     eval_h = var_values[VAR_OUT_H] = var_values[VAR_OH] = (int) res == 0 ? inlink->h : (int) res;
     /* evaluate again the width, as it may depend on the output height */
     if ((ret = av_expr_parse_and_eval(&res, (expr = w_expr),
                                       var_names, var_values,
                                       NULL, NULL, NULL, NULL, NULL, 0, log_ctx)) < 0)
         goto fail;
+    if (!(res >= INT32_MIN && res <= INT32_MAX)) {
+        ret = AVERROR(EINVAL);
+        goto fail;
+    }
     eval_w = (int) res == 0 ? inlink->w : (int) res;
 
     *ret_w = eval_w;
