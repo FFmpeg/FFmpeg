@@ -6681,7 +6681,6 @@ EOF
         if test_cmd $x86asmexe_probe -v; then
             x86asmexe=$x86asmexe_probe
             x86asm_debug="-g -F dwarf"
-            X86ASMDEP=
             X86ASM_DEPFLAGS='-MD $(@:.o=.d)'
         fi
         check_x86asm x86asm "movbe ecx, [5]"
@@ -8460,8 +8459,6 @@ CCDEP_FLAGS=$CCDEP_FLAGS
 CXXDEP_FLAGS=$CXXDEP_FLAGS
 ASDEP=$ASDEP
 ASDEP_FLAGS=$ASDEP_FLAGS
-X86ASMDEP=$X86ASMDEP
-X86ASMDEP_FLAGS=$X86ASMDEP_FLAGS
 CC_DEPFLAGS=$CC_DEPFLAGS
 CXX_DEPFLAGS=$CXX_DEPFLAGS
 OBJCC_DEPFLAGS=$OBJC_DEPFLAGS
