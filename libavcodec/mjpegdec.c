@@ -100,7 +100,6 @@ static int init_default_huffman_tables(MJpegDecodeContext *s)
 
 static void parse_avid(MJpegDecodeContext *s, uint8_t *buf, int len)
 {
-    s->buggy_avid = 1;
     if (len > 12 && buf[12] == 1) /* 1 - NTSC */
         s->interlace_polarity = 1;
     if (len > 12 && buf[12] == 2) /* 2 - PAL */
@@ -1893,8 +1892,7 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
         av_log(s->avctx, AV_LOG_DEBUG, "APPx (%s / %8X) len=%d\n",
                av_fourcc2str(av_bswap32(id)), id, len);
 
-    /* Buggy AVID, it puts EOI only at every 10th frame. */
-    /* Also, this fourcc is used by non-avid files too, it holds some
+    /* This fourcc is used by non-avid files too, it holds some
        information, but it's always present in AVID-created files. */
     if (id == AV_RB32("AVI1")) {
         /* structure:
@@ -1904,7 +1902,6 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
             4bytes      field_size
             4bytes      field_size_less_padding
         */
-            s->buggy_avid = 1;
         if (len < 1)
             goto out;
         i = bytestream2_get_byteu(&s->gB); len--;
