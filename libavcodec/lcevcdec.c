@@ -110,6 +110,7 @@ static int lcevc_send_frame(void *logctx, FFLCEVCFrame *frame_ctx, const AVFrame
 {
     FFLCEVCContext *lcevc = frame_ctx->lcevc;
     const AVFrameSideData *sd = av_frame_get_side_data(in, AV_FRAME_DATA_LCEVC);
+    AVFrame *opaque;
     LCEVC_PictureHandle picture;
     LCEVC_ReturnCode res;
     int ret = 0;
@@ -125,9 +126,23 @@ static int lcevc_send_frame(void *logctx, FFLCEVCFrame *frame_ctx, const AVFrame
     if (ret < 0)
         return ret;
 
-    res = LCEVC_SendDecoderBase(lcevc->decoder, in->pts, picture, -1, NULL);
+    opaque = av_frame_clone(in);
+    if (!opaque) {
+        LCEVC_FreePicture(lcevc->decoder, picture);
+        return AVERROR(ENOMEM);
+    }
+
+    res = LCEVC_SetPictureUserData(lcevc->decoder, picture, opaque);
     if (res != LCEVC_Success) {
         LCEVC_FreePicture(lcevc->decoder, picture);
+        av_frame_free(&opaque);
+        return AVERROR_EXTERNAL;
+    }
+
+    res = LCEVC_SendDecoderBase(lcevc->decoder, in->pts, picture, -1, opaque);
+    if (res != LCEVC_Success) {
+        LCEVC_FreePicture(lcevc->decoder, picture);
+        av_frame_free(&opaque);
         return AVERROR_EXTERNAL;
     }
 
@@ -163,17 +178,16 @@ static int generate_output(void *logctx, FFLCEVCFrame *frame_ctx, AVFrame *out)
         return AVERROR_EXTERNAL;
     }
 
+    av_frame_unref(out);
+    av_frame_copy_props(frame_ctx->frame, (AVFrame *)info.baseUserData);
+    av_frame_move_ref(out, frame_ctx->frame);
+
     out->crop_top = desc.cropTop;
     out->crop_bottom = desc.cropBottom;
     out->crop_left = desc.cropLeft;
     out->crop_right = desc.cropRight;
     out->sample_aspect_ratio.num = desc.sampleAspectRatioNum;
     out->sample_aspect_ratio.den = desc.sampleAspectRatioDen;
-
-    av_frame_copy_props(frame_ctx->frame, out);
-    av_frame_unref(out);
-    av_frame_move_ref(out, frame_ctx->frame);
-
     out->width = desc.width + out->crop_left + out->crop_right;
     out->height = desc.height + out->crop_top + out->crop_bottom;
 
@@ -184,18 +198,13 @@ static int generate_output(void *logctx, FFLCEVCFrame *frame_ctx, AVFrame *out)
     return 0;
 }
 
-static int lcevc_receive_frame(void *logctx, FFLCEVCFrame *frame_ctx, AVFrame *out)
+static int lcevc_flush_pictures(FFLCEVCContext *lcevc)
 {
-    FFLCEVCContext *lcevc = frame_ctx->lcevc;
     LCEVC_PictureHandle picture;
     LCEVC_ReturnCode res;
-    int ret;
-
-    ret = generate_output(logctx, frame_ctx, out);
-    if (ret < 0)
-        return ret;
 
     while (1) {
+        AVFrame *base = NULL;
         res = LCEVC_ReceiveDecoderBase (lcevc->decoder, &picture);
         if (res != LCEVC_Success && res != LCEVC_Again)
             return AVERROR_EXTERNAL;
@@ -203,12 +212,27 @@ static int lcevc_receive_frame(void *logctx, FFLCEVCFrame *frame_ctx, AVFrame *o
         if (res == LCEVC_Again)
             break;
 
+        LCEVC_GetPictureUserData(lcevc->decoder, picture, (void **)&base);
+        av_frame_free(&base);
+
         res = LCEVC_FreePicture(lcevc->decoder, picture);
         if (res != LCEVC_Success)
             return AVERROR_EXTERNAL;
     }
 
     return 0;
+}
+
+static int lcevc_receive_frame(void *logctx, FFLCEVCFrame *frame_ctx, AVFrame *out)
+{
+    FFLCEVCContext *lcevc = frame_ctx->lcevc;
+    int ret;
+
+    ret = generate_output(logctx, frame_ctx, out);
+    if (ret < 0)
+        return ret;
+
+    return lcevc_flush_pictures(lcevc);
 }
 
 static void event_callback(LCEVC_DecoderHandle dec, LCEVC_Event event,
@@ -227,8 +251,11 @@ static void event_callback(LCEVC_DecoderHandle dec, LCEVC_Event event,
 static void lcevc_free(AVRefStructOpaque unused, void *obj)
 {
     FFLCEVCContext *lcevc = obj;
-    if (lcevc->initialized)
+    if (lcevc->initialized) {
+        LCEVC_FlushDecoder(lcevc->decoder);
+        lcevc_flush_pictures(lcevc);
         LCEVC_DestroyDecoder(lcevc->decoder);
+    }
     memset(lcevc, 0, sizeof(*lcevc));
 }
 
@@ -277,7 +304,7 @@ int ff_lcevc_process(void *logctx, AVFrame *frame)
     if (ret)
         return ret < 0 ? ret : 0;
 
-    lcevc_receive_frame(logctx, frame_ctx, frame);
+    ret = lcevc_receive_frame(logctx, frame_ctx, frame);
     if (ret < 0)
         return ret;
 
