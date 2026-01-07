@@ -194,8 +194,8 @@ static void check_idct(void)
             for (sz = 4; sz <= 8; sz += 4) {
                 void (*idct)(uint8_t *, int16_t *, int) = NULL;
                 const char fmts[3][28] = {
-                    "h264_idct%d_add_%dbpp", "h264_idct%d_dc_add_%dbpp",
-                    "h264_add_pixels%d_%dbpp",
+                    "idct%d_add_%dbpp", "idct%d_dc_add_%dbpp",
+                    "add_pixels%d_%dbpp",
                 };
 
                 randomize_buffers(i);
@@ -206,12 +206,12 @@ static void check_idct(void)
                     dct8x8(coef, bit_depth);
 
                 switch ((sz << 2) | dc) {
-                case (4 << 2) | 0: idct = h.h264_idct_add; break;
-                case (4 << 2) | 1: idct = h.h264_idct_dc_add; break;
-                case (4 << 2) | 2: idct = h.h264_add_pixels4_clear; break;
-                case (8 << 2) | 0: idct = h.h264_idct8_add; break;
-                case (8 << 2) | 1: idct = h.h264_idct8_dc_add; break;
-                case (8 << 2) | 2: idct = h.h264_add_pixels8_clear; break;
+                case (4 << 2) | 0: idct = h.idct_add; break;
+                case (4 << 2) | 1: idct = h.idct_dc_add; break;
+                case (4 << 2) | 2: idct = h.add_pixels4_clear; break;
+                case (8 << 2) | 0: idct = h.idct8_add; break;
+                case (8 << 2) | 1: idct = h.idct8_dc_add; break;
+                case (8 << 2) | 2: idct = h.add_pixels8_clear; break;
                 }
 
                 if (check_func(idct, fmts[dc], sz, bit_depth)) {
@@ -261,17 +261,17 @@ static void check_idct_multiple(void)
             int block_offset[16] = { 0 };
             switch (func) {
             case 0:
-                idct = h.h264_idct_add16;
-                name = "h264_idct_add16";
+                idct = h.idct_add16;
+                name = "idct_add16";
                 break;
             case 1:
-                idct = h.h264_idct_add16intra;
-                name = "h264_idct_add16intra";
+                idct = h.idct_add16intra;
+                name = "idct_add16intra";
                 intra = 1;
                 break;
             case 2:
-                idct = h.h264_idct8_add4;
-                name = "h264_idct8_add4";
+                idct = h.idct8_add4;
+                name = "idct8_add4";
                 sz = 8;
                 break;
             }
@@ -361,7 +361,7 @@ static void check_idct_dequant(void)
         memset(dst_ref, 0, 16 * 16 * SIZEOF_COEF);
         memset(dst_new, 0, 16 * 16 * SIZEOF_COEF);
 
-        if (check_func(h.h264_luma_dc_dequant_idct, "h264_luma_dc_dequant_idct_%d", bit_depth)) {
+        if (check_func(h.luma_dc_dequant_idct, "luma_dc_dequant_idct_%d", bit_depth)) {
 
             call_ref(dst_ref, src, qmul);
             call_new(dst_new, src, qmul);
@@ -425,16 +425,16 @@ static void check_loop_filter(void)
             }                                                           \
         } while (0)
 
-        CHECK_LOOP_FILTER(h264_v_loop_filter_luma, 1,);
-        CHECK_LOOP_FILTER(h264_h_loop_filter_luma, 0,);
-        CHECK_LOOP_FILTER(h264_h_loop_filter_luma_mbaff, 0,);
-        CHECK_LOOP_FILTER(h264_v_loop_filter_chroma, 1,);
-        CHECK_LOOP_FILTER(h264_h_loop_filter_chroma, 0,);
-        CHECK_LOOP_FILTER(h264_h_loop_filter_chroma_mbaff, 0,);
+        CHECK_LOOP_FILTER(v_loop_filter_luma, 1,);
+        CHECK_LOOP_FILTER(h_loop_filter_luma, 0,);
+        CHECK_LOOP_FILTER(h_loop_filter_luma_mbaff, 0,);
+        CHECK_LOOP_FILTER(v_loop_filter_chroma, 1,);
+        CHECK_LOOP_FILTER(h_loop_filter_chroma, 0,);
+        CHECK_LOOP_FILTER(h_loop_filter_chroma_mbaff, 0,);
 
         ff_h264dsp_init(&h, bit_depth, 2);
-        CHECK_LOOP_FILTER(h264_h_loop_filter_chroma, 0, 422);
-        CHECK_LOOP_FILTER(h264_h_loop_filter_chroma_mbaff, 0, 422);
+        CHECK_LOOP_FILTER(h_loop_filter_chroma, 0, 422);
+        CHECK_LOOP_FILTER(h_loop_filter_chroma_mbaff, 0, 422);
 #undef CHECK_LOOP_FILTER
     }
 }
@@ -486,16 +486,16 @@ static void check_loop_filter_intra(void)
             }                                                           \
         } while (0)
 
-        CHECK_LOOP_FILTER(h264_v_loop_filter_luma_intra, 1,);
-        CHECK_LOOP_FILTER(h264_h_loop_filter_luma_intra, 0,);
-        CHECK_LOOP_FILTER(h264_h_loop_filter_luma_mbaff_intra, 0,);
-        CHECK_LOOP_FILTER(h264_v_loop_filter_chroma_intra, 1,);
-        CHECK_LOOP_FILTER(h264_h_loop_filter_chroma_intra, 0,);
-        CHECK_LOOP_FILTER(h264_h_loop_filter_chroma_mbaff_intra, 0,);
+        CHECK_LOOP_FILTER(v_loop_filter_luma_intra, 1,);
+        CHECK_LOOP_FILTER(h_loop_filter_luma_intra, 0,);
+        CHECK_LOOP_FILTER(h_loop_filter_luma_mbaff_intra, 0,);
+        CHECK_LOOP_FILTER(v_loop_filter_chroma_intra, 1,);
+        CHECK_LOOP_FILTER(h_loop_filter_chroma_intra, 0,);
+        CHECK_LOOP_FILTER(h_loop_filter_chroma_mbaff_intra, 0,);
 
         ff_h264dsp_init(&h, bit_depth, 2);
-        CHECK_LOOP_FILTER(h264_h_loop_filter_chroma_intra, 0, 422);
-        CHECK_LOOP_FILTER(h264_h_loop_filter_chroma_mbaff_intra, 0, 422);
+        CHECK_LOOP_FILTER(h_loop_filter_chroma_intra, 0, 422);
+        CHECK_LOOP_FILTER(h_loop_filter_chroma_mbaff_intra, 0, 422);
 #undef CHECK_LOOP_FILTER
     }
 }

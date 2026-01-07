@@ -174,16 +174,16 @@ static av_noinline void FUNC(hl_decode_mb)(const H264Context *h, H264SliceContex
                               h->h264chroma.put_h264_chroma_pixels_tab,
                               h->h264qpel.avg_h264_qpel_pixels_tab,
                               h->h264chroma.avg_h264_chroma_pixels_tab,
-                              h->h264dsp.weight_h264_pixels_tab,
-                              h->h264dsp.biweight_h264_pixels_tab);
+                              h->h264dsp.weight_pixels_tab,
+                              h->h264dsp.biweight_pixels_tab);
             } else {
                 FUNC(hl_motion_420)(h, sl, dest_y, dest_cb, dest_cr,
                               h->h264qpel.put_h264_qpel_pixels_tab,
                               h->h264chroma.put_h264_chroma_pixels_tab,
                               h->h264qpel.avg_h264_qpel_pixels_tab,
                               h->h264chroma.avg_h264_chroma_pixels_tab,
-                              h->h264dsp.weight_h264_pixels_tab,
-                              h->h264dsp.biweight_h264_pixels_tab);
+                              h->h264dsp.weight_pixels_tab,
+                              h->h264dsp.biweight_pixels_tab);
             }
         }
 
@@ -206,7 +206,7 @@ static av_noinline void FUNC(hl_decode_mb)(const H264Context *h, H264SliceContex
                                                             sl->mb + (16 * 16 * 2 << PIXEL_SHIFT),
                                                             uvlinesize);
                 } else {
-                    idct_add = h->h264dsp.h264_add_pixels4_clear;
+                    idct_add = h->h264dsp.add_pixels4_clear;
                     for (j = 1; j < 3; j++) {
                         for (i = j * 16; i < j * 16 + 4; i++)
                             if (sl->non_zero_count_cache[scan8[i]] ||
@@ -234,14 +234,14 @@ static av_noinline void FUNC(hl_decode_mb)(const H264Context *h, H264SliceContex
                     qp[1] = sl->chroma_qp[1];
                 }
                 if (sl->non_zero_count_cache[scan8[CHROMA_DC_BLOCK_INDEX + 0]])
-                    h->h264dsp.h264_chroma_dc_dequant_idct(sl->mb + (16 * 16 * 1 << PIXEL_SHIFT),
-                                                           h->ps.pps->dequant4_coeff[IS_INTRA(mb_type) ? 1 : 4][qp[0]][0]);
+                    h->h264dsp.chroma_dc_dequant_idct(sl->mb + (16 * 16 * 1 << PIXEL_SHIFT),
+                                                      h->ps.pps->dequant4_coeff[IS_INTRA(mb_type) ? 1 : 4][qp[0]][0]);
                 if (sl->non_zero_count_cache[scan8[CHROMA_DC_BLOCK_INDEX + 1]])
-                    h->h264dsp.h264_chroma_dc_dequant_idct(sl->mb + (16 * 16 * 2 << PIXEL_SHIFT),
-                                                           h->ps.pps->dequant4_coeff[IS_INTRA(mb_type) ? 2 : 5][qp[1]][0]);
-                h->h264dsp.h264_idct_add8(dest, block_offset,
-                                          sl->mb, uvlinesize,
-                                          sl->non_zero_count_cache);
+                    h->h264dsp.chroma_dc_dequant_idct(sl->mb + (16 * 16 * 2 << PIXEL_SHIFT),
+                                                      h->ps.pps->dequant4_coeff[IS_INTRA(mb_type) ? 2 : 5][qp[1]][0]);
+                h->h264dsp.idct_add8(dest, block_offset,
+                                     sl->mb, uvlinesize,
+                                     sl->non_zero_count_cache);
             }
         }
     }
@@ -341,8 +341,8 @@ static av_noinline void FUNC(hl_decode_mb_444)(const H264Context *h, H264SliceCo
                       h->h264chroma.put_h264_chroma_pixels_tab,
                       h->h264qpel.avg_h264_qpel_pixels_tab,
                       h->h264chroma.avg_h264_chroma_pixels_tab,
-                      h->h264dsp.weight_h264_pixels_tab,
-                      h->h264dsp.biweight_h264_pixels_tab);
+                      h->h264dsp.weight_pixels_tab,
+                      h->h264dsp.biweight_pixels_tab);
         }
 
         for (p = 0; p < plane_count; p++)

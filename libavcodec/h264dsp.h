@@ -41,71 +41,71 @@ typedef void (*h264_biweight_func)(uint8_t *dst, uint8_t *src,
  */
 typedef struct H264DSPContext {
     /* weighted MC */
-    h264_weight_func weight_h264_pixels_tab[4];
-    h264_biweight_func biweight_h264_pixels_tab[4];
+    h264_weight_func     weight_pixels_tab[4];
+    h264_biweight_func biweight_pixels_tab[4];
 
     /* loop filter */
-    void (*h264_v_loop_filter_luma)(uint8_t *pix /*align 16*/, ptrdiff_t stride,
-                                    int alpha, int beta, int8_t *tc0);
-    void (*h264_h_loop_filter_luma)(uint8_t *pix /*align 4 */, ptrdiff_t stride,
-                                    int alpha, int beta, int8_t *tc0);
-    void (*h264_h_loop_filter_luma_mbaff)(uint8_t *pix /*align 16*/, ptrdiff_t stride,
-                                          int alpha, int beta, int8_t *tc0);
+    void (*v_loop_filter_luma)(uint8_t *pix /*align 16*/, ptrdiff_t stride,
+                               int alpha, int beta, int8_t *tc0);
+    void (*h_loop_filter_luma)(uint8_t *pix /*align 4 */, ptrdiff_t stride,
+                               int alpha, int beta, int8_t *tc0);
+    void (*h_loop_filter_luma_mbaff)(uint8_t *pix /*align 16*/, ptrdiff_t stride,
+                                     int alpha, int beta, int8_t *tc0);
     /* v/h_loop_filter_luma_intra: align 16 */
-    void (*h264_v_loop_filter_luma_intra)(uint8_t *pix, ptrdiff_t stride,
-                                          int alpha, int beta);
-    void (*h264_h_loop_filter_luma_intra)(uint8_t *pix, ptrdiff_t stride,
-                                          int alpha, int beta);
-    void (*h264_h_loop_filter_luma_mbaff_intra)(uint8_t *pix /*align 16*/,
-                                                ptrdiff_t stride, int alpha, int beta);
-    void (*h264_v_loop_filter_chroma)(uint8_t *pix /*align 8*/, ptrdiff_t stride,
-                                      int alpha, int beta, int8_t *tc0);
-    void (*h264_h_loop_filter_chroma)(uint8_t *pix /*align 4*/, ptrdiff_t stride,
-                                      int alpha, int beta, int8_t *tc0);
-    void (*h264_h_loop_filter_chroma_mbaff)(uint8_t *pix /*align 8*/,
-                                            ptrdiff_t stride, int alpha, int beta,
-                                            int8_t *tc0);
-    void (*h264_v_loop_filter_chroma_intra)(uint8_t *pix /*align 8*/,
-                                            ptrdiff_t stride, int alpha, int beta);
-    void (*h264_h_loop_filter_chroma_intra)(uint8_t *pix /*align 8*/,
-                                            ptrdiff_t stride, int alpha, int beta);
-    void (*h264_h_loop_filter_chroma_mbaff_intra)(uint8_t *pix /*align 8*/,
-                                                  ptrdiff_t stride, int alpha, int beta);
-    // h264_loop_filter_strength: simd only. the C version is inlined in h264_loopfilter.c
-    void (*h264_loop_filter_strength)(int16_t bS[2][4][4], uint8_t nnz[40],
-                                      int8_t ref[2][40], int16_t mv[2][40][2],
-                                      int bidir, int edges, int step,
-                                      int mask_mv0, int mask_mv1, int field);
+    void (*v_loop_filter_luma_intra)(uint8_t *pix, ptrdiff_t stride,
+                                     int alpha, int beta);
+    void (*h_loop_filter_luma_intra)(uint8_t *pix, ptrdiff_t stride,
+                                     int alpha, int beta);
+    void (*h_loop_filter_luma_mbaff_intra)(uint8_t *pix /*align 16*/,
+                                           ptrdiff_t stride, int alpha, int beta);
+    void (*v_loop_filter_chroma)(uint8_t *pix /*align 8*/, ptrdiff_t stride,
+                                 int alpha, int beta, int8_t *tc0);
+    void (*h_loop_filter_chroma)(uint8_t *pix /*align 4*/, ptrdiff_t stride,
+                                 int alpha, int beta, int8_t *tc0);
+    void (*h_loop_filter_chroma_mbaff)(uint8_t *pix /*align 8*/,
+                                       ptrdiff_t stride, int alpha, int beta,
+                                       int8_t *tc0);
+    void (*v_loop_filter_chroma_intra)(uint8_t *pix /*align 8*/,
+                                       ptrdiff_t stride, int alpha, int beta);
+    void (*h_loop_filter_chroma_intra)(uint8_t *pix /*align 8*/,
+                                       ptrdiff_t stride, int alpha, int beta);
+    void (*h_loop_filter_chroma_mbaff_intra)(uint8_t *pix /*align 8*/,
+                                             ptrdiff_t stride, int alpha, int beta);
+    // loop_filter_strength: simd only. the C version is inlined in h264_loopfilter.c
+    void (*loop_filter_strength)(int16_t bS[2][4][4], uint8_t nnz[40],
+                                 int8_t ref[2][40], int16_t mv[2][40][2],
+                                 int bidir, int edges, int step,
+                                 int mask_mv0, int mask_mv1, int field);
 
     /* IDCT */
-    void (*h264_idct_add)(uint8_t *dst /*align 4*/,
-                          int16_t *block /*align 16*/, int stride);
-    void (*h264_idct8_add)(uint8_t *dst /*align 8*/,
-                           int16_t *block /*align 16*/, int stride);
-    void (*h264_idct_dc_add)(uint8_t *dst /*align 4*/,
-                             int16_t *block /*align 16*/, int stride);
-    void (*h264_idct8_dc_add)(uint8_t *dst /*align 8*/,
-                              int16_t *block /*align 16*/, int stride);
+    void (*idct_add)(uint8_t *dst /*align 4*/,
+                     int16_t *block /*align 16*/, int stride);
+    void (*idct8_add)(uint8_t *dst /*align 8*/,
+                      int16_t *block /*align 16*/, int stride);
+    void (*idct_dc_add)(uint8_t *dst /*align 4*/,
+                        int16_t *block /*align 16*/, int stride);
+    void (*idct8_dc_add)(uint8_t *dst /*align 8*/,
+                         int16_t *block /*align 16*/, int stride);
 
-    void (*h264_idct_add16)(uint8_t *dst /*align 16*/, const int *blockoffset,
-                            int16_t *block /*align 16*/, int stride,
-                            const uint8_t nnzc[5 * 8]);
-    void (*h264_idct8_add4)(uint8_t *dst /*align 16*/, const int *blockoffset,
-                            int16_t *block /*align 16*/, int stride,
-                            const uint8_t nnzc[5 * 8]);
-    void (*h264_idct_add8)(uint8_t **dst /*align 16*/, const int *blockoffset,
-                           int16_t *block /*align 16*/, int stride,
-                           const uint8_t nnzc[15 * 8]);
-    void (*h264_idct_add16intra)(uint8_t *dst /*align 16*/, const int *blockoffset,
-                                 int16_t *block /*align 16*/,
-                                 int stride, const uint8_t nnzc[5 * 8]);
-    void (*h264_luma_dc_dequant_idct)(int16_t *output,
-                                      int16_t *input /*align 16*/, int qmul);
-    void (*h264_chroma_dc_dequant_idct)(int16_t *block, int qmul);
+    void (*idct_add16)(uint8_t *dst /*align 16*/, const int *blockoffset,
+                       int16_t *block /*align 16*/, int stride,
+                       const uint8_t nnzc[5 * 8]);
+    void (*idct8_add4)(uint8_t *dst /*align 16*/, const int *blockoffset,
+                       int16_t *block /*align 16*/, int stride,
+                       const uint8_t nnzc[5 * 8]);
+    void (*idct_add8)(uint8_t **dst /*align 16*/, const int *blockoffset,
+                      int16_t *block /*align 16*/, int stride,
+                      const uint8_t nnzc[15 * 8]);
+    void (*idct_add16intra)(uint8_t *dst /*align 16*/, const int *blockoffset,
+                            int16_t *block /*align 16*/,
+                            int stride, const uint8_t nnzc[5 * 8]);
+    void (*luma_dc_dequant_idct)(int16_t *output,
+                                 int16_t *input /*align 16*/, int qmul);
+    void (*chroma_dc_dequant_idct)(int16_t *block, int qmul);
 
     /* bypass-transform */
-    void (*h264_add_pixels8_clear)(uint8_t *dst, int16_t *block, int stride);
-    void (*h264_add_pixels4_clear)(uint8_t *dst, int16_t *block, int stride);
+    void (*add_pixels8_clear)(uint8_t *dst, int16_t *block, int stride);
+    void (*add_pixels4_clear)(uint8_t *dst, int16_t *block, int stride);
 
     /**
      * Search buf from the start for up to size bytes. Return the index
