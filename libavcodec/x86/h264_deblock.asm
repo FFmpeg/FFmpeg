@@ -182,10 +182,16 @@ cextern pb_3
 %macro LOAD_MASK 2-3
     movd     m4, %1
     movd     m5, %2
+%if cpuflag(ssse3)
+    pxor     m6, m6
+    pshufb   m4, m6
+    pshufb   m5, m6
+%else
     SPLATW   m4, m4
     SPLATW   m5, m5
     packuswb m4, m4  ; 16x alpha-1
     packuswb m5, m5  ; 16x beta-1
+%endif
 %if %0>2
     mova     %3, m4
 %endif
