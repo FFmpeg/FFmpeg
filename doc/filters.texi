@@ -18793,6 +18793,69 @@ normalize=blackpt=red:whitept=cyan
 
 Pass the video source unchanged to the output.
 
+@section ocio
+OpenColorIO library filter
+
+This filter allows you to do color management using the OpenColorIO library.
+See https://opencolorio.org/ for more details. To Enable
+compilation of this filter, you need to configure FFmpeg with @code{--enable-libopencolorio}.
+
+It accepts the following options:
+
+@table @option
+@item config
+By default the filter will use the OCIO config defined by the OCIO environment variable, but this parameter allows you to explicitly specify its location.
+If you are getting started, you can use config=ocio://studio-config-v1.0.0_aces-v1.3_ocio-v2.1 which specifies one of the built in defaults.
+
+@item input
+Set the input colorspace.
+
+@item output
+Set the output colorspace.
+
+@item display
+Set the display colorspace, used in combination with view.
+
+@item view
+Set the view colorspace, used in combination with display.
+
+@item inverse
+When used in combination with display and view, this inverts the transform, so going from a display/view to the "input colorspace".
+
+@item filetransform
+Allows you to specify an external file-transform to use instead of the OCIO config file. This is useful for applying a single transform without needing a full OCIO config file.
+
+@item format
+Allow you to specify the output pix_fmt of the OCIO filter. This *has* to be a RGB colorspace, so you really are limited to rgb24, rgba, rgb48, rgba48, gbrp10, gbrp12, gbrpf32le, gbrapf32le, for most encoding we would recommend rgb48
+
+@item context_params
+Allow you to specify additional context parameters for the OCIO filter. This is a list of key=value pairs, separated by colons.
+
+@end table
+
+@subsection Examples
+
+Map from ACEScg to ACEScct, this assumes the OCIO file is defined with the OCIO environment variable.
+@example
+input=ACEScg:output=ACEScct:format=rgb48
+@end example
+
+Map from ACEScg to a sRGB display using the "ACES 1.0 - SDR Video" view transform, this assumes the OCIO file is defined with the OCIO environment variable. Note you will need to wrap the argument in quotes to ensure that the spaces are interpreted correctly.
+@example
+input=ACEScg:display=sRGB - Display:view=ACES 1.0 - SDR Video:format=rgb48
+@end example
+
+
+As above but using the OCIO file studio-config-v1.0.0_aces-v1.3_ocio-v2.1_ns.ocio rather than the OCIO environment variable.
+@example
+config=studio-config-v1.0.0_aces-v1.3_ocio-v2.1_ns.ocio:input=ACEScg:display=sRGB - Display:view=ACES 1.0 - SDR Video:format=rgb48
+@end example
+
+If you are converting to YCrCb you still will want to set the color matrix for the conversion. This is a good example of combining the two.
+@example
+ffmpeg -y -i SOURCEFRAMES.%05d.exr -c:v libx265 -vf "ocio=input=ACEScg:output=ACEScct:format=rgb48,scale=in_color_matrix=bt709:out_color_matrix=bt709,format=yuv444p10"  OUTPUTFILE.mov
+@end example
+
 @section ocr
 Optical Character Recognition
 
