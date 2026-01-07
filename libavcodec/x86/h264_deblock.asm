@@ -322,8 +322,7 @@ cglobal deblock_h_luma_8, 5,9,8,0x60+16*WIN64
 
     ; transpose 16x4 (only the middle 4 rows were changed by the filter)
     mova       m0, [pix_tmp+0x10]
-    mova       m1, [pix_tmp+0x20]
-    mova       m2, [pix_tmp+0x30]
+    ; the two middle rows are still in the proper registers
     mova       m3, [pix_tmp+0x40]
 
     punpckhbw  m4, m0, m1
@@ -523,8 +522,7 @@ cglobal deblock_h_luma_8, 0,5,8,0x60+12
 
     ; transpose 16x4 (only the middle 4 rows were changed by the filter)
     mova       m0, [pix_tmp+0x10]
-    mova       m1, [pix_tmp+0x20]
-    mova       m2, [pix_tmp+0x30]
+    ; the two middle rows are still in the proper registers
     mova       m3, [pix_tmp+0x40]
 
     mov        r0, r0mp
