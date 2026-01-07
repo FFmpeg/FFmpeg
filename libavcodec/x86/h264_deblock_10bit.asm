@@ -1,5 +1,5 @@
 ;*****************************************************************************
-;* MMX/SSE2/AVX-optimized 10-bit H.264 deblocking code
+;* SSE2/AVX-optimized 10-bit H.264 deblocking code
 ;*****************************************************************************
 ;* Copyright (C) 2005-2011 x264 project
 ;*
@@ -65,12 +65,8 @@ cextern pw_1023
 %macro LOAD_TC 2
     movd        %1, [%2]
     punpcklbw   %1, %1
-%if mmsize == 8
-    pshufw      %1, %1, 0
-%else
     pshuflw     %1, %1, 01010000b
     pshufd      %1, %1, 01010000b
-%endif
     psraw       %1, 6
 %endmacro
 
@@ -131,12 +127,6 @@ cextern pw_1023
 %endmacro
 
 %macro LUMA_H_STORE 2
-%if mmsize == 8
-    movq        [r0-4], m0
-    movq        [r0+r1-4], m1
-    movq        [r0+r1*2-4], m2
-    movq        [r0+%2-4], m3
-%else
     movq        [r0-4], m0
     movhps      [r0+r1-4], m0
     movq        [r0+r1*2-4], m1
@@ -145,7 +135,6 @@ cextern pw_1023
     movhps      [%1+r1*2-4], m2
     movq        [%1+%2-4], m3
     movhps      [%1+r1*4-4], m3
-%endif
 %endmacro
 
 %macro DEBLOCK_LUMA 0
@@ -222,24 +211,9 @@ cglobal deblock_h_luma_10, 5,6,8,-7*mmsize
     mov         r5, 32/mmsize
     mova        bm, m5
     add         r3, r1
-%if mmsize == 16
     mov         r2, r0
     add         r2, r3
-%endif
 .loop:
-%if mmsize == 8
-    movq        m2, [r0-8]     ; y q2 q1 q0
-    movq        m7, [r0+0]
-    movq        m5, [r0+r1-8]
-    movq        m3, [r0+r1+0]
-    movq        m0, [r0+r1*2-8]
-    movq        m6, [r0+r1*2+0]
-    movq        m1, [r0+r3-8]
-    TRANSPOSE4x4W 2, 5, 0, 1, 4
-    SWAP         2, 7
-    movq        m7, [r0+r3]
-    TRANSPOSE4x4W 2, 3, 6, 7, 4
-%else
     movu        m5, [r0-8]     ; y q2 q1 q0 p0 p1 p2 x
     movu        m0, [r0+r1-8]
     movu        m2, [r0+r1*2-8]
@@ -258,7 +232,6 @@ cglobal deblock_h_luma_10, 5,6,8,-7*mmsize
     punpckhqdq  m5, m4
     SBUTTERFLY qdq, 0, 1, 7
     SBUTTERFLY qdq, 2, 3, 7
-%endif
 
     mova       p2m, m6
     LOAD_MASK   m0, m1, m2, m3, am, bm, m7, m4, m6
@@ -515,23 +488,6 @@ DEBLOCK_LUMA_64
 %endmacro
 
 %macro LUMA_H_INTRA_LOAD 0
-%if mmsize == 8
-    movu    t0, [r0-8]
-    movu    t1, [r0+r1-8]
-    movu    m0, [r0+r1*2-8]
-    movu    m1, [r0+r4-8]
-    TRANSPOSE4x4W 4, 5, 0, 1, 2
-    mova    t4, t0        ; p3
-    mova    t5, t1        ; p2
-
-    movu    m2, [r0]
-    movu    m3, [r0+r1]
-    movu    t0, [r0+r1*2]
-    movu    t1, [r0+r4]
-    TRANSPOSE4x4W 2, 3, 4, 5, 6
-    mova    t6, t0        ; q2
-    mova    t7, t1        ; q3
-%else
     movu    t0, [r0-8]
     movu    t1, [r0+r1-8]
     movu    m0, [r0+r1*2-8]
@@ -545,24 +501,10 @@ DEBLOCK_LUMA_64
     mova    t5, t1        ; p2
     mova    t6, t2        ; q2
     mova    t7, t3        ; q3
-%endif
 %endmacro
 
 ; in: %1=q3 %2=q2' %3=q1' %4=q0' %5=p0' %6=p1' %7=p2' %8=p3 %9=tmp
 %macro LUMA_H_INTRA_STORE 9
-%if mmsize == 8
-    TRANSPOSE4x4W %1, %2, %3, %4, %9
-    movq       [r0-8], m%1
-    movq       [r0+r1-8], m%2
-    movq       [r0+r1*2-8], m%3
-    movq       [r0+r4-8], m%4
-    movq       m%1, %8
-    TRANSPOSE4x4W %5, %6, %7, %1, %9
-    movq       [r0], m%5
-    movq       [r0+r1], m%6
-    movq       [r0+r1*2], m%7
-    movq       [r0+r4], m%1
-%else
     TRANSPOSE2x4x4W %1, %2, %3, %4, %9
     movq       [r0-8], m%1
     movq       [r0+r1-8], m%2
@@ -586,7 +528,6 @@ DEBLOCK_LUMA_64
     movhps     [r4+r1], m%6
     movhps     [r4+r1*2], m%7
     movhps     [r4+r5], m%1
-%endif
 %endmacro
 
 %if ARCH_X86_64
@@ -746,15 +687,10 @@ cglobal deblock_v_luma_intra_10, 4,7,8,-3*mmsize
 ;-----------------------------------------------------------------------------
 cglobal deblock_h_luma_intra_10, 4,7,8,-8*mmsize
     LUMA_INTRA_INIT 8
-%if mmsize == 8
-    lea     r4, [r1*3]
-    mov     r5, 32/mmsize
-%else
     lea     r4, [r1*4]
     lea     r5, [r1*3] ; 3*stride
     add     r4, r0     ; pix+4*stride
     mov     r6, 32/mmsize
-%endif
     shl    r2d, 2
     shl    r3d, 2
 .loop:
@@ -774,22 +710,13 @@ cglobal deblock_h_luma_intra_10, 4,7,8,-8*mmsize
     LUMA_H_INTRA_STORE 2, 0, 1, 3, 4, 6, 5, t7, 7
 
     lea     r0, [r0+r1*(mmsize/2)]
-%if mmsize == 8
-    dec     r5
-%else
     lea     r4, [r4+r1*(mmsize/2)]
     dec     r6
-%endif
     jg .loop
     RET
 %endmacro
 
 %if ARCH_X86_64 == 0
-%if HAVE_ALIGNED_STACK == 0
-INIT_MMX mmxext
-DEBLOCK_LUMA
-DEBLOCK_LUMA_INTRA
-%endif
 INIT_XMM sse2
 DEBLOCK_LUMA
 DEBLOCK_LUMA_INTRA
@@ -876,37 +803,21 @@ DEBLOCK_LUMA_INTRA
 %endmacro
 
 ; %1 = base + 3*stride
-; %2 = 3*stride (unused on mmx)
+; %2 = 3*stride
 ; %3, %4 = place to store p1 and q1 values
 %macro CHROMA_H_LOAD 4
-    %if mmsize == 8
-        movq m0, [pix_q - 4]
-        movq m1, [pix_q +   stride_q - 4]
-        movq m2, [pix_q + 2*stride_q - 4]
-        movq m3, [%1 - 4]
-        TRANSPOSE4x4W 0, 1, 2, 3, 4
-    %else
-        TRANSPOSE4x8W_LOAD PASS8ROWS(pix_q-4, %1-4, stride_q, %2)
-    %endif
+    TRANSPOSE4x8W_LOAD PASS8ROWS(pix_q-4, %1-4, stride_q, %2)
     mova %3, m0
     mova %4, m3
 %endmacro
 
 ; %1 = base + 3*stride
-; %2 = 3*stride (unused on mmx)
+; %2 = 3*stride
 ; %3, %4 = place to load p1 and q1 values
 %macro CHROMA_H_STORE 4
     mova m0, %3
     mova m3, %4
-    %if mmsize == 8
-        TRANSPOSE4x4W 0, 1, 2, 3, 4
-        movq [pix_q - 4],              m0
-        movq [pix_q +   stride_q - 4], m1
-        movq [pix_q + 2*stride_q - 4], m2
-        movq [%1 - 4],                 m3
-    %else
-        TRANSPOSE8x4W_STORE PASS8ROWS(pix_q-4, %1-4, stride_q, %2)
-    %endif
+    TRANSPOSE8x4W_STORE PASS8ROWS(pix_q-4, %1-4, stride_q, %2)
 %endmacro
 
 %macro CHROMA_V_LOAD_TC 2
@@ -921,7 +832,7 @@ DEBLOCK_LUMA_INTRA
 ; void ff_deblock_v_chroma_10(uint16_t *pix, int stride, int alpha, int beta,
 ;                             int8_t *tc0)
 ;-----------------------------------------------------------------------------
-cglobal deblock_v_chroma_10, 5,7-(mmsize/16),8*(mmsize/16)
+cglobal deblock_v_chroma_10, 5,6,8
     mov         r5, r0
     sub         r0, r1
     sub         r0, r1
@@ -943,7 +854,7 @@ cglobal deblock_v_chroma_10, 5,7-(mmsize/16),8*(mmsize/16)
 ; void ff_deblock_v_chroma_intra_10(uint16_t *pix, int stride, int alpha,
 ;                                   int beta)
 ;-----------------------------------------------------------------------------
-cglobal deblock_v_chroma_intra_10, 4,6-(mmsize/16),8*(mmsize/16)
+cglobal deblock_v_chroma_intra_10, 4,5,8
     mov         r4, r0
     sub         r0, r1
     sub         r0, r1

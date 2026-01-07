@@ -127,11 +127,6 @@ LF_FUNC(h, luma_mbaff, 8, avx)
 LF_FUNCS(uint8_t,   8)
 LF_FUNCS(uint16_t, 10)
 
-LF_FUNC(v,  luma,       10, mmxext)
-LF_FUNC(h,  luma,       10, mmxext)
-LF_IFUNC(v, luma_intra, 10, mmxext)
-LF_IFUNC(h, luma_intra, 10, mmxext)
-
 /***********************************/
 /* weighted prediction */
 
@@ -275,12 +270,6 @@ av_cold void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth,
         }
     } else if (bit_depth == 10) {
         if (EXTERNAL_MMXEXT(cpu_flags)) {
-#if ARCH_X86_32 && !HAVE_ALIGNED_STACK
-            c->h264_v_loop_filter_luma         = ff_deblock_v_luma_10_mmxext;
-            c->h264_h_loop_filter_luma         = ff_deblock_h_luma_10_mmxext;
-            c->h264_v_loop_filter_luma_intra   = ff_deblock_v_luma_intra_10_mmxext;
-            c->h264_h_loop_filter_luma_intra   = ff_deblock_h_luma_intra_10_mmxext;
-#endif /* ARCH_X86_32 && !HAVE_ALIGNED_STACK */
             c->h264_idct_dc_add = ff_h264_idct_dc_add_10_mmxext;
         }
         if (EXTERNAL_SSE2(cpu_flags)) {
