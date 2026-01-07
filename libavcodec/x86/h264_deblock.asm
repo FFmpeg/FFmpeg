@@ -37,35 +37,25 @@ cextern pb_0
 cextern pb_1
 cextern pb_3
 
-; in: 4 rows of 8 bytes in m0..m3
-; out: 8 rows of 4 bytes in %1..%8
-%macro TRANSPOSE8x4B_STORE 8
-    punpckhdq  m4, m0, m0
-    punpckhdq  m5, m1, m1
-    punpckhdq  m6, m2, m2
-
-    punpcklbw  m0, m1
-    punpcklbw  m2, m3
-    punpcklwd  m1, m0, m2
-    punpckhwd  m0, m2
-    movh       %1, m1
-    punpckhdq  m1, m1
-    movh       %2, m1
-    movh       %3, m0
-    punpckhdq  m0, m0
-    movh       %4, m0
-
-    punpckhdq  m3, m3
-    punpcklbw  m4, m5
-    punpcklbw  m6, m3
-    punpcklwd  m5, m4, m6
-    punpckhwd  m4, m6
-    movh       %5, m5
-    punpckhdq  m5, m5
-    movh       %6, m5
-    movh       %7, m4
-    punpckhdq  m4, m4
-    movh       %8, m4
+; in: 2 rows of 8 words in %1, %2
+; out: 8 rows of 4 bytes in %3..%10
+%macro TRANSPOSE8x4B_STORE 10
+    punpcklwd   m6, %1, %2
+    movd        %3, m6
+    pshufd      m7, m6, 00110001b
+    punpckhqdq  m6, m6
+    movd        %4, m7
+    punpckhqdq  m7, m7
+    punpckhwd   %1, %2
+    movd        %5, m6
+    movd        %6, m7
+    pshufd      m6, %1, 00110001b
+    movd        %7, %1
+    punpckhqdq  %1, %1
+    movd        %8, m6
+    punpckhqdq  m6, m6
+    movd        %9, %1
+    movd       %10, m6
 %endmacro
 
 %macro SBUTTERFLY3 4
@@ -297,8 +287,8 @@ cglobal deblock_v_luma_8, 5,5,10, pix_, stride_, alpha_, beta_, base3_
 ; void ff_deblock_h_luma(uint8_t *pix, int stride, int alpha, int beta,
 ;                        int8_t *tc0)
 ;-----------------------------------------------------------------------------
-INIT_MMX cpuname
-cglobal deblock_h_luma_8, 5,9,0,0x60+16*WIN64
+cglobal deblock_h_luma_8, 5,9,8,0x60+16*WIN64
+    INIT_MMX cpuname
     movsxd r7,  r1d
     lea    r8,  [r7+r7*2]
     lea    r6,  [r0-4]
@@ -325,25 +315,30 @@ cglobal deblock_h_luma_8, 5,9,0,0x60+16*WIN64
 %endif
     call   deblock_v_luma_8
 
-    ; transpose 16x4 -> original space  (only the middle 4 rows were changed by the filter)
     add    r6, 2
     add    r5, 2
-    movq   m0, [pix_tmp+0x18]
-    movq   m1, [pix_tmp+0x28]
-    movq   m2, [pix_tmp+0x38]
-    movq   m3, [pix_tmp+0x48]
-    TRANSPOSE8x4B_STORE  PASS8ROWS(r6, r5, r7, r8)
 
+    INIT_XMM cpuname
+
+    ; transpose 16x4 (only the middle 4 rows were changed by the filter)
+    mova       m0, [pix_tmp+0x10]
+    mova       m1, [pix_tmp+0x20]
+    mova       m2, [pix_tmp+0x30]
+    mova       m3, [pix_tmp+0x40]
+
+    punpckhbw  m4, m0, m1
+    punpckhbw  m5, m2, m3
+
+    TRANSPOSE8x4B_STORE m4, m5, PASS8ROWS(r6, r5, r7, r8)
+
+    punpcklbw  m0, m1
+    punpcklbw  m2, m3
     shl    r7,  3
     sub    r6,  r7
     sub    r5,  r7
     shr    r7,  3
-    movq   m0, [pix_tmp+0x10]
-    movq   m1, [pix_tmp+0x20]
-    movq   m2, [pix_tmp+0x30]
-    movq   m3, [pix_tmp+0x40]
-    TRANSPOSE8x4B_STORE  PASS8ROWS(r6, r5, r7, r8)
 
+    TRANSPOSE8x4B_STORE m0, m2, PASS8ROWS(r6, r5, r7, r8)
     RET
 %endmacro
 
@@ -499,8 +494,8 @@ cglobal deblock_v_luma_8, 5,5,8,2*%1
 ; void ff_deblock_h_luma(uint8_t *pix, int stride, int alpha, int beta,
 ;                        int8_t *tc0)
 ;-----------------------------------------------------------------------------
-INIT_MMX cpuname
 cglobal deblock_h_luma_8, 0,5,8,0x60+12
+    INIT_MMX cpuname
     mov    r0, r0mp
     mov    r3, r1m
     lea    r4, [r3*3]
@@ -524,24 +519,28 @@ cglobal deblock_h_luma_8, 0,5,8,0x60+12
     call   deblock_v_luma_8
     ADD    esp, 20
 
-    ; transpose 16x4 -> original space  (only the middle 4 rows were changed by the filter)
-    mov    r0, r0mp
-    sub    r0, 2
+    INIT_XMM cpuname
 
-    movq   m0, [pix_tmp+0x10]
-    movq   m1, [pix_tmp+0x20]
-    lea    r1, [r0+r4]
-    movq   m2, [pix_tmp+0x30]
-    movq   m3, [pix_tmp+0x40]
-    TRANSPOSE8x4B_STORE  PASS8ROWS(r0, r1, r3, r4)
+    ; transpose 16x4 (only the middle 4 rows were changed by the filter)
+    mova       m0, [pix_tmp+0x10]
+    mova       m1, [pix_tmp+0x20]
+    mova       m2, [pix_tmp+0x30]
+    mova       m3, [pix_tmp+0x40]
 
+    mov        r0, r0mp
+    punpcklbw  m4, m0, m1
+    sub        r0, 2
+    punpcklbw  m5, m2, m3
+    lea        r1, [r0+r4]
+
+    TRANSPOSE8x4B_STORE m4, m5, PASS8ROWS(r0, r1, r3, r4)
+
+    punpckhbw   m0, m1
     lea    r0, [r0+r3*8]
+    punpckhbw   m2, m3
     lea    r1, [r1+r3*8]
-    movq   m0, [pix_tmp+0x18]
-    movq   m1, [pix_tmp+0x28]
-    movq   m2, [pix_tmp+0x38]
-    movq   m3, [pix_tmp+0x48]
-    TRANSPOSE8x4B_STORE  PASS8ROWS(r0, r1, r3, r4)
+
+    TRANSPOSE8x4B_STORE m0, m2, PASS8ROWS(r0, r1, r3, r4)
 
     RET
 %endmacro ; DEBLOCK_LUMA
