@@ -80,8 +80,10 @@ static AVFrame *downscale(AVFrame *in)
     src = in   ->data[0];
     dst = frame->data[0];
 
-    for(y = 0; y < frame->height; y++) {
-        for(x = 0; x < frame->width; x++) {
+    int w2 = in->width/2;
+    int h2 = in->height/2;
+    for(y = 0; y < h2; y++) {
+        for(x = 0; x < w2; x++) {
             dst[x] = (  src[2*x+0]
                       + src[2*x+1]
                       + src[2*x+0 + in->linesize[0]]
@@ -91,6 +93,22 @@ static AVFrame *downscale(AVFrame *in)
         src += 2*in->linesize[0];
         dst += frame->linesize[0];
     }
+    src = in   ->data[0];
+    dst = frame->data[0];
+    for(y = 0; y < frame->height; y++) {
+        int yd = y < h2 ? in->linesize[0] : 0;
+        x = yd ? w2 : 0;
+        for(; x < frame->width; x++) {
+            dst[x] = (  src[2*x+0]
+                      + src[FFMIN(2*x+1, w2)]
+                      + src[2*x+0            + yd]
+                      + src[FFMIN(2*x+1, w2) + yd]
+                      + 2) >> 2;
+        }
+        src += 2*in->linesize[0];
+        dst += frame->linesize[0];
+    }
+
     return frame;
 }
 
