@@ -699,10 +699,8 @@ cglobal deblock_%1_luma_intra_8, 4,6,16,ARCH_X86_64*0x50-0x50
     lea     r4, [r1*4]
     lea     r5, [r1*3] ; 3*stride
     dec     r2d        ; alpha-1
-    jl .end
     neg     r4
     dec     r3d        ; beta-1
-    jl .end
     add     r4, r0     ; pix-4*stride
     mova    p1, [r4+2*r1]
     mova    p0, [r4+r5]
@@ -743,7 +741,6 @@ cglobal deblock_%1_luma_intra_8, 4,6,16,ARCH_X86_64*0x50-0x50
     LUMA_INTRA_P012 [r4+r5], [r4+2*r1], [r4+r1], [r4]
     LUMA_INTRA_SWAP_PQ
     LUMA_INTRA_P012 [r0], [r0+r1], [r0+2*r1], [r0+r5]
-.end:
     RET
 
 INIT_MMX cpuname
