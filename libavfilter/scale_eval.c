@@ -116,7 +116,7 @@ int ff_scale_adjust_dimensions(AVFilterLink *inlink,
     double w_adj)
 {
     int64_t w, h;
-    int factor_w, factor_h;
+    int64_t factor_w, factor_h;
 
     w = *ret_w;
     h = *ret_h;
