@@ -445,12 +445,12 @@ DEBLOCK_LUMA
 
 %else
 
-%macro DEBLOCK_LUMA 2
+%macro DEBLOCK_LUMA 1
 ;-----------------------------------------------------------------------------
-; void ff_deblock_v8_luma(uint8_t *pix, int stride, int alpha, int beta,
-;                         int8_t *tc0)
+; void ff_deblock_v_luma(uint8_t *pix, ptrdiff_t stride, int alpha, int beta,
+;                        int8_t *tc0)
 ;-----------------------------------------------------------------------------
-cglobal deblock_%1_luma_8, 5,5,8,2*%2
+cglobal deblock_v_luma_8, 5,5,8,2*%1
     lea     r4, [r1*3]
     dec     r2     ; alpha-1
     neg     r4
@@ -468,7 +468,7 @@ cglobal deblock_%1_luma_8, 5,5,8,2*%2
     movd    m4, [r3] ; tc0
     punpcklbw m4, m4
     punpcklbw m4, m4 ; tc = 4x tc0[3], 4x tc0[2], 4x tc0[1], 4x tc0[0]
-    mova   [esp+%2], m4 ; tc
+    mova   [esp+%1], m4 ; tc
     pcmpgtb m4, m3
     mova    m3, [r4] ; p2
     pand    m4, m7
@@ -476,7 +476,7 @@ cglobal deblock_%1_luma_8, 5,5,8,2*%2
 
     DIFF_GT2 m1, m3, m5, m6, m7 ; |p2-p0| > beta-1
     pand    m6, m4
-    pand    m4, [esp+%2] ; tc
+    pand    m4, [esp+%1] ; tc
     psubb   m7, m4, m6
     pand    m6, m4
     LUMA_Q1 m0, m3, [r4], [r4+r1], m6, m4
@@ -484,7 +484,7 @@ cglobal deblock_%1_luma_8, 5,5,8,2*%2
     mova    m4, [r0+2*r1] ; q2
     DIFF_GT2 m2, m4, m5, m6, m3 ; |q2-q0| > beta-1
     pand    m6, [esp] ; mask
-    mova    m5, [esp+%2] ; tc
+    mova    m5, [esp+%1] ; tc
     psubb   m7, m6
     pand    m5, m6
     mova    m3, [r0+r1]
@@ -521,12 +521,7 @@ cglobal deblock_h_luma_8, 0,5,8,0x60+12
     PUSH   dword r2m
     PUSH   dword 16
     PUSH   dword r0
-    call   deblock_%1_luma_8
-%ifidn %1, v8
-    add    dword [esp   ], 8 ; pix_tmp+0x38
-    add    dword [esp+16], 2 ; tc0+2
-    call   deblock_%1_luma_8
-%endif
+    call   deblock_v_luma_8
     ADD    esp, 20
 
     ; transpose 16x4 -> original space  (only the middle 4 rows were changed by the filter)
@@ -552,10 +547,10 @@ cglobal deblock_h_luma_8, 0,5,8,0x60+12
 %endmacro ; DEBLOCK_LUMA
 
 INIT_XMM sse2
-DEBLOCK_LUMA v, 16
+DEBLOCK_LUMA 16
 %if HAVE_AVX_EXTERNAL
 INIT_XMM avx
-DEBLOCK_LUMA v, 16
+DEBLOCK_LUMA 16
 %endif
 
 %endif ; ARCH
@@ -698,9 +693,9 @@ DEBLOCK_LUMA v, 16
 ; void ff_deblock_v_luma_intra(uint8_t *pix, int stride, int alpha, int beta)
 ;-----------------------------------------------------------------------------
 %if WIN64
-cglobal deblock_%1_luma_intra_8, 4,6,16,0x10
+cglobal deblock_v_luma_intra_8, 4,6,16,0x10
 %else
-cglobal deblock_%1_luma_intra_8, 4,6,16,ARCH_X86_64*0x50-0x50
+cglobal deblock_v_luma_intra_8, 4,6,16,ARCH_X86_64*0x50-0x50
 %endif
     lea     r4, [r1*4]
     lea     r5, [r1*3] ; 3*stride
@@ -802,11 +797,7 @@ cglobal deblock_h_luma_intra_8, 2,4,8,0x80
     PUSH   dword r2m
     PUSH   dword 16
     PUSH   r0
-    call   deblock_%1_luma_intra_8
-%ifidn %1, v8
-    add    dword [rsp], 8 ; pix_tmp+8
-    call   deblock_%1_luma_intra_8
-%endif
+    call   deblock_v_luma_intra_8
     ADD    esp, 16
 
     mov    r1,  r1m
