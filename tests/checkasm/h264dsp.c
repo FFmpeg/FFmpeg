@@ -374,24 +374,26 @@ static void check_idct_dequant(void)
 
 static void check_loop_filter(void)
 {
+    enum {
+        N = 35,
+    };
     LOCAL_ALIGNED_16(uint8_t, dst, [32 * 16 * 2]);
     LOCAL_ALIGNED_16(uint8_t, dst0, [32 * 16 * 2]);
     LOCAL_ALIGNED_16(uint8_t, dst1, [32 * 16 * 2]);
     H264DSPContext h;
     int bit_depth;
-    int alphas[36], betas[36];
-    int8_t tc0[36][4];
+    int alphas[N], betas[N];
+    int8_t tc0[N][4];
 
     declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *pix, ptrdiff_t stride,
                       int alpha, int beta, int8_t *tc0);
 
     for (bit_depth = 8; bit_depth <= 10; bit_depth++) {
-        int i, j, a, c;
         uint32_t mask = pixel_mask_lf[bit_depth - 8];
         ff_h264dsp_init(&h, bit_depth, 1);
-        for (i = 35, a = 255, c = 250; i >= 0; i--) {
+        for (int i = N, a = 255, c = 250; --i >= 0;) {
             alphas[i] = a << (bit_depth - 8);
-            betas[i]  = (i + 1) / 2 << (bit_depth - 8);
+            betas[i]  = (i + 2) / 2 << (bit_depth - 8);
             tc0[i][0] = tc0[i][3] = (c + 6) / 10;
             tc0[i][1] = (c + 7) / 15;
             tc0[i][2] = (c + 9) / 20;
@@ -402,9 +404,9 @@ static void check_loop_filter(void)
 #define CHECK_LOOP_FILTER(name, align, idc)                             \
         do {                                                            \
             if (check_func(h.name, #name #idc "_%dbpp", bit_depth)) {   \
-                for (j = 0; j < 36; j++) {                              \
+                for (int j = 0; j < N; ++j) {                           \
                     intptr_t off = 8 * 32 + (j & 15) * 4 * !align;      \
-                    for (i = 0; i < 1024; i+=4) {                       \
+                    for (int i = 0; i < 1024; i += 4) {                 \
                         AV_WN32A(dst + i, rnd() & mask);                \
                     }                                                   \
                     memcpy(dst0, dst, 32 * 16 * 2);                     \
@@ -439,32 +441,34 @@ static void check_loop_filter(void)
 
 static void check_loop_filter_intra(void)
 {
+    enum {
+        N = 35,
+    };
     LOCAL_ALIGNED_16(uint8_t, dst, [32 * 16 * 2]);
     LOCAL_ALIGNED_16(uint8_t, dst0, [32 * 16 * 2]);
     LOCAL_ALIGNED_16(uint8_t, dst1, [32 * 16 * 2]);
     H264DSPContext h;
     int bit_depth;
-    int alphas[36], betas[36];
+    int alphas[N], betas[N];
 
     declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *pix, ptrdiff_t stride,
                       int alpha, int beta);
 
     for (bit_depth = 8; bit_depth <= 10; bit_depth++) {
-        int i, j, a;
         uint32_t mask = pixel_mask_lf[bit_depth - 8];
         ff_h264dsp_init(&h, bit_depth, 1);
-        for (i = 35, a = 255; i >= 0; i--) {
+        for (int i = N, a = 255; --i >= 0;) {
             alphas[i] = a << (bit_depth - 8);
-            betas[i]  = (i + 1) / 2 << (bit_depth - 8);
+            betas[i]  = (i + 2) / 2 << (bit_depth - 8);
             a = a*9/10;
         }
 
 #define CHECK_LOOP_FILTER(name, align, idc)                             \
         do {                                                            \
             if (check_func(h.name, #name #idc "_%dbpp", bit_depth)) {   \
-                for (j = 0; j < 36; j++) {                              \
+                for (int j = 0; j < N; ++j) {                           \
                     intptr_t off = 8 * 32 + (j & 15) * 4 * !align;      \
-                    for (i = 0; i < 1024; i+=4) {                       \
+                    for (int i = 0; i < 1024; i += 4) {                 \
                         AV_WN32A(dst + i, rnd() & mask);                \
                     }                                                   \
                     memcpy(dst0, dst, 32 * 16 * 2);                     \
