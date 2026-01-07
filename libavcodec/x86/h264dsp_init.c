@@ -314,12 +314,10 @@ av_cold void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth,
             } else {
                 c->h264_h_loop_filter_chroma = ff_deblock_h_chroma422_10_sse2;
             }
-#if HAVE_ALIGNED_STACK
             c->h264_v_loop_filter_luma       = ff_deblock_v_luma_10_sse2;
             c->h264_h_loop_filter_luma       = ff_deblock_h_luma_10_sse2;
             c->h264_v_loop_filter_luma_intra = ff_deblock_v_luma_intra_10_sse2;
             c->h264_h_loop_filter_luma_intra = ff_deblock_h_luma_intra_10_sse2;
-#endif /* HAVE_ALIGNED_STACK */
         }
         if (EXTERNAL_SSE4(cpu_flags)) {
             c->weight_h264_pixels_tab[0] = ff_h264_weight_16_10_sse4;
@@ -354,12 +352,10 @@ av_cold void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth,
             } else {
                 c->h264_h_loop_filter_chroma = ff_deblock_h_chroma422_10_avx;
             }
-#if HAVE_ALIGNED_STACK
             c->h264_v_loop_filter_luma         = ff_deblock_v_luma_10_avx;
             c->h264_h_loop_filter_luma         = ff_deblock_h_luma_10_avx;
             c->h264_v_loop_filter_luma_intra   = ff_deblock_v_luma_intra_10_avx;
             c->h264_h_loop_filter_luma_intra   = ff_deblock_h_luma_intra_10_avx;
-#endif /* HAVE_ALIGNED_STACK */
         }
     }
 }
