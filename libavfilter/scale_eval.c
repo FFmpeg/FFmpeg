@@ -124,7 +124,7 @@ int ff_scale_adjust_dimensions(AVFilterLink *inlink,
     int force_original_aspect_ratio, int force_divisible_by)
 {
     int64_t w, h;
-    int factor_w, factor_h;
+    int64_t factor_w, factor_h;
 
     w = *ret_w;
     h = *ret_h;
