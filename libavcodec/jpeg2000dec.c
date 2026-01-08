@@ -2271,7 +2271,7 @@ static inline int tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile 
                     continue;
 
                 if (M_b >= 31) {
-                    avpriv_request_sample(s->avctx, "M_b >= 31");
+                    avpriv_request_sample(s->avctx, "M_b (%d) > 31", M_b);
                     return AVERROR_PATCHWELCOME;
                 }
 
