@@ -249,6 +249,18 @@ av_warn_unused_result
 int ff_set_common_formats_from_list(AVFilterContext *ctx, const int *fmts);
 
 /**
+ * Equivalent to ff_set_common_formats(ctx, ff_make_sample_format_list(fmts))
+ */
+av_warn_unused_result
+int ff_set_sample_formats_from_list(AVFilterContext *ctx, const enum AVSampleFormat *fmts);
+
+/**
+ * Equivalent to ff_set_common_formats(ctx, ff_make_pixel_format_list(fmts))
+ */
+av_warn_unused_result
+int ff_set_pixel_formats_from_list(AVFilterContext *ctx, const enum AVPixelFormat *fmts);
+
+/**
  * Helpers for query_formats2() which set all free audio links to the same list
  * of channel layouts/sample rates. If there are no links hooked to this list,
  * the list is freed.
@@ -350,6 +362,18 @@ int ff_set_common_formats_from_list2(const AVFilterContext *ctx,
                                      const int *fmts);
 
 av_warn_unused_result
+int ff_set_sample_formats_from_list2(const AVFilterContext *ctx,
+                                     AVFilterFormatsConfig **cfg_in,
+                                     AVFilterFormatsConfig **cfg_out,
+                                     const enum AVSampleFormat *fmts);
+
+av_warn_unused_result
+int ff_set_pixel_formats_from_list2(const AVFilterContext *ctx,
+                                    AVFilterFormatsConfig **cfg_in,
+                                    AVFilterFormatsConfig **cfg_out,
+                                    const enum AVPixelFormat *fmts);
+
+av_warn_unused_result
 int ff_add_channel_layout(AVFilterChannelLayouts **l,
                           const AVChannelLayout *channel_layout);
 
@@ -384,6 +408,26 @@ int ff_default_query_formats(AVFilterContext *ctx);
  */
 av_warn_unused_result
 AVFilterFormats *ff_make_format_list(const int *fmts);
+
+/**
+ * Create a list of supported sample formats. This is intended for use in
+ * AVFilter->query_formats().
+ *
+ * @param fmts list of enum AVSampleFormat, terminated by AV_SAMPLE_FMT_NONE
+ * @return the format list, with no existing references
+ */
+av_warn_unused_result
+AVFilterFormats *ff_make_sample_format_list(const enum AVSampleFormat *fmts);
+
+/**
+ * Create a list of supported pixel formats. This is intended for use in
+ * AVFilter->query_formats().
+ *
+ * @param fmts list of enum AVPixelFormat, terminated by AV_PIX_FMT_NONE
+ * @return the format list, with no existing references
+ */
+av_warn_unused_result
+AVFilterFormats *ff_make_pixel_format_list(const enum AVPixelFormat *fmts);
 
 /**
  * Equivalent to ff_make_format_list({const int[]}{ fmt, -1 })

@@ -497,14 +497,18 @@ int ff_fmt_is_in(int fmt, const int *fmts)
         }                                                               \
     }
 
-AVFilterFormats *ff_make_format_list(const int *fmts)
-{
-    MAKE_FORMAT_LIST(AVFilterFormats, formats, nb_formats);
-    while (count--)
-        formats->formats[count] = fmts[count];
+#define MAKE_FORMAT_LIST_TYPE(name, type)                           \
+    AVFilterFormats *ff_make_ ## name ## _list(const type* fmts)    \
+    {                                                               \
+        MAKE_FORMAT_LIST(AVFilterFormats, formats, nb_formats);     \
+        while (count--)                                             \
+            formats->formats[count] = (int)fmts[count];             \
+        return formats;                                             \
+    }
 
-    return formats;
-}
+MAKE_FORMAT_LIST_TYPE(format, int)
+MAKE_FORMAT_LIST_TYPE(sample_format, enum AVSampleFormat)
+MAKE_FORMAT_LIST_TYPE(pixel_format, enum AVPixelFormat)
 
 AVFilterChannelLayouts *ff_make_channel_layout_list(const AVChannelLayout *fmts)
 {
@@ -969,6 +973,16 @@ int ff_set_common_formats_from_list(AVFilterContext *ctx, const int *fmts)
     return ff_set_common_formats(ctx, ff_make_format_list(fmts));
 }
 
+int ff_set_sample_formats_from_list(AVFilterContext *ctx, const enum AVSampleFormat *fmts)
+{
+    return ff_set_common_formats(ctx, ff_make_sample_format_list(fmts));
+}
+
+int ff_set_pixel_formats_from_list(AVFilterContext *ctx, const enum AVPixelFormat *fmts)
+{
+    return ff_set_common_formats(ctx, ff_make_pixel_format_list(fmts));
+}
+
 #define SET_COMMON_FORMATS2(ctx, cfg_in, cfg_out, fmts, media_type, \
                             ref_fn, unref_fn)                       \
     if (!fmts)                                                      \
@@ -1139,6 +1153,21 @@ int ff_set_common_formats_from_list2(const AVFilterContext *ctx,
     return ff_set_common_formats2(ctx, cfg_in, cfg_out, ff_make_format_list(fmts));
 }
 
+int ff_set_sample_formats_from_list2(const AVFilterContext *ctx,
+                                     AVFilterFormatsConfig **cfg_in,
+                                     AVFilterFormatsConfig **cfg_out,
+                                     const enum AVSampleFormat *fmts)
+{
+    return ff_set_common_formats2(ctx, cfg_in, cfg_out, ff_make_sample_format_list(fmts));
+}
+
+int ff_set_pixel_formats_from_list2(const AVFilterContext *ctx,
+                                    AVFilterFormatsConfig **cfg_in,
+                                    AVFilterFormatsConfig **cfg_out,
+                                    const enum AVPixelFormat *fmts)
+{
+    return ff_set_common_formats2(ctx, cfg_in, cfg_out, ff_make_pixel_format_list(fmts));
+}
 
 int ff_default_query_formats(AVFilterContext *ctx)
 {
