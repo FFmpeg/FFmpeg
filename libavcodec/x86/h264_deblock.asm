@@ -238,7 +238,7 @@ cextern pb_3
 
 %if ARCH_X86_64
 ;-----------------------------------------------------------------------------
-; void ff_deblock_v_luma(uint8_t *pix, int stride, int alpha, int beta,
+; void ff_deblock_v_luma(uint8_t *pix, ptrdiff_t stride, int alpha, int beta,
 ;                        int8_t *tc0)
 ;-----------------------------------------------------------------------------
 %macro DEBLOCK_LUMA 0
@@ -284,15 +284,15 @@ cglobal deblock_v_luma_8, 5,5,10, pix_, stride_, alpha_, beta_, base3_
     RET
 
 ;-----------------------------------------------------------------------------
-; void ff_deblock_h_luma(uint8_t *pix, int stride, int alpha, int beta,
+; void ff_deblock_h_luma(uint8_t *pix, ptrdiff_t stride, int alpha, int beta,
 ;                        int8_t *tc0)
 ;-----------------------------------------------------------------------------
 cglobal deblock_h_luma_8, 5,9,8,0x60+16*WIN64
     INIT_MMX cpuname
-    movsxd r7,  r1d
-    lea    r8,  [r7+r7*2]
+    lea    r8,  [r1+r1*2]
     lea    r6,  [r0-4]
     lea    r5,  [r0-4+r8]
+    mov    r7,  r1
 %if WIN64
     %define pix_tmp rsp+0x30 ; shadow space + r4
 %else
@@ -300,10 +300,10 @@ cglobal deblock_h_luma_8, 5,9,8,0x60+16*WIN64
 %endif
 
     ; transpose 6x16 -> tmp space
-    TRANSPOSE6x8_MEM  PASS8ROWS(r6, r5, r7, r8), pix_tmp
-    lea    r6, [r6+r7*8]
-    lea    r5, [r5+r7*8]
-    TRANSPOSE6x8_MEM  PASS8ROWS(r6, r5, r7, r8), pix_tmp+8
+    TRANSPOSE6x8_MEM  PASS8ROWS(r6, r5, r1, r8), pix_tmp
+    lea    r6, [r6+r1*8]
+    lea    r5, [r5+r1*8]
+    TRANSPOSE6x8_MEM  PASS8ROWS(r6, r5, r1, r8), pix_tmp+8
 
     ; vertical filter
     ; alpha, beta, tc0 are still in r2d, r3d, r4
@@ -344,7 +344,6 @@ cglobal deblock_h_luma_8, 5,9,8,0x60+16*WIN64
 %macro DEBLOCK_H_LUMA_MBAFF 0
 
 cglobal deblock_h_luma_mbaff_8, 5, 9, 10, 8*16, pix_, stride_, alpha_, beta_, tc0_, base3_, stride3_
-    movsxd stride_q,   stride_d
     dec    alpha_d
     dec    beta_d
     mov    base3_q,    pix_q
@@ -490,7 +489,7 @@ cglobal deblock_v_luma_8, 5,5,8,2*%1
     RET
 
 ;-----------------------------------------------------------------------------
-; void ff_deblock_h_luma(uint8_t *pix, int stride, int alpha, int beta,
+; void ff_deblock_h_luma(uint8_t *pix, ptrdiff_t stride, int alpha, int beta,
 ;                        int8_t *tc0)
 ;-----------------------------------------------------------------------------
 cglobal deblock_h_luma_8, 0,5,8,0x60+12
@@ -687,7 +686,7 @@ DEBLOCK_LUMA 16
 %endif
 
 ;-----------------------------------------------------------------------------
-; void ff_deblock_v_luma_intra(uint8_t *pix, int stride, int alpha, int beta)
+; void ff_deblock_v_luma_intra(uint8_t *pix, ptrdiff_t stride, int alpha, int beta)
 ;-----------------------------------------------------------------------------
 %if WIN64
 cglobal deblock_v_luma_intra_8, 4,6,16,0x10
@@ -744,13 +743,13 @@ cglobal deblock_v_luma_intra_8, 4,6,16,ARCH_X86_64*0x50-0x50
 INIT_MMX cpuname
 %if ARCH_X86_64
 ;-----------------------------------------------------------------------------
-; void ff_deblock_h_luma_intra(uint8_t *pix, int stride, int alpha, int beta)
+; void ff_deblock_h_luma_intra(uint8_t *pix, ptrdiff_t stride, int alpha, int beta)
 ;-----------------------------------------------------------------------------
 cglobal deblock_h_luma_intra_8, 4,9,0,0x80
-    movsxd r7,  r1d
-    lea    r8,  [r7*3]
+    lea    r8,  [r1*3]
     lea    r6,  [r0-4]
     lea    r5,  [r0-4+r8]
+    mov    r7,  r1
 %if WIN64
     %define pix_tmp rsp+0x20 ; shadow space
 %else
@@ -758,10 +757,10 @@ cglobal deblock_h_luma_intra_8, 4,9,0,0x80
 %endif
 
     ; transpose 8x16 -> tmp space
-    TRANSPOSE8x8_MEM  PASS8ROWS(r6, r5, r7, r8), PASS8ROWS(pix_tmp, pix_tmp+0x30, 0x10, 0x30)
-    lea    r6, [r6+r7*8]
-    lea    r5, [r5+r7*8]
-    TRANSPOSE8x8_MEM  PASS8ROWS(r6, r5, r7, r8), PASS8ROWS(pix_tmp+8, pix_tmp+0x38, 0x10, 0x30)
+    TRANSPOSE8x8_MEM  PASS8ROWS(r6, r5, r1, r8), PASS8ROWS(pix_tmp, pix_tmp+0x30, 0x10, 0x30)
+    lea    r6, [r6+r1*8]
+    lea    r5, [r5+r1*8]
+    TRANSPOSE8x8_MEM  PASS8ROWS(r6, r5, r1, r8), PASS8ROWS(pix_tmp+8, pix_tmp+0x38, 0x10, 0x30)
 
     lea    r0,  [pix_tmp+0x40]
     mov    r1,  0x10
@@ -899,7 +898,6 @@ DEBLOCK_LUMA_INTRA v
 %endmacro
 
 %macro CHROMA_V_START_XMM 1
-    movsxdifnidn stride_q, stride_d
     dec alpha_d
     dec beta_d
     mov %1, pix_q
@@ -908,7 +906,6 @@ DEBLOCK_LUMA_INTRA v
 %endmacro
 
 %macro CHROMA_H_START_XMM 2
-    movsxdifnidn stride_q, stride_d
     dec alpha_d
     dec beta_d
     lea %2, [3*stride_q]
