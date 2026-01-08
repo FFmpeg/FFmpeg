@@ -465,6 +465,7 @@ SwsOpList *ff_sws_op_list_alloc(void)
     if (!ops)
         return NULL;
 
+    ops->order_src = ops->order_dst = SWS_SWIZZLE(0, 1, 2, 3);
     ff_fmt_clear(&ops->src);
     ff_fmt_clear(&ops->dst);
     return ops;
@@ -845,6 +846,8 @@ typedef struct SwsOpPass {
     int planes_out;
     int pixel_bits_in;
     int pixel_bits_out;
+    int idx_in[4];
+    int idx_out[4];
     bool memcpy_in;
     bool memcpy_out;
 } SwsOpPass;
@@ -861,10 +864,27 @@ static void op_pass_free(void *ptr)
     av_free(p);
 }
 
-static void op_pass_setup(const SwsImg *out, const SwsImg *in, const SwsPass *pass)
+static inline SwsImg img_shift_idx(const SwsImg *base, const int y,
+                                   const int plane_idx[4])
 {
-    const AVPixFmtDescriptor *indesc  = av_pix_fmt_desc_get(in->fmt);
-    const AVPixFmtDescriptor *outdesc = av_pix_fmt_desc_get(out->fmt);
+    SwsImg img = *base;
+    for (int i = 0; i < 4; i++) {
+        const int idx = plane_idx[i];
+        if (idx >= 0) {
+            const int yshift = y >> ff_fmt_vshift(base->fmt, idx);
+            img.data[i] = base->data[idx] + yshift * base->linesize[idx];
+        } else {
+            img.data[i] = NULL;
+        }
+    }
+    return img;
+}
+
+static void op_pass_setup(const SwsImg *out_base, const SwsImg *in_base,
+                          const SwsPass *pass)
+{
+    const AVPixFmtDescriptor *indesc  = av_pix_fmt_desc_get(in_base->fmt);
+    const AVPixFmtDescriptor *outdesc = av_pix_fmt_desc_get(out_base->fmt);
 
     SwsOpPass *p = pass->priv;
     SwsOpExec *exec = &p->exec_base;
@@ -883,22 +903,27 @@ static void op_pass_setup(const SwsImg *out, const SwsImg *in, const SwsPass *pa
     p->memcpy_in     = false;
     p->memcpy_out    = false;
 
+    const SwsImg in  = img_shift_idx(in_base,  0, p->idx_in);
+    const SwsImg out = img_shift_idx(out_base, 0, p->idx_out);
+
     for (int i = 0; i < p->planes_in; i++) {
-        const int sub_x      = (i == 1 || i == 2) ? indesc->log2_chroma_w : 0;
+        const int idx        = p->idx_in[i];
+        const int sub_x      = (idx == 1 || idx == 2) ? indesc->log2_chroma_w : 0;
         const int plane_w    = (aligned_w + sub_x) >> sub_x;
         const int plane_pad  = (comp->over_read + sub_x) >> sub_x;
         const int plane_size = plane_w * p->pixel_bits_in >> 3;
-        p->memcpy_in |= plane_size + plane_pad > in->linesize[i];
-        exec->in_stride[i] = in->linesize[i];
+        p->memcpy_in |= plane_size + plane_pad > in.linesize[i];
+        exec->in_stride[i] = in.linesize[i];
     }
 
     for (int i = 0; i < p->planes_out; i++) {
-        const int sub_x      = (i == 1 || i == 2) ? outdesc->log2_chroma_w : 0;
+        const int idx        = p->idx_out[i];
+        const int sub_x      = (idx == 1 || idx == 2) ? outdesc->log2_chroma_w : 0;
         const int plane_w    = (aligned_w + sub_x) >> sub_x;
         const int plane_pad  = (comp->over_write + sub_x) >> sub_x;
         const int plane_size = plane_w * p->pixel_bits_out >> 3;
-        p->memcpy_out |= plane_size + plane_pad > out->linesize[i];
-        exec->out_stride[i] = out->linesize[i];
+        p->memcpy_out |= plane_size + plane_pad > out.linesize[i];
+        exec->out_stride[i] = out.linesize[i];
     }
 
     /* Pre-fill pointer bump for the main section only; this value does not
@@ -906,8 +931,8 @@ static void op_pass_setup(const SwsImg *out, const SwsImg *in, const SwsPass *pa
      * process a single line */
     const int blocks_main = p->num_blocks - p->memcpy_out;
     for (int i = 0; i < 4; i++) {
-        exec->in_bump[i]  = in->linesize[i]  - blocks_main * exec->block_size_in;
-        exec->out_bump[i] = out->linesize[i] - blocks_main * exec->block_size_out;
+        exec->in_bump[i]  = in.linesize[i]  - blocks_main * exec->block_size_in;
+        exec->out_bump[i] = out.linesize[i] - blocks_main * exec->block_size_out;
     }
 }
 
@@ -925,8 +950,8 @@ handle_tail(const SwsOpPass *p, SwsOpExec *exec,
     const int tail_size_out = p->tail_size_out;
     const int bx = p->num_blocks - 1;
 
-    SwsImg in  = ff_sws_img_shift(in_base,  y);
-    SwsImg out = ff_sws_img_shift(out_base, y);
+    SwsImg in  = img_shift_idx(in_base,  y, p->idx_in);
+    SwsImg out = img_shift_idx(out_base, y, p->idx_out);
     for (int i = 0; i < p->planes_in; i++) {
         in.data[i]  += p->tail_off_in;
         if (copy_in) {
@@ -980,8 +1005,8 @@ static void op_pass_run(const SwsImg *out_base, const SwsImg *in_base,
 {
     const SwsOpPass *p = pass->priv;
     const SwsCompiledOp *comp = &p->comp;
-    const SwsImg in  = ff_sws_img_shift(in_base,  y);
-    const SwsImg out = ff_sws_img_shift(out_base, y);
+    const SwsImg in  = img_shift_idx(in_base,  y, p->idx_in);
+    const SwsImg out = img_shift_idx(out_base, y, p->idx_out);
 
     /* Fill exec metadata for this slice */
     DECLARE_ALIGNED_32(SwsOpExec, exec) = p->exec_base;
@@ -1099,6 +1124,11 @@ int ff_sws_compile_pass(SwsGraph *graph, SwsOpList *ops, int flags, SwsFormat ds
         .block_size_in  = p->comp.block_size * p->pixel_bits_in  >> 3,
         .block_size_out = p->comp.block_size * p->pixel_bits_out >> 3,
     };
+
+    for (int i = 0; i < 4; i++) {
+        p->idx_in[i]  = i < p->planes_in  ? ops->order_src.in[i] : -1;
+        p->idx_out[i] = i < p->planes_out ? ops->order_dst.in[i] : -1;
+    }
 
     pass = ff_sws_graph_add_pass(graph, dst.format, dst.width, dst.height, input,
                                  1, p, op_pass_run);

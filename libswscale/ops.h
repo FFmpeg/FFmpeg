@@ -230,6 +230,9 @@ typedef struct SwsOpList {
     SwsOp *ops;
     int num_ops;
 
+    /* Input/output plane pointer swizzle mask */
+    SwsSwizzleOp order_src, order_dst;
+
     /* Purely informative metadata associated with this operation list */
     SwsFormat src, dst;
 } SwsOpList;
