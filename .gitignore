@@ -25,6 +25,7 @@
 *.metallib.c
 *.spv
 *.spv.c
+*.spv.gz
 *.ptx
 *.ptx.c
 *.ptx.gz

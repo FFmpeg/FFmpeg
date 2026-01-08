@@ -134,8 +134,16 @@ RUN_MINIFY = $(M)sed 's!/\\*.*\\*/!!g' $< | tr '\n' ' ' | tr -s ' ' | sed 's/^ /
 %.spv: %.glsl
 	$(COMPILE_GLSLC)
 
+ifdef CONFIG_SHADER_COMPRESSION
+%.spv.gz: %.spv
+	$(RUN_GZIP)
+
+%.spv.c: %.spv.gz $(BIN2CEXE)
+	$(RUN_BIN2C)
+else
 %.spv.c: %.spv $(BIN2CEXE)
 	$(RUN_BIN2C)
+endif
 
 %.metal.air: %.metal
 	$(METALCC) $< -o $@
@@ -239,7 +247,7 @@ SPVOBJS      = $(filter %.spv.o,$(OBJS))
 PTXOBJS      = $(filter %.ptx.o,$(OBJS))
 $(HOBJS):     CCFLAGS += $(CFLAGS_HEADERS)
 checkheaders: $(HOBJS)
-.SECONDARY:   $(HOBJS:.o=.c) $(SPVOBJS:.o=.c) $(SPVOBJS:.o=) $(PTXOBJS:.o=.c) $(PTXOBJS:.o=.gz) $(PTXOBJS:.o=)
+.SECONDARY:   $(HOBJS:.o=.c) $(SPVOBJS:.o=.c) $(SPVOBJS:.o=.gz) $(SPVOBJS:.o=) $(PTXOBJS:.o=.c) $(PTXOBJS:.o=.gz) $(PTXOBJS:.o=)
 alltools: $(TOOLS)
 
 $(HOSTOBJS): %.o: %.c
@@ -258,7 +266,7 @@ $(TOOLOBJS): | tools
 
 OUTDIRS := $(OUTDIRS) $(dir $(OBJS) $(HOBJS) $(HOSTOBJS) $(SHLIBOBJS) $(STLIBOBJS) $(TESTOBJS))
 
-CLEANSUFFIXES     = *.d *.gcda *.gcno *.h.c *.ho *.map *.o *.objs *.pc *.ptx *.ptx.gz *.ptx.c *.spv *.spv.c *.ver *.version *.html.gz *.html.c *.css.min.gz *.css.min *.css.c  *$(DEFAULT_X86ASMD).asm *~ *.ilk *.pdb
+CLEANSUFFIXES     = *.d *.gcda *.gcno *.h.c *.ho *.map *.o *.objs *.pc *.ptx *.ptx.gz *.ptx.c *.spv *.spv.gz *.spv.c *.ver *.version *.html.gz *.html.c *.css.min.gz *.css.min *.css.c  *$(DEFAULT_X86ASMD).asm *~ *.ilk *.pdb
 LIBSUFFIXES       = *.a *.lib *.so *.so.* *.dylib *.dll *.def *.dll.a
 
 define RULES

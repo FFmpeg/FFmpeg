@@ -18,11 +18,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
 #include "avassert.h"
 #include "mem.h"
 
 #include "vulkan.h"
 #include "libavutil/vulkan_loader.h"
+
+#if CONFIG_SHADER_COMPRESSION
+#include "libavutil/zlib_utils.h"
+#endif
 
 const VkComponentMapping ff_comp_identity_map = {
     .r = VK_COMPONENT_SWIZZLE_IDENTITY,
@@ -2388,7 +2393,7 @@ int ff_vk_shader_link(FFVulkanContext *s, FFVulkanShader *shd,
     FFVulkanFunctions *vk = &s->vkfn;
     VkSpecializationMapEntry spec_entries[3];
     VkSpecializationInfo spec_info;
-    size_t binary_size = 0;
+    size_t input_size = spirv_len, binary_size = 0;
 
     if (shd->precompiled) {
         if (!shd->specialization_info) {
@@ -2414,6 +2419,16 @@ int ff_vk_shader_link(FFVulkanContext *s, FFVulkanShader *shd,
         memcpy(&spd[shd->specialization_info->dataSize],
                shd->lg_size, 3*sizeof(uint32_t));
         shd->specialization_info->dataSize += 3*sizeof(uint32_t);
+
+#if CONFIG_SHADER_COMPRESSION
+        uint8_t *out;
+        size_t out_len;
+        int ret = ff_zlib_expand(s, &out, &out_len, spirv, spirv_len);
+        if (ret < 0)
+            return ret;
+        spirv = out;
+        spirv_len = out_len;
+#endif
     }
 
     err = init_descriptors(s, shd);
@@ -2462,6 +2477,8 @@ int ff_vk_shader_link(FFVulkanContext *s, FFVulkanShader *shd,
     else
         av_log(s, AV_LOG_VERBOSE, "Shader linked, size:");
 
+    if (input_size != spirv_len)
+        av_log(s, AV_LOG_VERBOSE, " %zu compressed,", input_size);
     av_log(s, AV_LOG_VERBOSE, " %zu SPIR-V", spirv_len);
     if (binary_size != spirv_len)
         av_log(s, AV_LOG_VERBOSE, ", %zu binary", spirv_len);
@@ -2472,6 +2489,10 @@ end:
         shd->specialization_info->mapEntryCount -= 3;
         shd->specialization_info->dataSize -= 3*sizeof(uint32_t);
     }
+#if CONFIG_SHADER_COMPRESSION
+    if (shd->precompiled)
+        av_free((void *)spirv);
+#endif
     return err;
 }
 
