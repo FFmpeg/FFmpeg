@@ -2100,7 +2100,7 @@ static int decode_cblk(const Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *cod
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
             int32_t sign, n, val;
-            const uint32_t mask  = UINT32_MAX >> (M_b + 1); // bit mask for ROI detection
+            const uint32_t mask  = (UINT32_MAX >> M_b) >> 1; // bit mask for ROI detection
 
             n = x + (y * t1->stride);
             val = t1->data[n];
@@ -2270,7 +2270,7 @@ static inline int tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile 
                     band->coord[1][0] == band->coord[1][1])
                     continue;
 
-                if (M_b >= 31) {
+                if (M_b > 31) {
                     avpriv_request_sample(s->avctx, "M_b (%d) > 31", M_b);
                     return AVERROR_PATCHWELCOME;
                 }
