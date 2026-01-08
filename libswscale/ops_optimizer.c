@@ -405,6 +405,34 @@ retry:
                 ff_sws_op_list_remove_at(ops, n + 1, 1);
                 goto retry;
             }
+
+            /* Swizzle planes instead of components, if possible */
+            if (prev->op == SWS_OP_READ && !prev->rw.packed) {
+                for (int dst = 0; dst < prev->rw.elems; dst++) {
+                    const int src = op->swizzle.in[dst];
+                    if (src > dst && src < prev->rw.elems) {
+                        FFSWAP(int, ops->order_src.in[dst], ops->order_src.in[src]);
+                        for (int i = dst; i < 4; i++) {
+                            if (op->swizzle.in[i] == dst)
+                                op->swizzle.in[i] = src;
+                            else if (op->swizzle.in[i] == src)
+                                op->swizzle.in[i] = dst;
+                        }
+                        goto retry;
+                    }
+                }
+            }
+
+            if (next->op == SWS_OP_WRITE && !next->rw.packed) {
+                for (int dst = 0; dst < next->rw.elems; dst++) {
+                    const int src = op->swizzle.in[dst];
+                    if (src > dst && src < next->rw.elems) {
+                        FFSWAP(int, ops->order_dst.in[dst], ops->order_dst.in[src]);
+                        FFSWAP(int, op->swizzle.in[dst], op->swizzle.in[src]);
+                        goto retry;
+                    }
+                }
+            }
             break;
 
         case SWS_OP_CONVERT:
