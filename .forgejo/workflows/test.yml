@@ -6,6 +6,9 @@ on:
       - master
   pull_request:
 
+concurrency:
+  cancel-in-progress: ${{ forge.event_name == 'pull_request' }}
+
 jobs:
   run_fate:
     name: Fate (${{ matrix.runner }}, ${{ matrix.shared }}, ${{ matrix.bits }} bit)
