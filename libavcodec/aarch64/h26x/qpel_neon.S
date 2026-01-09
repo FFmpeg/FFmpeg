@@ -1511,7 +1511,7 @@ function ff_hevc_put_hevc_qpel_uni_v4_8_neon, export=1
 .endm
 1:      calc_all
 .purgem calc
-2: ret
+2:      ret
 endfunc
 
 function ff_hevc_put_hevc_qpel_uni_v6_8_neon, export=1
@@ -1540,7 +1540,7 @@ function ff_hevc_put_hevc_qpel_uni_v6_8_neon, export=1
 .endm
 1:      calc_all
 .purgem calc
-2: ret
+2:      ret
 endfunc
 
 function ff_hevc_put_hevc_qpel_uni_v8_8_neon, export=1
@@ -1567,7 +1567,7 @@ function ff_hevc_put_hevc_qpel_uni_v8_8_neon, export=1
 .endm
 1:      calc_all
 .purgem calc
-2: ret
+2:      ret
 endfunc
 
 function ff_hevc_put_hevc_qpel_uni_v12_8_neon, export=1
