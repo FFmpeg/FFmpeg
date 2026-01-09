@@ -2,7 +2,8 @@ FATE_ID3V2_FFPROBE-$(CONFIG_MP3_DEMUXER) += fate-id3v2-priv
 fate-id3v2-priv: CMD = probetags $(TARGET_SAMPLES)/id3v2/id3v2_priv.mp3
 
 FATE_ID3V2_FFMPEG-$(CONFIG_MP3_DEMUXER) += fate-id3v2-invalid-tags
-fate-id3v2-invalid-tags: CMD = run $(FFMPEG) -nostdin -hide_banner -loglevel fatal -i $(TARGET_SAMPLES)/id3v2/invalid-tags.mp3 -f null - 2>&1 || true
+fate-id3v2-invalid-tags: CMD = run $(FFMPEG) -nostdin -hide_banner -i $(TARGET_SAMPLES)/id3v2/invalid-tags.mp3 -f null - || true
+fate-id3v2-invalid-tags: CMP = null
 
 FATE_ID3V2_FFMPEG_FFPROBE-$(call REMUX, MP3) += fate-id3v2-priv-remux
 fate-id3v2-priv-remux: CMD = transcode mp3 $(TARGET_SAMPLES)/id3v2/id3v2_priv.mp3 mp3 "-c copy" "-c copy -t 0.1" "-show_entries format_tags"
