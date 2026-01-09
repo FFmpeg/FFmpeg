@@ -576,7 +576,7 @@ retry:
     }
 
     /* Push clears to the back to void any unused components */
-    for (int n = 1; n < ops->num_ops - 1; n++) { /* exclude READ/WRITE */
+    for (int n = 0; n < ops->num_ops - 1; n++) {
         SwsOp *op = &ops->ops[n];
         SwsOp *next = &ops->ops[n + 1];
 
@@ -593,7 +593,7 @@ retry:
     /* Apply any remaining preferential re-ordering optimizations; do these
      * last because they are more likely to block other optimizations if done
      * too aggressively */
-    for (int n = 1; n < ops->num_ops - 1; n++) { /* exclude READ/WRITE */
+    for (int n = 0; n < ops->num_ops - 1; n++) {
         SwsOp *op = &ops->ops[n];
         SwsOp *prev = &ops->ops[n - 1];
         SwsOp *next = &ops->ops[n + 1];
