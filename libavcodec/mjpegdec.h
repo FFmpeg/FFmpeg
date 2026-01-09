@@ -112,7 +112,6 @@ typedef struct MJpegDecodeContext {
     AVFrame *picture_ptr; /* pointer to picture structure */
     int got_picture;                                ///< we found a SOF and picture is valid, too.
     int linesize[MAX_COMPONENTS];                   ///< linesize << interlaced
-    int8_t *qscale_table;
     DECLARE_ALIGNED(32, int16_t, block)[64];
     int16_t (*blocks[MAX_COMPONENTS])[64]; ///< intermediate sums (progressive mode)
     uint8_t *last_nnz[MAX_COMPONENTS];
