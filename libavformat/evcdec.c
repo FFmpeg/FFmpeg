@@ -104,6 +104,9 @@ static int evc_read_header(AVFormatContext *s)
     EVCDemuxContext *c = s->priv_data;
     int ret = 0;
 
+    if (!filter)
+        return AVERROR_BUG;
+
     st = avformat_new_stream(s, NULL);
     if (!st) {
         ret = AVERROR(ENOMEM);
