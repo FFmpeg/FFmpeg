@@ -27,7 +27,8 @@
 #include "colorspace.h"
 #include "video.h"
 
-extern const char *ff_source_debayer_comp;
+extern const unsigned char ff_debayer_comp_spv_data[];
+extern const unsigned int ff_debayer_comp_spv_len;
 
 enum ScalerFunc {
     F_BILINEAR = 0,
@@ -195,25 +196,6 @@ static int init_scale_shader(AVFilterContext *ctx, FFVulkanShader *shd,
     return 0;
 }
 
-static int init_debayer_shader(ScaleVulkanContext *s, FFVulkanShader *shd,
-                               FFVulkanDescriptorSetBinding *desc, AVFrame *in)
-{
-    GLSLD(ff_source_debayer_comp);
-
-    GLSLC(0, void main(void));
-    GLSLC(0, {              );
-    if (s->debayer == DB_BILINEAR)
-        GLSLC(1, debayer_bilinear(););
-    else if (s->debayer == DB_BILINEAR_HQ)
-        GLSLC(1, debayer_bilinear_hq(););
-    GLSLC(0, }              );
-
-    shd->lg_size[0] <<= 1;
-    shd->lg_size[1] <<= 1;
-
-    return 0;
-}
-
 static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
 {
     int err;
@@ -227,7 +209,6 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
     FFVkSPIRVCompiler *spv;
     FFVulkanDescriptorSetBinding *desc;
 
-    int debayer = s->vkctx.input_format == AV_PIX_FMT_BAYER_RGGB16;
     int in_planes = av_pix_fmt_count_planes(s->vkctx.input_format);
 
     switch (s->scaler) {
@@ -245,17 +226,9 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
         return AVERROR_EXTERNAL;
     }
 
-    s->qf = ff_vk_qf_find(vkctx, VK_QUEUE_COMPUTE_BIT, 0);
-    if (!s->qf) {
-        av_log(ctx, AV_LOG_ERROR, "Device has no compute queues\n");
-        err = AVERROR(ENOTSUP);
-        goto fail;
-    }
-
     RET(ff_vk_exec_pool_init(vkctx, s->qf, &s->e, s->qf->num*4, 0, 0, 0, NULL));
 
-    if (!debayer)
-        RET(ff_vk_init_sampler(vkctx, &s->sampler, 0, sampler_mode));
+    RET(ff_vk_init_sampler(vkctx, &s->sampler, 0, sampler_mode));
 
     RET(ff_vk_shader_init(vkctx, &s->shd, "scale",
                           VK_SHADER_STAGE_COMPUTE_BIT,
@@ -266,12 +239,8 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
     desc = (FFVulkanDescriptorSetBinding []) {
         {
             .name       = "input_img",
-            .type       = debayer ?
-                          VK_DESCRIPTOR_TYPE_STORAGE_IMAGE :
-                          VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .mem_layout = debayer ?
-                          ff_vk_shader_rep_fmt(s->vkctx.input_format, FF_VK_REP_FLOAT) :
-                          NULL,
+            .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .mem_layout = NULL,
             .mem_quali  = "readonly",
             .dimensions = 2,
             .elems      = in_planes,
@@ -303,10 +272,7 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
     ff_vk_shader_add_push_const(&s->shd, 0, sizeof(s->opts),
                                 VK_SHADER_STAGE_COMPUTE_BIT);
 
-    if (debayer)
-        err = init_debayer_shader(s, shd, desc, in);
-    else
-        err = init_scale_shader(ctx, shd, desc, in);
+    err = init_scale_shader(ctx, shd, desc, in);
     if (err < 0)
         goto fail;
 
@@ -327,6 +293,52 @@ fail:
     return err;
 }
 
+static av_cold int init_debayer(AVFilterContext *ctx, AVFrame *in)
+{
+    int err;
+    ScaleVulkanContext *s = ctx->priv;
+    FFVulkanContext *vkctx = &s->vkctx;
+    FFVulkanShader *shd = &s->shd;
+
+    RET(ff_vk_exec_pool_init(vkctx, s->qf, &s->e, s->qf->num*2, 0, 0, 0, NULL));
+
+    SPEC_LIST_CREATE(sl, 1, 1*sizeof(int32_t))
+    SPEC_LIST_ADD(sl, 0, 32, s->debayer);
+    ff_vk_shader_load(&s->shd, VK_SHADER_STAGE_COMPUTE_BIT, sl,
+                      (uint32_t []) { 32, 32, 1 }, 0);
+
+    ff_vk_shader_add_push_const(&s->shd, 0, sizeof(s->opts),
+                                VK_SHADER_STAGE_COMPUTE_BIT);
+
+    const FFVulkanDescriptorSetBinding desc[] = {
+        {
+            .name       = "src",
+            .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
+        },
+        {
+            .name       = "dst",
+            .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
+        },
+    };
+    ff_vk_shader_add_descriptor_set(vkctx, &s->shd, desc, 2, 0, 0);
+
+    RET(ff_vk_shader_link(vkctx, shd,
+                          ff_debayer_comp_spv_data,
+                          ff_debayer_comp_spv_len, "main"));
+
+    RET(ff_vk_shader_register_exec(vkctx, &s->e, &s->shd));
+
+    shd->lg_size[0] <<= 1;
+    shd->lg_size[1] <<= 1;
+
+    s->initialized = 1;
+
+fail:
+    return err;
+}
+
 static int scale_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
 {
     int err;
@@ -340,8 +352,19 @@ static int scale_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
         goto fail;
     }
 
-    if (!s->initialized)
-        RET(init_filter(ctx, in));
+    s->qf = ff_vk_qf_find(&s->vkctx, VK_QUEUE_COMPUTE_BIT, 0);
+    if (!s->qf) {
+        av_log(ctx, AV_LOG_ERROR, "Device has no compute queues\n");
+        err = AVERROR(ENOTSUP);
+        goto fail;
+    }
+
+    if (!s->initialized) {
+        if (s->vkctx.input_format == AV_PIX_FMT_BAYER_RGGB16)
+            RET(init_debayer(ctx, in));
+        else
+            RET(init_filter(ctx, in));
+    }
 
     s->opts.crop_x = in->crop_left;
     s->opts.crop_y = in->crop_top;

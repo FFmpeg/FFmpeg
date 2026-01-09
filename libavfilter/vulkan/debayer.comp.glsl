@@ -19,46 +19,62 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#version 460
+#pragma shader_stage(compute)
+
+#extension GL_EXT_shader_image_load_formatted : require
+
+layout (local_size_x_id = 253, local_size_y_id = 254, local_size_z_id = 255) in;
+
+layout (set = 0, binding = 0) uniform readonly image2D src;
+layout (set = 0, binding = 1) uniform writeonly image2D dst;
+
+layout (constant_id = 0) const int debayer_mode = 0;
+
+layout(push_constant, std430) uniform pushConstants {
+   mat4 yuv_matrix;
+   int crop_x;
+   int crop_y;
+   int crop_w;
+   int crop_h;
+};
+
 #define LD(xo, yo) \
-    (imageLoad(input_img[0], pos + ivec2((xo), (yo))).r)
+    (imageLoad(src, pos + ivec2((xo), (yo))).r)
 
-void debayer_bilinear(void)
+void debayer_bilinear(ivec2 pos)
 {
-    ivec2 pos = ivec2(gl_GlobalInvocationID.xy) << 1;
-
     /* R basis */
     vec4 tl = vec4(LD(0, 0),
                    (LD(1, 0) + LD(-1, 0) + LD(0, 1) + LD(0, -1)) / 4.0f,
                    (LD(-1, -1) + LD(1, 1) + LD(-1, 1) + LD(1, -1)) / 4.0f,
                    1.0f);
-    imageStore(output_img[0], pos, tl);
+    imageStore(dst, pos, tl);
 
     /* G1 basis */
     vec4 tr = vec4((LD(2, 0) + LD(0, 0)) / 2.0f,
                    LD(1, 0),
                    (LD(1, 1) + LD(1, -1)) / 2.0f,
                    1.0f);
-    imageStore(output_img[0], pos + ivec2(1, 0), tr);
+    imageStore(dst, pos + ivec2(1, 0), tr);
 
     /* G2 basis */
     vec4 bl = vec4((LD(0, 2) + LD(0, 0)) / 2.0f,
                    LD(0, 1),
                    (LD(1, 1) + LD(-1, 1)) / 2.0f,
                    1.0f);
-    imageStore(output_img[0], pos + ivec2(0, 1), bl);
+    imageStore(dst, pos + ivec2(0, 1), bl);
 
     /* B basis */
     vec4 br = vec4((LD(0, 0) + LD(2, 2) + LD(0, 2) + LD(2, 0)) / 4.0f,
                    (LD(2, 1) + LD(0, 1) + LD(1, 2) + LD(1, 0)) / 4.0f,
                    LD(1, 1),
                    1.0f);
-    imageStore(output_img[0], pos + ivec2(1, 1), br);
+    imageStore(dst, pos + ivec2(1, 1), br);
 }
 
-void debayer_bilinear_hq(void)
+void debayer_bilinear_hq(ivec2 pos)
 {
-    ivec2 pos = ivec2(gl_GlobalInvocationID.xy) << 1;
-
     /* R basis */
     vec4 tl = vec4(LD(0, 0),
                    (4.0f*LD(0, 0) + 2.0f*(LD(0, -1) + LD(0, 1) + LD(-1, 0) + LD(1, 0)) -
@@ -66,7 +82,7 @@ void debayer_bilinear_hq(void)
                    (12.0f*LD(0, 0) + 4.0f*(LD(-1, -1) + LD(-1, 1) + LD(1, -1) + LD(1, 1)) -
                     3.0f*(LD(0, -2) + LD(0, 2) + LD(-2, 0) + LD(2, 0))) / 16.0f,
                    1.0f);
-    imageStore(output_img[0], pos, tl);
+    imageStore(dst, pos, tl);
 
     /* G1 basis */
     vec4 tr = vec4((10.0f*LD(1, 0) + 8.0f*(LD(0, 0) + LD(2, 0)) -
@@ -77,7 +93,7 @@ void debayer_bilinear_hq(void)
                     2.0f*(LD(0, -1) + LD(0, 1) + LD(2, -1) + LD(2, 1) + LD(1, -2) + LD(1, 2)) +
                     LD(-1, 0) + LD(3, 0)) / 16.0f,
                    1.0f);
-    imageStore(output_img[0], pos + ivec2(1, 0), tr);
+    imageStore(dst, pos + ivec2(1, 0), tr);
 
 
     /* G2 basis */
@@ -89,7 +105,7 @@ void debayer_bilinear_hq(void)
                    2.0f*(LD(-1, 0) + LD(1, 2) + LD(-1, 2) + LD(1, 0) + LD(-2, 1) + LD(2, 1)) +
                     LD(0, -1) + LD(0, 3)) / 16.0f,
                    1.0f);
-    imageStore(output_img[0], pos + ivec2(0, 1), bl);
+    imageStore(dst, pos + ivec2(0, 1), bl);
 
     /* B basis */
     vec4 br = vec4((12.0f*LD(1, 1) + 4.0f*(LD(0, 0) + LD(0, 2) + LD(2, 0) + LD(2, 2)) -
@@ -98,5 +114,15 @@ void debayer_bilinear_hq(void)
                     (LD(1, -1) + LD(1, 3) + LD(-1, 1) + LD(3, 1))) / 8.0f,
                    LD(1, 1),
                    1.0f);
-    imageStore(output_img[0], pos + ivec2(1, 1), br);
+    imageStore(dst, pos + ivec2(1, 1), br);
+}
+
+void main(void)
+{
+    ivec2 pos = ivec2(gl_GlobalInvocationID.xy) << 1;
+
+    if (debayer_mode == 0)
+        debayer_bilinear(pos);
+    else
+        debayer_bilinear_hq(pos);
 }
