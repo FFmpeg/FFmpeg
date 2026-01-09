@@ -515,15 +515,7 @@ static int add_convert_pass(SwsGraph *graph, SwsFormat src, SwsFormat dst,
     av_log(ctx, AV_LOG_DEBUG, "Unoptimized operation list:\n");
     ff_sws_op_list_print(ctx, AV_LOG_DEBUG, ops);
     av_log(ctx, AV_LOG_DEBUG, "Optimized operation list:\n");
-
     ff_sws_op_list_optimize(ops);
-    if (ops->num_ops == 0) {
-        av_log(ctx, AV_LOG_VERBOSE, "  optimized into memcpy\n");
-        ff_sws_op_list_free(&ops);
-        *output = input;
-        return 0;
-    }
-
     ff_sws_op_list_print(ctx, AV_LOG_VERBOSE, ops);
 
     ret = ff_sws_compile_pass(graph, ops, 0, dst, input, output);

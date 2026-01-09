@@ -243,6 +243,12 @@ void ff_sws_op_list_free(SwsOpList **ops);
 SwsOpList *ff_sws_op_list_duplicate(const SwsOpList *ops);
 
 /**
+ * Returns whether an op list represents a true no-op operation, i.e. may be
+ * eliminated entirely from an execution graph.
+ */
+bool ff_sws_op_list_is_noop(const SwsOpList *ops);
+
+/**
  * Returns the size of the largest pixel type used in `ops`.
  */
 int ff_sws_op_list_max_size(const SwsOpList *ops);

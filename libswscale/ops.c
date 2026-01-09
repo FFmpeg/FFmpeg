@@ -542,6 +542,11 @@ int ff_sws_op_list_append(SwsOpList *ops, SwsOp *op)
     return ff_sws_op_list_insert_at(ops, ops->num_ops, op);
 }
 
+bool ff_sws_op_list_is_noop(const SwsOpList *ops)
+{
+    return !ops->num_ops;
+}
+
 int ff_sws_op_list_max_size(const SwsOpList *ops)
 {
     int max_size = 0;
@@ -1039,6 +1044,12 @@ int ff_sws_compile_pass(SwsGraph *graph, SwsOpList *ops, int flags, SwsFormat ds
     const SwsOp *write = &ops->ops[ops->num_ops - 1];
     SwsPass *pass;
     int ret;
+
+    /* Check if the whole operation graph is an end-to-end no-op */
+    if (ff_sws_op_list_is_noop(ops)) {
+        *output = input;
+        return 0;
+    }
 
     if (ops->num_ops < 2) {
         av_log(ctx, AV_LOG_ERROR, "Need at least two operations.\n");
