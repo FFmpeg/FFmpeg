@@ -18,9 +18,8 @@ OBJS-$(CONFIG_PRORES_RAW_VULKAN_HWACCEL) += vulkan/prores_raw_decode.comp.spv.o 
 OBJS-$(CONFIG_PRORES_VULKAN_HWACCEL) += vulkan/prores_vld.comp.spv.o \
                                         vulkan/prores_idct.comp.spv.o
 
-OBJS-$(CONFIG_DPX_VULKAN_HWACCEL) += vulkan/common.o \
-                                     vulkan/dpx_unpack.o \
-                                     vulkan/dpx_copy.o
+OBJS-$(CONFIG_DPX_VULKAN_HWACCEL) += vulkan/dpx_unpack.comp.spv.o \
+                                     vulkan/dpx_copy.comp.spv.o
 
 VULKAN = $(subst $(SRC_PATH)/,,$(wildcard $(SRC_PATH)/libavcodec/vulkan/*.comp))
 .SECONDARY: $(VULKAN:.comp=.c)
