@@ -294,11 +294,6 @@ static int d3d12va_encode_h264_get_encoder_caps(AVCodecContext *avctx)
 
     config->ConfigurationFlags = D3D12_VIDEO_ENCODER_CODEC_CONFIGURATION_H264_FLAG_NONE;
 
-    if (h264_caps.SupportFlags & D3D12_VIDEO_ENCODER_CODEC_CONFIGURATION_SUPPORT_H264_FLAG_CABAC_ENCODING_SUPPORT) {
-        config->ConfigurationFlags |= D3D12_VIDEO_ENCODER_CODEC_CONFIGURATION_H264_FLAG_ENABLE_CABAC_ENCODING;
-        priv->unit_opts.cabac = 1;
-    }
-
     // Deblocking filter configuration
     if (priv->deblock == 1) {
        if (h264_caps.DisableDeblockingFilterSupportedModes & D3D12_VIDEO_ENCODER_CODEC_CONFIGURATION_H264_SLICES_DEBLOCKING_MODE_FLAG_0_ALL_LUMA_CHROMA_SLICE_BLOCK_EDGES_ALWAYS_FILTERED) {
@@ -313,6 +308,16 @@ static int d3d12va_encode_h264_get_encoder_caps(AVCodecContext *avctx)
         } else {
             av_log(avctx, AV_LOG_ERROR, "Requested deblocking filter disable mode not supported by driver.\n");
             return AVERROR(ENOTSUP);
+        }
+    }
+
+    // Entropy coder configuration
+    if (priv->unit_opts.cabac) {
+        if (h264_caps.SupportFlags & D3D12_VIDEO_ENCODER_CODEC_CONFIGURATION_SUPPORT_H264_FLAG_CABAC_ENCODING_SUPPORT) {
+            config->ConfigurationFlags |= D3D12_VIDEO_ENCODER_CODEC_CONFIGURATION_H264_FLAG_ENABLE_CABAC_ENCODING;
+        } else {
+            av_log(avctx, AV_LOG_WARNING, "CABAC entropy coding is not supported by the driver, falling back to CAVLC.\n");
+            priv->unit_opts.cabac = 0;
         }
     }
 
@@ -642,6 +647,11 @@ static const AVOption d3d12va_encode_h264_options[] = {
 
     { "deblock", "Deblocking filter mode",
       OFFSET(deblock), AV_OPT_TYPE_BOOL, { .i64 = -1 }, -1, 1, FLAGS },
+
+    { "coder", "Entropy coder type",
+      OFFSET(unit_opts.cabac), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, FLAGS, "coder" },
+        { "cavlc", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 0 }, INT_MIN, INT_MAX, FLAGS, "coder" },
+        { "cabac", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 1 }, INT_MIN, INT_MAX, FLAGS, "coder" },
 
     { NULL },
 };
