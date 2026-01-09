@@ -57,7 +57,10 @@ static int run_test(SwsContext *const ctx, AVFrame *frame,
            av_get_pix_fmt_name(src.format), av_get_pix_fmt_name(dst.format));
 
     ff_sws_op_list_optimize(ops);
-    ff_sws_op_list_print(NULL, AV_LOG_INFO, ops);
+    if (ff_sws_op_list_is_noop(ops))
+        av_log(NULL, AV_LOG_INFO, "  (no-op)\n");
+    else
+        ff_sws_op_list_print(NULL, AV_LOG_INFO, ops);
 
 fail:
     /* silently skip unsupported formats */
