@@ -18,10 +18,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <math.h>
 #include "checkasm.h"
 #include "libavfilter/vf_nlmeans_init.h"
 #include "libavutil/avassert.h"
 #include "libavutil/mem.h"
+#include "libavutil/mem_internal.h"
 
 #define randomize_buffer(buf, size) do {    \
     int i;                                  \
@@ -108,6 +110,82 @@ void checkasm_check_nlmeans(void)
         av_freep(&ii_orig_ref);
         av_freep(&ii_orig_new);
         av_freep(&src);
+    }
+
+    if (check_func(dsp.compute_weights_line, "compute_weights_line")) {
+#define TEST_W 256
+#define MAX_MEANINGFUL_DIFF 255
+        const int startx = 10;
+        const int endx = 200;
+
+        // Allocate aligned buffers on stack
+        LOCAL_ALIGNED_32(uint32_t, iia, [TEST_W + 16]);
+        LOCAL_ALIGNED_32(uint32_t, iib, [TEST_W + 16]);
+        LOCAL_ALIGNED_32(uint32_t, iid, [TEST_W + 16]);
+        LOCAL_ALIGNED_32(uint32_t, iie, [TEST_W + 16]);
+        LOCAL_ALIGNED_32(uint8_t,  src, [TEST_W + 16]);
+        LOCAL_ALIGNED_32(float,   tw_ref,  [TEST_W + 16]);
+        LOCAL_ALIGNED_32(float,   tw_new,  [TEST_W + 16]);
+        LOCAL_ALIGNED_32(float,   sum_ref, [TEST_W + 16]);
+        LOCAL_ALIGNED_32(float,   sum_new, [TEST_W + 16]);
+        LOCAL_ALIGNED_32(float,   lut,     [MAX_MEANINGFUL_DIFF + 1]);
+
+        declare_func(void, const uint32_t *const iia,
+                     const uint32_t *const iib,
+                     const uint32_t *const iid,
+                     const uint32_t *const iie,
+                     const uint8_t *const src,
+                     float *total_weight,
+                     float *sum,
+                     const float *const weight_lut,
+                     ptrdiff_t max_meaningful_diff,
+                     ptrdiff_t startx, ptrdiff_t endx);
+
+        // Initialize LUT: weight = exp(-diff * scale)
+        // Using scale = 0.01 for testing
+        for (int i = 0; i <= MAX_MEANINGFUL_DIFF; i++)
+            lut[i] = expf(-i * 0.01f);
+
+        // Initialize source pixels
+        for (int i = 0; i < TEST_W; i++)
+            src[i] = rnd() & 0xff;
+
+        // Initialize integral images
+        // We need to ensure diff = e - d - b + a is non-negative and within range
+        // Set up as if computing real integral image values
+        for (int i = 0; i < TEST_W; i++) {
+            uint32_t base = rnd() % 1000;
+            iia[i] = base;
+            iib[i] = base + (rnd() % 100);
+            iid[i] = base + (rnd() % 100);
+            // e = a + (b - a) + (d - a) + diff
+            // So diff = e - d - b + a will be in range [0, max_meaningful_diff]
+            uint32_t diff = rnd() % (MAX_MEANINGFUL_DIFF + 1);
+            iie[i] = iia[i] + (iib[i] - iia[i]) + (iid[i] - iia[i]) + diff;
+        }
+
+        // Clear output buffers
+        memset(tw_ref,  0, (TEST_W + 16) * sizeof(float));
+        memset(tw_new,  0, (TEST_W + 16) * sizeof(float));
+        memset(sum_ref, 0, (TEST_W + 16) * sizeof(float));
+        memset(sum_new, 0, (TEST_W + 16) * sizeof(float));
+
+        call_ref(iia, iib, iid, iie, src, tw_ref, sum_ref, lut,
+                 MAX_MEANINGFUL_DIFF, startx, endx);
+        call_new(iia, iib, iid, iie, src, tw_new, sum_new, lut,
+                 MAX_MEANINGFUL_DIFF, startx, endx);
+
+        // Compare results with small tolerance for floating point
+        if (!float_near_abs_eps_array(tw_ref + startx, tw_new + startx, 1e-5f, endx - startx))
+            fail();
+        if (!float_near_abs_eps_array(sum_ref + startx, sum_new + startx, 1e-4f, endx - startx))
+            fail();
+
+        // Benchmark
+        memset(tw_new,  0, (TEST_W + 16) * sizeof(float));
+        memset(sum_new, 0, (TEST_W + 16) * sizeof(float));
+        bench_new(iia, iib, iid, iie, src, tw_new, sum_new, lut,
+                  MAX_MEANINGFUL_DIFF, startx, endx);
     }
 
     report("dsp");

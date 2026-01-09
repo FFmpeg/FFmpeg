@@ -79,8 +79,8 @@ static void compute_weights_line_c(const uint32_t *const iia,
                                    float *total_weight,
                                    float *sum,
                                    const float *const weight_lut,
-                                   int max_meaningful_diff,
-                                   int startx, int endx)
+                                   ptrdiff_t max_meaningful_diff,
+                                   ptrdiff_t startx, ptrdiff_t endx)
 {
     for (int x = startx; x < endx; x++) {
         /*

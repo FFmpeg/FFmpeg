@@ -25,10 +25,23 @@ void ff_compute_safe_ssd_integral_image_neon(uint32_t *dst, ptrdiff_t dst_linesi
                                              const uint8_t *s2, ptrdiff_t linesize2,
                                              int w, int h);
 
+void ff_compute_weights_line_neon(const uint32_t *const iia,
+                                  const uint32_t *const iib,
+                                  const uint32_t *const iid,
+                                  const uint32_t *const iie,
+                                  const uint8_t *const src,
+                                  float *total_weight,
+                                  float *sum,
+                                  const float *const weight_lut,
+                                  ptrdiff_t max_meaningful_diff,
+                                  ptrdiff_t startx, ptrdiff_t endx);
+
 av_cold void ff_nlmeans_init_aarch64(NLMeansDSPContext *dsp)
 {
     int cpu_flags = av_get_cpu_flags();
 
-    if (have_neon(cpu_flags))
+    if (have_neon(cpu_flags)) {
         dsp->compute_safe_ssd_integral_image = ff_compute_safe_ssd_integral_image_neon;
+        dsp->compute_weights_line = ff_compute_weights_line_neon;
+    }
 }
