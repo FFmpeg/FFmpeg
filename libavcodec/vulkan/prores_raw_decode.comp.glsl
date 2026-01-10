@@ -39,12 +39,10 @@ layout (set = 0, binding = 1, scalar) readonly buffer frame_data_buf {
 
 layout (push_constant, scalar) uniform pushConstants {
    u8buf pkt_data;
-   ivec2 frame_size;
    ivec2 tile_size;
-   uint8_t qmat[64];
 };
 
-#define COMP_ID (gl_LocalInvocationID.x)
+#define COMP_ID (gl_LocalInvocationID.y)
 
 GetBitContext gb;
 
@@ -223,7 +221,8 @@ void main(void)
     const uint tile_idx = gl_WorkGroupID.y*gl_NumWorkGroups.x + gl_WorkGroupID.x;
     TileData td = tile_data[tile_idx];
 
-    if (expectEXT(td.pos.x >= frame_size.x, false))
+    int width = imageSize(dst).x;
+    if (expectEXT(td.pos.x >= width, false))
         return;
 
     uint64_t pkt_offset = uint64_t(pkt_data) + td.offset;
@@ -239,8 +238,8 @@ void main(void)
         return;
 
     const ivec2 offs = td.pos + ivec2(COMP_ID & 1, COMP_ID >> 1);
-    const int w = min(tile_size.x, frame_size.x - td.pos.x) / 2;
-    const int nb_blocks = w / 8;
+    const int w = min(tile_size.x, width - td.pos.x) >> 1;
+    const int nb_blocks = w >> 3;
 
     const ivec4 comp_offset = ivec4(size[2] + size[1] + size[3],
                                     size[2],

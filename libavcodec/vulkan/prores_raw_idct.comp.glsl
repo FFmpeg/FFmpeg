@@ -40,7 +40,6 @@ layout (set = 0, binding = 1, scalar) readonly buffer frame_data_buf {
 
 layout (push_constant, scalar) uniform pushConstants {
    u8buf pkt_data;
-   ivec2 frame_size;
    ivec2 tile_size;
    uint8_t qmat[64];
 };
@@ -73,7 +72,8 @@ void main(void)
     const uint tile_idx = gl_WorkGroupID.y*gl_NumWorkGroups.x + gl_WorkGroupID.x;
     TileData td = tile_data[tile_idx];
 
-    if (expectEXT(td.pos.x >= frame_size.x, false))
+    int width = imageSize(dst).x;
+    if (expectEXT(td.pos.x >= width, false))
         return;
 
     uint64_t pkt_offset = uint64_t(pkt_data) + td.offset;
@@ -81,8 +81,8 @@ void main(void)
     int qscale = pack16(hdr_data[0].v.yx);
 
     const ivec2 offs = td.pos + ivec2(COMP_ID & 1, COMP_ID >> 1);
-    const uint w = min(tile_size.x, frame_size.x - td.pos.x) / 2;
-    const uint nb_blocks = w / 8;
+    const uint w = min(tile_size.x, width - td.pos.x) >> 1;
+    const uint nb_blocks = w >> 3;
 
     /* We have to do non-uniform access, so copy it */
     uint8_t qmat_buf[64] = qmat;

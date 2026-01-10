@@ -51,7 +51,6 @@ typedef struct ProResRAWVulkanDecodeContext {
 
 typedef struct DecodePushData {
     VkDeviceAddress pkt_data;
-    int32_t frame_size[2];
     int32_t tile_size[2];
     uint8_t  qmat[64];
 } DecodePushData;
@@ -231,15 +230,13 @@ static int vk_prores_raw_end_frame(AVCodecContext *avctx)
     /* Update push data */
     DecodePushData pd_decode = (DecodePushData) {
         .pkt_data = slices_buf->address,
-        .frame_size[0] = avctx->width,
-        .frame_size[1] = avctx->height,
         .tile_size[0] = prr->tw,
         .tile_size[1] = prr->th,
     };
     memcpy(pd_decode.qmat, prr->qmat, 64);
     ff_vk_shader_update_push_const(&ctx->s, exec, decode_shader,
                                    VK_SHADER_STAGE_COMPUTE_BIT,
-                                   0, sizeof(pd_decode), &pd_decode);
+                                   0, sizeof(pd_decode) - 64, &pd_decode);
 
     vk->CmdDispatch(exec->buf, prr->nb_tw, prr->nb_th, 1);
 
@@ -284,12 +281,9 @@ fail:
     return 0;
 }
 
-static int add_common_data(AVCodecContext *avctx, FFVulkanContext *s,
-                           FFVulkanShader *shd, int writeonly)
+static int add_desc(AVCodecContext *avctx, FFVulkanContext *s,
+                    FFVulkanShader *shd)
 {
-    ff_vk_shader_add_push_const(shd, 0, sizeof(DecodePushData),
-                                VK_SHADER_STAGE_COMPUTE_BIT);
-
     FFVulkanDescriptorSetBinding desc_set[] = {
         {
             .name   = "dst",
@@ -312,10 +306,12 @@ static int init_decode_shader(AVCodecContext *avctx, FFVulkanContext *s,
 {
     int err;
 
-    ff_vk_shader_load(shd, VK_SHADER_STAGE_COMPUTE_BIT, NULL,
-                      (uint32_t []) { 4, 1, 1 }, 0);
+    ff_vk_shader_add_push_const(shd, 0, sizeof(DecodePushData) - 64,
+                                VK_SHADER_STAGE_COMPUTE_BIT);
+   ff_vk_shader_load(shd, VK_SHADER_STAGE_COMPUTE_BIT, NULL,
+                     (uint32_t []) { 1, 4, 1 }, 0);
 
-    add_common_data(avctx, s, shd, 1);
+    add_desc(avctx, s, shd);
 
     RET(ff_vk_shader_link(s, shd,
                           ff_prores_raw_decode_comp_spv_data,
@@ -351,7 +347,9 @@ static int init_idct_shader(AVCodecContext *avctx, FFVulkanContext *s,
     ff_vk_shader_load(shd, VK_SHADER_STAGE_COMPUTE_BIT, sl,
                       (uint32_t []) { 8, nb_blocks, 4 }, 0);
 
-    add_common_data(avctx, s, shd, 0);
+    ff_vk_shader_add_push_const(shd, 0, sizeof(DecodePushData),
+                                VK_SHADER_STAGE_COMPUTE_BIT);
+    add_desc(avctx, s, shd);
 
     RET(ff_vk_shader_link(s, shd,
                           ff_prores_raw_idct_comp_spv_data,
