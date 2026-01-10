@@ -167,6 +167,29 @@ static ssize_t gnutls_url_push(gnutls_transport_ptr_t transport,
     return -1;
 }
 
+static int gnutls_pull_timeout(gnutls_transport_ptr_t ptr, unsigned int ms)
+{
+    TLSContext *c = (TLSContext*) ptr;
+    TLSShared *s = &c->tls_shared;
+    int ret;
+    fd_set rfds;
+    struct timeval tv;
+    int sockfd = ffurl_get_file_handle(s->udp);
+    if (sockfd < 0)
+        return 0;
+
+    FD_ZERO(&rfds);
+    FD_SET(sockfd, &rfds);
+
+    tv.tv_sec = ms / 1000;
+    tv.tv_usec = (ms % 1000) * 1000;
+
+    ret = select(sockfd + 1, &rfds, NULL, NULL, &tv);
+    if (ret <= 0)
+        return ret;
+    return 1;
+}
+
 static int tls_handshake(URLContext *h)
 {
     TLSContext *c = h->priv_data;
@@ -244,9 +267,11 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
     gnutls_transport_set_pull_function(c->session, gnutls_url_pull);
     gnutls_transport_set_push_function(c->session, gnutls_url_push);
     gnutls_transport_set_ptr(c->session, c);
-    if (s->is_dtls)
+    if (s->is_dtls) {
+        gnutls_transport_set_pull_timeout_function(c->session, gnutls_pull_timeout);
         if (s->mtu)
             gnutls_dtls_set_mtu(c->session, s->mtu);
+    }
     gnutls_set_default_priority(c->session);
     ret = tls_handshake(h);
     if (ret < 0)
