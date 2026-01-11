@@ -88,6 +88,7 @@ typedef struct SetTSContext {
     char *duration_str;
 
     AVRational time_base;
+    int user_outtb;
 
     int64_t frame_number;
 
@@ -142,8 +143,13 @@ static int setts_init(AVBSFContext *ctx)
         }
     }
 
-    if (s->time_base.num > 0 && s->time_base.den > 0)
+    if (s->time_base.num > 0 && s->time_base.den > 0) {
         ctx->time_base_out = s->time_base;
+        s->user_outtb = 1;
+    } else if (s->time_base.num || !s->time_base.den) {
+        av_log(ctx, AV_LOG_ERROR, "Invalid value %d/%d specified for output timebase\n", s->time_base.num, s->time_base.den);
+        return AVERROR_INVALIDDATA;
+    }
 
     s->frame_number= 0;
     s->var_values[VAR_STARTPTS] = AV_NOPTS_VALUE;
@@ -218,6 +224,12 @@ static int setts_filter(AVBSFContext *ctx, AVPacket *pkt)
     ret = av_packet_ref(pkt, s->prev_inpkt);
     if (ret < 0)
         return ret;
+
+    if (s->user_outtb) {
+        new_pts = av_rescale_q(new_pts, ctx->time_base_in, ctx->time_base_out);
+        new_dts = av_rescale_q(new_dts, ctx->time_base_in, ctx->time_base_out);
+        new_duration = av_rescale_q(new_duration, ctx->time_base_in, ctx->time_base_out);
+    }
 
     pkt->pts = new_pts;
     pkt->dts = new_dts;
