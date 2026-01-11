@@ -102,8 +102,13 @@ static av_cold int vpx_init(AVCodecContext *avctx,
         return AVERROR(EINVAL);
     }
 
-    if (avctx->codec_id == AV_CODEC_ID_VP9)
-        vpx_codec_set_frame_buffer_functions(decoder, get_frame_buffer, release_frame_buffer, avctx->priv_data);
+    if (vpx_codec_get_caps(ctx->iface) & VPX_CODEC_CAP_EXTERNAL_FRAME_BUFFER) {
+        if (vpx_codec_set_frame_buffer_functions(decoder, get_frame_buffer, release_frame_buffer, avctx->priv_data)) {
+            vpx_codec_destroy(decoder);
+            av_log(avctx, AV_LOG_ERROR, "Failed to set frame buffer.\n");
+            return AVERROR_EXTERNAL;
+        }
+    }
 
     return 0;
 }
@@ -299,7 +304,7 @@ static int vpx_decode(AVCodecContext *avctx, AVFrame *picture,
         linesizes[3] =
             ctx->has_alpha_channel ? img_alpha->stride[VPX_PLANE_Y] : 0;
 
-        if (img->fb_priv && (!ctx->has_alpha_channel || img_alpha->fb_priv)) {
+        if (vpx_codec_get_caps(ctx->iface) & VPX_CODEC_CAP_EXTERNAL_FRAME_BUFFER) {
             ret = ff_decode_frame_props(avctx, picture);
             if (ret < 0)
                 return ret;
