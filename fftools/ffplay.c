@@ -37,6 +37,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/dict.h"
 #include "libavutil/fifo.h"
+#include "libavutil/parseutils.h"
 #include "libavutil/samplefmt.h"
 #include "libavutil/time.h"
 #include "libavutil/bprint.h"
@@ -267,6 +268,7 @@ typedef struct VideoState {
     AVComplexFloat *rdft_data;
     int xpos;
     double last_vis_time;
+    RenderParams render_params;
     SDL_Texture *vis_texture;
     SDL_Texture *sub_texture;
     SDL_Texture *vid_texture;
@@ -350,6 +352,7 @@ static int find_stream_info = 1;
 static int filter_nbthreads = 0;
 static int enable_vulkan = 0;
 static char *vulkan_params = NULL;
+static char *video_background = NULL;
 static const char *hwaccel = NULL;
 
 /* current context */
@@ -963,11 +966,44 @@ static void set_sdl_yuv_conversion_mode(AVFrame *frame)
 #endif
 }
 
+static void draw_video_background(VideoState *is)
+{
+    const int tile_size = VIDEO_BACKGROUND_TILE_SIZE;
+    SDL_Rect *rect = &is->render_params.target_rect;
+    SDL_BlendMode blendMode;
+
+    if (!SDL_GetTextureBlendMode(is->vid_texture, &blendMode) && blendMode == SDL_BLENDMODE_BLEND) {
+        switch (is->render_params.video_background_type) {
+        case VIDEO_BACKGROUND_TILES:
+            SDL_SetRenderDrawColor(renderer, 237, 237, 237, 255);
+            fill_rectangle(rect->x, rect->y, rect->w, rect->h);
+            SDL_SetRenderDrawColor(renderer, 222, 222, 222, 255);
+            for (int x = 0; x < rect->w; x += tile_size * 2)
+                fill_rectangle(rect->x + x, rect->y, FFMIN(tile_size, rect->w - x), rect->h);
+            for (int y = 0; y < rect->h; y += tile_size * 2)
+                fill_rectangle(rect->x, rect->y + y, rect->w, FFMIN(tile_size, rect->h - y));
+            SDL_SetRenderDrawColor(renderer, 237, 237, 237, 255);
+            for (int y = 0; y < rect->h; y += tile_size * 2) {
+                int h = FFMIN(tile_size, rect->h - y);
+                for (int x = 0; x < rect->w; x += tile_size * 2)
+                    fill_rectangle(x + rect->x, y + rect->y, FFMIN(tile_size, rect->w - x), h);
+            }
+            break;
+        case VIDEO_BACKGROUND_COLOR: {
+            const uint8_t *c = is->render_params.video_background_color;
+            SDL_SetRenderDrawColor(renderer, c[0], c[1], c[2], c[3]);
+            fill_rectangle(rect->x, rect->y, rect->w, rect->h);
+            break;
+        }
+        }
+    }
+}
+
 static void video_image_display(VideoState *is)
 {
     Frame *vp;
     Frame *sp = NULL;
-    SDL_Rect rect;
+    SDL_Rect *rect = &is->render_params.target_rect;
 
     vp = frame_queue_peek_last(&is->pictq);
     if (vk_renderer) {
@@ -1020,7 +1056,7 @@ static void video_image_display(VideoState *is)
         }
     }
 
-    calculate_display_rect(&rect, is->xleft, is->ytop, is->width, is->height, vp->width, vp->height, vp->sar);
+    calculate_display_rect(rect, is->xleft, is->ytop, is->width, is->height, vp->width, vp->height, vp->sar);
     set_sdl_yuv_conversion_mode(vp->frame);
 
     if (!vp->uploaded) {
@@ -1032,15 +1068,16 @@ static void video_image_display(VideoState *is)
         vp->flip_v = vp->frame->linesize[0] < 0;
     }
 
-    SDL_RenderCopyEx(renderer, is->vid_texture, NULL, &rect, 0, NULL, vp->flip_v ? SDL_FLIP_VERTICAL : 0);
+    draw_video_background(is);
+    SDL_RenderCopyEx(renderer, is->vid_texture, NULL, rect, 0, NULL, vp->flip_v ? SDL_FLIP_VERTICAL : 0);
     set_sdl_yuv_conversion_mode(NULL);
     if (sp) {
 #if USE_ONEPASS_SUBTITLE_RENDER
-        SDL_RenderCopy(renderer, is->sub_texture, NULL, &rect);
+        SDL_RenderCopy(renderer, is->sub_texture, NULL, rect);
 #else
         int i;
-        double xratio = (double)rect.w / (double)sp->width;
-        double yratio = (double)rect.h / (double)sp->height;
+        double xratio = (double)rect->w / (double)sp->width;
+        double yratio = (double)rect->h / (double)sp->height;
         for (i = 0; i < sp->sub.num_rects; i++) {
             SDL_Rect *sub_rect = (SDL_Rect*)sp->sub.rects[i];
             SDL_Rect target = {.x = rect.x + sub_rect->x * xratio,
@@ -3228,6 +3265,14 @@ static VideoState *stream_open(const char *filename,
         av_log(NULL, AV_LOG_WARNING, "-volume=%d < 0, setting to 0\n", startup_volume);
     if (startup_volume > 100)
         av_log(NULL, AV_LOG_WARNING, "-volume=%d > 100, setting to 100\n", startup_volume);
+    if (video_background) {
+        if (strcmp(video_background, "tiles")) {
+            if (av_parse_color(is->render_params.video_background_color, video_background, -1, NULL) >= 0)
+                is->render_params.video_background_type = VIDEO_BACKGROUND_COLOR;
+            else
+                goto fail;
+        }
+    }
     startup_volume = av_clip(startup_volume, 0, 100);
     startup_volume = av_clip(SDL_MIX_MAXVOLUME * startup_volume / 100, 0, SDL_MIX_MAXVOLUME);
     is->audio_volume = startup_volume;
@@ -3741,6 +3786,7 @@ static const OptionDef options[] = {
     { "filter_threads",     OPT_TYPE_INT,    OPT_EXPERT, { &filter_nbthreads }, "number of filter threads per graph" },
     { "enable_vulkan",      OPT_TYPE_BOOL,            0, { &enable_vulkan }, "enable vulkan renderer" },
     { "vulkan_params",      OPT_TYPE_STRING, OPT_EXPERT, { &vulkan_params }, "vulkan configuration using a list of key=value pairs separated by ':'" },
+    { "video_bg",           OPT_TYPE_STRING, OPT_EXPERT, { &video_background }, "set video background for transparent videos" },
     { "hwaccel",            OPT_TYPE_STRING, OPT_EXPERT, { &hwaccel }, "use HW accelerated decoding" },
     { NULL, },
 };
