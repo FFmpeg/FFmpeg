@@ -155,6 +155,7 @@ libavformat/rm.* @pross
 libavformat/sauce.* @pross
 libavformat/scd.* @zane
 libavformat/tty.* @pross
+libavformat/whip.c @JackLau
 libavformat/wsd.* @pross
 libavformat/wtv.* @pross
 

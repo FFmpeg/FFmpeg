@@ -483,6 +483,7 @@ Muxers/Demuxers:
   webm dash (matroskaenc.c)             Vignesh Venkatasubramanian
   webvtt*                               Matthew J Heaney
   westwood.c                            Mike Melanson
+  whip.c                            [2] Jack Lau
   wtv.c                                 Peter Ross
 
 Protocols:
