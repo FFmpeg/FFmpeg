@@ -41,6 +41,7 @@
 #include "profiles.h"
 
 typedef struct VPxDecoderContext {
+    const struct vpx_codec_iface *iface;
     struct vpx_codec_ctx decoder;
     struct vpx_codec_ctx decoder_alpha;
     AVBufferPool *pool;
@@ -84,9 +85,9 @@ static int release_frame_buffer(void *priv, vpx_codec_frame_buffer_t *fb)
 }
 
 static av_cold int vpx_init(AVCodecContext *avctx,
-                            struct vpx_codec_ctx* decoder,
-                            const struct vpx_codec_iface *iface)
+                            struct vpx_codec_ctx* decoder)
 {
+    VPxContext *ctx = avctx->priv_data;
     struct vpx_codec_dec_cfg deccfg = {
         .threads = FFMIN(avctx->thread_count ? avctx->thread_count : av_cpu_count(), MAX_VPX_THREADS)
     };
@@ -94,7 +95,7 @@ static av_cold int vpx_init(AVCodecContext *avctx,
     av_log(avctx, AV_LOG_INFO, "%s\n", vpx_codec_version_str());
     av_log(avctx, AV_LOG_VERBOSE, "%s\n", vpx_codec_build_config());
 
-    if (vpx_codec_dec_init(decoder, iface, &deccfg, 0) != VPX_CODEC_OK) {
+    if (vpx_codec_dec_init(decoder, ctx->iface, &deccfg, 0) != VPX_CODEC_OK) {
         const char *error = vpx_codec_error(decoder);
         av_log(avctx, AV_LOG_ERROR, "Failed to initialize decoder: %s\n",
                error);
@@ -239,17 +240,7 @@ static int vpx_decode(AVCodecContext *avctx, AVFrame *picture,
         if (additional_id == 1) {  // 1 stands for alpha channel data.
             if (!ctx->has_alpha_channel) {
                 ctx->has_alpha_channel = 1;
-                ret = vpx_init(avctx,
-                               &ctx->decoder_alpha,
-#if CONFIG_LIBVPX_VP8_DECODER && CONFIG_LIBVPX_VP9_DECODER
-                               (avctx->codec_id == AV_CODEC_ID_VP8) ?
-                               vpx_codec_vp8_dx() : vpx_codec_vp9_dx()
-#elif CONFIG_LIBVPX_VP8_DECODER
-                               vpx_codec_vp8_dx()
-#else
-                               vpx_codec_vp9_dx()
-#endif
-                               );
+                ret = vpx_init(avctx, &ctx->decoder_alpha);
                 if (ret)
                     return ret;
             }
@@ -349,7 +340,8 @@ static av_cold int vpx_free(AVCodecContext *avctx)
 static av_cold int vp8_init(AVCodecContext *avctx)
 {
     VPxContext *ctx = avctx->priv_data;
-    return vpx_init(avctx, &ctx->decoder, vpx_codec_vp8_dx());
+    ctx->iface = vpx_codec_vp8_dx();
+    return vpx_init(avctx, &ctx->decoder);
 }
 
 const FFCodec ff_libvpx_vp8_decoder = {
@@ -372,7 +364,8 @@ const FFCodec ff_libvpx_vp8_decoder = {
 static av_cold int vp9_init(AVCodecContext *avctx)
 {
     VPxContext *ctx = avctx->priv_data;
-    return vpx_init(avctx, &ctx->decoder, vpx_codec_vp9_dx());
+    ctx->iface = vpx_codec_vp9_dx();
+    return vpx_init(avctx, &ctx->decoder);
 }
 
 const FFCodec ff_libvpx_vp9_decoder = {
