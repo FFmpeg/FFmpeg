@@ -4002,8 +4002,8 @@ srtp_protocol_select="rtp_protocol srtp"
 tcp_protocol_select="network"
 tls_protocol_deps_any="gnutls openssl schannel securetransport libtls mbedtls"
 tls_protocol_select="tcp_protocol"
-# TODO: Support libtls, mbedtls, and gnutls.
-dtls_protocol_deps_any="openssl schannel"
+# TODO: Support libtls, mbedtls.
+dtls_protocol_deps_any="openssl schannel gnutls"
 dtls_protocol_select="udp_protocol"
 udp_protocol_select="network"
 udplite_protocol_select="network"
