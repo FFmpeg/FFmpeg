@@ -172,19 +172,13 @@ static int gnutls_pull_timeout(gnutls_transport_ptr_t ptr, unsigned int ms)
     TLSContext *c = (TLSContext*) ptr;
     TLSShared *s = &c->tls_shared;
     int ret;
-    fd_set rfds;
-    struct timeval tv;
     int sockfd = ffurl_get_file_handle(s->udp);
+    struct pollfd pfd = { .fd = sockfd, .events = POLLIN, .revents = 0 };
+
     if (sockfd < 0)
         return 0;
 
-    FD_ZERO(&rfds);
-    FD_SET(sockfd, &rfds);
-
-    tv.tv_sec = ms / 1000;
-    tv.tv_usec = (ms % 1000) * 1000;
-
-    ret = select(sockfd + 1, &rfds, NULL, NULL, &tv);
+    ret = poll(&pfd, 1, ms);
     if (ret <= 0)
         return ret;
     return 1;
