@@ -3316,7 +3316,7 @@ av1_videotoolbox_hwaccel_deps="videotoolbox"
 av1_videotoolbox_hwaccel_select="av1_decoder"
 av1_vulkan_hwaccel_deps="vulkan"
 av1_vulkan_hwaccel_select="av1_decoder"
-dpx_vulkan_hwaccel_deps="vulkan"
+dpx_vulkan_hwaccel_deps="vulkan spirv_compiler"
 dpx_vulkan_hwaccel_select="dpx_decoder"
 ffv1_vulkan_hwaccel_deps="vulkan spirv_library"
 ffv1_vulkan_hwaccel_select="ffv1_decoder"
@@ -3396,9 +3396,9 @@ mpeg4_videotoolbox_hwaccel_deps="videotoolbox"
 mpeg4_videotoolbox_hwaccel_select="mpeg4_decoder"
 prores_videotoolbox_hwaccel_deps="videotoolbox"
 prores_videotoolbox_hwaccel_select="prores_decoder"
-prores_raw_vulkan_hwaccel_deps="vulkan"
+prores_raw_vulkan_hwaccel_deps="vulkan spirv_compiler"
 prores_raw_vulkan_hwaccel_select="prores_raw_decoder"
-prores_vulkan_hwaccel_deps="vulkan"
+prores_vulkan_hwaccel_deps="vulkan spirv_compiler"
 prores_vulkan_hwaccel_select="prores_decoder"
 vc1_d3d11va_hwaccel_deps="d3d11va"
 vc1_d3d11va_hwaccel_select="vc1_decoder"
@@ -4035,7 +4035,7 @@ aresample_filter_deps="swresample"
 asr_filter_deps="pocketsphinx"
 ass_filter_deps="libass"
 avgblur_opencl_filter_deps="opencl"
-avgblur_vulkan_filter_deps="vulkan"
+avgblur_vulkan_filter_deps="vulkan spirv_compiler"
 azmq_filter_deps="libzmq"
 blackdetect_vulkan_filter_deps="vulkan spirv_library"
 blackframe_filter_deps="gpl"
@@ -4045,7 +4045,7 @@ boxblur_opencl_filter_deps="opencl gpl"
 bs2b_filter_deps="libbs2b"
 bwdif_cuda_filter_deps="ffnvcodec"
 bwdif_cuda_filter_deps_any="cuda_nvcc cuda_llvm"
-bwdif_vulkan_filter_deps="vulkan"
+bwdif_vulkan_filter_deps="vulkan spirv_compiler"
 chromaber_vulkan_filter_deps="vulkan spirv_library"
 color_vulkan_filter_deps="vulkan spirv_library"
 colorkey_opencl_filter_deps="opencl"
@@ -4186,7 +4186,7 @@ zoompan_filter_deps="swscale"
 zscale_filter_deps="libzimg const_nan"
 scale_vaapi_filter_deps="vaapi"
 scale_vt_filter_deps="videotoolbox VTPixelTransferSessionCreate"
-scale_vulkan_filter_deps="vulkan spirv_library"
+scale_vulkan_filter_deps="vulkan spirv_compiler"
 vpp_qsv_filter_deps="libmfx"
 vpp_qsv_filter_select="qsvvpp"
 xfade_opencl_filter_deps="opencl"
@@ -6841,6 +6841,7 @@ fi
 # _deps results in it always passing.
 # Disable it explicitly to fix this.
 disable spirv_library
+disable spirv_compiler
 
 check_func_headers malloc.h _aligned_malloc     && enable aligned_malloc
 check_func  ${malloc_prefix}memalign            && enable memalign
@@ -7701,16 +7702,11 @@ probe_glslc(){
         glslc_debug="-g"
         GLSLC_DEPFLAGS='-MD -MF $(@:.spv=.d) -MT $@'
     else
+        disable spirv_compiler
         return 1
     fi
-    check_glslc vulkan
-}
+    check_glslc spirv_compiler || return 0
 
-if enabled vulkan; then
-    for program in $glslc glslc glslang glslangValidator; do
-        probe_glslc $program && break
-    done
-    disabled vulkan && warn "glslc/glslang not found or too old, disabling Vulkan."
     append GLSLCFLAGS $glslcflags
     if enabled small; then
         append GLSLCFLAGS $glslc_opt_size
@@ -7720,10 +7716,14 @@ if enabled vulkan; then
         append GLSLCFLAGS $glslc_opt_none
     fi
     enabled debug && append GLSLCFLAGS $glslc_debug
-fi
+}
 
-if disabled vulkan; then
-    disable libglslang libshaderc spirv_library
+if enabled vulkan; then
+    for program in $glslc glslc glslang glslangValidator; do
+        probe_glslc $program && break
+    done
+else
+    disable libglslang libshaderc spirv_library spirv_compiler
 fi
 
 if enabled x86; then
