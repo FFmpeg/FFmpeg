@@ -913,6 +913,8 @@ Set expressions for PTS, DTS or both.
 Set expression for duration.
 @item time_base
 Set output time base.
+@item prescale
+Set whether to convert time fields to user-set output time base before evaluation of expressions. Defaults to 0.
 @end table
 
 The expressions are evaluated through the eval API and can contain the following
@@ -973,7 +975,7 @@ The next input PTS.
 The next input duration.
 
 @item TB
-The timebase of stream packet belongs.
+The timebase in which time fields are denominated. The user-set output timebase if prescale is enabled, else the input timebase.
 
 @item TB_OUT
 The output timebase.

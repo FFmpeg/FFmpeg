@@ -89,6 +89,7 @@ typedef struct SetTSContext {
 
     AVRational time_base;
     int user_outtb;
+    int prescale;
 
     int64_t frame_number;
 
@@ -149,18 +150,25 @@ static int setts_init(AVBSFContext *ctx)
     } else if (s->time_base.num || !s->time_base.den) {
         av_log(ctx, AV_LOG_ERROR, "Invalid value %d/%d specified for output timebase\n", s->time_base.num, s->time_base.den);
         return AVERROR_INVALIDDATA;
-    }
+    } else
+        s->prescale = 0;
 
     s->frame_number= 0;
     s->var_values[VAR_STARTPTS] = AV_NOPTS_VALUE;
     s->var_values[VAR_STARTDTS] = AV_NOPTS_VALUE;
     s->var_values[VAR_NOPTS] = AV_NOPTS_VALUE;
-    s->var_values[VAR_TB]    = ctx->time_base_in.den ? av_q2d(ctx->time_base_in) : 0;
     s->var_values[VAR_TB_OUT]= ctx->time_base_out.den ? av_q2d(ctx->time_base_out) : 0;
     s->var_values[VAR_SR]    = ctx->par_in->sample_rate;
 
+    if (s->user_outtb && s->prescale)
+        s->var_values[VAR_TB] = av_q2d(ctx->time_base_out);
+    else
+        s->var_values[VAR_TB] = ctx->time_base_in.den ? av_q2d(ctx->time_base_in) : 0;
+
     return 0;
 }
+
+#define PRESCALED(x) ( s->prescale ? av_rescale_q(x, ctx->time_base_in, ctx->time_base_out) : x )
 
 static int setts_filter(AVBSFContext *ctx, AVPacket *pkt)
 {
@@ -178,39 +186,39 @@ static int setts_filter(AVBSFContext *ctx, AVPacket *pkt)
     }
 
     if (s->var_values[VAR_STARTPTS] == AV_NOPTS_VALUE)
-        s->var_values[VAR_STARTPTS] = s->cur_pkt->pts;
+        s->var_values[VAR_STARTPTS] = PRESCALED(s->cur_pkt->pts);
 
     if (s->var_values[VAR_STARTDTS] == AV_NOPTS_VALUE)
-        s->var_values[VAR_STARTDTS] = s->cur_pkt->dts;
+        s->var_values[VAR_STARTDTS] = PRESCALED(s->cur_pkt->dts);
 
     s->var_values[VAR_N]           = s->frame_number++;
-    s->var_values[VAR_TS]          = s->cur_pkt->dts;
+    s->var_values[VAR_TS]          = PRESCALED(s->cur_pkt->dts);
     s->var_values[VAR_POS]         = s->cur_pkt->pos;
-    s->var_values[VAR_PTS]         = s->cur_pkt->pts;
-    s->var_values[VAR_DTS]         = s->cur_pkt->dts;
-    s->var_values[VAR_DURATION]    = s->cur_pkt->duration;
-    s->var_values[VAR_PREV_INPTS]  = s->prev_inpkt->pts;
-    s->var_values[VAR_PREV_INDTS]  = s->prev_inpkt->dts;
-    s->var_values[VAR_PREV_INDUR]  = s->prev_inpkt->duration;
+    s->var_values[VAR_PTS]         = PRESCALED(s->cur_pkt->pts);
+    s->var_values[VAR_DTS]         = PRESCALED(s->cur_pkt->dts);
+    s->var_values[VAR_DURATION]    = PRESCALED(s->cur_pkt->duration);
+    s->var_values[VAR_PREV_INPTS]  = PRESCALED(s->prev_inpkt->pts);
+    s->var_values[VAR_PREV_INDTS]  = PRESCALED(s->prev_inpkt->dts);
+    s->var_values[VAR_PREV_INDUR]  = PRESCALED(s->prev_inpkt->duration);
     s->var_values[VAR_PREV_OUTPTS] = s->prev_outpkt->pts;
     s->var_values[VAR_PREV_OUTDTS] = s->prev_outpkt->dts;
     s->var_values[VAR_PREV_OUTDUR] = s->prev_outpkt->duration;
-    s->var_values[VAR_NEXT_PTS]    = pkt->pts;
-    s->var_values[VAR_NEXT_DTS]    = pkt->dts;
-    s->var_values[VAR_NEXT_DUR]    = pkt->duration;
+    s->var_values[VAR_NEXT_PTS]    = PRESCALED(pkt->pts);
+    s->var_values[VAR_NEXT_DTS]    = PRESCALED(pkt->dts);
+    s->var_values[VAR_NEXT_DUR]    = PRESCALED(pkt->duration);
 
     new_ts = llrint(av_expr_eval(s->ts_expr, s->var_values, NULL));
     new_duration = llrint(av_expr_eval(s->duration_expr, s->var_values, NULL));
 
     if (s->pts_str) {
-        s->var_values[VAR_TS] = s->cur_pkt->pts;
+        s->var_values[VAR_TS] = PRESCALED(s->cur_pkt->pts);
         new_pts = llrint(av_expr_eval(s->pts_expr, s->var_values, NULL));
     } else {
         new_pts = new_ts;
     }
 
     if (s->dts_str) {
-        s->var_values[VAR_TS] = s->cur_pkt->dts;
+        s->var_values[VAR_TS] = PRESCALED(s->cur_pkt->dts);
         new_dts = llrint(av_expr_eval(s->dts_expr, s->var_values, NULL));
     } else {
         new_dts = new_ts;
@@ -225,7 +233,7 @@ static int setts_filter(AVBSFContext *ctx, AVPacket *pkt)
     if (ret < 0)
         return ret;
 
-    if (s->user_outtb) {
+    if (s->user_outtb && !s->prescale) {
         new_pts = av_rescale_q(new_pts, ctx->time_base_in, ctx->time_base_out);
         new_dts = av_rescale_q(new_dts, ctx->time_base_in, ctx->time_base_out);
         new_duration = av_rescale_q(new_duration, ctx->time_base_in, ctx->time_base_out);
@@ -269,6 +277,7 @@ static const AVOption options[] = {
     { "dts", "set expression for packet DTS", OFFSET(dts_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
     { "duration", "set expression for packet duration", OFFSET(duration_str), AV_OPT_TYPE_STRING, {.str="DURATION"}, 0, 0, FLAGS },
     { "time_base", "set output timebase", OFFSET(time_base), AV_OPT_TYPE_RATIONAL, {.dbl=0}, 0, INT_MAX, FLAGS },
+    { "prescale",  "convert to output timebase before evaluation", OFFSET(prescale), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS },
     { NULL },
 };
 
