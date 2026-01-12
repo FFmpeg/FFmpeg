@@ -104,6 +104,7 @@ libavfilter/vf_blackdetect.* @haasn
 libavfilter/vf_colordetect.* @haasn
 libavfilter/vf_colorspace.* @rbultje
 libavfilter/.*drawvg.* @ayosec
+libavfilter/vf_find_rect.* @michaelni
 libavfilter/vf_icc.* @haasn
 libavfilter/vf_libplacebo.* @haasn
 libavfilter/vf_premultiply.* @haasn
