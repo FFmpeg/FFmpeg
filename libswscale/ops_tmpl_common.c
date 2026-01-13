@@ -93,6 +93,7 @@ DECL_ENTRY(clear##_##X##Y##Z##W,                                                
 
 WRAP_CLEAR(1, 1, 1, 0) /* rgba alpha */
 WRAP_CLEAR(0, 1, 1, 1) /* argb alpha */
+WRAP_CLEAR(1, 0, 1, 1) /* ya alpha */
 
 WRAP_CLEAR(0, 0, 1, 1) /* vuya chroma */
 WRAP_CLEAR(1, 0, 0, 1) /* yuva chroma */

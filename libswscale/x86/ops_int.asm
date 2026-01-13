@@ -622,6 +622,7 @@ op clear
         decl_pattern 1, 1, 1, 0, clear_generic
         decl_pattern 0, 1, 1, 1, clear_generic
         decl_pattern 0, 0, 1, 1, clear_generic
+        decl_pattern 1, 0, 1, 1, clear_generic
         decl_pattern 1, 0, 0, 1, clear_generic
         decl_pattern 1, 1, 0, 0, clear_generic
         decl_pattern 0, 1, 0, 1, clear_generic

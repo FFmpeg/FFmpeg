@@ -542,6 +542,7 @@ static const SwsOpTable fn(op_table_int) = {
         &fn(op_clear_1110),
         &fn(op_clear_0111),
         &fn(op_clear_0011),
+        &fn(op_clear_1011),
         &fn(op_clear_1001),
         &fn(op_clear_1100),
         &fn(op_clear_0101),
