@@ -6841,7 +6841,6 @@ fi
 # _deps results in it always passing.
 # Disable it explicitly to fix this.
 disable spirv_library
-disable spirv_compiler
 
 check_func_headers malloc.h _aligned_malloc     && enable aligned_malloc
 check_func  ${malloc_prefix}memalign            && enable memalign
@@ -7715,10 +7714,14 @@ probe_glslc(){
     else
         append GLSLCFLAGS $glslc_opt_none
     fi
-    enabled debug && append GLSLCFLAGS $glslc_debug
+    if enabled debug; then
+        append GLSLCFLAGS $glslc_debug
+    fi
 }
 
 if enabled vulkan; then
+    check_pkg_config_header_only vulkan_1_4 "vulkan >= 1.4.317" "vulkan/vulkan.h" "defined VK_VERSION_1_4" ||
+        check_cpp_condition vulkan_1_4 "vulkan/vulkan.h" "defined(VK_VERSION_1_5) || (defined(VK_VERSION_1_4) && VK_HEADER_VERSION >= 317)"
     for program in $glslc glslc glslang glslangValidator; do
         probe_glslc $program && break
     done
