@@ -58,8 +58,6 @@
 
 DECL_READ(read_planar, const int elems)
 {
-    block_t x, y, z, w;
-
     SWS_LOOP
     for (int i = 0; i < SWS_BLOCK_SIZE; i++) {
         x[i] = in0[i];
@@ -76,8 +74,6 @@ DECL_READ(read_planar, const int elems)
 
 DECL_READ(read_packed, const int elems)
 {
-    block_t x, y, z, w;
-
     SWS_LOOP
     for (int i = 0; i < SWS_BLOCK_SIZE; i++) {
         x[i] = in0[elems * i + 0];
@@ -121,7 +117,7 @@ DECL_WRITE(write_packed, const int elems)
 }
 
 #define WRAP_READ(FUNC, ELEMS, FRAC, PACKED)                                    \
-DECL_IMPL_READ(FUNC##ELEMS)                                                     \
+DECL_IMPL(FUNC##ELEMS)                                                          \
 {                                                                               \
     CALL_READ(FUNC, ELEMS);                                                     \
     for (int i = 0; i < (PACKED ? 1 : ELEMS); i++)                              \
@@ -173,8 +169,6 @@ WRAP_WRITE(write_packed, 4, 0, true)
 #if BIT_DEPTH == 8
 DECL_READ(read_nibbles, const int elems)
 {
-    block_t x, y, z, w;
-
     SWS_LOOP
     for (int i = 0; i < SWS_BLOCK_SIZE; i += 2) {
         const pixel_t val = ((const pixel_t *) in0)[i >> 1];
@@ -187,8 +181,6 @@ DECL_READ(read_nibbles, const int elems)
 
 DECL_READ(read_bits, const int elems)
 {
-    block_t x, y, z, w;
-
     SWS_LOOP
     for (int i = 0; i < SWS_BLOCK_SIZE; i += 8) {
         const pixel_t val = ((const pixel_t *) in0)[i >> 3];

@@ -78,13 +78,9 @@ typedef struct SwsOpIter {
                                           __VA_ARGS__)
 
 #define DECL_READ(NAME, ...)                                                    \
-    static av_always_inline void fn(NAME)(SwsOpIter *restrict iter,             \
-                                          const SwsOpImpl *restrict impl,       \
-                                          const pixel_t *restrict in0,          \
-                                          const pixel_t *restrict in1,          \
-                                          const pixel_t *restrict in2,          \
-                                          const pixel_t *restrict in3,          \
-                                          __VA_ARGS__)
+    DECL_FUNC(NAME, const pixel_t *restrict in0, const pixel_t *restrict in1,   \
+                    const pixel_t *restrict in2, const pixel_t *restrict in3,   \
+                    __VA_ARGS__)
 
 #define DECL_WRITE(NAME, ...)                                                   \
     DECL_FUNC(NAME, pixel_t *restrict out0, pixel_t *restrict out1,             \
@@ -96,10 +92,9 @@ typedef struct SwsOpIter {
     fn(FUNC)(iter, impl, x, y, z, w, __VA_ARGS__)
 
 #define CALL_READ(FUNC, ...)                                                    \
-    fn(FUNC)(iter, impl, (const pixel_t *) iter->in[0],                         \
-                         (const pixel_t *) iter->in[1],                         \
-                         (const pixel_t *) iter->in[2],                         \
-                         (const pixel_t *) iter->in[3], __VA_ARGS__)
+    CALL(FUNC, (const pixel_t *) iter->in[0], (const pixel_t *) iter->in[1],    \
+               (const pixel_t *) iter->in[2], (const pixel_t *) iter->in[3],    \
+               __VA_ARGS__)
 
 #define CALL_WRITE(FUNC, ...)                                                   \
     CALL(FUNC, (pixel_t *) iter->out[0], (pixel_t *) iter->out[1],              \
@@ -111,10 +106,6 @@ typedef struct SwsOpIter {
                                   const SwsOpImpl *restrict impl,               \
                                   block_t x, block_t y,                         \
                                   block_t z, block_t w)
-
-#define DECL_IMPL_READ(NAME)                                                    \
-    static SWS_FUNC void fn(NAME)(SwsOpIter *restrict iter,                     \
-                                  const SwsOpImpl *restrict impl)
 
 /* Helper macro to call into the next continuation with a given type */
 #define CONTINUE(TYPE, ...)                                                     \

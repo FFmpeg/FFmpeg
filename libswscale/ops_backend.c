@@ -53,18 +53,20 @@ static void process(const SwsOpExec *exec, const void *priv,
 {
     const SwsOpChain *chain = priv;
     const SwsOpImpl *impl = chain->impl;
-    SwsOpIter iter;
+    u32block_t x, y, z, w; /* allocate enough space for any intermediate */
 
-    for (iter.y = y_start; iter.y < y_end; iter.y++) {
+    SwsOpIter iterdata;
+    SwsOpIter *iter = &iterdata; /* for CONTINUE() macro to work */
+
+    for (iter->y = y_start; iter->y < y_end; iter->y++) {
         for (int i = 0; i < 4; i++) {
-            iter.in[i]  = exec->in[i]  + (iter.y - y_start) * exec->in_stride[i];
-            iter.out[i] = exec->out[i] + (iter.y - y_start) * exec->out_stride[i];
+            iter->in[i]  = exec->in[i]  + (iter->y - y_start) * exec->in_stride[i];
+            iter->out[i] = exec->out[i] + (iter->y - y_start) * exec->out_stride[i];
         }
 
         for (int block = bx_start; block < bx_end; block++) {
-            iter.x = block * SWS_BLOCK_SIZE;
-            ((void (*)(SwsOpIter *, const SwsOpImpl *)) impl->cont)
-                (&iter, &impl[1]);
+            iter->x = block * SWS_BLOCK_SIZE;
+            CONTINUE(u32block_t, x, y, z, w);
         }
     }
 }
