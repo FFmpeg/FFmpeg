@@ -657,8 +657,8 @@ static int compile(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
         return mmsize;
 
     av_assert1(ops->num_ops > 0);
-    const SwsOp read = ops->ops[0];
-    const SwsOp write = ops->ops[ops->num_ops - 1];
+    const SwsOp *read = ops->ops[0].op == SWS_OP_READ ? &ops->ops[0] : NULL;
+    const SwsOp *write = &ops->ops[ops->num_ops - 1];
     int ret;
 
     /* Special fast path for in-place packed shuffle */
@@ -679,9 +679,9 @@ static int compile(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
     };
 
     /* 3-component reads/writes process one extra garbage word */
-    if (read.rw.packed && read.rw.elems == 3)
+    if (read && read->rw.packed && read->rw.elems == 3)
         out->over_read = sizeof(uint32_t);
-    if (write.rw.packed && write.rw.elems == 3)
+    if (write->rw.packed && write->rw.elems == 3)
         out->over_write = sizeof(uint32_t);
 
     static const SwsOpTable *const tables[] = {
@@ -722,8 +722,8 @@ static int compile(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
         out->func = NAME;                                       \
     } while (0)
 
-    const int read_planes  = read.rw.packed  ? 1 : read.rw.elems;
-    const int write_planes = write.rw.packed ? 1 : write.rw.elems;
+    const int read_planes  = read ? (read->rw.packed ? 1 : read->rw.elems) : 0;
+    const int write_planes = write->rw.packed ? 1 : write->rw.elems;
     switch (FFMAX(read_planes, write_planes)) {
     case 1: ASSIGN_PROCESS_FUNC(ff_sws_process1_x86); break;
     case 2: ASSIGN_PROCESS_FUNC(ff_sws_process2_x86); break;
