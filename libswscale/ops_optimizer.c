@@ -645,13 +645,15 @@ int ff_sws_solve_shuffle(const SwsOpList *const ops, uint8_t shuffle[],
                          int size, uint8_t clear_val,
                          int *read_bytes, int *write_bytes)
 {
+    if (!ops->num_ops)
+        return AVERROR(EINVAL);
+
     const SwsOp read = ops->ops[0];
     const int read_size = ff_sws_pixel_type_size(read.type);
     uint32_t mask[4] = {0};
 
-    if (!ops->num_ops || read.op != SWS_OP_READ)
-        return AVERROR(EINVAL);
-    if (read.rw.frac || (!read.rw.packed && read.rw.elems > 1))
+    if (read.op != SWS_OP_READ || read.rw.frac ||
+        (!read.rw.packed && read.rw.elems > 1))
         return AVERROR(ENOTSUP);
 
     for (int i = 0; i < read.rw.elems; i++)
