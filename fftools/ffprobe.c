@@ -1104,6 +1104,10 @@ static void print_pkt_side_data(AVTextFormatContext *tfc,
         print_int("active_format", *sd->data);
     } else if (sd->type == AV_PKT_DATA_EXIF) {
         print_int("size", sd->size);
+    } else if (sd->type == AV_PKT_DATA_MATROSKA_BLOCKADDITIONAL && sd->size >= 8) {
+        print_int("block_additional_id", AV_RB64(sd->data));
+        if (do_show_data)
+            avtext_print_data(tfc, "block_additional_data", sd->data + 8, sd->size - 8);
     }
 }
 
