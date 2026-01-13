@@ -2272,15 +2272,15 @@ static inline uint16_t bl16_c1_avg_col(uint16_t c1, uint16_t c2)
  */
 static int bl16_decode_1(SANMVideoContext *ctx)
 {
-    uint16_t hh, hw, c1, c2, *dst1, *dst2;
-
-    if (bytestream2_get_bytes_left(&ctx->gb) < ((ctx->width * ctx->height) / 2))
-        return AVERROR_INVALIDDATA;
+    uint16_t hh, hw, hw1, c1, c2, *dst1, *dst2;
 
     hh = (ctx->height + 1) >> 1;
+    hw1 = (ctx->width - 1) >> 1;
+    if (!hw1 || (bytestream2_get_bytes_left(&ctx->gb) < (hh * hw1 * 2)))
+        return AVERROR_INVALIDDATA;
     dst1 = (uint16_t *)ctx->frm0 + ctx->pitch;    /* start with line 1 */
     while (hh--) {
-        hw = (ctx->width - 1) >> 1;
+        hw = hw1;
         c1 = bytestream2_get_le16u(&ctx->gb);
         dst1[0] = c1;
         dst1[1] = c1;
@@ -2599,15 +2599,15 @@ static int bl16_decode_6(SANMVideoContext *ctx)
  */
 static int bl16_decode_7(SANMVideoContext *ctx)
 {
-    uint16_t hh, hw, c1, c2, *dst1, *dst2;
-
-    if (bytestream2_get_bytes_left(&ctx->gb) < ((ctx->width * ctx->height) / 4))
-        return AVERROR_INVALIDDATA;
+    uint16_t hh, hw, hw1, c1, c2, *dst1, *dst2;
 
     hh = (ctx->height + 1) >> 1;
+    hw1 = (ctx->width - 1) >> 1;
+    if (!hw1 || (bytestream2_get_bytes_left(&ctx->gb) < (hh * hw1)))
+        return AVERROR_INVALIDDATA;
     dst1 = (uint16_t *)ctx->frm0 + ctx->pitch;    /* start with line 1 */
     while (hh--) {
-        hw = (ctx->width - 1) >> 1;
+        hw = hw1;
         c1 = ctx->codebook[bytestream2_get_byteu(&ctx->gb)];
         dst1[0] = c1;    /* leftmost 2 pixels of a row are identical */
         dst1[1] = c1;
