@@ -774,7 +774,7 @@ static int config_input(AVFilterLink *inlink)
         return AVERROR(ENOMEM);
 
     s->limiter_buf_size = frame_size(inlink->sample_rate, 210) * inlink->ch_layout.nb_channels;
-    s->limiter_buf = av_malloc_array(s->buf_size, sizeof(*s->limiter_buf));
+    s->limiter_buf = av_malloc_array(s->limiter_buf_size, sizeof(*s->limiter_buf));
     if (!s->limiter_buf)
         return AVERROR(ENOMEM);
 
