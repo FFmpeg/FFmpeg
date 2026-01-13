@@ -89,6 +89,10 @@ typedef enum {
     AV_TEXTFORMAT_LINKTYPE_MANYTOMANY = AV_TEXTFORMAT_LINKTYPE_NONDIR,
 } AVTextFormatLinkType;
 
+typedef enum {
+    AV_TEXTFORMAT_DATADUMP_XXD,
+} AVTextFormatDataDump;
+
 typedef struct AVTextFormatter {
     const AVClass *priv_class;      ///< private class of the formatter, if any
     int priv_size;                  ///< private size for the formatter context
@@ -144,6 +148,7 @@ struct AVTextFormatContext {
     int use_value_prefix;
     int use_byte_value_binary_prefix;
     int use_value_sexagesimal_format;
+    AVTextFormatDataDump data_dump_format;
 
     struct AVHashContext *hash;
 
@@ -159,6 +164,7 @@ typedef struct AVTextFormatOptions {
     int use_value_prefix;
     int use_byte_value_binary_prefix;
     int use_value_sexagesimal_format;
+    AVTextFormatDataDump data_dump_format;
 } AVTextFormatOptions;
 
 #define AV_TEXTFORMAT_PRINT_STRING_OPTIONAL 1

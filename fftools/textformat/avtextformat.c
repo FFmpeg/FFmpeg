@@ -153,6 +153,7 @@ int avtext_context_open(AVTextFormatContext **ptctx, const AVTextFormatter *form
     tctx->use_byte_value_binary_prefix = options.use_byte_value_binary_prefix;
     tctx->use_value_sexagesimal_format = options.use_value_sexagesimal_format;
     tctx->show_optional_fields = options.show_optional_fields;
+    tctx->data_dump_format = options.data_dump_format;
 
     if (nb_sections > SECTION_MAX_NB_SECTIONS) {
         av_log(tctx, AV_LOG_ERROR, "The number of section definitions (%d) is larger than the maximum allowed (%d)\n", nb_sections, SECTION_MAX_NB_SECTIONS);
@@ -513,30 +514,41 @@ void avtext_print_ts(AVTextFormatContext *tctx, const char *key, int64_t ts, int
         avtext_print_integer(tctx, key, ts, 0);
 }
 
+static void print_data_xxd(AVBPrint *bp, const uint8_t *data, int size)
+{
+    unsigned offset = 0;
+    int i;
+
+    av_bprintf(bp, "\n");
+    while (size) {
+        av_bprintf(bp, "%08x: ", offset);
+        int l = FFMIN(size, 16);
+        for (i = 0; i < l; i++) {
+            av_bprintf(bp, "%02x", data[i]);
+            if (i & 1)
+                av_bprintf(bp, " ");
+        }
+        av_bprint_chars(bp, ' ', 41 - 2 * i - i / 2);
+        for (i = 0; i < l; i++)
+            av_bprint_chars(bp, data[i] - 32U < 95 ? data[i] : '.', 1);
+        av_bprintf(bp, "\n");
+        offset += l;
+        data   += l;
+        size   -= l;
+    }
+}
+
 void avtext_print_data(AVTextFormatContext *tctx, const char *key,
                        const uint8_t *data, int size)
 {
     AVBPrint bp;
-    unsigned offset = 0;
-    int i;
-
     av_bprint_init(&bp, 0, AV_BPRINT_SIZE_UNLIMITED);
-    av_bprintf(&bp, "\n");
-    while (size) {
-        av_bprintf(&bp, "%08x: ", offset);
-        int l = FFMIN(size, 16);
-        for (i = 0; i < l; i++) {
-            av_bprintf(&bp, "%02x", data[i]);
-            if (i & 1)
-                av_bprintf(&bp, " ");
-        }
-        av_bprint_chars(&bp, ' ', 41 - 2 * i - i / 2);
-        for (i = 0; i < l; i++)
-            av_bprint_chars(&bp, data[i] - 32U < 95 ? data[i] : '.', 1);
-        av_bprintf(&bp, "\n");
-        offset += l;
-        data   += l;
-        size   -= l;
+    switch (tctx->data_dump_format) {
+    case AV_TEXTFORMAT_DATADUMP_XXD:
+        print_data_xxd(&bp, data, size);
+        break;
+    default:
+        av_unreachable("Invalid data dump type");
     }
     avtext_print_string(tctx, key, bp.str, 0);
     av_bprint_finalize(&bp, NULL);
