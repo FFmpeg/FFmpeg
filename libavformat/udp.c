@@ -700,6 +700,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     struct sockaddr_storage my_addr;
     socklen_t len;
     int ret;
+    const char *bind_addr = NULL;
 
     h->is_streamed = 1;
 
@@ -759,7 +760,12 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     if ((s->is_multicast || s->local_port < 0) && (h->flags & AVIO_FLAG_READ))
         s->local_port = port;
 
-    udp_fd = udp_socket_create(h, &my_addr, &len, s->localaddr);
+    if (!s->is_multicast && (s->localaddr == NULL || s->localaddr[0] == '\0') && h->flags == AVIO_FLAG_READ)
+        bind_addr = hostname;
+    else
+        bind_addr = s->localaddr;
+
+    udp_fd = udp_socket_create(h, &my_addr, &len, bind_addr);
     if (udp_fd < 0) {
         ret = AVERROR(EIO);
         goto fail;
