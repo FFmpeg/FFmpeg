@@ -39,6 +39,8 @@
  */
 static bool op_commute_clear(SwsOp *op, SwsOp *next)
 {
+    SwsOp tmp;
+
     av_assert1(op->op == SWS_OP_CLEAR);
     switch (next->op) {
     case SWS_OP_CONVERT:
@@ -54,8 +56,24 @@ static bool op_commute_clear(SwsOp *op, SwsOp *next)
     case SWS_OP_SWIZZLE:
         ff_sws_apply_op_q(next, op->c.q4);
         return true;
-    case SWS_OP_INVALID:
     case SWS_OP_SWAP_BYTES:
+        switch (next->type) {
+        case SWS_PIXEL_U16:
+            ff_sws_apply_op_q(next, op->c.q4); /* always works */
+            return true;
+        case SWS_PIXEL_U32:
+            for (int i = 0; i < 4; i++) {
+                uint32_t v = av_bswap32(op->c.q4[i].num);
+                if (v > INT_MAX)
+                    return false; /* can't represent as AVRational anymore */
+                tmp.c.q4[i] = Q(v);
+            }
+            op->c = tmp.c;
+            return true;
+        default:
+            return false;
+        }
+    case SWS_OP_INVALID:
     case SWS_OP_WRITE:
     case SWS_OP_LINEAR:
     case SWS_OP_PACK:
