@@ -30,7 +30,7 @@
 
 #define AV_READ_TIME mach_absolute_time
 
-#elif HAVE_INLINE_ASM && defined(__ARM_ARCH_7A__)
+#elif HAVE_INLINE_ASM && defined(__ARM_ARCH_7A__) && !defined(__ANDROID__)
 
 #define AV_READ_TIME read_time
 
