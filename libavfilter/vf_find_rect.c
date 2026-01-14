@@ -191,6 +191,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     int xmax = FFMIN(foc->xmax, inlink->w - foc->obj_frame->width );
     int ymax = FFMIN(foc->ymax, inlink->h - foc->obj_frame->height);
 
+    if (xmin > xmax || ymin > ymax)
+        av_log(ctx, AV_LOG_WARNING, "x/y min/max are invalid for the current frame\n");
+
+
     foc->haystack_frame[0] = av_frame_clone(in);
     for (i=1; i<foc->mipmaps; i++) {
         foc->haystack_frame[i] = downscale(foc->haystack_frame[i-1]);
