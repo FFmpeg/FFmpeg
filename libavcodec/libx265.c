@@ -251,6 +251,24 @@ static int handle_side_data(AVCodecContext *avctx, const x265_api *api,
     return 0;
 }
 
+static int get_x265_log_level(AVCodecContext *avctx)
+{
+    int level = av_log_get_level() + avctx->log_level_offset;
+
+    if (level <= AV_LOG_QUIET)
+        return X265_LOG_NONE;
+    if (level <= AV_LOG_ERROR)
+        return X265_LOG_ERROR;
+    if (level <= AV_LOG_WARNING)
+        return X265_LOG_WARNING;
+    if (level <= AV_LOG_INFO)
+        return X265_LOG_INFO;
+    if (level <= AV_LOG_DEBUG)
+        return X265_LOG_DEBUG;
+
+    return X265_LOG_FULL;
+}
+
 static av_cold int libx265_encode_init(AVCodecContext *avctx)
 {
     libx265Context *ctx = avctx->priv_data;
@@ -286,6 +304,7 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
+    ctx->params->logLevel = get_x265_log_level(avctx);
     ctx->params->frameNumThreads = avctx->thread_count;
     if (avctx->framerate.num > 0 && avctx->framerate.den > 0) {
         ctx->params->fpsNum      = avctx->framerate.num;
