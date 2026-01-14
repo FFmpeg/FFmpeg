@@ -299,13 +299,29 @@ retry:
 
         switch (op->op) {
         case SWS_OP_READ:
-            /* Skip reading extra unneeded components */
+            /* "Compress" planar reads where not all components are needed */
             if (!op->rw.packed) {
-                int needed = op->rw.elems;
-                while (needed > 0 && next->comps.unused[needed - 1])
-                    needed--;
-                if (op->rw.elems != needed) {
-                    op->rw.elems = needed;
+                SwsSwizzleOp swiz = SWS_SWIZZLE(0, 1, 2, 3);
+                int nb_planes = 0;
+                for (int i = 0; i < op->rw.elems; i++) {
+                    if (next->comps.unused[i]) {
+                        swiz.in[i] = 3 - (i - nb_planes); /* map to unused plane */
+                        continue;
+                    }
+
+                    const int idx = nb_planes++;
+                    av_assert1(idx <= i);
+                    ops->order_src.in[idx] = ops->order_src.in[i];
+                    swiz.in[i] = idx;
+                }
+
+                if (nb_planes < op->rw.elems) {
+                    op->rw.elems = nb_planes;
+                    RET(ff_sws_op_list_insert_at(ops, n + 1, &(SwsOp) {
+                        .op = SWS_OP_SWIZZLE,
+                        .type = op->type,
+                        .swizzle = swiz,
+                    }));
                     goto retry;
                 }
             }
