@@ -91,6 +91,7 @@ typedef enum {
 
 typedef enum {
     AV_TEXTFORMAT_DATADUMP_XXD,
+    AV_TEXTFORMAT_DATADUMP_BASE64,
 } AVTextFormatDataDump;
 
 typedef struct AVTextFormatter {

@@ -117,7 +117,8 @@ ffprobe -show_packets -select_streams v:1 INPUT
 @end example
 
 @item -show_data
-Show payload data, as a hexadecimal and ASCII dump. Coupled with
+Show payload data, as a hexadecimal and ASCII dump (other formats can be
+selected using @option{-data_dump_format}). Coupled with
 @option{-show_packets}, it will dump the packets' data. Coupled with
 @option{-show_streams}, it will dump the codec extradata.
 
@@ -126,6 +127,11 @@ The dump is printed as the "data" field. It may contain newlines.
 @item -show_data_hash @var{algorithm}
 Show a hash of payload data, for packets with @option{-show_packets} and for
 codec extradata with @option{-show_streams}.
+
+@item -data_dump_format @var{format}
+Select a format used for the data dumps enabled with the @option{-show_data}
+option. The default is @code{xxd} which is a hexdump format compatible with the
+well-known @command{xxd} program. @code{base64} is also supported.
 
 @item -show_error
 Show information about the error found when trying to probe the input.

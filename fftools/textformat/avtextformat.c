@@ -26,6 +26,7 @@
 
 #include "libavutil/mem.h"
 #include "libavutil/avassert.h"
+#include "libavutil/base64.h"
 #include "libavutil/bprint.h"
 #include "libavutil/error.h"
 #include "libavutil/hash.h"
@@ -532,6 +533,19 @@ static void print_data_xxd(AVBPrint *bp, const uint8_t *data, int size)
     }
 }
 
+static void print_data_base64(AVBPrint *bp, const uint8_t *data, int size)
+{
+    char buf[AV_BASE64_SIZE(60)];
+
+    av_bprintf(bp, "\n");
+    while (size) {
+        int l = FFMIN(size, 60);
+        av_base64_encode(buf, sizeof(buf), data, l);
+        av_bprintf(bp, "%s\n", buf);
+        data   += l;
+        size   -= l;
+    }
+}
 void avtext_print_data(AVTextFormatContext *tctx, const char *key,
                        const uint8_t *data, int size)
 {
@@ -540,6 +554,9 @@ void avtext_print_data(AVTextFormatContext *tctx, const char *key,
     switch (tctx->opts.data_dump_format) {
     case AV_TEXTFORMAT_DATADUMP_XXD:
         print_data_xxd(&bp, data, size);
+        break;
+    case AV_TEXTFORMAT_DATADUMP_BASE64:
+        print_data_base64(&bp, data, size);
         break;
     default:
         av_unreachable("Invalid data dump type");

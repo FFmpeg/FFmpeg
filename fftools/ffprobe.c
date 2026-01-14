@@ -144,6 +144,7 @@ static int show_optional_fields = SHOW_OPTIONAL_FIELDS_AUTO;
 static char *output_format;
 static char *stream_specifier;
 static char *show_data_hash;
+static char *data_dump_format;
 
 typedef struct ReadInterval {
     int id;             ///< identifier
@@ -3172,6 +3173,7 @@ static const OptionDef real_options[] = {
     { "of",                    OPT_TYPE_STRING,      0, { &output_format }, "alias for -output_format", "format" },
     { "select_streams",        OPT_TYPE_STRING,      0, { &stream_specifier }, "select the specified streams", "stream_specifier" },
     { "sections",              OPT_TYPE_FUNC, OPT_EXIT, {.func_arg = opt_sections}, "print sections structure and section information, and exit" },
+    { "data_dump_format",      OPT_TYPE_STRING,      0, { &data_dump_format }, "set data dump format (available formats are: xxd, base64)" },
     { "show_data",             OPT_TYPE_BOOL,        0, { &do_show_data }, "show packets data" },
     { "show_data_hash",        OPT_TYPE_STRING,      0, { &show_data_hash }, "show packets data hash" },
     { "show_error",            OPT_TYPE_FUNC,        0, { .func_arg = &opt_show_error },  "show probing error" },
@@ -3236,6 +3238,7 @@ int main(int argc, char **argv)
     char *buf;
     char *f_name = NULL, *f_args = NULL;
     int ret, input_ret;
+    AVTextFormatDataDump data_dump_format_id;
 
     init_dynload();
 
@@ -3320,6 +3323,18 @@ int main(int argc, char **argv)
         goto end;
     }
 
+    if (data_dump_format) {
+        if (!strcmp(data_dump_format, "xxd")) {
+            data_dump_format_id = AV_TEXTFORMAT_DATADUMP_XXD;
+        } else if (!strcmp(data_dump_format, "base64")) {
+            data_dump_format_id = AV_TEXTFORMAT_DATADUMP_BASE64;
+        } else {
+            av_log(NULL, AV_LOG_ERROR, "Unknown data dump format with name '%s'\n", data_dump_format);
+            ret = AVERROR(EINVAL);
+            goto end;
+        }
+    }
+
     if (output_filename) {
         ret = avtextwriter_create_file(&wctx, output_filename);
     } else
@@ -3335,6 +3350,7 @@ int main(int argc, char **argv)
         .use_value_prefix = use_value_prefix,
         .use_byte_value_binary_prefix = use_byte_value_binary_prefix,
         .use_value_sexagesimal_format = use_value_sexagesimal_format,
+        .data_dump_format             = data_dump_format_id,
     };
 
     if ((ret = avtext_context_open(&tctx, f, wctx, f_args, sections, FF_ARRAY_ELEMS(sections), tf_options, show_data_hash)) >= 0) {
