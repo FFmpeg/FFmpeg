@@ -45,7 +45,7 @@ int vk_renderer_create(VkRenderer *renderer, SDL_Window *window,
 
 int vk_renderer_get_hw_dev(VkRenderer *renderer, AVBufferRef **dev);
 
-int vk_renderer_display(VkRenderer *renderer, AVFrame *frame);
+int vk_renderer_display(VkRenderer *renderer, AVFrame *frame, RenderParams *params);
 
 int vk_renderer_resize(VkRenderer *renderer, int width, int height);
 

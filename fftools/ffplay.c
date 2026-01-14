@@ -1006,8 +1006,9 @@ static void video_image_display(VideoState *is)
     SDL_Rect *rect = &is->render_params.target_rect;
 
     vp = frame_queue_peek_last(&is->pictq);
+    calculate_display_rect(rect, is->xleft, is->ytop, is->width, is->height, vp->width, vp->height, vp->sar);
     if (vk_renderer) {
-        vk_renderer_display(vk_renderer, vp->frame);
+        vk_renderer_display(vk_renderer, vp->frame, &is->render_params);
         return;
     }
 
@@ -1056,7 +1057,6 @@ static void video_image_display(VideoState *is)
         }
     }
 
-    calculate_display_rect(rect, is->xleft, is->ytop, is->width, is->height, vp->width, vp->height, vp->sar);
     set_sdl_yuv_conversion_mode(vp->frame);
 
     if (!vp->uploaded) {

@@ -53,7 +53,7 @@ struct VkRenderer {
 
     int (*get_hw_dev)(VkRenderer *renderer, AVBufferRef **dev);
 
-    int (*display)(VkRenderer *renderer, AVFrame *frame);
+    int (*display)(VkRenderer *renderer, AVFrame *frame, RenderParams *params);
 
     int (*resize)(VkRenderer *renderer, int width, int height);
 
@@ -702,11 +702,13 @@ static int convert_frame(VkRenderer *renderer, AVFrame *frame)
     return ret;
 }
 
-static int display(VkRenderer *renderer, AVFrame *frame)
+static int display(VkRenderer *renderer, AVFrame *frame, RenderParams *params)
 {
+    SDL_Rect *rect = &params->target_rect;
     struct pl_swapchain_frame swap_frame = {0};
     struct pl_frame pl_frame = {0};
     struct pl_frame target = {0};
+    struct pl_render_params pl_params = pl_render_default_params;
     RendererContext *ctx = (RendererContext *) renderer;
     int ret = 0;
     struct pl_color_space hint = {0};
@@ -731,8 +733,23 @@ static int display(VkRenderer *renderer, AVFrame *frame)
     }
 
     pl_frame_from_swapchain(&target, &swap_frame);
-    if (!pl_render_image(ctx->renderer, &pl_frame, &target,
-                         &pl_render_default_params)) {
+
+    target.crop = (pl_rect2df){.x0 = rect->x, .x1 = rect->x + rect->w,
+                               .y0 = rect->y, .y1 = rect->y + rect->h};
+    switch (params->video_background_type) {
+    case VIDEO_BACKGROUND_TILES:
+        pl_params.background = PL_CLEAR_TILES;
+        pl_params.tile_size = VIDEO_BACKGROUND_TILE_SIZE * 2;
+        break;
+    case VIDEO_BACKGROUND_COLOR:
+        pl_params.background = PL_CLEAR_COLOR;
+        for (int i = 0; i < 3; i++)
+            pl_params.background_color[i] = params->video_background_color[i] / 255.0;
+        pl_params.background_transparency = (255 - params->video_background_color[3]) / 255.0;
+        break;
+    }
+
+    if (!pl_render_image(ctx->renderer, &pl_frame, &target, &pl_params)) {
         av_log(NULL, AV_LOG_ERROR, "pl_render_image failed\n");
         ret = AVERROR_EXTERNAL;
         goto out;
@@ -835,9 +852,9 @@ int vk_renderer_get_hw_dev(VkRenderer *renderer, AVBufferRef **dev)
     return renderer->get_hw_dev(renderer, dev);
 }
 
-int vk_renderer_display(VkRenderer *renderer, AVFrame *frame)
+int vk_renderer_display(VkRenderer *renderer, AVFrame *frame, RenderParams *render_params)
 {
-    return renderer->display(renderer, frame);
+    return renderer->display(renderer, frame, render_params);
 }
 
 int vk_renderer_resize(VkRenderer *renderer, int width, int height)
