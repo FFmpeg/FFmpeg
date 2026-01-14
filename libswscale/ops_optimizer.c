@@ -297,6 +297,14 @@ retry:
         /* common helper variable */
         bool noop = true;
 
+        if (next->comps.unused[0] && next->comps.unused[1] &&
+            next->comps.unused[2] && next->comps.unused[3])
+        {
+            /* Remove completely unused operations */
+            ff_sws_op_list_remove_at(ops, n, 1);
+            goto retry;
+        }
+
         switch (op->op) {
         case SWS_OP_READ:
             /* "Compress" planar reads where not all components are needed */
