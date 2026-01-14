@@ -768,10 +768,11 @@ const char **av_vk_get_optional_device_extensions(int *count)
     return exts;
 }
 
-static VkBool32 VKAPI_CALL vk_dbg_callback(VkDebugUtilsMessageSeverityFlagBitsEXT severity,
-                                           VkDebugUtilsMessageTypeFlagsEXT messageType,
-                                           const VkDebugUtilsMessengerCallbackDataEXT *data,
-                                           void *priv)
+static VKAPI_ATTR
+VkBool32 VKAPI_CALL vk_dbg_callback(VkDebugUtilsMessageSeverityFlagBitsEXT severity,
+                                    VkDebugUtilsMessageTypeFlagsEXT messageType,
+                                    const VkDebugUtilsMessengerCallbackDataEXT *data,
+                                    void *priv)
 {
     int l;
     AVHWDeviceContext *ctx = priv;
