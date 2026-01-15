@@ -172,6 +172,10 @@ typedef struct MJpegDecodeContext {
     enum AVPixelFormat hwaccel_pix_fmt;
     void *hwaccel_picture_private;
     struct JLSState *jls_state;
+
+    const uint8_t *mb_bitmask;
+    size_t mb_bitmask_size;
+    const AVFrame *reference;
 } MJpegDecodeContext;
 
 int ff_mjpeg_build_vlc(VLC *vlc, const uint8_t *bits_table,
@@ -187,9 +191,7 @@ int ff_mjpeg_decode_frame_from_buf(AVCodecContext *avctx,
 int ff_mjpeg_decode_dqt(MJpegDecodeContext *s);
 int ff_mjpeg_decode_dht(MJpegDecodeContext *s);
 int ff_mjpeg_decode_sof(MJpegDecodeContext *s);
-int ff_mjpeg_decode_sos(MJpegDecodeContext *s,
-                        const uint8_t *mb_bitmask,int mb_bitmask_size,
-                        const AVFrame *reference);
+int ff_mjpeg_decode_sos(MJpegDecodeContext *s);
 int ff_mjpeg_find_marker(const uint8_t **buf_ptr, const uint8_t *buf_end);
 
 #endif /* AVCODEC_MJPEGDEC_H */

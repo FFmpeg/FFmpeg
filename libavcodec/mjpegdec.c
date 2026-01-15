@@ -1475,14 +1475,13 @@ static void shift_output(MJpegDecodeContext *s, uint8_t *ptr, int linesize)
     }
 }
 
-static int mjpeg_decode_scan(MJpegDecodeContext *s,
-                             const uint8_t *mb_bitmask,
-                             int mb_bitmask_size,
-                             const AVFrame *reference)
+static int mjpeg_decode_scan(MJpegDecodeContext *s)
 {
     int nb_components = s->nb_components_sos;
     int Ah = s->Ah;
     int Al = s->Al;
+    const uint8_t *mb_bitmask = NULL;
+    const AVFrame *reference = NULL;
     int i, mb_x, mb_y, chroma_h_shift, chroma_v_shift, chroma_width, chroma_height;
     uint8_t *data[MAX_COMPONENTS];
     const uint8_t *reference_data[MAX_COMPONENTS];
@@ -1490,8 +1489,13 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s,
     GetBitContext mb_bitmask_gb = {0}; // initialize to silence gcc warning
     int bytes_per_pixel = 1 + (s->bits > 8);
 
+    if (s->avctx->codec_id == AV_CODEC_ID_MXPEG) {
+        mb_bitmask = s->mb_bitmask;
+        reference = s->reference;
+    }
+
     if (mb_bitmask) {
-        if (mb_bitmask_size != (s->mb_width * s->mb_height + 7)>>3) {
+        if (s->mb_bitmask_size != (s->mb_width * s->mb_height + 7)>>3) {
             av_log(s->avctx, AV_LOG_ERROR, "mb_bitmask_size mismatches\n");
             return AVERROR_INVALIDDATA;
         }
@@ -1708,8 +1712,7 @@ static void mjpeg_idct_scan_progressive_ac(MJpegDecodeContext *s)
     }
 }
 
-int ff_mjpeg_decode_sos(MJpegDecodeContext *s, const uint8_t *mb_bitmask,
-                        int mb_bitmask_size, const AVFrame *reference)
+int ff_mjpeg_decode_sos(MJpegDecodeContext *s)
 {
     int len, i, h, v;
     int index, id, ret;
@@ -1834,7 +1837,7 @@ int ff_mjpeg_decode_sos(MJpegDecodeContext *s, const uint8_t *mb_bitmask,
             if ((ret = mjpeg_decode_scan_progressive_ac(s)) < 0)
                 return ret;
         } else {
-            if ((ret = mjpeg_decode_scan(s, mb_bitmask, mb_bitmask_size, reference)) < 0)
+            if ((ret = mjpeg_decode_scan(s)) < 0)
                 return ret;
         }
     }
@@ -2599,7 +2602,7 @@ eoi_parser:
         case SOS:
             s->cur_scan++;
 
-            if ((ret = ff_mjpeg_decode_sos(s, NULL, 0, NULL)) < 0 &&
+            if ((ret = ff_mjpeg_decode_sos(s)) < 0 &&
                 (avctx->err_recognition & AV_EF_EXPLODE))
                 goto fail;
             break;
