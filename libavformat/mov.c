@@ -10198,6 +10198,9 @@ static int read_image_grid(AVFormatContext *s, const HEIFGrid *grid,
         offset = c->idat_offset;
     }
 
+    if (offset > INT64_MAX - item->extent_offset)
+        return AVERROR_INVALIDDATA;
+
     avio_seek(s->pb, item->extent_offset + offset, SEEK_SET);
 
     avio_r8(s->pb);    /* version */
@@ -10295,6 +10298,9 @@ static int read_image_iovl(AVFormatContext *s, const HEIFGrid *grid,
         }
         offset = c->idat_offset;
     }
+
+    if (offset > INT64_MAX - item->extent_offset)
+        return AVERROR_INVALIDDATA;
 
     avio_seek(s->pb, item->extent_offset + offset, SEEK_SET);
 
@@ -10486,6 +10492,9 @@ static int mov_parse_heif_items(AVFormatContext *s)
 
         err = sanity_checks(s, sc, item->item_id);
         if (err)
+            return AVERROR_INVALIDDATA;
+
+        if (offset > INT64_MAX - item->extent_offset)
             return AVERROR_INVALIDDATA;
 
         sc->chunk_offsets[0] = item->extent_offset + offset;
