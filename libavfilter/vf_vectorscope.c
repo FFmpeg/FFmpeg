@@ -1469,6 +1469,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         return AVERROR(ENOMEM);
     }
     av_frame_copy_props(out, in);
+    out->sample_aspect_ratio = outlink->sample_aspect_ratio;
 
     s->vectorscope(s, in, out, s->pd);
     s->graticulef(s, out, s->x, s->y, s->pd, s->cs);

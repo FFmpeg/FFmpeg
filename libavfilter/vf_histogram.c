@@ -594,6 +594,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
 
     av_frame_copy_props(out, in);
+    out->sample_aspect_ratio = outlink->sample_aspect_ratio;
     av_frame_free(&in);
     s->x_pos++;
     if (s->x_pos >= s->width) {
