@@ -41,9 +41,9 @@ int show_sources(void *optctx, const char *opt, const char *arg);
 
 #if CONFIG_AVDEVICE
 #define CMDUTILS_COMMON_OPTIONS_AVDEVICE                                                                                \
-    { "sources"    , OPT_TYPE_FUNC, OPT_EXIT | OPT_FUNC_ARG | OPT_EXPERT, { .func_arg = show_sources },                 \
+    { "sources"    , OPT_TYPE_FUNC, OPT_EXIT | OPT_EXPERT, { .func_arg = show_sources },                                \
       "list sources of the input device", "device" },                                                                   \
-    { "sinks"      , OPT_TYPE_FUNC, OPT_EXIT | OPT_FUNC_ARG | OPT_EXPERT, { .func_arg = show_sinks },                   \
+    { "sinks"      , OPT_TYPE_FUNC, OPT_EXIT | OPT_EXPERT, { .func_arg = show_sinks },                                  \
       "list sinks of the output device", "device" },                                                                    \
 
 #else
