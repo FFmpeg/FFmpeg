@@ -55,6 +55,8 @@
 #include "put_bits.h"
 
 
+static void mjpeg_find_raw_scan_data(MJpegDecodeContext *s,
+                                     const uint8_t **pbuf_ptr, size_t *pbuf_size);
 static int mjpeg_unescape_sos(MJpegDecodeContext *s);
 
 static int init_default_huffman_tables(MJpegDecodeContext *s)
@@ -1806,18 +1808,20 @@ int ff_mjpeg_decode_sos(MJpegDecodeContext *s)
     if (s->mjpb_skiptosod)
         bytestream2_skip(&s->gB, s->mjpb_skiptosod);
 
-    ret = mjpeg_unescape_sos(s);
-    if (ret < 0)
-        return ret;
-
     if (s->avctx->hwaccel) {
-        ret = FF_HW_CALL(s->avctx, decode_slice,
-                         s->raw_scan_buffer,
-                         s->raw_scan_buffer_size);
+        const uint8_t *buf_ptr;
+        size_t buf_size;
+
+        mjpeg_find_raw_scan_data(s, &buf_ptr, &buf_size);
+
+        ret = FF_HW_CALL(s->avctx, decode_slice, buf_ptr, buf_size);
         if (ret < 0)
             return ret;
 
     } else {
+        ret = mjpeg_unescape_sos(s);
+        if (ret < 0)
+            return ret;
     if (s->lossless) {
         av_assert0(s->picture_ptr == s->picture);
         if (CONFIG_JPEGLS_DECODER && s->ls) {
@@ -2240,14 +2244,12 @@ found:
     return val;
 }
 
-static int mjpeg_unescape_sos(MJpegDecodeContext *s)
+static void mjpeg_find_raw_scan_data(MJpegDecodeContext *s,
+                                     const uint8_t **pbuf_ptr, size_t *pbuf_size)
 {
     const uint8_t *buf_ptr = s->gB.buffer;
     const uint8_t *buf_end = buf_ptr + bytestream2_get_bytes_left(&s->gB);
-    const uint8_t *unescaped_buf_ptr;
-    size_t unescaped_buf_size;
 
-    if (s->avctx->hwaccel) {
         /* Find size of image data buffer (including restart markers).
          * No unescaping is performed. */
         const uint8_t *ptr = buf_ptr;
@@ -2267,11 +2269,17 @@ static int mjpeg_unescape_sos(MJpegDecodeContext *s)
         }
         ptr = buf_end;
 found_hw:
-        s->raw_scan_buffer      = buf_ptr;
-        s->raw_scan_buffer_size = ptr - buf_ptr;
-        bytestream2_skipu(&s->gB, s->raw_scan_buffer_size);
-        return 0;
-    }
+    *pbuf_ptr = buf_ptr;
+    *pbuf_size = ptr - buf_ptr;
+    bytestream2_skipu(&s->gB, *pbuf_size);
+}
+
+static int mjpeg_unescape_sos(MJpegDecodeContext *s)
+{
+    const uint8_t *buf_ptr = s->gB.buffer;
+    const uint8_t *buf_end = buf_ptr + bytestream2_get_bytes_left(&s->gB);
+    const uint8_t *unescaped_buf_ptr;
+    size_t unescaped_buf_size;
 
     if (s->avctx->codec_id == AV_CODEC_ID_MEDIA100 ||
         s->avctx->codec_id == AV_CODEC_ID_MJPEGB ||

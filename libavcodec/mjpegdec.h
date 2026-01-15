@@ -162,8 +162,6 @@ typedef struct MJpegDecodeContext {
     // Raw stream data for hwaccel use.
     const uint8_t *raw_image_buffer;
     size_t         raw_image_buffer_size;
-    const uint8_t *raw_scan_buffer;
-    size_t         raw_scan_buffer_size;
 
     uint8_t raw_huffman_lengths[2][4][16];
     uint8_t raw_huffman_values[2][4][256];
