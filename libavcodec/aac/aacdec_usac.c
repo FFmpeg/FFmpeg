@@ -315,7 +315,7 @@ int ff_aac_usac_reset_state(AACDecContext *ac, OutputConfiguration *oc)
                 ff_aac_sbr_config_usac(ac, che, e);
 
             for (int j = 0; j < ch; j++) {
-                SingleChannelElement *sce = &che->ch[ch];
+                SingleChannelElement *sce = &che->ch[j];
                 AACUsacElemData *ue = &sce->ue;
 
                 memset(ue, 0, sizeof(*ue));
