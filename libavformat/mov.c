@@ -10252,6 +10252,9 @@ static int read_image_grid(AVFormatContext *s, const HEIFGrid *grid,
         offset = c->idat_offset;
     }
 
+    if (offset > INT64_MAX - item->extent_offset)
+        return AVERROR_INVALIDDATA;
+
     avio_seek(s->pb, item->extent_offset + offset, SEEK_SET);
 
     avio_r8(s->pb);    /* version */
@@ -10335,6 +10338,9 @@ static int read_image_iovl(AVFormatContext *s, const HEIFGrid *grid,
         offset = c->idat_offset;
     }
 
+    if (offset > INT64_MAX - item->extent_offset)
+        return AVERROR_INVALIDDATA;
+
     avio_seek(s->pb, item->extent_offset + offset, SEEK_SET);
 
     avio_r8(s->pb);    /* version */
@@ -10407,6 +10413,9 @@ static int mov_parse_exif_item(AVFormatContext *s,
     buf = av_buffer_alloc(ref->extent_length);
     if (!buf)
         return AVERROR(ENOMEM);
+
+    if (offset > INT64_MAX - ref->extent_offset)
+        return AVERROR_INVALIDDATA;
 
     avio_seek(s->pb, ref->extent_offset + offset, SEEK_SET);
     err = avio_read(s->pb, buf->data, ref->extent_length);
@@ -10619,6 +10628,9 @@ static int mov_parse_heif_items(AVFormatContext *s)
 
         err = sanity_checks(s, sc, st->index);
         if (err)
+            return AVERROR_INVALIDDATA;
+
+        if (offset > INT64_MAX - item->extent_offset)
             return AVERROR_INVALIDDATA;
 
         sc->chunk_offsets[0] = item->extent_offset + offset;
