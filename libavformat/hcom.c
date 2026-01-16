@@ -21,6 +21,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "demux.h"
 #include "internal.h"
 #include "pcm.h"
@@ -73,7 +74,9 @@ static int hcom_read_header(AVFormatContext *s)
         return ret;
     AV_WB16(st->codecpar->extradata, dict_entries);
     AV_WB32(st->codecpar->extradata + 2, compresstype);
-    avio_read(s->pb, st->codecpar->extradata + 6, dict_entries * 4);
+    ret = ffio_read_size(s->pb, st->codecpar->extradata + 6, dict_entries * 4);
+    if (ret < 0)
+        return ret;
     avio_skip(s->pb, 1);
     st->codecpar->extradata[dict_entries * 4 + 6] = avio_r8(s->pb);
 
