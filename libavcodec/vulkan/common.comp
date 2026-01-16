@@ -107,9 +107,6 @@ layout(buffer_reference, buffer_reference_align = 8) buffer u64buf {
 #define ceil_rshift(a, b) \
     (-((-(a)) >> (b)))
 
-#define IS_WITHIN(v1, v2) \
-    ((v1.x < v2.x) && (v1.y < v2.y))
-
 /* TODO: optimize */
 uint align(uint src, uint a)
 {

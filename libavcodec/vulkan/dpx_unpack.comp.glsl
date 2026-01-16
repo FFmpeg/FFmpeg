@@ -91,7 +91,7 @@ i16vec4 parse_packed_in_32(ivec2 pos, int stride)
 void main(void)
 {
     ivec2 pos = ivec2(gl_GlobalInvocationID.xy);
-    if (!IS_WITHIN(pos, imageSize(dst[0])))
+    if (any(greaterThanEqual(pos, imageSize(dst[0]))))
         return;
 
     i16vec4 p;

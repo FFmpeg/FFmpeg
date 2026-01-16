@@ -40,9 +40,8 @@ void main()
 {
     const ivec2 pos = ivec2(gl_GlobalInvocationID.xy);
 
-#define IS_WITHIN(v1, v2) ((v1.x < v2.x) && (v1.y < v2.y))
     ivec2 size = imageSize(output_img[nonuniformEXT(gl_LocalInvocationID.z)]);
-    if (!IS_WITHIN(pos, size))
+    if (any(greaterThanEqual(pos, size)))
         return;
 
     if ((planes & (1 << gl_LocalInvocationID.z)) == 0) {
