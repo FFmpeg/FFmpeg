@@ -629,10 +629,7 @@ static const AVOption d3d12va_encode_h264_options[] = {
 #undef LEVEL
 
     { "deblock", "Deblocking filter mode",
-      OFFSET(deblock), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 1, FLAGS, "deblock" },
-        { "auto",    "Default (enabled)",         0, AV_OPT_TYPE_CONST, { .i64 = -1 }, 0, 0, FLAGS, "deblock" },
-        { "disable", "Disable deblocking filter", 0, AV_OPT_TYPE_CONST, { .i64 = 0 },  0, 0, FLAGS, "deblock" },
-        { "enable",  "Enable deblocking filter",  0, AV_OPT_TYPE_CONST, { .i64 = 1 },  0, 0, FLAGS, "deblock" },
+      OFFSET(deblock), AV_OPT_TYPE_BOOL, { .i64 = -1 }, -1, 1, FLAGS },
 
     { NULL },
 };
