@@ -38,16 +38,15 @@
 #define LZF_LONG_BACKREF 7 + 2
 
 
-static inline int lzf_realloc(uint8_t **buf, size_t *size, int addition, unsigned *allocated_size)
+static inline int lzf_realloc(uint8_t **buf, size_t new_size, unsigned *allocated_size)
 {
-    void *ptr = av_fast_realloc(*buf, allocated_size, *size + addition);
+    void *ptr = av_fast_realloc(*buf, allocated_size, new_size);
 
     if (!ptr) {
         av_freep(buf); //probably not needed
         return AVERROR(ENOMEM);
     }
     *buf = ptr;
-    *size += addition;
 
     return 0;
 }
@@ -63,8 +62,8 @@ int ff_lzf_uncompress(GetByteContext *gb, uint8_t **buf, size_t *size, unsigned 
 
         if (s < LZF_LITERAL_MAX) {
             s++;
-            if (s > *size - len) {
-                ret = lzf_realloc(buf, size, s, allocated_size);
+            if (s > *allocated_size - len) {
+                ret = lzf_realloc(buf, len + s, allocated_size);
                 if (ret < 0)
                     return ret;
                 p = *buf + len;
@@ -88,8 +87,8 @@ int ff_lzf_uncompress(GetByteContext *gb, uint8_t **buf, size_t *size, unsigned 
             if (off > len)
                 return AVERROR_INVALIDDATA;
 
-            if (l > *size - len) {
-                ret = lzf_realloc(buf, size, l, allocated_size);
+            if (l > *allocated_size - len) {
+                ret = lzf_realloc(buf, len + l, allocated_size);
                 if (ret < 0)
                     return ret;
                 p = *buf + len;
