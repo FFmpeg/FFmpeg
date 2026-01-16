@@ -602,6 +602,17 @@ static int d3d12va_encode_av1_init_sequence_params(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_DEBUG, "ROI encoding not supported by hardware for current rate control mode \n");
     }
 
+    // Check motion estimation precision mode support
+    if (ctx->me_precision != D3D12_VIDEO_ENCODER_MOTION_ESTIMATION_PRECISION_MODE_MAXIMUM) {
+        if (!(support.SupportFlags & D3D12_VIDEO_ENCODER_SUPPORT_FLAG_MOTION_ESTIMATION_PRECISION_MODE_LIMIT_AVAILABLE)) {
+            av_log(avctx, AV_LOG_ERROR, "Hardware does not support motion estimation "
+                "precision mode limits.\n");
+            return AVERROR(ENOTSUP);
+        }
+        av_log(avctx, AV_LOG_VERBOSE, "Hardware supports motion estimation "
+            "precision mode limits.\n");
+    }
+
     memset(seqheader_obu, 0, sizeof(*seqheader_obu));
     seq->seq_profile = profile;
     seq->seq_level_idx[0] = level.Level;
