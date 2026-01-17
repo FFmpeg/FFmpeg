@@ -1021,7 +1021,7 @@ static int config_output(AVFilterLink *outlink)
         break;
     case DIRECTION_RL:
     case DIRECTION_DU:
-        s->pos = s->sono_size;
+        s->pos = FFMAX(s->sono_size - 1, 0);
         break;
     }
 
@@ -1096,7 +1096,7 @@ static int output_frame(AVFilterContext *ctx)
         case DIRECTION_RL:
             s->pos--;
             if (s->pos < 0) {
-                s->pos = s->sono_size;
+                s->pos = FFMAX(s->sono_size - 1, 0);
                 s->new_frame = 1;
             }
             break;
@@ -1110,7 +1110,7 @@ static int output_frame(AVFilterContext *ctx)
         case DIRECTION_DU:
             s->pos--;
             if (s->pos < 0) {
-                s->pos = s->sono_size;
+                s->pos = FFMAX(s->sono_size - 1, 0);
                 s->new_frame = 1;
             }
             break;
@@ -1124,7 +1124,7 @@ static int output_frame(AVFilterContext *ctx)
             break;
         case DIRECTION_RL:
         case DIRECTION_DU:
-            s->pos = s->sono_size;
+            s->pos = FFMAX(s->sono_size - 1, 0);
             break;
         }
         break;
