@@ -10414,8 +10414,10 @@ static int mov_parse_exif_item(AVFormatContext *s,
     if (!buf)
         return AVERROR(ENOMEM);
 
-    if (offset > INT64_MAX - ref->extent_offset)
-        return AVERROR_INVALIDDATA;
+    if (offset > INT64_MAX - ref->extent_offset) {
+        err = AVERROR(ENOMEM);
+        goto fail;
+    }
 
     avio_seek(s->pb, ref->extent_offset + offset, SEEK_SET);
     err = avio_read(s->pb, buf->data, ref->extent_length);
