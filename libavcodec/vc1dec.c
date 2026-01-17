@@ -893,10 +893,8 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
                     buf_size3 = v->vc1dsp.vc1_unescape_buffer(start + 4, size,
                                                               slices[n_slices].buf);
                     ret = init_get_bits8(&slices[n_slices].gb, slices[n_slices].buf, buf_size3);
-                    if (ret < 0) {
-                        ret = AVERROR(ENOMEM);
+                    if (ret < 0)
                         goto err;
-                    }
                     slices[n_slices].mby_start = avctx->coded_height + 31 >> 5;
                     slices[n_slices].rawbuf = start;
                     slices[n_slices].raw_size = size + 4;
@@ -907,10 +905,8 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
                 case VC1_CODE_ENTRYPOINT: /* it should be before frame data */
                     buf_size2 = v->vc1dsp.vc1_unescape_buffer(start + 4, size, buf2);
                     ret = init_get_bits8(&v->gb, buf2, buf_size2);
-                    if (ret < 0) {
-                        ret = AVERROR(ENOMEM);
+                    if (ret < 0)
                         goto err;
-                    }
                     ff_vc1_decode_entry_point(avctx, v, &v->gb);
                     break;
                 case VC1_CODE_SLICE: {
@@ -930,10 +926,8 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
                     buf_size3 = v->vc1dsp.vc1_unescape_buffer(start + 4, size,
                                                               slices[n_slices].buf);
                     ret = init_get_bits8(&slices[n_slices].gb, slices[n_slices].buf, buf_size3);
-                    if (ret < 0) {
-                        ret = AVERROR(ENOMEM);
+                    if (ret < 0)
                         goto err;
-                    }
                     slices[n_slices].mby_start = get_bits(&slices[n_slices].gb, 9);
                     slices[n_slices].rawbuf = start;
                     slices[n_slices].raw_size = size + 4;
@@ -967,10 +961,8 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
                 }
                 buf_size3 = v->vc1dsp.vc1_unescape_buffer(divider + 4, buf + buf_size - divider - 4, slices[n_slices].buf);
                 ret = init_get_bits8(&slices[n_slices].gb, slices[n_slices].buf, buf_size3);
-                if (ret < 0) {
-                    ret = AVERROR(ENOMEM);
+                if (ret < 0)
                     goto err;
-                }
                 slices[n_slices].mby_start = s->mb_height + 1 >> 1;
                 slices[n_slices].rawbuf = divider;
                 slices[n_slices].raw_size = buf + buf_size - divider;
