@@ -747,6 +747,9 @@ static int display(VkRenderer *renderer, AVFrame *frame, RenderParams *params)
             pl_params.background_color[i] = params->video_background_color[i] / 255.0;
         pl_params.background_transparency = (255 - params->video_background_color[3]) / 255.0;
         break;
+    case VIDEO_BACKGROUND_NONE:
+        pl_frame.repr.alpha = PL_ALPHA_NONE;
+        break;
     }
 
     if (!pl_render_image(ctx->renderer, &pl_frame, &target, &pl_params)) {

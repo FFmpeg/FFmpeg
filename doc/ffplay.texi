@@ -213,7 +213,8 @@ Set the video background pattern used for transparent videos. For solid color
 patterns you can use the color name or color code as specified in the
 @ref{color syntax,,Color section in the ffmpeg-utils(1) manual,ffmpeg-utils}.
 You can also use the special @code{tiles} keyword for a checker board style
-pattern. This is also the default.
+pattern. This is also the default. The @code{none} pattern does rendering
+without alpha blending effectively ignoring alpha channel.
 
 @end table
 

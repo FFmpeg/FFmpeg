@@ -30,6 +30,7 @@ typedef struct VkRenderer VkRenderer;
 enum VideoBackgroundType {
     VIDEO_BACKGROUND_TILES,
     VIDEO_BACKGROUND_COLOR,
+    VIDEO_BACKGROUND_NONE,
 };
 
 typedef struct RenderParams {

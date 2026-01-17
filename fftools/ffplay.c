@@ -995,6 +995,9 @@ static void draw_video_background(VideoState *is)
             fill_rectangle(rect->x, rect->y, rect->w, rect->h);
             break;
         }
+        case VIDEO_BACKGROUND_NONE:
+            SDL_SetTextureBlendMode(is->vid_texture, SDL_BLENDMODE_NONE);
+            break;
         }
     }
 }
@@ -3266,7 +3269,9 @@ static VideoState *stream_open(const char *filename,
     if (startup_volume > 100)
         av_log(NULL, AV_LOG_WARNING, "-volume=%d > 100, setting to 100\n", startup_volume);
     if (video_background) {
-        if (strcmp(video_background, "tiles")) {
+        if (!strcmp(video_background, "none")) {
+            is->render_params.video_background_type = VIDEO_BACKGROUND_NONE;
+        } else if (strcmp(video_background, "tiles")) {
             if (av_parse_color(is->render_params.video_background_color, video_background, -1, NULL) >= 0)
                 is->render_params.video_background_type = VIDEO_BACKGROUND_COLOR;
             else
