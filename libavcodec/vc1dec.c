@@ -975,11 +975,11 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
         }
         ret = init_get_bits8(&v->gb, buf2, buf_size2);
         if (ret < 0)
-            return ret;
+            goto err;
     } else{
         ret = init_get_bits8(&v->gb, buf, buf_size);
         if (ret < 0)
-            return ret;
+            goto err;
     }
 
     if (v->res_sprite) {
