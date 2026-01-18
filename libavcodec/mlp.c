@@ -107,8 +107,11 @@ uint8_t ff_mlp_restart_checksum(const uint8_t *buf, unsigned int bit_size)
     int i;
     int num_bytes = (bit_size + 2) / 8;
 
-    int crc = crc_1D[buf[0] & 0x3f];
-    crc = av_crc(crc_1D, crc, buf + 1, num_bytes - 2);
+    // The two most significant bits of buf[0] are not supposed
+    // to be contained in the checksum; using buf[0] & 0xC0 as start value
+    // achieves this.
+    int crc = av_crc(crc_1D, buf[0] & 0xC0, buf, num_bytes - 1);
+
     crc ^= buf[num_bytes - 1];
 
     for (i = 0; i < ((bit_size + 2) & 7); i++) {
