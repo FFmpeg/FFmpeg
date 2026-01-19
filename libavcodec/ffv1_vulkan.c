@@ -114,7 +114,12 @@ int ff_ffv1_vk_init_crc_table_data(FFVulkanContext *s,
                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
     RET(ff_vk_map_buffer(s, vkb, (void *)&buf_mapped, 0));
 
-    memcpy(buf_mapped, av_crc_get_table(AV_CRC_32_IEEE), buf_len);
+    for (uint32_t i = 0; i < 256; i++) {
+        uint32_t c = i << 24;
+        for (int j = 0; j < 8; j++)
+            c = (c << 1) ^ (0x04C11DB7 & (((int32_t) c) >> 31));
+        buf_mapped[i] = av_bswap32(c);
+    }
 
     RET(ff_vk_unmap_buffer(s, vkb, 1));
 
