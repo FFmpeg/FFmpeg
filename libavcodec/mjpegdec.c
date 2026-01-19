@@ -147,6 +147,7 @@ av_cold int ff_mjpeg_decode_init(AVCodecContext *avctx)
     if ((ret = init_default_huffman_tables(s)) < 0)
         return ret;
 
+#if FF_API_MJPEG_EXTERN_HUFF
     if (s->extern_huff && avctx->extradata) {
         av_log(avctx, AV_LOG_INFO, "using external huffman table\n");
         bytestream2_init(&s->gB, avctx->extradata, avctx->extradata_size);
@@ -157,6 +158,7 @@ av_cold int ff_mjpeg_decode_init(AVCodecContext *avctx)
                 return ret;
         }
     }
+#endif
     if (avctx->field_order == AV_FIELD_BB) { /* quicktime icefloe 019 */
         s->interlace_polarity = 1;           /* bottom field first */
         av_log(avctx, AV_LOG_DEBUG, "bottom field first\n");
@@ -2953,18 +2955,22 @@ static av_cold void decode_flush(AVCodecContext *avctx)
 }
 
 #if CONFIG_MJPEG_DECODER
+#if FF_API_MJPEG_EXTERN_HUFF
 #define OFFSET(x) offsetof(MJpegDecodeContext, x)
 #define VD AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
     { "extern_huff", "Use external huffman table.",
-      OFFSET(extern_huff), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VD },
+      OFFSET(extern_huff), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VD | AV_OPT_FLAG_DEPRECATED },
     { NULL },
 };
+#endif
 
 static const AVClass mjpegdec_class = {
     .class_name = "MJPEG decoder",
     .item_name  = av_default_item_name,
+#if FF_API_MJPEG_EXTERN_HUFF
     .option     = options,
+#endif
     .version    = LIBAVUTIL_VERSION_INT,
 };
 

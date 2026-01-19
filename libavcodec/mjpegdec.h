@@ -144,7 +144,9 @@ typedef struct MJpegDecodeContext {
     uint16_t (*ljpeg_buffer)[4];
     unsigned int ljpeg_buffer_size;
 
+#if FF_API_MJPEG_EXTERN_HUFF
     int extern_huff;
+#endif
     AVExifMetadata exif_metadata;
 
     AVStereo3D *stereo3d; ///!< stereoscopic information (cached, since it is read before frame allocation)
