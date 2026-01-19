@@ -54,106 +54,6 @@ typedef struct DecodePushData {
     int shift;
 } DecodePushData;
 
-static int host_upload_image(AVCodecContext *avctx,
-                             FFVulkanDecodeContext *dec, DPXDecContext *dpx,
-                             const uint8_t *src, uint32_t size)
-{
-    int err;
-    VkImage temp;
-
-    FFVulkanDecodeShared *ctx = dec->shared_ctx;
-    DPXVulkanDecodeContext *dxv = ctx->sd_ctx;
-    VkPhysicalDeviceLimits *limits = &ctx->s.props.properties.limits;
-    FFVulkanFunctions *vk = &ctx->s.vkfn;
-
-    DPXVulkanDecodePicture *pp = dpx->hwaccel_picture_private;
-    FFVulkanDecodePicture *vp = &pp->vp;
-
-    int unpack = (avctx->bits_per_raw_sample == 12 && !dpx->packing) ||
-                 avctx->bits_per_raw_sample == 10;
-    if (unpack)
-        return 0;
-
-    VkImageCreateInfo create_info = {
-        .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-        .imageType = VK_IMAGE_TYPE_2D,
-        .format = avctx->bits_per_raw_sample == 8 ? VK_FORMAT_R8_UINT :
-                  avctx->bits_per_raw_sample == 32 ? VK_FORMAT_R32_UINT :
-                                                     VK_FORMAT_R16_UINT,
-        .extent.width = dpx->frame->width*dpx->components,
-        .extent.height = dpx->frame->height,
-        .extent.depth = 1,
-        .mipLevels = 1,
-        .arrayLayers = 1,
-        .tiling = VK_IMAGE_TILING_LINEAR,
-        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-        .usage = VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT,
-        .samples = VK_SAMPLE_COUNT_1_BIT,
-        .pQueueFamilyIndices = &ctx->qf[0].idx,
-        .queueFamilyIndexCount = 1,
-        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-    };
-
-    if (create_info.extent.width >= limits->maxImageDimension2D ||
-        create_info.extent.height >= limits->maxImageDimension2D)
-        return 0;
-
-    vk->CreateImage(ctx->s.hwctx->act_dev, &create_info, ctx->s.hwctx->alloc,
-                    &temp);
-
-    err = ff_vk_get_pooled_buffer(&ctx->s, &dxv->frame_data_pool,
-                                  &vp->slices_buf,
-                                  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                                      VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-                                  NULL, size,
-                                  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
-                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-    if (err < 0)
-        return err;
-
-    FFVkBuffer *vkb = (FFVkBuffer *)vp->slices_buf->data;
-    VkBindImageMemoryInfo bind_info = {
-        .sType = VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO,
-        .image = temp,
-        .memory = vkb->mem,
-    };
-    vk->BindImageMemory2(ctx->s.hwctx->act_dev, 1, &bind_info);
-
-    VkHostImageLayoutTransitionInfo layout_change = {
-        .sType = VK_STRUCTURE_TYPE_HOST_IMAGE_LAYOUT_TRANSITION_INFO,
-        .image = temp,
-        .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-        .newLayout = VK_IMAGE_LAYOUT_GENERAL,
-        .subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-        .subresourceRange.layerCount = 1,
-        .subresourceRange.levelCount = 1,
-    };
-    vk->TransitionImageLayoutEXT(ctx->s.hwctx->act_dev, 1, &layout_change);
-
-    VkMemoryToImageCopy copy_region = {
-        .sType = VK_STRUCTURE_TYPE_MEMORY_TO_IMAGE_COPY,
-        .pHostPointer = src,
-        .imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-        .imageSubresource.layerCount = 1,
-        .imageExtent = (VkExtent3D){ dpx->frame->width*dpx->components,
-                                     dpx->frame->height,
-                                     1 },
-    };
-    VkCopyMemoryToImageInfo copy_info = {
-        .sType = VK_STRUCTURE_TYPE_COPY_MEMORY_TO_IMAGE_INFO,
-        .flags = VK_HOST_IMAGE_COPY_MEMCPY_EXT,
-        .dstImage = temp,
-        .dstImageLayout = VK_IMAGE_LAYOUT_GENERAL,
-        .regionCount = 1,
-        .pRegions = &copy_region,
-    };
-    vk->CopyMemoryToImageEXT(ctx->s.hwctx->act_dev, &copy_info);
-
-    vk->DestroyImage(ctx->s.hwctx->act_dev, temp, ctx->s.hwctx->alloc);
-
-    return 0;
-}
-
 static int vk_dpx_start_frame(AVCodecContext          *avctx,
                               const AVBufferRef       *buffer_ref,
                               av_unused const uint8_t *buffer,
@@ -166,9 +66,6 @@ static int vk_dpx_start_frame(AVCodecContext          *avctx,
 
     DPXVulkanDecodePicture *pp = dpx->hwaccel_picture_private;
     FFVulkanDecodePicture *vp = &pp->vp;
-
-    if (ctx->s.extensions & FF_VK_EXT_HOST_IMAGE_COPY)
-        host_upload_image(avctx, dec, dpx, buffer, size);
 
     /* Host map the frame data if supported */
     if (!vp->slices_buf &&
