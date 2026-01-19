@@ -384,6 +384,12 @@ fate-jpegls-5bpc: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/jpegls/32.jls
 FATE_JPEGLS += fate-jpegls-7bpc
 fate-jpegls-7bpc: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/jpegls/128.jls
 
+FATE_JPEGLS += fate-jpegls-ilv0-rst
+fate-jpegls-ilv0-rst: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/jpegls/ilv0_rst.jls
+
+FATE_JPEGLS += fate-jpegls-ilv1-rst
+fate-jpegls-ilv1-rst: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/jpegls/ilv1_rst.jls
+
 FATE_JPEGLS-$(call DEMDEC, IMAGE2, JPEGLS) += $(FATE_JPEGLS)
 FATE_IMAGE_FRAMECRC += $(FATE_JPEGLS-yes)
 fate-jpegls: $(FATE_JPEGLS-yes)
