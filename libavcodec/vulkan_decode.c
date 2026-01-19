@@ -1150,7 +1150,10 @@ int ff_vk_frame_params(AVCodecContext *avctx, AVBufferRef *hw_frames_ctx)
     if (err < 0)
         return err;
 
+    frames_ctx->format = AV_PIX_FMT_VULKAN;
     frames_ctx->sw_format = avctx->sw_pix_fmt;
+    frames_ctx->width  = avctx->coded_width;
+    frames_ctx->height = avctx->coded_height;
 
     if (!DECODER_IS_SDR(avctx->codec_id)) {
         prof = av_mallocz(sizeof(FFVulkanDecodeProfileData));
@@ -1166,6 +1169,9 @@ int ff_vk_frame_params(AVCodecContext *avctx, AVBufferRef *hw_frames_ctx)
             return err;
         }
 
+        const AVPixFmtDescriptor *pdesc = av_pix_fmt_desc_get(frames_ctx->sw_format);
+        frames_ctx->width       = FFALIGN(frames_ctx->width, 1 << pdesc->log2_chroma_w);
+        frames_ctx->height      = FFALIGN(frames_ctx->height, 1 << pdesc->log2_chroma_h);
         frames_ctx->user_opaque = prof;
         frames_ctx->free        = free_profile_data;
 
@@ -1210,11 +1216,6 @@ int ff_vk_frame_params(AVCodecContext *avctx, AVBufferRef *hw_frames_ctx)
             break;
         }
     }
-
-    const AVPixFmtDescriptor *pdesc = av_pix_fmt_desc_get(frames_ctx->sw_format);
-    frames_ctx->width  = FFALIGN(avctx->coded_width, 1 << pdesc->log2_chroma_w);
-    frames_ctx->height = FFALIGN(avctx->coded_height, 1 << pdesc->log2_chroma_h);
-    frames_ctx->format = AV_PIX_FMT_VULKAN;
 
     hwfc->tiling = VK_IMAGE_TILING_OPTIMAL;
     hwfc->usage  = VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
