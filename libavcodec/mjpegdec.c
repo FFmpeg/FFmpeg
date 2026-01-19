@@ -150,7 +150,7 @@ av_cold int ff_mjpeg_decode_init(AVCodecContext *avctx)
     if ((ret = init_default_huffman_tables(s)) < 0)
         return ret;
 
-    if (s->extern_huff) {
+    if (s->extern_huff && avctx->extradata) {
         av_log(avctx, AV_LOG_INFO, "using external huffman table\n");
         if ((ret = init_get_bits(&s->gb, avctx->extradata, avctx->extradata_size * 8)) < 0)
             return ret;
