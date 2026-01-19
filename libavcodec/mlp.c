@@ -70,13 +70,11 @@ const AVChannelLayout ff_mlp_ch_layouts[12] = {
 #define CRC_TABLE_SIZE 1024
 #endif
 static AVCRC crc_63[CRC_TABLE_SIZE];
-static AVCRC crc_1D[CRC_TABLE_SIZE];
 static AVCRC crc_2D[CRC_TABLE_SIZE];
 
 static av_cold void mlp_init_crc(void)
 {
     av_crc_init(crc_63, 0,  8,   0x63, sizeof(crc_63));
-    av_crc_init(crc_1D, 0,  8,   0x1D, sizeof(crc_1D));
     av_crc_init(crc_2D, 0, 16, 0x002D, sizeof(crc_2D));
 }
 
@@ -104,6 +102,7 @@ uint8_t ff_mlp_checksum8(const uint8_t *buf, unsigned int buf_size)
 
 uint8_t ff_mlp_restart_checksum(const uint8_t *buf, unsigned int bit_size)
 {
+    const AVCRC *crc_1D = av_crc_get_table(AV_CRC_8_EBU);
     int i;
     int num_bytes = (bit_size + 2) / 8;
 
