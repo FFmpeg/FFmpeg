@@ -145,7 +145,7 @@ av_cold int ff_mjpeg_decode_init(AVCodecContext *avctx)
     if ((ret = init_default_huffman_tables(s)) < 0)
         return ret;
 
-    if (s->extern_huff) {
+    if (s->extern_huff && avctx->extradata) {
         av_log(avctx, AV_LOG_INFO, "using external huffman table\n");
         bytestream2_init(&s->gB, avctx->extradata, avctx->extradata_size);
         if (ff_mjpeg_decode_dht(s)) {
