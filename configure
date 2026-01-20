@@ -1116,7 +1116,6 @@ check_glslc(){
     log check_glslc "$@"
     name=$1
     shift 1
-    disabled $name && return
     disable $name
     test_glslc "$@" <<EOF && enable $name
 #version 460
