@@ -12221,18 +12221,42 @@ and configure FFmpeg with @code{--enable-libtorch
 --extra-cflags=-I/libtorch_root/libtorch/include/torch/csrc/api/include
 --extra-ldflags=-L/libtorch_root/libtorch/lib/}
 
+@item onnx
+ONNX Runtime backend. To enable this backend you need to install the
+ONNX Runtime library (see @url{https://onnxruntime.ai/}) and configure
+FFmpeg with @code{--enable-libonnxruntime}.
+
+The current ONNX Runtime backend expects 4-D input and output tensors
+with NCHW layout and 32-bit floating-point element type (ONNX
+@code{FLOAT}); models with integer or other element types (e.g.
+@code{UINT8}) are not supported and will be rejected at load time.
+Models using NHWC layout or other ranks are not yet
+supported. Only single-input models are supported; the backend binds
+exactly one input tensor when running the model.
+
+The @option{input} and @option{output} options are optional for the
+ONNX Runtime backend; when they are omitted the backend resolves the
+tensor names from the session.
+
+The ONNX Runtime backend runs inference synchronously using a single
+inference request. The shared @option{async} and @option{nireq} options
+therefore have no effect for @code{dnn_backend=onnx}; inference always
+runs synchronously regardless of their values.
+
 @end table
 
 @item model
 Set path to model file specifying network architecture and its parameters.
-Note that different backends use different file formats. TensorFlow, OpenVINO
-and Libtorch backend can load files for only its format.
+Note that different backends use different file formats. TensorFlow, OpenVINO,
+Libtorch, and ONNX Runtime backends can load files for only their respective formats.
 
 @item input
-Set the input name of the dnn network.
+Set the input name of the dnn network. Required for the TensorFlow backend;
+optional for the ONNX Runtime backend.
 
 @item output
-Set the output name of the dnn network.
+Set the output name of the dnn network. Required for the TensorFlow backend;
+optional for the ONNX Runtime backend.
 
 @item backend_configs
 Set the configs to be passed into backend. To use async execution, set async (default: set).
@@ -12240,6 +12264,20 @@ Roll back to sync execution if the backend does not support async.
 
 For tensorflow backend, you can set its configs with @option{sess_config} options,
 please use tools/python/tf_sess_config.py to get the configs of TensorFlow backend for your system.
+
+@item device
+Set the device to run the model. For the ONNX Runtime backend this selects the
+execution provider: @code{cpu} (default), @code{cuda} (NVIDIA GPU),
+@code{dml} (DirectML, Windows only) or @code{vitisai} (AMD Ryzen AI NPU).
+
+@item device_id
+Set the device index used by GPU execution providers (e.g. @code{cuda} or
+@code{dml}) for the ONNX Runtime backend. Default is 0.
+
+@item threads_per_operation
+ONNX Runtime backend only. Set the number of CPU threads used per ONNX
+Runtime operator when running with @code{device=cpu}. Default is 0 (let
+ONNX Runtime choose automatically). Has no effect for GPU/NPU providers.
 
 @end table
 

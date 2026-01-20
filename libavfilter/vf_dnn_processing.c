@@ -53,10 +53,13 @@ static const AVOption dnn_processing_options[] = {
 #if (CONFIG_LIBTORCH == 1)
     { "torch",       "torch backend flag",         0,                        AV_OPT_TYPE_CONST,     { .i64 = DNN_TH },    0, 0, FLAGS, "backend" },
 #endif
+#if (CONFIG_LIBONNXRUNTIME == 1)
+    { "onnx",        "onnx backend flag",          0,                        AV_OPT_TYPE_CONST,     { .i64 = DNN_ONNX },  0, 0, FLAGS, "backend" },
+#endif
     { NULL }
 };
 
-AVFILTER_DNN_DEFINE_CLASS(dnn_processing, DNN_TF | DNN_OV | DNN_TH);
+AVFILTER_DNN_DEFINE_CLASS(dnn_processing, DNN_TF | DNN_OV | DNN_TH | DNN_ONNX);
 
 static av_cold int init(AVFilterContext *context)
 {

@@ -33,6 +33,9 @@
 extern const DNNModule ff_dnn_backend_openvino;
 extern const DNNModule ff_dnn_backend_tf;
 extern const DNNModule ff_dnn_backend_torch;
+#if CONFIG_LIBONNXRUNTIME
+extern const DNNModule ff_dnn_backend_onnx;
+#endif
 
 #define OFFSET(x) offsetof(DnnContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM
@@ -53,6 +56,8 @@ static const AVOption dnn_base_options[] = {
                 OFFSET(async), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, FLAGS},
         {"device", "device to run model",
                 OFFSET(device), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, FLAGS},
+        {"device_id", "device ID to run model",
+                OFFSET(device_id), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, FLAGS},
         {NULL}
 };
 
@@ -77,6 +82,9 @@ static const DnnBackendInfo dnn_backend_info_list[] = {
 #endif
 #if CONFIG_LIBTORCH
         {offsetof(DnnContext, torch_option), .module = &ff_dnn_backend_torch},
+#endif
+#if CONFIG_LIBONNXRUNTIME
+        {offsetof(DnnContext, onnx_option), .module = &ff_dnn_backend_onnx},
 #endif
 };
 

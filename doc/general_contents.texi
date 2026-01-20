@@ -205,6 +205,39 @@ FFmpeg can make use of this library, originating in Modplug-XMMS, to read from M
 See @url{https://github.com/Konstanty/libmodplug}. Pass @code{--enable-libmodplug} to configure to
 enable it.
 
+@section ONNX Runtime
+
+FFmpeg can make use of the ONNX Runtime library as a backend for DNN based filters.
+
+Go to @url{https://onnxruntime.ai/} and follow the instructions for installing
+the library. Pre-built packages are available for various platforms.
+
+Configure FFmpeg with ONNX Runtime support:
+
+@example
+./configure \
+    --enable-libonnxruntime \
+    --extra-cflags="-I/path/to/onnxruntime/include" \
+    --extra-ldflags="-L/path/to/onnxruntime/lib"
+@end example
+
+On ELF-based systems (Linux, BSD) you may also want to embed the
+library search path so that the installed @file{ffmpeg} binary finds the
+shared library at run time without setting @env{LD_LIBRARY_PATH}:
+
+@example
+./configure \
+    --enable-libonnxruntime \
+    --extra-cflags="-I/path/to/onnxruntime/include" \
+    --extra-ldflags="-L/path/to/onnxruntime/lib -Wl,-rpath,/path/to/onnxruntime/lib"
+@end example
+
+The @code{-Wl,-rpath} flag is ELF-specific and should be omitted on
+other platforms (Windows, macOS).
+
+For MinGW GCC builds, add the @code{-D_stdcall=__stdcall} flag for compatibility
+with ONNX Runtime headers.
+
 @section OpenCORE, VisualOn, and Fraunhofer libraries
 
 Spun off Google Android sources, OpenCore, VisualOn and Fraunhofer

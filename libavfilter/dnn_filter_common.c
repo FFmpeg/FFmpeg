@@ -31,12 +31,15 @@ static char **separate_output_names(const char *expr, const char *val_sep, int *
         return NULL;
     }
 
-    parsed_vals = av_calloc(MAX_SUPPORTED_OUTPUTS_NB, sizeof(*parsed_vals));
+    parsed_vals = av_calloc(MAX_SUPPORTED_OUTPUTS_NB + 1, sizeof(*parsed_vals));
     if (!parsed_vals) {
         return NULL;
     }
 
     do {
+        if (val_num >= MAX_SUPPORTED_OUTPUTS_NB) {
+            goto err;
+        }
         val = av_get_token(&expr, val_sep);
         if(val) {
             parsed_vals[val_num] = val;
@@ -51,6 +54,12 @@ static char **separate_output_names(const char *expr, const char *val_sep, int *
     *separated_nb = val_num;
 
     return parsed_vals;
+
+err:
+    for (int i = 0; i < val_num; i++)
+        av_free(parsed_vals[i]);
+    av_freep(&parsed_vals);
+    return NULL;
 }
 
 typedef struct DnnFilterBase {
@@ -96,6 +105,20 @@ int ff_dnn_init(DnnContext *ctx, DNNFunctionType func_type, AVFilterContext *fil
         if (!ctx->model_outputnames) {
             av_log(filter_ctx, AV_LOG_ERROR, "could not parse model output names\n");
             return AVERROR(EINVAL);
+        }
+    } else if (backend == DNN_ONNX) {
+        /* ONNX: input and output tensor names are optional.*/
+        if (ctx->model_outputnames_string) {
+            ctx->model_outputnames = separate_output_names(ctx->model_outputnames_string, "&", &ctx->nb_outputs);
+            if (!ctx->model_outputnames) {
+                av_log(filter_ctx, AV_LOG_ERROR, "could not parse model output names\n");
+                return AVERROR(EINVAL);
+            }
+            if (ctx->nb_outputs != 1) {
+                av_log(filter_ctx, AV_LOG_ERROR,
+                       "ONNX backend supports a single output name only\n");
+                return AVERROR(EINVAL);
+            }
         }
     }
 

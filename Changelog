@@ -18,6 +18,7 @@ version <next>:
 - Remove ogg/celt parsing
 - Bitstream filter to split Dolby Vision multi-layer HEVC
 - Add AMF hardware memory mapping support.
+- ONNX Runtime DNN backend with GPU execution provider support
 
 
 version 8.1:

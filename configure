@@ -253,6 +253,7 @@ External library support:
   --enable-libmp3lame      enable MP3 encoding via libmp3lame [no]
   --enable-libmpeghdec     enable MPEG-H 3DA decoding via libmpeghdec [no]
   --enable-liboapv         enable APV encoding via liboapv [no]
+  --enable-libonnxruntime  enable ONNX Runtime as a DNN module backend [no]
   --enable-libopencore-amrnb enable AMR-NB de/encoding via libopencore-amrnb [no]
   --enable-libopencore-amrwb enable AMR-WB decoding via libopencore-amrwb [no]
   --enable-libopencv       enable video filtering via libopencv [no]
@@ -2108,6 +2109,7 @@ EXTERNAL_LIBRARY_LIST="
     libmp3lame
     libmysofa
     liboapv
+    libonnxruntime
     libopencv
     libopencolorio
     libopenh264
@@ -3089,7 +3091,7 @@ dirac_parse_select="golomb"
 dovi_rpudec_select="golomb"
 dovi_rpuenc_select="golomb"
 dnn_deps="avformat swscale"
-dnn_deps_any="libtensorflow libopenvino libtorch"
+dnn_deps_any="libtensorflow libopenvino libtorch libonnxruntime"
 error_resilience_select="me_cmp"
 evcparse_select="golomb"
 faandct_deps="faan"
@@ -7440,6 +7442,7 @@ enabled libnpp            && { test_cpp_condition "$(cd "$source_path"; pwd)/lib
                                die "ERROR: libnpp not found"; } &&
                              { check_func_headers "nppi.h" nppiYCbCr420_8u_P2P3R $libnpp_extralibs ||
                                die "ERROR: libnpp support is deprecated, version 13.0 and up are not supported"; }
+enabled libonnxruntime    && require libonnxruntime onnxruntime_c_api.h OrtGetApiBase -lonnxruntime
 enabled libopencore_amrnb && { check_pkg_config libopencore_amrnb opencore-amrnb opencore-amrnb/interf_dec.h Decoder_Interface_init ||
                                require libopencore_amrnb opencore-amrnb/interf_dec.h Decoder_Interface_init -lopencore-amrnb; }
 enabled libopencore_amrwb && { check_pkg_config libopencore_amrwb opencore-amrwb opencore-amrwb/dec_if.h D_IF_init ||
