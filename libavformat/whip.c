@@ -744,7 +744,7 @@ static int generate_sdp_offer(AVFormatContext *s)
             "a=rtcp-rsize\r\n"
             "a=rtpmap:%u %s/90000\r\n"
             "a=fmtp:%u level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=%02x%02x%02x\r\n"
-            "a=rtcp-fb%u nack\r\n"
+            "a=rtcp-fb:%u nack\r\n"
             "a=rtpmap:%u rtx/90000\r\n"
             "a=fmtp:%u apt=%u\r\n"
             "a=ssrc-group:FID %u %u\r\n"
