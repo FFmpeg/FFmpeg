@@ -1082,10 +1082,8 @@ int ff_pre_estimate_p_frame_motion(MPVEncContext *const s,
     get_limits(s, 16*mb_x, 16*mb_y, 0);
     c->skip=0;
 
-    P_LEFT[0]       = s->p_mv_table[xy + 1][0];
+    P_LEFT[0]       = FFMAX(s->p_mv_table[xy + 1][0], c->xmin * (1 << shift));
     P_LEFT[1]       = s->p_mv_table[xy + 1][1];
-
-    if(P_LEFT[0]       < (c->xmin<<shift)) P_LEFT[0]       = (c->xmin<<shift);
 
     /* special case for first line */
     if (s->c.first_slice_line) {
