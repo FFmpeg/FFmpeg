@@ -451,10 +451,13 @@ static int scalable_channel_layout_config(void *s, AVIOContext *pb,
                     return AVERROR_INVALIDDATA;
                 ch_layout.u.mask &= ~mask;
             }
-        } else
-            ch_layout = (AVChannelLayout){ .order = AV_CHANNEL_ORDER_UNSPEC,
-                                                          .nb_channels = substream_count +
-                                                                         coupled_substream_count };
+        } else {
+            if (expanded_loudspeaker_layout >= 0)
+                avpriv_request_sample(s, "expanded_loudspeaker_layout %d", expanded_loudspeaker_layout);
+            else
+                avpriv_request_sample(s, "loudspeaker_layout %d", loudspeaker_layout);
+            return AVERROR_PATCHWELCOME;
+        }
 
         channels = ch_layout.nb_channels;
         if (i) {
@@ -476,11 +479,9 @@ static int scalable_channel_layout_config(void *s, AVIOContext *pb,
                 return ret;
         }
 
-        if (ch_layout.order == AV_CHANNEL_ORDER_NATIVE) {
             ret = av_channel_layout_custom_init(&layer->ch_layout, ch_layout.nb_channels);
             if (ret < 0)
                 return ret;
-
             for (int j = 0; j < n; j++)
                 layer->ch_layout.u.map[j].id = av_channel_layout_channel_from_index(&audio_element->element->layers[i-1]->ch_layout, j);
 
@@ -508,8 +509,6 @@ static int scalable_channel_layout_config(void *s, AVIOContext *pb,
             ret = av_channel_layout_retype(&layer->ch_layout, AV_CHANNEL_ORDER_NATIVE, 0);
             if (ret < 0 && ret != AVERROR(ENOSYS))
                 return ret;
-        } else // AV_CHANNEL_ORDER_UNSPEC
-            av_channel_layout_copy(&layer->ch_layout, &ch_layout);
     }
 
     if (k != audio_element->nb_substreams)
