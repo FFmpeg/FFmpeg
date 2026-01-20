@@ -525,6 +525,9 @@ static void readrate_sleep(Demuxer *d)
         pts = av_rescale(ds->dts, 1000000, AV_TIME_BASE);
         now = av_gettime_relative();
         wc_elapsed = now - d->wallclock_start;
+
+        if (pts <= stream_ts_offset + initial_burst) continue;
+
         max_pts = stream_ts_offset + initial_burst + (int64_t)(wc_elapsed * d->readrate);
         lag = FFMAX(max_pts - pts, 0);
         if ( (!ds->lag && lag > 0.3 * AV_TIME_BASE) || ( lag > ds->lag + 0.3 * AV_TIME_BASE) ) {
