@@ -2803,21 +2803,13 @@ static void write_mb_info(MpegEncContext *s)
     bytestream_put_byte(&ptr, 0); /* vmv2 */
 }
 
-static void update_mb_info(MpegEncContext *s, int startcode)
+static void update_mb_info(MpegEncContext *s)
 {
     if (!s->mb_info)
         return;
     if (put_bytes_count(&s->pb, 0) - s->prev_mb_info >= s->mb_info) {
         s->mb_info_size += 12;
         s->prev_mb_info = s->last_mb_info;
-    }
-    if (startcode) {
-        s->prev_mb_info = put_bytes_count(&s->pb, 0);
-        /* This might have incremented mb_info_size above, and we return without
-         * actually writing any info into that slot yet. But in that case,
-         * this will be called again at the start of the after writing the
-         * start code, actually writing the mb info. */
-        return;
     }
 
     s->last_mb_info = put_bytes_count(&s->pb, 0);
@@ -3035,8 +3027,11 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     case AV_CODEC_ID_H263:
                     case AV_CODEC_ID_H263P:
                         if (CONFIG_H263_ENCODER) {
-                            update_mb_info(s, 1);
+                            if (s->mb_info && put_bytes_count(&s->pb, 0) - s->prev_mb_info >= s->mb_info)
+                                s->mb_info_size += 12;
+
                             ff_h263_encode_gob_header(s, mb_y);
+                            s->prev_mb_info = put_bits_count(&s->pb)/8;
                         }
                     break;
                     }
@@ -3062,7 +3057,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
             s->mb_skipped=0;
             s->dquant=0; //only for QP_RD
 
-            update_mb_info(s, 0);
+            update_mb_info(s);
 
             if (mb_type & (mb_type-1) || (s->mpv_flags & FF_MPV_FLAG_QP_RD)) { // more than 1 MB type possible or FF_MPV_FLAG_QP_RD
                 int next_block=0;
