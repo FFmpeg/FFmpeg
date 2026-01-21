@@ -4528,7 +4528,8 @@ static int vulkan_transfer_host(AVHWFramesContext *hwfc, AVFrame *hwf,
         for (int i = 0; i < planes; i++) {
             int img_idx = FFMIN(i, (nb_images - 1));
             uint32_t p_w, p_h;
-            get_plane_wh(&p_w, &p_h, swf->format, swf->width, swf->height, i);
+            get_plane_wh(&p_w, &p_h, swf->format,
+                         swf->linesize[i]/desc->comp[i].step, swf->height, i);
 
             region_info.pHostPointer = swf->data[i];
             region_info.imageSubresource.aspectMask = ff_vk_aspect_flag(hwf, i);
