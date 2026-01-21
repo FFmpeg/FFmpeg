@@ -275,6 +275,11 @@ static av_cold int initFilter(int16_t **outFilter, int32_t **filterPos,
             sizeFactor = param[0] != SWS_PARAM_DEFAULT ? ceil(2 * param[0]) : 6;
         av_assert0(sizeFactor > 0);
 
+        if (sizeFactor > 50) {
+            ret = AVERROR(EINVAL);
+            goto fail;
+        }
+
         if (xInc <= 1 << 16)
             filterSize = 1 + sizeFactor;    // upscale
         else
