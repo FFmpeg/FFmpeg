@@ -818,8 +818,7 @@ cglobal vp9_loop_filter_%1_%2_ %+ mmsize, 2, 6, 16, %3 + %4 + %%ext, dst, stride
 
     ; (m0: hev, m1: p0', m2: q0-p0, m3: fm, m7: q0', [m8: flat8out], m10..13: p1 p0 q0 q1, m14: pb_10, [m15: flat8in], )
     ; filter4()
-    mova                m4, m2
-    paddsb              m2, m4                          ; 2 * (q0 - p0)
+    paddsb              m4, m2, m2                      ; 2 * (q0 - p0)
     paddsb              m2, m4                          ; 3 * (q0 - p0)
     paddsb              m6, m2, [pb_4]                  ; m6:  f1 = clip(f + 4, 127)
     paddsb              m2, [pb_3]                      ; m2: f2 = clip(f + 3, 127)
