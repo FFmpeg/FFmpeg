@@ -257,8 +257,7 @@ INIT_XMM sse2
 %macro MASKED_COPY 2
     pand             %2, m11 ; and mask
     pandn           m10, m11, %1; and -mask
-    por              %2, m10
-    mova             %1, %2
+    por              %1, %2, m10
 %endmacro
 
 ; in: %2 clobbered
@@ -267,8 +266,7 @@ INIT_XMM sse2
 %macro MASKED_COPY2 3
     pand             %2, %3 ; and mask
     pandn            %3, %1; and -mask
-    por              %2, %3
-    mova             %1, %2
+    por              %1, %2, %3
 %endmacro
 
 ALIGN 16
