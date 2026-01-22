@@ -244,3 +244,128 @@ endfunc
 function ff_hevc_dequant_32x32_10_neon, export=1
         ret
 endfunc
+
+// --------------------------------------------------------------------------
+// HEVC dequant for 12-bit depth
+//
+// For 12-bit: shift = 15 - 12 - log2_size = 3 - log2_size
+//
+// Block size | log2_size | shift | operation
+// 4x4        | 2         | 1     | srshr #1 (shift right)
+// 8x8        | 3         | 0     | no-op (identity)
+// 16x16      | 4         | -1    | shl #1 (shift left)
+// 32x32      | 5         | -2    | shl #2 (shift left)
+// --------------------------------------------------------------------------
+
+// void ff_hevc_dequant_4x4_12_neon(int16_t *coeffs)
+// 4x4 = 16 coeffs, shift=1
+function ff_hevc_dequant_4x4_12_neon, export=1
+        ldp             q0, q1, [x0]
+        srshr           v0.8h, v0.8h, #1
+        srshr           v1.8h, v1.8h, #1
+        stp             q0, q1, [x0]
+        ret
+endfunc
+
+// void ff_hevc_dequant_8x8_12_neon(int16_t *coeffs)
+// 8x8 = 64 coeffs, shift=0
+// When shift=0: output = input (identity transform)
+// No operation needed - just return immediately
+function ff_hevc_dequant_8x8_12_neon, export=1
+        ret
+endfunc
+
+// void ff_hevc_dequant_16x16_12_neon(int16_t *coeffs)
+// 16x16 = 256 coeffs, shift=-1 (left shift by 1)
+// Pipelined implementation: interleave load/compute/store to hide memory latency
+// Uses .irp macro to unroll 4 iterations, processing 64 coeffs per iteration
+// x0 = load pointer, x1 = store pointer (both advance through the buffer)
+function ff_hevc_dequant_16x16_12_neon, export=1
+        mov             x1, x0
+        ld1             {v0.16b, v1.16b, v2.16b, v3.16b}, [x0], #64
+.irp i, 0, 1, 2, 3
+        shl             v0.8h, v0.8h, #1
+        shl             v1.8h, v1.8h, #1
+        ld1             {v4.16b, v5.16b, v6.16b, v7.16b}, [x0], #64
+        shl             v2.8h, v2.8h, #1
+        shl             v3.8h, v3.8h, #1
+        shl             v4.8h, v4.8h, #1
+        shl             v5.8h, v5.8h, #1
+        st1             {v0.16b - v3.16b}, [x1], #64
+        shl             v6.8h, v6.8h, #1
+.if \i < 3
+        ld1             {v0.16b, v1.16b, v2.16b, v3.16b}, [x0], #64
+.endif
+        shl             v7.8h, v7.8h, #1
+        st1             {v4.16b - v7.16b}, [x1], #64
+.endr
+        ret
+endfunc
+
+// void ff_hevc_dequant_32x32_12_neon(int16_t *coeffs)
+// 32x32 = 1024 coeffs, shift=-2 (left shift by 2)
+// Process 128 coeffs per iteration (8 iterations)
+// Using pipelined load/compute/store for better performance
+function ff_hevc_dequant_32x32_12_neon, export=1
+        mov             x2, #8
+1:
+        // Group A: q0-q3 (64 bytes / 32 coeffs)
+        ldp             q0, q1, [x0]
+        ldp             q2, q3, [x0, #32]
+        // Group B: q4-q7 (64 bytes / 32 coeffs)
+        ldp             q4, q5, [x0, #64]
+        ldp             q6, q7, [x0, #96]
+        subs            x2, x2, #1                 // Decrement loop counter early for better pipelining
+
+        // Calc Group A (shift left by 2)
+        shl             v0.8h, v0.8h, #2
+        shl             v1.8h, v1.8h, #2
+        shl             v2.8h, v2.8h, #2
+        shl             v3.8h, v3.8h, #2
+
+        // Group C: q16-q19 (64 bytes / 32 coeffs)
+        ldp             q16, q17, [x0, #128]
+        ldp             q18, q19, [x0, #160]
+
+        // Calc Group B
+        shl             v4.8h, v4.8h, #2
+        shl             v5.8h, v5.8h, #2
+        shl             v6.8h, v6.8h, #2
+        shl             v7.8h, v7.8h, #2
+
+        // Store Group A
+        stp             q0, q1, [x0]
+        stp             q2, q3, [x0, #32]
+
+        // Group D: q20-q23 (64 bytes / 32 coeffs)
+        ldp             q20, q21, [x0, #192]
+        ldp             q22, q23, [x0, #224]
+
+        // Calc Group C
+        shl             v16.8h, v16.8h, #2
+        shl             v17.8h, v17.8h, #2
+        shl             v18.8h, v18.8h, #2
+        shl             v19.8h, v19.8h, #2
+
+        // Store Group B
+        stp             q4, q5, [x0, #64]
+        stp             q6, q7, [x0, #96]
+
+        // Calc Group D
+        shl             v20.8h, v20.8h, #2
+        shl             v21.8h, v21.8h, #2
+        shl             v22.8h, v22.8h, #2
+        shl             v23.8h, v23.8h, #2
+
+        // Store Group C
+        stp             q16, q17, [x0, #128]
+        stp             q18, q19, [x0, #160]
+
+        // Store Group D
+        stp             q20, q21, [x0, #192]
+        stp             q22, q23, [x0, #224]
+
+        add             x0, x0, #256
+        b.ne            1b
+        ret
+endfunc
