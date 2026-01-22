@@ -258,6 +258,8 @@ typedef struct OptionsContext {
     SpecifierOptList enc_stats_pre_fmt;
     SpecifierOptList enc_stats_post_fmt;
     SpecifierOptList mux_stats_fmt;
+
+    int depth;
 } OptionsContext;
 
 enum IFilterFlags {
