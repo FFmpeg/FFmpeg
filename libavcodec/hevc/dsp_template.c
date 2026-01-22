@@ -106,6 +106,26 @@ static void FUNC(transform_rdpcm)(int16_t *_coeffs, int16_t log2_size, int mode)
     }
 }
 
+/**
+ * HEVC transform dequantization (ITU-T H.265 8.6.3)
+ *
+ * @param coeffs    transform coefficient buffer (in-place)
+ * @param log2_size log2 of transform block size, range: 2..5 (4x4 to 32x32)
+ *                  This value comes from recursive split_transform_flag parsing
+ *                  in the bitstream, bounded by log2_min_tb_size (min 2) and
+ *                  log2_max_trafo_size (max 5) from SPS.
+ *
+ * Formula: shift = 15 - BIT_DEPTH - log2_size
+ *
+ *   bit_depth | 4x4 (2) | 8x8 (3) | 16x16 (4) | 32x32 (5)
+ *   ----------+---------+---------+-----------+----------
+ *      8-bit  |    5    |    4    |     3     |     2      (shift right)
+ *     10-bit  |    3    |    2    |     1     |     0      (shift right / no-op)
+ *     12-bit  |    1    |    0    |    -1     |    -2      (shift right / no-op / shift left)
+ *
+ * When shift == 0, output equals input (identity transform), so we skip
+ * the loop entirely for better performance.
+ */
 static void FUNC(dequant)(int16_t *coeffs, int16_t log2_size)
 {
     int shift  = 15 - BIT_DEPTH - log2_size;
@@ -120,7 +140,7 @@ static void FUNC(dequant)(int16_t *coeffs, int16_t log2_size)
                 coeffs++;
             }
         }
-    } else {
+    } else if (shift < 0) {
         for (y = 0; y < size; y++) {
             for (x = 0; x < size; x++) {
                 *coeffs = *(uint16_t*)coeffs << -shift;
@@ -128,6 +148,7 @@ static void FUNC(dequant)(int16_t *coeffs, int16_t log2_size)
             }
         }
     }
+    /* shift == 0: no operation needed (identity transform) */
 }
 
 #define SET(dst, x)   (dst) = (x)
