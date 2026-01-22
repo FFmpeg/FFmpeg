@@ -282,6 +282,8 @@ typedef struct OptionsContext {
     int        nb_enc_stats_post_fmt;
     SpecifierOpt *mux_stats_fmt;
     int        nb_mux_stats_fmt;
+
+    int depth;
 } OptionsContext;
 
 typedef struct InputFilter {
