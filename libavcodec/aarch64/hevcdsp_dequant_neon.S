@@ -167,3 +167,80 @@ function ff_hevc_dequant_32x32_8_neon, export=1
         b.ne            1b
         ret
 endfunc
+
+// --------------------------------------------------------------------------
+// HEVC dequant for 10-bit depth
+//
+// For 10-bit: shift = 15 - 10 - log2_size = 5 - log2_size
+//
+// Block size | log2_size | shift | operation
+// 4x4        | 2         | 3     | srshr #3
+// 8x8        | 3         | 2     | srshr #2
+// 16x16      | 4         | 1     | srshr #1
+// 32x32      | 5         | 0     | no-op (identity)
+// --------------------------------------------------------------------------
+
+// void ff_hevc_dequant_4x4_10_neon(int16_t *coeffs)
+// 4x4 = 16 coeffs, shift=3
+function ff_hevc_dequant_4x4_10_neon, export=1
+        ldp             q0, q1, [x0]
+        srshr           v0.8h, v0.8h, #3
+        srshr           v1.8h, v1.8h, #3
+        stp             q0, q1, [x0]
+        ret
+endfunc
+
+// void ff_hevc_dequant_8x8_10_neon(int16_t *coeffs)
+// 8x8 = 64 coeffs, shift=2
+// Fully unrolled - no loop needed for 64 coeffs
+function ff_hevc_dequant_8x8_10_neon, export=1
+        ld1             {v0.16b-v3.16b}, [x0], #64
+        ld1             {v4.16b-v7.16b}, [x0]
+        sub             x0, x0, #64
+        srshr           v0.8h, v0.8h, #2
+        srshr           v1.8h, v1.8h, #2
+        srshr           v2.8h, v2.8h, #2
+        srshr           v3.8h, v3.8h, #2
+        srshr           v4.8h, v4.8h, #2
+        srshr           v5.8h, v5.8h, #2
+        srshr           v6.8h, v6.8h, #2
+        srshr           v7.8h, v7.8h, #2
+        st1             {v0.16b-v3.16b}, [x0], #64
+        st1             {v4.16b-v7.16b}, [x0]
+        ret
+endfunc
+
+// void ff_hevc_dequant_16x16_10_neon(int16_t *coeffs)
+// 16x16 = 256 coeffs, shift=1
+// Pipelined implementation: interleave load/compute/store to hide memory latency
+// Uses .irp macro to unroll 4 iterations, processing 64 coeffs per iteration
+// x0 = load pointer, x1 = store pointer (both advance through the buffer)
+function ff_hevc_dequant_16x16_10_neon, export=1
+        mov             x1, x0
+        ld1             {v0.16b, v1.16b, v2.16b, v3.16b}, [x0], #64
+.irp i, 0, 1, 2, 3
+        srshr           v0.8h, v0.8h, #1
+        srshr           v1.8h, v1.8h, #1
+        ld1             {v4.16b, v5.16b, v6.16b, v7.16b}, [x0], #64
+        srshr           v2.8h, v2.8h, #1
+        srshr           v3.8h, v3.8h, #1
+        srshr           v4.8h, v4.8h, #1
+        srshr           v5.8h, v5.8h, #1
+        st1             {v0.16b - v3.16b}, [x1], #64
+        srshr           v6.8h, v6.8h, #1
+.if \i < 3
+        ld1             {v0.16b, v1.16b, v2.16b, v3.16b}, [x0], #64
+.endif
+        srshr           v7.8h, v7.8h, #1
+        st1             {v4.16b - v7.16b}, [x1], #64
+.endr
+        ret
+endfunc
+
+// void ff_hevc_dequant_32x32_10_neon(int16_t *coeffs)
+// 32x32 = 1024 coeffs, shift=0
+// When shift=0: output = (input + 0) >> 0 = input (identity transform)
+// No operation needed - just return immediately
+function ff_hevc_dequant_32x32_10_neon, export=1
+        ret
+endfunc

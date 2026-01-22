@@ -103,6 +103,11 @@ void ff_hevc_dequant_8x8_8_neon(int16_t *coeffs);
 void ff_hevc_dequant_16x16_8_neon(int16_t *coeffs);
 void ff_hevc_dequant_32x32_8_neon(int16_t *coeffs);
 
+void ff_hevc_dequant_4x4_10_neon(int16_t *coeffs);
+void ff_hevc_dequant_8x8_10_neon(int16_t *coeffs);
+void ff_hevc_dequant_16x16_10_neon(int16_t *coeffs);
+void ff_hevc_dequant_32x32_10_neon(int16_t *coeffs);
+
 static void hevc_dequant_8_neon(int16_t *coeffs, int16_t log2_size)
 {
     switch (log2_size) {
@@ -110,6 +115,17 @@ static void hevc_dequant_8_neon(int16_t *coeffs, int16_t log2_size)
     case 3: ff_hevc_dequant_8x8_8_neon(coeffs); break;
     case 4: ff_hevc_dequant_16x16_8_neon(coeffs); break;
     case 5: ff_hevc_dequant_32x32_8_neon(coeffs); break;
+    default: av_unreachable("log2_size must be 2, 3, 4 or 5");
+    }
+}
+
+static void hevc_dequant_10_neon(int16_t *coeffs, int16_t log2_size)
+{
+    switch (log2_size) {
+    case 2: ff_hevc_dequant_4x4_10_neon(coeffs); break;
+    case 3: ff_hevc_dequant_8x8_10_neon(coeffs); break;
+    case 4: ff_hevc_dequant_16x16_10_neon(coeffs); break;
+    case 5: ff_hevc_dequant_32x32_10_neon(coeffs); break;
     default: av_unreachable("log2_size must be 2, 3, 4 or 5");
     }
 }
@@ -292,6 +308,7 @@ av_cold void ff_hevc_dsp_init_aarch64(HEVCDSPContext *c, const int bit_depth)
         c->idct_dc[1]                  = ff_hevc_idct_8x8_dc_10_neon;
         c->idct_dc[2]                  = ff_hevc_idct_16x16_dc_10_neon;
         c->idct_dc[3]                  = ff_hevc_idct_32x32_dc_10_neon;
+        c->dequant                     = hevc_dequant_10_neon;
     }
     if (bit_depth == 12) {
         c->hevc_h_loop_filter_luma     = ff_hevc_h_loop_filter_luma_12_neon;
