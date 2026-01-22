@@ -171,10 +171,12 @@ static int update_size(AVCodecContext *avctx, int w, int h)
     uint8_t *p;
     int bytesperpixel = s->bytesperpixel, ret, cols, rows;
     int lflvl_len, i;
+    int changed = 0;
 
     av_assert0(w > 0 && h > 0);
 
     if (!(s->pix_fmt == s->gf_fmt && w == s->w && h == s->h)) {
+        changed = 1;
         if ((ret = ff_set_dimensions(avctx, w, h)) < 0)
             return ret;
 
@@ -248,7 +250,7 @@ static int update_size(AVCodecContext *avctx, int w, int h)
     rows = (h + 7) >> 3;
 
     if (s->intra_pred_data[0] && cols == s->cols && rows == s->rows && s->pix_fmt == s->last_fmt)
-        return 0;
+        return changed;
 
     s->last_fmt  = s->pix_fmt;
     s->sb_cols   = (w + 63) >> 6;
@@ -293,9 +295,10 @@ static int update_size(AVCodecContext *avctx, int w, int h)
         ff_vp9dsp_init(&s->dsp, s->s.h.bpp, avctx->flags & AV_CODEC_FLAG_BITEXACT);
         ff_videodsp_init(&s->vdsp, s->s.h.bpp);
         s->last_bpp = s->s.h.bpp;
+        changed = 1;
     }
 
-    return 0;
+    return changed;
 }
 
 static int update_block_buffers(AVCodecContext *avctx)
@@ -502,6 +505,7 @@ static int decode_frame_header(AVCodecContext *avctx,
     int c, i, j, k, l, m, n, w, h, max, size2, ret, sharp;
     int last_invisible;
     const uint8_t *data2;
+    int changed;
 
     /* general header */
     if ((ret = init_get_bits8(&s->gb, data, size)) < 0) {
@@ -767,10 +771,10 @@ static int decode_frame_header(AVCodecContext *avctx,
     }
 
     /* tiling info */
-    if ((ret = update_size(avctx, w, h)) < 0) {
+    if ((changed = update_size(avctx, w, h)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Failed to initialize decoder for %dx%d @ %d\n",
                w, h, s->pix_fmt);
-        return ret;
+        return changed;
     }
     for (s->s.h.tiling.log2_tile_cols = 0;
          s->sb_cols > (64 << s->s.h.tiling.log2_tile_cols);
@@ -785,7 +789,7 @@ static int decode_frame_header(AVCodecContext *avctx,
     }
     s->s.h.tiling.log2_tile_rows = decode012(&s->gb);
     s->s.h.tiling.tile_rows = 1 << s->s.h.tiling.log2_tile_rows;
-    if (s->s.h.tiling.tile_cols != (1 << s->s.h.tiling.log2_tile_cols)) {
+    if (s->s.h.tiling.tile_cols != (1 << s->s.h.tiling.log2_tile_cols) || changed) {
         int n_range_coders;
         VPXRangeCoder *rc;
 
