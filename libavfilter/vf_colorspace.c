@@ -873,7 +873,7 @@ static int query_formats(const AVFilterContext *ctx,
             return res;
     }
 
-    formats = ff_make_format_list(pix_fmts);
+    formats = ff_make_pixel_format_list(pix_fmts);
     if (!formats)
         return AVERROR(ENOMEM);
     if (s->user_format == AV_PIX_FMT_NONE)

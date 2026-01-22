@@ -108,9 +108,9 @@ static int query_formats(const AVFilterContext *ctx,
     static const enum AVPixelFormat out_fmts[] = {AV_PIX_FMT_RGB32, AV_PIX_FMT_NONE};
     int ret;
 
-    if ((ret = ff_formats_ref(ff_make_format_list(in_fmts) , &cfg_in[0]->formats)) < 0)
+    if ((ret = ff_formats_ref(ff_make_pixel_format_list(in_fmts) , &cfg_in[0]->formats)) < 0)
         return ret;
-    if ((ret = ff_formats_ref(ff_make_format_list(out_fmts), &cfg_out[0]->formats)) < 0)
+    if ((ret = ff_formats_ref(ff_make_pixel_format_list(out_fmts), &cfg_out[0]->formats)) < 0)
         return ret;
     return 0;
 }

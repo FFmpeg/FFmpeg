@@ -91,7 +91,7 @@ static int query_formats(const AVFilterContext *ctx,
         AV_PIX_FMT_NONE
     };
 
-    ret = ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out,
+    ret = ff_set_pixel_formats_from_list2(ctx, cfg_in, cfg_out,
                                            s->inplace ? alpha_pix_fmts : no_alpha_pix_fmts);
     if (ret < 0)
         return ret;

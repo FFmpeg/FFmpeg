@@ -116,7 +116,7 @@ static int query_formats(const AVFilterContext *ctx,
     } else {
         av_assert0(0);
     }
-    return ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, pix_fmts);
+    return ff_set_pixel_formats_from_list2(ctx, cfg_in, cfg_out, pix_fmts);
 }
 
 static int config_props(AVFilterLink *inlink)

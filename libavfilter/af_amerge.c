@@ -163,7 +163,7 @@ static int query_formats(AVFilterContext *ctx)
     default:
         av_unreachable("Invalid layout_mode");
     }
-    if ((ret = ff_set_common_formats_from_list(ctx, packed_sample_fmts)) < 0)
+    if ((ret = ff_set_sample_formats_from_list(ctx, packed_sample_fmts)) < 0)
         goto out;
     for (i = 0; i < s->nb_inputs; i++) {
         layouts = NULL;

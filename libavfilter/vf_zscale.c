@@ -208,10 +208,10 @@ static int query_formats(const AVFilterContext *ctx,
     };
     int ret;
 
-    ret = ff_formats_ref(ff_make_format_list(pixel_fmts), &cfg_in[0]->formats);
+    ret = ff_formats_ref(ff_make_pixel_format_list(pixel_fmts), &cfg_in[0]->formats);
     if (ret < 0)
         return ret;
-    ret = ff_formats_ref(ff_make_format_list(pixel_fmts), &cfg_out[0]->formats);
+    ret = ff_formats_ref(ff_make_pixel_format_list(pixel_fmts), &cfg_out[0]->formats);
     if (ret < 0)
         return ret;
 

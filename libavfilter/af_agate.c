@@ -328,7 +328,7 @@ static int scquery_formats(const AVFilterContext *ctx,
     if (ret < 0)
         return ret;
 
-    if ((ret = ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, sample_fmts)) < 0)
+    if ((ret = ff_set_sample_formats_from_list2(ctx, cfg_in, cfg_out, sample_fmts)) < 0)
         return ret;
 
     return 0;

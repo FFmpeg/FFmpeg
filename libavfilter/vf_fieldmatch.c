@@ -927,7 +927,7 @@ static int query_formats(const AVFilterContext *ctx,
     };
     int ret;
 
-    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    AVFilterFormats *fmts_list = ff_make_pixel_format_list(pix_fmts);
     if (!fmts_list)
         return AVERROR(ENOMEM);
     if (!fm->ppsrc) {
@@ -936,7 +936,7 @@ static int query_formats(const AVFilterContext *ctx,
 
     if ((ret = ff_formats_ref(fmts_list, &cfg_in[INPUT_MAIN]->formats)) < 0)
         return ret;
-    fmts_list = ff_make_format_list(unproc_pix_fmts);
+    fmts_list = ff_make_pixel_format_list(unproc_pix_fmts);
     if (!fmts_list)
         return AVERROR(ENOMEM);
     if ((ret = ff_formats_ref(fmts_list, &cfg_out[0]->formats)) < 0)

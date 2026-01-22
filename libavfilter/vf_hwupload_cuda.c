@@ -70,14 +70,14 @@ static int cudaupload_query_formats(const AVFilterContext *ctx,
     static const enum AVPixelFormat output_pix_fmts[] = {
         AV_PIX_FMT_CUDA, AV_PIX_FMT_NONE,
     };
-    AVFilterFormats *in_fmts  = ff_make_format_list(input_pix_fmts);
+    AVFilterFormats *in_fmts  = ff_make_pixel_format_list(input_pix_fmts);
     AVFilterFormats *out_fmts;
 
     ret = ff_formats_ref(in_fmts, &cfg_in[0]->formats);
     if (ret < 0)
         return ret;
 
-    out_fmts = ff_make_format_list(output_pix_fmts);
+    out_fmts = ff_make_pixel_format_list(output_pix_fmts);
 
     ret = ff_formats_ref(out_fmts, &cfg_out[0]->formats);
     if (ret < 0)

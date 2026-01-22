@@ -610,7 +610,7 @@ static int query_formats(const AVFilterContext *ctx,
     AVFilterChannelLayouts *hrir_layouts = NULL;
     int ret, i;
 
-    ret = ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, formats);
+    ret = ff_set_sample_formats_from_list2(ctx, cfg_in, cfg_out, formats);
     if (ret)
         return ret;
 

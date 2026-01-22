@@ -111,7 +111,7 @@ static int query_formats(const AVFilterContext *ctx,
                                                    AV_PIX_FMT_YUV444P16, AV_PIX_FMT_NONE };
     int ret, sample_rates[] = { 48000, -1 };
 
-    formats = ff_make_format_list(sample_fmts);
+    formats = ff_make_sample_format_list(sample_fmts);
     if ((ret = ff_formats_ref         (formats, &cfg_out[0]->formats         )) < 0 ||
         (ret = ff_add_channel_layout  (&layout, &FF_COUNT2LAYOUT(s->channels))) < 0 ||
         (ret = ff_channel_layouts_ref (layout , &cfg_out[0]->channel_layouts)) < 0)
@@ -124,13 +124,13 @@ static int query_formats(const AVFilterContext *ctx,
     if ((ret = ff_formats_ref(formats, &cfg_out[0]->samplerates)) < 0)
         return ret;
 
-    formats = ff_make_format_list(pix_fmts);
+    formats = ff_make_pixel_format_list(pix_fmts);
     if (!formats)
         return AVERROR(ENOMEM);
     if ((ret = ff_formats_ref(formats, &cfg_in[MAGNITUDE]->formats)) < 0)
         return ret;
 
-    formats = ff_make_format_list(pix_fmts);
+    formats = ff_make_pixel_format_list(pix_fmts);
     if (!formats)
         return AVERROR(ENOMEM);
     if ((ret = ff_formats_ref(formats, &cfg_in[PHASE]->formats)) < 0)

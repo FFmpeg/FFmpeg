@@ -414,7 +414,7 @@ static int query_formats(const AVFilterContext *ctx,
     int sample_rates[] = { WHISPER_SAMPLE_RATE, -1 };
     int ret;
 
-    ret = ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, sample_fmts);
+    ret = ff_set_sample_formats_from_list2(ctx, cfg_in, cfg_out, sample_fmts);
     if (ret < 0)
         return ret;
 

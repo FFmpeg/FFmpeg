@@ -388,12 +388,12 @@ static int overlay_qsv_query_formats(const AVFilterContext *ctx,
     };
 
     for (i = 0; i < ctx->nb_inputs; i++) {
-        ret = ff_formats_ref(ff_make_format_list(main_in_fmts), &cfg_in[i]->formats);
+        ret = ff_formats_ref(ff_make_pixel_format_list(main_in_fmts), &cfg_in[i]->formats);
         if (ret < 0)
             return ret;
     }
 
-    ret = ff_formats_ref(ff_make_format_list(out_pix_fmts), &cfg_out[0]->formats);
+    ret = ff_formats_ref(ff_make_pixel_format_list(out_pix_fmts), &cfg_out[0]->formats);
     if (ret < 0)
         return ret;
 

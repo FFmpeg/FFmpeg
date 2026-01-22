@@ -105,8 +105,8 @@ static int query_formats(const AVFilterContext *ctx,
         return ret;
 
     if(out_format != AV_SAMPLE_FMT_NONE) {
-        int formatlist[] = { out_format, -1 };
-        out_formats = ff_make_format_list(formatlist);
+        enum AVSampleFormat formatlist[] = { out_format, AV_SAMPLE_FMT_NONE };
+        out_formats = ff_make_sample_format_list(formatlist);
     } else
         out_formats = ff_all_formats(AVMEDIA_TYPE_AUDIO);
     if ((ret = ff_formats_ref(out_formats, &cfg_out[0]->formats)) < 0)

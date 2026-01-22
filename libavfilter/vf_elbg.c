@@ -98,14 +98,14 @@ static int query_formats(const AVFilterContext *ctx,
         AV_PIX_FMT_NONE
     };
     if (!elbg->pal8) {
-        return ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, pix_fmts);
+        return ff_set_pixel_formats_from_list2(ctx, cfg_in, cfg_out, pix_fmts);
     } else {
         static const enum AVPixelFormat pal8_fmt[] = {
             AV_PIX_FMT_PAL8,
             AV_PIX_FMT_NONE
         };
-        if ((ret = ff_formats_ref(ff_make_format_list(pix_fmts), &cfg_in[0]->formats)) < 0 ||
-            (ret = ff_formats_ref(ff_make_format_list(pal8_fmt), &cfg_out[0]->formats)) < 0)
+        if ((ret = ff_formats_ref(ff_make_pixel_format_list(pix_fmts), &cfg_in[0]->formats)) < 0 ||
+            (ret = ff_formats_ref(ff_make_pixel_format_list(pal8_fmt), &cfg_out[0]->formats)) < 0)
             return ret;
     }
     return 0;

@@ -1636,12 +1636,12 @@ static int query_formats(const AVFilterContext *ctx,
     if (ret < 0)
         return ret;
 
-    in_formats = ff_make_format_list(sample_fmts_in);
+    in_formats = ff_make_sample_format_list(sample_fmts_in);
     ret = ff_formats_ref(in_formats, &cfg_in[0]->formats);
     if (ret < 0)
         return ret;
 
-    out_formats = ff_make_format_list(sample_fmts_out);
+    out_formats = ff_make_sample_format_list(sample_fmts_out);
     ret = ff_formats_ref(out_formats, &cfg_out[0]->formats);
     if (ret < 0)
         return ret;

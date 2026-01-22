@@ -85,7 +85,7 @@ static int hwupload_query_formats(const AVFilterContext *avctx,
     input_pix_fmts  = constraints->valid_sw_formats;
     output_pix_fmts = constraints->valid_hw_formats;
 
-    input_formats = ff_make_format_list(output_pix_fmts);
+    input_formats = ff_make_pixel_format_list(output_pix_fmts);
     if (!input_formats) {
         err = AVERROR(ENOMEM);
         goto fail;
@@ -99,7 +99,7 @@ static int hwupload_query_formats(const AVFilterContext *avctx,
     }
 
     if ((err = ff_formats_ref(input_formats, &cfg_in[0]->formats)) < 0 ||
-        (err = ff_formats_ref(ff_make_format_list(output_pix_fmts),
+        (err = ff_formats_ref(ff_make_pixel_format_list(output_pix_fmts),
                               &cfg_out[0]->formats)) < 0)
         goto fail;
 

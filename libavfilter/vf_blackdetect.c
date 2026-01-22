@@ -117,9 +117,9 @@ static int query_format(const AVFilterContext *ctx,
     const BlackDetectContext *s = ctx->priv;
     AVFilterFormats *formats;
     if (s->alpha)
-        formats = ff_make_format_list(yuva_formats);
+        formats = ff_make_pixel_format_list(yuva_formats);
     else
-        formats = ff_make_format_list(yuv_formats);
+        formats = ff_make_pixel_format_list(yuv_formats);
 
     return ff_set_common_formats2(ctx, cfg_in, cfg_out, formats);
 }

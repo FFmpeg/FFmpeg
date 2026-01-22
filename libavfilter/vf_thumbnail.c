@@ -365,7 +365,7 @@ static int query_formats(const AVFilterContext *ctx,
     const AVPixFmtDescriptor *desc = NULL;
     AVFilterFormats *formats;
 
-    formats = ff_make_format_list(packed_rgb_fmts);
+    formats = ff_make_pixel_format_list(packed_rgb_fmts);
     if (!formats)
         return AVERROR(ENOMEM);
 

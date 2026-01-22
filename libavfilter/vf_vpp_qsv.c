@@ -952,7 +952,7 @@ static int vpp_query_formats(const AVFilterContext *ctx,
     };
     static enum AVPixelFormat out_pix_fmts[4];
 
-    ret = ff_formats_ref(ff_make_format_list(in_pix_fmts),
+    ret = ff_formats_ref(ff_make_pixel_format_list(in_pix_fmts),
                          &cfg_in[0]->formats);
     if (ret < 0)
         return ret;
@@ -969,7 +969,7 @@ static int vpp_query_formats(const AVFilterContext *ctx,
     out_pix_fmts[i++] = AV_PIX_FMT_QSV;
     out_pix_fmts[i++] = AV_PIX_FMT_NONE;
 
-    return ff_formats_ref(ff_make_format_list(out_pix_fmts),
+    return ff_formats_ref(ff_make_pixel_format_list(out_pix_fmts),
                           &cfg_out[0]->formats);
 }
 

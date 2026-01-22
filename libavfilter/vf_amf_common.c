@@ -218,11 +218,11 @@ int amf_setup_input_output_formats(AVFilterContext *avctx,
         }
     }
 
-    input_formats = ff_make_format_list(output_pix_fmts);
+    input_formats = ff_make_pixel_format_list(output_pix_fmts);
     if (!input_formats) {
         return AVERROR(ENOMEM);
     }
-    output_formats = ff_make_format_list(output_pix_fmts);
+    output_formats = ff_make_pixel_format_list(output_pix_fmts);
     if (!output_formats) {
         return AVERROR(ENOMEM);
     }

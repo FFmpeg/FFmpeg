@@ -117,12 +117,12 @@ static int query_formats(const AVFilterContext *ctx,
     AVFilterFormats *pix_formats = NULL, *map_formats = NULL;
     int ret;
 
-    pix_formats = ff_make_format_list(s->format ? gray_pix_fmts : pix_fmts);
+    pix_formats = ff_make_pixel_format_list(s->format ? gray_pix_fmts : pix_fmts);
     if ((ret = ff_formats_ref(pix_formats, &cfg_in[0]->formats)) < 0 ||
         (ret = ff_formats_ref(pix_formats, &cfg_out[0]->formats)) < 0)
         return ret;
 
-    map_formats = ff_make_format_list(map_fmts);
+    map_formats = ff_make_pixel_format_list(map_fmts);
     if ((ret = ff_formats_ref(map_formats, &cfg_in[1]->formats)) < 0)
         return ret;
     return ff_formats_ref(map_formats, &cfg_in[2]->formats);

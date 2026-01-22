@@ -646,7 +646,7 @@ static int query_formats(const AVFilterContext *ctx,
         AV_SAMPLE_FMT_NONE
     };
 
-    ret = ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, sample_fmts);
+    ret = ff_set_sample_formats_from_list2(ctx, cfg_in, cfg_out, sample_fmts);
     if (ret)
         return ret;
 

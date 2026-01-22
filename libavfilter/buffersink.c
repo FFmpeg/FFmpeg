@@ -400,7 +400,7 @@ static int vsink_query_formats(const AVFilterContext *ctx,
     if (buf->nb_pixel_formats || buf->nb_colorspaces || buf->nb_colorranges || buf->nb_alphamodes) {
 #endif
         if (buf->nb_pixel_formats) {
-            ret = ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, buf->pixel_formats);
+            ret = ff_set_pixel_formats_from_list2(ctx, cfg_in, cfg_out, buf->pixel_formats);
             if (ret < 0)
                 return ret;
         }
@@ -474,7 +474,7 @@ static int asink_query_formats(const AVFilterContext *ctx,
     if (buf->nb_sample_formats || buf->nb_samplerates || buf->nb_channel_layouts) {
 #endif
         if (buf->nb_sample_formats) {
-            ret = ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, buf->sample_formats);
+            ret = ff_set_sample_formats_from_list2(ctx, cfg_in, cfg_out, buf->sample_formats);
             if (ret < 0)
                 return ret;
         }

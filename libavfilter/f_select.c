@@ -527,7 +527,7 @@ static int query_formats(const AVFilterContext *ctx,
             AV_PIX_FMT_YUV420P10,
             AV_PIX_FMT_NONE
         };
-        return ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, pix_fmts);
+        return ff_set_pixel_formats_from_list2(ctx, cfg_in, cfg_out, pix_fmts);
     }
     return 0;
 }

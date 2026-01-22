@@ -35,7 +35,7 @@ int ff_vaapi_vpp_query_formats(const AVFilterContext *avctx,
     };
     int err;
 
-    err = ff_set_common_formats_from_list2(avctx, cfg_in, cfg_out, pix_fmts);
+    err = ff_set_pixel_formats_from_list2(avctx, cfg_in, cfg_out, pix_fmts);
     if (err < 0)
         return err;
 

@@ -252,7 +252,7 @@ static int query_formats(const AVFilterContext *ctx,
         AV_PIX_FMT_NONE
     };
 
-    return ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out,
+    return ff_set_pixel_formats_from_list2(ctx, cfg_in, cfg_out,
                                             s->alpha ? alpha_pix_fmts : pix_fmts);
 }
 

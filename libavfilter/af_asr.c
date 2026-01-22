@@ -139,7 +139,7 @@ static int query_formats(const AVFilterContext *ctx,
     int sample_rates[] = { s->rate, -1 };
     int ret;
 
-    ret = ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, formats);
+    ret = ff_set_sample_formats_from_list2(ctx, cfg_in, cfg_out, formats);
     if (ret < 0)
         return ret;
 

@@ -181,7 +181,7 @@ static int query_formats(const AVFilterContext *ctx,
             return ret;
     }
 
-    return ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, pixel_fmts);
+    return ff_set_pixel_formats_from_list2(ctx, cfg_in, cfg_out, pixel_fmts);
 }
 
 const static enum AVPixelFormat studio_level_pix_fmts[] = {
