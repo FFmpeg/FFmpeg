@@ -217,6 +217,11 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
             ysize *= 2;
             usize *= 2;
         }
+        if (ysize + 2*usize + (desc->nb_components > 3) * ysize > pkt->size) {
+            ret = AVERROR(EINVAL);
+            goto fail;
+        }
+
         if ((ret = write_and_close(s, &pb[0], pkt->data                , ysize)) < 0 ||
             (ret = write_and_close(s, &pb[1], pkt->data + ysize        , usize)) < 0 ||
             (ret = write_and_close(s, &pb[2], pkt->data + ysize + usize, usize)) < 0)
