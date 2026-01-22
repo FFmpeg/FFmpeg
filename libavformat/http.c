@@ -2008,10 +2008,6 @@ static int64_t http_seek_internal(URLContext *h, int64_t off, int whence, int fo
 
     if (whence == AVSEEK_SIZE)
         return s->filesize;
-    else if (!force_reconnect &&
-             ((whence == SEEK_CUR && off == 0) ||
-              (whence == SEEK_SET && off == s->off)))
-        return s->off;
     else if ((s->filesize == UINT64_MAX && whence == SEEK_END))
         return AVERROR(ENOSYS);
 
@@ -2023,6 +2019,8 @@ static int64_t http_seek_internal(URLContext *h, int64_t off, int whence, int fo
         return AVERROR(EINVAL);
     if (off < 0)
         return AVERROR(EINVAL);
+    if (!force_reconnect && off == s->off)
+        return s->off;
     s->off = off;
 
     if (s->off && h->is_streamed)
