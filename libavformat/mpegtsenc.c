@@ -57,6 +57,7 @@ typedef struct MpegTSSection {
     int discontinuity;
     void (*write_packet)(struct MpegTSSection *s, const uint8_t *packet);
     void *opaque;
+    int remaining;
 } MpegTSSection;
 
 typedef struct MpegTSService {
@@ -1018,6 +1019,10 @@ static MpegTSService *mpegts_add_service(AVFormatContext *s, int sid,
         av_log(s, AV_LOG_ERROR, "Too long service or provider name\n");
         goto fail;
     }
+    ts->sdt.remaining -= 10 + service->provider_name[0] + service->name[0];
+    if (ts->sdt.remaining < 0)
+        goto fail;
+
     if (av_dynarray_add_nofree(&ts->services, &ts->nb_services, service) < 0)
         goto fail;
 
@@ -1127,6 +1132,8 @@ static int mpegts_init(AVFormatContext *s)
 
     // round up to a whole number of TS packets
     ts->pes_payload_size = (ts->pes_payload_size + 14 + 183) / 184 * 184 - 14;
+
+    ts->sdt.remaining    = SECTION_LENGTH - 3;
 
     if (!s->nb_programs) {
         /* allocate a single DVB service */
