@@ -604,6 +604,16 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
             gnutls_dtls_set_mtu(c->session, s->mtu);
     }
     gnutls_set_default_priority(c->session);
+
+    if (s->use_srtp) {
+        ret = gnutls_srtp_set_profile(c->session, GNUTLS_SRTP_AES128_CM_HMAC_SHA1_80);
+        if (ret < 0) {
+            av_log(c, AV_LOG_ERROR, "Unable to set SRTP profile: %s\n", gnutls_strerror(ret));
+            ret = AVERROR(EINVAL);
+            goto fail;
+        }
+    }
+
     if (!s->external_sock) {
         ret = tls_handshake(h);
         if (ret < 0)
