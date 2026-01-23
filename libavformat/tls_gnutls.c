@@ -573,8 +573,20 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
             ret = AVERROR(EIO);
             goto fail;
         }
-    } else if (s->cert_file || s->key_file)
+    } else if (s->cert_file || s->key_file) {
         av_log(h, AV_LOG_ERROR, "cert and key required\n");
+    } else if (s->cert_buf && s->key_buf) {
+        gnutls_datum_t cert_data = { .data = s->cert_buf, .size = strlen(s->cert_buf)};
+        gnutls_datum_t pkey_data = { .data = s->key_buf, .size = strlen(s->key_buf)};
+        ret = gnutls_certificate_set_x509_key_mem(c->cred, &cert_data, &pkey_data, GNUTLS_X509_FMT_PEM);
+        if (ret < 0) {
+            av_log(h, AV_LOG_ERROR, "Unable to set cert/key memory: %s\n", gnutls_strerror(ret));
+            ret = AVERROR(EINVAL);
+            goto fail;
+        }
+    } else if (s->cert_buf || s->key_buf) {
+        av_log(h, AV_LOG_ERROR, "cert and key required\n");
+    }
 
     if (s->listen && !s->cert_file && !s->cert_buf && !s->key_file && !s->key_buf) {
         av_log(h, AV_LOG_VERBOSE, "No server certificate provided, using self-signed\n");
