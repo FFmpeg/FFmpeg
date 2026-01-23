@@ -16689,6 +16689,7 @@ exist.
 @item color_primaries
 @item color_trc
 @item range
+@item chroma_location
 Configure the colorspace that output frames will be delivered in. The default
 value of @code{auto} outputs frames in the same format as the input frames,
 leading to no change. For any other value, conversion will be performed.
