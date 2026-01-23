@@ -1419,8 +1419,11 @@ static int http_read_header(URLContext *h)
     for (;;) {
         int parsed_http_code = 0;
 
-        if ((err = http_get_line(s, line, sizeof(line))) < 0)
+        if ((err = http_get_line(s, line, sizeof(line))) < 0) {
+            av_log(h, AV_LOG_ERROR, "Error reading HTTP response: %s\n",
+                   av_err2str(err));
             return err;
+        }
 
         av_log(h, AV_LOG_TRACE, "header='%s'\n", line);
 
