@@ -366,15 +366,20 @@ struct unit_value {
     const char *unit;
 };
 
+static const char float_fmt_full[] = "%f";
+static const char float_fmt_singledigit[] = "%.1f";
 static char *value_string(const AVTextFormatContext *tctx, char *buf, int buf_size, struct unit_value uv)
 {
     double vald;
     int64_t vali = 0;
-    int show_float = 0;
+    const char *float_fmt = 0;
 
-    if (uv.fmt >= AV_TEXTFORMAT_VALUE_FMT_DOUBLE) {
+    if (uv.fmt == AV_TEXTFORMAT_VALUE_FMT_DECIBEL) {
+        vald = 20 * log10(uv.val.d);
+        float_fmt = float_fmt_singledigit;
+    } else if (uv.fmt >= AV_TEXTFORMAT_VALUE_FMT_DOUBLE) {
         vald = uv.val.d;
-        show_float = 1;
+        float_fmt = float_fmt_full;
     } else {
         vald = (double)uv.val.i;
         vali = uv.val.i;
@@ -409,8 +414,8 @@ static char *value_string(const AVTextFormatContext *tctx, char *buf, int buf_si
             vali = (int64_t)vald;
         }
 
-        if (show_float || (tctx->opts.use_value_prefix && vald != (int64_t)vald))
-            snprintf(buf, buf_size, "%f", vald);
+        if (float_fmt || (tctx->opts.use_value_prefix && vald != (int64_t)vald))
+            snprintf(buf, buf_size, float_fmt ? float_fmt : "%f", vald);
         else
             snprintf(buf, buf_size, "%"PRId64, vali);
 
@@ -435,6 +440,19 @@ void avtext_print_unit_integer(AVTextFormatContext *tctx, const char *key, int64
     avtext_print_string(tctx, key, value_string(tctx, val_str, sizeof(val_str), uv), 0);
 }
 
+
+void avtext_print_unit_double(AVTextFormatContext *tctx, const char *key, double val, AVTextFormatValueFormat fmt, const char *unit)
+{
+    char val_str[128];
+    struct unit_value uv;
+
+    av_assert0(fmt >= AV_TEXTFORMAT_VALUE_FMT_DOUBLE);
+
+    uv.val.d = val;
+    uv.fmt = fmt;
+    uv.unit = unit;
+    avtext_print_string(tctx, key, value_string(tctx, val_str, sizeof(val_str), uv), 0);
+}
 
 int avtext_print_string(AVTextFormatContext *tctx, const char *key, const char *val, int flags)
 {

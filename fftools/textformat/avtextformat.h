@@ -166,6 +166,7 @@ typedef enum {
     AV_TEXTFORMAT_VALUE_FMT_BYTE,
     AV_TEXTFORMAT_VALUE_FMT_DOUBLE = 0x100,
     AV_TEXTFORMAT_VALUE_FMT_SECOND,
+    AV_TEXTFORMAT_VALUE_FMT_DECIBEL,
 } AVTextFormatValueFormat;
 
 #define AV_TEXTFORMAT_PRINT_STRING_OPTIONAL 1
@@ -186,6 +187,8 @@ void avtext_print_integer(AVTextFormatContext *tctx, const char *key, int64_t va
 int avtext_print_string(AVTextFormatContext *tctx, const char *key, const char *val, int flags);
 
 void avtext_print_unit_integer(AVTextFormatContext *tctx, const char *key, int64_t val, AVTextFormatValueFormat fmt, const char *unit);
+
+void avtext_print_unit_double(AVTextFormatContext *tctx, const char *key, double val, AVTextFormatValueFormat fmt, const char *unit);
 
 void avtext_print_rational(AVTextFormatContext *tctx, const char *key, AVRational q, char sep);
 
