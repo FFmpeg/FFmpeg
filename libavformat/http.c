@@ -1711,6 +1711,8 @@ static int http_buf_read(URLContext *h, uint8_t *buf, int size)
         uint64_t target_end = s->range_end ? s->range_end : file_end;
         if ((!s->willclose || s->chunksize == UINT64_MAX) && s->off >= file_end)
             return AVERROR_EOF;
+        if (s->off == target_end && target_end < file_end)
+            return AVERROR(EAGAIN); /* reached end of content range */
         len = ffurl_read(s->hd, buf, size);
         if ((!len || len == AVERROR_EOF) &&
             (!s->willclose || s->chunksize == UINT64_MAX) && s->off < target_end) {
@@ -1795,6 +1797,16 @@ static int http_read_stream(URLContext *h, uint8_t *buf, int size)
 
         if (read_ret == AVERROR_EXIT)
             break;
+        else if (read_ret == AVERROR(EAGAIN)) {
+            /* send new request for more data on existing connection */
+            AVDictionary *options = NULL;
+            if (s->willclose)
+                ffurl_closep(&s->hd);
+            read_ret = http_open_cnx(h, &options);
+            av_dict_free(&options);
+            if (read_ret == 0)
+                goto retry;
+        }
 
         if (h->is_streamed && !s->reconnect_streamed)
             break;
@@ -1824,6 +1836,7 @@ static int http_read_stream(URLContext *h, uint8_t *buf, int size)
             return read_ret;
         }
 
+retry:
         read_ret = http_buf_read(h, buf, size);
     }
 
