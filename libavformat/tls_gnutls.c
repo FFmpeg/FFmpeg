@@ -535,8 +535,10 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
 
     ff_gnutls_init();
 
-    if ((ret = ff_tls_open_underlying(s, h, uri, options)) < 0)
-        goto fail;
+    if (!s->external_sock) {
+        if ((ret = ff_tls_open_underlying(s, h, uri, options)) < 0)
+            goto fail;
+    }
 
     if (s->is_dtls)
         gnutls_flags |= GNUTLS_DATAGRAM;
@@ -602,9 +604,11 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
             gnutls_dtls_set_mtu(c->session, s->mtu);
     }
     gnutls_set_default_priority(c->session);
-    ret = tls_handshake(h);
-    if (ret < 0)
-        goto fail;
+    if (!s->external_sock) {
+        ret = tls_handshake(h);
+        if (ret < 0)
+            goto fail;
+    }
     c->need_shutdown = 1;
     if (s->verify) {
         unsigned int status, cert_list_size;
