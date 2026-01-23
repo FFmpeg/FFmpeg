@@ -78,7 +78,7 @@ typedef struct HTTPContext {
     /* Used if "Transfer-Encoding: chunked" otherwise -1. */
     uint64_t chunksize;
     int chunkend;
-    uint64_t off, end_off, filesize;
+    uint64_t off, end_off, filesize, range_end;
     char *uri;
     char *location;
     HTTPAuthState auth_state;
@@ -892,11 +892,13 @@ static int parse_location(HTTPContext *s, const char *p)
 static void parse_content_range(URLContext *h, const char *p)
 {
     HTTPContext *s = h->priv_data;
-    const char *slash;
+    const char *slash, *end;
 
     if (!strncmp(p, "bytes ", 6)) {
         p     += 6;
         s->off = strtoull(p, NULL, 10);
+        if ((end = strchr(p, '-')) && strlen(end) > 0)
+            s->range_end = strtoull(end + 1, NULL, 10) + 1;
         if ((slash = strchr(p, '/')) && strlen(slash) > 0)
             s->filesize_from_content_range = strtoull(slash + 1, NULL, 10);
     }
@@ -1702,8 +1704,9 @@ static int http_buf_read(URLContext *h, uint8_t *buf, int size)
         memcpy(buf, s->buf_ptr, len);
         s->buf_ptr += len;
     } else {
-        uint64_t target_end = s->end_off ? s->end_off : s->filesize;
-        if ((!s->willclose || s->chunksize == UINT64_MAX) && s->off >= target_end)
+        uint64_t file_end   = s->end_off   ? s->end_off   : s->filesize;
+        uint64_t target_end = s->range_end ? s->range_end : file_end;
+        if ((!s->willclose || s->chunksize == UINT64_MAX) && s->off >= file_end)
             return AVERROR_EOF;
         len = ffurl_read(s->hd, buf, size);
         if ((!len || len == AVERROR_EOF) &&
