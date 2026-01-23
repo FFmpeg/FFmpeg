@@ -315,9 +315,9 @@ static int wav_write_header(AVFormatContext *s)
 
     ffio_wfourcc(pb, "WAVE");
 
-    if (wav->rf64 != RF64_NEVER) {
-        /* write empty ds64 chunk or JUNK chunk to reserve space for ds64 */
-        ffio_wfourcc(pb, wav->rf64 == RF64_ALWAYS ? "ds64" : "JUNK");
+    if (wav->rf64 == RF64_ALWAYS) {
+        /* write empty ds64 chunk */
+        ffio_wfourcc(pb, "ds64");
         avio_wl32(pb, 28); /* chunk size */
         wav->ds64 = avio_tell(pb);
         ffio_fill(pb, 0, 28);
@@ -332,6 +332,16 @@ static int wav_write_header(AVFormatContext *s)
             return AVERROR(ENOSYS);
         }
         ff_end_tag(pb, fmt);
+
+        if (wav->rf64 == RF64_AUTO) {
+            /* reserve space for ds64 */
+            ffio_wfourcc(pb, "JUNK");
+            avio_wl32(pb, 28); /* chunk size */
+            ffio_fill(pb, 0, 28);
+
+            /* in RF64_AUTO mode, fmt + JUNK will be overwritten by ds64 + fmt */
+            wav->ds64 = fmt;
+        }
     }
 
     if (s->streams[0]->codecpar->codec_tag != 0x01 /* hence for all other than PCM */
@@ -411,6 +421,7 @@ static int wav_write_trailer(AVFormatContext *s)
     WAVMuxContext    *wav = s->priv_data;
     int64_t file_size, data_size;
     int64_t number_of_samples = 0;
+    int64_t pos;
     int rf64 = 0;
     int ret = 0;
 
@@ -459,7 +470,7 @@ static int wav_write_trailer(AVFormatContext *s)
             ffio_wfourcc(pb, "RF64");
             avio_wl32(pb, -1);
 
-            /* write ds64 chunk (overwrite JUNK if rf64 == RF64_AUTO) */
+            /* write ds64 chunk (overwrite fmt + JUNK if rf64 == RF64_AUTO) */
             avio_seek(pb, wav->ds64 - 8, SEEK_SET);
             ffio_wfourcc(pb, "ds64");
             avio_wl32(pb, 28);                  /* ds64 chunk size */
@@ -467,6 +478,11 @@ static int wav_write_trailer(AVFormatContext *s)
             avio_wl64(pb, data_size);           /* data chunk size */
             avio_wl64(pb, number_of_samples);   /* fact chunk number of samples */
             avio_wl32(pb, 0);                   /* number of table entries for non-'data' chunks */
+
+            /* rewrite fmt in its RF64 position after ds64 */
+            pos = ff_start_tag(pb, "fmt ");
+            ret = ff_put_wav_header(s, pb, s->streams[0]->codecpar, 0);
+            ff_end_tag(pb, pos);
 
             /* write -1 in data chunk size */
             avio_seek(pb, wav->data - 4, SEEK_SET);
