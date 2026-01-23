@@ -20,7 +20,6 @@ color_transfer=bt470m
 color_primaries=unknown
 chroma_location=topleft
 field_order=tt
-refs=1
 id=N/A
 r_frame_rate=25/1
 avg_frame_rate=25/1

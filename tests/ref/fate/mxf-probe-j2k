@@ -20,7 +20,6 @@ color_transfer=bt709
 color_primaries=bt709
 chroma_location=unspecified
 field_order=progressive
-refs=1
 id=N/A
 r_frame_rate=24/1
 avg_frame_rate=24/1

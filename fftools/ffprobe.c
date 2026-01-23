@@ -1872,7 +1872,7 @@ static int show_stream(AVTextFormatContext *tfc, AVFormatContext *fmt_ctx, int s
         else
             print_str_opt("field_order", "unknown");
 
-        if (dec_ctx)
+        if (dec_ctx && do_read_frames)
             print_int("refs", dec_ctx->refs);
         break;
 

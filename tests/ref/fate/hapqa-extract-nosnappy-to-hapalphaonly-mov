@@ -34,7 +34,6 @@ color_transfer=unknown
 color_primaries=unknown
 chroma_location=unspecified
 field_order=unknown
-refs=1
 id=0x1
 r_frame_rate=25/1
 avg_frame_rate=25/1
