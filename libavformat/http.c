@@ -1658,6 +1658,9 @@ static int http_buf_read(URLContext *h, uint8_t *buf, int size)
     HTTPContext *s = h->priv_data;
     int len;
 
+    if (!s->hd)
+        return AVERROR(EIO);
+
     if (s->chunksize != UINT64_MAX) {
         if (s->chunkend) {
             return AVERROR_EOF;
