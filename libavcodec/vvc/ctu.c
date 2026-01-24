@@ -1136,8 +1136,11 @@ static int skipped_transform_tree_unit(VVCLocalContext *lc)
     const CodingUnit *cu   = lc->cu;
     int ret;
 
-    if (cu->tree_type != DUAL_TREE_CHROMA)
-        set_qp_y(lc, cu->x0, cu->y0, 0);
+    if (cu->tree_type != DUAL_TREE_CHROMA) {
+        ret = set_qp_y(lc, cu->x0, cu->y0, 0);
+        if (ret < 0)
+            return ret;
+    }
     if (rsps->sps_chroma_format_idc && cu->tree_type != DUAL_TREE_LUMA)
         set_qp_c(lc);
     ret = skipped_transform_tree(lc, cu->x0, cu->y0, cu->cb_width, cu->cb_height);
