@@ -1157,8 +1157,11 @@ static int skipped_transform_tree_unit(VVCLocalContext *lc)
     const CodingUnit *cu   = lc->cu;
     int ret;
 
-    if (cu->tree_type != DUAL_TREE_CHROMA)
-        set_qp_y(lc, cu->x0, cu->y0, 0);
+    if (cu->tree_type != DUAL_TREE_CHROMA) {
+        ret = set_qp_y(lc, cu->x0, cu->y0, 0);
+        if (ret < 0)
+            return ret;
+    }
     if (rsps->sps_chroma_format_idc && cu->tree_type != DUAL_TREE_LUMA)
         set_qp_c(lc);
     ret = skipped_transform_tree(lc, cu->x0, cu->y0, cu->cb_width, cu->cb_height);
@@ -1937,17 +1940,20 @@ static void palette_update_predictor(VVCLocalContext *lc, const bool local_dual_
     }
 }
 
-static void palette_qp(VVCLocalContext *lc, VVCTreeType tree_type, const bool escape_present)
+static int palette_qp(VVCLocalContext *lc, VVCTreeType tree_type, const bool escape_present)
 {
     const VVCFrameContext *fc     = lc->fc;
     const VVCPPS *pps             = fc->ps.pps;
     const H266RawSliceHeader *rsh = lc->sc->sh.r;
     const CodingUnit *cu          = lc->cu;
+    int ret;
 
     if (tree_type != DUAL_TREE_CHROMA) {
         const bool has_qp_delta = escape_present &&
             pps->r->pps_cu_qp_delta_enabled_flag && !lc->parse.is_cu_qp_delta_coded;
-        set_qp_y(lc, cu->x0, cu->y0, has_qp_delta);
+        ret = set_qp_y(lc, cu->x0, cu->y0, has_qp_delta);
+        if (ret < 0)
+            return ret;
     }
 
     if (tree_type != DUAL_TREE_LUMA) {
@@ -1955,6 +1961,8 @@ static void palette_qp(VVCLocalContext *lc, VVCTreeType tree_type, const bool es
             chroma_qp_offset_decode(lc, 0, 1);
         set_qp_c(lc);
     }
+
+    return 0;
 }
 
 #define PALETTE_SET_PIXEL(xc, yc, pix)                              \
@@ -2123,7 +2131,9 @@ static int hls_palette_coding(VVCLocalContext *lc, const VVCTreeType tree_type)
         transpose = ff_vvc_palette_transpose_flag(lc);
     }
 
-    palette_qp(lc, tree_type, escape_present);
+    ret = palette_qp(lc, tree_type, escape_present);
+    if (ret < 0)
+        return ret;
 
     index[0] = 0;
     for (int i = 0; i <= (tu->tbs[0].tb_width * tu->tbs[0].tb_height - 1) >> 4; i++) {
