@@ -15,15 +15,15 @@ jobs:
     if: ${{ github.event.sender.login != 'ffmpeg-devel' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Label by file-changes
-        uses: https://github.com/actions/labeler@v5
+        uses: actions/labeler@v6
         if: ${{ forge.event_name == 'pull_request_target' }}
         with:
           configuration-path: .forgejo/labeler/labeler.yml
           repo-token: ${{ secrets.AUTOLABELER_TOKEN }}
       - name: Label by title-match
-        uses: https://github.com/actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const script = require('.forgejo/labeler/labeler.js')

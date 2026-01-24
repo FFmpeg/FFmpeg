@@ -28,7 +28,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Configure
         run: |
           ./configure --enable-gpl --enable-nonfree --enable-memory-poisoning --assert-level=2 \
@@ -41,7 +41,7 @@ jobs:
         run: make -j$(nproc)
       - name: Restore Cached Fate-Suite
         id: cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: fate-suite
           key: fate-suite
@@ -53,7 +53,7 @@ jobs:
           make fate-rsync SAMPLES=$PWD/fate-suite
           echo "hash=$(find fate-suite -type f -printf "%P %s %T@\n" | sort | sha256sum | cut -d' ' -f1)" >> $FORGEJO_OUTPUT
       - name: Cache Fate-Suite
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         if: ${{ format('fate-suite-{0}', steps.fate.outputs.hash) != steps.cache.outputs.cache-matched-key }}
         with:
           path: fate-suite
@@ -74,7 +74,7 @@ jobs:
     container: ${{ matrix.image }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Configure
         run: |
           ./configure --pkg-config-flags="--static" $FFBUILD_TARGET_FLAGS $FF_CONFIGURE \
@@ -89,7 +89,7 @@ jobs:
         run: make -j$(nproc)
       - name: Restore Cached Fate-Suite
         id: cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: fate-suite
           key: fate-suite
@@ -101,7 +101,7 @@ jobs:
           make fate-rsync SAMPLES=$PWD/fate-suite
           echo "hash=$(find fate-suite -type f -printf "%P %s %T@\n" | sort | sha256sum | cut -d' ' -f1)" >> $FORGEJO_OUTPUT
       - name: Cache Fate-Suite
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         if: ${{ format('fate-suite-{0}', steps.fate.outputs.hash) != steps.cache.outputs.cache-matched-key }}
         with:
           path: fate-suite

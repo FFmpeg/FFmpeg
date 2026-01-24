@@ -15,7 +15,7 @@ jobs:
     runs-on: utilities
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Install pre-commit CI
         id: install
         run: |
@@ -24,7 +24,7 @@ jobs:
             ~/pre-commit/bin/pip install pre-commit
             echo "envhash=$({ python3 --version && cat .forgejo/pre-commit/config.yaml; } | sha256sum | cut -d' ' -f1)" >> $FORGEJO_OUTPUT
       - name: Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/pre-commit
           key: pre-commit-${{ steps.install.outputs.envhash }}
