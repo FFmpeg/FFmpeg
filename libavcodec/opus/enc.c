@@ -638,12 +638,8 @@ static av_cold int opus_encode_init(AVCodecContext *avctx)
     s->avctx = avctx;
     s->channels = avctx->ch_layout.nb_channels;
 
-    /* Opus allows us to change the framesize on each packet (and each packet may
-     * have multiple frames in it) but we can't change the codec's frame size on
-     * runtime, so fix it to the lowest possible number of samples and use a queue
-     * to accumulate AVFrames until we have enough to encode whatever the encoder
-     * decides is the best */
-    avctx->frame_size = 120;
+    int max_delay_samples = (s->options.max_delay_ms * s->avctx->sample_rate) / 1000;
+    avctx->frame_size = OPUS_BLOCK_SIZE(FFMIN(OPUS_SAMPLES_TO_BLOCK_SIZE(max_delay_samples), CELT_BLOCK_960));
     /* Initial padding will change if SILK is ever supported */
     avctx->initial_padding = 120;
 
