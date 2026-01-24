@@ -34,12 +34,14 @@ typedef struct {
     int64_t data;
     int64_t total_duration;
     int64_t packets;
+    uint32_t frame_size;
 } CAFContext;
 
 typedef struct {
-    uint8_t *byte_size_buffer;
-    int byte_size_buffer_sz;
-    int nb_byte_size_buffer;
+    uint32_t *byte_size_buffer;
+    uint32_t *frame_size_buffer;
+    unsigned byte_size_buffer_sz;
+    unsigned frame_size_buffer_sz;
 } CAFStreamContext;
 
 static uint32_t codec_flags(enum AVCodecID codec_id) {
@@ -123,7 +125,7 @@ static int caf_write_header(AVFormatContext *s)
     const AVDictionaryEntry *t = NULL;
     unsigned int codec_tag = ff_codec_get_tag(ff_codec_caf_tags, par->codec_id);
     int64_t chunk_size = 0;
-    int frame_size = par->frame_size, sample_rate = par->sample_rate;
+    int sample_rate = par->sample_rate;
 
     switch (par->codec_id) {
     case AV_CODEC_ID_AAC:
@@ -146,15 +148,21 @@ static int caf_write_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     }
 
-    st->priv_data = av_mallocz(sizeof(CAFStreamContext));
-    if (!st->priv_data)
-        return AVERROR(ENOMEM);
+    caf->frame_size = par->frame_size;
+    if (par->codec_id != AV_CODEC_ID_MP3 || caf->frame_size != 576)
+        caf->frame_size = samples_per_packet(par);
 
-    if (par->codec_id != AV_CODEC_ID_MP3 || frame_size != 576)
-        frame_size = samples_per_packet(par);
+    if (!caf->frame_size && !(pb->seekable & AVIO_SEEKABLE_NORMAL)) {
+        av_log(s, AV_LOG_ERROR, "Muxing variable frame size not supported on non seekable output\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     if (par->codec_id == AV_CODEC_ID_OPUS)
         sample_rate = 48000;
+
+    st->priv_data = av_mallocz(sizeof(CAFStreamContext));
+    if (!st->priv_data)
+        return AVERROR(ENOMEM);
 
     ffio_wfourcc(pb, "caff"); //< mFileType
     avio_wb16(pb, 1);         //< mFileVersion
@@ -166,7 +174,7 @@ static int caf_write_header(AVFormatContext *s)
     avio_wl32(pb, codec_tag);                         //< mFormatID
     avio_wb32(pb, codec_flags(par->codec_id));        //< mFormatFlags
     avio_wb32(pb, par->block_align);                  //< mBytesPerPacket
-    avio_wb32(pb, frame_size);                        //< mFramesPerPacket
+    avio_wb32(pb, caf->frame_size);                   //< mFramesPerPacket
     avio_wb32(pb, par->ch_layout.nb_channels);        //< mChannelsPerFrame
     avio_wb32(pb, av_get_bits_per_sample(par->codec_id)); //< mBitsPerChannel
 
@@ -226,25 +234,36 @@ static int caf_write_packet(AVFormatContext *s, AVPacket *pkt)
     CAFContext *caf = s->priv_data;
     AVStream *const st = s->streams[0];
 
-    if (!st->codecpar->block_align) {
+    if (!st->codecpar->block_align || !caf->frame_size) {
         CAFStreamContext *caf_st = st->priv_data;
-        uint8_t *pkt_sizes;
-        int i, alloc_size = caf_st->nb_byte_size_buffer + 5U;
-        if (alloc_size < 0)
+        void *pkt_sizes;
+        unsigned alloc_size = caf->packets + 1;
+
+        if (!st->codecpar->block_align) {
+        if (UINT_MAX / sizeof(*caf_st->byte_size_buffer) < alloc_size)
             return AVERROR(ERANGE);
 
         pkt_sizes = av_fast_realloc(caf_st->byte_size_buffer,
                                     &caf_st->byte_size_buffer_sz,
-                                    alloc_size);
+                                    alloc_size * sizeof(*caf_st->byte_size_buffer));
         if (!pkt_sizes)
             return AVERROR(ENOMEM);
         caf_st->byte_size_buffer = pkt_sizes;
-        for (i = 4; i > 0; i--) {
-            unsigned top = pkt->size >> i * 7;
-            if (top)
-                pkt_sizes[caf_st->nb_byte_size_buffer++] = 128 | top;
+        caf_st->byte_size_buffer[caf->packets] = pkt->size;
         }
-        pkt_sizes[caf_st->nb_byte_size_buffer++] = pkt->size & 127;
+        if (!caf->frame_size) {
+            if (UINT_MAX / sizeof(*caf_st->frame_size_buffer) < alloc_size)
+                return AVERROR(ERANGE);
+
+            pkt_sizes = av_fast_realloc(caf_st->frame_size_buffer,
+                                        &caf_st->frame_size_buffer_sz,
+                                        alloc_size * sizeof(*caf_st->frame_size_buffer));
+            if (!pkt_sizes)
+                return AVERROR(ENOMEM);
+            caf_st->frame_size_buffer = pkt_sizes;
+            caf_st->frame_size_buffer[caf->packets] = pkt->duration;
+        }
+
         caf->packets++;
         caf->total_duration += pkt->duration;
     }
@@ -265,30 +284,56 @@ static int caf_write_trailer(AVFormatContext *s)
 
         avio_seek(pb, caf->data, SEEK_SET);
         avio_wb64(pb, file_size - caf->data - 8);
-        if (!par->block_align) {
-            unsigned packet_size = samples_per_packet(par);
-            int64_t valid_frames = (packet_size ? caf->packets * packet_size : caf->total_duration);
+        if (!par->block_align || !caf->frame_size) {
+            int64_t valid_frames = caf->frame_size ? caf->packets * caf->frame_size : caf->total_duration;
             unsigned remainder_frames = valid_frames > caf->total_duration
                                       ? valid_frames - caf->total_duration : 0;
+            int64_t size = 24;
+
             valid_frames -= par->initial_padding;
             valid_frames -= remainder_frames;
-            if (!packet_size) {
-                packet_size = caf->total_duration / (caf->packets - 1);
-                avio_seek(pb, FRAME_SIZE_OFFSET, SEEK_SET);
-                avio_wb32(pb, packet_size);
-            }
+
             avio_seek(pb, file_size, SEEK_SET);
             ffio_wfourcc(pb, "pakt");
-            avio_wb64(pb, caf_st->nb_byte_size_buffer + 24U);
+            avio_wb64(pb, 0); // size, to be replaced
             avio_wb64(pb, caf->packets); ///< mNumberPackets
             avio_wb64(pb, valid_frames); ///< mNumberValidFrames
             avio_wb32(pb, par->initial_padding); ///< mPrimingFrames
             avio_wb32(pb, remainder_frames); ///< mRemainderFrames
-            avio_write(pb, caf_st->byte_size_buffer, caf_st->nb_byte_size_buffer);
+            for (int i = 0; i < caf->packets; i++) {
+                if (!par->block_align) {
+                    for (int j = 4; j > 0; j--) {
+                        unsigned top = caf_st->byte_size_buffer[i] >> j * 7;
+                        if (top) {
+                            avio_w8(pb, 128 | top);
+                            size++;
+                        }
+                    }
+                    avio_w8(pb, caf_st->byte_size_buffer[i] & 127);
+                    size++;
+                }
+                if (!caf->frame_size) {
+                    for (int j = 4; j > 0; j--) {
+                        unsigned top = caf_st->frame_size_buffer[i] >> j * 7;
+                        if (top) {
+                            avio_w8(pb, 128 | top);
+                            size++;
+                        }
+                    }
+                    avio_w8(pb, caf_st->frame_size_buffer[i] & 127);
+                    size++;
+                }
+            }
+
+            int64_t end = avio_tell(pb);
+            avio_seek(pb, file_size + 4, SEEK_SET);
+            avio_wb64(pb, size);
+            avio_seek(pb, end, SEEK_SET);
         }
     }
 
     av_freep(&caf_st->byte_size_buffer);
+    av_freep(&caf_st->frame_size_buffer);
 
     return 0;
 }
