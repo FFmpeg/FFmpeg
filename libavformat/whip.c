@@ -1949,6 +1949,7 @@ static void handle_nack_rtx(AVFormatContext *s, int size)
     WHIPContext *whip = s->priv_data;
     uint8_t *buf = NULL;
     int rtcp_len, srtcp_len, header_len = 12/*RFC 4585 6.1*/;
+    uint32_t ssrc;
 
     /**
      * Refer to RFC 3550 6.4.1
@@ -1972,6 +1973,13 @@ static void handle_nack_rtx(AVFormatContext *s, int size)
     if ((ret = ff_srtp_decrypt(&whip->srtp_recv, buf, &srtcp_len)) < 0) {
         av_log(whip, AV_LOG_WARNING, "NACK packet decrypt failed: %d\n", ret);
         goto error;
+    }
+    ssrc = AV_RB32(&buf[8]);
+    if (ssrc != whip->video_ssrc) {
+        av_log(whip, AV_LOG_DEBUG,
+               "NACK packet SSRC: %"PRIu32" not match with video track SSRC: %"PRIu32"\n",
+               ssrc, whip->video_ssrc);
+        goto end;
     }
     while (header_len + i + 4 <= rtcp_len) {
         /**
