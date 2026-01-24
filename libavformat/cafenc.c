@@ -32,9 +32,10 @@
 
 typedef struct {
     int64_t data;
+    int64_t total_duration;
+    int64_t packets;
     int size_buffer_size;
     int size_entries_used;
-    int packets;
 } CAFContext;
 
 static uint32_t codec_flags(enum AVCodecID codec_id) {
@@ -235,6 +236,7 @@ static int caf_write_packet(AVFormatContext *s, AVPacket *pkt)
         }
         pkt_sizes[caf->size_entries_used++] = pkt->size & 127;
         caf->packets++;
+        caf->total_duration += pkt->duration;
     }
     avio_write(s->pb, pkt->data, pkt->size);
     return 0;
@@ -253,9 +255,14 @@ static int caf_write_trailer(AVFormatContext *s)
         avio_seek(pb, caf->data, SEEK_SET);
         avio_wb64(pb, file_size - caf->data - 8);
         if (!par->block_align) {
-            int packet_size = samples_per_packet(par);
+            unsigned packet_size = samples_per_packet(par);
+            int64_t valid_frames = (packet_size ? caf->packets * packet_size : caf->total_duration);
+            unsigned remainder_frames = valid_frames > caf->total_duration
+                                      ? valid_frames - caf->total_duration : 0;
+            valid_frames -= par->initial_padding;
+            valid_frames -= remainder_frames;
             if (!packet_size) {
-                packet_size = st->duration / (caf->packets - 1);
+                packet_size = caf->total_duration / (caf->packets - 1);
                 avio_seek(pb, FRAME_SIZE_OFFSET, SEEK_SET);
                 avio_wb32(pb, packet_size);
             }
@@ -263,9 +270,9 @@ static int caf_write_trailer(AVFormatContext *s)
             ffio_wfourcc(pb, "pakt");
             avio_wb64(pb, caf->size_entries_used + 24U);
             avio_wb64(pb, caf->packets); ///< mNumberPackets
-            avio_wb64(pb, caf->packets * packet_size); ///< mNumberValidFrames
-            avio_wb32(pb, 0); ///< mPrimingFrames
-            avio_wb32(pb, 0); ///< mRemainderFrames
+            avio_wb64(pb, valid_frames); ///< mNumberValidFrames
+            avio_wb32(pb, par->initial_padding); ///< mPrimingFrames
+            avio_wb32(pb, remainder_frames); ///< mRemainderFrames
             avio_write(pb, st->priv_data, caf->size_entries_used);
         }
     }
