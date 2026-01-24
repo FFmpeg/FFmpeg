@@ -225,21 +225,23 @@ static int get_chroma_predict_unit(const CodingUnit *cu, const TransformUnit *tu
 }
 
 //8.4.5.1 General decoding process for intra blocks
-static void predict_intra(VVCLocalContext *lc, const TransformUnit *tu, const int idx, const int target_ch_type)
+static int predict_intra(VVCLocalContext *lc, const TransformUnit *tu, const int idx, const int target_ch_type)
 {
     const VVCFrameContext *fc         = lc->fc;
     const CodingUnit *cu        = lc->cu;
     const VVCTreeType tree_type = cu->tree_type;
-    int x0, y0, w, h;
+    int x0, y0, w, h, ret;
     if (cu->pred_mode != MODE_INTRA) {
-        add_reconstructed_area(lc, target_ch_type, tu->x0, tu->y0, tu->width, tu->height);
-        return;
+        ret = add_reconstructed_area(lc, target_ch_type, tu->x0, tu->y0, tu->width, tu->height);
+        return ret;
     }
     if (!target_ch_type && tree_type != DUAL_TREE_CHROMA) {
         if (get_luma_predict_unit(cu, tu, idx, &x0, &y0, &w, &h)) {
             ff_vvc_set_neighbour_available(lc, x0, y0, w, h);
             fc->vvcdsp.intra.intra_pred(lc, x0, y0, w, h, 0);
-            add_reconstructed_area(lc, 0, x0, y0, w, h);
+            ret = add_reconstructed_area(lc, 0, x0, y0, w, h);
+            if (ret < 0)
+                return ret;
         }
     }
     if (target_ch_type && tree_type != DUAL_TREE_LUMA) {
@@ -251,9 +253,12 @@ static void predict_intra(VVCLocalContext *lc, const TransformUnit *tu, const in
                 fc->vvcdsp.intra.intra_pred(lc, x0, y0, w, h, 1);
                 fc->vvcdsp.intra.intra_pred(lc, x0, y0, w, h, 2);
             }
-            add_reconstructed_area(lc, 1, x0, y0, w, h);
+            ret = add_reconstructed_area(lc, 1, x0, y0, w, h);
+            if (ret < 0)
+                return ret;
         }
     }
+    return 0;
 }
 
 static void scale_clip(int *coeff, const int nzw, const int w, const int h,
@@ -586,11 +591,14 @@ static int reconstruct(VVCLocalContext *lc)
     CodingUnit *cu      = lc->cu;
     const int start     = cu->tree_type == DUAL_TREE_CHROMA;
     const int end       = fc->ps.sps->r->sps_chroma_format_idc && (cu->tree_type != DUAL_TREE_LUMA);
+    int ret;
 
     for (int ch_type = start; ch_type <= end; ch_type++) {
         TransformUnit *tu = cu->tus.head;
         for (int i = 0; tu; i++) {
-            predict_intra(lc, tu, i, ch_type);
+            ret = predict_intra(lc, tu, i, ch_type);
+            if (ret < 0)
+                return ret;
             itransform(lc, tu, ch_type);
             tu = tu->next;
         }
@@ -726,10 +734,16 @@ int ff_vvc_reconstruct(VVCLocalContext *lc, const int rs, const int rx, const in
         if (cu->coded_flag) {
             ret = reconstruct(lc);
         } else {
-            if (cu->tree_type != DUAL_TREE_CHROMA)
-                add_reconstructed_area(lc, LUMA, cu->x0, cu->y0, cu->cb_width, cu->cb_height);
-            if (sps->r->sps_chroma_format_idc && cu->tree_type != DUAL_TREE_LUMA)
-                add_reconstructed_area(lc, CHROMA, cu->x0, cu->y0, cu->cb_width, cu->cb_height);
+            if (cu->tree_type != DUAL_TREE_CHROMA) {
+                ret = add_reconstructed_area(lc, LUMA, cu->x0, cu->y0, cu->cb_width, cu->cb_height);
+                if (ret < 0)
+                    return ret;
+            }
+            if (sps->r->sps_chroma_format_idc && cu->tree_type != DUAL_TREE_LUMA) {
+                ret = add_reconstructed_area(lc, CHROMA, cu->x0, cu->y0, cu->cb_width, cu->cb_height);
+                if (ret < 0)
+                    return ret;
+            }
         }
         if (sps->r->sps_ibc_enabled_flag)
             ibc_fill_vir_buf(lc, cu);
