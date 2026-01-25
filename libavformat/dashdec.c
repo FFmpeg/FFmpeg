@@ -843,6 +843,43 @@ end:
 
 }
 
+#define SET_REPRESENTATION_SEQUENCE_BASE_INFO(arg, cnt) { \
+        val = get_val_from_nodes_tab((arg), (cnt), "duration"); \
+        if (val) { \
+            int64_t fragment_duration = (int64_t) strtoll(val, NULL, 10); \
+            if (fragment_duration < 0) { \
+                av_log(s, AV_LOG_WARNING, "duration invalid, autochanged to 0.\n"); \
+                fragment_duration = 0; \
+            } \
+            rep->fragment_duration = fragment_duration; \
+            av_log(s, AV_LOG_TRACE, "rep->fragment_duration = [%"PRId64"]\n", rep->fragment_duration); \
+            xmlFree(val); \
+        } \
+        val = get_val_from_nodes_tab((arg), (cnt), "timescale"); \
+        if (val) { \
+            int64_t fragment_timescale = (int64_t) strtoll(val, NULL, 10); \
+            if (fragment_timescale < 0) { \
+                av_log(s, AV_LOG_WARNING, "timescale invalid, autochanged to 0.\n"); \
+                fragment_timescale = 0; \
+            } \
+            rep->fragment_timescale = fragment_timescale; \
+            av_log(s, AV_LOG_TRACE, "rep->fragment_timescale = [%"PRId64"]\n", rep->fragment_timescale); \
+            xmlFree(val); \
+        } \
+        val = get_val_from_nodes_tab((arg), (cnt), "startNumber"); \
+        if (val) { \
+            int64_t start_number = (int64_t) strtoll(val, NULL, 10); \
+            if (start_number < 0) { \
+                av_log(s, AV_LOG_WARNING, "startNumber invalid, autochanged to 0.\n"); \
+                start_number = 0; \
+            } \
+            rep->start_number = rep->first_seq_no = start_number; \
+            av_log(s, AV_LOG_TRACE, "rep->first_seq_no = [%"PRId64"]\n", rep->first_seq_no); \
+            xmlFree(val); \
+        } \
+    }
+
+
 static int parse_manifest_representation(AVFormatContext *s, const char *url,
                                          xmlNodePtr node,
                                          xmlNodePtr adaptionset_node,
@@ -957,28 +994,17 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
         }
         val = get_val_from_nodes_tab(fragment_templates_tab, 4, "presentationTimeOffset");
         if (val) {
-            rep->presentation_timeoffset = (int64_t) strtoll(val, NULL, 10);
+            int64_t presentation_timeoffset = (int64_t) strtoll(val, NULL, 10);
+            if (presentation_timeoffset < 0) {
+                av_log(s, AV_LOG_WARNING, "presentationTimeOffset invalid, autochanged to 0.\n");
+                presentation_timeoffset = 0;
+            }
+            rep->presentation_timeoffset = presentation_timeoffset;
             av_log(s, AV_LOG_TRACE, "rep->presentation_timeoffset = [%"PRId64"]\n", rep->presentation_timeoffset);
             xmlFree(val);
         }
-        val = get_val_from_nodes_tab(fragment_templates_tab, 4, "duration");
-        if (val) {
-            rep->fragment_duration = (int64_t) strtoll(val, NULL, 10);
-            av_log(s, AV_LOG_TRACE, "rep->fragment_duration = [%"PRId64"]\n", rep->fragment_duration);
-            xmlFree(val);
-        }
-        val = get_val_from_nodes_tab(fragment_templates_tab, 4, "timescale");
-        if (val) {
-            rep->fragment_timescale = (int64_t) strtoll(val, NULL, 10);
-            av_log(s, AV_LOG_TRACE, "rep->fragment_timescale = [%"PRId64"]\n", rep->fragment_timescale);
-            xmlFree(val);
-        }
-        val = get_val_from_nodes_tab(fragment_templates_tab, 4, "startNumber");
-        if (val) {
-            rep->start_number = rep->first_seq_no = (int64_t) strtoll(val, NULL, 10);
-            av_log(s, AV_LOG_TRACE, "rep->first_seq_no = [%"PRId64"]\n", rep->first_seq_no);
-            xmlFree(val);
-        }
+
+        SET_REPRESENTATION_SEQUENCE_BASE_INFO(fragment_templates_tab, 4);
         if (adaptionset_supplementalproperty_node) {
             char *scheme_id_uri = xmlGetProp(adaptionset_supplementalproperty_node, "schemeIdUri");
             if (scheme_id_uri) {
@@ -1035,25 +1061,7 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
         segmentlists_tab[1] = adaptionset_segmentlist_node;
         segmentlists_tab[2] = period_segmentlist_node;
 
-        val = get_val_from_nodes_tab(segmentlists_tab, 3, "duration");
-        if (val) {
-            rep->fragment_duration = (int64_t) strtoll(val, NULL, 10);
-            av_log(s, AV_LOG_TRACE, "rep->fragment_duration = [%"PRId64"]\n", rep->fragment_duration);
-            xmlFree(val);
-        }
-        val = get_val_from_nodes_tab(segmentlists_tab, 3, "timescale");
-        if (val) {
-            rep->fragment_timescale = (int64_t) strtoll(val, NULL, 10);
-            av_log(s, AV_LOG_TRACE, "rep->fragment_timescale = [%"PRId64"]\n", rep->fragment_timescale);
-            xmlFree(val);
-        }
-        val = get_val_from_nodes_tab(segmentlists_tab, 3, "startNumber");
-        if (val) {
-            rep->start_number = rep->first_seq_no = (int64_t) strtoll(val, NULL, 10);
-            av_log(s, AV_LOG_TRACE, "rep->first_seq_no = [%"PRId64"]\n", rep->first_seq_no);
-            xmlFree(val);
-        }
-
+        SET_REPRESENTATION_SEQUENCE_BASE_INFO(segmentlists_tab, 3)
         fragmenturl_node = xmlFirstElementChild(representation_segmentlist_node);
         while (fragmenturl_node) {
             ret = parse_manifest_segmenturlnode(s, rep, fragmenturl_node,
