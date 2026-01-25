@@ -132,7 +132,7 @@ static void FUNC(dequant)(int16_t *coeffs, int16_t log2_size)
     int x, y;
     int size = 1 << log2_size;
 
-    if (shift > 0) {
+    if (BIT_DEPTH <= 9 || shift > 0) {
         int offset = 1 << (shift - 1);
         for (y = 0; y < size; y++) {
             for (x = 0; x < size; x++) {
@@ -140,7 +140,7 @@ static void FUNC(dequant)(int16_t *coeffs, int16_t log2_size)
                 coeffs++;
             }
         }
-    } else if (shift < 0) {
+    } else if (BIT_DEPTH > 10 && shift < 0) {
         for (y = 0; y < size; y++) {
             for (x = 0; x < size; x++) {
                 *coeffs = *(uint16_t*)coeffs << -shift;
