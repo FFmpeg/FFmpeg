@@ -116,16 +116,11 @@ static uint32_t samples_per_packet(const AVCodecParameters *par) {
     }
 }
 
-static int caf_write_header(AVFormatContext *s)
+static int caf_write_init(struct AVFormatContext *s)
 {
-    AVIOContext *pb = s->pb;
     AVStream *const st = s->streams[0];
     AVCodecParameters *par = s->streams[0]->codecpar;
-    CAFContext *caf = s->priv_data;
-    const AVDictionaryEntry *t = NULL;
     unsigned int codec_tag = ff_codec_get_tag(ff_codec_caf_tags, par->codec_id);
-    int64_t chunk_size = 0;
-    int sample_rate = par->sample_rate;
 
     switch (par->codec_id) {
     case AV_CODEC_ID_AAC:
@@ -143,6 +138,28 @@ static int caf_write_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     }
 
+    st->priv_data = av_mallocz(sizeof(CAFStreamContext));
+    if (!st->priv_data)
+        return AVERROR(ENOMEM);
+
+    // if either block_align or frame_size are 0, we need to check that the output
+    // is seekable. Postpone reporting init as complete until caf_write_header()
+    if (!par->block_align || !par->frame_size)
+        return 1;
+
+    return 0;
+}
+
+static int caf_write_header(AVFormatContext *s)
+{
+    AVIOContext *pb = s->pb;
+    AVCodecParameters *par = s->streams[0]->codecpar;
+    CAFContext *caf = s->priv_data;
+    const AVDictionaryEntry *t = NULL;
+    unsigned int codec_tag = ff_codec_get_tag(ff_codec_caf_tags, par->codec_id);
+    int64_t chunk_size = 0;
+    int sample_rate = par->sample_rate;
+
     if (!par->block_align && !(pb->seekable & AVIO_SEEKABLE_NORMAL)) {
         av_log(s, AV_LOG_ERROR, "Muxing variable packet size not supported on non seekable output\n");
         return AVERROR_INVALIDDATA;
@@ -159,10 +176,6 @@ static int caf_write_header(AVFormatContext *s)
 
     if (par->codec_id == AV_CODEC_ID_OPUS)
         sample_rate = 48000;
-
-    st->priv_data = av_mallocz(sizeof(CAFStreamContext));
-    if (!st->priv_data)
-        return AVERROR(ENOMEM);
 
     ffio_wfourcc(pb, "caff"); //< mFileType
     avio_wb16(pb, 1);         //< mFileVersion
@@ -334,10 +347,16 @@ static int caf_write_trailer(AVFormatContext *s)
         }
     }
 
+    return 0;
+}
+
+static void caf_write_deinit(AVFormatContext *s)
+{
+    AVStream *st = s->streams[0];
+    CAFStreamContext *caf_st = st->priv_data;
+
     av_freep(&caf_st->byte_size_buffer);
     av_freep(&caf_st->frame_size_buffer);
-
-    return 0;
 }
 
 const FFOutputFormat ff_caf_muxer = {
@@ -350,8 +369,10 @@ const FFOutputFormat ff_caf_muxer = {
     .p.video_codec  = AV_CODEC_ID_NONE,
     .p.subtitle_codec = AV_CODEC_ID_NONE,
     .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .init           = caf_write_init,
     .write_header   = caf_write_header,
     .write_packet   = caf_write_packet,
     .write_trailer  = caf_write_trailer,
+    .deinit         = caf_write_deinit,
     .p.codec_tag    = ff_caf_codec_tags_list,
 };
