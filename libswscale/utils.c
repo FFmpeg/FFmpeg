@@ -388,7 +388,7 @@ static av_cold int initFilter(int16_t **outFilter, int32_t **filterPos,
     if (dstFilter)
         filter2Size += dstFilter->length - 1;
     av_assert0(filter2Size > 0);
-    filter2 = av_malloc_array(dstW, filter2Size * sizeof(*filter2));
+    filter2 = av_calloc(dstW, filter2Size * sizeof(*filter2));
     if (!filter2)
         goto nomem;
     for (i = 0; i < dstW; i++) {
@@ -557,7 +557,7 @@ static av_cold int initFilter(int16_t **outFilter, int32_t **filterPos,
 
     // Note the +1 is for the MMX scaler which reads over the end
     /* align at 16 for AltiVec (needed by hScale_altivec_real) */
-    *outFilter = av_malloc_array(dstW + 3, *outFilterSize * sizeof(**outFilter));
+    *outFilter = av_calloc(dstW + 3, *outFilterSize * sizeof(**outFilter));
     if (!*outFilter)
         goto nomem;
 
