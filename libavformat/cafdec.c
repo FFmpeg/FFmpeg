@@ -28,6 +28,7 @@
 #include <inttypes.h>
 
 #include "avformat.h"
+#include "avformat_internal.h"
 #include "avio_internal.h"
 #include "demux.h"
 #include "internal.h"
@@ -438,6 +439,9 @@ found_data:
     /* position the stream at the start of data */
     if (caf->data_size >= 0)
         avio_seek(pb, caf->data_start, SEEK_SET);
+
+    if (!ff_is_intra_only(st->codecpar->codec_id))
+        ffstream(st)->need_parsing = AVSTREAM_PARSE_HEADERS;
 
     return 0;
 }
