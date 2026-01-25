@@ -35,7 +35,8 @@ SECTION .text
 
 %if ARCH_X86_64
 INIT_XMM sse2
-cglobal cfhdenc_horiz_filter, 8, 10, 11, input, low, high, istride, lwidth, hwidth, width, y, x, temp
+cglobal cfhdenc_horiz_filter, 6, 10, 11, input, low, high, istride, lwidth, hwidth, width, y, x, temp
+    movsxdifnidn widthq, widthm
     shl  istrideq, 1
     shl   lwidthq, 1
     shl   hwidthq, 1
@@ -43,8 +44,7 @@ cglobal cfhdenc_horiz_filter, 8, 10, 11, input, low, high, istride, lwidth, hwid
     mova       m8, [pw_1]
     pcmpeqw        m9, m9       ; -1
     mova       m10,[pw_p1_n1]
-    movsxdifnidn yq, yd
-    movsxdifnidn widthq, widthd
+    movsxdifnidn   yq, ym
     neg        yq
 .looph:
     movsx          xq, word [inputq]
