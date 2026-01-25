@@ -50,7 +50,7 @@ typedef struct HEVCDSPContext {
 
     void (*add_residual[4])(uint8_t *dst, const int16_t *res, ptrdiff_t stride);
 
-    void (*dequant)(int16_t *coeffs, int16_t log2_size);
+    void (*dequant)(int16_t *coeffs /* align 32 */, int16_t log2_size);
 
     void (*transform_rdpcm)(int16_t *coeffs, int16_t log2_size, int mode);
 
