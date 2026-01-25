@@ -82,7 +82,8 @@ typedef struct SRTContext {
     int payload_size;
     int64_t rcvlatency;
     int64_t peerlatency;
-    enum SRTMode mode;
+    /* enum SRTMode, use int for AVOption */
+    int mode;
     int sndbuf;
     int rcvbuf;
     int lossmaxttl;

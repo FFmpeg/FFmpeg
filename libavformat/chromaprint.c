@@ -41,7 +41,8 @@ typedef struct ChromaprintMuxContext {
     const AVClass *class;
     int silence_threshold;
     int algorithm;
-    FingerprintFormat fp_format;
+    /* FingerprintFormat, use int for AVOption */
+    int fp_format;
 #if CPR_VERSION_INT >= AV_VERSION_INT(1, 4, 0)
     ChromaprintContext *ctx;
 #else
