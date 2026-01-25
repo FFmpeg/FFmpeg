@@ -62,7 +62,8 @@ typedef struct HapContext {
 
     GetByteContext gbc;
 
-    enum HapTextureFormat opt_tex_fmt; /* Texture type (encoder only) */
+    /* enum HapTextureFormat, use int for AVOption */
+    int opt_tex_fmt; /* Texture type (encoder only) */
     int opt_chunk_count; /* User-requested chunk count (encoder only) */
     int opt_compressor; /* User-requested compressor (encoder only) */
 

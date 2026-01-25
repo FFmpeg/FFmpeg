@@ -48,7 +48,8 @@ typedef struct HYuvEncContext {
     AVClass *class;
     AVCodecContext *avctx;
     PutBitContext pb;
-    Predictor predictor;
+    /* Predictor, use int for AVOption */
+    int predictor;
     int interlaced;
     int decorrelate;
     int bitstream_bpp;

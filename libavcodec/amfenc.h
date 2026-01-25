@@ -115,8 +115,10 @@ typedef struct AMFEncoderContext {
 
     // AV1 - specific options
 
-    enum AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE_ENUM                 align;
-    enum AMF_VIDEO_ENCODER_AV1_AQ_MODE_ENUM                        aq_mode;
+    /* enum AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE_ENUM, use int for AVOption */
+    int                 align;
+    /* enum AMF_VIDEO_ENCODER_AV1_AQ_MODE_ENUM */
+    int                 aq_mode;
 
     // Preanalysis - specific options
 

@@ -35,7 +35,8 @@ typedef struct FilterUnitsContext {
 
     const char *pass_types;
     const char *remove_types;
-    enum AVDiscard discard;
+    /* enum AVDiscard, use int for AVOption */
+    int discard;
     int discard_flags;
 
     enum {
