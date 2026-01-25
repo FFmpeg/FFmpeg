@@ -52,8 +52,8 @@ typedef struct TiltandshiftContext {
     int tilt;
 
     /* initial or final actions to perform (pad/hold a frame/black/nothing) */
-    enum PaddingOption start;
-    enum PaddingOption end;
+    int start;
+    int end;
 
     /* columns to hold or pad at the beginning or at the end (respectively) */
     int hold;

@@ -206,7 +206,8 @@ typedef struct LibplaceboContext {
     float pad_crop_ratio;
     float corner_rounding;
     char *lut_filename;
-    enum pl_lut_type lut_type;
+    /* enum pl_lut_type */
+    int lut_type;
     int force_original_aspect_ratio;
     int force_divisible_by;
     int reset_sar;

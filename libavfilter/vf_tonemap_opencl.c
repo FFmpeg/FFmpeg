@@ -57,7 +57,8 @@ typedef struct TonemapOpenCLContext {
     enum AVColorRange range, range_in, range_out;
     enum AVChromaLocation chroma_loc;
 
-    enum TonemapAlgorithm tonemap;
+    /* enum TonemapAlgorithm */
+    int                   tonemap;
     enum AVPixelFormat    format;
     double                peak;
     double                param;

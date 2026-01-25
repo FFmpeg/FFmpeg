@@ -165,7 +165,8 @@ typedef struct MIContext {
     const AVClass *class;
     AVMotionEstContext me_ctx;
     AVRational frame_rate;
-    enum MIMode mi_mode;
+    /* enum MIMode */
+    int mi_mode;
     int mc_mode;
     int me_mode;
     int me_method;

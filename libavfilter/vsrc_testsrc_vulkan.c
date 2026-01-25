@@ -51,7 +51,8 @@ typedef struct TestSrcVulkanContext {
     int w, h;
     int pw, ph;
     char *out_format_string;
-    enum AVColorRange out_range;
+    /* enum AVColorRange */
+    int out_range;
     unsigned int nb_frame;
     AVRational time_base, frame_rate;
     int64_t pts;

@@ -45,7 +45,8 @@ typedef struct FramepackContext {
     int depth;
     const AVPixFmtDescriptor *pix_desc; ///< agreed pixel format
 
-    enum AVStereo3DType format;         ///< frame pack type output
+    /* enum AVStereo3DType */
+    int format;                         ///< frame pack type output
 
     AVFrame *input_views[2];            ///< input frames
 } FramepackContext;

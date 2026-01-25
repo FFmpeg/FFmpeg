@@ -41,7 +41,8 @@ typedef struct PerlinContext {
     int octaves;
     double persistence;
     unsigned int random_seed;
-    enum FFPerlinRandomMode random_mode;
+    /* enum FFPerlinRandomMode */
+    int random_mode;
 
     double xscale, yscale, tscale;
     uint64_t pts;

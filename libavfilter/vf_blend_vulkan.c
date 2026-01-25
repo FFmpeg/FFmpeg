@@ -52,7 +52,8 @@ typedef struct BlendVulkanContext {
 
     FilterParamsVulkan params[4];
     double all_opacity;
-    enum BlendMode all_mode;
+    /* enum BlendMode */
+    int all_mode;
 } BlendVulkanContext;
 
 #define DEFINE_BLEND_MODE(MODE, EXPR) \

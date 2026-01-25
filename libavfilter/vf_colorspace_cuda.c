@@ -61,7 +61,8 @@ typedef struct CUDAColorspaceContext {
     CUfunction cu_convert[AVCOL_RANGE_NB];
 
     enum AVPixelFormat pix_fmt;
-    enum AVColorRange range;
+    /* enum AVColorRange */
+    int range;
 
     int num_planes;
 } CUDAColorspaceContext;

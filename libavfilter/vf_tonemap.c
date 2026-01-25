@@ -53,7 +53,8 @@ enum TonemapAlgorithm {
 typedef struct TonemapContext {
     const AVClass *class;
 
-    enum TonemapAlgorithm tonemap;
+    /* enum TonemapAlgorithm */
+    int tonemap;
     double param;
     double desat;
     double peak;

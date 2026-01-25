@@ -40,7 +40,8 @@ typedef struct BlendContext {
     int hsub, vsub;             ///< chroma subsampling values
     int nb_planes;
     char *all_expr;
-    enum BlendMode all_mode;
+    /* enum BlendMode */
+    int all_mode;
     double all_opacity;
 
     int depth;

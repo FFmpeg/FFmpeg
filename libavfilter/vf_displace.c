@@ -36,7 +36,8 @@ enum EdgeMode {
 typedef struct DisplaceContext {
     const AVClass *class;
     int width[4], height[4];
-    enum EdgeMode edge;
+    /* enum EdgeMode */
+    int edge;
     int nb_planes;
     int nb_components;
     int step;
