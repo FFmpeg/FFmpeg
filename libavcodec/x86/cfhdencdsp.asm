@@ -37,12 +37,13 @@ SECTION .text
 INIT_XMM sse2
 cglobal cfhdenc_horiz_filter, 6, 10, 11, input, low, high, istride, lwidth, hwidth, width, y, x, temp
     movsxdifnidn widthq, widthm
-    shl  istrideq, 1
     shl   lwidthq, 1
     shl   hwidthq, 1
     mova       m7, [pd_4]
     mova       m8, [pw_1]
     pcmpeqw        m9, m9       ; -1
+    sub      istrideq, widthq
+    shl      istrideq, 1
     mova       m10,[pw_p1_n1]
     movsxdifnidn   yq, ym
     neg        yq
@@ -136,8 +137,6 @@ cglobal cfhdenc_horiz_filter, 6, 10, 11, input, low, high, istride, lwidth, hwid
     cmp            xq, widthq
     jl .loopw
 
-    add          lowq, widthq
-    add         highq, widthq
     lea        inputq, [inputq + widthq * 2]
 
     movsx          xq, word [inputq - 4]
@@ -147,7 +146,7 @@ cglobal cfhdenc_horiz_filter, 6, 10, 11, input, low, high, istride, lwidth, hwid
     movd          xm0, tempd
     packssdw       m0, m0
     movd        tempd, m0
-    mov word [lowq-2], tempw
+    mov word [lowq+widthq-2], tempw
 
     movsx       tempq, word [inputq - 4]
     imul        tempq, 11
@@ -175,12 +174,7 @@ cglobal cfhdenc_horiz_filter, 6, 10, 11, input, low, high, istride, lwidth, hwid
     movd          xm0, tempd
     packssdw       m0, m0
     movd        tempd, m0
-    mov word [highq-2], tempw
-
-    sub        inputq, widthq
-    sub        inputq, widthq
-    sub         highq, widthq
-    sub          lowq, widthq
+    mov word [highq+widthq-2], tempw
 
     add          lowq, lwidthq
     add         highq, hwidthq
