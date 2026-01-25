@@ -31,7 +31,6 @@ pw_p11_n5: dw 11, -5, 11, -5, 11, -5, 11, -5
 pw_n11_p5: dw -11, 5, -11, 5, -11, 5, -11, 5
 pd_4:  times 4 dd  4
 pw_n4: times 8 dw -4
-cextern pw_m1
 cextern pw_1
 cextern pw_4
 
@@ -45,7 +44,7 @@ cglobal cfhdenc_horiz_filter, 8, 10, 11, input, low, high, istride, lwidth, hwid
     shl   hwidthq, 1
     mova       m7, [pd_4]
     mova       m8, [pw_1]
-    mova       m9, [pw_m1]
+    pcmpeqw    m9, m9       ; -1
     mova       m10,[pw_p1_n1]
     movsxdifnidn yq, yd
     movsxdifnidn widthq, widthd
@@ -207,7 +206,7 @@ cglobal cfhdenc_vert_filter, 8, 11, 14, input, low, high, istride, lwidth, hwidt
 
     mova       m7, [pd_4]
     mova       m8, [pw_1]
-    mova       m9, [pw_m1]
+    pcmpeqw    m9, m9      ; -1
     mova       m10,[pw_p1_n1]
     mova       m11,[pw_n1_p1]
     mova       m12,[pw_4]
