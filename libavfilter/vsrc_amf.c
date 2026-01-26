@@ -107,11 +107,10 @@ static void amf_restore_timer_precision(AMFGrabContext *ctx)
 
 static void amf_release_surface(void *opaque, uint8_t *data)
 {
-    int ref = 0;
     if(!!data){
         AMFInterface *surface = (AMFInterface*)(data);
         if (surface && surface->pVtbl)
-            ref = surface->pVtbl->Release(surface);
+            surface->pVtbl->Release(surface);
     }
 }
 
