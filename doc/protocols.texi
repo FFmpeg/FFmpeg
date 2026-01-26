@@ -169,6 +169,7 @@ Read angle 2 of playlist 4 from BluRay mounted to /mnt/bluray, start from chapte
 -playlist 4 -angle 2 -chapter 2 bluray:/mnt/bluray
 @end example
 
+@anchor{cache}
 @section cache
 
 Caching wrapper for input stream.
@@ -1569,6 +1570,57 @@ If set to any value, listen for an incoming connection. Outgoing connection is d
 @item max_streams
 Set the maximum number of streams. By default no limit is set.
 @end table
+
+@section shared
+
+Thread-safe, persistent, cross-process cache wrapper for input streams. Caches
+the input stream to a file in the specified directory. This is similar to
+@ref{cache}, but with a persistent cache on disk that may be shared between
+multiple processes or demuxers, even concurrently.
+
+The filename of the cache is obtained by hashing the input URL, so there is
+some risk of collision if the same URL is used for different content (e.g.
+as a result of extra POST data being used to select the stream ID). To avoid
+this, make sure to only use this protocol for URLs that uniquely identify
+the content; otherwise you may get a garbled mix of sources.
+
+The accepted options are:
+@table @option
+
+@item cache_dir
+Path to the directory where cache files are stored. This option is required.
+
+@item block_shift
+Shift factor (log2) of the block size used for internal reads/writes. Defaults
+to 15, i.e. 32KB blocks. If this does not match the value that was specified
+when an existing cache file was created, the previously specified value will
+be used instead.
+
+@item read_only
+If true, use the shared cache for reads but don't write any new blocks to it.
+Default is false. Note that even with this option enabled, the cache file will
+be initialized if it does not already exist.
+
+@item cache_timeout
+If set to a nonzero value, specifies the maximum time (in microseconds) to wait
+for data to become available, if another process is currently trying to fetch
+and cache the same block at the same time. If this timeout elapses, it's
+assumed that the other process may have gotten stuck or died in the meantime.
+
+If set to zero, no waiting is done and all processes will immediately race
+to try and fetch the same missing blocks themselves. Defaults to 0.
+
+@item retry_errors
+If true (the default), transient read errors from the underlying input stream
+are ignored and retried again. If false, any blocks that previously failed
+being read from will be treated as permanently inaccessible.
+
+@end table
+
+URL Syntax is
+@example
+shared:@var{URL}
+@end example
 
 @section srt
 

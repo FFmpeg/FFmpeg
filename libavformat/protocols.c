@@ -55,6 +55,7 @@ extern const URLProtocol ff_rtmpt_protocol;
 extern const URLProtocol ff_rtmpte_protocol;
 extern const URLProtocol ff_rtmpts_protocol;
 extern const URLProtocol ff_rtp_protocol;
+extern const URLProtocol ff_shared_protocol;
 extern const URLProtocol ff_sctp_protocol;
 extern const URLProtocol ff_srtp_protocol;
 extern const URLProtocol ff_subfile_protocol;
