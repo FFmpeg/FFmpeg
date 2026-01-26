@@ -962,9 +962,7 @@ static const AVFilterPad mestimate_d3d12_outputs[] = {
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
 static const AVOption mestimate_d3d12_options[] = {
-    { "mb_size", "macroblock size", OFFSET(block_size), AV_OPT_TYPE_INT, {.i64 = 16}, 8, 16, FLAGS, .unit = "mb_size" },
-    { "8",  "8x8 blocks",   0, AV_OPT_TYPE_CONST, {.i64 = 8},  0, 0, FLAGS, .unit = "mb_size" },
-    { "16", "16x16 blocks", 0, AV_OPT_TYPE_CONST, {.i64 = 16}, 0, 0, FLAGS, .unit = "mb_size" },
+    { "mb_size", "macroblock size, only 8 and 16 are supported", OFFSET(block_size), AV_OPT_TYPE_INT, {.i64 = 16}, 8, 16, FLAGS },
     { NULL }
 };
 
