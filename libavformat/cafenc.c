@@ -263,10 +263,10 @@ static int caf_write_packet(AVFormatContext *s, AVPacket *pkt)
             caf_st->frame_size_buffer = pkt_sizes;
             caf_st->frame_size_buffer[caf->packets] = pkt->duration;
         }
-
+    }
         caf->packets++;
         caf->total_duration += pkt->duration;
-    }
+
     avio_write(s->pb, pkt->data, pkt->size);
     return 0;
 }
@@ -281,13 +281,15 @@ static int caf_write_trailer(AVFormatContext *s)
 
     if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         int64_t file_size = avio_tell(pb);
-
-        avio_seek(pb, caf->data, SEEK_SET);
-        avio_wb64(pb, file_size - caf->data - 8);
-        if (!par->block_align || !caf->frame_size) {
+        int64_t packets = (!par->block_align || !caf->frame_size) ? caf->packets : 0;
             int64_t valid_frames = caf->frame_size ? caf->packets * caf->frame_size : caf->total_duration;
             unsigned remainder_frames = valid_frames > caf->total_duration
                                       ? valid_frames - caf->total_duration : 0;
+
+        avio_seek(pb, caf->data, SEEK_SET);
+        avio_wb64(pb, file_size - caf->data - 8);
+
+        if (!par->block_align || !caf->frame_size || par->initial_padding || remainder_frames) {
             int64_t size = 24;
 
             valid_frames -= par->initial_padding;
@@ -296,11 +298,11 @@ static int caf_write_trailer(AVFormatContext *s)
             avio_seek(pb, file_size, SEEK_SET);
             ffio_wfourcc(pb, "pakt");
             avio_wb64(pb, 0); // size, to be replaced
-            avio_wb64(pb, caf->packets); ///< mNumberPackets
+            avio_wb64(pb, packets); ///< mNumberPackets
             avio_wb64(pb, valid_frames); ///< mNumberValidFrames
             avio_wb32(pb, par->initial_padding); ///< mPrimingFrames
             avio_wb32(pb, remainder_frames); ///< mRemainderFrames
-            for (int i = 0; i < caf->packets; i++) {
+            for (int i = 0; i < packets; i++) {
                 if (!par->block_align) {
                     for (int j = 4; j > 0; j--) {
                         unsigned top = caf_st->byte_size_buffer[i] >> j * 7;

@@ -1,5 +1,5 @@
-2b71d78aa6c9d13a3c0dbbbebe885227 *tests/data/fate/caf-qdm2-remux.caf
-51228 tests/data/fate/caf-qdm2-remux.caf
+fa896705e19dccfef00734f1e8f614c8 *tests/data/fate/caf-qdm2-remux.caf
+51264 tests/data/fate/caf-qdm2-remux.caf
 #extradata 0:       64, 0x10d20603
 #tb 0: 1/44100
 #media_type 0: audio
