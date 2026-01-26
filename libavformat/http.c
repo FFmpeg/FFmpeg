@@ -148,6 +148,14 @@ typedef struct HTTPContext {
     int reconnect_delay_total_max;
     uint64_t initial_request_size;
     int partial_requests; /* whether or not to limit requests to initial_request_size */
+    /* Connection statistics */
+    int nb_connections;
+    int nb_requests;
+    int nb_retries;
+    int nb_reconnects;
+    int nb_redirects;
+    int sum_latency; /* divide by nb_requests */
+    int max_latency;
 } HTTPContext;
 
 #define OFFSET(x) offsetof(HTTPContext, x)
@@ -300,6 +308,7 @@ static int http_open_cnx_internal(URLContext *h, AVDictionary **options)
     ff_url_join(buf, sizeof(buf), lower_proto, NULL, hostname, port, NULL);
 
     if (!s->hd) {
+        s->nb_connections++;
         err = ffurl_open_whitelist(&s->hd, buf, AVIO_FLAG_READ_WRITE,
                                    &h->interrupt_callback, options,
                                    h->protocol_whitelist, h->protocol_blacklist, h);
@@ -430,6 +439,7 @@ redo:
             if (reconnect_delay > s->reconnect_delay_max)
                 goto fail;
             s->retry_after = 0;
+            s->nb_retries++;
         }
 
         av_log(h, AV_LOG_WARNING, "Will reconnect at %"PRIu64" in %d second(s).\n", off, reconnect_delay);
@@ -438,6 +448,7 @@ redo:
             goto fail;
         reconnect_delay_total += reconnect_delay;
         reconnect_delay = 1 + 2 * reconnect_delay;
+        s->nb_reconnects++;
         conn_attempts++;
 
         /* restore the offset (http_connect resets it) */
@@ -483,6 +494,7 @@ redo:
         av_free(s->location);
         s->location = s->new_location;
         s->new_location = NULL;
+        s->nb_redirects++;
 
         /* Restart the authentication process with the new target, which
          * might use a different auth mechanism. */
@@ -1654,9 +1666,15 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     }
 
     /* wait for header */
+    int64_t latency = av_gettime();
     err = http_read_header(h);
+    latency = av_gettime() - latency;
     if (err < 0)
         goto done;
+
+    s->nb_requests++;
+    s->sum_latency += latency;
+    s->max_latency = FFMAX(s->max_latency, latency);
 
     if (s->new_location)
         s->off = off;
@@ -2032,6 +2050,19 @@ static int http_close(URLContext *h)
     av_dict_free(&s->redirect_cache);
     av_freep(&s->new_location);
     av_freep(&s->uri);
+
+    av_log(h, AV_LOG_DEBUG, "Statistics: %d connection%s, %d request%s, %d retr%s, %d reconnection%s, %d redirect%s\n",
+           s->nb_connections, s->nb_connections == 1 ? ""  : "s",
+           s->nb_requests,    s->nb_requests    == 1 ? ""  : "s",
+           s->nb_retries,     s->nb_retries     == 1 ? "y" : "ies",
+           s->nb_reconnects,  s->nb_reconnects  == 1 ? ""  : "s",
+           s->nb_redirects,   s->nb_redirects   == 1 ? ""  : "s");
+
+    if (s->nb_requests > 0) {
+        av_log(h, AV_LOG_DEBUG, "Latency: %.2f ms avg, %.2f ms max\n",
+               1e-3 * s->sum_latency / s->nb_requests,
+               1e-3 * s->max_latency);
+    }
     return ret;
 }
 
