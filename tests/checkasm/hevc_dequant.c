@@ -48,11 +48,11 @@ static void check_dequant(HEVCDSPContext *h, int bit_depth)
         int size = block_size * block_size;
         declare_func(void, int16_t *coeffs, int16_t log2_size);
 
-        randomize_buffers(coeffs0, size);
-        memcpy(coeffs1, coeffs0, sizeof(*coeffs0) * size);
-
         if (check_func(h->dequant, "hevc_dequant_%dx%d_%d",
                        block_size, block_size, bit_depth)) {
+            randomize_buffers(coeffs0, size);
+            memcpy(coeffs1, coeffs0, sizeof(*coeffs0) * size);
+
             call_ref(coeffs0, i);
             call_new(coeffs1, i);
             if (memcmp(coeffs0, coeffs1, sizeof(*coeffs0) * size))
