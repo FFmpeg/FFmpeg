@@ -107,11 +107,10 @@ enum {
 #if !HAVE_STRERROR_R
     STRERROR_LIST(OFFSET)
 #endif
-    ERROR_LIST_SIZE
 };
 
 #define STRING(CODE, DESC) DESC "\0"
-static const char error_stringtable[ERROR_LIST_SIZE] =
+static const char error_stringtable[] =
     AVERROR_LIST(STRING, NOTHING)
 #if !HAVE_STRERROR_R
     STRERROR_LIST(STRING)
