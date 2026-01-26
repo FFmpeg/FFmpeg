@@ -240,16 +240,16 @@ static int caf_write_packet(AVFormatContext *s, AVPacket *pkt)
         unsigned alloc_size = caf->packets + 1;
 
         if (!st->codecpar->block_align) {
-        if (UINT_MAX / sizeof(*caf_st->byte_size_buffer) < alloc_size)
-            return AVERROR(ERANGE);
+            if (UINT_MAX / sizeof(*caf_st->byte_size_buffer) < alloc_size)
+                return AVERROR(ERANGE);
 
-        pkt_sizes = av_fast_realloc(caf_st->byte_size_buffer,
-                                    &caf_st->byte_size_buffer_sz,
-                                    alloc_size * sizeof(*caf_st->byte_size_buffer));
-        if (!pkt_sizes)
-            return AVERROR(ENOMEM);
-        caf_st->byte_size_buffer = pkt_sizes;
-        caf_st->byte_size_buffer[caf->packets] = pkt->size;
+            pkt_sizes = av_fast_realloc(caf_st->byte_size_buffer,
+                                        &caf_st->byte_size_buffer_sz,
+                                        alloc_size * sizeof(*caf_st->byte_size_buffer));
+            if (!pkt_sizes)
+                return AVERROR(ENOMEM);
+            caf_st->byte_size_buffer = pkt_sizes;
+            caf_st->byte_size_buffer[caf->packets] = pkt->size;
         }
         if (!caf->frame_size) {
             if (UINT_MAX / sizeof(*caf_st->frame_size_buffer) < alloc_size)
@@ -264,8 +264,8 @@ static int caf_write_packet(AVFormatContext *s, AVPacket *pkt)
             caf_st->frame_size_buffer[caf->packets] = pkt->duration;
         }
     }
-        caf->packets++;
-        caf->total_duration += pkt->duration;
+    caf->packets++;
+    caf->total_duration += pkt->duration;
 
     avio_write(s->pb, pkt->data, pkt->size);
     return 0;
@@ -282,9 +282,9 @@ static int caf_write_trailer(AVFormatContext *s)
     if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         int64_t file_size = avio_tell(pb);
         int64_t packets = (!par->block_align || !caf->frame_size) ? caf->packets : 0;
-            int64_t valid_frames = caf->frame_size ? caf->packets * caf->frame_size : caf->total_duration;
-            unsigned remainder_frames = valid_frames > caf->total_duration
-                                      ? valid_frames - caf->total_duration : 0;
+        int64_t valid_frames = caf->frame_size ? caf->packets * caf->frame_size : caf->total_duration;
+        unsigned remainder_frames = valid_frames > caf->total_duration
+                                  ? valid_frames - caf->total_duration : 0;
 
         avio_seek(pb, caf->data, SEEK_SET);
         avio_wb64(pb, file_size - caf->data - 8);
