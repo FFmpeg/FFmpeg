@@ -82,6 +82,7 @@ typedef enum SwsDither {
     SWS_DITHER_A_DITHER, /* arithmetic addition */
     SWS_DITHER_X_DITHER, /* arithmetic xor */
     SWS_DITHER_NB,       /* not part of the ABI */
+    SWS_DITHER_MAX_ENUM = 0x7FFFFFFF, /* force size to 32 bits, not a valid dither type */
 } SwsDither;
 
 typedef enum SwsAlphaBlend {
@@ -89,6 +90,7 @@ typedef enum SwsAlphaBlend {
     SWS_ALPHA_BLEND_UNIFORM,
     SWS_ALPHA_BLEND_CHECKERBOARD,
     SWS_ALPHA_BLEND_NB,  /* not part of the ABI */
+    SWS_ALPHA_BLEND_MAX_ENUM = 0x7FFFFFFF, /* force size to 32 bits, not a valid blend mode */
 } SwsAlphaBlend;
 
 typedef enum SwsFlags {
