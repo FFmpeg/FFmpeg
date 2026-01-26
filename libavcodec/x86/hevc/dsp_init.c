@@ -30,6 +30,8 @@
 #include "libavcodec/x86/hevc/dsp.h"
 #include "libavcodec/x86/h26x/h2656dsp.h"
 
+void ff_hevc_dequant_8_ssse3(int16_t *coeffs, int16_t log2_size);
+
 #define LFC_FUNC(DIR, DEPTH, OPT) \
 void ff_hevc_ ## DIR ## _loop_filter_chroma_ ## DEPTH ## _ ## OPT(uint8_t *pix, ptrdiff_t stride, const int *tc, const uint8_t *no_p, const uint8_t *no_q);
 
@@ -847,6 +849,7 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_8_ssse3;
             c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_8_ssse3;
 #endif
+            c->dequant = ff_hevc_dequant_8_ssse3;
             SAO_EDGE_INIT(8, ssse3);
         }
 #if HAVE_SSE4_EXTERNAL && ARCH_X86_64

@@ -4,6 +4,7 @@ clean::
 X86ASM-OBJS-$(CONFIG_HEVC_DECODER)      += x86/hevc/dsp_init.o      \
                                            x86/hevc/add_res.o       \
                                            x86/hevc/deblock.o       \
+                                           x86/hevc/dequant.o       \
                                            x86/hevc/idct.o          \
                                            x86/hevc/mc.o            \
                                            x86/hevc/sao.o           \
