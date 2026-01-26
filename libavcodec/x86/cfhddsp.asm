@@ -24,7 +24,6 @@
 SECTION_RODATA
 
 factor_p1_n1: dw 1, -1, 1, -1, 1, -1, 1, -1,
-factor_n1_p1: dw -1, 1, -1, 1, -1, 1, -1, 1,
 factor_p11_n4: dw 11, -4, 11, -4, 11, -4, 11, -4,
 factor_p5_p4: dw 5, 4, 5, 4, 5, 4, 5, 4,
 pd_4: times 4 dd 4
@@ -80,7 +79,6 @@ cglobal cfhd_horiz_filter, 7, 7, 8, output, x, low, y, high, temp, width, height
 
 %if ARCH_X86_64
     mova       m8, [factor_p1_n1]
-    mova       m9, [factor_n1_p1]
     mova      m10, [pw_1]
     mova      m11, [pd_4]
 %endif
@@ -144,29 +142,23 @@ cglobal cfhd_horiz_filter, 7, 7, 8, output, x, low, y, high, temp, width, height
     punpcklwd      m4, m1
     punpckhwd      m5, m1
 
-    mova           m6, m4
-    mova           m7, m5
-
 %if ARCH_X86_64
     pmaddwd        m4, m8
     pmaddwd        m5, m8
-    pmaddwd        m6, m9
-    pmaddwd        m7, m9
 
+    psubd          m6, m11, m4
+    psubd          m7, m11, m5
     paddd          m4, m11
     paddd          m5, m11
-    paddd          m6, m11
-    paddd          m7, m11
 %else
+    mova           m2, [pd_4]
     pmaddwd        m4, [factor_p1_n1]
     pmaddwd        m5, [factor_p1_n1]
-    pmaddwd        m6, [factor_n1_p1]
-    pmaddwd        m7, [factor_n1_p1]
 
-    paddd          m4, [pd_4]
-    paddd          m5, [pd_4]
-    paddd          m6, [pd_4]
-    paddd          m7, [pd_4]
+    psubd          m6, m2, m4
+    psubd          m7, m2, m5
+    paddd          m4, m2
+    paddd          m5, m2
 %endif
 
     psrad          m4, 3
@@ -313,7 +305,6 @@ cglobal cfhd_vert_filter, 8, 11, 14, output, ostride, low, lwidth, high, hwidth,
     dec   heightd
 
     mova       m8, [factor_p1_n1]
-    mova       m9, [factor_n1_p1]
     mova      m10, [pw_1]
     mova      m11, [pd_4]
     mova      m12, [factor_p11_n4]
@@ -471,29 +462,23 @@ cglobal cfhd_vert_filter, 7, 7, 8, output, x, low, y, high, pos, width, height
     punpcklwd  m4, m1
     punpckhwd  m5, m1
 
-    mova       m6, m4
-    mova       m7, m5
-
 %if ARCH_X86_64
     pmaddwd    m4, m8
     pmaddwd    m5, m8
-    pmaddwd    m6, m9
-    pmaddwd    m7, m9
 
+    psubd      m6, m11, m4
+    psubd      m7, m11, m5
     paddd      m4, m11
     paddd      m5, m11
-    paddd      m6, m11
-    paddd      m7, m11
 %else
+    mova       m2, [pd_4]
     pmaddwd    m4, [factor_p1_n1]
     pmaddwd    m5, [factor_p1_n1]
-    pmaddwd    m6, [factor_n1_p1]
-    pmaddwd    m7, [factor_n1_p1]
 
-    paddd      m4, [pd_4]
-    paddd      m5, [pd_4]
-    paddd      m6, [pd_4]
-    paddd      m7, [pd_4]
+    psubd      m6, m2, m4
+    psubd      m7, m2, m5
+    paddd      m4, m2
+    paddd      m5, m2
 %endif
 
     psrad      m4, 3
