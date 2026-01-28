@@ -40,7 +40,7 @@ static void error(const char *err)
     exit(1);
 }
 
-static int alloc_plane(uint8_t *data[AV_VIDEO_MAX_PLANES], int stride[AV_VIDEO_MAX_PLANES], int w, int h, int format, int *hshift, int *vshift)
+static int alloc_plane(uint8_t *data[AV_VIDEO_MAX_PLANES], int stride[AV_VIDEO_MAX_PLANES], int w, int h, int format, int *hshift, int *vshift, int zero_init)
 {
     size_t size[AV_VIDEO_MAX_PLANES];
     ptrdiff_t ptrdiff_stride[AV_VIDEO_MAX_PLANES];
@@ -62,7 +62,7 @@ static int alloc_plane(uint8_t *data[AV_VIDEO_MAX_PLANES], int stride[AV_VIDEO_M
 
     for(int p=0; p<AV_VIDEO_MAX_PLANES; p++) {
         if (size[p]) {
-            data[p] = av_mallocz(size[p] + 32);
+            data[p] = zero_init ? av_mallocz(size[p] + 32) : av_malloc(size[p] + 32);
             if (!data[p])
                 return -1;
         } else
@@ -165,11 +165,11 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     fprintf(stderr, "%d x %d %s -> %d x %d %s\n", srcW, srcH, desc_src->name, dstW, dstH, desc_dst->name);
 #endif
 
-    ret = alloc_plane(src, srcStride, srcW, srcH, srcFormat, &srcHShift, &srcVShift);
+    ret = alloc_plane(src, srcStride, srcW, srcH, srcFormat, &srcHShift, &srcVShift, 1);
     if (ret < 0)
         goto end;
 
-    ret = alloc_plane(dst, dstStride, dstW, dstH, dstFormat, &dstHShift, &dstVShift);
+    ret = alloc_plane(dst, dstStride, dstW, dstH, dstFormat, &dstHShift, &dstVShift, 0);
     if (ret < 0)
         goto end;
 
