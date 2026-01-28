@@ -86,6 +86,36 @@ static void mapres(unsigned *r0, unsigned *r1) {
     *r1 = 1 + (*r1 * maxb) / UINT32_MAX;
 }
 
+typedef struct FilterParams {
+    float luma_gblur, chroma_gblur;
+    float luma_sharpen, chroma_sharpen;
+    float chroma_hshift, chroma_vshift;
+} FilterParams;
+
+static void read_filter_params(GetByteContext *gbc, FilterParams *p)
+{
+    int gblur_luma     = bytestream2_get_byte(gbc);
+    int gblur_chroma   = bytestream2_get_byte(gbc);
+    int sharpen_luma   = bytestream2_get_byte(gbc);
+    int sharpen_chroma = bytestream2_get_byte(gbc);
+    int hshift_chroma  = bytestream2_get_byte(gbc);
+    int vshift_chroma  = bytestream2_get_byte(gbc);
+
+    p->luma_gblur     = (gblur_luma     - 128) * 100 / 128.0f;
+    p->chroma_gblur   = (gblur_chroma   - 128) * 100 / 128.0f;
+    p->luma_sharpen   = (sharpen_luma   - 128) * 100 / 128.0f;
+    p->chroma_sharpen = (sharpen_chroma - 128) * 100 / 128.0f;
+    p->chroma_hshift  = (hshift_chroma  - 128) * 100 / 128.0f;
+    p->chroma_vshift  = (vshift_chroma  - 128) * 100 / 128.0f;
+}
+
+static SwsFilter *get_filter(const FilterParams *p)
+{
+    return sws_getDefaultFilter(p->luma_gblur, p->chroma_gblur,
+                                p->luma_sharpen, p->chroma_sharpen,
+                                p->chroma_hshift, p->chroma_vshift, 0);
+}
+
 static void reset_cpu_flags(void)
 {
     static int default_cpu_flags = -1;
@@ -110,6 +140,10 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     uint8_t *src[AV_VIDEO_MAX_PLANES] = { 0 };
     uint8_t *dst[AV_VIDEO_MAX_PLANES] = { 0 };
     struct SwsContext *sws = NULL;
+    SwsFilter *src_filter = NULL;
+    SwsFilter *dst_filter = NULL;
+    int use_src_filter = 0, use_dst_filter = 0;
+    FilterParams src_params = { 0 }, dst_params = { 0 };
 
     reset_cpu_flags();
 
@@ -150,6 +184,13 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         flags64 = bytestream2_get_le64(&gbc);
         if (flags64 & 0x10)
             av_force_cpu_flags(0);
+
+        use_src_filter = flags64 & 0x20;
+        use_dst_filter = flags64 & 0x40;
+
+        /* read both unconditionally to keep the input layout stable */
+        read_filter_params(&gbc, &src_params);
+        read_filter_params(&gbc, &dst_params);
 
         if (av_image_check_size(srcW, srcH, srcFormat, NULL) < 0)
             srcW = srcH = 23;
@@ -198,7 +239,23 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     av_opt_set_int(sws, "dst_format", dstFormat, 0);
     av_opt_set(sws, "alphablend", "none", 0);
 
-    ret = sws_init_context(sws, NULL, NULL);
+    /*
+     * Explicitly skip re-testing NULL filters, just to trim this branches early.
+     * They will be tested anyway by the inputs that don't set the filter flags.
+     */
+    if (use_src_filter) {
+        src_filter = get_filter(&src_params);
+        if (!src_filter)
+            goto end;
+    }
+
+    if (use_dst_filter) {
+        dst_filter = get_filter(&dst_params);
+        if (!dst_filter)
+            goto end;
+    }
+
+    ret = sws_init_context(sws, src_filter, dst_filter);
     if (ret < 0)
         goto end;
 
@@ -206,6 +263,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     sws_scale(sws, (const uint8_t * const*)src, srcStride, 0, srcH, dst, dstStride);
 
 end:
+    sws_freeFilter(dst_filter);
+    sws_freeFilter(src_filter);
     sws_freeContext(sws);
 
     free_plane(src);
