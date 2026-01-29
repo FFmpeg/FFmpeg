@@ -1179,11 +1179,11 @@ int ff_default_query_formats(AVFilterContext *ctx)
     switch (f->formats_state) {
     case FF_FILTER_FORMATS_PIXFMT_LIST:
         type    = AVMEDIA_TYPE_VIDEO;
-        formats = ff_make_format_list(f->formats.pixels_list);
+        formats = ff_make_pixel_format_list(f->formats.pixels_list);
         break;
     case FF_FILTER_FORMATS_SAMPLEFMTS_LIST:
         type    = AVMEDIA_TYPE_AUDIO;
-        formats = ff_make_format_list(f->formats.samples_list);
+        formats = ff_make_sample_format_list(f->formats.samples_list);
         break;
     case FF_FILTER_FORMATS_SINGLE_PIXFMT:
         type    = AVMEDIA_TYPE_VIDEO;

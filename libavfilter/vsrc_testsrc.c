@@ -1493,7 +1493,7 @@ static int smptebars_query_formats(const AVFilterContext *ctx,
     if ((ret = ff_set_common_color_ranges2(ctx, cfg_in, cfg_out,
                                            ff_make_formats_list_singleton(AVCOL_RANGE_MPEG))))
         return ret;
-    return ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, smptebars_pix_fmts);
+    return ff_set_pixel_formats_from_list2(ctx, cfg_in, cfg_out, smptebars_pix_fmts);
 }
 
 AVFILTER_DEFINE_CLASS_EXT(palbars, "pal(75|100)bars", options);
@@ -2260,7 +2260,7 @@ static int zoneplate_query_formats(const AVFilterContext *ctx,
     if ((ret = ff_set_common_color_ranges2(ctx, cfg_in, cfg_out,
                                            ff_make_formats_list_singleton(AVCOL_RANGE_JPEG))))
         return ret;
-    return ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, zoneplate_pix_fmts);
+    return ff_set_pixel_formats_from_list2(ctx, cfg_in, cfg_out, zoneplate_pix_fmts);
 }
 
 static const AVFilterPad avfilter_vsrc_zoneplate_outputs[] = {
