@@ -482,9 +482,9 @@ static int parse_matrix_coeffs(void *logctx, uint16_t *dest, const char *str)
     return 0;
 }
 
-static int fmt_in_list(const int *formats, int format)
+static int pixfmt_in_list(const enum AVPixelFormat *formats, enum AVPixelFormat format)
 {
-    for (; *formats != -1; formats++)
+    for (; *formats != AV_PIX_FMT_NONE; formats++)
         if (*formats == format)
             return 1;
     return 0;
@@ -544,7 +544,7 @@ static enum AVPixelFormat pix_fmt_parse(OutputStream *ost, const char *name)
      * endianness by av_get_pix_fmt();
      * the following code handles the case when the native endianness is not
      * supported by the encoder, but the other one is */
-    if (fmts && !fmt_in_list(fmts, fmt)) {
+    if (fmts && !pixfmt_in_list(fmts, fmt)) {
         const char *name_canonical = av_get_pix_fmt_name(fmt);
         int len = strlen(name_canonical);
 
@@ -557,7 +557,7 @@ static enum AVPixelFormat pix_fmt_parse(OutputStream *ost, const char *name)
             snprintf(name_other, sizeof(name_other), "%s%ce",
                      name, name_canonical[len - 2] == 'l' ? 'b' : 'l');
             fmt_other = av_get_pix_fmt(name_other);
-            if (fmt_other != AV_PIX_FMT_NONE && fmt_in_list(fmts, fmt_other)) {
+            if (fmt_other != AV_PIX_FMT_NONE && pixfmt_in_list(fmts, fmt_other)) {
                 av_log(ost, AV_LOG_VERBOSE, "Mapping pixel format %s->%s\n",
                        name, name_other);
                 fmt = fmt_other;
@@ -565,7 +565,7 @@ static enum AVPixelFormat pix_fmt_parse(OutputStream *ost, const char *name)
         }
     }
 
-    if (fmts && !fmt_in_list(fmts, fmt))
+    if (fmts && !pixfmt_in_list(fmts, fmt))
         fmt = choose_pixel_fmt(ost->enc->enc_ctx, fmt);
 
     return fmt;
