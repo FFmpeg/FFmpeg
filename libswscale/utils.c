@@ -766,7 +766,7 @@ av_cold int ff_sws_fill_xyztables(SwsInternal *c)
     return 0;
 }
 
-static int handle_jpeg(enum AVPixelFormat *format)
+static int handle_jpeg(/* enum AVPixelFormat */ int *format)
 {
     switch (*format) {
     case AV_PIX_FMT_YUVJ420P:
@@ -804,7 +804,7 @@ static int handle_jpeg(enum AVPixelFormat *format)
     }
 }
 
-static int handle_0alpha(enum AVPixelFormat *format)
+static int handle_0alpha(/* enum AVPixelFormat */ int *format)
 {
     switch (*format) {
     case AV_PIX_FMT_0BGR    : *format = AV_PIX_FMT_ABGR   ; return 1;
@@ -815,7 +815,7 @@ static int handle_0alpha(enum AVPixelFormat *format)
     }
 }
 
-static int handle_xyz(enum AVPixelFormat *format)
+static int handle_xyz(/* enum AVPixelFormat */ int *format)
 {
     switch (*format) {
     case AV_PIX_FMT_XYZ12BE : *format = AV_PIX_FMT_RGB48BE; return 1;
