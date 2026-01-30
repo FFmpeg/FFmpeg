@@ -110,7 +110,7 @@ static void checkasm_check_hevc_qpel(void)
                         call_new(dstw1, src1, sizes[size] * SIZEOF_PIXEL, sizes[size], i, j, sizes[size]);
                         checkasm_check(int16_t, dstw0, MAX_PB_SIZE * sizeof(int16_t),
                                                 dstw1, MAX_PB_SIZE * sizeof(int16_t),
-                                                size[sizes], size[sizes], "dst");
+                                                sizes[size], sizes[size], "dst");
                         bench_new(dstw1, src1, sizes[size] * SIZEOF_PIXEL, sizes[size], i, j, sizes[size]);
                     }
                 }
@@ -159,7 +159,7 @@ static void checkasm_check_hevc_qpel_uni(void)
                                  sizes[size], i, j, sizes[size]);
                         checkasm_check_pixel_padded(dst0, dst0_stride,
                                                     dst1, dst1_stride,
-                                                    size[sizes], size[sizes], "dst");
+                                                    sizes[size], sizes[size], "dst");
                         bench_new(dst1, dst1_stride,
                                   src1, sizes[size] * SIZEOF_PIXEL,
                                   sizes[size], i, j, sizes[size]);
@@ -214,7 +214,7 @@ static void checkasm_check_hevc_qpel_uni_w(void)
                                              sizes[size], *denom, *wx, *ox, i, j, sizes[size]);
                                     checkasm_check_pixel_padded(dst0, dst0_stride,
                                                                 dst1, dst1_stride,
-                                                                size[sizes], size[sizes], "dst");
+                                                                sizes[size], sizes[size], "dst");
                                     bench_new(dst1, dst1_stride,
                                               src1, sizes[size] * SIZEOF_PIXEL,
                                               sizes[size], *denom, *wx, *ox, i, j, sizes[size]);
@@ -271,7 +271,7 @@ static void checkasm_check_hevc_qpel_bi(void)
                                  ref1, sizes[size], i, j, sizes[size]);
                         checkasm_check_pixel_padded(dst0, dst0_stride,
                                                     dst1, dst1_stride,
-                                                    size[sizes], size[sizes], "dst");
+                                                    sizes[size], sizes[size], "dst");
                         bench_new(dst1, dst1_stride,
                                   src1, sizes[size] * SIZEOF_PIXEL,
                                   ref1, sizes[size], i, j, sizes[size]);
@@ -330,7 +330,7 @@ static void checkasm_check_hevc_qpel_bi_w(void)
                                              ref1, sizes[size], *denom, *wx, *wx, *ox, *ox, i, j, sizes[size]);
                                     checkasm_check_pixel_padded(dst0, dst0_stride,
                                                                 dst1, dst1_stride,
-                                                                size[sizes], size[sizes], "dst");
+                                                                sizes[size], sizes[size], "dst");
                                     bench_new(dst1, dst1_stride,
                                               src1, sizes[size] * SIZEOF_PIXEL,
                                               ref1, sizes[size], *denom, *wx, *wx, *ox, *ox, i, j, sizes[size]);
@@ -383,7 +383,7 @@ static void checkasm_check_hevc_epel(void)
                         call_new(dstw1, src1, sizes[size] * SIZEOF_PIXEL, sizes[size], i, j, sizes[size]);
                         checkasm_check(int16_t, dstw0, MAX_PB_SIZE * sizeof(int16_t),
                                                 dstw1, MAX_PB_SIZE * sizeof(int16_t),
-                                                size[sizes], size[sizes], "dst");
+                                                sizes[size], sizes[size], "dst");
                         bench_new(dstw1, src1, sizes[size] * SIZEOF_PIXEL, sizes[size], i, j, sizes[size]);
                     }
                 }
@@ -432,7 +432,7 @@ static void checkasm_check_hevc_epel_uni(void)
                                  sizes[size], i, j, sizes[size]);
                         checkasm_check_pixel_padded(dst0, dst0_stride,
                                                     dst1, dst1_stride,
-                                                    size[sizes], size[sizes], "dst");
+                                                    sizes[size], sizes[size], "dst");
                         bench_new(dst1, dst1_stride,
                                   src1, sizes[size] * SIZEOF_PIXEL,
                                   sizes[size], i, j, sizes[size]);
@@ -487,7 +487,7 @@ static void checkasm_check_hevc_epel_uni_w(void)
                                              sizes[size], *denom, *wx, *ox, i, j, sizes[size]);
                                     checkasm_check_pixel_padded(dst0, dst0_stride,
                                                                 dst1, dst1_stride,
-                                                                size[sizes], size[sizes], "dst");
+                                                                sizes[size], sizes[size], "dst");
                                     bench_new(dst1, dst1_stride,
                                               src1, sizes[size] * SIZEOF_PIXEL,
                                               sizes[size], *denom, *wx, *ox, i, j, sizes[size]);
@@ -544,7 +544,7 @@ static void checkasm_check_hevc_epel_bi(void)
                                  ref1, sizes[size], i, j, sizes[size]);
                         checkasm_check_pixel_padded(dst0, dst0_stride,
                                                     dst1, dst1_stride,
-                                                    size[sizes], size[sizes], "dst");
+                                                    sizes[size], sizes[size], "dst");
                         bench_new(dst1, dst1_stride,
                                   src1, sizes[size] * SIZEOF_PIXEL,
                                   ref1, sizes[size], i, j, sizes[size]);
@@ -603,7 +603,7 @@ static void checkasm_check_hevc_epel_bi_w(void)
                                              ref1, sizes[size], *denom, *wx, *wx, *ox, *ox, i, j, sizes[size]);
                                     checkasm_check_pixel_padded(dst0, dst0_stride,
                                                                 dst1, dst1_stride,
-                                                                size[sizes], size[sizes], "dst");
+                                                                sizes[size], sizes[size], "dst");
                                     bench_new(dst1, dst1_stride,
                                               src1, sizes[size] * SIZEOF_PIXEL,
                                               ref1, sizes[size], *denom, *wx, *wx, *ox, *ox, i, j, sizes[size]);
