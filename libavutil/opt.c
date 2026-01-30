@@ -1336,7 +1336,7 @@ int av_opt_get_video_rate(void *obj, const char *name, int search_flags, AVRatio
     return av_opt_get_q(obj, name, search_flags, out_val);
 }
 
-static int get_format(void *obj, const char *name, int search_flags, int *out_fmt,
+static int get_format(void *obj, const char *name, int search_flags, void *out_fmt,
                       enum AVOptionType type, const char *desc)
 {
     void *dst, *target_obj;
@@ -1350,7 +1350,11 @@ static int get_format(void *obj, const char *name, int search_flags, int *out_fm
     }
 
     dst = ((uint8_t*)target_obj) + o->offset;
-    *out_fmt = *(int *)dst;
+    if (type == AV_OPT_TYPE_PIXEL_FMT)
+        *(enum AVPixelFormat *)out_fmt = *(enum AVPixelFormat *)dst;
+    else
+        *(enum AVSampleFormat*)out_fmt = *(enum AVSampleFormat*)dst;
+
     return 0;
 }
 
