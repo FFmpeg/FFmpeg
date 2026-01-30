@@ -35,7 +35,6 @@
 typedef struct {
     int64_t data;
     int64_t total_duration;
-    int64_t packets;
     uint32_t frame_size;
 
     uint8_t *pakt_buf;
@@ -271,7 +270,6 @@ static int caf_write_packet(AVFormatContext *s, AVPacket *pkt)
             pakt_buf = put_variable_length_num(pakt_buf, pkt->duration);
         caf->pakt_buf_size = pakt_buf - caf->pakt_buf;
     }
-    caf->packets++;
     caf->total_duration += pkt->duration;
 
     avio_write(s->pb, pkt->data, pkt->size);
@@ -287,8 +285,8 @@ static int caf_write_trailer(AVFormatContext *s)
 
     if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         int64_t file_size = avio_tell(pb);
-        int64_t packets = (!par->block_align || !caf->frame_size) ? caf->packets : 0;
-        int64_t valid_frames = caf->frame_size ? caf->packets * caf->frame_size : caf->total_duration;
+        int64_t packets = (!par->block_align || !caf->frame_size) ? st->nb_frames : 0;
+        int64_t valid_frames = caf->frame_size ? st->nb_frames * caf->frame_size : caf->total_duration;
         unsigned remainder_frames = valid_frames > caf->total_duration
                                   ? valid_frames - caf->total_duration : 0;
 
