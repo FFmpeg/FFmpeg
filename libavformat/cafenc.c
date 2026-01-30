@@ -35,14 +35,12 @@ typedef struct {
     int64_t total_duration;
     int64_t packets;
     uint32_t frame_size;
-} CAFContext;
 
-typedef struct {
     uint32_t *byte_size_buffer;
     uint32_t *frame_size_buffer;
     unsigned byte_size_buffer_sz;
     unsigned frame_size_buffer_sz;
-} CAFStreamContext;
+} CAFContext;
 
 static uint32_t codec_flags(enum AVCodecID codec_id) {
     switch (codec_id) {
@@ -118,7 +116,6 @@ static uint32_t samples_per_packet(const AVCodecParameters *par) {
 
 static int caf_write_init(struct AVFormatContext *s)
 {
-    AVStream *const st = s->streams[0];
     AVCodecParameters *par = s->streams[0]->codecpar;
     unsigned int codec_tag = ff_codec_get_tag(ff_codec_caf_tags, par->codec_id);
 
@@ -137,10 +134,6 @@ static int caf_write_init(struct AVFormatContext *s)
         av_log(s, AV_LOG_ERROR, "unsupported codec\n");
         return AVERROR_INVALIDDATA;
     }
-
-    st->priv_data = av_mallocz(sizeof(CAFStreamContext));
-    if (!st->priv_data)
-        return AVERROR(ENOMEM);
 
     // if either block_align or frame_size are 0, we need to check that the output
     // is seekable. Postpone reporting init as complete until caf_write_header()
@@ -248,33 +241,32 @@ static int caf_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVStream *const st = s->streams[0];
 
     if (!st->codecpar->block_align || !caf->frame_size) {
-        CAFStreamContext *caf_st = st->priv_data;
         void *pkt_sizes;
         unsigned alloc_size = caf->packets + 1;
 
         if (!st->codecpar->block_align) {
-            if (UINT_MAX / sizeof(*caf_st->byte_size_buffer) < alloc_size)
+            if (UINT_MAX / sizeof(*caf->byte_size_buffer) < alloc_size)
                 return AVERROR(ERANGE);
 
-            pkt_sizes = av_fast_realloc(caf_st->byte_size_buffer,
-                                        &caf_st->byte_size_buffer_sz,
-                                        alloc_size * sizeof(*caf_st->byte_size_buffer));
+            pkt_sizes = av_fast_realloc(caf->byte_size_buffer,
+                                        &caf->byte_size_buffer_sz,
+                                        alloc_size * sizeof(*caf->byte_size_buffer));
             if (!pkt_sizes)
                 return AVERROR(ENOMEM);
-            caf_st->byte_size_buffer = pkt_sizes;
-            caf_st->byte_size_buffer[caf->packets] = pkt->size;
+            caf->byte_size_buffer = pkt_sizes;
+            caf->byte_size_buffer[caf->packets] = pkt->size;
         }
         if (!caf->frame_size) {
-            if (UINT_MAX / sizeof(*caf_st->frame_size_buffer) < alloc_size)
+            if (UINT_MAX / sizeof(*caf->frame_size_buffer) < alloc_size)
                 return AVERROR(ERANGE);
 
-            pkt_sizes = av_fast_realloc(caf_st->frame_size_buffer,
-                                        &caf_st->frame_size_buffer_sz,
-                                        alloc_size * sizeof(*caf_st->frame_size_buffer));
+            pkt_sizes = av_fast_realloc(caf->frame_size_buffer,
+                                        &caf->frame_size_buffer_sz,
+                                        alloc_size * sizeof(*caf->frame_size_buffer));
             if (!pkt_sizes)
                 return AVERROR(ENOMEM);
-            caf_st->frame_size_buffer = pkt_sizes;
-            caf_st->frame_size_buffer[caf->packets] = pkt->duration;
+            caf->frame_size_buffer = pkt_sizes;
+            caf->frame_size_buffer[caf->packets] = pkt->duration;
         }
     }
     caf->packets++;
@@ -289,7 +281,6 @@ static int caf_write_trailer(AVFormatContext *s)
     CAFContext *caf = s->priv_data;
     AVIOContext *pb = s->pb;
     AVStream *st = s->streams[0];
-    CAFStreamContext *caf_st = st->priv_data;
     AVCodecParameters *par = st->codecpar;
 
     if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
@@ -318,24 +309,24 @@ static int caf_write_trailer(AVFormatContext *s)
             for (int i = 0; i < packets; i++) {
                 if (!par->block_align) {
                     for (int j = 4; j > 0; j--) {
-                        unsigned top = caf_st->byte_size_buffer[i] >> j * 7;
+                        unsigned top = caf->byte_size_buffer[i] >> j * 7;
                         if (top) {
                             avio_w8(pb, 128 | top);
                             size++;
                         }
                     }
-                    avio_w8(pb, caf_st->byte_size_buffer[i] & 127);
+                    avio_w8(pb, caf->byte_size_buffer[i] & 127);
                     size++;
                 }
                 if (!caf->frame_size) {
                     for (int j = 4; j > 0; j--) {
-                        unsigned top = caf_st->frame_size_buffer[i] >> j * 7;
+                        unsigned top = caf->frame_size_buffer[i] >> j * 7;
                         if (top) {
                             avio_w8(pb, 128 | top);
                             size++;
                         }
                     }
-                    avio_w8(pb, caf_st->frame_size_buffer[i] & 127);
+                    avio_w8(pb, caf->frame_size_buffer[i] & 127);
                     size++;
                 }
             }
@@ -352,11 +343,10 @@ static int caf_write_trailer(AVFormatContext *s)
 
 static void caf_write_deinit(AVFormatContext *s)
 {
-    AVStream *st = s->streams[0];
-    CAFStreamContext *caf_st = st->priv_data;
+    CAFContext *caf = s->priv_data;
 
-    av_freep(&caf_st->byte_size_buffer);
-    av_freep(&caf_st->frame_size_buffer);
+    av_freep(&caf->byte_size_buffer);
+    av_freep(&caf->frame_size_buffer);
 }
 
 const FFOutputFormat ff_caf_muxer = {
