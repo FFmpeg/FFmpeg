@@ -285,8 +285,8 @@ static int config_props(AVFilterLink *inlink)
 
     s->is_yuv = s->is_rgb = 0;
     s->is_planar = desc->flags & AV_PIX_FMT_FLAG_PLANAR;
-    if      (ff_fmt_is_in(inlink->format, yuv_pix_fmts)) s->is_yuv = 1;
-    else if (ff_fmt_is_in(inlink->format, rgb_pix_fmts)) s->is_rgb = 1;
+    if      (ff_pixfmt_is_in(inlink->format, yuv_pix_fmts)) s->is_yuv = 1;
+    else if (ff_pixfmt_is_in(inlink->format, rgb_pix_fmts)) s->is_rgb = 1;
 
     if (s->is_rgb) {
         ff_fill_rgba_map(rgba_map, inlink->format);

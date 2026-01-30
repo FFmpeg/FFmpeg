@@ -316,7 +316,7 @@ static int config_input_overlay(AVFilterLink *inlink)
 
     s->overlay_is_packed_rgb =
         ff_fill_rgba_map(s->overlay_rgba_map, inlink->format) >= 0;
-    s->overlay_has_alpha = ff_fmt_is_in(inlink->format, alpha_pix_fmts);
+    s->overlay_has_alpha = ff_pixfmt_is_in(inlink->format, alpha_pix_fmts);
 
     if (s->eval_mode == EVAL_MODE_INIT) {
         eval_expr(ctx);
@@ -753,7 +753,7 @@ static int config_input_main(AVFilterLink *inlink)
 
     s->main_is_packed_rgb =
         ff_fill_rgba_map(s->main_rgba_map, inlink->format) >= 0;
-    s->main_has_alpha = ff_fmt_is_in(inlink->format, alpha_pix_fmts);
+    s->main_has_alpha = ff_pixfmt_is_in(inlink->format, alpha_pix_fmts);
     return 0;
 }
 

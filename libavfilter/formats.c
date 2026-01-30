@@ -468,12 +468,10 @@ const AVFilterNegotiation *ff_filter_get_negotiation(const AVFilterLink *link)
     }
 }
 
-int ff_fmt_is_in(int fmt, const int *fmts)
+int ff_pixfmt_is_in(enum AVPixelFormat fmt, const enum AVPixelFormat *fmts)
 {
-    const int *p;
-
-    for (p = fmts; *p != -1; p++) {
-        if (fmt == *p)
+    for (; *fmts != AV_PIX_FMT_NONE; ++fmts) {
+        if (fmt == *fmts)
             return 1;
     }
     return 0;

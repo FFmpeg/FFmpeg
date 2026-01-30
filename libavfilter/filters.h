@@ -26,6 +26,7 @@
  */
 
 #include "avfilter.h"
+#include "libavutil/pixfmt.h"
 
 /**
  * Special return code when activate() did not do anything.
@@ -807,15 +808,13 @@ int ff_append_inpad_free_name (AVFilterContext *f, AVFilterPad *p);
 int ff_append_outpad_free_name(AVFilterContext *f, AVFilterPad *p);
 
 /**
- * Tell if an integer is contained in the provided -1-terminated list of integers.
- * This is useful for determining (for instance) if an AVPixelFormat is in an
- * array of supported formats.
+ * Tell if a pixel format is contained in the provided AV_PIX_FMT_NONE-terminated list.
  *
  * @param fmt provided format
- * @param fmts -1-terminated list of formats
+ * @param fmts AV_PIX_FMT_NONE-terminated list of pixel formats
  * @return 1 if present, 0 if absent
  */
-int ff_fmt_is_in(int fmt, const int *fmts);
+int ff_pixfmt_is_in(enum AVPixelFormat fmt, const enum AVPixelFormat *fmts);
 
 int ff_filter_execute(AVFilterContext *ctx, avfilter_action_func *func,
                       void *arg, int *ret, int nb_jobs);
