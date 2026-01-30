@@ -223,8 +223,10 @@ static int load_mask(uint8_t **mask, int *w, int *h,
 
     /* copy mask to a newly allocated array */
     *mask = av_malloc(*w * *h);
-    if (!*mask)
+    if (!*mask) {
         ret = AVERROR(ENOMEM);
+        goto end;
+    }
     av_image_copy_plane(*mask, *w, gray_data[0], gray_linesize[0], *w, *h);
 
 end:
