@@ -20,7 +20,6 @@
 
 #include <stdint.h>
 
-#include "libavutil/dict.h"
 #include "libavutil/frame.h"
 #include "libavutil/log.h"
 
@@ -41,7 +40,6 @@ int ff_load_image(struct AVFrame **outframe,
     AVFrame *frame = NULL;
     int ret = 0;
     AVPacket pkt;
-    AVDictionary *opt=NULL;
 
     *outframe = NULL;
 
@@ -78,8 +76,8 @@ int ff_load_image(struct AVFrame **outframe,
         goto end;
     }
 
-    av_dict_set(&opt, "thread_type", "slice", 0);
-    if ((ret = avcodec_open2(codec_ctx, codec, &opt)) < 0) {
+    codec_ctx->thread_type = FF_THREAD_SLICE;
+    if ((ret = avcodec_open2(codec_ctx, codec, NULL)) < 0) {
         av_log(log_ctx, AV_LOG_ERROR, "Failed to open codec\n");
         goto end;
     }
@@ -114,7 +112,6 @@ int ff_load_image(struct AVFrame **outframe,
 end:
     avcodec_free_context(&codec_ctx);
     avformat_close_input(&format_ctx);
-    av_dict_free(&opt);
 
     if (ret < 0)
         av_log(log_ctx, AV_LOG_ERROR, "Error loading image file '%s'\n", filename);
