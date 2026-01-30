@@ -50,6 +50,7 @@ enum IEC61937DataType {
     IEC61937_MPEG2_AAC_LSF_4096 = 0x13 | 0x20,   ///< MPEG-2 AAC ADTS quarter-rate low sampling frequency
     IEC61937_EAC3               = 0x15,          ///< E-AC-3 data
     IEC61937_TRUEHD             = 0x16,          ///< TrueHD data
+    IEC61937_MAX_ENUM           = 0xFFFF         ///< to force the underlying type to be at least 16bits
 };
 
 static const uint16_t spdif_mpeg_pkt_offset[2][3] = {
