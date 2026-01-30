@@ -311,7 +311,7 @@ static int caf_write_trailer(AVFormatContext *s)
                     for (int j = 4; j > 0; j--) {
                         unsigned top = caf->byte_size_buffer[i] >> j * 7;
                         if (top) {
-                            avio_w8(pb, 128 | top);
+                            avio_w8(pb, 128 | (uint8_t)top);
                             size++;
                         }
                     }
@@ -322,7 +322,7 @@ static int caf_write_trailer(AVFormatContext *s)
                     for (int j = 4; j > 0; j--) {
                         unsigned top = caf->frame_size_buffer[i] >> j * 7;
                         if (top) {
-                            avio_w8(pb, 128 | top);
+                            avio_w8(pb, 128 | (uint8_t)top);
                             size++;
                         }
                     }
