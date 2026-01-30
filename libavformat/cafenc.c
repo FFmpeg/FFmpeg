@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdint.h>
+
 #include "avformat.h"
 #include "caf.h"
 #include "isom.h"
@@ -36,10 +38,9 @@ typedef struct {
     int64_t packets;
     uint32_t frame_size;
 
-    uint32_t *byte_size_buffer;
-    uint32_t *frame_size_buffer;
-    unsigned byte_size_buffer_sz;
-    unsigned frame_size_buffer_sz;
+    uint8_t *pakt_buf;
+    unsigned pakt_buf_size;
+    unsigned pakt_buf_alloc_size;
 } CAFContext;
 
 static uint32_t codec_flags(enum AVCodecID codec_id) {
@@ -236,39 +237,39 @@ static int caf_write_header(AVFormatContext *s)
     return 0;
 }
 
+static uint8_t *put_variable_length_num(uint8_t *buf, uint32_t num)
+{
+    for (int j = 4; j > 0; j--) {
+        unsigned top = num >> j * 7;
+        if (top)
+            *(buf++) = top | 128;
+    }
+    *(buf++) = num & 127;
+    return buf;
+}
+
 static int caf_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     CAFContext *caf = s->priv_data;
     AVStream *const st = s->streams[0];
 
     if (!st->codecpar->block_align || !caf->frame_size) {
-        void *pkt_sizes;
-        unsigned alloc_size = caf->packets + 1;
+#if SIZE_MAX - 10 < UINT_MAX
+        if (caf->pakt_buf_size > SIZE_MAX - 10)
+            return AVERROR(ERANGE);
+#endif
+        uint8_t *pakt_buf = av_fast_realloc(caf->pakt_buf, &caf->pakt_buf_alloc_size,
+                                            caf->pakt_buf_size + (size_t)10);
+        if (!pakt_buf)
+            return AVERROR(ENOMEM);
+        caf->pakt_buf = pakt_buf;
+        pakt_buf += caf->pakt_buf_size;
 
-        if (!st->codecpar->block_align) {
-            if (UINT_MAX / sizeof(*caf->byte_size_buffer) < alloc_size)
-                return AVERROR(ERANGE);
-
-            pkt_sizes = av_fast_realloc(caf->byte_size_buffer,
-                                        &caf->byte_size_buffer_sz,
-                                        alloc_size * sizeof(*caf->byte_size_buffer));
-            if (!pkt_sizes)
-                return AVERROR(ENOMEM);
-            caf->byte_size_buffer = pkt_sizes;
-            caf->byte_size_buffer[caf->packets] = pkt->size;
-        }
-        if (!caf->frame_size) {
-            if (UINT_MAX / sizeof(*caf->frame_size_buffer) < alloc_size)
-                return AVERROR(ERANGE);
-
-            pkt_sizes = av_fast_realloc(caf->frame_size_buffer,
-                                        &caf->frame_size_buffer_sz,
-                                        alloc_size * sizeof(*caf->frame_size_buffer));
-            if (!pkt_sizes)
-                return AVERROR(ENOMEM);
-            caf->frame_size_buffer = pkt_sizes;
-            caf->frame_size_buffer[caf->packets] = pkt->duration;
-        }
+        if (!st->codecpar->block_align)
+            pakt_buf = put_variable_length_num(pakt_buf, pkt->size);
+        if (!caf->frame_size)
+            pakt_buf = put_variable_length_num(pakt_buf, pkt->duration);
+        caf->pakt_buf_size = pakt_buf - caf->pakt_buf;
     }
     caf->packets++;
     caf->total_duration += pkt->duration;
@@ -295,47 +296,17 @@ static int caf_write_trailer(AVFormatContext *s)
         avio_wb64(pb, file_size - caf->data - 8);
 
         if (!par->block_align || !caf->frame_size || par->initial_padding || remainder_frames) {
-            int64_t size = 24;
-
             valid_frames -= par->initial_padding;
             valid_frames -= remainder_frames;
 
             avio_seek(pb, file_size, SEEK_SET);
             ffio_wfourcc(pb, "pakt");
-            avio_wb64(pb, 0); // size, to be replaced
+            avio_wb64(pb, 24ULL + caf->pakt_buf_size); // size
             avio_wb64(pb, packets); ///< mNumberPackets
             avio_wb64(pb, valid_frames); ///< mNumberValidFrames
             avio_wb32(pb, par->initial_padding); ///< mPrimingFrames
             avio_wb32(pb, remainder_frames); ///< mRemainderFrames
-            for (int i = 0; i < packets; i++) {
-                if (!par->block_align) {
-                    for (int j = 4; j > 0; j--) {
-                        unsigned top = caf->byte_size_buffer[i] >> j * 7;
-                        if (top) {
-                            avio_w8(pb, 128 | (uint8_t)top);
-                            size++;
-                        }
-                    }
-                    avio_w8(pb, caf->byte_size_buffer[i] & 127);
-                    size++;
-                }
-                if (!caf->frame_size) {
-                    for (int j = 4; j > 0; j--) {
-                        unsigned top = caf->frame_size_buffer[i] >> j * 7;
-                        if (top) {
-                            avio_w8(pb, 128 | (uint8_t)top);
-                            size++;
-                        }
-                    }
-                    avio_w8(pb, caf->frame_size_buffer[i] & 127);
-                    size++;
-                }
-            }
-
-            int64_t end = avio_tell(pb);
-            avio_seek(pb, file_size + 4, SEEK_SET);
-            avio_wb64(pb, size);
-            avio_seek(pb, end, SEEK_SET);
+            avio_write(pb, caf->pakt_buf, caf->pakt_buf_size);
         }
     }
 
@@ -346,8 +317,7 @@ static void caf_write_deinit(AVFormatContext *s)
 {
     CAFContext *caf = s->priv_data;
 
-    av_freep(&caf->byte_size_buffer);
-    av_freep(&caf->frame_size_buffer);
+    av_freep(&caf->pakt_buf);
 }
 
 const FFOutputFormat ff_caf_muxer = {
