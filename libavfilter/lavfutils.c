@@ -21,9 +21,8 @@
 #include <stdint.h>
 
 #include "libavutil/dict.h"
-#include "libavutil/imgutils.h"
+#include "libavutil/frame.h"
 #include "libavutil/log.h"
-#include "libavutil/pixfmt.h"
 
 #include "libavformat/avformat.h"
 
@@ -31,8 +30,7 @@
 
 #include "lavfutils.h"
 
-int ff_load_image(uint8_t *data[4], int linesize[4],
-                  int *w, int *h, enum AVPixelFormat *pix_fmt,
+int ff_load_image(struct AVFrame **outframe,
                   const char *filename, void *log_ctx)
 {
     const AVInputFormat *iformat = NULL;
@@ -44,6 +42,8 @@ int ff_load_image(uint8_t *data[4], int linesize[4],
     int ret = 0;
     AVPacket pkt;
     AVDictionary *opt=NULL;
+
+    *outframe = NULL;
 
     iformat = av_find_input_format("image2pipe");
     if ((ret = avformat_open_input(&format_ctx, filename, iformat, NULL)) < 0) {
@@ -84,12 +84,6 @@ int ff_load_image(uint8_t *data[4], int linesize[4],
         goto end;
     }
 
-    if (!(frame = av_frame_alloc()) ) {
-        av_log(log_ctx, AV_LOG_ERROR, "Failed to alloc frame\n");
-        ret = AVERROR(ENOMEM);
-        goto end;
-    }
-
     ret = av_read_frame(format_ctx, &pkt);
     if (ret < 0) {
         av_log(log_ctx, AV_LOG_ERROR, "Failed to read frame from file\n");
@@ -103,27 +97,23 @@ int ff_load_image(uint8_t *data[4], int linesize[4],
         goto end;
     }
 
-    ret = avcodec_receive_frame(codec_ctx, frame);
-    if (ret < 0) {
-        av_log(log_ctx, AV_LOG_ERROR, "Failed to decode image from file\n");
+    if (!(frame = av_frame_alloc()) ) {
+        av_log(log_ctx, AV_LOG_ERROR, "Failed to alloc frame\n");
+        ret = AVERROR(ENOMEM);
         goto end;
     }
 
-    *w       = frame->width;
-    *h       = frame->height;
-    *pix_fmt = frame->format;
-
-    if ((ret = av_image_alloc(data, linesize, *w, *h, *pix_fmt, 16)) < 0)
+    ret = avcodec_receive_frame(codec_ctx, frame);
+    if (ret < 0) {
+        av_frame_free(&frame);
+        av_log(log_ctx, AV_LOG_ERROR, "Failed to decode image from file\n");
         goto end;
-    ret = 0;
-
-    av_image_copy2(data, linesize, frame->data, frame->linesize,
-                   *pix_fmt, *w, *h);
+    }
+    *outframe = frame;
 
 end:
     avcodec_free_context(&codec_ctx);
     avformat_close_input(&format_ctx);
-    av_frame_free(&frame);
     av_dict_free(&opt);
 
     if (ret < 0)

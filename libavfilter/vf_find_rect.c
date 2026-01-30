@@ -22,7 +22,6 @@
  * @todo switch to dualinput
  */
 
-#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 
 #include "filters.h"
@@ -250,8 +249,6 @@ static av_cold void uninit(AVFilterContext *ctx)
         av_frame_free(&foc->haystack_frame[i]);
     }
 
-    if (foc->obj_frame)
-        av_freep(&foc->obj_frame->data[0]);
     av_frame_free(&foc->obj_frame);
 }
 
@@ -265,13 +262,8 @@ static av_cold int init(AVFilterContext *ctx)
         return AVERROR(EINVAL);
     }
 
-    foc->obj_frame = av_frame_alloc();
-    if (!foc->obj_frame)
-        return AVERROR(ENOMEM);
-
-    if ((ret = ff_load_image(foc->obj_frame->data, foc->obj_frame->linesize,
-                             &foc->obj_frame->width, &foc->obj_frame->height,
-                             &foc->obj_frame->format, foc->obj_filename, ctx)) < 0)
+    ret = ff_load_image(&foc->obj_frame, foc->obj_filename, ctx);
+    if (ret < 0)
         return ret;
 
     if (foc->obj_frame->format != AV_PIX_FMT_GRAY8) {

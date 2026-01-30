@@ -24,21 +24,18 @@
 #ifndef AVFILTER_LAVFUTILS_H
 #define AVFILTER_LAVFUTILS_H
 
-#include <stdint.h>
-#include "libavutil/pixfmt.h"
+struct AVFrame;
 
 /**
- * Load image from filename and put the resulting image in data.
+ * Load image from filename and put the resulting image in an AVFrame.
  *
- * @param w pointer to the width of the loaded image
- * @param h pointer to the height of the loaded image
- * @param pix_fmt pointer to the pixel format of the loaded image
+ * @param outframe pointer to a pointer to an AVFrame; *outframe will
+ *                 point to a new allocated AVFrame on success
  * @param filename the name of the image file to load
  * @param log_ctx log context
  * @return >= 0 in case of success, a negative error code otherwise.
  */
-int ff_load_image(uint8_t *data[4], int linesize[4],
-                  int *w, int *h, enum AVPixelFormat *pix_fmt,
+int ff_load_image(struct AVFrame **outframe,
                   const char *filename, void *log_ctx);
 
 #endif  /* AVFILTER_LAVFUTILS_H */
