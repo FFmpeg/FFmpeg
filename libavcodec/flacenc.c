@@ -57,7 +57,7 @@ enum CodingMode {
 typedef struct CompressionOptions {
     int compression_level;
     int block_time_ms;
-    enum FFLPCType lpc_type;
+    int /* enum FFLPCType */ lpc_type;
     int lpc_passes;
     int lpc_coeff_precision;
     int min_prediction_order;
