@@ -949,7 +949,7 @@ ost_bind_filter(const Muxer *mux, MuxStream *ms, OutputFilter *ofilter,
         if (!keep_pix_fmt) {
             ret = avcodec_get_supported_config(enc_ctx, NULL,
                                                AV_CODEC_CONFIG_PIX_FORMAT, 0,
-                                               (const void **) &opts.formats, NULL);
+                                               (const void **) &opts.pix_fmts, NULL);
             if (ret < 0)
                 return ret;
         }
@@ -978,7 +978,7 @@ ost_bind_filter(const Muxer *mux, MuxStream *ms, OutputFilter *ofilter,
     } else {
         ret = avcodec_get_supported_config(enc_ctx, NULL,
                                            AV_CODEC_CONFIG_SAMPLE_FORMAT, 0,
-                                           (const void **) &opts.formats, NULL);
+                                           (const void **) &opts.sample_fmts, NULL);
         if (ret < 0)
             return ret;
         ret = avcodec_get_supported_config(enc_ctx, NULL,

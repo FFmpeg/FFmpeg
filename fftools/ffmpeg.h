@@ -347,7 +347,10 @@ typedef struct OutputFilterOptions {
     int                 sample_rate;
     AVChannelLayout     ch_layout;
 
-    const int                *formats;
+    union {
+        const enum AVPixelFormat *pix_fmts;
+        const enum AVSampleFormat *sample_fmts;
+    };
     const int                *sample_rates;
     const AVChannelLayout    *ch_layouts;
     const AVRational         *frame_rates;
