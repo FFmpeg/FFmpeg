@@ -1879,6 +1879,7 @@ int ifile_open(const OptionsContext *o, const char *filename, Scheduler *sch)
     ic = avformat_alloc_context();
     if (!ic)
         return AVERROR(ENOMEM);
+    ic->name = av_strdup(d->log_name);
     if (o->audio_sample_rate.nb_opt) {
         av_dict_set_int(&o->g->format_opts, "sample_rate", o->audio_sample_rate.opt[o->audio_sample_rate.nb_opt - 1].u.i, 0);
     }
@@ -1967,6 +1968,8 @@ int ifile_open(const OptionsContext *o, const char *filename, Scheduler *sch)
 
     av_strlcat(d->log_name, "/",               sizeof(d->log_name));
     av_strlcat(d->log_name, ic->iformat->name, sizeof(d->log_name));
+    av_freep(&ic->name);
+    ic->name = av_strdup(d->log_name);
 
     if (scan_all_pmts_set)
         av_dict_set(&o->g->format_opts, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE);
