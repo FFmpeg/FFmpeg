@@ -228,12 +228,26 @@ static int read_kuki_chunk(AVFormatContext *s, int64_t size)
         if (!last)
             av_log(s, AV_LOG_WARNING, "non-STREAMINFO FLACMetadataBlock(s) ignored\n");
     } else if (st->codecpar->codec_id == AV_CODEC_ID_OPUS) {
-        // The data layout for Opus is currently unknown, so we do not export
-        // extradata at all. Multichannel streams are not supported.
+        // The data layout for Opus is currently unknown, so we generate
+        // extradata using known sane values. Multichannel streams are not supported.
         if (st->codecpar->ch_layout.nb_channels > 2) {
             avpriv_request_sample(s, "multichannel Opus in CAF");
             return AVERROR_PATCHWELCOME;
         }
+
+        ret = ff_alloc_extradata(st->codecpar, 19);
+        if (ret < 0)
+            return ret;
+
+        AV_WB32A(st->codecpar->extradata, MKBETAG('O','p','u','s'));
+        AV_WB32A(st->codecpar->extradata + 4, MKBETAG('H','e','a','d'));
+        AV_WB8(st->codecpar->extradata + 8, 1); /* OpusHead version */
+        AV_WB8(st->codecpar->extradata + 9, st->codecpar->ch_layout.nb_channels);
+        AV_WL16A(st->codecpar->extradata + 10, st->codecpar->initial_padding);
+        AV_WL32A(st->codecpar->extradata + 12, st->codecpar->sample_rate);
+        AV_WL16A(st->codecpar->extradata + 16, 0);
+        AV_WB8(st->codecpar->extradata + 18, 0);
+
         avio_skip(pb, size);
     } else if ((ret = ff_get_extradata(s, st->codecpar, pb, size)) < 0) {
         return ret;
@@ -267,6 +281,9 @@ static int read_pakt_chunk(AVFormatContext *s, int64_t size)
     st->codecpar->initial_padding = priming;
     st->nb_frames += priming;
     st->nb_frames += caf->remainder;
+
+    if (st->codecpar->codec_id == AV_CODEC_ID_OPUS && st->codecpar->extradata_size)
+        AV_WL16A(st->codecpar->extradata + 10, st->codecpar->initial_padding);
 
     if (caf->bytes_per_packet > 0 && caf->frames_per_packet > 0) {
         if (!num_packets) {
