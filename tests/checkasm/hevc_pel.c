@@ -83,7 +83,7 @@ static void checkasm_check_hevc_qpel(void)
     LOCAL_ALIGNED_32(uint8_t, dst1, [BUF_SIZE]);
 
     HEVCDSPContext h;
-    int size, bit_depth, i, j;
+    int idx, bit_depth, i, j;
     declare_func(void, int16_t *dst, const uint8_t *src, ptrdiff_t srcstride,
                  int height, intptr_t mx, intptr_t my, int width);
 
@@ -92,7 +92,7 @@ static void checkasm_check_hevc_qpel(void)
 
         for (i = 0; i < 2; i++) {
             for (j = 0; j < 2; j++) {
-                for (size = 1; size < 10; size++) {
+                for (idx = 1; idx < FF_ARRAY_ELEMS(sizes); idx++) {
                     const char *type;
                     switch ((j << 1) | i) {
                     case 0: type = "pel_pixels"; break; // 0 0
@@ -101,17 +101,17 @@ static void checkasm_check_hevc_qpel(void)
                     case 3: type = "qpel_hv"; break; // 1 1
                     }
 
-                    if (check_func(h.put_hevc_qpel[size][j][i],
-                                   "put_hevc_%s%d_%d", type, sizes[size], bit_depth)) {
+                    if (check_func(h.put_hevc_qpel[idx][j][i],
+                                   "put_hevc_%s%d_%d", type, sizes[idx], bit_depth)) {
                         int16_t *dstw0 = (int16_t *) dst0, *dstw1 = (int16_t *) dst1;
                         randomize_buffers();
                         randomize_buffers_dst();
-                        call_ref(dstw0, src0, sizes[size] * SIZEOF_PIXEL, sizes[size], i, j, sizes[size]);
-                        call_new(dstw1, src1, sizes[size] * SIZEOF_PIXEL, sizes[size], i, j, sizes[size]);
+                        call_ref(dstw0, src0, sizes[idx] * SIZEOF_PIXEL, sizes[idx], i, j, sizes[idx]);
+                        call_new(dstw1, src1, sizes[idx] * SIZEOF_PIXEL, sizes[idx], i, j, sizes[idx]);
                         checkasm_check(int16_t, dstw0, MAX_PB_SIZE * sizeof(int16_t),
                                                 dstw1, MAX_PB_SIZE * sizeof(int16_t),
-                                                sizes[size], sizes[size], "dst");
-                        bench_new(dstw1, src1, sizes[size] * SIZEOF_PIXEL, sizes[size], i, j, sizes[size]);
+                                                sizes[idx], sizes[idx], "dst");
+                        bench_new(dstw1, src1, sizes[idx] * SIZEOF_PIXEL, sizes[idx], i, j, sizes[idx]);
                     }
                 }
             }
@@ -128,7 +128,7 @@ static void checkasm_check_hevc_qpel_uni(void)
     PIXEL_RECT(dst1, 64, 64);
 
     HEVCDSPContext h;
-    int size, bit_depth, i, j;
+    int idx, bit_depth, i, j;
     declare_func(void, uint8_t *dst, ptrdiff_t dststride, const uint8_t *src, ptrdiff_t srcstride,
                  int height, intptr_t mx, intptr_t my, int width);
 
@@ -137,7 +137,7 @@ static void checkasm_check_hevc_qpel_uni(void)
 
         for (i = 0; i < 2; i++) {
             for (j = 0; j < 2; j++) {
-                for (size = 1; size < 10; size++) {
+                for (idx = 1; idx < FF_ARRAY_ELEMS(sizes); idx++) {
                     const char *type;
                     switch ((j << 1) | i) {
                     case 0: type = "pel_uni_pixels"; break; // 0 0
@@ -146,23 +146,23 @@ static void checkasm_check_hevc_qpel_uni(void)
                     case 3: type = "qpel_uni_hv"; break; // 1 1
                     }
 
-                    if (check_func(h.put_hevc_qpel_uni[size][j][i],
-                                   "put_hevc_%s%d_%d", type, sizes[size], bit_depth)) {
+                    if (check_func(h.put_hevc_qpel_uni[idx][j][i],
+                                   "put_hevc_%s%d_%d", type, sizes[idx], bit_depth)) {
                         randomize_buffers();
                         CLEAR_PIXEL_RECT(dst0);
                         CLEAR_PIXEL_RECT(dst1);
                         call_ref(dst0, dst0_stride,
-                                 src0, sizes[size] * SIZEOF_PIXEL,
-                                 sizes[size], i, j, sizes[size]);
+                                 src0, sizes[idx] * SIZEOF_PIXEL,
+                                 sizes[idx], i, j, sizes[idx]);
                         call_new(dst1, dst1_stride,
-                                 src1, sizes[size] * SIZEOF_PIXEL,
-                                 sizes[size], i, j, sizes[size]);
+                                 src1, sizes[idx] * SIZEOF_PIXEL,
+                                 sizes[idx], i, j, sizes[idx]);
                         checkasm_check_pixel_padded(dst0, dst0_stride,
                                                     dst1, dst1_stride,
-                                                    sizes[size], sizes[size], "dst");
+                                                    sizes[idx], sizes[idx], "dst");
                         bench_new(dst1, dst1_stride,
-                                  src1, sizes[size] * SIZEOF_PIXEL,
-                                  sizes[size], i, j, sizes[size]);
+                                  src1, sizes[idx] * SIZEOF_PIXEL,
+                                  sizes[idx], i, j, sizes[idx]);
                     }
                 }
             }
@@ -179,7 +179,7 @@ static void checkasm_check_hevc_qpel_uni_w(void)
     PIXEL_RECT(dst1, 64, 64);
 
     HEVCDSPContext h;
-    int size, bit_depth, i, j;
+    int idx, bit_depth, i, j;
     const int *denom, *wx, *ox;
     declare_func(void, uint8_t *dst, ptrdiff_t dststride, const uint8_t *src, ptrdiff_t srcstride,
                  int height, int denom, int wx, int ox, intptr_t mx, intptr_t my, int width);
@@ -189,7 +189,7 @@ static void checkasm_check_hevc_qpel_uni_w(void)
 
         for (i = 0; i < 2; i++) {
             for (j = 0; j < 2; j++) {
-                for (size = 1; size < 10; size++) {
+                for (idx = 1; idx < FF_ARRAY_ELEMS(sizes); idx++) {
                     const char *type;
                     switch ((j << 1) | i) {
                     case 0: type = "pel_uni_w_pixels"; break; // 0 0
@@ -198,8 +198,8 @@ static void checkasm_check_hevc_qpel_uni_w(void)
                     case 3: type = "qpel_uni_w_hv"; break; // 1 1
                     }
 
-                    if (check_func(h.put_hevc_qpel_uni_w[size][j][i],
-                                   "put_hevc_%s%d_%d", type, sizes[size], bit_depth)) {
+                    if (check_func(h.put_hevc_qpel_uni_w[idx][j][i],
+                                   "put_hevc_%s%d_%d", type, sizes[idx], bit_depth)) {
                         for (denom = denoms; *denom >= 0; denom++) {
                             for (wx = weights; *wx >= 0; wx++) {
                                 for (ox = offsets; *ox >= 0; ox++) {
@@ -207,17 +207,17 @@ static void checkasm_check_hevc_qpel_uni_w(void)
                                     CLEAR_PIXEL_RECT(dst0);
                                     CLEAR_PIXEL_RECT(dst1);
                                     call_ref(dst0, dst0_stride,
-                                             src0, sizes[size] * SIZEOF_PIXEL,
-                                             sizes[size], *denom, *wx, *ox, i, j, sizes[size]);
+                                             src0, sizes[idx] * SIZEOF_PIXEL,
+                                             sizes[idx], *denom, *wx, *ox, i, j, sizes[idx]);
                                     call_new(dst1, dst1_stride,
-                                             src1, sizes[size] * SIZEOF_PIXEL,
-                                             sizes[size], *denom, *wx, *ox, i, j, sizes[size]);
+                                             src1, sizes[idx] * SIZEOF_PIXEL,
+                                             sizes[idx], *denom, *wx, *ox, i, j, sizes[idx]);
                                     checkasm_check_pixel_padded(dst0, dst0_stride,
                                                                 dst1, dst1_stride,
-                                                                sizes[size], sizes[size], "dst");
+                                                                sizes[idx], sizes[idx], "dst");
                                     bench_new(dst1, dst1_stride,
-                                              src1, sizes[size] * SIZEOF_PIXEL,
-                                              sizes[size], *denom, *wx, *ox, i, j, sizes[size]);
+                                              src1, sizes[idx] * SIZEOF_PIXEL,
+                                              sizes[idx], *denom, *wx, *ox, i, j, sizes[idx]);
                                 }
                             }
                         }
@@ -239,7 +239,7 @@ static void checkasm_check_hevc_qpel_bi(void)
     LOCAL_ALIGNED_32(int16_t, ref1, [BUF_SIZE]);
 
     HEVCDSPContext h;
-    int size, bit_depth, i, j;
+    int idx, bit_depth, i, j;
     declare_func(void, uint8_t *dst, ptrdiff_t dststride, const uint8_t *src, ptrdiff_t srcstride,
                  const int16_t *src2,
                  int height, intptr_t mx, intptr_t my, int width);
@@ -249,7 +249,7 @@ static void checkasm_check_hevc_qpel_bi(void)
 
         for (i = 0; i < 2; i++) {
             for (j = 0; j < 2; j++) {
-                for (size = 1; size < 10; size++) {
+                for (idx = 1; idx < FF_ARRAY_ELEMS(sizes); idx++) {
                     const char *type;
                     switch ((j << 1) | i) {
                     case 0: type = "pel_bi_pixels"; break; // 0 0
@@ -258,23 +258,23 @@ static void checkasm_check_hevc_qpel_bi(void)
                     case 3: type = "qpel_bi_hv"; break; // 1 1
                     }
 
-                    if (check_func(h.put_hevc_qpel_bi[size][j][i],
-                                   "put_hevc_%s%d_%d", type, sizes[size], bit_depth)) {
+                    if (check_func(h.put_hevc_qpel_bi[idx][j][i],
+                                   "put_hevc_%s%d_%d", type, sizes[idx], bit_depth)) {
                         randomize_buffers_ref();
                         CLEAR_PIXEL_RECT(dst0);
                         CLEAR_PIXEL_RECT(dst1);
                         call_ref(dst0, dst0_stride,
-                                 src0, sizes[size] * SIZEOF_PIXEL,
-                                 ref0, sizes[size], i, j, sizes[size]);
+                                 src0, sizes[idx] * SIZEOF_PIXEL,
+                                 ref0, sizes[idx], i, j, sizes[idx]);
                         call_new(dst1, dst1_stride,
-                                 src1, sizes[size] * SIZEOF_PIXEL,
-                                 ref1, sizes[size], i, j, sizes[size]);
+                                 src1, sizes[idx] * SIZEOF_PIXEL,
+                                 ref1, sizes[idx], i, j, sizes[idx]);
                         checkasm_check_pixel_padded(dst0, dst0_stride,
                                                     dst1, dst1_stride,
-                                                    sizes[size], sizes[size], "dst");
+                                                    sizes[idx], sizes[idx], "dst");
                         bench_new(dst1, dst1_stride,
-                                  src1, sizes[size] * SIZEOF_PIXEL,
-                                  ref1, sizes[size], i, j, sizes[size]);
+                                  src1, sizes[idx] * SIZEOF_PIXEL,
+                                  ref1, sizes[idx], i, j, sizes[idx]);
                     }
                 }
             }
@@ -293,7 +293,7 @@ static void checkasm_check_hevc_qpel_bi_w(void)
     LOCAL_ALIGNED_32(int16_t, ref1, [BUF_SIZE]);
 
     HEVCDSPContext h;
-    int size, bit_depth, i, j;
+    int idx, bit_depth, i, j;
     const int *denom, *wx, *ox;
     declare_func(void, uint8_t *dst, ptrdiff_t dststride, const uint8_t *src, ptrdiff_t srcstride,
                  const int16_t *src2,
@@ -305,7 +305,7 @@ static void checkasm_check_hevc_qpel_bi_w(void)
 
         for (i = 0; i < 2; i++) {
             for (j = 0; j < 2; j++) {
-                for (size = 1; size < 10; size++) {
+                for (idx = 1; idx < FF_ARRAY_ELEMS(sizes); idx++) {
                     const char *type;
                     switch ((j << 1) | i) {
                     case 0: type = "pel_bi_w_pixels"; break; // 0 0
@@ -314,8 +314,8 @@ static void checkasm_check_hevc_qpel_bi_w(void)
                     case 3: type = "qpel_bi_w_hv"; break; // 1 1
                     }
 
-                    if (check_func(h.put_hevc_qpel_bi_w[size][j][i],
-                                   "put_hevc_%s%d_%d", type, sizes[size], bit_depth)) {
+                    if (check_func(h.put_hevc_qpel_bi_w[idx][j][i],
+                                   "put_hevc_%s%d_%d", type, sizes[idx], bit_depth)) {
                         for (denom = denoms; *denom >= 0; denom++) {
                             for (wx = weights; *wx >= 0; wx++) {
                                 for (ox = offsets; *ox >= 0; ox++) {
@@ -323,17 +323,17 @@ static void checkasm_check_hevc_qpel_bi_w(void)
                                     CLEAR_PIXEL_RECT(dst0);
                                     CLEAR_PIXEL_RECT(dst1);
                                     call_ref(dst0, dst0_stride,
-                                             src0, sizes[size] * SIZEOF_PIXEL,
-                                             ref0, sizes[size], *denom, *wx, *wx, *ox, *ox, i, j, sizes[size]);
+                                             src0, sizes[idx] * SIZEOF_PIXEL,
+                                             ref0, sizes[idx], *denom, *wx, *wx, *ox, *ox, i, j, sizes[idx]);
                                     call_new(dst1, dst1_stride,
-                                             src1, sizes[size] * SIZEOF_PIXEL,
-                                             ref1, sizes[size], *denom, *wx, *wx, *ox, *ox, i, j, sizes[size]);
+                                             src1, sizes[idx] * SIZEOF_PIXEL,
+                                             ref1, sizes[idx], *denom, *wx, *wx, *ox, *ox, i, j, sizes[idx]);
                                     checkasm_check_pixel_padded(dst0, dst0_stride,
                                                                 dst1, dst1_stride,
-                                                                sizes[size], sizes[size], "dst");
+                                                                sizes[idx], sizes[idx], "dst");
                                     bench_new(dst1, dst1_stride,
-                                              src1, sizes[size] * SIZEOF_PIXEL,
-                                              ref1, sizes[size], *denom, *wx, *wx, *ox, *ox, i, j, sizes[size]);
+                                              src1, sizes[idx] * SIZEOF_PIXEL,
+                                              ref1, sizes[idx], *denom, *wx, *wx, *ox, *ox, i, j, sizes[idx]);
                                 }
                             }
                         }
@@ -356,7 +356,7 @@ static void checkasm_check_hevc_epel(void)
     LOCAL_ALIGNED_32(uint8_t, dst1, [BUF_SIZE]);
 
     HEVCDSPContext h;
-    int size, bit_depth, i, j;
+    int idx, bit_depth, i, j;
     declare_func(void, int16_t *dst, const uint8_t *src, ptrdiff_t srcstride,
                  int height, intptr_t mx, intptr_t my, int width);
 
@@ -365,7 +365,7 @@ static void checkasm_check_hevc_epel(void)
 
         for (i = 0; i < 2; i++) {
             for (j = 0; j < 2; j++) {
-                for (size = 1; size < 10; size++) {
+                for (idx = 1; idx < FF_ARRAY_ELEMS(sizes); idx++) {
                     const char *type;
                     switch ((j << 1) | i) {
                     case 0: type = "pel_pixels"; break; // 0 0
@@ -374,17 +374,17 @@ static void checkasm_check_hevc_epel(void)
                     case 3: type = "epel_hv"; break; // 1 1
                     }
 
-                    if (check_func(h.put_hevc_epel[size][j][i],
-                                   "put_hevc_%s%d_%d", type, sizes[size], bit_depth)) {
+                    if (check_func(h.put_hevc_epel[idx][j][i],
+                                   "put_hevc_%s%d_%d", type, sizes[idx], bit_depth)) {
                         int16_t *dstw0 = (int16_t *) dst0, *dstw1 = (int16_t *) dst1;
                         randomize_buffers();
                         randomize_buffers_dst();
-                        call_ref(dstw0, src0, sizes[size] * SIZEOF_PIXEL, sizes[size], i, j, sizes[size]);
-                        call_new(dstw1, src1, sizes[size] * SIZEOF_PIXEL, sizes[size], i, j, sizes[size]);
+                        call_ref(dstw0, src0, sizes[idx] * SIZEOF_PIXEL, sizes[idx], i, j, sizes[idx]);
+                        call_new(dstw1, src1, sizes[idx] * SIZEOF_PIXEL, sizes[idx], i, j, sizes[idx]);
                         checkasm_check(int16_t, dstw0, MAX_PB_SIZE * sizeof(int16_t),
                                                 dstw1, MAX_PB_SIZE * sizeof(int16_t),
-                                                sizes[size], sizes[size], "dst");
-                        bench_new(dstw1, src1, sizes[size] * SIZEOF_PIXEL, sizes[size], i, j, sizes[size]);
+                                                sizes[idx], sizes[idx], "dst");
+                        bench_new(dstw1, src1, sizes[idx] * SIZEOF_PIXEL, sizes[idx], i, j, sizes[idx]);
                     }
                 }
             }
@@ -401,7 +401,7 @@ static void checkasm_check_hevc_epel_uni(void)
     PIXEL_RECT(dst1, 64, 64);
 
     HEVCDSPContext h;
-    int size, bit_depth, i, j;
+    int idx, bit_depth, i, j;
     declare_func(void, uint8_t *dst, ptrdiff_t dststride, const uint8_t *src, ptrdiff_t srcstride,
                  int height, intptr_t mx, intptr_t my, int width);
 
@@ -410,7 +410,7 @@ static void checkasm_check_hevc_epel_uni(void)
 
         for (i = 0; i < 2; i++) {
             for (j = 0; j < 2; j++) {
-                for (size = 1; size < 10; size++) {
+                for (idx = 1; idx < FF_ARRAY_ELEMS(sizes); idx++) {
                     const char *type;
                     switch ((j << 1) | i) {
                     case 0: type = "pel_uni_pixels"; break; // 0 0
@@ -419,23 +419,23 @@ static void checkasm_check_hevc_epel_uni(void)
                     case 3: type = "epel_uni_hv"; break; // 1 1
                     }
 
-                    if (check_func(h.put_hevc_epel_uni[size][j][i],
-                                   "put_hevc_%s%d_%d", type, sizes[size], bit_depth)) {
+                    if (check_func(h.put_hevc_epel_uni[idx][j][i],
+                                   "put_hevc_%s%d_%d", type, sizes[idx], bit_depth)) {
                         randomize_buffers();
                         CLEAR_PIXEL_RECT(dst0);
                         CLEAR_PIXEL_RECT(dst1);
                         call_ref(dst0, dst0_stride,
-                                 src0, sizes[size] * SIZEOF_PIXEL,
-                                 sizes[size], i, j, sizes[size]);
+                                 src0, sizes[idx] * SIZEOF_PIXEL,
+                                 sizes[idx], i, j, sizes[idx]);
                         call_new(dst1, dst1_stride,
-                                 src1, sizes[size] * SIZEOF_PIXEL,
-                                 sizes[size], i, j, sizes[size]);
+                                 src1, sizes[idx] * SIZEOF_PIXEL,
+                                 sizes[idx], i, j, sizes[idx]);
                         checkasm_check_pixel_padded(dst0, dst0_stride,
                                                     dst1, dst1_stride,
-                                                    sizes[size], sizes[size], "dst");
+                                                    sizes[idx], sizes[idx], "dst");
                         bench_new(dst1, dst1_stride,
-                                  src1, sizes[size] * SIZEOF_PIXEL,
-                                  sizes[size], i, j, sizes[size]);
+                                  src1, sizes[idx] * SIZEOF_PIXEL,
+                                  sizes[idx], i, j, sizes[idx]);
                     }
                 }
             }
@@ -452,7 +452,7 @@ static void checkasm_check_hevc_epel_uni_w(void)
     PIXEL_RECT(dst1, 64, 64);
 
     HEVCDSPContext h;
-    int size, bit_depth, i, j;
+    int idx, bit_depth, i, j;
     const int *denom, *wx, *ox;
     declare_func(void, uint8_t *dst, ptrdiff_t dststride, const uint8_t *src, ptrdiff_t srcstride,
                  int height, int denom, int wx, int ox, intptr_t mx, intptr_t my, int width);
@@ -462,7 +462,7 @@ static void checkasm_check_hevc_epel_uni_w(void)
 
         for (i = 0; i < 2; i++) {
             for (j = 0; j < 2; j++) {
-                for (size = 1; size < 10; size++) {
+                for (idx = 1; idx < FF_ARRAY_ELEMS(sizes); idx++) {
                     const char *type;
                     switch ((j << 1) | i) {
                     case 0: type = "pel_uni_w_pixels"; break; // 0 0
@@ -471,8 +471,8 @@ static void checkasm_check_hevc_epel_uni_w(void)
                     case 3: type = "epel_uni_w_hv"; break; // 1 1
                     }
 
-                    if (check_func(h.put_hevc_epel_uni_w[size][j][i],
-                                   "put_hevc_%s%d_%d", type, sizes[size], bit_depth)) {
+                    if (check_func(h.put_hevc_epel_uni_w[idx][j][i],
+                                   "put_hevc_%s%d_%d", type, sizes[idx], bit_depth)) {
                         for (denom = denoms; *denom >= 0; denom++) {
                             for (wx = weights; *wx >= 0; wx++) {
                                 for (ox = offsets; *ox >= 0; ox++) {
@@ -480,17 +480,17 @@ static void checkasm_check_hevc_epel_uni_w(void)
                                     CLEAR_PIXEL_RECT(dst0);
                                     CLEAR_PIXEL_RECT(dst1);
                                     call_ref(dst0, dst0_stride,
-                                             src0, sizes[size] * SIZEOF_PIXEL,
-                                             sizes[size], *denom, *wx, *ox, i, j, sizes[size]);
+                                             src0, sizes[idx] * SIZEOF_PIXEL,
+                                             sizes[idx], *denom, *wx, *ox, i, j, sizes[idx]);
                                     call_new(dst1, dst1_stride,
-                                             src1, sizes[size] * SIZEOF_PIXEL,
-                                             sizes[size], *denom, *wx, *ox, i, j, sizes[size]);
+                                             src1, sizes[idx] * SIZEOF_PIXEL,
+                                             sizes[idx], *denom, *wx, *ox, i, j, sizes[idx]);
                                     checkasm_check_pixel_padded(dst0, dst0_stride,
                                                                 dst1, dst1_stride,
-                                                                sizes[size], sizes[size], "dst");
+                                                                sizes[idx], sizes[idx], "dst");
                                     bench_new(dst1, dst1_stride,
-                                              src1, sizes[size] * SIZEOF_PIXEL,
-                                              sizes[size], *denom, *wx, *ox, i, j, sizes[size]);
+                                              src1, sizes[idx] * SIZEOF_PIXEL,
+                                              sizes[idx], *denom, *wx, *ox, i, j, sizes[idx]);
                                 }
                             }
                         }
@@ -512,7 +512,7 @@ static void checkasm_check_hevc_epel_bi(void)
     LOCAL_ALIGNED_32(int16_t, ref1, [BUF_SIZE]);
 
     HEVCDSPContext h;
-    int size, bit_depth, i, j;
+    int idx, bit_depth, i, j;
     declare_func(void, uint8_t *dst, ptrdiff_t dststride, const uint8_t *src, ptrdiff_t srcstride,
                  const int16_t *src2,
                  int height, intptr_t mx, intptr_t my, int width);
@@ -522,7 +522,7 @@ static void checkasm_check_hevc_epel_bi(void)
 
         for (i = 0; i < 2; i++) {
             for (j = 0; j < 2; j++) {
-                for (size = 1; size < 10; size++) {
+                for (idx = 1; idx < FF_ARRAY_ELEMS(sizes); idx++) {
                     const char *type;
                     switch ((j << 1) | i) {
                     case 0: type = "pel_bi_pixels"; break; // 0 0
@@ -531,23 +531,23 @@ static void checkasm_check_hevc_epel_bi(void)
                     case 3: type = "epel_bi_hv"; break; // 1 1
                     }
 
-                    if (check_func(h.put_hevc_epel_bi[size][j][i],
-                                   "put_hevc_%s%d_%d", type, sizes[size], bit_depth)) {
+                    if (check_func(h.put_hevc_epel_bi[idx][j][i],
+                                   "put_hevc_%s%d_%d", type, sizes[idx], bit_depth)) {
                         randomize_buffers_ref();
                         CLEAR_PIXEL_RECT(dst0);
                         CLEAR_PIXEL_RECT(dst1);
                         call_ref(dst0, dst0_stride,
-                                 src0, sizes[size] * SIZEOF_PIXEL,
-                                 ref0, sizes[size], i, j, sizes[size]);
+                                 src0, sizes[idx] * SIZEOF_PIXEL,
+                                 ref0, sizes[idx], i, j, sizes[idx]);
                         call_new(dst1, dst1_stride,
-                                 src1, sizes[size] * SIZEOF_PIXEL,
-                                 ref1, sizes[size], i, j, sizes[size]);
+                                 src1, sizes[idx] * SIZEOF_PIXEL,
+                                 ref1, sizes[idx], i, j, sizes[idx]);
                         checkasm_check_pixel_padded(dst0, dst0_stride,
                                                     dst1, dst1_stride,
-                                                    sizes[size], sizes[size], "dst");
+                                                    sizes[idx], sizes[idx], "dst");
                         bench_new(dst1, dst1_stride,
-                                  src1, sizes[size] * SIZEOF_PIXEL,
-                                  ref1, sizes[size], i, j, sizes[size]);
+                                  src1, sizes[idx] * SIZEOF_PIXEL,
+                                  ref1, sizes[idx], i, j, sizes[idx]);
                     }
                 }
             }
@@ -566,7 +566,7 @@ static void checkasm_check_hevc_epel_bi_w(void)
     LOCAL_ALIGNED_32(int16_t, ref1, [BUF_SIZE]);
 
     HEVCDSPContext h;
-    int size, bit_depth, i, j;
+    int idx, bit_depth, i, j;
     const int *denom, *wx, *ox;
     declare_func(void, uint8_t *dst, ptrdiff_t dststride, const uint8_t *src, ptrdiff_t srcstride,
                  const int16_t *src2,
@@ -578,7 +578,7 @@ static void checkasm_check_hevc_epel_bi_w(void)
 
         for (i = 0; i < 2; i++) {
             for (j = 0; j < 2; j++) {
-                for (size = 1; size < 10; size++) {
+                for (idx = 1; idx < FF_ARRAY_ELEMS(sizes); idx++) {
                     const char *type;
                     switch ((j << 1) | i) {
                     case 0: type = "pel_bi_w_pixels"; break; // 0 0
@@ -587,8 +587,8 @@ static void checkasm_check_hevc_epel_bi_w(void)
                     case 3: type = "epel_bi_w_hv"; break; // 1 1
                     }
 
-                    if (check_func(h.put_hevc_epel_bi_w[size][j][i],
-                                   "put_hevc_%s%d_%d", type, sizes[size], bit_depth)) {
+                    if (check_func(h.put_hevc_epel_bi_w[idx][j][i],
+                                   "put_hevc_%s%d_%d", type, sizes[idx], bit_depth)) {
                         for (denom = denoms; *denom >= 0; denom++) {
                             for (wx = weights; *wx >= 0; wx++) {
                                 for (ox = offsets; *ox >= 0; ox++) {
@@ -596,17 +596,17 @@ static void checkasm_check_hevc_epel_bi_w(void)
                                     CLEAR_PIXEL_RECT(dst0);
                                     CLEAR_PIXEL_RECT(dst1);
                                     call_ref(dst0, dst0_stride,
-                                             src0, sizes[size] * SIZEOF_PIXEL,
-                                             ref0, sizes[size], *denom, *wx, *wx, *ox, *ox, i, j, sizes[size]);
+                                             src0, sizes[idx] * SIZEOF_PIXEL,
+                                             ref0, sizes[idx], *denom, *wx, *wx, *ox, *ox, i, j, sizes[idx]);
                                     call_new(dst1, dst1_stride,
-                                             src1, sizes[size] * SIZEOF_PIXEL,
-                                             ref1, sizes[size], *denom, *wx, *wx, *ox, *ox, i, j, sizes[size]);
+                                             src1, sizes[idx] * SIZEOF_PIXEL,
+                                             ref1, sizes[idx], *denom, *wx, *wx, *ox, *ox, i, j, sizes[idx]);
                                     checkasm_check_pixel_padded(dst0, dst0_stride,
                                                                 dst1, dst1_stride,
-                                                                sizes[size], sizes[size], "dst");
+                                                                sizes[idx], sizes[idx], "dst");
                                     bench_new(dst1, dst1_stride,
-                                              src1, sizes[size] * SIZEOF_PIXEL,
-                                              ref1, sizes[size], *denom, *wx, *wx, *ox, *ox, i, j, sizes[size]);
+                                              src1, sizes[idx] * SIZEOF_PIXEL,
+                                              ref1, sizes[idx], *denom, *wx, *wx, *ox, *ox, i, j, sizes[idx]);
                                 }
                             }
                         }
