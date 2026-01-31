@@ -121,6 +121,7 @@ static int caf_write_init(struct AVFormatContext *s)
 
     switch (par->codec_id) {
     case AV_CODEC_ID_AAC:
+    case AV_CODEC_ID_OPUS:
         av_log(s, AV_LOG_ERROR, "muxing codec currently unsupported\n");
         return AVERROR_PATCHWELCOME;
     }
