@@ -45,7 +45,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
 static const char* format_to_name(void* ptr)
 {
     AVFormatContext* fc = (AVFormatContext*) ptr;
-    if(fc->iformat) return fc->iformat->name;
+    if (fc->name) return fc->name;
+    else if(fc->iformat) return fc->iformat->name;
     else if(fc->oformat) return fc->oformat->name;
     else return fc->av_class->class_name;
 }

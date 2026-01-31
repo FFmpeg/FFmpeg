@@ -1884,6 +1884,11 @@ typedef struct AVFormatContext {
      * @see skip_estimate_duration_from_pts
      */
     int64_t duration_probesize;
+
+    /**
+     * Name of this format context, only used for logging purposes.
+     */
+    char *name;
 } AVFormatContext;
 
 /**

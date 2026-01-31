@@ -190,6 +190,7 @@ void avformat_free_context(AVFormatContext *s)
     if (s->iformat)
         ff_flush_packet_queue(s);
     av_freep(&s->url);
+    av_freep(&s->name);
     av_free(s);
 }
 
