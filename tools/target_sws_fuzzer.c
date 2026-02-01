@@ -95,13 +95,11 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     int srcStride[AV_VIDEO_MAX_PLANES] = {0};
     int dstStride[AV_VIDEO_MAX_PLANES] = {0};
     int ret;
-    const uint8_t *end = data + size;
     enum AVPixelFormat srcFormat = AV_PIX_FMT_YUV420P;
     enum AVPixelFormat dstFormat = AV_PIX_FMT_YUV420P;
     uint8_t *src[AV_VIDEO_MAX_PLANES] = { 0 };
     uint8_t *dst[AV_VIDEO_MAX_PLANES] = { 0 };
     struct SwsContext *sws = NULL;
-    const AVPixFmtDescriptor *desc_src, *desc_dst;
 
     if (size > 128) {
         GetByteContext gbc;
@@ -148,10 +146,12 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         //TODO alphablend
     }
 
-    desc_src = av_pix_fmt_desc_get(srcFormat);
-    desc_dst = av_pix_fmt_desc_get(dstFormat);
+#ifdef ENABLE_LOG
+    const AVPixFmtDescriptor *desc_src = av_pix_fmt_desc_get(srcFormat);
+    const AVPixFmtDescriptor *desc_dst = av_pix_fmt_desc_get(dstFormat);
 
-    // fprintf(stderr, "%d x %d %s -> %d x %d %s\n", srcW, srcH, desc_src->name, dstW, dstH, desc_dst->name);
+    fprintf(stderr, "%d x %d %s -> %d x %d %s\n", srcW, srcH, desc_src->name, dstW, dstH, desc_dst->name);
+#endif
 
     ret = alloc_plane(src, srcStride, srcW, srcH, srcFormat, &srcHShift, &srcVShift);
     if (ret < 0)
