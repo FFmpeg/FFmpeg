@@ -1265,7 +1265,7 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt,
         /* set the duration */
         out_pkt->duration = (sti->parser->flags & PARSER_FLAG_COMPLETE_FRAMES) ? pkt->duration : 0;
         if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
-            if (sti->avctx->sample_rate > 0) {
+            if (sti->avctx->sample_rate > 0 && sti->parser->duration > 0) {
                 out_pkt->duration =
                     av_rescale_q_rnd(sti->parser->duration,
                                      (AVRational) { 1, sti->avctx->sample_rate },
