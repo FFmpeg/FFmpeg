@@ -21,7 +21,7 @@ ece637ed28526724c88f5c69b8bf7d6f *tests/data/fate/matroska-encoding-delay.matros
 1,         86,         86,       24,     1152, 0xc9e85398
 1,        110,        110,       24,     1152, 0xda1287d3
 0,        120,        120,       40,   238290, 0xbe18b18f
-1,        134,        134,       24,     1152, 0x1c9a6102
+1,        134,        134,       16,     1152, 0x1c9a6102
 [PACKET]
 codec_type=audio
 stream_index=1
