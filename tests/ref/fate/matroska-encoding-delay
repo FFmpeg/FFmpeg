@@ -11,7 +11,7 @@ ece637ed28526724c88f5c69b8bf7d6f *tests/data/fate/matroska-encoding-delay.matros
 #codec_id 1: mp2
 #sample_rate 1: 48000
 #channel_layout_name 1: stereo
-1,        -10,        -10,       24,     1152, 0x724077b8
+1,        -10,        -10,       24,     1152, 0x724077b8, S=1, Skip Samples,       10, 0x08d300e2
 0,          0,          0,       40,   237628, 0xeff25579
 1,         14,         14,       24,     1152, 0x80625572
 1,         38,         38,       24,     1152, 0x7d7f4dce
@@ -34,6 +34,13 @@ duration_time=0.024000
 size=1152
 pos=1263
 flags=K__
+[SIDE_DATA]
+side_data_type=Skip Samples
+skip_samples=481
+discard_padding=0
+skip_reason=0
+discard_reason=0
+[/SIDE_DATA]
 [/PACKET]
 [PACKET]
 codec_type=video
