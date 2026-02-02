@@ -46,38 +46,38 @@ static const uint8_t aac_extradata[] = {
 
 
 static const char *format = "mp4";
-AVFormatContext *ctx;
-uint8_t iobuf[32768];
-AVDictionary *opts;
+static AVFormatContext *ctx;
+static uint8_t iobuf[32768];
+static AVDictionary *opts;
 
-int write_file;
-const char *cur_name;
-FILE* out;
-int out_size;
-struct AVMD5* md5;
-uint8_t hash[HASH_SIZE];
+static int write_file;
+static const char *cur_name;
+static FILE* out;
+static int out_size;
+static struct AVMD5* md5;
+static uint8_t hash[HASH_SIZE];
 
-AVPacket *pkt;
-AVStream *video_st, *audio_st, *id3_st;
-int64_t audio_dts, video_dts;
+static AVPacket *pkt;
+static AVStream *video_st, *audio_st, *id3_st;
+static int64_t audio_dts, video_dts;
 
-int bframes;
-int64_t duration;
-int64_t audio_duration;
-int frames;
-int gop_size;
-int64_t next_p_pts;
-enum AVPictureType last_picture;
-int skip_write;
-int skip_write_audio;
-int clear_duration;
-int force_iobuf_size;
-int do_interleave;
-int fake_pkt_duration;
+static int bframes;
+static int64_t duration;
+static int64_t audio_duration;
+static int frames;
+static int gop_size;
+static int64_t next_p_pts;
+static enum AVPictureType last_picture;
+static int skip_write;
+static int skip_write_audio;
+static int clear_duration;
+static int force_iobuf_size;
+static int do_interleave;
+static int fake_pkt_duration;
 
-int num_warnings;
+static int num_warnings;
 
-int check_faults;
+static int check_faults;
 
 
 static void count_warnings(void *avcl, int level, const char *fmt, va_list vl)
