@@ -25,6 +25,11 @@
 
 layout (local_size_x_id = 253, local_size_y_id = 254, local_size_z_id = 255) in;
 
+#ifdef DEBUG
+#extension GL_EXT_debug_printf : require
+#define printf debugPrintfEXT
+#endif
+
 #extension GL_EXT_shader_explicit_arithmetic_types : require
 #extension GL_EXT_shader_explicit_arithmetic_types_int8 : require
 #extension GL_EXT_shader_explicit_arithmetic_types_int16 : require
