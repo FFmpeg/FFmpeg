@@ -931,7 +931,8 @@ static int check_extensions(AVHWDeviceContext *ctx, int dev, AVDictionary *opts,
             ((debug_mode == FF_VULKAN_DEBUG_VALIDATE) ||
              (debug_mode == FF_VULKAN_DEBUG_PRINTF) ||
              (debug_mode == FF_VULKAN_DEBUG_PRACTICES)) &&
-            !strcmp(tstr, VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME)) {
+            (!strcmp(tstr, VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME) ||
+             !strcmp(tstr, VK_EXT_SHADER_OBJECT_EXTENSION_NAME))) {
             continue;
         }
 
