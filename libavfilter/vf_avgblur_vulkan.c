@@ -54,8 +54,6 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
     FFVulkanContext *vkctx = &s->vkctx;
     const int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
 
-    FFVulkanDescriptorSetBinding *desc;
-
     s->qf = ff_vk_qf_find(vkctx, VK_QUEUE_COMPUTE_BIT, 0);
     if (!s->qf) {
         av_log(ctx, AV_LOG_ERROR, "Device has no compute queues\n");
@@ -71,22 +69,19 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
     ff_vk_shader_add_push_const(&s->shd, 0, sizeof(s->opts),
                                 VK_SHADER_STAGE_COMPUTE_BIT);
 
-    desc = (FFVulkanDescriptorSetBinding []) {
-        {
-            .name   = "input_img",
+    const FFVulkanDescriptorSetBinding desc_set[] = {
+        { /* input_img */
             .type   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
             .stages = VK_SHADER_STAGE_COMPUTE_BIT,
             .elems  = planes,
         },
-        {
-            .name   = "output_img",
+        { /* output_img */
             .type   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
             .stages = VK_SHADER_STAGE_COMPUTE_BIT,
             .elems  = planes,
         },
     };
-
-    ff_vk_shader_add_descriptor_set(vkctx, &s->shd, desc, 2, 0, 0);
+    ff_vk_shader_add_descriptor_set(vkctx, &s->shd, desc_set, 2, 0, 0);
 
     RET(ff_vk_shader_link(vkctx, &s->shd,
                           ff_avgblur_comp_spv_data,

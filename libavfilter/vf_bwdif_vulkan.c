@@ -51,7 +51,6 @@ static av_cold int init_filter(AVFilterContext *ctx)
     BWDIFVulkanContext *s = ctx->priv;
     FFVulkanContext *vkctx = &s->vkctx;
     const int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
-    FFVulkanDescriptorSetBinding *desc;
 
     s->qf = ff_vk_qf_find(vkctx, VK_QUEUE_COMPUTE_BIT, 0);
     if (!s->qf) {
@@ -65,34 +64,29 @@ static av_cold int init_filter(AVFilterContext *ctx)
     ff_vk_shader_load(&s->shd, VK_SHADER_STAGE_COMPUTE_BIT, NULL,
                       (uint32_t [3]) { 1, 64, planes }, 0);
 
-    desc = (FFVulkanDescriptorSetBinding []) {
-        {
-            .name       = "prev",
-            .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-            .elems      = planes,
-            .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
+    const FFVulkanDescriptorSetBinding desc_set[] = {
+        { /* prev */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
+            .elems  = planes,
         },
-        {
-            .name       = "cur",
-            .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-            .elems      = planes,
-            .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
+        { /* cur */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
+            .elems  = planes,
         },
-        {
-            .name       = "next",
-            .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-            .elems      = planes,
-            .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
+        { /* next */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
+            .elems  = planes,
         },
-        {
-            .name       = "dst",
-            .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-            .elems      = planes,
-            .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
+        { /* dst */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
+            .elems  = planes,
         },
     };
-
-    ff_vk_shader_add_descriptor_set(vkctx, &s->shd, desc, 4, 0, 0);
+    ff_vk_shader_add_descriptor_set(vkctx, &s->shd, desc_set, 4, 0, 0);
 
     ff_vk_shader_add_push_const(&s->shd, 0, sizeof(BWDIFParameters),
                                 VK_SHADER_STAGE_COMPUTE_BIT);

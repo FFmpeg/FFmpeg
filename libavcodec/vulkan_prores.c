@@ -373,22 +373,19 @@ static int init_decode_shader(AVCodecContext *avctx, FFVulkanContext *s,
     ff_vk_shader_add_push_const(shd, 0, sizeof(ProresVkParameters),
                                 VK_SHADER_STAGE_COMPUTE_BIT);
 
-    FFVulkanDescriptorSetBinding desc_set[] = {
-        {
-            .name        = "slice_offsets_buf",
-            .type        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-            .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
+    const FFVulkanDescriptorSetBinding desc_set[] = {
+        { /* slice_offsets_buf */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
         },
-        {
-            .name        = "quant_idx_buf",
-            .type        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-            .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
+        { /* quant_idx_buf */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
         },
-        {
-            .name       = "dst",
-            .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-            .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
-            .elems      = av_pix_fmt_count_planes(dec_frames_ctx->sw_format),
+        { /* dst */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
+            .elems  = av_pix_fmt_count_planes(dec_frames_ctx->sw_format),
         },
     };
     ff_vk_shader_add_descriptor_set(s, shd, desc_set, 3, 0, 0);
@@ -432,22 +429,19 @@ static int init_idct_shader(AVCodecContext *avctx, FFVulkanContext *s,
     ff_vk_shader_add_push_const(shd, 0, sizeof(ProresVkParameters),
                                 VK_SHADER_STAGE_COMPUTE_BIT);
 
-    FFVulkanDescriptorSetBinding desc_set[] = {
-        {
-            .name        = "quant_idx_buf",
-            .type        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-            .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
+    const FFVulkanDescriptorSetBinding desc_set[] = {
+        { /* quant_idx_buf */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
         },
-        {
-            .name        = "qmat_buf",
-            .type        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-            .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
+        { /* qmat_buf */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
         },
-        {
-            .name       = "dst",
-            .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-            .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
-            .elems      = av_pix_fmt_count_planes(dec_frames_ctx->sw_format),
+        { /* dst */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
+            .elems  = av_pix_fmt_count_planes(dec_frames_ctx->sw_format),
         },
     };
     RET(ff_vk_shader_add_descriptor_set(s, shd, desc_set, 3, 0, 0));

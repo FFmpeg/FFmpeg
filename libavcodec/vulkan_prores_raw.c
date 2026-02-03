@@ -284,14 +284,12 @@ fail:
 static int add_desc(AVCodecContext *avctx, FFVulkanContext *s,
                     FFVulkanShader *shd)
 {
-    FFVulkanDescriptorSetBinding desc_set[] = {
-        {
-            .name   = "dst",
+    const FFVulkanDescriptorSetBinding desc_set[] = {
+        { /* dst */
             .type   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
             .stages = VK_SHADER_STAGE_COMPUTE_BIT,
         },
-        {
-            .name   = "frame_data_buf",
+        { /* frame_data_buf */
             .type   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
             .stages = VK_SHADER_STAGE_COMPUTE_BIT,
         },
