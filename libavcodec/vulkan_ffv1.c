@@ -783,8 +783,6 @@ static int vk_decode_ffv1_init(AVCodecContext *avctx)
     AVHWFramesContext *hwfc = (AVHWFramesContext *)avctx->hw_frames_ctx->data;
     AVHWFramesContext *dctx = hwfc;
     enum AVPixelFormat sw_format = hwfc->sw_format;
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(sw_format);
-    int color_planes = av_pix_fmt_desc_get(avctx->sw_pix_fmt)->nb_components;
     int is_rgb = !(f->colorspace == 0 && sw_format != AV_PIX_FMT_YA8) &&
                  !(sw_format == AV_PIX_FMT_YA8);
 
@@ -796,36 +794,13 @@ static int vk_decode_ffv1_init(AVCodecContext *avctx)
     }
 
     SPEC_LIST_CREATE(sl, 15, 15*sizeof(uint32_t))
+    ff_ffv1_vk_set_common_sl(avctx, f, sl, sw_format);
 
     if (RGB_LINECACHE != 2)
         SPEC_LIST_ADD(sl, 0, 32, RGB_LINECACHE);
 
     if (f->ec && !!(avctx->err_recognition & AV_EF_CRCCHECK))
         SPEC_LIST_ADD(sl, 1, 32, 1);
-
-    SPEC_LIST_ADD(sl,  2, 32, f->version);
-    SPEC_LIST_ADD(sl,  3, 32, f->quant_table_count);
-
-    for (int i = 0; i < f->quant_table_count; i++) {
-        if (f->quant_tables[i][3][127] || f->quant_tables[i][4][127]) {
-            SPEC_LIST_ADD(sl, 4, 32, 1);
-            break;
-        }
-    }
-
-    int bits = f->avctx->bits_per_raw_sample > 0 ? f->avctx->bits_per_raw_sample : 8;
-    SPEC_LIST_ADD(sl,  5, 32, 1 << bits);
-    SPEC_LIST_ADD(sl,  6, 32, f->colorspace);
-    SPEC_LIST_ADD(sl,  7, 32, f->transparency);
-    SPEC_LIST_ADD(sl,  8, 32, ff_vk_mt_is_np_rgb(sw_format) &&
-                              (desc->flags & AV_PIX_FMT_FLAG_PLANAR));
-    SPEC_LIST_ADD(sl,  9, 32, f->plane_count);
-    SPEC_LIST_ADD(sl, 10, 32, color_planes);
-    SPEC_LIST_ADD(sl, 11, 32, av_pix_fmt_count_planes(sw_format));
-    SPEC_LIST_ADD(sl, 12, 32, bits + is_rgb);
-
-    SPEC_LIST_ADD(sl, 13, 32, f->chroma_h_shift);
-    SPEC_LIST_ADD(sl, 14, 32, f->chroma_v_shift);
 
     /* Setup shader */
     RET(init_setup_shader(f, &ctx->s, &ctx->exec_pool, &fv->setup, sl));

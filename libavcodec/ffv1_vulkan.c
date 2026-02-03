@@ -21,6 +21,40 @@
 #include "ffv1_vulkan.h"
 #include "libavutil/crc.h"
 
+void ff_ffv1_vk_set_common_sl(AVCodecContext *avctx, FFV1Context *f,
+                              VkSpecializationInfo *sl,
+                              enum AVPixelFormat sw_format)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(sw_format);
+    int color_planes = av_pix_fmt_desc_get(sw_format)->nb_components;
+    int is_rgb = !(f->colorspace == 0 && sw_format != AV_PIX_FMT_YA8) &&
+                 !(sw_format == AV_PIX_FMT_YA8);
+
+    SPEC_LIST_ADD(sl,  2, 32, f->version);
+    SPEC_LIST_ADD(sl,  3, 32, f->quant_table_count);
+
+    for (int i = 0; i < f->quant_table_count; i++) {
+        if (f->quant_tables[i][3][127] || f->quant_tables[i][4][127]) {
+            SPEC_LIST_ADD(sl, 4, 32, 1);
+            break;
+        }
+    }
+
+    int bits = desc->comp[0].depth;
+    SPEC_LIST_ADD(sl,  5, 32, 1 << bits);
+    SPEC_LIST_ADD(sl,  6, 32, f->colorspace);
+    SPEC_LIST_ADD(sl,  7, 32, f->transparency);
+    SPEC_LIST_ADD(sl,  8, 32, ff_vk_mt_is_np_rgb(sw_format) &&
+                              (desc->flags & AV_PIX_FMT_FLAG_PLANAR));
+    SPEC_LIST_ADD(sl,  9, 32, f->plane_count);
+    SPEC_LIST_ADD(sl, 10, 32, color_planes);
+    SPEC_LIST_ADD(sl, 11, 32, av_pix_fmt_count_planes(sw_format));
+    SPEC_LIST_ADD(sl, 12, 32, bits + is_rgb);
+
+    SPEC_LIST_ADD(sl, 13, 32, f->chroma_h_shift);
+    SPEC_LIST_ADD(sl, 14, 32, f->chroma_v_shift);
+}
+
 int ff_ffv1_vk_update_state_transition_data(FFVulkanContext *s,
                                             FFVkBuffer *vkb, FFV1Context *f)
 {

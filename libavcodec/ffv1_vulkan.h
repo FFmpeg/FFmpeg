@@ -24,6 +24,10 @@
 #include "libavutil/vulkan.h"
 #include "ffv1.h"
 
+void ff_ffv1_vk_set_common_sl(AVCodecContext *avctx, FFV1Context *f,
+                              VkSpecializationInfo *sl,
+                              enum AVPixelFormat sw_format);
+
 int ff_ffv1_vk_update_state_transition_data(FFVulkanContext *s,
                                             FFVkBuffer *vkb, FFV1Context *f);
 
