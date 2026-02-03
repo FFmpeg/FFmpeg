@@ -822,7 +822,7 @@ static int vk_decode_ffv1_init(AVCodecContext *avctx)
     SPEC_LIST_ADD(sl,  9, 32, f->plane_count);
     SPEC_LIST_ADD(sl, 10, 32, color_planes);
     SPEC_LIST_ADD(sl, 11, 32, av_pix_fmt_count_planes(sw_format));
-    SPEC_LIST_ADD(sl, 12, 32, bits);
+    SPEC_LIST_ADD(sl, 12, 32, bits + is_rgb);
 
     SPEC_LIST_ADD(sl, 13, 32, f->chroma_h_shift);
     SPEC_LIST_ADD(sl, 14, 32, f->chroma_v_shift);

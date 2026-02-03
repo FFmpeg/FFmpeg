@@ -63,7 +63,7 @@ int get_isymbol(inout RangeCoder c, uint state_off)
     return READ(c, min(e + 10, 21)) ? -a : a;
 }
 
-void decode_line_pcm(inout SliceContext sc, ivec2 sp, int w, int y, int p, int bits)
+void decode_line_pcm(inout SliceContext sc, ivec2 sp, int w, int y, int p)
 {
 #ifndef RGB
     if (p > 0 && p < 3) {
@@ -74,15 +74,17 @@ void decode_line_pcm(inout SliceContext sc, ivec2 sp, int w, int y, int p, int b
 
     for (int x = 0; x < w; x++) {
         uint v = 0;
-        for (int i = (bits - 1); i >= 0; i--)
-            v |= uint(get_rac_equi(sc.c)) << i;
+
+        [[unroll]]
+        for (uint i = (rct_offset >> 1); i > 0; i >>= 1)
+            v |= get_rac_equi(sc.c) ? i : 0;
 
         imageStore(dec[p], sp + LADDR(ivec2(x, y)), uvec4(v));
     }
 }
 
 void decode_line(inout SliceContext sc, ivec2 sp, int w,
-                 int y, int p, int bits, uint state_off,
+                 int y, int p, uint state_off,
                  uint8_t quant_table_idx, int run_index)
 {
 #ifndef RGB
@@ -118,7 +120,7 @@ void golomb_init(inout SliceContext sc)
 }
 
 void decode_line(inout SliceContext sc, ivec2 sp, int w,
-                 int y, int p, int bits, uint state_off,
+                 int y, int p, uint state_off,
                  uint8_t quant_table_idx, inout int run_index)
 {
 #ifndef RGB
@@ -230,12 +232,7 @@ void decode_slice(inout SliceContext sc, const uint slice_idx)
     int w = sc.slice_dim.x;
     ivec2 sp = sc.slice_pos;
 
-    int bits = bits_per_raw_sample;
 #ifdef RGB
-    bits = 9;
-    if (bits != 8 || sc.slice_coding_mode != 0)
-        bits = bits_per_raw_sample + int(sc.slice_coding_mode != 1);
-
     sp.y = int(gl_WorkGroupID.y)*rgb_linecache;
 #endif
 
@@ -245,7 +242,7 @@ void decode_slice(inout SliceContext sc, const uint slice_idx)
 #ifdef RGB
         for (int y = 0; y < sc.slice_dim.y; y++) {
             for (int p = 0; p < color_planes; p++)
-                decode_line_pcm(sc, sp, w, y, p, bits);
+                decode_line_pcm(sc, sp, w, y, p);
 
             writeout_rgb(sc, sp, w, y, false);
         }
@@ -256,7 +253,7 @@ void decode_slice(inout SliceContext sc, const uint slice_idx)
                 h = ceil_rshift(h, chroma_shift.y);
 
             for (int y = 0; y < h; y++)
-                decode_line_pcm(sc, sp, w, y, p, bits);
+                decode_line_pcm(sc, sp, w, y, p);
         }
 #endif
         return;
@@ -275,7 +272,7 @@ void decode_slice(inout SliceContext sc, const uint slice_idx)
     int run_index = 0;
     for (int y = 0; y < sc.slice_dim.y; y++) {
         for (int p = 0; p < color_planes; p++)
-            decode_line(sc, sp, w, y, p, bits,
+            decode_line(sc, sp, w, y, p,
                         slice_state_off[p], quant_table_idx[p], run_index);
 
         writeout_rgb(sc, sp, w, y, true);
@@ -288,7 +285,7 @@ void decode_slice(inout SliceContext sc, const uint slice_idx)
 
         int run_index = 0;
         for (int y = 0; y < h; y++)
-            decode_line(sc, sp, w, y, p, bits,
+            decode_line(sc, sp, w, y, p,
                         slice_state_off[p], quant_table_idx[p], run_index);
     }
 #endif

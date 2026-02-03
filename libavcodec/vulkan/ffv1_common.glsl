@@ -46,7 +46,7 @@ layout (constant_id =  8) const bool planar_rgb = false;
 layout (constant_id =  9) const int codec_planes = 0;
 layout (constant_id = 10) const int color_planes = 0;
 layout (constant_id = 11) const int planes = 0;
-layout (constant_id = 12) const int bits_per_raw_sample = 0;
+layout (constant_id = 12) const int bits = 0;
 
 layout (constant_id = 13) const int chroma_shift_x = 0;
 layout (constant_id = 14) const int chroma_shift_y = 0;
