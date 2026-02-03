@@ -672,7 +672,7 @@ static av_cold int opus_decode_close(AVCodecContext *avctx)
 
     c->p.nb_streams = 0;
 
-    av_freep(&c->p.channel_maps);
+    avpriv_opus_parse_uninit_context(&c->p);
     av_freep(&c->fdsp);
 
     return 0;
