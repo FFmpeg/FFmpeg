@@ -143,7 +143,7 @@ NEON8_FNPROTO(epel_uni_w_v, (uint8_t *_dst,  ptrdiff_t _dststride,
         int height, int denom, int wx, int ox,
         intptr_t mx, intptr_t my, int width),);
 
-NEON8_FNPROTO_PARTIAL_4(qpel_uni_w_v, (uint8_t *_dst,  ptrdiff_t _dststride,
+NEON8_FNPROTO(qpel_uni_w_v, (uint8_t *_dst,  ptrdiff_t _dststride,
         const uint8_t *_src, ptrdiff_t _srcstride,
         int height, int denom, int wx, int ox,
         intptr_t mx, intptr_t my, int width),);
