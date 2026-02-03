@@ -306,8 +306,8 @@ static int init_decode_shader(AVCodecContext *avctx, FFVulkanContext *s,
 
     ff_vk_shader_add_push_const(shd, 0, sizeof(DecodePushData) - 64,
                                 VK_SHADER_STAGE_COMPUTE_BIT);
-   ff_vk_shader_load(shd, VK_SHADER_STAGE_COMPUTE_BIT, NULL,
-                     (uint32_t []) { 1, 4, 1 }, 0);
+    ff_vk_shader_load(shd, VK_SHADER_STAGE_COMPUTE_BIT, NULL,
+                      (uint32_t []) { 1, 4, 1 }, 0);
 
     add_desc(avctx, s, shd);
 
