@@ -69,6 +69,7 @@
 #include "libavcodec/itut35.h"
 #include "libavcodec/xiph.h"
 #include "libavcodec/mpeg4audio.h"
+#include "libavcodec/opus/parse.h"
 
 /* Level 1 elements we create a SeekHead entry for:
  * Info, Tracks, Chapters, Attachments, Tags (potentially twice) and Cues */
@@ -209,6 +210,10 @@ typedef struct mkv_track {
      * The callback shall not return an error on the second call. */
     int             (*reformat)(struct MatroskaMuxContext *, AVIOContext *,
                                 const AVPacket *, int *size);
+
+    // Opus specific
+    OpusParseContext *opus;
+    OpusPacket *opus_pkt;
 } mkv_track;
 
 typedef struct MatroskaMuxContext {
@@ -859,6 +864,14 @@ static void mkv_deinit(AVFormatContext *s)
 
     av_freep(&mkv->cur_block.h2645_nalu_list.nalus);
     av_freep(&mkv->cues.entries);
+
+    for (int i = 0; i < s->nb_streams; i++) {
+        mkv_track *track = &mkv->tracks[i];
+        if (track->opus)
+            avpriv_opus_parse_uninit_context(track->opus);
+        av_freep(&track->opus);
+        av_freep(&track->opus_pkt);
+    }
     av_freep(&mkv->tracks);
 }
 
@@ -2799,11 +2812,12 @@ static void mkv_write_blockadditional(EbmlWriter *writer, const uint8_t *buf,
 }
 
 static int mkv_write_block(void *logctx, MatroskaMuxContext *mkv,
-                           AVIOContext *pb, const AVCodecParameters *par,
+                           AVIOContext *pb, const AVStream *st,
                            mkv_track *track, const AVPacket *pkt,
                            int keyframe, int64_t ts, uint64_t duration,
                            int force_blockgroup, int64_t relative_packet_pos)
 {
+    const AVCodecParameters *par  = st->codecpar;
     uint8_t t35_buf[6 + AV_HDR_PLUS_MAX_PAYLOAD_SIZE];
     uint8_t *side_data;
     size_t side_data_size;
@@ -2829,6 +2843,19 @@ static int mkv_write_block(void *logctx, MatroskaMuxContext *mkv,
         duration != track->default_duration_high &&
         duration != track->default_duration_low))
         ebml_writer_add_uint(&writer, MATROSKA_ID_BLOCKDURATION, duration);
+    else if (track->opus) {
+        ret = avpriv_opus_parse_packet(&track->opus_pkt, pkt->data, pkt->size,
+                                       track->opus->nb_streams > 1, logctx);
+        if (!ret) {
+            /* If the packet's duration is inconsistent with the coded duration,
+             * add an explicit duration element. */
+            uint64_t parsed_duration = av_rescale_q(track->opus_pkt->frame_count * track->opus_pkt->frame_duration,
+                                                    (AVRational){1, par->sample_rate},
+                                                    st->time_base);
+            if (parsed_duration != duration)
+                ebml_writer_add_uint(&writer, MATROSKA_ID_BLOCKDURATION, duration);
+        }
+    }
 
     av_log(logctx, AV_LOG_DEBUG,
            "Writing block of size %d with pts %" PRId64 ", dts %" PRId64 ", "
@@ -2999,6 +3026,7 @@ static int mkv_write_packet_internal(AVFormatContext *s, const AVPacket *pkt)
 {
     MatroskaMuxContext *mkv = s->priv_data;
     AVIOContext *pb;
+    AVStream *st            = s->streams[pkt->stream_index];
     AVCodecParameters *par  = s->streams[pkt->stream_index]->codecpar;
     mkv_track *track        = &mkv->tracks[pkt->stream_index];
     int is_sub              = par->codec_type == AVMEDIA_TYPE_SUBTITLE;
@@ -3045,7 +3073,7 @@ static int mkv_write_packet_internal(AVFormatContext *s, const AVPacket *pkt)
 
     /* The WebM spec requires WebVTT to be muxed in BlockGroups;
      * so we force it even for packets without duration. */
-    ret = mkv_write_block(s, mkv, pb, par, track, pkt,
+    ret = mkv_write_block(s, mkv, pb, st, track, pkt,
                           keyframe, ts, duration,
                           par->codec_id == AV_CODEC_ID_WEBVTT,
                           relative_packet_pos);
@@ -3466,6 +3494,10 @@ static int mkv_init(struct AVFormatContext *s)
             break;
         case AV_CODEC_ID_WEBVTT:
             track->reformat = webm_reformat_vtt;
+            break;
+        case AV_CODEC_ID_OPUS:
+            avpriv_opus_parse_extradata(&track->opus, par->extradata, par->extradata_size,
+                                        par->ch_layout.nb_channels, s);
             break;
         }
 

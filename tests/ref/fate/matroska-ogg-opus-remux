@@ -1,5 +1,5 @@
-87d0185c5b780dd9509aafd957236bdd *tests/data/fate/matroska-ogg-opus-remux.matroska
-10203 tests/data/fate/matroska-ogg-opus-remux.matroska
+c8596f7b31a8b6693f53759942c3754f *tests/data/fate/matroska-ogg-opus-remux.matroska
+10206 tests/data/fate/matroska-ogg-opus-remux.matroska
 #extradata 0:       19, 0x399c0471
 #tb 0: 1/1000
 #media_type 0: audio
@@ -46,7 +46,7 @@
 0,        733,        733,       20,      219, 0xe2906c62
 0,        753,        753,       20,      217, 0xcf316ba1
 0,        773,        773,       20,      217, 0x470b6eea
-0,        793,        793,       20,      359, 0x36c2a18a, S=1, Skip Samples,       10, 0x0232005e
+0,        793,        793,        7,      359, 0x36c2a18a, S=1, Skip Samples,       10, 0x0232005e
 [PACKET]
 codec_type=audio
 stream_index=0
