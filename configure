@@ -7727,7 +7727,7 @@ probe_glslc(){
     if test_cmd $glslc_probe -v; then
         # glslang/glslangValidator
         glslc=$glslc_probe
-        glslcflags="-V --target-env spirv1.6"
+        glslcflags="-V --target-env spirv1.6 --glsl-version 460"
         glslc_opt_speed=""
         glslc_opt_size="-Os"
         glslc_opt_none="-Od"
@@ -7736,7 +7736,7 @@ probe_glslc(){
     elif test_cmd $glslc_probe --version; then
         # glslc
         glslc=$glslc_probe
-        glslcflags="--target-env=vulkan1.4 --target-spv=spv1.6"
+        glslcflags="--target-env=vulkan1.4 --target-spv=spv1.6 -std=460"
         glslc_opt_speed="-O"
         glslc_opt_size="-Os"
         glslc_opt_none="-O0"
