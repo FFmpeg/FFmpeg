@@ -1567,7 +1567,7 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
                 AVDictionary *opts = map_to_opts(rt);
 
                 ff_url_join(buf, sizeof(buf), "rtp", NULL, host, -1,
-                            "?localport=%d", j);
+                            "?localrtpport=%d", j);
                 /* we will use two ports per rtp stream (rtp and rtcp) */
                 j += 2;
                 err = ffurl_open_whitelist(&rtsp_st->rtp_handle, buf, AVIO_FLAG_READ_WRITE,
@@ -2509,7 +2509,7 @@ static int sdp_read_header(AVFormatContext *s)
             }
             ff_url_join(url, sizeof(url), "rtp", NULL,
                         namebuf, rtsp_st->sdp_port,
-                        "?localport=%d&ttl=%d&connect=%d&write_to_source=%d",
+                        "?localrtpport=%d&ttl=%d&connect=%d&write_to_source=%d",
                         rtsp_st->sdp_port, rtsp_st->sdp_ttl,
                         rt->rtsp_flags & RTSP_FLAG_FILTER_SRC ? 1 : 0,
                         rt->rtsp_flags & RTSP_FLAG_RTCP_TO_SOURCE ? 1 : 0);
