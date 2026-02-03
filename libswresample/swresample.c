@@ -30,6 +30,20 @@
 
 #define ALIGN 32
 
+int swri_check_chlayout(struct SwrContext *s, const AVChannelLayout *chl, const char *name) {
+    char l1[1024];
+    int ret;
+
+    if (!(ret = av_channel_layout_check(chl)) || chl->nb_channels > SWR_CH_MAX) {
+        if (ret)
+            av_channel_layout_describe(chl, l1, sizeof(l1));
+        av_log(s, AV_LOG_WARNING, "%s channel layout \"%s\" is invalid or unsupported.\n", name, ret ? l1 : "");
+        return AVERROR(EINVAL);
+    }
+
+    return 0;
+}
+
 int swr_set_channel_mapping(struct SwrContext *s, const int *channel_map){
     if(!s || s->in_convert) // s needs to be allocated but not initialized
         return AVERROR(EINVAL);
@@ -162,19 +176,9 @@ av_cold int swr_init(struct SwrContext *s){
     s->out.ch_count  = s-> user_out_chlayout.nb_channels;
     s-> in.ch_count  = s->  user_in_chlayout.nb_channels;
 
-    if (!(ret = av_channel_layout_check(&s->user_in_chlayout)) || s->user_in_chlayout.nb_channels > SWR_CH_MAX) {
-        if (ret)
-            av_channel_layout_describe(&s->user_in_chlayout, l1, sizeof(l1));
-        av_log(s, AV_LOG_WARNING, "Input channel layout \"%s\" is invalid or unsupported.\n", ret ? l1 : "");
+    if (swri_check_chlayout(s, &s->user_in_chlayout , "input") ||
+        swri_check_chlayout(s, &s->user_out_chlayout, "output"))
         return AVERROR(EINVAL);
-    }
-
-    if (!(ret = av_channel_layout_check(&s->user_out_chlayout)) || s->user_out_chlayout.nb_channels > SWR_CH_MAX) {
-        if (ret)
-            av_channel_layout_describe(&s->user_out_chlayout, l2, sizeof(l2));
-        av_log(s, AV_LOG_WARNING, "Output channel layout \"%s\" is invalid or unsupported.\n", ret ? l2 : "");
-        return AVERROR(EINVAL);
-    }
 
     ret  = av_channel_layout_copy(&s->in_ch_layout, &s->user_in_chlayout);
     ret |= av_channel_layout_copy(&s->out_ch_layout, &s->user_out_chlayout);
