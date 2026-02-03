@@ -68,6 +68,8 @@ int swr_alloc_set_opts2(struct SwrContext **ps,
 
     if ((ret = av_opt_set_chlayout(s, "ochl", out_ch_layout, 0)) < 0)
         goto fail;
+    if ((ret = swri_check_chlayout(s, out_ch_layout, "ochl")) < 0)
+        goto fail;
 
     if ((ret = av_opt_set_int(s, "osf", out_sample_fmt, 0)) < 0)
         goto fail;
@@ -76,6 +78,8 @@ int swr_alloc_set_opts2(struct SwrContext **ps,
         goto fail;
 
     if ((ret = av_opt_set_chlayout(s, "ichl", in_ch_layout, 0)) < 0)
+        goto fail;
+    if ((ret = swri_check_chlayout(s, in_ch_layout, "ichl")) < 0)
         goto fail;
 
     if ((ret = av_opt_set_int(s, "isf", in_sample_fmt, 0)) < 0)
