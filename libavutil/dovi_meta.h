@@ -377,6 +377,10 @@ av_dovi_get_color(const AVDOVIMetadata *data)
     return (AVDOVIColorMetadata *)((uint8_t *) data + data->color_offset);
 }
 
+/**
+ * Gets the specified Dolby Vision Display Management (DM) metadata
+ * @param index must be non negative and below data->num_ext_blocks
+ */
 static av_always_inline AVDOVIDmData *
 av_dovi_get_ext(const AVDOVIMetadata *data, int index)
 {
