@@ -20,6 +20,23 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#pragma shader_stage(compute)
+#extension GL_GOOGLE_include_directive : require
+
+#include "common.comp"
+#include "ffv1_common.glsl"
+
+layout (set = 0, binding = 1, scalar) uniform crc_ieee_buf {
+    uint32_t crc_ieee[256];
+};
+
+layout (set = 1, binding = 1, scalar) readonly buffer slice_offsets_buf {
+    u32vec2 slice_offsets[];
+};
+layout (set = 1, binding = 2, scalar) writeonly buffer slice_status_buf {
+    uint32_t slice_status[];
+};
+
 uint8_t setup_state[CONTEXT_SIZE];
 
 uint get_usymbol(inout RangeCoder c)
@@ -98,21 +115,9 @@ bool decode_slice_header(inout SliceContext sc)
     return false;
 }
 
-void golomb_init(inout SliceContext sc)
-{
-    if (version == 3 && micro_version > 1 || version > 3) {
-        setup_state[0] = uint8_t(129);
-        get_rac_direct(sc.c, setup_state[0]);
-    }
-
-    uint64_t ac_byte_count = sc.c.bytestream - sc.c.bytestream_start - 1;
-    init_get_bits(sc.gb, u8buf(sc.c.bytestream_start + ac_byte_count),
-                  int(sc.c.bytestream_end - sc.c.bytestream_start - ac_byte_count));
-}
-
 void main(void)
 {
-    const uint slice_idx = gl_WorkGroupID.y*gl_NumWorkGroups.x + gl_WorkGroupID.x;
+    uint slice_idx = gl_WorkGroupID.y*gl_NumWorkGroups.x + gl_WorkGroupID.x;
 
     u8buf bs = u8buf(slice_data + slice_offsets[slice_idx].x);
     uint32_t slice_size = slice_offsets[slice_idx].y;
@@ -125,10 +130,7 @@ void main(void)
 
     decode_slice_header(slice_ctx[slice_idx]);
 
-    if (golomb == 1)
-        golomb_init(slice_ctx[slice_idx]);
-
-    if (ec != 0 && check_crc != 0) {
+    if (has_crc) {
         uint32_t crc = crcref;
         for (int i = 0; i < slice_size; i++)
             crc = crc_ieee[(crc & 0xFF) ^ uint32_t(bs[i].v)] ^ (crc >> 8);

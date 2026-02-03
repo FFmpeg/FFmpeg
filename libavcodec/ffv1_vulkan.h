@@ -36,6 +36,22 @@ int ff_ffv1_vk_init_quant_table_data(FFVulkanContext *s,
 int ff_ffv1_vk_init_crc_table_data(FFVulkanContext *s,
                                    FFVkBuffer *vkb, FFV1Context *f);
 
+typedef struct FFv1ShaderParams {
+    VkDeviceAddress slice_data;
+    VkDeviceAddress slice_state;
+
+    uint32_t extend_lookup[8];
+    uint16_t context_count[8];
+
+    int fmt_lut[4];
+    uint16_t img_size[2];
+
+    uint32_t plane_state_size;
+    uint32_t key_frame;
+    uint32_t crcref;
+    int micro_version;
+} FFv1ShaderParams;
+
 typedef struct FFv1VkRCTParameters {
     int fmt_lut[4];
     int offset;

@@ -7,10 +7,13 @@ OBJS-$(CONFIG_FFV1_VULKAN_ENCODER)  +=  vulkan/common.o \
 					vulkan/ffv1_enc_setup.o vulkan/ffv1_enc.o \
 					vulkan/ffv1_rct_search.o
 
-OBJS-$(CONFIG_FFV1_VULKAN_HWACCEL)  +=  vulkan/common.o \
-					vulkan/rangecoder.o vulkan/ffv1_vlc.o \
-					vulkan/ffv1_common.o vulkan/ffv1_reset.o \
-					vulkan/ffv1_dec_setup.o vulkan/ffv1_dec.o
+OBJS-$(CONFIG_FFV1_VULKAN_HWACCEL) += vulkan/ffv1_dec_setup.comp.spv.o \
+                                      vulkan/ffv1_dec_reset.comp.spv.o \
+                                      vulkan/ffv1_dec_reset_golomb.comp.spv.o \
+                                      vulkan/ffv1_dec.comp.spv.o \
+                                      vulkan/ffv1_dec_golomb.comp.spv.o \
+                                      vulkan/ffv1_dec_rgb.comp.spv.o \
+                                      vulkan/ffv1_dec_rgb_golomb.comp.spv.o
 
 OBJS-$(CONFIG_PRORES_RAW_VULKAN_HWACCEL) += vulkan/prores_raw_decode.comp.spv.o \
                                             vulkan/prores_raw_idct.comp.spv.o

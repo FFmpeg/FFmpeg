@@ -20,6 +20,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef CONTEXT_SIZE
+#define CONTEXT_SIZE 32
+
+layout (set = 0, binding = 0, scalar) uniform rangecoder_buf {
+    uint8_t zero_one_state[512];
+};
+#endif
+
 struct RangeCoder {
     uint64_t bytestream_start;
     uint64_t bytestream;
@@ -41,8 +49,6 @@ void rac_init(out RangeCoder r, u8buf data, uint buf_size)
     r.outstanding_count = uint16_t(0);
     r.outstanding_byte = uint8_t(0xFF);
 }
-
-#if !defined(DECODE)
 
 #ifdef FULL_RENORM
 /* Full renorm version that can handle outstanding_byte == 0xFF */
@@ -178,8 +184,6 @@ uint32_t rac_terminate(inout RangeCoder c)
     return uint32_t(uint64_t(c.bytestream) - uint64_t(c.bytestream_start));
 }
 
-#else
-
 /* Decoder */
 uint overread = 0;
 bool corrupt = false;
@@ -243,5 +247,3 @@ bool get_rac_equi(inout RangeCoder c)
 {
     return get_rac_internal(c, c.range >> 1);
 }
-
-#endif
