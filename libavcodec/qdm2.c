@@ -1929,6 +1929,8 @@ static int qdm2_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     if(buf_size < s->checksum_size)
         return AVERROR_INVALIDDATA;
 
+    s->sub_packet = 0;
+
     /* get output buffer */
     frame->nb_samples = 16 * s->frame_size;
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
