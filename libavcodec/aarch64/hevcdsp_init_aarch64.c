@@ -268,6 +268,7 @@ av_cold void ff_hevc_dsp_init_aarch64(HEVCDSPContext *c, const int bit_depth)
         NEON8_FNASSIGN_PARTIAL_6(c->put_hevc_qpel_bi_w, 0, 0, pel_bi_w_pixels,);
         NEON8_FNASSIGN_PARTIAL_6(c->put_hevc_epel_bi_w, 0, 0, pel_bi_w_pixels,);
         NEON8_FNASSIGN(c->put_hevc_epel_uni, 0, 0, pel_uni_pixels,);
+        NEON8_FNASSIGN(c->put_hevc_epel_uni, 0, 1, epel_uni_h,);
         NEON8_FNASSIGN(c->put_hevc_epel_uni, 1, 0, epel_uni_v,);
         NEON8_FNASSIGN(c->put_hevc_qpel_uni, 0, 0, pel_uni_pixels,);
         NEON8_FNASSIGN(c->put_hevc_qpel_uni, 1, 0, qpel_uni_v,);

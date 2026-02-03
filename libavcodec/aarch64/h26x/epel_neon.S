@@ -1744,6 +1744,398 @@ function ff_hevc_put_hevc_epel_uni_v64_8_neon, export=1
         ret
 endfunc
 
+// epel_uni_h: horizontal EPEL filter with output to uint8_t
+// void put_hevc_epel_uni_h(uint8_t *dst, ptrdiff_t dststride,
+//                          const uint8_t *src, ptrdiff_t srcstride,
+//                          int height, intptr_t mx, intptr_t my, int width)
+// x0: dst, x1: dststride, x2: src, x3: srcstride, w4: height, x5: mx
+
+.macro EPEL_UNI_H_HEADER
+        movrel          x7, epel_filters
+        add             x7, x7, x5, lsl #2
+        ld1r            {v30.4s}, [x7]
+        sxtl            v0.8h, v30.8b
+        sub             x2, x2, #1
+.endm
+
+function ff_hevc_put_hevc_epel_uni_h4_8_neon, export=1
+        EPEL_UNI_H_HEADER
+1:      ld1             {v4.8b}, [x2], x3
+        subs            w4, w4, #1
+        uxtl            v4.8h, v4.8b
+        ext             v5.16b, v4.16b, v4.16b, #2
+        ext             v6.16b, v4.16b, v4.16b, #4
+        ext             v7.16b, v4.16b, v4.16b, #6
+        mul             v16.4h, v4.4h, v0.h[0]
+        mla             v16.4h, v5.4h, v0.h[1]
+        mla             v16.4h, v6.4h, v0.h[2]
+        mla             v16.4h, v7.4h, v0.h[3]
+        sqrshrun        v16.8b, v16.8h, #6
+        st1             {v16.s}[0], [x0], x1
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_h6_8_neon, export=1
+        EPEL_UNI_H_HEADER
+1:      ld1             {v3.16b}, [x2], x3
+        subs            w4, w4, #1
+        uxtl2           v4.8h, v3.16b
+        uxtl            v3.8h, v3.8b
+        ext             v5.16b, v3.16b, v4.16b, #2
+        ext             v6.16b, v3.16b, v4.16b, #4
+        ext             v7.16b, v3.16b, v4.16b, #6
+        mul             v16.8h, v3.8h, v0.h[0]
+        mla             v16.8h, v5.8h, v0.h[1]
+        mla             v16.8h, v6.8h, v0.h[2]
+        mla             v16.8h, v7.8h, v0.h[3]
+        sqrshrun        v16.8b, v16.8h, #6
+        add             x7, x0, #4
+        st1             {v16.s}[0], [x0], x1
+        st1             {v16.h}[2], [x7]
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_h8_8_neon, export=1
+        EPEL_UNI_H_HEADER
+1:      ld1             {v3.16b}, [x2], x3
+        subs            w4, w4, #1
+        uxtl2           v4.8h, v3.16b
+        uxtl            v3.8h, v3.8b
+        ext             v5.16b, v3.16b, v4.16b, #2
+        ext             v6.16b, v3.16b, v4.16b, #4
+        ext             v7.16b, v3.16b, v4.16b, #6
+        mul             v16.8h, v3.8h, v0.h[0]
+        mla             v16.8h, v5.8h, v0.h[1]
+        mla             v16.8h, v6.8h, v0.h[2]
+        mla             v16.8h, v7.8h, v0.h[3]
+        sqrshrun        v16.8b, v16.8h, #6
+        st1             {v16.8b}, [x0], x1
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_h12_8_neon, export=1
+        EPEL_UNI_H_HEADER
+1:      ld1             {v3.16b}, [x2], x3
+        subs            w4, w4, #1
+        uxtl2           v4.8h, v3.16b
+        uxtl            v3.8h, v3.8b
+        ext             v5.16b, v3.16b, v4.16b, #2
+        ext             v6.16b, v3.16b, v4.16b, #4
+        ext             v7.16b, v3.16b, v4.16b, #6
+        ext             v20.16b, v4.16b, v4.16b, #2
+        ext             v21.16b, v4.16b, v4.16b, #4
+        ext             v22.16b, v4.16b, v4.16b, #6
+        mul             v16.8h, v3.8h, v0.h[0]
+        mla             v16.8h, v5.8h, v0.h[1]
+        mla             v16.8h, v6.8h, v0.h[2]
+        mla             v16.8h, v7.8h, v0.h[3]
+        mul             v17.4h, v4.4h, v0.h[0]
+        mla             v17.4h, v20.4h, v0.h[1]
+        mla             v17.4h, v21.4h, v0.h[2]
+        mla             v17.4h, v22.4h, v0.h[3]
+        sqrshrun        v16.8b, v16.8h, #6
+        sqrshrun        v17.8b, v17.8h, #6
+        add             x7, x0, #8
+        st1             {v16.8b}, [x0], x1
+        st1             {v17.s}[0], [x7]
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_h16_8_neon, export=1
+        EPEL_UNI_H_HEADER
+1:      ld1             {v2.16b, v3.16b}, [x2], x3
+        subs            w4, w4, #1
+        uxtl            v4.8h, v2.8b
+        uxtl2           v5.8h, v2.16b
+        uxtl            v6.8h, v3.8b
+        ext             v16.16b, v4.16b, v5.16b, #2
+        ext             v17.16b, v4.16b, v5.16b, #4
+        ext             v18.16b, v4.16b, v5.16b, #6
+        ext             v19.16b, v5.16b, v6.16b, #2
+        ext             v20.16b, v5.16b, v6.16b, #4
+        ext             v21.16b, v5.16b, v6.16b, #6
+        mul             v22.8h, v4.8h, v0.h[0]
+        mla             v22.8h, v16.8h, v0.h[1]
+        mla             v22.8h, v17.8h, v0.h[2]
+        mla             v22.8h, v18.8h, v0.h[3]
+        mul             v23.8h, v5.8h, v0.h[0]
+        mla             v23.8h, v19.8h, v0.h[1]
+        mla             v23.8h, v20.8h, v0.h[2]
+        mla             v23.8h, v21.8h, v0.h[3]
+        sqrshrun        v22.8b, v22.8h, #6
+        sqrshrun2       v22.16b, v23.8h, #6
+        st1             {v22.16b}, [x0], x1
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_h24_8_neon, export=1
+        EPEL_UNI_H_HEADER
+1:      ld1             {v1.16b, v2.16b}, [x2], x3
+        subs            w4, w4, #1
+        uxtl            v3.8h, v1.8b
+        uxtl2           v4.8h, v1.16b
+        uxtl            v5.8h, v2.8b
+        uxtl2           v6.8h, v2.16b
+        // First 8 pixels
+        ext             v16.16b, v3.16b, v4.16b, #2
+        ext             v17.16b, v3.16b, v4.16b, #4
+        ext             v18.16b, v3.16b, v4.16b, #6
+        mul             v22.8h, v3.8h, v0.h[0]
+        mla             v22.8h, v16.8h, v0.h[1]
+        mla             v22.8h, v17.8h, v0.h[2]
+        mla             v22.8h, v18.8h, v0.h[3]
+        // Second 8 pixels
+        ext             v16.16b, v4.16b, v5.16b, #2
+        ext             v17.16b, v4.16b, v5.16b, #4
+        ext             v18.16b, v4.16b, v5.16b, #6
+        mul             v23.8h, v4.8h, v0.h[0]
+        mla             v23.8h, v16.8h, v0.h[1]
+        mla             v23.8h, v17.8h, v0.h[2]
+        mla             v23.8h, v18.8h, v0.h[3]
+        // Third 8 pixels
+        ext             v16.16b, v5.16b, v6.16b, #2
+        ext             v17.16b, v5.16b, v6.16b, #4
+        ext             v18.16b, v5.16b, v6.16b, #6
+        mul             v24.8h, v5.8h, v0.h[0]
+        mla             v24.8h, v16.8h, v0.h[1]
+        mla             v24.8h, v17.8h, v0.h[2]
+        mla             v24.8h, v18.8h, v0.h[3]
+        sqrshrun        v22.8b, v22.8h, #6
+        sqrshrun2       v22.16b, v23.8h, #6
+        sqrshrun        v23.8b, v24.8h, #6
+        add             x7, x0, #16
+        st1             {v22.16b}, [x0], x1
+        st1             {v23.8b}, [x7]
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_h32_8_neon, export=1
+        EPEL_UNI_H_HEADER
+1:      ld1             {v1.16b, v2.16b, v3.16b}, [x2], x3
+        subs            w4, w4, #1
+        uxtl            v4.8h, v1.8b
+        uxtl2           v5.8h, v1.16b
+        uxtl            v6.8h, v2.8b
+        uxtl2           v7.8h, v2.16b
+        uxtl            v26.8h, v3.8b
+        // First 8 pixels
+        ext             v16.16b, v4.16b, v5.16b, #2
+        ext             v17.16b, v4.16b, v5.16b, #4
+        ext             v18.16b, v4.16b, v5.16b, #6
+        mul             v22.8h, v4.8h, v0.h[0]
+        mla             v22.8h, v16.8h, v0.h[1]
+        mla             v22.8h, v17.8h, v0.h[2]
+        mla             v22.8h, v18.8h, v0.h[3]
+        // Second 8 pixels
+        ext             v16.16b, v5.16b, v6.16b, #2
+        ext             v17.16b, v5.16b, v6.16b, #4
+        ext             v18.16b, v5.16b, v6.16b, #6
+        mul             v23.8h, v5.8h, v0.h[0]
+        mla             v23.8h, v16.8h, v0.h[1]
+        mla             v23.8h, v17.8h, v0.h[2]
+        mla             v23.8h, v18.8h, v0.h[3]
+        // Third 8 pixels
+        ext             v16.16b, v6.16b, v7.16b, #2
+        ext             v17.16b, v6.16b, v7.16b, #4
+        ext             v18.16b, v6.16b, v7.16b, #6
+        mul             v24.8h, v6.8h, v0.h[0]
+        mla             v24.8h, v16.8h, v0.h[1]
+        mla             v24.8h, v17.8h, v0.h[2]
+        mla             v24.8h, v18.8h, v0.h[3]
+        // Fourth 8 pixels
+        ext             v16.16b, v7.16b, v26.16b, #2
+        ext             v17.16b, v7.16b, v26.16b, #4
+        ext             v18.16b, v7.16b, v26.16b, #6
+        mul             v25.8h, v7.8h, v0.h[0]
+        mla             v25.8h, v16.8h, v0.h[1]
+        mla             v25.8h, v17.8h, v0.h[2]
+        mla             v25.8h, v18.8h, v0.h[3]
+        sqrshrun        v22.8b, v22.8h, #6
+        sqrshrun2       v22.16b, v23.8h, #6
+        sqrshrun        v23.8b, v24.8h, #6
+        sqrshrun2       v23.16b, v25.8h, #6
+        st1             {v22.16b, v23.16b}, [x0], x1
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_h48_8_neon, export=1
+        EPEL_UNI_H_HEADER
+        sub             sp, sp, #32
+        st1             {v8.16b, v9.16b}, [sp]
+1:      ld1             {v1.16b, v2.16b, v3.16b}, [x2]
+        add             x7, x2, #48
+        ld1             {v26.8b}, [x7]
+        add             x2, x2, x3
+        subs            w4, w4, #1
+        uxtl            v4.8h, v1.8b
+        uxtl2           v5.8h, v1.16b
+        uxtl            v6.8h, v2.8b
+        uxtl2           v7.8h, v2.16b
+        uxtl            v8.8h, v3.8b
+        uxtl2           v9.8h, v3.16b
+        uxtl            v27.8h, v26.8b
+        // First 8 pixels
+        ext             v16.16b, v4.16b, v5.16b, #2
+        ext             v17.16b, v4.16b, v5.16b, #4
+        ext             v18.16b, v4.16b, v5.16b, #6
+        mul             v22.8h, v4.8h, v0.h[0]
+        mla             v22.8h, v16.8h, v0.h[1]
+        mla             v22.8h, v17.8h, v0.h[2]
+        mla             v22.8h, v18.8h, v0.h[3]
+        // Second 8 pixels
+        ext             v16.16b, v5.16b, v6.16b, #2
+        ext             v17.16b, v5.16b, v6.16b, #4
+        ext             v18.16b, v5.16b, v6.16b, #6
+        mul             v23.8h, v5.8h, v0.h[0]
+        mla             v23.8h, v16.8h, v0.h[1]
+        mla             v23.8h, v17.8h, v0.h[2]
+        mla             v23.8h, v18.8h, v0.h[3]
+        // Third 8 pixels
+        ext             v16.16b, v6.16b, v7.16b, #2
+        ext             v17.16b, v6.16b, v7.16b, #4
+        ext             v18.16b, v6.16b, v7.16b, #6
+        mul             v24.8h, v6.8h, v0.h[0]
+        mla             v24.8h, v16.8h, v0.h[1]
+        mla             v24.8h, v17.8h, v0.h[2]
+        mla             v24.8h, v18.8h, v0.h[3]
+        // Fourth 8 pixels
+        ext             v16.16b, v7.16b, v8.16b, #2
+        ext             v17.16b, v7.16b, v8.16b, #4
+        ext             v18.16b, v7.16b, v8.16b, #6
+        mul             v25.8h, v7.8h, v0.h[0]
+        mla             v25.8h, v16.8h, v0.h[1]
+        mla             v25.8h, v17.8h, v0.h[2]
+        mla             v25.8h, v18.8h, v0.h[3]
+        // Fifth 8 pixels
+        ext             v16.16b, v8.16b, v9.16b, #2
+        ext             v17.16b, v8.16b, v9.16b, #4
+        ext             v18.16b, v8.16b, v9.16b, #6
+        mul             v28.8h, v8.8h, v0.h[0]
+        mla             v28.8h, v16.8h, v0.h[1]
+        mla             v28.8h, v17.8h, v0.h[2]
+        mla             v28.8h, v18.8h, v0.h[3]
+        // Sixth 8 pixels
+        ext             v16.16b, v9.16b, v27.16b, #2
+        ext             v17.16b, v9.16b, v27.16b, #4
+        ext             v18.16b, v9.16b, v27.16b, #6
+        mul             v29.8h, v9.8h, v0.h[0]
+        mla             v29.8h, v16.8h, v0.h[1]
+        mla             v29.8h, v17.8h, v0.h[2]
+        mla             v29.8h, v18.8h, v0.h[3]
+        sqrshrun        v22.8b, v22.8h, #6
+        sqrshrun2       v22.16b, v23.8h, #6
+        sqrshrun        v23.8b, v24.8h, #6
+        sqrshrun2       v23.16b, v25.8h, #6
+        sqrshrun        v24.8b, v28.8h, #6
+        sqrshrun2       v24.16b, v29.8h, #6
+        st1             {v22.16b, v23.16b, v24.16b}, [x0], x1
+        b.ne            1b
+        ld1             {v8.16b, v9.16b}, [sp], #32
+        ret
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_h64_8_neon, export=1
+        EPEL_UNI_H_HEADER
+        sub             sp, sp, #64
+        st1             {v8.16b, v9.16b, v10.16b, v11.16b}, [sp]
+1:      add             x7, x2, #48
+        ld1             {v1.16b, v2.16b, v3.16b}, [x2]
+        ld1             {v26.16b, v27.16b}, [x7]
+        add             x2, x2, x3
+        subs            w4, w4, #1
+        uxtl            v4.8h, v1.8b
+        uxtl2           v5.8h, v1.16b
+        uxtl            v6.8h, v2.8b
+        uxtl2           v7.8h, v2.16b
+        uxtl            v8.8h, v3.8b
+        uxtl2           v9.8h, v3.16b
+        uxtl            v10.8h, v26.8b
+        uxtl2           v11.8h, v26.16b
+        uxtl            v28.8h, v27.8b
+        // First 8 pixels
+        ext             v16.16b, v4.16b, v5.16b, #2
+        ext             v17.16b, v4.16b, v5.16b, #4
+        ext             v18.16b, v4.16b, v5.16b, #6
+        mul             v22.8h, v4.8h, v0.h[0]
+        mla             v22.8h, v16.8h, v0.h[1]
+        mla             v22.8h, v17.8h, v0.h[2]
+        mla             v22.8h, v18.8h, v0.h[3]
+        // Second 8 pixels
+        ext             v16.16b, v5.16b, v6.16b, #2
+        ext             v17.16b, v5.16b, v6.16b, #4
+        ext             v18.16b, v5.16b, v6.16b, #6
+        mul             v23.8h, v5.8h, v0.h[0]
+        mla             v23.8h, v16.8h, v0.h[1]
+        mla             v23.8h, v17.8h, v0.h[2]
+        mla             v23.8h, v18.8h, v0.h[3]
+        // Third 8 pixels
+        ext             v16.16b, v6.16b, v7.16b, #2
+        ext             v17.16b, v6.16b, v7.16b, #4
+        ext             v18.16b, v6.16b, v7.16b, #6
+        mul             v24.8h, v6.8h, v0.h[0]
+        mla             v24.8h, v16.8h, v0.h[1]
+        mla             v24.8h, v17.8h, v0.h[2]
+        mla             v24.8h, v18.8h, v0.h[3]
+        // Fourth 8 pixels
+        ext             v16.16b, v7.16b, v8.16b, #2
+        ext             v17.16b, v7.16b, v8.16b, #4
+        ext             v18.16b, v7.16b, v8.16b, #6
+        mul             v25.8h, v7.8h, v0.h[0]
+        mla             v25.8h, v16.8h, v0.h[1]
+        mla             v25.8h, v17.8h, v0.h[2]
+        mla             v25.8h, v18.8h, v0.h[3]
+        sqrshrun        v22.8b, v22.8h, #6
+        sqrshrun2       v22.16b, v23.8h, #6
+        sqrshrun        v23.8b, v24.8h, #6
+        sqrshrun2       v23.16b, v25.8h, #6
+        // Fifth 8 pixels
+        ext             v16.16b, v8.16b, v9.16b, #2
+        ext             v17.16b, v8.16b, v9.16b, #4
+        ext             v18.16b, v8.16b, v9.16b, #6
+        mul             v24.8h, v8.8h, v0.h[0]
+        mla             v24.8h, v16.8h, v0.h[1]
+        mla             v24.8h, v17.8h, v0.h[2]
+        mla             v24.8h, v18.8h, v0.h[3]
+        // Sixth 8 pixels
+        ext             v16.16b, v9.16b, v10.16b, #2
+        ext             v17.16b, v9.16b, v10.16b, #4
+        ext             v18.16b, v9.16b, v10.16b, #6
+        mul             v25.8h, v9.8h, v0.h[0]
+        mla             v25.8h, v16.8h, v0.h[1]
+        mla             v25.8h, v17.8h, v0.h[2]
+        mla             v25.8h, v18.8h, v0.h[3]
+        // Seventh 8 pixels
+        ext             v16.16b, v10.16b, v11.16b, #2
+        ext             v17.16b, v10.16b, v11.16b, #4
+        ext             v18.16b, v10.16b, v11.16b, #6
+        mul             v26.8h, v10.8h, v0.h[0]
+        mla             v26.8h, v16.8h, v0.h[1]
+        mla             v26.8h, v17.8h, v0.h[2]
+        mla             v26.8h, v18.8h, v0.h[3]
+        // Eighth 8 pixels
+        ext             v16.16b, v11.16b, v28.16b, #2
+        ext             v17.16b, v11.16b, v28.16b, #4
+        ext             v18.16b, v11.16b, v28.16b, #6
+        mul             v27.8h, v11.8h, v0.h[0]
+        mla             v27.8h, v16.8h, v0.h[1]
+        mla             v27.8h, v17.8h, v0.h[2]
+        mla             v27.8h, v18.8h, v0.h[3]
+        sqrshrun        v24.8b, v24.8h, #6
+        sqrshrun2       v24.16b, v25.8h, #6
+        sqrshrun        v25.8b, v26.8h, #6
+        sqrshrun2       v25.16b, v27.8h, #6
+        st1             {v22.16b, v23.16b, v24.16b, v25.16b}, [x0], x1
+        b.ne            1b
+        ld1             {v8.16b, v9.16b, v10.16b, v11.16b}, [sp], #64
+        ret
+endfunc
 
 .macro EPEL_H_HEADER
         movrel          x5, epel_filters

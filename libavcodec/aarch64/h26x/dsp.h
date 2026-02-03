@@ -130,6 +130,10 @@ NEON8_FNPROTO(epel_uni_v, (uint8_t *dst,  ptrdiff_t dststride,
         const uint8_t *src, ptrdiff_t srcstride,
         int height, intptr_t mx, intptr_t my, int width),);
 
+NEON8_FNPROTO(epel_uni_h, (uint8_t *dst,  ptrdiff_t dststride,
+        const uint8_t *src, ptrdiff_t srcstride,
+        int height, intptr_t mx, intptr_t my, int width),);
+
 NEON8_FNPROTO(epel_uni_hv, (uint8_t *dst, ptrdiff_t _dststride,
         const uint8_t *src, ptrdiff_t srcstride,
         int height, intptr_t mx, intptr_t my, int width),);
