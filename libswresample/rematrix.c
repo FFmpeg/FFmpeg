@@ -66,7 +66,10 @@ int swr_set_matrix(struct SwrContext *s, const double *matrix, int stride)
     int nb_in, nb_out, in, out;
     int user_in_chlayout_nb_channels, user_out_chlayout_nb_channels;
 
-    if (!s || s->in_convert) // s needs to be allocated but not initialized
+    if (!s || s->in_convert ||   // s needs to be allocated but not initialized
+        swri_check_chlayout(s, &s->user_in_chlayout , "input") ||
+        swri_check_chlayout(s, &s->user_out_chlayout, "output")
+    )
         return AVERROR(EINVAL);
     memset(s->matrix, 0, sizeof(s->matrix));
     memset(s->matrix_flt, 0, sizeof(s->matrix_flt));
