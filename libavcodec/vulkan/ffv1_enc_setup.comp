@@ -99,16 +99,6 @@ void write_frame_header(inout SliceContext sc)
     put_rac_equi(sc.c, bool(key_frame));
 }
 
-#ifdef GOLOMB
-void init_golomb(inout SliceContext sc)
-{
-    sc.hdr_len = rac_terminate(sc.c);
-    init_put_bits(sc.pb,
-                  OFFBUF(u8buf, sc.c.bytestream_start, sc.hdr_len),
-                  slice_size_max - sc.hdr_len);
-}
-#endif
-
 void main(void)
 {
     const uint slice_idx = gl_WorkGroupID.y*gl_NumWorkGroups.x + gl_WorkGroupID.x;
@@ -119,8 +109,4 @@ void main(void)
         write_frame_header(slice_ctx[slice_idx]);
 
     write_slice_header(slice_ctx[slice_idx]);
-
-#ifdef GOLOMB
-    init_golomb(slice_ctx[slice_idx]);
-#endif
 }

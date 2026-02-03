@@ -75,10 +75,6 @@ layout (push_constant, scalar) uniform pushConstants {
 struct SliceContext {
     RangeCoder c;
 
-#ifndef DECODE
-    PutBitContext pb; /* 8*8 bytes */
-#endif
-
     ivec2 slice_dim;
     ivec2 slice_pos;
     ivec2 slice_rct_coef;

@@ -23,18 +23,10 @@
 struct SliceContext {
     RangeCoder c;
 
-#if !defined(DECODE)
-    PutBitContext pb; /* 8*8 bytes */
-#else
-    GetBitContext gb;
-#endif
-
     ivec2 slice_dim;
     ivec2 slice_pos;
     ivec2 slice_rct_coef;
     u8vec3 quant_table_idx;
-
-    uint hdr_len; // only used for golomb
 
     uint slice_coding_mode;
     bool slice_reset_contexts;

@@ -115,6 +115,17 @@ void encode_line(inout SliceContext sc, readonly uimage2D img, uint state_off,
 
 #else /* GOLOMB */
 
+uint hdr_len = 0;
+PutBitContext pb;
+
+void init_golomb(inout SliceContext sc)
+{
+    hdr_len = rac_terminate(sc.c);
+    init_put_bits(pb,
+                  OFFBUF(u8buf, sc.c.bytestream_start, hdr_len),
+                  slice_size_max - hdr_len);
+}
+
 void encode_line(inout SliceContext sc, readonly uimage2D img, uint state_off,
                  ivec2 sp, int y, int p, int comp, int bits,
                  uint8_t quant_table_idx, inout int run_index)
@@ -150,10 +161,10 @@ void encode_line(inout SliceContext sc, readonly uimage2D img, uint state_off,
                 while (run_count >= 1 << log2_run[run_index]) {
                     run_count -= 1 << log2_run[run_index];
                     run_index++;
-                    put_bits(sc.pb, 1, 1);
+                    put_bits(pb, 1, 1);
                 }
 
-                put_bits(sc.pb, 1 + log2_run[run_index], run_count);
+                put_bits(pb, 1 + log2_run[run_index], run_count);
                 if (run_index != 0)
                     run_index--;
                 run_count = 0;
@@ -168,7 +179,7 @@ void encode_line(inout SliceContext sc, readonly uimage2D img, uint state_off,
         if (!run_mode) {
             VlcState sb = VlcState(uint64_t(slice_state) + state_off + VLC_STATE_SIZE*d[0]);
             Symbol sym = get_vlc_symbol(sb, d[1], bits);
-            put_bits(sc.pb, sym.bits, sym.val);
+            put_bits(pb, sym.bits, sym.val);
         }
     }
 
@@ -176,11 +187,11 @@ void encode_line(inout SliceContext sc, readonly uimage2D img, uint state_off,
         while (run_count >= (1 << log2_run[run_index])) {
             run_count -= 1 << log2_run[run_index];
             run_index++;
-            put_bits(sc.pb, 1, 1);
+            put_bits(pb, 1, 1);
         }
 
         if (run_count > 0)
-            put_bits(sc.pb, 1, 1);
+            put_bits(pb, 1, 1);
     }
 }
 #endif
@@ -312,7 +323,7 @@ void finalize_slice(inout SliceContext sc, const uint slice_idx)
 #endif
 
 #ifdef GOLOMB
-    uint32_t enc_len = sc.hdr_len + flush_put_bits(sc.pb);
+    uint32_t enc_len = hdr_len + flush_put_bits(pb);
 #else
     uint32_t enc_len = rac_terminate(sc.c);
 #endif
@@ -353,6 +364,9 @@ void finalize_slice(inout SliceContext sc, const uint slice_idx)
 void main(void)
 {
     const uint slice_idx = gl_WorkGroupID.y*gl_NumWorkGroups.x + gl_WorkGroupID.x;
+#ifdef GOLOMB
+    init_golomb(slice_ctx[slice_idx]);
+#endif
     encode_slice(slice_ctx[slice_idx], slice_idx);
     finalize_slice(slice_ctx[slice_idx], slice_idx);
 }
