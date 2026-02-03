@@ -109,13 +109,15 @@ void decode_line(inout SliceContext sc, ivec2 sp, int w,
     }
 }
 #else
+GetBitContext gb;
+
 void golomb_init(inout SliceContext sc)
 {
     if (version == 3 && micro_version > 1 || version > 3)
         get_rac_internal(sc.c, sc.c.range * 129 >> 8);
 
     uint64_t ac_byte_count = sc.c.bytestream - sc.c.bytestream_start - 1;
-    init_get_bits(sc.gb, u8buf(sc.c.bytestream_start + ac_byte_count),
+    init_get_bits(gb, u8buf(sc.c.bytestream_start + ac_byte_count),
                   int(sc.c.bytestream_end - sc.c.bytestream_start - ac_byte_count));
 }
 
@@ -148,13 +150,13 @@ void decode_line(inout SliceContext sc, ivec2 sp, int w,
         if (run_mode != 0) {
             if (run_count == 0 && run_mode == 1) {
                 int tmp_idx = int(log2_run[run_index]);
-                if (get_bit(sc.gb)) {
+                if (get_bit(gb)) {
                     run_count = 1 << tmp_idx;
                     if (x + run_count <= w)
                         run_index++;
                 } else {
                     if (tmp_idx != 0) {
-                        run_count = int(get_bits(sc.gb, tmp_idx));
+                        run_count = int(get_bits(gb, tmp_idx));
                     } else
                         run_count = 0;
 
@@ -168,14 +170,14 @@ void decode_line(inout SliceContext sc, ivec2 sp, int w,
             if (run_count < 0) {
                 run_mode  = 0;
                 run_count = 0;
-                diff = read_vlc_symbol(sc.gb, sb, bits);
+                diff = read_vlc_symbol(gb, sb, bits);
                 if (diff >= 0)
                     diff++;
             } else {
                 diff = 0;
             }
         } else {
-            diff = read_vlc_symbol(sc.gb, sb, bits);
+            diff = read_vlc_symbol(gb, sb, bits);
         }
 
         if (pr[0] < 0)
