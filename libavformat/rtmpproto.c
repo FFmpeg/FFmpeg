@@ -362,7 +362,7 @@ static int gen_connect(URLContext *s, RTMPContext *rt)
         // check the string, fourcc + ',' + ...  + end fourcc correct length should be (4+1)*n+4
         if ((fourcc_str_len + 1) % 5 != 0) {
             av_log(s, AV_LOG_ERROR, "Malformed rtmp_enhanched_codecs, "
-                   "should be of the form hvc1[,av01][,vp09][,...]\n");
+                   "should be of the form hvc1[,av01][,vp09][,vvc1][,...]\n");
             ff_rtmp_packet_destroy(&pkt);
             return AVERROR(EINVAL);
         }
@@ -379,6 +379,7 @@ static int gen_connect(URLContext *s, RTMPContext *rt)
                 !strncmp(fourcc_data, "ec-3", 4) ||
                 !strncmp(fourcc_data, "fLaC", 4) ||
                 !strncmp(fourcc_data, "hvc1", 4) ||
+                !strncmp(fourcc_data, "vvc1", 4) ||
                 !strncmp(fourcc_data, ".mp3", 4) ||
                 !strncmp(fourcc_data, "mp4a", 4) ||
                 !strncmp(fourcc_data, "Opus", 4) ||
