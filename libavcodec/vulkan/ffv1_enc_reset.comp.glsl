@@ -30,11 +30,7 @@ void main(void)
 {
     const uint slice_idx = gl_WorkGroupID.y*gl_NumWorkGroups.x + gl_WorkGroupID.x;
 
-    if (!key_frame && !slice_ctx[slice_idx].slice_reset_contexts)
-        return;
-
-    const uint8_t qidx = slice_ctx[slice_idx].quant_table_idx[gl_WorkGroupID.z];
-    uint contexts = context_count[qidx];
+    uint contexts = context_count[context_model];
     uint64_t slice_state_off = uint64_t(slice_state) +
                                slice_idx*plane_state_size*codec_planes;
 

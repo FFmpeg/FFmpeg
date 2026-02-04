@@ -433,19 +433,21 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
     nb_buf_bar = 0;
 
     /* Run reset shader */
-    ff_vk_shader_update_desc_buffer(&fv->s, exec, &fv->reset,
-                                    1, 0, 0,
-                                    slice_data_buf,
-                                    0, slice_data_size*f->slice_count,
-                                    VK_FORMAT_UNDEFINED);
+    if (f->key_frame || fv->force_pcm) {
+        ff_vk_shader_update_desc_buffer(&fv->s, exec, &fv->reset,
+                                        1, 0, 0,
+                                        slice_data_buf,
+                                        0, slice_data_size*f->slice_count,
+                                        VK_FORMAT_UNDEFINED);
 
-    ff_vk_exec_bind_shader(&fv->s, exec, &fv->reset);
-    ff_vk_shader_update_push_const(&fv->s, exec, &fv->reset,
-                                   VK_SHADER_STAGE_COMPUTE_BIT,
-                                   0, sizeof(FFv1ShaderParams), &pd);
+        ff_vk_exec_bind_shader(&fv->s, exec, &fv->reset);
+        ff_vk_shader_update_push_const(&fv->s, exec, &fv->reset,
+                                       VK_SHADER_STAGE_COMPUTE_BIT,
+                                       0, sizeof(FFv1ShaderParams), &pd);
 
-    vk->CmdDispatch(exec->buf, fv->ctx.num_h_slices, fv->ctx.num_v_slices,
-                    f->plane_count);
+        vk->CmdDispatch(exec->buf, fv->ctx.num_h_slices, fv->ctx.num_v_slices,
+                        f->plane_count);
+    }
 
     /* Sync between reset and encode shaders */
     ff_vk_buf_barrier(buf_bar[nb_buf_bar++], slice_data_buf,
