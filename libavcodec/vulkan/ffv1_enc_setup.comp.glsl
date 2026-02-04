@@ -72,23 +72,30 @@ void put_usymbol(inout RangeCoder c, uint v)
         put_rac_direct(c, state[22 + min(i, 9)], bool(bitfieldExtract(v, i, 1)));
 }
 
+shared uint hdr_sym[4 + 4 + 3];
+const int nb_hdr_sym = 4 + codec_planes + 3;
+
 void write_slice_header(inout SliceContext sc)
 {
     [[unroll]]
     for (int i = 0; i < CONTEXT_SIZE; i++)
         state[i] = uint8_t(128);
 
-    put_usymbol(sc.c, gl_WorkGroupID.x);
-    put_usymbol(sc.c, gl_WorkGroupID.y);
-    put_usymbol(sc.c, 0);
-    put_usymbol(sc.c, 0);
+    hdr_sym[0] = gl_WorkGroupID.x;
+    hdr_sym[1] = gl_WorkGroupID.y;
+    hdr_sym[2] = 0;
+    hdr_sym[3] = 0;
 
+    [[unroll]]
     for (int i = 0; i < codec_planes; i++)
-        put_usymbol(sc.c, sc.quant_table_idx[i]);
+        hdr_sym[4 + i] = sc.quant_table_idx[i];
 
-    put_usymbol(sc.c, pic_mode);
-    put_usymbol(sc.c, sar.x);
-    put_usymbol(sc.c, sar.y);
+    hdr_sym[nb_hdr_sym - 3] = pic_mode;
+    hdr_sym[nb_hdr_sym - 2] = sar.x;
+    hdr_sym[nb_hdr_sym - 1] = sar.y;
+
+    for (int i = 0; i < nb_hdr_sym; i++)
+        put_usymbol(sc.c, hdr_sym[i]);
 
     if (version >= 4) {
         put_rac_direct(sc.c, state[0], sc.slice_reset_contexts);
