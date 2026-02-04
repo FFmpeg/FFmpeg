@@ -50,7 +50,7 @@ static const AVOption unix_options[] = {
     { "type",      "Socket type",                           OFFSET(type),    AV_OPT_TYPE_INT,   { .i64 = SOCK_STREAM },    INT_MIN, INT_MAX, ED, .unit = "type" },
     { "stream",    "Stream (reliable stream-oriented)",     0,               AV_OPT_TYPE_CONST, { .i64 = SOCK_STREAM },    INT_MIN, INT_MAX, ED, .unit = "type" },
     { "datagram",  "Datagram (unreliable packet-oriented)", 0,               AV_OPT_TYPE_CONST, { .i64 = SOCK_DGRAM },     INT_MIN, INT_MAX, ED, .unit = "type" },
-    { "seqpacket", "Seqpacket (reliable packet-oriented",   0,               AV_OPT_TYPE_CONST, { .i64 = SOCK_SEQPACKET }, INT_MIN, INT_MAX, ED, .unit = "type" },
+    { "seqpacket", "Seqpacket (reliable packet-oriented)",  0,               AV_OPT_TYPE_CONST, { .i64 = SOCK_SEQPACKET }, INT_MIN, INT_MAX, ED, .unit = "type" },
     { "pkt_size",  "Maximum packet size",                   OFFSET(pkt_size), AV_OPT_TYPE_INT,  { .i64 = 0 },              0, INT_MAX, ED },
     { NULL }
 };
@@ -78,11 +78,19 @@ static int unix_open(URLContext *h, const char *filename, int flags)
         s->timeout = h->rw_timeout / 1000;
 
     if (s->listen) {
-        ret = ff_listen_bind(fd, (struct sockaddr *)&s->addr,
-                             sizeof(s->addr), s->timeout, h);
-        if (ret < 0)
-            goto fail;
-        fd = ret;
+        if (s->type == SOCK_DGRAM) {
+            ret = bind(fd, (struct sockaddr *)&s->addr, sizeof(s->addr));
+            if (ret) {
+                ret = ff_neterrno();
+                goto fail;
+            }
+        } else {
+            ret = ff_listen_bind(fd, (struct sockaddr *)&s->addr,
+                                sizeof(s->addr), s->timeout, h);
+            if (ret < 0)
+                goto fail;
+            fd = ret;
+        }
     } else {
         ret = ff_listen_connect(fd, (struct sockaddr *)&s->addr,
                                 sizeof(s->addr), s->timeout, h, 0);
