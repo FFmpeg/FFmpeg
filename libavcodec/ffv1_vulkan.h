@@ -56,15 +56,4 @@ typedef struct FFv1ShaderParams {
     int micro_version;
 } FFv1ShaderParams;
 
-typedef struct FFv1VkResetParameters {
-    uint32_t context_count[MAX_QUANT_TABLES];
-    VkDeviceAddress slice_state;
-    uint32_t plane_state_size;
-    uint8_t codec_planes;
-    uint8_t key_frame;
-    uint8_t version;
-    uint8_t micro_version;
-    uint8_t padding[1];
-} FFv1VkResetParameters;
-
 #endif /* AVCODEC_FFV1_VULKAN_H */

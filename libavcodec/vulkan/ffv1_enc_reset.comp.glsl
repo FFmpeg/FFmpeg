@@ -20,12 +20,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#pragma shader_stage(compute)
+#extension GL_GOOGLE_include_directive : require
+
+#include "common.comp"
+#include "ffv1_common.glsl"
+
 void main(void)
 {
     const uint slice_idx = gl_WorkGroupID.y*gl_NumWorkGroups.x + gl_WorkGroupID.x;
 
-    if (key_frame == 0 &&
-        slice_ctx[slice_idx].slice_reset_contexts == false)
+    if (!key_frame && !slice_ctx[slice_idx].slice_reset_contexts)
         return;
 
     const uint8_t qidx = slice_ctx[slice_idx].quant_table_idx[gl_WorkGroupID.z];
@@ -35,7 +40,8 @@ void main(void)
 
 #ifdef GOLOMB
     uint64_t start = slice_state_off +
-                     (gl_WorkGroupID.z*(plane_state_size/VLC_STATE_SIZE) + gl_LocalInvocationID.x)*VLC_STATE_SIZE;
+                     (gl_WorkGroupID.z*(plane_state_size/VLC_STATE_SIZE) +
+                      gl_LocalInvocationID.x)*VLC_STATE_SIZE;
     for (uint x = gl_LocalInvocationID.x; x < contexts; x += gl_WorkGroupSize.x) {
         VlcState sb = VlcState(start);
         sb.drift     =  int16_t(0);
