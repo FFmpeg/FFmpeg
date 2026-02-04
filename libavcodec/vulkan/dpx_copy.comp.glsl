@@ -21,7 +21,7 @@
 #pragma shader_stage(compute)
 #extension GL_GOOGLE_include_directive : require
 
-#include "common.comp"
+#include "common.glsl"
 
 layout (constant_id = 0) const bool big_endian = false;
 layout (constant_id = 1) const int type_bits = 0;

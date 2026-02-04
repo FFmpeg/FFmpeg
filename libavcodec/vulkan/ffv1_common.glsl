@@ -23,9 +23,9 @@
 #ifndef VULKAN_FFV1_COMMON_H
 #define VULKAN_FFV1_COMMON_H
 
-#include "rangecoder.comp"
+#include "rangecoder.glsl"
 #ifdef GOLOMB
-#include "ffv1_vlc.comp"
+#include "ffv1_vlc.glsl"
 #endif
 
 #define MAX_QUANT_TABLES 8

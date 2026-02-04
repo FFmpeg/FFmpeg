@@ -24,7 +24,7 @@
 #extension GL_GOOGLE_include_directive : require
 
 #define DECODE
-#include "common.comp"
+#include "common.glsl"
 #include "ffv1_common.glsl"
 
 layout (set = 1, binding = 1, scalar) readonly buffer slice_offsets_buf {

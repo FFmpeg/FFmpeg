@@ -23,7 +23,7 @@
 #pragma shader_stage(compute)
 #extension GL_GOOGLE_include_directive : require
 
-#include "common.comp"
+#include "common.glsl"
 #include "ffv1_common.glsl"
 
 layout (set = 0, binding = 1, scalar) uniform crc_ieee_buf {

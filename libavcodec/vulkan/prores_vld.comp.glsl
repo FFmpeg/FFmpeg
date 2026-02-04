@@ -20,7 +20,7 @@
 #extension GL_GOOGLE_include_directive : require
 
 #define GET_BITS_SMEM 4
-#include "common.comp"
+#include "common.glsl"
 
 layout (constant_id = 0) const bool interlaced = false;
 

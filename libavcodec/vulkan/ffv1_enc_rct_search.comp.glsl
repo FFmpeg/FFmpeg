@@ -24,7 +24,7 @@
 #extension GL_GOOGLE_include_directive : require
 
 #define ENCODE
-#include "common.comp"
+#include "common.glsl"
 #include "ffv1_common.glsl"
 
 layout (set = 1, binding = 1) uniform uimage2D src[];

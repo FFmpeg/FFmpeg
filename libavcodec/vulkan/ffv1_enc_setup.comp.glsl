@@ -24,7 +24,7 @@
 #extension GL_GOOGLE_include_directive : require
 
 #define FULL_RENORM
-#include "common.comp"
+#include "common.glsl"
 #include "ffv1_common.glsl"
 
 uint8_t state[CONTEXT_SIZE];

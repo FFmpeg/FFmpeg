@@ -23,7 +23,7 @@
 #pragma shader_stage(compute)
 #extension GL_GOOGLE_include_directive : require
 
-#include "common.comp"
+#include "common.glsl"
 #include "dct.glsl"
 
 struct TileData {

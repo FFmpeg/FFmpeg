@@ -20,13 +20,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef CONTEXT_SIZE
+#ifndef VULKAN_RANGECODER_H
+#define VULKAN_RANGECODER_H
+
 #define CONTEXT_SIZE 32
 
 layout (set = 0, binding = 0, scalar) uniform rangecoder_buf {
     uint8_t zero_one_state[512];
 };
-#endif
 
 struct RangeCoder {
     uint64_t bytestream_start;
@@ -247,3 +248,5 @@ bool get_rac_equi(inout RangeCoder c)
 {
     return get_rac_internal(c, c.range >> 1);
 }
+
+#endif /* VULKAN_RANGECODER_H */
