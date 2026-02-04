@@ -494,6 +494,11 @@ static int exif_decode_tag(void *logctx, GetByteContext *gb, int le,
     av_log(logctx, AV_LOG_DEBUG, "TIFF Tag: id: 0x%04x, type: %d, count: %u, offset: %d, "
                                  "payload: %" PRIu32 "\n", entry->id, type, count, tell, payload);
 
+    if (!type) {
+        av_log(logctx, AV_LOG_DEBUG, "Skipping invalid TIFF tag 0\n");
+        goto end;
+    }
+
     /* AV_TIFF_IFD is the largest, numerically */
     if (type > AV_TIFF_IFD || count >= INT_MAX/8U)
         return AVERROR_INVALIDDATA;
