@@ -544,7 +544,21 @@ int ff_sws_op_list_append(SwsOpList *ops, SwsOp *op)
 
 bool ff_sws_op_list_is_noop(const SwsOpList *ops)
 {
-    return !ops->num_ops;
+    if (!ops->num_ops)
+        return true;
+
+    const SwsOp *read  = &ops->ops[0];
+    const SwsOp *write = &ops->ops[1];
+    if (ops->num_ops != 2 ||
+        read->op != SWS_OP_READ ||
+        write->op != SWS_OP_WRITE ||
+        read->type != write->type ||
+        read->rw.packed != write->rw.packed ||
+        read->rw.elems != write->rw.elems ||
+        read->rw.frac != write->rw.frac)
+        return false;
+
+    return true;
 }
 
 int ff_sws_op_list_max_size(const SwsOpList *ops)

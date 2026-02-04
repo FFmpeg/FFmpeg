@@ -273,17 +273,6 @@ retry:
 
         switch (op->op) {
         case SWS_OP_READ:
-            /* Optimized further into refcopy / memcpy */
-            if (next->op == SWS_OP_WRITE &&
-                next->rw.elems == op->rw.elems &&
-                next->rw.packed == op->rw.packed &&
-                next->rw.frac == op->rw.frac)
-            {
-                ff_sws_op_list_remove_at(ops, n, 2);
-                av_assert1(ops->num_ops == 0);
-                return 0;
-            }
-
             /* Skip reading extra unneeded components */
             if (!op->rw.packed) {
                 int needed = op->rw.elems;
