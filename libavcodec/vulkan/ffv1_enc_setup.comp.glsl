@@ -20,12 +20,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#pragma shader_stage(compute)
+#extension GL_GOOGLE_include_directive : require
+
+#define FULL_RENORM
+#include "common.comp"
+#include "ffv1_common.glsl"
+
 uint8_t state[CONTEXT_SIZE];
 
-void init_slice(inout SliceContext sc, const uint slice_idx)
+void init_slice(inout SliceContext sc, uint slice_idx)
 {
     /* Set coordinates */
-    uvec2 img_size = imageSize(src[0]);
     uint sxs = slice_coord(img_size.x, gl_WorkGroupID.x + 0,
                            gl_NumWorkGroups.x, chroma_shift.x);
     uint sxe = slice_coord(img_size.x, gl_WorkGroupID.x + 1,
@@ -37,15 +43,15 @@ void init_slice(inout SliceContext sc, const uint slice_idx)
 
     sc.slice_pos = ivec2(sxs, sys);
     sc.slice_dim = ivec2(sxe - sxs, sye - sys);
-    sc.slice_coding_mode = int(force_pcm == 1);
+    sc.slice_coding_mode = int(force_pcm);
     sc.slice_reset_contexts = sc.slice_coding_mode == 1;
     sc.quant_table_idx = u8vec3(context_model);
 
-    if ((rct_search == 0) || (sc.slice_coding_mode == 1))
+    if (!rct_search || (sc.slice_coding_mode == 1))
         sc.slice_rct_coef = ivec2(1, 1);
 
     rac_init(sc.c,
-             OFFBUF(u8buf, out_data, slice_idx * slice_size_max),
+             OFFBUF(u8buf, slice_data, slice_idx * slice_size_max),
              slice_size_max);
 }
 

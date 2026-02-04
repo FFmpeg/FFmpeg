@@ -54,6 +54,8 @@ const ivec2 chroma_shift = ivec2(chroma_shift_x, chroma_shift_y);
 
 /* Encoder-only */
 layout (constant_id = 15) const bool force_pcm = false;
+layout (constant_id = 16) const bool rct_search = false;
+layout (constant_id = 17) const bool context_model = false;
 
 layout (push_constant, scalar) uniform pushConstants {
     u8buf slice_data;
@@ -69,6 +71,11 @@ layout (push_constant, scalar) uniform pushConstants {
     bool key_frame;
     uint32_t crcref;
     int micro_version;
+
+    /* Encoder-only */
+    ivec2 sar;
+    int pic_mode;
+    uint slice_size_max;
 };
 
 #define TYPE int32_t

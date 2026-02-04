@@ -54,6 +54,11 @@ typedef struct FFv1ShaderParams {
     uint32_t key_frame;
     uint32_t crcref;
     int micro_version;
+
+    /* Encoder-only */
+    int sar[2];
+    int pic_mode;
+    uint32_t slice_size_max;
 } FFv1ShaderParams;
 
 #endif /* AVCODEC_FFV1_VULKAN_H */
