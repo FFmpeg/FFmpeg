@@ -1320,10 +1320,6 @@ OBJS-$(HAVE_THREADS)                   += pthread.o pthread_slice.o pthread_fram
 
 OBJS-$(CONFIG_FRAME_THREAD_ENCODER)    += frame_thread_encoder.o
 
-# vulkan libs
-OBJS-$(CONFIG_LIBGLSLANG)              += vulkan_glslang.o
-OBJS-$(CONFIG_LIBSHADERC)              += vulkan_shaderc.o
-
 # Windows resource file
 SHLIBOBJS-$(HAVE_GNU_WINDRES)           += avcodecres.o
 

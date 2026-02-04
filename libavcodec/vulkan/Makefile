@@ -26,9 +26,3 @@ OBJS-$(CONFIG_PRORES_VULKAN_HWACCEL) += vulkan/prores_vld.comp.spv.o \
 
 OBJS-$(CONFIG_DPX_VULKAN_HWACCEL) += vulkan/dpx_unpack.comp.spv.o \
                                      vulkan/dpx_copy.comp.spv.o
-
-VULKAN = $(subst $(SRC_PATH)/,,$(wildcard $(SRC_PATH)/libavcodec/vulkan/*.comp))
-.SECONDARY: $(VULKAN:.comp=.c)
-libavcodec/vulkan/%.c: TAG = VULKAN
-libavcodec/vulkan/%.c: $(SRC_PATH)/libavcodec/vulkan/%.comp
-	$(M)$(SRC_PATH)/tools/source2c $< $@
