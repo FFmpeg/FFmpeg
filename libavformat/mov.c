@@ -3178,6 +3178,7 @@ fail:
             av_freep(&sc->extradata[j]);
     }
 
+    sc->stsd_count = 0;
     av_freep(&sc->extradata);
     av_freep(&sc->extradata_size);
     return ret;
