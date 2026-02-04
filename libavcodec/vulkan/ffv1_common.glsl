@@ -52,6 +52,9 @@ layout (constant_id = 13) const int chroma_shift_x = 0;
 layout (constant_id = 14) const int chroma_shift_y = 0;
 const ivec2 chroma_shift = ivec2(chroma_shift_x, chroma_shift_y);
 
+/* Encoder-only */
+layout (constant_id = 15) const bool force_pcm = false;
+
 layout (push_constant, scalar) uniform pushConstants {
     u8buf slice_data;
     u8buf slice_state;

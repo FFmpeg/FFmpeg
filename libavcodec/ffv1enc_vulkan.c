@@ -111,9 +111,11 @@ extern const char *ff_source_rangecoder_comp;
 extern const char *ff_source_ffv1_vlc_comp;
 extern const char *ff_source_ffv1_common_comp;
 extern const char *ff_source_ffv1_reset_comp;
-extern const char *ff_source_ffv1_rct_search_comp;
 extern const char *ff_source_ffv1_enc_setup_comp;
 extern const char *ff_source_ffv1_enc_comp;
+
+extern const unsigned char ff_ffv1_enc_rct_search_comp_spv_data[];
+extern const unsigned int ff_ffv1_enc_rct_search_comp_spv_len;
 
 typedef struct FFv1VkParameters {
     VkDeviceAddress slice_state;
@@ -192,63 +194,31 @@ static void add_push_data(FFVulkanShader *shd)
                                 VK_SHADER_STAGE_COMPUTE_BIT);
 }
 
-typedef struct FFv1VkRCTSearchParameters {
-    int fmt_lut[4];
-    int rct_offset;
-    uint8_t planar_rgb;
-    uint8_t transparency;
-    uint8_t key_frame;
-    uint8_t force_pcm;
-    uint8_t version;
-    uint8_t micro_version;
-    uint8_t padding[2];
-} FFv1VkRCTSearchParameters;
-
 static int run_rct_search(AVCodecContext *avctx, FFVkExecContext *exec,
                           AVFrame *enc_in, VkImageView *enc_in_views,
-                          FFVkBuffer *slice_data_buf, uint32_t slice_data_size)
+                          FFVkBuffer *slice_data_buf, uint32_t slice_data_size,
+                          FFv1ShaderParams *pd)
 {
     VulkanEncodeFFv1Context *fv = avctx->priv_data;
     FFV1Context *f = &fv->ctx;
     FFVulkanFunctions *vk = &fv->s.vkfn;
-    AVHWFramesContext *src_hwfc = (AVHWFramesContext *)enc_in->hw_frames_ctx->data;
-    FFv1VkRCTSearchParameters pd;
 
     /* Update descriptors */
     ff_vk_shader_update_desc_buffer(&fv->s, exec, &fv->rct_search,
-                                    0, 0, 0,
+                                    1, 0, 0,
                                     slice_data_buf,
                                     0, slice_data_size*f->slice_count,
                                     VK_FORMAT_UNDEFINED);
     ff_vk_shader_update_img_array(&fv->s, exec, &fv->rct_search,
                                   enc_in, enc_in_views,
-                                  0, 1,
+                                  1, 1,
                                   VK_IMAGE_LAYOUT_GENERAL,
                                   VK_NULL_HANDLE);
 
     ff_vk_exec_bind_shader(&fv->s, exec, &fv->rct_search);
-
-    pd = (FFv1VkRCTSearchParameters) {
-        .rct_offset = 1 << f->bits_per_raw_sample,
-        .planar_rgb = ff_vk_mt_is_np_rgb(src_hwfc->sw_format) &&
-                      (ff_vk_count_images((AVVkFrame *)enc_in->data[0]) > 1),
-        .transparency = f->transparency,
-        .key_frame = f->key_frame,
-        .force_pcm = fv->force_pcm,
-        .version = f->version,
-        .micro_version = f->micro_version,
-    };
-
-    if (avctx->sw_pix_fmt == AV_PIX_FMT_GBRP10 ||
-        avctx->sw_pix_fmt == AV_PIX_FMT_GBRP12 ||
-        avctx->sw_pix_fmt == AV_PIX_FMT_GBRP14)
-        memcpy(pd.fmt_lut, (int [4]) { 2, 1, 0, 3 }, 4*sizeof(int));
-    else
-        ff_vk_set_perm(avctx->sw_pix_fmt, pd.fmt_lut, 1);
-
     ff_vk_shader_update_push_const(&fv->s, exec, &fv->rct_search,
                                    VK_SHADER_STAGE_COMPUTE_BIT,
-                                   0, sizeof(pd), &pd);
+                                   0, sizeof(FFv1ShaderParams), pd);
 
     vk->CmdDispatch(exec->buf, fv->ctx.num_h_slices, fv->ctx.num_v_slices, 1);
 
@@ -265,7 +235,7 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
     FFVulkanFunctions *vk = &fv->s.vkfn;
 
     VulkanEncodeFFv1FrameData *fd = exec->opaque;
-    FFv1VkParameters pd;
+    FFv1VkParameters pd_old;
 
     /* Slice data */
     AVBufferRef *slice_data_ref;
@@ -401,6 +371,34 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
                                     FF_VK_REP_NATIVE));
     }
 
+    /* With everything allocated, setup push data */
+    FFv1ShaderParams pd = {
+        .slice_data = out_data_buf->address,
+        .slice_state = slice_data_buf->address + f->slice_count*256,
+
+        .img_size[0] = fv->s.frames->width,
+        .img_size[1] = fv->s.frames->height,
+
+        .plane_state_size = plane_state_size,
+        .key_frame = f->key_frame,
+        .crcref = f->crcref,
+        .micro_version = f->micro_version,
+    };
+
+    for (int i = 0; i < f->quant_table_count; i++) {
+        pd.context_count[i] = f->context_count[i];
+        pd.extend_lookup[i] = f->quant_tables[i][3][127] ||
+                              f->quant_tables[i][4][127];
+    }
+
+    /* For some reason the C FFv1 encoder/decoder treats these differently */
+    if (avctx->sw_pix_fmt == AV_PIX_FMT_GBRP10 ||
+        avctx->sw_pix_fmt == AV_PIX_FMT_GBRP12 ||
+        avctx->sw_pix_fmt == AV_PIX_FMT_GBRP14)
+        memcpy(pd.fmt_lut, (int [4]) { 2, 1, 0, 3 }, 4*sizeof(int));
+    else
+        ff_vk_set_perm(avctx->sw_pix_fmt, pd.fmt_lut, 1);
+
     /* Setup shader */
     ff_vk_shader_update_desc_buffer(&fv->s, exec, &fv->setup,
                                     1, 0, 0,
@@ -437,7 +435,7 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
     if (fv->optimize_rct) {
         RET(run_rct_search(avctx, exec,
                            src, src_views,
-                           slice_data_buf, slice_data_size));
+                           slice_data_buf, slice_data_size, &pd));
 
         /* Make sure the writes are visible to the setup shader */
         ff_vk_buf_barrier(buf_bar[nb_buf_bar++], slice_data_buf,
@@ -454,7 +452,7 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
 
     /* Run setup shader */
     ff_vk_exec_bind_shader(&fv->s, exec, &fv->setup);
-    pd = (FFv1VkParameters) {
+    pd_old = (FFv1VkParameters) {
         .slice_state = slice_data_buf->address + f->slice_count*256,
         .out_data = out_data_buf->address,
         .bits_per_raw_sample = f->bits_per_raw_sample,
@@ -491,16 +489,16 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
     if (avctx->sw_pix_fmt == AV_PIX_FMT_GBRP10 ||
         avctx->sw_pix_fmt == AV_PIX_FMT_GBRP12 ||
         avctx->sw_pix_fmt == AV_PIX_FMT_GBRP14)
-        memcpy(pd.fmt_lut, (int [4]) { 2, 1, 0, 3 }, 4*sizeof(int));
+        memcpy(pd_old.fmt_lut, (int [4]) { 2, 1, 0, 3 }, 4*sizeof(int));
     else
-        ff_vk_set_perm(avctx->sw_pix_fmt, pd.fmt_lut, 1);
+        ff_vk_set_perm(avctx->sw_pix_fmt, pd_old.fmt_lut, 1);
 
     for (int i = 0; i < f->quant_table_count; i++)
-        pd.extend_lookup[i] = (f->quant_tables[i][3][127] != 0) ||
-                              (f->quant_tables[i][4][127] != 0);
+        pd_old.extend_lookup[i] = (f->quant_tables[i][3][127] != 0) ||
+                                  (f->quant_tables[i][4][127] != 0);
     ff_vk_shader_update_push_const(&fv->s, exec, &fv->setup,
                                    VK_SHADER_STAGE_COMPUTE_BIT,
-                                   0, sizeof(pd), &pd);
+                                   0, sizeof(pd_old), &pd_old);
     vk->CmdDispatch(exec->buf, fv->ctx.num_h_slices, fv->ctx.num_v_slices, 1);
 
     /* Clean up temporary image */
@@ -623,7 +621,7 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
     ff_vk_exec_bind_shader(&fv->s, exec, &fv->enc);
     ff_vk_shader_update_push_const(&fv->s, exec, &fv->enc,
                                    VK_SHADER_STAGE_COMPUTE_BIT,
-                                   0, sizeof(pd), &pd);
+                                   0, sizeof(pd_old), &pd_old);
     vk->CmdDispatch(exec->buf, fv->ctx.num_h_slices, fv->ctx.num_v_slices, 1);
 
     /* Submit */
@@ -970,102 +968,46 @@ static void define_shared_code(AVCodecContext *avctx, FFVulkanShader *shd)
     GLSLD(ff_source_ffv1_common_comp);
 }
 
-static int init_rct_search_shader(AVCodecContext *avctx, FFVkSPIRVCompiler *spv)
+static int init_rct_search_shader(AVCodecContext *avctx, VkSpecializationInfo *sl)
 {
     int err;
     VulkanEncodeFFv1Context *fv = avctx->priv_data;
-    FFV1Context *f = &fv->ctx;
     FFVulkanShader *shd = &fv->rct_search;
-    FFVulkanDescriptorSetBinding *desc_set;
 
-    uint8_t *spv_data;
-    size_t spv_len;
-    void *spv_opaque = NULL;
+    ff_vk_shader_load(shd, VK_SHADER_STAGE_COMPUTE_BIT, sl,
+                      (uint32_t []) { 32, 32, 1 }, 0);
 
-    RET(ff_vk_shader_init(&fv->s, shd, "ffv1_rct_search",
-                          VK_SHADER_STAGE_COMPUTE_BIT,
-                          (const char *[]) { "GL_EXT_buffer_reference",
-                                             "GL_EXT_buffer_reference2",
-                                             "GL_EXT_null_initializer" }, 3,
-                          32, 32, 1,
-                          0));
-
-    /* Common codec header */
-    GLSLD(ff_source_common_comp);
-
-    GLSLC(0, layout(push_constant, scalar) uniform pushConstants {             );
-    GLSLC(1,    ivec4 fmt_lut;                                                 );
-    GLSLC(1,    int rct_offset;                                                );
-    GLSLC(1,    uint8_t planar_rgb;                                            );
-    GLSLC(1,    uint8_t transparency;                                          );
-    GLSLC(1,    uint8_t key_frame;                                             );
-    GLSLC(1,    uint8_t force_pcm;                                             );
-    GLSLC(1,    uint8_t version;                                               );
-    GLSLC(1,    uint8_t micro_version;                                         );
-    GLSLC(1,    uint8_t padding[3];                                            );
-    GLSLC(0, };                                                                );
-    ff_vk_shader_add_push_const(shd, 0, sizeof(FFv1VkResetParameters),
+    ff_vk_shader_add_push_const(shd, 0, sizeof(FFv1ShaderParams),
                                 VK_SHADER_STAGE_COMPUTE_BIT);
 
-    av_bprintf(&shd->src, "#define MAX_QUANT_TABLES %i\n", MAX_QUANT_TABLES);
-    av_bprintf(&shd->src, "#define MAX_CONTEXT_INPUTS %i\n", MAX_CONTEXT_INPUTS);
-    av_bprintf(&shd->src, "#define MAX_QUANT_TABLE_SIZE %i\n", MAX_QUANT_TABLE_SIZE);
-
-    /* Never used */
-    desc_set = (FFVulkanDescriptorSetBinding []) {
-        {
-            .name        = "rangecoder_static_buf",
-            .type        = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
-            .mem_layout  = "scalar",
-            .buf_content = "uint8_t zero_one_state[512];",
-        },
-        {
-            .name        = "quant_buf",
-            .type        = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
-            .mem_layout  = "scalar",
-            .buf_content = "int16_t quant_table[MAX_QUANT_TABLES]"
-                           "[MAX_CONTEXT_INPUTS][MAX_QUANT_TABLE_SIZE];",
+    const FFVulkanDescriptorSetBinding desc_set_const[] = {
+        { /* rangecoder_buf */
+            .type   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
         },
     };
-    RET(ff_vk_shader_add_descriptor_set(&fv->s, shd, desc_set, 2, 1, 1));
+    ff_vk_shader_add_descriptor_set(&fv->s, shd, desc_set_const, 1, 1, 0);
 
-    define_shared_code(avctx, shd);
-
-    desc_set = (FFVulkanDescriptorSetBinding []) {
-        {
-            .name        = "slice_data_buf",
-            .type        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-            .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
-            .buf_content = "SliceContext slice_ctx",
-            .buf_elems   = f->max_slice_count,
+    const FFVulkanDescriptorSetBinding desc_set[] = {
+        { /* slice_data_buf */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
         },
-        {
-            .name       = "src",
-            .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-            .dimensions = 2,
-            .mem_layout = ff_vk_shader_rep_fmt(fv->s.frames->sw_format,
-                                               FF_VK_REP_NATIVE),
-            .elems      = av_pix_fmt_count_planes(fv->s.frames->sw_format),
-            .mem_quali  = "readonly",
-            .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
+        { /* src */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
+            .elems  = av_pix_fmt_count_planes(fv->s.frames->sw_format),
         },
     };
-    RET(ff_vk_shader_add_descriptor_set(&fv->s, shd, desc_set, 2, 0, 0));
+    ff_vk_shader_add_descriptor_set(&fv->s, shd, desc_set, 2, 0, 0);
 
-    GLSLD(ff_source_ffv1_rct_search_comp);
-
-    RET(spv->compile_shader(&fv->s, spv, shd, &spv_data, &spv_len, "main",
-                            &spv_opaque));
-    RET(ff_vk_shader_link(&fv->s, shd, spv_data, spv_len, "main"));
+    RET(ff_vk_shader_link(&fv->s, shd,
+                          ff_ffv1_enc_rct_search_comp_spv_data,
+                          ff_ffv1_enc_rct_search_comp_spv_len, "main"));
 
     RET(ff_vk_shader_register_exec(&fv->s, &fv->exec_pool, shd));
 
 fail:
-    if (spv_opaque)
-        spv->free_shader(spv, &spv_opaque);
-
     return err;
 }
 
@@ -1575,8 +1517,14 @@ static av_cold int vulkan_encode_ffv1_init(AVCodecContext *avctx)
     /* Init rct search shader */
     fv->optimize_rct = fv->is_rgb && f->version >= 4 &&
                        !fv->force_pcm && fv->optimize_rct;
+
+    /* Init shader specialization consts */
+    SPEC_LIST_CREATE(sl, 16, 16*sizeof(uint32_t))
+    ff_ffv1_vk_set_common_sl(avctx, f, sl, fv->s.frames->sw_format);
+    SPEC_LIST_ADD(sl, 15, 32, fv->force_pcm);
+
     if (fv->optimize_rct) {
-        err = init_rct_search_shader(avctx, spv);
+        err = init_rct_search_shader(avctx, sl);
         if (err < 0) {
             spv->uninit(&spv);
             return err;

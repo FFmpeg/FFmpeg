@@ -56,18 +56,6 @@ typedef struct FFv1ShaderParams {
     int micro_version;
 } FFv1ShaderParams;
 
-typedef struct FFv1VkRCTParameters {
-    int fmt_lut[4];
-    int offset;
-    uint8_t bits;
-    uint8_t planar_rgb;
-    uint8_t color_planes;
-    uint8_t transparency;
-    uint8_t version;
-    uint8_t micro_version;
-    uint8_t padding[2];
-} FFv1VkRCTParameters;
-
 typedef struct FFv1VkResetParameters {
     uint32_t context_count[MAX_QUANT_TABLES];
     VkDeviceAddress slice_state;

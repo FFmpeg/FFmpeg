@@ -20,13 +20,21 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#pragma shader_stage(compute)
+#extension GL_GOOGLE_include_directive : require
+
+#define ENCODE
+#include "common.comp"
+#include "ffv1_common.glsl"
+
+layout (set = 1, binding = 1) uniform uimage2D src[];
+
 ivec3 load_components(ivec2 pos)
 {
     ivec3 pix = ivec3(imageLoad(src[0], pos));
-    if (planar_rgb != 0) {
+    if (planar_rgb)
         for (int i = 1; i < 3; i++)
             pix[i] = int(imageLoad(src[i], pos)[0]);
-    }
 
     return ivec3(pix[fmt_lut[0]], pix[fmt_lut[1]], pix[fmt_lut[2]]);
 }
@@ -132,8 +140,9 @@ void coeff_search(inout SliceContext sc)
 
 void main(void)
 {
-    if (force_pcm == 1)
+    if (force_pcm)
         return;
+
     const uint slice_idx = gl_WorkGroupID.y*gl_NumWorkGroups.x + gl_WorkGroupID.x;
     coeff_search(slice_ctx[slice_idx]);
 }
