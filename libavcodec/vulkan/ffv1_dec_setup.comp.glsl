@@ -37,7 +37,9 @@ layout (set = 1, binding = 2, scalar) writeonly buffer slice_status_buf {
     uint32_t slice_status[];
 };
 
-uint8_t setup_state[CONTEXT_SIZE];
+shared uint8_t setup_state[CONTEXT_SIZE];
+shared uint hdr_sym[4 + 4 + 3];
+const int nb_hdr_sym = 4 + codec_planes + 3;
 
 uint get_usymbol(inout RangeCoder c)
 {
@@ -68,10 +70,13 @@ bool decode_slice_header(inout SliceContext sc)
     for (int i = 0; i < CONTEXT_SIZE; i++)
         setup_state[i] = uint8_t(128);
 
-    uint sx = get_usymbol(sc.c);
-    uint sy = get_usymbol(sc.c);
-    uint sw = get_usymbol(sc.c) + 1;
-    uint sh = get_usymbol(sc.c) + 1;
+    for (int i = 0; i < nb_hdr_sym; i++)
+        hdr_sym[i] = get_usymbol(sc.c);
+
+    uint sx = hdr_sym[0];
+    uint sy = hdr_sym[1];
+    uint sw = hdr_sym[2] + 1;
+    uint sh = hdr_sym[3] + 1;
 
     if (sx < 0 || sy < 0 || sw <= 0 || sh <= 0 ||
         sx > (gl_NumWorkGroups.x - sw) || sy > (gl_NumWorkGroups.y - sh) ||
@@ -91,15 +96,11 @@ bool decode_slice_header(inout SliceContext sc)
     sc.slice_coding_mode = int(0);
 
     for (uint i = 0; i < codec_planes; i++) {
-        uint idx = get_usymbol(sc.c);
+        uint idx = hdr_sym[4 + i];
         if (idx >= quant_table_count)
             return true;
         sc.quant_table_idx[i] = uint8_t(idx);
     }
-
-    get_usymbol(sc.c);
-    get_usymbol(sc.c);
-    get_usymbol(sc.c);
 
     if (version >= 4) {
         sc.slice_reset_contexts = get_rac_direct(sc.c, setup_state[0]);
