@@ -306,11 +306,11 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
         case SWS_OP_CLEAR:
             for (int i = 0; i < 4; i++) {
                 if (op->c.q4[i].den) {
-                    if (op->c.q4[i].num == 0) {
-                        op->comps.flags[i] = SWS_COMP_ZERO | SWS_COMP_EXACT;
-                    } else if (op->c.q4[i].den == 1) {
-                        op->comps.flags[i] = SWS_COMP_EXACT;
-                    }
+                    op->comps.flags[i] = 0;
+                    if (op->c.q4[i].num == 0)
+                        op->comps.flags[i] |= SWS_COMP_ZERO;
+                    if (op->c.q4[i].den == 1)
+                        op->comps.flags[i] |= SWS_COMP_EXACT;
                 } else {
                     op->comps.flags[i] = prev.flags[i];
                 }
