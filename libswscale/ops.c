@@ -19,6 +19,7 @@
  */
 
 #include "libavutil/avassert.h"
+#include "libavutil/avstring.h"
 #include "libavutil/bswap.h"
 #include "libavutil/mem.h"
 #include "libavutil/rational.h"
@@ -640,6 +641,18 @@ static char describe_comp_flags(unsigned flags)
         return '.';
 }
 
+static const char *describe_order(SwsSwizzleOp order, int planes, char buf[32])
+{
+    if (order.mask == SWS_SWIZZLE(0, 1, 2, 3).mask)
+        return "";
+
+    av_strlcpy(buf, ", via {", 32);
+    for (int i = 0; i < planes; i++)
+        av_strlcatf(buf, 32, "%s%d", i ? ", " : "", order.in[i]);
+    av_strlcat(buf, "}", 32);
+    return buf;
+}
+
 static const char *print_q(const AVRational q, char buf[], int buf_len)
 {
     if (!q.den) {
@@ -667,6 +680,8 @@ void ff_sws_op_list_print(void *log, int lev, const SwsOpList *ops)
 
     for (int i = 0; i < ops->num_ops; i++) {
         const SwsOp *op = &ops->ops[i];
+        char buf[32];
+
         av_log(log, lev, "  [%3s %c%c%c%c -> %c%c%c%c] ",
                ff_sws_pixel_type_name(op->type),
                op->comps.unused[0] ? 'X' : '.',
@@ -684,11 +699,14 @@ void ff_sws_op_list_print(void *log, int lev, const SwsOpList *ops)
             break;
         case SWS_OP_READ:
         case SWS_OP_WRITE:
-            av_log(log, lev, "%-20s: %d elem(s) %s >> %d\n",
+            av_log(log, lev, "%-20s: %d elem(s) %s >> %d%s\n",
                    op->op == SWS_OP_READ ? "SWS_OP_READ"
                                          : "SWS_OP_WRITE",
                    op->rw.elems,  op->rw.packed ? "packed" : "planar",
-                   op->rw.frac);
+                   op->rw.frac,
+                   describe_order(op->op == SWS_OP_READ ? ops->order_src
+                                                        : ops->order_dst,
+                                  op->rw.packed ? 1 : op->rw.elems, buf));
             break;
         case SWS_OP_SWAP_BYTES:
             av_log(log, lev, "SWS_OP_SWAP_BYTES\n");
