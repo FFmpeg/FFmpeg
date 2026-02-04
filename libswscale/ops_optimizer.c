@@ -623,30 +623,12 @@ retry:
      * too aggressively */
     for (int n = 0; n < ops->num_ops - 1; n++) {
         SwsOp *op = &ops->ops[n];
-        SwsOp *prev = &ops->ops[n - 1];
         SwsOp *next = &ops->ops[n + 1];
 
         switch (op->op) {
         case SWS_OP_SWIZZLE: {
-            bool seen[4] = {0};
-            bool has_duplicates = false;
-            for (int i = 0; i < 4; i++) {
-                if (next->comps.unused[i])
-                    continue;
-                has_duplicates |= seen[op->swizzle.in[i]];
-                seen[op->swizzle.in[i]] = true;
-            }
-
-            /* Try to push swizzles with duplicates towards the output */
-            if (has_duplicates && op_commute_swizzle(op, next)) {
-                FFSWAP(SwsOp, *op, *next);
-                goto retry;
-            }
-
-            /* Move swizzle out of the way between two converts so that
-             * they may be merged */
-            if (prev->op == SWS_OP_CONVERT && next->op == SWS_OP_CONVERT) {
-                op->type = next->convert.to;
+            /* Try to push swizzles towards the output */
+            if (op_commute_swizzle(op, next)) {
                 FFSWAP(SwsOp, *op, *next);
                 goto retry;
             }
