@@ -481,7 +481,7 @@ endfunc
 #else
         ldrsw           x9, [sp, #8]        // ox0
         ldrsw           x10, [sp, #16]      // ox1
-        ldrsw           x11, [sp, 40]       // width
+        ldrsw           x11, [sp, #40]      // width
 #endif
 .endm
 
