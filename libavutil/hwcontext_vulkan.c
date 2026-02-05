@@ -695,6 +695,9 @@ static const VulkanOptExtension optional_device_exts[] = {
     { VK_KHR_SHADER_SUBGROUP_ROTATE_EXTENSION_NAME,           FF_VK_EXT_SUBGROUP_ROTATE        },
     { VK_EXT_HOST_IMAGE_COPY_EXTENSION_NAME,                  FF_VK_EXT_HOST_IMAGE_COPY        },
     { VK_KHR_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_EXTENSION_NAME, FF_VK_EXT_EXPLICIT_MEM_LAYOUT    },
+#ifdef VK_KHR_shader_relaxed_extended_instruction
+    { VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION_EXTENSION_NAME, FF_VK_EXT_RELAXED_EXTENDED_INSTR },
+#endif
 #ifdef VK_EXT_shader_long_vector
     { VK_EXT_SHADER_LONG_VECTOR_EXTENSION_NAME,               FF_VK_EXT_LONG_VECTOR            },
 #endif
@@ -984,10 +987,7 @@ static int check_extensions(AVHWDeviceContext *ctx, int dev, AVDictionary *opts,
                 break;
             }
         }
-        if (found) {
-            av_log(ctx, AV_LOG_VERBOSE, "Using %s extension %s\n", mod, tstr);
-            ADD_VAL_TO_LIST(extension_names, extensions_found, tstr);
-        } else {
+        if (!found) {
             av_log(ctx, AV_LOG_ERROR, "Debug_printf/profile enabled, but extension \"%s\" not found!\n",
                    tstr);
             err = AVERROR(EINVAL);
