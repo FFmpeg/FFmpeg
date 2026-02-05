@@ -309,7 +309,7 @@ static int argo_brp_read_header(AVFormatContext *s)
         if (blk.size < ASF_CHUNK_HEADER_SIZE)
             return AVERROR_INVALIDDATA;
 
-        ret = ffio_read_size(pb, buf, BRP_BLOCK_HEADER_SIZE);
+        ret = ffio_read_size(pb, buf, ASF_CHUNK_HEADER_SIZE);
         if (ret < 0)
             return ret;
 
