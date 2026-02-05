@@ -41,8 +41,8 @@ align 16
     mova                     m1, [angq+block_sizeq]
     xorps                    m2, m2
     xorps                    m3, m3
-    cmpleps                  m2, m0     ; m <= 0.0
-    cmpleps                  m3, m1     ; a <= 0.0
+    cmpltps                  m2, m0     ; m < 0.0
+    cmpltps                  m3, m1     ; a < 0.0
     andps                    m2, m5     ; keep only the sign bit
     xorps                    m1, m2
     mova                     m4, m3
