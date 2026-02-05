@@ -2295,6 +2295,13 @@ The following parameters can be set via command line options
 Timeout in ms.
 @item listen
 Create the Unix socket in listening mode.
+@item type
+Select socket type.
+@table @samp
+@item stream Corresponds to SOCK_STREAM (reliable stream-oriented)
+@item datagram Corresponds to SOCK_DGRAM (unreliable packet-oriented)
+@item seqpacket Corresponds to SOCK_SEQPACKET (reliable packet-oriented)
+@end table
 @item pkt_size
 Maximum packet size for packet-oriented sockets (SOCK_DGRAM and
 SOCK_SEQPACKET). If greater than zero, this value is used as
