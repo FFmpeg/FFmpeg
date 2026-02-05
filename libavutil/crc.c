@@ -357,6 +357,10 @@ int av_crc_init(AVCRC *ctx, int le, int bits, uint32_t poly, int ctx_size)
     int done = ff_crc_init_x86(ctx, le, bits, poly, ctx_size);
     if (done)
         return 0;
+#elif ARCH_AARCH64
+    int done = ff_crc_init_aarch64(ctx, le, bits, poly, ctx_size);
+    if (done)
+        return 0;
 #endif
 
     for (i = 0; i < 256; i++) {
