@@ -64,6 +64,22 @@
 #define DISABLE_I8MM
 #endif
 
+#if HAVE_AS_ARCHEXT_AES_DIRECTIVE
+#define ENABLE_PMULL  .arch_extension aes
+#define DISABLE_PMULL .arch_extension noaes
+#else
+#define ENABLE_PMULL
+#define DISABLE_PMULL
+#endif
+
+#if HAVE_AS_ARCHEXT_SHA3_DIRECTIVE
+#define ENABLE_EOR3  .arch_extension sha3
+#define DISABLE_EOR3 .arch_extension nosha3
+#else
+#define ENABLE_EOR3
+#define DISABLE_EOR3
+#endif
+
 #if HAVE_AS_ARCHEXT_SVE_DIRECTIVE
 #define ENABLE_SVE  .arch_extension sve
 #define DISABLE_SVE .arch_extension nosve
@@ -105,6 +121,8 @@
 #endif
 
 DISABLE_ARM_CRC
+DISABLE_PMULL
+DISABLE_EOR3
 DISABLE_DOTPROD
 DISABLE_I8MM
 DISABLE_SVE

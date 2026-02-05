@@ -24,7 +24,9 @@
 #include <stdint.h>
 #include <sys/auxv.h>
 
+#define HWCAP_AARCH64_PMULL   (1 << 4)
 #define HWCAP_AARCH64_CRC32   (1 << 7)
+#define HWCAP_AARCH64_SHA3    (1 << 17)
 #define HWCAP_AARCH64_ASIMDDP (1 << 20)
 #define HWCAP_AARCH64_SVE     (1 << 22)
 #define HWCAP2_AARCH64_SVE2   (1 << 1)
@@ -40,6 +42,10 @@ static int detect_flags(void)
     unsigned long hwcap = ff_getauxval(AT_HWCAP);
     unsigned long hwcap2 = ff_getauxval(AT_HWCAP2);
 
+    if (hwcap & HWCAP_AARCH64_PMULL)
+        flags |= AV_CPU_FLAG_PMULL;
+    if (hwcap & HWCAP_AARCH64_SHA3)
+        flags |= AV_CPU_FLAG_EOR3;
     if (hwcap & HWCAP_AARCH64_CRC32)
         flags |= AV_CPU_FLAG_ARM_CRC;
     if (hwcap & HWCAP_AARCH64_ASIMDDP)
@@ -85,6 +91,10 @@ static int detect_flags(void)
         flags |= AV_CPU_FLAG_SME_I16I64;
     if (have_feature("hw.optional.armv8_crc32"))
         flags |= AV_CPU_FLAG_ARM_CRC;
+    if (have_feature("hw.optional.arm.FEAT_PMULL"))
+        flags |= AV_CPU_FLAG_PMULL;
+    if (have_feature("hw.optional.armv8_2_sha3"))
+        flags |= AV_CPU_FLAG_EOR3;
     if (have_feature("hw.optional.arm.FEAT_SME2"))
         flags |= AV_CPU_FLAG_SME2;
 
@@ -115,6 +125,10 @@ static int detect_flags(void)
             flags |= AV_CPU_FLAG_DOTPROD;
         if (ID_AA64ISAR0_CRC32(isar0) >= ID_AA64ISAR0_CRC32_BASE)
             flags |= AV_CPU_FLAG_ARM_CRC;
+        if (ID_AA64ISAR0_AES(isar0) >= ID_AA64ISAR0_AES_PMULL)
+            flags |= AV_CPU_FLAG_PMULL;
+        if (ID_AA64ISAR0_SHA3(isar0) >= ID_AA64ISAR0_SHA3_IMPL)
+            flags |= AV_CPU_FLAG_EOR3;
     }
 
     mib[0] = CTL_MACHDEP;
@@ -140,6 +154,14 @@ static int detect_flags(void)
 #ifdef PF_ARM_V8_CRC32_INSTRUCTIONS_AVAILABLE
     if (IsProcessorFeaturePresent(PF_ARM_V8_CRC32_INSTRUCTIONS_AVAILABLE))
         flags |= AV_CPU_FLAG_ARM_CRC;
+#endif
+#ifdef PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE
+    if (IsProcessorFeaturePresent(PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE))
+        flags |= AV_CPU_FLAG_PMULL;
+#endif
+#ifdef PF_ARM_SHA3_INSTRUCTIONS_AVAILABLE
+    if (IsProcessorFeaturePresent(PF_ARM_SHA3_INSTRUCTIONS_AVAILABLE))
+        flags |= AV_CPU_FLAG_EOR3;
 #endif
 #ifdef PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE
     if (IsProcessorFeaturePresent(PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE))
@@ -202,6 +224,12 @@ int ff_get_cpu_flags_aarch64(void)
 #endif
 #ifdef __ARM_FEATURE_CRC32
     flags |= AV_CPU_FLAG_ARM_CRC;
+#endif
+#ifdef __ARM_FEATURE_AES
+    flags |= AV_CPU_FLAG_PMULL;
+#endif
+#ifdef __ARM_FEATURE_SHA3
+    flags |= AV_CPU_FLAG_EOR3;
 #endif
 #ifdef __ARM_FEATURE_SME_I16I64
     flags |= AV_CPU_FLAG_SME_I16I64;
