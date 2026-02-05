@@ -424,6 +424,14 @@ static int execute_model_th(THRequestItem *request, Queue *lltask_queue)
         }
         th_model->cond->notify_one();
         return 0;
+    } else {
+        // Synchronous execution path
+        ret = th_start_inference((void *)(request));
+        if (ret != 0) {
+            goto err;
+        }
+        infer_completion_callback(request);
+        return (task->inference_done == task->inference_todo) ? 0 : DNN_GENERIC_ERROR;
     }
 
 err:
