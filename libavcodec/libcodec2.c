@@ -104,13 +104,6 @@ static av_cold int libcodec2_init_encoder(AVCodecContext *avctx)
 {
     LibCodec2Context *c2 = avctx->priv_data;
 
-    //will need to be smarter once we get wideband support
-    if (avctx->sample_rate != 8000 ||
-        avctx->sample_fmt != AV_SAMPLE_FMT_S16) {
-        av_log(avctx, AV_LOG_ERROR, "only 8 kHz 16-bit mono allowed\n");
-        return AVERROR(EINVAL);
-    }
-
     avctx->extradata = av_mallocz(CODEC2_EXTRADATA_SIZE + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!avctx->extradata) {
         return AVERROR(ENOMEM);
