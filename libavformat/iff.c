@@ -346,8 +346,10 @@ static int parse_dsd_prop(AVFormatContext *s, AVStream *st, uint64_t eof)
             if (config != 0xFFFF) {
                 if (config < FF_ARRAY_ELEMS(dsd_loudspeaker_config))
                     st->codecpar->ch_layout = dsd_loudspeaker_config[config];
-                if (!st->codecpar->ch_layout.nb_channels)
+                if (!st->codecpar->ch_layout.nb_channels) {
                     avpriv_request_sample(s, "loudspeaker configuration %d", config);
+                    return AVERROR_PATCHWELCOME;
+                }
             }
             break;
         }
