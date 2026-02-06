@@ -103,6 +103,8 @@ static int detect_flags(void)
     if (sysctl(mib, 2, &isar0, &len, NULL, 0) != -1) {
         if (ID_AA64ISAR0_DP(isar0) >= ID_AA64ISAR0_DP_IMPL)
             flags |= AV_CPU_FLAG_DOTPROD;
+        if (ID_AA64ISAR0_CRC32(isar0) >= ID_AA64ISAR0_CRC32_BASE)
+            flags |= AV_CPU_FLAG_ARM_CRC;
     }
 
     mib[0] = CTL_MACHDEP;
