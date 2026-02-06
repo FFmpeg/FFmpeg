@@ -568,6 +568,8 @@ SwsFunc ff_yuv2rgb_get_func_ptr(SwsInternal *c)
     t = ff_yuv2rgb_init_x86(c);
 #elif ARCH_LOONGARCH64
     t = ff_yuv2rgb_init_loongarch(c);
+#elif ARCH_AARCH64
+    t = ff_yuv2rgb_init_aarch64(c);
 #endif
 
     if (t)

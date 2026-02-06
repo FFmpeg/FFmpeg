@@ -735,6 +735,7 @@ av_cold int ff_sws_fill_xyztables(SwsInternal *c);
 SwsFunc ff_yuv2rgb_init_x86(SwsInternal *c);
 SwsFunc ff_yuv2rgb_init_ppc(SwsInternal *c);
 SwsFunc ff_yuv2rgb_init_loongarch(SwsInternal *c);
+SwsFunc ff_yuv2rgb_init_aarch64(SwsInternal *c);
 
 static av_always_inline int is16BPS(enum AVPixelFormat pix_fmt)
 {
