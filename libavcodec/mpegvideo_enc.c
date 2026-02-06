@@ -1419,7 +1419,6 @@ static int load_input_picture(MPVMainEncContext *const m, const AVFrame *pic_arg
                                             EDGE_BOTTOM);
                 }
             }
-            emms_c();
         }
 
         pic->display_picture_number = display_picture_number;
@@ -1885,8 +1884,6 @@ static void frame_end(MPVMainEncContext *const m)
                                 EDGE_WIDTH >> vshift,
                                 EDGE_TOP | EDGE_BOTTOM);
     }
-
-    emms_c();
 
     m->last_pict_type                  = s->c.pict_type;
     m->last_lambda_for[s->c.pict_type] = s->c.cur_pic.ptr->f->quality;

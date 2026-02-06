@@ -34,7 +34,6 @@ int ff_pix_sum16_xop(const uint8_t *pix, ptrdiff_t line_size);
 int ff_pix_norm1_sse2(const uint8_t *pix, ptrdiff_t line_size);
 void ff_add_8x8basis_ssse3(int16_t rem[64], const int16_t basis[64], int scale);
 
-#if HAVE_INLINE_ASM
 #if HAVE_SSSE3_INLINE
 #define SCALE_OFFSET -1
 
@@ -84,77 +83,62 @@ static int try_8x8basis_ssse3(const int16_t rem[64], const int16_t weight[64], c
     );
     return i;
 }
-#endif /* HAVE_SSSE3_INLINE */
 
 /* Draw the edges of width 'w' of an image of size width, height */
-static void draw_edges_mmx(uint8_t *buf, ptrdiff_t wrap, int width, int height,
-                           int w, int h, int sides)
+static void draw_edges_ssse3(uint8_t *buf, ptrdiff_t wrap, int width, int height,
+                             int w, int h, int sides)
 {
-    uint8_t *ptr, *last_line;
+    uint8_t *ptr = buf, *last_line;
     int i;
 
+    av_assert1(w == 16 || w == 8 || w == 4);
+
     /* left and right */
-    ptr = buf;
-    if (w == 8) {
-        __asm__ volatile (
-            "1:                             \n\t"
-            "movd            (%0), %%mm0    \n\t"
-            "punpcklbw      %%mm0, %%mm0    \n\t"
-            "punpcklwd      %%mm0, %%mm0    \n\t"
-            "punpckldq      %%mm0, %%mm0    \n\t"
-            "movq           %%mm0, -8(%0)   \n\t"
-            "movq      -8(%0, %2), %%mm1    \n\t"
-            "punpckhbw      %%mm1, %%mm1    \n\t"
-            "punpckhwd      %%mm1, %%mm1    \n\t"
-            "punpckhdq      %%mm1, %%mm1    \n\t"
-            "movq           %%mm1, (%0, %2) \n\t"
-            "add               %1, %0       \n\t"
-            "cmp               %3, %0       \n\t"
-            "jnz               1b           \n\t"
-            : "+r" (ptr)
-            : "r" ((x86_reg) wrap), "r" ((x86_reg) width),
-              "r" (ptr + wrap * height));
-    } else if (w == 16) {
-        __asm__ volatile (
-            "1:                                 \n\t"
-            "movd            (%0), %%mm0        \n\t"
-            "punpcklbw      %%mm0, %%mm0        \n\t"
-            "punpcklwd      %%mm0, %%mm0        \n\t"
-            "punpckldq      %%mm0, %%mm0        \n\t"
-            "movq           %%mm0, -8(%0)       \n\t"
-            "movq           %%mm0, -16(%0)      \n\t"
-            "movq      -8(%0, %2), %%mm1        \n\t"
-            "punpckhbw      %%mm1, %%mm1        \n\t"
-            "punpckhwd      %%mm1, %%mm1        \n\t"
-            "punpckhdq      %%mm1, %%mm1        \n\t"
-            "movq           %%mm1,  (%0, %2)    \n\t"
-            "movq           %%mm1, 8(%0, %2)    \n\t"
-            "add               %1, %0           \n\t"
-            "cmp               %3, %0           \n\t"
-            "jnz               1b               \n\t"
-            : "+r"(ptr)
-            : "r"((x86_reg)wrap), "r"((x86_reg)width), "r"(ptr + wrap * height)
-            );
-    } else {
-        av_assert1(w == 4);
-        __asm__ volatile (
-            "1:                             \n\t"
-            "movd            (%0), %%mm0    \n\t"
-            "punpcklbw      %%mm0, %%mm0    \n\t"
-            "punpcklwd      %%mm0, %%mm0    \n\t"
-            "movd           %%mm0, -4(%0)   \n\t"
-            "movd      -4(%0, %2), %%mm1    \n\t"
-            "punpcklbw      %%mm1, %%mm1    \n\t"
-            "punpckhwd      %%mm1, %%mm1    \n\t"
-            "punpckhdq      %%mm1, %%mm1    \n\t"
-            "movd           %%mm1, (%0, %2) \n\t"
-            "add               %1, %0       \n\t"
-            "cmp               %3, %0       \n\t"
-            "jnz               1b           \n\t"
-            : "+r" (ptr)
-            : "r" ((x86_reg) wrap), "r" ((x86_reg) width),
-              "r" (ptr + wrap * height));
-    }
+    __asm__ volatile (
+        "pcmpeqw         %%xmm3, %%xmm3     \n\t"
+        "pxor            %%xmm2, %%xmm2     \n\t"
+        "psrlw              $14, %%xmm3     \n\t"  // pw_3
+        "pshufb          %%xmm2, %%xmm3     \n\t"  // pb_3
+        "cmp                 $8, %4         \n\t"
+        "jg                 16f             \n\t"
+        "jl                  4f             \n\t"
+        "8:                                 \n\t"
+        "movd              (%0), %%xmm0     \n\t"
+        "movd        -4(%0, %2), %%xmm1     \n\t"
+        "pshufb          %%xmm2, %%xmm0     \n\t"
+        "pshufb          %%xmm3, %%xmm1     \n\t"
+        "movq            %%xmm0, -8(%0)     \n\t"
+        "movq            %%xmm1, (%0, %2)   \n\t"
+        "add                 %1, %0         \n\t"
+        "cmp                 %3, %0         \n\t"
+        "jnz                 8b             \n\t"
+        "jmp                 1f             \n\t"
+        "4:                                 \n\t"
+        "movd              (%0), %%xmm0     \n\t"
+        "movd        -4(%0, %2), %%xmm1     \n\t"
+        "pshufb          %%xmm2, %%xmm0     \n\t"
+        "pshufb          %%xmm3, %%xmm1     \n\t"
+        "movd            %%xmm0, -4(%0)     \n\t"
+        "movd            %%xmm1, (%0, %2)   \n\t"
+        "add                 %1, %0         \n\t"
+        "cmp                 %3, %0         \n\t"
+        "jnz                 4b             \n\t"
+        "jmp                 1f             \n\t"
+        "16:                                \n\t"
+        "movd              (%0), %%xmm0     \n\t"
+        "movd        -4(%0, %2), %%xmm1     \n\t"
+        "pshufb          %%xmm2, %%xmm0     \n\t"
+        "pshufb          %%xmm3, %%xmm1     \n\t"
+        "movdqu          %%xmm0, -16(%0)    \n\t"
+        "movdqu          %%xmm1, (%0, %2)   \n\t"
+        "add                 %1, %0         \n\t"
+        "cmp                 %3, %0         \n\t"
+        "jnz                16b             \n\t"
+        "1:                                 \n\t"
+        : "+r" (ptr)
+        : "r" ((x86_reg) wrap), "r" ((x86_reg) width), "r"(ptr + wrap * height), "r" (w)
+        XMM_CLOBBERS_ONLY("%xmm0", "%xmm1", "%xmm2", "%xmm3")
+    );
 
     /* top and bottom + corners */
     buf -= w;
@@ -168,8 +152,7 @@ static void draw_edges_mmx(uint8_t *buf, ptrdiff_t wrap, int width, int height,
             // bottom
             memcpy(last_line + (i + 1) * wrap, last_line, width + w + w);
 }
-
-#endif /* HAVE_INLINE_ASM */
+#endif /* HAVE_SSSE3_INLINE */
 
 av_cold void ff_mpegvideoencdsp_init_x86(MpegvideoEncDSPContext *c,
                                          AVCodecContext *avctx)
@@ -186,19 +169,13 @@ av_cold void ff_mpegvideoencdsp_init_x86(MpegvideoEncDSPContext *c,
         c->pix_sum     = ff_pix_sum16_xop;
     }
 
-#if HAVE_INLINE_ASM
-
-    if (INLINE_MMX(cpu_flags)) {
-        if (avctx->bits_per_raw_sample <= 8) {
-            c->draw_edges = draw_edges_mmx;
-        }
-    }
-#endif /* HAVE_INLINE_ASM */
-
     if (X86_SSSE3(cpu_flags)) {
 #if HAVE_SSSE3_INLINE
         if (!(avctx->flags & AV_CODEC_FLAG_BITEXACT)) {
             c->try_8x8basis = try_8x8basis_ssse3;
+        }
+        if (avctx->bits_per_raw_sample <= 8) {
+            c->draw_edges = draw_edges_ssse3;
         }
 #endif /* HAVE_SSSE3_INLINE */
 #if HAVE_SSSE3_EXTERNAL

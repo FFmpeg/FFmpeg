@@ -1786,7 +1786,6 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                                 EDGE_TOP | EDGE_BOTTOM);
 
     }
-    emms_c();
     pic = s->input_picture;
     pic->pict_type = pict->pict_type;
     pic->quality = pict->quality;
@@ -1831,7 +1830,6 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                                       s->current_picture->linesize[2], w>>s->chroma_h_shift, h>>s->chroma_v_shift,
                                       EDGE_WIDTH>>s->chroma_h_shift, EDGE_WIDTH>>s->chroma_v_shift, EDGE_TOP | EDGE_BOTTOM);
         }
-        emms_c();
     }
 
     ff_snow_frames_prepare(s);
