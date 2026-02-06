@@ -1795,7 +1795,8 @@ static bool codec_has_blockadditional_alpha(AVFormatContext *s, const AVStream *
     if (par->codec_id != AV_CODEC_ID_VP8 &&
         par->codec_id != AV_CODEC_ID_VP9)
         return false;
-    if (par->format == AV_PIX_FMT_YUVA420P)
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(par->format);
+    if (desc && (desc->flags & AV_PIX_FMT_FLAG_ALPHA))
         return true;
     return ((tag = av_dict_get(st->metadata, "alpha_mode", NULL, 0)) ||
             (tag = av_dict_get( s->metadata, "alpha_mode", NULL, 0))) && strtol(tag->value, NULL, 0);
