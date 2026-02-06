@@ -140,23 +140,28 @@ static int set_pix_fmt(AVCodecContext *avctx, struct vpx_image *img,
 #if CONFIG_LIBVPX_VP9_DECODER
     case VPX_IMG_FMT_I422:
         avctx->profile = AV_PROFILE_VP9_1;
-        avctx->pix_fmt = AV_PIX_FMT_YUV422P;
+        avctx->pix_fmt =
+            has_alpha_channel ? AV_PIX_FMT_YUVA422P : AV_PIX_FMT_YUV422P;
         return 0;
     case VPX_IMG_FMT_I440:
+        //TODO: Add alpha support once the pixel format becomes available
         avctx->profile = AV_PROFILE_VP9_1;
         avctx->pix_fmt = AV_PIX_FMT_YUV440P;
         return 0;
     case VPX_IMG_FMT_I444:
         avctx->profile = AV_PROFILE_VP9_1;
         avctx->pix_fmt = avctx->colorspace == AVCOL_SPC_RGB ?
-                         AV_PIX_FMT_GBRP : AV_PIX_FMT_YUV444P;
+                         (has_alpha_channel ? AV_PIX_FMT_GBRAP : AV_PIX_FMT_GBRP) :
+                         (has_alpha_channel ? AV_PIX_FMT_YUVA444P : AV_PIX_FMT_YUV444P);
         return 0;
     case VPX_IMG_FMT_I42016:
         avctx->profile = AV_PROFILE_VP9_2;
         if (img->bit_depth == 10) {
-            avctx->pix_fmt = AV_PIX_FMT_YUV420P10;
+            avctx->pix_fmt =
+                has_alpha_channel ? AV_PIX_FMT_YUVA420P10 : AV_PIX_FMT_YUV420P10;
             return 0;
         } else if (img->bit_depth == 12) {
+            //TODO: Add alpha support once the pixel format becomes available
             avctx->pix_fmt = AV_PIX_FMT_YUV420P12;
             return 0;
         } else {
@@ -165,15 +170,18 @@ static int set_pix_fmt(AVCodecContext *avctx, struct vpx_image *img,
     case VPX_IMG_FMT_I42216:
         avctx->profile = AV_PROFILE_VP9_3;
         if (img->bit_depth == 10) {
-            avctx->pix_fmt = AV_PIX_FMT_YUV422P10;
+            avctx->pix_fmt =
+                has_alpha_channel ? AV_PIX_FMT_YUVA422P10 : AV_PIX_FMT_YUV422P10;
             return 0;
         } else if (img->bit_depth == 12) {
+            //TODO: Add alpha support once the pixel format becomes available
             avctx->pix_fmt = AV_PIX_FMT_YUV422P12;
             return 0;
         } else {
             return AVERROR_INVALIDDATA;
         }
     case VPX_IMG_FMT_I44016:
+        //TODO: Add alpha support once the pixel format becomes available
         avctx->profile = AV_PROFILE_VP9_3;
         if (img->bit_depth == 10) {
             avctx->pix_fmt = AV_PIX_FMT_YUV440P10;
@@ -188,11 +196,13 @@ static int set_pix_fmt(AVCodecContext *avctx, struct vpx_image *img,
         avctx->profile = AV_PROFILE_VP9_3;
         if (img->bit_depth == 10) {
             avctx->pix_fmt = avctx->colorspace == AVCOL_SPC_RGB ?
-                             AV_PIX_FMT_GBRP10 : AV_PIX_FMT_YUV444P10;
+                             (has_alpha_channel ? AV_PIX_FMT_GBRAP10 : AV_PIX_FMT_GBRP10) :
+                             (has_alpha_channel ? AV_PIX_FMT_YUVA444P10 : AV_PIX_FMT_YUV444P10);
             return 0;
         } else if (img->bit_depth == 12) {
             avctx->pix_fmt = avctx->colorspace == AVCOL_SPC_RGB ?
-                             AV_PIX_FMT_GBRP12 : AV_PIX_FMT_YUV444P12;
+                             (has_alpha_channel ? AV_PIX_FMT_GBRAP12 : AV_PIX_FMT_GBRP12) :
+                             (has_alpha_channel ? AV_PIX_FMT_YUVA444P12 : AV_PIX_FMT_YUV444P12);
             return 0;
         } else {
             return AVERROR_INVALIDDATA;
