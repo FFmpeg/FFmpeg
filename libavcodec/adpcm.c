@@ -2937,91 +2937,82 @@ static av_cold void adpcm_flush(AVCodecContext *avctx)
 }
 
 
-static const enum AVSampleFormat sample_fmts_s16[]  = { AV_SAMPLE_FMT_S16,
-                                                        AV_SAMPLE_FMT_NONE };
-static const enum AVSampleFormat sample_fmts_s16p[] = { AV_SAMPLE_FMT_S16P,
-                                                        AV_SAMPLE_FMT_NONE };
-static const enum AVSampleFormat sample_fmts_both[] = { AV_SAMPLE_FMT_S16,
-                                                        AV_SAMPLE_FMT_S16P,
-                                                        AV_SAMPLE_FMT_NONE };
-
-#define ADPCM_DECODER_0(id_, sample_fmts_, name_, long_name_)
-#define ADPCM_DECODER_1(id_, sample_fmts_, name_, long_name_) \
+#define ADPCM_DECODER_0(id_, name_, long_name_)
+#define ADPCM_DECODER_1(id_, name_, long_name_)             \
 const FFCodec ff_ ## name_ ## _decoder = {                  \
     .p.name         = #name_,                               \
     CODEC_LONG_NAME(long_name_),                            \
     .p.type         = AVMEDIA_TYPE_AUDIO,                   \
     .p.id           = id_,                                  \
     .p.capabilities = AV_CODEC_CAP_DR1,                     \
-    CODEC_SAMPLEFMTS_ARRAY(sample_fmts_),                   \
     .priv_data_size = sizeof(ADPCMDecodeContext),           \
     .init           = adpcm_decode_init,                    \
     FF_CODEC_DECODE_CB(adpcm_decode_frame),                 \
     .flush          = adpcm_flush,                          \
 };
-#define ADPCM_DECODER_2(enabled, codec_id, name, sample_fmts, long_name) \
-    ADPCM_DECODER_ ## enabled(codec_id, name, sample_fmts, long_name)
-#define ADPCM_DECODER_3(config, codec_id, name, sample_fmts, long_name) \
-    ADPCM_DECODER_2(config, codec_id, name, sample_fmts, long_name)
-#define ADPCM_DECODER(codec, name, sample_fmts, long_name) \
+#define ADPCM_DECODER_2(enabled, codec_id, name, long_name) \
+    ADPCM_DECODER_ ## enabled(codec_id, name, long_name)
+#define ADPCM_DECODER_3(config, codec_id, name, long_name) \
+    ADPCM_DECODER_2(config, codec_id, name, long_name)
+#define ADPCM_DECODER(codec, name, long_name) \
     ADPCM_DECODER_3(CONFIG_ ## codec ## _DECODER, AV_CODEC_ID_ ## codec, \
-                    name, sample_fmts, long_name)
+                    name, long_name)
 
 /* Note: Do not forget to add new entries to the Makefile as well. */
-ADPCM_DECODER(ADPCM_4XM,         sample_fmts_s16p, adpcm_4xm,         "ADPCM 4X Movie")
-ADPCM_DECODER(ADPCM_AFC,         sample_fmts_s16p, adpcm_afc,         "ADPCM Nintendo Gamecube AFC")
-ADPCM_DECODER(ADPCM_AGM,         sample_fmts_s16,  adpcm_agm,         "ADPCM AmuseGraphics Movie")
-ADPCM_DECODER(ADPCM_AICA,        sample_fmts_s16p, adpcm_aica,        "ADPCM Yamaha AICA")
-ADPCM_DECODER(ADPCM_ARGO,        sample_fmts_s16p, adpcm_argo,        "ADPCM Argonaut Games")
-ADPCM_DECODER(ADPCM_CIRCUS,      sample_fmts_s16,  adpcm_circus,      "ADPCM Circus")
-ADPCM_DECODER(ADPCM_CT,          sample_fmts_s16,  adpcm_ct,          "ADPCM Creative Technology")
-ADPCM_DECODER(ADPCM_DTK,         sample_fmts_s16p, adpcm_dtk,         "ADPCM Nintendo Gamecube DTK")
-ADPCM_DECODER(ADPCM_EA,          sample_fmts_s16,  adpcm_ea,          "ADPCM Electronic Arts")
-ADPCM_DECODER(ADPCM_EA_MAXIS_XA, sample_fmts_s16,  adpcm_ea_maxis_xa, "ADPCM Electronic Arts Maxis CDROM XA")
-ADPCM_DECODER(ADPCM_EA_R1,       sample_fmts_s16p, adpcm_ea_r1,       "ADPCM Electronic Arts R1")
-ADPCM_DECODER(ADPCM_EA_R2,       sample_fmts_s16p, adpcm_ea_r2,       "ADPCM Electronic Arts R2")
-ADPCM_DECODER(ADPCM_EA_R3,       sample_fmts_s16p, adpcm_ea_r3,       "ADPCM Electronic Arts R3")
-ADPCM_DECODER(ADPCM_EA_XAS,      sample_fmts_s16p, adpcm_ea_xas,      "ADPCM Electronic Arts XAS")
-ADPCM_DECODER(ADPCM_IMA_ACORN,   sample_fmts_s16,  adpcm_ima_acorn,   "ADPCM IMA Acorn Replay")
-ADPCM_DECODER(ADPCM_IMA_AMV,     sample_fmts_s16,  adpcm_ima_amv,     "ADPCM IMA AMV")
-ADPCM_DECODER(ADPCM_IMA_APC,     sample_fmts_s16,  adpcm_ima_apc,     "ADPCM IMA CRYO APC")
-ADPCM_DECODER(ADPCM_IMA_APM,     sample_fmts_s16,  adpcm_ima_apm,     "ADPCM IMA Ubisoft APM")
-ADPCM_DECODER(ADPCM_IMA_CUNNING, sample_fmts_s16p, adpcm_ima_cunning, "ADPCM IMA Cunning Developments")
-ADPCM_DECODER(ADPCM_IMA_DAT4,    sample_fmts_s16,  adpcm_ima_dat4,    "ADPCM IMA Eurocom DAT4")
-ADPCM_DECODER(ADPCM_IMA_DK3,     sample_fmts_s16,  adpcm_ima_dk3,     "ADPCM IMA Duck DK3")
-ADPCM_DECODER(ADPCM_IMA_DK4,     sample_fmts_s16,  adpcm_ima_dk4,     "ADPCM IMA Duck DK4")
-ADPCM_DECODER(ADPCM_IMA_EA_EACS, sample_fmts_s16,  adpcm_ima_ea_eacs, "ADPCM IMA Electronic Arts EACS")
-ADPCM_DECODER(ADPCM_IMA_EA_SEAD, sample_fmts_s16,  adpcm_ima_ea_sead, "ADPCM IMA Electronic Arts SEAD")
-ADPCM_DECODER(ADPCM_IMA_ESCAPE,  sample_fmts_s16,  adpcm_ima_escape,  "ADPCM IMA Acorn Escape")
-ADPCM_DECODER(ADPCM_IMA_HVQM2,   sample_fmts_s16,  adpcm_ima_hvqm2,   "ADPCM IMA HVQM2")
-ADPCM_DECODER(ADPCM_IMA_HVQM4,   sample_fmts_s16,  adpcm_ima_hvqm4,   "ADPCM IMA HVQM4")
-ADPCM_DECODER(ADPCM_IMA_ISS,     sample_fmts_s16,  adpcm_ima_iss,     "ADPCM IMA Funcom ISS")
-ADPCM_DECODER(ADPCM_IMA_MAGIX,   sample_fmts_s16,  adpcm_ima_magix,   "ADPCM IMA Magix")
-ADPCM_DECODER(ADPCM_IMA_MOFLEX,  sample_fmts_s16p, adpcm_ima_moflex,  "ADPCM IMA MobiClip MOFLEX")
-ADPCM_DECODER(ADPCM_IMA_MTF,     sample_fmts_s16,  adpcm_ima_mtf,     "ADPCM IMA Capcom's MT Framework")
-ADPCM_DECODER(ADPCM_IMA_OKI,     sample_fmts_s16,  adpcm_ima_oki,     "ADPCM IMA Dialogic OKI")
-ADPCM_DECODER(ADPCM_IMA_PDA,     sample_fmts_s16,  adpcm_ima_pda,     "ADPCM IMA PlayDate")
-ADPCM_DECODER(ADPCM_IMA_QT,      sample_fmts_s16p, adpcm_ima_qt,      "ADPCM IMA QuickTime")
-ADPCM_DECODER(ADPCM_IMA_RAD,     sample_fmts_s16,  adpcm_ima_rad,     "ADPCM IMA Radical")
-ADPCM_DECODER(ADPCM_IMA_SSI,     sample_fmts_s16,  adpcm_ima_ssi,     "ADPCM IMA Simon & Schuster Interactive")
-ADPCM_DECODER(ADPCM_IMA_SMJPEG,  sample_fmts_s16,  adpcm_ima_smjpeg,  "ADPCM IMA Loki SDL MJPEG")
-ADPCM_DECODER(ADPCM_IMA_ALP,     sample_fmts_s16,  adpcm_ima_alp,     "ADPCM IMA High Voltage Software ALP")
-ADPCM_DECODER(ADPCM_IMA_WAV,     sample_fmts_s16p, adpcm_ima_wav,     "ADPCM IMA WAV")
-ADPCM_DECODER(ADPCM_IMA_WS,      sample_fmts_both, adpcm_ima_ws,      "ADPCM IMA Westwood")
-ADPCM_DECODER(ADPCM_IMA_XBOX,    sample_fmts_s16p, adpcm_ima_xbox,    "ADPCM IMA Xbox")
-ADPCM_DECODER(ADPCM_MS,          sample_fmts_both, adpcm_ms,          "ADPCM Microsoft")
-ADPCM_DECODER(ADPCM_MTAF,        sample_fmts_s16p, adpcm_mtaf,        "ADPCM MTAF")
-ADPCM_DECODER(ADPCM_N64,         sample_fmts_s16p, adpcm_n64,         "ADPCM Silicon Graphics N64")
-ADPCM_DECODER(ADPCM_PSX,         sample_fmts_s16p, adpcm_psx,         "ADPCM Playstation")
-ADPCM_DECODER(ADPCM_PSXC,        sample_fmts_s16p, adpcm_psxc,        "ADPCM Playstation C")
-ADPCM_DECODER(ADPCM_SANYO,       sample_fmts_s16p, adpcm_sanyo,       "ADPCM Sanyo")
-ADPCM_DECODER(ADPCM_SBPRO_2,     sample_fmts_s16,  adpcm_sbpro_2,     "ADPCM Sound Blaster Pro 2-bit")
-ADPCM_DECODER(ADPCM_SBPRO_3,     sample_fmts_s16,  adpcm_sbpro_3,     "ADPCM Sound Blaster Pro 2.6-bit")
-ADPCM_DECODER(ADPCM_SBPRO_4,     sample_fmts_s16,  adpcm_sbpro_4,     "ADPCM Sound Blaster Pro 4-bit")
-ADPCM_DECODER(ADPCM_SWF,         sample_fmts_s16,  adpcm_swf,         "ADPCM Shockwave Flash")
-ADPCM_DECODER(ADPCM_THP_LE,      sample_fmts_s16p, adpcm_thp_le,      "ADPCM Nintendo THP (little-endian)")
-ADPCM_DECODER(ADPCM_THP,         sample_fmts_s16p, adpcm_thp,         "ADPCM Nintendo THP")
-ADPCM_DECODER(ADPCM_XA,          sample_fmts_s16p, adpcm_xa,          "ADPCM CDROM XA")
-ADPCM_DECODER(ADPCM_XMD,         sample_fmts_s16p, adpcm_xmd,         "ADPCM Konami XMD")
-ADPCM_DECODER(ADPCM_YAMAHA,      sample_fmts_s16,  adpcm_yamaha,      "ADPCM Yamaha")
-ADPCM_DECODER(ADPCM_ZORK,        sample_fmts_s16,  adpcm_zork,        "ADPCM Zork")
+ADPCM_DECODER(ADPCM_4XM,         adpcm_4xm,         "ADPCM 4X Movie")
+ADPCM_DECODER(ADPCM_AFC,         adpcm_afc,         "ADPCM Nintendo Gamecube AFC")
+ADPCM_DECODER(ADPCM_AGM,         adpcm_agm,         "ADPCM AmuseGraphics Movie")
+ADPCM_DECODER(ADPCM_AICA,        adpcm_aica,        "ADPCM Yamaha AICA")
+ADPCM_DECODER(ADPCM_ARGO,        adpcm_argo,        "ADPCM Argonaut Games")
+ADPCM_DECODER(ADPCM_CIRCUS,      adpcm_circus,      "ADPCM Circus")
+ADPCM_DECODER(ADPCM_CT,          adpcm_ct,          "ADPCM Creative Technology")
+ADPCM_DECODER(ADPCM_DTK,         adpcm_dtk,         "ADPCM Nintendo Gamecube DTK")
+ADPCM_DECODER(ADPCM_EA,          adpcm_ea,          "ADPCM Electronic Arts")
+ADPCM_DECODER(ADPCM_EA_MAXIS_XA, adpcm_ea_maxis_xa, "ADPCM Electronic Arts Maxis CDROM XA")
+ADPCM_DECODER(ADPCM_EA_R1,       adpcm_ea_r1,       "ADPCM Electronic Arts R1")
+ADPCM_DECODER(ADPCM_EA_R2,       adpcm_ea_r2,       "ADPCM Electronic Arts R2")
+ADPCM_DECODER(ADPCM_EA_R3,       adpcm_ea_r3,       "ADPCM Electronic Arts R3")
+ADPCM_DECODER(ADPCM_EA_XAS,      adpcm_ea_xas,      "ADPCM Electronic Arts XAS")
+ADPCM_DECODER(ADPCM_IMA_ACORN,   adpcm_ima_acorn,   "ADPCM IMA Acorn Replay")
+ADPCM_DECODER(ADPCM_IMA_AMV,     adpcm_ima_amv,     "ADPCM IMA AMV")
+ADPCM_DECODER(ADPCM_IMA_APC,     adpcm_ima_apc,     "ADPCM IMA CRYO APC")
+ADPCM_DECODER(ADPCM_IMA_APM,     adpcm_ima_apm,     "ADPCM IMA Ubisoft APM")
+ADPCM_DECODER(ADPCM_IMA_CUNNING, adpcm_ima_cunning, "ADPCM IMA Cunning Developments")
+ADPCM_DECODER(ADPCM_IMA_DAT4,    adpcm_ima_dat4,    "ADPCM IMA Eurocom DAT4")
+ADPCM_DECODER(ADPCM_IMA_DK3,     adpcm_ima_dk3,     "ADPCM IMA Duck DK3")
+ADPCM_DECODER(ADPCM_IMA_DK4,     adpcm_ima_dk4,     "ADPCM IMA Duck DK4")
+ADPCM_DECODER(ADPCM_IMA_EA_EACS, adpcm_ima_ea_eacs, "ADPCM IMA Electronic Arts EACS")
+ADPCM_DECODER(ADPCM_IMA_EA_SEAD, adpcm_ima_ea_sead, "ADPCM IMA Electronic Arts SEAD")
+ADPCM_DECODER(ADPCM_IMA_ESCAPE,  adpcm_ima_escape,  "ADPCM IMA Acorn Escape")
+ADPCM_DECODER(ADPCM_IMA_HVQM2,   adpcm_ima_hvqm2,   "ADPCM IMA HVQM2")
+ADPCM_DECODER(ADPCM_IMA_HVQM4,   adpcm_ima_hvqm4,   "ADPCM IMA HVQM4")
+ADPCM_DECODER(ADPCM_IMA_ISS,     adpcm_ima_iss,     "ADPCM IMA Funcom ISS")
+ADPCM_DECODER(ADPCM_IMA_MAGIX,   adpcm_ima_magix,   "ADPCM IMA Magix")
+ADPCM_DECODER(ADPCM_IMA_MOFLEX,  adpcm_ima_moflex,  "ADPCM IMA MobiClip MOFLEX")
+ADPCM_DECODER(ADPCM_IMA_MTF,     adpcm_ima_mtf,     "ADPCM IMA Capcom's MT Framework")
+ADPCM_DECODER(ADPCM_IMA_OKI,     adpcm_ima_oki,     "ADPCM IMA Dialogic OKI")
+ADPCM_DECODER(ADPCM_IMA_PDA,     adpcm_ima_pda,     "ADPCM IMA PlayDate")
+ADPCM_DECODER(ADPCM_IMA_QT,      adpcm_ima_qt,      "ADPCM IMA QuickTime")
+ADPCM_DECODER(ADPCM_IMA_RAD,     adpcm_ima_rad,     "ADPCM IMA Radical")
+ADPCM_DECODER(ADPCM_IMA_SSI,     adpcm_ima_ssi,     "ADPCM IMA Simon & Schuster Interactive")
+ADPCM_DECODER(ADPCM_IMA_SMJPEG,  adpcm_ima_smjpeg,  "ADPCM IMA Loki SDL MJPEG")
+ADPCM_DECODER(ADPCM_IMA_ALP,     adpcm_ima_alp,     "ADPCM IMA High Voltage Software ALP")
+ADPCM_DECODER(ADPCM_IMA_WAV,     adpcm_ima_wav,     "ADPCM IMA WAV")
+ADPCM_DECODER(ADPCM_IMA_WS,      adpcm_ima_ws,      "ADPCM IMA Westwood")
+ADPCM_DECODER(ADPCM_IMA_XBOX,    adpcm_ima_xbox,    "ADPCM IMA Xbox")
+ADPCM_DECODER(ADPCM_MS,          adpcm_ms,          "ADPCM Microsoft")
+ADPCM_DECODER(ADPCM_MTAF,        adpcm_mtaf,        "ADPCM MTAF")
+ADPCM_DECODER(ADPCM_N64,         adpcm_n64,         "ADPCM Silicon Graphics N64")
+ADPCM_DECODER(ADPCM_PSX,         adpcm_psx,         "ADPCM Playstation")
+ADPCM_DECODER(ADPCM_PSXC,        adpcm_psxc,        "ADPCM Playstation C")
+ADPCM_DECODER(ADPCM_SANYO,       adpcm_sanyo,       "ADPCM Sanyo")
+ADPCM_DECODER(ADPCM_SBPRO_2,     adpcm_sbpro_2,     "ADPCM Sound Blaster Pro 2-bit")
+ADPCM_DECODER(ADPCM_SBPRO_3,     adpcm_sbpro_3,     "ADPCM Sound Blaster Pro 2.6-bit")
+ADPCM_DECODER(ADPCM_SBPRO_4,     adpcm_sbpro_4,     "ADPCM Sound Blaster Pro 4-bit")
+ADPCM_DECODER(ADPCM_SWF,         adpcm_swf,         "ADPCM Shockwave Flash")
+ADPCM_DECODER(ADPCM_THP_LE,      adpcm_thp_le,      "ADPCM Nintendo THP (little-endian)")
+ADPCM_DECODER(ADPCM_THP,         adpcm_thp,         "ADPCM Nintendo THP")
+ADPCM_DECODER(ADPCM_XA,          adpcm_xa,          "ADPCM CDROM XA")
+ADPCM_DECODER(ADPCM_XMD,         adpcm_xmd,         "ADPCM Konami XMD")
+ADPCM_DECODER(ADPCM_YAMAHA,      adpcm_yamaha,      "ADPCM Yamaha")
+ADPCM_DECODER(ADPCM_ZORK,        adpcm_zork,        "ADPCM Zork")
