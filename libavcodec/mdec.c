@@ -174,6 +174,9 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
     int buf_size          = avpkt->size;
     int ret;
 
+    if (a->mb_width * a->mb_height * 3 > buf_size)
+        return AVERROR_INVALIDDATA;
+
     if ((ret = ff_thread_get_buffer(avctx, frame, 0)) < 0)
         return ret;
 
