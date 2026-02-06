@@ -202,5 +202,4 @@ const FFCodec ff_nellymoser_decoder = {
     .close          = decode_end,
     FF_CODEC_DECODE_CB(decode_tag),
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_PARAM_CHANGE | AV_CODEC_CAP_CHANNEL_CONF,
-    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_FLT),
 };

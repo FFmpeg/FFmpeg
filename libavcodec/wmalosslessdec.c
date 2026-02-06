@@ -1337,5 +1337,4 @@ const FFCodec ff_wmalossless_decoder = {
     .flush          = flush,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
-    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_S16P, AV_SAMPLE_FMT_S32P),
 };

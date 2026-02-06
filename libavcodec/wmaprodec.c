@@ -2097,7 +2097,6 @@ const FFCodec ff_wmapro_decoder = {
     FF_CODEC_DECODE_CB(wmapro_decode_packet),
     .p.capabilities = AV_CODEC_CAP_DR1,
     .flush          = wmapro_flush,
-    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP),
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
 
@@ -2112,7 +2111,6 @@ const FFCodec ff_xma1_decoder = {
     FF_CODEC_DECODE_CB(xma_decode_packet),
     .flush          = xma_flush,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
-    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP),
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
 
@@ -2127,6 +2125,5 @@ const FFCodec ff_xma2_decoder = {
     FF_CODEC_DECODE_CB(xma_decode_packet),
     .flush          = xma_flush,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
-    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP),
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };

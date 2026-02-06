@@ -1033,7 +1033,6 @@ const FFCodec ff_imc_decoder = {
     FF_CODEC_DECODE_CB(imc_decode_frame),
     .flush          = flush,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
-    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP),
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
 #endif
@@ -1049,7 +1048,6 @@ const FFCodec ff_iac_decoder = {
     FF_CODEC_DECODE_CB(imc_decode_frame),
     .flush          = flush,
     .p.capabilities = AV_CODEC_CAP_DR1,
-    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP),
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
 #endif

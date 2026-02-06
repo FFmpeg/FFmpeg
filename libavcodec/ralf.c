@@ -523,6 +523,5 @@ const FFCodec ff_ralf_decoder = {
     .flush          = decode_flush,
     .p.capabilities = AV_CODEC_CAP_CHANNEL_CONF |
                       AV_CODEC_CAP_DR1,
-    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_S16P),
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };

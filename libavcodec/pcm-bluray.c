@@ -307,5 +307,4 @@ const FFCodec ff_pcm_bluray_decoder = {
     .p.id           = AV_CODEC_ID_PCM_BLURAY,
     FF_CODEC_DECODE_CB(pcm_bluray_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
-    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_S32),
 };

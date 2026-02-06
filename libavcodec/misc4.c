@@ -181,5 +181,4 @@ const FFCodec ff_misc4_decoder = {
     FF_CODEC_DECODE_CB(misc4_decode),
     .p.capabilities   = AV_CODEC_CAP_DR1 |
                         AV_CODEC_CAP_CHANNEL_CONF,
-    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_S16),
 };

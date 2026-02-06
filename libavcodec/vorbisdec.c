@@ -1896,6 +1896,4 @@ const FFCodec ff_vorbis_decoder = {
     .flush           = vorbis_decode_flush,
     .p.capabilities  = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .caps_internal   = FF_CODEC_CAP_INIT_CLEANUP,
-    CODEC_CH_LAYOUTS_ARRAY(ff_vorbis_ch_layouts),
-    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP),
 };

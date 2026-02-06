@@ -429,5 +429,4 @@ const FFCodec ff_bonk_decoder = {
     .p.capabilities   = AV_CODEC_CAP_DELAY |
                         AV_CODEC_CAP_DR1,
     .caps_internal    = FF_CODEC_CAP_INIT_CLEANUP,
-    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_S16P),
 };

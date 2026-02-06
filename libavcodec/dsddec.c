@@ -126,7 +126,6 @@ const FFCodec ff_ ## name_ ## _decoder = { \
     .init         = decode_init, \
     FF_CODEC_DECODE_CB(decode_frame), \
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS, \
-    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP), \
 };
 
 DSD_DECODER(DSD_LSBF, dsd_lsbf, "DSD (Direct Stream Digital), least significant bit first")

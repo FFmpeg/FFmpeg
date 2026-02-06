@@ -1023,5 +1023,4 @@ const FFCodec ff_on2avc_decoder = {
     .close          = on2avc_decode_close,
     .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
-    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP),
 };

@@ -1308,5 +1308,4 @@ const FFCodec ff_amrwb_decoder = {
     .init           = amrwb_decode_init,
     FF_CODEC_DECODE_CB(amrwb_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
-    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP),
 };
