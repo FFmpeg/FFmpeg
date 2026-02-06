@@ -213,7 +213,7 @@ int ff_aom_parse_film_grain_sets(AVFilmGrainAFGS1Params *s,
         }
 
         predict_scaling = get_bits1(gb);
-        if (predict_scaling && (!ref || ref == fgp))
+        if (predict_scaling && !ref)
             goto error; // prediction must be from valid, different set
 
         predict_y_scaling = predict_scaling ? get_bits1(gb) : 0;
