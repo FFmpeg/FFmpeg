@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "config_components.h"
@@ -1787,11 +1788,23 @@ static void mkv_write_blockadditionmapping(AVFormatContext *s, const MatroskaMux
 #endif
 }
 
+static bool codec_has_blockadditional_alpha(AVFormatContext *s, const AVStream *st,
+                                            const AVCodecParameters *par)
+{
+    const AVDictionaryEntry *tag;
+    if (par->codec_id != AV_CODEC_ID_VP8 &&
+        par->codec_id != AV_CODEC_ID_VP9)
+        return false;
+    if (par->format == AV_PIX_FMT_YUVA420P)
+        return true;
+    return ((tag = av_dict_get(st->metadata, "alpha_mode", NULL, 0)) ||
+            (tag = av_dict_get( s->metadata, "alpha_mode", NULL, 0))) && strtol(tag->value, NULL, 0);
+}
+
 static int mkv_write_track_video(AVFormatContext *s, MatroskaMuxContext *mkv,
                                  const AVStream *st, const AVCodecParameters *par,
                                  AVIOContext *pb)
 {
-    const AVDictionaryEntry *tag;
     int display_width_div = 1, display_height_div = 1;
     uint8_t color_space[4], projection_private[20];
     const AVPacketSideData *sd;
@@ -1815,9 +1828,7 @@ static int mkv_write_track_video(AVFormatContext *s, MatroskaMuxContext *mkv,
     if (ret < 0)
         return ret;
 
-    if (par->format == AV_PIX_FMT_YUVA420P ||
-        ((tag = av_dict_get(st->metadata, "alpha_mode", NULL, 0)) ||
-         (tag = av_dict_get( s->metadata, "alpha_mode", NULL, 0))) && strtol(tag->value, NULL, 0))
+    if (codec_has_blockadditional_alpha(s, st, par))
         ebml_writer_add_uint(&writer, MATROSKA_ID_VIDEOALPHAMODE, 1);
 
     sd = av_packet_side_data_get(par->coded_side_data,
