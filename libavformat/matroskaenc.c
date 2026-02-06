@@ -69,7 +69,7 @@
 #include "libavcodec/itut35.h"
 #include "libavcodec/xiph.h"
 #include "libavcodec/mpeg4audio.h"
-#include "libavcodec/opus/parse.h"
+#include "libavcodec/opus/tab.h"
 
 /* Level 1 elements we create a SeekHead entry for:
  * Info, Tracks, Chapters, Attachments, Tags (potentially twice) and Cues */
@@ -210,10 +210,6 @@ typedef struct mkv_track {
      * The callback shall not return an error on the second call. */
     int             (*reformat)(struct MatroskaMuxContext *, AVIOContext *,
                                 const AVPacket *, int *size);
-
-    // Opus specific
-    OpusParseContext *opus;
-    OpusPacket *opus_pkt;
 } mkv_track;
 
 typedef struct MatroskaMuxContext {
@@ -285,6 +281,34 @@ typedef struct MatroskaMuxContext {
 
 /** Seek preroll value for opus */
 #define OPUS_SEEK_PREROLL 80000000
+
+/**
+ * Returns the duration of an Opus packet in samples.
+ */
+static int parse_opus_packet_duration(const uint8_t *buf, int buf_size)
+{
+    int code   = buf[0] & 0x3;
+    int config = buf[0] >> 3;
+    int frame_count;
+
+    switch (code) {
+    default:
+        av_unreachable("code is in 0..3");
+    case 0:
+        frame_count = 1;
+        break;
+    case 1:
+    case 2:
+        frame_count = 2;
+        break;
+    case 3:
+        if (buf_size <= 1)
+            return AVERROR_INVALIDDATA;
+        frame_count = buf[1] & 0x3F;
+        break;
+    }
+    return frame_count * ff_opus_frame_duration[config];
+}
 
 static int ebml_id_size(uint32_t id)
 {
@@ -865,13 +889,6 @@ static void mkv_deinit(AVFormatContext *s)
     av_freep(&mkv->cur_block.h2645_nalu_list.nalus);
     av_freep(&mkv->cues.entries);
 
-    for (int i = 0; i < s->nb_streams; i++) {
-        mkv_track *track = &mkv->tracks[i];
-        if (track->opus)
-            avpriv_opus_parse_uninit_context(track->opus);
-        av_freep(&track->opus);
-        av_freep(&track->opus_pkt);
-    }
     av_freep(&mkv->tracks);
 }
 
@@ -2843,14 +2860,12 @@ static int mkv_write_block(void *logctx, MatroskaMuxContext *mkv,
         duration != track->default_duration_high &&
         duration != track->default_duration_low))
         ebml_writer_add_uint(&writer, MATROSKA_ID_BLOCKDURATION, duration);
-    else if (track->opus) {
-        ret = avpriv_opus_parse_packet(&track->opus_pkt, pkt->data, pkt->size,
-                                       track->opus->nb_streams > 1, logctx);
-        if (!ret) {
+    else if (par->codec_id == AV_CODEC_ID_OPUS) {
+        ret = parse_opus_packet_duration(pkt->data, pkt->size);
+        if (ret >= 0) {
             /* If the packet's duration is inconsistent with the coded duration,
              * add an explicit duration element. */
-            uint64_t parsed_duration = av_rescale_q(track->opus_pkt->frame_count * track->opus_pkt->frame_duration,
-                                                    (AVRational){1, par->sample_rate},
+            uint64_t parsed_duration = av_rescale_q(ret, (AVRational){1, 48000},
                                                     st->time_base);
             if (parsed_duration != duration)
                 ebml_writer_add_uint(&writer, MATROSKA_ID_BLOCKDURATION, duration);
@@ -3494,10 +3509,6 @@ static int mkv_init(struct AVFormatContext *s)
             break;
         case AV_CODEC_ID_WEBVTT:
             track->reformat = webm_reformat_vtt;
-            break;
-        case AV_CODEC_ID_OPUS:
-            avpriv_opus_parse_extradata(&track->opus, par->extradata, par->extradata_size,
-                                        par->ch_layout.nb_channels, s);
             break;
         }
 

@@ -161,7 +161,7 @@ extern const float    ff_celt_postfilter_taps[3][3];
 extern const float    ff_celt_window2[120];
 
 extern const float    ff_celt_window_padded[];
-static const float *const ff_celt_window = &ff_celt_window_padded[8];
+#define ff_celt_window (ff_celt_window_padded + 8)
 
 extern const float    ff_opus_deemph_weights[];
 
