@@ -417,7 +417,19 @@ static int libvorbis_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     duration = av_vorbis_parse_frame(s->vp, avpkt->data, avpkt->size);
     if (duration > 0) {
+        int discard_padding;
+
         ff_af_queue_remove(&s->afq, duration, &avpkt->pts, &avpkt->duration);
+
+        discard_padding = ff_samples_to_time_base(avctx, duration) - avpkt->duration;
+        if (discard_padding > 0) {
+            uint8_t *side_data = av_packet_new_side_data(avpkt,
+                                                         AV_PKT_DATA_SKIP_SAMPLES,
+                                                         10);
+            if (!side_data)
+                return AVERROR(ENOMEM);
+            AV_WL32(side_data + 4, discard_padding);
+        }
     }
 
     *got_packet_ptr = 1;
