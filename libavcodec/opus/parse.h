@@ -64,8 +64,6 @@ typedef struct OpusParseContext {
     int             nb_streams;
     int      nb_stereo_streams;
 
-    AVChannelLayout layout;
-    int16_t delay;
     int16_t gain_i;
 
     ChannelMap *channel_maps;
@@ -73,13 +71,7 @@ typedef struct OpusParseContext {
 
 int ff_opus_parse_packet(OpusPacket *pkt, const uint8_t *buf, int buf_size,
                          int self_delimited);
-int avpriv_opus_parse_packet(OpusPacket **ppkt, const uint8_t *buf, size_t size,
-                             int self_delimited, void *logctx);
 
 int ff_opus_parse_extradata(AVCodecContext *avctx, OpusParseContext *s);
-int avpriv_opus_parse_extradata(OpusParseContext **ps, const uint8_t *buf,
-                                size_t size, int channels, void *logctx);
-
-void avpriv_opus_parse_uninit_context(OpusParseContext *s);
 
 #endif /* AVCODEC_OPUS_PARSE_H */

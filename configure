@@ -2724,7 +2724,6 @@ CONFIG_EXTRA="
     msmpeg4dec
     msmpeg4enc
     mss34dsp
-    opusparse
     pixblockdsp
     qpeldsp
     qsv
@@ -3184,7 +3183,6 @@ nellymoser_encoder_select="audio_frame_queue sinewin"
 notchlc_decoder_select="lzf"
 nuv_decoder_select="idctdsp"
 opus_decoder_deps="swresample"
-opus_decoder_select="opusparse"
 opus_encoder_select="audio_frame_queue"
 pdv_decoder_select="inflate_wrapper"
 png_decoder_select="inflate_wrapper"
@@ -3639,7 +3637,6 @@ h264_parser_select="golomb h264dsp h264parse h264_sei"
 hevc_parser_select="hevcparse hevc_sei"
 mpegaudio_parser_select="mpegaudioheader"
 mpeg4video_parser_select="mpegvideodec"
-opus_parser_select="opusparse"
 vc1_parser_select="vc1dsp"
 vvc_parser_select="cbs_h266"
 

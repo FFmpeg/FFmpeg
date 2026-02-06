@@ -182,7 +182,7 @@ static int opus_parse(AVCodecParserContext *ctx, AVCodecContext *avctx,
             av_log(avctx, AV_LOG_ERROR, "Error parsing Ogg extradata.\n");
             goto fail;
         }
-        avpriv_opus_parse_uninit_context(&s->ctx);
+        av_freep(&s->ctx.channel_maps);
         s->extradata_parsed = 1;
     }
 
