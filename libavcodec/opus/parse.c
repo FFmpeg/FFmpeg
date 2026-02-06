@@ -36,21 +36,10 @@
 #include "mathops.h"
 #include "opus.h"
 #include "parse.h"
+#include "tab.h"
 #include "vorbis_data.h"
 
 #if CONFIG_OPUSPARSE
-static const uint16_t opus_frame_duration[32] = {
-    480, 960, 1920, 2880,
-    480, 960, 1920, 2880,
-    480, 960, 1920, 2880,
-    480, 960,
-    480, 960,
-    120, 240,  480,  960,
-    120, 240,  480,  960,
-    120, 240,  480,  960,
-    120, 240,  480,  960,
-};
-
 /**
  * Read a 1- or 2-byte frame length
  */
@@ -258,7 +247,7 @@ int ff_opus_parse_packet(OpusPacket *pkt, const uint8_t *buf, int buf_size,
     pkt->data_size   = pkt->packet_size - padding;
 
     /* total packet duration cannot be larger than 120ms */
-    pkt->frame_duration = opus_frame_duration[pkt->config];
+    pkt->frame_duration = ff_opus_frame_duration[pkt->config];
     if (pkt->frame_duration * pkt->frame_count > OPUS_MAX_PACKET_DUR)
         goto fail;
 

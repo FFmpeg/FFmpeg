@@ -8,6 +8,7 @@ OBJS-$(CONFIG_OPUS_DECODER) +=  \
     opus/dec.o                  \
     opus/dec_celt.o             \
     opus/celt.o                 \
+    opus/frame_duration_tab.o   \
     opus/pvq.o                  \
     opus/silk.o                 \
     opus/tab.o                  \
@@ -16,6 +17,7 @@ OBJS-$(CONFIG_OPUS_DECODER) +=  \
 
 
 OBJS-$(CONFIG_OPUS_PARSER) +=   \
+    opus/frame_duration_tab.o   \
     opus/parser.o               \
 
 
