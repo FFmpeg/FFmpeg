@@ -152,8 +152,9 @@ int ff_aom_parse_film_grain_sets(AVFilmGrainAFGS1Params *s,
         payload_4byte = get_bits1(gb);
         payload_size = get_bits(gb, payload_4byte ? 2 : 8);
         set_idx = get_bits(gb, 3);
+
         fgp = av_film_grain_params_alloc(&fgp_size);
-        if (!fgp)
+        if (!fgp || s->sets[set_idx])
             goto error;
         aom = &fgp->codec.aom;
 
