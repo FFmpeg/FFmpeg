@@ -207,9 +207,6 @@ static int bmp_decode_frame(AVCodecContext *avctx, AVFrame *p,
         return AVERROR_INVALIDDATA;
     }
 
-    if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
-        return ret;
-
     buf   = buf0 + hsize;
     dsize = buf_size - hsize;
 
@@ -225,6 +222,8 @@ static int bmp_decode_frame(AVCodecContext *avctx, AVFrame *p,
         }
         av_log(avctx, AV_LOG_ERROR, "data size too small, assuming missing line alignment\n");
     }
+    if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
+        return ret;
 
     // RLE may skip decoding some picture areas, so blank picture before decoding
     if (comp == BMP_RLE4 || comp == BMP_RLE8)
