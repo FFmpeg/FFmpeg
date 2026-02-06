@@ -129,7 +129,7 @@ static int bmp_decode_frame(AVCodecContext *avctx, AVFrame *p,
         rgb[1] = bytestream_get_le32(&buf);
         rgb[2] = bytestream_get_le32(&buf);
         if (ihsize > 40)
-        alpha = bytestream_get_le32(&buf);
+            alpha = bytestream_get_le32(&buf);
     }
 
     ret = ff_set_dimensions(avctx, width, height > 0 ? height : -(unsigned)height);
