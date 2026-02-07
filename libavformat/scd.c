@@ -30,6 +30,7 @@
 #include "libavutil/mem.h"
 #include "libavformat/internal.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "demux.h"
 
 #define SCD_MAGIC              ((uint64_t)MKBETAG('S', 'E', 'D', 'B') << 32 | \
@@ -121,7 +122,7 @@ static int scd_read_offsets(AVFormatContext *s)
     SCDDemuxContext  *ctx = s->priv_data;
     uint8_t buf[SCD_OFFSET_HEADER_SIZE];
 
-    if ((ret = avio_read(s->pb, buf, SCD_OFFSET_HEADER_SIZE)) < 0)
+    if ((ret = ffio_read_size(s->pb, buf, SCD_OFFSET_HEADER_SIZE)) < 0)
         return ret;
 
     ctx->hdr.table0.count  = AV_RB16(buf +  0);
