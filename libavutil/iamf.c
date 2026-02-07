@@ -226,8 +226,6 @@ AVIAMFParamDefinition *av_iamf_param_definition_alloc(enum AVIAMFParamDefinition
         default:
             av_assert0(0);
         }
-
-        av_opt_set_defaults(subblock);
     }
 
     if (out_size)
