@@ -102,6 +102,7 @@ static int audio_frame_obu(AVFormatContext *s, const IAMFDemuxContext *c,
 static int parameter_block_obu(AVFormatContext *s, IAMFDemuxContext *c,
                                AVIOContext *pbc, int len)
 {
+    const IAMFAudioElement *audio_element;
     const IAMFParamDefinition *param_definition;
     const AVIAMFParamDefinition *param;
     AVIAMFParamDefinition *out_param = NULL;
@@ -138,6 +139,7 @@ static int parameter_block_obu(AVFormatContext *s, IAMFDemuxContext *c,
         goto fail;
     }
 
+    audio_element = param_definition->audio_element;
     param = param_definition->param;
     if (!param_definition->mode) {
         duration = ffio_read_leb(pb);
@@ -145,10 +147,23 @@ static int parameter_block_obu(AVFormatContext *s, IAMFDemuxContext *c,
             ret = AVERROR_INVALIDDATA;
             goto fail;
         }
+        if (audio_element) {
+            const IAMFCodecConfig *codec_config = ff_iamf_get_codec_config(&c->iamf, audio_element->codec_config_id);
+            if (duration > av_rescale(codec_config->nb_samples, codec_config->sample_rate, param->parameter_rate)) {
+                av_log(s, AV_LOG_ERROR, "Invalid block duration in parameter_id %u\n", parameter_id);
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
+            }
+        }
         constant_subblock_duration = ffio_read_leb(pb);
         if (constant_subblock_duration == 0)
             nb_subblocks = ffio_read_leb(pb);
         else {
+            if (constant_subblock_duration > duration) {
+                av_log(s, AV_LOG_ERROR, "Invalid block duration in parameter_id %u\n", parameter_id);
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
+            }
             nb_subblocks = duration / constant_subblock_duration;
             total_duration = duration;
         }
@@ -156,6 +171,12 @@ static int parameter_block_obu(AVFormatContext *s, IAMFDemuxContext *c,
         duration = param->duration;
         constant_subblock_duration = param->constant_subblock_duration;
         nb_subblocks = param->nb_subblocks;
+    }
+
+    if (nb_subblocks > duration) {
+        av_log(s, AV_LOG_ERROR, "Invalid duration or subblock count in parameter_id %u\n", parameter_id);
+        ret = AVERROR_INVALIDDATA;
+        goto fail;
     }
 
     out_param = av_iamf_param_definition_alloc(param->type, nb_subblocks, &out_param_size);
@@ -177,6 +198,11 @@ static int parameter_block_obu(AVFormatContext *s, IAMFDemuxContext *c,
 
         if (!param_definition->mode && !constant_subblock_duration) {
             subblock_duration = ffio_read_leb(pb);
+            if (duration - total_duration > subblock_duration) {
+                av_log(s, AV_LOG_ERROR, "Invalid subblock durations in parameter_id %u\n", parameter_id);
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
+            }
             total_duration += subblock_duration;
         } else if (i == nb_subblocks - 1)
             subblock_duration = duration - i * constant_subblock_duration;
@@ -211,10 +237,10 @@ static int parameter_block_obu(AVFormatContext *s, IAMFDemuxContext *c,
         }
         case AV_IAMF_PARAMETER_DEFINITION_RECON_GAIN: {
             AVIAMFReconGain *recon = subblock;
-            const IAMFAudioElement *audio_element = param_definition->audio_element;
-            const AVIAMFAudioElement *element = audio_element->celement;
+            const AVIAMFAudioElement *element;
 
-            av_assert0(audio_element && element);
+            av_assert0(audio_element && audio_element->celement);
+            element = audio_element->celement;
             for (int i = 0; i < element->nb_layers; i++) {
                 const AVIAMFLayer *layer = element->layers[i];
                 if (layer->flags & AV_IAMF_LAYER_FLAG_RECON_GAIN) {
