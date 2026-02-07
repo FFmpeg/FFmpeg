@@ -36,35 +36,51 @@ layout (set = 1, binding = 2, scalar) writeonly buffer slice_status_buf {
 layout (set = 1, binding = 3) uniform uimage2D dec[];
 
 #ifndef GOLOMB
-#define READ(c, off) get_rac(c, uint64_t(slice_state) + (state_off + off))
-int get_isymbol(inout RangeCoder c, uint state_off)
+
+#define READ(c, idx) get_rac_noadapt(c, idx)
+int get_isymbol(inout RangeCoder c)
 {
     if (READ(c, 0))
         return 0;
 
     uint e = 1;
-    for (; e < 33; e++)
-        if (!READ(c, min(e, 10)))
+    for (; e < 11; e++) {
+        if (!READ(c, e))
             break;
-
-    if (expectEXT(e == 1, false)) {
-        return READ(c, 11) ? -1 : 1;
-    } else if (expectEXT(e == 33, false)) {
-        corrupt = true;
-        return 0;
     }
 
     int a = 1;
-    for (uint i = e + 20; i >= 22; i--) {
-        a <<= 1;
-        a |= int(READ(c, min(i, 31)));
+    uint i = e;
+
+    if (bits > 8 && e == 11) {
+        do {
+            rc_state[10] = zero_one_state[rc_state[10] + 256];
+            e++;
+        } while (READ(c, 10));
+
+        e--;
+        i = e - 1;
+
+        a += a + int(READ(c, 31));
+        for (; i >= 11; i--) {
+            rc_state[31] = zero_one_state[rc_state[31] +
+                                          (rc_data[31] ? 256 : 0)];
+            a += a + int(READ(c, 31));
+        }
     }
+
+    i += 20;
+    for (; i >= 22; i--)
+        a += a + int(READ(c, i));
 
     return READ(c, min(e + 10, 21)) ? -a : a;
 }
 
 void decode_line_pcm(inout SliceContext sc, ivec2 sp, int w, int y, int p)
 {
+    if (gl_LocalInvocationID.x > 0)
+        return;
+
 #ifndef RGB
     if (p > 0 && p < 3) {
         w = ceil_rshift(w, chroma_shift.x);
@@ -99,13 +115,28 @@ void decode_line(inout SliceContext sc, ivec2 sp, int w,
                             quant_table_idx, extend_lookup[quant_table_idx]);
 
         uint context_off = state_off + CONTEXT_SIZE*abs(pr[0]);
+        u8buf cd = u8buf(uint64_t(slice_state) + context_off);
 
-        int diff = get_isymbol(sc.c, context_off);
-        if (pr[0] < 0)
-            diff = -diff;
+        rc_state[gl_LocalInvocationID.x] = cd[gl_LocalInvocationID.x].v;
+        rc_dec[gl_LocalInvocationID.x] = false;
+        barrier();
 
-        uint v = zero_extend(pr[1] + diff, bits);
-        imageStore(dec[p], sp + LADDR(ivec2(x, y)), uvec4(v));
+        int diff;
+        if (gl_LocalInvocationID.x == 0)
+            diff = get_isymbol(sc.c);
+
+        barrier();
+        uint i = gl_LocalInvocationID.x;
+        if (rc_dec[i])
+            cd[i].v = zero_one_state[rc_state[i] + (rc_data[i] ? 256 : 0)];
+
+        if (gl_LocalInvocationID.x == 0) {
+            if (pr[0] < 0)
+                diff = -diff;
+
+            uint v = zero_extend(pr[1] + diff, bits);
+            imageStore(dec[p], sp + LADDR(ivec2(x, y)), uvec4(v));
+        }
     }
 }
 #else

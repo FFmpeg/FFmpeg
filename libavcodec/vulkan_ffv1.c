@@ -540,7 +540,7 @@ static int init_setup_shader(FFV1Context *f, FFVulkanContext *s,
 
     const FFVulkanDescriptorSetBinding desc_set_const[] = {
         { /* rangecoder_buf */
-            .type   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
             .stages = VK_SHADER_STAGE_COMPUTE_BIT,
         },
         { /* crc_ieee_buf */
@@ -591,7 +591,7 @@ static int init_reset_shader(FFV1Context *f, FFVulkanContext *s,
 
     const FFVulkanDescriptorSetBinding desc_set_const[] = {
         { /* rangecoder_buf */
-            .type   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
             .stages = VK_SHADER_STAGE_COMPUTE_BIT,
         },
     };
@@ -628,15 +628,16 @@ static int init_decode_shader(FFV1Context *f, FFVulkanContext *s,
 {
     int err;
 
+    uint32_t wg_x = ac != AC_GOLOMB_RICE ? CONTEXT_SIZE : 1;
     ff_vk_shader_load(shd, VK_SHADER_STAGE_COMPUTE_BIT, sl,
-                      (uint32_t []) { 1, 1, 1 }, 0);
+                      (uint32_t []) { wg_x, 1, 1 }, 0);
 
     ff_vk_shader_add_push_const(shd, 0, sizeof(FFv1ShaderParams),
                                 VK_SHADER_STAGE_COMPUTE_BIT);
 
     const FFVulkanDescriptorSetBinding desc_set_const[] = {
         { /* rangecoder_buf */
-            .type   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
             .stages = VK_SHADER_STAGE_COMPUTE_BIT,
         },
         { /* quant_buf */

@@ -25,7 +25,7 @@
 
 #define CONTEXT_SIZE 32
 
-layout (set = 0, binding = 0, scalar) uniform rangecoder_buf {
+layout (set = 0, binding = 0, scalar) readonly buffer rangecoder_buf {
     uint8_t zero_one_state[512];
 };
 
@@ -39,6 +39,10 @@ struct RangeCoder {
     uint16_t outstanding_count;
     uint8_t  outstanding_byte;
 };
+
+shared uint8_t rc_state[CONTEXT_SIZE];
+shared bool rc_data[CONTEXT_SIZE];
+shared bool rc_dec[CONTEXT_SIZE];
 
 void rac_init(out RangeCoder r, u8buf data, uint buf_size)
 {
@@ -237,6 +241,12 @@ bool get_rac_direct(inout RangeCoder c, inout uint8_t state)
     bool bit = get_rac_internal(c, c.range * state >> 8);
     state = zero_one_state[state + (bit ? 256 : 0)];
     return bit;
+}
+
+bool get_rac_noadapt(inout RangeCoder c, uint idx)
+{
+    rc_dec[idx] = true;
+    return (rc_data[idx] = get_rac_internal(c, c.range * rc_state[idx] >> 8));
 }
 
 bool get_rac(inout RangeCoder c, uint64_t state)

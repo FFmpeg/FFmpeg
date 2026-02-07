@@ -86,7 +86,7 @@ static int init_state_transition_data(FFVulkanContext *s,
                          buf_len,
                          NULL, NULL,
                          VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
-                         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
 
