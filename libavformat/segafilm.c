@@ -163,7 +163,7 @@ static int film_read_header(AVFormatContext *s)
         st->codecpar->height = AV_RB32(&scratch[12]);
 
         if (film->video_type == AV_CODEC_ID_RAWVIDEO) {
-            if (scratch[20] == 24) {
+            if (film->version == 0 || scratch[20] == 24) {
                 st->codecpar->format = AV_PIX_FMT_RGB24;
             } else {
                 av_log(s, AV_LOG_ERROR, "raw video is using unhandled %dbpp\n", scratch[20]);
