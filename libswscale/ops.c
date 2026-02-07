@@ -45,12 +45,6 @@ const SwsOpBackend * const ff_sws_op_backends[] = {
     NULL
 };
 
-#define RET(x)                                                                 \
-    do {                                                                       \
-        if ((ret = (x)) < 0)                                                   \
-            return ret;                                                        \
-    } while (0)
-
 const char *ff_sws_pixel_type_name(SwsPixelType type)
 {
     switch (type) {
