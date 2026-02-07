@@ -131,8 +131,8 @@ typedef struct SwsGraph {
     /** Temporary execution state inside ff_sws_graph_run */
     struct {
         const SwsPass *pass; /* current filter pass */
-        SwsImg input;
-        SwsImg output;
+        const SwsImg *input; /* arguments passed to ff_sws_graph_run() */
+        const SwsImg *output;
     } exec;
 } SwsGraph;
 
@@ -182,9 +182,6 @@ int ff_sws_graph_reinit(SwsContext *ctx, const SwsFormat *dst, const SwsFormat *
 /**
  * Dispatch the filter graph on a single field. Internally threaded.
  */
-void ff_sws_graph_run(SwsGraph *graph, uint8_t *const out_data[4],
-                      const int out_linesize[4],
-                      const uint8_t *const in_data[4],
-                      const int in_linesize[4]);
+void ff_sws_graph_run(SwsGraph *graph, const SwsImg *output, const SwsImg *input);
 
 #endif /* SWSCALE_GRAPH_H */
