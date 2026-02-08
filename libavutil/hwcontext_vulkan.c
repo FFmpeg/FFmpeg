@@ -677,10 +677,10 @@ typedef struct VulkanOptExtension {
 } VulkanOptExtension;
 
 static const VulkanOptExtension optional_instance_exts[] = {
-    { VK_EXT_LAYER_SETTINGS_EXTENSION_NAME,                   FF_VK_EXT_NO_FLAG                },
 #ifdef __APPLE__
     { VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME,          FF_VK_EXT_NO_FLAG                },
 #endif
+    { 0 },
 };
 
 static const VulkanOptExtension optional_device_exts[] = {
@@ -746,14 +746,14 @@ static const VulkanOptExtension optional_device_exts[] = {
 const char **av_vk_get_optional_instance_extensions(int *count)
 {
     const char **exts = av_malloc_array(sizeof(*exts),
-                                        FF_ARRAY_ELEMS(optional_instance_exts));
+                                        FF_ARRAY_ELEMS(optional_instance_exts) - 1);
     if (!exts)
         return NULL;
 
-    for (int i = 0; i < FF_ARRAY_ELEMS(optional_instance_exts); i++)
+    for (int i = 0; i < FF_ARRAY_ELEMS(optional_instance_exts) - 1; i++)
         exts[i] = optional_instance_exts[i].name;
 
-    *count = FF_ARRAY_ELEMS(optional_instance_exts);
+    *count = FF_ARRAY_ELEMS(optional_instance_exts) - 1;
     return exts;
 }
 
@@ -881,7 +881,7 @@ static int check_extensions(AVHWDeviceContext *ctx, int dev, AVDictionary *opts,
     if (!dev) {
         mod = "instance";
         optional_exts = optional_instance_exts;
-        optional_exts_num = FF_ARRAY_ELEMS(optional_instance_exts);
+        optional_exts_num = FF_ARRAY_ELEMS(optional_instance_exts) - 1;
         user_exts = av_dict_get(opts, "instance_extensions", NULL, 0);
         if (user_exts) {
             user_exts_str = av_strdup(user_exts->value);
