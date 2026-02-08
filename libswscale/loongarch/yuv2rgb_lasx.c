@@ -185,6 +185,7 @@
         const uint8_t *py_2 = py_1   +                   srcStride[0];              \
         const uint8_t *pu   = src[1] +   (y >> vshift) * srcStride[1];              \
         const uint8_t *pv   = src[2] +   (y >> vshift) * srcStride[2];              \
+        res = c->opts.dst_w & 15;                                                   \
         for(x = 0; x < h_size; x++) {                                               \
 
 #define YUV2RGBFUNC32(func_name, dst_type, alpha)                                   \
@@ -213,6 +214,7 @@
         const uint8_t *py_2 = py_1   +                   srcStride[0];              \
         const uint8_t *pu   = src[1] +   (y >> vshift) * srcStride[1];              \
         const uint8_t *pv   = src[2] +   (y >> vshift) * srcStride[2];              \
+        res = c->opts.dst_w & 15;                                                   \
         for(x = 0; x < h_size; x++) {                                               \
 
 #define DEALYUV2RGBLINE                                                             \
