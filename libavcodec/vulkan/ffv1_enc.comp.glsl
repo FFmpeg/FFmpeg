@@ -34,12 +34,15 @@ layout (set = 0, binding = 2, scalar) uniform crc_ieee_buf {
 layout (set = 1, binding = 1, scalar) writeonly buffer slice_results_buf {
     uint64_t slice_results[];
 };
-layout (set = 1, binding = 2) uniform uimage2D src[];
+layout (set = 1, binding = 3) uniform uimage2D src[];
 
 #ifndef GOLOMB
-#define WRITE(c, off, val) put_rac(c, uint64_t(slice_state) + (state_off + off), val)
 
-/* Note - only handles signed values */
+layout (set = 1, binding = 2, scalar) buffer slice_state_buf {
+    uint8_t slice_rc_state[];
+};
+
+#define WRITE(c, off, val) put_rac_direct(c, slice_rc_state[state_off + off], val)
 void put_symbol(inout RangeCoder c, uint state_off, int v)
 {
     bool is_nil = (v == 0);
@@ -112,6 +115,10 @@ void encode_line(inout SliceContext sc, readonly uimage2D img, uint state_off,
 
 #else /* GOLOMB */
 
+layout (set = 1, binding = 2, scalar) buffer slice_state_buf {
+    VlcState slice_vlc_state[];
+};
+
 uint hdr_len = 0;
 PutBitContext pb;
 
@@ -174,9 +181,8 @@ void encode_line(inout SliceContext sc, readonly uimage2D img, uint state_off,
         }
 
         if (!run_mode) {
-            VlcState sb = VlcState(uint64_t(slice_state) +
-                                   state_off + VLC_STATE_SIZE*d[0]);
-            Symbol sym = get_vlc_symbol(sb, d[1], bits);
+            Symbol sym = get_vlc_symbol(slice_vlc_state[state_off + d[0]],
+                                        d[1], bits);
             put_bits(pb, sym.bits, sym.val);
         }
     }
@@ -276,6 +282,7 @@ void encode_slice(inout SliceContext sc, const uint slice_idx)
                                uvec4(0, 1, 1, 2))*plane_state_size;
 
 #ifdef GOLOMB
+    slice_state_off >>= 3;
     init_golomb(slice_ctx[slice_idx]);
 #endif
 

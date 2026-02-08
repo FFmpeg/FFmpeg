@@ -355,7 +355,6 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
 
     FFv1ShaderParams pd = {
         .slice_data = slices_buf->address,
-        .slice_state  = slice_state->address + f->slice_count*fp->slice_data_size,
 
         .img_size[0] = f->picture.f->width,
         .img_size[1] = f->picture.f->height,

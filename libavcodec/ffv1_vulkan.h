@@ -42,7 +42,6 @@ int ff_ffv1_vk_init_crc_table_data(FFVulkanContext *s,
 
 typedef struct FFv1ShaderParams {
     VkDeviceAddress slice_data;
-    VkDeviceAddress slice_state;
 
     uint32_t extend_lookup[8];
     uint16_t context_count[8];

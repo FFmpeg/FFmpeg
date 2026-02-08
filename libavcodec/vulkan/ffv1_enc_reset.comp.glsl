@@ -26,34 +26,41 @@
 #include "common.glsl"
 #include "ffv1_common.glsl"
 
+#ifdef GOLOMB
+#define PS_SHIFT 3
+layout (set = 1, binding = 1, scalar) writeonly buffer slice_state_buf {
+    VlcState slice_vlc_state[];
+};
+#else
+#define PS_SHIFT 2
+layout (set = 1, binding = 1, scalar) writeonly buffer slice_state_buf {
+    uint32_t slice_rc_state[];
+};
+#endif
+
 void main(void)
 {
     const uint slice_idx = gl_WorkGroupID.y*gl_NumWorkGroups.x + gl_WorkGroupID.x;
 
     uint contexts = context_count[context_model];
-    uint64_t slice_state_off = uint64_t(slice_state) +
-                               slice_idx*plane_state_size*codec_planes;
+    uint plane_state_len = plane_state_size >> PS_SHIFT;
+    uint offs = slice_idx*plane_state_len*codec_planes +
+                gl_WorkGroupID.z*plane_state_len +
+                gl_LocalInvocationID.x;
 
 #ifdef GOLOMB
-    uint64_t start = slice_state_off +
-                     (gl_WorkGroupID.z*(plane_state_size/VLC_STATE_SIZE) +
-                      gl_LocalInvocationID.x)*VLC_STATE_SIZE;
     for (uint x = gl_LocalInvocationID.x; x < contexts; x += gl_WorkGroupSize.x) {
-        VlcState sb = VlcState(start);
-        sb.drift     =  int16_t(0);
-        sb.error_sum = uint16_t(4);
-        sb.bias      =   int8_t(0);
-        sb.count     =  uint8_t(1);
-        start += gl_WorkGroupSize.x*VLC_STATE_SIZE;
+        slice_vlc_state[offs].drift     =  int16_t(0);
+        slice_vlc_state[offs].error_sum = uint16_t(4);
+        slice_vlc_state[offs].bias      =   int8_t(0);
+        slice_vlc_state[offs].count     =  uint8_t(1);
+        offs += gl_WorkGroupSize.x;
     }
 #else
-    uint64_t start = slice_state_off +
-                     gl_WorkGroupID.z*plane_state_size +
-                     (gl_LocalInvocationID.x << 2 /* dwords */); /* Bytes */
     uint count_total = contexts*(CONTEXT_SIZE /* bytes */ >> 2 /* dwords */);
     for (uint x = gl_LocalInvocationID.x; x < count_total; x += gl_WorkGroupSize.x) {
-        u32buf(start).v = 0x80808080;
-        start += gl_WorkGroupSize.x*(CONTEXT_SIZE >> 3 /* 1/8th of context */);
+        slice_rc_state[offs] = 0x80808080;
+        offs += gl_WorkGroupSize.x;
     }
 #endif
 }

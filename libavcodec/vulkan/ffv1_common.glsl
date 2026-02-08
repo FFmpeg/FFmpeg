@@ -59,7 +59,6 @@ layout (constant_id = 17) const uint context_model = 0;
 
 layout (push_constant, scalar) uniform pushConstants {
     u8buf slice_data;
-    u8buf slice_state;
 
     bool extend_lookup[MAX_QUANT_TABLES];
     uint16_t context_count[MAX_QUANT_TABLES];

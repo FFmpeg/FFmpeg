@@ -24,7 +24,7 @@
 #extension GL_GOOGLE_include_directive : require
 #extension GL_EXT_shader_image_load_formatted : require
 
-layout (set = 1, binding = 3) uniform uimage2D tmp;
+layout (set = 1, binding = 4) uniform uimage2D tmp;
 
 #define RGB
 #include "ffv1_enc.comp.glsl"

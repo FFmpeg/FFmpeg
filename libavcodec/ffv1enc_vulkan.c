@@ -286,7 +286,6 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
     /* With everything allocated, setup push data */
     FFv1ShaderParams pd = {
         .slice_data = out_data_buf->address,
-        .slice_state = slice_data_buf->address + f->slice_count*256,
 
         .img_size[0] = fv->s.frames->width,
         .img_size[1] = fv->s.frames->height,
@@ -422,6 +421,12 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
                                         slice_data_buf,
                                         0, slice_data_size*f->slice_count,
                                         VK_FORMAT_UNDEFINED);
+        ff_vk_shader_update_desc_buffer(&fv->s, exec, &fv->reset,
+                                        1, 1, 0,
+                                        slice_data_buf,
+                                        f->slice_count*256,
+                                        VK_WHOLE_SIZE,
+                                        VK_FORMAT_UNDEFINED);
 
         ff_vk_exec_bind_shader(&fv->s, exec, &fv->reset);
         ff_vk_shader_update_push_const(&fv->s, exec, &fv->reset,
@@ -485,15 +490,21 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
                                     results_data_buf,
                                     0, results_data_buf->size,
                                     VK_FORMAT_UNDEFINED);
+    ff_vk_shader_update_desc_buffer(&fv->s, exec, &fv->enc,
+                                    1, 2, 0,
+                                    slice_data_buf,
+                                    f->slice_count*256,
+                                    VK_WHOLE_SIZE,
+                                    VK_FORMAT_UNDEFINED);
     ff_vk_shader_update_img_array(&fv->s, exec, &fv->enc,
                                   src, src_views,
-                                  1, 2,
+                                  1, 3,
                                   VK_IMAGE_LAYOUT_GENERAL,
                                   VK_NULL_HANDLE);
     if (fv->is_rgb)
         ff_vk_shader_update_img_array(&fv->s, exec, &fv->enc,
                                       tmp, tmp_views,
-                                      1, 3,
+                                      1, 4,
                                       VK_IMAGE_LAYOUT_GENERAL,
                                       VK_NULL_HANDLE);
 
@@ -878,8 +889,12 @@ static int init_reset_shader(AVCodecContext *avctx, VkSpecializationInfo *sl)
             .type   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
             .stages = VK_SHADER_STAGE_COMPUTE_BIT,
         },
+        { /* slice_state_buf */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
+        },
     };
-    ff_vk_shader_add_descriptor_set(&fv->s, shd, desc_set, 1, 0, 0);
+    ff_vk_shader_add_descriptor_set(&fv->s, shd, desc_set, 2, 0, 0);
 
     if (fv->ctx.ac == AC_GOLOMB_RICE)
         RET(ff_vk_shader_link(&fv->s, shd,
@@ -933,6 +948,10 @@ static int init_encode_shader(AVCodecContext *avctx, VkSpecializationInfo *sl)
             .type   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
             .stages = VK_SHADER_STAGE_COMPUTE_BIT,
         },
+        { /* slice_state_buf */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
+        },
         { /* src */
             .type   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
             .stages = VK_SHADER_STAGE_COMPUTE_BIT,
@@ -943,7 +962,7 @@ static int init_encode_shader(AVCodecContext *avctx, VkSpecializationInfo *sl)
             .stages = VK_SHADER_STAGE_COMPUTE_BIT,
         },
     };
-    ff_vk_shader_add_descriptor_set(&fv->s, shd, desc_set, 3 + fv->is_rgb, 0, 0);
+    ff_vk_shader_add_descriptor_set(&fv->s, shd, desc_set, 4 + fv->is_rgb, 0, 0);
 
     if (fv->ctx.ac == AC_GOLOMB_RICE) {
         if (fv->is_rgb)
