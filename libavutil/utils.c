@@ -99,7 +99,7 @@ AVRational av_get_time_base_q(void)
 {
     return (AVRational){1, AV_TIME_BASE};
 }
-
+#if FF_API_ASSERT_FPU
 void av_assert0_fpu(void) {
 #if HAVE_MMX_INLINE
     uint16_t state[14];
@@ -112,3 +112,4 @@ void av_assert0_fpu(void) {
     av_assert0((state[4] & 3) == 3);
 #endif
 }
+#endif
