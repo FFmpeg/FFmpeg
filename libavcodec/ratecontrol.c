@@ -533,7 +533,6 @@ av_cold int ff_rate_control_init(MPVMainEncContext *const m)
         "qp2bits",
         NULL
     };
-    emms_c();
 
     if (!avctx->rc_max_available_vbv_use && avctx->rc_buffer_size) {
         if (avctx->rc_max_rate) {
@@ -710,8 +709,6 @@ av_cold int ff_rate_control_init(MPVMainEncContext *const m)
 
 av_cold void ff_rate_control_uninit(RateControlContext *rcc)
 {
-    emms_c();
-
     // rc_eq is always managed via an AVOption and therefore not freed here.
     av_expr_free(rcc->rc_eq_eval);
     rcc->rc_eq_eval = NULL;
