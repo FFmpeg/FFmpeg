@@ -34,10 +34,10 @@ struct RangeCoder {
     uint64_t bytestream;
     uint64_t bytestream_end;
 
-    int low;
-    int range;
+    uint     low;
+    uint     range;
     uint16_t outstanding_count;
-    uint8_t outstanding_byte;
+    uint8_t  outstanding_byte;
 };
 
 void rac_init(out RangeCoder r, u8buf data, uint buf_size)
@@ -89,7 +89,7 @@ void renorm_encoder(inout RangeCoder c)
 void renorm_encoder(inout RangeCoder c)
 {
     uint16_t oc = c.outstanding_count + uint16_t(1);
-    int low = c.low;
+    uint low = c.low;
 
     c.range <<= 8;
     c.low = bitfieldInsert(0, low, 8, 8);
@@ -115,7 +115,7 @@ void renorm_encoder(inout RangeCoder c)
 }
 #endif
 
-void put_rac_internal(inout RangeCoder c, const int range1, bool bit)
+void put_rac_internal(inout RangeCoder c, const uint range1, bool bit)
 {
 #ifdef DEBUG
     if (range1 >= c.range)
@@ -124,7 +124,7 @@ void put_rac_internal(inout RangeCoder c, const int range1, bool bit)
         debugPrintfEXT("Error: range1 <= 0");
 #endif
 
-    int ranged = c.range - range1;
+    uint ranged = c.range - range1;
     c.low += bit ? ranged : 0;
     c.range = bit ? range1 : ranged;
 
@@ -151,7 +151,7 @@ void put_rac_equi(inout RangeCoder c, bool bit)
 
 void put_rac_terminate(inout RangeCoder c)
 {
-    int range1 = (c.range * 129) >> 8;
+    uint range1 = (c.range * 129) >> 8;
 
 #ifdef DEBUG
     if (range1 >= c.range)
@@ -166,7 +166,7 @@ void put_rac_terminate(inout RangeCoder c)
 }
 
 /* Return the number of bytes written. */
-uint32_t rac_terminate(inout RangeCoder c)
+uint rac_terminate(inout RangeCoder c)
 {
     put_rac_terminate(c);
     c.range = uint16_t(0xFF);
@@ -182,7 +182,7 @@ uint32_t rac_terminate(inout RangeCoder c)
         debugPrintfEXT("Error: range < 0x100");
 #endif
 
-    return uint32_t(uint64_t(c.bytestream) - uint64_t(c.bytestream_start));
+    return uint(uint64_t(c.bytestream) - uint64_t(c.bytestream_start));
 }
 
 /* Decoder */
@@ -219,9 +219,9 @@ void refill(inout RangeCoder c)
     }
 }
 
-bool get_rac_internal(inout RangeCoder c, const int range1)
+bool get_rac_internal(inout RangeCoder c, const uint range1)
 {
-    int ranged = c.range - range1;
+    uint ranged = c.range - range1;
     bool bit = c.low >= ranged;
     c.low -= bit ? ranged : 0;
     c.range = (bit ? 0 : ranged) + (bit ? range1 : 0);
