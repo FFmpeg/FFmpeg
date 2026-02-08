@@ -1218,7 +1218,6 @@ static int get_nb_samples(AVCodecContext *avctx, GetByteContext *gb,
         case AV_CODEC_ID_ADPCM_AGM:
         case AV_CODEC_ID_ADPCM_IMA_ACORN:
         case AV_CODEC_ID_ADPCM_IMA_DAT4:
-        case AV_CODEC_ID_ADPCM_IMA_MAGIX:
         case AV_CODEC_ID_ADPCM_IMA_MOFLEX:
         case AV_CODEC_ID_ADPCM_IMA_ISS:     header_size = 4 * ch;      break;
         case AV_CODEC_ID_ADPCM_IMA_SMJPEG:  header_size = 4 * ch;      break;
@@ -1314,6 +1313,15 @@ static int get_nb_samples(AVCodecContext *avctx, GetByteContext *gb,
         if (avctx->block_align > 0)
             buf_size = FFMIN(buf_size, avctx->block_align);
         nb_samples = (buf_size - 4 * ch) * 2 / ch;
+        break;
+    case AV_CODEC_ID_ADPCM_IMA_MAGIX:
+        if (avctx->block_align > 0)
+            buf_size = FFMIN(buf_size, avctx->block_align);
+        nb_samples = (buf_size - 4 * ch) * 2 / ch;
+        if (ch == 1) {
+            avpriv_request_sample(avctx, "mono ADPCM Magix");
+            return AVERROR_PATCHWELCOME;
+        }
         break;
     CASE(ADPCM_IMA_WAV,
         int bsize = ff_adpcm_ima_block_sizes[avctx->bits_per_coded_sample - 2];
@@ -1799,7 +1807,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx, AVFrame *frame,
             }
         }
 
-        for (int m = 0; m < avctx->block_align-8; m += 8) {
+        for (int m = 0; m < channels*nb_samples/16; m ++) {
             uint32_t v0 = bytestream2_get_le32u(&gb);
             uint32_t v1 = bytestream2_get_le32u(&gb);
 
