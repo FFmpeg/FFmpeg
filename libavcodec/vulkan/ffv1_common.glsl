@@ -126,29 +126,6 @@ int predict(int L, ivec2 top)
     return mid_pred(L, L + top[1] - top[0], top[1]);
 }
 
-/* { -2, -1 }, { -1, 0, 1 }, 0 */
-int get_context(VTYPE2 cur_l, VTYPE3 top_l, TYPE top2, uint8_t quant_table_idx)
-{
-    const int LT = top_l[0]; /* -1 */
-    const int T  = top_l[1]; /*  0 */
-    const int RT = top_l[2]; /*  1 */
-    const int L  = cur_l[1]; /* -1 */
-
-    int base = quant_table[quant_table_idx][0][(L - LT) & MAX_QUANT_TABLE_MASK] +
-               quant_table[quant_table_idx][1][(LT - T) & MAX_QUANT_TABLE_MASK] +
-               quant_table[quant_table_idx][2][(T - RT) & MAX_QUANT_TABLE_MASK];
-
-    if ((quant_table[quant_table_idx][3][127] == 0) &&
-        (quant_table[quant_table_idx][4][127] == 0))
-        return base;
-
-    const int TT = top2;     /* -2 */
-    const int LL = cur_l[0]; /* -2 */
-    return base +
-           quant_table[quant_table_idx][3][(LL - L) & MAX_QUANT_TABLE_MASK] +
-           quant_table[quant_table_idx][4][(TT - T) & MAX_QUANT_TABLE_MASK];
-}
-
 const uint32_t log2_run[41] = {
      0,  0,  0,  0,  1,  1,  1,  1,
      2,  2,  2,  2,  3,  3,  3,  3,

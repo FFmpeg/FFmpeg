@@ -1035,65 +1035,32 @@ static av_cold int vulkan_encode_ffv1_init(AVCodecContext *avctx)
     if (f->version == 4 && f->micro_version > 4)
         f->micro_version = 3;
 
-    //if (fv->ctx.ac == AC_GOLOMB_RICE) {
-    if (0) {
-        int w_a = FFALIGN(avctx->width, LG_ALIGN_W);
-        int h_a = FFALIGN(avctx->height, LG_ALIGN_H);
-        int w_sl, h_sl;
+    f->num_h_slices = fv->num_h_slices;
+    f->num_v_slices = fv->num_v_slices;
 
-        /* Pixels per line an invocation handles */
-        int ppi = 0;
-        /* Chunk size */
-        int chunks = 0;
-
-        do {
-            if (ppi < 2)
-                ppi++;
-            chunks++;
-            w_sl = w_a / (LG_ALIGN_W*ppi);
-            h_sl = h_a / (LG_ALIGN_H*chunks);
-        } while (w_sl > MAX_SLICES / h_sl);
-
-        av_log(avctx, AV_LOG_VERBOSE, "Slice config: %ix%i, %i total\n",
-               LG_ALIGN_W*ppi, LG_ALIGN_H*chunks, w_sl*h_sl);
-        av_log(avctx, AV_LOG_VERBOSE, "Horizontal slices: %i (%i pixels per invoc)\n",
-               w_sl, ppi);
-        av_log(avctx, AV_LOG_VERBOSE, "Vertical slices: %i (%i chunks)\n",
-               h_sl, chunks);
-
-        f->num_h_slices = w_sl;
-        f->num_v_slices = h_sl;
-
-        fv->ppi = ppi;
-        fv->chunks = chunks;
-    } else {
-        f->num_h_slices = fv->num_h_slices;
-        f->num_v_slices = fv->num_v_slices;
-
-        if (f->num_h_slices <= 0 && f->num_v_slices <= 0) {
-            if (avctx->slices) {
-                err = ff_ffv1_encode_determine_slices(avctx);
-                if (err < 0)
-                    return err;
-            } else {
-                f->num_h_slices = 32;
-                f->num_v_slices = 32;
-            }
-        } else if (f->num_h_slices && f->num_v_slices <= 0) {
-            f->num_v_slices = MAX_SLICES / f->num_h_slices;
-        } else if (f->num_v_slices && f->num_h_slices <= 0) {
-            f->num_h_slices = MAX_SLICES / f->num_v_slices;
+    if (f->num_h_slices <= 0 && f->num_v_slices <= 0) {
+        if (avctx->slices) {
+            err = ff_ffv1_encode_determine_slices(avctx);
+            if (err < 0)
+                return err;
+        } else {
+            f->num_h_slices = 32;
+            f->num_v_slices = 32;
         }
+    } else if (f->num_h_slices && f->num_v_slices <= 0) {
+        f->num_v_slices = MAX_SLICES / f->num_h_slices;
+    } else if (f->num_v_slices && f->num_h_slices <= 0) {
+        f->num_h_slices = MAX_SLICES / f->num_v_slices;
+    }
 
-        f->num_h_slices = FFMIN(f->num_h_slices, avctx->width);
-        f->num_v_slices = FFMIN(f->num_v_slices, avctx->height);
+    f->num_h_slices = FFMIN(f->num_h_slices, avctx->width);
+    f->num_v_slices = FFMIN(f->num_v_slices, avctx->height);
 
-        if (f->num_h_slices * f->num_v_slices > MAX_SLICES) {
-            av_log(avctx, AV_LOG_ERROR, "Too many slices (%i), maximum supported "
-                                        "by the standard is %i\n",
-                   f->num_h_slices * f->num_v_slices, MAX_SLICES);
-            return AVERROR_PATCHWELCOME;
-        }
+    if (f->num_h_slices * f->num_v_slices > MAX_SLICES) {
+        av_log(avctx, AV_LOG_ERROR, "Too many slices (%i), maximum supported "
+                                    "by the standard is %i\n",
+               f->num_h_slices * f->num_v_slices, MAX_SLICES);
+        return AVERROR_PATCHWELCOME;
     }
 
     f->max_slice_count = f->num_h_slices * f->num_v_slices;
