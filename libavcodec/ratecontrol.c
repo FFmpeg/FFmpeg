@@ -26,7 +26,6 @@
  */
 
 #include "libavutil/attributes.h"
-#include "libavutil/emms.h"
 #include "libavutil/internal.h"
 #include "libavutil/mem.h"
 
@@ -924,7 +923,6 @@ float ff_rate_estimate_qscale(MPVMainEncContext *const m, int dry_run)
     double rate_factor;
     int64_t var;
     const int pict_type = s->c.pict_type;
-    emms_c();
 
     get_qminmax(&qmin, &qmax, m, pict_type);
 
