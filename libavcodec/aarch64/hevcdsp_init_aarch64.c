@@ -194,6 +194,24 @@ static void hevc_dequant_12_neon(int16_t *coeffs, int16_t log2_size)
         member[8][v][h] = ff_hevc_put_hevc_##fn##24_8_neon##ext; \
         member[9][v][h] = ff_hevc_put_hevc_##fn##32_8_neon##ext;
 
+/*
+ * qpel horizontal (non-i8mm): no dedicated w24/w48/w64 NEON functions,
+ * w12 and w24 share h12 (loop x2), w32/w48/w64 share h32 (loop).
+ *
+ * Index-to-width: [1]=4 [2]=6 [3]=8 [4]=12 [5]=16
+ *                 [6]=24 [7]=32 [8]=48 [9]=64
+ */
+#define NEON8_FNASSIGN_QPEL_H(member, fn)                        \
+        member[1][0][1] = ff_hevc_put_hevc_##fn##_h4_8_neon;     \
+        member[2][0][1] = ff_hevc_put_hevc_##fn##_h6_8_neon;     \
+        member[3][0][1] = ff_hevc_put_hevc_##fn##_h8_8_neon;     \
+        member[4][0][1] =                                        \
+        member[6][0][1] = ff_hevc_put_hevc_##fn##_h12_8_neon;    \
+        member[5][0][1] = ff_hevc_put_hevc_##fn##_h16_8_neon;    \
+        member[7][0][1] =                                        \
+        member[8][0][1] =                                        \
+        member[9][0][1] = ff_hevc_put_hevc_##fn##_h32_8_neon;
+
 av_cold void ff_hevc_dsp_init_aarch64(HEVCDSPContext *c, const int bit_depth)
 {
     int cpu_flags = av_get_cpu_flags();
@@ -228,83 +246,77 @@ av_cold void ff_hevc_dsp_init_aarch64(HEVCDSPContext *c, const int bit_depth)
         c->sao_edge_filter[2]          =
         c->sao_edge_filter[3]          =
         c->sao_edge_filter[4]          = ff_hevc_sao_edge_filter_16x16_8_neon;
-        c->put_hevc_qpel[1][0][1]      = ff_hevc_put_hevc_qpel_h4_8_neon;
-        c->put_hevc_qpel[2][0][1]      = ff_hevc_put_hevc_qpel_h6_8_neon;
-        c->put_hevc_qpel[3][0][1]      = ff_hevc_put_hevc_qpel_h8_8_neon;
-        c->put_hevc_qpel[4][0][1]      =
-        c->put_hevc_qpel[6][0][1]      = ff_hevc_put_hevc_qpel_h12_8_neon;
-        c->put_hevc_qpel[5][0][1]      = ff_hevc_put_hevc_qpel_h16_8_neon;
-        c->put_hevc_qpel[7][0][1]      =
-        c->put_hevc_qpel[8][0][1]      =
-        c->put_hevc_qpel[9][0][1]      = ff_hevc_put_hevc_qpel_h32_8_neon;
-        c->put_hevc_qpel_uni[1][0][1]  = ff_hevc_put_hevc_qpel_uni_h4_8_neon;
-        c->put_hevc_qpel_uni[2][0][1]  = ff_hevc_put_hevc_qpel_uni_h6_8_neon;
-        c->put_hevc_qpel_uni[3][0][1]  = ff_hevc_put_hevc_qpel_uni_h8_8_neon;
-        c->put_hevc_qpel_uni[4][0][1]  =
-        c->put_hevc_qpel_uni[6][0][1]  = ff_hevc_put_hevc_qpel_uni_h12_8_neon;
-        c->put_hevc_qpel_uni[5][0][1]  = ff_hevc_put_hevc_qpel_uni_h16_8_neon;
-        c->put_hevc_qpel_uni[7][0][1]  =
-        c->put_hevc_qpel_uni[8][0][1]  =
-        c->put_hevc_qpel_uni[9][0][1]  = ff_hevc_put_hevc_qpel_uni_h32_8_neon;
-        c->put_hevc_qpel_bi[1][0][1]   = ff_hevc_put_hevc_qpel_bi_h4_8_neon;
-        c->put_hevc_qpel_bi[2][0][1]   = ff_hevc_put_hevc_qpel_bi_h6_8_neon;
-        c->put_hevc_qpel_bi[3][0][1]   = ff_hevc_put_hevc_qpel_bi_h8_8_neon;
-        c->put_hevc_qpel_bi[4][0][1]   =
-        c->put_hevc_qpel_bi[6][0][1]   = ff_hevc_put_hevc_qpel_bi_h12_8_neon;
-        c->put_hevc_qpel_bi[5][0][1]   = ff_hevc_put_hevc_qpel_bi_h16_8_neon;
-        c->put_hevc_qpel_bi[7][0][1]   =
-        c->put_hevc_qpel_bi[8][0][1]   =
-        c->put_hevc_qpel_bi[9][0][1]   = ff_hevc_put_hevc_qpel_bi_h32_8_neon;
 
-        NEON8_FNASSIGN(c->put_hevc_epel, 0, 0, pel_pixels,);
-        NEON8_FNASSIGN(c->put_hevc_epel, 1, 0, epel_v,);
+        /* ============ qpel ============ */
         NEON8_FNASSIGN(c->put_hevc_qpel, 0, 0, pel_pixels,);
+        NEON8_FNASSIGN_QPEL_H(c->put_hevc_qpel, qpel);
         NEON8_FNASSIGN(c->put_hevc_qpel, 1, 0, qpel_v,);
-        NEON8_FNASSIGN(c->put_hevc_epel_bi, 0, 0, pel_bi_pixels,);
-        NEON8_FNASSIGN(c->put_hevc_epel_bi, 0, 1, epel_bi_h,);
-        NEON8_FNASSIGN(c->put_hevc_epel_bi, 1, 0, epel_bi_v,);
+        NEON8_FNASSIGN(c->put_hevc_qpel, 1, 1, qpel_hv,);
+
+        /* qpel_uni: pixels, h, v, hv */
+        NEON8_FNASSIGN(c->put_hevc_qpel_uni, 0, 0, pel_uni_pixels,);
+        NEON8_FNASSIGN_QPEL_H(c->put_hevc_qpel_uni, qpel_uni);
+        NEON8_FNASSIGN(c->put_hevc_qpel_uni, 1, 0, qpel_uni_v,);
+        NEON8_FNASSIGN(c->put_hevc_qpel_uni, 1, 1, qpel_uni_hv,);
+
+        /* qpel_bi: pixels, h, v, hv */
         NEON8_FNASSIGN(c->put_hevc_qpel_bi, 0, 0, pel_bi_pixels,);
+        NEON8_FNASSIGN_QPEL_H(c->put_hevc_qpel_bi, qpel_bi);
         NEON8_FNASSIGN(c->put_hevc_qpel_bi, 1, 0, qpel_bi_v,);
+        NEON8_FNASSIGN(c->put_hevc_qpel_bi, 1, 1, qpel_bi_hv,);
+
+        /* qpel_uni_w: pixels, h, v, hv */
+        NEON8_FNASSIGN(c->put_hevc_qpel_uni_w, 0, 0, pel_uni_w_pixels,);
+        NEON8_FNASSIGN_SHARED_32(c->put_hevc_qpel_uni_w, 0, 1, qpel_uni_w_h,);
+        NEON8_FNASSIGN(c->put_hevc_qpel_uni_w, 1, 0, qpel_uni_w_v,);
+        NEON8_FNASSIGN(c->put_hevc_qpel_uni_w, 1, 1, qpel_uni_w_hv,);
+
+        /* qpel_bi_w: pixels only */
         NEON8_FNASSIGN_PARTIAL_6(c->put_hevc_qpel_bi_w, 0, 0, pel_bi_w_pixels,);
-        NEON8_FNASSIGN_PARTIAL_6(c->put_hevc_epel_bi_w, 0, 0, pel_bi_w_pixels,);
+
+        /* ============ epel ============ */
+        NEON8_FNASSIGN(c->put_hevc_epel, 0, 0, pel_pixels,);
+        NEON8_FNASSIGN_SHARED_32(c->put_hevc_epel, 0, 1, epel_h,);
+        NEON8_FNASSIGN(c->put_hevc_epel, 1, 0, epel_v,);
+        NEON8_FNASSIGN(c->put_hevc_epel, 1, 1, epel_hv,);
+
+        /* epel_uni: pixels, h, v, hv */
         NEON8_FNASSIGN(c->put_hevc_epel_uni, 0, 0, pel_uni_pixels,);
         NEON8_FNASSIGN(c->put_hevc_epel_uni, 0, 1, epel_uni_h,);
         NEON8_FNASSIGN(c->put_hevc_epel_uni, 1, 0, epel_uni_v,);
-        NEON8_FNASSIGN(c->put_hevc_qpel_uni, 0, 0, pel_uni_pixels,);
-        NEON8_FNASSIGN(c->put_hevc_qpel_uni, 1, 0, qpel_uni_v,);
-        NEON8_FNASSIGN(c->put_hevc_epel_uni_w, 0, 0, pel_uni_w_pixels,);
-        NEON8_FNASSIGN(c->put_hevc_qpel_uni_w, 0, 0, pel_uni_w_pixels,);
-        NEON8_FNASSIGN(c->put_hevc_epel_uni_w, 1, 0, epel_uni_w_v,);
-        NEON8_FNASSIGN(c->put_hevc_qpel_uni_w, 1, 0, qpel_uni_w_v,);
-
-        NEON8_FNASSIGN_SHARED_32(c->put_hevc_epel, 0, 1, epel_h,);
-        NEON8_FNASSIGN_SHARED_32(c->put_hevc_epel_uni_w, 0, 1, epel_uni_w_h,);
-
-        NEON8_FNASSIGN(c->put_hevc_epel, 1, 1, epel_hv,);
         NEON8_FNASSIGN(c->put_hevc_epel_uni, 1, 1, epel_uni_hv,);
-        NEON8_FNASSIGN(c->put_hevc_epel_uni_w, 1, 1, epel_uni_w_hv,);
+
+        /* epel_bi: pixels, h, v, hv */
+        NEON8_FNASSIGN(c->put_hevc_epel_bi, 0, 0, pel_bi_pixels,);
+        NEON8_FNASSIGN(c->put_hevc_epel_bi, 0, 1, epel_bi_h,);
+        NEON8_FNASSIGN(c->put_hevc_epel_bi, 1, 0, epel_bi_v,);
         NEON8_FNASSIGN(c->put_hevc_epel_bi, 1, 1, epel_bi_hv,);
 
-        NEON8_FNASSIGN_SHARED_32(c->put_hevc_qpel_uni_w, 0, 1, qpel_uni_w_h,);
+        /* epel_uni_w: pixels, h, v, hv */
+        NEON8_FNASSIGN(c->put_hevc_epel_uni_w, 0, 0, pel_uni_w_pixels,);
+        NEON8_FNASSIGN_SHARED_32(c->put_hevc_epel_uni_w, 0, 1, epel_uni_w_h,);
+        NEON8_FNASSIGN(c->put_hevc_epel_uni_w, 1, 0, epel_uni_w_v,);
+        NEON8_FNASSIGN(c->put_hevc_epel_uni_w, 1, 1, epel_uni_w_hv,);
 
-        NEON8_FNASSIGN(c->put_hevc_qpel, 1, 1, qpel_hv,);
-        NEON8_FNASSIGN(c->put_hevc_qpel_uni, 1, 1, qpel_uni_hv,);
-        NEON8_FNASSIGN(c->put_hevc_qpel_uni_w, 1, 1, qpel_uni_w_hv,);
-        NEON8_FNASSIGN(c->put_hevc_qpel_bi, 1, 1, qpel_bi_hv,);
+        /* epel_bi_w: pixels only */
+        NEON8_FNASSIGN_PARTIAL_6(c->put_hevc_epel_bi_w, 0, 0, pel_bi_w_pixels,);
 
         if (have_i8mm(cpu_flags)) {
-            NEON8_FNASSIGN(c->put_hevc_epel, 0, 1, epel_h, _i8mm);
-            NEON8_FNASSIGN(c->put_hevc_epel, 1, 1, epel_hv, _i8mm);
-            NEON8_FNASSIGN(c->put_hevc_epel_uni, 1, 1, epel_uni_hv, _i8mm);
-            NEON8_FNASSIGN(c->put_hevc_epel_uni_w, 0, 1, epel_uni_w_h ,_i8mm);
-            NEON8_FNASSIGN(c->put_hevc_epel_uni_w, 1, 1, epel_uni_w_hv, _i8mm);
-            NEON8_FNASSIGN(c->put_hevc_epel_bi, 1, 1, epel_bi_hv, _i8mm);
+            /* i8mm overrides: qpel */
             NEON8_FNASSIGN(c->put_hevc_qpel, 0, 1, qpel_h, _i8mm);
             NEON8_FNASSIGN(c->put_hevc_qpel, 1, 1, qpel_hv, _i8mm);
             NEON8_FNASSIGN(c->put_hevc_qpel_uni, 1, 1, qpel_uni_hv, _i8mm);
             NEON8_FNASSIGN(c->put_hevc_qpel_uni_w, 0, 1, qpel_uni_w_h, _i8mm);
             NEON8_FNASSIGN(c->put_hevc_qpel_uni_w, 1, 1, qpel_uni_w_hv, _i8mm);
             NEON8_FNASSIGN(c->put_hevc_qpel_bi, 1, 1, qpel_bi_hv, _i8mm);
+
+            /* i8mm overrides: epel */
+            NEON8_FNASSIGN(c->put_hevc_epel, 0, 1, epel_h, _i8mm);
+            NEON8_FNASSIGN(c->put_hevc_epel, 1, 1, epel_hv, _i8mm);
+            NEON8_FNASSIGN(c->put_hevc_epel_uni, 1, 1, epel_uni_hv, _i8mm);
+            NEON8_FNASSIGN(c->put_hevc_epel_uni_w, 0, 1, epel_uni_w_h, _i8mm);
+            NEON8_FNASSIGN(c->put_hevc_epel_uni_w, 1, 1, epel_uni_w_hv, _i8mm);
+            NEON8_FNASSIGN(c->put_hevc_epel_bi, 1, 1, epel_bi_hv, _i8mm);
         }
 
     }
