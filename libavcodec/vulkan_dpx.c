@@ -72,8 +72,7 @@ static int vk_dpx_start_frame(AVCodecContext          *avctx,
         ctx->s.extensions & FF_VK_EXT_EXTERNAL_HOST_MEMORY)
         ff_vk_host_map_buffer(&ctx->s, &vp->slices_buf, (uint8_t *)buffer,
                               buffer_ref,
-                              VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                              VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+                              VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 
     /* Prepare frame to be used */
     err = ff_vk_decode_prepare_frame_sdr(dec, dpx->frame, vp, 1,

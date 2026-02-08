@@ -85,8 +85,7 @@ static int vk_prores_raw_start_frame(AVCodecContext          *avctx,
     /* Allocate tile data */
     err = ff_vk_get_pooled_buffer(&ctx->s, &prv->frame_data_pool,
                                   &pp->frame_data_buf,
-                                  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                                  VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                                  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                                   NULL, prr->nb_tiles*sizeof(TileData),
                                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
                                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);

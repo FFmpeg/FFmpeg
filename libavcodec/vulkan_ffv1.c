@@ -138,8 +138,7 @@ static int vk_ffv1_start_frame(AVCodecContext          *avctx,
     if (f->picture.f->flags & AV_FRAME_FLAG_KEY) {
         err = ff_vk_get_pooled_buffer(&ctx->s, &fv->slice_state_pool,
                                       &fp->slice_state,
-                                      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                                      VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                                      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                                       NULL, f->slice_count*fp->slice_state_size,
                                       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
         if (err < 0)
@@ -154,8 +153,7 @@ static int vk_ffv1_start_frame(AVCodecContext          *avctx,
     /* Allocate slice offsets buffer */
     err = ff_vk_get_pooled_buffer(&ctx->s, &fv->slice_offset_pool,
                                   &fp->slice_offset_buf,
-                                  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                                  VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                                  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                                   NULL, 2*f->slice_count*sizeof(uint32_t),
                                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
                                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
@@ -165,8 +163,7 @@ static int vk_ffv1_start_frame(AVCodecContext          *avctx,
     /* Allocate slice status buffer */
     err = ff_vk_get_pooled_buffer(&ctx->s, &fv->slice_status_pool,
                                   &fp->slice_status_buf,
-                                  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                                  VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                                  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                                   NULL, 2*f->slice_count*sizeof(uint32_t),
                                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
                                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);

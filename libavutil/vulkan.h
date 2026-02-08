@@ -258,9 +258,8 @@ typedef struct FFVulkanShader {
     FFVulkanDescriptorSet desc_set[FF_VK_MAX_DESCRIPTOR_SETS];
     int nb_descriptor_sets;
 
-    /* Descriptor buffer */
+    /* Descriptors */
     VkDescriptorSetLayout desc_layout[FF_VK_MAX_DESCRIPTOR_SETS];
-    uint32_t bound_buffer_indices[FF_VK_MAX_DESCRIPTOR_SETS];
 
     /* Descriptor pool */
     int use_push;

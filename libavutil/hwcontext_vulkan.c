@@ -112,7 +112,6 @@ typedef struct VulkanDeviceFeatures {
 
     VkPhysicalDeviceShaderObjectFeaturesEXT shader_object;
     VkPhysicalDeviceCooperativeMatrixFeaturesKHR cooperative_matrix;
-    VkPhysicalDeviceDescriptorBufferFeaturesEXT descriptor_buffer;
     VkPhysicalDeviceShaderAtomicFloatFeaturesEXT atomic_float;
 
 #ifdef VK_KHR_shader_relaxed_extended_instruction
@@ -274,8 +273,6 @@ static void device_features_init(AVHWDeviceContext *ctx, VulkanDeviceFeatures *f
                      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT);
     FF_VK_STRUCT_EXT(s, &feats->device, &feats->cooperative_matrix, FF_VK_EXT_COOP_MATRIX,
                      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_KHR);
-    FF_VK_STRUCT_EXT(s, &feats->device, &feats->descriptor_buffer, FF_VK_EXT_DESCRIPTOR_BUFFER,
-                     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_FEATURES_EXT);
     FF_VK_STRUCT_EXT(s, &feats->device, &feats->atomic_float, FF_VK_EXT_ATOMIC_FLOAT,
                      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT);
     FF_VK_STRUCT_EXT(s, &feats->device, &feats->explicit_mem_layout, FF_VK_EXT_EXPLICIT_MEM_LAYOUT,
@@ -373,9 +370,6 @@ static void device_features_copy_needed(VulkanDeviceFeatures *dst, VulkanDeviceF
     COPY_VAL(shader_object.shaderObject);
 
     COPY_VAL(cooperative_matrix.cooperativeMatrix);
-
-    COPY_VAL(descriptor_buffer.descriptorBuffer);
-    COPY_VAL(descriptor_buffer.descriptorBufferPushDescriptors);
 
     COPY_VAL(atomic_float.shaderBufferFloat32Atomics);
     COPY_VAL(atomic_float.shaderBufferFloat32AtomicAdd);
@@ -687,7 +681,6 @@ static const VulkanOptExtension optional_device_exts[] = {
     /* Misc or required by other extensions */
     { VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME,               FF_VK_EXT_PORTABILITY_SUBSET     },
     { VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME,                  FF_VK_EXT_PUSH_DESCRIPTOR        },
-    { VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME,                FF_VK_EXT_DESCRIPTOR_BUFFER      },
     { VK_EXT_PHYSICAL_DEVICE_DRM_EXTENSION_NAME,              FF_VK_EXT_DEVICE_DRM             },
     { VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME,              FF_VK_EXT_ATOMIC_FLOAT           },
     { VK_KHR_COOPERATIVE_MATRIX_EXTENSION_NAME,               FF_VK_EXT_COOP_MATRIX            },
@@ -918,11 +911,6 @@ static int check_extensions(AVHWDeviceContext *ctx, int dev, AVDictionary *opts,
         tstr = optional_exts[i].name;
         found = 0;
 
-        /* Intel has had a bad descriptor buffer implementation for a while */
-        if (p->dprops.driverID == VK_DRIVER_ID_INTEL_OPEN_SOURCE_MESA &&
-            !strcmp(tstr, VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME))
-            continue;
-
         /* Check if the device has ReBAR for host image copies */
         if (!strcmp(tstr, VK_EXT_HOST_IMAGE_COPY_EXTENSION_NAME) &&
             !vulkan_device_has_rebar(ctx))
@@ -932,8 +920,7 @@ static int check_extensions(AVHWDeviceContext *ctx, int dev, AVDictionary *opts,
             ((debug_mode == FF_VULKAN_DEBUG_VALIDATE) ||
              (debug_mode == FF_VULKAN_DEBUG_PRINTF) ||
              (debug_mode == FF_VULKAN_DEBUG_PRACTICES)) &&
-            (!strcmp(tstr, VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME) ||
-             !strcmp(tstr, VK_EXT_SHADER_OBJECT_EXTENSION_NAME))) {
+            (!strcmp(tstr, VK_EXT_SHADER_OBJECT_EXTENSION_NAME))) {
             continue;
         }
 

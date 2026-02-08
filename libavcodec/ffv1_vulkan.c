@@ -85,7 +85,6 @@ static int init_state_transition_data(FFVulkanContext *s,
     RET(ff_vk_create_buf(s, vkb,
                          buf_len,
                          NULL, NULL,
-                         VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
                          VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
@@ -116,7 +115,6 @@ int ff_ffv1_vk_init_quant_table_data(FFVulkanContext *s,
     RET(ff_vk_create_buf(s, vkb,
                          buf_len,
                          NULL, NULL,
-                         VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
                          VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
@@ -142,7 +140,6 @@ int ff_ffv1_vk_init_crc_table_data(FFVulkanContext *s,
     RET(ff_vk_create_buf(s, vkb,
                          buf_len,
                          NULL, NULL,
-                         VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
                          VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));

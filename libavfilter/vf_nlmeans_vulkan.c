@@ -668,7 +668,6 @@ static av_cold int init_filter(AVFilterContext *ctx)
     }
 
     RET(ff_vk_create_buf(&s->vkctx, &s->xyoffsets_buf, 2*s->nb_offsets*sizeof(int32_t), NULL, NULL,
-                         VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
                          VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
@@ -861,8 +860,7 @@ static int nlmeans_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
 
     err = ff_vk_get_pooled_buffer(&s->vkctx, &s->ws_buf_pool, &ws_buf,
                                   VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                                  VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-                                  VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                                  VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                                   NULL,
                                   ws_size * s-> opts.t * 2,
                                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);

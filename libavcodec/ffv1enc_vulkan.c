@@ -229,8 +229,7 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
     if (!slice_data_ref) {
         RET(ff_vk_get_pooled_buffer(&fv->s, &fv->slice_data_pool,
                                     &slice_data_ref,
-                                    VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                                    VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                                    VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                                     NULL, slice_state_size*f->slice_count,
                                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
 
@@ -243,8 +242,7 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
     /* Allocate results buffer */
     RET(ff_vk_get_pooled_buffer(&fv->s, &fv->results_data_pool,
                                 &fd->results_data_ref,
-                                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                                VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                                 NULL, 2*f->slice_count*sizeof(uint64_t),
                                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
