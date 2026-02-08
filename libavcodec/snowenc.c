@@ -2055,8 +2055,6 @@ redo_frame:
         ff_write_pass1_stats(&enc->m);
     enc->m.last_pict_type = mpv->c.pict_type;
 
-    emms_c();
-
     ff_encode_add_stats_side_data(pkt, s->current_picture->quality,
                                   enc->encoding_error,
                                   (s->avctx->flags&AV_CODEC_FLAG_PSNR) ? SNOW_MAX_PLANES : 0,
