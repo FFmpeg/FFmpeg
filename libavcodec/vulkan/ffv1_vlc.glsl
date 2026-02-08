@@ -24,7 +24,13 @@
 #define VULKAN_FFV1_VLC_H
 
 #define VLC_STATE_SIZE 8
-layout(buffer_reference, buffer_reference_align = VLC_STATE_SIZE) buffer VlcState {
+#ifdef VLC_BUFFER
+layout(buffer_reference, buffer_reference_align = VLC_STATE_SIZE) buffer
+#else
+struct
+#endif
+
+VlcState {
     uint32_t error_sum;
     int16_t  drift;
     int8_t   bias;

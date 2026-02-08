@@ -404,6 +404,12 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
                                     slice_state,
                                     0, fp->slice_data_size*f->slice_count,
                                     VK_FORMAT_UNDEFINED);
+    ff_vk_shader_update_desc_buffer(&ctx->s, exec, reset_shader,
+                                    1, 1, 0,
+                                    slice_state,
+                                    f->slice_count*fp->slice_data_size,
+                                    VK_WHOLE_SIZE,
+                                    VK_FORMAT_UNDEFINED);
 
     ff_vk_exec_bind_shader(&ctx->s, exec, reset_shader);
     ff_vk_shader_update_push_const(&ctx->s, exec, reset_shader,
@@ -458,16 +464,22 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
                                     slice_status,
                                     0, 2*f->slice_count*sizeof(uint32_t),
                                     VK_FORMAT_UNDEFINED);
+    ff_vk_shader_update_desc_buffer(&ctx->s, exec, decode_shader,
+                                    1, 3, 0,
+                                    slice_state,
+                                    f->slice_count*fp->slice_data_size,
+                                    VK_WHOLE_SIZE,
+                                    VK_FORMAT_UNDEFINED);
 
     ff_vk_shader_update_img_array(&ctx->s, exec, decode_shader,
                                   decode_dst, decode_dst_view,
-                                  1, 3,
+                                  1, 4,
                                   VK_IMAGE_LAYOUT_GENERAL,
                                   VK_NULL_HANDLE);
     if (is_rgb)
         ff_vk_shader_update_img_array(&ctx->s, exec, decode_shader,
                                       f->picture.f, vp->view.out,
-                                      1, 4,
+                                      1, 5,
                                       VK_IMAGE_LAYOUT_GENERAL,
                                       VK_NULL_HANDLE);
 
@@ -602,8 +614,12 @@ static int init_reset_shader(FFV1Context *f, FFVulkanContext *s,
             .type   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
             .stages = VK_SHADER_STAGE_COMPUTE_BIT,
         },
+        { /* slice_state_buf */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
+        },
     };
-    ff_vk_shader_add_descriptor_set(s, shd, desc_set, 1, 0, 0);
+    ff_vk_shader_add_descriptor_set(s, shd, desc_set, 2, 0, 0);
 
     if (ac == AC_GOLOMB_RICE)
         RET(ff_vk_shader_link(s, shd,
@@ -660,6 +676,10 @@ static int init_decode_shader(FFV1Context *f, FFVulkanContext *s,
             .type   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
             .stages = VK_SHADER_STAGE_COMPUTE_BIT,
         },
+        { /* slice_state_buf */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
+        },
         { /* dec */
             .type   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
             .stages = VK_SHADER_STAGE_COMPUTE_BIT,
@@ -671,7 +691,7 @@ static int init_decode_shader(FFV1Context *f, FFVulkanContext *s,
             .elems  = av_pix_fmt_count_planes(out_frames_ctx->sw_format),
         },
     };
-    ff_vk_shader_add_descriptor_set(s, shd, desc_set, 4 + rgb, 0, 0);
+    ff_vk_shader_add_descriptor_set(s, shd, desc_set, 5 + rgb, 0, 0);
 
     if (ac == AC_GOLOMB_RICE) {
         if (rgb)

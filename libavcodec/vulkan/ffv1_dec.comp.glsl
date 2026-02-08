@@ -33,9 +33,13 @@ layout (set = 1, binding = 1, scalar) readonly buffer slice_offsets_buf {
 layout (set = 1, binding = 2, scalar) writeonly buffer slice_status_buf {
     uint32_t slice_status[];
 };
-layout (set = 1, binding = 3) uniform uimage2D dec[];
+layout (set = 1, binding = 4) uniform uimage2D dec[];
 
 #ifndef GOLOMB
+
+layout (set = 1, binding = 3, scalar) buffer slice_state_buf {
+    uint8_t slice_rc_state[];
+};
 
 #define READ(c, idx) get_rac_noadapt(c, idx)
 int get_isymbol(inout RangeCoder c)
@@ -114,10 +118,9 @@ void decode_line(inout SliceContext sc, ivec2 sp, int w,
         ivec2 pr = get_pred(dec[p], sp, ivec2(x, y), 0, w,
                             quant_table_idx, extend_lookup[quant_table_idx]);
 
-        uint context_off = state_off + CONTEXT_SIZE*abs(pr[0]);
-        u8buf cd = u8buf(uint64_t(slice_state) + context_off);
+        uint rc_off = state_off + CONTEXT_SIZE*abs(pr[0]) + gl_LocalInvocationID.x;
 
-        rc_state[gl_LocalInvocationID.x] = cd[gl_LocalInvocationID.x].v;
+        rc_state[gl_LocalInvocationID.x] = slice_rc_state[rc_off];
         rc_dec[gl_LocalInvocationID.x] = false;
         barrier();
 
@@ -128,7 +131,8 @@ void decode_line(inout SliceContext sc, ivec2 sp, int w,
         barrier();
         uint i = gl_LocalInvocationID.x;
         if (rc_dec[i])
-            cd[i].v = zero_one_state[rc_state[i] + (rc_data[i] ? 256 : 0)];
+            slice_rc_state[rc_off] = zero_one_state[rc_state[i] +
+                                                    (rc_data[i] ? 256 : 0)];
 
         if (gl_LocalInvocationID.x == 0) {
             if (pr[0] < 0)
@@ -139,7 +143,13 @@ void decode_line(inout SliceContext sc, ivec2 sp, int w,
         }
     }
 }
-#else
+
+#else /* GOLOMB */
+
+layout (set = 1, binding = 3, scalar) buffer slice_state_buf {
+    VlcState slice_vlc_state[];
+};
+
 GetBitContext gb;
 
 void golomb_init(inout SliceContext sc)
@@ -172,8 +182,7 @@ void decode_line(inout SliceContext sc, ivec2 sp, int w,
         ivec2 pr = get_pred(dec[p], sp, ivec2(x, y), 0, w,
                             quant_table_idx, extend_lookup[quant_table_idx]);
 
-        uint context_off = state_off + VLC_STATE_SIZE*abs(pr[0]);
-        VlcState sb = VlcState(uint64_t(slice_state) + context_off);
+        uint vlc_off = state_off + abs(pr[0]);
 
         if (pr[0] == 0 && run_mode == 0)
             run_mode = 1;
@@ -201,14 +210,14 @@ void decode_line(inout SliceContext sc, ivec2 sp, int w,
             if (run_count < 0) {
                 run_mode  = 0;
                 run_count = 0;
-                diff = read_vlc_symbol(gb, sb, bits);
+                diff = read_vlc_symbol(gb, slice_vlc_state[vlc_off], bits);
                 if (diff >= 0)
                     diff++;
             } else {
                 diff = 0;
             }
         } else {
-            diff = read_vlc_symbol(gb, sb, bits);
+            diff = read_vlc_symbol(gb, slice_vlc_state[vlc_off], bits);
         }
 
         if (pr[0] < 0)
@@ -298,6 +307,7 @@ void decode_slice(inout SliceContext sc, const uint slice_idx)
                                uvec4(0, 1, 1, 2))*plane_state_size;
 
 #ifdef GOLOMB
+    slice_state_off >>= 3; // division by VLC_STATE_SIZE
     golomb_init(sc);
 #endif
 

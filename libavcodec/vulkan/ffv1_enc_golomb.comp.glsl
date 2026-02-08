@@ -23,5 +23,6 @@
 #pragma shader_stage(compute)
 #extension GL_GOOGLE_include_directive : require
 
+#define VLC_BUFFER
 #define GOLOMB
 #include "ffv1_enc.comp.glsl"
