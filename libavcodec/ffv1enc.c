@@ -906,6 +906,7 @@ av_cold int ff_ffv1_encode_setup_plane_info(AVCodecContext *avctx,
         s->use32bit = 1;
         s->version = FFMAX(s->version, 1);
         break;
+    case AV_PIX_FMT_GBRP:
     case AV_PIX_FMT_0RGB32:
         s->colorspace = 1;
         s->chroma_planes = 1;
