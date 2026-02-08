@@ -916,7 +916,7 @@ static int audio_element_obu(void *s, IAMFContext *c, AVIOContext *pb, int len)
         if (ret < 0)
             goto fail;
     } else {
-        av_assert0(0);
+        av_unreachable("audio_element_type should have been checked above");
     }
 
     c->audio_elements[c->nb_audio_elements++] = audio_element;

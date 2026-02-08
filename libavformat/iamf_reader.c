@@ -257,7 +257,7 @@ static int parameter_block_obu(AVFormatContext *s, IAMFDemuxContext *c,
             break;
         }
         default:
-            av_assert0(0);
+            av_unreachable("param_definition_type should have been checked in descriptor");
         }
     }
 
@@ -290,7 +290,7 @@ static int parameter_block_obu(AVFormatContext *s, IAMFDemuxContext *c,
         c->recon_size = out_param_size;
         break;
     default:
-        av_assert0(0);
+        av_unreachable("param_definition_type should have been checked in descriptor");
     }
 
     ret = 0;

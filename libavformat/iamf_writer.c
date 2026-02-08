@@ -1146,7 +1146,7 @@ static int write_parameter_block(const IAMFContext *iamf, AVIOContext *pb,
             break;
         }
         default:
-            av_assert0(0);
+            av_unreachable("param_definition_type should have been checked above");
         }
     }
 
