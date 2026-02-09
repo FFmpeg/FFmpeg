@@ -147,7 +147,8 @@ typedef struct HTTPContext {
     int reconnect_max_retries;
     int reconnect_delay_total_max;
     uint64_t initial_request_size;
-    int partial_requests; /* whether or not to limit requests to initial_request_size */
+    uint64_t request_size;
+    int initial_requests; /* whether or not to limit requests to initial_request_size */
     /* Connection statistics */
     int nb_connections;
     int nb_requests;
@@ -173,6 +174,7 @@ static const AVOption options[] = {
     { "user_agent", "override User-Agent header", OFFSET(user_agent), AV_OPT_TYPE_STRING, { .str = DEFAULT_USER_AGENT }, 0, 0, D },
     { "referer", "override referer header", OFFSET(referer), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, D },
     { "multiple_requests", "use persistent connections", OFFSET(multiple_requests), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, D | E },
+    { "request_size", "size (in bytes) of requests to make", OFFSET(request_size), AV_OPT_TYPE_INT64, { .i64 = 0 }, 0, INT64_MAX, D },
     { "initial_request_size", "size (in bytes) of initial requests made during probing / header parsing", OFFSET(initial_request_size), AV_OPT_TYPE_INT64, { .i64 = 0 }, 0, INT64_MAX, D },
     { "post_data", "set custom HTTP post data", OFFSET(post_data), AV_OPT_TYPE_BINARY, .flags = D | E },
     { "mime_type", "export the MIME type", OFFSET(mime_type), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, AV_OPT_FLAG_EXPORT | AV_OPT_FLAG_READONLY },
@@ -774,7 +776,7 @@ static int http_open(URLContext *h, const char *uri, int flags,
     else
         h->is_streamed = 1;
 
-    s->partial_requests = s->seekable != 0 && s->initial_request_size > 0;
+    s->initial_requests = s->seekable != 0 && s->initial_request_size > 0;
     s->filesize = UINT64_MAX;
 
     s->location = av_strdup(uri);
@@ -1477,7 +1479,7 @@ static int http_read_header(URLContext *h)
         h->is_streamed = 1; /* we can in fact _not_ seek */
 
     if (h->is_streamed)
-        s->partial_requests = 0; /* unable to use partial requests */
+        s->initial_requests = 0; /* unable to use partial requests */
 
     // add any new cookies into the existing cookie string
     cookie_string(s->cookie_dict, &s->cookies);
@@ -1588,8 +1590,9 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     // server supports seeking by analysing the reply headers.
     if (!has_header(s->headers, "\r\nRange: ") && !post && (s->off > 0 || s->end_off || s->seekable != 0)) {
         av_bprintf(&request, "Range: bytes=%"PRIu64"-", s->off);
-        if (s->partial_requests && s->seekable != 0) {
-            uint64_t target_off = s->off + s->initial_request_size;
+        if ((s->initial_requests || s->request_size) && s->seekable != 0) {
+            uint64_t req_size = s->initial_requests ? s->initial_request_size : s->request_size;
+            uint64_t target_off = s->off + req_size;
             if (target_off < s->off) /* overflow */
                 target_off = UINT64_MAX;
             if (s->end_off)
@@ -1840,7 +1843,7 @@ static int http_read_stream(URLContext *h, uint8_t *buf, int size)
             AVDictionary *options = NULL;
             if (s->willclose)
                 ffurl_closep(&s->hd);
-            s->partial_requests = 0; /* continue streaming uninterrupted from now on */
+            s->initial_requests = 0; /* continue streaming uninterrupted from now on */
             read_ret = http_open_cnx(h, &options);
             av_dict_free(&options);
             if (read_ret == 0)

@@ -453,18 +453,27 @@ Set the Referer header. Include 'Referer: URL' header in HTTP request.
 @item multiple_requests
 Use persistent connections if set to 1, default is 0.
 
-@item initial_request_size
-Limit the size of initial requests. This is useful when dealing with formats
-that require frequent seeks during initial parsing. This lasts until the
-demuxer makes a read request larger than this size (without a seek in between),
-after which the implementation will continue using unbounded requests as usual.
-Disabled (set to 0) by default.
+@item request_size
+Limit the size of requests made. This is useful for some pathological servers
+that throttle unbounded range requests, as well as when expecting to seek
+frequently. Disabled (set to 0) by default.
 
 Note that if enabling this option, it's strongly recommended to also enable
 the @option{multiple_requests} option, as well as setting
 @option{short_seek_size} to the same value or higher. Doing so allows FFmpeg
-to reuse a single HTTP connection wherever possible, even for formats like
-MXF or MOV that require frequent small seeks during initial parsing.
+to reuse a single HTTP connection wherever possible.
+
+@item initial_request_size
+Limit the size of initial requests. Similar to @code{request_size}, but only
+used during initial format parsing. Useful for formats like MXF or MOV that
+require frequent seeks during header parsing. Lasts until the demuxer makes a
+read request larger than this size (without a seek in between), after which
+the implementation will continue using requests as usual. Disabled (set to 0)
+by default.
+
+Note that if enabling this option, it's strongly recommended to also enable
+the @option{multiple_requests} option, as well as setting
+@option{short_seek_size} to the same value or higher.
 
 @item post_data
 Set custom HTTP post data.
