@@ -585,6 +585,22 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
         }
     }
 
+    if (shr->listen && !shr->cert_file && !shr->cert_buf && !shr->key_file && !shr->key_buf) {
+        char buf[4096];
+        if ((ret = mbedtls_gen_pkey(&tls_ctx->priv_key)) != 0) {
+            av_log(h, AV_LOG_ERROR, "failed to generate priv_key, returned %d\n", ret);
+            goto fail;
+        }
+        if ((ret = mbedtls_gen_x509_cert(&tls_ctx->priv_key, buf, sizeof(buf))) != 0) {
+            av_log(h, AV_LOG_ERROR, "failed to generate cert, returned %d\n", ret);
+            goto fail;
+        }
+        if ((ret = mbedtls_x509_crt_parse(&tls_ctx->own_cert, buf, sizeof(buf))) != 0) {
+            av_log(h, AV_LOG_ERROR, "failed to parse generated cert, returned %d\n", ret);
+            goto fail;
+        }
+    }
+
     if ((ret = mbedtls_ssl_config_defaults(&tls_ctx->ssl_config,
                                            shr->listen ? MBEDTLS_SSL_IS_SERVER : MBEDTLS_SSL_IS_CLIENT,
                                            shr->is_dtls ? MBEDTLS_SSL_TRANSPORT_DATAGRAM : MBEDTLS_SSL_TRANSPORT_STREAM,
