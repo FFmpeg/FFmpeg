@@ -987,7 +987,6 @@ const FFCodec ff_ ## name_ ## _encoder = {                                 \
     .p.id           = id_,                                                 \
     .p.capabilities = capabilities_ | AV_CODEC_CAP_DR1 |                   \
                       AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,               \
-    .p.priv_class   = &adpcm_encoder_class,                                \
     CODEC_SAMPLEFMTS_ARRAY(sample_fmts_),                                  \
     .priv_data_size = sizeof(ADPCMEncodeContext),                          \
     .init           = adpcm_encode_init,                                   \
@@ -1005,15 +1004,16 @@ const FFCodec ff_ ## name_ ## _encoder = {                                 \
                     name, sample_fmts, capabilities, long_name, __VA_ARGS__)
 
 #define MONO_STEREO CODEC_CH_LAYOUTS_ARRAY(ch_layouts_mono_stereo)
+#define AVCLASS .p.priv_class = &adpcm_encoder_class
 
 ADPCM_ENCODER(ADPCM_ARGO,    adpcm_argo,    sample_fmts_p, 0,                             "ADPCM Argonaut Games",                   MONO_STEREO)
-ADPCM_ENCODER(ADPCM_IMA_AMV, adpcm_ima_amv, sample_fmts,   0,                             "ADPCM IMA AMV",                          CODEC_CH_LAYOUTS(AV_CHANNEL_LAYOUT_MONO), CODEC_SAMPLERATES(22050))
-ADPCM_ENCODER(ADPCM_IMA_APM, adpcm_ima_apm, sample_fmts,   AV_CODEC_CAP_SMALL_LAST_FRAME, "ADPCM IMA Ubisoft APM",                  MONO_STEREO)
-ADPCM_ENCODER(ADPCM_IMA_ALP, adpcm_ima_alp, sample_fmts,   AV_CODEC_CAP_SMALL_LAST_FRAME, "ADPCM IMA High Voltage Software ALP",    MONO_STEREO)
+ADPCM_ENCODER(ADPCM_IMA_AMV, adpcm_ima_amv, sample_fmts,   0,                             "ADPCM IMA AMV",                          CODEC_CH_LAYOUTS(AV_CHANNEL_LAYOUT_MONO), CODEC_SAMPLERATES(22050), AVCLASS)
+ADPCM_ENCODER(ADPCM_IMA_APM, adpcm_ima_apm, sample_fmts,   AV_CODEC_CAP_SMALL_LAST_FRAME, "ADPCM IMA Ubisoft APM",                  MONO_STEREO, AVCLASS)
+ADPCM_ENCODER(ADPCM_IMA_ALP, adpcm_ima_alp, sample_fmts,   AV_CODEC_CAP_SMALL_LAST_FRAME, "ADPCM IMA High Voltage Software ALP",    MONO_STEREO, AVCLASS)
 ADPCM_ENCODER(ADPCM_IMA_QT,  adpcm_ima_qt,  sample_fmts_p, 0,                             "ADPCM IMA QuickTime",                    MONO_STEREO)
-ADPCM_ENCODER(ADPCM_IMA_SSI, adpcm_ima_ssi, sample_fmts,   AV_CODEC_CAP_SMALL_LAST_FRAME, "ADPCM IMA Simon & Schuster Interactive", MONO_STEREO)
-ADPCM_ENCODER(ADPCM_IMA_WAV, adpcm_ima_wav, sample_fmts_p, 0,                             "ADPCM IMA WAV",                          MONO_STEREO)
-ADPCM_ENCODER(ADPCM_IMA_WS,  adpcm_ima_ws,  sample_fmts,   AV_CODEC_CAP_SMALL_LAST_FRAME, "ADPCM IMA Westwood",                     MONO_STEREO)
-ADPCM_ENCODER(ADPCM_MS,      adpcm_ms,      sample_fmts,   0,                             "ADPCM Microsoft",                        MONO_STEREO)
+ADPCM_ENCODER(ADPCM_IMA_SSI, adpcm_ima_ssi, sample_fmts,   AV_CODEC_CAP_SMALL_LAST_FRAME, "ADPCM IMA Simon & Schuster Interactive", MONO_STEREO, AVCLASS)
+ADPCM_ENCODER(ADPCM_IMA_WAV, adpcm_ima_wav, sample_fmts_p, 0,                             "ADPCM IMA WAV",                          MONO_STEREO, AVCLASS)
+ADPCM_ENCODER(ADPCM_IMA_WS,  adpcm_ima_ws,  sample_fmts,   AV_CODEC_CAP_SMALL_LAST_FRAME, "ADPCM IMA Westwood",                     MONO_STEREO, AVCLASS)
+ADPCM_ENCODER(ADPCM_MS,      adpcm_ms,      sample_fmts,   0,                             "ADPCM Microsoft",                        MONO_STEREO, AVCLASS)
 ADPCM_ENCODER(ADPCM_SWF,     adpcm_swf,     sample_fmts,   0,                             "ADPCM Shockwave Flash",                  MONO_STEREO, CODEC_SAMPLERATES(11025, 22050, 44100))
-ADPCM_ENCODER(ADPCM_YAMAHA,  adpcm_yamaha,  sample_fmts,   0,                             "ADPCM Yamaha",                           MONO_STEREO)
+ADPCM_ENCODER(ADPCM_YAMAHA,  adpcm_yamaha,  sample_fmts,   0,                             "ADPCM Yamaha",                           MONO_STEREO, AVCLASS)
