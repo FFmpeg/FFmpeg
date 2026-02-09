@@ -92,7 +92,7 @@ typedef struct SubBand{
     int stride_line; ///< Stride measured in lines, not pixels.
     x_and_coeff * x_coeff;
     struct SubBand *parent;
-    uint8_t state[/*7*2*/ 7 + 512][32];
+    uint8_t state[34][32];
 }SubBand;
 
 typedef struct Plane{
