@@ -34,6 +34,7 @@
 
 #include "avformat.h"
 #include "internal.h"
+#include "network.h"
 #include "url.h"
 #include "tls.h"
 #include "libavutil/mem.h"
@@ -258,6 +259,8 @@ typedef struct TLSContext {
     mbedtls_pk_context priv_key;
     char *priv_key_pw;
     dtls_srtp_keys srtp_key;
+    struct sockaddr_storage dest_addr;
+    socklen_t dest_addr_len;
 } TLSContext;
 
 int ff_tls_set_external_socket(URLContext *h, URLContext *sock)
@@ -379,8 +382,20 @@ static int mbedtls_recv(void *ctx, unsigned char *buf, size_t len)
     TLSShared *shr = &tls_ctx->tls_shared;
     URLContext *h = shr->is_dtls ? shr->udp : shr->tcp;
     int ret = ffurl_read(h, buf, len);
-    if (ret >= 0)
+    if (ret >= 0) {
+        if (shr->is_dtls && shr->listen && !tls_ctx->dest_addr_len) {
+            int err_ret;
+
+            ff_udp_get_last_recv_addr(shr->udp, &tls_ctx->dest_addr, &tls_ctx->dest_addr_len);
+            err_ret = ff_udp_set_remote_addr(shr->udp, (struct sockaddr *)&tls_ctx->dest_addr, tls_ctx->dest_addr_len, 1);
+            if (err_ret < 0) {
+                av_log(tls_ctx, AV_LOG_ERROR, "Failed connecting udp context\n");
+                return err_ret;
+            }
+            av_log(tls_ctx, AV_LOG_TRACE, "Set UDP remote addr on UDP socket, now 'connected'\n");
+        }
         return ret;
+    }
     if (h->max_packet_size && len > h->max_packet_size)
         return MBEDTLS_ERR_SSL_BUFFER_TOO_SMALL;
 
