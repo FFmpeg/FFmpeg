@@ -689,7 +689,7 @@ static int tls_read(URLContext *h, uint8_t *buf, int size)
     TLSShared *s = &c->tls_shared;
     URLContext *uc = s->is_dtls ? s->udp : s->tcp;
     int ret;
-    // Set or clear the AVIO_FLAG_NONBLOCK on c->tls_shared.tcp
+    // Set or clear the AVIO_FLAG_NONBLOCK on the underlying socket
     uc->flags &= ~AVIO_FLAG_NONBLOCK;
     uc->flags |= h->flags & AVIO_FLAG_NONBLOCK;
     ret = gnutls_record_recv(c->session, buf, size);
@@ -706,7 +706,7 @@ static int tls_write(URLContext *h, const uint8_t *buf, int size)
     TLSShared *s = &c->tls_shared;
     URLContext *uc = s->is_dtls ? s->udp : s->tcp;
     int ret;
-    // Set or clear the AVIO_FLAG_NONBLOCK on c->tls_shared.tcp
+    // Set or clear the AVIO_FLAG_NONBLOCK on the underlying socket
     uc->flags &= ~AVIO_FLAG_NONBLOCK;
     uc->flags |= h->flags & AVIO_FLAG_NONBLOCK;
 
