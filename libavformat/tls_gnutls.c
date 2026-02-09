@@ -709,6 +709,12 @@ static int tls_write(URLContext *h, const uint8_t *buf, int size)
     // Set or clear the AVIO_FLAG_NONBLOCK on c->tls_shared.tcp
     uc->flags &= ~AVIO_FLAG_NONBLOCK;
     uc->flags |= h->flags & AVIO_FLAG_NONBLOCK;
+
+    if (s->is_dtls) {
+        const size_t mtu_size = gnutls_dtls_get_data_mtu(c->session);
+        size = FFMIN(size, mtu_size);
+    }
+
     ret = gnutls_record_send(c->session, buf, size);
     if (ret > 0)
         return ret;
