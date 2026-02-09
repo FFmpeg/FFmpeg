@@ -210,7 +210,7 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
         avctx->block_align = s->block_size;
         ) /* End of CASE */
     default:
-        return AVERROR(EINVAL);
+        av_unreachable("there is a case for every codec using adpcm_encode_init()");
     }
 
     return 0;
