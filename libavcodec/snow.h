@@ -168,7 +168,6 @@ typedef struct SnowContext{
     slice_buffer sb;
 
     uint8_t *scratchbuf;
-    uint8_t *emu_edge_buffer;
 
     AVMotionVector *avmv;
     unsigned avmv_size;
