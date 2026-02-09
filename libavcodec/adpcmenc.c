@@ -163,13 +163,6 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
         avctx->block_align = s->block_size;
         ) /* End of CASE */
     CASE(ADPCM_SWF,
-        if (avctx->sample_rate != 11025 &&
-            avctx->sample_rate != 22050 &&
-            avctx->sample_rate != 44100) {
-            av_log(avctx, AV_LOG_ERROR, "Sample rate must be 11025, "
-                   "22050 or 44100\n");
-            return AVERROR(EINVAL);
-        }
         avctx->frame_size  = 4096; /* Hardcoded according to the SWF spec. */
         avctx->block_align = (2 + channels * (22 + 4 * (avctx->frame_size - 1)) + 7) / 8;
         ) /* End of CASE */
@@ -179,16 +172,6 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
         avctx->block_align = s->block_size;
         break;
     CASE(ADPCM_IMA_AMV,
-        if (avctx->sample_rate != 22050) {
-            av_log(avctx, AV_LOG_ERROR, "Sample rate must be 22050\n");
-            return AVERROR(EINVAL);
-        }
-
-        if (channels != 1) {
-            av_log(avctx, AV_LOG_ERROR, "Only mono is supported\n");
-            return AVERROR(EINVAL);
-        }
-
         avctx->frame_size  = s->block_size;
         avctx->block_align = 8 + (FFALIGN(avctx->frame_size, 2) / 2);
         ) /* End of CASE */
@@ -968,7 +951,7 @@ static const enum AVSampleFormat sample_fmts_p[] = {
     AV_SAMPLE_FMT_S16P, AV_SAMPLE_FMT_NONE
 };
 
-static const AVChannelLayout ch_layouts[] = {
+static const AVChannelLayout ch_layouts_mono_stereo[] = {
     AV_CHANNEL_LAYOUT_MONO,
     AV_CHANNEL_LAYOUT_STEREO,
     { 0 },
@@ -995,8 +978,8 @@ static const AVClass adpcm_encoder_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-#define ADPCM_ENCODER_0(id_, name_, sample_fmts_, capabilities_, long_name_)
-#define ADPCM_ENCODER_1(id_, name_, sample_fmts_, capabilities_, long_name_) \
+#define ADPCM_ENCODER_0(id_, name_, sample_fmts_, capabilities_, long_name_, ...)
+#define ADPCM_ENCODER_1(id_, name_, sample_fmts_, capabilities_, long_name_, ...) \
 const FFCodec ff_ ## name_ ## _encoder = {                                 \
     .p.name         = #name_,                                              \
     CODEC_LONG_NAME(long_name_),                                           \
@@ -1005,30 +988,32 @@ const FFCodec ff_ ## name_ ## _encoder = {                                 \
     .p.capabilities = capabilities_ | AV_CODEC_CAP_DR1 |                   \
                       AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,               \
     .p.priv_class   = &adpcm_encoder_class,                                \
-    CODEC_CH_LAYOUTS_ARRAY(ch_layouts),                                    \
     CODEC_SAMPLEFMTS_ARRAY(sample_fmts_),                                  \
     .priv_data_size = sizeof(ADPCMEncodeContext),                          \
     .init           = adpcm_encode_init,                                   \
     FF_CODEC_ENCODE_CB(adpcm_encode_frame),                                \
     .close          = adpcm_encode_close,                                  \
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,                           \
+    __VA_ARGS__,                                                           \
 };
-#define ADPCM_ENCODER_2(enabled, codec_id, name, sample_fmts, capabilities, long_name) \
-    ADPCM_ENCODER_ ## enabled(codec_id, name, sample_fmts, capabilities, long_name)
-#define ADPCM_ENCODER_3(config, codec_id, name, sample_fmts, capabilities, long_name) \
-    ADPCM_ENCODER_2(config, codec_id, name, sample_fmts, capabilities, long_name)
-#define ADPCM_ENCODER(codec, name, sample_fmts, capabilities, long_name) \
+#define ADPCM_ENCODER_2(enabled, codec_id, name, sample_fmts, capabilities, long_name, ...) \
+    ADPCM_ENCODER_ ## enabled(codec_id, name, sample_fmts, capabilities, long_name, __VA_ARGS__)
+#define ADPCM_ENCODER_3(config, codec_id, name, sample_fmts, capabilities, long_name, ...) \
+    ADPCM_ENCODER_2(config, codec_id, name, sample_fmts, capabilities, long_name, __VA_ARGS__)
+#define ADPCM_ENCODER(codec, name, sample_fmts, capabilities, long_name, ...) \
     ADPCM_ENCODER_3(CONFIG_ ## codec ## _ENCODER, AV_CODEC_ID_ ## codec, \
-                    name, sample_fmts, capabilities, long_name)
+                    name, sample_fmts, capabilities, long_name, __VA_ARGS__)
 
-ADPCM_ENCODER(ADPCM_ARGO,    adpcm_argo,    sample_fmts_p, 0,                             "ADPCM Argonaut Games")
-ADPCM_ENCODER(ADPCM_IMA_AMV, adpcm_ima_amv, sample_fmts,   0,                             "ADPCM IMA AMV")
-ADPCM_ENCODER(ADPCM_IMA_APM, adpcm_ima_apm, sample_fmts,   AV_CODEC_CAP_SMALL_LAST_FRAME, "ADPCM IMA Ubisoft APM")
-ADPCM_ENCODER(ADPCM_IMA_ALP, adpcm_ima_alp, sample_fmts,   AV_CODEC_CAP_SMALL_LAST_FRAME, "ADPCM IMA High Voltage Software ALP")
-ADPCM_ENCODER(ADPCM_IMA_QT,  adpcm_ima_qt,  sample_fmts_p, 0,                             "ADPCM IMA QuickTime")
-ADPCM_ENCODER(ADPCM_IMA_SSI, adpcm_ima_ssi, sample_fmts,   AV_CODEC_CAP_SMALL_LAST_FRAME, "ADPCM IMA Simon & Schuster Interactive")
-ADPCM_ENCODER(ADPCM_IMA_WAV, adpcm_ima_wav, sample_fmts_p, 0,                             "ADPCM IMA WAV")
-ADPCM_ENCODER(ADPCM_IMA_WS,  adpcm_ima_ws,  sample_fmts,   AV_CODEC_CAP_SMALL_LAST_FRAME, "ADPCM IMA Westwood")
-ADPCM_ENCODER(ADPCM_MS,      adpcm_ms,      sample_fmts,   0,                             "ADPCM Microsoft")
-ADPCM_ENCODER(ADPCM_SWF,     adpcm_swf,     sample_fmts,   0,                             "ADPCM Shockwave Flash")
-ADPCM_ENCODER(ADPCM_YAMAHA,  adpcm_yamaha,  sample_fmts,   0,                             "ADPCM Yamaha")
+#define MONO_STEREO CODEC_CH_LAYOUTS_ARRAY(ch_layouts_mono_stereo)
+
+ADPCM_ENCODER(ADPCM_ARGO,    adpcm_argo,    sample_fmts_p, 0,                             "ADPCM Argonaut Games",                   MONO_STEREO)
+ADPCM_ENCODER(ADPCM_IMA_AMV, adpcm_ima_amv, sample_fmts,   0,                             "ADPCM IMA AMV",                          CODEC_CH_LAYOUTS(AV_CHANNEL_LAYOUT_MONO), CODEC_SAMPLERATES(22050))
+ADPCM_ENCODER(ADPCM_IMA_APM, adpcm_ima_apm, sample_fmts,   AV_CODEC_CAP_SMALL_LAST_FRAME, "ADPCM IMA Ubisoft APM",                  MONO_STEREO)
+ADPCM_ENCODER(ADPCM_IMA_ALP, adpcm_ima_alp, sample_fmts,   AV_CODEC_CAP_SMALL_LAST_FRAME, "ADPCM IMA High Voltage Software ALP",    MONO_STEREO)
+ADPCM_ENCODER(ADPCM_IMA_QT,  adpcm_ima_qt,  sample_fmts_p, 0,                             "ADPCM IMA QuickTime",                    MONO_STEREO)
+ADPCM_ENCODER(ADPCM_IMA_SSI, adpcm_ima_ssi, sample_fmts,   AV_CODEC_CAP_SMALL_LAST_FRAME, "ADPCM IMA Simon & Schuster Interactive", MONO_STEREO)
+ADPCM_ENCODER(ADPCM_IMA_WAV, adpcm_ima_wav, sample_fmts_p, 0,                             "ADPCM IMA WAV",                          MONO_STEREO)
+ADPCM_ENCODER(ADPCM_IMA_WS,  adpcm_ima_ws,  sample_fmts,   AV_CODEC_CAP_SMALL_LAST_FRAME, "ADPCM IMA Westwood",                     MONO_STEREO)
+ADPCM_ENCODER(ADPCM_MS,      adpcm_ms,      sample_fmts,   0,                             "ADPCM Microsoft",                        MONO_STEREO)
+ADPCM_ENCODER(ADPCM_SWF,     adpcm_swf,     sample_fmts,   0,                             "ADPCM Shockwave Flash",                  MONO_STEREO, CODEC_SAMPLERATES(11025, 22050, 44100))
+ADPCM_ENCODER(ADPCM_YAMAHA,  adpcm_yamaha,  sample_fmts,   0,                             "ADPCM Yamaha",                           MONO_STEREO)
