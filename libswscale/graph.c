@@ -38,7 +38,7 @@
 
 static int pass_alloc_output(SwsPass *pass)
 {
-    if (!pass || pass->output.fmt != AV_PIX_FMT_NONE)
+    if (!pass || pass->output.data[0])
         return 0;
     pass->output.fmt = pass->format;
     return av_image_alloc(pass->output.data, pass->output.linesize, pass->width,
@@ -672,7 +672,7 @@ static void sws_graph_worker(void *priv, int jobnr, int threadnr, int nb_jobs,
     SwsGraph *graph = priv;
     const SwsPass *pass = graph->exec.pass;
     const SwsImg *input  = pass->input ? &pass->input->output : &graph->exec.input;
-    const SwsImg *output = pass->output.fmt != AV_PIX_FMT_NONE ? &pass->output : &graph->exec.output;
+    const SwsImg *output = pass->output.data[0] ? &pass->output : &graph->exec.output;
     const int slice_y = jobnr * pass->slice_h;
     const int slice_h = FFMIN(pass->slice_h, pass->height - slice_y);
 
@@ -729,8 +729,7 @@ void ff_sws_graph_free(SwsGraph **pgraph)
         SwsPass *pass = graph->passes[i];
         if (pass->free)
             pass->free(pass->priv);
-        if (pass->output.fmt != AV_PIX_FMT_NONE)
-            av_free(pass->output.data[0]);
+        av_free(pass->output.data[0]);
         av_free(pass);
     }
     av_free(graph->passes);
@@ -796,7 +795,7 @@ void ff_sws_graph_run(SwsGraph *graph, uint8_t *const out_data[4],
         const SwsPass *pass = graph->passes[i];
         graph->exec.pass = pass;
         if (pass->setup) {
-            pass->setup(pass->output.fmt != AV_PIX_FMT_NONE ? &pass->output : out,
+            pass->setup(pass->output.data[0] ? &pass->output : out,
                         pass->input ? &pass->input->output : in, pass);
         }
         avpriv_slicethread_execute(graph->slicethread, pass->num_slices, 0);
