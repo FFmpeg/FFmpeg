@@ -100,7 +100,7 @@ static int x509_fingerprint(X509 *cert, char **fingerprint)
     if (X509_digest(cert, EVP_sha256(), md, &n) != 1) {
         av_log(NULL, AV_LOG_ERROR, "TLS: Failed to generate fingerprint, %s\n",
                ERR_error_string(ERR_get_error(), NULL));
-        return AVERROR(ENOMEM);
+        return AVERROR(EINVAL);
     }
 
     av_bprint_init(&buf, n*3, n*3);
