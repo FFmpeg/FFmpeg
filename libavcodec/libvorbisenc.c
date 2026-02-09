@@ -23,6 +23,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/fifo.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
@@ -179,6 +180,62 @@ error:
     return vorbis_error_to_averror(ret);
 }
 
+static av_cold int libvorbis_get_priming_samples(vorbis_info *vi, AVCodecContext *avctx)
+{
+    LibvorbisEncContext *s = avctx->priv_data;
+    vorbis_dsp_state vd;
+    vorbis_block vb;
+    ogg_packet op;
+    int ret;
+
+    if ((ret = vorbis_analysis_init(&vd, vi))) {
+        av_log(avctx, AV_LOG_ERROR, "analysis init failed\n");
+        return vorbis_error_to_averror(ret);
+    }
+    if ((ret = vorbis_block_init(&vd, &vb))) {
+        av_log(avctx, AV_LOG_ERROR, "dsp init failed\n");
+        vorbis_dsp_clear(&vd);
+        return vorbis_error_to_averror(ret);
+    }
+
+    if ((ret = vorbis_analysis_wrote(&vd, 0)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "error in vorbis_analysis_wrote() during init\n");
+        ret = vorbis_error_to_averror(ret);
+        goto error;
+    }
+
+    /* retrieve available packets from libvorbis */
+    if ((ret = vorbis_analysis_blockout(&vd, &vb)) == 1) {
+        if ((ret = vorbis_analysis(&vb, NULL)) < 0) {
+            av_log(avctx, AV_LOG_ERROR, "error in vorbis_analysis_blockout() during init\n");
+            ret = vorbis_error_to_averror(ret);
+            goto error;
+        }
+        if ((ret = vorbis_bitrate_addblock(&vb)) < 0) {
+            av_log(avctx, AV_LOG_ERROR, "error in vorbis_bitrate_addblock() during init\n");
+            ret = vorbis_error_to_averror(ret);
+            goto error;
+        }
+
+        /* add any available packets to the output packet buffer */
+        ret = vorbis_bitrate_flushpacket(&vd, &op);
+        if (ret < 0) {
+            av_log(avctx, AV_LOG_ERROR, "error in vorbis_bitrate_flushpacket() during init\n");
+            ret = vorbis_error_to_averror(ret);
+            goto error;
+        }
+    }
+
+    avctx->initial_padding = av_vorbis_parse_frame(s->vp, op.packet, op.bytes);
+
+    ret = 0;
+error:
+    vorbis_block_clear(&vb);
+    vorbis_dsp_clear(&vd);
+
+    return ret;
+}
+
 /* How many bytes are needed for a buffer of length 'l' */
 static int xiph_len(int l)
 {
@@ -269,6 +326,9 @@ static av_cold int libvorbis_encode_init(AVCodecContext *avctx)
 
     vorbis_comment_clear(&s->vc);
 
+    if ((ret = libvorbis_get_priming_samples(&s->vi, avctx)))
+        return ret;
+
     avctx->frame_size = LIBVORBIS_FRAME_SIZE;
     ff_af_queue_init(avctx, &s->afq);
 
@@ -357,16 +417,6 @@ static int libvorbis_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     duration = av_vorbis_parse_frame(s->vp, avpkt->data, avpkt->size);
     if (duration > 0) {
-        /* we do not know encoder delay until we get the first packet from
-         * libvorbis, so we have to update the AudioFrameQueue counts */
-        if (!avctx->initial_padding && s->afq.frames) {
-            avctx->initial_padding    = duration;
-            av_assert0(!s->afq.remaining_delay);
-            s->afq.frames->duration  += duration;
-            if (s->afq.frames->pts != AV_NOPTS_VALUE)
-                s->afq.frames->pts       -= duration;
-            s->afq.remaining_samples += duration;
-        }
         ff_af_queue_remove(&s->afq, duration, &avpkt->pts, &avpkt->duration);
     }
 
