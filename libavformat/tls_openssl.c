@@ -267,7 +267,6 @@ static int openssl_gen_certificate(EVP_PKEY *pkey, X509 **cert, char **fingerpri
         goto enomem_end;
     }
 
-    // TODO: Support non-self-signed certificate, for example, load from a file.
     subject = X509_NAME_new();
     if (!subject) {
         goto enomem_end;
@@ -812,17 +811,7 @@ static int dtls_start(URLContext *h, const char *url, int flags, AVDictionary **
     else
         SSL_set_connect_state(c->ssl);
 
-    /**
-     * During initialization, we only need to call SSL_do_handshake once because SSL_read consumes
-     * the handshake message if the handshake is incomplete.
-     * To simplify maintenance, we initiate the handshake for both the DTLS server and client after
-     * sending out the ICE response in the start_active_handshake function. It's worth noting that
-     * although the DTLS server may receive the ClientHello immediately after sending out the ICE
-     * response, this shouldn't be an issue as the handshake function is called before any DTLS
-     * packets are received.
-     *
-     * The SSL_do_handshake can't be called if DTLS hasn't prepare for udp.
-     */
+    /* The SSL_do_handshake can't be called if DTLS hasn't prepare for udp. */
     if (!c->tls_shared.external_sock) {
         ret = dtls_handshake(h);
         // Fatal SSL error, for example, no available suite when peer is DTLS 1.0 while we are DTLS 1.2.
@@ -933,7 +922,7 @@ static int tls_write(URLContext *h, const uint8_t *buf, int size)
     URLContext *uc = s->is_dtls ? s->udp : s->tcp;
     int ret;
 
-    // Set or clear the AVIO_FLAG_NONBLOCK on c->tls_shared.tcp
+    // Set or clear the AVIO_FLAG_NONBLOCK on the underlying socket
     uc->flags &= ~AVIO_FLAG_NONBLOCK;
     uc->flags |= h->flags & AVIO_FLAG_NONBLOCK;
 
