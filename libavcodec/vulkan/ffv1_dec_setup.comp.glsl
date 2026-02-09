@@ -37,28 +37,22 @@ layout (set = 1, binding = 2, scalar) writeonly buffer slice_status_buf {
     uint32_t slice_status[];
 };
 
-shared uint8_t setup_state[CONTEXT_SIZE];
 shared uint hdr_sym[4 + 4 + 3];
 const int nb_hdr_sym = 4 + codec_planes + 3;
 
-uint get_usymbol(inout RangeCoder c)
+uint get_usymbol(void)
 {
-    if (get_rac_direct(c, setup_state[0]))
+    if (get_rac_direct(rc_state[0]))
         return 0;
 
     int e = 0;
-    while (get_rac_direct(c, setup_state[1 + min(e, 9)])) { // 1..10
+    while (get_rac_direct(rc_state[1 + min(e, 9)])) // 1..10
         e++;
-        if (e > 31) {
-            corrupt = true;
-            return 0;
-        }
-    }
 
     uint a = 1;
     for (int i = e - 1; i >= 0; i--) {
         a <<= 1;
-        a |= uint(get_rac_direct(c, setup_state[22 + min(i, 9)]));  // 22..31
+        a |= uint(get_rac_direct(rc_state[22 + min(i, 9)]));  // 22..31
     }
 
     return a;
@@ -68,10 +62,10 @@ bool decode_slice_header(inout SliceContext sc)
 {
     [[unroll]]
     for (int i = 0; i < CONTEXT_SIZE; i++)
-        setup_state[i] = uint8_t(128);
+        rc_state[i] = uint8_t(128);
 
     for (int i = 0; i < nb_hdr_sym; i++)
-        hdr_sym[i] = get_usymbol(sc.c);
+        hdr_sym[i] = get_usymbol();
 
     uint sx = hdr_sym[0];
     uint sy = hdr_sym[1];
@@ -79,10 +73,8 @@ bool decode_slice_header(inout SliceContext sc)
     uint sh = hdr_sym[3] + 1;
 
     if (sx < 0 || sy < 0 || sw <= 0 || sh <= 0 ||
-        sx > (gl_NumWorkGroups.x - sw) || sy > (gl_NumWorkGroups.y - sh) ||
-        corrupt) {
+        sx > (gl_NumWorkGroups.x - sw) || sy > (gl_NumWorkGroups.y - sh))
         return true;
-    }
 
     /* Set coordinates */
     uint sxs = slice_coord(img_size.x, sx     , gl_NumWorkGroups.x, chroma_shift.x);
@@ -103,11 +95,11 @@ bool decode_slice_header(inout SliceContext sc)
     }
 
     if (version >= 4) {
-        sc.slice_reset_contexts = get_rac_direct(sc.c, setup_state[0]);
-        sc.slice_coding_mode = get_usymbol(sc.c);
+        sc.slice_reset_contexts = get_rac_direct(rc_state[0]);
+        sc.slice_coding_mode = get_usymbol();
         if (sc.slice_coding_mode != 1 && colorspace == 1) {
-            sc.slice_rct_coef.x = int(get_usymbol(sc.c));
-            sc.slice_rct_coef.y = int(get_usymbol(sc.c));
+            sc.slice_rct_coef.x = int(get_usymbol());
+            sc.slice_rct_coef.y = int(get_usymbol());
             if (sc.slice_rct_coef.x + sc.slice_rct_coef.y > 4)
                 return true;
         }
@@ -123,13 +115,14 @@ void main(void)
     u8buf bs = u8buf(slice_data + slice_offsets[slice_idx].x);
     uint32_t slice_size = slice_offsets[slice_idx].y;
 
-    rac_init_dec(slice_ctx[slice_idx].c,
-                 bs, slice_size);
+    rac_init_dec(bs, slice_size);
 
     if (slice_idx == (gl_NumWorkGroups.x*gl_NumWorkGroups.y - 1))
-        get_rac_equi(slice_ctx[slice_idx].c);
+        get_rac_equi();
 
     decode_slice_header(slice_ctx[slice_idx]);
+
+    slice_ctx[slice_idx].c = rc;
 
     if (has_crc) {
         uint32_t crc = crcref;
@@ -139,5 +132,8 @@ void main(void)
         slice_status[2*slice_idx + 0] = crc;
     }
 
-    slice_status[2*slice_idx + 1] = corrupt ? uint32_t(corrupt) : overread;
+    uint overread = 0;
+    if (rc.bytestream >= (rc.bytestream_end + MAX_OVERREAD))
+        overread = uint(rc.bytestream - rc.bytestream_end);
+    slice_status[2*slice_idx + 1] = overread;
 }

@@ -24,6 +24,7 @@
 #define VULKAN_RANGECODER_H
 
 #define CONTEXT_SIZE 32
+#define MAX_OVERREAD 2
 
 layout (set = 0, binding = 0, scalar) readonly buffer rangecoder_buf {
     uint8_t zero_one_state[512];
@@ -40,6 +41,7 @@ struct RangeCoder {
     uint8_t  outstanding_byte;
 };
 
+shared RangeCoder rc;
 shared uint8_t rc_state[CONTEXT_SIZE];
 shared bool rc_data[CONTEXT_SIZE];
 shared bool rc_dec[CONTEXT_SIZE];
@@ -189,74 +191,64 @@ uint rac_terminate(inout RangeCoder c)
     return uint(uint64_t(c.bytestream) - uint64_t(c.bytestream_start));
 }
 
-/* Decoder */
-uint overread = 0;
-bool corrupt = false;
-
-void rac_init_dec(out RangeCoder r, u8buf data, uint buf_size)
+void rac_init_dec(u8buf data, uint buf_size)
 {
-    overread = 0;
-    corrupt = false;
-
     /* Skip priming bytes */
-    rac_init(r, OFFBUF(u8buf, data, 2), buf_size - 2);
+    rac_init(rc, OFFBUF(u8buf, data, 2), buf_size - 2);
 
     u8vec2 prime = u8vec2buf(data).v;
     /* Switch endianness of the priming bytes */
-    r.low = pack16(prime.yx);
+    rc.low = pack16(prime.yx);
 
-    if (r.low >= 0xFF00) {
-        r.low = 0xFF00;
-        r.bytestream_end = uint64_t(data) + 2;
+    if (rc.low >= 0xFF00) {
+        rc.low = 0xFF00;
+        rc.bytestream_end = uint64_t(data) + 2;
     }
 }
 
-void refill(inout RangeCoder c)
+void refill(void)
 {
-    c.range <<= 8;
-    c.low   <<= 8;
-    if (expectEXT(c.bytestream < c.bytestream_end, false)) {
-        c.low |= u8buf(c.bytestream).v;
-        c.bytestream++;
-    } else {
-        overread++;
-    }
+    rc.range <<= 8;
+    rc.low   <<= 8;
+    if (expectEXT(rc.bytestream < rc.bytestream_end, true))
+        rc.low |= u8buf(rc.bytestream).v;
+    rc.bytestream++;
 }
 
-bool get_rac_internal(inout RangeCoder c, const uint range1)
+bool get_rac_internal(const uint range1)
 {
-    uint ranged = c.range - range1;
-    bool bit = c.low >= ranged;
-    c.low -= bit ? ranged : 0;
-    c.range = (bit ? 0 : ranged) + (bit ? range1 : 0);
+    uint ranged = rc.range - range1;
+    bool bit = rc.low >= ranged;
+    rc.low -= bit ? ranged : 0;
+    rc.range = (bit ? 0 : ranged) + (bit ? range1 : 0);
 
-    if (expectEXT(c.range < 0x100, false))
-        refill(c);
+    if (expectEXT(rc.range < 0x100, false))
+        refill();
 
     return bit;
 }
 
-bool get_rac_direct(inout RangeCoder c, inout uint8_t state)
+bool get_rac_direct(inout uint8_t state)
 {
-    bool bit = get_rac_internal(c, c.range * state >> 8);
+    bool bit = get_rac_internal(rc.range * state >> 8);
     state = zero_one_state[state + (bit ? 256 : 0)];
     return bit;
 }
 
-bool get_rac_noadapt(inout RangeCoder c, uint idx)
+bool get_rac_noadapt(uint idx)
 {
     rc_dec[idx] = true;
-    return (rc_data[idx] = get_rac_internal(c, c.range * rc_state[idx] >> 8));
+    return (rc_data[idx] = get_rac_internal(rc.range * rc_state[idx] >> 8));
 }
 
-bool get_rac(inout RangeCoder c, uint64_t state)
+bool get_rac(uint64_t state)
 {
-    return get_rac_direct(c, u8buf(state).v);
+    return get_rac_direct(u8buf(state).v);
 }
 
-bool get_rac_equi(inout RangeCoder c)
+bool get_rac_equi(void)
 {
-    return get_rac_internal(c, c.range >> 1);
+    return get_rac_internal(rc.range >> 1);
 }
 
 #endif /* VULKAN_RANGECODER_H */

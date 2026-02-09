@@ -887,18 +887,21 @@ static void vk_ffv1_free_frame_priv(AVRefStructOpaque _hwctx, void *data)
 
     int slice_error_cnt = 0;
     int crc_mismatch_cnt = 0;
+    uint32_t max_overread = 0;
     for (int i = 0; i < fp->slice_num; i++) {
         uint32_t crc_res = 0;
+        uint8_t *ssp = slice_status->mapped_mem + 2*i*sizeof(uint32_t);
         if (fp->crc_checked)
-            crc_res = AV_RN32(slice_status->mapped_mem + 2*i*sizeof(uint32_t) + 0);
-        uint32_t status = AV_RN32(slice_status->mapped_mem + 2*i*sizeof(uint32_t) + 4);
-        slice_error_cnt += !!status;
+            crc_res = AV_RN32(ssp + 0);
+        uint32_t overread = AV_RN32(ssp + 4);
+        max_overread = FFMAX(overread, max_overread);
+        slice_error_cnt += !!overread;
         crc_mismatch_cnt += !!crc_res;
     }
     if (slice_error_cnt || crc_mismatch_cnt)
-        av_log(dev_ctx, AV_LOG_ERROR, "Decode status: %i slices errored, "
+        av_log(dev_ctx, AV_LOG_ERROR, "Decode status: %i slices overread (%i bytes max), "
                                       "%i CRCs mismatched\n",
-               slice_error_cnt, crc_mismatch_cnt);
+               slice_error_cnt, max_overread, crc_mismatch_cnt);
 
     av_buffer_unref(&fp->slice_state);
     av_buffer_unref(&fp->slice_offset_buf);

@@ -41,46 +41,49 @@ layout (set = 1, binding = 3, scalar) buffer slice_state_buf {
     uint8_t slice_rc_state[];
 };
 
-#define READ(c, idx) get_rac_noadapt(c, idx)
-int get_isymbol(inout RangeCoder c)
+#define READ(idx) get_rac_noadapt(idx)
+int get_isymbol(void)
 {
-    if (READ(c, 0))
+    if (READ(0))
         return 0;
 
-    uint e = 1;
+    int e = 1;
     for (; e < 11; e++) {
-        if (!READ(c, e))
+        if (!READ(e))
             break;
     }
 
     int a = 1;
-    uint i = e;
+    int i = e;
 
     if (bits > 8 && e == 11) {
         do {
             rc_state[10] = zero_one_state[rc_state[10] + 256];
             e++;
-        } while (READ(c, 10));
+        } while (READ(10));
 
         e--;
         i = e - 1;
 
-        a += a + int(READ(c, 31));
+        a <<= 1;
+        a |= int(READ(31));
         for (; i >= 11; i--) {
             rc_state[31] = zero_one_state[rc_state[31] +
                                           (rc_data[31] ? 256 : 0)];
-            a += a + int(READ(c, 31));
+            a <<= 1;
+            a |= int(READ(31));
         }
     }
 
-    i += 20;
-    for (; i >= 22; i--)
-        a += a + int(READ(c, i));
+    a <<= i - 1;
+    i -= 2;
+    for (; i >= 0; i--)
+        a |= int(READ(i + 22)) << i;
 
-    return READ(c, min(e + 10, 21)) ? -a : a;
+    return READ(min(e + 10, 21)) ? -a : a;
 }
 
-void decode_line_pcm(inout SliceContext sc, ivec2 sp, int w, int y, int p)
+void decode_line_pcm(ivec2 sp, int w, int y, int p)
 {
     if (gl_LocalInvocationID.x > 0)
         return;
@@ -97,13 +100,13 @@ void decode_line_pcm(inout SliceContext sc, ivec2 sp, int w, int y, int p)
 
         [[unroll]]
         for (uint i = (rct_offset >> 1); i > 0; i >>= 1)
-            v |= get_rac_equi(sc.c) ? i : 0;
+            v |= get_rac_equi() ? i : 0;
 
         imageStore(dec[p], sp + LADDR(ivec2(x, y)), uvec4(v));
     }
 }
 
-void decode_line(inout SliceContext sc, ivec2 sp, int w,
+void decode_line(ivec2 sp, int w,
                  int y, int p, uint state_off,
                  uint8_t quant_table_idx, int run_index)
 {
@@ -126,7 +129,7 @@ void decode_line(inout SliceContext sc, ivec2 sp, int w,
 
         int diff;
         if (gl_LocalInvocationID.x == 0)
-            diff = get_isymbol(sc.c);
+            diff = get_isymbol();
 
         barrier();
         uint i = gl_LocalInvocationID.x;
@@ -155,14 +158,14 @@ GetBitContext gb;
 void golomb_init(inout SliceContext sc)
 {
     if (version == 3 && micro_version > 1 || version > 3)
-        get_rac_internal(sc.c, sc.c.range * 129 >> 8);
+        get_rac_internal(rc.range * 129 >> 8);
 
-    uint64_t ac_byte_count = sc.c.bytestream - sc.c.bytestream_start - 1;
-    init_get_bits(gb, u8buf(sc.c.bytestream_start + ac_byte_count),
-                  int(sc.c.bytestream_end - sc.c.bytestream_start - ac_byte_count));
+    uint64_t ac_byte_count = rc.bytestream - rc.bytestream_start - 1;
+    init_get_bits(gb, u8buf(rc.bytestream_start + ac_byte_count),
+                  int(rc.bytestream_end - rc.bytestream_start - ac_byte_count));
 }
 
-void decode_line(inout SliceContext sc, ivec2 sp, int w,
+void decode_line(ivec2 sp, int w,
                  int y, int p, uint state_off,
                  uint8_t quant_table_idx, inout int run_index)
 {
@@ -284,7 +287,7 @@ void decode_slice(inout SliceContext sc, const uint slice_idx)
 #ifdef RGB
         for (int y = 0; y < sc.slice_dim.y; y++) {
             for (int p = 0; p < color_planes; p++)
-                decode_line_pcm(sc, sp, w, y, p);
+                decode_line_pcm(sp, w, y, p);
 
             writeout_rgb(sc, sp, w, y, false);
         }
@@ -295,7 +298,7 @@ void decode_slice(inout SliceContext sc, const uint slice_idx)
                 h = ceil_rshift(h, chroma_shift.y);
 
             for (int y = 0; y < h; y++)
-                decode_line_pcm(sc, sp, w, y, p);
+                decode_line_pcm(sp, w, y, p);
         }
 #endif
         return;
@@ -315,7 +318,7 @@ void decode_slice(inout SliceContext sc, const uint slice_idx)
     int run_index = 0;
     for (int y = 0; y < sc.slice_dim.y; y++) {
         for (int p = 0; p < color_planes; p++)
-            decode_line(sc, sp, w, y, p,
+            decode_line(sp, w, y, p,
                         slice_state_off[p], quant_table_idx[p], run_index);
 
         writeout_rgb(sc, sp, w, y, true);
@@ -328,7 +331,7 @@ void decode_slice(inout SliceContext sc, const uint slice_idx)
 
         int run_index = 0;
         for (int y = 0; y < h; y++)
-            decode_line(sc, sp, w, y, p,
+            decode_line(sp, w, y, p,
                         slice_state_off[p], quant_table_idx[p], run_index);
     }
 #endif
@@ -337,9 +340,16 @@ void decode_slice(inout SliceContext sc, const uint slice_idx)
 void main(void)
 {
     uint slice_idx = gl_WorkGroupID.y*gl_NumWorkGroups.x + gl_WorkGroupID.x;
+
+    rc = slice_ctx[slice_idx].c;
+
     decode_slice(slice_ctx[slice_idx], slice_idx);
 
-    uint32_t status = corrupt ? uint32_t(corrupt) : overread;
-    if (status != 0)
-        slice_status[2*slice_idx + 1] = status;
+    if (gl_LocalInvocationID.x > 0)
+        return;
+
+    uint overread = 0;
+    if (rc.bytestream >= (rc.bytestream_end + MAX_OVERREAD))
+        overread = uint(rc.bytestream - rc.bytestream_end);
+    slice_status[2*slice_idx + 1] = overread;
 }
