@@ -466,12 +466,12 @@ static av_cold void dpcm_flush(AVCodecContext *avctx)
     s->sample[0] = s->sample[1] = 0;
 }
 
-#define DPCM_DECODER(id_, name_, long_name_)                \
-const FFCodec ff_ ## name_ ## _decoder = {                  \
-    .p.name         = #name_,                               \
-    CODEC_LONG_NAME(long_name_),                            \
+#define DPCM_DECODER(ID, NAME, LONG_NAME)                   \
+const FFCodec ff_ ## NAME ## _decoder = {                   \
+    .p.name         = #NAME,                                \
+    CODEC_LONG_NAME(LONG_NAME),                             \
     .p.type         = AVMEDIA_TYPE_AUDIO,                   \
-    .p.id           = id_,                                  \
+    .p.id           = ID,                                   \
     .p.capabilities = AV_CODEC_CAP_DR1,                     \
     .priv_data_size = sizeof(DPCMContext),                  \
     .init           = dpcm_decode_init,                     \
