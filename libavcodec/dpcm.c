@@ -466,7 +466,7 @@ static av_cold void dpcm_flush(AVCodecContext *avctx)
     s->sample[0] = s->sample[1] = 0;
 }
 
-#define DPCM_DECODER(ID, NAME, LONG_NAME)                   \
+#define DPCM_DECODER(ID, NAME, FLUSH, LONG_NAME)            \
 const FFCodec ff_ ## NAME ## _decoder = {                   \
     .p.name         = #NAME,                                \
     CODEC_LONG_NAME(LONG_NAME),                             \
@@ -475,16 +475,16 @@ const FFCodec ff_ ## NAME ## _decoder = {                   \
     .p.capabilities = AV_CODEC_CAP_DR1,                     \
     .priv_data_size = sizeof(DPCMContext),                  \
     .init           = dpcm_decode_init,                     \
-    .flush          = dpcm_flush,                           \
+    .flush          = FLUSH,                                \
     FF_CODEC_DECODE_CB(dpcm_decode_frame),                  \
 }
 
-DPCM_DECODER(AV_CODEC_ID_CBD2_DPCM,      cbd2_dpcm,      "DPCM Cuberoot-Delta-Exact");
-DPCM_DECODER(AV_CODEC_ID_DERF_DPCM,      derf_dpcm,      "DPCM Xilam DERF");
-DPCM_DECODER(AV_CODEC_ID_GREMLIN_DPCM,   gremlin_dpcm,   "DPCM Gremlin");
-DPCM_DECODER(AV_CODEC_ID_INTERPLAY_DPCM, interplay_dpcm, "DPCM Interplay");
-DPCM_DECODER(AV_CODEC_ID_ROQ_DPCM,       roq_dpcm,       "DPCM id RoQ");
-DPCM_DECODER(AV_CODEC_ID_SDX2_DPCM,      sdx2_dpcm,      "DPCM Squareroot-Delta-Exact");
-DPCM_DECODER(AV_CODEC_ID_SOL_DPCM,       sol_dpcm,       "DPCM Sol");
-DPCM_DECODER(AV_CODEC_ID_XAN_DPCM,       xan_dpcm,       "DPCM Xan");
-DPCM_DECODER(AV_CODEC_ID_WADY_DPCM,      wady_dpcm,      "DPCM Marble WADY");
+DPCM_DECODER(AV_CODEC_ID_CBD2_DPCM,      cbd2_dpcm,      dpcm_flush, "DPCM Cuberoot-Delta-Exact");
+DPCM_DECODER(AV_CODEC_ID_DERF_DPCM,      derf_dpcm,      dpcm_flush, "DPCM Xilam DERF");
+DPCM_DECODER(AV_CODEC_ID_GREMLIN_DPCM,   gremlin_dpcm,   dpcm_flush, "DPCM Gremlin");
+DPCM_DECODER(AV_CODEC_ID_INTERPLAY_DPCM, interplay_dpcm, NULL,       "DPCM Interplay");
+DPCM_DECODER(AV_CODEC_ID_ROQ_DPCM,       roq_dpcm,       NULL,       "DPCM id RoQ");
+DPCM_DECODER(AV_CODEC_ID_SDX2_DPCM,      sdx2_dpcm,      dpcm_flush, "DPCM Squareroot-Delta-Exact");
+DPCM_DECODER(AV_CODEC_ID_SOL_DPCM,       sol_dpcm,       dpcm_flush, "DPCM Sol");
+DPCM_DECODER(AV_CODEC_ID_XAN_DPCM,       xan_dpcm,       NULL,       "DPCM Xan");
+DPCM_DECODER(AV_CODEC_ID_WADY_DPCM,      wady_dpcm,      dpcm_flush, "DPCM Marble WADY");
