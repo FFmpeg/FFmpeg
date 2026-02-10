@@ -82,6 +82,7 @@ jobs:
               --extra-cflags="$FF_CFLAGS" --extra-cxxflags="$FF_CXXFLAGS" \
               --extra-libs="$FF_LIBS" --extra-ldflags="$FF_LDFLAGS" --extra-ldexeflags="$FF_LDEXEFLAGS" \
               --enable-memory-poisoning --assert-level=2 --target-exec="${{ matrix.target_exec }}" \
+              --enable-hardcoded-tables \
               || CFGRES=$?
           cat ffbuild/config.log
           exit ${CFGRES:-0}
