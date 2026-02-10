@@ -93,7 +93,7 @@ struct SliceContext {
     bool slice_reset_contexts;
 };
 
-layout (set = 1, binding = 0) buffer slice_ctx_buf {
+layout (set = 1, binding = 0, scalar) buffer slice_ctx_buf {
     SliceContext slice_ctx[];
 };
 
