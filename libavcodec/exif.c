@@ -270,6 +270,9 @@ static inline void tput64(PutByteContext *pb, const int le, const uint64_t value
 
 static int exif_read_values(void *logctx, GetByteContext *gb, int le, AVExifEntry *entry)
 {
+    if (exif_sizes[entry->type] * entry->count > bytestream2_get_bytes_left(gb))
+        return AVERROR_INVALIDDATA;
+
     switch (entry->type) {
         case AV_TIFF_SHORT:
         case AV_TIFF_LONG:
