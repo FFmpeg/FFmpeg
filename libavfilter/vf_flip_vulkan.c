@@ -19,13 +19,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/random_seed.h"
 #include "libavutil/opt.h"
-#include "libavutil/vulkan_spirv.h"
 #include "vulkan_filter.h"
 
 #include "filters.h"
 #include "video.h"
+
+extern const unsigned char ff_flip_comp_spv_data[];
+extern const unsigned int ff_flip_comp_spv_len;
 
 enum FlipType {
     FLIP_VERTICAL,
@@ -42,24 +43,13 @@ typedef struct FlipVulkanContext {
     FFVulkanShader shd;
 } FlipVulkanContext;
 
-static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in, enum FlipType type)
+static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
 {
     int err = 0;
-    uint8_t *spv_data;
-    size_t spv_len;
-    void *spv_opaque = NULL;
     FlipVulkanContext *s = ctx->priv;
     FFVulkanContext *vkctx = &s->vkctx;
     const int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
     FFVulkanShader *shd = &s->shd;
-    FFVkSPIRVCompiler *spv;
-    FFVulkanDescriptorSetBinding *desc;
-
-    spv = ff_vk_spirv_init();
-    if (!spv) {
-        av_log(ctx, AV_LOG_ERROR, "Unable to initialize SPIR-V compiler!\n");
-        return AVERROR_EXTERNAL;
-    }
 
     s->qf = ff_vk_qf_find(vkctx, VK_QUEUE_COMPUTE_BIT, 0);
     if (!s->qf) {
@@ -69,77 +59,36 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in, enum FlipType 
     }
 
     RET(ff_vk_exec_pool_init(vkctx, s->qf, &s->e, s->qf->num*4, 0, 0, 0, NULL));
-    RET(ff_vk_shader_init(vkctx, &s->shd, "flip",
-                          VK_SHADER_STAGE_COMPUTE_BIT,
-                          NULL, 0,
-                          32, 32, 1,
-                          0));
 
-    desc = (FFVulkanDescriptorSetBinding []) {
-        {
-            .name       = "input_image",
-            .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-            .mem_layout = ff_vk_shader_rep_fmt(s->vkctx.input_format, FF_VK_REP_FLOAT),
-            .mem_quali  = "readonly",
-            .dimensions = 2,
-            .elems      = planes,
-            .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
+    ff_vk_shader_load(&s->shd, VK_SHADER_STAGE_COMPUTE_BIT, NULL,
+                      (uint32_t []) { 32, 8, planes }, 0);
+
+    ff_vk_shader_add_push_const(&s->shd, 0, sizeof(int),
+                                VK_SHADER_STAGE_COMPUTE_BIT);
+
+    const FFVulkanDescriptorSetBinding desc[] = {
+        { /* input_img */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
+            .elems  = planes,
         },
-        {
-            .name       = "output_image",
-            .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-            .mem_layout = ff_vk_shader_rep_fmt(s->vkctx.output_format, FF_VK_REP_FLOAT),
-            .mem_quali  = "writeonly",
-            .dimensions = 2,
-            .elems      = planes,
-            .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
+        { /* output_img */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
+            .elems  = planes,
         },
     };
+    ff_vk_shader_add_descriptor_set(vkctx, &s->shd, desc, 2, 0, 0);
 
-    RET(ff_vk_shader_add_descriptor_set(vkctx, &s->shd, desc, 2, 0, 0));
-
-    GLSLC(0, void main()                                                                    );
-    GLSLC(0, {                                                                              );
-    GLSLC(1,     ivec2 size;                                                                );
-    GLSLC(1,     const ivec2 pos = ivec2(gl_GlobalInvocationID.xy);                         );
-    for (int i = 0; i < planes; i++) {
-        GLSLC(0,                                                                            );
-        GLSLF(1, size = imageSize(output_image[%i]);                                      ,i);
-        GLSLC(1, if (IS_WITHIN(pos, size)) {                                                );
-        switch (type)
-        {
-        case FLIP_HORIZONTAL:
-            GLSLF(2, vec4 res = imageLoad(input_image[%i], ivec2(size.x - pos.x, pos.y)); ,i);
-            break;
-        case FLIP_VERTICAL:
-            GLSLF(2, vec4 res = imageLoad(input_image[%i], ivec2(pos.x, size.y - pos.y)); ,i);
-            break;
-        case FLIP_BOTH:
-            GLSLF(2, vec4 res = imageLoad(input_image[%i], ivec2(size.xy - pos.xy));,      i);
-            break;
-        default:
-            GLSLF(2, vec4 res = imageLoad(input_image[%i], pos);                          ,i);
-            break;
-        }
-        GLSLF(2,     imageStore(output_image[%i], pos, res);                              ,i);
-        GLSLC(1, }                                                                          );
-    }
-    GLSLC(0, }                                                                              );
-
-    RET(spv->compile_shader(vkctx, spv, shd, &spv_data, &spv_len, "main",
-                            &spv_opaque));
-    RET(ff_vk_shader_link(vkctx, shd, spv_data, spv_len, "main"));
+    RET(ff_vk_shader_link(vkctx, shd,
+                          ff_flip_comp_spv_data,
+                          ff_flip_comp_spv_len, "main"));
 
     RET(ff_vk_shader_register_exec(vkctx, &s->e, &s->shd));
 
     s->initialized = 1;
 
 fail:
-    if (spv_opaque)
-        spv->free_shader(spv, &spv_opaque);
-    if (spv)
-        spv->uninit(&spv);
-
     return err;
 }
 
@@ -171,10 +120,10 @@ static int filter_frame(AVFilterLink *link, AVFrame *in, enum FlipType type)
     }
 
     if (!s->initialized)
-        RET(init_filter(ctx, in, type));
+        RET(init_filter(ctx, in));
 
     RET(ff_vk_filter_process_simple(&s->vkctx, &s->e, &s->shd, out, in,
-                                    VK_NULL_HANDLE, 1, NULL, 0));
+                                    VK_NULL_HANDLE, 1, &type, sizeof(int)));
 
     RET(av_frame_copy_props(out, in));
 

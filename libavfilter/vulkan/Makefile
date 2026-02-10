@@ -4,6 +4,7 @@ clean::
 OBJS-$(CONFIG_AVGBLUR_VULKAN_FILTER) += vulkan/avgblur.comp.spv.o
 OBJS-$(CONFIG_BWDIF_VULKAN_FILTER) += vulkan/bwdif.comp.spv.o
 OBJS-$(CONFIG_SCALE_VULKAN_FILTER) += vulkan/debayer.comp.spv.o
+OBJS-$(CONFIG_FLIP_VULKAN_FILTER) += vulkan/flip.comp.spv.o
 OBJS-$(CONFIG_V360_VULKAN_FILTER) += vulkan/v360.comp.spv.o
 OBJS-$(CONFIG_INTERLACE_VULKAN_FILTER) += vulkan/interlace.comp.spv.o
 OBJS-$(CONFIG_XFADE_VULKAN_FILTER) += vulkan/xfade.comp.spv.o
