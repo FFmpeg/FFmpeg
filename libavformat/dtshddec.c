@@ -59,6 +59,7 @@ static int dtshd_read_header(AVFormatContext *s)
     uint64_t chunk_type, chunk_size;
     int64_t duration, orig_nb_samples, data_start;
     AVStream *st;
+    FFStream *sti;
     int ret;
     char *value;
 
@@ -67,7 +68,8 @@ static int dtshd_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
     st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_id   = AV_CODEC_ID_DTS;
-    ffstream(st)->need_parsing = AVSTREAM_PARSE_FULL_RAW;
+    sti = ffstream(st);
+    sti->need_parsing = AVSTREAM_PARSE_FULL_RAW;
 
     for (;;) {
         chunk_type = avio_rb64(pb);
@@ -111,6 +113,10 @@ static int dtshd_read_header(AVFormatContext *s)
             st->codecpar->ch_layout.nb_channels = ff_dca_count_chs_for_mask(avio_rb16(pb));
             st->codecpar->initial_padding = avio_rb16(pb);
             st->codecpar->trailing_padding = FFMAX(st->duration - orig_nb_samples - st->codecpar->initial_padding, 0);
+            st->start_time =
+            sti->start_skip_samples = st->codecpar->initial_padding;
+            sti->first_discard_sample = orig_nb_samples + st->codecpar->initial_padding;
+            sti->last_discard_sample = st->duration;
             avio_skip(pb, chunk_size - 21);
             break;
         case FILEINFO:

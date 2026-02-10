@@ -3,9 +3,44 @@
 #codec_id 0: pcm_s24le
 #sample_rate 0: 48000
 #channel_layout_name 0: stereo
-0,          0,          0,      512,     3072, 0x00000000
-0,        512,        512,      512,     3072, 0x00000000
-0,       1024,       1024,      512,     3072, 0x1bf4e1f9
-0,       1536,       1536,      512,     3072, 0x89a1d6cd
-0,       2048,       2048,      512,     3072, 0xf088ee73
-0,       2560,       2560,      512,     3072, 0x401cc303
+0,      -1024,      -1024,      512,     3072, 0x00000000
+0,       -512,       -512,      512,     3072, 0x00000000
+0,          0,          0,      512,     3072, 0x1bf4e1f9
+0,        512,        512,      512,     3072, 0x89a1d6cd
+0,       1024,       1024,      512,     3072, 0xf088ee73
+0,       1536,       1536,      512,     3072, 0x401cc303
+[PACKET]
+pts=0
+duration=512
+[SIDE_DATA]
+side_data_type=Skip Samples
+skip_samples=1024
+discard_padding=0
+skip_reason=0
+discard_reason=0
+[/SIDE_DATA]
+[/PACKET]
+[PACKET]
+pts=512
+duration=512
+[/PACKET]
+[PACKET]
+pts=1024
+duration=512
+[/PACKET]
+[PACKET]
+pts=1536
+duration=512
+[/PACKET]
+[PACKET]
+pts=2048
+duration=512
+[/PACKET]
+[PACKET]
+pts=2560
+duration=512
+[/PACKET]
+[STREAM]
+initial_padding=1024
+start_time=0.021333
+[/STREAM]

@@ -3,9 +3,44 @@
 #codec_id 0: pcm_s16le
 #sample_rate 0: 192000
 #channel_layout_name 0: 5.1(side)
-0,          0,          0,     2048,    24576, 0x00000000
-0,       2048,       2048,     2048,    24576, 0x00000000
-0,       4096,       4096,     2048,    24576, 0x004b62f1
-0,       6144,       6144,     2048,    24576, 0x66edba5f
-0,       8192,       8192,     2048,    24576, 0xf2aa3d4b
-0,      10240,      10240,     2048,    24576, 0xa6741aff
+0,      -4096,      -4096,     2048,    24576, 0x00000000
+0,      -2048,      -2048,     2048,    24576, 0x00000000
+0,          0,          0,     2048,    24576, 0x004b62f1
+0,       2048,       2048,     2048,    24576, 0x66edba5f
+0,       4096,       4096,     2048,    24576, 0xf2aa3d4b
+0,       6144,       6144,     2048,    24576, 0xa6741aff
+[PACKET]
+pts=0
+duration=2048
+[SIDE_DATA]
+side_data_type=Skip Samples
+skip_samples=4096
+discard_padding=0
+skip_reason=0
+discard_reason=0
+[/SIDE_DATA]
+[/PACKET]
+[PACKET]
+pts=2048
+duration=2048
+[/PACKET]
+[PACKET]
+pts=4096
+duration=2048
+[/PACKET]
+[PACKET]
+pts=6144
+duration=2048
+[/PACKET]
+[PACKET]
+pts=8192
+duration=2048
+[/PACKET]
+[PACKET]
+pts=10240
+duration=2048
+[/PACKET]
+[STREAM]
+initial_padding=4096
+start_time=0.021333
+[/STREAM]
