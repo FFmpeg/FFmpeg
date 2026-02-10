@@ -19,14 +19,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/random_seed.h"
 #include "libavutil/opt.h"
-#include "libavutil/vulkan_spirv.h"
 #include "vulkan_filter.h"
 
 #include "filters.h"
 #include "transpose.h"
 #include "video.h"
+
+extern const unsigned char ff_transpose_comp_spv_data[];
+extern const unsigned int ff_transpose_comp_spv_len;
 
 typedef struct TransposeVulkanContext {
     FFVulkanContext vkctx;
@@ -43,22 +44,9 @@ typedef struct TransposeVulkanContext {
 static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
 {
     int err;
-    uint8_t *spv_data;
-    size_t spv_len;
-    void *spv_opaque = NULL;
     TransposeVulkanContext *s = ctx->priv;
     FFVulkanContext *vkctx = &s->vkctx;
-
     const int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
-    FFVulkanShader *shd = &s->shd;
-    FFVkSPIRVCompiler *spv;
-    FFVulkanDescriptorSetBinding *desc;
-
-    spv = ff_vk_spirv_init();
-    if (!spv) {
-        av_log(ctx, AV_LOG_ERROR, "Unable to initialize SPIR-V compiler!\n");
-        return AVERROR_EXTERNAL;
-    }
 
     s->qf = ff_vk_qf_find(vkctx, VK_QUEUE_COMPUTE_BIT, 0);
     if (!s->qf) {
@@ -68,70 +56,36 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
     }
 
     RET(ff_vk_exec_pool_init(vkctx, s->qf, &s->e, s->qf->num*4, 0, 0, 0, NULL));
-    RET(ff_vk_shader_init(vkctx, &s->shd, "transpose",
-                          VK_SHADER_STAGE_COMPUTE_BIT,
-                          NULL, 0,
-                          32, 1, 1,
-                          0));
 
-    desc = (FFVulkanDescriptorSetBinding []) {
-        {
-            .name       = "input_images",
-            .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-            .mem_layout = ff_vk_shader_rep_fmt(s->vkctx.input_format, FF_VK_REP_FLOAT),
-            .mem_quali  = "readonly",
-            .dimensions = 2,
-            .elems      = planes,
-            .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
+    ff_vk_shader_load(&s->shd, VK_SHADER_STAGE_COMPUTE_BIT, NULL,
+                      (uint32_t []) { 32, 1, planes }, 0);
+
+    ff_vk_shader_add_push_const(&s->shd, 0, sizeof(int),
+                                VK_SHADER_STAGE_COMPUTE_BIT);
+
+    const FFVulkanDescriptorSetBinding desc[] = {
+        { /* input_img */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
+            .elems  = planes,
         },
-        {
-            .name       = "output_images",
-            .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-            .mem_layout = ff_vk_shader_rep_fmt(s->vkctx.output_format, FF_VK_REP_FLOAT),
-            .mem_quali  = "writeonly",
-            .dimensions = 2,
-            .elems      = planes,
-            .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
+        { /* output_img */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
+            .elems  = planes,
         },
     };
+    ff_vk_shader_add_descriptor_set(vkctx, &s->shd, desc, 2, 0, 0);
 
-    RET(ff_vk_shader_add_descriptor_set(vkctx, &s->shd, desc, 2, 0, 0));
-
-    GLSLC(0, void main()                                               );
-    GLSLC(0, {                                                         );
-    GLSLC(1,     ivec2 size;                                           );
-    GLSLC(1,     ivec2 pos = ivec2(gl_GlobalInvocationID.xy);          );
-    for (int i = 0; i < planes; i++) {
-        GLSLC(0,                                                       );
-        GLSLF(1, size = imageSize(output_images[%i]);                ,i);
-        GLSLC(1, if (IS_WITHIN(pos, size)) {                           );
-        if (s->dir == TRANSPOSE_CCLOCK)
-            GLSLF(2, vec4 res = imageLoad(input_images[%i], ivec2(size.y - pos.y, pos.x)); ,i);
-        else if (s->dir == TRANSPOSE_CLOCK_FLIP || s->dir == TRANSPOSE_CLOCK) {
-            GLSLF(2, vec4 res = imageLoad(input_images[%i], ivec2(size.yx - pos.yx));      ,i);
-            if (s->dir == TRANSPOSE_CLOCK)
-                GLSLC(2, pos = ivec2(pos.x, size.y - pos.y);           );
-        } else
-            GLSLF(2, vec4 res = imageLoad(input_images[%i], pos.yx);  ,i);
-        GLSLF(2,     imageStore(output_images[%i], pos, res);        ,i);
-        GLSLC(1, }                                                     );
-    }
-    GLSLC(0, }                                                         );
-
-    RET(spv->compile_shader(vkctx, spv, shd, &spv_data, &spv_len, "main",
-                            &spv_opaque));
-    RET(ff_vk_shader_link(vkctx, shd, spv_data, spv_len, "main"));
+    RET(ff_vk_shader_link(vkctx, &s->shd,
+                          ff_transpose_comp_spv_data,
+                          ff_transpose_comp_spv_len, "main"));
 
     RET(ff_vk_shader_register_exec(vkctx, &s->e, &s->shd));
 
     s->initialized = 1;
 
 fail:
-    if (spv_opaque)
-        spv->free_shader(spv, &spv_opaque);
-    if (spv)
-        spv->uninit(&spv);
-
     return err;
 }
 
@@ -156,7 +110,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         RET(init_filter(ctx, in));
 
     RET(ff_vk_filter_process_simple(&s->vkctx, &s->e, &s->shd, out, in,
-                                    VK_NULL_HANDLE, 1, NULL, 0));
+                                    VK_NULL_HANDLE, 1, &s->dir, sizeof(int)));
 
     RET(av_frame_copy_props(out, in));
 
@@ -223,7 +177,8 @@ static int config_props_output(AVFilterLink *outlink)
 }
 
 #define OFFSET(x) offsetof(TransposeVulkanContext, x)
-#define FLAGS (AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_VIDEO_PARAM)
+#define FLAGS (AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_VIDEO_PARAM | \
+               AV_OPT_FLAG_RUNTIME_PARAM)
 
 static const AVOption transpose_vulkan_options[] = {
     { "dir", "set transpose direction", OFFSET(dir), AV_OPT_TYPE_INT, { .i64 = TRANSPOSE_CCLOCK_FLIP }, 0, 7, FLAGS, .unit = "dir" },
