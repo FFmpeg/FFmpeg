@@ -2036,6 +2036,11 @@ static int mjpeg_decode_app(MJpegDecodeContext *s, int start_code)
         bytestream2_skipu(&s->gB, 2); // skip padding
         len -= 2;
 
+        if (s->exif_metadata.entries) {
+            av_log(s->avctx, AV_LOG_WARNING, "multiple EXIF\n");
+            goto out;
+        }
+
         ret = av_exif_parse_buffer(s->avctx, s->gB.buffer, len, &s->exif_metadata, AV_EXIF_TIFF_HEADER);
         if (ret < 0) {
             av_log(s->avctx, AV_LOG_WARNING, "unable to parse EXIF buffer\n");
