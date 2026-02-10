@@ -297,7 +297,9 @@ static int dhav_read_header(AVFormatContext *s)
                 if (seek_back < 9)
                     break;
                 dhav->last_good_pos = avio_tell(s->pb);
-                avio_seek(s->pb, -seek_back, SEEK_CUR);
+                int64_t ret64 = avio_seek(s->pb, -seek_back, SEEK_CUR);
+                if (ret64 < 0)
+                    return ret64;
             }
             avio_seek(s->pb, dhav->last_good_pos, SEEK_SET);
         }
