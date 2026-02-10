@@ -230,9 +230,6 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
                  !(sw_format == AV_PIX_FMT_YA8);
     int color_planes = av_pix_fmt_desc_get(avctx->sw_pix_fmt)->nb_components;
 
-    FFVulkanShader *reset_shader;
-    FFVulkanShader *decode_shader;
-
     FFv1VulkanDecodePicture *fp = f->hwaccel_picture_private;
     FFVulkanDecodePicture *vp = &fp->vp;
 
@@ -241,9 +238,6 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
     FFVkBuffer *slice_feedback = (FFVkBuffer *)fp->slice_feedback_buf->data;
 
     VkImageView rct_image_views[AV_NUM_DATA_POINTERS];
-
-    AVFrame *decode_dst = is_rgb ? vp->dpb_frame : f->picture.f;
-    VkImageView *decode_dst_view = is_rgb ? rct_image_views : vp->view.out;
 
     VkImageMemoryBarrier2 img_bar[37];
     int nb_img_bar = 0;
@@ -269,12 +263,6 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
         RET(ff_vk_exec_add_dep_frame(&ctx->s, exec, vp->dpb_frame,
                                      VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
                                      VK_PIPELINE_STAGE_2_CLEAR_BIT));
-        ff_vk_frame_barrier(&ctx->s, exec, decode_dst, img_bar, &nb_img_bar,
-                            VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
-                            VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
-                            VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                            VK_IMAGE_LAYOUT_GENERAL,
-                            VK_QUEUE_FAMILY_IGNORED);
     }
 
     if (!(f->picture.f->flags & AV_FRAME_FLAG_KEY)) {
@@ -291,29 +279,11 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
     RET(ff_vk_exec_add_dep_buf(&ctx->s, exec, &vp->slices_buf, 1, 0));
     vp->slices_buf = NULL;
 
-    /* Entry barrier for the slice state (not preserved between frames) */
-    if (!(f->picture.f->flags & AV_FRAME_FLAG_KEY))
-        ff_vk_buf_barrier(buf_bar[nb_buf_bar++], slice_state,
-                          ALL_COMMANDS_BIT, NONE_KHR, NONE_KHR,
-                          COMPUTE_SHADER_BIT, SHADER_STORAGE_READ_BIT,
-                                              SHADER_STORAGE_WRITE_BIT,
-                          0, fp->slice_data_size*f->slice_count);
-    else
-        ff_vk_buf_barrier(buf_bar[nb_buf_bar++], slice_state,
-                          COMPUTE_SHADER_BIT, SHADER_STORAGE_READ_BIT,
-                                              SHADER_STORAGE_WRITE_BIT,
-                          COMPUTE_SHADER_BIT, SHADER_STORAGE_READ_BIT,
-                                              SHADER_STORAGE_WRITE_BIT,
-                          0, fp->slice_data_size*f->slice_count);
-    vk->CmdPipelineBarrier2(exec->buf, &(VkDependencyInfo) {
-        .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-        .pImageMemoryBarriers = img_bar,
-        .imageMemoryBarrierCount = nb_img_bar,
-        .pBufferMemoryBarriers = buf_bar,
-        .bufferMemoryBarrierCount = nb_buf_bar,
-    });
-    nb_buf_bar = 0;
-    nb_img_bar = 0;
+    AVVkFrame *vkf = (AVVkFrame *)f->picture.f->data[0];
+    for (int i = 0; i < ff_vk_count_images(vkf); i++) {
+        vkf->layout[i] = VK_IMAGE_LAYOUT_UNDEFINED;
+        vkf->access[i] = VK_ACCESS_2_NONE;
+    }
 
     /* Setup shader */
     ff_vk_shader_update_desc_buffer(&ctx->s, exec, &fv->setup,
@@ -367,7 +337,29 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
     vk->CmdDispatch(exec->buf, f->num_h_slices, f->num_v_slices, 1);
 
     if (is_rgb) {
-        AVVkFrame *vkf = (AVVkFrame *)vp->dpb_frame->data[0];
+        vkf = (AVVkFrame *)vp->dpb_frame->data[0];
+        for (int i = 0; i < 4; i++) {
+            vkf->layout[i] = VK_IMAGE_LAYOUT_UNDEFINED;
+            vkf->access[i] = VK_ACCESS_2_NONE;
+        }
+
+        ff_vk_frame_barrier(&ctx->s, exec, vp->dpb_frame, img_bar, &nb_img_bar,
+                            VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                            VK_PIPELINE_STAGE_2_CLEAR_BIT,
+                            VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                            VK_IMAGE_LAYOUT_GENERAL,
+                            VK_QUEUE_FAMILY_IGNORED);
+
+        vk->CmdPipelineBarrier2(exec->buf, &(VkDependencyInfo) {
+            .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+            .pImageMemoryBarriers = img_bar,
+            .imageMemoryBarrierCount = nb_img_bar,
+            .pBufferMemoryBarriers = buf_bar,
+            .bufferMemoryBarrierCount = nb_buf_bar,
+        });
+        nb_img_bar = 0;
+        nb_buf_bar = 0;
+
         for (int i = 0; i < color_planes; i++)
             vk->CmdClearColorImage(exec->buf, vkf->img[i], VK_IMAGE_LAYOUT_GENERAL,
                                    &((VkClearColorValue) { 0 }),
@@ -378,43 +370,21 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
                                    }));
     }
 
-    /* Reset shader */
-    reset_shader = &fv->reset;
-    ff_vk_shader_update_desc_buffer(&ctx->s, exec, reset_shader,
-                                    1, 0, 0,
-                                    slice_state,
-                                    0, fp->slice_data_size*f->slice_count,
-                                    VK_FORMAT_UNDEFINED);
-    ff_vk_shader_update_desc_buffer(&ctx->s, exec, reset_shader,
-                                    1, 1, 0,
-                                    slice_state,
-                                    f->slice_count*fp->slice_data_size,
-                                    VK_WHOLE_SIZE,
-                                    VK_FORMAT_UNDEFINED);
-
-    ff_vk_exec_bind_shader(&ctx->s, exec, reset_shader);
-    ff_vk_shader_update_push_const(&ctx->s, exec, reset_shader,
-                                   VK_SHADER_STAGE_COMPUTE_BIT,
-                                   0, sizeof(FFv1ShaderParams), &pd);
-
     /* Sync between setup and reset shaders */
     ff_vk_buf_barrier(buf_bar[nb_buf_bar++], slice_state,
                       COMPUTE_SHADER_BIT, SHADER_STORAGE_READ_BIT,
                                           SHADER_STORAGE_WRITE_BIT,
                       COMPUTE_SHADER_BIT, SHADER_STORAGE_READ_BIT, NONE_KHR,
                       0, fp->slice_data_size*f->slice_count);
-    /* Probability data barrier */
+
+    /* Probability data barrier for P-frames */
     if (!(f->picture.f->flags & AV_FRAME_FLAG_KEY))
-        ff_vk_buf_barrier(buf_bar[nb_buf_bar++], slice_state,
-                          ALL_COMMANDS_BIT, NONE_KHR, NONE_KHR,
-                          COMPUTE_SHADER_BIT, SHADER_STORAGE_WRITE_BIT, NONE_KHR,
-                          fp->slice_data_size*f->slice_count, VK_WHOLE_SIZE);
-    else
         ff_vk_buf_barrier(buf_bar[nb_buf_bar++], slice_state,
                           COMPUTE_SHADER_BIT, SHADER_STORAGE_READ_BIT,
                                               SHADER_STORAGE_WRITE_BIT,
                           COMPUTE_SHADER_BIT, SHADER_STORAGE_WRITE_BIT, NONE_KHR,
                           fp->slice_data_size*f->slice_count, VK_WHOLE_SIZE);
+
     vk->CmdPipelineBarrier2(exec->buf, &(VkDependencyInfo) {
         .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
         .pImageMemoryBarriers = img_bar,
@@ -425,62 +395,34 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
     nb_buf_bar = 0;
     nb_img_bar = 0;
 
-    vk->CmdDispatch(exec->buf, f->num_h_slices, f->num_v_slices,
-                    f->plane_count);
-
-    /* Decode */
-    decode_shader = &fv->decode;
-    ff_vk_shader_update_desc_buffer(&ctx->s, exec, decode_shader,
+    /* Reset shader */
+    ff_vk_shader_update_desc_buffer(&ctx->s, exec, &fv->reset,
                                     1, 0, 0,
                                     slice_state,
                                     0, fp->slice_data_size*f->slice_count,
                                     VK_FORMAT_UNDEFINED);
-    ff_vk_shader_update_desc_buffer(&ctx->s, exec, decode_shader,
+    ff_vk_shader_update_desc_buffer(&ctx->s, exec, &fv->reset,
                                     1, 1, 0,
-                                    slice_feedback,
-                                    0, 2*f->slice_count*sizeof(uint32_t),
-                                    VK_FORMAT_UNDEFINED);
-    ff_vk_shader_update_desc_buffer(&ctx->s, exec, decode_shader,
-                                    1, 2, 0,
-                                    slice_feedback,
-                                    2*f->slice_count*sizeof(uint32_t),
-                                    VK_WHOLE_SIZE,
-                                    VK_FORMAT_UNDEFINED);
-    ff_vk_shader_update_desc_buffer(&ctx->s, exec, decode_shader,
-                                    1, 3, 0,
                                     slice_state,
                                     f->slice_count*fp->slice_data_size,
                                     VK_WHOLE_SIZE,
                                     VK_FORMAT_UNDEFINED);
 
-    ff_vk_shader_update_img_array(&ctx->s, exec, decode_shader,
-                                  decode_dst, decode_dst_view,
-                                  1, 4,
-                                  VK_IMAGE_LAYOUT_GENERAL,
-                                  VK_NULL_HANDLE);
-    if (is_rgb)
-        ff_vk_shader_update_img_array(&ctx->s, exec, decode_shader,
-                                      f->picture.f, vp->view.out,
-                                      1, 5,
-                                      VK_IMAGE_LAYOUT_GENERAL,
-                                      VK_NULL_HANDLE);
-
-    ff_vk_exec_bind_shader(&ctx->s, exec, decode_shader);
-    ff_vk_shader_update_push_const(&ctx->s, exec, decode_shader,
+    ff_vk_exec_bind_shader(&ctx->s, exec, &fv->reset);
+    ff_vk_shader_update_push_const(&ctx->s, exec, &fv->reset,
                                    VK_SHADER_STAGE_COMPUTE_BIT,
                                    0, sizeof(FFv1ShaderParams), &pd);
 
+    vk->CmdDispatch(exec->buf, f->num_h_slices, f->num_v_slices,
+                    f->plane_count);
+
     /* Sync probabilities between reset and decode shaders */
-    ff_vk_buf_barrier(buf_bar[nb_buf_bar++], slice_state,
-                      COMPUTE_SHADER_BIT, SHADER_STORAGE_READ_BIT, NONE_KHR,
-                      COMPUTE_SHADER_BIT, SHADER_STORAGE_READ_BIT,
-                                          SHADER_STORAGE_WRITE_BIT,
-                      0, fp->slice_data_size*f->slice_count);
     ff_vk_buf_barrier(buf_bar[nb_buf_bar++], slice_state,
                       COMPUTE_SHADER_BIT, SHADER_STORAGE_WRITE_BIT, NONE_KHR,
                       COMPUTE_SHADER_BIT, SHADER_STORAGE_READ_BIT,
                                           SHADER_STORAGE_WRITE_BIT,
                       fp->slice_data_size*f->slice_count, VK_WHOLE_SIZE);
+
     /* Input frame barrier */
     ff_vk_frame_barrier(&ctx->s, exec, f->picture.f, img_bar, &nb_img_bar,
                         VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
@@ -491,7 +433,7 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
                         VK_QUEUE_FAMILY_IGNORED);
     if (is_rgb)
         ff_vk_frame_barrier(&ctx->s, exec, vp->dpb_frame, img_bar, &nb_img_bar,
-                            VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                            VK_PIPELINE_STAGE_2_CLEAR_BIT,
                             VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                             VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
                             VK_IMAGE_LAYOUT_GENERAL,
@@ -506,6 +448,49 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
     });
     nb_img_bar = 0;
     nb_buf_bar = 0;
+
+    /* Decode */
+    ff_vk_shader_update_desc_buffer(&ctx->s, exec, &fv->decode,
+                                    1, 0, 0,
+                                    slice_state,
+                                    0, fp->slice_data_size*f->slice_count,
+                                    VK_FORMAT_UNDEFINED);
+    ff_vk_shader_update_desc_buffer(&ctx->s, exec, &fv->decode,
+                                    1, 1, 0,
+                                    slice_feedback,
+                                    0, 2*f->slice_count*sizeof(uint32_t),
+                                    VK_FORMAT_UNDEFINED);
+    ff_vk_shader_update_desc_buffer(&ctx->s, exec, &fv->decode,
+                                    1, 2, 0,
+                                    slice_feedback,
+                                    2*f->slice_count*sizeof(uint32_t),
+                                    VK_WHOLE_SIZE,
+                                    VK_FORMAT_UNDEFINED);
+    ff_vk_shader_update_desc_buffer(&ctx->s, exec, &fv->decode,
+                                    1, 3, 0,
+                                    slice_state,
+                                    f->slice_count*fp->slice_data_size,
+                                    VK_WHOLE_SIZE,
+                                    VK_FORMAT_UNDEFINED);
+
+    AVFrame *decode_dst = is_rgb ? vp->dpb_frame : f->picture.f;
+    VkImageView *decode_dst_view = is_rgb ? rct_image_views : vp->view.out;
+    ff_vk_shader_update_img_array(&ctx->s, exec, &fv->decode,
+                                  decode_dst, decode_dst_view,
+                                  1, 4,
+                                  VK_IMAGE_LAYOUT_GENERAL,
+                                  VK_NULL_HANDLE);
+    if (is_rgb)
+        ff_vk_shader_update_img_array(&ctx->s, exec, &fv->decode,
+                                      f->picture.f, vp->view.out,
+                                      1, 5,
+                                      VK_IMAGE_LAYOUT_GENERAL,
+                                      VK_NULL_HANDLE);
+
+    ff_vk_exec_bind_shader(&ctx->s, exec, &fv->decode);
+    ff_vk_shader_update_push_const(&ctx->s, exec, &fv->decode,
+                                   VK_SHADER_STAGE_COMPUTE_BIT,
+                                   0, sizeof(FFv1ShaderParams), &pd);
 
     vk->CmdDispatch(exec->buf, f->num_h_slices, f->num_v_slices, 1);
 
