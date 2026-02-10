@@ -16946,13 +16946,13 @@ process. Enabled by default.
 @item smoothing_period
 Peak detection smoothing period, between @code{0.0} and @code{1000.0}. Higher
 values result in peak detection becoming less responsive to changes in the
-input. Defaults to @code{100.0}.
+input. Defaults to @code{20.0}.
 
 @item scene_threshold_low
 @item scene_threshold_high
 Lower and upper thresholds for scene change detection. Expressed in a
-logarithmic scale between @code{0.0} and @code{100.0}. Default to @code{5.5}
-and @code{10.0}, respectively. Setting either to a negative value disables
+logarithmic scale between @code{0.0} and @code{100.0}. Default to @code{1.0}
+and @code{3.0}, respectively. Setting either to a negative value disables
 this functionality.
 
 @item percentile
