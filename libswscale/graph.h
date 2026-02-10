@@ -200,6 +200,16 @@ int ff_sws_graph_add_pass(SwsGraph *graph, enum AVPixelFormat fmt,
                           SwsPass **out_pass);
 
 /**
+ * Link the output buffers to a different pass, rather than allocating
+ * new image buffers. This allows reusing the same buffer for multiple passes,
+ * e.g. in the case of in-place passes or partial passes that modify different
+ * planes.
+ *
+ * Any existing buffer on `dst` will be ignored/unref'd.
+ **/
+void ff_sws_pass_link_output(SwsPass *dst, const SwsPass *src);
+
+/**
  * Remove all passes added since the given index.
  */
 void ff_sws_graph_rollback(SwsGraph *graph, int since_idx);
