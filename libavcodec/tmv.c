@@ -47,15 +47,15 @@ static int tmv_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     unsigned x, y, fg, bg, c;
     int ret;
 
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
-        return ret;
-
     if (avpkt->size < 2*char_rows*char_cols) {
         av_log(avctx, AV_LOG_ERROR,
                "Input buffer too small, truncated sample?\n");
         *got_frame = 0;
         return AVERROR_INVALIDDATA;
     }
+
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
+        return ret;
 
     dst              = frame->data[0];
 
