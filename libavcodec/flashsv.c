@@ -314,6 +314,9 @@ static int flashsv_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     v_blocks = s->image_height / s->block_height;
     v_part   = s->image_height % s->block_height;
 
+    if (h_blocks * v_blocks * 16 > get_bits_left(&gb))
+        return AVERROR_INVALIDDATA;
+
     /* the block size could change between frames, make sure the buffer
      * is large enough, if not, get a larger one */
     if (s->block_size < s->block_width * s->block_height) {
