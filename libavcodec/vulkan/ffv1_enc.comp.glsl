@@ -44,8 +44,8 @@ layout (set = 1, binding = 2, scalar) buffer slice_state_buf {
     uint8_t slice_rc_state[];
 };
 
-#define WRITE(off, val) put_rac(slice_rc_state[state_off + off], val)
-void put_symbol(uint state_off, int v)
+#define WRITE(idx, val) put_rac(rc_state[idx], val)
+void put_symbol(int v)
 {
     bool is_nil = (v == 0);
     WRITE(0, is_nil);
@@ -68,6 +68,9 @@ void put_symbol(uint state_off, int v)
 void encode_line_pcm(in SliceContext sc, readonly uimage2D img,
                      ivec2 sp, int y, int p, int comp)
 {
+    if (gl_LocalInvocationID.x > 0)
+        return;
+
     int w = sc.slice_dim.x;
 
 #ifndef RGB
@@ -109,9 +112,16 @@ void encode_line(in SliceContext sc, readonly uimage2D img, uint state_off,
 
         d[1] = fold(d[1], bits);
 
-        uint context_off = state_off + CONTEXT_SIZE*d[0];
+        uint rc_off = state_off + CONTEXT_SIZE*d[0] + gl_LocalInvocationID.x;
 
-        put_symbol(context_off, d[1]);
+        rc_state[gl_LocalInvocationID.x] = slice_rc_state[rc_off];
+        barrier();
+
+        if (gl_LocalInvocationID.x == 0)
+            put_symbol(d[1]);
+
+        barrier();
+        slice_rc_state[rc_off] = rc_state[gl_LocalInvocationID.x];
     }
 }
 

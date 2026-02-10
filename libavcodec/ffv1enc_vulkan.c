@@ -915,8 +915,9 @@ static int init_encode_shader(AVCodecContext *avctx, VkSpecializationInfo *sl)
     VulkanEncodeFFv1Context *fv = avctx->priv_data;
     FFVulkanShader *shd = &fv->enc;
 
+    uint32_t wg_x = fv->ctx.ac != AC_GOLOMB_RICE ? CONTEXT_SIZE : 1;
     ff_vk_shader_load(shd, VK_SHADER_STAGE_COMPUTE_BIT, sl,
-                      (uint32_t []) { 1, 1, 1 }, 0);
+                      (uint32_t []) { wg_x, 1, 1 }, 0);
 
     ff_vk_shader_add_push_const(shd, 0, sizeof(FFv1ShaderParams),
                                 VK_SHADER_STAGE_COMPUTE_BIT);
