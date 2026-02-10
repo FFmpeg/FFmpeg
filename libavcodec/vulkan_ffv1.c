@@ -61,12 +61,10 @@ typedef struct FFv1VulkanDecodePicture {
     uint32_t slice_state_size;
     uint32_t slice_data_size;
 
-    AVBufferRef *slice_offset_buf;
+    AVBufferRef *slice_feedback_buf;
     uint32_t    *slice_offset;
     int          slice_num;
-
-    AVBufferRef *slice_status_buf;
-    int crc_checked;
+    int          crc_checked;
 } FFv1VulkanDecodePicture;
 
 typedef struct FFv1VulkanDecodeContext {
@@ -81,8 +79,7 @@ typedef struct FFv1VulkanDecodeContext {
     FFVkBuffer crc_buf;
 
     AVBufferPool *slice_state_pool;
-    AVBufferPool *slice_offset_pool;
-    AVBufferPool *slice_status_pool;
+    AVBufferPool *slice_feedback_pool;
 } FFv1VulkanDecodeContext;
 
 static int vk_ffv1_start_frame(AVCodecContext          *avctx,
@@ -150,21 +147,11 @@ static int vk_ffv1_start_frame(AVCodecContext          *avctx,
             return AVERROR(ENOMEM);
     }
 
-    /* Allocate slice offsets buffer */
-    err = ff_vk_get_pooled_buffer(&ctx->s, &fv->slice_offset_pool,
-                                  &fp->slice_offset_buf,
+    /* Allocate slice offsets/status buffer */
+    err = ff_vk_get_pooled_buffer(&ctx->s, &fv->slice_feedback_pool,
+                                  &fp->slice_feedback_buf,
                                   VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-                                  NULL, 2*f->slice_count*sizeof(uint32_t),
-                                  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
-                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-    if (err < 0)
-        return err;
-
-    /* Allocate slice status buffer */
-    err = ff_vk_get_pooled_buffer(&ctx->s, &fv->slice_status_pool,
-                                  &fp->slice_status_buf,
-                                  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-                                  NULL, 2*f->slice_count*sizeof(uint32_t),
+                                  NULL, 2*(2*f->slice_count*sizeof(uint32_t)),
                                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
                                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
     if (err < 0)
@@ -200,7 +187,7 @@ static int vk_ffv1_decode_slice(AVCodecContext *avctx,
     FFv1VulkanDecodePicture *fp = f->hwaccel_picture_private;
     FFVulkanDecodePicture *vp = &fp->vp;
 
-    FFVkBuffer *slice_offset = (FFVkBuffer *)fp->slice_offset_buf->data;
+    FFVkBuffer *slice_offset = (FFVkBuffer *)fp->slice_feedback_buf->data;
     FFVkBuffer *slices_buf = vp->slices_buf ? (FFVkBuffer *)vp->slices_buf->data : NULL;
 
     if (slices_buf && slices_buf->host_ref) {
@@ -251,8 +238,7 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
 
     FFVkBuffer *slices_buf = (FFVkBuffer *)vp->slices_buf->data;
     FFVkBuffer *slice_state = (FFVkBuffer *)fp->slice_state->data;
-    FFVkBuffer *slice_offset = (FFVkBuffer *)fp->slice_offset_buf->data;
-    FFVkBuffer *slice_status = (FFVkBuffer *)fp->slice_status_buf->data;
+    FFVkBuffer *slice_feedback = (FFVkBuffer *)fp->slice_feedback_buf->data;
 
     VkImageView rct_image_views[AV_NUM_DATA_POINTERS];
 
@@ -301,11 +287,9 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
     }
 
     RET(ff_vk_exec_add_dep_buf(&ctx->s, exec, &fp->slice_state, 1, 1));
-    RET(ff_vk_exec_add_dep_buf(&ctx->s, exec, &fp->slice_status_buf, 1, 1));
+    RET(ff_vk_exec_add_dep_buf(&ctx->s, exec, &fp->slice_feedback_buf, 1, 1));
     RET(ff_vk_exec_add_dep_buf(&ctx->s, exec, &vp->slices_buf, 1, 0));
     vp->slices_buf = NULL;
-    RET(ff_vk_exec_add_dep_buf(&ctx->s, exec, &fp->slice_offset_buf, 1, 0));
-    fp->slice_offset_buf = NULL;
 
     /* Entry barrier for the slice state (not preserved between frames) */
     if (!(f->picture.f->flags & AV_FRAME_FLAG_KEY))
@@ -339,13 +323,14 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
                                     VK_FORMAT_UNDEFINED);
     ff_vk_shader_update_desc_buffer(&ctx->s, exec, &fv->setup,
                                     1, 1, 0,
-                                    slice_offset,
+                                    slice_feedback,
                                     0, 2*f->slice_count*sizeof(uint32_t),
                                     VK_FORMAT_UNDEFINED);
     ff_vk_shader_update_desc_buffer(&ctx->s, exec, &fv->setup,
                                     1, 2, 0,
-                                    slice_status,
-                                    0, 2*f->slice_count*sizeof(uint32_t),
+                                    slice_feedback,
+                                    2*f->slice_count*sizeof(uint32_t),
+                                    VK_WHOLE_SIZE,
                                     VK_FORMAT_UNDEFINED);
 
     ff_vk_exec_bind_shader(&ctx->s, exec, &fv->setup);
@@ -452,13 +437,14 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
                                     VK_FORMAT_UNDEFINED);
     ff_vk_shader_update_desc_buffer(&ctx->s, exec, decode_shader,
                                     1, 1, 0,
-                                    slice_offset,
+                                    slice_feedback,
                                     0, 2*f->slice_count*sizeof(uint32_t),
                                     VK_FORMAT_UNDEFINED);
     ff_vk_shader_update_desc_buffer(&ctx->s, exec, decode_shader,
                                     1, 2, 0,
-                                    slice_status,
-                                    0, 2*f->slice_count*sizeof(uint32_t),
+                                    slice_feedback,
+                                    2*f->slice_count*sizeof(uint32_t),
+                                    VK_WHOLE_SIZE,
                                     VK_FORMAT_UNDEFINED);
     ff_vk_shader_update_desc_buffer(&ctx->s, exec, decode_shader,
                                     1, 3, 0,
@@ -766,8 +752,7 @@ static void vk_decode_ffv1_uninit(FFVulkanDecodeShared *ctx)
     ff_vk_free_buf(&ctx->s, &fv->crc_buf);
 
     av_buffer_pool_uninit(&fv->slice_state_pool);
-    av_buffer_pool_uninit(&fv->slice_offset_pool);
-    av_buffer_pool_uninit(&fv->slice_status_pool);
+    av_buffer_pool_uninit(&fv->slice_feedback_pool);
 
     av_freep(&fv);
 }
@@ -869,15 +854,16 @@ static void vk_ffv1_free_frame_priv(AVRefStructOpaque _hwctx, void *data)
 
     FFv1VulkanDecodePicture *fp = data;
     FFVulkanDecodePicture *vp = &fp->vp;
-    FFVkBuffer *slice_status = (FFVkBuffer *)fp->slice_status_buf->data;
+    FFVkBuffer *slice_feedback = (FFVkBuffer *)fp->slice_feedback_buf->data;
+    uint8_t *ssp = slice_feedback->mapped_mem + 2*fp->slice_num*sizeof(uint32_t);
 
     ff_vk_decode_free_frame(dev_ctx, vp);
 
     /* Invalidate slice/output data if needed */
-    if (!(slice_status->flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
+    if (!(slice_feedback->flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
         VkMappedMemoryRange invalidate_data = {
             .sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
-            .memory = slice_status->mem,
+            .memory = slice_feedback->mem,
             .offset = 0,
             .size = 2*fp->slice_num*sizeof(uint32_t),
         };
@@ -890,10 +876,9 @@ static void vk_ffv1_free_frame_priv(AVRefStructOpaque _hwctx, void *data)
     uint32_t max_overread = 0;
     for (int i = 0; i < fp->slice_num; i++) {
         uint32_t crc_res = 0;
-        uint8_t *ssp = slice_status->mapped_mem + 2*i*sizeof(uint32_t);
         if (fp->crc_checked)
-            crc_res = AV_RN32(ssp + 0);
-        uint32_t overread = AV_RN32(ssp + 4);
+            crc_res = AV_RN32(ssp + 2*i*sizeof(uint32_t) + 0);
+        uint32_t overread = AV_RN32(ssp + 2*i*sizeof(uint32_t) + 4);
         max_overread = FFMAX(overread, max_overread);
         slice_error_cnt += !!overread;
         crc_mismatch_cnt += !!crc_res;
@@ -904,8 +889,7 @@ static void vk_ffv1_free_frame_priv(AVRefStructOpaque _hwctx, void *data)
                slice_error_cnt, max_overread, crc_mismatch_cnt);
 
     av_buffer_unref(&fp->slice_state);
-    av_buffer_unref(&fp->slice_offset_buf);
-    av_buffer_unref(&fp->slice_status_buf);
+    av_buffer_unref(&fp->slice_feedback_buf);
 }
 
 const FFHWAccel ff_ffv1_vulkan_hwaccel = {
