@@ -42,17 +42,17 @@ const int nb_hdr_sym = 4 + codec_planes + 3;
 
 uint get_usymbol(void)
 {
-    if (get_rac_direct(rc_state[0]))
+    if (get_rac(rc_state[0]))
         return 0;
 
     int e = 0;
-    while (get_rac_direct(rc_state[1 + min(e, 9)])) // 1..10
+    while (get_rac(rc_state[1 + min(e, 9)])) // 1..10
         e++;
 
     uint a = 1;
     for (int i = e - 1; i >= 0; i--) {
         a <<= 1;
-        a |= uint(get_rac_direct(rc_state[22 + min(i, 9)]));  // 22..31
+        a |= uint(get_rac(rc_state[22 + min(i, 9)]));  // 22..31
     }
 
     return a;
@@ -95,7 +95,7 @@ bool decode_slice_header(inout SliceContext sc)
     }
 
     if (version >= 4) {
-        sc.slice_reset_contexts = get_rac_direct(rc_state[0]);
+        sc.slice_reset_contexts = get_rac(rc_state[0]);
         sc.slice_coding_mode = get_usymbol();
         if (sc.slice_coding_mode != 1 && colorspace == 1) {
             sc.slice_rct_coef.x = int(get_usymbol());

@@ -31,7 +31,6 @@ layout (set = 0, binding = 0, scalar) readonly buffer rangecoder_buf {
 };
 
 struct RangeCoder {
-    uint64_t bytestream_start;
     uint64_t bytestream;
     uint64_t bytestream_end;
 
@@ -48,7 +47,6 @@ shared bool rc_dec[CONTEXT_SIZE];
 
 void rac_init(u8buf data, uint buf_size)
 {
-    rc.bytestream_start = uint64_t(data);
     rc.bytestream = uint64_t(data);
     rc.bytestream_end = uint64_t(data) + buf_size;
     rc.low = 0;
@@ -138,18 +136,12 @@ void put_rac_internal(const uint range1, bool bit)
         renorm_encoder();
 }
 
-void put_rac_direct(inout uint8_t state, bool bit)
+void put_rac(inout uint8_t state, bool bit)
 {
     put_rac_internal((rc.range * state) >> 8, bit);
     state = zero_one_state[(uint(bit) << 8) + state];
 }
 
-void put_rac(uint64_t state, bool bit)
-{
-    put_rac_direct(u8buf(state).v, bit);
-}
-
-/* Equiprobable bit */
 void put_rac_equi(bool bit)
 {
     put_rac_internal(rc.range >> 1, bit);
@@ -172,7 +164,7 @@ void put_rac_terminate(void)
 }
 
 /* Return the number of bytes written. */
-uint rac_terminate(void)
+uint rac_terminate(uint64_t bytestream_start)
 {
     put_rac_terminate();
     rc.range = uint16_t(0xFF);
@@ -188,7 +180,7 @@ uint rac_terminate(void)
         debugPrintfEXT("Error: range < 0x100");
 #endif
 
-    return uint(uint64_t(rc.bytestream) - uint64_t(rc.bytestream_start));
+    return uint(uint64_t(rc.bytestream) - bytestream_start);
 }
 
 void rac_init_dec(u8buf data, uint buf_size)
@@ -228,22 +220,17 @@ bool get_rac_internal(const uint range1)
     return bit;
 }
 
-bool get_rac_direct(inout uint8_t state)
+bool get_rac(inout uint8_t state)
 {
     bool bit = get_rac_internal(rc.range * state >> 8);
     state = zero_one_state[state + (bit ? 256 : 0)];
     return bit;
 }
 
-bool get_rac_noadapt(uint idx)
+bool get_rac_state(uint idx)
 {
     rc_dec[idx] = true;
     return (rc_data[idx] = get_rac_internal(rc.range * rc_state[idx] >> 8));
-}
-
-bool get_rac(uint64_t state)
-{
-    return get_rac_direct(u8buf(state).v);
 }
 
 bool get_rac_equi(void)

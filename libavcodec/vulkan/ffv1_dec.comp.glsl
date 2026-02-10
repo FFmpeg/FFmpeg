@@ -35,13 +35,15 @@ layout (set = 1, binding = 2, scalar) writeonly buffer slice_status_buf {
 };
 layout (set = 1, binding = 4) uniform uimage2D dec[];
 
+uint64_t slice_start;
+
 #ifndef GOLOMB
 
 layout (set = 1, binding = 3, scalar) buffer slice_state_buf {
     uint8_t slice_rc_state[];
 };
 
-#define READ(idx) get_rac_noadapt(idx)
+#define READ(idx) get_rac_state(idx)
 int get_isymbol(void)
 {
     if (READ(0))
@@ -160,9 +162,9 @@ void golomb_init(inout SliceContext sc)
     if (version == 3 && micro_version > 1 || version > 3)
         get_rac_internal(rc.range * 129 >> 8);
 
-    uint64_t ac_byte_count = rc.bytestream - rc.bytestream_start - 1;
-    init_get_bits(gb, u8buf(rc.bytestream_start + ac_byte_count),
-                  int(rc.bytestream_end - rc.bytestream_start - ac_byte_count));
+    uint64_t ac_byte_count = rc.bytestream - slice_start - 1;
+    init_get_bits(gb, u8buf(slice_start + ac_byte_count),
+                  int(rc.bytestream_end - slice_start - ac_byte_count));
 }
 
 void decode_line(ivec2 sp, int w,
@@ -340,6 +342,7 @@ void decode_slice(inout SliceContext sc, const uint slice_idx)
 void main(void)
 {
     uint slice_idx = gl_WorkGroupID.y*gl_NumWorkGroups.x + gl_WorkGroupID.x;
+    slice_start = uint64_t(slice_data) + slice_offsets[slice_idx].x;
 
     rc = slice_ctx[slice_idx].c;
 
