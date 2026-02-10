@@ -205,8 +205,15 @@ static av_always_inline void ac_get(ArithCoder *ac, GetBitContext *gb, int p, in
 
     if (ac->a < 2048) {
         int n = 11 - av_log2(ac->a);
+        int left = get_bits_left(gb);
         ac->a <<= n;
-        ac->c = (ac->c << n) | get_bits(gb, n);
+        if (left >= n) {
+            ac->c = (ac->c << n) | get_bits(gb, n);
+        } else {
+            ac->c <<= n;
+            if (left > 0)
+                ac->c |= get_bits(gb, left) << (n - left);
+        }
     }
 }
 
