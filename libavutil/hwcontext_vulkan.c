@@ -853,8 +853,6 @@ enum FFVulkanDebugMode {
     FF_VULKAN_DEBUG_PRINTF = 2,
     /* Enables extra printouts */
     FF_VULKAN_DEBUG_PRACTICES = 3,
-    /* Disables validation but keeps shader debug info and optimizations */
-    FF_VULKAN_DEBUG_PROFILE = 4,
 
     FF_VULKAN_DEBUG_NB,
 };
@@ -977,8 +975,7 @@ static int check_extensions(AVHWDeviceContext *ctx, int dev, AVDictionary *opts,
     }
 
 #ifdef VK_KHR_shader_relaxed_extended_instruction
-    if (((debug_mode == FF_VULKAN_DEBUG_PRINTF) ||
-         (debug_mode == FF_VULKAN_DEBUG_PROFILE)) && dev) {
+    if ((debug_mode == FF_VULKAN_DEBUG_PRINTF) && dev) {
         tstr = VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION_EXTENSION_NAME;
         found = 0;
         for (int j = 0; j < sup_ext_count; j++) {
@@ -1074,9 +1071,7 @@ static int check_layers(AVHWDeviceContext *ctx, AVDictionary *opts,
 
     /* Check for any properly supported validation layer */
     if (debug_opt) {
-        if (!strcmp(debug_opt->value, "profile")) {
-            mode = FF_VULKAN_DEBUG_PROFILE;
-        } else if (!strcmp(debug_opt->value, "printf")) {
+        if (!strcmp(debug_opt->value, "printf")) {
             mode = FF_VULKAN_DEBUG_PRINTF;
         } else if (!strcmp(debug_opt->value, "validate")) {
             mode = FF_VULKAN_DEBUG_VALIDATE;
@@ -1116,8 +1111,6 @@ static int check_layers(AVHWDeviceContext *ctx, AVDictionary *opts,
             err = AVERROR(ENOTSUP);
             goto end;
         }
-    } else if (mode == FF_VULKAN_DEBUG_PROFILE) {
-        *debug_mode = mode;
     }
 
     /* Process any custom layers enabled */
