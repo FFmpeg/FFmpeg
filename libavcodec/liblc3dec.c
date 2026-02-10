@@ -87,7 +87,6 @@ static av_cold int liblc3_decode_init(AVCodecContext *avctx)
 
     avctx->delay = lc3_hr_delay_samples(
         liblc3->hr_mode, liblc3->frame_us, liblc3->srate_hz);
-    avctx->internal->skip_samples = avctx->delay;
 
     return 0;
 }

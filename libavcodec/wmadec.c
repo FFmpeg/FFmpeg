@@ -140,7 +140,7 @@ static av_cold int wma_decode_init(AVCodecContext *avctx)
 
     avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
 
-    avctx->internal->skip_samples = s->frame_len * 2;
+    avctx->delay = s->frame_len * 2;
 
     return 0;
 }

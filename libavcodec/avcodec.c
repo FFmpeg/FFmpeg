@@ -354,6 +354,8 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
         if (!avctx->bit_rate)
             avctx->bit_rate = get_bit_rate(avctx);
 
+        avci->skip_samples = avctx->delay;
+
         /* validate channel layout from the decoder */
         if ((avctx->ch_layout.nb_channels && !av_channel_layout_check(&avctx->ch_layout)) ||
             avctx->ch_layout.nb_channels > FF_SANE_NB_CHANNELS) {

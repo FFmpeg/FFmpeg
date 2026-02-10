@@ -321,8 +321,6 @@ av_cold int ff_opus_parse_extradata(AVCodecContext *avctx,
     }
 
     avctx->delay = AV_RL16(extradata + 10);
-    if (avctx->internal)
-        avctx->internal->skip_samples = avctx->delay;
 
     channels = avctx->extradata ? extradata[9] : (channels == 1) ? 1 : 2;
     if (!channels) {
