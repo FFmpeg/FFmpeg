@@ -718,12 +718,10 @@ static void sws_graph_worker(void *priv, int jobnr, int threadnr, int nb_jobs,
 {
     SwsGraph *graph = priv;
     const SwsPass *pass = graph->exec.pass;
-    const SwsImg *input  = pass->input ? &pass->input->output.img : graph->exec.input;
-    const SwsImg *output = pass->output.img.data[0] ? &pass->output.img : graph->exec.output;
     const int slice_y = jobnr * pass->slice_h;
     const int slice_h = FFMIN(pass->slice_h, pass->height - slice_y);
 
-    pass->run(output, input, slice_y, slice_h, pass);
+    pass->run(&graph->exec.output, &graph->exec.input, slice_y, slice_h, pass);
 }
 
 int ff_sws_graph_create(SwsContext *ctx, const SwsFormat *dst, const SwsFormat *src,
@@ -824,20 +822,34 @@ void ff_sws_graph_update_metadata(SwsGraph *graph, const SwsColor *color)
     ff_color_update_dynamic(&graph->src.color, color);
 }
 
+static SwsImg pass_output(const SwsPass *pass, const SwsImg *fallback)
+{
+    if (!pass)
+        return *fallback;
+
+    SwsImg img = pass->output.img;
+    for (int i = 0; i < FF_ARRAY_ELEMS(img.data); i++) {
+        if (!img.data[i]) {
+            img.data[i]     = fallback->data[i];
+            img.linesize[i] = fallback->linesize[i];
+        }
+    }
+
+    return img;
+}
+
 void ff_sws_graph_run(SwsGraph *graph, const SwsImg *output, const SwsImg *input)
 {
     av_assert0(output->fmt == graph->dst.format);
     av_assert0(input->fmt  == graph->src.format);
-    graph->exec.output = output;
-    graph->exec.input  = input;
 
     for (int i = 0; i < graph->num_passes; i++) {
         const SwsPass *pass = graph->passes[i];
-        graph->exec.pass = pass;
-        if (pass->setup) {
-            pass->setup(pass->output.img.data[0] ? &pass->output.img : output,
-                        pass->input ? &pass->input->output.img : input, pass);
-        }
+        graph->exec.pass   = pass;
+        graph->exec.input  = pass_output(pass->input, input);
+        graph->exec.output = pass_output(pass, output);
+        if (pass->setup)
+            pass->setup(&graph->exec.output, &graph->exec.input, pass);
         avpriv_slicethread_execute(graph->slicethread, pass->num_slices, 0);
     }
 }

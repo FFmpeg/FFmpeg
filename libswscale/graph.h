@@ -139,11 +139,14 @@ typedef struct SwsGraph {
     SwsFormat src, dst;
     int field;
 
-    /** Temporary execution state inside ff_sws_graph_run */
+    /**
+     * Temporary execution state inside ff_sws_graph_run(); used to pass
+     * data to worker threads.
+     */
     struct {
         const SwsPass *pass; /* current filter pass */
-        const SwsImg *input; /* arguments passed to ff_sws_graph_run() */
-        const SwsImg *output;
+        SwsImg input; /* current filter pass input/output */
+        SwsImg output;
     } exec;
 } SwsGraph;
 
