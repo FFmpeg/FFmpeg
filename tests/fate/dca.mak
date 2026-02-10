@@ -23,9 +23,9 @@ DCADEC_SUITE_LOSSY       = core_51_24_48_768_0        \
 
 define FATE_DCADEC_LOSSLESS_SUITE
 FATE_DCADEC_LOSSLESS_$(2) += fate-dca-$(1) fate-dca-$(1)-dmix_2 fate-dca-$(1)-dmix_6
-fate-dca-$(1): CMD = framemd5 -i $(TARGET_SAMPLES)/dts/dcadec-suite/$(1).dtshd -c:a pcm_$(2) -af aresample
-fate-dca-$(1)-dmix_2: CMD = framemd5 -downmix 0x3   -i $(TARGET_SAMPLES)/dts/dcadec-suite/$(1).dtshd -c:a pcm_$(2) -af aresample
-fate-dca-$(1)-dmix_6: CMD = framemd5 -downmix 0x60f -i $(TARGET_SAMPLES)/dts/dcadec-suite/$(1).dtshd -c:a pcm_$(2) -af aresample
+fate-dca-$(1): CMD = stream_demux dtshd $(TARGET_SAMPLES)/dts/dcadec-suite/$(1).dtshd "" "-c:a pcm_$(2) -af aresample"
+fate-dca-$(1)-dmix_2: CMD = stream_demux dtshd $(TARGET_SAMPLES)/dts/dcadec-suite/$(1).dtshd "-downmix 0x3" "-c:a pcm_$(2) -af aresample"
+fate-dca-$(1)-dmix_6: CMD = stream_demux dtshd $(TARGET_SAMPLES)/dts/dcadec-suite/$(1).dtshd "-downmix 0x60f" "-c:a pcm_$(2) -af aresample"
 endef
 
 define FATE_DCADEC_LOSSY_SUITE
