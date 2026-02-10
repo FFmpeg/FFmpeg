@@ -219,8 +219,6 @@ static void free_legacy_swscale(void *priv)
 static void setup_legacy_swscale(const SwsImg *out, const SwsImg *in,
                                  const SwsPass *pass)
 {
-    const SwsGraph *graph = pass->graph;
-    const SwsImg *in_orig = graph->exec.input;
     SwsContext *sws = pass->priv;
     SwsInternal *c = sws_internal(sws);
     if (sws->flags & SWS_BITEXACT && sws->dither == SWS_DITHER_ED && c->dither_error[0]) {
@@ -229,7 +227,7 @@ static void setup_legacy_swscale(const SwsImg *out, const SwsImg *in,
     }
 
     if (usePal(sws->src_format))
-        ff_update_palette(c, (const uint32_t *) in_orig->data[1]);
+        ff_update_palette(c, (const uint32_t *) in->data[1]);
 }
 
 static inline SwsContext *slice_ctx(const SwsPass *pass, int y)
