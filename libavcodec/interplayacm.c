@@ -437,6 +437,9 @@ static int fill_block(InterplayACMContext *s)
     unsigned i, ind;
     int ret;
 
+    if (get_bits_left(gb) < s->cols * 5)
+        return AVERROR_INVALIDDATA;
+
     for (i = 0; i < s->cols; i++) {
         ind = get_bits(gb, 5);
         ret = filler_list[ind](s, ind, i);
