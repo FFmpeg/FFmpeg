@@ -27,8 +27,6 @@
 #include "common.glsl"
 #include "ffv1_common.glsl"
 
-uint8_t state[CONTEXT_SIZE];
-
 void init_slice(inout SliceContext sc, uint slice_idx)
 {
     /* Set coordinates */
@@ -50,26 +48,25 @@ void init_slice(inout SliceContext sc, uint slice_idx)
     if (!rct_search || (sc.slice_coding_mode == 1))
         sc.slice_rct_coef = ivec2(1, 1);
 
-    rac_init(sc.c,
-             OFFBUF(u8buf, slice_data, slice_idx * slice_size_max),
+    rac_init(OFFBUF(u8buf, slice_data, slice_idx * slice_size_max),
              slice_size_max);
 }
 
-void put_usymbol(inout RangeCoder c, uint v)
+void put_usymbol(uint v)
 {
     bool is_nil = (v == 0);
-    put_rac_direct(c, state[0], is_nil);
+    put_rac_direct(rc_state[0], is_nil);
     if (is_nil)
         return;
 
     const int e = findMSB(v);
 
     for (int i = 0; i < e; i++)
-        put_rac_direct(c, state[1 + min(i, 9)], true);
-    put_rac_direct(c, state[1 + min(e, 9)], false);
+        put_rac_direct(rc_state[1 + min(i, 9)], true);
+    put_rac_direct(rc_state[1 + min(e, 9)], false);
 
     for (int i = e - 1; i >= 0; i--)
-        put_rac_direct(c, state[22 + min(i, 9)], bool(bitfieldExtract(v, i, 1)));
+        put_rac_direct(rc_state[22 + min(i, 9)], bool(bitfieldExtract(v, i, 1)));
 }
 
 shared uint hdr_sym[4 + 4 + 3];
@@ -79,7 +76,7 @@ void write_slice_header(inout SliceContext sc)
 {
     [[unroll]]
     for (int i = 0; i < CONTEXT_SIZE; i++)
-        state[i] = uint8_t(128);
+        rc_state[i] = uint8_t(128);
 
     hdr_sym[0] = gl_WorkGroupID.x;
     hdr_sym[1] = gl_WorkGroupID.y;
@@ -95,21 +92,21 @@ void write_slice_header(inout SliceContext sc)
     hdr_sym[nb_hdr_sym - 1] = sar.y;
 
     for (int i = 0; i < nb_hdr_sym; i++)
-        put_usymbol(sc.c, hdr_sym[i]);
+        put_usymbol(hdr_sym[i]);
 
     if (version >= 4) {
-        put_rac_direct(sc.c, state[0], sc.slice_reset_contexts);
-        put_usymbol(sc.c, sc.slice_coding_mode);
+        put_rac_direct(rc_state[0], sc.slice_reset_contexts);
+        put_usymbol(sc.slice_coding_mode);
         if (sc.slice_coding_mode != 1 && colorspace == 1) {
-            put_usymbol(sc.c, sc.slice_rct_coef.y);
-            put_usymbol(sc.c, sc.slice_rct_coef.x);
+            put_usymbol(sc.slice_rct_coef.y);
+            put_usymbol(sc.slice_rct_coef.x);
         }
     }
 }
 
 void write_frame_header(inout SliceContext sc)
 {
-    put_rac_equi(sc.c, bool(key_frame));
+    put_rac_equi(bool(key_frame));
 }
 
 void main(void)
@@ -122,4 +119,6 @@ void main(void)
         write_frame_header(slice_ctx[slice_idx]);
 
     write_slice_header(slice_ctx[slice_idx]);
+
+    slice_ctx[slice_idx].c = rc;
 }

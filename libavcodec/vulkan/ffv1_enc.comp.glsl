@@ -42,11 +42,11 @@ layout (set = 1, binding = 2, scalar) buffer slice_state_buf {
     uint8_t slice_rc_state[];
 };
 
-#define WRITE(c, off, val) put_rac_direct(c, slice_rc_state[state_off + off], val)
-void put_symbol(inout RangeCoder c, uint state_off, int v)
+#define WRITE(off, val) put_rac_direct(slice_rc_state[state_off + off], val)
+void put_symbol(uint state_off, int v)
 {
     bool is_nil = (v == 0);
-    WRITE(c, 0, is_nil);
+    WRITE(0, is_nil);
     if (is_nil)
         return;
 
@@ -54,13 +54,13 @@ void put_symbol(inout RangeCoder c, uint state_off, int v)
     const int e = findMSB(a);
 
     for (int i = 0; i < e; i++)
-        WRITE(c, 1 + min(i, 9), true);
-    WRITE(c, 1 + min(e, 9), false);
+        WRITE(1 + min(i, 9), true);
+    WRITE(1 + min(e, 9), false);
 
     for (int i = e - 1; i >= 0; i--)
-        WRITE(c, 22 + min(i, 9), bool(bitfieldExtract(a, i, 1)));
+        WRITE(22 + min(i, 9), bool(bitfieldExtract(a, i, 1)));
 
-    WRITE(c, 22 - 11 + min(e, 10), v < 0);
+    WRITE(22 - 11 + min(e, 10), v < 0);
 }
 
 void encode_line_pcm(inout SliceContext sc, readonly uimage2D img,
@@ -80,7 +80,7 @@ void encode_line_pcm(inout SliceContext sc, readonly uimage2D img,
 
         [[unroll]]
         for (uint i = (rct_offset >> 1); i > 0; i >>= 1)
-            put_rac_equi(sc.c, bool(v & i));
+            put_rac_equi(bool(v & i));
     }
 }
 
@@ -109,7 +109,7 @@ void encode_line(inout SliceContext sc, readonly uimage2D img, uint state_off,
 
         uint context_off = state_off + CONTEXT_SIZE*d[0];
 
-        put_symbol(sc.c, context_off, d[1]);
+        put_symbol(context_off, d[1]);
     }
 }
 
@@ -124,9 +124,9 @@ PutBitContext pb;
 
 void init_golomb(inout SliceContext sc)
 {
-    hdr_len = rac_terminate(sc.c);
+    hdr_len = rac_terminate();
     init_put_bits(pb,
-                  OFFBUF(u8buf, sc.c.bytestream_start, hdr_len),
+                  OFFBUF(u8buf, rc.bytestream_start, hdr_len),
                   slice_size_max - hdr_len);
 }
 
@@ -324,10 +324,10 @@ void finalize_slice(inout SliceContext sc, const uint slice_idx)
 #ifdef GOLOMB
     uint32_t enc_len = hdr_len + flush_put_bits(pb);
 #else
-    uint32_t enc_len = rac_terminate(sc.c);
+    uint32_t enc_len = rac_terminate();
 #endif
 
-    u8buf bs = u8buf(sc.c.bytestream_start);
+    u8buf bs = u8buf(rc.bytestream_start);
 
     /* Append slice length */
     u8vec4 enc_len_p = unpack8(enc_len);
@@ -363,6 +363,8 @@ void finalize_slice(inout SliceContext sc, const uint slice_idx)
 void main(void)
 {
     const uint slice_idx = gl_WorkGroupID.y*gl_NumWorkGroups.x + gl_WorkGroupID.x;
+
+    rc = slice_ctx[slice_idx].c;
     encode_slice(slice_ctx[slice_idx], slice_idx);
     finalize_slice(slice_ctx[slice_idx], slice_idx);
 }
