@@ -52,8 +52,8 @@ void put_symbol(uint state_off, int v)
     if (is_nil)
         return;
 
-    const int a = abs(v);
-    const int e = findMSB(a);
+    int a = abs(v);
+    int e = findMSB(a);
 
     for (int i = 0; i < e; i++)
         WRITE(1 + min(i, 9), true);
@@ -65,7 +65,7 @@ void put_symbol(uint state_off, int v)
     WRITE(22 - 11 + min(e, 10), v < 0);
 }
 
-void encode_line_pcm(inout SliceContext sc, readonly uimage2D img,
+void encode_line_pcm(in SliceContext sc, readonly uimage2D img,
                      ivec2 sp, int y, int p, int comp)
 {
     int w = sc.slice_dim.x;
@@ -86,7 +86,7 @@ void encode_line_pcm(inout SliceContext sc, readonly uimage2D img,
     }
 }
 
-void encode_line(inout SliceContext sc, readonly uimage2D img, uint state_off,
+void encode_line(in SliceContext sc, readonly uimage2D img, uint state_off,
                  ivec2 sp, int y, int p, int comp,
                  uint8_t quant_table_idx, const int run_index)
 {
@@ -124,14 +124,14 @@ layout (set = 1, binding = 2, scalar) buffer slice_state_buf {
 uint hdr_len = 0;
 PutBitContext pb;
 
-void init_golomb(inout SliceContext sc)
+void init_golomb(void)
 {
     hdr_len = rac_terminate(slice_start);
     init_put_bits(pb, OFFBUF(u8buf, slice_start, hdr_len),
                   slice_size_max - hdr_len);
 }
 
-void encode_line(inout SliceContext sc, readonly uimage2D img, uint state_off,
+void encode_line(in SliceContext sc, readonly uimage2D img, uint state_off,
                  ivec2 sp, int y, int p, int comp,
                  uint8_t quant_table_idx, inout int run_index)
 {
@@ -239,7 +239,7 @@ void preload_rgb(in SliceContext sc, ivec2 sp, int w, int y, bool apply_rct)
 }
 #endif
 
-void encode_slice(inout SliceContext sc, const uint slice_idx)
+void encode_slice(in SliceContext sc, uint slice_idx)
 {
     ivec2 sp = sc.slice_pos;
 
@@ -284,7 +284,7 @@ void encode_slice(inout SliceContext sc, const uint slice_idx)
 
 #ifdef GOLOMB
     slice_state_off >>= 3;
-    init_golomb(slice_ctx[slice_idx]);
+    init_golomb();
 #endif
 
 #ifndef RGB
@@ -320,7 +320,7 @@ void encode_slice(inout SliceContext sc, const uint slice_idx)
 #endif
 }
 
-void finalize_slice(inout SliceContext sc, const uint slice_idx)
+void finalize_slice(const uint slice_idx)
 {
 #ifdef GOLOMB
     uint32_t enc_len = hdr_len + flush_put_bits(pb);
@@ -368,5 +368,5 @@ void main(void)
 
     rc = slice_ctx[slice_idx].c;
     encode_slice(slice_ctx[slice_idx], slice_idx);
-    finalize_slice(slice_ctx[slice_idx], slice_idx);
+    finalize_slice(slice_idx);
 }

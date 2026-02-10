@@ -24,6 +24,7 @@
 #extension GL_GOOGLE_include_directive : require
 
 #define ENCODE
+#define SB_QUALI
 #include "common.glsl"
 #include "ffv1_common.glsl"
 

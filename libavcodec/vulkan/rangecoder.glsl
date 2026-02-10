@@ -26,7 +26,13 @@
 #define CONTEXT_SIZE 32
 #define MAX_OVERREAD 2
 
-layout (set = 0, binding = 0, scalar) readonly buffer rangecoder_buf {
+#if !defined(GOLOMB) && (defined(DECODE))
+#define RC_BTYPE readonly buffer
+#else
+#define RC_BTYPE uniform
+#endif
+
+layout (set = 0, binding = 0, scalar) RC_BTYPE rangecoder_buf {
     uint8_t zero_one_state[512];
 };
 

@@ -157,7 +157,7 @@ layout (set = 1, binding = 3, scalar) buffer slice_state_buf {
 
 GetBitContext gb;
 
-void golomb_init(inout SliceContext sc)
+void golomb_init(void)
 {
     if (version == 3 && micro_version > 1 || version > 3)
         get_rac_internal(rc.range * 129 >> 8);
@@ -274,7 +274,7 @@ void writeout_rgb(in SliceContext sc, ivec2 sp, int w, int y, bool apply_rct)
 }
 #endif
 
-void decode_slice(inout SliceContext sc, const uint slice_idx)
+void decode_slice(in SliceContext sc, uint slice_idx)
 {
     int w = sc.slice_dim.x;
     ivec2 sp = sc.slice_pos;
@@ -313,7 +313,7 @@ void decode_slice(inout SliceContext sc, const uint slice_idx)
 
 #ifdef GOLOMB
     slice_state_off >>= 3; // division by VLC_STATE_SIZE
-    golomb_init(sc);
+    golomb_init();
 #endif
 
 #ifdef RGB

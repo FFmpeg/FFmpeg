@@ -93,7 +93,15 @@ struct SliceContext {
     bool slice_reset_contexts;
 };
 
-layout (set = 1, binding = 0, scalar) buffer slice_ctx_buf {
+#if !defined(SB_QUALI)
+#if (defined(ENCODE) || defined(DECODE))
+#define SB_QUALI readonly
+#else
+#define SB_QUALI
+#endif
+#endif
+
+layout (set = 1, binding = 0, scalar) SB_QUALI buffer slice_ctx_buf {
     SliceContext slice_ctx[];
 };
 

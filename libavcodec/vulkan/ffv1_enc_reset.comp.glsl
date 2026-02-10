@@ -23,6 +23,7 @@
 #pragma shader_stage(compute)
 #extension GL_GOOGLE_include_directive : require
 
+#define SB_QUALI readonly
 #include "common.glsl"
 #include "ffv1_common.glsl"
 

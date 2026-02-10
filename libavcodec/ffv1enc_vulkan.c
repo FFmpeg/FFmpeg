@@ -793,7 +793,7 @@ static int init_rct_search_shader(AVCodecContext *avctx, VkSpecializationInfo *s
 
     const FFVulkanDescriptorSetBinding desc_set_const[] = {
         { /* rangecoder_buf */
-            .type   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .type   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
             .stages = VK_SHADER_STAGE_COMPUTE_BIT,
         },
     };
@@ -836,7 +836,7 @@ static int init_setup_shader(AVCodecContext *avctx, VkSpecializationInfo *sl)
 
     const FFVulkanDescriptorSetBinding desc_set_const[] = {
         { /* rangecoder_buf */
-            .type   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .type   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
             .stages = VK_SHADER_STAGE_COMPUTE_BIT,
         },
     };
@@ -876,7 +876,7 @@ static int init_reset_shader(AVCodecContext *avctx, VkSpecializationInfo *sl)
 
     const FFVulkanDescriptorSetBinding desc_set_const[] = {
         { /* rangecoder_buf */
-            .type   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .type   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
             .stages = VK_SHADER_STAGE_COMPUTE_BIT,
         },
     };
@@ -923,7 +923,7 @@ static int init_encode_shader(AVCodecContext *avctx, VkSpecializationInfo *sl)
 
     const FFVulkanDescriptorSetBinding desc_set_const[] = {
         { /* rangecoder_buf */
-            .type   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .type   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
             .stages = VK_SHADER_STAGE_COMPUTE_BIT,
         },
         { /* quant_buf */
