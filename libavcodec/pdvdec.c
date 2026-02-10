@@ -75,6 +75,9 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
         return AVERROR_INVALIDDATA;
     }
 
+    if (avpkt->size * 1032LL < ((avctx->width + 7) >> 3) * avctx->height) //Asymptotic max compression of deflate
+        return AVERROR_INVALIDDATA;
+
     if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
         return ret;
 
