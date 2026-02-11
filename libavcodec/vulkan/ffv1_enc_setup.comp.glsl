@@ -60,9 +60,8 @@ void put_usymbol(uint v)
 
     const int e = findMSB(v);
 
-    for (int i = 0; i < e; i++)
-        put_rac(rc_state[1 + min(i, 9)], true);
-    put_rac(rc_state[1 + min(e, 9)], false);
+    for (int i = 0; i <= e; i++)
+        put_rac(rc_state[1 + min(i, 9)], i < e);
 
     for (int i = e - 1; i >= 0; i--)
         put_rac(rc_state[22 + min(i, 9)], bool(bitfieldExtract(v, i, 1)));

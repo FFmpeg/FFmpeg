@@ -66,8 +66,6 @@ void rac_init(uint bs_start, uint bs_len)
 /* Full renorm version that can handle outstanding_byte == 0xFF */
 void renorm_encoder(void)
 {
-    int bs_cnt = 0;
-
     if (rc.outstanding_byte == 0xFF) {
         rc.outstanding_byte = uint8_t(rc.low >> 8);
     } else if (rc.low <= 0xFF00) {
