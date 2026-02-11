@@ -3665,7 +3665,8 @@ static int decode_nal_unit(HEVCContext *s, unsigned nal_idx)
     case HEVC_NAL_EOB_NUT:
     case HEVC_NAL_AUD:
     case HEVC_NAL_FD_NUT:
-    case HEVC_NAL_UNSPEC62:
+    case HEVC_NAL_UNSPEC62: // Dolby Vision RPU
+    case HEVC_NAL_UNSPEC63: // Dolby Vision EL
         break;
     default:
         av_log(s->avctx, AV_LOG_INFO,
