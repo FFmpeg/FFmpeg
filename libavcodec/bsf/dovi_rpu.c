@@ -84,7 +84,7 @@ static int dovi_rpu_update_fragment_hevc(AVBSFContext *bsf, AVPacket *pkt,
     uint8_t *rpu = NULL;
     int rpu_size, ret;
 
-    // HEVC_NAL_UNSPEC62 is Dolby Vision PRU and HEVC_NAL_UNSPEC63 is Dolby Vision EL
+    // HEVC_NAL_UNSPEC62 is Dolby Vision RPU and HEVC_NAL_UNSPEC63 is Dolby Vision EL
     if (!nal || (nal->type != HEVC_NAL_UNSPEC62 && nal->type != HEVC_NAL_UNSPEC63))
         return 0;
 
