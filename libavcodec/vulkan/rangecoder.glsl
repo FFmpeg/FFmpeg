@@ -37,9 +37,9 @@ layout (set = 0, binding = 0, scalar) RC_BTYPE rangecoder_buf {
 };
 
 struct RangeCoder {
-    uint64_t bytestream;
-    uint64_t bytestream_end;
-
+    uint     bs_start;
+    uint     bs_off;
+    uint     bs_end;
     uint     low;
     uint     range;
     uint16_t outstanding_count;
@@ -51,10 +51,11 @@ shared uint8_t rc_state[CONTEXT_SIZE];
 shared bool rc_data[CONTEXT_SIZE];
 shared bool rc_dec[CONTEXT_SIZE];
 
-void rac_init(u8buf data, uint buf_size)
+void rac_init(uint bs_start, uint bs_len)
 {
-    rc.bytestream = uint64_t(data);
-    rc.bytestream_end = uint64_t(data) + buf_size;
+    rc.bs_start = bs_start;
+    rc.bs_off = bs_start;
+    rc.bs_end = bs_start + bs_len;
     rc.low = 0;
     rc.range = 0xFF00;
     rc.outstanding_count = uint16_t(0);
@@ -66,29 +67,27 @@ void rac_init(u8buf data, uint buf_size)
 void renorm_encoder(void)
 {
     int bs_cnt = 0;
-    u8buf bytestream = u8buf(rc.bytestream);
 
     if (rc.outstanding_byte == 0xFF) {
         rc.outstanding_byte = uint8_t(rc.low >> 8);
     } else if (rc.low <= 0xFF00) {
-        bytestream[bs_cnt++].v = rc.outstanding_byte;
+        slice_data[rc.bs_off++].v = rc.outstanding_byte;
         uint16_t cnt = rc.outstanding_count;
         for (; cnt > 0; cnt--)
-            bytestream[bs_cnt++].v = uint8_t(0xFF);
+            slice_data[rc.bs_off++].v = uint8_t(0xFF);
         rc.outstanding_count = uint16_t(0);
         rc.outstanding_byte = uint8_t(rc.low >> 8);
     } else if (rc.low >= 0x10000) {
-        bytestream[bs_cnt++].v = rc.outstanding_byte + uint8_t(1);
+        slice_data[rc.bs_off++].v = rc.outstanding_byte + uint8_t(1);
         uint16_t cnt = rc.outstanding_count;
         for (; cnt > 0; cnt--)
-            bytestream[bs_cnt++].v = uint8_t(0x00);
+            slice_data[rc.bs_off++].v = uint8_t(0x00);
         rc.outstanding_count = uint16_t(0);
         rc.outstanding_byte = uint8_t(bitfieldExtract(rc.low, 8, 8));
     } else {
         rc.outstanding_count++;
     }
 
-    rc.bytestream += bs_cnt;
     rc.range <<= 8;
     rc.low = bitfieldInsert(0, rc.low, 8, 8);
 }
@@ -109,19 +108,17 @@ void renorm_encoder(void)
         return;
     }
 
-    u8buf bs = u8buf(rc.bytestream);
     uint8_t outstanding_byte = rc.outstanding_byte;
 
-    rc.bytestream        = uint64_t(bs) + oc;
     rc.outstanding_count = uint16_t(0);
     rc.outstanding_byte  = uint8_t(low >> 8);
 
     uint8_t obs = uint8_t(low > 0xFF00);
     uint8_t fill = obs - uint8_t(1); /* unsigned underflow */
 
-    bs[0].v = outstanding_byte + obs;
+    slice_data[rc.bs_off++].v = outstanding_byte + obs;
     for (int i = 1; i < oc; i++)
-        bs[i].v = fill;
+        slice_data[rc.bs_off++].v = fill;
 }
 #endif
 
@@ -170,7 +167,7 @@ void put_rac_terminate(void)
 }
 
 /* Return the number of bytes written. */
-uint rac_terminate(uint64_t bytestream_start)
+uint rac_terminate(void)
 {
     put_rac_terminate();
     rc.range = uint16_t(0xFF);
@@ -186,21 +183,21 @@ uint rac_terminate(uint64_t bytestream_start)
         debugPrintfEXT("Error: range < 0x100");
 #endif
 
-    return uint(uint64_t(rc.bytestream) - bytestream_start);
+    return rc.bs_off - rc.bs_start;
 }
 
-void rac_init_dec(u8buf data, uint buf_size)
+void rac_init_dec(uint bs_start, uint bs_len)
 {
     /* Skip priming bytes */
-    rac_init(OFFBUF(u8buf, data, 2), buf_size - 2);
+    rac_init(bs_start + 2, bs_len - 2);
 
-    u8vec2 prime = u8vec2buf(data).v;
+    u8vec2 prime = u8vec2buf(slice_data + bs_start).v;
     /* Switch endianness of the priming bytes */
     rc.low = pack16(prime.yx);
 
     if (rc.low >= 0xFF00) {
         rc.low = 0xFF00;
-        rc.bytestream_end = uint64_t(data) + 2;
+        rc.bs_end = bs_start + 2;
     }
 }
 
@@ -208,9 +205,9 @@ void refill(void)
 {
     rc.range <<= 8;
     rc.low   <<= 8;
-    if (expectEXT(rc.bytestream < rc.bytestream_end, true))
-        rc.low |= u8buf(rc.bytestream).v;
-    rc.bytestream++;
+    if (expectEXT(rc.bs_off < rc.bs_end, true))
+        rc.low |= slice_data[rc.bs_off].v;
+    rc.bs_off++;
 }
 
 bool get_rac_internal(const uint range1)

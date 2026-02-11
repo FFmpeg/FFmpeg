@@ -23,7 +23,6 @@
 #ifndef VULKAN_FFV1_COMMON_H
 #define VULKAN_FFV1_COMMON_H
 
-#include "rangecoder.glsl"
 #ifdef GOLOMB
 #include "ffv1_vlc.glsl"
 #endif
@@ -76,6 +75,8 @@ layout (push_constant, scalar) uniform pushConstants {
     int pic_mode;
     uint slice_size_max;
 };
+
+#include "rangecoder.glsl"
 
 #define TYPE int32_t
 #define VTYPE2 i32vec2

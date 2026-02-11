@@ -48,8 +48,7 @@ void init_slice(inout SliceContext sc, uint slice_idx)
     if (!rct_search || (sc.slice_coding_mode == 1))
         sc.slice_rct_coef = ivec2(1, 1);
 
-    rac_init(OFFBUF(u8buf, slice_data, slice_idx * slice_size_max),
-             slice_size_max);
+    rac_init(slice_idx*slice_size_max, slice_size_max);
 }
 
 void put_usymbol(uint v)

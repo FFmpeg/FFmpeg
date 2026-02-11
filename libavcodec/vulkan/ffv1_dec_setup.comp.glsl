@@ -112,10 +112,7 @@ void main(void)
 {
     uint slice_idx = gl_WorkGroupID.y*gl_NumWorkGroups.x + gl_WorkGroupID.x;
 
-    u8buf bs = u8buf(slice_data + slice_offsets[slice_idx].x);
-    uint32_t slice_size = slice_offsets[slice_idx].y;
-
-    rac_init_dec(bs, slice_size);
+    rac_init_dec(slice_offsets[slice_idx].x, slice_offsets[slice_idx].y);
 
     if (slice_idx == (gl_NumWorkGroups.x*gl_NumWorkGroups.y - 1))
         get_rac_equi();
@@ -125,6 +122,9 @@ void main(void)
     slice_ctx[slice_idx].c = rc;
 
     if (has_crc) {
+        u8buf bs = u8buf(slice_data + slice_offsets[slice_idx].x);
+        uint32_t slice_size = slice_offsets[slice_idx].y;
+
         uint32_t crc = crcref;
         for (int i = 0; i < slice_size; i++)
             crc = crc_ieee[(crc & 0xFF) ^ uint32_t(bs[i].v)] ^ (crc >> 8);
@@ -133,7 +133,7 @@ void main(void)
     }
 
     uint overread = 0;
-    if (rc.bytestream >= (rc.bytestream_end + MAX_OVERREAD))
-        overread = uint(rc.bytestream - rc.bytestream_end);
+    if (rc.bs_off >= (rc.bs_end + MAX_OVERREAD))
+        overread = rc.bs_off - rc.bs_end;
     slice_status[2*slice_idx + 1] = overread;
 }

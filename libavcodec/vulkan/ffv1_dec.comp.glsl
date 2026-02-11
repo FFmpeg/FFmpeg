@@ -35,8 +35,6 @@ layout (set = 1, binding = 2, scalar) writeonly buffer slice_status_buf {
 };
 layout (set = 1, binding = 4) uniform uimage2D dec[];
 
-uint64_t slice_start;
-
 #ifndef GOLOMB
 
 layout (set = 1, binding = 3, scalar) buffer slice_state_buf {
@@ -162,9 +160,9 @@ void golomb_init(void)
     if (version == 3 && micro_version > 1 || version > 3)
         get_rac_internal(rc.range * 129 >> 8);
 
-    uint64_t ac_byte_count = rc.bytestream - slice_start - 1;
-    init_get_bits(gb, u8buf(slice_start + ac_byte_count),
-                  int(rc.bytestream_end - slice_start - ac_byte_count));
+    uint64_t ac_byte_count = rc.bs_off - rc.bs_start - 1;
+    init_get_bits(gb, u8buf(rc.bs_start + ac_byte_count),
+                  int(rc.bs_end - rc.bs_start - ac_byte_count));
 }
 
 void decode_line(ivec2 sp, int w,
@@ -342,7 +340,6 @@ void decode_slice(in SliceContext sc, uint slice_idx)
 void main(void)
 {
     uint slice_idx = gl_WorkGroupID.y*gl_NumWorkGroups.x + gl_WorkGroupID.x;
-    slice_start = uint64_t(slice_data) + slice_offsets[slice_idx].x;
 
     if (gl_LocalInvocationID.x == 0)
         rc = slice_ctx[slice_idx].c;
@@ -352,8 +349,8 @@ void main(void)
 
     if (gl_LocalInvocationID.x == 0) {
         uint overread = 0;
-        if (rc.bytestream >= (rc.bytestream_end + MAX_OVERREAD))
-            overread = uint(rc.bytestream - rc.bytestream_end);
+        if (rc.bs_off >= (rc.bs_end + MAX_OVERREAD))
+            overread = rc.bs_off - rc.bs_end;
         slice_status[2*slice_idx + 1] = overread;
     }
 }

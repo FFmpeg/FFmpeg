@@ -36,8 +36,6 @@ layout (set = 1, binding = 1, scalar) writeonly buffer slice_results_buf {
 };
 layout (set = 1, binding = 3) uniform uimage2D src[];
 
-uint64_t slice_start;
-
 #ifndef GOLOMB
 
 layout (set = 1, binding = 2, scalar) buffer slice_state_buf {
@@ -136,8 +134,8 @@ PutBitContext pb;
 
 void init_golomb(void)
 {
-    hdr_len = rac_terminate(slice_start);
-    init_put_bits(pb, OFFBUF(u8buf, slice_start, hdr_len),
+    hdr_len = rac_terminate();
+    init_put_bits(pb, OFFBUF(u8buf, rc.bs_start, hdr_len),
                   slice_size_max - hdr_len);
 }
 
@@ -329,10 +327,10 @@ void finalize_slice(const uint slice_idx)
 #ifdef GOLOMB
     uint32_t enc_len = hdr_len + flush_put_bits(pb);
 #else
-    uint32_t enc_len = rac_terminate(slice_start);
+    uint32_t enc_len = rac_terminate();
 #endif
 
-    u8buf bs = u8buf(slice_start);
+    u8buf bs = u8buf(slice_data + rc.bs_start);
 
     /* Append slice length */
     u8vec4 enc_len_p = unpack8(enc_len);
@@ -367,7 +365,6 @@ void finalize_slice(const uint slice_idx)
 void main(void)
 {
     const uint slice_idx = gl_WorkGroupID.y*gl_NumWorkGroups.x + gl_WorkGroupID.x;
-    slice_start = uint64_t(slice_data) + slice_idx*slice_size_max;
 
     if (gl_LocalInvocationID.x == 0)
         rc = slice_ctx[slice_idx].c;
