@@ -148,7 +148,7 @@ const uint32_t log2_run[41] = {
 #define LADDR(p) (ivec2((p).x, ((p).y & RGB_LBUF)))
 
 ivec2 get_pred(readonly uimage2D pred, ivec2 sp, ivec2 off,
-               int comp, int sw, uint8_t quant_table_idx, bool extend_lookup)
+               uint comp, int sw, uint8_t quant_table_idx, bool extend_lookup)
 {
     const ivec2 yoff_border1 = expectEXT(off.x == 0, false) ? off + ivec2(1, -1) : off;
 
@@ -192,7 +192,7 @@ ivec2 get_pred(readonly uimage2D pred, ivec2 sp, ivec2 off,
 #define LADDR(p) (p)
 
 ivec2 get_pred(readonly uimage2D pred, ivec2 sp, ivec2 off,
-               int comp, int sw, uint8_t quant_table_idx, bool extend_lookup)
+               uint comp, int sw, uint8_t quant_table_idx, bool extend_lookup)
 {
     const ivec2 yoff_border1 = off.x == 0 ? ivec2(1, -1) : ivec2(0, 0);
     sp += off;

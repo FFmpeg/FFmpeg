@@ -66,7 +66,7 @@ void put_symbol(int v)
 }
 
 void encode_line_pcm(in SliceContext sc, readonly uimage2D img,
-                     ivec2 sp, int y, int p, int comp)
+                     ivec2 sp, int y, uint p, uint comp)
 {
     if (gl_LocalInvocationID.x > 0)
         return;
@@ -90,7 +90,7 @@ void encode_line_pcm(in SliceContext sc, readonly uimage2D img,
 }
 
 void encode_line(in SliceContext sc, readonly uimage2D img, uint state_off,
-                 ivec2 sp, int y, int p, int comp,
+                 ivec2 sp, int y, uint p, uint comp,
                  uint8_t quant_table_idx, const int run_index)
 {
     int w = sc.slice_dim.x;
@@ -142,7 +142,7 @@ void init_golomb(void)
 }
 
 void encode_line(in SliceContext sc, readonly uimage2D img, uint state_off,
-                 ivec2 sp, int y, int p, int comp,
+                 ivec2 sp, int y, uint p, uint comp,
                  uint8_t quant_table_idx, inout int run_index)
 {
     int w = sc.slice_dim.x;
@@ -212,6 +212,8 @@ void encode_line(in SliceContext sc, readonly uimage2D img, uint state_off,
 #endif
 
 #ifdef RGB
+const uvec4 rgb_plane_order = { 1, 2, 0, 3 };
+
 ivec4 load_components(ivec2 pos)
 {
     ivec4 pix = ivec4(imageLoad(src[0], pos));
@@ -277,11 +279,8 @@ void encode_slice(in SliceContext sc, uint slice_idx)
         for (int y = 0; y < sc.slice_dim.y; y++) {
             preload_rgb(sc, sp, sc.slice_dim.x, y, false);
 
-            encode_line_pcm(sc, tmp, sp, y, 0, 1);
-            encode_line_pcm(sc, tmp, sp, y, 0, 2);
-            encode_line_pcm(sc, tmp, sp, y, 0, 0);
-            if (transparency)
-                encode_line_pcm(sc, tmp, sp, y, 0, 3);
+            for (uint c = 0; c < color_planes; c++)
+                encode_line_pcm(sc, tmp, sp, y, 0, rgb_plane_order[c]);
         }
 #endif
         return;
@@ -298,15 +297,15 @@ void encode_slice(in SliceContext sc, uint slice_idx)
 #endif
 
 #ifndef RGB
-    for (int c = 0; c < color_planes; c++) {
+    for (uint c = 0; c < color_planes; c++) {
         int run_index = 0;
 
         int h = sc.slice_dim.y;
         if (c > 0 && c < 3)
             h = ceil_rshift(h, chroma_shift.y);
 
-        int p = min(c, planes - 1);
-        int comp = c - p;
+        uint p = min(c, planes - 1);
+        uint comp = c - p;
 
         for (int y = 0; y < h; y++)
             encode_line(sc, src[p], slice_state_off[c], sp, y, p,
@@ -317,15 +316,10 @@ void encode_slice(in SliceContext sc, uint slice_idx)
     for (int y = 0; y < sc.slice_dim.y; y++) {
         preload_rgb(sc, sp, sc.slice_dim.x, y, true);
 
-        encode_line(sc, tmp, slice_state_off[0],
-                    sp, y, 0, 1, quant_table_idx[0], run_index);
-        encode_line(sc, tmp, slice_state_off[1],
-                    sp, y, 0, 2, quant_table_idx[1], run_index);
-        encode_line(sc, tmp, slice_state_off[2],
-                    sp, y, 0, 0, quant_table_idx[2], run_index);
-        if (transparency)
-            encode_line(sc, tmp, slice_state_off[3],
-                        sp, y, 0, 3, quant_table_idx[3], run_index);
+        for (uint c = 0; c < color_planes; c++)
+            encode_line(sc, tmp, slice_state_off[c],
+                        sp, y, 0, rgb_plane_order[c],
+                        quant_table_idx[c], run_index);
     }
 #endif
 }
