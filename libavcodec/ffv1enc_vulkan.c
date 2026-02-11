@@ -243,7 +243,7 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
     RET(ff_vk_get_pooled_buffer(&fv->s, &fv->results_data_pool,
                                 &fd->results_data_ref,
                                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-                                NULL, 2*f->slice_count*sizeof(uint64_t),
+                                NULL, f->slice_count*sizeof(uint32_t),
                                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
     results_data_buf = (FFVkBuffer *)fd->results_data_ref->data;
@@ -486,7 +486,7 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
     ff_vk_shader_update_desc_buffer(&fv->s, exec,
                                     &fv->enc, 1, 1, 0,
                                     results_data_buf,
-                                    0, results_data_buf->size,
+                                    0, VK_WHOLE_SIZE,
                                     VK_FORMAT_UNDEFINED);
     ff_vk_shader_update_desc_buffer(&fv->s, exec, &fv->enc,
                                     1, 2, 0,
@@ -607,7 +607,7 @@ static int get_packet(AVCodecContext *avctx, FFVkExecContext *exec,
 
     FFVkBuffer *out_data_buf = (FFVkBuffer *)fd->out_data_ref->data;
     FFVkBuffer *results_data_buf = (FFVkBuffer *)fd->results_data_ref->data;
-    uint64_t *sc;
+    uint32_t slice_size_max = out_data_buf->size / f->slice_count;
 
     /* Make sure encoding's done */
     ff_vk_exec_wait(&fv->s, exec);
@@ -627,17 +627,15 @@ static int get_packet(AVCodecContext *avctx, FFVkExecContext *exec,
     /* Calculate final size */
     pkt->size = 0;
     for (int i = 0; i < f->slice_count; i++) {
-        sc = &((uint64_t *)results_data_buf->mapped_mem)[i*2];
-        av_log(avctx, AV_LOG_DEBUG, "Slice %i size = %"PRIu64", "
-                                    "src offset = %"PRIu64"\n",
-               i, sc[0], sc[1]);
+        uint32_t sl_len = AV_RN32(results_data_buf->mapped_mem + i*4);
+        av_log(avctx, AV_LOG_DEBUG, "Slice %i size = %u\n", i, sl_len);
 
         fv->buf_regions[i] = (VkBufferCopy) {
-            .srcOffset = sc[1],
+            .srcOffset = i*slice_size_max,
             .dstOffset = pkt->size,
-            .size = sc[0],
+            .size = sl_len,
         };
-        pkt->size += sc[0];
+        pkt->size += sl_len;
     }
     av_log(avctx, AV_LOG_VERBOSE, "Encoded data: %iMiB\n", pkt->size / (1024*1024));
     av_buffer_unref(&fd->results_data_ref); /* No need for this buffer anymore */

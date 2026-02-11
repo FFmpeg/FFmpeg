@@ -32,7 +32,7 @@ layout (set = 0, binding = 2, scalar) uniform crc_ieee_buf {
 };
 
 layout (set = 1, binding = 1, scalar) writeonly buffer slice_results_buf {
-    uint64_t slice_results[];
+    uint32_t slice_results[];
 };
 layout (set = 1, binding = 3) uniform uimage2D src[];
 
@@ -361,8 +361,7 @@ void finalize_slice(const uint slice_idx)
         enc_len += 4;
     }
 
-    slice_results[slice_idx*2 + 0] = enc_len;
-    slice_results[slice_idx*2 + 1] = uint64_t(bs) - uint64_t(slice_data);
+    slice_results[slice_idx] = enc_len;
 }
 
 void main(void)
