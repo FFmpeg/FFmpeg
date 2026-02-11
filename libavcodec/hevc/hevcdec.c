@@ -3669,7 +3669,7 @@ static int decode_nal_unit(HEVCContext *s, unsigned nal_idx)
     case HEVC_NAL_UNSPEC63: // Dolby Vision EL
         break;
     default:
-        av_log(s->avctx, AV_LOG_INFO,
+        av_log(s->avctx, AV_LOG_VERBOSE,
                "Skipping NAL unit %d\n", s->nal_unit_type);
     }
 
