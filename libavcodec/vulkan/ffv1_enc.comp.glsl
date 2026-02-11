@@ -376,7 +376,12 @@ void main(void)
     const uint slice_idx = gl_WorkGroupID.y*gl_NumWorkGroups.x + gl_WorkGroupID.x;
     slice_start = uint64_t(slice_data) + slice_idx*slice_size_max;
 
-    rc = slice_ctx[slice_idx].c;
+    if (gl_LocalInvocationID.x == 0)
+        rc = slice_ctx[slice_idx].c;
+    barrier();
+
     encode_slice(slice_ctx[slice_idx], slice_idx);
-    finalize_slice(slice_idx);
+
+    if (gl_LocalInvocationID.x == 0)
+        finalize_slice(slice_idx);
 }

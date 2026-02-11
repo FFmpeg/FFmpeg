@@ -344,15 +344,16 @@ void main(void)
     uint slice_idx = gl_WorkGroupID.y*gl_NumWorkGroups.x + gl_WorkGroupID.x;
     slice_start = uint64_t(slice_data) + slice_offsets[slice_idx].x;
 
-    rc = slice_ctx[slice_idx].c;
+    if (gl_LocalInvocationID.x == 0)
+        rc = slice_ctx[slice_idx].c;
+    barrier();
 
     decode_slice(slice_ctx[slice_idx], slice_idx);
 
-    if (gl_LocalInvocationID.x > 0)
-        return;
-
-    uint overread = 0;
-    if (rc.bytestream >= (rc.bytestream_end + MAX_OVERREAD))
-        overread = uint(rc.bytestream - rc.bytestream_end);
-    slice_status[2*slice_idx + 1] = overread;
+    if (gl_LocalInvocationID.x == 0) {
+        uint overread = 0;
+        if (rc.bytestream >= (rc.bytestream_end + MAX_OVERREAD))
+            overread = uint(rc.bytestream - rc.bytestream_end);
+        slice_status[2*slice_idx + 1] = overread;
+    }
 }
