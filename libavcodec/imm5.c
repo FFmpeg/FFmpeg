@@ -136,6 +136,8 @@ static int imm5_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     }
 
     ret = avcodec_receive_frame(codec_avctx, frame);
+    if (ret == AVERROR(EAGAIN))
+        return avpkt->size;
     if (ret < 0)
         return ret;
 
