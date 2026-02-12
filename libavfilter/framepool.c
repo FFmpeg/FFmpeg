@@ -92,7 +92,7 @@ FFFramePool *ff_frame_pool_video_init(AVBufferRef* (*alloc)(size_t size),
         linesizes[i] = pool->linesize[i];
 
     if (av_image_fill_plane_sizes(sizes, pool->format,
-                                  pool->height,
+                                  FFALIGN(pool->height, align),
                                   linesizes) < 0) {
         goto fail;
     }
