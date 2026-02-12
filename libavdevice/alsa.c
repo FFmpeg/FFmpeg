@@ -335,10 +335,12 @@ int ff_alsa_xrun_recover(AVFormatContext *s1, int err)
 
             return AVERROR(EIO);
         }
+#ifdef ESTRPIPE
     } else if (err == -ESTRPIPE) {
         av_log(s1, AV_LOG_ERROR, "-ESTRPIPE... Unsupported!\n");
 
         return -1;
+#endif
     }
     return err;
 }
