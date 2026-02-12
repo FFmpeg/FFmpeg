@@ -18,10 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/random_seed.h"
 #include "libavutil/csp.h"
 #include "libavutil/opt.h"
-#include "libavutil/vulkan_spirv.h"
 #include "vulkan_filter.h"
 #include "filters.h"
 #include "colorspace.h"
@@ -31,8 +29,11 @@ enum TestSrcVulkanMode {
     TESTSRC_COLOR,
 };
 
+extern const unsigned char ff_color_comp_spv_data[];
+extern const unsigned int ff_color_comp_spv_len;
+
 typedef struct TestSrcVulkanPushData {
-    float color_comp[4];
+    float color_data[4][4];
 } TestSrcVulkanPushData;
 
 typedef struct TestSrcVulkanContext {
@@ -66,22 +67,10 @@ typedef struct TestSrcVulkanContext {
 static av_cold int init_filter(AVFilterContext *ctx, enum TestSrcVulkanMode mode)
 {
     int err;
-    uint8_t *spv_data;
-    size_t spv_len;
-    void *spv_opaque = NULL;
     TestSrcVulkanContext *s = ctx->priv;
     FFVulkanContext *vkctx = &s->vkctx;
     const int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
-    FFVulkanShader *shd = &s->shd;
-    FFVkSPIRVCompiler *spv;
-    FFVulkanDescriptorSetBinding *desc_set;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(s->vkctx.output_format);
-
-    spv = ff_vk_spirv_init();
-    if (!spv) {
-        av_log(ctx, AV_LOG_ERROR, "Unable to initialize SPIR-V compiler!\n");
-        return AVERROR_EXTERNAL;
-    }
 
     s->qf = ff_vk_qf_find(vkctx, VK_QUEUE_COMPUTE_BIT, 0);
     if (!s->qf) {
@@ -91,37 +80,22 @@ static av_cold int init_filter(AVFilterContext *ctx, enum TestSrcVulkanMode mode
     }
 
     RET(ff_vk_exec_pool_init(vkctx, s->qf, &s->e, s->qf->num*4, 0, 0, 0, NULL));
-    RET(ff_vk_shader_init(vkctx, &s->shd, "scale",
-                          VK_SHADER_STAGE_COMPUTE_BIT,
-                          NULL, 0,
-                          32, 32, 1,
-                          0));
 
-    GLSLC(0, layout(push_constant, std430) uniform pushConstants {        );
-    GLSLC(1,    vec4 color_comp;                                          );
-    GLSLC(0, };                                                           );
-    GLSLC(0,                                                              );
+    ff_vk_shader_load(&s->shd, VK_SHADER_STAGE_COMPUTE_BIT, NULL,
+                      (uint32_t []) { 32, 32, 1 }, 0);
 
     ff_vk_shader_add_push_const(&s->shd, 0, sizeof(s->opts),
                                 VK_SHADER_STAGE_COMPUTE_BIT);
 
-    desc_set = (FFVulkanDescriptorSetBinding []) {
-        {
-            .name       = "output_img",
+    const FFVulkanDescriptorSetBinding desc_set[] = {
+        { /* output_img */
             .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-            .mem_layout = ff_vk_shader_rep_fmt(s->vkctx.output_format, FF_VK_REP_FLOAT),
-            .mem_quali  = "writeonly",
-            .dimensions = 2,
-            .elems      = planes,
             .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
+            .elems      = planes,
         },
     };
+    ff_vk_shader_add_descriptor_set(vkctx, &s->shd, desc_set, 1, 0, 0);
 
-    RET(ff_vk_shader_add_descriptor_set(vkctx, &s->shd, desc_set, 1, 0, 0));
-
-    GLSLC(0, void main()                                                  );
-    GLSLC(0, {                                                            );
-    GLSLC(1,     ivec2 pos = ivec2(gl_GlobalInvocationID.xy);             );
     if (mode == TESTSRC_COLOR) {
         double rgb2yuv[3][3];
         double rgbad[4];
@@ -168,38 +142,30 @@ static av_cold int init_filter(AVFilterContext *ctx, enum TestSrcVulkanMode mode
         if (desc->nb_components <= 2)
             yuvad[1] = yuvad[3];
 
+        float color_comp[4];
         for (int i = 0; i < 4; i++)
-            s->opts.color_comp[i] = yuvad[i];
+            color_comp[i] = yuvad[i];
 
-        GLSLC(1,     vec4 r;                                                  );
-        GLSLC(0,                                                              );
+        int fmt_lut[4];
+        ff_vk_set_perm(s->vkctx.output_format, fmt_lut, 0);
         for (int i = 0, c_off = 0; i < planes; i++) {
             for (int c = 0; c < desc->nb_components; c++) {
                 if (desc->comp[c].plane == i) {
                     int off = desc->comp[c].offset / (FFALIGN(desc->comp[c].depth, 8)/8);
-                    GLSLF(1, r[%i] = color_comp[%i];             ,off, c_off++);
+                    s->opts.color_data[i][off] = color_comp[fmt_lut[c_off++]];
                 }
             }
-            GLSLF(1, imageStore(output_img[%i], pos, r);                    ,i);
-            GLSLC(0,                                                          );
         }
-    }
-    GLSLC(0, }                                                            );
 
-    RET(spv->compile_shader(vkctx, spv, shd, &spv_data, &spv_len, "main",
-                            &spv_opaque));
-    RET(ff_vk_shader_link(vkctx, shd, spv_data, spv_len, "main"));
+        RET(ff_vk_shader_link(vkctx, &s->shd, ff_color_comp_spv_data,
+                              ff_color_comp_spv_len, "main"));
+    }
 
     RET(ff_vk_shader_register_exec(vkctx, &s->e, &s->shd));
 
     s->initialized = 1;
 
 fail:
-    if (spv_opaque)
-        spv->free_shader(spv, &spv_opaque);
-    if (spv)
-        spv->uninit(&spv);
-
     return err;
 }
 
@@ -208,6 +174,7 @@ static int testsrc_vulkan_activate(AVFilterContext *ctx)
     int err;
     AVFilterLink *outlink = ctx->outputs[0];
     TestSrcVulkanContext *s = ctx->priv;
+    const int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
     AVFrame *frame;
 
     if (!s->initialized) {
@@ -236,7 +203,8 @@ static int testsrc_vulkan_activate(AVFilterContext *ctx)
                 return AVERROR(ENOMEM);
 
             err = ff_vk_filter_process_simple(&s->vkctx, &s->e, &s->shd, s->picref, NULL,
-                                              VK_NULL_HANDLE, 1, &s->opts, sizeof(s->opts));
+                                              VK_NULL_HANDLE, planes,
+                                              &s->opts, sizeof(s->opts));
             if (err < 0)
                 return err;
         }
@@ -255,7 +223,8 @@ static int testsrc_vulkan_activate(AVFilterContext *ctx)
     frame->sample_aspect_ratio = s->sar;
     if (!s->draw_once) {
         err = ff_vk_filter_process_simple(&s->vkctx, &s->e, &s->shd, frame, NULL,
-                                          VK_NULL_HANDLE, 1, &s->opts, sizeof(s->opts));
+                                          VK_NULL_HANDLE, planes,
+                                          &s->opts, sizeof(s->opts));
         if (err < 0) {
             av_frame_free(&frame);
             return err;

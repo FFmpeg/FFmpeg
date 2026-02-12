@@ -3,6 +3,7 @@ clean::
 
 OBJS-$(CONFIG_AVGBLUR_VULKAN_FILTER) += vulkan/avgblur.comp.spv.o
 OBJS-$(CONFIG_BWDIF_VULKAN_FILTER) += vulkan/bwdif.comp.spv.o
+OBJS-$(CONFIG_COLOR_VULKAN_FILTER) += vulkan/color.comp.spv.o
 OBJS-$(CONFIG_SCALE_VULKAN_FILTER) += vulkan/debayer.comp.spv.o
 OBJS-$(CONFIG_FLIP_VULKAN_FILTER) += vulkan/flip.comp.spv.o
 OBJS-$(CONFIG_TRANSPOSE_VULKAN_FILTER) += vulkan/transpose.comp.spv.o
