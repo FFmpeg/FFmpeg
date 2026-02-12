@@ -373,4 +373,108 @@ int av_dynamic_hdr_plus_from_t35(AVDynamicHDRPlus *s, const uint8_t *data,
  */
 int av_dynamic_hdr_plus_to_t35(const AVDynamicHDRPlus *s, uint8_t **data, size_t *size);
 
+/**
+ * This struct represents dynamic metadata for color volume transform as
+ * specified in the SMPTE 2094-50 standard.
+ *
+ * To be used as payload of a AVFrameSideData or AVPacketSideData with the
+ * appropriate type.
+ *
+ * @note The struct should be allocated with
+ * av_dynamic_smpte2094_app5_alloc() and its size is not a part of
+ * the public ABI.
+ */
+typedef struct AVDynamicHDRSmpte2094App5 {
+    /**
+     * Section C.2.1. smpte_st_2094_50_application_info()
+     */
+    uint8_t application_version;
+    uint8_t minimum_application_version;
+
+    /**
+     * Section C.2.2 smpte_st_2094_50_color_volume_transform()
+     */
+    uint8_t has_custom_hdr_reference_white_flag;
+    uint8_t has_adaptive_tone_map_flag;
+    uint16_t hdr_reference_white;
+
+    /**
+     * Section C.2.3 smpte_st_2094_50_adaptive_tone_map()
+     */
+    uint16_t baseline_hdr_headroom;
+    uint8_t use_reference_white_tone_mapping_flag;
+    uint8_t num_alternate_images;
+    uint8_t gain_application_space_chromaticities_flag;
+    uint8_t has_common_component_mix_params_flag;
+    uint8_t has_common_curve_params_flag;
+    uint16_t gain_application_space_chromaticities[8];
+    uint16_t alternate_hdr_headrooms[4];
+
+    /**
+     * Section C.2.4 smpte_st_2094_50_component_mixing()
+     */
+    uint8_t component_mixing_type[4];
+    uint8_t has_component_mixing_coefficient_flag[4][6];
+    uint16_t component_mixing_coefficient[4][6];
+
+    /**
+     * Section C.2.5 smpte_st_2094_50_gain_curve()
+     */
+    uint8_t gain_curve_num_control_points_minus_1[4];
+    uint8_t gain_curve_use_pchip_slope_flag[4];
+    uint16_t gain_curve_control_points_x[4][32];
+    uint16_t gain_curve_control_points_y[4][32];
+    uint16_t gain_curve_control_points_theta[4][32];
+} AVDynamicHDRSmpte2094App5;
+
+/**
+ * Allocate an AVDynamicHDRSmpte2094App5 structure and set its fields to
+ * default values. The resulting struct can be freed using av_freep().
+ *
+ * @return An AVDynamicHDRSmpte2094App5 filled with default values or NULL
+ *         on failure.
+ */
+AVDynamicHDRSmpte2094App5* av_dynamic_hdr_smpte2094_app5_alloc(size_t* size);
+
+/**
+ * Allocate a complete AVDynamicHDRSmpte2094App5 and add it to the frame.
+ *
+ * @param frame The frame which side data is added to.
+ *
+ * @return The AVDynamicHDRSmpte2094App5 structure to be filled by caller or
+ *         NULL on failure.
+ */
+AVDynamicHDRSmpte2094App5* av_dynamic_hdr_smpte2094_app5_create_side_data(AVFrame* frame);
+
+/**
+ * Parse the user data formatted as ITU-T T.35 message to AVDynamicHDRSmpte2094App5.
+ *
+ * @param s A pointer containing the decoded AVDynamicHDRSmpte2094App5 structure.
+ * @param data The byte array containing the raw ITU-T T.35 data.
+ * @param size Size of the data array in bytes.
+ *
+ * @return >= 0 on success. Otherwise, returns the appropriate AVERROR.
+ */
+int av_dynamic_hdr_smpte2094_app5_from_t35(AVDynamicHDRSmpte2094App5* s, const uint8_t* data,
+                                           size_t size);
+
+/**
+ * Serialize dynamic SMPTE-2094-50 metadata to a ITU-T T.35 message. Excluding
+ * the country_code, provider_code and provider_oriented_code.
+ *
+ * @param s A pointer containing the AVDynamicHDRSmpte2094App5 data.
+ * @param[in,out] data A pointer to pointer to a byte buffer to be filled with
+ * the serialized metadata. If *data is NULL, a buffer be will be allocated and
+ * a pointer to it stored in its place. The caller assumes ownership of the
+ * buffer. May be NULL, in which case the function will only store the required
+ * buffer size in *size.
+ * @param[in,out] size A pointer to a size to be set to the returned buffer's
+ * size. If *data is not NULL, *size must contain the size of the input buffer.
+ * May be NULL only if *data is NULL.
+ *
+ * @return >= 0 on success. Otherwise, returns the appropriate AVERROR.
+ */
+int av_dynamic_hdr_smpte2094_app5_to_t35(const AVDynamicHDRSmpte2094App5* s, uint8_t** data,
+                                         size_t* size);
+
 #endif /* AVUTIL_HDR_DYNAMIC_METADATA_H */

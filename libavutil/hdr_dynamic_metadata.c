@@ -395,3 +395,313 @@ int av_dynamic_hdr_plus_to_t35(const AVDynamicHDRPlus *s, uint8_t **data, size_t
         *size = size_bytes;
     return 0;
 }
+
+AVDynamicHDRSmpte2094App5 *av_dynamic_hdr_smpte2094_app5_alloc(size_t *size)
+{
+    AVDynamicHDRSmpte2094App5 *smpte2094_app5 = av_mallocz(sizeof(AVDynamicHDRSmpte2094App5));
+    if (!smpte2094_app5)
+        return NULL;
+
+    if (size)
+        *size = sizeof(*smpte2094_app5);
+
+    return smpte2094_app5;
+}
+
+AVDynamicHDRSmpte2094App5 *av_dynamic_hdr_smpte2094_app5_create_side_data(AVFrame *frame)
+{
+    AVFrameSideData *side_data = av_frame_new_side_data(frame,
+                                                        AV_FRAME_DATA_DYNAMIC_HDR_SMPTE_2094_APP5,
+                                                        sizeof(AVDynamicHDRSmpte2094App5));
+    if (!side_data)
+        return NULL;
+
+    memset(side_data->data, 0, sizeof(AVDynamicHDRSmpte2094App5));
+
+    return (AVDynamicHDRSmpte2094App5 *)side_data->data;
+}
+
+#define GET_BITS_OR_FAIL(var, n)        \
+    do {                                \
+        if (get_bits_left(gb) < n) {    \
+            ret = AVERROR_INVALIDDATA;  \
+            goto end;                   \
+        }                               \
+        var = get_bits(gb, n);          \
+    } while (0)
+
+int av_dynamic_hdr_smpte2094_app5_from_t35(AVDynamicHDRSmpte2094App5 *s, const uint8_t *data,
+                                           size_t size)
+{
+    GetBitContext gbc, *gb = &gbc;
+    int ret, reserved_zero;
+    size_t padded_size = size + AV_INPUT_BUFFER_PADDING_SIZE;
+
+    if (!s)
+        return AVERROR(ENOMEM);
+
+    uint8_t *padded_data = av_mallocz(padded_size);
+    memcpy(padded_data, data, size);
+    ret = init_get_bits8(gb, padded_data, size);
+    if (ret < 0)
+        goto end;
+
+    // Table C.1
+    GET_BITS_OR_FAIL(s->application_version, 3);
+    GET_BITS_OR_FAIL(s->minimum_application_version, 3);
+    GET_BITS_OR_FAIL(reserved_zero, 2);
+    if (reserved_zero) {
+        ret = AVERROR_INVALIDDATA;
+        goto end;
+    }
+
+    // Table C.2
+    GET_BITS_OR_FAIL(s->has_custom_hdr_reference_white_flag, 1);
+    GET_BITS_OR_FAIL(s->has_adaptive_tone_map_flag, 1);
+    GET_BITS_OR_FAIL(reserved_zero, 6);
+    if (reserved_zero) {
+        ret = AVERROR_INVALIDDATA;
+        goto end;
+    }
+    if (s->has_custom_hdr_reference_white_flag)
+        GET_BITS_OR_FAIL(s->hdr_reference_white, 16);
+    if (!s->has_adaptive_tone_map_flag) {
+        ret = 0;
+        goto end;
+    }
+
+    // Table C.3
+    GET_BITS_OR_FAIL(s->baseline_hdr_headroom, 16);
+    GET_BITS_OR_FAIL(s->use_reference_white_tone_mapping_flag, 1);
+    if (s->use_reference_white_tone_mapping_flag) {
+        GET_BITS_OR_FAIL(reserved_zero, 7);
+        ret = reserved_zero ? AVERROR_INVALIDDATA : 0;
+        goto end;
+    }
+    GET_BITS_OR_FAIL(s->num_alternate_images, 3);
+    if (s->num_alternate_images > 4) {
+        ret = AVERROR_INVALIDDATA;
+        goto end;
+    }
+    GET_BITS_OR_FAIL(s->gain_application_space_chromaticities_flag, 2);
+    GET_BITS_OR_FAIL(s->has_common_component_mix_params_flag, 1);
+    GET_BITS_OR_FAIL(s->has_common_curve_params_flag, 1);
+    if (s->gain_application_space_chromaticities_flag == 3)
+        for (int r = 0; r < 8; r++)
+            GET_BITS_OR_FAIL(s->gain_application_space_chromaticities[r], 16);
+
+    for (int a = 0; a < s->num_alternate_images; a++) {
+        GET_BITS_OR_FAIL(s->alternate_hdr_headrooms[a], 16);
+
+        // Table C.4
+        if (!a || !s->has_common_component_mix_params_flag) {
+            GET_BITS_OR_FAIL(s->component_mixing_type[a], 2);
+            if (s->component_mixing_type[a] != 3) {
+                GET_BITS_OR_FAIL(reserved_zero, 6);
+                if (reserved_zero) {
+                    ret = AVERROR_INVALIDDATA;
+                    goto end;
+                }
+            } else {
+                for (int k = 0; k < 6; k++)
+                    GET_BITS_OR_FAIL(s->has_component_mixing_coefficient_flag[a][k], 1);
+                for (int k = 0; k < 6; k++) {
+                    if (s->has_component_mixing_coefficient_flag[a][k]) {
+                        GET_BITS_OR_FAIL(s->component_mixing_coefficient[a][k], 16);
+                    } else {
+                        s->component_mixing_coefficient[a][k] = 0;
+                    }
+                }
+            }
+        } else {
+            s->component_mixing_type[a] = s->component_mixing_type[0];
+            if (s->component_mixing_type[a] == 3) {
+                for (int k = 0; k < 6; k++) {
+                    s->has_component_mixing_coefficient_flag[a][k] =
+                            s->has_component_mixing_coefficient_flag[0][k];
+                    s->component_mixing_coefficient[a][k] = s->component_mixing_coefficient[0][k];
+                }
+            }
+        }
+
+        // Table C.5
+        if (!a || !s->has_common_curve_params_flag) {
+            GET_BITS_OR_FAIL(s->gain_curve_num_control_points_minus_1[a], 5);
+            if (s->gain_curve_num_control_points_minus_1[a] > 31) {
+                ret = AVERROR_INVALIDDATA;
+                goto end;
+            }
+            GET_BITS_OR_FAIL(s->gain_curve_use_pchip_slope_flag[a], 1);
+            GET_BITS_OR_FAIL(reserved_zero, 2);
+            if (reserved_zero) {
+                ret = AVERROR_INVALIDDATA;
+                goto end;
+            }
+            for (int c = 0; c <= s->gain_curve_num_control_points_minus_1[a]; c++) {
+                GET_BITS_OR_FAIL(s->gain_curve_control_points_x[a][c], 16);
+            }
+        } else {
+            s->gain_curve_num_control_points_minus_1[a] =
+                    s->gain_curve_num_control_points_minus_1[0];
+            s->gain_curve_use_pchip_slope_flag[a] = s->gain_curve_use_pchip_slope_flag[0];
+            for (int c = 0; c <= s->gain_curve_num_control_points_minus_1[a]; c++) {
+                s->gain_curve_control_points_x[a][c] = s->gain_curve_control_points_x[0][c];
+            }
+        }
+        for (int c = 0; c <= s->gain_curve_num_control_points_minus_1[a]; c++)
+            GET_BITS_OR_FAIL(s->gain_curve_control_points_y[a][c], 16);
+        if (!s->gain_curve_use_pchip_slope_flag[a]) {
+            for (int c = 0; c <= s->gain_curve_num_control_points_minus_1[a]; c++)
+                GET_BITS_OR_FAIL(s->gain_curve_control_points_theta[a][c], 16);
+        }
+    }
+    ret = 0;
+end:
+    av_free(padded_data);
+    return ret;
+}
+
+int av_dynamic_hdr_smpte2094_app5_to_t35(const AVDynamicHDRSmpte2094App5 *s, uint8_t **data,
+                                         size_t *size)
+{
+    uint8_t *buf;
+    size_t size_bytes, size_bits;
+    PutBitContext pbc, *pb = &pbc;
+
+    if (!s)
+        return AVERROR(EINVAL);
+    if ((!data || *data) && !size)
+       return AVERROR(EINVAL);
+
+    if (s->application_version >= 8 || s->minimum_application_version >= 3)
+        return AVERROR_INVALIDDATA;
+    size_bits = 0;
+    size_bits += 3 + 3 + 2;
+    size_bits += 1 + 1 + 6;
+    if (s->has_custom_hdr_reference_white_flag)
+        size_bits += 16;
+    if (s->has_adaptive_tone_map_flag) {
+        size_bits += 16 + 1;
+        if (s->use_reference_white_tone_mapping_flag) {
+            size_bits += 7;
+        } else {
+            size_bits += 3 + 2 + 1 + 1;
+            if (s->gain_application_space_chromaticities_flag == 3)
+                size_bits += 16 * 8;
+            if (s->num_alternate_images > 4)
+                return AVERROR_INVALIDDATA;
+            for (int a = 0; a < s->num_alternate_images; a++) {
+                size_bits += 16;
+                if (!a || !s->has_common_component_mix_params_flag) {
+                    size_bits += 2;
+                    if (s->component_mixing_type[a] != 3) {
+                        size_bits += 6;
+                    } else {
+                        size_bits += 6;
+                        for (int k = 0; k < 6; k++)
+                          if (s->has_component_mixing_coefficient_flag[a][k])
+                            size_bits += 16;
+                    }
+                }
+                if (!a || !s->has_common_curve_params_flag) {
+                    size_bits += 5 + 1 + 2;
+                    if (s->gain_curve_num_control_points_minus_1[a] > 31)
+                        return AVERROR_INVALIDDATA;
+                    size_bits += 16 * (s->gain_curve_num_control_points_minus_1[a] + 1);
+                }
+                size_bits += 16 * (s->gain_curve_num_control_points_minus_1[a] + 1);
+                if (!s->gain_curve_use_pchip_slope_flag[a])
+                    size_bits += 16 * (s->gain_curve_num_control_points_minus_1[a] + 1);
+            }
+        }
+    }
+    if (size_bits % 8)
+      return AVERROR_INVALIDDATA;
+    size_bytes = size_bits >> 3;
+
+    if (!data) {
+        *size = size_bytes;
+        return 0;
+    } else if (*data) {
+        if (*size < size_bytes)
+            return AVERROR_BUFFER_TOO_SMALL;
+        buf = *data;
+    } else {
+        buf = av_malloc(size_bytes);
+        if (!buf)
+            return AVERROR(ENOMEM);
+    }
+
+    init_put_bits(pb, buf, size_bytes);
+
+    // Table C.1
+    put_bits(pb, 3, s->application_version);
+    put_bits(pb, 3, s->minimum_application_version);
+    put_bits(pb, 2, 0); // reserved_zero
+
+    // Table C.2
+    put_bits(pb, 1, s->has_custom_hdr_reference_white_flag);
+    put_bits(pb, 1, s->has_adaptive_tone_map_flag);
+    put_bits(pb, 6, 0); // reserved_zero
+
+    if (s->has_custom_hdr_reference_white_flag)
+        put_bits(pb, 16, s->hdr_reference_white);
+
+    if (s->has_adaptive_tone_map_flag) {
+        // Table C.3
+        put_bits(pb, 16, s->baseline_hdr_headroom);
+        put_bits(pb, 1, s->use_reference_white_tone_mapping_flag);
+        if (s->use_reference_white_tone_mapping_flag) {
+            put_bits(pb, 7, 0); // reserved_zero
+        } else {
+            put_bits(pb, 3, s->num_alternate_images);
+            put_bits(pb, 2, s->gain_application_space_chromaticities_flag);
+            put_bits(pb, 1, s->has_common_component_mix_params_flag);
+            put_bits(pb, 1, s->has_common_curve_params_flag);
+
+            if (s->gain_application_space_chromaticities_flag == 3)
+                for (int r = 0; r < 8; r++)
+                    put_bits(pb, 16, s->gain_application_space_chromaticities[r]);
+
+            for (int a = 0; a < s->num_alternate_images; a++) {
+                put_bits(pb, 16, s->alternate_hdr_headrooms[a]);
+
+                // Table C.4
+                if (!a || !s->has_common_component_mix_params_flag) {
+                    put_bits(pb, 2, s->component_mixing_type[a]);
+                    if (s->component_mixing_type[a] != 3) {
+                        put_bits(pb, 6, 0); // reserved_zero
+                    } else {
+                        for (int k = 0; k < 6; k++)
+                            put_bits(pb, 1, s->has_component_mixing_coefficient_flag[a][k]);
+                        for (int k = 0; k < 6; k++)
+                            if (s->has_component_mixing_coefficient_flag[a][k])
+                                put_bits(pb, 16, s->component_mixing_coefficient[a][k]);
+                    }
+                }
+
+                // Table C.5
+                if (!a || !s->has_common_curve_params_flag) {
+                    put_bits(pb, 5, s->gain_curve_num_control_points_minus_1[a]);
+                    put_bits(pb, 1, s->gain_curve_use_pchip_slope_flag[a]);
+                    put_bits(pb, 2, 0); // reserved_zero
+                    for (int c = 0; c <= s->gain_curve_num_control_points_minus_1[a]; c++)
+                        put_bits(pb, 16, s->gain_curve_control_points_x[a][c]);
+                }
+                for (int c = 0; c <= s->gain_curve_num_control_points_minus_1[a]; c++)
+                    put_bits(pb, 16, s->gain_curve_control_points_y[a][c]);
+                if (!s->gain_curve_use_pchip_slope_flag[a]) {
+                    for (int c = 0; c <= s->gain_curve_num_control_points_minus_1[a]; c++)
+                        put_bits(pb, 16, s->gain_curve_control_points_theta[a][c]);
+                }
+            }
+        }
+    }
+
+    flush_put_bits(pb);
+
+    *data = buf;
+    if (size)
+        *size = size_bytes;
+    return 0;
+}

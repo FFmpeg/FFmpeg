@@ -36,6 +36,7 @@ static const AVSideDataDescriptor sd_props[] = {
     [AV_FRAME_DATA_S12M_TIMECODE]               = { "SMPTE 12-1 timecode" },
     [AV_FRAME_DATA_DYNAMIC_HDR_PLUS]            = { "HDR Dynamic Metadata SMPTE2094-40 (HDR10+)",   AV_SIDE_DATA_PROP_COLOR_DEPENDENT },
     [AV_FRAME_DATA_DYNAMIC_HDR_VIVID]           = { "HDR Dynamic Metadata CUVA 005.1 2021 (Vivid)", AV_SIDE_DATA_PROP_COLOR_DEPENDENT },
+    [AV_FRAME_DATA_DYNAMIC_HDR_SMPTE_2094_APP5] = { "HDR Dynamic Metadata SMPTE2094-50",            AV_SIDE_DATA_PROP_COLOR_DEPENDENT },
     [AV_FRAME_DATA_REGIONS_OF_INTEREST]         = { "Regions Of Interest",                          AV_SIDE_DATA_PROP_SIZE_DEPENDENT },
     [AV_FRAME_DATA_VIDEO_ENC_PARAMS]            = { "Video encoding parameters" },
     [AV_FRAME_DATA_FILM_GRAIN_PARAMS]           = { "Film grain parameters" },
