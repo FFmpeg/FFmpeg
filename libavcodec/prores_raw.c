@@ -461,6 +461,9 @@ static int decode_frame(AVCodecContext *avctx,
         tile->y = (n / s->nb_tw) * s->th;
         tile->x = (n % s->nb_tw) * s->tw;
 
+        if (avctx->width - tile->x < 16)
+            return AVERROR_PATCHWELCOME;
+
         offset += size;
     }
 
