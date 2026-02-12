@@ -316,7 +316,7 @@ static int gblur_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
 
     RET(ff_vk_filter_process_2pass(&s->vkctx, &s->e,
                                    (FFVulkanShader *[2]){ &s->shd_hor, &s->shd_ver },
-                                   out, tmp, in, VK_NULL_HANDLE, NULL, 0));
+                                   out, tmp, in, VK_NULL_HANDLE, 1, NULL, 0));
 
     err = av_frame_copy_props(out, in);
     if (err < 0)

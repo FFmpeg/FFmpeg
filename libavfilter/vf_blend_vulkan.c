@@ -265,7 +265,7 @@ static int blend_frame(FFFrameSync *fs)
 
     RET(ff_vk_filter_process_Nin(&s->vkctx, &s->e, &s->shd,
                                  out, (AVFrame *[]){ top, bottom }, 2,
-                                 VK_NULL_HANDLE, NULL, 0));
+                                 VK_NULL_HANDLE, 1, NULL, 0));
 
     return ff_filter_frame(outlink, out);
 

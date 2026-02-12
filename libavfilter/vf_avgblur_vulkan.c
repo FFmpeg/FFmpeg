@@ -122,7 +122,7 @@ static int avgblur_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
 
     RET(ff_vk_filter_process_simple(&s->vkctx, &s->e, &s->shd,
                                     out, in, VK_NULL_HANDLE,
-                                    &s->opts, sizeof(s->opts)));
+                                    1, &s->opts, sizeof(s->opts)));
 
     err = av_frame_copy_props(out, in);
     if (err < 0)

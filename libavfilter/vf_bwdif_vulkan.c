@@ -115,7 +115,7 @@ static void bwdif_vulkan_filter_frame(AVFilterContext *ctx, AVFrame *dst,
 
     ff_vk_filter_process_Nin(&s->vkctx, &s->e, &s->shd, dst,
                              (AVFrame *[]){ y->prev, y->cur, y->next }, 3,
-                             VK_NULL_HANDLE, &params, sizeof(params));
+                             VK_NULL_HANDLE, 1, &params, sizeof(params));
 
     if (y->current_field == YADIF_FIELD_END)
         y->current_field = YADIF_FIELD_NORMAL;

@@ -283,7 +283,7 @@ static int v360_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
                               pd.rot_mat, s->rotation_order);
 
     RET(ff_vk_filter_process_simple(&s->vkctx, &s->e, &s->shd,
-                                    out, in, s->sampler,
+                                    out, in, s->sampler, 1,
                                     &pd, sizeof(pd)));
 
     err = av_frame_copy_props(out, in);

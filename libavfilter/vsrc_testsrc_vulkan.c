@@ -236,7 +236,7 @@ static int testsrc_vulkan_activate(AVFilterContext *ctx)
                 return AVERROR(ENOMEM);
 
             err = ff_vk_filter_process_simple(&s->vkctx, &s->e, &s->shd, s->picref, NULL,
-                                              VK_NULL_HANDLE, &s->opts, sizeof(s->opts));
+                                              VK_NULL_HANDLE, 1, &s->opts, sizeof(s->opts));
             if (err < 0)
                 return err;
         }
@@ -255,7 +255,7 @@ static int testsrc_vulkan_activate(AVFilterContext *ctx)
     frame->sample_aspect_ratio = s->sar;
     if (!s->draw_once) {
         err = ff_vk_filter_process_simple(&s->vkctx, &s->e, &s->shd, frame, NULL,
-                                          VK_NULL_HANDLE, &s->opts, sizeof(s->opts));
+                                          VK_NULL_HANDLE, 1, &s->opts, sizeof(s->opts));
         if (err < 0) {
             av_frame_free(&frame);
             return err;

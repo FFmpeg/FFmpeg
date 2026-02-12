@@ -218,7 +218,7 @@ static int interlace_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
 
     RET(ff_vk_filter_process_Nin(&s->vkctx, &s->e, &s->shd,
                                  out, (AVFrame *[]){ input_top, input_bot }, 2,
-                                 s->sampler, NULL, 0));
+                                 s->sampler, 1, NULL, 0));
 
     err = av_frame_copy_props(out, s->cur);
     if (err < 0)

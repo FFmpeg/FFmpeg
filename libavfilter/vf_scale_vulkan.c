@@ -389,7 +389,7 @@ static int scale_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
         }
 
         RET(ff_vk_filter_process_simple(&s->vkctx, &s->e, &s->shd, out, in,
-                                        s->sampler, &s->opts, sizeof(s->opts)));
+                                        s->sampler, 1, &s->opts, sizeof(s->opts)));
     } else {
         err = sws_scale_frame(s->sws, out, in);
         if (err < 0)

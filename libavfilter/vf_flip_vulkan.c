@@ -174,7 +174,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in, enum FlipType type)
         RET(init_filter(ctx, in, type));
 
     RET(ff_vk_filter_process_simple(&s->vkctx, &s->e, &s->shd, out, in,
-                                    VK_NULL_HANDLE, NULL, 0));
+                                    VK_NULL_HANDLE, 1, NULL, 0));
 
     RET(av_frame_copy_props(out, in));
 

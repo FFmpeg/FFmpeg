@@ -447,7 +447,7 @@ static int xfade_frame(AVFilterContext *avctx, AVFrame *frame_a, AVFrame *frame_
                         0.f, 1.f);
 
     RET(ff_vk_filter_process_Nin(&s->vkctx, &s->e, &s->shd, output,
-                                 (AVFrame *[]){ frame_a, frame_b }, 2, s->sampler,
+                                 (AVFrame *[]){ frame_a, frame_b }, 2, s->sampler, 1,
                                  &(XFadeParameters){ progress }, sizeof(XFadeParameters)));
 
     return ff_filter_frame(outlink, output);

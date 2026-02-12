@@ -188,7 +188,7 @@ static int chromaber_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
         RET(init_filter(ctx, in));
 
     RET(ff_vk_filter_process_simple(&s->vkctx, &s->e, &s->shd, out, in,
-                                    s->sampler, &s->opts, sizeof(s->opts)));
+                                    s->sampler, 1, &s->opts, sizeof(s->opts)));
 
     err = av_frame_copy_props(out, in);
     if (err < 0)

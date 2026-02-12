@@ -241,7 +241,8 @@ int ff_vk_filter_init(AVFilterContext *avctx)
 
 int ff_vk_filter_process_simple(FFVulkanContext *vkctx, FFVkExecPool *e,
                                 FFVulkanShader *shd, AVFrame *out_f, AVFrame *in_f,
-                                VkSampler sampler, void *push_src, size_t push_size)
+                                VkSampler sampler, uint32_t wgc_z,
+                                void *push_src, size_t push_size)
 {
     int err = 0;
     FFVulkanFunctions *vk = &vkctx->vkfn;
@@ -304,7 +305,7 @@ int ff_vk_filter_process_simple(FFVulkanContext *vkctx, FFVkExecPool *e,
     vk->CmdDispatch(exec->buf,
                     FFALIGN(vkctx->output_width,  shd->lg_size[0])/shd->lg_size[0],
                     FFALIGN(vkctx->output_height, shd->lg_size[1])/shd->lg_size[1],
-                    1);
+                    wgc_z);
 
     return ff_vk_exec_submit(vkctx, exec);
 fail:
@@ -315,7 +316,8 @@ fail:
 int ff_vk_filter_process_2pass(FFVulkanContext *vkctx, FFVkExecPool *e,
                                FFVulkanShader *shd_list[2],
                                AVFrame *out, AVFrame *tmp, AVFrame *in,
-                               VkSampler sampler, void *push_src, size_t push_size)
+                               VkSampler sampler, uint32_t wgc_z,
+                               void *push_src, size_t push_size)
 {
     int err = 0;
     FFVulkanFunctions *vk = &vkctx->vkfn;
@@ -395,7 +397,7 @@ int ff_vk_filter_process_2pass(FFVulkanContext *vkctx, FFVkExecPool *e,
         vk->CmdDispatch(exec->buf,
                         FFALIGN(vkctx->output_width,  shd->lg_size[0])/shd->lg_size[0],
                         FFALIGN(vkctx->output_height, shd->lg_size[1])/shd->lg_size[1],
-                        1);
+                        wgc_z);
     }
 
     return ff_vk_exec_submit(vkctx, exec);
@@ -407,7 +409,8 @@ fail:
 int ff_vk_filter_process_Nin(FFVulkanContext *vkctx, FFVkExecPool *e,
                              FFVulkanShader *shd,
                              AVFrame *out, AVFrame *in[], int nb_in,
-                             VkSampler sampler, void *push_src, size_t push_size)
+                             VkSampler sampler, uint32_t wgc_z,
+                             void *push_src, size_t push_size)
 {
     int err = 0;
     FFVulkanFunctions *vk = &vkctx->vkfn;
@@ -474,7 +477,7 @@ int ff_vk_filter_process_Nin(FFVulkanContext *vkctx, FFVkExecPool *e,
     vk->CmdDispatch(exec->buf,
                     FFALIGN(vkctx->output_width,  shd->lg_size[0])/shd->lg_size[0],
                     FFALIGN(vkctx->output_height, shd->lg_size[1])/shd->lg_size[1],
-                    1);
+                    wgc_z);
 
     return ff_vk_exec_submit(vkctx, exec);
 fail:

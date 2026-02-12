@@ -240,7 +240,7 @@ static int overlay_vulkan_blend(FFFrameSync *fs)
 
     RET(ff_vk_filter_process_Nin(&s->vkctx, &s->e, &s->shd,
                                  out, (AVFrame *[]){ input_main, input_overlay }, 2,
-                                 VK_NULL_HANDLE, &s->opts, sizeof(s->opts)));
+                                 VK_NULL_HANDLE, 1, &s->opts, sizeof(s->opts)));
 
     err = av_frame_copy_props(out, input_main);
     if (err < 0)
