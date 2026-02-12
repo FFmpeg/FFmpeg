@@ -84,7 +84,8 @@ AVFrame *ff_default_get_video_buffer2(AVFilterLink *link, int w, int h, int alig
             return NULL;
         }
 
-        if (pool_width != w || pool_height != h ||
+        if (FFALIGN(pool_width,  pool_align) != FFALIGN(w, align) ||
+            FFALIGN(pool_height, pool_align) != FFALIGN(h, align) ||
             pool_format != link->format || pool_align != align) {
 
             ff_frame_pool_uninit(&li->frame_pool);
