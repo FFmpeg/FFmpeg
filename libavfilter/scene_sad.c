@@ -62,6 +62,9 @@ ff_scene_sad_fn ff_scene_sad_get_fn(int depth)
 #if ARCH_X86 && HAVE_X86ASM
     sad = ff_scene_sad_get_fn_x86(depth);
 #endif
+#if ARCH_RISCV
+    sad = ff_scene_sad_get_fn_riscv(depth);
+#endif
     if (!sad) {
         if (depth <= 8)
             sad = ff_scene_sad_c;
