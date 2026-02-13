@@ -89,7 +89,7 @@ static int64_t read_ts(const char *p, int64_t *start)
         return 0;
     }
     int ret = av_sscanf(p, "%2[[-]%"SCNu32":%lf]", prefix, &mm, &ss);
-    if (ret != 3 || prefix[0] != '[' || ss < 0 || ss > 60) {
+    if (ret != 3 || prefix[0] != '[' || ss < 0 || ss > 60 || !isfinite(ss)) {
         return 0;
     }
     *start = llrint((mm * 60 + ss) * AV_TIME_BASE);
