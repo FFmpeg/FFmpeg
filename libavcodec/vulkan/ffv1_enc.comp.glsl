@@ -246,6 +246,9 @@ void preload_rgb(in SliceContext sc, ivec2 sp, int w, int y, bool apply_rct)
 
         imageStore(tmp, lpos, pix);
     }
+
+    memoryBarrierImage();
+    barrier();
 }
 #endif
 

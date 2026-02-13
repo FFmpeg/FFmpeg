@@ -246,6 +246,9 @@ ivec4 transform_sample(ivec4 pix, ivec2 rct_coef)
 
 void writeout_rgb(in SliceContext sc, ivec2 sp, int w, int y, bool apply_rct)
 {
+    memoryBarrierImage();
+    barrier();
+
     for (uint x = gl_LocalInvocationID.x; x < w; x += gl_WorkGroupSize.x) {
         ivec2 lpos = sp + LADDR(ivec2(x, y));
         ivec2 pos = sc.slice_pos + ivec2(x, y);
