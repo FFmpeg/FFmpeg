@@ -127,23 +127,22 @@ void decode_line(ivec2 sp, int w,
         rc_dec[gl_LocalInvocationID.x] = false;
         barrier();
 
-        int diff;
-        if (gl_LocalInvocationID.x == 0)
-            diff = get_isymbol();
-
-        barrier();
-        uint i = gl_LocalInvocationID.x;
-        if (rc_dec[i])
-            slice_rc_state[rc_off] = zero_one_state[rc_state[i] +
-                                                    (rc_data[i] ? 256 : 0)];
-
         if (gl_LocalInvocationID.x == 0) {
+            int diff = get_isymbol();
             if (pr[0] < 0)
                 diff = -diff;
 
             uint v = zero_extend(pr[1] + diff, bits);
             imageStore(dec[p], sp + LADDR(ivec2(x, y)), uvec4(v));
         }
+
+        /* Image write now visible to other invocs */
+        memoryBarrierImage();
+        barrier();
+        if (rc_dec[gl_LocalInvocationID.x])
+            slice_rc_state[rc_off] =
+                zero_one_state[rc_state[gl_LocalInvocationID.x] +
+                               (rc_data[gl_LocalInvocationID.x] ? 256 : 0)];
     }
 }
 
