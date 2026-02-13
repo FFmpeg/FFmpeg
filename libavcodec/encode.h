@@ -100,6 +100,18 @@ static av_always_inline int64_t ff_samples_to_time_base(const AVCodecContext *av
 }
 
 /**
+ * Rescale from time base to AVCodecContext.sample_rate.
+ */
+static av_always_inline int64_t ff_samples_from_time_base(const AVCodecContext *avctx,
+                                                          int64_t duration)
+{
+    if (!duration)
+        return duration;
+    return av_rescale_q(duration, avctx->time_base,
+                        (AVRational){ 1, avctx->sample_rate });
+}
+
+/**
  * Check if the elements of codec context matrices (intra_matrix, inter_matrix or
  * chroma_intra_matrix) are within the specified range.
  */
