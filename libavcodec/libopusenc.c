@@ -511,7 +511,7 @@ static int libopus_encode(AVCodecContext *avctx, AVPacket *avpkt,
     ff_af_queue_remove(&opus->afq, opus->opts.packet_size,
                        &avpkt->pts, &avpkt->duration);
 
-    discard_padding = opus->opts.packet_size - avpkt->duration;
+    discard_padding = opus->opts.packet_size - ff_samples_from_time_base(avctx, avpkt->duration);
     // Check if subtraction resulted in an overflow
     if ((discard_padding < opus->opts.packet_size) != (avpkt->duration > 0))
         return AVERROR(EINVAL);
