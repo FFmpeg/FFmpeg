@@ -151,7 +151,7 @@ const uint32_t log2_run[41] = {
 ivec2 get_pred(readonly uimage2D pred, ivec2 sp, ivec2 off,
                uint comp, int sw, uint8_t quant_table_idx, bool extend_lookup)
 {
-    const ivec2 yoff_border1 = expectEXT(off.x == 0, false) ? off + ivec2(1, -1) : off;
+    ivec2 yoff_border1 = expectEXT(off.x == 0, false) ? off + ivec2(1, -1) : off;
 
     /* Thanks to the same coincidence as below, we can skip checking if off == 0, 1 */
     VTYPE3 top  = VTYPE3(TYPE(imageLoad(pred, sp + LADDR(yoff_border1 + ivec2(-1, -1)))[comp]),
@@ -170,7 +170,7 @@ ivec2 get_pred(readonly uimage2D pred, ivec2 sp, ivec2 off,
     if (has_extend_lookup && extend_lookup) {
         TYPE cur2 = TYPE(0);
         if (expectEXT(off.x > 0, true)) {
-            const ivec2 yoff_border2 = expectEXT(off.x == 1, false) ? ivec2(-1, -1) : ivec2(-2, 0);
+            ivec2 yoff_border2 = expectEXT(off.x == 1, false) ? ivec2(-1, -1) : ivec2(-2, 0);
             cur2 = TYPE(imageLoad(pred, sp + LADDR(off + yoff_border2))[comp]);
         }
         base += quant_table[quant_table_idx][3][(cur2 - cur) & MAX_QUANT_TABLE_MASK];
@@ -195,7 +195,7 @@ ivec2 get_pred(readonly uimage2D pred, ivec2 sp, ivec2 off,
 ivec2 get_pred(readonly uimage2D pred, ivec2 sp, ivec2 off,
                uint comp, int sw, uint8_t quant_table_idx, bool extend_lookup)
 {
-    const ivec2 yoff_border1 = off.x == 0 ? ivec2(1, -1) : ivec2(0, 0);
+    ivec2 yoff_border1 = off.x == 0 ? ivec2(1, -1) : ivec2(0, 0);
     sp += off;
 
     VTYPE3 top  = VTYPE3(TYPE(0),
@@ -219,7 +219,7 @@ ivec2 get_pred(readonly uimage2D pred, ivec2 sp, ivec2 off,
     if (has_extend_lookup && extend_lookup) {
         TYPE cur2 = TYPE(0);
         if (off.x > 0 && off != ivec2(1, 0)) {
-            const ivec2 yoff_border2 = off.x == 1 ? ivec2(1, -1) : ivec2(0, 0);
+            ivec2 yoff_border2 = off.x == 1 ? ivec2(1, -1) : ivec2(0, 0);
             cur2 = TYPE(imageLoad(pred, sp + ivec2(-2,  0) + yoff_border2)[comp]);
         }
         base += quant_table[quant_table_idx][3][(cur2 - cur) & MAX_QUANT_TABLE_MASK];

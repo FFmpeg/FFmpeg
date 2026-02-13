@@ -120,7 +120,7 @@ void renorm_encoder(void)
 }
 #endif
 
-void put_rac_internal(const uint range1, bool bit)
+void put_rac_internal(in uint range1, bool bit)
 {
 #ifdef DEBUG
     if (range1 >= rc.range)
@@ -208,7 +208,7 @@ void refill(void)
     rc.bs_off++;
 }
 
-bool get_rac_internal(const uint range1)
+bool get_rac_internal(in uint range1)
 {
     uint ranged = rc.range - range1;
     bool bit = rc.low >= ranged;

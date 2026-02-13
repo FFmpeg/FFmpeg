@@ -81,7 +81,6 @@ void encode_line_pcm(in SliceContext sc, readonly uimage2D img,
     for (int x = 0; x < w; x++) {
         uint v = imageLoad(img, sp + LADDR(ivec2(x, y)))[comp];
 
-        [[unroll]]
         for (uint i = (rct_offset >> 1); i > 0; i >>= 1)
             put_rac_equi(bool(v & i));
     }
@@ -89,7 +88,7 @@ void encode_line_pcm(in SliceContext sc, readonly uimage2D img,
 
 void encode_line(in SliceContext sc, readonly uimage2D img, uint state_off,
                  ivec2 sp, int y, uint p, uint comp,
-                 uint8_t quant_table_idx, const int run_index)
+                 uint8_t quant_table_idx, in int run_index)
 {
     int w = sc.slice_dim.x;
 
@@ -241,7 +240,7 @@ void preload_rgb(in SliceContext sc, ivec2 sp, int w, int y, bool apply_rct)
 
         ivec4 pix = load_components(pos);
 
-        if (expectEXT(apply_rct, true))
+        if (apply_rct)
             transform_sample(pix, sc.slice_rct_coef);
 
         imageStore(tmp, lpos, pix);
@@ -325,7 +324,7 @@ void encode_slice(in SliceContext sc, uint slice_idx)
 #endif
 }
 
-void finalize_slice(const uint slice_idx)
+void finalize_slice(in uint slice_idx)
 {
 #ifdef GOLOMB
     uint32_t enc_len = hdr_len + flush_put_bits(pb);
@@ -367,7 +366,7 @@ void finalize_slice(const uint slice_idx)
 
 void main(void)
 {
-    const uint slice_idx = gl_WorkGroupID.y*gl_NumWorkGroups.x + gl_WorkGroupID.x;
+    uint slice_idx = gl_WorkGroupID.y*gl_NumWorkGroups.x + gl_WorkGroupID.x;
 
     if (gl_LocalInvocationID.x == 0)
         rc = slice_ctx[slice_idx].c;

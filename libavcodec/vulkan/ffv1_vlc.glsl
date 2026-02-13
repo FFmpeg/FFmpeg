@@ -30,7 +30,7 @@ struct VlcState {
     uint8_t  count;
 };
 
-void update_vlc_state(inout VlcState state, const int v)
+void update_vlc_state(inout VlcState state, in int v)
 {
     int drift = state.drift;
     int count = state.count;

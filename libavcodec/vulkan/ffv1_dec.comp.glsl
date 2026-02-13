@@ -98,7 +98,6 @@ void decode_line_pcm(ivec2 sp, int w, int y, int p)
     for (int x = 0; x < w; x++) {
         uint v = 0;
 
-        [[unroll]]
         for (uint i = (rct_offset >> 1); i > 0; i >>= 1)
             v |= get_rac_equi() ? i : 0;
 
@@ -259,7 +258,7 @@ void writeout_rgb(in SliceContext sc, ivec2 sp, int w, int y, bool apply_rct)
         if (transparency)
             pix.a = int(imageLoad(dec[3], lpos)[0]);
 
-        if (expectEXT(apply_rct, true))
+        if (apply_rct)
             pix = transform_sample(pix, sc.slice_rct_coef);
         else
             pix = ivec4(pix[fmt_lut[0]], pix[fmt_lut[1]],
