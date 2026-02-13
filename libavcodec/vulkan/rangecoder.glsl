@@ -49,7 +49,6 @@ struct RangeCoder {
 shared RangeCoder rc;
 shared uint8_t rc_state[CONTEXT_SIZE];
 shared bool rc_data[CONTEXT_SIZE];
-shared bool rc_dec[CONTEXT_SIZE];
 
 void rac_init(uint bs_start, uint bs_len)
 {
@@ -230,7 +229,6 @@ bool get_rac(inout uint8_t state)
 
 bool get_rac_state(uint idx)
 {
-    rc_dec[idx] = true;
     return (rc_data[idx] = get_rac_internal(rc.range * rc_state[idx] >> 8));
 }
 

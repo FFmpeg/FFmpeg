@@ -42,45 +42,51 @@ layout (set = 1, binding = 3, scalar) buffer slice_state_buf {
 };
 
 #define READ(idx) get_rac_state(idx)
+shared int sym_e;
+shared bool rc_dec[CONTEXT_SIZE];
 int get_isymbol(void)
 {
+    sym_e = 0;
+    rc_dec[0] = true;
     if (READ(0))
         return 0;
 
     int e = 1;
     for (; e < 11; e++) {
+        rc_dec[e] = true;
         if (!READ(e))
             break;
     }
 
     int a = 1;
-    int i = e;
+    sym_e = e + 10;
+    rc_dec[sym_e] = true;
 
-    if (bits > 8 && e == 11) {
+    if (bits > 10 && e == 11) {
         do {
             rc_state[10] = zero_one_state[rc_state[10] + 256];
             e++;
         } while (READ(10));
 
-        e--;
-        i = e - 1;
-
-        a <<= 1;
-        a |= int(READ(31));
-        for (; i >= 11; i--) {
+        a = READ(31) ? 0x3 : 0x2;
+        for (e -= 2; e >= 11; e--) {
             rc_state[31] = zero_one_state[rc_state[31] +
                                           (rc_data[31] ? 256 : 0)];
             a <<= 1;
             a |= int(READ(31));
         }
+
+        rc_dec[31] = true;
     }
 
-    a <<= i - 1;
-    i -= 2;
-    for (; i >= 0; i--)
-        a |= int(READ(i + 22)) << i;
+    e += 20;
+    for (; e >= 22; e--) {
+        a <<= 1;
+        a |= int(READ(e));
+        rc_dec[e] = true;
+    }
 
-    return READ(min(e + 10, 21)) ? -a : a;
+    return READ(sym_e) ? -a : a;
 }
 
 void decode_line_pcm(ivec2 sp, int w, int y, int p)
@@ -105,6 +111,8 @@ void decode_line_pcm(ivec2 sp, int w, int y, int p)
     }
 }
 
+shared ivec2 pr;
+
 void decode_line(ivec2 sp, int w,
                  int y, int p, uint state_off,
                  uint8_t quant_table_idx, int run_index)
@@ -117,13 +125,15 @@ void decode_line(ivec2 sp, int w,
 #endif
 
     for (int x = 0; x < w; x++) {
-        ivec2 pr = get_pred(dec[p], sp, ivec2(x, y), 0, w,
-                            quant_table_idx, extend_lookup[quant_table_idx]);
+        if (gl_LocalInvocationID.x == 0)
+            pr = get_pred(dec[p], sp, ivec2(x, y), 0, w,
+                          quant_table_idx, extend_lookup[quant_table_idx]);
+        barrier();
 
         uint rc_off = state_off + CONTEXT_SIZE*abs(pr[0]) + gl_LocalInvocationID.x;
 
-        rc_state[gl_LocalInvocationID.x] = slice_rc_state[rc_off];
         rc_dec[gl_LocalInvocationID.x] = false;
+        rc_state[gl_LocalInvocationID.x] = slice_rc_state[rc_off];
         barrier();
 
         if (gl_LocalInvocationID.x == 0) {
@@ -136,7 +146,6 @@ void decode_line(ivec2 sp, int w,
         }
 
         /* Image write now visible to other invocs */
-        memoryBarrierImage();
         barrier();
         if (rc_dec[gl_LocalInvocationID.x])
             slice_rc_state[rc_off] =
