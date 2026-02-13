@@ -285,7 +285,7 @@ static int mp3lame_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         ff_af_queue_remove(&s->afq, avctx->frame_size, &avpkt->pts,
                            &avpkt->duration);
 
-        discard_padding = avctx->frame_size - avpkt->duration;
+        discard_padding = avctx->frame_size - ff_samples_from_time_base(avctx, avpkt->duration);
         // Check if subtraction resulted in an overflow
         if ((discard_padding < avctx->frame_size) != (avpkt->duration > 0)) {
             av_log(avctx, AV_LOG_ERROR, "discard padding overflow\n");
