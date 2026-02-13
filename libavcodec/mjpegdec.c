@@ -1093,7 +1093,6 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s)
     const int mask     = ((1 << s->bits) - 1) << point_transform;
     int resync_mb_y = 0;
     int resync_mb_x = 0;
-    int vpred[6];
     int ret;
 
     if (!s->bayer && s->nb_components < 3)
@@ -1108,10 +1107,6 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s)
         if (s->rct || s->pegasus_rct)
             return AVERROR_INVALIDDATA;
     }
-
-
-    for (i = 0; i < 6; i++)
-        vpred[i] = 1 << (s->bits - 1);
 
     if (s->bayer)
         width = s->mb_width / nb_components; /* Interleaved, width stored is the total so need to divide */
@@ -1166,18 +1161,11 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s)
                 topleft[i] = top[i];
                 top[i]     = buffer[mb_x][i];
 
+                PREDICT(pred, topleft[i], top[i], left[i], modified_predictor);
+
                 ret = mjpeg_decode_dc(s, s->dc_index[i], &dc);
                 if (ret < 0)
                     return ret;
-
-                if (!s->bayer || mb_x) {
-                    pred = left[i];
-                } else { /* This path runs only for the first line in bayer images */
-                    vpred[i] += dc;
-                    pred = vpred[i] - dc;
-                }
-
-                PREDICT(pred, topleft[i], top[i], pred, modified_predictor);
 
                 left[i] = buffer[mb_x][i] =
                     mask & (pred + (unsigned)(dc * (1 << point_transform)));
