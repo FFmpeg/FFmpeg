@@ -426,19 +426,6 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         return AVERROR_PATCHWELCOME;
     }
 
-    if (s->bayer) {
-        if (nb_components == 2) {
-            /* Bayer images embedded in DNGs can contain 2 interleaved components and the
-               width stored in their SOF3 markers is the width of each one.  We only output
-               a single component, therefore we need to adjust the output image width.  We
-               handle the deinterleaving (but not the debayering) in this file. */
-            width *= 2;
-        }
-        /* They can also contain 1 component, which is double the width and half the height
-            of the final image (rows are interleaved).  We don't handle the decoding in this
-            file, but leave that to the TIFF/DNG decoder. */
-    }
-
     /* if different size, realloc/alloc picture */
     if (width != s->width || height != s->height || bits != s->bits ||
         memcmp(s->h_count, h_count, sizeof(h_count))                ||
@@ -474,6 +461,19 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
              s->avctx->codec_tag == MKTAG('A', 'V', 'D', 'J')) &&
             s->orig_height < height)
             s->avctx->height = AV_CEIL_RSHIFT(s->orig_height, s->avctx->lowres);
+
+        if (s->bayer) {
+            if (nb_components == 2) {
+                /* Bayer images embedded in DNGs can contain 2 interleaved components and the
+                 * width stored in their SOF3 markers is the width of each one.  We only output
+                 * a single component, therefore we need to adjust the output image width.  We
+                 * handle the deinterleaving (but not the debayering) in this file. */
+                s->avctx->width *= 2;
+            }
+            /* They can also contain 1 component, which is double the width and half the height
+             * of the final image (rows are interleaved).  We don't handle the decoding in this
+             * file, but leave that to the TIFF/DNG decoder. */
+        }
 
         s->first_picture = 0;
     } else {
@@ -1086,7 +1086,6 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s)
     int predictor = s->Ss;
     int point_transform = s->Al;
     int i, mb_x, mb_y;
-    unsigned width;
     uint16_t (*buffer)[4];
     int left[4], top[4], topleft[4];
     const int linesize = s->linesize[0];
@@ -1108,12 +1107,8 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s)
             return AVERROR_INVALIDDATA;
     }
 
-    if (s->bayer)
-        width = s->mb_width / nb_components; /* Interleaved, width stored is the total so need to divide */
-    else
-        width = s->mb_width;
-
-    av_fast_malloc(&s->ljpeg_buffer, &s->ljpeg_buffer_size, width * 4 * sizeof(s->ljpeg_buffer[0][0]));
+    av_fast_malloc(&s->ljpeg_buffer, &s->ljpeg_buffer_size,
+                   (unsigned)s->mb_width * 4 * sizeof(s->ljpeg_buffer[0][0]));
     if (!s->ljpeg_buffer)
         return AVERROR(ENOMEM);
 
@@ -1133,7 +1128,7 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s)
         for (i = 0; i < 4; i++)
             top[i] = left[i] = topleft[i] = buffer[0][i];
 
-        for (mb_x = 0; mb_x < width; mb_x++) {
+        for (mb_x = 0; mb_x < s->mb_width; mb_x++) {
             int modified_predictor = predictor;
             int restart;
 
@@ -1210,10 +1205,10 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s)
                 return AVERROR_PATCHWELCOME;
             if (nb_components == 1) {
                 /* Leave decoding to the TIFF/DNG decoder (see comment in ff_mjpeg_decode_sof) */
-                for (mb_x = 0; mb_x < width; mb_x++)
+                for (mb_x = 0; mb_x < s->mb_width; mb_x++)
                     ((uint16_t*)ptr)[mb_x] = buffer[mb_x][0];
             } else if (nb_components == 2) {
-                for (mb_x = 0; mb_x < width; mb_x++) {
+                for (mb_x = 0; mb_x < s->mb_width; mb_x++) {
                     ((uint16_t*)ptr)[2 * mb_x + 0] = buffer[mb_x][0];
                     ((uint16_t*)ptr)[2 * mb_x + 1] = buffer[mb_x][1];
                 }
