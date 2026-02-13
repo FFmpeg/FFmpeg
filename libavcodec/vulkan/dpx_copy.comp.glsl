@@ -69,9 +69,12 @@ uint read_data(uint off)
 void main(void)
 {
     ivec2 pos = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 size = imageSize(dst[0]);
+    if (any(greaterThanEqual(pos, size)))
+        return;
 
     uint linesize;
-    linesize = align(imageSize(dst[0]).x*bits_per_comp*nb_comp, 32);
+    linesize = align(size.x*bits_per_comp*nb_comp, 32);
 
     uint offs = pos.y*linesize + pos.x*nb_comp*bits_per_comp;
     offs /= bits_per_comp;
