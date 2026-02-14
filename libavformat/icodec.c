@@ -113,7 +113,7 @@ static int read_header(AVFormatContext *s)
         avio_skip(pb, 5);
 
         ico->images[i].size   = avio_rl32(pb);
-        if (ico->images[i].size <= 0) {
+        if (ico->images[i].size <= 0 || ico->images[i].size > INT_MAX - 14) {
             av_log(s, AV_LOG_ERROR, "Invalid image size %d\n", ico->images[i].size);
             return AVERROR_INVALIDDATA;
         }
