@@ -68,6 +68,8 @@ typedef struct SnowEncContext {
     uint64_t encoding_error[SNOW_MAX_PLANES];
 } SnowEncContext;
 
+#define PTR_ADD(ptr, off) ((ptr) ? (ptr) + (off) : NULL)
+
 static void init_ref(MotionEstContext *c, const uint8_t *const src[3],
                      uint8_t *const ref[3], uint8_t *const ref2[3],
                      int x, int y, int ref_index)
@@ -80,7 +82,7 @@ static void init_ref(MotionEstContext *c, const uint8_t *const src[3],
     };
     for (int i = 0; i < 3; i++) {
         c->src[0][i] = src [i];
-        c->ref[0][i] = ref [i] + offset[i];
+        c->ref[0][i] = PTR_ADD(ref[i], offset[i]);
     }
     av_assert2(!ref_index);
 }
@@ -400,8 +402,8 @@ static int encode_q_branch(SnowEncContext *enc, int level, int x, int y)
     const int stride= s->current_picture->linesize[0];
     const int uvstride= s->current_picture->linesize[1];
     const uint8_t *const current_data[3] = { s->input_picture->data[0] + (x + y*  stride)*block_w,
-                                s->input_picture->data[1] + ((x*block_w)>>s->chroma_h_shift) + ((y*uvstride*block_w)>>s->chroma_v_shift),
-                                s->input_picture->data[2] + ((x*block_w)>>s->chroma_h_shift) + ((y*uvstride*block_w)>>s->chroma_v_shift)};
+                                PTR_ADD(s->input_picture->data[1], ((x*block_w)>>s->chroma_h_shift) + ((y*uvstride*block_w)>>s->chroma_v_shift)),
+                                PTR_ADD(s->input_picture->data[2], ((x*block_w)>>s->chroma_h_shift) + ((y*uvstride*block_w)>>s->chroma_v_shift))};
     int P[10][2];
     int16_t last_mv[3][2];
     int qpel= !!(s->avctx->flags & AV_CODEC_FLAG_QPEL); //unused
