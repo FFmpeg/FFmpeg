@@ -237,16 +237,23 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
     maxsize = FFMIN(maxsize, fv->s.props_11.maxMemoryAllocationSize);
 
     /* Allocate output buffer */
+    VkMemoryPropertyFlagBits out_buf_flags;
+    if (maxsize < fv->max_heap_size) {
+        out_buf_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+        /* If we can't map host memory, we can't let the GPU copy its buffer. */
+        if (!fv->s.extensions & FF_VK_EXT_EXTERNAL_HOST_MEMORY)
+            out_buf_flags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+    } else {
+        out_buf_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                        fv->s.host_cached_flag;
+    }
+
     RET(ff_vk_get_pooled_buffer(&fv->s, &fv->out_data_pool,
                                 &fd->out_data_ref,
                                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
                                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                                 VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-                                NULL, maxsize,
-                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                (maxsize < fv->max_heap_size ?
-                                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT :
-                                 fv->s.host_cached_flag)));
+                                NULL, maxsize, out_buf_flags));
     out_data_buf = (FFVkBuffer *)fd->out_data_ref->data;
 
     /* Image views */
