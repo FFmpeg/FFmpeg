@@ -2100,7 +2100,7 @@ static int decode_cblk(const Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *cod
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
             int32_t sign, n, val;
-            const uint32_t mask  = (UINT32_MAX >> M_b) >> 1; // bit mask for ROI detection
+            const uint32_t mask  = (int64_t)UINT32_MAX >> (M_b + 1); // bit mask for ROI detection
 
             n = x + (y * t1->stride);
             val = t1->data[n];
@@ -2130,7 +2130,7 @@ static void dequantization_float(int x, int y, Jpeg2000Cblk *cblk,
     int w = cblk->coord[0][1] - cblk->coord[0][0];
     const int downshift = 31 - M_b;
     float fscale = band->f_stepsize;
-    fscale /= (float)(1 << downshift);
+    fscale /= (float)(1LL << downshift);
     for (j = 0; j < (cblk->coord[1][1] - cblk->coord[1][0]); ++j) {
         float *datap = &comp->f_data[(comp->coord[0][1] - comp->coord[0][0]) * (y + j) + x];
         int *src = t1->data + j*t1->stride;
@@ -2149,7 +2149,7 @@ static void dequantization_int(int x, int y, Jpeg2000Cblk *cblk,
                                Jpeg2000T1Context *t1, Jpeg2000Band *band, const int M_b)
 {
     int i, j;
-    const int downshift = 31 - M_b;
+    const int downshift = FFMIN(31 - M_b, 31);
     int w = cblk->coord[0][1] - cblk->coord[0][0];
     for (j = 0; j < (cblk->coord[1][1] - cblk->coord[1][0]); ++j) {
         int32_t *datap = &comp->i_data[(comp->coord[0][1] - comp->coord[0][0]) * (y + j) + x];
@@ -2188,7 +2188,7 @@ static void dequantization_int_97(int x, int y, Jpeg2000Cblk *cblk,
     const int PRESCALE = 6; // At least 6 is required to pass the conformance tests in ISO/IEC 15444-4
     int scale;
 
-    fscale /= (float)(1 << downshift);
+    fscale /= (float)(1LL << downshift);
     fscale *= (float)(1 << PRESCALE);
     fscale *= (float)(1 << (16 + I_PRESHIFT));
     scale = (int)(fscale + 0.5);
