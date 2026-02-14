@@ -1662,16 +1662,12 @@ static int hls_pcm_sample(HEVCLocalContext *lc, const HEVCLayerContext *l,
     GetBitContext gb;
     int cb_size   = 1 << log2_cb_size;
     ptrdiff_t stride0 = s->cur_frame->f->linesize[0];
-    ptrdiff_t stride1 = s->cur_frame->f->linesize[1];
-    ptrdiff_t stride2 = s->cur_frame->f->linesize[2];
     uint8_t *dst0 = &s->cur_frame->f->data[0][y0 * stride0 + (x0 << sps->pixel_shift)];
-    uint8_t *dst1 = &s->cur_frame->f->data[1][(y0 >> sps->vshift[1]) * stride1 + ((x0 >> sps->hshift[1]) << sps->pixel_shift)];
-    uint8_t *dst2 = &s->cur_frame->f->data[2][(y0 >> sps->vshift[2]) * stride2 + ((x0 >> sps->hshift[2]) << sps->pixel_shift)];
 
-    int length         = cb_size * cb_size * sps->pcm.bit_depth +
+    int length         = cb_size * cb_size * sps->pcm.bit_depth + (sps->chroma_format_idc != 0 ?
                          (((cb_size >> sps->hshift[1]) * (cb_size >> sps->vshift[1])) +
                           ((cb_size >> sps->hshift[2]) * (cb_size >> sps->vshift[2]))) *
-                          sps->pcm.bit_depth_chroma;
+                          sps->pcm.bit_depth_chroma : 0);
     const uint8_t *pcm = skip_bytes(&lc->cc, (length + 7) >> 3);
     int ret;
 
@@ -1682,8 +1678,13 @@ static int hls_pcm_sample(HEVCLocalContext *lc, const HEVCLayerContext *l,
     if (ret < 0)
         return ret;
 
-    s->hevcdsp.put_pcm(dst0, stride0, cb_size, cb_size,     &gb, sps->pcm.bit_depth);
+    s->hevcdsp.put_pcm(dst0, stride0, cb_size, cb_size, &gb, sps->pcm.bit_depth);
     if (sps->chroma_format_idc) {
+        ptrdiff_t stride1 = s->cur_frame->f->linesize[1];
+        ptrdiff_t stride2 = s->cur_frame->f->linesize[2];
+        uint8_t *dst1 = &s->cur_frame->f->data[1][(y0 >> sps->vshift[1]) * stride1 + ((x0 >> sps->hshift[1]) << sps->pixel_shift)];
+        uint8_t *dst2 = &s->cur_frame->f->data[2][(y0 >> sps->vshift[2]) * stride2 + ((x0 >> sps->hshift[2]) << sps->pixel_shift)];
+
         s->hevcdsp.put_pcm(dst1, stride1,
                            cb_size >> sps->hshift[1],
                            cb_size >> sps->vshift[1],
