@@ -1126,7 +1126,9 @@ int ff_vk_map_buffers(FFVulkanContext *s, FFVkBuffer **buf, uint8_t *mem[],
                    ff_vk_ret2str(ret));
             return AVERROR_EXTERNAL;
         }
-        mem[i] = buf[i]->mapped_mem = dst;
+        buf[i]->mapped_mem = dst;
+        if (mem)
+            mem[i] = dst;
     }
 
     if (!invalidate)
