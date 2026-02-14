@@ -74,9 +74,7 @@ typedef struct FFv1VulkanDecodeContext {
     FFVulkanShader reset;
     FFVulkanShader decode;
 
-    FFVkBuffer rangecoder_buf;
-    FFVkBuffer quant_buf;
-    FFVkBuffer crc_buf;
+    FFVkBuffer consts_buf;
 
     AVBufferPool *slice_state_pool;
     AVBufferPool *slice_feedback_pool;
@@ -732,9 +730,7 @@ static void vk_decode_ffv1_uninit(FFVulkanDecodeShared *ctx)
     ff_vk_shader_free(&ctx->s, &fv->reset);
     ff_vk_shader_free(&ctx->s, &fv->decode);
 
-    ff_vk_free_buf(&ctx->s, &fv->rangecoder_buf);
-    ff_vk_free_buf(&ctx->s, &fv->quant_buf);
-    ff_vk_free_buf(&ctx->s, &fv->crc_buf);
+    ff_vk_free_buf(&ctx->s, &fv->consts_buf);
 
     av_buffer_pool_uninit(&fv->slice_state_pool);
     av_buffer_pool_uninit(&fv->slice_feedback_pool);
@@ -800,32 +796,31 @@ static int vk_decode_ffv1_init(AVCodecContext *avctx)
                            dctx, hwfc, sl, f->ac, is_rgb));
 
     /* Init static data */
-    RET(ff_ffv1_vk_init_state_transition_data(&ctx->s, &fv->rangecoder_buf, f));
-    RET(ff_ffv1_vk_init_crc_table_data(&ctx->s, &fv->crc_buf, f));
-    RET(ff_ffv1_vk_init_quant_table_data(&ctx->s, &fv->quant_buf, f));
+    RET(ff_ffv1_vk_init_consts(&ctx->s, &fv->consts_buf, f));
 
     /* Update setup global descriptors */
     RET(ff_vk_shader_update_desc_buffer(&ctx->s, &ctx->exec_pool.contexts[0],
                                         &fv->setup, 0, 0, 0,
-                                        &fv->rangecoder_buf,
-                                        0, 512*sizeof(uint8_t),
+                                        &fv->consts_buf,
+                                        256*sizeof(uint32_t), 512*sizeof(uint8_t),
                                         VK_FORMAT_UNDEFINED));
     RET(ff_vk_shader_update_desc_buffer(&ctx->s, &ctx->exec_pool.contexts[0],
                                         &fv->setup, 0, 1, 0,
-                                        &fv->crc_buf,
+                                        &fv->consts_buf,
                                         0, 256*sizeof(uint32_t),
                                         VK_FORMAT_UNDEFINED));
 
     /* Update decode global descriptors */
     RET(ff_vk_shader_update_desc_buffer(&ctx->s, &ctx->exec_pool.contexts[0],
                                         &fv->decode, 0, 0, 0,
-                                        &fv->rangecoder_buf,
-                                        0, 512*sizeof(uint8_t),
+                                        &fv->consts_buf,
+                                        256*sizeof(uint32_t), 512*sizeof(uint8_t),
                                         VK_FORMAT_UNDEFINED));
     RET(ff_vk_shader_update_desc_buffer(&ctx->s, &ctx->exec_pool.contexts[0],
                                         &fv->decode, 0, 1, 0,
-                                        &fv->quant_buf,
-                                        0, VK_WHOLE_SIZE,
+                                        &fv->consts_buf,
+                                        256*sizeof(uint32_t) + 512*sizeof(uint8_t),
+                                        VK_WHOLE_SIZE,
                                         VK_FORMAT_UNDEFINED));
 
 fail:

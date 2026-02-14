@@ -28,17 +28,7 @@ void ff_ffv1_vk_set_common_sl(AVCodecContext *avctx, FFV1Context *f,
                               VkSpecializationInfo *sl,
                               enum AVPixelFormat sw_format);
 
-int ff_ffv1_vk_update_state_transition_data(FFVulkanContext *s,
-                                            FFVkBuffer *vkb, FFV1Context *f);
-
-int ff_ffv1_vk_init_state_transition_data(FFVulkanContext *s,
-                                          FFVkBuffer *vkb, FFV1Context *f);
-
-int ff_ffv1_vk_init_quant_table_data(FFVulkanContext *s,
-                                     FFVkBuffer *vkb, FFV1Context *f);
-
-int ff_ffv1_vk_init_crc_table_data(FFVulkanContext *s,
-                                   FFVkBuffer *vkb, FFV1Context *f);
+int ff_ffv1_vk_init_consts(FFVulkanContext *s, FFVkBuffer *vkb, FFV1Context *f);
 
 typedef struct FFv1ShaderParams {
     VkDeviceAddress slice_data;

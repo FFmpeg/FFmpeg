@@ -78,9 +78,7 @@ typedef struct VulkanEncodeFFv1Context {
     FFVulkanShader enc;
 
     /* Constant read-only buffers */
-    FFVkBuffer quant_buf;
-    FFVkBuffer rangecoder_static_buf;
-    FFVkBuffer crc_tab_buf;
+    FFVkBuffer consts_buf;
 
     /* Slice data buffer pool */
     AVBufferPool *slice_data_pool;
@@ -1195,48 +1193,33 @@ static av_cold int vulkan_encode_ffv1_init(AVCodecContext *avctx)
     if (err < 0)
         return err;
 
-    /* Range coder data */
-    err = ff_ffv1_vk_init_state_transition_data(&fv->s,
-                                                &fv->rangecoder_static_buf,
-                                                f);
-    if (err < 0)
-        return err;
-
-    /* Quantization table data */
-    err = ff_ffv1_vk_init_quant_table_data(&fv->s,
-                                           &fv->quant_buf,
-                                           f);
-    if (err < 0)
-        return err;
-
-    /* CRC table buffer */
-    err = ff_ffv1_vk_init_crc_table_data(&fv->s,
-                                         &fv->crc_tab_buf,
-                                         f);
+    /* Constant data */
+    err = ff_ffv1_vk_init_consts(&fv->s, &fv->consts_buf, f);
     if (err < 0)
         return err;
 
     /* Update setup global descriptors */
     RET(ff_vk_shader_update_desc_buffer(&fv->s, &fv->exec_pool.contexts[0],
                                         &fv->setup, 0, 0, 0,
-                                        &fv->rangecoder_static_buf,
-                                        0, 512*sizeof(uint8_t),
+                                        &fv->consts_buf,
+                                        256*sizeof(uint32_t), 512*sizeof(uint8_t),
                                         VK_FORMAT_UNDEFINED));
 
     /* Update encode global descriptors */
     RET(ff_vk_shader_update_desc_buffer(&fv->s, &fv->exec_pool.contexts[0],
                                         &fv->enc, 0, 0, 0,
-                                        &fv->rangecoder_static_buf,
-                                        0, fv->rangecoder_static_buf.size,
+                                        &fv->consts_buf,
+                                        256*sizeof(uint32_t), 512*sizeof(uint8_t),
                                         VK_FORMAT_UNDEFINED));
     RET(ff_vk_shader_update_desc_buffer(&fv->s, &fv->exec_pool.contexts[0],
                                         &fv->enc, 0, 1, 0,
-                                        &fv->quant_buf,
-                                        0, VK_WHOLE_SIZE,
+                                        &fv->consts_buf,
+                                        256*sizeof(uint32_t) + 512*sizeof(uint8_t),
+                                        VK_WHOLE_SIZE,
                                         VK_FORMAT_UNDEFINED));
     RET(ff_vk_shader_update_desc_buffer(&fv->s, &fv->exec_pool.contexts[0],
                                         &fv->enc, 0, 2, 0,
-                                        &fv->crc_tab_buf,
+                                        &fv->consts_buf,
                                         0, 256*sizeof(uint32_t),
                                         VK_FORMAT_UNDEFINED));
 
@@ -1292,9 +1275,7 @@ static av_cold int vulkan_encode_ffv1_close(AVCodecContext *avctx)
     av_buffer_unref(&fv->keyframe_slice_data_ref);
     av_buffer_pool_uninit(&fv->slice_data_pool);
 
-    ff_vk_free_buf(&fv->s, &fv->quant_buf);
-    ff_vk_free_buf(&fv->s, &fv->rangecoder_static_buf);
-    ff_vk_free_buf(&fv->s, &fv->crc_tab_buf);
+    ff_vk_free_buf(&fv->s, &fv->consts_buf);
 
     av_free(fv->buf_regions);
     av_frame_free(&fv->frame);

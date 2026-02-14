@@ -55,103 +55,50 @@ void ff_ffv1_vk_set_common_sl(AVCodecContext *avctx, FFV1Context *f,
     SPEC_LIST_ADD(sl, 14, 32, f->chroma_v_shift);
 }
 
-int ff_ffv1_vk_update_state_transition_data(FFVulkanContext *s,
-                                            FFVkBuffer *vkb, FFV1Context *f)
+static void set_crc_tab(uint32_t *buf)
 {
-    int err;
-    uint8_t *buf_mapped;
-
-    RET(ff_vk_map_buffer(s, vkb, &buf_mapped, 0));
-
-    for (int i = 1; i < 256; i++) {
-        buf_mapped[256 + i] = f->state_transition[i];
-        buf_mapped[256 - i] = 256 - (int)f->state_transition[i];
+    for (uint32_t i = 0; i < 256; i++) {
+        uint32_t c = i << 24;
+        for (int j = 0; j < 8; j++)
+            c = (c << 1) ^ (0x04C11DB7 & (((int32_t) c) >> 31));
+        buf[i] = av_bswap32(c);
     }
-
-    RET(ff_vk_unmap_buffer(s, vkb, 1));
-
-fail:
-    return err;
 }
 
-static int init_state_transition_data(FFVulkanContext *s,
-                                      FFVkBuffer *vkb, FFV1Context *f,
-                                      int (*write_data)(FFVulkanContext *s,
-                                                        FFVkBuffer *vkb, FFV1Context *f))
+static void set_rc_state_tab(FFV1Context *f, uint8_t *buf)
 {
-    int err;
-    size_t buf_len = 512*sizeof(uint8_t);
-
-    RET(ff_vk_create_buf(s, vkb,
-                         buf_len,
-                         NULL, NULL,
-                         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT |
-                         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-                         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
-                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
-
-    write_data(s, vkb, f);
-
-fail:
-    return err;
+    for (int i = 1; i < 256; i++) {
+        buf[256 + i] = f->state_transition[i];
+        buf[256 - i] = 256 - (int)f->state_transition[i];
+    }
 }
 
-int ff_ffv1_vk_init_state_transition_data(FFVulkanContext *s,
-                                          FFVkBuffer *vkb, FFV1Context *f)
-{
-    return init_state_transition_data(s, vkb, f,
-                                      ff_ffv1_vk_update_state_transition_data);
-}
-
-int ff_ffv1_vk_init_quant_table_data(FFVulkanContext *s,
-                                     FFVkBuffer *vkb, FFV1Context *f)
+int ff_ffv1_vk_init_consts(FFVulkanContext *s, FFVkBuffer *vkb, FFV1Context *f)
 {
     int err;
 
-    int16_t *buf_mapped;
-    size_t buf_len = MAX_QUANT_TABLES*
+    uint8_t *buf_mapped;
+    size_t buf_len = 256*sizeof(uint32_t) + /* CRC */
+                     512*sizeof(uint8_t) + /* Rangecoder */
+                     MAX_QUANT_TABLES*
                      MAX_CONTEXT_INPUTS*
                      MAX_QUANT_TABLE_SIZE*sizeof(int16_t);
 
     RET(ff_vk_create_buf(s, vkb,
                          buf_len,
                          NULL, NULL,
+                         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                          VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
     RET(ff_vk_map_buffer(s, vkb, (void *)&buf_mapped, 0));
 
-    memcpy(buf_mapped, f->quant_tables,
-           sizeof(f->quant_tables));
+    set_crc_tab((uint32_t *)buf_mapped);
 
-    RET(ff_vk_unmap_buffer(s, vkb, 1));
+    set_rc_state_tab(f, buf_mapped + 256*sizeof(uint32_t));
 
-fail:
-    return err;
-}
-
-int ff_ffv1_vk_init_crc_table_data(FFVulkanContext *s,
-                                   FFVkBuffer *vkb, FFV1Context *f)
-{
-    int err;
-
-    uint32_t *buf_mapped;
-    size_t buf_len = 256*sizeof(int32_t);
-
-    RET(ff_vk_create_buf(s, vkb,
-                         buf_len,
-                         NULL, NULL,
-                         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
-                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
-    RET(ff_vk_map_buffer(s, vkb, (void *)&buf_mapped, 0));
-
-    for (uint32_t i = 0; i < 256; i++) {
-        uint32_t c = i << 24;
-        for (int j = 0; j < 8; j++)
-            c = (c << 1) ^ (0x04C11DB7 & (((int32_t) c) >> 31));
-        buf_mapped[i] = av_bswap32(c);
-    }
+    memcpy(buf_mapped + 256*sizeof(uint32_t) + 512*sizeof(uint8_t),
+           f->quant_tables, sizeof(f->quant_tables));
 
     RET(ff_vk_unmap_buffer(s, vkb, 1));
 
