@@ -698,6 +698,11 @@ static int cfhd_decode(AVCodecContext *avctx, AVFrame *pic,
 
         if (s->subband_num_actual == 255)
             goto finish;
+
+        if (tag == BitstreamMarker && data == CoefficientSegment || tag == BandHeader || tag == BandSecondPass || s->peak.level)
+            if (s->transform_type != s->a_transform_type)
+                return AVERROR_PATCHWELCOME;
+
         coeff_data = s->plane[s->channel_num].subband[s->subband_num_actual];
 
         /* Lowpass coefficients */
