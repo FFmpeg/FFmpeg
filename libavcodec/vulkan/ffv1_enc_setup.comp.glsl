@@ -45,7 +45,7 @@ void init_slice(inout SliceContext sc, uint slice_idx)
     sc.slice_reset_contexts = sc.slice_coding_mode == 1;
     sc.quant_table_idx = u8vec3(context_model);
 
-    if (!rct_search || (sc.slice_coding_mode == 1))
+    if (!rct_search || force_pcm)
         sc.slice_rct_coef = ivec2(1, 1);
 
     rac_init(slice_idx*slice_size_max, slice_size_max);
@@ -83,7 +83,7 @@ void write_slice_header(inout SliceContext sc)
 
     [[unroll]]
     for (int i = 0; i < codec_planes; i++)
-        hdr_sym[4 + i] = sc.quant_table_idx[i];
+        hdr_sym[4 + i] = context_model;
 
     hdr_sym[nb_hdr_sym - 3] = pic_mode;
     hdr_sym[nb_hdr_sym - 2] = sar.x;
@@ -93,9 +93,9 @@ void write_slice_header(inout SliceContext sc)
         put_usymbol(hdr_sym[i]);
 
     if (version >= 4) {
-        put_rac(rc_state[0], sc.slice_reset_contexts);
-        put_usymbol(sc.slice_coding_mode);
-        if (sc.slice_coding_mode != 1 && colorspace == 1) {
+        put_rac(rc_state[0], force_pcm);
+        put_usymbol(uint(force_pcm));
+        if (!force_pcm && colorspace == 1) {
             put_usymbol(sc.slice_rct_coef.y);
             put_usymbol(sc.slice_rct_coef.x);
         }

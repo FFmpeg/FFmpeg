@@ -260,7 +260,7 @@ void encode_slice(in SliceContext sc, uint slice_idx)
 #endif
 
 #ifndef GOLOMB
-    if (sc.slice_coding_mode == 1) {
+    if (force_pcm) {
 #ifndef RGB
         for (int c = 0; c < color_planes; c++) {
 
@@ -287,7 +287,6 @@ void encode_slice(in SliceContext sc, uint slice_idx)
     }
 #endif
 
-    u8vec4 quant_table_idx = sc.quant_table_idx.xyyz;
     u32vec4 slice_state_off = (slice_idx*codec_planes +
                                uvec4(0, 1, 1, 2))*plane_state_size;
 
@@ -309,7 +308,7 @@ void encode_slice(in SliceContext sc, uint slice_idx)
 
         for (int y = 0; y < h; y++)
             encode_line(sc, src[p], slice_state_off[c], sp, y, p,
-                        comp, quant_table_idx[c], run_index);
+                        comp, U8(context_model), run_index);
     }
 #else
     int run_index = 0;
@@ -319,7 +318,7 @@ void encode_slice(in SliceContext sc, uint slice_idx)
         for (uint c = 0; c < color_planes; c++)
             encode_line(sc, tmp, slice_state_off[c],
                         sp, y, 0, rgb_plane_order[c],
-                        quant_table_idx[c], run_index);
+                        U8(context_model), run_index);
     }
 #endif
 }
