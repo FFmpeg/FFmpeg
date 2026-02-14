@@ -628,7 +628,7 @@ static int cfhd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         }
 
         bytestream2_put_be16(pby, BitstreamMarker);
-        bytestream2_put_be16(pby, 0x1a4a);
+        bytestream2_put_be16(pby, LowPassSegment);
 
         pos = bytestream2_tell_p(pby);
 
@@ -654,7 +654,7 @@ static int cfhd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         bytestream2_put_be16(pby, 16);
 
         bytestream2_put_be16(pby, BitstreamMarker);
-        bytestream2_put_be16(pby, 0x0f0f);
+        bytestream2_put_be16(pby, CoefficientSegment);
 
         for (int i = 0; i < height; i++) {
             for (int j = 0; j < width; j++)
@@ -663,7 +663,7 @@ static int cfhd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         }
 
         bytestream2_put_be16(pby, BitstreamMarker);
-        bytestream2_put_be16(pby, 0x1b4b);
+        bytestream2_put_be16(pby, LowPassEndSegment);
 
         for (int l = 0; l < 3; l++) {
             for (int i = 0; i < 3; i++) {
@@ -678,7 +678,7 @@ static int cfhd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             int height = s->plane[p].band[l][0].height;
 
             bytestream2_put_be16(pby, BitstreamMarker);
-            bytestream2_put_be16(pby, 0x0d0d);
+            bytestream2_put_be16(pby, HighPassSegment);
 
             bytestream2_put_be16(pby, WaveletType);
             bytestream2_put_be16(pby, 3 + 2 * (l == 2));
@@ -715,7 +715,7 @@ static int cfhd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                 int count = 0, padd = 0;
 
                 bytestream2_put_be16(pby, BitstreamMarker);
-                bytestream2_put_be16(pby, 0x0e0e);
+                bytestream2_put_be16(pby, BandSegment);
 
                 bytestream2_put_be16(pby, SubbandNumber);
                 bytestream2_put_be16(pby, i + 1);
@@ -784,7 +784,7 @@ static int cfhd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             }
 
             bytestream2_put_be16(pby, BitstreamMarker);
-            bytestream2_put_be16(pby, 0x0c0c);
+            bytestream2_put_be16(pby, HighPassEndSegment);
         }
 
         s->plane[p].size = bytestream2_tell_p(pby) - pos;
