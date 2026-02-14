@@ -71,7 +71,7 @@ ivec3 transform_sample(ivec3 pix, ivec2 rct_coef)
 {
     pix.b -= pix.g;
     pix.r -= pix.g;
-    pix.g += (pix.r*rct_coef.x + pix.b*rct_coef.y) >> 2;
+    pix.g += (pix.b*rct_coef.g + pix.r*rct_coef.r) >> 2;
     pix.b += rct_offset;
     pix.r += rct_offset;
     return pix;

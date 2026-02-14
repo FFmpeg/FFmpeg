@@ -244,7 +244,7 @@ ivec4 transform_sample(ivec4 pix, ivec2 rct_coef)
 {
     pix.b -= rct_offset;
     pix.r -= rct_offset;
-    pix.g -= (pix.b*rct_coef.y + pix.r*rct_coef.x) >> 2;
+    pix.g -= (pix.b*rct_coef.g + pix.r*rct_coef.r) >> 2;
     pix.b += pix.g;
     pix.r += pix.g;
     return ivec4(pix[fmt_lut[0]], pix[fmt_lut[1]],

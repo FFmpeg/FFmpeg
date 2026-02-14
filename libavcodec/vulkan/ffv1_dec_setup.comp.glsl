@@ -98,9 +98,9 @@ bool decode_slice_header(inout SliceContext sc)
         sc.slice_reset_contexts = get_rac(rc_state[0]);
         sc.slice_coding_mode = get_usymbol();
         if (sc.slice_coding_mode != 1 && colorspace == 1) {
-            sc.slice_rct_coef.x = int(get_usymbol());
-            sc.slice_rct_coef.y = int(get_usymbol());
-            if (sc.slice_rct_coef.x + sc.slice_rct_coef.y > 4)
+            sc.slice_rct_coef.g = int(get_usymbol());
+            sc.slice_rct_coef.r = int(get_usymbol());
+            if (sc.slice_rct_coef.g + sc.slice_rct_coef.r > 4)
                 return true;
         }
     }

@@ -96,8 +96,8 @@ void write_slice_header(inout SliceContext sc)
         put_rac(rc_state[0], force_pcm);
         put_usymbol(uint(force_pcm));
         if (!force_pcm && colorspace == 1) {
-            put_usymbol(sc.slice_rct_coef.y);
-            put_usymbol(sc.slice_rct_coef.x);
+            put_usymbol(sc.slice_rct_coef.g);
+            put_usymbol(sc.slice_rct_coef.r);
         }
     }
 }
