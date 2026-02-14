@@ -91,6 +91,15 @@ enum CFHDParam {
     ChannelHeight    = 105,
 };
 
+enum CFHDSegment {
+    LowPassSegment      = 0x1a4a,
+    LowPassEndSegment   = 0x1b4b,
+    HighPassSegment     = 0x0d0d,
+    BandSegment         = 0x0e0e,
+    HighPassEndSegment  = 0x0c0c,
+    CoefficientSegment  = 0x0f0f,
+};
+
 #define VLC_BITS       9
 #define SUBBAND_COUNT 10
 #define SUBBAND_COUNT_3D 17
