@@ -512,6 +512,7 @@ redo:
     return 0;
 
 fail:
+    s->off = off;
     if (s->hd)
         ffurl_closep(&s->hd);
     if (ret < 0)
