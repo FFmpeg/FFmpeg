@@ -552,20 +552,64 @@ function ff_hevc_put_hevc_\type\()_h12_8_neon, export=1
         ret             mx
 endfunc
 
+.ifc \type, qpel
+// VVC qpel h16: self-contained int16-domain implementation
+function ff_vvc_put_qpel_h16_8_neon, export=1
+        vvc_load_filter mx
+        sxtw            height, heightw
+        sub             src, src, #3
+        mov             mx, x30
+        mov             dststride, #(VVC_MAX_PB_SIZE << 1)
+        lsl             x13, srcstride, #1 // srcstridel
+        mov             x14, #(VVC_MAX_PB_SIZE << 2)
+        add             x10, dst, dststride // dstb
+        add             x12, src, srcstride // srcb
+1:      ld1             {v16.8b-v18.8b}, [src], x13
+        ld1             {v19.8b-v21.8b}, [x12], x13
+        uxtl            v16.8h,  v16.8b
+        uxtl            v19.8h,  v19.8b
+        bl              ff_hevc_put_hevc_h16_8_neon
+        subs            height, height, #2
+        st1             {v26.8h, v27.8h}, [dst], x14
+        st1             {v28.8h, v29.8h}, [x10], x14
+        b.gt            1b // double line
+        ret             mx
+endfunc
+
+// HEVC qpel h16: byte-domain widening multiply
+function ff_hevc_put_hevc_qpel_h16_8_neon, export=1
+        load_qpel_filterb mx, x15
+        sxtw            height, heightw
+        sub             src, src, #3
+        mov             dststride, #(HEVC_MAX_PB_SIZE << 1)
+1:
+        ld1             {v16.16b, v17.16b}, [src], srcstride
+        ext             v18.16b, v16.16b, v17.16b, #1
+        ext             v19.16b, v16.16b, v17.16b, #2
+        ext             v20.16b, v16.16b, v17.16b, #3
+        ext             v21.16b, v16.16b, v17.16b, #4
+        ext             v22.16b, v16.16b, v17.16b, #5
+        ext             v23.16b, v16.16b, v17.16b, #6
+        ext             v24.16b, v16.16b, v17.16b, #7
+        calc_qpelb      v26, v16, v18, v19, v20, v21, v22, v23, v24
+        calc_qpelb2     v27, v16, v18, v19, v20, v21, v22, v23, v24
+        stp             q26, q27, [dst]
+        add             dst, dst, dststride
+        subs            height, height, #1
+        b.gt            1b
+        ret
+endfunc
+
+.else // qpel_uni, qpel_bi
+
 .ifnc \type, qpel_bi
 function ff_vvc_put_\type\()_h16_8_neon, export=1
         vvc_load_filter mx
         sxtw            height, heightw
         sub             src, src, #3
         mov             mx, x30
-.ifc \type, qpel
-        mov             dststride, #(VVC_MAX_PB_SIZE << 1)
-        lsl             x13, srcstride, #1 // srcstridel
-        mov             x14, #(VVC_MAX_PB_SIZE << 2)
-.else
         lsl             x14, dststride, #1 // dststridel
         lsl             x13, srcstride, #1 // srcstridel
-.endif
         b               0f
 endfunc
 .endif // !qpel_bi
@@ -581,14 +625,8 @@ function ff_hevc_put_hevc_\type\()_h16_8_neon, export=1
 .endif
         sub             src, src, #3
         mov             mx, x30
-.ifc \type, qpel
-        mov             dststride, #(HEVC_MAX_PB_SIZE << 1)
-        lsl             x13, srcstride, #1 // srcstridel
-        mov             x14, #(HEVC_MAX_PB_SIZE << 2)
-.else
         lsl             x14, dststride, #1 // dststridel
         lsl             x13, srcstride, #1 // srcstridel
-.endif
 0:
         add             x10, dst, dststride // dstb
         add             x12, src, srcstride // srcb
@@ -601,10 +639,6 @@ function ff_hevc_put_hevc_\type\()_h16_8_neon, export=1
         bl              ff_hevc_put_hevc_h16_8_neon
         subs            height, height, #2
 
-.ifc \type, qpel
-        st1             {v26.8h, v27.8h}, [dst], x14
-        st1             {v28.8h, v29.8h}, [x10], x14
-.else
 .ifc \type, qpel_bi
         ld1             {v16.8h, v17.8h}, [ x4], x16
         ld1             {v18.8h, v19.8h}, [x15], x16
@@ -624,10 +658,86 @@ function ff_hevc_put_hevc_\type\()_h16_8_neon, export=1
 .endif
         st1             {v26.8b, v27.8b}, [dst], x14
         st1             {v28.8b, v29.8b}, [x10], x14
-.endif
         b.gt            1b // double line
         ret             mx
 endfunc
+
+.endif // qpel vs qpel_uni/qpel_bi
+
+.ifc \type, qpel
+// VVC qpel h32: self-contained int16-domain implementation
+function ff_vvc_put_qpel_h32_8_neon, export=1
+        vvc_load_filter mx
+        sxtw            height, heightw
+        mov             mx, x30
+        sub             src, src, #3
+        mov             dststride, #(VVC_MAX_PB_SIZE << 1)
+        lsl             x13, srcstride, #1 // srcstridel
+        mov             x14, #(VVC_MAX_PB_SIZE << 2)
+        sub             x14, x14, width, uxtw #1
+        sub             x13, x13, width, uxtw
+        sub             x13, x13, #8
+        add             x10, dst, dststride // dstb
+        add             x12, src, srcstride // srcb
+0:      mov             w9, width
+        ld1             {v16.8b}, [src], #8
+        ld1             {v19.8b}, [x12], #8
+        uxtl            v16.8h, v16.8b
+        uxtl            v19.8h, v19.8b
+1:
+        ld1             {v17.8b-v18.8b}, [src], #16
+        ld1             {v20.8b-v21.8b}, [x12], #16
+        bl              ff_hevc_put_hevc_h16_8_neon
+        subs            w9, w9, #16
+        mov             v16.16b, v18.16b
+        mov             v19.16b, v21.16b
+        st1             {v26.8h, v27.8h}, [dst], #32
+        st1             {v28.8h, v29.8h}, [x10], #32
+        b.gt            1b // double line
+        subs            height, height, #2
+        add             src, src, x13
+        add             x12, x12, x13
+        add             dst, dst, x14
+        add             x10, x10, x14
+        b.gt            0b
+        ret             mx
+endfunc
+
+// HEVC qpel h32: byte-domain widening multiply with width loop
+function ff_hevc_put_hevc_qpel_h32_8_neon, export=1
+        load_qpel_filterb mx, x15
+        sxtw            height, heightw
+        sub             src, src, #3
+        mov             dststride, #(HEVC_MAX_PB_SIZE << 1)
+        sub             x13, dststride, width, uxtw #1 // stride adjustment
+0:
+        mov             w9, width
+        mov             x10, src
+        mov             x11, dst
+1:
+        ld1             {v16.16b, v17.16b}, [x10]
+        add             x10, x10, #16
+        ext             v18.16b, v16.16b, v17.16b, #1
+        ext             v19.16b, v16.16b, v17.16b, #2
+        ext             v20.16b, v16.16b, v17.16b, #3
+        ext             v21.16b, v16.16b, v17.16b, #4
+        ext             v22.16b, v16.16b, v17.16b, #5
+        ext             v23.16b, v16.16b, v17.16b, #6
+        ext             v24.16b, v16.16b, v17.16b, #7
+        calc_qpelb      v26, v16, v18, v19, v20, v21, v22, v23, v24
+        calc_qpelb2     v27, v16, v18, v19, v20, v21, v22, v23, v24
+        stp             q26, q27, [x11], #32
+        subs            w9, w9, #16
+        b.gt            1b
+        add             src, src, srcstride
+        add             dst, dst, x13
+        add             dst, dst, width, uxtw #1
+        subs            height, height, #1
+        b.gt            0b
+        ret
+endfunc
+
+.else // qpel_uni, qpel_bi
 
 .ifnc \type, qpel_bi
 function ff_vvc_put_\type\()_h32_8_neon, export=1
@@ -635,16 +745,9 @@ function ff_vvc_put_\type\()_h32_8_neon, export=1
         sxtw            height, heightw
         sub             src, src, #3
         mov             mx, x30
-.ifc \type, qpel
-        mov             dststride, #(VVC_MAX_PB_SIZE << 1)
-        lsl             x13, srcstride, #1 // srcstridel
-        mov             x14, #(VVC_MAX_PB_SIZE << 2)
-        sub             x14, x14, width, uxtw #1
-.else
         lsl             x14, dststride, #1 // dststridel
         lsl             x13, srcstride, #1 // srcstridel
         sub             x14, x14, width, uxtw
-.endif
         b               1f
 endfunc
 .endif // !qpel_bi
@@ -662,16 +765,9 @@ function ff_hevc_put_hevc_\type\()_h32_8_neon, export=1
 .endif
         sub             src, src, #3
         mov             mx, x30
-.ifc \type, qpel
-        mov             dststride, #(HEVC_MAX_PB_SIZE << 1)
-        lsl             x13, srcstride, #1 // srcstridel
-        mov             x14, #(HEVC_MAX_PB_SIZE << 2)
-        sub             x14, x14, width, uxtw #1
-.else
         lsl             x14, dststride, #1 // dststridel
         lsl             x13, srcstride, #1 // srcstridel
         sub             x14, x14, width, uxtw
-.endif
 1:
         sub             x13, x13, width, uxtw
         sub             x13, x13, #8
@@ -691,10 +787,6 @@ function ff_hevc_put_hevc_\type\()_h32_8_neon, export=1
 
         mov             v16.16b, v18.16b
         mov             v19.16b, v21.16b
-.ifc \type, qpel
-        st1             {v26.8h, v27.8h}, [dst], #32
-        st1             {v28.8h, v29.8h}, [x10], #32
-.else
 .ifc \type, qpel_bi
         ld1             {v20.8h, v21.8h}, [ x4], #32
         ld1             {v22.8h, v23.8h}, [x15], #32
@@ -714,7 +806,6 @@ function ff_hevc_put_hevc_\type\()_h32_8_neon, export=1
 .endif
         st1             {v26.8b, v27.8b}, [dst], #16
         st1             {v28.8b, v29.8b}, [x10], #16
-.endif
         b.gt            1b // double line
         subs            height, height, #2
         add             src, src, x13
@@ -728,6 +819,8 @@ function ff_hevc_put_hevc_\type\()_h32_8_neon, export=1
         b.gt            0b
         ret             mx
 endfunc
+
+.endif // qpel vs qpel_uni/qpel_bi
 
 .unreq height
 .unreq heightw
