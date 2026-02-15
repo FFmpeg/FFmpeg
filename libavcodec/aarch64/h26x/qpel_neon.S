@@ -556,7 +556,6 @@ endfunc
 function ff_vvc_put_\type\()_h16_8_neon, export=1
         vvc_load_filter mx
         sxtw            height, heightw
-        mov             mx, x30
         sub             src, src, #3
         mov             mx, x30
 .ifc \type, qpel
@@ -634,7 +633,6 @@ endfunc
 function ff_vvc_put_\type\()_h32_8_neon, export=1
         vvc_load_filter mx
         sxtw            height, heightw
-        mov             mx, x30
         sub             src, src, #3
         mov             mx, x30
 .ifc \type, qpel
