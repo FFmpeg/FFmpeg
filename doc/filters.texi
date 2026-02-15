@@ -5914,6 +5914,11 @@ Options are true or false. Default is false.
 @item print_format
 Set print format for stats. Options are summary, json, or none.
 Default value is none.
+
+@item stats_file
+Write stats to specified file. Format is controlled by @option{print_format},
+which must be set. Specify @code{-} to write to standard output.
+Default is unset.
 @end table
 
 @section lowpass
