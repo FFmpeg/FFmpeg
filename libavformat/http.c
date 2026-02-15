@@ -1687,7 +1687,15 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     if (s->new_location)
         s->off = off;
 
-    err = (off == s->off) ? 0 : -1;
+    if (off != s->off) {
+        av_log(h, AV_LOG_ERROR,
+               "Unexpected offset: expected %"PRIu64", got %"PRIu64"\n",
+               off, s->off);
+        err = AVERROR(EIO);
+        goto done;
+    }
+
+    err = 0;
 done:
     av_freep(&authstr);
     av_freep(&proxyauthstr);
