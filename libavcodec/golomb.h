@@ -455,7 +455,7 @@ static inline int get_ur_golomb_jpegls(GetBitContext *gb, int k, int limit,
             buf = get_bits_long(gb, k);
 
             return buf + (i << k);
-        } else if (i == limit - 1) {
+        } else if (esc_len && i == limit - 1) {
             buf = get_bits_long(gb, esc_len);
 
             return buf + 1;
@@ -512,7 +512,7 @@ static inline int get_ur_golomb_jpegls(GetBitContext *gb, int k, int limit,
             }
 
             buf += ((SUINT)i << k);
-        } else if (i == limit - 1) {
+        } else if (esc_len && i == limit - 1) {
             buf = SHOW_UBITS(re, gb, esc_len);
             LAST_SKIP_BITS(re, gb, esc_len);
 
