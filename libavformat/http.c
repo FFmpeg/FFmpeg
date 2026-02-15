@@ -155,8 +155,8 @@ typedef struct HTTPContext {
     int nb_retries;
     int nb_reconnects;
     int nb_redirects;
-    int sum_latency; /* divide by nb_requests */
-    int max_latency;
+    int64_t sum_latency; /* divide by nb_requests */
+    int64_t max_latency;
     int max_redirects;
 } HTTPContext;
 
