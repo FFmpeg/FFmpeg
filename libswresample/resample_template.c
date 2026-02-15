@@ -25,6 +25,8 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
+// FELEM2U, a variant of FELEM2 which does not produce undefined overflow
+
 #if defined(TEMPLATE_RESAMPLE_DBL)
 
 #    define RENAME(N) N ## _double
@@ -32,6 +34,7 @@
 #    define DELEM  double
 #    define FELEM  double
 #    define FELEM2 double
+#    define FELEM2U double
 #    define FOFFSET 0
 #    define OUT(d, v) d = v
 
@@ -42,6 +45,7 @@
 #    define DELEM  float
 #    define FELEM  float
 #    define FELEM2 float
+#    define FELEM2U float
 #    define FOFFSET 0
 #    define OUT(d, v) d = v
 
@@ -52,6 +56,7 @@
 #    define DELEM  int32_t
 #    define FELEM  int32_t
 #    define FELEM2 int64_t
+#    define FELEM2U uint64_t
 #    define FELEM_MAX INT32_MAX
 #    define FELEM_MIN INT32_MIN
 #    define FOFFSET (1<<(FILTER_SHIFT-1))
@@ -64,6 +69,7 @@
 #    define DELEM  int16_t
 #    define FELEM  int16_t
 #    define FELEM2 int32_t
+#    define FELEM2U uint32_t
 #    define FELEML int64_t
 #    define FELEM_MAX INT16_MAX
 #    define FELEM_MIN INT16_MIN
@@ -161,7 +167,7 @@ static int RENAME(resample_linear)(ResampleContext *c,
 
     for (dst_index = 0; dst_index < n; dst_index++) {
         FELEM *filter = ((FELEM *) c->filter_bank) + c->filter_alloc * index;
-        FELEM2 val = FOFFSET, v2 = FOFFSET;
+        FELEM2U val = FOFFSET, v2 = FOFFSET;
 
         int i;
         for (i = 0; i < c->filter_length; i++) {
@@ -169,15 +175,15 @@ static int RENAME(resample_linear)(ResampleContext *c,
             v2  += src[sample_index + i] * (FELEM2)filter[i + c->filter_alloc];
         }
 #ifdef FELEML
-        val += (v2 - val) * (FELEML) frac / c->src_incr;
+        val += (FELEM2)(v2 - val) * (FELEML) frac / c->src_incr;
 #else
 #    if FILTER_SHIFT == 0
-        val += (v2 - val) * inv_src_incr * frac;
+        val += (FELEM2)(v2 - val) * inv_src_incr * frac;
 #    else
-        val += (v2 - val) / c->src_incr * frac;
+        val += (FELEM2)(v2 - val) / c->src_incr * frac;
 #    endif
 #endif
-        OUT(dst[dst_index], val);
+        OUT(dst[dst_index], (FELEM2)val);
 
         frac += c->dst_incr_mod;
         index += c->dst_incr_div;
@@ -205,6 +211,7 @@ static int RENAME(resample_linear)(ResampleContext *c,
 #undef DELEM
 #undef FELEM
 #undef FELEM2
+#undef FELEM2U
 #undef FELEML
 #undef FELEM_MAX
 #undef FELEM_MIN
