@@ -353,20 +353,12 @@ static inline void silk_decode_lpc(SilkContext *s, SilkFrame *frame,
     for (i = 0; i < order; i++) {
         const uint8_t * codebook = s->wb ? ff_silk_lsf_codebook_wb  [lsf_i1] :
                                            ff_silk_lsf_codebook_nbmb[lsf_i1];
-        int cur, prev, next, weight_sq, weight, ipart, fpart, y, value;
+        int cur,  weight, value;
 
         /* find the weight of the residual */
-        /* TODO: precompute */
         cur = codebook[i];
-        prev = i ? codebook[i - 1] : 0;
-        next = i + 1 < order ? codebook[i + 1] : 256;
-        weight_sq = (1024 / (cur - prev) + 1024 / (next - cur)) << 16;
-
-        /* approximate square-root with mandated fixed-point arithmetic */
-        ipart = opus_ilog(weight_sq);
-        fpart = (weight_sq >> (ipart-8)) & 127;
-        y = ((ipart & 1) ? 32768 : 46214) >> ((32 - ipart)>>1);
-        weight = y + ((213 * fpart * y) >> 16);
+        weight = s->wb ? ff_silk_model_lsf_weight_wb[lsf_i1][i] :
+                         ff_silk_model_lsf_weight_nbmb[lsf_i1][i];
 
         value = cur * 128 + (lsf_res[i] * 16384) / weight;
         nlsf[i] = av_clip_uintp2(value, 15);

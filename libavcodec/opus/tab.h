@@ -63,7 +63,8 @@ extern const uint16_t ff_silk_model_pitch_contour_nb10ms[];
 extern const uint16_t ff_silk_model_pitch_contour_nb20ms[];
 extern const uint16_t ff_silk_model_pitch_contour_mbwb10ms[];
 extern const uint16_t ff_silk_model_pitch_contour_mbwb20ms[];
-
+extern const uint16_t ff_silk_model_lsf_weight_nbmb[32][10];
+extern const uint16_t ff_silk_model_lsf_weight_wb[32][16];
 extern const uint16_t ff_silk_model_ltp_filter[];
 extern const uint16_t ff_silk_model_ltp_filter0_sel[];
 extern const uint16_t ff_silk_model_ltp_filter1_sel[];
