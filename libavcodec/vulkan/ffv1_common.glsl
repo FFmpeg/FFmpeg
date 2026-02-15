@@ -78,9 +78,15 @@ layout (push_constant, scalar) uniform pushConstants {
 
 #include "rangecoder.glsl"
 
+#if !defined(RGB)
+#define TYPE int16_t
+#define VTYPE2 i16vec2
+#define VTYPE3 i16vec3
+#else
 #define TYPE int32_t
 #define VTYPE2 i32vec2
 #define VTYPE3 i32vec3
+#endif
 
 struct SliceContext {
     RangeCoder c;
