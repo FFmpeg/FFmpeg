@@ -59,7 +59,7 @@ int main(int argc, char **argv)
     _setmode(_fileno(stdout), _O_BINARY);
 #endif
 
-    for (int i = 1; i < argc; i += 2) {
+    for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "-help") || !strcmp(argv[i], "--help")) {
             fprintf(stderr,
                     "sws_ops [options...]\n"
@@ -74,22 +74,29 @@ int main(int argc, char **argv)
             );
             return 0;
         }
-        if (argv[i][0] != '-' || i + 1 == argc)
-            goto bad_option;
         if (!strcmp(argv[i], "-src")) {
+            if (i + 1 >= argc)
+                goto bad_option;
             src_fmt = av_get_pix_fmt(argv[i + 1]);
             if (src_fmt == AV_PIX_FMT_NONE) {
                 fprintf(stderr, "invalid pixel format %s\n", argv[i + 1]);
                 goto error;
             }
+            i++;
         } else if (!strcmp(argv[i], "-dst")) {
+            if (i + 1 >= argc)
+                goto bad_option;
             dst_fmt = av_get_pix_fmt(argv[i + 1]);
             if (dst_fmt == AV_PIX_FMT_NONE) {
                 fprintf(stderr, "invalid pixel format %s\n", argv[i + 1]);
                 goto error;
             }
+            i++;
         } else if (!strcmp(argv[i], "-v")) {
+            if (i + 1 >= argc)
+                goto bad_option;
             av_log_set_level(atoi(argv[i + 1]));
+            i++;
         } else {
 bad_option:
             fprintf(stderr, "bad option or argument missing (%s) see -help\n", argv[i]);
