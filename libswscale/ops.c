@@ -760,8 +760,9 @@ void ff_sws_op_list_print(void *log, int lev, int lev_extra,
     }
 
     for (int i = 0; i < ops->num_ops; i++) {
-        const SwsOp *op = &ops->ops[i];
+        const SwsOp *op   = &ops->ops[i];
         const SwsOp *next = i + 1 < ops->num_ops ? &ops->ops[i + 1] : op;
+        const char *name  = ff_sws_op_type_name(op->op);
         char buf[32];
 
         av_log(log, lev, "  [%3s %c%c%c%c -> %c%c%c%c] ",
@@ -777,68 +778,62 @@ void ff_sws_op_list_print(void *log, int lev, int lev_extra,
 
         switch (op->op) {
         case SWS_OP_INVALID:
-            av_log(log, lev, "SWS_OP_INVALID\n");
+        case SWS_OP_SWAP_BYTES:
+            av_log(log, lev, "%s\n", name);
             break;
         case SWS_OP_READ:
         case SWS_OP_WRITE:
-            av_log(log, lev, "%-20s: %d elem(s) %s >> %d%s\n",
-                   op->op == SWS_OP_READ ? "SWS_OP_READ"
-                                         : "SWS_OP_WRITE",
+            av_log(log, lev, "%-20s: %d elem(s) %s >> %d%s\n", name,
                    op->rw.elems,  op->rw.packed ? "packed" : "planar",
                    op->rw.frac,
                    describe_order(op->op == SWS_OP_READ ? ops->order_src
                                                         : ops->order_dst,
                                   op->rw.packed ? 1 : op->rw.elems, buf));
             break;
-        case SWS_OP_SWAP_BYTES:
-            av_log(log, lev, "SWS_OP_SWAP_BYTES\n");
-            break;
         case SWS_OP_LSHIFT:
-            av_log(log, lev, "%-20s: << %u\n", "SWS_OP_LSHIFT", op->c.u);
+            av_log(log, lev, "%-20s: << %u\n", name, op->c.u);
             break;
         case SWS_OP_RSHIFT:
-            av_log(log, lev, "%-20s: >> %u\n", "SWS_OP_RSHIFT", op->c.u);
+            av_log(log, lev, "%-20s: >> %u\n", name, op->c.u);
             break;
         case SWS_OP_PACK:
         case SWS_OP_UNPACK:
-            av_log(log, lev, "%-20s: {%d %d %d %d}\n",
-                   op->op == SWS_OP_PACK ? "SWS_OP_PACK"
-                                         : "SWS_OP_UNPACK",
+            av_log(log, lev, "%-20s: {%d %d %d %d}\n", name,
                    op->pack.pattern[0], op->pack.pattern[1],
                    op->pack.pattern[2], op->pack.pattern[3]);
             break;
         case SWS_OP_CLEAR:
-            av_log(log, lev, "%-20s: {%s %s %s %s}\n", "SWS_OP_CLEAR",
+            av_log(log, lev, "%-20s: {%s %s %s %s}\n", name,
                    op->c.q4[0].den ? PRINTQ(op->c.q4[0]) : "_",
                    op->c.q4[1].den ? PRINTQ(op->c.q4[1]) : "_",
                    op->c.q4[2].den ? PRINTQ(op->c.q4[2]) : "_",
                    op->c.q4[3].den ? PRINTQ(op->c.q4[3]) : "_");
             break;
         case SWS_OP_SWIZZLE:
-            av_log(log, lev, "%-20s: %d%d%d%d\n", "SWS_OP_SWIZZLE",
+            av_log(log, lev, "%-20s: %d%d%d%d\n", name,
                    op->swizzle.x, op->swizzle.y, op->swizzle.z, op->swizzle.w);
             break;
         case SWS_OP_CONVERT:
-            av_log(log, lev, "%-20s: %s -> %s%s\n", "SWS_OP_CONVERT",
+            av_log(log, lev, "%-20s: %s -> %s%s\n", name,
                    ff_sws_pixel_type_name(op->type),
                    ff_sws_pixel_type_name(op->convert.to),
                    op->convert.expand ? " (expand)" : "");
             break;
         case SWS_OP_DITHER:
-            av_log(log, lev, "%-20s: %dx%d matrix + {%d %d %d %d}\n", "SWS_OP_DITHER",
+            av_log(log, lev, "%-20s: %dx%d matrix + {%d %d %d %d}\n", name,
                     1 << op->dither.size_log2, 1 << op->dither.size_log2,
                     op->dither.y_offset[0], op->dither.y_offset[1],
                     op->dither.y_offset[2], op->dither.y_offset[3]);
             break;
         case SWS_OP_MIN:
-            av_log(log, lev, "%-20s: x <= {%s %s %s %s}\n", "SWS_OP_MIN",
+            av_log(log, lev, "%-20s: x <= {%s %s %s %s}\n", name,
                     op->c.q4[0].den ? PRINTQ(op->c.q4[0]) : "_",
                     op->c.q4[1].den ? PRINTQ(op->c.q4[1]) : "_",
                     op->c.q4[2].den ? PRINTQ(op->c.q4[2]) : "_",
                     op->c.q4[3].den ? PRINTQ(op->c.q4[3]) : "_");
             break;
         case SWS_OP_MAX:
-            av_log(log, lev, "%-20s: {%s %s %s %s} <= x\n", "SWS_OP_MAX",
+            av_log(log, lev, "%-20s: {%s %s %s %s} <= x\n", name,
                     op->c.q4[0].den ? PRINTQ(op->c.q4[0]) : "_",
                     op->c.q4[1].den ? PRINTQ(op->c.q4[1]) : "_",
                     op->c.q4[2].den ? PRINTQ(op->c.q4[2]) : "_",
@@ -849,15 +844,14 @@ void ff_sws_op_list_print(void *log, int lev, int lev_extra,
                                         "[%s %s %s %s %s] "
                                         "[%s %s %s %s %s] "
                                         "[%s %s %s %s %s]]\n",
-                   "SWS_OP_LINEAR", describe_lin_mask(op->lin.mask),
+                   name, describe_lin_mask(op->lin.mask),
                    PRINTQ(op->lin.m[0][0]), PRINTQ(op->lin.m[0][1]), PRINTQ(op->lin.m[0][2]), PRINTQ(op->lin.m[0][3]), PRINTQ(op->lin.m[0][4]),
                    PRINTQ(op->lin.m[1][0]), PRINTQ(op->lin.m[1][1]), PRINTQ(op->lin.m[1][2]), PRINTQ(op->lin.m[1][3]), PRINTQ(op->lin.m[1][4]),
                    PRINTQ(op->lin.m[2][0]), PRINTQ(op->lin.m[2][1]), PRINTQ(op->lin.m[2][2]), PRINTQ(op->lin.m[2][3]), PRINTQ(op->lin.m[2][4]),
                    PRINTQ(op->lin.m[3][0]), PRINTQ(op->lin.m[3][1]), PRINTQ(op->lin.m[3][2]), PRINTQ(op->lin.m[3][3]), PRINTQ(op->lin.m[3][4]));
             break;
         case SWS_OP_SCALE:
-            av_log(log, lev, "%-20s: * %s\n", "SWS_OP_SCALE",
-                   PRINTQ(op->c.q));
+            av_log(log, lev, "%-20s: * %s\n", name, PRINTQ(op->c.q));
             break;
         case SWS_OP_TYPE_NB:
             break;
