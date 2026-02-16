@@ -2049,7 +2049,6 @@ EXTERNAL_LIBRARY_LIST="
     liboapv
     libopencv
     libopencolorio
-    libopenimage
     libopenh264
     libopenjpeg
     libopenmpt
