@@ -351,6 +351,8 @@ static const AVClass tile_grid_class = {
 
 #define OFFSET(x) offsetof(AVStreamGroupLCEVC, x)
 static const AVOption lcevc_options[] = {
+    { "lcevc_index", "Index of the LCEVC stream within the group", OFFSET(lcevc_index),
+        AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, FLAGS },
     { "video_size", "size of video after LCEVC enhancement has been applied", OFFSET(width),
         AV_OPT_TYPE_IMAGE_SIZE, { .str = NULL }, 0, INT_MAX, FLAGS },
     { NULL },
