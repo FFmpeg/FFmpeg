@@ -1826,6 +1826,10 @@ static int colour_mapping_table(GetBitContext *gb, AVCodecContext *avctx, HEVCPP
     pps->luma_bit_depth_cm_output   = get_ue_golomb(gb) + 8;
     pps->chroma_bit_depth_cm_output = get_ue_golomb(gb) + 8;
 
+    if (   pps->  luma_bit_depth_cm_output < pps->  luma_bit_depth_cm_input
+        || pps->chroma_bit_depth_cm_output < pps->chroma_bit_depth_cm_input)
+            return AVERROR_INVALIDDATA;
+
     pps->cm_res_quant_bits = get_bits(gb, 2);
     pps->cm_delta_flc_bits = get_bits(gb, 2) + 1;
 
