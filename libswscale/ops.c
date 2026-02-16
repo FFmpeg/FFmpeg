@@ -92,6 +92,32 @@ bool ff_sws_pixel_type_is_int(SwsPixelType type)
     return false;
 }
 
+const char *ff_sws_op_type_name(SwsOpType op)
+{
+    switch (op) {
+    case SWS_OP_READ:        return "SWS_OP_READ";
+    case SWS_OP_WRITE:       return "SWS_OP_WRITE";
+    case SWS_OP_SWAP_BYTES:  return "SWS_OP_SWAP_BYTES";
+    case SWS_OP_SWIZZLE:     return "SWS_OP_SWIZZLE";
+    case SWS_OP_UNPACK:      return "SWS_OP_UNPACK";
+    case SWS_OP_PACK:        return "SWS_OP_PACK";
+    case SWS_OP_LSHIFT:      return "SWS_OP_LSHIFT";
+    case SWS_OP_RSHIFT:      return "SWS_OP_RSHIFT";
+    case SWS_OP_CLEAR:       return "SWS_OP_CLEAR";
+    case SWS_OP_CONVERT:     return "SWS_OP_CONVERT";
+    case SWS_OP_MIN:         return "SWS_OP_MIN";
+    case SWS_OP_MAX:         return "SWS_OP_MAX";
+    case SWS_OP_SCALE:       return "SWS_OP_SCALE";
+    case SWS_OP_LINEAR:      return "SWS_OP_LINEAR";
+    case SWS_OP_DITHER:      return "SWS_OP_DITHER";
+    case SWS_OP_INVALID:     return "SWS_OP_INVALID";
+    case SWS_OP_TYPE_NB: break;
+    }
+
+    av_unreachable("Invalid operation type!");
+    return "ERR";
+}
+
 /* biased towards `a` */
 static AVRational av_min_q(AVRational a, AVRational b)
 {

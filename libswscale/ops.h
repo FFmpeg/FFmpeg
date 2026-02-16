@@ -69,6 +69,8 @@ typedef enum SwsOpType {
     SWS_OP_TYPE_NB,
 } SwsOpType;
 
+const char *ff_sws_op_type_name(SwsOpType op);
+
 typedef enum SwsCompFlags {
     SWS_COMP_GARBAGE = 1 << 0, /* contents are undefined / garbage data */
     SWS_COMP_EXACT   = 1 << 1, /* value is an exact integer */
