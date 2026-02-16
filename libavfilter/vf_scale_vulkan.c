@@ -239,7 +239,7 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
     desc = (FFVulkanDescriptorSetBinding []) {
         {
             .name       = "input_img",
-            .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .type       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             .mem_layout = NULL,
             .mem_quali  = "readonly",
             .dimensions = 2,
