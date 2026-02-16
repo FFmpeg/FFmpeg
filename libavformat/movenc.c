@@ -38,6 +38,7 @@
 #include "avc.h"
 #include "evc.h"
 #include "apv.h"
+#include "lcevc.h"
 #include "libavcodec/ac3_parser_internal.h"
 #include "libavcodec/dnxhddata.h"
 #include "libavcodec/flac.h"
@@ -1681,6 +1682,19 @@ static int mov_write_evcc_tag(AVIOContext *pb, MOVTrack *track)
     return update_size(pb, pos);
 }
 
+static int mov_write_lvcc_tag(AVIOContext *pb, MOVTrack *track)
+{
+    int64_t pos = avio_tell(pb);
+
+    avio_wb32(pb, 0);
+    ffio_wfourcc(pb, "lvcC");
+
+    ff_isom_write_lvcc(pb, track->extradata[track->last_stsd_index],
+                       track->extradata_size[track->last_stsd_index]);
+
+    return update_size(pb, pos);
+}
+
 static int mov_write_vvcc_tag(AVIOContext *pb, MOVTrack *track)
 {
     int64_t pos = avio_tell(pb);
@@ -2880,6 +2894,8 @@ static int mov_write_video_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
     }
     else if (track->par->codec_id ==AV_CODEC_ID_EVC) {
         mov_write_evcc_tag(pb, track);
+    } else if (track->par->codec_id == AV_CODEC_ID_LCEVC) {
+        mov_write_lvcc_tag(pb, track);
     } else if (track->par->codec_id ==AV_CODEC_ID_APV) {
         mov_write_apvc_tag(mov->fc, pb, track);
     } else if (track->par->codec_id == AV_CODEC_ID_VP9) {
@@ -5222,6 +5238,9 @@ static int mov_write_moov_tag(AVIOContext *pb, MOVMuxContext *mov,
         if (track->tag == MKTAG('r','t','p',' ')) {
             track->tref_tag = MKTAG('h','i','n','t');
             track->tref_id = mov->tracks[track->src_track].track_id;
+        } else if (track->tag == MKTAG('l','v','c','1')) {
+            track->tref_tag = MKTAG('s','b','a','s');
+            track->tref_id = mov->tracks[track->src_track].track_id;
         } else if (track->par->codec_type == AVMEDIA_TYPE_AUDIO) {
             const AVPacketSideData *sd = av_packet_side_data_get(track->st->codecpar->coded_side_data,
                                                                  track->st->codecpar->nb_coded_side_data,
@@ -6847,6 +6866,7 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
          par->codec_id == AV_CODEC_ID_VVC ||
          par->codec_id == AV_CODEC_ID_VP9 ||
          par->codec_id == AV_CODEC_ID_EVC ||
+         par->codec_id == AV_CODEC_ID_LCEVC ||
          par->codec_id == AV_CODEC_ID_TRUEHD) && !trk->extradata_size[0] &&
          !TAG_IS_AVCI(trk->tag)) {
         /* copy frame to create needed atoms */
@@ -6956,6 +6976,25 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
             avio_write(pb, reformatted_data, size);
         } else {
             size = ff_vvc_annexb2mp4(pb, pkt->data, pkt->size, 0, NULL);
+        }
+    } else if (par->codec_id == AV_CODEC_ID_LCEVC && trk->extradata_size[trk->last_stsd_index] > 0 &&
+              *(uint8_t *)trk->extradata[trk->last_stsd_index] != 1) {
+        /* extradata is Annex B, assume the bitstream is too and convert it */
+        if (trk->hint_track >= 0 && trk->hint_track < mov->nb_tracks) {
+            ret = ff_nal_parse_units_buf(pkt->data, &reformatted_data, &size);
+            if (ret < 0)
+                return ret;
+            avio_write(pb, reformatted_data, size);
+        } else {
+            if (trk->cenc.aes_ctr) {
+                size = ff_mov_cenc_avc_parse_nal_units(&trk->cenc, pb, pkt->data, size);
+                if (size < 0) {
+                    ret = size;
+                    goto err;
+                }
+            } else {
+                size = ff_nal_parse_units(pb, pkt->data, pkt->size);
+            }
         }
     } else if (par->codec_id == AV_CODEC_ID_AV1 && !trk->cenc.aes_ctr) {
         if (trk->hint_track >= 0 && trk->hint_track < mov->nb_tracks) {
@@ -8041,10 +8080,25 @@ static int mov_init(AVFormatContext *s)
         s->streams[0]->disposition |= AV_DISPOSITION_DEFAULT;
     }
 
-#if CONFIG_IAMFENC
     for (i = 0; i < s->nb_stream_groups; i++) {
         AVStreamGroup *stg = s->stream_groups[i];
 
+        if (stg->type == AV_STREAM_GROUP_PARAMS_LCEVC) {
+            if (stg->nb_streams != 2) {
+                av_log(s, AV_LOG_ERROR, "Exactly two Streams are supported for Stream Groups of type LCEVC\n");
+                return AVERROR(EINVAL);
+            }
+            AVStreamGroupLCEVC *lcevc = stg->params.lcevc;
+            if (lcevc->lcevc_index > 1)
+                return AVERROR(EINVAL);
+            AVStream *st = stg->streams[lcevc->lcevc_index];
+            if (st->codecpar->codec_id != AV_CODEC_ID_LCEVC) {
+                av_log(s, AV_LOG_ERROR, "Stream #%u is not an LCEVC stream\n", lcevc->lcevc_index);
+                return AVERROR(EINVAL);
+            }
+        }
+
+#if CONFIG_IAMFENC
         if (stg->type != AV_STREAM_GROUP_PARAMS_IAMF_AUDIO_ELEMENT)
             continue;
 
@@ -8062,8 +8116,8 @@ static int mov_init(AVFormatContext *s)
 
         if (!mov->nb_tracks) // We support one track for the entire IAMF structure
             mov->nb_tracks++;
-    }
 #endif
+    }
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
@@ -8376,6 +8430,28 @@ static int mov_init(AVFormatContext *s)
             if (ret)
                 return ret;
         }
+    }
+
+    for (i = 0; i < s->nb_stream_groups; i++) {
+        AVStreamGroup *stg = s->stream_groups[i];
+
+        if (stg->type != AV_STREAM_GROUP_PARAMS_LCEVC)
+            continue;
+
+        AVStreamGroupLCEVC *lcevc = stg->params.lcevc;
+        AVStream *st    = stg->streams[lcevc->lcevc_index];
+        MOVTrack *track = st->priv_data;
+
+        for (i = 0; i < mov->nb_tracks; i++) {
+            MOVTrack *trk = &mov->tracks[i];
+
+            if (trk->st == stg->streams[!lcevc->lcevc_index])
+                break;
+        }
+        track->src_track = i;
+
+        track->par->width = lcevc->width;
+        track->par->height = track->height = lcevc->height;
     }
 
     enable_tracks(s);
@@ -8892,6 +8968,7 @@ static const AVCodecTag codec_mp4_tags[] = {
     { AV_CODEC_ID_VVC,             MKTAG('v', 'v', 'c', '1') },
     { AV_CODEC_ID_VVC,             MKTAG('v', 'v', 'i', '1') },
     { AV_CODEC_ID_EVC,             MKTAG('e', 'v', 'c', '1') },
+    { AV_CODEC_ID_LCEVC,           MKTAG('l', 'v', 'c', '1') },
     { AV_CODEC_ID_APV,             MKTAG('a', 'p', 'v', '1') },
     { AV_CODEC_ID_MPEG2VIDEO,      MKTAG('m', 'p', '4', 'v') },
     { AV_CODEC_ID_MPEG1VIDEO,      MKTAG('m', 'p', '4', 'v') },

@@ -3,6 +3,7 @@ releases are sorted from youngest to oldest.
 
 version <next>:
 - Extend AMF Color Converter (vf_vpp_amf) HDR capabilities
+- LCEVC track muxing support in MP4 muxer
 
 
 version 8.1:

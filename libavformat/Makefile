@@ -389,7 +389,8 @@ OBJS-$(CONFIG_MOV_DEMUXER)               += mov.o mov_chan.o mov_esds.o \
 OBJS-$(CONFIG_MOV_MUXER)                 += movenc.o \
                                             movenchint.o mov_chan.o rtp.o \
                                             movenccenc.o movenc_ttml.o rawutils.o \
-                                            apv.o dovi_isom.o evc.o cbs.o cbs_av1.o cbs_apv.o
+                                            apv.o dovi_isom.o evc.o cbs.o cbs_av1.o cbs_apv.o \
+                                            lcevc.o
 OBJS-$(CONFIG_MP2_MUXER)                 += rawenc.o
 OBJS-$(CONFIG_MP3_DEMUXER)               += mp3dec.o replaygain.o
 OBJS-$(CONFIG_MP3_MUXER)                 += mp3enc.o rawenc.o id3v2enc.o
@@ -751,6 +752,7 @@ SHLIBOBJS-$(CONFIG_JPEGXL_ANIM_DEMUXER)  += jpegxl_parse.o
 SHLIBOBJS-$(CONFIG_MATROSKA_DEMUXER)     += mpeg4audio_sample_rates.o
 SHLIBOBJS-$(CONFIG_MATROSKA_MUXER)       += opus_frame_duration_tab.o
 SHLIBOBJS-$(CONFIG_MOV_DEMUXER)          += ac3_channel_layout_tab.o
+SHLIBOBJS-$(CONFIG_MOV_MUXER)            += h2645_parse.o lcevctab.o
 SHLIBOBJS-$(CONFIG_MP3_MUXER)            += mpegaudiotabs.o
 SHLIBOBJS-$(CONFIG_MXF_MUXER)            += golomb_tab.o \
                                             rangecoder_dec.o
