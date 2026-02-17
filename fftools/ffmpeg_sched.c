@@ -435,7 +435,7 @@ static void task_init(Scheduler *sch, SchTask *task, enum SchedulerNodeType type
     task->func_arg  = func_arg;
 }
 
-static int64_t trailing_dts(const Scheduler *sch, int count_finished)
+static int64_t trailing_dts(const Scheduler *sch)
 {
     int64_t min_dts = INT64_MAX;
 
@@ -445,7 +445,7 @@ static int64_t trailing_dts(const Scheduler *sch, int count_finished)
         for (unsigned j = 0; j < mux->nb_streams; j++) {
             const SchMuxStream *ms = &mux->streams[j];
 
-            if (ms->source_finished && !count_finished)
+            if (ms->source_finished)
                 continue;
             if (ms->last_dts == AV_NOPTS_VALUE)
                 return AV_NOPTS_VALUE;
@@ -455,6 +455,26 @@ static int64_t trailing_dts(const Scheduler *sch, int count_finished)
     }
 
     return min_dts == INT64_MAX ? AV_NOPTS_VALUE : min_dts;
+}
+
+static int64_t progressing_dts(const Scheduler *sch, int count_finished)
+{
+    int64_t max_dts = INT64_MIN;
+
+    for (unsigned i = 0; i < sch->nb_mux; i++) {
+        const SchMux *mux = &sch->mux[i];
+
+        for (unsigned j = 0; j < mux->nb_streams; j++) {
+            const SchMuxStream *ms = &mux->streams[j];
+
+            if (ms->source_finished && !count_finished)
+                continue;
+            if (ms->last_dts != AV_NOPTS_VALUE)
+                max_dts = FFMAX(max_dts, ms->last_dts);
+        }
+    }
+
+    return max_dts == INT64_MIN ? AV_NOPTS_VALUE : max_dts;
 }
 
 void sch_remove_filtergraph(Scheduler *sch, int idx)
@@ -1399,9 +1419,9 @@ static void schedule_update_locked(Scheduler *sch)
     if (atomic_load(&sch->terminate))
         return;
 
-    dts = trailing_dts(sch, 0);
+    dts = trailing_dts(sch);
 
-    atomic_store(&sch->last_dts, dts);
+    atomic_store(&sch->last_dts, progressing_dts(sch, 0));
 
     // initialize our internal state
     for (unsigned type = 0; type < 2; type++)
@@ -2768,7 +2788,7 @@ int sch_stop(Scheduler *sch, int64_t *finish_ts)
     }
 
     if (finish_ts)
-        *finish_ts = trailing_dts(sch, 1);
+        *finish_ts = progressing_dts(sch, 1);
 
     sch->state = SCH_STATE_STOPPED;
 
