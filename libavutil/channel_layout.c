@@ -694,6 +694,7 @@ av_channel_layout_channel_from_index(const AVChannelLayout *channel_layout,
             if ((1ULL << i) & channel_layout->u.mask && !idx--)
                 return i;
         }
+        av_fallthrough;
     default:
         return AV_CHAN_NONE;
     }
