@@ -25,6 +25,7 @@ version <next>:
 - Vulkan compute codec optimizations
 - swscale Vulkan support
 - LCEVC metadata bitstream filter
+- Add vf_deinterlace_d3d12 filter
 
 
 version 8.0:
