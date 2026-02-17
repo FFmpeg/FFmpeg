@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/avstring.h"
 #include "libavutil/avassert.h"
 #include "libavutil/bswap.h"
@@ -1182,12 +1183,14 @@ static int nut_read_packet(AVFormatContext *s, AVPacket *pkt)
             if (decode_syncpoint(nut, &ts, &back_ptr) < 0)
                 goto resync;
             frame_code = avio_r8(bc);
+            av_fallthrough;
         case 0:
             ret = decode_frame(nut, pkt, frame_code);
             if (ret == 0)
                 return 0;
             else if (ret == 1) // OK but discard packet
                 break;
+            av_fallthrough;
         default:
 resync:
             av_log(s, AV_LOG_DEBUG, "syncing from %"PRId64"\n", pos);
