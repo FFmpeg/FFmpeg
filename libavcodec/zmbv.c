@@ -26,6 +26,7 @@
 
 #include <stddef.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/common.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
@@ -583,6 +584,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
         case ZMBV_FMT_8BPP:
             for (j = 0; j < 256; j++)
                 AV_WN32(&frame->data[1][j * 4], 0xFFU << 24 | AV_RB24(&c->pal[j * 3]));
+            av_fallthrough;
         case ZMBV_FMT_15BPP:
         case ZMBV_FMT_16BPP:
 #ifdef ZMBV_ENABLE_24BPP
