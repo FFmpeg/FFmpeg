@@ -23,6 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
 #include "avformat.h"
@@ -691,6 +692,7 @@ static int ty_read_packet(AVFormatContext *s, AVPacket *pkt)
             break;
         default:
             ff_dlog(s, "Invalid record type 0x%02x\n", rec->rec_type);
+            av_fallthrough;
         case 0x01:
         case 0x02:
         case 0x03: /* TiVo data services */
