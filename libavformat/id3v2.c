@@ -283,6 +283,7 @@ static int decode_str(AVFormatContext *s, AVIOContext *pb, int encoding,
         switch (bom) {
         case 0xfffe:
             get = avio_rl16;
+            break;
         case 0xfeff:
             break;
         case 0: // empty string without bom
