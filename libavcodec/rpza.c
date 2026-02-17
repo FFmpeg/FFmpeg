@@ -36,6 +36,7 @@
 
 #include <stdint.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/internal.h"
 #include "avcodec.h"
 #include "bytestream.h"
@@ -163,6 +164,7 @@ static int rpza_decode_stream(RpzaContext *s)
         /* Fill blocks with 4 colors */
         case 0xc0:
             colorA = bytestream2_get_be16(&s->gb);
+            av_fallthrough;
         case 0x20:
             colorB = bytestream2_get_be16(&s->gb);
 
