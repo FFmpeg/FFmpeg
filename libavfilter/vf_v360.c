@@ -4427,7 +4427,7 @@ static int config_output(AVFilterLink *outlink)
         in_offset_h = h;
         break;
     default:
-        av_assert0(0);
+        av_unreachable("All valid cases are handled");
     }
 
     set_dimensions(s->inplanewidth, s->inplaneheight, w, h, desc);
@@ -4449,6 +4449,7 @@ static int config_output(AVFilterLink *outlink)
     case FISHEYE:
         default_ih_fov = 180.f;
         default_iv_fov = 180.f;
+        break;
     default:
         break;
     }
