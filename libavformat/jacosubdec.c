@@ -28,6 +28,7 @@
 #include "avformat.h"
 #include "demux.h"
 #include "internal.h"
+#include "libavutil/attributes.h"
 #include "subtitles.h"
 #include "libavcodec/jacosub.h"
 #include "libavutil/avstring.h"
@@ -144,9 +145,9 @@ static int get_shift(unsigned timeres, const char *buf)
 
     ret = 0;
     switch (n) {
-    case 1:        h = 0;                   //clear all in case of a single parameter
-    case 2: s = m; m = h; h = 0;            //shift into second subsecondd
-    case 3: d = s; s = m; m = h; h = 0;     //shift into minute second subsecond
+    case 1:        h = 0;               av_fallthrough; //clear all in case of a single parameter
+    case 2: s = m; m = h; h = 0;        av_fallthrough; //shift into second subsecondd
+    case 3: d = s; s = m; m = h; h = 0;                 //shift into minute second subsecond
     }
 
     ret = (int64_t)h*3600 + (int64_t)m*60 + s;
