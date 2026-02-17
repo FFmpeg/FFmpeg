@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #define BITSTREAM_WRITER_LE
 
 #include "libavutil/channel_layout.h"
@@ -2844,6 +2845,7 @@ static void fill_buffer(WavPackEncodeContext *s,
             COPY_SAMPLES(int32_t, 0, 8);
             break;
         }
+        av_fallthrough;
     case AV_SAMPLE_FMT_FLTP:
         memcpy(dst, src, nb_samples * 4);
     }
