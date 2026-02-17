@@ -1603,6 +1603,7 @@ static void ebml_free(EbmlSyntax *syntax, void *data)
                 list->alloc_elem_size = 0;
             } else
                 ebml_free(syntax[i].def.n, data_off);
+            break;
         default:
             break;
         }
