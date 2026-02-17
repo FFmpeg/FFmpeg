@@ -1580,17 +1580,6 @@ check_lib(){
         enable $name && eval ${name}_extralibs="\$@"
 }
 
-check_lib_cpp(){
-    log check_lib_cpp "$@"
-    name="$1"
-    headers="$2"
-    code="$3"
-    shift 3
-    disable $name
-    test_code ld "$headers" "$code" cxx "$@" &&
-        enable $name && eval ${name}_extralibs="\$@"
-}
-
 check_lib_cxx(){
     log check_lib_cxx "$@"
     name="$1"
@@ -1802,14 +1791,6 @@ require_cxx(){
     name="${1%% *}"
     shift
     check_lib_cxx "$name" "$@" || die "ERROR: $name_version not found"
-}
-
-require_cpp(){
-    log require_cpp "$@"
-    name_version="$1"
-    name="${1%% *}"
-    shift
-    check_lib_cpp "$name" "$@" || die "ERROR: $name_version not found"
 }
 
 require_headers(){
