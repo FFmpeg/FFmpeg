@@ -64,12 +64,12 @@ SECTION .text
     %rep %3
         %define off %%i
         AVG_LOAD_W16        0, off
-        %2
+        %2                 %1
         AVG_SAVE_W16       %1, 0, off
 
 
         AVG_LOAD_W16        1, off
-        %2
+        %2                 %1
         AVG_SAVE_W16       %1, 1, off
 
         %assign %%i %%i+1
@@ -84,7 +84,7 @@ SECTION .text
     pinsrd              xm0, [src0q + AVG_SRC_STRIDE], 1
     movd                xm1, [src1q]
     pinsrd              xm1, [src1q + AVG_SRC_STRIDE], 1
-    %2
+    %2                   %1
     AVG_SAVE_W2          %1
     AVG_LOOP_END        .w2
 
@@ -93,7 +93,7 @@ SECTION .text
     pinsrq              xm0, [src0q + AVG_SRC_STRIDE], 1
     movq                xm1, [src1q]
     pinsrq              xm1, [src1q + AVG_SRC_STRIDE], 1
-    %2
+    %2                   %1
     AVG_SAVE_W4          %1
 
     AVG_LOOP_END        .w4
@@ -103,7 +103,7 @@ SECTION .text
     vinserti128         m0, m0, [src0q + AVG_SRC_STRIDE], 1
     vinserti128         m1, m1, [src1q], 0
     vinserti128         m1, m1, [src1q + AVG_SRC_STRIDE], 1
-    %2
+    %2                  %1
     AVG_SAVE_W8         %1
 
     AVG_LOOP_END       .w8
@@ -132,13 +132,15 @@ SECTION .text
     RET
 %endmacro
 
-%macro AVG   0
+%macro AVG   1
     paddsw               m0, m1
     pmulhrsw             m0, m2
+%if %1 != 8
     CLIPW                m0, m3, m4
+%endif
 %endmacro
 
-%macro W_AVG 0
+%macro W_AVG 1
     punpckhwd            m5, m0, m1
     pmaddwd              m5, m3
     paddd                m5, m4
@@ -150,7 +152,9 @@ SECTION .text
     psrad                m0, xm2
 
     packssdw             m0, m5
+%if %1 != 8
     CLIPW                m0, m6, m7
+%endif
 %endmacro
 
 %macro AVG_LOAD_W16 2  ; line, offset
@@ -217,11 +221,13 @@ SECTION .text
 ;void ff_vvc_avg_%1bpc_avx2(uint8_t *dst, ptrdiff_t dst_stride,
 ;   const int16_t *src0, const int16_t *src1, intptr_t width, intptr_t height, intptr_t pixel_max);
 %macro VVC_AVG_AVX2 1
-cglobal vvc_avg_%1bpc, 4, 7, 5, dst, stride, src0, src1, w, h, bd
+cglobal vvc_avg_%1bpc, 4, 7, 3+2*(%1 != 8), dst, stride, src0, src1, w, h, bd
     movifnidn            hd, hm
 
+%if %1 != 8
     pxor                 m3, m3             ; pixel min
     vpbroadcastw         m4, bdm            ; pixel max
+%endif
 
     movifnidn           bdd, bdm
     inc                 bdd
@@ -245,7 +251,7 @@ cglobal vvc_avg_%1bpc, 4, 7, 5, dst, stride, src0, src1, w, h, bd
 ;    const int16_t *src0, const int16_t *src1, intptr_t width, intptr_t height,
 ;    intptr_t denom, intptr_t w0, intptr_t w1,  intptr_t o0, intptr_t o1, intptr_t pixel_max);
 %macro VVC_W_AVG_AVX2 1
-cglobal vvc_w_avg_%1bpc, 4, 8, 8, dst, stride, src0, src1, w, h, t0, t1
+cglobal vvc_w_avg_%1bpc, 4, 8, 6+2*(%1 != 8), dst, stride, src0, src1, w, h, t0, t1
 
     movifnidn            hd, hm
 
@@ -255,8 +261,10 @@ cglobal vvc_w_avg_%1bpc, 4, 8, 8, dst, stride, src0, src1, w, h, t0, t1
     movd                xm3, t0d
     vpbroadcastd         m3, xm3                ; w0, w1
 
+%if %1 != 8
     pxor                m6, m6                  ;pixel min
     vpbroadcastw        m7, r11m                ;pixel max
+%endif
 
     mov                 t1q, rcx                ; save ecx
     mov                 ecx, r11m
