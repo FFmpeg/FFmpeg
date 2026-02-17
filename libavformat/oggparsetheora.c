@@ -23,6 +23,7 @@
  **/
 
 #include <stdlib.h>
+#include "libavutil/attributes.h"
 #include "libavutil/mem.h"
 #include "libavcodec/get_bits.h"
 #include "avformat.h"
@@ -117,6 +118,7 @@ static int theora_header(AVFormatContext *s, int idx)
     break;
     case 0x81:
         ff_vorbis_stream_comment(s, st, os->buf + os->pstart + 7, os->psize - 7);
+        av_fallthrough;
     case 0x82:
         if (!thp->version)
             return AVERROR_INVALIDDATA;
