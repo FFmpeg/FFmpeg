@@ -24,6 +24,7 @@
  * VB Video decoder
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/mem.h"
 #include "avcodec.h"
 #include "bytestream.h"
@@ -159,6 +160,7 @@ static int vb_decode_framedata(VBDecContext *c, int offset)
                 break;
             case 1:
                 pattern = ~pattern;
+                av_fallthrough;
             case 2:
                 a = bytestream2_get_byte(&g);
                 for (y = 0; y < 4; y++)
