@@ -23,6 +23,7 @@
 
 #include <inttypes.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/mem.h"
@@ -582,6 +583,7 @@ static int avi_read_header(AVFormatContext *s)
             break;
         case MKTAG('a', 'm', 'v', 'h'):
             amv_file_format = 1;
+            av_fallthrough;
         case MKTAG('a', 'v', 'i', 'h'):
             /* AVI header */
             /* using frame_period is bad idea */
@@ -1041,6 +1043,7 @@ static int avi_read_header(AVFormatContext *s)
                     return ret;
                 break;
             }
+            av_fallthrough;
         default:
             if (size > 1000000) {
                 av_log(s, AV_LOG_ERROR,
@@ -1054,6 +1057,7 @@ static int avi_read_header(AVFormatContext *s)
                 avi->movi_end  = avi->fsize;
                 goto end_of_header;
             }
+            av_fallthrough;
         /* Do not fail for very large idx1 tags */
         case MKTAG('i', 'd', 'x', '1'):
             /* skip tag */
