@@ -29,16 +29,14 @@
 
 %define MAX_PB_SIZE 128
 
-SECTION_RODATA 32
+SECTION_RODATA
 
 %if ARCH_X86_64
 
 %if HAVE_AVX2_EXTERNAL
 
 pw_0    times 2 dw   0
-pw_1    times 2 dw   1
 pw_4    times 2 dw   4
-pw_12   times 2 dw  12
 pw_256  times 2 dw 256
 
 %macro AVG_JMP_TABLE 3-*
