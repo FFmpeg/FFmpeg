@@ -26,6 +26,7 @@
  * https://trac.videolan.org/vlc/ticket/1825#comment:6
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/avstring.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/bprint.h"
@@ -99,6 +100,7 @@ static char *microdvd_load_tags(struct microdvd_tag *tags, char *s)
         /* Style */
         case 'Y':
             tag.persistent = MICRODVD_PERSISTENT_ON;
+            av_fallthrough;
         case 'y':
             while (*s && *s != '}' && s - start < 256) {
                 int style_index = indexof(MICRODVD_STYLES, *s);
@@ -117,6 +119,7 @@ static char *microdvd_load_tags(struct microdvd_tag *tags, char *s)
         /* Color */
         case 'C':
             tag.persistent = MICRODVD_PERSISTENT_ON;
+            av_fallthrough;
         case 'c':
             while (*s == '$' || *s == '#')
                 s++;
@@ -129,6 +132,7 @@ static char *microdvd_load_tags(struct microdvd_tag *tags, char *s)
         /* Font name */
         case 'F':
             tag.persistent = MICRODVD_PERSISTENT_ON;
+            av_fallthrough;
         case 'f': {
             int len = indexof(s, '}');
             if (len < 0)
@@ -143,6 +147,7 @@ static char *microdvd_load_tags(struct microdvd_tag *tags, char *s)
         /* Font size */
         case 'S':
             tag.persistent = MICRODVD_PERSISTENT_ON;
+            av_fallthrough;
         case 's':
             tag.data1 = strtol(s, &s, 10);
             if (*s != '}')
