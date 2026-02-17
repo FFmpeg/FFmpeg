@@ -24,6 +24,7 @@
  * DXA Video decoder
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
 #include "bytestream.h"
@@ -82,6 +83,7 @@ static int decode_13(AVCodecContext *avctx, DxaDecContext *c, uint8_t* dst,
                     return AVERROR_INVALIDDATA;
                 }
                 tmp2 += x + y*stride;
+                av_fallthrough;
             case 0: // skip
             case 5: // skip in method 12
                 for(y = 0; y < 4; y++){
@@ -144,6 +146,7 @@ static int decode_13(AVCodecContext *avctx, DxaDecContext *c, uint8_t* dst,
                             return AVERROR_INVALIDDATA;
                         }
                         tmp2 += x + y*stride;
+                        av_fallthrough;
                     case 0x00: // skip
                         tmp[d + 0         ] = tmp2[0];
                         tmp[d + 1         ] = tmp2[1];
