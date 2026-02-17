@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/intreadwrite.h"
 #include "libavcodec/internal.h"
 #include "avformat.h"
@@ -80,6 +81,7 @@ static int epaf_read_header(AVFormatContext *s)
         break;
     case 1:
         avpriv_request_sample(s, "24-bit Paris PCM format");
+        av_fallthrough;
     default:
         return AVERROR_INVALIDDATA;
     }
