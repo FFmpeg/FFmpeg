@@ -7337,10 +7337,7 @@ enabled libopencore_amrnb && require libopencore_amrnb opencore-amrnb/interf_dec
 enabled libopencore_amrwb && require libopencore_amrwb opencore-amrwb/dec_if.h D_IF_init -lopencore-amrwb
 enabled libopencv         && { check_pkg_config libopencv opencv4 opencv2/core/core_c.h cvCreateImageHeader ||
                                require libopencv opencv2/core/core_c.h cvCreateImageHeader -lopencv_core -lopencv_imgproc; }
-enabled libopencolorio    && add_cxxflags $(pkg-config --cflags OpenColorIO) &&
-                                OCIO_LIBS=$($pkg_config --libs OpenColorIO) &&
-                            require_cpp OpenColorIO OpenColorIO/OpenColorIO.h "namespace OCIO = OCIO_NAMESPACE; OCIO::ConfigRcPtr cfg = OCIO::Config::Create();" $OCIO_LIBS -lstdc++ &&
-                            append libopencolorio_extralibs "$OCIO_LIBS -lstdc++"
+enabled libopencolorio    && require_pkg_config_cxx libopencolorio "OpenColorIO" OpenColorIO/OpenColorIO.h OCIO_NAMESPACE::Config
 enabled libopenh264       && require_pkg_config libopenh264 "openh264 >= 1.3.0" wels/codec_api.h WelsGetCodecVersion
 enabled libopenjpeg       && { check_pkg_config libopenjpeg "libopenjp2 >= 2.1.0" openjpeg.h opj_version ||
                                { require_pkg_config libopenjpeg "libopenjp2 >= 2.1.0" openjpeg.h opj_version -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } }
