@@ -79,6 +79,7 @@ SECTION .text
 %macro AVG_FN 2 ; bpc, op
    jmp                  wq
 
+INIT_XMM cpuname
 .w2:
     movd                xm0, [src0q]
     pinsrd              xm0, [src0q + AVG_SRC_STRIDE], 1
@@ -98,6 +99,7 @@ SECTION .text
 
     AVG_LOOP_END        .w4
 
+INIT_YMM cpuname
 .w8:
     movu               xm0, [src0q]
     movu               xm1, [src1q]
