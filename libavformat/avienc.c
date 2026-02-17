@@ -25,6 +25,7 @@
 #include "internal.h"
 #include "avi.h"
 #include "avio_internal.h"
+#include "libavutil/attributes.h"
 #include "riff.h"
 #include "mpegts.h"
 #include "mux.h"
@@ -369,6 +370,7 @@ static int avi_write_header(AVFormatContext *s)
                 avpriv_report_missing_feature(s, "Subtitle streams other than DivX XSUB");
                 return AVERROR_PATCHWELCOME;
             }
+            av_fallthrough;
         case AVMEDIA_TYPE_VIDEO:
             ffio_wfourcc(pb, "vids");
             break;
@@ -446,6 +448,7 @@ static int avi_write_header(AVFormatContext *s)
                  * are not (yet) supported. */
                 if (par->codec_id != AV_CODEC_ID_XSUB)
                     break;
+                av_fallthrough;
             case AVMEDIA_TYPE_VIDEO:
                 /* WMP expects RGB 5:5:5 rawvideo in avi to have bpp set to 16. */
                 if (  !par->codec_tag
