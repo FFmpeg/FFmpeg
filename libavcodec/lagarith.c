@@ -27,6 +27,7 @@
 
 #include <inttypes.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/thread.h"
 
 #include "avcodec.h"
@@ -578,6 +579,7 @@ static int lag_decode_frame(AVCodecContext *avctx, AVFrame *p,
     switch (frametype) {
     case FRAME_SOLID_RGBA:
         avctx->pix_fmt = AV_PIX_FMT_GBRAP;
+        av_fallthrough;
     case FRAME_SOLID_GRAY:
         if (frametype == FRAME_SOLID_GRAY)
             if (avctx->bits_per_coded_sample == 24) {
@@ -627,6 +629,7 @@ static int lag_decode_frame(AVCodecContext *avctx, AVFrame *p,
         planes = 4;
         offset_ry += 4;
         offs[3] = AV_RL32(buf + 9);
+        av_fallthrough;
     case FRAME_ARITH_RGB24:
     case FRAME_U_RGB24:
         if (frametype == FRAME_ARITH_RGB24 || frametype == FRAME_U_RGB24)
