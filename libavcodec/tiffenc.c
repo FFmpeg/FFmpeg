@@ -26,6 +26,7 @@
  */
 
 #include "config.h"
+#include "libavutil/attributes.h"
 #if CONFIG_ZLIB
 #include <zlib.h>
 #endif
@@ -278,15 +279,18 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     case AV_PIX_FMT_RGBA64LE:
     case AV_PIX_FMT_RGBA:
         alpha = 1;
+        av_fallthrough;
     case AV_PIX_FMT_RGB48LE:
     case AV_PIX_FMT_RGB24:
         s->photometric_interpretation = TIFF_PHOTOMETRIC_RGB;
         break;
     case AV_PIX_FMT_GRAY8:
         avctx->bits_per_coded_sample = 0x28;
+        av_fallthrough;
     case AV_PIX_FMT_GRAY8A:
     case AV_PIX_FMT_YA16LE:
         alpha = avctx->pix_fmt == AV_PIX_FMT_GRAY8A || avctx->pix_fmt == AV_PIX_FMT_YA16LE;
+        av_fallthrough;
     case AV_PIX_FMT_GRAY16LE:
     case AV_PIX_FMT_MONOBLACK:
         s->photometric_interpretation = TIFF_PHOTOMETRIC_BLACK_IS_ZERO;
