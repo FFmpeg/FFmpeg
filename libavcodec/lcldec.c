@@ -42,6 +42,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
 #include "avcodec.h"
@@ -239,11 +240,13 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
                 break;
             case IMGTYPE_YUV422:
                 aligned_width &= ~3;
+                av_fallthrough;
             case IMGTYPE_YUV211:
                 bppx2 = 4;
                 break;
             case IMGTYPE_YUV411:
                 aligned_width &= ~3;
+                av_fallthrough;
             case IMGTYPE_YUV420:
                 bppx2 = 3;
                 break;
