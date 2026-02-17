@@ -35,23 +35,21 @@ SECTION_RODATA
 
 %if HAVE_AVX2_EXTERNAL
 
-pw_256  times 2 dw 256
-
-%macro AVG_JMP_TABLE 3-*
-    %xdefine %1_%2_%3_table (%%table - 2*%4)
-    %xdefine %%base %1_%2_%3_table
-    %xdefine %%prefix mangle(private_prefix %+ _vvc_%1_%2bpc_%3)
+%macro AVG_JMP_TABLE 4-*
+    %xdefine %1_%2_%4_table (%%table - 2*%5)
+    %xdefine %%base %1_%2_%4_table
+    %xdefine %%prefix mangle(private_prefix %+ _vvc_%1_%3_%4)
     %%table:
-    %rep %0 - 3
-        dd %%prefix %+ .w%4 - %%base
+    %rep %0 - 4
+        dd %%prefix %+ .w%5 - %%base
         %rotate 1
     %endrep
 %endmacro
 
-AVG_JMP_TABLE    avg,  8, avx2,                2, 4, 8, 16, 32, 64, 128
-AVG_JMP_TABLE    avg, 16, avx2,                2, 4, 8, 16, 32, 64, 128
-AVG_JMP_TABLE  w_avg,  8, avx2,                2, 4, 8, 16, 32, 64, 128
-AVG_JMP_TABLE  w_avg, 16, avx2,                2, 4, 8, 16, 32, 64, 128
+AVG_JMP_TABLE    avg,  8,  8, avx2,                2, 4, 8, 16, 32, 64, 128
+AVG_JMP_TABLE    avg, 16, 10, avx2,                2, 4, 8, 16, 32, 64, 128
+AVG_JMP_TABLE  w_avg,  8,  8bpc, avx2,             2, 4, 8, 16, 32, 64, 128
+AVG_JMP_TABLE  w_avg, 16, 16bpc, avx2,             2, 4, 8, 16, 32, 64, 128
 
 SECTION .text
 
@@ -72,9 +70,10 @@ SECTION .text
     %endrep
 %endmacro
 
-%macro AVG_FN 2 ; bpc, op
+%macro AVG_FN 2-3 1; bpc, op, instantiate implementation
    jmp                  wq
 
+%if %3
 INIT_XMM cpuname
 .w2:
     movd                xm0, [src0q]
@@ -128,6 +127,7 @@ INIT_YMM cpuname
 
 .ret:
     RET
+%endif
 %endmacro
 
 %macro AVG   2 ; bpc, width
@@ -222,31 +222,24 @@ INIT_YMM cpuname
 
 %define AVG_SRC_STRIDE MAX_PB_SIZE*2
 
-;void ff_vvc_avg_%1bpc_avx2(uint8_t *dst, ptrdiff_t dst_stride,
-;   const int16_t *src0, const int16_t *src1, intptr_t width, intptr_t height, intptr_t pixel_max);
-%macro VVC_AVG_AVX2 1
-cglobal vvc_avg_%1bpc, 4, 7, 3+2*(%1 != 8), dst, stride, src0, src1, w, h, bd
+;void ff_vvc_avg_%1_avx2(uint8_t *dst, ptrdiff_t dst_stride, const int16_t *src0,
+;                        const int16_t *src1, int width, int height);
+%macro VVC_AVG_AVX2 3
+cglobal vvc_avg_%2, 4, 7, 5, dst, stride, src0, src1, w, h
     movifnidn            hd, hm
 
+    pcmpeqw              m2, m2
 %if %1 != 8
     pxor                 m3, m3             ; pixel min
-    vpbroadcastw         m4, bdm            ; pixel max
 %endif
-
-    movifnidn           bdd, bdm
-    inc                 bdd
-    tzcnt               bdd, bdd            ; bit depth
-
-    sub                 bdd, 8
-    movd                xm0, bdd
-    vpbroadcastd         m2, [pw_256]
-    psllw                m2, xm0                ; shift
 
     lea                  r6, [avg_%1 %+ SUFFIX %+ _table]
     tzcnt                wd, wm
     movsxd               wq, dword [r6+wq*4]
+    psrlw                m4, m2, 16-%2      ; pixel max
+    psubw                m2, m4, m2         ; 1 << bpp
     add                  wq, r6
-    AVG_FN               %1, AVG
+    AVG_FN               %1, AVG, %3
 %endmacro
 
 ;void ff_vvc_w_avg_%1bpc_avx(uint8_t *dst, ptrdiff_t dst_stride,
@@ -298,9 +291,11 @@ cglobal vvc_w_avg_%1bpc, 4, 8, 6+2*(%1 != 8), dst, stride, src0, src1, w, h, t0,
 
 INIT_YMM avx2
 
-VVC_AVG_AVX2 16
+VVC_AVG_AVX2 16, 12, 0
 
-VVC_AVG_AVX2 8
+VVC_AVG_AVX2 16, 10, 1
+
+VVC_AVG_AVX2 8, 8, 1
 
 VVC_W_AVG_AVX2 16
 

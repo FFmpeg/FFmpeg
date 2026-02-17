@@ -36,8 +36,6 @@
 #define BF(fn, bpc, opt) fn##_##bpc##bpc_##opt
 
 #define AVG_BPC_PROTOTYPES(bpc, opt)                                                                 \
-void BF(ff_vvc_avg, bpc, opt)(uint8_t *dst, ptrdiff_t dst_stride,                                    \
-    const int16_t *src0, const int16_t *src1, intptr_t width, intptr_t height, intptr_t pixel_max);  \
 void BF(ff_vvc_w_avg, bpc, opt)(uint8_t *dst, ptrdiff_t dst_stride,                                  \
     const int16_t *src0, const int16_t *src1, intptr_t width, intptr_t height,                       \
     intptr_t denom, intptr_t w0, intptr_t w1,  intptr_t o0, intptr_t o1, intptr_t pixel_max);
@@ -171,11 +169,6 @@ FW_PUT_16BPC_AVX2(10)
 FW_PUT_16BPC_AVX2(12)
 
 #define AVG_FUNCS(bpc, bd, opt)                                                                     \
-static void bf(vvc_avg, bd, opt)(uint8_t *dst, ptrdiff_t dst_stride,                                \
-    const int16_t *src0, const int16_t *src1, int width, int height)                                \
-{                                                                                                   \
-    BF(ff_vvc_avg, bpc, opt)(dst, dst_stride, src0, src1, width, height, (1 << bd)  - 1);           \
-}                                                                                                   \
 static void bf(vvc_w_avg, bd, opt)(uint8_t *dst, ptrdiff_t dst_stride,                              \
     const int16_t *src0, const int16_t *src1, int width, int height,                                \
     int denom, int w0, int w1, int o0, int o1)                                                      \
@@ -254,7 +247,9 @@ SAO_FILTER_FUNCS(12, avx2)
 } while (0)
 
 #define AVG_INIT(bd, opt) do {                                       \
-    c->inter.avg    = bf(vvc_avg, bd, opt);                          \
+void bf(ff_vvc_avg, bd, opt)(uint8_t *dst, ptrdiff_t dst_stride,     \
+    const int16_t *src0, const int16_t *src1, int width, int height);\
+    c->inter.avg    = bf(ff_vvc_avg, bd, opt);                       \
     c->inter.w_avg  = bf(vvc_w_avg, bd, opt);                        \
 } while (0)
 
