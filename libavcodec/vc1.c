@@ -248,6 +248,7 @@ static int vop_dquant_decoding(VC1Context *v)
                 v->halfpq = 0;
                 return 0;
             }
+            break;
         default:
             break; //Forbidden ?
         }
