@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/hdr_dynamic_metadata.h"
 #include "libavutil/mastering_display_metadata.h"
@@ -1387,7 +1388,7 @@ int ff_sws_decode_colors(SwsContext *ctx, SwsPixelType type,
     case AVCOL_SPC_UNSPECIFIED:
         c = av_csp_luma_coeffs_from_avcsp(AVCOL_SPC_BT470BG);
         *incomplete = true;
-        /* fall through */
+        av_fallthrough;
     case AVCOL_SPC_FCC:
     case AVCOL_SPC_BT470BG:
     case AVCOL_SPC_SMPTE170M:
@@ -1459,7 +1460,7 @@ int ff_sws_encode_colors(SwsContext *ctx, SwsPixelType type,
     case AVCOL_SPC_UNSPECIFIED:
         c = av_csp_luma_coeffs_from_avcsp(AVCOL_SPC_BT470BG);
         *incomplete = true;
-        /* fall through */
+        av_fallthrough;
     case AVCOL_SPC_FCC:
     case AVCOL_SPC_BT470BG:
     case AVCOL_SPC_SMPTE170M:

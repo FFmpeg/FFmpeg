@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
@@ -396,7 +397,7 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
         case SWS_OP_WRITE:
             for (int i = 0; i < op->rw.elems; i++)
                 av_assert1(!(prev.flags[i] & SWS_COMP_GARBAGE));
-            /* fall through */
+            av_fallthrough;
         case SWS_OP_LSHIFT:
         case SWS_OP_RSHIFT:
             propagate_flags(op, &prev);

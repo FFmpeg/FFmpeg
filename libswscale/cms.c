@@ -574,7 +574,7 @@ static av_always_inline void update_hue_peaks(CmsCtx *ctx, float P, float T)
     switch (ctx->map.intent) {
     case SWS_INTENT_PERCEPTUAL:
         ctx->tmp.peak = saturate(hue, ctx->tmp);
-        /* fall through */
+        av_fallthrough;
     case SWS_INTENT_RELATIVE_COLORIMETRIC:
     case SWS_INTENT_ABSOLUTE_COLORIMETRIC:
         ctx->dst.peak = saturate(hue, ctx->dst);

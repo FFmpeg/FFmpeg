@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/bswap.h"
 #include "libavutil/rational.h"
@@ -45,7 +46,7 @@ static bool op_commute_clear(SwsOp *op, SwsOp *next)
     switch (next->op) {
     case SWS_OP_CONVERT:
         op->type = next->convert.to;
-        /* fall through */
+        av_fallthrough;
     case SWS_OP_LSHIFT:
     case SWS_OP_RSHIFT:
     case SWS_OP_DITHER:
@@ -109,7 +110,7 @@ static bool op_commute_swizzle(SwsOp *op, SwsOp *next)
     switch (next->op) {
     case SWS_OP_CONVERT:
         op->type = next->convert.to;
-        /* fall through */
+        av_fallthrough;
     case SWS_OP_SWAP_BYTES:
     case SWS_OP_LSHIFT:
     case SWS_OP_RSHIFT:
