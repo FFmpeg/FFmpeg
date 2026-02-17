@@ -407,6 +407,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *picture,
         break;
     case PSD_DUOTONE:
         av_log(avctx, AV_LOG_WARNING, "ignoring unknown duotone specification.\n");
+        av_fallthrough;
     case PSD_GRAYSCALE:
         if (s->layer_count < 0 && s->channel_count >= 2) {
             if (s->channel_depth == 8) {
