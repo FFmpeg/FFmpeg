@@ -27,6 +27,7 @@
  *   http://www.csse.monash.edu.au/~timf/
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
@@ -195,6 +196,7 @@ static int roq_read_packet(AVFormatContext *s,
                     st->codecpar->bits_per_coded_sample;
                 st->codecpar->block_align = roq->audio_channels * st->codecpar->bits_per_coded_sample;
             }
+            av_fallthrough;
         case RoQ_QUAD_VQ:
             if (chunk_type == RoQ_QUAD_VQ) {
                 if (roq->video_stream_index < 0)
