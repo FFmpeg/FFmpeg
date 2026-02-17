@@ -59,6 +59,14 @@
 #    define AV_HAS_STD_ATTRIBUTE(x) 0
 #endif
 
+#if AV_HAS_STD_ATTRIBUTE(fallthrough)
+#    define av_fallthrough [[fallthrough]]
+#elif AV_HAS_ATTRIBUTE(fallthrough)
+#    define av_fallthrough __attribute__((fallthrough))
+#else
+#    define av_fallthrough do {} while(0)
+#endif
+
 #ifndef av_always_inline
 #if AV_GCC_VERSION_AT_LEAST(3,1) || defined(__clang__)
 #    define av_always_inline __attribute__((always_inline)) inline
