@@ -23,6 +23,7 @@
 #include "codec_internal.h"
 #include "decode.h"
 #include "get_bits.h"
+#include "libavutil/attributes.h"
 
 typedef struct AvsContext {
     AVFrame *frame;
@@ -98,6 +99,7 @@ static int avs_decode_frame(AVCodecContext * avctx, AVFrame *picture,
     case AVS_I_FRAME:
         p->pict_type = AV_PICTURE_TYPE_I;
         p->flags |= AV_FRAME_FLAG_KEY;
+        av_fallthrough;
     case AVS_P_FRAME_3X3:
         vect_w = 3;
         vect_h = 3;
