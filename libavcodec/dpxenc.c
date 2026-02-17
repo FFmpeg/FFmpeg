@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/imgutils.h"
@@ -226,6 +227,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         break;
     default:
         av_log(avctx, AV_LOG_WARNING, "unsupported color transfer\n");
+        av_fallthrough;
     case AVCOL_TRC_UNSPECIFIED:
         color_trc = DPX_TRC_UNSPECIFIED_VIDEO;
         break;
@@ -247,6 +249,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         break;
     default:
         av_log(avctx, AV_LOG_WARNING, "unsupported colorimetric specification\n");
+        av_fallthrough;
     case AVCOL_PRI_UNSPECIFIED:
         color_spec = DPX_COL_SPEC_UNSPECIFIED_VIDEO;
         break;
