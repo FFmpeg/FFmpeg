@@ -20,6 +20,7 @@
  */
 
 #include "libavcodec/bytestream.h"
+#include "libavutil/attributes.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/mem.h"
 
@@ -466,6 +467,7 @@ static int amf_tag_skip(GetByteContext *gb)
     case AMF_DATA_TYPE_ARRAY:
     case AMF_DATA_TYPE_MIXEDARRAY:
         nb = bytestream2_get_be32(gb);
+        av_fallthrough;
     case AMF_DATA_TYPE_OBJECT:
         while (type != AMF_DATA_TYPE_ARRAY || nb-- > 0) {
             int t;
