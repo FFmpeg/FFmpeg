@@ -24,6 +24,7 @@
  * ASCII/ANSI art decoder
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/common.h"
 #include "libavutil/frame.h"
 #include "libavutil/xga_font_data.h"
@@ -396,6 +397,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                 break;
             case 0x0A: //LF
                 hscroll(avctx);
+                av_fallthrough;
             case 0x0D: //CR
                 s->x = 0;
                 break;
