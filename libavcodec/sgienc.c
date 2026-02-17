@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 
@@ -123,6 +124,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         break;
     case AV_PIX_FMT_GRAY16LE:
         put_be = !HAVE_BIGENDIAN;
+        av_fallthrough;
     case AV_PIX_FMT_GRAY16BE:
         bytes_per_channel = 2;
         pixmax = 0xFFFF;
@@ -131,6 +133,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         break;
     case AV_PIX_FMT_RGB48LE:
         put_be = !HAVE_BIGENDIAN;
+        av_fallthrough;
     case AV_PIX_FMT_RGB48BE:
         bytes_per_channel = 2;
         pixmax = 0xFFFF;
@@ -139,6 +142,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         break;
     case AV_PIX_FMT_RGBA64LE:
         put_be = !HAVE_BIGENDIAN;
+        av_fallthrough;
     case AV_PIX_FMT_RGBA64BE:
         bytes_per_channel = 2;
         pixmax = 0xFFFF;
