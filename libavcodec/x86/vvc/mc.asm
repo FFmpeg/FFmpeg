@@ -64,12 +64,12 @@ SECTION .text
     %rep %3
         %define off %%i
         AVG_LOAD_W16        0, off
-        %2                 %1
+        %2                 %1, 16
         AVG_SAVE_W16       %1, 0, off
 
 
         AVG_LOAD_W16        1, off
-        %2                 %1
+        %2                 %1, 16
         AVG_SAVE_W16       %1, 1, off
 
         %assign %%i %%i+1
@@ -85,7 +85,7 @@ INIT_XMM cpuname
     pinsrd              xm0, [src0q + AVG_SRC_STRIDE], 1
     movd                xm1, [src1q]
     pinsrd              xm1, [src1q + AVG_SRC_STRIDE], 1
-    %2                   %1
+    %2                   %1, 2
     AVG_SAVE_W2          %1
     AVG_LOOP_END        .w2
 
@@ -94,7 +94,7 @@ INIT_XMM cpuname
     pinsrq              xm0, [src0q + AVG_SRC_STRIDE], 1
     movq                xm1, [src1q]
     pinsrq              xm1, [src1q + AVG_SRC_STRIDE], 1
-    %2                   %1
+    %2                   %1, 4
     AVG_SAVE_W4          %1
 
     AVG_LOOP_END        .w4
@@ -105,7 +105,7 @@ INIT_YMM cpuname
     movu               xm1, [src1q]
     vinserti128         m0, m0, [src0q + AVG_SRC_STRIDE], 1
     vinserti128         m1, m1, [src1q + AVG_SRC_STRIDE], 1
-    %2                  %1
+    %2                  %1, 8
     AVG_SAVE_W8         %1
 
     AVG_LOOP_END       .w8
@@ -134,7 +134,7 @@ INIT_YMM cpuname
     RET
 %endmacro
 
-%macro AVG   1
+%macro AVG   2 ; bpc, width
     paddsw               m0, m1
     pmulhrsw             m0, m2
 %if %1 != 8
@@ -142,18 +142,24 @@ INIT_YMM cpuname
 %endif
 %endmacro
 
-%macro W_AVG 1
+%macro W_AVG 2 ; bpc, width
+%if %2 > 2
     punpckhwd            m5, m0, m1
     pmaddwd              m5, m3
     paddd                m5, m4
     psrad                m5, xm2
+%endif
 
     punpcklwd            m0, m0, m1
     pmaddwd              m0, m3
     paddd                m0, m4
     psrad                m0, xm2
 
+%if %2 == 2
+    packssdw             m0, m0
+%else
     packssdw             m0, m5
+%endif
 %if %1 != 8
     CLIPW                m0, m6, m7
 %endif
