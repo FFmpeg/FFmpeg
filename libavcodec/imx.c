@@ -79,6 +79,7 @@ static int imx_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
         switch (op) {
         case 3:
             len = len * 64 + bytestream2_get_byte(&gb);
+            av_fallthrough;
         case 0:
             while (len > 0) {
                 x++;
