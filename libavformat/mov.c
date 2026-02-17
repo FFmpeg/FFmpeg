@@ -2359,8 +2359,10 @@ static int mov_read_ares(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                 if (den >= INT_MAX / 2)
                     return 0;
                 den *= 2;
+                av_fallthrough;
             case 1:
                 sti->display_aspect_ratio = (AVRational){ num, den };
+                av_fallthrough;
             default:
                 return 0;
             }
@@ -9790,6 +9792,7 @@ static int mov_probe(const AVProbeData *p)
         /* check for obvious tags */
         case MKTAG('m','o','o','v'):
             moov_offset = offset + 4;
+            av_fallthrough;
         case MKTAG('m','d','a','t'):
         case MKTAG('p','n','o','t'): /* detect movs with preview pics like ew.mov and april.mov */
         case MKTAG('u','d','t','a'): /* Packet Video PVAuthor adds this and a lot of more junk */
