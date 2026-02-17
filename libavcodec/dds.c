@@ -28,6 +28,7 @@
 
 #include <stdint.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/libm.h"
 #include "libavutil/imgutils.h"
 
@@ -267,6 +268,7 @@ static int parse_pixel_format(AVCodecContext *avctx)
                 break;
             case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
                 avctx->colorspace = AVCOL_SPC_RGB;
+                av_fallthrough;
             case DXGI_FORMAT_R8G8B8A8_TYPELESS:
             case DXGI_FORMAT_R8G8B8A8_UNORM:
             case DXGI_FORMAT_R8G8B8A8_UINT:
@@ -276,12 +278,14 @@ static int parse_pixel_format(AVCodecContext *avctx)
                 break;
             case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
                 avctx->colorspace = AVCOL_SPC_RGB;
+                av_fallthrough;
             case DXGI_FORMAT_B8G8R8A8_TYPELESS:
             case DXGI_FORMAT_B8G8R8A8_UNORM:
                 avctx->pix_fmt = AV_PIX_FMT_RGBA;
                 break;
             case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
                 avctx->colorspace = AVCOL_SPC_RGB;
+                av_fallthrough;
             case DXGI_FORMAT_B8G8R8X8_TYPELESS:
             case DXGI_FORMAT_B8G8R8X8_UNORM:
                 avctx->pix_fmt = AV_PIX_FMT_RGBA; // opaque
@@ -292,6 +296,7 @@ static int parse_pixel_format(AVCodecContext *avctx)
             /* Texture types. */
             case DXGI_FORMAT_BC1_UNORM_SRGB:
                 avctx->colorspace = AVCOL_SPC_RGB;
+                av_fallthrough;
             case DXGI_FORMAT_BC1_TYPELESS:
             case DXGI_FORMAT_BC1_UNORM:
                 ctx->dec.tex_ratio = 8;
@@ -299,6 +304,7 @@ static int parse_pixel_format(AVCodecContext *avctx)
                 break;
             case DXGI_FORMAT_BC2_UNORM_SRGB:
                 avctx->colorspace = AVCOL_SPC_RGB;
+                av_fallthrough;
             case DXGI_FORMAT_BC2_TYPELESS:
             case DXGI_FORMAT_BC2_UNORM:
                 ctx->dec.tex_ratio = 16;
@@ -306,6 +312,7 @@ static int parse_pixel_format(AVCodecContext *avctx)
                 break;
             case DXGI_FORMAT_BC3_UNORM_SRGB:
                 avctx->colorspace = AVCOL_SPC_RGB;
+                av_fallthrough;
             case DXGI_FORMAT_BC3_TYPELESS:
             case DXGI_FORMAT_BC3_UNORM:
                 ctx->dec.tex_ratio = 16;
