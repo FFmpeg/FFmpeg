@@ -27,6 +27,7 @@
 
 #include "avcodec.h"
 #include "hwaccel_internal.h"
+#include "libavutil/attributes.h"
 #include "vc1.h"
 #include "vdpau.h"
 #include "vdpau_internal.h"
@@ -53,7 +54,7 @@ static int vdpau_vc1_start_frame(AVCodecContext *avctx,
             assert(ref != VDP_INVALID_HANDLE);
             info->backward_reference = ref;
         }
-        /* fall-through */
+        av_fallthrough;
     case AV_PICTURE_TYPE_P:
         if (s->last_pic.ptr) {
             ref = ff_vdpau_get_surface_id(s->last_pic.ptr->f);

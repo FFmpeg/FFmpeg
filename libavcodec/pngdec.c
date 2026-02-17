@@ -23,6 +23,7 @@
 
 #include "config_components.h"
 
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/bprint.h"
 #include "libavutil/crc.h"
@@ -1583,7 +1584,7 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
                 goto fail;
             }
             bytestream2_get_be32(&gb_chunk);
-            /* fallthrough */
+            av_fallthrough;
         case MKTAG('I', 'D', 'A', 'T'):
             if (CONFIG_APNG_DECODER && avctx->codec_id == AV_CODEC_ID_APNG && !decode_next_dat)
                 continue;

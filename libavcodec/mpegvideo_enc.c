@@ -36,6 +36,7 @@
 #include <assert.h>
 #include <stdint.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/emms.h"
 #include "libavutil/internal.h"
 #include "libavutil/intmath.h"
@@ -843,7 +844,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
 #if CONFIG_MPEG1VIDEO_ENCODER || CONFIG_MPEG2VIDEO_ENCODER
     case AV_CODEC_ID_MPEG2VIDEO:
         s->rtp_mode   = 1;
-        /* fallthrough */
+        av_fallthrough;
     case AV_CODEC_ID_MPEG1VIDEO:
         s->c.out_format = FMT_MPEG1;
         s->c.low_delay  = !!(avctx->flags & AV_CODEC_FLAG_LOW_DELAY);
@@ -3107,7 +3108,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     case AV_CODEC_ID_H263P:
                         if (s->c.dc_val)
                             ff_h263_mpeg4_reset_dc(s);
-                        // fallthrough
+                        av_fallthrough;
 #endif
                     case AV_CODEC_ID_H263:
                         if (CONFIG_H263_ENCODER) {

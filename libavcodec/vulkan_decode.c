@@ -16,6 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/refstruct.h"
 #include "vulkan_video.h"
 #include "vulkan_decode.h"
@@ -1213,7 +1214,7 @@ int ff_vk_frame_params(AVCodecContext *avctx, AVBufferRef *hw_frames_ctx)
         case AV_PIX_FMT_YUVA422P12:
         case AV_PIX_FMT_YUVA444P12:
             hwfc->format[3] = VK_FORMAT_R16_UNORM;
-            /* fallthrough */
+            av_fallthrough;
         case AV_PIX_FMT_YUV422P10:
         case AV_PIX_FMT_YUV444P10:
         case AV_PIX_FMT_YUV422P12:

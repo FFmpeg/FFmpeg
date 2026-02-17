@@ -358,7 +358,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
             p->poc.prev_frame_num_offset = 0;
             p->poc.prev_poc_msb          =
             p->poc.prev_poc_lsb          = 0;
-        /* fall through */
+            av_fallthrough;
         case H264_NAL_SLICE:
             get_ue_golomb_long(&nal.gb);  // skip first_mb_in_slice
             slice_type   = get_ue_golomb_31(&nal.gb);

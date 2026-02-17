@@ -30,6 +30,7 @@
 #include "jpegquanttables.h"
 #include "jpegtables.h"
 #include "leaddata.h"
+#include "libavutil/attributes.h"
 #include "libavutil/mem.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/thread.h"
@@ -160,7 +161,7 @@ static int lead_decode_frame(AVCodecContext *avctx, AVFrame * frame,
     case 0x6:
     case 0x8000:
         yuv20p_half = 1;
-        // fall-through
+        av_fallthrough;
     case 0x1000:
         avctx->pix_fmt = AV_PIX_FMT_YUV420P;
         break;

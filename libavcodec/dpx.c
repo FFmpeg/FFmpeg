@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/avstring.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/intfloat.h"
@@ -237,7 +238,7 @@ static void unpack_frame(AVCodecContext *avctx, AVFrame *p, const uint8_t *buf,
         break;
     case 16:
         elements *= 2;
-    // fall-through
+        av_fallthrough;
     case 8:
         if (   avctx->pix_fmt == AV_PIX_FMT_YUVA444P
             || avctx->pix_fmt == AV_PIX_FMT_YUV444P) {

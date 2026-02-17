@@ -27,6 +27,7 @@
  * Known FOURCCs: 'IV50'
  */
 
+#include "libavutil/attributes.h"
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "codec_internal.h"
@@ -615,7 +616,7 @@ static void switch_buffers(IVI45DecContext *ctx)
     switch (ctx->frame_type) {
     case FRAMETYPE_INTRA:
         ctx->buf_switch = 0;
-        /* FALLTHROUGH */
+        av_fallthrough;
     case FRAMETYPE_INTER:
         ctx->inter_scal = 0;
         ctx->dst_buf = ctx->buf_switch;

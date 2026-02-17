@@ -22,6 +22,7 @@
 
 #include "config_components.h"
 
+#include "libavutil/attributes.h"
 #include "libavutil/mem.h"
 #include "hwaccel_internal.h"
 #include "mpegvideodec.h"
@@ -379,7 +380,7 @@ static int vaapi_vc1_start_frame(AVCodecContext *avctx,
     case AV_PICTURE_TYPE_B:
         if (s->next_pic.ptr)
             pic_param.backward_reference_picture = ff_vaapi_get_surface_id(s->next_pic.ptr->f);
-        // fall-through
+        av_fallthrough;
     case AV_PICTURE_TYPE_P:
         if (s->last_pic.ptr)
             pic_param.forward_reference_picture = ff_vaapi_get_surface_id(s->last_pic.ptr->f);
@@ -417,7 +418,7 @@ static int vaapi_vc1_start_frame(AVCodecContext *avctx,
                 ff_bp[2] = pic_param.bitplane_present.flags.bp_forward_mb ? v->forward_mb_plane : NULL;
                 break;
             }
-            /* fall-through (BI-type) */
+            av_fallthrough; // (BI-type)
         case AV_PICTURE_TYPE_I:
             ff_bp[0] = pic_param.bitplane_present.flags.bp_field_tx   ? v->fieldtx_plane      : NULL;
             ff_bp[1] = pic_param.bitplane_present.flags.bp_ac_pred    ? v->acpred_plane       : NULL;

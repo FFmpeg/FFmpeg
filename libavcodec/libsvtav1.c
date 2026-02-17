@@ -26,6 +26,7 @@
 #include <EbSvtAv1Enc.h>
 #include <EbSvtAv1Metadata.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/common.h"
 #include "libavutil/frame.h"
 #include "libavutil/imgutils.h"
@@ -737,7 +738,7 @@ static int eb_receive_packet(AVCodecContext *avctx, AVPacket *pkt)
     switch (headerPtr->pic_type) {
     case EB_AV1_KEY_PICTURE:
         pkt->flags |= AV_PKT_FLAG_KEY;
-        // fall-through
+        av_fallthrough;
     case EB_AV1_INTRA_ONLY_PICTURE:
         pict_type = AV_PICTURE_TYPE_I;
         break;

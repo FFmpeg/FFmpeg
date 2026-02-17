@@ -136,7 +136,7 @@ static av_cold int dovi_configure_ext(DOVIContext *s, enum AVCodecID codec_id,
             bl_compat_id = 0;
             break;
         }
-        /* fall through */
+        av_fallthrough;
     case 8: /* HEVC (or AV1) with BL compatibility */
         if (color_space == AVCOL_SPC_BT2020_NCL &&
             color_primaries == AVCOL_PRI_BT2020 &&
@@ -612,7 +612,7 @@ int ff_dovi_rpu_generate(DOVIContext *s, const AVDOVIMetadata *metadata,
         /* Limited metadata compression requires vdr_rpi_id == 0 */
         if (vdr_rpu_id != 0)
             break;
-        /* fall through */
+        av_fallthrough;
     case AV_DOVI_COMPRESSION_EXTENDED:
         if (s->vdr[vdr_rpu_id])
             use_prev_vdr_rpu = !memcmp(s->vdr[vdr_rpu_id], mapping, sizeof(*mapping));

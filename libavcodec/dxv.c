@@ -22,6 +22,7 @@
 
 #include <stdint.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/mem.h"
 
@@ -1041,7 +1042,7 @@ static int dxv_decode(AVCodecContext *avctx, AVFrame *frame,
         ret = ff_texturedsp_exec_decompress_threads(avctx, &texdsp_ctx);
         if (ret < 0)
             return ret;
-        /* fallthrough */
+        av_fallthrough;
     case DXV_FMT_YCG6:
         /* BC5 texture with Co in the first half of each block and Cg in the second */
         ctexdsp_ctx.tex_data.in    = ctx->ctex_data;
@@ -1056,7 +1057,7 @@ static int dxv_decode(AVCodecContext *avctx, AVFrame *frame,
         ret = ff_texturedsp_exec_decompress_threads(avctx, &ctexdsp_ctx);
         if (ret < 0)
             return ret;
-        /* fallthrough */
+        av_fallthrough;
     case DXV_FMT_DXT1:
     case DXV_FMT_DXT5:
         /* For DXT1 and DXT5, self explanatory

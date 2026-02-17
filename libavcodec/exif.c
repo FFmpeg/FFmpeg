@@ -29,6 +29,7 @@
 
 #include <inttypes.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/avconfig.h"
 #include "libavutil/bprint.h"
 #include "libavutil/display.h"
@@ -891,13 +892,13 @@ int av_exif_parse_buffer(void *logctx, const uint8_t *buf, size_t size,
             if (size < 6)
                 return AVERROR_INVALIDDATA;
             off = 6;
-            /* fallthrough */
+            av_fallthrough;
         case AV_EXIF_T_OFF:
             if (size < 4)
                 return AVERROR_INVALIDDATA;
             if (!off)
                 off = AV_RB32(buf) + 4;
-            /* fallthrough */
+            av_fallthrough;
         case AV_EXIF_TIFF_HEADER: {
             int ifd_offset;
             if (size <= off)

@@ -28,6 +28,7 @@
 #include <inttypes.h>
 #include <zlib.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/mem.h"
 #include "libavutil/mem_internal.h"
@@ -661,7 +662,7 @@ static int epic_decode_run_length(ePICContext *dc, int x, int y, int tile_width,
                         break;
                     }
                 }
-                /* fall through */
+                av_fallthrough;
             default:
                 NWneW = 1;
                 old_WWneW = WWneW;

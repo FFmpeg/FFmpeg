@@ -943,7 +943,8 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                         last_gold_motion_x = motion_x[0] = vp4_get_mv(gb, 0, last_gold_motion_x);
                         last_gold_motion_y = motion_y[0] = vp4_get_mv(gb, 1, last_gold_motion_y);
                         break;
-                    } /* otherwise fall through */
+                    }
+                    av_fallthrough;
                 case MODE_INTER_PLUS_MV:
                     /* all 6 fragments use the same motion vector */
                     if (coding_mode == 0) {

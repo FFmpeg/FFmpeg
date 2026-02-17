@@ -25,6 +25,7 @@
 
 #include <stdbool.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/fifo.h"
 #include "libavutil/mem.h"
@@ -262,7 +263,7 @@ static int h264_filter(AVBSFContext *ctx)
             h264->poc.prev_frame_num_offset = 0;
             h264->poc.prev_poc_msb          =
             h264->poc.prev_poc_lsb          = 0;
-        // fall-through
+            av_fallthrough;
         case H264_NAL_SLICE: {
             const H264RawSlice *slice = unit->content;
             const H264RawSliceHeader *header = &slice->header;

@@ -23,6 +23,7 @@
 #include "config.h"
 #include "config_components.h"
 #include "videotoolbox.h"
+#include "libavutil/attributes.h"
 #include "libavutil/hwcontext_videotoolbox.h"
 #include "libavutil/mem.h"
 #include "vt_internal.h"
@@ -935,7 +936,7 @@ static int videotoolbox_start(AVCodecContext *avctx)
         switch (avctx->codec_tag) {
         default:
             av_log(avctx, AV_LOG_WARNING, "Unknown prores profile %d\n", avctx->codec_tag);
-        // fall-through
+            av_fallthrough;
         case MKTAG('a','p','c','o'): // kCMVideoCodecType_AppleProRes422Proxy
         case MKTAG('a','p','c','s'): // kCMVideoCodecType_AppleProRes422LT
         case MKTAG('a','p','c','n'): // kCMVideoCodecType_AppleProRes422

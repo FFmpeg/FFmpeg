@@ -29,6 +29,7 @@
  * @see http://wiki.multimedia.cx/index.php?title=Indeo_3
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
@@ -500,7 +501,7 @@ static int decode_cell_data(Indeo3DecodeContext *ctx, Cell *cell,
                             skip_flag  = 0;
                             rle_blocks = 1;
                             code       = 253;
-                            /* FALLTHROUGH */
+                            av_fallthrough;
                         case RLE_ESC_FF:
                         case RLE_ESC_FE:
                         case RLE_ESC_FD:
@@ -532,7 +533,7 @@ static int decode_cell_data(Indeo3DecodeContext *ctx, Cell *cell,
                         case RLE_ESC_F9:
                             skip_flag  = 1;
                             rle_blocks = 1;
-                            /* FALLTHROUGH */
+                            av_fallthrough;
                         case RLE_ESC_FA:
                             if (line)
                                 return IV3_BAD_RLE;

@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "vulkan_decode.h"
 #include "hwaccel_internal.h"
 
@@ -300,7 +301,7 @@ static int vk_decode_dpx_init(AVCodecContext *avctx)
     case AV_PIX_FMT_GBRP10:
         if (dpx->unpadded_10bit)
             return AVERROR(ENOTSUP);
-    /* fallthrough */
+        av_fallthrough;
     default:
         break;
     }
