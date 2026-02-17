@@ -24,6 +24,7 @@
  * RV30/40 decoder common data
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
@@ -909,6 +910,7 @@ static int rv34_decode_mv(RV34DecContext *r, int block_type)
             rv34_mc_1mv (r, block_type, 0, 0, 0, 2, 2, 0);
             break;
         }
+        av_fallthrough;
     case RV34_MB_B_DIRECT:
         //surprisingly, it uses motion scheme from next reference frame
         /* wait for the current mb row to be finished */
