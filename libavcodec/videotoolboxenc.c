@@ -26,6 +26,7 @@
 #include <TargetConditionals.h>
 #include <VideoToolbox/VideoToolbox.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/mem.h"
@@ -548,6 +549,7 @@ static CMVideoCodecType get_cm_codec_type(AVCodecContext *avctx,
 
         default:
             av_log(avctx, AV_LOG_ERROR, "Unknown profile ID: %d, using auto\n", profile);
+            av_fallthrough;
         case AV_PROFILE_UNKNOWN:
             if (desc &&
                 ((desc->flags & AV_PIX_FMT_FLAG_ALPHA) ||
