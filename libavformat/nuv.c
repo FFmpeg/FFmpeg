@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
@@ -389,6 +390,7 @@ static int64_t nuv_read_dts(AVFormatContext *s, int stream_index,
                     *ppos = pos;
                     return dts;
                 }
+                av_fallthrough;
             default:
                 avio_skip(pb, size);
                 break;
