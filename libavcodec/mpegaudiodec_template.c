@@ -1489,6 +1489,7 @@ static int mp_decode_frame(MPADecodeContext *s, OUT_INT **samples,
         break;
     case 3:
         s->avctx->frame_size = s->lsf ? 576 : 1152;
+        av_fallthrough;
     default:
         nb_frames = mp_decode_layer3(s);
 
