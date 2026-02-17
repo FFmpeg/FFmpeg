@@ -31,6 +31,7 @@
 #include <math.h>
 #include <string.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/crc.h"
 #include "libavutil/downmix_info.h"
@@ -338,7 +339,9 @@ static int decode_exponents(AC3DecodeContext *s,
         switch (group_size) {
         case 4: dexps[j++] = prevexp;
                 dexps[j++] = prevexp;
+                av_fallthrough;
         case 2: dexps[j++] = prevexp;
+                av_fallthrough;
         case 1: dexps[j++] = prevexp;
         }
     }
@@ -614,13 +617,16 @@ static void ac3_upmix_delay(AC3DecodeContext *s)
         break;
     case AC3_CHMODE_2F2R:
         memset(s->delay[3], 0, channel_data_size);
+        av_fallthrough;
     case AC3_CHMODE_2F1R:
         memset(s->delay[2], 0, channel_data_size);
         break;
     case AC3_CHMODE_3F2R:
         memset(s->delay[4], 0, channel_data_size);
+        av_fallthrough;
     case AC3_CHMODE_3F1R:
         memset(s->delay[3], 0, channel_data_size);
+        av_fallthrough;
     case AC3_CHMODE_3F:
         memcpy(s->delay[2], s->delay[1], channel_data_size);
         memset(s->delay[1], 0, channel_data_size);
