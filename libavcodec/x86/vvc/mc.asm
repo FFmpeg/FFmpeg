@@ -35,8 +35,6 @@ SECTION_RODATA
 
 %if HAVE_AVX2_EXTERNAL
 
-pw_0    times 2 dw   0
-pw_4    times 2 dw   4
 pw_256  times 2 dw 256
 
 %macro AVG_JMP_TABLE 3-*
@@ -241,8 +239,6 @@ cglobal vvc_avg_%1bpc, 4, 7, 3+2*(%1 != 8), dst, stride, src0, src1, w, h, bd
 
     sub                 bdd, 8
     movd                xm0, bdd
-    vpbroadcastd         m1, [pw_4]
-    pminuw               m0, m1
     vpbroadcastd         m2, [pw_256]
     psllw                m2, xm0                ; shift
 
@@ -283,9 +279,7 @@ cglobal vvc_w_avg_%1bpc, 4, 8, 6+2*(%1 != 8), dst, stride, src0, src1, w, h, t0,
     inc                 t0d                     ;((o0 + o1) << (BIT_DEPTH - 8)) + 1
 
     neg                 ecx
-    add                 ecx, 4                  ; bd - 12
-    cmovl               ecx, [pw_0]
-    add                 ecx, 3
+    add                 ecx, 7
     add                 ecx, r6m
     movd                xm2, ecx                ; shift
 
