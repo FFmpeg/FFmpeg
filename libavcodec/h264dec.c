@@ -645,6 +645,7 @@ static int decode_nal_units(H264Context *h, AVBufferRef *buf_ref,
             }
             idr_cleared = 1;
             h->has_recovery_point = 1;
+            av_fallthrough;
         case H264_NAL_SLICE:
             h->has_slice = 1;
 
