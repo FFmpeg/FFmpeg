@@ -48,6 +48,7 @@
 #include <time.h>
 
 #include "libavutil/aes.h"
+#include "libavutil/attributes.h"
 #include "libavutil/avstring.h"
 #include "libavutil/mastering_display_metadata.h"
 #include "libavutil/mathematics.h"
@@ -423,6 +424,7 @@ static void mxf_free_metadataset(MXFMetadataSet **ctx, enum MXFMetadataSetType t
         av_freep(&seg->temporal_offset_entries);
         av_freep(&seg->flag_entries);
         av_freep(&seg->stream_offset_entries);
+        break;
     default:
         break;
     }
@@ -2926,6 +2928,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                     break;
                 case SegmentedFrame:
                     st->codecpar->field_order = AV_FIELD_PROGRESSIVE;
+                    av_fallthrough;
                 case SeparateFields:
                     av_log(mxf->fc, AV_LOG_DEBUG, "video_line_map: (%d, %d), field_dominance: %d\n",
                            descriptor->video_line_map[0], descriptor->video_line_map[1],
