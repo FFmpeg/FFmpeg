@@ -672,6 +672,7 @@ static int read_dct_coeffs(BinkContext *c, GetBitContext *gb, int32_t block[64],
             case 0:
                 coef_list[list_pos] = ccoef + 4;
                 mode_list[list_pos] = 1;
+                av_fallthrough;
             case 2:
                 if (mode == 2) {
                     coef_list[list_pos]   = 0;
@@ -792,6 +793,7 @@ static int read_residue(GetBitContext *gb, int16_t block[64], int masks_count)
             case 0:
                 coef_list[list_pos] = ccoef + 4;
                 mode_list[list_pos] = 1;
+                av_fallthrough;
             case 2:
                 if (mode == 2) {
                     coef_list[list_pos]   = 0;
