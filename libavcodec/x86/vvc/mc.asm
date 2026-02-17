@@ -99,9 +99,9 @@ SECTION .text
     AVG_LOOP_END        .w4
 
 .w8:
-    vinserti128         m0, m0, [src0q], 0
+    movu               xm0, [src0q]
+    movu               xm1, [src1q]
     vinserti128         m0, m0, [src0q + AVG_SRC_STRIDE], 1
-    vinserti128         m1, m1, [src1q], 0
     vinserti128         m1, m1, [src1q + AVG_SRC_STRIDE], 1
     %2                  %1
     AVG_SAVE_W8         %1
@@ -164,7 +164,7 @@ SECTION .text
 
 %macro AVG_SAVE_W2 1 ;bpc
     %if %1 == 16
-        pextrd           [dstq], xm0, 0
+        movd             [dstq], xm0
         pextrd [dstq + strideq], xm0, 1
     %else
         packuswb           m0, m0
@@ -175,23 +175,23 @@ SECTION .text
 
 %macro AVG_SAVE_W4 1 ;bpc
     %if %1 == 16
-        pextrq           [dstq], xm0, 0
+        movq             [dstq], xm0
         pextrq [dstq + strideq], xm0, 1
     %else
         packuswb           m0, m0
-        pextrd           [dstq], xm0, 0
+        movd             [dstq], xm0
         pextrd [dstq + strideq], xm0, 1
     %endif
 %endmacro
 
 %macro AVG_SAVE_W8 1 ;bpc
     %if %1 == 16
-        vextracti128            [dstq], m0, 0
+        movu                    [dstq], xm0
         vextracti128  [dstq + strideq], m0, 1
     %else
         packuswb                    m0, m0
         vpermq                      m0, m0, 1000b
-        pextrq                  [dstq], xm0, 0
+        movq                    [dstq], xm0
         pextrq        [dstq + strideq], xm0, 1
     %endif
 %endmacro
@@ -202,7 +202,7 @@ SECTION .text
     %else
         packuswb                                        m0, m0
         vpermq                                          m0, m0, 1000b
-        vextracti128       [dstq + %2 * strideq + %3 * 16], m0, 0
+        movu               [dstq + %2 * strideq + %3 * 16], xm0
     %endif
 %endmacro
 
