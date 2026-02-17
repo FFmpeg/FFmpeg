@@ -25,6 +25,7 @@
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "decode.h"
+#include "libavutil/attributes.h"
 #include "texturedsp.h"
 
 #define TXD_DXT1 0x31545844
@@ -72,6 +73,7 @@ static int txd_decode_frame(AVCodecContext *avctx, AVFrame *p,
         case 0:
             if (!(flags & 1))
                 goto unsupported;
+            av_fallthrough;
         case TXD_DXT1:
             if (bytestream2_get_bytes_left(&gb) < AV_CEIL_RSHIFT(w, 2) * AV_CEIL_RSHIFT(h, 2) * 8 + 4)
                 return AVERROR_INVALIDDATA;
