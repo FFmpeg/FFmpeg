@@ -1267,7 +1267,7 @@ unsigned stream_specifier_match(const StreamSpecifier *ss,
                 break;
             }
         }
-        // fall-through
+        av_fallthrough;
     case STREAM_LIST_GROUP_IDX:
         if (ss->stream_list == STREAM_LIST_GROUP_IDX &&
             ss->list_id >= 0 && ss->list_id < s->nb_stream_groups)

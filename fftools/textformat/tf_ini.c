@@ -26,6 +26,7 @@
 
 #include "avtextformat.h"
 
+#include "libavutil/attributes.h"
 #include "libavutil/bprint.h"
 #include "libavutil/opt.h"
 #include "tf_internal.h"
@@ -74,7 +75,7 @@ static char *ini_escape_str(AVBPrint *dst, const char *src)
         case '=':
         case ':':
             av_bprint_chars(dst, '\\', 1);
-            /* fallthrough */
+            av_fallthrough;
         default:
             if ((unsigned char)c < 32)
                 av_bprintf(dst, "\\x00%02x", (unsigned char)c);

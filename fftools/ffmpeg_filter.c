@@ -27,6 +27,7 @@
 #include "libavfilter/buffersink.h"
 #include "libavfilter/buffersrc.h"
 
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
@@ -2572,6 +2573,7 @@ static void video_sync_process(OutputFilterPriv *ofp, AVFrame *frame,
             delta0 = 0;
             ofp->next_pts = llrint(sync_ipts);
         }
+        av_fallthrough;
     case VSYNC_CFR:
         // FIXME set to 0.5 after we fix some dts/pts bugs like in avidec.c
         if (frame_drop_threshold && delta < frame_drop_threshold && fps->frame_number) {
