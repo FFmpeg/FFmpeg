@@ -64,6 +64,7 @@
 
 #include "config_components.h"
 
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/ffmath.h"
@@ -857,6 +858,7 @@ static int config_filter(AVFilterLink *outlink, int reset)
         break;
     case bass:
         beta = sqrt((A * A + 1) - (A - 1) * (A - 1));
+        av_fallthrough;
     case tiltshelf:
     case lowshelf:
         if (s->poles == 1) {
@@ -884,6 +886,7 @@ static int config_filter(AVFilterLink *outlink, int reset)
         break;
     case treble:
         beta = sqrt((A * A + 1) - (A - 1) * (A - 1));
+        av_fallthrough;
     case highshelf:
         if (s->poles == 1) {
             double A = ff_exp10(gain / 20);
