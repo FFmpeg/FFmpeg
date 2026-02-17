@@ -160,6 +160,7 @@ static inline void dv_calc_mb_coordinates(const AVDVProfile *d, int chan,
                 tbl[m] = (x << 2) | (y << 8);
                 break;
             }
+            break;
         default:
             break;
         }
