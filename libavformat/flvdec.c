@@ -24,6 +24,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
@@ -463,6 +464,7 @@ static int flv_set_video_codec(AVFormatContext *s, AVStream *vstream,
         break;
     case FLV_CODECID_VP6:
         par->codec_id = AV_CODEC_ID_VP6F;
+        av_fallthrough;
     case FLV_CODECID_VP6A:
         if (flv_codecid == FLV_CODECID_VP6A)
             par->codec_id = AV_CODEC_ID_VP6A;
@@ -1064,10 +1066,12 @@ static int amf_skip_tag(AVIOContext *pb, AMFDataType type, int depth)
         break;
     case AMF_DATA_TYPE_ARRAY:
         parse_name = 0;
+        av_fallthrough;
     case AMF_DATA_TYPE_MIXEDARRAY:
         nb = avio_rb32(pb);
         if (nb < 0)
             return AVERROR_INVALIDDATA;
+        av_fallthrough;
     case AMF_DATA_TYPE_OBJECT:
         while(!pb->eof_reached && (nb-- > 0 || type != AMF_DATA_TYPE_ARRAY)) {
             if (parse_name) {
@@ -1104,8 +1108,10 @@ static int flv_data_packet(AVFormatContext *s, AVPacket *pkt,
     switch (avio_r8(pb)) {
     case AMF_DATA_TYPE_ARRAY:
         array = 1;
+        av_fallthrough;
     case AMF_DATA_TYPE_MIXEDARRAY:
         avio_seek(pb, 4, SEEK_CUR);
+        av_fallthrough;
     case AMF_DATA_TYPE_OBJECT:
         break;
     default:
