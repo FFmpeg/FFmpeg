@@ -22,6 +22,7 @@
 
 #include <string.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/common.h"
 #include "libavutil/cuda_check.h"
 #include "libavutil/hwcontext.h"
@@ -283,7 +284,7 @@ static int conv_cuda_convert(AVFilterContext* ctx, AVFrame* out, AVFrame* in)
             break;
         case AV_PIX_FMT_YUV420P:
             width = comp_id ? in->width / 2 : in->width;
-            /* fall-through */
+            av_fallthrough;
         case AV_PIX_FMT_NV12:
             height = comp_id ? in->height / 2 : in->height;
             break;

@@ -28,6 +28,7 @@
 #include <cairo.h>
 #include <stdbool.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bswap.h"
@@ -633,7 +634,7 @@ next_token:
             goto next_token;
         }
 
-        /* fallthrough */
+        av_fallthrough;
 
     default:
         token->type = TOKEN_WORD;
@@ -859,7 +860,7 @@ static int vgs_parse_numeric_argument(
         if (ret == 0)
             break;
 
-        /* fallthrough */
+        av_fallthrough;
 
     default:
         vgs_log_invalid_token(log_ctx, parser, &token, "Expected numeric argument.");
@@ -1101,7 +1102,7 @@ static int vgs_parse_statement(
                 FAIL(EINVAL);
             }
 
-            /* fallthrough */
+            av_fallthrough;
 
         case PARAM_NUMERIC:
         case PARAM_NUMERIC_COLOR:
@@ -1217,7 +1218,7 @@ static int vgs_parse_statement(
                 continue;
             }
 
-            /* fallthrough */
+            av_fallthrough;
 
         case PARAM_VAR_NAME: {
             int var_idx = -1;

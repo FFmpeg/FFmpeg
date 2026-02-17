@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/bprint.h"
 #include "libavutil/channel_layout.h"
@@ -1193,7 +1194,7 @@ int ff_default_query_formats(AVFilterContext *ctx)
         break;
     default:
         av_assert2(!"Unreachable");
-    /* Intended fallthrough */
+        av_fallthrough;
     case FF_FILTER_FORMATS_PASSTHROUGH:
     case FF_FILTER_FORMATS_QUERY_FUNC:
     case FF_FILTER_FORMATS_QUERY_FUNC2:

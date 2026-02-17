@@ -379,14 +379,14 @@ static int lut_packed_16bits(AVFilterContext *ctx, void *arg, int jobnr, int nb_
 
             switch (step) {
 #if HAVE_BIGENDIAN
-            case 4:  outrow[3] = av_bswap16(tab[3][av_bswap16(inrow[3])]); // Fall-through
-            case 3:  outrow[2] = av_bswap16(tab[2][av_bswap16(inrow[2])]); // Fall-through
-            case 2:  outrow[1] = av_bswap16(tab[1][av_bswap16(inrow[1])]); // Fall-through
+            case 4:  outrow[3] = av_bswap16(tab[3][av_bswap16(inrow[3])]); av_fallthrough;
+            case 3:  outrow[2] = av_bswap16(tab[2][av_bswap16(inrow[2])]); av_fallthrough;
+            case 2:  outrow[1] = av_bswap16(tab[1][av_bswap16(inrow[1])]); av_fallthrough;
             default: outrow[0] = av_bswap16(tab[0][av_bswap16(inrow[0])]);
 #else
-            case 4:  outrow[3] = tab[3][inrow[3]]; // Fall-through
-            case 3:  outrow[2] = tab[2][inrow[2]]; // Fall-through
-            case 2:  outrow[1] = tab[1][inrow[1]]; // Fall-through
+            case 4:  outrow[3] = tab[3][inrow[3]]; av_fallthrough;
+            case 3:  outrow[2] = tab[2][inrow[2]]; av_fallthrough;
+            case 2:  outrow[1] = tab[1][inrow[1]]; av_fallthrough;
             default: outrow[0] = tab[0][inrow[0]];
 #endif
             }
@@ -414,9 +414,9 @@ static int lut_packed_8bits(AVFilterContext *ctx, void *arg, int jobnr, int nb_j
         outrow = outrow0 + i * out_linesize;
         for (j = 0; j < w; j++) {
             switch (step) {
-            case 4:  outrow[3] = tab[3][inrow[3]]; // Fall-through
-            case 3:  outrow[2] = tab[2][inrow[2]]; // Fall-through
-            case 2:  outrow[1] = tab[1][inrow[1]]; // Fall-through
+            case 4:  outrow[3] = tab[3][inrow[3]]; av_fallthrough;
+            case 3:  outrow[2] = tab[2][inrow[2]]; av_fallthrough;
+            case 2:  outrow[1] = tab[1][inrow[1]]; av_fallthrough;
             default: outrow[0] = tab[0][inrow[0]];
             }
             outrow += step;

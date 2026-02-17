@@ -23,6 +23,7 @@
  * Convert between colorspaces.
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/csp.h"
 #include "libavutil/frame.h"
@@ -394,7 +395,7 @@ static int get_range_off(AVFilterContext *ctx, int *off,
             s->did_warn_range = 1;
         }
     }
-        // fall-through
+    av_fallthrough;
     case AVCOL_RANGE_MPEG:
         *off = 16 << (depth - 8);
         *y_rng = 219 << (depth - 8);
