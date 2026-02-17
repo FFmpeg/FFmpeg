@@ -111,8 +111,6 @@ void decode_line_pcm(ivec2 sp, int w, int y, int p)
     }
 }
 
-shared ivec2 pr;
-
 void decode_line(ivec2 sp, int w,
                  int y, int p, uint state_off,
                  uint8_t quant_table_idx, int run_index)
@@ -124,11 +122,11 @@ void decode_line(ivec2 sp, int w,
     }
 #endif
 
+    linecache_load(dec[p], sp, y, 0);
+
     for (int x = 0; x < w; x++) {
-        if (gl_LocalInvocationID.x == 0)
-            pr = get_pred(dec[p], sp, ivec2(x, y), 0, w,
-                          quant_table_idx, extend_lookup[quant_table_idx]);
-        barrier();
+        ivec2 pr = get_pred(dec[p], sp, ivec2(x, y), 0, w,
+                            quant_table_idx, extend_lookup[quant_table_idx]);
 
         uint rc_off = state_off + CONTEXT_SIZE*abs(pr[0]) + gl_LocalInvocationID.x;
 
@@ -143,6 +141,7 @@ void decode_line(ivec2 sp, int w,
 
             uint v = zero_extend(pr[1] + diff, bits);
             imageStore(dec[p], sp + LADDR(ivec2(x, y)), uvec4(v));
+            linecache_next(TYPE(v));
         }
 
         /* Image write now visible to other invocs */
@@ -182,6 +181,8 @@ void decode_line(ivec2 sp, int w,
         sp >>= chroma_shift;
     }
 #endif
+
+    linecache_load(dec[p], sp, y, 0);
 
     int run_count = 0;
     int run_mode  = 0;
@@ -235,6 +236,7 @@ void decode_line(ivec2 sp, int w,
 
         uint v = zero_extend(pr[1] + diff, bits);
         imageStore(dec[p], sp + LADDR(ivec2(x, y)), uvec4(v));
+        linecache_next(TYPE(v));
     }
 }
 #endif

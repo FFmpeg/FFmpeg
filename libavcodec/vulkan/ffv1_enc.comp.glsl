@@ -99,10 +99,13 @@ void encode_line(in SliceContext sc, readonly uimage2D img, uint state_off,
     }
 #endif
 
+    linecache_load(img, sp, y, comp);
+
     for (int x = 0; x < w; x++) {
         ivec2 d = get_pred(img, sp, ivec2(x, y), comp, w,
                            quant_table_idx, extend_lookup[quant_table_idx]);
-        d[1] = int(imageLoad(img, sp + LADDR(ivec2(x, y)))[comp]) - d[1];
+        TYPE cur = TYPE(imageLoad(img, sp + LADDR(ivec2(x, y)))[comp]);
+        d[1] = int(cur) - d[1];
 
         if (d[0] < 0)
             d = -d;
@@ -114,8 +117,10 @@ void encode_line(in SliceContext sc, readonly uimage2D img, uint state_off,
         rc_state[gl_LocalInvocationID.x] = slice_rc_state[rc_off];
         barrier();
 
-        if (gl_LocalInvocationID.x == 0)
+        if (gl_LocalInvocationID.x == 0) {
             put_symbol(d[1]);
+            linecache_next(cur);
+        }
 
         barrier();
         slice_rc_state[rc_off] = rc_state[gl_LocalInvocationID.x];
@@ -151,13 +156,17 @@ void encode_line(in SliceContext sc, readonly uimage2D img, uint state_off,
     }
 #endif
 
+    linecache_load(img, sp, y, comp);
+
     int run_count = 0;
     bool run_mode = false;
 
     for (int x = 0; x < w; x++) {
         ivec2 d = get_pred(img, sp, ivec2(x, y), comp, w,
                            quant_table_idx, extend_lookup[quant_table_idx]);
-        d[1] = int(imageLoad(img, sp + LADDR(ivec2(x, y)))[comp]) - d[1];
+        TYPE cur = TYPE(imageLoad(img, sp + LADDR(ivec2(x, y)))[comp]);
+        d[1] = int(cur) - d[1];
+        linecache_next(cur);
 
         if (d[0] < 0)
             d = -d;
