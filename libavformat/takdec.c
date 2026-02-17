@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/crc.h"
 #include "libavutil/mem.h"
 
@@ -85,6 +86,7 @@ static int tak_read_header(AVFormatContext *s)
         case TAK_METADATA_STREAMINFO:
             if (st->codecpar->extradata)
                 return AVERROR_INVALIDDATA;
+            av_fallthrough;
         case TAK_METADATA_LAST_FRAME:
         case TAK_METADATA_ENCODER:
             if (size <= 3)
