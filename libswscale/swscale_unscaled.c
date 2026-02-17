@@ -23,6 +23,7 @@
 #include <math.h>
 #include <stdio.h>
 #include "config.h"
+#include "libavutil/attributes.h"
 #include "swscale.h"
 #include "swscale_internal.h"
 #include "rgb2rgb.h"
@@ -1287,6 +1288,7 @@ static int planarRgbaToRgbWrapper(SwsInternal *c, const uint8_t *const src[],
 
     case AV_PIX_FMT_ARGB:
         alpha_first = 1;
+        av_fallthrough;
     case AV_PIX_FMT_RGBA:
         gbraptopacked32(src201, stride201,
                         dst[0] + srcSliceY * dstStride[0], dstStride[0],
@@ -1295,6 +1297,7 @@ static int planarRgbaToRgbWrapper(SwsInternal *c, const uint8_t *const src[],
 
     case AV_PIX_FMT_ABGR:
         alpha_first = 1;
+        av_fallthrough;
     case AV_PIX_FMT_BGRA:
         gbraptopacked32(src102, stride102,
                         dst[0] + srcSliceY * dstStride[0], dstStride[0],
@@ -1343,6 +1346,7 @@ static int planarRgbToRgbWrapper(SwsInternal *c, const uint8_t *const src[],
 
     case AV_PIX_FMT_ARGB:
         alpha_first = 1;
+        av_fallthrough;
     case AV_PIX_FMT_RGBA:
         gbr24ptopacked32(src201, stride201,
                          dst[0] + srcSliceY * dstStride[0], dstStride[0],
@@ -1351,6 +1355,7 @@ static int planarRgbToRgbWrapper(SwsInternal *c, const uint8_t *const src[],
 
     case AV_PIX_FMT_ABGR:
         alpha_first = 1;
+        av_fallthrough;
     case AV_PIX_FMT_BGRA:
         gbr24ptopacked32(src102, stride102,
                          dst[0] + srcSliceY * dstStride[0], dstStride[0],
@@ -1445,12 +1450,14 @@ static int rgbToPlanarRgbWrapper(SwsInternal *c, const uint8_t *const src[],
         break;
     case AV_PIX_FMT_ARGB:
         alpha_first = 1;
+        av_fallthrough;
     case AV_PIX_FMT_RGBA:
         packedtogbr24p((const uint8_t *) src[0], srcStride[0], dst201,
                        stride201, srcSliceH, alpha_first, 4, c->opts.src_w);
         break;
     case AV_PIX_FMT_ABGR:
         alpha_first = 1;
+        av_fallthrough;
     case AV_PIX_FMT_BGRA:
         packedtogbr24p((const uint8_t *) src[0], srcStride[0], dst102,
                        stride102, srcSliceH, alpha_first, 4, c->opts.src_w);
@@ -1555,12 +1562,14 @@ static int rgbToPlanarRgbaWrapper(SwsInternal *c, const uint8_t *const src[],
         break;
     case AV_PIX_FMT_ARGB:
         alpha_first = 1;
+        av_fallthrough;
     case AV_PIX_FMT_RGBA:
         packed32togbrap((const uint8_t *) src[0], srcStride[0], dst201,
                         stride201, srcSliceH, alpha_first, c->opts.src_w);
         break;
     case AV_PIX_FMT_ABGR:
         alpha_first = 1;
+        av_fallthrough;
     case AV_PIX_FMT_BGRA:
         packed32togbrap((const uint8_t *) src[0], srcStride[0], dst102,
                         stride102, srcSliceH, alpha_first, c->opts.src_w);

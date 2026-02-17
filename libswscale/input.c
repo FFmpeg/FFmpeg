@@ -22,6 +22,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/bswap.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avassert.h"
@@ -2302,31 +2303,37 @@ av_cold void ff_sws_init_input_funcs(SwsInternal *c,
         break;
     case AV_PIX_FMT_GBRAP10LE:
         *readAlpPlanar = planar_rgb10le_to_a;
+        av_fallthrough;
     case AV_PIX_FMT_GBRP10LE:
         *readLumPlanar = planar_rgb10le_to_y;
         break;
     case AV_PIX_FMT_GBRAP12LE:
         *readAlpPlanar = planar_rgb12le_to_a;
+        av_fallthrough;
     case AV_PIX_FMT_GBRP12LE:
         *readLumPlanar = planar_rgb12le_to_y;
         break;
     case AV_PIX_FMT_GBRAP14LE:
         *readAlpPlanar = planar_rgb14le_to_a;
+        av_fallthrough;
     case AV_PIX_FMT_GBRP14LE:
         *readLumPlanar = planar_rgb14le_to_y;
         break;
     case AV_PIX_FMT_GBRAP16LE:
         *readAlpPlanar = planar_rgb16le_to_a;
+        av_fallthrough;
     case AV_PIX_FMT_GBRP16LE:
         *readLumPlanar = planar_rgb16le_to_y;
         break;
     case AV_PIX_FMT_GBRAPF32LE:
         *readAlpPlanar = planar_rgbf32le_to_a;
+        av_fallthrough;
     case AV_PIX_FMT_GBRPF32LE:
         *readLumPlanar = planar_rgbf32le_to_y;
         break;
     case AV_PIX_FMT_GBRAPF16LE:
         *readAlpPlanar = planar_rgbf16le_to_a;
+        av_fallthrough;
     case AV_PIX_FMT_GBRPF16LE:
         *readLumPlanar = planar_rgbf16le_to_y;
         break;
@@ -2341,31 +2348,37 @@ av_cold void ff_sws_init_input_funcs(SwsInternal *c,
         break;
     case AV_PIX_FMT_GBRAP10BE:
         *readAlpPlanar = planar_rgb10be_to_a;
+        av_fallthrough;
     case AV_PIX_FMT_GBRP10BE:
         *readLumPlanar = planar_rgb10be_to_y;
         break;
     case AV_PIX_FMT_GBRAP12BE:
         *readAlpPlanar = planar_rgb12be_to_a;
+        av_fallthrough;
     case AV_PIX_FMT_GBRP12BE:
         *readLumPlanar = planar_rgb12be_to_y;
         break;
     case AV_PIX_FMT_GBRAP14BE:
         *readAlpPlanar = planar_rgb14be_to_a;
+        av_fallthrough;
     case AV_PIX_FMT_GBRP14BE:
         *readLumPlanar = planar_rgb14be_to_y;
         break;
     case AV_PIX_FMT_GBRAP16BE:
         *readAlpPlanar = planar_rgb16be_to_a;
+        av_fallthrough;
     case AV_PIX_FMT_GBRP16BE:
         *readLumPlanar = planar_rgb16be_to_y;
         break;
     case AV_PIX_FMT_GBRAPF32BE:
         *readAlpPlanar = planar_rgbf32be_to_a;
+        av_fallthrough;
     case AV_PIX_FMT_GBRPF32BE:
         *readLumPlanar = planar_rgbf32be_to_y;
         break;
     case AV_PIX_FMT_GBRAPF16BE:
         *readAlpPlanar = planar_rgbf16be_to_a;
+        av_fallthrough;
     case AV_PIX_FMT_GBRPF16BE:
         *readLumPlanar = planar_rgbf16be_to_y;
         break;
@@ -2377,6 +2390,7 @@ av_cold void ff_sws_init_input_funcs(SwsInternal *c,
         break;
     case AV_PIX_FMT_GBRAP:
         *readAlpPlanar = planar_rgb_to_a;
+        av_fallthrough;
     case AV_PIX_FMT_GBRP:
         *readLumPlanar = planar_rgb_to_y;
         break;
