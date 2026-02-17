@@ -23,6 +23,7 @@
 #include "bytestream.h"
 #include "codec_internal.h"
 #include "decode.h"
+#include "libavutil/attributes.h"
 
 typedef struct C93DecoderContext {
     AVFrame *pictures[2];
@@ -174,6 +175,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
 
             case C93_4X4_FROM_CURR:
                 copy_from = newpic->data[0];
+                av_fallthrough;
             case C93_4X4_FROM_PREV:
                 for (int j = 0; j < 8; j += 4) {
                     for (i = 0; i < 8; i += 4) {
