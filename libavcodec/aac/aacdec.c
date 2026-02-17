@@ -1940,6 +1940,7 @@ static int decode_extension_payload(AACDecContext *ac, GetBitContext *gb, int cn
     switch (type) { // extension type
     case EXT_SBR_DATA_CRC:
         crc_flag++;
+        av_fallthrough;
     case EXT_SBR_DATA:
         if (!che) {
             av_log(ac->avctx, AV_LOG_ERROR, "SBR was found before the first channel element.\n");
