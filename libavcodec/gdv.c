@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/common.h"
 #include "libavutil/mem.h"
 #include "avcodec.h"
@@ -488,6 +489,7 @@ static int gdv_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     switch (compression) {
     case 1:
         memset(gdv->frame + PREAMBLE_SIZE, 0, gdv->frame_size - PREAMBLE_SIZE);
+        av_fallthrough;
     case 0:
         for (i = 0; i < 256; i++) {
             unsigned r = bytestream2_get_byte(gb);
