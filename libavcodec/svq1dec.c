@@ -558,6 +558,7 @@ static int svq1_decode_frame_header(AVCodecContext *avctx, AVFrame *frame, int *
         break;
     case 2:
         s->nonref = 1;
+        av_fallthrough;
     case 1:
         frame->pict_type = AV_PICTURE_TYPE_P;
         break;
