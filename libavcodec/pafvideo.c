@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/mem.h"
 
@@ -246,16 +247,20 @@ static int decode_0(PAFVideoDecContext *c, const uint8_t *pkt, uint8_t code)
                 switch (code) {
                 case 2:
                     offset = 0;
+                    av_fallthrough;
                 case 3:
                     color = bytestream2_get_byte(&c->gb);
+                    av_fallthrough;
                 case 4:
                     mask = bytestream2_get_byte(&c->gb);
                     copy_color_mask(dst + offset, c->width, mask, color);
                     break;
                 case 5:
                     offset = 0;
+                    av_fallthrough;
                 case 6:
                     set_src_position(c, &src, &send);
+                    av_fallthrough;
                 case 7:
                     if (src + offset + c->width + 4 > send)
                         return AVERROR_INVALIDDATA;
