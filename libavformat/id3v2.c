@@ -27,6 +27,7 @@
  */
 
 #include "config.h"
+#include "libavutil/attributes.h"
 
 #if CONFIG_ZLIB
 #include <zlib.h>
@@ -293,7 +294,7 @@ static int decode_str(AVFormatContext *s, AVIOContext *pb, int encoding,
             *maxread = left;
             return AVERROR_INVALIDDATA;
         }
-        // fall-through
+        av_fallthrough;
 
     case ID3v2_ENCODING_UTF16BE:
         while ((left > 1) && ch) {

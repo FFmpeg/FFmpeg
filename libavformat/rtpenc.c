@@ -20,6 +20,7 @@
  */
 
 #include "avformat.h"
+#include "libavutil/attributes.h"
 #include "mpegts.h"
 #include "internal.h"
 #include "mux.h"
@@ -630,7 +631,7 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
             ff_rtp_send_h263_rfc2190(s1, pkt->data, size, mb_info, mb_info_size);
             break;
         }
-        /* Fallthrough */
+        av_fallthrough;
     case AV_CODEC_ID_H263P:
         ff_rtp_send_h263(s1, pkt->data, size);
         break;
@@ -669,7 +670,7 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
                    size, s->max_payload_size);
             return AVERROR(EINVAL);
         }
-        /* Intentional fallthrough */
+        av_fallthrough;
     default:
         /* better than nothing : send the codec raw data */
         rtp_send_raw(s1, pkt->data, size);

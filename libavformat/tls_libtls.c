@@ -22,6 +22,7 @@
 
 #include "avformat.h"
 #include "internal.h"
+#include "libavutil/attributes.h"
 #include "network.h"
 #include "url.h"
 #include "tls.h"
@@ -140,7 +141,7 @@ err_config:
 err_ctx:
     av_log(h, AV_LOG_ERROR, "%s\n", tls_error(p->ctx));
     ret = AVERROR(EIO);
-    /* fallthrough */
+    av_fallthrough;
 fail:
     if (cfg)
         tls_config_free(cfg);

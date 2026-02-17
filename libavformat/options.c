@@ -26,6 +26,7 @@
 #include "libavcodec/avcodec.h"
 #include "libavcodec/codec_par.h"
 
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/iamf.h"
 #include "libavutil/internal.h"
@@ -395,7 +396,7 @@ static const AVClass *stream_group_child_iterate(void **opaque)
     switch(i) {
     case AV_STREAM_GROUP_PARAMS_NONE:
         i++;
-    // fall-through
+        av_fallthrough;
     case AV_STREAM_GROUP_PARAMS_IAMF_AUDIO_ELEMENT:
         ret = av_iamf_audio_element_get_class();
         break;

@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include "libavutil/attributes.h"
 #include "libavutil/bprint.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
@@ -1118,7 +1119,7 @@ static int generate_interval(void *log, struct sbg_script *s,
         case SBG_TYPE_SPIN:
             av_log(log, AV_LOG_WARNING, "Spinning noise not implemented, "
                                         "using pink noise instead.\n");
-            /* fall through */
+            av_fallthrough;
         case SBG_TYPE_NOISE:
             /* SBaGen's pink noise generator uses:
                - 1 band of white noise, mean square: 1/3;
