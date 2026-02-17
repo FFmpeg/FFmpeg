@@ -40,6 +40,7 @@
 #include <inttypes.h>
 #include <time.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/attributes_internal.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
@@ -1257,6 +1258,7 @@ static int64_t mxf_write_generic_picture_desc(AVFormatContext *s, AVStream *st)
         if (sc->cid < 1270) // DNxHD
             break;
         // fall for DNxHR RI rasters
+        av_fallthrough;
     case AV_CODEC_ID_MPEG2VIDEO:
     case AV_CODEC_ID_H264:
         //Based on 16x16 macroblocks
