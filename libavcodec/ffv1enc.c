@@ -815,6 +815,7 @@ av_cold int ff_ffv1_encode_setup_plane_info(AVCodecContext *avctx,
     case AV_PIX_FMT_YUVA420P9:
         if (!avctx->bits_per_raw_sample)
             s->bits_per_raw_sample = 9;
+        av_fallthrough;
     case AV_PIX_FMT_GRAY10:
     case AV_PIX_FMT_YUV444P10:
     case AV_PIX_FMT_YUV440P10:
@@ -825,6 +826,7 @@ av_cold int ff_ffv1_encode_setup_plane_info(AVCodecContext *avctx,
     case AV_PIX_FMT_YUVA420P10:
         if (!avctx->bits_per_raw_sample && !s->bits_per_raw_sample)
             s->bits_per_raw_sample = 10;
+        av_fallthrough;
     case AV_PIX_FMT_GRAY12:
     case AV_PIX_FMT_YUV444P12:
     case AV_PIX_FMT_YUV440P12:
@@ -834,6 +836,7 @@ av_cold int ff_ffv1_encode_setup_plane_info(AVCodecContext *avctx,
     case AV_PIX_FMT_YUVA422P12:
         if (!avctx->bits_per_raw_sample && !s->bits_per_raw_sample)
             s->bits_per_raw_sample = 12;
+        av_fallthrough;
     case AV_PIX_FMT_GRAY14:
     case AV_PIX_FMT_YUV444P14:
     case AV_PIX_FMT_YUV420P14:
@@ -841,6 +844,7 @@ av_cold int ff_ffv1_encode_setup_plane_info(AVCodecContext *avctx,
         if (!avctx->bits_per_raw_sample && !s->bits_per_raw_sample)
             s->bits_per_raw_sample = 14;
         s->packed_at_lsb = 1;
+        av_fallthrough;
     case AV_PIX_FMT_GRAY16:
     case AV_PIX_FMT_P016:
     case AV_PIX_FMT_P216:
@@ -863,6 +867,7 @@ av_cold int ff_ffv1_encode_setup_plane_info(AVCodecContext *avctx,
             return AVERROR_INVALIDDATA;
         }
         s->version = FFMAX(s->version, 1);
+        av_fallthrough;
     case AV_PIX_FMT_GRAY8:
     case AV_PIX_FMT_YA8:
     case AV_PIX_FMT_NV12:
@@ -915,26 +920,31 @@ av_cold int ff_ffv1_encode_setup_plane_info(AVCodecContext *avctx,
     case AV_PIX_FMT_GBRP9:
         if (!avctx->bits_per_raw_sample)
             s->bits_per_raw_sample = 9;
+        av_fallthrough;
     case AV_PIX_FMT_X2BGR10:
     case AV_PIX_FMT_X2RGB10:
     case AV_PIX_FMT_GBRP10:
     case AV_PIX_FMT_GBRAP10:
         if (!avctx->bits_per_raw_sample && !s->bits_per_raw_sample)
             s->bits_per_raw_sample = 10;
+        av_fallthrough;
     case AV_PIX_FMT_GBRP12:
     case AV_PIX_FMT_GBRAP12:
         if (!avctx->bits_per_raw_sample && !s->bits_per_raw_sample)
             s->bits_per_raw_sample = 12;
+        av_fallthrough;
     case AV_PIX_FMT_GBRP14:
     case AV_PIX_FMT_GBRAP14:
         if (!avctx->bits_per_raw_sample && !s->bits_per_raw_sample)
             s->bits_per_raw_sample = 14;
+        av_fallthrough;
     case AV_PIX_FMT_GBRP16:
     case AV_PIX_FMT_GBRAP16:
     case AV_PIX_FMT_GBRPF16:
     case AV_PIX_FMT_GBRAPF16:
         if (!avctx->bits_per_raw_sample && !s->bits_per_raw_sample)
             s->bits_per_raw_sample = 16;
+        av_fallthrough;
     case AV_PIX_FMT_GBRPF32:
     case AV_PIX_FMT_GBRAPF32:
         if (!avctx->bits_per_raw_sample && !s->bits_per_raw_sample)
