@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "demux.h"
@@ -75,8 +76,10 @@ next_chunk:
     case TXD_INFO:
         if (chunk_size > 100)
             break;
+        av_fallthrough;
     case TXD_EXTRA:
         avio_skip(s->pb, chunk_size);
+        av_fallthrough;
     case TXD_FILE:
     case TXD_TEXTURE:
         goto next_chunk;
