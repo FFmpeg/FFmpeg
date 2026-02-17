@@ -25,6 +25,7 @@
 
 #include "config_components.h"
 
+#include "libavutil/attributes.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
 #include "libavutil/error.h"
@@ -179,6 +180,7 @@ static int64_t concat_seek(URLContext *h, int64_t pos, int whence)
         pos += ffurl_seek(nodes[i].uc, 0, SEEK_CUR);
         whence = SEEK_SET;
         /* fall through with the absolute position */
+        av_fallthrough;
     case SEEK_SET:
         for (i = 0; i != data->length - 1 && pos >= nodes[i].size; i++)
             pos -= nodes[i].size;
