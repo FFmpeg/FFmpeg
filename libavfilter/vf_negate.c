@@ -16,6 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/common.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
@@ -131,9 +132,9 @@ static void negate_packed8(const uint8_t *ssrc, uint8_t *ddst,
 
         for (int x = 0; x < w; x++) {
             switch (step) {
-            case 4:  dst[3] = components & 8 ? 255 - src[3] : src[3];
-            case 3:  dst[2] = components & 4 ? 255 - src[2] : src[2];
-            case 2:  dst[1] = components & 2 ? 255 - src[1] : src[1];
+            case 4:  dst[3] = components & 8 ? 255 - src[3] : src[3]; av_fallthrough;
+            case 3:  dst[2] = components & 4 ? 255 - src[2] : src[2]; av_fallthrough;
+            case 2:  dst[1] = components & 2 ? 255 - src[1] : src[1]; av_fallthrough;
             default: dst[0] = components & 1 ? 255 - src[0] : src[0];
             }
 
@@ -174,9 +175,9 @@ static void negate_packed16(const uint8_t *ssrc, uint8_t *ddst,
 
         for (int x = 0; x < w; x++) {
             switch (step) {
-            case 4:  dst[3] = components & 8 ? max - src[3] : src[3];
-            case 3:  dst[2] = components & 4 ? max - src[2] : src[2];
-            case 2:  dst[1] = components & 2 ? max - src[1] : src[1];
+            case 4:  dst[3] = components & 8 ? max - src[3] : src[3]; av_fallthrough;
+            case 3:  dst[2] = components & 4 ? max - src[2] : src[2]; av_fallthrough;
+            case 2:  dst[1] = components & 2 ? max - src[1] : src[1]; av_fallthrough;
             default: dst[0] = components & 1 ? max - src[0] : src[0];
             }
 
