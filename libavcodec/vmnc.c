@@ -25,6 +25,7 @@
  * As Alex Beregszaszi discovered, this is effectively RFB data dump
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/common.h"
 #include "libavutil/mem.h"
 #include "avcodec.h"
@@ -542,6 +543,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         /* 24 bits is not technically supported, but some clients might
          * mistakenly set it, so let's assume they actually meant 32 bits */
         c->bpp = 32;
+        av_fallthrough;
     case 32:
         avctx->pix_fmt = AV_PIX_FMT_0RGB32;
         break;
