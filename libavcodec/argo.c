@@ -634,24 +634,28 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
             ret = decode_avcf(avctx, frame);
             break;
         }
+        av_fallthrough;
     case MKBETAG('A', 'L', 'C', 'D'):
         if (avctx->pix_fmt == AV_PIX_FMT_PAL8) {
             s->key = 0;
             ret = decode_alcd(avctx, frame);
             break;
         }
+        av_fallthrough;
     case MKBETAG('R', 'L', 'E', 'F'):
         if (avctx->pix_fmt == AV_PIX_FMT_PAL8) {
             s->key = 1;
             ret = decode_rle(avctx, frame);
             break;
         }
+        av_fallthrough;
     case MKBETAG('R', 'L', 'E', 'D'):
         if (avctx->pix_fmt == AV_PIX_FMT_PAL8) {
             s->key = 0;
             ret = decode_rle(avctx, frame);
             break;
         }
+        av_fallthrough;
     default:
         av_log(avctx, AV_LOG_DEBUG, "unknown chunk 0x%X\n", chunk);
         break;
