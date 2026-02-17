@@ -218,6 +218,7 @@ static int dca_parse_params(DCAParseContext *pc1, const uint8_t *buf,
             switch (get_bits(&gb, 8)) {
             case DCA_LBR_HEADER_DECODER_INIT:
                 pc1->sr_code = get_bits(&gb, 8);
+                break;
             case DCA_LBR_HEADER_SYNC_ONLY:
                 break;
             default:
