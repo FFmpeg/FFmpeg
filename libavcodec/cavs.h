@@ -25,6 +25,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/frame.h"
 #include "libavutil/mem_internal.h"
 
@@ -257,6 +258,7 @@ static inline void set_mvs(cavs_vector *mv, enum cavs_block size) {
     case BLK_16X16:
         mv[MV_STRIDE  ] = mv[0];
         mv[MV_STRIDE+1] = mv[0];
+        av_fallthrough;
     case BLK_16X8:
         mv[1] = mv[0];
         break;

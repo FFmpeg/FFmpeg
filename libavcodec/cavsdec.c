@@ -1280,6 +1280,7 @@ static int cavs_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                 av_frame_unref(h->DPB[1].f);
                 h->got_keyframe = 1;
             }
+            av_fallthrough;
         case PIC_PB_START_CODE:
             if (frame_start > 1)
                 return AVERROR_INVALIDDATA;
