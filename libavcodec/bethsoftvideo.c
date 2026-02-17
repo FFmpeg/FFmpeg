@@ -27,6 +27,7 @@
  * @see http://www.svatopluk.com/andux/docs/dfvid.html
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/common.h"
 #include "avcodec.h"
 #include "bethsoftvideo.h"
@@ -113,6 +114,7 @@ static int bethsoftvid_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
             if(yoffset >= avctx->height)
                 return AVERROR_INVALIDDATA;
             dst += vid->frame->linesize[0] * yoffset;
+            av_fallthrough;
         case VIDEO_P_FRAME:
         case VIDEO_I_FRAME:
             break;
