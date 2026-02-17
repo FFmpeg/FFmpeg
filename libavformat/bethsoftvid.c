@@ -27,6 +27,7 @@
  * @see http://www.svatopluk.com/andux/docs/dfvid.html
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
@@ -247,6 +248,7 @@ static int vid_read_packet(AVFormatContext *s,
             avio_rl16(pb);
             // soundblaster DAC used for sample rate, as on specification page (link above)
             vid->sample_rate = 1000000 / (256 - avio_r8(pb));
+            av_fallthrough;
         case AUDIO_BLOCK:
             if (vid->audio_index < 0) {
                 AVStream *st = avformat_new_stream(s, NULL);
