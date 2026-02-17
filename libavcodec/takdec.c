@@ -25,6 +25,7 @@
  * @author Paul B Mahol
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/internal.h"
 #include "libavutil/mem.h"
 #include "libavutil/mem_internal.h"
@@ -582,6 +583,7 @@ static int decorrelate(TAKDecContext *s, int c1, int c2, int length)
     case 4: /* side/left with scale factor */
         FFSWAP(int32_t*, p1, p2);
         FFSWAP(int32_t, bp1, bp2);
+        av_fallthrough;
     case 5: /* side/right with scale factor */
         dshift  = get_bits_esc4(gb);
         dfactor = get_sbits(gb, 10);
@@ -589,6 +591,7 @@ static int decorrelate(TAKDecContext *s, int c1, int c2, int length)
         break;
     case 6:
         FFSWAP(int32_t*, p1, p2);
+        av_fallthrough;
     case 7: {
         int length2, order_half, filter_order, dval1, dval2;
         int tmp, x, code_size;
