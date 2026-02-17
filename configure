@@ -1499,7 +1499,7 @@ check_class_headers_cxx(){
         echo "int main(void) { "
         i=1
         for class in $classes; do
-            echo "$class obj$i;"
+            echo "$class *obj$i;"
             i=$(expr $i + 1)
         done
         echo "return 0; }"
