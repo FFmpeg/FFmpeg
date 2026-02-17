@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "demux.h"
@@ -120,6 +121,7 @@ static int lvf_read_packet(AVFormatContext *s, AVPacket *pkt)
         switch (id) {
         case MKTAG('0', '0', 'd', 'c'):
             is_video = 1;
+            av_fallthrough;
         case MKTAG('0', '1', 'w', 'b'):
             if (size < 8)
                 return AVERROR_INVALIDDATA;
