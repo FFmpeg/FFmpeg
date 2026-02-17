@@ -19,6 +19,7 @@
  */
 
 #include "config.h"
+#include "libavutil/attributes.h"
 #include "libavutil/mem.h"
 #include "libavutil/tx.h"
 #include "libavutil/channel_layout.h"
@@ -1203,6 +1204,7 @@ static void init_colormatrix(ShowCQTContext *s)
     default:
         av_log(s->ctx, AV_LOG_WARNING, "unsupported colorspace, setting it to unspecified.\n");
         s->csp = AVCOL_SPC_UNSPECIFIED;
+        av_fallthrough;
     case AVCOL_SPC_UNSPECIFIED:
     case AVCOL_SPC_BT470BG:
     case AVCOL_SPC_SMPTE170M:
