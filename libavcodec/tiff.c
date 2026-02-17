@@ -1061,6 +1061,7 @@ static int init_image(TiffContext *s, AVFrame *frame)
             s->avctx->pix_fmt = AV_PIX_FMT_MONOBLACK;
             break;
         }
+        av_fallthrough;
     case 21:
     case 41:
         s->avctx->pix_fmt = AV_PIX_FMT_PAL8;
