@@ -30,6 +30,7 @@
 
 #include "config_components.h"
 
+#include "libavutil/attributes.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/xga_font_data.h"
 #include "avcodec.h"
@@ -92,6 +93,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         default:
             av_log(avctx, AV_LOG_WARNING, "font height %i not supported\n", s->font_height);
             s->font_height = 8;
+            av_fallthrough;
         case 8:
             s->font = avpriv_cga_font_get();
             break;
