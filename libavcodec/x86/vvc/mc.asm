@@ -48,8 +48,8 @@ SECTION_RODATA
 
 AVG_JMP_TABLE    avg,  8,  8, avx2,                2, 4, 8, 16, 32, 64, 128
 AVG_JMP_TABLE    avg, 16, 10, avx2,                2, 4, 8, 16, 32, 64, 128
-AVG_JMP_TABLE  w_avg,  8,  8bpc, avx2,             2, 4, 8, 16, 32, 64, 128
-AVG_JMP_TABLE  w_avg, 16, 16bpc, avx2,             2, 4, 8, 16, 32, 64, 128
+AVG_JMP_TABLE  w_avg,  8,  8, avx2,                2, 4, 8, 16, 32, 64, 128
+AVG_JMP_TABLE  w_avg, 16, 10, avx2,                2, 4, 8, 16, 32, 64, 128
 
 SECTION .text
 
@@ -242,64 +242,68 @@ cglobal vvc_avg_%2, 4, 7, 5, dst, stride, src0, src1, w, h
     AVG_FN               %1, AVG, %3
 %endmacro
 
-;void ff_vvc_w_avg_%1bpc_avx(uint8_t *dst, ptrdiff_t dst_stride,
-;    const int16_t *src0, const int16_t *src1, intptr_t width, intptr_t height,
-;    intptr_t denom, intptr_t w0, intptr_t w1,  intptr_t o0, intptr_t o1, intptr_t pixel_max);
-%macro VVC_W_AVG_AVX2 1
-cglobal vvc_w_avg_%1bpc, 4, 8, 6+2*(%1 != 8), dst, stride, src0, src1, w, h, t0, t1
+;void ff_vvc_w_avg_%2_avx(uint8_t *dst, ptrdiff_t dst_stride,
+;                         const int16_t *src0, const int16_t *src1, int width, int height,
+;                         int denom, intptr_t w0, int w1, int o0, int o1);
+%macro VVC_W_AVG_AVX2 3
+cglobal vvc_w_avg_%2, 4, 7+2*UNIX64, 6+2*(%1 != 8), dst, stride, src0, src1, w, h
+%if UNIX64
+    ; r6-r8 are volatile and not used for parameter passing
+    DECLARE_REG_TMP 6, 7, 8
+%else ; Win64
+    ; r4-r6 are volatile and not used for parameter passing
+    DECLARE_REG_TMP 4, 5, 6
+%endif
 
-    movifnidn            hd, hm
-
-    movifnidn           t0d, r8m                ; w1
-    shl                 t0d, 16
-    mov                 t0w, r7m                ; w0
-    movd                xm3, t0d
+    mov                 t1d, r6m                ; denom
+    mov                 t0d, r9m                ; o0
+    add                 t0d, r10m               ; o1
+    movifnidn           t2d, r8m                ; w1
+    add                 t1d, 15-%2
+%if %2 != 8
+    shl                 t0d, %2 - 8
+%endif
+    movd                xm2, t1d                ; shift
+    inc                 t0d                     ; ((o0 + o1) << (BIT_DEPTH - 8)) + 1
+    shl                 t2d, 16
+    movd                xm4, t0d
+    mov                 t2w, r7m                ; w0
+    movd                xm3, t2d
     vpbroadcastd         m3, xm3                ; w0, w1
 
 %if %1 != 8
-    pxor                m6, m6                  ;pixel min
-    vpbroadcastw        m7, r11m                ;pixel max
+    pcmpeqw              m7, m7
+    pxor                 m6, m6                 ; pixel min
+    psrlw                m7, 16-%2              ; pixel max
 %endif
-
-    mov                 t1q, rcx                ; save ecx
-    mov                 ecx, r11m
-    inc                 ecx                     ; bd
-    tzcnt               ecx, ecx
-    sub                 ecx, 8
-    mov                 t0d, r9m                ; o0
-    add                 t0d, r10m               ; o1
-    shl                 t0d, cl
-    inc                 t0d                     ;((o0 + o1) << (BIT_DEPTH - 8)) + 1
-
-    neg                 ecx
-    add                 ecx, 7
-    add                 ecx, r6m
-    movd                xm2, ecx                ; shift
-
-    dec                ecx
-    shl                t0d, cl
-    movd               xm4, t0d
-    vpbroadcastd        m4, xm4                 ; offset
-    mov                rcx, t1q                 ; restore ecx
 
     lea                 r6, [w_avg_%1 %+ SUFFIX %+ _table]
     tzcnt               wd, wm
     movsxd              wq, dword [r6+wq*4]
+
+    pslld               xm4, xm2
+    psrad               xm4, 1
+    vpbroadcastd         m4, xm4                 ; offset
+
+    movifnidn            hd, hm
+
     add                 wq, r6
-    AVG_FN              %1, W_AVG
+    AVG_FN              %1, W_AVG, %3
 %endmacro
 
 INIT_YMM avx2
 
 VVC_AVG_AVX2 16, 12, 0
 
+VVC_W_AVG_AVX2 16, 12, 0
+
 VVC_AVG_AVX2 16, 10, 1
+
+VVC_W_AVG_AVX2 16, 10, 1
 
 VVC_AVG_AVX2 8, 8, 1
 
-VVC_W_AVG_AVX2 16
-
-VVC_W_AVG_AVX2 8
+VVC_W_AVG_AVX2 8, 8, 1
 %endif
 
 %endif
