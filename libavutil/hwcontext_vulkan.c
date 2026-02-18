@@ -4153,14 +4153,14 @@ static int vulkan_map_to_drm(AVHWFramesContext *hwfc, AVFrame *dst,
     AVVulkanDeviceContext *hwctx = &p->p;
     FFVulkanFunctions *vk = &p->vkctx.vkfn;
     VulkanFramesPriv *fp = hwfc->hwctx;
-    const int planes = av_pix_fmt_count_planes(hwfc->sw_format);
+    const int nb_images = ff_vk_count_images(f);
     VkImageDrmFormatModifierPropertiesEXT drm_mod = {
         .sType = VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_PROPERTIES_EXT,
     };
     VkSemaphoreWaitInfo wait_info = {
         .sType          = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,
         .flags          = 0x0,
-        .semaphoreCount = planes,
+        .semaphoreCount = nb_images,
     };
 
     AVDRMFrameDescriptor *drm_desc = av_mallocz(sizeof(*drm_desc));
@@ -4189,7 +4189,7 @@ static int vulkan_map_to_drm(AVHWFramesContext *hwfc, AVFrame *dst,
         goto end;
     }
 
-    for (int i = 0; (i < planes) && (f->mem[i]); i++) {
+    for (int i = 0; (i < nb_images) && (f->mem[i]); i++) {
         VkMemoryGetFdInfoKHR export_info = {
             .sType      = VK_STRUCTURE_TYPE_MEMORY_GET_FD_INFO_KHR,
             .memory     = f->mem[i],
@@ -4209,7 +4209,7 @@ static int vulkan_map_to_drm(AVHWFramesContext *hwfc, AVFrame *dst,
         drm_desc->objects[i].format_modifier = drm_mod.drmFormatModifier;
     }
 
-    drm_desc->nb_layers = planes;
+    drm_desc->nb_layers = nb_images;
     for (int i = 0; i < drm_desc->nb_layers; i++) {
         VkFormat plane_vkfmt = av_vkfmt_from_pixfmt(hwfc->sw_format)[i];
 
