@@ -109,21 +109,6 @@ typedef enum SwsScaler {
 
 typedef enum SwsFlags {
     /**
-     * Scaler selection options. Only one may be active at a time.
-     */
-    SWS_FAST_BILINEAR = 1 <<  0, ///< fast bilinear filtering
-    SWS_BILINEAR      = 1 <<  1, ///< bilinear filtering
-    SWS_BICUBIC       = 1 <<  2, ///< 2-tap cubic B-spline
-    SWS_X             = 1 <<  3, ///< experimental
-    SWS_POINT         = 1 <<  4, ///< nearest neighbor
-    SWS_AREA          = 1 <<  5, ///< area averaging
-    SWS_BICUBLIN      = 1 <<  6, ///< bicubic luma, bilinear chroma
-    SWS_GAUSS         = 1 <<  7, ///< gaussian approximation
-    SWS_SINC          = 1 <<  8, ///< unwindowed sinc
-    SWS_LANCZOS       = 1 <<  9, ///< 3-tap sinc/sinc
-    SWS_SPLINE        = 1 << 10, ///< unwindowed natural cubic spline
-
-    /**
      * Return an error on underspecified conversions. Without this flag,
      * unspecified fields are defaulted to sensible values.
      */
@@ -183,6 +168,22 @@ typedef enum SwsFlags {
      */
     SWS_DIRECT_BGR      = 1 << 15, ///< This flag has no effect
     SWS_ERROR_DIFFUSION = 1 << 23, ///< Set `SwsContext.dither` instead
+
+    /**
+     * Scaler selection options. Only one may be active at a time.
+     * Deprecated in favor of `SwsContext.scaler`.
+     */
+    SWS_FAST_BILINEAR = 1 <<  0, ///< fast bilinear filtering
+    SWS_BILINEAR      = 1 <<  1, ///< bilinear filtering
+    SWS_BICUBIC       = 1 <<  2, ///< 2-tap cubic B-spline
+    SWS_X             = 1 <<  3, ///< experimental
+    SWS_POINT         = 1 <<  4, ///< nearest neighbor
+    SWS_AREA          = 1 <<  5, ///< area averaging
+    SWS_BICUBLIN      = 1 <<  6, ///< bicubic luma, bilinear chroma
+    SWS_GAUSS         = 1 <<  7, ///< gaussian approximation
+    SWS_SINC          = 1 <<  8, ///< unwindowed sinc
+    SWS_LANCZOS       = 1 <<  9, ///< 3-tap sinc/sinc
+    SWS_SPLINE        = 1 << 10, ///< unwindowed natural cubic spline
 } SwsFlags;
 
 typedef enum SwsIntent {
