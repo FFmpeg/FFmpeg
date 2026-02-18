@@ -87,10 +87,8 @@ static SwsContext *alloc_set_opts(int srcW, int srcH, enum AVPixelFormat srcForm
     sws->src_format = srcFormat;
     sws->dst_format = dstFormat;
 
-    if (param) {
-        sws->scaler_params[0] = param[0];
-        sws->scaler_params[1] = param[1];
-    }
+    for (int i = 0; param && i < SWS_NUM_SCALER_PARAMS; i++)
+        sws->scaler_params[i] = param[i];
 
     return sws;
 }
@@ -200,7 +198,7 @@ static av_cold int initFilter(int16_t **outFilter, int32_t **filterPos,
                               int dstW, int filterAlign, int one,
                               int flags, int cpu_flags,
                               SwsVector *srcFilter, SwsVector *dstFilter,
-                              double param[2], int srcPos, int dstPos)
+                              double param[SWS_NUM_SCALER_PARAMS], int srcPos, int dstPos)
 {
     int i;
     int filterSize;
@@ -2375,8 +2373,8 @@ SwsContext *sws_getCachedContext(SwsContext *prev, int srcW,
                  prev->dst_h            == dstH      &&
                  prev->dst_format       == dstFormat &&
                  prev->flags            == flags     &&
-                 prev->scaler_params[0] == param[0]  &&
-                 prev->scaler_params[1] == param[1])) {
+                 !memcmp(prev->scaler_params, param,
+                         sizeof(prev->scaler_params)))) {
         return prev;
     }
 
@@ -2397,8 +2395,8 @@ SwsContext *sws_getCachedContext(SwsContext *prev, int srcW,
     sws->dst_h            = dstH;
     sws->dst_format       = dstFormat;
     sws->flags            = flags;
-    sws->scaler_params[0] = param[0];
-    sws->scaler_params[1] = param[1];
+    for (int i = 0; i < SWS_NUM_SCALER_PARAMS; i++)
+        sws->scaler_params[i] = param[i];
 
     if (sws_init_context(sws, srcFilter, dstFilter) < 0)
         sws_free_context(&sws);

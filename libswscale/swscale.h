@@ -204,7 +204,8 @@ typedef struct SwsContext {
     /**
      * Extra parameters for fine-tuning certain scalers.
      */
-    double scaler_params[2];
+#define SWS_NUM_SCALER_PARAMS 2
+    double scaler_params[SWS_NUM_SCALER_PARAMS];
 
     /**
      * How many threads to use for processing, or 0 for automatic selection.
