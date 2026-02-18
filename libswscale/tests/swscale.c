@@ -193,7 +193,7 @@ static float get_loss(const float ssim[4])
 }
 
 static int scale_legacy(AVFrame *dst, const AVFrame *src, struct mode mode,
-                        struct options opts)
+                        struct options opts, int64_t *out_time)
 {
     SwsContext *sws_legacy;
     int ret;
@@ -215,8 +215,10 @@ static int scale_legacy(AVFrame *dst, const AVFrame *src, struct mode mode,
     if ((ret = sws_init_context(sws_legacy, NULL, NULL)) < 0)
         goto error;
 
+    int64_t time = av_gettime_relative();
     for (int i = 0; ret >= 0 && i < opts.iters; i++)
         ret = sws_scale_frame(sws_legacy, dst, src);
+    *out_time = av_gettime_relative() - time;
 
 error:
     sws_freeContext(sws_legacy);
@@ -273,6 +275,12 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
     sws[1]->dither = mode.dither;
     sws[1]->threads = opts.threads;
 
+    if (sws_frame_setup(sws[1], dst, src) < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Failed to setup %s ---> %s\n",
+               av_get_pix_fmt_name(src->format), av_get_pix_fmt_name(dst->format));
+        goto error;
+    }
+
     time = av_gettime_relative();
 
     for (int i = 0; i < opts.iters; i++) {
@@ -316,13 +324,11 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
 
     if (!ssim_ref && sws_isSupportedInput(src->format) && sws_isSupportedOutput(dst->format)) {
         /* Compare against the legacy swscale API as a reference */
-        time_ref = av_gettime_relative();
-        if (scale_legacy(dst, src, mode, opts) < 0) {
+        if (scale_legacy(dst, src, mode, opts, &time_ref) < 0) {
             av_log(NULL, AV_LOG_ERROR, "Failed ref %s ---> %s\n",
                    av_get_pix_fmt_name(src->format), av_get_pix_fmt_name(dst->format));
             goto error;
         }
-        time_ref = av_gettime_relative() - time_ref;
 
         if (sws_scale_frame(sws[2], out, dst) < 0)
             goto error;
