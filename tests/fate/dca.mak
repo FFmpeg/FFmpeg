@@ -85,4 +85,4 @@ fate-dca-core-bsf: REF = ca22b00d8c641cd168e2f7ca8d2f340e
 
 FATE_SAMPLES_FFMPEG += $(FATE_DCA-yes)
 FATE_SAMPLES_FFMPEG_FFPROBE += $(FATE_DCA_FFMPEG_FFPROBE-yes)
-fate-dca: $(FATE_DCA-yes) $(FATE_DCA_FFMPEG_FFPROBE-yes)
+fate-audio fate-dca: $(FATE_DCA-yes) $(FATE_DCA_FFMPEG_FFPROBE-yes)

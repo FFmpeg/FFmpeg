@@ -18,5 +18,5 @@ fate-truehd-mono1726: CMD = md5pipe -f truehd -i $(TARGET_SAMPLES)/truehd/ticket
 fate-truehd-mono1726: CMP = oneline
 fate-truehd-mono1726: REF = 9be9551fac418440bb02101bfdb11df9
 
-FATE_SAMPLES_AUDIO += $(FATE_TRUEHD-yes)
-fate-truehd: $(FATE_TRUEHD-yes)
+FATE_SAMPLES_FFMPEG += $(FATE_TRUEHD-yes)
+fate-audio fate-truehd: $(FATE_TRUEHD-yes)
