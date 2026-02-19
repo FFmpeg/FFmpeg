@@ -221,6 +221,22 @@ static unsigned merge_comp_flags(unsigned a, unsigned b)
     return ((a & b) & flags_and) | ((a | b) & flags_or);
 }
 
+/* Linearly propagate flags per component */
+static void propagate_flags(SwsOp *op, const SwsComps *prev)
+{
+    for (int i = 0; i < 4; i++)
+        op->comps.flags[i] = prev->flags[i];
+}
+
+/* Clear undefined values in dst with src */
+static void clear_undefined_values(AVRational dst[4], const AVRational src[4])
+{
+    for (int i = 0; i < 4; i++) {
+        if (dst[i].den == 0)
+            dst[i] = src[i];
+    }
+}
+
 /* Infer + propagate known information about components */
 void ff_sws_op_list_update_comps(SwsOpList *ops)
 {
@@ -276,11 +292,15 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
             /* fall through */
         case SWS_OP_LSHIFT:
         case SWS_OP_RSHIFT:
+            propagate_flags(op, &prev);
+            break;
         case SWS_OP_MIN:
+            propagate_flags(op, &prev);
+            clear_undefined_values(op->comps.max, op->c.q4);
+            break;
         case SWS_OP_MAX:
-            /* Linearly propagate flags per component */
-            for (int i = 0; i < 4; i++)
-                op->comps.flags[i] = prev.flags[i];
+            propagate_flags(op, &prev);
+            clear_undefined_values(op->comps.min, op->c.q4);
             break;
         case SWS_OP_DITHER:
             /* Strip zero flag because of the nonzero dithering offset */
