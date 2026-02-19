@@ -436,8 +436,8 @@ static void log_callback(void *ptr, int level, const char *fmt, va_list vl)
 
 #define print_list_fmt(k, f, n, m, ...) do {    \
     av_bprint_clear(&pbuf);                     \
-    for (int idx = 0; idx < n; idx++) {         \
-        for (int idx2 = 0; idx2 < m; idx2++) {  \
+    for (unsigned int idx = 0; idx < n; idx++) {         \
+        for (unsigned int idx2 = 0; idx2 < m; idx2++) {  \
             if (idx > 0 || idx2 > 0)            \
                 av_bprint_chars(&pbuf, ' ', 1); \
             av_bprintf(&pbuf, f, __VA_ARGS__);  \
