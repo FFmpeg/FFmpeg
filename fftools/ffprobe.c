@@ -2155,10 +2155,10 @@ static void print_iamf_param_definition(AVTextFormatContext *tfc, const char *na
                                         const AVIAMFParamDefinition *param, SectionID section_id)
 {
     SectionID subsection_id, parameter_section_id;
+    av_assert0(sections[section_id].children_ids[0] != -1);
     subsection_id = sections[section_id].children_ids[0];
-    av_assert0(subsection_id != -1);
+    av_assert0(sections[subsection_id].children_ids[0] != -1);
     parameter_section_id = sections[subsection_id].children_ids[0];
-    av_assert0(parameter_section_id != -1);
     avtext_print_section_header(tfc, "IAMF Param Definition", section_id);
     print_str("name",           name);
     print_int("nb_subblocks",   param->nb_subblocks);
