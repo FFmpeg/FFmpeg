@@ -32,9 +32,8 @@ SECTION_RODATA 32
 pd_15                   times 8 dd 15
 pd_m15                  times 8 dd -15
 
-pb_shuffle_w8  times 2 db   0, 1, 0xff, 0xff, 8, 9, 0xff, 0xff, 6, 7, 0xff, 0xff, 14, 15, 0xff, 0xff
-pb_shuffle_w16 times 2 db   0, 1, 0xff, 0xff, 6, 7, 0xff, 0xff, 8, 9, 0xff, 0xff, 14, 15, 0xff, 0xff
-pd_perm_w16            dd   0, 2, 1, 4, 3, 6, 5, 7
+pb_shuffle     times 2 db   0, 1, 0xff, 0xff, 8, 9, 0xff, 0xff, 6, 7, 0xff, 0xff, 14, 15, 0xff, 0xff
+pd_perm_w16            dd   0, 1, 2, 4, 3, 5, 6, 7
 %if ARCH_X86_64
 
 %if HAVE_AVX2_EXTERNAL
@@ -186,6 +185,9 @@ INIT_YMM avx2
 
     DIFF                     ndiff, c1, c0, SHIFT2, t0  ; -diff
 
+    ; use t0, t1 as temporary buffers
+    mova                        t0, [pb_shuffle]
+
     psignw                      m7, ndiff, m8           ; sgxdi
     psignw                      m9, ndiff, m6           ; sgydi
     psignw                     m10, m8, m6              ; sgxgy
@@ -193,11 +195,9 @@ INIT_YMM avx2
     pabsw                       m6, m6                  ; sgy2
     pabsw                       m8, m8                  ; sgx2
 
-    ; use t0, t1 as temporary buffers
     cmp                         wd, 16
 
     je                       %%w16
-    mova                        t0, [pb_shuffle_w8]
     SUM_MIN_BLOCK_W8            m6, t0, m11
     SUM_MIN_BLOCK_W8            m7, t0, m11
     SUM_MIN_BLOCK_W8            m8, t0, m11
@@ -206,7 +206,6 @@ INIT_YMM avx2
     jmp                     %%wend
 
 %%w16:
-    mova                        t0, [pb_shuffle_w16]
     mova                        t1, [pd_perm_w16]
     SUM_MIN_BLOCK_W16           m6, t0, t1, m11
     SUM_MIN_BLOCK_W16           m7, t0, t1, m11
