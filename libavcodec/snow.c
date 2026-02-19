@@ -540,7 +540,7 @@ int ff_snow_common_init_after_header(AVCodecContext *avctx) {
     int plane_index, level, orientation;
 
     if(!s->scratchbuf) {
-        if (!FF_ALLOCZ_TYPED_ARRAY(s->scratchbuf, FFMAX(s->mconly_picture->linesize[0], 2*avctx->width+256) * 7 * MB_SIZE))
+        if (!FF_ALLOCZ_TYPED_ARRAY(s->scratchbuf, FFMAX(s->current_picture->linesize[0], 2*avctx->width+256) * 7 * MB_SIZE))
             return AVERROR(ENOMEM);
     }
 

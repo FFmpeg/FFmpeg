@@ -605,14 +605,16 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *picture,
     if ((res = decode_header(s)) < 0)
         return res;
 
-    if (!s->mconly_picture->data[0]) {
+    if (avctx->debug & 2048) {
+        av_frame_unref(s->mconly_picture);
         res = ff_get_buffer(avctx, s->mconly_picture, AV_GET_BUFFER_FLAG_REF);
         if (res < 0)
             return res;
     }
-    if (s->mconly_picture->format != avctx->pix_fmt) {
+
+    if (s->current_picture->data[0] && s->current_picture->format != avctx->pix_fmt) {
         av_log(avctx, AV_LOG_ERROR, "pixel format changed\n");
-        return AVERROR_INVALIDDATA;
+        return AVERROR_PATCHWELCOME;
     }
 
     if ((res=ff_snow_common_init_after_header(avctx)) < 0)
