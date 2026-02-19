@@ -23,6 +23,7 @@
 
 #include "config.h"
 
+#include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/vvc/dec.h"
@@ -321,7 +322,7 @@ int ff_vvc_sad_avx2(const int16_t *src0, const int16_t *src1, int dx, int dy, in
 
 #endif // ARCH_X86_64
 
-void ff_vvc_dsp_init_x86(VVCDSPContext *const c, const int bd)
+av_cold void ff_vvc_dsp_init_x86(VVCDSPContext *const c, const int bd)
 {
 #if ARCH_X86_64
     const int cpu_flags = av_get_cpu_flags();
