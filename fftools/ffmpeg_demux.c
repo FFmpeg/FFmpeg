@@ -1560,6 +1560,56 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st, AVDictiona
     return 0;
 }
 
+static int is_windows_reserved_device_name(const char *f)
+{
+#if HAVE_DOS_PATHS
+    for (const char *p = f; p && *p; ) {
+        char stem[6], *s;
+        av_strlcpy(stem, p, sizeof(stem));
+        if ((s = strchr(stem, '.')))
+            *s = 0;
+        if ((s = strpbrk(stem, "123456789")))
+            *s = '1';
+
+        if( !av_strcasecmp(stem, "AUX") ||
+            !av_strcasecmp(stem, "CON") ||
+            !av_strcasecmp(stem, "NUL") ||
+            !av_strcasecmp(stem, "PRN") ||
+            !av_strcasecmp(stem, "COM1") ||
+            !av_strcasecmp(stem, "LPT1")
+        )
+            return 1;
+
+        p = strchr(p, '/');
+        if (p)
+            p++;
+    }
+#endif
+    return 0;
+}
+
+static int safe_filename(const char *f, int allow_subdir)
+{
+    const char *start = f;
+
+    if (!*f || is_windows_reserved_device_name(f))
+        return 0;
+
+    for (; *f; f++) {
+        /* A-Za-z0-9_- */
+        if (!((unsigned)((*f | 32) - 'a') < 26 ||
+              (unsigned)(*f - '0') < 10 || *f == '_' || *f == '-')) {
+            if (f == start)
+                return 0;
+            else if (allow_subdir && *f == '/')
+                start = f + 1;
+            else if (*f != '.')
+                return 0;
+        }
+    }
+    return 1;
+}
+
 static int dump_attachment(InputStream *ist, const char *filename)
 {
     AVStream *st = ist->st;
@@ -1571,8 +1621,13 @@ static int dump_attachment(InputStream *ist, const char *filename)
         av_log(ist, AV_LOG_WARNING, "No extradata to dump.\n");
         return 0;
     }
-    if (!*filename && (e = av_dict_get(st->metadata, "filename", NULL, 0)))
+    if (!*filename && (e = av_dict_get(st->metadata, "filename", NULL, 0))) {
         filename = e->value;
+        if (!safe_filename(filename, 0)) {
+            av_log(ist, AV_LOG_ERROR, "Filename %s is unsafe\n", filename);
+            return AVERROR(EINVAL);
+        }
+    }
     if (!*filename) {
         av_log(ist, AV_LOG_FATAL, "No filename specified and no 'filename' tag");
         return AVERROR(EINVAL);
