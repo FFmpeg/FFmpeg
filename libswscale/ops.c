@@ -669,7 +669,7 @@ static const char *print_q(const AVRational q, char buf[], int buf_len)
     }
 }
 
-#define PRINTQ(q) print_q(q, (char[32]){0}, sizeof(char[32]) - 1)
+#define PRINTQ(q) print_q(q, (char[32]){0}, sizeof(char[32]))
 
 void ff_sws_op_list_print(void *log, int lev, const SwsOpList *ops)
 {
