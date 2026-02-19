@@ -349,7 +349,7 @@ static const char unit_hertz_str[]          = "Hz"   ;
 static const char unit_byte_str[]           = "byte" ;
 static const char unit_bit_per_second_str[] = "bit/s";
 
-static int nb_streams;
+static unsigned int nb_streams;
 static uint64_t *nb_streams_packets;
 static uint64_t *nb_streams_frames;
 static int *selected_streams;
