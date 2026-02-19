@@ -896,7 +896,7 @@ int ff_sws_decode_pixfmt(SwsOpList *ops, enum AVPixelFormat fmt)
     SwsReadWriteOp rw_op;
     SwsSwizzleOp swizzle;
     SwsPackOp unpack;
-    SwsComps comps = {0};
+    SwsComps *comps = &ops->comps_src;
     int shift;
 
     RET(fmt_analyze(fmt, &rw_op, &unpack, &swizzle, &shift,
@@ -908,8 +908,8 @@ int ff_sws_decode_pixfmt(SwsOpList *ops, enum AVPixelFormat fmt)
     const int integer = ff_sws_pixel_type_is_int(raw_type);
     const int swapped = (desc->flags & AV_PIX_FMT_FLAG_BE) != NATIVE_ENDIAN_FLAG;
     for (int i = 0; i < rw_op.elems; i++) {
-        comps.flags[i] = (integer ? SWS_COMP_EXACT   : 0) |
-                         (swapped ? SWS_COMP_SWAPPED : 0);
+        comps->flags[i] = (integer ? SWS_COMP_EXACT   : 0) |
+                          (swapped ? SWS_COMP_SWAPPED : 0);
     }
 
     /* Generate value range information for simple unpacked formats */
@@ -920,9 +920,9 @@ int ff_sws_decode_pixfmt(SwsOpList *ops, enum AVPixelFormat fmt)
         for (int c = 0; c < desc->nb_components; c++) {
             const int bits   = desc->comp[c].depth + shift;
             const int idx    = swizzle.in[is_ya ? 3 * c : c];
-            comps.min[idx]   = Q0;
+            comps->min[idx]  = Q0;
             if (bits < 32) /* FIXME: AVRational is limited to INT_MAX */
-                comps.max[idx] = Q((1ULL << bits) - 1);
+                comps->max[idx] = Q((1ULL << bits) - 1);
         }
     }
 
@@ -931,7 +931,6 @@ int ff_sws_decode_pixfmt(SwsOpList *ops, enum AVPixelFormat fmt)
         .op    = SWS_OP_READ,
         .type  = raw_type,
         .rw    = rw_op,
-        .comps = comps,
     }));
 
     if (swapped) {

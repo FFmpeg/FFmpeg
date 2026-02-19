@@ -197,15 +197,8 @@ typedef struct SwsOp {
     };
 
     /**
-     * Metadata about the operation's input/output components.
-     *
-     * For SWS_OP_READ, this is informative; and lets the optimizer know
-     * additional information about the value range and/or pixel data to expect.
-     * The default value of {0} is safe to pass in the case that no additional
-     * information is known.
-     *
-     * For every other operation, this metadata is discarded and regenerated
-     * automatically by `ff_sws_op_list_update_comps()`.
+     * Metadata about the operation's input/output components. Discarded
+     * and regenerated automatically by `ff_sws_op_list_update_comps()`.
      *
      * Note that backends may rely on the presence and accuracy of this
      * metadata for all operations, during ff_sws_ops_compile().
@@ -232,6 +225,17 @@ typedef struct SwsOpList {
 
     /* Input/output plane pointer swizzle mask */
     SwsSwizzleOp order_src, order_dst;
+
+    /**
+     * Source component metadata associated with pixel values from each
+     * corresponding component (in plane/memory order, i.e. not affected by
+     * `order_src`). Lets the optimizer know additional information about
+     * the value range and/or pixel data to expect.
+     *
+     * The default value of {0} is safe to pass in the case that no additional
+     * information is known.
+     */
+    SwsComps comps_src;
 
     /* Purely informative metadata associated with this operation list */
     SwsFormat src, dst;

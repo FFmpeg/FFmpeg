@@ -249,8 +249,14 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
 
         switch (op->op) {
         case SWS_OP_READ:
-            /* Active components are preserved from the user-provided value,
+            /* Active components are taken from the user-provided values,
              * other components are explicitly stripped */
+            for (int i = 0; i < op->rw.elems; i++) {
+                const int idx = op->rw.packed ? i : ops->order_src.in[i];
+                op->comps.flags[i] = ops->comps_src.flags[idx];
+                op->comps.min[i]   = ops->comps_src.min[idx];
+                op->comps.max[i]   = ops->comps_src.max[idx];
+            }
             for (int i = op->rw.elems; i < 4; i++) {
                 op->comps.flags[i] = prev.flags[i];
                 op->comps.min[i]   = prev.min[i];
