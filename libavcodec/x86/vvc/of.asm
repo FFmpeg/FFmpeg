@@ -352,7 +352,7 @@ INIT_YMM avx2
 ;void ff_vvc_apply_bdof_%1(uint8_t *dst, const ptrdiff_t dst_stride, int16_t *src0, int16_t *src1,
 ;    const int w, const int h, const int int pixel_max)
 %macro BDOF_AVX2 0
-cglobal vvc_apply_bdof, 7, 10, 16, BDOF_STACK_SIZE*32, dst, ds, src0, src1, w, h, pixel_max, ds3, tmp0, tmp1
+cglobal vvc_apply_bdof, 7, 9, 16, BDOF_STACK_SIZE*32, dst, ds, src0, src1, w, h, pixel_max, ds3, tmp0
 
     lea                   ds3q, [dsq * 3]
     sub                  src0q, SRC_STRIDE + SRC_PS
