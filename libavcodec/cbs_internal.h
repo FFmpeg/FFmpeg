@@ -57,6 +57,9 @@
 #ifndef CBS_H266
 #define CBS_H266 CONFIG_CBS_H266
 #endif
+#ifndef CBS_LCEVC
+#define CBS_LCEVC CONFIG_CBS_LCEVC
+#endif
 #ifndef CBS_JPEG
 #define CBS_JPEG CONFIG_CBS_JPEG
 #endif
@@ -391,6 +394,7 @@ extern const CodedBitstreamType CBS_FUNC(type_av1);
 extern const CodedBitstreamType CBS_FUNC(type_h264);
 extern const CodedBitstreamType CBS_FUNC(type_h265);
 extern const CodedBitstreamType CBS_FUNC(type_h266);
+extern const CodedBitstreamType CBS_FUNC(type_lcevc);
 extern const CodedBitstreamType CBS_FUNC(type_jpeg);
 extern const CodedBitstreamType CBS_FUNC(type_mpeg2);
 extern const CodedBitstreamType CBS_FUNC(type_vp8);

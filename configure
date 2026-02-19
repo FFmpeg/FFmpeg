@@ -2694,6 +2694,7 @@ CONFIG_EXTRA="
     cbs_h265
     cbs_h266
     cbs_jpeg
+    cbs_lcevc
     cbs_mpeg2
     cbs_vp8
     cbs_vp9
@@ -3006,6 +3007,7 @@ cbs_h264_select="cbs"
 cbs_h265_select="cbs"
 cbs_h266_select="cbs"
 cbs_jpeg_select="cbs"
+cbs_lcevc_select="cbs"
 cbs_mpeg2_select="cbs"
 cbs_vp8_select="cbs"
 cbs_vp9_select="cbs"
@@ -3692,6 +3694,7 @@ h264_metadata_bsf_deps="const_nan"
 h264_metadata_bsf_select="cbs_h264"
 h264_redundant_pps_bsf_select="cbs_h264"
 hevc_metadata_bsf_select="cbs_h265"
+lcevc_metadata_bsf_select="cbs_lcevc"
 mjpeg2jpeg_bsf_select="jpegtables"
 mpeg2_metadata_bsf_select="cbs_mpeg2"
 smpte436m_to_eia608_bsf_select="smpte_436m"

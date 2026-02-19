@@ -46,6 +46,9 @@ static const CodedBitstreamType *const cbs_type_table[] = {
 #if CBS_H266
     &CBS_FUNC(type_h266),
 #endif
+#if CBS_LCEVC
+    &CBS_FUNC(type_lcevc),
+#endif
 #if CBS_JPEG
     &CBS_FUNC(type_jpeg),
 #endif
@@ -75,6 +78,9 @@ const enum AVCodecID CBS_FUNC(all_codec_ids)[] = {
 #endif
 #if CBS_H266
     AV_CODEC_ID_H266,
+#endif
+#if CBS_LCEVC
+    AV_CODEC_ID_LCEVC,
 #endif
 #if CBS_JPEG
     AV_CODEC_ID_MJPEG,

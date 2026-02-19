@@ -91,6 +91,7 @@ OBJS-$(CONFIG_CBS_AV1)                 += cbs_av1.o
 OBJS-$(CONFIG_CBS_H264)                += cbs_h264.o cbs_h2645.o cbs_sei.o h2645_parse.o
 OBJS-$(CONFIG_CBS_H265)                += cbs_h265.o cbs_h2645.o cbs_sei.o h2645_parse.o
 OBJS-$(CONFIG_CBS_H266)                += cbs_h266.o cbs_h2645.o cbs_sei.o h2645_parse.o
+OBJS-$(CONFIG_CBS_LCEVC)               += cbs_lcevc.o cbs_h2645.o cbs_sei.o h2645_parse.o
 OBJS-$(CONFIG_CBS_JPEG)                += cbs_jpeg.o
 OBJS-$(CONFIG_CBS_MPEG2)               += cbs_mpeg2.o
 OBJS-$(CONFIG_CBS_VP8)                 += cbs_vp8.o vp8data.o

@@ -26,6 +26,7 @@
 #define CBS_H265 0
 #define CBS_H266 0
 #define CBS_JPEG 0
+#define CBS_LCEVC 0
 #define CBS_MPEG2 0
 #define CBS_VP8 0
 #define CBS_VP9 0
