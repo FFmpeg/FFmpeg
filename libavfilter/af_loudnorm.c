@@ -20,7 +20,6 @@
 
 /* http://k.ylo.ph/2016/04/04/loudnorm.html */
 
-#include "libavutil/avstring.h"
 #include "libavutil/file_open.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
@@ -834,7 +833,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     double i_in, i_out, lra_in, lra_out, thresh_in, thresh_out, tp_in, tp_out;
     int c;
     FILE *stats_file = NULL;
-    char *stats = NULL;
 
     if (!s->r128_in || !s->r128_out)
         goto end;
@@ -879,7 +877,9 @@ static av_cold void uninit(AVFilterContext *ctx)
         break;
 
     case JSON:
-        stats = av_asprintf(
+    case SUMMARY: {
+        char stats[1024];
+        const char *const format = s->print_format == JSON ?
             "{\n"
             "\t\"input_i\" : \"%.2f\",\n"
             "\t\"input_tp\" : \"%.2f\",\n"
@@ -891,25 +891,7 @@ static av_cold void uninit(AVFilterContext *ctx)
             "\t\"output_thresh\" : \"%.2f\",\n"
             "\t\"normalization_type\" : \"%s\",\n"
             "\t\"target_offset\" : \"%.2f\"\n"
-            "}\n",
-            i_in,
-            20. * log10(tp_in),
-            lra_in,
-            thresh_in,
-            i_out,
-            20. * log10(tp_out),
-            lra_out,
-            thresh_out,
-            s->frame_type == LINEAR_MODE ? "linear" : "dynamic",
-            s->target_i - i_out
-        );
-        av_log(ctx, AV_LOG_INFO, "\n%s", stats);
-        if (stats_file)
-            fprintf(stats_file, "%s", stats);
-        break;
-
-    case SUMMARY:
-        stats = av_asprintf(
+            "}\n" :
             "Input Integrated:   %+6.1f LUFS\n"
             "Input True Peak:    %+6.1f dBTP\n"
             "Input LRA:          %6.1f LU\n"
@@ -921,7 +903,9 @@ static av_cold void uninit(AVFilterContext *ctx)
             "Output Threshold:   %+6.1f LUFS\n"
             "\n"
             "Normalization Type:   %s\n"
-            "Target Offset:      %+6.1f LU\n",
+            "Target Offset:      %+6.1f LU\n";
+
+        snprintf(stats, sizeof(stats), format,
             i_in,
             20. * log10(tp_in),
             lra_in,
@@ -930,7 +914,8 @@ static av_cold void uninit(AVFilterContext *ctx)
             20. * log10(tp_out),
             lra_out,
             thresh_out,
-            s->frame_type == LINEAR_MODE ? "Linear" : "Dynamic",
+            s->frame_type == LINEAR_MODE ? (s->print_format == JSON ? "linear"  : "Linear")
+                                         : (s->print_format == JSON ? "dynamic" : "Dynamic"),
             s->target_i - i_out
         );
         av_log(ctx, AV_LOG_INFO, "\n%s", stats);
@@ -938,10 +923,9 @@ static av_cold void uninit(AVFilterContext *ctx)
             fprintf(stats_file, "%s", stats);
         break;
     }
+    }
 
 end:
-    if (stats)
-        av_free(stats);
     if (stats_file && stats_file != stdout)
         fclose(stats_file);
     if (s->r128_in)
