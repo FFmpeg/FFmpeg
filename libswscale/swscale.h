@@ -373,6 +373,14 @@ int sws_is_noop(const AVFrame *dst, const AVFrame *src);
  */
 int sws_scale_frame(SwsContext *c, AVFrame *dst, const AVFrame *src);
 
+/**
+ * Filter kernel cut-off value. Values below this (absolute) magnitude
+ * are cut off from the main filter kernel. Note that the window is
+ * always adjusted to the new filter radius, so there will never be
+ * any spectral leakage (for suitably windowed filters).
+ */
+#define SWS_MAX_REDUCE_CUTOFF 0.002
+
 /*************************
  * Legacy (stateful) API *
  *************************/
@@ -381,8 +389,6 @@ int sws_scale_frame(SwsContext *c, AVFrame *dst, const AVFrame *src);
 #define SWS_SRC_V_CHR_DROP_SHIFT    16
 
 #define SWS_PARAM_DEFAULT           123456
-
-#define SWS_MAX_REDUCE_CUTOFF 0.002
 
 #define SWS_CS_ITU709         1
 #define SWS_CS_FCC            4
