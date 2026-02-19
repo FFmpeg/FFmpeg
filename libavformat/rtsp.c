@@ -1415,7 +1415,7 @@ int ff_rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
             memcpy(rt->stored_msg.header, &header, sizeof(header));
         } else {
             av_log(s, AV_LOG_WARNING, "Unexpected reply with seq %d, expected %d\n",
-                rt->stored_msg.header->seq, rt->stored_msg.expected_seq);
+                header.seq, rt->stored_msg.expected_seq);
             av_freep(&rt->stored_msg.body);
         }
 
