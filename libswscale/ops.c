@@ -560,6 +560,18 @@ bool ff_sws_op_list_is_noop(const SwsOpList *ops)
         read->rw.frac != write->rw.frac)
         return false;
 
+    /**
+     * Note that this check is unlikely to ever be hit in practice, since it
+     * would imply the existence of planar formats with different plane orders
+     * between them, e.g. rgbap <-> gbrap, which doesn't currently exist.
+     * However, the check is cheap and lets me sleep at night.
+     */
+    const int num_planes = read->rw.packed ? 1 : read->rw.elems;
+    for (int i = 0; i < num_planes; i++) {
+        if (ops->order_src.in[i] != ops->order_dst.in[i])
+            return false;
+    }
+
     return true;
 }
 
