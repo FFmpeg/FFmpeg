@@ -674,17 +674,22 @@ static int rtsp_read_command_reply(AVFormatContext *s, enum AVFormatCommandID id
     if (!data_out)
         return AVERROR(EINVAL);
 
-    AVRTSPResponse *res = av_malloc(sizeof(*res));
-    if (!res)
-        return AVERROR(ENOMEM);
-
+    unsigned char *body;
     RTSPMessageHeader *reply;
-    int ret = ff_rtsp_read_reply_async_stored(s, &reply, &res->body);
+    int ret = ff_rtsp_read_reply_async_stored(s, &reply, &body);
     if (ret < 0)
         return ret;
 
+    AVRTSPResponse *res = av_malloc(sizeof(*res));
+    if (!res) {
+        av_free(body);
+        av_free(reply);
+        return AVERROR(ENOMEM);
+    }
+
     res->status_code = reply->status_code;
     res->body_len = reply->content_length;
+    res->body = body;
 
     res->reason = av_strdup(reply->reason);
     if (!res->reason) {
@@ -694,6 +699,7 @@ static int rtsp_read_command_reply(AVFormatContext *s, enum AVFormatCommandID id
         return AVERROR(ENOMEM);
     }
 
+    av_free(reply);
     *data_out = res;
     return 0;
 }
