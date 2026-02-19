@@ -271,7 +271,8 @@ void ff_sws_op_list_remove_at(SwsOpList *ops, int index, int count);
 /**
  * Print out the contents of an operation list.
  */
-void ff_sws_op_list_print(void *log_ctx, int log_level, const SwsOpList *ops);
+void ff_sws_op_list_print(void *log_ctx, int log_level, int log_level_extra,
+                          const SwsOpList *ops);
 
 /**
  * Infer + propagate known information about components. Called automatically

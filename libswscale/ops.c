@@ -689,7 +689,8 @@ static const char *print_q(const AVRational q, char buf[], int buf_len)
 
 #define PRINTQ(q) print_q(q, (char[32]){0}, sizeof(char[32]))
 
-void ff_sws_op_list_print(void *log, int lev, const SwsOpList *ops)
+void ff_sws_op_list_print(void *log, int lev, int lev_extra,
+                          const SwsOpList *ops)
 {
     if (!ops->num_ops) {
         av_log(log, lev, "  (empty)\n");
@@ -804,7 +805,7 @@ void ff_sws_op_list_print(void *log, int lev, const SwsOpList *ops)
             op->comps.max[0].den || op->comps.max[1].den ||
             op->comps.max[2].den || op->comps.max[3].den)
         {
-            av_log(log, AV_LOG_TRACE, "    min: {%s, %s, %s, %s}, max: {%s, %s, %s, %s}\n",
+            av_log(log, lev_extra, "    min: {%s, %s, %s, %s}, max: {%s, %s, %s, %s}\n",
                 PRINTQ(op->comps.min[0]), PRINTQ(op->comps.min[1]),
                 PRINTQ(op->comps.min[2]), PRINTQ(op->comps.min[3]),
                 PRINTQ(op->comps.max[0]), PRINTQ(op->comps.max[1]),
@@ -841,7 +842,7 @@ int ff_sws_ops_compile_backend(SwsContext *ctx, const SwsOpBackend *backend,
                backend->name, av_err2str(ret));
         if (rest.num_ops != ops->num_ops) {
             av_log(ctx, msg_lev, "Uncompiled remainder:\n");
-            ff_sws_op_list_print(ctx, msg_lev, &rest);
+            ff_sws_op_list_print(ctx, msg_lev, AV_LOG_TRACE, &rest);
         }
     } else {
         *out = compiled;
@@ -866,7 +867,7 @@ int ff_sws_ops_compile(SwsContext *ctx, const SwsOpList *ops, SwsCompiledOp *out
     }
 
     av_log(ctx, AV_LOG_WARNING, "No backend found for operations:\n");
-    ff_sws_op_list_print(ctx, AV_LOG_WARNING, ops);
+    ff_sws_op_list_print(ctx, AV_LOG_WARNING, AV_LOG_TRACE, ops);
     return AVERROR(ENOTSUP);
 }
 

@@ -575,10 +575,10 @@ static int add_convert_pass(SwsGraph *graph, SwsFormat src, SwsFormat dst,
            av_get_pix_fmt_name(src.format), av_get_pix_fmt_name(dst.format));
 
     av_log(ctx, AV_LOG_DEBUG, "Unoptimized operation list:\n");
-    ff_sws_op_list_print(ctx, AV_LOG_DEBUG, ops);
+    ff_sws_op_list_print(ctx, AV_LOG_DEBUG, AV_LOG_TRACE, ops);
     av_log(ctx, AV_LOG_DEBUG, "Optimized operation list:\n");
     ff_sws_op_list_optimize(ops);
-    ff_sws_op_list_print(ctx, AV_LOG_VERBOSE, ops);
+    ff_sws_op_list_print(ctx, AV_LOG_VERBOSE, AV_LOG_TRACE, ops);
 
     ret = ff_sws_compile_pass(graph, ops, 0, dst, input, output);
     if (ret < 0)
