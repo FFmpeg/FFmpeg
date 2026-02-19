@@ -225,6 +225,25 @@ AVStream *stream;
 AVStream* stream;
 @end example
 
+@item
+When sensible, prefer a narrow variable scope, especially in for loops:
+
+@example c, good
+// Good
+for (unsigned i = 0; i < submix->nb_elements; i++) @{
+    // Do something...
+@}
+@end example
+
+@example c, bad
+// Bad style
+unsigned i;
+//...
+for (i = 0; i < submix->nb_elements; i++) @{
+    // Do something...
+@}
+@end example
+
 @end itemize
 
 If you work on a file that does not follow these guidelines consistently,
