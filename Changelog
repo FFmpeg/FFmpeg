@@ -24,6 +24,7 @@ version <next>:
 - Remove the old HLS protocol handler
 - Vulkan compute codec optimizations
 - swscale Vulkan support
+- LCEVC metadata bitstream filter
 
 
 version 8.0:
