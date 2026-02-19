@@ -892,8 +892,7 @@ static int parse_answer(AVFormatContext *s)
 
     if (!whip->sdp_answer || !strlen(whip->sdp_answer)) {
         av_log(whip, AV_LOG_ERROR, "No answer to parse\n");
-        ret = AVERROR(EINVAL);
-        goto end;
+        return AVERROR(EINVAL);
     }
 
     pb = avio_alloc_context(whip->sdp_answer, strlen(whip->sdp_answer), 0, NULL, NULL, NULL, NULL);
