@@ -107,7 +107,7 @@ typedef enum SwsFlags {
     SWS_GAUSS         = 1 <<  7, ///< gaussian approximation
     SWS_SINC          = 1 <<  8, ///< unwindowed sinc
     SWS_LANCZOS       = 1 <<  9, ///< 3-tap sinc/sinc
-    SWS_SPLINE        = 1 << 10, ///< cubic Keys spline
+    SWS_SPLINE        = 1 << 10, ///< unwindowed natural cubic spline
 
     /**
      * Return an error on underspecified conversions. Without this flag,
