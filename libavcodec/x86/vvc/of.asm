@@ -251,21 +251,25 @@ INIT_YMM avx2
     psrlw                 %3, %4
 %endmacro
 
-%macro LOG2 2 ; dst/src, offset
-    pextrw              tmp0d, xm%1,  %2
+%macro LOG2 3 ; dst, src, offset
+    pextrw              tmp0d, xm%2,  %3
     bsr                 tmp0d, tmp0d
-    pinsrw               xm%1, tmp0d, %2
+%if %3 != 0
+    pinsrw               xm%1, tmp0d, %3
+%else
+    movd                 xm%1, tmp0d
+%endif
 %endmacro
 
-%macro LOG2 1 ; dst/src
-    LOG2                 %1, 0
-    LOG2                 %1, 1
-    LOG2                 %1, 2
-    LOG2                 %1, 3
-    LOG2                 %1, 4
-    LOG2                 %1, 5
-    LOG2                 %1, 6
-    LOG2                 %1, 7
+%macro LOG2 2 ; dst, src
+    LOG2                 %1, %2, 0
+    LOG2                 %1, %2, 1
+    LOG2                 %1, %2, 2
+    LOG2                 %1, %2, 3
+    LOG2                 %1, %2, 4
+    LOG2                 %1, %2, 5
+    LOG2                 %1, %2, 6
+    LOG2                 %1, %2, 7
 %endmacro
 
 ; %1: 4 (sgx2, sgy2, sgxdi, gydi)
@@ -277,8 +281,7 @@ INIT_YMM avx2
 
     punpcklqdq              m8, m%1, m7             ; 4 (sgx2, sgy2)
     punpckhqdq              m9, m%1, m7             ; 4 (sgxdi, sgydi)
-    mova                   m10, m8
-    LOG2                    10                      ; 4 (log2(sgx2), log2(sgy2))
+    LOG2                    10, 8                   ; 4 (log2(sgx2), log2(sgy2))
 
     ; Promote to dword since vpsrlvw is AVX-512 only
     pmovsxwd                m8, xm8
