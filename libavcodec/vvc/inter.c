@@ -217,8 +217,9 @@ static int derive_weight_uni(int *denom, int *wx, int *ox,
 }
 
 // part of 8.5.6.6 Weighted sample prediction process
-static int derive_weight(int *denom, int *w0, int *w1, int *o0, int *o1,
-    const VVCLocalContext *lc, const MvField *mvf, const int c_idx, const int dmvr_flag)
+static void apply_averaging(uint8_t *dst, const ptrdiff_t dst_stride,
+                            const int16_t *src0, const int16_t *src1, int width, int height,
+                            const VVCLocalContext *lc, const MvField *mvf, const int c_idx, const int dmvr_flag)
 {
     const VVCFrameContext *fc = lc->fc;
     const VVCPPS *pps         = fc->ps.pps;
@@ -226,24 +227,27 @@ static int derive_weight(int *denom, int *w0, int *w1, int *o0, int *o1,
     const int bcw_idx         = mvf->bcw_idx;
     av_assert2(IS_B(sh->r));
     const int weight_flag     = pps->r->pps_weighted_bipred_flag && !dmvr_flag;
-    if ((!weight_flag && !bcw_idx) || (bcw_idx && lc->cu->ciip_flag))
-        return 0;
+    if ((!weight_flag && !bcw_idx) || (bcw_idx && lc->cu->ciip_flag)) {
+        fc->vvcdsp.inter.avg(dst, dst_stride, src0, src1, width, height);
+        return;
+    }
 
+    int denom, w0, w1, o1, o2;
     if (bcw_idx) {
-        *denom = 2;
-        *w1 = bcw_w_lut[bcw_idx];
-        *w0 = 8 - *w1;
-        *o0 = *o1 = 0;
+        denom = 2;
+        w1 = bcw_w_lut[bcw_idx];
+        w0 = 8 - w1;
+        o1 = o2 = 0;
     } else {
         const PredWeightTable *w = pps->r->pps_wp_info_in_ph_flag ? &fc->ps.ph.pwt : &sh->pwt;
 
-        *denom = w->log2_denom[c_idx > 0];
-        *w0 = w->weight[L0][c_idx][mvf->ref_idx[L0]];
-        *w1 = w->weight[L1][c_idx][mvf->ref_idx[L1]];
-        *o0 = w->offset[L0][c_idx][mvf->ref_idx[L0]];
-        *o1 = w->offset[L1][c_idx][mvf->ref_idx[L1]];
+        denom = w->log2_denom[c_idx > 0];
+        w0 = w->weight[L0][c_idx][mvf->ref_idx[L0]];
+        w1 = w->weight[L1][c_idx][mvf->ref_idx[L1]];
+        o1 = w->offset[L0][c_idx][mvf->ref_idx[L0]];
+        o2 = w->offset[L1][c_idx][mvf->ref_idx[L1]];
     }
-    return 1;
+    fc->vvcdsp.inter.w_avg(dst, dst_stride, src0, src1, width, height, denom, w0, w1, o1, o2);
 }
 
 #define INTER_FILTER(t, frac)  (is_chroma ? ff_vvc_inter_chroma_filters[t][frac] : ff_vvc_inter_luma_filters[t][frac])
@@ -320,8 +324,6 @@ static void mc_bi(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_stride,
     const int idx             = av_log2(block_w) - 1;
     const VVCFrame *refs[]    = { ref0, ref1 };
     int16_t *tmp[]            = { lc->tmp + sb_bdof_flag * PROF_TEMP_OFFSET, lc->tmp1 + sb_bdof_flag * PROF_TEMP_OFFSET };
-    int denom, w0, w1, o0, o1;
-    const int weight_flag     = derive_weight(&denom, &w0, &w1, &o0, &o1, lc, mvf, c_idx, pu->dmvr_flag);
     const int is_chroma       = !!c_idx;
     const int hpel_if_idx     = is_chroma ? 0 : pu->mi.hpel_if_idx;
 
@@ -352,10 +354,9 @@ static void mc_bi(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_stride,
     }
     if (sb_bdof_flag)
         fc->vvcdsp.inter.apply_bdof(dst, dst_stride, tmp[L0], tmp[L1], block_w, block_h);
-    else if (weight_flag)
-        fc->vvcdsp.inter.w_avg(dst, dst_stride, tmp[L0], tmp[L1], block_w, block_h, denom, w0, w1, o0, o1);
     else
-        fc->vvcdsp.inter.avg(dst, dst_stride, tmp[L0], tmp[L1], block_w, block_h);
+        apply_averaging(dst, dst_stride, tmp[L0], tmp[L1], block_w, block_h,
+                        lc, mvf, c_idx, pu->dmvr_flag);
 }
 
 static const int8_t* inter_filter_scaled(const int scale, const int is_chroma, const int is_affine)
@@ -468,9 +469,6 @@ static void mc_bi_scaled(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_
    const VVCRefPic *refp0, const VVCRefPic *refp1, const MvField *mvf,
    const int x_off, const int y_off, const int block_w, const int block_h, const int c_idx)
 {
-    int denom, w0, w1, o0, o1;
-    const VVCFrameContext *fc = lc->fc;
-    const int weight_flag     = derive_weight(&denom, &w0, &w1, &o0, &o1, lc, mvf, c_idx, lc->cu->pu.dmvr_flag);
     const VVCRefPic *refps[]  = { refp0, refp1 };
     int16_t *tmp[]            = { lc->tmp, lc->tmp1 };
 
@@ -483,10 +481,8 @@ static void mc_bi_scaled(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_
         else
             mc(lc, tmp[i], refp->ref, mv, x_off, y_off, block_w, block_h, c_idx);
     }
-    if (weight_flag)
-        fc->vvcdsp.inter.w_avg(dst, dst_stride, tmp[L0], tmp[L1], block_w, block_h, denom, w0, w1, o0, o1);
-    else
-        fc->vvcdsp.inter.avg(dst, dst_stride, tmp[L0], tmp[L1], block_w, block_h);
+    apply_averaging(dst, dst_stride, tmp[L0], tmp[L1], block_w, block_h,
+                    lc, mvf, c_idx, lc->cu->pu.dmvr_flag);
 }
 
 static void luma_prof_uni(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_stride,
@@ -560,11 +556,8 @@ static void luma_prof_bi(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_
     const VVCRefPic *ref0, const VVCRefPic *ref1, const MvField *mvf, const int x_off, const int y_off,
     const int block_w, const int block_h)
 {
-    const VVCFrameContext *fc = lc->fc;
     const VVCRefPic *refps[]  = { ref0, ref1 };
     int16_t *tmp[]            = { lc->tmp, lc->tmp1 };
-    int denom, w0, w1, o0, o1;
-    const int weight_flag     = derive_weight(&denom, &w0, &w1, &o0, &o1, lc, mvf, LUMA, 0);
 
     for (int i = L0; i <= L1; i++) {
         const VVCRefPic *refp = refps[i];
@@ -576,10 +569,7 @@ static void luma_prof_bi(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_
             luma_prof(lc, tmp[i], refp->ref, mv, x_off, y_off, block_w, block_h, i);
     }
 
-    if (weight_flag)
-        fc->vvcdsp.inter.w_avg(dst, dst_stride, tmp[L0], tmp[L1], block_w, block_h,  denom, w0, w1, o0, o1);
-    else
-        fc->vvcdsp.inter.avg(dst, dst_stride, tmp[L0], tmp[L1], block_w, block_h);
+    apply_averaging(dst, dst_stride, tmp[L0], tmp[L1], block_w, block_h, lc, mvf, LUMA, 0);
 }
 
 static int pred_get_refs(const VVCLocalContext *lc, VVCRefPic *refp[2], const MvField *mv)
