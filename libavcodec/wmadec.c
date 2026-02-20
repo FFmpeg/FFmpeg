@@ -354,9 +354,10 @@ static int decode_exp_vlc(WMACodecContext *s, int ch)
         max_scale = v;
         n         = *ptr++;
         switch (n & 3) do {
-        case 0: *q++ = iv;
-        case 3: *q++ = iv;
-        case 2: *q++ = iv;
+        av_fallthrough;
+        case 0: *q++ = iv; av_fallthrough;
+        case 3: *q++ = iv; av_fallthrough;
+        case 2: *q++ = iv; av_fallthrough;
         case 1: *q++ = iv;
         } while ((n -= 4) > 0);
     } else
@@ -377,9 +378,10 @@ static int decode_exp_vlc(WMACodecContext *s, int ch)
             max_scale = v;
         n = *ptr++;
         switch (n & 3) do {
-        case 0: *q++ = iv;
-        case 3: *q++ = iv;
-        case 2: *q++ = iv;
+        av_fallthrough;
+        case 0: *q++ = iv; av_fallthrough;
+        case 3: *q++ = iv; av_fallthrough;
+        case 2: *q++ = iv; av_fallthrough;
         case 1: *q++ = iv;
         } while ((n -= 4) > 0);
     }
