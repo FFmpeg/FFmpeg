@@ -231,7 +231,7 @@ void bf(ff_vvc_avg, bd, opt)(uint8_t *dst, ptrdiff_t dst_stride,     \
     const int16_t *src0, const int16_t *src1, int width, int height);\
 void bf(ff_vvc_w_avg, bd, opt)(uint8_t *dst, ptrdiff_t dst_stride,   \
     const int16_t *src0, const int16_t *src1, int width, int height, \
-    int denom, int w0, int w1,  int o0, int o1);                     \
+    int denom, int w0, int w1, int o);                               \
     c->inter.avg    = bf(ff_vvc_avg, bd, opt);                       \
     c->inter.w_avg  = bf(ff_vvc_w_avg, bd, opt);                     \
 } while (0)

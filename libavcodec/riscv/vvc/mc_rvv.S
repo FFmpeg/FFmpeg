@@ -163,9 +163,7 @@ func ff_vvc_w_avg_8_rvv_\vlen\(), zve32x, zbb, zba
         addi              t6, a6, 7
         ld                t3, (sp)
         ld                t4, 8(sp)
-        ld                t5, 16(sp)
         addi              t4, t4, 1       // o0 + o1 + 1
-        add               t4, t4, t5
         addi              t5, t6, -1      // shift - 1
         sll               t4, t4, t5
         POW2_J            \vlen, 2, a4

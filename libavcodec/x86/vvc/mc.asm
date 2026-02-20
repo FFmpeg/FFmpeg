@@ -244,7 +244,7 @@ cglobal vvc_avg_%2, 4, 7, 5, dst, stride, src0, src1, w, h
 
 ;void ff_vvc_w_avg_%2_avx(uint8_t *dst, ptrdiff_t dst_stride,
 ;                         const int16_t *src0, const int16_t *src1, int width, int height,
-;                         int denom, intptr_t w0, int w1, int o0, int o1);
+;                         int denom, intptr_t w0, int w1, int o);
 %macro VVC_W_AVG_AVX2 3
 cglobal vvc_w_avg_%2, 4, 7+2*UNIX64, 6+2*(%1 != 8), dst, stride, src0, src1, w, h
 %if UNIX64
@@ -256,8 +256,7 @@ cglobal vvc_w_avg_%2, 4, 7+2*UNIX64, 6+2*(%1 != 8), dst, stride, src0, src1, w, 
 %endif
 
     mov                 t1d, r6m                ; denom
-    mov                 t0d, r9m                ; o0
-    add                 t0d, r10m               ; o1
+    mov                 t0d, r9m                ; o0 + o1
     movifnidn           t2d, r8m                ; w1
     add                 t1d, 15-%2
 %if %2 != 8

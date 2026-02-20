@@ -306,7 +306,7 @@ static void check_avg(void)
                 {
                     declare_func(void, uint8_t *dst, ptrdiff_t dst_stride,
                         const int16_t *src0, const int16_t *src1, int width, int height,
-                        int denom, int w0, int w1, int o0, int o1);
+                        int denom, int w0, int w1, int o);
                     {
                         const int denom = rnd() % 8;
                         const int w0    = rnd() % 256 - 128;
@@ -317,12 +317,12 @@ static void check_avg(void)
                             memset(dst0, 0, AVG_DST_BUF_SIZE);
                             memset(dst1, 0, AVG_DST_BUF_SIZE);
 
-                            call_ref(dst0, MAX_CTU_SIZE * SIZEOF_PIXEL, src00, src01, w, h, denom, w0, w1, o0, o1);
-                            call_new(dst1, MAX_CTU_SIZE * SIZEOF_PIXEL, src10, src11, w, h, denom, w0, w1, o0, o1);
+                            call_ref(dst0, MAX_CTU_SIZE * SIZEOF_PIXEL, src00, src01, w, h, denom, w0, w1, o0 + o1);
+                            call_new(dst1, MAX_CTU_SIZE * SIZEOF_PIXEL, src10, src11, w, h, denom, w0, w1, o0 + o1);
                             if (memcmp(dst0, dst1, DST_BUF_SIZE))
                                 fail();
                             if (w == h)
-                                bench_new(dst0, MAX_CTU_SIZE * SIZEOF_PIXEL, src00, src01, w, h, denom, w0, w1, o0, o1);
+                                bench_new(dst0, MAX_CTU_SIZE * SIZEOF_PIXEL, src00, src01, w, h, denom, w0, w1, o0 + o1);
                         }
                     }
                 }

@@ -75,7 +75,7 @@ typedef struct VVCInterDSPContext {
 
     void (*w_avg)(uint8_t *_dst, const ptrdiff_t _dst_stride,
         const int16_t *src0, const int16_t *src1, int width, int height,
-        int denom, int w0, int w1, int o0, int o1);
+        int denom, int w0, int w1, int o);
 
     void (*put_ciip)(uint8_t *dst, ptrdiff_t dst_stride, int width, int height,
         const uint8_t *inter, ptrdiff_t inter_stride, int inter_weight);

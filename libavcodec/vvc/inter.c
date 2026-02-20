@@ -232,22 +232,22 @@ static void apply_averaging(uint8_t *dst, const ptrdiff_t dst_stride,
         return;
     }
 
-    int denom, w0, w1, o1, o2;
+    int denom, w0, w1, o;
     if (bcw_idx) {
         denom = 2;
         w1 = bcw_w_lut[bcw_idx];
         w0 = 8 - w1;
-        o1 = o2 = 0;
+        o  = 0;
     } else {
         const PredWeightTable *w = pps->r->pps_wp_info_in_ph_flag ? &fc->ps.ph.pwt : &sh->pwt;
 
         denom = w->log2_denom[c_idx > 0];
         w0 = w->weight[L0][c_idx][mvf->ref_idx[L0]];
         w1 = w->weight[L1][c_idx][mvf->ref_idx[L1]];
-        o1 = w->offset[L0][c_idx][mvf->ref_idx[L0]];
-        o2 = w->offset[L1][c_idx][mvf->ref_idx[L1]];
+        o  = w->offset[L0][c_idx][mvf->ref_idx[L0]]
+           + w->offset[L1][c_idx][mvf->ref_idx[L1]];
     }
-    fc->vvcdsp.inter.w_avg(dst, dst_stride, src0, src1, width, height, denom, w0, w1, o1, o2);
+    fc->vvcdsp.inter.w_avg(dst, dst_stride, src0, src1, width, height, denom, w0, w1, o);
 }
 
 #define INTER_FILTER(t, frac)  (is_chroma ? ff_vvc_inter_chroma_filters[t][frac] : ff_vvc_inter_luma_filters[t][frac])
