@@ -8183,6 +8183,13 @@ haiku)
     ;;
 esac
 
+if ! enabled_any memalign posix_memalign aligned_malloc; then
+    if enabled_any asm inline_asm; then
+        die "ERROR: Building with assembly enabled is not supported on platforms "\
+            "without aligned memory allocations! Try reconfiguring with --disable-asm"
+    fi
+fi
+
 flatten_extralibs(){
     nested_entries=
     list_name=$1
