@@ -36,9 +36,13 @@ FATE_LIBSWSCALE-$(CONFIG_UNSTABLE) += fate-sws-unscaled
 fate-sws-unscaled: libswscale/tests/swscale$(EXESUF)
 fate-sws-unscaled: CMD = run libswscale/tests/swscale$(EXESUF) -unscaled 1 -flags unstable -v 16
 
+ifneq ($(HAVE_BIGENDIAN),yes)
+# Disable on big endian because big endian platforms generate different op
+# lists for le vs be formats; this breaks the checksum otherwise
 FATE_LIBSWSCALE-$(CONFIG_UNSTABLE) += fate-sws-ops-list
 fate-sws-ops-list: libswscale/tests/sws_ops$(EXESUF)
 fate-sws-ops-list: CMD = run libswscale/tests/sws_ops$(EXESUF) | do_md5sum | cut -d" " -f1
+endif
 
 FATE_LIBSWSCALE += $(FATE_LIBSWSCALE-yes)
 FATE_LIBSWSCALE_SAMPLES += $(FATE_LIBSWSCALE_SAMPLES-yes)
