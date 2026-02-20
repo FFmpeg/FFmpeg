@@ -168,9 +168,9 @@ int ff_sws_encode_pixfmt(SwsOpList *ops, enum AVPixelFormat fmt);
  * Returns 0 on success, or a negative error code on failure.
  */
 int ff_sws_decode_colors(SwsContext *ctx, SwsPixelType type, SwsOpList *ops,
-                         const SwsFormat fmt, bool *incomplete);
+                         const SwsFormat *fmt, bool *incomplete);
 int ff_sws_encode_colors(SwsContext *ctx, SwsPixelType type, SwsOpList *ops,
-                         const SwsFormat src, const SwsFormat dst,
+                         const SwsFormat *src, const SwsFormat *dst,
                          bool *incomplete);
 
 #endif /* SWSCALE_FORMAT_H */

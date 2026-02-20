@@ -1080,7 +1080,7 @@ static inline AVRational av_neg_q(AVRational x)
     return (AVRational) { -x.num, x.den };
 }
 
-static SwsLinearOp fmt_encode_range(const SwsFormat fmt, bool *incomplete)
+static SwsLinearOp fmt_encode_range(const SwsFormat *fmt, bool *incomplete)
 {
     SwsLinearOp c = { .m = {
         { Q1, Q0, Q0, Q0, Q0 },
@@ -1089,22 +1089,22 @@ static SwsLinearOp fmt_encode_range(const SwsFormat fmt, bool *incomplete)
         { Q0, Q0, Q0, Q1, Q0 },
     }};
 
-    const int depth0 = fmt.desc->comp[0].depth;
-    const int depth1 = fmt.desc->comp[1].depth;
-    const int depth2 = fmt.desc->comp[2].depth;
-    const int depth3 = fmt.desc->comp[3].depth;
+    const int depth0 = fmt->desc->comp[0].depth;
+    const int depth1 = fmt->desc->comp[1].depth;
+    const int depth2 = fmt->desc->comp[2].depth;
+    const int depth3 = fmt->desc->comp[3].depth;
 
-    if (fmt.desc->flags & AV_PIX_FMT_FLAG_FLOAT)
+    if (fmt->desc->flags & AV_PIX_FMT_FLAG_FLOAT)
         return c; /* floats are directly output as-is */
 
-    if (fmt.csp == AVCOL_SPC_RGB || (fmt.desc->flags & AV_PIX_FMT_FLAG_XYZ)) {
+    if (fmt->csp == AVCOL_SPC_RGB || (fmt->desc->flags & AV_PIX_FMT_FLAG_XYZ)) {
         c.m[0][0] = Q((1 << depth0) - 1);
         c.m[1][1] = Q((1 << depth1) - 1);
         c.m[2][2] = Q((1 << depth2) - 1);
-    } else if (fmt.range == AVCOL_RANGE_JPEG) {
+    } else if (fmt->range == AVCOL_RANGE_JPEG) {
         /* Full range YUV */
         c.m[0][0] = Q((1 << depth0) - 1);
-        if (fmt.desc->nb_components >= 3) {
+        if (fmt->desc->nb_components >= 3) {
             /* This follows the ITU-R convention, which is slightly different
              * from the JFIF convention. */
             c.m[1][1] = Q((1 << depth1) - 1);
@@ -1114,11 +1114,11 @@ static SwsLinearOp fmt_encode_range(const SwsFormat fmt, bool *incomplete)
         }
     } else {
         /* Limited range YUV */
-        if (fmt.range == AVCOL_RANGE_UNSPECIFIED)
+        if (fmt->range == AVCOL_RANGE_UNSPECIFIED)
             *incomplete = true;
         c.m[0][0] = Q(219 << (depth0 - 8));
         c.m[0][4] = Q( 16 << (depth0 - 8));
-        if (fmt.desc->nb_components >= 3) {
+        if (fmt->desc->nb_components >= 3) {
             c.m[1][1] = Q(224 << (depth1 - 8));
             c.m[2][2] = Q(224 << (depth2 - 8));
             c.m[1][4] = Q(128 << (depth1 - 8));
@@ -1126,12 +1126,12 @@ static SwsLinearOp fmt_encode_range(const SwsFormat fmt, bool *incomplete)
         }
     }
 
-    if (fmt.desc->flags & AV_PIX_FMT_FLAG_ALPHA) {
-        const bool is_ya = fmt.desc->nb_components == 2;
+    if (fmt->desc->flags & AV_PIX_FMT_FLAG_ALPHA) {
+        const bool is_ya = fmt->desc->nb_components == 2;
         c.m[3][3] = Q((1 << (is_ya ? depth1 : depth3)) - 1);
     }
 
-    if (fmt.format == AV_PIX_FMT_MONOWHITE) {
+    if (fmt->format == AV_PIX_FMT_MONOWHITE) {
         /* This format is inverted, 0 = white, 1 = black */
         c.m[0][4] = av_add_q(c.m[0][4], c.m[0][0]);
         c.m[0][0] = av_neg_q(c.m[0][0]);
@@ -1141,7 +1141,7 @@ static SwsLinearOp fmt_encode_range(const SwsFormat fmt, bool *incomplete)
     return c;
 }
 
-static SwsLinearOp fmt_decode_range(const SwsFormat fmt, bool *incomplete)
+static SwsLinearOp fmt_decode_range(const SwsFormat *fmt, bool *incomplete)
 {
     SwsLinearOp c = fmt_encode_range(fmt, incomplete);
 
@@ -1153,7 +1153,7 @@ static SwsLinearOp fmt_decode_range(const SwsFormat fmt, bool *incomplete)
     }
 
     /* Explicitly initialize alpha for sanity */
-    if (!(fmt.desc->flags & AV_PIX_FMT_FLAG_ALPHA))
+    if (!(fmt->desc->flags & AV_PIX_FMT_FLAG_ALPHA))
         c.m[3][4] = Q1;
 
     c.mask = ff_sws_linear_mask(c);
@@ -1219,15 +1219,15 @@ static bool trc_is_hdr(enum AVColorTransferCharacteristic trc)
 
 static int fmt_dither(SwsContext *ctx, SwsOpList *ops,
                       const SwsPixelType type,
-                      const SwsFormat src, const SwsFormat dst)
+                      const SwsFormat *src, const SwsFormat *dst)
 {
     SwsDither mode = ctx->dither;
     SwsDitherOp dither;
-    const int bpc = dst.desc->comp[0].depth;
+    const int bpc = dst->desc->comp[0].depth;
 
     if (mode == SWS_DITHER_AUTO) {
         /* Visual threshold of perception: 12 bits for SDR, 14 bits for HDR */
-        const int jnd_bits = trc_is_hdr(dst.color.trc) ? 14 : 12;
+        const int jnd_bits = trc_is_hdr(dst->color.trc) ? 14 : 12;
         mode = bpc >= jnd_bits ? SWS_DITHER_NONE : SWS_DITHER_BAYER;
     }
 
@@ -1266,7 +1266,7 @@ static int fmt_dither(SwsContext *ctx, SwsOpList *ops,
             dither.y_offset[i] = offsets_16x16[i];
         }
 
-        if (src.desc->nb_components < 3 && bpc >= 8) {
+        if (src->desc->nb_components < 3 && bpc >= 8) {
             /**
              * For high-bit-depth sources without chroma, use same matrix
              * offset for all color channels. This prevents introducing color
@@ -1316,13 +1316,13 @@ linear_mat3(const AVRational m00, const AVRational m01, const AVRational m02,
 }
 
 int ff_sws_decode_colors(SwsContext *ctx, SwsPixelType type,
-                         SwsOpList *ops, const SwsFormat fmt, bool *incomplete)
+                         SwsOpList *ops, const SwsFormat *fmt, bool *incomplete)
 {
-    const AVLumaCoefficients *c = av_csp_luma_coeffs_from_avcsp(fmt.csp);
+    const AVLumaCoefficients *c = av_csp_luma_coeffs_from_avcsp(fmt->csp);
 
     RET(ff_sws_op_list_append(ops, &(SwsOp) {
         .op         = SWS_OP_CONVERT,
-        .type       = fmt_pixel_type(fmt.format),
+        .type       = fmt_pixel_type(fmt->format),
         .convert.to = type,
     }));
 
@@ -1334,7 +1334,7 @@ int ff_sws_decode_colors(SwsContext *ctx, SwsPixelType type,
     }));
 
     /* Final step, decode colorspace */
-    switch (fmt.csp) {
+    switch (fmt->csp) {
     case AVCOL_SPC_RGB:
         return 0;
     case AVCOL_SPC_UNSPECIFIED:
@@ -1398,12 +1398,12 @@ int ff_sws_decode_colors(SwsContext *ctx, SwsPixelType type,
 }
 
 int ff_sws_encode_colors(SwsContext *ctx, SwsPixelType type,
-                         SwsOpList *ops, const SwsFormat src,
-                         const SwsFormat dst, bool *incomplete)
+                         SwsOpList *ops, const SwsFormat *src,
+                         const SwsFormat *dst, bool *incomplete)
 {
-    const AVLumaCoefficients *c = av_csp_luma_coeffs_from_avcsp(dst.csp);
+    const AVLumaCoefficients *c = av_csp_luma_coeffs_from_avcsp(dst->csp);
 
-    switch (dst.csp) {
+    switch (dst->csp) {
     case AVCOL_SPC_RGB:
         break;
     case AVCOL_SPC_UNSPECIFIED:
@@ -1469,14 +1469,14 @@ int ff_sws_encode_colors(SwsContext *ctx, SwsPixelType type,
         .lin  = fmt_encode_range(dst, incomplete),
     }));
 
-    if (!(dst.desc->flags & AV_PIX_FMT_FLAG_FLOAT)) {
+    if (!(dst->desc->flags & AV_PIX_FMT_FLAG_FLOAT)) {
         SwsConst range = {0};
 
-        const bool is_ya = dst.desc->nb_components == 2;
-        for (int i = 0; i < dst.desc->nb_components; i++) {
+        const bool is_ya = dst->desc->nb_components == 2;
+        for (int i = 0; i < dst->desc->nb_components; i++) {
             /* Clamp to legal pixel range */
             const int idx = i * (is_ya ? 3 : 1);
-            range.q4[idx] = Q((1 << dst.desc->comp[i].depth) - 1);
+            range.q4[idx] = Q((1 << dst->desc->comp[i].depth) - 1);
         }
 
         RET(fmt_dither(ctx, ops, type, src, dst));
@@ -1496,7 +1496,7 @@ int ff_sws_encode_colors(SwsContext *ctx, SwsPixelType type,
     return ff_sws_op_list_append(ops, &(SwsOp) {
         .type       = type,
         .op         = SWS_OP_CONVERT,
-        .convert.to = fmt_pixel_type(dst.format),
+        .convert.to = fmt_pixel_type(dst->format),
     });
 }
 

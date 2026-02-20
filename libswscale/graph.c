@@ -457,12 +457,13 @@ static int init_legacy_subpass(SwsGraph *graph, SwsContext *sws,
     return 0;
 }
 
-static int add_legacy_sws_pass(SwsGraph *graph, SwsFormat src, SwsFormat dst,
-                               SwsPass *input, SwsPass **output)
+static int add_legacy_sws_pass(SwsGraph *graph, const SwsFormat *src,
+                               const SwsFormat *dst, SwsPass *input,
+                               SwsPass **output)
 {
     int ret, warned = 0;
     SwsContext *const ctx = graph->ctx;
-    if (src.hw_format != AV_PIX_FMT_NONE || dst.hw_format != AV_PIX_FMT_NONE)
+    if (src->hw_format != AV_PIX_FMT_NONE || dst->hw_format != AV_PIX_FMT_NONE)
         return AVERROR(ENOTSUP);
 
     SwsContext *sws = sws_alloc_context();
@@ -474,20 +475,20 @@ static int add_legacy_sws_pass(SwsGraph *graph, SwsFormat src, SwsFormat dst,
     sws->alpha_blend = ctx->alpha_blend;
     sws->gamma_flag  = ctx->gamma_flag;
 
-    sws->src_w       = src.width;
-    sws->src_h       = src.height;
-    sws->src_format  = src.format;
-    sws->src_range   = src.range == AVCOL_RANGE_JPEG;
+    sws->src_w       = src->width;
+    sws->src_h       = src->height;
+    sws->src_format  = src->format;
+    sws->src_range   = src->range == AVCOL_RANGE_JPEG;
 
-    sws->dst_w      = dst.width;
-    sws->dst_h      = dst.height;
-    sws->dst_format = dst.format;
-    sws->dst_range  = dst.range == AVCOL_RANGE_JPEG;
-    get_chroma_pos(graph, &sws->src_h_chr_pos, &sws->src_v_chr_pos, &src);
-    get_chroma_pos(graph, &sws->dst_h_chr_pos, &sws->dst_v_chr_pos, &dst);
+    sws->dst_w      = dst->width;
+    sws->dst_h      = dst->height;
+    sws->dst_format = dst->format;
+    sws->dst_range  = dst->range == AVCOL_RANGE_JPEG;
+    get_chroma_pos(graph, &sws->src_h_chr_pos, &sws->src_v_chr_pos, src);
+    get_chroma_pos(graph, &sws->dst_h_chr_pos, &sws->dst_v_chr_pos, dst);
 
-    graph->incomplete |= src.range == AVCOL_RANGE_UNSPECIFIED;
-    graph->incomplete |= dst.range == AVCOL_RANGE_UNSPECIFIED;
+    graph->incomplete |= src->range == AVCOL_RANGE_UNSPECIFIED;
+    graph->incomplete |= dst->range == AVCOL_RANGE_UNSPECIFIED;
 
     /* Allow overriding chroma position with the legacy API */
     legacy_chr_pos(graph, &sws->src_h_chr_pos, ctx->src_h_chr_pos, &warned);
@@ -512,12 +513,12 @@ static int add_legacy_sws_pass(SwsGraph *graph, SwsFormat src, SwsFormat dst,
                                 (int **)&table, &out_full,
                                 &brightness, &contrast, &saturation);
 
-        inv_table = sws_getCoefficients(src.csp);
-        table     = sws_getCoefficients(dst.csp);
+        inv_table = sws_getCoefficients(src->csp);
+        table     = sws_getCoefficients(dst->csp);
 
-        graph->incomplete |= src.csp != dst.csp &&
-                            (src.csp == AVCOL_SPC_UNSPECIFIED ||
-                             dst.csp == AVCOL_SPC_UNSPECIFIED);
+        graph->incomplete |= src->csp != dst->csp &&
+                            (src->csp == AVCOL_SPC_UNSPECIFIED ||
+                             dst->csp == AVCOL_SPC_UNSPECIFIED);
 
         sws_setColorspaceDetails(sws, inv_table, in_full, table, out_full,
                                 brightness, contrast, saturation);
@@ -531,8 +532,9 @@ static int add_legacy_sws_pass(SwsGraph *graph, SwsFormat src, SwsFormat dst,
  *********************/
 
 #if CONFIG_UNSTABLE
-static int add_convert_pass(SwsGraph *graph, SwsFormat src, SwsFormat dst,
-                            SwsPass *input, SwsPass **output)
+static int add_convert_pass(SwsGraph *graph, const SwsFormat *src,
+                            const SwsFormat *dst, SwsPass *input,
+                            SwsPass **output)
 {
     const SwsPixelType type = SWS_PIXEL_F32;
 
@@ -545,23 +547,23 @@ static int add_convert_pass(SwsGraph *graph, SwsFormat src, SwsFormat dst,
         goto fail;
 
     /* The new format conversion layer cannot scale for now */
-    if (src.width != dst.width || src.height != dst.height ||
-        src.desc->log2_chroma_h || src.desc->log2_chroma_w ||
-        dst.desc->log2_chroma_h || dst.desc->log2_chroma_w)
+    if (src->width != dst->width || src->height != dst->height ||
+        src->desc->log2_chroma_h || src->desc->log2_chroma_w ||
+        dst->desc->log2_chroma_h || dst->desc->log2_chroma_w)
         goto fail;
 
     /* The new code does not yet support alpha blending */
-    if (src.desc->flags & AV_PIX_FMT_FLAG_ALPHA &&
+    if (src->desc->flags & AV_PIX_FMT_FLAG_ALPHA &&
         ctx->alpha_blend != SWS_ALPHA_BLEND_NONE)
         goto fail;
 
     ops = ff_sws_op_list_alloc();
     if (!ops)
         return AVERROR(ENOMEM);
-    ops->src = src;
-    ops->dst = dst;
+    ops->src = *src;
+    ops->dst = *dst;
 
-    ret = ff_sws_decode_pixfmt(ops, src.format);
+    ret = ff_sws_decode_pixfmt(ops, src->format);
     if (ret < 0)
         goto fail;
     ret = ff_sws_decode_colors(ctx, type, ops, src, &graph->incomplete);
@@ -570,12 +572,12 @@ static int add_convert_pass(SwsGraph *graph, SwsFormat src, SwsFormat dst,
     ret = ff_sws_encode_colors(ctx, type, ops, src, dst, &graph->incomplete);
     if (ret < 0)
         goto fail;
-    ret = ff_sws_encode_pixfmt(ops, dst.format);
+    ret = ff_sws_encode_pixfmt(ops, dst->format);
     if (ret < 0)
         goto fail;
 
     av_log(ctx, AV_LOG_VERBOSE, "Conversion pass for %s -> %s:\n",
-           av_get_pix_fmt_name(src.format), av_get_pix_fmt_name(dst.format));
+           av_get_pix_fmt_name(src->format), av_get_pix_fmt_name(dst->format));
 
     av_log(ctx, AV_LOG_DEBUG, "Unoptimized operation list:\n");
     ff_sws_op_list_print(ctx, AV_LOG_DEBUG, AV_LOG_TRACE, ops);
@@ -673,7 +675,7 @@ static int adapt_colors(SwsGraph *graph, SwsFormat src, SwsFormat dst,
     if (fmt_in != src.format) {
         SwsFormat tmp = src;
         tmp.format = fmt_in;
-        ret = add_convert_pass(graph, src, tmp, input, &input);
+        ret = add_convert_pass(graph, &src, &tmp, input, &input);
         if (ret < 0)
             return ret;
     }
@@ -715,7 +717,7 @@ static int init_passes(SwsGraph *graph)
     src.color  = dst.color;
 
     if (!ff_fmt_equal(&src, &dst)) {
-        ret = add_convert_pass(graph, src, dst, pass, &pass);
+        ret = add_convert_pass(graph, &src, &dst, pass, &pass);
         if (ret < 0)
             return ret;
     }
