@@ -478,6 +478,8 @@ retry:
 
             /* Conversion followed by integer expansion */
             if (next->op == SWS_OP_SCALE && !op->convert.expand &&
+                ff_sws_pixel_type_is_int(op->type) &&
+                ff_sws_pixel_type_is_int(op->convert.to) &&
                 !av_cmp_q(next->c.q, ff_sws_pixel_expand(op->type, op->convert.to)))
             {
                 op->convert.expand = true;
