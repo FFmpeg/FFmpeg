@@ -224,8 +224,8 @@ static int derive_weight(int *denom, int *w0, int *w1, int *o0, int *o1,
     const VVCPPS *pps         = fc->ps.pps;
     const VVCSH *sh           = &lc->sc->sh;
     const int bcw_idx         = mvf->bcw_idx;
-    const int weight_flag     = (IS_P(sh->r) && pps->r->pps_weighted_pred_flag) ||
-                                  (IS_B(sh->r) && pps->r->pps_weighted_bipred_flag && !dmvr_flag);
+    av_assert2(IS_B(sh->r));
+    const int weight_flag     = pps->r->pps_weighted_bipred_flag && !dmvr_flag;
     if ((!weight_flag && !bcw_idx) || (bcw_idx && lc->cu->ciip_flag))
         return 0;
 
