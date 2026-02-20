@@ -31,9 +31,11 @@ static inline AVRational ff_sws_pixel_expand(SwsPixelType from, SwsPixelType to)
 {
     const int src = ff_sws_pixel_type_size(from);
     const int dst = ff_sws_pixel_type_size(to);
-    int scale = 0;
-    for (int i = 0; i < dst / src; i++)
-        scale = scale << src * 8 | 1;
+    if (src > dst)
+        return Q(0);
+    int scale = 1;
+    for (int i = 1; i < dst / src; i++)
+        scale = (scale << (src * 8)) | 1;
     return Q(scale);
 }
 
