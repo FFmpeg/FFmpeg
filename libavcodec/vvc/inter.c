@@ -235,7 +235,6 @@ static int derive_weight(int *denom, int *w0, int *w1, int *o0, int *o1,
         *w0 = 8 - *w1;
         *o0 = *o1 = 0;
     } else {
-        const VVCPPS *pps        = fc->ps.pps;
         const PredWeightTable *w = pps->r->pps_wp_info_in_ph_flag ? &fc->ps.ph.pwt : &sh->pwt;
 
         *denom = w->log2_denom[c_idx > 0];
