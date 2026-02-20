@@ -591,6 +591,7 @@ SwsFunc ff_yuv2rgb_get_func_ptr(SwsInternal *c)
         case AV_PIX_FMT_ABGR:
             if (CONFIG_SWSCALE_ALPHA && isALPHA(c->opts.src_format))
                 return yuva422p_argb_c;
+            av_fallthrough;
         case AV_PIX_FMT_RGBA:
         case AV_PIX_FMT_BGRA:
             return (CONFIG_SWSCALE_ALPHA && isALPHA(c->opts.src_format)) ? yuva422p_rgba_c : yuv422p_rgb32_c;
@@ -633,6 +634,7 @@ SwsFunc ff_yuv2rgb_get_func_ptr(SwsInternal *c)
         case AV_PIX_FMT_ABGR:
             if (CONFIG_SWSCALE_ALPHA && isALPHA(c->opts.src_format))
                 return yuva2argb_c;
+            av_fallthrough;
         case AV_PIX_FMT_RGBA:
         case AV_PIX_FMT_BGRA:
             return (CONFIG_SWSCALE_ALPHA && isALPHA(c->opts.src_format)) ? yuva2rgba_c : yuv2rgb_c_32;
