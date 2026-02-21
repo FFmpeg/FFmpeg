@@ -1336,7 +1336,8 @@ static SwsImg get_frame_img(const AVFrame *frame, int field)
         /* Odd rows, offset by one line */
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
         for (int i = 0; i < 4; i++) {
-            img.data[i] += img.linesize[i];
+            if (img.data[i])
+                img.data[i] += img.linesize[i];
             if (desc->flags & AV_PIX_FMT_FLAG_PAL)
                 break;
         }
