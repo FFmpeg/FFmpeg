@@ -998,16 +998,16 @@ static void id3v2_parse(AVIOContext *pb, AVDictionary **metadata,
             if (unsync || tunsync) {
                 uint8_t *b = buffer;
                 uint8_t *t = buffer;
-                uint8_t *end = t + tlen;
 
                 if (avio_read(pb, buffer, tlen) != tlen) {
                     av_log(s, AV_LOG_ERROR, "Failed to read tag data\n");
                     goto seek;
                 }
 
-                while (t != end) {
+                const uint8_t *const buf_end = t + tlen;
+                while (t != buf_end) {
                     *b++ = *t++;
-                    if (t != end && t[-1] == 0xff && !t[0])
+                    if (t != buf_end && t[-1] == 0xff && !t[0])
                         t++;
                 }
 
