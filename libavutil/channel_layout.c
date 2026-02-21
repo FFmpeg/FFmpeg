@@ -271,7 +271,7 @@ static int parse_channel_list(AVChannelLayout *ch_layout, const char *str)
 
     while (*str) {
         char *channel, *chname;
-        int ret = av_opt_get_key_value(&str, "@", "+", AV_OPT_FLAG_IMPLICIT_KEY, &channel, &chname);
+        ret = av_opt_get_key_value(&str, "@", "+", AV_OPT_FLAG_IMPLICIT_KEY, &channel, &chname);
         if (ret < 0) {
             av_freep(&map);
             return ret;
@@ -345,7 +345,7 @@ int av_channel_layout_from_string(AVChannelLayout *channel_layout,
         channel_layout->nb_channels = (order + 1) * (order + 1);
 
         if (*endptr) {
-            int ret = av_channel_layout_from_string(&extra, endptr + 1);
+            ret = av_channel_layout_from_string(&extra, endptr + 1);
             if (ret < 0)
                 return ret;
             if (extra.nb_channels >= INT_MAX - channel_layout->nb_channels) {
@@ -953,10 +953,10 @@ int av_channel_layout_retype(AVChannelLayout *channel_layout, enum AVChannelOrde
         if (channel_layout->order == AV_CHANNEL_ORDER_CUSTOM) {
             int64_t mask;
             int nb_channels = channel_layout->nb_channels;
-            int order = av_channel_layout_ambisonic_order(channel_layout);
-            if (order < 0)
+            int amb_order = av_channel_layout_ambisonic_order(channel_layout);
+            if (amb_order < 0)
                 return AVERROR(ENOSYS);
-            mask = masked_description(channel_layout, (order + 1) * (order + 1));
+            mask = masked_description(channel_layout, (amb_order + 1) * (amb_order + 1));
             if (mask < 0)
                 return AVERROR(ENOSYS);
             lossy = has_channel_names(channel_layout);
