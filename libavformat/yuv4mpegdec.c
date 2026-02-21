@@ -36,7 +36,6 @@ static int yuv4_read_header(AVFormatContext *s)
     char header[MAX_YUV4_HEADER + 10];  // Include headroom for
                                         // the longest option
     char *tokstart, *tokend, *header_end;
-    int i;
     AVIOContext *pb = s->pb;
     int width = -1, height  = -1, raten   = 0,
         rated =  0, aspectn =  0, aspectd = 0;
@@ -47,25 +46,25 @@ static int yuv4_read_header(AVFormatContext *s)
     AVStream *st;
     int64_t data_offset;
 
-    for (i = 0; i < MAX_YUV4_HEADER; i++) {
+    for (int i = 0;;) {
         header[i] = avio_r8(pb);
         if (header[i] == '\n') {
             header[i + 1] = 0x20;  // Add a space after last option.
                                    // Makes parsing "444" vs "444alpha" easier.
             header[i + 2] = 0;
+            header_end = &header[i + 1]; // Include space
             break;
         }
-    }
-    if (i == MAX_YUV4_HEADER) {
-        av_log(s, AV_LOG_ERROR, "Header too large.\n");
-        return AVERROR(EINVAL);
+        if (++i == MAX_YUV4_HEADER) {
+            av_log(s, AV_LOG_ERROR, "Header too large.\n");
+            return AVERROR(EINVAL);
+        }
     }
     if (strncmp(header, Y4M_MAGIC, strlen(Y4M_MAGIC))) {
         av_log(s, AV_LOG_ERROR, "Invalid magic number for yuv4mpeg.\n");
         return AVERROR(EINVAL);
     }
 
-    header_end = &header[i + 1]; // Include space
     for (tokstart = &header[strlen(Y4M_MAGIC) + 1];
          tokstart < header_end; tokstart++) {
         if (*tokstart == 0x20)
@@ -117,6 +116,7 @@ static int yuv4_read_header(AVFormatContext *s)
                 { "mono9",    AV_PIX_FMT_GRAY9,     AVCHROMA_LOC_UNSPECIFIED },
                 { "mono",     AV_PIX_FMT_GRAY8,     AVCHROMA_LOC_UNSPECIFIED },
             };
+            size_t i;
             for (i = 0; i < FF_ARRAY_ELEMS(pix_fmt_array); i++) {
                 if (av_strstart(tokstart, pix_fmt_array[i].name, NULL)) {
                     pix_fmt = pix_fmt_array[i].pix_fmt;
