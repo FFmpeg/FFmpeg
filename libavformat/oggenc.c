@@ -274,12 +274,12 @@ static int ogg_buffer_data(AVFormatContext *s, AVStream *st,
             page->granule = granule;
 
         {
-            AVStream *st = s->streams[page->stream_index];
+            AVRational time_base = s->streams[page->stream_index]->time_base;
 
-            int64_t start = av_rescale_q(page->start_granule, st->time_base,
+            int64_t start = av_rescale_q(page->start_granule, time_base,
                                          AV_TIME_BASE_Q);
             int64_t next  = av_rescale_q(ogg_granule_to_timestamp(oggstream, page->granule),
-                                         st->time_base, AV_TIME_BASE_Q);
+                                         time_base, AV_TIME_BASE_Q);
 
             if (page->segments_count == 255) {
                 ogg_buffer_page(s, oggstream);
