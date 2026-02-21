@@ -19,6 +19,7 @@
  */
 
 #include "libavutil/avassert.h"
+#include "libavutil/cpu.h"
 #include "libavutil/error.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/macros.h"
@@ -36,14 +37,55 @@
 #include "graph.h"
 #include "ops.h"
 
+static int buffer_get_sizes(SwsPassBuffer *buffer, size_t sizes[4])
+{
+    const int align  = av_cpu_max_align();
+    const int format = buffer->img.fmt;
+    const int width  = FFALIGN(buffer->width, align);
+    const int height = buffer->height;
+    int ret;
+
+    ret = av_image_check_size2(width, height, INT64_MAX, format, 0, NULL);
+    if (ret < 0)
+        return ret;
+
+    int *linesize = buffer->img.linesize;
+    ret = av_image_fill_linesizes(linesize, format, width);
+    if (ret < 0)
+        return ret;
+
+    ptrdiff_t linesize1[4];
+    for (int i = 0; i < 4; i++)
+        linesize1[i] = linesize[i] = FFALIGN(linesize[i], align);
+
+    return av_image_fill_plane_sizes(sizes, format, height, linesize1);
+}
+
 static int pass_alloc_output(SwsPass *pass)
 {
-    if (!pass || pass->output.img.data[0])
+    if (!pass || pass->output.buf[0])
         return 0;
 
+    size_t sizes[4];
     SwsPassBuffer *output = &pass->output;
-    return av_image_alloc(output->img.data, output->img.linesize, output->width,
-                          output->height, output->img.fmt, 64);
+    int ret = buffer_get_sizes(output, sizes);
+    if (ret < 0)
+        return ret;
+
+    const int align = av_cpu_max_align();
+    for (int i = 0; i < 4; i++) {
+        if (!sizes[i])
+            break;
+        if (sizes[i] > SIZE_MAX - align)
+            return AVERROR(EINVAL);
+
+        AVBufferRef *buf = av_buffer_alloc(sizes[i] + align);
+        if (!buf)
+            return AVERROR(ENOMEM);
+        output->img.data[i] = (uint8_t *) FFALIGN((uintptr_t) buf->data, align);
+        output->buf[i] = buf;
+    }
+    return 0;
 }
 
 SwsPass *ff_sws_graph_add_pass(SwsGraph *graph, enum AVPixelFormat fmt,
@@ -731,7 +773,8 @@ void ff_sws_graph_free(SwsGraph **pgraph)
         SwsPass *pass = graph->passes[i];
         if (pass->free)
             pass->free(pass->priv);
-        av_free(pass->output.img.data[0]);
+        for (int n = 0; n < FF_ARRAY_ELEMS(pass->output.buf); n++)
+            av_buffer_unref(&pass->output.buf[n]);
         av_free(pass);
     }
     av_free(graph->passes);

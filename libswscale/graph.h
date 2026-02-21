@@ -24,6 +24,8 @@
 #include <stdbool.h>
 
 #include "libavutil/slicethread.h"
+#include "libavutil/buffer.h"
+
 #include "swscale.h"
 #include "format.h"
 
@@ -66,6 +68,7 @@ typedef void (*sws_filter_run_t)(const SwsImg *out, const SwsImg *in,
 typedef struct SwsPassBuffer {
     SwsImg img;
     int width, height; /* dimensions of this buffer */
+    AVBufferRef *buf[4]; /* one per plane */
 } SwsPassBuffer;
 
 /**
