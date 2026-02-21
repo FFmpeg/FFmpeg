@@ -76,13 +76,12 @@ typedef struct HuffEntry {
 static int build_huff(UtvideoContext *c, const uint8_t *src, VLC *vlc,
                       VLC_MULTI *multi, int *fsym, unsigned nb_elems)
 {
-    int i;
     HuffEntry he[1024];
     uint8_t bits[1024];
     uint16_t codes_count[33] = { 0 };
 
     *fsym = -1;
-    for (i = 0; i < nb_elems; i++) {
+    for (unsigned i = 0; i < nb_elems; i++) {
         if (src[i] == 0) {
             *fsym = i;
             return 0;
