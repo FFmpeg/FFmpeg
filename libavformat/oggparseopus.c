@@ -181,7 +181,7 @@ static int opus_packet(AVFormatContext *avf, int idx)
         for (; seg < os->nsegs; seg++) {
             next_pkt += os->segments[seg];
             if (os->segments[seg] < 255 && next_pkt != last_pkt) {
-                int d = opus_duration(last_pkt, next_pkt - last_pkt);
+                d = opus_duration(last_pkt, next_pkt - last_pkt);
                 if (d > 0)
                     duration += d;
                 last_pkt = next_pkt;
