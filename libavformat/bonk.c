@@ -63,8 +63,7 @@ static int bonk_read_header(AVFormatContext *s)
         const int b = avio_r8(s->pb);
         if (!b) {
             uint32_t t;
-            int ret = ffio_ensure_seekback(s->pb, 3);
-
+            ret = ffio_ensure_seekback(s->pb, 3);
             if (ret < 0)
                 return ret;
 
