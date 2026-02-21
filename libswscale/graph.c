@@ -844,23 +844,6 @@ void ff_sws_graph_update_metadata(SwsGraph *graph, const SwsColor *color)
     ff_color_update_dynamic(&graph->src.color, color);
 }
 
-static SwsImg pass_output(const SwsPass *pass, const SwsImg *fallback)
-{
-    if (!pass)
-        return *fallback;
-
-    SwsImg img = pass->output->img;
-    img.frame_ptr = fallback->frame_ptr;
-    for (int i = 0; i < FF_ARRAY_ELEMS(img.data); i++) {
-        if (!img.data[i]) {
-            img.data[i]     = fallback->data[i];
-            img.linesize[i] = fallback->linesize[i];
-        }
-    }
-
-    return img;
-}
-
 void ff_sws_graph_run(SwsGraph *graph, const SwsImg *output, const SwsImg *input)
 {
     av_assert0(output->fmt == graph->dst.hw_format ||
@@ -871,8 +854,8 @@ void ff_sws_graph_run(SwsGraph *graph, const SwsImg *output, const SwsImg *input
     for (int i = 0; i < graph->num_passes; i++) {
         const SwsPass *pass = graph->passes[i];
         graph->exec.pass   = pass;
-        graph->exec.input  = pass_output(pass->input, input);
-        graph->exec.output = pass_output(pass, output);
+        graph->exec.input  = pass->input ? pass->input->output->img : *input;
+        graph->exec.output = pass->output->buf[0] ? pass->output->img : *output;
         if (pass->setup)
             pass->setup(&graph->exec.output, &graph->exec.input, pass);
         avpriv_slicethread_execute(graph->slicethread, pass->num_slices, 0);
