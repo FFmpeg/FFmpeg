@@ -199,13 +199,8 @@ again:
             uint8_t val = s->header[i];
 
             for (int j = 0; j < 8 && cur_st < ctx->nb_streams; j++, cur_st++) {
-                StreamParams *stp = &s->p[st_index];
-
-                stp->stored = 0;
-                if (val & 1) {
-                    stp->stored = 1;
-                    st_count++;
-                }
+                s->p[st_index].stored = val & 1;
+                st_count             += val & 1;
                 val >>= 1;
                 st_index++;
             }
