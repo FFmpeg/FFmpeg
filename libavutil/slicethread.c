@@ -153,7 +153,6 @@ int avpriv_slicethread_create(AVSliceThread **pctx, void *priv,
 
     for (i = 0; i < nb_workers; i++) {
         WorkerContext *w = &ctx->workers[i];
-        int ret;
         w->ctx = ctx;
         ret = pthread_mutex_init(&w->mutex, NULL);
         if (ret) {
