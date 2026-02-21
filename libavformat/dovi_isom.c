@@ -57,9 +57,9 @@ int ff_isom_parse_dvcc_dvvc(void *logctx, AVStream *st,
 
     // Has enough remaining data
     if (size >= 5) {
-        uint8_t buf = *buf_ptr++;
-        dovi->dv_bl_signal_compatibility_id = (buf >> 4) & 0x0f; // 4 bits
-        dovi->dv_md_compression = (buf >> 2) & 0x03; // 2 bits
+        uint8_t byte = *buf_ptr++;
+        dovi->dv_bl_signal_compatibility_id = (byte >> 4) & 0x0f; // 4 bits
+        dovi->dv_md_compression = (byte >> 2) & 0x03; // 2 bits
     } else {
         // 0 stands for None
         // Dolby Vision V1.2.93 profiles and levels
