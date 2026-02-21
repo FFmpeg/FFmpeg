@@ -3674,7 +3674,7 @@ static void set_frame_distances(MPVEncContext *const s)
 static int encode_picture(MPVMainEncContext *const m, const AVPacket *pkt)
 {
     MPVEncContext *const s = &m->s;
-    int i, ret;
+    int ret;
     int bits;
     int context_count = s->c.slice_context_count;
 
@@ -3752,9 +3752,8 @@ static int encode_picture(MPVMainEncContext *const m, const AVPacket *pkt)
                                 NULL, context_count, sizeof(void*));
         }
     }
-    for(i=1; i<context_count; i++){
+    for (int i = 1; i < context_count; i++)
         merge_context_after_me(s, s->c.enc_contexts[i]);
-    }
     m->mc_mb_var_sum = s->me.mc_mb_var_sum_temp;
     m->mb_var_sum    = s->me.   mb_var_sum_temp;
     emms_c();
@@ -3785,7 +3784,7 @@ static int encode_picture(MPVMainEncContext *const m, const AVPacket *pkt)
             ff_fix_long_mvs(s, NULL, 0, s->p_mv_table, s->f_code, CANDIDATE_MB_TYPE_INTER, !!s->intra_penalty);
             if (s->c.avctx->flags & AV_CODEC_FLAG_INTERLACED_ME) {
                 int j;
-                for(i=0; i<2; i++){
+                for (int i = 0; i < 2; i++) {
                     for(j=0; j<2; j++)
                         ff_fix_long_mvs(s, s->p_field_select_table[i], j,
                                         s->c.p_field_mv_table[i][j], s->f_code, CANDIDATE_MB_TYPE_INTER_I, !!s->intra_penalty);
@@ -3809,7 +3808,7 @@ static int encode_picture(MPVMainEncContext *const m, const AVPacket *pkt)
             if (s->c.avctx->flags & AV_CODEC_FLAG_INTERLACED_ME) {
                 int dir, j;
                 for(dir=0; dir<2; dir++){
-                    for(i=0; i<2; i++){
+                    for (int i = 0; i < 2; i++) {
                         for(j=0; j<2; j++){
                             int type= dir ? (CANDIDATE_MB_TYPE_BACKWARD_I|CANDIDATE_MB_TYPE_BIDIR_I)
                                           : (CANDIDATE_MB_TYPE_FORWARD_I |CANDIDATE_MB_TYPE_BIDIR_I);
@@ -3897,12 +3896,11 @@ static int encode_picture(MPVMainEncContext *const m, const AVPacket *pkt)
     bits= put_bits_count(&s->pb);
     m->header_bits = bits - s->last_bits;
 
-    for(i=1; i<context_count; i++){
+    for (int i = 1; i < context_count; i++)
         update_duplicate_context_after_me(s->c.enc_contexts[i], s);
-    }
     s->c.avctx->execute(s->c.avctx, encode_thread, &s->c.enc_contexts[0],
                         NULL, context_count, sizeof(void*));
-    for(i=1; i<context_count; i++){
+    for (int i = 1; i < context_count; i++) {
         if (s->pb.buf_end == s->c.enc_contexts[i]->pb.buf)
             set_put_bits_buffer_size(&s->pb, FFMIN(s->c.enc_contexts[i]->pb.buf_end - s->pb.buf, INT_MAX/8-BUF_BITS));
         merge_context_after_encode(s, s->c.enc_contexts[i]);
@@ -4550,8 +4548,7 @@ static int dct_quantize_refine(MPVEncContext *const s, //FIXME breaks denoise?
             run=0;
             rle_index=0;
             for(i=start_i; i<=last_non_zero; i++){
-                int j= perm_scantable[i];
-                const int level= block[j];
+                const int level = block[perm_scantable[i]];
 
                  if(level){
                      run_tab[rle_index++]=run;
