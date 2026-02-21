@@ -37,7 +37,7 @@ typedef struct SRTPProtoContext {
 
 #define D AV_OPT_FLAG_DECODING_PARAM
 #define E AV_OPT_FLAG_ENCODING_PARAM
-static const AVOption options[] = {
+static const AVOption srtp_options[] = {
     { "srtp_out_suite", "", offsetof(SRTPProtoContext, out_suite), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, E },
     { "srtp_out_params", "", offsetof(SRTPProtoContext, out_params), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, E },
     { "srtp_in_suite", "", offsetof(SRTPProtoContext, in_suite), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, D },
@@ -48,7 +48,7 @@ static const AVOption options[] = {
 static const AVClass srtp_context_class = {
     .class_name     = "srtp",
     .item_name      = av_default_item_name,
-    .option         = options,
+    .option         = srtp_options,
     .version        = LIBAVUTIL_VERSION_INT,
 };
 
