@@ -1097,6 +1097,7 @@ static SwsLinearOp fmt_encode_range(const SwsFormat *fmt, bool *incomplete)
     if (fmt->desc->flags & AV_PIX_FMT_FLAG_FLOAT)
         return c; /* floats are directly output as-is */
 
+    av_assert0(depth0 < 32 && depth1 < 32 && depth2 < 32 && depth3 < 32);
     if (fmt->csp == AVCOL_SPC_RGB || (fmt->desc->flags & AV_PIX_FMT_FLAG_XYZ)) {
         c.m[0][0] = Q((1 << depth0) - 1);
         c.m[1][1] = Q((1 << depth1) - 1);
