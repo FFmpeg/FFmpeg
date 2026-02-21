@@ -163,7 +163,6 @@ static int webp_write_packet(AVFormatContext *s, AVPacket *pkt)
         avio_write(s->pb, pkt->data, pkt->size);
         w->wrote_webp_header = 1;  // for good measure
     } else {
-        int ret;
         if ((ret = flush(s, 0, pkt->pts)) < 0)
             return ret;
         av_packet_ref(w->last_pkt, pkt);
