@@ -42,9 +42,8 @@ static int pass_alloc_output(SwsPass *pass)
         return 0;
 
     SwsPassBuffer *output = &pass->output;
-    output->img.fmt = pass->format;
-    return av_image_alloc(output->img.data, output->img.linesize, pass->width,
-                          pass->num_slices * pass->slice_h, pass->format, 64);
+    return av_image_alloc(output->img.data, output->img.linesize, output->width,
+                          output->height, output->img.fmt, 64);
 }
 
 SwsPass *ff_sws_graph_add_pass(SwsGraph *graph, enum AVPixelFormat fmt,
@@ -63,7 +62,6 @@ SwsPass *ff_sws_graph_add_pass(SwsGraph *graph, enum AVPixelFormat fmt,
     pass->width  = width;
     pass->height = height;
     pass->input  = input;
-    pass->output.img.fmt = AV_PIX_FMT_NONE;
 
     ret = pass_alloc_output(input);
     if (ret < 0) {
@@ -79,6 +77,11 @@ SwsPass *ff_sws_graph_add_pass(SwsGraph *graph, enum AVPixelFormat fmt,
         pass->slice_h = FFALIGN(pass->slice_h, align);
         pass->num_slices = (pass->height + pass->slice_h - 1) / pass->slice_h;
     }
+
+    /* Align output buffer to include extra slice padding */
+    pass->output.img.fmt = fmt;
+    pass->output.width   = pass->width;
+    pass->output.height  = pass->slice_h * pass->num_slices;
 
     ret = av_dynarray_add_nofree(&graph->passes, &graph->num_passes, pass);
     if (ret < 0)

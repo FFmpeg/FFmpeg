@@ -65,6 +65,7 @@ typedef void (*sws_filter_run_t)(const SwsImg *out, const SwsImg *in,
  */
 typedef struct SwsPassBuffer {
     SwsImg img;
+    int width, height; /* dimensions of this buffer */
 } SwsPassBuffer;
 
 /**
