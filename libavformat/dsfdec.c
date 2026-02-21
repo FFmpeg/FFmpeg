@@ -175,7 +175,7 @@ static int dsf_read_packet(AVFormatContext *s, AVPacket *pkt)
             int64_t packet_size = dsf->audio_size - data_pos;
             int64_t skip_size = dsf->data_size - data_pos - packet_size;
             uint8_t *dst;
-            int ch, ret;
+            int ch;
 
             if (packet_size <= 0 || skip_size <= 0)
                 return AVERROR_INVALIDDATA;
