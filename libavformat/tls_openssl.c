@@ -312,7 +312,7 @@ static int openssl_gen_certificate(EVP_PKEY *pkey, X509 **cert, char **fingerpri
         goto einval_end;
     }
 
-    if (!X509_sign(*cert, pkey, EVP_sha1())) {
+    if (!X509_sign(*cert, pkey, EVP_sha256())) {
         av_log(NULL, AV_LOG_ERROR, "TLS: Failed to sign certificate, %s\n", ERR_error_string(ERR_get_error(), NULL));
         goto einval_end;
     }
