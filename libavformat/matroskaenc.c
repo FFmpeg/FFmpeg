@@ -2552,11 +2552,11 @@ static int64_t get_metadata_duration(AVFormatContext *s)
     }
 
     for (unsigned i = 0; i < s->nb_streams; i++) {
-        int64_t us;
+        int64_t stream_duration_us;
         duration = av_dict_get(s->streams[i]->metadata, "DURATION", NULL, 0);
 
-        if (duration && (av_parse_time(&us, duration->value, 1) == 0))
-            max = FFMAX(max, us);
+        if (duration && (av_parse_time(&stream_duration_us, duration->value, 1) == 0))
+            max = FFMAX(max, stream_duration_us);
     }
 
     av_log(s, AV_LOG_DEBUG, "get_metadata_duration returned: %" PRId64 "\n", max);
