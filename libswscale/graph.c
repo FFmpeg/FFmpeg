@@ -38,10 +38,12 @@
 
 static int pass_alloc_output(SwsPass *pass)
 {
-    if (!pass || pass->output.data[0])
+    if (!pass || pass->output.img.data[0])
         return 0;
-    pass->output.fmt = pass->format;
-    return av_image_alloc(pass->output.data, pass->output.linesize, pass->width,
+
+    SwsPassBuffer *output = &pass->output;
+    output->img.fmt = pass->format;
+    return av_image_alloc(output->img.data, output->img.linesize, pass->width,
                           pass->num_slices * pass->slice_h, pass->format, 64);
 }
 
@@ -61,7 +63,7 @@ SwsPass *ff_sws_graph_add_pass(SwsGraph *graph, enum AVPixelFormat fmt,
     pass->width  = width;
     pass->height = height;
     pass->input  = input;
-    pass->output.fmt = AV_PIX_FMT_NONE;
+    pass->output.img.fmt = AV_PIX_FMT_NONE;
 
     ret = pass_alloc_output(input);
     if (ret < 0) {
@@ -671,8 +673,8 @@ static void sws_graph_worker(void *priv, int jobnr, int threadnr, int nb_jobs,
 {
     SwsGraph *graph = priv;
     const SwsPass *pass = graph->exec.pass;
-    const SwsImg *input  = pass->input ? &pass->input->output : graph->exec.input;
-    const SwsImg *output = pass->output.data[0] ? &pass->output : graph->exec.output;
+    const SwsImg *input  = pass->input ? &pass->input->output.img : graph->exec.input;
+    const SwsImg *output = pass->output.img.data[0] ? &pass->output.img : graph->exec.output;
     const int slice_y = jobnr * pass->slice_h;
     const int slice_h = FFMIN(pass->slice_h, pass->height - slice_y);
 
@@ -726,7 +728,7 @@ void ff_sws_graph_free(SwsGraph **pgraph)
         SwsPass *pass = graph->passes[i];
         if (pass->free)
             pass->free(pass->priv);
-        av_free(pass->output.data[0]);
+        av_free(pass->output.img.data[0]);
         av_free(pass);
     }
     av_free(graph->passes);
@@ -787,8 +789,8 @@ void ff_sws_graph_run(SwsGraph *graph, const SwsImg *output, const SwsImg *input
         const SwsPass *pass = graph->passes[i];
         graph->exec.pass = pass;
         if (pass->setup) {
-            pass->setup(pass->output.data[0] ? &pass->output : output,
-                        pass->input ? &pass->input->output : input, pass);
+            pass->setup(pass->output.img.data[0] ? &pass->output.img : output,
+                        pass->input ? &pass->input->output.img : input, pass);
         }
         avpriv_slicethread_execute(graph->slicethread, pass->num_slices, 0);
     }

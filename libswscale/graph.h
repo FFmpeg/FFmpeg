@@ -61,6 +61,13 @@ typedef void (*sws_filter_run_t)(const SwsImg *out, const SwsImg *in,
                                  int y, int h, const SwsPass *pass);
 
 /**
+ * Represents an allocated output buffer for a filter pass.
+ */
+typedef struct SwsPassBuffer {
+    SwsImg img;
+} SwsPassBuffer;
+
+/**
  * Represents a single filter pass in the scaling graph. Each filter will
  * read from some previous pass's output, and write to a buffer associated
  * with the pass (or into the final output image).
@@ -88,7 +95,7 @@ struct SwsPass {
     /**
      * Filter output buffer. Allocated on demand and freed automatically.
      */
-    SwsImg output;
+    SwsPassBuffer output;
 
     /**
      * Called once from the main thread before running the filter. Optional.
