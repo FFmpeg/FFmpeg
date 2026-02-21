@@ -87,7 +87,7 @@ static av_cold int mpa_encode_init(AVCodecContext *avctx)
     int freq = avctx->sample_rate;
     int bitrate = avctx->bit_rate;
     int channels = avctx->ch_layout.nb_channels;
-    int i, v, table;
+    int i, table;
     float a;
 
     bitrate = bitrate / 1000;
@@ -160,7 +160,7 @@ static av_cold int mpa_encode_init(AVCodecContext *avctx)
     }
 
     for(i=0;i<64;i++) {
-        v = (int)(exp2((3 - i) / 3.0) * (1 << 20));
+        int v = (int)(exp2((3 - i) / 3.0) * (1 << 20));
         if (v <= 0)
             v = 1;
         s->scale_factor_table[i] = v;
@@ -173,7 +173,7 @@ static av_cold int mpa_encode_init(AVCodecContext *avctx)
         }
     }
     for(i=0;i<128;i++) {
-        v = i - 64;
+        int v = i - 64;
         if (v <= -3)
             v = 0;
         else if (v < 0)
@@ -188,7 +188,7 @@ static av_cold int mpa_encode_init(AVCodecContext *avctx)
     }
 
     for(i=0;i<17;i++) {
-        v = ff_mpa_quant_bits[i];
+        int v = ff_mpa_quant_bits[i];
         if (v < 0)
             v = -v;
         else
