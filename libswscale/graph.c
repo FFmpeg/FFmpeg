@@ -26,6 +26,7 @@
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/refstruct.h"
 #include "libavutil/slicethread.h"
 
 #include "libswscale/swscale.h"
@@ -63,11 +64,11 @@ static int buffer_get_sizes(SwsPassBuffer *buffer, size_t sizes[4])
 
 static int pass_alloc_output(SwsPass *pass)
 {
-    if (!pass || pass->output.buf[0])
+    if (!pass || pass->output->buf[0])
         return 0;
 
     size_t sizes[4];
-    SwsPassBuffer *output = &pass->output;
+    SwsPassBuffer *output = pass->output;
     int ret = buffer_get_sizes(output, sizes);
     if (ret < 0)
         return ret;
@@ -88,6 +89,13 @@ static int pass_alloc_output(SwsPass *pass)
     return 0;
 }
 
+static void free_buffer(AVRefStructOpaque opaque, void *obj)
+{
+    SwsPassBuffer *buffer = obj;
+    for (int i = 0; i < FF_ARRAY_ELEMS(buffer->buf); i++)
+        av_buffer_unref(&buffer->buf[i]);
+}
+
 SwsPass *ff_sws_graph_add_pass(SwsGraph *graph, enum AVPixelFormat fmt,
                                int width, int height, SwsPass *input,
                                int align, void *priv, sws_filter_run_t run)
@@ -104,12 +112,13 @@ SwsPass *ff_sws_graph_add_pass(SwsGraph *graph, enum AVPixelFormat fmt,
     pass->width  = width;
     pass->height = height;
     pass->input  = input;
+    pass->output = av_refstruct_alloc_ext(sizeof(*pass->output), 0, NULL, free_buffer);
+    if (!pass->output)
+        goto fail;
 
     ret = pass_alloc_output(input);
-    if (ret < 0) {
-        av_free(pass);
-        return NULL;
-    }
+    if (ret < 0)
+        goto fail;
 
     if (!align) {
         pass->slice_h = pass->height;
@@ -121,14 +130,20 @@ SwsPass *ff_sws_graph_add_pass(SwsGraph *graph, enum AVPixelFormat fmt,
     }
 
     /* Align output buffer to include extra slice padding */
-    pass->output.img.fmt = fmt;
-    pass->output.width   = pass->width;
-    pass->output.height  = pass->slice_h * pass->num_slices;
+    pass->output->img.fmt = fmt;
+    pass->output->width   = pass->width;
+    pass->output->height  = pass->slice_h * pass->num_slices;
 
     ret = av_dynarray_add_nofree(&graph->passes, &graph->num_passes, pass);
     if (ret < 0)
-        av_freep(&pass);
+        goto fail;
+
     return pass;
+
+fail:
+    av_refstruct_unref(&pass->output);
+    av_free(pass);
+    return NULL;
 }
 
 /* Wrapper around ff_sws_graph_add_pass() that chains a pass "in-place" */
@@ -771,8 +786,7 @@ void ff_sws_graph_free(SwsGraph **pgraph)
         SwsPass *pass = graph->passes[i];
         if (pass->free)
             pass->free(pass->priv);
-        for (int n = 0; n < FF_ARRAY_ELEMS(pass->output.buf); n++)
-            av_buffer_unref(&pass->output.buf[n]);
+        av_refstruct_unref(&pass->output);
         av_free(pass);
     }
     av_free(graph->passes);
@@ -827,7 +841,7 @@ static SwsImg pass_output(const SwsPass *pass, const SwsImg *fallback)
     if (!pass)
         return *fallback;
 
-    SwsImg img = pass->output.img;
+    SwsImg img = pass->output->img;
     for (int i = 0; i < FF_ARRAY_ELEMS(img.data); i++) {
         if (!img.data[i]) {
             img.data[i]     = fallback->data[i];
