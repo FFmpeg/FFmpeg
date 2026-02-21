@@ -51,7 +51,6 @@ static struct dv_vlc_pair dv_vlc_map[DV_VLC_MAP_RUN_SIZE][DV_VLC_MAP_LEV_SIZE];
 static av_cold void dv_vlc_map_tableinit(void)
 {
     uint32_t code = 0;
-    int i, j;
     for (int i = 0; i < NB_DV_VLC; i++) {
         uint32_t cur_code = code >> (32 - ff_dv_vlc_len[i]);
         code += 1U << (32 - ff_dv_vlc_len[i]);
@@ -70,9 +69,9 @@ static av_cold void dv_vlc_map_tableinit(void)
         dv_vlc_map[ff_dv_vlc_run[i]][ff_dv_vlc_level[i]].size =
             ff_dv_vlc_len[i]   + (!!ff_dv_vlc_level[i]);
     }
-    for (i = 0; i < DV_VLC_MAP_RUN_SIZE; i++) {
+    for (int i = 0; i < DV_VLC_MAP_RUN_SIZE; i++) {
 #if CONFIG_SMALL
-        for (j = 1; j < DV_VLC_MAP_LEV_SIZE; j++) {
+        for (int j = 1; j < DV_VLC_MAP_LEV_SIZE; j++) {
             if (dv_vlc_map[i][j].size == 0) {
                 dv_vlc_map[i][j].vlc  = dv_vlc_map[0][j].vlc |
                                         (dv_vlc_map[i - 1][0].vlc <<
@@ -82,7 +81,7 @@ static av_cold void dv_vlc_map_tableinit(void)
             }
         }
 #else
-        for (j = 1; j < DV_VLC_MAP_LEV_SIZE / 2; j++) {
+        for (int j = 1; j < DV_VLC_MAP_LEV_SIZE / 2; j++) {
             if (dv_vlc_map[i][j].size == 0) {
                 dv_vlc_map[i][j].vlc  = dv_vlc_map[0][j].vlc |
                                         (dv_vlc_map[i - 1][0].vlc <<
