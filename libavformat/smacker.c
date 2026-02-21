@@ -177,34 +177,34 @@ static int smacker_read_header(AVFormatContext *s)
 
         if (rate) {
             AVStream *ast = avformat_new_stream(s, NULL);
-            AVCodecParameters *par;
             if (!ast)
                 return AVERROR(ENOMEM);
 
+            AVCodecParameters *const apar = ast->codecpar;
+
             smk->indexes[i] = ast->index;
-            par = ast->codecpar;
-            par->codec_type = AVMEDIA_TYPE_AUDIO;
+            apar->codec_type = AVMEDIA_TYPE_AUDIO;
             if (aflag & SMK_AUD_BINKAUD) {
-                par->codec_id  = AV_CODEC_ID_BINKAUDIO_RDFT;
+                apar->codec_id  = AV_CODEC_ID_BINKAUDIO_RDFT;
             } else if (aflag & SMK_AUD_USEDCT) {
-                par->codec_id  = AV_CODEC_ID_BINKAUDIO_DCT;
+                apar->codec_id  = AV_CODEC_ID_BINKAUDIO_DCT;
             } else if (aflag & SMK_AUD_PACKED) {
-                par->codec_id  = AV_CODEC_ID_SMACKAUDIO;
-                par->codec_tag = MKTAG('S', 'M', 'K', 'A');
+                apar->codec_id  = AV_CODEC_ID_SMACKAUDIO;
+                apar->codec_tag = MKTAG('S', 'M', 'K', 'A');
             } else {
-                par->codec_id  = AV_CODEC_ID_PCM_U8;
+                apar->codec_id  = AV_CODEC_ID_PCM_U8;
             }
-            av_channel_layout_default(&par->ch_layout,
+            av_channel_layout_default(&apar->ch_layout,
                                       !!(aflag & SMK_AUD_STEREO) + 1);
-            par->sample_rate = rate;
-            par->bits_per_coded_sample = (aflag & SMK_AUD_16BITS) ? 16 : 8;
-            if (par->bits_per_coded_sample == 16 &&
-                par->codec_id == AV_CODEC_ID_PCM_U8)
-                par->codec_id = AV_CODEC_ID_PCM_S16LE;
+            apar->sample_rate = rate;
+            apar->bits_per_coded_sample = (aflag & SMK_AUD_16BITS) ? 16 : 8;
+            if (apar->bits_per_coded_sample == 16 &&
+                apar->codec_id == AV_CODEC_ID_PCM_U8)
+                apar->codec_id = AV_CODEC_ID_PCM_S16LE;
             else
                 smk->duration_size[i] = 4;
-            avpriv_set_pts_info(ast, 64, 1, par->sample_rate * par->ch_layout.nb_channels
-                                            * par->bits_per_coded_sample / 8);
+            avpriv_set_pts_info(ast, 64, 1, apar->sample_rate * apar->ch_layout.nb_channels
+                                            * apar->bits_per_coded_sample / 8);
         }
     }
 
