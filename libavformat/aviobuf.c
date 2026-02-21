@@ -392,10 +392,10 @@ static inline int put_str16(AVIOContext *s, const char *str, const int be)
 
     while (*q) {
         uint32_t ch;
-        uint16_t tmp;
+        uint16_t tmp16;
 
         GET_UTF8(ch, *q++, goto invalid;)
-        PUT_UTF16(ch, tmp, be ? avio_wb16(s, tmp) : avio_wl16(s, tmp);
+        PUT_UTF16(ch, tmp16, be ? avio_wb16(s, tmp16) : avio_wl16(s, tmp16);
                   ret += 2;)
         continue;
 invalid:
