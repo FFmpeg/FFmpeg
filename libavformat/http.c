@@ -165,7 +165,7 @@ typedef struct HTTPContext {
 #define E AV_OPT_FLAG_ENCODING_PARAM
 #define DEFAULT_USER_AGENT "Lavf/" AV_STRINGIFY(LIBAVFORMAT_VERSION)
 
-static const AVOption options[] = {
+static const AVOption http_options[] = {
     { "seekable", "control seekability of connection", OFFSET(seekable), AV_OPT_TYPE_BOOL, { .i64 = -1 }, -1, 1, D },
     { "chunked_post", "use chunked transfer-encoding for posts", OFFSET(chunked_post), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, E },
     { "http_proxy", "set HTTP proxy to tunnel through", OFFSET(http_proxy), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, D | E },
@@ -2143,7 +2143,7 @@ static int64_t http_seek_internal(URLContext *h, int64_t off, int whence, int fo
         av_log(h, AV_LOG_DEBUG, "Soft-seeking to offset %"PRIu64" by draining "
                "%"PRIu64" remaining byte(s)\n", s->off, remaining);
         while (remaining) {
-            int ret = ffurl_read(s->hd, discard, FFMIN(remaining, sizeof(discard)));
+            ret = ffurl_read(s->hd, discard, FFMIN(remaining, sizeof(discard)));
             if (ret < 0 || ret == AVERROR_EOF || (ret == 0 && remaining)) {
                 /* connection broken or stuck, need to reopen */
                 ffurl_closep(&s->hd);
@@ -2195,7 +2195,7 @@ static int http_get_short_seek(URLContext *h)
 static const AVClass flavor ## _context_class = {   \
     .class_name = # flavor,                         \
     .item_name  = av_default_item_name,             \
-    .option     = options,                          \
+    .option     = http_options,                     \
     .version    = LIBAVUTIL_VERSION_INT,            \
 }
 
