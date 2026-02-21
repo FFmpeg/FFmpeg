@@ -60,7 +60,7 @@ static int rtp_mpegts_write_header(AVFormatContext *s)
     MuxChain *chain = s->priv_data;
     AVFormatContext *mpegts_ctx = NULL, *rtp_ctx = NULL;
     int i, ret = AVERROR(ENOMEM);
-    AVStream *st;
+    AVStream *new_st;
     AVDictionary *mpegts_muxer_options = NULL;
     AVDictionary *rtp_muxer_options = NULL;
 
@@ -106,14 +106,14 @@ static int rtp_mpegts_write_header(AVFormatContext *s)
     }
     EXTERN const FFOutputFormat ff_rtp_muxer;
     rtp_ctx->oformat = &ff_rtp_muxer.p;
-    st = avformat_new_stream(rtp_ctx, NULL);
-    if (!st) {
+    new_st = avformat_new_stream(rtp_ctx, NULL);
+    if (!new_st) {
         ret = AVERROR(ENOMEM);
         goto fail;
     }
-    st->time_base.num   = 1;
-    st->time_base.den   = 90000;
-    st->codecpar->codec_id = AV_CODEC_ID_MPEG2TS;
+    new_st->time_base.num   = 1;
+    new_st->time_base.den   = 90000;
+    new_st->codecpar->codec_id = AV_CODEC_ID_MPEG2TS;
     rtp_ctx->pb = s->pb;
     av_dict_copy(&rtp_muxer_options, chain->rtp_muxer_options, 0);
     ret = avformat_write_header(rtp_ctx, &rtp_muxer_options);
