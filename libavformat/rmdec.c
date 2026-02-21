@@ -1201,7 +1201,7 @@ static int ivr_probe(const AVProbeData *p)
 static int ivr_read_header(AVFormatContext *s)
 {
     unsigned tag, type, len, tlen, value;
-    int i, j, n, count, nb_streams = 0, ret;
+    int i, n, count, nb_streams = 0, ret;
     uint8_t key[256], val[256];
     AVIOContext *pb = s->pb;
     AVStream *st;
@@ -1255,7 +1255,7 @@ static int ivr_read_header(AVFormatContext *s)
             av_log(s, AV_LOG_DEBUG, "%s = '%s'\n", key, val);
         } else if (type == 4) {
             av_log(s, AV_LOG_DEBUG, "%s = '0x", key);
-            for (j = 0; j < len; j++) {
+            for (unsigned j = 0; j < len; j++) {
                 if (avio_feof(pb))
                     return AVERROR_INVALIDDATA;
                 av_log(s, AV_LOG_DEBUG, "%X", avio_r8(pb));
@@ -1308,10 +1308,8 @@ static int ivr_read_header(AVFormatContext *s)
                 if (ret < 0)
                     return ret;
             } else if (type == 4) {
-                int j;
-
                 av_log(s, AV_LOG_DEBUG, "%s = '0x", key);
-                for (j = 0; j < len; j++) {
+                for (unsigned j = 0; j < len; j++) {
                     if (avio_feof(pb))
                         return AVERROR_INVALIDDATA;
                     av_log(s, AV_LOG_DEBUG, "%X", avio_r8(pb));
