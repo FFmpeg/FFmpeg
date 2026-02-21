@@ -53,7 +53,7 @@ typedef struct TheoraContext {
     int         stats_offset;
     int         uv_hshift;
     int         uv_vshift;
-    int         keyframe_mask;
+    unsigned    keyframe_mask;
     int         speed_level;
 } TheoraContext;
 
@@ -249,7 +249,7 @@ static av_cold int encode_init(AVCodecContext* avc_context)
         return AVERROR_EXTERNAL;
     }
 
-    h->keyframe_mask = (1 << av_ceil_log2(avc_context->gop_size)) - 1;
+    h->keyframe_mask = (1U << av_ceil_log2(avc_context->gop_size)) - 1;
     /* Clear up theora_info struct */
     th_info_clear(&t_info);
 
