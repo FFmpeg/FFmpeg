@@ -417,7 +417,7 @@ static int track_header(VividasDemuxContext *viv, AVFormatContext *s,
             }
 
             for (j = 0; j < num_data; j++) {
-                int ret = avio_read(pb, &p[offset], data_len[j]);
+                ret = avio_read(pb, &p[offset], data_len[j]);
                 if (ret < data_len[j]) {
                     st->codecpar->extradata_size = 0;
                     av_freep(&st->codecpar->extradata);
