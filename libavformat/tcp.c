@@ -167,7 +167,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     }
     p = strchr(uri, '?');
     if (p) {
-        int ret = ff_parse_opts_from_query_string(s, p, 1);
+        ret = ff_parse_opts_from_query_string(s, p, 1);
         if (ret < 0)
             return ret;
     }
