@@ -410,7 +410,6 @@ static void update_ch_subobj(AdaptiveModel *am)
 static int amdl_decode_int(AdaptiveModel *am, ACoder *ac, unsigned *dst, unsigned size)
 {
     unsigned freq, size2, val, mul;
-    int j;
 
     size = FFMIN(size, am->buf_size - 1);
 
@@ -435,7 +434,7 @@ static int amdl_decode_int(AdaptiveModel *am, ACoder *ac, unsigned *dst, unsigne
         size2 = am->buf_size >> 1;
         val = am->prob[0][0];
         if (freq >= val) {
-            int sum = 0;
+            int sum = 0, j;
             for (j = freq - val; size2; size2 >>= 1) {
                 unsigned v = am->prob[0][size2 + sum];
                 if (j >= v) {
