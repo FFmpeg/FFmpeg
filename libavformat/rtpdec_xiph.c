@@ -187,7 +187,7 @@ static int xiph_handle_packet(AVFormatContext *ctx, PayloadContext *data,
 
         if (fragmented == 3) {
             // end of xiph data packet
-            int ret = ff_rtp_finalize_packet(pkt, &data->fragment, st->index);
+            ret = ff_rtp_finalize_packet(pkt, &data->fragment, st->index);
             if (ret < 0) {
                 av_log(ctx, AV_LOG_ERROR,
                        "Error occurred when getting fragment buffer.");
