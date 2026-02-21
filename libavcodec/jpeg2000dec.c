@@ -2201,7 +2201,7 @@ static void dequantization_int_97(int x, int y, Jpeg2000Cblk *cblk,
             if (val < 0) // Convert sign-magnitude to two's complement
                 val = -(val & INT32_MAX);
             // Shifting down to prevent overflow in dequantization
-            val = (val + (1 << (PRESCALE - 1))) >> PRESCALE;
+            val = (val + (1LL << (PRESCALE - 1))) >> PRESCALE;
             datap[i] = RSHIFT(val * (int64_t)band->i_stepsize, 16);
         }
     }
