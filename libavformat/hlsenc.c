@@ -1243,7 +1243,7 @@ static int parse_playlist(AVFormatContext *s, const char *url, VariantStream *vs
                     int vtt_index = extract_segment_number(line);
                     const char *vtt_basename = av_basename(vs->vtt_basename);
                     char *vtt_file = NULL;
-                    int ret = replace_int_data_in_filename(&vtt_file, vtt_basename, 'd', vtt_index);
+                    ret = replace_int_data_in_filename(&vtt_file, vtt_basename, 'd', vtt_index);
                     if (ret < 0 || !vtt_file) {
                         ret = AVERROR(ENOMEM);
                         goto fail;
