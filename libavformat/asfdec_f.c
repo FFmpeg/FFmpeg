@@ -671,7 +671,6 @@ static int asf_read_marker(AVFormatContext *s)
 
     for (i = 0; i < count; i++) {
         int64_t pres_time;
-        int name_len;
 
         if (avio_feof(pb))
             return AVERROR_INVALIDDATA;
@@ -1138,7 +1137,7 @@ static int asf_parse_packet(AVFormatContext *s, AVIOContext *pb, AVPacket *pkt)
     ASFContext *asf   = s->priv_data;
     ASFStream *asf_st = 0;
     for (;;) {
-        int ret;
+        int read;
         if (avio_feof(pb))
             return AVERROR_EOF;
         if (asf->packet_size_left < FRAME_HEADER_SIZE ||
@@ -1279,28 +1278,28 @@ static int asf_parse_packet(AVFormatContext *s, AVIOContext *pb, AVPacket *pkt)
             asf_st->pkt_clean = 1;
         }
 
-        ret = avio_read(pb, asf_st->pkt.data + asf->packet_frag_offset,
-                        asf->packet_frag_size);
-        if (ret != asf->packet_frag_size) {
-            if (ret < 0 || asf->packet_frag_offset + ret == 0)
-                return ret < 0 ? ret : AVERROR_EOF;
+        read = avio_read(pb, asf_st->pkt.data + asf->packet_frag_offset,
+                         asf->packet_frag_size);
+        if (read != asf->packet_frag_size) {
+            if (read < 0 || asf->packet_frag_offset + read == 0)
+                return read < 0 ? read : AVERROR_EOF;
 
             if (asf_st->ds_span > 1) {
                 // scrambling, we can either drop it completely or fill the remainder
                 // TODO: should we fill the whole packet instead of just the current
                 // fragment?
-                memset(asf_st->pkt.data + asf->packet_frag_offset + ret, 0,
-                       asf->packet_frag_size - ret);
-                ret = asf->packet_frag_size;
+                memset(asf_st->pkt.data + asf->packet_frag_offset + read, 0,
+                       asf->packet_frag_size - read);
+                read = asf->packet_frag_size;
             } else {
                 // no scrambling, so we can return partial packets
-                av_shrink_packet(&asf_st->pkt, asf->packet_frag_offset + ret);
+                av_shrink_packet(&asf_st->pkt, asf->packet_frag_offset + read);
             }
         }
         if (s->key && s->keylen == 20)
             ff_asfcrypt_dec(s->key, asf_st->pkt.data + asf->packet_frag_offset,
-                            ret);
-        asf_st->frag_offset += ret;
+                            read);
+        asf_st->frag_offset += read;
         /* test if whole packet is read */
         if (asf_st->frag_offset == asf_st->pkt.size) {
             // workaround for macroshit radio DVR-MS files
@@ -1578,11 +1577,11 @@ static int asf_read_seek(AVFormatContext *s, int stream_index,
 
     /* Try using the protocol's read_seek if available */
     if (s->pb) {
-        int64_t ret = avio_seek_time(s->pb, stream_index, pts, flags);
-        if (ret >= 0)
+        int64_t ret64 = avio_seek_time(s->pb, stream_index, pts, flags);
+        if (ret64 >= 0)
             asf_reset_header(s);
-        if (ret != AVERROR(ENOSYS))
-            return ret;
+        if (ret64 != AVERROR(ENOSYS))
+            return ret64;
     }
 
     /* explicitly handle the case of seeking to 0 */
