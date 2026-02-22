@@ -50,24 +50,12 @@ DMVR_PROTOTYPES( 8, avx2)
 DMVR_PROTOTYPES(10, avx2)
 DMVR_PROTOTYPES(12, avx2)
 
-#if ARCH_X86_64 && HAVE_AVX2_EXTERNAL
-void ff_vvc_apply_bdof_avx2(uint8_t *dst, ptrdiff_t dst_stride,
-                            const int16_t *src0, const int16_t *src1,
-                            int w, int h, int pixel_max);
-
-#define OF_FUNC(bd, opt)                                                                            \
-static void vvc_apply_bdof_##bd##_##opt(uint8_t *dst, ptrdiff_t dst_stride,                         \
-    const int16_t *src0, const int16_t *src1, int w, int h)                                         \
-{                                                                                                   \
-    ff_vvc_apply_bdof##_##opt(dst, dst_stride, src0, src1, w, h, (1 << bd)  - 1);                   \
-}                                                                                                   \
-
-OF_FUNC( 8, avx2)
-OF_FUNC(10, avx2)
-OF_FUNC(12, avx2)
-
-#define OF_INIT(bd) c->inter.apply_bdof = vvc_apply_bdof_##bd##_avx2
-#endif
+#define OF_INIT(BD, OPT) do {                                                      \
+void ff_vvc_apply_bdof_## BD ## _ ## OPT(uint8_t *dst, ptrdiff_t dst_stride,       \
+                                         const int16_t *src0, const int16_t *src1, \
+                                         int w, int h);                            \
+    c->inter.apply_bdof = ff_vvc_apply_bdof_## BD ##_## OPT;                       \
+} while (0)
 
 #define ALF_BPC_PROTOTYPES(bpc, opt)                                                                                     \
 void BF(ff_vvc_alf_filter_luma, bpc, opt)(uint8_t *dst, ptrdiff_t dst_stride,                                            \
@@ -340,7 +328,7 @@ av_cold void ff_vvc_dsp_init_x86(VVCDSPContext *const c, const int bd)
             AVG_INIT(8, avx2);
             DMVR_INIT(8);
             MC_LINKS_AVX2(8);
-            OF_INIT(8);
+            OF_INIT(8, avx2);
             SAD_INIT();
 
             // filter
@@ -362,7 +350,7 @@ av_cold void ff_vvc_dsp_init_x86(VVCDSPContext *const c, const int bd)
             DMVR_INIT(10);
             MC_LINKS_AVX2(10);
             MC_LINKS_16BPC_AVX2(10);
-            OF_INIT(10);
+            OF_INIT(10, avx2);
             SAD_INIT();
 
             // filter
@@ -384,7 +372,7 @@ av_cold void ff_vvc_dsp_init_x86(VVCDSPContext *const c, const int bd)
             DMVR_INIT(12);
             MC_LINKS_AVX2(12);
             MC_LINKS_16BPC_AVX2(12);
-            OF_INIT(12);
+            OF_INIT(12, avx2);
             SAD_INIT();
 
             // filter

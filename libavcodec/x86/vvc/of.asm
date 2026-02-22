@@ -345,11 +345,27 @@ INIT_YMM avx2
 %endif
 %endmacro
 
-;void ff_vvc_apply_bdof_%1(uint8_t *dst, const ptrdiff_t dst_stride, int16_t *src0, int16_t *src1,
-;    const int w, const int h, const int int pixel_max)
-%macro BDOF_AVX2 0
-cglobal vvc_apply_bdof, 7, 9, 16, BDOF_STACK_SIZE*32, dst, ds, src0, src1, w, h, pixel_max, ds3, tmp0
+%macro BDOF_WRAPPER 2 ; bpp, is_nonadjacent
+;void ff_vvc_apply_bdof_%1(uint8_t *dst, const ptrdiff_t dst_stride, const int16_t *src0,
+;                          const int16_t *src1, const int w, const int h)
+cglobal vvc_apply_bdof_%1
+    ; r6 is not used for parameter passing and is volatile both on UNIX64
+    ; and Win64, so it can be freely used
+    mov                    r6d, (1<<%1)-1
+%if %2
+    jmp        vvc_apply_bdof_ %+ cpuname
+%endif
+%endmacro
 
+%macro VVC_OF_AVX2 0
+    BDOF_WRAPPER 12, 1
+    BDOF_WRAPPER  8, 1
+    BDOF_WRAPPER 10, 0
+
+vvc_apply_bdof_ %+ cpuname:
+; the prologue on Win64 is big (10 xmm regs need saving), so use PROLOGUE
+; to avoid duplicating it.
+PROLOGUE 6, 9, 16, BDOF_STACK_SIZE*32, dst, ds, src0, src1, w, h, pixel_max, ds3, tmp0
     lea                   ds3q, [dsq * 3]
     sub                  src0q, SRC_STRIDE + SRC_PS
     sub                  src1q, SRC_STRIDE + SRC_PS
@@ -368,10 +384,6 @@ cglobal vvc_apply_bdof, 7, 9, 16, BDOF_STACK_SIZE*32, dst, ds, src0, src1, w, h,
 
 .end:
     RET
-%endmacro
-
-%macro VVC_OF_AVX2 0
-    BDOF_AVX2
 %endmacro
 
 VVC_OF_AVX2
