@@ -333,21 +333,25 @@ INIT_YMM avx2
     BDOF_PROF_GRAD  %1 * 4 + 1, 0
     BDOF_PROF_GRAD  %1 * 4 + 2, 0
 
+%if (%2)
+    BDOF_PROF_GRAD  %1 * 4 + 3, %2
+    BDOF_VX_VY              12, 13
+    APPLY_BDOF_MIN_BLOCK    %1, m12, m13, bd
+%else
     mova                   m14, m12
     mova                   m15, m13
 
     pxor                   m12, m12
     pxor                   m13, m13
-    BDOF_PROF_GRAD  %1 * 4 + 3, %2
-%if (%2) == 0
+    BDOF_PROF_GRAD  %1 * 4 + 3, 0
     BDOF_PROF_GRAD  %1 * 4 + 4, 0
-%endif
     paddw                  m14, m12
     paddw                  m15, m13
 
     BDOF_VX_VY              14, 15
     APPLY_BDOF_MIN_BLOCK    %1, m14, m15, bd
     lea                   dstq, [dstq + 4 * dsq]
+%endif
 %endmacro
 
 ;void ff_vvc_apply_bdof_%1(uint8_t *dst, const ptrdiff_t dst_stride, int16_t *src0, int16_t *src1,
