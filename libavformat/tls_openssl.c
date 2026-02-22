@@ -398,17 +398,16 @@ static EVP_PKEY *pkey_from_pem_string(const char *pem_str, int is_priv)
  */
 static X509 *cert_from_pem_string(const char *pem_str)
 {
+    X509 *cert = NULL;
     BIO *mem = BIO_new_mem_buf(pem_str, -1);
     if (!mem) {
         av_log(NULL, AV_LOG_ERROR, "BIO_new_mem_buf failed\n");
         return NULL;
     }
 
-    X509 *cert = PEM_read_bio_X509(mem, NULL, NULL, NULL);
-    if (!cert) {
+    cert = PEM_read_bio_X509(mem, NULL, NULL, NULL);
+    if (!cert)
         av_log(NULL, AV_LOG_ERROR, "Failed to parse certificate from string\n");
-        return NULL;
-    }
 
     BIO_free(mem);
     return cert;
