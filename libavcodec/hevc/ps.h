@@ -162,10 +162,7 @@ typedef struct RepFormat {
     uint8_t  separate_colour_plane_flag;
     uint8_t  bit_depth_luma;    ///< bit_depth_vps_luma_minus8 + 8
     uint8_t  bit_depth_chroma;  ///< bit_depth_vps_chroma_minus8 + 8
-    uint16_t conf_win_left_offset;
-    uint16_t conf_win_right_offset;
-    uint16_t conf_win_top_offset;
-    uint16_t conf_win_bottom_offset;
+    HEVCWindow conf_win;
 } RepFormat;
 
 typedef struct HEVCVPS {
