@@ -230,14 +230,20 @@ INIT_YMM avx2
     pshufhw                      m6, m6, q2301
     paddw                        m8, m6, m11                ; 4 x (4sgx2, 4sgy2, 4sgxdi, 4sgydi)
 
-%if (%1) == 0 || (%2)
-    ; pad for top and bottom
+%if (%1) == 0
+    ; pad for top and directly output to m12, m13
+    paddw                      m12, m8,  m8
+    paddw                      m13, m10, m10
+%else
+%if (%2)
+    ; pad for bottom
     paddw                       m8, m8
     paddw                      m10, m10
 %endif
 
     paddw                      m12, m8
     paddw                      m13, m10
+%endif
 %endmacro
 
 
@@ -320,9 +326,6 @@ INIT_YMM avx2
     movu                    m1, [src0q + 1 * SRC_STRIDE + SRC_PS]
     movu                    m3, [src1q + 0 * SRC_STRIDE + SRC_PS]
     movu                    m4, [src1q + 1 * SRC_STRIDE + SRC_PS]
-
-    pxor                   m12, m12
-    pxor                   m13, m13
 
     BDOF_PROF_GRAD           0, 0
 %endif
