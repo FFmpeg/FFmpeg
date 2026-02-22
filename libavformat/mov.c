@@ -9149,8 +9149,13 @@ static int mov_read_iref_dimg(MOVContext *c, AVIOContext *pb, int version)
     if (!grid->tile_id_list || !grid->tile_item_list || !grid->tile_idx_list)
         return AVERROR(ENOMEM);
     /* 'to' item ids */
-    for (i = 0; i < entries; i++)
+    for (i = 0; i < entries; i++) {
         grid->tile_id_list[i] = version ? avio_rb32(pb) : avio_rb16(pb);
+
+        if (avio_feof(pb))
+            return AVERROR_INVALIDDATA;
+    }
+
     grid->nb_tiles = entries;
     grid->item = item;
 
@@ -9177,6 +9182,10 @@ static int mov_read_iref_cdsc(MOVContext *c, AVIOContext *pb, uint32_t type, int
     /* 'to' item ids */
     for (int i = 0; i < entries; i++) {
         HEIFItem *item = get_heif_item(c, version ? avio_rb32(pb) : avio_rb16(pb));
+
+        if (avio_feof(pb))
+            return AVERROR_INVALIDDATA;
+
         if (!item) {
             av_log(c->fc, AV_LOG_WARNING, "Missing stream referenced by %s item\n",
                    av_fourcc2str(type));
