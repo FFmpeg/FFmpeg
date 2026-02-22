@@ -1376,28 +1376,21 @@ int sws_scale_frame(SwsContext *sws, AVFrame *dst, const AVFrame *src)
     if (!src->data[0])
         return 0;
 
-    if (c->graph[FIELD_TOP]->noop &&
-        (!c->graph[FIELD_BOTTOM] || c->graph[FIELD_BOTTOM]->noop) &&
-        src->buf[0] && !dst->buf[0] && !dst->data[0])
-    {
-        /* Lightweight refcopy */
-        ret = frame_ref(dst, src);
-        if (ret < 0)
-            return ret;
-    } else {
-        if (!dst->data[0]) {
-            ret = av_frame_get_buffer(dst, 0);
-            if (ret < 0)
-                return ret;
-        }
+    const SwsGraph *top = c->graph[FIELD_TOP];
+    const SwsGraph *bot = c->graph[FIELD_BOTTOM];
+    if (dst->data[0]) /* user-provided buffers */
+        goto process_frame;
 
-        for (int field = 0; field < 2; field++) {
-            SwsGraph *graph = c->graph[field];
-            ff_sws_graph_run(graph, dst, src);
-            if (!graph->dst.interlaced)
-                break;
-        }
-    }
+    if (src->buf[0] && top->noop && (!bot || bot->noop))
+        return frame_ref(dst, src);
+
+    ret = av_frame_get_buffer(dst, 0);
+    if (ret < 0)
+        return ret;
+
+process_frame:
+    for (int field = 0; field < (bot ? 2 : 1); field++)
+        ff_sws_graph_run(c->graph[field], dst, src);
 
     return 0;
 }
