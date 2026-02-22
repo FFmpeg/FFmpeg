@@ -25,6 +25,206 @@
 #include "cbs_sei.h"
 #include "libavutil/refstruct.h"
 
+#define HEADER(name) do { \
+        ff_cbs_trace_header(ctx, name); \
+    } while (0)
+
+#define CHECK(call) do { \
+        err = (call); \
+        if (err < 0) \
+            return err; \
+    } while (0)
+
+#define FUNC_NAME2(rw, codec, name) cbs_ ## codec ## _ ## rw ## _ ## name
+#define FUNC_NAME1(rw, codec, name) FUNC_NAME2(rw, codec, name)
+#define FUNC_NAME2_EXPORT(rw, codec, name) ff_cbs_ ## codec ## _ ## rw ## _ ## name
+#define FUNC_NAME1_EXPORT(rw, codec, name) FUNC_NAME2_EXPORT(rw, codec, name)
+#define FUNC_SEI(name)  FUNC_NAME1(READWRITE, sei,  name)
+#define FUNC_SEI_EXPORT(name)  FUNC_NAME1_EXPORT(READWRITE, sei,  name)
+
+#define SEI_FUNC(name, args) \
+static int FUNC_SEI(name) args;  \
+static int FUNC_SEI(name ## _internal)(CodedBitstreamContext *ctx, \
+                                       RWContext *rw, void *cur,   \
+                                       SEIMessageState *state)     \
+{ \
+    return FUNC_SEI(name)(ctx, rw, cur, state); \
+} \
+static int FUNC_SEI(name) args
+
+#define SUBSCRIPTS(subs, ...) (subs > 0 ? ((int[subs + 1]){ subs, __VA_ARGS__ }) : NULL)
+
+#define u(width, name, range_min, range_max) \
+        xu(width, name, current->name, range_min, range_max, 0, )
+#define flag(name) ub(1, name)
+#define ue(name, range_min, range_max) \
+        xue(name, current->name, range_min, range_max, 0, )
+#define i(width, name, range_min, range_max) \
+        xi(width, name, current->name, range_min, range_max, 0, )
+#define ib(width, name) \
+        xi(width, name, current->name, MIN_INT_BITS(width), MAX_INT_BITS(width), 0, )
+#define se(name, range_min, range_max) \
+        xse(name, current->name, range_min, range_max, 0, )
+
+#define us(width, name, range_min, range_max, subs, ...) \
+        xu(width, name, current->name, range_min, range_max, subs, __VA_ARGS__)
+#define ubs(width, name, subs, ...) \
+        xu(width, name, current->name, 0, MAX_UINT_BITS(width), subs, __VA_ARGS__)
+#define flags(name, subs, ...) \
+        xu(1, name, current->name, 0, 1, subs, __VA_ARGS__)
+#define ues(name, range_min, range_max, subs, ...) \
+        xue(name, current->name, range_min, range_max, subs, __VA_ARGS__)
+#define is(width, name, range_min, range_max, subs, ...) \
+        xi(width, name, current->name, range_min, range_max, subs, __VA_ARGS__)
+#define ibs(width, name, subs, ...) \
+        xi(width, name, current->name, MIN_INT_BITS(width), MAX_INT_BITS(width), subs, __VA_ARGS__)
+#define ses(name, range_min, range_max, subs, ...) \
+        xse(name, current->name, range_min, range_max, subs, __VA_ARGS__)
+
+#define fixed(width, name, value) do { \
+        av_unused uint32_t fixed_value = value; \
+        xu(width, name, fixed_value, value, value, 0, ); \
+    } while (0)
+
+
+#define READ
+#define READWRITE read
+#define RWContext GetBitContext
+
+#define ub(width, name) do { \
+        uint32_t value; \
+        CHECK(ff_cbs_read_simple_unsigned(ctx, rw, width, #name, \
+                                          &value)); \
+        current->name = value; \
+    } while (0)
+#define xu(width, name, var, range_min, range_max, subs, ...) do { \
+        uint32_t value; \
+        CHECK(ff_cbs_read_unsigned(ctx, rw, width, #name, \
+                                   SUBSCRIPTS(subs, __VA_ARGS__), \
+                                   &value, range_min, range_max)); \
+        var = value; \
+    } while (0)
+#define xue(name, var, range_min, range_max, subs, ...) do { \
+        uint32_t value; \
+        CHECK(ff_cbs_read_ue_golomb(ctx, rw, #name, \
+                                 SUBSCRIPTS(subs, __VA_ARGS__), \
+                                 &value, range_min, range_max)); \
+        var = value; \
+    } while (0)
+#define xi(width, name, var, range_min, range_max, subs, ...) do { \
+        int32_t value; \
+        CHECK(ff_cbs_read_signed(ctx, rw, width, #name, \
+                                 SUBSCRIPTS(subs, __VA_ARGS__), \
+                                 &value, range_min, range_max)); \
+        var = value; \
+    } while (0)
+#define xse(name, var, range_min, range_max, subs, ...) do { \
+        int32_t value; \
+        CHECK(ff_cbs_read_se_golomb(ctx, rw, #name, \
+                                 SUBSCRIPTS(subs, __VA_ARGS__), \
+                                 &value, range_min, range_max)); \
+        var = value; \
+    } while (0)
+
+
+#define infer(name, value) do { \
+        current->name = value; \
+    } while (0)
+
+#define more_rbsp_data(var) ((var) = ff_cbs_h2645_read_more_rbsp_data(rw))
+
+#define bit_position(rw)   (get_bits_count(rw))
+#define byte_alignment(rw) (get_bits_count(rw) % 8)
+
+/* The CBS SEI code uses the refstruct API for the allocation
+ * of its child buffers. */
+#define allocate(name, size) do { \
+        name  = av_refstruct_allocz(size + \
+                                        AV_INPUT_BUFFER_PADDING_SIZE); \
+        if (!name) \
+            return AVERROR(ENOMEM); \
+    } while (0)
+
+#define FUNC(name) FUNC_SEI_EXPORT(name)
+#include "cbs_sei_syntax_template.c"
+#undef FUNC
+
+#undef READ
+#undef READWRITE
+#undef RWContext
+#undef ub
+#undef xu
+#undef xi
+#undef xue
+#undef xse
+#undef infer
+#undef more_rbsp_data
+#undef bit_position
+#undef byte_alignment
+#undef allocate
+
+
+#define WRITE
+#define READWRITE write
+#define RWContext PutBitContext
+
+#define ub(width, name) do { \
+        uint32_t value = current->name; \
+        CHECK(ff_cbs_write_simple_unsigned(ctx, rw, width, #name, \
+                                           value)); \
+    } while (0)
+#define xu(width, name, var, range_min, range_max, subs, ...) do { \
+        uint32_t value = var; \
+        CHECK(ff_cbs_write_unsigned(ctx, rw, width, #name, \
+                                    SUBSCRIPTS(subs, __VA_ARGS__), \
+                                    value, range_min, range_max)); \
+    } while (0)
+#define xue(name, var, range_min, range_max, subs, ...) do { \
+        uint32_t value = var; \
+        CHECK(ff_cbs_write_ue_golomb(ctx, rw, #name, \
+                                  SUBSCRIPTS(subs, __VA_ARGS__), \
+                                  value, range_min, range_max)); \
+    } while (0)
+#define xi(width, name, var, range_min, range_max, subs, ...) do { \
+        int32_t value = var; \
+        CHECK(ff_cbs_write_signed(ctx, rw, width, #name, \
+                                  SUBSCRIPTS(subs, __VA_ARGS__), \
+                                  value, range_min, range_max)); \
+    } while (0)
+#define xse(name, var, range_min, range_max, subs, ...) do { \
+        int32_t value = var; \
+        CHECK(ff_cbs_write_se_golomb(ctx, rw, #name, \
+                                  SUBSCRIPTS(subs, __VA_ARGS__), \
+                                  value, range_min, range_max)); \
+    } while (0)
+
+#define infer(name, value) do { \
+        if (current->name != (value)) { \
+            av_log(ctx->log_ctx, AV_LOG_ERROR, \
+                   "%s does not match inferred value: " \
+                   "%"PRId64", but should be %"PRId64".\n", \
+                   #name, (int64_t)current->name, (int64_t)(value)); \
+            return AVERROR_INVALIDDATA; \
+        } \
+    } while (0)
+
+#define more_rbsp_data(var) (var)
+
+#define bit_position(rw)   (put_bits_count(rw))
+#define byte_alignment(rw) (put_bits_count(rw) % 8)
+
+#define allocate(name, size) do { \
+        if (!name) { \
+            av_log(ctx->log_ctx, AV_LOG_ERROR, "%s must be set " \
+                   "for writing.\n", #name); \
+            return AVERROR_INVALIDDATA; \
+        } \
+    } while (0)
+
+#define FUNC(name) FUNC_SEI_EXPORT(name)
+#include "cbs_sei_syntax_template.c"
+#undef FUNC
+
 static void cbs_free_user_data_registered(AVRefStructOpaque unused, void *obj)
 {
     SEIRawUserDataRegistered *udr = obj;
@@ -383,4 +583,124 @@ void ff_cbs_sei_delete_message_type(CodedBitstreamContext *ctx,
                 cbs_sei_delete_message(list, j);
         }
     }
+}
+
+// Macro for the read/write pair.
+#define SEI_MESSAGE_RW(codec, name) \
+    .read  = cbs_ ## codec ## _read_  ## name ## _internal, \
+    .write = cbs_ ## codec ## _write_ ## name ## _internal
+
+static const SEIMessageTypeDescriptor cbs_sei_common_types[] = {
+    {
+        SEI_TYPE_FILLER_PAYLOAD,
+        1, 1,
+        sizeof(SEIRawFillerPayload),
+        SEI_MESSAGE_RW(sei, filler_payload),
+    },
+    {
+        SEI_TYPE_USER_DATA_REGISTERED_ITU_T_T35,
+        1, 1,
+        sizeof(SEIRawUserDataRegistered),
+        SEI_MESSAGE_RW(sei, user_data_registered),
+    },
+    {
+        SEI_TYPE_USER_DATA_UNREGISTERED,
+        1, 1,
+        sizeof(SEIRawUserDataUnregistered),
+        SEI_MESSAGE_RW(sei, user_data_unregistered),
+    },
+    {
+        SEI_TYPE_FRAME_PACKING_ARRANGEMENT,
+        1, 0,
+        sizeof(SEIRawFramePackingArrangement),
+        SEI_MESSAGE_RW(sei, frame_packing_arrangement),
+    },
+    {
+        SEI_TYPE_DECODED_PICTURE_HASH,
+        0, 1,
+        sizeof(SEIRawDecodedPictureHash),
+        SEI_MESSAGE_RW(sei, decoded_picture_hash),
+    },
+    {
+        SEI_TYPE_MASTERING_DISPLAY_COLOUR_VOLUME,
+        1, 0,
+        sizeof(SEIRawMasteringDisplayColourVolume),
+        SEI_MESSAGE_RW(sei, mastering_display_colour_volume),
+    },
+    {
+        SEI_TYPE_CONTENT_LIGHT_LEVEL_INFO,
+        1, 0,
+        sizeof(SEIRawContentLightLevelInfo),
+        SEI_MESSAGE_RW(sei, content_light_level_info),
+    },
+    {
+        SEI_TYPE_ALTERNATIVE_TRANSFER_CHARACTERISTICS,
+        1, 0,
+        sizeof(SEIRawAlternativeTransferCharacteristics),
+        SEI_MESSAGE_RW(sei, alternative_transfer_characteristics),
+    },
+    {
+        SEI_TYPE_AMBIENT_VIEWING_ENVIRONMENT,
+        1, 0,
+        sizeof(SEIRawAmbientViewingEnvironment),
+        SEI_MESSAGE_RW(sei, ambient_viewing_environment),
+    },
+    SEI_MESSAGE_TYPE_END,
+};
+
+static const SEIMessageTypeDescriptor cbs_sei_h274_types[] = {
+    {
+        SEI_TYPE_FILM_GRAIN_CHARACTERISTICS,
+        1, 0,
+        sizeof(SEIRawFilmGrainCharacteristics),
+        SEI_MESSAGE_RW(sei, film_grain_characteristics),
+    },
+    {
+        SEI_TYPE_DISPLAY_ORIENTATION,
+        1, 0,
+        sizeof(SEIRawDisplayOrientation),
+        SEI_MESSAGE_RW(sei, display_orientation)
+    },
+    {
+        SEI_TYPE_FRAME_FIELD_INFO,
+        1, 0,
+        sizeof(SEIRawFrameFieldInformation),
+        SEI_MESSAGE_RW(sei, frame_field_information)
+    },
+    SEI_MESSAGE_TYPE_END,
+};
+
+const SEIMessageTypeDescriptor *ff_cbs_sei_find_type(CodedBitstreamContext *ctx,
+                                                     int payload_type)
+{
+    const SEIMessageTypeDescriptor *codec_list = NULL;
+    int i;
+
+    switch (ctx->codec->codec_id) {
+#if CBS_H264
+    case AV_CODEC_ID_H264:
+        codec_list = ff_cbs_sei_h264_types;
+        break;
+#endif
+#if CBS_H265
+    case AV_CODEC_ID_H265:
+        codec_list = ff_cbs_sei_h265_types;
+        break;
+#endif
+    case AV_CODEC_ID_H266:
+        codec_list = cbs_sei_h274_types;
+        break;
+    }
+
+    for (i = 0; codec_list && codec_list[i].type >= 0; i++) {
+        if (codec_list[i].type == payload_type)
+            return &codec_list[i];
+    }
+
+    for (i = 0; cbs_sei_common_types[i].type >= 0; i++) {
+        if (cbs_sei_common_types[i].type == payload_type)
+            return &cbs_sei_common_types[i];
+    }
+
+    return NULL;
 }

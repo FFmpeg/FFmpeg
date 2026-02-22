@@ -334,7 +334,7 @@ SEI_FUNC(frame_field_information, (CodedBitstreamContext *ctx, RWContext *rw,
     return 0;
 }
 
-static int FUNC(message)(CodedBitstreamContext *ctx, RWContext *rw,
+int FUNC(message)(CodedBitstreamContext *ctx, RWContext *rw,
                          SEIRawMessage *current)
 {
     const SEIMessageTypeDescriptor *desc;
@@ -422,7 +422,7 @@ static int FUNC(message)(CodedBitstreamContext *ctx, RWContext *rw,
     return 0;
 }
 
-static int FUNC(message_list)(CodedBitstreamContext *ctx, RWContext *rw,
+int FUNC(message_list)(CodedBitstreamContext *ctx, RWContext *rw,
                               SEIRawMessageList *current, int prefix)
 {
     SEIRawMessage *message;
@@ -471,7 +471,7 @@ static int FUNC(message_list)(CodedBitstreamContext *ctx, RWContext *rw,
 
         skip_bits_long(rw, 8 * payload_size);
 
-        if (!cbs_h2645_read_more_rbsp_data(rw))
+        if (!ff_cbs_h2645_read_more_rbsp_data(rw))
             break;
     }
 #else

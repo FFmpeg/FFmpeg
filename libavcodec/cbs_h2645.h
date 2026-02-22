@@ -19,6 +19,7 @@
 #ifndef AVCODEC_CBS_H2645_H
 #define AVCODEC_CBS_H2645_H
 
+#include "cbs.h"
 #include "h2645_parse.h"
 
 
@@ -32,5 +33,48 @@ typedef struct CodedBitstreamH2645Context {
     H2645Packet read_packet;
 } CodedBitstreamH2645Context;
 
+struct GetBitContext;
+struct PutBitContext;
+
+int ff_cbs_read_ue_golomb(CodedBitstreamContext *ctx, struct GetBitContext *gbc,
+                          const char *name, const int *subscripts,
+                          uint32_t *write_to,
+                          uint32_t range_min, uint32_t range_max);
+int ff_cbs_read_se_golomb(CodedBitstreamContext *ctx, struct GetBitContext *gbc,
+                          const char *name, const int *subscripts,
+                          int32_t *write_to,
+                          int32_t range_min, int32_t range_max);
+int ff_cbs_write_ue_golomb(CodedBitstreamContext *ctx, struct PutBitContext *pbc,
+                           const char *name, const int *subscripts,
+                           uint32_t value,
+                           uint32_t range_min, uint32_t range_max);
+int ff_cbs_write_se_golomb(CodedBitstreamContext *ctx, struct PutBitContext *pbc,
+                           const char *name, const int *subscripts,
+                           int32_t value,
+                           int32_t range_min, int32_t range_max);
+
+int ff_cbs_h2645_read_more_rbsp_data(struct GetBitContext *gbc);
+
+int ff_cbs_h2645_fragment_add_nals(CodedBitstreamContext *ctx,
+                                   CodedBitstreamFragment *frag,
+                                   const H2645Packet *packet);
+
+int ff_cbs_h2645_write_slice_data(CodedBitstreamContext *ctx,
+                                  struct PutBitContext *pbc, const uint8_t *data,
+                                  size_t data_size, int data_bit_start);
+
+int ff_cbs_h2645_unit_requires_zero_byte(enum AVCodecID codec_id,
+                                         CodedBitstreamUnitType type,
+                                         int nal_unit_index);
+
+int ff_cbs_h2645_assemble_fragment(CodedBitstreamContext *ctx,
+                                   CodedBitstreamFragment *frag);
+
+/**
+ * payload_extension_present() - true if we are before the last 1-bit
+ * in the payload structure, which must be in the last byte.
+ */
+int ff_cbs_h2645_payload_extension_present(struct GetBitContext *gbc, uint32_t payload_size,
+                                           int cur_pos);
 
 #endif /* AVCODEC_CBS_H2645_H */
