@@ -881,7 +881,8 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
                 AVStream *st = s->streams[stream_index];
                 uint8_t language[4];
                 avio_skip(pb, 12);
-                avio_read(pb, language, 3);
+                if (avio_read(pb, language, 3) != 3)
+                    return AVERROR_INVALIDDATA;
                 if (language[0]) {
                     language[3] = 0;
                     av_dict_set(&st->metadata, "language", language, 0);
