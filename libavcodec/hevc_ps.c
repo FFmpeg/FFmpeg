@@ -78,6 +78,22 @@ static const uint8_t hevc_sub_height_c[] = {
     1, 2, 1, 1
 };
 
+static int read_window(HEVCWindow *window, GetBitContext *gb, int chroma_format_idc, int w, int h)
+{
+    int64_t vert_mult  = hevc_sub_height_c[chroma_format_idc];
+    int64_t horiz_mult = hevc_sub_width_c [chroma_format_idc];
+    int64_t left   = get_ue_golomb_long(gb) * horiz_mult;
+    int64_t right  = get_ue_golomb_long(gb) * horiz_mult;
+    int64_t top    = get_ue_golomb_long(gb) * vert_mult;
+    int64_t bottom = get_ue_golomb_long(gb) * vert_mult;
+
+    window->left_offset   = left;
+    window->right_offset  = right;
+    window->top_offset    = top;
+    window->bottom_offset = bottom;
+    return 0;
+}
+
 static void remove_pps(HEVCParamSets *s, int id)
 {
     if (s->pps_list[id] && s->pps == (const HEVCPPS*)s->pps_list[id]->data)
@@ -663,12 +679,7 @@ static void decode_vui(GetBitContext *gb, AVCodecContext *avctx,
         vui->default_display_window_flag = get_bits1(gb);
 
     if (vui->default_display_window_flag) {
-        int vert_mult  = hevc_sub_height_c[sps->chroma_format_idc];
-        int horiz_mult = hevc_sub_width_c[sps->chroma_format_idc];
-        vui->def_disp_win.left_offset   = get_ue_golomb_long(gb) * horiz_mult;
-        vui->def_disp_win.right_offset  = get_ue_golomb_long(gb) * horiz_mult;
-        vui->def_disp_win.top_offset    = get_ue_golomb_long(gb) *  vert_mult;
-        vui->def_disp_win.bottom_offset = get_ue_golomb_long(gb) *  vert_mult;
+        read_window(&vui->def_disp_win, gb, sps->chroma_format_idc, sps->width, sps->height);
 
         if (apply_defdispwin &&
             avctx->flags2 & AV_CODEC_FLAG2_IGNORE_CROP) {
@@ -958,12 +969,9 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
         return ret;
 
     if (get_bits1(gb)) { // pic_conformance_flag
-        int vert_mult  = hevc_sub_height_c[sps->chroma_format_idc];
-        int horiz_mult = hevc_sub_width_c[sps->chroma_format_idc];
-        sps->pic_conf_win.left_offset   = get_ue_golomb_long(gb) * horiz_mult;
-        sps->pic_conf_win.right_offset  = get_ue_golomb_long(gb) * horiz_mult;
-        sps->pic_conf_win.top_offset    = get_ue_golomb_long(gb) *  vert_mult;
-        sps->pic_conf_win.bottom_offset = get_ue_golomb_long(gb) *  vert_mult;
+        ret = read_window(&sps->pic_conf_win, gb, sps->chroma_format_idc, sps->width, sps->height);
+        if (ret < 0)
+            return ret;
 
         if (avctx->flags2 & AV_CODEC_FLAG2_IGNORE_CROP) {
             av_log(avctx, AV_LOG_DEBUG,
