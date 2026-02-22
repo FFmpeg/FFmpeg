@@ -150,7 +150,7 @@ const uint32_t log2_run[41] = {
     24,
 };
 
-shared VTYPE2 linecache = {};
+shared VTYPE2 linecache;
 
 #ifdef RGB
 #define RGB_LBUF (rgb_linecache - 1)
@@ -236,13 +236,15 @@ ivec2 get_pred(readonly uimage2D pred, ivec2 sp, ivec2 off,
 
 void linecache_load(readonly uimage2D src, ivec2 sp, int y, uint comp)
 {
-    if (y > 0) {
-        if (gl_LocalInvocationID.x == 0) {
-            TYPE c = TYPE(imageLoad(src, sp + LADDR(ivec2(0, y - 1)))[comp]);
-            linecache = VTYPE2(TYPE(0), c);
-        }
-        barrier();
+    if (gl_LocalInvocationID.x == 0) {
+        linecache[0] = TYPE(0);
+    } else if (gl_LocalInvocationID.x == 1) {
+        TYPE c = TYPE(0);
+        if (y > 0)
+            c = TYPE(imageLoad(src, sp + LADDR(ivec2(0, y - 1)))[comp]);
+        linecache[1] = c;
     }
+    barrier();
 }
 
 void linecache_next(TYPE cur)
