@@ -327,15 +327,11 @@ INIT_YMM avx2
     BDOF_PROF_GRAD           0, 0
 %endif
 
-    mova                   m14, m12
-    mova                   m15, m13
-
-    pxor                   m12, m12
-    pxor                   m13, m13
     BDOF_PROF_GRAD  %1 * 4 + 1, 0
     BDOF_PROF_GRAD  %1 * 4 + 2, 0
-    paddw                  m14, m12
-    paddw                  m15, m13
+
+    mova                   m14, m12
+    mova                   m15, m13
 
     pxor                   m12, m12
     pxor                   m13, m13
