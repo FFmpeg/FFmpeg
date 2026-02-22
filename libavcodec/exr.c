@@ -1813,7 +1813,7 @@ static int decode_header(EXRContext *s, AVFrame *frame)
                 s->is_luma = 1;
             } else {
                 avpriv_request_sample(s->avctx, "Uncommon channel combination");
-                ret = AVERROR(AVERROR_PATCHWELCOME);
+                ret = AVERROR_PATCHWELCOME;
                 goto fail;
             }
 
