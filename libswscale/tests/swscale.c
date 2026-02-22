@@ -192,6 +192,18 @@ static float get_loss(const float ssim[4])
     return 1.0 - sum;
 }
 
+static void unref_buffers(AVFrame *frame)
+{
+    for (int i = 0; i < FF_ARRAY_ELEMS(frame->buf); i++) {
+        if (!frame->buf[i])
+            break;
+        av_buffer_unref(&frame->buf[i]);
+    }
+
+    memset(frame->data, 0, sizeof(frame->data));
+    memset(frame->linesize, 0, sizeof(frame->linesize));
+}
+
 static int scale_legacy(AVFrame *dst, const AVFrame *src, struct mode mode,
                         struct options opts, int64_t *out_time)
 {
@@ -216,8 +228,10 @@ static int scale_legacy(AVFrame *dst, const AVFrame *src, struct mode mode,
         goto error;
 
     int64_t time = av_gettime_relative();
-    for (int i = 0; ret >= 0 && i < opts.iters; i++)
+    for (int i = 0; ret >= 0 && i < opts.iters; i++) {
+        unref_buffers(dst);
         ret = sws_scale_frame(sws_legacy, dst, src);
+    }
     *out_time = av_gettime_relative() - time;
 
 error:
@@ -284,6 +298,7 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
     time = av_gettime_relative();
 
     for (int i = 0; i < opts.iters; i++) {
+        unref_buffers(dst);
         if (sws_scale_frame(sws[1], dst, src) < 0) {
             av_log(NULL, AV_LOG_ERROR, "Failed %s ---> %s\n",
                    av_get_pix_fmt_name(src->format), av_get_pix_fmt_name(dst->format));
