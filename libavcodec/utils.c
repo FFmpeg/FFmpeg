@@ -639,16 +639,16 @@ static int get_audio_frame_duration(enum AVCodecID id, int sr, int ch, int ba,
 
     if (frame_bytes > 0) {
         /* calc from frame_bytes only */
-        if (id == AV_CODEC_ID_TRUESPEECH)
-            return 240 * (frame_bytes / 32);
-        if (id == AV_CODEC_ID_NELLYMOSER)
-            return 256 * (frame_bytes / 64);
-        if (id == AV_CODEC_ID_RA_144)
-            return 160 * (frame_bytes / 20);
-        if (id == AV_CODEC_ID_APTX)
-            return 4 * (frame_bytes / 4);
-        if (id == AV_CODEC_ID_APTX_HD)
-            return 4 * (frame_bytes / 6);
+        int64_t d = INT64_MIN;
+        switch(id) {
+        case AV_CODEC_ID_TRUESPEECH : d = 240LL * (frame_bytes / 32); break;
+        case AV_CODEC_ID_NELLYMOSER : d = 256LL * (frame_bytes / 64); break;
+        case AV_CODEC_ID_RA_144     : d = 160LL * (frame_bytes / 20); break;
+        case AV_CODEC_ID_APTX       : d =   4LL * (frame_bytes /  4); break;
+        case AV_CODEC_ID_APTX_HD    : d =   4LL * (frame_bytes /  6); break;
+        }
+        if (d > INT64_MIN)
+            return ((int)d == d && d > 0) ? d : 0;
 
         if (bps > 0) {
             /* calc from frame_bytes and bits_per_coded_sample */
