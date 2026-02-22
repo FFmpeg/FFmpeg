@@ -72,35 +72,27 @@ INIT_YMM avx2
     CLIPW                         %1, m9, m10
 %endmacro
 
-%macro SAVE_8BPC 3 ; dst, src, jmp dst
+%macro SAVE 2 ; dst, src
+    cmp                 pixel_maxd, (1 << 8) - 1
+    jne               %%save_16bpc
+
     packuswb                   m%2, m%2
     vpermq                     m%2, m%2, q0020
 
     cmp                         wd, 16
-    je                       %%w16
+    je                       %%w16_8
     movq                        %1, xm%2
-    jmp                         %3
-%%w16:
-    movu                        %1, xm%2
-    jmp                         %3
-%endmacro
+    jmp                      %%end
 
-%macro SAVE_16BPC 2 ; dst, src
-    cmp                         wd, 16
-    je                       %%w16
-    movu                        %1, xm%2
-    jmp                     %%wend
-%%w16:
-    movu                        %1, m%2
-%%wend:
-%endmacro
-
-%macro SAVE 2 ; dst, src
-    cmp                 pixel_maxd, (1 << 8) - 1
-    jne               %%save_16bpc
-    SAVE_8BPC                   %1, %2, %%end
 %%save_16bpc:
-    SAVE_16BPC                   %1, %2
+    cmp                         wd, 16
+    jne                       %%w8_16
+    movu                        %1, m%2
+    jmp                      %%end
+
+%%w16_8:
+%%w8_16:
+    movu                        %1, xm%2
 %%end:
 %endmacro
 
