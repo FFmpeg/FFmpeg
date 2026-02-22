@@ -2874,6 +2874,8 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
     if (av_image_check_size(visible_width, visible_height, 0, avctx) < 0 ||
         visible_width  + offset_x > s->width ||
         visible_height + offset_y > s->height ||
+        visible_width  + 512 < s->width  ||
+        visible_height + 512 < s->height ||
         visible_width < 18
     ) {
         av_log(avctx, AV_LOG_ERROR,
