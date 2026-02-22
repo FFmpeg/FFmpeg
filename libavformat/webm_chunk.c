@@ -30,6 +30,7 @@
 #include "internal.h"
 #include "mux.h"
 
+#include "libavutil/attributes_internal.h"
 #include "libavutil/bprint.h"
 #include "libavutil/log.h"
 #include "libavutil/mem.h"
@@ -51,7 +52,6 @@ typedef struct WebMChunkContext {
 static int webm_chunk_init(AVFormatContext *s)
 {
     WebMChunkContext *wc = s->priv_data;
-    const AVOutputFormat *oformat;
     AVFormatContext *oc;
     AVStream *st, *ost = s->streams[0];
     AVDictionary *dict = NULL;
@@ -68,11 +68,9 @@ static int webm_chunk_init(AVFormatContext *s)
 
     wc->prev_pts = AV_NOPTS_VALUE;
 
-    oformat = av_guess_format("webm", s->url, "video/webm");
-    if (!oformat)
-        return AVERROR_MUXER_NOT_FOUND;
+    EXTERN const FFOutputFormat ff_webm_muxer;
 
-    ret = avformat_alloc_output_context2(&wc->avf, oformat, NULL, NULL);
+    ret = avformat_alloc_output_context2(&wc->avf, &ff_webm_muxer.p, NULL, NULL);
     if (ret < 0)
         return ret;
     oc = wc->avf;

@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes_internal.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
@@ -58,22 +59,19 @@ static int rtp_mpegts_write_header(AVFormatContext *s)
 {
     MuxChain *chain = s->priv_data;
     AVFormatContext *mpegts_ctx = NULL, *rtp_ctx = NULL;
-    const AVOutputFormat *mpegts_format = av_guess_format("mpegts", NULL, NULL);
-    const AVOutputFormat *rtp_format    = av_guess_format("rtp", NULL, NULL);
     int i, ret = AVERROR(ENOMEM);
     AVStream *st;
     AVDictionary *mpegts_muxer_options = NULL;
     AVDictionary *rtp_muxer_options = NULL;
 
-    if (!mpegts_format || !rtp_format)
-        return AVERROR(ENOSYS);
     mpegts_ctx = avformat_alloc_context();
     if (!mpegts_ctx)
         return AVERROR(ENOMEM);
     chain->pkt = av_packet_alloc();
     if (!chain->pkt)
         goto fail;
-    mpegts_ctx->oformat   = mpegts_format;
+    EXTERN const FFOutputFormat ff_mpegts_muxer;
+    mpegts_ctx->oformat   = &ff_mpegts_muxer.p;
     mpegts_ctx->max_delay = s->max_delay;
     av_dict_copy(&mpegts_ctx->metadata, s->metadata, 0);
     for (i = 0; i < s->nb_streams; i++) {
@@ -106,7 +104,8 @@ static int rtp_mpegts_write_header(AVFormatContext *s)
         ret = AVERROR(ENOMEM);
         goto fail;
     }
-    rtp_ctx->oformat = rtp_format;
+    EXTERN const FFOutputFormat ff_rtp_muxer;
+    rtp_ctx->oformat = &ff_rtp_muxer.p;
     st = avformat_new_stream(rtp_ctx, NULL);
     if (!st) {
         ret = AVERROR(ENOMEM);

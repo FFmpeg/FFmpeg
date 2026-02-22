@@ -31,6 +31,7 @@
 #include "avc.h"
 #include "url.h"
 
+#include "libavutil/attributes_internal.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/avstring.h"
@@ -283,17 +284,12 @@ static int ism_write_header(AVFormatContext *s)
 {
     SmoothStreamingContext *c = s->priv_data;
     int ret = 0, i;
-    const AVOutputFormat *oformat;
 
     if (mkdir(s->url, 0777) == -1 && errno != EEXIST) {
         av_log(s, AV_LOG_ERROR, "mkdir failed\n");
         return AVERROR(errno);
     }
 
-    oformat = av_guess_format("ismv", NULL, NULL);
-    if (!oformat) {
-        return AVERROR_MUXER_NOT_FOUND;
-    }
 
     c->streams = av_calloc(s->nb_streams, sizeof(*c->streams));
     if (!c->streams) {
@@ -325,7 +321,8 @@ static int ism_write_header(AVFormatContext *s)
         }
         if ((ret = ff_copy_whiteblacklists(ctx, s)) < 0)
             return ret;
-        ctx->oformat = oformat;
+        EXTERN const FFOutputFormat ff_ismv_muxer;
+        ctx->oformat = &ff_ismv_muxer.p;
         ctx->interrupt_callback = s->interrupt_callback;
 
         if (!(st = avformat_new_stream(ctx, NULL))) {

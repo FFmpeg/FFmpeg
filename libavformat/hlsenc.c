@@ -28,6 +28,7 @@
 #include <unistd.h>
 #endif
 
+#include "libavutil/attributes_internal.h"
 #include "libavutil/avassert.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/avstring.h"
@@ -2972,12 +2973,12 @@ static int hls_init(AVFormatContext *s)
         if (vs->has_video > 1)
             av_log(s, AV_LOG_WARNING, "More than a single video stream present, expect issues decoding it.\n");
         if (hls->segment_type == SEGMENT_TYPE_FMP4) {
-            vs->oformat = av_guess_format("mp4", NULL, NULL);
+            EXTERN const FFOutputFormat ff_mp4_muxer;
+            vs->oformat = &ff_mp4_muxer.p;
         } else {
-            vs->oformat = av_guess_format("mpegts", NULL, NULL);
+            EXTERN const FFOutputFormat ff_mpegts_muxer;
+            vs->oformat = &ff_mpegts_muxer.p;
         }
-        if (!vs->oformat)
-            return AVERROR_MUXER_NOT_FOUND;
 
         if (hls->segment_filename) {
             ret = format_name(hls->segment_filename, &vs->basename, i, vs->varname);
@@ -3054,9 +3055,8 @@ static int hls_init(AVFormatContext *s)
             return ret;
 
         if (vs->has_subtitle) {
-            vs->vtt_oformat = av_guess_format("webvtt", NULL, NULL);
-            if (!vs->vtt_oformat)
-                return AVERROR_MUXER_NOT_FOUND;
+            EXTERN const FFOutputFormat ff_webvtt_muxer;
+            vs->vtt_oformat = &ff_webvtt_muxer.p;
 
             p = strrchr(vs->m3u8_name, '.');
             if (p)
