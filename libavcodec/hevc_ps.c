@@ -69,6 +69,13 @@ static int read_window(HEVCWindow *window, GetBitContext *gb, int chroma_format_
     int64_t top    = get_ue_golomb_long(gb) * vert_mult;
     int64_t bottom = get_ue_golomb_long(gb) * vert_mult;
 
+    if (left < 0 || right < 0 || top < 0 || bottom < 0 ||
+        w <= left + right ||
+        h <= top + bottom) {
+        memset(window, 0, sizeof(*window));
+        return AVERROR_INVALIDDATA;
+    }
+
     window->left_offset   = left;
     window->right_offset  = right;
     window->top_offset    = top;
