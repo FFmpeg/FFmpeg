@@ -1,0 +1,30 @@
+Testing av_film_grain_params_alloc()
+alloc with size: OK
+alloc without size: OK
+
+Testing av_film_grain_params_create_side_data()
+create: OK
+defaults: range=0 pri=2 trc=2 space=2
+
+Testing av_film_grain_params_select()
+invalid format: NULL
+no side data: NULL
+NONE type: NULL
+AV1 match: OK
+AV1 sub mismatch: NULL
+H274 match: OK
+H274 lower sub: OK
+H274 higher sub: NULL
+width too large: NULL
+height too large: NULL
+size unspecified: OK
+bd_luma mismatch: NULL
+bd_chroma mismatch: NULL
+bd unspecified: OK
+bd exact match: OK
+color_range mismatch: NULL
+color_primaries mismatch: NULL
+color_trc mismatch: NULL
+color_space mismatch: NULL
+color unspecified: OK
+best selection: width=1000 height=1080

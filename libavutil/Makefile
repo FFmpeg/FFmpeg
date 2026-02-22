@@ -277,6 +277,7 @@ TESTPROGS = adler32                                                     \
             eval                                                        \
             file                                                        \
             fifo                                                        \
+            film_grain_params                                           \
             hash                                                        \
             hmac                                                        \
             hwdevice                                                    \

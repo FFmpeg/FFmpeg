@@ -87,6 +87,10 @@ FATE_LIBAVUTIL += fate-fifo
 fate-fifo: libavutil/tests/fifo$(EXESUF)
 fate-fifo: CMD = run libavutil/tests/fifo$(EXESUF)
 
+FATE_LIBAVUTIL += fate-film_grain_params
+fate-film_grain_params: libavutil/tests/film_grain_params$(EXESUF)
+fate-film_grain_params: CMD = run libavutil/tests/film_grain_params$(EXESUF)
+
 FATE_LIBAVUTIL += fate-hash
 fate-hash: libavutil/tests/hash$(EXESUF)
 fate-hash: CMD = run libavutil/tests/hash$(EXESUF)
