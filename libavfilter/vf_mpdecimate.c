@@ -32,6 +32,12 @@
 #include "filters.h"
 #include "video.h"
 
+typedef enum {
+    DECIMATE_DROP,          ///< similar frame, past keep threshold — drop it
+    DECIMATE_KEEP_UPDATE,   ///< keep frame and update reference (frame is different, or first frame)
+    DECIMATE_KEEP_NO_UPDATE,///< keep frame without updating reference (similar frame under keep threshold, or forced keep due to max_drop_count)
+} DecimateResult;
+
 typedef struct DecimateContext {
     const AVClass *class;
     int lo, hi;                    ///< lower and higher threshold number of differences
@@ -110,24 +116,13 @@ static int diff_planes(AVFilterContext *ctx,
  * Tell if the frame should be decimated, for example if it is no much
  * different with respect to the reference frame ref.
  */
-static int decimate_frame(AVFilterContext *ctx,
-                          AVFrame *cur, AVFrame *ref)
+static DecimateResult decimate_frame(AVFilterContext *ctx, AVFrame *cur, AVFrame *ref)
 {
     DecimateContext *decimate = ctx->priv;
     int plane;
+    int is_similar;
 
-    if (decimate->max_keep_count > 0 &&
-        decimate->keep_count > -1 &&
-        decimate->keep_count < decimate->max_keep_count) {
-        decimate->keep_count++;
-        return 0;
-    }
-    if (decimate->max_drop_count > 0 &&
-        decimate->drop_count >= decimate->max_drop_count)
-        return 0;
-    if (decimate->max_drop_count < 0 &&
-        (decimate->drop_count-1) > decimate->max_drop_count)
-        return 0;
+    is_similar = 1;
 
     for (plane = 0; ref->data[plane] && ref->linesize[plane]; plane++) {
         /* use 8x8 SAD even on subsampled planes.  The blocks won't match up with
@@ -141,11 +136,29 @@ static int decimate_frame(AVFilterContext *ctx,
                         cur->data[plane], cur->linesize[plane],
                         ref->data[plane], ref->linesize[plane],
                         AV_CEIL_RSHIFT(ref->width,  hsub),
-                        AV_CEIL_RSHIFT(ref->height, vsub)))
-            return 0;
+                        AV_CEIL_RSHIFT(ref->height, vsub))) {
+            is_similar = 0;
+            break;
+        }
     }
+    if (!is_similar) {
+        return DECIMATE_KEEP_UPDATE;
+    }
+    /* Frame is similar - check if we must keep it due to drop limits */
+    if (decimate->max_drop_count > 0 &&
+        decimate->drop_count >= decimate->max_drop_count)
+        return DECIMATE_KEEP_NO_UPDATE;
+    if (decimate->max_drop_count < 0 &&
+        (decimate->drop_count - 1) > decimate->max_drop_count)
+        return DECIMATE_KEEP_NO_UPDATE;
 
-    return 1;
+    /* Frame is similar - check if we must keep it due to keep option */
+    if (decimate->max_keep_count > 0 && decimate->keep_count > -1 &&
+        decimate->keep_count < decimate->max_keep_count) {
+        decimate->keep_count++;
+        return DECIMATE_KEEP_NO_UPDATE;
+    }
+    return DECIMATE_DROP;
 }
 
 static av_cold int init(AVFilterContext *ctx)
@@ -200,29 +213,36 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *cur)
     DecimateContext *decimate = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
     int ret;
+    DecimateResult result = decimate->ref ? decimate_frame(inlink->dst, cur, decimate->ref) : DECIMATE_KEEP_UPDATE;
 
-    if (decimate->ref && decimate_frame(inlink->dst, cur, decimate->ref)) {
+    switch (result) {
+    case DECIMATE_DROP:
         decimate->drop_count = FFMAX(1, decimate->drop_count+1);
-        decimate->keep_count = -1; // do not keep any more frames until non-similar frames are detected
-    } else {
+        decimate->keep_count = -1;
+        break;
+    case DECIMATE_KEEP_NO_UPDATE:
+        decimate->drop_count = FFMIN(-1, decimate->drop_count-1);
+        if ((ret = ff_filter_frame(outlink, av_frame_clone(cur))) < 0)
+            return ret;
+        break;
+    case DECIMATE_KEEP_UPDATE:
         av_frame_free(&decimate->ref);
         decimate->ref = cur;
         decimate->drop_count = FFMIN(-1, decimate->drop_count-1);
-        if (decimate->keep_count < 0) // re-enable counting similar frames to ignore before dropping
-            decimate->keep_count = 0;
-
+        decimate->keep_count = 0;
         if ((ret = ff_filter_frame(outlink, av_frame_clone(cur))) < 0)
             return ret;
+        break;
     }
 
     av_log(inlink->dst, AV_LOG_DEBUG,
            "%s pts:%s pts_time:%s drop_count:%d keep_count:%d\n",
-           decimate->drop_count > 0 ? "drop" : "keep",
+           result == DECIMATE_DROP ? "drop" : "keep",
            av_ts2str(cur->pts), av_ts2timestr(cur->pts, &inlink->time_base),
            decimate->drop_count,
            decimate->keep_count);
 
-    if (decimate->drop_count > 0)
+    if (result != DECIMATE_KEEP_UPDATE)
         av_frame_free(&cur);
 
     return 0;
