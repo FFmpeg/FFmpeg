@@ -1,6 +1,4 @@
-/**
- * Copyright (C) 2026 Lynne
- *
+/*
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -18,26 +16,4 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef SWSCALE_VULKAN_OPS_H
-#define SWSCALE_VULKAN_OPS_H
-
-#include "libavutil/vulkan.h"
-#include "../swscale.h"
-
-#if CONFIG_LIBSHADERC || CONFIG_LIBGLSLANG
-#include "libavutil/vulkan_spirv.h"
-#endif
-
-typedef struct FFVulkanOpsCtx {
-    FFVulkanContext vkctx;
-    AVVulkanDeviceQueueFamily *qf;
-    FFVkExecPool e;
-#if CONFIG_LIBSHADERC || CONFIG_LIBGLSLANG
-    FFVkSPIRVCompiler *spvc;
-#endif
-} FFVulkanOpsCtx;
-
-int ff_sws_vk_init(SwsContext *sws, AVBufferRef *dev_ref);
-void ff_sws_vk_uninit(SwsContext *sws);
-
-#endif /* SWSCALE_VULKAN_OPS_H */
+#include "libavutil/vulkan_glslang.c"
