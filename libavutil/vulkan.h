@@ -692,7 +692,7 @@ int ff_vk_shader_register_exec(FFVulkanContext *s, FFVkExecPool *pool,
  * Bind a shader.
  */
 void ff_vk_exec_bind_shader(FFVulkanContext *s, FFVkExecContext *e,
-                            FFVulkanShader *shd);
+                            const FFVulkanShader *shd);
 
 /**
  * Update push constant in a shader.
