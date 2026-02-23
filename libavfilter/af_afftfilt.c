@@ -128,7 +128,8 @@ static int config_input(AVFilterLink *inlink)
     }
 
     s->window_size = s->fft_size;
-    buf_size = FFALIGN(s->window_size, av_cpu_max_align());
+    size_t max_align = av_cpu_max_align();
+    buf_size = FFALIGN(s->window_size, max_align);
 
     s->fft_in = av_calloc(inlink->ch_layout.nb_channels, sizeof(*s->fft_in));
     if (!s->fft_in)
