@@ -701,6 +701,9 @@ struct SwsInternal {
     int          color_conversion_warned;
 
     Half2FloatTables *h2f_tables;
+
+    // Hardware specific private data
+    void *hw_priv;
 };
 //FIXME check init (where 0)
 

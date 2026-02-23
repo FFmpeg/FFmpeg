@@ -124,6 +124,8 @@ typedef struct SwsGraph {
     bool incomplete; /* set during init() if formats had to be inferred */
     bool noop;       /* set during init() if the graph is a no-op */
 
+    AVBufferRef *hw_frames_ref;
+
     /** Sorted sequence of filter passes to apply */
     SwsPass **passes;
     int num_passes;

@@ -31,6 +31,7 @@
 extern const SwsOpBackend backend_c;
 extern const SwsOpBackend backend_murder;
 extern const SwsOpBackend backend_x86;
+extern const SwsOpBackend backend_vulkan;
 
 const SwsOpBackend * const ff_sws_op_backends[] = {
     &backend_murder,
@@ -38,6 +39,9 @@ const SwsOpBackend * const ff_sws_op_backends[] = {
     &backend_x86,
 #endif
     &backend_c,
+#if CONFIG_VULKAN
+    &backend_vulkan,
+#endif
     NULL
 };
 
