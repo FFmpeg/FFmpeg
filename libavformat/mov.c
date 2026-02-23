@@ -9025,8 +9025,10 @@ static int mov_read_infe(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         av_bprint_finalize(&item_name, NULL);
         return AVERROR(ENOMEM);
     }
-    if (i == c->nb_heif_item)
+    if (i == c->nb_heif_item) {
+        av_bprint_finalize(&item_name, NULL);
         return AVERROR_INVALIDDATA;
+    }
 
     av_freep(&item->name);
     av_bprint_finalize(&item_name, ret ? &item->name : NULL);
