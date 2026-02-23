@@ -509,11 +509,6 @@ int main(int argc, char **argv)
     AVLFG rand;
     int ret = -1;
 
-    const AVClass *sws_class = sws_get_class();
-    const AVOption *flags_opt = av_opt_find(&sws_class, "sws_flags", NULL, 0,
-                                            AV_OPT_SEARCH_FAKE_OBJ);
-    av_assert0(flags_opt);
-
     for (int i = 1; i < argc; i += 2) {
         if (!strcmp(argv[i], "-help") || !strcmp(argv[i], "--help")) {
             fprintf(stderr,
@@ -581,7 +576,10 @@ int main(int argc, char **argv)
             opts.w = 1920;
             opts.h = 1080;
         } else if (!strcmp(argv[i], "-flags")) {
-            ret = av_opt_eval_flags(&sws_class, flags_opt, argv[i + 1], &opts.flags);
+            SwsContext *dummy = sws_alloc_context();
+            const AVOption *flags_opt = av_opt_find(dummy, "sws_flags", NULL, 0, 0);
+            ret = av_opt_eval_flags(dummy, flags_opt, argv[i + 1], &opts.flags);
+            sws_free_context(&dummy);
             if (ret < 0) {
                 fprintf(stderr, "invalid flags %s\n", argv[i + 1]);
                 goto error;
