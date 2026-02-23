@@ -30,6 +30,7 @@
 
 #include <float.h>
 #include <math.h>
+#include <stdio.h>
 
 #include "libavutil/mem.h"
 #include "libavutil/tx.h"
@@ -951,17 +952,13 @@ static int draw_legend(AVFilterContext *ctx, uint64_t samples)
         }
 
         for (y = 0; ch == 0 && y < h + 5; y += 25) {
-            static const char *log_fmt = "%.0f";
-            static const char *lin_fmt = "%.3f";
             const float a = av_clipf(1.f - y / (float)(h - 1), 0.f, 1.f);
             const float value = s->scale == LOG ? log10f(get_iscale(ctx, s->scale, a)) * 20.f : get_iscale(ctx, s->scale, a);
-            char *text;
+            char scale_fmt[32];
 
-            text = av_asprintf(s->scale == LOG ? log_fmt : lin_fmt, value);
-            if (!text)
-                continue;
-            drawtext(s->outpicref, s->w + s->start_x + 35, s->start_y + y - 3, text, 0);
-            av_free(text);
+            snprintf(scale_fmt, sizeof(scale_fmt),
+                     s->scale == LOG ? "%.0f" : "%.3f", value);
+            drawtext(s->outpicref, s->w + s->start_x + 35, s->start_y + y - 3, scale_fmt, 0);
         }
     }
 
