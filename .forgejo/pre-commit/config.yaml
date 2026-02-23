@@ -1,5 +1,14 @@
 exclude: ^tests/ref/
 
+# This repository keeps its pre-commit config in this nondefault path.
+# Install hooks from here with:
+#   pre-commit install -c .forgejo/pre-commit/config.yaml
+# The command above installs both the pre-commit and commit-msg hooks because
+# default_install_hook_types includes them below.
+default_install_hook_types:
+  - pre-commit
+  - commit-msg
+
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v5.0.0
@@ -20,6 +29,12 @@ repos:
     - id: trailing-whitespace
 - repo: local
   hooks:
+    - id: check-commit-message
+      name: validate commit message format
+      language: script
+      entry: ./tools/check_commit_msg.sh
+      stages: [commit-msg]
+      always_run: true
     - id: arm-asm-indent
       name: fix arm/aarch64 assembly indentation
       files: ^.*/(arm|aarch64)/.*\.S$
