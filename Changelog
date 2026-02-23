@@ -20,6 +20,7 @@ version <next>:
 - JPEG-XS raw bitstream muxer and demuxer
 - IAMF Projection mode Ambisonic Audio Elements muxing and demuxing
 - Add vf_mestimate_d3d12 filter
+- xHE-AAC Mps212 decoding support (experimental)
 
 
 version 8.0:
