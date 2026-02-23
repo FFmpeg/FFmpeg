@@ -78,6 +78,7 @@ typedef struct SwsFormat {
     int width, height;
     int interlaced;
     enum AVPixelFormat format;
+    enum AVPixelFormat hw_format;
     enum AVColorRange range;
     enum AVColorSpace csp;
     enum AVChromaLocation loc;

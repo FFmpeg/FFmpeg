@@ -26,6 +26,11 @@
 #include "format.h"
 #include "csputils.h"
 #include "ops_internal.h"
+#include "config_components.h"
+
+#if CONFIG_UNSTABLE
+#include "libavutil/hwcontext.h"
+#endif
 
 #define Q(N) ((AVRational) { N, 1 })
 #define Q0   Q(0)
@@ -306,18 +311,31 @@ int sws_isSupportedEndiannessConversion(enum AVPixelFormat pix_fmt)
  */
 SwsFormat ff_fmt_from_frame(const AVFrame *frame, int field)
 {
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
     const AVColorPrimariesDesc *primaries;
     AVFrameSideData *sd;
 
+    enum AVPixelFormat format = frame->format;
+    enum AVPixelFormat hw_format = AV_PIX_FMT_NONE;
+
+#if CONFIG_UNSTABLE
+    if (frame->hw_frames_ctx) {
+        AVHWFramesContext *hwfc = (AVHWFramesContext *)frame->hw_frames_ctx->data;
+        hw_format = frame->format;
+        format = hwfc->sw_format;
+    }
+#endif
+
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(format);
+
     SwsFormat fmt = {
-        .width  = frame->width,
-        .height = frame->height,
-        .format = frame->format,
-        .range  = frame->color_range,
-        .csp    = frame->colorspace,
-        .loc    = frame->chroma_location,
-        .desc   = desc,
+        .width     = frame->width,
+        .height    = frame->height,
+        .format    = format,
+        .hw_format = hw_format,
+        .range     = frame->color_range,
+        .csp       = frame->colorspace,
+        .loc       = frame->chroma_location,
+        .desc      = desc,
         .color = {
             .prim = frame->color_primaries,
             .trc  = frame->color_trc,
@@ -583,6 +601,7 @@ int ff_test_fmt(const SwsFormat *fmt, int output)
            sws_test_colorspace(fmt->csp,        output) &&
            sws_test_primaries (fmt->color.prim, output) &&
            sws_test_transfer  (fmt->color.trc,  output) &&
+           sws_test_hw_format (fmt->hw_format)          &&
            test_range         (fmt->range)              &&
            test_loc           (fmt->loc);
 }
