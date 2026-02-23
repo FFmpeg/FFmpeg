@@ -976,7 +976,8 @@ static void op_pass_setup(const SwsImg *out_base, const SwsImg *in_base,
         const int plane_w    = (aligned_w + sub_x) >> sub_x;
         const int plane_pad  = (comp->over_read + sub_x) >> sub_x;
         const int plane_size = plane_w * p->pixel_bits_in >> 3;
-        p->memcpy_in |= plane_size + plane_pad > in.linesize[i];
+        if (comp->slice_align)
+            p->memcpy_in |= plane_size + plane_pad > in.linesize[i];
         exec->in_stride[i] = in.linesize[i];
     }
 
@@ -986,7 +987,8 @@ static void op_pass_setup(const SwsImg *out_base, const SwsImg *in_base,
         const int plane_w    = (aligned_w + sub_x) >> sub_x;
         const int plane_pad  = (comp->over_write + sub_x) >> sub_x;
         const int plane_size = plane_w * p->pixel_bits_out >> 3;
-        p->memcpy_out |= plane_size + plane_pad > out.linesize[i];
+        if (comp->slice_align)
+            p->memcpy_out |= plane_size + plane_pad > out.linesize[i];
         exec->out_stride[i] = out.linesize[i];
     }
 

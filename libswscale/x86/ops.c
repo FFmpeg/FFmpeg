@@ -596,15 +596,15 @@ static int solve_shuffle(const SwsOpList *ops, int mmsize, SwsCompiledOp *out)
                           mmsize;             /* movu */
 
     *out = (SwsCompiledOp) {
-        .priv       = av_memdup(shuffle, sizeof(shuffle)),
-        .free       = av_free,
+        .priv        = av_memdup(shuffle, sizeof(shuffle)),
+        .free        = av_free,
         .slice_align = 1,
-        .block_size = pixels * num_lanes,
-        .over_read  = read_size - in_total,
-        .over_write = mmsize - out_total,
-        .cpu_flags  = mmsize > 32 ? AV_CPU_FLAG_AVX512 :
-                      mmsize > 16 ? AV_CPU_FLAG_AVX2 :
-                                    AV_CPU_FLAG_SSE4,
+        .block_size  = pixels * num_lanes,
+        .over_read   = read_size - in_total,
+        .over_write  = mmsize - out_total,
+        .cpu_flags   = mmsize > 32 ? AV_CPU_FLAG_AVX512 :
+                       mmsize > 16 ? AV_CPU_FLAG_AVX2 :
+                                     AV_CPU_FLAG_SSE4,
     };
 
     if (!out->priv)

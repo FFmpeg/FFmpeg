@@ -95,10 +95,10 @@ typedef struct SwsCompiledOp {
     SwsOpFunc func;
 
     int slice_align; /* slice height alignment */
-    int block_size; /* number of pixels processed per iteration */
-    int over_read;  /* implementation over-reads input by this many bytes */
-    int over_write; /* implementation over-writes output by this many bytes */
-    int cpu_flags;  /* active set of CPU flags (informative) */
+    int block_size;  /* number of pixels processed per iteration */
+    int over_read;   /* implementation over-reads input by this many bytes */
+    int over_write;  /* implementation over-writes output by this many bytes */
+    int cpu_flags;   /* active set of CPU flags (informative) */
 
     /* Arbitrary private data */
     void *priv;
