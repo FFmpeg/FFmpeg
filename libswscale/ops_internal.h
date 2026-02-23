@@ -94,6 +94,7 @@ typedef void (*SwsOpFunc)(const SwsOpExec *exec, const void *priv,
 typedef struct SwsCompiledOp {
     SwsOpFunc func;
 
+    int slice_align; /* slice height alignment */
     int block_size; /* number of pixels processed per iteration */
     int over_read;  /* implementation over-reads input by this many bytes */
     int over_write; /* implementation over-writes output by this many bytes */

@@ -76,6 +76,7 @@ static int compile(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
     }
 
     *out = (SwsCompiledOp) {
+        .slice_align = 1,
         .block_size = SWS_BLOCK_SIZE,
         .cpu_flags  = chain->cpu_flags,
         .priv       = chain,

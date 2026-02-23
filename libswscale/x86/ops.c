@@ -598,6 +598,7 @@ static int solve_shuffle(const SwsOpList *ops, int mmsize, SwsCompiledOp *out)
     *out = (SwsCompiledOp) {
         .priv       = av_memdup(shuffle, sizeof(shuffle)),
         .free       = av_free,
+        .slice_align = 1,
         .block_size = pixels * num_lanes,
         .over_read  = read_size - in_total,
         .over_write = mmsize - out_total,
@@ -684,6 +685,7 @@ static int compile(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
 
     *out = (SwsCompiledOp) {
         .priv = chain,
+        .slice_align = 1,
         .free = ff_sws_op_chain_free_cb,
 
         /* Use at most two full YMM regs during the widest precision section */

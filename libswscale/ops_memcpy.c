@@ -118,6 +118,7 @@ static int compile(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
     }
 
     *out = (SwsCompiledOp) {
+        .slice_align = 1,
         .block_size = 1,
         .func = process,
         .priv = av_memdup(&p, sizeof(p)),
