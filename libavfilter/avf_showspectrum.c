@@ -1143,6 +1143,11 @@ static int config_output(AVFilterLink *outlink)
             float scale = 1.f;
 
             ret = av_tx_init(&s->fft[i], &s->tx_fn, AV_TX_FLOAT_FFT, 0, fft_size << (!!s->stop), &scale, 0);
+            if (ret < 0) {
+                av_log(ctx, AV_LOG_ERROR, "Unable to create FFT context. "
+                       "The window size might be too high.\n");
+                return ret;
+            }
             if (s->stop) {
                 ret = av_tx_init(&s->ifft[i], &s->itx_fn, AV_TX_FLOAT_FFT, 1, fft_size << (!!s->stop), &scale, 0);
                 if (ret < 0) {
@@ -1150,11 +1155,6 @@ static int config_output(AVFilterLink *outlink)
                            "The window size might be too high.\n");
                     return ret;
                 }
-            }
-            if (ret < 0) {
-                av_log(ctx, AV_LOG_ERROR, "Unable to create FFT context. "
-                       "The window size might be too high.\n");
-                return ret;
             }
         }
 
