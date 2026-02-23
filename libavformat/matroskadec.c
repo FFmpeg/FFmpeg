@@ -4454,6 +4454,10 @@ static CueDesc get_cue_desc(AVFormatContext *s, int64_t ts, int64_t cues_start) 
         // Clusters.
         cue_desc.end_offset = cues_start - matroska->segment_start;
     }
+
+    if (cue_desc.end_time_ns < cue_desc.start_time_ns)
+        return (CueDesc) {-1, -1, -1, -1};
+
     return cue_desc;
 }
 
