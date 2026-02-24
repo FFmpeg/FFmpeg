@@ -1293,7 +1293,8 @@ static void spectrum_decode(AACDecContext *ac, AACUSACConfig *usac,
         SingleChannelElement *sce = &cpe->ch[ch];
         AACUsacElemData *ue = &sce->ue;
 
-        spectrum_scale(ac, sce, ue);
+        if (!ue->core_mode)
+            spectrum_scale(ac, sce, ue);
     }
 
     if (nb_channels > 1 && us->common_window) {
@@ -1343,8 +1344,9 @@ static void spectrum_decode(AACDecContext *ac, AACUSACConfig *usac,
         if (sce->tns.present && ((nb_channels == 1) || (us->tns_on_lr)))
             ac->dsp.apply_tns(sce->coeffs, &sce->tns, &sce->ics, 1);
 
-        ac->oc[1].m4ac.frame_length_short ? ac->dsp.imdct_and_windowing_768(ac, sce) :
-                                            ac->dsp.imdct_and_windowing(ac, sce);
+        if (!sce->ue.core_mode)
+            ac->oc[1].m4ac.frame_length_short ? ac->dsp.imdct_and_windowing_768(ac, sce) :
+                                                ac->dsp.imdct_and_windowing(ac, sce);
     }
 }
 
