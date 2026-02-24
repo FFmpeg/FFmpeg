@@ -2132,14 +2132,8 @@ static int packedCopyWrapper(SwsInternal *c, const uint8_t *const src[],
         int i;
         const uint8_t *srcPtr = src[0];
         uint8_t *dstPtr = dst[0] + dstStride[0] * srcSliceY;
-        int length = 0;
 
-        /* universal length finder */
-        while (length + c->opts.src_w <= FFABS(dstStride[0]) &&
-               length + c->opts.src_w <= FFABS(srcStride[0]))
-            length += c->opts.src_w;
-        av_assert1(length != 0);
-
+        const int length = FFMIN(FFABS(dstStride[0]), FFABS(srcStride[0]));
         for (i = 0; i < srcSliceH; i++) {
             memcpy(dstPtr, srcPtr, length);
             srcPtr += srcStride[0];
