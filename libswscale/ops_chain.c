@@ -184,7 +184,7 @@ static int op_match(const SwsOp *op, const SwsOpEntry *entry, const SwsComps nex
         score += av_popcount(SWS_MASK_ALL ^ entry->linear_mask);
         return score;
     case SWS_OP_SCALE:
-        return score;
+        return av_cmp_q(op->c.q, entry->scale) ? 0 : score;
     case SWS_OP_TYPE_NB:
         break;
     }

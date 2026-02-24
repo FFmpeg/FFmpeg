@@ -111,6 +111,7 @@ typedef struct SwsOpEntry {
         uint32_t       linear_mask; /* subset of SwsLinearOp */
         int            dither_size; /* subset of SwsDitherOp */
         int            clear_value; /* clear value for integer clears */
+        AVRational     scale;       /* scale factor for SWS_OP_SCALE */
     };
 
     /* Kernel implementation */
