@@ -42,9 +42,9 @@
 static void check_chroma_mc(void)
 {
     H264ChromaContext h;
-    LOCAL_ALIGNED_32(uint8_t, src,  [16 * 18 * 2]);
-    LOCAL_ALIGNED_32(uint8_t, dst0, [16 * 18 * 2]);
-    LOCAL_ALIGNED_32(uint8_t, dst1, [16 * 18 * 2]);
+    DECLARE_ALIGNED_4(uint8_t, src) [16 * 18 * 2];
+    DECLARE_ALIGNED_16(uint8_t, dst0)[16 * 18 * 2];
+    DECLARE_ALIGNED_16(uint8_t, dst1)[16 * 18 * 2];
 
     declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *dst, const uint8_t *src,
                       ptrdiff_t stride, int h, int x, int y);
