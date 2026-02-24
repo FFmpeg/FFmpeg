@@ -699,6 +699,7 @@ void ff_sws_op_list_print(void *log, int lev, int lev_extra,
 
     for (int i = 0; i < ops->num_ops; i++) {
         const SwsOp *op = &ops->ops[i];
+        const SwsOp *next = i + 1 < ops->num_ops ? &ops->ops[i + 1] : op;
         char buf[32];
 
         av_log(log, lev, "  [%3s %c%c%c%c -> %c%c%c%c] ",
@@ -707,10 +708,10 @@ void ff_sws_op_list_print(void *log, int lev, int lev_extra,
                op->comps.unused[1] ? 'X' : '.',
                op->comps.unused[2] ? 'X' : '.',
                op->comps.unused[3] ? 'X' : '.',
-               describe_comp_flags(op->comps.flags[0]),
-               describe_comp_flags(op->comps.flags[1]),
-               describe_comp_flags(op->comps.flags[2]),
-               describe_comp_flags(op->comps.flags[3]));
+               next->comps.unused[0] ? 'X' : describe_comp_flags(op->comps.flags[0]),
+               next->comps.unused[1] ? 'X' : describe_comp_flags(op->comps.flags[1]),
+               next->comps.unused[2] ? 'X' : describe_comp_flags(op->comps.flags[2]),
+               next->comps.unused[3] ? 'X' : describe_comp_flags(op->comps.flags[3]));
 
         switch (op->op) {
         case SWS_OP_INVALID:
@@ -806,10 +807,14 @@ void ff_sws_op_list_print(void *log, int lev, int lev_extra,
             op->comps.max[2].den || op->comps.max[3].den)
         {
             av_log(log, lev_extra, "    min: {%s, %s, %s, %s}, max: {%s, %s, %s, %s}\n",
-                PRINTQ(op->comps.min[0]), PRINTQ(op->comps.min[1]),
-                PRINTQ(op->comps.min[2]), PRINTQ(op->comps.min[3]),
-                PRINTQ(op->comps.max[0]), PRINTQ(op->comps.max[1]),
-                PRINTQ(op->comps.max[2]), PRINTQ(op->comps.max[3]));
+                   next->comps.unused[0] ? "_" : PRINTQ(op->comps.min[0]),
+                   next->comps.unused[1] ? "_" : PRINTQ(op->comps.min[1]),
+                   next->comps.unused[2] ? "_" : PRINTQ(op->comps.min[2]),
+                   next->comps.unused[3] ? "_" : PRINTQ(op->comps.min[3]),
+                   next->comps.unused[0] ? "_" : PRINTQ(op->comps.max[0]),
+                   next->comps.unused[1] ? "_" : PRINTQ(op->comps.max[1]),
+                   next->comps.unused[2] ? "_" : PRINTQ(op->comps.max[2]),
+                   next->comps.unused[3] ? "_" : PRINTQ(op->comps.max[3]));
         }
 
     }
