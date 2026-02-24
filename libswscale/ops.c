@@ -1054,9 +1054,9 @@ handle_tail(const SwsOpPass *p, SwsOpExec *exec,
         }
 
         for (int i = 0; i < 4; i++) {
-            if (!copy_in)
+            if (!copy_in && exec->in[i])
                 exec->in[i] += in.linesize[i];
-            if (!copy_out)
+            if (!copy_out && exec->out[i])
                 exec->out[i] += out.linesize[i];
         }
     }
