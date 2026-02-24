@@ -1994,8 +1994,8 @@ static int rgbToRgbWrapper(SwsInternal *c, const uint8_t *const src[], const int
     const enum AVPixelFormat dstFormat = c->opts.dst_format;
     const AVPixFmtDescriptor *desc_src = av_pix_fmt_desc_get(c->opts.src_format);
     const AVPixFmtDescriptor *desc_dst = av_pix_fmt_desc_get(c->opts.dst_format);
-    const int srcBpp = (c->srcFormatBpp + 7) >> 3;
-    const int dstBpp = (c->dstFormatBpp + 7) >> 3;
+    const int srcBpp = desc_src->comp[0].step;
+    const int dstBpp = desc_dst->comp[0].step;
     rgbConvFn conv = findRgbConvFn(c);
 
     if (!conv) {
@@ -2004,8 +2004,8 @@ static int rgbToRgbWrapper(SwsInternal *c, const uint8_t *const src[], const int
     } else {
         const uint8_t *srcPtr = src[0];
               uint8_t *dstPtr = dst[0];
-        int src_bswap = IS_NOT_NE(c->srcFormatBpp, desc_src);
-        int dst_bswap = IS_NOT_NE(c->dstFormatBpp, desc_dst);
+        int src_bswap = IS_NOT_NE(srcBpp, desc_src);
+        int dst_bswap = IS_NOT_NE(dstBpp, desc_dst);
 
         if ((srcFormat == AV_PIX_FMT_RGB32_1 || srcFormat == AV_PIX_FMT_BGR32_1) &&
             !isRGBA32(dstFormat))
