@@ -64,7 +64,7 @@ static void check_chroma_mc(void)
                             call_ref(dst0, src, 16 * SIZEOF_PIXEL, 16, x, y);                             \
                             call_new(dst1, src, 16 * SIZEOF_PIXEL, 16, x, y);                             \
                             if (memcmp(dst0, dst1, 16 * 16 * SIZEOF_PIXEL)) {                             \
-                                fprintf(stderr, #name ": x:%i, y:%i\n", x, y);                            \
+                                fprintf(stderr, #name "_%d: x:%i, y:%i\n", bit_depth, x, y);              \
                                 fail();                                                                   \
                             }                                                                             \
                             bench_new(dst1, src, 16 * SIZEOF_PIXEL, 16, x, y);                            \
