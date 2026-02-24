@@ -96,6 +96,8 @@
 #include "libswscale/swscale_internal.h"
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
+#include "libavutil/error.h"
+#include "libavutil/mem.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/pixdesc.h"
 #include "yuv2rgb_altivec.h"
@@ -871,4 +873,33 @@ YUV2PACKEDX_WRAPPER(rgba,  AV_PIX_FMT_RGBA);
 YUV2PACKEDX_WRAPPER(rgb24, AV_PIX_FMT_RGB24);
 YUV2PACKEDX_WRAPPER(bgr24, AV_PIX_FMT_BGR24);
 
+av_cold int ff_sws_init_altivec_bufs(SwsInternal *c)
+{
+    const SwsContext *const sws = &c->opts;
+
+    c->vYCoeffsBank = av_malloc_array(sws->dst_h, c->vLumFilterSize * sizeof(*c->vYCoeffsBank));
+    c->vCCoeffsBank = av_malloc_array(c->chrDstH, c->vChrFilterSize * sizeof(*c->vCCoeffsBank));
+    if (!c->vYCoeffsBank || !c->vCCoeffsBank)
+        return AVERROR(ENOMEM);
+
+    for (int i = 0; i < c->vLumFilterSize * sws->dst_h; ++i) {
+        short *p = (short *)&c->vYCoeffsBank[i];
+        for (int j = 0; j < 8; ++j)
+            p[j] = c->vLumFilter[i];
+    }
+
+    for (int i = 0; i < c->vChrFilterSize * c->chrDstH; ++i) {
+        short *p = (short *)&c->vCCoeffsBank[i];
+        for (int j = 0; j < 8; ++j)
+            p[j] = c->vChrFilter[i];
+    }
+
+    return 0;
+}
+
+av_cold void ff_sws_free_altivec_bufs(SwsInternal *c)
+{
+    av_freep(&c->vYCoeffsBank);
+    av_freep(&c->vCCoeffsBank);
+}
 #endif /* HAVE_ALTIVEC */

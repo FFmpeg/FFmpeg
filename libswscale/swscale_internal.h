@@ -1039,6 +1039,9 @@ void ff_sws_init_swscale_arm(SwsInternal *c);
 void ff_sws_init_swscale_loongarch(SwsInternal *c);
 void ff_sws_init_swscale_riscv(SwsInternal *c);
 
+int ff_sws_init_altivec_bufs(SwsInternal *c);
+void ff_sws_free_altivec_bufs(SwsInternal *c);
+
 void ff_hyscale_fast_c(SwsInternal *c, int16_t *dst, int dstWidth,
                        const uint8_t *src, int srcW, int xInc);
 void ff_hcscale_fast_c(SwsInternal *c, int16_t *dst1, int16_t *dst2,
