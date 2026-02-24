@@ -170,7 +170,7 @@ static int tgq_decode_mb(TgqContext *s, GetByteContext *gbyte,
             return ret;
 
         for (i = 0; i < 6; i++) {
-            int ret = tgq_decode_block(s, s->block[i], &gb);
+            ret = tgq_decode_block(s, s->block[i], &gb);
             if (ret < 0)
                 return ret;
         }
