@@ -37,10 +37,14 @@
 #include "libavutil/pixfmt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/slicethread.h"
-#if HAVE_ALTIVEC
-#include "libavutil/ppc/util_altivec.h"
-#endif
 #include "libavutil/half2float.h"
+
+#if HAVE_ALTIVEC
+#define SWSINTERNAL_ADDITIONAL_ASM_SIZE (7*16 + 2*8 + /* alignment */ 16)
+#endif
+#ifndef SWSINTERNAL_ADDITIONAL_ASM_SIZE
+#define SWSINTERNAL_ADDITIONAL_ASM_SIZE 0
+#endif
 
 #define STR(s) AV_TOSTRING(s) // AV_STRINGIFY is too long
 
@@ -543,17 +547,6 @@ struct SwsInternal {
     DECLARE_ALIGNED(8, uint32_t, dither32)[8];
 
     const uint8_t *chrDither8, *lumDither8;
-
-#if HAVE_ALTIVEC
-    vector signed short   CY;
-    vector signed short   CRV;
-    vector signed short   CBU;
-    vector signed short   CGU;
-    vector signed short   CGV;
-    vector signed short   OY;
-    vector unsigned short CSHIFT;
-    vector signed short  *vYCoeffsBank, *vCCoeffsBank;
-#endif
 
     int use_mmx_vfilter;
 

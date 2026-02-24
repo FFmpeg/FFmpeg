@@ -30,6 +30,7 @@
 #include "libswscale/swscale_internal.h"
 
 #if HAVE_ALTIVEC
+#include "libavutil/ppc/util_altivec.h"
 
 static int yv12toyuy2_unscaled_altivec(SwsInternal *c, const uint8_t *const src[],
                                        const int srcStride[], int srcSliceY,

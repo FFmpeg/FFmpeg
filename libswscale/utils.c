@@ -1031,7 +1031,7 @@ int sws_getColorspaceDetails(SwsContext *sws, int **inv_table,
 
 SwsContext *sws_alloc_context(void)
 {
-    SwsInternal *c = (SwsInternal *) av_mallocz(sizeof(SwsInternal));
+    SwsInternal *c = av_mallocz(sizeof(*c) + SWSINTERNAL_ADDITIONAL_ASM_SIZE);
     if (!c)
         return NULL;
 
