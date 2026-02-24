@@ -572,71 +572,65 @@ static inline const uint8_t *align_get_bits(GetBitContext *s)
  */
 #define GET_VLC(code, name, gb, table, bits, max_depth)         \
     do {                                                        \
-        int n, nb_bits;                                         \
-        unsigned int index;                                     \
+        unsigned idx_ = SHOW_UBITS(name, gb, bits);             \
+        code          = table[idx_].sym;                        \
+        int        n_ = table[idx_].len;                        \
                                                                 \
-        index = SHOW_UBITS(name, gb, bits);                     \
-        code  = table[index].sym;                               \
-        n     = table[index].len;                               \
-                                                                \
-        if (max_depth > 1 && n < 0) {                           \
+        if (max_depth > 1 && n_ < 0) {                          \
             LAST_SKIP_BITS(name, gb, bits);                     \
             UPDATE_CACHE(name, gb);                             \
                                                                 \
-            nb_bits = -n;                                       \
+            int nb__bits = -n_;                                 \
                                                                 \
-            index = SHOW_UBITS(name, gb, nb_bits) + code;       \
-            code  = table[index].sym;                           \
-            n     = table[index].len;                           \
-            if (max_depth > 2 && n < 0) {                       \
-                LAST_SKIP_BITS(name, gb, nb_bits);              \
+            idx_ = SHOW_UBITS(name, gb, nb__bits) + code;       \
+            code = table[idx_].sym;                             \
+            n_   = table[idx_].len;                             \
+            if (max_depth > 2 && n_ < 0) {                      \
+                LAST_SKIP_BITS(name, gb, nb__bits);             \
                 UPDATE_CACHE(name, gb);                         \
                                                                 \
-                nb_bits = -n;                                   \
+                nb__bits = -n_;                                 \
                                                                 \
-                index = SHOW_UBITS(name, gb, nb_bits) + code;   \
-                code  = table[index].sym;                       \
-                n     = table[index].len;                       \
+                idx_ = SHOW_UBITS(name, gb, nb__bits) + code;   \
+                code = table[idx_].sym;                         \
+                n_   = table[idx_].len;                         \
             }                                                   \
         }                                                       \
-        SKIP_BITS(name, gb, n);                                 \
+        SKIP_BITS(name, gb, n_);                                \
     } while (0)
 
 #define GET_RL_VLC(level, run, name, gb, table, bits,  \
                    max_depth, need_update)                      \
     do {                                                        \
-        int n, nb_bits;                                         \
-        unsigned int index;                                     \
+        unsigned idx_ = SHOW_UBITS(name, gb, bits);             \
+        level         = table[idx_].level;                      \
+        int        n_ = table[idx_].len8;                       \
                                                                 \
-        index = SHOW_UBITS(name, gb, bits);                     \
-        level = table[index].level;                             \
-        n     = table[index].len8;                              \
-                                                                \
-        if (max_depth > 1 && n < 0) {                           \
+        if (max_depth > 1 && n_ < 0) {                          \
             SKIP_BITS(name, gb, bits);                          \
             if (need_update) {                                  \
                 UPDATE_CACHE(name, gb);                         \
             }                                                   \
                                                                 \
-            nb_bits = -n;                                       \
+            int nb__bits = -n_;                                 \
                                                                 \
-            index = SHOW_UBITS(name, gb, nb_bits) + level;      \
-            level = table[index].level;                         \
-            n     = table[index].len8;                          \
-            if (max_depth > 2 && n < 0) {                       \
-                LAST_SKIP_BITS(name, gb, nb_bits);              \
+            idx_  = SHOW_UBITS(name, gb, nb__bits) + level;     \
+            level = table[idx_].level;                          \
+            n_    = table[idx_].len8;                           \
+            if (max_depth > 2 && n_ < 0) {                      \
+                LAST_SKIP_BITS(name, gb, nb__bits);             \
                 if (need_update) {                              \
                     UPDATE_CACHE(name, gb);                     \
                 }                                               \
-                nb_bits = -n;                                   \
+                nb__bits = -n_;                                 \
                                                                 \
-                index = SHOW_UBITS(name, gb, nb_bits) + level;  \
-                level = table[index].level;                     \
-                n     = table[index].len8;                      \
+                idx_  = SHOW_UBITS(name, gb, nb__bits) + level; \
+                level = table[idx_].level;                      \
+                n_    = table[idx_].len8;                       \
             }                                                   \
         }                                                       \
-        run = table[index].run;                                 \
-        SKIP_BITS(name, gb, n);                                 \
+        run = table[idx_].run;                                  \
+        SKIP_BITS(name, gb, n_);                                \
     } while (0)
 
 /**
