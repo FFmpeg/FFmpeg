@@ -702,15 +702,11 @@ static inline int h263_mv4_search(MPVEncContext *const s, int mx, int my, int sh
     }
 
     if(c->avctx->mb_cmp&FF_CMP_CHROMA){
-        int dxy;
-        int mx, my;
-        int offset;
+        int mx_chroma = ff_h263_round_chroma(mx4_sum);
+        int my_chroma = ff_h263_round_chroma(my4_sum);
+        int dxy = ((my_chroma & 1) << 1) | (mx_chroma & 1);
 
-        mx= ff_h263_round_chroma(mx4_sum);
-        my= ff_h263_round_chroma(my4_sum);
-        dxy = ((my & 1) << 1) | (mx & 1);
-
-        offset = (s->c.mb_x*8 + (mx>>1)) + (s->c.mb_y*8 + (my>>1))*s->c.uvlinesize;
+        int offset = (s->c.mb_x*8 + (mx_chroma>>1)) + (s->c.mb_y*8 + (my_chroma>>1))*s->c.uvlinesize;
 
         c->hpel_put[1][dxy](c->scratchpad    , s->c.last_pic.data[1] + offset, s->c.uvlinesize, 8);
         c->hpel_put[1][dxy](c->scratchpad + 8, s->c.last_pic.data[2] + offset, s->c.uvlinesize, 8);
