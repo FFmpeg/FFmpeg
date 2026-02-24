@@ -175,3 +175,27 @@ WRAP_COMMON_PATTERNS(scale,
     .setup = ff_sws_setup_q,
     .flexible = true,
 );
+
+static void fn(process)(const SwsOpExec *exec, const void *priv,
+                        const int bx_start, const int y_start,
+                        int bx_end, int y_end)
+{
+    const SwsOpChain *chain = priv;
+    const SwsOpImpl *impl = chain->impl;
+    u32block_t x, y, z, w; /* allocate enough space for any intermediate */
+
+    SwsOpIter iterdata;
+    SwsOpIter *iter = &iterdata; /* for CONTINUE() macro to work */
+
+    for (iter->y = y_start; iter->y < y_end; iter->y++) {
+        for (int i = 0; i < 4; i++) {
+            iter->in[i]  = exec->in[i]  + (iter->y - y_start) * exec->in_stride[i];
+            iter->out[i] = exec->out[i] + (iter->y - y_start) * exec->out_stride[i];
+        }
+
+        for (int block = bx_start; block < bx_end; block++) {
+            iter->x = block * SWS_BLOCK_SIZE;
+            CONTINUE(block_t, (void *) x, (void *) y, (void *) z, (void *) w);
+        }
+    }
+}
