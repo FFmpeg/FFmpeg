@@ -52,6 +52,9 @@ mask2: times 32 db 0x03
 mask3: times 32 db 0x07
 mask4: times 32 db 0x0F
 
+const1b equ mask1
+const1w: times 16 dw 0x01
+
 SECTION .text
 
 ;---------------------------------------------------------
@@ -456,7 +459,7 @@ IF V2,  movd mx2, [in0q + 2]
 %endif
         mova m8, [bits_shuf]
         VBROADCASTI128 m9,  [bits_mask]
-        VBROADCASTI128 m10, [mask1]
+        VBROADCASTI128 m10, [const1b]
         LOAD_CONT tmp0q
         add in0q, (mmsize >> 3) * (1 + V2)
         pshufb mx,  m8
@@ -947,7 +950,7 @@ IF W,   vpermq mw, mw, q3120
 %endmacro
 
 ;---------------------------------------------------------
-; Shifting
+; Shifting and scaling
 
 %macro lshift16 0
 op lshift16
@@ -983,6 +986,16 @@ IF W,   psrlw mw2, xm8
         CONTINUE tmp0q
 %endmacro
 
+; special cases for expanding bits to full range
+%macro expand_bits 2 ; bits, suffix
+op expand_bits%1
+        mova m8, [const1%2]
+        LOAD_CONT tmp0q
+        pcmpeq%2 mx, m8
+IF V2,  pcmpeq%2 mx2, m8
+        CONTINUE tmp0q
+%endmacro
+
 ;---------------------------------------------------------
 ; Macro instantiations for kernel functions
 
@@ -1000,6 +1013,7 @@ IF W,   psrlw mw2, xm8
     read_nibbles
     read_bits
     write_bits
+    expand_bits 8, b
 
     pack_generic 1, 2, 1
     pack_generic 3, 3, 2
@@ -1022,6 +1036,7 @@ IF W,   psrlw mw2, xm8
 
 %macro funcs_u16 0
     rw_packed 16
+    expand_bits 16, w
     pack_generic  4, 4, 4
     pack_generic  5, 5, 5
     pack_generic  5, 6, 5
