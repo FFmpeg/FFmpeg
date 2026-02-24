@@ -520,11 +520,8 @@ static void setup_5x5(int radius, const uint8_t *c[], const uint8_t *src, int st
     int i;
 
     for (i = 0; i < 25; i++) {
-        int xoff = FFABS(x + ((i % 5) - 2));
-        int yoff = FFABS(y + (i / 5) - 2);
-
-        xoff = xoff >= w ? 2 * w - 1 - xoff : xoff;
-        yoff = yoff >= h ? 2 * h - 1 - yoff : yoff;
+        int xoff = avpriv_mirror(x + (i % 5) - 2, w - 1);
+        int yoff = avpriv_mirror(y + (i / 5) - 2, h - 1);
 
         c[i] = src + xoff * bpc + yoff * stride;
     }
@@ -536,11 +533,8 @@ static void setup_7x7(int radius, const uint8_t *c[], const uint8_t *src, int st
     int i;
 
     for (i = 0; i < 49; i++) {
-        int xoff = FFABS(x + ((i % 7) - 3));
-        int yoff = FFABS(y + (i / 7) - 3);
-
-        xoff = xoff >= w ? 2 * w - 1 - xoff : xoff;
-        yoff = yoff >= h ? 2 * h - 1 - yoff : yoff;
+        int xoff = avpriv_mirror(x + (i % 7) - 3, w - 1);
+        int yoff = avpriv_mirror(y + (i / 7) - 3, h - 1);
 
         c[i] = src + xoff * bpc + yoff * stride;
     }
@@ -552,9 +546,7 @@ static void setup_row(int radius, const uint8_t *c[], const uint8_t *src, int st
     int i;
 
     for (i = 0; i < radius * 2 + 1; i++) {
-        int xoff = FFABS(x + i - radius);
-
-        xoff = xoff >= w ? 2 * w - 1 - xoff : xoff;
+        int xoff = avpriv_mirror(x + i - radius, w - 1);
 
         c[i] = src + xoff * bpc + y * stride;
     }
@@ -566,9 +558,7 @@ static void setup_column(int radius, const uint8_t *c[], const uint8_t *src, int
     int i;
 
     for (i = 0; i < radius * 2 + 1; i++) {
-        int xoff = FFABS(x + i - radius);
-
-        xoff = xoff >= h ? 2 * h - 1 - xoff : xoff;
+        int xoff = avpriv_mirror(x + i - radius, h - 1);
 
         c[i] = src + y * bpc + xoff * stride;
     }
