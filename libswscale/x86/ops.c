@@ -552,7 +552,7 @@ static bool op_is_type_invariant(const SwsOp *op)
     switch (op->op) {
     case SWS_OP_READ:
     case SWS_OP_WRITE:
-        return !op->rw.packed && !op->rw.frac;
+        return !(op->rw.elems > 1 && op->rw.packed) && !op->rw.frac;
     case SWS_OP_SWIZZLE:
     case SWS_OP_CLEAR:
         return true;
