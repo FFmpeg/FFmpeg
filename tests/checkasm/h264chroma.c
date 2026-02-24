@@ -30,11 +30,12 @@
 #define randomize_buffers(bit_depth)             \
     do {                                         \
         if (bit_depth == 8) {                    \
-            for (int i = 0; i < 16*18*2; i++)    \
-                src[i] = rnd() & 0x3;            \
+            for (int i = 0; i < 16*18; i++)      \
+                src[i] = rnd();                  \
         } else {                                 \
-            for (int i = 0; i < 16*18; i += 2)   \
-                AV_WN16(&src[i], rnd() & 0xFF);  \
+            unsigned mask = (1 << bit_depth) - 1;\
+            for (int i = 0; i < 16*18*2; i += 2) \
+                AV_WN16A(&src[i], rnd() & mask); \
         }                                        \
     } while (0)
 
