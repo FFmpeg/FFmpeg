@@ -182,6 +182,7 @@ static int setup_shift(const SwsOp *op, SwsOpPriv *out)
     DECL_COMMON_PATTERNS(F32, scale##EXT,                                       \
         .op = SWS_OP_SCALE,                                                     \
         .setup = ff_sws_setup_q,                                                \
+        .flexible = true,                                                       \
     );
 
 static int setup_dither(const SwsOp *op, SwsOpPriv *out)
