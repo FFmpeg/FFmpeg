@@ -1321,6 +1321,7 @@ static SwsImg get_frame_img(const AVFrame *frame, int field)
 {
     SwsImg img = {0};
 
+    img.frame_ptr = frame;
     img.fmt = frame->format;
     for (int i = 0; i < 4; i++) {
         img.data[i]     = frame->data[i];

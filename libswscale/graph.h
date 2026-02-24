@@ -36,6 +36,7 @@ typedef struct SwsImg {
     enum AVPixelFormat fmt;
     uint8_t *data[4]; /* points to y=0 */
     int linesize[4];
+    const AVFrame *frame_ptr; /* Pointer to the original AVframe */
 } SwsImg;
 
 static av_always_inline av_const int ff_fmt_vshift(enum AVPixelFormat fmt, int plane)

@@ -842,6 +842,7 @@ static SwsImg pass_output(const SwsPass *pass, const SwsImg *fallback)
         return *fallback;
 
     SwsImg img = pass->output->img;
+    img.frame_ptr = fallback->frame_ptr;
     for (int i = 0; i < FF_ARRAY_ELEMS(img.data); i++) {
         if (!img.data[i]) {
             img.data[i]     = fallback->data[i];

@@ -970,6 +970,9 @@ static void op_pass_setup(const SwsImg *out_base, const SwsImg *in_base,
     const SwsImg in  = img_shift_idx(in_base,  0, p->idx_in);
     const SwsImg out = img_shift_idx(out_base, 0, p->idx_out);
 
+    exec->src_frame_ptr = in.frame_ptr;
+    exec->dst_frame_ptr = out.frame_ptr;
+
     for (int i = 0; i < p->planes_in; i++) {
         const int idx        = p->idx_in[i];
         const int sub_x      = (idx == 1 || idx == 2) ? indesc->log2_chroma_w : 0;
@@ -1082,6 +1085,9 @@ static void op_pass_run(const SwsImg *out_base, const SwsImg *in_base,
         exec.in[i]  = in.data[i];
         exec.out[i] = out.data[i];
     }
+
+    exec.src_frame_ptr = in_base->frame_ptr;
+    exec.dst_frame_ptr = out_base->frame_ptr;
 
     /**
      *  To ensure safety, we need to consider the following:

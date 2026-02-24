@@ -137,6 +137,8 @@ struc SwsOpExec
     .slice_h resd 1
     .block_size_in resd 1
     .block_size_out resd 1
+    .in_hwframe_ref resq 1
+    .out_hwframe_ref resq 1
 endstruc
 
 struc SwsOpImpl
