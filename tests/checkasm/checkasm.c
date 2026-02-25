@@ -198,6 +198,9 @@ static const struct {
     #if CONFIG_HUFFYUV_DECODER
         { "huffyuvdsp", checkasm_check_huffyuvdsp },
     #endif
+    #if CONFIG_HUFFYUVENCDSP
+        { "huffyuvencdsp", checkasm_check_huffyuvencdsp },
+    #endif
     #if CONFIG_IDCTDSP
         { "idctdsp", checkasm_check_idctdsp },
     #endif
