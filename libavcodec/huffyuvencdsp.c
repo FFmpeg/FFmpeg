@@ -84,12 +84,12 @@ static void sub_hfyu_median_pred_int16_c(uint16_t *dst, const uint16_t *src1, co
     *left_top = lt;
 }
 
-av_cold void ff_huffyuvencdsp_init(HuffYUVEncDSPContext *c, int bpp)
+av_cold void ff_huffyuvencdsp_init(HuffYUVEncDSPContext *c, int bpp, int width)
 {
     c->diff_int16           = diff_int16_c;
     c->sub_hfyu_median_pred_int16 = sub_hfyu_median_pred_int16_c;
 
 #if ARCH_X86 && HAVE_X86ASM
-    ff_huffyuvencdsp_init_x86(c, bpp);
+    ff_huffyuvencdsp_init_x86(c, bpp, width);
 #endif
 }

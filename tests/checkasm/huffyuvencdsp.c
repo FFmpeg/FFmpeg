@@ -48,7 +48,7 @@ static void check_sub_hfyu_median_pred_int16(const char *aligned, unsigned width
     for (size_t i = 0; i < FF_ARRAY_ELEMS(bpps); ++i) {
         const int bpp = bpps[i];
 
-        ff_huffyuvencdsp_init(&c, bpp);
+        ff_huffyuvencdsp_init(&c, bpp, width);
 
         if (check_func(c.sub_hfyu_median_pred_int16, "sub_hfyu_median_pred_int16_%dbpp%s", bpp, aligned)) {
             DECLARE_ALIGNED(32, uint16_t, dst0)[MAX_WIDTH];

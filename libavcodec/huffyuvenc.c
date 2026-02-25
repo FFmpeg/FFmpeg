@@ -278,7 +278,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     s->mask  = (1 << s->bps) - 1;
     s->vlc_n = FFMIN(1 << s->bps, MAX_VLC_N);
 
-    ff_huffyuvencdsp_init(&s->hencdsp, s->bps);
+    ff_huffyuvencdsp_init(&s->hencdsp, s->bps, avctx->width >> s->chroma_h_shift);
 
     switch (avctx->pix_fmt) {
     case AV_PIX_FMT_YUV420P:
