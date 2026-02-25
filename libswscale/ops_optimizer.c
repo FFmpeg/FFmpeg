@@ -520,7 +520,12 @@ retry:
             for (int i = 0; i < 4; i++) {
                 if (next->comps.unused[i] || op->dither.y_offset[i] < 0)
                     continue;
-                noop &= !!(prev->comps.flags[i] & SWS_COMP_EXACT);
+                if (prev->comps.flags[i] & SWS_COMP_EXACT) {
+                    op->dither.y_offset[i] = -1; /* unnecessary dither */
+                    goto retry;
+                } else {
+                    noop = false;
+                }
             }
 
             if (noop) {
