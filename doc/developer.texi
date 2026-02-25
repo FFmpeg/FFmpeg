@@ -45,6 +45,7 @@ maintained and developed.
 @end itemize
 
 All proposed code changes should be submitted for review to
+@url{https://code.ffmpeg.org/FFmpeg/FFmpeg/pulls, Forgejo} or
 @url{mailto:ffmpeg-devel@@ffmpeg.org, the development mailing list}, as
 described in more detail in the @ref{Submitting patches} chapter. The code
 should comply with the @ref{Development Policy} and follow the @ref{Coding Rules}.
@@ -722,7 +723,8 @@ and has no lrint()')
 Also please if you send several patches, send each patch as a separate mail,
 do not attach several unrelated patches to the same mail.
 
-Patches should be posted to the
+Patches should be posted to
+@uref{https://code.ffmpeg.org/FFmpeg/FFmpeg/pulls, Forgejo} or the
 @uref{https://lists.ffmpeg.org/mailman/listinfo/ffmpeg-devel, ffmpeg-devel}
 mailing list. Use @code{git send-email} when possible since it will properly
 send patches without requiring extra care. If you cannot, then send patches
