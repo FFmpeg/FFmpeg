@@ -549,6 +549,9 @@ int sws_test_hw_format(enum AVPixelFormat format)
 {
     switch (format) {
     case AV_PIX_FMT_NONE: return 1;
+#if CONFIG_VULKAN
+    case AV_PIX_FMT_VULKAN: return 1;
+#endif
     default: return 0;
     }
 }

@@ -63,6 +63,10 @@
 #include "swscale_internal.h"
 #include "graph.h"
 
+#if CONFIG_VULKAN
+#include "vulkan/ops.h"
+#endif
+
 /**
  * Allocate and return an SwsContext without performing initialization.
  */
@@ -2258,6 +2262,10 @@ void sws_freeContext(SwsContext *sws)
     int i;
     if (!c)
         return;
+
+#if CONFIG_VULKAN
+    ff_sws_vk_uninit(sws);
+#endif
 
     for (i = 0; i < FF_ARRAY_ELEMS(c->graph); i++)
         ff_sws_graph_free(&c->graph[i]);

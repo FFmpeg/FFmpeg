@@ -31,9 +31,13 @@
 #include "libavutil/mem.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/hwcontext.h"
 #include "config.h"
 #include "swscale_internal.h"
 #include "swscale.h"
+#if CONFIG_VULKAN
+#include "vulkan/ops.h"
+#endif
 
 DECLARE_ALIGNED(8, const uint8_t, ff_dither_8x8_128)[9][8] = {
     {  36, 68,  60, 92,  34, 66,  58, 90, },
@@ -1451,6 +1455,35 @@ int sws_frame_setup(SwsContext *ctx, const AVFrame *dst, const AVFrame *src)
         return AVERROR(EINVAL);
     if ((ret = validate_params(ctx)) < 0)
         return ret;
+
+    /* For now, if a single frame has a context, then both need a context */
+    if (!!src->hw_frames_ctx != !!dst->hw_frames_ctx) {
+        return AVERROR(ENOTSUP);
+    } else if (!!src->hw_frames_ctx) {
+        /* Both hardware frames must already be allocated */
+        if (!src->data[0] || !dst->data[0])
+            return AVERROR(EINVAL);
+
+        AVHWFramesContext *src_hwfc, *dst_hwfc;
+        src_hwfc = (AVHWFramesContext *)src->hw_frames_ctx->data;
+        dst_hwfc = (AVHWFramesContext *)dst->hw_frames_ctx->data;
+
+        /* Both frames must live on the same device */
+        if (src_hwfc->device_ref->data != dst_hwfc->device_ref->data)
+            return AVERROR(EINVAL);
+
+        /* Only Vulkan devices are supported */
+        AVHWDeviceContext *dev_ctx;
+        dev_ctx = (AVHWDeviceContext *)src_hwfc->device_ref->data;
+        if (dev_ctx->type != AV_HWDEVICE_TYPE_VULKAN)
+            return AVERROR(ENOTSUP);
+
+#if CONFIG_VULKAN
+        ret = ff_sws_vk_init(ctx, src_hwfc->device_ref);
+        if (ret < 0)
+            return ret;
+#endif
+    }
 
     for (int field = 0; field < 2; field++) {
         SwsFormat src_fmt = ff_fmt_from_frame(src, field);

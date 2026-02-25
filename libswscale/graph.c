@@ -861,8 +861,10 @@ static SwsImg pass_output(const SwsPass *pass, const SwsImg *fallback)
 
 void ff_sws_graph_run(SwsGraph *graph, const SwsImg *output, const SwsImg *input)
 {
-    av_assert0(output->fmt == graph->dst.format);
-    av_assert0(input->fmt  == graph->src.format);
+    av_assert0(output->fmt == graph->dst.hw_format ||
+               output->fmt == graph->dst.format);
+    av_assert0(input->fmt  == graph->src.hw_format ||
+               input->fmt  == graph->src.format);
 
     for (int i = 0; i < graph->num_passes; i++) {
         const SwsPass *pass = graph->passes[i];
