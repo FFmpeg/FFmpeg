@@ -181,8 +181,10 @@ void ff_sws_apply_op_q(const SwsOp *op, AVRational x[4])
         return;
     case SWS_OP_DITHER:
         av_assert1(!ff_sws_pixel_type_is_int(op->type));
-        for (int i = 0; i < 4; i++)
-            x[i] = x[i].den ? av_add_q(x[i], av_make_q(1, 2)) : x[i];
+        for (int i = 0; i < 4; i++) {
+            if (op->dither.y_offset[i] >= 0 && x[i].den)
+                x[i] = av_add_q(x[i], av_make_q(1, 2));
+        }
         return;
     case SWS_OP_MIN:
         for (int i = 0; i < 4; i++)

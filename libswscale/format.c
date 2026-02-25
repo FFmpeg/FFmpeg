@@ -1229,8 +1229,10 @@ static int fmt_dither(SwsContext *ctx, SwsOpList *ops,
         /* Brute-forced offsets; minimizes quantization error across a 16x16
          * bayer dither pattern for standard RGBA and YUVA pixel formats */
         const int offsets_16x16[4] = {0, 3, 2, 5};
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < 4; i++) {
+            av_assert0(offsets_16x16[i] <= INT8_MAX);
             dither.y_offset[i] = offsets_16x16[i];
+        }
 
         if (src.desc->nb_components < 3 && bpc >= 8) {
             /**
