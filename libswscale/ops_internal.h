@@ -120,6 +120,13 @@ typedef struct SwsOpBackend {
      * Returns 0 or a negative error code.
      */
     int (*compile)(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out);
+
+    /**
+     * If NONE, backend only supports software frames.
+     * Otherwise, frame hardware format must match hw_format for the backend
+     * to be used.
+     */
+    enum AVPixelFormat hw_format;
 } SwsOpBackend;
 
 /* List of all backends, terminated by NULL */

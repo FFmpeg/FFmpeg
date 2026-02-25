@@ -883,6 +883,9 @@ int ff_sws_ops_compile(SwsContext *ctx, const SwsOpList *ops, SwsCompiledOp *out
 {
     for (int n = 0; ff_sws_op_backends[n]; n++) {
         const SwsOpBackend *backend = ff_sws_op_backends[n];
+        if (ops->src.hw_format != backend->hw_format ||
+            ops->dst.hw_format != backend->hw_format)
+            continue;
         if (ff_sws_ops_compile_backend(ctx, backend, ops, out) < 0)
             continue;
 

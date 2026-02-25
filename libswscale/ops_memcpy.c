@@ -128,6 +128,7 @@ static int compile(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
 }
 
 const SwsOpBackend backend_murder = {
-    .name    = "memcpy",
-    .compile = compile,
+    .name       = "memcpy",
+    .compile    = compile,
+    .hw_format  = AV_PIX_FMT_NONE,
 };

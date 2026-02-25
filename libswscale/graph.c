@@ -462,6 +462,9 @@ static int add_legacy_sws_pass(SwsGraph *graph, SwsFormat src, SwsFormat dst,
 {
     int ret, warned = 0;
     SwsContext *const ctx = graph->ctx;
+    if (src.hw_format != AV_PIX_FMT_NONE || dst.hw_format != AV_PIX_FMT_NONE)
+        return AVERROR(ENOTSUP);
+
     SwsContext *sws = sws_alloc_context();
     if (!sws)
         return AVERROR(ENOMEM);
@@ -657,6 +660,9 @@ static int adapt_colors(SwsGraph *graph, SwsFormat src, SwsFormat dst,
 
     if (ff_sws_color_map_noop(&map))
         return 0;
+
+    if (src.hw_format != AV_PIX_FMT_NONE || dst.hw_format != AV_PIX_FMT_NONE)
+        return AVERROR(ENOTSUP);
 
     lut = ff_sws_lut3d_alloc();
     if (!lut)

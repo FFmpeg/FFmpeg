@@ -97,4 +97,5 @@ static int compile(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
 const SwsOpBackend backend_c = {
     .name       = "c",
     .compile    = compile,
+    .hw_format  = AV_PIX_FMT_NONE,
 };
