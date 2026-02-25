@@ -337,8 +337,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
         s->bitstream_bpp = 24;
         break;
     default:
-        av_log(avctx, AV_LOG_ERROR, "format not supported\n");
-        return AVERROR(EINVAL);
+        av_unreachable("Already checked via CODEC_PIXFMTS");
     }
 
     avctx->bits_per_coded_sample = s->bitstream_bpp;
