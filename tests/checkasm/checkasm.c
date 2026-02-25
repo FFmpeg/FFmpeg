@@ -195,7 +195,7 @@ static const struct {
     #if CONFIG_HPELDSP
         { "hpeldsp", checkasm_check_hpeldsp },
     #endif
-    #if CONFIG_HUFFYUV_DECODER
+    #if CONFIG_HUFFYUVDSP
         { "huffyuvdsp", checkasm_check_huffyuvdsp },
     #endif
     #if CONFIG_HUFFYUVENCDSP
