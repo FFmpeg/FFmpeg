@@ -94,3 +94,53 @@ cglobal sub_hfyu_median_pred_int16, 7,7,0, dst, src1, src2, mask, w, left, left_
     movzx maskd, word [src2q + wq - 2]
     mov [leftq], maskd
     RET
+
+INIT_XMM sse2
+cglobal sub_hfyu_median_pred_int16, 7,7,6, dst, src1, src2, mask, w, left, left_top
+    movd         m5, maskd
+    lea          wd, [wd+wd-(mmsize-1)]
+    movu         m0, [src1q]
+    movu         m2, [src2q]
+    SPLATW       m5, m5
+    add        dstq, wq
+    movd         m1, [left_topq]
+    neg          wq
+    movd         m3, [leftq]
+    sub       src1q, wq
+    sub       src2q, wq
+    pslldq       m0, 2
+    pslldq       m2, 2
+    por          m0, m1
+    por          m2, m3
+    jmp       .init
+
+.loop:
+    movu         m0, [src1q + wq - 2]   ; lt
+    movu         m2, [src2q + wq - 2]   ; l
+.init:
+    movu         m1, [src1q + wq]       ; t
+    movu         m3, [src2q + wq]
+    psubw        m4, m2, m0             ; l - lt
+    pmaxsw       m0, m1, m2
+    paddw        m4, m1                 ; l - lt + t
+    pminsw       m2, m1
+    pand         m4, m5                 ; (l - lt + t)&mask
+    pminsw       m4, m0
+    pmaxsw       m4, m2                 ; pred
+    psubw        m3, m4                 ; l - pred
+    pand         m3, m5
+    movu [dstq + wq], m3
+    add          wq, 16
+    js        .loop
+
+    cmp          wd, mmsize-1
+    jne       .tail
+
+    movzx     src1d, word [src1q + (mmsize-1) - 2]
+    movzx     src2d, word [src2q + (mmsize-1) - 2]
+    mov [left_topq], src1d
+    mov     [leftq], src2d
+    RET
+.tail:
+    mov          wq, -1
+    jmp       .loop
