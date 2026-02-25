@@ -197,6 +197,9 @@ IF W,   addps mw2, m8
 
 %macro dither_row 5 ; size_log2, comp_idx, matrix, out, out2
         mov tmp0w, [implq + SwsOpImpl.priv + (4 + %2) * 2] ; priv.u16[4 + i]
+        ; test is tmp0w < 0
+        test tmp0w, tmp0w
+        js .skip%2
 %if %1 == 1
         vbroadcastsd m8, [%3 + tmp0q]
         addps %4, m8
@@ -209,6 +212,7 @@ IF W,   addps mw2, m8
         addps %4, [%3 + tmp0q]
         addps %5, [%3 + tmp0q + mmsize * ((4 << %1) > mmsize)]
 %endif
+.skip%2:
 %endmacro
 
 %macro dither 1 ; size_log2
@@ -238,7 +242,7 @@ op dither%1
 %endmacro
 
 %macro dither_fns 0
-        dither0
+        decl_common_patterns dither0
         dither 1
         dither 2
         dither 3
@@ -364,5 +368,5 @@ decl_common_patterns conv32fto8
 decl_common_patterns conv32fto16
 decl_common_patterns min_max
 decl_common_patterns scale
-decl_common_patterns dither_fns
+dither_fns
 linear_fns

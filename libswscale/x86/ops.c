@@ -201,10 +201,11 @@ static int setup_dither(const SwsOp *op, SwsOpPriv *out)
     }
 
     const int size = 1 << op->dither.size_log2;
+    const int8_t *off = op->dither.y_offset;
     int max_offset = 0;
     for (int i = 0; i < 4; i++) {
-        const int offset = op->dither.y_offset[i] & (size - 1);
-        max_offset = FFMAX(max_offset, offset);
+        if (off[i] >= 0)
+            max_offset = FFMAX(max_offset, off[i] & (size - 1));
     }
 
     /* Allocate extra rows to allow over-reading for row offsets. Note that
@@ -223,17 +224,17 @@ static int setup_dither(const SwsOp *op, SwsOpPriv *out)
     memcpy(&matrix[size * size], matrix, max_offset * stride);
 
     /* Store relative pointer offset to each row inside extra space */
-    static_assert(sizeof(out->ptr) <= sizeof(uint16_t[4]), ">8 byte pointers not supported");
-    assert(max_offset * stride <= UINT16_MAX);
-    uint16_t *offset = &out->u16[4];
+    static_assert(sizeof(out->ptr) <= sizeof(int16_t[4]), ">8 byte pointers not supported");
+    assert(max_offset * stride <= INT16_MAX);
+    int16_t *off_out = &out->i16[4];
     for (int i = 0; i < 4; i++)
-        offset[i] = (op->dither.y_offset[i] & (size - 1)) * stride;
+        off_out[i] = off[i] >= 0 ? (off[i] & (size - 1)) * stride : -1;
 
     return 0;
 }
 
-#define DECL_DITHER(EXT, SIZE)                                                  \
-    DECL_COMMON_PATTERNS(F32, dither##SIZE##EXT,                                \
+#define DECL_DITHER(DECL_MACRO, EXT, SIZE)                                      \
+    DECL_MACRO(F32, dither##SIZE##EXT,                                          \
         .op    = SWS_OP_DITHER,                                                 \
         .setup = setup_dither,                                                  \
         .free  = (SIZE) ? av_free : NULL,                                       \
@@ -453,15 +454,15 @@ static const SwsOpTable ops16##EXT = {                                          
     DECL_EXPAND(EXT,   U8, U32)                                                 \
     DECL_MIN_MAX(EXT)                                                           \
     DECL_SCALE(EXT)                                                             \
-    DECL_DITHER(EXT, 0)                                                         \
-    DECL_DITHER(EXT, 1)                                                         \
-    DECL_DITHER(EXT, 2)                                                         \
-    DECL_DITHER(EXT, 3)                                                         \
-    DECL_DITHER(EXT, 4)                                                         \
-    DECL_DITHER(EXT, 5)                                                         \
-    DECL_DITHER(EXT, 6)                                                         \
-    DECL_DITHER(EXT, 7)                                                         \
-    DECL_DITHER(EXT, 8)                                                         \
+    DECL_DITHER(DECL_COMMON_PATTERNS, EXT, 0)                                   \
+    DECL_DITHER(DECL_ASM, EXT, 1)                                               \
+    DECL_DITHER(DECL_ASM, EXT, 2)                                               \
+    DECL_DITHER(DECL_ASM, EXT, 3)                                               \
+    DECL_DITHER(DECL_ASM, EXT, 4)                                               \
+    DECL_DITHER(DECL_ASM, EXT, 5)                                               \
+    DECL_DITHER(DECL_ASM, EXT, 6)                                               \
+    DECL_DITHER(DECL_ASM, EXT, 7)                                               \
+    DECL_DITHER(DECL_ASM, EXT, 8)                                               \
     DECL_LINEAR(EXT, luma,      SWS_MASK_LUMA)                                  \
     DECL_LINEAR(EXT, alpha,     SWS_MASK_ALPHA)                                 \
     DECL_LINEAR(EXT, lumalpha,  SWS_MASK_LUMA | SWS_MASK_ALPHA)                 \
@@ -505,14 +506,14 @@ static const SwsOpTable ops32##EXT = {                                          
         REF_COMMON_PATTERNS(max##EXT),                                          \
         REF_COMMON_PATTERNS(scale##EXT),                                        \
         REF_COMMON_PATTERNS(dither0##EXT),                                      \
-        REF_COMMON_PATTERNS(dither1##EXT),                                      \
-        REF_COMMON_PATTERNS(dither2##EXT),                                      \
-        REF_COMMON_PATTERNS(dither3##EXT),                                      \
-        REF_COMMON_PATTERNS(dither4##EXT),                                      \
-        REF_COMMON_PATTERNS(dither5##EXT),                                      \
-        REF_COMMON_PATTERNS(dither6##EXT),                                      \
-        REF_COMMON_PATTERNS(dither7##EXT),                                      \
-        REF_COMMON_PATTERNS(dither8##EXT),                                      \
+        &op_dither1##EXT,                                                       \
+        &op_dither2##EXT,                                                       \
+        &op_dither3##EXT,                                                       \
+        &op_dither4##EXT,                                                       \
+        &op_dither5##EXT,                                                       \
+        &op_dither6##EXT,                                                       \
+        &op_dither7##EXT,                                                       \
+        &op_dither8##EXT,                                                       \
         &op_luma##EXT,                                                          \
         &op_alpha##EXT,                                                         \
         &op_lumalpha##EXT,                                                      \
