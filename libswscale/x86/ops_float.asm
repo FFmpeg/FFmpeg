@@ -193,37 +193,45 @@ IF W,   mulps mw2, m8
 %endif
 %endmacro
 
+%macro dither0 0
+op dither0
+        ; constant offset for all channels
+        vbroadcastss m8, [implq + SwsOpImpl.priv]
+        LOAD_CONT tmp0q
+IF X,   addps mx, m8
+IF Y,   addps my, m8
+IF Z,   addps mz, m8
+IF W,   addps mw, m8
+IF X,   addps mx2, m8
+IF Y,   addps my2, m8
+IF Z,   addps mz2, m8
+IF W,   addps mw2, m8
+        CONTINUE tmp0q
+%endmacro
+
 %macro dither 1 ; size_log2
 op dither%1
         %define DX  m8
         %define DY  m9
         %define DZ  m10
         %define DW  m11
-        %define DX2 DX
-        %define DY2 DY
-        %define DZ2 DZ
-        %define DW2 DW
-%if %1 == 0
-        ; constant offset for all channels
-        vbroadcastss DX, [implq + SwsOpImpl.priv]
-        %define DY DX
-        %define DZ DX
-        %define DW DX
-%else
-        ; load all four channels with custom offset
-        ;
-        ; note that for 2x2, we would only need to look at the sign of `y`, but
-        ; this special case is ignored for simplicity reasons (and because
-        ; the current upstream format code never generates matrices that small)
     %if (4 << %1) > mmsize
         %define DX2 m12
         %define DY2 m13
         %define DZ2 m14
         %define DW2 m15
+    %else
+        %define DX2 DX
+        %define DY2 DY
+        %define DZ2 DZ
+        %define DW2 DW
     %endif
         ; dither matrix is stored indirectly at the private data address
         mov tmp1q, [implq + SwsOpImpl.priv]
-        ; add y offset
+        ; add y offset. note that for 2x2, we would only need to look at the
+        ; sign of `y`, but this special case is ignored for simplicity reasons
+        ; (and because the current upstream format code never generates matrices
+        ; that small)
         mov tmp0d, yd
         and tmp0d, (1 << %1) - 1
         shl tmp0d, %1 + 2 ; * sizeof(float)
@@ -239,7 +247,6 @@ IF X,   load_dither_row %1, 0, tmp1q, DX, DX2
 IF Y,   load_dither_row %1, 1, tmp1q, DY, DY2
 IF Z,   load_dither_row %1, 2, tmp1q, DZ, DZ2
 IF W,   load_dither_row %1, 3, tmp1q, DW, DW2
-%endif
         LOAD_CONT tmp0q
 IF X,   addps mx, DX
 IF Y,   addps my, DY
@@ -253,7 +260,7 @@ IF W,   addps mw2, DW2
 %endmacro
 
 %macro dither_fns 0
-        dither 0
+        dither0
         dither 1
         dither 2
         dither 3
