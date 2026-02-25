@@ -254,7 +254,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
     s->flags = avctx->flags;
 
     ff_bswapdsp_init(&s->bdsp);
-    ff_huffyuvencdsp_init(&s->hencdsp, avctx->pix_fmt);
     ff_llvidencdsp_init(&s->llvidencdsp);
 
     avctx->extradata = av_mallocz(3*MAX_N + 4);
@@ -278,6 +277,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     s->mask  = (1 << s->bps) - 1;
     s->vlc_n = FFMIN(1 << s->bps, MAX_VLC_N);
+
+    ff_huffyuvencdsp_init(&s->hencdsp, s->bps);
 
     switch (avctx->pix_fmt) {
     case AV_PIX_FMT_YUV420P:
