@@ -174,7 +174,7 @@ struct AVExpr {
         double (*func0)(double);
         double (*func1)(void *, double);
         double (*func2)(void *, double, double);
-    } a;
+    } ;
     struct AVExpr *param[3];
     double *var;
     FFSFC64 *prng_state;
@@ -191,9 +191,9 @@ static double eval_expr(Parser *p, AVExpr *e)
     switch (e->type) {
         case e_value:  return e->value;
         case e_const:  return e->value * p->const_values[e->const_index];
-        case e_func0:  return e->value * e->a.func0(eval_expr(p, e->param[0]));
-        case e_func1:  return e->value * e->a.func1(p->opaque, eval_expr(p, e->param[0]));
-        case e_func2:  return e->value * e->a.func2(p->opaque, eval_expr(p, e->param[0]), eval_expr(p, e->param[1]));
+        case e_func0:  return e->value * e->func0(eval_expr(p, e->param[0]));
+        case e_func1:  return e->value * e->func1(p->opaque, eval_expr(p, e->param[0]));
+        case e_func2:  return e->value * e->func2(p->opaque, eval_expr(p, e->param[0]), eval_expr(p, e->param[1]));
         case e_squish: return 1/(1+exp(4*eval_expr(p, e->param[0])));
         case e_gauss: { double d = eval_expr(p, e->param[0]); return exp(-d*d/2)/sqrt(2*M_PI); }
         case e_ld:     return e->value * p->var[av_clip(eval_expr(p, e->param[0]), 0, VARS-1)];
@@ -457,19 +457,19 @@ static int parse_primary(AVExpr **e, Parser *p)
     }
 
     d->type = e_func0;
-         if (strmatch(next, "sinh"  )) d->a.func0 = sinh;
-    else if (strmatch(next, "cosh"  )) d->a.func0 = cosh;
-    else if (strmatch(next, "tanh"  )) d->a.func0 = tanh;
-    else if (strmatch(next, "sin"   )) d->a.func0 = sin;
-    else if (strmatch(next, "cos"   )) d->a.func0 = cos;
-    else if (strmatch(next, "tan"   )) d->a.func0 = tan;
-    else if (strmatch(next, "atan"  )) d->a.func0 = atan;
-    else if (strmatch(next, "asin"  )) d->a.func0 = asin;
-    else if (strmatch(next, "acos"  )) d->a.func0 = acos;
-    else if (strmatch(next, "exp"   )) d->a.func0 = exp;
-    else if (strmatch(next, "log"   )) d->a.func0 = log;
-    else if (strmatch(next, "abs"   )) d->a.func0 = fabs;
-    else if (strmatch(next, "time"  )) d->a.func0 = etime;
+         if (strmatch(next, "sinh"  )) d->func0 = sinh;
+    else if (strmatch(next, "cosh"  )) d->func0 = cosh;
+    else if (strmatch(next, "tanh"  )) d->func0 = tanh;
+    else if (strmatch(next, "sin"   )) d->func0 = sin;
+    else if (strmatch(next, "cos"   )) d->func0 = cos;
+    else if (strmatch(next, "tan"   )) d->func0 = tan;
+    else if (strmatch(next, "atan"  )) d->func0 = atan;
+    else if (strmatch(next, "asin"  )) d->func0 = asin;
+    else if (strmatch(next, "acos"  )) d->func0 = acos;
+    else if (strmatch(next, "exp"   )) d->func0 = exp;
+    else if (strmatch(next, "log"   )) d->func0 = log;
+    else if (strmatch(next, "abs"   )) d->func0 = fabs;
+    else if (strmatch(next, "time"  )) d->func0 = etime;
     else if (strmatch(next, "squish")) d->type = e_squish;
     else if (strmatch(next, "gauss" )) d->type = e_gauss;
     else if (strmatch(next, "mod"   )) d->type = e_mod;
@@ -511,7 +511,7 @@ static int parse_primary(AVExpr **e, Parser *p)
     else {
         for (i=0; p->func1_names && p->func1_names[i]; i++) {
             if (strmatch(next, p->func1_names[i])) {
-                d->a.func1 = p->funcs1[i];
+                d->func1 = p->funcs1[i];
                 d->type = e_func1;
                 d->const_index = i;
                 *e = d;
@@ -521,7 +521,7 @@ static int parse_primary(AVExpr **e, Parser *p)
 
         for (i=0; p->func2_names && p->func2_names[i]; i++) {
             if (strmatch(next, p->func2_names[i])) {
-                d->a.func2 = p->funcs2[i];
+                d->func2 = p->funcs2[i];
                 d->type = e_func2;
                 d->const_index = i;
                 *e = d;
