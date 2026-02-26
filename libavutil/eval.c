@@ -28,6 +28,7 @@
 
 #include <float.h>
 #include "attributes.h"
+#include "avassert.h"
 #include "avutil.h"
 #include "common.h"
 #include "eval.h"
@@ -157,29 +158,35 @@ static int strmatch(const char *s, const char *prefix)
     return !IS_IDENTIFIER_CHAR(s[i]);
 }
 
+enum {
+    e_value, e_const, e_func0, e_func1, e_func2,
+    e_squish, e_gauss, e_ld, e_isnan, e_isinf,
+    e_mod, e_max, e_min, e_eq, e_gt, e_gte, e_lte, e_lt,
+    e_pow, e_mul, e_div, e_add,
+    e_last, e_st, e_while, e_taylor, e_root, e_floor, e_ceil, e_trunc, e_round,
+    e_sqrt, e_not, e_random, e_hypot, e_gcd,
+    e_if, e_ifnot, e_print, e_bitand, e_bitor, e_between, e_clip, e_atan2, e_lerp,
+    e_sgn, e_randomi
+};
 struct AVExpr {
-    enum {
-        e_value, e_const, e_func0, e_func1, e_func2,
-        e_squish, e_gauss, e_ld, e_isnan, e_isinf,
-        e_mod, e_max, e_min, e_eq, e_gt, e_gte, e_lte, e_lt,
-        e_pow, e_mul, e_div, e_add,
-        e_last, e_st, e_while, e_taylor, e_root, e_floor, e_ceil, e_trunc, e_round,
-        e_sqrt, e_not, e_random, e_hypot, e_gcd,
-        e_if, e_ifnot, e_print, e_bitand, e_bitor, e_between, e_clip, e_atan2, e_lerp,
-        e_sgn, e_randomi
-    } type;
-    double value; // is sign in other types
+    unsigned char type;
+    unsigned char root;
+    short depth;
     int const_index;
+    double value; // is sign in other types
     union {
         double (*func0)(double);
         double (*func1)(void *, double);
         double (*func2)(void *, double, double);
     } ;
     struct AVExpr *param[3];
+};
+
+typedef struct {
+    AVExpr avexpr;
     double *var;
     FFSFC64 *prng_state;
-    int depth;
-};
+} AVExprRoot;
 
 static double etime(double v)
 {
@@ -364,8 +371,11 @@ void av_expr_free(AVExpr *e)
     av_expr_free(e->param[0]);
     av_expr_free(e->param[1]);
     av_expr_free(e->param[2]);
-    av_freep(&e->var);
-    av_freep(&e->prng_state);
+    if (e->root) {
+        AVExprRoot *r = (AVExprRoot*)e;
+        av_freep(&r->var);
+        av_freep(&r->prng_state);
+    }
     av_freep(&e);
 }
 
@@ -764,9 +774,16 @@ int av_expr_parse(AVExpr **expr, const char *s,
         ret = AVERROR(EINVAL);
         goto end;
     }
-    e->var= av_mallocz(sizeof(double) *VARS);
-    e->prng_state = av_mallocz(sizeof(*e->prng_state) *VARS);
-    if (!e->var || !e->prng_state) {
+    AVExprRoot *r = av_realloc(e, sizeof(*r));
+    if (!r) {
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
+    e = (AVExpr*)r;
+    e->root = 1;
+    r->var= av_mallocz(sizeof(double) *VARS);
+    r->prng_state = av_mallocz(sizeof(*r->prng_state) *VARS);
+    if (!r->var || !r->prng_state) {
         ret = AVERROR(ENOMEM);
         goto end;
     }
@@ -806,12 +823,14 @@ int av_expr_count_func(AVExpr *e, unsigned *counter, int size, int arg)
 
 double av_expr_eval(AVExpr *e, const double *const_values, void *opaque)
 {
+    av_assert1(e->root);
+    AVExprRoot *r = (AVExprRoot *)e;
     Parser p = {
         .class        = &eval_class,
         .const_values = const_values,
         .opaque       = opaque,
-        .var          = e->var,
-        .prng_state   = e->prng_state,
+        .var          = r->var,
+        .prng_state   = r->prng_state,
     };
 
     return eval_expr(&p, e);
