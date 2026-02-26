@@ -38,42 +38,29 @@
 #include "graph.h"
 #include "ops.h"
 
-static int buffer_get_sizes(SwsPassBuffer *buffer, size_t sizes[4])
+/* Allocates one buffer per plane */
+static int frame_alloc_planes(AVFrame *dst)
 {
-    const int align  = av_cpu_max_align();
-    const int format = buffer->img.fmt;
-    const int width  = FFALIGN(buffer->width, align);
-    const int height = buffer->height;
-    int ret;
-
-    ret = av_image_check_size2(width, height, INT64_MAX, format, 0, NULL);
+    int ret = av_image_check_size2(dst->width, dst->height, INT64_MAX,
+                                   dst->format, 0, NULL);
     if (ret < 0)
         return ret;
 
-    int *linesize = buffer->img.linesize;
-    ret = av_image_fill_linesizes(linesize, format, width);
+    const int align = av_cpu_max_align();
+    const int aligned_w = FFALIGN(dst->width, align);
+    ret = av_image_fill_linesizes(dst->linesize, dst->format, aligned_w);
     if (ret < 0)
         return ret;
 
     ptrdiff_t linesize1[4];
     for (int i = 0; i < 4; i++)
-        linesize1[i] = linesize[i] = FFALIGN(linesize[i], align);
-
-    return av_image_fill_plane_sizes(sizes, format, height, linesize1);
-}
-
-static int pass_alloc_output(SwsPass *pass)
-{
-    if (!pass || pass->output->buf[0])
-        return 0;
+        linesize1[i] = dst->linesize[i] = FFALIGN(dst->linesize[i], align);
 
     size_t sizes[4];
-    SwsPassBuffer *output = pass->output;
-    int ret = buffer_get_sizes(output, sizes);
+    ret = av_image_fill_plane_sizes(sizes, dst->format, dst->height, linesize1);
     if (ret < 0)
         return ret;
 
-    const int align = av_cpu_max_align();
     for (int i = 0; i < 4; i++) {
         if (!sizes[i])
             break;
@@ -83,17 +70,44 @@ static int pass_alloc_output(SwsPass *pass)
         AVBufferRef *buf = av_buffer_alloc(sizes[i] + align);
         if (!buf)
             return AVERROR(ENOMEM);
-        output->img.data[i] = (uint8_t *) FFALIGN((uintptr_t) buf->data, align);
-        output->buf[i] = buf;
+        dst->data[i] = (uint8_t *) FFALIGN((uintptr_t) buf->data, align);
+        dst->buf[i] = buf;
     }
+
+    return 0;
+}
+
+static int pass_alloc_output(SwsPass *pass)
+{
+    if (!pass || pass->output->frame)
+        return 0;
+
+    SwsPassBuffer *buffer = pass->output;
+    AVFrame *frame = av_frame_alloc();
+    if (!frame)
+        return AVERROR(ENOMEM);
+    frame->format = pass->format;
+    frame->width  = buffer->width;
+    frame->height = buffer->height;
+
+    int ret = frame_alloc_planes(frame);
+    if (ret < 0) {
+        av_frame_free(&frame);
+        return ret;
+    }
+
+    buffer->frame = frame;
+    buffer->img.fmt = pass->format;
+    buffer->img.frame_ptr = frame;
+    memcpy(buffer->img.data, frame->data, sizeof(frame->data));
+    memcpy(buffer->img.linesize, frame->linesize, sizeof(frame->linesize));
     return 0;
 }
 
 static void free_buffer(AVRefStructOpaque opaque, void *obj)
 {
     SwsPassBuffer *buffer = obj;
-    for (int i = 0; i < FF_ARRAY_ELEMS(buffer->buf); i++)
-        av_buffer_unref(&buffer->buf[i]);
+    av_frame_free(&buffer->frame);
 }
 
 SwsPass *ff_sws_graph_add_pass(SwsGraph *graph, enum AVPixelFormat fmt,
@@ -869,7 +883,7 @@ void ff_sws_graph_run(SwsGraph *graph, const SwsImg *output, const SwsImg *input
         const SwsPass *pass = graph->passes[i];
         graph->exec.pass   = pass;
         graph->exec.input  = pass->input ? pass->input->output->img : *input;
-        graph->exec.output = pass->output->buf[0] ? pass->output->img : *output;
+        graph->exec.output = pass->output->frame ? pass->output->img : *output;
         if (pass->setup)
             pass->setup(&graph->exec.output, &graph->exec.input, pass);
         avpriv_slicethread_execute(graph->slicethread, pass->num_slices, 0);
