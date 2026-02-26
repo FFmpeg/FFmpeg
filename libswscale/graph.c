@@ -64,13 +64,10 @@ static int frame_alloc_planes(AVFrame *dst)
     for (int i = 0; i < 4; i++) {
         if (!sizes[i])
             break;
-        if (sizes[i] > SIZE_MAX - align)
-            return AVERROR(EINVAL);
-
-        AVBufferRef *buf = av_buffer_alloc(sizes[i] + align);
+        AVBufferRef *buf = av_buffer_alloc(sizes[i]);
         if (!buf)
             return AVERROR(ENOMEM);
-        dst->data[i] = (uint8_t *) FFALIGN((uintptr_t) buf->data, align);
+        dst->data[i] = buf->data;
         dst->buf[i] = buf;
     }
 
