@@ -23,6 +23,7 @@ version <next>:
 - xHE-AAC Mps212 decoding support (experimental)
 - Remove the old HLS protocol handler
 - Vulkan compute codec optimizations
+- swscale Vulkan support
 
 
 version 8.0:
