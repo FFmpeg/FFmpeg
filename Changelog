@@ -22,6 +22,7 @@ version <next>:
 - Add vf_mestimate_d3d12 filter
 - xHE-AAC Mps212 decoding support (experimental)
 - Remove the old HLS protocol handler
+- Vulkan compute codec optimizations
 
 
 version 8.0:
