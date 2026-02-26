@@ -39,7 +39,6 @@
 #include "huffyuvencdsp.h"
 #include "lossless_videoencdsp.h"
 #include "put_bits.h"
-#include "libavutil/emms.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
@@ -940,7 +939,6 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     } else {
         av_log(avctx, AV_LOG_ERROR, "Format not supported!\n");
     }
-    emms_c();
 
     size += (put_bits_count(&s->pb) + 31) / 8;
     put_bits(&s->pb, 16, 0);

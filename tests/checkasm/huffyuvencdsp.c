@@ -42,8 +42,8 @@ static void check_sub_hfyu_median_pred_int16(const char *aligned, unsigned width
     static const int bpps[] = { 9, 16, };
     HuffYUVEncDSPContext c;
 
-    declare_func_emms(AV_CPU_FLAG_MMXEXT, void, uint16_t *dst, const uint16_t *src1,
-                      const uint16_t *src2, unsigned mask, int w, int *left, int *left_top);
+    declare_func(void, uint16_t *dst, const uint16_t *src1,
+                 const uint16_t *src2, unsigned mask, int w, int *left, int *left_top);
 
     for (size_t i = 0; i < FF_ARRAY_ELEMS(bpps); ++i) {
         const int bpp = bpps[i];
