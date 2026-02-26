@@ -396,6 +396,8 @@ static int flv_same_video_codec(AVCodecParameters *vpar, uint32_t flv_codecid)
         return 1;
 
     switch (flv_codecid) {
+    case MKBETAG('v', 'v', 'c', '1'):
+        return vpar->codec_id == AV_CODEC_ID_VVC;
     case FLV_CODECID_X_HEVC:
     case MKBETAG('h', 'v', 'c', '1'):
         return vpar->codec_id == AV_CODEC_ID_HEVC;
@@ -430,6 +432,10 @@ static int flv_set_video_codec(AVFormatContext *s, AVStream *vstream,
     enum AVCodecID old_codec_id = vstream->codecpar->codec_id;
 
     switch (flv_codecid) {
+    case MKBETAG('v', 'v', 'c', '1'):
+        par->codec_id = AV_CODEC_ID_VVC;
+        vstreami->need_parsing = AVSTREAM_PARSE_HEADERS;
+        break;
     case FLV_CODECID_X_HEVC:
     case MKBETAG('h', 'v', 'c', '1'):
         par->codec_id = AV_CODEC_ID_HEVC;
@@ -1750,6 +1756,7 @@ retry_duration:
             st->codecpar->codec_id == AV_CODEC_ID_H264 ||
             st->codecpar->codec_id == AV_CODEC_ID_MPEG4 ||
             st->codecpar->codec_id == AV_CODEC_ID_HEVC ||
+            st->codecpar->codec_id == AV_CODEC_ID_VVC ||
             st->codecpar->codec_id == AV_CODEC_ID_AV1 ||
             st->codecpar->codec_id == AV_CODEC_ID_VP9) {
             int type = 0;
@@ -1773,7 +1780,9 @@ retry_duration:
             }
 
             if (st->codecpar->codec_id == AV_CODEC_ID_MPEG4 ||
-                ((st->codecpar->codec_id == AV_CODEC_ID_H264 || st->codecpar->codec_id == AV_CODEC_ID_HEVC) &&
+                ((st->codecpar->codec_id == AV_CODEC_ID_H264 ||
+                  st->codecpar->codec_id == AV_CODEC_ID_VVC ||
+                  st->codecpar->codec_id == AV_CODEC_ID_HEVC) &&
                  (!enhanced_flv || type == PacketTypeCodedFrames))) {
                 if (size < 3 || track_size < 3) {
                     ret = AVERROR_INVALIDDATA;
@@ -1798,6 +1807,7 @@ retry_duration:
             if (type == 0 && (!st->codecpar->extradata || st->codecpar->codec_id == AV_CODEC_ID_AAC ||
                 st->codecpar->codec_id == AV_CODEC_ID_OPUS || st->codecpar->codec_id == AV_CODEC_ID_FLAC ||
                 st->codecpar->codec_id == AV_CODEC_ID_H264 || st->codecpar->codec_id == AV_CODEC_ID_HEVC ||
+                st->codecpar->codec_id == AV_CODEC_ID_VVC ||
                 st->codecpar->codec_id == AV_CODEC_ID_AV1 || st->codecpar->codec_id == AV_CODEC_ID_VP9)) {
                 AVDictionaryEntry *t;
 
