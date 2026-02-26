@@ -157,26 +157,37 @@ static int pass_append(SwsGraph *graph, enum AVPixelFormat fmt, int w, int h,
     return 0;
 }
 
-static void run_copy(const SwsImg *out_base, const SwsImg *in_base,
-                     int y, int h, const SwsPass *pass)
+static void img_shift(const SwsImg *img, const int y, uint8_t *data[4])
 {
-    SwsImg in  = ff_sws_img_shift(in_base,  y);
-    SwsImg out = ff_sws_img_shift(out_base, y);
+    for (int i = 0; i < 4; i++) {
+        if (img->data[i])
+            data[i] = img->data[i] + (y >> ff_fmt_vshift(img->fmt, i)) * img->linesize[i];
+        else
+            data[i] = NULL;
+    }
+}
 
-    for (int i = 0; i < FF_ARRAY_ELEMS(out.data) && out.data[i]; i++) {
-        const int lines = h >> ff_fmt_vshift(in.fmt, i);
-        av_assert1(in.data[i]);
+static void run_copy(const SwsImg *out, const SwsImg *in, int y, int h,
+                     const SwsPass *pass)
+{
+    uint8_t *in_data[4], *out_data[4];
+    img_shift(in,  y, in_data);
+    img_shift(out, y, out_data);
 
-        if (in.data[i] == out.data[i]) {
-            av_assert0(in.linesize[i] == out.linesize[i]);
-        } else if (in.linesize[i] == out.linesize[i]) {
-            memcpy(out.data[i], in.data[i], lines * out.linesize[i]);
+    for (int i = 0; i < 4 && out_data[i]; i++) {
+        const int lines = h >> ff_fmt_vshift(in->fmt, i);
+        av_assert1(in_data[i]);
+
+        if (in_data[i] == out_data[i]) {
+            av_assert0(in->linesize[i] == out->linesize[i]);
+        } else if (in->linesize[i] == out->linesize[i]) {
+            memcpy(out_data[i], in_data[i], lines * out->linesize[i]);
         } else {
-            const int linesize = FFMIN(out.linesize[i], in.linesize[i]);
+            const int linesize = FFMIN(out->linesize[i], in->linesize[i]);
             for (int j = 0; j < lines; j++) {
-                memcpy(out.data[i], in.data[i], linesize);
-                in.data[i]  += in.linesize[i];
-                out.data[i] += out.linesize[i];
+                memcpy(out_data[i], in_data[i], linesize);
+                in_data[i]  += in->linesize[i];
+                out_data[i] += out->linesize[i];
             }
         }
     }
@@ -266,26 +277,28 @@ static inline SwsContext *slice_ctx(const SwsPass *pass, int y)
     return sws;
 }
 
-static void run_legacy_unscaled(const SwsImg *out, const SwsImg *in_base,
+static void run_legacy_unscaled(const SwsImg *out, const SwsImg *in,
                                 int y, int h, const SwsPass *pass)
 {
     SwsContext *sws = slice_ctx(pass, y);
     SwsInternal *c = sws_internal(sws);
-    const SwsImg in = ff_sws_img_shift(in_base, y);
+    uint8_t *in_data[4];
+    img_shift(in, y, in_data);
 
-    c->convert_unscaled(c, (const uint8_t *const *) in.data, in.linesize, y, h,
+    c->convert_unscaled(c, (const uint8_t *const *) in_data, in->linesize, y, h,
                         out->data, out->linesize);
 }
 
-static void run_legacy_swscale(const SwsImg *out_base, const SwsImg *in,
+static void run_legacy_swscale(const SwsImg *out, const SwsImg *in,
                                int y, int h, const SwsPass *pass)
 {
     SwsContext *sws = slice_ctx(pass, y);
     SwsInternal *c = sws_internal(sws);
-    const SwsImg out = ff_sws_img_shift(out_base, y);
+    uint8_t *out_data[4];
+    img_shift(out, y, out_data);
 
     ff_swscale(c, (const uint8_t *const *) in->data, in->linesize, 0,
-               sws->src_h, out.data, out.linesize, y, h);
+               sws->src_h, out_data, out->linesize, y, h);
 }
 
 static void get_chroma_pos(SwsGraph *graph, int *h_chr_pos, int *v_chr_pos,
@@ -621,15 +634,16 @@ static void setup_lut3d(const SwsImg *out, const SwsImg *in, const SwsPass *pass
     ff_sws_lut3d_update(lut, &pass->graph->src.color);
 }
 
-static void run_lut3d(const SwsImg *out_base, const SwsImg *in_base,
-                      int y, int h, const SwsPass *pass)
+static void run_lut3d(const SwsImg *out, const SwsImg *in, int y, int h,
+                      const SwsPass *pass)
 {
     SwsLut3D *lut = pass->priv;
-    const SwsImg in  = ff_sws_img_shift(in_base,  y);
-    const SwsImg out = ff_sws_img_shift(out_base, y);
+    uint8_t *in_data[4], *out_data[4];
+    img_shift(in,  y, in_data);
+    img_shift(out, y, out_data);
 
-    ff_sws_lut3d_apply(lut, in.data[0], in.linesize[0], out.data[0],
-                       out.linesize[0], pass->width, h);
+    ff_sws_lut3d_apply(lut, in_data[0], in->linesize[0], out_data[0],
+                       out->linesize[0], pass->width, h);
 }
 
 static int adapt_colors(SwsGraph *graph, SwsFormat src, SwsFormat dst,
