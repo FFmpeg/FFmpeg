@@ -234,6 +234,8 @@ static int add_ops_glsl(VulkanPriv *p, FFVulkanOpsCtx *s,
         const char *type_s = op->type == SWS_PIXEL_F32 ? "float" :
                              op->type == SWS_PIXEL_U32 ? "uint32_t" :
                              op->type == SWS_PIXEL_U16 ? "uint16_t" : "uint8_t";
+        av_bprintf(&shd->src, "    // %s\n", ff_sws_op_type_name(op->op));
+
         switch (op->op) {
         case SWS_OP_READ: {
             if (op->rw.packed) {
