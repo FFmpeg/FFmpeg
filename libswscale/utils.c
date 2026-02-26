@@ -1885,6 +1885,7 @@ av_cold int sws_init_context(SwsContext *sws, SwsFilter *srcFilter,
     enum AVPixelFormat src_format, dst_format;
     int ret;
 
+    c->is_legacy_init = 1;
     c->frame_src = av_frame_alloc();
     c->frame_dst = av_frame_alloc();
     if (!c->frame_src || !c->frame_dst)
@@ -2253,6 +2254,11 @@ void sws_freeContext(SwsContext *sws)
 
     for (i = 0; i < FF_ARRAY_ELEMS(c->graph); i++)
         ff_sws_graph_free(&c->graph[i]);
+
+    if (!c->is_legacy_init) {
+        av_free(c);
+        return;
+    }
 
     for (i = 0; i < c->nb_slice_ctx; i++)
         sws_freeContext(c->slice_ctx[i]);

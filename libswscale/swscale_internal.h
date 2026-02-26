@@ -697,6 +697,8 @@ struct SwsInternal {
 
     // Hardware specific private data
     void *hw_priv; /* refstruct */
+
+    int is_legacy_init;
 };
 //FIXME check init (where 0)
 

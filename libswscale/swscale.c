@@ -1208,6 +1208,8 @@ static int scale_internal(SwsContext *sws,
 void sws_frame_end(SwsContext *sws)
 {
     SwsInternal *c = sws_internal(sws);
+    if (!c->is_legacy_init)
+        return;
     av_frame_unref(c->frame_src);
     av_frame_unref(c->frame_dst);
     c->src_ranges.nb_ranges = 0;
@@ -1217,6 +1219,8 @@ int sws_frame_start(SwsContext *sws, AVFrame *dst, const AVFrame *src)
 {
     SwsInternal *c = sws_internal(sws);
     int ret, allocated = 0;
+    if (!c->is_legacy_init)
+        return AVERROR(EINVAL);
 
     ret = av_frame_ref(c->frame_src, src);
     if (ret < 0)
@@ -1249,6 +1253,8 @@ int sws_send_slice(SwsContext *sws, unsigned int slice_start,
 {
     SwsInternal *c = sws_internal(sws);
     int ret;
+    if (!c->is_legacy_init)
+        return AVERROR(EINVAL);
 
     ret = ff_range_add(&c->src_ranges, slice_start, slice_height);
     if (ret < 0)
@@ -1272,6 +1278,8 @@ int sws_receive_slice(SwsContext *sws, unsigned int slice_start,
     SwsInternal *c = sws_internal(sws);
     unsigned int align = sws_receive_slice_alignment(sws);
     uint8_t *dst[4];
+    if (!c->is_legacy_init)
+        return AVERROR(EINVAL);
 
     /* wait until complete input has been received */
     if (!(c->src_ranges.nb_ranges == 1        &&
@@ -1345,9 +1353,9 @@ int sws_scale_frame(SwsContext *sws, AVFrame *dst, const AVFrame *src)
     if (!src || !dst)
         return AVERROR(EINVAL);
 
-    if (c->frame_src) {
+    if (c->is_legacy_init) {
         /* Context has been initialized with explicit values, fall back to
-         * legacy API */
+         * legacy API behavior. */
         ret = sws_frame_start(sws, dst, src);
         if (ret < 0)
             return ret;
@@ -1516,6 +1524,9 @@ int attribute_align_arg sws_scale(SwsContext *sws,
                                   const int dstStride[])
 {
     SwsInternal *c = sws_internal(sws);
+    if (!c->is_legacy_init)
+        return AVERROR(EINVAL);
+
     if (c->nb_slice_ctx) {
         sws = c->slice_ctx[0];
         c = sws_internal(sws);
