@@ -1321,40 +1321,6 @@ int sws_receive_slice(SwsContext *sws, unsigned int slice_start,
                           dst, c->frame_dst->linesize, slice_start, slice_height);
 }
 
-static SwsImg get_frame_img(const AVFrame *frame, int field)
-{
-    SwsImg img = {0};
-
-    img.frame_ptr = frame;
-    img.fmt = frame->format;
-    for (int i = 0; i < 4; i++) {
-        img.data[i]     = frame->data[i];
-        img.linesize[i] = frame->linesize[i];
-    }
-
-    if (!(frame->flags & AV_FRAME_FLAG_INTERLACED)) {
-        av_assert1(!field);
-        return img;
-    }
-
-    if (field == FIELD_BOTTOM) {
-        /* Odd rows, offset by one line */
-        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
-        for (int i = 0; i < 4; i++) {
-            if (img.data[i])
-                img.data[i] += img.linesize[i];
-            if (desc->flags & AV_PIX_FMT_FLAG_PAL)
-                break;
-        }
-    }
-
-    /* Take only every second line */
-    for (int i = 0; i < 4; i++)
-        img.linesize[i] <<= 1;
-
-    return img;
-}
-
 /* Subset of av_frame_ref() that only references (video) data buffers */
 static int frame_ref(AVFrame *dst, const AVFrame *src)
 {
@@ -1419,9 +1385,7 @@ int sws_scale_frame(SwsContext *sws, AVFrame *dst, const AVFrame *src)
 
         for (int field = 0; field < 2; field++) {
             SwsGraph *graph = c->graph[field];
-            SwsImg input  = get_frame_img(src, field);
-            SwsImg output = get_frame_img(dst, field);
-            ff_sws_graph_run(graph, &output, &input);
+            ff_sws_graph_run(graph, dst, src);
             if (!graph->dst.interlaced)
                 break;
         }

@@ -189,8 +189,9 @@ int ff_sws_graph_reinit(SwsContext *ctx, const SwsFormat *dst, const SwsFormat *
                         int field, SwsGraph **graph);
 
 /**
- * Dispatch the filter graph on a single field. Internally threaded.
+ * Dispatch the filter graph on a single field of the given frames. Internally
+ * threaded.
  */
-void ff_sws_graph_run(SwsGraph *graph, const SwsImg *output, const SwsImg *input);
+void ff_sws_graph_run(SwsGraph *graph, const AVFrame *dst, const AVFrame *src);
 
 #endif /* SWSCALE_GRAPH_H */

@@ -869,18 +869,52 @@ void ff_sws_graph_update_metadata(SwsGraph *graph, const SwsColor *color)
     ff_color_update_dynamic(&graph->src.color, color);
 }
 
-void ff_sws_graph_run(SwsGraph *graph, const SwsImg *output, const SwsImg *input)
+static SwsImg get_field(const AVFrame *frame, int field)
 {
-    av_assert0(output->fmt == graph->dst.hw_format ||
-               output->fmt == graph->dst.format);
-    av_assert0(input->fmt  == graph->src.hw_format ||
-               input->fmt  == graph->src.format);
+    SwsImg img = {0};
+
+    img.frame_ptr = frame;
+    img.fmt = frame->format;
+    for (int i = 0; i < 4; i++) {
+        img.data[i]     = frame->data[i];
+        img.linesize[i] = frame->linesize[i];
+    }
+
+    if (!(frame->flags & AV_FRAME_FLAG_INTERLACED)) {
+        av_assert1(!field);
+        return img;
+    }
+
+    if (field == FIELD_BOTTOM) {
+        /* Odd rows, offset by one line */
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
+        for (int i = 0; i < 4; i++) {
+            if (img.data[i])
+                img.data[i] += img.linesize[i];
+            if (desc->flags & AV_PIX_FMT_FLAG_PAL)
+                break;
+        }
+    }
+
+    /* Take only every second line */
+    for (int i = 0; i < 4; i++)
+        img.linesize[i] <<= 1;
+
+    return img;
+}
+
+void ff_sws_graph_run(SwsGraph *graph, const AVFrame *dst, const AVFrame *src)
+{
+    av_assert0(dst->format == graph->dst.hw_format || dst->format == graph->dst.format);
+    av_assert0(src->format == graph->src.hw_format || src->format == graph->src.format);
+    SwsImg input  = get_field(src, graph->field);
+    SwsImg output = get_field(dst, graph->field);
 
     for (int i = 0; i < graph->num_passes; i++) {
         const SwsPass *pass = graph->passes[i];
         graph->exec.pass   = pass;
-        graph->exec.input  = pass->input ? pass->input->output->img : *input;
-        graph->exec.output = pass->output->frame ? pass->output->img : *output;
+        graph->exec.input  = pass->input ? pass->input->output->img : input;
+        graph->exec.output = pass->output->frame ? pass->output->img : output;
         if (pass->setup)
             pass->setup(&graph->exec.output, &graph->exec.input, pass);
         avpriv_slicethread_execute(graph->slicethread, pass->num_slices, 0);
