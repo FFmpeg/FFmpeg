@@ -41,6 +41,7 @@
 #include "demux.h"
 #include "mux.h"
 #include "internal.h"
+#include "url.h"
 
 void ff_free_stream(AVStream **pst)
 {
@@ -867,6 +868,37 @@ void ff_format_set_url(AVFormatContext *s, char *url)
     av_freep(&s->url);
     s->url = url;
 }
+
+int ff_format_check_set_url(AVFormatContext *s, const char *url)
+{
+    URLComponents uc;
+    av_assert0(url);
+    char proto[64];
+
+    int ret = ff_url_decompose(&uc, url, NULL);
+    if (ret < 0)
+        return ret;
+    av_strlcpy(proto, uc.scheme, FFMIN(sizeof(proto), uc.url_component_end_scheme - uc.scheme));
+
+    if (s->protocol_whitelist && av_match_list(proto, s->protocol_whitelist, ',') <= 0) {
+        av_log(s, AV_LOG_ERROR, "Protocol '%s' not on whitelist '%s'!\n", proto, s->protocol_whitelist);
+        return AVERROR(EINVAL);
+    }
+
+    if (s->protocol_blacklist && av_match_list(proto, s->protocol_blacklist, ',') > 0) {
+        av_log(s, AV_LOG_ERROR, "Protocol '%s' on blacklist '%s'!\n", proto, s->protocol_blacklist);
+        return AVERROR(EINVAL);
+    }
+
+    url = av_strdup(url);
+    if (!url)
+        return AVERROR(ENOMEM);
+
+    av_freep(&s->url);
+    s->url = url;
+    return 0;
+}
+
 
 int ff_format_io_close(AVFormatContext *s, AVIOContext **pb)
 {

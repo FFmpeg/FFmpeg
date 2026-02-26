@@ -631,6 +631,16 @@ int ff_bprint_to_codecpar_extradata(AVCodecParameters *par, struct AVBPrint *buf
 void ff_format_set_url(AVFormatContext *s, char *url);
 
 /**
+ * Set AVFormatContext url field to a av_strdup of the provided pointer. The pointer must
+ * point to a valid string. The existing url field is freed if necessary.
+ *
+ * Checks protocol_whitelist/blacklist
+ *
+ * @returns a AVERROR code or non negative on success
+ */
+int ff_format_check_set_url(AVFormatContext *s, const char *url);
+
+/**
  * Return a positive value if the given url has one of the given
  * extensions, negative AVERROR on error, 0 otherwise.
  *
