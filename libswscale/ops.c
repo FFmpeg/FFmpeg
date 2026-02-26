@@ -1090,9 +1090,6 @@ static void op_pass_run(const SwsImg *out, const SwsImg *in, const int y,
     exec.slice_y = y;
     exec.slice_h = h;
 
-    exec.src_frame_ptr = in->frame_ptr;
-    exec.dst_frame_ptr = out->frame_ptr;
-
     /**
      *  To ensure safety, we need to consider the following:
      *
