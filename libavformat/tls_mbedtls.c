@@ -675,7 +675,7 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
         // check the result of the certificate verification
         if ((verify_res_flags = mbedtls_ssl_get_verify_result(&tls_ctx->ssl_context)) != 0) {
             av_log(h, AV_LOG_ERROR, "mbedtls_ssl_get_verify_result reported problems "\
-                                    "with the certificate verification, returned flags: %u\n",
+                                    "with the certificate verification, returned flags: %"PRIu32"\n",
                                     verify_res_flags);
             if (verify_res_flags & MBEDTLS_X509_BADCERT_NOT_TRUSTED)
                 av_log(h, AV_LOG_ERROR, "The certificate is not correctly signed by the trusted CA.\n");

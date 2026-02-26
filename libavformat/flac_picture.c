@@ -120,7 +120,7 @@ int ff_flac_parse_picture(AVFormatContext *s, uint8_t **bufp, int buf_size,
     left = bytestream2_get_bytes_left(&g);
     if (len <= 0 || len > left) {
         if (len > MAX_TRUNC_PICTURE_SIZE || len >= INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE) {
-            av_log(s, AV_LOG_ERROR, "Attached picture metadata block too big %u\n", len);
+            av_log(s, AV_LOG_ERROR, "Attached picture metadata block too big %"PRIu32"\n", len);
             if (s->error_recognition & AV_EF_EXPLODE)
                 return AVERROR_INVALIDDATA;
             return 0;
@@ -132,7 +132,7 @@ int ff_flac_parse_picture(AVFormatContext *s, uint8_t **bufp, int buf_size,
         if (truncate_workaround &&
             s->strict_std_compliance <= FF_COMPLIANCE_NORMAL &&
             len > left && (len & 0xffffff) == left) {
-            av_log(s, AV_LOG_INFO, "Correcting truncated metadata picture size from %u to %u\n", left, len);
+            av_log(s, AV_LOG_INFO, "Correcting truncated metadata picture size from %"PRIu32" to %"PRIu32"\n", left, len);
             trunclen = len - left;
         } else {
             av_log(s, AV_LOG_ERROR, "Attached picture metadata block too short\n");

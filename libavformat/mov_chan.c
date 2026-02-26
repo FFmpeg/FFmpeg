@@ -546,7 +546,7 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
         int nb_channels = ch_layout->nb_channels;
 
         if (!num_descr || num_descr < nb_channels) {
-            av_log(s, AV_LOG_ERROR, "got %d channel descriptions when at least %d were needed\n",
+            av_log(s, AV_LOG_ERROR, "got %"PRIu32" channel descriptions when at least %d were needed\n",
                    num_descr, nb_channels);
             return AVERROR_INVALIDDATA;
         }
@@ -554,7 +554,7 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
         if (num_descr > nb_channels) {
             int strict = s->strict_std_compliance >= FF_COMPLIANCE_STRICT;
             av_log(s, strict ? AV_LOG_ERROR : AV_LOG_WARNING,
-                   "got %d channel descriptions when number of channels is %d\n",
+                   "got %"PRIu32" channel descriptions when number of channels is %d\n",
                    num_descr, nb_channels);
             if (strict)
                 return AVERROR_INVALIDDATA;
