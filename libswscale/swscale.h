@@ -440,7 +440,7 @@ int sws_isSupportedEndiannessConversion(enum AVPixelFormat pix_fmt);
  * Initialize the swscaler context sws_context.
  *
  * This function is considered deprecated, and provided only for backwards
- * compatibility with sws_scale() and sws_start_frame(). The preferred way to
+ * compatibility with sws_scale() and sws_frame_start(). The preferred way to
  * use libswscale is to set all frame properties correctly and call
  * sws_scale_frame() directly, without explicitly initializing the context.
  *
@@ -485,8 +485,8 @@ SwsContext *sws_getContext(int srcW, int srcH, enum AVPixelFormat srcFormat,
 /**
  * Scale the image slice in srcSlice and put the resulting scaled
  * slice in the image in dst. A slice is a sequence of consecutive
- * rows in an image. Requires a context that has been previously
- * been initialized with sws_init_context().
+ * rows in an image. Requires a context that has previously been
+ * initialized with sws_init_context().
  *
  * Slices have to be provided in sequential order, either in
  * top-bottom or bottom-top order. If slices are provided in
@@ -516,8 +516,7 @@ int sws_scale(SwsContext *c, const uint8_t *const srcSlice[],
 /**
  * Initialize the scaling process for a given pair of source/destination frames.
  * Must be called before any calls to sws_send_slice() and sws_receive_slice().
- * Requires a context that has been previously been initialized with
- * sws_init_context().
+ * Requires a context that has previously been initialized with sws_init_context().
  *
  * This function will retain references to src and dst, so they must both use
  * refcounted buffers (if allocated by the caller, in case of dst).
@@ -588,7 +587,7 @@ int sws_receive_slice(SwsContext *c, unsigned int slice_start,
                       unsigned int slice_height);
 
 /**
- * Get the alignment required for slices. Requires a context that has been
+ * Get the alignment required for slices. Requires a context that has
  * previously been initialized with sws_init_context().
  *
  * @param c   The scaling context
@@ -600,8 +599,8 @@ unsigned int sws_receive_slice_alignment(const SwsContext *c);
 
 /**
  * @param c the scaling context
- * @param dstRange flag indicating the while-black range of the output (1=jpeg / 0=mpeg)
- * @param srcRange flag indicating the while-black range of the input (1=jpeg / 0=mpeg)
+ * @param dstRange flag indicating the white-black range of the output (1=jpeg / 0=mpeg)
+ * @param srcRange flag indicating the white-black range of the input (1=jpeg / 0=mpeg)
  * @param table the yuv2rgb coefficients describing the output yuv space, normally ff_yuv2rgb_coeffs[x]
  * @param inv_table the yuv2rgb coefficients describing the input yuv space, normally ff_yuv2rgb_coeffs[x]
  * @param brightness 16.16 fixed point brightness correction
