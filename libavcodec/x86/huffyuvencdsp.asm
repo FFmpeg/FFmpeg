@@ -95,23 +95,32 @@ cglobal sub_hfyu_median_pred_int16, 7,7,0, dst, src1, src2, mask, w, left, left_
     mov [leftq], maskd
     RET
 
-INIT_XMM sse2
+%macro SUB_HFYU_MEDIAN_PRED_INT16 1 ; u,s for pmaxuw vs pmaxsw
 cglobal sub_hfyu_median_pred_int16, 7,7,6, dst, src1, src2, mask, w, left, left_top
-    movd         m5, maskd
+    movd        xm5, maskd
     lea          wd, [wd+wd-(mmsize-1)]
-    movu         m0, [src1q]
-    movu         m2, [src2q]
-    SPLATW       m5, m5
+    movu        xm0, [src1q]
+    movu        xm2, [src2q]
+    SPLATW       m5, xm5
     add        dstq, wq
-    movd         m1, [left_topq]
+    movd        xm1, [left_topq]
     neg          wq
-    movd         m3, [leftq]
+    movd        xm3, [leftq]
+%if mmsize >= 32
+    movu        xm4, [src1q+14]
+%endif
     sub       src1q, wq
+    pslldq      xm0, 2
+    pslldq      xm2, 2
+    por         xm0, xm1
+%if mmsize >= 32
+    vinserti128  m0, xm4, 1
+%endif
+    por         xm2, xm3
+%if mmsize >= 32
+    vinserti128  m2, [src2q+14], 1
+%endif
     sub       src2q, wq
-    pslldq       m0, 2
-    pslldq       m2, 2
-    por          m0, m1
-    por          m2, m3
     jmp       .init
 
 .loop:
@@ -121,16 +130,16 @@ cglobal sub_hfyu_median_pred_int16, 7,7,6, dst, src1, src2, mask, w, left, left_
     movu         m1, [src1q + wq]       ; t
     movu         m3, [src2q + wq]
     psubw        m4, m2, m0             ; l - lt
-    pmaxsw       m0, m1, m2
+    pmax%1w      m0, m1, m2
     paddw        m4, m1                 ; l - lt + t
-    pminsw       m2, m1
+    pmin%1w      m2, m1
     pand         m4, m5                 ; (l - lt + t)&mask
-    pminsw       m4, m0
-    pmaxsw       m4, m2                 ; pred
+    pmin%1w      m4, m0
+    pmax%1w      m4, m2                 ; pred
     psubw        m3, m4                 ; l - pred
     pand         m3, m5
     movu [dstq + wq], m3
-    add          wq, 16
+    add          wq, mmsize
     js        .loop
 
     cmp          wd, mmsize-1
@@ -144,3 +153,12 @@ cglobal sub_hfyu_median_pred_int16, 7,7,6, dst, src1, src2, mask, w, left, left_
 .tail:
     mov          wq, -1
     jmp       .loop
+%endmacro
+
+INIT_XMM sse2
+SUB_HFYU_MEDIAN_PRED_INT16 s
+
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+SUB_HFYU_MEDIAN_PRED_INT16 u
+%endif
