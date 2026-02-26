@@ -334,6 +334,7 @@ void ff_vk_exec_pool_free(FFVulkanContext *s, FFVkExecPool *pool)
 
         av_freep(&sd->desc_sets);
     }
+    pool->nb_reg_shd = 0;
 
     for (int i = 0; i < pool->pool_size; i++) {
         if (pool->cmd_buf_pools[i])
@@ -350,6 +351,7 @@ void ff_vk_exec_pool_free(FFVulkanContext *s, FFVkExecPool *pool)
     av_free(pool->cmd_buf_pools);
     av_free(pool->cmd_bufs);
     av_free(pool->contexts);
+    pool->pool_size = 0;
 }
 
 int ff_vk_exec_pool_init(FFVulkanContext *s, AVVulkanDeviceQueueFamily *qf,
