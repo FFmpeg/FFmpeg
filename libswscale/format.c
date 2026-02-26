@@ -527,6 +527,14 @@ int sws_test_format(enum AVPixelFormat format, int output)
     return output ? sws_isSupportedOutput(format) : sws_isSupportedInput(format);
 }
 
+int sws_test_hw_format(enum AVPixelFormat format)
+{
+    switch (format) {
+    case AV_PIX_FMT_NONE: return 1;
+    default: return 0;
+    }
+}
+
 int sws_test_colorspace(enum AVColorSpace csp, int output)
 {
     switch (csp) {

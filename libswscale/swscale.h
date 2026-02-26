@@ -267,7 +267,7 @@ void sws_free_context(SwsContext **ctx);
  ***************************/
 
 /**
- * Test if a given pixel format is supported.
+ * Test if a given (software) pixel format is supported.
  *
  * @param output  If 0, test if compatible with the source/input frame;
  *                otherwise, with the destination/output frame.
@@ -276,6 +276,15 @@ void sws_free_context(SwsContext **ctx);
  * @return A positive integer if supported, 0 otherwise.
  */
 int sws_test_format(enum AVPixelFormat format, int output);
+
+/**
+ * Test if a given hardware pixel format is supported.
+ *
+ * @param format  The hardware format to check, or AV_PIX_FMT_NONE.
+ *
+ * @return A positive integer if supported or AV_PIX_FMT_NONE, 0 otherwise.
+ */
+int sws_test_hw_format(enum AVPixelFormat format);
 
 /**
  * Test if a given color space is supported.
