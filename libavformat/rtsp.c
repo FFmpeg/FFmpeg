@@ -2170,12 +2170,11 @@ redirect:
     ff_rtsp_close_streams(s);
     ff_rtsp_close_connections(s);
     if (reply->status_code >=300 && reply->status_code < 400 && s->iformat) {
-        char *new_url = av_strdup(reply->location);
-        if (!new_url) {
-            err = AVERROR(ENOMEM);
+        int ret = ff_format_check_set_url(s, reply->location);
+        if (ret < 0) {
+            err = ret;
             goto fail2;
         }
-        ff_format_set_url(s, new_url);
         rt->session_id[0] = '\0';
         av_log(s, AV_LOG_INFO, "Status %d: Redirecting to %s\n",
                reply->status_code,
