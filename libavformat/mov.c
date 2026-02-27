@@ -10729,7 +10729,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
         sample->size = FFMIN(sample->size, (mov->next_root_atom - sample->pos));
     }
 
-    if (st->discard != AVDISCARD_ALL) {
+    if (st->discard != AVDISCARD_ALL || sc->iamf) {
         int64_t ret64 = avio_seek(sc->pb, sample->pos, SEEK_SET);
         if (ret64 != sample->pos) {
             av_log(mov->fc, AV_LOG_ERROR, "stream %d, offset 0x%"PRIx64": partial file\n",
@@ -10765,6 +10765,12 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
                     return ret;
                 }
                 size -= ret;
+
+                if (pkt->flags & AV_PKT_FLAG_DISCARD) {
+                    av_packet_unref(pkt);
+                    ret = 0;
+                    continue;
+                }
                 pkt->pts = pts; pkt->dts = dts;
                 pkt->pos = pos; pkt->flags |= flags;
                 pkt->duration = duration;
