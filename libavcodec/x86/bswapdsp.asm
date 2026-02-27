@@ -33,11 +33,12 @@ SECTION .text
 ; %1 = aligned/unaligned
 %macro BSWAP_LOOPS  1
     mov      r3d, r2d
+%if cpuflag(avx2)
+    sar      r3d, 4
+    jz       .left8_%1
+%else
     sar      r3d, 3
     jz       .left4_%1
-%if cpuflag(avx2)
-    sar      r3d, 1
-    jz       .left8_%1
 %endif
 .loop8_%1:
     mov%1    m0, [r1 +  0]
