@@ -517,25 +517,8 @@ static int run_file_tests(const AVFrame *ref, FILE *fp, struct options opts)
     return 0;
 }
 
-int main(int argc, char **argv)
+static int parse_options(int argc, char **argv, struct options *opts, FILE **fp)
 {
-    struct options opts = {
-        .src_fmt = AV_PIX_FMT_NONE,
-        .dst_fmt = AV_PIX_FMT_NONE,
-        .w       = 96,
-        .h       = 96,
-        .threads = 1,
-        .iters   = 1,
-        .prob    = 1.0,
-        .flags   = -1,
-        .dither  = -1,
-    };
-
-    AVFrame *rgb = NULL, *ref = NULL;
-    FILE *fp = NULL;
-    AVLFG rand;
-    int ret = -1;
-
     for (int i = 1; i < argc; i += 2) {
         if (!strcmp(argv[i], "-help") || !strcmp(argv[i], "--help")) {
             fprintf(stderr,
@@ -566,67 +549,92 @@ int main(int argc, char **argv)
                     "   -v <level>\n"
                     "       Enable log verbosity at given level\n"
             );
-            return 0;
+            exit(0);
         }
         if (argv[i][0] != '-' || i + 1 == argc)
             goto bad_option;
         if (!strcmp(argv[i], "-ref")) {
-            fp = fopen(argv[i + 1], "r");
-            if (!fp) {
+            *fp = fopen(argv[i + 1], "r");
+            if (!*fp) {
                 fprintf(stderr, "could not open '%s'\n", argv[i + 1]);
-                goto error;
+                return -1;
             }
         } else if (!strcmp(argv[i], "-cpuflags")) {
             unsigned flags = av_get_cpu_flags();
             int res = av_parse_cpu_caps(&flags, argv[i + 1]);
             if (res < 0) {
                 fprintf(stderr, "invalid cpu flags %s\n", argv[i + 1]);
-                goto error;
+                return -1;
             }
             av_force_cpu_flags(flags);
         } else if (!strcmp(argv[i], "-src")) {
-            opts.src_fmt = av_get_pix_fmt(argv[i + 1]);
-            if (opts.src_fmt == AV_PIX_FMT_NONE) {
+            opts->src_fmt = av_get_pix_fmt(argv[i + 1]);
+            if (opts->src_fmt == AV_PIX_FMT_NONE) {
                 fprintf(stderr, "invalid pixel format %s\n", argv[i + 1]);
-                goto error;
+                return -1;
             }
         } else if (!strcmp(argv[i], "-dst")) {
-            opts.dst_fmt = av_get_pix_fmt(argv[i + 1]);
-            if (opts.dst_fmt == AV_PIX_FMT_NONE) {
+            opts->dst_fmt = av_get_pix_fmt(argv[i + 1]);
+            if (opts->dst_fmt == AV_PIX_FMT_NONE) {
                 fprintf(stderr, "invalid pixel format %s\n", argv[i + 1]);
-                goto error;
+                return -1;
             }
         } else if (!strcmp(argv[i], "-bench")) {
-            opts.bench = 1;
-            opts.iters = atoi(argv[i + 1]);
-            opts.iters = FFMAX(opts.iters, 1);
-            opts.w = 1920;
-            opts.h = 1080;
+            opts->bench = 1;
+            opts->iters = atoi(argv[i + 1]);
+            opts->iters = FFMAX(opts->iters, 1);
+            opts->w = 1920;
+            opts->h = 1080;
         } else if (!strcmp(argv[i], "-flags")) {
             SwsContext *dummy = sws_alloc_context();
             const AVOption *flags_opt = av_opt_find(dummy, "sws_flags", NULL, 0, 0);
-            ret = av_opt_eval_flags(dummy, flags_opt, argv[i + 1], &opts.flags);
+            int ret = av_opt_eval_flags(dummy, flags_opt, argv[i + 1], &opts->flags);
             sws_free_context(&dummy);
             if (ret < 0) {
                 fprintf(stderr, "invalid flags %s\n", argv[i + 1]);
-                goto error;
+                return -1;
             }
         } else if (!strcmp(argv[i], "-dither")) {
-            opts.dither = atoi(argv[i + 1]);
+            opts->dither = atoi(argv[i + 1]);
         } else if (!strcmp(argv[i], "-unscaled")) {
-            opts.unscaled = atoi(argv[i + 1]);
+            opts->unscaled = atoi(argv[i + 1]);
         } else if (!strcmp(argv[i], "-threads")) {
-            opts.threads = atoi(argv[i + 1]);
+            opts->threads = atoi(argv[i + 1]);
         } else if (!strcmp(argv[i], "-p")) {
-            opts.prob = atof(argv[i + 1]);
+            opts->prob = atof(argv[i + 1]);
         } else if (!strcmp(argv[i], "-v")) {
             av_log_set_level(atoi(argv[i + 1]));
         } else {
 bad_option:
             fprintf(stderr, "bad option or argument missing (%s) see -help\n", argv[i]);
-            goto error;
+            return -1;
         }
     }
+
+    return 0;
+}
+
+int main(int argc, char **argv)
+{
+    struct options opts = {
+        .src_fmt = AV_PIX_FMT_NONE,
+        .dst_fmt = AV_PIX_FMT_NONE,
+        .w       = 96,
+        .h       = 96,
+        .threads = 1,
+        .iters   = 1,
+        .prob    = 1.0,
+        .flags   = -1,
+        .dither  = -1,
+    };
+
+    AVFrame *rgb = NULL, *ref = NULL;
+    FILE *fp = NULL;
+    AVLFG rand;
+    int ret = -1;
+
+    if (parse_options(argc, argv, &opts, &fp) < 0)
+        goto error;
 
     ff_sfc64_init(&prng_state, 0, 0, 0, 12);
     av_lfg_init(&rand, 1);
