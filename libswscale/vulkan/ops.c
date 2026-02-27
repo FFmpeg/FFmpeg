@@ -296,6 +296,11 @@ static int add_ops_glsl(VulkanPriv *p, FFVulkanOpsCtx *s,
                            op->type == SWS_PIXEL_F32 ? ".0f" : "");
             }
             break;
+        case SWS_OP_LSHIFT:
+        case SWS_OP_RSHIFT:
+            av_bprintf(&shd->src, "    %s %s= %i;\n", type_name,
+                       op->op == SWS_OP_LSHIFT ? "<<" : ">>", op->c.u);
+            break;
         default:
             return AVERROR(ENOTSUP);
         }
