@@ -96,7 +96,6 @@ static void mpeg_er_decode_mb(void *opaque, int ref, int mv_dir, int mv_type,
 av_cold int ff_mpeg_er_init(MpegEncContext *s)
 {
     ERContext *er = &s->er;
-    int mb_array_size = s->mb_height * s->mb_stride;
 
     er->avctx       = s->avctx;
 
@@ -111,22 +110,11 @@ av_cold int ff_mpeg_er_init(MpegEncContext *s)
     er->dc_val[1] = er->dc_val[0] + s->b8_stride * 2 * s->buffer_pools.alloc_mb_height + s->mb_stride;
     er->dc_val[2] = er->dc_val[1] + s->mb_stride * (s->buffer_pools.alloc_mb_height + 1);
 
-    er->er_temp_buffer     = av_malloc(s->mb_height * s->mb_stride * (4*sizeof(int) + 1));
-    er->error_status_table = av_mallocz(mb_array_size);
-    if (!er->er_temp_buffer || !er->error_status_table)
-        goto fail;
-
     er->mbskip_table  = s->mbskip_table;
     er->mbintra_table = s->mbintra_table;
 
     er->decode_mb = mpeg_er_decode_mb;
     er->opaque    = s;
 
-    ff_er_init(er);
-
-    return 0;
-fail:
-    av_freep(&er->er_temp_buffer);
-    av_freep(&er->error_status_table);
-    return AVERROR(ENOMEM);
+    return ff_er_init(er);
 }

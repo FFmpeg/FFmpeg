@@ -39,12 +39,22 @@
 #include "threadframe.h"
 #include "threadprogress.h"
 
-av_cold void ff_er_init(ERContext *const s)
+av_cold int ff_er_init(ERContext *const s)
 {
     MECmpContext mecc;
+    unsigned mb_array_size = s->mb_height * s->mb_stride;
+
+    s->error_status_table = av_mallocz(mb_array_size);
+    if (!s->error_status_table)
+        return AVERROR(ENOMEM);
+    s->er_temp_buffer = av_malloc_array(mb_array_size, 4*sizeof(int) + 1);
+    if (!s->er_temp_buffer)
+        return AVERROR(ENOMEM);
 
     ff_me_cmp_init(&mecc, s->avctx);
     s->sad = mecc.sad[0];
+
+    return 0;
 }
 
 /**

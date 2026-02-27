@@ -90,7 +90,7 @@ typedef struct ERContext {
     void *opaque;
 } ERContext;
 
-void ff_er_init(ERContext *const s);
+int ff_er_init(ERContext *const s);
 
 void ff_er_frame_start(ERContext *s);
 
