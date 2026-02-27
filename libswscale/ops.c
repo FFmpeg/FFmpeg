@@ -982,24 +982,32 @@ static void op_pass_setup(const SwsImg *out_base, const SwsImg *in_base,
 
     for (int i = 0; i < p->planes_in; i++) {
         const int idx        = p->idx_in[i];
-        const int sub_x      = (idx == 1 || idx == 2) ? indesc->log2_chroma_w : 0;
+        const int chroma     = idx == 1 || idx == 2;
+        const int sub_x      = chroma ? indesc->log2_chroma_w : 0;
+        const int sub_y      = chroma ? indesc->log2_chroma_h : 0;
         const int plane_w    = (aligned_w + sub_x) >> sub_x;
         const int plane_pad  = (comp->over_read + sub_x) >> sub_x;
         const int plane_size = plane_w * p->pixel_bits_in >> 3;
         if (comp->slice_align)
             p->memcpy_in |= plane_size + plane_pad > in.linesize[i];
         exec->in_stride[i] = in.linesize[i];
+        exec->in_sub_y[i]  = sub_y;
+        exec->in_sub_x[i]  = sub_x;
     }
 
     for (int i = 0; i < p->planes_out; i++) {
         const int idx        = p->idx_out[i];
-        const int sub_x      = (idx == 1 || idx == 2) ? outdesc->log2_chroma_w : 0;
+        const int chroma     = idx == 1 || idx == 2;
+        const int sub_x      = chroma ? outdesc->log2_chroma_w : 0;
+        const int sub_y      = chroma ? outdesc->log2_chroma_h : 0;
         const int plane_w    = (aligned_w + sub_x) >> sub_x;
         const int plane_pad  = (comp->over_write + sub_x) >> sub_x;
         const int plane_size = plane_w * p->pixel_bits_out >> 3;
         if (comp->slice_align)
             p->memcpy_out |= plane_size + plane_pad > out.linesize[i];
         exec->out_stride[i] = out.linesize[i];
+        exec->out_sub_y[i]  = sub_y;
+        exec->out_sub_x[i]  = sub_x;
     }
 
     /* Pre-fill pointer bump for the main section only; this value does not
