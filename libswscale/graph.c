@@ -782,14 +782,20 @@ int ff_sws_graph_create(SwsContext *ctx, const SwsFormat *dst, const SwsFormat *
     graph->field = field;
     graph->opts_copy = *ctx;
 
-    ret = avpriv_slicethread_create(&graph->slicethread, (void *) graph,
-                                    sws_graph_worker, NULL, ctx->threads);
-    if (ret == AVERROR(ENOSYS))
+    if (ctx->threads == 1) {
         graph->num_threads = 1;
-    else if (ret < 0)
-        goto error;
-    else
-        graph->num_threads = ret;
+    } else {
+        ret = avpriv_slicethread_create(&graph->slicethread, (void *) graph,
+                                        sws_graph_worker, NULL, ctx->threads);
+        if (ret == AVERROR(ENOSYS)) {
+            /* Fall back to single threaded operation */
+            graph->num_threads = 1;
+        } else if (ret < 0) {
+            goto error;
+        } else {
+            graph->num_threads = ret;
+        }
+    }
 
     ret = init_passes(graph);
     if (ret < 0)
@@ -908,6 +914,11 @@ void ff_sws_graph_run(SwsGraph *graph, const AVFrame *dst, const AVFrame *src)
         graph->exec.output = pass->output->avframe ? &pass->output->frame : &dst_field;
         if (pass->setup)
             pass->setup(graph->exec.output, graph->exec.input, pass);
-        avpriv_slicethread_execute(graph->slicethread, pass->num_slices, 0);
+
+        if (graph->num_threads == 1) {
+            pass->run(graph->exec.output, graph->exec.input, 0, pass->height, pass);
+        } else {
+            avpriv_slicethread_execute(graph->slicethread, pass->num_slices, 0);
+        }
     }
 }
