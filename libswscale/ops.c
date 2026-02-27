@@ -1123,10 +1123,7 @@ static void op_pass_run(const SwsImg *out, const SwsImg *in, const int y,
 
     if (memcpy_in) {
         /* Safe part of last row */
-        for (int i = 0; i < 4; i++) {
-            exec.in[i]  += h_main * exec.in_stride[i];
-            exec.out[i] += h_main * exec.out_stride[i];
-        }
+        get_row_data(p, y + h_main, exec.in, exec.out);
         comp->func(&exec, comp->priv, 0, y + h_main, num_blocks - 1, y + h);
     }
 
