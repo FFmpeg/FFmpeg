@@ -30,6 +30,7 @@ OBJS-$(CONFIG_UNSTABLE) +=                              \
        ops.o                                            \
        ops_backend.o                                    \
        ops_chain.o                                      \
+       ops_dispatch.o                                   \
        ops_memcpy.o                                     \
        ops_optimizer.o                                  \
 

@@ -24,6 +24,7 @@
 #include "libavutil/mem_internal.h"
 
 #include "ops.h"
+#include "ops_dispatch.h"
 
 #define Q(N) ((AVRational) { N, 1 })
 
@@ -50,71 +51,6 @@ static inline void ff_sws_pack_op_decode(const SwsOp *op, uint64_t mask[4], int 
         shift[i] = (i ? shift[i - 1] : size) - bits;
     }
 }
-
-/**
- * Global execution context for all compiled functions.
- *
- * Note: This struct is hard-coded in assembly, so do not change the layout
- * without updating the corresponding assembly definitions.
- */
-typedef struct SwsOpExec {
-    /* The data pointers point to the first pixel to process */
-    const uint8_t *in[4];
-    uint8_t *out[4];
-
-    /* Separation between lines in bytes */
-    ptrdiff_t in_stride[4];
-    ptrdiff_t out_stride[4];
-
-    /* Pointer bump, difference between stride and processed line size */
-    ptrdiff_t in_bump[4];
-    ptrdiff_t out_bump[4];
-
-    /* Extra metadata, may or may not be useful */
-    int32_t width, height;      /* Overall image dimensions */
-    int32_t slice_y, slice_h;   /* Start and height of current slice */
-    int32_t block_size_in;      /* Size of a block of pixels in bytes */
-    int32_t block_size_out;
-
-    /* Subsampling factors for each plane */
-    uint8_t in_sub_y[4], out_sub_y[4];
-    uint8_t in_sub_x[4], out_sub_x[4];
-
-    /* Pointers back to the original SwsFrame */
-    const SwsFrame *in_frame;
-    const SwsFrame *out_frame;
-} SwsOpExec;
-
-static_assert(sizeof(SwsOpExec) == 24 * sizeof(void *) +
-                                   6  * sizeof(int32_t) +
-                                   16 * sizeof(uint8_t) +
-                                   2  * sizeof(void *),
-              "SwsOpExec layout mismatch");
-
-/**
- * Process a given range of pixel blocks.
- *
- * Note: `bx_start` and `bx_end` are in units of `SwsCompiledOp.block_size`.
- */
-typedef void (*SwsOpFunc)(const SwsOpExec *exec, const void *priv,
-                          int bx_start, int y_start, int bx_end, int y_end);
-
-#define SWS_DECL_FUNC(NAME) \
-    void NAME(const SwsOpExec *, const void *, int, int, int, int)
-
-typedef struct SwsCompiledOp {
-    SwsOpFunc func;
-
-    int slice_align; /* slice height alignment */
-    int block_size;  /* number of pixels processed per iteration */
-    int over_read;   /* implementation over-reads input by this many bytes */
-    int over_write;  /* implementation over-writes output by this many bytes */
-    int cpu_flags;   /* active set of CPU flags (informative) */
-
-    /* Arbitrary private data */
-    void *priv;
-    void (*free)(void *priv);
-} SwsCompiledOp;
 
 typedef struct SwsOpBackend {
     const char *name; /* Descriptive name for this backend */
