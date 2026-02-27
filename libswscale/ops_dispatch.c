@@ -322,8 +322,8 @@ static int rw_pixel_bits(const SwsOp *op)
     return elems * size * bits;
 }
 
-static int compile(SwsGraph *graph, const SwsOpList *ops,
-                   const SwsFormat *dst, SwsPass *input, SwsPass **output)
+static int compile(SwsGraph *graph, const SwsOpList *ops, SwsPass *input,
+                   SwsPass **output)
 {
     SwsContext *ctx = graph->ctx;
     SwsOpPass *p = av_mallocz(sizeof(*p));
@@ -334,6 +334,7 @@ static int compile(SwsGraph *graph, const SwsOpList *ops,
     if (ret < 0)
         goto fail;
 
+    const SwsFormat *dst = &ops->dst;
     if (p->comp.opaque) {
         SwsCompiledOp c = p->comp;
         av_free(p);
@@ -370,7 +371,7 @@ fail:
 }
 
 int ff_sws_compile_pass(SwsGraph *graph, SwsOpList **pops, int flags,
-                        const SwsFormat *dst, SwsPass *input, SwsPass **output)
+                        SwsPass *input, SwsPass **output)
 {
     SwsContext *ctx = graph->ctx;
     SwsOpList *ops = *pops;
@@ -397,7 +398,7 @@ int ff_sws_compile_pass(SwsGraph *graph, SwsOpList **pops, int flags,
             goto out;
     }
 
-    ret = compile(graph, ops, dst, input, output);
+    ret = compile(graph, ops, input, output);
 
 out:
     ff_sws_op_list_free(&ops);

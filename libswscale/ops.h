@@ -225,7 +225,7 @@ typedef struct SwsOpList {
     SwsOp *ops;
     int num_ops;
 
-    /* Purely informative metadata associated with this operation list */
+    /* Metadata associated with this operation list */
     SwsFormat src, dst;
 
     /* Input/output plane pointer swizzle mask */
@@ -317,6 +317,6 @@ enum SwsOpCompileFlags {
  * Note: `ops` may be modified by this function.
  */
 int ff_sws_compile_pass(SwsGraph *graph, SwsOpList **ops, int flags,
-                        const SwsFormat *dst, SwsPass *input, SwsPass **output);
+                        SwsPass *input, SwsPass **output);
 
 #endif
