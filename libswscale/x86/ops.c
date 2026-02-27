@@ -188,7 +188,7 @@ static int setup_shift(const SwsOp *op, SwsOpPriv *out)
 #define DECL_EXPAND_BITS(EXT, BITS)                                             \
     DECL_ASM(U##BITS, expand_bits##BITS##EXT,                                   \
         .op = SWS_OP_SCALE,                                                     \
-        .scale = Q((1 << (BITS)) - 1),                                          \
+        .scale = { .num = ((1 << (BITS)) - 1), .den = 1 },                      \
     );
 
 static int setup_dither(const SwsOp *op, SwsOpPriv *out)
