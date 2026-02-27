@@ -100,10 +100,15 @@ SECTION .text
 
 ; void ff_bswap_buf(uint32_t *dst, const uint32_t *src, int w);
 %macro BSWAP32_BUF 0
-%if cpuflag(ssse3)||cpuflag(avx2)
+%if cpuflag(avx2)
 cglobal bswap32_buf, 3,4,3
+    vbroadcasti128  m2, [pb_bswap32]
+    BSWAP_LOOPS  u
+%else
+%if cpuflag(ssse3)
+cglobal bswap32_buf, 3,4,3
+    mova     m2, [pb_bswap32]
     mov      r3, r1
-    VBROADCASTI128  m2, [pb_bswap32]
 %else
 cglobal bswap32_buf, 3,4,5
     mov      r3, r1
@@ -115,6 +120,7 @@ cglobal bswap32_buf, 3,4,5
     jmp      .left
 .start_align:
     BSWAP_LOOPS  a
+%endif
 .left:
 %if cpuflag(ssse3)
     test     r2d, 2
