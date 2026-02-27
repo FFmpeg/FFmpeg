@@ -33,10 +33,10 @@ SECTION .text
 ; %1 = aligned/unaligned
 %macro BSWAP_LOOPS  1
     mov      r3d, r2d
-    sar      r2d, 3
+    sar      r3d, 3
     jz       .left4_%1
 %if cpuflag(avx2)
-    sar      r2d, 1
+    sar      r3d, 1
     jz       .left8_%1
 %endif
 .loop8_%1:
@@ -65,12 +65,11 @@ SECTION .text
 %endif
     add      r0, mmsize*2
     add      r1, mmsize*2
-    dec      r2d
+    dec      r3d
     jnz      .loop8_%1
 %if cpuflag(avx2)
 .left8_%1:
-    mov      r2d, r3d
-    test     r3d, 8
+    test     r2d, 8
     jz       .left4_%1
     mov%1    m0, [r1]
     pshufb   m0, m2
@@ -79,8 +78,7 @@ SECTION .text
     add r0, mmsize
 %endif
 .left4_%1:
-    mov      r2d, r3d
-    test     r3d, 4
+    test     r2d, 4
     jz       .left
     mov%1    xm0, [r1]
 %if cpuflag(ssse3)
