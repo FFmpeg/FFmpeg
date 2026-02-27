@@ -88,7 +88,7 @@ static int compile(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
     case SWS_PIXEL_U16: out->func = process_u16; break;
     case SWS_PIXEL_U32: out->func = process_u32; break;
     case SWS_PIXEL_F32: out->func = process_f32; break;
-    default: return AVERROR(EINVAL);
+    default: av_unreachable("Invalid pixel type!");
     }
 
     return 0;
