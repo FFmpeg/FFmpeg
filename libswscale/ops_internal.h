@@ -80,8 +80,9 @@ typedef struct SwsOpExec {
     uint8_t in_sub_y[4], out_sub_y[4];
     uint8_t in_sub_x[4], out_sub_x[4];
 
-    const AVFrame *src_frame_ptr;
-    const AVFrame *dst_frame_ptr;
+    /* Pointers back to the original SwsFrame */
+    const SwsFrame *in_frame;
+    const SwsFrame *out_frame;
 } SwsOpExec;
 
 static_assert(sizeof(SwsOpExec) == 24 * sizeof(void *) +

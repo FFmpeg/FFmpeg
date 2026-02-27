@@ -76,31 +76,32 @@ static int frame_alloc_planes(AVFrame *dst)
 
 static int pass_alloc_output(SwsPass *pass)
 {
-    if (!pass || pass->output->frame)
+    if (!pass || pass->output->avframe)
         return 0;
 
     SwsPassBuffer *buffer = pass->output;
-    AVFrame *frame = av_frame_alloc();
-    if (!frame)
+    AVFrame *avframe = av_frame_alloc();
+    if (!avframe)
         return AVERROR(ENOMEM);
-    frame->format = pass->format;
-    frame->width  = buffer->width;
-    frame->height = buffer->height;
+    avframe->format = pass->format;
+    avframe->width  = buffer->width;
+    avframe->height = buffer->height;
 
-    int ret = frame_alloc_planes(frame);
+    int ret = frame_alloc_planes(avframe);
     if (ret < 0) {
-        av_frame_free(&frame);
+        av_frame_free(&avframe);
         return ret;
     }
 
-    buffer->frame = frame;
+    buffer->avframe = avframe;
+    ff_sws_frame_from_avframe(&buffer->frame, avframe);
     return 0;
 }
 
 static void free_buffer(AVRefStructOpaque opaque, void *obj)
 {
     SwsPassBuffer *buffer = obj;
-    av_frame_free(&buffer->frame);
+    av_frame_free(&buffer->avframe);
 }
 
 SwsPass *ff_sws_graph_add_pass(SwsGraph *graph, enum AVPixelFormat fmt,
@@ -163,7 +164,7 @@ static int pass_append(SwsGraph *graph, enum AVPixelFormat fmt, int w, int h,
     return 0;
 }
 
-static void frame_shift(const AVFrame *f, const int y, uint8_t *data[4])
+static void frame_shift(const SwsFrame *f, const int y, uint8_t *data[4])
 {
     for (int i = 0; i < 4; i++) {
         if (f->data[i])
@@ -173,7 +174,7 @@ static void frame_shift(const AVFrame *f, const int y, uint8_t *data[4])
     }
 }
 
-static void run_copy(const AVFrame *out, const AVFrame *in, int y, int h,
+static void run_copy(const SwsFrame *out, const SwsFrame *in, int y, int h,
                      const SwsPass *pass)
 {
     uint8_t *in_data[4], *out_data[4];
@@ -199,7 +200,7 @@ static void run_copy(const AVFrame *out, const AVFrame *in, int y, int h,
     }
 }
 
-static void run_rgb0(const AVFrame *out, const AVFrame *in, int y, int h,
+static void run_rgb0(const SwsFrame *out, const SwsFrame *in, int y, int h,
                      const SwsPass *pass)
 {
     SwsInternal *c = pass->priv;
@@ -220,7 +221,7 @@ static void run_rgb0(const AVFrame *out, const AVFrame *in, int y, int h,
     }
 }
 
-static void run_xyz2rgb(const AVFrame *out, const AVFrame *in, int y, int h,
+static void run_xyz2rgb(const SwsFrame *out, const SwsFrame *in, int y, int h,
                         const SwsPass *pass)
 {
     const SwsInternal *c = pass->priv;
@@ -229,7 +230,7 @@ static void run_xyz2rgb(const AVFrame *out, const AVFrame *in, int y, int h,
                     pass->width, h);
 }
 
-static void run_rgb2xyz(const AVFrame *out, const AVFrame *in, int y, int h,
+static void run_rgb2xyz(const SwsFrame *out, const SwsFrame *in, int y, int h,
                         const SwsPass *pass)
 {
     const SwsInternal *c = pass->priv;
@@ -250,7 +251,7 @@ static void free_legacy_swscale(void *priv)
     sws_free_context(&sws);
 }
 
-static void setup_legacy_swscale(const AVFrame *out, const AVFrame *in,
+static void setup_legacy_swscale(const SwsFrame *out, const SwsFrame *in,
                                  const SwsPass *pass)
 {
     SwsContext *sws = pass->priv;
@@ -283,7 +284,7 @@ static inline SwsContext *slice_ctx(const SwsPass *pass, int y)
     return sws;
 }
 
-static void run_legacy_unscaled(const AVFrame *out, const AVFrame *in,
+static void run_legacy_unscaled(const SwsFrame *out, const SwsFrame *in,
                                 int y, int h, const SwsPass *pass)
 {
     SwsContext *sws = slice_ctx(pass, y);
@@ -295,7 +296,7 @@ static void run_legacy_unscaled(const AVFrame *out, const AVFrame *in,
                         out->data, out->linesize);
 }
 
-static void run_legacy_swscale(const AVFrame *out, const AVFrame *in,
+static void run_legacy_swscale(const SwsFrame *out, const SwsFrame *in,
                                int y, int h, const SwsPass *pass)
 {
     SwsContext *sws = slice_ctx(pass, y);
@@ -632,7 +633,7 @@ static void free_lut3d(void *priv)
     ff_sws_lut3d_free(&lut);
 }
 
-static void setup_lut3d(const AVFrame *out, const AVFrame *in, const SwsPass *pass)
+static void setup_lut3d(const SwsFrame *out, const SwsFrame *in, const SwsPass *pass)
 {
     SwsLut3D *lut = pass->priv;
 
@@ -640,7 +641,7 @@ static void setup_lut3d(const AVFrame *out, const AVFrame *in, const SwsPass *pa
     ff_sws_lut3d_update(lut, &pass->graph->src.color);
 }
 
-static void run_lut3d(const AVFrame *out, const AVFrame *in, int y, int h,
+static void run_lut3d(const SwsFrame *out, const SwsFrame *in, int y, int h,
                       const SwsPass *pass)
 {
     SwsLut3D *lut = pass->priv;
@@ -781,14 +782,6 @@ int ff_sws_graph_create(SwsContext *ctx, const SwsFormat *dst, const SwsFormat *
     graph->field = field;
     graph->opts_copy = *ctx;
 
-    for (int i = 0; i < FF_ARRAY_ELEMS(graph->field_tmp); i++) {
-        graph->field_tmp[i] = av_frame_alloc();
-        if (!graph->field_tmp[i]) {
-            ret = AVERROR(ENOMEM);
-            goto error;
-        }
-    }
-
     ret = avpriv_slicethread_create(&graph->slicethread, (void *) graph,
                                     sws_graph_worker, NULL, ctx->threads);
     if (ret == AVERROR(ENOSYS))
@@ -826,9 +819,6 @@ void ff_sws_graph_free(SwsGraph **pgraph)
         av_free(pass);
     }
     av_free(graph->passes);
-
-    for (int i = 0; i < FF_ARRAY_ELEMS(graph->field_tmp); i++)
-        av_frame_free(&graph->field_tmp[i]);
 
     av_free(graph);
     *pgraph = NULL;
@@ -875,22 +865,21 @@ void ff_sws_graph_update_metadata(SwsGraph *graph, const SwsColor *color)
     ff_color_update_dynamic(&graph->src.color, color);
 }
 
-static const AVFrame *get_field(SwsGraph *graph, const AVFrame *frame,
-                                AVFrame *restrict tmp)
+static void get_field(SwsGraph *graph, const AVFrame *avframe, SwsFrame *frame)
 {
-    if (!(frame->flags & AV_FRAME_FLAG_INTERLACED)) {
-        av_assert1(!graph->field);
-        return frame;
-    }
+    ff_sws_frame_from_avframe(frame, avframe);
 
-    *tmp = *frame;
+    if (!(avframe->flags & AV_FRAME_FLAG_INTERLACED)) {
+        av_assert1(!graph->field);
+        return;
+    }
 
     if (graph->field == FIELD_BOTTOM) {
         /* Odd rows, offset by one line */
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
         for (int i = 0; i < 4; i++) {
-            if (tmp->data[i])
-                tmp->data[i] += frame->linesize[i];
+            if (frame->data[i])
+                frame->data[i] += frame->linesize[i];
             if (desc->flags & AV_PIX_FMT_FLAG_PAL)
                 break;
         }
@@ -898,23 +887,23 @@ static const AVFrame *get_field(SwsGraph *graph, const AVFrame *frame,
 
     /* Take only every second line */
     for (int i = 0; i < 4; i++)
-        tmp->linesize[i] <<= 1;
-
-    return tmp;
+        frame->linesize[i] <<= 1;
 }
 
 void ff_sws_graph_run(SwsGraph *graph, const AVFrame *dst, const AVFrame *src)
 {
     av_assert0(dst->format == graph->dst.hw_format || dst->format == graph->dst.format);
     av_assert0(src->format == graph->src.hw_format || src->format == graph->src.format);
-    const AVFrame *src_field = get_field(graph, src, graph->field_tmp[0]);
-    const AVFrame *dst_field = get_field(graph, dst, graph->field_tmp[1]);
+
+    SwsFrame src_field, dst_field;
+    get_field(graph, dst, &dst_field);
+    get_field(graph, src, &src_field);
 
     for (int i = 0; i < graph->num_passes; i++) {
         const SwsPass *pass = graph->passes[i];
         graph->exec.pass   = pass;
-        graph->exec.input  = pass->input ? pass->input->output->frame : src_field;
-        graph->exec.output = pass->output->frame ? pass->output->frame : dst_field;
+        graph->exec.input  = pass->input ? &pass->input->output->frame : &src_field;
+        graph->exec.output = pass->output->avframe ? &pass->output->frame : &dst_field;
         if (pass->setup)
             pass->setup(graph->exec.output, graph->exec.input, pass);
         avpriv_slicethread_execute(graph->slicethread, pass->num_slices, 0);

@@ -945,7 +945,7 @@ static inline void get_row_data(const SwsOpPass *p, const int y,
         out[i] = base->out[i] + (y >> base->out_sub_y[i]) * base->out_stride[i];
 }
 
-static void op_pass_setup(const AVFrame *out, const AVFrame *in,
+static void op_pass_setup(const SwsFrame *out, const SwsFrame *in,
                           const SwsPass *pass)
 {
     const AVPixFmtDescriptor *indesc  = av_pix_fmt_desc_get(in->format);
@@ -1009,8 +1009,8 @@ static void op_pass_setup(const AVFrame *out, const AVFrame *in,
         exec->out_bump[i] = exec->out_stride[i] - blocks_main * exec->block_size_out;
     }
 
-    exec->src_frame_ptr = in;
-    exec->dst_frame_ptr = out;
+    exec->in_frame  = in;
+    exec->out_frame = out;
 }
 
 /* Dispatch kernel over the last column of the image using memcpy */
@@ -1079,7 +1079,7 @@ handle_tail(const SwsOpPass *p, SwsOpExec *exec,
     }
 }
 
-static void op_pass_run(const AVFrame *out, const AVFrame *in, const int y,
+static void op_pass_run(const SwsFrame *out, const SwsFrame *in, const int y,
                         const int h, const SwsPass *pass)
 {
     const SwsOpPass *p = pass->priv;

@@ -636,6 +636,18 @@ int sws_is_noop(const AVFrame *dst, const AVFrame *src)
     return 1;
 }
 
+void ff_sws_frame_from_avframe(SwsFrame *dst, const AVFrame *src)
+{
+    dst->format  = src->format;
+    dst->width   = src->width;
+    dst->height  = src->height;
+    dst->avframe = src;
+    for (int i = 0; i < FF_ARRAY_ELEMS(dst->data); i++) {
+        dst->data[i]     = src->data[i];
+        dst->linesize[i] = src->linesize[i];
+    }
+}
+
 #if CONFIG_UNSTABLE
 
 /* Returns the type suitable for a pixel after fully decoding/unpacking it */
