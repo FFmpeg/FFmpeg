@@ -29,16 +29,6 @@
 #include "swscale.h"
 #include "format.h"
 
-/**
- * Represents a view into a single field of frame data.
- */
-typedef struct SwsImg {
-    enum AVPixelFormat fmt;
-    uint8_t *data[4]; /* points to y=0 */
-    int linesize[4];
-    const AVFrame *frame_ptr; /* Pointer to the original AVframe */
-} SwsImg;
-
 static av_always_inline av_const int ff_fmt_vshift(enum AVPixelFormat fmt, int plane)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
@@ -52,16 +42,15 @@ typedef struct SwsGraph SwsGraph;
  * Output `h` lines of filtered data. `out` and `in` point to the
  * start of the image buffer for this pass.
  */
-typedef void (*sws_filter_run_t)(const SwsImg *out, const SwsImg *in,
+typedef void (*sws_filter_run_t)(const AVFrame *out, const AVFrame *in,
                                  int y, int h, const SwsPass *pass);
 
 /**
  * Represents an allocated output buffer for a filter pass.
  */
 typedef struct SwsPassBuffer {
-    SwsImg img;
     int width, height; /* dimensions of this buffer */
-    AVFrame *frame; /* backing storage for frame data */
+    AVFrame *frame;
 } SwsPassBuffer;
 
 /**
@@ -97,7 +86,7 @@ struct SwsPass {
     /**
      * Called once from the main thread before running the filter. Optional.
      */
-    void (*setup)(const SwsImg *out, const SwsImg *in, const SwsPass *pass);
+    void (*setup)(const AVFrame *out, const AVFrame *in, const SwsPass *pass);
 
     /**
      * Optional private state and associated free() function.
@@ -135,13 +124,19 @@ typedef struct SwsGraph {
     int field;
 
     /**
+     * Temporary storage to hold individual fields of the input frames.
+     * No actual ownership over the data.
+     */
+    AVFrame *field_tmp[2];
+
+    /**
      * Temporary execution state inside ff_sws_graph_run(); used to pass
      * data to worker threads.
      */
     struct {
         const SwsPass *pass; /* current filter pass */
-        SwsImg input; /* current filter pass input/output */
-        SwsImg output;
+        const AVFrame *input; /* current filter pass input/output */
+        const AVFrame *output;
     } exec;
 } SwsGraph;
 
