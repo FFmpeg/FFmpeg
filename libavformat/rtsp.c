@@ -1892,6 +1892,15 @@ redirect:
             }
         }
 
+        if (!rt->rtsp_hd->protocol_blacklist && s->protocol_blacklist) {
+            rt->rtsp_hd->protocol_blacklist = av_strdup(s->protocol_blacklist);
+            if (!rt->rtsp_hd->protocol_blacklist) {
+                av_dict_free(&options);
+                err = AVERROR(ENOMEM);
+                goto fail;
+            }
+        }
+
         /* complete the connection */
         if (ffurl_connect(rt->rtsp_hd, &options)) {
             av_dict_free(&options);
