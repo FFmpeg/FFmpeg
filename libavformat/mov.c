@@ -10573,7 +10573,7 @@ static int mov_parse_lcevc_streams(AVFormatContext *s)
 
 static void fix_stream_ids(AVFormatContext *s)
 {
-    int highest_id = 0;
+    int highest_id = 0, lowest_iamf_id = INT_MAX;
 
     for (int i = 0; i < s->nb_streams; i++) {
         const AVStream *st = s->streams[i];
@@ -10581,7 +10581,21 @@ static void fix_stream_ids(AVFormatContext *s)
         if (!sc->iamf)
             highest_id = FFMAX(highest_id, st->id);
     }
-    highest_id += !highest_id;
+
+    for (int i = 0; i < s->nb_stream_groups; i++) {
+        AVStreamGroup *stg = s->stream_groups[i];
+        if (stg->type != AV_STREAM_GROUP_PARAMS_IAMF_AUDIO_ELEMENT)
+            continue;
+        for (int j = 0; j < stg->nb_streams; j++) {
+            AVStream *st = stg->streams[j];
+            lowest_iamf_id = FFMIN(lowest_iamf_id, st->id);
+        }
+    }
+
+    if (highest_id < lowest_iamf_id)
+        return;
+
+    highest_id += !lowest_iamf_id;
     for (int i = 0; highest_id > 1 && i < s->nb_stream_groups; i++) {
         AVStreamGroup *stg = s->stream_groups[i];
         if (stg->type != AV_STREAM_GROUP_PARAMS_IAMF_AUDIO_ELEMENT)
