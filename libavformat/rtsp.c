@@ -1779,7 +1779,8 @@ redirect:
     } else if (!strcmp(proto, "satip")) {
         av_strlcpy(proto, "rtsp", sizeof(proto));
         rt->server_type = RTSP_SERVER_SATIP;
-    }
+    } else if (strcmp(proto, "rtsp"))
+        return AVERROR_INVALIDDATA;
 
     if (*auth) {
         av_strlcpy(rt->auth, auth, sizeof(rt->auth));
