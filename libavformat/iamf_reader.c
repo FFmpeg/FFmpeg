@@ -94,6 +94,9 @@ static int audio_frame_obu(AVFormatContext *s, const IAMFDemuxContext *c,
         memcpy(side_data, c->recon, c->recon_size);
     }
 
+    if (st->discard == AVDISCARD_ALL)
+        pkt->flags |= AV_PKT_FLAG_DISCARD;
+
     pkt->stream_index = st->index;
     return 0;
 }
