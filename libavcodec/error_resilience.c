@@ -28,6 +28,7 @@
 #include <limits.h>
 
 #include "libavutil/avassert.h"
+#include "libavutil/attributes.h"
 #include "libavutil/mem.h"
 #include "avcodec.h"
 #include "error_resilience.h"
@@ -37,6 +38,14 @@
 #include "mpegvideo.h"
 #include "threadframe.h"
 #include "threadprogress.h"
+
+av_cold void ff_er_init(ERContext *const s)
+{
+    MECmpContext mecc;
+
+    ff_me_cmp_init(&mecc, s->avctx);
+    s->sad = mecc.sad[0];
+}
 
 /**
  * @param stride the number of MVs to get to the next row
@@ -794,13 +803,6 @@ void ff_er_frame_start(ERContext *s)
 {
     if (!s->avctx->error_concealment)
         return;
-
-    if (!s->mecc_inited) {
-        MECmpContext mecc;
-        ff_me_cmp_init(&mecc, s->avctx);
-        s->sad = mecc.sad[0];
-        s->mecc_inited = 1;
-    }
 
     memset(s->error_status_table, ER_MB_ERROR | VP_START | ER_MB_END,
            s->mb_stride * s->mb_height * sizeof(uint8_t));

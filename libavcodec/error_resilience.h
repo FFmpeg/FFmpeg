@@ -56,7 +56,6 @@ typedef struct ERContext {
 
     int (*sad)(MPVEncContext *unused, const uint8_t *blk1,
                const uint8_t *blk2, ptrdiff_t stride, int h);
-    int mecc_inited;
 
     int *mb_index2xy;
     int mb_num;
@@ -90,6 +89,8 @@ typedef struct ERContext {
                       int mb_x, int mb_y, int mb_intra, int mb_skipped);
     void *opaque;
 } ERContext;
+
+void ff_er_init(ERContext *const s);
 
 void ff_er_frame_start(ERContext *s);
 

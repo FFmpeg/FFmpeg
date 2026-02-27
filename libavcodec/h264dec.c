@@ -255,6 +255,8 @@ int ff_h264_alloc_tables(H264Context *h)
         er->dc_val[2] = er->dc_val[1] + big_mb_num;
         for (int i = 0; i < yc_size; i++)
             h->dc_val_base[i] = 1024;
+
+        ff_er_init(er);
     }
 
     return 0;

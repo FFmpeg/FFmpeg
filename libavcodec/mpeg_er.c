@@ -122,6 +122,8 @@ av_cold int ff_mpeg_er_init(MpegEncContext *s)
     er->decode_mb = mpeg_er_decode_mb;
     er->opaque    = s;
 
+    ff_er_init(er);
+
     return 0;
 fail:
     av_freep(&er->er_temp_buffer);
