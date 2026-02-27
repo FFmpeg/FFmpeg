@@ -888,6 +888,8 @@ static void get_field(SwsGraph *graph, const AVFrame *avframe, SwsFrame *frame)
     /* Take only every second line */
     for (int i = 0; i < 4; i++)
         frame->linesize[i] <<= 1;
+
+    frame->height = (frame->height + (graph->field == FIELD_TOP)) >> 1;
 }
 
 void ff_sws_graph_run(SwsGraph *graph, const AVFrame *dst, const AVFrame *src)
