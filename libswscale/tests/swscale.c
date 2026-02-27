@@ -354,7 +354,7 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
             goto error;
     }
 
-    if (!ssim_ref && sws_isSupportedInput(src->format) && sws_isSupportedOutput(dst->format)) {
+    if (!ssim_ref) {
         /* Compare against the legacy swscale API as a reference */
         if (scale_legacy(dst, src, mode, opts, &time_ref) < 0) {
             av_log(NULL, AV_LOG_ERROR, "Failed ref %s ---> %s\n",
