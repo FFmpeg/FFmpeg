@@ -167,7 +167,7 @@ static int add_ops_glsl(VulkanPriv *p, FFVulkanOpsCtx *s,
     void *spv_opaque = NULL;
 
     /* Interlaced formats are not currently supported */
-    if (ops->src.interlaced || ops->src.interlaced)
+    if (ops->src.interlaced || ops->dst.interlaced)
         return AVERROR(ENOTSUP);
 
     err = ff_vk_shader_init(&s->vkctx, shd, "sws_pass",
