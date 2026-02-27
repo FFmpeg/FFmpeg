@@ -935,27 +935,21 @@ static void op_pass_free(void *ptr)
     av_free(p);
 }
 
-static inline SwsImg img_shift_idx(const SwsImg *base, const int y,
-                                   const int plane_idx[4])
+static inline void get_row_data(const SwsOpPass *p, const int y,
+                                const uint8_t *in[4], uint8_t *out[4])
 {
-    SwsImg img = *base;
-    for (int i = 0; i < 4; i++) {
-        const int idx = plane_idx[i];
-        if (idx >= 0) {
-            const int yshift = y >> ff_fmt_vshift(base->fmt, idx);
-            img.data[i] = base->data[idx] + yshift * base->linesize[idx];
-        } else {
-            img.data[i] = NULL;
-        }
-    }
-    return img;
+    const SwsOpExec *base = &p->exec_base;
+    for (int i = 0; i < p->planes_in; i++)
+        in[i] = base->in[i] + (y >> base->in_sub_y[i]) * base->in_stride[i];
+    for (int i = 0; i < p->planes_out; i++)
+        out[i] = base->out[i] + (y >> base->out_sub_y[i]) * base->out_stride[i];
 }
 
-static void op_pass_setup(const SwsImg *out_base, const SwsImg *in_base,
+static void op_pass_setup(const SwsImg *out, const SwsImg *in,
                           const SwsPass *pass)
 {
-    const AVPixFmtDescriptor *indesc  = av_pix_fmt_desc_get(in_base->fmt);
-    const AVPixFmtDescriptor *outdesc = av_pix_fmt_desc_get(out_base->fmt);
+    const AVPixFmtDescriptor *indesc  = av_pix_fmt_desc_get(in->fmt);
+    const AVPixFmtDescriptor *outdesc = av_pix_fmt_desc_get(out->fmt);
 
     SwsOpPass *p = pass->priv;
     SwsOpExec *exec = &p->exec_base;
@@ -974,12 +968,6 @@ static void op_pass_setup(const SwsImg *out_base, const SwsImg *in_base,
     p->memcpy_in     = false;
     p->memcpy_out    = false;
 
-    const SwsImg in  = img_shift_idx(in_base,  0, p->idx_in);
-    const SwsImg out = img_shift_idx(out_base, 0, p->idx_out);
-
-    exec->src_frame_ptr = in.frame_ptr;
-    exec->dst_frame_ptr = out.frame_ptr;
-
     for (int i = 0; i < p->planes_in; i++) {
         const int idx        = p->idx_in[i];
         const int chroma     = idx == 1 || idx == 2;
@@ -989,8 +977,9 @@ static void op_pass_setup(const SwsImg *out_base, const SwsImg *in_base,
         const int plane_pad  = (comp->over_read + sub_x) >> sub_x;
         const int plane_size = plane_w * p->pixel_bits_in >> 3;
         if (comp->slice_align)
-            p->memcpy_in |= plane_size + plane_pad > in.linesize[i];
-        exec->in_stride[i] = in.linesize[i];
+            p->memcpy_in |= plane_size + plane_pad > in->linesize[idx];
+        exec->in[i]        = in->data[idx];
+        exec->in_stride[i] = in->linesize[idx];
         exec->in_sub_y[i]  = sub_y;
         exec->in_sub_x[i]  = sub_x;
     }
@@ -1004,8 +993,9 @@ static void op_pass_setup(const SwsImg *out_base, const SwsImg *in_base,
         const int plane_pad  = (comp->over_write + sub_x) >> sub_x;
         const int plane_size = plane_w * p->pixel_bits_out >> 3;
         if (comp->slice_align)
-            p->memcpy_out |= plane_size + plane_pad > out.linesize[i];
-        exec->out_stride[i] = out.linesize[i];
+            p->memcpy_out |= plane_size + plane_pad > out->linesize[idx];
+        exec->out[i]        = out->data[idx];
+        exec->out_stride[i] = out->linesize[idx];
         exec->out_sub_y[i]  = sub_y;
         exec->out_sub_x[i]  = sub_x;
     }
@@ -1015,44 +1005,49 @@ static void op_pass_setup(const SwsImg *out_base, const SwsImg *in_base,
      * process a single line */
     const int blocks_main = p->num_blocks - p->memcpy_out;
     for (int i = 0; i < 4; i++) {
-        exec->in_bump[i]  = in.linesize[i]  - blocks_main * exec->block_size_in;
-        exec->out_bump[i] = out.linesize[i] - blocks_main * exec->block_size_out;
+        exec->in_bump[i]  = exec->in_stride[i]  - blocks_main * exec->block_size_in;
+        exec->out_bump[i] = exec->out_stride[i] - blocks_main * exec->block_size_out;
     }
+
+    exec->src_frame_ptr = in->frame_ptr;
+    exec->dst_frame_ptr = out->frame_ptr;
 }
 
 /* Dispatch kernel over the last column of the image using memcpy */
 static av_always_inline void
 handle_tail(const SwsOpPass *p, SwsOpExec *exec,
-            const SwsImg *out_base, const bool copy_out,
-            const SwsImg *in_base, const bool copy_in,
+            const bool copy_out, const bool copy_in,
             int y, const int h)
 {
     DECLARE_ALIGNED_64(uint8_t, tmp)[2][4][sizeof(uint32_t[128])];
 
+    const SwsOpExec *base = &p->exec_base;
     const SwsCompiledOp *comp = &p->comp;
     const int tail_size_in  = p->tail_size_in;
     const int tail_size_out = p->tail_size_out;
     const int bx = p->num_blocks - 1;
 
-    SwsImg in  = img_shift_idx(in_base,  y, p->idx_in);
-    SwsImg out = img_shift_idx(out_base, y, p->idx_out);
+    const uint8_t *in_data[4];
+    uint8_t *out_data[4];
+    get_row_data(p, y, in_data, out_data);
+
     for (int i = 0; i < p->planes_in; i++) {
-        in.data[i]  += p->tail_off_in;
+        in_data[i] += p->tail_off_in;
         if (copy_in) {
             exec->in[i] = (void *) tmp[0][i];
             exec->in_stride[i] = sizeof(tmp[0][i]);
         } else {
-            exec->in[i] = in.data[i];
+            exec->in[i] = in_data[i];
         }
     }
 
     for (int i = 0; i < p->planes_out; i++) {
-        out.data[i] += p->tail_off_out;
+        out_data[i] += p->tail_off_out;
         if (copy_out) {
             exec->out[i] = (void *) tmp[1][i];
             exec->out_stride[i] = sizeof(tmp[1][i]);
         } else {
-            exec->out[i] = out.data[i];
+            exec->out[i] = out_data[i];
         }
     }
 
@@ -1060,8 +1055,8 @@ handle_tail(const SwsOpPass *p, SwsOpExec *exec,
         if (copy_in) {
             for (int i = 0; i < p->planes_in; i++) {
                 av_assert2(tmp[0][i] + tail_size_in < (uint8_t *) tmp[1]);
-                memcpy(tmp[0][i], in.data[i], tail_size_in);
-                in.data[i] += in.linesize[i];
+                memcpy(tmp[0][i], in_data[i], tail_size_in);
+                in_data[i] += base->in_stride[i]; /* exec->in_stride was clobbered */
             }
         }
 
@@ -1070,39 +1065,33 @@ handle_tail(const SwsOpPass *p, SwsOpExec *exec,
         if (copy_out) {
             for (int i = 0; i < p->planes_out; i++) {
                 av_assert2(tmp[1][i] + tail_size_out < (uint8_t *) tmp[2]);
-                memcpy(out.data[i], tmp[1][i], tail_size_out);
-                out.data[i] += out.linesize[i];
+                memcpy(out_data[i], tmp[1][i], tail_size_out);
+                out_data[i] += base->out_stride[i];
             }
         }
 
         for (int i = 0; i < 4; i++) {
             if (!copy_in && exec->in[i])
-                exec->in[i] += in.linesize[i];
+                exec->in[i] += exec->in_stride[i];
             if (!copy_out && exec->out[i])
-                exec->out[i] += out.linesize[i];
+                exec->out[i] += exec->out_stride[i];
         }
     }
 }
 
-static void op_pass_run(const SwsImg *out_base, const SwsImg *in_base,
-                        const int y, const int h, const SwsPass *pass)
+static void op_pass_run(const SwsImg *out, const SwsImg *in, const int y,
+                        const int h, const SwsPass *pass)
 {
     const SwsOpPass *p = pass->priv;
     const SwsCompiledOp *comp = &p->comp;
-    const SwsImg in  = img_shift_idx(in_base,  y, p->idx_in);
-    const SwsImg out = img_shift_idx(out_base, y, p->idx_out);
 
     /* Fill exec metadata for this slice */
     DECLARE_ALIGNED_32(SwsOpExec, exec) = p->exec_base;
     exec.slice_y = y;
     exec.slice_h = h;
-    for (int i = 0; i < 4; i++) {
-        exec.in[i]  = in.data[i];
-        exec.out[i] = out.data[i];
-    }
 
-    exec.src_frame_ptr = in_base->frame_ptr;
-    exec.dst_frame_ptr = out_base->frame_ptr;
+    exec.src_frame_ptr = in->frame_ptr;
+    exec.dst_frame_ptr = out->frame_ptr;
 
     /**
      *  To ensure safety, we need to consider the following:
@@ -1129,22 +1118,23 @@ static void op_pass_run(const SwsImg *out_base, const SwsImg *in_base,
     const int h_main      = h - memcpy_in;
 
     /* Handle main section */
+    get_row_data(p, y, exec.in, exec.out);
     comp->func(&exec, comp->priv, 0, y, blocks_main, y + h_main);
 
     if (memcpy_in) {
         /* Safe part of last row */
         for (int i = 0; i < 4; i++) {
-            exec.in[i]  += h_main * in.linesize[i];
-            exec.out[i] += h_main * out.linesize[i];
+            exec.in[i]  += h_main * exec.in_stride[i];
+            exec.out[i] += h_main * exec.out_stride[i];
         }
         comp->func(&exec, comp->priv, 0, y + h_main, num_blocks - 1, y + h);
     }
 
     /* Handle last column via memcpy, takes over `exec` so call these last */
     if (memcpy_out)
-        handle_tail(p, &exec, out_base, true, in_base, false, y, h_main);
+        handle_tail(p, &exec, true, false, y, h_main);
     if (memcpy_in)
-        handle_tail(p, &exec, out_base, memcpy_out, in_base, true, y + h_main, 1);
+        handle_tail(p, &exec, memcpy_out, true, y + h_main, 1);
 }
 
 static int rw_planes(const SwsOp *op)
