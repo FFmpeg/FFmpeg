@@ -180,6 +180,10 @@ static void add_desc_read_write(FFVulkanDescriptorSetBinding *out_desc,
     *out_rep = op->type == SWS_PIXEL_F32 ? FF_VK_REP_FLOAT : FF_VK_REP_UINT;
 }
 
+#define QSTR "(%i/%i%s)"
+#define QTYPE(i) op->c.q4[i].num, op->c.q4[i].den,       \
+                 op->type == SWS_PIXEL_F32 ? ".0f" : ""
+
 static int add_ops_glsl(VulkanPriv *p, FFVulkanOpsCtx *s,
                         SwsOpList *ops, FFVulkanShader *shd)
 {
@@ -270,12 +274,15 @@ static int add_ops_glsl(VulkanPriv *p, FFVulkanOpsCtx *s,
             for (int i = 0; i < 4; i++) {
                 if (!op->c.q4[i].den)
                     continue;
-                av_bprintf(&shd->src, "    %s.%c = %s(%i/%i%s);\n", type_name,
-                           "xyzw"[i], type_s, op->c.q4[i].num, op->c.q4[i].den,
-                           op->type == SWS_PIXEL_F32 ? ".0f" : "");
+                av_bprintf(&shd->src, "    %s.%c = %s"QSTR";\n", type_name,
+                           "xyzw"[i], type_s, QTYPE(i));
             }
             break;
         }
+        case SWS_OP_SCALE:
+            av_bprintf(&shd->src, "    %s = %s*%i/%i;\n",
+                       type_name, type_name, op->c.q.num, op->c.q.den);
+            break;
         default:
             return AVERROR(ENOTSUP);
         }
