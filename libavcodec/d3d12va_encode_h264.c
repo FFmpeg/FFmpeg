@@ -295,14 +295,14 @@ static int d3d12va_encode_h264_get_encoder_caps(AVCodecContext *avctx)
     config->ConfigurationFlags = D3D12_VIDEO_ENCODER_CODEC_CONFIGURATION_H264_FLAG_NONE;
 
     // Deblocking filter configuration
-    if (priv->deblock == 1) {
+    if (priv->deblock) {
        if (h264_caps.DisableDeblockingFilterSupportedModes & D3D12_VIDEO_ENCODER_CODEC_CONFIGURATION_H264_SLICES_DEBLOCKING_MODE_FLAG_0_ALL_LUMA_CHROMA_SLICE_BLOCK_EDGES_ALWAYS_FILTERED) {
             config->DisableDeblockingFilterConfig = D3D12_VIDEO_ENCODER_CODEC_CONFIGURATION_H264_SLICES_DEBLOCKING_MODE_0_ALL_LUMA_CHROMA_SLICE_BLOCK_EDGES_ALWAYS_FILTERED;
         } else {
             av_log(avctx, AV_LOG_ERROR, "Requested deblocking filter enable mode not supported by driver.\n");
             return AVERROR(ENOTSUP);
         }
-    } else if (priv->deblock == 0) {
+    } else {
         if (h264_caps.DisableDeblockingFilterSupportedModes & D3D12_VIDEO_ENCODER_CODEC_CONFIGURATION_H264_SLICES_DEBLOCKING_MODE_FLAG_1_DISABLE_ALL_SLICE_BLOCK_EDGES) {
             config->DisableDeblockingFilterConfig = D3D12_VIDEO_ENCODER_CODEC_CONFIGURATION_H264_SLICES_DEBLOCKING_MODE_1_DISABLE_ALL_SLICE_BLOCK_EDGES;
         } else {
@@ -646,7 +646,7 @@ static const AVOption d3d12va_encode_h264_options[] = {
 #undef LEVEL
 
     { "deblock", "Deblocking filter mode",
-      OFFSET(deblock), AV_OPT_TYPE_BOOL, { .i64 = -1 }, -1, 1, FLAGS },
+      OFFSET(deblock), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, FLAGS },
 
     { "coder", "Entropy coder type",
       OFFSET(unit_opts.cabac), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, FLAGS, "coder" },
