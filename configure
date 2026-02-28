@@ -7877,6 +7877,10 @@ check_warning -Wwrite-strings
 check_warning -Wtype-limits
 check_warning -Wundef
 check_warning -Wempty-body
+# Warn about excessive stack usage, using a 120 KiB per-function threshold.
+# This roughly matches the default thread stack size on Musl, which is 128 KiB,
+# leaving some headroom for caller frames.
+check_warning -Wstack-usage=122880
 check_c_warning -Wmissing-prototypes
 check_c_warning -Wstrict-prototypes
 check_c_warning -Wunterminated-string-initialization
