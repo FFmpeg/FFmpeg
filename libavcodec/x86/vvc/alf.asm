@@ -760,12 +760,18 @@ cglobal vvc_alf_classify_grad_%1bpc, 6, 14, 16, gradient_sum, src, src_stride, w
     pblendvb          m2, m5, m8, m1     ; hvd1
     pblendvb          m3, m6, m9, m1     ; hvd0
 
+%if ps != 1  ; high bit depth
     movd             xm5, bit_depthd
     vpbroadcastd      m5, xm5
+%endif
 
     ;*class_idx = arg_var[av_clip_uintp2(sum_hv * ac >> (BIT_DEPTH - 1), 4)];
     pmulld            m0, m14            ; sum_hv * ac
+%if ps != 1
     vpsrlvd           m0, m0, m5
+%else
+    psrld             m0, 8
+%endif
     pminsd            m0, [dd15]
     movu              m6, [ARG_VAR_SHUFFE]
     pshufb            m6, m0             ; class_idx
@@ -818,7 +824,9 @@ ALF_CLASSIFY_GRAD %1
 cglobal vvc_alf_classify_%1bpc, 7, 15, 16, class_idx, transpose_idx, gradient_sum, width, height, vb_pos, bit_depth, \
     x, y, grad, sum_stride, sum_stride3, temp, w
 
+%if ps != 1
     sub       bit_depthq, 1
+%endif
 
     ; now we can use gradient to get class idx and transpose idx
     lea      sum_strideq, [widthd + ALF_GRADIENT_BORDER * 2]
