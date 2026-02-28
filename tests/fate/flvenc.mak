@@ -5,6 +5,10 @@ FATE_ENHANCED_FLVENC_FFMPEG-$(call REMUX, FLV MOV, FLV_DEMUXER HEVC_PARSER) += f
 fate-enhanced-flv-hevc: CMD = transcode mov $(TARGET_SAMPLES)/hevc/dv84.mov\
 		flv "-c copy" "-c copy"
 
+FATE_ENHANCED_FLVENC_FFMPEG-$(call REMUX, FLV VVC, FLV_DEMUXER VVC_PARSER SETTS_BSF) += fate-enhanced-flv-vvc
+fate-enhanced-flv-vvc: CMD = transcode vvc $(TARGET_SAMPLES)/vvc-conformance/10b422_L_5.bit\
+		flv "-c copy -bsf:0 setts=pts=DTS" "-c copy"
+
 FATE_ENHANCED_FLVENC_FFMPEG-$(call REMUX, FLV IVF, FLV_DEMUXER VP9_PARSER) += fate-enhanced-flv-vp9
 fate-enhanced-flv-vp9: CMD = transcode ivf $(TARGET_SAMPLES)/vp9-test-vectors/vp90-2-05-resize.ivf\
 		flv "-c copy" "-c copy"
