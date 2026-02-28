@@ -168,9 +168,6 @@ static int extract_extradata_h2645(AVBSFContext *ctx, AVPacket *pkt,
     static const int extradata_nal_types_vvc[] = {
         VVC_VPS_NUT, VVC_SPS_NUT, VVC_PPS_NUT,
     };
-    static const int extradata_nal_types_lcevc[] = {
-        LCEVC_IDR_NUT, LCEVC_NON_IDR_NUT,
-    };
     static const int extradata_nal_types_hevc[] = {
         HEVC_NAL_VPS, HEVC_NAL_SPS, HEVC_NAL_PPS,
     };
@@ -188,9 +185,6 @@ static int extract_extradata_h2645(AVBSFContext *ctx, AVPacket *pkt,
     if (ctx->par_in->codec_id == AV_CODEC_ID_VVC) {
         extradata_nal_types    = extradata_nal_types_vvc;
         nb_extradata_nal_types = FF_ARRAY_ELEMS(extradata_nal_types_vvc);
-    } else if (ctx->par_in->codec_id == AV_CODEC_ID_LCEVC) {
-        extradata_nal_types    = extradata_nal_types_lcevc;
-        nb_extradata_nal_types = FF_ARRAY_ELEMS(extradata_nal_types_lcevc);
     } else if (ctx->par_in->codec_id == AV_CODEC_ID_HEVC) {
         extradata_nal_types    = extradata_nal_types_hevc;
         nb_extradata_nal_types = FF_ARRAY_ELEMS(extradata_nal_types_hevc);
@@ -214,8 +208,6 @@ static int extract_extradata_h2645(AVBSFContext *ctx, AVPacket *pkt,
             } else if (ctx->par_in->codec_id == AV_CODEC_ID_HEVC) {
                 if (nal->type == HEVC_NAL_SPS) has_sps = 1;
                 if (nal->type == HEVC_NAL_VPS) has_vps = 1;
-            } else if (ctx->par_in->codec_id == AV_CODEC_ID_LCEVC) {
-                has_sps = 1;
             } else {
                 if (nal->type == H264_NAL_SPS) has_sps = 1;
             }
@@ -226,7 +218,6 @@ static int extract_extradata_h2645(AVBSFContext *ctx, AVPacket *pkt,
 
     if (extradata_size &&
         ((ctx->par_in->codec_id == AV_CODEC_ID_VVC  && has_sps) ||
-         (ctx->par_in->codec_id == AV_CODEC_ID_LCEVC && has_sps) ||
          (ctx->par_in->codec_id == AV_CODEC_ID_HEVC && has_sps && has_vps) ||
          (ctx->par_in->codec_id == AV_CODEC_ID_H264 && has_sps))) {
         AVBufferRef *filtered_buf = NULL;
