@@ -41,7 +41,6 @@ PARAM_SHUFFE 2
 PARAM_SHUFFE 3
 
 CLASSIFY_SHUFFE: times 2    db 2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13
-TRANSPOSE_PERMUTE:          dd 0, 1, 4, 5, 2, 3, 6, 7
 ARG_VAR_SHUFFE: times 2     db 0, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4
 
 cextern pd_64
