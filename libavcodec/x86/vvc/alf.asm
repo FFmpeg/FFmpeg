@@ -60,7 +60,6 @@ SECTION .text
 ;%1-%3 out
 ;%4 clip or filter
 %macro LOAD_LUMA_PARAMS 4
-    lea                 offsetq, [3 * xq]                       ;xq * ALF_NUM_COEFF_LUMA / ALF_BLOCK_SIZE
     movu                    m%1, [%4q + 2 * offsetq + 0 * mmsize] ; 2 * for sizeof(int16_t)
     movu                    m%2, [%4q + 2 * offsetq + 1 * mmsize]
     movu                    m%3, [%4q + 2 * offsetq + 2 * mmsize]
@@ -116,6 +115,7 @@ SECTION .text
 
 %macro LOAD_PARAMS 0
 %if LUMA
+    lea                 offsetq, [3 * xq]           ;xq * ALF_NUM_COEFF_LUMA / ALF_BLOCK_SIZE
     LOAD_LUMA_PARAMS          3, 4, 5, filter, 6, 7
     LOAD_LUMA_PARAMS          6, 7, 8, clip,   9, 10
 %else
