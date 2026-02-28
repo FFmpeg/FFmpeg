@@ -305,17 +305,36 @@ fate-mov-mp4-iamf-5_1_4: CMD = transcode wav $(SRC) mp4 "-auto_conversion_filter
   "-show_entries stream_group=index,id,nb_streams,type:stream_group_components:stream_group_disposition:stream_group_tags:stream_group_stream=index,id:stream_group_stream_disposition"
 
 # Test muxing an IAMF track alongside a video one, with video as the first track.
-FATE_MOV_FFMPEG_FFPROBE-$(call TRANSCODE, MPEG4, MP4 MOV, WAV_DEMUXER FLAC_DECODER RAWVIDEO_DEMUXER PCM_S16LE_DECODER ARESAMPLE_FILTER) += fate-mov-mp4-iamf-7_1_4-video-first
-fate-mov-mp4-iamf-7_1_4-video-first: tests/data/asynth-44100-12.wav tests/data/vsynth1.yuv tests/data/filtergraphs/iamf_7_1_4 tests/data/streamgroups/audio_element-7_1_4-2 tests/data/streamgroups/mix_presentation-7_1_4
-fate-mov-mp4-iamf-7_1_4-video-first: SRC = $(TARGET_PATH)/tests/data/asynth-44100-12.wav
-fate-mov-mp4-iamf-7_1_4-video-first: SRC2 = $(TARGET_PATH)/tests/data/vsynth1.yuv
-fate-mov-mp4-iamf-7_1_4-video-first: CMD = transcode wav $(SRC) mp4 "-auto_conversion_filters \
+tests/data/mov-mp4-iamf-7_1_4-video-first.mp4: TAG = GEN
+tests/data/mov-mp4-iamf-7_1_4-video-first.mp4: tests/data/asynth-44100-12.wav tests/data/vsynth1.yuv tests/data/filtergraphs/iamf_7_1_4 tests/data/streamgroups/audio_element-7_1_4-2 tests/data/streamgroups/mix_presentation-7_1_4
+tests/data/mov-mp4-iamf-7_1_4-video-first.mp4: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
+	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
+  -f wav -i $(TARGET_PATH)/tests/data/asynth-44100-12.wav \
+  -f rawvideo -s 352x288 -pix_fmt yuv420p -flags +bitexact -sws_flags +accurate_rnd+bitexact -i $(TARGET_PATH)/tests/data/vsynth1.yuv \
   -/filter_complex $(TARGET_PATH)/tests/data/filtergraphs/iamf_7_1_4 \
   -/stream_group $(TARGET_PATH)/tests/data/streamgroups/audio_element-7_1_4-2 \
   -/stream_group $(TARGET_PATH)/tests/data/streamgroups/mix_presentation-7_1_4 \
-  -streamid 0:1 -streamid 1:2 -streamid 2:3 -streamid 3:4 -streamid 4:5 -streamid 5:6 -streamid 6:7 -streamid 7:8 -map 1:v:0 -map [FRONT] -map [TOP_FRONT] -map [CENTER] -map [LFE] -map [SIDE] -map [BACK] -map [TOP_BACK] -c:a flac -c:v mpeg4 -t 1" "-c:a copy -c:v copy -map 0" \
-  "-show_entries stream_group=index,id,nb_streams,type:stream_group_components:stream_group_disposition:stream_group_tags:stream_group_stream=index,id:stream_group_stream_disposition:stream=index,id" \
-  "-f rawvideo -s 352x288 -pix_fmt yuv420p -i $(SRC2)"
+  -streamid 0:1 -streamid 1:2 -streamid 2:3 -streamid 3:4 -streamid 4:5 -streamid 5:6 -streamid 6:7 -streamid 7:8 -map 1:v:0 -map [FRONT] -map [TOP_FRONT] -map [CENTER] -map [LFE] -map [SIDE] -map [BACK] -map [TOP_BACK] \
+  -flags +bitexact -c:a flac -idct simple -dct fastint -sws_flags +accurate_rnd+bitexact -flags +bitexact -threads 1 -c:v mpeg4 -t 1 -fflags +bitexact -f mp4 $(TARGET_PATH)/tests/data/mov-mp4-iamf-7_1_4-video-first.mp4 -y 2>/dev/null
+
+# Demux everything
+FATE_MOV_FFMPEG_FFPROBE-$(call TRANSCODE, MPEG4, MP4 MOV, WAV_DEMUXER FLAC_DECODER RAWVIDEO_DEMUXER PCM_S16LE_DECODER ARESAMPLE_FILTER) += fate-mov-mp4-iamf-7_1_4-video-first
+fate-mov-mp4-iamf-7_1_4-video-first: tests/data/mov-mp4-iamf-7_1_4-video-first.mp4
+fate-mov-mp4-iamf-7_1_4-video-first: CMD = stream_demux mp4 $(TARGET_PATH)/tests/data/mov-mp4-iamf-7_1_4-video-first.mp4 \
+  "" "-c:a copy -c:v copy -map 0" \
+  "-show_entries stream_group=index,id,nb_streams,type:stream_group_components:stream_group_disposition:stream_group_tags:stream_group_stream=index,id:stream_group_stream_disposition:stream=index,id"
+
+# Demux the first stream in the IAMF struct
+FATE_MOV_FFMPEG-$(call TRANSCODE, MPEG4, MP4 MOV, WAV_DEMUXER FLAC_DECODER RAWVIDEO_DEMUXER PCM_S16LE_DECODER ARESAMPLE_FILTER) += fate-mov-mp4-iamf-7_1_4-video-first-2
+fate-mov-mp4-iamf-7_1_4-video-first-2: tests/data/mov-mp4-iamf-7_1_4-video-first.mp4
+fate-mov-mp4-iamf-7_1_4-video-first-2: CMD = stream_demux mp4 $(TARGET_PATH)/tests/data/mov-mp4-iamf-7_1_4-video-first.mp4 \
+  "" "-c:a copy -map 0:g:0:0" \
+
+# Demux the fourth stream in the IAMF struct. See 16ee3d8d99a2
+FATE_MOV_FFMPEG-$(call TRANSCODE, MPEG4, MP4 MOV, WAV_DEMUXER FLAC_DECODER RAWVIDEO_DEMUXER PCM_S16LE_DECODER ARESAMPLE_FILTER) += fate-mov-mp4-iamf-7_1_4-video-first-3
+fate-mov-mp4-iamf-7_1_4-video-first-3: tests/data/mov-mp4-iamf-7_1_4-video-first.mp4
+fate-mov-mp4-iamf-7_1_4-video-first-3: CMD = stream_demux mp4 $(TARGET_PATH)/tests/data/mov-mp4-iamf-7_1_4-video-first.mp4 \
+  "" "-c:a copy -map 0:g:0:3" \
 
 # Test muxing an IAMF track alongside a video one, with video as the last track. Also, use stream ids as track ids.
 FATE_MOV_FFMPEG_FFPROBE-$(call TRANSCODE, MPEG4, MP4 MOV, WAV_DEMUXER FLAC_DECODER RAWVIDEO_DEMUXER PCM_S16LE_DECODER ARESAMPLE_FILTER) += fate-mov-mp4-iamf-7_1_4-video-last
