@@ -675,10 +675,9 @@ cglobal vvc_alf_classify_grad_%1bpc, 6, 14, 16, gradient_sum, src, src_stride, w
     cmp                     wd, 8
     jl %%w4
     SAVE_CLASSIFY_PARAM_W8 tempq, %2
+    je                   %%end
     vpermq                 m%2, m%2, 00010011b
     add                  tempq, 8
-    cmp                     wd, 8
-    je                   %%end
 %%w4:
     SAVE_CLASSIFY_PARAM_W4 tempq, %2
 %%end:
