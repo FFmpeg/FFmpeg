@@ -76,7 +76,6 @@ INIT_YMM avx2
     jne               %%save_16bpc
 
     packuswb                   m%2, m%2
-    vpermq                     m%2, m%2, q0020
 
     cmp                         wd, 16
     je                       %%w16_8
@@ -91,6 +90,7 @@ INIT_YMM avx2
     jmp                      %%end
 
 %%w16_8:
+    vpermq                     m%2, m%2, q0020
 %%w8_16:
     movu                        %1, xm%2
 %%end:
