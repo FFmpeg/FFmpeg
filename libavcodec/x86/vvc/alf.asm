@@ -353,13 +353,12 @@ SECTION .text
     cmp %3, 8
     jl .w4
     STORE_PIXELS_W8 %1, %2
-    cmp %3, 12
+    je .end
     %if ps == 2
         vpermq      m%2,  m%2, q0302
     %else
         vpermq      m%2,  m%2, q0101
     %endif
-    jl .end
     STORE_PIXELS_W4 %1, %2, 8
     jmp .end
 .w4:
