@@ -649,23 +649,23 @@ cglobal vvc_alf_classify_grad_%1bpc, 6, 14, 16, gradient_sum, src, src_stride, w
 
 ; SAVE_CLASSIFY_PARAM_W16(dest, src)
 %macro SAVE_CLASSIFY_PARAM_W16 2
+    vpermq                  m%2, m%2, 11011000b
     lea                   tempq, [%1q + xq]
     movu                [tempq], xm%2
-    vperm2i128              m%2, m%2, m%2, 1
+    vextracti128           xm%2, m%2, 1
     movu       [tempq + widthq], xm%2
 %endmacro
 
 ; SAVE_CLASSIFY_PARAM_W8
 %macro SAVE_CLASSIFY_PARAM_W8 2
     movq                   [%1], xm%2
-    vperm2i128              m%2, m%2, m%2, 1
-    movq          [%1 + widthq], xm%2
+    movhps        [%1 + widthq], xm%2
 %endmacro
 
 ; SAVE_CLASSIFY_PARAM_W4
 %macro SAVE_CLASSIFY_PARAM_W4 2
     movd                   [%1], xm%2
-    vperm2i128              m%2, m%2, m%2, 1
+    punpckhqdq             xm%2, xm%2
     movd          [%1 + widthq], xm%2
 %endmacro
 
@@ -676,7 +676,7 @@ cglobal vvc_alf_classify_grad_%1bpc, 6, 14, 16, gradient_sum, src, src_stride, w
     jl %%w4
     SAVE_CLASSIFY_PARAM_W8 tempq, %2
     je                   %%end
-    vpermq                 m%2, m%2, 00010011b
+    vextracti128          xm%2, m%2, 1
     add                  tempq, 8
 %%w4:
     SAVE_CLASSIFY_PARAM_W4 tempq, %2
@@ -775,7 +775,6 @@ cglobal vvc_alf_classify_grad_%1bpc, 6, 14, 16, gradient_sum, src, src_stride, w
     paddd            m11, m7, m7
     paddd            m11, m4
     paddd            m10, m11
-    vpermq           m10, m10, 11011000b
     SAVE_CLASSIFY_PARAM transpose_idx, 10
 
     psrlq            m10, m8, 32
@@ -832,7 +831,6 @@ cglobal vvc_alf_classify_grad_%1bpc, 6, 14, 16, gradient_sum, src, src_stride, w
     pandn             m1, m7
     paddd             m1, m1             ; dir1 << 1
     paddd             m6, m1             ; class_idx
-    vpermq            m6, m6, 11011000b
 
     SAVE_CLASSIFY_PARAM class_idx, 6
 %endmacro
