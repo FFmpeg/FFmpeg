@@ -409,8 +409,10 @@ SECTION .text
     ; sum += curr
     paddsw             m0, m2
 
+%if ps != 1
     ; clip to pixel
     CLIPW             m0, m14, m15
+%endif
 
     STORE_PIXELS    dstq, 0, %1
 
@@ -443,18 +445,20 @@ SECTION .text
 %else
     %xdefine LUMA 0
 %endif
+%define ps (%1 / 8) ; pixel size
 
 ; ******************************
 ; void vvc_alf_filter_%2_%1bpc_avx2(uint8_t *dst, ptrdiff_t dst_stride,
 ;      const uint8_t *src, ptrdiff_t src_stride, const ptrdiff_t width, cosnt ptr_diff_t height,
 ;      const int16_t *filter, const int16_t *clip, ptrdiff_t stride, ptrdiff_t vb_pos, ptrdiff_t pixel_max);
 ; ******************************
-cglobal vvc_alf_filter_%2_%1bpc, 11, 15, 16, 0-0x30, dst, dst_stride, src, src_stride, width, height, filter, clip, stride, vb_pos, pixel_max, \
+cglobal vvc_alf_filter_%2_%1bpc, 11, 15, 14+2*(ps!=1), 0-0x30, dst, dst_stride, src, src_stride, width, height, filter, clip, stride, vb_pos, pixel_max, \
     offset, x, s5, s6
-%define ps (%1 / 8) ; pixel size
+%if ps != 1
     movd            xm15, pixel_maxd
     vpbroadcastw     m15, xm15
     pxor             m14, m14
+%endif
 
 .loop:
     push            srcq
