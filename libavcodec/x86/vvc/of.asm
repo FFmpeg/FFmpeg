@@ -71,7 +71,7 @@ INIT_YMM avx2
     pmulhrsw                      %1, m11
 %endmacro
 
-%macro SAVE 2 ; dst, src
+%macro SAVE 2-3 ""; dst, src, jump target
     cmp                 pixel_maxd, (1 << 8) - 1
     jne               %%save_16bpc
 
@@ -80,14 +80,22 @@ INIT_YMM avx2
     cmp                         wd, 16
     je                       %%w16_8
     movq                        %1, xm%2
+%ifnidn %3, ""
+    jmp                         %3
+%else
     jmp                      %%end
+%endif
 
 %%save_16bpc:
     CLIPW                      m%2, m9, m10
     cmp                         wd, 16
     jne                       %%w8_16
     movu                        %1, m%2
+%ifnidn %3, ""
+    jmp                         %3
+%else
     jmp                      %%end
+%endif
 
 %%w16_8:
     vpermq                     m%2, m%2, q0020
@@ -98,7 +106,7 @@ INIT_YMM avx2
 
 ; [rsp + even * mmsize] are gradient_h[0] - gradient_h[1]
 ; [rsp +  odd * mmsize] are gradient_v[0] - gradient_v[1]
-%macro APPLY_BDOF_MIN_BLOCK 4 ; block_num, vx, vy, bd
+%macro APPLY_BDOF_MIN_BLOCK 3-4 ""; block_num, vx, vy, jump target
     pxor                          m9, m9
 
     movd                        xm10, pixel_maxd
@@ -118,7 +126,7 @@ INIT_YMM avx2
     SAVE                        [dstq + 2 * dsq], 6
 
     APPLY_BDOF_MIN_BLOCK_LINE    m6, %2, %3, m7, (%1) * 4 + 3
-    SAVE                        [dstq + ds3q], 6
+    SAVE                        [dstq + ds3q], 6, %4
 %endmacro
 
 %macro SUM_MIN_BLOCK_W16 4 ; src/dst, shuffle, perm, tmp
@@ -327,7 +335,12 @@ INIT_YMM avx2
 %if (%2)
     BDOF_PROF_GRAD  %1 * 4 + 3, %2
     BDOF_VX_VY              12, 13
-    APPLY_BDOF_MIN_BLOCK    %1, m12, m13, bd
+%if UNIX64
+    APPLY_BDOF_MIN_BLOCK    %1, m12, m13
+%else
+    APPLY_BDOF_MIN_BLOCK    %1, m12, m13, .end
+%endif
+
 %else
     mova                   m14, m12
     mova                   m15, m13
@@ -340,7 +353,7 @@ INIT_YMM avx2
     paddw                  m15, m13
 
     BDOF_VX_VY              14, 15
-    APPLY_BDOF_MIN_BLOCK    %1, m14, m15, bd
+    APPLY_BDOF_MIN_BLOCK    %1, m14, m15
     lea                   dstq, [dstq + 4 * dsq]
 %endif
 %endmacro
@@ -375,7 +388,11 @@ PROLOGUE 6, 9, 16, BDOF_STACK_SIZE*32, dst, ds, src0, src1, w, h, pixel_max, ds3
     cmp                     hd, 16
     je                    .h16
     BDOF_MINI_BLOCKS         1, 1
+%if UNIX64
+    RET
+%else
     jmp                   .end
+%endif
 
 .h16:
     BDOF_MINI_BLOCKS         1, 0
