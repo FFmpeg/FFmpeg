@@ -69,7 +69,6 @@ INIT_YMM avx2
     paddw                         %4, [src1q + (%5 + 1) * SRC_STRIDE + SRC_PS]
     paddsw                        %1, %4                                         ; src0[x] + src1[x] + bdof_offset
     pmulhrsw                      %1, m11
-    CLIPW                         %1, m9, m10
 %endmacro
 
 %macro SAVE 2 ; dst, src
@@ -85,6 +84,7 @@ INIT_YMM avx2
     jmp                      %%end
 
 %%save_16bpc:
+    CLIPW                      m%2, m9, m10
     cmp                         wd, 16
     jne                       %%w8_16
     movu                        %1, m%2
