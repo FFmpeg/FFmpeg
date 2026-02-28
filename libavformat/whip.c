@@ -1601,7 +1601,6 @@ static int create_rtp_muxer(AVFormatContext *s)
     AVFormatContext *rtp_ctx = NULL;
     AVDictionary *opts = NULL;
     uint8_t *buffer = NULL;
-    char buf[64];
     WHIPContext *whip = s->priv_data;
     whip->udp->flags |= AVIO_FLAG_NONBLOCK;
 
@@ -1663,10 +1662,8 @@ static int create_rtp_muxer(AVFormatContext *s)
         rtp_ctx->pb->av_class = &ff_avio_class;
 
         is_video = s->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO;
-        snprintf(buf, sizeof(buf), "%d", is_video? whip->video_payload_type : whip->audio_payload_type);
-        av_dict_set(&opts, "payload_type", buf, 0);
-        snprintf(buf, sizeof(buf), "%d", is_video? whip->video_ssrc : whip->audio_ssrc);
-        av_dict_set(&opts, "ssrc", buf, 0);
+        av_dict_set_int(&opts, "payload_type", is_video ? whip->video_payload_type : whip->audio_payload_type, 0);
+        av_dict_set_int(&opts, "ssrc", is_video ? whip->video_ssrc : whip->audio_ssrc, 0);
         av_dict_set_int(&opts, "seq", is_video ? whip->video_first_seq : whip->audio_first_seq, 0);
 
         ret = avformat_write_header(rtp_ctx, &opts);
