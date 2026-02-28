@@ -59,15 +59,15 @@ SECTION .text
 
 ;%1-%3 out
 ;%4 clip or filter
-%macro LOAD_LUMA_PARAMS_W16 4
+%macro LOAD_LUMA_PARAMS 4
     lea                 offsetq, [3 * xq]                       ;xq * ALF_NUM_COEFF_LUMA / ALF_BLOCK_SIZE
-    movu                    m%1, [%4q + 2 * offsetq + 0 * 32]   ; 2 * for sizeof(int16_t)
-    movu                    m%2, [%4q + 2 * offsetq + 1 * 32]
-    movu                    m%3, [%4q + 2 * offsetq + 2 * 32]
+    movu                    m%1, [%4q + 2 * offsetq + 0 * mmsize] ; 2 * for sizeof(int16_t)
+    movu                    m%2, [%4q + 2 * offsetq + 1 * mmsize]
+    movu                    m%3, [%4q + 2 * offsetq + 2 * mmsize]
 %endmacro
 
 %macro LOAD_LUMA_PARAMS_W16 6
-    LOAD_LUMA_PARAMS_W16    %1, %2, %3, %4
+    LOAD_LUMA_PARAMS        %1, %2, %3, %4
     ;m%1 = 03 02 01 00
     ;m%2 = 07 06 05 04
     ;m%3 = 11 10 09 08
@@ -84,11 +84,26 @@ SECTION .text
     vpermpd                 m%3, m%3, 10000111b         ;11 08 05 02
 %endmacro
 
+%macro LOAD_LUMA_PARAMS_W8 5
+    LOAD_LUMA_PARAMS       %2, %3, %5, %4
+    ;m%2 = 01 00
+    ;m%3 = 03 02
+    ;m%5 = 05 04
+
+    shufpd                  m%1, m%2, m%3, 10b          ;03 00
+    shufpd                  m%2, m%2, m%5, 01b          ;04 01
+    shufpd                  m%3, m%3, m%5, 10b          ;05 02
+%endmacro
+
 ; %1-%3 out
 ; %4    clip or filter
 ; %5-%6 tmp
 %macro LOAD_LUMA_PARAMS 6
+%if mmsize == 32
     LOAD_LUMA_PARAMS_W16 %1, %2, %3, %4, %5, %6
+%else
+    LOAD_LUMA_PARAMS_W8  %1, %2, %3, %4, %5
+%endif
 %endmacro
 
 %macro LOAD_CHROMA_PARAMS 4
@@ -483,8 +498,14 @@ cglobal vvc_alf_filter_%2_%1bpc, 11, 15, 14+2*(ps!=1), 0-0x30, dst, dst_stride, 
     cmp           widthq, 0
     je            .w_end
 
+%if LUMA
+INIT_XMM cpuname
+%endif
     LOAD_PARAMS
     FILTER_16x4  widthq
+%if LUMA
+INIT_YMM cpuname
+%endif
 
 .w_end:
 
