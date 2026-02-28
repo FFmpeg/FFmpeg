@@ -275,7 +275,7 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
     }
 
     if (po->flags & OPT_FLAG_SPEC) {
-        char *p = strchr(opt, ':');
+        const char *p = strchr(opt, ':');
         char *str;
 
         sol = dst;
