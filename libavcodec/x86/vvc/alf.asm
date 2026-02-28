@@ -354,11 +354,7 @@ SECTION .text
     jl .w4
     STORE_PIXELS_W8 %1, %2
     je .end
-    %if ps == 2
-        vpermq      m%2,  m%2, q0302
-    %else
-        vpermq      m%2,  m%2, q0101
-    %endif
+    vextracti128    xm%2, m%2, 1
     STORE_PIXELS_W4 %1, %2, 8
     jmp .end
 .w4:
@@ -366,19 +362,24 @@ SECTION .text
 .end:
 %endmacro
 
-; STORE_PIXELS(dst, src, width)
-%macro STORE_PIXELS 3
-    %if ps == 1
-        packuswb    m%2, m%2
-        vpermq      m%2, m%2, 0x8
-    %endif
-
+; STORE_PIXELS(dst, src, width, tmp reg)
+%macro STORE_PIXELS 4
     %ifidn %3, 16
+        %if ps == 1
+            vextracti128 xm%4, m%2, 1
+            packuswb     xm%2, xm%4
+        %endif
         STORE_PIXELS_W16  %1, %2
     %else
         %if LUMA
+            %if ps == 1
+                packuswb     xm%2, xm%2
+            %endif
             STORE_PIXELS_W8   %1, %2
         %else
+            %if ps == 1
+                packuswb      m%2, m%2
+            %endif
             STORE_PIXELS_W8LE %1, %2, %3
         %endif
     %endif
@@ -413,7 +414,7 @@ SECTION .text
     CLIPW             m0, m14, m15
 %endif
 
-    STORE_PIXELS    dstq, 0, %1
+    STORE_PIXELS    dstq, 0, %1, 2
 
     lea             srcq, [srcq + src_strideq]
     lea             dstq, [dstq + dst_strideq]
