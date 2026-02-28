@@ -467,8 +467,20 @@ SECTION .text
 ;      const uint8_t *src, ptrdiff_t src_stride, const ptrdiff_t width, cosnt ptr_diff_t height,
 ;      const int16_t *filter, const int16_t *clip, ptrdiff_t stride, ptrdiff_t vb_pos, ptrdiff_t pixel_max);
 ; ******************************
-cglobal vvc_alf_filter_%2_%1bpc, 11, 15, 14+2*(ps!=1), 0-0x30, dst, dst_stride, src, src_stride, width, height, filter, clip, stride, vb_pos, pixel_max, \
+cglobal vvc_alf_filter_%2_%1bpc, 11, 15, 12+2*(ps!=1)+2*LUMA, 0-0x30, dst, dst_stride, src, src_stride, width, height, filter, clip, stride, vb_pos, pixel_max, \
     offset, x, s5, s6
+%if !LUMA
+; chroma does not use registers m5 and m8. Swap them to reduce the amount
+; of nonvolatile registers on Win64. It also reduces codesize generally
+; as encodings with high registers (m8-m15) take more bytes.
+    %if ps != 1
+        SWAP 5,15
+        SWAP 8,14
+    %else
+        SWAP 5,12
+        SWAP 8,13
+    %endif
+%endif
 %if ps != 1
     movd            xm15, pixel_maxd
     vpbroadcastw     m15, xm15
