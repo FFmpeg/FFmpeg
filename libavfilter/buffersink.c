@@ -53,7 +53,7 @@ typedef struct BufferSinkContext {
     int color_spaces_size;
     enum AVColorRange *color_ranges;    ///< list of accepted color ranges
     int color_ranges_size;
-    enum AVColorRange *alpha_modes;     ///< list of accepted alpha modes
+    enum AVAlphaMode *alpha_modes;     ///< list of accepted alpha modes
     int alpha_modes_size;
 #endif
 
