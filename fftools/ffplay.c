@@ -3826,9 +3826,9 @@ void show_help_default(const char *opt, const char *arg)
            "c                   cycle program\n"
            "w                   cycle video filters or show modes\n"
            "s                   activate frame-step mode\n"
-           "left/right          seek backward/forward 10 seconds or to custom interval if -seek_interval is set\n"
+           "left/right          seek backward/forward by 10 seconds or a custom interval if -seek_interval is set\n"
            "down/up             seek backward/forward 1 minute\n"
-           "page down/page up   seek backward/forward 10 minutes\n"
+           "page down/page up   seek to previous/next chapter or backward/forward 10 minutes if no chapters\n"
            "right mouse click   seek to percentage in file corresponding to fraction of width\n"
            "left double-click   toggle full screen\n"
            );

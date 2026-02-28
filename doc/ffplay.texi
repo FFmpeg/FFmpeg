@@ -259,15 +259,13 @@ Pause if the stream is not already paused, step to the next video
 frame, and pause.
 
 @item left/right
-Seek backward/forward 10 seconds.
+Seek backward/forward by 10 seconds or a custom interval if -seek_interval is set.
 
 @item down/up
 Seek backward/forward 1 minute.
 
 @item page down/page up
-Seek to the previous/next chapter.
-or if there are no chapters
-Seek backward/forward 10 minutes.
+Seek to previous/next chapter or backward/forward 10 minutes if no chapters.
 
 @item right mouse click
 Seek to percentage in file corresponding to fraction of width.
