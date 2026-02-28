@@ -107,9 +107,8 @@ SECTION .text
 
 %macro LOAD_CHROMA_PARAMS 4
     ; LOAD_CHROMA_PARAMS_W %+ WIDTH %1, %2, %3, %4
-    movq                   xm%1, [%3q]
+    vpbroadcastq            m%1, [%3q]
     movd                   xm%2, [%3q + 8]
-    vpbroadcastq            m%1, xm%1
     vpbroadcastq            m%2, xm%2
 %endmacro
 
@@ -602,8 +601,7 @@ cglobal vvc_alf_classify_grad_%1bpc, 6, 14, 16, gradient_sum, src, src_stride, w
         pblendw           m0, m1, m6, 0x55
         paddw             m0, m0                       ; c
 
-        movu              m1, [CLASSIFY_SHUFFE]
-        pshufb            m1, m0, m1                   ; d
+        pshufb            m1, m0, [CLASSIFY_SHUFFE]    ; d
 
         paddw             m9, m14                      ; n + s
         psubw             m9, m0                       ; (n + s) - c
