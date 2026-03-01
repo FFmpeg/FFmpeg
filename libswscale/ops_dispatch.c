@@ -387,8 +387,6 @@ int ff_sws_compile_pass(SwsGraph *graph, SwsOpList *ops, int flags,
         ret = ff_sws_op_list_optimize(ops);
         if (ret < 0)
             return ret;
-    } else {
-        ff_sws_op_list_update_comps(ops);
     }
 
     return compile(graph, ops, dst, input, output);
