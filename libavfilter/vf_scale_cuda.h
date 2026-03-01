@@ -59,6 +59,8 @@ typedef struct {
     int log2_chroma_w;
     int log2_chroma_h;
     CUDAScaleColorMatrix color_matrix;
+    int dst_depth;
+    int dst_shift;
 } CUDAScaleKernelParams;
 
 #endif
