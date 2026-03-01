@@ -187,12 +187,12 @@ SECTION .text
     neg      src_strideq
 
 %if LUMA
-    cmp          vb_posq, 0
+    cmp          vb_posd, 0
     je       %%vb_bottom
-    cmp          vb_posq, 4
+    cmp          vb_posd, 4
     jne         %%vb_end
 %else
-    cmp          vb_posq, 2
+    cmp          vb_posd, 2
     jne         %%vb_end
     cmp               %1, 2
     jge      %%vb_bottom
@@ -206,23 +206,23 @@ SECTION .text
     ; p4 = (y + i >= vb_pos - 2) ? p2 : p4;
     ; p5 = (y + i >= vb_pos - 3) ? p3 : p5;
     ; p6 = (y + i >= vb_pos - 3) ? p4 : p6;
-    dec          vb_posq
-    cmp          vb_posq, %1
+    dec          vb_posd
+    cmp          vb_posd, %1
     cmove            s1q, srcq
     cmove            s2q, srcq
 
-    dec          vb_posq
-    cmp          vb_posq, %1
+    dec          vb_posd
+    cmp          vb_posd, %1
     cmovbe           s3q, s1q
     cmovbe           s4q, s2q
 
-    dec          vb_posq
+    dec          vb_posd
 %if LUMA
-    cmp          vb_posq, %1
+    cmp          vb_posd, %1
     cmovbe           s5q, s3q
     cmovbe           s6q, s4q
 %endif
-    add          vb_posq, 3
+    add          vb_posd, 3
     jmp         %%vb_end
 
 %%vb_bottom:
@@ -233,22 +233,22 @@ SECTION .text
     ; p4 = (y + i <= vb_pos + 1) ? p2 : p4;
     ; p5 = (y + i <= vb_pos + 2) ? p3 : p5;
     ; p6 = (y + i <= vb_pos + 2) ? p4 : p6;
-    cmp          vb_posq, %1
+    cmp          vb_posd, %1
     cmove            s1q, srcq
     cmove            s2q, srcq
 
-    inc          vb_posq
-    cmp          vb_posq, %1
+    inc          vb_posd
+    cmp          vb_posd, %1
     cmovae           s3q, s1q
     cmovae           s4q, s2q
 
-    inc          vb_posq
+    inc          vb_posd
 %if LUMA
-    cmp          vb_posq, %1
+    cmp          vb_posd, %1
     cmovae           s5q, s3q
     cmovae           s6q, s4q
 %endif
-    sub          vb_posq, 2
+    sub          vb_posd, 2
 %%vb_end:
 %endmacro
 
@@ -266,18 +266,18 @@ SECTION .text
     je      %%near_below
     jmp          %%no_vb
     %%near_above:
-        cmp      vb_posq, 4
+        cmp      vb_posd, 4
         je     %%near_vb
         jmp      %%no_vb
     %%near_below:
-        cmp      vb_posq, 0
+        cmp      vb_posd, 0
         je     %%near_vb
 %else
     cmp               %1, 0
     je           %%no_vb
     cmp               %1, 3
     je           %%no_vb
-    cmp          vb_posq, 2
+    cmp          vb_posd, 2
     je         %%near_vb
 %endif
 %%no_vb:
@@ -414,11 +414,11 @@ SECTION .text
     %define s4q offsetq
     push xq
 
-    xor               xq, xq
+    xor               xd, xd
 %%filter_16x4_loop:
     LOAD_PIXELS       m2, [srcq]   ;p0
 
-    FILTER_VB         xq
+    FILTER_VB         xd
 
     ; sum += curr
     paddsw             m0, m2
@@ -432,8 +432,8 @@ SECTION .text
 
     lea             srcq, [srcq + src_strideq]
     lea             dstq, [dstq + dst_strideq]
-    inc               xq
-    cmp               xq, 4
+    inc               xd
+    cmp               xd, 4
     jl %%filter_16x4_loop
 
     mov               xq, src_strideq
@@ -490,10 +490,10 @@ cglobal vvc_alf_filter_%2_%1bpc, 11, 15, 12+2*(ps!=1)+2*LUMA, 0-0x30, dst, dst_s
     push            srcq
     push            dstq
     push          widthq
-    xor               xq, xq
+    xor               xd, xd
 
     .loop_w:
-        cmp       widthq, 16
+        cmp       widthd, 16
         jl   .loop_w_end
 
         LOAD_PARAMS
@@ -501,19 +501,19 @@ cglobal vvc_alf_filter_%2_%1bpc, 11, 15, 12+2*(ps!=1)+2*LUMA, 0-0x30, dst, dst_s
 
         add         srcq, 16 * ps
         add         dstq, 16 * ps
-        add           xq, 16
-        sub       widthq, 16
+        add           xd, 16
+        sub       widthd, 16
         jmp      .loop_w
 
 .loop_w_end:
-    cmp           widthq, 0
+    cmp           widthd, 0
     je            .w_end
 
 %if LUMA
 INIT_XMM cpuname
 %endif
     LOAD_PARAMS
-    FILTER_16x4  widthq
+    FILTER_16x4  widthd
 %if LUMA
 INIT_YMM cpuname
 %endif
@@ -529,8 +529,8 @@ INIT_YMM cpuname
     lea          filterq, [filterq + 2 * strideq]
     lea            clipq, [clipq   + 2 * strideq]
 
-    sub          vb_posq, 4
-    sub          heightq, 4
+    sub          vb_posd, 4
+    sub          heightd, 4
     jg             .loop
     RET
 %endmacro
@@ -856,7 +856,7 @@ cglobal vvc_alf_classify_%1bpc, 7, 15, 16, class_idx, transpose_idx, gradient_su
     x, y, grad, sum_stride, sum_stride3, temp, w
 
 %if ps != 1
-    sub       bit_depthq, 1
+    sub       bit_depthd, 1
 %endif
 
     ; now we can use gradient to get class idx and transpose idx
