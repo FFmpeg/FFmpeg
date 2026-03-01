@@ -182,11 +182,12 @@ cglobal %2 %+ 24ToY, 6, 6, %1, dst, src, u1, u2, w, table
 .loop:
 %if cpuflag(ssse3)
     movu          xm0, [srcq+0]           ; (byte) { Bx, Gx, Rx }[0-3]
-    movu          xm2, [srcq+12]          ; (byte) { Bx, Gx, Rx }[4-7]
+    movu          xm2, [srcq+8]           ; (byte) { Bx, Gx, Rx }[4-7]
 %if mmsize == 32
     vinserti128    m0, m0, [srcq+24], 1
-    vinserti128    m2, m2, [srcq+36], 1
+    vinserti128    m2, m2, [srcq+32], 1
 %endif
+    psrldq         m2, 4
     pshufb         m1, m0, shuf_rgb2      ; (word) { R0, B1, G1, R1, R2, B3, G3, R3 }
     pshufb         m0, shuf_rgb1          ; (word) { B0, G0, R0, B1, B2, G2, R2, B3 }
     pshufb         m3, m2, shuf_rgb2      ; (word) { R4, B5, G5, R5, R6, B7, G7, R7 }
@@ -289,11 +290,12 @@ cglobal %3 %+ 24ToUV, 7, 7, %1, dstU, dstV, u1, src, u2, w, table
 .loop:
 %if cpuflag(ssse3)
     movu          xm0, [srcq+0]           ; (byte) { Bx, Gx, Rx }[0-3]
-    movu          xm4, [srcq+12]          ; (byte) { Bx, Gx, Rx }[4-7]
+    movu          xm4, [srcq+8]           ; (byte) { Bx, Gx, Rx }[4-7]
 %if mmsize == 32
     vinserti128    m0, m0, [srcq+24], 1
-    vinserti128    m4, m4, [srcq+36], 1
+    vinserti128    m4, m4, [srcq+32], 1
 %endif
+    psrldq         m4, 4
     pshufb         m1, m0, shuf_rgb2      ; (word) { R0, B1, G1, R1, R2, B3, G3, R3 }
     pshufb         m0, shuf_rgb1          ; (word) { B0, G0, R0, B1, B2, G2, R2, B3 }
 %else ; !cpuflag(ssse3)
