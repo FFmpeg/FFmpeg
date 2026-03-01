@@ -4,6 +4,7 @@ OBJS-$(CONFIG_FDCTDSP)                  += aarch64/fdctdsp_init_aarch64.o
 OBJS-$(CONFIG_FMTCONVERT)               += aarch64/fmtconvert_init.o
 OBJS-$(CONFIG_H264CHROMA)               += aarch64/h264chroma_init_aarch64.o
 OBJS-$(CONFIG_H264DSP)                  += aarch64/h264dsp_init_aarch64.o
+OBJS-$(CONFIG_HUFFYUVDSP)               += aarch64/huffyuvdsp_init_aarch64.o
 OBJS-$(CONFIG_H264PRED)                 += aarch64/h264pred_init.o
 OBJS-$(CONFIG_H264QPEL)                 += aarch64/h264qpel_init_aarch64.o
 OBJS-$(CONFIG_HPELDSP)                  += aarch64/hpeldsp_init_aarch64.o
@@ -51,6 +52,7 @@ NEON-OBJS-$(CONFIG_H264PRED)            += aarch64/h264pred_neon.o
 NEON-OBJS-$(CONFIG_H264QPEL)            += aarch64/h264qpel_neon.o             \
                                            aarch64/hpeldsp_neon.o
 NEON-OBJS-$(CONFIG_HPELDSP)             += aarch64/hpeldsp_neon.o
+NEON-OBJS-$(CONFIG_HUFFYUVDSP)          += aarch64/huffyuvdsp_neon.o
 NEON-OBJS-$(CONFIG_IDCTDSP)             += aarch64/idctdsp_neon.o              \
                                            aarch64/simple_idct_neon.o
 NEON-OBJS-$(CONFIG_ME_CMP)              += aarch64/me_cmp_neon.o

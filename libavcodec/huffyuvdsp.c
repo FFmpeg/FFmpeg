@@ -87,7 +87,9 @@ av_cold void ff_huffyuvdsp_init(HuffYUVDSPContext *c, enum AVPixelFormat pix_fmt
     c->add_hfyu_median_pred_int16 = add_hfyu_median_pred_int16_c;
     c->add_hfyu_left_pred_bgr32 = add_hfyu_left_pred_bgr32_c;
 
-#if ARCH_RISCV
+#if ARCH_AARCH64
+    ff_huffyuvdsp_init_aarch64(c, pix_fmt);
+#elif ARCH_RISCV
     ff_huffyuvdsp_init_riscv(c, pix_fmt);
 #elif ARCH_X86 && HAVE_X86ASM
     ff_huffyuvdsp_init_x86(c, pix_fmt);
