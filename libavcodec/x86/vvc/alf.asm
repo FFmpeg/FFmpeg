@@ -688,13 +688,12 @@ cglobal vvc_alf_classify_grad_%1bpc, 6, 14, 16, gradient_sum, src, src_stride, w
     movu              m1, [gradq + sum_strideq]
     movu              m2, [gradq + 2 * sum_strideq]
 
-    pcmpeqb          m11, m11
     movd            xm13, yd
-    vpbroadcastd     m13, xm13
     movd            xm12, vb_posd
-    vpbroadcastd     m12, xm12
-    pcmpeqd          m13, m12       ; y == vb_pos
-    pandn            m13, m11       ; y != vb_pos
+    pcmpeqb         xm11, xm11
+    pcmpeqd         xm13, xm12      ; y == vb_pos
+    pxor            xm13, xm11      ; y != vb_pos
+    vpbroadcastd     m13, xm13
 
     vpbroadcastd     m14, [dw3]
     pblendvb         m14, m14, [dd2], m13    ; ac
