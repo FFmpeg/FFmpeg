@@ -78,10 +78,6 @@ void (*yuv422ptouyvy)(const uint8_t *ysrc, const uint8_t *usrc,
                       const uint8_t *vsrc, uint8_t *dst,
                       int width, int height,
                       int lumStride, int chromStride, int dstStride);
-void (*yuy2toyv12)(const uint8_t *src, uint8_t *ydst,
-                   uint8_t *udst, uint8_t *vdst,
-                   int width, int height,
-                   int lumStride, int chromStride, int srcStride);
 void (*ff_rgb24toyv12)(const uint8_t *src, uint8_t *ydst,
                        uint8_t *udst, uint8_t *vdst,
                        int width, int height,
@@ -95,16 +91,6 @@ void (*interleaveBytes)(const uint8_t *src1, const uint8_t *src2, uint8_t *dst,
 void (*deinterleaveBytes)(const uint8_t *src, uint8_t *dst1, uint8_t *dst2,
                           int width, int height, int srcStride,
                           int dst1Stride, int dst2Stride);
-void (*vu9_to_vu12)(const uint8_t *src1, const uint8_t *src2,
-                    uint8_t *dst1, uint8_t *dst2,
-                    int width, int height,
-                    int srcStride1, int srcStride2,
-                    int dstStride1, int dstStride2);
-void (*yvu9_to_yuy2)(const uint8_t *src1, const uint8_t *src2,
-                     const uint8_t *src3, uint8_t *dst,
-                     int width, int height,
-                     int srcStride1, int srcStride2,
-                     int srcStride3, int dstStride);
 void (*uyvytoyuv420)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
                      const uint8_t *src, int width, int height,
                      int lumStride, int chromStride, int srcStride);

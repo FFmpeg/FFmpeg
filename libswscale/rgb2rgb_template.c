@@ -528,40 +528,6 @@ static inline void yuv422ptoyuy2_c(const uint8_t *ysrc, const uint8_t *usrc,
                       chromStride, dstStride, 1);
 }
 
-/**
- * Height should be a multiple of 2 and width should be a multiple of 16.
- * (If this is a problem for anyone then tell me, and I will fix it.)
- */
-static inline void yuy2toyv12_c(const uint8_t *src, uint8_t *ydst,
-                                uint8_t *udst, uint8_t *vdst,
-                                int width, int height, int lumStride,
-                                int chromStride, int srcStride)
-{
-    int y;
-    const int chromWidth = width >> 1;
-
-    for (y = 0; y < height; y += 2) {
-        int i;
-        for (i = 0; i < chromWidth; i++) {
-            ydst[2 * i + 0] = src[4 * i + 0];
-            udst[i]         = src[4 * i + 1];
-            ydst[2 * i + 1] = src[4 * i + 2];
-            vdst[i]         = src[4 * i + 3];
-        }
-        ydst += lumStride;
-        src  += srcStride;
-
-        for (i = 0; i < chromWidth; i++) {
-            ydst[2 * i + 0] = src[4 * i + 0];
-            ydst[2 * i + 1] = src[4 * i + 2];
-        }
-        udst += chromStride;
-        vdst += chromStride;
-        ydst += lumStride;
-        src  += srcStride;
-    }
-}
-
 static inline void planar2x_c(const uint8_t *src, uint8_t *dst, int srcWidth,
                               int srcHeight, int srcStride, int dstStride)
 {
@@ -707,59 +673,6 @@ static void deinterleaveBytes_c(const uint8_t *src, uint8_t *dst1, uint8_t *dst2
         src  += srcStride;
         dst1 += dst1Stride;
         dst2 += dst2Stride;
-    }
-}
-
-static inline void vu9_to_vu12_c(const uint8_t *src1, const uint8_t *src2,
-                                 uint8_t *dst1, uint8_t *dst2,
-                                 int width, int height,
-                                 int srcStride1, int srcStride2,
-                                 int dstStride1, int dstStride2)
-{
-    int x, y;
-    int w = width  / 2;
-    int h = height / 2;
-
-    for (y = 0; y < h; y++) {
-        const uint8_t *s1 = src1 + srcStride1 * (y >> 1);
-        uint8_t *d        = dst1 + dstStride1 *  y;
-        for (x = 0; x < w; x++)
-            d[2 * x] = d[2 * x + 1] = s1[x];
-    }
-    for (y = 0; y < h; y++) {
-        const uint8_t *s2 = src2 + srcStride2 * (y >> 1);
-        uint8_t *d        = dst2 + dstStride2 *  y;
-        for (x = 0; x < w; x++)
-            d[2 * x] = d[2 * x + 1] = s2[x];
-    }
-}
-
-static inline void yvu9_to_yuy2_c(const uint8_t *src1, const uint8_t *src2,
-                                  const uint8_t *src3, uint8_t *dst,
-                                  int width, int height,
-                                  int srcStride1, int srcStride2,
-                                  int srcStride3, int dstStride)
-{
-    int x, y;
-    int w = width / 2;
-    int h = height;
-
-    for (y = 0; y < h; y++) {
-        const uint8_t *yp = src1 + srcStride1 *  y;
-        const uint8_t *up = src2 + srcStride2 * (y >> 2);
-        const uint8_t *vp = src3 + srcStride3 * (y >> 2);
-        uint8_t *d        = dst  + dstStride  *  y;
-        for (x = 0; x < w; x++) {
-            const int x2 = x << 2;
-            d[8 * x + 0] = yp[x2];
-            d[8 * x + 1] = up[x];
-            d[8 * x + 2] = yp[x2 + 1];
-            d[8 * x + 3] = vp[x];
-            d[8 * x + 4] = yp[x2 + 2];
-            d[8 * x + 5] = up[x];
-            d[8 * x + 6] = yp[x2 + 3];
-            d[8 * x + 7] = vp[x];
-        }
     }
 }
 
@@ -948,13 +861,10 @@ static av_cold void rgb2rgb_init_c(void)
     yv12touyvy         = yv12touyvy_c;
     yuv422ptoyuy2      = yuv422ptoyuy2_c;
     yuv422ptouyvy      = yuv422ptouyvy_c;
-    yuy2toyv12         = yuy2toyv12_c;
     planar2x           = planar2x_c;
     ff_rgb24toyv12     = ff_rgb24toyv12_c;
     interleaveBytes    = interleaveBytes_c;
     deinterleaveBytes  = deinterleaveBytes_c;
-    vu9_to_vu12        = vu9_to_vu12_c;
-    yvu9_to_yuy2       = yvu9_to_yuy2_c;
 
     uyvytoyuv420       = uyvytoyuv420_c;
     uyvytoyuv422       = uyvytoyuv422_c;
