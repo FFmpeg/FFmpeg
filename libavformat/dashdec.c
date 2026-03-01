@@ -264,6 +264,7 @@ static int64_t get_segment_start_time_based_on_timeline(struct representation *p
     int64_t j = 0;
     int64_t num = 0;
 
+    cur_seq_no -= pls->first_seq_no;
     if (pls->n_timelines) {
         for (i = 0; i < pls->n_timelines; i++) {
             if (pls->timelines[i]->starttime > 0) {
@@ -316,10 +317,10 @@ static int64_t calc_next_seg_no_from_timelines(struct representation *pls, int64
         num++;
     }
 
-    return -1;
+    return pls->first_seq_no;
 
 finish:
-    return num;
+    return num + pls->first_seq_no;
 }
 
 static void free_fragment(struct fragment **seg)
@@ -1448,10 +1449,6 @@ static int64_t calc_cur_seg_no(AVFormatContext *s, struct representation *pls)
             av_log(s, AV_LOG_TRACE, "in n_timelines mode\n");
             start_time_offset = get_segment_start_time_based_on_timeline(pls, 0xFFFFFFFF) - 60 * pls->fragment_timescale; // 60 seconds before end
             num = calc_next_seg_no_from_timelines(pls, start_time_offset);
-            if (num == -1)
-                num = pls->first_seq_no;
-            else
-                num += pls->first_seq_no;
         } else if (pls->fragment_duration){
             av_log(s, AV_LOG_TRACE, "in fragment_duration mode fragment_timescale = %"PRId64", presentation_timeoffset = %"PRId64"\n", pls->fragment_timescale, pls->presentation_timeoffset);
             if (pls->presentation_timeoffset) {
