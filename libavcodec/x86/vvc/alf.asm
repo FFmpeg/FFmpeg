@@ -45,7 +45,6 @@ ARG_VAR_SHUFFE: times 2     db 0, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4
 
 cextern pd_64
 dd448: times 8             dd 512 - 64
-dd2:  times 8              dd 2
 dw3:  times 8              dd 3
 dw5:  times 8              dd 5
 dd15: times 8              dd 15
@@ -696,7 +695,7 @@ cglobal vvc_alf_classify_grad_%1bpc, 6, 14, 16, gradient_sum, src, src_stride, w
     vpbroadcastd     m13, xm13
 
     vpbroadcastd     m14, [dw3]
-    pblendvb         m14, m14, [dd2], m13    ; ac
+    paddd            m14, m13       ; ac = (y != vb_pos) ? 2 : 3
 
     pblendvb          m3, m15, [gradq + sum_stride3q], m13
 
