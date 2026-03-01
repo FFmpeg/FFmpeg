@@ -197,7 +197,7 @@ static int gnutls_gen_private_key(gnutls_x509_privkey_t *key)
     }
 
     ret = gnutls_x509_privkey_generate(*key, GNUTLS_PK_ECDSA,
-                                       gnutls_sec_param_to_pk_bits(GNUTLS_PK_ECDSA, GNUTLS_SEC_PARAM_MEDIUM), 0);
+                                       GNUTLS_CURVE_TO_BITS(GNUTLS_ECC_CURVE_SECP256R1), 0);
     if (ret < 0) {
         av_log(NULL, AV_LOG_ERROR, "TLS: Failed to generate private key: %s\n", gnutls_strerror(ret));
         goto einval_end;
