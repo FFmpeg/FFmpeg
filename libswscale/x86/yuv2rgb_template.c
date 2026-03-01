@@ -26,6 +26,23 @@
 #include "libavutil/x86/asm.h"
 #include "libswscale/swscale_internal.h"
 
+#undef EMMS_IF_MMX
+
+#if defined(COMPILE_TEMPLATE_MMX) || defined(COMPILE_TEMPLATE_MMXEXT)
+// Don't use emms_c() directly as it may entail an av_get_cpu_flags() call.
+#if HAVE_MMX_INLINE
+#   define EMMS_IF_MMX __asm__ volatile ("emms" ::: "memory");
+#elif HAVE_MM_EMPTY
+#   include <mmintrin.h>
+#   define EMMS_IF_MMX _mm_empty();
+#else
+#   include "libavutil/emms.h"
+#   define EMMS_IF_MMX emms_c();
+#endif
+#else
+#define EMMS_IF_MMX
+#endif
+
 #define YUV2RGB_LOOP(depth)                                          \
     h_size = (c->dstW + 7) & ~7;                                     \
     if (h_size * depth > FFABS(dstStride[0]))                        \
@@ -84,6 +101,7 @@ static inline int RENAME(yuv420_rgb15)(SwsContext *c, const uint8_t *src[],
 
         RENAME(ff_yuv_420_rgb15)(index, image, pu - index, pv - index, &(c->redDither), py - 2 * index);
     }
+    EMMS_IF_MMX
     return srcSliceH;
 }
 
@@ -104,6 +122,7 @@ static inline int RENAME(yuv420_rgb16)(SwsContext *c, const uint8_t *src[],
 
         RENAME(ff_yuv_420_rgb16)(index, image, pu - index, pv - index, &(c->redDither), py - 2 * index);
     }
+    EMMS_IF_MMX
     return srcSliceH;
 }
 
@@ -118,6 +137,7 @@ static inline int RENAME(yuv420_rgb32)(SwsContext *c, const uint8_t *src[],
 
         RENAME(ff_yuv_420_rgb32)(index, image, pu - index, pv - index, &(c->redDither), py - 2 * index);
     }
+    EMMS_IF_MMX
     return srcSliceH;
 }
 
@@ -132,6 +152,7 @@ static inline int RENAME(yuv420_bgr32)(SwsContext *c, const uint8_t *src[],
 
         RENAME(ff_yuv_420_bgr32)(index, image, pu - index, pv - index, &(c->redDither), py - 2 * index);
     }
+    EMMS_IF_MMX
     return srcSliceH;
 }
 
@@ -146,6 +167,7 @@ static inline int RENAME(yuva420_rgb32)(SwsContext *c, const uint8_t *src[],
         const uint8_t *pa = src[3] + y * srcStride[3];
         RENAME(ff_yuva_420_rgb32)(index, image, pu - index, pv - index, &(c->redDither), py - 2 * index, pa - 2 * index);
     }
+    EMMS_IF_MMX
     return srcSliceH;
 }
 
@@ -161,6 +183,7 @@ static inline int RENAME(yuva420_bgr32)(SwsContext *c, const uint8_t *src[],
         const uint8_t *pa = src[3] + y * srcStride[3];
         RENAME(ff_yuva_420_bgr32)(index, image, pu - index, pv - index, &(c->redDither), py - 2 * index, pa - 2 * index);
     }
+    EMMS_IF_MMX
     return srcSliceH;
 }
 #endif
@@ -177,6 +200,7 @@ static inline int RENAME(yuv420_rgb24)(SwsContext *c, const uint8_t *src[],
 
         RENAME(ff_yuv_420_rgb24)(index, image, pu - index, pv - index, &(c->redDither), py - 2 * index);
     }
+    EMMS_IF_MMX
     return srcSliceH;
 }
 
@@ -191,6 +215,7 @@ static inline int RENAME(yuv420_bgr24)(SwsContext *c, const uint8_t *src[],
 
         RENAME(ff_yuv_420_bgr24)(index, image, pu - index, pv - index, &(c->redDither), py - 2 * index);
     }
+    EMMS_IF_MMX
     return srcSliceH;
 }
 #endif
