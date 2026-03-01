@@ -1113,6 +1113,145 @@ __device__ static inline T Subsample_Nearest(cudaTextureObject_t tex,
     return tex2D<T>(tex, xi, yi);
 }
 
+__device__ static inline float clamp_f(float x, float lo, float hi)
+{
+    return x < lo ? lo : (x > hi ? hi : x);
+}
+
+/* Half away from zero, then clamp. A bare cast truncates. */
+__device__ static inline float round_code(float x, float lo, float hi)
+{
+    return clamp_f(x + 0.5f, lo, hi);
+}
+
+/* Stored samples enter the 8-bit matrix domain.
+   Limited codes are the 8-bit codes shifted by depth-8. Full-range
+   codes are scaled by the code maximum, so 1023 is 255 and the
+   chroma midpoint stays 128. P010 keeps that code in the high bits. */
+__device__ static inline void yuv_codes_to_u8(float raw_y, float raw_u, float raw_v,
+                                              int depth, int storage_max, int mpeg_range,
+                                              float &fy, float &fu, float &fv)
+{
+    if (depth <= 8) {
+        fy = raw_y;
+        fu = raw_u;
+        fv = raw_v;
+    } else if (mpeg_range) {
+        float code_div = (float)(1 << (depth - 8)) *
+                         ((float)storage_max / (float)((1 << depth) - 1));
+        fy = raw_y / code_div;
+        fu = raw_u / code_div;
+        fv = raw_v / code_div;
+    } else {
+        float peak = (float)((1 << depth) - 1);
+        float mid = (float)(1 << (depth - 1));
+        float to_code = peak / (float)storage_max;
+
+        fy = raw_y * 255.f / (float)storage_max;
+        fu = (raw_u * to_code - mid) * (255.f / peak) + 128.f;
+        fv = (raw_v * to_code - mid) * (255.f / peak) + 128.f;
+    }
+    if (mpeg_range)
+        fy -= 16.f;
+    fu -= 128.f;
+    fv -= 128.f;
+}
+
+// YUV to RGB CONVERSION
+//      R = m[0][0]*(Y-Yoff) + m[0][1]*(U-128) + m[0][2]*(V-128)
+//      G = m[1][0]*(Y-Yoff) + m[1][1]*(U-128) + m[1][2]*(V-128)
+//      B = m[2][0]*(Y-Yoff) + m[2][1]*(U-128) + m[2][2]*(V-128)
+// channel_order:
+//      0 = BGRA (B,G,R,A), 1 = RGBA (R,G,B,A),
+//      2 = BGR0 (B,G,R,0), 3 = RGB0 (R,G,B,0)
+__device__ static inline uchar4 yuv8_to_rgba_generic(
+    float fy, float fu, float fv,
+    const CUDAScaleColorMatrix &mat,
+    int channel_order)
+{
+    float r = mat.m[0][0] * fy + mat.m[0][1] * fu + mat.m[0][2] * fv;
+    float g = mat.m[1][0] * fy + mat.m[1][1] * fu + mat.m[1][2] * fv;
+    float b = mat.m[2][0] * fy + mat.m[2][1] * fu + mat.m[2][2] * fv;
+
+    uchar rc = (uchar)round_code(r, 0.0f, 255.0f);
+    uchar gc = (uchar)round_code(g, 0.0f, 255.0f);
+    uchar bc = (uchar)round_code(b, 0.0f, 255.0f);
+
+    switch (channel_order) {
+    case 0: return make_uchar4(bc, gc, rc, 0xFF); // BGRA
+    case 1: return make_uchar4(rc, gc, bc, 0xFF); // RGBA
+    case 2: return make_uchar4(bc, gc, rc, 0x00); // BGR0
+    case 3: return make_uchar4(rc, gc, bc, 0x00); // RGB0
+    default: return make_uchar4(bc, gc, rc, 0xFF);
+    }
+}
+
+// YUV to RGB kernel for semiplanar input (NV12, P010, NV16, P210)
+// No resize: src and dst have identical dimensions.
+template<typename in_y_T, typename in_uv_T, int channel_order>
+__device__ void YuvToRgb_semiplanar(CUDAScaleKernelParams params)
+{
+    int xo = blockIdx.x * blockDim.x + threadIdx.x;
+    int yo = blockIdx.y * blockDim.y + threadIdx.y;
+    if (yo >= params.dst_height || xo >= params.dst_width) return;
+
+    // Direct 1:1 Y plane read
+    in_y_T y_raw = tex2D<in_y_T>(
+        params.src_tex[0],
+        xo + params.src_left + 0.5f,
+        yo + params.src_top  + 0.5f);
+
+    // Chroma: map luma coords to chroma coords for subsampled formats
+    float cx = ((float)xo + 0.5f) / (float)(1 << params.log2_chroma_w)
+             + (float)(params.src_left >> params.log2_chroma_w);
+    float cy = ((float)yo + 0.5f) / (float)(1 << params.log2_chroma_h)
+             + (float)(params.src_top  >> params.log2_chroma_h);
+    in_uv_T uv_raw = tex2D<in_uv_T>(params.src_tex[1], cx, cy);
+
+    float fy, fu, fv;
+    yuv_codes_to_u8((float)(int)y_raw, (float)(int)uv_raw.x, (float)(int)uv_raw.y,
+                    params.src_depth, params.src_storage_max, params.mpeg_range,
+                    fy, fu, fv);
+
+    uchar4 *dst = (uchar4*)params.dst[0];
+    int dst_pitch = params.dst_pitch / sizeof(uchar4);
+    dst[yo * dst_pitch + xo] = yuv8_to_rgba_generic(fy, fu, fv, params.color_matrix, channel_order);
+}
+
+// YUV to RGB kernel for planar input (YUV420P, YUV422P, YUV444P, etc)
+// No resize: src and dst have identical dimensions.
+template<typename in_y_T, typename in_uv_T, int channel_order>
+__device__ void YuvToRgb_planar(CUDAScaleKernelParams params)
+{
+    int xo = blockIdx.x * blockDim.x + threadIdx.x;
+    int yo = blockIdx.y * blockDim.y + threadIdx.y;
+    if (yo >= params.dst_height || xo >= params.dst_width) return;
+
+    // Direct 1:1 Y plane read
+    in_y_T y_raw = tex2D<in_y_T>(
+        params.src_tex[0],
+        xo + params.src_left + 0.5f,
+        yo + params.src_top  + 0.5f);
+
+    // Chroma: map luma coords to chroma coords for subsampled formats
+    float cx = ((float)xo + 0.5f) / (float)(1 << params.log2_chroma_w)
+             + (float)(params.src_left >> params.log2_chroma_w);
+    float cy = ((float)yo + 0.5f) / (float)(1 << params.log2_chroma_h)
+             + (float)(params.src_top  >> params.log2_chroma_h);
+
+    in_uv_T u_raw = tex2D<in_uv_T>(params.src_tex[1], cx, cy);
+    in_uv_T v_raw = tex2D<in_uv_T>(params.src_tex[2], cx, cy);
+
+    float fy, fu, fv;
+    yuv_codes_to_u8((float)(int)y_raw, (float)(int)u_raw, (float)(int)v_raw,
+                    params.src_depth, params.src_storage_max, params.mpeg_range,
+                    fy, fu, fv);
+
+    uchar4 *dst = (uchar4*)params.dst[0];
+    int dst_pitch = params.dst_pitch / sizeof(uchar4);
+    dst[yo * dst_pitch + xo] = yuv8_to_rgba_generic(fy, fu, fv, params.color_matrix, channel_order);
+}
+
 template<typename T>
 __device__ static inline T Subsample_Bilinear(cudaTextureObject_t tex,
                                               int xo, int yo,
@@ -1553,4 +1692,47 @@ GENERIC_FLOAT_KERNEL_Y(bgr0, uchar4, float4)
 GENERIC_FLOAT_KERNEL_Y(rgba, uchar4, float4)
 GENERIC_FLOAT_KERNEL_Y(bgra, uchar4, float4)
 
+
+// --- YUV to RGB kernel exports ---
+// Single-pass kernels (no resize, color conversion only)
+
+// semiplanar8 (NV12, NV16) -> RGB outputs
+__global__ void Subsample_Nearest_semiplanar8_bgra(CUDAScaleKernelParams p)
+{ YuvToRgb_semiplanar<uchar, uchar2, 0>(p); }
+__global__ void Subsample_Nearest_semiplanar8_rgba(CUDAScaleKernelParams p)
+{ YuvToRgb_semiplanar<uchar, uchar2, 1>(p); }
+__global__ void Subsample_Nearest_semiplanar8_bgr0(CUDAScaleKernelParams p)
+{ YuvToRgb_semiplanar<uchar, uchar2, 2>(p); }
+__global__ void Subsample_Nearest_semiplanar8_rgb0(CUDAScaleKernelParams p)
+{ YuvToRgb_semiplanar<uchar, uchar2, 3>(p); }
+
+// semiplanar10 (P010, P210) -> RGB outputs
+__global__ void Subsample_Nearest_semiplanar10_bgra(CUDAScaleKernelParams p)
+{ YuvToRgb_semiplanar<ushort, ushort2, 0>(p); }
+__global__ void Subsample_Nearest_semiplanar10_rgba(CUDAScaleKernelParams p)
+{ YuvToRgb_semiplanar<ushort, ushort2, 1>(p); }
+__global__ void Subsample_Nearest_semiplanar10_bgr0(CUDAScaleKernelParams p)
+{ YuvToRgb_semiplanar<ushort, ushort2, 2>(p); }
+__global__ void Subsample_Nearest_semiplanar10_rgb0(CUDAScaleKernelParams p)
+{ YuvToRgb_semiplanar<ushort, ushort2, 3>(p); }
+
+// planar8 (YUV420P, YUV422P, YUV444P) -> RGB outputs
+__global__ void Subsample_Nearest_planar8_bgra(CUDAScaleKernelParams p)
+{ YuvToRgb_planar<uchar, uchar, 0>(p); }
+__global__ void Subsample_Nearest_planar8_rgba(CUDAScaleKernelParams p)
+{ YuvToRgb_planar<uchar, uchar, 1>(p); }
+__global__ void Subsample_Nearest_planar8_bgr0(CUDAScaleKernelParams p)
+{ YuvToRgb_planar<uchar, uchar, 2>(p); }
+__global__ void Subsample_Nearest_planar8_rgb0(CUDAScaleKernelParams p)
+{ YuvToRgb_planar<uchar, uchar, 3>(p); }
+
+// planar10 (YUV420P10, YUV422P10, YUV444P10) -> RGB outputs
+__global__ void Subsample_Nearest_planar10_bgra(CUDAScaleKernelParams p)
+{ YuvToRgb_planar<ushort, ushort, 0>(p); }
+__global__ void Subsample_Nearest_planar10_rgba(CUDAScaleKernelParams p)
+{ YuvToRgb_planar<ushort, ushort, 1>(p); }
+__global__ void Subsample_Nearest_planar10_bgr0(CUDAScaleKernelParams p)
+{ YuvToRgb_planar<ushort, ushort, 2>(p); }
+__global__ void Subsample_Nearest_planar10_rgb0(CUDAScaleKernelParams p)
+{ YuvToRgb_planar<ushort, ushort, 3>(p); }
 }

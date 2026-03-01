@@ -21,11 +21,13 @@
 */
 
 #include <float.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
+#include "libavutil/csp.h"
 #include "libavutil/hwcontext.h"
 #include "libavutil/hwcontext_cuda_internal.h"
 #include "libavutil/cuda_check.h"
@@ -38,7 +40,9 @@
 #include "libswscale/filters.h"
 
 #include "avfilter.h"
+#include "colorspace.h"
 #include "filters.h"
+#include "formats.h"
 #include "scale_eval.h"
 #include "video.h"
 
@@ -191,6 +195,10 @@ typedef struct CUDAScaleContext {
     int use_filters_opt; /* -1 for auto */
 
     float param;
+
+    bool yuv2rgb;
+    enum AVColorRange  color_range;  ///< resolved color range for conversion
+    CUDAScaleColorMatrix color_matrix;
 } CUDAScaleContext;
 
 /*
@@ -457,6 +465,48 @@ static const char* get_format_name(enum AVPixelFormat fmt)
     return NULL;
 }
 
+/* H.273 YCgCo uses the luma excursion for chroma as well. */
+static int chroma_uses_luma_span(enum AVColorSpace colorspace)
+{
+    return colorspace == AVCOL_SPC_YCGCO
+        || colorspace == AVCOL_SPC_YCGCO_RE
+        || colorspace == AVCOL_SPC_YCGCO_RO;
+}
+
+static int compute_yuv2rgb_matrix(void *log_ctx, CUDAScaleColorMatrix *mat,
+                                  enum AVColorSpace colorspace,
+                                  bool limited_range)
+{
+    const AVLumaCoefficients *coeffs = av_csp_luma_coeffs_from_avcsp(colorspace);
+    float y_scale = 1.0f;
+    float uv_scale = 1.0f;
+    double rgb2yuv[3][3], yuv2rgb[3][3];
+
+    /* Constant luminance is not the matrix returned for these coefficients. */
+    if (!coeffs || colorspace == AVCOL_SPC_BT2020_CL) {
+        av_log(log_ctx, AV_LOG_ERROR,
+               "Unsupported colorspace %d for YUV->RGB conversion\n", colorspace);
+        return AVERROR(EINVAL);
+    }
+
+    ff_fill_rgb2yuv_table(coeffs, rgb2yuv);
+    ff_matrix_invert_3x3(rgb2yuv, yuv2rgb);
+
+    if (limited_range) {
+        y_scale  = 255.0f / (235.0f - 16.0f);
+        uv_scale = chroma_uses_luma_span(colorspace) ? y_scale
+                                                     : 255.0f / (240.0f - 16.0f);
+    }
+
+    for (int i = 0; i < 3; i++) {
+        mat->m[i][0] = (float)yuv2rgb[i][0] * y_scale;
+        mat->m[i][1] = (float)yuv2rgb[i][1] * uv_scale;
+        mat->m[i][2] = (float)yuv2rgb[i][2] * uv_scale;
+    }
+
+    return 0;
+}
+
 static av_cold void set_format_info(AVFilterContext *ctx, enum AVPixelFormat in_format, enum AVPixelFormat out_format)
 {
     CUDAScaleContext *s = ctx->priv;
@@ -487,8 +537,10 @@ static av_cold int init_processing_chain(AVFilterContext *ctx, int in_width, int
                                          int out_width, int out_height)
 {
     CUDAScaleContext *s = ctx->priv;
-    FilterLink     *inl = ff_filter_link(ctx->inputs[0]);
-    FilterLink    *outl = ff_filter_link(ctx->outputs[0]);
+    AVFilterLink *inlink  = ctx->inputs[0];
+    AVFilterLink *outlink = ctx->outputs[0];
+    FilterLink     *inl = ff_filter_link(inlink);
+    FilterLink    *outl = ff_filter_link(outlink);
 
     AVHWFramesContext *in_frames_ctx;
 
@@ -517,6 +569,70 @@ static av_cold int init_processing_chain(AVFilterContext *ctx, int in_width, int
     }
 
     set_format_info(ctx, in_format, out_format);
+
+    s->yuv2rgb = !(s->in_desc->flags & AV_PIX_FMT_FLAG_RGB) &&
+                  (s->out_desc->flags & AV_PIX_FMT_FLAG_RGB);
+    if (s->yuv2rgb) {
+        /* Hardware cropping keeps the link dimensions, so the exact size
+         * check happens per frame. Only reject what can never match. */
+        if (out_width > in_width || out_height > in_height) {
+            av_log(ctx, AV_LOG_ERROR,
+                   "Resizing is not supported during YUV->RGB conversion, "
+                   "use a separate scale_cuda instance for resizing\n");
+            return AVERROR(ENOSYS);
+        }
+
+        enum AVColorSpace cs = inlink->colorspace;
+        bool limited_range;
+
+        /* When colorspace is unspecified, default to BT.601 (SMPTE 170M)
+         * to match swscale behavior (SWS_CS_DEFAULT = ITU601).
+         */
+        if (cs == AVCOL_SPC_UNSPECIFIED)
+            cs = AVCOL_SPC_SMPTE170M;
+
+        if (cs == AVCOL_SPC_RGB) {
+            av_log(ctx, AV_LOG_ERROR,
+                   "YUV input is tagged with the RGB colorspace\n");
+            return AVERROR(EINVAL);
+        }
+
+        limited_range = (inlink->color_range != AVCOL_RANGE_JPEG);
+
+        ret = compute_yuv2rgb_matrix(ctx, &s->color_matrix, cs, limited_range);
+        if (ret < 0)
+            return ret;
+
+        s->color_range = limited_range ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
+
+        /* YUV->RGB only supports Nearest for now. Forcing it here also makes
+         * the generic filter path get disabled below. */
+        if (s->interp_algo != INTERP_ALGO_DEFAULT &&
+            s->interp_algo != INTERP_ALGO_NEAREST)
+            av_log(ctx, AV_LOG_WARNING,
+                   "YUV->RGB conversion only supports nearest interpolation, "
+                   "ignoring interp_algo\n");
+        s->interp_algo = INTERP_ALGO_NEAREST;
+
+        av_log(ctx, AV_LOG_VERBOSE,
+               "YUV->RGB conversion enabled (%s, %s range)\n",
+               av_color_space_name(cs),
+               limited_range ? "limited" : "full");
+    }
+
+    if (!(s->out_desc->flags & AV_PIX_FMT_FLAG_RGB) &&
+        (inlink->colorspace  != outlink->colorspace ||
+         inlink->color_range != outlink->color_range)) {
+        /* Without conversion, the samples keep their encoding. */
+        av_log(ctx, AV_LOG_ERROR,
+               "Cannot convert from %s %s range to %s %s range\n",
+               av_color_space_name(inlink->colorspace),
+               av_color_range_name(inlink->color_range),
+               av_color_space_name(outlink->colorspace),
+               av_color_range_name(outlink->color_range));
+        return AVERROR(ENOSYS);
+    }
+
     if (s->passthrough && in_width == out_width && in_height == out_height && in_format == out_format) {
         s->frames_ctx = av_buffer_ref(inl->hw_frames_ctx);
         if (!s->frames_ctx)
@@ -671,12 +787,16 @@ static av_cold int cudascale_load_functions(AVFilterContext *ctx)
         if (ret < 0)
             goto unsupported;
 
-        snprintf(buf, sizeof(buf), "Subsample_%s_%s_%s_uv", fixed_infix,
-                 in_fmt_name, out_fmt_name);
-        ret = CHECK_CU(cu->cuModuleGetFunction(&s->cu_func_fixed_uv,
-                                               s->cu_module, buf));
-        if (ret < 0)
-            goto unsupported;
+        /* YUV->RGB produces all output components in a single kernel,
+         * there is no separate chroma pass. */
+        if (!s->yuv2rgb) {
+            snprintf(buf, sizeof(buf), "Subsample_%s_%s_%s_uv", fixed_infix,
+                     in_fmt_name, out_fmt_name);
+            ret = CHECK_CU(cu->cuModuleGetFunction(&s->cu_func_fixed_uv,
+                                                   s->cu_module, buf));
+            if (ret < 0)
+                goto unsupported;
+        }
     }
 
     goto fail;
@@ -945,6 +1065,40 @@ static av_cold int cudascale_setup_filters(AVFilterContext *ctx,
     return ret;
 }
 
+static int cudascale_query_formats(const AVFilterContext *ctx,
+                                   AVFilterFormatsConfig **cfg_in,
+                                   AVFilterFormatsConfig **cfg_out)
+{
+    const CUDAScaleContext *s = ctx->priv;
+    static const enum AVPixelFormat pix_fmts[] = { AV_PIX_FMT_CUDA, AV_PIX_FMT_NONE };
+    const AVPixFmtDescriptor *out_desc = s->format != AV_PIX_FMT_NONE ?
+                                         av_pix_fmt_desc_get(s->format) : NULL;
+    const int out_rgb = out_desc && (out_desc->flags & AV_PIX_FMT_FLAG_RGB);
+    int ret;
+
+    if ((ret = ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, pix_fmts)) < 0)
+        return ret;
+
+    /* The software format of CUDA frames is unknown during negotiation, so
+     * whether a YUV->RGB conversion happens is only known at configuration
+     * time. Negotiate the input and output properties independently; when
+     * nothing constrains the output, it follows the input. Configuration
+     * rejects mismatches that the selected processing cannot produce. */
+    if ((ret = ff_formats_ref(ff_all_color_spaces(), &cfg_in[0]->color_spaces)) < 0 ||
+        (ret = ff_formats_ref(ff_all_color_ranges(), &cfg_in[0]->color_ranges)) < 0)
+        return ret;
+
+    if ((ret = ff_formats_ref(out_rgb ? ff_make_formats_list_singleton(AVCOL_SPC_RGB)
+                                      : ff_all_color_spaces(),
+                              &cfg_out[0]->color_spaces)) < 0 ||
+        (ret = ff_formats_ref(out_rgb ? ff_make_formats_list_singleton(AVCOL_RANGE_JPEG)
+                                      : ff_all_color_ranges(),
+                              &cfg_out[0]->color_ranges)) < 0)
+        return ret;
+
+    return 0;
+}
+
 static av_cold int cudascale_config_props(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
@@ -1146,12 +1300,18 @@ static int call_resize_kernel(AVFilterContext *ctx, CUfunction func,
         .src_depth = s->in_desc->comp[0].depth,
         .src_storage_max = ((1U << s->in_desc->comp[0].depth) - 1) <<
                            s->in_desc->comp[0].shift,
+        .color_matrix = s->color_matrix,
     };
 
     if (filter) {
         params.weights = filter->weights;
         params.offsets = filter->offsets;
         params.filter_size = filter->filter_size;
+    }
+
+    if (s->yuv2rgb) {
+        params.log2_chroma_w = s->in_desc->log2_chroma_w;
+        params.log2_chroma_h = s->in_desc->log2_chroma_h;
     }
 
     void *args[] = { &params };
@@ -1169,7 +1329,11 @@ static int scalecuda_resize(AVFilterContext *ctx,
     const CUDAScaleFilter *filter = NULL;
     const CUDAScaleFilter *filter_uv = NULL;
     CUfunction func, func_uv;
-    int mpeg_range = in->color_range != AVCOL_RANGE_JPEG;
+    /* The color matrix was computed at config time, so for yuv2rgb use the
+     * resolved color range to keep mpeg_range consistent with it. For plain
+     * scaling, follow the frame the texture was mapped from. */
+    int mpeg_range = s->yuv2rgb ? (s->color_range != AVCOL_RANGE_JPEG)
+                                : (in->color_range != AVCOL_RANGE_JPEG);
     int ret;
 
     int out_planes = s->out_planes;
@@ -1290,6 +1454,14 @@ static int cudascale_scale(AVFilterContext *ctx, AVFrame *out, AVFrame *in,
     if (ret < 0)
         goto fail;
 
+    if (s->yuv2rgb) {
+        /* The conversion matrix was built from the negotiated link
+         * properties, so describe the output frames the same way. */
+        out->colorspace  = outlink->colorspace;
+        out->color_range = outlink->color_range;
+        out->chroma_location = AVCHROMA_LOC_UNSPECIFIED;
+    }
+
     out->crop_top    = 0;
     out->crop_bottom = 0;
     out->crop_left   = 0;
@@ -1327,6 +1499,17 @@ static int cudascale_filter_frame(AVFilterLink *link, AVFrame *in)
                                    &normalize_crop);
     if (ret < 0)
         goto fail;
+
+    /* The conversion kernels read the visible area 1:1 without resizing. */
+    if (s->yuv2rgb &&
+        (in_width != outlink->w || in_height != outlink->h)) {
+        av_log(ctx, AV_LOG_ERROR,
+               "Visible input size %dx%d does not match output size %dx%d; "
+               "resizing is not supported during YUV->RGB conversion\n",
+               in_width, in_height, outlink->w, outlink->h);
+        ret = AVERROR(ENOSYS);
+        goto fail;
+    }
 
     out = av_frame_alloc();
     if (!out) {
@@ -1433,7 +1616,7 @@ const FFFilter ff_vf_scale_cuda = {
     FILTER_INPUTS(cudascale_inputs),
     FILTER_OUTPUTS(cudascale_outputs),
 
-    FILTER_SINGLE_PIXFMT(AV_PIX_FMT_CUDA),
+    FILTER_QUERY_FUNC2(cudascale_query_formats),
 
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
