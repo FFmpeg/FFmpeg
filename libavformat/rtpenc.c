@@ -178,9 +178,16 @@ static int rtp_write_header(AVFormatContext *s1)
     case AV_CODEC_ID_MPEG2VIDEO:
         break;
     case AV_CODEC_ID_MPEG2TS:
+        if (s->max_payload_size < TS_PACKET_SIZE) {
+            av_log(s1, AV_LOG_ERROR,
+                   "RTP payload size %u too small for MPEG-TS "
+                   "(minimum %d bytes required)\n",
+                   s->max_payload_size, TS_PACKET_SIZE);
+            ret = AVERROR(EINVAL);
+            goto fail;
+        }
+
         n = s->max_payload_size / TS_PACKET_SIZE;
-        if (n < 1)
-            n = 1;
         s->max_payload_size = n * TS_PACKET_SIZE;
         break;
     case AV_CODEC_ID_DIRAC:
