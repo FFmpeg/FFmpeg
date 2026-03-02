@@ -21,6 +21,7 @@
 #include "aacdec_tab.h"
 #include "libavcodec/get_bits.h"
 #include "libavutil/macros.h"
+#include "libavutil/avassert.h"
 
 #include "aacdec_usac_mps212.h"
 
@@ -70,6 +71,8 @@ static int huff_data_1d(GetBitContext *gb, int16_t *data, int data_bands,
         if (data_bands == 1)
             hcod1D = ff_aac_hcod1D_IPD[!diff_freq];
         break;
+    default:
+        av_unreachable("Invalid data type");
     }
 
     if (p0_flag)
