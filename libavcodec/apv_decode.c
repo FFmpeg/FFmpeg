@@ -87,7 +87,7 @@ static int apv_decode_check_format(AVCodecContext *avctx,
         return AVERROR_PATCHWELCOME;
     }
     avctx->pix_fmt =
-        apv_format_table[header->frame_info.chroma_format_idc][bit_depth - 4 >> 2];
+        apv_format_table[header->frame_info.chroma_format_idc][(bit_depth - 8) >> 1];
 
     if (!avctx->pix_fmt) {
         avpriv_request_sample(avctx, "YUVA444P14");
