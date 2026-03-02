@@ -806,7 +806,7 @@ int ff_aac_map_index_data(AACMPSLosslessData *ld,
 
     /* Prepare data */
     int interpolate[MPS_MAX_PARAM_SETS] = { 0 };
-    int16_t tmp_idx_data[MPS_MAX_PARAM_SETS][MPS_MAX_PARAM_BANDS];
+    int16_t tmp_idx_data[MPS_MAX_PARAM_SETS][MPS_MAX_PARAM_BANDS] = { 0 };
     for (int i = 0; i < nb_param_sets; i++) {
         if (ld->data_mode[i] == 0) {
             ld->coarse_quant_no[i] = 0;
