@@ -97,6 +97,32 @@ const shuf_2130_tbl, align=4
         .byte  14, 13, 15, 12
 endconst
 
+// rgb32tobgr24: tbl indices for 2-register sliding window (ldp+tbl+stp approach)
+// Converts 16 BGRA pixels (64 bytes) to 16 BGR pixels (48 bytes) by dropping alpha.
+// Each 16-byte output register selects 3-of-4 bytes from a {Vn, Vn+1} pair.
+const rgb32tobgr24_tbl, align=4
+        // out0 from {v0,v1}: pixels 0-5⅓ → B0 G0 R0 B1 G1 R1 B2 G2 R2 B3 G3 R3 B4 G4 R4 B5
+        .byte  0,  1,  2,  4,  5,  6,  8,  9, 10, 12, 13, 14, 16, 17, 18, 20
+        // out1 from {v1,v2}: pixels 5⅓-10⅔ → G5 R5 B6 G6 R6 B7 G7 R7 B8 G8 R8 B9 G9 R9 B10 G10
+        .byte  5,  6,  8,  9, 10, 12, 13, 14, 16, 17, 18, 20, 21, 22, 24, 25
+        // out2 from {v2,v3}: pixels 10⅔-15 → R10 B11 G11 R11 B12 G12 R12 B13 G13 R13 B14 G14 R14 B15 G15 R15
+        .byte 10, 12, 13, 14, 16, 17, 18, 20, 21, 22, 24, 25, 26, 28, 29, 30
+endconst
+
+// rgb24tobgr32: tbl indices for sliding window (ldp+tbl+orr+stp approach)
+// Converts 16 BGR pixels (48 bytes) to 16 BGRA pixels (64 bytes) by inserting alpha=255.
+// Out-of-range index 128 produces 0 from tbl; orr with alpha mask fills in 0xFF.
+const rgb24tobgr32_tbl, align=4
+        // out0 from {v0}: pixels 0-3 → B0 G0 R0 _ B1 G1 R1 _ B2 G2 R2 _ B3 G3 R3 _
+        .byte  0,  1,  2, 128,  3,  4,  5, 128,  6,  7,  8, 128,  9, 10, 11, 128
+        // out1 from {v0,v1}: pixels 4-7 → B4 G4 R4 _ B5 G5 R5 _ B6 G6 R6 _ B7 G7 R7 _
+        .byte 12, 13, 14, 128, 15, 16, 17, 128, 18, 19, 20, 128, 21, 22, 23, 128
+        // out2 from {v1,v2}: pixels 8-11 → B8 G8 R8 _ B9 G9 R9 _ B10 G10 R10 _ B11 G11 R11 _
+        .byte  8,  9, 10, 128, 11, 12, 13, 128, 14, 15, 16, 128, 17, 18, 19, 128
+        // out3 from {v2}: pixels 12-15 → B12 G12 R12 _ B13 G13 R13 _ B14 G14 R14 _ B15 G15 R15 _
+        .byte  4,  5,  6, 128,  7,  8,  9, 128, 10, 11, 12, 128, 13, 14, 15, 128
+endconst
+
 // convert rgb to 16-bit y, u, or v
 // uses v3 and v4
 
@@ -279,6 +305,121 @@ function ff_rgb24tobgr24_neon, export=1
         strb            w4, [x1, #1]
         strb            w3, [x1, #2]
         strb            w5, [x1], #3
+        b.gt            5b
+4:
+        ret
+endfunc
+
+// void ff_rgb32tobgr24_neon(const uint8_t *src, uint8_t *dst, int src_size);
+function ff_rgb32tobgr24_neon, export=1
+        // x0 = src (BGRA), x1 = dst (BGR), w2 = src_size (bytes)
+
+        // Load 3 tbl permutation masks for 2-register sliding window
+        movrel          x3, rgb32tobgr24_tbl
+        ld1             {v16.16b, v17.16b, v18.16b}, [x3]
+
+        // Fast path: 64 bytes input (16 pixels) → 48 bytes output
+        // Uses ldp+tbl(2-reg sliding window)+stp to avoid expensive ld4/st3.
+        // Post-indexed addressing eliminates pointer-advance instructions.
+        // subs placed between loads and tbl to fill load-latency gap on
+        // in-order cores (A55).
+        subs            w2, w2, #64
+        b.lt            2f
+1:
+        ldp             q0, q1, [x0], #64
+        ldp             q2, q3, [x0, #-32]
+        subs            w2, w2, #64
+        tbl             v4.16b, {v0.16b, v1.16b}, v16.16b
+        tbl             v5.16b, {v1.16b, v2.16b}, v17.16b
+        tbl             v6.16b, {v2.16b, v3.16b}, v18.16b
+        stp             q4, q5, [x1], #48
+        str             q6, [x1, #-16]
+        b.ge            1b
+2:
+        add             w2, w2, #64
+        // Medium path: 32 bytes input (8 pixels) → 24 bytes output
+        cmp             w2, #32
+        b.lt            3f
+        ld4             {v0.8b, v1.8b, v2.8b, v3.8b}, [x0], #32
+        sub             w2, w2, #32
+        st3             {v0.8b, v1.8b, v2.8b}, [x1], #24
+3:
+        // Scalar tail: 4 bytes → 3 bytes at a time
+        // Uses word load + halfword/byte stores to reduce instructions.
+        // On LE: ldr gives A<<24|R<<16|G<<8|B; strh stores [B,G]; lsr+strb stores R.
+        // subs and lsr fill load-use latency. lsr uses a fresh register so
+        // strh and strb can issue independently; add advances x1 off critical path.
+        cmp             w2, #4
+        b.lt            4f
+5:
+        ldr             w3, [x0], #4
+        subs            w2, w2, #4
+        lsr             w4, w3, #16
+        strh            w3, [x1]
+        strb            w4, [x1, #2]
+        add             x1, x1, #3
+        b.gt            5b
+4:
+        ret
+endfunc
+
+// void ff_rgb24tobgr32_neon(const uint8_t *src, uint8_t *dst, int src_size);
+function ff_rgb24tobgr32_neon, export=1
+        // x0 = src (BGR), x1 = dst (BGRA), w2 = src_size (bytes)
+
+        // Load tbl permutation indices and alpha mask for the fast path
+        movrel          x3, rgb24tobgr32_tbl
+        ld1             {v16.16b, v17.16b, v18.16b, v19.16b}, [x3]
+        movi            v20.4s, #255, lsl #24             // Alpha mask: 00 00 00 FF per pixel
+
+        // Fast path: 48 bytes input (16 pixels) → 64 bytes output
+        // Uses ldp+tbl+orr+stp to avoid expensive ld3/st4 structure load/stores.
+        // tbl produces 0 for alpha positions; orr fills in 0xFF.
+        // Post-indexed addressing eliminates pointer-advance instructions.
+        // tbl/orr interleaved so each orr starts as soon as its tbl result
+        // is ready, hiding latency on narrow in-order cores (A55).
+        subs            w2, w2, #48
+        b.lt            2f
+1:
+        ldp             q0, q1, [x0], #48
+        ldr             q2, [x0, #-16]
+        subs            w2, w2, #48
+        tbl             v4.16b, {v0.16b}, v16.16b
+        tbl             v5.16b, {v0.16b, v1.16b}, v17.16b
+        orr             v4.16b, v4.16b, v20.16b
+        tbl             v6.16b, {v1.16b, v2.16b}, v18.16b
+        orr             v5.16b, v5.16b, v20.16b
+        tbl             v7.16b, {v2.16b}, v19.16b
+        orr             v6.16b, v6.16b, v20.16b
+        stp             q4, q5, [x1], #64
+        orr             v7.16b, v7.16b, v20.16b
+        stp             q6, q7, [x1, #-32]
+        b.ge            1b
+2:
+        add             w2, w2, #48
+        // Medium path: 24 bytes input (8 pixels) → 32 bytes output
+        cmp             w2, #24
+        b.lt            3f
+        movi            v3.8b, #255
+        ld3             {v0.8b, v1.8b, v2.8b}, [x0], #24
+        sub             w2, w2, #24
+        st4             {v0.8b, v1.8b, v2.8b, v3.8b}, [x1], #32
+3:
+        // Scalar tail: 3 bytes → 4 bytes at a time
+        // Uses halfword+byte loads, orr to combine with alpha, word store.
+        // On LE: ldrh gives G<<8|B, ldrb gives R; orr assembles 0xFF<<24|R<<16|G<<8|B;
+        // str stores [B,G,R,0xFF]. subs and add placed between loads and first
+        // orr to fill load-use latency on A55.
+        cmp             w2, #3
+        b.lt            4f
+5:
+        ldrh            w4, [x0]
+        ldrb            w5, [x0, #2]
+        add             x0, x0, #3
+        subs            w2, w2, #3
+        orr             w4, w4, w5, lsl #16
+        orr             w4, w4, #0xFF000000
+        str             w4, [x1], #4
         b.gt            5b
 4:
         ret

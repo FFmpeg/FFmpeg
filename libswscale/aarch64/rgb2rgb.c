@@ -52,6 +52,8 @@ static void rgb24toyv12(const uint8_t *src, uint8_t *ydst, uint8_t *udst,
 }
 
 void ff_rgb24tobgr24_neon(const uint8_t *src, uint8_t *dst, int src_size);
+void ff_rgb32tobgr24_neon(const uint8_t *src, uint8_t *dst, int src_size);
+void ff_rgb24tobgr32_neon(const uint8_t *src, uint8_t *dst, int src_size);
 
 void ff_interleave_bytes_neon(const uint8_t *src1, const uint8_t *src2,
                               uint8_t *dest, int width, int height,
@@ -88,6 +90,8 @@ av_cold void rgb2rgb_init_aarch64(void)
     if (have_neon(cpu_flags)) {
         ff_rgb24toyv12  = rgb24toyv12;
         rgb24tobgr24    = ff_rgb24tobgr24_neon;
+        rgb32tobgr24    = ff_rgb32tobgr24_neon;
+        rgb24tobgr32    = ff_rgb24tobgr32_neon;
         interleaveBytes = ff_interleave_bytes_neon;
         deinterleaveBytes = ff_deinterleave_bytes_neon;
         shuffle_bytes_0321 = ff_shuffle_bytes_0321_neon;
