@@ -29,6 +29,7 @@ version <next>:
 - ffprobe: only show refs field in stream section when reading frames
 - ProRes Vulkan encoder
 - LCEVC parser
+- LCEVC enhancement layer exporting in MPEG-TS
 
 
 version 8.0:

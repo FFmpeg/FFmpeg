@@ -816,6 +816,7 @@ static const StreamType ISO_types[] = {
     { STREAM_TYPE_VIDEO_JPEG2000, AVMEDIA_TYPE_VIDEO, AV_CODEC_ID_JPEG2000   },
     { STREAM_TYPE_VIDEO_HEVC,     AVMEDIA_TYPE_VIDEO, AV_CODEC_ID_HEVC       },
     { STREAM_TYPE_VIDEO_JPEGXS,   AVMEDIA_TYPE_VIDEO, AV_CODEC_ID_JPEGXS     },
+    { STREAM_TYPE_VIDEO_LCEVC,    AVMEDIA_TYPE_VIDEO, AV_CODEC_ID_LCEVC      },
     { STREAM_TYPE_VIDEO_VVC,      AVMEDIA_TYPE_VIDEO, AV_CODEC_ID_VVC        },
     { STREAM_TYPE_VIDEO_CAVS,     AVMEDIA_TYPE_VIDEO, AV_CODEC_ID_CAVS       },
     { STREAM_TYPE_VIDEO_DIRAC,    AVMEDIA_TYPE_VIDEO, AV_CODEC_ID_DIRAC      },
@@ -1834,9 +1835,10 @@ static const uint8_t opus_channel_map[8][8] = {
     { 0,6,1,2,3,4,5,7 },
 };
 
-static int parse_mpeg2_extension_descriptor(AVFormatContext *fc, AVStream *st,
+static int parse_mpeg2_extension_descriptor(AVFormatContext *fc, AVStream *st, int prg_id,
                                             const uint8_t **pp, const uint8_t *desc_end)
 {
+    MpegTSContext *ts = fc->priv_data;
     int ext_tag = get8(pp, desc_end);
 
     switch (ext_tag) {
@@ -1913,6 +1915,88 @@ static int parse_mpeg2_extension_descriptor(AVFormatContext *fc, AVStream *st,
             st->codecpar->color_space = matrix_coefficients;
         }
         break;
+    case LCEVC_VIDEO_DESCRIPTOR:
+        {
+            AVStreamGroup *stg = NULL;
+            int lcevc_stream_tag = get8(pp, desc_end);
+            int ret, i;
+
+            if (!get_program(ts, prg_id))
+                return 0;
+
+            if (st->codecpar->codec_id != AV_CODEC_ID_LCEVC)
+                return AVERROR_INVALIDDATA;
+
+            for (i = 0; i < fc->nb_stream_groups; i++) {
+                stg = fc->stream_groups[i];
+                if (stg->type != AV_STREAM_GROUP_PARAMS_LCEVC)
+                    continue;
+                if (stg->id == lcevc_stream_tag)
+                    break;
+            }
+            if (i == fc->nb_stream_groups)
+                stg = avformat_stream_group_create(fc, AV_STREAM_GROUP_PARAMS_LCEVC, NULL);
+            if (!stg)
+                return AVERROR(ENOMEM);
+
+            stg->id = lcevc_stream_tag;
+            for (i = 0; i < stg->nb_streams; i++) {
+                if (stg->streams[i]->codecpar->codec_id == AV_CODEC_ID_LCEVC)
+                    break;
+            }
+            if (i == stg->nb_streams) {
+                ret = avformat_stream_group_add_stream(stg, st);
+                av_assert0(ret != AVERROR(EEXIST));
+                if (ret < 0)
+                    return ret;
+            } else
+                stg->streams[i] = st;
+
+            av_assert0(i < stg->nb_streams);
+            stg->params.lcevc->lcevc_index = i;
+        }
+        break;
+    case LCEVC_LINKAGE_DESCRIPTOR:
+        {
+            int num_lcevc_stream_tags = get8(pp, desc_end);
+
+            if (!get_program(ts, prg_id))
+                return 0;
+
+            if (st->codecpar->codec_id == AV_CODEC_ID_LCEVC)
+                return AVERROR_INVALIDDATA;
+
+            for (int i = 0; i < num_lcevc_stream_tags; i++) {
+                AVStreamGroup *stg = NULL;
+                int lcevc_stream_tag = get8(pp, desc_end);;
+                int ret, j;
+
+                for (j = 0; j < fc->nb_stream_groups; j++) {
+                    stg = fc->stream_groups[j];
+                    if (stg->type != AV_STREAM_GROUP_PARAMS_LCEVC)
+                        continue;
+                    if (stg->id == lcevc_stream_tag)
+                        break;
+                }
+                if (j == fc->nb_stream_groups)
+                    stg = avformat_stream_group_create(fc, AV_STREAM_GROUP_PARAMS_LCEVC, NULL);
+                if (!stg)
+                    return AVERROR(ENOMEM);
+
+                stg->id = lcevc_stream_tag;
+                for (j = 0; j < stg->nb_streams; j++) {
+                    if (stg->streams[j]->index == st->index)
+                        break;
+                }
+                if (j == stg->nb_streams) {
+                    ret = avformat_stream_group_add_stream(stg, st);
+                    av_assert0(ret != AVERROR(EEXIST));
+                    if (ret < 0)
+                        return ret;
+                }
+            }
+        }
+        break;
     default:
         break;
     }
@@ -1920,7 +2004,7 @@ static int parse_mpeg2_extension_descriptor(AVFormatContext *fc, AVStream *st,
     return 0;
 }
 
-int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type,
+int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type, int prg_id,
                               const uint8_t **pp, const uint8_t *desc_list_end,
                               Mp4Descr *mp4_descr, int mp4_descr_count, int pid,
                               MpegTSContext *ts)
@@ -2354,7 +2438,7 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
         break;
     case EXTENSION_DESCRIPTOR: /* descriptor extension */
         {
-            int ret = parse_mpeg2_extension_descriptor(fc, st, pp, desc_end);
+            int ret = parse_mpeg2_extension_descriptor(fc, st, prg_id, pp, desc_end);
 
             if (ret < 0)
                 return ret;
@@ -2643,7 +2727,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         if (desc_list_end > p_end)
             goto out;
         for (;;) {
-            if (ff_parse_mpeg2_descriptor(ts->stream, st, stream_type, &p,
+            if (ff_parse_mpeg2_descriptor(ts->stream, st, stream_type, h->id, &p,
                                           desc_list_end, mp4_descr,
                                           mp4_descr_count, pid, ts) < 0)
                 break;
