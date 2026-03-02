@@ -865,6 +865,97 @@ void checkasm_check_sw_rgb(void)
     }
     report("rgb24tobgr24");
 
+    {
+        /* rgb32tobgr24: 4-byte pixels → 3-byte pixels.
+         * Test widths must be multiples of 4 (one pixel).
+         * Sizes chosen to exercise each codepath tier:
+         *   4       = scalar only (1 pixel)
+         *   16      = scalar only (4 pixels, loop iteration)
+         *   32      = medium only
+         *   48      = medium + scalar
+         *   64      = fast only (exact)
+         *   68      = fast + scalar (skip medium)
+         *   100     = fast + medium + scalar (all tiers)
+         *   128     = fast only (multi-iteration)
+         *   1920*4  = fast only (benchmark width)
+         */
+        static const int rgb32_widths[] = {4, 16, 32, 48, 64, 68, 100, 128, 1920 * 4};
+#define RGB32_BENCH_WIDTH (1920 * 4)
+#define RGB32_DST_SIZE (RGB32_BENCH_WIDTH * 3 / 4 + 8)
+        LOCAL_ALIGNED_32(uint8_t, src0, [RGB32_BENCH_WIDTH]);
+        LOCAL_ALIGNED_32(uint8_t, src1, [RGB32_BENCH_WIDTH]);
+        LOCAL_ALIGNED_32(uint8_t, dst0, [RGB32_DST_SIZE]);
+        LOCAL_ALIGNED_32(uint8_t, dst1, [RGB32_DST_SIZE]);
+
+        declare_func(void, const uint8_t *src, uint8_t *dst, int src_size);
+
+        randomize_buffers(src0, RGB32_BENCH_WIDTH);
+        memcpy(src1, src0, RGB32_BENCH_WIDTH);
+
+        if (check_func(rgb32tobgr24, "rgb32tobgr24")) {
+            for (int i = 0; i < FF_ARRAY_ELEMS(rgb32_widths); i++) {
+                int out_size = rgb32_widths[i] * 3 / 4;
+                memset(dst0, 0xAA, RGB32_DST_SIZE);
+                memset(dst1, 0xAA, RGB32_DST_SIZE);
+                call_ref(src0, dst0, rgb32_widths[i]);
+                call_new(src1, dst1, rgb32_widths[i]);
+                if (memcmp(dst0, dst1, out_size) ||
+                    dst0[out_size] != 0xAA ||
+                    dst1[out_size] != 0xAA)
+                    fail();
+            }
+            bench_new(src0, dst0, RGB32_BENCH_WIDTH);
+        }
+#undef RGB32_DST_SIZE
+#undef RGB32_BENCH_WIDTH
+    }
+    report("rgb32tobgr24");
+
+    {
+        /* rgb24tobgr32: 3-byte pixels → 4-byte pixels.
+         * Test widths must be multiples of 3 (one pixel).
+         * Sizes chosen to exercise each codepath tier:
+         *   3       = scalar only (1 pixel)
+         *   12      = scalar only (4 pixels, loop iteration)
+         *   24      = medium only
+         *   36      = medium + scalar
+         *   48      = fast only (exact)
+         *   51      = fast + scalar (skip medium)
+         *   126     = fast + medium + scalar (all tiers)
+         *   1920*3  = fast only (benchmark width)
+         */
+        static const int rgb24to32_widths[] = {3, 12, 24, 36, 48, 51, 126, 1920 * 3};
+#define RGB24TO32_BENCH_WIDTH (1920 * 3)
+#define RGB24TO32_DST_SIZE (RGB24TO32_BENCH_WIDTH * 4 / 3 + 8)
+        LOCAL_ALIGNED_32(uint8_t, src0, [RGB24TO32_BENCH_WIDTH]);
+        LOCAL_ALIGNED_32(uint8_t, src1, [RGB24TO32_BENCH_WIDTH]);
+        LOCAL_ALIGNED_32(uint8_t, dst0, [RGB24TO32_DST_SIZE]);
+        LOCAL_ALIGNED_32(uint8_t, dst1, [RGB24TO32_DST_SIZE]);
+
+        declare_func(void, const uint8_t *src, uint8_t *dst, int src_size);
+
+        randomize_buffers(src0, RGB24TO32_BENCH_WIDTH);
+        memcpy(src1, src0, RGB24TO32_BENCH_WIDTH);
+
+        if (check_func(rgb24tobgr32, "rgb24tobgr32")) {
+            for (int i = 0; i < FF_ARRAY_ELEMS(rgb24to32_widths); i++) {
+                int out_size = rgb24to32_widths[i] * 4 / 3;
+                memset(dst0, 0xAA, RGB24TO32_DST_SIZE);
+                memset(dst1, 0xAA, RGB24TO32_DST_SIZE);
+                call_ref(src0, dst0, rgb24to32_widths[i]);
+                call_new(src1, dst1, rgb24to32_widths[i]);
+                if (memcmp(dst0, dst1, out_size) ||
+                    dst0[out_size] != 0xAA ||
+                    dst1[out_size] != 0xAA)
+                    fail();
+            }
+            bench_new(src0, dst0, RGB24TO32_BENCH_WIDTH);
+        }
+#undef RGB24TO32_DST_SIZE
+#undef RGB24TO32_BENCH_WIDTH
+    }
+    report("rgb24tobgr32");
+
     check_uyvy_to_422p();
     report("uyvytoyuv422");
 
