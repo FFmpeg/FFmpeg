@@ -421,7 +421,8 @@ static int extract_extradata_lcevc(AVBSFContext *ctx, AVPacket *pkt,
 				*size = write_lcevc_nalu(ctx, &pb_extradata, nal);
             } else if (s->remove) {
                 bytestream2_put_be24(&pb_filtered_data, 1); //startcode
-                *size = write_lcevc_nalu(ctx, &pb_filtered_data, nal);
+                bytestream2_put_bufferu(&pb_filtered_data, nal->raw_data, nal->raw_size);
+                filtered_size += nal->raw_size;
             }
         }
 
