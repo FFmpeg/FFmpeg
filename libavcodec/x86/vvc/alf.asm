@@ -400,7 +400,7 @@ SECTION .text
     %endif
 %endmacro
 
-%macro FILTER_16x4 1
+%macro FILTER_16x4 2
 %if LUMA
     push clipq
     %define s5q clipq
@@ -429,12 +429,14 @@ SECTION .text
     cmp               xd, 4
     jl %%filter_16x4_loop
 
+%ifnidn %2, 0
     mov               xq, src_strideq
     neg               xq
-    lea             srcq, [srcq + xq * 4]
+    lea             srcq, [srcq + xq * 4 + %2]
     mov               xq, dst_strideq
     neg               xq
-    lea             dstq, [dstq + xq * 4]
+    lea             dstq, [dstq + xq * 4 + %2]
+%endif
 
 %if LUMA
     pop clipq
@@ -486,10 +488,8 @@ cglobal vvc_alf_filter_%2_%1bpc, 10, 15, 12+2*(ps!=1)+2*LUMA, dst, dst_stride, s
         jl   .loop_w_end
 
         LOAD_PARAMS
-        FILTER_16x4   16
+        FILTER_16x4   16, 16 * ps
 
-        add         srcq, 16 * ps
-        add         dstq, 16 * ps
         sub       widthd, 16
         jmp      .loop_w
 
@@ -501,7 +501,7 @@ cglobal vvc_alf_filter_%2_%1bpc, 10, 15, 12+2*(ps!=1)+2*LUMA, dst, dst_stride, s
 INIT_XMM cpuname
 %endif
     LOAD_PARAMS
-    FILTER_16x4  widthd
+    FILTER_16x4  widthd, 0
 %if LUMA
 INIT_YMM cpuname
 %endif
