@@ -222,12 +222,10 @@ cglobal apv_decode_transquant, 5, 7, 16, output, pitch, input, qmatrix, bit_dept
     vpslld    m12, m14, xm15
     vpsrld    m10, m12, 1
     vpsubd    m12, m12, m14
-    vpxor     m11, m11, m11
 
     ; m8  = vector 1 << (bd_shift - 1)
     ; m9  = scalar bd_shift
     ; m10 = vector 1 << (bit_depth - 1)
-    ; m11 = zero
     ; m12 = vector (1 << bit_depth) - 1
 
 %macro NORMALISE_AND_STORE_10 2
@@ -237,8 +235,6 @@ cglobal apv_decode_transquant, 5, 7, 16, output, pitch, input, qmatrix, bit_dept
     vpsrad    m%2, m%2, xm9
     vpaddd    m%1, m%1, m10
     vpaddd    m%2, m%2, m10
-    vpmaxsd   m%1, m%1, m11
-    vpmaxsd   m%2, m%2, m11
     vpminsd   m%1, m%1, m12
     vpminsd   m%2, m%2, m12
     ; m%1 = A0-3 A4-7
