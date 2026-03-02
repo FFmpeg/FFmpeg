@@ -834,6 +834,37 @@ void checkasm_check_sw_rgb(void)
     check_shuffle_bytes(shuffle_bytes_2130, "shuffle_bytes_2130");
     report("shuffle_bytes_2130");
 
+    {
+        /* rgb24tobgr24 operates on 3-byte pixels, so test widths must be
+         * multiples of 3 to avoid reading past the source buffer. */
+        static const int rgb24_width[] = {3, 12, 24, 36, 48, 126, 1920 * 3};
+        int i;
+#define RGB24_BENCH_WIDTH (1920 * 3)
+        LOCAL_ALIGNED_32(uint8_t, src0, [RGB24_BENCH_WIDTH]);
+        LOCAL_ALIGNED_32(uint8_t, src1, [RGB24_BENCH_WIDTH]);
+        LOCAL_ALIGNED_32(uint8_t, dst0, [RGB24_BENCH_WIDTH]);
+        LOCAL_ALIGNED_32(uint8_t, dst1, [RGB24_BENCH_WIDTH]);
+
+        declare_func(void, const uint8_t *src, uint8_t *dst, int src_size);
+
+        memset(dst0, 0, RGB24_BENCH_WIDTH);
+        memset(dst1, 0, RGB24_BENCH_WIDTH);
+        randomize_buffers(src0, RGB24_BENCH_WIDTH);
+        memcpy(src1, src0, RGB24_BENCH_WIDTH);
+
+        if (check_func(rgb24tobgr24, "rgb24tobgr24")) {
+            for (i = 0; i < FF_ARRAY_ELEMS(rgb24_width); i++) {
+                call_ref(src0, dst0, rgb24_width[i]);
+                call_new(src1, dst1, rgb24_width[i]);
+                if (memcmp(dst0, dst1, rgb24_width[i]))
+                    fail();
+            }
+            bench_new(src0, dst0, RGB24_BENCH_WIDTH);
+        }
+#undef RGB24_BENCH_WIDTH
+    }
+    report("rgb24tobgr24");
+
     check_uyvy_to_422p();
     report("uyvytoyuv422");
 
