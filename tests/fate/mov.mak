@@ -314,7 +314,7 @@ tests/data/mov-mp4-iamf-7_1_4-video-first.mp4: ffmpeg$(PROGSSUF)$(EXESUF) | test
   -/filter_complex $(TARGET_PATH)/tests/data/filtergraphs/iamf_7_1_4 \
   -/stream_group $(TARGET_PATH)/tests/data/streamgroups/audio_element-7_1_4-2 \
   -/stream_group $(TARGET_PATH)/tests/data/streamgroups/mix_presentation-7_1_4 \
-  -streamid 0:1 -streamid 1:2 -streamid 2:3 -streamid 3:4 -streamid 4:5 -streamid 5:6 -streamid 6:7 -streamid 7:8 -map 1:v:0 -map [FRONT] -map [TOP_FRONT] -map [CENTER] -map [LFE] -map [SIDE] -map [BACK] -map [TOP_BACK] \
+  -streamid 0:1 -streamid 1:2 -streamid 2:3 -streamid 3:4 -streamid 4:5 -streamid 5:6 -streamid 6:7 -streamid 7:8 -map 1:v:0 -map "[FRONT]" -map "[TOP_FRONT]" -map "[CENTER]" -map "[LFE]" -map "[SIDE]" -map "[BACK]" -map "[TOP_BACK]" \
   -flags +bitexact -c:a flac -idct simple -dct fastint -sws_flags +accurate_rnd+bitexact -flags +bitexact -threads 1 -c:v mpeg4 -t 1 -fflags +bitexact -f mp4 $(TARGET_PATH)/tests/data/mov-mp4-iamf-7_1_4-video-first.mp4 -y 2>/dev/null
 
 # Demux everything
