@@ -60,10 +60,10 @@ void ff_vvc_apply_bdof_## BD ## _ ## OPT(uint8_t *dst, ptrdiff_t dst_stride,    
 #define ALF_BPC_PROTOTYPES(bpc, opt)                                                                                     \
 void BF(ff_vvc_alf_filter_luma, bpc, opt)(uint8_t *dst, ptrdiff_t dst_stride,                                            \
     const uint8_t *src, ptrdiff_t src_stride, ptrdiff_t width, ptrdiff_t height,                                         \
-    const int16_t *filter, const int16_t *clip, ptrdiff_t stride, ptrdiff_t vb_pos, ptrdiff_t pixel_max);                \
+    const int16_t *filter, const int16_t *clip, ptrdiff_t vb_pos, ptrdiff_t pixel_max);                                  \
 void BF(ff_vvc_alf_filter_chroma, bpc, opt)(uint8_t *dst, ptrdiff_t dst_stride,                                          \
     const uint8_t *src, ptrdiff_t src_stride, ptrdiff_t width, ptrdiff_t height,                                         \
-    const int16_t *filter, const int16_t *clip, ptrdiff_t stride, ptrdiff_t vb_pos, ptrdiff_t pixel_max);                \
+    const int16_t *filter, const int16_t *clip, ptrdiff_t vb_pos, ptrdiff_t pixel_max);                                  \
 void BF(ff_vvc_alf_classify_grad, bpc, opt)(int *gradient_sum,                                                           \
     const uint8_t *src, ptrdiff_t src_stride, intptr_t width, intptr_t height, intptr_t vb_pos);                         \
 void BF(ff_vvc_alf_classify, bpc, opt)(int *class_idx, int *transpose_idx, const int *gradient_sum,                      \
@@ -153,15 +153,14 @@ FW_PUT_16BPC_AVX2(12)
 static void bf(vvc_alf_filter_luma, bd, opt)(uint8_t *dst, ptrdiff_t dst_stride, const uint8_t *src, ptrdiff_t src_stride, \
     int width, int height, const int16_t *filter, const int16_t *clip, const int vb_pos)                                 \
 {                                                                                                                        \
-    const int param_stride  = (width >> 2) * ALF_NUM_COEFF_LUMA;                                                         \
     BF(ff_vvc_alf_filter_luma, bpc, opt)(dst, dst_stride, src, src_stride, width, height,                                \
-        filter, clip, param_stride, vb_pos, (1 << bd)  - 1);                                                             \
+        filter, clip, vb_pos, (1 << bd)  - 1);                                                                           \
 }                                                                                                                        \
 static void bf(vvc_alf_filter_chroma, bd, opt)(uint8_t *dst, ptrdiff_t dst_stride, const uint8_t *src, ptrdiff_t src_stride, \
     int width, int height, const int16_t *filter, const int16_t *clip, const int vb_pos)                                 \
 {                                                                                                                        \
     BF(ff_vvc_alf_filter_chroma, bpc, opt)(dst, dst_stride, src, src_stride, width, height,                              \
-        filter, clip, 0, vb_pos,(1 << bd)  - 1);                                                                         \
+        filter, clip, vb_pos,(1 << bd)  - 1);                                                                            \
 }                                                                                                                        \
 static void bf(vvc_alf_classify, bd, opt)(int *class_idx, int *transpose_idx,                                            \
     const uint8_t *src, ptrdiff_t src_stride, int width, int height, int vb_pos, int *gradient_tmp)                      \

@@ -59,9 +59,12 @@ SECTION .text
 ;%1-%3 out
 ;%4 clip or filter
 %macro LOAD_LUMA_PARAMS 4
-    movu                    m%1, [%4q + 2 * offsetq + 0 * mmsize] ; 2 * for sizeof(int16_t)
-    movu                    m%2, [%4q + 2 * offsetq + 1 * mmsize]
-    movu                    m%3, [%4q + 2 * offsetq + 2 * mmsize]
+    movu                    m%1, [%4q + 0 * mmsize]
+    movu                    m%2, [%4q + 1 * mmsize]
+    movu                    m%3, [%4q + 2 * mmsize]
+    ; we process mmsize/(2*ALF_BLOCK_SIZE) alf blocks,
+    ; consuming ALF_NUM_COEFF_LUMA int16_t coeffs per alf block
+    add                     %4q, 3 * mmsize
 %endmacro
 
 %macro LOAD_LUMA_PARAMS_W16 6
@@ -113,7 +116,6 @@ SECTION .text
 
 %macro LOAD_PARAMS 0
 %if LUMA
-    lea                 offsetq, [3 * xq]           ;xq * ALF_NUM_COEFF_LUMA / ALF_BLOCK_SIZE
     LOAD_LUMA_PARAMS          3, 4, 5, filter, 6, 7
     LOAD_LUMA_PARAMS          6, 7, 8, clip,   9, 10
 %else
@@ -401,17 +403,9 @@ SECTION .text
 %macro FILTER_16x4 1
 %if LUMA
     push clipq
-    push strideq
-    %define s1q clipq
-    %define s2q strideq
-%else
-    %define s1q s5q
-    %define s2q s6q
+    %define s5q clipq
+    %define s6q pixel_maxq
 %endif
-
-    %define s3q pixel_maxq
-    %define s4q offsetq
-    push xq
 
     xor               xd, xd
 %%filter_16x4_loop:
@@ -442,10 +436,7 @@ SECTION .text
     neg               xq
     lea             dstq, [dstq + xq * 4]
 
-    pop xq
-
 %if LUMA
-    pop strideq
     pop clipq
 %endif
 %endmacro
@@ -463,10 +454,10 @@ SECTION .text
 ; ******************************
 ; void vvc_alf_filter_%2_%1bpc_avx2(uint8_t *dst, ptrdiff_t dst_stride,
 ;      const uint8_t *src, ptrdiff_t src_stride, const ptrdiff_t width, cosnt ptr_diff_t height,
-;      const int16_t *filter, const int16_t *clip, ptrdiff_t stride, ptrdiff_t vb_pos, ptrdiff_t pixel_max);
+;      const int16_t *filter, const int16_t *clip, ptrdiff_t vb_pos, ptrdiff_t pixel_max);
 ; ******************************
-cglobal vvc_alf_filter_%2_%1bpc, 11, 15, 12+2*(ps!=1)+2*LUMA, 0-0x30, dst, dst_stride, src, src_stride, width, height, filter, clip, stride, vb_pos, pixel_max, \
-    offset, x, s5, s6
+cglobal vvc_alf_filter_%2_%1bpc, 10, 15, 12+2*(ps!=1)+2*LUMA, 0-0x30, dst, dst_stride, src, src_stride, width, height, filter, clip, vb_pos, pixel_max, \
+    x, s1, s2, s3, s4
 %if !LUMA
 ; chroma does not use registers m5 and m8. Swap them to reduce the amount
 ; of nonvolatile registers on Win64. It also reduces codesize generally
@@ -489,7 +480,6 @@ cglobal vvc_alf_filter_%2_%1bpc, 11, 15, 12+2*(ps!=1)+2*LUMA, 0-0x30, dst, dst_s
     push            srcq
     push            dstq
     push          widthq
-    xor               xd, xd
 
     .loop_w:
         cmp       widthd, 16
@@ -500,7 +490,6 @@ cglobal vvc_alf_filter_%2_%1bpc, 11, 15, 12+2*(ps!=1)+2*LUMA, 0-0x30, dst, dst_s
 
         add         srcq, 16 * ps
         add         dstq, 16 * ps
-        add           xd, 16
         sub       widthd, 16
         jmp      .loop_w
 
@@ -524,9 +513,6 @@ INIT_YMM cpuname
     pop             srcq
     lea             srcq, [srcq + 4 * src_strideq]
     lea             dstq, [dstq + 4 * dst_strideq]
-
-    lea          filterq, [filterq + 2 * strideq]
-    lea            clipq, [clipq   + 2 * strideq]
 
     sub          vb_posd, 4
     sub          heightd, 4
