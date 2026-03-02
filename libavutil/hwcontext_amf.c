@@ -638,33 +638,23 @@ static int amf_device_derive(AVHWDeviceContext *device_ctx,
         return ret;
 
     switch (child_device_ctx->type) {
-
 #if CONFIG_DXVA2
-    case AV_HWDEVICE_TYPE_DXVA2: {
-            return amf_init_from_dxva2_device(amf_ctx, child_device_ctx);
-        }
-        break;
+    case AV_HWDEVICE_TYPE_DXVA2:
+        return amf_init_from_dxva2_device(amf_ctx, child_device_ctx);
 #endif
-
 #if CONFIG_D3D11VA
-    case AV_HWDEVICE_TYPE_D3D11VA: {
-            return amf_init_from_d3d11_device(amf_ctx, child_device_ctx);
-        }
-        break;
+    case AV_HWDEVICE_TYPE_D3D11VA:
+        return amf_init_from_d3d11_device(amf_ctx, child_device_ctx);
 #endif
 #if CONFIG_D3D12VA
-    case AV_HWDEVICE_TYPE_D3D12VA: {
-            return amf_init_from_d3d12_device(amf_ctx, child_device_ctx);
-        }
-        break;
+    case AV_HWDEVICE_TYPE_D3D12VA:
+        return amf_init_from_d3d12_device(amf_ctx, child_device_ctx);
 #endif
-    default: {
-            av_log(child_device_ctx, AV_LOG_ERROR, "AMF initialisation from a %s device is not supported.\n",
-                av_hwdevice_get_type_name(child_device_ctx->type));
-            return AVERROR(ENOSYS);
-        }
+    default:
+        av_log(child_device_ctx, AV_LOG_ERROR, "AMF initialisation from a %s device is not supported.\n",
+               av_hwdevice_get_type_name(child_device_ctx->type));
+        return AVERROR(ENOSYS);
     }
-    return 0;
 }
 
 const HWContextType ff_hwcontext_type_amf = {
