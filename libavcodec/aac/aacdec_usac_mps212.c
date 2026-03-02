@@ -146,6 +146,8 @@ static void pcm_decode(GetBitContext *gb, int16_t *data0, int16_t *data1,
         return;
     };
 
+    av_assert1(data0 || data1);
+
     int pcm_chunk_size[7] = { 0 };
 
     int tmp = 1;
