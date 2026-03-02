@@ -793,7 +793,7 @@ int ff_aac_map_index_data(AACMPSLosslessData *ld,
     if (nb_param_sets > MPS_MAX_PARAM_SETS)
         return AVERROR(EINVAL);
 
-    int data_mode_3_idx[MPS_MAX_PARAM_SETS];
+    int data_mode_3_idx[MPS_MAX_PARAM_SETS] = { 0 };
     int nb_data_mode_3 = 0;
     for (int i = 0; i < nb_param_sets; i++) {
         if (ld->data_mode[i] == 3) {
