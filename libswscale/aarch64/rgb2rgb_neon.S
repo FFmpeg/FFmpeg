@@ -241,6 +241,49 @@ function ff_rgb24toyv12_neon, export=1
         ret
 endfunc
 
+// void ff_rgb24tobgr24_neon(const uint8_t *src, uint8_t *dst, int src_size);
+function ff_rgb24tobgr24_neon, export=1
+        // x0 = src, x1 = dst, w2 = src_size (bytes)
+
+        // Fast path: 48 bytes (16 pixels) per iteration
+        subs            w2, w2, #48
+        b.lt            2f
+1:
+        ld3             {v0.16b, v1.16b, v2.16b}, [x0], #48
+        subs            w2, w2, #48
+        mov             v3.16b, v0.16b
+        mov             v0.16b, v2.16b
+        mov             v2.16b, v3.16b
+        st3             {v0.16b, v1.16b, v2.16b}, [x1], #48
+        b.ge            1b
+2:
+        add             w2, w2, #48
+        // Medium path: 24 bytes (8 pixels)
+        cmp             w2, #24
+        b.lt            3f
+        ld3             {v0.8b, v1.8b, v2.8b}, [x0], #24
+        sub             w2, w2, #24
+        mov             v3.8b, v0.8b
+        mov             v0.8b, v2.8b
+        mov             v2.8b, v3.8b
+        st3             {v0.8b, v1.8b, v2.8b}, [x1], #24
+3:
+        // Scalar tail: 3 bytes (1 pixel) at a time
+        cmp             w2, #3
+        b.lt            4f
+5:
+        ldrb            w4, [x0, #1]
+        ldrb            w5, [x0, #2]
+        ldrb            w3, [x0], #3
+        subs            w2, w2, #3
+        strb            w4, [x1, #1]
+        strb            w3, [x1, #2]
+        strb            w5, [x1], #3
+        b.gt            5b
+4:
+        ret
+endfunc
+
 // void ff_interleave_bytes_neon(const uint8_t *src1, const uint8_t *src2,
 //                               uint8_t *dest, int width, int height,
 //                               int src1Stride, int src2Stride, int dstStride);
