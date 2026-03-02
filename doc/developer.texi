@@ -471,13 +471,18 @@ ask/discuss it on the developer mailing list.
 
 @subheading Cosmetic changes should be kept in separate patches.
 We refuse source indentation and other cosmetic changes if they are mixed
-with functional changes, such commits will be rejected and removed. Every
+with functional changes, such commits will be rejected and removed. However,
+indentation changes that can be ignored by @code{git diff --ignore-all-space}
+(e.g. changes in whitespace amount, leading/trailing spaces) may be mixed with
+functional changes, since reviewers can use @code{git diff -w} or
+@code{git log -p --ignore-all-space} to review only the functional parts of
+the change. Forgejo's pull request interface also provides a
+``Hide whitespace changes'' option for this purpose. Every
 developer has his own indentation style, you should not change it. Of course
 if you (re)write something, you can use your own style, even though we would
 prefer if the indentation throughout FFmpeg was consistent (Many projects
 force a given indentation style - we do not.). If you really need to make
-indentation changes (try to avoid this), separate them strictly from real
-changes.
+non-whitespace cosmetic changes, separate them strictly from real changes.
 
 NOTE: If you had to put if()@{ .. @} over a large (> 5 lines) chunk of code,
 then either do NOT change the indentation of the inner part within (do not
