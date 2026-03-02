@@ -28,6 +28,7 @@ version <next>:
 - Add vf_deinterlace_d3d12 filter
 - ffprobe: only show refs field in stream section when reading frames
 - ProRes Vulkan encoder
+- LCEVC parser
 
 
 version 8.0:

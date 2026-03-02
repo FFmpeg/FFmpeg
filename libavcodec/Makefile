@@ -1277,6 +1277,7 @@ OBJS-$(CONFIG_IPU_PARSER)              += ipu_parser.o
 OBJS-$(CONFIG_JPEG2000_PARSER)         += jpeg2000_parser.o
 OBJS-$(CONFIG_JPEGXL_PARSER)           += jpegxl_parser.o jpegxl_parse.o
 OBJS-$(CONFIG_JPEGXS_PARSER)           += jpegxs_parser.o
+OBJS-$(CONFIG_LCEVC_PARSER)            += lcevc_parser.o
 OBJS-$(CONFIG_MISC4_PARSER)            += misc4_parser.o
 OBJS-$(CONFIG_MJPEG_PARSER)            += mjpeg_parser.o
 OBJS-$(CONFIG_MLP_PARSER)              += mlp_parse.o mlp_parser.o mlp.o
