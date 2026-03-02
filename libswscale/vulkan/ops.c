@@ -182,7 +182,7 @@ static void add_desc_read_write(FFVulkanDescriptorSetBinding *out_desc,
 
 #define QSTR "(%i/%i%s)"
 #define QTYPE(i) op->c.q4[i].num, op->c.q4[i].den,       \
-                 op->type == SWS_PIXEL_F32 ? ".0f" : ""
+                 cur_type == SWS_PIXEL_F32 ? ".0f" : ""
 
 static int add_ops_glsl(VulkanPriv *p, FFVulkanOpsCtx *s,
                         SwsOpList *ops, FFVulkanShader *shd)
@@ -225,15 +225,17 @@ static int add_ops_glsl(VulkanPriv *p, FFVulkanOpsCtx *s,
     GLSLC(1,     precise f32vec4 f32;                                         );
     GLSLC(0,                                                                  );
 
-    const char *type_name = ff_sws_pixel_type_name(ops->ops[0].type);
     for (int n = 0; n < ops->num_ops; n++) {
         const SwsOp *op = &ops->ops[n];
-        const char *type_v = op->type == SWS_PIXEL_F32 ? "f32vec4" :
-                             op->type == SWS_PIXEL_U32 ? "u32vec4" :
-                             op->type == SWS_PIXEL_U16 ? "u16vec4" : "u8vec4";
-        const char *type_s = op->type == SWS_PIXEL_F32 ? "float" :
-                             op->type == SWS_PIXEL_U32 ? "uint32_t" :
-                             op->type == SWS_PIXEL_U16 ? "uint16_t" : "uint8_t";
+        SwsPixelType cur_type = op->op == SWS_OP_CONVERT ? op->convert.to :
+                                op->type;
+        const char *type_name = ff_sws_pixel_type_name(cur_type);
+        const char *type_v = cur_type == SWS_PIXEL_F32 ? "f32vec4" :
+                             cur_type == SWS_PIXEL_U32 ? "u32vec4" :
+                             cur_type == SWS_PIXEL_U16 ? "u16vec4" : "u8vec4";
+        const char *type_s = cur_type == SWS_PIXEL_F32 ? "float" :
+                             cur_type == SWS_PIXEL_U32 ? "uint32_t" :
+                             cur_type == SWS_PIXEL_U16 ? "uint16_t" : "uint8_t";
         av_bprintf(&shd->src, "    // %s\n", ff_sws_op_type_name(op->op));
 
         switch (op->op) {
@@ -293,13 +295,24 @@ static int add_ops_glsl(VulkanPriv *p, FFVulkanOpsCtx *s,
                            op->op == SWS_OP_MIN ? "min" : "max",
                            type_name, "xyzw"[i],
                            op->c.q4[i].num, op->c.q4[i].den,
-                           op->type == SWS_PIXEL_F32 ? ".0f" : "");
+                           cur_type == SWS_PIXEL_F32 ? ".0f" : "");
             }
             break;
         case SWS_OP_LSHIFT:
         case SWS_OP_RSHIFT:
             av_bprintf(&shd->src, "    %s %s= %i;\n", type_name,
                        op->op == SWS_OP_LSHIFT ? "<<" : ">>", op->c.u);
+            break;
+        case SWS_OP_CONVERT:
+            if (ff_sws_pixel_type_is_int(cur_type) && op->convert.expand) {
+                const AVRational sc = ff_sws_pixel_expand(op->type, op->convert.to);
+                av_bprintf(&shd->src, "    %s = %s((%s*%i)/%i);\n",
+                           type_name, type_v, ff_sws_pixel_type_name(op->type),
+                           sc.num, sc.den);
+            } else {
+                av_bprintf(&shd->src, "    %s = %s(%s);\n",
+                           type_name, type_v, ff_sws_pixel_type_name(op->type));
+            }
             break;
         default:
             return AVERROR(ENOTSUP);
