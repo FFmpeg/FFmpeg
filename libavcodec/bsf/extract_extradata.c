@@ -290,7 +290,8 @@ static inline uint64_t get_mb(GetBitContext *s) {
  * present in the bitstream, we need to keep track of the raw buffer as we navigate
  * the stripped buffer.
  */
-static int write_lcevc_nalu(AVBSFContext *ctx, PutByteContext *pbc, const H2645NAL *nal)
+static int write_lcevc_nalu(AVBSFContext *ctx, PutByteContext *pbc, const H2645NAL *nal,
+                            int remove)
 {
     GetByteContext gbc, raw_gbc;
     int sc = 0, gc = 0;
@@ -333,11 +334,16 @@ static int write_lcevc_nalu(AVBSFContext *ctx, PutByteContext *pbc, const H2645N
         case LCEVC_PAYLOAD_TYPE_SEQUENCE_CONFIG:
         case LCEVC_PAYLOAD_TYPE_GLOBAL_CONFIG:
         case LCEVC_PAYLOAD_TYPE_ADDITIONAL_INFO:
+            if (remove)
+                break;
             bytestream2_put_buffer(pbc, raw_gbc.buffer, raw_block_size);
             sc |= payload_type == LCEVC_PAYLOAD_TYPE_SEQUENCE_CONFIG;
             gc |= payload_type == LCEVC_PAYLOAD_TYPE_GLOBAL_CONFIG;
             break;
         default:
+            if (!remove)
+                break;
+            bytestream2_put_buffer(pbc, raw_gbc.buffer, raw_block_size);
             break;
         }
 
@@ -345,7 +351,7 @@ static int write_lcevc_nalu(AVBSFContext *ctx, PutByteContext *pbc, const H2645N
         bytestream2_skip(&raw_gbc, raw_block_size);
     }
 
-    if (!sc && !gc)
+    if (!remove && !sc && !gc)
         return AVERROR_INVALIDDATA;
 
     bytestream2_put_byte(pbc, 0x80); // rbsp_alignment bits
@@ -376,11 +382,10 @@ static int extract_extradata_lcevc(AVBSFContext *ctx, AVPacket *pkt,
         if (val_in_array(extradata_nal_types, nb_extradata_nal_types, nal->type)) {
             bytestream2_init_writer(&pb_extradata, NULL, 0);
             // dummy pass to find sc, gc or ai
-            if (!write_lcevc_nalu(ctx, &pb_extradata, nal))
+            if (!write_lcevc_nalu(ctx, &pb_extradata, nal, 0))
                 extradata_size += nal->raw_size + 3;
-        } else if (s->remove) {
-            filtered_size += nal->raw_size + 3;
         }
+        filtered_size += nal->raw_size + 3;
     }
 
     if (extradata_size) {
@@ -403,18 +408,35 @@ static int extract_extradata_lcevc(AVBSFContext *ctx, AVPacket *pkt,
         }
 
         *data = extradata;
-        *size = extradata_size;
+        *size = 0;
 
         bytestream2_init_writer(&pb_extradata, extradata, extradata_size);
         if (s->remove)
             bytestream2_init_writer(&pb_filtered_data, filtered_buf->data, filtered_size);
 
+        filtered_size = 0;
         for (i = 0; i < s->h2645_pkt.nb_nals; i++) {
             H2645NAL *nal = &s->h2645_pkt.nals[i];
             if (val_in_array(extradata_nal_types, nb_extradata_nal_types,
                              nal->type)) {
                 bytestream2_put_be24(&pb_extradata, 1); //startcode
-				*size = write_lcevc_nalu(ctx, &pb_extradata, nal);
+                ret = write_lcevc_nalu(ctx, &pb_extradata, nal, 0);
+                if (ret < 0) {
+                    av_freep(data);
+                    av_buffer_unref(&filtered_buf);
+                    return ret;
+                }
+                *size += ret;
+                if (s->remove) {
+                    bytestream2_put_be24(&pb_filtered_data, 1); //startcode
+                    ret = write_lcevc_nalu(ctx, &pb_filtered_data, nal, 1);
+                    if (ret < 0) {
+                        av_freep(data);
+                        av_buffer_unref(&filtered_buf);
+                        return ret;
+                    }
+                    filtered_size += ret;
+                }
             } else if (s->remove) {
                 bytestream2_put_be24(&pb_filtered_data, 1); //startcode
                 bytestream2_put_bufferu(&pb_filtered_data, nal->raw_data, nal->raw_size);
