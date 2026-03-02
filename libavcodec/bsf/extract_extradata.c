@@ -330,16 +330,12 @@ static int write_lcevc_nalu(AVBSFContext *ctx, PutByteContext *pbc, const H2645N
         }
 
         switch (payload_type) {
-        case 0:
+        case LCEVC_PAYLOAD_TYPE_SEQUENCE_CONFIG:
+        case LCEVC_PAYLOAD_TYPE_GLOBAL_CONFIG:
+        case LCEVC_PAYLOAD_TYPE_ADDITIONAL_INFO:
             bytestream2_put_buffer(pbc, raw_gbc.buffer, raw_block_size);
-            sc = 1;
-            break;
-        case 1:
-            bytestream2_put_buffer(pbc, raw_gbc.buffer, raw_block_size);
-            gc = 1;
-            break;
-        case 5:
-            bytestream2_put_buffer(pbc, raw_gbc.buffer, raw_block_size);
+            sc |= payload_type == LCEVC_PAYLOAD_TYPE_SEQUENCE_CONFIG;
+            gc |= payload_type == LCEVC_PAYLOAD_TYPE_GLOBAL_CONFIG;
             break;
         default:
             break;
