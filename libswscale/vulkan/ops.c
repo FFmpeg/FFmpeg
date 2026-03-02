@@ -218,7 +218,7 @@ static int add_ops_glsl(VulkanPriv *p, FFVulkanOpsCtx *s,
     GLSLC(1,     u8vec4 u8;                                                   );
     GLSLC(1,     u16vec4 u16;                                                 );
     GLSLC(1,     u32vec4 u32;                                                 );
-    GLSLC(1,     f32vec4 f32;                                                 );
+    GLSLC(1,     precise f32vec4 f32;                                         );
     GLSLC(0,                                                                  );
 
     const char *type_name = ff_sws_pixel_type_name(ops->ops[0].type);
