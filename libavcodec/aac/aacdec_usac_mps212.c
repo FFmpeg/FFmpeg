@@ -213,6 +213,8 @@ static void huff_data_2d(GetBitContext *gb, int16_t *part0_data[2], int16_t (*da
         case 7: hcod2D = ff_aac_hcod2D_IPD_07[freq_pair][diff_freq]; break;
         }
         break;
+    default:
+        av_unreachable("Invalid data type");
     }
 
     if (part0_data[0])
