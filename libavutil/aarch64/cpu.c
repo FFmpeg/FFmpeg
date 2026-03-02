@@ -30,6 +30,7 @@
 #define HWCAP2_AARCH64_SVE2   (1 << 1)
 #define HWCAP2_AARCH64_I8MM   (1 << 13)
 #define HWCAP2_AARCH64_SME    (1 << 23)
+#define HWCAP2_AARCH64_SME_I16I64 (1 << 24)
 #define HWCAP2_AARCH64_SME2   (1ULL << 37)
 
 static int detect_flags(void)
@@ -51,6 +52,8 @@ static int detect_flags(void)
         flags |= AV_CPU_FLAG_I8MM;
     if (hwcap2 & HWCAP2_AARCH64_SME)
         flags |= AV_CPU_FLAG_SME;
+    if (hwcap2 & HWCAP2_AARCH64_SME_I16I64)
+        flags |= AV_CPU_FLAG_SME_I16I64;
     if (hwcap2 & HWCAP2_AARCH64_SME2)
         flags |= AV_CPU_FLAG_SME2;
 
@@ -78,6 +81,8 @@ static int detect_flags(void)
         flags |= AV_CPU_FLAG_I8MM;
     if (have_feature("hw.optional.arm.FEAT_SME"))
         flags |= AV_CPU_FLAG_SME;
+    if (have_feature("hw.optional.arm.FEAT_SME_I16I64"))
+        flags |= AV_CPU_FLAG_SME_I16I64;
     if (have_feature("hw.optional.armv8_crc32"))
         flags |= AV_CPU_FLAG_ARM_CRC;
     if (have_feature("hw.optional.arm.FEAT_SME2"))
@@ -156,6 +161,10 @@ static int detect_flags(void)
     if (IsProcessorFeaturePresent(PF_ARM_SME_INSTRUCTIONS_AVAILABLE))
         flags |= AV_CPU_FLAG_SME;
 #endif
+#ifdef PF_ARM_SME_I16I64_INSTRUCTIONS_AVAILABLE
+    if (IsProcessorFeaturePresent(PF_ARM_SME_I16I64_INSTRUCTIONS_AVAILABLE))
+        flags |= AV_CPU_FLAG_SME_I16I64;
+#endif
 #ifdef PF_ARM_SME2_INSTRUCTIONS_AVAILABLE
     if (IsProcessorFeaturePresent(PF_ARM_SME2_INSTRUCTIONS_AVAILABLE))
         flags |= AV_CPU_FLAG_SME2;
@@ -193,6 +202,9 @@ int ff_get_cpu_flags_aarch64(void)
 #endif
 #ifdef __ARM_FEATURE_CRC32
     flags |= AV_CPU_FLAG_ARM_CRC;
+#endif
+#ifdef __ARM_FEATURE_SME_I16I64
+    flags |= AV_CPU_FLAG_SME_I16I64;
 #endif
 #ifdef __ARM_FEATURE_SME2
     flags |= AV_CPU_FLAG_SME2;

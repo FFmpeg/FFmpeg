@@ -31,6 +31,7 @@
 #define have_sve(flags)     CPUEXT(flags, SVE)
 #define have_sve2(flags)    CPUEXT(flags, SVE2)
 #define have_sme(flags)     CPUEXT(flags, SME)
+#define have_sme_i16i64(flags) CPUEXT(flags, SME_I16I64)
 #define have_sme2(flags)    CPUEXT(flags, SME2)
 
 #if HAVE_SVE

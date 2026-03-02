@@ -88,6 +88,14 @@
 #define DISABLE_SME
 #endif
 
+#if HAVE_AS_ARCHEXT_SME_I16I64_DIRECTIVE
+#define ENABLE_SME_I16I64  .arch_extension sme-i16i64
+#define DISABLE_SME_I16I64 .arch_extension nosme-i16i64
+#else
+#define ENABLE_SME_I16I64
+#define DISABLE_SME_I16I64
+#endif
+
 #if HAVE_AS_ARCHEXT_SME2_DIRECTIVE
 #define ENABLE_SME2   .arch_extension sme2
 #define DISABLE_SME2  .arch_extension nosme2
@@ -102,6 +110,7 @@ DISABLE_I8MM
 DISABLE_SVE
 DISABLE_SVE2
 DISABLE_SME
+DISABLE_SME_I16I64
 DISABLE_SME2
 
 

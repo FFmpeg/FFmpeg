@@ -485,6 +485,7 @@ Optimization options (experts only):
   --disable-sve            disable SVE optimizations
   --disable-sve2           disable SVE2 optimizations
   --disable-sme            disable SME optimizations
+  --disable-sme-i16i64     disable SME-I16I64 optimizations
   --disable-sme2           disable SME2 optimizations
   --disable-inline-asm     disable use of inline assembly
   --disable-x86asm         disable use of standalone x86 assembly
@@ -1238,6 +1239,7 @@ check_archext_name_insn(){
     log check_archext_name_insn "$@"
     feature="$1"
     archext="$2"
+    archextdir=$(printf '%s' "$2" | tr '-' '_')
     instr="$3"
     instr2="$4"
     # Check if the assembly is accepted in inline assembly.
@@ -1252,7 +1254,7 @@ check_archext_name_insn(){
 
     # Test if the assembler supports the .arch_extension $archext directive.
     arch_extension_directive=".arch_extension $archext"
-    test_as <<EOF && enable as_archext_${archext}_directive || arch_extension_directive=""
+    test_as <<EOF && enable as_archext_${archextdir}_directive || arch_extension_directive=""
 $arch_directive
 $arch_extension_directive
 EOF
@@ -2304,6 +2306,7 @@ ARCH_EXT_LIST_ARM="
     sve
     sve2
     sme
+    sme_i16i64
     sme2
 "
 
@@ -2575,6 +2578,7 @@ TOOLCHAIN_FEATURES="
     as_archext_sve_directive
     as_archext_sve2_directive
     as_archext_sme_directive
+    as_archext_sme_i16i64_directive
     as_archext_sme2_directive
     as_dn_directive
     as_fpu_directive
@@ -2917,6 +2921,7 @@ i8mm_deps="aarch64 neon"
 sve_deps="aarch64 neon"
 sve2_deps="aarch64 neon sve"
 sme_deps="aarch64 neon sve sve2"
+sme_i16i64_deps="aarch64 neon sve sve2 sme"
 sme2_deps="aarch64 neon sve sve2 sme"
 
 map 'eval ${v}_inline_deps=inline_asm' $ARCH_EXT_LIST_ARM
@@ -6555,13 +6560,14 @@ if enabled aarch64; then
     # internal assembler in clang 3.3 does not support this instruction
     enabled neon && check_insn neon 'ext   v0.8B, v0.8B, v1.8B, #1'
 
-    archext_list="arm_crc dotprod i8mm sve sve2 sme sme2"
+    archext_list="arm_crc dotprod i8mm sve sve2 sme sme_i16i64 sme2"
     enabled arm_crc && check_archext_name_insn arm_crc crc 'crc32x w0, w0, x0'
     enabled dotprod && check_archext_insn dotprod 'udot v0.4s, v0.16b, v0.16b'
     enabled i8mm    && check_archext_insn i8mm    'usdot v0.4s, v0.16b, v0.16b'
     enabled sve     && check_archext_insn sve     'whilelt p0.s, x0, x1'
     enabled sve2    && check_archext_insn sve2    'sqrdmulh z0.s, z0.s, z0.s'
     enabled sme     && check_archext_insn sme     'smstart' 'cntb x0'
+    enabled sme_i16i64 && check_archext_name_insn sme_i16i64 sme-i16i64 'smstart' 'smopa za0.d, p0/m, p0/m, z0.h, z1.h'
     enabled sme2    && check_archext_insn sme2    'smstart' 'sdot za.s[w10, 0], {z0.b-z3.b}, {z4.b-z7.b}'
 
     # Disable the main feature (e.g. HAVE_NEON) if neither inline nor external
@@ -8392,6 +8398,7 @@ if enabled aarch64; then
     echo "SVE enabled               ${sve-no}"
     echo "SVE2 enabled              ${sve2-no}"
     echo "SME enabled               ${sme-no}"
+    echo "SME-I16I64 enabled        ${sme_i16i64-no}"
     echo "SME2 enabled              ${sme2-no}"
 fi
 if enabled arm; then
