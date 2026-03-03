@@ -338,6 +338,9 @@ typedef struct WHIPContext {
 
     /* The timeout in milliseconds for ICE and DTLS handshake. */
     int handshake_timeout;
+
+    /* The timeout in microseconds for HTTP operations. */
+    int64_t timeout;
     /**
      * The size of RTP packet, should generally be set to MTU.
      * Note that pion requires a smaller value, for example, 1200.
@@ -838,6 +841,9 @@ static int exchange_sdp(AVFormatContext *s)
 
     av_dict_set(&opts, "headers", buf, 0);
     av_dict_set_int(&opts, "chunked_post", 0, 0);
+
+    if (whip->timeout >= 0)
+        av_dict_set_int(&opts, "timeout", whip->timeout, 0);
 
     hex_data = av_mallocz(2 * strlen(whip->sdp_offer) + 1);
     if (!hex_data) {
@@ -1733,6 +1739,10 @@ static int dispose_session(AVFormatContext *s)
     av_dict_set(&opts, "headers", buf, 0);
     av_dict_set_int(&opts, "chunked_post", 0, 0);
     av_dict_set(&opts, "method", "DELETE", 0);
+
+    if (whip->timeout >= 0)
+        av_dict_set_int(&opts, "timeout", whip->timeout, 0);
+
     ret = ffurl_open_whitelist(&whip_uc, whip->whip_resource_url, AVIO_FLAG_READ_WRITE, &s->interrupt_callback,
         &opts, s->protocol_whitelist, s->protocol_blacklist, NULL);
     if (ret < 0) {
@@ -2176,6 +2186,7 @@ static int whip_check_bitstream(AVFormatContext *s, AVStream *st, const AVPacket
 #define ENC AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
     { "handshake_timeout",  "Timeout in milliseconds for ICE and DTLS handshake.",      OFFSET(handshake_timeout),  AV_OPT_TYPE_INT,    { .i64 = 5000 },    -1, INT_MAX, ENC },
+    { "timeout",            "Set timeout for socket I/O operations",                    OFFSET(timeout),            AV_OPT_TYPE_DURATION, { .i64 = -1 }, -1, INT_MAX, ENC },
     { "pkt_size",           "The maximum size, in bytes, of RTP packets that send out", OFFSET(pkt_size),           AV_OPT_TYPE_INT,    { .i64 = 1200 },    -1, INT_MAX, ENC },
     { "ts_buffer_size",     "The buffer size, in bytes, of underlying protocol",        OFFSET(ts_buffer_size),        AV_OPT_TYPE_INT,    { .i64 = -1 },      -1, INT_MAX, ENC },
     { "whip_flags",         "Set flags affecting WHIP connection behavior",             OFFSET(flags),              AV_OPT_TYPE_FLAGS,  { .i64 = 0},         0, UINT_MAX, ENC, .unit = "flags" },
