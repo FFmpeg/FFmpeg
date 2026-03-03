@@ -9169,6 +9169,7 @@ static int mov_read_iref_dimg(MOVContext *c, AVIOContext *pb, int version)
     HEIFGrid *grid;
     int entries, i;
     int from_item_id = version ? avio_rb32(pb) : avio_rb16(pb);
+    int ret = 0;
 
     for (int i = 0; i < c->nb_heif_grid; i++) {
         if (c->heif_grid[i].item->item_id == from_item_id) {
@@ -9203,29 +9204,40 @@ static int mov_read_iref_dimg(MOVContext *c, AVIOContext *pb, int version)
     if (!grid)
         return AVERROR(ENOMEM);
     c->heif_grid = grid;
-    grid = &grid[c->nb_heif_grid++];
+    grid = &grid[c->nb_heif_grid];
 
     entries = avio_rb16(pb);
     grid->tile_id_list = av_malloc_array(entries, sizeof(*grid->tile_id_list));
     grid->tile_idx_list = av_calloc(entries, sizeof(*grid->tile_idx_list));
     grid->tile_item_list = av_calloc(entries, sizeof(*grid->tile_item_list));
-    if (!grid->tile_id_list || !grid->tile_item_list || !grid->tile_idx_list)
-        return AVERROR(ENOMEM);
+    if (!grid->tile_id_list || !grid->tile_item_list || !grid->tile_idx_list) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
     /* 'to' item ids */
     for (i = 0; i < entries; i++) {
         grid->tile_id_list[i] = version ? avio_rb32(pb) : avio_rb16(pb);
 
-        if (avio_feof(pb))
-            return AVERROR_INVALIDDATA;
+        if (avio_feof(pb)) {
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
+        }
     }
 
     grid->nb_tiles = entries;
     grid->item = item;
+    ++c->nb_heif_grid;
 
     av_log(c->fc, AV_LOG_TRACE, "dimg: from_item_id %d, entries %d\n",
            from_item_id, entries);
 
     return 0;
+fail:
+    av_freep(&grid->tile_id_list);
+    av_freep(&grid->tile_idx_list);
+    av_freep(&grid->tile_item_list);
+
+    return ret;
 }
 
 static int mov_read_iref_cdsc(MOVContext *c, AVIOContext *pb, uint32_t type, int version)
@@ -9288,8 +9300,12 @@ static int mov_read_iref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         type = avio_rl32(pb);
         switch (type) {
         case MKTAG('d','i','m','g'):
-            mov_read_iref_dimg(c, pb, version);
+        {
+            int ret = mov_read_iref_dimg(c, pb, version);
+            if (ret < 0)
+                return ret;
             break;
+        }
         case MKTAG('c','d','s','c'):
         case MKTAG('t','h','m','b'):
             mov_read_iref_cdsc(c, pb, type, version);
