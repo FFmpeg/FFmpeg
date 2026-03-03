@@ -52,9 +52,6 @@ typedef struct AlsaData {
     int frame_size;  ///< bytes per sample * channels
     int period_size; ///< preferred size for reads and writes, in frames
     int sample_rate; ///< sample rate set by user
-#if FF_API_ALSA_CHANNELS
-    int channels;    ///< number of channels set by user
-#endif
     AVChannelLayout ch_layout; ///< Channel layout set by user
     int last_period;
     TimeFilter *timefilter;

@@ -33,6 +33,4 @@
  * the public API and may change, break or disappear at any time.
  */
 
-#define FF_API_ALSA_CHANNELS (LIBAVDEVICE_VERSION_MAJOR < 63)
-
 #endif /* AVDEVICE_VERSION_MAJOR_H */
