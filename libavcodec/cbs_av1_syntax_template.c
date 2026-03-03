@@ -1758,7 +1758,15 @@ static int FUNC(frame_header_obu)(CodedBitstreamContext *ctx, RWContext *rw,
         }
     } else {
         if (redundant)
+#ifdef READ
             HEADER("Redundant Frame Header (used as Frame Header)");
+#else
+        {
+            av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid redundant "
+                   "frame header OBU.\n");
+            return AVERROR_INVALIDDATA;
+        }
+#endif
         else
             HEADER("Frame Header");
 
