@@ -157,13 +157,6 @@ fail:
     return ret;
 }
 
-/* Wrapper around ff_sws_graph_add_pass() that chains a pass "in-place" */
-static int pass_append(SwsGraph *graph, enum AVPixelFormat fmt, int w, int h,
-                       SwsPass **pass, int align, void *priv, sws_filter_run_t run)
-{
-    return ff_sws_graph_add_pass(graph, fmt, w, h, *pass, align, priv, run, pass);
-}
-
 static void frame_shift(const SwsFrame *f, const int y, uint8_t *data[4])
 {
     for (int i = 0; i < 4; i++) {
@@ -400,7 +393,8 @@ static int init_legacy_subpass(SwsGraph *graph, SwsContext *sws,
         align = 0; /* disable slice threading */
 
     if (c->src0Alpha && !c->dst0Alpha && isALPHA(sws->dst_format)) {
-        ret = pass_append(graph, AV_PIX_FMT_RGBA, src_w, src_h, &input, 1, c, run_rgb0);
+        ret = ff_sws_graph_add_pass(graph, AV_PIX_FMT_RGBA, src_w, src_h, input,
+                                    1, c, run_rgb0, &input);
         if (ret < 0) {
             sws_free_context(&sws);
             return ret;
@@ -408,7 +402,8 @@ static int init_legacy_subpass(SwsGraph *graph, SwsContext *sws,
     }
 
     if (c->srcXYZ && !(c->dstXYZ && unscaled)) {
-        ret = pass_append(graph, AV_PIX_FMT_RGB48, src_w, src_h, &input, 1, c, run_xyz2rgb);
+        ret = ff_sws_graph_add_pass(graph, AV_PIX_FMT_RGB48, src_w, src_h, input,
+                                    1, c, run_xyz2rgb, &input);
         if (ret < 0) {
             sws_free_context(&sws);
             return ret;
@@ -469,7 +464,8 @@ static int init_legacy_subpass(SwsGraph *graph, SwsContext *sws,
     }
 
     if (c->dstXYZ && !(c->srcXYZ && unscaled)) {
-        ret = pass_append(graph, AV_PIX_FMT_RGB48, dst_w, dst_h, &pass, 1, c, run_rgb2xyz);
+        ret = ff_sws_graph_add_pass(graph, AV_PIX_FMT_RGB48, dst_w, dst_h, pass,
+                                    1, c, run_rgb2xyz, &pass);
         if (ret < 0)
             return ret;
     }
