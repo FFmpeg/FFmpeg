@@ -192,6 +192,7 @@ static const CodedBitstreamUnitType decompose_unit_types[] = {
     AV1_OBU_FRAME_HEADER,
     AV1_OBU_TILE_GROUP,
     AV1_OBU_FRAME,
+    AV1_OBU_REDUNDANT_FRAME_HEADER,
 };
 
 static av_cold int av1_parser_init(AVCodecParserContext *ctx)
