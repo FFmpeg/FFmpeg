@@ -154,11 +154,13 @@ int ff_sws_graph_create(SwsContext *ctx, const SwsFormat *dst, const SwsFormat *
  * @param align  Minimum slice alignment for this pass, or 0 for no threading.
  * @param priv   Private state for the filter run function.
  * @param run    Filter function to run.
- * @return The newly created pass, or NULL on error.
+ * @param out_pass The newly added pass will be written here on success.
+ * @return 0 or a negative error code
  */
-SwsPass *ff_sws_graph_add_pass(SwsGraph *graph, enum AVPixelFormat fmt,
-                               int width, int height, SwsPass *input,
-                               int align, void *priv, sws_filter_run_t run);
+int ff_sws_graph_add_pass(SwsGraph *graph, enum AVPixelFormat fmt,
+                          int width, int height, SwsPass *input,
+                          int align, void *priv, sws_filter_run_t run,
+                          SwsPass **out_pass);
 
 /**
  * Uninitialize any state associate with this filter graph and free it.

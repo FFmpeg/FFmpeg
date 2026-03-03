@@ -346,12 +346,12 @@ static int compile(SwsGraph *graph, const SwsOpList *ops,
     }
 
     SwsPass *pass;
-    pass = ff_sws_graph_add_pass(graph, dst->format, dst->width, dst->height,
-                                 input, p->comp.slice_align, p, op_pass_run);
-    if (!pass) {
-        ret = AVERROR(ENOMEM);
+    ret = ff_sws_graph_add_pass(graph, dst->format, dst->width, dst->height,
+                                input, p->comp.slice_align, p, op_pass_run,
+                                &pass);
+    if (ret < 0)
         goto fail;
-    }
+
     pass->setup = op_pass_setup;
     pass->free  = op_pass_free;
 
