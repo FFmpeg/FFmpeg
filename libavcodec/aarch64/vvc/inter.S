@@ -2224,3 +2224,354 @@ endfunc
 function ff_vvc_put_luma_v_x16_12_neon, export=1
         put_luma_v_x16_xx_neon 4
 endfunc
+
+
+.macro put_luma_hv_x8_horizontal_filter shift, dst, src0, src1
+        ext             v2.16b, \src0\().16b, \src1\().16b, #2
+        ext             v3.16b, \src0\().16b, \src1\().16b, #4
+        ext             v4.16b, \src0\().16b, \src1\().16b, #6
+        ext             v5.16b, \src0\().16b, \src1\().16b, #8
+        smull           v6.4s, \src0\().4h, v0.h[0]
+        smull2          v7.4s, \src0\().8h, v0.h[0]
+        smlal           v6.4s, v2.4h, v0.h[1]
+        smlal2          v7.4s, v2.8h, v0.h[1]
+        smlal           v6.4s, v3.4h, v0.h[2]
+        smlal2          v7.4s, v3.8h, v0.h[2]
+        smlal           v6.4s, v4.4h, v0.h[3]
+        smlal2          v7.4s, v4.8h, v0.h[3]
+        smlal           v6.4s, v5.4h, v0.h[4]
+        smlal2          v7.4s, v5.8h, v0.h[4]
+        ext             v2.16b, \src0\().16b, \src1\().16b, #10
+        ext             v3.16b, \src0\().16b, \src1\().16b, #12
+        ext             v4.16b, \src0\().16b, \src1\().16b, #14
+        smlal           v6.4s, v2.4h, v0.h[5]
+        smlal2          v7.4s, v2.8h, v0.h[5]
+        smlal           v6.4s, v3.4h, v0.h[6]
+        smlal2          v7.4s, v3.8h, v0.h[6]
+        smlal           v6.4s, v4.4h, v0.h[7]
+        smlal2          v7.4s, v4.8h, v0.h[7]
+        sqshrn          \dst\().4h, v6.4s, #(\shift)
+        sqshrn2         \dst\().8h, v7.4s, #(\shift)
+.endm
+
+.macro put_luma_hv_x8_vertical_filter dst0, dst1, src0, src1, src2, src3, src4, src5, src6, src7
+        smull           \dst0\().4s, \src0\().4h, v1.h[0]
+        smull2          \dst1\().4s, \src0\().8h, v1.h[0]
+        smlal           \dst0\().4s, \src1\().4h, v1.h[1]
+        smlal2          \dst1\().4s, \src1\().8h, v1.h[1]
+        smlal           \dst0\().4s, \src2\().4h, v1.h[2]
+        smlal2          \dst1\().4s, \src2\().8h, v1.h[2]
+        smlal           \dst0\().4s, \src3\().4h, v1.h[3]
+        smlal2          \dst1\().4s, \src3\().8h, v1.h[3]
+        smlal           \dst0\().4s, \src4\().4h, v1.h[4]
+        smlal2          \dst1\().4s, \src4\().8h, v1.h[4]
+        smlal           \dst0\().4s, \src5\().4h, v1.h[5]
+        smlal2          \dst1\().4s, \src5\().8h, v1.h[5]
+        smlal           \dst0\().4s, \src6\().4h, v1.h[6]
+        smlal2          \dst1\().4s, \src6\().8h, v1.h[6]
+        smlal           \dst0\().4s, \src7\().4h, v1.h[7]
+        smlal2          \dst1\().4s, \src7\().8h, v1.h[7]
+        sqshrn          \dst0\().4h, \dst0\().4s, #6
+        sqshrn          \dst1\().4h, \dst1\().4s, #6
+.endm
+
+.macro put_luma_hv8_xx_neon shift
+        // dst         .req x0
+        // _src        .req x1
+        // _src_stride .req x2
+        // height      .req x3
+        // hf          .req x4
+        // vf          .req x5
+        // width       .req x6
+        mov             x9, #(VVC_MAX_PB_SIZE * 2)
+        sub             x1, x1, #6
+        ld1             {v0.8b}, [x4]
+        sub             x1, x1, x2, lsl #1
+        sxtl            v0.8h, v0.8b
+        ld1             {v1.8b}, [x5]
+        sub             x1, x1, x2
+        sxtl            v1.8h, v1.8b
+        ld1             {v16.8h, v17.8h}, [x1], x2
+        ld1             {v18.8h, v19.8h}, [x1], x2
+        ld1             {v20.8h, v21.8h}, [x1], x2
+        ld1             {v22.8h, v23.8h}, [x1], x2
+        ld1             {v24.8h, v25.8h}, [x1], x2
+        ld1             {v26.8h, v27.8h}, [x1], x2
+        ld1             {v28.8h, v29.8h}, [x1], x2
+        put_luma_hv_x8_horizontal_filter \shift, v16, v16, v17
+        put_luma_hv_x8_horizontal_filter \shift, v18, v18, v19
+        put_luma_hv_x8_horizontal_filter \shift, v20, v20, v21
+        put_luma_hv_x8_horizontal_filter \shift, v22, v22, v23
+        put_luma_hv_x8_horizontal_filter \shift, v24, v24, v25
+        put_luma_hv_x8_horizontal_filter \shift, v26, v26, v27
+        put_luma_hv_x8_horizontal_filter \shift, v28, v28, v29
+1:
+        ld1             {v30.8h, v31.8h}, [x1], x2
+        put_luma_hv_x8_horizontal_filter \shift, v30, v30, v31
+        put_luma_hv_x8_vertical_filter v2, v3, v16, v18, v20, v22, v24, v26, v28, v30
+        ld1             {v16.8h, v17.8h}, [x1], x2
+        st1             {v2.4h-v3.4h}, [x0], x9
+        put_luma_hv_x8_horizontal_filter \shift, v16, v16, v17
+        put_luma_hv_x8_vertical_filter v2, v3, v18, v20, v22, v24, v26, v28, v30, v16
+        ld1             {v18.8h, v19.8h}, [x1], x2
+        st1             {v2.4h-v3.4h}, [x0], x9
+        put_luma_hv_x8_horizontal_filter \shift, v18, v18, v19
+        put_luma_hv_x8_vertical_filter v2, v3, v20, v22, v24, v26, v28, v30, v16, v18
+        ld1             {v20.8h, v21.8h}, [x1], x2
+        st1             {v2.4h-v3.4h}, [x0], x9
+        put_luma_hv_x8_horizontal_filter \shift, v20, v20, v21
+        put_luma_hv_x8_vertical_filter v2, v3, v22, v24, v26, v28, v30, v16, v18, v20
+        st1             {v2.4h-v3.4h}, [x0], x9
+
+        mov             v17.16b, v16.16b
+        mov             v16.16b, v24.16b
+        mov             v24.16b, v17.16b
+        mov             v19.16b, v18.16b
+        mov             v18.16b, v26.16b
+        mov             v26.16b, v19.16b
+        mov             v21.16b, v20.16b
+        mov             v20.16b, v28.16b
+        mov             v28.16b, v21.16b
+        subs            w3, w3, #4
+        mov             v22.16b, v30.16b
+        b.gt            1b
+        ret
+.endm
+
+function ff_vvc_put_luma_hv8_10_neon, export=1
+        put_luma_hv8_xx_neon 2
+endfunc
+
+function ff_vvc_put_luma_hv8_12_neon, export=1
+        put_luma_hv8_xx_neon 4
+endfunc
+
+.macro put_luma_hv16_xx_neon shift
+        // dst         .req x0
+        // _src        .req x1
+        // _src_stride .req x2
+        // height      .req x3
+        // hf          .req x4
+        // vf          .req x5
+        // width       .req x6
+        stp             d8, d9, [sp, #-64]!
+        stp             d10, d11, [sp, #16]
+        stp             d12, d13, [sp, #32]
+        stp             d14, d15, [sp, #48]
+
+        mov             x9, #(VVC_MAX_PB_SIZE * 2)
+        sub             x1, x1, #6
+        ld1             {v0.8b}, [x4]
+        sub             x1, x1, x2, lsl #1
+        sxtl            v0.8h, v0.8b
+        ld1             {v1.8b}, [x5]
+        sub             x1, x1, x2
+        sxtl            v1.8h, v1.8b
+        ld1             {v8.8h, v9.8h, v10.8h}, [x1], x2
+        ld1             {v11.8h, v12.8h, v13.8h}, [x1], x2
+        ld1             {v14.8h, v15.8h, v16.8h}, [x1], x2
+        ld1             {v17.8h, v18.8h, v19.8h}, [x1], x2
+        ld1             {v20.8h, v21.8h, v22.8h}, [x1], x2
+        ld1             {v23.8h, v24.8h, v25.8h}, [x1], x2
+        ld1             {v26.8h, v27.8h, v28.8h}, [x1], x2
+        put_luma_hv_x8_horizontal_filter \shift, v8, v8, v9
+        put_luma_hv_x8_horizontal_filter \shift, v9, v9, v10
+        put_luma_hv_x8_horizontal_filter \shift, v11, v11, v12
+        put_luma_hv_x8_horizontal_filter \shift, v12, v12, v13
+        put_luma_hv_x8_horizontal_filter \shift, v14, v14, v15
+        put_luma_hv_x8_horizontal_filter \shift, v15, v15, v16
+        put_luma_hv_x8_horizontal_filter \shift, v17, v17, v18
+        put_luma_hv_x8_horizontal_filter \shift, v18, v18, v19
+        put_luma_hv_x8_horizontal_filter \shift, v20, v20, v21
+        put_luma_hv_x8_horizontal_filter \shift, v21, v21, v22
+        put_luma_hv_x8_horizontal_filter \shift, v23, v23, v24
+        put_luma_hv_x8_horizontal_filter \shift, v24, v24, v25
+        put_luma_hv_x8_horizontal_filter \shift, v26, v26, v27
+        put_luma_hv_x8_horizontal_filter \shift, v27, v27, v28
+1:
+        ld1             {v29.8h, v30.8h, v31.8h}, [x1], x2
+        put_luma_hv_x8_horizontal_filter \shift, v29, v29, v30
+        put_luma_hv_x8_horizontal_filter \shift, v30, v30, v31
+        put_luma_hv_x8_vertical_filter v2, v3, v8, v11, v14, v17, v20, v23, v26, v29
+        put_luma_hv_x8_vertical_filter v4, v5, v9, v12, v15, v18, v21, v24, v27, v30
+        ld1             {v8.8h, v9.8h, v10.8h}, [x1], x2
+        st1             {v2.4h-v5.4h}, [x0], x9
+        put_luma_hv_x8_horizontal_filter \shift, v8, v8, v9
+        put_luma_hv_x8_horizontal_filter \shift, v9, v9, v10
+        put_luma_hv_x8_vertical_filter v2, v3, v11, v14, v17, v20, v23, v26, v29, v8
+        put_luma_hv_x8_vertical_filter v4, v5, v12, v15, v18, v21, v24, v27, v30, v9
+        ld1             {v11.8h, v12.8h, v13.8h}, [x1], x2
+        st1             {v2.4h-v5.4h}, [x0], x9
+        put_luma_hv_x8_horizontal_filter \shift, v11, v11, v12
+        put_luma_hv_x8_horizontal_filter \shift, v12, v12, v13
+        put_luma_hv_x8_vertical_filter v2, v3, v14, v17, v20, v23, v26, v29, v8, v11
+        put_luma_hv_x8_vertical_filter v4, v5, v15, v18, v21, v24, v27, v30, v9, v12
+        ld1             {v14.8h, v15.8h, v16.8h}, [x1], x2
+        st1             {v2.4h-v5.4h}, [x0], x9
+        put_luma_hv_x8_horizontal_filter \shift, v14, v14, v15
+        put_luma_hv_x8_horizontal_filter \shift, v15, v15, v16
+        put_luma_hv_x8_vertical_filter v2, v3, v17, v20, v23, v26, v29, v8, v11, v14
+        put_luma_hv_x8_vertical_filter v4, v5, v18, v21, v24, v27, v30, v9, v12, v15
+        st1             {v2.4h-v5.4h}, [x0], x9
+
+        mov             v10.16b, v8.16b
+        mov             v8.16b, v20.16b
+        mov             v20.16b, v10.16b
+        mov             v10.16b, v9.16b
+        mov             v9.16b, v21.16b
+        mov             v21.16b, v10.16b
+
+        mov             v13.16b, v11.16b
+        mov             v11.16b, v23.16b
+        mov             v23.16b, v13.16b
+        mov             v13.16b, v12.16b
+        mov             v12.16b, v24.16b
+        mov             v24.16b, v13.16b
+
+        mov             v16.16b, v14.16b
+        mov             v14.16b, v26.16b
+        mov             v26.16b, v16.16b
+        mov             v16.16b, v15.16b
+        mov             v15.16b, v27.16b
+        mov             v27.16b, v16.16b
+
+        subs            w3, w3, #4
+        mov             v17.16b, v29.16b
+        mov             v18.16b, v30.16b
+        b.gt            1b
+
+        ldp             d14, d15, [sp, #48]
+        ldp             d12, d13, [sp, #32]
+        ldp             d10, d11, [sp, #16]
+        ldp             d8, d9, [sp], #64
+        ret
+.endm
+
+function ff_vvc_put_luma_hv16_10_neon, export=1
+        put_luma_hv16_xx_neon 2
+endfunc
+
+function ff_vvc_put_luma_hv16_12_neon, export=1
+        put_luma_hv16_xx_neon 4
+endfunc
+
+.macro put_luma_hv_x16_xx_neon shift
+        // dst         .req x0
+        // _src        .req x1
+        // _src_stride .req x2
+        // height      .req x3
+        // hf          .req x4
+        // vf          .req x5
+        // width       .req x6
+        uxtw            x6, w6
+        stp             d8, d9, [sp, #-64]!
+        stp             d10, d11, [sp, #16]
+        stp             d12, d13, [sp, #32]
+        stp             d14, d15, [sp, #48]
+        mov             x9, #(VVC_MAX_PB_SIZE * 2)
+        sub             x1, x1, #6
+        ld1             {v0.8b}, [x4]
+        sub             x1, x1, x2, lsl #1
+        sxtl            v0.8h, v0.8b
+        ld1             {v1.8b}, [x5]
+        sub             x1, x1, x2
+        sxtl            v1.8h, v1.8b
+1:
+        mov             w13, w3
+        mov             x11, x1
+        mov             x10, x0
+        ld1             {v8.8h, v9.8h, v10.8h}, [x11], x2
+        ld1             {v11.8h, v12.8h, v13.8h}, [x11], x2
+        ld1             {v14.8h, v15.8h, v16.8h}, [x11], x2
+        ld1             {v17.8h, v18.8h, v19.8h}, [x11], x2
+        ld1             {v20.8h, v21.8h, v22.8h}, [x11], x2
+        ld1             {v23.8h, v24.8h, v25.8h}, [x11], x2
+        ld1             {v26.8h, v27.8h, v28.8h}, [x11], x2
+        put_luma_hv_x8_horizontal_filter \shift, v8, v8, v9
+        put_luma_hv_x8_horizontal_filter \shift, v9, v9, v10
+        put_luma_hv_x8_horizontal_filter \shift, v11, v11, v12
+        put_luma_hv_x8_horizontal_filter \shift, v12, v12, v13
+        put_luma_hv_x8_horizontal_filter \shift, v14, v14, v15
+        put_luma_hv_x8_horizontal_filter \shift, v15, v15, v16
+        put_luma_hv_x8_horizontal_filter \shift, v17, v17, v18
+        put_luma_hv_x8_horizontal_filter \shift, v18, v18, v19
+        put_luma_hv_x8_horizontal_filter \shift, v20, v20, v21
+        put_luma_hv_x8_horizontal_filter \shift, v21, v21, v22
+        put_luma_hv_x8_horizontal_filter \shift, v23, v23, v24
+        put_luma_hv_x8_horizontal_filter \shift, v24, v24, v25
+        put_luma_hv_x8_horizontal_filter \shift, v26, v26, v27
+        put_luma_hv_x8_horizontal_filter \shift, v27, v27, v28
+2:
+        ld1             {v29.8h, v30.8h, v31.8h}, [x11], x2
+        put_luma_hv_x8_horizontal_filter \shift, v29, v29, v30
+        put_luma_hv_x8_horizontal_filter \shift, v30, v30, v31
+        put_luma_hv_x8_vertical_filter v2, v3, v8, v11, v14, v17, v20, v23, v26, v29
+        put_luma_hv_x8_vertical_filter v4, v5, v9, v12, v15, v18, v21, v24, v27, v30
+        ld1             {v8.8h, v9.8h, v10.8h}, [x11], x2
+        st1             {v2.4h-v5.4h}, [x10], x9
+
+        put_luma_hv_x8_horizontal_filter \shift, v8, v8, v9
+        put_luma_hv_x8_horizontal_filter \shift, v9, v9, v10
+        put_luma_hv_x8_vertical_filter v2, v3, v11, v14, v17, v20, v23, v26, v29, v8
+        put_luma_hv_x8_vertical_filter v4, v5, v12, v15, v18, v21, v24, v27, v30, v9
+        ld1             {v11.8h, v12.8h, v13.8h}, [x11], x2
+        st1             {v2.4h-v5.4h}, [x10], x9
+
+        put_luma_hv_x8_horizontal_filter \shift, v11, v11, v12
+        put_luma_hv_x8_horizontal_filter \shift, v12, v12, v13
+        put_luma_hv_x8_vertical_filter v2, v3, v14, v17, v20, v23, v26, v29, v8, v11
+        put_luma_hv_x8_vertical_filter v4, v5, v15, v18, v21, v24, v27, v30, v9, v12
+        ld1             {v14.8h, v15.8h, v16.8h}, [x11], x2
+        st1             {v2.4h-v5.4h}, [x10], x9
+
+        put_luma_hv_x8_horizontal_filter \shift, v14, v14, v15
+        put_luma_hv_x8_horizontal_filter \shift, v15, v15, v16
+        put_luma_hv_x8_vertical_filter v2, v3, v17, v20, v23, v26, v29, v8, v11, v14
+        put_luma_hv_x8_vertical_filter v4, v5, v18, v21, v24, v27, v30, v9, v12, v15
+        st1             {v2.4h-v5.4h}, [x10], x9
+
+        mov             v10.16b, v8.16b
+        mov             v8.16b, v20.16b
+        mov             v20.16b, v10.16b
+        mov             v10.16b, v9.16b
+        mov             v9.16b, v21.16b
+        mov             v21.16b, v10.16b
+
+        mov             v13.16b, v11.16b
+        mov             v11.16b, v23.16b
+        mov             v23.16b, v13.16b
+        mov             v13.16b, v12.16b
+        mov             v12.16b, v24.16b
+        mov             v24.16b, v13.16b
+
+        mov             v16.16b, v14.16b
+        mov             v14.16b, v26.16b
+        mov             v26.16b, v16.16b
+        mov             v16.16b, v15.16b
+        mov             v15.16b, v27.16b
+        mov             v27.16b, v16.16b
+
+        subs            w13, w13, #4
+        mov             v17.16b, v29.16b
+        mov             v18.16b, v30.16b
+        b.gt            2b
+
+        add             x0, x0, #32
+        add             x1, x1, #32
+        subs            w6, w6, #16
+        b.gt            1b
+
+        ldp             d14, d15, [sp, #48]
+        ldp             d12, d13, [sp, #32]
+        ldp             d10, d11, [sp, #16]
+        ldp             d8, d9, [sp], #64
+        ret
+.endm
+
+function ff_vvc_put_luma_hv_x16_10_neon, export=1
+        put_luma_hv_x16_xx_neon 2
+endfunc
+
+function ff_vvc_put_luma_hv_x16_12_neon, export=1
+        put_luma_hv_x16_xx_neon 4
+endfunc
