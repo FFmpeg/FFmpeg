@@ -3910,7 +3910,12 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
                st->index, edit_list_index, edit_list_media_time, edit_list_duration);
         edit_list_index++;
         edit_list_dts_counter = edit_list_dts_entry_end;
-        edit_list_dts_entry_end += edit_list_duration;
+        edit_list_dts_entry_end = av_sat_add64(edit_list_dts_entry_end, edit_list_duration);
+        if (edit_list_dts_entry_end == INT64_MAX) {
+            av_log(mov->fc, AV_LOG_ERROR, "Cannot calculate dts entry length with duration %"PRId64"\n",
+                   edit_list_duration);
+            break;
+        }
         num_discarded_begin = 0;
         if (!found_non_empty_edit && edit_list_media_time == -1) {
             empty_edits_sum_duration += edit_list_duration;
