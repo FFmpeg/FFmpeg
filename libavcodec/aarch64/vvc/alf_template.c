@@ -241,3 +241,29 @@ static void FUNC2(alf_classify, BIT_DEPTH, _neon)(int *class_idx, int *transpose
     FUNC2(ff_alf_classify_grad, BIT_DEPTH, _neon)(class_idx, transpose_idx, _src, _src_stride, width, height, vb_pos, (int16_t*)gradient_tmp);
     FUNC(alf_classify)(class_idx, transpose_idx, _src, _src_stride, width, height, vb_pos, (int16_t*)gradient_tmp);
 }
+
+
+void FUNC2(ff_vvc_alf_filter_luma, BIT_DEPTH, _sme2)(uint8_t *dst, const uint8_t *src, const uint64_t strides,
+                                                     const uint64_t dims, const int16_t *filter, const int16_t *clip,
+                                                     const int vb_pos);
+
+#define ALF_ALIGN_BY_4(x) (4*((x - 1) >> 2u)+4)
+
+static void FUNC2(alf_filter_luma, BIT_DEPTH, _sme2)(uint8_t *_dst,
+                                                     ptrdiff_t dst_stride,
+                                                     const uint8_t *_src,
+                                                     ptrdiff_t src_stride,
+                                                     const int width, const int height,
+                                                     const int16_t *filter,
+                                                     const int16_t *clip,
+                                                     const int vb_pos)
+{
+    if ((width >= 16) && (height >= 16)) {
+        int aligned_width = ALF_ALIGN_BY_4(width); // align width by 4
+        uint64_t dims = ((uint64_t)height << 32u) | (uint64_t)aligned_width;
+        uint64_t strides = ((uint64_t)src_stride << 32u) | (uint64_t)dst_stride;
+        FUNC2(ff_vvc_alf_filter_luma, BIT_DEPTH, _sme2)(_dst, _src, strides, dims, filter, clip, vb_pos);
+    } else {
+        FUNC2(alf_filter_luma, BIT_DEPTH, _neon)(_dst, dst_stride, _src, src_stride, width, height, filter, clip, vb_pos);
+    }
+}

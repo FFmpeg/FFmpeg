@@ -8,3 +8,4 @@ NEON-OBJS-$(CONFIG_VVC_DECODER)         += aarch64/vvc/alf.o \
                                            aarch64/h26x/epel_neon.o \
                                            aarch64/h26x/qpel_neon.o \
                                            aarch64/h26x/sao_neon.o
+SME2-OBJS-$(CONFIG_VVC_DECODER)         += aarch64/vvc/inter_sme2.o

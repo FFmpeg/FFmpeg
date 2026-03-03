@@ -281,6 +281,9 @@ void ff_vvc_dsp_init_aarch64(VVCDSPContext *const c, const int bd)
             c->inter.put[1][5][1][1] = ff_vvc_put_epel_hv64_8_neon_i8mm;
             c->inter.put[1][6][1][1] = ff_vvc_put_epel_hv128_8_neon_i8mm;
         }
+        if (have_sme2(cpu_flags) && have_sme_i16i64(cpu_flags)) {
+            c->alf.filter[LUMA] = alf_filter_luma_8_sme2;
+        }
     } else if (bd == 10) {
         c->inter.avg = ff_vvc_avg_10_neon;
         c->inter.w_avg = vvc_w_avg_10;
@@ -309,6 +312,9 @@ void ff_vvc_dsp_init_aarch64(VVCDSPContext *const c, const int bd)
         c->alf.filter[LUMA] = alf_filter_luma_10_neon;
         c->alf.filter[CHROMA] = alf_filter_chroma_10_neon;
         c->alf.classify = alf_classify_10_neon;
+        if (have_sme2(cpu_flags) && have_sme_i16i64(cpu_flags)) {
+            c->alf.filter[LUMA] = alf_filter_luma_10_sme2;
+        }
     } else if (bd == 12) {
         c->inter.avg = ff_vvc_avg_12_neon;
         c->inter.w_avg = vvc_w_avg_12;
@@ -338,6 +344,9 @@ void ff_vvc_dsp_init_aarch64(VVCDSPContext *const c, const int bd)
         c->alf.filter[LUMA] = alf_filter_luma_12_neon;
         c->alf.filter[CHROMA] = alf_filter_chroma_12_neon;
         c->alf.classify = alf_classify_12_neon;
+        if (have_sme2(cpu_flags) && have_sme_i16i64(cpu_flags)) {
+            c->alf.filter[LUMA] = alf_filter_luma_12_sme2;
+        }
     }
 
     c->inter.sad = ff_vvc_sad_neon;
