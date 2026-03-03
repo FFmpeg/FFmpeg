@@ -314,6 +314,28 @@ static int add_ops_glsl(VulkanPriv *p, FFVulkanOpsCtx *s,
                            type_name, type_v, ff_sws_pixel_type_name(op->type));
             }
             break;
+        case SWS_OP_DITHER:
+            av_bprintf(&shd->src, "    precise const float dm%i[%i][%i] = {\n",
+                       n, 1 << op->dither.size_log2, 1 << op->dither.size_log2);
+            int size = (1 << op->dither.size_log2);
+            for (int i = 0; i < size; i++) {
+                av_bprintf(&shd->src, "        { ");
+                for (int j = 0; j < size; j++)
+                    av_bprintf(&shd->src, "%i/%i.0, ",
+                               op->dither.matrix[i*size + j].num,
+                               op->dither.matrix[i*size + j].den);
+                av_bprintf(&shd->src, "}, %s\n", i == (size - 1) ? "\n    };" : "");
+            }
+            for (int i = 0; i < 4; i++) {
+                if (op->dither.y_offset[i] < 0)
+                    continue;
+                av_bprintf(&shd->src, "    %s.%c += dm%i[(pos.y + %i) & %i]"
+                                                        "[pos.x & %i];\n",
+                           type_name, "xyzw"[i], n,
+                           op->dither.y_offset[i], size - 1,
+                           size - 1);
+            }
+            break;
         default:
             return AVERROR(ENOTSUP);
         }
