@@ -192,64 +192,58 @@ SECTION .text
     je       %%vb_bottom
     cmp          vb_posd, 4
     jne         %%vb_end
-%else
-    cmp          vb_posd, 2
-    jne         %%vb_end
-    cmp               %1, 2
-    jge      %%vb_bottom
-%endif
-
 %%vb_above:
-    ; above
+    ; above: vb_pos == 4
     ; p1 = (y + i == vb_pos - 1) ? p0 : p1;
     ; p2 = (y + i == vb_pos - 1) ? p0 : p2;
     ; p3 = (y + i >= vb_pos - 2) ? p1 : p3;
     ; p4 = (y + i >= vb_pos - 2) ? p2 : p4;
     ; p5 = (y + i >= vb_pos - 3) ? p3 : p5;
     ; p6 = (y + i >= vb_pos - 3) ? p4 : p6;
-    dec          vb_posd
-    cmp          vb_posd, %1
+    cmp               %1, 3
     cmove            s1q, srcq
     cmove            s2q, srcq
 
-    dec          vb_posd
-    cmp          vb_posd, %1
-    cmovbe           s3q, s1q
-    cmovbe           s4q, s2q
+    cmp               %1, 1
+    cmova            s3q, s1q
+    cmova            s4q, s2q
 
-    dec          vb_posd
-%if LUMA
-    cmp          vb_posd, %1
-    cmovbe           s5q, s3q
-    cmovbe           s6q, s4q
-%endif
-    add          vb_posd, 3
+    cmovae           s5q, s3q
+    cmovae           s6q, s4q
     jmp         %%vb_end
 
 %%vb_bottom:
-    ; bottom
+    ; bottom: vb_pos == 0
     ; p1 = (y + i == vb_pos    ) ? p0 : p1;
     ; p2 = (y + i == vb_pos    ) ? p0 : p2;
     ; p3 = (y + i <= vb_pos + 1) ? p1 : p3;
     ; p4 = (y + i <= vb_pos + 1) ? p2 : p4;
     ; p5 = (y + i <= vb_pos + 2) ? p3 : p5;
     ; p6 = (y + i <= vb_pos + 2) ? p4 : p6;
-    cmp          vb_posd, %1
+    cmp               %1, 0
     cmove            s1q, srcq
     cmove            s2q, srcq
 
-    inc          vb_posd
-    cmp          vb_posd, %1
-    cmovae           s3q, s1q
-    cmovae           s4q, s2q
+    cmp               %1, 2
+    cmovb            s3q, s1q
+    cmovb            s4q, s2q
 
-    inc          vb_posd
-%if LUMA
-    cmp          vb_posd, %1
-    cmovae           s5q, s3q
-    cmovae           s6q, s4q
+    cmovbe           s5q, s3q
+    cmovbe           s6q, s4q
+%else ; chroma
+    cmp          vb_posd, 2
+    jne         %%vb_end
+    cmp               %1, 2
+    jge      %%vb_bottom
+%%vb_above:
+    cmp               %1, 1
+%%vb_bottom:
+    cmove            s1q, srcq
+    cmove            s2q, srcq
+
+    mov              s3q, s1q
+    mov              s4q, s2q
 %endif
-    sub          vb_posd, 2
 %%vb_end:
 %endmacro
 
