@@ -1895,13 +1895,15 @@ static av_cold int sws_init_single_context(SwsContext *c, SwsFilter *srcFilter,
                                 PPC_ALTIVEC(cpu_flags) ? 8 :
                                 have_neon(cpu_flags)   ? 2 : 1;
 
-        if ((ret = initFilter(&c->vLumFilter, &c->vLumFilterPos, &c->vLumFilterSize,
+        ret = initFilter(&c->vLumFilter, &c->vLumFilterPos, &c->vLumFilterSize,
                        c->lumYInc, srcH, dstH, filterAlign, (1 << 12),
                        (flags & SWS_BICUBLIN) ? (flags | SWS_BICUBIC) : flags,
                        cpu_flags, srcFilter->lumV, dstFilter->lumV,
                        c->param,
                        get_local_pos(c, 0, 0, 1),
-                       get_local_pos(c, 0, 0, 1))) < 0)
+                       get_local_pos(c, 0, 0, 1));
+        int usecascade = (ret == RETCODE_USE_CASCADE);
+        if (ret < 0 && !usecascade)
             goto fail;
         if ((ret = initFilter(&c->vChrFilter, &c->vChrFilterPos, &c->vChrFilterSize,
                        c->chrYInc, c->chrSrcH, c->chrDstH,
@@ -1913,6 +1915,10 @@ static av_cold int sws_init_single_context(SwsContext *c, SwsFilter *srcFilter,
                        get_local_pos(c, c->chrDstVSubSample, c->dst_v_chr_pos, 1))) < 0)
 
             goto fail;
+        if (usecascade) {
+            ret = RETCODE_USE_CASCADE;
+            goto fail;
+        }
 
 #if HAVE_ALTIVEC
         c->vYCoeffsBank = av_malloc_array(c->dstH, c->vLumFilterSize * sizeof(*c->vYCoeffsBank));
