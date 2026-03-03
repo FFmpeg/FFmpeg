@@ -403,8 +403,7 @@ SECTION .text
 %macro FILTER_16x4 2
 %if LUMA
     push clipq
-    %define s5q clipq
-    %define s6q pixel_maxq
+    %define s6q clipq
 %endif
 
     xor               xd, xd
@@ -443,23 +442,21 @@ SECTION .text
 %endif
 %endmacro
 
-; FILTER(bpc, luma/chroma)
-%macro ALF_FILTER 2
-%xdefine BPC   %1
+; FILTER(bd, luma/chroma, bd of implementation to use)
+%macro ALF_FILTER 3
 %ifidn %2, luma
     %xdefine LUMA 1
 %else
     %xdefine LUMA 0
 %endif
-%define ps (%1 / 8) ; pixel size
+%assign ps (%1+7) / 8 ; pixel size
 
 ; ******************************
-; void vvc_alf_filter_%2_%1bpc_avx2(uint8_t *dst, ptrdiff_t dst_stride,
-;      const uint8_t *src, ptrdiff_t src_stride, const ptrdiff_t width, cosnt ptr_diff_t height,
-;      const int16_t *filter, const int16_t *clip, ptrdiff_t vb_pos, ptrdiff_t pixel_max);
+; void ff_vvc_alf_filter_%2_%1_avx2(uint8_t *dst, ptrdiff_t dst_stride,
+;      const uint8_t *src, ptrdiff_t src_stride, int width, int height,
+;      const int16_t *filter, const int16_t *clip, int vb_pos);
 ; ******************************
-cglobal vvc_alf_filter_%2_%1bpc, 10, 15, 12+2*(ps!=1)+2*LUMA, dst, dst_stride, src, src_stride, width, height, filter, clip, vb_pos, pixel_max, \
-    x, s1, s2, s3, s4
+cglobal vvc_alf_filter_%2_%1
 %if !LUMA
 ; chroma does not use registers m5 and m8. Swap them to reduce the amount
 ; of nonvolatile registers on Win64. It also reduces codesize generally
@@ -471,10 +468,24 @@ cglobal vvc_alf_filter_%2_%1bpc, 10, 15, 12+2*(ps!=1)+2*LUMA, dst, dst_stride, s
         SWAP 5,12
         SWAP 8,13
     %endif
+%elif WIN64 && (ps != 1)
+; Swap m5 and m15, so that the register for the maximum pixel value
+; ends up in a volatile register
+    SWAP 5,15
 %endif
 %if ps != 1
-    movd            xm15, pixel_maxd
-    vpbroadcastw     m15, xm15
+  ; create pw_pixelmax for clipping
+  pcmpeqw         m15, m15
+  psrlw           m15, 16 - %1
+%endif
+
+%if %1 != %3
+    jmp vvc_alf_filter_%2_%3_prologue
+%else
+vvc_alf_filter_%2_%1_prologue:
+    PROLOGUE 9, 14+LUMA, 12+2*(ps!=1)+2*LUMA, dst, dst_stride, src, src_stride, width, height, filter, clip, vb_pos, \
+    x, s1, s2, s3, s4, s5
+%if ps != 1
     pxor             m14, m14
 %endif
 
@@ -498,7 +509,9 @@ cglobal vvc_alf_filter_%2_%1bpc, 10, 15, 12+2*(ps!=1)+2*LUMA, dst, dst_stride, s
     je            .w_end
 
 %if LUMA
+SAVE_MM_PERMUTATION
 INIT_XMM cpuname
+LOAD_MM_PERMUTATION
 %endif
     LOAD_PARAMS
     FILTER_16x4  widthd, 0
@@ -518,12 +531,13 @@ INIT_YMM cpuname
     sub          heightd, 4
     jg             .loop
     RET
+%endif
 %endmacro
 
-; FILTER(bpc)
-%macro ALF_FILTER 1
-    ALF_FILTER  %1, luma
-    ALF_FILTER  %1, chroma
+; FILTER(bd, bd of implementation to use)
+%macro ALF_FILTER 2
+    ALF_FILTER  %1, luma,   %2
+    ALF_FILTER  %1, chroma, %2
 %endmacro
 
 %define ALF_GRADIENT_BORDER 2
@@ -891,9 +905,10 @@ cglobal vvc_alf_classify_%1bpc, 7, 15, 16, class_idx, transpose_idx, gradient_su
 %if ARCH_X86_64
 %if HAVE_AVX2_EXTERNAL
 INIT_YMM avx2
-ALF_FILTER   16
-ALF_FILTER   8
+ALF_FILTER   12, 10
+ALF_FILTER   10, 10
 ALF_CLASSIFY 16
+ALF_FILTER   8,  8
 ALF_CLASSIFY 8
 %endif
 %endif
