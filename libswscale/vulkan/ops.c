@@ -223,6 +223,7 @@ static int add_ops_glsl(VulkanPriv *p, FFVulkanOpsCtx *s,
     GLSLC(1,     u16vec4 u16;                                                 );
     GLSLC(1,     u32vec4 u32;                                                 );
     GLSLC(1,     precise f32vec4 f32;                                         );
+    GLSLC(1,     precise f32vec4 tmp;                                         );
     GLSLC(0,                                                                  );
 
     for (int n = 0; n < ops->num_ops; n++) {
@@ -335,6 +336,23 @@ static int add_ops_glsl(VulkanPriv *p, FFVulkanOpsCtx *s,
                            op->dither.y_offset[i], size - 1,
                            size - 1);
             }
+            break;
+        case SWS_OP_LINEAR:
+            for (int i = 0; i < 4; i++) {
+                if (op->lin.m[i][4].num)
+                    av_bprintf(&shd->src, "    tmp.%c = (%i/%i.0);\n", "xyzw"[i],
+                               op->lin.m[i][4].num, op->lin.m[i][4].den);
+                else
+                    av_bprintf(&shd->src, "    tmp.%c = 0;\n", "xyzw"[i]);
+                for (int j = 0; j < 4; j++) {
+                    if (!op->lin.m[i][j].num)
+                        continue;
+                    av_bprintf(&shd->src, "    tmp.%c += f32.%c*(%i/%i.0);\n",
+                               "xyzw"[i], "xyzw"[j],
+                               op->lin.m[i][j].num, op->lin.m[i][j].den);
+                }
+            }
+            av_bprintf(&shd->src, "    f32 = tmp;\n");
             break;
         default:
             return AVERROR(ENOTSUP);
