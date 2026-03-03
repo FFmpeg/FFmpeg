@@ -538,8 +538,8 @@ static int config_props(AVFilterLink *outlink)
 
     if (outlink->w > INT_MAX ||
         outlink->h > INT_MAX ||
-        (outlink->h * inlink->w) > INT_MAX ||
-        (outlink->w * inlink->h) > INT_MAX)
+        (outlink->h * (uint64_t)inlink->w) > INT_MAX ||
+        (outlink->w * (uint64_t)inlink->h) > INT_MAX)
         av_log(ctx, AV_LOG_ERROR, "Rescaled value for width or height is too big.\n");
 
     /* TODO: make algorithm configurable */
