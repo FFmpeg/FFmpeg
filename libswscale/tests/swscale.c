@@ -252,6 +252,64 @@ error:
     return ret;
 }
 
+static void print_results(const AVFrame *ref, const AVFrame *src, const AVFrame *dst,
+                          int dst_w, int dst_h,
+                          const struct mode *mode, const struct options *opts,
+                          const float ssim_ref[4], const float ssim[4],
+                          float loss_ref, float expected_loss, float loss,
+                          int64_t time_ref, int64_t time)
+{
+    av_log(NULL, AV_LOG_INFO, "%s %dx%d -> %s %3dx%3d, flags=0x%x dither=%u\n",
+           av_get_pix_fmt_name(src->format), src->width, src->height,
+           av_get_pix_fmt_name(dst->format), dst->width, dst->height,
+           mode->flags, mode->dither);
+
+    av_log(NULL, AV_LOG_VERBOSE - 4, "  SSIM {Y=%f U=%f V=%f A=%f}\n",
+           ssim[0], ssim[1], ssim[2], ssim[3]);
+
+    if (loss - expected_loss > 1e-4 && dst_w >= ref->width && dst_h >= ref->height) {
+        const int bad = loss - expected_loss > 1e-2;
+        const int level = bad ? AV_LOG_ERROR : AV_LOG_WARNING;
+        av_log(NULL, level, "%s %dx%d -> %s %3dx%3d, flags=0x%x dither=%u\n",
+               av_get_pix_fmt_name(src->format), src->width, src->height,
+               av_get_pix_fmt_name(dst->format), dst->width, dst->height,
+               mode->flags, mode->dither);
+        av_log(NULL, level, "  loss %g is %s by %g, expected loss %g\n",
+               loss, bad ? "WORSE" : "worse", loss - expected_loss, expected_loss);
+    }
+
+    if (ssim_ref) {
+        if (loss - loss_ref > 1e-4) {
+            int bad = loss - loss_ref > 1e-2;
+            av_log(NULL, bad ? AV_LOG_ERROR : AV_LOG_WARNING,
+                   "  loss %g is %s by %g, ref loss %g, "
+                   "SSIM {Y=%f U=%f V=%f A=%f}\n",
+                   loss, bad ? "WORSE" : "worse", loss - loss_ref, loss_ref,
+                   ssim_ref[0], ssim_ref[1], ssim_ref[2], ssim_ref[3]);
+        }
+    }
+
+    if (opts->bench && time_ref) {
+        double ratio = (double) time_ref / time;
+        if (FFMIN(time, time_ref) > 100 /* don't pollute stats with low precision */) {
+            speedup_min = FFMIN(speedup_min, ratio);
+            speedup_max = FFMAX(speedup_max, ratio);
+            speedup_logavg += log(ratio);
+            speedup_count++;
+        }
+
+        if (av_log_get_level() >= AV_LOG_INFO) {
+            printf("  time=%"PRId64" us, ref=%"PRId64" us, speedup=%.3fx %s%s\033[0m\n",
+                   time / opts->iters, time_ref / opts->iters, ratio,
+                   speedup_color(ratio), ratio >= 1.0 ? "faster" : "slower");
+        }
+    } else if (opts->bench) {
+        av_log(NULL, AV_LOG_INFO, "  time=%"PRId64" us\n", time / opts->iters);
+    }
+
+    fflush(stdout);
+}
+
 /* Runs a series of ref -> src -> dst -> out, and compares out vs ref */
 static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
                     int dst_w, int dst_h,
@@ -274,6 +332,7 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
     const float ssim_luma = (2 * ref_var + c1) / (2 * ref_var + total_var + c1);
     const float ssim_expected[4] = { ssim_luma, 1, 1, 1 }; /* for simplicity */
     const float expected_loss = get_loss(ssim_expected);
+    float loss_ref = 0.;
     float loss;
 
     dst = av_frame_alloc();
@@ -339,28 +398,10 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
     }
 
     get_ssim(ssim, out, ref, comps);
-    av_log(NULL, AV_LOG_INFO, "%s %dx%d -> %s %3dx%3d, flags=0x%x dither=%u\n",
-           av_get_pix_fmt_name(src->format), src->width, src->height,
-           av_get_pix_fmt_name(dst->format), dst->width, dst->height,
-           mode->flags, mode->dither);
-
-    av_log(NULL, AV_LOG_VERBOSE - 4, "  SSIM {Y=%f U=%f V=%f A=%f}\n",
-           ssim[0], ssim[1], ssim[2], ssim[3]);
-
     loss = get_loss(ssim);
-    if (loss - expected_loss > 1e-4 && dst_w >= ref->width && dst_h >= ref->height) {
-        const int bad = loss - expected_loss > 1e-2;
-        const int level = bad ? AV_LOG_ERROR : AV_LOG_WARNING;
-        av_log(NULL, level, "%s %dx%d -> %s %3dx%3d, flags=0x%x dither=%u\n",
-               av_get_pix_fmt_name(src->format), src->width, src->height,
-               av_get_pix_fmt_name(dst->format), dst->width, dst->height,
-               mode->flags, mode->dither);
-        av_log(NULL, level, "  loss %g is %s by %g, expected loss %g\n",
-               loss, bad ? "WORSE" : "worse", loss - expected_loss, expected_loss);
-        if (bad) {
-            ret = -1;
-            goto error;
-        }
+    if (loss - expected_loss > 1e-2 && dst_w >= ref->width && dst_h >= ref->height) {
+        ret = -1;
+        goto bad_loss;
     }
 
     if (!ssim_ref) {
@@ -393,41 +434,23 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
     }
 
     if (ssim_ref) {
-        const float loss_ref = get_loss(ssim_ref);
-        if (loss - loss_ref > 1e-4) {
-            int bad = loss - loss_ref > 1e-2;
-            av_log(NULL, bad ? AV_LOG_ERROR : AV_LOG_WARNING,
-                   "  loss %g is %s by %g, ref loss %g, "
-                   "SSIM {Y=%f U=%f V=%f A=%f}\n",
-                   loss, bad ? "WORSE" : "worse", loss - loss_ref, loss_ref,
-                   ssim_ref[0], ssim_ref[1], ssim_ref[2], ssim_ref[3]);
-            if (bad) {
-                ret = -1;
-                goto error;
-            }
+        loss_ref = get_loss(ssim_ref);
+        if (loss - loss_ref > 1e-2) {
+            ret = -1;
+            goto bad_loss;
         }
     }
 
-    if (opts->bench && time_ref) {
-        double ratio = (double) time_ref / time;
-        if (FFMIN(time, time_ref) > 100 /* don't pollute stats with low precision */) {
-            speedup_min = FFMIN(speedup_min, ratio);
-            speedup_max = FFMAX(speedup_max, ratio);
-            speedup_logavg += log(ratio);
-            speedup_count++;
-        }
-
-        if (av_log_get_level() >= AV_LOG_INFO) {
-            printf("  time=%"PRId64" us, ref=%"PRId64" us, speedup=%.3fx %s%s\033[0m\n",
-                   time / opts->iters, time_ref / opts->iters, ratio,
-                   speedup_color(ratio), ratio >= 1.0 ? "faster" : "slower");
-        }
-    } else if (opts->bench) {
-        av_log(NULL, AV_LOG_INFO, "  time=%"PRId64" us\n", time / opts->iters);
-    }
-
-    fflush(stdout);
     ret = 0; /* fall through */
+
+bad_loss:
+    print_results(ref, src, dst,
+                  dst_w, dst_h,
+                  mode, opts,
+                  ssim_ref, ssim,
+                  loss_ref, expected_loss, loss,
+                  time_ref, time);
+
  error:
     av_frame_free(&dst);
     av_frame_free(&out);
