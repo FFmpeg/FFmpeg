@@ -1272,7 +1272,7 @@ yuv2rgba64_1_c_template(SwsInternal *c, const int32_t *buf0,
 {
     const int32_t *ubuf0 = ubuf[0], *vbuf0 = vbuf[0];
     int i;
-    int A1 = 0xffff<<14, A2= 0xffff<<14;
+    SUINT A1 = 0xffff<<14, A2= 0xffff<<14;
 
     if (uvalpha == 0) {
         for (i = 0; i < ((dstW + 1) >> 1); i++) {
@@ -1290,8 +1290,8 @@ yuv2rgba64_1_c_template(SwsInternal *c, const int32_t *buf0,
             Y2 += (1 << 13) - (1 << 29);
 
             if (hasAlpha) {
-                A1 = abuf0[i * 2    ] * (1 << 11);
-                A2 = abuf0[i * 2 + 1] * (1 << 11);
+                A1 = abuf0[i * 2    ] * (SUINT)(1 << 11);
+                A2 = abuf0[i * 2 + 1] * (SUINT)(1 << 11);
 
                 A1 += 1 << 13;
                 A2 += 1 << 13;
