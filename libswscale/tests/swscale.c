@@ -254,9 +254,9 @@ error:
 static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
                     int dst_w, int dst_h,
                     const struct mode *mode, const struct options *opts,
-                    const AVFrame *ref, const float ssim_ref[4])
+                    const AVFrame *ref, AVFrame *src, const float ssim_ref[4])
 {
-    AVFrame *src = NULL, *dst = NULL, *out = NULL;
+    AVFrame *dst = NULL, *out = NULL;
     float ssim[4], ssim_sws[4];
     const int comps = fmt_comps(src_fmt) & fmt_comps(dst_fmt);
     int64_t time, time_ref = 0;
@@ -274,28 +274,32 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
     const float expected_loss = get_loss(ssim_expected);
     float loss;
 
-    src = av_frame_alloc();
     dst = av_frame_alloc();
     out = av_frame_alloc();
-    if (!src || !dst || !out)
+    if (!dst || !out)
         goto error;
 
-    av_frame_copy_props(src, ref);
+    if (src->format != src_fmt) {
+        av_frame_unref(src);
+        av_frame_copy_props(src, ref);
+        src->width  = ref->width;
+        src->height = ref->height;
+        src->format = src_fmt;
+        if (sws_scale_frame(sws_ref_src, src, ref) < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Failed %s ---> %s\n",
+                   av_get_pix_fmt_name(ref->format), av_get_pix_fmt_name(src->format));
+            goto error;
+        }
+    }
+
     av_frame_copy_props(dst, ref);
     av_frame_copy_props(out, ref);
-    src->width  = out->width  = ref->width;
-    src->height = out->height = ref->height;
+    out->width  = ref->width;
+    out->height = ref->height;
     out->format = ref->format;
-    src->format = src_fmt;
     dst->format = dst_fmt;
     dst->width  = dst_w;
     dst->height = dst_h;
-
-    if (sws_scale_frame(sws_ref_src, src, ref) < 0) {
-        av_log(NULL, AV_LOG_ERROR, "Failed %s ---> %s\n",
-               av_get_pix_fmt_name(ref->format), av_get_pix_fmt_name(src->format));
-        goto error;
-    }
 
     sws_src_dst->flags  = mode->flags;
     sws_src_dst->dither = mode->dither;
@@ -411,7 +415,6 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
     fflush(stdout);
     ret = 0; /* fall through */
  error:
-    av_frame_free(&src);
     av_frame_free(&dst);
     av_frame_free(&out);
     return ret;
@@ -433,6 +436,12 @@ static int run_self_tests(const AVFrame *ref, const struct options *opts)
                        dst_fmt_min = 0,
                        src_fmt_max = AV_PIX_FMT_NB - 1,
                        dst_fmt_max = AV_PIX_FMT_NB - 1;
+
+    AVFrame *src = av_frame_alloc();
+    if (!src)
+        return AVERROR(ENOMEM);
+
+    int ret = 0;
 
     if (opts->src_fmt != AV_PIX_FMT_NONE)
         src_fmt_min = src_fmt_max = opts->src_fmt;
@@ -460,9 +469,10 @@ static int run_self_tests(const AVFrame *ref, const struct options *opts)
                         if (ff_sfc64_get(&prng_state) > UINT64_MAX * opts->prob)
                             continue;
 
-                        if (run_test(src_fmt, dst_fmt, dst_w[w], dst_h[h],
-                                     &mode, opts, ref, NULL) < 0)
-                            return -1;
+                        ret = run_test(src_fmt, dst_fmt, dst_w[w], dst_h[h],
+                                       &mode, opts, ref, src, NULL);
+                        if (ret < 0)
+                            goto error;
 
                         if (opts->flags >= 0 || opts->unscaled)
                             break;
@@ -476,13 +486,21 @@ static int run_self_tests(const AVFrame *ref, const struct options *opts)
         }
     }
 
-    return 0;
+    ret = 0;
+
+error:
+    av_frame_free(&src);
+    return ret;
 }
 
 static int run_file_tests(const AVFrame *ref, FILE *fp, const struct options *opts)
 {
     char buf[256];
-    int ret;
+    int ret = 0;
+
+    AVFrame *src = av_frame_alloc();
+    if (!src)
+        return AVERROR(ENOMEM);
 
     while (fgets(buf, sizeof(buf), fp)) {
         char src_fmt_str[21], dst_fmt_str[21];
@@ -509,18 +527,24 @@ static int run_file_tests(const AVFrame *ref, FILE *fp, const struct options *op
             sw != ref->width || sh != ref->height ||
             mode.dither >= SWS_DITHER_NB) {
             av_log(NULL, AV_LOG_FATAL, "malformed input file\n");
-            return -1;
+            ret = -1;
+            goto error;
         }
 
         if (opts->src_fmt != AV_PIX_FMT_NONE && src_fmt != opts->src_fmt ||
             opts->dst_fmt != AV_PIX_FMT_NONE && dst_fmt != opts->dst_fmt)
             continue;
 
-        if (run_test(src_fmt, dst_fmt, dw, dh, &mode, opts, ref, ssim) < 0)
-            return -1;
+        ret = run_test(src_fmt, dst_fmt, dw, dh, &mode, opts, ref, src, ssim);
+        if (ret < 0)
+            goto error;
     }
 
-    return 0;
+    ret = 0;
+
+error:
+    av_frame_free(&src);
+    return ret;
 }
 
 static int init_ref(AVFrame *ref, const struct options *opts)
