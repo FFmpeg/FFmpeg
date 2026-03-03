@@ -1307,6 +1307,8 @@ static int av1_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
             av_refstruct_replace(&s->seq_ref, unit->content_ref);
 
             s->raw_seq = &obu->obu.sequence_header;
+            s->raw_frame_header = NULL;
+            raw_tile_group      = NULL;
 
             ret = set_context_with_sequence(avctx, s->raw_seq);
             if (ret < 0) {
@@ -1342,6 +1344,8 @@ static int av1_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
             }
 
             av_refstruct_replace(&s->header_ref, unit->content_ref);
+
+            raw_tile_group      = NULL;
 
             if (unit->type == AV1_OBU_FRAME)
                 s->raw_frame_header = &obu->obu.frame.header;
@@ -1415,8 +1419,11 @@ static int av1_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
                 }
             }
             break;
-        case AV1_OBU_TILE_LIST:
         case AV1_OBU_TEMPORAL_DELIMITER:
+            s->raw_frame_header = NULL;
+            raw_tile_group      = NULL;
+        // fall-through
+        case AV1_OBU_TILE_LIST:
         case AV1_OBU_PADDING:
             break;
         case AV1_OBU_METADATA:
