@@ -347,7 +347,8 @@ static int magy_decode_slice(AVCodecContext *avctx, void *tdata,
                 s->llviddsp.add_left_pred(dst, dst, width, 0);
                 dst += stride;
             }
-            lefttop = left = dst[0];
+            if (1 + interlaced < height)
+                lefttop = left = dst[0];
             for (k = 1 + interlaced; k < height; k++) {
                 s->llviddsp.add_median_pred(dst, dst - fake_stride,
                                              dst, width, &left, &lefttop);
