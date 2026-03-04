@@ -12,4 +12,4 @@ X86ASM-OBJS += x86/aes.o x86/aes_init.o                                 \
                x86/lls.o x86/lls_init.o                                 \
                x86/tx_float.o x86/tx_float_init.o                       \
 
-X86ASM-OBJS-$(CONFIG_PIXELUTILS) += x86/pixelutils.o x86/pixelutils_init.o
+X86ASM-OBJS-$(CONFIG_PIXELUTILS) += x86/pixelutils.o

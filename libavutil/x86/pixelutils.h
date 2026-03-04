@@ -19,8 +19,69 @@
 #ifndef AVUTIL_X86_PIXELUTILS_H
 #define AVUTIL_X86_PIXELUTILS_H
 
+#include <stddef.h>
+#include <stdint.h>
+
+#include "config.h"
+
+#include "cpu.h"
+#include "libavutil/attributes.h"
 #include "libavutil/pixelutils.h"
 
-void ff_pixelutils_sad_init_x86(av_pixelutils_sad_fn *sad, int aligned);
+int ff_pixelutils_sad_8x8_mmxext(const uint8_t *src1, ptrdiff_t stride1,
+                                 const uint8_t *src2, ptrdiff_t stride2);
 
-#endif /* AVUTIL_X86_PIXELUTILS_H */
+int ff_pixelutils_sad_16x16_sse2(const uint8_t *src1, ptrdiff_t stride1,
+                                 const uint8_t *src2, ptrdiff_t stride2);
+int ff_pixelutils_sad_a_16x16_sse2(const uint8_t *src1, ptrdiff_t stride1,
+                                   const uint8_t *src2, ptrdiff_t stride2);
+int ff_pixelutils_sad_u_16x16_sse2(const uint8_t *src1, ptrdiff_t stride1,
+                                   const uint8_t *src2, ptrdiff_t stride2);
+
+int ff_pixelutils_sad_32x32_sse2(const uint8_t *src1, ptrdiff_t stride1,
+                                 const uint8_t *src2, ptrdiff_t stride2);
+int ff_pixelutils_sad_a_32x32_sse2(const uint8_t *src1, ptrdiff_t stride1,
+                                   const uint8_t *src2, ptrdiff_t stride2);
+int ff_pixelutils_sad_u_32x32_sse2(const uint8_t *src1, ptrdiff_t stride1,
+                                   const uint8_t *src2, ptrdiff_t stride2);
+
+int ff_pixelutils_sad_32x32_avx2(const uint8_t *src1, ptrdiff_t stride1,
+                                 const uint8_t *src2, ptrdiff_t stride2);
+
+static inline av_cold void ff_pixelutils_sad_init_x86(av_pixelutils_sad_fn *sad, int aligned)
+{
+    int cpu_flags = av_get_cpu_flags();
+
+    // The best way to use SSE2 would be to do 2 SADs in parallel,
+    // but we'd have to modify the pixelutils API to return SIMD functions.
+
+    // It's probably not faster to shuffle data around
+    // to get two lines of 8 pixels into a single 16byte register,
+    // so just use the MMX 8x8 version even when SSE2 is available.
+    if (EXTERNAL_MMXEXT(cpu_flags)) {
+        sad[2] = ff_pixelutils_sad_8x8_mmxext;
+    }
+
+    if (EXTERNAL_SSE2(cpu_flags)) {
+        switch (aligned) {
+        case 0: sad[3] = ff_pixelutils_sad_16x16_sse2;   break; // src1 unaligned, src2 unaligned
+        case 1: sad[3] = ff_pixelutils_sad_u_16x16_sse2; break; // src1   aligned, src2 unaligned
+        case 2: sad[3] = ff_pixelutils_sad_a_16x16_sse2; break; // src1   aligned, src2   aligned
+        }
+    }
+
+    if (EXTERNAL_SSE2(cpu_flags)) {
+        switch (aligned) {
+        case 0: sad[4] = ff_pixelutils_sad_32x32_sse2;   break; // src1 unaligned, src2 unaligned
+        case 1: sad[4] = ff_pixelutils_sad_u_32x32_sse2; break; // src1   aligned, src2 unaligned
+        case 2: sad[4] = ff_pixelutils_sad_a_32x32_sse2; break; // src1   aligned, src2   aligned
+        }
+    }
+
+#if HAVE_AVX2_EXTERNAL
+    if (EXTERNAL_AVX2_FAST(cpu_flags)) {
+        sad[4] = ff_pixelutils_sad_32x32_avx2;
+    }
+#endif
+}
+#endif
