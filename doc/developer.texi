@@ -367,6 +367,9 @@ symbols. If in doubt, just avoid names starting with @code{_} altogether.
 @item
 Casts should be used only when necessary. Unneeded parentheses
 should also be avoided if they don't make the code easier to understand.
+@item
+Where applicable, SI units shall be used. For example timeouts should use seconds as the fundamental unit not micro seconds.
+That means a bare value like @samp{1.0} must mean 1 second, @samp{50m} means 50 milliseconds. For weight, gram shall be used.
 @end itemize
 
 @anchor{Development Policy}
