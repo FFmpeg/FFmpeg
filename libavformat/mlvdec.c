@@ -89,7 +89,7 @@ static void read_string(AVFormatContext *avctx, AVIOContext *pb, const char *tag
     }
 
     ret = avio_read(pb, value, size);
-    if (ret != size || !value[0]) {
+    if (ret != size || !size || !value[0]) {
         av_free(value);
         return;
     }
