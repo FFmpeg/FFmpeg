@@ -18,10 +18,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "../ops_internal.h"
-#include "../swscale_internal.h"
 #include "libavutil/mem.h"
 #include "libavutil/refstruct.h"
+
+#include "../ops_internal.h"
+#include "../swscale_internal.h"
+
 #include "ops.h"
 
 static void ff_sws_vk_uninit(AVRefStructOpaque opaque, void *obj)
