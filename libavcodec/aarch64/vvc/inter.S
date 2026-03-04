@@ -1833,6 +1833,137 @@ function ff_vvc_put_luma_h_x16_12_neon, export=1
         put_luma_h_x16_xx_neon 4
 endfunc
 
+.macro put_chroma_h_x8_horizontal_filter shift
+        // 4 bytes from hf loaded to v0.4h
+        // 24 bytes from _src loaded to v20.8h & v21.4h where v21.4h is loaded for shift to v1.8h,v2.8h,v3.8h
+        // v24.4h & v25.4h are output vectors to store
+        ext             v1.16b, v20.16b, v21.16b, #2
+        ext             v2.16b, v20.16b, v21.16b, #4
+        ext             v3.16b, v20.16b, v21.16b, #6
+        smull           v24.4s, v20.4h, v0.h[0]
+        smull2          v25.4s, v20.8h, v0.h[0]
+        smlal           v24.4s, v1.4h, v0.h[1]
+        smlal2          v25.4s, v1.8h, v0.h[1]
+        smlal           v24.4s, v2.4h, v0.h[2]
+        smlal2          v25.4s, v2.8h, v0.h[2]
+        smlal           v24.4s, v3.4h, v0.h[3]
+        smlal2          v25.4s, v3.8h, v0.h[3]
+        sqshrn          v24.4h, v24.4s, #(\shift)
+        sqshrn          v25.4h, v25.4s, #(\shift)
+.endm
+
+.macro put_chroma_h8_xx_neon shift
+        // dst         .req x0
+        // _src        .req x1
+        // _src_stride .req x2
+        // height      .req x3
+        // hf          .req x4
+        // vf          .req x5
+        // width       .req x6
+        mov             x9, #(VVC_MAX_PB_SIZE * 2)
+        ldr             s0, [x4]
+        sub             x1, x1, #2
+        sub             x2, x2, #16
+        sxtl            v0.8h, v0.8b
+1:
+        ld1             {v20.8h}, [x1], #16
+        ld1             {v21.4h}, [x1], x2
+        put_chroma_h_x8_horizontal_filter \shift
+        subs            w3, w3, #1
+        st1             {v24.4h, v25.4h}, [x0], x9
+        b.gt            1b
+        ret
+.endm
+
+.macro put_chroma_h16_xx_neon shift
+        // dst         .req x0
+        // _src        .req x1
+        // _src_stride .req x2
+        // height      .req x3
+        // hf          .req x4
+        // vf          .req x5
+        // width       .req x6
+        mov             x9, #(VVC_MAX_PB_SIZE * 2)
+        ldr             s0, [x4]
+        sub             x9, x9, #16
+        sub             x1, x1, #2
+        sub             x2, x2, #32
+        sxtl            v0.8h, v0.8b
+1:
+        ld1             {v20.8h, v21.8h}, [x1], #32
+        ld1             {v22.4h}, [x1], x2
+        put_chroma_h_x8_horizontal_filter \shift
+        mov             v20.16b, v21.16b
+        mov             v21.16b, v22.16b
+        st1             {v24.4h, v25.4h}, [x0], #16
+        put_chroma_h_x8_horizontal_filter \shift
+        subs            w3, w3, #1
+        st1             {v24.4h, v25.4h}, [x0], x9
+        b.gt            1b
+        ret
+.endm
+
+.macro put_chroma_h_x16_xx_neon shift
+        // dst         .req x0
+        // _src        .req x1
+        // _src_stride .req x2
+        // height      .req x3
+        // hf          .req x4
+        // vf          .req x5
+        // width       .req x6
+        mov             x9, #(VVC_MAX_PB_SIZE * 2)
+        ldr             s0, [x4]
+        sub             x9, x9, w6, uxtw #1
+        sub             x2, x2, w6, uxtw #1
+        sxtl            v0.8h, v0.8b
+        sub             x1, x1, #2
+        sub             x2, x2, #16
+1:
+        ld1             {v20.8h}, [x1], #16
+        mov             w8, w6
+2:
+        ld1             {v21.8h, v22.8h}, [x1], #32
+        put_chroma_h_x8_horizontal_filter \shift
+        mov             v20.16b, v21.16b
+        mov             v21.16b, v22.16b
+        st1             {v24.4h, v25.4h}, [x0], #16
+        put_chroma_h_x8_horizontal_filter \shift
+        mov             v20.16b, v21.16b
+        subs            w8, w8, #16
+        st1             {v24.4h, v25.4h}, [x0], #16
+        b.gt            2b
+        subs            w3, w3, #1
+        add             x0, x0, x9
+        add             x1, x1, x2
+        b.gt            1b
+        ret
+.endm
+
+
+function ff_vvc_put_chroma_h8_10_neon, export=1
+        put_chroma_h8_xx_neon 2
+endfunc
+
+function ff_vvc_put_chroma_h8_12_neon, export=1
+        put_chroma_h8_xx_neon 4
+endfunc
+
+function ff_vvc_put_chroma_h16_10_neon, export=1
+        put_chroma_h16_xx_neon 2
+endfunc
+
+function ff_vvc_put_chroma_h16_12_neon, export=1
+        put_chroma_h16_xx_neon 4
+endfunc
+
+function ff_vvc_put_chroma_h_x16_10_neon, export=1
+        put_chroma_h_x16_xx_neon 2
+endfunc
+
+function ff_vvc_put_chroma_h_x16_12_neon, export=1
+        put_chroma_h_x16_xx_neon 4
+endfunc
+
 .macro put_luma_v4_xx_neon shift
         mov             x9, #(VVC_MAX_PB_SIZE * 2)
         sub             x1, x1, x2, lsl #1
