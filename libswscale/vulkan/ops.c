@@ -244,12 +244,15 @@ static int add_ops_glsl(VulkanPriv *p, FFVulkanOpsCtx *s,
             if (op->rw.frac) {
                 return AVERROR(ENOTSUP);
             } else if (op->rw.packed) {
-                GLSLF(1, %s = %s(imageLoad(src_img[0], pos));                  ,
-                      type_name, type_v);
+                GLSLF(1, %s = %s(imageLoad(src_img[0], pos)).%c%c%c%c;         ,
+                      type_name, type_v, "xyzw"[ops->order_src.in[0]],
+                                         "xyzw"[ops->order_src.in[1]],
+                                         "xyzw"[ops->order_src.in[2]],
+                                         "xyzw"[ops->order_src.in[3]]);
             } else {
                 for (int i = 0; i < (op->rw.packed ? 1 : op->rw.elems); i++)
                     GLSLF(1, %s.%c = %s(imageLoad(src_img[%i], pos)[0]);      ,
-                          type_name, "xyzw"[i], type_s, i);
+                          type_name, "xyzw"[i], type_s, ops->order_src.in[i]);
             }
             break;
         }
@@ -257,12 +260,15 @@ static int add_ops_glsl(VulkanPriv *p, FFVulkanOpsCtx *s,
             if (op->rw.frac) {
                 return AVERROR(ENOTSUP);
             } else if (op->rw.packed) {
-                GLSLF(1, imageStore(dst_img[0], pos, %s(%s));                  ,
-                      type_v, type_name);
+                GLSLF(1, imageStore(dst_img[0], pos, %s(%s).%c%c%c%c);         ,
+                      type_v, type_name, "xyzw"[ops->order_dst.in[0]],
+                                         "xyzw"[ops->order_dst.in[1]],
+                                         "xyzw"[ops->order_dst.in[2]],
+                                         "xyzw"[ops->order_dst.in[3]]);
             } else {
                 for (int i = 0; i < (op->rw.packed ? 1 : op->rw.elems); i++)
                     GLSLF(1, imageStore(dst_img[%i], pos, %s(%s[%i]));         ,
-                          i, type_v, type_name, i);
+                          ops->order_dst.in[i], type_v, type_name, i);
             }
             break;
         }
