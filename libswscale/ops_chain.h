@@ -22,6 +22,7 @@
 #define SWSCALE_OPS_CHAIN_H
 
 #include "libavutil/cpu.h"
+#include "libavutil/mem.h"
 
 #include "ops_internal.h"
 
@@ -82,7 +83,7 @@ static_assert(offsetof(SwsOpImpl, priv) == 16, "SwsOpImpl layout mismatch");
 typedef struct SwsOpChain {
 #define SWS_MAX_OPS 16
     SwsOpImpl impl[SWS_MAX_OPS + 1]; /* reserve extra space for the entrypoint */
-    void (*free[SWS_MAX_OPS + 1])(void *);
+    void (*free[SWS_MAX_OPS + 1])(SwsOpPriv);
     int num_impl;
     int cpu_flags; /* set of all used CPU flags */
 } SwsOpChain;
@@ -96,7 +97,7 @@ static inline void ff_sws_op_chain_free(SwsOpChain *chain)
 
 /* Returns 0 on success, or a negative error code. */
 int ff_sws_op_chain_append(SwsOpChain *chain, SwsFuncPtr func,
-                           void (*free)(void *), const SwsOpPriv *priv);
+                           void (*free)(SwsOpPriv), const SwsOpPriv *priv);
 
 typedef struct SwsOpEntry {
     /* Kernel metadata; reduced size subset of SwsOp */
@@ -119,8 +120,13 @@ typedef struct SwsOpEntry {
     /* Kernel implementation */
     SwsFuncPtr func;
     int (*setup)(const SwsOp *op, SwsOpPriv *out); /* optional */
-    void (*free)(void *priv);
+    void (*free)(SwsOpPriv priv);
 } SwsOpEntry;
+
+static inline void ff_op_priv_free(SwsOpPriv priv)
+{
+    av_free(priv.ptr);
+}
 
 typedef struct SwsOpTable {
     unsigned cpu_flags;   /* required CPU flags for this table */

@@ -107,7 +107,7 @@ DECL_ENTRY(dither##N,                                                           
     .op = SWS_OP_DITHER,                                                        \
     .dither_size = N,                                                           \
     .setup = fn(setup_dither),                                                  \
-    .free = av_free,                                                            \
+    .free = ff_op_priv_free,                                                    \
 );
 
 WRAP_DITHER(0)
@@ -193,7 +193,7 @@ DECL_IMPL(linear_##NAME)                                                        
 DECL_ENTRY(linear_##NAME,                                                       \
     .op    = SWS_OP_LINEAR,                                                     \
     .setup = fn(setup_linear),                                                  \
-    .free  = av_free,                                                           \
+    .free  = ff_op_priv_free,                                                   \
     .linear_mask = (MASK),                                                      \
 );
 

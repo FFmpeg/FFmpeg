@@ -237,7 +237,7 @@ static int setup_dither(const SwsOp *op, SwsOpPriv *out)
     DECL_MACRO(F32, dither##SIZE##EXT,                                          \
         .op    = SWS_OP_DITHER,                                                 \
         .setup = setup_dither,                                                  \
-        .free  = (SIZE) ? av_free : NULL,                                       \
+        .free  = (SIZE) ? ff_op_priv_free : NULL,                               \
         .dither_size = SIZE,                                                    \
     );
 
@@ -259,7 +259,7 @@ static int setup_linear(const SwsOp *op, SwsOpPriv *out)
     DECL_ASM(F32, NAME##EXT,                                                    \
         .op    = SWS_OP_LINEAR,                                                 \
         .setup = setup_linear,                                                  \
-        .free  = av_free,                                                       \
+        .free  = ff_op_priv_free,                                               \
         .linear_mask = (MASK),                                                  \
     );
 
