@@ -28,7 +28,9 @@
 #include "attributes.h"
 #include "macros.h"
 
+#if ARCH_X86 && HAVE_X86ASM
 #include "x86/pixelutils.h"
+#endif
 
 static av_always_inline int sad_wxh(const uint8_t *src1, ptrdiff_t stride1,
                                     const uint8_t *src2, ptrdiff_t stride2,
