@@ -50,6 +50,7 @@
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/refstruct.h"
 #include "libavutil/slicethread.h"
 #include "libavutil/thread.h"
 #include "libavutil/aarch64/cpu.h"
@@ -2248,9 +2249,7 @@ void sws_freeContext(SwsContext *sws)
     if (!c)
         return;
 
-#if CONFIG_UNSTABLE && CONFIG_VULKAN
-    ff_sws_vk_uninit(sws);
-#endif
+    av_refstruct_unref(&c->hw_priv);
 
     for (i = 0; i < FF_ARRAY_ELEMS(c->graph); i++)
         ff_sws_graph_free(&c->graph[i]);

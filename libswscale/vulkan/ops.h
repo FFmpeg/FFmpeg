@@ -38,6 +38,5 @@ typedef struct FFVulkanOpsCtx {
 } FFVulkanOpsCtx;
 
 int ff_sws_vk_init(SwsContext *sws, AVBufferRef *dev_ref);
-void ff_sws_vk_uninit(SwsContext *sws);
 
 #endif /* SWSCALE_VULKAN_OPS_H */

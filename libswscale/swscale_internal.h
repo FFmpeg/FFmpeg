@@ -696,7 +696,7 @@ struct SwsInternal {
     Half2FloatTables *h2f_tables;
 
     // Hardware specific private data
-    void *hw_priv;
+    void *hw_priv; /* refstruct */
 };
 //FIXME check init (where 0)
 
