@@ -30,9 +30,9 @@
 #include "checkasm.h"
 
 enum {
-    LINES  = 2,
-    NB_PLANES = 4,
-    PIXELS = 64,
+    NB_PLANES   = 4,
+    PIXELS      = 64,
+    LINES       = 2,
 };
 
 enum {
@@ -174,7 +174,7 @@ static void check_ops(const char *report, const unsigned ranges[NB_PLANES],
 
     SwsOpExec exec = {0};
     exec.width = PIXELS;
-    exec.height = exec.slice_h = 1;
+    exec.height = exec.slice_h = LINES;
     for (int i = 0; i < NB_PLANES; i++) {
         exec.in_stride[i]  = sizeof(src0[i][0]);
         exec.out_stride[i] = sizeof(dst0[i][0]);
