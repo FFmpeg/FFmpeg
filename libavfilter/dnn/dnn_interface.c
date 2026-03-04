@@ -98,6 +98,8 @@ void ff_dnn_init_child_class(DnnContext *ctx)
     for (int i = 0; i < FF_ARRAY_ELEMS(dnn_backend_info_list); i++) {
         const AVClass **ptr = (const AVClass **) ((char *) ctx + dnn_backend_info_list[i].offset);
         *ptr = dnn_backend_info_list[i].class;
+        // Set default values after the class pointer is set
+        av_opt_set_defaults(ptr);
     }
 }
 
