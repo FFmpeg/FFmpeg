@@ -48,8 +48,8 @@ typedef void (*SwsPassFunc)(const SwsFrame *out, const SwsFrame *in,
 /**
  * Function to run from the main thread before processing any lines.
  */
-typedef void (*SwsPassSetup)(const SwsFrame *out, const SwsFrame *in,
-                             const SwsPass *pass);
+typedef int (*SwsPassSetup)(const SwsFrame *out, const SwsFrame *in,
+                            const SwsPass *pass);
 
 /**
  * Represents an allocated output buffer for a filter pass.
@@ -93,6 +93,7 @@ struct SwsPass {
 
     /**
      * Called once from the main thread before running the filter. Optional.
+     * Returns 0 or a negative error code.
      */
     SwsPassSetup setup;
 
@@ -195,6 +196,6 @@ int ff_sws_graph_reinit(SwsContext *ctx, const SwsFormat *dst, const SwsFormat *
  * Dispatch the filter graph on a single field of the given frames. Internally
  * threaded.
  */
-void ff_sws_graph_run(SwsGraph *graph, const AVFrame *dst, const AVFrame *src);
+int ff_sws_graph_run(SwsGraph *graph, const AVFrame *dst, const AVFrame *src);
 
 #endif /* SWSCALE_GRAPH_H */

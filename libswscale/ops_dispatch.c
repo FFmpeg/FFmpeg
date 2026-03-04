@@ -117,8 +117,8 @@ static inline void get_row_data(const SwsOpPass *p, const int y,
         out[i] = base->out[i] + (y >> base->out_sub_y[i]) * base->out_stride[i];
 }
 
-static void op_pass_setup(const SwsFrame *out, const SwsFrame *in,
-                          const SwsPass *pass)
+static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
+                         const SwsPass *pass)
 {
     const AVPixFmtDescriptor *indesc  = av_pix_fmt_desc_get(in->format);
     const AVPixFmtDescriptor *outdesc = av_pix_fmt_desc_get(out->format);
@@ -180,6 +180,8 @@ static void op_pass_setup(const SwsFrame *out, const SwsFrame *in,
         exec->in_bump[i]  = exec->in_stride[i]  - blocks_main * exec->block_size_in;
         exec->out_bump[i] = exec->out_stride[i] - blocks_main * exec->block_size_out;
     }
+
+    return 0;
 }
 
 /* Dispatch kernel over the last column of the image using memcpy */

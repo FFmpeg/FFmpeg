@@ -1395,8 +1395,11 @@ int sws_scale_frame(SwsContext *sws, AVFrame *dst, const AVFrame *src)
         return ret;
 
 process_frame:
-    for (int field = 0; field < (bot ? 2 : 1); field++)
-        ff_sws_graph_run(c->graph[field], dst, src);
+    for (int field = 0; field < (bot ? 2 : 1); field++) {
+        ret = ff_sws_graph_run(c->graph[field], dst, src);
+        if (ret < 0)
+            return ret;
+    }
 
     return 0;
 }

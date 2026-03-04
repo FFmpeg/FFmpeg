@@ -257,8 +257,8 @@ static void free_legacy_swscale(void *priv)
     sws_free_context(&sws);
 }
 
-static void setup_legacy_swscale(const SwsFrame *out, const SwsFrame *in,
-                                 const SwsPass *pass)
+static int setup_legacy_swscale(const SwsFrame *out, const SwsFrame *in,
+                                const SwsPass *pass)
 {
     SwsContext *sws = pass->priv;
     SwsInternal *c = sws_internal(sws);
@@ -269,6 +269,8 @@ static void setup_legacy_swscale(const SwsFrame *out, const SwsFrame *in,
 
     if (usePal(sws->src_format))
         ff_update_palette(c, (const uint32_t *) in->data[1]);
+
+    return 0;
 }
 
 static inline SwsContext *slice_ctx(const SwsPass *pass, int y)
@@ -634,12 +636,13 @@ static void free_lut3d(void *priv)
     ff_sws_lut3d_free(&lut);
 }
 
-static void setup_lut3d(const SwsFrame *out, const SwsFrame *in, const SwsPass *pass)
+static int setup_lut3d(const SwsFrame *out, const SwsFrame *in, const SwsPass *pass)
 {
     SwsLut3D *lut = pass->priv;
 
     /* Update dynamic frame metadata from the original source frame */
     ff_sws_lut3d_update(lut, &pass->graph->src.color);
+    return 0;
 }
 
 static void run_lut3d(const SwsFrame *out, const SwsFrame *in, int y, int h,
@@ -882,7 +885,7 @@ static void get_field(SwsGraph *graph, const AVFrame *avframe, SwsFrame *frame)
     frame->height = (frame->height + (graph->field == FIELD_TOP)) >> 1;
 }
 
-void ff_sws_graph_run(SwsGraph *graph, const AVFrame *dst, const AVFrame *src)
+int ff_sws_graph_run(SwsGraph *graph, const AVFrame *dst, const AVFrame *src)
 {
     av_assert0(dst->format == graph->dst.hw_format || dst->format == graph->dst.format);
     av_assert0(src->format == graph->src.hw_format || src->format == graph->src.format);
@@ -896,8 +899,11 @@ void ff_sws_graph_run(SwsGraph *graph, const AVFrame *dst, const AVFrame *src)
         graph->exec.pass   = pass;
         graph->exec.input  = pass->input ? &pass->input->output->frame : &src_field;
         graph->exec.output = pass->output->avframe ? &pass->output->frame : &dst_field;
-        if (pass->setup)
-            pass->setup(graph->exec.output, graph->exec.input, pass);
+        if (pass->setup) {
+            int ret = pass->setup(graph->exec.output, graph->exec.input, pass);
+            if (ret < 0)
+                return ret;
+        }
 
         if (pass->num_slices == 1) {
             pass->run(graph->exec.output, graph->exec.input, 0, pass->height, pass);
@@ -905,4 +911,6 @@ void ff_sws_graph_run(SwsGraph *graph, const AVFrame *dst, const AVFrame *src)
             avpriv_slicethread_execute(graph->slicethread, pass->num_slices, 0);
         }
     }
+
+    return 0;
 }
