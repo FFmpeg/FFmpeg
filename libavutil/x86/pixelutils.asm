@@ -241,70 +241,24 @@ SAD_XMM_32x32 u
 ;                                  const uint8_t *src2, ptrdiff_t stride2);
 ;-------------------------------------------------------------------------------
 INIT_YMM avx2
-cglobal pixelutils_sad_32x32, 4,7,5, src1, stride1, src2, stride2
-    pxor            m0, m0
-    mov             r4d, 32/4
-    lea             r5, [stride1q * 3]
-    lea             r6, [stride2q * 3]
-
-.loop:
-    movu           m1, [src1q]               ; row 0 of pix0
-    movu           m2, [src2q]               ; row 0 of pix1
-    movu           m3, [src1q + stride1q]    ; row 1 of pix0
-    movu           m4, [src2q + stride2q]    ; row 1 of pix1
-
-    psadbw         m1, m2
-    psadbw         m3, m4
-    paddd          m0, m1
-    paddd          m0, m3
-
-    movu           m1, [src1q + 2 * stride1q] ; row 2 of pix0
-    movu           m2, [src2q + 2 * stride2q] ; row 2 of pix1
-    movu           m3, [src1q + r5]           ; row 3 of pix0
-    movu           m4, [src2q + r6]           ; row 3 of pix1
-
-    psadbw         m1, m2
-    psadbw         m3, m4
-    paddd          m0, m1
-    paddd          m0, m3
-
-    lea            src2q,     [src2q + 4 * stride2q]
-    lea            src1q,     [src1q + 4 * stride1q]
-
-    dec            r4d
-    jnz           .loop
-
-    vextracti128   xm1, m0, 1
-    paddd          xm0, xm1
-    pshufd         xm1, xm0, 2
-    paddd          xm0, xm1
-    movd           eax, xm0
-    RET
-
-;-------------------------------------------------------------------------------
-; int ff_pixelutils_sad_[au]_32x32_avx2(const uint8_t *src1, ptrdiff_t stride1,
-;                                       const uint8_t *src2, ptrdiff_t stride2);
-;-------------------------------------------------------------------------------
-%macro SAD_AVX2_32x32 1
-INIT_YMM avx2
-cglobal pixelutils_sad_%1_32x32, 4,7,3, src1, stride1, src2, stride2
+cglobal pixelutils_sad_32x32, 4,7,3, src1, stride1, src2, stride2
     pxor           m0, m0
     mov            r4d, 32/4
     lea            r5, [stride1q * 3]
     lea            r6, [stride2q * 3]
 
 .loop:
-    mov%1          m1, [src2q]                ; row 0 of pix1
+    movu           m1, [src2q]                ; row 0 of pix1
     psadbw         m1, [src1q]
-    mov%1          m2, [src2q + stride2q]     ; row 1 of pix1
+    movu           m2, [src2q + stride2q]     ; row 1 of pix1
     psadbw         m2, [src1q + stride1q]
 
     paddd          m0, m1
     paddd          m0, m2
 
-    mov%1          m1, [src2q + 2 * stride2q] ; row 2 of pix1
+    movu           m1, [src2q + 2 * stride2q] ; row 2 of pix1
     psadbw         m1, [src1q + 2 * stride1q]
-    mov%1          m2, [src2q + r6]           ; row 3 of pix1
+    movu           m2, [src2q + r6]           ; row 3 of pix1
     psadbw         m2, [src1q + r5]
 
     paddd          m0, m1
@@ -322,8 +276,4 @@ cglobal pixelutils_sad_%1_32x32, 4,7,3, src1, stride1, src2, stride2
     paddd          xm0, xm1
     movd           eax, xm0
     RET
-%endmacro
-
-SAD_AVX2_32x32 a
-SAD_AVX2_32x32 u
 %endif
