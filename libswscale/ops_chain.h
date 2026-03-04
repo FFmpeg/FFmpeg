@@ -45,12 +45,17 @@ typedef union SwsOpPriv {
 
     /* Common types */
     void *ptr;
-    int8_t    i8[16];
-    uint8_t   u8[16];
-    uint16_t u16[8];
-    int16_t  i16[8];
-    uint32_t u32[4];
-    float    f32[4];
+    uint8_t    u8[16];
+    int8_t     i8[16];
+    uint16_t   u16[8];
+    int16_t    i16[8];
+    uint32_t   u32[4];
+    int32_t    i32[4];
+    float      f32[4];
+    uint64_t   u64[2];
+    int64_t    i64[2];
+    uintptr_t uptr[2];
+    intptr_t  iptr[2];
 } SwsOpPriv;
 
 static_assert(sizeof(SwsOpPriv) == 16, "SwsOpPriv size mismatch");
