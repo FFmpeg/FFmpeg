@@ -2248,7 +2248,7 @@ void sws_freeContext(SwsContext *sws)
     if (!c)
         return;
 
-#if CONFIG_VULKAN
+#if CONFIG_UNSTABLE && CONFIG_VULKAN
     ff_sws_vk_uninit(sws);
 #endif
 

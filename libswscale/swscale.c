@@ -1442,7 +1442,7 @@ int sws_frame_setup(SwsContext *ctx, const AVFrame *dst, const AVFrame *src)
         if (dev_ctx->type != AV_HWDEVICE_TYPE_VULKAN)
             return AVERROR(ENOTSUP);
 
-#if CONFIG_VULKAN
+#if CONFIG_UNSTABLE && CONFIG_VULKAN
         ret = ff_sws_vk_init(ctx, src_hwfc->device_ref);
         if (ret < 0)
             return ret;
