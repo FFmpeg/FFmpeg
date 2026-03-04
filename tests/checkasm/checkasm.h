@@ -131,6 +131,7 @@ void checkasm_check_mpegvideoencdsp(void);
 void checkasm_check_nlmeans(void);
 void checkasm_check_opusdsp(void);
 void checkasm_check_pixblockdsp(void);
+void checkasm_check_pixelutils(void);
 void checkasm_check_png(void);
 void checkasm_check_qpeldsp(void);
 void checkasm_check_sbrdsp(void);
