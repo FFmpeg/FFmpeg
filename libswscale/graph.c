@@ -63,7 +63,7 @@ static int frame_alloc_planes(AVFrame *dst)
         return ret;
 
     const int align = av_cpu_max_align();
-    const int aligned_w = FFALIGN(dst->width, align);
+    const int aligned_w = FFALIGN(dst->width + 1, align); /* add space for over-write */
     ret = av_image_fill_linesizes(dst->linesize, dst->format, aligned_w);
     if (ret < 0)
         return ret;
