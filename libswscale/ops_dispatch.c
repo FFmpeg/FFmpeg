@@ -85,6 +85,8 @@ int ff_sws_ops_compile(SwsContext *ctx, const SwsOpList *ops, SwsCompiledOp *out
                "block size = %d, over-read = %d, over-write = %d, cpu flags = 0x%x\n",
                backend->name, out->block_size, out->over_read, out->over_write,
                out->cpu_flags);
+
+        ff_sws_op_list_print(ctx, AV_LOG_VERBOSE, AV_LOG_TRACE, ops);
         return 0;
     }
 
