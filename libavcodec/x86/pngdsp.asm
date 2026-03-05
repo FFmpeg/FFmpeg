@@ -31,14 +31,11 @@ SECTION .text
 
 INIT_XMM sse2
 cglobal add_bytes_l2, 4, 6, 2, dst, src1, src2, wa, w, i
-%if ARCH_X86_64
-    movsxd             waq, wad
-%endif
-    xor                 iq, iq
+    xor                 id, id
 
     ; vector loop
-    mov                 wq, waq
-    and                waq, ~(mmsize*2-1)
+    mov                 wd, wad
+    and                wad, ~(mmsize*2-1)
     jz               .tail
 
 .loop_v:
@@ -48,23 +45,23 @@ cglobal add_bytes_l2, 4, 6, 2, dst, src1, src2, wa, w, i
     paddb               m1, [src1q+iq+mmsize]
     movu  [dstq+iq       ], m0
     movu  [dstq+iq+mmsize], m1
-    add                 iq, mmsize*2
-    cmp                 iq, waq
+    add                 id, mmsize*2
+    cmp                 id, wad
     jl .loop_v
 
     ; vector loop
 .tail:
-    mov                waq, wq
-    and                waq, ~7
+    mov                wad, wd
+    and                wad, ~7
     jmp .end_l
 .loop_l:
     movq                m0, [src2q+iq]
     movq                m1, [src1q+iq]
     paddb               m0, m1
     movq  [dstq+iq       ], m0
-    add                 iq, 8
+    add                 id, 8
 .end_l:
-    cmp                 iq, waq
+    cmp                 id, wad
     jl .loop_l
 
     ; scalar loop for leftover
@@ -73,9 +70,9 @@ cglobal add_bytes_l2, 4, 6, 2, dst, src1, src2, wa, w, i
     mov                wab, [src1q+iq]
     add                wab, [src2q+iq]
     mov          [dstq+iq], wab
-    inc                 iq
+    inc                 id
 .end_s:
-    cmp                 iq, wq
+    cmp                 id, wd
     jl .loop_s
     RET
 
