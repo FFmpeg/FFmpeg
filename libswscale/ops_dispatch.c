@@ -47,7 +47,7 @@ typedef struct SwsOpPass {
 int ff_sws_ops_compile_backend(SwsContext *ctx, const SwsOpBackend *backend,
                                const SwsOpList *ops, SwsCompiledOp *out)
 {
-    SwsOpList *copy, rest;
+    SwsOpList *copy;
     SwsCompiledOp compiled = {0};
     int ret = 0;
 
@@ -58,19 +58,11 @@ int ff_sws_ops_compile_backend(SwsContext *ctx, const SwsOpBackend *backend,
     /* Ensure these are always set during compilation */
     ff_sws_op_list_update_comps(copy);
 
-    /* Make an on-stack copy of `ops` to ensure we can still properly clean up
-     * the copy afterwards */
-    rest = *copy;
-
-    ret = backend->compile(ctx, &rest, &compiled);
+    ret = backend->compile(ctx, copy, &compiled);
     if (ret < 0) {
         int msg_lev = ret == AVERROR(ENOTSUP) ? AV_LOG_TRACE : AV_LOG_ERROR;
         av_log(ctx, msg_lev, "Backend '%s' failed to compile operations: %s\n",
                backend->name, av_err2str(ret));
-        if (rest.num_ops != ops->num_ops) {
-            av_log(ctx, msg_lev, "Uncompiled remainder:\n");
-            ff_sws_op_list_print(ctx, msg_lev, AV_LOG_TRACE, &rest);
-        }
     } else {
         *out = compiled;
     }

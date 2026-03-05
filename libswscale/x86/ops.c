@@ -708,9 +708,12 @@ static int compile(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
     if (write->rw.packed && write->rw.elems == 3)
         out->over_write = sizeof(uint32_t);
 
+
+    /* Make on-stack copy of `ops` to iterate over */
+    SwsOpList rest = *ops;
     do {
         int op_block_size = out->block_size;
-        SwsOp *op = &ops->ops[0];
+        SwsOp *op = &rest.ops[0];
 
         if (op_is_type_invariant(op)) {
             if (op->op == SWS_OP_CLEAR)
@@ -719,11 +722,16 @@ static int compile(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
             op->type = SWS_PIXEL_U8;
         }
 
-        ret = ff_sws_op_compile_tables(tables, FF_ARRAY_ELEMS(tables), ops,
+        ret = ff_sws_op_compile_tables(tables, FF_ARRAY_ELEMS(tables), &rest,
                                        op_block_size, chain);
     } while (ret == AVERROR(EAGAIN));
+
     if (ret < 0) {
         ff_sws_op_chain_free(chain);
+        if (rest.num_ops < ops->num_ops) {
+            av_log(ctx, AV_LOG_TRACE, "Uncompiled remainder:\n");
+            ff_sws_op_list_print(ctx, AV_LOG_TRACE, AV_LOG_TRACE, &rest);
+        }
         return ret;
     }
 
