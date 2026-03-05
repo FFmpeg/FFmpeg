@@ -61,7 +61,7 @@ SECTION .text
 ; Global entry point. See `ops_common.asm` for info.
 
 %macro process_fn 1 ; number of planes
-cglobal sws_process%1_x86, 6, 6 + 2 * %1, 16
+cglobal sws_process%1_x86, 6, 7 + 2 * %1, 16
             ; Args:
             ;   execq, implq, bxd, yd as defined in ops_common.int
             ;   bx_end and y_end are initially in tmp0d / tmp1d
