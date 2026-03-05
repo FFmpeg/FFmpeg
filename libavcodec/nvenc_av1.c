@@ -140,10 +140,17 @@ static const AVOption options[] = {
     { "aq-strength",  "When Spatial AQ is enabled, this field is used to specify AQ strength. AQ strength scale is from 1 (low) - 15 (aggressive)",
                                                             OFFSET(aq_strength),  AV_OPT_TYPE_INT,   { .i64 = 8 }, 1, 15, VE },
     { "weighted_pred","Enable weighted prediction",         OFFSET(weighted_pred),AV_OPT_TYPE_BOOL,  { .i64 = 0 }, 0, 1, VE },
+#ifdef NVENC_HAVE_AV1_HGOP_SUPPORT
+    { "b_ref_mode",   "Use B frames as references",         OFFSET(b_ref_mode),   AV_OPT_TYPE_INT,   { .i64 = -1 }, -1, NV_ENC_BFRAME_REF_MODE_HIERARCHICAL, VE, .unit = "b_ref_mode" },
+#else
     { "b_ref_mode",   "Use B frames as references",         OFFSET(b_ref_mode),   AV_OPT_TYPE_INT,   { .i64 = -1 }, -1, NV_ENC_BFRAME_REF_MODE_MIDDLE, VE, .unit = "b_ref_mode" },
+#endif
     { "disabled",     "B frames will not be used for reference", 0,               AV_OPT_TYPE_CONST, { .i64 = NV_ENC_BFRAME_REF_MODE_DISABLED }, 0, 0, VE, .unit = "b_ref_mode" },
     { "each",         "Each B frame will be used for reference", 0,               AV_OPT_TYPE_CONST, { .i64 = NV_ENC_BFRAME_REF_MODE_EACH }, 0, 0, VE, .unit = "b_ref_mode" },
     { "middle",       "Every other B-frame as Altref2 reference, except last in Altref interval", 0, AV_OPT_TYPE_CONST, { .i64 = NV_ENC_BFRAME_REF_MODE_MIDDLE }, 0, 0, VE, .unit = "b_ref_mode" },
+#ifdef NVENC_HAVE_AV1_HGOP_SUPPORT
+    { "hierarchical", "B frames are used as references in a hierarchical manner", 0, AV_OPT_TYPE_CONST, { .i64 = NV_ENC_BFRAME_REF_MODE_HIERARCHICAL }, 0, 0, VE, .unit = "b_ref_mode" },
+#endif
     { "dpb_size",     "Specifies the DPB size used for encoding (0 means automatic)",
                                                             OFFSET(dpb_size),     AV_OPT_TYPE_INT,   { .i64 = 0 }, 0, INT_MAX, VE },
     { "ldkfs",        "Low delay key frame scale; Specifies the Scene Change frame size increase allowed in case of single frame VBV and CBR",

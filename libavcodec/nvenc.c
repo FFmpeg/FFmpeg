@@ -606,9 +606,17 @@ static int nvenc_check_capabilities(AVCodecContext *avctx)
             return AVERROR(ENOSYS);
         }
         break;
+#ifdef NVENC_HAVE_AV1_HGOP_SUPPORT
+    case NV_ENC_BFRAME_REF_MODE_HIERARCHICAL:
+        if (!(ret & 4)) {
+            av_log(avctx, AV_LOG_WARNING, "Hierarchical B frame reference mode is not supported\n");
+            return AVERROR(ENOSYS);
+        }
+        break;
+#endif
     default:
-        av_log(avctx, AV_LOG_ERROR, "Unknown B frame reference mode!\n");
-        return AVERROR_BUG;
+        av_log(avctx, AV_LOG_ERROR, "Invalid b_ref_mode value %d\n", tmp);
+        return AVERROR(EINVAL);
     }
 #else
     tmp = (ctx->b_ref_mode >= 0) ? ctx->b_ref_mode : 0;

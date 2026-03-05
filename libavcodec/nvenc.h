@@ -114,6 +114,7 @@ typedef void ID3D11Device;
 // SDK 13.1 compile time feature checks
 #if NVENCAPI_CHECK_VERSION(13, 1)
 #define NVENC_NEW_COUNTING_TYPE
+#define NVENC_HAVE_AV1_HGOP_SUPPORT
 #endif
 
 typedef struct NvencSurface
