@@ -39,7 +39,8 @@ cglobal add_bytes_l2, 4, 6, 2, dst, src1, src2, wa, w, i
     ; vector loop
     mov                 wq, waq
     and                waq, ~(mmsize*2-1)
-    jmp .end_v
+    jz               .tail
+
 .loop_v:
     movu                m0, [src2q+iq]
     movu                m1, [src2q+iq+mmsize]
@@ -48,11 +49,11 @@ cglobal add_bytes_l2, 4, 6, 2, dst, src1, src2, wa, w, i
     movu  [dstq+iq       ], m0
     movu  [dstq+iq+mmsize], m1
     add                 iq, mmsize*2
-.end_v:
     cmp                 iq, waq
     jl .loop_v
 
     ; vector loop
+.tail:
     mov                waq, wq
     and                waq, ~7
     jmp .end_l
