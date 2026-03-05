@@ -542,6 +542,16 @@ DECL_FUNCS_16(32, _m2_avx2, AVX2)
 
 DECL_FUNCS_32(16, _avx2, AVX2)
 
+static const SwsOpTable *const tables[] = {
+    &ops8_m1_sse4,
+    &ops8_m1_avx2,
+    &ops8_m2_sse4,
+    &ops8_m2_avx2,
+    &ops16_m1_avx2,
+    &ops16_m2_avx2,
+    &ops32_avx2,
+};
+
 static av_const int get_mmsize(const int cpu_flags)
 {
     if (cpu_flags & AV_CPU_FLAG_AVX512)
@@ -697,16 +707,6 @@ static int compile(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
         out->over_read = sizeof(uint32_t);
     if (write->rw.packed && write->rw.elems == 3)
         out->over_write = sizeof(uint32_t);
-
-    static const SwsOpTable *const tables[] = {
-        &ops8_m1_sse4,
-        &ops8_m1_avx2,
-        &ops8_m2_sse4,
-        &ops8_m2_avx2,
-        &ops16_m1_avx2,
-        &ops16_m2_avx2,
-        &ops32_avx2,
-    };
 
     do {
         int op_block_size = out->block_size;

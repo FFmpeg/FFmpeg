@@ -48,6 +48,13 @@ typedef    float f32block_t[SWS_BLOCK_SIZE];
 # include "ops_tmpl_float.c"
 #undef BIT_DEPTH
 
+static const SwsOpTable *const tables[] = {
+    &bitfn(op_table_int,    u8),
+    &bitfn(op_table_int,   u16),
+    &bitfn(op_table_int,   u32),
+    &bitfn(op_table_float, f32),
+};
+
 static int compile(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
 {
     int ret;
@@ -58,13 +65,6 @@ static int compile(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
 
     av_assert0(ops->num_ops > 0);
     const SwsPixelType read_type = ops->ops[0].type;
-
-    static const SwsOpTable *const tables[] = {
-        &bitfn(op_table_int,    u8),
-        &bitfn(op_table_int,   u16),
-        &bitfn(op_table_int,   u32),
-        &bitfn(op_table_float, f32),
-    };
 
     do {
         ret = ff_sws_op_compile_tables(tables, FF_ARRAY_ELEMS(tables), ops,
