@@ -38,8 +38,8 @@ static void check_add_bytes_l2(const PNGDSPContext *c)
     LOCAL_ALIGNED_16(uint8_t, dst1, [BUF_SIZE]);
     LOCAL_ALIGNED_16(uint8_t, src, [2], [BUF_SIZE]);
 
-    declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t * dst, const uint8_t *src1,
-                      const uint8_t *src2, int w);
+    declare_func(void, uint8_t * dst, const uint8_t *src1,
+                       const uint8_t *src2, int w);
 
     randomize_buf(dst0, BUF_SIZE);
     memcpy(dst1, dst0, BUF_SIZE);

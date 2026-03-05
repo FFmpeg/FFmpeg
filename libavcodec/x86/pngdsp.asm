@@ -57,9 +57,10 @@ cglobal add_bytes_l2, 4, 6, 2, dst, src1, src2, wa, w, i
     and                waq, ~7
     jmp .end_l
 .loop_l:
-    movq               mm0, [src1q+iq]
-    paddb              mm0, [src2q+iq]
-    movq  [dstq+iq       ], mm0
+    movq                m0, [src2q+iq]
+    movq                m1, [src1q+iq]
+    paddb               m0, m1
+    movq  [dstq+iq       ], m0
     add                 iq, 8
 .end_l:
     cmp                 iq, waq
