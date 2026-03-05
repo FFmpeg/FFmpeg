@@ -263,8 +263,10 @@ static void nvenc_map_preset(NvencContext *ctx)
 
 static void nvenc_print_driver_requirement(AVCodecContext *avctx, int level)
 {
-#if NVENCAPI_CHECK_VERSION(13, 1)
+#if NVENCAPI_CHECK_VERSION(13, 2)
     const char *minver = "(unknown)";
+#elif NVENCAPI_CHECK_VERSION(13, 1)
+    const char *minver = "610.00";
 #elif NVENCAPI_CHECK_VERSION(13, 0)
     const char *minver = "570.0";
 #elif NVENCAPI_CHECK_VERSION(12, 2)
@@ -2526,7 +2528,12 @@ static void nvenc_fill_time_code(AVCodecContext *avctx, const AVFrame *frame, NV
             unsigned hh, mm, ss, ff, drop;
             ff_timecode_set_smpte(&drop, &hh, &mm, &ss, &ff, avctx->framerate, tc[i + 1], 0, 0);
 
+#ifdef NVENC_NEW_COUNTING_TYPE
+            time_code->clockTimestamp[i].countingTypeLSB = 0;
+            time_code->clockTimestamp[i].countingTypeMSB = 0;
+#else
             time_code->clockTimestamp[i].countingType = 0;
+#endif
             time_code->clockTimestamp[i].discontinuityFlag = 0;
             time_code->clockTimestamp[i].cntDroppedFrames = drop;
             time_code->clockTimestamp[i].nFrames = ff;
