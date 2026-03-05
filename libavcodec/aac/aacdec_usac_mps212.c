@@ -584,6 +584,9 @@ static int get_freq_strides(int16_t *freq_strides, int band_stride,
         }
     }
 
+    for (int i = 0; i <= data_bands; i++)
+        freq_strides[i] = av_clip_uintp2(freq_strides[i], 2);
+
     return data_bands;
 }
 
