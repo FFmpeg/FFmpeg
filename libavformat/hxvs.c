@@ -118,6 +118,10 @@ static int hxvs_probe(const AVProbeData *p)
         i += 4;
         if (tag == HXVF || tag == HXAF) {
             bytes = AV_RL32(&p->buf[i]);
+
+            if (12 + bytes > INT_MAX - i)
+                return 0;
+
             i += 12 + bytes;
             flag |= (tag == HXVF) ? 2 : 4;
             continue;
