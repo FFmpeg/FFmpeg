@@ -544,7 +544,7 @@ static void coarse_to_fine(int16_t *data, enum AACMPSDataType data_type,
                            int start_band, int end_band)
 {
     for (int i = start_band; i < end_band; i++)
-        data[i] <<= 1;
+        data[i] *= 2;
     if (data_type == MPS_CLD) {
         for (int i = start_band; i < end_band; i++) {
             if (data[i] == -14)
