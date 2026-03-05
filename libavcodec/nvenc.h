@@ -111,6 +111,11 @@ typedef void ID3D11Device;
 #define NVENC_HAVE_MVHEVC
 #endif
 
+// SDK 13.1 compile time feature checks
+#if NVENCAPI_CHECK_VERSION(13, 1)
+#define NVENC_NEW_COUNTING_TYPE
+#endif
+
 typedef struct NvencSurface
 {
     NV_ENC_INPUT_PTR input_surface;
