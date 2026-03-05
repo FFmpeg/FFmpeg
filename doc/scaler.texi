@@ -11,48 +11,88 @@ For programmatic use, they can be set explicitly in the
 
 @table @option
 
+@anchor{scaler}
+@item scaler, scaler_sub
+Choose the scaling algorithm to use. Default value is @samp{auto} for both.
+It accepts the following values:
+
+@table @samp
+@item auto
+Aumotic choice. For @samp{scaler_sub}, this means the same algorithm as
+@samp{scaler}. For @samp{scaler}, this defaults to the scaler flag selected
+by @samp{sws_flags}.
+
+@item bilinear
+Bilinear filter. (AKA triangle filter)
+
+@item bicubic
+2-tap cubic BC-spline (AKA Mitchell-Netravali spline). The B and C parameters
+can be configured by setting @code{param0} and @code{param1}, defaulting to
+0.0 and 0.6 respectively.
+
+@item point, neighbor
+Point sampling (AKA nearest neighbor).
+
+@item area
+Area averaging. Equivalent to @samp{bilinear} for upscaling.
+
+@item gaussian
+2-tap Gaussian filter approximation. The sharpness parameter can be configured
+by setting @code{param0}, defaulting to 3.0.
+
+@item sinc
+Unwindowed sinc filter.
+
+@item lanczos
+Lanczos resampling (sinc windowed sinc). The number of filter taps can
+be configured by setting @code{param0}, defaulting to 3.
+
+@item spline
+Unwindowed natural bicubic spline.
+@end table
+
 @anchor{sws_flags}
 @item sws_flags
 Set the scaler flags. This is also used to set the scaling
-algorithm. Only a single algorithm should be selected. Default
-value is @samp{bicubic}.
+algorithm, though this usage is deprecated in favor of setting @samp{scaler}.
+Only a single algorithm may be selected. Default value is @samp{bicubic}.
 
 It accepts the following values:
 @table @samp
 @item fast_bilinear
-Select fast bilinear scaling algorithm.
+Select fast bilinear scaling algorithm. (Deprecated)
 
 @item bilinear
-Select bilinear scaling algorithm.
+Select bilinear scaling algorithm. (Deprecated)
 
 @item bicubic
-Select bicubic scaling algorithm.
+Select bicubic scaling algorithm. (Deprecated)
 
 @item experimental
-Select experimental scaling algorithm.
+Select experimental scaling algorithm. (Deprecated)
 
 @item neighbor
-Select nearest neighbor rescaling algorithm.
+Select nearest neighbor rescaling algorithm. (Deprecated)
 
 @item area
-Select averaging area rescaling algorithm.
+Select averaging area rescaling algorithm. (Deprecated)
 
 @item bicublin
 Select bicubic scaling algorithm for the luma component, bilinear for
-chroma components.
+chroma components. (Deprecated)
 
 @item gauss
-Select Gaussian rescaling algorithm.
+Select Gaussian rescaling algorithm. (Deprecated)
 
 @item sinc
-Select sinc rescaling algorithm.
+Select sinc rescaling algorithm. (Deprecated)
 
 @item lanczos
 Select Lanczos rescaling algorithm. The default width (alpha) is 3 and can be
-changed by setting @code{param0}.
+changed by setting @code{param0}. (Deprecated)
 
 @item spline
-Select natural bicubic spline rescaling algorithm.
+Select natural bicubic spline rescaling algorithm. (Deprecated)
 
 @item print_info
 Enable printing/debug logging.
