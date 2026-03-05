@@ -259,10 +259,15 @@ static void FUNC2(alf_filter_luma, BIT_DEPTH, _sme2)(uint8_t *_dst,
                                                      const int vb_pos)
 {
     if ((width >= 16) && (height >= 16)) {
+        // If compiled without support for SME2 or SME-I16I64, we never assign
+        // the function pointer anyway, but make sure we don't produce a
+        // reference to the function which does not exist.
+#if HAVE_SME2 && HAVE_SME_I16I64
         int aligned_width = ALF_ALIGN_BY_4(width); // align width by 4
         uint64_t dims = ((uint64_t)height << 32u) | (uint64_t)aligned_width;
         uint64_t strides = ((uint64_t)src_stride << 32u) | (uint64_t)dst_stride;
         FUNC2(ff_vvc_alf_filter_luma, BIT_DEPTH, _sme2)(_dst, _src, strides, dims, filter, clip, vb_pos);
+#endif
     } else {
         FUNC2(alf_filter_luma, BIT_DEPTH, _neon)(_dst, dst_stride, _src, src_stride, width, height, filter, clip, vb_pos);
     }
