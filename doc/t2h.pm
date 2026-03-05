@@ -55,7 +55,8 @@ sub get_formatting_function($$) {
 
 # determine texinfo version
 my $package_version = ff_get_conf('PACKAGE_VERSION');
-$package_version =~ s/\+dev$//;
+$package_version =~ s/\+nc$//;
+$package_version =~ s/\+?dev$//;
 my $program_version_num = version->declare($package_version)->numify;
 my $program_version_6_8 = $program_version_num >= 6.008000;
 
@@ -119,29 +120,8 @@ sub ffmpeg_heading_command($$$$$)
     }
 
     my $heading_level;
-    # node is used as heading if there is nothing else.
-    if ($cmdname eq 'node') {
-        if (!$output_unit or
-            (((!$output_unit->{'extra'}->{'section'}
-              and $output_unit->{'extra'}->{'node'}
-              and $output_unit->{'extra'}->{'node'} eq $command)
-             or
-             ((($output_unit->{'extra'}->{'unit_command'}
-                and $output_unit->{'extra'}->{'unit_command'} eq $command)
-               or
-               ($output_unit->{'unit_command'}
-                and $output_unit->{'unit_command'} eq $command))
-              and $command->{'extra'}
-              and not $command->{'extra'}->{'associated_section'}))
-             # bogus node may not have been normalized
-            and defined($command->{'extra'}->{'normalized'}))) {
-            if ($command->{'extra'}->{'normalized'} eq 'Top') {
-                $heading_level = 0;
-            } else {
-                $heading_level = 3;
-            }
-        }
-    } else {
+    # Never use node for heading
+    if ($cmdname ne 'node') {
         if (defined($command->{'extra'})
             and defined($command->{'extra'}->{'section_level'})) {
           $heading_level = $command->{'extra'}->{'section_level'};
@@ -153,58 +133,58 @@ sub ffmpeg_heading_command($$$$$)
         }
     }
 
-    my $heading = $self->command_text($command);
-    # $heading not defined may happen if the command is a @node, for example
-    # if there is an error in the node.
-    if (defined($heading) and $heading ne '' and defined($heading_level)) {
-
-        if ($root_commands{$cmdname}
-            and $sectioning_commands{$cmdname}) {
-            my $content_href = $self->command_contents_href($command, 'contents',
-                                                            $self->{'current_filename'});
-            if ($content_href) {
-                my $this_href = $content_href =~ s/^\#toc-/\#/r;
-                $heading .= '<span class="pull-right">'.
-                              '<a class="anchor hidden-xs" '.
-                                 "href=\"$this_href\" aria-hidden=\"true\">".
-            ($ENV{"FA_ICONS"} ? '<i class="fa fa-link"></i>'
-                              : '#').
-                              '</a> '.
-                              '<a class="anchor hidden-xs"'.
-                                 "href=\"$content_href\" aria-hidden=\"true\">".
-            ($ENV{"FA_ICONS"} ? '<i class="fa fa-navicon"></i>'
-                              : 'TOC').
-                              '</a>'.
-                            '</span>';
+    if (defined($heading_level)) {
+        my $heading = $self->command_text($command);
+        # empty heading corresponds to an empty @top
+        if ($heading ne '') {
+            if ($root_commands{$cmdname}
+                and $sectioning_commands{$cmdname}) {
+                my $content_href = $self->command_contents_href($command, 'contents',
+                                                                $self->{'current_filename'});
+                if ($content_href) {
+                    my $this_href = $content_href =~ s/^\#toc-/\#/r;
+                    $heading .= '<span class="pull-right">'.
+                                  '<a class="anchor hidden-xs" '.
+                                     "href=\"$this_href\" aria-hidden=\"true\">".
+                ($ENV{"FA_ICONS"} ? '<i class="fa fa-link"></i>'
+                                  : '#').
+                                  '</a> '.
+                                  '<a class="anchor hidden-xs"'.
+                                     "href=\"$content_href\" aria-hidden=\"true\">".
+                ($ENV{"FA_ICONS"} ? '<i class="fa fa-navicon"></i>'
+                                  : 'TOC').
+                                  '</a>'.
+                                '</span>';
+                }
             }
-        }
 
-        my $in_preformatted;
-        if ($program_version_num >= 7.001090) {
-          $in_preformatted = $self->in_preformatted_context();
-        } else {
-          $in_preformatted = $self->in_preformatted();
-        }
-        if ($in_preformatted) {
-            $result .= $heading."\n";
-        } else {
-            # if the level was changed, set the command name right
-            if ($cmdname ne 'node'
-                and $heading_level ne $Texinfo::Common::command_structuring_level{$cmdname}) {
-                $cmdname
-                    = $Texinfo::Common::level_to_structuring_command{$cmdname}->[$heading_level];
-            }
-            if ($program_version_num >= 7.000000) {
-                $result .= &{get_formatting_function($self,'format_heading_text')}($self,
-                     $cmdname, [$cmdname], $heading,
-                     $heading_level +$self->get_conf('CHAPTER_HEADER_LEVEL') -1,
-                     $heading_id, $command);
-
+            my $in_preformatted;
+            if ($program_version_num >= 7.001090) {
+              $in_preformatted = $self->in_preformatted_context();
             } else {
-              $result .= &{get_formatting_function($self,'format_heading_text')}(
-                        $self, $cmdname, $heading,
-                        $heading_level +
-                        $self->get_conf('CHAPTER_HEADER_LEVEL') - 1, $command);
+              $in_preformatted = $self->in_preformatted();
+            }
+            if ($in_preformatted) {
+                $result .= $heading."\n";
+            } else {
+                # if the level was changed, set the command name right
+                if ($cmdname ne 'node'
+                    and $heading_level ne $Texinfo::Common::command_structuring_level{$cmdname}) {
+                    $cmdname
+                        = $Texinfo::Common::level_to_structuring_command{$cmdname}->[$heading_level];
+                }
+                if ($program_version_num >= 7.000000) {
+                    $result .= &{get_formatting_function($self,'format_heading_text')}($self,
+                         $cmdname, [$cmdname], $heading,
+                         $heading_level +$self->get_conf('CHAPTER_HEADER_LEVEL') -1,
+                         $heading_id, $command);
+
+                } else {
+                  $result .= &{get_formatting_function($self,'format_heading_text')}(
+                            $self, $cmdname, $heading,
+                            $heading_level +
+                            $self->get_conf('CHAPTER_HEADER_LEVEL') - 1, $command);
+                }
             }
         }
     }
