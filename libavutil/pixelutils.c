@@ -32,6 +32,8 @@
 #include "aarch64/pixelutils.h"
 #elif ARCH_ARM && HAVE_ARMV6
 #include "arm/pixelutils.h"
+#elif ARCH_MIPS && HAVE_MSA
+#include "mips/pixelutils.h"
 #elif ARCH_RISCV
 #include "riscv/pixelutils.h"
 #elif ARCH_X86 && HAVE_X86ASM
@@ -98,6 +100,8 @@ av_pixelutils_sad_fn av_pixelutils_get_sad_fn(int w_bits, int h_bits, int aligne
     ff_pixelutils_sad_init_aarch64(sad, aligned);
 #elif ARCH_ARM
     ff_pixelutils_sad_init_arm(sad, aligned);
+#elif ARCH_MIPS && HAVE_MSA
+    ff_pixelutils_sad_init_mips(sad, aligned);
 #elif ARCH_RISCV
     ff_pixelutils_init_riscv(sad, aligned);
 #elif ARCH_X86 && HAVE_X86ASM
