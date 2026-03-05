@@ -140,7 +140,7 @@ int av_strerror(int errnum, char *errbuf, size_t errbuf_size)
         }
     }
 #if HAVE_STRERROR_R
-    int ret = AVERROR(strerror_r(AVUNERROR(errnum), errbuf, errbuf_size));
+    int ret = AVERROR(strerror_r(AVUNERROR((unsigned)errnum), errbuf, errbuf_size));
 #else
     int ret = -1;
 #endif
