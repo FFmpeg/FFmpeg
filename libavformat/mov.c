@@ -9167,6 +9167,8 @@ static int mov_read_iref_thmb(MOVContext *c, AVIOContext *pb, int version)
 static int mov_read_iref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     int version = avio_r8(pb);
+    int ret;
+
     avio_rb24(pb); // flags
     atom.size -= 4;
 
@@ -9186,14 +9188,14 @@ static int mov_read_iref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         type = avio_rl32(pb);
         switch (type) {
         case MKTAG('d','i','m','g'):
-        {
-            int ret = mov_read_iref_dimg(c, pb, version);
+            ret = mov_read_iref_dimg(c, pb, version);
             if (ret < 0)
                 return ret;
             break;
-        }
         case MKTAG('t','h','m','b'):
-            mov_read_iref_thmb(c, pb, version);
+            ret = mov_read_iref_thmb(c, pb, version);
+            if (ret < 0)
+                return ret;
             break;
         default:
             av_log(c->fc, AV_LOG_DEBUG, "Unknown iref type %s size %"PRIu32"\n",
