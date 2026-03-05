@@ -541,6 +541,24 @@ SwsOpList *ff_sws_op_list_duplicate(const SwsOpList *ops)
     return copy;
 }
 
+const SwsOp *ff_sws_op_list_input(const SwsOpList *ops)
+{
+    if (!ops->num_ops)
+        return NULL;
+
+    const SwsOp *read = &ops->ops[0];
+    return read->op == SWS_OP_READ ? read : NULL;
+}
+
+const SwsOp *ff_sws_op_list_output(const SwsOpList *ops)
+{
+    if (!ops->num_ops)
+        return NULL;
+
+    const SwsOp *write = &ops->ops[ops->num_ops - 1];
+    return write->op == SWS_OP_WRITE ? write : NULL;
+}
+
 void ff_sws_op_list_remove_at(SwsOpList *ops, int index, int count)
 {
     const int end = ops->num_ops - count;
@@ -575,11 +593,9 @@ bool ff_sws_op_list_is_noop(const SwsOpList *ops)
     if (!ops->num_ops)
         return true;
 
-    const SwsOp *read  = &ops->ops[0];
-    const SwsOp *write = &ops->ops[1];
-    if (ops->num_ops != 2 ||
-        read->op != SWS_OP_READ ||
-        write->op != SWS_OP_WRITE ||
+    const SwsOp *read  = ff_sws_op_list_input(ops);
+    const SwsOp *write = ff_sws_op_list_output(ops);
+    if (!read || !write || ops->num_ops > 2 ||
         read->type != write->type ||
         read->rw.packed != write->rw.packed ||
         read->rw.elems != write->rw.elems ||

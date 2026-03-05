@@ -250,6 +250,21 @@ void ff_sws_op_list_free(SwsOpList **ops);
 SwsOpList *ff_sws_op_list_duplicate(const SwsOpList *ops);
 
 /**
+ * Returns the input operation for a given op list, or NULL if there is none
+ * (e.g. for a pure CLEAR-only operation list).
+ *
+ * This will always be an op of type SWS_OP_READ.
+ */
+const SwsOp *ff_sws_op_list_input(const SwsOpList *ops);
+
+/**
+ * Returns the output operation for a given op list, or NULL if there is none.
+ *
+ * This will always be an op of type SWS_OP_WRITE.
+ */
+const SwsOp *ff_sws_op_list_output(const SwsOpList *ops);
+
+/**
  * Returns whether an op list represents a true no-op operation, i.e. may be
  * eliminated entirely from an execution graph.
  */

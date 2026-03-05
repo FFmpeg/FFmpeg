@@ -335,8 +335,8 @@ static int compile(SwsGraph *graph, const SwsOpList *ops,
     if (ret < 0)
         goto fail;
 
-    const SwsOp *read = &ops->ops[0];
-    const SwsOp *write = &ops->ops[ops->num_ops - 1];
+    const SwsOp *read  = ff_sws_op_list_input(ops);
+    const SwsOp *write = ff_sws_op_list_output(ops);
     p->planes_in  = rw_planes(read);
     p->planes_out = rw_planes(write);
     p->pixel_bits_in  = rw_pixel_bits(read);
@@ -375,8 +375,6 @@ int ff_sws_compile_pass(SwsGraph *graph, SwsOpList *ops, int flags,
                         const SwsFormat *dst, SwsPass *input, SwsPass **output)
 {
     SwsContext *ctx = graph->ctx;
-    const SwsOp *read = &ops->ops[0];
-    const SwsOp *write = &ops->ops[ops->num_ops - 1];
     int ret;
 
     /* Check if the whole operation graph is an end-to-end no-op */
@@ -385,12 +383,9 @@ int ff_sws_compile_pass(SwsGraph *graph, SwsOpList *ops, int flags,
         return 0;
     }
 
-    if (ops->num_ops < 2) {
-        av_log(ctx, AV_LOG_ERROR, "Need at least two operations.\n");
-        return AVERROR(EINVAL);
-    }
-
-    if (read->op != SWS_OP_READ || write->op != SWS_OP_WRITE) {
+    const SwsOp *read  = ff_sws_op_list_input(ops);
+    const SwsOp *write = ff_sws_op_list_output(ops);
+    if (!read || !write) {
         av_log(ctx, AV_LOG_ERROR, "First and last operations must be a read "
                "and write, respectively.\n");
         return AVERROR(EINVAL);

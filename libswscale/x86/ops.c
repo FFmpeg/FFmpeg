@@ -679,9 +679,9 @@ static int compile(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
     if (mmsize < 0)
         return mmsize;
 
-    av_assert1(ops->num_ops > 0);
-    const SwsOp *read = ops->ops[0].op == SWS_OP_READ ? &ops->ops[0] : NULL;
-    const SwsOp *write = &ops->ops[ops->num_ops - 1];
+    const SwsOp *read  = ff_sws_op_list_input(ops);
+    const SwsOp *write = ff_sws_op_list_output(ops);
+    av_assert1(write);
     int ret;
 
     /* Special fast path for in-place packed shuffle */
