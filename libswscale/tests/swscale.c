@@ -500,7 +500,7 @@ static int run_file_tests(const AVFrame *ref, FILE *fp, struct options opts)
         src_fmt = av_get_pix_fmt(src_fmt_str);
         dst_fmt = av_get_pix_fmt(dst_fmt_str);
         if (src_fmt == AV_PIX_FMT_NONE || dst_fmt == AV_PIX_FMT_NONE ||
-            sw != ref->width || sh != ref->height || dw > 8192 || dh > 8192 ||
+            sw != ref->width || sh != ref->height ||
             mode.dither >= SWS_DITHER_NB) {
             av_log(NULL, AV_LOG_FATAL, "malformed input file\n");
             return -1;
