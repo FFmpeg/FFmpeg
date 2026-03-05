@@ -186,10 +186,10 @@ typedef void (*yuv2interleavedX_fn)(enum AVPixelFormat dstFormat,
  *                to write into dest[]
  * @param uvalpha chroma scaling coefficient for the second line of chroma
  *                pixels, either 2048 or 0. If 0, one chroma input is used
- *                for 2 output pixels (or if the SWS_FLAG_FULL_CHR_INT flag
+ *                for 2 output pixels (or if the SWS_FULL_CHR_H_INT flag
  *                is set, it generates 1 output pixel). If 2048, two chroma
  *                input pixels should be averaged for 2 output pixels (this
- *                only happens if SWS_FLAG_FULL_CHR_INT is not set)
+ *                only happens if SWS_FULL_CHR_H_INT is not set)
  * @param y       vertical line number for this output. This does not need
  *                to be used to calculate the offset in the destination,
  *                but can be used to generate comfort noise using dithering
@@ -599,7 +599,7 @@ struct SwsInternal {
      *   pixels to interpolate the output pixel. Since you can use at most
      *   two input pixels per output pixel in bilinear scaling, this is
      *   impossible and thus downscaling by any size will create artifacts.
-     * To enable this type of scaling, set SWS_FLAG_FAST_BILINEAR
+     * To enable this type of scaling, set SWS_FAST_BILINEAR
      * in SwsInternal->flags.
      */
     /** @{ */
