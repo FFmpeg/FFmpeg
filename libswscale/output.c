@@ -1064,8 +1064,8 @@ yuv2rgba64_X_c_template(SwsContext *c, const int16_t *lumFilter,
         int j;
         unsigned Y1 = -0x40000000;
         unsigned Y2 = -0x40000000;
-        int U  = -(128 << 23); // 19
-        int V  = -(128 << 23);
+        unsigned U  = -(128 << 23); // 19
+        unsigned V  = -(128 << 23);
         int R, G, B;
 
         for (j = 0; j < lumFilterSize; j++) {
@@ -1095,8 +1095,8 @@ yuv2rgba64_X_c_template(SwsContext *c, const int16_t *lumFilter,
         Y1 += 0x10000;
         Y2 = (int)Y2 >> 14;
         Y2 += 0x10000;
-        U  >>= 14;
-        V  >>= 14;
+        U  = (int)U >> 14;
+        V  = (int)V >> 14;
 
         // 8 bits: 27 -> 17 bits, 16 bits: 31 - 14 = 17 bits
         Y1 -= c->yuv2rgb_y_offset;
