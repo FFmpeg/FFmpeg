@@ -1,0 +1,40 @@
+This document is work in progress
+
+*What is CVSS*
+    The Common Vulnerability Scoring System (CVSS) is an open, industry-standard framework used to measure and communicate the severity of software vulnerabilities, ranging from 0.0 to 10.0.
+
+*Why we need this Document*
+    It is important that FFmpeg CVEs have consistent and correct CVSS, not only for the obvious reason that one can recognize the severity of an issue at first glance.
+    But also as these numbers form the basis of rewards paid in bug bounty systems. Inconsistent CVSS could lead to unfair payouts.
+
+*What is this Document*
+    Prior 2026, FFmpeg had no guideline about CVSS.
+    This document describes how to select the CVSS for a FFmpeg related CVE. It currently only covers the Base Score.
+
+*What is the CVSS Base Score*
+    AV Attack Vector    (Network, Adjacent, Local, Physical)
+    AC Attack Complexity (Low, High)
+    PR Privileges Required (None, Low, High)
+    UI User Interaction (None, Required)
+    S  Scope (Unchanged, Changed)
+    C  Confidentiality (None, Low, High)
+    I  Integrity (None, Low, High)
+    A  Availability (None, Low, High)
+
+
+*Things people have set incorrectly*
+
+Below are general guidelines and in specific cases other things may apply.
+
+Attack Vector.
+    Quote from https://www.first.org/cvss/v3.1/user-guide
+        "Specifically, analysts should only score for Network or Adjacent when a vulnerability is bound to the network stack.
+         Vulnerabilities which require user interaction to download or receive malicious content (which could also be delivered locally, e.g., via USB drives) should be scored as Local."
+
+Availability.
+    FFmpeg Crashes -> AVAILABILITY IMPACT: Low
+    FFmpeg is frequently used as a short-lived, single-run process instead of a continuously running service that handles ongoing streams of user input. In that usage model, a crash usually causes only limited disruption.
+
+User Interaction
+    Please consider if an attacker can actually set the parameters required for an attack.
+    In general arbitrary filter parameters cannot be set by an attacker and require the user/account owner/admin to set them
