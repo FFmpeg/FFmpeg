@@ -909,7 +909,7 @@ void ff_sws_graph_run(SwsGraph *graph, const AVFrame *dst, const AVFrame *src)
         if (pass->setup)
             pass->setup(graph->exec.output, graph->exec.input, pass);
 
-        if (graph->num_threads == 1) {
+        if (pass->num_slices == 1) {
             pass->run(graph->exec.output, graph->exec.input, 0, pass->height, pass);
         } else {
             avpriv_slicethread_execute(graph->slicethread, pass->num_slices, 0);
