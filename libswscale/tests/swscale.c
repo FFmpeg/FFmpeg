@@ -224,14 +224,20 @@ static int scale_legacy(AVFrame *dst, const AVFrame *src, struct mode mode,
     sws_legacy->dither     = mode.dither;
     sws_legacy->threads    = opts.threads;
 
+    av_frame_unref(dst);
+    dst->width  = sws_legacy->dst_w;
+    dst->height = sws_legacy->dst_h;
+    dst->format = sws_legacy->dst_format;
+    ret = av_frame_get_buffer(dst, 0);
+    if (ret < 0)
+        goto error;
+
     if ((ret = sws_init_context(sws_legacy, NULL, NULL)) < 0)
         goto error;
 
     int64_t time = av_gettime_relative();
-    for (int i = 0; ret >= 0 && i < opts.iters; i++) {
-        unref_buffers(dst);
+    for (int i = 0; ret >= 0 && i < opts.iters; i++)
         ret = sws_scale_frame(sws_legacy, dst, src);
-    }
     *out_time = av_gettime_relative() - time;
 
 error:
