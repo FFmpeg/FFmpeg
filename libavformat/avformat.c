@@ -890,12 +890,12 @@ int ff_format_check_set_url(AVFormatContext *s, const char *url)
         return AVERROR(EINVAL);
     }
 
-    url = av_strdup(url);
-    if (!url)
+    char *urldup = av_strdup(url);
+    if (!urldup)
         return AVERROR(ENOMEM);
 
     av_freep(&s->url);
-    s->url = url;
+    s->url = urldup;
     return 0;
 }
 
