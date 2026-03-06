@@ -28,6 +28,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/mem.h"
 
+#include "codec_desc.h"
 #include "parser.h"
 #include "parser_internal.h"
 
@@ -125,6 +126,7 @@ int av_parser_parse2(AVCodecParserContext *s, AVCodecContext *avctx,
                      const uint8_t *buf, int buf_size,
                      int64_t pts, int64_t dts, int64_t pos)
 {
+    const AVCodecDescriptor *desc;
     int index, i;
     uint8_t dummy_buf[AV_INPUT_BUFFER_PADDING_SIZE];
 
@@ -138,6 +140,8 @@ int av_parser_parse2(AVCodecParserContext *s, AVCodecContext *avctx,
                avctx->codec_id == s->parser->codec_ids[4] ||
                avctx->codec_id == s->parser->codec_ids[5] ||
                avctx->codec_id == s->parser->codec_ids[6]);
+
+    desc = avcodec_descriptor_get(avctx->codec_id);
 
     if (!(s->flags & PARSER_FLAG_FETCHED_OFFSET)) {
         s->next_frame_offset =
@@ -178,6 +182,8 @@ int av_parser_parse2(AVCodecParserContext *s, AVCodecContext *avctx,
         FILL(coded_height);
         FILL(width);
         FILL(height);
+        if (desc && (desc->props & AV_CODEC_PROP_ENHANCEMENT) &&
+            s->format >= 0 && avctx->pix_fmt < 0) avctx->pix_fmt = s->format;
     }
 
     /* update the file pointer */
