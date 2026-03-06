@@ -40,7 +40,8 @@ typedef struct SwsOpPass {
     int pixel_bits_out;
     int idx_in[4];
     int idx_out[4];
-    bool memcpy_in;
+    bool memcpy_first;
+    bool memcpy_last;
     bool memcpy_out;
 } SwsOpPass;
 
@@ -141,7 +142,8 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
     p->tail_off_out  = safe_width * p->pixel_bits_out >> 3;
     p->tail_size_in  = tail_size  * p->pixel_bits_in  >> 3;
     p->tail_size_out = tail_size  * p->pixel_bits_out >> 3;
-    p->memcpy_in     = false;
+    p->memcpy_first  = false;
+    p->memcpy_last   = false;
     p->memcpy_out    = false;
 
     for (int i = 0; i < p->planes_in; i++) {
@@ -152,7 +154,12 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
         const int plane_w    = (aligned_w + sub_x) >> sub_x;
         const int plane_pad  = (comp->over_read + sub_x) >> sub_x;
         const int plane_size = plane_w * p->pixel_bits_in >> 3;
-        p->memcpy_in |= plane_size + plane_pad > in->linesize[idx];
+        const int total_size = plane_size + plane_pad;
+        if (in->linesize[idx] >= 0) {
+            p->memcpy_last |= total_size > in->linesize[idx];
+        } else {
+            p->memcpy_first |= total_size > -in->linesize[idx];
+        }
         exec->in[i]        = in->data[idx];
         exec->in_stride[i] = in->linesize[idx];
         exec->in_sub_y[i]  = sub_y;
@@ -167,7 +174,7 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
         const int plane_w    = (aligned_w + sub_x) >> sub_x;
         const int plane_pad  = (comp->over_write + sub_x) >> sub_x;
         const int plane_size = plane_w * p->pixel_bits_out >> 3;
-        p->memcpy_out |= plane_size + plane_pad > out->linesize[idx];
+        p->memcpy_out |= plane_size + plane_pad > FFABS(out->linesize[idx]);
         exec->out[i]        = out->data[idx];
         exec->out_stride[i] = out->linesize[idx];
         exec->out_sub_y[i]  = sub_y;
@@ -268,7 +275,9 @@ static void op_pass_run(const SwsFrame *out, const SwsFrame *in, const int y,
      *
      * 1. We can overread the input, unless this is the last line of an
      *    unpadded buffer. All defined operations can handle arbitrary pixel
-     *    input, so overread of arbitrary data is fine.
+     *    input, so overread of arbitrary data is fine. For flipped images,
+     *    this condition is actually *inverted* to where the first line is
+     *    the one at the end of the buffer.
      *
      * 2. We can overwrite the output, as long as we don't write more than the
      *    amount of pixels that fit into one linesize. So we always need to
@@ -280,8 +289,8 @@ static void op_pass_run(const SwsFrame *out, const SwsFrame *in, const int y,
      *    need to worry about this for the end of a slice.
      */
 
-    const int last_slice  = y + h == pass->height;
-    const bool memcpy_in  = last_slice && p->memcpy_in;
+    const bool memcpy_in  = p->memcpy_last && y + h == pass->height ||
+                            p->memcpy_first && y == 0;
     const bool memcpy_out = p->memcpy_out;
     const int num_blocks  = p->num_blocks;
     const int blocks_main = num_blocks - memcpy_out;
