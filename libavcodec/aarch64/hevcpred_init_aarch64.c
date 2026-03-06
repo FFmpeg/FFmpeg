@@ -39,6 +39,16 @@ void ff_hevc_pred_dc_32x32_8_neon(uint8_t *src, const uint8_t *top,
                                 const uint8_t *left, ptrdiff_t stride,
                                 int c_idx);
 
+// Planar prediction
+void ff_hevc_pred_planar_4x4_8_neon(uint8_t *src, const uint8_t *top,
+                                   const uint8_t *left, ptrdiff_t stride);
+void ff_hevc_pred_planar_8x8_8_neon(uint8_t *src, const uint8_t *top,
+                                   const uint8_t *left, ptrdiff_t stride);
+void ff_hevc_pred_planar_16x16_8_neon(uint8_t *src, const uint8_t *top,
+                                    const uint8_t *left, ptrdiff_t stride);
+void ff_hevc_pred_planar_32x32_8_neon(uint8_t *src, const uint8_t *top,
+                                    const uint8_t *left, ptrdiff_t stride);
+
 static void pred_dc_neon(uint8_t *src, const uint8_t *top,
                          const uint8_t *left, ptrdiff_t stride,
                          int log2_size, int c_idx)
@@ -70,5 +80,9 @@ av_cold void ff_hevc_pred_init_aarch64(HEVCPredContext *hpc, int bit_depth)
 
     if (bit_depth == 8) {
         hpc->pred_dc        = pred_dc_neon;
+        hpc->pred_planar[0] = ff_hevc_pred_planar_4x4_8_neon;
+        hpc->pred_planar[1] = ff_hevc_pred_planar_8x8_8_neon;
+        hpc->pred_planar[2] = ff_hevc_pred_planar_16x16_8_neon;
+        hpc->pred_planar[3] = ff_hevc_pred_planar_32x32_8_neon;
     }
 }
