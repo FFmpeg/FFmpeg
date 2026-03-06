@@ -1335,7 +1335,7 @@ static int frame_ref(AVFrame *dst, const AVFrame *src)
     /* ref the buffers */
     for (int i = 0; i < FF_ARRAY_ELEMS(src->buf); i++) {
         if (!src->buf[i])
-            continue;
+            break;
         dst->buf[i] = av_buffer_ref(src->buf[i]);
         if (!dst->buf[i])
             return AVERROR(ENOMEM);
