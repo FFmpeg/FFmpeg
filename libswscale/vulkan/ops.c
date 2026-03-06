@@ -183,10 +183,6 @@ static int add_ops_glsl(VulkanPriv *p, FFVulkanOpsCtx *s,
         const SwsOp *op = &ops->ops[n];
         /* Set initial type */
         if (op->op == SWS_OP_READ || op->op == SWS_OP_WRITE) {
-            if (op->rw.frac)
-                return AVERROR(ENOTSUP);
-        }
-        if (op->op == SWS_OP_READ || op->op == SWS_OP_WRITE) {
             const char *img_type = op->type == SWS_PIXEL_F32 ? "rgba32f"  :
                                    op->type == SWS_PIXEL_U32 ? "rgba32ui" :
                                    op->type == SWS_PIXEL_U16 ? "rgba16ui" :
@@ -237,7 +233,9 @@ static int add_ops_glsl(VulkanPriv *p, FFVulkanOpsCtx *s,
 
         switch (op->op) {
         case SWS_OP_READ: {
-            if (op->rw.packed) {
+            if (op->rw.frac) {
+                return AVERROR(ENOTSUP);
+            } else if (op->rw.packed) {
                 GLSLF(1, %s = %s(imageLoad(src_img[0], pos));                  ,
                       type_name, type_v);
             } else {
@@ -248,7 +246,9 @@ static int add_ops_glsl(VulkanPriv *p, FFVulkanOpsCtx *s,
             break;
         }
         case SWS_OP_WRITE: {
-            if (op->rw.packed) {
+            if (op->rw.frac) {
+                return AVERROR(ENOTSUP);
+            } else if (op->rw.packed) {
                 GLSLF(1, imageStore(dst_img[0], pos, %s(%s));                  ,
                       type_v, type_name);
             } else {
