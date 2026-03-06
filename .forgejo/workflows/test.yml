@@ -75,13 +75,32 @@ jobs:
           echo "New FATE samples were injected from PR attachments. Please add them to the official fate-suite before merging."
           exit 1
   run_fate_full:
-    name: Fate (Full, ${{ matrix.target_exec }})
+    name: Fate (${{ matrix.name }})
     strategy:
       fail-fast: false
       matrix:
-        image: ['ghcr.io/btbn/ffmpeg-builds/win64-gpl:latest']
-        target_exec: ['wine']
-    runs-on: linux-amd64
+        include:
+          - name: 'Full, Wine, win64'
+            image: 'ghcr.io/btbn/ffmpeg-builds/win64-gpl:latest'
+            target_exec: 'wine'
+            runner: 'linux-amd64'
+          - name: 'Full, Linux, aarch64'
+            image: 'ghcr.io/btbn/ffmpeg-builds/linuxarm64-gpl:latest-arm'
+            target_exec: ''
+            runner: 'linux-aarch64'
+          - name: 'Qemu, Linux, ppc64'
+            image: 'ghcr.io/btbn/ffmpeg-builds/base-linuxppc64:latest-arm'
+            target_exec: 'qemu-ppc64'
+            runner: 'linux-aarch64-big'
+          - name: 'Qemu, Linux, mips64'
+            image: 'ghcr.io/btbn/ffmpeg-builds/base-linuxmips64:latest-arm'
+            target_exec: 'qemu-mips64'
+            runner: 'linux-aarch64-big'
+          - name: 'Qemu, Linux, riscv64'
+            image: 'ghcr.io/btbn/ffmpeg-builds/base-linuxriscv64:latest-arm'
+            target_exec: 'qemu-riscv64'
+            runner: 'linux-aarch64-big'
+    runs-on: ${{ matrix.runner }}
     container: ${{ matrix.image }}
     steps:
       - name: Checkout
