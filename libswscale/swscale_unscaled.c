@@ -2355,6 +2355,8 @@ static int planarCopyWrapper(SwsInternal *c, const uint8_t *const src[],
             } else {
                 if (is16BPS(c->opts.src_format) && is16BPS(c->opts.dst_format))
                     length *= 2;
+                else if (isFloat(c->opts.src_format) && isFloat(c->opts.dst_format))
+                    length *= 4;
                 else if (desc_src->comp[0].depth == 1)
                     length >>= 3; // monowhite/black
                 for (i = 0; i < height; i++) {
