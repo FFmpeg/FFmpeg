@@ -28,6 +28,7 @@
 
 #undef HAVE_AV_CONFIG_H
 #include "libavutil/cpu.h"
+#include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/lfg.h"
 #include "libavutil/sfc64.h"
@@ -598,8 +599,10 @@ static int parse_options(int argc, char **argv, struct options *opts, FILE **fp)
                     "       Only test the specified destination pixel format\n"
                     "   -src <pixfmt>\n"
                     "       Only test the specified source pixel format\n"
+                    "   -s <size>\n"
+                    "       Set frame size (WxH or abbreviation)\n"
                     "   -bench <iters>\n"
-                    "       Run benchmarks with the specified number of iterations. This mode also increases the size of the test images\n"
+                    "       Run benchmarks with the specified number of iterations. This mode also sets the frame size to 1920x1080 (unless -s is specified)\n"
                     "   -flags <flags>\n"
                     "       Test with a specific combination of flags\n"
                     "   -dither <mode>\n"
@@ -643,12 +646,15 @@ static int parse_options(int argc, char **argv, struct options *opts, FILE **fp)
                 fprintf(stderr, "invalid pixel format %s\n", argv[i + 1]);
                 return -1;
             }
+        } else if (!strcmp(argv[i], "-s")) {
+            if (av_parse_video_size(&opts->w, &opts->h, argv[i + 1]) < 0) {
+                fprintf(stderr, "invalid frame size %s\n", argv[i + 1]);
+                return -1;
+            }
         } else if (!strcmp(argv[i], "-bench")) {
             opts->bench = 1;
             opts->iters = atoi(argv[i + 1]);
             opts->iters = FFMAX(opts->iters, 1);
-            opts->w = 1920;
-            opts->h = 1080;
         } else if (!strcmp(argv[i], "-flags")) {
             SwsContext *dummy = sws_alloc_context();
             const AVOption *flags_opt = av_opt_find(dummy, "sws_flags", NULL, 0, 0);
@@ -675,6 +681,11 @@ bad_option:
         }
     }
 
+    if (opts->w < 0 || opts->h < 0) {
+        opts->w = opts->bench ? 1920 : 96;
+        opts->h = opts->bench ? 1080 : 96;
+    }
+
     return 0;
 }
 
@@ -683,8 +694,8 @@ int main(int argc, char **argv)
     struct options opts = {
         .src_fmt = AV_PIX_FMT_NONE,
         .dst_fmt = AV_PIX_FMT_NONE,
-        .w       = 96,
-        .h       = 96,
+        .w       = -1,
+        .h       = -1,
         .threads = 1,
         .iters   = 1,
         .prob    = 1.0,
