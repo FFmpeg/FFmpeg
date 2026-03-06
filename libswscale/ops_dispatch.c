@@ -95,15 +95,21 @@ int ff_sws_ops_compile(SwsContext *ctx, const SwsOpList *ops, SwsCompiledOp *out
     return AVERROR(ENOTSUP);
 }
 
+void ff_sws_compiled_op_unref(SwsCompiledOp *comp)
+{
+    if (comp->free)
+        comp->free(comp->priv);
+
+    *comp = (SwsCompiledOp) {0};
+}
+
 static void op_pass_free(void *ptr)
 {
     SwsOpPass *p = ptr;
     if (!p)
         return;
 
-    if (p->comp.free)
-        p->comp.free(p->comp.priv);
-
+    ff_sws_compiled_op_unref(&p->comp);
     av_free(p);
 }
 

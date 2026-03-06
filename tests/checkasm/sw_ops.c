@@ -241,10 +241,9 @@ static void check_ops(const char *report, const unsigned ranges[NB_PLANES],
         bench(comp_new.func, &exec, comp_new.priv, 0, 0, PIXELS / comp_new.block_size, LINES);
     }
 
-    if (comp_new.func != comp_ref.func && comp_new.free)
-        comp_new.free(comp_new.priv);
-    if (comp_ref.free)
-        comp_ref.free(comp_ref.priv);
+    if (comp_new.func != comp_ref.func)
+        ff_sws_compiled_op_unref(&comp_new);
+    ff_sws_compiled_op_unref(&comp_ref);
     sws_free_context(&ctx);
 }
 

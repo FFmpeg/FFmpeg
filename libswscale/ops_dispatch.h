@@ -100,4 +100,6 @@ typedef struct SwsCompiledOp {
     void (*free)(void *priv);
 } SwsCompiledOp;
 
+void ff_sws_compiled_op_unref(SwsCompiledOp *comp);
+
 #endif /* SWSCALE_OPS_DISPATCH_H */
