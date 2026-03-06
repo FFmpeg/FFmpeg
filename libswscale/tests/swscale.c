@@ -52,6 +52,7 @@ struct options {
     int flags;
     int dither;
     int unscaled;
+    int legacy;
 };
 
 struct mode {
@@ -404,7 +405,8 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
     if (ret < 0)
         goto error;
 
-    ret = scale_new(dst, src, mode, opts, &r.time);
+    ret = opts->legacy ? scale_legacy(dst, src, mode, opts, &r.time)
+                       : scale_new(dst, src, mode, opts, &r.time);
     if (ret < 0)
         goto error;
 
@@ -417,8 +419,22 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
         goto error;
 
     get_ssim(r.ssim, out, ref, comps);
+
+    if (opts->legacy) {
+        /* Legacy swscale does not perform bit accurate upconversions of low
+         * bit depth RGB. This artificially improves the SSIM score because the
+         * resulting error deletes some of the input dither noise. This gives
+         * it an unfair advantage when compared against a bit exact reference.
+         * Work around this by ensuring that the resulting SSIM score is not
+         * higher than it theoretically "should" be. */
+        if (src_var > dst_var) {
+            const float src_loss = (2 * ref_var + c1) / (2 * ref_var + src_var + c1);
+            r.ssim[0] = FFMIN(r.ssim[0], src_loss);
+        }
+    }
+
     r.loss = get_loss(r.ssim);
-    if (r.loss - expected_loss > 1e-2 && dst_w >= ref->width && dst_h >= ref->height) {
+    if (!opts->legacy && r.loss - expected_loss > 1e-2 && dst_w >= ref->width && dst_h >= ref->height) {
         ret = -1;
         goto bad_loss;
     }
@@ -658,6 +674,8 @@ static int parse_options(int argc, char **argv, struct options *opts, FILE **fp)
                     "       Test with a specific dither mode\n"
                     "   -unscaled <1 or 0>\n"
                     "       If 1, test only conversions that do not involve scaling\n"
+                    "   -legacy <1 or 0>\n"
+                    "       If 1, force using legacy swscale for the main conversion\n"
                     "   -threads <threads>\n"
                     "       Use the specified number of threads\n"
                     "   -cpuflags <cpuflags>\n"
@@ -717,6 +735,8 @@ static int parse_options(int argc, char **argv, struct options *opts, FILE **fp)
             opts->dither = atoi(argv[i + 1]);
         } else if (!strcmp(argv[i], "-unscaled")) {
             opts->unscaled = atoi(argv[i + 1]);
+        } else if (!strcmp(argv[i], "-legacy")) {
+            opts->legacy = atoi(argv[i + 1]);
         } else if (!strcmp(argv[i], "-threads")) {
             opts->threads = atoi(argv[i + 1]);
         } else if (!strcmp(argv[i], "-p")) {
