@@ -182,8 +182,7 @@ static int add_ops_glsl(VulkanPriv *p, FFVulkanOpsCtx *s,
     for (int n = 0; n < ops->num_ops; n++) {
         const SwsOp *op = &ops->ops[n];
         /* Set initial type */
-        if (op->op == SWS_OP_READ || op->op == SWS_OP_WRITE ||
-            op->op == SWS_OP_CLEAR) {
+        if (op->op == SWS_OP_READ || op->op == SWS_OP_WRITE) {
             if (op->rw.frac)
                 return AVERROR(ENOTSUP);
         }
