@@ -42,8 +42,8 @@ typedef struct SwsGraph SwsGraph;
  * Output `h` lines of filtered data. `out` and `in` point to the
  * start of the image buffer for this pass.
  */
-typedef void (*sws_filter_run_t)(const SwsFrame *out, const SwsFrame *in,
-                                 int y, int h, const SwsPass *pass);
+typedef void (*SwsPassFunc)(const SwsFrame *out, const SwsFrame *in,
+                            int y, int h, const SwsPass *pass);
 
 /**
  * Represents an allocated output buffer for a filter pass.
@@ -68,7 +68,7 @@ struct SwsPass {
      * the granularity dictated by `slice_h`. Individual slices sent to `run`
      * are always equal to (or smaller than, for the last slice) `slice_h`.
      */
-    sws_filter_run_t run;
+    SwsPassFunc run;
     enum AVPixelFormat format; /* new pixel format */
     int width, height; /* new output size */
     int slice_h;       /* filter granularity */
@@ -159,7 +159,7 @@ int ff_sws_graph_create(SwsContext *ctx, const SwsFormat *dst, const SwsFormat *
  */
 int ff_sws_graph_add_pass(SwsGraph *graph, enum AVPixelFormat fmt,
                           int width, int height, SwsPass *input,
-                          int align, void *priv, sws_filter_run_t run,
+                          int align, void *priv, SwsPassFunc run,
                           SwsPass **out_pass);
 
 /**

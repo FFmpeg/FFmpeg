@@ -106,7 +106,7 @@ static void free_buffer(AVRefStructOpaque opaque, void *obj)
 
 int ff_sws_graph_add_pass(SwsGraph *graph, enum AVPixelFormat fmt,
                           int width, int height, SwsPass *input,
-                          int align, void *priv, sws_filter_run_t run,
+                          int align, void *priv, SwsPassFunc run,
                           SwsPass **out_pass)
 {
     int ret;
