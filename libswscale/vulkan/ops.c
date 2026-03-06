@@ -180,6 +180,28 @@ static void add_desc_read_write(FFVulkanDescriptorSetBinding *out_desc,
 }
 
 #if CONFIG_LIBSHADERC || CONFIG_LIBGLSLANG
+static void add_desc_read_write(FFVulkanDescriptorSetBinding *out_desc,
+                                enum FFVkShaderRepFormat *out_rep,
+                                const SwsOp *op)
+{
+    const char *img_type = op->type == SWS_PIXEL_F32 ? "rgba32f"  :
+                           op->type == SWS_PIXEL_U32 ? "rgba32ui" :
+                           op->type == SWS_PIXEL_U16 ? "rgba16ui" :
+                                                       "rgba8ui";
+
+    *out_desc = (FFVulkanDescriptorSetBinding) {
+        .name = op->op == SWS_OP_WRITE ? "dst_img" : "src_img",
+        .type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+        .mem_layout = img_type,
+        .mem_quali = op->op == SWS_OP_WRITE ? "writeonly" : "readonly",
+        .dimensions = 2,
+        .elems = op->rw.packed ? 1 : op->rw.elems,
+        .stages = VK_SHADER_STAGE_COMPUTE_BIT,
+    };
+
+    *out_rep = op->type == SWS_PIXEL_F32 ? FF_VK_REP_FLOAT : FF_VK_REP_UINT;
+}
+
 static int add_ops_glsl(VulkanPriv *p, FFVulkanOpsCtx *s,
                         SwsOpList *ops, FFVulkanShader *shd)
 {
