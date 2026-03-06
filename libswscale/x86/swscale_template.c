@@ -25,12 +25,9 @@
 
 #undef REAL_MOVNTQ
 #undef MOVNTQ
-#undef MOVNTQ2
-#undef PREFETCH
 
 
 #define REAL_MOVNTQ(a,b) "movntq " #a ", " #b " \n\t"
-#define MOVNTQ2 "movntq "
 #define MOVNTQ(a,b)  REAL_MOVNTQ(a,b)
 
 #define YSCALEYUV2PACKEDX_UV \
@@ -485,59 +482,6 @@ static void RENAME(yuv2rgb555_X)(SwsInternal *c, const int16_t *lumFilter,
     WRITERGB15(%4, "%5", %%FF_REGa)
     YSCALEYUV2PACKEDX_END
 }
-
-#define WRITEBGR24MMX(dst, dstw, index) \
-    /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */\
-    "movq      %%mm2, %%mm1     \n\t" /* B */\
-    "movq      %%mm5, %%mm6     \n\t" /* R */\
-    "punpcklbw %%mm4, %%mm2     \n\t" /* GBGBGBGB 0 */\
-    "punpcklbw %%mm7, %%mm5     \n\t" /* 0R0R0R0R 0 */\
-    "punpckhbw %%mm4, %%mm1     \n\t" /* GBGBGBGB 2 */\
-    "punpckhbw %%mm7, %%mm6     \n\t" /* 0R0R0R0R 2 */\
-    "movq      %%mm2, %%mm0     \n\t" /* GBGBGBGB 0 */\
-    "movq      %%mm1, %%mm3     \n\t" /* GBGBGBGB 2 */\
-    "punpcklwd %%mm5, %%mm0     \n\t" /* 0RGB0RGB 0 */\
-    "punpckhwd %%mm5, %%mm2     \n\t" /* 0RGB0RGB 1 */\
-    "punpcklwd %%mm6, %%mm1     \n\t" /* 0RGB0RGB 2 */\
-    "punpckhwd %%mm6, %%mm3     \n\t" /* 0RGB0RGB 3 */\
-\
-    "movq      %%mm0, %%mm4     \n\t" /* 0RGB0RGB 0 */\
-    "movq      %%mm2, %%mm6     \n\t" /* 0RGB0RGB 1 */\
-    "movq      %%mm1, %%mm5     \n\t" /* 0RGB0RGB 2 */\
-    "movq      %%mm3, %%mm7     \n\t" /* 0RGB0RGB 3 */\
-\
-    "psllq       $40, %%mm0     \n\t" /* RGB00000 0 */\
-    "psllq       $40, %%mm2     \n\t" /* RGB00000 1 */\
-    "psllq       $40, %%mm1     \n\t" /* RGB00000 2 */\
-    "psllq       $40, %%mm3     \n\t" /* RGB00000 3 */\
-\
-    "punpckhdq %%mm4, %%mm0     \n\t" /* 0RGBRGB0 0 */\
-    "punpckhdq %%mm6, %%mm2     \n\t" /* 0RGBRGB0 1 */\
-    "punpckhdq %%mm5, %%mm1     \n\t" /* 0RGBRGB0 2 */\
-    "punpckhdq %%mm7, %%mm3     \n\t" /* 0RGBRGB0 3 */\
-\
-    "psrlq        $8, %%mm0     \n\t" /* 00RGBRGB 0 */\
-    "movq      %%mm2, %%mm6     \n\t" /* 0RGBRGB0 1 */\
-    "psllq       $40, %%mm2     \n\t" /* GB000000 1 */\
-    "por       %%mm2, %%mm0     \n\t" /* GBRGBRGB 0 */\
-    MOVNTQ(%%mm0, (dst))\
-\
-    "psrlq       $24, %%mm6     \n\t" /* 0000RGBR 1 */\
-    "movq      %%mm1, %%mm5     \n\t" /* 0RGBRGB0 2 */\
-    "psllq       $24, %%mm1     \n\t" /* BRGB0000 2 */\
-    "por       %%mm1, %%mm6     \n\t" /* BRGBRGBR 1 */\
-    MOVNTQ(%%mm6, 8(dst))\
-\
-    "psrlq       $40, %%mm5     \n\t" /* 000000RG 2 */\
-    "psllq        $8, %%mm3     \n\t" /* RGBRGB00 3 */\
-    "por       %%mm3, %%mm5     \n\t" /* RGBRGBRG 2 */\
-    MOVNTQ(%%mm5, 16(dst))\
-\
-    "add         $24, "#dst"    \n\t"\
-\
-    "add          $8, "#index"  \n\t"\
-    "cmp      "dstw", "#index"  \n\t"\
-    " jb          1b            \n\t"
 
 #define WRITEBGR24MMXEXT(dst, dstw, index) \
     /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */\
