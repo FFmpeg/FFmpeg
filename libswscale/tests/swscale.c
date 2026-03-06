@@ -262,7 +262,7 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
     float ssim[4], ssim_sws[4];
     const int comps = fmt_comps(src_fmt) & fmt_comps(dst_fmt);
     int64_t time, time_ref = 0;
-    int ret = -1;
+    int ret;
 
     /* Estimate the expected amount of loss from bit depth reduction */
     const float c1 = 0.01 * 0.01; /* stabilization constant */
@@ -278,8 +278,10 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
 
     dst = av_frame_alloc();
     out = av_frame_alloc();
-    if (!dst || !out)
+    if (!dst || !out) {
+        ret = AVERROR(ENOMEM);
         goto error;
+    }
 
     if (src->format != src_fmt) {
         av_frame_unref(src);
@@ -287,7 +289,8 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
         src->width  = ref->width;
         src->height = ref->height;
         src->format = src_fmt;
-        if (sws_scale_frame(sws_ref_src, src, ref) < 0) {
+        ret = sws_scale_frame(sws_ref_src, src, ref);
+        if (ret < 0) {
             av_log(NULL, AV_LOG_ERROR, "Failed %s ---> %s\n",
                    av_get_pix_fmt_name(ref->format), av_get_pix_fmt_name(src->format));
             goto error;
@@ -307,7 +310,8 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
     sws_src_dst->dither = mode->dither;
     sws_src_dst->threads = opts->threads;
 
-    if (sws_frame_setup(sws_src_dst, dst, src) < 0) {
+    ret = sws_frame_setup(sws_src_dst, dst, src);
+    if (ret < 0) {
         av_log(NULL, AV_LOG_ERROR, "Failed to setup %s ---> %s\n",
                av_get_pix_fmt_name(src->format), av_get_pix_fmt_name(dst->format));
         goto error;
@@ -317,7 +321,8 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
 
     for (int i = 0; i < opts->iters; i++) {
         unref_buffers(dst);
-        if (sws_scale_frame(sws_src_dst, dst, src) < 0) {
+        ret = sws_scale_frame(sws_src_dst, dst, src);
+        if (ret < 0) {
             av_log(NULL, AV_LOG_ERROR, "Failed %s ---> %s\n",
                    av_get_pix_fmt_name(src->format), av_get_pix_fmt_name(dst->format));
             goto error;
@@ -326,7 +331,8 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
 
     time = av_gettime_relative() - time;
 
-    if (sws_scale_frame(sws_dst_out, out, dst) < 0) {
+    ret = sws_scale_frame(sws_dst_out, out, dst);
+    if (ret < 0) {
         av_log(NULL, AV_LOG_ERROR, "Failed %s ---> %s\n",
                av_get_pix_fmt_name(dst->format), av_get_pix_fmt_name(out->format));
         goto error;
@@ -351,19 +357,23 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
                mode->flags, mode->dither);
         av_log(NULL, level, "  loss %g is %s by %g, expected loss %g\n",
                loss, bad ? "WORSE" : "worse", loss - expected_loss, expected_loss);
-        if (bad)
+        if (bad) {
+            ret = -1;
             goto error;
+        }
     }
 
     if (!ssim_ref) {
         /* Compare against the legacy swscale API as a reference */
-        if (scale_legacy(dst, src, mode, opts, &time_ref) < 0) {
+        ret = scale_legacy(dst, src, mode, opts, &time_ref);
+        if (ret < 0) {
             av_log(NULL, AV_LOG_ERROR, "Failed ref %s ---> %s\n",
                    av_get_pix_fmt_name(src->format), av_get_pix_fmt_name(dst->format));
             goto error;
         }
 
-        if (sws_scale_frame(sws_dst_out, out, dst) < 0)
+        ret = sws_scale_frame(sws_dst_out, out, dst);
+        if (ret < 0)
             goto error;
 
         get_ssim(ssim_sws, out, ref, comps);
@@ -391,8 +401,10 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
                    "SSIM {Y=%f U=%f V=%f A=%f}\n",
                    loss, bad ? "WORSE" : "worse", loss - loss_ref, loss_ref,
                    ssim_ref[0], ssim_ref[1], ssim_ref[2], ssim_ref[3]);
-            if (bad)
+            if (bad) {
+                ret = -1;
                 goto error;
+            }
         }
     }
 
