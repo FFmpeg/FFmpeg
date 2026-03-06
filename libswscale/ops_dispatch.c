@@ -21,6 +21,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/mem.h"
 #include "libavutil/mem_internal.h"
+#include "libavutil/refstruct.h"
 
 #include "ops.h"
 #include "ops_internal.h"
@@ -40,6 +41,7 @@ typedef struct SwsOpPass {
     int pixel_bits_out;
     int idx_in[4];
     int idx_out[4];
+    int *offsets_y;
     bool memcpy_first;
     bool memcpy_last;
     bool memcpy_out;
@@ -109,17 +111,19 @@ static void op_pass_free(void *ptr)
         return;
 
     ff_sws_compiled_op_unref(&p->comp);
+    av_refstruct_unref(&p->offsets_y);
     av_free(p);
 }
 
-static inline void get_row_data(const SwsOpPass *p, const int y,
+static inline void get_row_data(const SwsOpPass *p, const int y_dst,
                                 const uint8_t *in[4], uint8_t *out[4])
 {
     const SwsOpExec *base = &p->exec_base;
+    const int y_src = p->offsets_y ? p->offsets_y[y_dst] : y_dst;
     for (int i = 0; i < p->planes_in; i++)
-        in[i] = base->in[i] + (y >> base->in_sub_y[i]) * base->in_stride[i];
+        in[i] = base->in[i] + (y_src >> base->in_sub_y[i]) * base->in_stride[i];
     for (int i = 0; i < p->planes_out; i++)
-        out[i] = base->out[i] + (y >> base->out_sub_y[i]) * base->out_stride[i];
+        out[i] = base->out[i] + (y_dst >> base->out_sub_y[i]) * base->out_stride[i];
 }
 
 static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
@@ -365,6 +369,9 @@ static int compile(SwsGraph *graph, const SwsOpList *ops, SwsPass *input,
         p->idx_in[i]  = i < p->planes_in  ? ops->order_src.in[i] : -1;
         p->idx_out[i] = i < p->planes_out ? ops->order_dst.in[i] : -1;
     }
+
+    if (read->rw.filter == SWS_OP_FILTER_V)
+        p->offsets_y = av_refstruct_ref(read->rw.kernel->offsets);
 
     return ff_sws_graph_add_pass(graph, dst->format, dst->width, dst->height,
                                  input, p->comp.slice_align, op_pass_run,
