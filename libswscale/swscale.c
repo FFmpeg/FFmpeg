@@ -1381,6 +1381,12 @@ int sws_scale_frame(SwsContext *sws, AVFrame *dst, const AVFrame *src)
     if (dst->data[0]) /* user-provided buffers */
         goto process_frame;
 
+    /* Sanity */
+    memset(dst->buf, 0, sizeof(dst->buf));
+    memset(dst->data, 0, sizeof(dst->data));
+    memset(dst->linesize, 0, sizeof(dst->linesize));
+    dst->extended_data = dst->data;
+
     if (src->buf[0] && top->noop && (!bot || bot->noop))
         return frame_ref(dst, src);
 
