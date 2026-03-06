@@ -1652,10 +1652,12 @@ static int map_auto_video(Muxer *mux, const OptionsContext *o)
         }
         for (int i = 0; i < ifile->nb_streams; i++) {
             InputStream *ist = ifile->streams[i];
+            const AVCodecDescriptor *desc = avcodec_descriptor_get(ist->st->codecpar->codec_id);
             int64_t score;
 
             if (ist->user_set_discard == AVDISCARD_ALL ||
-                ist->st->codecpar->codec_type != AVMEDIA_TYPE_VIDEO)
+                ist->st->codecpar->codec_type != AVMEDIA_TYPE_VIDEO ||
+                (desc && (desc->props & AV_CODEC_PROP_ENHANCEMENT)))
                 continue;
 
             score = ist->st->codecpar->width * (int64_t)ist->st->codecpar->height
