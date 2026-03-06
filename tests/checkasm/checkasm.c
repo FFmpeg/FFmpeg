@@ -190,6 +190,7 @@ static const struct {
         { "hevc_dequant", checkasm_check_hevc_dequant },
         { "hevc_idct", checkasm_check_hevc_idct },
         { "hevc_pel", checkasm_check_hevc_pel },
+        { "hevc_pred", checkasm_check_hevc_pred },
         { "hevc_sao", checkasm_check_hevc_sao },
     #endif
     #if CONFIG_HPELDSP

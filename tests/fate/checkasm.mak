@@ -30,6 +30,7 @@ FATE_CHECKASM = fate-checkasm-aacencdsp                                 \
                 fate-checkasm-hevc_dequant                              \
                 fate-checkasm-hevc_idct                                 \
                 fate-checkasm-hevc_pel                                  \
+                fate-checkasm-hevc_pred                                 \
                 fate-checkasm-hevc_sao                                  \
                 fate-checkasm-hpeldsp                                   \
                 fate-checkasm-huffyuvdsp                                \
