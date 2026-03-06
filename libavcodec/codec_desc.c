@@ -3838,9 +3838,10 @@ static const AVCodecDescriptor codec_descriptors[] = {
     },
     {
         .id        = AV_CODEC_ID_LCEVC,
-        .type      = AVMEDIA_TYPE_DATA,
+        .type      = AVMEDIA_TYPE_VIDEO,
         .name      = "lcevc",
         .long_name = NULL_IF_CONFIG_SMALL("LCEVC (Low Complexity Enhancement Video Coding) / MPEG-5 LCEVC / MPEG-5 part 2"),
+        .props     = AV_CODEC_PROP_ENHANCEMENT,
     },
     {
         .id        = AV_CODEC_ID_SMPTE_436M_ANC,

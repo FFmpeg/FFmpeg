@@ -1065,9 +1065,8 @@ typedef struct AVStreamGroupTileGrid {
  * AVStreamGroupLCEVC is meant to define the relation between video streams
  * and a data stream containing LCEVC enhancement layer NALUs.
  *
- * No more than one stream of @ref AVCodecParameters.codec_type "codec_type"
- * AVMEDIA_TYPE_DATA shall be present, and it must be of
- * @ref AVCodecParameters.codec_id "codec_id" AV_CODEC_ID_LCEVC.
+ * No more than one stream of
+ * @ref AVCodecParameters.codec_id "codec_id" AV_CODEC_ID_LCEVC shall be present.
  */
 typedef struct AVStreamGroupLCEVC {
     const AVClass *av_class;

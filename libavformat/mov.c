@@ -10802,8 +10802,6 @@ static int mov_parse_lcevc_streams(AVFormatContext *s)
             !(sc->tref_flags & MOV_TREF_FLAG_ENHANCEMENT))
             continue;
 
-        st->codecpar->codec_type = AVMEDIA_TYPE_DATA;
-
         stg = avformat_stream_group_create(s, AV_STREAM_GROUP_PARAMS_LCEVC, NULL);
         if (!stg)
             return AVERROR(ENOMEM);
@@ -10811,8 +10809,6 @@ static int mov_parse_lcevc_streams(AVFormatContext *s)
         stg->id = st->id;
         stg->params.lcevc->width  = st->codecpar->width;
         stg->params.lcevc->height = st->codecpar->height;
-        st->codecpar->width = 0;
-        st->codecpar->height = 0;
 
         while (st_base = mov_find_reference_track(s, st, j)) {
             err = avformat_stream_group_add_stream(stg, st_base);
