@@ -97,6 +97,14 @@ typedef struct AVCodecDescriptor {
 #define AV_CODEC_PROP_FIELDS        (1 << 4)
 
 /**
+ * Video codec contains enhancement information meant to be applied to other
+ * existing frames, and can't generate usable image data on its own.
+ * A standalone decoder is unlikely to be available for it and should not
+ * be expected.
+ */
+#define AV_CODEC_PROP_ENHANCEMENT   (1 << 5)
+
+/**
  * Subtitle codec is bitmap based
  * Decoded AVSubtitle data can be read from the AVSubtitleRect->pict field.
  */

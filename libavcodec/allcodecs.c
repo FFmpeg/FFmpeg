@@ -28,11 +28,13 @@
 #include <string.h>
 
 #include "config.h"
+#include "libavutil/avassert.h"
 #include "libavutil/thread.h"
 #include "avcodec.h"
 #include "codec.h"
 #include "codec_id.h"
 #include "codec_internal.h"
+#include "codec_desc.h"
 
 extern const FFCodec ff_a64multi_encoder;
 extern const FFCodec ff_a64multi5_encoder;
@@ -1018,6 +1020,7 @@ static enum AVCodecID remap_deprecated_codec_id(enum AVCodecID id)
 static const AVCodec *find_codec(enum AVCodecID id, int (*x)(const AVCodec *))
 {
     const AVCodec *p, *experimental = NULL;
+    av_unused const AVCodecDescriptor *desc = avcodec_descriptor_get(id);
     void *i = 0;
 
     id = remap_deprecated_codec_id(id);
@@ -1026,6 +1029,7 @@ static const AVCodec *find_codec(enum AVCodecID id, int (*x)(const AVCodec *))
         if (!x(p))
             continue;
         if (p->id == id) {
+            av_assert1(!desc || !(desc->props & AV_CODEC_PROP_ENHANCEMENT));
             if (p->capabilities & AV_CODEC_CAP_EXPERIMENTAL && !experimental) {
                 experimental = p;
             } else
