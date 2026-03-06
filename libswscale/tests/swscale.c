@@ -316,6 +316,20 @@ static void print_results(const AVFrame *ref, const AVFrame *src, const AVFrame 
     fflush(stdout);
 }
 
+static int init_frame(AVFrame **pframe, const AVFrame *ref,
+                      int width, int height, enum AVPixelFormat format)
+{
+    AVFrame *frame = av_frame_alloc();
+    if (!frame)
+        return AVERROR(ENOMEM);
+    av_frame_copy_props(frame, ref);
+    frame->width  = width;
+    frame->height = height;
+    frame->format = format;
+    *pframe = frame;
+    return 0;
+}
+
 /* Runs a series of ref -> src -> dst -> out, and compares out vs ref */
 static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
                     int dst_w, int dst_h,
@@ -341,13 +355,6 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
     struct test_results r = { 0 };
     struct test_results ref_r = { .loss = NAN };
 
-    dst = av_frame_alloc();
-    out = av_frame_alloc();
-    if (!dst || !out) {
-        ret = AVERROR(ENOMEM);
-        goto error;
-    }
-
     if (src->format != src_fmt) {
         av_frame_unref(src);
         av_frame_copy_props(src, ref);
@@ -362,14 +369,9 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
         }
     }
 
-    av_frame_copy_props(dst, ref);
-    av_frame_copy_props(out, ref);
-    out->width  = ref->width;
-    out->height = ref->height;
-    out->format = ref->format;
-    dst->format = dst_fmt;
-    dst->width  = dst_w;
-    dst->height = dst_h;
+    ret = init_frame(&dst, ref, dst_w, dst_h, dst_fmt);
+    if (ret < 0)
+        goto error;
 
     sws_src_dst->flags  = mode->flags;
     sws_src_dst->dither = mode->dither;
@@ -395,6 +397,10 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
     }
 
     r.time = av_gettime_relative() - time;
+
+    ret = init_frame(&out, ref, ref->width, ref->height, ref->format);
+    if (ret < 0)
+        goto error;
 
     ret = sws_scale_frame(sws_dst_out, out, dst);
     if (ret < 0) {
