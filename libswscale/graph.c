@@ -573,9 +573,7 @@ static int add_convert_pass(SwsGraph *graph, const SwsFormat *src,
         goto fail;
 
     /* The new format conversion layer cannot scale for now */
-    if (src->width != dst->width || src->height != dst->height ||
-        src->desc->log2_chroma_h || src->desc->log2_chroma_w ||
-        dst->desc->log2_chroma_h || dst->desc->log2_chroma_w)
+    if (src->width != dst->width || src->height != dst->height)
         goto fail;
 
     /* The new code does not yet support alpha blending */
