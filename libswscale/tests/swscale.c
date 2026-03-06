@@ -238,7 +238,8 @@ static int scale_legacy(AVFrame *dst, const AVFrame *src,
     if (ret < 0)
         goto error;
 
-    if ((ret = sws_init_context(sws_legacy, NULL, NULL)) < 0)
+    ret = sws_init_context(sws_legacy, NULL, NULL);
+    if (ret < 0)
         goto error;
 
     int64_t time = av_gettime_relative();
@@ -728,7 +729,8 @@ int main(int argc, char **argv)
     ref->height = opts.h;
     ref->format = AV_PIX_FMT_YUVA444P;
 
-    if (init_ref(ref, &opts) < 0)
+    ret = init_ref(ref, &opts);
+    if (ret < 0)
         goto error;
 
     ret = fp ? run_file_tests(ref, fp, &opts)
