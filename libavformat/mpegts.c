@@ -583,7 +583,7 @@ static void mpegts_close_filter(MpegTSContext *ts, MpegTSFilter *filter)
         av_buffer_unref(&pes->buffer);
         /* referenced private data will be freed later in
          * avformat_close_input (pes->st->priv_data == pes) */
-        if (!pes->st || pes->merged_st) {
+        if (!pes->st || pes->merged_st || !pes->st->priv_data) {
             av_freep(&filter->u.pes_filter.opaque);
         }
     }
