@@ -65,6 +65,7 @@ struct test_results {
     float ssim[4];
     float loss;
     int64_t time;
+    int iters;
 };
 
 const SwsFlags flags[] = {
@@ -313,26 +314,32 @@ static void print_results(const AVFrame *ref, const AVFrame *src, const AVFrame 
                opts->pretty ?  8 : 0, mode->flags,
                mode->dither);
 
-        printf(", SSIM={Y=%f U=%f V=%f A=%f} loss=%e",
-               r->ssim[0], r->ssim[1], r->ssim[2], r->ssim[3],
-               r->loss);
+        if (!opts->bench || !ref_r) {
+            printf(", SSIM={Y=%f U=%f V=%f A=%f} loss=%e",
+                   r->ssim[0], r->ssim[1], r->ssim[2], r->ssim[3],
+                   r->loss);
+            if (ref_r)
+                printf(" (ref=%e)", ref_r->loss);
+        }
 
-        if (opts->bench && ref_r->time) {
-            double ratio = (double) ref_r->time / r->time;
-            if (FFMIN(r->time, ref_r->time) > 100 /* don't pollute stats with low precision */) {
-                speedup_min = FFMIN(speedup_min, ratio);
-                speedup_max = FFMAX(speedup_max, ratio);
-                speedup_logavg += log(ratio);
-                speedup_count++;
+        if (opts->bench) {
+            printf(", time=%*"PRId64"/%u us",
+                   opts->pretty ? 7 : 0, r->time, opts->iters);
+            if (ref_r) {
+                double ratio = ((double) ref_r->time / ref_r->iters)
+                             / ((double) r->time / opts->iters);
+                if (FFMIN(r->time, ref_r->time) > 100 /* don't pollute stats with low precision */) {
+                    speedup_min = FFMIN(speedup_min, ratio);
+                    speedup_max = FFMAX(speedup_max, ratio);
+                    speedup_logavg += log(ratio);
+                    speedup_count++;
+                }
+
+                printf(" (ref=%*"PRId64"/%u us), speedup=%*.3fx %s%s\033[0m",
+                       opts->pretty ? 7 : 0, ref_r->time, ref_r->iters,
+                       opts->pretty ? 6 : 0, ratio,
+                       speedup_color(ratio), ratio >= 1.0 ? "faster" : "slower");
             }
-
-            printf(", time=%*"PRId64"/%u us (ref=%*"PRId64"/%u us), speedup=%*.3fx %s%s\033[0m",
-                   opts->pretty ? 7 : 0, r->time, opts->iters,
-                   opts->pretty ? 7 : 0, ref_r->time, opts->iters,
-                   opts->pretty ? 6 : 0, ratio,
-                   speedup_color(ratio), ratio >= 1.0 ? "faster" : "slower");
-        } else if (opts->bench) {
-            printf(", time=%"PRId64"/%u us", r->time, opts->iters);
         }
         printf("\n");
 
@@ -348,7 +355,7 @@ static void print_results(const AVFrame *ref, const AVFrame *src, const AVFrame 
                r->loss, worse_str, r->loss - expected_loss, expected_loss);
     }
 
-    if (!isnan(ref_r->loss) && r->loss - ref_r->loss > 1e-4) {
+    if (ref_r && r->loss - ref_r->loss > 1e-4) {
         const int bad = r->loss - ref_r->loss > 1e-2;
         const int level = bad ? AV_LOG_ERROR : AV_LOG_WARNING;
         const char *worse_str = bad ? "WORSE" : "worse";
@@ -377,7 +384,8 @@ static int init_frame(AVFrame **pframe, const AVFrame *ref,
 static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
                     int dst_w, int dst_h,
                     const struct mode *mode, const struct options *opts,
-                    const AVFrame *ref, AVFrame *src, const float ssim_ref[4])
+                    const AVFrame *ref, AVFrame *src,
+                    const struct test_results *ref_r)
 {
     AVFrame *dst = NULL, *out = NULL;
     const int comps = fmt_comps(src_fmt) & fmt_comps(dst_fmt);
@@ -395,7 +403,6 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
     const float expected_loss = get_loss(ssim_expected);
 
     struct test_results r = { 0 };
-    struct test_results ref_r = { .loss = NAN };
 
     if (src->format != src_fmt) {
         av_frame_unref(src);
@@ -446,34 +453,7 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
         goto bad_loss;
     }
 
-    if (!ssim_ref || opts->bench) {
-        /* Compare against the legacy swscale API as a reference */
-        ret = scale_legacy(dst, src, mode, opts, &ref_r.time);
-        if (ret < 0)
-            goto error;
-
-        ret = checked_sws_scale_frame(sws_dst_out, out, dst);
-        if (ret < 0)
-            goto error;
-
-        get_ssim(ref_r.ssim, out, ref, comps);
-
-        /* Legacy swscale does not perform bit accurate upconversions of low
-         * bit depth RGB. This artificially improves the SSIM score because the
-         * resulting error deletes some of the input dither noise. This gives
-         * it an unfair advantage when compared against a bit exact reference.
-         * Work around this by ensuring that the reference SSIM score is not
-         * higher than it theoretically "should" be. */
-        if (src_var > dst_var) {
-            const float src_loss = (2 * ref_var + c1) / (2 * ref_var + src_var + c1);
-            ref_r.ssim[0] = FFMIN(ref_r.ssim[0], src_loss);
-        }
-    } else {
-        memcpy(ref_r.ssim, ssim_ref, sizeof(ref_r.ssim));
-    }
-
-    ref_r.loss = get_loss(ref_r.ssim);
-    if (r.loss - ref_r.loss > 1e-2) {
+    if (ref_r && r.loss - ref_r->loss > 1e-2) {
         ret = -1;
         goto bad_loss;
     }
@@ -484,7 +464,7 @@ bad_loss:
     print_results(ref, src, dst,
                   dst_w, dst_h,
                   mode, opts,
-                  &r, &ref_r,
+                  &r, ref_r,
                   expected_loss);
 
  error:
@@ -580,20 +560,32 @@ static int run_file_tests(const AVFrame *ref, FILE *fp, const struct options *op
         enum AVPixelFormat src_fmt;
         enum AVPixelFormat dst_fmt;
         int sw, sh, dw, dh;
-        struct test_results r;
+        struct test_results r = { 0 };
         struct mode mode;
+        int n = 0;
 
         ret = sscanf(buf,
                      "%20s %dx%d -> %20s %dx%d, flags=0x%x dither=%u, "
-                     "SSIM={Y=%f U=%f V=%f A=%f} loss=%e\n",
+                     "SSIM={Y=%f U=%f V=%f A=%f} loss=%e%n",
                      src_fmt_str, &sw, &sh, dst_fmt_str, &dw, &dh,
                      &mode.flags, &mode.dither,
                      &r.ssim[0], &r.ssim[1], &r.ssim[2], &r.ssim[3],
-                     &r.loss);
+                     &r.loss, &n);
         if (ret != 13) {
             av_log(NULL, AV_LOG_FATAL,
                    "Malformed reference file in line %d\n", line);
             goto error;
+        }
+        if (opts->bench) {
+            ret = sscanf(buf + n,
+                         ", time=%"PRId64"/%u us",
+                         &r.time, &r.iters);
+            if (ret != 2) {
+                av_log(NULL, AV_LOG_FATAL,
+                       "Missing benchmarks from reference file in line %d\n",
+                       line);
+                goto error;
+            }
         }
 
         src_fmt = av_get_pix_fmt(src_fmt_str);
@@ -616,7 +608,7 @@ static int run_file_tests(const AVFrame *ref, FILE *fp, const struct options *op
             opts->dst_fmt != AV_PIX_FMT_NONE && dst_fmt != opts->dst_fmt)
             continue;
 
-        ret = run_test(src_fmt, dst_fmt, dw, dh, &mode, opts, ref, src, r.ssim);
+        ret = run_test(src_fmt, dst_fmt, dw, dh, &mode, opts, ref, src, &r);
         if (ret < 0)
             goto error;
     }
