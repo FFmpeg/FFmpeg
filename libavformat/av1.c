@@ -126,8 +126,8 @@ static inline void uvlc(GetBitContext *gb)
 {
     int leading_zeros = 0;
 
-    while (get_bits_left(gb)) {
-        if (get_bits1(gb))
+    while (leading_zeros < 32) {
+        if (get_bits_left(gb) < 1 || get_bits1(gb))
             break;
         leading_zeros++;
     }
