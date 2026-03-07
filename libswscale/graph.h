@@ -46,6 +46,12 @@ typedef void (*SwsPassFunc)(const SwsFrame *out, const SwsFrame *in,
                             int y, int h, const SwsPass *pass);
 
 /**
+ * Function to run from the main thread before processing any lines.
+ */
+typedef void (*SwsPassSetup)(const SwsFrame *out, const SwsFrame *in,
+                             const SwsPass *pass);
+
+/**
  * Represents an allocated output buffer for a filter pass.
  */
 typedef struct SwsPassBuffer {
@@ -88,7 +94,7 @@ struct SwsPass {
     /**
      * Called once from the main thread before running the filter. Optional.
      */
-    void (*setup)(const SwsFrame *out, const SwsFrame *in, const SwsPass *pass);
+    SwsPassSetup setup;
 
     /**
      * Optional private state and associated free() function.
