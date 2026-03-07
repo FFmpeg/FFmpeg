@@ -302,12 +302,12 @@ static void print_results(const AVFrame *ref, const AVFrame *src, const AVFrame 
                           float expected_loss)
 {
     if (av_log_get_level() >= AV_LOG_INFO) {
-        printf("%s %dx%d -> %s %3dx%3d, flags=0x%x dither=%u, ",
+        printf("%s %dx%d -> %s %3dx%3d, flags=0x%x dither=%u",
                av_get_pix_fmt_name(src->format), src->width, src->height,
                av_get_pix_fmt_name(dst->format), dst->width, dst->height,
                mode->flags, mode->dither);
 
-        printf("SSIM {Y=%f U=%f V=%f A=%f} loss=%e",
+        printf(", SSIM={Y=%f U=%f V=%f A=%f} loss=%e",
                r->ssim[0], r->ssim[1], r->ssim[2], r->ssim[3],
                r->loss);
 
@@ -320,11 +320,11 @@ static void print_results(const AVFrame *ref, const AVFrame *src, const AVFrame 
                 speedup_count++;
             }
 
-            printf(" time=%"PRId64" us, ref=%"PRId64" us, speedup=%.3fx %s%s\033[0m",
+            printf(", time=%"PRId64" us (ref=%"PRId64" us), speedup=%.3fx %s%s\033[0m",
                    r->time / opts->iters, ref_r->time / opts->iters, ratio,
                    speedup_color(ratio), ratio >= 1.0 ? "faster" : "slower");
         } else if (opts->bench) {
-            printf(" time=%"PRId64" us", r->time / opts->iters);
+            printf(", time=%"PRId64" us", r->time / opts->iters);
         }
         printf("\n");
 
@@ -345,7 +345,7 @@ static void print_results(const AVFrame *ref, const AVFrame *src, const AVFrame 
         const int level = bad ? AV_LOG_ERROR : AV_LOG_WARNING;
         const char *worse_str = bad ? "WORSE" : "worse";
         av_log(NULL, level,
-               "  loss %e is %s by %e, ref loss %e SSIM {Y=%f U=%f V=%f A=%f}\n",
+               "  loss %e is %s by %e, ref loss %e SSIM={Y=%f U=%f V=%f A=%f}\n",
                r->loss, worse_str, r->loss - ref_r->loss, ref_r->loss,
                ref_r->ssim[0], ref_r->ssim[1], ref_r->ssim[2], ref_r->ssim[3]);
     }
@@ -577,7 +577,7 @@ static int run_file_tests(const AVFrame *ref, FILE *fp, const struct options *op
 
         ret = sscanf(buf,
                      "%20s %dx%d -> %20s %dx%d, flags=0x%x dither=%u, "
-                     "SSIM {Y=%f U=%f V=%f A=%f} loss=%e\n",
+                     "SSIM={Y=%f U=%f V=%f A=%f} loss=%e\n",
                      src_fmt_str, &sw, &sh, dst_fmt_str, &dw, &dh,
                      &mode.flags, &mode.dither,
                      &r.ssim[0], &r.ssim[1], &r.ssim[2], &r.ssim[3],
