@@ -333,19 +333,20 @@ static void print_results(const AVFrame *ref, const AVFrame *src, const AVFrame 
     if (r->loss - expected_loss > 1e-4 && dst_w >= ref->width && dst_h >= ref->height) {
         const int bad = r->loss - expected_loss > 1e-2;
         const int level = bad ? AV_LOG_ERROR : AV_LOG_WARNING;
-        av_log(NULL, level, "  loss %e is %s by %e, expected loss %e\n",
-               r->loss, bad ? "WORSE" : "worse", r->loss - expected_loss, expected_loss);
+        const char *worse_str = bad ? "WORSE" : "worse";
+        av_log(NULL, level,
+               "  loss %e is %s by %e, expected loss %e\n",
+               r->loss, worse_str, r->loss - expected_loss, expected_loss);
     }
 
-    if (!isnan(ref_r->loss)) {
-        if (r->loss - ref_r->loss > 1e-4) {
-            int bad = r->loss - ref_r->loss > 1e-2;
-            av_log(NULL, bad ? AV_LOG_ERROR : AV_LOG_WARNING,
-                   "  loss %e is %s by %e, ref loss %e, "
-                   "SSIM {Y=%f U=%f V=%f A=%f}\n",
-                   r->loss, bad ? "WORSE" : "worse", r->loss - ref_r->loss, ref_r->loss,
-                   ref_r->ssim[0], ref_r->ssim[1], ref_r->ssim[2], ref_r->ssim[3]);
-        }
+    if (!isnan(ref_r->loss) && r->loss - ref_r->loss > 1e-4) {
+        const int bad = r->loss - ref_r->loss > 1e-2;
+        const int level = bad ? AV_LOG_ERROR : AV_LOG_WARNING;
+        const char *worse_str = bad ? "WORSE" : "worse";
+        av_log(NULL, level,
+               "  loss %e is %s by %e, ref loss %e SSIM {Y=%f U=%f V=%f A=%f}\n",
+               r->loss, worse_str, r->loss - ref_r->loss, ref_r->loss,
+               ref_r->ssim[0], ref_r->ssim[1], ref_r->ssim[2], ref_r->ssim[3]);
     }
 }
 
