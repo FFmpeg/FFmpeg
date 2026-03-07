@@ -251,7 +251,7 @@ static int64_t get_duration(AVFormatContext *s)
     unsigned date;
     int64_t size = avio_size(s->pb);
 
-    if (start_pos + 20 > size)
+    if (start_pos < 0 || start_pos > size - 20)
         return 0;
 
     avio_skip(s->pb, 16);
