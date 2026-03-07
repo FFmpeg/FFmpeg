@@ -750,6 +750,12 @@ static int vk_decode_ffv1_init(AVCodecContext *avctx)
         (f->version == 4 && f->micro_version > 3))
         return AVERROR(ENOTSUP);
 
+    /* Streams with a low amount of slices will usually be much slower
+     * to decode, so warn the user. */
+    if (f->slice_count < 16)
+        av_log(avctx, AV_LOG_WARNING, "Stream has a low number of slices (%i), "
+               "decoding may be very slow\n", f->slice_count);
+
     err = ff_vk_decode_init(avctx);
     if (err < 0)
         return err;
