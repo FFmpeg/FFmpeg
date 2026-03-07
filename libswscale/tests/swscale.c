@@ -320,11 +320,11 @@ static void print_results(const AVFrame *ref, const AVFrame *src, const AVFrame 
                 speedup_count++;
             }
 
-            printf(", time=%"PRId64" us (ref=%"PRId64" us), speedup=%.3fx %s%s\033[0m",
-                   r->time / opts->iters, ref_r->time / opts->iters, ratio,
+            printf(", time=%"PRId64"/%u us (ref=%"PRId64"/%u us), speedup=%.3fx %s%s\033[0m",
+                   r->time, opts->iters, ref_r->time, opts->iters, ratio,
                    speedup_color(ratio), ratio >= 1.0 ? "faster" : "slower");
         } else if (opts->bench) {
-            printf(", time=%"PRId64" us", r->time / opts->iters);
+            printf(", time=%"PRId64"/%u us", r->time, opts->iters);
         }
         printf("\n");
 
