@@ -3163,6 +3163,25 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
         sti->avctx_inited = 0;
     }
 
+    /* update the stream group parameters from the stream contexts if needed */
+    for (unsigned i = 0; i < ic->nb_stream_groups; i++) {
+        AVStreamGroup *const stg  = ic->stream_groups[i];
+        AVStreamGroupLCEVC *lcevc;
+        const AVStream *st;
+
+        if (stg->type != AV_STREAM_GROUP_PARAMS_LCEVC)
+            continue;
+
+        /* For LCEVC in mpegts, the parser is needed to get the enhancement layer
+         * dimensions */
+        lcevc = stg->params.lcevc;
+        if (lcevc->width && lcevc->height)
+            continue;
+        st = stg->streams[lcevc->lcevc_index];
+        lcevc->width  = st->codecpar->width;
+        lcevc->height = st->codecpar->height;
+    }
+
 find_stream_info_err:
     for (unsigned i = 0; i < ic->nb_streams; i++) {
         AVStream *const st  = ic->streams[i];
