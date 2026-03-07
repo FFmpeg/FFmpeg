@@ -54,16 +54,11 @@ typedef struct SwsOpExec {
     /* Subsampling factors for each plane */
     uint8_t in_sub_y[4], out_sub_y[4];
     uint8_t in_sub_x[4], out_sub_x[4];
-
-    /* Pointers back to the original SwsFrame */
-    const SwsFrame *in_frame;
-    const SwsFrame *out_frame;
 } SwsOpExec;
 
 static_assert(sizeof(SwsOpExec) == 24 * sizeof(void *) +
                                    6  * sizeof(int32_t) +
-                                   16 * sizeof(uint8_t) +
-                                   2  * sizeof(void *),
+                                   16 * sizeof(uint8_t),
               "SwsOpExec layout mismatch");
 
 /**

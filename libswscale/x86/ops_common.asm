@@ -141,8 +141,6 @@ struc SwsOpExec
     .out_sub_y4 resb 4
     .in_sub_x4 resb 4
     .out_sub_x4 resb 4
-    .in_hwframe_ref resq 1
-    .out_hwframe_ref resq 1
 endstruc
 
 struc SwsOpImpl

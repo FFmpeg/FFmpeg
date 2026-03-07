@@ -180,9 +180,6 @@ static void op_pass_setup(const SwsFrame *out, const SwsFrame *in,
         exec->in_bump[i]  = exec->in_stride[i]  - blocks_main * exec->block_size_in;
         exec->out_bump[i] = exec->out_stride[i] - blocks_main * exec->block_size_out;
     }
-
-    exec->in_frame  = in;
-    exec->out_frame = out;
 }
 
 /* Dispatch kernel over the last column of the image using memcpy */
