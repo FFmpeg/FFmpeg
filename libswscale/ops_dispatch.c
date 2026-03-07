@@ -352,7 +352,7 @@ static int compile(SwsGraph *graph, const SwsOpList *ops,
                                 input, p->comp.slice_align, op_pass_run,
                                 op_pass_setup, p, op_pass_free, &pass);
     if (ret < 0)
-        goto fail;
+        return ret;
 
     *output = pass;
     return 0;

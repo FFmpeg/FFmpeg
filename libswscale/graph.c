@@ -104,6 +104,14 @@ static void free_buffer(AVRefStructOpaque opaque, void *obj)
     av_frame_free(&buffer->avframe);
 }
 
+static void pass_free(SwsPass *pass)
+{
+    if (pass->free)
+        pass->free(pass->priv);
+    av_refstruct_unref(&pass->output);
+    av_free(pass);
+}
+
 int ff_sws_graph_add_pass(SwsGraph *graph, enum AVPixelFormat fmt,
                           int width, int height, SwsPass *input,
                           int align, SwsPassFunc run, SwsPassSetup setup,
@@ -112,8 +120,11 @@ int ff_sws_graph_add_pass(SwsGraph *graph, enum AVPixelFormat fmt,
 {
     int ret;
     SwsPass *pass = av_mallocz(sizeof(*pass));
-    if (!pass)
+    if (!pass) {
+        if (free_cb)
+            free_cb(priv);
         return AVERROR(ENOMEM);
+    }
 
     pass->graph  = graph;
     pass->run    = run;
@@ -155,8 +166,7 @@ int ff_sws_graph_add_pass(SwsGraph *graph, enum AVPixelFormat fmt,
     return 0;
 
 fail:
-    av_refstruct_unref(&pass->output);
-    av_free(pass);
+    pass_free(pass);
     return ret;
 }
 
@@ -416,10 +426,8 @@ static int init_legacy_subpass(SwsGraph *graph, SwsContext *sws,
     ret = ff_sws_graph_add_pass(graph, sws->dst_format, dst_w, dst_h, input, align,
                                 c->convert_unscaled ? run_legacy_unscaled : run_legacy_swscale,
                                 setup_legacy_swscale, sws, free_legacy_swscale, &pass);
-    if (ret < 0) {
-        sws_free_context(&sws);
+    if (ret < 0)
         return ret;
-    }
 
     /**
      * For slice threading, we need to create sub contexts, similar to how
@@ -705,10 +713,8 @@ static int adapt_colors(SwsGraph *graph, SwsFormat src, SwsFormat dst,
     ret = ff_sws_graph_add_pass(graph, fmt_out, src.width, src.height,
                                 input, 1, run_lut3d, setup_lut3d, lut,
                                 free_lut3d, &pass);
-    if (ret < 0) {
-        ff_sws_lut3d_free(&lut);
+    if (ret < 0)
         return ret;
-    }
 
     *output = pass;
     return 0;
@@ -811,13 +817,8 @@ void ff_sws_graph_free(SwsGraph **pgraph)
 
     avpriv_slicethread_free(&graph->slicethread);
 
-    for (int i = 0; i < graph->num_passes; i++) {
-        SwsPass *pass = graph->passes[i];
-        if (pass->free)
-            pass->free(pass->priv);
-        av_refstruct_unref(&pass->output);
-        av_free(pass);
-    }
+    for (int i = 0; i < graph->num_passes; i++)
+        pass_free(graph->passes[i]);
     av_free(graph->passes);
 
     av_free(graph);

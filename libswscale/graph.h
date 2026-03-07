@@ -150,7 +150,8 @@ int ff_sws_graph_create(SwsContext *ctx, const SwsFormat *dst, const SwsFormat *
 
 
 /**
- * Allocate and add a new pass to the filter graph.
+ * Allocate and add a new pass to the filter graph. Takes over ownership of
+ * `priv`, even on failure.
  *
  * @param graph  Filter graph to add the pass to.
  * @param fmt    Pixel format of the output image.
