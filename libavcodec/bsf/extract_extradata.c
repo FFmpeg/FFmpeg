@@ -304,7 +304,8 @@ static int write_lcevc_nalu(AVBSFContext *ctx, PutByteContext *pbc, const H2645N
 
     while (bytestream2_get_bytes_left(&gbc) > 1) {
         GetBitContext gb;
-        int payload_size_type, payload_type, payload_size;
+        int payload_size_type, payload_type;
+        uint64_t payload_size;
         int block_size, raw_block_size, block_end;
 
         init_get_bits8(&gb, gbc.buffer, bytestream2_get_bytes_left(&gbc));
@@ -316,6 +317,9 @@ static int write_lcevc_nalu(AVBSFContext *ctx, PutByteContext *pbc, const H2645N
             return AVERROR_PATCHWELCOME;
         if (payload_size_type == 7)
             payload_size = get_mb(&gb);
+
+        if (payload_size > INT_MAX - (get_bits_count(&gb) >> 3))
+            return AVERROR_INVALIDDATA;
 
         block_size = raw_block_size = payload_size + (get_bits_count(&gb) >> 3);
         if (block_size >= bytestream2_get_bytes_left(&gbc))
