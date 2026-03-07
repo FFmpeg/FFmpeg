@@ -215,6 +215,16 @@ static void unref_buffers(AVFrame *frame)
     memset(frame->linesize, 0, sizeof(frame->linesize));
 }
 
+static int checked_sws_scale_frame(SwsContext *c, AVFrame *dst, const AVFrame *src)
+{
+    int ret = sws_scale_frame(c, dst, src);
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Failed %s ---> %s\n",
+               av_get_pix_fmt_name(src->format), av_get_pix_fmt_name(dst->format));
+    }
+    return ret;
+}
+
 static int scale_legacy(AVFrame *dst, const AVFrame *src,
                         const struct mode *mode, const struct options *opts,
                         int64_t *out_time)
@@ -250,7 +260,7 @@ static int scale_legacy(AVFrame *dst, const AVFrame *src,
 
     int64_t time = av_gettime_relative();
     for (int i = 0; ret >= 0 && i < opts->iters; i++)
-        ret = sws_scale_frame(sws_legacy, dst, src);
+        ret = checked_sws_scale_frame(sws_legacy, dst, src);
     *out_time = av_gettime_relative() - time;
 
 error:
@@ -361,12 +371,9 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
         src->width  = ref->width;
         src->height = ref->height;
         src->format = src_fmt;
-        ret = sws_scale_frame(sws_ref_src, src, ref);
-        if (ret < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Failed %s ---> %s\n",
-                   av_get_pix_fmt_name(ref->format), av_get_pix_fmt_name(src->format));
+        ret = checked_sws_scale_frame(sws_ref_src, src, ref);
+        if (ret < 0)
             goto error;
-        }
     }
 
     ret = init_frame(&dst, ref, dst_w, dst_h, dst_fmt);
@@ -388,12 +395,9 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
 
     for (int i = 0; i < opts->iters; i++) {
         unref_buffers(dst);
-        ret = sws_scale_frame(sws_src_dst, dst, src);
-        if (ret < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Failed %s ---> %s\n",
-                   av_get_pix_fmt_name(src->format), av_get_pix_fmt_name(dst->format));
+        ret = checked_sws_scale_frame(sws_src_dst, dst, src);
+        if (ret < 0)
             goto error;
-        }
     }
 
     r.time = av_gettime_relative() - time;
@@ -402,12 +406,9 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
     if (ret < 0)
         goto error;
 
-    ret = sws_scale_frame(sws_dst_out, out, dst);
-    if (ret < 0) {
-        av_log(NULL, AV_LOG_ERROR, "Failed %s ---> %s\n",
-               av_get_pix_fmt_name(dst->format), av_get_pix_fmt_name(out->format));
+    ret = checked_sws_scale_frame(sws_dst_out, out, dst);
+    if (ret < 0)
         goto error;
-    }
 
     get_ssim(r.ssim, out, ref, comps);
     r.loss = get_loss(r.ssim);
@@ -419,13 +420,10 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
     if (!ssim_ref) {
         /* Compare against the legacy swscale API as a reference */
         ret = scale_legacy(dst, src, mode, opts, &ref_r.time);
-        if (ret < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Failed ref %s ---> %s\n",
-                   av_get_pix_fmt_name(src->format), av_get_pix_fmt_name(dst->format));
+        if (ret < 0)
             goto error;
-        }
 
-        ret = sws_scale_frame(sws_dst_out, out, dst);
+        ret = checked_sws_scale_frame(sws_dst_out, out, dst);
         if (ret < 0)
             goto error;
 
@@ -619,7 +617,7 @@ static int init_ref(AVFrame *ref, const struct options *opts)
     }
 
     ctx->flags = SWS_BILINEAR | SWS_BITEXACT | SWS_ACCURATE_RND;
-    ret = sws_scale_frame(ctx, ref, rgb);
+    ret = checked_sws_scale_frame(ctx, ref, rgb);
 
 error:
     sws_free_context(&ctx);
