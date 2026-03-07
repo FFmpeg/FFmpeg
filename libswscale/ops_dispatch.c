@@ -329,6 +329,14 @@ static int compile(SwsGraph *graph, const SwsOpList *ops,
     if (ret < 0)
         goto fail;
 
+    if (p->comp.opaque) {
+        SwsCompiledOp c = p->comp;
+        av_free(p);
+        return ff_sws_graph_add_pass(graph, dst->format, dst->width, dst->height,
+                                     input, c.slice_align, c.func_opaque,
+                                     NULL, c.priv, c.free, output);
+    }
+
     const SwsOp *read  = ff_sws_op_list_input(ops);
     const SwsOp *write = ff_sws_op_list_output(ops);
     p->planes_in  = rw_planes(read);
