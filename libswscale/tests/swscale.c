@@ -719,9 +719,14 @@ static int parse_options(int argc, char **argv, struct options *opts, FILE **fp)
                 return -1;
             }
         } else if (!strcmp(argv[i], "-bench")) {
-            opts->bench = 1;
-            opts->iters = atoi(argv[i + 1]);
-            opts->iters = FFMAX(opts->iters, 1);
+            int iters = atoi(argv[i + 1]);
+            if (iters <= 0) {
+                opts->bench = 0;
+                opts->iters = 1;
+            } else {
+                opts->bench = 1;
+                opts->iters = iters;
+            }
         } else if (!strcmp(argv[i], "-flags")) {
             SwsContext *dummy = sws_alloc_context();
             const AVOption *flags_opt = av_opt_find(dummy, "sws_flags", NULL, 0, 0);
