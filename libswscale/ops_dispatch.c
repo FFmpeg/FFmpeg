@@ -347,15 +347,9 @@ static int compile(SwsGraph *graph, const SwsOpList *ops,
         p->idx_out[i] = i < p->planes_out ? ops->order_dst.in[i] : -1;
     }
 
-    SwsPass *pass;
-    ret = ff_sws_graph_add_pass(graph, dst->format, dst->width, dst->height,
-                                input, p->comp.slice_align, op_pass_run,
-                                op_pass_setup, p, op_pass_free, &pass);
-    if (ret < 0)
-        return ret;
-
-    *output = pass;
-    return 0;
+    return ff_sws_graph_add_pass(graph, dst->format, dst->width, dst->height,
+                                 input, p->comp.slice_align, op_pass_run,
+                                 op_pass_setup, p, op_pass_free, output);
 
 fail:
     op_pass_free(p);

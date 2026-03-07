@@ -662,7 +662,6 @@ static int adapt_colors(SwsGraph *graph, SwsFormat src, SwsFormat dst,
     enum AVPixelFormat fmt_in, fmt_out;
     SwsColorMap map = {0};
     SwsLut3D *lut;
-    SwsPass *pass;
     int ret;
 
     /**
@@ -710,14 +709,9 @@ static int adapt_colors(SwsGraph *graph, SwsFormat src, SwsFormat dst,
         return ret;
     }
 
-    ret = ff_sws_graph_add_pass(graph, fmt_out, src.width, src.height,
-                                input, 1, run_lut3d, setup_lut3d, lut,
-                                free_lut3d, &pass);
-    if (ret < 0)
-        return ret;
-
-    *output = pass;
-    return 0;
+    return ff_sws_graph_add_pass(graph, fmt_out, src.width, src.height,
+                                 input, 1, run_lut3d, setup_lut3d, lut,
+                                 free_lut3d, output);
 }
 
 /***************************************
@@ -743,18 +737,15 @@ static int init_passes(SwsGraph *graph)
             return ret;
     }
 
-    if (!pass) {
-        /* No passes were added, so no operations were necessary */
-        graph->noop = 1;
+    if (pass)
+        return 0;
 
-        /* Add threaded memcpy pass */
-        ret = ff_sws_graph_add_pass(graph, dst.format, dst.width, dst.height,
-                                    pass, 1, run_copy, NULL, NULL, NULL, &pass);
-        if (ret < 0)
-            return ret;
-    }
+    /* No passes were added, so no operations were necessary */
+    graph->noop = 1;
 
-    return 0;
+    /* Add threaded memcpy pass */
+    return ff_sws_graph_add_pass(graph, dst.format, dst.width, dst.height,
+                                 pass, 1, run_copy, NULL, NULL, NULL, &pass);
 }
 
 static void sws_graph_worker(void *priv, int jobnr, int threadnr, int nb_jobs,
