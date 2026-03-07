@@ -309,6 +309,26 @@ static void print_results(const AVFrame *ref, const AVFrame *src, const AVFrame 
     av_log(NULL, AV_LOG_VERBOSE - 4, "  SSIM {Y=%f U=%f V=%f A=%f}\n",
            r->ssim[0], r->ssim[1], r->ssim[2], r->ssim[3]);
 
+    if (opts->bench && ref_r->time) {
+        double ratio = (double) ref_r->time / r->time;
+        if (FFMIN(r->time, ref_r->time) > 100 /* don't pollute stats with low precision */) {
+            speedup_min = FFMIN(speedup_min, ratio);
+            speedup_max = FFMAX(speedup_max, ratio);
+            speedup_logavg += log(ratio);
+            speedup_count++;
+        }
+
+        if (av_log_get_level() >= AV_LOG_INFO) {
+            printf("  time=%"PRId64" us, ref=%"PRId64" us, speedup=%.3fx %s%s\033[0m\n",
+                   r->time / opts->iters, ref_r->time / opts->iters, ratio,
+                   speedup_color(ratio), ratio >= 1.0 ? "faster" : "slower");
+        }
+    } else if (opts->bench) {
+        av_log(NULL, AV_LOG_INFO, "  time=%"PRId64" us\n", r->time / opts->iters);
+    }
+
+    fflush(stdout);
+
     if (r->loss - expected_loss > 1e-4 && dst_w >= ref->width && dst_h >= ref->height) {
         const int bad = r->loss - expected_loss > 1e-2;
         const int level = bad ? AV_LOG_ERROR : AV_LOG_WARNING;
@@ -330,26 +350,6 @@ static void print_results(const AVFrame *ref, const AVFrame *src, const AVFrame 
                    ref_r->ssim[0], ref_r->ssim[1], ref_r->ssim[2], ref_r->ssim[3]);
         }
     }
-
-    if (opts->bench && ref_r->time) {
-        double ratio = (double) ref_r->time / r->time;
-        if (FFMIN(r->time, ref_r->time) > 100 /* don't pollute stats with low precision */) {
-            speedup_min = FFMIN(speedup_min, ratio);
-            speedup_max = FFMAX(speedup_max, ratio);
-            speedup_logavg += log(ratio);
-            speedup_count++;
-        }
-
-        if (av_log_get_level() >= AV_LOG_INFO) {
-            printf("  time=%"PRId64" us, ref=%"PRId64" us, speedup=%.3fx %s%s\033[0m\n",
-                   r->time / opts->iters, ref_r->time / opts->iters, ratio,
-                   speedup_color(ratio), ratio >= 1.0 ? "faster" : "slower");
-        }
-    } else if (opts->bench) {
-        av_log(NULL, AV_LOG_INFO, "  time=%"PRId64" us\n", r->time / opts->iters);
-    }
-
-    fflush(stdout);
 }
 
 static int init_frame(AVFrame **pframe, const AVFrame *ref,
