@@ -349,13 +349,10 @@ static int compile(SwsGraph *graph, const SwsOpList *ops,
 
     SwsPass *pass;
     ret = ff_sws_graph_add_pass(graph, dst->format, dst->width, dst->height,
-                                input, p->comp.slice_align, p, op_pass_run,
-                                &pass);
+                                input, p->comp.slice_align, op_pass_run,
+                                op_pass_setup, p, op_pass_free, &pass);
     if (ret < 0)
         goto fail;
-
-    pass->setup = op_pass_setup;
-    pass->free  = op_pass_free;
 
     *output = pass;
     return 0;

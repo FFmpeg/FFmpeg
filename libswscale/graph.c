@@ -106,7 +106,8 @@ static void free_buffer(AVRefStructOpaque opaque, void *obj)
 
 int ff_sws_graph_add_pass(SwsGraph *graph, enum AVPixelFormat fmt,
                           int width, int height, SwsPass *input,
-                          int align, void *priv, SwsPassFunc run,
+                          int align, SwsPassFunc run, SwsPassSetup setup,
+                          void *priv, void (*free_cb)(void *priv),
                           SwsPass **out_pass)
 {
     int ret;
@@ -116,7 +117,9 @@ int ff_sws_graph_add_pass(SwsGraph *graph, enum AVPixelFormat fmt,
 
     pass->graph  = graph;
     pass->run    = run;
+    pass->setup  = setup;
     pass->priv   = priv;
+    pass->free   = free_cb;
     pass->format = fmt;
     pass->width  = width;
     pass->height = height;
@@ -394,7 +397,7 @@ static int init_legacy_subpass(SwsGraph *graph, SwsContext *sws,
 
     if (c->src0Alpha && !c->dst0Alpha && isALPHA(sws->dst_format)) {
         ret = ff_sws_graph_add_pass(graph, AV_PIX_FMT_RGBA, src_w, src_h, input,
-                                    1, c, run_rgb0, &input);
+                                    1, run_rgb0, NULL, c, NULL, &input);
         if (ret < 0) {
             sws_free_context(&sws);
             return ret;
@@ -403,22 +406,20 @@ static int init_legacy_subpass(SwsGraph *graph, SwsContext *sws,
 
     if (c->srcXYZ && !(c->dstXYZ && unscaled)) {
         ret = ff_sws_graph_add_pass(graph, AV_PIX_FMT_RGB48, src_w, src_h, input,
-                                    1, c, run_xyz2rgb, &input);
+                                    1, run_xyz2rgb, NULL, c, NULL, &input);
         if (ret < 0) {
             sws_free_context(&sws);
             return ret;
         }
     }
 
-    ret = ff_sws_graph_add_pass(graph, sws->dst_format, dst_w, dst_h, input, align, sws,
+    ret = ff_sws_graph_add_pass(graph, sws->dst_format, dst_w, dst_h, input, align,
                                 c->convert_unscaled ? run_legacy_unscaled : run_legacy_swscale,
-                                &pass);
+                                setup_legacy_swscale, sws, free_legacy_swscale, &pass);
     if (ret < 0) {
         sws_free_context(&sws);
         return ret;
     }
-    pass->setup = setup_legacy_swscale;
-    pass->free = free_legacy_swscale;
 
     /**
      * For slice threading, we need to create sub contexts, similar to how
@@ -465,7 +466,7 @@ static int init_legacy_subpass(SwsGraph *graph, SwsContext *sws,
 
     if (c->dstXYZ && !(c->srcXYZ && unscaled)) {
         ret = ff_sws_graph_add_pass(graph, AV_PIX_FMT_RGB48, dst_w, dst_h, pass,
-                                    1, c, run_rgb2xyz, &pass);
+                                    1, run_rgb2xyz, NULL, c, NULL, &pass);
         if (ret < 0)
             return ret;
     }
@@ -702,13 +703,12 @@ static int adapt_colors(SwsGraph *graph, SwsFormat src, SwsFormat dst,
     }
 
     ret = ff_sws_graph_add_pass(graph, fmt_out, src.width, src.height,
-                                input, 1, lut, run_lut3d, &pass);
+                                input, 1, run_lut3d, setup_lut3d, lut,
+                                free_lut3d, &pass);
     if (ret < 0) {
         ff_sws_lut3d_free(&lut);
         return ret;
     }
-    pass->setup = setup_lut3d;
-    pass->free = free_lut3d;
 
     *output = pass;
     return 0;
@@ -743,7 +743,7 @@ static int init_passes(SwsGraph *graph)
 
         /* Add threaded memcpy pass */
         ret = ff_sws_graph_add_pass(graph, dst.format, dst.width, dst.height,
-                                    pass, 1, NULL, run_copy, &pass);
+                                    pass, 1, run_copy, NULL, NULL, NULL, &pass);
         if (ret < 0)
             return ret;
     }
