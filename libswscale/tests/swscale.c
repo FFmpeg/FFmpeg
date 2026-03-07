@@ -104,9 +104,9 @@ static void exit_handler(int sig)
 {
     if (speedup_count) {
         double ratio = exp(speedup_logavg / speedup_count);
-        printf("Overall speedup=%.3fx %s%s\033[0m, min=%.3fx max=%.3fx\n", ratio,
-               speedup_color(ratio), ratio >= 1.0 ? "faster" : "slower",
-               speedup_min, speedup_max);
+        fprintf(stderr, "Overall speedup=%.3fx %s%s\033[0m, min=%.3fx max=%.3fx\n", ratio,
+                speedup_color(ratio), ratio >= 1.0 ? "faster" : "slower",
+                speedup_min, speedup_max);
     }
 
     exit(sig);
@@ -301,12 +301,13 @@ static void print_results(const AVFrame *ref, const AVFrame *src, const AVFrame 
                           const struct test_results *ref_r,
                           float expected_loss)
 {
-    av_log(NULL, AV_LOG_INFO, "%s %dx%d -> %s %3dx%3d, flags=0x%x dither=%u\n",
+    if (av_log_get_level() >= AV_LOG_INFO) {
+    printf("%s %dx%d -> %s %3dx%3d, flags=0x%x dither=%u, ",
            av_get_pix_fmt_name(src->format), src->width, src->height,
            av_get_pix_fmt_name(dst->format), dst->width, dst->height,
            mode->flags, mode->dither);
 
-    av_log(NULL, AV_LOG_VERBOSE - 4, "  SSIM {Y=%f U=%f V=%f A=%f}\n",
+    printf("SSIM {Y=%f U=%f V=%f A=%f}",
            r->ssim[0], r->ssim[1], r->ssim[2], r->ssim[3]);
 
     if (opts->bench && ref_r->time) {
@@ -318,16 +319,16 @@ static void print_results(const AVFrame *ref, const AVFrame *src, const AVFrame 
             speedup_count++;
         }
 
-        if (av_log_get_level() >= AV_LOG_INFO) {
-            printf("  time=%"PRId64" us, ref=%"PRId64" us, speedup=%.3fx %s%s\033[0m\n",
+            printf(" time=%"PRId64" us, ref=%"PRId64" us, speedup=%.3fx %s%s\033[0m",
                    r->time / opts->iters, ref_r->time / opts->iters, ratio,
                    speedup_color(ratio), ratio >= 1.0 ? "faster" : "slower");
-        }
     } else if (opts->bench) {
-        av_log(NULL, AV_LOG_INFO, "  time=%"PRId64" us\n", r->time / opts->iters);
+        printf(" time=%"PRId64" us", r->time / opts->iters);
     }
+    printf("\n");
 
     fflush(stdout);
+    }
 
     if (r->loss - expected_loss > 1e-4 && dst_w >= ref->width && dst_h >= ref->height) {
         const int bad = r->loss - expected_loss > 1e-2;
@@ -439,7 +440,7 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
         goto bad_loss;
     }
 
-    if (!ssim_ref) {
+    if (!ssim_ref || opts->bench) {
         /* Compare against the legacy swscale API as a reference */
         ret = scale_legacy(dst, src, mode, opts, &ref_r.time);
         if (ret < 0)
