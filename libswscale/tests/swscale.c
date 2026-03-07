@@ -307,8 +307,9 @@ static void print_results(const AVFrame *ref, const AVFrame *src, const AVFrame 
                av_get_pix_fmt_name(dst->format), dst->width, dst->height,
                mode->flags, mode->dither);
 
-        printf("SSIM {Y=%f U=%f V=%f A=%f}",
-               r->ssim[0], r->ssim[1], r->ssim[2], r->ssim[3]);
+        printf("SSIM {Y=%f U=%f V=%f A=%f} loss=%e",
+               r->ssim[0], r->ssim[1], r->ssim[2], r->ssim[3],
+               r->loss);
 
         if (opts->bench && ref_r->time) {
             double ratio = (double) ref_r->time / r->time;
@@ -576,11 +577,12 @@ static int run_file_tests(const AVFrame *ref, FILE *fp, const struct options *op
 
         ret = sscanf(buf,
                      "%20s %dx%d -> %20s %dx%d, flags=0x%x dither=%u, "
-                     "SSIM {Y=%f U=%f V=%f A=%f}\n",
+                     "SSIM {Y=%f U=%f V=%f A=%f} loss=%e\n",
                      src_fmt_str, &sw, &sh, dst_fmt_str, &dw, &dh,
                      &mode.flags, &mode.dither,
-                     &r.ssim[0], &r.ssim[1], &r.ssim[2], &r.ssim[3]);
-        if (ret != 12) {
+                     &r.ssim[0], &r.ssim[1], &r.ssim[2], &r.ssim[3],
+                     &r.loss);
+        if (ret != 13) {
             av_log(NULL, AV_LOG_FATAL,
                    "Malformed reference file in line %d\n", line);
             goto error;
