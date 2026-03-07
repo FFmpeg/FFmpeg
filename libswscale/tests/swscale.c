@@ -569,7 +569,7 @@ static int run_file_tests(const AVFrame *ref, FILE *fp, const struct options *op
     if (!src)
         return AVERROR(ENOMEM);
 
-    while (fgets(buf, sizeof(buf), fp)) {
+    for (int line = 1; fgets(buf, sizeof(buf), fp); line++) {
         char src_fmt_str[21], dst_fmt_str[21];
         enum AVPixelFormat src_fmt;
         enum AVPixelFormat dst_fmt;
@@ -584,17 +584,24 @@ static int run_file_tests(const AVFrame *ref, FILE *fp, const struct options *op
                      &mode.flags, &mode.dither,
                      &r.ssim[0], &r.ssim[1], &r.ssim[2], &r.ssim[3]);
         if (ret != 12) {
-            printf("%s", buf);
-            continue;
+            av_log(NULL, AV_LOG_FATAL,
+                   "Malformed reference file in line %d\n", line);
+            goto error;
         }
 
         src_fmt = av_get_pix_fmt(src_fmt_str);
         dst_fmt = av_get_pix_fmt(dst_fmt_str);
-        if (src_fmt == AV_PIX_FMT_NONE || dst_fmt == AV_PIX_FMT_NONE ||
-            sw != ref->width || sh != ref->height ||
-            mode.dither >= SWS_DITHER_NB) {
-            av_log(NULL, AV_LOG_FATAL, "malformed input file\n");
-            ret = -1;
+        if (src_fmt == AV_PIX_FMT_NONE || dst_fmt == AV_PIX_FMT_NONE) {
+            av_log(NULL, AV_LOG_FATAL,
+                   "Unknown pixel formats (%s and/or %s) in line %d\n",
+                   src_fmt_str, dst_fmt_str, line);
+            goto error;
+        }
+
+        if (sw != ref->width || sh != ref->height) {
+            av_log(NULL, AV_LOG_FATAL,
+                   "Mismatching dimensions %dx%d (ref is %dx%d) in line %d\n",
+                   sw, sh, ref->width, ref->height, line);
             goto error;
         }
 
