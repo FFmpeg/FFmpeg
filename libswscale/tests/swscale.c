@@ -225,6 +225,31 @@ static int checked_sws_scale_frame(SwsContext *c, AVFrame *dst, const AVFrame *s
     return ret;
 }
 
+static int scale_new(AVFrame *dst, const AVFrame *src,
+                     const struct mode *mode, const struct options *opts,
+                     int64_t *out_time)
+{
+    sws_src_dst->flags  = mode->flags;
+    sws_src_dst->dither = mode->dither;
+    sws_src_dst->threads = opts->threads;
+
+    int ret = sws_frame_setup(sws_src_dst, dst, src);
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Failed to setup %s ---> %s\n",
+               av_get_pix_fmt_name(src->format), av_get_pix_fmt_name(dst->format));
+        return ret;
+    }
+
+    int64_t time = av_gettime_relative();
+    for (int i = 0; ret >= 0 && i < opts->iters; i++) {
+        unref_buffers(dst);
+        ret = checked_sws_scale_frame(sws_src_dst, dst, src);
+    }
+    *out_time = av_gettime_relative() - time;
+
+    return ret;
+}
+
 static int scale_legacy(AVFrame *dst, const AVFrame *src,
                         const struct mode *mode, const struct options *opts,
                         int64_t *out_time)
@@ -348,7 +373,6 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
 {
     AVFrame *dst = NULL, *out = NULL;
     const int comps = fmt_comps(src_fmt) & fmt_comps(dst_fmt);
-    int64_t time;
     int ret;
 
     /* Estimate the expected amount of loss from bit depth reduction */
@@ -380,27 +404,9 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
     if (ret < 0)
         goto error;
 
-    sws_src_dst->flags  = mode->flags;
-    sws_src_dst->dither = mode->dither;
-    sws_src_dst->threads = opts->threads;
-
-    ret = sws_frame_setup(sws_src_dst, dst, src);
-    if (ret < 0) {
-        av_log(NULL, AV_LOG_ERROR, "Failed to setup %s ---> %s\n",
-               av_get_pix_fmt_name(src->format), av_get_pix_fmt_name(dst->format));
+    ret = scale_new(dst, src, mode, opts, &r.time);
+    if (ret < 0)
         goto error;
-    }
-
-    time = av_gettime_relative();
-
-    for (int i = 0; i < opts->iters; i++) {
-        unref_buffers(dst);
-        ret = checked_sws_scale_frame(sws_src_dst, dst, src);
-        if (ret < 0)
-            goto error;
-    }
-
-    r.time = av_gettime_relative() - time;
 
     ret = init_frame(&out, ref, ref->width, ref->height, ref->format);
     if (ret < 0)
