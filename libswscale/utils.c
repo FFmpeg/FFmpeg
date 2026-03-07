@@ -2272,11 +2272,6 @@ void sws_freeContext(SwsContext *sws)
     for (i = 0; i < FF_ARRAY_ELEMS(c->graph); i++)
         ff_sws_graph_free(&c->graph[i]);
 
-    if (!c->is_legacy_init) {
-        av_free(c);
-        return;
-    }
-
     for (i = 0; i < c->nb_slice_ctx; i++)
         sws_freeContext(c->slice_ctx[i]);
     av_freep(&c->slice_ctx);
