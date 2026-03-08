@@ -3007,6 +3007,7 @@ static int read_thread(void *arg)
         // initial metadata as update.
         st->event_flags &= ~AVSTREAM_EVENT_FLAG_METADATA_UPDATED;
     }
+    ic->event_flags &= ~AVFMT_EVENT_FLAG_METADATA_UPDATED;
     for (i = 0; i < AVMEDIA_TYPE_NB; i++) {
         if (wanted_stream_spec[i] && st_index[i] == -1) {
             av_log(NULL, AV_LOG_ERROR, "Stream specifier %s does not match any %s stream\n", wanted_stream_spec[i], av_get_media_type_string(i));
@@ -3175,16 +3176,24 @@ static int read_thread(void *arg)
             is->eof = 0;
         }
 
-        if (show_status && ic->streams[pkt->stream_index]->event_flags &
-            AVSTREAM_EVENT_FLAG_METADATA_UPDATED) {
-            fprintf(stderr, "\x1b[2K\r");
-            snprintf(metadata_description,
-                     sizeof(metadata_description),
-                     "\r  New metadata for stream %d",
-                     pkt->stream_index);
-            dump_dictionary(NULL, ic->streams[pkt->stream_index]->metadata,
-                               metadata_description, "    ", AV_LOG_INFO);
+        if (show_status) {
+            if (ic->event_flags & AVFMT_EVENT_FLAG_METADATA_UPDATED) {
+                fprintf(stderr, "\x1b[2K\r");
+                dump_dictionary(NULL, ic->metadata,
+                                "\r  New metadata", "    ", AV_LOG_INFO);
+            }
+            if (ic->streams[pkt->stream_index]->event_flags &
+                AVSTREAM_EVENT_FLAG_METADATA_UPDATED) {
+                fprintf(stderr, "\x1b[2K\r");
+                snprintf(metadata_description,
+                         sizeof(metadata_description),
+                         "\r  New metadata for stream %d",
+                         pkt->stream_index);
+                dump_dictionary(NULL, ic->streams[pkt->stream_index]->metadata,
+                                   metadata_description, "    ", AV_LOG_INFO);
+            }
         }
+        ic->event_flags &= ~AVFMT_EVENT_FLAG_METADATA_UPDATED;
         ic->streams[pkt->stream_index]->event_flags &= ~AVSTREAM_EVENT_FLAG_METADATA_UPDATED;
 
         /* check if packet is in play range specified by user, then queue, otherwise discard */
