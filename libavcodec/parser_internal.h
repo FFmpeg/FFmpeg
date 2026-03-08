@@ -23,23 +23,7 @@
 
 #include "libavutil/macros.h"
 #include "avcodec.h"
-#include "codec_id.h"
 
-#if FF_API_PARSER_PRIVATE
-typedef union FFCodecParser {
-    struct {
-        enum AVCodecID codec_ids[7]; /* several codec IDs are permitted */
-        int priv_data_size;
-        int (*init)(AVCodecParserContext *s);
-        int (*parse)(AVCodecParserContext *s,
-                     AVCodecContext *avctx,
-                     const uint8_t **poutbuf, int *poutbuf_size,
-                     const uint8_t *buf, int buf_size);
-        void (*close)(AVCodecParserContext *s);
-        int (*split)(AVCodecContext *avctx, const uint8_t *buf, int buf_size);
-    };
-    AVCodecParser p;
-#else
 typedef struct FFCodecParser {
     AVCodecParser p;
     unsigned priv_data_size;
@@ -49,7 +33,6 @@ typedef struct FFCodecParser {
                  const uint8_t **poutbuf, int *poutbuf_size,
                  const uint8_t *buf, int buf_size);
     void (*close)(AVCodecParserContext *s);
-#endif
 } FFCodecParser;
 
 static inline const FFCodecParser *ffcodecparser(const AVCodecParser *parser)
@@ -68,12 +51,7 @@ static inline const FFCodecParser *ffcodecparser(const AVCodecParser *parser)
 #define FIRST_SEVEN(...) FF_MSVC_EXPAND(FIRST_SEVEN2(__VA_ARGS__))
 #define TIMES_SEVEN(a) a,a,a,a,a,a,a
 
-#if FF_API_PARSER_PRIVATE
-#define PARSER_CODEC_LIST(...) CHECK_FOR_TOO_MANY_IDS(__VA_ARGS__) \
-    .codec_ids = { FIRST_SEVEN(__VA_ARGS__, TIMES_SEVEN(AV_CODEC_ID_NONE)) }
-#else
 #define PARSER_CODEC_LIST(...) CHECK_FOR_TOO_MANY_IDS(__VA_ARGS__) \
     .p.codec_ids = { FIRST_SEVEN(__VA_ARGS__, TIMES_SEVEN(AV_CODEC_ID_NONE)) }
-#endif
 
 #endif /* AVCODEC_PARSER_INTERNAL_H */
