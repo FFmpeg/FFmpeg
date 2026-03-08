@@ -364,8 +364,6 @@ External library support:
   --enable-mmal            enable Broadcom Multi-Media Abstraction Layer (Raspberry Pi) via MMAL [no]
   --disable-nvdec          disable Nvidia video decoding acceleration (via hwaccel) [autodetect]
   --disable-nvenc          disable Nvidia video encoding code [autodetect]
-  --enable-omx             enable OpenMAX IL code [no]
-  --enable-omx-rpi         enable OpenMAX IL code for Raspberry Pi [no]
   --enable-rkmpp           enable Rockchip Media Process Platform code [no]
   --disable-v4l2-m2m       disable V4L2 mem2mem code [autodetect]
   --disable-vaapi          disable Video Acceleration API (mainly Unix/Intel) code [autodetect]
@@ -2205,7 +2203,6 @@ HWACCEL_LIBRARY_LIST="
     libmfx
     libvpl
     mmal
-    omx
     opencl
 "
 
@@ -2222,7 +2219,6 @@ FEATURE_LIST="
     ftrapv
     gray
     hardcoded_tables
-    omx_rpi
     runtime_cpudetect
     safe_bitstream_reader
     shared
@@ -3566,8 +3562,6 @@ wmv3_vdpau_hwaccel_select="vc1_vdpau_hwaccel"
 # hardware-accelerated codecs
 d3d12va_encode_deps="d3d12va ID3D12VideoEncoder d3d12_encoder_feature"
 mediafoundation_deps="mftransform_h MFCreateAlignedMemoryBuffer"
-omx_deps="libdl pthreads"
-omx_rpi_select="omx"
 qsv_deps="libmfx"
 qsvdec_select="qsv"
 qsvenc_select="qsv"
@@ -3651,7 +3645,6 @@ h264_nvenc_encoder_select="atsc_a53"
 h264_oh_decoder_deps="ohcodec"
 h264_oh_decoder_select="h264_mp4toannexb_bsf"
 h264_oh_encoder_deps="ohcodec"
-h264_omx_encoder_deps="omx"
 h264_qsv_decoder_select="h264_mp4toannexb_bsf qsvdec"
 h264_qsv_encoder_select="atsc_a53 qsvenc"
 h264_rkmpp_decoder_deps="rkmpp"
@@ -3711,7 +3704,6 @@ mpeg4_mediacodec_decoder_deps="mediacodec"
 mpeg4_mediacodec_encoder_deps="mediacodec"
 mpeg4_mediacodec_encoder_select="extract_extradata_bsf"
 mpeg4_mmal_decoder_deps="mmal"
-mpeg4_omx_encoder_deps="omx"
 mpeg4_v4l2m2m_decoder_deps="v4l2_m2m mpeg4_v4l2_m2m"
 mpeg4_v4l2m2m_encoder_deps="v4l2_m2m mpeg4_v4l2_m2m"
 vc1_cuvid_decoder_deps="cuvid"
@@ -7582,14 +7574,6 @@ enabled opengl            && { check_lib opengl GL/glx.h glXGetProcAddress "-lGL
                                check_lib opengl ES2/gl.h glGetError "-isysroot=${sysroot} -framework OpenGLES" ||
                                die "ERROR: opengl not found."
                              }
-enabled omx_rpi           && { test_code cc OMX_Core.h OMX_IndexConfigBrcmVideoRequestIFrame ||
-                               { ! enabled cross_compile &&
-                                 add_cflags -isystem/opt/vc/include/IL &&
-                                 test_code cc OMX_Core.h OMX_IndexConfigBrcmVideoRequestIFrame; } ||
-                               die "ERROR: OpenMAX IL headers from raspberrypi/firmware not found"; } &&
-                             enable omx
-enabled omx               && require_headers OMX_Core.h && \
-    warn "The OpenMAX encoders are deprecated and will be removed in future versions"
 
 enabled openssl           && { { check_pkg_config openssl "openssl >= 3.0.0" openssl/ssl.h DTLS_get_data_mtu &&
                                  { enabled gplv3 || ! enabled gpl || enabled nonfree || die "ERROR: OpenSSL >=3.0.0 requires --enable-version3"; }; } ||
