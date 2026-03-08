@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
     height = atoi(argv[2]);
     size   = width * height;
 
-    if (!(fin = fopen(argv[3], "r"))) {
+    if (!(fin = fopen(argv[3], "rb"))) {
         fprintf(stderr, "Fail to open input file : %s\n", strerror(errno));
         return -1;
     }
