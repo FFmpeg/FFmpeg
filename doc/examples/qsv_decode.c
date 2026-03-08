@@ -39,6 +39,7 @@
 #include <libavutil/error.h>
 #include <libavutil/hwcontext.h>
 #include <libavutil/hwcontext_qsv.h>
+#include <libavutil/imgutils.h>
 #include <libavutil/mem.h>
 
 static int get_format(AVCodecContext *avctx, const enum AVPixelFormat *pix_fmts)
@@ -88,9 +89,16 @@ static int decode_packet(AVCodecContext *decoder_ctx,
             goto fail;
         }
 
-        for (i = 0; i < FF_ARRAY_ELEMS(sw_frame->data) && sw_frame->data[i]; i++)
-            for (j = 0; j < (sw_frame->height >> (i > 0)); j++)
-                avio_write(output_ctx, sw_frame->data[i] + j * sw_frame->linesize[i], sw_frame->width);
+        for (i = 0; i < FF_ARRAY_ELEMS(sw_frame->data) && sw_frame->data[i]; i++) {
+            int h = sw_frame->height >> (i > 0);
+            int linesize = av_image_get_linesize(sw_frame->format, sw_frame->width, i);
+            if (linesize < 0) {
+                ret = linesize;
+                goto fail;
+            }
+            for (j = 0; j < h; j++)
+                avio_write(output_ctx, sw_frame->data[i] + j * sw_frame->linesize[i], linesize);
+        }
 
 fail:
         av_frame_unref(sw_frame);
