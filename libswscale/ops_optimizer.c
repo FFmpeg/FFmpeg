@@ -782,3 +782,163 @@ int ff_sws_solve_shuffle(const SwsOpList *const ops, uint8_t shuffle[],
 
     return AVERROR(EINVAL);
 }
+
+/**
+ * Determine a suitable intermediate buffer format for a given combination
+ * of pixel types and number of planes. The exact interpretation of these
+ * formats does not matter at all; since they will only ever be used as
+ * temporary intermediate buffers. We still need to pick *some* format as
+ * a consequence of ff_sws_graph_add_pass() taking an AVPixelFormat for the
+ * output buffer.
+ */
+static enum AVPixelFormat get_planar_fmt(SwsPixelType type, int nb_planes)
+{
+    switch (ff_sws_pixel_type_size(type)) {
+    case 1:
+        switch (nb_planes) {
+        case 1: return AV_PIX_FMT_GRAY8;
+        case 2: return AV_PIX_FMT_YUV444P; // FIXME: no 2-plane planar fmt
+        case 3: return AV_PIX_FMT_YUV444P;
+        case 4: return AV_PIX_FMT_YUVA444P;
+        }
+        break;
+    case 2:
+        switch (nb_planes) {
+        case 1: return AV_PIX_FMT_GRAY16;
+        case 2: return AV_PIX_FMT_YUV444P16; // FIXME: no 2-plane planar fmt
+        case 3: return AV_PIX_FMT_YUV444P16;
+        case 4: return AV_PIX_FMT_YUVA444P16;
+        }
+        break;
+    case 4:
+        switch (nb_planes) {
+        case 1: return AV_PIX_FMT_GRAYF32;
+        case 2: return AV_PIX_FMT_GBRPF32; // FIXME: no 2-plane planar fmt
+        case 3: return AV_PIX_FMT_GBRPF32;
+        case 4: return AV_PIX_FMT_GBRAPF32;
+        }
+        break;
+    }
+
+    av_unreachable("Invalid pixel type or number of planes?");
+    return AV_PIX_FMT_NONE;
+}
+
+static void get_input_size(const SwsOpList *ops, SwsFormat *fmt)
+{
+    fmt->width  = ops->src.width;
+    fmt->height = ops->src.height;
+
+    const SwsOp *read = ff_sws_op_list_input(ops);
+    if (read && read->rw.filter == SWS_OP_FILTER_V) {
+        fmt->height = read->rw.kernel->dst_size;
+    } else if (read && read->rw.filter == SWS_OP_FILTER_H) {
+        fmt->width = read->rw.kernel->dst_size;
+    }
+}
+
+int ff_sws_op_list_subpass(SwsOpList *ops1, SwsOpList **out_rest)
+{
+    const SwsOp *op;
+    int ret, idx;
+
+    for (idx = 0; idx < ops1->num_ops; idx++) {
+        op = &ops1->ops[idx];
+        if (op->op == SWS_OP_FILTER_H || op->op == SWS_OP_FILTER_V)
+            break;
+    }
+
+    if (idx == ops1->num_ops) {
+        *out_rest = NULL;
+        return 0;
+    }
+
+    av_assert0(idx > 0);
+    const SwsOp *prev = &ops1->ops[idx - 1];
+
+    SwsOpList *ops2 = ff_sws_op_list_duplicate(ops1);
+    if (!ops2)
+        return AVERROR(ENOMEM);
+
+    /**
+     * Not all components may be needed; but we need the ones that *are*
+     * used to be contiguous for the write/read operations. So, first
+     * compress them into a linearly ascending list of components
+     */
+    int nb_planes = 0;
+    SwsSwizzleOp swiz_wr = SWS_SWIZZLE(0, 1, 2, 3);
+    SwsSwizzleOp swiz_rd = SWS_SWIZZLE(0, 1, 2, 3);
+    for (int i = 0; i < 4; i++) {
+        if (!op->comps.unused[i]) {
+            const int o = nb_planes++;
+            swiz_wr.in[o] = i;
+            swiz_rd.in[i] = o;
+        }
+    }
+
+    /* Determine metadata for the intermediate format */
+    const SwsPixelType type = op->type;
+    ops2->order_src = SWS_SWIZZLE(0, 1, 2, 3);
+    ops2->comps_src = prev->comps;
+    ops2->src.format = get_planar_fmt(type, nb_planes);
+    ops2->src.desc = av_pix_fmt_desc_get(ops2->src.format);
+    get_input_size(ops1, &ops2->src);
+
+    ops1->order_dst = SWS_SWIZZLE(0, 1, 2, 3);
+    ops1->dst = ops2->src;
+
+    ff_sws_op_list_remove_at(ops1, idx, ops1->num_ops - idx);
+    ff_sws_op_list_remove_at(ops2, 0, idx);
+    op = NULL; /* the above command may invalidate op */
+
+    if (swiz_wr.mask != SWS_SWIZZLE(0, 1, 2, 3).mask) {
+        ret = ff_sws_op_list_append(ops1, &(SwsOp) {
+            .op      = SWS_OP_SWIZZLE,
+            .type    = type,
+            .swizzle = swiz_wr,
+        });
+        if (ret < 0)
+            goto fail;
+    }
+
+    ret = ff_sws_op_list_append(ops1, &(SwsOp) {
+        .op       = SWS_OP_WRITE,
+        .type     = type,
+        .rw.elems = nb_planes,
+    });
+    if (ret < 0)
+        goto fail;
+
+    ret = ff_sws_op_list_insert_at(ops2, 0, &(SwsOp) {
+        .op        = SWS_OP_READ,
+        .type      = type,
+        .rw.elems  = nb_planes,
+    });
+    if (ret < 0)
+        goto fail;
+
+    if (swiz_rd.mask != SWS_SWIZZLE(0, 1, 2, 3).mask) {
+        ret = ff_sws_op_list_insert_at(ops2, 1, &(SwsOp) {
+            .op      = SWS_OP_SWIZZLE,
+            .type    = type,
+            .swizzle = swiz_rd,
+        });
+        if (ret < 0)
+            goto fail;
+    }
+
+    ret = ff_sws_op_list_optimize(ops1);
+    if (ret < 0)
+        goto fail;
+
+    ret = ff_sws_op_list_optimize(ops2);
+    if (ret < 0)
+        goto fail;
+
+    *out_rest = ops2;
+    return 0;
+
+fail:
+    ff_sws_op_list_free(&ops2);
+    return ret;
+}
