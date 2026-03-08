@@ -253,7 +253,6 @@ Codecs:
   sanm.c                                Manuel Lauss
   smc.c                                 Mike Melanson
   snow*                                 Michael Niedermayer, Loren Merritt
-  sonic.c                               Alex Beregszaszi
   speedhq.c                             Steinar H. Gunderson
   srt*                                  Aurelien Jacobs
   sunrast.c                             Ivo van Poorten

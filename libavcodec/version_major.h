@@ -53,10 +53,6 @@
 
 // reminder to remove the OMX encoder on next major bump
 #define FF_CODEC_OMX               (LIBAVCODEC_VERSION_MAJOR < 63)
-// reminder to remove Sonic Lossy/Lossless encoders on next major bump
-#define FF_CODEC_SONIC_ENC         (LIBAVCODEC_VERSION_MAJOR < 63)
-// reminder to remove Sonic decoder on next-next major bump
-#define FF_CODEC_SONIC_DEC         (LIBAVCODEC_VERSION_MAJOR < 63)
 
 #define FF_API_NVENC_H264_MAIN     (LIBAVCODEC_VERSION_MAJOR < 63)
 

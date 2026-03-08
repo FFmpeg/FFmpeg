@@ -3329,9 +3329,6 @@ sipr_decoder_select="lsp celp_math"
 smvjpeg_decoder_select="mjpeg_decoder"
 snow_decoder_select="dwt h264qpel rangecoder videodsp"
 snow_encoder_select="dwt h264qpel hpeldsp me_cmp mpegvideoencdsp rangecoder videodsp"
-sonic_decoder_select="golomb rangecoder"
-sonic_encoder_select="golomb rangecoder"
-sonic_ls_encoder_select="golomb rangecoder"
 sp5x_decoder_select="mjpeg_decoder"
 speedhq_decoder_select="blockdsp idctdsp"
 speedhq_encoder_select="mpegvideoenc"
@@ -4692,9 +4689,6 @@ do_random(){
     random_seed=$(awk "BEGIN { srand($random_seed); print srand() }")
     $action $(rand_list "$@" | awk "BEGIN { srand($random_seed) } \$1 == \"prob\" { prob = \$2; next } rand() < prob { print }")
 }
-
-# deprecated components (disabled by default)
-disable sonic_encoder sonic_ls_encoder
 
 for opt do
     optval="${opt#*=}"
