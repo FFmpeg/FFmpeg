@@ -73,6 +73,7 @@ typedef struct LV2Context {
     float *controls;
 
     LilvInstance *instance;
+    int           instance_activated;
 
     LilvNode  *atom_AtomPort;
     LilvNode  *atom_Sequence;
@@ -390,6 +391,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
         inlink->min_samples = inlink->max_samples = 4096;
     }
 
+    lilv_instance_activate(s->instance);
+    s->instance_activated = 1;
+
     return 0;
 }
 
@@ -569,6 +573,8 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     LV2Context *s = ctx->priv;
 
+    if (s->instance_activated)
+        lilv_instance_deactivate(s->instance);
     lilv_node_free(s->powerOf2BlockLength);
     lilv_node_free(s->fixedBlockLength);
     lilv_node_free(s->boundedBlockLength);
