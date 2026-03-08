@@ -316,9 +316,6 @@ AVStream *avformat_new_stream(AVFormatContext *s, const AVCodec *c)
         sti->pts_buffer[i] = AV_NOPTS_VALUE;
 
     st->sample_aspect_ratio = (AVRational) { 0, 1 };
-#if FF_API_INTERNAL_TIMING
-    sti->transferred_mux_tb = (AVRational) { 0, 1 };;
-#endif
 
     sti->need_context_update = 1;
 

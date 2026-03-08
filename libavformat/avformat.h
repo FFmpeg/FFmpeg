@@ -3185,32 +3185,6 @@ int avformat_match_stream_specifier(AVFormatContext *s, AVStream *st,
 
 int avformat_queue_attached_pictures(AVFormatContext *s);
 
-#if FF_API_INTERNAL_TIMING
-enum AVTimebaseSource {
-    AVFMT_TBCF_AUTO = -1,
-    AVFMT_TBCF_DECODER,
-    AVFMT_TBCF_DEMUXER,
-#if FF_API_R_FRAME_RATE
-    AVFMT_TBCF_R_FRAMERATE,
-#endif
-};
-
-/**
- * @deprecated do not call this function
- */
-attribute_deprecated
-int avformat_transfer_internal_stream_timing_info(const AVOutputFormat *ofmt,
-                                                  AVStream *ost, const AVStream *ist,
-                                                  enum AVTimebaseSource copy_tb);
-
-/**
- * @deprecated do not call this function
- */
-attribute_deprecated
-AVRational av_stream_get_codec_timebase(const AVStream *st);
-#endif
-
-
 /**
  * @}
  */

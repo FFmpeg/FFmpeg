@@ -25,7 +25,6 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/frame.h"
 #include "libavutil/iamf.h"
-#include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixfmt.h"
@@ -827,77 +826,6 @@ AVRational av_guess_frame_rate(AVFormatContext *format, AVStream *st, AVFrame *f
 
     return fr;
 }
-
-#if FF_API_INTERNAL_TIMING
-int avformat_transfer_internal_stream_timing_info(const AVOutputFormat *ofmt,
-                                                  AVStream *ost, const AVStream *ist,
-                                                  enum AVTimebaseSource copy_tb)
-{
-    const AVCodecDescriptor       *desc = cffstream(ist)->codec_desc;
-    const AVCodecContext *const dec_ctx = cffstream(ist)->avctx;
-
-    AVRational mul = (AVRational){ desc && (desc->props & AV_CODEC_PROP_FIELDS) ? 2 : 1, 1 };
-    AVRational dec_ctx_framerate = dec_ctx ? dec_ctx->framerate : (AVRational){ 0, 0 };
-    AVRational dec_ctx_tb = dec_ctx_framerate.num ? av_inv_q(av_mul_q(dec_ctx_framerate, mul))
-                                                   : (ist->codecpar->codec_type == AVMEDIA_TYPE_AUDIO ? (AVRational){0, 1}
-                                                                                                      : ist->time_base);
-    AVRational enc_tb = ist->time_base;
-
-    /*
-     * Avi is a special case here because it supports variable fps but
-     * having the fps and timebase differe significantly adds quite some
-     * overhead
-     */
-    if (!strcmp(ofmt->name, "avi")) {
-#if FF_API_R_FRAME_RATE
-        if (copy_tb == AVFMT_TBCF_AUTO && ist->r_frame_rate.num
-            && av_q2d(ist->r_frame_rate) >= av_q2d(ist->avg_frame_rate)
-            && 0.5/av_q2d(ist->r_frame_rate) > av_q2d(ist->time_base)
-            && 0.5/av_q2d(ist->r_frame_rate) > av_q2d(dec_ctx_tb)
-            && av_q2d(ist->time_base) < 1.0/500 && av_q2d(dec_ctx_tb) < 1.0/500
-            || copy_tb == AVFMT_TBCF_R_FRAMERATE) {
-            enc_tb.num = ist->r_frame_rate.den;
-            enc_tb.den = 2*ist->r_frame_rate.num;
-        } else
-#endif
-            if (copy_tb == AVFMT_TBCF_AUTO && dec_ctx_framerate.num &&
-                av_q2d(av_inv_q(dec_ctx_framerate)) > 2*av_q2d(ist->time_base)
-                   && av_q2d(ist->time_base) < 1.0/500
-                   || (copy_tb == AVFMT_TBCF_DECODER &&
-                       (dec_ctx_framerate.num || ist->codecpar->codec_type == AVMEDIA_TYPE_AUDIO))) {
-            enc_tb = dec_ctx_tb;
-            enc_tb.den *= 2;
-        }
-    } else if (!(ofmt->flags & AVFMT_VARIABLE_FPS)
-               && !av_match_name(ofmt->name, "mov,mp4,3gp,3g2,psp,ipod,ismv,f4v")) {
-        if (copy_tb == AVFMT_TBCF_AUTO && dec_ctx_framerate.num
-            && av_q2d(av_inv_q(dec_ctx_framerate)) > av_q2d(ist->time_base)
-            && av_q2d(ist->time_base) < 1.0/500
-            || (copy_tb == AVFMT_TBCF_DECODER &&
-                (dec_ctx_framerate.num || ist->codecpar->codec_type == AVMEDIA_TYPE_AUDIO))) {
-            enc_tb = dec_ctx_tb;
-        }
-    }
-
-    if (ost->codecpar->codec_tag == AV_RL32("tmcd")
-        && dec_ctx_tb.num < dec_ctx_tb.den
-        && dec_ctx_tb.num > 0
-        && 121LL*dec_ctx_tb.num > dec_ctx_tb.den) {
-        enc_tb = dec_ctx_tb;
-    }
-
-    av_reduce(&ffstream(ost)->transferred_mux_tb.num,
-              &ffstream(ost)->transferred_mux_tb.den,
-              enc_tb.num, enc_tb.den, INT_MAX);
-
-    return 0;
-}
-
-AVRational av_stream_get_codec_timebase(const AVStream *st)
-{
-    return cffstream(st)->avctx ? cffstream(st)->avctx->time_base : cffstream(st)->transferred_mux_tb;
-}
-#endif
 
 void avpriv_set_pts_info(AVStream *st, int pts_wrap_bits,
                          unsigned int pts_num, unsigned int pts_den)
