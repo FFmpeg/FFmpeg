@@ -2,92 +2,92 @@ The last version increases of all libraries were on 2025-03-28
 
 API changes, most recent first:
 
-2026-03-07 - xxxxxxxxxx - lavc 62.26.100 - codec_desc.h
+2026-03-07 - c23d56b173a - lavc 62.26.100 - codec_desc.h
   Add AV_CODEC_PROP_ENHANCEMENT.
 
-2026-03-07 - xxxxxxxxxx - lavc 62.25.100 - avcodec.h
+2026-03-07 - f37cfb370f8 - lavc 62.25.100 - avcodec.h
   Deprecate AVCodecContext.intra_dc_precision.
 
-2026-02-xx - xxxxxxxxxx - lsws 9.4.100 - swscale.h
+2026-02-26 - 26d6ac56c10 - lsws 9.4.100 - swscale.h
   Add sws_test_hw_format().
 
-2026-02-19 - xxxxxxxxxx - lavf 62.10.100 - avformat.h
+2026-02-19 - ca011ee7547 - lavf 62.10.100 - avformat.h
   Add demuxer command API consisting of:
     - Add avformat_send_command().
     - Add avformat_receive_command_reply().
     - Add enum AVFormatCommandID.
 
-2026-02-13 - xxxxxxxxxx - lavu 60.25.100 - avassert.h
+2026-02-13 - 66766bb1c76 - lavu 60.25.100 - avassert.h
   Deprecate av_assert0_fpu() and av_assert2_fpu() without replacement.
 
-2026-02-xx - xxxxxxxxxx - lavf 62.9.100 - avformat.h
+2026-02-09 - f2b13f783ac - lavf 62.9.100 - avformat.h
   Add AVFormatContext.name.
 
-2026-01-xx - xxxxxxxxxx - lavu 60.24.100 - hwcontext_d3d11va.h
+2026-01-26 - 714152dd9a0 - lavu 60.24.100 - hwcontext_d3d11va.h
   Add BindFlags and MiscFlags to AVD3D11VADeviceContext
 
-2026-01-04 - xxxxxxxxxx - lavu 60.23.100 - cpu.h
+2026-01-04 - 0645c484537 - lavu 60.23.100 - cpu.h
   Add AV_CPU_FLAG_ARM_CRC.
 
-2026-01-04 - xxxxxxxxxx - lavu 60.22.100 - cpu.h
+2026-01-04 - e382772e4a1 - lavu 60.22.100 - cpu.h
   Add AV_CPU_FLAG_CLMUL.
 
-2025-12-29 - xxxxxxxxxx - lavu 60.21.100 - iamf.h
+2025-12-29 - a6e5fa3fbb5 - lavu 60.21.100 - iamf.h
   Add nb_demixing_matrix to AVIAMFLayer
 
 2025-12-13 - b8ee68cffe - lavc 62.23.100 - codec_id.h
   Add AV_CODEC_ID_JPEGXS.
 
-2025-12-xx - xxxxxxxxxx - lavf 62.x.xxx - avformat.h
+2025-12-12 - c9b5e145b71 - lavf 62.7.100 - avformat.h
   Add av_mime_codec_str
 
-2025-12-xx - xxxxxxxxxx - lavu 60.20.100 - hwcontext_vulkan.h
+2025-12-08 - 212eb8413a6 - lavu 60.20.100 - hwcontext_vulkan.h
   Add av_vk_get_optional_instance_extensions().
   Add av_vk_get_optional_device_extensions().
 
-2025-12-xx - xxxxxxxxxx - lavc 62.22.101 - avcodec.h
+2025-12-07 - 00caeba050d - lavc 62.22.101 - avcodec.h
   Add avcodec_receive_frame_flags().
   Add AV_CODEC_RECEIVE_FRAME_FLAG_SYNCHRONOUS.
 
-2025-09-xx - xxxxxxxxxx - lavfi 11.10.100 - buffersrc.h
+2025-11-26 - 623669a02cd - lavfi 11.10.100 - buffersrc.h
   Add av_buffersrc_get_status().
 
-2025-11-18 - xxxxxxxxxx - lavu 60.19.100 - hwcontext_amf.h
+2025-11-18 - 140b4f28c30 - lavu 60.19.100 - hwcontext_amf.h
   avutil/hwcontext_amf: add lock and unlock for AVAMFDeviceContext.
 
-2025-11-16 - xxxxxxxxxx - lavu 60.18.100 - cpu.h
+2025-11-16 - 643e2e10f98 - lavu 60.18.100 - cpu.h
   Deprecate AV_CPU_FLAG_FORCE without replacement.
 
-2025-11-01 - xxxxxxxxxx - lavc 62.19.100 - avcodec.h
+2025-11-01 - 8a322c956f3 - lavc 62.19.100 - avcodec.h
   Schedule AVCodecParser and av_parser_init() to use enum AVCodecID
   for codec ids on the next major version bump.
 
-2025-11-01 - xxxxxxxxxx - lavc 62.18.100 - avcodec.h
+2025-11-01 - e0b0ca81112 - lavc 62.18.100 - avcodec.h
   Deprecate AVCodecParser fields priv_data_size, parser_init,
   parser_parse, parser_close, and split with no replacement.
 
-2025-10-30 - xxxxxxxxxx - lavc 62.17.100 - packet.h
+2025-10-30 - 6879c8ee5dd - lavc 62.17.100 - packet.h
   Add av_packet_side_data_from_frame() and av_packet_side_data_to_frame().
 
-2025-10-xx - xxxxxxxxxx - lavu 60.16.100 - pixfmt.h
+2025-10-28 - 71c7b9156bd - lavu 60.16.100 - pixfmt.h
   Add AVCOL_TRC_EXT_BASE, AVCOL_TRC_V_LOG,
   AVCOL_PRI_EXT_BASE and AVCOL_PRI_V_GAMUT.
 
-2025-10-xx - xxxxxxxxxx - lavu 60.14.100 - csp.h
+2025-10-24 - 00e43619cd3 - lavu 60.14.100 - csp.h
   Add av_csp_approximate_eotf_gamma().
 
 2025-08-xx - xxxxxxxxxx - lavf 62.6.100 - oggparsevorbis.h oggparseopus.h oggparseflac.h
   Drop header packets from secondary chained ogg/{flac, opus, vorbis} streams
   from demuxer output.
 
-2025-09-xx - xxxxxxxxxx - lavu 60.13.100 - hwcontext_d3d12va.h
+2025-09-08 - 1b97966199f - lavu 60.13.100 - hwcontext_d3d12va.h
   Add resource_flags and heap_flags to AVD3D12VADeviceContext
   Add heap_flags to AVD3D12VAFramesContext
 
-2025-09-xx - xxxxxxxx - lavf 62.5.100 - avformat.h
+2025-09-05 - 9458a6f8ec2 - lavf 62.5.100 - avformat.h
   Add AV_FRAME_FILENAME_FLAGS_IGNORE_TRUNCATION
 
-2025-09-xx - xxxxxxxxxx - lavu 60.12.100 - hwcontext_d3d12va.h
+2025-09-03 - c2ce3873859 - lavu 60.12.100 - hwcontext_d3d12va.h
   Add support for texture array mode AVD3D12VAFrame.subresource_index,
   AVD3D12VAFramesContext.texture_array
   Add enum AVD3D12VAFrameFlags to define the behaviours of frame allocation.
@@ -95,30 +95,30 @@ API changes, most recent first:
   Add flags to AVD3D12VAFramesContext
   Add flags to AVD3D12VAFrame
 
-2025-09-xx - xxxxxxxxxx - lavfi 11.8.100 - buffersrc.h
+2025-09-02 - de297ae2fca - lavfi 11.8.100 - buffersrc.h
   Add AVBufferSrcParameters.alpha_mode.
 
-2025-09-xx - xxxxxxxxxx - lavfi 11.7.100 - buffersink.h
+2025-09-02 - 0fbd90d78f8 - lavfi 11.7.100 - buffersink.h
   Add av_buffersink_get_alpha_mode().
 
-2025-09-xx - xxxxxxxxxx - lavc 62.15.100 - avcodec.h codec_par.h
+2025-09-02 - ecebf9c6935 - lavc 62.15.100 - avcodec.h codec_par.h
   Add AVCodecContext.alpha_mode, AVCodecParameters.alpha_mode, and
   AV_CODEC_CONFIG_ALPHA_MODE.
 
-2025-09-xx - xxxxxxxxxx - lavfi 11.6.100 - avfilter.h
+2025-09-02 - eea99a77eda - lavfi 11.6.100 - avfilter.h
   Add AVFilterLink.alpha_mode.
 
-2025-09-xx - xxxxxxxxxx - lavu 60.11.100 - frame.h pixfmt.h
+2025-09-02 - 22929bd044c - lavu 60.11.100 - frame.h pixfmt.h
   Add AVAlphaMode, AVFrame.alpha_mode, av_alpha_mode_name() and
   av_alpha_mode_from_name().
 
-2025-09-xx - xxxxxxxxxx - lsws 9.3.100 - swscale.h
+2025-09-01 - ce0938da8cd - lsws 9.3.100 - swscale.h
   Add SWS_UNSTABLE flag.
 
-2025-09-01 - xxxxxxxx - lavc 62.14.100 - packet.h
+2025-09-01 - 4ffd621523e - lavc 62.14.100 - packet.h
   Add AV_PKT_DATA_EXIF
 
-2025-08-xx - xxxxxxxx - lavc 62.13.101 - exif.h
+2025-08-24 - 368b5e0ffc2 - lavc 62.13.101 - exif.h
   Add AV_EXIF_FLAG_RECURSIVE
 
 2025-08-19 - ad77345a5d1..fe496b0308f - lavc 62.13.100 - exif.h
