@@ -23,8 +23,12 @@
 #include "libavutil/mem.h"
 #include "libavutil/refstruct.h"
 
+#include "cbs.h"
+#include "cbs_lcevc.h"
 #include "decode.h"
+#include "lcevc_parse.h"
 #include "lcevcdec.h"
+#include "lcevctab.h"
 
 static LCEVC_ColorFormat map_format(int format)
 {
@@ -191,6 +195,15 @@ static int generate_output(void *logctx, FFLCEVCFrame *frame_ctx, AVFrame *out)
     out->width = desc.width + out->crop_left + out->crop_right;
     out->height = desc.height + out->crop_top + out->crop_bottom;
 
+    av_log(logctx, AV_LOG_DEBUG, "out PTS %"PRId64", %dx%d, "
+                                 "%zu/%zu/%zu/%zu, "
+                                 "SAR %d:%d, "
+                                 "hasEnhancement %d, enhanced %d\n",
+           out->pts, out->width, out->height,
+           out->crop_top, out->crop_bottom, out->crop_left, out->crop_right,
+           out->sample_aspect_ratio.num, out->sample_aspect_ratio.den,
+           info.hasEnhancement, info.enhanced);
+
     res = LCEVC_FreePicture(lcevc->decoder, picture);
     if (res != LCEVC_Success)
         return AVERROR_EXTERNAL;
@@ -256,6 +269,10 @@ static void lcevc_free(AVRefStructOpaque unused, void *obj)
         lcevc_flush_pictures(lcevc);
         LCEVC_DestroyDecoder(lcevc->decoder);
     }
+    if (lcevc->frag)
+        ff_cbs_fragment_free(lcevc->frag);
+    av_freep(&lcevc->frag);
+    ff_cbs_close(&lcevc->cbc);
     memset(lcevc, 0, sizeof(*lcevc));
 }
 
@@ -313,14 +330,74 @@ int ff_lcevc_process(void *logctx, AVFrame *frame)
     return 0;
 }
 
-int ff_lcevc_alloc(FFLCEVCContext **plcevc)
+int ff_lcevc_parse_frame(FFLCEVCContext *lcevc, const AVFrame *frame,
+                         int *width, int *height, void *logctx)
+{
+    LCEVCRawProcessBlock *block = NULL;
+    LCEVCRawGlobalConfig *gc = NULL;
+    AVFrameSideData *sd = av_frame_get_side_data(frame, AV_FRAME_DATA_LCEVC);
+    int ret;
+
+    ret = ff_cbs_read(lcevc->cbc, lcevc->frag, sd->buf, sd->data, sd->size);
+    if (ret < 0) {
+        av_log(logctx, AV_LOG_ERROR, "Failed to parse Access Unit.\n");
+        goto end;
+    }
+
+    ret = ff_cbs_lcevc_find_process_block(lcevc->cbc, lcevc->frag,
+                                          LCEVC_PAYLOAD_TYPE_GLOBAL_CONFIG, &block);
+    if (ret < 0) {
+        ret = 0;
+        goto end;
+    }
+
+    gc = block->payload;
+    if (gc->resolution_type < 63) {
+        *width  = ff_lcevc_resolution_type[gc->resolution_type].width;
+        *height = ff_lcevc_resolution_type[gc->resolution_type].height;
+    } else {
+        *width  = gc->custom_resolution_width;
+        *height = gc->custom_resolution_height;
+    }
+
+    ret = 0;
+end:
+    ff_cbs_fragment_reset(lcevc->frag);
+
+    return ret;
+}
+
+static const CodedBitstreamUnitType decompose_unit_types[] = {
+    LCEVC_IDR_NUT,
+};
+
+int ff_lcevc_alloc(FFLCEVCContext **plcevc, void *logctx)
 {
     FFLCEVCContext *lcevc = NULL;
+    int ret;
+
     lcevc = av_refstruct_alloc_ext(sizeof(*lcevc), 0, NULL, lcevc_free);
     if (!lcevc)
         return AVERROR(ENOMEM);
+
+    lcevc->frag = av_mallocz(sizeof(*lcevc->frag));
+    if (!lcevc->frag) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    ret = ff_cbs_init(&lcevc->cbc, AV_CODEC_ID_LCEVC, logctx);
+    if (ret < 0)
+        goto fail;
+
+    lcevc->cbc->decompose_unit_types    = decompose_unit_types;
+    lcevc->cbc->nb_decompose_unit_types = FF_ARRAY_ELEMS(decompose_unit_types);
+
     *plcevc = lcevc;
     return 0;
+fail:
+    av_refstruct_unref(&lcevc);
+    return ret;
 }
 
 void ff_lcevc_unref(void *opaque)
