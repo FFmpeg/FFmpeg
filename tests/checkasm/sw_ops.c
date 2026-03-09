@@ -32,7 +32,7 @@
 enum {
     NB_PLANES   = 4,
     PIXELS      = 64,
-    LINES       = 2,
+    LINES       = 16,
 };
 
 enum {
