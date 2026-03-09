@@ -555,11 +555,11 @@ SwsOpList *ff_sws_op_list_duplicate(const SwsOpList *ops)
         return NULL;
     }
 
-    for (int i = 0; i < ops->num_ops; i++) {
-        const SwsOp *op = &ops->ops[i];
+    for (int i = 0; i < copy->num_ops; i++) {
+        const SwsOp *op = &copy->ops[i];
         switch (op->op) {
         case SWS_OP_DITHER:
-            av_refstruct_ref(copy->ops[i].dither.matrix);
+            av_refstruct_ref(op->dither.matrix);
             break;
         }
     }
