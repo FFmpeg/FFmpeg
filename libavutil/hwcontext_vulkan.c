@@ -1741,35 +1741,6 @@ static int setup_queue_families(AVHWDeviceContext *ctx, VkDeviceCreateInfo *cd)
         };
     }
 
-#if FF_API_VULKAN_FIXED_QUEUES
-FF_DISABLE_DEPRECATION_WARNINGS
-    /* Setup deprecated fields */
-    hwctx->queue_family_index        = -1;
-    hwctx->queue_family_comp_index   = -1;
-    hwctx->queue_family_tx_index     = -1;
-    hwctx->queue_family_encode_index = -1;
-    hwctx->queue_family_decode_index = -1;
-
-#define SET_OLD_QF(field, nb_field, type)             \
-    do {                                              \
-        if (field < 0 && hwctx->qf[i].flags & type) { \
-            field = hwctx->qf[i].idx;                 \
-            nb_field = hwctx->qf[i].num;              \
-        }                                             \
-    } while (0)
-
-    for (uint32_t i = 0; i < hwctx->nb_qf; i++) {
-        SET_OLD_QF(hwctx->queue_family_index, hwctx->nb_graphics_queues, VK_QUEUE_GRAPHICS_BIT);
-        SET_OLD_QF(hwctx->queue_family_comp_index, hwctx->nb_comp_queues, VK_QUEUE_COMPUTE_BIT);
-        SET_OLD_QF(hwctx->queue_family_tx_index, hwctx->nb_tx_queues, VK_QUEUE_TRANSFER_BIT);
-        SET_OLD_QF(hwctx->queue_family_encode_index, hwctx->nb_encode_queues, VK_QUEUE_VIDEO_ENCODE_BIT_KHR);
-        SET_OLD_QF(hwctx->queue_family_decode_index, hwctx->nb_decode_queues, VK_QUEUE_VIDEO_DECODE_BIT_KHR);
-    }
-
-#undef SET_OLD_QF
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     return 0;
 }
 
@@ -1947,7 +1918,6 @@ static int vulkan_device_init(AVHWDeviceContext *ctx)
     VkQueueFamilyProperties2 *qf;
     VkQueueFamilyVideoPropertiesKHR *qf_vid;
     VkPhysicalDeviceExternalSemaphoreInfo ext_sem_props_info;
-    int graph_index, comp_index, tx_index, enc_index, dec_index;
 
     /* Set device extension flags */
     for (int i = 0; i < hwctx->nb_enabled_dev_extensions; i++) {
@@ -2059,77 +2029,6 @@ static int vulkan_device_init(AVHWDeviceContext *ctx)
             }
         }
     }
-
-#if FF_API_VULKAN_FIXED_QUEUES
-FF_DISABLE_DEPRECATION_WARNINGS
-    graph_index = hwctx->nb_graphics_queues ? hwctx->queue_family_index : -1;
-    comp_index  = hwctx->nb_comp_queues ? hwctx->queue_family_comp_index : -1;
-    tx_index    = hwctx->nb_tx_queues ? hwctx->queue_family_tx_index : -1;
-    dec_index   = hwctx->nb_decode_queues ? hwctx->queue_family_decode_index : -1;
-    enc_index   = hwctx->nb_encode_queues ? hwctx->queue_family_encode_index : -1;
-
-#define CHECK_QUEUE(type, required, fidx, ctx_qf, qc)                                           \
-    do {                                                                                        \
-        if (ctx_qf < 0 && required) {                                                           \
-            av_log(ctx, AV_LOG_ERROR, "%s queue family is required, but marked as missing"      \
-                   " in the context!\n", type);                                                 \
-            err = AVERROR(EINVAL);                                                              \
-            goto end;                                                                           \
-        } else if (fidx < 0 || ctx_qf < 0) {                                                    \
-            break;                                                                              \
-        } else if (ctx_qf >= qf_num) {                                                          \
-            av_log(ctx, AV_LOG_ERROR, "Invalid %s family index %i (device has %i families)!\n", \
-                   type, ctx_qf, qf_num);                                                       \
-            err = AVERROR(EINVAL);                                                              \
-            goto end;                                                                           \
-        }                                                                                       \
-                                                                                                \
-        av_log(ctx, AV_LOG_VERBOSE, "Using queue family %i (queues: %i)"                        \
-               " for%s%s%s%s%s\n",                                                              \
-               ctx_qf, qc,                                                                      \
-               ctx_qf == graph_index ? " graphics" : "",                                        \
-               ctx_qf == comp_index  ? " compute" : "",                                         \
-               ctx_qf == tx_index    ? " transfers" : "",                                       \
-               ctx_qf == enc_index   ? " encode" : "",                                          \
-               ctx_qf == dec_index   ? " decode" : "");                                         \
-        graph_index = (ctx_qf == graph_index) ? -1 : graph_index;                               \
-        comp_index  = (ctx_qf == comp_index)  ? -1 : comp_index;                                \
-        tx_index    = (ctx_qf == tx_index)    ? -1 : tx_index;                                  \
-        enc_index   = (ctx_qf == enc_index)   ? -1 : enc_index;                                 \
-        dec_index   = (ctx_qf == dec_index)   ? -1 : dec_index;                                 \
-    } while (0)
-
-    CHECK_QUEUE("graphics", 0, graph_index, hwctx->queue_family_index,        hwctx->nb_graphics_queues);
-    CHECK_QUEUE("compute",  1, comp_index,  hwctx->queue_family_comp_index,   hwctx->nb_comp_queues);
-    CHECK_QUEUE("upload",   1, tx_index,    hwctx->queue_family_tx_index,     hwctx->nb_tx_queues);
-    CHECK_QUEUE("decode",   0, dec_index,   hwctx->queue_family_decode_index, hwctx->nb_decode_queues);
-    CHECK_QUEUE("encode",   0, enc_index,   hwctx->queue_family_encode_index, hwctx->nb_encode_queues);
-
-#undef CHECK_QUEUE
-
-    /* Update the new queue family fields. If non-zero already,
-     * it means API users have set it. */
-    if (!hwctx->nb_qf) {
-#define ADD_QUEUE(ctx_qf, qc, flag)                                    \
-    do {                                                               \
-        if (ctx_qf != -1) {                                            \
-            hwctx->qf[hwctx->nb_qf++] = (AVVulkanDeviceQueueFamily) {  \
-                .idx = ctx_qf,                                         \
-                .num = qc,                                             \
-                .flags = flag,                                         \
-            };                                                         \
-        }                                                              \
-    } while (0)
-
-        ADD_QUEUE(hwctx->queue_family_index, hwctx->nb_graphics_queues, VK_QUEUE_GRAPHICS_BIT);
-        ADD_QUEUE(hwctx->queue_family_comp_index, hwctx->nb_comp_queues, VK_QUEUE_COMPUTE_BIT);
-        ADD_QUEUE(hwctx->queue_family_tx_index, hwctx->nb_tx_queues, VK_QUEUE_TRANSFER_BIT);
-        ADD_QUEUE(hwctx->queue_family_decode_index, hwctx->nb_decode_queues, VK_QUEUE_VIDEO_DECODE_BIT_KHR);
-        ADD_QUEUE(hwctx->queue_family_encode_index, hwctx->nb_encode_queues, VK_QUEUE_VIDEO_ENCODE_BIT_KHR);
-#undef ADD_QUEUE
-    }
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     for (int i = 0; i < hwctx->nb_qf; i++) {
         if (!hwctx->qf[i].video_caps &&

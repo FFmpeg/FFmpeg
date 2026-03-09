@@ -116,58 +116,6 @@ typedef struct AVVulkanDeviceContext {
     const char * const *enabled_dev_extensions;
     int nb_enabled_dev_extensions;
 
-#if FF_API_VULKAN_FIXED_QUEUES
-    /**
-     * Queue family index for graphics operations, and the number of queues
-     * enabled for it. If unavailable, will be set to -1. Not required.
-     * av_hwdevice_create() will attempt to find a dedicated queue for each
-     * queue family, or pick the one with the least unrelated flags set.
-     * Queue indices here may overlap if a queue has to share capabilities.
-     */
-    attribute_deprecated
-    int queue_family_index;
-    attribute_deprecated
-    int nb_graphics_queues;
-
-    /**
-     * Queue family index for transfer operations and the number of queues
-     * enabled. Required.
-     */
-    attribute_deprecated
-    int queue_family_tx_index;
-    attribute_deprecated
-    int nb_tx_queues;
-
-    /**
-     * Queue family index for compute operations and the number of queues
-     * enabled. Required.
-     */
-    attribute_deprecated
-    int queue_family_comp_index;
-    attribute_deprecated
-    int nb_comp_queues;
-
-    /**
-     * Queue family index for video encode ops, and the amount of queues enabled.
-     * If the device doesn't support such, queue_family_encode_index will be -1.
-     * Not required.
-     */
-    attribute_deprecated
-    int queue_family_encode_index;
-    attribute_deprecated
-    int nb_encode_queues;
-
-    /**
-     * Queue family index for video decode ops, and the amount of queues enabled.
-     * If the device doesn't support such, queue_family_decode_index will be -1.
-     * Not required.
-     */
-    attribute_deprecated
-    int queue_family_decode_index;
-    attribute_deprecated
-    int nb_decode_queues;
-#endif
-
 #if FF_API_VULKAN_SYNC_QUEUES
     /**
      * Locks a queue, preventing other threads from submitting any command
