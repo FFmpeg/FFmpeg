@@ -130,6 +130,9 @@ IF W,   vpermq mw, mw, q3120
         CONTINUE tmp0q
 %endmacro
 
+;---------------------------------------------------------
+; Arithmetic operations
+
 %macro min_max 0
 op min
 IF X,   vbroadcastss m8,  [implq + SwsOpImpl.priv + 0]
@@ -178,6 +181,9 @@ IF Z,   mulps mz2, m8
 IF W,   mulps mw2, m8
         CONTINUE tmp0q
 %endmacro
+
+;---------------------------------------------------------
+; Dithering
 
 %macro dither0 0
 op dither0
@@ -252,6 +258,9 @@ op dither%1
         dither 7
         dither 8
 %endmacro
+
+;---------------------------------------------------------
+; Linear transformations
 
 %xdefine MASK(I, J)  (1 << (5 * (I) + (J)))
 %xdefine MASK_OFF(I) MASK(I, 4)
