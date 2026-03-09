@@ -177,7 +177,7 @@ static int open_output_file(const char *filename)
                 enc_ctx->width = dec_ctx->width;
                 enc_ctx->sample_aspect_ratio = dec_ctx->sample_aspect_ratio;
 
-                ret = avcodec_get_supported_config(dec_ctx, NULL,
+                ret = avcodec_get_supported_config(enc_ctx, NULL,
                                                    AV_CODEC_CONFIG_PIX_FORMAT, 0,
                                                    (const void**)&pix_fmts, NULL);
 
@@ -195,7 +195,7 @@ static int open_output_file(const char *filename)
                 if (ret < 0)
                     return ret;
 
-                ret = avcodec_get_supported_config(dec_ctx, NULL,
+                ret = avcodec_get_supported_config(enc_ctx, NULL,
                                                    AV_CODEC_CONFIG_SAMPLE_FORMAT, 0,
                                                    (const void**)&sample_fmts, NULL);
 
