@@ -471,6 +471,7 @@ fail:
 int ff_sws_compile_pass(SwsGraph *graph, SwsOpList **pops, int flags,
                         SwsPass *input, SwsPass **output)
 {
+    const int passes_orig = graph->num_passes;
     SwsContext *ctx = graph->ctx;
     SwsOpList *ops = *pops;
     int ret = 0;
@@ -499,12 +500,45 @@ int ff_sws_compile_pass(SwsGraph *graph, SwsOpList **pops, int flags,
     }
 
     ret = compile(graph, ops, input, output);
+    if (ret != AVERROR(ENOTSUP))
+        goto out;
+
+    av_log(ctx, AV_LOG_DEBUG, "Retrying with separated filter passes.\n");
+    SwsPass *prev = input;
+    while (ops) {
+        SwsOpList *rest;
+        ret = ff_sws_op_list_subpass(ops, &rest);
+        if (ret < 0)
+            goto out;
+
+        if (prev == input && !rest) {
+            /* No point in compiling an unsplit pass again */
+            ret = AVERROR(ENOTSUP);
+            goto out;
+        }
+
+        ret = compile(graph, ops, prev, &prev);
+        if (ret < 0) {
+            ff_sws_op_list_free(&rest);
+            goto out;
+        }
+
+        ff_sws_op_list_free(&ops);
+        ops = rest;
+    }
+
+    /* Return last subpass successfully compiled */
+    av_log(ctx, AV_LOG_VERBOSE, "Using %d separate passes.\n",
+           graph->num_passes - passes_orig);
+    *output = prev;
 
 out:
     if (ret == AVERROR(ENOTSUP)) {
         av_log(ctx, AV_LOG_WARNING, "No backend found for operations:\n");
         ff_sws_op_list_print(ctx, AV_LOG_WARNING, AV_LOG_TRACE, ops);
     }
+    if (ret < 0)
+        ff_sws_graph_rollback(graph, passes_orig);
     ff_sws_op_list_free(&ops);
     *pops = NULL;
     return ret;
