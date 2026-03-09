@@ -8014,11 +8014,6 @@ fi
 
 enabled ftrapv && check_cflags -ftrapv
 
-test_cc -mno-red-zone <<EOF && noredzone_flags="-mno-red-zone"
-int x;
-EOF
-
-
 if enabled icc; then
     # Just warnings, no remarks
     check_allcflags -w1
@@ -8678,7 +8673,6 @@ SLIB_INSTALL_EXTRA_LIB=${SLIB_INSTALL_EXTRA_LIB}
 SLIB_INSTALL_EXTRA_SHLIB=${SLIB_INSTALL_EXTRA_SHLIB}
 VERSION_SCRIPT_POSTPROCESS_CMD=${VERSION_SCRIPT_POSTPROCESS_CMD}
 SAMPLES:=${samples:-\$(FATE_SAMPLES)}
-NOREDZONE_FLAGS=$noredzone_flags
 LIBFUZZER_PATH=$libfuzzer_path
 IGNORE_TESTS=$ignore_tests
 VERSION_TRACKING=$version_tracking
