@@ -30,6 +30,7 @@
 #include "h2645_parse.h"
 #include "h264.h"
 #include "lcevc.h"
+#include "lcevc_parse.h"
 #include "startcode.h"
 #include "vc1_common.h"
 #include "vvc.h"
@@ -266,22 +267,6 @@ static int extract_extradata_h2645(AVBSFContext *ctx, AVPacket *pkt,
     }
 
     return 0;
-}
-
-static inline uint64_t get_mb(GetBitContext *s) {
-    int more, i = 0;
-    uint64_t mb = 0;
-
-    do {
-        int byte = get_bits(s, 8);
-        unsigned bits = byte & 0x7f;
-        more = byte & 0x80;
-        mb = (mb << 7) | bits;
-        if (++i == 10)
-            break;
-    } while (more);
-
-    return mb;
 }
 
 /**
