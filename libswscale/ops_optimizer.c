@@ -518,9 +518,9 @@ retry:
 
         case SWS_OP_DITHER:
             for (int i = 0; i < 4; i++) {
-                if (next->comps.unused[i] || op->dither.y_offset[i] < 0)
+                if (op->dither.y_offset[i] < 0)
                     continue;
-                if (prev->comps.flags[i] & SWS_COMP_EXACT) {
+                if (next->comps.unused[i] || (prev->comps.flags[i] & SWS_COMP_EXACT)) {
                     op->dither.y_offset[i] = -1; /* unnecessary dither */
                     goto retry;
                 } else {
