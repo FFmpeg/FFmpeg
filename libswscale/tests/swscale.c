@@ -333,10 +333,6 @@ static void print_results(const AVFrame *ref, const AVFrame *src, const AVFrame 
     if (r->loss - expected_loss > 1e-4 && dst_w >= ref->width && dst_h >= ref->height) {
         const int bad = r->loss - expected_loss > 1e-2;
         const int level = bad ? AV_LOG_ERROR : AV_LOG_WARNING;
-        av_log(NULL, level, "%s %dx%d -> %s %3dx%3d, flags=0x%x dither=%u\n",
-               av_get_pix_fmt_name(src->format), src->width, src->height,
-               av_get_pix_fmt_name(dst->format), dst->width, dst->height,
-               mode->flags, mode->dither);
         av_log(NULL, level, "  loss %e is %s by %e, expected loss %e\n",
                r->loss, bad ? "WORSE" : "worse", r->loss - expected_loss, expected_loss);
     }
