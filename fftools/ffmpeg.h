@@ -53,7 +53,6 @@
 
 // deprecated features
 #define FFMPEG_OPT_TOP 1
-#define FFMPEG_OPT_VSYNC_DROP 1
 #define FFMPEG_OPT_VSYNC 1
 #define FFMPEG_OPT_FILTER_SCRIPT 1
 
@@ -65,9 +64,6 @@ enum VideoSyncMethod {
     VSYNC_CFR,
     VSYNC_VFR,
     VSYNC_VSCFR,
-#if FFMPEG_OPT_VSYNC_DROP
-    VSYNC_DROP,
-#endif
 };
 
 enum EncTimeBase {

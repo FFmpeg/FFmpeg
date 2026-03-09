@@ -810,10 +810,6 @@ static int new_stream_video(Muxer *mux, const OptionsContext *o,
                 *vsync_method = VSYNC_VSCFR;
             }
         }
-#if FFMPEG_OPT_VSYNC_DROP
-        if (*vsync_method == VSYNC_DROP)
-            ms->ts_drop = 1;
-#endif
     }
 
     return 0;

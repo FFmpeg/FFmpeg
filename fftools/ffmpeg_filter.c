@@ -2540,11 +2540,7 @@ static void video_sync_process(OutputFilterPriv *ofp, AVFrame *frame,
 
     if (delta0 < 0 &&
         delta > 0 &&
-        fps->vsync_method != VSYNC_PASSTHROUGH
-#if FFMPEG_OPT_VSYNC_DROP
-        && fps->vsync_method != VSYNC_DROP
-#endif
-        ) {
+        fps->vsync_method != VSYNC_PASSTHROUGH) {
         if (delta0 < -0.6) {
             av_log(ofp, AV_LOG_VERBOSE, "Past duration %f too large\n", -delta0);
         } else
@@ -2583,9 +2579,6 @@ static void video_sync_process(OutputFilterPriv *ofp, AVFrame *frame,
             ofp->next_pts = llrint(sync_ipts);
         frame->duration = llrint(duration);
         break;
-#if FFMPEG_OPT_VSYNC_DROP
-    case VSYNC_DROP:
-#endif
     case VSYNC_PASSTHROUGH:
         ofp->next_pts = llrint(sync_ipts);
         frame->duration = llrint(duration);

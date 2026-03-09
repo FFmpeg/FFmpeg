@@ -139,11 +139,6 @@ static int mux_fixup_ts(Muxer *mux, MuxStream *ms, AVPacket *pkt)
 {
     OutputStream *ost = &ms->ost;
 
-#if FFMPEG_OPT_VSYNC_DROP
-    if (ost->type == AVMEDIA_TYPE_VIDEO && ms->ts_drop)
-        pkt->pts = pkt->dts = AV_NOPTS_VALUE;
-#endif
-
     // rescale timestamps to the stream timebase
     if (ost->type == AVMEDIA_TYPE_AUDIO && !ost->enc) {
         // use av_rescale_delta() for streamcopying audio, to preserve
