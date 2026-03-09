@@ -90,8 +90,6 @@ int ff_sws_ops_compile(SwsContext *ctx, const SwsOpList *ops, SwsCompiledOp *out
         return 0;
     }
 
-    av_log(ctx, AV_LOG_WARNING, "No backend found for operations:\n");
-    ff_sws_op_list_print(ctx, AV_LOG_WARNING, AV_LOG_TRACE, ops);
     return AVERROR(ENOTSUP);
 }
 
@@ -401,6 +399,10 @@ int ff_sws_compile_pass(SwsGraph *graph, SwsOpList **pops, int flags,
     ret = compile(graph, ops, input, output);
 
 out:
+    if (ret == AVERROR(ENOTSUP)) {
+        av_log(ctx, AV_LOG_WARNING, "No backend found for operations:\n");
+        ff_sws_op_list_print(ctx, AV_LOG_WARNING, AV_LOG_TRACE, ops);
+    }
     ff_sws_op_list_free(&ops);
     *pops = NULL;
     return ret;
