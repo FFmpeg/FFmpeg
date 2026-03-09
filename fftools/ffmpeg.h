@@ -52,7 +52,6 @@
 #include "libswresample/swresample.h"
 
 // deprecated features
-#define FFMPEG_OPT_QPHIST 1
 #define FFMPEG_OPT_ADRIFT_THRESHOLD 1
 #define FFMPEG_OPT_ENC_TIME_BASE_NUM 1
 #define FFMPEG_OPT_TOP 1

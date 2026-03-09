@@ -1597,14 +1597,6 @@ int opt_timelimit(void *optctx, const char *opt, const char *arg)
     return 0;
 }
 
-#if FFMPEG_OPT_QPHIST
-static int opt_qphist(void *optctx, const char *opt, const char *arg)
-{
-    av_log(NULL, AV_LOG_WARNING, "Option -%s is deprecated and has no effect\n", opt);
-    return 0;
-}
-#endif
-
 #if FFMPEG_OPT_ADRIFT_THRESHOLD
 static int opt_adrift_threshold(void *optctx, const char *opt, const char *arg)
 {
@@ -2191,11 +2183,6 @@ const OptionDef options[] = {
     { "top", OPT_TYPE_INT,     OPT_VIDEO | OPT_EXPERT | OPT_PERSTREAM | OPT_INPUT | OPT_OUTPUT,
         { .off = OFFSET(top_field_first) },
         "deprecated, use the setfield video filter", "" },
-#endif
-#if FFMPEG_OPT_QPHIST
-    { "qphist", OPT_TYPE_FUNC, OPT_VIDEO | OPT_EXPERT,
-        { .func_arg = opt_qphist },
-        "deprecated, does nothing" },
 #endif
 #if FFMPEG_OPT_VSYNC
     { "vsync",                  OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_EXPERT,
