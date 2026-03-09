@@ -168,6 +168,51 @@ static bool op_commute_swizzle(SwsOp *op, SwsOp *next)
     return false;
 }
 
+/**
+ * Try to commute a filter op with the previous operation. Makes any
+ * adjustments to the operations as needed, but does not perform the actual
+ * commutation.
+ *
+ * Returns whether successful.
+ */
+static bool op_commute_filter(SwsOp *op, SwsOp *prev)
+{
+    switch (prev->op) {
+    case SWS_OP_SWIZZLE:
+    case SWS_OP_SCALE:
+    case SWS_OP_LINEAR:
+    case SWS_OP_DITHER:
+        prev->type = SWS_PIXEL_F32;
+        return true;
+    case SWS_OP_CONVERT:
+        if (prev->convert.to == SWS_PIXEL_F32) {
+            av_assert0(!prev->convert.expand);
+            FFSWAP(SwsPixelType, op->type, prev->type);
+            return true;
+        }
+        return false;
+    case SWS_OP_INVALID:
+    case SWS_OP_READ:
+    case SWS_OP_WRITE:
+    case SWS_OP_SWAP_BYTES:
+    case SWS_OP_UNPACK:
+    case SWS_OP_PACK:
+    case SWS_OP_LSHIFT:
+    case SWS_OP_RSHIFT:
+    case SWS_OP_CLEAR:
+    case SWS_OP_MIN:
+    case SWS_OP_MAX:
+    case SWS_OP_FILTER_H:
+    case SWS_OP_FILTER_V:
+        return false;
+    case SWS_OP_TYPE_NB:
+        break;
+    }
+
+    av_unreachable("Invalid operation type!");
+    return false;
+}
+
 /* returns log2(x) only if x is a power of two, or 0 otherwise */
 static int exact_log2(const int x)
 {
@@ -290,6 +335,23 @@ int ff_sws_op_list_optimize(SwsOpList *ops)
 
 retry:
     ff_sws_op_list_update_comps(ops);
+
+    /* Try to push filters towards the input; do this first to unblock
+     * in-place optimizations like linear op fusion */
+    for (int n = 1; n < ops->num_ops; n++) {
+        SwsOp *op = &ops->ops[n];
+        SwsOp *prev = &ops->ops[n - 1];
+
+        switch (op->op) {
+        case SWS_OP_FILTER_H:
+        case SWS_OP_FILTER_V:
+            if (op_commute_filter(op, prev)) {
+                FFSWAP(SwsOp, *op, *prev);
+                goto retry;
+            }
+            break;
+        }
+    }
 
     /* Apply all in-place optimizations (that do not re-order the list) */
     for (int n = 0; n < ops->num_ops; n++) {
@@ -647,6 +709,18 @@ retry:
             }
             break;
         }
+
+        case SWS_OP_FILTER_H:
+        case SWS_OP_FILTER_V:
+            /* Merge with prior simple planar read */
+            if (prev->op == SWS_OP_READ && !prev->rw.filter &&
+                !prev->rw.packed && !prev->rw.frac) {
+                prev->rw.filter = op->op;
+                prev->rw.kernel = av_refstruct_ref(op->filter.kernel);
+                ff_sws_op_list_remove_at(ops, n, 1);
+                goto retry;
+            }
+            break;
         }
     }
 
