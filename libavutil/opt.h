@@ -28,7 +28,6 @@
  */
 
 #include "rational.h"
-#include "avutil.h"
 #include "channel_layout.h"
 #include "dict.h"
 #include "log.h"
@@ -885,24 +884,6 @@ int av_opt_set_chlayout(void *obj, const char *name, const AVChannelLayout *layo
  * caller still owns val is and responsible for freeing it.
  */
 int av_opt_set_dict_val(void *obj, const char *name, const AVDictionary *val, int search_flags);
-
-#if FF_API_OPT_INT_LIST
-/**
- * Set a binary option to an integer list.
- *
- * @param obj    AVClass object to set options on
- * @param name   name of the binary option
- * @param val    pointer to an integer list (must have the correct type with
- *               regard to the contents of the list)
- * @param term   list terminator (usually 0 or -1)
- * @param flags  search flags
- */
-#define av_opt_set_int_list(obj, name, val, term, flags) \
-    (av_int_list_length(val, term) > INT_MAX / sizeof(*(val)) ? \
-     AVERROR(EINVAL) : \
-     av_opt_set_bin(obj, name, (const uint8_t *)(val), \
-                    av_int_list_length(val, term) * sizeof(*(val)), flags))
-#endif
 
 /**
  * Add, replace, or remove elements for an array option. Which of these

@@ -19,9 +19,8 @@
 #ifndef AVCODEC_V210ENC_H
 #define AVCODEC_V210ENC_H
 
-#include "libavutil/log.h"
-#include "libavutil/opt.h"
-#include "libavutil/pixfmt.h"
+#include <stddef.h>
+#include <stdint.h>
 
 typedef struct V210EncContext {
     void (*pack_line_8)(const uint8_t *y, const uint8_t *u,

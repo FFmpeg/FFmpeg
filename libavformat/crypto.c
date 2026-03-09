@@ -19,8 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <inttypes.h>
+#include <string.h>
+
 #include "libavutil/aes.h"
 #include "libavutil/avstring.h"
+#include "libavutil/error.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "url.h"

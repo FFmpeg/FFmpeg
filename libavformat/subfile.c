@@ -20,6 +20,8 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
+#include "libavutil/common.h"
+#include "libavutil/error.h"
 #include "libavutil/opt.h"
 #include "url.h"
 

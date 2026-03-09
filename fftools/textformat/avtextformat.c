@@ -18,19 +18,21 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <inttypes.h>
 #include <limits.h>
+#include <math.h>
 #include <stdarg.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
 #include "libavutil/mem.h"
 #include "libavutil/avassert.h"
+#include "libavutil/avutil.h"
 #include "libavutil/base64.h"
 #include "libavutil/bprint.h"
+#include "libavutil/common.h"
 #include "libavutil/error.h"
 #include "libavutil/hash.h"
-#include "libavutil/intreadwrite.h"
 #include "libavutil/macros.h"
 #include "libavutil/opt.h"
 #include "avtextformat.h"

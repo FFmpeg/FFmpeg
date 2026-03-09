@@ -27,6 +27,9 @@
  *      support work with concatdec, hls
  */
 
+#include <inttypes.h>
+#include <string.h>
+
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/error.h"
@@ -35,7 +38,6 @@
 #include "libavutil/opt.h"
 #include "libavutil/thread.h"
 #include "url.h"
-#include <stdint.h>
 
 #if HAVE_UNISTD_H
 #include <unistd.h>

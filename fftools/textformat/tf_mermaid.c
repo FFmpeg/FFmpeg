@@ -18,10 +18,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <inttypes.h>
 #include <limits.h>
 #include <stdarg.h>
-#include <stdint.h>
-#include <stdio.h>
 #include <string.h>
 
 #include "avtextformat.h"

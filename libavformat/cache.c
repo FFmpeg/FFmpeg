@@ -27,8 +27,11 @@
  *      support filling with a background thread
  */
 
+#include <inttypes.h>
+
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
+#include "libavutil/error.h"
 #include "libavutil/file_open.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
@@ -42,7 +45,6 @@
 #include <unistd.h>
 #endif
 #include <sys/stat.h>
-#include <stdlib.h>
 #include "os_support.h"
 #include "url.h"
 

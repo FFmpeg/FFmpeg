@@ -25,6 +25,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/crc.h"
+#include "libavutil/error.h"
 #include "libavutil/hash.h"
 #include "libavutil/file_open.h"
 #include "libavutil/mem.h"
@@ -35,7 +36,9 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <inttypes.h>
 #include <stdatomic.h>
+#include <string.h>
 #include <sys/file.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
