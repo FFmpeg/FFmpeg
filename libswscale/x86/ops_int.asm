@@ -208,9 +208,11 @@ packed_shuffle 16,  8 ; 16 -> 8
 packed_shuffle 10, 15 ; 16 -> 24
 packed_shuffle  8, 16 ; 16 -> 32, 32 -> 64
 packed_shuffle  4, 12 ; 16 -> 48
+packed_shuffle 15,  5 ; 24 -> 8
 packed_shuffle 15, 15 ; 24 -> 24
 packed_shuffle 12, 16 ; 24 -> 32
 packed_shuffle  6, 12 ; 24 -> 48
+packed_shuffle 16,  4 ; 32 -> 8,  64 -> 16
 packed_shuffle 16, 12 ; 32 -> 24, 64 -> 48
 packed_shuffle 16, 16 ; 32 -> 32, 64 -> 64
 packed_shuffle  8, 12 ; 32 -> 48

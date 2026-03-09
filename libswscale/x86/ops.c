@@ -655,9 +655,11 @@ do {                                                                            
     ASSIGN_SHUFFLE_FUNC(10, 15, sse4);
     ASSIGN_SHUFFLE_FUNC( 8, 16, sse4);
     ASSIGN_SHUFFLE_FUNC( 4, 12, sse4);
+    ASSIGN_SHUFFLE_FUNC(15,  5, sse4);
     ASSIGN_SHUFFLE_FUNC(15, 15, sse4);
     ASSIGN_SHUFFLE_FUNC(12, 16, sse4);
     ASSIGN_SHUFFLE_FUNC( 6, 12, sse4);
+    ASSIGN_SHUFFLE_FUNC(16,  4, sse4);
     ASSIGN_SHUFFLE_FUNC(16, 12, sse4);
     ASSIGN_SHUFFLE_FUNC(16, 16, sse4);
     ASSIGN_SHUFFLE_FUNC( 8, 12, sse4);
