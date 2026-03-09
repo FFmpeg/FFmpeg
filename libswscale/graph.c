@@ -608,7 +608,7 @@ static int add_convert_pass(SwsGraph *graph, const SwsFormat *src,
     av_log(ctx, AV_LOG_DEBUG, "Unoptimized operation list:\n");
     ff_sws_op_list_print(ctx, AV_LOG_DEBUG, AV_LOG_TRACE, ops);
 
-    ret = ff_sws_compile_pass(graph, ops, SWS_OP_FLAG_OPTIMIZE, dst, input, output);
+    ret = ff_sws_compile_pass(graph, &ops, SWS_OP_FLAG_OPTIMIZE, dst, input, output);
     if (ret < 0)
         goto fail;
 

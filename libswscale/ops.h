@@ -312,9 +312,11 @@ enum SwsOpCompileFlags {
  * Resolves an operation list to a graph pass. The first and last operations
  * must be a read/write respectively. `flags` is a list of SwsOpCompileFlags.
  *
+ * Takes over ownership of `ops` and sets it to NULL, even on failure.
+ *
  * Note: `ops` may be modified by this function.
  */
-int ff_sws_compile_pass(SwsGraph *graph, SwsOpList *ops, int flags,
+int ff_sws_compile_pass(SwsGraph *graph, SwsOpList **ops, int flags,
                         const SwsFormat *dst, SwsPass *input, SwsPass **output);
 
 #endif

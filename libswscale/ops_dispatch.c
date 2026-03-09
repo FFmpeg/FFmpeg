@@ -369,16 +369,17 @@ fail:
     return ret;
 }
 
-int ff_sws_compile_pass(SwsGraph *graph, SwsOpList *ops, int flags,
+int ff_sws_compile_pass(SwsGraph *graph, SwsOpList **pops, int flags,
                         const SwsFormat *dst, SwsPass *input, SwsPass **output)
 {
     SwsContext *ctx = graph->ctx;
-    int ret;
+    SwsOpList *ops = *pops;
+    int ret = 0;
 
     /* Check if the whole operation graph is an end-to-end no-op */
     if (ff_sws_op_list_is_noop(ops)) {
         *output = input;
-        return 0;
+        goto out;
     }
 
     const SwsOp *read  = ff_sws_op_list_input(ops);
@@ -386,14 +387,20 @@ int ff_sws_compile_pass(SwsGraph *graph, SwsOpList *ops, int flags,
     if (!read || !write) {
         av_log(ctx, AV_LOG_ERROR, "First and last operations must be a read "
                "and write, respectively.\n");
-        return AVERROR(EINVAL);
+        ret = AVERROR(EINVAL);
+        goto out;
     }
 
     if (flags & SWS_OP_FLAG_OPTIMIZE) {
         ret = ff_sws_op_list_optimize(ops);
         if (ret < 0)
-            return ret;
+            goto out;
     }
 
-    return compile(graph, ops, dst, input, output);
+    ret = compile(graph, ops, dst, input, output);
+
+out:
+    ff_sws_op_list_free(&ops);
+    *pops = NULL;
+    return ret;
 }
