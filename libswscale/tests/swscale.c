@@ -53,6 +53,7 @@ struct options {
     int dither;
     int unscaled;
     int legacy;
+    int pretty;
 };
 
 struct mode {
@@ -302,10 +303,15 @@ static void print_results(const AVFrame *ref, const AVFrame *src, const AVFrame 
                           float expected_loss)
 {
     if (av_log_get_level() >= AV_LOG_INFO) {
-        printf("%s %dx%d -> %s %3dx%3d, flags=0x%x dither=%u",
-               av_get_pix_fmt_name(src->format), src->width, src->height,
-               av_get_pix_fmt_name(dst->format), dst->width, dst->height,
-               mode->flags, mode->dither);
+        printf("%-*s %*dx%*d -> %-*s %*dx%*d, flags=0x%0*x dither=%u",
+               opts->pretty ? 14 : 0, av_get_pix_fmt_name(src->format),
+               opts->pretty ?  4 : 0, src->width,
+               opts->pretty ?  4 : 0, src->height,
+               opts->pretty ? 14 : 0, av_get_pix_fmt_name(dst->format),
+               opts->pretty ?  4 : 0, dst->width,
+               opts->pretty ?  4 : 0, dst->height,
+               opts->pretty ?  8 : 0, mode->flags,
+               mode->dither);
 
         printf(", SSIM={Y=%f U=%f V=%f A=%f} loss=%e",
                r->ssim[0], r->ssim[1], r->ssim[2], r->ssim[3],
@@ -320,8 +326,10 @@ static void print_results(const AVFrame *ref, const AVFrame *src, const AVFrame 
                 speedup_count++;
             }
 
-            printf(", time=%"PRId64"/%u us (ref=%"PRId64"/%u us), speedup=%.3fx %s%s\033[0m",
-                   r->time, opts->iters, ref_r->time, opts->iters, ratio,
+            printf(", time=%*"PRId64"/%u us (ref=%*"PRId64"/%u us), speedup=%*.3fx %s%s\033[0m",
+                   opts->pretty ? 7 : 0, r->time, opts->iters,
+                   opts->pretty ? 7 : 0, ref_r->time, opts->iters,
+                   opts->pretty ? 6 : 0, ratio,
                    speedup_color(ratio), ratio >= 1.0 ? "faster" : "slower");
         } else if (opts->bench) {
             printf(", time=%"PRId64"/%u us", r->time, opts->iters);
@@ -687,6 +695,8 @@ static int parse_options(int argc, char **argv, struct options *opts, FILE **fp)
                     "       Use the specified number of threads\n"
                     "   -cpuflags <cpuflags>\n"
                     "       Uses the specified cpuflags in the tests\n"
+                    "   -pretty <1 or 0>\n"
+                    "       Align fields while printing results\n"
                     "   -v <level>\n"
                     "       Enable log verbosity at given level\n"
             );
@@ -753,6 +763,8 @@ static int parse_options(int argc, char **argv, struct options *opts, FILE **fp)
             opts->threads = atoi(argv[i + 1]);
         } else if (!strcmp(argv[i], "-p")) {
             opts->prob = atof(argv[i + 1]);
+        } else if (!strcmp(argv[i], "-pretty")) {
+            opts->pretty = atoi(argv[i + 1]);
         } else if (!strcmp(argv[i], "-v")) {
             av_log_set_level(atoi(argv[i + 1]));
         } else {
