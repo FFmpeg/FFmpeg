@@ -96,7 +96,6 @@ static int encode_write(AVCodecContext *avctx, AVFrame *frame, FILE *fout)
 
 end:
     av_packet_free(&enc_pkt);
-    ret = ((ret == AVERROR(EAGAIN)) ? 0 : -1);
     return ret;
 }
 
@@ -198,7 +197,8 @@ int main(int argc, char *argv[])
             goto close;
         }
 
-        if ((err = (encode_write(avctx, hw_frame, fout))) < 0) {
+        err = encode_write(avctx, hw_frame, fout);
+        if (err != AVERROR(EAGAIN) && err < 0) {
             fprintf(stderr, "Failed to encode.\n");
             goto close;
         }
