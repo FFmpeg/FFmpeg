@@ -401,6 +401,8 @@ int ff_sws_compile_pass(SwsGraph *graph, SwsOpList **pops, int flags,
         ret = ff_sws_op_list_optimize(ops);
         if (ret < 0)
             goto out;
+        av_log(ctx, AV_LOG_DEBUG, "Operation list after optimizing:\n");
+        ff_sws_op_list_print(ctx, AV_LOG_DEBUG, AV_LOG_TRACE, ops);
     }
 
     ret = compile(graph, ops, input, output);
