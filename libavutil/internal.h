@@ -51,12 +51,6 @@
 #endif
 #endif
 
-#if defined(_WIN32) && CONFIG_SHARED && !defined(BUILDING_avutil)
-#    define av_export_avutil __declspec(dllimport)
-#else
-#    define av_export_avutil
-#endif
-
 #if HAVE_PRAGMA_DEPRECATED
 #    if defined(__ICL) || defined (__INTEL_COMPILER)
 #        define FF_DISABLE_DEPRECATION_WARNINGS __pragma(warning(push)) __pragma(warning(disable:1478))
