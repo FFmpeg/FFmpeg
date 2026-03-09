@@ -77,9 +77,6 @@ typedef struct OGGPageList {
 typedef struct OGGContext {
     const AVClass *class;
     OGGPageList *page_list;
-#if LIBAVFORMAT_VERSION_MAJOR < 63
-    int pref_size; ///< preferred page size (0 => fill all segments)
-#endif
     int64_t pref_duration;      ///< preferred page duration (0 => fill all segments)
     int serial_offset;
     int failed; // if true all packet submission will fail.
@@ -93,12 +90,6 @@ static int ogg_write_trailer(AVFormatContext *s);
 static const AVOption options[] = {
     { "serial_offset", "serial number offset",
         OFFSET(serial_offset), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, PARAM },
-#if LIBAVFORMAT_VERSION_MAJOR < 63
-    { "oggpagesize", "Set preferred Ogg page size.",
-      OFFSET(pref_size), AV_OPT_TYPE_INT, {.i64 = 0}, 0, MAX_PAGE_SIZE, PARAM | AV_OPT_FLAG_DEPRECATED },
-    { "pagesize", "preferred page size in bytes",
-        OFFSET(pref_size), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, MAX_PAGE_SIZE, PARAM | AV_OPT_FLAG_DEPRECATED },
-#endif
     { "page_duration", "preferred page duration, in microseconds",
         OFFSET(pref_duration), AV_OPT_TYPE_INT64, { .i64 = 1000000 }, 0, INT64_MAX, PARAM },
     { NULL },
@@ -284,12 +275,7 @@ static int ogg_buffer_data(AVFormatContext *s, AVStream *st,
             if (page->segments_count == 255) {
                 ogg_buffer_page(s, oggstream);
             } else if (!header) {
-#if LIBAVFORMAT_VERSION_MAJOR < 63
-                if ((ogg->pref_size     > 0 && page->size   >= ogg->pref_size) ||
-                    (ogg->pref_duration > 0 && next - start >= ogg->pref_duration)) {
-#else
                 if (ogg->pref_duration > 0 && next - start >= ogg->pref_duration) {
-#endif
                     ogg_buffer_page(s, oggstream);
                 }
             }
