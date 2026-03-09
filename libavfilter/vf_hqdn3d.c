@@ -31,7 +31,6 @@
 #include "config.h"
 #include "libavutil/attributes.h"
 #include "libavutil/common.h"
-#include "libavutil/emms.h"
 #include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/intreadwrite.h"
@@ -150,7 +149,6 @@ static int denoise_depth(HQDN3DContext *s,
     else
         denoise_temporal(src, dst, frame_ant,
                          w, h, sstride, dstride, temporal, depth);
-    emms_c();
     return 0;
 }
 
