@@ -47,6 +47,9 @@ typedef struct SwsOpIter {
     uintptr_t in[4];
     uintptr_t out[4];
     int x, y;
+
+    /* Link back to per-slice execution context */
+    const SwsOpExec *exec;
 } SwsOpIter;
 
 #ifdef __clang__
