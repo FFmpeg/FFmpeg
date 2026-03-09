@@ -46,7 +46,7 @@ typedef struct SwsOpExec {
     ptrdiff_t out_bump[4];
 
     /* Extra metadata, may or may not be useful */
-    int32_t width, height;      /* Overall image dimensions */
+    int32_t width, height;      /* Overall output image dimensions */
     int32_t slice_y, slice_h;   /* Start and height of current slice */
     int32_t block_size_in;      /* Size of a block of pixels in bytes */
     int32_t block_size_out;
@@ -54,11 +54,22 @@ typedef struct SwsOpExec {
     /* Subsampling factors for each plane */
     uint8_t in_sub_y[4], out_sub_y[4];
     uint8_t in_sub_x[4], out_sub_x[4];
+
+    /**
+     * Line bump; determines how many additional lines to advance (after
+     * incrementing normally to the next line), for each filtered output line.
+     *
+     * Indexed by the line's true y coordinate. If NULL, then the bumps are
+     * effectively all zero. Note that these bumps still need to be
+     * multiplied by the corresponding line stride.
+     */
+    int32_t *in_bump_y;
 } SwsOpExec;
 
 static_assert(sizeof(SwsOpExec) == 24 * sizeof(void *) +
                                    6  * sizeof(int32_t) +
-                                   16 * sizeof(uint8_t),
+                                   16 * sizeof(uint8_t) +
+                                   1  * sizeof(void *),
               "SwsOpExec layout mismatch");
 
 /**

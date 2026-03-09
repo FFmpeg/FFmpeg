@@ -112,6 +112,7 @@ static void op_pass_free(void *ptr)
 
     ff_sws_compiled_op_unref(&p->comp);
     av_refstruct_unref(&p->offsets_y);
+    av_free(p->exec_base.in_bump_y);
     av_free(p);
 }
 
@@ -370,8 +371,26 @@ static int compile(SwsGraph *graph, const SwsOpList *ops, SwsPass *input,
         p->idx_out[i] = i < p->planes_out ? ops->order_dst.in[i] : -1;
     }
 
-    if (read->rw.filter == SWS_OP_FILTER_V)
-        p->offsets_y = av_refstruct_ref(read->rw.kernel->offsets);
+    if (read->rw.filter == SWS_OP_FILTER_V) {
+        const SwsFilterWeights *filter = read->rw.kernel;
+        p->offsets_y = av_refstruct_ref(filter->offsets);
+
+        /* Compute relative pointer bumps for each output line */
+        int32_t *bump = av_malloc_array(filter->dst_size, sizeof(*bump));
+        if (!bump) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+
+        int line = filter->offsets[0];
+        for (int y = 0; y < filter->dst_size - 1; y++) {
+            int next = filter->offsets[y + 1];
+            bump[y] = next - line - 1;
+            line = next;
+        }
+        bump[filter->dst_size - 1] = 0;
+        p->exec_base.in_bump_y = bump;
+    }
 
     return ff_sws_graph_add_pass(graph, dst->format, dst->width, dst->height,
                                  input, p->comp.slice_align, op_pass_run,

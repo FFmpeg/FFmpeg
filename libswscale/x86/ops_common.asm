@@ -141,6 +141,7 @@ struc SwsOpExec
     .out_sub_y4 resb 4
     .in_sub_x4 resb 4
     .out_sub_x4 resb 4
+    .in_bump_y resq 1
 endstruc
 
 struc SwsOpImpl
