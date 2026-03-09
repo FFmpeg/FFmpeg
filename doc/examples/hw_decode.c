@@ -233,6 +233,10 @@ int main(int argc, char *argv[])
 
     /* open the file to dump raw data */
     output_file = fopen(argv[3], "w+b");
+    if (!output_file) {
+        fprintf(stderr, "Cannot open output file '%s'\n", argv[3]);
+        return -1;
+    }
 
     /* actual decoding and dump the raw data */
     while (ret >= 0) {
