@@ -339,12 +339,6 @@ int ff_itut_t35_parse_payload_to_frame(FFITUTT35 *const itut_t35, FFITUTT35Aux *
         ret = ff_frame_new_side_data_from_buf(avctx, frame, AV_FRAME_DATA_A53_CC, &metadata.a53_cc);
         if (ret < 0)
             return ret;
-
-#if FF_API_CODEC_PROPS
-FF_DISABLE_DEPRECATION_WARNINGS
-        avctx->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     }
 
     if (metadata.aom_film_grain.enable) {

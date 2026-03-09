@@ -26,7 +26,6 @@
 
 #include "avcodec.h"
 #include "avcodec_internal.h"
-#include "codec_desc.h"
 #include "codec_internal.h"
 #include "decode.h"
 #include "hwaccel_internal.h"
@@ -37,11 +36,9 @@
 #include "libavutil/refstruct.h"
 #include "thread.h"
 #include "threadframe.h"
-#include "version_major.h"
 
 #include "libavutil/avassert.h"
 #include "libavutil/buffer.h"
-#include "libavutil/common.h"
 #include "libavutil/cpu.h"
 #include "libavutil/frame.h"
 #include "libavutil/internal.h"
@@ -361,11 +358,6 @@ static int update_context_from_thread(AVCodecContext *dst, const AVCodecContext 
 
         dst->has_b_frames = src->has_b_frames;
         dst->idct_algo    = src->idct_algo;
-#if FF_API_CODEC_PROPS
-FF_DISABLE_DEPRECATION_WARNINGS
-        dst->properties   = src->properties;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
         dst->bits_per_coded_sample = src->bits_per_coded_sample;
         dst->sample_aspect_ratio   = src->sample_aspect_ratio;

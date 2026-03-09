@@ -1408,11 +1408,6 @@ static int webp_decode_frame(AVCodecContext *avctx, AVFrame *p,
                                                 chunk_size, 0);
                 if (ret < 0)
                     return ret;
-#if FF_API_CODEC_PROPS
-FF_DISABLE_DEPRECATION_WARNINGS
-                avctx->properties |= FF_CODEC_PROPERTY_LOSSLESS;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
             }
             bytestream2_skip(&gb, chunk_size);
             break;
@@ -2103,11 +2098,6 @@ static int webp_anim_decode_frame(AVCodecContext *avctx, AVFrame *p,
             ret = prepare_canvas(s, key_frame, AV_PIX_FMT_ARGB);
             if (ret < 0)
                 goto end;
-#if FF_API_CODEC_PROPS
-FF_DISABLE_DEPRECATION_WARNINGS
-            avctx->properties |= FF_CODEC_PROPERTY_LOSSLESS;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
             bytestream2_skip(&gb, chunk_size);
             break;
         default:
