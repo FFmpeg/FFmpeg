@@ -284,6 +284,76 @@ static int setup_linear(const SwsImplParams *params, SwsImplResult *out)
         .linear_mask = (MASK),                                                  \
     );
 
+static bool check_filter_fma(const SwsImplParams *params)
+{
+    const SwsOp *op = params->op;
+    SwsContext *ctx = params->ctx;
+    if (!(ctx->flags & SWS_BITEXACT))
+        return true;
+
+    if (!ff_sws_pixel_type_is_int(op->type))
+        return false;
+
+    /* Check if maximum/minimum partial sum fits losslessly inside float */
+    AVRational max_range = {   1 << 24,  1 };
+    AVRational min_range = { -(1 << 24), 1 };
+    const AVRational scale = Q(SWS_FILTER_SCALE);
+
+    for (int i = 0; i < op->rw.elems; i++) {
+        const AVRational min = av_mul_q(op->comps.min[i], scale);
+        const AVRational max = av_mul_q(op->comps.max[i], scale);
+        if (av_cmp_q(min, min_range) < 0 || av_cmp_q(max_range, max) < 0)
+            return false;
+    }
+
+    return true;
+}
+
+static int setup_filter_v(const SwsImplParams *params, SwsImplResult *out)
+{
+    const SwsFilterWeights *filter = params->op->rw.kernel;
+    static_assert(sizeof(out->priv.ptr) <= sizeof(int32_t[2]),
+                  ">8 byte pointers not supported");
+
+    /* Pre-convert weights to float */
+    float *weights = av_calloc(filter->num_weights, sizeof(float));
+    if (!weights)
+        return AVERROR(ENOMEM);
+
+    for (int i = 0; i < filter->num_weights; i++)
+        weights[i] = (float) filter->weights[i] / SWS_FILTER_SCALE;
+
+    out->priv.ptr = weights;
+    out->priv.uptr[1] = filter->filter_size;
+    out->free = ff_op_priv_free;
+    return 0;
+}
+
+#define DECL_FILTER(EXT, TYPE, DIR, NAME, ELEMS, ...)                           \
+    DECL_ASM(TYPE, NAME##ELEMS##_##TYPE##EXT,                                   \
+        .op = SWS_OP_READ,                                                      \
+        .rw.elems = ELEMS,                                                      \
+        .rw.filter = SWS_OP_FILTER_##DIR,                                       \
+        __VA_ARGS__                                                             \
+    );
+
+#define DECL_FILTERS(EXT, TYPE, DIR, NAME, ...)                                 \
+    DECL_FILTER(EXT, TYPE, DIR, NAME, 1, __VA_ARGS__)                           \
+    DECL_FILTER(EXT, TYPE, DIR, NAME, 2, __VA_ARGS__)                           \
+    DECL_FILTER(EXT, TYPE, DIR, NAME, 3, __VA_ARGS__)                           \
+    DECL_FILTER(EXT, TYPE, DIR, NAME, 4, __VA_ARGS__)
+
+#define DECL_FILTERS_GENERIC(EXT, TYPE)                                         \
+    DECL_FILTERS(EXT, TYPE, V, filter_v,     .setup = setup_filter_v)           \
+    DECL_FILTERS(EXT, TYPE, V, filter_fma_v, .setup = setup_filter_v,           \
+                 .check = check_filter_fma)
+
+#define REF_FILTERS(NAME, SUFFIX)                                               \
+    &op_##NAME##1##SUFFIX,                                                      \
+    &op_##NAME##2##SUFFIX,                                                      \
+    &op_##NAME##3##SUFFIX,                                                      \
+    &op_##NAME##4##SUFFIX
+
 #define DECL_FUNCS_8(SIZE, EXT, FLAG)                                           \
     DECL_RW(EXT, U8, read_planar,   READ,  1, false, 0)                         \
     DECL_RW(EXT, U8, read_planar,   READ,  2, false, 0)                         \
@@ -498,6 +568,9 @@ static const SwsOpTable ops16##EXT = {                                          
     DECL_LINEAR(EXT, affine3a,  SWS_MASK_MAT3 | SWS_MASK_OFF3 | SWS_MASK_ALPHA) \
     DECL_LINEAR(EXT, matrix4,   SWS_MASK_MAT4)                                  \
     DECL_LINEAR(EXT, affine4,   SWS_MASK_MAT4 | SWS_MASK_OFF4)                  \
+    DECL_FILTERS_GENERIC(EXT,  U8)                                              \
+    DECL_FILTERS_GENERIC(EXT, U16)                                              \
+    DECL_FILTERS_GENERIC(EXT, F32)                                              \
                                                                                 \
 static const SwsOpTable ops32##EXT = {                                          \
     .cpu_flags = AV_CPU_FLAG_##FLAG,                                            \
@@ -549,6 +622,12 @@ static const SwsOpTable ops32##EXT = {                                          
         &op_affine3a##EXT,                                                      \
         &op_matrix4##EXT,                                                       \
         &op_affine4##EXT,                                                       \
+        REF_FILTERS(filter_fma_v, _U8##EXT),                                    \
+        REF_FILTERS(filter_fma_v, _U16##EXT),                                   \
+        REF_FILTERS(filter_fma_v, _F32##EXT),                                   \
+        REF_FILTERS(filter_v, _U8##EXT),                                        \
+        REF_FILTERS(filter_v, _U16##EXT),                                       \
+        REF_FILTERS(filter_v, _F32##EXT),                                       \
         NULL                                                                    \
     },                                                                          \
 };

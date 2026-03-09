@@ -370,6 +370,113 @@ op dot3
         linear_mask affine4,    MASK_MAT4 | MASK_OFF4
 %endmacro
 
+;---------------------------------------------------------
+; Filtering / scaling
+
+%macro floadU8 2 ; dst, src
+        pmovzxbd  %1, %2
+        vcvtdq2ps %1, %1
+%endmacro
+
+%macro floadU16 2 ; dst, src
+        pmovzxwd  %1, %2
+        vcvtdq2ps %1, %1
+%endmacro
+
+%macro floadF32 2 ; dst, src
+        movu %1, %2
+%endmacro
+
+%macro fmaccum 4 ; variant, dst, srcA, srcB
+%ifidn %1, none
+        mulps %2, %3, %4
+%elifidn %1, fma_v
+        fmaddps %2, %3, %4, %2
+%else
+        mulps %3, %4
+        addps %2, %3
+%endif
+%endmacro
+
+%macro filter_v_iter 4 ; elems, type, sizeof_type, variant
+            vbroadcastss m12, [weights]
+            fload%2 m8,  [in0q]
+IF %1 > 1,  fload%2 m9,  [in1q]
+IF %1 > 2,  fload%2 m10, [in2q]
+IF %1 > 3,  fload%2 m11, [in3q]
+            fmaccum %4, mx, m8,  m12
+IF %1 > 1,  fmaccum %4, my, m9,  m12
+IF %1 > 2,  fmaccum %4, mz, m10, m12
+IF %1 > 3,  fmaccum %4, mw, m11, m12
+            fload%2 m8,  [in0q + (mmsize >> 2) * %3]
+IF %1 > 1,  fload%2 m9,  [in1q + (mmsize >> 2) * %3]
+IF %1 > 2,  fload%2 m10, [in2q + (mmsize >> 2) * %3]
+IF %1 > 3,  fload%2 m11, [in3q + (mmsize >> 2) * %3]
+            fmaccum %4, mx2, m8,  m12
+IF %1 > 1,  fmaccum %4, my2, m9,  m12
+IF %1 > 2,  fmaccum %4, mz2, m10, m12
+IF %1 > 3,  fmaccum %4, mw2, m11, m12
+%endmacro
+
+%macro filter_v 4 ; elems, type, sizeof_type, variant
+op filter_%4%1_%2
+%xdefine weights tmp0q
+%xdefine fltsize tmp1q
+            mov weights, [implq + SwsOpImpl.priv]     ; float *weights
+            mov fltsize, [implq + SwsOpImpl.priv + 8] ; size_t filter_size
+            ; weights += filter_size * y * sizeof(float)
+            mov tmp2q, fltsize
+            imul tmp2q, yq
+            lea weights, [weights + 4 * tmp2q]
+            filter_v_iter %1, %2, %3, none
+            dec fltsize
+            jz .done
+            push in0q
+IF %1 > 1,  push in1q
+IF %1 > 2,  push in2q
+IF %1 > 3,  push in3q
+.loop:
+            add in0q, [execq + SwsOpExec.in_stride0]
+IF %1 > 1,  add in1q, [execq + SwsOpExec.in_stride1]
+IF %1 > 2,  add in2q, [execq + SwsOpExec.in_stride2]
+IF %1 > 3,  add in3q, [execq + SwsOpExec.in_stride3]
+            add weights, 4
+            filter_v_iter %1, %2, %3, %4
+            dec fltsize
+            jnz .loop
+IF %1 > 3,  pop in3q
+IF %1 > 2,  pop in2q
+IF %1 > 1,  pop in1q
+            pop in0q
+.done:
+            LOAD_CONT tmp0q
+IF %1 > 3,  add in3q, (mmsize >> 1) * %3
+IF %1 > 2,  add in2q, (mmsize >> 1) * %3
+IF %1 > 1,  add in1q, (mmsize >> 1) * %3
+            add in0q, (mmsize >> 1) * %3
+            CONTINUE tmp0q
+%undef weights
+%undef fltsize
+%endmacro
+
+%macro generic_filter_fns 2 ; type, sizeof_type
+        filter_v 1, %1, %2, v
+        filter_v 2, %1, %2, v
+        filter_v 3, %1, %2, v
+        filter_v 4, %1, %2, v
+
+        filter_v 1, %1, %2, fma_v
+        filter_v 2, %1, %2, fma_v
+        filter_v 3, %1, %2, fma_v
+        filter_v 4, %1, %2, fma_v
+%endmacro
+
+%macro filter_fns 0
+    generic_filter_fns U8,  1
+    generic_filter_fns U16, 2
+    generic_filter_fns F32, 4
+%endmacro
+
 INIT_YMM avx2
 decl_common_patterns conv8to32f
 decl_common_patterns conv16to32f
@@ -379,3 +486,4 @@ decl_common_patterns min_max
 decl_common_patterns scale
 dither_fns
 linear_fns
+filter_fns
