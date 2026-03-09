@@ -39,7 +39,6 @@
 #include "opt.h"
 #include "samplefmt.h"
 #include "bprint.h"
-#include "version.h"
 
 #include <float.h>
 
@@ -2047,18 +2046,6 @@ const AVClass *av_opt_child_class_iterate(const AVClass *parent, void **iter)
         return parent->child_class_iterate(iter);
     return NULL;
 }
-
-#if FF_API_OPT_PTR
-void *av_opt_ptr(const AVClass *class, void *obj, const char *name)
-{
-    const AVOption *opt= av_opt_find2(&class, name, NULL, 0, AV_OPT_SEARCH_FAKE_OBJ, NULL);
-
-    // no direct access to array-type options
-    if (!opt || (opt->type & AV_OPT_TYPE_FLAG_ARRAY))
-        return NULL;
-    return (uint8_t*)obj + opt->offset;
-}
-#endif
 
 static int opt_copy_elem(void *logctx, enum AVOptionType type,
                          void *dst, const void *src)
