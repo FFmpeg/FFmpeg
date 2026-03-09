@@ -3284,12 +3284,6 @@ static int process_forced_keyframes(Muxer *mux, const OptionsContext *o)
             // parse it only for static kf timings
         } else if (!strcmp(forced_keyframes, "source")) {
             ost->kf.type = KF_FORCE_SOURCE;
-#if FFMPEG_OPT_FORCE_KF_SOURCE_NO_DROP
-        } else if (!strcmp(forced_keyframes, "source_no_drop")) {
-            av_log(ost, AV_LOG_WARNING, "The 'source_no_drop' value for "
-                   "-force_key_frames is deprecated, use just 'source'\n");
-            ost->kf.type = KF_FORCE_SOURCE;
-#endif
         } else if (!strcmp(forced_keyframes, "scd_metadata")) {
             ost->kf.type = KF_FORCE_SCD_METADATA;
         } else {

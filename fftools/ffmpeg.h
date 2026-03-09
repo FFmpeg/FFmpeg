@@ -53,7 +53,6 @@
 
 // deprecated features
 #define FFMPEG_OPT_TOP 1
-#define FFMPEG_OPT_FORCE_KF_SOURCE_NO_DROP 1
 #define FFMPEG_OPT_VSYNC_DROP 1
 #define FFMPEG_OPT_VSYNC 1
 #define FFMPEG_OPT_FILTER_SCRIPT 1
@@ -603,9 +602,6 @@ typedef struct EncStats {
 
 enum {
     KF_FORCE_SOURCE         = 1,
-#if FFMPEG_OPT_FORCE_KF_SOURCE_NO_DROP
-    KF_FORCE_SOURCE_NO_DROP = 2,
-#endif
     // force keyframe if lavfi.scd.time metadata is set
     KF_FORCE_SCD_METADATA = 3,
 };
