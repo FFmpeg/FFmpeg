@@ -24,7 +24,7 @@
  * swscale version macros
  */
 
-#define LIBSWSCALE_VERSION_MAJOR   9
+#define LIBSWSCALE_VERSION_MAJOR   10
 
 /**
  * FF_API_* defines may be placed below to indicate public API that will be

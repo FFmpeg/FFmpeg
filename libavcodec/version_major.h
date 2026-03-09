@@ -25,7 +25,7 @@
  * Libavcodec version macros.
  */
 
-#define LIBAVCODEC_VERSION_MAJOR  62
+#define LIBAVCODEC_VERSION_MAJOR  63
 
 /**
  * FF_API_* defines may be placed below to indicate public API that will be
@@ -37,9 +37,9 @@
  * at once through the bump. This improves the git bisect-ability of the change.
  */
 
-#define FF_API_INIT_PACKET         (LIBAVCODEC_VERSION_MAJOR < 63)
+#define FF_API_INIT_PACKET         (LIBAVCODEC_VERSION_MAJOR < 64)
 
-#define FF_API_INTRA_DC_PRECISION  (LIBAVCODEC_VERSION_MAJOR < 63)
-#define FF_API_MJPEG_EXTERN_HUFF   (LIBAVCODEC_VERSION_MAJOR < 63)
+#define FF_API_INTRA_DC_PRECISION  (LIBAVCODEC_VERSION_MAJOR < 64)
+#define FF_API_MJPEG_EXTERN_HUFF   (LIBAVCODEC_VERSION_MAJOR < 64)
 
 #endif /* AVCODEC_VERSION_MAJOR_H */
