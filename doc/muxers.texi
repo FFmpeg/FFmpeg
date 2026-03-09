@@ -2662,7 +2662,7 @@ containing the @code{:} special character must be escaped.
 Use @command{ffmpeg} for creating a sequence of files @file{img-001.jpeg},
 @file{img-002.jpeg}, ..., taking one image every second from the input video:
 @example
-ffmpeg -i in.avi -vsync cfr -r 1 -f image2 'img-%03d.jpeg'
+ffmpeg -i in.avi -fps_mode cfr -r 1 -f image2 'img-%03d.jpeg'
 @end example
 
 Note that with @command{ffmpeg}, if the format is not specified with the
@@ -2670,7 +2670,7 @@ Note that with @command{ffmpeg}, if the format is not specified with the
 format, the image2 muxer is automatically selected, so the previous
 command can be written as:
 @example
-ffmpeg -i in.avi -vsync cfr -r 1 'img-%03d.jpeg'
+ffmpeg -i in.avi -fps_mode cfr -r 1 'img-%03d.jpeg'
 @end example
 
 Note also that the pattern must not necessarily contain "%d" or

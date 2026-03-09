@@ -56,9 +56,6 @@ char *vstats_filename;
 float dts_delta_threshold   = 10;
 float dts_error_threshold   = 3600*30;
 
-#if FFMPEG_OPT_VSYNC
-enum VideoSyncMethod video_sync_method = VSYNC_AUTO;
-#endif
 float frame_drop_threshold = 0;
 int do_benchmark      = 0;
 int do_benchmark_all  = 0;
@@ -359,31 +356,16 @@ int view_specifier_parse(const char **pspec, ViewSpecifier *vs)
     return 0;
 }
 
-int parse_and_set_vsync(const char *arg, enum VideoSyncMethod *vsync_var, int file_idx, int st_idx, int is_global)
+int parse_and_set_vsync(const char *arg, enum VideoSyncMethod *vsync_var, int file_idx, int st_idx)
 {
     if      (!av_strcasecmp(arg, "cfr"))         *vsync_var = VSYNC_CFR;
     else if (!av_strcasecmp(arg, "vfr"))         *vsync_var = VSYNC_VFR;
     else if (!av_strcasecmp(arg, "passthrough")) *vsync_var = VSYNC_PASSTHROUGH;
-    else if (!is_global && !av_strcasecmp(arg, "auto"))  *vsync_var = VSYNC_AUTO;
-    else if (!is_global) {
+    else if (!av_strcasecmp(arg, "auto"))        *vsync_var = VSYNC_AUTO;
+    else {
         av_log(NULL, AV_LOG_FATAL, "Invalid value %s specified for fps_mode of #%d:%d.\n", arg, file_idx, st_idx);
         return AVERROR(EINVAL);
     }
-
-#if FFMPEG_OPT_VSYNC
-    if (is_global && *vsync_var == VSYNC_AUTO) {
-        int ret;
-        double num;
-
-        ret = parse_number("vsync", arg, OPT_TYPE_INT, VSYNC_AUTO, VSYNC_VFR, &num);
-        if (ret < 0)
-            return ret;
-
-        video_sync_method = num;
-        av_log(NULL, AV_LOG_WARNING, "Passing a number to -vsync is deprecated,"
-               " use a string argument as described in the manual.\n");
-    }
-#endif
 
     return 0;
 }
@@ -1228,14 +1210,6 @@ static int opt_audio_filters(void *optctx, const char *opt, const char *arg)
     return parse_option(o, "filter:a", arg, options);
 }
 
-#if FFMPEG_OPT_VSYNC
-static int opt_vsync(void *optctx, const char *opt, const char *arg)
-{
-    av_log(NULL, AV_LOG_WARNING, "-vsync is deprecated. Use -fps_mode\n");
-    return parse_and_set_vsync(arg, &video_sync_method, -1, -1, 1);
-}
-#endif
-
 static int opt_timecode(void *optctx, const char *opt, const char *arg)
 {
     OptionsContext *o = optctx;
@@ -1939,7 +1913,7 @@ const OptionDef options[] = {
         .u1.name_canon = "tag", },
     { "fps_mode",                   OPT_TYPE_STRING, OPT_VIDEO | OPT_EXPERT | OPT_PERSTREAM | OPT_OUTPUT,
         { .off = OFFSET(fps_mode) },
-        "set framerate mode for matching video streams; overrides vsync" },
+        "set framerate mode for matching video streams" },
     { "force_fps",                  OPT_TYPE_BOOL,   OPT_VIDEO | OPT_EXPERT  | OPT_PERSTREAM | OPT_OUTPUT,
         { .off = OFFSET(force_fps) },
         "force the selected framerate, disable the best supported framerate selection" },
@@ -2123,13 +2097,6 @@ const OptionDef options[] = {
     { "filter_hw_device", OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_EXPERT,
         { .func_arg = opt_filter_hw_device },
         "set hardware device used when filtering", "device" },
-
-    // deprecated options
-#if FFMPEG_OPT_VSYNC
-    { "vsync",                  OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_EXPERT,
-        { .func_arg = opt_vsync },
-        "set video sync method globally; deprecated, use -fps_mode", "" },
-#endif
 
     { NULL, },
 };

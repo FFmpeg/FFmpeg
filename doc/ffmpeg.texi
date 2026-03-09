@@ -2388,25 +2388,19 @@ If either the input or output is blocked leading to actual read speed falling be
 specified readrate, then this rate takes effect till the input catches up with the
 specified readrate. Must not be lower than the primary readrate.
 
-@item -vsync @var{parameter} (@emph{global})
-@itemx -fps_mode[:@var{stream_specifier}] @var{parameter} (@emph{output,per-stream})
-Set video sync method / framerate mode. vsync is applied to all output video streams
-but can be overridden for a stream by setting fps_mode. vsync is deprecated and will be
-removed in the future.
-
-For compatibility reasons some of the values for vsync can be specified as numbers (shown
-in parentheses in the following table).
+@item -fps_mode[:@var{stream_specifier}] @var{parameter} (@emph{output,per-stream})
+Set video sync method / framerate mode.
 
 @table @option
-@item passthrough (0)
+@item passthrough
 Each frame is passed with its timestamp from the demuxer to the muxer.
-@item cfr (1)
+@item cfr
 Frames will be duplicated and dropped to achieve exactly the requested
 constant frame rate.
-@item vfr (2)
+@item vfr
 Frames are passed through with their timestamp or dropped so as to
 prevent 2 frames from having the same timestamp.
-@item auto (-1)
+@item auto
 Chooses between cfr and vfr depending on muxer capabilities. This is the
 default method.
 @end table
@@ -2436,7 +2430,7 @@ Do not process input timestamps, but keep their values without trying
 to sanitize them. In particular, do not remove the initial start time
 offset value.
 
-Note that, depending on the @option{vsync} option or on specific muxer
+Note that, depending on the @option{fps_mode} option or on specific muxer
 processing (e.g. in case the format option @option{avoid_negative_ts}
 is enabled) the output timestamps may mismatch with the input
 timestamps even when this option is selected.

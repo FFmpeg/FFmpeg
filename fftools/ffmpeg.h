@@ -51,9 +51,6 @@
 
 #include "libswresample/swresample.h"
 
-// deprecated features
-#define FFMPEG_OPT_VSYNC 1
-
 #define FFMPEG_ERROR_RATE_EXCEEDED FFERRTAG('E', 'R', 'E', 'D')
 
 enum VideoSyncMethod {
@@ -786,7 +783,7 @@ int check_avoptions_used(const AVDictionary *opts, const AVDictionary *opts_used
 int assert_file_overwrite(const char *filename);
 int find_codec(void *logctx, const char *name,
                enum AVMediaType type, int encoder, const AVCodec **codec);
-int parse_and_set_vsync(const char *arg, enum VideoSyncMethod *vsync_var, int file_idx, int st_idx, int is_global);
+int parse_and_set_vsync(const char *arg, enum VideoSyncMethod *vsync_var, int file_idx, int st_idx);
 
 int filtergraph_is_simple(const FilterGraph *fg);
 int fg_create_simple(FilterGraph **pfg,
