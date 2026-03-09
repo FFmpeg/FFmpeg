@@ -7743,6 +7743,11 @@ The file path of the downloaded whisper.cpp model (mandatory).
 The language to use for transcription ('auto' for auto-detect).
 Default value: @code{"auto"}
 
+@item translate
+If enabled, translate the transcription from the source language to English. A
+multilingual model is required to enable this option.
+Default value: @code{"false"}
+
 @item queue
 The maximum size that will be queued into the filter before processing the audio
 with whisper. Using a small value the audio stream will be processed more often,
