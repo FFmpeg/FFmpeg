@@ -128,6 +128,28 @@ IF %1 > 1,  add out1q, [execq + SwsOpExec.out_bump1]
 IF %1 > 2,  add out2q, [execq + SwsOpExec.out_bump2]
 IF %1 > 3,  add out3q, [execq + SwsOpExec.out_bump3]
             mov bxd, [rsp + 16]
+            ; conditionally apply y bump (if non-NULL)
+            mov tmp0q, [execq + SwsOpExec.in_bump_y]
+            test tmp0q, tmp0q
+            jz .continue
+            movsxd tmp0q, [tmp0q + yq * 4 - 4] ; load (signed) y bump
+%if %1 > 3
+            mov tmp1q, tmp0q
+            imul tmp1q, [execq + SwsOpExec.in_stride3]
+            add in3q, tmp1q
+%endif
+%if %1 > 2
+            mov tmp1q, tmp0q
+            imul tmp1q, [execq + SwsOpExec.in_stride2]
+            add in2q, tmp1q
+%endif
+%if %1 > 1
+            mov tmp1q, tmp0q
+            imul tmp1q, [execq + SwsOpExec.in_stride1]
+            add in1q, tmp1q
+%endif
+            imul tmp0q, [execq + SwsOpExec.in_stride0]
+            add in0q, tmp0q
 .continue:
             jmp [rsp]
 .end:
