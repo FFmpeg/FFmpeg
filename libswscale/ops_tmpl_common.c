@@ -198,8 +198,9 @@ static void fn(process)(const SwsOpExec *exec, const void *priv,
             CONTINUE(block_t, (void *) x, (void *) y, (void *) z, (void *) w);
         }
 
+        const int y_bump = exec->in_bump_y ? exec->in_bump_y[iter->y] : 0;
         for (int i = 0; i < 4; i++) {
-            iter->in[i]  += exec->in_bump[i];
+            iter->in[i]  += exec->in_bump[i] + y_bump * exec->in_stride[i];
             iter->out[i] += exec->out_bump[i];
         }
     }
