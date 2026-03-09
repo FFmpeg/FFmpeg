@@ -674,6 +674,9 @@ int ff_cbs_lcevc_find_process_block(CodedBitstreamContext *ctx,
         CodedBitstreamUnit *unit = &au->units[i];
         LCEVCRawProcessBlockList *list;
 
+        if (!unit->content)
+            continue;
+
         err = cbs_lcevc_get_process_block_list(ctx, unit, &list);
         if (err < 0)
             continue;
