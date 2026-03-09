@@ -333,6 +333,11 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
                 op->comps.min[i]   = prev.min[i];
                 op->comps.max[i]   = prev.max[i];
             }
+
+            if (op->rw.filter) {
+                const SwsComps prev = op->comps;
+                apply_filter_weights(&op->comps, &prev, op->rw.kernel);
+            }
             break;
         case SWS_OP_SWAP_BYTES:
             for (int i = 0; i < 4; i++) {
@@ -540,6 +545,9 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
 static void op_uninit(SwsOp *op)
 {
     switch (op->op) {
+    case SWS_OP_READ:
+        av_refstruct_unref(&op->rw.kernel);
+        break;
     case SWS_OP_DITHER:
         av_refstruct_unref(&op->dither.matrix);
         break;
@@ -598,6 +606,10 @@ SwsOpList *ff_sws_op_list_duplicate(const SwsOpList *ops)
     for (int i = 0; i < copy->num_ops; i++) {
         const SwsOp *op = &copy->ops[i];
         switch (op->op) {
+        case SWS_OP_READ:
+            if (op->rw.kernel)
+                av_refstruct_ref(op->rw.kernel);
+            break;
         case SWS_OP_DITHER:
             av_refstruct_ref(op->dither.matrix);
             break;
@@ -811,6 +823,12 @@ void ff_sws_op_desc(AVBPrint *bp, const SwsOp *op, const bool unused[4])
         av_bprintf(bp, "%-20s: %d elem(s) %s >> %d", name,
                    op->rw.elems,  op->rw.packed ? "packed" : "planar",
                    op->rw.frac);
+        if (!op->rw.filter)
+            break;
+        const SwsFilterWeights *kernel = op->rw.kernel;
+        av_bprintf(bp, " + %d tap %s filter (%c)",
+                   kernel->filter_size, kernel->name,
+                   op->rw.filter == SWS_OP_FILTER_H ? 'H' : 'V');
         break;
     case SWS_OP_LSHIFT:
         av_bprintf(bp, "%-20s: << %u", name, op->c.u);

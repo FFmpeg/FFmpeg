@@ -105,17 +105,27 @@ typedef struct SwsComps {
 } SwsComps;
 
 typedef struct SwsReadWriteOp {
+    /**
+     * Examples:
+     *   rgba      = 4x u8 packed
+     *   yuv444p   = 3x u8
+     *   rgb565    = 1x u16   <- use SWS_OP_UNPACK to unpack
+     *   monow     = 1x u8 (frac 3)
+     *   rgb4      = 1x u8 (frac 1)
+     */
     uint8_t elems; /* number of elements (of type `op.type`) to read/write */
     uint8_t frac;  /* fractional pixel step factor (log2) */
     bool packed;   /* read multiple elements from a single plane */
 
-    /** Examples:
-     *    rgba      = 4x u8 packed
-     *    yuv444p   = 3x u8
-     *    rgb565    = 1x u16   <- use SWS_OP_UNPACK to unpack
-     *    monow     = 1x u8 (frac 3)
-     *    rgb4      = 1x u8 (frac 1)
+    /**
+     * Filter kernel to apply to each plane while sampling. Currently, only
+     * one shared filter kernel is supported for all planes. (Optional)
+     *
+     * Note: As with SWS_OP_FILTER_*, if a filter kernel is in use, the read
+     * operation will always output floating point values.
      */
+    SwsOpType filter;         /* some value of SWS_OP_FILTER_* */
+    SwsFilterWeights *kernel; /* (refstruct) */
 } SwsReadWriteOp;
 
 typedef struct SwsPackOp {

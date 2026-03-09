@@ -72,8 +72,8 @@ int ff_sws_op_chain_append(SwsOpChain *chain, SwsFuncPtr func,
  * `op->linear.mask`, but may not contain any columns explicitly ignored by
  * `op->comps.unused`.
  *
- * For SWS_OP_READ, SWS_OP_WRITE, SWS_OP_SWAP_BYTES and SWS_OP_SWIZZLE, the
- * exact type is not checked, just the size.
+ * For unfiltered SWS_OP_READ/SWS_OP_WRITE, SWS_OP_SWAP_BYTES and
+ * SWS_OP_SWIZZLE, the exact type is not checked, just the size.
  *
  * Components set in `next.unused` are ignored when matching. If `flexible`
  * is true, the op body is ignored - only the operation, pixel type, and
@@ -88,6 +88,9 @@ static int op_match(const SwsOp *op, const SwsOpEntry *entry, const SwsComps nex
     switch (op->op) {
     case SWS_OP_READ:
     case SWS_OP_WRITE:
+        if (op->rw.filter && op->type != entry->type)
+            return 0;
+        /* fall through */;
     case SWS_OP_SWAP_BYTES:
     case SWS_OP_SWIZZLE:
         /* Only the size matters for these operations */
@@ -129,6 +132,7 @@ static int op_match(const SwsOp *op, const SwsOpEntry *entry, const SwsComps nex
     case SWS_OP_WRITE:
         if (op->rw.elems   != entry->rw.elems ||
             op->rw.frac    != entry->rw.frac  ||
+            op->rw.filter  != entry->rw.filter ||
             (op->rw.elems > 1 && op->rw.packed != entry->rw.packed))
             return 0;
         return score;

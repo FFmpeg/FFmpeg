@@ -241,7 +241,7 @@ static int add_ops_glsl(VulkanPriv *p, FFVulkanOpsCtx *s,
 
         switch (op->op) {
         case SWS_OP_READ: {
-            if (op->rw.frac) {
+            if (op->rw.frac || op->rw.filter) {
                 return AVERROR(ENOTSUP);
             } else if (op->rw.packed) {
                 GLSLF(1, %s = %s(imageLoad(src_img[0], pos)).%c%c%c%c;         ,
@@ -257,7 +257,7 @@ static int add_ops_glsl(VulkanPriv *p, FFVulkanOpsCtx *s,
             break;
         }
         case SWS_OP_WRITE: {
-            if (op->rw.frac) {
+            if (op->rw.frac || op->rw.filter) {
                 return AVERROR(ENOTSUP);
             } else if (op->rw.packed) {
                 GLSLF(1, imageStore(dst_img[0], pos, %s(%s).%c%c%c%c);         ,

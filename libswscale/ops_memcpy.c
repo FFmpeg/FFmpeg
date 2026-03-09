@@ -64,7 +64,7 @@ static int compile(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
         const SwsOp *op = &ops->ops[n];
         switch (op->op) {
         case SWS_OP_READ:
-            if ((op->rw.packed && op->rw.elems != 1) || op->rw.frac)
+            if ((op->rw.packed && op->rw.elems != 1) || op->rw.frac || op->rw.filter)
                 return AVERROR(ENOTSUP);
             for (int i = 0; i < op->rw.elems; i++)
                 p.index[i] = i;
@@ -107,7 +107,7 @@ static int compile(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
             break;
 
         case SWS_OP_WRITE:
-            if ((op->rw.packed && op->rw.elems != 1) || op->rw.frac)
+            if ((op->rw.packed && op->rw.elems != 1) || op->rw.frac || op->rw.filter)
                 return AVERROR(ENOTSUP);
             p.num_planes = op->rw.elems;
             break;

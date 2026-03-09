@@ -331,7 +331,7 @@ retry:
                     op->rw.elems = nb_planes;
                     RET(ff_sws_op_list_insert_at(ops, n + 1, &(SwsOp) {
                         .op = SWS_OP_SWIZZLE,
-                        .type = op->type,
+                        .type = op->rw.filter ? SWS_PIXEL_F32 : op->type,
                         .swizzle = swiz,
                     }));
                     goto retry;
@@ -695,7 +695,8 @@ int ff_sws_solve_shuffle(const SwsOpList *const ops, uint8_t shuffle[],
         return AVERROR(EINVAL);
 
     const SwsOp *read = ff_sws_op_list_input(ops);
-    if (!read || read->rw.frac || (!read->rw.packed && read->rw.elems > 1))
+    if (!read || read->rw.frac || read->rw.filter ||
+        (!read->rw.packed && read->rw.elems > 1))
         return AVERROR(ENOTSUP);
 
     const int read_size = ff_sws_pixel_type_size(read->type);
@@ -745,7 +746,8 @@ int ff_sws_solve_shuffle(const SwsOpList *const ops, uint8_t shuffle[],
         }
 
         case SWS_OP_WRITE: {
-            if (op->rw.frac || (!op->rw.packed && op->rw.elems > 1))
+            if (op->rw.frac || op->rw.filter ||
+                (!op->rw.packed && op->rw.elems > 1))
                 return AVERROR(ENOTSUP);
 
             /* Initialize to no-op */
