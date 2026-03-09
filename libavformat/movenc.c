@@ -2806,11 +2806,6 @@ static int mov_write_video_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
                            || (track->par->codec_id == AV_CODEC_ID_RAWVIDEO && track->par->format == AV_PIX_FMT_VYU444)
                            || (track->par->codec_id == AV_CODEC_ID_RAWVIDEO && track->par->format == AV_PIX_FMT_UYVA)
                            || (track->par->codec_id == AV_CODEC_ID_RAWVIDEO && track->par->format == AV_PIX_FMT_V30XLE)
-#if FF_API_V408_CODECID
-                           ||  track->par->codec_id == AV_CODEC_ID_V308
-                           ||  track->par->codec_id == AV_CODEC_ID_V408
-                           ||  track->par->codec_id == AV_CODEC_ID_V410
-#endif
                            ||  track->par->codec_id == AV_CODEC_ID_V210);
 
     avio_wb32(pb, 0); /* size */
@@ -2852,8 +2847,7 @@ static int mov_write_video_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
     avio_w8(pb, strlen(compressor_name));
     avio_write(pb, compressor_name, 31);
 
-    if (track->mode == MODE_MOV &&
-       (track->par->codec_id == AV_CODEC_ID_V410 || track->par->codec_id == AV_CODEC_ID_V210))
+    if (track->mode == MODE_MOV && track->par->codec_id == AV_CODEC_ID_V210)
         avio_wb16(pb, 0x18);
     else if (track->mode == MODE_MOV && track->par->bits_per_coded_sample)
         avio_wb16(pb, track->par->bits_per_coded_sample |

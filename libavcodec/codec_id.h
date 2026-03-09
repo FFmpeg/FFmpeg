@@ -24,8 +24,6 @@
 #include "libavutil/avutil.h"
 #include "libavutil/samplefmt.h"
 
-#include "version_major.h"
-
 /**
  * @addtogroup lavc_core
  * @{
@@ -206,9 +204,6 @@ enum AVCodecID {
     AV_CODEC_ID_BMV_VIDEO,
     AV_CODEC_ID_VBLE,
     AV_CODEC_ID_DXTORY,
-#if FF_API_V408_CODECID
-    AV_CODEC_ID_V410,
-#endif
     AV_CODEC_ID_XWD,
     AV_CODEC_ID_CDXL,
     AV_CODEC_ID_XBM,
@@ -256,10 +251,6 @@ enum AVCodecID {
     AV_CODEC_ID_012V,
     AV_CODEC_ID_AVUI,
     AV_CODEC_ID_TARGA_Y216,
-#if FF_API_V408_CODECID
-    AV_CODEC_ID_V308,
-    AV_CODEC_ID_V408,
-#endif
     AV_CODEC_ID_YUV4,
     AV_CODEC_ID_AVRN,
     AV_CODEC_ID_CPIA,
