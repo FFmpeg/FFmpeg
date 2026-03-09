@@ -218,10 +218,10 @@ int main(int argc, char **argv)
         samples = (uint16_t*)frame->data[0];
 
         for (j = 0; j < c->frame_size; j++) {
-            samples[2*j] = (int)(sin(t) * 10000);
+            samples[c->ch_layout.nb_channels*j] = (int)(sin(t) * 10000);
 
             for (k = 1; k < c->ch_layout.nb_channels; k++)
-                samples[2*j + k] = samples[2*j];
+                samples[c->ch_layout.nb_channels*j + k] = samples[c->ch_layout.nb_channels*j];
             t += tincr;
         }
         encode(c, frame, pkt, f);
