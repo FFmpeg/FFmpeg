@@ -184,7 +184,7 @@ end:
     avformat_close_input(&ifmt_ctx);
 
     /* close output */
-    if (ofmt_ctx && !(ofmt->flags & AVFMT_NOFILE))
+    if (ofmt_ctx && !(ofmt_ctx->oformat->flags & AVFMT_NOFILE))
         avio_closep(&ofmt_ctx->pb);
     avformat_free_context(ofmt_ctx);
 
