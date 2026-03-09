@@ -2160,11 +2160,6 @@ const OptionDef options[] = {
         "set hardware device used when filtering", "device" },
 
     // deprecated options
-#if FFMPEG_OPT_TOP
-    { "top", OPT_TYPE_INT,     OPT_VIDEO | OPT_EXPERT | OPT_PERSTREAM | OPT_INPUT | OPT_OUTPUT,
-        { .off = OFFSET(top_field_first) },
-        "deprecated, use the setfield video filter", "" },
-#endif
 #if FFMPEG_OPT_VSYNC
     { "vsync",                  OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_EXPERT,
         { .func_arg = opt_vsync },

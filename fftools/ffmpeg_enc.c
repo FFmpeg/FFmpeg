@@ -283,17 +283,8 @@ int enc_open(void *opaque, const AVFrame *frame)
         }
 
         if (enc_ctx->flags & (AV_CODEC_FLAG_INTERLACED_DCT | AV_CODEC_FLAG_INTERLACED_ME) ||
-            (frame->flags & AV_FRAME_FLAG_INTERLACED)
-#if FFMPEG_OPT_TOP
-            || ost->top_field_first >= 0
-#endif
-            ) {
-            int top_field_first =
-#if FFMPEG_OPT_TOP
-                ost->top_field_first >= 0 ?
-                ost->top_field_first :
-#endif
-                !!(frame->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST);
+            (frame->flags & AV_FRAME_FLAG_INTERLACED)) {
+            int top_field_first = !!(frame->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST);
 
             if (enc->id == AV_CODEC_ID_MJPEG)
                 enc_ctx->field_order = top_field_first ? AV_FIELD_TT : AV_FIELD_BB;
@@ -805,13 +796,6 @@ static int frame_encode(OutputStream *ost, AVFrame *frame, AVPacket *pkt)
         if (type == AVMEDIA_TYPE_VIDEO) {
             frame->quality   = e->enc_ctx->global_quality;
             frame->pict_type = forced_kf_apply(e, &ost->kf, frame);
-
-#if FFMPEG_OPT_TOP
-            if (ost->top_field_first >= 0) {
-                frame->flags &= ~AV_FRAME_FLAG_TOP_FIELD_FIRST;
-                frame->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST * (!!ost->top_field_first);
-            }
-#endif
         } else {
             if (!(e->enc_ctx->codec->capabilities & AV_CODEC_CAP_PARAM_CHANGE) &&
                 e->enc_ctx->ch_layout.nb_channels != frame->ch_layout.nb_channels) {

@@ -52,7 +52,6 @@
 #include "libswresample/swresample.h"
 
 // deprecated features
-#define FFMPEG_OPT_TOP 1
 #define FFMPEG_OPT_VSYNC 1
 #define FFMPEG_OPT_FILTER_SCRIPT 1
 
@@ -216,9 +215,6 @@ typedef struct OptionsContext {
     SpecifierOptList intra_matrices;
     SpecifierOptList inter_matrices;
     SpecifierOptList chroma_intra_matrices;
-#if FFMPEG_OPT_TOP
-    SpecifierOptList top_field_first;
-#endif
     SpecifierOptList metadata_map;
     SpecifierOptList presets;
     SpecifierOptList copy_initial_nonkeyframes;
@@ -428,9 +424,6 @@ enum DecoderFlags {
     // decoder should override timestamps by fixed framerate
     // from DecoderOpts.framerate
     DECODER_FLAG_FRAMERATE_FORCED = (1 << 2),
-#if FFMPEG_OPT_TOP
-    DECODER_FLAG_TOP_FIELD_FIRST  = (1 << 3),
-#endif
     DECODER_FLAG_SEND_END_TS      = (1 << 4),
     // force bitexact decoding
     DECODER_FLAG_BITEXACT         = (1 << 5),
@@ -494,9 +487,6 @@ typedef struct InputStream {
 
     /* framerate forced with -r */
     AVRational            framerate;
-#if FFMPEG_OPT_TOP
-    int                   top_field_first;
-#endif
 
     int                   fix_sub_duration;
 
@@ -654,10 +644,6 @@ typedef struct OutputStream {
 
     Encoder *enc;
 
-    /* video only */
-#if FFMPEG_OPT_TOP
-    int top_field_first;
-#endif
     int bitexact;
     int bits_per_raw_sample;
 
