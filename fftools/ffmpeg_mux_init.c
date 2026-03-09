@@ -417,45 +417,19 @@ static int ost_get_filters(const OptionsContext *o, AVFormatContext *oc,
                            OutputStream *ost, char **dst)
 {
     const char *filters = NULL;
-#if FFMPEG_OPT_FILTER_SCRIPT
-    const char *filters_script = NULL;
-
-    opt_match_per_stream_str(ost, &o->filter_scripts, oc, ost->st, &filters_script);
-#endif
     opt_match_per_stream_str(ost, &o->filters, oc, ost->st, &filters);
 
     if (!ost->ist) {
-        if (
-#if FFMPEG_OPT_FILTER_SCRIPT
-            filters_script ||
-#endif
-            filters) {
+        if (filters) {
             av_log(ost, AV_LOG_ERROR,
-                   "%s '%s' was specified for a stream fed from a complex "
+                   "Filtergraph '%s' was specified for a stream fed from a complex "
                    "filtergraph. Simple and complex filtering cannot be used "
-                   "together for the same stream.\n",
-#if FFMPEG_OPT_FILTER_SCRIPT
-                   filters ? "Filtergraph" : "Filtergraph script",
-                   filters ? filters : filters_script
-#else
-                   "Filtergraph", filters
-#endif
-                   );
+                   "together for the same stream.\n", filters);
             return AVERROR(EINVAL);
         }
         return 0;
     }
 
-#if FFMPEG_OPT_FILTER_SCRIPT
-    if (filters_script && filters) {
-        av_log(ost, AV_LOG_ERROR, "Both -filter and -filter_script set\n");
-        return AVERROR(EINVAL);
-    }
-
-    if (filters_script)
-        *dst = read_file_to_string(filters_script);
-    else
-#endif
     if (filters)
         *dst = av_strdup(filters);
     else
@@ -1029,28 +1003,12 @@ static int streamcopy_init(const OptionsContext *o, const Muxer *mux,
     int ret = 0;
 
     const char *filters = NULL;
-#if FFMPEG_OPT_FILTER_SCRIPT
-    const char *filters_script = NULL;
-
-    opt_match_per_stream_str(ost, &o->filter_scripts, mux->fc, ost->st, &filters_script);
-#endif
     opt_match_per_stream_str(ost, &o->filters, mux->fc, ost->st, &filters);
 
-    if (
-#if FFMPEG_OPT_FILTER_SCRIPT
-        filters_script ||
-#endif
-        filters) {
+    if (filters) {
         av_log(ost, AV_LOG_ERROR,
-               "%s '%s' was specified, but codec copy was selected. "
-               "Filtering and streamcopy cannot be used together.\n",
-#if FFMPEG_OPT_FILTER_SCRIPT
-               filters ? "Filtergraph" : "Filtergraph script",
-               filters ? filters : filters_script
-#else
-               "Filtergraph", filters
-#endif
-               );
+               "Filtergraph '%s' was specified, but codec copy was selected. "
+               "Filtering and streamcopy cannot be used together.\n", filters);
         return AVERROR(EINVAL);
     }
 
