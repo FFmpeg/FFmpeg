@@ -28,8 +28,6 @@
 
 #if ARCH_X86
 
-void avpriv_emms_asm(void);
-
 #if HAVE_MMX_INLINE
 #ifndef __MMX__
 #include "libavutil/cpu.h"
@@ -80,7 +78,8 @@ static inline void ff_assert0_fpu(const char *file, int line_number)
 #   include <mmintrin.h>
 #   define emms_c _mm_empty
 #elif HAVE_MMX_EXTERNAL
-#   define emms_c avpriv_emms_asm
+void ff_emms_asm(void);
+#   define emms_c ff_emms_asm
 #endif /* HAVE_MMX_INLINE */
 
 #endif /* ARCH_X86 */

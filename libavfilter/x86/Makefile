@@ -1,6 +1,10 @@
 OBJS-$(CONFIG_NOISE_FILTER)                  += x86/vf_noise.o
 OBJS-$(CONFIG_SPP_FILTER)                    += x86/vf_spp.o
 
+EMMS_OBJS_$(HAVE_MMX_INLINE)_$(HAVE_MMX_EXTERNAL)_$(HAVE_MM_EMPTY) = x86/emms.o
+# Add internal copy of ff_emms() to libavfilter for shared builds (if needed).
+SHLIBOBJS-$(CONFIG_FSPP_FILTER)              += $(EMMS_OBJS__yes_)
+
 X86ASM-OBJS-$(CONFIG_SCENE_SAD)              += x86/scene_sad.o x86/scene_sad_init.o
 
 X86ASM-OBJS-$(CONFIG_AFIR_FILTER)            += x86/af_afir.o x86/af_afir_init.o

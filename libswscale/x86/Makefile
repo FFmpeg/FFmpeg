@@ -6,6 +6,10 @@ OBJS-$(HAVE_MMXEXT_INLINE)      += x86/hscale_fast_bilinear_simd.o      \
 
 OBJS-$(CONFIG_XMM_CLOBBER_TEST) += x86/w64xmmtest.o
 
+EMMS_OBJS_$(HAVE_MMX_INLINE)_$(HAVE_MMX_EXTERNAL)_$(HAVE_MM_EMPTY) = x86/emms.o
+# Add internal copy of ff_emms() to swscale for shared builds (if needed).
+SHLIBOBJS                       += $(EMMS_OBJS__yes_)
+
 X86ASM-OBJS                     += x86/input.o                          \
                                    x86/output.o                         \
                                    x86/scale.o                          \

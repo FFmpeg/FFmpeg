@@ -1,6 +1,4 @@
 ;*****************************************************************************
-;* Copyright (C) 2013 Martin Storsjo
-;*
 ;* This file is part of FFmpeg.
 ;*
 ;* FFmpeg is free software; you can redistribute it and/or
@@ -18,13 +16,4 @@
 ;* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ;******************************************************************************
 
-%include "libavutil/x86/x86util.asm"
-
-SECTION .text
-
-;-----------------------------------------------------------------------------
-; void ff_emms_asm(void)
-;-----------------------------------------------------------------------------
-cglobal emms_asm, 0, 0
-    emms
-    RET
+%include "libavutil/x86/emms.asm"

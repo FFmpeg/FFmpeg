@@ -1,10 +1,11 @@
 OBJS += x86/cpu.o                                                       \
 
 EMMS_OBJS_$(HAVE_MMX_INLINE)_$(HAVE_MMX_EXTERNAL)_$(HAVE_MM_EMPTY) = x86/emms.o
+# For static builds, libavutil provides ff_emms for all libraries (if needed).
+STLIBOBJS   += $(EMMS_OBJS__yes_)
 
 X86ASM-OBJS += x86/cpuid.o                                              \
                x86/crc.o                                                \
-               $(EMMS_OBJS__yes_)                                       \
                x86/fixed_dsp.o x86/fixed_dsp_init.o                     \
                x86/float_dsp.o x86/float_dsp_init.o                     \
                x86/imgutils.o x86/imgutils_init.o                       \

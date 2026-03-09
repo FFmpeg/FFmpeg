@@ -1,5 +1,9 @@
 OBJS                                   += x86/constants.o               \
 
+EMMS_OBJS_$(HAVE_MMX_INLINE)_$(HAVE_MMX_EXTERNAL)_$(HAVE_MM_EMPTY) = x86/emms.o
+# Add internal copy of ff_emms() to lavc for shared builds (if needed).
+SHLIBOBJS                              += $(EMMS_OBJS__yes_)
+
 # subsystems
 X86ASM-OBJS-$(CONFIG_AC3DSP)           += x86/ac3dsp_init.o
 X86ASM-OBJS-$(CONFIG_AUDIODSP)         += x86/audiodsp_init.o
