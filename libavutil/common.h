@@ -297,17 +297,6 @@ static av_always_inline av_const unsigned av_zero_extend_c(unsigned a, unsigned 
     return a & ((1U << p) - 1);
 }
 
-#if FF_API_MOD_UINTP2
-#ifndef av_mod_uintp2
-#   define av_mod_uintp2 av_mod_uintp2_c
-#endif
-attribute_deprecated
-static av_always_inline av_const unsigned av_mod_uintp2_c(unsigned a, unsigned p)
-{
-    return av_zero_extend_c(a, p);
-}
-#endif
-
 /**
  * Add two signed 32-bit values with saturation.
  *
