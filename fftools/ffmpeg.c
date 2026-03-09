@@ -253,7 +253,6 @@ void term_init(void)
 /* read a key without blocking */
 static int read_key(void)
 {
-    unsigned char ch = -1;
 #if HAVE_TERMIOS_H
     int n = 1;
     struct timeval tv;
@@ -265,6 +264,7 @@ static int read_key(void)
     tv.tv_usec = 0;
     n = select(1, &rfds, NULL, NULL, &tv);
     if (n > 0) {
+        unsigned char ch;
         n = read(0, &ch, 1);
         if (n == 1)
             return ch;
@@ -289,6 +289,7 @@ static int read_key(void)
         }
         //Read it
         if(nchars != 0) {
+            unsigned char ch;
             if (read(0, &ch, 1) == 1)
                 return ch;
             return 0;
@@ -300,7 +301,7 @@ static int read_key(void)
     if(kbhit())
         return(getch());
 #endif
-    return ch;
+    return -1;
 }
 
 static int decode_interrupt_cb(void *ctx)
