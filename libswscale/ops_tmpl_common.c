@@ -176,6 +176,90 @@ WRAP_COMMON_PATTERNS(scale,
     .flexible = true,
 );
 
+DECL_SETUP(setup_filter_v, params, out)
+{
+    const SwsFilterWeights *filter = params->op->rw.kernel;
+    static_assert(sizeof(out->priv.ptr) <= sizeof(int32_t[2]),
+                  ">8 byte pointers not supported");
+
+    /* Pre-convert weights to float */
+    float *weights = av_calloc(filter->num_weights, sizeof(float));
+    if (!weights)
+        return AVERROR(ENOMEM);
+
+    for (int i = 0; i < filter->num_weights; i++)
+        weights[i] = (float) filter->weights[i] / SWS_FILTER_SCALE;
+
+    out->priv.ptr = weights;
+    out->priv.i32[2] = filter->filter_size;
+    out->free = ff_op_priv_free;
+    return 0;
+}
+
+/* Fully general vertical planar filter case */
+DECL_READ(filter_v, const int elems)
+{
+    const SwsOpExec *exec = iter->exec;
+    const float *restrict weights = impl->priv.ptr;
+    const int filter_size = impl->priv.i32[2];
+    weights += filter_size * iter->y;
+
+    f32block_t xs, ys, zs, ws;
+    memset(xs, 0, sizeof(xs));
+    if (elems > 1)
+        memset(ys, 0, sizeof(ys));
+    if (elems > 2)
+        memset(zs, 0, sizeof(zs));
+    if (elems > 3)
+        memset(ws, 0, sizeof(ws));
+
+    for (int j = 0; j < filter_size; j++) {
+        const float weight = weights[j];
+
+        SWS_LOOP
+        for (int i = 0; i < SWS_BLOCK_SIZE; i++) {
+            xs[i] += weight * in0[i];
+            if (elems > 1)
+                ys[i] += weight * in1[i];
+            if (elems > 2)
+                zs[i] += weight * in2[i];
+            if (elems > 3)
+                ws[i] += weight * in3[i];
+        }
+
+        in0 = bump_ptr(in0, exec->in_stride[0]);
+        if (elems > 1)
+            in1 = bump_ptr(in1, exec->in_stride[1]);
+        if (elems > 2)
+            in2 = bump_ptr(in2, exec->in_stride[2]);
+        if (elems > 3)
+            in3 = bump_ptr(in3, exec->in_stride[3]);
+    }
+
+    for (int i = 0; i < elems; i++)
+        iter->in[i] += sizeof(block_t);
+
+    CONTINUE(f32block_t, xs, ys, zs, ws);
+}
+
+#define WRAP_FILTER(FUNC, DIR, ELEMS, SUFFIX)                                   \
+DECL_IMPL(FUNC##ELEMS##SUFFIX)                                                  \
+{                                                                               \
+    CALL_READ(FUNC##SUFFIX, ELEMS);                                             \
+}                                                                               \
+                                                                                \
+DECL_ENTRY(FUNC##ELEMS##SUFFIX,                                                 \
+    .op = SWS_OP_READ,                                                          \
+    .setup = fn(setup_filter##SUFFIX),                                          \
+    .rw.elems = ELEMS,                                                          \
+    .rw.filter = SWS_OP_FILTER_##DIR,                                           \
+);
+
+WRAP_FILTER(filter, V, 1, _v)
+WRAP_FILTER(filter, V, 2, _v)
+WRAP_FILTER(filter, V, 3, _v)
+WRAP_FILTER(filter, V, 4, _v)
+
 static void fn(process)(const SwsOpExec *exec, const void *priv,
                         const int bx_start, const int y_start,
                         int bx_end, int y_end)

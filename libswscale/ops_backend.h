@@ -71,6 +71,7 @@ typedef struct SwsOpIter {
 #define fn(name)  bitfn(name, FN_SUFFIX)
 
 #define av_q2pixel(q) ((q).den ? (pixel_t) (q).num / (q).den : 0)
+#define bump_ptr(ptr, bump) ((pixel_t *) ((uintptr_t) (ptr) + (bump)))
 
 /* Helper macros to make writing common function signatures less painful */
 #define DECL_FUNC(NAME, ...)                                                    \

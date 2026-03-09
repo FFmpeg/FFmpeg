@@ -255,6 +255,11 @@ static const SwsOpTable fn(op_table_float) = {
         &fn(op_linear_matrix4),
         &fn(op_linear_affine4),
 
+        &fn(op_filter1_v),
+        &fn(op_filter2_v),
+        &fn(op_filter3_v),
+        &fn(op_filter4_v),
+
         NULL
     },
 };

@@ -491,6 +491,11 @@ static const SwsOpTable fn(op_table_int) = {
         &fn(op_write_packed3),
         &fn(op_write_packed4),
 
+        &fn(op_filter1_v),
+        &fn(op_filter2_v),
+        &fn(op_filter3_v),
+        &fn(op_filter4_v),
+
 #if BIT_DEPTH == 8
         &fn(op_read_bits1),
         &fn(op_read_nibbles1),
