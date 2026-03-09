@@ -808,6 +808,13 @@ error:
     return ret;
 }
 
+void ff_sws_graph_rollback(SwsGraph *graph, int since_idx)
+{
+    for (int i = since_idx; i < graph->num_passes; i++)
+        pass_free(graph->passes[i]);
+    graph->num_passes = since_idx;
+}
+
 void ff_sws_graph_free(SwsGraph **pgraph)
 {
     SwsGraph *graph = *pgraph;

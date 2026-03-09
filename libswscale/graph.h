@@ -176,6 +176,11 @@ int ff_sws_graph_add_pass(SwsGraph *graph, enum AVPixelFormat fmt,
                           SwsPass **out_pass);
 
 /**
+ * Remove all passes added since the given index.
+ */
+void ff_sws_graph_rollback(SwsGraph *graph, int since_idx);
+
+/**
  * Uninitialize any state associate with this filter graph and free it.
  */
 void ff_sws_graph_free(SwsGraph **graph);
