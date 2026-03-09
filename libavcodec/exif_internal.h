@@ -34,13 +34,6 @@
 #include "libavutil/frame.h"
 
 #include "exif.h"
-#include "version_major.h"
-
-#if LIBAVCODEC_VERSION_MAJOR < 63
-/* Used by the AVI demuxer */
-int avpriv_exif_decode_ifd(void *logctx, const uint8_t *buf, int size,
-                           int le, int depth, AVDictionary **metadata);
-#endif
 
 /**
  * Compares values in the IFD with data in the provided AVFrame and sets the values

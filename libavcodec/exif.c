@@ -1055,23 +1055,6 @@ int av_exif_ifd_to_dict(void *logctx, const AVExifMetadata *ifd, AVDictionary **
     return exif_ifd_to_dict(logctx, "", ifd, metadata);
 }
 
-#if LIBAVCODEC_VERSION_MAJOR < 63
-int avpriv_exif_decode_ifd(void *logctx, const uint8_t *buf, int size,
-                           int le, int depth, AVDictionary **metadata)
-{
-    AVExifMetadata ifd = { 0 };
-    GetByteContext gb;
-    int ret;
-    bytestream2_init(&gb, buf, size);
-    ret = exif_parse_ifd_list(logctx, &gb, le, depth, &ifd, 0);
-    if (ret < 0)
-        return ret;
-    ret = av_exif_ifd_to_dict(logctx, &ifd, metadata);
-    av_exif_free(&ifd);
-    return ret;
-}
-#endif
-
 #define EXIF_COPY(fname, srcname) do { \
     size_t sz; \
     if (av_size_mult(src->count, sizeof(*(fname)), &sz) < 0) { \
