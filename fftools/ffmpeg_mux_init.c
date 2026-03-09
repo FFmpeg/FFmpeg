@@ -1401,20 +1401,11 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
                 q = (AVRational){ ENC_TIME_BASE_FILTER, 0 };
             } else {
                 ret = av_parse_ratio(&q, enc_time_base, INT_MAX, 0, NULL);
-                if (ret < 0 || q.den <= 0
-#if !FFMPEG_OPT_ENC_TIME_BASE_NUM
-                    || q.num < 0
-#endif
-                    ) {
+                if (ret < 0 || q.den <= 0 || q.num < 0) {
                     av_log(ost, AV_LOG_FATAL, "Invalid time base: %s\n", enc_time_base);
                     ret = ret < 0 ? ret : AVERROR(EINVAL);
                     goto fail;
                 }
-#if FFMPEG_OPT_ENC_TIME_BASE_NUM
-                if (q.num < 0)
-                    av_log(ost, AV_LOG_WARNING, "-enc_time_base -1 is deprecated,"
-                           " use -enc_time_base demux\n");
-#endif
             }
 
             enc_tb = q;
