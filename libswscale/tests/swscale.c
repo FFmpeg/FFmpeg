@@ -337,7 +337,7 @@ static void print_results(const AVFrame *ref, const AVFrame *src, const AVFrame 
                av_get_pix_fmt_name(src->format), src->width, src->height,
                av_get_pix_fmt_name(dst->format), dst->width, dst->height,
                mode->flags, mode->dither);
-        av_log(NULL, level, "  loss %g is %s by %g, expected loss %g\n",
+        av_log(NULL, level, "  loss %e is %s by %e, expected loss %e\n",
                r->loss, bad ? "WORSE" : "worse", r->loss - expected_loss, expected_loss);
     }
 
@@ -345,7 +345,7 @@ static void print_results(const AVFrame *ref, const AVFrame *src, const AVFrame 
         if (r->loss - ref_r->loss > 1e-4) {
             int bad = r->loss - ref_r->loss > 1e-2;
             av_log(NULL, bad ? AV_LOG_ERROR : AV_LOG_WARNING,
-                   "  loss %g is %s by %g, ref loss %g, "
+                   "  loss %e is %s by %e, ref loss %e, "
                    "SSIM {Y=%f U=%f V=%f A=%f}\n",
                    r->loss, bad ? "WORSE" : "worse", r->loss - ref_r->loss, ref_r->loss,
                    ref_r->ssim[0], ref_r->ssim[1], ref_r->ssim[2], ref_r->ssim[3]);
