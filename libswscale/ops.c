@@ -32,12 +32,15 @@
 
 extern const SwsOpBackend backend_c;
 extern const SwsOpBackend backend_murder;
+extern const SwsOpBackend backend_aarch64;
 extern const SwsOpBackend backend_x86;
 extern const SwsOpBackend backend_vulkan;
 
 const SwsOpBackend * const ff_sws_op_backends[] = {
     &backend_murder,
-#if ARCH_X86_64 && HAVE_X86ASM
+#if ARCH_AARCH64 && HAVE_NEON
+    &backend_aarch64,
+#elif ARCH_X86_64 && HAVE_X86ASM
     &backend_x86,
 #endif
     &backend_c,

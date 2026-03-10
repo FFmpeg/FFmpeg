@@ -143,6 +143,12 @@ static inline int linear_num_vregs(const SwsAArch64OpImplParams *params)
     return (count + 3) / 4;
 }
 
+static inline int linear_index_to_sws_op(int idx)
+{
+    const int reorder_col[5] = { 4, 0, 1, 2, 3 };
+    return reorder_col[idx];
+}
+
 static inline int linear_index_is_offset(int idx)
 {
     return (idx == 0);
