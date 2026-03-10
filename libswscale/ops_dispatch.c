@@ -140,8 +140,8 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
     const int tail_size  = pass->width - safe_width;
     p->tail_off_in   = safe_width * p->pixel_bits_in  >> 3;
     p->tail_off_out  = safe_width * p->pixel_bits_out >> 3;
-    p->tail_size_in  = tail_size  * p->pixel_bits_in  >> 3;
-    p->tail_size_out = tail_size  * p->pixel_bits_out >> 3;
+    p->tail_size_in  = (tail_size * p->pixel_bits_in  + 7) >> 3;
+    p->tail_size_out = (tail_size * p->pixel_bits_out + 7) >> 3;
     p->memcpy_first  = false;
     p->memcpy_last   = false;
     p->memcpy_out    = false;
