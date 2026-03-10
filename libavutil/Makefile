@@ -301,6 +301,7 @@ TESTPROGS = adler32                                                     \
             sha512                                                      \
             side_data_array                                             \
             softfloat                                                   \
+            stereo3d                                                    \
             tree                                                        \
             twofish                                                     \
             utf8                                                        \

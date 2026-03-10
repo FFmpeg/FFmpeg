@@ -1,0 +1,73 @@
+Testing av_stereo3d_alloc_size()
+alloc_size: OK, size>0: yes
+alloc: OK
+
+Testing av_stereo3d_create_side_data()
+create_side_data: OK
+
+Testing av_stereo3d_type_name()
+type 0: 2D
+type 1: side by side
+type 2: top and bottom
+type 3: frame alternate
+type 4: checkerboard
+type 5: side by side (quincunx subsampling)
+type 6: interleaved lines
+type 7: interleaved columns
+type 8: unspecified
+out of range: unknown
+
+Testing av_stereo3d_from_name()
+2D: 0
+side by side: 1
+top and bottom: 2
+frame alternate: 3
+checkerboard: 4
+side by side (quincunx subsampling): 1
+interleaved lines: 6
+interleaved columns: 7
+unspecified: 8
+nonexistent: -1
+
+Testing type name round-trip
+type roundtrip 0 (2D): OK
+type roundtrip 1 (side by side): OK
+type roundtrip 2 (top and bottom): OK
+type roundtrip 3 (frame alternate): OK
+type roundtrip 4 (checkerboard): OK
+type roundtrip 5 (side by side (quincunx subsampling)): FAIL
+type roundtrip 6 (interleaved lines): OK
+type roundtrip 7 (interleaved columns): OK
+type roundtrip 8 (unspecified): OK
+
+Testing av_stereo3d_view_name()
+view 0: packed
+view 1: left
+view 2: right
+view 3: unspecified
+out of range: unknown
+
+Testing view name round-trip
+view roundtrip 0 (packed): OK
+view roundtrip 1 (left): OK
+view roundtrip 2 (right): OK
+view roundtrip 3 (unspecified): OK
+
+Testing av_stereo3d_view_from_name()
+packed: 0
+left: 1
+right: 2
+unspecified: 3
+nonexistent: -1
+
+Testing av_stereo3d_primary_eye_name()
+eye 0: none
+eye 1: left
+eye 2: right
+out of range: unknown
+
+Testing av_stereo3d_primary_eye_from_name()
+none: 0
+left: 1
+right: 2
+nonexistent: 0
