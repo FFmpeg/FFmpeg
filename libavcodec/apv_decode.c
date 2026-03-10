@@ -66,10 +66,10 @@ typedef struct APVDecodeContext {
 
 static const enum AVPixelFormat apv_format_table[5][4] = {
     { AV_PIX_FMT_GRAY10,     AV_PIX_FMT_GRAY12,     AV_PIX_FMT_GRAY14,    AV_PIX_FMT_GRAY16     },
-    { 0 }, // 4:2:0 is not valid.
+    { AV_PIX_FMT_NONE,       AV_PIX_FMT_NONE,       AV_PIX_FMT_NONE,      AV_PIX_FMT_NONE       }, // 4:2:0 is not valid.
     { AV_PIX_FMT_YUV422P10,  AV_PIX_FMT_YUV422P12,  AV_PIX_FMT_YUV422P14, AV_PIX_FMT_YUV422P16  },
     { AV_PIX_FMT_YUV444P10,  AV_PIX_FMT_YUV444P12,  AV_PIX_FMT_YUV444P14, AV_PIX_FMT_YUV444P16  },
-    { AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_YUVA444P12, 0                   , AV_PIX_FMT_YUVA444P16 },
+    { AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_YUVA444P12, AV_PIX_FMT_NONE,      AV_PIX_FMT_YUVA444P16 },
 };
 
 static APVVLCLUT decode_lut;
@@ -91,7 +91,7 @@ static int apv_decode_check_format(AVCodecContext *avctx,
     avctx->pix_fmt =
         apv_format_table[header->frame_info.chroma_format_idc][(bit_depth - 10) >> 1];
 
-    if (!avctx->pix_fmt) {
+    if (avctx->pix_fmt == AV_PIX_FMT_NONE) {
         avpriv_request_sample(avctx, "YUVA444P14");
         return AVERROR_PATCHWELCOME;
     }
