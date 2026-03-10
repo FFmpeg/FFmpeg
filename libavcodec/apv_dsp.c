@@ -102,19 +102,19 @@ static void apv_decode_transquant_c(void *output,
 
     // Output.
     av_assert2(bit_depth > 8 && bit_depth <= 16);
-        uint16_t *ptr = output;
-        int bd_shift = 20 - bit_depth;
-        pitch /= 2; // Pitch was in bytes, 2 bytes per sample.
+    uint16_t *ptr = output;
+    int bd_shift = 20 - bit_depth;
+    pitch /= 2; // Pitch was in bytes, 2 bytes per sample.
 
-        for (int y = 0; y < 8; y++) {
-            for (int x = 0; x < 8; x++) {
-                int sample = ((recon_sample[y][x] +
-                               (1 << (bd_shift - 1))) >> bd_shift) +
-                    (1 << (bit_depth - 1));
-                ptr[x] = av_clip_uintp2(sample, bit_depth);
-            }
-            ptr += pitch;
+    for (int y = 0; y < 8; y++) {
+        for (int x = 0; x < 8; x++) {
+            int sample = ((recon_sample[y][x] +
+                           (1 << (bd_shift - 1))) >> bd_shift) +
+                (1 << (bit_depth - 1));
+            ptr[x] = av_clip_uintp2(sample, bit_depth);
         }
+        ptr += pitch;
+    }
 }
 
 av_cold void ff_apv_dsp_init(APVDSPContext *dsp)
