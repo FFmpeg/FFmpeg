@@ -18,6 +18,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/**
+ * This file is used both by sws_ops_aarch64 to generate ops_entries.c and
+ * by the standalone build-time tool that generates the static assembly
+ * functions (aarch64/ops_asmgen). Therefore, it must not depend on internal
+ * FFmpeg libraries.
+ */
+
 #include <inttypes.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -25,6 +32,10 @@
 
 #include "libavutil/attributes.h"
 
+/**
+ * NOTE: ops_asmgen contains header redefinitions to provide av_assert0
+ * while not depending on internal FFmpeg libraries.
+ */
 #include "libavutil/avassert.h"
 
 #include "ops_impl.h"
@@ -44,6 +55,22 @@ static const char *aarch64_pixel_type(SwsAArch64PixelType fmt)
         return NULL;
     }
     return pixel_types[fmt];
+}
+
+static const char pixel_type_names[AARCH64_PIXEL_TYPE_NB][4] = {
+    [AARCH64_PIXEL_U8 ] = "u8",
+    [AARCH64_PIXEL_U16] = "u16",
+    [AARCH64_PIXEL_U32] = "u32",
+    [AARCH64_PIXEL_F32] = "f32",
+};
+
+static const char *aarch64_pixel_type_name(SwsAArch64PixelType fmt)
+{
+    if (fmt >= AARCH64_PIXEL_TYPE_NB) {
+        av_assert0(!"Invalid pixel type!");
+        return NULL;
+    }
+    return pixel_type_names[fmt];
 }
 
 /*********************************************************************/
@@ -82,6 +109,43 @@ static const char *aarch64_op_type(SwsAArch64OpType op)
         return NULL;
     }
     return op_types[op];
+}
+
+static const char op_type_names[AARCH64_SWS_OP_TYPE_NB][16] = {
+    [AARCH64_SWS_OP_NONE          ] = "none",
+    [AARCH64_SWS_OP_PROCESS       ] = "process",
+    [AARCH64_SWS_OP_PROCESS_RETURN] = "process_return",
+    [AARCH64_SWS_OP_READ_BIT      ] = "read_bit",
+    [AARCH64_SWS_OP_READ_NIBBLE   ] = "read_nibble",
+    [AARCH64_SWS_OP_READ_PACKED   ] = "read_packed",
+    [AARCH64_SWS_OP_READ_PLANAR   ] = "read_planar",
+    [AARCH64_SWS_OP_WRITE_BIT     ] = "write_bit",
+    [AARCH64_SWS_OP_WRITE_NIBBLE  ] = "write_nibble",
+    [AARCH64_SWS_OP_WRITE_PACKED  ] = "write_packed",
+    [AARCH64_SWS_OP_WRITE_PLANAR  ] = "write_planar",
+    [AARCH64_SWS_OP_SWAP_BYTES    ] = "swap_bytes",
+    [AARCH64_SWS_OP_SWIZZLE       ] = "swizzle",
+    [AARCH64_SWS_OP_UNPACK        ] = "unpack",
+    [AARCH64_SWS_OP_PACK          ] = "pack",
+    [AARCH64_SWS_OP_LSHIFT        ] = "lshift",
+    [AARCH64_SWS_OP_RSHIFT        ] = "rshift",
+    [AARCH64_SWS_OP_CLEAR         ] = "clear",
+    [AARCH64_SWS_OP_CONVERT       ] = "convert",
+    [AARCH64_SWS_OP_EXPAND        ] = "expand",
+    [AARCH64_SWS_OP_MIN           ] = "min",
+    [AARCH64_SWS_OP_MAX           ] = "max",
+    [AARCH64_SWS_OP_SCALE         ] = "scale",
+    [AARCH64_SWS_OP_LINEAR        ] = "linear",
+    [AARCH64_SWS_OP_DITHER        ] = "dither",
+};
+
+static const char *aarch64_op_type_name(SwsAArch64OpType op)
+{
+    if (op == AARCH64_SWS_OP_NONE || op >= AARCH64_SWS_OP_TYPE_NB) {
+        av_assert0(!"Invalid op type!");
+        return NULL;
+    }
+    return op_type_names[op];
 }
 
 /*********************************************************************/
@@ -127,11 +191,18 @@ typedef struct ParamField {
     const char *name;
     size_t offset;
     size_t size;
+    void (*print_str)(char **pbuf, size_t *prem, void *p);
     void (*print_val)(char **pbuf, size_t *prem, void *p);
     int (*cmp_val)(void *pa, void *pb);
 } ParamField;
 
 #define PARAM_FIELD(name) #name, offsetof(SwsAArch64OpImplParams, name), sizeof(((SwsAArch64OpImplParams *) 0)->name)
+
+static void print_op_name(char **pbuf, size_t *prem, void *p)
+{
+    SwsAArch64OpType op = *(SwsAArch64OpType *) p;
+    buf_appendf(pbuf, prem, "_%s", aarch64_op_type_name(op));
+}
 
 static void print_op_val(char **pbuf, size_t *prem, void *p)
 {
@@ -147,6 +218,12 @@ static int cmp_op(void *pa, void *pb)
     if (diff)
         return diff < 0 ? -1 : 1;
     return 0;
+}
+
+static void print_pixel_name(char **pbuf, size_t *prem, void *p)
+{
+    SwsAArch64PixelType type = *(SwsAArch64PixelType *) p;
+    buf_appendf(pbuf, prem, "_%s", aarch64_pixel_type_name(type));
 }
 
 static void print_pixel_val(char **pbuf, size_t *prem, void *p)
@@ -165,6 +242,12 @@ static int cmp_pixel(void *pa, void *pb)
     return 0;
 }
 
+static void print_u8_name(char **pbuf, size_t *prem, void *p)
+{
+    uint8_t val = *(uint8_t *) p;
+    buf_appendf(pbuf, prem, "_%u", val);
+}
+
 static void print_u8_val(char **pbuf, size_t *prem, void *p)
 {
     uint8_t val = *(uint8_t *) p;
@@ -181,6 +264,12 @@ static int cmp_u8(void *pa, void *pb)
     return 0;
 }
 
+static void print_u16_name(char **pbuf, size_t *prem, void *p)
+{
+    uint16_t val = *(uint16_t *) p;
+    buf_appendf(pbuf, prem, "_%04x", val);
+}
+
 static void print_u16_val(char **pbuf, size_t *prem, void *p)
 {
     uint16_t val = *(uint16_t *) p;
@@ -195,6 +284,12 @@ static int cmp_u16(void *pa, void *pb)
     if (diff)
         return diff < 0 ? -1 : 1;
     return 0;
+}
+
+static void print_u40_name(char **pbuf, size_t *prem, void *p)
+{
+    uint64_t val = *(uint64_t *) p;
+    buf_appendf(pbuf, prem, "_%010" PRIx64, val);
 }
 
 static void print_u40_val(char **pbuf, size_t *prem, void *p)
@@ -214,18 +309,18 @@ static int cmp_u40(void *pa, void *pb)
 }
 
 /*********************************************************************/
-static const ParamField field_op               = { PARAM_FIELD(op),               print_op_val,    cmp_op };
-static const ParamField field_mask             = { PARAM_FIELD(mask),             print_u16_val,   cmp_u16 };
-static const ParamField field_type             = { PARAM_FIELD(type),             print_pixel_val, cmp_pixel };
-static const ParamField field_block_size       = { PARAM_FIELD(block_size),       print_u8_val,    cmp_u8 };
-static const ParamField field_shift            = { PARAM_FIELD(shift),            print_u8_val,    cmp_u8 };
-static const ParamField field_swizzle          = { PARAM_FIELD(swizzle),          print_u16_val,   cmp_u16 };
-static const ParamField field_pack             = { PARAM_FIELD(pack),             print_u16_val,   cmp_u16 };
-static const ParamField field_to_type          = { PARAM_FIELD(to_type),          print_pixel_val, cmp_pixel };
-static const ParamField field_linear_mask      = { PARAM_FIELD(linear.mask),      print_u40_val,   cmp_u40 };
-static const ParamField field_linear_fmla      = { PARAM_FIELD(linear.fmla),      print_u8_val,    cmp_u8 };
-static const ParamField field_dither_y_offset  = { PARAM_FIELD(dither.y_offset),  print_u16_val,   cmp_u16 };
-static const ParamField field_dither_size_log2 = { PARAM_FIELD(dither.size_log2), print_u8_val,    cmp_u8 };
+static const ParamField field_op               = { PARAM_FIELD(op),               print_op_name,    print_op_val,    cmp_op };
+static const ParamField field_mask             = { PARAM_FIELD(mask),             print_u16_name,   print_u16_val,   cmp_u16 };
+static const ParamField field_type             = { PARAM_FIELD(type),             print_pixel_name, print_pixel_val, cmp_pixel };
+static const ParamField field_block_size       = { PARAM_FIELD(block_size),       print_u8_name,    print_u8_val,    cmp_u8 };
+static const ParamField field_shift            = { PARAM_FIELD(shift),            print_u8_name,    print_u8_val,    cmp_u8 };
+static const ParamField field_swizzle          = { PARAM_FIELD(swizzle),          print_u16_name,   print_u16_val,   cmp_u16 };
+static const ParamField field_pack             = { PARAM_FIELD(pack),             print_u16_name,   print_u16_val,   cmp_u16 };
+static const ParamField field_to_type          = { PARAM_FIELD(to_type),          print_pixel_name, print_pixel_val, cmp_pixel };
+static const ParamField field_linear_mask      = { PARAM_FIELD(linear.mask),      print_u40_name,   print_u40_val,   cmp_u40 };
+static const ParamField field_linear_fmla      = { PARAM_FIELD(linear.fmla),      print_u8_name,    print_u8_val,    cmp_u8 };
+static const ParamField field_dither_y_offset  = { PARAM_FIELD(dither.y_offset),  print_u16_name,   print_u16_val,   cmp_u16 };
+static const ParamField field_dither_size_log2 = { PARAM_FIELD(dither.size_log2), print_u8_name,    print_u8_val,    cmp_u8 };
 
 /* Fields needed to uniquely identify each SwsAArch64OpType. */
 #define MAX_LEVELS 8

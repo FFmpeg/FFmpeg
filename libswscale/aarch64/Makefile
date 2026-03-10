@@ -10,3 +10,5 @@ NEON-OBJS   += aarch64/hscale.o                 \
                aarch64/swscale_unscaled_neon.o  \
                aarch64/xyz2rgb_neon.o           \
                aarch64/yuv2rgb_neon.o           \
+
+HOSTPROGS = aarch64/ops_asmgen

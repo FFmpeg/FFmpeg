@@ -108,14 +108,54 @@ typedef struct SwsAArch64OpImplParams {
 
 /* SwsAArch64OpMask-related helpers. */
 
+#define MASK_GET(mask, idx) (((mask) >> ((idx) << 2)) & 0xf)
 #define MASK_SET(mask, idx, val) do { (mask) |= (((val) & 0xf) << ((idx) << 2)); } while (0)
 
+#define LOOP(mask, idx)                 \
+    for (int idx = 0; idx < 4; idx++)   \
+        if (MASK_GET(mask, idx))
+#define LOOP_BWD(mask, idx)             \
+    for (int idx = 3; idx >= 0; idx--)  \
+        if (MASK_GET(mask, idx))
+
+#define LOOP_MASK(p, idx) LOOP(p->mask, idx)
+#define LOOP_MASK_BWD(p, idx) LOOP_BWD(p->mask, idx)
+
+#define LINEAR_MASK_GET(mask, idx, jdx) (((mask) >> (2 * ((5 * (idx) + (jdx))))) & 3)
 #define LINEAR_MASK_SET(mask, idx, jdx, val) do {                                       \
     (mask) |= ((((SwsAArch64LinearOpMask) (val)) & 3) << (2 * ((5 * (idx) + (jdx)))));  \
 } while (0)
 #define LINEAR_MASK_0 0
 #define LINEAR_MASK_1 1
 #define LINEAR_MASK_X 3
+
+#define LOOP_LINEAR_MASK(p, idx, jdx)       \
+    LOOP_MASK(p, idx)                       \
+        for (int jdx = 0; jdx < 5; jdx++)   \
+            if (LINEAR_MASK_GET(p->linear.mask, idx, jdx))
+
+/* Compute number of vector registers needed to store all coefficients. */
+static inline int linear_num_vregs(const SwsAArch64OpImplParams *params)
+{
+    int count = 0;
+    LOOP_LINEAR_MASK(params, i, j)
+        count++;
+    return (count + 3) / 4;
+}
+
+static inline int linear_index_is_offset(int idx)
+{
+    return (idx == 0);
+}
+
+static inline int linear_index_to_vx(int idx)
+{
+    /* The offset shouldn't map to any vx, but to please UBSan we map
+     * it to 0. */
+    if (linear_index_is_offset(idx))
+        return 0;
+    return (idx - 1);
+}
 
 /**
  * These values will be used by ops_asmgen to access fields inside of
