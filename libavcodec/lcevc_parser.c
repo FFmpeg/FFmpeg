@@ -114,7 +114,9 @@ static int parse_nal_unit(AVCodecParserContext *s, AVCodecContext *avctx,
         int payload_size_type, payload_type;
         int block_size;
 
-        init_get_bits8(&gb, gbc.buffer, bytestream2_get_bytes_left(&gbc));
+        int ret = init_get_bits8(&gb, gbc.buffer, bytestream2_get_bytes_left(&gbc));
+        if (ret < 0)
+            return ret;
 
         payload_size_type = get_bits(&gb, 3);
         payload_type      = get_bits(&gb, 5);
