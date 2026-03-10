@@ -215,6 +215,9 @@ static int decode_usac_element_pair(AACDecContext *ac,
 
     if (e->stereo_config_index) {
         e->mps.freq_res = get_bits(gb, 3); /* bsFreqRes */
+        if (!e->mps.freq_res)
+            return AVERROR_INVALIDDATA; /* value 0 is reserved */
+
         int numBands = ((int[]){0,28,20,14,10,7,5,4})[e->mps.freq_res]; // ISO/IEC 23003-1:2007, 5.2, Table 39
 
         e->mps.fixed_gain = get_bits(gb, 3); /* bsFixedGainDMX */
