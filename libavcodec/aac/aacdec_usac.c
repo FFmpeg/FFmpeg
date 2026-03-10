@@ -215,6 +215,9 @@ static int decode_usac_element_pair(AACDecContext *ac,
 
     if (e->stereo_config_index) {
         e->mps.freq_res = get_bits(gb, 3); /* bsFreqRes */
+        if (!e->mps.freq_res)
+            return AVERROR_INVALIDDATA; /* value 0 is reserved */
+
         e->mps.fixed_gain = get_bits(gb, 3); /* bsFixedGainDMX */
         e->mps.temp_shape_config = get_bits(gb, 2); /* bsTempShapeConfig */
         e->mps.decorr_config = get_bits(gb, 2); /* bsDecorrConfig */
