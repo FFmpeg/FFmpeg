@@ -150,6 +150,11 @@ static inline void ff_op_priv_free(SwsOpPriv *priv)
     av_freep(&priv->ptr);
 }
 
+static inline void ff_op_priv_unref(SwsOpPriv *priv)
+{
+    av_refstruct_unref(&priv->ptr);
+}
+
 struct SwsOpTable {
     unsigned cpu_flags;   /* required CPU flags for this table */
     int block_size;       /* fixed block size of this table */

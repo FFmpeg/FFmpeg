@@ -30,6 +30,7 @@
 #  define PIXEL_TYPE SWS_PIXEL_F32
 #  define PIXEL_MAX  FLT_MAX
 #  define pixel_t    float
+#  define inter_t    float
 #  define block_t    f32block_t
 #  define px         f32
 #else
@@ -260,6 +261,11 @@ static const SwsOpTable fn(op_table_float) = {
         &fn(op_filter3_v),
         &fn(op_filter4_v),
 
+        &fn(op_filter1_h),
+        &fn(op_filter2_h),
+        &fn(op_filter3_h),
+        &fn(op_filter4_h),
+
         NULL
     },
 };
@@ -267,6 +273,7 @@ static const SwsOpTable fn(op_table_float) = {
 #undef PIXEL_TYPE
 #undef PIXEL_MAX
 #undef pixel_t
+#undef inter_t
 #undef block_t
 #undef px
 

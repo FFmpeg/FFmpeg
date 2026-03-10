@@ -242,6 +242,59 @@ DECL_READ(filter_v, const int elems)
     CONTINUE(f32block_t, xs, ys, zs, ws);
 }
 
+DECL_SETUP(setup_filter_h, params, out)
+{
+    SwsFilterWeights *filter = params->op->rw.kernel;
+    out->priv.ptr = av_refstruct_ref(filter->weights);
+    out->priv.i32[2] = filter->filter_size;
+    out->free = ff_op_priv_unref;
+    return 0;
+}
+
+/* Fully general horizontal planar filter case */
+DECL_READ(filter_h, const int elems)
+{
+    const SwsOpExec *exec = iter->exec;
+    const int *restrict weights = impl->priv.ptr;
+    const int filter_size = impl->priv.i32[2];
+    const float scale = 1.0f / SWS_FILTER_SCALE;
+    const int xpos = iter->x;
+    weights += filter_size * iter->x;
+
+    f32block_t xs, ys, zs, ws;
+    for (int i = 0; i < SWS_BLOCK_SIZE; i++) {
+        const int offset = exec->in_offset_x[xpos + i];
+        pixel_t *start0 = bump_ptr(in0, offset);
+        pixel_t *start1 = bump_ptr(in1, offset);
+        pixel_t *start2 = bump_ptr(in2, offset);
+        pixel_t *start3 = bump_ptr(in3, offset);
+
+        inter_t sx = 0, sy = 0, sz = 0, sw = 0;
+        for (int j = 0; j < filter_size; j++) {
+            const int weight = weights[j];
+            sx += weight * start0[j];
+            if (elems > 1)
+                sy += weight * start1[j];
+            if (elems > 2)
+                sz += weight * start2[j];
+            if (elems > 3)
+                sw += weight * start3[j];
+        }
+
+        xs[i] = (float) sx * scale;
+        if (elems > 1)
+            ys[i] = (float) sy * scale;
+        if (elems > 2)
+            zs[i] = (float) sz * scale;
+        if (elems > 3)
+            ws[i] = (float) sw * scale;
+
+        weights += filter_size;
+    }
+
+    CONTINUE(f32block_t, xs, ys, zs, ws);
+}
+
 #define WRAP_FILTER(FUNC, DIR, ELEMS, SUFFIX)                                   \
 DECL_IMPL(FUNC##ELEMS##SUFFIX)                                                  \
 {                                                                               \
@@ -259,6 +312,11 @@ WRAP_FILTER(filter, V, 1, _v)
 WRAP_FILTER(filter, V, 2, _v)
 WRAP_FILTER(filter, V, 3, _v)
 WRAP_FILTER(filter, V, 4, _v)
+
+WRAP_FILTER(filter, H, 1, _h)
+WRAP_FILTER(filter, H, 2, _h)
+WRAP_FILTER(filter, H, 3, _h)
+WRAP_FILTER(filter, H, 4, _h)
 
 static void fn(process)(const SwsOpExec *exec, const void *priv,
                         const int bx_start, const int y_start,
