@@ -20,22 +20,17 @@
    compile-time flags.
   INSTRUCTIONS:
 
-  * Get the very fresh clang, e.g. see http://libfuzzer.info#versions
-  * Get and build libFuzzer:
-     svn co http://llvm.org/svn/llvm-project/llvm/trunk/lib/Fuzzer
-     ./Fuzzer/build.sh
-  * build ffmpeg for fuzzing:
-    FLAGS="-fsanitize=address -fsanitize-coverage=trace-pc-guard,trace-cmp -g" CC="clang $FLAGS" CXX="clang++ $FLAGS" ./configure  --disable-x86asm
+  * Get clang > 6.0 (https://llvm.org/docs/LibFuzzer.html)
+  * Build ffmpeg for fuzzing:
+    ./configure --enable-debug --toolchain=clang-asan-ubsan-fuzz --enable-ossfuzz
     make clean && make -j
   * build the fuzz target.
-    Choose the value of FFMPEG_CODEC (e.g. AV_CODEC_ID_DVD_SUBTITLE) and
-    choose one of FUZZ_FFMPEG_VIDEO, FUZZ_FFMPEG_AUDIO, FUZZ_FFMPEG_SUBTITLE.
-    clang -fsanitize=address -fsanitize-coverage=trace-pc-guard,trace-cmp tools/target_dec_fuzzer.c -o target_dec_fuzzer -I.   -DFFMPEG_CODEC=AV_CODEC_ID_MPEG1VIDEO -DFUZZ_FFMPEG_VIDEO ../../libfuzzer/libFuzzer.a   -Llibavcodec -Llibavdevice -Llibavfilter -Llibavformat -Llibavutil -Llibpostproc -Llibswscale -Llibswresample -Wl,--as-needed -Wl,-z,noexecstack -Wl,--warn-common -Wl,-rpath-link=:libpostproc:libswresample:libswscale:libavfilter:libavdevice:libavformat:libavcodec:libavutil -lavdevice -lavfilter -lavformat -lavcodec -lswresample -lswscale -lavutil -ldl -lxcb -lxcb-shm -lxcb -lxcb-xfixes  -lxcb -lxcb-shape -lxcb -lX11 -lasound -lm -lbz2 -lz -pthread
-  * create a corpus directory and put some samples there (empty dir is ok too):
-    mkdir CORPUS && cp some-files CORPUS
-
-  * Run fuzzing:
-    ./target_dec_fuzzer -max_len=100000 CORPUS
+    make tools/target_dec_<codec>_fuzzer # e.g. tools/target_dec_jpeg2000_fuzzer
+  * Run fuzzing with a corpus directory:
+    mkdir CORPUS && cp some-files CORPUS # (empty corpus dir is ok too)
+    ./tools/target_dec_<codec>_fuzzer -max_len=100000 CORPUS
+  * Run a test case:
+    ./tools/target_dec_<codec>_fuzzer <testcase>
 
    More info:
    http://libfuzzer.info
