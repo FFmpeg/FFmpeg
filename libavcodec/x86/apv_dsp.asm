@@ -230,52 +230,6 @@ cglobal apv_decode_transquant, 5, 7, 16, output, pitch, input, qmatrix, bit_dept
     ; m11 = zero
     ; m12 = vector (1 << bit_depth) - 1
 
-    cmp       bit_depthd, 8
-    jne       store_10
-
-    lea       tmpq, [pitchq + 2*pitchq]
-%macro NORMALISE_AND_STORE_8 4
-    vpaddd    m%1, m%1, m8
-    vpaddd    m%2, m%2, m8
-    vpaddd    m%3, m%3, m8
-    vpaddd    m%4, m%4, m8
-    vpsrad    m%1, m%1, xm9
-    vpsrad    m%2, m%2, xm9
-    vpsrad    m%3, m%3, xm9
-    vpsrad    m%4, m%4, xm9
-    vpaddd    m%1, m%1, m10
-    vpaddd    m%2, m%2, m10
-    vpaddd    m%3, m%3, m10
-    vpaddd    m%4, m%4, m10
-    ; m%1 = A0-3 A4-7
-    ; m%2 = B0-3 B4-7
-    ; m%3 = C0-3 C4-7
-    ; m%4 = D0-3 D4-7
-    vpackusdw m%1, m%1, m%2
-    vpackusdw m%3, m%3, m%4
-    ; m%1 = A0-3 B0-3 A4-7 B4-7
-    ; m%2 = C0-3 D0-3 C4-7 D4-7
-    vpermq    m%1, m%1, q3120
-    vpermq    m%2, m%3, q3120
-    ; m%1 = A0-3 A4-7 B0-3 B4-7
-    ; m%2 = C0-3 C4-7 D0-3 D4-7
-    vpackuswb m%1, m%1, m%2
-    ; m%1 = A0-3 A4-7 C0-3 C4-7 B0-3 B4-7 D0-3 D4-7
-    vextracti128  xm%2, m%1, 1
-    vmovq     [outputq],            xm%1
-    vmovq     [outputq + pitchq],   xm%2
-    vpextrq   [outputq + 2*pitchq], xm%1, 1
-    vpextrq   [outputq + tmpq],     xm%2, 1
-    lea       outputq, [outputq + 4*pitchq]
-%endmacro
-
-    NORMALISE_AND_STORE_8 0, 1, 2, 3
-    NORMALISE_AND_STORE_8 4, 5, 6, 7
-
-    RET
-
-store_10:
-
 %macro NORMALISE_AND_STORE_10 2
     vpaddd    m%1, m%1, m8
     vpaddd    m%2, m%2, m8
