@@ -241,7 +241,7 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
     if (maxsize < fv->max_heap_size) {
         out_buf_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
         /* If we can't map host memory, we can't let the GPU copy its buffer. */
-        if (!fv->s.extensions & FF_VK_EXT_EXTERNAL_HOST_MEMORY)
+        if (!(fv->s.extensions & FF_VK_EXT_EXTERNAL_HOST_MEMORY))
             out_buf_flags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
     } else {
         out_buf_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
