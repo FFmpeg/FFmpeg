@@ -59,6 +59,39 @@ FATE_PCM-$(call TRANSCODE, PCM_DVD, MPEG2VOB MPEGPS, WAV_DEMUXER PCM_S16LE_DECOD
 fate-pcm_dvd-16-1-96000: tests/data/asynth-96000-1.wav
 fate-pcm_dvd-16-1-96000: CMD = transcode wav $(TARGET_PATH)/tests/data/asynth-96000-1.wav vob "-c:a pcm_dvd" "-t 0.2"
 
+# PCM Blu-ray encoder/decoder roundtrip tests (s16, locally generated sources)
+FATE_PCM_BLURAY_S16 = fate-pcm-bluray-s16-mono                                \
+                      fate-pcm-bluray-s16-stereo                               \
+                      fate-pcm-bluray-s16-51                                   \
+                      fate-pcm-bluray-s16-70                                   \
+                      fate-pcm-bluray-s16-71
+
+FATE_PCM-$(call ENCDEC, PCM_BLURAY, MPEGTS, WAV_DEMUXER PCM_S16LE_DECODER PCM_S16LE_ENCODER PIPE_PROTOCOL FRAMEMD5_MUXER) += \
+    fate-pcm-bluray-s16-mono fate-pcm-bluray-s16-stereo fate-pcm-bluray-s16-71
+FATE_PCM-$(call ENCDEC, PCM_BLURAY, MPEGTS, WAV_DEMUXER PCM_S16LE_DECODER PCM_S16LE_ENCODER PIPE_PROTOCOL FRAMEMD5_MUXER PAN_FILTER) += \
+    fate-pcm-bluray-s16-51 fate-pcm-bluray-s16-70
+
+fate-pcm-bluray-s16-mono: tests/data/asynth-48000-1.wav
+fate-pcm-bluray-s16-mono: CMD = enc_dec_pcm mpegts framemd5 s16le $(TARGET_PATH)/tests/data/asynth-48000-1.wav -c:a pcm_bluray -mpegts_m2ts_mode 1 -t 0.5
+
+fate-pcm-bluray-s16-stereo: tests/data/asynth-48000-2.wav
+fate-pcm-bluray-s16-stereo: CMD = enc_dec_pcm mpegts framemd5 s16le $(TARGET_PATH)/tests/data/asynth-48000-2.wav -c:a pcm_bluray -mpegts_m2ts_mode 1 -t 0.5
+
+fate-pcm-bluray-s16-51: tests/data/asynth-48000-6.wav
+fate-pcm-bluray-s16-51: CMD = enc_dec_pcm mpegts framemd5 s16le $(TARGET_PATH)/tests/data/asynth-48000-6.wav -af "pan=0x60f|FL=FL|FR=FR|FC=FC|LFE=LFE|SL=BL|SR=BR" -c:a pcm_bluray -mpegts_m2ts_mode 1 -t 0.5
+
+fate-pcm-bluray-s16-70: tests/data/asynth-48000-8.wav
+fate-pcm-bluray-s16-70: CMD = enc_dec_pcm mpegts framemd5 s16le $(TARGET_PATH)/tests/data/asynth-48000-8.wav -af "pan=0x637|FL=FL|FR=FR|FC=FC|BL=BL|BR=BR|SL=SL|SR=SR" -c:a pcm_bluray -mpegts_m2ts_mode 1 -t 0.5
+
+fate-pcm-bluray-s16-71: tests/data/asynth-48000-8.wav
+fate-pcm-bluray-s16-71: CMD = enc_dec_pcm mpegts framemd5 s16le $(TARGET_PATH)/tests/data/asynth-48000-8.wav -c:a pcm_bluray -mpegts_m2ts_mode 1 -t 0.5
+
+# PCM Blu-ray s32 tests (FATE sample sources with real >16-bit content)
+FATE_SAMPLES_PCM-$(call ENCDEC, PCM_BLURAY, MPEGTS, WAV_DEMUXER PCM_S24LE_DECODER PCM_S32LE_ENCODER PIPE_PROTOCOL FRAMEMD5_MUXER) += fate-pcm-bluray-s32-stereo
+fate-pcm-bluray-s32-stereo: CMD = enc_dec_pcm mpegts framemd5 s32le $(TARGET_SAMPLES)/audio-reference/divertimenti_2ch_96kHz_s24.wav -c:a pcm_bluray -sample_fmt s32 -mpegts_m2ts_mode 1 -t 0.5
+
+fate-pcm-bluray: $(FATE_PCM_BLURAY_S16) fate-pcm-bluray-s32-stereo
+
 FATE_FFMPEG += $(FATE_PCM-yes)
 FATE_SAMPLES_AVCONV += $(FATE_SAMPLES_PCM-yes)
 fate-pcm: $(FATE_PCM-yes) $(FATE_SAMPLES_PCM-yes)
