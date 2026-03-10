@@ -19,6 +19,7 @@
 #include <stdatomic.h>
 
 #include "libavutil/attributes.h"
+#include "libavutil/avassert.h"
 #include "libavutil/mastering_display_metadata.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/pixdesc.h"
@@ -82,7 +83,8 @@ static int apv_decode_check_format(AVCodecContext *avctx,
     avctx->level   = header->frame_info.level_idc;
 
     bit_depth = header->frame_info.bit_depth_minus8 + 8;
-    if (bit_depth < 8 || bit_depth > 16 || bit_depth % 2) {
+    av_assert1(bit_depth >= 10 && bit_depth <= 16); // checked by CBS
+    if (bit_depth % 2) {
         avpriv_request_sample(avctx, "Bit depth %d", bit_depth);
         return AVERROR_PATCHWELCOME;
     }
