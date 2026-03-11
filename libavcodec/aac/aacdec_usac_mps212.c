@@ -240,7 +240,7 @@ static void huff_data_2d(GetBitContext *gb, int16_t *part0_data[2], int16_t (*da
                    0, 2*esc_cnt, 0, (2*lav + 1));
         for (i = 0; i < esc_cnt; i++) {
             data[esc_idx[i]][0] = esc_data[0][i] - lav;
-            data[esc_idx[i]][0] = esc_data[0][i] - lav;
+            data[esc_idx[i]][1] = esc_data[1][i] - lav;
         }
     }
 }
