@@ -615,8 +615,10 @@ static int amf_load_library(AVAMFDeviceContext* amf_ctx,  void* avcl)
     version_fun = (AMFQueryVersion_Fn)dlsym(amf_ctx->library, AMF_QUERY_VERSION_FUNCTION_NAME);
     AMF_RETURN_IF_FALSE(avcl, version_fun != NULL, AVERROR_UNKNOWN, "DLL %s failed to find function %s\n", AMF_DLL_NAMEA, AMF_QUERY_VERSION_FUNCTION_NAME);
 
-    res = version_fun((unsigned long long*)&amf_ctx->version);
+    amf_uint64 version;
+    res = version_fun(&version);
     AMF_RETURN_IF_FALSE(avcl, res == AMF_OK, AVERROR_UNKNOWN, "%s failed with error %d\n", AMF_QUERY_VERSION_FUNCTION_NAME, res);
+    amf_ctx->version = version;
     res = init_fun(AMF_FULL_VERSION, &amf_ctx->factory);
     AMF_RETURN_IF_FALSE(avcl, res == AMF_OK, AVERROR_UNKNOWN, "%s failed with error %d\n", AMF_INIT_FUNCTION_NAME, res);
     return 0;
