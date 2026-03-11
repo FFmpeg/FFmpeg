@@ -647,7 +647,7 @@ int ff_aac_ec_data_dec(GetBitContext *gb, AACMPSLosslessData *ld,
                                           stride_table[ld->freq_res[set_idx]],
                                           start_band, end_band);
 
-        if (set_idx + data_pair > MPS_MAX_PARAM_SETS)
+        if (set_idx + data_pair >= MPS_MAX_PARAM_SETS)
             return AVERROR(EINVAL);
 
         for (int j = 0; j < data_bands; j++)
