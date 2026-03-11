@@ -591,9 +591,6 @@ static int get_freq_strides(int16_t *freq_strides, int band_stride,
         }
     }
 
-    for (int i = 0; i <= data_bands; i++)
-        freq_strides[i] = av_clip_uintp2(freq_strides[i], 2);
-
     return data_bands;
 }
 
@@ -643,7 +640,8 @@ int ff_aac_ec_data_dec(GetBitContext *gb, AACMPSLosslessData *ld,
                 fine_to_coarse(ld->last_data, data_type, start_band, end_band);
         }
 
-        int data_bands = get_freq_strides(ld->freq_res,
+        int16_t freq_stride_map[MPS_MAX_PARAM_BANDS + 1];
+        int data_bands = get_freq_strides(freq_stride_map,
                                           stride_table[ld->freq_res[set_idx]],
                                           start_band, end_band);
 
@@ -651,7 +649,7 @@ int ff_aac_ec_data_dec(GetBitContext *gb, AACMPSLosslessData *ld,
             return AVERROR(EINVAL);
 
         for (int j = 0; j < data_bands; j++)
-            ld->last_data[start_band + j] = ld->last_data[ld->freq_res[j]];
+            ld->last_data[start_band + j] = ld->last_data[freq_stride_map[j]];
 
         int err = ec_pair_dec(gb,
                               ld->data[set_idx + 0], ld->data[set_idx + 1],
@@ -664,11 +662,11 @@ int ff_aac_ec_data_dec(GetBitContext *gb, AACMPSLosslessData *ld,
         if (data_type == MPS_IPD) {
             const int mask = ld->coarse_quant[set_idx] ? 0x7 : 0xF;
             for (int j = 0; j < data_bands; j++)
-                for (int k = ld->freq_res[j + 0]; k < ld->freq_res[j + 1]; k++)
+                for (int k = freq_stride_map[j + 0]; k < freq_stride_map[j + 1]; k++)
                     ld->last_data[k] = ld->data[set_idx + data_pair][start_band + j] & mask;
         } else {
             for (int j = 0; j < data_bands; j++)
-                for (int k = ld->freq_res[j + 0]; k < ld->freq_res[j + 1]; k++)
+                for (int k = freq_stride_map[j + 0]; k < freq_stride_map[j + 1]; k++)
                     ld->last_data[k] = ld->data[set_idx + data_pair][start_band + j];
         }
 
