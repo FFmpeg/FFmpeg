@@ -2708,7 +2708,8 @@ static int rtmp_open(URLContext *s, const char *uri, int flags, AVDictionary **o
         if (rt->listen)
             ff_url_join(buf, sizeof(buf), "tcp", NULL, hostname, port,
                         "?listen&listen_timeout=%d&tcp_nodelay=%d",
-                        rt->listen_timeout * 1000, rt->tcp_nodelay);
+                        rt->listen_timeout < 0 ? -1 : rt->listen_timeout * 1000,
+                        rt->tcp_nodelay);
         else
             ff_url_join(buf, sizeof(buf), "tcp", NULL, hostname, port, "?tcp_nodelay=%d", rt->tcp_nodelay);
     }
