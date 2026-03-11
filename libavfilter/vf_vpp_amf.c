@@ -88,12 +88,11 @@ static int amf_filter_config_output(AVFilterLink *outlink)
     size_t size = 0;
     int ret;
     AMF_RESULT res;
+    const AVFrameSideData *sd;
     enum AMF_VIDEO_CONVERTER_COLOR_PROFILE_ENUM amf_color_profile;
     enum AVPixelFormat in_format;
     const int chroma_den = 50000;
     const int luma_den = 10000;
-    const int total_max_cll_args = 2;
-    const int total_disp_meta_args = 10;
 
     ret = amf_init_filter_config(outlink, &in_format);
     if (ret < 0)
@@ -155,64 +154,20 @@ static int amf_filter_config_output(AVFilterLink *outlink)
         AMF_ASSIGN_PROPERTY_INT64(res, ctx->component, AMF_VIDEO_CONVERTER_INPUT_TRANSFER_CHARACTERISTIC, ctx->in_trc);
     }
 
-    if (ctx->disp_master) {
-        ctx->master_display = av_mastering_display_metadata_alloc();
+    sd = av_frame_side_data_get(inlink->side_data, inlink->nb_side_data,
+                                AV_FRAME_DATA_MASTERING_DISPLAY_METADATA);
+    if (sd) {
+        ctx->master_display = av_memdup(sd->data, sd->size);
         if (!ctx->master_display)
             return AVERROR(ENOMEM);
-
-        ret = sscanf(ctx->disp_master,
-            "G(%hu,%hu)B(%hu,%hu)R(%hu,%hu)WP(%hu,%hu)L(%u,%u)",
-            (uint16_t*)&ctx->master_display->display_primaries[1][0].num,
-            (uint16_t*)&ctx->master_display->display_primaries[1][1].num,
-            (uint16_t*)&ctx->master_display->display_primaries[2][0].num,
-            (uint16_t*)&ctx->master_display->display_primaries[2][1].num,
-            (uint16_t*)&ctx->master_display->display_primaries[0][0].num,
-            (uint16_t*)&ctx->master_display->display_primaries[0][1].num,
-            (uint16_t*)&ctx->master_display->white_point[0].num,
-            (uint16_t*)&ctx->master_display->white_point[1].num,
-            (unsigned*)&ctx->master_display->max_luminance.num,
-            (unsigned*)&ctx->master_display->min_luminance.num
-        );
-
-        if (ret != total_disp_meta_args) {
-            av_freep(&ctx->master_display);
-            av_log(avctx, AV_LOG_ERROR, "failed to parse mastering_display option\n");
-            return AVERROR(EINVAL);
-        }
-
-        ctx->master_display->display_primaries[1][0].den = chroma_den;
-        ctx->master_display->display_primaries[1][1].den = chroma_den;
-        ctx->master_display->display_primaries[2][0].den = chroma_den;
-        ctx->master_display->display_primaries[2][1].den = chroma_den;
-        ctx->master_display->display_primaries[0][0].den = chroma_den;
-        ctx->master_display->display_primaries[0][1].den = chroma_den;
-        ctx->master_display->white_point[0].den = chroma_den;
-        ctx->master_display->white_point[1].den = chroma_den;
-        ctx->master_display->max_luminance.den = luma_den;
-        ctx->master_display->min_luminance.den = luma_den;
-
-        ctx->master_display->has_primaries = 1;
-        ctx->master_display->has_luminance = 1;
     }
 
-
-    if (ctx->max_cll) {
-        ctx->light_meta = av_content_light_metadata_alloc(&size);
+    sd = av_frame_side_data_get(inlink->side_data, inlink->nb_side_data,
+                                AV_FRAME_DATA_CONTENT_LIGHT_LEVEL);
+    if (sd) {
+        ctx->light_meta = av_memdup(sd->data, sd->size);
         if (!ctx->light_meta)
             return AVERROR(ENOMEM);
-
-        ret = sscanf(ctx->max_cll,
-            "%hu,%hu",
-            (uint16_t*)&ctx->light_meta->MaxCLL,
-            (uint16_t*)&ctx->light_meta->MaxFALL
-        );
-
-        if (ret != total_max_cll_args) {
-            av_freep(ctx->light_meta);
-            ctx->light_meta = NULL;
-            av_log(avctx, AV_LOG_ERROR, "failed to parse max_cll option\n");
-            return AVERROR(EINVAL);
-        }
     }
 
     if (ctx->light_meta || ctx->master_display) {
@@ -228,8 +183,6 @@ static int amf_filter_config_output(AVFilterLink *outlink)
 
                 hdrmeta_buffer->pVtbl->Release(hdrmeta_buffer);
             }
-        } else {
-            av_log(avctx, AV_LOG_WARNING, "master_display/max_cll options are applicable only if in_trc is set to SMPTE2084\n");
         }
     }
 
@@ -315,13 +268,6 @@ static const AVOption vpp_amf_options[] = {
     { "increase", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = SCALE_FORCE_OAR_INCREASE }, 0, 0, FLAGS, "force_oar" },
     { "force_divisible_by", "enforce that the output resolution is divisible by a defined integer when force_original_aspect_ratio is used", OFFSET(force_divisible_by), AV_OPT_TYPE_INT, { .i64 = 1}, 1, 256, FLAGS },
     { "reset_sar", "reset SAR to 1 and scale to square pixels if scaling proportionally", OFFSET(reset_sar), AV_OPT_TYPE_BOOL, { .i64 = 0}, 0, 1, FLAGS },
-
-    { "master_display",
-      "set SMPTE2084 mastering display color volume info using libx265-style parameter string (G(%hu,%hu)B(%hu,%hu)R(%hu,%hu)WP(%hu,%hu)L(%u,%u)).",
-       OFFSET(disp_master), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, FLAGS
-    },
-
-    { "max_cll", "set SMPTE2084 Max CLL and Max FALL values using libx265-style parameter string (%hu,%hu)", OFFSET(max_cll), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, FLAGS },
 
     { NULL },
 };

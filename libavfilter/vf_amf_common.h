@@ -43,8 +43,6 @@ typedef struct AMFFilterContext {
     int fill_color;
     int keep_ratio;
 
-    char *disp_master;
-    char *max_cll;
     AVMasteringDisplayMetadata *master_display;
     AVContentLightMetadata     *light_meta;
 

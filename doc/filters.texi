@@ -25664,19 +25664,6 @@ Full (or JPEG) color range.
 
 @end table
 
-@item master_display
-Set SMPTE2084 mastering display color volume info using libx265-style parameter
-string, format is @code{G(%hu,%hu)B(%hu,%hu)R(%hu,%hu)WP(%hu,%hu)L(%u,%u)}.
-Just like in libx265, %hu are unsigned 16bit integers and %u are unsigned
-32bit integers. The SEI includes X,Y display primaries for RGB channels and
-white point (WP) in units of 0.00002 and max,min luminance (L) values
-in units of 0.0001 candela per meter square.
-
-@item max_cll
-Set SMPTE2084 Max CLL and Max FALL values using libx265-style parameter string:
-@code{%hu,%hu}, where %hu are unsigned 16bit integers. The first value is the
-max content light level, the second value is the maximum picture average light level.
-
 @anchor{color_profile}
 @item color_profile
 Specify all color properties at once.
