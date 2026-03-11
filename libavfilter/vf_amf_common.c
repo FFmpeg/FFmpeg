@@ -25,9 +25,9 @@
 #include "libavutil/mem.h"
 #include "libavutil/imgutils.h"
 
+#include "AMF/components/VideoDecoderUVD.h"
 #include "libavutil/hwcontext_amf.h"
 #include "libavutil/hwcontext_amf_internal.h"
-#include "AMF/components/ColorSpace.h"
 #include "scale_eval.h"
 
 #if CONFIG_DXVA2
@@ -64,6 +64,12 @@ void amf_filter_uninit(AVFilterContext *avctx)
         ctx->component->pVtbl->Release(ctx->component);
         ctx->component = NULL;
     }
+
+    if (ctx->master_display)
+        av_freep(&ctx->master_display);
+
+    if (ctx->light_meta)
+        av_freep(&ctx->light_meta);
 
     av_buffer_unref(&ctx->amf_device_ref);
     av_buffer_unref(&ctx->hwdevice_ref);
@@ -137,19 +143,19 @@ int amf_filter_filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
 
     out_color_range = AVCOL_RANGE_UNSPECIFIED;
-    if (ctx->color_range == AMF_COLOR_RANGE_FULL)
+    if (ctx->out_color_range == AMF_COLOR_RANGE_FULL)
         out_color_range = AVCOL_RANGE_JPEG;
-    else if (ctx->color_range == AMF_COLOR_RANGE_STUDIO)
+    else if (ctx->out_color_range == AMF_COLOR_RANGE_STUDIO)
         out_color_range = AVCOL_RANGE_MPEG;
 
-    if (ctx->color_range != AMF_COLOR_RANGE_UNDEFINED)
+    if (ctx->out_color_range != AMF_COLOR_RANGE_UNDEFINED)
         out->color_range = out_color_range;
 
-    if (ctx->primaries != AMF_COLOR_PRIMARIES_UNDEFINED)
-        out->color_primaries = ctx->primaries;
+    if (ctx->out_primaries != AMF_COLOR_PRIMARIES_UNDEFINED)
+        out->color_primaries = ctx->out_primaries;
 
-    if (ctx->trc != AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED)
-        out->color_trc = ctx->trc;
+    if (ctx->out_trc != AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED)
+        out->color_trc = ctx->out_trc;
 
 
     if (ret < 0)
@@ -444,6 +450,7 @@ AVFrame *amf_amfsurface_to_avframe(AVFilterContext *avctx, AMFSurface* pSurface)
 
 int amf_avframe_to_amfsurface(AVFilterContext *avctx, const AVFrame *frame, AMFSurface** ppSurface)
 {
+    AMFVariantStruct var = { 0 };
     AMFFilterContext *ctx = avctx->priv;
     AMFSurface *surface;
     AMF_RESULT  res;
@@ -491,6 +498,71 @@ int amf_avframe_to_amfsurface(AVFilterContext *avctx, const AVFrame *frame, AMFS
             amf_copy_surface(avctx, frame, surface);
         }
         break;
+    }
+
+    // If AMFSurface comes from other AMF components, it may have various
+    // properties already set. These properties can be used by other AMF
+    // components to perform their tasks. In the context of the AMF video
+    // filter, that other component could be an AMFVideoConverter. By default,
+    // AMFVideoConverter will use HDR related properties assigned to a surface
+    // by an AMFDecoder. If frames (surfaces) originated from any other source,
+    // i.e. from hevcdec, assign those properties from avframe; do not
+    // overwrite these properties if they already have a value.
+    res = surface->pVtbl->GetProperty(surface, AMF_VIDEO_DECODER_COLOR_TRANSFER_CHARACTERISTIC, &var);
+
+    if (res == AMF_NOT_FOUND && frame->color_trc != AVCOL_TRC_UNSPECIFIED)
+        // Note: as of now(Feb 2026), most AV and AMF enums are interchangeable.
+        // TBD: can enums change their values in the future?
+        // For better future-proofing it's better to have dedicated
+        // enum mapping functions.
+        AMF_ASSIGN_PROPERTY_INT64(res, surface, AMF_VIDEO_DECODER_COLOR_TRANSFER_CHARACTERISTIC, frame->color_trc);
+
+    res = surface->pVtbl->GetProperty(surface, AMF_VIDEO_DECODER_COLOR_PRIMARIES, &var);
+    if (res == AMF_NOT_FOUND && frame->color_primaries != AVCOL_PRI_UNSPECIFIED)
+        AMF_ASSIGN_PROPERTY_INT64(res, surface, AMF_VIDEO_DECODER_COLOR_PRIMARIES, frame->color_primaries);
+
+    res = surface->pVtbl->GetProperty(surface, AMF_VIDEO_DECODER_COLOR_RANGE, &var);
+    if (res == AMF_NOT_FOUND && frame->color_range != AVCOL_RANGE_UNSPECIFIED)
+        AMF_ASSIGN_PROPERTY_INT64(res, surface, AMF_VIDEO_DECODER_COLOR_RANGE, frame->color_range);
+
+    // Color range for older drivers
+    if (frame->color_range == AVCOL_RANGE_JPEG) {
+        AMF_ASSIGN_PROPERTY_BOOL(res, surface, AMF_VIDEO_DECODER_FULL_RANGE_COLOR, 1);
+    } else if (frame->color_range != AVCOL_RANGE_UNSPECIFIED)
+        AMF_ASSIGN_PROPERTY_BOOL(res, surface, AMF_VIDEO_DECODER_FULL_RANGE_COLOR, 0);
+
+    // Color profile for newer drivers
+    res = surface->pVtbl->GetProperty(surface, AMF_VIDEO_DECODER_COLOR_PROFILE, &var);
+    if (res == AMF_NOT_FOUND && frame->color_range != AVCOL_RANGE_UNSPECIFIED && frame->colorspace != AVCOL_SPC_UNSPECIFIED) {
+        amf_int64 color_profile = color_profile = av_amf_get_color_profile(frame->color_range, frame->colorspace);
+
+        if (color_profile != AMF_VIDEO_CONVERTER_COLOR_PROFILE_UNKNOWN)
+            AMF_ASSIGN_PROPERTY_INT64(res, surface, AMF_VIDEO_DECODER_COLOR_PROFILE, color_profile);
+    }
+
+    if (ctx->in_trc == AMF_COLOR_TRANSFER_CHARACTERISTIC_SMPTE2084 && (ctx->master_display || ctx->light_meta)) {
+        AMFBuffer *hdrmeta_buffer = NULL;
+        res = ctx->amf_device_ctx->context->pVtbl->AllocBuffer(ctx->amf_device_ctx->context, AMF_MEMORY_HOST, sizeof(AMFHDRMetadata), &hdrmeta_buffer);
+        if (res == AMF_OK) {
+            AMFHDRMetadata *hdrmeta = (AMFHDRMetadata*)hdrmeta_buffer->pVtbl->GetNative(hdrmeta_buffer);
+
+            av_amf_display_mastering_meta_to_hdrmeta(ctx->master_display, hdrmeta);
+            av_amf_light_metadata_to_hdrmeta(ctx->light_meta, hdrmeta);
+            AMF_ASSIGN_PROPERTY_INTERFACE(res, surface, AMF_VIDEO_DECODER_HDR_METADATA, hdrmeta_buffer);
+        }
+    } else if (frame->color_trc == AVCOL_TRC_SMPTE2084) {
+        res = surface->pVtbl->GetProperty(surface, AMF_VIDEO_DECODER_HDR_METADATA, &var);
+        if (res == AMF_NOT_FOUND) {
+            AMFBuffer *hdrmeta_buffer = NULL;
+            res = ctx->amf_device_ctx->context->pVtbl->AllocBuffer(ctx->amf_device_ctx->context, AMF_MEMORY_HOST, sizeof(AMFHDRMetadata), &hdrmeta_buffer);
+            if (res == AMF_OK) {
+                AMFHDRMetadata *hdrmeta = (AMFHDRMetadata*)hdrmeta_buffer->pVtbl->GetNative(hdrmeta_buffer);
+
+                if (av_amf_extract_hdr_metadata(frame, hdrmeta) == 0)
+                    AMF_ASSIGN_PROPERTY_INTERFACE(res, surface, AMF_VIDEO_DECODER_HDR_METADATA, hdrmeta_buffer);
+                hdrmeta_buffer->pVtbl->Release(hdrmeta_buffer);
+            }
+        }
     }
 
     if (frame->crop_left || frame->crop_right || frame->crop_top || frame->crop_bottom) {

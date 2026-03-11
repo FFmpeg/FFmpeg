@@ -117,10 +117,13 @@ static int amf_filter_config_output(AVFilterLink *outlink)
     AMF_ASSIGN_PROPERTY_BOOL(res, ctx->component, AMF_HQ_SCALER_FILL, ctx->fill);
     AMF_ASSIGN_PROPERTY_BOOL(res, ctx->component, AMF_HQ_SCALER_KEEP_ASPECT_RATIO, ctx->keep_ratio);
     // Setup default options to skip color conversion
+    ctx->in_color_range = AMF_COLOR_RANGE_UNDEFINED;
+    ctx->in_primaries = AMF_COLOR_PRIMARIES_UNDEFINED;
+    ctx->in_trc = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED;
     ctx->color_profile = AMF_VIDEO_CONVERTER_COLOR_PROFILE_UNKNOWN;
-    ctx->color_range = AMF_COLOR_RANGE_UNDEFINED;
-    ctx->primaries = AMF_COLOR_PRIMARIES_UNDEFINED;
-    ctx->trc = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED;
+    ctx->out_color_range = AMF_COLOR_RANGE_UNDEFINED;
+    ctx->out_primaries = AMF_COLOR_PRIMARIES_UNDEFINED;
+    ctx->out_trc = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED;
 
     res = ctx->component->pVtbl->Init(ctx->component, av_av_to_amf_format(in_format), inlink->w, inlink->h);
     AMF_RETURN_IF_FALSE(avctx, res == AMF_OK, AVERROR_UNKNOWN, "AMFHQScaler-Init() failed with error %d\n", res);

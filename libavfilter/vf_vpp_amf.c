@@ -21,14 +21,9 @@
  * VPP video filter with AMF hardware acceleration
  */
 
-#include <stdio.h>
-#include <string.h>
-
-#include "libavutil/avassert.h"
-#include "libavutil/imgutils.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
-#include "libavutil/pixdesc.h"
-#include "libavutil/time.h"
+#include "libavutil/internal.h"
 
 #include "libavutil/hwcontext.h"
 #include "libavutil/hwcontext_amf.h"
@@ -38,8 +33,6 @@
 #include "vf_amf_common.h"
 
 #include "avfilter.h"
-#include "formats.h"
-#include "video.h"
 #include "scale_eval.h"
 #include "avfilter_internal.h"
 
@@ -85,19 +78,26 @@ static int amf_filter_query_formats(AVFilterContext *avctx)
 
 static int amf_filter_config_output(AVFilterLink *outlink)
 {
-    AVFilterContext *avctx = outlink->src;
-    AVFilterLink   *inlink = avctx->inputs[0];
-    AMFFilterContext  *ctx = avctx->priv;
+    AVFilterContext   *avctx = outlink->src;
+    AVFilterLink      *inlink = avctx->inputs[0];
     AVHWFramesContext *hwframes_out = NULL;
+    AMFFilterContext  *ctx = avctx->priv;
+    AMFBuffer         *hdrmeta_buffer = NULL;
+    AMFHDRMetadata    *hdrmeta = NULL;
     AMFSize out_size;
-    int err;
+    size_t size = 0;
+    int ret;
     AMF_RESULT res;
     enum AMF_VIDEO_CONVERTER_COLOR_PROFILE_ENUM amf_color_profile;
     enum AVPixelFormat in_format;
+    const int chroma_den = 50000;
+    const int luma_den = 10000;
+    const int total_max_cll_args = 2;
+    const int total_disp_meta_args = 10;
 
-    err = amf_init_filter_config(outlink, &in_format);
-    if (err < 0)
-        return err;
+    ret = amf_init_filter_config(outlink, &in_format);
+    if (ret < 0)
+        return ret;
     // FIXME: add checks whether we have HW context
     hwframes_out = (AVHWFramesContext*)ctx->hwframes_out_ref->data;
     res = ctx->amf_device_ctx->factory->pVtbl->CreateComponent(ctx->amf_device_ctx->factory, ctx->amf_device_ctx->context, AMFVideoConverter, &ctx->component);
@@ -118,21 +118,21 @@ static int amf_filter_config_output(AVFilterLink *outlink)
 
     switch(ctx->color_profile) {
     case AMF_VIDEO_CONVERTER_COLOR_PROFILE_601:
-        if (ctx->color_range == AMF_COLOR_RANGE_FULL) {
+        if (ctx->out_color_range == AMF_COLOR_RANGE_FULL) {
             amf_color_profile = AMF_VIDEO_CONVERTER_COLOR_PROFILE_FULL_601;
         } else {
             amf_color_profile = AMF_VIDEO_CONVERTER_COLOR_PROFILE_601;
         }
         break;
     case AMF_VIDEO_CONVERTER_COLOR_PROFILE_709:
-        if (ctx->color_range == AMF_COLOR_RANGE_FULL) {
+        if (ctx->out_color_range == AMF_COLOR_RANGE_FULL) {
             amf_color_profile = AMF_VIDEO_CONVERTER_COLOR_PROFILE_FULL_709;
         } else {
             amf_color_profile = AMF_VIDEO_CONVERTER_COLOR_PROFILE_709;
         }
         break;
     case AMF_VIDEO_CONVERTER_COLOR_PROFILE_2020:
-        if (ctx->color_range == AMF_COLOR_RANGE_FULL) {
+        if (ctx->out_color_range == AMF_COLOR_RANGE_FULL) {
             amf_color_profile = AMF_VIDEO_CONVERTER_COLOR_PROFILE_FULL_2020;
         } else {
             amf_color_profile = AMF_VIDEO_CONVERTER_COLOR_PROFILE_2020;
@@ -143,20 +143,110 @@ static int amf_filter_config_output(AVFilterLink *outlink)
         break;
     }
 
+    if (ctx->in_color_range != AMF_COLOR_RANGE_UNDEFINED) {
+        AMF_ASSIGN_PROPERTY_INT64(res, ctx->component, AMF_VIDEO_CONVERTER_INPUT_COLOR_RANGE, ctx->in_color_range);
+    }
+
+    if (ctx->in_primaries != AMF_COLOR_PRIMARIES_UNDEFINED) {
+        AMF_ASSIGN_PROPERTY_INT64(res, ctx->component, AMF_VIDEO_CONVERTER_INPUT_COLOR_PRIMARIES, ctx->in_primaries);
+    }
+
+    if (ctx->in_trc != AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED) {
+        AMF_ASSIGN_PROPERTY_INT64(res, ctx->component, AMF_VIDEO_CONVERTER_INPUT_TRANSFER_CHARACTERISTIC, ctx->in_trc);
+    }
+
+    if (ctx->disp_master) {
+        ctx->master_display = av_mastering_display_metadata_alloc();
+        if (!ctx->master_display)
+            return AVERROR(ENOMEM);
+
+        ret = sscanf_s(ctx->disp_master,
+            "G(%hu,%hu)B(%hu,%hu)R(%hu,%hu)WP(%hu,%hu)L(%u,%u)",
+            (uint16_t*)&ctx->master_display->display_primaries[1][0].num,
+            (uint16_t*)&ctx->master_display->display_primaries[1][1].num,
+            (uint16_t*)&ctx->master_display->display_primaries[2][0].num,
+            (uint16_t*)&ctx->master_display->display_primaries[2][1].num,
+            (uint16_t*)&ctx->master_display->display_primaries[0][0].num,
+            (uint16_t*)&ctx->master_display->display_primaries[0][1].num,
+            (uint16_t*)&ctx->master_display->white_point[0].num,
+            (uint16_t*)&ctx->master_display->white_point[1].num,
+            (unsigned*)&ctx->master_display->max_luminance.num,
+            (unsigned*)&ctx->master_display->min_luminance.num
+        );
+
+        if (ret != total_disp_meta_args) {
+            av_freep(&ctx->master_display);
+            av_log(avctx, AV_LOG_ERROR, "failed to parse mastering_display option\n");
+            return AVERROR(EINVAL);
+        }
+
+        ctx->master_display->display_primaries[1][0].den = chroma_den;
+        ctx->master_display->display_primaries[1][1].den = chroma_den;
+        ctx->master_display->display_primaries[2][0].den = chroma_den;
+        ctx->master_display->display_primaries[2][1].den = chroma_den;
+        ctx->master_display->display_primaries[0][0].den = chroma_den;
+        ctx->master_display->display_primaries[0][1].den = chroma_den;
+        ctx->master_display->white_point[0].den = chroma_den;
+        ctx->master_display->white_point[1].den = chroma_den;
+        ctx->master_display->max_luminance.den = luma_den;
+        ctx->master_display->min_luminance.den = luma_den;
+
+        ctx->master_display->has_primaries = 1;
+        ctx->master_display->has_luminance = 1;
+    }
+
+
+    if (ctx->max_cll) {
+        ctx->light_meta = av_content_light_metadata_alloc(&size);
+        if (!ctx->light_meta)
+            return AVERROR(ENOMEM);
+
+        ret = sscanf_s(ctx->max_cll,
+            "%hu,%hu",
+            (uint16_t*)&ctx->light_meta->MaxCLL,
+            (uint16_t*)&ctx->light_meta->MaxFALL
+        );
+
+        if (ret != total_max_cll_args) {
+            av_freep(ctx->light_meta);
+            ctx->light_meta = NULL;
+            av_log(avctx, AV_LOG_ERROR, "failed to parse max_cll option\n");
+            return AVERROR(EINVAL);
+        }
+    }
+
+    if (ctx->light_meta || ctx->master_display) {
+        if (ctx->in_trc == AVCOL_TRC_SMPTEST2084) {
+            res = ctx->amf_device_ctx->context->pVtbl->AllocBuffer(ctx->amf_device_ctx->context, AMF_MEMORY_HOST, sizeof(AMFHDRMetadata), &hdrmeta_buffer);
+            if (res == AMF_OK) {
+                hdrmeta = (AMFHDRMetadata*)hdrmeta_buffer->pVtbl->GetNative(hdrmeta_buffer);
+
+                av_amf_display_mastering_meta_to_hdrmeta(ctx->master_display, hdrmeta);
+                av_amf_light_metadata_to_hdrmeta(ctx->light_meta, hdrmeta);
+
+                AMF_ASSIGN_PROPERTY_INTERFACE(res, ctx->component, AMF_VIDEO_CONVERTER_INPUT_HDR_METADATA, hdrmeta_buffer);
+
+                hdrmeta_buffer->pVtbl->Release(hdrmeta_buffer);
+            }
+        } else {
+            av_log(avctx, AV_LOG_WARNING, "master_display/max_cll options are applicable only if in_trc is set to SMPTE2084\n");
+        }
+    }
+
     if (amf_color_profile != AMF_VIDEO_CONVERTER_COLOR_PROFILE_UNKNOWN) {
         AMF_ASSIGN_PROPERTY_INT64(res, ctx->component, AMF_VIDEO_CONVERTER_COLOR_PROFILE, amf_color_profile);
     }
 
-    if (ctx->color_range != AMF_COLOR_RANGE_UNDEFINED) {
-        AMF_ASSIGN_PROPERTY_INT64(res, ctx->component, AMF_VIDEO_CONVERTER_OUTPUT_COLOR_RANGE, ctx->color_range);
+    if (ctx->out_color_range != AMF_COLOR_RANGE_UNDEFINED) {
+        AMF_ASSIGN_PROPERTY_INT64(res, ctx->component, AMF_VIDEO_CONVERTER_OUTPUT_COLOR_RANGE, ctx->out_color_range);
     }
 
-    if (ctx->primaries != AMF_COLOR_PRIMARIES_UNDEFINED) {
-        AMF_ASSIGN_PROPERTY_INT64(res, ctx->component, AMF_VIDEO_CONVERTER_OUTPUT_COLOR_PRIMARIES, ctx->primaries);
+    if (ctx->out_primaries != AMF_COLOR_PRIMARIES_UNDEFINED) {
+        AMF_ASSIGN_PROPERTY_INT64(res, ctx->component, AMF_VIDEO_CONVERTER_OUTPUT_COLOR_PRIMARIES, ctx->out_primaries);
     }
 
-    if (ctx->trc != AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED) {
-        AMF_ASSIGN_PROPERTY_INT64(res, ctx->component, AMF_VIDEO_CONVERTER_OUTPUT_TRANSFER_CHARACTERISTIC, ctx->trc);
+    if (ctx->out_trc != AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED) {
+        AMF_ASSIGN_PROPERTY_INT64(res, ctx->component, AMF_VIDEO_CONVERTER_OUTPUT_TRANSFER_CHARACTERISTIC, ctx->out_trc);
     }
 
     res = ctx->component->pVtbl->Init(ctx->component, av_av_to_amf_format(in_format), inlink->w, inlink->h);
@@ -181,11 +271,13 @@ static const AVOption vpp_amf_options[] = {
     { "bt709",          "BT.709",           0,  AV_OPT_TYPE_CONST, { .i64 = AMF_VIDEO_CONVERTER_COLOR_PROFILE_709 },  0, 0, FLAGS, "color_profile" },
     { "bt2020",         "BT.2020",          0,  AV_OPT_TYPE_CONST, { .i64 = AMF_VIDEO_CONVERTER_COLOR_PROFILE_2020 },  0, 0, FLAGS, "color_profile" },
 
-    { "color_range",    "Color range",          OFFSET(color_range),      AV_OPT_TYPE_INT,   { .i64 = AMF_COLOR_RANGE_UNDEFINED }, AMF_COLOR_RANGE_UNDEFINED, AMF_COLOR_RANGE_FULL, FLAGS, "color_range" },
-    { "studio",         "Studio",                   0,  AV_OPT_TYPE_CONST, { .i64 = AMF_COLOR_RANGE_STUDIO }, 0, 0, FLAGS, "color_range" },
-    { "full",           "Full",                     0,  AV_OPT_TYPE_CONST, { .i64 = AMF_COLOR_RANGE_FULL }, 0, 0, FLAGS, "color_range" },
+    { "in_color_range",  "Input color range",        OFFSET(in_color_range),  AV_OPT_TYPE_INT, { .i64 = AMF_COLOR_RANGE_UNDEFINED }, AMF_COLOR_RANGE_UNDEFINED, AMF_COLOR_RANGE_FULL, FLAGS, "color_range" },
+    { "out_color_range", "Output color range",       OFFSET(out_color_range), AV_OPT_TYPE_INT, { .i64 = AMF_COLOR_RANGE_UNDEFINED }, AMF_COLOR_RANGE_UNDEFINED, AMF_COLOR_RANGE_FULL, FLAGS, "color_range" },
+    { "studio",          "Studio",                   0,  AV_OPT_TYPE_CONST, { .i64 = AMF_COLOR_RANGE_STUDIO }, 0, 0, FLAGS, "color_range" },
+    { "full",            "Full",                     0,  AV_OPT_TYPE_CONST, { .i64 = AMF_COLOR_RANGE_FULL }, 0, 0, FLAGS, "color_range" },
 
-    { "primaries",      "Output color primaries",   OFFSET(primaries),  AV_OPT_TYPE_INT,   { .i64 = AMF_COLOR_PRIMARIES_UNDEFINED }, AMF_COLOR_PRIMARIES_UNDEFINED, AMF_COLOR_PRIMARIES_JEDEC_P22, FLAGS, "primaries" },
+    { "in_primaries",   "Input color primaries",    OFFSET(in_primaries),  AV_OPT_TYPE_INT, { .i64 = AMF_COLOR_PRIMARIES_UNDEFINED }, AMF_COLOR_PRIMARIES_UNDEFINED, AMF_COLOR_PRIMARIES_JEDEC_P22, FLAGS, "primaries" },
+    { "out_primaries",  "Output color primaries",   OFFSET(out_primaries), AV_OPT_TYPE_INT, { .i64 = AMF_COLOR_PRIMARIES_UNDEFINED }, AMF_COLOR_PRIMARIES_UNDEFINED, AMF_COLOR_PRIMARIES_JEDEC_P22, FLAGS, "primaries" },
     { "bt709",          "BT.709",                   0,  AV_OPT_TYPE_CONST, { .i64 = AMF_COLOR_PRIMARIES_BT709 }, 0, 0, FLAGS, "primaries" },
     { "bt470m",         "BT.470M",                  0,  AV_OPT_TYPE_CONST, { .i64 = AMF_COLOR_PRIMARIES_BT470M }, 0, 0, FLAGS, "primaries" },
     { "bt470bg",        "BT.470BG",                 0,  AV_OPT_TYPE_CONST, { .i64 = AMF_COLOR_PRIMARIES_BT470BG }, 0, 0, FLAGS, "primaries" },
@@ -198,7 +290,8 @@ static const AVOption vpp_amf_options[] = {
     { "smpte432",       "SMPTE432",                 0,  AV_OPT_TYPE_CONST, { .i64 = AMF_COLOR_PRIMARIES_SMPTE432 }, 0, 0, FLAGS, "primaries" },
     { "jedec-p22",      "JEDEC_P22",                0,  AV_OPT_TYPE_CONST, { .i64 = AMF_COLOR_PRIMARIES_JEDEC_P22 }, 0, 0, FLAGS, "primaries" },
 
-    { "trc",            "Output transfer characteristics",  OFFSET(trc),  AV_OPT_TYPE_INT,   { .i64 = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED }, AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED, AMF_COLOR_TRANSFER_CHARACTERISTIC_ARIB_STD_B67, FLAGS, "trc" },
+    { "in_trc",         "Input transfer characteristics",   OFFSET(in_trc),  AV_OPT_TYPE_INT, { .i64 = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED }, AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED, AMF_COLOR_TRANSFER_CHARACTERISTIC_ARIB_STD_B67, FLAGS, "trc" },
+    { "out_trc",        "Output transfer characteristics",  OFFSET(out_trc), AV_OPT_TYPE_INT, { .i64 = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED }, AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED, AMF_COLOR_TRANSFER_CHARACTERISTIC_ARIB_STD_B67, FLAGS, "trc" },
     { "bt709",          "BT.709",                   0,  AV_OPT_TYPE_CONST, { .i64 = AMF_COLOR_TRANSFER_CHARACTERISTIC_BT709 }, 0, 0, FLAGS, "trc" },
     { "gamma22",        "GAMMA22",                  0,  AV_OPT_TYPE_CONST, { .i64 = AMF_COLOR_TRANSFER_CHARACTERISTIC_GAMMA22 }, 0, 0, FLAGS, "trc" },
     { "gamma28",        "GAMMA28",                  0,  AV_OPT_TYPE_CONST, { .i64 = AMF_COLOR_TRANSFER_CHARACTERISTIC_GAMMA28 }, 0, 0, FLAGS, "trc" },
@@ -222,6 +315,13 @@ static const AVOption vpp_amf_options[] = {
     { "increase", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = SCALE_FORCE_OAR_INCREASE }, 0, 0, FLAGS, "force_oar" },
     { "force_divisible_by", "enforce that the output resolution is divisible by a defined integer when force_original_aspect_ratio is used", OFFSET(force_divisible_by), AV_OPT_TYPE_INT, { .i64 = 1}, 1, 256, FLAGS },
     { "reset_sar", "reset SAR to 1 and scale to square pixels if scaling proportionally", OFFSET(reset_sar), AV_OPT_TYPE_BOOL, { .i64 = 0}, 0, 1, FLAGS },
+
+    { "master_display",
+      "set SMPTE2084 mastering display color volume info using libx265-style parameter string (G(%hu,%hu)B(%hu,%hu)R(%hu,%hu)WP(%hu,%hu)L(%u,%u)).",
+       OFFSET(disp_master), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, FLAGS
+    },
+
+    { "max_cll", "set SMPTE2084 Max CLL and Max FALL values using libx265-style parameter string (%hu,%hu)", OFFSET(max_cll), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, FLAGS },
 
     { NULL },
 };

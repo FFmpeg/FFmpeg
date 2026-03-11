@@ -16,12 +16,22 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "mem.h"
 #include "buffer.h"
-#include "common.h"
+#include "pixfmt.h"
+#include "pixdesc.h"
+#include "imgutils.h"
 #include "hwcontext.h"
 #include "hwcontext_amf.h"
 #include "hwcontext_internal.h"
 #include "hwcontext_amf_internal.h"
+
+#include "libavutil/thread.h"
+#include "libavutil/avassert.h"
+
+#include <AMF/core/Surface.h>
+#include <AMF/core/Trace.h>
+
 #if CONFIG_VULKAN
 #include "hwcontext_vulkan.h"
 #endif
@@ -35,14 +45,6 @@
 #define COBJMACROS
 #include "libavutil/hwcontext_dxva2.h"
 #endif
-#include "mem.h"
-#include "pixdesc.h"
-#include "pixfmt.h"
-#include "imgutils.h"
-#include "thread.h"
-#include "libavutil/avassert.h"
-#include <AMF/core/Surface.h>
-#include <AMF/core/Trace.h>
 #ifdef _WIN32
 #include "compat/w32dlfcn.h"
 #else
@@ -148,6 +150,157 @@ enum AVPixelFormat av_amf_to_av_format(enum AMF_SURFACE_FORMAT fmt)
         }
     }
     return AV_PIX_FMT_NONE;
+}
+
+enum AMF_VIDEO_CONVERTER_COLOR_PROFILE_ENUM av_amf_get_color_profile(enum AVColorRange color_range, enum AVColorSpace color_space)
+{
+    switch (color_space) {
+    case AVCOL_SPC_SMPTE170M:
+        if (color_range == AVCOL_RANGE_JPEG) {
+            return AMF_VIDEO_CONVERTER_COLOR_PROFILE_FULL_601;
+        } else {
+            return AMF_VIDEO_CONVERTER_COLOR_PROFILE_601;
+        }
+        break;
+    case AVCOL_SPC_BT709:
+        if (color_range == AVCOL_RANGE_JPEG) {
+            return AMF_VIDEO_CONVERTER_COLOR_PROFILE_FULL_709;
+        } else {
+            return AMF_VIDEO_CONVERTER_COLOR_PROFILE_709;
+        }
+        break;
+    case AVCOL_SPC_BT2020_NCL:
+    case AVCOL_SPC_BT2020_CL:
+        if (color_range == AVCOL_RANGE_JPEG) {
+            return AMF_VIDEO_CONVERTER_COLOR_PROFILE_FULL_2020;
+        } else {
+            return AMF_VIDEO_CONVERTER_COLOR_PROFILE_2020;
+        }
+        break;
+
+    default:
+        return AMF_VIDEO_CONVERTER_COLOR_PROFILE_UNKNOWN;
+    }
+}
+
+int av_amf_display_mastering_meta_to_hdrmeta(const AVMasteringDisplayMetadata *display_meta, AMFHDRMetadata *hdrmeta)
+{
+    if (!display_meta || !hdrmeta)
+        return AVERROR(EINVAL);
+
+    if (display_meta->has_luminance) {
+        const unsigned int luma_den = 10000;
+        hdrmeta->maxMasteringLuminance =
+            (amf_uint32)(luma_den * av_q2d(display_meta->max_luminance));
+        hdrmeta->minMasteringLuminance =
+            FFMIN((amf_uint32)(luma_den * av_q2d(display_meta->min_luminance)), hdrmeta->maxMasteringLuminance);
+    }
+
+    if (display_meta->has_primaries) {
+        const unsigned int chroma_den = 50000;
+        hdrmeta->redPrimary[0] =
+            FFMIN((amf_uint16)(chroma_den * av_q2d(display_meta->display_primaries[0][0])), chroma_den);
+        hdrmeta->redPrimary[1] =
+            FFMIN((amf_uint16)(chroma_den * av_q2d(display_meta->display_primaries[0][1])), chroma_den);
+        hdrmeta->greenPrimary[0] =
+            FFMIN((amf_uint16)(chroma_den * av_q2d(display_meta->display_primaries[1][0])), chroma_den);
+        hdrmeta->greenPrimary[1] =
+            FFMIN((amf_uint16)(chroma_den * av_q2d(display_meta->display_primaries[1][1])), chroma_den);
+        hdrmeta->bluePrimary[0] =
+            FFMIN((amf_uint16)(chroma_den * av_q2d(display_meta->display_primaries[2][0])), chroma_den);
+        hdrmeta->bluePrimary[1] =
+            FFMIN((amf_uint16)(chroma_den * av_q2d(display_meta->display_primaries[2][1])), chroma_den);
+        hdrmeta->whitePoint[0] =
+            FFMIN((amf_uint16)(chroma_den * av_q2d(display_meta->white_point[0])), chroma_den);
+        hdrmeta->whitePoint[1] =
+            FFMIN((amf_uint16)(chroma_den * av_q2d(display_meta->white_point[1])), chroma_den);
+    }
+
+    return 0;
+}
+
+int av_amf_light_metadata_to_hdrmeta(const AVContentLightMetadata *light_meta, AMFHDRMetadata *hdrmeta)
+{
+    if (!light_meta || !hdrmeta)
+        return AVERROR(EINVAL);
+
+    hdrmeta->maxContentLightLevel = (amf_uint16)light_meta->MaxCLL;
+    hdrmeta->maxFrameAverageLightLevel = (amf_uint16)light_meta->MaxFALL;
+
+    return 0;
+}
+
+int av_amf_extract_hdr_metadata(const AVFrame *frame, AMFHDRMetadata *hdrmeta)
+{
+    AVFrameSideData            *sidedata;
+
+    if (!frame || !hdrmeta)
+        return AVERROR(EINVAL);
+
+    sidedata = av_frame_get_side_data(frame, AV_FRAME_DATA_MASTERING_DISPLAY_METADATA);
+    if (!sidedata)
+        return AVERROR(ENODATA);
+
+    if (av_amf_display_mastering_meta_to_hdrmeta((AVMasteringDisplayMetadata *)sidedata->data, hdrmeta) != 0)
+        return AVERROR(ENODATA);
+
+    sidedata = av_frame_get_side_data(frame, AV_FRAME_DATA_CONTENT_LIGHT_LEVEL);
+    if (sidedata)
+        av_amf_light_metadata_to_hdrmeta((AVContentLightMetadata *)sidedata->data, hdrmeta);
+
+    return 0;
+
+}
+
+int av_amf_attach_hdr_metadata(AVFrame *frame, const AMFHDRMetadata *hdrmeta) {
+    if (!hdrmeta || !frame)
+        return AVERROR(EINVAL);
+
+    AVMasteringDisplayMetadata *mastering =
+        av_mastering_display_metadata_create_side_data(frame);
+    const int chroma_den = 50000;
+    const int luma_den = 10000;
+
+    if (!mastering)
+      return AVERROR(ENOMEM);
+
+    mastering->display_primaries[0][0] =
+        av_make_q(hdrmeta->redPrimary[0], chroma_den);
+    mastering->display_primaries[0][1] =
+        av_make_q(hdrmeta->redPrimary[1], chroma_den);
+
+    mastering->display_primaries[1][0] =
+        av_make_q(hdrmeta->greenPrimary[0], chroma_den);
+    mastering->display_primaries[1][1] =
+        av_make_q(hdrmeta->greenPrimary[1], chroma_den);
+
+    mastering->display_primaries[2][0] =
+        av_make_q(hdrmeta->bluePrimary[0], chroma_den);
+    mastering->display_primaries[2][1] =
+        av_make_q(hdrmeta->bluePrimary[1], chroma_den);
+
+    mastering->white_point[0] = av_make_q(hdrmeta->whitePoint[0], chroma_den);
+    mastering->white_point[1] = av_make_q(hdrmeta->whitePoint[1], chroma_den);
+
+    mastering->max_luminance =
+        av_make_q(hdrmeta->maxMasteringLuminance, luma_den);
+    mastering->min_luminance =
+        av_make_q(hdrmeta->maxMasteringLuminance, luma_den);
+
+    mastering->has_luminance = 1;
+    mastering->has_primaries = 1;
+    if (hdrmeta->maxContentLightLevel) {
+      AVContentLightMetadata *light =
+          av_content_light_metadata_create_side_data(frame);
+
+      if (!light)
+        return AVERROR(ENOMEM);
+
+      light->MaxCLL = hdrmeta->maxContentLightLevel;
+      light->MaxFALL = hdrmeta->maxFrameAverageLightLevel;
+    }
+
+    return 0;
 }
 
 static const enum AVPixelFormat supported_formats[] = {
@@ -433,7 +586,7 @@ static int amf_device_init(AVHWDeviceContext *ctx)
             if (res != AMF_OK && res != AMF_ALREADY_INITIALIZED) {
                 if (res == AMF_NOT_SUPPORTED)
                     av_log(ctx, AV_LOG_ERROR, "AMF via Vulkan is not supported on the given device.\n");
-                 else
+                else
                     av_log(ctx, AV_LOG_ERROR, "AMF failed to initialise on the given Vulkan device: %d.\n", res);
                  return AVERROR(ENOSYS);
             }
@@ -462,7 +615,7 @@ static int amf_load_library(AVAMFDeviceContext* amf_ctx,  void* avcl)
     version_fun = (AMFQueryVersion_Fn)dlsym(amf_ctx->library, AMF_QUERY_VERSION_FUNCTION_NAME);
     AMF_RETURN_IF_FALSE(avcl, version_fun != NULL, AVERROR_UNKNOWN, "DLL %s failed to find function %s\n", AMF_DLL_NAMEA, AMF_QUERY_VERSION_FUNCTION_NAME);
 
-    res = version_fun(&amf_ctx->version);
+    res = version_fun((unsigned long long*)&amf_ctx->version);
     AMF_RETURN_IF_FALSE(avcl, res == AMF_OK, AVERROR_UNKNOWN, "%s failed with error %d\n", AMF_QUERY_VERSION_FUNCTION_NAME, res);
     res = init_fun(AMF_FULL_VERSION, &amf_ctx->factory);
     AMF_RETURN_IF_FALSE(avcl, res == AMF_OK, AVERROR_UNKNOWN, "%s failed with error %d\n", AMF_INIT_FUNCTION_NAME, res);

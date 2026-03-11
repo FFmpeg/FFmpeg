@@ -21,8 +21,6 @@
 #include "amfdec.h"
 #include "codec_internal.h"
 #include "hwconfig.h"
-#include "libavutil/imgutils.h"
-#include "libavutil/mem.h"
 #include "libavutil/time.h"
 #include "decode.h"
 #include "decode_bsf.h"
@@ -125,31 +123,7 @@ static int amf_init_decoder(AVCodecContext *avctx)
     } else if (avctx->color_range != AVCOL_RANGE_UNSPECIFIED) {
         AMF_ASSIGN_PROPERTY_BOOL(res, ctx->decoder, AMF_VIDEO_DECODER_FULL_RANGE_COLOR, 0);
     }
-    color_profile = AMF_VIDEO_CONVERTER_COLOR_PROFILE_UNKNOWN;
-    switch (avctx->colorspace) {
-    case AVCOL_SPC_SMPTE170M:
-        if (avctx->color_range == AVCOL_RANGE_JPEG) {
-            color_profile = AMF_VIDEO_CONVERTER_COLOR_PROFILE_FULL_601;
-        } else {
-            color_profile = AMF_VIDEO_CONVERTER_COLOR_PROFILE_601;
-        }
-        break;
-    case AVCOL_SPC_BT709:
-        if (avctx->color_range == AVCOL_RANGE_JPEG) {
-            color_profile = AMF_VIDEO_CONVERTER_COLOR_PROFILE_FULL_709;
-        } else {
-            color_profile = AMF_VIDEO_CONVERTER_COLOR_PROFILE_709;
-        }
-        break;
-    case AVCOL_SPC_BT2020_NCL:
-    case AVCOL_SPC_BT2020_CL:
-        if (avctx->color_range == AVCOL_RANGE_JPEG) {
-            color_profile = AMF_VIDEO_CONVERTER_COLOR_PROFILE_FULL_2020;
-        } else {
-            color_profile = AMF_VIDEO_CONVERTER_COLOR_PROFILE_2020;
-        }
-        break;
-    }
+    color_profile = av_amf_get_color_profile(avctx->color_range, avctx->colorspace);
     if (color_profile != AMF_VIDEO_CONVERTER_COLOR_PROFILE_UNKNOWN)
         AMF_ASSIGN_PROPERTY_INT64(res, ctx->decoder, AMF_VIDEO_DECODER_COLOR_PROFILE, color_profile);
     if (avctx->color_trc != AVCOL_TRC_UNSPECIFIED)
@@ -435,41 +409,10 @@ static int amf_amfsurface_to_avframe(AVCodecContext *avctx, AMFSurface* surface,
             AMFHDRMetadata * hdrmeta = (AMFHDRMetadata*)hdrmeta_buffer->pVtbl->GetNative(hdrmeta_buffer);
             if (ret != AMF_OK)
                 return ret;
-            if (hdrmeta != NULL) {
-                AVMasteringDisplayMetadata *mastering = av_mastering_display_metadata_create_side_data(frame);
-                const int chroma_den = 50000;
-                const int luma_den = 10000;
 
-                if (!mastering)
-                    return AVERROR(ENOMEM);
-
-                mastering->display_primaries[0][0] = av_make_q(hdrmeta->redPrimary[0], chroma_den);
-                mastering->display_primaries[0][1] = av_make_q(hdrmeta->redPrimary[1], chroma_den);
-
-                mastering->display_primaries[1][0] = av_make_q(hdrmeta->greenPrimary[0], chroma_den);
-                mastering->display_primaries[1][1] = av_make_q(hdrmeta->greenPrimary[1], chroma_den);
-
-                mastering->display_primaries[2][0] = av_make_q(hdrmeta->bluePrimary[0], chroma_den);
-                mastering->display_primaries[2][1] = av_make_q(hdrmeta->bluePrimary[1], chroma_den);
-
-                mastering->white_point[0] = av_make_q(hdrmeta->whitePoint[0], chroma_den);
-                mastering->white_point[1] = av_make_q(hdrmeta->whitePoint[1], chroma_den);
-
-                mastering->max_luminance = av_make_q(hdrmeta->maxMasteringLuminance, luma_den);
-                mastering->min_luminance = av_make_q(hdrmeta->maxMasteringLuminance, luma_den);
-
-                mastering->has_luminance = 1;
-                mastering->has_primaries = 1;
-                if (hdrmeta->maxContentLightLevel) {
-                   AVContentLightMetadata *light = av_content_light_metadata_create_side_data(frame);
-
-                    if (!light)
-                        return AVERROR(ENOMEM);
-
-                    light->MaxCLL  = hdrmeta->maxContentLightLevel;
-                    light->MaxFALL = hdrmeta->maxFrameAverageLightLevel;
-                }
-            }
+            ret = av_amf_attach_hdr_metadata(frame, hdrmeta);
+            if (ret < 0)
+                return ret;
         }
     }
     return 0;

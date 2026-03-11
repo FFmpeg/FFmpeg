@@ -24,6 +24,7 @@
 #include "AMF/core/Surface.h"
 #include "AMF/components/Component.h"
 #include "libavutil/hwcontext_amf.h"
+#include "libavutil/mastering_display_metadata.h"
 
 typedef struct AMFFilterContext {
     const AVClass *class;
@@ -31,13 +32,21 @@ typedef struct AMFFilterContext {
     int width, height;
     enum AVPixelFormat format;
     int scale_type;
+    int in_color_range;
+    int in_primaries;
+    int in_trc;
     int color_profile;
-    int color_range;
-    int primaries;
-    int trc;
+    int out_color_range;
+    int out_primaries;
+    int out_trc;
     int fill;
     int fill_color;
     int keep_ratio;
+
+    char *disp_master;
+    char *max_cll;
+    AVMasteringDisplayMetadata *master_display;
+    AVContentLightMetadata     *light_meta;
 
     // HQScaler properties
     int algorithm;
