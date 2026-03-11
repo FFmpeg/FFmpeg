@@ -160,7 +160,7 @@ static int amf_filter_config_output(AVFilterLink *outlink)
         if (!ctx->master_display)
             return AVERROR(ENOMEM);
 
-        ret = sscanf_s(ctx->disp_master,
+        ret = sscanf(ctx->disp_master,
             "G(%hu,%hu)B(%hu,%hu)R(%hu,%hu)WP(%hu,%hu)L(%u,%u)",
             (uint16_t*)&ctx->master_display->display_primaries[1][0].num,
             (uint16_t*)&ctx->master_display->display_primaries[1][1].num,
@@ -201,7 +201,7 @@ static int amf_filter_config_output(AVFilterLink *outlink)
         if (!ctx->light_meta)
             return AVERROR(ENOMEM);
 
-        ret = sscanf_s(ctx->max_cll,
+        ret = sscanf(ctx->max_cll,
             "%hu,%hu",
             (uint16_t*)&ctx->light_meta->MaxCLL,
             (uint16_t*)&ctx->light_meta->MaxFALL
