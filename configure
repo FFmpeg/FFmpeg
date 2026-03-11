@@ -361,7 +361,6 @@ External library support:
   --disable-libdrm         disable DRM code (Linux) [autodetect]
   --enable-libmfx          enable Intel MediaSDK (AKA Quick Sync Video) code via libmfx [no]
   --enable-libvpl          enable Intel oneVPL code via libvpl if libmfx is not used [no]
-  --enable-libnpp          enable Nvidia Performance Primitives-based code [no]
   --enable-mmal            enable Broadcom Multi-Media Abstraction Layer (Raspberry Pi) via MMAL [no]
   --disable-nvdec          disable Nvidia video decoding acceleration (via hwaccel) [autodetect]
   --disable-nvenc          disable Nvidia video encoding code [autodetect]
@@ -2199,7 +2198,6 @@ EXTRALIBS_LIST="
 HWACCEL_LIBRARY_NONFREE_LIST="
     cuda_nvcc
     cuda_sdk
-    libnpp
 "
 
 HWACCEL_LIBRARY_LIST="
@@ -2874,6 +2872,7 @@ CMDLINE_SELECT="
     cross_compile
     debug
     extra_warnings
+    libnpp
     logging
     optimizations
     response_files
@@ -3588,20 +3587,16 @@ chromakey_cuda_filter_deps_any="cuda_nvcc cuda_llvm"
 colorspace_cuda_filter_deps="ffnvcodec"
 colorspace_cuda_filter_deps_any="cuda_nvcc cuda_llvm"
 hwupload_cuda_filter_deps="ffnvcodec"
-scale_npp_filter_deps="ffnvcodec libnpp"
-scale2ref_npp_filter_deps="ffnvcodec libnpp"
 scale_cuda_filter_deps="ffnvcodec"
 scale_cuda_filter_deps_any="cuda_nvcc cuda_llvm"
 thumbnail_cuda_filter_deps="ffnvcodec"
 thumbnail_cuda_filter_deps_any="cuda_nvcc cuda_llvm"
 transpose_cuda_filter_deps="ffnvcodec"
 transpose_cuda_filter_deps_any="cuda_nvcc cuda_llvm"
-transpose_npp_filter_deps="ffnvcodec libnpp"
 overlay_cuda_filter_deps="ffnvcodec"
 overlay_cuda_filter_deps_any="cuda_nvcc cuda_llvm"
 pad_cuda_filter_deps="ffnvcodec"
 pad_cuda_filter_deps_any="cuda_nvcc cuda_llvm"
-sharpen_npp_filter_deps="ffnvcodec libnpp"
 
 ddagrab_filter_deps="d3d11va IDXGIOutput1 DXGI_OUTDUPL_FRAME_INFO"
 gfxcapture_filter_deps="cxx17 threads d3d11va IGraphicsCaptureItemInterop __x_ABI_CWindows_CGraphics_CCapture_CIGraphicsCaptureSession3"
@@ -4802,6 +4797,8 @@ for opt do
         ;;
     esac
 done
+
+enabled libnpp && warn "libnpp has been removed and enabling it does nothing."
 
 for e in $env; do
     eval "export $e"
@@ -7442,13 +7439,6 @@ enabled libmp3lame        && require "libmp3lame >= 3.98.3" lame/lame.h lame_set
 enabled libmpeghdec       && require_pkg_config libmpeghdec "mpeghdec >= 3.0.0" mpeghdec/mpeghdecoder.h mpeghdecoder_init
 enabled libmysofa         && { check_pkg_config libmysofa libmysofa mysofa.h mysofa_neighborhood_init_withstepdefine ||
                                require libmysofa mysofa.h mysofa_neighborhood_init_withstepdefine -lmysofa $zlib_extralibs; }
-enabled libnpp            && { test_cpp_condition "$(cd "$source_path"; pwd)/libavfilter/version_major.h" FF_API_LIBNPP_SUPPORT ||
-                               die "ERROR: libnpp support is removed in this version"; } &&
-                             { check_lib libnpp npp.h nppGetLibVersion -lnppig -lnppicc -lnppc -lnppidei -lnppif ||
-                               check_lib libnpp npp.h nppGetLibVersion -lnppi -lnppif -lnppc -lnppidei ||
-                               die "ERROR: libnpp not found"; } &&
-                             { check_func_headers "nppi.h" nppiYCbCr420_8u_P2P3R $libnpp_extralibs ||
-                               die "ERROR: libnpp support is deprecated, version 13.0 and up are not supported"; }
 enabled libonnxruntime    && require libonnxruntime onnxruntime_c_api.h OrtGetApiBase -lonnxruntime
 enabled libopencore_amrnb && { check_pkg_config libopencore_amrnb opencore-amrnb opencore-amrnb/interf_dec.h Decoder_Interface_init ||
                                require libopencore_amrnb opencore-amrnb/interf_dec.h Decoder_Interface_init -lopencore-amrnb; }
