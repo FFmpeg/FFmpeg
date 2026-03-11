@@ -860,7 +860,7 @@ int ff_aac_map_index_data(AACMPSLosslessData *ld,
     for (int i = 0; i < nb_param_sets; i++) {
         if (ld->coarse_quant_no[i] == 1) {
             coarse_to_fine(tmp_idx_data[i], data_type, start_band,
-                           stop_band - start_band);
+                           stop_band);
             ld->coarse_quant_no[i] = 0;
         }
     }
