@@ -159,10 +159,11 @@ static int decode_registered_user_data(H2645SEI *h, GetByteContext *gb,
     }
 
     /* itu_t_t35_payload_byte follows */
-    provider_code = bytestream2_get_be16u(gb);
 
     switch (country_code) {
     case ITU_T_T35_COUNTRY_CODE_US:
+        provider_code = bytestream2_get_be16u(gb);
+
         switch (provider_code) {
         case ITU_T_T35_PROVIDER_CODE_ATSC: {
             uint32_t user_identifier;
@@ -230,12 +231,17 @@ static int decode_registered_user_data(H2645SEI *h, GetByteContext *gb,
         }
         break;
     case ITU_T_T35_COUNTRY_CODE_UK:
+        bytestream2_skipu(gb, 1); // t35_uk_country_code_second_octet
+        if (bytestream2_get_bytes_left(gb) < 2)
+            return AVERROR_INVALIDDATA;
+
+        provider_code = bytestream2_get_be16u(gb);
+
         switch (provider_code) {
         case ITU_T_T35_PROVIDER_CODE_VNOVA:
             if (bytestream2_get_bytes_left(gb) < 2)
                 return AVERROR_INVALIDDATA;
 
-            bytestream2_skipu(gb, 1); // user_data_type_code
             return decode_registered_user_data_lcevc(&h->lcevc, gb);
         default:
             break;
@@ -245,6 +251,8 @@ static int decode_registered_user_data(H2645SEI *h, GetByteContext *gb,
     case ITU_T_T35_COUNTRY_CODE_CN: {
         const uint16_t cuva_provider_oriented_code = 0x0005;
         uint16_t provider_oriented_code;
+
+        provider_code = bytestream2_get_be16u(gb);
 
         switch (provider_code) {
         case ITU_T_T35_PROVIDER_CODE_HDR_VIVID:
