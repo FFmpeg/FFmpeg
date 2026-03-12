@@ -28,6 +28,7 @@
 #include "libavutil/display.h"
 #include "libavutil/error.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mastering_display_metadata.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
@@ -68,6 +69,8 @@ typedef struct DemuxStream {
     int                      autorotate;
     int                      apply_cropping;
     int                      force_display_matrix;
+    int                      force_mastering_display;
+    int                      force_content_light;
     int                      drop_changed;
 
 
@@ -1248,6 +1251,125 @@ static int add_display_matrix_to_stream(const OptionsContext *o,
     return 0;
 }
 
+static int add_mastering_display_to_stream(const OptionsContext *o,
+                                           AVFormatContext *ctx, InputStream *ist)
+{
+    AVStream *st = ist->st;
+    DemuxStream *ds = ds_from_ist(ist);
+    AVMasteringDisplayMetadata *master_display;
+    AVPacketSideData *sd;
+    const char *p = NULL;
+    const int chroma_den = 50000;
+    const int luma_den = 10000;
+    size_t size;
+    int ret;
+
+    opt_match_per_stream_str(ist, &o->mastering_displays, ctx, st, &p);
+
+    if (!p)
+        return 0;
+
+    master_display = av_mastering_display_metadata_alloc_size(&size);
+    if (!master_display)
+        return AVERROR(ENOMEM);
+
+    ret = sscanf(p,
+                 "G(%u,%u)B(%u,%u)R(%u,%u)WP(%u,%u)L(%u,%u)",
+                 (unsigned*)&master_display->display_primaries[1][0].num,
+                 (unsigned*)&master_display->display_primaries[1][1].num,
+                 (unsigned*)&master_display->display_primaries[2][0].num,
+                 (unsigned*)&master_display->display_primaries[2][1].num,
+                 (unsigned*)&master_display->display_primaries[0][0].num,
+                 (unsigned*)&master_display->display_primaries[0][1].num,
+                 (unsigned*)&master_display->white_point[0].num,
+                 (unsigned*)&master_display->white_point[1].num,
+                 (unsigned*)&master_display->max_luminance.num,
+                 (unsigned*)&master_display->min_luminance.num);
+
+    if (ret != 10 ||
+        (unsigned)(master_display->display_primaries[1][0].num | master_display->display_primaries[1][1].num |
+                   master_display->display_primaries[2][0].num | master_display->display_primaries[2][1].num |
+                   master_display->display_primaries[0][0].num | master_display->display_primaries[0][1].num |
+                   master_display->white_point[0].num | master_display->white_point[1].num) > UINT16_MAX ||
+        (unsigned)(master_display->max_luminance.num  | master_display->min_luminance.num) > INT_MAX ||
+                   master_display->min_luminance.num  > master_display->max_luminance.num) {
+        av_freep(&master_display);
+        av_log(ist, AV_LOG_ERROR, "Failed to parse mastering display option\n");
+        return AVERROR(EINVAL);
+    }
+
+    master_display->display_primaries[1][0].den = chroma_den;
+    master_display->display_primaries[1][1].den = chroma_den;
+    master_display->display_primaries[2][0].den = chroma_den;
+    master_display->display_primaries[2][1].den = chroma_den;
+    master_display->display_primaries[0][0].den = chroma_den;
+    master_display->display_primaries[0][1].den = chroma_den;
+    master_display->white_point[0].den = chroma_den;
+    master_display->white_point[1].den = chroma_den;
+    master_display->max_luminance.den = luma_den;
+    master_display->min_luminance.den = luma_den;
+
+    master_display->has_primaries = 1;
+    master_display->has_luminance = 1;
+
+    sd = av_packet_side_data_add(&st->codecpar->coded_side_data,
+                                 &st->codecpar->nb_coded_side_data,
+                                 AV_PKT_DATA_MASTERING_DISPLAY_METADATA,
+                                 (uint8_t *)master_display, size, 0);
+    if (!sd) {
+        av_freep(&master_display);
+        return AVERROR(ENOMEM);
+    }
+
+    ds->force_mastering_display = 1;
+
+    return 0;
+}
+
+static int add_content_light_to_stream(const OptionsContext *o,
+                                       AVFormatContext *ctx, InputStream *ist)
+{
+    AVStream *st = ist->st;
+    DemuxStream *ds = ds_from_ist(ist);
+    AVContentLightMetadata *cll;
+    AVPacketSideData *sd;
+    const char *p = NULL;
+    size_t size;
+    int ret;
+
+    opt_match_per_stream_str(ist, &o->content_lights, ctx, st, &p);
+
+    if (!p)
+        return 0;
+
+    cll = av_content_light_metadata_alloc(&size);
+    if (!cll)
+        return AVERROR(ENOMEM);
+
+    ret = sscanf(p, "%u,%u",
+                 (unsigned*)&cll->MaxCLL,
+                 (unsigned*)&cll->MaxFALL);
+
+    if (ret != 2 || (unsigned)(cll->MaxCLL | cll->MaxFALL) > UINT16_MAX) {
+        av_freep(&cll);
+        av_log(ist, AV_LOG_ERROR, "Failed to parse content light option\n");
+        return AVERROR(EINVAL);
+    }
+
+    sd = av_packet_side_data_add(&st->codecpar->coded_side_data,
+                                 &st->codecpar->nb_coded_side_data,
+                                 AV_PKT_DATA_CONTENT_LIGHT_LEVEL,
+                                 (uint8_t *)cll, size, 0);
+    if (!sd) {
+        av_freep(&cll);
+        return AVERROR(ENOMEM);
+    }
+
+    ds->force_content_light = 1;
+
+    return 0;
+}
+
 static const char *input_stream_item_name(void *obj)
 {
     const DemuxStream *ds = obj;
@@ -1301,6 +1423,7 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st, AVDictiona
     const char *bsfs = NULL;
     char *next;
     const char *discard_str = NULL;
+    AVBPrint bp;
     int ret;
 
     ds  = demux_stream_alloc(d, st);
@@ -1363,6 +1486,14 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st, AVDictiona
 
     if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
         ret = add_display_matrix_to_stream(o, ic, ist);
+        if (ret < 0)
+            return ret;
+
+        ret = add_mastering_display_to_stream(o, ic, ist);
+        if (ret < 0)
+            return ret;
+
+        ret = add_content_light_to_stream(o, ic, ist);
         if (ret < 0)
             return ret;
 
@@ -1483,15 +1614,27 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st, AVDictiona
     av_dict_set_int(&ds->decoder_opts, "apply_cropping",
                     ds->apply_cropping && ds->apply_cropping != CROP_CONTAINER, 0);
 
+    av_bprint_init(&bp, 0, AV_BPRINT_SIZE_AUTOMATIC);
     if (ds->force_display_matrix) {
-        char buf[32];
         if (av_dict_get(ds->decoder_opts, "side_data_prefer_packet", NULL, 0))
-            buf[0] = ',';
-        else
-            buf[0] = '\0';
-        av_strlcat(buf, "displaymatrix", sizeof(buf));
-        av_dict_set(&ds->decoder_opts, "side_data_prefer_packet", buf, AV_DICT_APPEND);
+            av_bprintf(&bp, ",");
+        av_bprintf(&bp, "displaymatrix");
     }
+    if (ds->force_mastering_display) {
+        if (bp.len || av_dict_get(ds->decoder_opts, "side_data_prefer_packet", NULL, 0))
+            av_bprintf(&bp, ",");
+        av_bprintf(&bp, "mastering_display_metadata");
+    }
+    if (ds->force_content_light) {
+        if (bp.len || av_dict_get(ds->decoder_opts, "side_data_prefer_packet", NULL, 0))
+            av_bprintf(&bp, ",");
+        av_bprintf(&bp, "content_light_level");
+    }
+    if (bp.len) {
+        av_bprint_finalize(&bp, NULL);
+        av_dict_set(&ds->decoder_opts, "side_data_prefer_packet", bp.str, AV_DICT_APPEND);
+    }
+
     /* Attached pics are sparse, therefore we would not want to delay their decoding
      * till EOF. */
     if (ist->st->disposition & AV_DISPOSITION_ATTACHED_PIC)
