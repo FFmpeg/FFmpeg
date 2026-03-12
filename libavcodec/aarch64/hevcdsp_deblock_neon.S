@@ -511,8 +511,11 @@ function hevc_loop_filter_luma_body_\bitdepth\()_neon, export=0
         sqxtun          v6.8b, v6.8h
         sqxtun          v7.8b, v7.8h
 .endif
+        // Use x15 to signal whether any pixels should be updated or not.
+        mov             x15, #1
         ret
-3:      ret             x6
+3:      mov             x15, #0
+        ret
 endfunc
 .endm
 
@@ -562,6 +565,7 @@ function ff_hevc_\dir\()_loop_filter_luma_\bitdepth\()_neon, export=1
 .endif
 .endif
         bl              hevc_loop_filter_luma_body_\bitdepth\()_neon
+        cbz             x15, 9f
 .if \bitdepth > 8
 .ifc \dir, v
         transpose_8x8H  v0, v1, v2, v3, v4, v5, v6, v7, v16, v17
@@ -587,6 +591,7 @@ function ff_hevc_\dir\()_loop_filter_luma_\bitdepth\()_neon, export=1
         st1             {v6.8b}, [x10], x1
         st1             {v7.8b}, [x10]
 .endif
+9:
         ret             x6
 endfunc
 .endm
