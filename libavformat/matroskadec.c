@@ -2773,6 +2773,10 @@ static int mka_parse_audio_codec(MatroskaTrack *track, AVCodecParameters *par,
             par->block_align  = track->audio.sub_packet_size;
             *extradata_offset = 78;
         }
+        if (par->block_align <= 0 ||
+            track->audio.sub_packet_h * (unsigned)track->audio.frame_size > INT_MAX ||
+            track->audio.frame_size * track->audio.sub_packet_h < par->block_align)
+            return AVERROR_INVALIDDATA;
         track->audio.buf = av_malloc_array(track->audio.sub_packet_h,
                                             track->audio.frame_size);
         if (!track->audio.buf)
