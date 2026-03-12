@@ -3238,7 +3238,7 @@ int main(int argc, char **argv)
     char *buf;
     char *f_name = NULL, *f_args = NULL;
     int ret, input_ret;
-    AVTextFormatDataDump data_dump_format_id;
+    AVTextFormatDataDump data_dump_format_id = AV_TEXTFORMAT_DATADUMP_XXD;
 
     init_dynload();
 
