@@ -1117,6 +1117,22 @@ static enum AVPixelFormat alphaless_fmt(enum AVPixelFormat fmt)
     }
 }
 
+static int scaler_flag(SwsScaler scaler, int fallback)
+{
+    switch (scaler) {
+    case SWS_SCALE_BILINEAR: return SWS_BILINEAR; break;
+    case SWS_SCALE_BICUBIC:  return SWS_BICUBIC;  break;
+    case SWS_SCALE_POINT:    return SWS_POINT;    break;
+    case SWS_SCALE_AREA:     return SWS_AREA;     break;
+    case SWS_SCALE_GAUSSIAN: return SWS_GAUSS;    break;
+    case SWS_SCALE_SINC:     return SWS_SINC;     break;
+    case SWS_SCALE_LANCZOS:  return SWS_LANCZOS;  break;
+    case SWS_SCALE_SPLINE:   return SWS_SPLINE;   break;
+    default:
+        return fallback;
+    }
+}
+
 av_cold int ff_sws_init_single_context(SwsContext *sws, SwsFilter *srcFilter,
                                        SwsFilter *dstFilter)
 {
@@ -1212,8 +1228,9 @@ av_cold int ff_sws_init_single_context(SwsContext *sws, SwsFilter *srcFilter,
         }
     }
 
-    int lum_scaler = i == SWS_BICUBLIN ? SWS_BICUBIC  : i;
-    int chr_scaler = i == SWS_BICUBLIN ? SWS_BILINEAR : i;
+    SwsScaler scaler_sub = sws->scaler_sub ? sws->scaler_sub : sws->scaler;
+    int lum_scaler = scaler_flag(sws->scaler, i == SWS_BICUBLIN ? SWS_BICUBIC  : i);
+    int chr_scaler = scaler_flag(scaler_sub,  i == SWS_BICUBLIN ? SWS_BILINEAR : i);
 
     /* sanity check */
     if (srcW < 1 || srcH < 1 || dstW < 1 || dstH < 1) {

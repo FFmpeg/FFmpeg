@@ -52,6 +52,19 @@ static const AVOption swscale_options[] = {
         { "error_diffusion", "error diffusion dither",        0,  AV_OPT_TYPE_CONST, { .i64 = SWS_ERROR_DIFFUSION}, .flags = VE, .unit = "sws_flags" },
         { "unstable",        "allow experimental new code",   0,  AV_OPT_TYPE_CONST, { .i64 = SWS_UNSTABLE       }, .flags = VE, .unit = "sws_flags" },
 
+    { "scaler",          "set scaling algorithm",         OFFSET(scaler),       AV_OPT_TYPE_INT,    { .i64 = SWS_SCALE_AUTO     }, .flags = VE, .unit = "sws_scaler", .max = SWS_SCALE_NB - 1 },
+    { "scaler_sub",      "set subsampling algorithm",     OFFSET(scaler_sub),   AV_OPT_TYPE_INT,    { .i64 = SWS_SCALE_AUTO     }, .flags = VE, .unit = "sws_scaler", .max = SWS_SCALE_NB - 1 },
+        { "auto",        "automatic selection",           0,                    AV_OPT_TYPE_CONST,  { .i64 = SWS_SCALE_AUTO     }, .flags = VE, .unit = "sws_scaler" },
+        { "bilinear",    "bilinear filtering",            0,                    AV_OPT_TYPE_CONST,  { .i64 = SWS_SCALE_BILINEAR }, .flags = VE, .unit = "sws_scaler" },
+        { "bicubic",     "2-tap cubic B-spline",          0,                    AV_OPT_TYPE_CONST,  { .i64 = SWS_SCALE_BICUBIC  }, .flags = VE, .unit = "sws_scaler" },
+        { "point",       "point sampling",                0,                    AV_OPT_TYPE_CONST,  { .i64 = SWS_SCALE_POINT    }, .flags = VE, .unit = "sws_scaler" },
+        { "neighbor",    "nearest neighbor",              0,                    AV_OPT_TYPE_CONST,  { .i64 = SWS_SCALE_POINT    }, .flags = VE, .unit = "sws_scaler" },
+        { "area",        "area averaging",                0,                    AV_OPT_TYPE_CONST,  { .i64 = SWS_SCALE_AREA     }, .flags = VE, .unit = "sws_scaler" },
+        { "gaussian",    "2-tap gaussian approximation",  0,                    AV_OPT_TYPE_CONST,  { .i64 = SWS_SCALE_GAUSSIAN }, .flags = VE, .unit = "sws_scaler" },
+        { "sinc",        "unwindowed sinc",               0,                    AV_OPT_TYPE_CONST,  { .i64 = SWS_SCALE_SINC     }, .flags = VE, .unit = "sws_scaler" },
+        { "lanczos",     "3-tap sinc/sinc",               0,                    AV_OPT_TYPE_CONST,  { .i64 = SWS_SCALE_LANCZOS  }, .flags = VE, .unit = "sws_scaler" },
+        { "spline",      "2-tap cubic BC spline",         0,                    AV_OPT_TYPE_CONST,  { .i64 = SWS_SCALE_SPLINE   }, .flags = VE, .unit = "sws_scaler" },
+
     { "param0",          "scaler param 0", OFFSET(scaler_params[0]), AV_OPT_TYPE_DOUBLE, { .dbl = SWS_PARAM_DEFAULT  }, INT_MIN, INT_MAX, VE },
     { "param1",          "scaler param 1", OFFSET(scaler_params[1]), AV_OPT_TYPE_DOUBLE, { .dbl = SWS_PARAM_DEFAULT  }, INT_MIN, INT_MAX, VE },
 

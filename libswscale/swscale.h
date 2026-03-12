@@ -93,6 +93,20 @@ typedef enum SwsAlphaBlend {
     SWS_ALPHA_BLEND_MAX_ENUM = 0x7FFFFFFF, /* force size to 32 bits, not a valid blend mode */
 } SwsAlphaBlend;
 
+typedef enum SwsScaler {
+    SWS_SCALE_AUTO = 0,
+    SWS_SCALE_BILINEAR, ///< bilinear filtering
+    SWS_SCALE_BICUBIC,  ///< 2-tap cubic BC-spline
+    SWS_SCALE_POINT,    ///< nearest neighbor (point sampling)
+    SWS_SCALE_AREA,     ///< area averaging
+    SWS_SCALE_GAUSSIAN, ///< 2-tap gaussian approximation
+    SWS_SCALE_SINC,     ///< unwindowed sinc
+    SWS_SCALE_LANCZOS,  ///< 3-tap sinc/sinc
+    SWS_SCALE_SPLINE,   ///< unwindowned natural cubic spline
+    SWS_SCALE_NB,       ///< not part of the ABI
+    SWS_SCALE_MAX_ENUM = 0x7FFFFFFF, ///< force size to 32 bits, not a valid filter type
+} SwsScaler;
+
 typedef enum SwsFlags {
     /**
      * Scaler selection options. Only one may be active at a time.
@@ -248,6 +262,22 @@ typedef struct SwsContext {
      * Desired ICC intent for color space conversions.
      */
     int intent;
+
+    /**
+     * Scaling filter. If set to something other than SWS_SCALE_AUTO, this will
+     * override the filter implied by `SwsContext.flags`.
+     *
+     * Note: Does not affect the legacy (stateful) API.
+     */
+    SwsScaler scaler;
+
+    /**
+     * Scaler used specifically for up/downsampling subsampled (chroma) planes.
+     * If set to something other than SWS_SCALE_AUTO, this will override the
+     * filter implied by `SwsContext.scaler`. Otherwise, the same filter
+     * will be used for both main scaling and chroma subsampling.
+     */
+    SwsScaler scaler_sub;
 
     /* Remember to add new fields to graph.c:opts_equal() */
 } SwsContext;
