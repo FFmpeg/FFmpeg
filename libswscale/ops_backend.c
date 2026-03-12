@@ -86,6 +86,8 @@ static int compile(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
         .slice_align = 1,
         .block_size  = SWS_BLOCK_SIZE,
         .cpu_flags   = chain->cpu_flags,
+        .over_read   = chain->over_read,
+        .over_write  = chain->over_write,
         .priv        = chain,
         .free        = ff_sws_op_chain_free_cb,
     };

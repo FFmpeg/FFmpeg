@@ -86,7 +86,9 @@ typedef struct SwsOpChain {
     SwsOpImpl impl[SWS_MAX_OPS + 1]; /* reserve extra space for the entrypoint */
     void (*free[SWS_MAX_OPS + 1])(SwsOpPriv *);
     int num_impl;
-    int cpu_flags; /* set of all used CPU flags */
+    int cpu_flags;  /* set of all used CPU flags */
+    int over_read;  /* chain over-reads input by this many bytes */
+    int over_write; /* chain over-writes output by this many bytes */
 } SwsOpChain;
 
 SwsOpChain *ff_sws_op_chain_alloc(void);
@@ -110,6 +112,8 @@ typedef struct SwsImplResult {
     SwsFuncPtr func; /* overrides `SwsOpEntry.func` if non-NULL */
     SwsOpPriv priv; /* private data for this implementation instance */
     void (*free)(SwsOpPriv *priv); /* free function for `priv` */
+    int over_read;  /* implementation over-reads input by this many bytes */
+    int over_write; /* implementation over-writes output by this many bytes */
 } SwsImplResult;
 
 typedef struct SwsOpEntry {

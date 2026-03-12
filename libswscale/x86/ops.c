@@ -710,9 +710,9 @@ static int compile(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
 
     /* 3-component reads/writes process one extra garbage word */
     if (read && read->rw.packed && read->rw.elems == 3)
-        out->over_read = sizeof(uint32_t);
+        chain->over_read = sizeof(uint32_t);
     if (write->rw.packed && write->rw.elems == 3)
-        out->over_write = sizeof(uint32_t);
+        chain->over_write = sizeof(uint32_t);
 
 
     /* Make on-stack copy of `ops` to iterate over */
@@ -764,7 +764,9 @@ static int compile(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
         return ret;
     }
 
-    out->cpu_flags = chain->cpu_flags;
+    out->cpu_flags  = chain->cpu_flags;
+    out->over_read  = chain->over_read;
+    out->over_write = chain->over_write;
     return 0;
 }
 

@@ -238,7 +238,6 @@ int ff_sws_op_compile_tables(SwsContext *ctx, const SwsOpTable *const tables[],
             return ret;
     }
 
-    chain->cpu_flags |= best_table->cpu_flags;
     ret = ff_sws_op_chain_append(chain, res.func ? res.func : best->func,
                                  res.free, &res.priv);
     if (ret < 0) {
@@ -246,6 +245,10 @@ int ff_sws_op_compile_tables(SwsContext *ctx, const SwsOpTable *const tables[],
             res.free(&res.priv);
         return ret;
     }
+
+    chain->cpu_flags |= best_table->cpu_flags;
+    chain->over_read  = FFMAX(chain->over_read,  res.over_read);
+    chain->over_write = FFMAX(chain->over_write, res.over_write);
 
     ops->ops++;
     ops->num_ops--;
