@@ -58,10 +58,26 @@
     REF_PATTERN(NAME, 1, 1, 1, 0),                                              \
     REF_PATTERN(NAME, 1, 1, 1, 1)
 
+static int setup_rw(const SwsImplParams *params, SwsImplResult *out)
+{
+    const SwsOp *op = params->op;
+
+    /* 3-component reads/writes process one extra garbage word */
+    if (op->rw.packed && op->rw.elems == 3) {
+        switch (op->op) {
+        case SWS_OP_READ:  out->over_read  = sizeof(uint32_t); break;
+        case SWS_OP_WRITE: out->over_write = sizeof(uint32_t); break;
+        }
+    }
+
+    return 0;
+}
+
 #define DECL_RW(EXT, TYPE, NAME, OP, ELEMS, PACKED, FRAC)                       \
     DECL_ASM(TYPE, NAME##ELEMS##EXT,                                            \
         .op = SWS_OP_##OP,                                                      \
         .rw = { .elems = ELEMS, .packed = PACKED, .frac = FRAC },               \
+        .setup = setup_rw,                                                      \
     );
 
 #define DECL_PACKED_RW(EXT, DEPTH)                                              \
@@ -707,13 +723,6 @@ static int compile(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
         /* Use at most two full YMM regs during the widest precision section */
         .block_size = 2 * FFMIN(mmsize, 32) / ff_sws_op_list_max_size(ops),
     };
-
-    /* 3-component reads/writes process one extra garbage word */
-    if (read && read->rw.packed && read->rw.elems == 3)
-        chain->over_read = sizeof(uint32_t);
-    if (write->rw.packed && write->rw.elems == 3)
-        chain->over_write = sizeof(uint32_t);
-
 
     /* Make on-stack copy of `ops` to iterate over */
     SwsOpList rest = *ops;
