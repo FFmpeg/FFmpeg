@@ -30,10 +30,8 @@
 // - CN providers
 #define ITU_T_T35_PROVIDER_CODE_HDR_VIVID    0x0004
 // - UK providers
-// V-Nova should be 0x5000 according to UK Register of Manufacturer Codes
 // https://www.cix.co.uk/~bpechey/H221/h221code.htm
-// but FFmpeg has been using 0x0050
-#define ITU_T_T35_PROVIDER_CODE_VNOVA        0x0050
+#define ITU_T_T35_PROVIDER_CODE_VNOVA        0x5000
 // - US providers
 #define ITU_T_T35_PROVIDER_CODE_ATSC         0x0031
 #define ITU_T_T35_PROVIDER_CODE_DOLBY        0x003B
