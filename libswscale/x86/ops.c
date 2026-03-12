@@ -696,15 +696,11 @@ static void normalize_clear(SwsOp *op)
 
 static int compile(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
 {
+    int ret;
     const int cpu_flags = av_get_cpu_flags();
     const int mmsize = get_mmsize(cpu_flags);
     if (mmsize < 0)
         return mmsize;
-
-    const SwsOp *read  = ff_sws_op_list_input(ops);
-    const SwsOp *write = ff_sws_op_list_output(ops);
-    av_assert1(write);
-    int ret;
 
     /* Special fast path for in-place packed shuffle */
     ret = solve_shuffle(ops, mmsize, out);
@@ -759,6 +755,8 @@ static int compile(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
         out->func = NAME;                                       \
     } while (0)
 
+    const SwsOp *read      = ff_sws_op_list_input(ops);
+    const SwsOp *write     = ff_sws_op_list_output(ops);
     const int read_planes  = read ? (read->rw.packed ? 1 : read->rw.elems) : 0;
     const int write_planes = write->rw.packed ? 1 : write->rw.elems;
     switch (FFMAX(read_planes, write_planes)) {
