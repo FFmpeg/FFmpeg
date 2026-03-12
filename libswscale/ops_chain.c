@@ -201,8 +201,9 @@ int ff_sws_op_compile_tables(const SwsOpTable *const tables[], int num_tables,
     const SwsOp *next = ops->num_ops > 1 ? &ops->ops[1] : &dummy;
     const unsigned cpu_flags = av_get_cpu_flags();
     const SwsOpEntry *best = NULL;
+    const SwsOpTable *best_table = NULL;
     const SwsOp *op = &ops->ops[0];
-    int ret, best_score = 0, best_cpu_flags;
+    int ret, best_score = 0;
 
     for (int n = 0; n < num_tables; n++) {
         const SwsOpTable *table = tables[n];
@@ -215,7 +216,7 @@ int ff_sws_op_compile_tables(const SwsOpTable *const tables[], int num_tables,
             int score = op_match(op, entry, next->comps);
             if (score > best_score) {
                 best_score = score;
-                best_cpu_flags = table->cpu_flags;
+                best_table = table;
                 best = entry;
             }
         }
@@ -226,13 +227,13 @@ int ff_sws_op_compile_tables(const SwsOpTable *const tables[], int num_tables,
 
     SwsImplResult res = {0};
     if (best->setup) {
-        const SwsImplParams params = { .op = op };
+        const SwsImplParams params = { .op = op, .table = best_table };
         ret = best->setup(&params, &res);
         if (ret < 0)
             return ret;
     }
 
-    chain->cpu_flags |= best_cpu_flags;
+    chain->cpu_flags |= best_table->cpu_flags;
     ret = ff_sws_op_chain_append(chain, res.func ? res.func : best->func,
                                  res.free, &res.priv);
     if (ret < 0) {

@@ -101,6 +101,7 @@ int ff_sws_op_chain_append(SwsOpChain *chain, SwsFuncPtr func,
                            void (*free)(SwsOpPriv *), const SwsOpPriv *priv);
 
 typedef struct SwsImplParams {
+    const SwsOpTable *table;
     const SwsOp *op;
 } SwsImplParams;
 
