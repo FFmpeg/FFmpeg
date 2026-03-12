@@ -131,6 +131,8 @@ static int parse_mb_skip(WMV2DecContext *w)
                     mb_type[mb_y * h->c.mb_stride + mb_x] =
                         MB_TYPE_SKIP | MB_TYPE_16x16 | MB_TYPE_FORWARD_MV;
             } else {
+                if (get_bits_left(&h->gb) < h->c.mb_width)
+                    return AVERROR_INVALIDDATA;
                 for (int mb_x = 0; mb_x < h->c.mb_width; mb_x++)
                     mb_type[mb_y * h->c.mb_stride + mb_x] =
                         (get_bits1(&h->gb) ? MB_TYPE_SKIP : 0) | MB_TYPE_16x16 | MB_TYPE_FORWARD_MV;
@@ -146,6 +148,8 @@ static int parse_mb_skip(WMV2DecContext *w)
                     mb_type[mb_y * h->c.mb_stride + mb_x] =
                         MB_TYPE_SKIP | MB_TYPE_16x16 | MB_TYPE_FORWARD_MV;
             } else {
+                if (get_bits_left(&h->gb) < h->c.mb_height)
+                    return AVERROR_INVALIDDATA;
                 for (int mb_y = 0; mb_y < h->c.mb_height; mb_y++)
                     mb_type[mb_y * h->c.mb_stride + mb_x] =
                         (get_bits1(&h->gb) ? MB_TYPE_SKIP : 0) | MB_TYPE_16x16 | MB_TYPE_FORWARD_MV;
