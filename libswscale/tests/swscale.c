@@ -187,7 +187,7 @@ static void get_ssim(float ssim[4], const AVFrame *out, const AVFrame *ref, int 
 
 static float get_loss(const float ssim[4])
 {
-    const float weights[3] = { 0.8, 0.1, 0.1 }; /* tuned for Y'CrCr */
+    const float weights[3] = { 0.8, 0.1, 0.1 }; /* tuned for Y'CbCr */
 
     float sum = 0;
     for (int i = 0; i < 3; i++)
@@ -591,7 +591,7 @@ static int parse_options(int argc, char **argv, struct options *opts, FILE **fp)
                     "   -help\n"
                     "       This text\n"
                     "   -ref <file>\n"
-                    "       Uses file as reference to compare tests againsts. Tests that have become worse will contain the string worse or WORSE\n"
+                    "       Uses file as reference to compare tests against. Tests that have become worse will contain the string worse or WORSE\n"
                     "   -p <number between 0.0 and 1.0>\n"
                     "       The percentage of tests or comparisons to perform. Doing all tests will take long and generate over a hundred MB text output\n"
                     "       It is often convenient to perform a random subset\n"
