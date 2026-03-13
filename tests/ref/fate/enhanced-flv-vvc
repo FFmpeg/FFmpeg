@@ -1,6 +1,6 @@
-b4074094cb8c5152361a9fab71dca9e9 *tests/data/fate/enhanced-flv-vvc.flv
-90620 tests/data/fate/enhanced-flv-vvc.flv
-#extradata 0:      161, 0x98c53408
+4789b9c0248ed8ec8d63880f1a40c7b7 *tests/data/fate/enhanced-flv-vvc.flv
+90619 tests/data/fate/enhanced-flv-vvc.flv
+#extradata 0:      160, 0x64ae3407
 #tb 0: 1/1000
 #media_type 0: video
 #codec_id 0: vvc

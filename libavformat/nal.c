@@ -88,8 +88,11 @@ static int nal_parse_units(AVIOContext *pb, NALUList *list,
 
         nal_end = ff_nal_find_startcode(nal_start, end);
         if (pb) {
-            avio_wb32(pb, nal_end - nal_start);
-            avio_write(pb, nal_start, nal_end - nal_start);
+            ptrdiff_t nalu_size = nal_end - nal_start;
+            while (nalu_size > 0 && nal_start[nalu_size - 1] == 0)
+                --nalu_size;
+            avio_wb32(pb, nalu_size);
+            avio_write(pb, nal_start, nalu_size);
         } else if (list->nb_nalus >= nalu_limit) {
             return AVERROR(ERANGE);
         } else {
