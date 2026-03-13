@@ -103,6 +103,7 @@ int ff_sws_op_chain_append(SwsOpChain *chain, SwsFuncPtr func,
 typedef struct SwsImplParams {
     const SwsOpTable *table;
     const SwsOp *op;
+    SwsContext *ctx;
 } SwsImplParams;
 
 typedef struct SwsImplResult {
@@ -157,8 +158,8 @@ struct SwsOpTable {
  *
  * Returns 0, AVERROR(EAGAIN), or a negative error code.
  */
-int ff_sws_op_compile_tables(const SwsOpTable *const tables[], int num_tables,
-                             SwsOpList *ops, const int block_size,
+int ff_sws_op_compile_tables(SwsContext *ctx, const SwsOpTable *const tables[],
+                             int num_tables, SwsOpList *ops, const int block_size,
                              SwsOpChain *chain);
 
 #endif

@@ -193,8 +193,8 @@ static int op_match(const SwsOp *op, const SwsOpEntry *entry, const SwsComps nex
     return 0;
 }
 
-int ff_sws_op_compile_tables(const SwsOpTable *const tables[], int num_tables,
-                             SwsOpList *ops, const int block_size,
+int ff_sws_op_compile_tables(SwsContext *ctx, const SwsOpTable *const tables[],
+                             int num_tables, SwsOpList *ops, const int block_size,
                              SwsOpChain *chain)
 {
     static const SwsOp dummy = { .comps.unused = { true, true, true, true }};
@@ -227,7 +227,12 @@ int ff_sws_op_compile_tables(const SwsOpTable *const tables[], int num_tables,
 
     SwsImplResult res = {0};
     if (best->setup) {
-        const SwsImplParams params = { .op = op, .table = best_table };
+        const SwsImplParams params = {
+            .ctx    = ctx,
+            .op     = op,
+            .table  = best_table,
+        };
+
         ret = best->setup(&params, &res);
         if (ret < 0)
             return ret;

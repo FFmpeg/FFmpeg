@@ -728,8 +728,8 @@ static int compile(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
             op->type = SWS_PIXEL_U8;
         }
 
-        ret = ff_sws_op_compile_tables(tables, FF_ARRAY_ELEMS(tables), &rest,
-                                       op_block_size, chain);
+        ret = ff_sws_op_compile_tables(ctx, tables, FF_ARRAY_ELEMS(tables),
+                                       &rest, op_block_size, chain);
     } while (ret == AVERROR(EAGAIN));
 
     if (ret < 0) {
