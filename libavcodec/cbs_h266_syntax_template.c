@@ -1972,6 +1972,8 @@ static int FUNC(pps) (CodedBitstreamContext *ctx, RWContext *rw,
             for (i = 0; i < current->pps_num_slices_in_pic_minus1; i++) {
                 tile_x = tile_idx % current->num_tile_columns;
                 tile_y = tile_idx / current->num_tile_columns;
+                if (tile_y >= current->num_tile_rows)
+                    return AVERROR_INVALIDDATA;
                 if (tile_x != current->num_tile_columns - 1) {
                     ues(pps_slice_width_in_tiles_minus1[i],
                         0, current->num_tile_columns - 1 - tile_x, 1, i);
