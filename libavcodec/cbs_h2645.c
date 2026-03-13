@@ -320,24 +320,6 @@ int ff_cbs_h2645_write_slice_data(CodedBitstreamContext *ctx,
     return 0;
 }
 
-int ff_cbs_h2645_unit_requires_zero_byte(enum AVCodecID codec_id,
-                                             CodedBitstreamUnitType type,
-                                             int nal_unit_index)
-{
-    // Section B.1.2 in H.264, section B.2.2 in H.265, H.266.
-    if (nal_unit_index == 0) {
-        // Assume that this is the first NAL unit in an access unit.
-        return 1;
-    }
-    if (codec_id == AV_CODEC_ID_H264)
-        return type == H264_NAL_SPS || type == H264_NAL_PPS;
-    if (codec_id == AV_CODEC_ID_HEVC)
-        return type == HEVC_NAL_VPS || type == HEVC_NAL_SPS || type == HEVC_NAL_PPS;
-    if (codec_id == AV_CODEC_ID_VVC)
-        return type >= VVC_OPI_NUT && type <= VVC_SUFFIX_APS_NUT;
-    return 0;
-}
-
 int ff_cbs_h2645_assemble_fragment(CodedBitstreamContext *ctx,
                                        CodedBitstreamFragment *frag)
 {
@@ -372,7 +354,7 @@ int ff_cbs_h2645_assemble_fragment(CodedBitstreamContext *ctx,
                 frag->data_bit_padding = unit->data_bit_padding;
         }
 
-        if (ff_cbs_h2645_unit_requires_zero_byte(ctx->codec->codec_id, unit->type, i)) {
+        if (ff_h2645_unit_requires_zero_byte(ctx->codec->codec_id, unit->type, i)) {
             // zero_byte
             data[dp++] = 0;
         }

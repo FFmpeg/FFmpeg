@@ -123,6 +123,10 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
  */
 void ff_h2645_packet_uninit(H2645Packet *pkt);
 
+int ff_h2645_unit_requires_zero_byte(enum AVCodecID codec_id,
+                                     unsigned int type,
+                                     int nal_unit_index);
+
 static inline int get_nalsize(int nal_length_size, const uint8_t *buf,
                               int buf_size, int *buf_index, void *logctx)
 {

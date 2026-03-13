@@ -181,6 +181,7 @@ static int extract_extradata_h2645(AVBSFContext *ctx, AVPacket *pkt,
     int extradata_size = 0, filtered_size = 0;
     const int *extradata_nal_types;
     size_t nb_extradata_nal_types;
+    int filtered_nb_nals = 0;
     int i, has_sps = 0, has_vps = 0, ret = 0;
 
     if (ctx->par_in->codec_id == AV_CODEC_ID_VVC) {
@@ -202,7 +203,7 @@ static int extract_extradata_h2645(AVBSFContext *ctx, AVPacket *pkt,
     for (i = 0; i < s->h2645_pkt.nb_nals; i++) {
         H2645NAL *nal = &s->h2645_pkt.nals[i];
         if (val_in_array(extradata_nal_types, nb_extradata_nal_types, nal->type)) {
-            extradata_size += nal->raw_size + 3;
+            extradata_size += nal->raw_size + 4;
             if (ctx->par_in->codec_id == AV_CODEC_ID_VVC) {
                 if (nal->type == VVC_SPS_NUT) has_sps = 1;
                 if (nal->type == VVC_VPS_NUT) has_vps = 1;
@@ -213,7 +214,8 @@ static int extract_extradata_h2645(AVBSFContext *ctx, AVPacket *pkt,
                 if (nal->type == H264_NAL_SPS) has_sps = 1;
             }
         } else if (s->remove) {
-            filtered_size += nal->raw_size + 3;
+            filtered_size += nal->raw_size + 3 +
+                             ff_h2645_unit_requires_zero_byte(ctx->par_in->codec_id, nal->type, filtered_nb_nals++);
         }
     }
 
@@ -246,13 +248,16 @@ static int extract_extradata_h2645(AVBSFContext *ctx, AVPacket *pkt,
         if (s->remove)
             bytestream2_init_writer(&pb_filtered_data, filtered_buf->data, filtered_size);
 
+        filtered_nb_nals = 0;
         for (i = 0; i < s->h2645_pkt.nb_nals; i++) {
             H2645NAL *nal = &s->h2645_pkt.nals[i];
             if (val_in_array(extradata_nal_types, nb_extradata_nal_types,
                              nal->type)) {
-                bytestream2_put_be24u(&pb_extradata, 1); //startcode
+                bytestream2_put_be32u(&pb_extradata, 1); //startcode
                 bytestream2_put_bufferu(&pb_extradata, nal->raw_data, nal->raw_size);
             } else if (s->remove) {
+                if (ff_h2645_unit_requires_zero_byte(ctx->par_in->codec_id, nal->type, filtered_nb_nals++))
+                    bytestream2_put_byteu(&pb_filtered_data, 0); // zero_byte
                 bytestream2_put_be24u(&pb_filtered_data, 1); // startcode
                 bytestream2_put_bufferu(&pb_filtered_data, nal->raw_data, nal->raw_size);
             }

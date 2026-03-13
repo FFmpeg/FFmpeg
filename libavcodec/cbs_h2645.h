@@ -63,10 +63,6 @@ int ff_cbs_h2645_write_slice_data(CodedBitstreamContext *ctx,
                                   struct PutBitContext *pbc, const uint8_t *data,
                                   size_t data_size, int data_bit_start);
 
-int ff_cbs_h2645_unit_requires_zero_byte(enum AVCodecID codec_id,
-                                         CodedBitstreamUnitType type,
-                                         int nal_unit_index);
-
 int ff_cbs_h2645_assemble_fragment(CodedBitstreamContext *ctx,
                                    CodedBitstreamFragment *frag);
 
