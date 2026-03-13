@@ -19,11 +19,13 @@
 #ifndef AVCODEC_LCEVCTAB_H
 #define AVCODEC_LCEVCTAB_H
 
+#include <stdint.h>
+
 #include "libavutil/attributes_internal.h"
 
 EXTERN const struct FFLCEVCDim {
-    int width;
-    int height;
+    uint16_t width;
+    uint16_t height;
 } ff_lcevc_resolution_type[63];
 
 #endif /* AVCODEC_LCEVCTAB_H */
