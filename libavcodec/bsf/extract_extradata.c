@@ -396,14 +396,10 @@ static int extract_extradata_lcevc(AVBSFContext *ctx, AVPacket *pkt,
             return AVERROR(ENOMEM);
         }
 
-        *data = extradata;
-        *size = 0;
-
         bytestream2_init_writer(&pb_extradata, extradata, extradata_size);
         if (s->remove)
             bytestream2_init_writer(&pb_filtered_data, filtered_buf->data, filtered_size);
 
-        filtered_size = 0;
         for (i = 0; i < s->h2645_pkt.nb_nals; i++) {
             H2645NAL *nal = &s->h2645_pkt.nals[i];
             if (val_in_array(extradata_nal_types, nb_extradata_nal_types,
@@ -411,33 +407,34 @@ static int extract_extradata_lcevc(AVBSFContext *ctx, AVPacket *pkt,
                 bytestream2_put_be24(&pb_extradata, 1); //startcode
                 ret = write_lcevc_nalu(ctx, &pb_extradata, nal, 0);
                 if (ret < 0) {
-                    av_freep(data);
+                    av_freep(&extradata);
                     av_buffer_unref(&filtered_buf);
                     return ret;
                 }
-                *size += ret;
                 if (s->remove) {
                     bytestream2_put_be24(&pb_filtered_data, 1); //startcode
                     ret = write_lcevc_nalu(ctx, &pb_filtered_data, nal, 1);
                     if (ret < 0) {
-                        av_freep(data);
+                        av_freep(&extradata);
                         av_buffer_unref(&filtered_buf);
                         return ret;
                     }
-                    filtered_size += ret;
                 }
             } else if (s->remove) {
                 bytestream2_put_be24(&pb_filtered_data, 1); //startcode
                 bytestream2_put_bufferu(&pb_filtered_data, nal->raw_data, nal->raw_size);
-                filtered_size += nal->raw_size;
             }
         }
+        *data = extradata;
+        *size = bytestream2_tell_p(&pb_extradata);
+        av_assert0(*size <= extradata_size);
 
         if (s->remove) {
+            av_assert0(bytestream2_tell_p(&pb_filtered_data) <= filtered_size);
             av_buffer_unref(&pkt->buf);
             pkt->buf  = filtered_buf;
             pkt->data = filtered_buf->data;
-            pkt->size = filtered_size;
+            pkt->size = bytestream2_tell_p(&pb_filtered_data);
         }
     }
 
