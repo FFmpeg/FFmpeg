@@ -57,6 +57,7 @@ libavcodec/.*png.* @Traneptora
 libavcodec/.*prores.* @lynne
 libavcodec/rangecoder.* @michaelni
 libavcodec/ratecontrol.* @michaelni
+libavcodec/rkmpp* @quink
 libavcodec/rv60.* @pross
 libavcodec/sgirle.* @pross
 libavcodec/.*siren.* @lynne
@@ -139,6 +140,7 @@ libavformat/electronicarts.* @pross
 libavformat/.*exif.* @Traneptora
 libavformat/filmstrip.* @pross
 libavformat/frm.* @pross
+libavformat/hxvs.* @quink
 libavformat/iamf.* @jamrial
 libavformat/icecast.c @ePirat
 libavformat/ico.* @pross
@@ -194,6 +196,7 @@ libavutil/aarch64/.* @lynne @mstorsjo
 libavutil/arm/.* @mstorsjo
 libavutil/ppc/.* @sean_mcg
 libavutil/riscv/.* @Courmisch
+libavutil/wasm/.* @quink
 libavutil/x86/.* @lynne
 
 # swresample

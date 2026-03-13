@@ -93,6 +93,7 @@ Other:
   hash                                  Reimar Doeffinger
   hwcontext_cuda*                       Timo Rothenpieler
   hwcontext_d3d12va*                    Wu Jianhua
+  hwcontext_oh*                         Zhao Zhili
   hwcontext_vulkan*                 [2] Lynne
   intfloat*                             Michael Niedermayer
   integer.c, integer.h                  Michael Niedermayer
@@ -158,7 +159,7 @@ Codecs:
   asv*                                  Michael Niedermayer
   atrac3plus*                           Maxim Poliakovski
   audiotoolbox*                         rcombs
-  avs2*                                 Huiwen Ren
+  avs2*                                 Huiwen Ren, Zhao Zhili
   bgmc.c, bgmc.h                        Thilo Borgmann
   binkaudio.c                           Peter Ross
   cavs*                                 Stefan Gehrer
@@ -232,6 +233,7 @@ Codecs:
   msvideo1.c                            Mike Melanson
   nuv.c                                 Reimar Doeffinger
   nvdec*, nvenc*                        Timo Rothenpieler
+  oh*                                   Zhao Zhili
   omx.c                                 Martin Storsjo, Aman Gupta
   opus*                                 Rostislav Pehlivanov
   pcx.c                                 Ivo van Poorten
@@ -243,6 +245,7 @@ Codecs:
   qtrle.c                               Mike Melanson
   ra144.c, ra144.h, ra288.c, ra288.h    Roberto Togni
   resample2.c                           Michael Niedermayer
+  rkmppenc*                             Zhao Zhili
   rl2.c                                 Sascha Sommer
   rpza.c                                Roberto Togni
   rtjpeg.c, rtjpeg.h                    Reimar Doeffinger
@@ -348,7 +351,9 @@ Filters:
   vf_minterpolate.c                     Davinder Singh
   vf_readvitc.c                         Tobias Rapp (CC t.rapp at noa-archive dot com)
   vf_scale.c                        [2] Michael Niedermayer
+  vf_scale_vt.c                         Zhao Zhili
   vf_tonemap_opencl.c                   Ruiling Song
+  vf_transpose_vt.c                     Zhao Zhili
   vf_yadif.c                        [2] Michael Niedermayer
   vf_xfade_vulkan.c                 [2] Marvin Scholz (CC <epirat07@gmail.com>)
 
@@ -407,6 +412,7 @@ Muxers/Demuxers:
   gxf.c                                 Reimar Doeffinger
   gxfenc.c                              Baptiste Coudurier
   hlsenc.c                              Christian Suloway, Steven Liu
+  hxvs.c                                Zhao Zhili
   iamf*                             [2] James Almer
   idcin.c                               Mike Melanson
   idroqdec.c                            Mike Melanson
