@@ -137,6 +137,7 @@ typedef struct SwsOpEntry {
     /* Kernel implementation */
     SwsFuncPtr func;
     int (*setup)(const SwsImplParams *params, SwsImplResult *out); /* optional */
+    bool (*check)(const SwsImplParams *params); /* optional, return true if supported */
 } SwsOpEntry;
 
 /* Setup helpers */
