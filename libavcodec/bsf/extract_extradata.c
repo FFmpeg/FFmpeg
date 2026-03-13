@@ -391,11 +391,9 @@ static int extract_extradata_lcevc(AVBSFContext *ctx, AVPacket *pkt,
         uint8_t *extradata;
 
         if (s->remove) {
-            filtered_buf = av_buffer_alloc(filtered_size + AV_INPUT_BUFFER_PADDING_SIZE);
-            if (!filtered_buf) {
-                return AVERROR(ENOMEM);
-            }
-            memset(filtered_buf->data + filtered_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
+            ret = av_buffer_realloc(&filtered_buf, filtered_size + AV_INPUT_BUFFER_PADDING_SIZE);
+            if (ret < 0)
+                return ret;
         }
 
         extradata = av_malloc(extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
@@ -440,17 +438,33 @@ static int extract_extradata_lcevc(AVBSFContext *ctx, AVPacket *pkt,
                 bytestream2_put_bufferu(&pb_filtered_data, nal->raw_data, nal->raw_size);
             }
         }
-        *data = extradata;
-        *size = bytestream2_tell_p(&pb_extradata);
-        av_assert0(*size <= extradata_size);
+        av_assert0(bytestream2_tell_p(&pb_extradata) <= extradata_size);
+        extradata_size = bytestream2_tell_p(&pb_extradata);
+        ret = av_reallocp(&extradata, extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
+        if (ret < 0) {
+            av_buffer_unref(&filtered_buf);
+            return ret;
+        }
+        memset(extradata + extradata_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
         if (s->remove) {
             av_assert0(bytestream2_tell_p(&pb_filtered_data) <= filtered_size);
+            filtered_size = bytestream2_tell_p(&pb_filtered_data);
+            ret = av_buffer_realloc(&filtered_buf, filtered_size + AV_INPUT_BUFFER_PADDING_SIZE);
+            if (ret < 0) {
+                av_buffer_unref(&filtered_buf);
+                av_freep(&extradata);
+                return ret;
+            }
+            memset(filtered_buf->data + filtered_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
             av_buffer_unref(&pkt->buf);
             pkt->buf  = filtered_buf;
             pkt->data = filtered_buf->data;
-            pkt->size = bytestream2_tell_p(&pb_filtered_data);
+            pkt->size = filtered_size;
         }
+
+        *data = extradata;
+        *size = extradata_size;
     }
 
     return 0;
