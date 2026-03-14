@@ -1963,6 +1963,12 @@ static int h264_slice_init(H264Context *h, H264SliceContext *sl,
                           h->ps.pps->chroma_qp_index_offset[1]) +
                    6 * (h->ps.sps->bit_depth_luma - 8);
 
+    // slice_table is uint16_t initialized to 0xFFFF as a sentinel.
+    if (h->current_slice >= 0xFFFE) {
+        av_log(h->avctx, AV_LOG_ERROR, "Too many slices (%d)\n", h->current_slice + 1);
+        return AVERROR_PATCHWELCOME;
+    }
+
     sl->slice_num       = ++h->current_slice;
 
     if (sl->slice_num)
