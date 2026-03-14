@@ -2119,10 +2119,14 @@ FF_ENABLE_DEPRECATION_WARNINGS
             p->img_qfs[p->nb_img_qfs++] = hwctx->qf[i].idx;
     }
 
+#if FF_API_VULKAN_SYNC_QUEUES
+FF_DISABLE_DEPRECATION_WARNINGS
     if (!hwctx->lock_queue)
         hwctx->lock_queue = lock_queue;
     if (!hwctx->unlock_queue)
         hwctx->unlock_queue = unlock_queue;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     /* Re-query device capabilities, in case the device was created externally */
     vk->GetPhysicalDeviceMemoryProperties(hwctx->phys_dev, &p->mprops);

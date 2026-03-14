@@ -667,14 +667,22 @@ static void lock_queue(void *priv, uint32_t qf, uint32_t qidx)
 {
     AVHWDeviceContext *avhwctx = priv;
     const AVVulkanDeviceContext *hwctx = avhwctx->hwctx;
+#if FF_API_VULKAN_SYNC_QUEUES
+FF_DISABLE_DEPRECATION_WARNINGS
     hwctx->lock_queue(avhwctx, qf, qidx);
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 }
 
 static void unlock_queue(void *priv, uint32_t qf, uint32_t qidx)
 {
     AVHWDeviceContext *avhwctx = priv;
     const AVVulkanDeviceContext *hwctx = avhwctx->hwctx;
+#if FF_API_VULKAN_SYNC_QUEUES
+FF_DISABLE_DEPRECATION_WARNINGS
     hwctx->unlock_queue(avhwctx, qf, qidx);
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 }
 #endif
 
