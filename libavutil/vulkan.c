@@ -928,9 +928,17 @@ int ff_vk_exec_submit(FFVulkanContext *s, FFVkExecContext *e)
         return AVERROR_EXTERNAL;
     }
 
+#if FF_API_VULKAN_SYNC_QUEUES
+FF_DISABLE_DEPRECATION_WARNINGS
     s->hwctx->lock_queue(s->device, e->qf, e->qi);
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     ret = vk->QueueSubmit2(e->queue, 1, &submit_info, e->fence);
+#if FF_API_VULKAN_SYNC_QUEUES
+FF_DISABLE_DEPRECATION_WARNINGS
     s->hwctx->unlock_queue(s->device, e->qf, e->qi);
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     if (ret != VK_SUCCESS) {
         av_log(s, AV_LOG_ERROR, "Unable to submit command buffer: %s\n",

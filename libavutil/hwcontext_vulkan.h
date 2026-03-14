@@ -168,18 +168,26 @@ typedef struct AVVulkanDeviceContext {
     int nb_decode_queues;
 #endif
 
+#if FF_API_VULKAN_SYNC_QUEUES
     /**
      * Locks a queue, preventing other threads from submitting any command
      * buffers to this queue.
      * If set to NULL, will be set to lavu-internal functions that utilize a
      * mutex.
+     *
+     * Deprecated: use VK_KHR_internally_synchronized_queues.
      */
+    attribute_deprecated
     void (*lock_queue)(struct AVHWDeviceContext *ctx, uint32_t queue_family, uint32_t index);
 
     /**
      * Similar to lock_queue(), unlocks a queue. Must only be called after locking.
+     *
+     * Deprecated: use VK_KHR_internally_synchronized_queues.
      */
+    attribute_deprecated
     void (*unlock_queue)(struct AVHWDeviceContext *ctx, uint32_t queue_family, uint32_t index);
+#endif
 
     /**
      * Queue families used. Must be preferentially ordered. List may contain
