@@ -68,7 +68,7 @@ static av_cold int xan_decode_init(AVCodecContext *avctx)
     }
 
     s->buffer_size = avctx->width * avctx->height;
-    s->y_buffer = av_malloc(s->buffer_size);
+    s->y_buffer = av_mallocz(s->buffer_size);
     if (!s->y_buffer)
         return AVERROR(ENOMEM);
     s->scratch_buffer = av_malloc(s->buffer_size + 130);
