@@ -30,6 +30,11 @@ static void gmc_mmx(uint8_t *dst, const uint8_t *src,
                     int dxx, int dxy, int dyx, int dyy,
                     int shift, int r, int width, int height)
 {
+    enum {
+        W               = 8,
+        EDGE_EMU_STRIDE = 16, //< anything >= W+1 will do
+        MAX_H           = 16,
+    };
     const int w    = 8;
     const int ix   = ox  >> (16 + shift);
     const int iy   = oy  >> (16 + shift);
@@ -47,9 +52,7 @@ static void gmc_mmx(uint8_t *dst, const uint8_t *src,
     const uint16_t dxy4[4] = { dxys, dxys, dxys, dxys };
     const uint16_t dyy4[4] = { dyys, dyys, dyys, dyys };
     const uint64_t shift2  = 2 * shift;
-#define MAX_STRIDE 4096U
-#define MAX_H 8U
-    uint8_t edge_buf[(MAX_H + 1) * MAX_STRIDE];
+    uint8_t edge_buf[(MAX_H + 1) * EDGE_EMU_STRIDE];
     int x, y;
 
     const int dxw = dxx2 * (w - 1);
@@ -64,18 +67,18 @@ static void gmc_mmx(uint8_t *dst, const uint8_t *src,
         ((ox2 + dxw) | (ox2 + dxh) | (ox2 + dxw + dxh) |
          (oy2 + dyw) | (oy2 + dyh) | (oy2 + dyw + dyh)) >> (16 + shift) ||
         // uses more than 16 bits of subpel mv (only at huge resolution)
-        (dxx | dxy | dyx | dyy) & 15 ||
-        (need_emu && (h > MAX_H || stride > MAX_STRIDE))) {
-        // FIXME could still use mmx for some of the rows
+        (dxx | dxy | dyx | dyy) & 15) {
         ff_gmc_c(dst, src, stride, h, ox, oy, dxx, dxy, dyx, dyy,
                  shift, r, width, height);
         return;
     }
 
     src += ix + iy * stride;
+    ptrdiff_t src_stride = stride;
     if (need_emu) {
-        ff_emulated_edge_mc_8(edge_buf, src, stride, stride, w + 1, h + 1, ix, iy, width, height);
-        src = edge_buf;
+        ff_emulated_edge_mc_8(edge_buf, src, EDGE_EMU_STRIDE, src_stride, w + 1, h + 1, ix, iy, width, height);
+        src        = edge_buf;
+        src_stride = EDGE_EMU_STRIDE;
     }
 
     __asm__ volatile (
@@ -144,11 +147,11 @@ static void gmc_mmx(uint8_t *dst, const uint8_t *src,
 
                 : "=m" (dst[x + y * stride])
                 : "m" (src[0]), "m" (src[1]),
-                  "m" (src[stride]), "m" (src[stride + 1]),
+                  "m" (src[src_stride]), "m" (src[src_stride + 1]),
                   "m" (*r4), "m" (shift2));
-            src += stride;
+            src += src_stride;
         }
-        src += 4 - h * stride;
+        src += 4 - h * src_stride;
     }
 }
 
