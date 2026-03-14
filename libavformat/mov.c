@@ -3680,7 +3680,8 @@ static int mov_read_sdtp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
     MOVStreamContext *sc;
-    int64_t i, entries;
+    unsigned int i;
+    int64_t entries;
 
     if (c->fc->nb_streams < 1)
         return 0;
@@ -3699,7 +3700,7 @@ static int mov_read_sdtp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     av_freep(&sc->sdtp_data);
     sc->sdtp_count = 0;
 
-    if (entries < 0 || entries > SIZE_MAX)
+    if (entries < 0 || entries > UINT_MAX)
         return AVERROR(ERANGE);
 
     sc->sdtp_data = av_malloc(entries);
