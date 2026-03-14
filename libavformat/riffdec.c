@@ -91,6 +91,52 @@ static void parse_waveformatex(void *logctx, AVIOContext *pb, AVCodecParameters 
     }
 }
 
+/*
+ * Compute the expected bit_rate for codecs with a deterministic block
+ * structure. Returns 0 when the codec is not handled or the parameters
+ * are not sufficient to derive a reliable value.
+ */
+static int64_t compute_bitrate(const AVCodecParameters *par)
+{
+    if (par->sample_rate <= 0 || par->block_align <= 0 ||
+        par->ch_layout.nb_channels <= 0)
+        return 0;
+
+    switch (par->codec_id) {
+    case AV_CODEC_ID_PCM_S8:
+    case AV_CODEC_ID_PCM_U8:
+    case AV_CODEC_ID_PCM_S16LE:
+    case AV_CODEC_ID_PCM_S16BE:
+    case AV_CODEC_ID_PCM_U16LE:
+    case AV_CODEC_ID_PCM_U16BE:
+    case AV_CODEC_ID_PCM_S24LE:
+    case AV_CODEC_ID_PCM_S24BE:
+    case AV_CODEC_ID_PCM_S32LE:
+    case AV_CODEC_ID_PCM_S32BE:
+    case AV_CODEC_ID_PCM_S64LE:
+    case AV_CODEC_ID_PCM_F32LE:
+    case AV_CODEC_ID_PCM_F64LE:
+    case AV_CODEC_ID_PCM_ALAW:
+    case AV_CODEC_ID_PCM_MULAW: {
+        int block_align = ((par->bits_per_coded_sample + 7) / 8) *
+                         par->ch_layout.nb_channels;
+        if (par->block_align != block_align)
+            return 0;
+        return (int64_t)par->sample_rate * block_align * 8;
+    }
+    case AV_CODEC_ID_ADPCM_MS:
+    case AV_CODEC_ID_ADPCM_IMA_WAV: {
+        int frame_size = av_get_audio_frame_duration2((AVCodecParameters *)par,
+                                                      par->block_align);
+        if (frame_size <= 0)
+            return 0;
+        return 8LL * par->sample_rate * par->block_align / frame_size;
+    }
+    default:
+        return 0;
+    }
+}
+
 /* "big_endian" values are needed for RIFX file format */
 int ff_get_wav_header(AVFormatContext *s, AVIOContext *pb,
                       AVCodecParameters *par, int size, int big_endian)
@@ -198,6 +244,7 @@ int ff_get_wav_header(AVFormatContext *s, AVIOContext *pb,
                "Invalid sample rate: %d\n", par->sample_rate);
         return AVERROR_INVALIDDATA;
     }
+
     if (par->codec_id == AV_CODEC_ID_AAC_LATM) {
         /* Channels and sample_rate values are those prior to applying SBR
          * and/or PS. */
@@ -213,6 +260,15 @@ int ff_get_wav_header(AVFormatContext *s, AVIOContext *pb,
         av_channel_layout_uninit(&par->ch_layout);
         par->ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
         par->ch_layout.nb_channels = channels;
+    }
+
+    int64_t expected_bitrate = compute_bitrate(par);
+    if (expected_bitrate && par->bit_rate / 8 != expected_bitrate / 8) {
+        av_log(s, AV_LOG_WARNING,
+               "nAvgBytesPerSec %"PRId64" inconsistent with other fields"
+               " (expected %"PRId64"), overriding.\n",
+               par->bit_rate / 8, expected_bitrate / 8);
+        par->bit_rate = expected_bitrate;
     }
 
     return 0;

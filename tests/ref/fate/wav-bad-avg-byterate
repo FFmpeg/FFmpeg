@@ -1,10 +1,9 @@
-ret:-EOF
+ret: 0         st: 0 flags:1 dts: 0.062500 pts: 0.062500 pos:   1078 size:  1024
 ret: 0         st:-1 flags:0  ts:-1.000000
 ret: 0         st: 0 flags:1 dts: 0.000000 pts: 0.000000 pos:     78 size:  1024
 ret: 0         st:-1 flags:1  ts: 1.894167
-ret:-EOF
-ret: 0         st: 0 flags:0  ts: 0.788375
-ret:-EOF
+ret: 0         st: 0 flags:1 dts: 0.448000 pts: 0.448000 pos:   7246 size:   832
+ret:-1         st: 0 flags:0  ts: 0.788375
 ret: 0         st: 0 flags:1  ts:-0.317500
 ret: 0         st: 0 flags:1 dts: 0.000000 pts: 0.000000 pos:     78 size:  1024
 ret: 0         st:-1 flags:0  ts: 2.576668
@@ -12,13 +11,12 @@ ret:-EOF
 ret: 0         st:-1 flags:1  ts: 1.470835
 ret:-EOF
 ret: 0         st: 0 flags:0  ts: 0.365000
-ret:-EOF
+ret: 0         st: 0 flags:1 dts: 0.365000 pts: 0.365000 pos:   5918 size:  1024
 ret: 0         st: 0 flags:1  ts:-0.740875
 ret: 0         st: 0 flags:1 dts: 0.000000 pts: 0.000000 pos:     78 size:  1024
-ret: 0         st:-1 flags:0  ts: 2.153336
-ret:-EOF
+ret:-1         st:-1 flags:0  ts: 2.153336
 ret: 0         st:-1 flags:1  ts: 1.047503
-ret:-EOF
+ret: 0         st: 0 flags:1 dts: 0.448000 pts: 0.448000 pos:   7246 size:   832
 ret: 0         st: 0 flags:0  ts:-0.058375
 ret: 0         st: 0 flags:1 dts: 0.000000 pts: 0.000000 pos:     78 size:  1024
 ret: 0         st: 0 flags:1  ts: 2.835875
@@ -30,17 +28,15 @@ ret:-EOF
 ret: 0         st: 0 flags:0  ts:-0.481625
 ret: 0         st: 0 flags:1 dts: 0.000000 pts: 0.000000 pos:     78 size:  1024
 ret: 0         st: 0 flags:1  ts: 2.412500
-ret:-EOF
-ret: 0         st:-1 flags:0  ts: 1.306672
-ret:-EOF
+ret: 0         st: 0 flags:1 dts: 0.448000 pts: 0.448000 pos:   7246 size:   832
+ret:-1         st:-1 flags:0  ts: 1.306672
 ret: 0         st:-1 flags:1  ts: 0.200839
-ret:-EOF
+ret: 0         st: 0 flags:1 dts: 0.200875 pts: 0.200875 pos:   3292 size:  1024
 ret: 0         st: 0 flags:0  ts:-0.905000
 ret: 0         st: 0 flags:1 dts: 0.000000 pts: 0.000000 pos:     78 size:  1024
 ret: 0         st: 0 flags:1  ts: 1.989125
-ret:-EOF
-ret: 0         st:-1 flags:0  ts: 0.883340
-ret:-EOF
+ret: 0         st: 0 flags:1 dts: 0.448000 pts: 0.448000 pos:   7246 size:   832
+ret:-1         st:-1 flags:0  ts: 0.883340
 ret: 0         st:-1 flags:1  ts:-0.222493
 ret: 0         st: 0 flags:1 dts: 0.000000 pts: 0.000000 pos:     78 size:  1024
 ret: 0         st: 0 flags:0  ts: 2.671625
@@ -48,6 +44,6 @@ ret:-EOF
 ret: 0         st: 0 flags:1  ts: 1.565875
 ret:-EOF
 ret: 0         st:-1 flags:0  ts: 0.460008
-ret:-EOF
+ret: 0         st: 0 flags:1 dts: 0.460000 pts: 0.460000 pos:   7438 size:   640
 ret: 0         st:-1 flags:1  ts:-0.645825
 ret: 0         st: 0 flags:1 dts: 0.000000 pts: 0.000000 pos:     78 size:  1024
