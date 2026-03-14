@@ -838,6 +838,8 @@ static int set_pix_fmt(AVCodecContext *avctx, vpx_codec_caps_t codec_caps,
         ctx->vpx_cs = VPX_CS_SRGB;
     case AV_PIX_FMT_YUV444P:
     case AV_PIX_FMT_YUVA444P:
+        if (avctx->colorspace == AVCOL_SPC_RGB)
+            ctx->vpx_cs = VPX_CS_SRGB;
         enccfg->g_profile = 1;
         *img_fmt = VPX_IMG_FMT_I444;
         return 0;
@@ -879,6 +881,8 @@ static int set_pix_fmt(AVCodecContext *avctx, vpx_codec_caps_t codec_caps,
     case AV_PIX_FMT_YUVA444P10:
     case AV_PIX_FMT_YUV444P12:
     case AV_PIX_FMT_YUVA444P12:
+        if (avctx->colorspace == AVCOL_SPC_RGB)
+            ctx->vpx_cs = VPX_CS_SRGB;
         if (codec_caps & VPX_CODEC_CAP_HIGHBITDEPTH) {
             enccfg->g_profile = 3;
             *img_fmt = VPX_IMG_FMT_I44416;
@@ -893,7 +897,7 @@ static int set_pix_fmt(AVCodecContext *avctx, vpx_codec_caps_t codec_caps,
     return AVERROR_INVALIDDATA;
 }
 
-static void set_colorspace(AVCodecContext *avctx)
+static int set_colorspace(AVCodecContext *avctx)
 {
     enum vpx_color_space vpx_cs;
     VPxContext *ctx = avctx->priv_data;
@@ -902,7 +906,11 @@ static void set_colorspace(AVCodecContext *avctx)
         vpx_cs = ctx->vpx_cs;
     } else {
         switch (avctx->colorspace) {
-        case AVCOL_SPC_RGB:         vpx_cs = VPX_CS_SRGB;      break;
+        case AVCOL_SPC_RGB:
+            av_log(avctx, AV_LOG_ERROR,
+                   "RGB colorspace is not compatible with pixel format %s.\n",
+                   av_get_pix_fmt_name(avctx->pix_fmt));
+            return AVERROR(EINVAL);
         case AVCOL_SPC_BT709:       vpx_cs = VPX_CS_BT_709;    break;
         case AVCOL_SPC_UNSPECIFIED: vpx_cs = VPX_CS_UNKNOWN;   break;
         case AVCOL_SPC_RESERVED:    vpx_cs = VPX_CS_RESERVED;  break;
@@ -913,10 +921,11 @@ static void set_colorspace(AVCodecContext *avctx)
         default:
             av_log(avctx, AV_LOG_WARNING, "Unsupported colorspace (%d)\n",
                    avctx->colorspace);
-            return;
+            return 0;
         }
     }
     codecctl_int(avctx, VP9E_SET_COLOR_SPACE, vpx_cs);
+    return 0;
 }
 
 #if VPX_ENCODER_ABI_VERSION >= 11
@@ -1277,7 +1286,9 @@ static av_cold int vpx_init(AVCodecContext *avctx,
             codecctl_int(avctx, VP9E_SET_FRAME_PARALLEL_DECODING, ctx->frame_parallel);
         if (ctx->aq_mode >= 0)
             codecctl_int(avctx, VP9E_SET_AQ_MODE, ctx->aq_mode);
-        set_colorspace(avctx);
+        res = set_colorspace(avctx);
+        if (res < 0)
+            return res;
 #if VPX_ENCODER_ABI_VERSION >= 11
         set_color_range(avctx);
 #endif
