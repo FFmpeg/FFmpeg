@@ -1041,10 +1041,10 @@ static int new_pes_packet(PESContext *pes, AVPacket *pkt)
                    "Invalid JPEG-XS header size %"PRIu32" > packet size %d\n",
                    header_size, pkt->size);
             pes->flags |= AV_PKT_FLAG_CORRUPT;
-            return AVERROR_INVALIDDATA;
+        } else {
+            pkt->data += header_size;
+            pkt->size -= header_size;
         }
-        pkt->data += header_size;
-        pkt->size -= header_size;
     }
 
     memset(pkt->data + pkt->size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
