@@ -2,6 +2,7 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version <next>:
+- Extend AMF Color Converter (vf_vpp_amf) HDR capabilities
 
 
 version 8.1:
@@ -33,7 +34,6 @@ version 8.1:
 - ProRes Vulkan encoder
 - LCEVC parser
 - LCEVC enhancement layer exporting in MPEG-TS
-- Extend AMF Color Converter (vf_vpp_amf) HDR capabilities
 
 
 version 8.0:
