@@ -23,7 +23,7 @@
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/mpeg4videodsp.h"
-#include "libavcodec/videodsp.h"
+#include "videodsp.h"
 
 #if HAVE_SSSE3_INLINE
 
@@ -83,7 +83,8 @@ static void gmc_ssse3(uint8_t *dst, const uint8_t *src,
     const ptrdiff_t dst_stride = stride;
     ptrdiff_t src_stride = stride;
     if (need_emu) {
-        ff_emulated_edge_mc_8(edge_buf, src, EDGE_EMU_STRIDE, src_stride, w + 1, h + 1, ix, iy, width, height);
+        ff_emulated_edge_mc_sse2(edge_buf, src, EDGE_EMU_STRIDE, src_stride,
+                                 w + 1, h + 1, ix, iy, width, height);
         src        = edge_buf;
         src_stride = EDGE_EMU_STRIDE;
     }

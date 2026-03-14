@@ -27,6 +27,7 @@
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/videodsp.h"
+#include "videodsp.h"
 
 typedef void emu_edge_vfix_func(uint8_t *dst, x86_reg dst_stride,
                                 const uint8_t *src, x86_reg src_stride,
@@ -187,12 +188,12 @@ static av_always_inline void emulated_edge_mc(uint8_t *dst, const uint8_t *src,
     }
 }
 
-static av_noinline void emulated_edge_mc_sse2(uint8_t *buf, const uint8_t *src,
-                                              ptrdiff_t buf_stride,
-                                              ptrdiff_t src_stride,
-                                              int block_w, int block_h,
-                                              int src_x, int src_y, int w,
-                                              int h)
+void ff_emulated_edge_mc_sse2(uint8_t *buf, const uint8_t *src,
+                              ptrdiff_t buf_stride,
+                              ptrdiff_t src_stride,
+                              int block_w, int block_h,
+                              int src_x, int src_y, int w,
+                              int h)
 {
     emulated_edge_mc(buf, src, buf_stride, src_stride, block_w, block_h,
                      src_x, src_y, w, h, vfixtbl_sse2, &ff_emu_edge_vvar_sse,
@@ -223,7 +224,7 @@ av_cold void ff_videodsp_init_x86(VideoDSPContext *ctx, int bpc)
         ctx->prefetch = ff_prefetch_mmxext;
     }
     if (EXTERNAL_SSE2(cpu_flags) && bpc <= 8) {
-        ctx->emulated_edge_mc = emulated_edge_mc_sse2;
+        ctx->emulated_edge_mc = ff_emulated_edge_mc_sse2;
     }
 #if HAVE_AVX2_EXTERNAL
     if (EXTERNAL_AVX2(cpu_flags) && bpc <= 8) {
