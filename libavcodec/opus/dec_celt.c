@@ -463,6 +463,8 @@ int ff_celt_decode_frame(CeltFrame *f, OpusRangeCoder *rc,
                                                   block->emph_coeff,
                                                   ff_opus_deemph_weights,
                                                   frame_size);
+        if (!isnormal(block->emph_coeff))
+            block->emph_coeff = 0.0;
     }
 
     if (channels == 1)
