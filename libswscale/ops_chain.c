@@ -39,14 +39,14 @@ void ff_sws_op_chain_free_cb(void *ptr)
     SwsOpChain *chain = ptr;
     for (int i = 0; i < chain->num_impl + 1; i++) {
         if (chain->free[i])
-            chain->free[i](chain->impl[i].priv);
+            chain->free[i](&chain->impl[i].priv);
     }
 
     av_free(chain);
 }
 
 int ff_sws_op_chain_append(SwsOpChain *chain, SwsFuncPtr func,
-                           void (*free)(SwsOpPriv), const SwsOpPriv *priv)
+                           void (*free)(SwsOpPriv *), const SwsOpPriv *priv)
 {
     const int idx = chain->num_impl;
     if (idx == SWS_MAX_OPS)
@@ -235,7 +235,7 @@ int ff_sws_op_compile_tables(const SwsOpTable *const tables[], int num_tables,
     ret = ff_sws_op_chain_append(chain, best->func, best->free, &priv);
     if (ret < 0) {
         if (best->free)
-            best->free(priv);
+            best->free(&priv);
         return ret;
     }
 
