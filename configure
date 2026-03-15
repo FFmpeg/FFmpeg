@@ -6780,7 +6780,6 @@ EOF
         x86asmexe_probe=$1
         if test_cmd $x86asmexe_probe -v; then
             x86asmexe=$x86asmexe_probe
-            x86asm_debug="-g -F dwarf"
             X86ASM_DEPFLAGS='-MD $(@:.o=.d)'
         fi
         check_x86asm x86asm "movbe ecx, [5]"
@@ -6794,9 +6793,7 @@ EOF
         disabled x86asm && die "nasm not found or too old. Please install/update nasm or use --disable-x86asm for a build without hand-optimized assembly."
         X86ASMFLAGS="-f $objformat"
         test -n "$extern_prefix"  && append X86ASMFLAGS "-DPREFIX"
-        case "$objformat" in
-            elf*) enabled debug && append X86ASMFLAGS $x86asm_debug ;;
-        esac
+        enabled debug && append X86ASMFLAGS "-g"
 
         enabled avx512    && check_x86asm avx512_external    "vmovdqa32 [eax]{k1}{z}, zmm0"
         enabled avx512icl && check_x86asm avx512icl_external "vpdpwssds zmm31{k1}{z}, zmm29, zmm28"
