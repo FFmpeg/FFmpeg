@@ -44,8 +44,8 @@
  * directly incremented by the corresponding read/write functions.
  */
 typedef struct SwsOpIter {
-    const uint8_t *in[4];
-    uint8_t *out[4];
+    uintptr_t in[4];
+    uintptr_t out[4];
     int x, y;
 } SwsOpIter;
 

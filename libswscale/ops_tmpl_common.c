@@ -187,8 +187,8 @@ static void fn(process)(const SwsOpExec *exec, const void *priv,
     SwsOpIter iterdata;
     SwsOpIter *iter = &iterdata; /* for CONTINUE() macro to work */
     for (int i = 0; i < 4; i++) {
-        iter->in[i]  = exec->in[i];
-        iter->out[i] = exec->out[i];
+        iter->in[i]  = (uintptr_t) exec->in[i];
+        iter->out[i] = (uintptr_t) exec->out[i];
     }
 
     for (iter->y = y_start; iter->y < y_end; iter->y++) {
