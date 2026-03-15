@@ -103,6 +103,14 @@ static void fill8(uint8_t *line, int num, unsigned range)
     }
 }
 
+static void set_range(AVRational *rangeq, unsigned range, unsigned range_def)
+{
+    if (!range)
+        range = range_def;
+    if (range && range <= INT_MAX)
+        *rangeq = (AVRational) { range, 1 };
+}
+
 static void check_ops(const char *report, const unsigned ranges[NB_PLANES],
                       const SwsOp *ops)
 {
@@ -136,10 +144,28 @@ static void check_ops(const char *report, const unsigned ranges[NB_PLANES],
     for (int p = 0; p < NB_PLANES; p++) {
         void *plane = src0[p];
         switch (read_op->type) {
-        case U8:    fill8(plane, sizeof(src0[p]) /  sizeof(uint8_t), ranges[p]); break;
-        case U16:  fill16(plane, sizeof(src0[p]) / sizeof(uint16_t), ranges[p]); break;
-        case U32:  fill32(plane, sizeof(src0[p]) / sizeof(uint32_t), ranges[p]); break;
-        case F32: fill32f(plane, sizeof(src0[p]) / sizeof(uint32_t), ranges[p]); break;
+        case U8:
+            fill8(plane, sizeof(src0[p]) /  sizeof(uint8_t), ranges[p]);
+            set_range(&oplist.comps_src.max[p], ranges[p], UINT8_MAX);
+            oplist.comps_src.min[p] = (AVRational) { 0, 1 };
+            break;
+        case U16:
+            fill16(plane, sizeof(src0[p]) / sizeof(uint16_t), ranges[p]);
+            set_range(&oplist.comps_src.max[p], ranges[p], UINT16_MAX);
+            oplist.comps_src.min[p] = (AVRational) { 0, 1 };
+            break;
+        case U32:
+            fill32(plane, sizeof(src0[p]) / sizeof(uint32_t), ranges[p]);
+            set_range(&oplist.comps_src.max[p], ranges[p], UINT32_MAX);
+            oplist.comps_src.min[p] = (AVRational) { 0, 1 };
+            break;
+        case F32:
+            fill32f(plane, sizeof(src0[p]) / sizeof(uint32_t), ranges[p]);
+            if (ranges[p] && ranges[p] <= INT_MAX) {
+                oplist.comps_src.max[p] = (AVRational) { ranges[p], 1 };
+                oplist.comps_src.min[p] = (AVRational) { 0, 1 };
+            }
+            break;
         }
     }
 
