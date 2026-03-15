@@ -152,8 +152,7 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
         const int plane_w    = (aligned_w + sub_x) >> sub_x;
         const int plane_pad  = (comp->over_read + sub_x) >> sub_x;
         const int plane_size = plane_w * p->pixel_bits_in >> 3;
-        if (comp->slice_align)
-            p->memcpy_in |= plane_size + plane_pad > in->linesize[idx];
+        p->memcpy_in |= plane_size + plane_pad > in->linesize[idx];
         exec->in[i]        = in->data[idx];
         exec->in_stride[i] = in->linesize[idx];
         exec->in_sub_y[i]  = sub_y;
@@ -168,8 +167,7 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
         const int plane_w    = (aligned_w + sub_x) >> sub_x;
         const int plane_pad  = (comp->over_write + sub_x) >> sub_x;
         const int plane_size = plane_w * p->pixel_bits_out >> 3;
-        if (comp->slice_align)
-            p->memcpy_out |= plane_size + plane_pad > out->linesize[idx];
+        p->memcpy_out |= plane_size + plane_pad > out->linesize[idx];
         exec->out[i]        = out->data[idx];
         exec->out_stride[i] = out->linesize[idx];
         exec->out_sub_y[i]  = sub_y;
