@@ -329,6 +329,98 @@ static int setup_filter_v(const SwsImplParams *params, SwsImplResult *out)
     return 0;
 }
 
+static int hscale_sizeof_weight(const SwsOp *op)
+{
+    switch (op->type) {
+    case SWS_PIXEL_U8:  return sizeof(int16_t);
+    case SWS_PIXEL_U16: return sizeof(int16_t);
+    case SWS_PIXEL_F32: return sizeof(float);
+    default:            return 0;
+    }
+}
+
+static int setup_filter_h(const SwsImplParams *params, SwsImplResult *out)
+{
+    const SwsOp *op = params->op;
+    const SwsFilterWeights *filter = op->rw.kernel;
+
+    /**
+     * `vpgatherdd` gathers 32 bits at a time; so if we're filtering a smaller
+     * size, we need to gather 2/4 taps simultaneously and unroll the inner
+     * loop over several packed samples.
+     */
+    const int taps_align = sizeof(int32_t) / ff_sws_pixel_type_size(op->type);
+    const int filter_size = filter->filter_size;
+    const int block_size = params->table->block_size;
+    const size_t aligned_size = FFALIGN(filter_size, taps_align);
+    const size_t line_size = FFALIGN(filter->dst_size, block_size);
+    av_assert1(FFALIGN(line_size, taps_align) == line_size);
+    if (aligned_size > INT_MAX)
+        return AVERROR(EINVAL);
+
+    union {
+        void *ptr;
+        int16_t *i16;
+        float *f32;
+    } weights;
+
+    const int sizeof_weight = hscale_sizeof_weight(op);
+    weights.ptr = av_calloc(line_size, sizeof_weight * aligned_size);
+    if (!weights.ptr)
+        return AVERROR(ENOMEM);
+
+    /**
+     * Transpose filter weights to group (aligned) taps by block
+     */
+    const int mmsize = block_size * 2;
+    const int gather_size = mmsize / sizeof(int32_t); /* pixels per vpgatherdd */
+    for (size_t x = 0; x < line_size; x += block_size) {
+        const int elems = FFMIN(block_size, filter->dst_size - x);
+        for (int j = 0; j < filter_size; j++) {
+            const int jb = j & ~(taps_align - 1);
+            const int ji = j - jb;
+            const size_t idx_base = x * aligned_size + jb * block_size + ji;
+            for (int i = 0; i < elems; i++) {
+                const int w = filter->weights[(x + i) * filter_size + j];
+                size_t idx = idx_base;
+                if (op->type == SWS_PIXEL_U8) {
+                    /* Interleave the pixels within each lane, i.e.:
+                     *  [a0 a1 a2 a3 | b0 b1 b2 b3 ] pixels 0-1, taps 0-3 (lane 0)
+                     *  [e0 e1 e2 e3 | f0 f1 f2 f3 ] pixels 4-5, taps 0-3 (lane 1)
+                     *  [c0 c1 c2 c3 | d0 d1 d2 d3 ] pixels 2-3, taps 0-3 (lane 0)
+                     *  [g0 g1 g2 g3 | h0 h1 h2 h3 ] pixels 6-7, taps 0-3 (lane 1)
+                     *  [i0 i1 i2 i3 | j0 j1 j2 j3 ] pixels 8-9, taps 0-3 (lane 0)
+                     *  ...
+                     *  [o0 o1 o2 o3 | p0 p1 p2 p3 ] pixels 14-15, taps 0-3 (lane 1)
+                     *  (repeat for taps 4-7, etc.)
+                     */
+                    const int gather_base = i & ~(gather_size - 1);
+                    const int gather_pos  = i - gather_base;
+                    const int lane_idx    = gather_pos >> 2;
+                    const int pos_in_lane = gather_pos & 3;
+                    idx += gather_base * 4 /* which gather (m0 or m1) */
+                         + (pos_in_lane >> 1) * (mmsize / 2) /* lo/hi unpack */
+                         + lane_idx * 8 /* 8 ints per lane */
+                         + (pos_in_lane & 1) * 4; /* 4 taps per pair */
+                } else {
+                    idx += i * taps_align;
+                }
+
+                switch (op->type) {
+                case SWS_PIXEL_U8:  weights.i16[idx] = w; break;
+                case SWS_PIXEL_U16: weights.i16[idx] = w; break;
+                case SWS_PIXEL_F32: weights.f32[idx] = w; break;
+                }
+            }
+        }
+    }
+
+    out->priv.ptr = weights.ptr;
+    out->priv.uptr[1] = aligned_size;
+    out->free = ff_op_priv_free;
+    return 0;
+}
+
 #define DECL_FILTER(EXT, TYPE, DIR, NAME, ELEMS, ...)                           \
     DECL_ASM(TYPE, NAME##ELEMS##_##TYPE##EXT,                                   \
         .op = SWS_OP_READ,                                                      \
@@ -346,7 +438,8 @@ static int setup_filter_v(const SwsImplParams *params, SwsImplResult *out)
 #define DECL_FILTERS_GENERIC(EXT, TYPE)                                         \
     DECL_FILTERS(EXT, TYPE, V, filter_v,     .setup = setup_filter_v)           \
     DECL_FILTERS(EXT, TYPE, V, filter_fma_v, .setup = setup_filter_v,           \
-                 .check = check_filter_fma)
+                 .check = check_filter_fma)                                     \
+    DECL_FILTERS(EXT, TYPE, H, filter_h,     .setup = setup_filter_h)
 
 #define REF_FILTERS(NAME, SUFFIX)                                               \
     &op_##NAME##1##SUFFIX,                                                      \
@@ -628,6 +721,9 @@ static const SwsOpTable ops32##EXT = {                                          
         REF_FILTERS(filter_v, _U8##EXT),                                        \
         REF_FILTERS(filter_v, _U16##EXT),                                       \
         REF_FILTERS(filter_v, _F32##EXT),                                       \
+        REF_FILTERS(filter_h, _U8##EXT),                                        \
+        REF_FILTERS(filter_h, _U16##EXT),                                       \
+        REF_FILTERS(filter_h, _F32##EXT),                                       \
         NULL                                                                    \
     },                                                                          \
 };

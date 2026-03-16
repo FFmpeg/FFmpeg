@@ -19,6 +19,30 @@
 ;******************************************************************************
 
 %include "ops_common.asm"
+%define SWS_FILTER_SCALE (1 << 14)
+
+SECTION_RODATA
+
+align 32
+bias16: times 16 dw 0x8000 ; shift unsigned to signed range
+bias32: times  8 dd 0x8000 * SWS_FILTER_SCALE
+scale_inv: times 8 dd 0x38800000 ; 1.0f / SWS_FILTER_SCALE
+
+; block_size = mmsize * 2 / sizeof(float)  (two grouped registers)
+%macro get_block_size 0
+    %define block_size (mmsize >> 1)
+%if mmsize == 64
+    %define block_shift 5
+%elif mmsize == 32
+    %define block_shift 4
+%elif mmsize == 16
+    %define block_shift 3
+%elif mmsize == 8
+    %define block_shift 2
+%else
+    %error "Unsupported mmsize"
+%endif
+%endmacro
 
 SECTION .text
 
@@ -459,7 +483,146 @@ IF %1 > 1,  add in1q, (mmsize >> 1) * %3
 %undef fltsize
 %endmacro
 
-%macro generic_filter_fns 2 ; type, sizeof_type
+%macro filter_h_iter_U8 4 ; acc, acc2, src, first
+        pcmpeqb m12, m12
+        pcmpeqb m13, m13
+        vpgatherdd m8, [%3 + m14], m12 ; { ABCD | EFGH } 4 pixel per word
+        vpgatherdd m9, [%3 + m15], m13 ; { IJKL | MNOP }
+        ; unpack 4 bytes into separate 16-bit integer registers
+        punpckhbw m10, m8, m12 ; { CCDD | GGHH } 2 pixels per word
+        punpcklbw m8,  m8, m12 ; { AABB | EEFF }
+        punpckhbw m11, m9, m12 ; { KKLL | OOPP }
+        punpcklbw m9,  m9, m12 ; { IIJJ | MMNN }
+        pmaddwd m8,  [weights]
+        pmaddwd m10, [weights + mmsize]
+        pmaddwd m9,  [weights + mmsize * 2]
+        pmaddwd m11, [weights + mmsize * 3]
+%if %4
+        phaddd %1, m8, m10 ; { ABCD | EFGH }
+        phaddd %2, m9, m11 ; { IJKL | MNOP }
+%else
+        phaddd m8, m10
+        phaddd m9, m11
+        paddd %1, m8
+        paddd %2, m9
+%endif
+%endmacro
+
+%macro filter_h_iter_U16 4 ; acc, acc2, src, first
+        pcmpeqb m12, m12
+        pcmpeqb m13, m13
+        vpgatherdd m8, [%3 + m14], m12
+        vpgatherdd m9, [%3 + m15], m13
+        psubw m8, m10
+        psubw m9, m10
+%if %4
+        pmaddwd %1, m8, [weights]
+        pmaddwd %2, m9, [weights + mmsize]
+%else
+        pmaddwd m8, [weights]
+        pmaddwd m9, [weights + mmsize]
+        paddd %1, m8
+        paddd %2, m9
+%endif
+%endmacro
+
+%macro filter_h_iter_F32 4 ; acc, acc2, src, first
+        pcmpeqb m12, m12
+        pcmpeqb m13, m13
+        vpgatherdd m8, [%3 + m14], m12
+        vpgatherdd m9, [%3 + m15], m13
+%if %4
+        mulps %1, m8, [weights]
+        mulps %2, m9, [weights + mmsize]
+%else
+        mulps m8, [weights]
+        mulps m9, [weights + mmsize]
+        addps %1, m8
+        addps %2, m9
+%endif
+%endmacro
+
+%macro filter_h 4 ; elems, type, sizeof_type, sizeof_weight
+op filter_h%1_%2
+%xdefine weights tmp0q
+%xdefine fltsize tmp1q
+            mov tmp0q,   [execq + SwsOpExec.in_offset_x]
+            mov fltsize, [implq + SwsOpImpl.priv + 8] ; size_t filter_size
+            get_block_size
+            mov tmp2d, bxd
+            shl tmp2q, block_shift         ; x := bx * block_size
+            movu m14, [tmp0q + 4 * tmp2q]  ; &exec->in_offset_x[x]
+            movu m15, [tmp0q + 4 * tmp2q + mmsize]
+            mov weights, [implq + SwsOpImpl.priv]
+%ifidn %2, U16
+            mova m10, [bias16]
+            mova m11, [bias32]
+%endif
+            imul tmp2q, fltsize
+            lea weights, [weights + tmp2q * %4] ; weights += x * filter_size
+            filter_h_iter_%2 mx, mx2, in0q, 1
+IF1 %1 > 1, filter_h_iter_%2 my, my2, in1q, 1
+IF1 %1 > 2, filter_h_iter_%2 mz, mz2, in2q, 1
+IF1 %1 > 3, filter_h_iter_%2 mw, mw2, in3q, 1
+            sub fltsize, 4 / %3
+            jz .done
+            push in0q
+IF %1 > 1,  push in1q
+IF %1 > 2,  push in2q
+IF %1 > 3,  push in3q
+.loop:
+            add in0q, 4
+IF %1 > 1,  add in1q, 4
+IF %1 > 2,  add in2q, 4
+IF %1 > 3,  add in3q, 4
+            add weights, mmsize * 2 * (%4 / %3)
+            filter_h_iter_%2 mx, mx2, in0q, 0
+IF1 %1 > 1, filter_h_iter_%2 my, my2, in1q, 0
+IF1 %1 > 2, filter_h_iter_%2 mz, mz2, in2q, 0
+IF1 %1 > 3, filter_h_iter_%2 mw, mw2, in3q, 0
+            sub fltsize, 4 / %3
+            jnz .loop
+IF %1 > 3,  pop in3q
+IF %1 > 2,  pop in2q
+IF %1 > 1,  pop in1q
+            pop in0q
+.done:
+%ifidn %2, U16
+            paddd mx, m11
+IF %1 > 1,  paddd my, m11
+IF %1 > 2,  paddd mz, m11
+IF %1 > 3,  paddd mw, m11
+            paddd mx2, m11
+IF %1 > 1,  paddd my2, m11
+IF %1 > 2,  paddd mz2, m11
+IF %1 > 3,  paddd mw2, m11
+%endif
+%ifnidn %2, F32
+            vcvtdq2ps mx, mx
+IF %1 > 1,  vcvtdq2ps my, my
+IF %1 > 2,  vcvtdq2ps mz, mz
+IF %1 > 3,  vcvtdq2ps mw, mw
+            vcvtdq2ps mx2, mx2
+IF %1 > 1,  vcvtdq2ps my2, my2
+IF %1 > 2,  vcvtdq2ps mz2, mz2
+IF %1 > 3,  vcvtdq2ps mw2, mw2
+%endif
+            mova m12, [scale_inv]
+            LOAD_CONT tmp0q
+            mulps mx, m12
+IF %1 > 1,  mulps my, m12
+IF %1 > 2,  mulps mz, m12
+IF %1 > 3,  mulps mw, m12
+            mulps mx2, m12
+IF %1 > 1,  mulps my2, m12
+IF %1 > 2,  mulps mz2, m12
+IF %1 > 3,  mulps mw2, m12
+            CONTINUE tmp0q
+%undef weights
+%undef fltsize
+%endmacro
+
+%macro generic_filter_fns 3 ; type, sizeof_type, sizeof_weight
         filter_v 1, %1, %2, v
         filter_v 2, %1, %2, v
         filter_v 3, %1, %2, v
@@ -469,12 +632,17 @@ IF %1 > 1,  add in1q, (mmsize >> 1) * %3
         filter_v 2, %1, %2, fma_v
         filter_v 3, %1, %2, fma_v
         filter_v 4, %1, %2, fma_v
+
+        filter_h 1, %1, %2, %3
+        filter_h 2, %1, %2, %3
+        filter_h 3, %1, %2, %3
+        filter_h 4, %1, %2, %3
 %endmacro
 
 %macro filter_fns 0
-    generic_filter_fns U8,  1
-    generic_filter_fns U16, 2
-    generic_filter_fns F32, 4
+    generic_filter_fns U8,  1, 2
+    generic_filter_fns U16, 2, 2
+    generic_filter_fns F32, 4, 4
 %endmacro
 
 INIT_YMM avx2
