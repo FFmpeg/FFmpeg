@@ -122,13 +122,11 @@ function ff_vvc_alf_filter_luma_8_sme2, export=1
         // clip          .req x5
         // vb            .req x6
         sme_entry
-        stp             x29, x30, [sp, #-96]!
-        mov             x29, sp
-        stp             x19, x20, [sp, #16]
-        stp             x21, x22, [sp, #32]
-        stp             x23, x24, [sp, #48]
-        stp             x25, x26, [sp, #64]
-        stp             x27, x28, [sp, #80]
+        stp             x19, x20, [sp, #-80]!
+        stp             x21, x22, [sp, #16]
+        stp             x23, x24, [sp, #32]
+        stp             x25, x26, [sp, #48]
+        stp             x27, x28, [sp, #64]
 
         lsr             x7, x3, #32
         cnth            x11
@@ -356,12 +354,11 @@ function ff_vvc_alf_filter_luma_8_sme2, export=1
         add             x0, x0, x2, lsl #2
         b.gt            1b
 
-        ldp             x19, x20, [sp, #16]
-        ldp             x21, x22, [sp, #32]
-        ldp             x23, x24, [sp, #48]
-        ldp             x25, x26, [sp, #64]
-        ldp             x27, x28, [sp, #80]
-        ldp             x29, x30, [sp], #96
+        ldp             x21, x22, [sp, #16]
+        ldp             x23, x24, [sp, #32]
+        ldp             x25, x26, [sp, #48]
+        ldp             x27, x28, [sp, #64]
+        ldp             x19, x20, [sp], #80
         sme_exit
         ret
 endfunc
@@ -410,13 +407,11 @@ function ff_vvc_alf_filter_luma_10_sme2, export=1
         mov             w12, #1023
 0:
         sme_entry
-        stp             x29, x30, [sp, #-96]!
-        mov             x29, sp
-        stp             x19, x20, [sp, #16]
-        stp             x21, x22, [sp, #32]
-        stp             x23, x24, [sp, #48]
-        stp             x25, x26, [sp, #64]
-        stp             x27, x28, [sp, #80]
+        stp             x19, x20, [sp, #-80]!
+        stp             x21, x22, [sp, #16]
+        stp             x23, x24, [sp, #32]
+        stp             x25, x26, [sp, #48]
+        stp             x27, x28, [sp, #64]
 
         lsr             x7, x3, #32
         cnth            x11
@@ -644,12 +639,11 @@ function ff_vvc_alf_filter_luma_10_sme2, export=1
         add             x0, x0, x2, lsl #3
         b.gt            1b
 
-        ldp             x19, x20, [sp, #16]
-        ldp             x21, x22, [sp, #32]
-        ldp             x23, x24, [sp, #48]
-        ldp             x25, x26, [sp, #64]
-        ldp             x27, x28, [sp, #80]
-        ldp             x29, x30, [sp], #96
+        ldp             x21, x22, [sp, #16]
+        ldp             x23, x24, [sp, #32]
+        ldp             x25, x26, [sp, #48]
+        ldp             x27, x28, [sp, #64]
+        ldp             x19, x20, [sp], #80
         sme_exit
         ret
 endfunc
