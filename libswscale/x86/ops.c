@@ -421,6 +421,87 @@ static int setup_filter_h(const SwsImplParams *params, SwsImplResult *out)
     return 0;
 }
 
+static bool check_filter_4x4_h(const SwsImplParams *params)
+{
+    SwsContext *ctx = params->ctx;
+    const SwsOp *op = params->op;
+    if ((ctx->flags & SWS_BITEXACT) && op->type == SWS_PIXEL_F32)
+        return false; /* different accumulation order due to 4x4 transpose */
+
+    const int cpu_flags = av_get_cpu_flags();
+    if (cpu_flags & AV_CPU_FLAG_SLOW_GATHER)
+        return true; /* always prefer over gathers if gathers are slow */
+
+    /**
+     * Otherwise, prefer it above a certain filter size. Empirically, this
+     * kernel seems to be faster whenever the reference/gather kernel crosses
+     * a breakpoint for the number of gathers needed, but this filter doesn't.
+     *
+     * Tested on a Lunar Lake (Intel Core Ultra 7 258V) system.
+     */
+    const SwsFilterWeights *filter = op->rw.kernel;
+    return op->type == SWS_PIXEL_U8  && filter->filter_size > 12 ||
+           op->type == SWS_PIXEL_U16 && filter->filter_size > 4  ||
+           op->type == SWS_PIXEL_F32 && filter->filter_size > 1;
+}
+
+static int setup_filter_4x4_h(const SwsImplParams *params, SwsImplResult *out)
+{
+    const SwsOp *op = params->op;
+    const SwsFilterWeights *filter = op->rw.kernel;
+    const int sizeof_weights = hscale_sizeof_weight(op);
+    const int block_size = params->table->block_size;
+    const int taps_align = 16 / sizeof_weights; /* taps per iteration (XMM) */
+    const int pixels_align = 4; /* pixels per iteration */
+    const int filter_size = filter->filter_size;
+    const size_t aligned_size = FFALIGN(filter_size, taps_align);
+    const int line_size = FFALIGN(filter->dst_size, block_size);
+    av_assert1(FFALIGN(line_size, pixels_align) == line_size);
+
+    union {
+        void *ptr;
+        int16_t *i16;
+        float *f32;
+    } weights;
+
+    weights.ptr = av_calloc(line_size, aligned_size * sizeof_weights);
+    if (!weights.ptr)
+        return AVERROR(ENOMEM);
+
+    /**
+     * Desired memory layout: [w][taps][pixels_align][taps_align]
+     *
+     * Example with taps_align=8, pixels_align=4:
+     *   [a0, a1, ... a7]  weights for pixel 0, taps 0..7
+     *   [b0, b1, ... b7]  weights for pixel 1, taps 0..7
+     *   [c0, c1, ... c7]  weights for pixel 2, taps 0..7
+     *   [d0, d1, ... d7]  weights for pixel 3, taps 0..7
+     *   [a8, a9, ... a15] weights for pixel 0, taps 8..15
+     *   ...
+     *   repeat for all taps, then move on to pixels 4..7, etc.
+     */
+    for (int x = 0; x < filter->dst_size; x++) {
+        for (int j = 0; j < filter_size; j++) {
+            const int xb = x & ~(pixels_align - 1);
+            const int jb = j & ~(taps_align - 1);
+            const int xi = x - xb, ji = j - jb;
+            const int w = filter->weights[x * filter_size + j];
+            const int idx = xb * aligned_size + jb * pixels_align + xi * taps_align + ji;
+
+            switch (op->type) {
+            case SWS_PIXEL_U8:  weights.i16[idx] = w; break;
+            case SWS_PIXEL_U16: weights.i16[idx] = w; break;
+            case SWS_PIXEL_F32: weights.f32[idx] = w; break;
+            }
+        }
+    }
+
+    out->priv.ptr = weights.ptr;
+    out->priv.uptr[1] = aligned_size * sizeof_weights;
+    out->free = ff_op_priv_free;
+    return 0;
+}
+
 #define DECL_FILTER(EXT, TYPE, DIR, NAME, ELEMS, ...)                           \
     DECL_ASM(TYPE, NAME##ELEMS##_##TYPE##EXT,                                   \
         .op = SWS_OP_READ,                                                      \
@@ -439,7 +520,9 @@ static int setup_filter_h(const SwsImplParams *params, SwsImplResult *out)
     DECL_FILTERS(EXT, TYPE, V, filter_v,     .setup = setup_filter_v)           \
     DECL_FILTERS(EXT, TYPE, V, filter_fma_v, .setup = setup_filter_v,           \
                  .check = check_filter_fma)                                     \
-    DECL_FILTERS(EXT, TYPE, H, filter_h,     .setup = setup_filter_h)
+    DECL_FILTERS(EXT, TYPE, H, filter_h,     .setup = setup_filter_h)           \
+    DECL_FILTERS(EXT, TYPE, H, filter_4x4_h, .setup = setup_filter_4x4_h,       \
+                 .check = check_filter_4x4_h)
 
 #define REF_FILTERS(NAME, SUFFIX)                                               \
     &op_##NAME##1##SUFFIX,                                                      \
@@ -718,6 +801,9 @@ static const SwsOpTable ops32##EXT = {                                          
         REF_FILTERS(filter_fma_v, _U8##EXT),                                    \
         REF_FILTERS(filter_fma_v, _U16##EXT),                                   \
         REF_FILTERS(filter_fma_v, _F32##EXT),                                   \
+        REF_FILTERS(filter_4x4_h, _U8##EXT),                                    \
+        REF_FILTERS(filter_4x4_h, _U16##EXT),                                   \
+        REF_FILTERS(filter_4x4_h, _F32##EXT),                                   \
         REF_FILTERS(filter_v, _U8##EXT),                                        \
         REF_FILTERS(filter_v, _U16##EXT),                                       \
         REF_FILTERS(filter_v, _F32##EXT),                                       \

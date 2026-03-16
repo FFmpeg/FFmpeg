@@ -622,6 +622,170 @@ IF %1 > 3,  mulps mw2, m12
 %undef fltsize
 %endmacro
 
+%macro iloadU8 2 ; dst, src
+        pmovzxbw %1, %2
+%endmacro
+
+%macro iloadU16 2 ; dst, src
+        movu %1, %2
+        psubw %1, [bias16] ; shift into signed I16 range
+%endmacro
+
+%macro iloadF32 2 ; dst, src
+        movu %1, %2
+%endmacro
+
+; filter 4 adjacent pixels at the same time
+%macro filter_h4 4 ; dst, src, type, sizeof_type
+%ifidn %3, F32
+    %xdefine MUL mulps
+    %xdefine ADD addps
+%else
+    %xdefine MUL pmaddwd
+    %xdefine ADD paddd
+%endif
+            iload%3 xm8,  [%2 + offset0q] ; {a0, a1, a2, a3}
+            iload%3 xm9,  [%2 + offset1q] ; {b0, b1, b2, b3}
+            iload%3 xm10, [%2 + offset2q] ; {c0, c1, c2, c3}
+            iload%3 xm11, [%2 + offset3q] ; {d0, d1, d2, d3}
+            MUL xm8,  [weights]
+            MUL xm9,  [weights + 16]
+            MUL xm10, [weights + 32]
+            MUL xm11, [weights + 48]
+            mov bxq, fltsize
+            sub bxq, 64
+            jz %%done
+            push weights
+            push %2
+%%loop:
+            add weights, 64
+%ifidn %3, F32
+            add %2, 4 * %4
+%else
+            add %2, 8 * %4
+%endif
+            iload%3 xm14, [%2 + offset0q]
+            iload%3 xm15, [%2 + offset1q]
+            MUL xm14, [weights]
+            MUL xm15, [weights + 16]
+            ADD xm8, xm14
+            ADD xm9, xm15
+            iload%3 xm14, [%2 + offset2q]
+            iload%3 xm15, [%2 + offset3q]
+            MUL xm14, [weights + 32]
+            MUL xm15, [weights + 48]
+            ADD xm10, xm14
+            ADD xm11, xm15
+            sub bxq, 64
+            jnz %%loop
+            pop %2
+            pop weights
+%%done:
+            ; 4x4 transpose (on XMM size)
+            punpckhdq  xm15, xm8,  xm9  ; {a2, b2, a3, b3}
+            punpckldq  xm8,  xm9        ; {a0, b0, a1, b1}
+            punpckhdq  xm9,  xm10, xm11 ; {c2, d2, c3, d3}
+            punpckldq  xm10, xm11       ; {c0, d0, c1, d1}
+            punpckhqdq xm11, xm8,  xm10 ; {a1, b1, c1, d1}
+            punpcklqdq xm8,  xm10       ; {a0, b0, c0, d0}
+            punpckhqdq xm10, xm15, xm9  ; {a3, b3, c3, d3}
+            punpcklqdq xm15, xm9        ; {a2, b2, c2, d2}
+            ADD xm8,  xm11 ; sum all even terms
+            ADD xm15, xm10 ; sum all odd terms
+            ADD %1, xm8, xm15
+%undef MUL
+%undef ADD
+%endmacro
+
+; filter low and high lines separately and combine results for each plane
+%macro filter_h8 4-5 ; elems, type, sizeof_type, offsets, dst_suffix
+            movsxd offset0q, dword [%4 +  0]
+            movsxd offset1q, dword [%4 +  4]
+            movsxd offset2q, dword [%4 +  8]
+            movsxd offset3q, dword [%4 + 12]
+            filter_h4 xmx%5, in0q, %2, %3
+IF %1 > 1,  filter_h4 xmy%5, in1q, %2, %3
+IF %1 > 2,  filter_h4 xmz%5, in2q, %2, %3
+IF %1 > 3,  filter_h4 xmw%5, in3q, %2, %3
+            add weights, fltsize
+            movsxd offset0q, dword [%4 + 16]
+            movsxd offset1q, dword [%4 + 20]
+            movsxd offset2q, dword [%4 + 24]
+            movsxd offset3q, dword [%4 + 28]
+            filter_h4 xm12, in0q, %2, %3
+IF %1 > 1,  filter_h4 xm13, in1q, %2, %3
+            vinsertf128 mx%5, mx%5, xmm12, 1
+IF %1 > 1,  vinsertf128 my%5, my%5, xmm13, 1
+IF %1 > 2,  filter_h4 xm12, in2q, %2, %3
+IF %1 > 3,  filter_h4 xm13, in3q, %2, %3
+IF %1 > 2,  vinsertf128 mz%5, mz%5, xmm12, 1
+IF %1 > 3,  vinsertf128 mw%5, mw%5, xmm13, 1
+%ifidn %2, U16
+            mova m15, [bias32]
+            paddd mx%5, m15
+IF %1 > 1,  paddd my%5, m15
+IF %1 > 2,  paddd mz%5, m15
+IF %1 > 3,  paddd mw%5, m15
+%endif
+%ifnidn %2, F32
+            vcvtdq2ps mx%5, mx%5
+IF %1 > 1,  vcvtdq2ps my%5, my%5
+IF %1 > 2,  vcvtdq2ps mz%5, mz%5
+IF %1 > 3,  vcvtdq2ps mw%5, mw%5
+%endif
+%endmacro
+
+%macro filter_4x4_h 3 ; elems, type, sizeof_type
+op filter_4x4_h%1_%2
+%xdefine offset0q out0q
+%xdefine offset1q out1q
+%xdefine offset2q out2q
+%xdefine offset3q out3q
+%xdefine weights  tmp0q
+%xdefine offsets  tmp2q
+%xdefine fltsize  tmp1q
+            ; reserve some registers for the inner loops
+            push bxq
+            push offset0q
+            push offset1q
+            push offset2q
+            push offset3q
+            get_block_size
+            shl bxq, block_shift ; x := bx * block_size
+            mov weights, [implq + SwsOpImpl.priv]        ; int16_t *weights
+            mov tmp1d,   [implq + SwsOpImpl.priv + 8]    ; size_t filter_size
+            mov offsets, [execq + SwsOpExec.in_offset_x] ; int32_t *offsets
+            lea offsets, [offsets + 4 * bxq] ; offsets += x * sizeof(int32_t)
+            imul bxq, fltsize
+            add weights, bxq ; weights += x * filter_size
+            shl fltsize, 2   ; fltsize *= 4 (number of pixels / iter)
+            filter_h8 %1, %2, %3, offsets
+            add weights, fltsize
+            filter_h8 %1, %2, %3, offsets + 32, 2
+            mova m10, [scale_inv]
+            mulps mx, m10
+IF %1 > 1,  mulps my, m10
+IF %1 > 2,  mulps mz, m10
+IF %1 > 3,  mulps mw, m10
+            mulps mx2, m10
+IF %1 > 1,  mulps my2, m10
+IF %1 > 2,  mulps mz2, m10
+IF %1 > 3,  mulps mw2, m10
+            pop offset3q
+            pop offset2q
+            pop offset1q
+            pop offset0q
+            pop bxq
+            CONTINUE
+%undef offset0q
+%undef offset1q
+%undef offset2q
+%undef offset3q
+%undef weights
+%undef offsets
+%undef fltsize
+%endmacro
+
 %macro generic_filter_fns 3 ; type, sizeof_type, sizeof_weight
         filter_v 1, %1, %2, v
         filter_v 2, %1, %2, v
@@ -637,6 +801,11 @@ IF %1 > 3,  mulps mw2, m12
         filter_h 2, %1, %2, %3
         filter_h 3, %1, %2, %3
         filter_h 4, %1, %2, %3
+
+        filter_4x4_h 1, %1, %2
+        filter_4x4_h 2, %1, %2
+        filter_4x4_h 3, %1, %2
+        filter_4x4_h 4, %1, %2
 %endmacro
 
 %macro filter_fns 0
