@@ -56,6 +56,9 @@ static int vvc_probe(const AVProbeData *p)
             if (code & 0x80) // forbidden_zero_bit
                 return 0;
 
+            if ((code & 0x3F) > 55) // nuh_layer_id must be in [0, 55]
+                return 0;
+
             if (!check_temporal_id(nal2 & 0x7, type))
                 return 0;
 
