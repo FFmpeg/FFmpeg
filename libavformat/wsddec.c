@@ -82,7 +82,7 @@ static int get_metadata(AVFormatContext *s, const char *const tag, const unsigne
     if (!buf)
         return AVERROR(ENOMEM);
 
-    if ((ret = avio_read(s->pb, buf, size)) < 0) {
+    if ((ret = ffio_read_size(s->pb, buf, size)) < 0) {
         av_free(buf);
         return ret;
     }
