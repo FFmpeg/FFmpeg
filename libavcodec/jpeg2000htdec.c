@@ -1334,8 +1334,19 @@ ff_jpeg2000_decode_htj2k(const Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c
             sign = val & INT32_MIN;
             val &= INT32_MAX;
             /* ROI shift, if necessary */
-            if (roi_shift && (((uint32_t)val & ~mask) == 0))
-                val <<= roi_shift;
+            if (roi_shift && (((uint32_t)val & ~mask) == 0)) {
+                if ((32 - ff_clz(val | 1)) < roi_shift)
+                    // Assuming that the internal precision for codeblock decoding is 32 bits.
+                    val <<= roi_shift;
+                else {
+                    av_log(s->avctx, AV_LOG_ERROR,
+                        "Pixel precision in ROI is beyond the supported range.\n"
+                    );
+                    ret = AVERROR_PATCHWELCOME;
+                    goto free;
+                }
+
+            }
             t1->data[n] = val | sign; /* NOTE: Binary point for reconstruction value is located in 31 - M_b */
         }
     }
