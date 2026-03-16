@@ -264,7 +264,7 @@ int ff_isom_write_lvcc(AVIOContext *pb, const uint8_t *data, int len)
     }
     if (nb_nidr) {
         avio_w8(pb, LCEVC_NON_IDR_NUT);
-        avio_wb16(pb, nb_idr);
+        avio_wb16(pb, nb_nidr);
         avio_write(pb, nidr, nidr_size);
     }
 
