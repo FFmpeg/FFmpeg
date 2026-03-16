@@ -30,16 +30,6 @@
 #include "avio_internal.h"
 #include "lcevc.h"
 
-typedef struct LCEVCDecoderConfigurationRecord {
-    uint8_t  profile_idc;
-    uint8_t  level_idc;
-    uint8_t  chroma_format_idc;
-    uint8_t  bit_depth_luma_minus8;
-    uint8_t  bit_depth_chroma_minus8;
-    uint32_t pic_width_in_luma_samples;
-    uint32_t pic_height_in_luma_samples;
-} LCEVCDecoderConfigurationRecord;
-
 /**
  * Rewrite the NALu stripping the unneeded blocks.
  * Given that length fields coded inside the NALu are not aware of any emulation_3bytes
@@ -185,6 +175,72 @@ static int write_nalu(LCEVCDecoderConfigurationRecord *lvcc, AVIOContext *pb,
     avio_seek(pb, end, SEEK_SET);
 
     return 0;
+}
+
+int ff_lcvec_parse_config_record(LCEVCDecoderConfigurationRecord *lvcc,
+                                 const uint8_t *buf, int size)
+{
+    H2645Packet h2645_pkt = { 0 };
+    AVIOContext *pb;
+    int ret;
+
+    if (size <= 0)
+        return AVERROR_INVALIDDATA;
+
+    if (buf[0] == 1) {
+        GetBitContext gb;
+
+        if (size < 13)
+            return AVERROR_INVALIDDATA;
+
+        ret = init_get_bits8(&gb, buf, 13);
+        if (ret < 0)
+            return ret;
+
+        memset(lvcc, 0, sizeof(*lvcc));
+
+        skip_bits(&gb, 8);
+        lvcc->profile_idc                 = get_bits(&gb, 8);
+        lvcc->level_idc                   = get_bits(&gb, 8);
+        lvcc->chroma_format_idc           = get_bits(&gb, 2);
+        lvcc->bit_depth_luma_minus8       = get_bits(&gb, 3);
+        lvcc->bit_depth_chroma_minus8     = get_bits(&gb, 3);
+        skip_bits(&gb, 8);
+        lvcc->pic_width_in_luma_samples   = get_bits_long(&gb, 32);
+        lvcc->pic_height_in_luma_samples  = get_bits_long(&gb, 32);
+
+        return 0;
+    }
+
+    ret = ffio_open_null_buf(&pb);
+    if (ret < 0)
+        return ret;
+
+    ret = ff_h2645_packet_split(&h2645_pkt, buf, size, NULL, 0, AV_CODEC_ID_LCEVC, 0);
+    if (ret < 0)
+        goto fail;
+
+    /* look for IDR or NON_IDR */
+    for (int i = 0; i < h2645_pkt.nb_nals; i++) {
+        const H2645NAL *nal = &h2645_pkt.nals[i];
+
+        if (nal->type == LCEVC_IDR_NUT) {
+            ret = write_nalu(lvcc, pb, nal);
+            if (ret < 0)
+                goto fail;
+        } else if (nal->type == LCEVC_NON_IDR_NUT) {
+            ret = write_nalu(lvcc, pb, nal);
+            if (ret < 0)
+                goto fail;
+        }
+    }
+
+    ret = 0;
+fail:
+    ffio_close_null_buf(pb);
+    ff_h2645_packet_uninit(&h2645_pkt);
+
+    return ret;
 }
 
 int ff_isom_write_lvcc(AVIOContext *pb, const uint8_t *data, int len)
