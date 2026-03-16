@@ -630,6 +630,7 @@ function ff_hevc_put_hevc_\type\()_h24_8_neon, export=1
 0:
 .ifc \type, qpel
         // Preserve filter index (mx) and lr so h16 gets correct mx; ret uses lr
+        AARCH64_SIGN_LINK_REGISTER
         stp             x4, x30, [sp, #-16]!
         ldr             x4, [sp]
 .endif
@@ -700,6 +701,7 @@ function ff_hevc_put_hevc_\type\()_h24_8_neon, export=1
         sub             x12, x12, #16
 .ifc \type, qpel
         ldp             x4, x30, [sp], #16
+        AARCH64_VALIDATE_LINK_REGISTER
 .endif
         b.gt            0b
 .ifc \type, qpel
@@ -1156,6 +1158,7 @@ function ff_hevc_put_hevc_qpel_v32_8_neon, export=1
 endfunc
 
 function ff_hevc_put_hevc_qpel_v48_8_neon, export=1
+        AARCH64_SIGN_LINK_REGISTER
         stp             x2, x3, [sp, #-48]!
         stp             x0, x1, [sp, #16]
         stp             x5, x30, [sp, #32]
@@ -1168,6 +1171,7 @@ function ff_hevc_put_hevc_qpel_v48_8_neon, export=1
         bl              X(ff_hevc_put_hevc_qpel_v24_8_neon)
         ldr             x30, [sp, #8]
         add             sp, sp, #16
+        AARCH64_VALIDATE_LINK_REGISTER
         ret
 endfunc
 
@@ -1446,6 +1450,7 @@ function ff_hevc_put_hevc_qpel_bi_v16_8_neon, export=1
 endfunc
 
 function ff_hevc_put_hevc_qpel_bi_v24_8_neon, export=1
+        AARCH64_SIGN_LINK_REGISTER
         stp             x4, x5, [sp, #-64]!
         stp             x2, x3, [sp, #16]
         stp             x0, x1, [sp, #32]
@@ -1461,6 +1466,7 @@ function ff_hevc_put_hevc_qpel_bi_v24_8_neon, export=1
         bl              X(ff_hevc_put_hevc_qpel_bi_v8_8_neon)
         ldr             x30, [sp, #8]
         add             sp, sp, #16
+        AARCH64_VALIDATE_LINK_REGISTER
         ret
 endfunc
 
@@ -1522,6 +1528,7 @@ function ff_hevc_put_hevc_qpel_bi_v32_8_neon, export=1
 endfunc
 
 function ff_hevc_put_hevc_qpel_bi_v48_8_neon, export=1
+        AARCH64_SIGN_LINK_REGISTER
         mov             x8, #32
         str             x8, [sp, #-80]!
         stp             x4, x5, [sp, #16]
@@ -1540,6 +1547,7 @@ function ff_hevc_put_hevc_qpel_bi_v48_8_neon, export=1
         bl              X(ff_hevc_put_hevc_qpel_bi_v16_8_neon)
         ldr             x30, [sp, #8]
         add             sp, sp, #16
+        AARCH64_VALIDATE_LINK_REGISTER
         ret
 endfunc
 
@@ -3280,6 +3288,7 @@ function ff_hevc_put_hevc_qpel_uni_hv4_8_\suffix, export=1
         lsl             x10, x10, #7
         mov             x14, sp
         sub             sp, sp, x10         // tmp_array
+        AARCH64_SIGN_LINK_REGISTER
         stp             x30, x14,[sp, #-48]!
         stp             x4, x6, [sp, #16]
         stp             x0, x1, [sp, #32]
@@ -3293,6 +3302,7 @@ function ff_hevc_put_hevc_qpel_uni_hv4_8_\suffix, export=1
         ldp             x4, x6, [sp, #16]
         ldp             x0, x1, [sp, #32]
         ldp             x30, x14, [sp], #48
+        AARCH64_VALIDATE_LINK_REGISTER
         b               hevc_put_hevc_qpel_uni_hv4_8_end_neon
 endfunc
 
@@ -3301,6 +3311,7 @@ function ff_hevc_put_hevc_qpel_uni_hv6_8_\suffix, export=1
         lsl             x10, x10, #7
         mov             x14, sp
         sub             sp, sp, x10         // tmp_array
+        AARCH64_SIGN_LINK_REGISTER
         stp             x30, x14,[sp, #-48]!
         stp             x4, x6, [sp, #16]
         stp             x0, x1, [sp, #32]
@@ -3314,6 +3325,7 @@ function ff_hevc_put_hevc_qpel_uni_hv6_8_\suffix, export=1
         ldp             x4, x6, [sp, #16]
         ldp             x0, x1, [sp, #32]
         ldp             x30, x14, [sp], #48
+        AARCH64_VALIDATE_LINK_REGISTER
         b               hevc_put_hevc_qpel_uni_hv6_8_end_neon
 endfunc
 
@@ -3322,6 +3334,7 @@ function ff_hevc_put_hevc_qpel_uni_hv8_8_\suffix, export=1
         lsl             x10, x10, #7
         mov             x14, sp
         sub             sp, sp, x10         // tmp_array
+        AARCH64_SIGN_LINK_REGISTER
         stp             x30, x14,[sp, #-48]!
         stp             x4, x6, [sp, #16]
         stp             x0, x1, [sp, #32]
@@ -3335,6 +3348,7 @@ function ff_hevc_put_hevc_qpel_uni_hv8_8_\suffix, export=1
         ldp             x4, x6, [sp, #16]
         ldp             x0, x1, [sp, #32]
         ldp             x30, x14, [sp], #48
+        AARCH64_VALIDATE_LINK_REGISTER
         b               hevc_put_hevc_qpel_uni_hv8_8_end_neon
 endfunc
 
@@ -3343,6 +3357,7 @@ function ff_hevc_put_hevc_qpel_uni_hv12_8_\suffix, export=1
         lsl             x10, x10, #7
         mov             x14, sp
         sub             sp, sp, x10         // tmp_array
+        AARCH64_SIGN_LINK_REGISTER
         stp             x7, x30, [sp, #-64]!
         stp             x4, x6, [sp, #16]
         stp             x0, x1, [sp, #32]
@@ -3359,6 +3374,7 @@ function ff_hevc_put_hevc_qpel_uni_hv12_8_\suffix, export=1
         ldp             x4, x6, [sp, #16]
         ldp             x0, x1, [sp, #32]
         ldp             x7, x30, [sp], #64
+        AARCH64_VALIDATE_LINK_REGISTER
         b               hevc_put_hevc_qpel_uni_hv12_8_end_neon
 endfunc
 
@@ -3367,6 +3383,7 @@ function ff_hevc_put_hevc_qpel_uni_hv16_8_\suffix, export=1
         lsl             x10, x10, #7
         mov             x14, sp
         sub             sp, sp, x10         // tmp_array
+        AARCH64_SIGN_LINK_REGISTER
         stp             x7, x30, [sp, #-64]!
         stp             x4, x6, [sp, #16]
         stp             x0, x1, [sp, #32]
@@ -3382,10 +3399,12 @@ function ff_hevc_put_hevc_qpel_uni_hv16_8_\suffix, export=1
         ldp             x4, x6, [sp, #16]
         ldp             x0, x1, [sp, #32]
         ldp             x7, x30, [sp], #64
+        AARCH64_VALIDATE_LINK_REGISTER
         b               hevc_put_hevc_qpel_uni_hv16_8_end_neon
 endfunc
 
 function ff_hevc_put_hevc_qpel_uni_hv24_8_\suffix, export=1
+        AARCH64_SIGN_LINK_REGISTER
         stp             x4, x5, [sp, #-64]!
         stp             x2, x3, [sp, #16]
         stp             x0, x1, [sp, #32]
@@ -3402,6 +3421,7 @@ function ff_hevc_put_hevc_qpel_uni_hv24_8_\suffix, export=1
         bl              X(ff_hevc_put_hevc_qpel_uni_hv8_8_\suffix)
         ldr             x30, [sp, #8]
         add             sp, sp, #16
+        AARCH64_VALIDATE_LINK_REGISTER
         ret
 endfunc
 
@@ -3410,6 +3430,7 @@ function ff_hevc_put_hevc_qpel_uni_hv32_8_\suffix, export=1
         lsl             x10, x10, #7
         mov             x14, sp
         sub             sp, sp, x10         // tmp_array
+        AARCH64_SIGN_LINK_REGISTER
         stp             x7, x30, [sp, #-64]!
         stp             x4, x6, [sp, #16]
         stp             x0, x1, [sp, #32]
@@ -3426,6 +3447,7 @@ function ff_hevc_put_hevc_qpel_uni_hv32_8_\suffix, export=1
         ldp             x4, x6, [sp, #16]
         ldp             x0, x1, [sp, #32]
         ldp             x7, x30, [sp], #64
+        AARCH64_VALIDATE_LINK_REGISTER
         b               hevc_put_hevc_qpel_uni_hv16_8_end_neon
 endfunc
 
@@ -3434,6 +3456,7 @@ function ff_hevc_put_hevc_qpel_uni_hv48_8_\suffix, export=1
         lsl             x10, x10, #7
         mov             x14, sp
         sub             sp, sp, x10         // tmp_array
+        AARCH64_SIGN_LINK_REGISTER
         stp             x7, x30, [sp, #-64]!
         stp             x4, x6, [sp, #16]
         stp             x0, x1, [sp, #32]
@@ -3454,6 +3477,7 @@ function ff_hevc_put_hevc_qpel_uni_hv48_8_\suffix, export=1
         ldp             x4, x6, [sp, #16]
         ldp             x0, x1, [sp, #32]
         ldp             x7, x30, [sp], #64
+        AARCH64_VALIDATE_LINK_REGISTER
         b               hevc_put_hevc_qpel_uni_hv16_8_end_neon
 endfunc
 
@@ -3462,6 +3486,7 @@ function ff_hevc_put_hevc_qpel_uni_hv64_8_\suffix, export=1
         lsl             x10, x10, #7
         mov             x14, sp
         sub             sp, sp, x10         // tmp_array
+        AARCH64_SIGN_LINK_REGISTER
         stp             x7, x30, [sp, #-64]!
         stp             x4, x6, [sp, #16]
         stp             x0, x1, [sp, #32]
@@ -3482,6 +3507,7 @@ function ff_hevc_put_hevc_qpel_uni_hv64_8_\suffix, export=1
         ldp             x4, x6, [sp, #16]
         ldp             x0, x1, [sp, #32]
         ldp             x7, x30, [sp], #64
+        AARCH64_VALIDATE_LINK_REGISTER
         b               hevc_put_hevc_qpel_uni_hv16_8_end_neon
 endfunc
 .endm
@@ -5055,6 +5081,7 @@ function ff_hevc_put_hevc_qpel_hv4_8_\suffix, export=1
         lsl             x10, x10, #7
         mov             x14, sp
         sub             sp, sp, x10         // tmp_array
+        AARCH64_SIGN_LINK_REGISTER
         stp             x5,  x30, [sp, #-48]!
         stp             x0,  x3,  [sp, #16]
         str             x14,      [sp, #32]
@@ -5066,6 +5093,7 @@ function ff_hevc_put_hevc_qpel_hv4_8_\suffix, export=1
         ldr             x14,      [sp, #32]
         ldp             x0,  x3,  [sp, #16]
         ldp             x5,  x30, [sp], #48
+        AARCH64_VALIDATE_LINK_REGISTER
         b               hevc_put_hevc_qpel_hv4_8_end_neon
 endfunc
 
@@ -5074,6 +5102,7 @@ function ff_vvc_put_qpel_hv4_8_\suffix, export=1
         lsl             x10, x10, #8
         mov             x14, sp
         sub             sp, sp, x10         // tmp_array
+        AARCH64_SIGN_LINK_REGISTER
         stp             x5,  x30, [sp, #-48]!
         stp             x0,  x3,  [sp, #16]
         str             x14,      [sp, #32]
@@ -5085,6 +5114,7 @@ function ff_vvc_put_qpel_hv4_8_\suffix, export=1
         ldr             x14,      [sp, #32]
         ldp             x0,  x3,  [sp, #16]
         ldp             x5,  x30, [sp], #48
+        AARCH64_VALIDATE_LINK_REGISTER
         b               vvc_put_qpel_hv4_8_end_neon
 endfunc
 
@@ -5094,6 +5124,7 @@ function ff_hevc_put_hevc_qpel_hv6_8_\suffix, export=1
         lsl             x10, x10, #7
         mov             x14, sp
         sub             sp, sp, x10         // tmp_array
+        AARCH64_SIGN_LINK_REGISTER
         stp             x5,  x30, [sp, #-48]!
         stp             x0,  x3,  [sp, #16]
         str             x14,      [sp, #32]
@@ -5105,6 +5136,7 @@ function ff_hevc_put_hevc_qpel_hv6_8_\suffix, export=1
         ldr             x14,      [sp, #32]
         ldp             x0,  x3,  [sp, #16]
         ldp             x5,  x30, [sp], #48
+        AARCH64_VALIDATE_LINK_REGISTER
         b               hevc_put_hevc_qpel_hv6_8_end_neon
 endfunc
 
@@ -5114,6 +5146,7 @@ function ff_hevc_put_hevc_qpel_hv8_8_\suffix, export=1
         sub             x1, x1, x2, lsl #1
         mov             x14, sp
         sub             sp, sp, x10         // tmp_array
+        AARCH64_SIGN_LINK_REGISTER
         stp             x5,  x30, [sp, #-48]!
         stp             x0,  x3,  [sp, #16]
         str             x14,      [sp, #32]
@@ -5124,6 +5157,7 @@ function ff_hevc_put_hevc_qpel_hv8_8_\suffix, export=1
         ldr             x14,      [sp, #32]
         ldp             x0,  x3,  [sp, #16]
         ldp             x5,  x30, [sp], #48
+        AARCH64_VALIDATE_LINK_REGISTER
         b               hevc_put_hevc_qpel_hv8_8_end_neon
 endfunc
 
@@ -5133,6 +5167,7 @@ function ff_vvc_put_qpel_hv8_8_\suffix, export=1
         sub             x1, x1, x2, lsl #1
         mov             x14, sp
         sub             sp, sp, x10         // tmp_array
+        AARCH64_SIGN_LINK_REGISTER
         stp             x5,  x30, [sp, #-48]!
         stp             x0,  x3,  [sp, #16]
         str             x14,      [sp, #32]
@@ -5143,6 +5178,7 @@ function ff_vvc_put_qpel_hv8_8_\suffix, export=1
         ldr             x14,      [sp, #32]
         ldp             x0,  x3,  [sp, #16]
         ldp             x5,  x30, [sp], #48
+        AARCH64_VALIDATE_LINK_REGISTER
         b               vvc_put_qpel_hv8_8_end_neon
 endfunc
 
@@ -5152,6 +5188,7 @@ function ff_hevc_put_hevc_qpel_hv12_8_\suffix, export=1
         sub             x1, x1, x2, lsl #1
         mov             x14, sp
         sub             sp, sp, x10         // tmp_array
+        AARCH64_SIGN_LINK_REGISTER
         stp             x5,  x30, [sp, #-48]!
         stp             x0,  x3,  [sp, #16]
         str             x14,      [sp, #32]
@@ -5163,6 +5200,7 @@ function ff_hevc_put_hevc_qpel_hv12_8_\suffix, export=1
         ldr             x14,      [sp, #32]
         ldp             x0,  x3,  [sp, #16]
         ldp             x5,  x30, [sp], #48
+        AARCH64_VALIDATE_LINK_REGISTER
         b               hevc_put_hevc_qpel_hv12_8_end_neon
 endfunc
 
@@ -5172,6 +5210,7 @@ function ff_hevc_put_hevc_qpel_hv16_8_\suffix, export=1
         sub             x1, x1, x2, lsl #1
         mov             x14, sp
         sub             sp, sp, x10         // tmp_array
+        AARCH64_SIGN_LINK_REGISTER
         stp             x5,  x30, [sp, #-48]!
         stp             x0,  x3,  [sp, #16]
         str             x14,      [sp, #32]
@@ -5182,6 +5221,7 @@ function ff_hevc_put_hevc_qpel_hv16_8_\suffix, export=1
         ldr             x14,      [sp, #32]
         ldp             x0,  x3,  [sp, #16]
         ldp             x5,  x30, [sp], #48
+        AARCH64_VALIDATE_LINK_REGISTER
         b               hevc_put_hevc_qpel_hv16_8_end_neon
 endfunc
 
@@ -5191,6 +5231,7 @@ function ff_vvc_put_qpel_hv16_8_\suffix, export=1
         sub             x1, x1, x2, lsl #1
         mov             x14, sp
         sub             sp, sp, x10         // tmp_array
+        AARCH64_SIGN_LINK_REGISTER
         stp             x5,  x30, [sp, #-48]!
         stp             x0,  x3,  [sp, #16]
         str             x14,      [sp, #32]
@@ -5201,10 +5242,12 @@ function ff_vvc_put_qpel_hv16_8_\suffix, export=1
         ldr             x14,      [sp, #32]
         ldp             x0,  x3,  [sp, #16]
         ldp             x5,  x30, [sp], #48
+        AARCH64_VALIDATE_LINK_REGISTER
         b               vvc_put_qpel_hv16_8_end_neon
 endfunc
 
 function ff_hevc_put_hevc_qpel_hv24_8_\suffix, export=1
+        AARCH64_SIGN_LINK_REGISTER
         stp             x4, x5, [sp, #-64]!
         stp             x2, x3, [sp, #16]
         stp             x0, x1, [sp, #32]
@@ -5217,6 +5260,7 @@ function ff_hevc_put_hevc_qpel_hv24_8_\suffix, export=1
         add             x0, x0, #24
         bl              X(ff_hevc_put_hevc_qpel_hv12_8_\suffix)
         ldr             x30, [sp], #16
+        AARCH64_VALIDATE_LINK_REGISTER
         ret
 endfunc
 
@@ -5227,6 +5271,7 @@ function ff_hevc_put_hevc_qpel_hv32_8_\suffix, export=1
         sub             x1, x1, x2
         mov             x14, sp
         sub             sp, sp, x10         // tmp_array
+        AARCH64_SIGN_LINK_REGISTER
         stp             x5,  x30, [sp, #-48]!
         stp             x0,  x3,  [sp, #16]
         str             x14,      [sp, #32]
@@ -5237,6 +5282,7 @@ function ff_hevc_put_hevc_qpel_hv32_8_\suffix, export=1
         ldr             x14,      [sp, #32]
         ldp             x0,  x3,  [sp, #16]
         ldp             x5,  x30, [sp], #48
+        AARCH64_VALIDATE_LINK_REGISTER
         b               hevc_put_hevc_qpel_hv32_8_end_neon
 endfunc
 
@@ -5247,6 +5293,7 @@ function ff_vvc_put_qpel_hv32_8_\suffix, export=1
         sub             x1, x1, x2
         mov             x14, sp
         sub             sp, sp, x10         // tmp_array
+        AARCH64_SIGN_LINK_REGISTER
         stp             x5,  x30, [sp, #-48]!
         stp             x0,  x3,  [sp, #16]
         str             x14,      [sp, #32]
@@ -5257,10 +5304,12 @@ function ff_vvc_put_qpel_hv32_8_\suffix, export=1
         ldr             x14,      [sp, #32]
         ldp             x0,  x3,  [sp, #16]
         ldp             x5,  x30, [sp], #48
+        AARCH64_VALIDATE_LINK_REGISTER
         b               vvc_put_qpel_hv32_8_end_neon
 endfunc
 
 function ff_hevc_put_hevc_qpel_hv48_8_\suffix, export=1
+        AARCH64_SIGN_LINK_REGISTER
         stp             x4, x5, [sp, #-64]!
         stp             x2, x3, [sp, #16]
         stp             x0, x1, [sp, #32]
@@ -5273,10 +5322,12 @@ function ff_hevc_put_hevc_qpel_hv48_8_\suffix, export=1
         add             x0, x0, #48
         bl              X(ff_hevc_put_hevc_qpel_hv24_8_\suffix)
         ldr             x30, [sp], #16
+        AARCH64_VALIDATE_LINK_REGISTER
         ret
 endfunc
 
 function ff_hevc_put_hevc_qpel_hv64_8_\suffix, export=1
+        AARCH64_SIGN_LINK_REGISTER
         stp             x4, x5, [sp, #-64]!
         stp             x2, x3, [sp, #16]
         stp             x0, x1, [sp, #32]
@@ -5291,10 +5342,12 @@ function ff_hevc_put_hevc_qpel_hv64_8_\suffix, export=1
         mov             x6, #32
         bl              X(ff_hevc_put_hevc_qpel_hv32_8_\suffix)
         ldr             x30, [sp], #16
+        AARCH64_VALIDATE_LINK_REGISTER
         ret
 endfunc
 
 function ff_vvc_put_qpel_hv64_8_\suffix, export=1
+        AARCH64_SIGN_LINK_REGISTER
         stp             x4, x5, [sp, #-64]!
         stp             x2, x3, [sp, #16]
         stp             x0, x1, [sp, #32]
@@ -5309,10 +5362,12 @@ function ff_vvc_put_qpel_hv64_8_\suffix, export=1
         mov             x6, #32
         bl              X(ff_vvc_put_qpel_hv32_8_\suffix)
         ldr             x30, [sp], #16
+        AARCH64_VALIDATE_LINK_REGISTER
         ret
 endfunc
 
 function ff_vvc_put_qpel_hv128_8_\suffix, export=1
+        AARCH64_SIGN_LINK_REGISTER
         stp             x4, x5, [sp, #-64]!
         stp             x2, x3, [sp, #16]
         stp             x0, x1, [sp, #32]
@@ -5327,6 +5382,7 @@ function ff_vvc_put_qpel_hv128_8_\suffix, export=1
         mov             x6, #64
         bl              X(ff_vvc_put_qpel_hv64_8_\suffix)
         ldr             x30, [sp], #16
+        AARCH64_VALIDATE_LINK_REGISTER
         ret
 endfunc
 
@@ -5345,6 +5401,7 @@ DISABLE_I8MM
 .macro QPEL_UNI_W_HV_HEADER width, suffix
         ldp             x14, x15, [sp]          // mx, my
         ldr             w13, [sp, #16]          // width
+        AARCH64_SIGN_LINK_REGISTER
         stp             x19, x30, [sp, #-80]!
         stp             x20, x21, [sp, #16]
         stp             x22, x23, [sp, #32]
@@ -5398,6 +5455,7 @@ DISABLE_I8MM
         ldp             x24, x25, [sp, #48]
         ldp             x26, x27, [sp, #64]
         ldp             x19, x30, [sp], #80
+        AARCH64_VALIDATE_LINK_REGISTER
 .endm
 
 .macro QPEL_UNI_W_HV_4
@@ -6176,6 +6234,7 @@ function ff_hevc_put_hevc_qpel_bi_hv4_8_\suffix, export=1
         lsl             x10, x10, #7
         mov             x14, sp
         sub             sp, sp, x10 // tmp_array
+        AARCH64_SIGN_LINK_REGISTER
         stp             x7, x30, [sp, #-64]!
         stp             x4, x5, [sp, #16]
         stp             x0, x1, [sp, #32]
@@ -6191,6 +6250,7 @@ function ff_hevc_put_hevc_qpel_bi_hv4_8_\suffix, export=1
         ldp             x0, x1, [sp, #32]
         ldr             x14,    [sp, #48]
         ldp             x7, x30, [sp], #64
+        AARCH64_VALIDATE_LINK_REGISTER
         b               hevc_put_hevc_qpel_bi_hv4_8_end_neon
 endfunc
 
@@ -6199,6 +6259,7 @@ function ff_hevc_put_hevc_qpel_bi_hv6_8_\suffix, export=1
         lsl             x10, x10, #7
         mov             x14, sp
         sub             sp, sp, x10         // tmp_array
+        AARCH64_SIGN_LINK_REGISTER
         stp             x7, x30, [sp, #-64]!
         stp             x4, x5, [sp, #16]
         stp             x0, x1, [sp, #32]
@@ -6214,6 +6275,7 @@ function ff_hevc_put_hevc_qpel_bi_hv6_8_\suffix, export=1
         ldp             x0, x1, [sp, #32]
         ldr             x14,    [sp, #48]
         ldp             x7, x30, [sp], #64
+        AARCH64_VALIDATE_LINK_REGISTER
         b               hevc_put_hevc_qpel_bi_hv6_8_end_neon
 endfunc
 
@@ -6222,6 +6284,7 @@ function ff_hevc_put_hevc_qpel_bi_hv8_8_\suffix, export=1
         lsl             x10, x10, #7
         mov             x14, sp
         sub             sp, sp, x10         // tmp_array
+        AARCH64_SIGN_LINK_REGISTER
         stp             x7, x30, [sp, #-64]!
         stp             x4, x5, [sp, #16]
         stp             x0, x1, [sp, #32]
@@ -6237,10 +6300,12 @@ function ff_hevc_put_hevc_qpel_bi_hv8_8_\suffix, export=1
         ldp             x0, x1, [sp, #32]
         ldr             x14,    [sp, #48]
         ldp             x7, x30, [sp], #64
+        AARCH64_VALIDATE_LINK_REGISTER
         b               hevc_put_hevc_qpel_bi_hv8_8_end_neon
 endfunc
 
 function ff_hevc_put_hevc_qpel_bi_hv12_8_\suffix, export=1
+        AARCH64_SIGN_LINK_REGISTER
         stp             x6, x7, [sp, #-80]!
         stp             x4, x5, [sp, #16]
         stp             x2, x3, [sp, #32]
@@ -6256,6 +6321,7 @@ function ff_hevc_put_hevc_qpel_bi_hv12_8_\suffix, export=1
         add             x0, x0, #8
         bl              X(ff_hevc_put_hevc_qpel_bi_hv4_8_\suffix)
         ldr             x30, [sp], #16
+        AARCH64_VALIDATE_LINK_REGISTER
         ret
 endfunc
 
@@ -6264,6 +6330,7 @@ function ff_hevc_put_hevc_qpel_bi_hv16_8_\suffix, export=1
         lsl             x10, x10, #7
         mov             x14, sp
         sub             sp, sp, x10         // tmp_array
+        AARCH64_SIGN_LINK_REGISTER
         stp             x7, x30, [sp, #-64]!
         stp             x4, x5, [sp, #16]
         stp             x0, x1, [sp, #32]
@@ -6279,11 +6346,13 @@ function ff_hevc_put_hevc_qpel_bi_hv16_8_\suffix, export=1
         ldp             x0, x1, [sp, #32]
         ldr             x14,    [sp, #48]
         ldp             x7, x30, [sp], #64
+        AARCH64_VALIDATE_LINK_REGISTER
         mov             x6, #16          // width
         b               hevc_put_hevc_qpel_bi_hv16_8_end_neon
 endfunc
 
 function ff_hevc_put_hevc_qpel_bi_hv24_8_\suffix, export=1
+        AARCH64_SIGN_LINK_REGISTER
         stp             x6, x7, [sp, #-80]!
         stp             x4, x5, [sp, #16]
         stp             x2, x3, [sp, #32]
@@ -6299,6 +6368,7 @@ function ff_hevc_put_hevc_qpel_bi_hv24_8_\suffix, export=1
         add             x0, x0, #16
         bl              X(ff_hevc_put_hevc_qpel_bi_hv8_8_\suffix)
         ldr             x30, [sp], #16
+        AARCH64_VALIDATE_LINK_REGISTER
         ret
 endfunc
 
@@ -6307,6 +6377,7 @@ function ff_hevc_put_hevc_qpel_bi_hv32_8_\suffix, export=1
         lsl             x10, x10, #7
         mov             x14, sp
         sub             sp, sp, x10         // tmp_array
+        AARCH64_SIGN_LINK_REGISTER
         stp             x7, x30, [sp, #-64]!
         stp             x4, x5, [sp, #16]
         stp             x0, x1, [sp, #32]
@@ -6323,6 +6394,7 @@ function ff_hevc_put_hevc_qpel_bi_hv32_8_\suffix, export=1
         ldp             x0, x1, [sp, #32]
         ldr             x14,    [sp, #48]
         ldp             x7, x30, [sp], #64
+        AARCH64_VALIDATE_LINK_REGISTER
         mov             x6, #32 // width
         b               hevc_put_hevc_qpel_bi_hv16_8_end_neon
 endfunc
@@ -6332,6 +6404,7 @@ function ff_hevc_put_hevc_qpel_bi_hv48_8_\suffix, export=1
         lsl             x10, x10, #7
         mov             x14, sp
         sub             sp, sp, x10 // tmp_array
+        AARCH64_SIGN_LINK_REGISTER
         stp             x7, x30, [sp, #-64]!
         stp             x4, x5, [sp, #16]
         stp             x0, x1, [sp, #32]
@@ -6352,6 +6425,7 @@ function ff_hevc_put_hevc_qpel_bi_hv48_8_\suffix, export=1
         ldp             x0, x1, [sp, #32]
         ldr             x14,    [sp, #48]
         ldp             x7, x30, [sp], #64
+        AARCH64_VALIDATE_LINK_REGISTER
         mov             x6, #48 // width
         b               hevc_put_hevc_qpel_bi_hv16_8_end_neon
 endfunc
@@ -6361,6 +6435,7 @@ function ff_hevc_put_hevc_qpel_bi_hv64_8_\suffix, export=1
         lsl             x10, x10, #7
         mov             x14, sp
         sub             sp, sp, x10 // tmp_array
+        AARCH64_SIGN_LINK_REGISTER
         stp             x7, x30, [sp, #-64]!
         stp             x4, x5, [sp, #16]
         stp             x0, x1, [sp, #32]
@@ -6381,6 +6456,7 @@ function ff_hevc_put_hevc_qpel_bi_hv64_8_\suffix, export=1
         ldp             x0, x1, [sp, #32]
         ldr             x14,    [sp, #48]
         ldp             x7, x30, [sp], #64
+        AARCH64_VALIDATE_LINK_REGISTER
         mov             x6, #64          // width
         b               hevc_put_hevc_qpel_bi_hv16_8_end_neon
 endfunc

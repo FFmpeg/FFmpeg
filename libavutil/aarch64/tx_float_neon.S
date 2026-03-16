@@ -917,6 +917,7 @@ FFT32_FN ns_float, 1
 
 .macro SR_TRANSFORM_DEF len, next=0
 \len:
+        AARCH64_SIGN_LINK_REGISTER
         stp             x20, x30, [sp, #-16]!
         mov             w20, #(\len/4)
         mov             x5, #((\len*4) - (\len/1))
@@ -926,6 +927,7 @@ FFT32_FN ns_float, 1
         add             x1, x1, x5
         bl              32b
         ldp             x20, x30, [sp], #16
+        AARCH64_VALIDATE_LINK_REGISTER
         ldr             w5, =(\len*6 + \len/2)
         sub             x1, x1, x5
 
@@ -1061,6 +1063,7 @@ function ff_tx_fft_sr_\name\()_neon, export=1
         b.gt            128f
         ret
 128:
+        AARCH64_SIGN_LINK_REGISTER
         stp             x20, x30, [sp, #-16]!
         mov             w20, #32
         add             x1, x1, #16*32
@@ -1068,6 +1071,7 @@ function ff_tx_fft_sr_\name\()_neon, export=1
         add             x1, x1, #8*32
         bl              32b
         ldp             x20, x30, [sp], #16
+        AARCH64_VALIDATE_LINK_REGISTER
         sub             x1, x1, #24*32
 
         SETUP_SR_RECOMB 128, x7, x8, x9
@@ -1081,6 +1085,7 @@ function ff_tx_fft_sr_\name\()_neon, export=1
         b.gt            256f
         ret
 256:
+        AARCH64_SIGN_LINK_REGISTER
         stp             x20, x30, [sp, #-16]!
         mov             w20, #64
         add             x1, x1, #32*32
@@ -1088,6 +1093,7 @@ function ff_tx_fft_sr_\name\()_neon, export=1
         add             x1, x1, #16*32
         bl              32b
         ldp             x20, x30, [sp], #16
+        AARCH64_VALIDATE_LINK_REGISTER
         sub             x1, x1, #48*32
 
         SETUP_SR_RECOMB 256, x7, x8, x9
@@ -1102,6 +1108,7 @@ function ff_tx_fft_sr_\name\()_neon, export=1
         b.gt            512f
         ret
 512:
+        AARCH64_SIGN_LINK_REGISTER
         stp             x20, x30, [sp, #-16]!
         mov             w20, #128
         add             x1, x1, #64*32
@@ -1109,6 +1116,7 @@ function ff_tx_fft_sr_\name\()_neon, export=1
         add             x1, x1, #32*32
         bl              32b
         ldp             x20, x30, [sp], #16
+        AARCH64_VALIDATE_LINK_REGISTER
         sub             x1, x1, #96*32
 
         SETUP_SR_RECOMB 512, x7, x8, x9
@@ -1128,6 +1136,7 @@ function ff_tx_fft_sr_\name\()_neon, export=1
 
         ret
 1024:
+        AARCH64_SIGN_LINK_REGISTER
         stp             x20, x30, [sp, #-16]!
         mov             w20, #256
         add             x1, x1, #96*32
@@ -1135,6 +1144,7 @@ function ff_tx_fft_sr_\name\()_neon, export=1
         add             x1, x1, #64*32
         bl              32b
         ldp             x20, x30, [sp], #16
+        AARCH64_VALIDATE_LINK_REGISTER
         mov             x5, #192*32
         sub             x1, x1, x5
 

@@ -1169,9 +1169,11 @@ function nsse16_neon, export=1
         str             x0, [sp, #-0x40]!
         stp             x1, x2, [sp, #0x10]
         stp             x3, x4, [sp, #0x20]
+        AARCH64_SIGN_LINK_REGISTER
         str             x30, [sp, #0x30]
         bl              X(sse16_neon)
         ldr             x30, [sp, #0x30]
+        AARCH64_VALIDATE_LINK_REGISTER
         mov             w9, w0                                  // here we store score1
         ldp             x1, x2, [sp, #0x10]
         ldp             x3, x4, [sp, #0x20]
@@ -1290,9 +1292,11 @@ function nsse8_neon, export=1
         str             x0, [sp, #-0x40]!
         stp             x1, x2, [sp, #0x10]
         stp             x3, x4, [sp, #0x20]
+        AARCH64_SIGN_LINK_REGISTER
         str             x30, [sp, #0x30]
         bl              X(sse8_neon)
         ldr             x30, [sp, #0x30]
+        AARCH64_VALIDATE_LINK_REGISTER
         mov             w9, w0                                  // here we store score1
         ldp             x1, x2, [sp, #0x10]
         ldp             x3, x4, [sp, #0x20]

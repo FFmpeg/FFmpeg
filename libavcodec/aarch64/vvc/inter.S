@@ -1611,6 +1611,7 @@ endfunc
 function ff_vvc_apply_bdof_8_neon, export=1
         mov             w6, #8
 0:
+        AARCH64_SIGN_LINK_REGISTER
         stp             x19, x20, [sp, #-0x40]!
         stp             x21, x22, [sp, #0x10]
         stp             x23, x24, [sp, #0x20]
@@ -1703,6 +1704,7 @@ function ff_vvc_apply_bdof_8_neon, export=1
         ldp             x23, x24, [sp, #0x20]
         ldp             x21, x22, [sp, #0x10]
         ldp             x19, x20, [sp], #0x40
+        AARCH64_VALIDATE_LINK_REGISTER
         ret
 endfunc
 
