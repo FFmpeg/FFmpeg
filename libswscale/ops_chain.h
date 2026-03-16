@@ -130,7 +130,7 @@ typedef struct SwsOpEntry {
 
 static inline void ff_op_priv_free(SwsOpPriv *priv)
 {
-    av_free(priv->ptr);
+    av_freep(&priv->ptr);
 }
 
 typedef struct SwsOpTable {
