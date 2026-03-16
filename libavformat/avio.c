@@ -239,7 +239,7 @@ int ffurl_connect(URLContext *uc, AVDictionary **options)
     if ((err = av_dict_set(options, "protocol_whitelist", uc->protocol_whitelist, 0)) < 0)
         return err;
     if ((err = av_dict_set(options, "protocol_blacklist", uc->protocol_blacklist, 0)) < 0)
-        return err;
+        goto fail;
 
     err =
         uc->prot->url_open2 ? uc->prot->url_open2(uc,
@@ -260,6 +260,11 @@ int ffurl_connect(URLContext *uc, AVDictionary **options)
         if (!uc->is_streamed && ffurl_seek(uc, 0, SEEK_SET) < 0)
             uc->is_streamed = 1;
     return 0;
+
+fail:
+    if (options == &tmp_opts)
+        av_dict_free(&tmp_opts);
+    return err;
 }
 
 int ffurl_accept(URLContext *s, URLContext **c)
