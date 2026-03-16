@@ -33,12 +33,16 @@ static void gmc_mmx(uint8_t *dst, const uint8_t *src,
     const int w    = 8;
     const int ix   = ox  >> (16 + shift);
     const int iy   = oy  >> (16 + shift);
-    const int oxs  = ox  >> 4;
-    const int oys  = oy  >> 4;
-    const int dxxs = dxx >> 4;
+    const int ox2  = ox & (1 << (16 + shift)) - 1;
+    const int oy2  = oy & (1 << (16 + shift)) - 1;
+    const int oxs  = ox2 >> 4;
+    const int oys  = oy2 >> 4;
+    const int dxx2 = dxx - (1 << (16 + shift));
+    const int dyy2 = dyy - (1 << (16 + shift));
+    const int dxxs = dxx2 >> 4;
     const int dxys = dxy >> 4;
     const int dyxs = dyx >> 4;
-    const int dyys = dyy >> 4;
+    const int dyys = dyy2 >> 4;
     const uint16_t r4[4]   = { r, r, r, r };
     const uint16_t dxy4[4] = { dxys, dxys, dxys, dxys };
     const uint16_t dyy4[4] = { dyys, dyys, dyys, dyys };
@@ -48,8 +52,8 @@ static void gmc_mmx(uint8_t *dst, const uint8_t *src,
     uint8_t edge_buf[(MAX_H + 1) * MAX_STRIDE];
     int x, y;
 
-    const int dxw = (dxx - (1 << (16 + shift))) * (w - 1);
-    const int dyh = (dyy - (1 << (16 + shift))) * (h - 1);
+    const int dxw = dxx2 * (w - 1);
+    const int dyh = dyy2 * (h - 1);
     const int dxh = dxy * (h - 1);
     const int dyw = dyx * (w - 1);
     int need_emu  =  (unsigned) ix >= width  - w || width < w ||
@@ -57,8 +61,8 @@ static void gmc_mmx(uint8_t *dst, const uint8_t *src,
                      ;
 
     if ( // non-constant fullpel offset (3% of blocks)
-        ((ox ^ (ox + dxw)) | (ox ^ (ox + dxh)) | (ox ^ (ox + dxw + dxh)) |
-         (oy ^ (oy + dyw)) | (oy ^ (oy + dyh)) | (oy ^ (oy + dyw + dyh))) >> (16 + shift) ||
+        ((ox2 + dxw) | (ox2 + dxh) | (ox2 + dxw + dxh) |
+         (oy2 + dyw) | (oy2 + dyh) | (oy2 + dyw + dyh)) >> (16 + shift) ||
         // uses more than 16 bits of subpel mv (only at huge resolution)
         (dxx | dxy | dyx | dyy) & 15 ||
         (need_emu && (h > MAX_H || stride > MAX_STRIDE))) {
