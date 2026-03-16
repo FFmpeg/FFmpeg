@@ -8442,13 +8442,14 @@ static int mov_init(AVFormatContext *s)
         AVStream *st    = stg->streams[lcevc->lcevc_index];
         MOVTrack *track = st->priv_data;
 
-        for (i = 0; i < mov->nb_tracks; i++) {
-            MOVTrack *trk = &mov->tracks[i];
+        for (int j = 0; j < mov->nb_tracks; j++) {
+            MOVTrack *trk = &mov->tracks[j];
 
-            if (trk->st == stg->streams[!lcevc->lcevc_index])
+            if (trk->st == stg->streams[!lcevc->lcevc_index]) {
+                track->src_track = j;
                 break;
+            }
         }
-        track->src_track = i;
 
         track->par->width = lcevc->width;
         track->par->height = track->height = lcevc->height;
