@@ -1339,7 +1339,7 @@ ff_jpeg2000_decode_htj2k(const Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c
                     // Assuming that the internal precision for codeblock decoding is 32 bits.
                     val <<= roi_shift;
                 else {
-                    av_log(s->avctx, AV_LOG_ERROR, 
+                    av_log(s->avctx, AV_LOG_ERROR,
                         "Pixel precision in ROI is beyond the supported range.\n"
                     );
                     ret = AVERROR_PATCHWELCOME;
