@@ -1,4 +1,4 @@
-6f0df0f3275f833c341d63b9054caebb *tests/data/fate/acodec-adpcm-ima_wav-trellis.wav
+2d7d3ceddfc5b145995e330a57594c81 *tests/data/fate/acodec-adpcm-ima_wav-trellis.wav
 267324 tests/data/fate/acodec-adpcm-ima_wav-trellis.wav
 1af83218cde84bd7cd2297c04ef97f79 *tests/data/fate/acodec-adpcm-ima_wav-trellis.out.wav
 stddev:  710.09 PSNR: 39.30 MAXDIFF:25941 bytes:  1058400/  1061748

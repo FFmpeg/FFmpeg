@@ -1,1 +1,1 @@
-adpcm_ima_wav bit_rate=128000 block_align=1024 bits_per_coded_sample=4 frame_size=1017
+adpcm_ima_wav bit_rate=355228 block_align=1024 bits_per_coded_sample=4 frame_size=1017

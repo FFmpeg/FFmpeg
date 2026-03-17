@@ -135,6 +135,7 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
            have to buffer the samples :-( */
         avctx->block_align = s->block_size;
         avctx->bits_per_coded_sample = 4;
+        avctx->bit_rate = avctx->block_align * 8LL * avctx->sample_rate / avctx->frame_size;
         ) /* End of CASE */
     CASE(ADPCM_IMA_QT,
         avctx->frame_size  = 64;
@@ -147,6 +148,7 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
         avctx->frame_size = (s->block_size - 7 * channels) * 2 / channels + 2;
         avctx->bits_per_coded_sample = 4;
         avctx->block_align     = s->block_size;
+        avctx->bit_rate = avctx->block_align * 8LL * avctx->sample_rate / avctx->frame_size;
         if (!(avctx->extradata = av_malloc(32 + AV_INPUT_BUFFER_PADDING_SIZE)))
             return AVERROR(ENOMEM);
         avctx->extradata_size = 32;

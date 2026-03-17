@@ -135,6 +135,14 @@ int ff_put_wav_header(AVFormatContext *s, AVIOContext *pb,
         bytespersec = par->sample_rate * blkalign;
     } else if (par->codec_id == AV_CODEC_ID_G723_1) {
         bytespersec = 800;
+    } else if (par->codec_id == AV_CODEC_ID_ADPCM_MS ||
+               par->codec_id == AV_CODEC_ID_ADPCM_IMA_WAV) {
+        if (frame_size <= 0) {
+            av_log(s, AV_LOG_ERROR, "Invalid block_align or bps for %s\n",
+                   avcodec_get_name(par->codec_id));
+            return AVERROR(EINVAL);
+        }
+        bytespersec = (int64_t)par->sample_rate * blkalign / frame_size;
     } else {
         bytespersec = par->bit_rate / 8;
     }
