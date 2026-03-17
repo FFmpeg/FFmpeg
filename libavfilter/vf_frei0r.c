@@ -43,6 +43,13 @@
 #include "formats.h"
 #include "video.h"
 
+#ifdef __APPLE__
+/* frei0r plugins use .so on macOS */
+#define FREI0R_SLIBSUF ".so"
+#else
+#define FREI0R_SLIBSUF SLIBSUF
+#endif
+
 typedef f0r_instance_t (*f0r_construct_f)(unsigned int width, unsigned int height);
 typedef void (*f0r_destruct_f)(f0r_instance_t instance);
 typedef void (*f0r_deinit_f)(void);
@@ -173,7 +180,7 @@ static int set_params(AVFilterContext *ctx, const char *params)
 
 static int load_path(AVFilterContext *ctx, void **handle_ptr, const char *prefix, const char *name)
 {
-    char *path = av_asprintf("%s%s%s", prefix, name, SLIBSUF);
+    char *path = av_asprintf("%s%s%s", prefix, name, FREI0R_SLIBSUF);
     if (!path)
         return AVERROR(ENOMEM);
     av_log(ctx, AV_LOG_DEBUG, "Looking for frei0r effect in '%s'.\n", path);
