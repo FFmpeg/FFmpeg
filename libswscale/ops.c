@@ -852,7 +852,7 @@ void ff_sws_op_list_print(void *log, int lev, int lev_extra,
                    PRINTQ(op->lin.m[3][0]), PRINTQ(op->lin.m[3][1]), PRINTQ(op->lin.m[3][2]), PRINTQ(op->lin.m[3][3]), PRINTQ(op->lin.m[3][4]));
             break;
         case SWS_OP_SCALE:
-            av_log(log, lev, "%-20s: * %s\n", name, PRINTQ(op->c.q));
+            av_log(log, lev, "%-20s: * %d/%d\n", name, op->c.q.num, op->c.q.den);
             break;
         case SWS_OP_TYPE_NB:
             break;
