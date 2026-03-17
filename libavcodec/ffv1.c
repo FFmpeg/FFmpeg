@@ -126,6 +126,8 @@ int ff_need_new_slices(int width, int num_h_slices, int chroma_shift) {
 
 int ff_slice_coord(const FFV1Context *f, int width, int sx, int num_h_slices, int chroma_shift) {
     int mpw = 1<<chroma_shift;
+    if (f->bayer)
+        mpw = FFMAX(mpw, 2);
     int awidth = FFALIGN(width, mpw);
 
     if (f->combined_version <= 0x40002)
@@ -233,7 +235,7 @@ void ff_ffv1_compute_bits_per_plane(const FFV1Context *f, FFV1SliceContext *sc, 
         av_assert0(bits_per_raw_sample > 8); //breaks with lbd, needs review if added
 
     //bits with no RCT
-    for (int p=0; p<3+f->transparency; p++) {
+    for (int p=0; p<3+f->transparency+f->bayer; p++) {
         bits[p] = av_ceil_log2(sc->remap_count[p]);
         if (mask)
             mask[p] = (1<<bits[p]) - 1;
@@ -246,6 +248,8 @@ void ff_ffv1_compute_bits_per_plane(const FFV1Context *f, FFV1SliceContext *sc, 
         bits[0] = av_ceil_log2(FFMAX3(sc->remap_count[0], sc->remap_count[1], sc->remap_count[2]));
         bits[1] = av_ceil_log2(sc->remap_count[0] + sc->remap_count[1]);
         bits[2] = av_ceil_log2(sc->remap_count[0] + sc->remap_count[2]);
+        if (f->bayer)
+            bits[3] = av_ceil_log2(sc->remap_count[0] + sc->remap_count[3]);
 
         //old version coded a bit more than needed
         if (f->combined_version < 0x40008) {

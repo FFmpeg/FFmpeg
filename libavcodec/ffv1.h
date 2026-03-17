@@ -153,6 +153,8 @@ typedef struct FFV1Context {
     int flt;
     int remap_mode;
     int remap_optimizer;
+    int bayer;
+    int bayer_order; /* 0 = RGGB (only supported value for now) */
     int maxsize_warned;
 
     int use32bit;
