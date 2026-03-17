@@ -203,7 +203,6 @@ int ff_sws_op_compile_tables(const SwsOpTable *const tables[], int num_tables,
     const SwsOpEntry *best = NULL;
     const SwsOp *op = &ops->ops[0];
     int ret, best_score = 0, best_cpu_flags;
-    SwsOpPriv priv = {0};
 
     for (int n = 0; n < num_tables; n++) {
         const SwsOpTable *table = tables[n];
@@ -225,17 +224,20 @@ int ff_sws_op_compile_tables(const SwsOpTable *const tables[], int num_tables,
     if (!best)
         return AVERROR(ENOTSUP);
 
+    SwsImplResult res = {0};
     if (best->setup) {
-        ret = best->setup(op, &priv);
+        const SwsImplParams params = { .op = op };
+        ret = best->setup(&params, &res);
         if (ret < 0)
             return ret;
     }
 
     chain->cpu_flags |= best_cpu_flags;
-    ret = ff_sws_op_chain_append(chain, best->func, best->free, &priv);
+    ret = ff_sws_op_chain_append(chain, res.func ? res.func : best->func,
+                                 res.free, &res.priv);
     if (ret < 0) {
-        if (best->free)
-            best->free(&priv);
+        if (res.free)
+            res.free(&res.priv);
         return ret;
     }
 
@@ -246,44 +248,45 @@ int ff_sws_op_compile_tables(const SwsOpTable *const tables[], int num_tables,
 
 #define q2pixel(type, q) ((q).den ? (type) (q).num / (q).den : 0)
 
-int ff_sws_setup_u8(const SwsOp *op, SwsOpPriv *out)
+int ff_sws_setup_u8(const SwsImplParams *params, SwsImplResult *out)
 {
-    out->u8[0] = op->c.u;
+    out->priv.u8[0] = params->op->c.u;
     return 0;
 }
 
-int ff_sws_setup_u(const SwsOp *op, SwsOpPriv *out)
+int ff_sws_setup_u(const SwsImplParams *params, SwsImplResult *out)
 {
+    const SwsOp *op = params->op;
     switch (op->type) {
-    case SWS_PIXEL_U8:  out->u8[0]  = op->c.u; return 0;
-    case SWS_PIXEL_U16: out->u16[0] = op->c.u; return 0;
-    case SWS_PIXEL_U32: out->u32[0] = op->c.u; return 0;
-    case SWS_PIXEL_F32: out->f32[0] = op->c.u; return 0;
+    case SWS_PIXEL_U8:  out->priv.u8[0]  = op->c.u; return 0;
+    case SWS_PIXEL_U16: out->priv.u16[0] = op->c.u; return 0;
+    case SWS_PIXEL_U32: out->priv.u32[0] = op->c.u; return 0;
+    case SWS_PIXEL_F32: out->priv.f32[0] = op->c.u; return 0;
     default: return AVERROR(EINVAL);
     }
 }
 
-int ff_sws_setup_q(const SwsOp *op, SwsOpPriv *out)
+int ff_sws_setup_q(const SwsImplParams *params, SwsImplResult *out)
 {
+    const SwsOp *op = params->op;
     switch (op->type) {
-    case SWS_PIXEL_U8:  out->u8[0]  = q2pixel(uint8_t,  op->c.q); return 0;
-    case SWS_PIXEL_U16: out->u16[0] = q2pixel(uint16_t, op->c.q); return 0;
-    case SWS_PIXEL_U32: out->u32[0] = q2pixel(uint32_t, op->c.q); return 0;
-    case SWS_PIXEL_F32: out->f32[0] = q2pixel(float,    op->c.q); return 0;
+    case SWS_PIXEL_U8:  out->priv.u8[0]  = q2pixel(uint8_t,  op->c.q); return 0;
+    case SWS_PIXEL_U16: out->priv.u16[0] = q2pixel(uint16_t, op->c.q); return 0;
+    case SWS_PIXEL_U32: out->priv.u32[0] = q2pixel(uint32_t, op->c.q); return 0;
+    case SWS_PIXEL_F32: out->priv.f32[0] = q2pixel(float,    op->c.q); return 0;
     default: return AVERROR(EINVAL);
     }
-
-    return 0;
 }
 
-int ff_sws_setup_q4(const SwsOp *op, SwsOpPriv *out)
+int ff_sws_setup_q4(const SwsImplParams *params, SwsImplResult *out)
 {
+    const SwsOp *op = params->op;
     for (int i = 0; i < 4; i++) {
         switch (op->type) {
-        case SWS_PIXEL_U8:  out->u8[i]  = q2pixel(uint8_t,  op->c.q4[i]); break;
-        case SWS_PIXEL_U16: out->u16[i] = q2pixel(uint16_t, op->c.q4[i]); break;
-        case SWS_PIXEL_U32: out->u32[i] = q2pixel(uint32_t, op->c.q4[i]); break;
-        case SWS_PIXEL_F32: out->f32[i] = q2pixel(float,    op->c.q4[i]); break;
+        case SWS_PIXEL_U8:  out->priv.u8[i]  = q2pixel(uint8_t,  op->c.q4[i]); break;
+        case SWS_PIXEL_U16: out->priv.u16[i] = q2pixel(uint16_t, op->c.q4[i]); break;
+        case SWS_PIXEL_U32: out->priv.u32[i] = q2pixel(uint32_t, op->c.q4[i]); break;
+        case SWS_PIXEL_F32: out->priv.f32[i] = q2pixel(float,    op->c.q4[i]); break;
         default: return AVERROR(EINVAL);
         }
     }

@@ -41,23 +41,27 @@
 #define FMT_CHAR f
 #include "ops_tmpl_common.c"
 
-DECL_SETUP(setup_dither)
+DECL_SETUP(setup_dither, params, out)
 {
+    const SwsOp *op = params->op;
     const int size = 1 << op->dither.size_log2;
     if (size == 1) {
         /* We special case this value */
         av_assert1(!av_cmp_q(op->dither.matrix[0], av_make_q(1, 2)));
-        out->ptr = NULL;
+        out->priv.ptr = NULL;
         return 0;
     }
 
     const int width = FFMAX(size, SWS_BLOCK_SIZE);
-    pixel_t *matrix = out->ptr = av_malloc(sizeof(pixel_t) * size * width);
+    pixel_t *matrix = out->priv.ptr = av_malloc(sizeof(pixel_t) * size * width);
     if (!matrix)
         return AVERROR(ENOMEM);
+    out->free = ff_op_priv_free;
 
-    static_assert(sizeof(out->ptr) <= sizeof(uint8_t[8]), ">8 byte pointers not supported");
-    int8_t *offset = &out->i8[8];
+    static_assert(sizeof(out->priv.ptr) <= sizeof(uint8_t[8]),
+                  ">8 byte pointers not supported");
+
+    int8_t *offset = &out->priv.i8[8];
     for (int i = 0; i < 4; i++)
         offset[i] = op->dither.y_offset[i];
 
@@ -107,7 +111,6 @@ DECL_ENTRY(dither##N,                                                           
     .op = SWS_OP_DITHER,                                                        \
     .dither_size = N,                                                           \
     .setup = fn(setup_dither),                                                  \
-    .free = ff_op_priv_free,                                                    \
 );
 
 WRAP_DITHER(0)
@@ -126,8 +129,9 @@ typedef struct {
     pixel_t k[4];
 } fn(LinCoeffs);
 
-DECL_SETUP(setup_linear)
+DECL_SETUP(setup_linear, params, out)
 {
+    const SwsOp *op = params->op;
     fn(LinCoeffs) c;
 
     for (int i = 0; i < 4; i++) {
@@ -136,7 +140,7 @@ DECL_SETUP(setup_linear)
         c.k[i] = av_q2pixel(op->lin.m[i][4]);
     }
 
-    return SETUP_MEMDUP(c);
+    return SETUP_MEMDUP(c, out);
 }
 
 /**
@@ -193,7 +197,6 @@ DECL_IMPL(linear_##NAME)                                                        
 DECL_ENTRY(linear_##NAME,                                                       \
     .op    = SWS_OP_LINEAR,                                                     \
     .setup = fn(setup_linear),                                                  \
-    .free  = ff_op_priv_free,                                                   \
     .linear_mask = (MASK),                                                      \
 );
 

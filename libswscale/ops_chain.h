@@ -37,6 +37,8 @@
  * that is an implementation detail of the specific backend.
  */
 
+typedef struct SwsOpTable SwsOpTable;
+
 /**
  * Private data for each kernel.
  */
@@ -59,12 +61,6 @@ typedef union SwsOpPriv {
 } SwsOpPriv;
 
 static_assert(sizeof(SwsOpPriv) == 16, "SwsOpPriv size mismatch");
-
-/* Setup helpers */
-int ff_sws_setup_u(const SwsOp *op, SwsOpPriv *out);
-int ff_sws_setup_u8(const SwsOp *op, SwsOpPriv *out);
-int ff_sws_setup_q(const SwsOp *op, SwsOpPriv *out);
-int ff_sws_setup_q4(const SwsOp *op, SwsOpPriv *out);
 
 /**
  * Per-kernel execution context.
@@ -104,6 +100,16 @@ static inline void ff_sws_op_chain_free(SwsOpChain *chain)
 int ff_sws_op_chain_append(SwsOpChain *chain, SwsFuncPtr func,
                            void (*free)(SwsOpPriv *), const SwsOpPriv *priv);
 
+typedef struct SwsImplParams {
+    const SwsOp *op;
+} SwsImplParams;
+
+typedef struct SwsImplResult {
+    SwsFuncPtr func; /* overrides `SwsOpEntry.func` if non-NULL */
+    SwsOpPriv priv; /* private data for this implementation instance */
+    void (*free)(SwsOpPriv *priv); /* free function for `priv` */
+} SwsImplResult;
+
 typedef struct SwsOpEntry {
     /* Kernel metadata; reduced size subset of SwsOp */
     SwsOpType op;
@@ -124,20 +130,25 @@ typedef struct SwsOpEntry {
 
     /* Kernel implementation */
     SwsFuncPtr func;
-    int (*setup)(const SwsOp *op, SwsOpPriv *out); /* optional */
-    void (*free)(SwsOpPriv *priv);
+    int (*setup)(const SwsImplParams *params, SwsImplResult *out); /* optional */
 } SwsOpEntry;
+
+/* Setup helpers */
+int ff_sws_setup_u(const SwsImplParams *params, SwsImplResult *out);
+int ff_sws_setup_u8(const SwsImplParams *params, SwsImplResult *out);
+int ff_sws_setup_q(const SwsImplParams *params, SwsImplResult *out);
+int ff_sws_setup_q4(const SwsImplParams *params, SwsImplResult *out);
 
 static inline void ff_op_priv_free(SwsOpPriv *priv)
 {
     av_freep(&priv->ptr);
 }
 
-typedef struct SwsOpTable {
+struct SwsOpTable {
     unsigned cpu_flags;   /* required CPU flags for this table */
     int block_size;       /* fixed block size of this table */
     const SwsOpEntry *entries[]; /* terminated by NULL */
-} SwsOpTable;
+};
 
 /**
  * "Compile" a single op by looking it up in a list of fixed size op tables.

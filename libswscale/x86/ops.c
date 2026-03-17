@@ -83,11 +83,11 @@
         .pack.pattern = {X, Y, Z, W},                                           \
     );                                                                          \
 
-static int setup_swap_bytes(const SwsOp *op, SwsOpPriv *out)
+static int setup_swap_bytes(const SwsImplParams *params, SwsImplResult *out)
 {
-    const int mask = ff_sws_pixel_type_size(op->type) - 1;
+    const int mask = ff_sws_pixel_type_size(params->op->type) - 1;
     for (int i = 0; i < 16; i++)
-        out->u8[i] = (i & ~mask) | (mask - (i & mask));
+        out->priv.u8[i] = (i & ~mask) | (mask - (i & mask));
     return 0;
 }
 
@@ -113,10 +113,11 @@ static int setup_swap_bytes(const SwsOp *op, SwsOpPriv *out)
         .unused[IDX] = true,                                                    \
     );
 
-static int setup_clear(const SwsOp *op, SwsOpPriv *out)
+static int setup_clear(const SwsImplParams *params, SwsImplResult *out)
 {
+    const SwsOp *op = params->op;
     for (int i = 0; i < 4; i++)
-        out->u32[i] = (uint32_t) op->c.q4[i].num;
+        out->priv.u32[i] = (uint32_t) op->c.q4[i].num;
     return 0;
 }
 
@@ -146,9 +147,9 @@ static int setup_clear(const SwsOp *op, SwsOpPriv *out)
         .convert.expand = true,                                                 \
     );
 
-static int setup_shift(const SwsOp *op, SwsOpPriv *out)
+static int setup_shift(const SwsImplParams *params, SwsImplResult *out)
 {
-    out->u16[0] = op->c.u;
+    out->priv.u16[0] = params->op->c.u;
     return 0;
 }
 
@@ -191,12 +192,13 @@ static int setup_shift(const SwsOp *op, SwsOpPriv *out)
         .scale = { .num = ((1 << (BITS)) - 1), .den = 1 },                      \
     );
 
-static int setup_dither(const SwsOp *op, SwsOpPriv *out)
+static int setup_dither(const SwsImplParams *params, SwsImplResult *out)
 {
+    const SwsOp *op = params->op;
     /* 1x1 matrix / single constant */
     if (!op->dither.size_log2) {
         const AVRational k = op->dither.matrix[0];
-        out->f32[0] = (float) k.num / k.den;
+        out->priv.f32[0] = (float) k.num / k.den;
         return 0;
     }
 
@@ -214,9 +216,10 @@ static int setup_dither(const SwsOp *op, SwsOpPriv *out)
      * typically 320 bytes for a 16x16 dither matrix. */
     const int stride = size * sizeof(float);
     const int num_rows = size + max_offset;
-    float *matrix = out->ptr = av_mallocz(num_rows * stride);
+    float *matrix = out->priv.ptr = av_mallocz(num_rows * stride);
     if (!matrix)
         return AVERROR(ENOMEM);
+    out->free = ff_op_priv_free;
 
     for (int i = 0; i < size * size; i++)
         matrix[i] = (float) op->dither.matrix[i].num / op->dither.matrix[i].den;
@@ -224,9 +227,10 @@ static int setup_dither(const SwsOp *op, SwsOpPriv *out)
     memcpy(&matrix[size * size], matrix, max_offset * stride);
 
     /* Store relative pointer offset to each row inside extra space */
-    static_assert(sizeof(out->ptr) <= sizeof(int16_t[4]), ">8 byte pointers not supported");
+    static_assert(sizeof(out->priv.ptr) <= sizeof(int16_t[4]),
+                  ">8 byte pointers not supported");
     assert(max_offset * stride <= INT16_MAX);
-    int16_t *off_out = &out->i16[4];
+    int16_t *off_out = &out->priv.i16[4];
     for (int i = 0; i < 4; i++)
         off_out[i] = off[i] >= 0 ? (off[i] & (size - 1)) * stride : -1;
 
@@ -237,15 +241,17 @@ static int setup_dither(const SwsOp *op, SwsOpPriv *out)
     DECL_MACRO(F32, dither##SIZE##EXT,                                          \
         .op    = SWS_OP_DITHER,                                                 \
         .setup = setup_dither,                                                  \
-        .free  = (SIZE) ? ff_op_priv_free : NULL,                               \
         .dither_size = SIZE,                                                    \
     );
 
-static int setup_linear(const SwsOp *op, SwsOpPriv *out)
+static int setup_linear(const SwsImplParams *params, SwsImplResult *out)
 {
-    float *matrix = out->ptr = av_mallocz(sizeof(float[4][5]));
+    const SwsOp *op = params->op;
+
+    float *matrix = out->priv.ptr = av_mallocz(sizeof(float[4][5]));
     if (!matrix)
         return AVERROR(ENOMEM);
+    out->free = ff_op_priv_free;
 
     for (int y = 0; y < 4; y++) {
         for (int x = 0; x < 5; x++)
@@ -259,7 +265,6 @@ static int setup_linear(const SwsOp *op, SwsOpPriv *out)
     DECL_ASM(F32, NAME##EXT,                                                    \
         .op    = SWS_OP_LINEAR,                                                 \
         .setup = setup_linear,                                                  \
-        .free  = ff_op_priv_free,                                               \
         .linear_mask = (MASK),                                                  \
     );
 
@@ -651,20 +656,21 @@ do {                                                                            
 static void normalize_clear(SwsOp *op)
 {
     static_assert(sizeof(uint32_t) == sizeof(int), "int size mismatch");
-    SwsOpPriv priv;
+    SwsImplResult res;
     union {
         uint32_t u32;
         int i;
     } c;
 
-    ff_sws_setup_q4(op, &priv);
+    ff_sws_setup_q4(&(const SwsImplParams) { .op = op }, &res);
+
     for (int i = 0; i < 4; i++) {
         if (!op->c.q4[i].den)
             continue;
         switch (ff_sws_pixel_type_size(op->type)) {
-        case 1: c.u32 = 0x1010101U * priv.u8[i]; break;
-        case 2: c.u32 = (uint32_t)priv.u16[i] << 16 | priv.u16[i]; break;
-        case 4: c.u32 = priv.u32[i]; break;
+        case 1: c.u32 = 0x1010101U * res.priv.u8[i]; break;
+        case 2: c.u32 = (uint32_t) res.priv.u16[i] << 16 | res.priv.u16[i]; break;
+        case 4: c.u32 = res.priv.u32[i]; break;
         }
 
         op->c.q4[i].num = c.i;
