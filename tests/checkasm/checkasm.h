@@ -126,6 +126,7 @@ void checkasm_check_llviddsp(void);
 void checkasm_check_llvidencdsp(void);
 void checkasm_check_lpc(void);
 void checkasm_check_motion(void);
+void checkasm_check_mpeg4videodsp(void);
 void checkasm_check_mpegvideo_unquantize(void);
 void checkasm_check_mpegvideoencdsp(void);
 void checkasm_check_nlmeans(void);
