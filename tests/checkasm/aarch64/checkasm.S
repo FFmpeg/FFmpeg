@@ -68,7 +68,7 @@ function checkasm_stack_clobber, export=1
 endfunc
 
 // + 16 for stack canary reference
-#define ARG_STACK ((8*(MAX_ARGS - 8) + 15) & ~15 + 16)
+#define ARG_STACK (((8*(MAX_ARGS - 8) + 15) & ~15) + 16)
 
 function checkasm_checked_call, export=1
         stp             x29, x30, [sp, #-16]!
