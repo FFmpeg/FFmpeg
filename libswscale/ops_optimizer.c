@@ -628,6 +628,17 @@ retry:
                 goto retry;
             }
 
+            /* Merge consecutive scaling operations (that don't overflow) */
+            if (next->op == SWS_OP_SCALE) {
+                int64_t p = op->c.q.num * (int64_t) next->c.q.num;
+                int64_t q = op->c.q.den * (int64_t) next->c.q.den;
+                if (FFABS(p) <= INT_MAX && FFABS(q) <= INT_MAX) {
+                    av_reduce(&op->c.q.num, &op->c.q.den, p, q, INT_MAX);
+                    ff_sws_op_list_remove_at(ops, n + 1, 1);
+                    goto retry;
+                }
+            }
+
             /* Scaling by exact power of two */
             if (factor2 && ff_sws_pixel_type_is_int(op->type)) {
                 op->op = factor2 > 0 ? SWS_OP_LSHIFT : SWS_OP_RSHIFT;
