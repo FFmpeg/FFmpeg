@@ -117,7 +117,15 @@ int ff_ffv1_read_extra_header(FFV1Context *f)
     f->chroma_h_shift             = ff_ffv1_get_symbol(&c, state, 0);
     f->chroma_v_shift             = ff_ffv1_get_symbol(&c, state, 0);
     f->transparency               = get_rac(&c, state);
-    f->plane_count                = 1 + (f->chroma_planes || f->version<4) + f->transparency;
+    f->bayer                      = (f->colorspace == 2);
+    if (f->bayer) {
+        f->bayer_order            = ff_ffv1_get_symbol(&c, state, 0);
+        if (f->bayer_order != 0) {
+            av_log(f->avctx, AV_LOG_ERROR, "Unsupported bayer order %d\n", f->bayer_order);
+            return AVERROR_PATCHWELCOME;
+        }
+    }
+    f->plane_count                = 1 + (f->chroma_planes || f->version<4) + f->transparency + f->bayer;
     f->num_h_slices               = 1 + ff_ffv1_get_symbol(&c, state, 0);
     f->num_v_slices               = 1 + ff_ffv1_get_symbol(&c, state, 0);
 
@@ -428,6 +436,11 @@ int ff_ffv1_parse_header(FFV1Context *f, RangeCoder *c, uint8_t *state)
             if (f->flt) {
                 f->pix_fmt = AV_PIX_FMT_GBRAPF32;
             }
+            f->use32bit = 1;
+        }
+    } else if (f->colorspace == 2) {
+        if (f->avctx->bits_per_raw_sample == 16) {
+            f->pix_fmt = AV_PIX_FMT_BAYER_RGGB16;
             f->use32bit = 1;
         }
     } else {
