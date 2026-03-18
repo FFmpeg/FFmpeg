@@ -20,6 +20,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
+#include "libavutil/bprint.h"
 #include "libavutil/bswap.h"
 #include "libavutil/mem.h"
 #include "libavutil/rational.h"
@@ -722,18 +723,6 @@ static char describe_comp_flags(SwsCompFlags flags)
         return '.';
 }
 
-static const char *describe_order(SwsSwizzleOp order, int planes, char buf[32])
-{
-    if (order.mask == SWS_SWIZZLE(0, 1, 2, 3).mask)
-        return "";
-
-    av_strlcpy(buf, ", via {", 32);
-    for (int i = 0; i < planes; i++)
-        av_strlcatf(buf, 32, "%s%d", i ? ", " : "", order.in[i]);
-    av_strlcat(buf, "}", 32);
-    return buf;
-}
-
 static const char *print_q(const AVRational q, char buf[], int buf_len)
 {
     if (!q.den) {
@@ -755,108 +744,124 @@ static const char *print_q(const AVRational q, char buf[], int buf_len)
 void ff_sws_op_list_print(void *log, int lev, int lev_extra,
                           const SwsOpList *ops)
 {
+    AVBPrint bp;
     if (!ops->num_ops) {
         av_log(log, lev, "  (empty)\n");
         return;
     }
 
+    av_bprint_init(&bp, 0, AV_BPRINT_SIZE_AUTOMATIC);
+
     for (int i = 0; i < ops->num_ops; i++) {
         const SwsOp *op   = &ops->ops[i];
         const SwsOp *next = i + 1 < ops->num_ops ? &ops->ops[i + 1] : op;
         const char *name  = ff_sws_op_type_name(op->op);
-        char buf[32];
-
-        av_log(log, lev, "  [%3s %c%c%c%c -> %c%c%c%c] ",
-               ff_sws_pixel_type_name(op->type),
-               op->comps.unused[0] ? 'X' : '.',
-               op->comps.unused[1] ? 'X' : '.',
-               op->comps.unused[2] ? 'X' : '.',
-               op->comps.unused[3] ? 'X' : '.',
-               next->comps.unused[0] ? 'X' : describe_comp_flags(op->comps.flags[0]),
-               next->comps.unused[1] ? 'X' : describe_comp_flags(op->comps.flags[1]),
-               next->comps.unused[2] ? 'X' : describe_comp_flags(op->comps.flags[2]),
-               next->comps.unused[3] ? 'X' : describe_comp_flags(op->comps.flags[3]));
+        av_bprint_clear(&bp);
+        av_bprintf(&bp, "  [%3s %c%c%c%c -> %c%c%c%c] ",
+                   ff_sws_pixel_type_name(op->type),
+                   op->comps.unused[0] ? 'X' : '.',
+                   op->comps.unused[1] ? 'X' : '.',
+                   op->comps.unused[2] ? 'X' : '.',
+                   op->comps.unused[3] ? 'X' : '.',
+                   next->comps.unused[0] ? 'X' : describe_comp_flags(op->comps.flags[0]),
+                   next->comps.unused[1] ? 'X' : describe_comp_flags(op->comps.flags[1]),
+                   next->comps.unused[2] ? 'X' : describe_comp_flags(op->comps.flags[2]),
+                   next->comps.unused[3] ? 'X' : describe_comp_flags(op->comps.flags[3]));
 
         switch (op->op) {
         case SWS_OP_INVALID:
         case SWS_OP_SWAP_BYTES:
-            av_log(log, lev, "%s\n", name);
+            av_bprintf(&bp, "%s", name);
             break;
         case SWS_OP_READ:
         case SWS_OP_WRITE:
-            av_log(log, lev, "%-20s: %d elem(s) %s >> %d%s\n", name,
-                   op->rw.elems,  op->rw.packed ? "packed" : "planar",
-                   op->rw.frac,
-                   describe_order(op->op == SWS_OP_READ ? ops->order_src
-                                                        : ops->order_dst,
-                                  op->rw.packed ? 1 : op->rw.elems, buf));
+            av_bprintf(&bp, "%-20s: %d elem(s) %s >> %d", name,
+                       op->rw.elems,  op->rw.packed ? "packed" : "planar",
+                       op->rw.frac);
+            SwsSwizzleOp order = op->op == SWS_OP_READ ? ops->order_src : ops->order_dst;
+            if (order.mask != SWS_SWIZZLE(0, 1, 2, 3).mask) {
+                const int planes = op->rw.packed ? 1 : op->rw.elems;
+                av_bprintf(&bp, ", via {");
+                for (int i = 0; i < planes; i++)
+                    av_bprintf(&bp, "%s%d", i ? ", " : "", order.in[i]);
+                av_bprintf(&bp, "}");
+            }
             break;
         case SWS_OP_LSHIFT:
-            av_log(log, lev, "%-20s: << %u\n", name, op->c.u);
+            av_bprintf(&bp, "%-20s: << %u", name, op->c.u);
             break;
         case SWS_OP_RSHIFT:
-            av_log(log, lev, "%-20s: >> %u\n", name, op->c.u);
+            av_bprintf(&bp, "%-20s: >> %u", name, op->c.u);
             break;
         case SWS_OP_PACK:
         case SWS_OP_UNPACK:
-            av_log(log, lev, "%-20s: {%d %d %d %d}\n", name,
-                   op->pack.pattern[0], op->pack.pattern[1],
-                   op->pack.pattern[2], op->pack.pattern[3]);
+            av_bprintf(&bp, "%-20s: {%d %d %d %d}", name,
+                       op->pack.pattern[0], op->pack.pattern[1],
+                       op->pack.pattern[2], op->pack.pattern[3]);
             break;
         case SWS_OP_CLEAR:
-            av_log(log, lev, "%-20s: {%s %s %s %s}\n", name,
-                   op->c.q4[0].den ? PRINTQ(op->c.q4[0]) : "_",
-                   op->c.q4[1].den ? PRINTQ(op->c.q4[1]) : "_",
-                   op->c.q4[2].den ? PRINTQ(op->c.q4[2]) : "_",
-                   op->c.q4[3].den ? PRINTQ(op->c.q4[3]) : "_");
+            av_bprintf(&bp, "%-20s: {%s %s %s %s}", name,
+                       op->c.q4[0].den ? PRINTQ(op->c.q4[0]) : "_",
+                       op->c.q4[1].den ? PRINTQ(op->c.q4[1]) : "_",
+                       op->c.q4[2].den ? PRINTQ(op->c.q4[2]) : "_",
+                       op->c.q4[3].den ? PRINTQ(op->c.q4[3]) : "_");
             break;
         case SWS_OP_SWIZZLE:
-            av_log(log, lev, "%-20s: %d%d%d%d\n", name,
-                   op->swizzle.x, op->swizzle.y, op->swizzle.z, op->swizzle.w);
+            av_bprintf(&bp, "%-20s: %d%d%d%d", name,
+                       op->swizzle.x, op->swizzle.y, op->swizzle.z, op->swizzle.w);
             break;
         case SWS_OP_CONVERT:
-            av_log(log, lev, "%-20s: %s -> %s%s\n", name,
-                   ff_sws_pixel_type_name(op->type),
-                   ff_sws_pixel_type_name(op->convert.to),
-                   op->convert.expand ? " (expand)" : "");
+            av_bprintf(&bp, "%-20s: %s -> %s%s", name,
+                       ff_sws_pixel_type_name(op->type),
+                       ff_sws_pixel_type_name(op->convert.to),
+                       op->convert.expand ? " (expand)" : "");
             break;
         case SWS_OP_DITHER:
-            av_log(log, lev, "%-20s: %dx%d matrix + {%d %d %d %d}\n", name,
-                    1 << op->dither.size_log2, 1 << op->dither.size_log2,
-                    op->dither.y_offset[0], op->dither.y_offset[1],
-                    op->dither.y_offset[2], op->dither.y_offset[3]);
+            av_bprintf(&bp, "%-20s: %dx%d matrix + {%d %d %d %d}", name,
+                       1 << op->dither.size_log2, 1 << op->dither.size_log2,
+                       op->dither.y_offset[0], op->dither.y_offset[1],
+                       op->dither.y_offset[2], op->dither.y_offset[3]);
             break;
         case SWS_OP_MIN:
-            av_log(log, lev, "%-20s: x <= {%s %s %s %s}\n", name,
-                    op->c.q4[0].den ? PRINTQ(op->c.q4[0]) : "_",
-                    op->c.q4[1].den ? PRINTQ(op->c.q4[1]) : "_",
-                    op->c.q4[2].den ? PRINTQ(op->c.q4[2]) : "_",
-                    op->c.q4[3].den ? PRINTQ(op->c.q4[3]) : "_");
+            av_bprintf(&bp, "%-20s: x <= {%s %s %s %s}", name,
+                       op->c.q4[0].den ? PRINTQ(op->c.q4[0]) : "_",
+                       op->c.q4[1].den ? PRINTQ(op->c.q4[1]) : "_",
+                       op->c.q4[2].den ? PRINTQ(op->c.q4[2]) : "_",
+                       op->c.q4[3].den ? PRINTQ(op->c.q4[3]) : "_");
             break;
         case SWS_OP_MAX:
-            av_log(log, lev, "%-20s: {%s %s %s %s} <= x\n", name,
-                    op->c.q4[0].den ? PRINTQ(op->c.q4[0]) : "_",
-                    op->c.q4[1].den ? PRINTQ(op->c.q4[1]) : "_",
-                    op->c.q4[2].den ? PRINTQ(op->c.q4[2]) : "_",
-                    op->c.q4[3].den ? PRINTQ(op->c.q4[3]) : "_");
+            av_bprintf(&bp, "%-20s: {%s %s %s %s} <= x", name,
+                       op->c.q4[0].den ? PRINTQ(op->c.q4[0]) : "_",
+                       op->c.q4[1].den ? PRINTQ(op->c.q4[1]) : "_",
+                       op->c.q4[2].den ? PRINTQ(op->c.q4[2]) : "_",
+                       op->c.q4[3].den ? PRINTQ(op->c.q4[3]) : "_");
             break;
         case SWS_OP_LINEAR:
-            av_log(log, lev, "%-20s: %s [[%s %s %s %s %s] "
-                                        "[%s %s %s %s %s] "
-                                        "[%s %s %s %s %s] "
-                                        "[%s %s %s %s %s]]\n",
-                   name, describe_lin_mask(op->lin.mask),
-                   PRINTQ(op->lin.m[0][0]), PRINTQ(op->lin.m[0][1]), PRINTQ(op->lin.m[0][2]), PRINTQ(op->lin.m[0][3]), PRINTQ(op->lin.m[0][4]),
-                   PRINTQ(op->lin.m[1][0]), PRINTQ(op->lin.m[1][1]), PRINTQ(op->lin.m[1][2]), PRINTQ(op->lin.m[1][3]), PRINTQ(op->lin.m[1][4]),
-                   PRINTQ(op->lin.m[2][0]), PRINTQ(op->lin.m[2][1]), PRINTQ(op->lin.m[2][2]), PRINTQ(op->lin.m[2][3]), PRINTQ(op->lin.m[2][4]),
-                   PRINTQ(op->lin.m[3][0]), PRINTQ(op->lin.m[3][1]), PRINTQ(op->lin.m[3][2]), PRINTQ(op->lin.m[3][3]), PRINTQ(op->lin.m[3][4]));
+            av_bprintf(&bp, "%-20s: %s [[%s %s %s %s %s] "
+                                       "[%s %s %s %s %s] "
+                                       "[%s %s %s %s %s] "
+                                       "[%s %s %s %s %s]]",
+                       name, describe_lin_mask(op->lin.mask),
+                       PRINTQ(op->lin.m[0][0]), PRINTQ(op->lin.m[0][1]),
+                       PRINTQ(op->lin.m[0][2]), PRINTQ(op->lin.m[0][3]),
+                       PRINTQ(op->lin.m[0][4]), PRINTQ(op->lin.m[1][0]),
+                       PRINTQ(op->lin.m[1][1]), PRINTQ(op->lin.m[1][2]),
+                       PRINTQ(op->lin.m[1][3]), PRINTQ(op->lin.m[1][4]),
+                       PRINTQ(op->lin.m[2][0]), PRINTQ(op->lin.m[2][1]),
+                       PRINTQ(op->lin.m[2][2]), PRINTQ(op->lin.m[2][3]),
+                       PRINTQ(op->lin.m[2][4]), PRINTQ(op->lin.m[3][0]),
+                       PRINTQ(op->lin.m[3][1]), PRINTQ(op->lin.m[3][2]),
+                       PRINTQ(op->lin.m[3][3]), PRINTQ(op->lin.m[3][4]));
             break;
         case SWS_OP_SCALE:
-            av_log(log, lev, "%-20s: * %d/%d\n", name, op->c.q.num, op->c.q.den);
+            av_bprintf(&bp, "%-20s: * %d/%d", name, op->c.q.num, op->c.q.den);
             break;
         case SWS_OP_TYPE_NB:
             break;
         }
+
+        av_assert0(av_bprint_is_complete(&bp));
+        av_log(log, lev, "%s\n", bp.str);
 
         if (op->comps.min[0].den || op->comps.min[1].den ||
             op->comps.min[2].den || op->comps.min[3].den ||
