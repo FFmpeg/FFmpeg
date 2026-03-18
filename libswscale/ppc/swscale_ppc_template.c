@@ -90,7 +90,7 @@ static void FUNC(yuv2planeX)(const int16_t *filter, int filterSize,
 
     yuv2planeX_u(filter, filterSize, src, dest, dst_u, dither, offset, 0);
 
-    for (i = dst_u; i < dstW - 15; i += 16)
+    for (i = dst_u; i < dstW - 23; i += 16)
         FUNC(yuv2planeX_8_16)(filter, filterSize, src, dest + i, dither,
                               offset, i);
 
