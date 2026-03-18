@@ -126,7 +126,7 @@ static int decode_registered_user_data_closed_caption(H2645SEIA53Caption *h,
 static int decode_registered_user_data(H2645SEI *h, GetByteContext *gb,
                                        enum AVCodecID codec_id, void *logctx)
 {
-    int country_code, provider_code;
+    int country_code, provider_code = -1;
 
     if (bytestream2_get_bytes_left(gb) < 3)
         return AVERROR_INVALIDDATA;
