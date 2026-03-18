@@ -34,7 +34,7 @@
     } while (0)
 
 static void test_rv34_inv_transform_dc(RV34DSPContext *s) {
-    declare_func_emms(AV_CPU_FLAG_MMX, void, int16_t *block);
+    declare_func(void, int16_t *block);
 
     if (check_func(s->rv34_inv_transform_dc, "rv34_inv_transform_dc")) {
         LOCAL_ALIGNED_16(int16_t, p1, [BUF_SIZE]);

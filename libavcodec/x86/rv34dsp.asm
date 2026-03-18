@@ -44,16 +44,14 @@ SECTION .text
     sar    %1, 10
 %endmacro
 
-INIT_MMX mmxext
-cglobal rv34_idct_dc_noround, 1, 2, 0
+INIT_XMM sse2
+cglobal rv34_idct_dc_noround, 1, 2, 1
     movsx   r1, word [r0]
     IDCT_DC_NOROUND r1
     movd    m0, r1d
-    pshufw  m0, m0, 0
-    movq    [r0+ 0], m0
-    movq    [r0+ 8], m0
-    movq    [r0+16], m0
-    movq    [r0+24], m0
+    SPLATW  m0, m0
+    mova    [r0+ 0], m0
+    mova    [r0+16], m0
     RET
 
 ; Load coeffs and perform row transform
