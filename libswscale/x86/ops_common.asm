@@ -242,7 +242,9 @@ endstruc
 %define execq   r0q
 %define implq   r1q
 %define bxd     r2d
+%define bxq     r2q
 %define yd      r3d
+%define yq      r3q
 
 ; Extra registers for free use by kernels, not saved between ops
 %define tmp0q   r4q

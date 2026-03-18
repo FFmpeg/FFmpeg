@@ -81,6 +81,8 @@ cglobal sws_process%1_x86, 6, 7 + 2 * %1, 16
             add implq, SwsOpImpl.next
             mov [rsp +  0], tmp0q
             mov [rsp +  8], implq
+            movsxdifnidn bxq, bxd
+            movsxdifnidn yq, yd
 
             ; load plane pointers
             mov in0q,  [execq + SwsOpExec.in0]
