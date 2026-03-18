@@ -723,23 +723,36 @@ static char describe_comp_flags(SwsCompFlags flags)
         return '.';
 }
 
-static const char *print_q(const AVRational q, char buf[], int buf_len)
+static void print_q(AVBPrint *bp, const AVRational q, bool ignore_den0)
 {
-    if (!q.den) {
-        return q.num > 0 ? "inf" : q.num < 0 ? "-inf" : "nan";
+    if (!q.den && ignore_den0) {
+        av_bprintf(bp, "_");
+    } else if (!q.den) {
+        av_bprintf(bp, "%s", q.num > 0 ? "inf" : q.num < 0 ? "-inf" : "nan");
     } else if (q.den == 1) {
-        snprintf(buf, buf_len, "%d", q.num);
-        return buf;
+        av_bprintf(bp, "%d", q.num);
     } else if (abs(q.num) > 1000 || abs(q.den) > 1000) {
-        snprintf(buf, buf_len, "%f", av_q2d(q));
-        return buf;
+        av_bprintf(bp, "%f", av_q2d(q));
     } else {
-        snprintf(buf, buf_len, "%d/%d", q.num, q.den);
-        return buf;
+        av_bprintf(bp, "%d/%d", q.num, q.den);
     }
 }
 
-#define PRINTQ(q) print_q(q, (char[32]){0}, sizeof(char[32]))
+static void print_q4(AVBPrint *bp, const AVRational q4[4], bool ignore_den0,
+                     const bool unused[4])
+{
+    av_bprintf(bp, "{");
+    for (int i = 0; i < 4; i++) {
+        if (i)
+            av_bprintf(bp, " ");
+        if (unused && unused[i]) {
+            av_bprintf(bp, "_");
+        } else {
+            print_q(bp, q4[i], ignore_den0);
+        }
+    }
+    av_bprintf(bp, "}");
+}
 
 void ff_sws_op_list_print(void *log, int lev, int lev_extra,
                           const SwsOpList *ops)
@@ -800,11 +813,8 @@ void ff_sws_op_list_print(void *log, int lev, int lev_extra,
                        op->pack.pattern[2], op->pack.pattern[3]);
             break;
         case SWS_OP_CLEAR:
-            av_bprintf(&bp, "%-20s: {%s %s %s %s}", name,
-                       op->c.q4[0].den ? PRINTQ(op->c.q4[0]) : "_",
-                       op->c.q4[1].den ? PRINTQ(op->c.q4[1]) : "_",
-                       op->c.q4[2].den ? PRINTQ(op->c.q4[2]) : "_",
-                       op->c.q4[3].den ? PRINTQ(op->c.q4[3]) : "_");
+            av_bprintf(&bp, "%-20s: ", name);
+            print_q4(&bp, op->c.q4, true, NULL);
             break;
         case SWS_OP_SWIZZLE:
             av_bprintf(&bp, "%-20s: %d%d%d%d", name,
@@ -823,35 +833,25 @@ void ff_sws_op_list_print(void *log, int lev, int lev_extra,
                        op->dither.y_offset[2], op->dither.y_offset[3]);
             break;
         case SWS_OP_MIN:
-            av_bprintf(&bp, "%-20s: x <= {%s %s %s %s}", name,
-                       op->c.q4[0].den ? PRINTQ(op->c.q4[0]) : "_",
-                       op->c.q4[1].den ? PRINTQ(op->c.q4[1]) : "_",
-                       op->c.q4[2].den ? PRINTQ(op->c.q4[2]) : "_",
-                       op->c.q4[3].den ? PRINTQ(op->c.q4[3]) : "_");
+            av_bprintf(&bp, "%-20s: x <= ", name);
+            print_q4(&bp, op->c.q4, true, NULL);
             break;
         case SWS_OP_MAX:
-            av_bprintf(&bp, "%-20s: {%s %s %s %s} <= x", name,
-                       op->c.q4[0].den ? PRINTQ(op->c.q4[0]) : "_",
-                       op->c.q4[1].den ? PRINTQ(op->c.q4[1]) : "_",
-                       op->c.q4[2].den ? PRINTQ(op->c.q4[2]) : "_",
-                       op->c.q4[3].den ? PRINTQ(op->c.q4[3]) : "_");
+            av_bprintf(&bp, "%-20s: ", name);
+            print_q4(&bp, op->c.q4, true, NULL);
+            av_bprintf(&bp, " <= x");
             break;
         case SWS_OP_LINEAR:
-            av_bprintf(&bp, "%-20s: %s [[%s %s %s %s %s] "
-                                       "[%s %s %s %s %s] "
-                                       "[%s %s %s %s %s] "
-                                       "[%s %s %s %s %s]]",
-                       name, describe_lin_mask(op->lin.mask),
-                       PRINTQ(op->lin.m[0][0]), PRINTQ(op->lin.m[0][1]),
-                       PRINTQ(op->lin.m[0][2]), PRINTQ(op->lin.m[0][3]),
-                       PRINTQ(op->lin.m[0][4]), PRINTQ(op->lin.m[1][0]),
-                       PRINTQ(op->lin.m[1][1]), PRINTQ(op->lin.m[1][2]),
-                       PRINTQ(op->lin.m[1][3]), PRINTQ(op->lin.m[1][4]),
-                       PRINTQ(op->lin.m[2][0]), PRINTQ(op->lin.m[2][1]),
-                       PRINTQ(op->lin.m[2][2]), PRINTQ(op->lin.m[2][3]),
-                       PRINTQ(op->lin.m[2][4]), PRINTQ(op->lin.m[3][0]),
-                       PRINTQ(op->lin.m[3][1]), PRINTQ(op->lin.m[3][2]),
-                       PRINTQ(op->lin.m[3][3]), PRINTQ(op->lin.m[3][4]));
+            av_bprintf(&bp, "%-20s: %s [", name, describe_lin_mask(op->lin.mask));
+            for (int i = 0; i < 4; i++) {
+                av_bprintf(&bp, "%s[", i ? " " : "");
+                for (int j = 0; j < 5; j++) {
+                    av_bprintf(&bp, j ? " " : "");
+                    print_q(&bp, op->lin.m[i][j], false);
+                }
+                av_bprintf(&bp, "]");
+            }
+            av_bprintf(&bp, "]");
             break;
         case SWS_OP_SCALE:
             av_bprintf(&bp, "%-20s: * %d/%d", name, op->c.q.num, op->c.q.den);
@@ -868,15 +868,13 @@ void ff_sws_op_list_print(void *log, int lev, int lev_extra,
             op->comps.max[0].den || op->comps.max[1].den ||
             op->comps.max[2].den || op->comps.max[3].den)
         {
-            av_log(log, lev_extra, "    min: {%s %s %s %s}, max: {%s %s %s %s}\n",
-                   next->comps.unused[0] ? "_" : PRINTQ(op->comps.min[0]),
-                   next->comps.unused[1] ? "_" : PRINTQ(op->comps.min[1]),
-                   next->comps.unused[2] ? "_" : PRINTQ(op->comps.min[2]),
-                   next->comps.unused[3] ? "_" : PRINTQ(op->comps.min[3]),
-                   next->comps.unused[0] ? "_" : PRINTQ(op->comps.max[0]),
-                   next->comps.unused[1] ? "_" : PRINTQ(op->comps.max[1]),
-                   next->comps.unused[2] ? "_" : PRINTQ(op->comps.max[2]),
-                   next->comps.unused[3] ? "_" : PRINTQ(op->comps.max[3]));
+            av_bprint_clear(&bp);
+            av_bprintf(&bp, "    min: ");
+            print_q4(&bp, op->comps.min, false, next->comps.unused);
+            av_bprintf(&bp, ", max: ");
+            print_q4(&bp, op->comps.max, false, next->comps.unused);
+            av_assert0(av_bprint_is_complete(&bp));
+            av_log(log, lev_extra, "%s\n", bp.str);
         }
 
     }
