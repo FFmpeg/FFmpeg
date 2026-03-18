@@ -25,8 +25,6 @@
 
 #include "checkasm.h"
 
-#define BUF_SIZE 1024
-
 #define randomize(buf, len) \
     do { \
         for (int i = 0; i < len; i++) \
@@ -37,16 +35,16 @@ static void test_rv34_inv_transform_dc(RV34DSPContext *s) {
     declare_func(void, int16_t *block);
 
     if (check_func(s->rv34_inv_transform_dc, "rv34_inv_transform_dc")) {
-        LOCAL_ALIGNED_16(int16_t, p1, [BUF_SIZE]);
-        LOCAL_ALIGNED_16(int16_t, p2, [BUF_SIZE]);
+        DECLARE_ALIGNED_16(int16_t, p1)[4*4];
+        DECLARE_ALIGNED_16(int16_t, p2)[4*4];
 
-        randomize(p1, BUF_SIZE);
-        memcpy(p2, p1, BUF_SIZE * sizeof(*p1));
+        randomize(p1, FF_ARRAY_ELEMS(p1));
+        memcpy(p2, p1, sizeof(p1));
 
         call_ref(p1);
         call_new(p2);
 
-        if (memcmp(p1,  p2,  BUF_SIZE * sizeof (*p1)) != 0) {
+        if (memcmp(p1, p2, sizeof(p1))) {
             fail();
         }
 
@@ -60,16 +58,16 @@ static void test_rv34_idct_dc_add(RV34DSPContext *s) {
     declare_func(void, uint8_t *dst, ptrdiff_t stride, int dc);
 
     if (check_func(s->rv34_idct_dc_add, "rv34_idct_dc_add")) {
-        LOCAL_ALIGNED_16(uint8_t, p1, [BUF_SIZE]);
-        LOCAL_ALIGNED_16(uint8_t, p2, [BUF_SIZE]);
+        DECLARE_ALIGNED_16(uint8_t, p1)[4*4];
+        DECLARE_ALIGNED_16(uint8_t, p2)[4*4];
 
-        randomize(p1, BUF_SIZE);
-        memcpy(p2, p1, BUF_SIZE * sizeof(*p1));
+        randomize(p1, FF_ARRAY_ELEMS(p1));
+        memcpy(p2, p1, sizeof(p1));
 
         call_ref(p1, 4, 5);
         call_new(p2, 4, 5);
 
-        if (memcmp(p1,  p2,  BUF_SIZE * sizeof (*p1)) != 0) {
+        if (memcmp(p1, p2, sizeof(p1))) {
             fail();
         }
 
