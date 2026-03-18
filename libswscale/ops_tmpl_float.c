@@ -29,7 +29,6 @@
 #if BIT_DEPTH == 32
 #  define PIXEL_TYPE SWS_PIXEL_F32
 #  define PIXEL_MAX  FLT_MAX
-#  define PIXEL_MIN  FLT_MIN
 #  define pixel_t    float
 #  define block_t    f32block_t
 #  define px         f32
@@ -262,7 +261,6 @@ static const SwsOpTable fn(op_table_float) = {
 
 #undef PIXEL_TYPE
 #undef PIXEL_MAX
-#undef PIXEL_MIN
 #undef pixel_t
 #undef block_t
 #undef px

@@ -53,7 +53,6 @@
 
 #define IS_FLOAT  0
 #define FMT_CHAR  u
-#define PIXEL_MIN 0
 #include "ops_tmpl_common.c"
 
 DECL_READ(read_planar, const int elems)
@@ -586,7 +585,6 @@ static const SwsOpTable fn(op_table_int) = {
 
 #undef PIXEL_TYPE
 #undef PIXEL_MAX
-#undef PIXEL_MIN
 #undef SWAP_BYTES
 #undef pixel_t
 #undef block_t
