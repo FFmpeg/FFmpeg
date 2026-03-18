@@ -1630,10 +1630,9 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st, AVDictiona
             av_bprintf(&bp, ",");
         av_bprintf(&bp, "content_light_level");
     }
-    if (bp.len) {
-        av_bprint_finalize(&bp, NULL);
+    if (bp.len)
         av_dict_set(&ds->decoder_opts, "side_data_prefer_packet", bp.str, AV_DICT_APPEND);
-    }
+    av_bprint_finalize(&bp, NULL);
 
     /* Attached pics are sparse, therefore we would not want to delay their decoding
      * till EOF. */
