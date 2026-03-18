@@ -57,8 +57,8 @@ typedef int (*rv40_loop_filter_strength_func)(uint8_t *src, ptrdiff_t stride,
 typedef struct RV34DSPContext {
     qpel_mc_func put_pixels_tab[2][16];
     qpel_mc_func avg_pixels_tab[2][16];
-    h264_chroma_mc_func put_chroma_pixels_tab[3];
-    h264_chroma_mc_func avg_chroma_pixels_tab[3];
+    h264_chroma_mc_func put_chroma_pixels_tab[2];
+    h264_chroma_mc_func avg_chroma_pixels_tab[2];
     /**
      * Biweight functions, first dimension is transform size (16/8),
      * second is whether the weight is prescaled by 1/512 to skip
