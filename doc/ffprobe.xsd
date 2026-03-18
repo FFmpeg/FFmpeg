@@ -357,6 +357,7 @@
   <xsd:complexType name="streamGroupComponentType">
     <xsd:sequence>
       <xsd:element name="subcomponents" type="ffprobe:streamGroupSubComponentList" minOccurs="0" maxOccurs="1"/>
+      <xsd:element name="side_data_list" type="ffprobe:packetSideDataListType" minOccurs="0" maxOccurs="1"/>
       <xsd:element name="component_entry" type="ffprobe:streamGroupEntryType" minOccurs="0" maxOccurs="unbounded"/>
     </xsd:sequence>
   </xsd:complexType>
