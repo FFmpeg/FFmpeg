@@ -452,6 +452,7 @@ int amf_avframe_to_amfsurface(AVFilterContext *avctx, const AVFrame *frame, AMFS
 {
     AMFVariantStruct var = { 0 };
     AMFFilterContext *ctx = avctx->priv;
+    AMFBuffer  *hdrmeta_buffer = NULL;
     AMFSurface *surface;
     AMF_RESULT  res;
     int hw_surface = 0;
@@ -541,7 +542,6 @@ int amf_avframe_to_amfsurface(AVFilterContext *avctx, const AVFrame *frame, AMFS
     }
 
     if (ctx->in_trc == AMF_COLOR_TRANSFER_CHARACTERISTIC_SMPTE2084 && (ctx->master_display || ctx->light_meta)) {
-        AMFBuffer *hdrmeta_buffer = NULL;
         res = ctx->amf_device_ctx->context->pVtbl->AllocBuffer(ctx->amf_device_ctx->context, AMF_MEMORY_HOST, sizeof(AMFHDRMetadata), &hdrmeta_buffer);
         if (res == AMF_OK) {
             AMFHDRMetadata *hdrmeta = (AMFHDRMetadata*)hdrmeta_buffer->pVtbl->GetNative(hdrmeta_buffer);
@@ -553,16 +553,19 @@ int amf_avframe_to_amfsurface(AVFilterContext *avctx, const AVFrame *frame, AMFS
     } else if (frame->color_trc == AVCOL_TRC_SMPTE2084) {
         res = surface->pVtbl->GetProperty(surface, AMF_VIDEO_DECODER_HDR_METADATA, &var);
         if (res == AMF_NOT_FOUND) {
-            AMFBuffer *hdrmeta_buffer = NULL;
             res = ctx->amf_device_ctx->context->pVtbl->AllocBuffer(ctx->amf_device_ctx->context, AMF_MEMORY_HOST, sizeof(AMFHDRMetadata), &hdrmeta_buffer);
             if (res == AMF_OK) {
                 AMFHDRMetadata *hdrmeta = (AMFHDRMetadata*)hdrmeta_buffer->pVtbl->GetNative(hdrmeta_buffer);
 
                 if (av_amf_extract_hdr_metadata(frame, hdrmeta) == 0)
                     AMF_ASSIGN_PROPERTY_INTERFACE(res, surface, AMF_VIDEO_DECODER_HDR_METADATA, hdrmeta_buffer);
-                hdrmeta_buffer->pVtbl->Release(hdrmeta_buffer);
             }
         }
+    }
+
+    if (hdrmeta_buffer) {
+        hdrmeta_buffer->pVtbl->Release(hdrmeta_buffer);
+        hdrmeta_buffer = NULL;
     }
 
     if (frame->crop_left || frame->crop_right || frame->crop_top || frame->crop_bottom) {

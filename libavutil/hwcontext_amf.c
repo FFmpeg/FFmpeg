@@ -232,24 +232,31 @@ int av_amf_light_metadata_to_hdrmeta(const AVContentLightMetadata *light_meta, A
 
 int av_amf_extract_hdr_metadata(const AVFrame *frame, AMFHDRMetadata *hdrmeta)
 {
-    AVFrameSideData            *sidedata;
+    AVFrameSideData *sidedata;
+    AVContentLightMetadata *content_light = NULL;
+    AVMasteringDisplayMetadata *mastering_display = NULL;
 
     if (!frame || !hdrmeta)
         return AVERROR(EINVAL);
 
     sidedata = av_frame_get_side_data(frame, AV_FRAME_DATA_MASTERING_DISPLAY_METADATA);
-    if (!sidedata)
-        return AVERROR(ENODATA);
-
-    if (av_amf_display_mastering_meta_to_hdrmeta((AVMasteringDisplayMetadata *)sidedata->data, hdrmeta) != 0)
-        return AVERROR(ENODATA);
+    if (sidedata) {
+        mastering_display = (AVMasteringDisplayMetadata *)sidedata->data;
+        if (av_amf_display_mastering_meta_to_hdrmeta(mastering_display, hdrmeta) != 0)
+            mastering_display = NULL;
+    }
 
     sidedata = av_frame_get_side_data(frame, AV_FRAME_DATA_CONTENT_LIGHT_LEVEL);
-    if (sidedata)
-        av_amf_light_metadata_to_hdrmeta((AVContentLightMetadata *)sidedata->data, hdrmeta);
+    if (sidedata) {
+        content_light = (AVContentLightMetadata *)sidedata->data;
+        if (av_amf_light_metadata_to_hdrmeta(content_light, hdrmeta) != 0)
+            content_light = NULL;
+    }
+
+    if (!mastering_display && !content_light)
+        return AVERROR(ENODATA);
 
     return 0;
-
 }
 
 int av_amf_attach_hdr_metadata(AVFrame *frame, const AMFHDRMetadata *hdrmeta) {

@@ -25804,18 +25804,10 @@ vpp_amf=4096:2160:color_profile=bt2020
 @end example
 
 @item
-Override display mastering, max CLL and max FALL metadata for filter input to represent those parameters:
-Primary G: x=0.2650 y=0.6900
-Primary B: x=0.1500 y=0.0600
-Primary R: x=0.6800 y=0.3200
-White point: x=0.3127 y=0.3290
-Max. luminance: 1100.0000 cd/m²
-Min. luminance: 0.0040 cd/m²
-MaxCLL: 1100 cd/m²
-MaxFALL: 400 cd/m²
+Override input primaries and input transfer characteristics, change both to bt709.
 
 @example
-vpp_amf=color_profile=bt2020:in_trc=smpte2084:in_primaries=bt2020:master_display='G(13250,23460)B(7500,3000)R(34000,16000)WP(15635,16450)L(11000000,40)':max_cll='1100,400'
+vpp_amf=color_profile=bt2020:in_trc=smpte2084:in_primaries=bt2020:out_trc=bt709:out_primaries=bt709
 @end example
 @end itemize
 

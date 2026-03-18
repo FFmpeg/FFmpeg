@@ -85,14 +85,11 @@ static int amf_filter_config_output(AVFilterLink *outlink)
     AMFBuffer         *hdrmeta_buffer = NULL;
     AMFHDRMetadata    *hdrmeta = NULL;
     AMFSize out_size;
-    size_t size = 0;
     int ret;
     AMF_RESULT res;
     const AVFrameSideData *sd;
     enum AMF_VIDEO_CONVERTER_COLOR_PROFILE_ENUM amf_color_profile;
     enum AVPixelFormat in_format;
-    const int chroma_den = 50000;
-    const int luma_den = 10000;
 
     ret = amf_init_filter_config(outlink, &in_format);
     if (ret < 0)
