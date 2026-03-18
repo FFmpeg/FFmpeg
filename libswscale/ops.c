@@ -868,7 +868,7 @@ void ff_sws_op_list_print(void *log, int lev, int lev_extra,
             op->comps.max[0].den || op->comps.max[1].den ||
             op->comps.max[2].den || op->comps.max[3].den)
         {
-            av_log(log, lev_extra, "    min: {%s, %s, %s, %s}, max: {%s, %s, %s, %s}\n",
+            av_log(log, lev_extra, "    min: {%s %s %s %s}, max: {%s %s %s %s}\n",
                    next->comps.unused[0] ? "_" : PRINTQ(op->comps.min[0]),
                    next->comps.unused[1] ? "_" : PRINTQ(op->comps.min[1]),
                    next->comps.unused[2] ? "_" : PRINTQ(op->comps.min[2]),
