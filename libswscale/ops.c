@@ -814,7 +814,7 @@ void ff_sws_op_list_print(void *log, int lev, int lev_extra,
             break;
         case SWS_OP_CLEAR:
             av_bprintf(&bp, "%-20s: ", name);
-            print_q4(&bp, op->c.q4, true, NULL);
+            print_q4(&bp, op->c.q4, true, next->comps.unused);
             break;
         case SWS_OP_SWIZZLE:
             av_bprintf(&bp, "%-20s: %d%d%d%d", name,
@@ -834,11 +834,11 @@ void ff_sws_op_list_print(void *log, int lev, int lev_extra,
             break;
         case SWS_OP_MIN:
             av_bprintf(&bp, "%-20s: x <= ", name);
-            print_q4(&bp, op->c.q4, true, NULL);
+            print_q4(&bp, op->c.q4, true, next->comps.unused);
             break;
         case SWS_OP_MAX:
             av_bprintf(&bp, "%-20s: ", name);
-            print_q4(&bp, op->c.q4, true, NULL);
+            print_q4(&bp, op->c.q4, true, next->comps.unused);
             av_bprintf(&bp, " <= x");
             break;
         case SWS_OP_LINEAR:
