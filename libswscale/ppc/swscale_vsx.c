@@ -54,7 +54,7 @@
     } while (0)
 
 #define LOAD_FILTER(vf,f) {\
-        vf = vec_vsx_ld(joffset, f);\
+        vf = vec_splats(f[j]);\
 }
 #define LOAD_L1(ll1,s,p){\
         ll1  = vec_vsx_ld(xoffset, s);\
