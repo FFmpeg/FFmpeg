@@ -699,22 +699,22 @@ cglobal vvc_alf_classify_grad_%1bpc, 6, 14, 12, gradient_sum, src, src_stride, w
     punpckhwd         m5, m1, m10
     punpcklwd         m1, m1, m10
     punpckhwd         m6, m2, m10
-    punpcklwd         m2, m2, m10
+    paddd             m4, m5
+    punpcklwd         m5, m2, m10
     punpckhwd         m7, m3, m10
     punpcklwd         m3, m3, m10
 
-    paddd             m4, m5
     paddd             m0, m1
     paddd             m6, m7
-    paddd             m2, m3
+    paddd             m5, m3
 
     ; sum of the first row
-    paddd             m0, m0, m2         ; low
+    paddd             m0, m0, m5         ; low
     paddd             m1, m4, m6         ; high
 
     lea            gradq, [gradq + 2 * sum_strideq]
 
-    pblendvb          m2, m10, [gradq], m8
+    pblendvb          m2, m10, m2, m8
 
     movu              m3, [gradq + sum_strideq]
     movu              m4, [gradq + 2 * sum_strideq]
