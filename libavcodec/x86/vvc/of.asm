@@ -289,14 +289,12 @@ INIT_YMM avx2
     LOG2                    10, 8                   ; 4 (log2(sgx2), log2(sgy2))
 
     ; Promote to dword since vpsrlvw is AVX-512 only
-    pmovsxwd                m8, xm8
     pmovsxwd                m9, xm9
     pmovsxwd               m10, xm10
 
     pslld                   m9, 2                   ; 4 (log2(sgx2) << 2, log2(sgy2) << 2)
 
-    psignd                 m11, m9, m8
-    vpsravd                m11, m11, m10
+    vpsravd                m11, m9, m10
     CLIPD                  m11, [pd_m15], [pd_15]   ; 4 (vx, junk)
 
     pshuflw                m%1, m11, q0000
@@ -309,7 +307,6 @@ INIT_YMM avx2
     psrad                  m%2, 1
     psubd                   m9, m%2                 ; 4 (junk, (sgydi << 2) - (vx * sgxgy >> 1))
 
-    psignd                  m9, m8
     vpsravd                m%2, m9, m10
     CLIPD                  m%2, [pd_m15], [pd_15]   ; 4 (junk, vy)
 
