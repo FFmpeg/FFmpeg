@@ -844,7 +844,7 @@ cglobal vvc_alf_classify_grad_%1bpc, 6, 14, 12, gradient_sum, src, src_stride, w
 %macro ALF_CLASSIFY 1
 %define ps (%1 / 8)
 ALF_CLASSIFY_GRAD %1
-cglobal vvc_alf_classify_%1bpc, 7, 15, 11, class_idx, transpose_idx, gradient_sum, width, height, vb_pos, bit_depth, \
+cglobal vvc_alf_classify_%1bpc, 7, 14, 11, class_idx, transpose_idx, gradient_sum, width, height, vb_pos, bit_depth, \
     x, y, grad, sum_stride, sum_stride3, temp, w
 
 %if ps != 1
