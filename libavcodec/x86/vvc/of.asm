@@ -264,8 +264,8 @@ INIT_YMM avx2
     punpckldq              m%1, m6
     vextracti128           xm7, m%1, 1
 
-    punpcklqdq              m8, m%1, m7             ; 4 (sgx2, sgy2)
-    punpckhqdq              m9, m%1, m7             ; 4 (sgxdi, sgydi)
+    punpcklqdq             xm8, xm%1, xm7           ; 4 (sgx2, sgy2)
+    punpckhqdq             xm9, xm%1, xm7           ; 4 (sgxdi, sgydi)
 
     ; Promote to dword since vpsrlvw is AVX-512 only
     pmovzxwd                m8, xm8
