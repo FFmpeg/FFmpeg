@@ -246,35 +246,15 @@ INIT_YMM avx2
 %endmacro
 
 
-%macro LOG2 5 ; log_sum, src, cmp, shift, tmp
-    pcmpgtw               %5, %2, %3
-    pandd                 %5, %4
-    paddw                 %1, %5
-
-    psrlw                 %2, %5
-    psrlw                 %4, 1
-    psrlw                 %3, %4
-%endmacro
-
-%macro LOG2 3 ; dst, src, offset
-    pextrw              tmp0d, xm%2,  %3
-    bsr                 tmp0d, tmp0d
-%if %3 != 0
-    pinsrw               xm%1, tmp0d, %3
-%else
-    movd                 xm%1, tmp0d
-%endif
-%endmacro
-
-%macro LOG2 2 ; dst, src
-    LOG2                 %1, %2, 0
-    LOG2                 %1, %2, 1
-    LOG2                 %1, %2, 2
-    LOG2                 %1, %2, 3
-    LOG2                 %1, %2, 4
-    LOG2                 %1, %2, 5
-    LOG2                 %1, %2, 6
-    LOG2                 %1, %2, 7
+%macro LOG2 3 ; dst, src, tmp
+    cvtdq2ps             %1, %2
+    ; The exponent contains log2 biased by 127 unless the value is zero.
+    ; dst is only used as shift count where the value to be shifted is
+    ; always zero if src is zero, so avoid using saturated subtraction.
+    pcmpeqd              %3, %3
+    psrld                %3, 25        ; pd_127
+    psrld                %1, 23        ; floating point exponent
+    psubd                %1, %3
 %endmacro
 
 ; %1: 4 (sgx2, sgy2, sgxdi, gydi)
@@ -286,11 +266,11 @@ INIT_YMM avx2
 
     punpcklqdq              m8, m%1, m7             ; 4 (sgx2, sgy2)
     punpckhqdq              m9, m%1, m7             ; 4 (sgxdi, sgydi)
-    LOG2                    10, 8                   ; 4 (log2(sgx2), log2(sgy2))
 
     ; Promote to dword since vpsrlvw is AVX-512 only
+    pmovzxwd                m8, xm8
     pmovsxwd                m9, xm9
-    pmovsxwd               m10, xm10
+    LOG2                   m10, m8, m7              ; 4 (log2(sgx2), log2(sgy2))
 
     pslld                   m9, 2                   ; 4 (log2(sgx2) << 2, log2(sgy2) << 2)
 
