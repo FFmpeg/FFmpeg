@@ -221,6 +221,7 @@ static void run_transcription(AVFilterContext *ctx, AVFrame *frame, int samples)
     params.print_timestamps = 0;
     params.max_len = wctx->max_len;
     params.token_timestamps = (wctx->max_len > 0);
+    params.split_on_word = (wctx->max_len > 0);
 
     if (whisper_full(wctx->ctx_wsp, params, wctx->audio_buffer, samples) != 0) {
         av_log(ctx, AV_LOG_ERROR, "Failed to process audio with whisper.cpp\n");
