@@ -110,6 +110,8 @@ static int decode_plane(FFV1Context *f, FFV1SliceContext *sc,
     if (sc->remap) {
         bits = av_ceil_log2(sc->remap_count[remap_index]);
         mask = (1<<bits)-1;
+
+        av_assert0(sc->fltmap_size[remap_index] >= (mask + 1) * sizeof(*sc->fltmap[remap_index]));
     } else {
         bits = f->avctx->bits_per_raw_sample;
     }
@@ -299,15 +301,30 @@ static int decode_remap(FFV1Context *f, FFV1SliceContext *sc)
 {
     unsigned int end = (1LL<<f->avctx->bits_per_raw_sample) - 1;
     int flip = sc->remap == 2 ? (end>>1) : 0;
-    const int pixel_num = sc->slice_width * sc->slice_height;
 
-    for (int p= 0; p < 1 + 2*f->chroma_planes + f->transparency; p++) {
+    for (int p = 0; p < 1 + 2*f->chroma_planes + f->transparency; p++) {
         int j = 0;
         int lu = 0;
         uint8_t state[2][3][32];
         int64_t i;
         int mul[4096+1];
         int mul_count;
+
+        const int is_chroma = (p == 1 || p == 2) && f->chroma_planes;
+        const int plane_width  = AV_CEIL_RSHIFT(sc->slice_width , is_chroma ? f->chroma_h_shift : 0);
+        const int plane_height = AV_CEIL_RSHIFT(sc->slice_height, is_chroma ? f->chroma_v_shift : 0);
+        const int pixel_num  = FFMIN(plane_width * plane_height, end + 1LL);
+        const size_t fltmap_ceil = 1ULL << av_ceil_log2(pixel_num);
+
+        if (f->avctx->bits_per_raw_sample == 32) {
+            av_fast_malloc(&sc->fltmap32[p], &sc->fltmap32_size[p], fltmap_ceil * sizeof(*sc->fltmap32[p]));
+            if (!sc->fltmap32[p])
+                return AVERROR(ENOMEM);
+        } else {
+            av_fast_malloc(&sc->fltmap[p]  , &sc->fltmap_size[p]  , fltmap_ceil * sizeof(*sc->fltmap[p]));
+            if (!sc->fltmap[p])
+                return AVERROR(ENOMEM);
+        }
 
         memset(state, 128, sizeof(state));
         mul_count = ff_ffv1_get_symbol(&sc->c, state[0][0], 0);
@@ -400,20 +417,6 @@ static int decode_slice(AVCodecContext *c, void *arg)
     y      = sc->slice_y;
 
     if (sc->remap) {
-        const int pixel_num = sc->slice_width * sc->slice_height;
-
-        for(int p = 0; p < 1 + 2*f->chroma_planes + f->transparency ; p++) {
-            if (f->avctx->bits_per_raw_sample == 32) {
-                av_fast_malloc(&sc->fltmap32[p], &sc->fltmap32_size[p], pixel_num * sizeof(*sc->fltmap32[p]));
-                if (!sc->fltmap32[p])
-                    return AVERROR(ENOMEM);
-            } else {
-                av_fast_malloc(&sc->fltmap[p], &sc->fltmap_size[p], pixel_num * sizeof(*sc->fltmap[p]));
-                if (!sc->fltmap[p])
-                    return AVERROR(ENOMEM);
-            }
-        }
-
         ret = decode_remap(f, sc);
         if (ret < 0)
             return ret;
