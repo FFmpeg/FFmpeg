@@ -542,7 +542,7 @@ INIT_YMM cpuname
 ;      ptrdiff_t src_stride,  intptr_t width, intptr_t height, intptr_t vb_pos);
 ; ******************************
 %macro ALF_CLASSIFY_GRAD 1
-cglobal vvc_alf_classify_grad_%1bpc, 6, 14, 16, gradient_sum, src, src_stride, width, height, vb_pos, \
+cglobal vvc_alf_classify_grad_%1bpc, 6, 14, 12, gradient_sum, src, src_stride, width, height, vb_pos, \
     x, y, s0, s1, s2, s3, vb_pos_below, src_stride3
 
     lea         src_stride3q, [src_strideq * 2 + src_strideq]
@@ -560,7 +560,7 @@ cglobal vvc_alf_classify_grad_%1bpc, 6, 14, 16, gradient_sum, src, src_stride, w
 
 .loop_h:
     xor                   xd,  xd
-    pxor                 m15, m15 ; prev
+    pxor                xm11, xm11 ; prev
     .loop_w:
         lea              s0q, [srcq + xq * ps]
         lea              s1q, [s0q + src_strideq]
@@ -585,44 +585,44 @@ cglobal vvc_alf_classify_grad_%1bpc, 6, 14, 16, gradient_sum, src, src_stride, w
 
         pblendw           m8, m0, m1, 0xaa             ; nw
         pblendw           m9, m0, m5, 0x55             ; n
-        pblendw          m10, m4, m5, 0xaa             ; ne
-        pblendw          m11, m1, m2, 0xaa             ; w
-        pblendw          m12, m5, m6, 0xaa             ; e
-        pblendw          m13, m2, m3, 0xaa             ; sw
-        pblendw          m14, m2, m7, 0x55             ; s
+        pblendw           m4, m4, m5, 0xaa             ; ne
+        pblendw          m10, m1, m2, 0xaa             ; w
+        pblendw           m5, m5, m6, 0xaa             ; e
+        pblendw           m3, m2, m3, 0xaa             ; sw
+        pblendw           m2, m2, m7, 0x55             ; s
 
         pblendw           m0, m1, m6, 0x55
         paddw             m0, m0                       ; c
 
         pshufb            m1, m0, [CLASSIFY_SHUFFE]    ; d
 
-        paddw             m9, m14                      ; n + s
+        paddw             m9, m2                       ; n + s
         psubw             m9, m0                       ; (n + s) - c
         pabsw             m9, m9                       ; ver
 
-        paddw            m11, m12                      ; w + e
-        psubw            m11, m1                       ; (w + e) - d
-        pabsw            m11, m11                      ; hor
+        paddw             m5, m10                      ; w + e
+        psubw             m5, m1                       ; (w + e) - d
+        pabsw             m5, m5                       ; hor
 
-        pblendw          m14, m6, m7, 0xaa             ; se
-        paddw             m8, m14                      ; nw + se
+        pblendw           m6, m6, m7, 0xaa             ; se
+        paddw             m8, m6                       ; nw + se
         psubw             m8, m1                       ; (nw + se) - d
         pabsw             m8, m8                       ; di0
 
-        paddw            m10, m13                      ; ne + sw
-        psubw            m10, m1                       ; (nw + se) - d
-        pabsw            m10, m10                      ; di1
+        paddw             m4, m3                       ; ne + sw
+        psubw             m4, m1                       ; (nw + se) - d
+        pabsw             m4, m4                       ; di1
 
-        phaddw            m9,  m11                     ; vh,  each word represent 2x2 pixels
-        phaddw            m8,  m10                     ; di,  each word represent 2x2 pixels
+        phaddw            m9, m5                       ; vh,  each word represent 2x2 pixels
+        phaddw            m8, m4                       ; di,  each word represent 2x2 pixels
         phaddw            m0,  m9, m8                  ; all = each word represent 4x2 pixels, order is v_h_d0_d1 x 4
 
-        vinserti128      m15, m15, xm0, 1
-        pblendw           m1,  m0, m15, 0xaa           ; t
+        vinserti128      m11, m11, xm0, 1
+        pblendw           m1,  m0, m11, 0xaa           ; t
 
         phaddw            m1,  m0                      ; each word represent 8x2 pixels, adjacent word share 4x2 pixels
 
-        vextracti128    xm15, m0, 1                    ; prev
+        vextracti128    xm11, m0, 1                    ; prev
 
         movu [gradient_sumq], m1
 
