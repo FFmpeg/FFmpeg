@@ -794,7 +794,7 @@ cglobal vvc_alf_classify_grad_%1bpc, 6, 14, 12, gradient_sum, src, src_stride, w
 %if ps != 1
     vpsrlvd           m0, m0, m5
 %else
-    psrld             m0, 8
+    psrld             m0, 7
 %endif
     pminsd            m0, [dd15]
     movu              m6, [ARG_VAR_SHUFFE]
