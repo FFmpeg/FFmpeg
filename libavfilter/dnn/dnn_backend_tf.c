@@ -541,8 +541,8 @@ static DNNModel *dnn_load_model_tf(DnnContext *ctx, DNNFunctionType func_type, A
     }
 
 #if !HAVE_PTHREAD_CANCEL
-    if (ctx->options.async) {
-        ctx->options.async = 0;
+    if (ctx->async) {
+        ctx->async = 0;
         av_log(filter_ctx, AV_LOG_WARNING, "pthread is not supported, roll back to sync.\n");
     }
 #endif
