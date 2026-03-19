@@ -151,6 +151,14 @@ static int RENAME(decode_rgb_frame)(FFV1Context *f, FFV1SliceContext *sc,
 
     ff_ffv1_compute_bits_per_plane(f, sc, bits, &offset, mask, f->avctx->bits_per_raw_sample);
 
+    if (sc->remap)
+        for (int p=0; p<3+f->transparency; p++) {
+            if (f->avctx->bits_per_raw_sample == 32) {
+                av_assert0(sc->fltmap32_size[p] >= (mask[p] + 1LL) * sizeof(*sc->fltmap32[p]));
+            } else
+                av_assert0(sc->fltmap_size[p]   >= (mask[p] + 1LL) * sizeof(*sc->fltmap[p]));
+        }
+
     if (sc->slice_coding_mode == 1)
         ac = 1;
 
