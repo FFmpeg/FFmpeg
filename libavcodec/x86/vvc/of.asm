@@ -272,13 +272,13 @@ INIT_YMM avx2
     pmovsxwd                m9, xm9
     LOG2                   m10, m8, m7              ; 4 (log2(sgx2), log2(sgy2))
 
-    pslld                   m9, 2                   ; 4 (log2(sgx2) << 2, log2(sgy2) << 2)
+    pslld                   m9, 2                   ; 4 (sgxdi, sgydi)
 
     vpsravd                m11, m9, m10
     CLIPD                  m11, [pd_m15], [pd_15]   ; 4 (vx, junk)
 
     pshuflw                m%1, m11, q0000
-    pshufhw                m%1, m%1, q0000          ; 4 (2junk, 2vx)
+    pshufhw                m%1, m%1, q0000          ; 4 (4vx)
 
     psllq                   m6, m%2, 32
     paddw                  m%2, m6
