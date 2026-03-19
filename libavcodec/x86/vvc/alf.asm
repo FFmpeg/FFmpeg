@@ -681,62 +681,62 @@ cglobal vvc_alf_classify_grad_%1bpc, 6, 14, 12, gradient_sum, src, src_stride, w
     movu              m1, [gradq + sum_strideq]
     movu              m2, [gradq + 2 * sum_strideq]
 
-    movd            xm13, yd
-    movd            xm12, vb_posd
-    pcmpeqb         xm11, xm11
-    pcmpeqd         xm13, xm12      ; y == vb_pos
-    pxor            xm13, xm11      ; y != vb_pos
-    vpbroadcastd     m13, xm13
+    movd             xm8, yd
+    movd             xm4, vb_posd
+    pcmpeqb          xm5, xm5
+    pcmpeqd          xm8, xm4      ; y == vb_pos
+    pxor             xm8, xm5      ; y != vb_pos
+    vpbroadcastd      m8, xm8
 
-    vpbroadcastd     m14, [dw3]
-    paddd            m14, m13       ; ac = (y != vb_pos) ? 2 : 3
+    vpbroadcastd      m9, [dw3]
+    paddd             m9, m8        ; ac = (y != vb_pos) ? 2 : 3
 
-    pblendvb          m3, m15, [gradq + sum_stride3q], m13
+    pblendvb          m3, m10, [gradq + sum_stride3q], m8
 
     ; extent to dword to avoid overflow
-    punpcklwd         m4, m0, m15
-    punpckhwd         m5, m0, m15
-    punpcklwd         m6, m1, m15
-    punpckhwd         m7, m1, m15
-    punpcklwd         m8, m2, m15
-    punpckhwd         m9, m2, m15
-    punpcklwd        m10, m3, m15
-    punpckhwd        m11, m3, m15
+    punpckhwd         m4, m0, m10
+    punpcklwd         m0, m0, m10
+    punpckhwd         m5, m1, m10
+    punpcklwd         m1, m1, m10
+    punpckhwd         m6, m2, m10
+    punpcklwd         m2, m2, m10
+    punpckhwd         m7, m3, m10
+    punpcklwd         m3, m3, m10
 
-    paddd             m0, m4, m6
-    paddd             m1, m5, m7
-    paddd             m2, m8, m10
-    paddd             m3, m9, m11
+    paddd             m4, m5
+    paddd             m0, m1
+    paddd             m6, m7
+    paddd             m2, m3
 
     ; sum of the first row
-    paddd             m0, m2           ; low
-    paddd             m1, m3           ; high
+    paddd             m0, m0, m2         ; low
+    paddd             m1, m4, m6         ; high
 
     lea            gradq, [gradq + 2 * sum_strideq]
 
-    pblendvb         m10, m15, [gradq], m13
+    pblendvb          m2, m10, [gradq], m8
 
-    movu             m11, [gradq + sum_strideq]
-    movu             m12, [gradq + 2 * sum_strideq]
-    movu             m13, [gradq + sum_stride3q]
+    movu              m3, [gradq + sum_strideq]
+    movu              m4, [gradq + 2 * sum_strideq]
+    movu              m5, [gradq + sum_stride3q]
 
-    punpcklwd         m4,  m10, m15
-    punpckhwd         m5,  m10, m15
-    punpcklwd         m6,  m11, m15
-    punpckhwd         m7,  m11, m15
-    punpcklwd         m8,  m12, m15
-    punpckhwd         m9,  m12, m15
-    punpcklwd        m10,  m13, m15
-    punpckhwd        m11,  m13, m15
+    punpckhwd         m6, m2, m10
+    punpcklwd         m2, m2, m10
+    punpckhwd         m7, m3, m10
+    punpcklwd         m3, m3, m10
+    punpckhwd         m8, m4, m10
+    punpcklwd         m4, m4, m10
+    paddd             m6, m7
+    punpckhwd         m7, m5, m10
+    punpcklwd         m5, m5, m10
 
-    paddd             m2, m4, m6
-    paddd             m3, m5, m7
-    paddd             m4, m8, m10
-    paddd             m5, m9, m11
+    paddd             m2, m3
+    paddd             m8, m7
+    paddd             m4, m5
 
     ; sum of the second row
-    paddd             m2, m4        ; low
-    paddd             m3, m5        ; high
+    paddd             m2, m2, m4         ; low
+    paddd             m3, m8, m6         ; high
 
     punpckldq         m4, m0, m2
     punpckhdq         m5, m0, m2
@@ -758,31 +758,31 @@ cglobal vvc_alf_classify_grad_%1bpc, 6, 14, 12, gradient_sum, src, src_stride, w
 
     pcmpgtd           m7, m2, m3         ; dir_d - 1
     pmaxsd            m8, m2, m3         ; d1
-    pminsd            m9, m2, m3         ; d0
+    pminsd            m3, m2, m3         ; d0
 
     ; *transpose_idx = dir_d * 2 + dir_hv;
-    vpbroadcastd     m10, [dw3]
-    paddd            m11, m7, m7
-    paddd            m11, m4
-    paddd            m10, m11
-    SAVE_CLASSIFY_PARAM transpose_idx, 10
+    vpbroadcastd      m1, [dw3]
+    paddd             m7, m7
+    paddd             m7, m4
+    paddd             m7, m1
+    SAVE_CLASSIFY_PARAM transpose_idx, 7
 
-    psrlq            m10, m8, 32
-    psrlq            m11, m6, 32
-    pmuldq           m12, m10, m11       ; d1 * hv0 high
-    psrlq             m1,  m9, 32
-    psrlq             m2,  m5, 32
-    pmuldq            m3,  m1, m2        ; d0 * hv1 high
-    pcmpgtq          m10, m12, m3        ; dir1 - 1 high
+    psrlq             m1, m8, 32
+    psrlq             m2, m6, 32
+    pmuldq            m4, m1, m2         ; d1 * hv0 high
+    psrlq             m1, m3, 32
+    psrlq             m2, m5, 32
+    pmuldq            m7, m1, m2         ; d0 * hv1 high
+    pcmpgtq           m7, m4, m7         ; dir1 - 1 high
 
     pmuldq            m1, m8, m6         ; d1 * hv0 low
-    pmuldq            m2, m9, m5         ; d0 * hv1 low
+    pmuldq            m2, m3, m5         ; d0 * hv1 low
     pcmpgtq           m1, m2             ; dir1 - 1 low
 
-    vpblendd          m1, m1, m10, 0xaa  ; dir1 - 1
+    vpblendd          m1, m1, m7, 0xaa   ; dir1 - 1
 
     pblendvb          m2, m5, m8, m1     ; hvd1
-    pblendvb          m3, m6, m9, m1     ; hvd0
+    pblendvb          m3, m6, m3, m1     ; hvd0
 
 %if ps != 1  ; high bit depth
     movd             xm5, bit_depthd
@@ -790,7 +790,7 @@ cglobal vvc_alf_classify_grad_%1bpc, 6, 14, 12, gradient_sum, src, src_stride, w
 %endif
 
     ;*class_idx = arg_var[av_clip_uintp2(sum_hv * ac >> (BIT_DEPTH - 1), 4)];
-    pmulld            m0, m14            ; sum_hv * ac
+    pmulld            m0, m9             ; sum_hv * ac
 %if ps != 1
     vpsrlvd           m0, m0, m5
 %else
@@ -800,7 +800,7 @@ cglobal vvc_alf_classify_grad_%1bpc, 6, 14, 12, gradient_sum, src, src_stride, w
     movu              m6, [ARG_VAR_SHUFFE]
     pshufb            m6, m0             ; class_idx
 
-    vpbroadcastd     m10, [dw5]
+    vpbroadcastd      m0, [dw5]
 
     ; if (hvd1 * 2 > 9 * hvd0)
     ;   *class_idx += ((dir1 << 1) + 2) * 5;
@@ -808,14 +808,14 @@ cglobal vvc_alf_classify_grad_%1bpc, 6, 14, 12, gradient_sum, src, src_stride, w
     ;   *class_idx += ((dir1 << 1) + 1) * 5;
     paddd             m7,  m3, m3
     pcmpgtd           m7,  m2, m7        ; hvd1 > 2 * hvd0
-    pand              m7, m10
+    pand              m7, m0
     paddd             m6,  m7            ; class_idx
 
     paddd             m8, m2, m2
-    pslld             m9, m3, 3
-    paddd             m9, m3
-    pcmpgtd           m8, m9             ; hvd1 * 2 > 9 * hvd0
-    pand              m8, m10
+    pslld             m2, m3, 3
+    paddd             m2, m3
+    pcmpgtd           m8, m2             ; hvd1 * 2 > 9 * hvd0
+    pand              m8, m0
     paddd             m6, m8             ; class_idx
 
     pandn             m1, m7
@@ -844,7 +844,7 @@ cglobal vvc_alf_classify_grad_%1bpc, 6, 14, 12, gradient_sum, src, src_stride, w
 %macro ALF_CLASSIFY 1
 %define ps (%1 / 8)
 ALF_CLASSIFY_GRAD %1
-cglobal vvc_alf_classify_%1bpc, 7, 15, 16, class_idx, transpose_idx, gradient_sum, width, height, vb_pos, bit_depth, \
+cglobal vvc_alf_classify_%1bpc, 7, 15, 11, class_idx, transpose_idx, gradient_sum, width, height, vb_pos, bit_depth, \
     x, y, grad, sum_stride, sum_stride3, temp, w
 
 %if ps != 1
@@ -863,7 +863,7 @@ cglobal vvc_alf_classify_%1bpc, 7, 15, 16, class_idx, transpose_idx, gradient_su
 
     xor               yd, yd
     and          vb_posd, ~7                ; floor align to 8
-    pxor             m15, m15
+    pxor            xm10, xm10
 
 .loop_sum_h:
     xor               xd,  xd
