@@ -136,8 +136,12 @@ SECTION .text
     %define clips m %+ k
 
     pshufb           m12, clips, [param_shuffe_ %+ i]        ;clip
+%if ps != 1 || UNIX64
+    psubw            m11, m14, m12                           ;-clip
+%else
     pxor             m11, m11
     psubw            m11, m12                                ;-clip
+%endif
 
     psubw             m9, m2
     CLIPW             m9, m11, m12
@@ -477,9 +481,9 @@ cglobal vvc_alf_filter_%2_%1
     jmp vvc_alf_filter_%2_%3_prologue
 %else
 vvc_alf_filter_%2_%1_prologue:
-    PROLOGUE 9, 14+LUMA, 12+2*(ps!=1)+2*LUMA, dst, dst_stride, src, src_stride, width, height, filter, clip, vb_pos, \
+    PROLOGUE 9, 14+LUMA, UNIX64 ? 16 : (12+2*(ps!=1)+2*LUMA), dst, dst_stride, src, src_stride, width, height, filter, clip, vb_pos, \
     x, s1, s2, s3, s4, s5
-%if ps != 1
+%if ps != 1 || UNIX64
     pxor             m14, m14
 %endif
 
