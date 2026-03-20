@@ -60,7 +60,7 @@ static int dvdsub_parse(AVCodecParserContext *s,
         pc->packet = av_malloc(pc->packet_len + AV_INPUT_BUFFER_PADDING_SIZE);
     }
     if (pc->packet) {
-        if (pc->packet_index + buf_size <= pc->packet_len) {
+        if (buf_size <= pc->packet_len - pc->packet_index) {
             memcpy(pc->packet + pc->packet_index, buf, buf_size);
             pc->packet_index += buf_size;
             if (pc->packet_index >= pc->packet_len) {
