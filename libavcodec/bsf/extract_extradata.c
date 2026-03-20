@@ -368,7 +368,7 @@ static int extract_extradata_lcevc(AVBSFContext *ctx, AVPacket *pkt,
     int i, ret = 0;
 
     ret = ff_h2645_packet_split(&s->h2645_pkt, pkt->data, pkt->size,
-                                ctx, 0, ctx->par_in->codec_id, H2645_FLAG_SMALL_PADDING);
+                                ctx, 0, AV_CODEC_ID_LCEVC, H2645_FLAG_SMALL_PADDING);
     if (ret < 0)
         return ret;
 
@@ -380,10 +380,10 @@ static int extract_extradata_lcevc(AVBSFContext *ctx, AVPacket *pkt,
             bytestream2_init_writer(&pb_extradata, nal->data, 0);
             if (!write_lcevc_nalu(ctx, &pb_extradata, nal, 0))
                 extradata_size += nal->raw_size + 3 +
-                    ff_h2645_unit_requires_zero_byte(ctx->par_in->codec_id, nal->type, extradata_nb_nals++);
+                    ff_h2645_unit_requires_zero_byte(AV_CODEC_ID_LCEVC, nal->type, extradata_nb_nals++);
         }
         filtered_size += nal->raw_size + 3 +
-            ff_h2645_unit_requires_zero_byte(ctx->par_in->codec_id, nal->type, filtered_nb_nals++);
+            ff_h2645_unit_requires_zero_byte(AV_CODEC_ID_LCEVC, nal->type, filtered_nb_nals++);
     }
 
     if (extradata_size) {
@@ -412,7 +412,7 @@ static int extract_extradata_lcevc(AVBSFContext *ctx, AVPacket *pkt,
             H2645NAL *nal = &s->h2645_pkt.nals[i];
             if (val_in_array(extradata_nal_types, nb_extradata_nal_types,
                              nal->type)) {
-                if (ff_h2645_unit_requires_zero_byte(ctx->par_in->codec_id, nal->type, extradata_nb_nals++))
+                if (ff_h2645_unit_requires_zero_byte(AV_CODEC_ID_LCEVC, nal->type, extradata_nb_nals++))
                     bytestream2_put_byteu(&pb_extradata, 0); // zero_byte
                 bytestream2_put_be24u(&pb_extradata, 1); //startcode
                 ret = write_lcevc_nalu(ctx, &pb_extradata, nal, 0);
@@ -422,7 +422,7 @@ static int extract_extradata_lcevc(AVBSFContext *ctx, AVPacket *pkt,
                     return ret;
                 }
                 if (s->remove) {
-                    if (ff_h2645_unit_requires_zero_byte(ctx->par_in->codec_id, nal->type, filtered_nb_nals++))
+                    if (ff_h2645_unit_requires_zero_byte(AV_CODEC_ID_LCEVC, nal->type, filtered_nb_nals++))
                         bytestream2_put_byteu(&pb_filtered_data, 0); // zero_byte
                     bytestream2_put_be24u(&pb_filtered_data, 1); //startcode
                     ret = write_lcevc_nalu(ctx, &pb_filtered_data, nal, 1);
@@ -433,7 +433,7 @@ static int extract_extradata_lcevc(AVBSFContext *ctx, AVPacket *pkt,
                     }
                 }
             } else if (s->remove) {
-                if (ff_h2645_unit_requires_zero_byte(ctx->par_in->codec_id, nal->type, filtered_nb_nals++))
+                if (ff_h2645_unit_requires_zero_byte(AV_CODEC_ID_LCEVC, nal->type, filtered_nb_nals++))
                     bytestream2_put_byteu(&pb_filtered_data, 0); // zero_byte
                 bytestream2_put_be24u(&pb_filtered_data, 1); //startcode
                 bytestream2_put_bufferu(&pb_filtered_data, nal->raw_data, nal->raw_size);
