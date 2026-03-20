@@ -112,7 +112,7 @@ static int extract_extradata_av1(AVBSFContext *ctx, AVPacket *pkt,
             extradata_size += obu->raw_size;
             if (obu->type == AV1_OBU_SEQUENCE_HEADER)
                 has_seq = 1;
-        } else if (s->remove) {
+        } else {
             filtered_size += obu->raw_size;
         }
     }
@@ -213,7 +213,7 @@ static int extract_extradata_h2645(AVBSFContext *ctx, AVPacket *pkt,
             } else {
                 if (nal->type == H264_NAL_SPS) has_sps = 1;
             }
-        } else if (s->remove) {
+        } else {
             filtered_size += nal->raw_size + 3 +
                              ff_h2645_unit_requires_zero_byte(ctx->par_in->codec_id, nal->type, filtered_nb_nals++);
         }
