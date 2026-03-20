@@ -19,6 +19,9 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
+#include <assert.h>
+
 #include "libavutil/frame.h"
 #include "libavutil/imgutils.h"
 
@@ -1029,8 +1032,8 @@ static void alf_filter_luma(VVCLocalContext *lc, uint8_t *dst, const uint8_t *sr
     int16_t *coeff            = (int16_t*)lc->tmp;
     int16_t *clip             = (int16_t *)lc->tmp1;
 
-    av_assert0(ALF_MAX_FILTER_SIZE <= sizeof(lc->tmp));
-    av_assert0(ALF_MAX_FILTER_SIZE * sizeof(int16_t) <= sizeof(lc->tmp1));
+    static_assert(ALF_MAX_FILTER_SIZE <= sizeof(lc->tmp), "VVCLocalContext.tmp too small");
+    static_assert(ALF_MAX_FILTER_SIZE * sizeof(int16_t) <= sizeof(lc->tmp1), "VVCLocalContext.tmp1 too small");
 
     alf_get_coeff_and_clip(lc, coeff, clip, src, src_stride, width, height, vb_pos, alf);
     fc->vvcdsp.alf.filter[LUMA](dst, dst_stride, src, src_stride, width, height, coeff, clip, vb_pos);

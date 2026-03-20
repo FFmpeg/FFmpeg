@@ -19,6 +19,9 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
+#include <assert.h>
+
 #include "libavcodec/cabac_functions.h"
 
 #include "cabac.h"
@@ -107,6 +110,8 @@ enum SyntaxElement {
     COEFF_SIGN_FLAG                 = ABS_LEVEL_GTX_FLAG            +72,
     SYNTAX_ELEMENT_LAST             = COEFF_SIGN_FLAG               + 6,
 };
+
+static_assert(VVC_CONTEXTS == SYNTAX_ELEMENT_LAST, "VVC_CONTEXTS wrong");
 
 static const uint8_t init_values[4][SYNTAX_ELEMENT_LAST] = {
     {
@@ -816,8 +821,6 @@ static void cabac_init_state(VVCLocalContext *lc)
     const H266RawSliceHeader *rsh = lc->sc->sh.r;
     const int qp                  = av_clip_uintp2(lc->sc->sh.slice_qp_y, 6);
     int init_type                 = 2 - rsh->sh_slice_type;
-
-    av_assert0(VVC_CONTEXTS == SYNTAX_ELEMENT_LAST);
 
     ff_vvc_ep_init_stat_coeff(lc->ep, sps->bit_depth, sps->r->sps_persistent_rice_adaptation_enabled_flag);
 
