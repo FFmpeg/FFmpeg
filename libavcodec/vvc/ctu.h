@@ -363,17 +363,17 @@ typedef struct VVCCabacState {
 typedef struct EntryPoint {
     int8_t qp_y;                                    ///< QpY
 
-    int stat_coeff[VVC_MAX_SAMPLE_ARRAYS];          ///< StatCoeff
-
-    Palette pp[VVC_MAX_SAMPLE_ARRAYS];              // PalettePredictor
-
-    VVCCabacState cabac_state[VVC_CONTEXTS];
-    CABACContext cc;
+    uint8_t is_first_qg;                            // first quantization group
 
     int ctu_start;
     int ctu_end;
 
-    uint8_t is_first_qg;                            // first quantization group
+    int stat_coeff[VVC_MAX_SAMPLE_ARRAYS];          ///< StatCoeff
+
+    CABACContext cc;
+    VVCCabacState cabac_state[VVC_CONTEXTS];
+
+    Palette pp[VVC_MAX_SAMPLE_ARRAYS];              // PalettePredictor
 
     MvField hmvp[MAX_NUM_HMVP_CANDS];               ///< HmvpCandList
     int     num_hmvp;                               ///< NumHmvpCand
@@ -388,17 +388,6 @@ typedef struct VVCLocalContext {
     uint8_t ctb_up_left_flag;
     int     end_of_tiles_x;
     int     end_of_tiles_y;
-
-    /* *2 for high bit depths */
-    DECLARE_ALIGNED(32, uint8_t, edge_emu_buffer)[EDGE_EMU_BUFFER_STRIDE * EDGE_EMU_BUFFER_STRIDE * 2];
-    DECLARE_ALIGNED(32, int16_t, tmp)[MAX_PB_SIZE * MAX_PB_SIZE];
-    DECLARE_ALIGNED(32, int16_t, tmp1)[MAX_PB_SIZE * MAX_PB_SIZE];
-    DECLARE_ALIGNED(32, int16_t, tmp2)[MAX_PB_SIZE * MAX_PB_SIZE];
-    DECLARE_ALIGNED(32, uint8_t, ciip_tmp)[MAX_PB_SIZE * MAX_PB_SIZE * 2];
-    DECLARE_ALIGNED(32, uint8_t, sao_buffer)[(MAX_CTU_SIZE + 2 * SAO_PADDING_SIZE) * EDGE_EMU_BUFFER_STRIDE * 2];
-    DECLARE_ALIGNED(32, uint8_t, alf_buffer_luma)[(MAX_CTU_SIZE + 2 * ALF_PADDING_SIZE) * EDGE_EMU_BUFFER_STRIDE * 2];
-    DECLARE_ALIGNED(32, uint8_t, alf_buffer_chroma)[(MAX_CTU_SIZE + 2 * ALF_PADDING_SIZE) * EDGE_EMU_BUFFER_STRIDE * 2];
-    DECLARE_ALIGNED(32, int32_t, alf_gradient_tmp)[ALF_GRADIENT_SIZE * ALF_GRADIENT_SIZE * ALF_NUM_DIR];
 
     struct {
         int sbt_num_fourths_tb0;                ///< SbtNumFourthsTb0
@@ -426,11 +415,12 @@ typedef struct VVCLocalContext {
         int y_vpdu;
     } lmcs;
 
-    CodingUnit *cu;
-    ReconstructedArea ras[2][MAX_PARTS_IN_CTU];
-    int num_ras[2];
+    SliceContext *sc;
+    VVCFrameContext *fc;
+    EntryPoint *ep;
+    int *coeffs;
 
-    NeighbourAvailable na;
+    CodingUnit *cu;
 
 #define BOUNDARY_LEFT_SLICE     (1 << 0)
 #define BOUNDARY_LEFT_TILE      (1 << 1)
@@ -442,10 +432,21 @@ typedef struct VVCLocalContext {
      * of the deblocking filter */
     int boundary_flags;
 
-    SliceContext *sc;
-    VVCFrameContext *fc;
-    EntryPoint *ep;
-    int *coeffs;
+    int num_ras[2];
+    ReconstructedArea ras[2][MAX_PARTS_IN_CTU];
+
+    NeighbourAvailable na;
+
+    /* *2 for high bit depths */
+    DECLARE_ALIGNED(32, uint8_t, edge_emu_buffer)[EDGE_EMU_BUFFER_STRIDE * EDGE_EMU_BUFFER_STRIDE * 2];
+    DECLARE_ALIGNED(32, int16_t, tmp)[MAX_PB_SIZE * MAX_PB_SIZE];
+    DECLARE_ALIGNED(32, int16_t, tmp1)[MAX_PB_SIZE * MAX_PB_SIZE];
+    DECLARE_ALIGNED(32, int16_t, tmp2)[MAX_PB_SIZE * MAX_PB_SIZE];
+    DECLARE_ALIGNED(32, uint8_t, ciip_tmp)[MAX_PB_SIZE * MAX_PB_SIZE * 2];
+    DECLARE_ALIGNED(32, uint8_t, sao_buffer)[(MAX_CTU_SIZE + 2 * SAO_PADDING_SIZE) * EDGE_EMU_BUFFER_STRIDE * 2];
+    DECLARE_ALIGNED(32, uint8_t, alf_buffer_luma)[(MAX_CTU_SIZE + 2 * ALF_PADDING_SIZE) * EDGE_EMU_BUFFER_STRIDE * 2];
+    DECLARE_ALIGNED(32, uint8_t, alf_buffer_chroma)[(MAX_CTU_SIZE + 2 * ALF_PADDING_SIZE) * EDGE_EMU_BUFFER_STRIDE * 2];
+    DECLARE_ALIGNED(32, int32_t, alf_gradient_tmp)[ALF_GRADIENT_SIZE * ALF_GRADIENT_SIZE * ALF_NUM_DIR];
 } VVCLocalContext;
 
 typedef struct VVCAllowedSplit {
