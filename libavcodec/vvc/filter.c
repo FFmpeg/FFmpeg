@@ -20,8 +20,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <assert.h>
-
 #include "libavutil/frame.h"
 #include "libavutil/imgutils.h"
 
@@ -355,7 +353,7 @@ void ff_vvc_sao_filter(VVCLocalContext *lc, int x0, int y0)
             case SAO_EDGE:
             {
                 const ptrdiff_t dst_stride = 2 * MAX_PB_SIZE + AV_INPUT_BUFFER_PADDING_SIZE;
-                uint8_t *dst               = lc->sao_buffer + dst_stride + AV_INPUT_BUFFER_PADDING_SIZE;
+                uint8_t *dst               = lc->sao.buffer + dst_stride + AV_INPUT_BUFFER_PADDING_SIZE;
 
                 sao_extends_edges(dst, dst_stride, src, src_stride, width, height, fc, x0, y0, rx, ry, edges, c_idx);
 
@@ -990,9 +988,6 @@ static void alf_prepare_buffer(VVCFrameContext *fc, uint8_t *_dst, const uint8_t
     alf_fill_border_v(dst, dst_stride, src,  dst - (1 << ps), border_pixels, height, ps, edges, edges[RIGHT]);
 }
 
-#define ALF_MAX_BLOCKS_IN_CTU   (MAX_CTU_SIZE * MAX_CTU_SIZE / ALF_BLOCK_SIZE / ALF_BLOCK_SIZE)
-#define ALF_MAX_FILTER_SIZE     (ALF_MAX_BLOCKS_IN_CTU * ALF_NUM_COEFF_LUMA)
-
 static void alf_get_coeff_and_clip(VVCLocalContext *lc, int16_t *coeff, int16_t *clip,
     const uint8_t *src, ptrdiff_t src_stride, int width, int height, int vb_pos, const ALFParams *alf)
 {
@@ -1018,7 +1013,7 @@ static void alf_get_coeff_and_clip(VVCLocalContext *lc, int16_t *coeff, int16_t 
         class_to_filt     = ff_vvc_alf_aps_class_to_filt_map;
     }
     fc->vvcdsp.alf.classify(class_idx, transpose_idx, src, src_stride, width, height,
-        vb_pos, lc->alf_gradient_tmp);
+        vb_pos, lc->alf.gradient_tmp);
     fc->vvcdsp.alf.recon_coeff_and_clip(coeff, clip, class_idx, transpose_idx, size,
         coeff_set, clip_idx_set, class_to_filt);
 }
@@ -1029,11 +1024,8 @@ static void alf_filter_luma(VVCLocalContext *lc, uint8_t *dst, const uint8_t *sr
 {
     const VVCFrameContext *fc = lc->fc;
     int vb_pos                = _vb_pos - y0;
-    int16_t *coeff            = (int16_t*)lc->tmp;
-    int16_t *clip             = (int16_t *)lc->tmp1;
-
-    static_assert(ALF_MAX_FILTER_SIZE <= sizeof(lc->tmp), "VVCLocalContext.tmp too small");
-    static_assert(ALF_MAX_FILTER_SIZE * sizeof(int16_t) <= sizeof(lc->tmp1), "VVCLocalContext.tmp1 too small");
+    int16_t *coeff            = lc->alf.coeff_tmp;
+    int16_t *clip             = lc->alf.clip_tmp;
 
     alf_get_coeff_and_clip(lc, coeff, clip, src, src_stride, width, height, vb_pos, alf);
     fc->vvcdsp.alf.filter[LUMA](dst, dst_stride, src, src_stride, width, height, coeff, clip, vb_pos);
@@ -1217,7 +1209,7 @@ void ff_vvc_alf_filter(VVCLocalContext *lc, const int x0, const int y0)
             uint8_t *padded;
 
             if (alf->ctb_flag[c_idx] || (!c_idx && has_chroma && (alf->ctb_cc_idc[0] || alf->ctb_cc_idc[1]))) {
-                padded = (c_idx ? lc->alf_buffer_chroma : lc->alf_buffer_luma) + padded_offset;
+                padded = (c_idx ? lc->alf.buffer_chroma : lc->alf.buffer_luma) + padded_offset;
                 alf_prepare_buffer(fc, padded, src, x, y, rx, ry, width, height,
                     padded_stride, src_stride, c_idx, sb_edges[i]);
             }
@@ -1231,7 +1223,7 @@ void ff_vvc_alf_filter(VVCLocalContext *lc, const int x0, const int y0)
                 }
             }
             if (c_idx && alf->ctb_cc_idc[c_idx - 1]) {
-                padded = lc->alf_buffer_luma + padded_offset;
+                padded = lc->alf.buffer_luma + padded_offset;
                 alf_filter_cc(lc, src, padded, src_stride, padded_stride, c_idx,
                     width, height, hs, vs, ctu_end - sb->t - ALF_VB_POS_ABOVE_LUMA, alf);
             }

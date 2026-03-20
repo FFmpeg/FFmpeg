@@ -273,7 +273,7 @@ static void mc(VVCLocalContext *lc, int16_t *dst, const VVCFrame *ref, const Mv 
     x_off += mv->x >> (4 + hs);
     y_off += mv->y >> (4 + vs);
 
-    MC_EMULATED_EDGE(lc->edge_emu_buffer, &src, &src_stride, x_off, y_off);
+    MC_EMULATED_EDGE(lc->pred.edge_emu_buffer, &src, &src_stride, x_off, y_off);
     fc->vvcdsp.inter.put[is_chroma][idx][!!my][!!mx](dst, src, src_stride, block_h, hf, vf, block_w);
 }
 
@@ -302,7 +302,7 @@ static void mc_uni(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_stride
     x_off += mv->x >> (4 + hs);
     y_off += mv->y >> (4 + vs);
 
-    MC_EMULATED_EDGE(lc->edge_emu_buffer, &src, &src_stride, x_off, y_off);
+    MC_EMULATED_EDGE(lc->pred.edge_emu_buffer, &src, &src_stride, x_off, y_off);
     if (derive_weight_uni(&denom, &wx, &ox, lc, mvf, c_idx)) {
         fc->vvcdsp.inter.put_uni_w[is_chroma][idx][!!my][!!mx](dst, dst_stride, src, src_stride,
             block_h, denom, wx, ox, hf, vf, block_w);
@@ -323,7 +323,7 @@ static void mc_bi(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_stride,
     const int vs              = fc->ps.sps->vshift[c_idx];
     const int idx             = av_log2(block_w) - 1;
     const VVCFrame *refs[]    = { ref0, ref1 };
-    int16_t *tmp[]            = { lc->tmp + sb_bdof_flag * PROF_TEMP_OFFSET, lc->tmp1 + sb_bdof_flag * PROF_TEMP_OFFSET };
+    int16_t *tmp[]            = { lc->pred.tmp + sb_bdof_flag * PROF_TEMP_OFFSET, lc->pred.tmp1 + sb_bdof_flag * PROF_TEMP_OFFSET };
     const int is_chroma       = !!c_idx;
     const int hpel_if_idx     = is_chroma ? 0 : pu->mi.hpel_if_idx;
 
@@ -344,9 +344,9 @@ static void mc_bi(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_stride,
             const int x_sb = x_off + (orig_mv->mv[i].x >> (4 + hs));
             const int y_sb = y_off + (orig_mv->mv[i].y >> (4 + vs));
 
-            MC_EMULATED_EDGE_DMVR(lc->edge_emu_buffer,  &src, &src_stride, x_sb, y_sb, ox, oy);
+            MC_EMULATED_EDGE_DMVR(lc->pred.edge_emu_buffer,  &src, &src_stride, x_sb, y_sb, ox, oy);
         } else {
-            MC_EMULATED_EDGE(lc->edge_emu_buffer, &src, &src_stride, ox, oy);
+            MC_EMULATED_EDGE(lc->pred.edge_emu_buffer, &src, &src_stride, ox, oy);
         }
         fc->vvcdsp.inter.put[is_chroma][idx][!!my][!!mx](tmp[i],  src, src_stride, block_h, hf, vf, block_w);
         if (sb_bdof_flag)
@@ -415,7 +415,7 @@ static void emulated_edge_scaled(VVCLocalContext *lc, const uint8_t **src, ptrdi
     const int block_h       = *src_height = y_end - y_off + (y_end == y_last);
     const int wrap_enabled  = 0;
 
-    MC_EMULATED_EDGE(lc->edge_emu_buffer, src, src_stride, x_off, y_off);
+    MC_EMULATED_EDGE(lc->pred.edge_emu_buffer, src, src_stride, x_off, y_off);
 }
 
 static void mc_scaled(VVCLocalContext *lc, int16_t *dst, const VVCRefPic *refp, const Mv *mv,
@@ -470,7 +470,7 @@ static void mc_bi_scaled(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_
    const int x_off, const int y_off, const int block_w, const int block_h, const int c_idx)
 {
     const VVCRefPic *refps[]  = { refp0, refp1 };
-    int16_t *tmp[]            = { lc->tmp, lc->tmp1 };
+    int16_t *tmp[]            = { lc->pred.tmp, lc->pred.tmp1 };
 
     for (int i = L0; i <= L1; i++) {
         const Mv *mv          = mvf->mv + i;
@@ -492,7 +492,7 @@ static void luma_prof_uni(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst
     const VVCFrameContext *fc = lc->fc;
     const uint8_t *src        = ref->frame->data[LUMA];
     ptrdiff_t src_stride      = ref->frame->linesize[LUMA];
-    uint16_t *prof_tmp        = lc->tmp + PROF_TEMP_OFFSET;
+    uint16_t *prof_tmp        = lc->pred.tmp + PROF_TEMP_OFFSET;
     const int idx             = av_log2(block_w) - 1;
     const int lx              = mvf->pred_flag - PF_L0;
     const Mv *mv              = mvf->mv + lx;
@@ -508,7 +508,7 @@ static void luma_prof_uni(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst
     x_off += mv->x >> 4;
     y_off += mv->y >> 4;
 
-    MC_EMULATED_EDGE(lc->edge_emu_buffer, &src, &src_stride, x_off, y_off);
+    MC_EMULATED_EDGE(lc->pred.edge_emu_buffer, &src, &src_stride, x_off, y_off);
     if (cb_prof_flag) {
         fc->vvcdsp.inter.put[LUMA][idx][!!my][!!mx](prof_tmp, src, src_stride, AFFINE_MIN_BLOCK_SIZE, hf, vf, AFFINE_MIN_BLOCK_SIZE);
         fc->vvcdsp.inter.fetch_samples(prof_tmp, src, src_stride, mx, my);
@@ -535,14 +535,14 @@ static void luma_prof(VVCLocalContext *lc, int16_t *dst, const VVCFrame *ref,
     const int oy              = y_off + (mv->y >> 4);
     const int idx             = av_log2(block_w) - 1;
     const int is_chroma       = 0;
-    uint16_t *prof_tmp        = lc->tmp2 + PROF_TEMP_OFFSET;
+    int16_t *prof_tmp         = lc->pred.prof_tmp + PROF_TEMP_OFFSET;
     ptrdiff_t src_stride      = ref->frame->linesize[LUMA];
     const uint8_t *src        = ref->frame->data[LUMA];
     const int8_t *hf          = ff_vvc_inter_luma_filters[VVC_INTER_LUMA_FILTER_TYPE_AFFINE][mx];
     const int8_t *vf          = ff_vvc_inter_luma_filters[VVC_INTER_LUMA_FILTER_TYPE_AFFINE][my];
     const int wrap_enabled    = fc->ps.pps->r->pps_ref_wraparound_enabled_flag;
 
-    MC_EMULATED_EDGE(lc->edge_emu_buffer, &src, &src_stride, ox, oy);
+    MC_EMULATED_EDGE(lc->pred.edge_emu_buffer, &src, &src_stride, ox, oy);
     if (!pu->cb_prof_flag[lx]) {
         fc->vvcdsp.inter.put[LUMA][idx][!!my][!!mx](dst, src, src_stride, block_h, hf, vf, block_w);
     } else {
@@ -557,7 +557,7 @@ static void luma_prof_bi(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_
     const int block_w, const int block_h)
 {
     const VVCRefPic *refps[]  = { ref0, ref1 };
-    int16_t *tmp[]            = { lc->tmp, lc->tmp1 };
+    int16_t *tmp[]            = { lc->pred.tmp, lc->pred.tmp1 };
 
     for (int i = L0; i <= L1; i++) {
         const VVCRefPic *refp = refps[i];
@@ -608,7 +608,7 @@ static void pred_gpm_blk(VVCLocalContext *lc)
 
     const int c_end = fc->ps.sps->r->sps_chroma_format_idc ? 3 : 1;
 
-    int16_t *tmp[2] = {lc->tmp, lc->tmp1};
+    int16_t *tmp[2] = {lc->pred.tmp, lc->pred.tmp1};
 
     for (int c_idx = 0; c_idx < c_end; c_idx++) {
         const int hs         = fc->ps.sps->hshift[c_idx];
@@ -691,7 +691,7 @@ static void pred_regular(VVCLocalContext *lc, const MvField *mvf, const MvField 
         const int h                  = sbh >> vs;
         const int is_luma            = !c_idx;
         const int do_ciip            = lc->cu->ciip_flag && (is_luma || (w > 2));
-        uint8_t *inter               = do_ciip ? (uint8_t *)lc->ciip_tmp : dst;
+        uint8_t *inter               = do_ciip ? lc->pred.ciip_tmp : dst;
         const ptrdiff_t inter_stride = do_ciip ? (MAX_PB_SIZE * sizeof(uint16_t)) : dst_stride;
         const int do_bdof            = is_luma && sb_bdof_flag;
 
@@ -774,7 +774,7 @@ static void dmvr_mv_refine(VVCLocalContext *lc, MvField *mvf, MvField *orig_mv, 
     const VVCFrameContext *fc = lc->fc;
     const int sr_range        = 2;
     const VVCFrame *refs[]    = { ref0, ref1 };
-    int16_t *tmp[]            = { lc->tmp, lc->tmp1 };
+    int16_t *tmp[]            = { lc->pred.tmp, lc->pred.tmp1 };
     int sad[SAD_ARRAY_SIZE][SAD_ARRAY_SIZE];
     int min_dx, min_dy, min_sad, dx, dy;
 
@@ -794,7 +794,7 @@ static void dmvr_mv_refine(VVCLocalContext *lc, MvField *mvf, MvField *orig_mv, 
         const uint8_t *src      = ref->frame->data[LUMA];
         const int wrap_enabled  = fc->ps.pps->r->pps_ref_wraparound_enabled_flag;
 
-        MC_EMULATED_EDGE_BILINEAR(lc->edge_emu_buffer, &src, &src_stride, ox, oy);
+        MC_EMULATED_EDGE_BILINEAR(lc->pred.edge_emu_buffer, &src, &src_stride, ox, oy);
         fc->vvcdsp.inter.dmvr[!!my][!!mx](tmp[i], src, src_stride, pred_h, mx, my, pred_w);
     }
 
@@ -808,7 +808,7 @@ static void dmvr_mv_refine(VVCLocalContext *lc, MvField *mvf, MvField *orig_mv, 
         for (dy = 0; dy < SAD_ARRAY_SIZE; dy++) {
             for (dx = 0; dx < SAD_ARRAY_SIZE; dx++) {
                 if (dx != sr_range || dy != sr_range) {
-                    sad[dy][dx] = fc->vvcdsp.inter.sad(lc->tmp, lc->tmp1, dx, dy, block_w, block_h);
+                    sad[dy][dx] = fc->vvcdsp.inter.sad(lc->pred.tmp, lc->pred.tmp1, dx, dy, block_w, block_h);
                     if (sad[dy][dx] < min_sad) {
                         min_sad = sad[dy][dx];
                         min_dx = dx;
