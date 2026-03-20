@@ -33,4 +33,4 @@ repos:
       args:
         - --ignore-words=.forgejo/pre-commit/ignored-words.txt
         - --ignore-multiline-regex=codespell:off.*?(codespell:on|\Z)
-      exclude: ^tools/(patcheck|clean-diff)$
+      exclude: ^tools/(patcheck|clean-diff)|tests/checkasm/ext/.*$
