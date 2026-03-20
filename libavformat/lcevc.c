@@ -183,6 +183,7 @@ int ff_lcvec_parse_config_record(LCEVCDecoderConfigurationRecord *lvcc,
     H2645Packet h2645_pkt = { 0 };
     AVIOContext *pb;
     int ret;
+    int found;
 
     if (size <= 0)
         return AVERROR_INVALIDDATA;
@@ -221,6 +222,7 @@ int ff_lcvec_parse_config_record(LCEVCDecoderConfigurationRecord *lvcc,
         goto fail;
 
     /* look for IDR or NON_IDR */
+    found = 0;
     for (int i = 0; i < h2645_pkt.nb_nals; i++) {
         const H2645NAL *nal = &h2645_pkt.nals[i];
 
@@ -229,7 +231,13 @@ int ff_lcvec_parse_config_record(LCEVCDecoderConfigurationRecord *lvcc,
             ret = write_nalu(lvcc, pb, nal);
             if (ret < 0)
                 goto fail;
+            found = 1;
         }
+    }
+
+    if (!found) {
+        ret = AVERROR_INVALIDDATA;
+        goto fail;
     }
 
     ret = 0;
