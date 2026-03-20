@@ -224,11 +224,8 @@ int ff_lcvec_parse_config_record(LCEVCDecoderConfigurationRecord *lvcc,
     for (int i = 0; i < h2645_pkt.nb_nals; i++) {
         const H2645NAL *nal = &h2645_pkt.nals[i];
 
-        if (nal->type == LCEVC_IDR_NUT) {
-            ret = write_nalu(lvcc, pb, nal);
-            if (ret < 0)
-                goto fail;
-        } else if (nal->type == LCEVC_NON_IDR_NUT) {
+        if (nal->type == LCEVC_IDR_NUT ||
+            nal->type == LCEVC_NON_IDR_NUT) {
             ret = write_nalu(lvcc, pb, nal);
             if (ret < 0)
                 goto fail;
