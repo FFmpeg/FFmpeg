@@ -130,6 +130,7 @@ typedef struct MOVTrack {
     int64_t     start_dts;
     int64_t     start_cts;
     int64_t     end_pts;
+    int64_t     elst_end_pts;
     int         end_reliable;
     int64_t     dts_shift;
 

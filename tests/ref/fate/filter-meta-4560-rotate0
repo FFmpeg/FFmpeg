@@ -1,4 +1,4 @@
-6cd6b45a88881e85dfe7ad9582ffbeff *tests/data/fate/filter-meta-4560-rotate0.mov
+b03cf24561b152da246df6d0d6cf9b81 *tests/data/fate/filter-meta-4560-rotate0.mov
 347425 tests/data/fate/filter-meta-4560-rotate0.mov
 #tb 0: 1/30
 #media_type 0: video
@@ -266,4 +266,3 @@
 1,     152576,     152576,     1024,     2048, 0x26721b75
 0,        104,        104,        1,   195840, 0x46851b87
 1,     153600,     153600,     1024,     2048, 0x97a2f42c
-0,        105,        105,        1,   195840, 0x02d97dc4

@@ -3835,13 +3835,13 @@ static int mov_write_minf_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContext
 }
 
 static void get_pts_range(MOVMuxContext *mov, MOVTrack *track,
-                          int64_t *start, int64_t *end)
+                          int64_t *start, int64_t *end, int elst)
 {
     if (track->tag == MKTAG('t','m','c','d') && mov->nb_meta_tmcd) {
         // tmcd tracks gets track_duration set in mov_write_moov_tag from
         // another track's duration, while the end_pts may be left at zero.
         // Calculate the pts duration for that track instead.
-        get_pts_range(mov, &mov->tracks[track->src_track], start, end);
+        get_pts_range(mov, &mov->tracks[track->src_track], start, end, elst);
         *start = av_rescale(*start, track->timescale,
                             mov->tracks[track->src_track].timescale);
         *end   = av_rescale(*end, track->timescale,
@@ -3852,7 +3852,7 @@ static void get_pts_range(MOVMuxContext *mov, MOVTrack *track,
         track->start_dts != AV_NOPTS_VALUE &&
         track->start_cts != AV_NOPTS_VALUE) {
         *start = track->start_dts + track->start_cts;
-        *end   = track->end_pts;
+        *end   = elst ? track->elst_end_pts : track->end_pts;
         return;
     }
     *start = 0;
@@ -3862,7 +3862,7 @@ static void get_pts_range(MOVMuxContext *mov, MOVTrack *track,
 static int64_t calc_samples_pts_duration(MOVMuxContext *mov, MOVTrack *track)
 {
     int64_t start, end;
-    get_pts_range(mov, track, &start, &end);
+    get_pts_range(mov, track, &start, &end, 0);
     return end - start;
 }
 
@@ -3874,9 +3874,16 @@ static int64_t calc_samples_pts_duration(MOVMuxContext *mov, MOVTrack *track)
 static int64_t calc_pts_duration(MOVMuxContext *mov, MOVTrack *track)
 {
     int64_t start, end;
-    get_pts_range(mov, track, &start, &end);
+    get_pts_range(mov, track, &start, &end, 0);
     if (mov->use_editlist != 0)
         start = 0;
+    return end - start;
+}
+
+static int64_t calc_elst_duration(MOVMuxContext *mov, MOVTrack *track)
+{
+    int64_t start, end;
+    get_pts_range(mov, track, &start, &end, 1);
     return end - start;
 }
 
@@ -4105,7 +4112,7 @@ static int mov_write_tapt_tag(AVIOContext *pb, MOVTrack *track)
 static int mov_write_edts_tag(AVIOContext *pb, MOVMuxContext *mov,
                               MOVTrack *track)
 {
-    int64_t duration = av_rescale_rnd(calc_samples_pts_duration(mov, track),
+    int64_t duration = av_rescale_rnd(calc_elst_duration(mov, track),
                                       mov->movie_timescale, track->timescale,
                                       AV_ROUND_UP);
     int version = duration < INT32_MAX ? 0 : 1;
@@ -6549,6 +6556,8 @@ static int mov_flush_fragment(AVFormatContext *s, int force)
                     track->end_pts = pts;
                 else
                     track->end_pts = dts;
+                if (!(pkt->flags & AV_PKT_FLAG_DISCARD))
+                    track->elst_end_pts = track->end_pts;
             }
         }
     }
@@ -7111,7 +7120,7 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
             /* New fragment, but discontinuous from previous fragments.
              * Pretend the duration sum of the earlier fragments is
              * pkt->dts - trk->start_dts. */
-            trk->end_pts = AV_NOPTS_VALUE;
+            trk->end_pts = trk->elst_end_pts = AV_NOPTS_VALUE;
             trk->frag_discont = 0;
         }
     }
@@ -7166,6 +7175,8 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         trk->end_pts = FFMAX(trk->end_pts, trk->cluster[trk->entry].dts +
                                            trk->cluster[trk->entry].cts +
                                            pkt->duration);
+    if (!(pkt->flags & AV_PKT_FLAG_DISCARD))
+        trk->elst_end_pts = trk->end_pts;
 
     if (par->codec_id == AV_CODEC_ID_VC1) {
         mov_parse_vc1_frame(pkt, trk);
@@ -7291,6 +7302,8 @@ static int mov_write_single_packet(AVFormatContext *s, AVPacket *pkt)
                     trk->end_pts = pkt->pts;
                 else
                     trk->end_pts = pkt->dts;
+                if (!(pkt->flags & AV_PKT_FLAG_DISCARD))
+                    trk->elst_end_pts = trk->end_pts;
                 trk->end_reliable = 1;
             }
             mov_auto_flush_fragment(s, 0);
