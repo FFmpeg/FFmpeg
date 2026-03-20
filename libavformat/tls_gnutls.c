@@ -31,6 +31,7 @@
 #include "url.h"
 #include "tls.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/thread.h"
 #include "libavutil/random_seed.h"
@@ -538,6 +539,9 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
 
     if (!s->external_sock) {
         if ((ret = ff_tls_open_underlying(s, h, uri, options)) < 0)
+            goto fail;
+    } else if (!s->host) {
+        if ((ret = ff_tls_parse_host(s, s->underlying_host, sizeof(s->underlying_host), NULL, uri)) < 0)
             goto fail;
     }
 
