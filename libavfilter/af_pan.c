@@ -69,7 +69,7 @@ static int parse_channel_name(char **arg, int *rchannel, int *rnamed)
 
     skip_spaces(arg);
     /* try to parse a channel name, e.g. "FL" */
-    if (sscanf(*arg, "%7[A-Z]%n", buf, &len)) {
+    if (sscanf(*arg, "%7[A-Z]%n", buf, &len) >= 1) {
         channel_id = av_channel_from_string(buf);
         if (channel_id < 0)
             return channel_id;
@@ -80,7 +80,7 @@ static int parse_channel_name(char **arg, int *rchannel, int *rnamed)
         return 0;
     }
     /* try to parse a channel number, e.g. "c2" */
-    if (sscanf(*arg, "c%d%n", &channel_id, &len) &&
+    if (sscanf(*arg, "c%d%n", &channel_id, &len) >= 1 &&
         channel_id >= 0 && channel_id < MAX_CHANNELS) {
         *rchannel = channel_id;
         *rnamed = 0;
