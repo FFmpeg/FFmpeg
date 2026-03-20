@@ -835,6 +835,10 @@ is_in(){
     return 1
 }
 
+msvc_style_linker(){
+    is_in $ld_type msvc icl lld-link
+}
+
 # The cfg loop is very hot (several thousands iterations), and in bash also
 # potentially quite slow. Try to abort the iterations early, preferably without
 # calling functions. 70%+ of the time cfg is already done or without deps.
@@ -1670,6 +1674,32 @@ check_pkg_config(){
     name="$1"
     test_pkg_config "$@" &&
         eval add_cflags \$${name}_cflags
+}
+
+probe_msvc_zlib_libname(){
+    log probe_msvc_zlib_libname
+    zlib_msvc_lib=zlib.lib
+
+    msvc_style_linker || return 0
+    test_cmd $pkg_config --exists --print-errors zlib || return 0
+
+    zlib_pkg_libs=$($pkg_config --libs $pkg_config_flags zlib) || return 0
+    is_in -lz $zlib_pkg_libs || return 0
+
+    for zlib_pkg_lib in $zlib_pkg_libs; do
+        case $zlib_pkg_lib in
+            -L*)
+                zlib_pkg_libdir=${zlib_pkg_lib#-L}
+                if test -f "$zlib_pkg_libdir/z.lib"; then
+                    zlib_msvc_lib=z.lib
+                    return 0
+                elif test -f "$zlib_pkg_libdir/zlib.lib"; then
+                    zlib_msvc_lib=zlib.lib
+                    return 0
+                fi
+                ;;
+        esac
+    done
 }
 
 check_pkg_config_cpp(){
@@ -5201,7 +5231,7 @@ msvc_common_flags(){
             -mthumb)              ;;
             -march=*)             ;;
             -mfp16-format=*)      ;;
-            -lz)                  echo zlib.lib ;;
+            -lz)                  echo ${zlib_msvc_lib:-zlib.lib} ;;
             -lx264)               echo libx264.lib ;;
             -lstdc++)             ;;
             -l*)                  echo ${flag#-l}.lib ;;
@@ -7240,8 +7270,10 @@ if ! disabled pthreads && ! enabled w32threads && ! enabled os2threads; then
     fi
 fi
 
+enabled zlib && msvc_style_linker && probe_msvc_zlib_libname
 enabled  zlib && { check_pkg_config zlib zlib "zlib.h" zlibVersion ||
-                   check_lib zlib   zlib.h      zlibVersion    -lz; }
+                   { zlib_msvc_lib=z.lib;    check_lib zlib zlib.h zlibVersion -lz; } ||
+                   { zlib_msvc_lib=zlib.lib; check_lib zlib zlib.h zlibVersion -lz; }; }
 enabled bzlib && check_lib bzlib bzlib.h BZ2_bzlibVersion    -lbz2
 enabled  lzma && check_lib lzma   lzma.h lzma_version_number -llzma
 
