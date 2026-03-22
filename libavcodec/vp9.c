@@ -1825,6 +1825,7 @@ finish:
 
     return pkt->size;
 fail:
+    ff_cbs_fragment_reset(&s->current_frag);
     ff_progress_frame_report(&s->s.frames[CUR_FRAME].tf, INT_MAX);
     return ret;
 }
