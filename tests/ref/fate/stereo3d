@@ -23,7 +23,7 @@ side by side: 1
 top and bottom: 2
 frame alternate: 3
 checkerboard: 4
-side by side (quincunx subsampling): 1
+side by side (quincunx subsampling): 5
 interleaved lines: 6
 interleaved columns: 7
 unspecified: 8
@@ -35,7 +35,7 @@ type roundtrip 1 (side by side): OK
 type roundtrip 2 (top and bottom): OK
 type roundtrip 3 (frame alternate): OK
 type roundtrip 4 (checkerboard): OK
-type roundtrip 5 (side by side (quincunx subsampling)): FAIL
+type roundtrip 5 (side by side (quincunx subsampling)): OK
 type roundtrip 6 (interleaved lines): OK
 type roundtrip 7 (interleaved columns): OK
 type roundtrip 8 (unspecified): OK
@@ -70,4 +70,4 @@ Testing av_stereo3d_primary_eye_from_name()
 none: 0
 left: 1
 right: 2
-nonexistent: 0
+nonexistent: -1
