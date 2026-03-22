@@ -113,6 +113,12 @@ static av_cold int concat_open(URLContext *h, const char *uri, int flags)
             break;
         }
 
+        if (total_size > INT64_MAX - size) {
+            ffurl_close(uc);
+            err = AVERROR_INVALIDDATA;
+            break;
+        }
+
         /* assembling */
         nodes[i].uc   = uc;
         nodes[i].size = size;
@@ -279,6 +285,12 @@ static av_cold int concatf_open(URLContext *h, const char *uri, int flags)
         if ((size = ffurl_size(uc)) < 0) {
             ffurl_close(uc);
             err = AVERROR(ENOSYS);
+            break;
+        }
+
+        if (total_size > INT64_MAX - size) {
+            ffurl_close(uc);
+            err = AVERROR_INVALIDDATA;
             break;
         }
 
