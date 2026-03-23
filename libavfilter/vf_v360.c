@@ -288,7 +288,7 @@ static int remap##ws##_##bits##bit_slice(AVFilterContext *ctx, void *arg, int jo
                                                                                                            \
     av_assert1(s->nb_planes <= AV_VIDEO_MAX_PLANES);                                                       \
                                                                                                            \
-    for (int stereo = 0; stereo < 1 + s->out_stereo > STEREO_2D; stereo++) {                               \
+    for (int stereo = 0; stereo < 1 + (s->out_stereo > STEREO_2D); stereo++) {                               \
         for (int plane = 0; plane < s->nb_planes; plane++) {                                               \
             const unsigned map = s->map[plane];                                                            \
             const int in_linesize  = in->linesize[plane];                                                  \
