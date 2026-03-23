@@ -18,7 +18,9 @@ OBJS-$(CONFIG_FFV1_VULKAN_HWACCEL) += vulkan/ffv1_dec_setup.comp.spv.o \
                                       vulkan/ffv1_dec.comp.spv.o \
                                       vulkan/ffv1_dec_golomb.comp.spv.o \
                                       vulkan/ffv1_dec_rgb.comp.spv.o \
-                                      vulkan/ffv1_dec_rgb_golomb.comp.spv.o
+                                      vulkan/ffv1_dec_rgb_golomb.comp.spv.o \
+                                      vulkan/ffv1_dec_rgb_float.comp.spv.o \
+                                      vulkan/ffv1_dec_rgb_float_golomb.comp.spv.o
 
 OBJS-$(CONFIG_PRORES_KS_VULKAN_ENCODER) += vulkan/prores_ks_alpha_data.comp.spv.o \
                                            vulkan/prores_ks_slice_data.comp.spv.o \

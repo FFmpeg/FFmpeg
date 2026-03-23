@@ -101,6 +101,9 @@ struct SliceContext {
     bool slice_reset_contexts;
 
     u16vec4 remap_count;
+
+    /* Decoder-only */
+    uint remap;
 };
 
 #if !defined(SB_QUALI)
@@ -142,6 +145,8 @@ u16vec4 get_slice_bits(in SliceContext sc)
     u16vec4 bits = sc.remap_count;
 #if defined(ENCODE)
     if (remap_mode == 0)
+#elif defined(DECODE)
+    if (sc.remap == 0)
 #endif
         bits = u16vec4(ivec4(rct_offset, rct_offset, rct_offset, rct_offset));
 

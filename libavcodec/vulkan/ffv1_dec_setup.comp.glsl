@@ -23,6 +23,7 @@
 #pragma shader_stage(compute)
 #extension GL_GOOGLE_include_directive : require
 
+#define NB_CONTEXTS 2
 #include "common.glsl"
 #include "ffv1_common.glsl"
 
@@ -37,35 +38,78 @@ layout (set = 1, binding = 2, scalar) writeonly buffer slice_status_buf {
     uint32_t slice_status[];
 };
 
+layout(set = 1, binding = 3) writeonly buffer fltmap_buf {
+    uint fltmap[][4][65536];
+};
+
 shared uint hdr_sym[4 + 4 + 3];
 const int nb_hdr_sym = 4 + codec_planes + 3;
 
-uint get_usymbol(void)
+uint get_usymbol(const uint ctx_off)
 {
-    if (get_rac(rc_state[0]))
+    if (get_rac(rc_state[ctx_off]))
         return 0;
 
     int e = 0;
-    while (get_rac(rc_state[1 + min(e, 9)])) // 1..10
+    while (get_rac(rc_state[ctx_off + 1 + min(e, 9)])) // 1..10
         e++;
 
     uint a = 1;
     for (int i = e - 1; i >= 0; i--) {
         a <<= 1;
-        a |= uint(get_rac(rc_state[22 + min(i, 9)]));  // 22..31
+        a |= uint(get_rac(rc_state[ctx_off + 22 + min(i, 9)]));  // 22..31
     }
 
     return a;
 }
 
-bool decode_slice_header(inout SliceContext sc)
+void decode_remap(uint slice_idx, inout SliceContext sc)
+{
+    int end = rct_offset - 1;
+    int flip = sc.remap == 2 ? (end >> 1) : 0;
+
+    for (int p = 0; p < color_planes; p++) {
+        int j = 0;
+        int lu = 0;
+
+        [[unroll]]
+        for (int i = 0; i < NB_CONTEXTS; i++)
+            rc_state[i] = uint8_t(128);
+
+        get_usymbol(0);
+
+        [[unroll]]
+        for (int i = 0; i < NB_CONTEXTS*CONTEXT_SIZE; i++)
+            rc_state[i] = uint8_t(128);
+
+        for (uint i = 0; i <= end; ) {
+            uint run = get_usymbol(lu*CONTEXT_SIZE);
+            uint run0 = lu != 0 ? 0   : run;
+            uint run1 = lu != 0 ? run : 1;
+
+            i += run0;
+            while (run1-- > 0) {
+                if (i - 1 >= end)
+                    break;
+                fltmap[slice_idx][p][j++] = i ^ (((i & 0x8000) != 0) ? 0 : flip);
+                i++;
+            }
+            if (lu > 0)
+                i++;
+            lu ^= int(run == 0);
+        }
+        sc.remap_count[p] = uint16_t(j);
+    }
+}
+
+bool decode_slice_header(uint slice_idx, inout SliceContext sc)
 {
     [[unroll]]
     for (int i = 0; i < CONTEXT_SIZE; i++)
         rc_state[i] = uint8_t(128);
 
     for (int i = 0; i < nb_hdr_sym; i++)
-        hdr_sym[i] = get_usymbol();
+        hdr_sym[i] = get_usymbol(0);
 
     uint sx = hdr_sym[0];
     uint sy = hdr_sym[1];
@@ -96,12 +140,18 @@ bool decode_slice_header(inout SliceContext sc)
 
     if (version >= 4) {
         sc.slice_reset_contexts = get_rac(rc_state[0]);
-        sc.slice_coding_mode = get_usymbol();
+        sc.slice_coding_mode = get_usymbol(0);
         if (sc.slice_coding_mode != 1 && colorspace == 1) {
-            sc.slice_rct_coef.g = int(get_usymbol());
-            sc.slice_rct_coef.r = int(get_usymbol());
+            sc.slice_rct_coef.g = int(get_usymbol(0));
+            sc.slice_rct_coef.r = int(get_usymbol(0));
             if (sc.slice_rct_coef.g + sc.slice_rct_coef.r > 4)
                 return true;
+        }
+
+        if (micro_version >= 4) {
+            sc.remap = get_usymbol(0);
+            if (sc.remap != 0)
+                decode_remap(slice_idx, sc);
         }
     }
 
@@ -117,7 +167,7 @@ void main(void)
     if (slice_idx == (gl_NumWorkGroups.x*gl_NumWorkGroups.y - 1))
         get_rac_equi();
 
-    decode_slice_header(slice_ctx[slice_idx]);
+    decode_slice_header(slice_idx, slice_ctx[slice_idx]);
 
     slice_ctx[slice_idx].c = rc;
 
