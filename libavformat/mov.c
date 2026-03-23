@@ -10793,6 +10793,10 @@ static int mov_parse_lcevc_streams(AVFormatContext *s)
 {
     int err;
 
+    // Don't try to add a group if there's only one track
+    if (s->nb_streams <= 1)
+        return 0;
+
     for (int i = 0; i < s->nb_streams; i++) {
         AVStreamGroup *stg;
         AVStream *st = s->streams[i];
