@@ -102,16 +102,18 @@ struct sbc_frame {
     /* bit number x set means joint stereo has been used in subband x */
     uint8_t joint;
 
+    const AVCRC *crc_ctx;
+
     /* only the lower 4 bits of every element are to be used */
     DECLARE_ALIGNED(SBC_ALIGN, uint32_t, scale_factor)[2][8];
 
-    /* raw integer subband samples in the frame */
-    DECLARE_ALIGNED(SBC_ALIGN, int32_t, sb_sample_f)[16][2][8];
+    union {
+        /* raw integer subband samples in the frame - encoder only */
+        DECLARE_ALIGNED(SBC_ALIGN, int32_t, sb_sample_f)[16][2][8];
 
-    /* modified subband samples */
-    DECLARE_ALIGNED(SBC_ALIGN, int32_t, sb_sample)[16][2][8];
-
-    const AVCRC *crc_ctx;
+        /* modified subband samples - decoder only */
+        DECLARE_ALIGNED(SBC_ALIGN, int32_t, sb_sample)[16][2][8];
+    };
 };
 
 uint8_t ff_sbc_crc8(const AVCRC *crc_ctx, const uint8_t *data, size_t len);
