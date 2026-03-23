@@ -126,7 +126,7 @@ cglobal sbc_calc_scalefactors, 5, 7, 4, sb_sample_f, scale_factor, blocks, chann
     shl           subbandsd, 2
     cmp           channelsd, 2
     jl            .loop_1
-    shl           subbandsd, 1
+    add           subbandsd, 32
 
 .loop_1:
     sub           subbandsq, 8
