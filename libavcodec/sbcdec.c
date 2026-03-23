@@ -45,7 +45,6 @@ struct sbc_decoder_state {
 };
 
 typedef struct SBCDecContext {
-    AVClass *class;
     DECLARE_ALIGNED(SBC_ALIGN, struct sbc_frame, frame);
     DECLARE_ALIGNED(SBC_ALIGN, struct sbc_decoder_state, dsp);
 } SBCDecContext;
