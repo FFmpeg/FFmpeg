@@ -34,7 +34,14 @@ layout (set = 0, binding = 2, scalar) uniform crc_ieee_buf {
 layout (set = 1, binding = 1, scalar) writeonly buffer slice_results_buf {
     uint32_t slice_results[];
 };
+#ifdef FLOAT
+layout (set = 1, binding = 3) uniform image2D src[];
+layout (set = 1, binding = 5) readonly buffer fltmap_buf {
+    uint fltmap[][4][65536];
+};
+#else
 layout (set = 1, binding = 3) uniform uimage2D src[];
+#endif
 
 #ifndef GOLOMB
 
@@ -87,7 +94,7 @@ void encode_line_pcm(in SliceContext sc, readonly uimage2D img,
 }
 
 void encode_line(in SliceContext sc, readonly uimage2D img, uint state_off,
-                 ivec2 sp, int y, uint p, uint comp,
+                 ivec2 sp, int y, uint p, uint comp, int bits,
                  uint8_t quant_table_idx, in int run_index)
 {
     int w = sc.slice_dim.x;
@@ -97,6 +104,9 @@ void encode_line(in SliceContext sc, readonly uimage2D img, uint state_off,
         w = ceil_rshift(w, chroma_shift.x);
         sp >>= chroma_shift;
     }
+#elif defined(FLOAT)
+    if (bits == 0)
+        return;
 #endif
 
     linecache_load(img, sp, y, comp);
@@ -144,7 +154,7 @@ void init_golomb(void)
 }
 
 void encode_line(in SliceContext sc, readonly uimage2D img, uint state_off,
-                 ivec2 sp, int y, uint p, uint comp,
+                 ivec2 sp, int y, uint p, uint comp, int bits,
                  uint8_t quant_table_idx, inout int run_index)
 {
     int w = sc.slice_dim.x;
@@ -220,37 +230,51 @@ void encode_line(in SliceContext sc, readonly uimage2D img, uint state_off,
 #ifdef RGB
 const uvec4 rgb_plane_order = { 1, 2, 0, 3 };
 
-ivec4 load_components(ivec2 pos)
+ivec4 load_components(uint slice_idx, in SliceContext sc, ivec2 pos)
 {
-    ivec4 pix = ivec4(imageLoad(src[0], pos));
-    if (planar_rgb) {
+    ivec4 pix;
+#ifdef FLOAT
+    for (int i = 0; i < color_planes; i++) {
+        float16_t v = float16_t(imageLoad(src[i], pos));
+        uint16_t iv = float16BitsToUint16(v);
+        pix[i] = int(fltmap[slice_idx][i][iv]);
+    }
+#else
+    pix = ivec4(imageLoad(src[0], pos));
+    if (planar_rgb)
         for (int i = 1; i < (3 + int(transparency)); i++)
             pix[i] = int(imageLoad(src[i], pos)[0]);
-    }
+#endif
 
     return ivec4(pix[fmt_lut[0]], pix[fmt_lut[1]],
                  pix[fmt_lut[2]], pix[fmt_lut[3]]);
 }
 
-void transform_sample(inout ivec4 pix, ivec2 rct_coef)
+void transform_sample(inout ivec4 pix, ivec2 rct_coef, int offset)
 {
     pix.b -= pix.g;
     pix.r -= pix.g;
     pix.g += (pix.b*rct_coef.g + pix.r*rct_coef.r) >> 2;
-    pix.b += rct_offset;
-    pix.r += rct_offset;
+    pix.b += offset;
+    pix.r += offset;
 }
 
-void preload_rgb(in SliceContext sc, ivec2 sp, int w, int y, bool apply_rct)
+void preload_rgb(uint slice_idx, in SliceContext sc, ivec2 sp, int w, int y,
+                 bool apply_rct)
 {
     for (uint x = gl_LocalInvocationID.x; x < w; x += gl_WorkGroupSize.x) {
         ivec2 lpos = sp + LADDR(ivec2(x, y));
         ivec2 pos = sc.slice_pos + ivec2(x, y);
 
-        ivec4 pix = load_components(pos);
+        ivec4 pix = load_components(slice_idx, sc, pos);
 
+#ifdef FLOAT
         if (apply_rct)
-            transform_sample(pix, sc.slice_rct_coef);
+            transform_sample(pix, sc.slice_rct_coef, sc.remap_count[0]);
+#else
+        if (apply_rct)
+            transform_sample(pix, sc.slice_rct_coef, rct_offset);
+#endif
 
         imageStore(tmp, lpos, pix);
     }
@@ -263,6 +287,7 @@ void preload_rgb(in SliceContext sc, ivec2 sp, int w, int y, bool apply_rct)
 void encode_slice(in SliceContext sc, uint slice_idx)
 {
     ivec2 sp = sc.slice_pos;
+    u16vec4 bits = get_slice_bits(sc);
 
 #ifdef RGB
     sp.y = int(gl_WorkGroupID.y)*rgb_linecache;
@@ -286,7 +311,7 @@ void encode_slice(in SliceContext sc, uint slice_idx)
         }
 #else
         for (int y = 0; y < sc.slice_dim.y; y++) {
-            preload_rgb(sc, sp, sc.slice_dim.x, y, false);
+            preload_rgb(slice_idx, sc, sp, sc.slice_dim.x, y, false);
 
             for (uint c = 0; c < color_planes; c++)
                 encode_line_pcm(sc, tmp, sp, y, 0, rgb_plane_order[c]);
@@ -317,16 +342,16 @@ void encode_slice(in SliceContext sc, uint slice_idx)
 
         for (int y = 0; y < h; y++)
             encode_line(sc, src[p], slice_state_off[c], sp, y, p,
-                        comp, U8(context_model), run_index);
+                        comp, bits[c], U8(context_model), run_index);
     }
 #else
     int run_index = 0;
     for (int y = 0; y < sc.slice_dim.y; y++) {
-        preload_rgb(sc, sp, sc.slice_dim.x, y, true);
+        preload_rgb(slice_idx, sc, sp, sc.slice_dim.x, y, true);
 
         for (uint c = 0; c < color_planes; c++)
             encode_line(sc, tmp, slice_state_off[c],
-                        sp, y, 0, rgb_plane_order[c],
+                        sp, y, 0, rgb_plane_order[c], bits[c],
                         U8(context_model), run_index);
     }
 #endif

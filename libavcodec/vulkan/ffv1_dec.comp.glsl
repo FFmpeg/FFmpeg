@@ -26,6 +26,7 @@
 #define DECODE
 #include "common.glsl"
 #include "ffv1_common.glsl"
+#define bits c_bits
 
 layout (set = 1, binding = 1, scalar) readonly buffer slice_offsets_buf {
     u32vec2 slice_offsets[];
@@ -269,6 +270,9 @@ void writeout_rgb(in SliceContext sc, ivec2 sp, int w, int y, bool apply_rct)
         if (transparency)
             pix.a = int(imageLoad(dec[3], lpos)[0]);
 
+        uint bits = packHalf2x16(vec2(3.14, 0.0)) & 0xFFFFu;
+        uint16_t test = uint16_t(float16BitsToUint16(float16_t(3.14)));
+        float test2 = float(uint16BitsToFloat16(uint16_t(test)));
         if (apply_rct)
             pix = transform_sample(pix, sc.slice_rct_coef);
         else

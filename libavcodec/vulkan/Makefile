@@ -8,7 +8,9 @@ OBJS-$(CONFIG_FFV1_VULKAN_ENCODER) += vulkan/ffv1_enc_setup.comp.spv.o \
                                       vulkan/ffv1_enc_golomb.comp.spv.o \
                                       vulkan/ffv1_enc_rgb.comp.spv.o \
                                       vulkan/ffv1_enc_rgb_golomb.comp.spv.o \
-                                      vulkan/ffv1_enc_rct_search.comp.spv.o
+                                      vulkan/ffv1_enc_rct_search.comp.spv.o \
+                                      vulkan/ffv1_enc_remap.comp.spv.o \
+                                      vulkan/ffv1_enc_rgb_float.comp.spv.o
 
 OBJS-$(CONFIG_FFV1_VULKAN_HWACCEL) += vulkan/ffv1_dec_setup.comp.spv.o \
                                       vulkan/ffv1_dec_reset.comp.spv.o \

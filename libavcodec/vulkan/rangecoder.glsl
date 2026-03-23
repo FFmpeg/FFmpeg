@@ -23,6 +23,9 @@
 #ifndef VULKAN_RANGECODER_H
 #define VULKAN_RANGECODER_H
 
+#ifndef NB_CONTEXTS
+#define NB_CONTEXTS 1
+#endif
 #define CONTEXT_SIZE 32
 #define MAX_OVERREAD 2
 
@@ -47,7 +50,7 @@ struct RangeCoder {
 };
 
 shared RangeCoder rc;
-shared uint8_t rc_state[CONTEXT_SIZE];
+shared uint8_t rc_state[NB_CONTEXTS*CONTEXT_SIZE];
 shared bool rc_data[CONTEXT_SIZE];
 
 void rac_init(uint bs_start, uint bs_len)

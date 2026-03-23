@@ -23,9 +23,14 @@
 #pragma shader_stage(compute)
 #extension GL_GOOGLE_include_directive : require
 
+#define NB_CONTEXTS 2
 #define FULL_RENORM
 #include "common.glsl"
 #include "ffv1_common.glsl"
+
+layout (set = 1, binding = 1) buffer fltmap_buf {
+    uint fltmap[][4][65536];
+};
 
 void init_slice(inout SliceContext sc, uint slice_idx)
 {
@@ -51,26 +56,68 @@ void init_slice(inout SliceContext sc, uint slice_idx)
     rac_init(slice_idx*slice_size_max, slice_size_max);
 }
 
-void put_usymbol(uint v)
+void put_usymbol(uint v, uint ctx_off)
 {
     bool is_nil = (v == 0);
-    put_rac(rc_state[0], is_nil);
+    put_rac(rc_state[ctx_off], is_nil);
     if (is_nil)
         return;
 
     const int e = findMSB(v);
 
     for (int i = 0; i <= e; i++)
-        put_rac(rc_state[1 + min(i, 9)], i < e);
+        put_rac(rc_state[ctx_off + 1 + min(i, 9)], i < e);
 
     for (int i = e - 1; i >= 0; i--)
-        put_rac(rc_state[22 + min(i, 9)], bool(bitfieldExtract(v, i, 1)));
+        put_rac(rc_state[ctx_off + 22 + min(i, 9)],
+                bool(bitfieldExtract(v, i, 1)));
 }
 
 shared uint hdr_sym[4 + 4 + 3];
 const int nb_hdr_sym = 4 + codec_planes + 3;
 
-void write_slice_header(inout SliceContext sc)
+void encode_histogram_remap(uint slice_idx, inout SliceContext sc)
+{
+    const int flip = (remap_mode == 2) ? 0x7FFF : 0;
+
+    for (int p = 0; p < color_planes; p++) {
+        uint j = 0;
+        uint lu = 0;
+        int run = 0;
+
+        for (int i = 0; i < NB_CONTEXTS*CONTEXT_SIZE; i++)
+            rc_state[i] = uint8_t(128);
+
+        put_usymbol(0, 0);
+
+        for (int i = 0; i < NB_CONTEXTS; i++)
+            rc_state[i] = uint8_t(128);
+
+        int cnt = 0;
+        for (int i = 0; i < rct_offset; i++) {
+            int ri = i ^ (((i & 0x8000) != 0) ? 0 : flip);
+            uint u = uint(fltmap[slice_idx][p][ri] != 0);
+
+            fltmap[slice_idx][p][ri] = uint16_t(j);
+            j += u;
+
+            if (lu == u) {
+                run++;
+            } else {
+                put_usymbol(run, lu*CONTEXT_SIZE);
+                if (run == 0)
+                    lu = u;
+                run = 0;
+            }
+        }
+
+        if (run != 0)
+            put_usymbol(run, lu*CONTEXT_SIZE);
+        sc.remap_count[p] = U16(j);
+    }
+}
+
+void write_slice_header(uint slice_idx, inout SliceContext sc)
 {
     [[unroll]]
     for (int i = 0; i < CONTEXT_SIZE; i++)
@@ -90,14 +137,19 @@ void write_slice_header(inout SliceContext sc)
     hdr_sym[nb_hdr_sym - 1] = sar.y;
 
     for (int i = 0; i < nb_hdr_sym; i++)
-        put_usymbol(hdr_sym[i]);
+        put_usymbol(hdr_sym[i], 0);
 
     if (version >= 4) {
         put_rac(rc_state[0], force_pcm);
-        put_usymbol(uint(force_pcm));
+        put_usymbol(uint(force_pcm), 0);
         if (!force_pcm && colorspace == 1) {
-            put_usymbol(sc.slice_rct_coef.g);
-            put_usymbol(sc.slice_rct_coef.r);
+            put_usymbol(sc.slice_rct_coef.g, 0);
+            put_usymbol(sc.slice_rct_coef.r, 0);
+        }
+
+        if (remap_mode != 0) {
+            put_usymbol(remap_mode, 0);
+            encode_histogram_remap(slice_idx, sc);
         }
     }
 }
@@ -116,7 +168,7 @@ void main(void)
     if (slice_idx == 0)
         write_frame_header(slice_ctx[slice_idx]);
 
-    write_slice_header(slice_ctx[slice_idx]);
+    write_slice_header(slice_idx, slice_ctx[slice_idx]);
 
     slice_ctx[slice_idx].c = rc;
 }

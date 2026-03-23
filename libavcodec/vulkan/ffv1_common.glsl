@@ -45,7 +45,7 @@ layout (constant_id =  8) const bool planar_rgb = false;
 layout (constant_id =  9) const int codec_planes = 0;
 layout (constant_id = 10) const int color_planes = 0;
 layout (constant_id = 11) const int planes = 0;
-layout (constant_id = 12) const int bits = 0;
+layout (constant_id = 12) const int c_bits = 0;
 
 layout (constant_id = 13) const int chroma_shift_x = 0;
 layout (constant_id = 14) const int chroma_shift_y = 0;
@@ -55,6 +55,7 @@ const ivec2 chroma_shift = ivec2(chroma_shift_x, chroma_shift_y);
 layout (constant_id = 15) const bool force_pcm = false;
 layout (constant_id = 16) const bool rct_search = false;
 layout (constant_id = 17) const uint context_model = 0;
+layout (constant_id = 18) const uint remap_mode = 0;
 
 layout (push_constant, scalar) uniform pushConstants {
     u8buf slice_data;
@@ -98,6 +99,8 @@ struct SliceContext {
 
     uint slice_coding_mode;
     bool slice_reset_contexts;
+
+    u16vec4 remap_count;
 };
 
 #if !defined(SB_QUALI)
@@ -128,6 +131,31 @@ uint slice_coord(uint width, uint sx, uint num_h_slices, uint chroma_shift)
 }
 
 #if defined(ENCODE) || defined(DECODE)
+
+#define ceil_log2(x) (findMSB(uint(((uint(x) - 1u) << 1u) | 1u)))
+
+u16vec4 get_slice_bits(in SliceContext sc)
+{
+#ifndef FLOAT
+    return u16vec4(c_bits, c_bits, c_bits, c_bits);
+#else
+    u16vec4 bits = sc.remap_count;
+#if defined(ENCODE)
+    if (remap_mode == 0)
+#endif
+        bits = u16vec4(ivec4(rct_offset, rct_offset, rct_offset, rct_offset));
+
+    if (sc.slice_coding_mode == 0) {
+        uint16_t max3 = max(bits[0], max(bits[1], bits[2]));
+        bits = u16vec4(ceil_log2(max3),
+                       ceil_log2(bits[0] + bits[1]),
+                       ceil_log2(bits[0] + bits[2]),
+                       bits[3]);
+    }
+
+    return bits;
+#endif
+}
 
 layout (set = 0, binding = 1, scalar) readonly uniform quant_buf {
     int16_t quant_table[MAX_QUANT_TABLES]
