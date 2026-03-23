@@ -558,7 +558,7 @@ static int decode_text_to_exif(PNGDecContext *s, const char *txt_utf8)
     }
 
     // first condition checks for overflow in 2 * exif_len
-    if ((exif_len & ~SIZE_MAX) || end - ptr < 2 * exif_len)
+    if (exif_len > SIZE_MAX / 2 || end - ptr < 2 * exif_len)
         return AVERROR_INVALIDDATA;
     if (exif_len < 10)
         return AVERROR_INVALIDDATA;
