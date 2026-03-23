@@ -103,8 +103,8 @@ static void sbc_analyze_8_simd(const int16_t *in, int32_t *out,
     sbc_analyze_simd(in, out, consts, 8);
 }
 
-static inline void sbc_analyze_4b_4s_simd(SBCDSPContext *s,
-                                          int16_t *x, int32_t *out, int out_stride)
+static inline void sbc_analyze_4b_4s_simd(SBCDSPContext *s, const int16_t *x,
+                                          int32_t *out, int out_stride)
 {
     /* Analyze blocks */
     s->sbc_analyze_4(x + 12, out, sbcdsp_analysis_consts_fixed4_simd_odd);
@@ -116,8 +116,8 @@ static inline void sbc_analyze_4b_4s_simd(SBCDSPContext *s,
     s->sbc_analyze_4(x + 0, out, sbcdsp_analysis_consts_fixed4_simd_even);
 }
 
-static inline void sbc_analyze_4b_8s_simd(SBCDSPContext *s,
-                                          int16_t *x, int32_t *out, int out_stride)
+static inline void sbc_analyze_4b_8s_simd(SBCDSPContext *s, const int16_t *x,
+                                          int32_t *out, int out_stride)
 {
     /* Analyze blocks */
     s->sbc_analyze_8(x + 24, out, sbcdsp_analysis_consts_fixed8_simd_odd);
@@ -130,11 +130,11 @@ static inline void sbc_analyze_4b_8s_simd(SBCDSPContext *s,
 }
 
 static inline void sbc_analyze_1b_8s_simd_even(SBCDSPContext *s,
-                                               int16_t *x, int32_t *out,
+                                               const int16_t *x, int32_t *out,
                                                int out_stride);
 
 static inline void sbc_analyze_1b_8s_simd_odd(SBCDSPContext *s,
-                                              int16_t *x, int32_t *out,
+                                              const int16_t *x, int32_t *out,
                                               int out_stride)
 {
     s->sbc_analyze_8(x, out, sbcdsp_analysis_consts_fixed8_simd_odd);
@@ -142,7 +142,7 @@ static inline void sbc_analyze_1b_8s_simd_odd(SBCDSPContext *s,
 }
 
 static inline void sbc_analyze_1b_8s_simd_even(SBCDSPContext *s,
-                                               int16_t *x, int32_t *out,
+                                               const int16_t *x, int32_t *out,
                                                int out_stride)
 {
     s->sbc_analyze_8(x, out, sbcdsp_analysis_consts_fixed8_simd_even);
@@ -267,7 +267,7 @@ static int sbc_enc_process_input_8s(int position, const uint8_t *pcm,
     return position;
 }
 
-static void sbc_calc_scalefactors(int32_t sb_sample_f[16][2][8],
+static void sbc_calc_scalefactors(const int32_t sb_sample_f[16][2][8],
                                   uint32_t scale_factor[2][8],
                                   int blocks, int channels, int subbands)
 {

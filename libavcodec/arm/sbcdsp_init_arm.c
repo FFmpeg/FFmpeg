@@ -40,7 +40,7 @@ void ff_sbc_analyze_8_armv6(const int16_t *in, int32_t *out, const int16_t *cons
 
 void ff_sbc_analyze_4_neon(const int16_t *in, int32_t *out, const int16_t *consts);
 void ff_sbc_analyze_8_neon(const int16_t *in, int32_t *out, const int16_t *consts);
-void ff_sbc_calc_scalefactors_neon(int32_t sb_sample_f[16][2][8],
+void ff_sbc_calc_scalefactors_neon(const int32_t sb_sample_f[16][2][8],
                                    uint32_t scale_factor[2][8],
                                    int blocks, int channels, int subbands);
 int ff_sbc_calc_scalefactors_j_neon(int32_t sb_sample_f[16][2][8],
