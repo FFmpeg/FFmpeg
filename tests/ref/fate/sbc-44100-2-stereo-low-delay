@@ -1,0 +1,4 @@
+b2517da4b139e19f92c9a5791f0192e6 *tests/data/fate/sbc-44100-2-stereo-low-delay.sbc
+148824 tests/data/fate/sbc-44100-2-stereo-low-delay.sbc
+69348f4124256eb1bc47581aab5fa23c *tests/data/fate/sbc-44100-2-stereo-low-delay.out.wav
+stddev: 3767.42 PSNR: 24.81 MAXDIFF:49898 bytes:  1058400/  1058156

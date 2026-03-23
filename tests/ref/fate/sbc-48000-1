@@ -1,0 +1,4 @@
+fdfb37d00c4630f858b40524c2da7919 *tests/data/fate/sbc-48000-1.sbc
+378000 tests/data/fate/sbc-48000-1.sbc
+b729801f40be56c3c1b6d6130554079b *tests/data/fate/sbc-48000-1.out.wav
+stddev:   48.83 PSNR: 62.56 MAXDIFF:  764 bytes:   576000/   575926

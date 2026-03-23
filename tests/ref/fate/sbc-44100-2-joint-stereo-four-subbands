@@ -1,0 +1,4 @@
+908244c0a8d086e5f32b3d77ce58e4a4 *tests/data/fate/sbc-44100-2-joint-stereo-four-subbands.sbc
+343122 tests/data/fate/sbc-44100-2-joint-stereo-four-subbands.sbc
+9db2f8e52608851867d0e0cf77b1dff2 *tests/data/fate/sbc-44100-2-joint-stereo-four-subbands.out.wav
+stddev:   76.69 PSNR: 58.63 MAXDIFF: 1609 bytes:  1058400/  1058156

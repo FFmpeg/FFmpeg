@@ -1,0 +1,4 @@
+78ff642215025d3639f499664e2233b1 *tests/data/fate/sbc-44100-2-stereo.sbc
+148824 tests/data/fate/sbc-44100-2-stereo.sbc
+ad2855b10cd2b9f4a4c5dde459e7bb74 *tests/data/fate/sbc-44100-2-stereo.out.wav
+stddev: 3515.64 PSNR: 25.41 MAXDIFF:49771 bytes:  1058400/  1058012

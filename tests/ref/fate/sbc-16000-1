@@ -1,0 +1,4 @@
+831fd5ac5a06b75c7c28f7df8ae01843 *tests/data/fate/sbc-16000-1.sbc
+96000 tests/data/fate/sbc-16000-1.sbc
+572c6755da143f4e20ddf2036956fc7e *tests/data/fate/sbc-16000-1.out.wav
+stddev:   60.09 PSNR: 60.75 MAXDIFF:  732 bytes:   192000/   191854
