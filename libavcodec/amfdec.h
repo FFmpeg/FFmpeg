@@ -55,6 +55,7 @@ typedef struct AMFDecoderContext {
     int                 drain;
     int                 resolution_changed;
     int                 copy_output;
+    int                 dimensions_initialized;
     AVPacket*           in_pkt;
     enum AMF_SURFACE_FORMAT output_format;
 

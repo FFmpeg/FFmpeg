@@ -243,12 +243,13 @@ static int amf_init_frames_context(AVCodecContext *avctx, int sw_format, int new
 static int amf_decode_init(AVCodecContext *avctx)
 {
     AMFDecoderContext *ctx = avctx->priv_data;
+    ctx->dimensions_initialized = 0;
     int ret;
     ctx->in_pkt = av_packet_alloc();
     if (!ctx->in_pkt)
         return AVERROR(ENOMEM);
 
-    if  (avctx->hw_device_ctx) {
+    if (avctx->hw_device_ctx) {
         AVHWDeviceContext   *hwdev_ctx;
         hwdev_ctx = (AVHWDeviceContext*)avctx->hw_device_ctx->data;
         if (hwdev_ctx->type == AV_HWDEVICE_TYPE_AMF)
@@ -271,7 +272,7 @@ static int amf_decode_init(AVCodecContext *avctx)
         AVAMFDeviceContext    *amf_device_ctx = (AVAMFDeviceContext*)hw_device_ctx->hwctx;
         enum AVPixelFormat    surf_pix_fmt = AV_PIX_FMT_NONE;
 
-        if(amf_legacy_driver_no_bitness_detect(amf_device_ctx)){
+        if (amf_legacy_driver_no_bitness_detect(amf_device_ctx)) {
             // if bitness detection is not supported in legacy driver use format from container
             switch (avctx->pix_fmt) {
             case AV_PIX_FMT_YUV420P:
@@ -280,7 +281,7 @@ static int amf_decode_init(AVCodecContext *avctx)
             case AV_PIX_FMT_YUV420P10:
                 surf_pix_fmt = AV_PIX_FMT_P010; break;
             }
-        }else{
+        } else {
             AMFVariantStruct format_var = {0};
 
             ret = ctx->decoder->pVtbl->GetProperty(ctx->decoder, AMF_VIDEO_DECODER_OUTPUT_FORMAT, &format_var);
@@ -288,17 +289,26 @@ static int amf_decode_init(AVCodecContext *avctx)
 
             surf_pix_fmt = av_amf_to_av_format(format_var.int64Value);
         }
-        if(avctx->hw_frames_ctx)
+        if (avctx->hw_frames_ctx)
         {
             // this values should be set for avcodec_open2
             // will be updated after header decoded if not true.
-            if(surf_pix_fmt == AV_PIX_FMT_NONE)
+            if (surf_pix_fmt == AV_PIX_FMT_NONE)
                 surf_pix_fmt = AV_PIX_FMT_NV12; // for older drivers
-            if (!avctx->coded_width)
-                avctx->coded_width = 1280;
-            if (!avctx->coded_height)
-                avctx->coded_height = 720;
-            ret = amf_init_frames_context(avctx, surf_pix_fmt, avctx->coded_width, avctx->coded_height);
+            int frames_w = 0;
+            int frames_h = 0;
+
+            if (avctx->coded_width > 0 && avctx->coded_height > 0) {
+                frames_w = avctx->coded_width;
+                frames_h = avctx->coded_height;
+            } else if (avctx->width > 0 && avctx->height > 0) {
+                frames_w = avctx->width;
+                frames_h = avctx->height;
+            } else {
+                frames_w = 1280;
+                frames_h = 720;
+            }
+            ret = amf_init_frames_context(avctx, surf_pix_fmt, frames_w, frames_h);
             AMF_GOTO_FAIL_IF_FALSE(avctx, ret == 0, ret, "Failed to init frames context (AMF) : %s\n", av_err2str(ret));
         }
         else
@@ -495,6 +505,25 @@ static AMF_RESULT amf_buffer_from_packet(AVCodecContext *avctx, const AVPacket* 
     return amf_update_buffer_properties(avctx, buf, pkt);
 }
 
+static void amf_init_dimensions(AVCodecContext *avctx)
+{
+    AMFDecoderContext *ctx = avctx->priv_data;
+    AMFVariantStruct size_var = {0};
+    AMF_RESULT res = AMF_OK;
+
+    res = ctx->decoder->pVtbl->GetProperty(ctx->decoder, AMF_VIDEO_DECODER_CURRENT_SIZE, &size_var);
+    if (res == AMF_OK && size_var.sizeValue.width > 0 && size_var.sizeValue.height > 0) {
+        avctx->width        = size_var.sizeValue.width;
+        avctx->height       = size_var.sizeValue.height;
+        avctx->coded_width  = size_var.sizeValue.width;
+        avctx->coded_height = size_var.sizeValue.height;
+
+        ctx->dimensions_initialized = 1;
+
+        av_log(avctx, AV_LOG_DEBUG, "AMF: detected initial decoder size %dx%d\n", avctx->width, avctx->height);
+    }
+}
+
 static int amf_decode_frame(AVCodecContext *avctx, struct AVFrame *frame)
 {
     AMFDecoderContext *ctx = avctx->priv_data;
@@ -556,9 +585,11 @@ static int amf_decode_frame(AVCodecContext *avctx, struct AVFrame *frame)
     }
 
     res = amf_receive_frame(avctx, frame);
-    if (res == AMF_OK)
+    if (res == AMF_OK) {
         got_frame = 1;
-    else if (res == AMF_REPEAT)
+        if (!ctx->dimensions_initialized)
+            amf_init_dimensions(avctx);
+    } else if (res == AMF_REPEAT)
         // decoder has no output yet
         res = AMF_OK;
     else if (res == AMF_EOF) {
