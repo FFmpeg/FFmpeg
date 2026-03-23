@@ -1034,10 +1034,16 @@ generate_eye_tape_map(SSIM360Context *s,
     float x_range = end_x - start_x;
 
     // Ensure tape length is a multiple of 4, for full SSIM block coverage
-    int tape_length = s->tape_length[plane] = ((int)ROUNDED_DIV(x_range, 4)) << 2;
+    float tape_length_f = ROUNDED_DIV(x_range, 4);
+    int tape_length;
 
-    s->ref_tape_map[plane][eye]  = av_malloc_array(tape_length * 8, sizeof(BilinearMap));
-    s->main_tape_map[plane][eye] = av_malloc_array(tape_length * 8, sizeof(BilinearMap));
+    if (!(tape_length_f > 0.f) || tape_length_f > INT_MAX / 4.0f)
+        return AVERROR(EINVAL);
+
+    tape_length = s->tape_length[plane] = (int)tape_length_f << 2;
+
+    s->ref_tape_map[plane][eye]  = av_malloc_array(tape_length, 8 * sizeof(BilinearMap));
+    s->main_tape_map[plane][eye] = av_malloc_array(tape_length, 8 * sizeof(BilinearMap));
     if (!s->ref_tape_map[plane][eye] || !s->main_tape_map[plane][eye])
         return AVERROR(ENOMEM);
 
