@@ -354,13 +354,6 @@ static int scale_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
         goto fail;
     }
 
-    s->qf = ff_vk_qf_find(&s->vkctx, VK_QUEUE_COMPUTE_BIT, 0);
-    if (!s->qf) {
-        av_log(ctx, AV_LOG_ERROR, "Device has no compute queues\n");
-        err = AVERROR(ENOTSUP);
-        goto fail;
-    }
-
     s->opts.crop_x = in->crop_left;
     s->opts.crop_y = in->crop_top;
     s->opts.crop_w = in->width - (in->crop_left + in->crop_right);
