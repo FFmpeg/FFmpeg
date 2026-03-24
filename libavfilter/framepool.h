@@ -107,37 +107,6 @@ int ff_frame_pool_audio_reinit(FFFramePool **pool,
                                int align);
 
 /**
- * Get the video frame pool configuration.
- *
- * @param width width of each frame in this pool
- * @param height height of each frame in this pool
- * @param format format of each frame in this pool
- * @param align buffers alignment of each frame in this pool
- * @return 0 on success, a negative AVERROR otherwise.
- */
-int ff_frame_pool_get_video_config(FFFramePool *pool,
-                                   int *width,
-                                   int *height,
-                                   enum AVPixelFormat *format,
-                                   int *align);
-
-/**
- * Get the audio frame pool configuration.
- *
- * @param channels channels of each frame in this pool
- * @param nb_samples number of samples of each frame in this pool
- * @param format format of each frame in this pool
- * @param align buffers alignment of each frame in this pool
- * @return 0 on success, a negative AVERROR otherwise.
- */
-int ff_frame_pool_get_audio_config(FFFramePool *pool,
-                                   int *channels,
-                                   int *nb_samples,
-                                   enum AVSampleFormat *format,
-                                   int *align);
-
-
-/**
  * Allocate a new AVFrame, reusing old buffers from the pool when available.
  * This function may be called simultaneously from multiple threads.
  *
