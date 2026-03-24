@@ -31,7 +31,6 @@
  */
 
 #include "libavutil/channel_layout.h"
-#include "libavutil/emms.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "codec_internal.h"
@@ -322,7 +321,6 @@ static int sbc_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                                        frame->blocks,
                                        frame->channels,
                                        frame->subbands);
-    emms_c();
     sbc_pack_frame(avpkt, frame, j, sbc->msbc);
 
     *got_packet_ptr = 1;

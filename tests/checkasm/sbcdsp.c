@@ -41,7 +41,7 @@ static void check_sbc_analyze(SBCDSPContext *sbcdsp)
     DECLARE_ALIGNED(SBC_ALIGN, int32_t, out_ref)[SBC_MAX_SUBBANDS];
     DECLARE_ALIGNED(SBC_ALIGN, int32_t, out_new)[SBC_MAX_SUBBANDS];
 
-    declare_func_emms(AV_CPU_FLAG_MMX, void, const int16_t *in, int32_t *out, const int16_t *consts);
+    declare_func(void, const int16_t *in, int32_t *out, const int16_t *consts);
 
     for (int i = 0; i < 2; ++i) {
         if (check_func(i ? sbcdsp->sbc_analyze_8 : sbcdsp->sbc_analyze_4, "sbc_analyze_%u", i ? 8 : 4)) {
