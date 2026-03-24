@@ -10792,7 +10792,8 @@ static AVStream *mov_find_reference_track(AVFormatContext *s, AVStream *st,
         return NULL;
 
     for (int i = first_index; i < s->nb_streams; i++)
-        if (s->streams[i]->id == sc->tref_id)
+        if (s->streams[i]->index != st->index &&
+            s->streams[i]->id == sc->tref_id)
             return s->streams[i];
 
     return NULL;
@@ -10834,8 +10835,12 @@ static int mov_parse_lcevc_streams(AVFormatContext *s)
             j = st_base->index + 1;
         }
         if (!j) {
-            av_log(s, AV_LOG_ERROR, "Failed to find base stream for enhancement stream\n");
-            return AVERROR_INVALIDDATA;
+            int loglevel = (s->error_recognition & AV_EF_EXPLODE) ? AV_LOG_ERROR : AV_LOG_WARNING;
+            av_log(s, loglevel, "Failed to find base stream for LCEVC stream\n");
+            ff_remove_stream_group(s, stg);
+            if (s->error_recognition & AV_EF_EXPLODE)
+                return AVERROR_INVALIDDATA;
+            continue;
         }
 
         err = avformat_stream_group_add_stream(stg, st);
