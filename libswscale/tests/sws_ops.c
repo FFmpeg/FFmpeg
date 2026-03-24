@@ -44,7 +44,7 @@ static void log_stdout(void *avcl, int level, const char *fmt, va_list vl)
 {
     if (level != AV_LOG_INFO) {
         av_log_default_callback(avcl, level, fmt, vl);
-    } else {
+    } else if (av_log_get_level() >= AV_LOG_INFO) {
         vfprintf(stdout, fmt, vl);
     }
 }
@@ -69,6 +69,8 @@ int main(int argc, char **argv)
                     "       Only test the specified destination pixel format\n"
                     "   -src <pixfmt>\n"
                     "       Only test the specified source pixel format\n"
+                    "   -v <level>\n"
+                    "       Enable log verbosity at given level\n"
             );
             return 0;
         }
@@ -86,6 +88,8 @@ int main(int argc, char **argv)
                 fprintf(stderr, "invalid pixel format %s\n", argv[i + 1]);
                 goto error;
             }
+        } else if (!strcmp(argv[i], "-v")) {
+            av_log_set_level(atoi(argv[i + 1]));
         } else {
 bad_option:
             fprintf(stderr, "bad option or argument missing (%s) see -help\n", argv[i]);
