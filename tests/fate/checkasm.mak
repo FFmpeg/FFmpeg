@@ -53,6 +53,7 @@ FATE_CHECKASM = fate-checkasm-aacencdsp                                 \
                 fate-checkasm-sbrdsp                                    \
                 fate-checkasm-rv34dsp                                   \
                 fate-checkasm-rv40dsp                                   \
+                fate-checkasm-sbcdsp                                    \
                 fate-checkasm-scene_sad                                 \
                 fate-checkasm-svq1enc                                   \
                 fate-checkasm-synth_filter                              \

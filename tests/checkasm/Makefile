@@ -48,6 +48,7 @@ AVCODECOBJS-$(CONFIG_HEVC_DECODER)      += hevc_add_res.o hevc_deblock.o hevc_de
 AVCODECOBJS-$(CONFIG_PNG_DECODER)       += png.o
 AVCODECOBJS-$(CONFIG_RV34DSP)           += rv34dsp.o
 AVCODECOBJS-$(CONFIG_RV40_DECODER)      += rv40dsp.o
+AVCODECOBJS-$(CONFIG_SBC_ENCODER)       += sbcdsp.o
 AVCODECOBJS-$(CONFIG_SVQ1_ENCODER)      += svq1enc.o
 AVCODECOBJS-$(CONFIG_TAK_DECODER)       += takdsp.o
 AVCODECOBJS-$(CONFIG_UTVIDEO_DECODER)   += utvideodsp.o
