@@ -291,3 +291,53 @@ av_cold void ff_frame_pool_uninit(FFFramePool **pool)
 
     av_freep(pool);
 }
+
+int ff_frame_pool_video_reinit(FFFramePool **pool,
+                               int width,
+                               int height,
+                               enum AVPixelFormat format,
+                               int align)
+{
+    FFFramePool *cur = *pool;
+    if (cur && cur->format == format &&
+        FFALIGN(cur->width,  cur->align) == FFALIGN(width,  align) &&
+        FFALIGN(cur->height, cur->align) == FFALIGN(height, align) &&
+        cur->align == align)
+    {
+        av_assert1(cur->type == AVMEDIA_TYPE_VIDEO);
+        return 0;
+    }
+
+    FFFramePool *new = ff_frame_pool_video_init(width, height, format, align);
+    if (!new)
+        return AVERROR(ENOMEM);
+
+    *pool = new;
+    ff_frame_pool_uninit(&cur);
+    return 0;
+}
+
+int ff_frame_pool_audio_reinit(FFFramePool **pool,
+                               int channels,
+                               int nb_samples,
+                               enum AVSampleFormat format,
+                               int align)
+{
+    FFFramePool *cur = *pool;
+    if (cur && cur->format == format &&
+        cur->channels == channels &&
+        cur->nb_samples == nb_samples &&
+        cur->align == align)
+    {
+        av_assert1(cur->type == AVMEDIA_TYPE_AUDIO);
+        return 0;
+    }
+
+    FFFramePool *new = ff_frame_pool_audio_init(channels, nb_samples, format, align);
+    if (!new)
+        return AVERROR(ENOMEM);
+
+    *pool = new;
+    ff_frame_pool_uninit(&cur);
+    return 0;
+}

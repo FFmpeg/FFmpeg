@@ -69,6 +69,44 @@ FFFramePool *ff_frame_pool_audio_init(int channels,
 void ff_frame_pool_uninit(FFFramePool **pool);
 
 /**
+ * Recreate the video frame pool if its current configuration differs from the
+ * provided configuration. If initialization fails, the old pool is kept
+ * unchanged.
+ *
+ * @param pool pointer to the frame pool to be reinitialized, or a pointer to
+ *        NULL to create a new pool.
+ * @param width width of each frame in this pool
+ * @param height height of each frame in this pool
+ * @param format format of each frame in this pool
+ * @param align buffers alignment of each frame in this pool
+ * @return 0 on success, a negative AVERROR otherwise.
+ */
+int ff_frame_pool_video_reinit(FFFramePool **pool,
+                               int width,
+                               int height,
+                               enum AVPixelFormat format,
+                               int align);
+
+/**
+ * Recreate the audio frame pool if its current configuration differs from the
+ * provided configuration. If initialization fails, the old pool is kept
+ * unchanged.
+ *
+ * @param pool pointer to the frame pool to be reinitialized, or a pointer to
+ *        NULL to create a new pool.
+ * @param channels channels of each frame in this pool
+ * @param nb_samples number of samples of each frame in this pool
+ * @param format format of each frame in this pool
+ * @param align buffers alignment of each frame in this pool
+ * @return 0 on success, a negative AVERROR otherwise.
+ */
+int ff_frame_pool_audio_reinit(FFFramePool **pool,
+                               int channels,
+                               int nb_samples,
+                               enum AVSampleFormat format,
+                               int align);
+
+/**
  * Get the video frame pool configuration.
  *
  * @param width width of each frame in this pool
