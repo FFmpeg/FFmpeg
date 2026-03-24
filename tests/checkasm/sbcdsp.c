@@ -69,6 +69,45 @@ static void check_sbc_analyze(SBCDSPContext *sbcdsp)
     report("sbc_analyze");
 }
 
+static void check_sbc_calc_scalefactors(const SBCDSPContext *const sbcdsp)
+{
+    DECLARE_ALIGNED(SBC_ALIGN,  int32_t, sb_sample_f)[16][2][8];
+    DECLARE_ALIGNED(SBC_ALIGN, uint32_t, scale_factor_ref)[2][8];
+    DECLARE_ALIGNED(SBC_ALIGN, uint32_t, scale_factor_new)[2][8];
+
+    declare_func(void, const int32_t sb_sample_f[16][2][8],
+                       uint32_t scale_factor[2][8],
+                       int blocks, int channels, int subbands);
+
+    static int blocks = 0;
+    if (!blocks)
+        blocks = ((const int[]){4, 8, 12, 15, 16})[rnd() % 5];
+    int inited = 0;
+
+    for (int ch = 1; ch <= 2; ++ch) {
+        for (int subbands = 4; subbands <= 8; subbands += 4) {
+            if (!check_func(sbcdsp->sbc_calc_scalefactors, "calc_scalefactors_%dch_%dsubbands", ch, subbands))
+                return;
+
+            if (!inited) {
+                for (size_t i = 0; i < FF_ARRAY_ELEMS(sb_sample_f); ++i)
+                    for (size_t j = 0; j < FF_ARRAY_ELEMS(sb_sample_f[0]); ++j)
+                        for (size_t k = 0; k < FF_ARRAY_ELEMS(sb_sample_f[0][0]); ++k)
+                            sb_sample_f[i][j][k] = rnd();
+            }
+
+            call_ref(sb_sample_f, scale_factor_ref, blocks, ch, subbands);
+            call_new(sb_sample_f, scale_factor_new, blocks, ch, subbands);
+            for (int i = 0; i < ch; ++i)
+                for (int j = 0; j < subbands; ++j)
+                    if (scale_factor_ref[i][j] != scale_factor_new[i][j])
+                        fail();
+
+            bench_new(sb_sample_f, scale_factor_new, blocks, ch, subbands);
+        }
+    }
+}
+
 void checkasm_check_sbcdsp(void)
 {
     SBCDSPContext sbcdsp;
@@ -76,4 +115,7 @@ void checkasm_check_sbcdsp(void)
     ff_sbcdsp_init(&sbcdsp);
 
     check_sbc_analyze(&sbcdsp);
+
+    check_sbc_calc_scalefactors(&sbcdsp);
+    report("calc_scalefactors");
 }
