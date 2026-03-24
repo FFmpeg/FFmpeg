@@ -269,7 +269,7 @@ AVFrame *ff_frame_pool_get(FFFramePool *pool)
 
         break;
     default:
-        av_assert0(0);
+        av_unreachable("only audio and video frame pools exist");
     }
 
     return frame;
