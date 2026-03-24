@@ -26,10 +26,6 @@
 
 %include "libavutil/x86/x86util.asm"
 
-SECTION_RODATA
-
-scale_mask: times 2 dd 0x8000    ; 1 << (SBC_PROTO_FIXED_SCALE - 1)
-
 SECTION .text
 
 %macro NIDN 3
@@ -127,50 +123,45 @@ cglobal sbc_analyze_8, 3, 3, 6, in, out, consts
 ;                              uint32_t scale_factor[2][8],
 ;                              int blocks, int channels, int subbands)
 ;*******************************************************************
-INIT_MMX mmx
-cglobal sbc_calc_scalefactors, 5, 7, 4, sb_sample_f, scale_factor, blocks, channels, subbands, ptr, blk
-    ; subbands = 4 * subbands * channels
-    movq          m3, [scale_mask]
-    shl           subbandsd, 2
-    cmp           channelsd, 2
-    jl            .loop_1
-    add           subbandsd, 32
+INIT_XMM sse4
+cglobal sbc_calc_scalefactors, 5, 6, 5, sb_sample_f, scale_factor, blocks, channels, subbands, step
+    shl          blocksd, 6
+    pcmpeqd           m3, m3
+    shl        subbandsd, 2
+    mov            stepd, 48
+    add     sb_sample_fq, blocksq
+    psrld             m4, m3, 25      ; pd_127
+    neg          blocksq
+    shl        channelsd, 5
+    sub            stepd, subbandsd   ; step = subbands == 4 ? 32 : 16
+    pxor              m2, m2
 
 .loop_1:
-    sub           subbandsq, 8
-    lea           ptrq, [sb_sample_fq + subbandsq]
+    lea        subbandsq, [blocksq+64]
 
-    ; blk = (blocks - 1) * 64;
-    lea           blkq, [blocksq - 1]
-    shl           blkd, 6
-
-    movq          m0, m3
+    pabsd             m0, [sb_sample_fq+blocksq]
 .loop_2:
-    movq          m1, [ptrq+blkq]
-    pxor          m2, m2
-    pcmpgtd       m1, m2
-    paddd         m1, [ptrq+blkq]
-    pcmpgtd       m2, m1
-    pxor          m1, m2
+    pabsd             m1, [sb_sample_fq+subbandsq]
+    pmaxud            m0, m1
+    add        subbandsq, 64
+    js           .loop_2
 
-    por           m0, m1
+    paddd             m0, m3          ; max - 1, representable as signed value
+    pmaxsd            m0, m2
 
-    sub           blkq, 64
-    jns           .loop_2
+    ; We have to calculate log2(x|(1<<15))-15. This equals log2(x>>15) for x >= 2^15
+    ; and x>>15 is exactly representable as a float, so one can get the log2
+    ; by converting to float and subtracting 127 from the exponent.
+    ; For x < 2^15 the result is correct when using saturated subtraction.
+    psrld             m0, 15
+    cvtdq2ps          m0, m0
+    add     sb_sample_fq, stepq
+    psrld             m0, 23          ; exponent
+    psubusw           m0, m4          ; same as saturated dword subtraction
+    mova [scale_factorq], m0
 
-    movd          blkd, m0
-    psrlq         m0,   32
-    bsr           blkd, blkd
-    sub           blkd, 15    ; SCALE_OUT_BITS
-    mov           [scale_factorq + subbandsq], blkd
+    add    scale_factorq, stepq
+    sub        channelsd, stepd
+    jg           .loop_1
 
-    movd          blkd, m0
-    bsr           blkd, blkd
-    sub           blkd, 15    ; SCALE_OUT_BITS
-    mov           [scale_factorq + subbandsq + 4], blkd
-
-    cmp           subbandsq, 0
-    jg            .loop_1
-
-    emms
     RET
