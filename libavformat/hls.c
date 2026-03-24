@@ -1111,6 +1111,17 @@ fail:
         !(c->variants[0]->playlists[0]->finished ||
           c->variants[0]->playlists[0]->type == PLS_TYPE_EVENT))
         c->ctx->ctx_flags |= AVFMTCTX_UNSEEKABLE;
+
+    if (c->n_variants && c->variants[0]->n_playlists &&
+        c->variants[0]->playlists[0]->type == PLS_TYPE_EVENT &&
+        !c->variants[0]->playlists[0]->finished) {
+        struct playlist *p = c->variants[0]->playlists[0];
+        int64_t duration = 0;
+        for (int i = 0; i < p->n_segments; i++)
+            duration += p->segments[i]->duration;
+        c->ctx->duration = duration;
+    }
+
     return ret;
 }
 
@@ -2182,9 +2193,10 @@ static int hls_read_header(AVFormatContext *s)
         }
     }
 
-    /* If this isn't a live stream, calculate the total duration of the
-     * stream. */
-    if (c->variants[0]->playlists[0]->finished) {
+    /* Calculate the total duration of the stream if all segments are
+     * available (finished or EVENT playlists). */
+    if (c->variants[0]->playlists[0]->finished ||
+        c->variants[0]->playlists[0]->type == PLS_TYPE_EVENT) {
         int64_t duration = 0;
         for (i = 0; i < c->variants[0]->playlists[0]->n_segments; i++)
             duration += c->variants[0]->playlists[0]->segments[i]->duration;
@@ -2549,9 +2561,24 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
                     }
 
                     if (c->first_timestamp == AV_NOPTS_VALUE &&
-                        pls->pkt->dts       != AV_NOPTS_VALUE)
+                        pls->pkt->dts       != AV_NOPTS_VALUE) {
+                        int64_t seg_idx = pls->cur_seq_no - pls->start_seq_no;
                         c->first_timestamp = av_rescale_q(pls->pkt->dts,
                             get_timebase(pls), AV_TIME_BASE_Q);
+
+                        /* EVENT playlists preserve all segments from the start */
+                        if (pls->type == PLS_TYPE_EVENT) {
+                            for (int64_t k = 0; k < seg_idx && k < pls->n_segments; k++)
+                                c->first_timestamp -= pls->segments[k]->duration;
+
+                            for (unsigned k = 0; k < s->nb_streams; k++) {
+                                AVStream *st = s->streams[k];
+                                if (st->start_time == AV_NOPTS_VALUE)
+                                    st->start_time = av_rescale_q(c->first_timestamp,
+                                        AV_TIME_BASE_Q, st->time_base);
+                            }
+                        }
+                    }
                 }
 
                 seg = current_segment(pls);
@@ -2717,6 +2744,11 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
     seek_pls->cur_seq_no = seq_no;
     seek_pls->seek_stream_index = stream_subdemuxer_index;
 
+    /* Reset PTS wrap detection so backward seeks don't get misinterpreted
+     * as a forward PTS wrap. */
+    for (i = 0; i < (int)s->nb_streams; i++)
+        ffstream(s->streams[i])->pts_wrap_reference = AV_NOPTS_VALUE;
+
     for (i = 0; i < c->n_playlists; i++) {
         /* Reset reading */
         struct playlist *pls = c->playlists[i];
@@ -2732,8 +2764,11 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
         /* Reset the pos, to let the mpegts/mov demuxer know we've seeked. */
         pb->pos = 0;
         /* Flush the packet queue of the subdemuxer. */
-        if (pls->ctx)
+        if (pls->ctx) {
             ff_read_frame_flush(pls->ctx);
+            for (j = 0; j < (int)pls->ctx->nb_streams; j++)
+                ffstream(pls->ctx->streams[j])->pts_wrap_reference = AV_NOPTS_VALUE;
+        }
         if (pls->is_subtitle)
             avformat_close_input(&pls->ctx);
 
@@ -2752,6 +2787,8 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
             pls->seek_stream_index = -1;
             pls->seek_flags |= AVSEEK_FLAG_ANY;
         }
+
+        pls->last_seq_no = pls->cur_seq_no;
     }
 
     c->cur_timestamp = seek_timestamp;
