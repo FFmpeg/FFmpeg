@@ -272,7 +272,6 @@ static av_cold int sbc_encode_init(AVCodecContext *avctx)
     frame->codesize = frame->subbands * frame->blocks * avctx->ch_layout.nb_channels * 2;
     frame->crc_ctx = av_crc_get_table(AV_CRC_8_EBU);
 
-    memset(&sbc->dsp.X, 0, sizeof(sbc->dsp.X));
     sbc->dsp.position = (SBC_X_BUFFER_SIZE - frame->subbands * 9) & ~7;
     sbc->dsp.increment = sbc->msbc ? 1 : 4;
     ff_sbcdsp_init(&sbc->dsp);
