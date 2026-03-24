@@ -137,7 +137,7 @@ av_cold FFFramePool *ff_frame_pool_audio_init(AVBufferRef* (*alloc)(size_t size)
 
     if (pool->linesize[0] > SIZE_MAX - align)
         goto fail;
-    pool->pools[0] = av_buffer_pool_init(pool->linesize[0] + align, NULL);
+    pool->pools[0] = av_buffer_pool_init(pool->linesize[0] + align, alloc);
     if (!pool->pools[0])
         goto fail;
 
