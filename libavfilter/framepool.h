@@ -35,17 +35,13 @@ typedef struct FFFramePool FFFramePool;
 /**
  * Allocate and initialize a video frame pool.
  *
- * @param alloc a function that will be used to allocate new frame buffers when
- * the pool is empty. May be NULL, then the default allocator will be used
- * (av_buffer_alloc()).
  * @param width width of each frame in this pool
  * @param height height of each frame in this pool
  * @param format format of each frame in this pool
  * @param align buffers alignment of each frame in this pool
  * @return newly created video frame pool on success, NULL on error.
  */
-FFFramePool *ff_frame_pool_video_init(AVBufferRef* (*alloc)(size_t size),
-                                      int width,
+FFFramePool *ff_frame_pool_video_init(int width,
                                       int height,
                                       enum AVPixelFormat format,
                                       int align);
@@ -53,17 +49,13 @@ FFFramePool *ff_frame_pool_video_init(AVBufferRef* (*alloc)(size_t size),
 /**
  * Allocate and initialize an audio frame pool.
  *
- * @param alloc a function that will be used to allocate new frame buffers when
- * the pool is empty. May be NULL, then the default allocator will be used
- * (av_buffer_alloc()).
  * @param channels channels of each frame in this pool
  * @param nb_samples number of samples of each frame in this pool
  * @param format format of each frame in this pool
  * @param align buffers alignment of each frame in this pool
  * @return newly created audio frame pool on success, NULL on error.
  */
-FFFramePool *ff_frame_pool_audio_init(AVBufferRef* (*alloc)(size_t size),
-                                      int channels,
+FFFramePool *ff_frame_pool_audio_init(int channels,
                                       int samples,
                                       enum AVSampleFormat format,
                                       int align);

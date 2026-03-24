@@ -49,8 +49,7 @@ struct FFFramePool {
 
 };
 
-av_cold FFFramePool *ff_frame_pool_video_init(AVBufferRef* (*alloc)(size_t size),
-                                              int width, int height,
+av_cold FFFramePool *ff_frame_pool_video_init(int width, int height,
                                               enum AVPixelFormat format,
                                               int align)
 {
@@ -97,7 +96,10 @@ av_cold FFFramePool *ff_frame_pool_video_init(AVBufferRef* (*alloc)(size_t size)
     for (i = 0; i < 4 && sizes[i]; i++) {
         if (sizes[i] > SIZE_MAX - align)
             goto fail;
-        pool->pools[i] = av_buffer_pool_init(sizes[i] + align, alloc);
+        pool->pools[i] = av_buffer_pool_init(sizes[i] + align,
+                                             CONFIG_MEMORY_POISONING
+                                                 ? NULL
+                                                 : av_buffer_allocz);
         if (!pool->pools[i])
             goto fail;
     }
@@ -109,8 +111,7 @@ fail:
     return NULL;
 }
 
-av_cold FFFramePool *ff_frame_pool_audio_init(AVBufferRef* (*alloc)(size_t size),
-                                              int channels, int nb_samples,
+av_cold FFFramePool *ff_frame_pool_audio_init(int channels, int nb_samples,
                                               enum AVSampleFormat format,
                                               int align)
 {
@@ -137,7 +138,8 @@ av_cold FFFramePool *ff_frame_pool_audio_init(AVBufferRef* (*alloc)(size_t size)
 
     if (pool->linesize[0] > SIZE_MAX - align)
         goto fail;
-    pool->pools[0] = av_buffer_pool_init(pool->linesize[0] + align, alloc);
+    pool->pools[0] = av_buffer_pool_init(pool->linesize[0] + align,
+                                         av_buffer_allocz);
     if (!pool->pools[0])
         goto fail;
 

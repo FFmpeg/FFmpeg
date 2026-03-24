@@ -71,10 +71,7 @@ AVFrame *ff_default_get_video_buffer2(AVFilterLink *link, int w, int h, int alig
     }
 
     if (!li->frame_pool) {
-        li->frame_pool = ff_frame_pool_video_init(CONFIG_MEMORY_POISONING
-                                                     ? NULL
-                                                     : av_buffer_allocz,
-                                                  w, h, link->format, align);
+        li->frame_pool = ff_frame_pool_video_init(w, h, link->format, align);
         if (!li->frame_pool)
             return NULL;
     } else {
@@ -89,10 +86,7 @@ AVFrame *ff_default_get_video_buffer2(AVFilterLink *link, int w, int h, int alig
             pool_format != link->format || pool_align != align) {
 
             ff_frame_pool_uninit(&li->frame_pool);
-            li->frame_pool = ff_frame_pool_video_init(CONFIG_MEMORY_POISONING
-                                                         ? NULL
-                                                         : av_buffer_allocz,
-                                                      w, h, link->format, align);
+            li->frame_pool = ff_frame_pool_video_init(w, h, link->format, align);
             if (!li->frame_pool)
                 return NULL;
         }
