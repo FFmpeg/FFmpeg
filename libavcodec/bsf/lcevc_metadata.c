@@ -100,7 +100,7 @@ static int lcevc_metadata_handle_vui(AVBSFContext *bsf,
         vui->chroma_sample_loc_type_top_field = ctx->chroma_sample_loc_type;
     }
 
-    err = ff_cbs_lcevc_add_process_block(ctx->common.output, au, position,
+    err = ff_cbs_lcevc_add_process_block(ctx->common.output, au, position + 1,
                                          LCEVC_PAYLOAD_TYPE_ADDITIONAL_INFO,
                                          ai, NULL);
     if (err < 0)
