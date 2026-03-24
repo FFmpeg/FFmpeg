@@ -751,6 +751,8 @@ av_cold int ff_vulkan_encode_init(AVCodecContext *avctx, FFVulkanEncodeContext *
 
     VkVideoFormatPropertiesKHR *ret_info;
     uint32_t nb_out_fmts = 0;
+    const uint32_t feedback_flags = VK_VIDEO_ENCODE_FEEDBACK_BITSTREAM_BUFFER_OFFSET_BIT_KHR |
+                                    VK_VIDEO_ENCODE_FEEDBACK_BITSTREAM_BYTES_WRITTEN_BIT_KHR;
 
     VkPhysicalDeviceVideoEncodeQualityLevelInfoKHR quality_info;
 
@@ -768,6 +770,14 @@ av_cold int ff_vulkan_encode_init(AVCodecContext *avctx, FFVulkanEncodeContext *
         av_log(avctx, AV_LOG_ERROR, "A hardware frames reference is "
                "required to associate the encoding device.\n");
         return AVERROR(EINVAL);
+    }
+
+    if ((ctx->enc_caps.supportedEncodeFeedbackFlags & feedback_flags) !=
+        feedback_flags) {
+        av_log (avctx, AV_LOG_ERROR,
+                "Driver does not support required encode feedback flags "
+                "(BUFFER_OFFSET and BYTES_WRITTEN).\n");
+        return AVERROR(ENOTSUP);
     }
 
     ctx->base.op = &vulkan_base_encode_ops;
@@ -879,8 +889,7 @@ av_cold int ff_vulkan_encode_init(AVCodecContext *avctx, FFVulkanEncodeContext *
     query_create = (VkQueryPoolVideoEncodeFeedbackCreateInfoKHR) {
         .sType = VK_STRUCTURE_TYPE_QUERY_POOL_VIDEO_ENCODE_FEEDBACK_CREATE_INFO_KHR,
         .pNext = &ctx->profile,
-        .encodeFeedbackFlags = ctx->enc_caps.supportedEncodeFeedbackFlags &
-                               (~VK_VIDEO_ENCODE_FEEDBACK_BITSTREAM_HAS_OVERRIDES_BIT_KHR),
+        .encodeFeedbackFlags = feedback_flags,
     };
     err = ff_vk_exec_pool_init(s, ctx->qf_enc, &ctx->enc_pool, base_ctx->async_depth,
                                1, VK_QUERY_TYPE_VIDEO_ENCODE_FEEDBACK_KHR, 0,
