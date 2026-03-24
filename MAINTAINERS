@@ -411,6 +411,7 @@ Muxers/Demuxers:
   flvenc.c                              Michael Niedermayer, Steven Liu
   gxf.c                                 Reimar Doeffinger
   gxfenc.c                              Baptiste Coudurier
+  hls.c                                 Kacper Michajłow
   hlsenc.c                              Christian Suloway, Steven Liu
   hxvs.c                                Zhao Zhili
   iamf*                             [2] James Almer
