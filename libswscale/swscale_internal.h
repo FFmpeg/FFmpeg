@@ -28,6 +28,7 @@
 #include "swscale.h"
 #include "graph.h"
 
+#include "libavfilter/framepool.h"
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/frame.h"
@@ -699,6 +700,8 @@ struct SwsInternal {
     void *hw_priv; /* refstruct */
 
     int is_legacy_init;
+
+    FFFramePool frame_pool; /* for sws_scale_frame() data allocations */
 };
 //FIXME check init (where 0)
 

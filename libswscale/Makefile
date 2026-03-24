@@ -12,6 +12,7 @@ OBJS = alphablend.o                                     \
        hscale_fast_bilinear.o                           \
        filters.o                                        \
        format.o                                         \
+       framepool.o                                      \
        gamma.o                                          \
        graph.o                                          \
        input.o                                          \

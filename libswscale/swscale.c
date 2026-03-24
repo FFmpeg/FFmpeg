@@ -1215,6 +1215,24 @@ void sws_frame_end(SwsContext *sws)
     c->src_ranges.nb_ranges = 0;
 }
 
+static int frame_alloc_buffers(SwsContext *sws, AVFrame *frame)
+{
+    SwsInternal *c = sws_internal(sws);
+    FFFramePool *pool = &c->frame_pool;
+
+    av_assert0(!frame->hw_frames_ctx);
+    const int nb_planes = av_pix_fmt_count_planes(frame->format);
+    for (int i = 0; i < nb_planes; i++) {
+        frame->linesize[i] = pool->linesize[i];
+        frame->buf[i] = av_buffer_pool_get(pool->pools[i]);
+        if (!frame->buf[i])
+            return AVERROR(ENOMEM);
+        frame->data[i] = frame->buf[i]->data;
+    }
+
+    return 0;
+}
+
 int sws_frame_start(SwsContext *sws, AVFrame *dst, const AVFrame *src)
 {
     SwsInternal *c = sws_internal(sws);
@@ -1390,7 +1408,7 @@ int sws_scale_frame(SwsContext *sws, AVFrame *dst, const AVFrame *src)
     if (src->buf[0] && top->noop && (!bot || bot->noop))
         return frame_ref(dst, src);
 
-    ret = av_frame_get_buffer(dst, 0);
+    ret = frame_alloc_buffers(sws, dst);
     if (ret < 0)
         return ret;
 
@@ -1457,6 +1475,12 @@ int sws_frame_setup(SwsContext *ctx, const AVFrame *dst, const AVFrame *src)
         if (ret < 0)
             return ret;
 #endif
+    } else {
+        /* Software frames */
+        ret = ff_frame_pool_video_reinit(&s->frame_pool, dst->width, dst->height,
+                                         dst->format, av_cpu_max_align());
+        if (ret < 0)
+            return ret;
     }
 
     for (int field = 0; field < 2; field++) {
