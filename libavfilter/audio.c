@@ -50,33 +50,9 @@ AVFrame *ff_default_get_audio_buffer(AVFilterLink *link, int nb_samples)
     int channels = link->ch_layout.nb_channels;
     int align = av_cpu_max_align();
 
-    if (!li->frame_pool) {
-        li->frame_pool = ff_frame_pool_audio_init(channels, nb_samples,
-                                                  link->format, align);
-        if (!li->frame_pool)
-            return NULL;
-    } else {
-        int pool_channels = 0;
-        int pool_nb_samples = 0;
-        int pool_align = 0;
-        enum AVSampleFormat pool_format = AV_SAMPLE_FMT_NONE;
-
-        if (ff_frame_pool_get_audio_config(li->frame_pool,
-                                           &pool_channels, &pool_nb_samples,
-                                           &pool_format, &pool_align) < 0) {
-            return NULL;
-        }
-
-        if (pool_channels != channels || pool_nb_samples < nb_samples ||
-            pool_format != link->format || pool_align != align) {
-
-            ff_frame_pool_uninit(&li->frame_pool);
-            li->frame_pool = ff_frame_pool_audio_init(channels, nb_samples,
-                                                      link->format, align);
-            if (!li->frame_pool)
-                return NULL;
-        }
-    }
+    if (ff_frame_pool_audio_reinit(&li->frame_pool, channels, nb_samples,
+                                   link->format, align) < 0)
+        return NULL;
 
     frame = ff_frame_pool_get(li->frame_pool);
     if (!frame)
