@@ -635,6 +635,8 @@ static int FUNC(process_block_list)(CodedBitstreamContext *ctx, RWContext *rw,
             *rw = start_state;
 
             tmp = FFMIN(block->payload_size, 7);
+            if (tmp == 6)
+                tmp = 7;
             xu(3, payload_size_type, tmp, 0, 7, 0);
             xu(5, payload_type, block->payload_type, 0, MAX_UINT_BITS(5), 0);
 
