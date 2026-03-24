@@ -135,7 +135,7 @@ static size_t sbc_pack_frame(AVPacket *avpkt, struct sbc_frame *frame,
     crc_header[1] = avpkt->data[2];
     crc_pos = 16;
 
-    init_put_bits(&pb, avpkt->data + 4, avpkt->size);
+    init_put_bits(&pb, avpkt->data + 4, avpkt->size - 4);
 
     if (frame->mode == JOINT_STEREO) {
         put_bits(&pb, frame->subbands, joint);
