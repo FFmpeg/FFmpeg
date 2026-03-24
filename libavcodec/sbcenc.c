@@ -128,10 +128,6 @@ static size_t sbc_pack_frame(AVPacket *avpkt, struct sbc_frame *frame,
         avpkt->data[1] |= ((frame->subbands == 8)     & 0x01) << 0;
 
         avpkt->data[2] = frame->bitpool;
-
-        if (frame->bitpool > frame->subbands << (4 + (frame->mode == STEREO
-                                                   || frame->mode == JOINT_STEREO)))
-            return -5;
     }
 
     /* Can't fill in crc yet */
@@ -258,6 +254,12 @@ static av_cold int sbc_encode_init(AVCodecContext *avctx)
                           - (frame->mode == SBC_MODE_JOINT_STEREO)*frame->subbands - 32 + d/2) / d;
         if (avctx->global_quality > 0)
             frame->bitpool = avctx->global_quality / FF_QP2LAMBDA;
+
+        if (frame->bitpool > frame->subbands << (4 + (frame->mode == STEREO
+                                                   || frame->mode == JOINT_STEREO))) {
+            av_log(avctx, AV_LOG_ERROR, "Invalid parameter combination\n");
+            return AVERROR_PATCHWELCOME;
+        }
 
         avctx->frame_size = 4*((frame->subbands >> 3) + 1) * 4*(frame->blocks >> 2);
     }
