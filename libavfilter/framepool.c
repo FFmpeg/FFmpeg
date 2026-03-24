@@ -305,6 +305,8 @@ int ff_frame_pool_video_reinit(FFFramePool **pool,
         cur->align == align)
     {
         av_assert1(cur->type == AVMEDIA_TYPE_VIDEO);
+        cur->width = width;
+        cur->height = height;
         return 0;
     }
 
