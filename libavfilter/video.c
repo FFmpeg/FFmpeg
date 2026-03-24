@@ -102,6 +102,9 @@ AVFrame *ff_default_get_video_buffer2(AVFilterLink *link, int w, int h, int alig
     if (!frame)
         return NULL;
 
+    frame->width  = w;
+    frame->height = h;
+
     frame->sample_aspect_ratio = link->sample_aspect_ratio;
     frame->colorspace  = link->colorspace;
     frame->color_range = link->color_range;
