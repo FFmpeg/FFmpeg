@@ -232,46 +232,20 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     VSTransformData* td = &(tc->td);
 
     AVFilterLink *outlink = ctx->outputs[0];
-    int direct = 0;
-    AVFrame *out;
     VSFrame inframe;
     int plane;
-
-    if (av_frame_is_writable(in)) {
-        direct = 1;
-        out = in;
-    } else {
-        out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-        if (!out) {
-            av_frame_free(&in);
-            return AVERROR(ENOMEM);
-        }
-        av_frame_copy_props(out, in);
-    }
 
     for (plane = 0; plane < vsTransformGetSrcFrameInfo(td)->planes; plane++) {
         inframe.data[plane] = in->data[plane];
         inframe.linesize[plane] = in->linesize[plane];
     }
-    if (direct) {
-        vsTransformPrepare(td, &inframe, &inframe);
-    } else { // separate frames
-        VSFrame outframe;
-        for (plane = 0; plane < vsTransformGetDestFrameInfo(td)->planes; plane++) {
-            outframe.data[plane] = out->data[plane];
-            outframe.linesize[plane] = out->linesize[plane];
-        }
-        vsTransformPrepare(td, &inframe, &outframe);
-    }
+    vsTransformPrepare(td, &inframe, &inframe);
 
     vsDoTransform(td, vsGetNextTransform(td, &tc->trans));
 
     vsTransformFinish(td);
 
-    if (!direct)
-        av_frame_free(&in);
-
-    return ff_filter_frame(outlink, out);
+    return ff_filter_frame(outlink, in);
 }
 
 static const AVFilterPad avfilter_vf_vidstabtransform_inputs[] = {
@@ -280,6 +254,18 @@ static const AVFilterPad avfilter_vf_vidstabtransform_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
         .config_props = config_input,
+        /* libvidstab's vsTransformPrepare() takes different internal code paths
+         * for in-place (src == dest) vs. separate-buffer operation. The
+         * separate-buffer path stores a shallow copy of the source frame
+         * pointer in td->src without allocating internal memory. When a
+         * subsequent frame takes the in-place path, it skips allocation
+         * (td->src is non-null) and copies into the stale pointer,
+         * corrupting memory that the caller no longer owns.
+         * Whether a frame is writable depends on pipeline scheduling, so
+         * always ensure the frame is writable to consistently take the
+         * in-place path.
+         */
+        .flags        = AVFILTERPAD_FLAG_NEEDS_WRITABLE,
     },
 };
 
