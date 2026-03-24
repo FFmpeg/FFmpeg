@@ -141,6 +141,7 @@ libavformat/electronicarts.* @pross
 libavformat/.*exif.* @Traneptora
 libavformat/filmstrip.* @pross
 libavformat/frm.* @pross
+libavformat/hls.* @kasper93
 libavformat/hxvs.* @quink
 libavformat/iamf.* @jamrial
 libavformat/icecast.c @ePirat
