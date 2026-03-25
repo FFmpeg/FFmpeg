@@ -270,6 +270,7 @@ TESTPROGS = adler32                                                     \
             cpu                                                         \
             crc                                                         \
             des                                                         \
+            detection_bbox                                              \
             dict                                                        \
             display                                                     \
             encryption_info                                             \

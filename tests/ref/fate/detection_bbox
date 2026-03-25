@@ -1,0 +1,22 @@
+Testing av_detection_bbox_alloc()
+alloc 0: OK, nb=0, size>0=yes
+alloc 1: OK, nb=1, size>0=yes
+alloc 4: OK, nb=4, size>0=yes
+alloc (no size): OK
+
+Testing av_get_detection_bbox()
+bbox 0: x=0 y=0 w=50 h=60 label=obj0 conf=90/100
+bbox 1: x=100 y=200 w=51 h=61 label=obj1 conf=91/100
+bbox 2: x=200 y=400 w=52 h=62 label=obj2 conf=92/100
+
+Testing classify fields
+classify_count=2
+classify 0: cat 95/100
+classify 1: animal 80/100
+
+Testing source field
+source: test_model_v1
+
+Testing av_detection_bbox_create_side_data()
+side_data: OK, nb=2
+side_data bbox 0: x=10 y=20

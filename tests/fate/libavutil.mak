@@ -70,6 +70,10 @@ fate-des: libavutil/tests/des$(EXESUF)
 fate-des: CMD = run libavutil/tests/des$(EXESUF)
 fate-des: CMP = null
 
+FATE_LIBAVUTIL += fate-detection_bbox
+fate-detection_bbox: libavutil/tests/detection_bbox$(EXESUF)
+fate-detection_bbox: CMD = run libavutil/tests/detection_bbox$(EXESUF)
+
 FATE_LIBAVUTIL += fate-dict
 fate-dict: libavutil/tests/dict$(EXESUF)
 fate-dict: CMD = run libavutil/tests/dict$(EXESUF)
