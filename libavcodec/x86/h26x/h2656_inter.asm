@@ -408,13 +408,9 @@ SECTION .text
     pmaddwd        %%reg1, %3
     pmaddwd        %%reg3, %4
     paddd          %%reg1, %%reg3
-%if %1 != 8
     psrad          %%reg1, %1-8
 %endif
-%endif
-%if %1 != 8
     psrad          %%reg0, %1-8
-%endif
     packssdw       %%reg0, %%reg1
 %endif
 %endmacro
@@ -437,9 +433,7 @@ SECTION .text
     paddd             m0, m2
     paddd             m4, m6
     paddd             m0, m4
-%if %2 != 8
     psrad             m0, %2-8
-%endif
 %if %1 > 4
     pmaddwd           m1, [%3q+4*mmsize]
     pmaddwd           m3, [%3q+5*mmsize]
@@ -448,9 +442,7 @@ SECTION .text
     paddd             m1, m3
     paddd             m5, m7
     paddd             m1, m5
-%if %2 != 8
     psrad             m1, %2-8
-%endif
 %endif
     p%4               m0, m1
 %endif
@@ -503,9 +495,7 @@ SECTION .text
     paddd             m0, m2
     paddd             m4, m6
     paddd             m0, m4
-%if %2 != 8
     psrad             m0, %2-8
-%endif
 %if %1 > 4
     pmaddwd           m1, m12
     pmaddwd           m3, m13
@@ -514,9 +504,7 @@ SECTION .text
     paddd             m1, m3
     paddd             m5, m7
     paddd             m1, m5
-%if %2 != 8
     psrad             m1, %2-8
-%endif
 %endif
 %endif
 %endmacro
