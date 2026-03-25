@@ -1,0 +1,38 @@
+Testing av_spherical_alloc()
+alloc: OK, size>0=yes, default projection=4
+alloc (no size): OK
+
+Testing av_spherical_projection_name()
+projection 0: equirectangular
+projection 1: cubemap
+projection 2: tiled equirectangular
+projection 3: half equirectangular
+projection 4: rectilinear
+projection 5: fisheye
+projection 6: parametric immersive
+out of range: unknown
+
+Testing av_spherical_from_name()
+equirectangular: 0
+cubemap: 1
+tiled equirectangular: 2
+half equirectangular: 3
+rectilinear: 4
+fisheye: 5
+parametric immersive: 6
+nonexistent: -1
+
+Testing projection name round-trip
+roundtrip 0 (equirectangular): OK
+roundtrip 1 (cubemap): OK
+roundtrip 2 (tiled equirectangular): OK
+roundtrip 3 (half equirectangular): OK
+roundtrip 4 (rectilinear): OK
+roundtrip 5 (fisheye): OK
+roundtrip 6 (parametric immersive): OK
+
+Testing av_spherical_tile_bounds()
+projection: tiled equirectangular
+full frame: left=0 top=0 right=0 bottom=0
+quarter top-left: left=0 top=0 right=959 bottom=539
+centered: left=480 top=270 right=479 bottom=269

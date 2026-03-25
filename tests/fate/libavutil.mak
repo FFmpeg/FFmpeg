@@ -156,6 +156,10 @@ FATE_LIBAVUTIL += fate-side_data_array
 fate-side_data_array: libavutil/tests/side_data_array$(EXESUF)
 fate-side_data_array: CMD = run libavutil/tests/side_data_array$(EXESUF)
 
+FATE_LIBAVUTIL += fate-spherical
+fate-spherical: libavutil/tests/spherical$(EXESUF)
+fate-spherical: CMD = run libavutil/tests/spherical$(EXESUF)
+
 FATE_LIBAVUTIL += fate-stereo3d
 fate-stereo3d: libavutil/tests/stereo3d$(EXESUF)
 fate-stereo3d: CMD = run libavutil/tests/stereo3d$(EXESUF)
