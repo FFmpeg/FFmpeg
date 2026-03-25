@@ -1637,8 +1637,10 @@ static int vp9_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         vp9_frame_replace(&s->s.frames[REF_FRAME_SEGMAP], src);
     vp9_frame_replace(&s->s.frames[REF_FRAME_MVPAIR], src);
     vp9_frame_unref(&s->s.frames[CUR_FRAME]);
-    if ((ret = vp9_frame_alloc(avctx, &s->s.frames[CUR_FRAME])) < 0)
+    if ((ret = vp9_frame_alloc(avctx, &s->s.frames[CUR_FRAME])) < 0) {
+        ff_cbs_fragment_reset(&s->current_frag);
         return ret;
+    }
 
     s->s.frames[CUR_FRAME].header_ref = av_refstruct_ref(s->header_ref);
     s->s.frames[CUR_FRAME].frame_header = s->frame_header;
