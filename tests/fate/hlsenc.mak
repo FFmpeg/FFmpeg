@@ -12,6 +12,21 @@ fate-hls-live-no-endlist: CMD = md5 -i $(SRC) -af hdcd=process_stereo=false -t 6
 fate-hls-live-no-endlist: CMP = oneline
 fate-hls-live-no-endlist: REF = e038bb8e65d4c1745b9b3ed643e607a3
 
+tests/data/event_no_endlist.m3u8: TAG = GEN
+tests/data/event_no_endlist.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
+	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
+        -f lavfi -v verbose -i "aevalsrc=cos(2*PI*t)*sin(2*PI*(440+4*t)*t):d=20" -f hls -hls_time 3 -map 0 \
+        -hls_playlist_type event -hls_flags omit_endlist -hls_list_size 0 -codec:a mp2fixed \
+        -hls_segment_filename $(TARGET_PATH)/tests/data/event_no_endlist_%03d.ts \
+        $(TARGET_PATH)/tests/data/event_no_endlist.m3u8 2>/dev/null
+
+FATE_HLSENC-$(call FILTERDEMDECENCMUX, HDCD AEVALSRC ARESAMPLE, HLS MPEGTS, MP2 PCM_F64LE, MP2FIXED PCM_S24LE, HLS MPEGTS PCM_S24LE, LAVFI_INDEV) += fate-hls-event-no-endlist
+fate-hls-event-no-endlist: tests/data/event_no_endlist.m3u8
+fate-hls-event-no-endlist: SRC = $(TARGET_PATH)/tests/data/event_no_endlist.m3u8
+fate-hls-event-no-endlist: CMD = md5 -ss 3 -i $(SRC) -af hdcd=process_stereo=false -t 3 -f s24le
+fate-hls-event-no-endlist: CMP = oneline
+fate-hls-event-no-endlist: REF = d9cd56b6aaebf67a52a63dd44ec5b085
+
 tests/data/live_last_endlist.m3u8: TAG = GEN
 tests/data/live_last_endlist.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
