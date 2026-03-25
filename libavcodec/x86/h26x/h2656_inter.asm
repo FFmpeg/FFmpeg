@@ -99,26 +99,16 @@ SECTION .text
     VPBROADCASTW                      m13, [%2q + 1 * 2]  ; coeff 2, 3
     VPBROADCASTW                      m14, [%2q + 2 * 2]  ; coeff 4, 5
     VPBROADCASTW                      m15, [%2q + 3 * 2]  ; coeff 6, 7
-%if %0 == 3
-    MC_8TAP_SAVE_FILTER                %3, m12, m13, m14, m15
-%endif
 
 %if %1 != 8
     pmovsxbw                          m12, xm12
     pmovsxbw                          m13, xm13
     pmovsxbw                          m14, xm14
     pmovsxbw                          m15, xm15
-    %if %0 == 3
-    MC_8TAP_SAVE_FILTER     %3 + 4*mmsize, m12, m13, m14, m15
-    %endif
-%elif %0 == 3
-    pmovsxbw                          m8, xm12
-    pmovsxbw                          m9, xm13
-    pmovsxbw                         m10, xm14
-    pmovsxbw                         m11, xm15
-    MC_8TAP_SAVE_FILTER     %3 + 4*mmsize, m8, m9, m10, m11
 %endif
-
+%if %0 == 3
+    MC_8TAP_SAVE_FILTER     %3, m12, m13, m14, m15
+%endif
 %endmacro
 
 %macro MC_4TAP_LOAD 4
@@ -426,19 +416,19 @@ SECTION .text
     paddw             m4, m6
     paddw             m0, m4
 %else
-    pmaddwd           m0, [%3q+4*mmsize]
-    pmaddwd           m2, [%3q+5*mmsize]
-    pmaddwd           m4, [%3q+6*mmsize]
-    pmaddwd           m6, [%3q+7*mmsize]
+    pmaddwd           m0, [%3q+0*mmsize]
+    pmaddwd           m2, [%3q+1*mmsize]
+    pmaddwd           m4, [%3q+2*mmsize]
+    pmaddwd           m6, [%3q+3*mmsize]
     paddd             m0, m2
     paddd             m4, m6
     paddd             m0, m4
     psrad             m0, %2-8
 %if %1 > 4
-    pmaddwd           m1, [%3q+4*mmsize]
-    pmaddwd           m3, [%3q+5*mmsize]
-    pmaddwd           m5, [%3q+6*mmsize]
-    pmaddwd           m7, [%3q+7*mmsize]
+    pmaddwd           m1, [%3q+0*mmsize]
+    pmaddwd           m3, [%3q+1*mmsize]
+    pmaddwd           m5, [%3q+2*mmsize]
+    pmaddwd           m7, [%3q+3*mmsize]
     paddd             m1, m3
     paddd             m5, m7
     paddd             m1, m5
@@ -856,11 +846,11 @@ cglobal %1_put_uni_8tap_v%2_%3, 7, 9, 16, dst, dststride, src, srcstride, height
 ;                     int height, const int8_t *hf, const int8_t *vf, int width)
 ; ******************************
 %macro PUT_8TAP_HV 3
-cglobal %1_put_8tap_hv%2_%3, 7, 8, 16, 0 - mmsize*16, dst, dststride, src, srcstride, height, hf, vf, r3src
+cglobal %1_put_8tap_hv%2_%3, 7, 8, 16, 0 - mmsize*8, dst, dststride, src, srcstride, height, hf, vf, r3src
     MC_8TAP_FILTER           %3, hf, 0
     lea                     hfq, [rsp]
-    MC_8TAP_FILTER           %3, vf, 8*mmsize
-    lea                     vfq, [rsp + 8*mmsize]
+    MC_8TAP_FILTER           14, vf, 4*mmsize
+    lea                     vfq, [rsp + 4*mmsize]
 
     lea                  r3srcq, [srcstrideq*3]
     sub                    srcq, r3srcq
@@ -931,11 +921,11 @@ cglobal %1_put_8tap_hv%2_%3, 7, 8, 16, 0 - mmsize*16, dst, dststride, src, srcst
     RET
 
 
-cglobal %1_put_uni_8tap_hv%2_%3, 7, 9, 16, 0 - 16*mmsize, dst, dststride, src, srcstride, height, hf, vf, r3src
+cglobal %1_put_uni_8tap_hv%2_%3, 7, 9, 16, 0 - 8*mmsize, dst, dststride, src, srcstride, height, hf, vf, r3src
     MC_8TAP_FILTER           %3, hf, 0
     lea                     hfq, [rsp]
-    MC_8TAP_FILTER           %3, vf, 8*mmsize
-    lea                     vfq, [rsp + 8*mmsize]
+    MC_8TAP_FILTER           14, vf, 4*mmsize
+    lea                     vfq, [rsp + 4*mmsize]
     lea           r3srcq, [srcstrideq*3]
     sub             srcq, r3srcq
     MC_8TAP_H_LOAD       %3, srcq, %2, 15
