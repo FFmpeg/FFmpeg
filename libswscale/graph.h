@@ -61,6 +61,10 @@ typedef struct SwsPassBuffer {
 
     int width, height; /* dimensions of this buffer */
     AVFrame *avframe;  /* backing storage for `frame` */
+
+    /* Optional allocation hints for optimal performance */
+    int width_align;   /* Align width to multiple of this */
+    int width_pad;     /* Extra padding pixels */
 } SwsPassBuffer;
 
 /**
