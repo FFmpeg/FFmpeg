@@ -1366,7 +1366,7 @@ static int frame_ref(AVFrame *dst, const AVFrame *src)
 
 int sws_scale_frame(SwsContext *sws, AVFrame *dst, const AVFrame *src)
 {
-    int ret;
+    int ret, allocated = 0;
     SwsInternal *c = sws_internal(sws);
     if (!src || !dst)
         return AVERROR(EINVAL);
@@ -1411,12 +1411,16 @@ int sws_scale_frame(SwsContext *sws, AVFrame *dst, const AVFrame *src)
     ret = frame_alloc_buffers(sws, dst);
     if (ret < 0)
         return ret;
+    allocated = 1;
 
 process_frame:
     for (int field = 0; field < (bot ? 2 : 1); field++) {
         ret = ff_sws_graph_run(c->graph[field], dst, src);
-        if (ret < 0)
+        if (ret < 0) {
+            if (allocated)
+                av_frame_unref(dst);
             return ret;
+        }
     }
 
     return 0;
