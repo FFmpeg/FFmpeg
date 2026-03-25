@@ -111,6 +111,11 @@ struct SwsPass {
 };
 
 /**
+ * Align `width` to the optimal size for `pass`.
+ */
+int ff_sws_pass_aligned_width(const SwsPass *pass, int width);
+
+/**
  * Filter graph, which represents a 'baked' pixel format conversion.
  */
 typedef struct SwsGraph {

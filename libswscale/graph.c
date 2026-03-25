@@ -38,6 +38,17 @@
 #include "graph.h"
 #include "ops.h"
 
+int ff_sws_pass_aligned_width(const SwsPass *pass, int width)
+{
+    if (!pass)
+        return width;
+
+    size_t aligned_w = width;
+    aligned_w = FFALIGN(aligned_w, pass->output->width_align);
+    aligned_w += pass->output->width_pad;
+    return aligned_w <= INT_MAX ? aligned_w : width;
+}
+
 /* Allocates one buffer per plane */
 static int frame_alloc_planes(AVFrame *dst)
 {
