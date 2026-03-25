@@ -50,7 +50,6 @@ cglobal idet_filter_line_16bit, 4, 5, 8, a, b, c, width, index
 .loop_16bit:
     movu      m2, [bq + indexq * 2]  ; B
     movu      m3, [aq + indexq * 2]  ; A
-    mova      m6, m2
     psubusw   m5, m2, m3             ; ba
 
     movu      m4, [cq + indexq * 2]  ; C
@@ -58,7 +57,7 @@ cglobal idet_filter_line_16bit, 4, 5, 8, a, b, c, width, index
     psubusw   m3, m2                 ; ab
     CMP       indexd, widthd
 
-    psubusw   m6, m4                 ; bc
+    psubusw   m6, m2, m4             ; bc
     psubusw   m4, m2                 ; cb
 
     PABS_DIFF_WD   m3, m6, m7        ; |ab - bc|
@@ -97,21 +96,19 @@ cglobal idet_filter_line, 4, 6, 7, a, b, c, width, index, total
 .sse2_loop:
     movu      m2, [bq + indexq*1]  ; B
     movu      m3, [aq + indexq*1]  ; A
-    mova      m6, m2
-    mova      m4, m3
     psubusb   m5, m2, m3           ; ba
 
-    movu      m3, [cq + indexq*1]  ; C
+    movu      m4, [cq + indexq*1]  ; C
     add       indexq, mmsize
-    psubusb   m4, m2               ; ab
+    psubusb   m3, m2               ; ab
     CMP       indexd, widthd
 
-    psubusb   m6, m3               ; bc
-    psubusb   m3, m2               ; cb
+    psubusb   m6, m2, m4           ; bc
+    psubusb   m4, m2               ; cb
 
-    psadbw    m4, m6               ; |ab - bc|
-    paddq     m0, m4
-    psadbw    m5, m3               ; |ba - cb|
+    psadbw    m3, m6               ; |ab - bc|
+    paddq     m0, m3
+    psadbw    m5, m4               ; |ba - cb|
     paddq     m1, m5
     jl       .sse2_loop
 
