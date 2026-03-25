@@ -1,0 +1,19 @@
+Testing av_video_enc_params_alloc()
+VP9: OK, type=0, nb_blocks=4, size>0=yes
+H264: OK, type=1, nb_blocks=4, size>0=yes
+MPEG2: OK, type=2, nb_blocks=4, size>0=yes
+zero blocks: OK, nb_blocks=0
+alloc (no size): OK
+
+Testing av_video_enc_params_block()
+frame qp=26, delta_qp[0]={-2,-1}
+block 0: src=(0,0) size=16x16 delta_qp=-1
+block 1: src=(16,16) size=16x16 delta_qp=0
+block 2: src=(32,32) size=16x16 delta_qp=1
+
+Testing av_video_enc_params_create_side_data()
+side_data: OK, type=0, nb_blocks=2
+side_data block 0: delta_qp=5
+
+Testing NONE type
+NONE: OK, type=-1

@@ -195,6 +195,10 @@ fate-uuid: libavutil/tests/uuid$(EXESUF)
 fate-uuid: CMD = run libavutil/tests/uuid$(EXESUF)
 fate-uuid: CMP = null
 
+FATE_LIBAVUTIL += fate-video_enc_params
+fate-video_enc_params: libavutil/tests/video_enc_params$(EXESUF)
+fate-video_enc_params: CMD = run libavutil/tests/video_enc_params$(EXESUF)
+
 FATE_LIBAVUTIL += fate-file
 fate-file: libavutil/tests/file$(EXESUF)
 fate-file: CMD = run libavutil/tests/file$(EXESUF) $(SRC_PATH)/libavutil/tests/file.c
