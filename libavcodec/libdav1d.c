@@ -443,6 +443,31 @@ FF_ENABLE_DEPRECATION_WARNINGS
             break;
         }
         break;
+    case ITU_T_T35_COUNTRY_CODE_UK:
+        bytestream2_skipu(&gb, 1); // t35_uk_country_code_second_octet
+        if (bytestream2_get_bytes_left(&gb) < 2)
+            return AVERROR_INVALIDDATA;
+
+        provider_code = bytestream2_get_be16u(&gb);
+        switch (provider_code) {
+        case ITU_T_T35_PROVIDER_CODE_VNOVA: {
+            AVFrameSideData *sd;
+            if (bytestream2_get_bytes_left(&gb) < 2)
+                return AVERROR_INVALIDDATA;
+
+            res = ff_frame_new_side_data(c, frame, AV_FRAME_DATA_LCEVC,
+                                         bytestream2_get_bytes_left(&gb), &sd);
+            if (res < 0)
+                return res;
+
+            bytestream2_get_bufferu(&gb, sd->data, sd->size);
+            break;
+        }
+        default:
+            break;
+        }
+        break;
+
     default:
         // ignore unsupported provider codes
         break;
