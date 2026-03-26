@@ -41,7 +41,13 @@ typedef struct SwsOpExec {
     ptrdiff_t in_stride[4];
     ptrdiff_t out_stride[4];
 
-    /* Pointer bump, difference between stride and processed line size */
+    /**
+     * Pointer bump, difference between stride and processed line size.
+     *
+     * Assumes that each read kernel increments pointers by the processed
+     * block size, except when using horizontal filtering, in which case
+     * this is always equal to the input stride.
+     */
     ptrdiff_t in_bump[4];
     ptrdiff_t out_bump[4];
 
@@ -64,12 +70,20 @@ typedef struct SwsOpExec {
      * multiplied by the corresponding line stride.
      */
     int32_t *in_bump_y;
+
+    /**
+     * Pixel offset map; for horizontal scaling, in bytes. Indexed by the x
+     * coordinate of the output pixel. This is always aligned up to a multiple
+     * of the block size, so implementations may safely over-read up to the
+     * next block boundary.
+     */
+    int32_t *in_offset_x;
 } SwsOpExec;
 
 static_assert(sizeof(SwsOpExec) == 24 * sizeof(void *) +
                                    6  * sizeof(int32_t) +
                                    16 * sizeof(uint8_t) +
-                                   1  * sizeof(void *),
+                                   2  * sizeof(void *),
               "SwsOpExec layout mismatch");
 
 /**

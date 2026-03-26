@@ -44,6 +44,7 @@ typedef struct SwsOpPass {
     int idx_in[4];
     int idx_out[4];
     int *offsets_y;
+    int filter_size;
     bool memcpy_first;
     bool memcpy_last;
     bool memcpy_out;
@@ -117,6 +118,7 @@ static void op_pass_free(void *ptr)
     ff_sws_compiled_op_unref(&p->comp);
     av_refstruct_unref(&p->offsets_y);
     av_free(p->exec_base.in_bump_y);
+    av_free(p->exec_base.in_offset_x);
     av_free(p->tail_buf);
     av_free(p);
 }
@@ -202,10 +204,17 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
 
     const int safe_width = (num_blocks - 1) * block_size;
     const int tail_size  = pass->width - safe_width;
-    p->tail_off_in   = safe_width * p->pixel_bits_in  >> 3;
     p->tail_off_out  = safe_width * p->pixel_bits_out >> 3;
-    p->tail_size_in  = (tail_size * p->pixel_bits_in  + 7) >> 3;
     p->tail_size_out = (tail_size * p->pixel_bits_out + 7) >> 3;
+
+    if (exec->in_offset_x) {
+        p->tail_off_in  = exec->in_offset_x[safe_width];
+        p->tail_size_in = exec->in_offset_x[pass->width - 1] - p->tail_off_in;
+        p->tail_size_in += (p->filter_size * p->pixel_bits_in + 7) >> 3;
+    } else {
+        p->tail_off_in  = safe_width * p->pixel_bits_in >> 3;
+        p->tail_size_in = (tail_size * p->pixel_bits_in + 7) >> 3;
+    }
 
     for (int i = 0; memcpy_in && i < p->planes_in; i++) {
         size_t block_size = (comp->block_size * p->pixel_bits_in + 7) >> 3;
@@ -225,6 +234,14 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
         alloc_size += tail->out_stride[i] * out->height;
     }
 
+    if (memcpy_in && exec->in_offset_x) {
+        /* `in_offset_x` is indexed relative to the line start, not the start
+         * of the section being processed; so we need to over-allocate this
+         * array to the full width of the image, even though we will only
+         * partially fill in the offsets relevant to the tail region */
+        alloc_size += aligned_w * sizeof(*exec->in_offset_x);
+    }
+
     uint8_t *tail_buf = av_fast_realloc(p->tail_buf, &p->tail_buf_size, alloc_size);
     if (!tail_buf)
         return AVERROR(ENOMEM);
@@ -238,6 +255,12 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
     for (int i = 0; p->memcpy_out && i < p->planes_out; i++) {
         tail->out[i] = tail_buf;
         tail_buf += tail->out_stride[i] * out->height;
+    }
+
+    if (memcpy_in && exec->in_offset_x) {
+        tail->in_offset_x = (int32_t *) tail_buf;
+        for (int i = safe_width; i < aligned_w; i++)
+            tail->in_offset_x[i] = exec->in_offset_x[i] - p->tail_off_in;
     }
 
     return 0;
@@ -308,7 +331,9 @@ static void op_pass_run(const SwsFrame *out, const SwsFrame *in, const int y,
     tail.slice_h = h;
 
     for (int i = 0; i < p->planes_in; i++) {
-        exec.in[i] += p->tail_off_in;
+        /* Input offsets are relative to the base pointer */
+        if (!exec.in_offset_x || memcpy_in)
+            exec.in[i] += p->tail_off_in;
         tail.in[i] += y * tail.in_stride[i];
     }
     for (int i = 0; i < p->planes_out; i++) {
@@ -397,8 +422,8 @@ static int compile(SwsGraph *graph, const SwsOpList *ops, SwsPass *input,
         p->idx_out[i] = i < p->planes_out ? ops->order_dst.in[i] : -1;
     }
 
+    const SwsFilterWeights *filter = read->rw.kernel;
     if (read->rw.filter == SWS_OP_FILTER_V) {
-        const SwsFilterWeights *filter = read->rw.kernel;
         p->offsets_y = av_refstruct_ref(filter->offsets);
 
         /* Compute relative pointer bumps for each output line */
@@ -416,6 +441,22 @@ static int compile(SwsGraph *graph, const SwsOpList *ops, SwsPass *input,
         }
         bump[filter->dst_size - 1] = 0;
         p->exec_base.in_bump_y = bump;
+    } else if (read->rw.filter == SWS_OP_FILTER_H) {
+        /* Compute pixel offset map for each output line */
+        const int pixels = FFALIGN(filter->dst_size, p->comp.block_size);
+        int32_t *offset = av_malloc_array(pixels, sizeof(*offset));
+        if (!offset) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+
+        for (int x = 0; x < filter->dst_size; x++)
+            offset[x] = filter->offsets[x] * p->pixel_bits_in >> 3;
+        for (int x = filter->dst_size; x < pixels; x++)
+            offset[x] = offset[filter->dst_size - 1];
+        p->exec_base.in_offset_x = offset;
+        p->exec_base.block_size_in = 0; /* ptr does not advance */
+        p->filter_size = filter->filter_size;
     }
 
     return ff_sws_graph_add_pass(graph, dst->format, dst->width, dst->height,
