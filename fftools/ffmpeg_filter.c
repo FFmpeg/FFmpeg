@@ -3337,8 +3337,6 @@ static int filter_thread(void *arg)
 
         o = (intptr_t)fgt.frame->opaque;
 
-        o = (intptr_t)fgt.frame->opaque;
-
         // message on the control stream
         if (input_idx == fg->nb_inputs) {
             FilterCommand *fc;
