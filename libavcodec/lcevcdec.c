@@ -37,12 +37,30 @@ static LCEVC_ColorFormat map_format(int format)
         return LCEVC_I420_8;
     case AV_PIX_FMT_YUV420P10:
         return LCEVC_I420_10_LE;
+    case AV_PIX_FMT_YUV420P12:
+        return LCEVC_I420_12_LE;
+    case AV_PIX_FMT_YUV422P:
+        return LCEVC_I422_8;
+    case AV_PIX_FMT_YUV422P10:
+        return LCEVC_I422_10_LE;
+    case AV_PIX_FMT_YUV422P12:
+        return LCEVC_I422_12_LE;
+    case AV_PIX_FMT_YUV444P:
+        return LCEVC_I444_8;
+    case AV_PIX_FMT_YUV444P10:
+        return LCEVC_I444_10_LE;
+    case AV_PIX_FMT_YUV444P12:
+        return LCEVC_I444_12_LE;
     case AV_PIX_FMT_NV12:
         return LCEVC_NV12_8;
     case AV_PIX_FMT_NV21:
         return LCEVC_NV21_8;
     case AV_PIX_FMT_GRAY8:
         return LCEVC_GRAY_8;
+    case AV_PIX_FMT_GRAY10LE:
+        return LCEVC_GRAY_10_LE;
+    case AV_PIX_FMT_GRAY12LE:
+        return LCEVC_GRAY_12_LE;
     }
 
     return LCEVC_ColorFormat_Unknown;
