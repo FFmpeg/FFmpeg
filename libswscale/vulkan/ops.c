@@ -154,6 +154,7 @@ static void free_fn(void *priv)
 {
     VulkanPriv *p = priv;
     ff_vk_shader_free(&p->s->vkctx, &p->shd);
+    av_refstruct_unref(&p->s);
     av_free(priv);
 }
 
@@ -382,31 +383,37 @@ static int compile(SwsContext *sws, SwsOpList *ops, SwsCompiledOp *out)
     if (!s)
         return AVERROR(ENOTSUP);
 
-    VulkanPriv p = {
-        .s = s,
-    };
+    VulkanPriv *p = av_mallocz(sizeof(*p));
+    if (!p)
+        return AVERROR(ENOMEM);
+    p->s = av_refstruct_ref(c->hw_priv);
 
 #if CONFIG_LIBSHADERC || CONFIG_LIBGLSLANG
     {
-        err = add_ops_glsl(&p, s, ops, &p.shd);
+        err = add_ops_glsl(p, s, ops, &p->shd);
         if (err < 0)
-            return err;
-    }
+            goto fail;
 #else
-    return AVERROR(ENOTSUP);
+        err = AVERROR(ENOTSUP);
+        goto fail;
 #endif
 
-    err = ff_vk_shader_register_exec(&s->vkctx, &s->e, &p.shd);
+    err = ff_vk_shader_register_exec(&s->vkctx, &s->e, &p->shd);
     if (err < 0)
-        return err;
+        goto fail;
 
     *out = (SwsCompiledOp) {
         .opaque      = true,
         .func_opaque = process,
-        .priv        = av_memdup(&p, sizeof(p)),
+        .priv        = p,
         .free        = free_fn,
     };
+
     return 0;
+
+fail:
+    free_fn(p);
+    return err;
 }
 
 const SwsOpBackend backend_vulkan = {
