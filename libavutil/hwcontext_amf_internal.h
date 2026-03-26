@@ -40,5 +40,6 @@
 
 #define AMF_TIME_BASE_Q          (AVRational){1, AMF_SECOND}
 
+#define AMF_IFACE_CALL(this, function, ...) ((this)->pVtbl->function((this), ##__VA_ARGS__))
 
 #endif /* AVUTIL_HWCONTEXT_AMF_INTERNAL_H */
