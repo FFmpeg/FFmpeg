@@ -369,6 +369,7 @@ end:
 
 static const CodedBitstreamUnitType decompose_unit_types[] = {
     LCEVC_IDR_NUT,
+    LCEVC_NON_IDR_NUT,
 };
 
 int ff_lcevc_alloc(FFLCEVCContext **plcevc, void *logctx)
