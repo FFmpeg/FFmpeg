@@ -1540,8 +1540,12 @@ static int read_diff_float_data(ALSDecContext *ctx, unsigned int ra_frame) {
                     return AVERROR_INVALIDDATA;
                 }
 
+                j = 0;
                 for (i = 0; i < frame_length; ++i) {
-                    ctx->raw_mantissa[c][i] = AV_RB32(larray);
+                    if (ctx->raw_samples[c][i] == 0) {
+                        ctx->raw_mantissa[c][i] = AV_RB32(larray + j);
+                        j += 4;
+                    }
                 }
             }
         }
