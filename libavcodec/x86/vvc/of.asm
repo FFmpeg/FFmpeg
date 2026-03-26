@@ -305,8 +305,10 @@ INIT_YMM avx2
     BDOF_PROF_GRAD           0, 0
 %endif
 
+%if (%1) != 1
     BDOF_PROF_GRAD  %1 * 4 + 1, 0
     BDOF_PROF_GRAD  %1 * 4 + 2, 0
+%endif
 
 %if (%2)
     BDOF_PROF_GRAD  %1 * 4 + 3, %2
@@ -360,6 +362,9 @@ PROLOGUE 6, 9, 16, BDOF_STACK_SIZE*32, dst, ds, src0, src1, w, h, pixel_max, ds3
     sub                  src1q, SRC_STRIDE + SRC_PS
 
     BDOF_MINI_BLOCKS         0, 0
+
+    BDOF_PROF_GRAD  1 * 4 + 1, 0
+    BDOF_PROF_GRAD  1 * 4 + 2, 0
 
     cmp                     hd, 16
     je                    .h16
