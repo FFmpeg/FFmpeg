@@ -3938,43 +3938,51 @@ static int matroska_parse_block_additional(MatroskaDemuxContext *matroska,
 
         /* ITU-T T.35 metadata */
         country_code  = bytestream2_get_byteu(&bc);
-        provider_code = bytestream2_get_be16u(&bc);
+        switch (country_code) {
+        case ITU_T_T35_COUNTRY_CODE_US:
+            provider_code = bytestream2_get_be16u(&bc);
 
-        if (country_code != ITU_T_T35_COUNTRY_CODE_US ||
-            provider_code != ITU_T_T35_PROVIDER_CODE_SAMSUNG)
-            break; // ignore
+            switch (provider_code) {
+            case ITU_T_T35_PROVIDER_CODE_SAMSUNG: {
+                provider_oriented_code = bytestream2_get_be16u(&bc);
+                application_identifier = bytestream2_get_byteu(&bc);
 
-        provider_oriented_code = bytestream2_get_be16u(&bc);
-        application_identifier = bytestream2_get_byteu(&bc);
+                if (provider_oriented_code != 1 || application_identifier != 4)
+                    break; // ignore
 
-        if (provider_oriented_code != 1 || application_identifier != 4)
-            break; // ignore
+                hdrplus = av_dynamic_hdr_plus_alloc(&hdrplus_size);
+                if (!hdrplus)
+                    return AVERROR(ENOMEM);
 
-        hdrplus = av_dynamic_hdr_plus_alloc(&hdrplus_size);
-        if (!hdrplus)
-            return AVERROR(ENOMEM);
+                if ((res = av_dynamic_hdr_plus_from_t35(hdrplus, bc.buffer,
+                                                        bytestream2_get_bytes_left(&bc))) < 0 ||
+                    (res = av_packet_add_side_data(pkt, AV_PKT_DATA_DYNAMIC_HDR10_PLUS,
+                                                   (uint8_t *)hdrplus, hdrplus_size)) < 0) {
+                    av_free(hdrplus);
+                    return res;
+                }
 
-        if ((res = av_dynamic_hdr_plus_from_t35(hdrplus, bc.buffer,
-                                                bytestream2_get_bytes_left(&bc))) < 0 ||
-            (res = av_packet_add_side_data(pkt, AV_PKT_DATA_DYNAMIC_HDR10_PLUS,
-                                           (uint8_t *)hdrplus, hdrplus_size)) < 0) {
-            av_free(hdrplus);
-            return res;
+                break;
+            }
+            default:
+                break;
+            }
+            break;
+        default:
+            break;
         }
-
-        return 0;
-    }
-    default:
         break;
     }
-
-    side_data = av_packet_new_side_data(pkt, AV_PKT_DATA_MATROSKA_BLOCKADDITIONAL,
+    default:
+        side_data = av_packet_new_side_data(pkt, AV_PKT_DATA_MATROSKA_BLOCKADDITIONAL,
                                         size + (size_t)8);
-    if (!side_data)
-        return AVERROR(ENOMEM);
+        if (!side_data)
+            return AVERROR(ENOMEM);
 
-    AV_WB64(side_data, id);
-    memcpy(side_data + 8, data, size);
+        AV_WB64(side_data, id);
+        memcpy(side_data + 8, data, size);
+        break;
+    }
 
     return 0;
 }
