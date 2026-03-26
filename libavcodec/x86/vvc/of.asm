@@ -129,18 +129,26 @@ INIT_YMM avx2
     SAVE                        [dstq + ds3q], 6, %4
 %endmacro
 
-%macro SUM_MIN_BLOCK_W16 4 ; src/dst, shuffle, perm, tmp
+%macro SUM_MIN_BLOCK_W16 4-5 ; src/dst, shuffle, perm, tmp, [dst]
     pshufb  %4, %1, %2
     vpermd  %4, %3, %4
+%if %0 == 4
     paddw   %1, %4
+%else
+    paddw   %5, %1, %4
+%endif
 %endmacro
 
-%macro SUM_MIN_BLOCK_W8 3 ; src/dst, shuffle, tmp
+%macro SUM_MIN_BLOCK_W8 3-4 ; src/dst, shuffle, tmp, [dst]
     pshufb  %3, %1, %2
+%if %0 == 3
     paddw   %1, %3
+%else
+    paddw   %4, %1, %3
+%endif
 %endmacro
 
-%macro BDOF_PROF_GRAD 2 ; line_no, last_line
+%macro BDOF_PROF_GRAD 2-3 0 ; line_no, last_line, assign (instead of add) to dst regs
 %assign i0 (%1 + 0) % 3
 %assign j0 (%1 + 1) % 3
 %assign k0 (%1 + 2) % 3
@@ -201,7 +209,11 @@ INIT_YMM avx2
     SUM_MIN_BLOCK_W8            m7, t0, m11
     SUM_MIN_BLOCK_W8            m8, t0, m11
     SUM_MIN_BLOCK_W8            m9, t0, m11
+%if (%3)
+    SUM_MIN_BLOCK_W8           m10, t0, m11, m13
+%else
     SUM_MIN_BLOCK_W8           m10, t0, m11
+%endif
     jmp                     %%wend
 
 %%w16:
@@ -210,7 +222,11 @@ INIT_YMM avx2
     SUM_MIN_BLOCK_W16           m7, t0, t1, m11
     SUM_MIN_BLOCK_W16           m8, t0, t1, m11
     SUM_MIN_BLOCK_W16           m9, t0, t1, m11
+%if (%3)
+    SUM_MIN_BLOCK_W16          m10, t0, t1, m11, m13
+%else
     SUM_MIN_BLOCK_W16          m10, t0, t1, m11
+%endif
 
 %%wend:
     vpblendd                    m11, m8, m7, 10101010b
@@ -227,13 +243,17 @@ INIT_YMM avx2
     vpblendw                     m6, m8, m6, 01010101b
     pshuflw                      m6, m6, q2301
     pshufhw                      m6, m6, q2301
+%if (%3)
+    paddw                       m12, m6, m11                ; 4 x (4sgx2, 4sgy2, 4sgxdi, 4sgydi)
+%else
     paddw                        m8, m6, m11                ; 4 x (4sgx2, 4sgy2, 4sgxdi, 4sgydi)
+%endif
 
 %if (%1) == 0
     ; pad for top and directly output to m12, m13
     paddw                      m12, m8,  m8
     paddw                      m13, m10, m10
-%else
+%elifn (%3)
 %if (%2)
     ; pad for bottom
     paddw                       m8, m8
@@ -323,9 +343,7 @@ INIT_YMM avx2
     mova                   m14, m12
     mova                   m15, m13
 
-    pxor                   m12, m12
-    pxor                   m13, m13
-    BDOF_PROF_GRAD  %1 * 4 + 3, 0
+    BDOF_PROF_GRAD  %1 * 4 + 3, 0, 1
     BDOF_PROF_GRAD  %1 * 4 + 4, 0
     paddw                  m14, m12
     paddw                  m15, m13
