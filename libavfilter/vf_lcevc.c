@@ -277,8 +277,8 @@ static int config_props(AVFilterLink *outlink)
     AVFilterLink *inlink = ctx->inputs[0];
     LCEVCContext *lcevc = ctx->priv;
 
-    outlink->w = lcevc->w = inlink->w * 2 / FFMAX(inlink->sample_aspect_ratio.den, 1);
-    outlink->h = lcevc->h = inlink->h * 2 / FFMAX(inlink->sample_aspect_ratio.den, 1);
+    outlink->w = lcevc->w = inlink->w * 2;
+    outlink->h = lcevc->h = inlink->h * 2;
     outlink->sample_aspect_ratio = (AVRational) { 0, 1 };
 
     return 0;
