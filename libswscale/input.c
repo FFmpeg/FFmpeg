@@ -1180,7 +1180,7 @@ static void planar_rgb_to_y(uint8_t *_dst, const uint8_t *src[4], int width, int
         int b = src[1][i];
         int r = src[2][i];
 
-        dst[i] = (ry*r + gy*g + by*b + (0x801<<(RGB2YUV_SHIFT-7))) >> (RGB2YUV_SHIFT-6);
+        dst[i] = (int)((unsigned)ry*r + (unsigned)gy*g + (unsigned)by*b + (0x801<<(RGB2YUV_SHIFT-7))) >> (RGB2YUV_SHIFT-6);
     }
 }
 
@@ -1204,8 +1204,8 @@ static void planar_rgb_to_uv(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *src[
         int b = src[1][i];
         int r = src[2][i];
 
-        dstU[i] = (ru*r + gu*g + bu*b + (0x4001<<(RGB2YUV_SHIFT-7))) >> (RGB2YUV_SHIFT-6);
-        dstV[i] = (rv*r + gv*g + bv*b + (0x4001<<(RGB2YUV_SHIFT-7))) >> (RGB2YUV_SHIFT-6);
+        dstU[i] = (int)((unsigned)ru*r + (unsigned)gu*g + (unsigned)bu*b + (0x4001<<(RGB2YUV_SHIFT-7))) >> (RGB2YUV_SHIFT-6);
+        dstV[i] = (int)((unsigned)rv*r + (unsigned)gv*g + (unsigned)bv*b + (0x4001<<(RGB2YUV_SHIFT-7))) >> (RGB2YUV_SHIFT-6);
     }
 }
 
@@ -1226,7 +1226,7 @@ static void planar_rgb_to_uv(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *src[
             int b = rdpx(src[1] + i) >> (16 - rdpx_shift);                                                     \
             int r = rdpx(src[2] + i) >> (16 - rdpx_shift);                                                     \
                                                                                                                \
-            dst[i] = (ry*r + gy*g + by*b + (16 << (RGB2YUV_SHIFT + bpc - 8))                                   \
+            dst[i] = (int)((unsigned)ry*r + (unsigned)gy*g + (unsigned)by*b + (16 << (RGB2YUV_SHIFT + bpc - 8))                                   \
                      + (1 << (RGB2YUV_SHIFT + shift - 15))) >> (RGB2YUV_SHIFT + shift - 14);                   \
         }                                                                                                      \
     }                                                                                                          \
@@ -1260,9 +1260,9 @@ static void planar_rgb_to_uv(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *src[
             int b = rdpx(src[1] + i) >> (16 - rdpx_shift);                                                     \
             int r = rdpx(src[2] + i) >> (16 - rdpx_shift);                                                     \
                                                                                                                \
-            dstU[i] = (ru*r + gu*g + bu*b + (128 << (RGB2YUV_SHIFT + bpc - 8))                                 \
+            dstU[i] = (int)((unsigned)ru*r + (unsigned)gu*g + (unsigned)bu*b + (128 << (RGB2YUV_SHIFT + bpc - 8))                                 \
                       + (1 << (RGB2YUV_SHIFT + shift - 15))) >> (RGB2YUV_SHIFT + shift - 14);                  \
-            dstV[i] = (rv*r + gv*g + bv*b + (128 << (RGB2YUV_SHIFT + bpc - 8))                                 \
+            dstV[i] = (int)((unsigned)rv*r + (unsigned)gv*g + (unsigned)bv*b + (128 << (RGB2YUV_SHIFT + bpc - 8))                                 \
                       + (1 << (RGB2YUV_SHIFT + shift - 15))) >> (RGB2YUV_SHIFT + shift - 14);                  \
         }                                                                                                      \
     }
@@ -1300,8 +1300,8 @@ static av_always_inline void planar_rgbf32_to_uv(uint8_t *_dstU, uint8_t *_dstV,
         int b = lrintf(av_clipf(65535.0f * rdpx(src[1] + i), 0.0f, 65535.0f));
         int r = lrintf(av_clipf(65535.0f * rdpx(src[2] + i), 0.0f, 65535.0f));
 
-        dstU[i] = (ru*r + gu*g + bu*b + (0x10001 << (RGB2YUV_SHIFT - 1))) >> RGB2YUV_SHIFT;
-        dstV[i] = (rv*r + gv*g + bv*b + (0x10001 << (RGB2YUV_SHIFT - 1))) >> RGB2YUV_SHIFT;
+        dstU[i] = (int)((unsigned)ru*r + (unsigned)gu*g + (unsigned)bu*b + (0x10001 << (RGB2YUV_SHIFT - 1))) >> RGB2YUV_SHIFT;
+        dstV[i] = (int)((unsigned)rv*r + (unsigned)gv*g + (unsigned)bv*b + (0x10001 << (RGB2YUV_SHIFT - 1))) >> RGB2YUV_SHIFT;
     }
 }
 
@@ -1318,7 +1318,7 @@ static av_always_inline void planar_rgbf32_to_y(uint8_t *_dst, const uint8_t *_s
         int b = lrintf(av_clipf(65535.0f * rdpx(src[1] + i), 0.0f, 65535.0f));
         int r = lrintf(av_clipf(65535.0f * rdpx(src[2] + i), 0.0f, 65535.0f));
 
-        dst[i] = (ry*r + gy*g + by*b + (0x2001 << (RGB2YUV_SHIFT - 1))) >> RGB2YUV_SHIFT;
+        dst[i] = (int)((unsigned)ry*r + (unsigned)gy*g + (unsigned)by*b + (0x2001 << (RGB2YUV_SHIFT - 1))) >> RGB2YUV_SHIFT;
     }
 }
 

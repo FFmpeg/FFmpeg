@@ -1232,9 +1232,9 @@ yuv2rgba64_2_c_template(SwsInternal *c, const int32_t *buf[2],
         Y1 += (1 << 13) - (1 << 29);
         Y2 += (1 << 13) - (1 << 29);
 
-        R = V * c->yuv2rgb_v2r_coeff;
-        G = V * c->yuv2rgb_v2g_coeff + U * c->yuv2rgb_u2g_coeff;
-        B =                            U * c->yuv2rgb_u2b_coeff;
+        R = (SUINT)V * c->yuv2rgb_v2r_coeff;
+        G = (SUINT)V * c->yuv2rgb_v2g_coeff + (SUINT)U * c->yuv2rgb_u2g_coeff;
+        B =                                   (SUINT)U * c->yuv2rgb_u2b_coeff;
 
         if (hasAlpha) {
             A1 = (int)(abuf0[i * 2    ] * yalpha1 + abuf1[i * 2    ] * yalpha) >> 1;
@@ -1327,8 +1327,8 @@ yuv2rgba64_1_c_template(SwsInternal *c, const int32_t *buf0,
         for (i = 0; i < ((dstW + 1) >> 1); i++) {
             SUINT Y1 = (buf0[i * 2]    ) >> 2;
             SUINT Y2 = (buf0[i * 2 + 1]) >> 2;
-            SUINT U = (ubuf0[i] * uvalpha1 + ubuf1[i] * uvalpha - (128 << 23)) >> 14;
-            SUINT V = (vbuf0[i] * uvalpha1 + vbuf1[i] * uvalpha - (128 << 23)) >> 14;
+            SUINT U = (int)((SUINT)ubuf0[i] * uvalpha1 + (SUINT)ubuf1[i] * uvalpha - (128 << 23)) >> 14;
+            SUINT V = (int)((SUINT)vbuf0[i] * uvalpha1 + (SUINT)vbuf1[i] * uvalpha - (128 << 23)) >> 14;
             int R, G, B;
 
             Y1 -= c->yuv2rgb_y_offset;
