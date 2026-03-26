@@ -260,8 +260,7 @@ INIT_YMM avx2
 ; %1: 4 (sgx2, sgy2, sgxdi, gydi)
 ; %2: 4 (4sgxgy)
 %macro BDOF_VX_VY 2       ;
-    pshufd                  m6, m%1, q0032
-    punpckldq              m%1, m6
+    pshufd                 m%1, m%1, q3120
     vextracti128           xm7, m%1, 1
 
     punpcklqdq             xm8, xm%1, xm7           ; 4 (sgx2, sgy2)
