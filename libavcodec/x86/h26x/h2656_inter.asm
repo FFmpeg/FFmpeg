@@ -64,15 +64,27 @@ SECTION .text
 %endmacro
 
 %macro MC_4TAP_FILTER 4 ; bitdepth, filter, a, b,
+%if cpuflag(avx2)
     VPBROADCASTW   %3, [%2q + 0 * 2]  ; coeff 0, 1
     VPBROADCASTW   %4, [%2q + 1 * 2]  ; coeff 2, 3
 %if %1 != 8
     pmovsxbw       %3, xmm%3
     pmovsxbw       %4, xmm%4
 %endif
+%else
+    movd           %3, [%2q]          ; coeff 0, 1, 2, 3
+%if %1 != 8
+    pmovsxbw       %3, %3             ; coeff 0, 1, 2, 3 (words)
+%else
+    punpcklwd      %3, %3             ; coeff 0,1,0,1,2,3,2,3
+%endif
+    pshufd         %4, %3, q1111
+    pshufd         %3, %3, q0000
+%endif
 %endmacro
 
 %macro MC_4TAP_HV_FILTER 1
+%if cpuflag(avx2)
     VPBROADCASTW  m12, [vfq + 0 * 2]  ; vf 0, 1
     VPBROADCASTW  m13, [vfq + 1 * 2]  ; vf 2, 3
     VPBROADCASTW  m14, [hfq + 0 * 2]  ; hf 0, 1
@@ -83,6 +95,21 @@ SECTION .text
 %if %1 != 8
     pmovsxbw      m14, xm14
     pmovsxbw      m15, xm15
+%endif
+%else
+    movd          m12, [vfq]          ; vf 0,1,2,3
+    movd          m14, [hfq]          ; hf 0,1,2,3
+
+    pmovsxbw      m12, m12            ; vf 0,1,2,3 (words)
+%if %1 != 8
+    pmovsxbw      m14, m14            ; hf 0,1,2,3 (words)
+%else
+    punpcklwd     m14, m14            ; hf 0,1,0,1,2,3,2,3
+%endif
+    pshufd        m13, m12, q1111
+    pshufd        m12, m12, q0000
+    pshufd        m15, m14, q1111
+    pshufd        m14, m14, q0000
 %endif
     lea           r3srcq, [srcstrideq*3]
 %endmacro
@@ -95,6 +122,7 @@ SECTION .text
 %endmacro
 
 %macro MC_8TAP_FILTER 2-3 ;bitdepth, filter, offset
+%if cpuflag(avx2)
     VPBROADCASTW                      m12, [%2q + 0 * 2]  ; coeff 0, 1
     VPBROADCASTW                      m13, [%2q + 1 * 2]  ; coeff 2, 3
     VPBROADCASTW                      m14, [%2q + 2 * 2]  ; coeff 4, 5
@@ -105,6 +133,18 @@ SECTION .text
     pmovsxbw                          m13, xm13
     pmovsxbw                          m14, xm14
     pmovsxbw                          m15, xm15
+%endif
+%else
+%if %1 != 8
+    pmovsxbw                          m15, [%2q]          ; coeffs 0-7 (words)
+%else
+    movq                              m15, [%2q]          ; coeffs 0-7
+    punpcklwd                         m15, m15
+%endif
+    pshufd                            m12, m15, q0000
+    pshufd                            m13, m15, q1111
+    pshufd                            m14, m15, q2222
+    pshufd                            m15, m15, q3333
 %endif
 %if %0 == 3
     MC_8TAP_SAVE_FILTER     %3, m12, m13, m14, m15
