@@ -166,10 +166,10 @@ struct SwsOpTable {
  * "Compile" a single op by looking it up in a list of fixed size op tables.
  * See `op_match` in `ops_chain.c` for details on how the matching works.
  *
- * Returns 0, AVERROR(EAGAIN), or a negative error code.
+ * Returns 0 or a negative error code.
  */
 int ff_sws_op_compile_tables(SwsContext *ctx, const SwsOpTable *const tables[],
-                             int num_tables, SwsOpList *ops, const int block_size,
-                             SwsOpChain *chain);
+                             int num_tables, SwsOpList *ops, int ops_index,
+                             const int block_size, SwsOpChain *chain);
 
 #endif

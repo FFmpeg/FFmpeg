@@ -201,13 +201,13 @@ static int op_match(const SwsOp *op, const SwsOpEntry *entry)
 }
 
 int ff_sws_op_compile_tables(SwsContext *ctx, const SwsOpTable *const tables[],
-                             int num_tables, SwsOpList *ops, const int block_size,
-                             SwsOpChain *chain)
+                             int num_tables, SwsOpList *ops, int ops_index,
+                             const int block_size, SwsOpChain *chain)
 {
+    const SwsOp *op = &ops->ops[ops_index];
     const unsigned cpu_flags = av_get_cpu_flags();
     const SwsOpEntry *best = NULL;
     const SwsOpTable *best_table = NULL;
-    const SwsOp *op = &ops->ops[0];
     int ret, best_score = 0;
 
     SwsImplParams params = {
@@ -258,10 +258,7 @@ int ff_sws_op_compile_tables(SwsContext *ctx, const SwsOpTable *const tables[],
     chain->cpu_flags |= best_table->cpu_flags;
     chain->over_read  = FFMAX(chain->over_read,  res.over_read);
     chain->over_write = FFMAX(chain->over_write, res.over_write);
-
-    ops->ops++;
-    ops->num_ops--;
-    return ops->num_ops ? AVERROR(EAGAIN) : 0;
+    return 0;
 }
 
 #define q2pixel(type, q) ((q).den ? (type) (q).num / (q).den : 0)

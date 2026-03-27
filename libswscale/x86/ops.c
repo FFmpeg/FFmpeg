@@ -983,11 +983,9 @@ static int compile(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
         .block_size = 2 * FFMIN(mmsize, 32) / ff_sws_op_list_max_size(ops),
     };
 
-    /* Make on-stack copy of `ops` to iterate over */
-    SwsOpList rest = *ops;
-    do {
+    for (int i = 0; i < ops->num_ops; i++) {
         int op_block_size = out->block_size;
-        SwsOp *op = &rest.ops[0];
+        SwsOp *op = &ops->ops[i];
 
         if (op_is_type_invariant(op)) {
             if (op->op == SWS_OP_CLEAR)
@@ -997,16 +995,12 @@ static int compile(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
         }
 
         ret = ff_sws_op_compile_tables(ctx, tables, FF_ARRAY_ELEMS(tables),
-                                       &rest, op_block_size, chain);
-    } while (ret == AVERROR(EAGAIN));
-
-    if (ret < 0) {
-        ff_sws_op_chain_free(chain);
-        if (rest.num_ops < ops->num_ops) {
-            av_log(ctx, AV_LOG_TRACE, "Uncompiled remainder:\n");
-            ff_sws_op_list_print(ctx, AV_LOG_TRACE, AV_LOG_TRACE, &rest);
+                                       ops, i, op_block_size, chain);
+        if (ret < 0) {
+            av_log(ctx, AV_LOG_TRACE, "Failed to compile op %d\n", i);
+            ff_sws_op_chain_free(chain);
+            return ret;
         }
-        return ret;
     }
 
 #define ASSIGN_PROCESS_FUNC(NAME)                               \
