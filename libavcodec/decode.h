@@ -47,7 +47,11 @@ typedef struct FrameDecodeData {
 
     /**
      * Per-frame private data for hwaccels.
+     *
+     * Same as @ref post_process, but used only by some hwaccels to retrieve or
+     * finalize frames, and executed first.
      */
+    int (*hwaccel_priv_post_process)(void *logctx, AVFrame *frame);
     void *hwaccel_priv;
     void (*hwaccel_priv_free)(void *priv);
 } FrameDecodeData;

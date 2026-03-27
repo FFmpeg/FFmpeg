@@ -600,7 +600,7 @@ int ff_nvdec_start_frame(AVCodecContext *avctx, AVFrame *frame)
 
     fdd->hwaccel_priv      = cf;
     fdd->hwaccel_priv_free = nvdec_fdd_priv_free;
-    fdd->post_process      = nvdec_retrieve_data;
+    fdd->hwaccel_priv_post_process = nvdec_retrieve_data;
 
     return 0;
 fail:

@@ -692,6 +692,14 @@ static int decode_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame,
         if (frame->private_ref) {
             FrameDecodeData *fdd = frame->private_ref;
 
+            if (fdd->hwaccel_priv_post_process) {
+                ret = fdd->hwaccel_priv_post_process(avctx, frame);
+                if (ret < 0) {
+                    av_frame_unref(frame);
+                    return ret;
+                }
+            }
+
             if (fdd->post_process) {
                 ret = fdd->post_process(avctx, frame);
                 if (ret < 0) {
