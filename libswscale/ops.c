@@ -363,8 +363,11 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
             break;
         case SWS_OP_DITHER:
             /* Strip zero flag because of the nonzero dithering offset */
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < 4; i++) {
+                if (op->dither.y_offset[i] < 0)
+                    continue;
                 op->comps.flags[i] = prev.flags[i] & ~SWS_COMP_ZERO;
+            }
             break;
         case SWS_OP_UNPACK:
             for (int i = 0; i < 4; i++) {
