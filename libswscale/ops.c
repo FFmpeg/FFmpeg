@@ -304,6 +304,7 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
         switch (op->op) {
         case SWS_OP_READ:
         case SWS_OP_LINEAR:
+        case SWS_OP_DITHER:
         case SWS_OP_SWAP_BYTES:
         case SWS_OP_UNPACK:
         case SWS_OP_FILTER_H:
@@ -364,9 +365,13 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
         case SWS_OP_DITHER:
             /* Strip zero flag because of the nonzero dithering offset */
             for (int i = 0; i < 4; i++) {
+                op->comps.min[i] = prev.min[i];
+                op->comps.max[i] = prev.max[i];
                 if (op->dither.y_offset[i] < 0)
                     continue;
                 op->comps.flags[i] = prev.flags[i] & ~SWS_COMP_ZERO;
+                op->comps.min[i] = av_add_q(op->comps.min[i], op->dither.min);
+                op->comps.max[i] = av_add_q(op->comps.max[i], op->dither.max);
             }
             break;
         case SWS_OP_UNPACK:
