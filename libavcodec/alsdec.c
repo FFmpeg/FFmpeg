@@ -1630,7 +1630,7 @@ static int read_diff_float_data(ALSDecContext *ctx, unsigned int ra_frame) {
                 tmp_32 = (sign << 31) | ((e + EXP_BIAS) << 23) | (mantissa);
                 ctx->raw_samples[c][i] = tmp_32;
             } else {
-                ctx->raw_samples[c][i] = raw_mantissa[c][i] & 0x007fffffUL;
+                ctx->raw_samples[c][i] = raw_mantissa[c][i];
             }
         }
         align_get_bits(gb);
