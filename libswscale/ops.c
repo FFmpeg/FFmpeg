@@ -26,6 +26,7 @@
 #include "libavutil/rational.h"
 #include "libavutil/refstruct.h"
 
+#include "format.h"
 #include "ops.h"
 #include "ops_internal.h"
 
@@ -889,4 +890,95 @@ void ff_sws_op_list_print(void *log, int lev, int lev_extra,
     }
 
     av_log(log, lev, "    (X = unused, z = byteswapped, + = exact, 0 = zero)\n");
+}
+
+static int enum_ops_fmt(SwsContext *ctx, void *opaque,
+                        enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
+                        int (*cb)(SwsContext *ctx, void *opaque, SwsOpList *ops))
+{
+    int ret;
+    const SwsPixelType type = SWS_PIXEL_F32;
+    SwsOpList *ops = ff_sws_op_list_alloc();
+    if (!ops)
+        return AVERROR(ENOMEM);
+
+    ff_fmt_from_pixfmt(src_fmt, &ops->src);
+    ff_fmt_from_pixfmt(dst_fmt, &ops->dst);
+    ops->src.width  = ops->dst.width  = 16;
+    ops->src.height = ops->dst.height = 16;
+
+    bool incomplete = ff_infer_colors(&ops->src.color, &ops->dst.color);
+    if (ff_sws_decode_pixfmt(ops, src_fmt) < 0 ||
+        ff_sws_decode_colors(ctx, type, ops, &ops->src, &incomplete) < 0 ||
+        ff_sws_encode_colors(ctx, type, ops, &ops->src, &ops->dst, &incomplete) < 0 ||
+        ff_sws_encode_pixfmt(ops, dst_fmt) < 0)
+    {
+        ret = 0; /* silently skip unsupported formats */
+        goto fail;
+    }
+
+    ret = ff_sws_op_list_optimize(ops);
+    if (ret < 0)
+        goto fail;
+
+    ret = cb(ctx, opaque, ops);
+    if (ret < 0)
+        goto fail;
+
+fail:
+    ff_sws_op_list_free(&ops);
+    return ret;
+}
+
+int ff_sws_enum_op_lists(SwsContext *ctx, void *opaque,
+                         enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
+                         int (*cb)(SwsContext *ctx, void *opaque, SwsOpList *ops))
+{
+    const AVPixFmtDescriptor *src_start = av_pix_fmt_desc_next(NULL);
+    const AVPixFmtDescriptor *dst_start = src_start;
+    if (src_fmt != AV_PIX_FMT_NONE)
+        src_start = av_pix_fmt_desc_get(src_fmt);
+    if (dst_fmt != AV_PIX_FMT_NONE)
+        dst_start = av_pix_fmt_desc_get(dst_fmt);
+
+    const AVPixFmtDescriptor *src, *dst;
+    for (src = src_start; src; src = av_pix_fmt_desc_next(src)) {
+        const enum AVPixelFormat src_f = av_pix_fmt_desc_get_id(src);
+        for (dst = dst_start; dst; dst = av_pix_fmt_desc_next(dst)) {
+            const enum AVPixelFormat dst_f = av_pix_fmt_desc_get_id(dst);
+            int ret = enum_ops_fmt(ctx, opaque, src_f, dst_f, cb);
+            if (ret < 0)
+                return ret;
+            if (dst_fmt != AV_PIX_FMT_NONE)
+                break;
+        }
+        if (src_fmt != AV_PIX_FMT_NONE)
+            break;
+    }
+
+    return 0;
+}
+
+struct EnumOpaque {
+    void *opaque;
+    int (*cb)(SwsContext *ctx, void *opaque, SwsOp *op);
+};
+
+static int enum_ops(SwsContext *ctx, void *opaque, SwsOpList *ops)
+{
+    struct EnumOpaque *priv = opaque;
+    for (int i = 0; i < ops->num_ops; i++) {
+        int ret = priv->cb(ctx, priv->opaque, &ops->ops[i]);
+        if (ret < 0)
+            return ret;
+    }
+    return 0;
+}
+
+int ff_sws_enum_ops(SwsContext *ctx, void *opaque,
+                    enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
+                    int (*cb)(SwsContext *ctx, void *opaque, SwsOp *op))
+{
+    struct EnumOpaque priv = { opaque, cb };
+    return ff_sws_enum_op_lists(ctx, &priv, src_fmt, dst_fmt, enum_ops);
 }
