@@ -754,6 +754,82 @@ static void print_q4(AVBPrint *bp, const AVRational q4[4], bool ignore_den0,
     av_bprintf(bp, "}");
 }
 
+void ff_sws_op_desc(AVBPrint *bp, const SwsOp *op, const bool unused[4])
+{
+    const char *name  = ff_sws_op_type_name(op->op);
+
+    switch (op->op) {
+    case SWS_OP_INVALID:
+    case SWS_OP_SWAP_BYTES:
+        av_bprintf(bp, "%s", name);
+        break;
+    case SWS_OP_READ:
+    case SWS_OP_WRITE:
+        av_bprintf(bp, "%-20s: %d elem(s) %s >> %d", name,
+                   op->rw.elems,  op->rw.packed ? "packed" : "planar",
+                   op->rw.frac);
+        break;
+    case SWS_OP_LSHIFT:
+        av_bprintf(bp, "%-20s: << %u", name, op->c.u);
+        break;
+    case SWS_OP_RSHIFT:
+        av_bprintf(bp, "%-20s: >> %u", name, op->c.u);
+        break;
+    case SWS_OP_PACK:
+    case SWS_OP_UNPACK:
+        av_bprintf(bp, "%-20s: {%d %d %d %d}", name,
+                   op->pack.pattern[0], op->pack.pattern[1],
+                   op->pack.pattern[2], op->pack.pattern[3]);
+        break;
+    case SWS_OP_CLEAR:
+        av_bprintf(bp, "%-20s: ", name);
+        print_q4(bp, op->c.q4, true, unused);
+        break;
+    case SWS_OP_SWIZZLE:
+        av_bprintf(bp, "%-20s: %d%d%d%d", name,
+                   op->swizzle.x, op->swizzle.y, op->swizzle.z, op->swizzle.w);
+        break;
+    case SWS_OP_CONVERT:
+        av_bprintf(bp, "%-20s: %s -> %s%s", name,
+                   ff_sws_pixel_type_name(op->type),
+                   ff_sws_pixel_type_name(op->convert.to),
+                   op->convert.expand ? " (expand)" : "");
+        break;
+    case SWS_OP_DITHER:
+        av_bprintf(bp, "%-20s: %dx%d matrix + {%d %d %d %d}", name,
+                   1 << op->dither.size_log2, 1 << op->dither.size_log2,
+                   op->dither.y_offset[0], op->dither.y_offset[1],
+                   op->dither.y_offset[2], op->dither.y_offset[3]);
+        break;
+    case SWS_OP_MIN:
+        av_bprintf(bp, "%-20s: x <= ", name);
+        print_q4(bp, op->c.q4, true, unused);
+        break;
+    case SWS_OP_MAX:
+        av_bprintf(bp, "%-20s: ", name);
+        print_q4(bp, op->c.q4, true, unused);
+        av_bprintf(bp, " <= x");
+        break;
+    case SWS_OP_LINEAR:
+        av_bprintf(bp, "%-20s: %s [", name, describe_lin_mask(op->lin.mask));
+        for (int i = 0; i < 4; i++) {
+            av_bprintf(bp, "%s[", i ? " " : "");
+            for (int j = 0; j < 5; j++) {
+                av_bprintf(bp, j ? " " : "");
+                print_q(bp, op->lin.m[i][j], false);
+            }
+            av_bprintf(bp, "]");
+        }
+        av_bprintf(bp, "]");
+        break;
+    case SWS_OP_SCALE:
+        av_bprintf(bp, "%-20s: * %d/%d", name, op->c.q.num, op->c.q.den);
+        break;
+    case SWS_OP_TYPE_NB:
+        break;
+    }
+}
+
 void ff_sws_op_list_print(void *log, int lev, int lev_extra,
                           const SwsOpList *ops)
 {
@@ -768,7 +844,6 @@ void ff_sws_op_list_print(void *log, int lev, int lev_extra,
     for (int i = 0; i < ops->num_ops; i++) {
         const SwsOp *op   = &ops->ops[i];
         const SwsOp *next = i + 1 < ops->num_ops ? &ops->ops[i + 1] : op;
-        const char *name  = ff_sws_op_type_name(op->op);
         av_bprint_clear(&bp);
         av_bprintf(&bp, "  [%3s %c%c%c%c -> %c%c%c%c] ",
                    ff_sws_pixel_type_name(op->type),
@@ -781,16 +856,9 @@ void ff_sws_op_list_print(void *log, int lev, int lev_extra,
                    next->comps.unused[2] ? 'X' : describe_comp_flags(op->comps.flags[2]),
                    next->comps.unused[3] ? 'X' : describe_comp_flags(op->comps.flags[3]));
 
-        switch (op->op) {
-        case SWS_OP_INVALID:
-        case SWS_OP_SWAP_BYTES:
-            av_bprintf(&bp, "%s", name);
-            break;
-        case SWS_OP_READ:
-        case SWS_OP_WRITE:
-            av_bprintf(&bp, "%-20s: %d elem(s) %s >> %d", name,
-                       op->rw.elems,  op->rw.packed ? "packed" : "planar",
-                       op->rw.frac);
+        ff_sws_op_desc(&bp, op, next->comps.unused);
+
+        if (op->op == SWS_OP_READ || op->op == SWS_OP_WRITE) {
             SwsSwizzleOp order = op->op == SWS_OP_READ ? ops->order_src : ops->order_dst;
             if (order.mask != SWS_SWIZZLE(0, 1, 2, 3).mask) {
                 const int planes = op->rw.packed ? 1 : op->rw.elems;
@@ -799,65 +867,6 @@ void ff_sws_op_list_print(void *log, int lev, int lev_extra,
                     av_bprintf(&bp, "%s%d", i ? ", " : "", order.in[i]);
                 av_bprintf(&bp, "}");
             }
-            break;
-        case SWS_OP_LSHIFT:
-            av_bprintf(&bp, "%-20s: << %u", name, op->c.u);
-            break;
-        case SWS_OP_RSHIFT:
-            av_bprintf(&bp, "%-20s: >> %u", name, op->c.u);
-            break;
-        case SWS_OP_PACK:
-        case SWS_OP_UNPACK:
-            av_bprintf(&bp, "%-20s: {%d %d %d %d}", name,
-                       op->pack.pattern[0], op->pack.pattern[1],
-                       op->pack.pattern[2], op->pack.pattern[3]);
-            break;
-        case SWS_OP_CLEAR:
-            av_bprintf(&bp, "%-20s: ", name);
-            print_q4(&bp, op->c.q4, true, next->comps.unused);
-            break;
-        case SWS_OP_SWIZZLE:
-            av_bprintf(&bp, "%-20s: %d%d%d%d", name,
-                       op->swizzle.x, op->swizzle.y, op->swizzle.z, op->swizzle.w);
-            break;
-        case SWS_OP_CONVERT:
-            av_bprintf(&bp, "%-20s: %s -> %s%s", name,
-                       ff_sws_pixel_type_name(op->type),
-                       ff_sws_pixel_type_name(op->convert.to),
-                       op->convert.expand ? " (expand)" : "");
-            break;
-        case SWS_OP_DITHER:
-            av_bprintf(&bp, "%-20s: %dx%d matrix + {%d %d %d %d}", name,
-                       1 << op->dither.size_log2, 1 << op->dither.size_log2,
-                       op->dither.y_offset[0], op->dither.y_offset[1],
-                       op->dither.y_offset[2], op->dither.y_offset[3]);
-            break;
-        case SWS_OP_MIN:
-            av_bprintf(&bp, "%-20s: x <= ", name);
-            print_q4(&bp, op->c.q4, true, next->comps.unused);
-            break;
-        case SWS_OP_MAX:
-            av_bprintf(&bp, "%-20s: ", name);
-            print_q4(&bp, op->c.q4, true, next->comps.unused);
-            av_bprintf(&bp, " <= x");
-            break;
-        case SWS_OP_LINEAR:
-            av_bprintf(&bp, "%-20s: %s [", name, describe_lin_mask(op->lin.mask));
-            for (int i = 0; i < 4; i++) {
-                av_bprintf(&bp, "%s[", i ? " " : "");
-                for (int j = 0; j < 5; j++) {
-                    av_bprintf(&bp, j ? " " : "");
-                    print_q(&bp, op->lin.m[i][j], false);
-                }
-                av_bprintf(&bp, "]");
-            }
-            av_bprintf(&bp, "]");
-            break;
-        case SWS_OP_SCALE:
-            av_bprintf(&bp, "%-20s: * %d/%d", name, op->c.q.num, op->c.q.den);
-            break;
-        case SWS_OP_TYPE_NB:
-            break;
         }
 
         av_assert0(av_bprint_is_complete(&bp));
