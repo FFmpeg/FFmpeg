@@ -1711,7 +1711,7 @@ static int attach_post_process_data(AVCodecContext *avctx, AVFrame *frame)
         FFLCEVCFrame *frame_ctx;
         int ret;
 
-        if (!dc->lcevc.width || !dc->lcevc.height) {
+        if (fdd->post_process || !dc->lcevc.width || !dc->lcevc.height) {
             dc->lcevc.frame = 0;
             return 0;
         }
