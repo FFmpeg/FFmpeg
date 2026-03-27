@@ -647,7 +647,7 @@ RET
 %endmacro
 
 INIT_XMM sse2
-cglobal h264_luma_dc_dequant_idct, 3, 4, 7
+cglobal h264_luma_dc_dequant_idct, 3, 4, 6
     movq        m3, [r1+24]
     movq        m2, [r1+16]
     movq        m1, [r1+ 8]
@@ -683,6 +683,7 @@ cglobal h264_luma_dc_dequant_idct, 3, 4, 7
     RET
 .big_qmul:
     bsr        t0d, t3d
+    WIN64_PUSH_XMM 7
     add        t3d, 128 << 16
     mov        t1d, 7
     cmp        t0d, t1d
