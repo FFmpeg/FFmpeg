@@ -7804,6 +7804,10 @@ elif enabled vulkan; then
         check_cpp_condition vulkan "vulkan/vulkan.h" "defined(VK_VERSION_1_4) || (defined(VK_VERSION_1_3) && VK_HEADER_VERSION >= 277)" $vulkan_incflags
 fi
 
+if enabled vulkan; then
+    check_cpp_condition vulkan "spirv/unified1/spirv.h" "defined(SPV_VERSION)" || die "spirv-headers is required to build with Vulkan support enabled."
+fi
+
 probe_glslc(){
     glslc_probe=$1
     if test_cmd $glslc_probe -v; then
