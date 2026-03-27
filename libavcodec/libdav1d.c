@@ -655,6 +655,10 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
                sizeof(fgp->codec.aom.uv_offset));
     }
 
+    res = ff_attach_decode_data(c, frame);
+    if (res < 0)
+        return res;
+
     res = 0;
 fail:
     dav1d_picture_unref(p);
