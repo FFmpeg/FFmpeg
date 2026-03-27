@@ -1269,6 +1269,8 @@ static int fmt_dither(SwsContext *ctx, SwsOpList *ops,
                 .op   = SWS_OP_DITHER,
                 .type = type,
                 .dither.matrix = bias,
+                .dither.min = *bias,
+                .dither.max = *bias,
             });
         } else {
             return 0; /* No-op */
@@ -1283,6 +1285,15 @@ static int fmt_dither(SwsContext *ctx, SwsOpList *ops,
         dither.matrix = generate_bayer_matrix(dither.size_log2);
         if (!dither.matrix)
             return AVERROR(ENOMEM);
+
+        const int size = 1 << dither.size_log2;
+        dither.min = dither.max = dither.matrix[0];
+        for (int i = 1; i < size * size; i++) {
+            if (av_cmp_q(dither.min, dither.matrix[i]) > 0)
+                dither.min = dither.matrix[i];
+            if (av_cmp_q(dither.matrix[i], dither.max) > 0)
+                dither.max = dither.matrix[i];
+        }
 
         /* Brute-forced offsets; minimizes quantization error across a 16x16
          * bayer dither pattern for standard RGBA and YUVA pixel formats */
