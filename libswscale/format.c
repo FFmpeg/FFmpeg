@@ -479,6 +479,14 @@ skip_hdr10:
     return fmt;
 }
 
+void ff_fmt_from_pixfmt(enum AVPixelFormat pixfmt, SwsFormat *fmt)
+{
+    ff_fmt_clear(fmt);
+    fmt->format = pixfmt;
+    fmt->desc = av_pix_fmt_desc_get(pixfmt);
+    sanitize_fmt(fmt, fmt->desc);
+}
+
 static int infer_prim_ref(SwsColor *csp, const SwsColor *ref)
 {
     if (csp->prim != AVCOL_PRI_UNSPECIFIED)

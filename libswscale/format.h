@@ -106,6 +106,11 @@ static inline void ff_fmt_clear(SwsFormat *fmt)
  */
 SwsFormat ff_fmt_from_frame(const AVFrame *frame, int field);
 
+/**
+ * Subset of ff_fmt_from_frame() that sets default metadata for the format.
+ */
+void ff_fmt_from_pixfmt(enum AVPixelFormat pixfmt, SwsFormat *fmt);
+
 static inline int ff_color_equal(const SwsColor *c1, const SwsColor *c2)
 {
     return  c1->prim == c2->prim &&
