@@ -140,11 +140,11 @@ INIT_YMM avx2
 %endmacro
 
 %macro SUM_MIN_BLOCK_W8 3-4 ; src/dst, shuffle, tmp, [dst]
-    pshufb  %3, %1, %2
+    pshufb  xm%3, xm%1, xm%2
 %if %0 == 3
-    paddw   %1, %3
+    paddw   xm%1, xm%3
 %else
-    paddw   %4, %1, %3
+    paddw   xm%4, xm%1, xm%3
 %endif
 %endmacro
 
@@ -205,14 +205,14 @@ INIT_YMM avx2
     cmp                         wd, 16
 
     je                       %%w16
-    SUM_MIN_BLOCK_W8            m6, t0, m11
-    SUM_MIN_BLOCK_W8            m7, t0, m11
-    SUM_MIN_BLOCK_W8            m8, t0, m11
-    SUM_MIN_BLOCK_W8            m9, t0, m11
+    SUM_MIN_BLOCK_W8             6, i0, i1
+    SUM_MIN_BLOCK_W8             7, i0, i1
+    SUM_MIN_BLOCK_W8             8, i0, i1
+    SUM_MIN_BLOCK_W8             9, i0, i1
 %if (%3)
-    SUM_MIN_BLOCK_W8           m10, t0, m11, m13
+    SUM_MIN_BLOCK_W8            10, i0, i1, 13
 %else
-    SUM_MIN_BLOCK_W8           m10, t0, m11
+    SUM_MIN_BLOCK_W8            10, i0, i1
 %endif
     jmp                     %%wend
 
