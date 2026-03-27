@@ -59,7 +59,6 @@ static void gmc_ssse3(uint8_t *dst, const uint8_t *src,
     const int dxys = dxy >> 4;
     const int dyxs = dyx >> 4;
     const int dyys = dyy2 >> 4;
-    uint8_t edge_buf[(MAX_H + 1) * EDGE_EMU_STRIDE];
 
     const int dxw = dxx2 * (w - 1);
     const int dyh = dyy2 * (h - 1);
@@ -73,7 +72,8 @@ static void gmc_ssse3(uint8_t *dst, const uint8_t *src,
         ((ox2 + dxw) | (ox2 + dxh) | (ox2 + dxw + dxh) |
          (oy2 + dyw) | (oy2 + dyh) | (oy2 + dyw + dyh)) >> (16 + shift) ||
         // uses more than 16 bits of subpel mv (only at huge resolution)
-        (dxx | dxy | dyx | dyy) & 15) {
+        (dxx | dxy | dyx | dyy) & 15 ||
+        (!HAVE_SSE2_EXTERNAL && need_emu)) {
         ff_gmc_c(dst, src, stride, h, ox, oy, dxx, dxy, dyx, dyy,
                  shift, r, width, height);
         return;
@@ -82,12 +82,15 @@ static void gmc_ssse3(uint8_t *dst, const uint8_t *src,
     src += ix + iy * stride;
     const ptrdiff_t dst_stride = stride;
     ptrdiff_t src_stride = stride;
+#if HAVE_SSE2_EXTERNAL
+    uint8_t edge_buf[(MAX_H + 1) * EDGE_EMU_STRIDE];
     if (need_emu) {
         ff_emulated_edge_mc_sse2(edge_buf, src, EDGE_EMU_STRIDE, src_stride,
                                  w + 1, h + 1, ix, iy, width, height);
         src        = edge_buf;
         src_stride = EDGE_EMU_STRIDE;
     }
+#endif
 
 #if ARCH_X86_32
     xmm_u16 dxy8, dyy8, r8;
