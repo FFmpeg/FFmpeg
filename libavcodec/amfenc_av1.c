@@ -26,9 +26,6 @@
 #include "amfenc.h"
 #include "codec_internal.h"
 
-#define AMF_VIDEO_ENCODER_AV1_CAP_WIDTH_ALIGNMENT_FACTOR_LOCAL                L"Av1WidthAlignmentFactor"          // amf_int64; default = 1
-#define AMF_VIDEO_ENCODER_AV1_CAP_HEIGHT_ALIGNMENT_FACTOR_LOCAL               L"Av1HeightAlignmentFactor"         // amf_int64; default = 1
-
 #define OFFSET(x) offsetof(AMFEncoderContext, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
@@ -667,13 +664,13 @@ static av_cold int amf_encode_init_av1(AVCodecContext* avctx)
     var.pInterface->pVtbl->Release(var.pInterface);
 
     //processing crop information according to alignment
-    if (ctx->encoder->pVtbl->GetProperty(ctx->encoder, AMF_VIDEO_ENCODER_AV1_CAP_WIDTH_ALIGNMENT_FACTOR_LOCAL, &var) != AMF_OK)
+    if (ctx->encoder->pVtbl->GetProperty(ctx->encoder, AMF_VIDEO_ENCODER_AV1_CAP_WIDTH_ALIGNMENT_FACTOR, &var) != AMF_OK)
         // assume older driver and Navi3x
         width_alignment_factor = 64;
     else
         width_alignment_factor = (int)var.int64Value;
 
-    if (ctx->encoder->pVtbl->GetProperty(ctx->encoder, AMF_VIDEO_ENCODER_AV1_CAP_HEIGHT_ALIGNMENT_FACTOR_LOCAL, &var) != AMF_OK)
+    if (ctx->encoder->pVtbl->GetProperty(ctx->encoder, AMF_VIDEO_ENCODER_AV1_CAP_HEIGHT_ALIGNMENT_FACTOR, &var) != AMF_OK)
         // assume older driver and Navi3x
         height_alignment_factor = 16;
     else
