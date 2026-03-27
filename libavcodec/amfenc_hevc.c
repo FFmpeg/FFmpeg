@@ -169,6 +169,7 @@ static av_cold int amf_encode_init_hevc(AVCodecContext *avctx)
     AMFEncoderContext  *ctx = avctx->priv_data;
     AMFVariantStruct    var = {0};
     amf_int64           profile = 0;
+    amf_int64           profile_from_bitdepth = 0;
     amf_int64           profile_level = 0;
     AMFBuffer          *buffer;
     AMFGuid             guid;
@@ -255,6 +256,17 @@ static av_cold int amf_encode_init_hevc(AVCodecContext *avctx)
         bit_depth = pix_desc->comp[0].depth >= 10 ? AMF_COLOR_BIT_DEPTH_10 : AMF_COLOR_BIT_DEPTH_8;
     }
     AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_HEVC_COLOR_BIT_DEPTH, bit_depth);
+
+    // HEVC profile follows target bit depth
+    profile_from_bitdepth = bit_depth == AMF_COLOR_BIT_DEPTH_10 ? AMF_VIDEO_ENCODER_HEVC_PROFILE_MAIN_10
+                                                                : AMF_VIDEO_ENCODER_HEVC_PROFILE_MAIN;
+    if (profile != profile_from_bitdepth) {
+        AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_HEVC_PROFILE, profile_from_bitdepth);
+        if (profile != 0) {
+            av_log(avctx, AV_LOG_WARNING, "The video profile and bit depth did not match, but this has been corrected\n");
+        }
+    }
+    avctx->profile = bit_depth == AMF_COLOR_BIT_DEPTH_10 ? AV_PROFILE_HEVC_MAIN_10 : AV_PROFILE_HEVC_MAIN;
 
     // Color profile
     color_profile = av_amf_get_color_profile(avctx->color_range, avctx->colorspace);
