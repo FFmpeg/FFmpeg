@@ -349,7 +349,7 @@ static int amf_amfsurface_to_avframe(AVCodecContext *avctx, AMFSurface* surface,
 
         avctx->sw_pix_fmt = avctx->pix_fmt;
 
-        ret = ff_attach_decode_data(frame);
+        ret = ff_attach_decode_data(avctx, frame);
         if (ret < 0)
             return ret;
         frame->width  = avctx->width;

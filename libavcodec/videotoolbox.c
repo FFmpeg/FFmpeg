@@ -152,7 +152,7 @@ int ff_videotoolbox_alloc_frame(AVCodecContext *avctx, AVFrame *frame)
     size_t      size = sizeof(VTHWFrame);
     uint8_t    *data = NULL;
     AVBufferRef *buf = NULL;
-    int ret = ff_attach_decode_data(frame);
+    int ret = ff_attach_decode_data(avctx, frame);
     FrameDecodeData *fdd;
     if (ret < 0)
         return ret;

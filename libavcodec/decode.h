@@ -86,7 +86,7 @@ int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame);
 int ff_decode_get_hw_frames_ctx(AVCodecContext *avctx,
                                 enum AVHWDeviceType dev_type);
 
-int ff_attach_decode_data(AVFrame *frame);
+int ff_attach_decode_data(AVCodecContext *avctx, AVFrame *frame);
 
 /**
  * Check whether the side-data of src contains a palette of

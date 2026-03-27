@@ -176,7 +176,7 @@ static int qsv_get_continuous_buffer(AVCodecContext *avctx, AVFrame *frame,
             frame->linesize[0] * FFALIGN(avctx->coded_height, 64);
     }
 
-    ret = ff_attach_decode_data(frame);
+    ret = ff_attach_decode_data(avctx, frame);
     if (ret < 0)
         return ret;
 

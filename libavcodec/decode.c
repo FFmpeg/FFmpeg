@@ -1620,6 +1620,33 @@ int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
         }
         break;
     }
+
+#if CONFIG_LIBLCEVC_DEC
+    AVCodecInternal    *avci = avctx->internal;
+    DecodeContext        *dc = decode_ctx(avci);
+
+    dc->lcevc.frame = dc->lcevc.ctx && avctx->codec_type == AVMEDIA_TYPE_VIDEO &&
+                      av_frame_get_side_data(frame, AV_FRAME_DATA_LCEVC);
+
+    if (dc->lcevc.frame) {
+        int ret = ff_lcevc_parse_frame(dc->lcevc.ctx, frame,
+                                       &dc->lcevc.width, &dc->lcevc.height, avctx);
+        if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))
+            return ret;
+
+        // force get_buffer2() to allocate the base frame using the same dimensions
+        // as the final enhanced frame, in order to prevent reinitializing the buffer
+        // pools unnecessarely
+        if (!ret && dc->lcevc.width && dc->lcevc.height) {
+            dc->lcevc.base_width  = frame->width;
+            dc->lcevc.base_height = frame->height;
+            frame->width  = dc->lcevc.width;
+            frame->height = dc->lcevc.height;
+        } else
+            dc->lcevc.frame = 0;
+    }
+#endif
+
     return 0;
 }
 
@@ -1655,7 +1682,7 @@ static void decode_data_free(AVRefStructOpaque unused, void *obj)
         fdd->hwaccel_priv_free(fdd->hwaccel_priv);
 }
 
-int ff_attach_decode_data(AVFrame *frame)
+int ff_attach_decode_data(AVCodecContext *avctx, AVFrame *frame)
 {
     FrameDecodeData *fdd;
 
@@ -1668,46 +1695,28 @@ int ff_attach_decode_data(AVFrame *frame)
 
     frame->private_ref = fdd;
 
-    return 0;
-}
-
-static int update_frame_props(AVCodecContext *avctx, AVFrame *frame)
-{
 #if CONFIG_LIBLCEVC_DEC
     AVCodecInternal    *avci = avctx->internal;
     DecodeContext        *dc = decode_ctx(avci);
 
-    dc->lcevc.frame = dc->lcevc.ctx && avctx->codec_type == AVMEDIA_TYPE_VIDEO &&
-                      av_frame_get_side_data(frame, AV_FRAME_DATA_LCEVC);
+    if (!dc->lcevc.frame) {
+        dc->lcevc.frame = dc->lcevc.ctx && avctx->codec_type == AVMEDIA_TYPE_VIDEO &&
+                          av_frame_get_side_data(frame, AV_FRAME_DATA_LCEVC);
 
-    if (dc->lcevc.frame) {
-        int ret = ff_lcevc_parse_frame(dc->lcevc.ctx, frame,
-                                       &dc->lcevc.width, &dc->lcevc.height, avctx);
-        if (ret < 0)
-            return ret;
+        if (dc->lcevc.frame) {
+            int ret = ff_lcevc_parse_frame(dc->lcevc.ctx, frame,
+                                           &dc->lcevc.width, &dc->lcevc.height, avctx);
+            if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))
+                return ret;
 
-        // force get_buffer2() to allocate the base frame using the same dimensions
-        // as the final enhanced frame, in order to prevent reinitializing the buffer
-        // pools unnecessarely
-        if (dc->lcevc.width && dc->lcevc.height) {
-            dc->lcevc.base_width  = frame->width;
-            dc->lcevc.base_height = frame->height;
-            frame->width  = dc->lcevc.width;
-            frame->height = dc->lcevc.height;
+            if (!ret && dc->lcevc.width && dc->lcevc.height) {
+                dc->lcevc.base_width  = frame->width;
+                dc->lcevc.base_height = frame->height;
+            } else
+                dc->lcevc.frame = 0;
         }
     }
-#endif
-    return 0;
-}
-
-static int attach_post_process_data(AVCodecContext *avctx, AVFrame *frame)
-{
-#if CONFIG_LIBLCEVC_DEC
-    AVCodecInternal    *avci = avctx->internal;
-    DecodeContext        *dc = decode_ctx(avci);
-
     if (dc->lcevc.frame) {
-        FrameDecodeData *fdd = frame->private_ref;
         FFLCEVCFrame *frame_ctx;
         int ret;
 
@@ -1797,9 +1806,6 @@ int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame, int flags)
         }
     } else {
         avctx->sw_pix_fmt = avctx->pix_fmt;
-        ret = update_frame_props(avctx, frame);
-        if (ret < 0)
-            goto fail;
     }
 
     ret = avctx->get_buffer2(avctx, frame, flags);
@@ -1808,11 +1814,7 @@ int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame, int flags)
 
     validate_avframe_allocation(avctx, frame);
 
-    ret = ff_attach_decode_data(frame);
-    if (ret < 0)
-        goto fail;
-
-    ret = attach_post_process_data(avctx, frame);
+    ret = ff_attach_decode_data(avctx, frame);
     if (ret < 0)
         goto fail;
 
