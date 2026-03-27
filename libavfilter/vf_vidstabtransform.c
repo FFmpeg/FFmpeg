@@ -231,7 +231,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     TransformContext *tc = ctx->priv;
     VSTransformData* td = &(tc->td);
 
-    AVFilterLink *outlink = inlink->dst->outputs[0];
+    AVFilterLink *outlink = ctx->outputs[0];
     int direct = 0;
     AVFrame *out;
     VSFrame inframe;
