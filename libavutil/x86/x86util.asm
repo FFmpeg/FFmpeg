@@ -1022,3 +1022,15 @@
     pxor  %1, %2
 %endif
 %endmacro
+
+; NASM panics when emitting CodeView debug info for an empty translation unit.
+; GNU binutils `strip` and some other tools such as older MSVC linker also fail
+; on such files. Emit a dummy byte in a COMDAT section to work around this.
+; The linker will discard it since __x86util_notref is not referenced anywhere.
+%ifidn __OUTPUT_FORMAT__,win64
+    section .text$1 comdat=2:__x86util_notref
+        db 0
+%elifidn __OUTPUT_FORMAT__,win32
+    section .text$1 comdat=2:__x86util_notref
+        db 0
+%endif
