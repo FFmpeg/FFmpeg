@@ -39,7 +39,7 @@
  */
 static bool op_commute_clear(SwsOp *op, SwsOp *next)
 {
-    SwsClearOp tmp;
+    SwsClearOp tmp = {0};
 
     av_assert1(op->op == SWS_OP_CLEAR);
     switch (next->op) {
@@ -65,6 +65,8 @@ static bool op_commute_clear(SwsOp *op, SwsOp *next)
             return true;
         case SWS_PIXEL_U32:
             for (int i = 0; i < 4; i++) {
+                if (!op->clear.value[i].den)
+                    continue;
                 uint32_t v = av_bswap32(op->clear.value[i].num);
                 if (v > INT_MAX)
                     return false; /* can't represent as AVRational anymore */
