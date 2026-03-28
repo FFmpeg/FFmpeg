@@ -263,33 +263,56 @@ int ff_sws_op_compile_tables(SwsContext *ctx, const SwsOpTable *const tables[],
 
 #define q2pixel(type, q) ((q).den ? (type) (q).num / (q).den : 0)
 
-int ff_sws_setup_u8(const SwsImplParams *params, SwsImplResult *out)
+int ff_sws_setup_shift(const SwsImplParams *params, SwsImplResult *out)
 {
     out->priv.u8[0] = params->op->c.u;
     return 0;
 }
 
-int ff_sws_setup_q(const SwsImplParams *params, SwsImplResult *out)
+int ff_sws_setup_scale(const SwsImplParams *params, SwsImplResult *out)
 {
     const SwsOp *op = params->op;
+    const AVRational factor = op->c.q;
     switch (op->type) {
-    case SWS_PIXEL_U8:  out->priv.u8[0]  = q2pixel(uint8_t,  op->c.q); return 0;
-    case SWS_PIXEL_U16: out->priv.u16[0] = q2pixel(uint16_t, op->c.q); return 0;
-    case SWS_PIXEL_U32: out->priv.u32[0] = q2pixel(uint32_t, op->c.q); return 0;
-    case SWS_PIXEL_F32: out->priv.f32[0] = q2pixel(float,    op->c.q); return 0;
+    case SWS_PIXEL_U8:  out->priv.u8[0]  = q2pixel(uint8_t,  factor); break;
+    case SWS_PIXEL_U16: out->priv.u16[0] = q2pixel(uint16_t, factor); break;
+    case SWS_PIXEL_U32: out->priv.u32[0] = q2pixel(uint32_t, factor); break;
+    case SWS_PIXEL_F32: out->priv.f32[0] = q2pixel(float,    factor); break;
     default: return AVERROR(EINVAL);
     }
+
+    return 0;
 }
 
-int ff_sws_setup_q4(const SwsImplParams *params, SwsImplResult *out)
+int ff_sws_setup_clamp(const SwsImplParams *params, SwsImplResult *out)
 {
     const SwsOp *op = params->op;
     for (int i = 0; i < 4; i++) {
+        const AVRational limit = op->c.q4[i];
         switch (op->type) {
-        case SWS_PIXEL_U8:  out->priv.u8[i]  = q2pixel(uint8_t,  op->c.q4[i]); break;
-        case SWS_PIXEL_U16: out->priv.u16[i] = q2pixel(uint16_t, op->c.q4[i]); break;
-        case SWS_PIXEL_U32: out->priv.u32[i] = q2pixel(uint32_t, op->c.q4[i]); break;
-        case SWS_PIXEL_F32: out->priv.f32[i] = q2pixel(float,    op->c.q4[i]); break;
+        case SWS_PIXEL_U8:  out->priv.u8[i]  = q2pixel(uint8_t,  limit); break;
+        case SWS_PIXEL_U16: out->priv.u16[i] = q2pixel(uint16_t, limit); break;
+        case SWS_PIXEL_U32: out->priv.u32[i] = q2pixel(uint32_t, limit); break;
+        case SWS_PIXEL_F32: out->priv.f32[i] = q2pixel(float,    limit); break;
+        default: return AVERROR(EINVAL);
+        }
+    }
+
+    return 0;
+}
+
+int ff_sws_setup_clear(const SwsImplParams *params, SwsImplResult *out)
+{
+    const SwsOp *op = params->op;
+    for (int i = 0; i < 4; i++) {
+        const AVRational value = op->c.q4[i];
+        if (!value.den)
+            continue;
+        switch (op->type) {
+        case SWS_PIXEL_U8:  out->priv.u8[i]  = q2pixel(uint8_t,  value); break;
+        case SWS_PIXEL_U16: out->priv.u16[i] = q2pixel(uint16_t, value); break;
+        case SWS_PIXEL_U32: out->priv.u32[i] = q2pixel(uint32_t, value); break;
+        case SWS_PIXEL_F32: out->priv.f32[i] = q2pixel(float,    value); break;
         default: return AVERROR(EINVAL);
         }
     }

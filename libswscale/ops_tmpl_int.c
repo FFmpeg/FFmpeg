@@ -383,13 +383,13 @@ DECL_PATTERN(rshift)
 
 WRAP_COMMON_PATTERNS(lshift,
     .op       = SWS_OP_LSHIFT,
-    .setup    = ff_sws_setup_u8,
+    .setup    = ff_sws_setup_shift,
     .flexible = true,
 );
 
 WRAP_COMMON_PATTERNS(rshift,
     .op       = SWS_OP_RSHIFT,
-    .setup    = ff_sws_setup_u8,
+    .setup    = ff_sws_setup_shift,
     .flexible = true,
 );
 #endif /* BIT_DEPTH != 8 */

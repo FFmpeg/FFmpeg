@@ -143,12 +143,14 @@ static int aarch64_setup(SwsOpList *ops, int block_size, int n,
         }
         break;
     case SWS_OP_CLEAR:
+        ff_sws_setup_clear(&(const SwsImplParams) { .op = op }, out);
+        break;
     case SWS_OP_MIN:
     case SWS_OP_MAX:
-        ff_sws_setup_q4(&(const SwsImplParams) { .op = op }, out);
+        ff_sws_setup_clamp(&(const SwsImplParams) { .op = op }, out);
         break;
     case SWS_OP_SCALE:
-        ff_sws_setup_q(&(const SwsImplParams) { .op = op }, out);
+        ff_sws_setup_scale(&(const SwsImplParams) { .op = op }, out);
         break;
     case SWS_OP_LINEAR:
         return aarch64_setup_linear(p, op, out);

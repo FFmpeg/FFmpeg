@@ -85,7 +85,7 @@ DECL_IMPL(clear##_##X##Y##Z##W)                                                 
 }                                                                               \
                                                                                 \
 DECL_ENTRY(clear##_##X##Y##Z##W,                                                \
-    .setup = ff_sws_setup_q4,                                                   \
+    .setup = ff_sws_setup_clear,                                                \
     .op = SWS_OP_CLEAR,                                                         \
     .flexible = true,                                                           \
     .unused = { !X, !Y, !Z, !W },                                               \
@@ -141,13 +141,13 @@ DECL_PATTERN(max)
 
 WRAP_COMMON_PATTERNS(min,
     .op = SWS_OP_MIN,
-    .setup = ff_sws_setup_q4,
+    .setup = ff_sws_setup_clamp,
     .flexible = true,
 );
 
 WRAP_COMMON_PATTERNS(max,
     .op = SWS_OP_MAX,
-    .setup = ff_sws_setup_q4,
+    .setup = ff_sws_setup_clamp,
     .flexible = true,
 );
 
@@ -172,7 +172,7 @@ DECL_PATTERN(scale)
 
 WRAP_COMMON_PATTERNS(scale,
     .op = SWS_OP_SCALE,
-    .setup = ff_sws_setup_q,
+    .setup = ff_sws_setup_scale,
     .flexible = true,
 );
 

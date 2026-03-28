@@ -185,20 +185,20 @@ static int setup_shift(const SwsImplParams *params, SwsImplResult *out)
 #define DECL_MIN_MAX(EXT)                                                       \
     DECL_COMMON_PATTERNS(F32, min##EXT,                                         \
         .op = SWS_OP_MIN,                                                       \
-        .setup = ff_sws_setup_q4,                                               \
+        .setup = ff_sws_setup_clamp,                                            \
         .flexible = true,                                                       \
     );                                                                          \
                                                                                 \
     DECL_COMMON_PATTERNS(F32, max##EXT,                                         \
         .op = SWS_OP_MAX,                                                       \
-        .setup = ff_sws_setup_q4,                                               \
+        .setup = ff_sws_setup_clamp,                                            \
         .flexible = true,                                                       \
     );
 
 #define DECL_SCALE(EXT)                                                         \
     DECL_COMMON_PATTERNS(F32, scale##EXT,                                       \
         .op = SWS_OP_SCALE,                                                     \
-        .setup = ff_sws_setup_q,                                                \
+        .setup = ff_sws_setup_scale,                                            \
         .flexible = true,                                                       \
     );
 
@@ -941,7 +941,7 @@ static void normalize_clear(SwsOp *op)
         int i;
     } c;
 
-    ff_sws_setup_q4(&(const SwsImplParams) { .op = op }, &res);
+    ff_sws_setup_clear(&(const SwsImplParams) { .op = op }, &res);
 
     for (int i = 0; i < 4; i++) {
         if (!op->c.q4[i].den)

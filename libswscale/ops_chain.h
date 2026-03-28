@@ -140,10 +140,11 @@ typedef struct SwsOpEntry {
     bool (*check)(const SwsImplParams *params); /* optional, return true if supported */
 } SwsOpEntry;
 
-/* Setup helpers */
-int ff_sws_setup_u8(const SwsImplParams *params, SwsImplResult *out);
-int ff_sws_setup_q(const SwsImplParams *params, SwsImplResult *out);
-int ff_sws_setup_q4(const SwsImplParams *params, SwsImplResult *out);
+/* Setup helpers for common/trivial operation types */
+int ff_sws_setup_shift(const SwsImplParams *params, SwsImplResult *out);
+int ff_sws_setup_scale(const SwsImplParams *params, SwsImplResult *out);
+int ff_sws_setup_clamp(const SwsImplParams *params, SwsImplResult *out);
+int ff_sws_setup_clear(const SwsImplParams *params, SwsImplResult *out);
 
 static inline void ff_op_priv_free(SwsOpPriv *priv)
 {
