@@ -78,14 +78,33 @@ typedef enum SwsOpType {
 
 const char *ff_sws_op_type_name(SwsOpType op);
 
+/**
+ * Bit-mask of components. Exact meaning depends on the usage context.
+ */
+typedef uint8_t SwsCompMask;
+enum {
+    SWS_COMP_NONE = 0,
+    SWS_COMP_ALL  = 0xF,
+#define SWS_COMP(X) (1 << (X))
+#define SWS_COMP_TEST(mask, X) (!!((mask) & SWS_COMP(X)))
+#define SWS_COMP_INV(mask) ((mask) ^ SWS_COMP_ALL)
+#define SWS_COMP_ELEMS(N) ((1 << (N)) - 1)
+#define SWS_COMP_MASK(X, Y, Z, W)   \
+    (((X) ? SWS_COMP(0) : 0) |      \
+     ((Y) ? SWS_COMP(1) : 0) |      \
+     ((Z) ? SWS_COMP(2) : 0) |      \
+     ((W) ? SWS_COMP(3) : 0))
+};
+
+/* Compute SwsCompMask from values with denominator != 0 */
+SwsCompMask ff_sws_comp_mask_q4(const AVRational q[4]);
+
 typedef enum SwsCompFlags {
     SWS_COMP_GARBAGE = 1 << 0, /* contents are undefined / garbage data */
     SWS_COMP_EXACT   = 1 << 1, /* value is an exact integer */
     SWS_COMP_ZERO    = 1 << 2, /* known to be a constant zero */
     SWS_COMP_SWAPPED = 1 << 3, /* byte order is swapped */
 } SwsCompFlags;
-
-#define SWS_OP_NEEDED(op, idx) (!((op)->comps.flags[idx] & SWS_COMP_GARBAGE))
 
 typedef struct SwsComps {
     SwsCompFlags flags[4]; /* knowledge about (output) component contents */
@@ -141,6 +160,7 @@ typedef struct SwsSwizzleOp {
 } SwsSwizzleOp;
 
 #define SWS_SWIZZLE(X,Y,Z,W) ((SwsSwizzleOp) { .in = {X, Y, Z, W} })
+SwsCompMask ff_sws_comp_mask_swizzle(SwsCompMask mask, SwsSwizzleOp swiz);
 
 typedef struct SwsShiftOp {
     uint8_t amount; /* number of bits to shift */
@@ -241,6 +261,11 @@ typedef struct SwsOp {
      */
     SwsComps comps;
 } SwsOp;
+
+#define SWS_OP_NEEDED(op, idx) (!((op)->comps.flags[idx] & SWS_COMP_GARBAGE))
+
+/* Compute SwsCompMask from a mask of needed components */
+SwsCompMask ff_sws_comp_mask_needed(const SwsOp *op);
 
 /**
  * Describe an operation in human-readable form.

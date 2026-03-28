@@ -133,6 +133,38 @@ const char *ff_sws_op_type_name(SwsOpType op)
     return "ERR";
 }
 
+SwsCompMask ff_sws_comp_mask_q4(const AVRational q[4])
+{
+    SwsCompMask mask = 0;
+    for (int i = 0; i < 4; i++) {
+        if (q[i].den)
+            mask |= SWS_COMP(i);
+    }
+    return mask;
+}
+
+SwsCompMask ff_sws_comp_mask_swizzle(const SwsCompMask mask, const SwsSwizzleOp swiz)
+{
+    SwsCompMask res = 0;
+    for (int i = 0; i < 4; i++) {
+        const int src = swiz.in[i];
+        if (SWS_COMP_TEST(mask, src))
+            res |= SWS_COMP(i);
+    }
+
+    return res;
+}
+
+SwsCompMask ff_sws_comp_mask_needed(const SwsOp *op)
+{
+    SwsCompMask mask = 0;
+    for (int i = 0; i < 4; i++) {
+        if (SWS_OP_NEEDED(op, i))
+            mask |= SWS_COMP(i);
+    }
+    return mask;
+}
+
 /* biased towards `a` */
 static AVRational av_min_q(AVRational a, AVRational b)
 {
