@@ -878,7 +878,9 @@ void ff_sws_op_desc(AVBPrint *bp, const SwsOp *op)
         av_bprintf(bp, "]");
         break;
     case SWS_OP_SCALE:
-        av_bprintf(bp, "%-20s: * %d/%d", name, op->c.q.num, op->c.q.den);
+        av_bprintf(bp, "%-20s: * %d", name, op->c.q.num);
+        if (op->c.q.den != 1)
+            av_bprintf(bp, "/%d", op->c.q.den);
         break;
     case SWS_OP_FILTER_H:
     case SWS_OP_FILTER_V: {
