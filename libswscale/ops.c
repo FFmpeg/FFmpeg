@@ -922,12 +922,8 @@ void ff_sws_op_list_print(void *log, int lev, int lev_extra,
         const SwsOp *op   = &ops->ops[i];
         const SwsOp *next = i + 1 < ops->num_ops ? &ops->ops[i + 1] : op;
         av_bprint_clear(&bp);
-        av_bprintf(&bp, "  [%3s %c%c%c%c -> %c%c%c%c] ",
+        av_bprintf(&bp, "  [%3s %c%c%c%c] ",
                    ff_sws_pixel_type_name(op->type),
-                   op->comps.unused[0] ? 'X' : '.',
-                   op->comps.unused[1] ? 'X' : '.',
-                   op->comps.unused[2] ? 'X' : '.',
-                   op->comps.unused[3] ? 'X' : '.',
                    next->comps.unused[0] ? 'X' : describe_comp_flags(op->comps.flags[0]),
                    next->comps.unused[1] ? 'X' : describe_comp_flags(op->comps.flags[1]),
                    next->comps.unused[2] ? 'X' : describe_comp_flags(op->comps.flags[2]),
