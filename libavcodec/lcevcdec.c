@@ -131,13 +131,14 @@ static int alloc_enhanced_frame(void *logctx, FFLCEVCFrame *frame_ctx,
 static int lcevc_send_frame(void *logctx, FFLCEVCFrame *frame_ctx, const AVFrame *in)
 {
     FFLCEVCContext *lcevc = frame_ctx->lcevc;
+    LCEVC_ColorFormat fmt = map_format(in->format);
     const AVFrameSideData *sd = av_frame_get_side_data(in, AV_FRAME_DATA_LCEVC);
     AVFrame *opaque;
     LCEVC_PictureHandle picture;
     LCEVC_ReturnCode res;
     int ret = 0;
 
-    if (!sd)
+    if (!sd || fmt == LCEVC_ColorFormat_Unknown)
         return 1;
 
     res = LCEVC_SendDecoderEnhancementData(lcevc->decoder, in->pts, sd->data, sd->size);
