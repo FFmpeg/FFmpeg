@@ -293,7 +293,6 @@ static void apply_filter_weights(SwsComps *comps, const SwsComps *prev,
 /* Infer + propagate known information about components */
 void ff_sws_op_list_update_comps(SwsOpList *ops)
 {
-    SwsComps next = { .unused = {true, true, true, true} };
     SwsComps prev = { .flags = {
         SWS_COMP_GARBAGE, SWS_COMP_GARBAGE, SWS_COMP_GARBAGE, SWS_COMP_GARBAGE,
     }};
@@ -468,16 +467,18 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
     }
 
     /* Backwards pass, solves for component dependencies */
+    bool need_out[4] = { false, false, false, false };
     for (int n = ops->num_ops - 1; n >= 0; n--) {
         SwsOp *op = &ops->ops[n];
+        bool need_in[4] = { false, false, false, false };
 
         switch (op->op) {
         case SWS_OP_READ:
         case SWS_OP_WRITE:
             for (int i = 0; i < op->rw.elems; i++)
-                op->comps.unused[i] = op->op == SWS_OP_READ;
+                need_in[i] = op->op == SWS_OP_WRITE;
             for (int i = op->rw.elems; i < 4; i++)
-                op->comps.unused[i] = next.unused[i];
+                need_in[i] = need_out[i];
             break;
         case SWS_OP_SWAP_BYTES:
         case SWS_OP_LSHIFT:
@@ -490,55 +491,40 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
         case SWS_OP_FILTER_H:
         case SWS_OP_FILTER_V:
             for (int i = 0; i < 4; i++)
-                op->comps.unused[i] = next.unused[i];
+                need_in[i] = need_out[i];
             break;
-        case SWS_OP_UNPACK: {
-            bool unused = true;
-            for (int i = 0; i < 4; i++) {
-                if (op->pack.pattern[i])
-                    unused &= next.unused[i];
-                op->comps.unused[i] = i > 0;
-            }
-            op->comps.unused[0] = unused;
+        case SWS_OP_UNPACK:
+            for (int i = 0; i < 4 && op->pack.pattern[i]; i++)
+                need_in[0] |= need_out[i];
             break;
-        }
         case SWS_OP_PACK:
-            for (int i = 0; i < 4; i++) {
-                if (op->pack.pattern[i])
-                    op->comps.unused[i] = next.unused[0];
-                else
-                    op->comps.unused[i] = true;
-            }
+            for (int i = 0; i < 4 && op->pack.pattern[i]; i++)
+                need_in[i] = need_out[0];
             break;
         case SWS_OP_CLEAR:
             for (int i = 0; i < 4; i++) {
-                if (op->c.q4[i].den)
-                    op->comps.unused[i] = true;
-                else
-                    op->comps.unused[i] = next.unused[i];
+                if (!op->c.q4[i].den)
+                    need_in[i] = need_out[i];
             }
             break;
-        case SWS_OP_SWIZZLE: {
-            bool unused[4] = { true, true, true, true };
+        case SWS_OP_SWIZZLE:
             for (int i = 0; i < 4; i++)
-                unused[op->swizzle.in[i]] &= next.unused[i];
-            for (int i = 0; i < 4; i++)
-                op->comps.unused[i] = unused[i];
+                need_in[op->swizzle.in[i]] |= need_out[i];
             break;
-        }
         case SWS_OP_LINEAR:
-            for (int j = 0; j < 4; j++) {
-                bool unused = true;
-                for (int i = 0; i < 4; i++) {
+            for (int i = 0; i < 4; i++) {
+                for (int j = 0; j < 4; j++) {
                     if (op->lin.m[i][j].num)
-                        unused &= next.unused[i];
+                        need_in[j] |= need_out[i];
                 }
-                op->comps.unused[j] = unused;
             }
             break;
         }
 
-        next = op->comps;
+        for (int i = 0; i < 4; i++) {
+            need_out[i] = need_in[i];
+            op->comps.unused[i] = !need_in[i];
+        }
     }
 }
 
