@@ -28,6 +28,7 @@
 #include "libavutil/bprint.h"
 
 #include "graph.h"
+#include "filters.h"
 
 typedef enum SwsPixelType {
     SWS_PIXEL_NONE = 0,
@@ -67,6 +68,10 @@ typedef enum SwsOpType {
     /* Floating-point only arithmetic operations. */
     SWS_OP_LINEAR,          /* generalized linear affine transform */
     SWS_OP_DITHER,          /* add dithering noise */
+
+    /* Filtering operations. Always output floating point. */
+    SWS_OP_FILTER_H,        /* horizontal filtering */
+    SWS_OP_FILTER_V,        /* vertical filtering */
 
     SWS_OP_TYPE_NB,
 } SwsOpType;
@@ -187,6 +192,10 @@ enum {
 /* Helper function to compute the correct mask */
 uint32_t ff_sws_linear_mask(SwsLinearOp);
 
+typedef struct SwsFilterOp {
+    SwsFilterWeights *kernel; /* filter kernel (refstruct) */
+} SwsFilterOp;
+
 typedef struct SwsOp {
     SwsOpType op;      /* operation to perform */
     SwsPixelType type; /* pixel type to operate on */
@@ -197,6 +206,7 @@ typedef struct SwsOp {
         SwsSwizzleOp    swizzle;
         SwsConvertOp    convert;
         SwsDitherOp     dither;
+        SwsFilterOp     filter;
         SwsConst        c;
     };
 

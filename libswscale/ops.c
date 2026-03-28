@@ -112,6 +112,8 @@ const char *ff_sws_op_type_name(SwsOpType op)
     case SWS_OP_SCALE:       return "SWS_OP_SCALE";
     case SWS_OP_LINEAR:      return "SWS_OP_LINEAR";
     case SWS_OP_DITHER:      return "SWS_OP_DITHER";
+    case SWS_OP_FILTER_H:    return "SWS_OP_FILTER_H";
+    case SWS_OP_FILTER_V:    return "SWS_OP_FILTER_V";
     case SWS_OP_INVALID:     return "SWS_OP_INVALID";
     case SWS_OP_TYPE_NB: break;
     }
@@ -235,6 +237,11 @@ void ff_sws_apply_op_q(const SwsOp *op, AVRational x[4])
         for (int i = 0; i < 4; i++)
             x[i] = x[i].den ? av_mul_q(x[i], op->c.q) : x[i];
         return;
+    case SWS_OP_FILTER_H:
+    case SWS_OP_FILTER_V:
+        /* Filters have normalized energy by definition, so they don't
+         * conceptually modify individual components */
+        return;
     }
 
     av_unreachable("Invalid operation type!");
@@ -265,6 +272,24 @@ static void clear_undefined_values(AVRational dst[4], const AVRational src[4])
     }
 }
 
+static void apply_filter_weights(SwsComps *comps, const SwsComps *prev,
+                                 const SwsFilterWeights *weights)
+{
+    const AVRational posw = { weights->sum_positive, SWS_FILTER_SCALE };
+    const AVRational negw = { weights->sum_negative, SWS_FILTER_SCALE };
+    for (int i = 0; i < 4; i++) {
+        comps->flags[i] = prev->flags[i];
+        /* Only point sampling preserves exactness */
+        if (weights->filter_size != 1)
+            comps->flags[i] &= ~SWS_COMP_EXACT;
+        /* Update min/max assuming extremes */
+        comps->min[i] = av_add_q(av_mul_q(prev->min[i], posw),
+                                 av_mul_q(prev->max[i], negw));
+        comps->max[i] = av_add_q(av_mul_q(prev->min[i], negw),
+                                 av_mul_q(prev->max[i], posw));
+    }
+}
+
 /* Infer + propagate known information about components */
 void ff_sws_op_list_update_comps(SwsOpList *ops)
 {
@@ -282,6 +307,8 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
         case SWS_OP_LINEAR:
         case SWS_OP_SWAP_BYTES:
         case SWS_OP_UNPACK:
+        case SWS_OP_FILTER_H:
+        case SWS_OP_FILTER_V:
             break; /* special cases, handled below */
         default:
             memcpy(op->comps.min, prev.min, sizeof(prev.min));
@@ -421,6 +448,11 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
                     FFSWAP(AVRational, op->comps.min[i], op->comps.max[i]);
             }
             break;
+        case SWS_OP_FILTER_H:
+        case SWS_OP_FILTER_V: {
+            apply_filter_weights(&op->comps, &prev, op->filter.kernel);
+            break;
+        }
 
         case SWS_OP_INVALID:
         case SWS_OP_TYPE_NB:
@@ -450,6 +482,8 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
         case SWS_OP_MIN:
         case SWS_OP_MAX:
         case SWS_OP_SCALE:
+        case SWS_OP_FILTER_H:
+        case SWS_OP_FILTER_V:
             for (int i = 0; i < 4; i++)
                 op->comps.unused[i] = next.unused[i];
             break;
@@ -509,6 +543,10 @@ static void op_uninit(SwsOp *op)
     case SWS_OP_DITHER:
         av_refstruct_unref(&op->dither.matrix);
         break;
+    case SWS_OP_FILTER_H:
+    case SWS_OP_FILTER_V:
+        av_refstruct_unref(&op->filter.kernel);
+        break;
     }
 
     *op = (SwsOp) {0};
@@ -562,6 +600,10 @@ SwsOpList *ff_sws_op_list_duplicate(const SwsOpList *ops)
         switch (op->op) {
         case SWS_OP_DITHER:
             av_refstruct_ref(op->dither.matrix);
+            break;
+        case SWS_OP_FILTER_H:
+        case SWS_OP_FILTER_V:
+            av_refstruct_ref(op->filter.kernel);
             break;
         }
     }
@@ -826,6 +868,14 @@ void ff_sws_op_desc(AVBPrint *bp, const SwsOp *op, const bool unused[4])
     case SWS_OP_SCALE:
         av_bprintf(bp, "%-20s: * %d/%d", name, op->c.q.num, op->c.q.den);
         break;
+    case SWS_OP_FILTER_H:
+    case SWS_OP_FILTER_V: {
+        const SwsFilterWeights *kernel = op->filter.kernel;
+        av_bprintf(bp, "%-20s: %d -> %d %s (%d taps)", name,
+                   kernel->src_size, kernel->dst_size,
+                   kernel->name, kernel->filter_size);
+        break;
+    }
     case SWS_OP_TYPE_NB:
         break;
     }

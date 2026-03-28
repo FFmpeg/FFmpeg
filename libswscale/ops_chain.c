@@ -185,6 +185,9 @@ static int op_match(const SwsOp *op, const SwsOpEntry *entry, const SwsComps nex
         return score;
     case SWS_OP_SCALE:
         return av_cmp_q(op->c.q, entry->scale) ? 0 : score;
+    case SWS_OP_FILTER_H:
+    case SWS_OP_FILTER_V:
+        return score;
     case SWS_OP_TYPE_NB:
         break;
     }

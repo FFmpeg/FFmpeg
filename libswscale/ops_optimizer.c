@@ -54,6 +54,8 @@ static bool op_commute_clear(SwsOp *op, SwsOp *next)
     case SWS_OP_SCALE:
     case SWS_OP_READ:
     case SWS_OP_SWIZZLE:
+    case SWS_OP_FILTER_H:
+    case SWS_OP_FILTER_V:
         ff_sws_apply_op_q(next, op->c.q4);
         return true;
     case SWS_OP_SWAP_BYTES:
@@ -107,6 +109,8 @@ static bool op_commute_swizzle(SwsOp *op, SwsOp *next)
     case SWS_OP_LSHIFT:
     case SWS_OP_RSHIFT:
     case SWS_OP_SCALE:
+    case SWS_OP_FILTER_H:
+    case SWS_OP_FILTER_V:
         return true;
 
     /**
