@@ -269,18 +269,6 @@ int ff_sws_setup_u8(const SwsImplParams *params, SwsImplResult *out)
     return 0;
 }
 
-int ff_sws_setup_u(const SwsImplParams *params, SwsImplResult *out)
-{
-    const SwsOp *op = params->op;
-    switch (op->type) {
-    case SWS_PIXEL_U8:  out->priv.u8[0]  = op->c.u; return 0;
-    case SWS_PIXEL_U16: out->priv.u16[0] = op->c.u; return 0;
-    case SWS_PIXEL_U32: out->priv.u32[0] = op->c.u; return 0;
-    case SWS_PIXEL_F32: out->priv.f32[0] = op->c.u; return 0;
-    default: return AVERROR(EINVAL);
-    }
-}
-
 int ff_sws_setup_q(const SwsImplParams *params, SwsImplResult *out)
 {
     const SwsOp *op = params->op;

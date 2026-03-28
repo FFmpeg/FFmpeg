@@ -141,7 +141,6 @@ typedef struct SwsOpEntry {
 } SwsOpEntry;
 
 /* Setup helpers */
-int ff_sws_setup_u(const SwsImplParams *params, SwsImplResult *out);
 int ff_sws_setup_u8(const SwsImplParams *params, SwsImplResult *out);
 int ff_sws_setup_q(const SwsImplParams *params, SwsImplResult *out);
 int ff_sws_setup_q4(const SwsImplParams *params, SwsImplResult *out);
