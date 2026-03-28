@@ -125,7 +125,7 @@ struct video_data {
     int (*munmap_f)(void *_start, size_t length);
 };
 
-struct buff_data {
+struct buf_desc {
     struct video_data *s;
     int index;
 };
@@ -468,7 +468,7 @@ static void mmap_release_buffer(void *opaque, uint8_t *data)
 {
     struct v4l2_plane planes[VIDEO_MAX_PLANES];
     struct v4l2_buffer buf = { 0 };
-    struct buff_data *buf_descriptor = opaque;
+    struct buf_desc *buf_descriptor = opaque;
     struct video_data *s = buf_descriptor->s;
 
     buf.type = s->buf_type;
@@ -621,12 +621,12 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
             return res;
         }
     } else {
-        struct buff_data *buf_descriptor;
+        struct buf_desc *buf_descriptor;
 
         pkt->data     = s->buf_data[buf.index].start;
         pkt->size     = bytesused;
 
-        buf_descriptor = av_malloc(sizeof(struct buff_data));
+        buf_descriptor = av_malloc(sizeof(struct buf_desc));
         if (!buf_descriptor) {
             /* Something went wrong... Since av_malloc() failed, we cannot even
              * allocate a buffer for memcpying into it
