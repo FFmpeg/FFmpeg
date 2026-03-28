@@ -250,8 +250,8 @@ static int add_ops_glsl(VulkanPriv *p, FFVulkanOpsCtx *s,
                                          "xyzw"[ops->order_src.in[2]],
                                          "xyzw"[ops->order_src.in[3]]);
             } else {
-                for (int i = 0; i < (op->rw.packed ? 1 : op->rw.elems); i++)
-                    GLSLF(1, %s.%c = %s(imageLoad(src_img[%i], pos)[0]);      ,
+                for (int i = 0; i < op->rw.elems; i++)
+                    GLSLF(1, %s.%c = %s(imageLoad(src_img[%i], pos)[0]);       ,
                           type_name, "xyzw"[i], type_s, ops->order_src.in[i]);
             }
             break;
@@ -266,7 +266,7 @@ static int add_ops_glsl(VulkanPriv *p, FFVulkanOpsCtx *s,
                                          "xyzw"[ops->order_dst.in[2]],
                                          "xyzw"[ops->order_dst.in[3]]);
             } else {
-                for (int i = 0; i < (op->rw.packed ? 1 : op->rw.elems); i++)
+                for (int i = 0; i < op->rw.elems; i++)
                     GLSLF(1, imageStore(dst_img[%i], pos, %s(%s[%i]));         ,
                           ops->order_dst.in[i], type_v, type_name, i);
             }
