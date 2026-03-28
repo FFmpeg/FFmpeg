@@ -75,11 +75,11 @@ int ff_sws_op_chain_append(SwsOpChain *chain, SwsFuncPtr func,
  * For unfiltered SWS_OP_READ/SWS_OP_WRITE, SWS_OP_SWAP_BYTES and
  * SWS_OP_SWIZZLE, the exact type is not checked, just the size.
  *
- * Components set in `next.unused` are ignored when matching. If `flexible`
+ * Components marked SWS_COMP_GARBAGE are ignored when matching. If `flexible`
  * is true, the op body is ignored - only the operation, pixel type, and
  * component masks are checked.
  */
-static int op_match(const SwsOp *op, const SwsOpEntry *entry, const SwsComps next)
+static int op_match(const SwsOp *op, const SwsOpEntry *entry)
 {
     int score = 10;
     if (op->op != entry->op)
@@ -115,7 +115,7 @@ static int op_match(const SwsOp *op, const SwsOpEntry *entry, const SwsComps nex
     if (op->op == SWS_OP_CLEAR) {
         /* Clear pattern must match exactly, regardless of `entry->flexible` */
         for (int i = 0; i < 4; i++) {
-            if (!next.unused[i] && entry->unused[i] != !!op->c.q4[i].den)
+            if (SWS_OP_NEEDED(op, i) && entry->unused[i] != !!op->c.q4[i].den)
                 return 0;
         }
     }
@@ -147,9 +147,9 @@ static int op_match(const SwsOp *op, const SwsOpEntry *entry, const SwsComps nex
         return score;
     case SWS_OP_CLEAR:
         for (int i = 0; i < 4; i++) {
-            if (!op->c.q4[i].den)
+            if (!op->c.q4[i].den || !SWS_OP_NEEDED(op, i))
                 continue;
-            if (av_cmp_q(op->c.q4[i], Q(entry->clear_value)) && !next.unused[i])
+            if (av_cmp_q(op->c.q4[i], Q(entry->clear_value)))
                 return 0;
         }
         return score;
@@ -159,7 +159,7 @@ static int op_match(const SwsOp *op, const SwsOpEntry *entry, const SwsComps nex
         break;
     case SWS_OP_SWIZZLE:
         for (int i = 0; i < 4; i++) {
-            if (op->swizzle.in[i] != entry->swizzle.in[i] && !next.unused[i])
+            if (SWS_OP_NEEDED(op, i) && op->swizzle.in[i] != entry->swizzle.in[i])
                 return 0;
         }
         return score;
@@ -204,8 +204,6 @@ int ff_sws_op_compile_tables(SwsContext *ctx, const SwsOpTable *const tables[],
                              int num_tables, SwsOpList *ops, const int block_size,
                              SwsOpChain *chain)
 {
-    static const SwsOp dummy = { .comps.unused = { true, true, true, true }};
-    const SwsOp *next = ops->num_ops > 1 ? &ops->ops[1] : &dummy;
     const unsigned cpu_flags = av_get_cpu_flags();
     const SwsOpEntry *best = NULL;
     const SwsOpTable *best_table = NULL;
@@ -226,7 +224,7 @@ int ff_sws_op_compile_tables(SwsContext *ctx, const SwsOpTable *const tables[],
         params.table = table;
         for (int i = 0; table->entries[i]; i++) {
             const SwsOpEntry *entry = table->entries[i];
-            int score = op_match(op, entry, next->comps);
+            int score = op_match(op, entry);
             if (score <= best_score)
                 continue;
             if (entry->check && !entry->check(&params))
