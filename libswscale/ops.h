@@ -85,6 +85,8 @@ typedef enum SwsCompFlags {
     SWS_COMP_SWAPPED = 1 << 3, /* byte order is swapped */
 } SwsCompFlags;
 
+#define SWS_OP_NEEDED(op, idx) (!((op)->comps.flags[idx] & SWS_COMP_GARBAGE))
+
 typedef union SwsConst {
     /* Generic constant value */
     AVRational q4[4];

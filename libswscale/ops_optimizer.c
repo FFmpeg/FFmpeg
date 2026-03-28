@@ -126,7 +126,7 @@ static bool op_commute_swizzle(SwsOp *op, SwsOp *next)
     case SWS_OP_MAX: {
         const SwsConst c = next->c;
         for (int i = 0; i < 4; i++) {
-            if (next->comps.unused[i])
+            if (!SWS_OP_NEEDED(op, i))
                 continue;
             const int j = op->swizzle.in[i];
             if (seen[j] && av_cmp_q(next->c.q4[j], c.q4[i]))
@@ -140,7 +140,7 @@ static bool op_commute_swizzle(SwsOp *op, SwsOp *next)
     case SWS_OP_DITHER: {
         const SwsDitherOp d = next->dither;
         for (int i = 0; i < 4; i++) {
-            if (next->comps.unused[i])
+            if (!SWS_OP_NEEDED(op, i))
                 continue;
             const int j = op->swizzle.in[i];
             if (seen[j] && next->dither.y_offset[j] != d.y_offset[i])
@@ -237,7 +237,7 @@ static int exact_log2_q(const AVRational x)
  * If a linear operation can be reduced to a scalar multiplication, returns
  * the corresponding scaling factor, or 0 otherwise.
  */
-static bool extract_scalar(const SwsLinearOp *c, SwsComps prev, SwsComps next,
+static bool extract_scalar(const SwsLinearOp *c, SwsComps comps, SwsComps prev,
                            SwsConst *out_scale)
 {
     SwsConst scale = {0};
@@ -248,7 +248,8 @@ static bool extract_scalar(const SwsLinearOp *c, SwsComps prev, SwsComps next,
 
     for (int i = 0; i < 4; i++) {
         const AVRational s = c->m[i][i];
-        if ((prev.flags[i] & SWS_COMP_ZERO) || next.unused[i])
+        if ((prev.flags[i]  & SWS_COMP_ZERO) ||
+            (comps.flags[i] & SWS_COMP_GARBAGE))
             continue;
         if (scale.q.den && av_cmp_q(s, scale.q))
             return false;
@@ -363,10 +364,11 @@ retry:
         /* common helper variable */
         bool noop = true;
 
-        if (next->comps.unused[0] && next->comps.unused[1] &&
-            next->comps.unused[2] && next->comps.unused[3])
+        if (!SWS_OP_NEEDED(op, 0) && !SWS_OP_NEEDED(op, 1) &&
+            !SWS_OP_NEEDED(op, 2) && !SWS_OP_NEEDED(op, 3) &&
+            op->op != SWS_OP_WRITE)
         {
-            /* Remove completely unused operations */
+            /* Remove any operation whose output is not needed */
             ff_sws_op_list_remove_at(ops, n, 1);
             goto retry;
         }
@@ -378,7 +380,7 @@ retry:
                 SwsSwizzleOp swiz = SWS_SWIZZLE(0, 1, 2, 3);
                 int nb_planes = 0;
                 for (int i = 0; i < op->rw.elems; i++) {
-                    if (next->comps.unused[i]) {
+                    if (!SWS_OP_NEEDED(op, i)) {
                         swiz.in[i] = 3 - (i - nb_planes); /* map to unused plane */
                         continue;
                     }
@@ -449,7 +451,7 @@ retry:
                 {
                     /* Redundant clear-to-zero of zero component */
                     op->c.q4[i].den = 0;
-                } else if (next->comps.unused[i]) {
+                } else if (!SWS_OP_NEEDED(op, i)) {
                     /* Unnecessary clear of unused component */
                     op->c.q4[i] = (AVRational) {0, 0};
                 } else if (op->c.q4[i].den) {
@@ -475,7 +477,7 @@ retry:
 
         case SWS_OP_SWIZZLE:
             for (int i = 0; i < 4; i++) {
-                if (next->comps.unused[i])
+                if (!SWS_OP_NEEDED(op, i))
                     continue;
                 if (op->swizzle.in[i] != i)
                     noop = false;
@@ -556,7 +558,7 @@ retry:
 
         case SWS_OP_MIN:
             for (int i = 0; i < 4; i++) {
-                if (next->comps.unused[i] || !op->c.q4[i].den)
+                if (!SWS_OP_NEEDED(op, i) || !op->c.q4[i].den)
                     continue;
                 if (av_cmp_q(op->c.q4[i], prev->comps.max[i]) < 0)
                     noop = false;
@@ -570,7 +572,7 @@ retry:
 
         case SWS_OP_MAX:
             for (int i = 0; i < 4; i++) {
-                if (next->comps.unused[i] || !op->c.q4[i].den)
+                if (!SWS_OP_NEEDED(op, i) || !op->c.q4[i].den)
                     continue;
                 if (av_cmp_q(prev->comps.min[i], op->c.q4[i]) < 0)
                     noop = false;
@@ -586,7 +588,7 @@ retry:
             for (int i = 0; i < 4; i++) {
                 if (op->dither.y_offset[i] < 0)
                     continue;
-                if (next->comps.unused[i] || (prev->comps.flags[i] & SWS_COMP_EXACT)) {
+                if (!SWS_OP_NEEDED(op, i) || (prev->comps.flags[i] & SWS_COMP_EXACT)) {
                     op->dither.y_offset[i] = -1; /* unnecessary dither */
                     goto retry;
                 } else {
@@ -643,7 +645,7 @@ retry:
             /* Optimize away unused rows */
             for (int i = 0; i < 4; i++) {
                 const uint32_t row = SWS_MASK_ROW(i);
-                if (!next->comps.unused[i] || !(op->lin.mask & row))
+                if (SWS_OP_NEEDED(op, i) || !(op->lin.mask & row))
                     continue;
                 for (int j = 0; j < 5; j++)
                     op->lin.m[i][j] = Q(i == j);
@@ -663,7 +665,7 @@ retry:
             }
 
             /* Multiplication by scalar constant */
-            if (extract_scalar(&op->lin, prev->comps, next->comps, &c)) {
+            if (extract_scalar(&op->lin, op->comps, prev->comps, &c)) {
                 op->op = SWS_OP_SCALE;
                 op->c  = c;
                 goto retry;
@@ -954,7 +956,7 @@ int ff_sws_op_list_subpass(SwsOpList *ops1, SwsOpList **out_rest)
     SwsSwizzleOp swiz_wr = SWS_SWIZZLE(0, 1, 2, 3);
     SwsSwizzleOp swiz_rd = SWS_SWIZZLE(0, 1, 2, 3);
     for (int i = 0; i < 4; i++) {
-        if (!op->comps.unused[i]) {
+        if (SWS_OP_NEEDED(prev, i)) {
             const int o = nb_planes++;
             swiz_wr.in[o] = i;
             swiz_rd.in[i] = o;
