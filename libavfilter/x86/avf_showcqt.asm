@@ -22,6 +22,8 @@
 
 %include "libavutil/x86/x86util.asm"
 
+SECTION .text
+
 %if ARCH_X86_64
 %define pointer resq
 %else
