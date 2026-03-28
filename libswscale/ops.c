@@ -472,6 +472,11 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
         SwsOp *op = &ops->ops[n];
         bool need_in[4] = { false, false, false, false };
 
+        for (int i = 0; i < 4; i++) {
+            if (!need_out[i])
+                op->comps.flags[i] = SWS_COMP_GARBAGE;
+        }
+
         switch (op->op) {
         case SWS_OP_READ:
         case SWS_OP_WRITE:
