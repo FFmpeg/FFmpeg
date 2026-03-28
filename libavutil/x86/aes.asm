@@ -86,7 +86,6 @@ cglobal aes_%1rypt_%2, 5, 5, 2
     REP_RET
 %endmacro
 
-%if HAVE_AESNI_EXTERNAL
 INIT_XMM aesni
 AES_CRYPT enc, 10
 AES_CRYPT enc, 12
@@ -94,4 +93,3 @@ AES_CRYPT enc, 14
 AES_CRYPT dec, 10
 AES_CRYPT dec, 12
 AES_CRYPT dec, 14
-%endif
