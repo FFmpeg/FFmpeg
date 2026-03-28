@@ -255,13 +255,13 @@ typedef struct SwsOpList {
     /* Metadata associated with this operation list */
     SwsFormat src, dst;
 
-    /* Input/output plane pointer swizzle mask */
-    SwsSwizzleOp order_src, order_dst;
+    /* Input/output plane indices */
+    uint8_t plane_src[4], plane_dst[4];
 
     /**
      * Source component metadata associated with pixel values from each
      * corresponding component (in plane/memory order, i.e. not affected by
-     * `order_src`). Lets the optimizer know additional information about
+     * `plane_src`). Lets the optimizer know additional information about
      * the value range and/or pixel data to expect.
      *
      * The default value of {0} is safe to pass in the case that no additional

@@ -385,7 +385,7 @@ retry:
 
                     const int idx = nb_planes++;
                     av_assert1(idx <= i);
-                    ops->order_src.in[idx] = ops->order_src.in[i];
+                    ops->plane_src[idx] = ops->plane_src[i];
                     swiz.in[i] = idx;
                 }
 
@@ -501,7 +501,7 @@ retry:
                 for (int dst = 0; dst < prev->rw.elems; dst++) {
                     const int src = op->swizzle.in[dst];
                     if (src > dst && src < prev->rw.elems) {
-                        FFSWAP(int, ops->order_src.in[dst], ops->order_src.in[src]);
+                        FFSWAP(int, ops->plane_src[dst], ops->plane_src[src]);
                         for (int i = dst; i < 4; i++) {
                             if (op->swizzle.in[i] == dst)
                                 op->swizzle.in[i] = src;
@@ -517,7 +517,7 @@ retry:
                 for (int dst = 0; dst < next->rw.elems; dst++) {
                     const int src = op->swizzle.in[dst];
                     if (src > dst && src < next->rw.elems) {
-                        FFSWAP(int, ops->order_dst.in[dst], ops->order_dst.in[src]);
+                        FFSWAP(int, ops->plane_dst[dst], ops->plane_dst[src]);
                         FFSWAP(int, op->swizzle.in[dst], op->swizzle.in[src]);
                         goto retry;
                     }
@@ -963,14 +963,14 @@ int ff_sws_op_list_subpass(SwsOpList *ops1, SwsOpList **out_rest)
 
     /* Determine metadata for the intermediate format */
     const SwsPixelType type = op->type;
-    ops2->order_src = SWS_SWIZZLE(0, 1, 2, 3);
     ops2->comps_src = prev->comps;
     ops2->src.format = get_planar_fmt(type, nb_planes);
     ops2->src.desc = av_pix_fmt_desc_get(ops2->src.format);
     get_input_size(ops1, &ops2->src);
-
-    ops1->order_dst = SWS_SWIZZLE(0, 1, 2, 3);
     ops1->dst = ops2->src;
+
+    for (int i = 0; i < nb_planes; i++)
+        ops1->plane_dst[i] = ops2->plane_src[i] = i;
 
     ff_sws_op_list_remove_at(ops1, idx, ops1->num_ops - idx);
     ff_sws_op_list_remove_at(ops2, 0, idx);

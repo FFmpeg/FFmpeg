@@ -323,7 +323,7 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
             /* Active components are taken from the user-provided values,
              * other components are explicitly stripped */
             for (int i = 0; i < op->rw.elems; i++) {
-                const int idx = op->rw.packed ? i : ops->order_src.in[i];
+                const int idx = op->rw.packed ? i : ops->plane_src[i];
                 op->comps.flags[i] = ops->comps_src.flags[idx];
                 op->comps.min[i]   = ops->comps_src.min[idx];
                 op->comps.max[i]   = ops->comps_src.max[idx];
@@ -566,7 +566,8 @@ SwsOpList *ff_sws_op_list_alloc(void)
     if (!ops)
         return NULL;
 
-    ops->order_src = ops->order_dst = SWS_SWIZZLE(0, 1, 2, 3);
+    for (int i = 0; i < 4; i++)
+        ops->plane_src[i] = ops->plane_dst[i] = i;
     ff_fmt_clear(&ops->src);
     ff_fmt_clear(&ops->dst);
     return ops;
@@ -693,7 +694,7 @@ bool ff_sws_op_list_is_noop(const SwsOpList *ops)
      */
     const int num_planes = read->rw.packed ? 1 : read->rw.elems;
     for (int i = 0; i < num_planes; i++) {
-        if (ops->order_src.in[i] != ops->order_dst.in[i])
+        if (ops->plane_src[i] != ops->plane_dst[i])
             return false;
     }
 
@@ -899,6 +900,20 @@ void ff_sws_op_desc(AVBPrint *bp, const SwsOp *op, const bool unused[4])
     }
 }
 
+static void desc_plane_order(AVBPrint *bp, int nb_planes, const uint8_t *order)
+{
+    bool inorder = true;
+    for (int i = 0; i < nb_planes; i++)
+        inorder &= order[i] == i;
+    if (inorder)
+        return;
+
+    av_bprintf(bp, ", via {");
+    for (int i = 0; i < nb_planes; i++)
+        av_bprintf(bp, "%s%d", i ? ", " : "", order[i]);
+    av_bprintf(bp, "}");
+}
+
 void ff_sws_op_list_print(void *log, int lev, int lev_extra,
                           const SwsOpList *ops)
 {
@@ -928,14 +943,9 @@ void ff_sws_op_list_print(void *log, int lev, int lev_extra,
         ff_sws_op_desc(&bp, op, next->comps.unused);
 
         if (op->op == SWS_OP_READ || op->op == SWS_OP_WRITE) {
-            SwsSwizzleOp order = op->op == SWS_OP_READ ? ops->order_src : ops->order_dst;
-            if (order.mask != SWS_SWIZZLE(0, 1, 2, 3).mask) {
-                const int planes = op->rw.packed ? 1 : op->rw.elems;
-                av_bprintf(&bp, ", via {");
-                for (int i = 0; i < planes; i++)
-                    av_bprintf(&bp, "%s%d", i ? ", " : "", order.in[i]);
-                av_bprintf(&bp, "}");
-            }
+            const int planes = op->rw.packed ? 1 : op->rw.elems;
+            desc_plane_order(&bp, planes,
+                op->op == SWS_OP_READ ? ops->plane_src : ops->plane_dst);
         }
 
         av_assert0(av_bprint_is_complete(&bp));

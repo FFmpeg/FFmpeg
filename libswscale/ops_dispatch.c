@@ -418,8 +418,8 @@ static int compile(SwsGraph *graph, const SwsOpList *ops, SwsPass *input,
     };
 
     for (int i = 0; i < 4; i++) {
-        p->idx_in[i]  = i < p->planes_in  ? ops->order_src.in[i] : -1;
-        p->idx_out[i] = i < p->planes_out ? ops->order_dst.in[i] : -1;
+        p->idx_in[i]  = i < p->planes_in  ? ops->plane_src[i] : -1;
+        p->idx_out[i] = i < p->planes_out ? ops->plane_dst[i] : -1;
     }
 
     const SwsFilterWeights *filter = read->rw.kernel;
