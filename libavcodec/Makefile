@@ -1127,7 +1127,7 @@ OBJS-$(CONFIG_FITS_DEMUXER)            += fits.o
 OBJS-$(CONFIG_TAK_DEMUXER)             += tak.o
 
 # libavformat dependencies for static builds
-STLIBOBJS-$(CONFIG_AVFORMAT)           += to_upper4.o
+STLIBOBJS-$(CONFIG_AVFORMAT)           += h2645_parse.o lcevctab.o to_upper4.o
 STLIBOBJS-$(CONFIG_ISO_MEDIA)          += mpegaudiotabs.o
 STLIBOBJS-$(CONFIG_FLV_MUXER)          += mpeg4audio_sample_rates.o
 STLIBOBJS-$(CONFIG_HLS_DEMUXER)        += ac3_channel_layout_tab.o
@@ -1135,7 +1135,6 @@ STLIBOBJS-$(CONFIG_IMAGE_JPEGXL_PIPE_DEMUXER) += jpegxl_parse.o
 STLIBOBJS-$(CONFIG_JPEGXL_ANIM_DEMUXER)       += jpegxl_parse.o
 STLIBOBJS-$(CONFIG_MATROSKA_DEMUXER)   += mpeg4audio_sample_rates.o
 STLIBOBJS-$(CONFIG_MOV_DEMUXER)        += ac3_channel_layout_tab.o
-STLIBOBJS-$(CONFIG_MOV_MUXER)          += h2645_parse.o lcevctab.o
 STLIBOBJS-$(CONFIG_MXF_MUXER)          += golomb.o
 STLIBOBJS-$(CONFIG_MP3_MUXER)          += mpegaudiotabs.o
 STLIBOBJS-$(CONFIG_NUT_MUXER)          += mpegaudiotabs.o
