@@ -282,8 +282,8 @@ static int add_ops_glsl(VulkanPriv *p, FFVulkanOpsCtx *s,
             break;
         }
         case SWS_OP_SCALE:
-            av_bprintf(&shd->src, "    %s = %s*%i/%i;\n",
-                       type_name, type_name, op->c.q.num, op->c.q.den);
+            av_bprintf(&shd->src, "    %s = %s * "QSTR";\n",
+                       type_name, type_name, QTYPE(op->c.q));
             break;
         case SWS_OP_MIN:
         case SWS_OP_MAX:
@@ -293,9 +293,7 @@ static int add_ops_glsl(VulkanPriv *p, FFVulkanOpsCtx *s,
                 av_bprintf(&shd->src, "    %s.%c = %s(%s.%c, "QSTR");\n",
                            type_name, "xyzw"[i],
                            op->op == SWS_OP_MIN ? "min" : "max",
-                           type_name, "xyzw"[i],
-                           op->c.q4[i].num, op->c.q4[i].den,
-                           cur_type == SWS_PIXEL_F32 ? ".0f" : "");
+                           type_name, "xyzw"[i], QTYPE(op->c.q4[i]));
             }
             break;
         case SWS_OP_LSHIFT:
@@ -321,9 +319,8 @@ static int add_ops_glsl(VulkanPriv *p, FFVulkanOpsCtx *s,
             for (int i = 0; i < size; i++) {
                 av_bprintf(&shd->src, "        { ");
                 for (int j = 0; j < size; j++)
-                    av_bprintf(&shd->src, "%i/%i.0, ",
-                               op->dither.matrix[i*size + j].num,
-                               op->dither.matrix[i*size + j].den);
+                    av_bprintf(&shd->src, QSTR", ",
+                               QTYPE(op->dither.matrix[i*size + j]));
                 av_bprintf(&shd->src, "}, %s\n", i == (size - 1) ? "\n    };" : "");
             }
             for (int i = 0; i < 4; i++) {
@@ -339,16 +336,15 @@ static int add_ops_glsl(VulkanPriv *p, FFVulkanOpsCtx *s,
         case SWS_OP_LINEAR:
             for (int i = 0; i < 4; i++) {
                 if (op->lin.m[i][4].num)
-                    av_bprintf(&shd->src, "    tmp.%c = (%i/%i.0);\n", "xyzw"[i],
-                               op->lin.m[i][4].num, op->lin.m[i][4].den);
+                    av_bprintf(&shd->src, "    tmp.%c = "QSTR";\n", "xyzw"[i],
+                               QTYPE(op->lin.m[i][4]));
                 else
                     av_bprintf(&shd->src, "    tmp.%c = 0;\n", "xyzw"[i]);
                 for (int j = 0; j < 4; j++) {
                     if (!op->lin.m[i][j].num)
                         continue;
-                    av_bprintf(&shd->src, "    tmp.%c += f32.%c*(%i/%i.0);\n",
-                               "xyzw"[i], "xyzw"[j],
-                               op->lin.m[i][j].num, op->lin.m[i][j].den);
+                    av_bprintf(&shd->src, "    tmp.%c += f32.%c*"QSTR";\n",
+                               "xyzw"[i], "xyzw"[j], QTYPE(op->lin.m[i][j]));
                 }
             }
             av_bprintf(&shd->src, "    f32 = tmp;\n");
