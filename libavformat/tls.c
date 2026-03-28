@@ -32,12 +32,30 @@
 #include "libavutil/mem.h"
 #include "libavutil/parseutils.h"
 
+int ff_tls_parse_host(TLSShared *s, char *hostname, int hostname_size, int *port_ptr, const char *uri)
+{
+    struct addrinfo hints = { .ai_flags = AI_NUMERICHOST }, *ai;
+
+    if (!hostname || hostname_size <= 0)
+        return AVERROR(EINVAL);
+
+    av_url_split(NULL, 0, NULL, 0, hostname, hostname_size, port_ptr, NULL, 0, uri);
+    if (!getaddrinfo(hostname, NULL, &hints, &ai)) {
+        s->numerichost = 1;
+        freeaddrinfo(ai);
+    }
+
+    if (!s->host && !(s->host = av_strdup(hostname)))
+        return AVERROR(ENOMEM);
+
+    return 0;
+}
+
 int ff_tls_open_underlying(TLSShared *c, URLContext *parent, const char *uri, AVDictionary **options)
 {
     int port;
     const char *p;
     char buf[200], opts[50] = "";
-    struct addrinfo hints = { 0 }, *ai = NULL;
     const char *proxy_path;
     char *env_http_proxy, *env_no_proxy;
     int use_proxy;
@@ -53,7 +71,9 @@ int ff_tls_open_underlying(TLSShared *c, URLContext *parent, const char *uri, AV
     if (c->listen && !c->is_dtls)
         snprintf(opts, sizeof(opts), "?listen=1");
 
-    av_url_split(NULL, 0, NULL, 0, c->underlying_host, sizeof(c->underlying_host), &port, NULL, 0, uri);
+    ret = ff_tls_parse_host(c, c->underlying_host, sizeof(c->underlying_host), &port, uri);
+    if (ret < 0)
+        return ret;
 
     if (!p) {
         p = opts;
@@ -63,15 +83,6 @@ int ff_tls_open_underlying(TLSShared *c, URLContext *parent, const char *uri, AV
     }
 
     ff_url_join(buf, sizeof(buf), c->is_dtls ? "udp" : "tcp", NULL, (c->is_dtls && c->listen) ? "" : c->underlying_host, port, "%s", p);
-
-    hints.ai_flags = AI_NUMERICHOST;
-    if (!getaddrinfo(c->underlying_host, NULL, &hints, &ai)) {
-        c->numerichost = 1;
-        freeaddrinfo(ai);
-    }
-
-    if (!c->host && !(c->host = av_strdup(c->underlying_host)))
-        return AVERROR(ENOMEM);
 
     env_http_proxy = getenv_utf8("http_proxy");
     proxy_path = c->http_proxy ? c->http_proxy : env_http_proxy;
