@@ -274,32 +274,32 @@ static int add_ops_glsl(VulkanPriv *p, FFVulkanOpsCtx *s,
         }
         case SWS_OP_CLEAR: {
             for (int i = 0; i < 4; i++) {
-                if (!op->c.q4[i].den)
+                if (!op->clear.value[i].den)
                     continue;
                 av_bprintf(&shd->src, "    %s.%c = %s"QSTR";\n", type_name,
-                           "xyzw"[i], type_s, QTYPE(op->c.q4[i]));
+                           "xyzw"[i], type_s, QTYPE(op->clear.value[i]));
             }
             break;
         }
         case SWS_OP_SCALE:
             av_bprintf(&shd->src, "    %s = %s * "QSTR";\n",
-                       type_name, type_name, QTYPE(op->c.q));
+                       type_name, type_name, QTYPE(op->scale.factor));
             break;
         case SWS_OP_MIN:
         case SWS_OP_MAX:
             for (int i = 0; i < 4; i++) {
-                if (!op->c.q4[i].den)
+                if (!op->clamp.limit[i].den)
                     continue;
                 av_bprintf(&shd->src, "    %s.%c = %s(%s.%c, "QSTR");\n",
                            type_name, "xyzw"[i],
                            op->op == SWS_OP_MIN ? "min" : "max",
-                           type_name, "xyzw"[i], QTYPE(op->c.q4[i]));
+                           type_name, "xyzw"[i], QTYPE(op->clamp.limit[i]));
             }
             break;
         case SWS_OP_LSHIFT:
         case SWS_OP_RSHIFT:
             av_bprintf(&shd->src, "    %s %s= %i;\n", type_name,
-                       op->op == SWS_OP_LSHIFT ? "<<" : ">>", op->c.u);
+                       op->op == SWS_OP_LSHIFT ? "<<" : ">>", op->shift.amount);
             break;
         case SWS_OP_CONVERT:
             if (ff_sws_pixel_type_is_int(cur_type) && op->convert.expand) {

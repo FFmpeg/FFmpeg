@@ -65,11 +65,16 @@ static int register_op(SwsContext *ctx, void *opaque, SwsOp *op)
         }
         break;
     case SWS_OP_SCALE:
+        op->scale.factor = (AVRational) { 0, 1 };
+        break;
     case SWS_OP_MIN:
     case SWS_OP_MAX:
+        for (int i = 0; i < 4; i++)
+            op->clamp.limit[i] = (AVRational) { 0, 1 };
+        break;
     case SWS_OP_CLEAR:
         for (int i = 0; i < 4; i++)
-            op->c.q4[i] = (AVRational) { 0, !!op->c.q4[i].den };
+            op->clear.value[i] = (AVRational) { 0, !!op->clear.value[i].den };
         break;
     case SWS_OP_DITHER:
         /* Strip arbitrary offset */

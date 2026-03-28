@@ -498,45 +498,45 @@ static void check_clear(void)
             const AVRational zero   = (AVRational) { 0, 1};
             const AVRational none = {0};
 
-            const SwsConst patterns[] = {
+            const SwsClearOp patterns[] = {
                 /* Zero only */
-                {.q4 = {   none,   none,   none,   zero }},
-                {.q4 = {   zero,   none,   none,   none }},
+                {{   none,   none,   none,   zero }},
+                {{   zero,   none,   none,   none }},
                 /* Alpha only */
-                {.q4 = {   none,   none,   none,  alpha }},
-                {.q4 = {  alpha,   none,   none,   none }},
+                {{   none,   none,   none,  alpha }},
+                {{  alpha,   none,   none,   none }},
                 /* Chroma only */
-                {.q4 = { chroma, chroma,   none,   none }},
-                {.q4 = {   none, chroma, chroma,   none }},
-                {.q4 = {   none,   none, chroma, chroma }},
-                {.q4 = { chroma,   none, chroma,   none }},
-                {.q4 = {   none, chroma,   none, chroma }},
+                {{ chroma, chroma,   none,   none }},
+                {{   none, chroma, chroma,   none }},
+                {{   none,   none, chroma, chroma }},
+                {{ chroma,   none, chroma,   none }},
+                {{   none, chroma,   none, chroma }},
                 /* Alpha+chroma */
-                {.q4 = { chroma, chroma,   none,  alpha }},
-                {.q4 = {   none, chroma, chroma,  alpha }},
-                {.q4 = {  alpha,   none, chroma, chroma }},
-                {.q4 = { chroma,   none, chroma,  alpha }},
-                {.q4 = {  alpha, chroma,   none, chroma }},
+                {{ chroma, chroma,   none,  alpha }},
+                {{   none, chroma, chroma,  alpha }},
+                {{  alpha,   none, chroma, chroma }},
+                {{ chroma,   none, chroma,  alpha }},
+                {{  alpha, chroma,   none, chroma }},
                 /* Random values */
-                {.q4 = { none, rndq(t), rndq(t), rndq(t) }},
-                {.q4 = { none, rndq(t), rndq(t), rndq(t) }},
-                {.q4 = { none, rndq(t), rndq(t), rndq(t) }},
-                {.q4 = { none, rndq(t), rndq(t), rndq(t) }},
+                {{ none, rndq(t), rndq(t), rndq(t) }},
+                {{ none, rndq(t), rndq(t), rndq(t) }},
+                {{ none, rndq(t), rndq(t), rndq(t) }},
+                {{ none, rndq(t), rndq(t), rndq(t) }},
             };
 
             for (int i = 0; i < FF_ARRAY_ELEMS(patterns); i++) {
                 CHECK(FMT("clear_pattern_%s[%d]", type, i), 4, 4, t, t, {
-                    .op   = SWS_OP_CLEAR,
-                    .type = t,
-                    .c    = patterns[i],
+                    .op    = SWS_OP_CLEAR,
+                    .type  = t,
+                    .clear = patterns[i],
                 });
             }
         } else if (!ff_sws_pixel_type_is_int(t)) {
             /* Floating point YUV doesn't exist, only alpha needs to be cleared */
             CHECK(FMT("clear_alpha_%s", type), 4, 4, t, t, {
-                .op      = SWS_OP_CLEAR,
-                .type    = t,
-                .c.q4[3] = { 0, 1 },
+                .op   = SWS_OP_CLEAR,
+                .type = t,
+                .clear.value[3] = { 0, 1 },
             });
         }
     }
@@ -551,15 +551,15 @@ static void check_shift(void)
 
         for (int shift = 1; shift <= 8; shift++) {
             CHECK_COMMON(FMT("lshift%d_%s", shift, type), t, t, {
-                .op   = SWS_OP_LSHIFT,
-                .type = t,
-                .c.u  = shift,
+                .op    = SWS_OP_LSHIFT,
+                .type  = t,
+                .shift = { shift },
             });
 
             CHECK_COMMON(FMT("rshift%d_%s", shift, type), t, t, {
-                .op   = SWS_OP_RSHIFT,
-                .type = t,
-                .c.u  = shift,
+                .op    = SWS_OP_RSHIFT,
+                .type  = t,
+                .shift = { shift },
             });
         }
     }
@@ -697,13 +697,13 @@ static void check_min_max(void)
         CHECK_COMMON(FMT("min_%s", type), t, t, {
             .op = SWS_OP_MIN,
             .type = t,
-            .c.q4 = { rndq(t), rndq(t), rndq(t), rndq(t) },
+            .clamp = {{ rndq(t), rndq(t), rndq(t), rndq(t) }},
         });
 
         CHECK_COMMON(FMT("max_%s", type), t, t, {
             .op = SWS_OP_MAX,
             .type = t,
-            .c.q4 = { rndq(t), rndq(t), rndq(t), rndq(t) },
+            .clamp = {{ rndq(t), rndq(t), rndq(t), rndq(t) }},
         });
     }
 }
@@ -776,15 +776,15 @@ static void check_scale(void)
             const unsigned scale = rnd() & max;
             const unsigned range = max / (scale ? scale : 1);
             CHECK_COMMON_RANGE(FMT("scale_%s", type), range, t, t, {
-                .op   = SWS_OP_SCALE,
-                .type = t,
-                .c.q  = { scale, 1 },
+                .op    = SWS_OP_SCALE,
+                .type  = t,
+                .scale = {{ scale, 1 }},
             });
         } else {
             CHECK_COMMON(FMT("scale_%s", type), t, t, {
-                .op   = SWS_OP_SCALE,
-                .type = t,
-                .c.q  = rndq(t),
+                .op    = SWS_OP_SCALE,
+                .type  = t,
+                .scale = { rndq(t) },
             });
         }
     }

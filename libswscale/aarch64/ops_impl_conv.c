@@ -181,14 +181,14 @@ static int convert_to_aarch64_impl(SwsContext *ctx, const SwsOpList *ops, int n,
         break;
     case AARCH64_SWS_OP_LSHIFT:
     case AARCH64_SWS_OP_RSHIFT:
-        out->shift = op->c.u;
+        out->shift = op->shift.amount;
         break;
     case AARCH64_SWS_OP_CLEAR:
         out->mask = 0;
-        MASK_SET(out->mask, 0, !!op->c.q4[0].den);
-        MASK_SET(out->mask, 1, !!op->c.q4[1].den);
-        MASK_SET(out->mask, 2, !!op->c.q4[2].den);
-        MASK_SET(out->mask, 3, !!op->c.q4[3].den);
+        MASK_SET(out->mask, 0, !!op->clear.value[0].den);
+        MASK_SET(out->mask, 1, !!op->clear.value[1].den);
+        MASK_SET(out->mask, 2, !!op->clear.value[2].den);
+        MASK_SET(out->mask, 3, !!op->clear.value[3].den);
         break;
     case AARCH64_SWS_OP_EXPAND:
     case AARCH64_SWS_OP_CONVERT:

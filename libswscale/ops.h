@@ -55,15 +55,15 @@ typedef enum SwsOpType {
     /* Bit manipulation operations. Defined for integers only. */
     SWS_OP_UNPACK,          /* split tightly packed data into components */
     SWS_OP_PACK,            /* compress components into tightly packed data */
-    SWS_OP_LSHIFT,          /* logical left shift of raw pixel values by (u8) */
-    SWS_OP_RSHIFT,          /* right shift of raw pixel values by (u8) */
+    SWS_OP_LSHIFT,          /* logical left shift of raw pixel values */
+    SWS_OP_RSHIFT,          /* right shift of raw pixel values */
 
     /* Generic arithmetic. Defined and implemented for all types */
     SWS_OP_CLEAR,           /* clear pixel values */
     SWS_OP_CONVERT,         /* convert (cast) between formats */
-    SWS_OP_MIN,             /* numeric minimum (q4) */
-    SWS_OP_MAX,             /* numeric maximum (q4) */
-    SWS_OP_SCALE,           /* multiplication by scalar (q) */
+    SWS_OP_MIN,             /* numeric minimum */
+    SWS_OP_MAX,             /* numeric maximum */
+    SWS_OP_SCALE,           /* multiplication by scalar */
 
     /* Floating-point only arithmetic operations. */
     SWS_OP_LINEAR,          /* generalized linear affine transform */
@@ -86,16 +86,6 @@ typedef enum SwsCompFlags {
 } SwsCompFlags;
 
 #define SWS_OP_NEEDED(op, idx) (!((op)->comps.flags[idx] & SWS_COMP_GARBAGE))
-
-typedef union SwsConst {
-    /* Generic constant value */
-    AVRational q4[4];
-    AVRational q;
-    unsigned u;
-} SwsConst;
-
-static_assert(sizeof(SwsConst) == sizeof(AVRational) * 4,
-              "First field of SwsConst should span the entire union");
 
 typedef struct SwsComps {
     SwsCompFlags flags[4]; /* knowledge about (output) component contents */
@@ -152,10 +142,26 @@ typedef struct SwsSwizzleOp {
 
 #define SWS_SWIZZLE(X,Y,Z,W) ((SwsSwizzleOp) { .in = {X, Y, Z, W} })
 
+typedef struct SwsShiftOp {
+    uint8_t amount; /* number of bits to shift */
+} SwsShiftOp;
+
+typedef struct SwsClearOp {
+    AVRational value[4]; /* value to set, or {0, 0} for no-op */
+} SwsClearOp;
+
 typedef struct SwsConvertOp {
     SwsPixelType to; /* type of pixel to convert to */
     bool expand; /* if true, integers are expanded to the full range */
 } SwsConvertOp;
+
+typedef struct SwsClampOp {
+    AVRational limit[4]; /* per-component min/max value */
+} SwsClampOp;
+
+typedef struct SwsScaleOp {
+    AVRational factor; /* scalar multiplication factor */
+} SwsScaleOp;
 
 typedef struct SwsDitherOp {
     AVRational *matrix; /* tightly packed dither matrix (refstruct) */
@@ -217,10 +223,13 @@ typedef struct SwsOp {
         SwsReadWriteOp  rw;
         SwsPackOp       pack;
         SwsSwizzleOp    swizzle;
+        SwsShiftOp      shift;
+        SwsClearOp      clear;
         SwsConvertOp    convert;
+        SwsClampOp      clamp;
+        SwsScaleOp      scale;
         SwsDitherOp     dither;
         SwsFilterOp     filter;
-        SwsConst        c;
     };
 
     /**

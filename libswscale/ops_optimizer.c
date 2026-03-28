@@ -39,7 +39,7 @@
  */
 static bool op_commute_clear(SwsOp *op, SwsOp *next)
 {
-    SwsOp tmp;
+    SwsClearOp tmp;
 
     av_assert1(op->op == SWS_OP_CLEAR);
     switch (next->op) {
@@ -56,21 +56,21 @@ static bool op_commute_clear(SwsOp *op, SwsOp *next)
     case SWS_OP_SWIZZLE:
     case SWS_OP_FILTER_H:
     case SWS_OP_FILTER_V:
-        ff_sws_apply_op_q(next, op->c.q4);
+        ff_sws_apply_op_q(next, op->clear.value);
         return true;
     case SWS_OP_SWAP_BYTES:
         switch (next->type) {
         case SWS_PIXEL_U16:
-            ff_sws_apply_op_q(next, op->c.q4); /* always works */
+            ff_sws_apply_op_q(next, op->clear.value); /* always works */
             return true;
         case SWS_PIXEL_U32:
             for (int i = 0; i < 4; i++) {
-                uint32_t v = av_bswap32(op->c.q4[i].num);
+                uint32_t v = av_bswap32(op->clear.value[i].num);
                 if (v > INT_MAX)
                     return false; /* can't represent as AVRational anymore */
-                tmp.c.q4[i] = Q(v);
+                tmp.value[i] = Q(v);
             }
-            op->c = tmp.c;
+            op->clear = tmp;
             return true;
         default:
             return false;
@@ -124,14 +124,14 @@ static bool op_commute_swizzle(SwsOp *op, SwsOp *next)
      */
     case SWS_OP_MIN:
     case SWS_OP_MAX: {
-        const SwsConst c = next->c;
+        const SwsClampOp c = next->clamp;
         for (int i = 0; i < 4; i++) {
             if (!SWS_OP_NEEDED(op, i))
                 continue;
             const int j = op->swizzle.in[i];
-            if (seen[j] && av_cmp_q(next->c.q4[j], c.q4[i]))
+            if (seen[j] && av_cmp_q(next->clamp.limit[j], c.limit[i]))
                 return false;
-            next->c.q4[j] = c.q4[i];
+            next->clamp.limit[j] = c.limit[i];
             seen[j] = true;
         }
         return true;
@@ -238,9 +238,9 @@ static int exact_log2_q(const AVRational x)
  * the corresponding scaling factor, or 0 otherwise.
  */
 static bool extract_scalar(const SwsLinearOp *c, SwsComps comps, SwsComps prev,
-                           SwsConst *out_scale)
+                           SwsScaleOp *out_scale)
 {
-    SwsConst scale = {0};
+    SwsScaleOp scale = {0};
 
     /* There are components not on the main diagonal */
     if (c->mask & ~SWS_MASK_DIAG4)
@@ -251,21 +251,21 @@ static bool extract_scalar(const SwsLinearOp *c, SwsComps comps, SwsComps prev,
         if ((prev.flags[i]  & SWS_COMP_ZERO) ||
             (comps.flags[i] & SWS_COMP_GARBAGE))
             continue;
-        if (scale.q.den && av_cmp_q(s, scale.q))
+        if (scale.factor.den && av_cmp_q(s, scale.factor))
             return false;
-        scale.q = s;
+        scale.factor = s;
     }
 
-    if (scale.q.den)
+    if (scale.factor.den)
         *out_scale = scale;
-    return scale.q.den;
+    return scale.factor.den;
 }
 
 /* Extracts an integer clear operation (subset) from the given linear op. */
 static bool extract_constant_rows(SwsLinearOp *c, SwsComps prev,
-                                  SwsConst *out_clear)
+                                  SwsClearOp *out_clear)
 {
-    SwsConst clear = {0};
+    SwsClearOp clear = {0};
     bool ret = false;
 
     for (int i = 0; i < 4; i++) {
@@ -275,7 +275,7 @@ static bool extract_constant_rows(SwsLinearOp *c, SwsComps prev,
                          (prev.flags[j] & SWS_COMP_ZERO); /* input is zero */
         }
         if (const_row && (c->mask & SWS_MASK_ROW(i))) {
-            clear.q4[i] = c->m[i][4];
+            clear.value[i] = c->m[i][4];
             for (int j = 0; j < 5; j++)
                 c->m[i][j] = Q(i == j);
             c->mask &= ~SWS_MASK_ROW(i);
@@ -428,13 +428,13 @@ retry:
         case SWS_OP_RSHIFT:
             /* Two shifts in the same direction */
             if (next->op == op->op) {
-                op->c.u += next->c.u;
+                op->shift.amount += next->shift.amount;
                 ff_sws_op_list_remove_at(ops, n + 1, 1);
                 goto retry;
             }
 
             /* No-op shift */
-            if (!op->c.u) {
+            if (!op->shift.amount) {
                 ff_sws_op_list_remove_at(ops, n, 1);
                 goto retry;
             }
@@ -442,19 +442,19 @@ retry:
 
         case SWS_OP_CLEAR:
             for (int i = 0; i < 4; i++) {
-                if (!op->c.q4[i].den)
+                if (!op->clear.value[i].den)
                     continue;
 
                 if ((prev->comps.flags[i] & SWS_COMP_ZERO) &&
                     !(prev->comps.flags[i] & SWS_COMP_GARBAGE) &&
-                    op->c.q4[i].num == 0)
+                    op->clear.value[i].num == 0)
                 {
                     /* Redundant clear-to-zero of zero component */
-                    op->c.q4[i].den = 0;
+                    op->clear.value[i].den = 0;
                 } else if (!SWS_OP_NEEDED(op, i)) {
                     /* Unnecessary clear of unused component */
-                    op->c.q4[i] = (AVRational) {0, 0};
-                } else if (op->c.q4[i].den) {
+                    op->clear.value[i] = (AVRational) {0, 0};
+                } else if (op->clear.value[i].den) {
                     noop = false;
                 }
             }
@@ -467,8 +467,8 @@ retry:
             /* Transitive clear */
             if (next->op == SWS_OP_CLEAR) {
                 for (int i = 0; i < 4; i++) {
-                    if (next->c.q4[i].den)
-                        op->c.q4[i] = next->c.q4[i];
+                    if (next->clear.value[i].den)
+                        op->clear.value[i] = next->clear.value[i];
                 }
                 ff_sws_op_list_remove_at(ops, n + 1, 1);
                 goto retry;
@@ -548,7 +548,8 @@ retry:
             if (next->op == SWS_OP_SCALE && !op->convert.expand &&
                 ff_sws_pixel_type_is_int(op->type) &&
                 ff_sws_pixel_type_is_int(op->convert.to) &&
-                !av_cmp_q(next->c.q, ff_sws_pixel_expand(op->type, op->convert.to)))
+                !av_cmp_q(next->scale.factor,
+                          ff_sws_pixel_expand(op->type, op->convert.to)))
             {
                 op->convert.expand = true;
                 ff_sws_op_list_remove_at(ops, n + 1, 1);
@@ -558,9 +559,9 @@ retry:
 
         case SWS_OP_MIN:
             for (int i = 0; i < 4; i++) {
-                if (!SWS_OP_NEEDED(op, i) || !op->c.q4[i].den)
+                if (!SWS_OP_NEEDED(op, i) || !op->clamp.limit[i].den)
                     continue;
-                if (av_cmp_q(op->c.q4[i], prev->comps.max[i]) < 0)
+                if (av_cmp_q(op->clamp.limit[i], prev->comps.max[i]) < 0)
                     noop = false;
             }
 
@@ -572,9 +573,9 @@ retry:
 
         case SWS_OP_MAX:
             for (int i = 0; i < 4; i++) {
-                if (!SWS_OP_NEEDED(op, i) || !op->c.q4[i].den)
+                if (!SWS_OP_NEEDED(op, i) || !op->clamp.limit[i].den)
                     continue;
-                if (av_cmp_q(prev->comps.min[i], op->c.q4[i]) < 0)
+                if (av_cmp_q(prev->comps.min[i], op->clamp.limit[i]) < 0)
                     noop = false;
             }
 
@@ -604,7 +605,8 @@ retry:
 
         case SWS_OP_LINEAR: {
             SwsSwizzleOp swizzle;
-            SwsConst c;
+            SwsClearOp clear;
+            SwsScaleOp scale;
 
             /* No-op (identity) linear operation */
             if (!op->lin.mask) {
@@ -654,20 +656,20 @@ retry:
             }
 
             /* Convert constant rows to explicit clear instruction */
-            if (extract_constant_rows(&op->lin, prev->comps, &c)) {
+            if (extract_constant_rows(&op->lin, prev->comps, &clear)) {
                 RET(ff_sws_op_list_insert_at(ops, n + 1, &(SwsOp) {
                     .op    = SWS_OP_CLEAR,
                     .type  = op->type,
                     .comps = op->comps,
-                    .c     = c,
+                    .clear = clear,
                 }));
                 goto retry;
             }
 
             /* Multiplication by scalar constant */
-            if (extract_scalar(&op->lin, op->comps, prev->comps, &c)) {
-                op->op = SWS_OP_SCALE;
-                op->c  = c;
+            if (extract_scalar(&op->lin, op->comps, prev->comps, &scale)) {
+                op->op    = SWS_OP_SCALE;
+                op->scale = scale;
                 goto retry;
             }
 
@@ -684,20 +686,20 @@ retry:
         }
 
         case SWS_OP_SCALE: {
-            const int factor2 = exact_log2_q(op->c.q);
+            const int factor2 = exact_log2_q(op->scale.factor);
 
             /* No-op scaling */
-            if (op->c.q.num == 1 && op->c.q.den == 1) {
+            if (op->scale.factor.num == 1 && op->scale.factor.den == 1) {
                 ff_sws_op_list_remove_at(ops, n, 1);
                 goto retry;
             }
 
             /* Merge consecutive scaling operations (that don't overflow) */
             if (next->op == SWS_OP_SCALE) {
-                int64_t p = op->c.q.num * (int64_t) next->c.q.num;
-                int64_t q = op->c.q.den * (int64_t) next->c.q.den;
+                int64_t p = op->scale.factor.num * (int64_t) next->scale.factor.num;
+                int64_t q = op->scale.factor.den * (int64_t) next->scale.factor.den;
                 if (FFABS(p) <= INT_MAX && FFABS(q) <= INT_MAX) {
-                    av_reduce(&op->c.q.num, &op->c.q.den, p, q, INT_MAX);
+                    av_reduce(&op->scale.factor.num, &op->scale.factor.den, p, q, INT_MAX);
                     ff_sws_op_list_remove_at(ops, n + 1, 1);
                     goto retry;
                 }
@@ -706,7 +708,7 @@ retry:
             /* Scaling by exact power of two */
             if (factor2 && ff_sws_pixel_type_is_int(op->type)) {
                 op->op = factor2 > 0 ? SWS_OP_LSHIFT : SWS_OP_RSHIFT;
-                op->c.u = FFABS(factor2);
+                op->shift.amount = FFABS(factor2);
                 goto retry;
             }
             break;
@@ -760,7 +762,7 @@ retry:
 
         case SWS_OP_SCALE:
             /* Scaling by integer before conversion to int */
-            if (op->c.q.den == 1 && next->op == SWS_OP_CONVERT &&
+            if (op->scale.factor.den == 1 && next->op == SWS_OP_CONVERT &&
                 ff_sws_pixel_type_is_int(next->convert.to))
             {
                 op->type = next->convert.to;
@@ -812,9 +814,9 @@ int ff_sws_solve_shuffle(const SwsOpList *const ops, uint8_t shuffle[],
 
         case SWS_OP_CLEAR:
             for (int i = 0; i < 4; i++) {
-                if (!op->c.q4[i].den)
+                if (!op->clear.value[i].den)
                     continue;
-                if (op->c.q4[i].num != 0 || !clear_val)
+                if (op->clear.value[i].num != 0 || !clear_val)
                     return AVERROR(ENOTSUP);
                 mask[i] = 0x1010101ul * clear_val;
             }
