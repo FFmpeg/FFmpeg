@@ -181,8 +181,7 @@ static void add_desc_read_write(FFVulkanDescriptorSetBinding *out_desc,
 }
 
 #define QSTR "(%i/%i%s)"
-#define QTYPE(i) op->c.q4[i].num, op->c.q4[i].den,       \
-                 cur_type == SWS_PIXEL_F32 ? ".0f" : ""
+#define QTYPE(Q) (Q).num, (Q).den, cur_type == SWS_PIXEL_F32 ? ".0f" : ""
 
 static int add_ops_glsl(VulkanPriv *p, FFVulkanOpsCtx *s,
                         SwsOpList *ops, FFVulkanShader *shd)
@@ -278,7 +277,7 @@ static int add_ops_glsl(VulkanPriv *p, FFVulkanOpsCtx *s,
                 if (!op->c.q4[i].den)
                     continue;
                 av_bprintf(&shd->src, "    %s.%c = %s"QSTR";\n", type_name,
-                           "xyzw"[i], type_s, QTYPE(i));
+                           "xyzw"[i], type_s, QTYPE(op->c.q4[i]));
             }
             break;
         }
