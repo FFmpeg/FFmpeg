@@ -50,7 +50,6 @@ static int cmp_str(const void *a, const void *b)
     return strcmp(a, b);
 }
 
-static const bool unused[4] = { false, false, false, false };
 static int register_op(SwsContext *ctx, void *opaque, SwsOp *op)
 {
     struct AVTreeNode **root = opaque;
@@ -80,7 +79,7 @@ static int register_op(SwsContext *ctx, void *opaque, SwsOp *op)
     }
 
     av_bprint_init(&bp, 0, AV_BPRINT_SIZE_AUTOMATIC);
-    ff_sws_op_desc(&bp, op, unused);
+    ff_sws_op_desc(&bp, op);
     int ret = av_bprint_finalize(&bp, &desc);
     if (ret < 0)
         return ret;

@@ -788,13 +788,13 @@ static void print_q(AVBPrint *bp, const AVRational q, bool ignore_den0)
 }
 
 static void print_q4(AVBPrint *bp, const AVRational q4[4], bool ignore_den0,
-                     const bool unused[4])
+                     const SwsCompFlags flags[4])
 {
     av_bprintf(bp, "{");
     for (int i = 0; i < 4; i++) {
         if (i)
             av_bprintf(bp, " ");
-        if (unused && unused[i]) {
+        if (flags[i] & SWS_COMP_GARBAGE) {
             av_bprintf(bp, "_");
         } else {
             print_q(bp, q4[i], ignore_den0);
@@ -803,7 +803,7 @@ static void print_q4(AVBPrint *bp, const AVRational q4[4], bool ignore_den0,
     av_bprintf(bp, "}");
 }
 
-void ff_sws_op_desc(AVBPrint *bp, const SwsOp *op, const bool unused[4])
+void ff_sws_op_desc(AVBPrint *bp, const SwsOp *op)
 {
     const char *name  = ff_sws_op_type_name(op->op);
 
@@ -838,7 +838,7 @@ void ff_sws_op_desc(AVBPrint *bp, const SwsOp *op, const bool unused[4])
         break;
     case SWS_OP_CLEAR:
         av_bprintf(bp, "%-20s: ", name);
-        print_q4(bp, op->c.q4, true, unused);
+        print_q4(bp, op->c.q4, true, op->comps.flags);
         break;
     case SWS_OP_SWIZZLE:
         av_bprintf(bp, "%-20s: %d%d%d%d", name,
@@ -858,11 +858,11 @@ void ff_sws_op_desc(AVBPrint *bp, const SwsOp *op, const bool unused[4])
         break;
     case SWS_OP_MIN:
         av_bprintf(bp, "%-20s: x <= ", name);
-        print_q4(bp, op->c.q4, true, unused);
+        print_q4(bp, op->c.q4, true, op->comps.flags);
         break;
     case SWS_OP_MAX:
         av_bprintf(bp, "%-20s: ", name);
-        print_q4(bp, op->c.q4, true, unused);
+        print_q4(bp, op->c.q4, true, op->comps.flags);
         av_bprintf(bp, " <= x");
         break;
     case SWS_OP_LINEAR:
@@ -933,7 +933,7 @@ void ff_sws_op_list_print(void *log, int lev, int lev_extra,
                    next->comps.unused[2] ? 'X' : describe_comp_flags(op->comps.flags[2]),
                    next->comps.unused[3] ? 'X' : describe_comp_flags(op->comps.flags[3]));
 
-        ff_sws_op_desc(&bp, op, next->comps.unused);
+        ff_sws_op_desc(&bp, op);
 
         if (op->op == SWS_OP_READ || op->op == SWS_OP_WRITE) {
             const int planes = op->rw.packed ? 1 : op->rw.elems;
@@ -951,9 +951,9 @@ void ff_sws_op_list_print(void *log, int lev, int lev_extra,
         {
             av_bprint_clear(&bp);
             av_bprintf(&bp, "    min: ");
-            print_q4(&bp, op->comps.min, false, next->comps.unused);
+            print_q4(&bp, op->comps.min, false, op->comps.flags);
             av_bprintf(&bp, ", max: ");
-            print_q4(&bp, op->comps.max, false, next->comps.unused);
+            print_q4(&bp, op->comps.max, false, op->comps.flags);
             av_assert0(av_bprint_is_complete(&bp));
             av_log(log, lev_extra, "%s\n", bp.str);
         }

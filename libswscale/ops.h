@@ -233,7 +233,7 @@ typedef struct SwsOp {
 /**
  * Describe an operation in human-readable form.
  */
-void ff_sws_op_desc(AVBPrint *bp, const SwsOp *op, const bool unused[4]);
+void ff_sws_op_desc(AVBPrint *bp, const SwsOp *op);
 
 /**
  * Frees any allocations associated with an SwsOp and sets it to {0}.
