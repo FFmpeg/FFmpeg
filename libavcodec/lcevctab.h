@@ -22,10 +22,13 @@
 #include <stdint.h>
 
 #include "libavutil/attributes_internal.h"
+#include "libavutil/pixfmt.h"
 
 EXTERN const struct FFLCEVCDim {
     uint16_t width;
     uint16_t height;
 } ff_lcevc_resolution_type[63];
+
+EXTERN const enum AVPixelFormat ff_lcevc_depth_type[4][4];
 
 #endif /* AVCODEC_LCEVCTAB_H */

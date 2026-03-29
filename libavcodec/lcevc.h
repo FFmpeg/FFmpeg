@@ -81,4 +81,34 @@ enum {
     LCEVC_ADDITIONAL_INFO_TYPE_VUI        = 1,
 };
 
+/*
+ * Table 21 — Colour format for the decoded picture
+ */
+enum {
+    LCEVC_CHROMA_SAMPLING_TYPE_400 = 0,
+    LCEVC_CHROMA_SAMPLING_TYPE_420 = 1,
+    LCEVC_CHROMA_SAMPLING_TYPE_422 = 2,
+    LCEVC_CHROMA_SAMPLING_TYPE_444 = 3,
+};
+
+/*
+ * Table 23 — Bit depth of the decoded base picture
+ */
+enum {
+    LCEVC_BASE_DEPTH_TYPE_8  = 0,
+    LCEVC_BASE_DEPTH_TYPE_10 = 1,
+    LCEVC_BASE_DEPTH_TYPE_12 = 2,
+    LCEVC_BASE_DEPTH_TYPE_14 = 3,
+};
+
+/*
+ * Table 24 — Bit depth of the decoded picture
+ */
+enum {
+    LCEVC_ENHANCEMENT_DEPTH_TYPE_8  = 0,
+    LCEVC_ENHANCEMENT_DEPTH_TYPE_10 = 1,
+    LCEVC_ENHANCEMENT_DEPTH_TYPE_12 = 2,
+    LCEVC_ENHANCEMENT_DEPTH_TYPE_14 = 3,
+};
+
 #endif /* AVCODEC_LCEVC_H */
