@@ -26,11 +26,32 @@
 #include "libavutil/internal.h"
 
 /**
- * Frame pool. This structure is opaque and not meant to be accessed
- * directly. It is allocated with ff_frame_pool_init() and freed with
- * ff_frame_pool_uninit().
+ * Frame pool. This structure must be allocated with
+ * ff_frame_pool_{video,audio}_reinit() and freed with ff_frame_pool_uninit().
  */
-typedef struct FFFramePool FFFramePool;
+typedef struct FFFramePool {
+
+    enum AVMediaType type;
+    union {
+        enum AVPixelFormat pix_fmt;
+        enum AVSampleFormat sample_fmt;
+    };
+
+    /* video */
+    int width;
+    int height;
+
+    /* audio */
+    int planes;
+    int channels;
+    int nb_samples;
+
+    /* common */
+    int align;
+    int linesize[4];
+    AVBufferPool *pools[4]; /* for audio, only pools[0] is used */
+
+} FFFramePool;
 
 /**
  * Recreate the video frame pool if its current configuration differs from the

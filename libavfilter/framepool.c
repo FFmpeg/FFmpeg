@@ -28,30 +28,6 @@
 #include "libavutil/mem.h"
 #include "libavutil/pixfmt.h"
 
-struct FFFramePool {
-
-    enum AVMediaType type;
-    union {
-        enum AVPixelFormat pix_fmt;
-        enum AVSampleFormat sample_fmt;
-    };
-
-    /* video */
-    int width;
-    int height;
-
-    /* audio */
-    int planes;
-    int channels;
-    int nb_samples;
-
-    /* common */
-    int align;
-    int linesize[4];
-    AVBufferPool *pools[4];
-
-};
-
 static av_cold FFFramePool *frame_pool_video_init(int width, int height,
                                                   enum AVPixelFormat format,
                                                   int align)
