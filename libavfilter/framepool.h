@@ -33,42 +33,6 @@
 typedef struct FFFramePool FFFramePool;
 
 /**
- * Allocate and initialize a video frame pool.
- *
- * @param width width of each frame in this pool
- * @param height height of each frame in this pool
- * @param format format of each frame in this pool
- * @param align buffers alignment of each frame in this pool
- * @return newly created video frame pool on success, NULL on error.
- */
-FFFramePool *ff_frame_pool_video_init(int width,
-                                      int height,
-                                      enum AVPixelFormat format,
-                                      int align);
-
-/**
- * Allocate and initialize an audio frame pool.
- *
- * @param channels channels of each frame in this pool
- * @param nb_samples number of samples of each frame in this pool
- * @param format format of each frame in this pool
- * @param align buffers alignment of each frame in this pool
- * @return newly created audio frame pool on success, NULL on error.
- */
-FFFramePool *ff_frame_pool_audio_init(int channels,
-                                      int samples,
-                                      enum AVSampleFormat format,
-                                      int align);
-
-/**
- * Deallocate the frame pool. It is safe to call this function while
- * some of the allocated frame are still in use.
- *
- * @param pool pointer to the frame pool to be freed. It will be set to NULL.
- */
-void ff_frame_pool_uninit(FFFramePool **pool);
-
-/**
  * Recreate the video frame pool if its current configuration differs from the
  * provided configuration. If initialization fails, the old pool is kept
  * unchanged.
@@ -105,6 +69,14 @@ int ff_frame_pool_audio_reinit(FFFramePool **pool,
                                int nb_samples,
                                enum AVSampleFormat format,
                                int align);
+
+/**
+ * Deallocate the frame pool. It is safe to call this function while
+ * some of the allocated frame are still in use.
+ *
+ * @param pool pointer to the frame pool to be freed. It will be set to NULL.
+ */
+void ff_frame_pool_uninit(FFFramePool **pool);
 
 /**
  * Allocate a new AVFrame, reusing old buffers from the pool when available.

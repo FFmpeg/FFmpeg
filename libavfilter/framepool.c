@@ -49,9 +49,9 @@ struct FFFramePool {
 
 };
 
-av_cold FFFramePool *ff_frame_pool_video_init(int width, int height,
-                                              enum AVPixelFormat format,
-                                              int align)
+static av_cold FFFramePool *frame_pool_video_init(int width, int height,
+                                                  enum AVPixelFormat format,
+                                                  int align)
 {
     int i, ret;
     FFFramePool *pool;
@@ -111,9 +111,9 @@ fail:
     return NULL;
 }
 
-av_cold FFFramePool *ff_frame_pool_audio_init(int channels, int nb_samples,
-                                              enum AVSampleFormat format,
-                                              int align)
+static av_cold FFFramePool *frame_pool_audio_init(int channels, int nb_samples,
+                                                  enum AVSampleFormat format,
+                                                  int align)
 {
     int ret, planar;
     FFFramePool *pool;
@@ -272,7 +272,7 @@ int ff_frame_pool_video_reinit(FFFramePool **pool,
         return 0;
     }
 
-    FFFramePool *new = ff_frame_pool_video_init(width, height, format, align);
+    FFFramePool *new = frame_pool_video_init(width, height, format, align);
     if (!new)
         return AVERROR(ENOMEM);
 
@@ -297,7 +297,7 @@ int ff_frame_pool_audio_reinit(FFFramePool **pool,
         return 0;
     }
 
-    FFFramePool *new = ff_frame_pool_audio_init(channels, nb_samples, format, align);
+    FFFramePool *new = frame_pool_audio_init(channels, nb_samples, format, align);
     if (!new)
         return AVERROR(ENOMEM);
 
