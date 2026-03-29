@@ -7,6 +7,7 @@ FATE_LAVF_VIDEO_SCALE-$(call ENCDEC,  FITS,       FITS) += gbrap.fits
 FATE_LAVF_VIDEO_SCALE-$(call ENCDEC,  FITS,       FITS) += gbrp16be.fits
 FATE_LAVF_VIDEO_SCALE-$(call ENCDEC,  FITS,       FITS) += gbrap16be.fits
 FATE_LAVF_VIDEO_SCALE-$(call ENCDEC,  GIF,         GIF) += gif
+FATE_LAVF_VIDEO_SCALE-$(call ENCDEC,  RAWVIDEO, YUV4MPEGPIPE) += yuv422p.y4m yuv444p.y4m yuv411p.y4m gray.y4m
 FATE_LAVF_VIDEO-$(call ENCDEC, WRAPPED_AVFRAME RAWVIDEO, YUV4MPEGPIPE) += y4m
 
 FATE_LAVF_VIDEO-$(CONFIG_SCALE_FILTER) += $(FATE_LAVF_VIDEO_SCALE-yes)
@@ -28,6 +29,10 @@ fate-lavf-gbrap.fits: CMD = lavf_video "-pix_fmt gbrap"
 fate-lavf-gbrp16be.fits: CMD = lavf_video "-pix_fmt gbrp16be"
 fate-lavf-gbrap16be.fits: CMD = lavf_video "-pix_fmt gbrap16be"
 fate-lavf-gif: CMD = lavf_video "-pix_fmt rgb8"
+fate-lavf-yuv422p.y4m: CMD = lavf_video "-pix_fmt yuv422p"
+fate-lavf-yuv444p.y4m: CMD = lavf_video "-pix_fmt yuv444p"
+fate-lavf-yuv411p.y4m: CMD = lavf_video "-pix_fmt yuv411p"
+fate-lavf-gray.y4m: CMD = lavf_video "-pix_fmt gray"
 
 FATE_AVCONV += $(FATE_LAVF_VIDEO)
 fate-lavf-video fate-lavf: $(FATE_LAVF_VIDEO)
