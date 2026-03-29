@@ -188,8 +188,9 @@ AVFrame *ff_frame_pool_get(FFFramePool *pool)
         }
 
         if (desc->flags & AV_PIX_FMT_FLAG_PAL) {
-            enum AVPixelFormat format =
-                pool->pix_fmt == AV_PIX_FMT_PAL8 ? AV_PIX_FMT_BGR8 : pool->pix_fmt;
+            enum AVPixelFormat format = pool->pix_fmt;
+            if (format == AV_PIX_FMT_PAL8)
+                format = AV_PIX_FMT_BGR8;
 
             av_assert0(frame->data[1] != NULL);
             if (avpriv_set_systematic_pal2((uint32_t *)frame->data[1], format) < 0)
