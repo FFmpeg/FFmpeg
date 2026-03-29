@@ -31,6 +31,10 @@
 struct FFFramePool {
 
     enum AVMediaType type;
+    union {
+        enum AVPixelFormat pix_fmt;
+        enum AVSampleFormat sample_fmt;
+    };
 
     /* video */
     int width;
@@ -42,7 +46,6 @@ struct FFFramePool {
     int nb_samples;
 
     /* common */
-    int format;
     int align;
     int linesize[4];
     AVBufferPool *pools[4];
@@ -65,14 +68,14 @@ static av_cold FFFramePool *frame_pool_video_init(int width, int height,
     pool->type = AVMEDIA_TYPE_VIDEO;
     pool->width = width;
     pool->height = height;
-    pool->format = format;
+    pool->pix_fmt = format;
     pool->align = align;
 
     if ((ret = av_image_check_size2(width, height, INT64_MAX, format, 0, NULL)) < 0) {
         goto fail;
     }
 
-    ret = av_image_fill_linesizes(pool->linesize, pool->format,
+    ret = av_image_fill_linesizes(pool->linesize, pool->pix_fmt,
                                     FFALIGN(pool->width, align));
     if (ret < 0) {
         goto fail;
@@ -87,7 +90,7 @@ static av_cold FFFramePool *frame_pool_video_init(int width, int height,
     for (i = 0; i < 4; i++)
         linesizes[i] = pool->linesize[i];
 
-    if (av_image_fill_plane_sizes(sizes, pool->format,
+    if (av_image_fill_plane_sizes(sizes, pool->pix_fmt,
                                   FFALIGN(pool->height, align),
                                   linesizes) < 0) {
         goto fail;
@@ -128,7 +131,7 @@ static av_cold FFFramePool *frame_pool_audio_init(int channels, int nb_samples,
     pool->planes = planar ? channels : 1;
     pool->channels = channels;
     pool->nb_samples = nb_samples;
-    pool->format = format;
+    pool->sample_fmt = format;
     pool->align = align;
 
     ret = av_samples_get_buffer_size(&pool->linesize[0], channels,
@@ -163,14 +166,14 @@ AVFrame *ff_frame_pool_get(FFFramePool *pool)
 
     switch(pool->type) {
     case AVMEDIA_TYPE_VIDEO:
-        desc = av_pix_fmt_desc_get(pool->format);
+        desc = av_pix_fmt_desc_get(pool->pix_fmt);
         if (!desc) {
             goto fail;
         }
 
         frame->width = pool->width;
         frame->height = pool->height;
-        frame->format = pool->format;
+        frame->format = pool->pix_fmt;
 
         for (i = 0; i < 4; i++) {
             frame->linesize[i] = pool->linesize[i];
@@ -186,7 +189,7 @@ AVFrame *ff_frame_pool_get(FFFramePool *pool)
 
         if (desc->flags & AV_PIX_FMT_FLAG_PAL) {
             enum AVPixelFormat format =
-                pool->format == AV_PIX_FMT_PAL8 ? AV_PIX_FMT_BGR8 : pool->format;
+                pool->pix_fmt == AV_PIX_FMT_PAL8 ? AV_PIX_FMT_BGR8 : pool->pix_fmt;
 
             av_assert0(frame->data[1] != NULL);
             if (avpriv_set_systematic_pal2((uint32_t *)frame->data[1], format) < 0)
@@ -198,7 +201,7 @@ AVFrame *ff_frame_pool_get(FFFramePool *pool)
     case AVMEDIA_TYPE_AUDIO:
         frame->nb_samples = pool->nb_samples;
         frame->ch_layout.nb_channels = pool->channels;
-        frame->format = pool->format;
+        frame->format = pool->sample_fmt;
         frame->linesize[0] = pool->linesize[0];
 
         if (pool->planes > AV_NUM_DATA_POINTERS) {
@@ -261,7 +264,7 @@ int ff_frame_pool_video_reinit(FFFramePool **pool,
                                int align)
 {
     FFFramePool *cur = *pool;
-    if (cur && cur->format == format &&
+    if (cur && cur->pix_fmt == format &&
         FFALIGN(cur->width,  cur->align) == FFALIGN(width,  align) &&
         FFALIGN(cur->height, cur->align) == FFALIGN(height, align) &&
         cur->align == align)
@@ -288,7 +291,7 @@ int ff_frame_pool_audio_reinit(FFFramePool **pool,
                                int align)
 {
     FFFramePool *cur = *pool;
-    if (cur && cur->format == format &&
+    if (cur && cur->sample_fmt == format &&
         cur->channels == channels &&
         cur->nb_samples == nb_samples &&
         cur->align == align)
