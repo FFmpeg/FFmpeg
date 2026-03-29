@@ -3069,7 +3069,7 @@ Default is @code{0x0001}.
 Set the @samp{original_network_id}. This is unique identifier of a
 network in DVB. Its main use is in the unique identification of a service
 through the path @samp{Original_Network_ID, Transport_Stream_ID}. Default
-is @code{0x0001}.
+is @code{0xff01}.
 
 @item mpegts_service_id @var{integer}
 Set the @samp{service_id}, also known as program in DVB. Default is
@@ -3096,6 +3096,8 @@ MPEG2 Digital HDTV service.
 Advanced Codec Digital SDTV service.
 @item advanced_codec_digital_hdtv
 Advanced Codec Digital HDTV service.
+@item hevc_digital_hdtv
+HEVC Digital Television service.
 @end table
 
 @item mpegts_pmt_start_pid @var{integer}
