@@ -250,12 +250,15 @@ void ff_sws_apply_op_q(const SwsOp *op, AVRational x[4])
     av_unreachable("Invalid operation type!");
 }
 
-/* merge_comp_flags() forms a monoid with flags_identity as the null element */
-static const SwsCompFlags flags_identity = SWS_COMP_ZERO | SWS_COMP_EXACT;
+/* merge_comp_flags() forms a monoid with SWS_COMP_IDENTITY as the null element */
+enum {
+    SWS_COMP_IDENTITY = SWS_COMP_ZERO | SWS_COMP_EXACT,
+};
+
 static SwsCompFlags merge_comp_flags(SwsCompFlags a, SwsCompFlags b)
 {
     const SwsCompFlags flags_or  = SWS_COMP_GARBAGE;
-    const SwsCompFlags flags_and = SWS_COMP_ZERO | SWS_COMP_EXACT;
+    const SwsCompFlags flags_and = SWS_COMP_IDENTITY;
     return ((a & b) & flags_and) | ((a | b) & flags_or);
 }
 
@@ -390,7 +393,7 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
             }
             break;
         case SWS_OP_PACK: {
-            SwsCompFlags flags = flags_identity;
+            SwsCompFlags flags = SWS_COMP_IDENTITY;
             for (int i = 0; i < 4; i++) {
                 if (op->pack.pattern[i])
                     flags = merge_comp_flags(flags, prev.flags[i]);
@@ -426,7 +429,7 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
             break;
         case SWS_OP_LINEAR:
             for (int i = 0; i < 4; i++) {
-                SwsCompFlags flags = flags_identity;
+                SwsCompFlags flags = SWS_COMP_IDENTITY;
                 AVRational min = Q(0), max = Q(0);
                 for (int j = 0; j < 4; j++) {
                     const AVRational k = op->lin.m[i][j];
