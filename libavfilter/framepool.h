@@ -26,7 +26,7 @@
 #include "libavutil/internal.h"
 
 /**
- * Frame pool. This structure must be allocated with
+ * Frame pool. This structure must be initialized with
  * ff_frame_pool_{video,audio}_reinit() and freed with ff_frame_pool_uninit().
  */
 typedef struct FFFramePool {
@@ -58,15 +58,14 @@ typedef struct FFFramePool {
  * provided configuration. If initialization fails, the old pool is kept
  * unchanged.
  *
- * @param pool pointer to the frame pool to be reinitialized, or a pointer to
- *        NULL to create a new pool.
+ * @param pool pointer to the frame pool to be (re)initialized
  * @param width width of each frame in this pool
  * @param height height of each frame in this pool
  * @param format format of each frame in this pool
  * @param align buffers alignment of each frame in this pool
  * @return 0 on success, a negative AVERROR otherwise.
  */
-int ff_frame_pool_video_reinit(FFFramePool **pool,
+int ff_frame_pool_video_reinit(FFFramePool *pool,
                                int width,
                                int height,
                                enum AVPixelFormat format,
@@ -77,15 +76,14 @@ int ff_frame_pool_video_reinit(FFFramePool **pool,
  * provided configuration. If initialization fails, the old pool is kept
  * unchanged.
  *
- * @param pool pointer to the frame pool to be reinitialized, or a pointer to
- *        NULL to create a new pool.
+ * @param pool pointer to the frame pool to be (re)initialized
  * @param channels channels of each frame in this pool
  * @param nb_samples number of samples of each frame in this pool
  * @param format format of each frame in this pool
  * @param align buffers alignment of each frame in this pool
  * @return 0 on success, a negative AVERROR otherwise.
  */
-int ff_frame_pool_audio_reinit(FFFramePool **pool,
+int ff_frame_pool_audio_reinit(FFFramePool *pool,
                                int channels,
                                int nb_samples,
                                enum AVSampleFormat format,
@@ -95,9 +93,9 @@ int ff_frame_pool_audio_reinit(FFFramePool **pool,
  * Deallocate the frame pool. It is safe to call this function while
  * some of the allocated frame are still in use.
  *
- * @param pool pointer to the frame pool to be freed. It will be set to NULL.
+ * @param pool pointer to the frame pool to be uninitialized
  */
-void ff_frame_pool_uninit(FFFramePool **pool);
+void ff_frame_pool_uninit(FFFramePool *pool);
 
 /**
  * Allocate a new AVFrame, reusing old buffers from the pool when available.

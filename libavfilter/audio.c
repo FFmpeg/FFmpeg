@@ -54,7 +54,7 @@ AVFrame *ff_default_get_audio_buffer(AVFilterLink *link, int nb_samples)
                                    link->format, align) < 0)
         return NULL;
 
-    frame = ff_frame_pool_get(li->frame_pool);
+    frame = ff_frame_pool_get(&li->frame_pool);
     if (!frame)
         return NULL;
 
