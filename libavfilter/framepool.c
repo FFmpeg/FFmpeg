@@ -57,11 +57,8 @@ static av_cold FFFramePool *frame_pool_video_init(int width, int height,
         goto fail;
     }
 
-    for (i = 0; i < 4 && pool->linesize[i]; i++) {
+    for (i = 0; i < 4 && pool->linesize[i]; i++)
         pool->linesize[i] = FFALIGN(pool->linesize[i], pool->align);
-        if ((pool->linesize[i] & (pool->align - 1)))
-            goto fail;
-    }
 
     for (i = 0; i < 4; i++)
         linesizes[i] = pool->linesize[i];
