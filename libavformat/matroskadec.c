@@ -3974,7 +3974,7 @@ static int matroska_parse_block_additional(MatroskaDemuxContext *matroska,
                 return AVERROR_INVALIDDATA;
 
             provider_code = bytestream2_get_be16u(&bc);
-            av_log(matroska->ctx, AV_LOG_WARNING, "provider_code %d\n", provider_code);
+
             switch (provider_code) {
             case ITU_T_T35_PROVIDER_CODE_VNOVA: {
                 uint8_t *data;
