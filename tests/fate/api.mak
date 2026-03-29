@@ -3,6 +3,12 @@ fate-api-flac: $(APITESTSDIR)/api-flac-test$(EXESUF)
 fate-api-flac: CMD = run $(APITESTSDIR)/api-flac-test$(EXESUF)
 fate-api-flac: CMP = null
 
+FATE_API_LIBAVCODEC-$(call ALLYES, H261_ENCODER H261_PARSER) += fate-api-enc-parser fate-api-enc-parser-cif
+fate-api-enc-parser: $(APITESTSDIR)/api-enc-parser-test$(EXESUF)
+fate-api-enc-parser: CMD = run $(APITESTSDIR)/api-enc-parser-test$(EXESUF) h261 176 144
+fate-api-enc-parser-cif: $(APITESTSDIR)/api-enc-parser-test$(EXESUF)
+fate-api-enc-parser-cif: CMD = run $(APITESTSDIR)/api-enc-parser-test$(EXESUF) h261 352 288
+
 FATE_API_SAMPLES_LIBAVFORMAT-$(call DEMDEC, FLV, FLV) += fate-api-band
 fate-api-band: $(APITESTSDIR)/api-band-test$(EXESUF)
 fate-api-band: CMD = run $(APITESTSDIR)/api-band-test$(EXESUF) $(TARGET_SAMPLES)/mpeg4/resize_down-up.h263
