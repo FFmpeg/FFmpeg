@@ -369,12 +369,12 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
             clear_undefined_values(op->comps.min, op->c.q4);
             break;
         case SWS_OP_DITHER:
-            /* Strip zero flag because of the nonzero dithering offset */
             for (int i = 0; i < 4; i++) {
                 op->comps.min[i] = prev.min[i];
                 op->comps.max[i] = prev.max[i];
                 if (op->dither.y_offset[i] < 0)
                     continue;
+                /* Strip zero flag because of the nonzero dithering offset */
                 op->comps.flags[i] = prev.flags[i] & ~SWS_COMP_ZERO;
                 op->comps.min[i] = av_add_q(op->comps.min[i], op->dither.min);
                 op->comps.max[i] = av_add_q(op->comps.max[i], op->dither.max);
