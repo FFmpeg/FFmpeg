@@ -170,7 +170,7 @@ static void mpegts_write_section(MpegTSSection *s, uint8_t *buf, int len)
             b |= 0x40;
         *q++  = b;
         *q++  = s->pid;
-        s->cc = s->cc + 1 & 0xf;
+        s->cc = (s->cc + 1) & 0xf;
         *q++  = 0x10 | s->cc;
         if (s->discontinuity) {
             q[-1] |= 0x20;
@@ -1583,7 +1583,7 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
             val |= 0x40;
         *q++      = val;
         *q++      = ts_st->pid;
-        ts_st->cc = ts_st->cc + 1 & 0xf;
+        ts_st->cc = (ts_st->cc + 1) & 0xf;
         *q++      = 0x10 | ts_st->cc; // payload indicator + CC
         if (ts_st->discontinuity) {
             set_af_flag(buf, 0x80);
