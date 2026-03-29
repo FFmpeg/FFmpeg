@@ -49,7 +49,7 @@ static av_cold FFFramePool *frame_pool_video_init(int width, int height,
     }
 
     ret = av_image_fill_linesizes(pool->linesize, pool->pix_fmt,
-                                    FFALIGN(pool->width, align));
+                                  FFALIGN(pool->width, align));
     if (ret < 0) {
         goto fail;
     }
