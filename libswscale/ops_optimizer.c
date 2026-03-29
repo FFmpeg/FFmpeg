@@ -53,9 +53,12 @@ static bool op_commute_clear(SwsOp *op, SwsOp *next)
     case SWS_OP_MAX:
     case SWS_OP_SCALE:
     case SWS_OP_READ:
-    case SWS_OP_SWIZZLE:
     case SWS_OP_FILTER_H:
     case SWS_OP_FILTER_V:
+        ff_sws_apply_op_q(next, op->clear.value);
+        return true;
+    case SWS_OP_SWIZZLE:
+        op->clear.mask = ff_sws_comp_mask_swizzle(op->clear.mask, next->swizzle);
         ff_sws_apply_op_q(next, op->clear.value);
         return true;
     case SWS_OP_SWAP_BYTES:
@@ -65,7 +68,7 @@ static bool op_commute_clear(SwsOp *op, SwsOp *next)
             return true;
         case SWS_PIXEL_U32:
             for (int i = 0; i < 4; i++) {
-                if (!op->clear.value[i].den)
+                if (!SWS_COMP_TEST(op->clear.mask, i))
                     continue;
                 uint32_t v = av_bswap32(op->clear.value[i].num);
                 if (v > INT_MAX)
@@ -277,6 +280,7 @@ static bool extract_constant_rows(SwsLinearOp *c, SwsComps prev,
                          (prev.flags[j] & SWS_COMP_ZERO); /* input is zero */
         }
         if (const_row && (c->mask & SWS_MASK_ROW(i))) {
+            clear.mask |= SWS_COMP(i);
             clear.value[i] = c->m[i][4];
             for (int j = 0; j < 5; j++)
                 c->m[i][j] = Q(i == j);
@@ -444,7 +448,7 @@ retry:
 
         case SWS_OP_CLEAR:
             for (int i = 0; i < 4; i++) {
-                if (!op->clear.value[i].den)
+                if (!SWS_COMP_TEST(op->clear.mask, i))
                     continue;
 
                 if ((prev->comps.flags[i] & SWS_COMP_ZERO) &&
@@ -452,11 +456,11 @@ retry:
                     op->clear.value[i].num == 0)
                 {
                     /* Redundant clear-to-zero of zero component */
-                    op->clear.value[i].den = 0;
+                    op->clear.mask ^= SWS_COMP(i);
                 } else if (!SWS_OP_NEEDED(op, i)) {
                     /* Unnecessary clear of unused component */
-                    op->clear.value[i] = (AVRational) {0, 0};
-                } else if (op->clear.value[i].den) {
+                    op->clear.mask ^= SWS_COMP(i);
+                } else {
                     noop = false;
                 }
             }
@@ -469,9 +473,10 @@ retry:
             /* Transitive clear */
             if (next->op == SWS_OP_CLEAR) {
                 for (int i = 0; i < 4; i++) {
-                    if (next->clear.value[i].den)
+                    if (SWS_COMP_TEST(next->clear.mask, i))
                         op->clear.value[i] = next->clear.value[i];
                 }
+                op->clear.mask |= next->clear.mask;
                 ff_sws_op_list_remove_at(ops, n + 1, 1);
                 goto retry;
             }
@@ -816,7 +821,7 @@ int ff_sws_solve_shuffle(const SwsOpList *const ops, uint8_t shuffle[],
 
         case SWS_OP_CLEAR:
             for (int i = 0; i < 4; i++) {
-                if (!op->clear.value[i].den)
+                if (!SWS_COMP_TEST(op->clear.mask, i))
                     continue;
                 if (op->clear.value[i].num != 0 || !clear_val)
                     return AVERROR(ENOTSUP);

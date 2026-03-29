@@ -953,7 +953,7 @@ static void normalize_clear(SwsOp *op)
     ff_sws_setup_clear(&(const SwsImplParams) { .op = op }, &res);
 
     for (int i = 0; i < 4; i++) {
-        if (!op->clear.value[i].den)
+        if (!SWS_COMP_TEST(op->clear.mask, i))
             continue;
         switch (ff_sws_pixel_type_size(op->type)) {
         case 1: c.u32 = 0x1010101U * res.priv.u8[i]; break;

@@ -217,7 +217,7 @@ void ff_sws_apply_op_q(const SwsOp *op, AVRational x[4])
         return;
     case SWS_OP_CLEAR:
         for (int i = 0; i < 4; i++) {
-            if (op->clear.value[i].den)
+            if (SWS_COMP_TEST(op->clear.mask, i))
                 x[i] = op->clear.value[i];
         }
         return;
@@ -446,7 +446,7 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
         }
         case SWS_OP_CLEAR:
             for (int i = 0; i < 4; i++) {
-                if (op->clear.value[i].den) {
+                if (SWS_COMP_TEST(op->clear.mask, i)) {
                     op->comps.flags[i] = 0;
                     if (op->clear.value[i].num == 0)
                         op->comps.flags[i] |= SWS_COMP_ZERO;
@@ -565,7 +565,7 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
             break;
         case SWS_OP_CLEAR:
             for (int i = 0; i < 4; i++) {
-                if (!op->clear.value[i].den)
+                if (!SWS_COMP_TEST(op->clear.mask, i))
                     need_in[i] = need_out[i];
             }
             break;

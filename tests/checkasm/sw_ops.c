@@ -540,32 +540,34 @@ static void check_clear(void)
             const AVRational zero   = (AVRational) { 0, 1};
             const AVRational none = {0};
 
-            const SwsClearOp patterns[] = {
+            const AVRational patterns[][4] = {
                 /* Zero only */
-                {{   none,   none,   none,   zero }},
-                {{   zero,   none,   none,   none }},
+                {   none,   none,   none,   zero },
+                {   zero,   none,   none,   none },
                 /* Alpha only */
-                {{   none,   none,   none,  alpha }},
-                {{  alpha,   none,   none,   none }},
+                {   none,   none,   none,  alpha },
+                {  alpha,   none,   none,   none },
                 /* Chroma only */
-                {{ chroma, chroma,   none,   none }},
-                {{   none, chroma, chroma,   none }},
-                {{   none,   none, chroma, chroma }},
-                {{ chroma,   none, chroma,   none }},
-                {{   none, chroma,   none, chroma }},
+                { chroma, chroma,   none,   none },
+                {   none, chroma, chroma,   none },
+                {   none,   none, chroma, chroma },
+                { chroma,   none, chroma,   none },
+                {   none, chroma,   none, chroma },
                 /* Alpha+chroma */
-                {{ chroma, chroma,   none,  alpha }},
-                {{   none, chroma, chroma,  alpha }},
-                {{  alpha,   none, chroma, chroma }},
-                {{ chroma,   none, chroma,  alpha }},
-                {{  alpha, chroma,   none, chroma }},
+                { chroma, chroma,   none,  alpha },
+                {   none, chroma, chroma,  alpha },
+                {  alpha,   none, chroma, chroma },
+                { chroma,   none, chroma,  alpha },
+                {  alpha, chroma,   none, chroma },
             };
 
             for (int i = 0; i < FF_ARRAY_ELEMS(patterns); i++) {
+                SwsClearOp clear = { .mask = ff_sws_comp_mask_q4(patterns[i]) };
+                memcpy(clear.value, patterns[i], sizeof(clear.value));
                 CHECK(FMT("clear_pattern_%s[%d]", type, i), 4, 4, t, t, {
                     .op    = SWS_OP_CLEAR,
                     .type  = t,
-                    .clear = patterns[i],
+                    .clear = clear,
                 });
             }
         } else if (!ff_sws_pixel_type_is_int(t)) {
@@ -574,6 +576,7 @@ static void check_clear(void)
                 .op   = SWS_OP_CLEAR,
                 .type = t,
                 .clear.value[3] = { 0, 1 },
+                .clear.mask = SWS_COMP(3),
             });
         }
     }

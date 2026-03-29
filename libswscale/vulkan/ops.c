@@ -398,12 +398,14 @@ static void define_shader_consts(SwsOpList *ops, SPICtx *spi, SPIRVIDs *id)
             break;
         case SWS_OP_CLEAR:
             for (int i = 0; i < 4; i++) {
+                if (!SWS_COMP_TEST(op->clear.mask, i))
+                    continue;
                 AVRational cv = op->clear.value[i];
-                if (cv.den && op->type == SWS_PIXEL_F32) {
+                if (op->type == SWS_PIXEL_F32) {
                     float q = (float)cv.num/cv.den;
                     id->const_ids[id->nb_const_ids++] =
                         spi_OpConstantFloat(spi, f32_type, q);
-                } else if (op->clear.value[i].den) {
+                } else {
                     av_assert0(cv.den == 1);
                     id->const_ids[id->nb_const_ids++] =
                         spi_OpConstantUInt(spi, u32_type, cv.num);
@@ -1036,7 +1038,7 @@ static int add_ops_glsl(VulkanPriv *p, FFVulkanOpsCtx *s,
         }
         case SWS_OP_CLEAR: {
             for (int i = 0; i < 4; i++) {
-                if (!op->clear.value[i].den)
+                if (!SWS_COMP_TEST(op->clear.mask, i))
                     continue;
                 av_bprintf(&shd->src, "    %s.%c = %s"QSTR";\n", type_name,
                            "xyzw"[i], type_s, QTYPE(op->clear.value[i]));

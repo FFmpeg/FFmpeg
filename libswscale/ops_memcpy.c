@@ -99,7 +99,7 @@ static int compile(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
 
         case SWS_OP_CLEAR:
             for (int i = 0; i < 4; i++) {
-                if (!op->clear.value[i].den)
+                if (!SWS_COMP_TEST(op->clear.mask, i))
                     continue;
                 if (op->clear.value[i].den != 1)
                     return AVERROR(ENOTSUP);

@@ -74,7 +74,7 @@ static int register_op(SwsContext *ctx, void *opaque, SwsOp *op)
         break;
     case SWS_OP_CLEAR:
         for (int i = 0; i < 4; i++)
-            op->clear.value[i] = (AVRational) { 0, !!op->clear.value[i].den };
+            op->clear.value[i] = (AVRational) { 0, SWS_COMP_TEST(op->clear.mask, i) };
         break;
     case SWS_OP_DITHER:
         /* Strip arbitrary offset */

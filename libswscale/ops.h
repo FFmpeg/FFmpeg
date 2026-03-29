@@ -167,7 +167,8 @@ typedef struct SwsShiftOp {
 } SwsShiftOp;
 
 typedef struct SwsClearOp {
-    AVRational value[4]; /* value to set, or {0, 0} for no-op */
+    SwsCompMask mask;    /* mask of components to clear */
+    AVRational value[4]; /* value to set */
 } SwsClearOp;
 
 typedef struct SwsConvertOp {

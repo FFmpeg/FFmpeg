@@ -117,7 +117,7 @@ static int op_match(const SwsOp *op, const SwsOpEntry *entry)
         for (int i = 0; i < 4; i++) {
             if (!SWS_OP_NEEDED(op, i))
                 continue;
-            if (entry->unused[i] != !!op->clear.value[i].den)
+            if (entry->unused[i] != SWS_COMP_TEST(op->clear.mask, i))
                 return 0;
         }
     }
@@ -149,7 +149,7 @@ static int op_match(const SwsOp *op, const SwsOpEntry *entry)
         return score;
     case SWS_OP_CLEAR:
         for (int i = 0; i < 4; i++) {
-            if (!op->clear.value[i].den || !SWS_OP_NEEDED(op, i))
+            if (!SWS_COMP_TEST(op->clear.mask, i) || !SWS_OP_NEEDED(op, i))
                 continue;
             if (av_cmp_q(op->clear.value[i], Q(entry->clear_value)))
                 return 0;

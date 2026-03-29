@@ -931,10 +931,15 @@ static SwsClearOp fmt_clear(enum AVPixelFormat fmt)
     const bool has_alpha  = desc->flags & AV_PIX_FMT_FLAG_ALPHA;
 
     SwsClearOp c = {0};
-    if (!has_chroma)
+    if (!has_chroma) {
+        c.mask |= SWS_COMP(1) | SWS_COMP(2);
         c.value[1] = c.value[2] = Q0;
-    if (!has_alpha)
+    }
+
+    if (!has_alpha) {
+        c.mask |= SWS_COMP(3);
         c.value[3] = Q0;
+    }
 
     return c;
 }
@@ -1060,6 +1065,7 @@ int ff_sws_encode_pixfmt(SwsOpList *ops, enum AVPixelFormat fmt)
         RET(ff_sws_op_list_append(ops, &(SwsOp) {
             .op   = SWS_OP_CLEAR,
             .type = pixel_type,
+            .clear.mask = SWS_COMP(3),
             .clear.value[3] = Q0,
         }));
     }
