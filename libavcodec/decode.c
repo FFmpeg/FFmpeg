@@ -98,6 +98,7 @@ typedef struct DecodeContext {
     struct {
         FFLCEVCContext *ctx;
         int frame;
+        enum AVPixelFormat format;
         int base_width;
         int base_height;
         int width;
@@ -1629,7 +1630,7 @@ int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
                       av_frame_get_side_data(frame, AV_FRAME_DATA_LCEVC);
 
     if (dc->lcevc.frame) {
-        int ret = ff_lcevc_parse_frame(dc->lcevc.ctx, frame,
+        int ret = ff_lcevc_parse_frame(dc->lcevc.ctx, frame, &dc->lcevc.format,
                                        &dc->lcevc.width, &dc->lcevc.height, avctx);
         if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))
             return ret;
@@ -1704,7 +1705,7 @@ int ff_attach_decode_data(AVCodecContext *avctx, AVFrame *frame)
                           av_frame_get_side_data(frame, AV_FRAME_DATA_LCEVC);
 
         if (dc->lcevc.frame) {
-            int ret = ff_lcevc_parse_frame(dc->lcevc.ctx, frame,
+            int ret = ff_lcevc_parse_frame(dc->lcevc.ctx, frame, &dc->lcevc.format,
                                            &dc->lcevc.width, &dc->lcevc.height, avctx);
             if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))
                 return ret;
@@ -1738,7 +1739,8 @@ int ff_attach_decode_data(AVCodecContext *avctx, AVFrame *frame)
         frame_ctx->lcevc = av_refstruct_ref(dc->lcevc.ctx);
         frame_ctx->frame->width  = dc->lcevc.width;
         frame_ctx->frame->height = dc->lcevc.height;
-        frame_ctx->frame->format = frame->format;
+        frame_ctx->frame->format = dc->lcevc.format;
+        avctx->bits_per_raw_sample = av_pix_fmt_desc_get(dc->lcevc.format)->comp[0].depth;
 
         frame->width  = dc->lcevc.base_width;
         frame->height = dc->lcevc.base_height;
@@ -2370,6 +2372,7 @@ av_cold void ff_decode_internal_sync(AVCodecContext *dst, const AVCodecContext *
     av_refstruct_replace(&dst_dc->lcevc.ctx, src_dc->lcevc.ctx);
     dst_dc->lcevc.width = src_dc->lcevc.width;
     dst_dc->lcevc.height = src_dc->lcevc.height;
+    dst_dc->lcevc.format = src_dc->lcevc.format;
 #endif
 }
 

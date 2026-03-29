@@ -358,7 +358,7 @@ int ff_lcevc_process(void *logctx, AVFrame *frame)
 }
 
 int ff_lcevc_parse_frame(FFLCEVCContext *lcevc, const AVFrame *frame,
-                         int *width, int *height, void *logctx)
+                         enum AVPixelFormat *format, int *width, int *height, void *logctx)
 {
     LCEVCRawProcessBlock *block = NULL;
     LCEVCRawGlobalConfig *gc = NULL;
@@ -379,6 +379,8 @@ int ff_lcevc_parse_frame(FFLCEVCContext *lcevc, const AVFrame *frame,
     }
 
     gc = block->payload;
+
+    *format = ff_lcevc_depth_type[gc->enhancement_depth_type][gc->chroma_sampling_type];
     if (gc->resolution_type < 63) {
         *width  = ff_lcevc_resolution_type[gc->resolution_type].width;
         *height = ff_lcevc_resolution_type[gc->resolution_type].height;
