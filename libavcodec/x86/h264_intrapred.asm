@@ -606,37 +606,31 @@ INIT_MMX ssse3
 PRED8x8_H
 
 ;-----------------------------------------------------------------------------
-; void ff_pred8x8_top_dc_8_mmxext(uint8_t *src, ptrdiff_t stride)
+; void ff_pred8x8_top_dc_8_sse2(uint8_t *src, ptrdiff_t stride)
 ;-----------------------------------------------------------------------------
-INIT_MMX mmxext
+INIT_XMM sse2
 cglobal pred8x8_top_dc_8, 2,5
     sub         r0, r1
-    movq       mm0, [r0]
-    pxor       mm1, mm1
-    pxor       mm2, mm2
+    movq      xmm0, [r0]
+    pxor      xmm1, xmm1
     lea         r2, [r0+r1*2]
-    punpckhbw  mm1, mm0
-    punpcklbw  mm0, mm2
-    psadbw     mm1, mm2        ; s1
+    punpcklbw xmm0, xmm1
+    psadbw    xmm0, xmm1       ; s0,0,0,0,s1,0,0,0 (w)
     lea         r3, [r2+r1*2]
-    psadbw     mm0, mm2        ; s0
-    psrlw      mm1, 1
-    psrlw      mm0, 1
-    pavgw      mm1, mm2
-    lea         r4, [r3+r1*2]
-    pavgw      mm0, mm2
-    pshufw     mm1, mm1, 0
-    pshufw     mm0, mm0, 0     ; dc0 (w)
-    packuswb   mm0, mm1        ; dc0,dc1 (b)
-    movq [r0+r1*1], mm0
-    movq [r0+r1*2], mm0
+    psrlw     xmm0, 1
+    pavgw     xmm0, xmm1
+    pshuflw   xmm0, xmm0, 0    ; dc0,dc0,dc0,dc0,dc1,0,0,0
+    pshufhw   xmm0, xmm0, 0    ; dc0,dc1 (w)
+    packuswb  xmm0, xmm1       ; dc0,dc1 (b)
+    movq [r0+r1*1], xmm0
+    movq [r0+r1*2], xmm0
     lea         r0, [r3+r1*2]
-    movq [r2+r1*1], mm0
-    movq [r2+r1*2], mm0
-    movq [r3+r1*1], mm0
-    movq [r3+r1*2], mm0
-    movq [r0+r1*1], mm0
-    movq [r0+r1*2], mm0
+    movq [r2+r1*1], xmm0
+    movq [r2+r1*2], xmm0
+    movq [r3+r1*1], xmm0
+    movq [r3+r1*2], xmm0
+    movq [r0+r1*1], xmm0
+    movq [r0+r1*2], xmm0
     RET
 
 ;-----------------------------------------------------------------------------
