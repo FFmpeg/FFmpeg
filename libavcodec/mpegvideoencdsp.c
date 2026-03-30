@@ -179,16 +179,16 @@ static void draw_edges_8_c(uint8_t *buf, ptrdiff_t wrap, int width, int height,
 
 /* This wrapper function only serves to convert the stride parameters
  * from ptrdiff_t to int for av_image_copy_plane(). */
-static void copy_plane_wrapper(uint8_t *dst, ptrdiff_t dst_wrap,
-                               const uint8_t *src, ptrdiff_t src_wrap,
+static void copy_plane_wrapper(uint8_t *restrict dst, ptrdiff_t dst_wrap,
+                               const uint8_t *restrict src, ptrdiff_t src_wrap,
                                int width, int height)
 {
     av_image_copy_plane(dst, dst_wrap, src, src_wrap, width, height);
 }
 
 /* 2x2 -> 1x1 */
-static void shrink22(uint8_t *dst, ptrdiff_t dst_wrap,
-                     const uint8_t *src, ptrdiff_t src_wrap,
+static void shrink22(uint8_t *restrict dst, ptrdiff_t dst_wrap,
+                     const uint8_t *restrict src, ptrdiff_t src_wrap,
                      int width, int height)
 {
     int w;
@@ -220,8 +220,8 @@ static void shrink22(uint8_t *dst, ptrdiff_t dst_wrap,
 }
 
 /* 4x4 -> 1x1 */
-static void shrink44(uint8_t *dst, ptrdiff_t dst_wrap,
-                     const uint8_t *src, ptrdiff_t src_wrap,
+static void shrink44(uint8_t *restrict dst, ptrdiff_t dst_wrap,
+                     const uint8_t *restrict src, ptrdiff_t src_wrap,
                      int width, int height)
 {
     int w;
@@ -251,8 +251,8 @@ static void shrink44(uint8_t *dst, ptrdiff_t dst_wrap,
 }
 
 /* 8x8 -> 1x1 */
-static void shrink88(uint8_t *dst, ptrdiff_t dst_wrap,
-                     const uint8_t *src, ptrdiff_t src_wrap,
+static void shrink88(uint8_t *restrict dst, ptrdiff_t dst_wrap,
+                     const uint8_t *restrict src, ptrdiff_t src_wrap,
                      int width, int height)
 {
     int w, i;
