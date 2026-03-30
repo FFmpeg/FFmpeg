@@ -38,6 +38,7 @@
 #include "libavutil/pixfmt.h"
 #include "libavutil/avassert.h"
 #include "libavutil/macros.h"
+#include "libavutil/hwcontext.h"
 
 #include "libswscale/swscale.h"
 
@@ -85,6 +86,9 @@ static FFSFC64 prng_state;
 static SwsContext *sws_ref_src;
 static SwsContext *sws_src_dst;
 static SwsContext *sws_dst_out;
+
+static AVBufferRef *hw_device_ctx = NULL;
+static AVHWFramesConstraints *hw_device_constr = NULL;
 
 static double speedup_logavg;
 static double speedup_min = 1e10;
@@ -296,6 +300,132 @@ error:
     return ret;
 }
 
+static int scale_hw(AVFrame *dst, const AVFrame *src,
+                    const struct mode *mode, const struct options *opts,
+                    int64_t *out_time)
+{
+    SwsContext *sws_hw = NULL;
+    AVBufferRef *in_ref = NULL;
+    AVBufferRef *out_ref = NULL;
+    AVHWFramesContext *in_ctx = NULL;
+    AVHWFramesContext *out_ctx = NULL;
+    AVFrame *in_f = NULL;
+    AVFrame *out_f = NULL;
+    int ret;
+
+    if (src->format == dst->format)
+        return AVERROR(ENOTSUP);
+
+    sws_hw = sws_alloc_context();
+    if (!sws_hw) {
+        ret = AVERROR(ENOMEM);
+        goto error;
+    }
+
+    sws_hw->flags  = mode->flags;
+    sws_hw->dither = mode->dither;
+
+    in_ref = av_hwframe_ctx_alloc(hw_device_ctx);
+    if (!in_ref) {
+        ret = AVERROR(ENOMEM);
+        goto error;
+    }
+
+    in_ctx = (AVHWFramesContext *)in_ref->data;
+    in_ctx->format = AV_PIX_FMT_VULKAN;
+    in_ctx->sw_format = src->format;
+    in_ctx->width = src->width;
+    in_ctx->height = src->height;
+    ret = av_hwframe_ctx_init(in_ref);
+    if (ret < 0) {
+        if (ret != AVERROR(ENOTSUP))
+            av_log(NULL, AV_LOG_ERROR, "Failed to create input HW context: %s\n",
+                   av_err2str(ret));
+        goto error;
+    }
+
+    out_ref = av_hwframe_ctx_alloc(hw_device_ctx);
+    if (!out_ref) {
+        ret = AVERROR(ENOMEM);
+        goto error;
+    }
+
+    out_ctx = (AVHWFramesContext *) out_ref->data;
+    out_ctx->format = AV_PIX_FMT_VULKAN;
+    out_ctx->sw_format = dst->format;
+    out_ctx->width = dst->width;
+    out_ctx->height = dst->height;
+    ret = av_hwframe_ctx_init(out_ref);
+    if (ret < 0) {
+        if (ret != AVERROR(ENOTSUP))
+            av_log(NULL, AV_LOG_ERROR, "Failed to create output HW context: %s\n",
+                   av_err2str(ret));
+        goto error;
+    }
+
+    in_f = av_frame_alloc();
+    if (!in_f) {
+        ret = AVERROR(ENOMEM);
+        goto error;
+    }
+    in_f->width = src->width;
+    in_f->height = src->height;
+    in_f->format = AV_PIX_FMT_VULKAN;
+    ret = av_hwframe_get_buffer(in_ref, in_f, 0);
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Failed to allocate input HW frame\n");
+        goto error;
+    }
+
+    ret = av_hwframe_transfer_data(in_f, src, 0);
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Failed to upload HW frame\n");
+        goto error;
+    }
+
+    out_f = av_frame_alloc();
+    if (!out_f) {
+        ret = AVERROR(ENOMEM);
+        goto error;
+    }
+    out_f->width = dst->width;
+    out_f->height = dst->height;
+    out_f->format = AV_PIX_FMT_VULKAN;
+    ret = av_hwframe_get_buffer(out_ref, out_f, 0);
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Failed to allocate output HW frame\n");
+        goto error;
+    }
+
+    int64_t time = av_gettime_relative();
+    for (int i = 0; ret >= 0 && i < opts->iters; i++) {
+        ret = checked_sws_scale_frame(sws_hw, out_f, in_f);
+        if (ret < 0)
+            goto error;
+    }
+    *out_time = av_gettime_relative() - time;
+
+    ret = av_frame_get_buffer(dst, 0);
+    if (ret < 0)
+        goto error;
+
+    ret = av_hwframe_transfer_data(dst, out_f, 0);
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Failed to download HW frame\n");
+        goto error;
+    }
+
+    ret = 0;
+
+error:
+    av_frame_free(&in_f);
+    av_frame_free(&out_f);
+    av_buffer_unref(&in_ref);
+    av_buffer_unref(&out_ref);
+    sws_free_context(&sws_hw);
+    return ret;
+}
+
 static void print_results(const AVFrame *ref, const AVFrame *src, const AVFrame *dst,
                           int dst_w, int dst_h,
                           const struct mode *mode, const struct options *opts,
@@ -428,10 +558,14 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
     if (ret < 0)
         goto error;
 
-    ret = opts->legacy ? scale_legacy(dst, src, mode, opts, &r.time)
-                       : scale_new(dst, src, mode, opts, &r.time);
-    if (ret < 0)
+    ret = opts->legacy  ? scale_legacy(dst, src, mode, opts, &r.time)
+        : hw_device_ctx ? scale_hw(dst, src, mode, opts, &r.time)
+                        : scale_new(dst, src, mode, opts, &r.time);
+    if (ret < 0) {
+        if (ret == AVERROR(ENOTSUP))
+            ret = 0;
         goto error;
+    }
 
     ret = init_frame(&out, ref, ref->width, ref->height, ref->format);
     if (ret < 0)
@@ -488,6 +622,24 @@ static inline int fmt_is_subsampled(enum AVPixelFormat fmt)
            av_pix_fmt_desc_get(fmt)->log2_chroma_h != 0;
 }
 
+static inline int fmt_is_supported_by_hw(enum AVPixelFormat fmt)
+{
+    if (!hw_device_constr)
+        return 1;
+
+    /* Semi-planar formats are only supported by the legacy path, which
+     * does not support hardware frames. */
+    if (fmt == AV_PIX_FMT_NV24 || fmt == AV_PIX_FMT_P410 ||
+        fmt == AV_PIX_FMT_P412 || fmt == AV_PIX_FMT_P416)
+        return 0;
+    for (int i = 0;
+         hw_device_constr->valid_sw_formats[i] != AV_PIX_FMT_NONE; i++) {
+        if (hw_device_constr->valid_sw_formats[i] == fmt)
+            return 1;
+    }
+    return 0;
+}
+
 static int run_self_tests(const AVFrame *ref, const struct options *opts)
 {
     const int dst_w[] = { opts->w, opts->w - opts->w / 3, opts->w + opts->w / 3 };
@@ -511,12 +663,14 @@ static int run_self_tests(const AVFrame *ref, const struct options *opts)
         dst_fmt_min = dst_fmt_max = opts->dst_fmt;
 
     for (src_fmt = src_fmt_min; src_fmt <= src_fmt_max; src_fmt++) {
-        if (opts->unscaled && fmt_is_subsampled(src_fmt))
+        if ((!fmt_is_supported_by_hw(src_fmt)) ||
+            (opts->unscaled && fmt_is_subsampled(src_fmt)))
             continue;
         if (!sws_test_format(src_fmt, 0) || !sws_test_format(src_fmt, 1))
             continue;
         for (dst_fmt = dst_fmt_min; dst_fmt <= dst_fmt_max; dst_fmt++) {
-            if (opts->unscaled && fmt_is_subsampled(dst_fmt))
+            if ((!fmt_is_supported_by_hw(dst_fmt)) ||
+                (opts->unscaled && fmt_is_subsampled(dst_fmt)))
                 continue;
             if (!sws_test_format(dst_fmt, 0) || !sws_test_format(dst_fmt, 1))
                 continue;
@@ -692,6 +846,8 @@ static int parse_options(int argc, char **argv, struct options *opts, FILE **fp)
                     "       If 1, test only conversions that do not involve scaling\n"
                     "   -legacy <1 or 0>\n"
                     "       If 1, force using legacy swscale for the main conversion\n"
+                    "   -hw <device>\n"
+                    "       Use Vulkan hardware acceleration on the specified device for the main conversion\n"
                     "   -threads <threads>\n"
                     "       Use the specified number of threads\n"
                     "   -cpuflags <cpuflags>\n"
@@ -760,6 +916,22 @@ static int parse_options(int argc, char **argv, struct options *opts, FILE **fp)
             opts->unscaled = atoi(argv[i + 1]);
         } else if (!strcmp(argv[i], "-legacy")) {
             opts->legacy = atoi(argv[i + 1]);
+        } else if (!strcmp(argv[i], "-hw")) {
+            int ret = av_hwdevice_ctx_create(&hw_device_ctx,
+                                             AV_HWDEVICE_TYPE_VULKAN,
+                                             argv[i + 1], NULL, 0);
+            if (ret < 0) {
+                fprintf(stderr, "Failed to create Vulkan device '%s'\n",
+                        argv[i + 1]);
+                return -1;
+            }
+            hw_device_constr = av_hwdevice_get_hwframe_constraints(hw_device_ctx,
+                                                                   NULL);
+            if (!hw_device_constr) {
+                fprintf(stderr, "Failed to retrieve Vulkan device constraints '%s'\n",
+                        argv[i + 1]);
+                return -1;
+            }
         } else if (!strcmp(argv[i], "-threads")) {
             opts->threads = atoi(argv[i + 1]);
         } else if (!strcmp(argv[i], "-p")) {
@@ -834,6 +1006,8 @@ error:
     sws_free_context(&sws_ref_src);
     sws_free_context(&sws_src_dst);
     sws_free_context(&sws_dst_out);
+    av_buffer_unref(&hw_device_ctx);
+    av_hwframe_constraints_free(&hw_device_constr);
     av_frame_free(&ref);
     if (fp)
         fclose(fp);
