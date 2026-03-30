@@ -3008,7 +3008,7 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
     if (!fmt) {
         av_log(hwfc, AV_LOG_ERROR, "Unsupported pixel format: %s!\n",
                av_get_pix_fmt_name(hwfc->sw_format));
-        return AVERROR(EINVAL);
+        return AVERROR(ENOTSUP);
     }
 
     if (hwctx->format[0] != VK_FORMAT_UNDEFINED) {
