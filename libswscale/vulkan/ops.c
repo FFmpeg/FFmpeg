@@ -388,6 +388,24 @@ static int compile(SwsContext *sws, SwsOpList *ops, SwsCompiledOp *out)
     if (err < 0)
         goto fail;
 
+    if (ops->src.format == AV_PIX_FMT_BGR0 ||
+        ops->src.format == AV_PIX_FMT_BGRA ||
+        ops->dst.format == AV_PIX_FMT_BGR0 ||
+        ops->dst.format == AV_PIX_FMT_BGRA) {
+        VkFormatProperties2 prop = {
+            .sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2,
+        };
+        FFVulkanFunctions *vk = &s->vkctx.vkfn;
+        vk->GetPhysicalDeviceFormatProperties2(s->vkctx.hwctx->phys_dev,
+                                               VK_FORMAT_B8G8R8A8_UNORM,
+                                               &prop);
+        if (!(prop.formatProperties.optimalTilingFeatures &
+              VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT)) {
+            err = AVERROR(ENOTSUP);
+            goto fail;
+        }
+    }
+
 #if CONFIG_LIBSHADERC || CONFIG_LIBGLSLANG
     {
         err = add_ops_glsl(p, s, ops, &p->shd);
