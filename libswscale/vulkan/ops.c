@@ -169,7 +169,7 @@ static void add_desc_read_write(FFVulkanDescriptorSetBinding *out_desc,
         .mem_layout = img_type,
         .mem_quali = op->op == SWS_OP_WRITE ? "writeonly" : "readonly",
         .dimensions = 2,
-        .elems = op->rw.packed ? 1 : op->rw.elems,
+        .elems = 4,
         .stages = VK_SHADER_STAGE_COMPUTE_BIT,
     };
 
