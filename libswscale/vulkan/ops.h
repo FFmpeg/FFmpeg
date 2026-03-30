@@ -31,7 +31,6 @@
 typedef struct FFVulkanOpsCtx {
     FFVulkanContext vkctx;
     AVVulkanDeviceQueueFamily *qf;
-    FFVkExecPool e;
 #if CONFIG_LIBSHADERC || CONFIG_LIBGLSLANG
     FFVkSPIRVCompiler *spvc;
 #endif

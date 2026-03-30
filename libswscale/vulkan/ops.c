@@ -34,7 +34,6 @@ static void ff_sws_vk_uninit(AVRefStructOpaque opaque, void *obj)
     if (s->spvc)
         s->spvc->uninit(&s->spvc);
 #endif
-    ff_vk_exec_pool_free(&s->vkctx, &s->e);
     ff_vk_uninit(&s->vkctx);
 }
 
@@ -53,7 +52,6 @@ int ff_sws_vk_init(SwsContext *sws, AVBufferRef *dev_ref)
     FFVulkanOpsCtx *s = c->hw_priv;
     if (s->vkctx.device_ref && s->vkctx.device_ref->data != dev_ref->data) {
         /* Reinitialize with new context */
-        ff_vk_exec_pool_free(&s->vkctx, &s->e);
         ff_vk_uninit(&s->vkctx);
     } else if (s->vkctx.device_ref && s->vkctx.device_ref->data == dev_ref->data) {
         return 0;
@@ -69,11 +67,6 @@ int ff_sws_vk_init(SwsContext *sws, AVBufferRef *dev_ref)
         return AVERROR(ENOTSUP);
     }
 
-    err = ff_vk_exec_pool_init(&s->vkctx, s->qf, &s->e, 1,
-                               0, 0, 0, NULL);
-    if (err < 0)
-        return err;
-
 #if CONFIG_LIBSHADERC || CONFIG_LIBGLSLANG
     if (!s->spvc) {
         s->spvc = ff_vk_spirv_init();
@@ -87,6 +80,7 @@ int ff_sws_vk_init(SwsContext *sws, AVBufferRef *dev_ref)
 
 typedef struct VulkanPriv {
     FFVulkanOpsCtx *s;
+    FFVkExecPool e;
     FFVulkanShader shd;
     enum FFVkShaderRepFormat src_rep;
     enum FFVkShaderRepFormat dst_rep;
@@ -96,7 +90,7 @@ static void process(const SwsFrame *dst, const SwsFrame *src, int y, int h,
                     const SwsPass *pass)
 {
     VulkanPriv *p = (VulkanPriv *) pass->priv;
-    FFVkExecContext *ec = ff_vk_exec_get(&p->s->vkctx, &p->s->e);
+    FFVkExecContext *ec = ff_vk_exec_get(&p->s->vkctx, &p->e);
     FFVulkanFunctions *vk = &p->s->vkctx.vkfn;
     ff_vk_exec_start(&p->s->vkctx, ec);
 
@@ -153,6 +147,7 @@ static void process(const SwsFrame *dst, const SwsFrame *src, int y, int h,
 static void free_fn(void *priv)
 {
     VulkanPriv *p = priv;
+    ff_vk_exec_pool_free(&p->s->vkctx, &p->e);
     ff_vk_shader_free(&p->s->vkctx, &p->shd);
     av_refstruct_unref(&p->s);
     av_free(priv);
@@ -388,6 +383,11 @@ static int compile(SwsContext *sws, SwsOpList *ops, SwsCompiledOp *out)
         return AVERROR(ENOMEM);
     p->s = av_refstruct_ref(c->hw_priv);
 
+    err = ff_vk_exec_pool_init(&s->vkctx, s->qf, &p->e, 1,
+                               0, 0, 0, NULL);
+    if (err < 0)
+        goto fail;
+
 #if CONFIG_LIBSHADERC || CONFIG_LIBGLSLANG
     {
         err = add_ops_glsl(p, s, ops, &p->shd);
@@ -398,7 +398,7 @@ static int compile(SwsContext *sws, SwsOpList *ops, SwsCompiledOp *out)
         goto fail;
 #endif
 
-    err = ff_vk_shader_register_exec(&s->vkctx, &s->e, &p->shd);
+    err = ff_vk_shader_register_exec(&s->vkctx, &p->e, &p->shd);
     if (err < 0)
         goto fail;
 
