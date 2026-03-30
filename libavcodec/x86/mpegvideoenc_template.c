@@ -29,6 +29,7 @@
 #include "libavcodec/mpegutils.h"
 #include "libavcodec/mpegvideoenc.h"
 #include "fdct.h"
+#include "mpegvideoencdsp.h"
 
 #undef SPREADW
 #undef PMAXW
@@ -79,7 +80,11 @@ static int RENAME(dct_quantize)(MPVEncContext *const s,
     if (s->dct_error_sum) {
         const int intra = s->c.mb_intra;
         s->dct_count[intra]++;
+#if HAVE_SSE2_EXTERNAL
+        ff_mpv_denoise_dct_sse2(block, s->dct_error_sum[intra], s->dct_offset[intra]);
+#else
         s->mpvencdsp.denoise_dct(block, s->dct_error_sum[intra], s->dct_offset[intra]);
+#endif
     }
 
     if (s->c.mb_intra) {

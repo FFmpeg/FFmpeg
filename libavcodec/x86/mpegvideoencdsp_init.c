@@ -26,9 +26,8 @@
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/mpegvideoencdsp.h"
+#include "mpegvideoencdsp.h"
 
-void ff_mpv_denoise_dct_sse2(int16_t block[64], int dct_error_sum[64],
-                             const uint16_t dct_offset[64]);
 int ff_pix_sum16_sse2(const uint8_t *pix, ptrdiff_t line_size);
 int ff_pix_sum16_xop(const uint8_t *pix, ptrdiff_t line_size);
 int ff_pix_norm1_sse2(const uint8_t *pix, ptrdiff_t line_size);
