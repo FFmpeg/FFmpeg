@@ -84,8 +84,7 @@ DECL_IMPL(clear, clear##_##X##Y##Z##W, X, Y, Z, W)                              
 DECL_ENTRY(clear##_##X##Y##Z##W,                                                \
     .setup = ff_sws_setup_clear,                                                \
     .op = SWS_OP_CLEAR,                                                         \
-    .flexible = true,                                                           \
-    .unused = { !X, !Y, !Z, !W },                                               \
+    .clear.mask = SWS_COMP_MASK(!X, !Y, !Z, !W),                                \
 );
 
 WRAP_CLEAR(1, 1, 1, 0) /* rgba alpha */

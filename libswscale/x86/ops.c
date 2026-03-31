@@ -118,15 +118,15 @@ static int setup_swap_bytes(const SwsImplParams *params, SwsImplResult *out)
 #define DECL_CLEAR_ALPHA(EXT, IDX)                                              \
     DECL_ASM(U8, clear_alpha##IDX##EXT,                                         \
         .op = SWS_OP_CLEAR,                                                     \
-        .clear_value = -1,                                                      \
-        .unused[IDX] = true,                                                    \
+        .clear.mask = SWS_COMP(IDX),                                            \
+        .clear.value[IDX] = { -1, 1 },                                          \
     );                                                                          \
 
 #define DECL_CLEAR_ZERO(EXT, IDX)                                               \
     DECL_ASM(U8, clear_zero##IDX##EXT,                                          \
         .op = SWS_OP_CLEAR,                                                     \
-        .clear_value = 0,                                                       \
-        .unused[IDX] = true,                                                    \
+        .clear.mask = SWS_COMP(IDX),                                            \
+        .clear.value[IDX] = { 0, 1 },                                           \
     );
 
 static int setup_clear(const SwsImplParams *params, SwsImplResult *out)
@@ -141,7 +141,7 @@ static int setup_clear(const SwsImplParams *params, SwsImplResult *out)
     DECL_PATTERN(U8, clear##EXT, X, Y, Z, W,                                    \
         .op = SWS_OP_CLEAR,                                                     \
         .setup = setup_clear,                                                   \
-        .flexible = true,                                                       \
+        .clear.mask = SWS_COMP_MASK(!X, !Y, !Z, !W),                            \
     );
 
 #define DECL_SWIZZLE(EXT, X, Y, Z, W)                                           \

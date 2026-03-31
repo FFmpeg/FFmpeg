@@ -112,16 +112,6 @@ static int op_match(const SwsOp *op, const SwsOpEntry *entry)
         }
     }
 
-    if (op->op == SWS_OP_CLEAR) {
-        /* Clear pattern must match exactly, regardless of `entry->flexible` */
-        for (int i = 0; i < 4; i++) {
-            if (!SWS_OP_NEEDED(op, i))
-                continue;
-            if (entry->unused[i] != SWS_COMP_TEST(op->clear.mask, i))
-                return 0;
-        }
-    }
-
     /* Flexible variants always match, but lower the score to prioritize more
      * specific implementations if they exist */
     if (entry->flexible)
@@ -148,10 +138,15 @@ static int op_match(const SwsOp *op, const SwsOpEntry *entry)
         }
         return score;
     case SWS_OP_CLEAR:
+        /* Clear mask must match exactly */
+        if (op->clear.mask != entry->clear.mask)
+            return 0;
         for (int i = 0; i < 4; i++) {
             if (!SWS_COMP_TEST(op->clear.mask, i) || !SWS_OP_NEEDED(op, i))
                 continue;
-            if (av_cmp_q(op->clear.value[i], Q(entry->clear_value)))
+            else if (!entry->clear.value[i].den)
+                continue; /* Any clear value supported */
+            else if (av_cmp_q(op->clear.value[i], entry->clear.value[i]))
                 return 0;
         }
         return score;
