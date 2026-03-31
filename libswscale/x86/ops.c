@@ -141,7 +141,7 @@ static int setup_clear(const SwsImplParams *params, SwsImplResult *out)
     DECL_ASM(U8, SWS_COMP_ALL, p##X##Y##Z##W##_clear##EXT,                      \
         .op = SWS_OP_CLEAR,                                                     \
         .setup = setup_clear,                                                   \
-        .clear.mask = SWS_COMP_MASK(!X, !Y, !Z, !W),                            \
+        .clear.mask = SWS_COMP_MASK(X, Y, Z, W),                                \
     );
 
 #define DECL_SWIZZLE(EXT, X, Y, Z, W)                                           \
@@ -589,16 +589,16 @@ static int setup_filter_4x4_h(const SwsImplParams *params, SwsImplResult *out)
     DECL_CLEAR_ZERO(EXT, 0)                                                     \
     DECL_CLEAR_ZERO(EXT, 1)                                                     \
     DECL_CLEAR_ZERO(EXT, 3)                                                     \
-    DECL_CLEAR(EXT, 1, 1, 1, 0)                                                 \
-    DECL_CLEAR(EXT, 0, 1, 1, 1)                                                 \
-    DECL_CLEAR(EXT, 0, 0, 1, 1)                                                 \
-    DECL_CLEAR(EXT, 1, 0, 0, 1)                                                 \
-    DECL_CLEAR(EXT, 1, 1, 0, 0)                                                 \
-    DECL_CLEAR(EXT, 0, 1, 0, 1)                                                 \
-    DECL_CLEAR(EXT, 1, 0, 1, 0)                                                 \
+    DECL_CLEAR(EXT, 0, 0, 0, 1)                                                 \
     DECL_CLEAR(EXT, 1, 0, 0, 0)                                                 \
-    DECL_CLEAR(EXT, 0, 1, 0, 0)                                                 \
-    DECL_CLEAR(EXT, 0, 0, 1, 0)                                                 \
+    DECL_CLEAR(EXT, 1, 1, 0, 0)                                                 \
+    DECL_CLEAR(EXT, 0, 1, 1, 0)                                                 \
+    DECL_CLEAR(EXT, 0, 0, 1, 1)                                                 \
+    DECL_CLEAR(EXT, 1, 0, 1, 0)                                                 \
+    DECL_CLEAR(EXT, 0, 1, 0, 1)                                                 \
+    DECL_CLEAR(EXT, 0, 1, 1, 1)                                                 \
+    DECL_CLEAR(EXT, 1, 0, 1, 1)                                                 \
+    DECL_CLEAR(EXT, 1, 1, 0, 1)                                                 \
                                                                                 \
 static const SwsOpTable ops8##EXT = {                                           \
     .cpu_flags = AV_CPU_FLAG_##FLAG,                                            \
@@ -656,16 +656,16 @@ static const SwsOpTable ops8##EXT = {                                           
         &op_clear_zero0##EXT,                                                   \
         &op_clear_zero1##EXT,                                                   \
         &op_clear_zero3##EXT,                                                   \
-        REF_PATTERN(clear##EXT, 1, 1, 1, 0),                                    \
-        REF_PATTERN(clear##EXT, 0, 1, 1, 1),                                    \
-        REF_PATTERN(clear##EXT, 0, 0, 1, 1),                                    \
-        REF_PATTERN(clear##EXT, 1, 0, 0, 1),                                    \
-        REF_PATTERN(clear##EXT, 1, 1, 0, 0),                                    \
-        REF_PATTERN(clear##EXT, 0, 1, 0, 1),                                    \
-        REF_PATTERN(clear##EXT, 1, 0, 1, 0),                                    \
+        REF_PATTERN(clear##EXT, 0, 0, 0, 1),                                    \
         REF_PATTERN(clear##EXT, 1, 0, 0, 0),                                    \
-        REF_PATTERN(clear##EXT, 0, 1, 0, 0),                                    \
-        REF_PATTERN(clear##EXT, 0, 0, 1, 0),                                    \
+        REF_PATTERN(clear##EXT, 1, 1, 0, 0),                                    \
+        REF_PATTERN(clear##EXT, 0, 1, 1, 0),                                    \
+        REF_PATTERN(clear##EXT, 0, 0, 1, 1),                                    \
+        REF_PATTERN(clear##EXT, 1, 0, 1, 0),                                    \
+        REF_PATTERN(clear##EXT, 0, 1, 0, 1),                                    \
+        REF_PATTERN(clear##EXT, 0, 1, 1, 1),                                    \
+        REF_PATTERN(clear##EXT, 1, 0, 1, 1),                                    \
+        REF_PATTERN(clear##EXT, 1, 1, 0, 1),                                    \
         NULL                                                                    \
     },                                                                          \
 };

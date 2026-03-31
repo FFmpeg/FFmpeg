@@ -602,47 +602,45 @@ IF V2,  mova %3, %2
         CONTINUE tmp0q
 %endmacro
 
-; note: the pattern is inverted for these functions; i.e. X=1 implies that we
-; *keep* the X component, not that we clear it
 %macro clear_generic 0
 op clear
             LOAD_CONT tmp0q
 %if cpuflag(avx2)
-    IF !X,  vpbroadcastd mx, [implq + SwsOpImpl.priv + 0]
-    IF !Y,  vpbroadcastd my, [implq + SwsOpImpl.priv + 4]
-    IF !Z,  vpbroadcastd mz, [implq + SwsOpImpl.priv + 8]
-    IF !W,  vpbroadcastd mw, [implq + SwsOpImpl.priv + 12]
+    IF X,   vpbroadcastd mx, [implq + SwsOpImpl.priv + 0]
+    IF Y,   vpbroadcastd my, [implq + SwsOpImpl.priv + 4]
+    IF Z,   vpbroadcastd mz, [implq + SwsOpImpl.priv + 8]
+    IF W,   vpbroadcastd mw, [implq + SwsOpImpl.priv + 12]
 %else ; !cpuflag(avx2)
-    IF !X,  movd mx, [implq + SwsOpImpl.priv + 0]
-    IF !Y,  movd my, [implq + SwsOpImpl.priv + 4]
-    IF !Z,  movd mz, [implq + SwsOpImpl.priv + 8]
-    IF !W,  movd mw, [implq + SwsOpImpl.priv + 12]
-    IF !X,  pshufd mx, mx, 0
-    IF !Y,  pshufd my, my, 0
-    IF !Z,  pshufd mz, mz, 0
-    IF !W,  pshufd mw, mw, 0
+    IF X,   movd mx, [implq + SwsOpImpl.priv + 0]
+    IF Y,   movd my, [implq + SwsOpImpl.priv + 4]
+    IF Z,   movd mz, [implq + SwsOpImpl.priv + 8]
+    IF W,   movd mw, [implq + SwsOpImpl.priv + 12]
+    IF X,   pshufd mx, mx, 0
+    IF Y,   pshufd my, my, 0
+    IF Z,   pshufd mz, mz, 0
+    IF W,   pshufd mw, mw, 0
 %endif
 %if V2
-    IF !X,  mova mx2, mx
-    IF !Y,  mova my2, my
-    IF !Z,  mova mz2, mz
-    IF !W,  mova mw2, mw
+    IF X,   mova mx2, mx
+    IF Y,   mova my2, my
+    IF Z,   mova mz2, mz
+    IF W,   mova mw2, mw
 %endif
             CONTINUE tmp0q
 %endmacro
 
 %macro clear_funcs 0
-        decl_pattern 1, 1, 1, 0, clear_generic
-        decl_pattern 0, 1, 1, 1, clear_generic
-        decl_pattern 0, 0, 1, 1, clear_generic
-        decl_pattern 1, 0, 1, 1, clear_generic
-        decl_pattern 1, 0, 0, 1, clear_generic
-        decl_pattern 1, 1, 0, 0, clear_generic
-        decl_pattern 0, 1, 0, 1, clear_generic
-        decl_pattern 1, 0, 1, 0, clear_generic
+        decl_pattern 0, 0, 0, 1, clear_generic
         decl_pattern 1, 0, 0, 0, clear_generic
+        decl_pattern 1, 1, 0, 0, clear_generic
         decl_pattern 0, 1, 0, 0, clear_generic
-        decl_pattern 0, 0, 1, 0, clear_generic
+        decl_pattern 0, 1, 1, 0, clear_generic
+        decl_pattern 0, 0, 1, 1, clear_generic
+        decl_pattern 1, 0, 1, 0, clear_generic
+        decl_pattern 0, 1, 0, 1, clear_generic
+        decl_pattern 0, 1, 1, 1, clear_generic
+        decl_pattern 1, 0, 1, 1, clear_generic
+        decl_pattern 1, 1, 0, 1, clear_generic
 %endmacro
 
 ;---------------------------------------------------------
