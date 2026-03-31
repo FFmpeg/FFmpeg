@@ -827,11 +827,9 @@ static char describe_comp_flags(SwsCompFlags flags)
         return '.';
 }
 
-static void print_q(AVBPrint *bp, const AVRational q, bool ignore_den0)
+static void print_q(AVBPrint *bp, const AVRational q)
 {
-    if (!q.den && ignore_den0) {
-        av_bprintf(bp, "_");
-    } else if (!q.den) {
+    if (!q.den) {
         av_bprintf(bp, "%s", q.num > 0 ? "inf" : q.num < 0 ? "-inf" : "nan");
     } else if (q.den == 1) {
         av_bprintf(bp, "%d", q.num);
@@ -842,17 +840,16 @@ static void print_q(AVBPrint *bp, const AVRational q, bool ignore_den0)
     }
 }
 
-static void print_q4(AVBPrint *bp, const AVRational q4[4], bool ignore_den0,
-                     const SwsCompFlags flags[4])
+static void print_q4(AVBPrint *bp, const AVRational q4[4], SwsCompMask mask)
 {
     av_bprintf(bp, "{");
     for (int i = 0; i < 4; i++) {
         if (i)
             av_bprintf(bp, " ");
-        if (flags[i] & SWS_COMP_GARBAGE) {
+        if (!SWS_COMP_TEST(mask, i)) {
             av_bprintf(bp, "_");
         } else {
-            print_q(bp, q4[i], ignore_den0);
+            print_q(bp, q4[i]);
         }
     }
     av_bprintf(bp, "}");
@@ -861,6 +858,7 @@ static void print_q4(AVBPrint *bp, const AVRational q4[4], bool ignore_den0,
 void ff_sws_op_desc(AVBPrint *bp, const SwsOp *op)
 {
     const char *name  = ff_sws_op_type_name(op->op);
+    const SwsCompMask mask = ff_sws_comp_mask_needed(op);
 
     switch (op->op) {
     case SWS_OP_INVALID:
@@ -893,7 +891,7 @@ void ff_sws_op_desc(AVBPrint *bp, const SwsOp *op)
         break;
     case SWS_OP_CLEAR:
         av_bprintf(bp, "%-20s: ", name);
-        print_q4(bp, op->clear.value, true, op->comps.flags);
+        print_q4(bp, op->clear.value, mask & op->clear.mask);
         break;
     case SWS_OP_SWIZZLE:
         av_bprintf(bp, "%-20s: %d%d%d%d", name,
@@ -913,11 +911,11 @@ void ff_sws_op_desc(AVBPrint *bp, const SwsOp *op)
         break;
     case SWS_OP_MIN:
         av_bprintf(bp, "%-20s: x <= ", name);
-        print_q4(bp, op->clamp.limit, true, op->comps.flags);
+        print_q4(bp, op->clamp.limit, mask & ff_sws_comp_mask_q4(op->clamp.limit));
         break;
     case SWS_OP_MAX:
         av_bprintf(bp, "%-20s: ", name);
-        print_q4(bp, op->clamp.limit, true, op->comps.flags);
+        print_q4(bp, op->clamp.limit, mask & ff_sws_comp_mask_q4(op->clamp.limit));
         av_bprintf(bp, " <= x");
         break;
     case SWS_OP_LINEAR:
@@ -926,7 +924,7 @@ void ff_sws_op_desc(AVBPrint *bp, const SwsOp *op)
             av_bprintf(bp, "%s[", i ? " " : "");
             for (int j = 0; j < 5; j++) {
                 av_bprintf(bp, j ? " " : "");
-                print_q(bp, op->lin.m[i][j], false);
+                print_q(bp, op->lin.m[i][j]);
             }
             av_bprintf(bp, "]");
         }
@@ -976,7 +974,8 @@ void ff_sws_op_list_print(void *log, int lev, int lev_extra,
     av_bprint_init(&bp, 0, AV_BPRINT_SIZE_AUTOMATIC);
 
     for (int i = 0; i < ops->num_ops; i++) {
-        const SwsOp *op   = &ops->ops[i];
+        const SwsOp *op = &ops->ops[i];
+        const SwsCompMask mask = ff_sws_comp_mask_needed(op);
         av_bprint_clear(&bp);
         av_bprintf(&bp, "  [%3s %c%c%c%c] ",
                    ff_sws_pixel_type_name(op->type),
@@ -1003,9 +1002,9 @@ void ff_sws_op_list_print(void *log, int lev, int lev_extra,
         {
             av_bprint_clear(&bp);
             av_bprintf(&bp, "    min: ");
-            print_q4(&bp, op->comps.min, false, op->comps.flags);
+            print_q4(&bp, op->comps.min, mask);
             av_bprintf(&bp, ", max: ");
-            print_q4(&bp, op->comps.max, false, op->comps.flags);
+            print_q4(&bp, op->comps.max, mask);
             av_assert0(av_bprint_is_complete(&bp));
             av_log(log, lev_extra, "%s\n", bp.str);
         }
