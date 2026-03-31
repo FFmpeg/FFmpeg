@@ -1,0 +1,73 @@
+Testing av_gcd()
+gcd(0, 0) = 0 OK
+gcd(1, 0) = 1 OK
+gcd(0, 1) = 1 OK
+gcd(6, 4) = 2 OK
+gcd(12, 8) = 4 OK
+gcd(17, 13) = 1 OK
+gcd(100, 75) = 25 OK
+gcd(-6, 4) = 2 OK
+gcd(6, -4) = 2 OK
+
+Testing av_rescale()
+rescale(6, 3, 2) = 9
+rescale(0, 3, 2) = 0
+rescale(1, 1, 1) = 1
+rescale(-6, 3, 2) = -9
+rescale(90000, 1, 90000) = 1
+
+Testing av_rescale_rnd()
+rescale_rnd(7, 1, 2, 0) = 3 OK
+rescale_rnd(7, 1, 2, 1) = 4 OK
+rescale_rnd(7, 1, 2, 2) = 3 OK
+rescale_rnd(7, 1, 2, 3) = 4 OK
+rescale_rnd(7, 1, 2, 5) = 4 OK
+rescale_rnd(-7, 1, 2, 0) = -3 OK
+rescale_rnd(-7, 1, 2, 1) = -4 OK
+rescale_rnd(-7, 1, 2, 2) = -4 OK
+rescale_rnd(-7, 1, 2, 3) = -3 OK
+rescale_rnd(6, 1, 2, 5) = 3 OK
+
+Testing AV_ROUND_PASS_MINMAX
+INT64_MIN passthrough: OK
+INT64_MAX passthrough: OK
+normal with PASS_MINMAX: 2
+
+Testing large value rescale
+rescale(INT64_MAX/2, 2, 1) = 9223372036854775806
+rescale(1000000007, 1000000009, 1000000007) = 1000000009
+rescale_rnd(10, INT_MAX+1, INT_MAX+1, ZERO) = 10
+rescale_rnd(7, 3000000000, 2000000000, NEAR_INF) = 11
+
+Testing av_rescale_q()
+rescale_q(90000, 1/90000, 1/1000) = 1000
+rescale_q(48000, 1/48000, 1/44100) = 44100
+
+Testing av_compare_ts()
+compare(1, 1/1, 1, 1/1) = 0
+compare(1, 1/1, 2, 1/1) = -1
+compare(2, 1/1, 1, 1/1) = 1
+compare(1, 1/1000, 1, 1/90000) = 1
+compare(INT64_MAX/2, 1/1, INT64_MAX/3, 1/1) = 1
+
+Testing av_compare_mod()
+compare_mod(3, 1, 16) = 2
+compare_mod(1, 3, 16) = -2
+compare_mod(5, 5, 16) = 0
+
+Testing av_rescale_delta()
+delta step 0: 0
+delta step 1: 941
+delta step 2: 1882
+delta step 3: 2822
+delta clip 0: 0
+delta clip 1: 1920
+delta clip 2: 3838
+delta clip 3: 5756
+
+Testing av_add_stable()
+add_stable(0, 1/1, 1/1000, 500) = 0
+add_stable(1000, 1/90000, 1/48000, 1024) = 2920
+add_stable(0, 1/48000, 1/90000, 90000) = 48000
+add_stable(100, 1/1000, 1/90000, 3000) = 133
+add_stable 10000x1024 at 1/48000: 10240000 (expected 10240000) OK
