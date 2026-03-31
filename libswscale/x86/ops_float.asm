@@ -327,7 +327,7 @@ op dither%1
     IF COL(2),  mulps m14, %4
     IF COL(3),  mulps m15, %5
     IF COL(0),  addps %1, m12
-    IF NOP(0) && COL(4), addps %1, %3 ; first vector was not reused
+    IF NOP(0) && COL(4), addps %1, %2 ; first vector was not reused
     IF COL(1),  addps %1, m13
     IF NOP(1),  addps %1, %3
     IF COL(2),  addps %1, m14
