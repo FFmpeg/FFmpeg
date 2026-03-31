@@ -256,7 +256,7 @@ DISABLE_SME2
         .popsection
 #endif
 
-.macro  function name, export=0, align=4
+.macro  function name, export=0, jumpable=0, align=4
     .macro endfunc
 ELF     .size   \name, . - \name
 FUNC    .endfunc
@@ -269,7 +269,11 @@ FUNC    .endfunc
 ELF     .type   EXTERN_ASM\name, %function
 FUNC    .func   EXTERN_ASM\name
 EXTERN_ASM\name:
+    .if \jumpable
+        AARCH64_VALID_JUMP_TARGET
+    .else
         AARCH64_VALID_CALL_TARGET
+    .endif
     .else
 ELF     .type   \name, %function
 FUNC    .func   \name
