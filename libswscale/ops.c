@@ -995,11 +995,10 @@ void ff_sws_op_list_print(void *log, int lev, int lev_extra,
         av_assert0(av_bprint_is_complete(&bp));
         av_log(log, lev, "%s\n", bp.str);
 
-        if (op->comps.min[0].den || op->comps.min[1].den ||
-            op->comps.min[2].den || op->comps.min[3].den ||
-            op->comps.max[0].den || op->comps.max[1].den ||
-            op->comps.max[2].den || op->comps.max[3].den)
-        {
+        /* Only print value ranges if any are relevant */
+        SwsCompMask range_mask = ff_sws_comp_mask_q4(op->comps.min) |
+                                 ff_sws_comp_mask_q4(op->comps.max);
+        if (range_mask & mask) {
             av_bprint_clear(&bp);
             av_bprintf(&bp, "    min: ");
             print_q4(&bp, op->comps.min, mask);
