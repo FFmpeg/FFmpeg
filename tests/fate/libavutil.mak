@@ -144,6 +144,10 @@ FATE_LIBAVUTIL += fate-random_seed
 fate-random_seed: libavutil/tests/random_seed$(EXESUF)
 fate-random_seed: CMD = run libavutil/tests/random_seed$(EXESUF)
 
+FATE_LIBAVUTIL += fate-rc4
+fate-rc4: libavutil/tests/rc4$(EXESUF)
+fate-rc4: CMD = run libavutil/tests/rc4$(EXESUF)
+
 FATE_LIBAVUTIL += fate-ripemd
 fate-ripemd: libavutil/tests/ripemd$(EXESUF)
 fate-ripemd: CMD = run libavutil/tests/ripemd$(EXESUF)

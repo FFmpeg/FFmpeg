@@ -297,6 +297,7 @@ TESTPROGS = adler32                                                     \
             pixfmt_best                                                 \
             random_seed                                                 \
             rational                                                    \
+            rc4                                                         \
             ripemd                                                      \
             sha                                                         \
             sha512                                                      \
