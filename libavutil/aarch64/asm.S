@@ -207,10 +207,12 @@ DISABLE_SME2
  */
 #if defined(__ARM_FEATURE_BTI_DEFAULT) && (__ARM_FEATURE_BTI_DEFAULT == 1)
 #   define GNU_PROPERTY_AARCH64_BTI (1 << 0)   // Has BTI
-#   define AARCH64_VALID_CALL_TARGET hint #34  // BTI 'c'
-#   define AARCH64_VALID_JUMP_TARGET hint #38  // BTI 'j'
+#   define AARCH64_VALID_JUMP_CALL_TARGET hint #38  // BTI 'jc'
+#   define AARCH64_VALID_CALL_TARGET      hint #34  // BTI 'c'
+#   define AARCH64_VALID_JUMP_TARGET      hint #38  // BTI 'j'
 #else
 #   define GNU_PROPERTY_AARCH64_BTI 0          // No BTI
+#   define AARCH64_VALID_JUMP_CALL_TARGET
 #   define AARCH64_VALID_CALL_TARGET
 #   define AARCH64_VALID_JUMP_TARGET
 #endif
