@@ -390,7 +390,7 @@ Toolchain options:
   --tempprefix=PATH        force fixed dir/prefix instead of mktemp for checks
   --toolchain=NAME         set tool defaults according to NAME
                            (<tool>[-sanitizer[-...]], e.g. clang-asan-ubsan
-                           tools: gcc, clang, msvc, icl, gcov, llvm-cov,
+                           tools: gcc, clang, llvm, msvc, icl, gcov, llvm-cov,
                                   valgrind-memcheck, valgrind-massif, hardened
                            sanitizers: asan, fuzz, lsan, msan, tsan, ubsan)
   --nm=NM                  use nm tool NM [$nm_default]
@@ -4874,6 +4874,16 @@ case "$toolchain" in
         add_sanitizers "${toolchain#clang-}"
         cc_default="clang"
         cxx_default="clang++"
+    ;;
+    llvm|llvm-*)
+        cc_default="clang"
+        cxx_default="clang++"
+        ar_default="llvm-ar"
+        nm_default="llvm-nm -g"
+        ranlib_default="llvm-ranlib"
+        strip_default="llvm-strip"
+        windres_default="llvm-windres"
+        test "$toolchain" != "llvm" && add_sanitizers "${toolchain#llvm-}"
     ;;
     gcc-*)
         add_sanitizers "${toolchain#gcc-}"
