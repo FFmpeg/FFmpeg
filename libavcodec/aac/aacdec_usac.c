@@ -215,6 +215,8 @@ static int decode_usac_element_pair(AACDecContext *ac,
 
     if (e->stereo_config_index) {
         e->mps.freq_res = get_bits(gb, 3); /* bsFreqRes */
+        int numBands = ((int[]){0,28,20,14,10,7,5,4})[e->mps.freq_res]; // ISO/IEC 23003-1:2007, 5.2, Table 39
+
         e->mps.fixed_gain = get_bits(gb, 3); /* bsFixedGainDMX */
         e->mps.temp_shape_config = get_bits(gb, 2); /* bsTempShapeConfig */
         e->mps.decorr_config = get_bits(gb, 2); /* bsDecorrConfig */
@@ -222,12 +224,21 @@ static int decode_usac_element_pair(AACDecContext *ac,
         e->mps.phase_coding = get_bits1(gb); /* bsPhaseCoding */
 
         e->mps.otts_bands_phase_present = get_bits1(gb);
-        if (e->mps.otts_bands_phase_present) /* bsOttBandsPhasePresent */
-            e->mps.otts_bands_phase = get_bits(gb, 5); /* bsOttBandsPhase */
+        int otts_bands_phase = ((int[]){0,10,10,7,5,3,2,2})[e->mps.freq_res]; // Table 109 — Default value of bsOttBandsPhase
+        if (e->mps.otts_bands_phase_present) { /* bsOttBandsPhasePresent */
+            otts_bands_phase = get_bits(gb, 5); /* bsOttBandsPhase */
+            if (otts_bands_phase > numBands)
+                return AVERROR_INVALIDDATA;
+        }
+        e->mps.otts_bands_phase = otts_bands_phase;
 
         e->mps.residual_coding = e->stereo_config_index >= 2; /* bsResidualCoding */
         if (e->mps.residual_coding) {
-            e->mps.residual_bands = get_bits(gb, 5); /* bsResidualBands */
+            int residual_bands = get_bits(gb, 5); /* bsResidualBands */
+            if (residual_bands > numBands)
+                return AVERROR_INVALIDDATA;
+            e->mps.residual_bands = residual_bands;
+
             e->mps.otts_bands_phase = FFMAX(e->mps.otts_bands_phase,
                                             e->mps.residual_bands);
             e->mps.pseudo_lr = get_bits1(gb); /* bsPseudoLr */
