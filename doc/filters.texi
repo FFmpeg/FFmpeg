@@ -27424,6 +27424,56 @@ Thumbnails are extracted from every @var{n}=150-frame batch, selecting one per b
 
 @end itemize
 
+@subsection transpose_cuda
+
+Transpose rows with columns in the input video and optionally flip it.
+For more in depth examples see the @ref{transpose} video filter, which shares mostly the same options.
+
+It accepts the following parameters:
+
+@table @option
+
+@item dir
+Specify the transposition direction.
+
+Can assume the following values:
+@table @samp
+@item cclock_flip
+Rotate by 90 degrees counterclockwise and vertically flip. (default)
+
+@item clock
+Rotate by 90 degrees clockwise.
+
+@item cclock
+Rotate by 90 degrees counterclockwise.
+
+@item clock_flip
+Rotate by 90 degrees clockwise and vertically flip.
+
+@item reversal
+Rotate by 180 degrees.
+
+@item hflip
+Flip horizontally.
+
+@item vflip
+Flip vertically.
+@end table
+
+@item passthrough
+Do not apply the transposition if the input geometry matches the one
+specified by the specified value. It accepts the following values:
+@table @samp
+@item none
+Always apply transposition. (default)
+@item portrait
+Preserve portrait geometry (when @var{height} >= @var{width}).
+@item landscape
+Preserve landscape geometry (when @var{width} >= @var{height}).
+@end table
+
+@end table
+
 @subsection yadif_cuda
 
 Deinterlace the input video using the @ref{yadif} algorithm, but implemented

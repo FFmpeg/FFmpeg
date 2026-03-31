@@ -513,6 +513,7 @@ extern const FFFilter ff_vf_tonemap_opencl;
 extern const FFFilter ff_vf_tonemap_vaapi;
 extern const FFFilter ff_vf_tpad;
 extern const FFFilter ff_vf_transpose;
+extern const FFFilter ff_vf_transpose_cuda;
 extern const FFFilter ff_vf_transpose_npp;
 extern const FFFilter ff_vf_transpose_opencl;
 extern const FFFilter ff_vf_transpose_vaapi;
