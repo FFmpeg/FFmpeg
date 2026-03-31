@@ -134,39 +134,6 @@ int ff_get_cpu_flags_ppc(void)
 out:
     close(fd);
     return ret;
-#elif CONFIG_RUNTIME_CPUDETECT && defined(__linux__)
-#define PVR_G4_7400  0x000C
-#define PVR_G5_970   0x0039
-#define PVR_G5_970FX 0x003C
-#define PVR_G5_970MP 0x0044
-#define PVR_G5_970GX 0x0045
-#define PVR_POWER6   0x003E
-#define PVR_POWER7   0x003F
-#define PVR_POWER8   0x004B
-#define PVR_CELL_PPU 0x0070
-    int ret = 0;
-    int proc_ver;
-    // Support of mfspr PVR emulation added in Linux 2.6.17.
-    __asm__ volatile("mfspr %0, 287" : "=r" (proc_ver));
-    proc_ver >>= 16;
-    if (proc_ver  & 0x8000 ||
-        proc_ver == PVR_G4_7400  ||
-        proc_ver == PVR_G5_970   ||
-        proc_ver == PVR_G5_970FX ||
-        proc_ver == PVR_G5_970MP ||
-        proc_ver == PVR_G5_970GX ||
-        proc_ver == PVR_POWER6   ||
-        proc_ver == PVR_POWER7   ||
-        proc_ver == PVR_POWER8   ||
-        proc_ver == PVR_CELL_PPU)
-        ret = AV_CPU_FLAG_ALTIVEC;
-    if (proc_ver == PVR_POWER7 ||
-        proc_ver == PVR_POWER8)
-        ret |= AV_CPU_FLAG_VSX;
-    if (proc_ver == PVR_POWER8)
-        ret |= AV_CPU_FLAG_POWER8;
-
-    return ret;
 #else
     // Since we were compiled for AltiVec, just assume we have it
     // until someone comes up with a proper way (not involving signal hacks).
