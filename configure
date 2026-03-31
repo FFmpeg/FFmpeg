@@ -1300,7 +1300,14 @@ test_ld(){
     test_$type $($cflags_filter $flags) || return
     flags=$($ldflags_filter $flags)
     libs=$($ldflags_filter $libs)
-    test_cmd $ld $LDFLAGS $LDEXEFLAGS $flags $(ld_o $TMPE) $TMPO $libs $extralibs
+    log $ld $LDFLAGS $LDEXEFLAGS $flags $(ld_o $TMPE) $TMPO $libs $extralibs
+    output=$($ld $LDFLAGS $LDEXEFLAGS $flags $(ld_o $TMPE) $TMPO $libs $extralibs 2>&1)
+    ret=$?
+    echo "$output" >> $logfile
+    # link.exe and lld-link exit 0 even for unrecognized options, emitting
+    # only a warning (LNK4044 / "ignoring unknown argument").  Treat such
+    # output as failure so check_ldflags rejects those flags correctly.
+    test $ret -eq 0 && ! echo "$output" | grep -qE 'LNK4044|lld-link: warning: ignoring unknown argument'
 }
 
 check_ld(){
