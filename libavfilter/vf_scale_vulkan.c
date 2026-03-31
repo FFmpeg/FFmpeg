@@ -447,7 +447,8 @@ static int scale_vulkan_config_output(AVFilterLink *outlink)
             av_log(avctx, AV_LOG_ERROR, "Scaling is not supported with debayering\n");
             return AVERROR_PATCHWELCOME;
         }
-    } else if (inlink->w == outlink->w || inlink->h == outlink->h) {
+    } else if ((inlink->w == outlink->w || inlink->h == outlink->h) &&
+               (s->vkctx.input_format != s->vkctx.output_format)) {
         s->sws = sws_alloc_context();
         if (!s->sws)
             return AVERROR(ENOMEM);
