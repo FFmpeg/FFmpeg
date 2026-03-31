@@ -528,10 +528,8 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
         bool need_in[4] = { false, false, false, false };
 
         for (int i = 0; i < 4; i++) {
-            if (!need_out[i]) {
+            if (!need_out[i])
                 op->comps.flags[i] = SWS_COMP_GARBAGE;
-                op->comps.min[i] = op->comps.max[i] = (AVRational) {0};
-            }
         }
 
         switch (op->op) {
