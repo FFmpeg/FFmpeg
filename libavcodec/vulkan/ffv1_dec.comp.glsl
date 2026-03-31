@@ -164,10 +164,10 @@ GetBitContext gb;
 void golomb_init(void)
 {
     if (version == 3 && micro_version > 1 || version > 3)
-        get_rac_internal(rc.range * 129 >> 8);
+        get_rac_internal((rc.range * 129) >> 8);
 
     uint64_t ac_byte_count = rc.bs_off - rc.bs_start - 1;
-    init_get_bits(gb, u8buf(rc.bs_start + ac_byte_count),
+    init_get_bits(gb, u8buf(slice_data + rc.bs_start + ac_byte_count),
                   int(rc.bs_end - rc.bs_start - ac_byte_count));
 }
 

@@ -186,7 +186,8 @@ uint rac_terminate(void)
 void rac_init_dec(uint bs_start, uint bs_len)
 {
     /* Skip priming bytes */
-    rac_init(bs_start + 2, bs_len - 2);
+    rac_init(bs_start, bs_len - 2);
+    rc.bs_off += 2;
 
     u8vec2 prime = u8vec2buf(slice_data + bs_start).v;
     /* Switch endianness of the priming bytes */
