@@ -298,7 +298,7 @@ static void asmgen_process(SwsAArch64Context *s, const SwsAArch64OpImplParams *p
 
     aarch64_op_impl_func_name(func_name, sizeof(func_name), p);
 
-    rasm_func_begin(r, func_name, true);
+    rasm_func_begin(r, func_name, true, false);
 
     /* Function prologue */
     RasmOp saved_regs[MAX_SAVED_REGS];
@@ -341,7 +341,7 @@ static void asmgen_process_return(SwsAArch64Context *s, const SwsAArch64OpImplPa
 
     aarch64_op_impl_func_name(func_name, sizeof(func_name), p);
 
-    rasm_func_begin(r, func_name, true);
+    rasm_func_begin(r, func_name, true, true);
 
     /* Reset impl to first kernel. */
     i_mov(r, s->impl, s->op1_impl);         CMT("impl = op1_impl;");
@@ -1348,7 +1348,7 @@ static void asmgen_op_cps(SwsAArch64Context *s, const SwsAArch64OpImplParams *p)
 
     char func_name[128];
     aarch64_op_impl_func_name(func_name, sizeof(func_name), p);
-    rasm_func_begin(r, func_name, true);
+    rasm_func_begin(r, func_name, true, true);
 
     /**
      * Set up vector register dimensions and reshape all vectors

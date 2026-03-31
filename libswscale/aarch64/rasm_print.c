@@ -402,7 +402,8 @@ static void print_node_function(const RasmContext *rctx,
                                 FILE *fp, int64_t *pos, int64_t line_start,
                                 const RasmNode *node)
 {
-    pos_fprintf(fp, pos, "function %s, export=%d", node->func.name, node->func.export);
+    pos_fprintf(fp, pos, "function %s, export=%d, jumpable=%d",
+                node->func.name, node->func.export, node->func.jumpable);
 }
 
 /*********************************************************************/

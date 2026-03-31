@@ -133,6 +133,7 @@ typedef struct RasmNodeLabel {
 typedef struct RasmNodeFunc {
     char *name;
     bool export;
+    bool jumpable;
 } RasmNodeFunc;
 
 typedef struct RasmNodeDirective {
@@ -200,7 +201,8 @@ RasmNode *rasm_add_comment(RasmContext *rctx, const char *comment);
 RasmNode *rasm_add_commentf(RasmContext *rctx, char *s, size_t n,
                             const char *fmt, ...) av_printf_format(4, 5);
 RasmNode *rasm_add_label(RasmContext *rctx, int id);
-RasmNode *rasm_add_func(RasmContext *rctx, int id, bool export);
+RasmNode *rasm_add_func(RasmContext *rctx, int id, bool export,
+                        bool jumpable);
 RasmNode *rasm_add_endfunc(RasmContext *rctx);
 RasmNode *rasm_add_directive(RasmContext *rctx, const char *text);
 
@@ -208,7 +210,8 @@ RasmNode *rasm_get_current_node(RasmContext *rctx);
 RasmNode *rasm_set_current_node(RasmContext *rctx, RasmNode *node);
 
 /* Top-level IR entries */
-int rasm_func_begin(RasmContext *rctx, const char *name, bool export);
+int rasm_func_begin(RasmContext *rctx, const char *name, bool export,
+                    bool jumpable);
 
 /**
  * Allocate a new label ID with the given name.
