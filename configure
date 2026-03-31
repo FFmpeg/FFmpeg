@@ -1081,6 +1081,10 @@ hostcc_o(){
     eval printf '%s\\n' $HOSTCC_O
 }
 
+hostld_o(){
+    eval printf '%s\\n' $HOSTLD_O
+}
+
 glslc_o(){
     eval printf '%s\\n' $GLSLC_O
 }
@@ -1835,6 +1839,16 @@ test_host_cc(){
     test_cmd $host_cc $host_cflags "$@" $HOSTCC_C $(hostcc_o $TMPO) $TMPC
 }
 
+test_host_ld(){
+    log test_host_ld "$@"
+    flags=$(filter_out '-l*|*.so' $@)
+    libs=$(filter '-l*|*.so' $@)
+    test_host_cc $($host_cflags_filter $flags) || return
+    flags=$($host_ldflags_filter $flags)
+    libs=$($host_ldflags_filter $libs)
+    test_cmd $host_ld $host_ldflags $flags $(hostld_o $TMPE) $TMPO $libs $host_extralibs
+}
+
 test_host_cpp(){
     log test_host_cpp "$@"
     cat > $TMPC
@@ -1897,6 +1911,27 @@ check_host_cpp_condition(){
     shift 1
     disable $name
     test_host_cpp_condition "$@" && enable $name
+}
+
+check_host_lib(){
+    log check_host_lib "$@"
+    headers="$1"
+    funcs="$2"
+    shift 2
+    {
+        for hdr in $headers; do
+            print_include $hdr
+        done
+        echo "#include <stdint.h>"
+        for func in $funcs; do
+            echo "long check_$func(void) { return (long) $func; }"
+        done
+        echo "int main(void) { int ret = 0;"
+        for func in $funcs; do
+            echo " ret |= ((intptr_t)check_$func) & 0xFFFF;"
+        done
+        echo "return ret; }"
+    } | test_host_ld "$@" && append host_extralibs "$@"
 }
 
 cp_if_changed(){
@@ -4470,7 +4505,7 @@ GLSLC_O='-o $@'
 NVCC_C='-c'
 NVCC_O='-o $@'
 
-host_extralibs='-lm'
+host_extralibs=
 host_cflags_filter=echo
 host_ldflags_filter=echo
 
@@ -7223,6 +7258,7 @@ enabled zlib_gzip && enabled gzip || disable resource_compression
 check_lib libdl dlfcn.h "dlopen dlsym" || check_lib libdl dlfcn.h "dlopen dlsym" -ldl
 
 check_lib libm math.h sin -lm
+check_host_lib math.h sin -lm
 
 atan2f_args=2
 copysign_args=2
