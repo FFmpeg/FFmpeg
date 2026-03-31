@@ -160,6 +160,10 @@ FATE_LIBAVUTIL += fate-sha512
 fate-sha512: libavutil/tests/sha512$(EXESUF)
 fate-sha512: CMD = run libavutil/tests/sha512$(EXESUF)
 
+FATE_LIBAVUTIL += fate-samplefmt
+fate-samplefmt: libavutil/tests/samplefmt$(EXESUF)
+fate-samplefmt: CMD = run libavutil/tests/samplefmt$(EXESUF)
+
 FATE_LIBAVUTIL += fate-side_data_array
 fate-side_data_array: libavutil/tests/side_data_array$(EXESUF)
 fate-side_data_array: CMD = run libavutil/tests/side_data_array$(EXESUF)

@@ -1,0 +1,114 @@
+Testing name/format round-trip
+ 0: name=u8    roundtrip=OK
+ 1: name=s16   roundtrip=OK
+ 2: name=s32   roundtrip=OK
+ 3: name=flt   roundtrip=OK
+ 4: name=dbl   roundtrip=OK
+ 5: name=u8p   roundtrip=OK
+ 6: name=s16p  roundtrip=OK
+ 7: name=s32p  roundtrip=OK
+ 8: name=fltp  roundtrip=OK
+ 9: name=dblp  roundtrip=OK
+10: name=s64   roundtrip=OK
+11: name=s64p  roundtrip=OK
+NONE name: (null)
+NB name: (null)
+unknown: -1
+
+Testing av_get_bytes_per_sample()
+u8: 1
+s16: 2
+s32: 4
+flt: 4
+dbl: 8
+u8p: 1
+s16p: 2
+s32p: 4
+fltp: 4
+dblp: 8
+s64: 8
+s64p: 8
+NONE: 0
+
+Testing av_sample_fmt_is_planar()
+u8: 0
+s16: 0
+s32: 0
+flt: 0
+dbl: 0
+u8p: 1
+s16p: 1
+s32p: 1
+fltp: 1
+dblp: 1
+s64: 0
+s64p: 1
+NONE: 0
+
+Testing packed/planar conversions
+u8: packed=u8   planar=u8p
+s16: packed=s16  planar=s16p
+s32: packed=s32  planar=s32p
+flt: packed=flt  planar=fltp
+dbl: packed=dbl  planar=dblp
+u8p: packed=u8   planar=u8p
+s16p: packed=s16  planar=s16p
+s32p: packed=s32  planar=s32p
+fltp: packed=flt  planar=fltp
+dblp: packed=dbl  planar=dblp
+s64: packed=s64  planar=s64p
+s64p: packed=s64  planar=s64p
+
+Testing av_get_alt_sample_fmt()
+u8: alt_packed=u8   alt_planar=u8p
+s16: alt_packed=s16  alt_planar=s16p
+s32: alt_packed=s32  alt_planar=s32p
+flt: alt_packed=flt  alt_planar=fltp
+dbl: alt_packed=dbl  alt_planar=dblp
+u8p: alt_packed=u8   alt_planar=u8p
+s16p: alt_packed=s16  alt_planar=s16p
+s32p: alt_packed=s32  alt_planar=s32p
+fltp: alt_packed=flt  alt_planar=fltp
+dblp: alt_packed=dbl  alt_planar=dblp
+s64: alt_packed=s64  alt_planar=s64p
+s64p: alt_packed=s64  alt_planar=s64p
+
+Testing av_get_sample_fmt_string()
+header: name   depth
+u8        8 
+s16      16 
+s32      32 
+flt      32 
+dbl      64 
+u8p       8 
+s16p     16 
+s32p     32 
+fltp     32 
+dblp     64 
+s64      64 
+s64p     64 
+
+Testing av_samples_get_buffer_size()
+2ch 1024smp s16: 4096
+2ch 1024smp s16p: 4096
+6ch 512smp s32: 12288
+linesize (2ch 1024smp s16 align=0): 4096
+0ch error: 1
+
+Testing av_samples_alloc()
+alloc 2ch s16: ret=1 linesize=4096 data[0]=set
+alloc 2ch s16p: ret=1 linesize=2048 data[0]=set data[1]=set
+
+Testing av_samples_alloc_array_and_samples()
+alloc_array 2ch s16p: ret=1 linesize=2048 data[0]=set data[1]=set
+
+Testing av_samples_copy()
+copy: OK
+
+Testing OOM paths
+alloc OOM: ret=1 data[0]=null
+alloc_array OOM: ret=1 data=null
+
+Testing av_samples_set_silence()
+silence s16: OK
+silence u8: OK
