@@ -68,10 +68,6 @@ int ff_sws_op_chain_append(SwsOpChain *chain, SwsFuncPtr func,
  * Likewise, if `ref->comps` has any components marked as unused, they must be
  * marked as unused in `ops` as well.
  *
- * For SWS_OP_LINEAR, `ref->linear.mask` must be a strict superset of
- * `op->linear.mask`, but may not contain any columns explicitly ignored by
- * `op->comps.unused`.
- *
  * For unfiltered SWS_OP_READ/SWS_OP_WRITE, SWS_OP_SWAP_BYTES and
  * SWS_OP_SWIZZLE, the exact type is not checked, just the size.
  *
@@ -172,17 +168,8 @@ static int op_match(const SwsOp *op, const SwsOpEntry *entry)
         av_assert1(entry->flexible);
         break;
     case SWS_OP_LINEAR:
-        /* All required elements must be present */
-        if (op->lin.mask & ~entry->linear_mask)
+        if (op->lin.mask != entry->linear_mask)
             return 0;
-        /* To avoid operating on possibly undefined memory, filter out
-         * implementations that operate on more input components */
-        for (int i = 0; i < 4; i++) {
-            if ((entry->linear_mask & SWS_MASK_COL(i)) && op->comps.unused[i])
-                return 0;
-        }
-        /* Prioritize smaller implementations */
-        score += av_popcount(SWS_MASK_ALL ^ entry->linear_mask);
         return score;
     case SWS_OP_SCALE:
         return av_cmp_q(op->scale.factor, entry->scale) ? 0 : score;
