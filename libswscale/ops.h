@@ -108,7 +108,6 @@ typedef enum SwsCompFlags {
 
 typedef struct SwsComps {
     SwsCompFlags flags[4]; /* knowledge about (output) component contents */
-    bool unused[4]; /* which input components are definitely unused */
 
     /* Keeps track of the known possible value range, or {0, 0} for undefined
      * or (unknown range) floating point inputs */

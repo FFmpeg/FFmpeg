@@ -581,10 +581,7 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
             break;
         }
 
-        for (int i = 0; i < 4; i++) {
-            need_out[i] = need_in[i];
-            op->comps.unused[i] = !need_in[i];
-        }
+        memcpy(need_out, need_in, sizeof(need_in));
     }
 }
 
