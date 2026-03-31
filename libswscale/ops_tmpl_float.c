@@ -218,7 +218,7 @@ static const SwsOpTable fn(op_table_float) = {
         REF_COMMON_PATTERNS(convert_uint16),
         REF_COMMON_PATTERNS(convert_uint32),
 
-        &fn(op_clear_1110),
+        &fn(op_clear_0001),
         REF_COMMON_PATTERNS(min),
         REF_COMMON_PATTERNS(max),
         REF_COMMON_PATTERNS(scale),
@@ -233,9 +233,9 @@ static const SwsOpTable fn(op_table_float) = {
         &fn(op_dither7),
         &fn(op_dither8),
 
-        &fn(op_clear_1110),
-        &fn(op_clear_0111),
-        &fn(op_clear_0011),
+        &fn(op_clear_0001),
+        &fn(op_clear_1000),
+        &fn(op_clear_1100),
 
         &fn(op_linear_luma),
         &fn(op_linear_alpha),

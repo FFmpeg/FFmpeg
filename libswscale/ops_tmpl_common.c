@@ -65,13 +65,13 @@ DECL_PATTERN(clear)
 {
     SWS_LOOP
     for (int i = 0; i < SWS_BLOCK_SIZE; i++) {
-        if (!X)
+        if (X)
             x[i] = impl->priv.px[0];
-        if (!Y)
+        if (Y)
             y[i] = impl->priv.px[1];
-        if (!Z)
+        if (Z)
             z[i] = impl->priv.px[2];
-        if (!W)
+        if (W)
             w[i] = impl->priv.px[3];
     }
 
@@ -84,22 +84,22 @@ DECL_IMPL(clear, clear##_##X##Y##Z##W, X, Y, Z, W)                              
 DECL_ENTRY(clear##_##X##Y##Z##W, SWS_COMP_ALL,                                  \
     .setup = ff_sws_setup_clear,                                                \
     .op = SWS_OP_CLEAR,                                                         \
-    .clear.mask = SWS_COMP_MASK(!X, !Y, !Z, !W),                                \
+    .clear.mask = SWS_COMP_MASK(X, Y, Z, W),                                    \
 );
 
-WRAP_CLEAR(1, 1, 1, 0) /* rgba alpha */
-WRAP_CLEAR(0, 1, 1, 1) /* argb alpha */
-WRAP_CLEAR(1, 0, 1, 1) /* ya alpha */
+WRAP_CLEAR(0, 0, 0, 1) /* rgba alpha */
+WRAP_CLEAR(1, 0, 0, 0) /* argb alpha */
+WRAP_CLEAR(0, 1, 0, 0) /* ya alpha */
 
-WRAP_CLEAR(0, 0, 1, 1) /* vuya chroma */
-WRAP_CLEAR(1, 0, 0, 1) /* yuva chroma */
-WRAP_CLEAR(1, 1, 0, 0) /* ayuv chroma */
-WRAP_CLEAR(0, 1, 0, 1) /* uyva chroma */
-WRAP_CLEAR(1, 0, 1, 0) /* xvyu chroma */
+WRAP_CLEAR(1, 1, 0, 0) /* vuya chroma */
+WRAP_CLEAR(0, 1, 1, 0) /* yuva chroma */
+WRAP_CLEAR(0, 0, 1, 1) /* ayuv chroma */
+WRAP_CLEAR(1, 0, 1, 0) /* uyva chroma */
+WRAP_CLEAR(0, 1, 0, 1) /* xvyu chroma */
 
-WRAP_CLEAR(1, 0, 0, 0) /* gray -> yuva */
-WRAP_CLEAR(0, 1, 0, 0) /* gray -> ayuv */
-WRAP_CLEAR(0, 0, 1, 0) /* gray -> vuya */
+WRAP_CLEAR(0, 1, 1, 1) /* gray -> yuva */
+WRAP_CLEAR(1, 0, 1, 1) /* gray -> ayuv */
+WRAP_CLEAR(1, 1, 0, 1) /* gray -> vuya */
 
 DECL_PATTERN(min)
 {
