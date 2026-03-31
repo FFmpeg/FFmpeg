@@ -394,13 +394,13 @@ static int gxf_header(AVFormatContext *s) {
         avio_skip(pb, map_len);
     if (!parse_packet_header(pb, &pkt_type, &len)) {
         av_log(s, AV_LOG_ERROR, "sync lost in header\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     if (pkt_type == PKT_FLT) {
         gxf_read_index(s, len);
         if (!parse_packet_header(pb, &pkt_type, &len)) {
             av_log(s, AV_LOG_ERROR, "sync lost in header\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
     }
     if (pkt_type == PKT_UMF) {
@@ -508,7 +508,7 @@ static int gxf_packet(AVFormatContext *s, AVPacket *pkt) {
         if (!parse_packet_header(pb, &pkt_type, &pkt_len)) {
             if (!avio_feof(pb))
                 av_log(s, AV_LOG_ERROR, "sync lost\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         if (pkt_type == PKT_FLT) {
             gxf_read_index(s, pkt_len);
