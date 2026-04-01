@@ -56,6 +56,11 @@ fate-sws-uops-macros: REF = $(SRC_PATH)/libswscale/uops_macros.h
 fate-sws-uops-macros: CMD = run libswscale/tests/sws_ops$(EXESUF) -macros
 endif
 
+FATE_LIBSWSCALE-$(CONFIG_UNSTABLE) += fate-sws-ops-entries-aarch64
+fate-sws-ops-entries-aarch64: libswscale/tests/sws_ops_aarch64$(EXESUF)
+fate-sws-ops-entries-aarch64: REF = $(SRC_PATH)/libswscale/aarch64/ops_entries.c
+fate-sws-ops-entries-aarch64: CMD = run libswscale/tests/sws_ops_aarch64$(EXESUF)
+
 FATE_LIBSWSCALE += $(FATE_LIBSWSCALE-yes)
 FATE_LIBSWSCALE_SAMPLES += $(FATE_LIBSWSCALE_SAMPLES-yes)
 FATE-$(CONFIG_SWSCALE) += $(FATE_LIBSWSCALE)

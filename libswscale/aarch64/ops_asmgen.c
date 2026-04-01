@@ -88,7 +88,7 @@ static void *av_dynarray2_add(void **tab_ptr, int *nb_ptr, size_t elem_size,
  * compiled by performing a dummy run of all conversions in sws_ops and
  * collecting all functions that need to be generated. This is achieved
  * by running:
- *   make sws_ops_entries_aarch64
+ *   make fate-sws-ops-entries-aarch64 GEN=1
  */
 static const SwsAArch64OpImplParams impl_params[] = {
 #include "ops_entries.c"
