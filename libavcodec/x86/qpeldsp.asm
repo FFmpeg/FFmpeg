@@ -307,7 +307,7 @@ MPEG4_QPEL16_H_LOWPASS put_no_rnd
 
 
 %macro MPEG4_QPEL8_H_LOWPASS 1
-cglobal %1_mpeg4_qpel8_h_lowpass, 5, 5, 0, 8
+cglobal %1_mpeg4_qpel8_h_lowpass, 5, 5, 0
     pxor         m7, m7
 .loop:
     mova         m0, [r1]
