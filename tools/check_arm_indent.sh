@@ -33,10 +33,30 @@ fi
 
 ret=0
 
-for i in */aarch64/*.S */aarch64/*/*.S; do
+for i in */aarch64/*.S */aarch64/*/*.S */arm/*.S; do
     case $i in
     libavcodec/aarch64/h264idct_neon.S|libavcodec/aarch64/h26x/epel_neon.S|libavcodec/aarch64/h26x/qpel_neon.S|libavcodec/aarch64/vc1dsp_neon.S)
         # Skip files with known (and tolerated) deviations from the tool.
+        continue
+        ;;
+    libavcodec/arm/jrevdct_arm.S)
+        # This file has a large copyright header that gets reindented like code.
+        continue
+        ;;
+    libavcodec/arm/mlpdsp_armv5te.S|libavcodec/arm/mlpdsp_armv6.S)
+        # These files use a bit more gas directives than most files, and the
+        # reindenter script would need a lot of manual fixups to make this
+        # look good, so keep it as is.
+        continue
+        ;;
+    libavcodec/arm/vc1dsp_neon.S|libavutil/arm/float_dsp_vfp.S)
+        # These files use different indentation levels to signify different
+        # levels in unrolling.
+        continue
+        ;;
+    libavcodec/arm/simple_idct_arm.S|libavcodec/arm/simple_idct_armv5te.S|libavcodec/arm/simple_idct_armv6.S)
+        # These files use defines for constants, like "W26", that get mistaken
+        # as register names and get lowercased by the script.
         continue
         ;;
     esac

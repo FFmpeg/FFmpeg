@@ -20,9 +20,9 @@ repos:
     - id: trailing-whitespace
 - repo: local
   hooks:
-    - id: aarch64-asm-indent
-      name: fix aarch64 assembly indentation
-      files: ^.*/aarch64/.*\.S$
+    - id: arm-asm-indent
+      name: fix arm/aarch64 assembly indentation
+      files: ^.*/(arm|aarch64)/.*\.S$
       language: script
       entry: ./tools/check_arm_indent.sh --apply
       pass_filenames: false
