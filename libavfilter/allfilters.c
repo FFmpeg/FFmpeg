@@ -443,6 +443,7 @@ extern const FFFilter ff_vf_sab;
 extern const FFFilter ff_vf_scale;
 extern const FFFilter ff_vf_vpp_amf;
 extern const FFFilter ff_vf_sr_amf;
+extern const FFFilter ff_vf_frc_amf;
 extern const FFFilter ff_vf_scale_cuda;
 extern const FFFilter ff_vf_scale_d3d11;
 extern const FFFilter ff_vf_scale_d3d12;

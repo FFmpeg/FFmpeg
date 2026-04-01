@@ -280,11 +280,16 @@ int amf_init_filter_config(AVFilterLink *outlink, enum AVPixelFormat *in_format)
     FilterLink        *outl = ff_filter_link(outlink);
     double w_adj = 1.0;
 
-    if ((err = ff_scale_eval_dimensions(avctx,
-                                        ctx->w_expr, ctx->h_expr,
-                                        inlink, outlink,
-                                        &ctx->width, &ctx->height)) < 0)
-        return err;
+    if (ctx->w_expr && ctx->h_expr) {
+        if ((err = ff_scale_eval_dimensions(avctx,
+                                            ctx->w_expr, ctx->h_expr,
+                                            inlink, outlink,
+                                            &ctx->width, &ctx->height)) < 0)
+            return err;
+    } else {
+        ctx->width = inlink->w;
+        ctx->height = inlink->h;
+    }
 
     if (ctx->reset_sar && inlink->sample_aspect_ratio.num)
         w_adj = (double) inlink->sample_aspect_ratio.num / inlink->sample_aspect_ratio.den;
@@ -444,6 +449,7 @@ AVFrame *amf_amfsurface_to_avframe(AVFilterContext *avctx, AMFSurface* pSurface)
             }
         }
     }
+
 
     return frame;
 }

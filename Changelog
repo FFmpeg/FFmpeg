@@ -8,6 +8,7 @@ version <next>:
 - Add v360_vulkan filter
 - HE-AAC 960 decoding (DAB+)
 - transpose_cuda filter
+- Add AMF Frame Rate Converter (vf_frc_amf) filter
 
 
 version 8.1:

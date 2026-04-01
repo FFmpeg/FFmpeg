@@ -14749,6 +14749,73 @@ This flag is enabled by default.
 @end table
 @end table
 
+@section frc_amf
+
+Double the frame rate, using Frame Rate Converter (FRC) provided by
+AMD Advanced Media Framework library for hardware acceleration.
+
+The filter accepts the following options:
+
+@table @option
+@item engine_type
+Specify the engine used to run shaders.
+@table @samp
+@item dx11
+DirectX 11.
+
+@item dx12
+DirectX 12 (Default value).
+@end table
+
+@item enable
+Boolean value: enable/disable FRC. Dynamic value, can be altered at a runtime
+without re-initializing the filter. (Default value: enabled).
+
+@item fallback_mode
+Fallback behavior in case of low interpolation confidence.
+@table @samp
+@item duplicate
+Duplicate frame.
+
+@item blend
+Blend two frames together (Default value).
+@end table
+
+@item indicator
+Boolean value: show FRC indicator square in the top left corner of the video
+(Default value: disabled).
+
+@item profile
+Level of hierarchical motion search.
+@table @samp
+@item low
+Less levels of hierarchical motion search.
+Only recommended for extremely low resolutions.
+
+@item high
+Recommended for any resolution up to 1440p. (Default value)
+
+@item super
+More levels of hierarchical motion search. Recommended for resolutions 1440p
+or higher.
+@end table
+
+@item mv_search_mode
+Performance mode of the motion search.
+@table @samp
+@item native
+Conduct motion search on the full resolution of source images.
+
+@item performance
+Conduct motion search on the down scaled source images.
+Recommended for APU or low end GPU for better performance.
+@end table
+
+@item use_future_frame
+Boolean value: enable dependency on future frame, improves quality for the cost
+of latency (Default value: enabled).
+@end table
+
 @section framestep
 
 Select one frame every N-th frame.
