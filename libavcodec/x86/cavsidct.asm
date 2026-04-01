@@ -61,7 +61,8 @@ SECTION .text
     mova            m6, m7
     mova            m0, m3
     mova            m2, m1
-    SUMSUB_BA     w, 7, 5               ; m7 = a0 + a1, m5 = a0 - a1
+    paddw           m7, m5              ; m7 = a0 + a1
+    psubw           m5, m6              ; m5 = a0 - a1
     paddw           m7, m3              ; m7 = a0 + a1 + a3
     paddw           m5, m1              ; m5 = a0 - a1 + a2
     paddw           m7, m7
@@ -69,7 +70,8 @@ SECTION .text
     paddw           m7, m6              ; m7 = b4
     paddw           m5, m4              ; m5 = b5
 
-    SUMSUB_BA     w, 1, 3               ; m1 = a3 + a2, m3 = a3 - a2
+    paddw           m1, m3              ; m1 = a3 + a2
+    psubw           m3, m2              ; m3 = a3 - a2
     psubw           m4, m1              ; m4 = a0 - a2 - a3
     mova            m1, m4              ; m1 = a0 - a2 - a3
     psubw           m3, m6              ; m3 = a3 - a2 - a1
@@ -93,18 +95,31 @@ SECTION .text
 
     mova            m2, [%1+0*16]       ; m2 = src0
     mova            m0, [%1+4*16]       ; m0 = src4
+%if ARCH_X86_64
+    SUMSUB_BA     w, 0, 2, 8            ; m0 = src0 + src4, m2 = src0 - src4
+%else
     SUMSUB_BA     w, 0, 2               ; m0 = src0 + src4, m2 = src0 - src4
+%endif
     psllw           m0, 3
     psllw           m2, 3
     paddw           m0, %2              ; add rounding bias
     paddw           m2, %2              ; add rounding bias
 
+%if ARCH_X86_64
+    SUMSUB_BA     w, 6, 0, 8            ; m6 = a4 + a6, m0 = a4 - a6
+    SUMSUB_BA     w, 4, 2, 8            ; m4 = a5 + a7, m2 = a5 - a7
+    SUMSUB_BA     w, 7, 6, 8            ; m7 = dst0, m6 = dst7
+    SUMSUB_BA     w, 5, 4, 8            ; m5 = dst1, m4 = dst6
+    SUMSUB_BA     w, 3, 2, 8            ; m3 = dst2, m2 = dst5
+    SUMSUB_BA     w, 1, 0, 8            ; m1 = dst3, m0 = dst4
+%else
     SUMSUB_BA     w, 6, 0               ; m6 = a4 + a6, m0 = a4 - a6
     SUMSUB_BA     w, 4, 2               ; m4 = a5 + a7, m2 = a5 - a7
     SUMSUB_BA     w, 7, 6               ; m7 = dst0, m6 = dst7
     SUMSUB_BA     w, 5, 4               ; m5 = dst1, m4 = dst6
     SUMSUB_BA     w, 3, 2               ; m3 = dst2, m2 = dst5
     SUMSUB_BA     w, 1, 0               ; m1 = dst3, m0 = dst4
+%endif
 %endmacro
 
 INIT_XMM sse2
