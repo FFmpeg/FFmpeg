@@ -15,6 +15,7 @@
 /cpu_init
 /crc
 /des
+/detection_bbox
 /dict
 /display
 /error
@@ -22,6 +23,7 @@
 /eval
 /fifo
 /file
+/film_grain_params
 /hash
 /hmac
 /hwdevice
@@ -46,9 +48,12 @@
 /sha512
 /side_data_array
 /softfloat
+/spherical
+/stereo3d
 /tea
 /tree
 /twofish
 /utf8
 /uuid
+/video_enc_params
 /xtea
