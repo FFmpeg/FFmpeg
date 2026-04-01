@@ -3978,15 +3978,15 @@ static int matroska_parse_block_additional(MatroskaDemuxContext *matroska,
             switch (provider_code) {
             case ITU_T_T35_PROVIDER_CODE_VNOVA: {
                 uint8_t *data;
+                int left = bytestream2_get_bytes_left(&bc);
 
-                if (bytestream2_get_bytes_left(&bc) < 2)
+                if (left < 2)
                     return AVERROR_INVALIDDATA;
-
-                data = av_packet_new_side_data(pkt, AV_PKT_DATA_LCEVC, bytestream2_get_bytes_left(&bc));
+                data = av_packet_new_side_data(pkt, AV_PKT_DATA_LCEVC, left);
                 if (!data)
                     return AVERROR(ENOMEM);
 
-                bytestream2_get_bufferu(&bc, data, bytestream2_get_bytes_left(&bc));
+                bytestream2_get_bufferu(&bc, data, left);
 
                 return 0;
             }
