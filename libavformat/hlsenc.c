@@ -2971,8 +2971,12 @@ static int hls_init(AVFormatContext *s)
         if (vs->has_video > 1)
             av_log(s, AV_LOG_WARNING, "More than a single video stream present, expect issues decoding it.\n");
         if (hls->segment_type == SEGMENT_TYPE_FMP4) {
+#if CONFIG_MP4_MUXER
             EXTERN const FFOutputFormat ff_mp4_muxer;
             vs->oformat = &ff_mp4_muxer.p;
+#else
+            return AVERROR_MUXER_NOT_FOUND;
+#endif
         } else {
             EXTERN const FFOutputFormat ff_mpegts_muxer;
             vs->oformat = &ff_mpegts_muxer.p;
