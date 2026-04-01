@@ -1916,6 +1916,12 @@ static void handle_rtx_packet(AVFormatContext *s, uint16_t seq)
     ori_buf = it->buf;
     ori_size = it->size;
 
+    /* A valid RTP packet must have at least a RTP header. */
+    if (ori_size < WHIP_RTP_HEADER_SIZE) {
+        av_log(whip, AV_LOG_WARNING, "RTX history packet too small, size=%d\n", ori_size);
+        goto end;
+    }
+
     /* RTX packet format: header + original seq (2 bytes) + payload */
     if (ori_size + 2 > sizeof(rtx_buf)) {
         av_log(whip, AV_LOG_WARNING, "RTX packet is too large, size=%d\n", ori_size);
