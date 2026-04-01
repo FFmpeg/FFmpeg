@@ -1060,6 +1060,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
                                          bytestream2_get_bytes_left(&gb), &sd);
             if (ret < 0)
                 return ret;
+            if (!sd)
+                break;
 
             bytestream2_get_bufferu(&gb, sd->data, sd->size);
             break;
