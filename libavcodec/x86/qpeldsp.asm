@@ -30,6 +30,12 @@ pw_15: times 8 dw 15
 cextern pw_16
 pw_20: times 8 dw 20
 
+coeff8_0: times 16 db 20  ; pb_20
+coeff8_1: db -6,  3, -6,  3,  3, -6,  3, -6, -6,  3, -6,  3,  3, -6,  3, -6
+coeff8_2: db -6,  3, -1,  0, -6,  3, -6,  3,  3, -6,  3, -6,  0, -1,  3, -6
+coeff8_3: db -1, -1, -3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -3, -1, -1
+shuffle_mask8: db 3, 7, 0, 9, 0, 12, 0, 14, 1, 15, 3, 15, 6, 15, 8, 12
+
 shuffle_mask16_0: db 2, 1, 1, 0, 0, 0, 1, 0, 1,  2,  2,  3,  4,  3,  5,  4
 shuffle_mask16_1: db 5, 6, 6, 7, 8, 7, 9, 8, 9, 10, 10, 11, 12, 11, 13, 12
 shuffle_mask16_2: db 0, 1, 1, 2, 3, 2, 3, 3,  3, 2,  2,  1, -1, -1, -1, -1
@@ -334,9 +340,52 @@ MPEG4_QPEL16_H_LOWPASS avg
 MPEG4_QPEL16_H_LOWPASS put_no_rnd
 
 %macro MPEG4_QPEL8_H_LOWPASS 1
-cglobal %1_mpeg4_qpel8_h_lowpass, 5, 5, 0
+cglobal %1_mpeg4_qpel8_h_lowpass, 5, 5, 8+2*ARCH_X86_64, dst, src, dstride, srcstride, h
+%if cpuflag(ssse3)
+    mova         m4, [PW_ROUND]
+    mova         m5, [coeff8_0]
+%if ARCH_X86_64
+    mova         m8, [coeff8_1]
+    mova         m9, [coeff8_2]
+%endif
+    mova         m6, [coeff8_3]
+    mova         m7, [shuffle_mask8]
+%else
     pxor         m7, m7
+%endif
 .loop:
+%if cpuflag(ssse3)
+    movq         m0, [srcq]
+    movq         m1, [srcq+1]
+    punpcklbw    m0, m1
+    pmaddubsw    m1, m0, m5
+    pshufd       m2, m0, q2301
+%if ARCH_X86_64
+    pmaddubsw    m2, m8
+    pshufd       m3, m0, q3120
+    pmaddubsw    m3, m9
+%else
+    pmaddubsw    m2, [coeff8_1]
+    pshufd       m3, m0, q3120
+    pmaddubsw    m3, [coeff8_2]
+%endif
+    paddw        m1, m2
+%ifidn %1, avg
+    movq         m2, [dstq]
+%endif
+    pshufb       m0, m7
+    pmaddubsw    m0, m6
+    add        srcq, srcstrideq
+    paddw        m1, m4
+    paddw        m1, m3
+    paddw        m1, m0
+    psraw        m1, 5
+    packuswb     m1, m1
+%ifidn %1, avg
+    pavgb        m1, m2
+%endif
+    movq     [dstq], m1
+%else
     mova         m0, [r1]
     mova         m1, m0
     mova         m2, m0
@@ -385,8 +434,9 @@ cglobal %1_mpeg4_qpel8_h_lowpass, 5, 5, 0
     packuswb     m0, m3
     OP_MOV     [r0], m0, m4
     add          r1, r3
-    add          r0, r2
-    dec r4d
+%endif
+    add        dstq, dstrideq
+    dec          hd
     jne .loop
     RET
 %endmacro
@@ -402,6 +452,13 @@ MPEG4_QPEL8_H_LOWPASS avg
 %define OP_MOV PUT_OP
 MPEG4_QPEL8_H_LOWPASS put_no_rnd
 
+INIT_XMM ssse3
+%define PW_ROUND pw_16
+MPEG4_QPEL8_H_LOWPASS put
+%define PW_ROUND pw_16
+MPEG4_QPEL8_H_LOWPASS avg
+%define PW_ROUND pw_15
+MPEG4_QPEL8_H_LOWPASS put_no_rnd
 
 
 %macro QPEL_V_LOW 5

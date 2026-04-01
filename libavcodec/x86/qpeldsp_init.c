@@ -267,12 +267,14 @@ MACRO(avg,,                SIZE, SIZEP1, HXMM, VXMM, HVXMM, L2) \
 MACRO(put_no_rnd, no_rnd_, SIZE, SIZEP1, HXMM, VXMM, HVXMM, L2)
 
 QPEL3(QPEL_H,   8,  9, mmxext, mmxext, mmxext, mmxext)
+QPEL3(QPEL_H,   8,  9, ssse3, sse2, ssse3, mmxext)
 
 QPEL3(QPEL_H,  16, 17, mmxext, mmxext, mmxext, mmxext)
 QPEL3(QPEL_H,  16, 17, ssse3, sse2, ssse3, sse2)
 
 QPEL3(QPEL_V,   8,  9, ssse3, sse2, ssse3, mmxext)
 QPEL3(QPEL_HV,  8,  9, mmxext, sse2, sse2, mmxext)
+QPEL3(QPEL_HV,  8,  9, ssse3, sse2, ssse3, mmxext)
 QPEL3(QPEL_V,  16, 17, ssse3, sse2, ssse3, sse2)
 QPEL3(QPEL_HV, 16, 17, mmxext, sse2, sse2, sse2)
 QPEL3(QPEL_HV, 16, 17, ssse3, sse2, ssse3, sse2)
@@ -332,6 +334,8 @@ av_cold void ff_qpeldsp_init_x86(QpelDSPContext *c)
     }
 #endif
     if (EXTERNAL_SSSE3(cpu_flags)) {
+        SET_H_QPEL_FUNCS(8, ssse3,);
+        SET_HV_QPEL_FUNCS(8, ssse3,);
         SET_H_QPEL_FUNCS(16, ssse3,);
         SET_HV_QPEL_FUNCS(16, ssse3,);
     }
