@@ -67,12 +67,21 @@ SECTION .text
 %endmacro
 
 %macro HADAMARD8 0
+%if ARCH_X86_64
+    SUMSUB_BADC       w, 0, 1, 2, 3, 8
+    SUMSUB_BADC       w, 4, 5, 6, 7, 8
+    SUMSUB_BADC       w, 0, 2, 1, 3, 8
+    SUMSUB_BADC       w, 4, 6, 5, 7, 8
+    SUMSUB_BADC       w, 0, 4, 1, 5, 8
+    SUMSUB_BADC       w, 2, 6, 3, 7, 8
+%else
     SUMSUB_BADC       w, 0, 1, 2, 3
     SUMSUB_BADC       w, 4, 5, 6, 7
     SUMSUB_BADC       w, 0, 2, 1, 3
     SUMSUB_BADC       w, 4, 6, 5, 7
     SUMSUB_BADC       w, 0, 4, 1, 5
     SUMSUB_BADC       w, 2, 6, 3, 7
+%endif
 %endmacro
 
 %macro ABS1_SUM 3
