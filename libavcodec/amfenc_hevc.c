@@ -16,10 +16,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/hwcontext_amf.h"
 #include "libavutil/internal.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
+#include "libavutil/pixdesc.h"
 #include "amfenc.h"
 #include "codec_internal.h"
 #include <AMF/components/PreAnalysis.h>
@@ -176,6 +178,7 @@ static av_cold int amf_encode_init_hevc(AVCodecContext *avctx)
     amf_int64           bit_depth;
     amf_int64           color_profile;
     enum                AVPixelFormat pix_fmt;
+    const AVPixFmtDescriptor *pix_desc;
 
     if (avctx->framerate.num > 0 && avctx->framerate.den > 0) {
         framerate = AMFConstructRate(avctx->framerate.num, avctx->framerate.den);
@@ -244,11 +247,12 @@ static av_cold int amf_encode_init_hevc(AVCodecContext *avctx)
 
     // Color bit depth
     pix_fmt = avctx->hw_frames_ctx ? ((AVHWFramesContext*)avctx->hw_frames_ctx->data)->sw_format
-                                    : avctx->pix_fmt;
-
+                                   : avctx->pix_fmt;
+    pix_desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(pix_desc);
     bit_depth = ctx->bit_depth;
-    if(bit_depth == AMF_COLOR_BIT_DEPTH_UNDEFINED){
-        bit_depth = pix_fmt == AV_PIX_FMT_P010 ? AMF_COLOR_BIT_DEPTH_10 : AMF_COLOR_BIT_DEPTH_8;
+    if (bit_depth == AMF_COLOR_BIT_DEPTH_UNDEFINED) {
+        bit_depth = pix_desc->comp[0].depth >= 10 ? AMF_COLOR_BIT_DEPTH_10 : AMF_COLOR_BIT_DEPTH_8;
     }
     AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_HEVC_COLOR_BIT_DEPTH, bit_depth);
 
@@ -259,20 +263,22 @@ static av_cold int amf_encode_init_hevc(AVCodecContext *avctx)
     // Color Range (Support for older Drivers)
     AMF_ASSIGN_PROPERTY_BOOL(res, ctx->encoder, AMF_VIDEO_ENCODER_HEVC_OUTPUT_FULL_RANGE_COLOR, (avctx->color_range == AVCOL_RANGE_JPEG));
 
-    // Color Transfer Characteristics (AMF matches ISO/IEC)
-    if(avctx->color_trc != AVCOL_TRC_UNSPECIFIED && (pix_fmt == AV_PIX_FMT_NV12 || pix_fmt == AV_PIX_FMT_P010)){
-        // if input is YUV, color_trc is for VUI only - any value
-        // AMF VCN color conversion supports only specific output transfer characteristic SMPTE2084 for 10-bit and BT709 for 8-bit
-        // vpp_amf supports more
-        AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_HEVC_OUTPUT_TRANSFER_CHARACTERISTIC, avctx->color_trc);
-    }
+    if (!(pix_desc->flags & AV_PIX_FMT_FLAG_RGB)) {
+        // Color Transfer Characteristics (AMF matches ISO/IEC)
+        if (avctx->color_trc != AVCOL_TRC_UNSPECIFIED) {
+            // if input is YUV, color_trc is for VUI only - any value
+            // AMF VCN color conversion supports only specific output transfer characteristic SMPTE2084 for 10-bit and BT709 for 8-bit
+            // vpp_amf supports more
+            AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_HEVC_OUTPUT_TRANSFER_CHARACTERISTIC, avctx->color_trc);
+        }
 
-    // Color Primaries (AMF matches ISO/IEC)
-    if(avctx->color_primaries != AVCOL_PRI_UNSPECIFIED && (pix_fmt == AV_PIX_FMT_NV12 || pix_fmt == AV_PIX_FMT_P010)){
-        // if input is YUV, color_primaries are for VUI only
-        // AMF VCN color conversion supports only specific output primaries BT2020 for 10-bit and BT709 for 8-bit
-        // vpp_amf supports more
-        AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_HEVC_OUTPUT_COLOR_PRIMARIES, avctx->color_primaries);
+        // Color Primaries (AMF matches ISO/IEC)
+        if (avctx->color_primaries != AVCOL_PRI_UNSPECIFIED) {
+            // if input is YUV, color_primaries are for VUI only
+            // AMF VCN color conversion supports only specific output primaries BT2020 for 10-bit and BT709 for 8-bit
+            // vpp_amf supports more
+            AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_HEVC_OUTPUT_COLOR_PRIMARIES, avctx->color_primaries);
+        }
     }
 
     // Picture control properties
