@@ -25,6 +25,48 @@
 #include "bit_depth_template.c"
 #include "pred.h"
 
+static void FUNC(ref_filter_3tap)(uint8_t *filtered_left,
+                                  uint8_t *filtered_top,
+                                  const uint8_t *left,
+                                  const uint8_t *top,
+                                  int size)
+{
+    pixel *filtered_left_p = (pixel *)filtered_left;
+    pixel *filtered_top_p  = (pixel *)filtered_top;
+    const pixel *left_p    = (const pixel *)left;
+    const pixel *top_p     = (const pixel *)top;
+    int i;
+    int n = 2 * size;
+
+    filtered_left_p[n - 1] = left_p[n - 1];
+    filtered_top_p[n - 1]  = top_p[n - 1];
+    for (i = n - 2; i >= 0; i--)
+        filtered_left_p[i] = (left_p[i + 1] + 2 * left_p[i] + left_p[i - 1] + 2) >> 2;
+    filtered_top_p[-1]  =
+    filtered_left_p[-1] = (left_p[0] + 2 * left_p[-1] + top_p[0] + 2) >> 2;
+    for (i = n - 2; i >= 0; i--)
+        filtered_top_p[i] = (top_p[i + 1] + 2 * top_p[i] + top_p[i - 1] + 2) >> 2;
+}
+
+static void FUNC(ref_filter_strong)(uint8_t *filtered_top,
+                                    uint8_t *left,
+                                    const uint8_t *top)
+{
+    pixel *filtered_top_p = (pixel *)filtered_top;
+    pixel *left_p         = (pixel *)left;
+    const pixel *top_p    = (const pixel *)top;
+    int i;
+
+    filtered_top_p[-1] = top_p[-1];
+    filtered_top_p[63] = top_p[63];
+    for (i = 0; i < 63; i++)
+        filtered_top_p[i] = ((64 - (i + 1)) * top_p[-1] +
+                             (i + 1) * top_p[63] + 32) >> 6;
+    for (i = 0; i < 63; i++)
+        left_p[i] = ((64 - (i + 1)) * left_p[-1] +
+                     (i + 1) * left_p[63] + 32) >> 6;
+}
+
 #define POS(x, y) src[(x) + stride * (y)]
 
 static av_always_inline void FUNC(intra_pred)(HEVCLocalContext *lc,
@@ -299,28 +341,14 @@ do {                                  \
                     log2_size == 5 &&
                     FFABS(top[-1]  + top[63]  - 2 * top[31])  < threshold &&
                     FFABS(left[-1] + left[63] - 2 * left[31]) < threshold) {
-                    // We can't just overwrite values in top because it could be
-                    // a pointer into src
-                    filtered_top[-1] = top[-1];
-                    filtered_top[63] = top[63];
-                    for (i = 0; i < 63; i++)
-                        filtered_top[i] = ((64 - (i + 1)) * top[-1] +
-                                           (i + 1)  * top[63] + 32) >> 6;
-                    for (i = 0; i < 63; i++)
-                        left[i] = ((64 - (i + 1)) * left[-1] +
-                                   (i + 1)  * left[63] + 32) >> 6;
+                    s->hpc.ref_filter_strong((uint8_t *)filtered_top,
+                                             (uint8_t *)left,
+                                             (const uint8_t *)top);
                     top = filtered_top;
                 } else {
-                    filtered_left[2 * size - 1] = left[2 * size - 1];
-                    filtered_top[2 * size - 1]  = top[2 * size - 1];
-                    for (i = 2 * size - 2; i >= 0; i--)
-                        filtered_left[i] = (left[i + 1] + 2 * left[i] +
-                                            left[i - 1] + 2) >> 2;
-                    filtered_top[-1]  =
-                    filtered_left[-1] = (left[0] + 2 * left[-1] + top[0] + 2) >> 2;
-                    for (i = 2 * size - 2; i >= 0; i--)
-                        filtered_top[i] = (top[i + 1] + 2 * top[i] +
-                                           top[i - 1] + 2) >> 2;
+                    s->hpc.ref_filter_3tap[log2_size - 3](
+                        (uint8_t *)filtered_left, (uint8_t *)filtered_top,
+                        (const uint8_t *)left, (const uint8_t *)top, size);
                     left = filtered_left;
                     top  = filtered_top;
                 }

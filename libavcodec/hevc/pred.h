@@ -40,6 +40,12 @@ typedef struct HEVCPredContext {
     void (*pred_angular[4])(uint8_t *src, const uint8_t *top,
                             const uint8_t *left, ptrdiff_t stride,
                             int c_idx, int mode);
+
+    void (*ref_filter_3tap[3])(uint8_t *filtered_left, uint8_t *filtered_top,
+                                const uint8_t *left, const uint8_t *top,
+                                int size);
+    void (*ref_filter_strong)(uint8_t *filtered_top, uint8_t *left,
+                               const uint8_t *top);
 } HEVCPredContext;
 
 void ff_hevc_pred_init(HEVCPredContext *hpc, int bit_depth);
