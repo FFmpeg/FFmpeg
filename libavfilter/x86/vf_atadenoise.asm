@@ -37,7 +37,7 @@ SECTION .text
 ;------------------------------------------------------------------------------
 
 INIT_XMM sse4
-cglobal atadenoise_filter_row8, 8,10,13, src, dst, srcf, w, mid, size, i, j, srcfx, x
+cglobal atadenoise_filter_row8, 6,10,13, src, dst, srcf, w, mid, size, i, j, srcfx, x
     movsxdifnidn    wq, wd
     movsxdifnidn  midq, midd
     movsxdifnidn sizeq, sized
@@ -151,7 +151,7 @@ cglobal atadenoise_filter_row8, 8,10,13, src, dst, srcf, w, mid, size, i, j, src
     RET
 
 INIT_XMM sse4
-cglobal atadenoise_filter_row8_serial, 8,10,13, src, dst, srcf, w, mid, size, i, j, srcfx, x
+cglobal atadenoise_filter_row8_serial, 6,10,13, src, dst, srcf, w, mid, size, i, j, srcfx, x
     movsxdifnidn    wq, wd
     movsxdifnidn  midq, midd
     movsxdifnidn sizeq, sized
