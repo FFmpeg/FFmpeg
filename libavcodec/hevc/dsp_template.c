@@ -43,20 +43,18 @@ static void FUNC(put_pcm)(uint8_t *_dst, ptrdiff_t stride, int width, int height
     }
 }
 
-static av_always_inline void FUNC(add_residual)(uint8_t *_dst, const int16_t *res,
+static av_always_inline void FUNC(add_residual)(uint8_t *restrict dst8, const int16_t *restrict res,
                                                 ptrdiff_t stride, int size)
 {
     int x, y;
-    pixel *dst = (pixel *)_dst;
-
-    stride /= sizeof(pixel);
 
     for (y = 0; y < size; y++) {
+        pixel *restrict dst = (pixel *)dst8;
         for (x = 0; x < size; x++) {
             dst[x] = av_clip_pixel(dst[x] + *res);
             res++;
         }
-        dst += stride;
+        dst8 += stride;
     }
 }
 
