@@ -205,7 +205,7 @@ static int convert_to_aarch64_impl(SwsContext *ctx, const SwsOpList *ops, int n,
         out->mask = 0;
         for (int i = 0; i < 4; i++) {
             /* Skip unused or identity rows */
-            if (op->comps.unused[i] || !(op->lin.mask & SWS_MASK_ROW(i)))
+            if (next->comps.unused[i] || !(op->lin.mask & SWS_MASK_ROW(i)))
                 continue;
             MASK_SET(out->mask, i, 1);
             for (int j = 0; j < 5; j++) {
