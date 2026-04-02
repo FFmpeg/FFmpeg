@@ -36,24 +36,32 @@ cextern rv40_bias
 
 SECTION .text
 
-%macro mv0_pixels_mc8 0
+%macro mv0_pixels_mc8 1
     lea           r4, [r2*2 ]
 .next4rows:
-    movq         mm0, [r1   ]
-    movq         mm1, [r1+r2]
+    movq          m0, [r1   ]
+    movq          m1, [r1+r2]
     add           r1, r4
-    CHROMAMC_AVG mm0, [r0   ]
-    CHROMAMC_AVG mm1, [r0+r2]
-    movq     [r0   ], mm0
-    movq     [r0+r2], mm1
+%ifidn %1,avg
+    movq          m2, [r0]
+    movq          m3, [r0+r2]
+    pavgb         m0, m2
+    pavgb         m1, m3
+%endif
+    movq     [r0   ], m0
+    movq     [r0+r2], m1
     add           r0, r4
-    movq         mm0, [r1   ]
-    movq         mm1, [r1+r2]
+    movq          m0, [r1   ]
+    movq          m1, [r1+r2]
     add           r1, r4
-    CHROMAMC_AVG mm0, [r0   ]
-    CHROMAMC_AVG mm1, [r0+r2]
-    movq     [r0   ], mm0
-    movq     [r0+r2], mm1
+%ifidn %1,avg
+    movq          m2, [r0]
+    movq          m3, [r0+r2]
+    pavgb         m0, m2
+    pavgb         m1, m3
+%endif
+    movq     [r0   ], m0
+    movq     [r0+r2], m1
     add           r0, r4
     sub          r3d, 4
     jne .next4rows
@@ -133,7 +141,7 @@ cglobal %1_%2_chroma_mc8%3, 6, 7+UNIX64, 8
     jne .at_least_one_non_zero
     ; mx == 0 AND my == 0 - no filter needed
 ..@%1_%2_chroma_mc8_no_filter_ %+ cpuname:
-    mv0_pixels_mc8
+    mv0_pixels_mc8 %1
     RET
 
 .at_least_one_non_zero:
