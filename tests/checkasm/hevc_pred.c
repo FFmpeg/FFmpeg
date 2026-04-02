@@ -51,6 +51,16 @@ static const uint32_t pixel_mask[3] = { 0xffffffff, 0x01ff01ff, 0x03ff03ff };
         }                                          \
     } while (0)
 
+#define randomize_ref_buffers()                    \
+    do {                                           \
+        uint32_t mask = pixel_mask[bit_depth - 8]; \
+        for (int i = -4; i < PRED_SIZE; i += 4) {  \
+            uint32_t r = rnd() & mask;             \
+            AV_WN32A(top + i, r);                  \
+            AV_WN32A(left + i, r);                 \
+        }                                          \
+    } while (0)
+
 static void check_pred_dc(HEVCPredContext *h,
                           uint8_t *buf0, uint8_t *buf1,
                           uint8_t *top, uint8_t *left, int bit_depth)
@@ -190,6 +200,109 @@ static void check_pred_angular(HEVCPredContext *h,
     }
 }
 
+static void check_ref_filter_3tap(HEVCPredContext *h,
+                                  uint8_t *top, uint8_t *left, int bit_depth)
+{
+    const char *const block_name[] = { "8x8", "16x16", "32x32" };
+    const int block_size[] = { 8, 16, 32 };
+    int i;
+
+    /* 3-tap filter: out[i] = (in[i+1] + 2*in[i] + in[i-1] + 2) >> 2
+     * Filters 2*size-1 samples (indices 0..2*size-2) plus corner [-1].
+     * Output: filtered_left[-1..2*size-1] and filtered_top[-1..2*size-1] */
+    declare_func(void, uint8_t *filtered_left, uint8_t *filtered_top,
+                 const uint8_t *left, const uint8_t *top, int size);
+
+    for (i = 0; i < 3; i++) {
+        int size = block_size[i];
+        int n = 2 * size;
+
+        if (check_func(h->ref_filter_3tap[i],
+                       "hevc_ref_filter_3tap_%s_%d",
+                       block_name[i], bit_depth)) {
+            /* Allocate output buffers with space for [-1] indexing.
+             * Need n+1 elements: indices [-1..n-1] = n+1 pixels.
+             * Use (n+1)*SIZEOF_PIXEL bytes starting at offset SIZEOF_PIXEL. */
+            LOCAL_ALIGNED_32(uint8_t, fl_ref_buf, [PRED_SIZE + 16]);
+            LOCAL_ALIGNED_32(uint8_t, fl_new_buf, [PRED_SIZE + 16]);
+            LOCAL_ALIGNED_32(uint8_t, ft_ref_buf, [PRED_SIZE + 16]);
+            LOCAL_ALIGNED_32(uint8_t, ft_new_buf, [PRED_SIZE + 16]);
+            uint8_t *fl_ref = fl_ref_buf + 8;
+            uint8_t *fl_new = fl_new_buf + 8;
+            uint8_t *ft_ref = ft_ref_buf + 8;
+            uint8_t *ft_new = ft_new_buf + 8;
+
+            randomize_ref_buffers();
+            /* Clear output buffers so comparison is clean */
+            memset(fl_ref_buf, 0, PRED_SIZE + 16);
+            memset(fl_new_buf, 0, PRED_SIZE + 16);
+            memset(ft_ref_buf, 0, PRED_SIZE + 16);
+            memset(ft_new_buf, 0, PRED_SIZE + 16);
+
+            call_ref(fl_ref, ft_ref, left, top, size);
+            call_new(fl_new, ft_new, left, top, size);
+
+            /* Compare filtered_left[-1..2*size-1] and filtered_top[-1..2*size-1] */
+            if (memcmp(fl_ref - SIZEOF_PIXEL, fl_new - SIZEOF_PIXEL,
+                       (n + 1) * SIZEOF_PIXEL))
+                fail();
+            if (memcmp(ft_ref - SIZEOF_PIXEL, ft_new - SIZEOF_PIXEL,
+                       (n + 1) * SIZEOF_PIXEL))
+                fail();
+
+            bench_new(fl_new, ft_new, left, top, size);
+        }
+    }
+}
+
+static void check_ref_filter_strong(HEVCPredContext *h,
+                                    uint8_t *top, uint8_t *left,
+                                    int bit_depth)
+{
+    /* Strong intra smoothing: only 32x32 luma.
+     * Interpolates top into filtered_top[0..62], sets filtered_top[-1] and [63].
+     * Modifies left[0..62] in-place. */
+    declare_func(void, uint8_t *filtered_top, uint8_t *left,
+                 const uint8_t *top);
+
+    if (check_func(h->ref_filter_strong,
+                   "hevc_ref_filter_strong_%d", bit_depth)) {
+        LOCAL_ALIGNED_32(uint8_t, ft_ref_buf, [PRED_SIZE + 16]);
+        LOCAL_ALIGNED_32(uint8_t, ft_new_buf, [PRED_SIZE + 16]);
+        LOCAL_ALIGNED_32(uint8_t, left_ref_buf, [PRED_SIZE + 16]);
+        LOCAL_ALIGNED_32(uint8_t, left_new_buf, [PRED_SIZE + 16]);
+        uint8_t *ft_ref = ft_ref_buf + 8;
+        uint8_t *ft_new = ft_new_buf + 8;
+        uint8_t *left_ref = left_ref_buf + 8;
+        uint8_t *left_new = left_new_buf + 8;
+
+        randomize_ref_buffers();
+        memset(ft_ref_buf, 0, PRED_SIZE + 16);
+        memset(ft_new_buf, 0, PRED_SIZE + 16);
+
+        /* Copy left so both ref and new start with the same input
+         * (left is modified in-place) */
+        memcpy(left_ref_buf, left - 8, PRED_SIZE + 16);
+        memcpy(left_new_buf, left - 8, PRED_SIZE + 16);
+
+        call_ref(ft_ref, left_ref, top);
+        call_new(ft_new, left_new, top);
+
+        /* Compare filtered_top[-1..63] = 65 pixels */
+        if (memcmp(ft_ref - SIZEOF_PIXEL, ft_new - SIZEOF_PIXEL,
+                   65 * SIZEOF_PIXEL))
+            fail();
+
+        /* Compare left[-1..63] = 65 pixels (left[-1] is unchanged,
+         * left[0..62] are modified, left[63] is unchanged) */
+        if (memcmp(left_ref - SIZEOF_PIXEL, left_new - SIZEOF_PIXEL,
+                   65 * SIZEOF_PIXEL))
+            fail();
+
+        bench_new(ft_new, left_new, top);
+    }
+}
+
 void checkasm_check_hevc_pred(void)
 {
     LOCAL_ALIGNED_32(uint8_t, buf0, [BUF_SIZE]);
@@ -224,4 +337,20 @@ void checkasm_check_hevc_pred(void)
         check_pred_angular(&h, buf0, buf1, top, left, bit_depth);
     }
     report("pred_angular");
+
+    for (bit_depth = 8; bit_depth <= 10; bit_depth += 2) {
+        HEVCPredContext h;
+
+        ff_hevc_pred_init(&h, bit_depth);
+        check_ref_filter_3tap(&h, top, left, bit_depth);
+    }
+    report("ref_filter_3tap");
+
+    for (bit_depth = 8; bit_depth <= 10; bit_depth += 2) {
+        HEVCPredContext h;
+
+        ff_hevc_pred_init(&h, bit_depth);
+        check_ref_filter_strong(&h, top, left, bit_depth);
+    }
+    report("ref_filter_strong");
 }
