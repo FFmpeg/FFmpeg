@@ -289,10 +289,10 @@ static void check_yuv2nv12cX(int accurate)
     static const int input_sizes[] = {8, 24, 128, 144, 256, 512};
     const char *accurate_str = (accurate) ? "accurate" : "approximate";
 
-    declare_func_emms(AV_CPU_FLAG_MMX, void, enum AVPixelFormat dstFormat,
-                      const uint8_t *chrDither, const int16_t *chrFilter,
-                      int chrFilterSize, const int16_t **chrUSrc,
-                      const int16_t **chrVSrc, uint8_t *dest, int dstW);
+    declare_func(void, enum AVPixelFormat dstFormat,
+                       const uint8_t *chrDither, const int16_t *chrFilter,
+                       int chrFilterSize, const int16_t **chrUSrc,
+                       const int16_t **chrVSrc, uint8_t *dest, int dstW);
 
     const int16_t *srcU[LARGEST_FILTER], *srcV[LARGEST_FILTER];
     LOCAL_ALIGNED_16(int16_t, srcU_pixels, [LARGEST_FILTER * LARGEST_INPUT_SIZE]);
