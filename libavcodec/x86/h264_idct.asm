@@ -142,6 +142,15 @@ SECTION .text
 
     mova         m2, %1
     mova         m5, %2
+%if ARCH_X86_64
+    SUMSUB_BA    w, 5, 2, 8
+    SUMSUB_BA    w, 6, 5, 8
+    SUMSUB_BA    w, 4, 2, 8
+    SUMSUB_BA    w, 7, 6, 8
+    SUMSUB_BA    w, 0, 4, 8
+    SUMSUB_BA    w, 3, 2, 8
+    SUMSUB_BA    w, 1, 5, 8
+%else
     SUMSUB_BA    w, 5, 2
     SUMSUB_BA    w, 6, 5
     SUMSUB_BA    w, 4, 2
@@ -149,6 +158,7 @@ SECTION .text
     SUMSUB_BA    w, 0, 4
     SUMSUB_BA    w, 3, 2
     SUMSUB_BA    w, 1, 5
+%endif
     SWAP         7, 6, 4, 5, 2, 3, 1, 0 ; 70315246 -> 01234567
 %endmacro
 
