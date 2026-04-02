@@ -60,17 +60,16 @@ static int convert_to_aarch64_impl(SwsContext *ctx, const SwsOpList *ops, int n,
                                    int block_size, SwsAArch64OpImplParams *out)
 {
     const SwsOp *op = &ops->ops[n];
-    const SwsOp *next = n + 1 < ops->num_ops ? &ops->ops[n + 1] : op;
 
     out->block_size = block_size;
 
     /**
-     * Most SwsOp work on fields described by next->comps.unused.
+     * Most SwsOp work on fields described by SWS_OP_NEEDED().
      * The few that don't will override this field later.
      */
     out->mask = 0;
     for (int i = 0; i < 4; i++) {
-        if (!next->comps.unused[i])
+        if (SWS_OP_NEEDED(op, i))
             MASK_SET(out->mask, i, 1);
     }
 
@@ -205,7 +204,7 @@ static int convert_to_aarch64_impl(SwsContext *ctx, const SwsOpList *ops, int n,
         out->mask = 0;
         for (int i = 0; i < 4; i++) {
             /* Skip unused or identity rows */
-            if (next->comps.unused[i] || !(op->lin.mask & SWS_MASK_ROW(i)))
+            if (!SWS_OP_NEEDED(op, i) || !(op->lin.mask & SWS_MASK_ROW(i)))
                 continue;
             MASK_SET(out->mask, i, 1);
             for (int j = 0; j < 5; j++) {
