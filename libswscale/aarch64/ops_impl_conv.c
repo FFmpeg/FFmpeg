@@ -169,10 +169,8 @@ static int convert_to_aarch64_impl(SwsContext *ctx, const SwsOpList *ops, int n,
         break;
     case AARCH64_SWS_OP_PACK:
         out->mask = 0;
-        MASK_SET(out->mask, 0, !op->comps.unused[0]);
-        MASK_SET(out->mask, 1, !op->comps.unused[1]);
-        MASK_SET(out->mask, 2, !op->comps.unused[2]);
-        MASK_SET(out->mask, 3, !op->comps.unused[3]);
+        for (int i = 0; i < 4 && op->pack.pattern[i]; i++)
+            MASK_SET(out->mask, i, 1);
         MASK_SET(out->pack, 0, op->pack.pattern[0]);
         MASK_SET(out->pack, 1, op->pack.pattern[1]);
         MASK_SET(out->pack, 2, op->pack.pattern[2]);
