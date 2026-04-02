@@ -140,9 +140,11 @@ do {                                  \
     enum IntraPredMode mode = c_idx ? lc->tu.intra_pred_mode_c :
                               lc->tu.intra_pred_mode;
     pixel4 a;
-    pixel  left_array[2 * MAX_TB_SIZE + 1];
+    // Extra 16 bytes of padding allow NEON 3-tap filter to do
+    // 32-byte loads without reading past the allocation.
+    pixel  left_array[2 * MAX_TB_SIZE + 1 + 16];
     pixel  filtered_left_array[2 * MAX_TB_SIZE + 1];
-    pixel  top_array[2 * MAX_TB_SIZE + 1];
+    pixel  top_array[2 * MAX_TB_SIZE + 1 + 16];
     pixel  filtered_top_array[2 * MAX_TB_SIZE + 1];
 
     pixel  *left          = left_array + 1;

@@ -835,3 +835,236 @@ const planar_weights_32, align=4
         .byte   1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16
         .byte   17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32
 endconst
+
+// =============================================================================
+// Reference Sample Filtering — 3-tap filter [1,2,1]>>2
+// =============================================================================
+
+/*
+ * 3-tap filter: out[i] = (in[i-1] + 2*in[i] + in[i+1] + 2) >> 2
+ *
+ * Signature: void ff_hevc_ref_filter_3tap_NxN_8_neon(
+ *     uint8_t *filtered_left,   // x0
+ *     uint8_t *filtered_top,    // x1
+ *     const uint8_t *left,      // x2
+ *     const uint8_t *top,       // x3
+ *     int size)                 // w4 — (unused, size is hardcoded per entry point)
+ *
+ * All pointers point to index [0]; caller has adjusted for [-1] accessibility.
+ *
+ * NEON approach: load 32 bytes via ld1, use ext #1/#2 to form
+ *   prev(v0)/curr(v2)/next(v3). Fold the 3-tap kernel into two
+ *   halving-adds on 16 bytes (no widen/narrow):
+ *     uhadd  v4, v0, v3        // floor((prev + next) / 2)
+ *     urhadd v4, v4, v2        // (h + curr + 1) / 2
+ *   equivalent to (prev + 2*curr + next + 2) >> 2 for all u8 inputs.
+ *   Caller pads input arrays by 16 bytes to guarantee safe 32-byte loads.
+ *   Forward processing is safe since output goes to a separate buffer.
+ */
+
+// Load 32 bytes from [x12], compute 16 filtered samples into v4.16b
+.macro filter_3tap_compute
+        ld1             {v0.16b, v1.16b}, [x12]
+        ext             v2.16b, v0.16b, v1.16b, #1 // curr
+        ext             v3.16b, v0.16b, v1.16b, #2 // next
+        uhadd           v4.16b, v0.16b, v3.16b   // floor((prev + next) / 2)
+        urhadd          v4.16b, v4.16b, v2.16b   // (prev + 2*curr + next + 2) >> 2
+.endm
+
+// Filter one array. n_reg holds 2*size; filters n-1 samples, copies last.
+// Caller guarantees 16 bytes of readable padding beyond in[n-1].
+// For total >= 16, overlap-last-16 avoids partial stores.
+// For total < 16 (8x8), overlap-last-8 stores two 8-byte halves.
+.macro filter_3tap_array x_out, x_in, n_reg
+        // Copy last element: out[n-1] = in[n-1]
+        sub             x10, \n_reg, #1
+        ldrb            w11, [\x_in, x10]
+        strb            w11, [\x_out, x10]
+
+        sub             x12, \x_in, #1          // x12 = load ptr (&in[-1])
+        mov             x13, \x_out             // x13 = store ptr (&out[0])
+        sub             x14, \n_reg, #1         // x14 = total samples to filter
+
+        cmp             x14, #16
+        b.lt            6f                      // total < 16: small path (8x8)
+
+        // --- Main loop: 16 samples per iteration ---
+1:      filter_3tap_compute
+        st1             {v4.16b}, [x13], #16
+        add             x12, x12, #16
+        sub             x14, x14, #16
+        cmp             x14, #16
+        b.ge            1b
+
+        // --- Overlap last 16 samples ---
+        cbz             x14, 9f
+        add             x12, \x_in, \n_reg
+        sub             x12, x12, #18          // &in[n-18]
+        add             x13, \x_out, \n_reg
+        sub             x13, x13, #17          // &out[n-17]
+        filter_3tap_compute
+        st1             {v4.16b}, [x13]
+        b               9f
+
+        // --- Small path: total < 16 (8x8, total=15) ---
+        // Store as two overlapping 8-byte halves: out[0..7] + out[7..14]
+6:      filter_3tap_compute
+        ext             v5.16b, v4.16b, v4.16b, #7
+        str             d4, [x13]               // out[0..7]
+        str             d5, [x13, #7]           // out[7..14]
+9:
+.endm
+
+// Corner: filtered[-1] = (left[0] + 2*left[-1] + top[0] + 2) >> 2
+.macro filter_3tap_corner
+        ldrb            w10, [x2]               // left[0]
+        ldrb            w11, [x2, #-1]          // left[-1]
+        ldrb            w12, [x3]               // top[0]
+        add             w10, w10, w12           // left[0] + top[0]
+        add             w10, w10, w11, lsl #1   // + 2*left[-1]
+        add             w10, w10, #2            // + 2
+        lsr             w10, w10, #2            // >> 2
+        strb            w10, [x0, #-1]          // filtered_left[-1]
+        strb            w10, [x1, #-1]          // filtered_top[-1]
+.endm
+
+function ff_hevc_ref_filter_3tap_8x8_8_neon, export=1
+        mov             x4, #16                 // n = 2*8
+        b               hevc_ref_filter_3tap_common_8_neon
+endfunc
+
+function ff_hevc_ref_filter_3tap_16x16_8_neon, export=1
+        mov             x4, #32                 // n = 2*16
+        b               hevc_ref_filter_3tap_common_8_neon
+endfunc
+
+function ff_hevc_ref_filter_3tap_32x32_8_neon, export=1
+        mov             x4, #64                 // n = 2*32
+        b               hevc_ref_filter_3tap_common_8_neon
+endfunc
+
+function hevc_ref_filter_3tap_common_8_neon, export=0
+        filter_3tap_array x0, x2, x4
+        filter_3tap_corner
+        filter_3tap_array x1, x3, x4
+        ret
+endfunc
+
+.purgem filter_3tap_compute
+.purgem filter_3tap_array
+.purgem filter_3tap_corner
+
+// =============================================================================
+// Reference Sample Filtering — Strong Intra Smoothing
+// =============================================================================
+
+/*
+ * Strong intra smoothing (32x32 luma only):
+ *   filtered_top[i] = ((64-(i+1))*top[-1] + (i+1)*top[63] + 32) >> 6
+ *   left[i]         = ((64-(i+1))*left[-1] + (i+1)*left[63] + 32) >> 6
+ *   for i = 0..62
+ *
+ * Also sets: filtered_top[-1] = top[-1], filtered_top[63] = top[63]
+ *
+ * Signature: void ff_hevc_ref_filter_strong_8_neon(
+ *     uint8_t *filtered_top,  // x0
+ *     uint8_t *left,          // x1
+ *     const uint8_t *top)     // x2
+ *
+ * NEON approach:
+ *   Preloaded weights dec={63..1,0} in v0-v3, inc={1..63,0} in v4-v7.
+ *   Two 16-byte blocks interleaved per pair, written via st1 {v22,v23},
+ *   hiding the rshrn→st1 latency. Weight[63]=0 lets lane 15 fall out as
+ *   zero; one strb restores output[63] to the correct end value.
+ */
+
+// Precomputed weight tables in .rodata
+const filter_strong_weights_inc, align=4
+        .byte    1,  2,  3,  4,  5,  6,  7,  8
+        .byte    9, 10, 11, 12, 13, 14, 15, 16
+        .byte   17, 18, 19, 20, 21, 22, 23, 24
+        .byte   25, 26, 27, 28, 29, 30, 31, 32
+        .byte   33, 34, 35, 36, 37, 38, 39, 40
+        .byte   41, 42, 43, 44, 45, 46, 47, 48
+        .byte   49, 50, 51, 52, 53, 54, 55, 56
+        .byte   57, 58, 59, 60, 61, 62, 63,  0
+endconst
+
+const filter_strong_weights_dec, align=4
+        .byte   63, 62, 61, 60, 59, 58, 57, 56
+        .byte   55, 54, 53, 52, 51, 50, 49, 48
+        .byte   47, 46, 45, 44, 43, 42, 41, 40
+        .byte   39, 38, 37, 36, 35, 34, 33, 32
+        .byte   31, 30, 29, 28, 27, 26, 25, 24
+        .byte   23, 22, 21, 20, 19, 18, 17, 16
+        .byte   15, 14, 13, 12, 11, 10,  9,  8
+        .byte    7,  6,  5,  4,  3,  2,  1,  0
+endconst
+
+// Macro: apply strong smoothing to one 63-element array
+// x_out = output pointer (index 0), w_start = start pixel, w_end = end pixel
+// Weights must be preloaded: v0-v3 = dec weights, v4-v7 = inc weights (16b each)
+// Interleave two 16-byte blocks to hide rshrn→st1 latency on in-order cores.
+.macro strong_smooth x_out, w_start, w_end
+        dup             v16.16b, \w_start       // broadcast start
+        dup             v17.16b, \w_end         // broadcast end
+        mov             x14, \x_out
+
+        // Blocks 0+1 interleaved: indices 0-31
+        umull           v18.8h, v0.8b, v16.8b   // blk0: dec_lo * start
+        umull           v20.8h, v1.8b, v16.8b   // blk1: dec_lo * start
+        umull2          v19.8h, v0.16b, v16.16b // blk0: dec_hi * start
+        umull2          v21.8h, v1.16b, v16.16b // blk1: dec_hi * start
+        umlal           v18.8h, v4.8b, v17.8b   // blk0: + inc_lo * end
+        umlal           v20.8h, v5.8b, v17.8b   // blk1: + inc_lo * end
+        umlal2          v19.8h, v4.16b, v17.16b // blk0: + inc_hi * end
+        umlal2          v21.8h, v5.16b, v17.16b // blk1: + inc_hi * end
+        rshrn           v22.8b, v18.8h, #6      // blk0: narrow lo
+        rshrn           v23.8b, v20.8h, #6      // blk1: narrow lo
+        rshrn2          v22.16b, v19.8h, #6     // blk0: narrow hi
+        rshrn2          v23.16b, v21.8h, #6     // blk1: narrow hi
+        st1             {v22.16b, v23.16b}, [x14], #32
+
+        // Blocks 2+3 interleaved: indices 32-63
+        // Weight at index 63 is zero, so v23.b[15] computes 0; we store all
+        // 32 bytes and fix up output[63] with a scalar strb afterward.
+        umull           v18.8h, v2.8b, v16.8b   // blk2: dec_lo * start
+        umull           v20.8h, v3.8b, v16.8b   // blk3: dec_lo * start
+        umull2          v19.8h, v2.16b, v16.16b // blk2: dec_hi * start
+        umull2          v21.8h, v3.16b, v16.16b // blk3: dec_hi * start
+        umlal           v18.8h, v6.8b, v17.8b   // blk2: + inc_lo * end
+        umlal           v20.8h, v7.8b, v17.8b   // blk3: + inc_lo * end
+        umlal2          v19.8h, v6.16b, v17.16b // blk2: + inc_hi * end
+        umlal2          v21.8h, v7.16b, v17.16b // blk3: + inc_hi * end
+        rshrn           v22.8b, v18.8h, #6      // blk2: narrow lo
+        rshrn           v23.8b, v20.8h, #6      // blk3: narrow lo
+        rshrn2          v22.16b, v19.8h, #6     // blk2: narrow hi
+        rshrn2          v23.16b, v21.8h, #6     // blk3: narrow hi
+        st1             {v22.16b, v23.16b}, [x14] // indices 32-63
+        strb            \w_end, [x14, #31]      // restore output[63]
+.endm
+
+function ff_hevc_ref_filter_strong_8_neon, export=1
+        ldrb            w10, [x2, #-1]          // top[-1]
+        strb            w10, [x0, #-1]          // filtered_top[-1]
+        ldrb            w11, [x2, #63]          // top[63]
+        strb            w11, [x0, #63]          // filtered_top[63]
+
+        // Preload all weight tables into registers (shared across both passes)
+        movrel          x8, filter_strong_weights_dec
+        movrel          x9, filter_strong_weights_inc
+        ld1             {v0.16b, v1.16b, v2.16b, v3.16b}, [x8]
+        ld1             {v4.16b, v5.16b, v6.16b, v7.16b}, [x9]
+
+        // Smooth top → filtered_top[0..62]
+        strong_smooth   x0, w10, w11
+
+        // Smooth left → left[0..62] in-place
+        ldrb            w10, [x1, #-1]          // left[-1]
+        ldrb            w11, [x1, #63]          // left[63]
+        strong_smooth   x1, w10, w11
+
+        ret
+endfunc
+
+.purgem strong_smooth

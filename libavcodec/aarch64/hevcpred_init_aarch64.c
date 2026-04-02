@@ -49,6 +49,24 @@ void ff_hevc_pred_planar_16x16_8_neon(uint8_t *src, const uint8_t *top,
 void ff_hevc_pred_planar_32x32_8_neon(uint8_t *src, const uint8_t *top,
                                     const uint8_t *left, ptrdiff_t stride);
 
+// 3-tap reference sample filter
+void ff_hevc_ref_filter_3tap_8x8_8_neon(uint8_t *filtered_left,
+                                        uint8_t *filtered_top,
+                                        const uint8_t *left,
+                                        const uint8_t *top, int size);
+void ff_hevc_ref_filter_3tap_16x16_8_neon(uint8_t *filtered_left,
+                                          uint8_t *filtered_top,
+                                          const uint8_t *left,
+                                          const uint8_t *top, int size);
+void ff_hevc_ref_filter_3tap_32x32_8_neon(uint8_t *filtered_left,
+                                          uint8_t *filtered_top,
+                                          const uint8_t *left,
+                                          const uint8_t *top, int size);
+
+// Strong intra smoothing
+void ff_hevc_ref_filter_strong_8_neon(uint8_t *filtered_top, uint8_t *left,
+                                      const uint8_t *top);
+
 static void pred_dc_neon(uint8_t *src, const uint8_t *top,
                          const uint8_t *left, ptrdiff_t stride,
                          int log2_size, int c_idx)
@@ -84,5 +102,10 @@ av_cold void ff_hevc_pred_init_aarch64(HEVCPredContext *hpc, int bit_depth)
         hpc->pred_planar[1] = ff_hevc_pred_planar_8x8_8_neon;
         hpc->pred_planar[2] = ff_hevc_pred_planar_16x16_8_neon;
         hpc->pred_planar[3] = ff_hevc_pred_planar_32x32_8_neon;
+
+        hpc->ref_filter_3tap[0] = ff_hevc_ref_filter_3tap_8x8_8_neon;
+        hpc->ref_filter_3tap[1] = ff_hevc_ref_filter_3tap_16x16_8_neon;
+        hpc->ref_filter_3tap[2] = ff_hevc_ref_filter_3tap_32x32_8_neon;
+        hpc->ref_filter_strong  = ff_hevc_ref_filter_strong_8_neon;
     }
 }
