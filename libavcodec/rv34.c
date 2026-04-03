@@ -310,8 +310,6 @@ static inline void decode_subblock3(int16_t *dst, int flags, GetBitContext *gb,
 static int rv34_decode_block(int16_t *dst, GetBitContext *gb, const RV34VLC *rvlc,
                              int fc, int sc, int q_dc, int q_ac1, int q_ac2)
 {
-    int has_ac = 1;
-
     int flags = get_vlc2(gb, rvlc->first_pattern[fc], 9, 2);
 
     int pattern = flags & 0x7;
@@ -324,7 +322,6 @@ static int rv34_decode_block(int16_t *dst, GetBitContext *gb, const RV34VLC *rvl
         decode_subblock1(dst, flags, gb, rvlc->coefficient, q_dc);
         if (!pattern)
             return 0;
-        has_ac = 0;
     }
 
     if(pattern & 4){
@@ -339,7 +336,7 @@ static int rv34_decode_block(int16_t *dst, GetBitContext *gb, const RV34VLC *rvl
         flags = get_vlc2(gb, rvlc->third_pattern[sc], 9, 2);
         decode_subblock(dst + 4*2+2, flags, 0, gb, rvlc->coefficient, q_ac2);
     }
-    return has_ac | pattern;
+    return 1;
 }
 
 /**
