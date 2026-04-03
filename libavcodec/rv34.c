@@ -92,10 +92,9 @@ static VLCElem table_data[117592];
  * @param num    VLC table number (for static initialization)
  */
 static av_cold void rv34_gen_vlc_ext(const uint8_t *bits, int size, VLC *vlc,
-                                     const uint8_t *syms, int *offset)
+                                     const uint8_t *syms, int mod_three_bits_offset, int *offset)
 {
     int counts[17] = {0}, codes[17];
-    uint16_t cw[MAX_VLC_SIZE];
     int maxbits;
 
     av_assert1(size > 0);
@@ -111,23 +110,43 @@ static av_cold void rv34_gen_vlc_ext(const uint8_t *bits, int size, VLC *vlc,
         if (counts[i])
             maxbits = i;
     }
-    for (int i = 0; i < size; i++)
-        cw[i] = codes[bits[i]]++;
+
+    uint16_t symbols[MAX_VLC_SIZE];
+    uint16_t cw[MAX_VLC_SIZE];
+    const void *symp = syms;
+    int symbol_size;
+
+    if (mod_three_bits_offset > 0) {
+        symp = symbols;
+        symbol_size = 2;
+
+        for (int i = 0, mask = (1 << mod_three_bits_offset) - 1; i < size; ++i) {
+            cw[i] = codes[bits[i]]++;
+            symbols[i] = (modulo_three_table[i >> mod_three_bits_offset] << mod_three_bits_offset) | (i & mask);
+        }
+    } else {
+        if (!mod_three_bits_offset)
+            symp = modulo_three_table;
+
+        symbol_size = !!symp;
+        for (int i = 0; i < size; ++i)
+            cw[i] = codes[bits[i]]++;
+    }
 
     vlc->table           = &table_data[*offset];
     vlc->table_allocated = FF_ARRAY_ELEMS(table_data) - *offset;
     ff_vlc_init_sparse(vlc, FFMIN(maxbits, 9), size,
                        bits, 1, 1,
                        cw,    2, 2,
-                       syms, !!syms, !!syms, VLC_INIT_STATIC_OVERLONG);
+                       symp, symbol_size, symbol_size, VLC_INIT_STATIC_OVERLONG);
     *offset += vlc->table_size;
 }
 
 static av_cold void rv34_gen_vlc(const uint8_t *bits, int size, const VLCElem **vlcp,
-                                 int *offset)
+                                 int mod_three_bits_offset, int *offset)
 {
     VLC vlc = { 0 };
-    rv34_gen_vlc_ext(bits, size, &vlc, NULL, offset);
+    rv34_gen_vlc_ext(bits, size, &vlc, NULL, mod_three_bits_offset, offset);
     *vlcp = vlc.table;
 }
 
@@ -141,41 +160,41 @@ static av_cold void rv34_init_tables(void)
     for(i = 0; i < NUM_INTRA_TABLES; i++){
         for(j = 0; j < 2; j++){
             rv34_gen_vlc(rv34_table_intra_cbppat   [i][j], CBPPAT_VLC_SIZE,
-                         &intra_vlcs[i].cbppattern[j],     &offset);
+                         &intra_vlcs[i].cbppattern[j],     4, &offset);
             rv34_gen_vlc(rv34_table_intra_secondpat[i][j], OTHERBLK_VLC_SIZE,
-                         &intra_vlcs[i].second_pattern[j], &offset);
+                         &intra_vlcs[i].second_pattern[j], 0, &offset);
             rv34_gen_vlc(rv34_table_intra_thirdpat [i][j], OTHERBLK_VLC_SIZE,
-                         &intra_vlcs[i].third_pattern[j],  &offset);
+                         &intra_vlcs[i].third_pattern[j],  0, &offset);
             for(k = 0; k < 4; k++){
                 rv34_gen_vlc_ext(rv34_table_intra_cbp[i][j+k*2],  CBP_VLC_SIZE,
-                                 &intra_vlcs[i].cbp[j][k], rv34_cbp_code, &offset);
+                                 &intra_vlcs[i].cbp[j][k], rv34_cbp_code, -1, &offset);
             }
         }
         for(j = 0; j < 4; j++){
             rv34_gen_vlc(rv34_table_intra_firstpat[i][j], FIRSTBLK_VLC_SIZE,
-                         &intra_vlcs[i].first_pattern[j], &offset);
+                         &intra_vlcs[i].first_pattern[j], 3, &offset);
         }
         rv34_gen_vlc(rv34_intra_coeff[i], COEFF_VLC_SIZE,
-                     &intra_vlcs[i].coefficient, &offset);
+                     &intra_vlcs[i].coefficient, -1, &offset);
     }
 
     for(i = 0; i < NUM_INTER_TABLES; i++){
         rv34_gen_vlc(rv34_inter_cbppat[i], CBPPAT_VLC_SIZE,
-                     &inter_vlcs[i].cbppattern[0], &offset);
+                     &inter_vlcs[i].cbppattern[0], 4, &offset);
         for(j = 0; j < 4; j++){
             rv34_gen_vlc_ext(rv34_inter_cbp[i][j], CBP_VLC_SIZE,
-                             &inter_vlcs[i].cbp[0][j], rv34_cbp_code, &offset);
+                             &inter_vlcs[i].cbp[0][j], rv34_cbp_code, -1, &offset);
         }
         for(j = 0; j < 2; j++){
             rv34_gen_vlc(rv34_table_inter_firstpat [i][j], FIRSTBLK_VLC_SIZE,
-                         &inter_vlcs[i].first_pattern[j],  &offset);
+                         &inter_vlcs[i].first_pattern[j],  3, &offset);
             rv34_gen_vlc(rv34_table_inter_secondpat[i][j], OTHERBLK_VLC_SIZE,
-                         &inter_vlcs[i].second_pattern[j], &offset);
+                         &inter_vlcs[i].second_pattern[j], 0, &offset);
             rv34_gen_vlc(rv34_table_inter_thirdpat [i][j], OTHERBLK_VLC_SIZE,
-                         &inter_vlcs[i].third_pattern[j],  &offset);
+                         &inter_vlcs[i].third_pattern[j],  0, &offset);
         }
         rv34_gen_vlc(rv34_inter_coeff[i], COEFF_VLC_SIZE,
-                     &inter_vlcs[i].coefficient, &offset);
+                     &inter_vlcs[i].coefficient, -1, &offset);
     }
 }
 
@@ -210,7 +229,7 @@ static int rv34_decode_cbp(GetBitContext *gb, const RV34VLC *vlc, int table)
     }
 
     for(i = 0; i < 4; i++){
-        t = (modulo_three_table[code] >> (6 - 2*i)) & 3;
+        t = (code >> (6 - 2*i)) & 3;
         if(t == 1)
             cbp |= cbp_masks[get_bits1(gb)] << i;
         if(t == 2)
@@ -243,11 +262,9 @@ static inline void decode_coeff(int16_t *dst, int coef, int esc, GetBitContext *
 /**
  * Decode 2x2 subblock of coefficients.
  */
-static inline void decode_subblock(int16_t *dst, int code, const int is_block2,
+static inline void decode_subblock(int16_t *dst, int flags, const int is_block2,
                                    GetBitContext *gb, const VLCElem *vlc, int q)
 {
-    int flags = modulo_three_table[code];
-
     decode_coeff(    dst+0*4+0, (flags >> 6)    , 3, gb, vlc, q);
     if(is_block2){
         decode_coeff(dst+1*4+0, (flags >> 4) & 3, 2, gb, vlc, q);
@@ -262,19 +279,17 @@ static inline void decode_subblock(int16_t *dst, int code, const int is_block2,
 /**
  * Decode a single coefficient.
  */
-static inline void decode_subblock1(int16_t *dst, int code, GetBitContext *gb,
+static inline void decode_subblock1(int16_t *dst, int flags, GetBitContext *gb,
                                     const VLCElem *vlc, int q)
 {
-    int coeff = modulo_three_table[code] >> 6;
+    int coeff = flags >> 6;
     decode_coeff(dst, coeff, 3, gb, vlc, q);
 }
 
-static inline void decode_subblock3(int16_t *dst, int code, GetBitContext *gb,
+static inline void decode_subblock3(int16_t *dst, int flags, GetBitContext *gb,
                                     const VLCElem *vlc,
                                     int q_dc, int q_ac1, int q_ac2)
 {
-    int flags = modulo_three_table[code];
-
     decode_coeff(dst+0*4+0, (flags >> 6)    , 3, gb, vlc, q_dc);
     decode_coeff(dst+0*4+1, (flags >> 4) & 3, 2, gb, vlc, q_ac1);
     decode_coeff(dst+1*4+0, (flags >> 2) & 3, 2, gb, vlc, q_ac1);
@@ -295,34 +310,34 @@ static inline void decode_subblock3(int16_t *dst, int code, GetBitContext *gb,
 static int rv34_decode_block(int16_t *dst, GetBitContext *gb, const RV34VLC *rvlc,
                              int fc, int sc, int q_dc, int q_ac1, int q_ac2)
 {
-    int code, pattern, has_ac = 1;
+    int has_ac = 1;
 
-    code = get_vlc2(gb, rvlc->first_pattern[fc], 9, 2);
+    int flags = get_vlc2(gb, rvlc->first_pattern[fc], 9, 2);
 
-    pattern = code & 0x7;
+    int pattern = flags & 0x7;
 
-    code >>= 3;
+    flags >>= 3;
 
-    if (modulo_three_table[code] & 0x3F) {
-        decode_subblock3(dst, code, gb, rvlc->coefficient, q_dc, q_ac1, q_ac2);
+    if (flags & 0x3F) {
+        decode_subblock3(dst, flags, gb, rvlc->coefficient, q_dc, q_ac1, q_ac2);
     } else {
-        decode_subblock1(dst, code, gb, rvlc->coefficient, q_dc);
+        decode_subblock1(dst, flags, gb, rvlc->coefficient, q_dc);
         if (!pattern)
             return 0;
         has_ac = 0;
     }
 
     if(pattern & 4){
-        code = get_vlc2(gb, rvlc->second_pattern[sc], 9, 2);
-        decode_subblock(dst + 4*0+2, code, 0, gb, rvlc->coefficient, q_ac2);
+        flags = get_vlc2(gb, rvlc->second_pattern[sc], 9, 2);
+        decode_subblock(dst + 4*0+2, flags, 0, gb, rvlc->coefficient, q_ac2);
     }
     if(pattern & 2){ // Looks like coefficients 1 and 2 are swapped for this block
-        code = get_vlc2(gb, rvlc->second_pattern[sc], 9, 2);
-        decode_subblock(dst + 4*2+0, code, 1, gb, rvlc->coefficient, q_ac2);
+        flags = get_vlc2(gb, rvlc->second_pattern[sc], 9, 2);
+        decode_subblock(dst + 4*2+0, flags, 1, gb, rvlc->coefficient, q_ac2);
     }
     if(pattern & 1){
-        code = get_vlc2(gb, rvlc->third_pattern[sc], 9, 2);
-        decode_subblock(dst + 4*2+2, code, 0, gb, rvlc->coefficient, q_ac2);
+        flags = get_vlc2(gb, rvlc->third_pattern[sc], 9, 2);
+        decode_subblock(dst + 4*2+2, flags, 0, gb, rvlc->coefficient, q_ac2);
     }
     return has_ac | pattern;
 }
