@@ -1,0 +1,7 @@
+#EXT-X-DISCONTINUITY
+#EXTINF:1.000000,
+hls_discont_start_0.ts
+#EXTINF:1.000000,
+hls_discont_start_1.ts
+#EXTINF:1.000000,
+hls_discont_start_2.ts
