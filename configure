@@ -4956,7 +4956,7 @@ case "$toolchain" in
                 ;;
         esac
     ;;
-    msvc)
+    msvc|msvc-*)
         cc_default="cl.exe"
         cxx_default="cl.exe"
         ld_default="$source_path/compat/windows/mslink"
@@ -4977,6 +4977,7 @@ case "$toolchain" in
         # issues with msys/win32 path conversion for MSVC parameters
         # such as -Fo<file> or -out:<file>.
         TMPDIR=.
+        test "$toolchain" != "msvc" && requested_sanitizers="${toolchain#msvc-}"
     ;;
     icl)
         cc_default="icl"
