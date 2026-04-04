@@ -1465,7 +1465,7 @@ int ff_exif_sanitize_ifd(void *logctx, const AVFrame *frame, AVExifMetadata *ifd
         if (ret < 0)
             goto end;
     }
-    if (!pw && w && w < 0xFFFFu || !ph && h && h < 0xFFFFu) {
+    if (!pw && w && w <= 0xFFFFu || !ph && h && h <= 0xFFFFu) {
         AVExifMetadata *exif;
         AVExifEntry *exif_entry;
         int exif_found = av_exif_get_entry(logctx, ifd, EXIFIFD_TAG, 0, &exif_entry);
@@ -1483,12 +1483,12 @@ int ff_exif_sanitize_ifd(void *logctx, const AVFrame *frame, AVExifMetadata *ifd
             }
             exif = &ifd->entries[ifd->count - 1].value.ifd;
         }
-        if (!pw && w && w < 0xFFFFu) {
+        if (!pw && w && w <= 0xFFFFu) {
             ret = av_exif_set_entry(logctx, exif, PIXEL_X_TAG, AV_TIFF_SHORT, 1, NULL, 0, &w);
             if (ret < 0)
                 goto end;
         }
-        if (!ph && h && h < 0xFFFFu) {
+        if (!ph && h && h <= 0xFFFFu) {
             ret = av_exif_set_entry(logctx, exif, PIXEL_Y_TAG, AV_TIFF_SHORT, 1, NULL, 0, &h);
             if (ret < 0)
                 goto end;
