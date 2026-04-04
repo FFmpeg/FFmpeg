@@ -619,6 +619,8 @@ typedef struct TLSContext {
     int connected;
     int connection_closed;
     int sspi_close_notify;
+
+    int have_private_cert;
 } TLSContext;
 
 int ff_tls_set_external_socket(URLContext *h, URLContext *sock)
@@ -925,7 +927,7 @@ static int tls_handshake_loop(URLContext *h, int initial)
         /* remote requests a client certificate - attempt to continue without one anyway */
         if (sspi_ret == SEC_I_INCOMPLETE_CREDENTIALS &&
             !(c->request_flags & ISC_REQ_USE_SUPPLIED_CREDS)) {
-            av_log(h, AV_LOG_VERBOSE, "Client certificate has been requested, ignoring\n");
+            av_log(h, AV_LOG_WARNING, "Server requested a client certificate\n");
             c->request_flags |= ISC_REQ_USE_SUPPLIED_CREDS;
             read_data = 0;
             continue;
@@ -1030,6 +1032,8 @@ static int tls_client_handshake(URLContext *h)
         c->request_flags |= ISC_REQ_DATAGRAM;
     else
         c->request_flags |= ISC_REQ_STREAM;
+    if (c->have_private_cert)
+        c->request_flags |= ISC_REQ_USE_SUPPLIED_CREDS;
 
     sspi_ret = InitializeSecurityContext(&c->cred_handle, NULL, s->host, c->request_flags, 0, 0,
                                          NULL, 0, &c->ctxt_handle, &outbuf_desc, &c->context_flags,
@@ -1127,24 +1131,29 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
     /* SChannel Options */
     schannel_cred.dwVersion = SCHANNEL_CRED_VERSION;
 
-    if (s->listen) {
-        if (c->cert_store_name && c->cert_store_subject) {
-            ret = tls_cert_from_store(h, c->cert_store_name, c->cert_store_subject, &crtctx);
-        } else if (s->key_buf && s->cert_buf) {
-            ret = tls_import_key_cert(s->key_buf, s->cert_buf, &key, &crtctx);
-        } else if (s->key_file && s->cert_file) {
-            ret = tls_load_key_cert(s->key_file, s->cert_file, &key, &crtctx);
-        } else {
-            av_log(h, AV_LOG_VERBOSE, "No server certificate provided, using self-signed\n");
-            ret = tls_gen_self_signed(&key, &crtctx);
-        }
+    if (c->cert_store_name && c->cert_store_subject) {
+        ret = tls_cert_from_store(h, c->cert_store_name, c->cert_store_subject, &crtctx);
+    } else if (s->key_buf && s->cert_buf) {
+        ret = tls_import_key_cert(s->key_buf, s->cert_buf, &key, &crtctx);
+    } else if (s->key_file && s->cert_file) {
+        ret = tls_load_key_cert(s->key_file, s->cert_file, &key, &crtctx);
+    } else if (!s->listen && (s->key_buf || s->cert_buf || s->key_file || s->cert_file)) {
+        av_log(h, AV_LOG_WARNING, "Both cert and key of same kind required, ignoring\n");
+    } else if (s->listen) {
+        av_log(h, AV_LOG_VERBOSE, "No server certificate provided, using self-signed\n");
+        ret = tls_gen_self_signed(&key, &crtctx);
+    }
 
-        if (ret < 0)
-            goto fail;
+    if (ret < 0)
+        goto fail;
 
+    if (crtctx) {
         schannel_cred.cCreds = 1;
         schannel_cred.paCred = &crtctx;
+        c->have_private_cert = 1;
+    }
 
+    if (s->listen) {
         schannel_cred.dwFlags = SCH_CRED_NO_SYSTEM_MAPPER | SCH_CRED_MANUAL_CRED_VALIDATION;
 
 #if CONFIG_DTLS_PROTOCOL
