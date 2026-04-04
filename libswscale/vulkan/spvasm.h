@@ -23,11 +23,20 @@
 
 #include <stdint.h>
 #include <string.h>
+#include "config.h"
 
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avassert.h"
+
+#if HAVE_SPIRV_HEADERS_SPIRV_H
+#include <spirv-headers/spirv.h>
+#include <spirv-headers/GLSL.std.450.h>
+#endif
+
+#if HAVE_SPIRV_UNIFIED1_SPIRV_H
 #include <spirv/unified1/spirv.h>
 #include <spirv/unified1/GLSL.std.450.h>
+#endif
 
 /* COUNT_ARGS: counts variadic macro arguments, including zero.
  * The sentinel 0 is prepended so the compound literal is never empty,

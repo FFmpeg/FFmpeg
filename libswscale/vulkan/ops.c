@@ -25,7 +25,10 @@
 #include "../swscale_internal.h"
 
 #include "ops.h"
+
+#if HAVE_SPIRV_HEADERS_SPIRV_H || HAVE_SPIRV_UNIFIED1_SPIRV_H
 #include "spvasm.h"
+#endif
 
 static void ff_sws_vk_uninit(AVRefStructOpaque opaque, void *obj)
 {
@@ -204,6 +207,7 @@ fail:
     return err;
 }
 
+#if HAVE_SPIRV_HEADERS_SPIRV_H || HAVE_SPIRV_UNIFIED1_SPIRV_H
 struct DitherData {
         int size;
         int arr_1d_id;
@@ -883,6 +887,7 @@ static int add_ops_spirv(VulkanPriv *p, FFVulkanOpsCtx *s,
 
     return ff_vk_shader_link(&s->vkctx, shd, spvbuf, len, "main");
 }
+#endif
 
 #if CONFIG_LIBSHADERC || CONFIG_LIBGLSLANG
 static void add_desc_read_write(FFVulkanDescriptorSetBinding *out_desc,
@@ -1159,19 +1164,18 @@ static int compile(SwsContext *sws, SwsOpList *ops, SwsCompiledOp *out, int glsl
     }
 
     if (glsl) {
+        err = AVERROR(ENOTSUP);
 #if CONFIG_LIBSHADERC || CONFIG_LIBGLSLANG
         err = add_ops_glsl(p, s, ops, &p->shd);
-        if (err < 0)
-            goto fail;
-#else
-        err = AVERROR(ENOTSUP);
-        goto fail;
 #endif
     } else {
+        err = AVERROR(ENOTSUP);
+#if HAVE_SPIRV_HEADERS_SPIRV_H || HAVE_SPIRV_UNIFIED1_SPIRV_H
         err = add_ops_spirv(p, s, ops, &p->shd);
-        if (err < 0)
-            goto fail;
+#endif
     }
+    if (err < 0)
+        goto fail;
 
     err = ff_vk_shader_register_exec(&s->vkctx, &p->e, &p->shd);
     if (err < 0)
@@ -1196,6 +1200,7 @@ fail:
     return err;
 }
 
+#if HAVE_SPIRV_HEADERS_SPIRV_H || HAVE_SPIRV_UNIFIED1_SPIRV_H
 static int compile_spirv(SwsContext *sws, SwsOpList *ops, SwsCompiledOp *out)
 {
     return compile(sws, ops, out, 0);
@@ -1206,6 +1211,7 @@ const SwsOpBackend backend_spirv = {
     .compile   = compile_spirv,
     .hw_format = AV_PIX_FMT_VULKAN,
 };
+#endif
 
 #if CONFIG_LIBSHADERC || CONFIG_LIBGLSLANG
 static int compile_glsl(SwsContext *sws, SwsOpList *ops, SwsCompiledOp *out)
