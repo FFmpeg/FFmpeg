@@ -1526,6 +1526,13 @@ int ff_exif_get_buffer(void *logctx, const AVFrame *frame, AVBufferRef **buffer_
         goto end;
     }
 
+    /*
+     * we always have to rewrite if the requested header mode
+     * does not match the internal header mode, which is always
+     * AV_EXIF_TIFF_HEADER inside FFmpeg.
+     */
+    rewrite = rewrite || header_mode != AV_EXIF_TIFF_HEADER;
+
     if (rewrite) {
         ret = av_exif_write(logctx, &ifd, &buffer, header_mode);
         if (ret < 0)
