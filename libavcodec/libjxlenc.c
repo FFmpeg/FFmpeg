@@ -456,7 +456,7 @@ static int libjxl_preprocess_stream(AVCodecContext *avctx, const AVFrame *frame,
 
     /* av_display_matrix_flip is a right-multipilcation */
     /* i.e. flip is applied before the previous matrix */
-    if (frame->linesize < 0)
+    if (frame->linesize[0] < 0)
         av_display_matrix_flip(matrix, 0, 1);
 
     orientation = av_exif_matrix_to_orientation(matrix);
@@ -469,7 +469,7 @@ static int libjxl_preprocess_stream(AVCodecContext *avctx, const AVFrame *frame,
     }
 
     /* restore the previous value */
-    if (frame->linesize < 0)
+    if (frame->linesize[0] < 0)
         av_display_matrix_flip(matrix, 0, 1);
 
     if (animated) {
