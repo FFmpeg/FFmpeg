@@ -256,10 +256,11 @@ enum AVFrameSideDataType {
     AV_FRAME_DATA_3D_REFERENCE_DISPLAYS,
 
     /**
-     * Extensible image file format metadata. The payload is a buffer containing
-     * EXIF metadata, starting with either 49 49 2a 00, or 4d 4d 00 2a.
+     * Exchangeable image file format metadata. The payload is a buffer containing
+     * EXIF metadata, starting with either 49 49 2a 00, or 4d 4d 00 2a. These four
+     * bytes signify the endianness, and occur as the first part of the TIFF header.
      */
-     AV_FRAME_DATA_EXIF,
+    AV_FRAME_DATA_EXIF,
 
      /**
       * HDR dynamic metadata associated with a video frame. The payload is
