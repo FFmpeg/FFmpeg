@@ -1196,7 +1196,7 @@ int av_exif_set_entry(void *logctx, AVExifMetadata *ifd, uint16_t id, enum AVTif
     uint32_t count, const uint8_t *ifd_lead, uint32_t ifd_offset, const void *value)
 {
     void *temp;
-    int ret = 0;
+    int ret, offset;
     AVExifEntry *entry = NULL;
     AVExifEntry src = { 0 };
 
@@ -1208,6 +1208,7 @@ int av_exif_set_entry(void *logctx, AVExifMetadata *ifd, uint16_t id, enum AVTif
     ret = av_exif_get_entry(logctx, ifd, id, 0, &entry);
     if (ret < 0)
         return ret;
+    offset = ret;
 
     if (entry) {
         exif_free_entry(entry);
@@ -1235,8 +1236,15 @@ int av_exif_set_entry(void *logctx, AVExifMetadata *ifd, uint16_t id, enum AVTif
 
     ret = exif_clone_entry(entry, &src);
 
-    if (ret < 0)
+    if (ret < 0) {
+        /* offset is the actual offset + 1 */
+        if (offset) {
+            size_t remaining = ifd->count - offset;
+            /* pop the entry off the IFD by shifting everything to the left */
+            memmove(&ifd->entries[offset - 1], &ifd->entries[offset], sizeof(*ifd->entries) * remaining);
+        }
         ifd->count--;
+    }
 
     return ret;
 }
