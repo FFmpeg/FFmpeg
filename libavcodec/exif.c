@@ -1274,8 +1274,10 @@ static int exif_remove_entry(void *logctx, AVExifMetadata *ifd, uint16_t id, int
     exif_free_entry(&ifd->entries[index]);
 
     if (index == --ifd->count) {
-        if (!index)
+        if (!index) {
             av_freep(&ifd->entries);
+            ifd->size = 0;
+        }
         return 1;
     }
 
