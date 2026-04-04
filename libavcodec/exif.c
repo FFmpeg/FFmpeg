@@ -1519,12 +1519,14 @@ int ff_exif_get_buffer(void *logctx, const AVFrame *frame, AVBufferRef **buffer_
         return AVERROR(EINVAL);
 
     sd_exif = av_frame_get_side_data(frame, AV_FRAME_DATA_EXIF);
-    if (!sd_exif)
+    if (!sd_exif && !av_frame_get_side_data(frame, AV_FRAME_DATA_DISPLAYMATRIX))
         return 0;
 
-    ret = av_exif_parse_buffer(logctx, sd_exif->data, sd_exif->size, &ifd, AV_EXIF_TIFF_HEADER);
-    if (ret < 0)
-        goto end;
+    if (sd_exif) {
+        ret = av_exif_parse_buffer(logctx, sd_exif->data, sd_exif->size, &ifd, AV_EXIF_TIFF_HEADER);
+        if (ret < 0)
+            goto end;
+    }
 
     rewrite = ff_exif_sanitize_ifd(logctx, frame, &ifd);
     if (rewrite < 0) {
@@ -1536,8 +1538,11 @@ int ff_exif_get_buffer(void *logctx, const AVFrame *frame, AVBufferRef **buffer_
      * we always have to rewrite if the requested header mode
      * does not match the internal header mode, which is always
      * AV_EXIF_TIFF_HEADER inside FFmpeg.
+     *
+     * If ifd.count == 0 then there's no data to write at all.
+     * This is possible if the frame width and height are zero and the orientation is 1.
      */
-    rewrite = rewrite || header_mode != AV_EXIF_TIFF_HEADER;
+    rewrite = (rewrite || header_mode != AV_EXIF_TIFF_HEADER) && ifd.count;
 
     if (rewrite) {
         ret = av_exif_write(logctx, &ifd, &buffer, header_mode);
@@ -1545,7 +1550,7 @@ int ff_exif_get_buffer(void *logctx, const AVFrame *frame, AVBufferRef **buffer_
             goto end;
 
         *buffer_ptr = buffer;
-    } else {
+    } else if (sd_exif) {
         *buffer_ptr = av_buffer_ref(sd_exif->buf);
         if (!*buffer_ptr) {
             ret = AVERROR(ENOMEM);
@@ -1554,7 +1559,8 @@ int ff_exif_get_buffer(void *logctx, const AVFrame *frame, AVBufferRef **buffer_
     }
 
     av_exif_free(&ifd);
-    return rewrite;
+
+    return !!(rewrite || sd_exif);
 
 end:
     av_exif_free(&ifd);
