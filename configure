@@ -4868,36 +4868,45 @@ set >> $logfile
 test -n "$valgrind" && toolchain="valgrind-memcheck"
 
 add_sanitizer_flags(){
+    sanitizer_cflags=
+    sanitizer_ldflags=
+
     case "$1" in
         asan)
-            add_allcflags -fsanitize=address
-            add_ldflags -fsanitize=address
+            sanitizer_cflags="-fsanitize=address"
+            sanitizer_ldflags="-fsanitize=address"
         ;;
         fuzz)
-            add_allcflags -fsanitize=fuzzer-no-link
-            add_ldflags -fsanitize=fuzzer-no-link
+            sanitizer_cflags="-fsanitize=fuzzer-no-link"
+            sanitizer_ldflags="-fsanitize=fuzzer-no-link"
             : "${libfuzzer_path:=-fsanitize=fuzzer}"
         ;;
         lsan)
-            add_allcflags -fsanitize=leak
-            add_ldflags -fsanitize=leak
+            sanitizer_cflags="-fsanitize=leak"
+            sanitizer_ldflags="-fsanitize=leak"
         ;;
         msan)
-            add_allcflags -fsanitize=memory -fsanitize-memory-track-origins
-            add_ldflags -fsanitize=memory
+            sanitizer_cflags="-fsanitize=memory -fsanitize-memory-track-origins"
+            sanitizer_ldflags="-fsanitize=memory"
         ;;
         tsan)
-            add_allcflags -fsanitize=thread
-            add_ldflags -fsanitize=thread
+            sanitizer_cflags="-fsanitize=thread"
+            sanitizer_ldflags="-fsanitize=thread"
         ;;
         usan|ubsan)
-            add_allcflags -fsanitize=undefined
-            add_ldflags -fsanitize=undefined
+            sanitizer_cflags="-fsanitize=undefined"
+            sanitizer_ldflags="-fsanitize=undefined"
         ;;
         ?*)
             die "Unknown sanitizer $1"
         ;;
     esac
+
+    test_cflags $sanitizer_cflags ||
+        die "Sanitizer $1 is not supported by $cc"
+
+    add_allcflags $sanitizer_cflags
+    check_ldflags $sanitizer_ldflags
 }
 
 add_sanitizers(){
@@ -4907,12 +4916,12 @@ add_sanitizers(){
     for sanitizer; do
         add_sanitizer_flags "$sanitizer"
     done
-    add_allcflags -fno-omit-frame-pointer
+    check_allcflags -fno-omit-frame-pointer
 }
 
 case "$toolchain" in
     clang-*)
-        add_sanitizers "${toolchain#clang-}"
+        requested_sanitizers="${toolchain#clang-}"
         cc_default="clang"
         cxx_default="clang++"
     ;;
@@ -4924,10 +4933,10 @@ case "$toolchain" in
         ranlib_default="llvm-ranlib"
         strip_default="llvm-strip"
         windres_default="llvm-windres"
-        test "$toolchain" != "llvm" && add_sanitizers "${toolchain#llvm-}"
+        test "$toolchain" != "llvm" && requested_sanitizers="${toolchain#llvm-}"
     ;;
     gcc-*)
-        add_sanitizers "${toolchain#gcc-}"
+        requested_sanitizers="${toolchain#gcc-}"
         cc_default="gcc"
         cxx_default="g++"
         # In case of tsan with gcc, PIC has to be enabled
@@ -5486,6 +5495,8 @@ test_cpp_condition windows.h "_MSC_FULL_VER >= 193030705" &&
     check_allcflags -options:strict
 test_host_cpp_condition windows.h "_MSC_FULL_VER >= 193030705" &&
     check_host_cflags -options:strict
+
+test -n "$requested_sanitizers" && add_sanitizers "$requested_sanitizers"
 
 add_cflags $extra_cflags
 add_cxxflags $extra_cxxflags
