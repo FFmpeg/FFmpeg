@@ -1394,6 +1394,10 @@ int ff_exif_sanitize_ifd(void *logctx, const AVFrame *frame, AVExifMetadata *ifd
 
     if (sd_orient)
         orientation = av_exif_matrix_to_orientation((int32_t *) sd_orient->data);
+    if (!orientation) {
+        av_log(logctx, AV_LOG_WARNING, "display matrix is singular\n");
+        orientation = 1;
+    }
     if (orientation != 1)
         av_log(logctx, AV_LOG_DEBUG, "matrix contains nontrivial EXIF orientation: %" PRIu64 "\n", orientation);
 
