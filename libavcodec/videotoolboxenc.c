@@ -2851,7 +2851,8 @@ const FFCodec ff_h264_videotoolbox_encoder = {
     CODEC_LONG_NAME("VideoToolbox H.264 Encoder"),
     .p.type           = AVMEDIA_TYPE_VIDEO,
     .p.id             = AV_CODEC_ID_H264,
-    .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
+    .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
+                        AV_CODEC_CAP_HYBRID,
     .priv_data_size   = sizeof(VTEncContext),
     CODEC_PIXFMTS_ARRAY(avc_pix_fmts),
     .defaults         = vt_defaults,
@@ -2860,6 +2861,7 @@ const FFCodec ff_h264_videotoolbox_encoder = {
     .close            = vtenc_close,
     .p.priv_class     = &h264_videotoolbox_class,
     .caps_internal    = FF_CODEC_CAP_INIT_CLEANUP,
+    .p.wrapper_name   = "videotoolbox",
     .hw_configs       = vt_encode_hw_configs,
 };
 
@@ -2891,7 +2893,7 @@ const FFCodec ff_hevc_videotoolbox_encoder = {
     .p.type           = AVMEDIA_TYPE_VIDEO,
     .p.id             = AV_CODEC_ID_HEVC,
     .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
-                        AV_CODEC_CAP_HARDWARE,
+                        AV_CODEC_CAP_HYBRID,
     .priv_data_size   = sizeof(VTEncContext),
     CODEC_PIXFMTS_ARRAY(hevc_pix_fmts),
     .defaults         = vt_defaults,
@@ -2932,7 +2934,7 @@ const FFCodec ff_prores_videotoolbox_encoder = {
     .p.type           = AVMEDIA_TYPE_VIDEO,
     .p.id             = AV_CODEC_ID_PRORES,
     .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
-                        AV_CODEC_CAP_HARDWARE,
+                        AV_CODEC_CAP_HYBRID,
     .priv_data_size   = sizeof(VTEncContext),
     CODEC_PIXFMTS_ARRAY(prores_pix_fmts),
     .defaults         = vt_defaults,
