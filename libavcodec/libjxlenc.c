@@ -434,7 +434,8 @@ static int libjxl_preprocess_stream(AVCodecContext *avctx, const AVFrame *frame,
         if (ret >= 0)
             ret = av_exif_get_entry(avctx, &ifd, tag, 0, &orient);
         if (ret >= 0 && orient) {
-            if (!have_matrix && orient->value.uint[0] >= 1 && orient->value.uint[0] <= 8) {
+            if (!have_matrix && orient->type == AV_TIFF_SHORT && orient->count
+                    && orient->value.uint[0] >= 1 && orient->value.uint[0] <= 8) {
                 av_exif_orientation_to_matrix(matrix, orient->value.uint[0]);
                 have_matrix = 1;
             }
