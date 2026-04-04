@@ -57,6 +57,6 @@ Description: $comment
 Version: $version
 Requires: $requires
 Conflicts:
-Libs: -L\${libdir} -Wl,-rpath,\${libdir} -l${fullname#lib} $($shared || echo $libs)
+Libs: -L\${libdir} $($shared && echo -Wl,-rpath,\${libdir}) -l${fullname#lib} $($shared || echo $libs)
 Cflags: -I\${includedir}
 EOF
