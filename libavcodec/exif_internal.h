@@ -56,11 +56,12 @@ int ff_exif_sanitize_ifd(void *logctx, const AVFrame *frame, AVExifMetadata *ifd
  * side data types that are included in the frame data, such as possibly an
  * instance of AV_FRAME_DATA_DISPLAYMATRIX. It also sets width and height tags
  * to match those of the AVFrame if they are different.
+ * The *buffer argument must be NULL before calling.
  *
- * Upon error, *buffer will be NULL. The buffer becomes owned by the caller upon
- * success. The *buffer argument must be NULL before calling. If *buffer is NULL
- * upon return then a negative return value indicates an error, and a zero return
- * value indicates that there was no EXIF data to write.
+ * On success, a positive number is returned, and the buffer becomes owned by the caller.
+ * A negative AVERROR return value means that an error occurred.
+ * A zero return value means that there was no EXIF data to write.
+ * In both the negative and zero cases, *buffer will be NULL.
  */
 int ff_exif_get_buffer(void *logctx, const AVFrame *frame, AVBufferRef **buffer, enum AVExifHeaderMode header_mode);
 
