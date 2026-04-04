@@ -109,4 +109,27 @@ inline __device__ float4 lerp_scalar<float4>(float4 v0, float4 v1, float t) {
     );
 }
 
+template<typename T>
+inline __device__ T saturate_rintf(T a, float factor) {
+    return rintf(__saturatef(a) * factor);
+}
+
+template<>
+inline __device__ float2 saturate_rintf<float2>(float2 a, float factor) {
+    return make_float2(
+        saturate_rintf(a.x, factor),
+        saturate_rintf(a.y, factor)
+    );
+}
+
+template<>
+inline __device__ float4 saturate_rintf<float4>(float4 a, float factor) {
+    return make_float4(
+        saturate_rintf(a.x, factor),
+        saturate_rintf(a.y, factor),
+        saturate_rintf(a.z, factor),
+        saturate_rintf(a.w, factor)
+    );
+}
+
 #endif
