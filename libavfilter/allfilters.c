@@ -525,6 +525,7 @@ extern const FFFilter ff_vf_unsharp_opencl;
 extern const FFFilter ff_vf_untile;
 extern const FFFilter ff_vf_uspp;
 extern const FFFilter ff_vf_v360;
+extern const FFFilter ff_vf_v360_vulkan;
 extern const FFFilter ff_vf_vaguedenoiser;
 extern const FFFilter ff_vf_varblur;
 extern const FFFilter ff_vf_vectorscope;
