@@ -309,6 +309,9 @@ static int sctp_read(URLContext *h, uint8_t *buf, int size)
     }
 
     if (s->max_streams) {
+        if (size < 2)
+            return AVERROR(EINVAL);
+
         /*StreamId is introduced as a 2byte code into the stream*/
         struct sctp_sndrcvinfo info = { 0 };
         ret = ff_sctp_recvmsg(s->fd, buf + 2, size - 2, NULL, 0, &info, 0);
