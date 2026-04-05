@@ -88,7 +88,7 @@ static void test_rv34_idct_add(const RV34DSPContext *const s)
     enum {
         MAX_STRIDE = 256, ///< arbitrary, should be divisible by four
     };
-    declare_func_emms(AV_CPU_FLAG_MMXEXT, void, uint8_t *dst, ptrdiff_t stride, int16_t *block);
+    declare_func(void, uint8_t *dst, ptrdiff_t stride, int16_t *block);
 
     if (check_func(s->rv34_idct_add, "rv34_idct_add")) {
         DECLARE_ALIGNED_16(int16_t, block_ref)[4*4];
