@@ -197,7 +197,7 @@ int main(int argc, char **argv)
             src_fmt = av_get_pix_fmt(argv[i + 1]);
             if (src_fmt == AV_PIX_FMT_NONE) {
                 fprintf(stderr, "invalid pixel format %s\n", argv[i + 1]);
-                goto error;
+                return AVERROR(EINVAL);
             }
             i++;
         } else if (!strcmp(argv[i], "-dst")) {
@@ -206,7 +206,7 @@ int main(int argc, char **argv)
             dst_fmt = av_get_pix_fmt(argv[i + 1]);
             if (dst_fmt == AV_PIX_FMT_NONE) {
                 fprintf(stderr, "invalid pixel format %s\n", argv[i + 1]);
-                goto error;
+                return AVERROR(EINVAL);
             }
             i++;
         } else if (!strcmp(argv[i], "-v")) {
@@ -219,7 +219,7 @@ int main(int argc, char **argv)
         } else {
 bad_option:
             fprintf(stderr, "bad option or argument missing (%s) see -help\n", argv[i]);
-            goto error;
+            return AVERROR(EINVAL);
         }
     }
 
@@ -256,7 +256,4 @@ bad_option:
 fail:
     sws_free_context(&ctx);
     return ret;
-
-error:
-    return AVERROR(EINVAL);
 }
