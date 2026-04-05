@@ -216,6 +216,10 @@ fate-file: libavutil/tests/file$(EXESUF)
 fate-file: CMD = run libavutil/tests/file$(EXESUF) $(SRC_PATH)/libavutil/tests/file.c
 fate-file: CMP = null
 
+FATE_LIBAVUTIL += fate-timecode
+fate-timecode: libavutil/tests/timecode$(EXESUF)
+fate-timecode: CMD = run libavutil/tests/timecode$(EXESUF)
+
 FATE_LIBAVUTIL += $(FATE_LIBAVUTIL-yes)
 FATE-$(CONFIG_AVUTIL) += $(FATE_LIBAVUTIL)
 fate-libavutil: $(FATE_LIBAVUTIL)

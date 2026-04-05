@@ -1,0 +1,51 @@
+check_frame_rate 24/1: 0
+check_frame_rate 25/1: 0
+check_frame_rate 30/1: 0
+check_frame_rate 48/1: 0
+check_frame_rate 50/1: 0
+check_frame_rate 60/1: 0
+check_frame_rate 100/1: 0
+check_frame_rate 120/1: 0
+check_frame_rate 150/1: 0
+check_frame_rate 30000/1001: 0
+check_frame_rate 15/1: -1
+check_frame_rate 12/1: -1
+check_frame_rate 0/0: -1
+check_frame_rate 30/0: -1
+init 25/1 flags:0 start:0: ok fps=25 start=0 rate=25/1
+init 30/1 flags:1 start:0: ok fps=30 start=0 rate=30/1
+init 24/1 flags:0 start:100: ok fps=24 start=100 rate=24/1
+init 0/1 flags:0 start:0: error
+init 25/1 flags:1 start:0: error
+init 30000/1001 flags:1 start:0: ok fps=30 start=0 rate=30000/1001
+init 25/1 flags:4 start:-100: ok fps=25 start=-100 rate=25/1
+from_components 25/1 00:00:00:00: 0 start=0
+from_components 25/1 01:00:00:00: 0 start=90000
+from_components 30/1 01:02:03:04: 0 start=111694
+from_components 30000/1001 drop 01:00:00;00: 0 start=107892
+from_string 30/1 00:01:02:03: 0 drop=0 start=1863
+from_string 30000/1001 00:01:00;02: 0 drop=1
+from_string 30000/1001 01:00:00.00: 0 drop=1
+from_string 25/1 notvalid: error
+make_string 25/1 35: 00:00:01:10
+make_string 25/1 0: 00:00:00:00
+make_string 30/1 30: 00:00:01:00
+make_string 25/1 24hwrap 2250000: 01:00:00:00
+make_string 30000/1001 drop 0: 00:00:00;00
+make_string 25/1 negative start -100 frame 0: -00:00:04:00
+smpte_tc 30/1 01:02:03:04: 01:02:03:04
+smpte_from_framenum 25/1 91530: 01:01:01:05
+smpte_tc2 50/1 00:00:00:00: 00:00:00:00
+smpte_tc2 60/1 01:00:00:00: 01:00:00:00
+mpeg_tc 01:02:03:04: 01:02:03:04
+mpeg_tc drop 01:02:03:04: 01:02:03;04
+adjust_ntsc 0 30: 0
+adjust_ntsc 1800 30: 1802
+adjust_ntsc 1000 25: 1000
+adjust_ntsc 1000 0: 1000
+adjust_ntsc 3600 60: 3604
+smpte_roundtrip 30/1 12:34:56:07: 12:34:56:07 / 12:34:56:07
+smpte_roundtrip 30/1 00:00:00:00: 00:00:00:00 / 00:00:00:00
+smpte_roundtrip 30000/1001 drop bit30=1: 00:01:00;02 / 00:01:00;02
+smpte_roundtrip 50/1 field bit7=1: 00:00:00:24 / 00:00:00:49
+smpte_roundtrip 60000/1001 field bit23=1: 00:00:00:29 / 00:00:00:59
