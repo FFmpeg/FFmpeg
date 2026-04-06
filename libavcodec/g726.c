@@ -275,7 +275,7 @@ static int16_t g726_decode(G726Context* c, int I)
     return av_clip(re_signal * 4, -0xffff, 0xffff);
 }
 
-static av_cold int g726_reset(G726Context *c)
+static av_cold void g726_reset(G726Context *c)
 {
     int i;
 
@@ -291,8 +291,6 @@ static av_cold int g726_reset(G726Context *c)
     c->yl = 34816;
 
     c->y = 544;
-
-    return 0;
 }
 
 #if CONFIG_ADPCM_G726_ENCODER || CONFIG_ADPCM_G726LE_ENCODER
