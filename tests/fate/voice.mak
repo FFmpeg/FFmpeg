@@ -6,6 +6,20 @@ fate-g722-encode: tests/data/asynth-16000-1.wav
 fate-g722-encode: SRC = tests/data/asynth-16000-1.wav
 fate-g722-encode: CMD = enc_dec_pcm wav framemd5 s16le $(SRC) -c:a g722
 
+FATE_VOICE-$(call ENCDEC, COMFORTNOISE, NUT, WAV_DEMUXER PCM_S16LE_DECODER WAV_MUXER PCM_S16LE_ENCODER PIPE_PROTOCOL) += fate-cng-encode
+fate-cng-encode: tests/data/asynth-8000-1.wav
+fate-cng-encode: SRC = tests/data/asynth-8000-1.wav
+fate-cng-encode: CMD = enc_dec_pcm nut wav s16le $(SRC) -c:a comfortnoise
+fate-cng-encode: REF = $(SRC)
+fate-cng-encode: CMP = stddev
+fate-cng-encode: CMP_TARGET = 8919.49
+fate-cng-encode: FUZZ = 0.1
+
+FATE_VOICE-$(call ENCMUX, COMFORTNOISE, NUT, WAV_DEMUXER PCM_S16LE_DECODER FILE_PROTOCOL) += fate-cng-enc-md5
+fate-cng-enc-md5: tests/data/asynth-8000-1.wav
+fate-cng-enc-md5: CMD = md5 -i $(TARGET_PATH)/tests/data/asynth-8000-1.wav -c:a comfortnoise -fflags +bitexact -flags +bitexact -f nut
+fate-cng-enc-md5: REF = $(SRC_PATH)/tests/ref/fate/cng-enc-md5
+
 FATE_VOICE-yes += $(FATE_G722-yes)
 fate-g722: $(FATE_G722-yes)
 
