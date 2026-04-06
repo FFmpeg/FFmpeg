@@ -54,7 +54,7 @@ TEXIDEP = perl $(SRC_PATH)/doc/texidep.pl $(SRC_PATH) $< $@ >$(@:%=%.d)
 doc/%.txt: TAG = TXT
 doc/%.txt: doc/%.texi
 	$(Q)$(TEXIDEP)
-	$(M)makeinfo --force --no-headers -o $@ $< 2>/dev/null
+	$(M)$(MAKEINFO) --force --no-headers -o $@ $< 2>/dev/null
 
 GENTEXI  = format codec
 GENTEXI := $(GENTEXI:%=doc/avoptions_%.texi)
@@ -69,11 +69,11 @@ doc/%-all.html: TAG = HTML
 ifdef HAVE_MAKEINFO_HTML
 doc/%.html: doc/%.texi $(SRC_PATH)/doc/t2h.pm $(GENTEXI)
 	$(Q)$(TEXIDEP)
-	$(M)makeinfo --html -I doc --no-split -D config-not-all --init-file=$(SRC_PATH)/doc/t2h.pm --output $@ $<
+	$(M)$(MAKEINFO) --html -I doc --no-split -D config-not-all --init-file=$(SRC_PATH)/doc/t2h.pm --output $@ $<
 
 doc/%-all.html: doc/%.texi $(SRC_PATH)/doc/t2h.pm $(GENTEXI)
 	$(Q)$(TEXIDEP)
-	$(M)makeinfo --html -I doc --no-split -D config-all --init-file=$(SRC_PATH)/doc/t2h.pm --output $@ $<
+	$(M)$(MAKEINFO) --html -I doc --no-split -D config-all --init-file=$(SRC_PATH)/doc/t2h.pm --output $@ $<
 else
 doc/%.html: doc/%.texi $(SRC_PATH)/doc/t2h.init $(GENTEXI)
 	$(Q)$(TEXIDEP)
