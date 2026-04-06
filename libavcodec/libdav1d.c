@@ -373,6 +373,8 @@ static int parse_itut_t35_metadata(Libdav1dContext *dav1d, Dav1dPicture *p,
     country_code = itut_t35->country_code;
     switch (country_code) {
     case ITU_T_T35_COUNTRY_CODE_US:
+        if (bytestream2_get_bytes_left(&gb) < 2)
+            return AVERROR_INVALIDDATA;
         provider_code = bytestream2_get_be16u(&gb);
 
         switch (provider_code) {
