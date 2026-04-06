@@ -318,11 +318,6 @@ static av_cold int g726_encode_init(AVCodecContext *avctx)
                "Resample or reduce the compliance level.\n");
         return AVERROR(EINVAL);
     }
-    if (avctx->sample_rate <= 0) {
-        av_log(avctx, AV_LOG_ERROR, "Invalid sample rate %d\n",
-               avctx->sample_rate);
-        return AVERROR(EINVAL);
-    }
 
     if (avctx->ch_layout.nb_channels != 1) {
         av_log(avctx, AV_LOG_ERROR, "Only mono is supported\n");
