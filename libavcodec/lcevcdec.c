@@ -199,7 +199,9 @@ static int generate_output(void *logctx, FFLCEVCFrame *frame_ctx, AVFrame *out)
     LCEVC_PictureHandle picture;
     LCEVC_ReturnCode res;
 
-    res = LCEVC_ReceiveDecoderPicture(lcevc->decoder, &picture, &info);
+    do {
+        res = LCEVC_ReceiveDecoderPicture(lcevc->decoder, &picture, &info);
+    } while (res == LCEVC_Again);
     if (res != LCEVC_Success)
         return AVERROR_EXTERNAL;
 
