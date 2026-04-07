@@ -217,120 +217,120 @@
 .endm
 
 .macro  hevc_put_qpel_vX_neon_8 filter
-        push   {r4, r5, r6, r7}
-        ldr    r4, [sp, #16] // height
-        ldr    r5, [sp, #20] // width
-        vpush {d8-d15}
-        sub       r2, r2, r3, lsl #1
-        sub       r2, r3
-        mov       r12, r4
-        mov       r6, r0
-        mov       r7, r2
-        lsl       r1, #1
+        push            {r4, r5, r6, r7}
+        ldr             r4, [sp, #16] // height
+        ldr             r5, [sp, #20] // width
+        vpush           {d8-d15}
+        sub             r2, r2, r3, lsl #1
+        sub             r2, r3
+        mov             r12, r4
+        mov             r6, r0
+        mov             r7, r2
+        lsl             r1, #1
 0:      loadin8
-        cmp       r5, #4
-        beq       4f
-8:      subs r4, #1
+        cmp             r5, #4
+        beq             4f
+8:      subs            r4, #1
         \filter
-        vst1.16    {q7}, [r0], r1
+        vst1.16         {q7}, [r0], r1
         regshuffle_d8
-        vld1.8    {d23}, [r2], r3
-        bne 8b
-        subs  r5, #8
-        beq       99f
-        mov r4, r12
-        add r6, #16
-        mov r0, r6
-        add r7, #8
-        mov r2, r7
-        b     0b
-4:      subs r4, #1
+        vld1.8          {d23}, [r2], r3
+        bne             8b
+        subs            r5, #8
+        beq             99f
+        mov             r4, r12
+        add             r6, #16
+        mov             r0, r6
+        add             r7, #8
+        mov             r2, r7
+        b               0b
+4:      subs            r4, #1
         \filter
-        vst1.16    d14, [r0], r1
+        vst1.16         d14, [r0], r1
         regshuffle_d8
-        vld1.32    {d23[0]}, [r2], r3
-        bne 4b
-99:     vpop {d8-d15}
-        pop {r4, r5, r6, r7}
-        bx lr
+        vld1.32         {d23[0]}, [r2], r3
+        bne             4b
+99:     vpop            {d8-d15}
+        pop             {r4, r5, r6, r7}
+        bx              lr
 .endm
 
 .macro  hevc_put_qpel_uw_vX_neon_8 filter
-        push   {r4-r10}
-        ldr    r5, [sp, #28] // width
-        ldr    r4, [sp, #32] // height
-        ldr    r8, [sp, #36] // src2
-        ldr    r9, [sp, #40] // src2stride
-        vpush {d8-d15}
-        sub       r2, r2, r3, lsl #1
-        sub       r2, r3
-        mov       r12, r4
-        mov       r6, r0
-        mov       r7, r2
-        cmp       r8, #0
-        bne       .Lbi\@
+        push            {r4-r10}
+        ldr             r5, [sp, #28] // width
+        ldr             r4, [sp, #32] // height
+        ldr             r8, [sp, #36] // src2
+        ldr             r9, [sp, #40] // src2stride
+        vpush           {d8-d15}
+        sub             r2, r2, r3, lsl #1
+        sub             r2, r3
+        mov             r12, r4
+        mov             r6, r0
+        mov             r7, r2
+        cmp             r8, #0
+        bne             .Lbi\@
 0:      loadin8
-        cmp       r5, #4
-        beq       4f
-8:      subs r4, #1
+        cmp             r5, #4
+        beq             4f
+8:      subs            r4, #1
         \filter
-        vqrshrun.s16   d0, q7, #6
-        vst1.8    d0, [r0], r1
+        vqrshrun.s16    d0, q7, #6
+        vst1.8          d0, [r0], r1
         regshuffle_d8
-        vld1.8    {d23}, [r2], r3
-        bne 8b
-        subs  r5, #8
-        beq       99f
-        mov r4, r12
-        add r6, #8
-        mov r0, r6
-        add r7, #8
-        mov r2, r7
-        b     0b
-4:      subs r4, #1
+        vld1.8          {d23}, [r2], r3
+        bne             8b
+        subs            r5, #8
+        beq             99f
+        mov             r4, r12
+        add             r6, #8
+        mov             r0, r6
+        add             r7, #8
+        mov             r2, r7
+        b               0b
+4:      subs            r4, #1
         \filter
-        vqrshrun.s16   d0, q7, #6
-        vst1.32    d0[0], [r0], r1
+        vqrshrun.s16    d0, q7, #6
+        vst1.32         d0[0], [r0], r1
         regshuffle_d8
-        vld1.32    {d23[0]}, [r2], r3
-        bne 4b
-        b   99f
+        vld1.32         {d23[0]}, [r2], r3
+        bne             4b
+        b               99f
 .Lbi\@: lsl       r9, #1
-        mov       r10, r8
+        mov             r10, r8
 0:      loadin8
-        cmp       r5, #4
-        beq       4f
-8:      subs r4, #1
+        cmp             r5, #4
+        beq             4f
+8:      subs            r4, #1
         \filter
-        vld1.16        {q0}, [r8], r9
-        vqadd.s16      q0, q7
-        vqrshrun.s16   d0, q0, #7
-        vst1.8         d0, [r0], r1
+        vld1.16         {q0}, [r8], r9
+        vqadd.s16       q0, q7
+        vqrshrun.s16    d0, q0, #7
+        vst1.8          d0, [r0], r1
         regshuffle_d8
-        vld1.8    {d23}, [r2], r3
-        bne 8b
-        subs  r5, #8
-        beq       99f
-        mov r4, r12
-        add r6, #8
-        mov r0, r6
-        add r10, #16
-        mov r8, r10
-        add r7, #8
-        mov r2, r7
-        b     0b
-4:      subs r4, #1
+        vld1.8          {d23}, [r2], r3
+        bne             8b
+        subs            r5, #8
+        beq             99f
+        mov             r4, r12
+        add             r6, #8
+        mov             r0, r6
+        add             r10, #16
+        mov             r8, r10
+        add             r7, #8
+        mov             r2, r7
+        b               0b
+4:      subs            r4, #1
         \filter
-        vld1.16      d0, [r8], r9
-        vqadd.s16    d0, d14
-        vqrshrun.s16 d0, q0, #7
-        vst1.32      d0[0], [r0], r1
+        vld1.16         d0, [r8], r9
+        vqadd.s16       d0, d14
+        vqrshrun.s16    d0, q0, #7
+        vst1.32         d0[0], [r0], r1
         regshuffle_d8
-        vld1.32    {d23[0]}, [r2], r3
-        bne 4b
-99:     vpop {d8-d15}
-        pop {r4-r10}
-        bx lr
+        vld1.32         {d23[0]}, [r2], r3
+        bne             4b
+99:     vpop            {d8-d15}
+        pop             {r4-r10}
+        bx              lr
 .endm
 
 function ff_hevc_put_qpel_v1_neon_8, export=1
@@ -359,114 +359,114 @@ function ff_hevc_put_qpel_uw_v3_neon_8, export=1
 endfunc
 
 .macro hevc_put_qpel_hX_neon_8 filter
-        push     {r4, r5, r6, r7}
-        ldr    r4, [sp, #16] // height
-        ldr    r5, [sp, #20] // width
+        push            {r4, r5, r6, r7}
+        ldr             r4, [sp, #16] // height
+        ldr             r5, [sp, #20] // width
 
-        vpush    {d8-d15}
-        sub       r2, #4
-        lsl       r1, #1
-        mov      r12, r4
-        mov       r6, r0
-        mov       r7, r2
-        cmp       r5, #4
-        beq       4f
-8:      subs      r4, #1
+        vpush           {d8-d15}
+        sub             r2, #4
+        lsl             r1, #1
+        mov             r12, r4
+        mov             r6, r0
+        mov             r7, r2
+        cmp             r5, #4
+        beq             4f
+8:      subs            r4, #1
         vextin8
         \filter
-        vst1.16   {q7}, [r0], r1
-        bne       8b
-        subs      r5, #8
-        beq      99f
-        mov       r4, r12
-        add       r6, #16
-        mov       r0, r6
-        add       r7, #8
-        mov       r2, r7
-        cmp       r5, #4
-        bne       8b
-4:      subs      r4, #1
+        vst1.16         {q7}, [r0], r1
+        bne             8b
+        subs            r5, #8
+        beq             99f
+        mov             r4, r12
+        add             r6, #16
+        mov             r0, r6
+        add             r7, #8
+        mov             r2, r7
+        cmp             r5, #4
+        bne             8b
+4:      subs            r4, #1
         vextin8
         \filter
-        vst1.16  d14, [r0], r1
-        bne       4b
-99:     vpop     {d8-d15}
-        pop      {r4, r5, r6, r7}
-        bx lr
+        vst1.16         d14, [r0], r1
+        bne             4b
+99:     vpop            {d8-d15}
+        pop             {r4, r5, r6, r7}
+        bx              lr
 .endm
 
 .macro hevc_put_qpel_uw_hX_neon_8 filter
-        push     {r4-r10}
-        ldr       r5, [sp, #28] // width
-        ldr       r4, [sp, #32] // height
-        ldr       r8, [sp, #36] // src2
-        ldr       r9, [sp, #40] // src2stride
-        vpush    {d8-d15}
-        sub       r2, #4
-        mov      r12, r4
-        mov       r6, r0
-        mov       r7, r2
-        cmp       r8, #0
-        bne       .Lbi\@
-        cmp       r5, #4
-        beq       4f
-8:      subs      r4, #1
+        push            {r4-r10}
+        ldr             r5, [sp, #28] // width
+        ldr             r4, [sp, #32] // height
+        ldr             r8, [sp, #36] // src2
+        ldr             r9, [sp, #40] // src2stride
+        vpush           {d8-d15}
+        sub             r2, #4
+        mov             r12, r4
+        mov             r6, r0
+        mov             r7, r2
+        cmp             r8, #0
+        bne             .Lbi\@
+        cmp             r5, #4
+        beq             4f
+8:      subs            r4, #1
         vextin8
         \filter
-        vqrshrun.s16   d0, q7, #6
-        vst1.8    d0, [r0], r1
-        bne       8b
-        subs      r5, #8
-        beq      99f
-        mov       r4, r12
-        add       r6, #8
-        mov       r0, r6
-        add       r7, #8
-        mov       r2, r7
-        cmp       r5, #4
-        bne       8b
-4:      subs      r4, #1
+        vqrshrun.s16    d0, q7, #6
+        vst1.8          d0, [r0], r1
+        bne             8b
+        subs            r5, #8
+        beq             99f
+        mov             r4, r12
+        add             r6, #8
+        mov             r0, r6
+        add             r7, #8
+        mov             r2, r7
+        cmp             r5, #4
+        bne             8b
+4:      subs            r4, #1
         vextin8
         \filter
-        vqrshrun.s16   d0, q7, #6
-        vst1.32  d0[0], [r0], r1
-        bne       4b
-        b         99f
+        vqrshrun.s16    d0, q7, #6
+        vst1.32         d0[0], [r0], r1
+        bne             4b
+        b               99f
 .Lbi\@:
-        lsl       r9, #1
-        cmp       r5, #4
-        beq       4f
-        mov       r10, r8
-8:      subs      r4, #1
+        lsl             r9, #1
+        cmp             r5, #4
+        beq             4f
+        mov             r10, r8
+8:      subs            r4, #1
         vextin8
         \filter
-        vld1.16        {q0}, [r8], r9
-        vqadd.s16      q0, q7
-        vqrshrun.s16   d0, q0, #7
-        vst1.8         d0, [r0], r1
-        bne       8b
-        subs      r5, #8
-        beq      99f
-        mov       r4, r12
-        add       r6, #8
-        add       r10, #16
-        mov       r8, r10
-        mov       r0, r6
-        add       r7, #8
-        mov       r2, r7
-        cmp       r5, #4
-        bne       8b
-4:      subs      r4, #1
+        vld1.16         {q0}, [r8], r9
+        vqadd.s16       q0, q7
+        vqrshrun.s16    d0, q0, #7
+        vst1.8          d0, [r0], r1
+        bne             8b
+        subs            r5, #8
+        beq             99f
+        mov             r4, r12
+        add             r6, #8
+        add             r10, #16
+        mov             r8, r10
+        mov             r0, r6
+        add             r7, #8
+        mov             r2, r7
+        cmp             r5, #4
+        bne             8b
+4:      subs            r4, #1
         vextin8
         \filter
-        vld1.16      d0, [r8], r9
-        vqadd.s16    d0, d14
-        vqrshrun.s16 d0, q0, #7
-        vst1.32      d0[0], [r0], r1
-        bne       4b
-99:     vpop     {d8-d15}
-        pop      {r4-r10}
-        bx lr
+        vld1.16         d0, [r8], r9
+        vqadd.s16       d0, d14
+        vqrshrun.s16    d0, q0, #7
+        vst1.32         d0[0], [r0], r1
+        bne             4b
+99:     vpop            {d8-d15}
+        pop             {r4-r10}
+        bx              lr
 .endm
 
 function ff_hevc_put_qpel_h1_neon_8, export=1
@@ -495,174 +495,174 @@ function ff_hevc_put_qpel_uw_h3_neon_8, export=1
 endfunc
 
 .macro hevc_put_qpel_hXvY_neon_8 filterh filterv
-        push   {r4, r5, r6, r7}
-        ldr    r4, [sp, #16] // height
-        ldr    r5, [sp, #20] // width
+        push            {r4, r5, r6, r7}
+        ldr             r4, [sp, #16] // height
+        ldr             r5, [sp, #20] // width
 
-        vpush {d8-d15}
-        sub       r2, #4
-        sub       r2, r2, r3, lsl #1
-        sub       r2, r3  // extra_before 3
-        lsl       r1, #1
-        mov       r12, r4
-        mov       r6, r0
-        mov       r7, r2
+        vpush           {d8-d15}
+        sub             r2, #4
+        sub             r2, r2, r3, lsl #1
+        sub             r2, r3  // extra_before 3
+        lsl             r1, #1
+        mov             r12, r4
+        mov             r6, r0
+        mov             r7, r2
 0:      vextin8
-        \filterh q0
+        \filterh        q0
         vextin8
-        \filterh q1
+        \filterh        q1
         vextin8
-        \filterh q2
+        \filterh        q2
         vextin8
-        \filterh q3
+        \filterh        q3
         vextin8
-        \filterh q4
+        \filterh        q4
         vextin8
-        \filterh q5
+        \filterh        q5
         vextin8
-        \filterh q6
+        \filterh        q6
         vextin8
-        \filterh q7
-        cmp r5, #4
-        beq 4f
-8:      subs  r4, #1
+        \filterh        q7
+        cmp             r5, #4
+        beq             4f
+8:      subs            r4, #1
         \filterv
-        vst1.16    {q8}, [r0], r1
+        vst1.16         {q8}, [r0], r1
         regshuffle_q8
         vextin8
-        \filterh q7
-        bne 8b
-        subs  r5, #8
-        beq 99f
-        mov r4, r12
-        add r6, #16
-        mov r0, r6
-        add r7, #8
-        mov r2, r7
-        b 0b
-4:      subs  r4, #1
+        \filterh        q7
+        bne             8b
+        subs            r5, #8
+        beq             99f
+        mov             r4, r12
+        add             r6, #16
+        mov             r0, r6
+        add             r7, #8
+        mov             r2, r7
+        b               0b
+4:      subs            r4, #1
         \filterv
-        vst1.16    d16, [r0], r1
+        vst1.16         d16, [r0], r1
         regshuffle_q8
         vextin8
-        \filterh q7
-        bne 4b
-99:     vpop {d8-d15}
-        pop {r4, r5, r6, r7}
-        bx lr
+        \filterh        q7
+        bne             4b
+99:     vpop            {d8-d15}
+        pop             {r4, r5, r6, r7}
+        bx              lr
 .endm
 
 .macro hevc_put_qpel_uw_hXvY_neon_8 filterh filterv
-        push     {r4-r10}
-        ldr       r5, [sp, #28] // width
-        ldr       r4, [sp, #32] // height
-        ldr       r8, [sp, #36] // src2
-        ldr       r9, [sp, #40] // src2stride
-        vpush {d8-d15}
-        sub       r2, #4
-        sub       r2, r2, r3, lsl #1
-        sub       r2, r3  // extra_before 3
-        mov       r12, r4
-        mov       r6, r0
-        mov       r7, r2
-        cmp       r8, #0
-        bne       .Lbi\@
+        push            {r4-r10}
+        ldr             r5, [sp, #28] // width
+        ldr             r4, [sp, #32] // height
+        ldr             r8, [sp, #36] // src2
+        ldr             r9, [sp, #40] // src2stride
+        vpush           {d8-d15}
+        sub             r2, #4
+        sub             r2, r2, r3, lsl #1
+        sub             r2, r3  // extra_before 3
+        mov             r12, r4
+        mov             r6, r0
+        mov             r7, r2
+        cmp             r8, #0
+        bne             .Lbi\@
 0:      vextin8
-        \filterh q0
+        \filterh        q0
         vextin8
-        \filterh q1
+        \filterh        q1
         vextin8
-        \filterh q2
+        \filterh        q2
         vextin8
-        \filterh q3
+        \filterh        q3
         vextin8
-        \filterh q4
+        \filterh        q4
         vextin8
-        \filterh q5
+        \filterh        q5
         vextin8
-        \filterh q6
+        \filterh        q6
         vextin8
-        \filterh q7
-        cmp r5, #4
-        beq 4f
-8:      subs  r4, #1
+        \filterh        q7
+        cmp             r5, #4
+        beq             4f
+8:      subs            r4, #1
         \filterv
-        vqrshrun.s16   d0, q8, #6
-        vst1.8    d0, [r0], r1
+        vqrshrun.s16    d0, q8, #6
+        vst1.8          d0, [r0], r1
         regshuffle_q8
         vextin8
-        \filterh q7
-        bne 8b
-        subs  r5, #8
-        beq 99f
-        mov r4, r12
-        add r6, #8
-        mov r0, r6
-        add r7, #8
-        mov r2, r7
-        b 0b
-4:      subs  r4, #1
+        \filterh        q7
+        bne             8b
+        subs            r5, #8
+        beq             99f
+        mov             r4, r12
+        add             r6, #8
+        mov             r0, r6
+        add             r7, #8
+        mov             r2, r7
+        b               0b
+4:      subs            r4, #1
         \filterv
-        vqrshrun.s16   d0, q8, #6
-        vst1.32        d0[0], [r0], r1
+        vqrshrun.s16    d0, q8, #6
+        vst1.32         d0[0], [r0], r1
         regshuffle_q8
         vextin8
-        \filterh q7
-        bne 4b
-        b   99f
+        \filterh        q7
+        bne             4b
+        b               99f
 .Lbi\@: lsl      r9, #1
-        mov      r10, r8
+        mov             r10, r8
 0:      vextin8
-        \filterh q0
+        \filterh        q0
         vextin8
-        \filterh q1
+        \filterh        q1
         vextin8
-        \filterh q2
+        \filterh        q2
         vextin8
-        \filterh q3
+        \filterh        q3
         vextin8
-        \filterh q4
+        \filterh        q4
         vextin8
-        \filterh q5
+        \filterh        q5
         vextin8
-        \filterh q6
+        \filterh        q6
         vextin8
-        \filterh q7
-        cmp r5, #4
-        beq 4f
-8:      subs  r4, #1
+        \filterh        q7
+        cmp             r5, #4
+        beq             4f
+8:      subs            r4, #1
         \filterv
-        vld1.16        {q0}, [r8], r9
-        vqadd.s16      q0, q8
-        vqrshrun.s16   d0, q0, #7
-        vst1.8         d0, [r0], r1
+        vld1.16         {q0}, [r8], r9
+        vqadd.s16       q0, q8
+        vqrshrun.s16    d0, q0, #7
+        vst1.8          d0, [r0], r1
         regshuffle_q8
         vextin8
-        \filterh q7
-        bne 8b
-        subs  r5, #8
-        beq 99f
-        mov r4, r12
-        add r6, #8
-        mov r0, r6
-        add r10, #16
-        mov r8, r10
-        add r7, #8
-        mov r2, r7
-        b 0b
-4:      subs  r4, #1
+        \filterh        q7
+        bne             8b
+        subs            r5, #8
+        beq             99f
+        mov             r4, r12
+        add             r6, #8
+        mov             r0, r6
+        add             r10, #16
+        mov             r8, r10
+        add             r7, #8
+        mov             r2, r7
+        b               0b
+4:      subs            r4, #1
         \filterv
-        vld1.16      d0, [r8], r9
-        vqadd.s16    d0, d16
-        vqrshrun.s16 d0, q0, #7
-        vst1.32      d0[0], [r0], r1
+        vld1.16         d0, [r8], r9
+        vqadd.s16       d0, d16
+        vqrshrun.s16    d0, q0, #7
+        vst1.32         d0[0], [r0], r1
         regshuffle_q8
         vextin8
-        \filterh q7
-        bne 4b
-99:     vpop {d8-d15}
-        pop {r4-r10}
-        bx lr
+        \filterh        q7
+        bne             4b
+99:     vpop            {d8-d15}
+        pop             {r4-r10}
+        bx              lr
 .endm
 
 
@@ -748,244 +748,244 @@ endfunc
 
 function ff_hevc_put_pixels_w2_neon_8, export=1
         init_put_pixels
-        vmov.u8      d5, #255
-        vshr.u64     d5, #32
-0:      subs r3, #1
-        vld1.32     {d0[0]}, [r1], r2
-        pld [r1]
-        vld1.32     d6, [r0]
-        vshll.u8    q0, d0, #6
-        vbit        d6, d0, d5
-        vst1.32     d6, [r0], r12
-        bne 0b
-        bx lr
+        vmov.u8         d5, #255
+        vshr.u64        d5, #32
+0:      subs            r3, #1
+        vld1.32         {d0[0]}, [r1], r2
+        pld             [r1]
+        vld1.32         d6, [r0]
+        vshll.u8        q0, d0, #6
+        vbit            d6, d0, d5
+        vst1.32         d6, [r0], r12
+        bne             0b
+        bx              lr
 endfunc
 
 function ff_hevc_put_pixels_w4_neon_8, export=1
         init_put_pixels
-0:      subs r3, #2
-        vld1.32   {d0[0]}, [r1], r2
-        vld1.32   {d0[1]}, [r1], r2
-        pld       [r1]
-        pld       [r1, r2]
-        vshll.u8   q0, d0, #6
-        vst1.64   {d0}, [r0], r12
-        vst1.64   {d1}, [r0], r12
-        bne 0b
-        bx lr
+0:      subs            r3, #2
+        vld1.32         {d0[0]}, [r1], r2
+        vld1.32         {d0[1]}, [r1], r2
+        pld             [r1]
+        pld             [r1, r2]
+        vshll.u8        q0, d0, #6
+        vst1.64         {d0}, [r0], r12
+        vst1.64         {d1}, [r0], r12
+        bne             0b
+        bx              lr
 endfunc
 
 function ff_hevc_put_pixels_w6_neon_8, export=1
         init_put_pixels
-        vmov.u8      q10, #255
-        vshr.u64     d21, #32
-0:      subs r3, #1
-        vld1.16     {d0}, [r1], r2
-        pld [r1]
-        vshll.u8    q0, d0, #6
-        vld1.8      {q12}, [r0]
-        vbit        q12, q0, q10
-        vst1.8      {q12}, [r0], r12
-        bne 0b
-        bx lr
+        vmov.u8         q10, #255
+        vshr.u64        d21, #32
+0:      subs            r3, #1
+        vld1.16         {d0}, [r1], r2
+        pld             [r1]
+        vshll.u8        q0, d0, #6
+        vld1.8          {q12}, [r0]
+        vbit            q12, q0, q10
+        vst1.8          {q12}, [r0], r12
+        bne             0b
+        bx              lr
 endfunc
 
 function ff_hevc_put_pixels_w8_neon_8, export=1
         init_put_pixels
-0:      subs r3, #2
-        vld1.8   {d0}, [r1], r2
-        vld1.8   {d2}, [r1], r2
-        pld        [r1]
-        pld        [r1, r2]
-        vshll.u8   q0, d0, #6
-        vshll.u8   q1, d2, #6
-        vst1.16   {q0}, [r0], r12
-        vst1.16   {q1}, [r0], r12
-        bne 0b
-        bx lr
+0:      subs            r3, #2
+        vld1.8          {d0}, [r1], r2
+        vld1.8          {d2}, [r1], r2
+        pld             [r1]
+        pld             [r1, r2]
+        vshll.u8        q0, d0, #6
+        vshll.u8        q1, d2, #6
+        vst1.16         {q0}, [r0], r12
+        vst1.16         {q1}, [r0], r12
+        bne             0b
+        bx              lr
 endfunc
 
 function ff_hevc_put_pixels_w12_neon_8, export=1
         init_put_pixels
-0:      subs r3, #2
-        vld1.64    {d0}, [r1]
-        add       r1, #8
-        vld1.32   {d1[0]}, [r1], r2
-        sub       r1, #8
-        vld1.64    {d2}, [r1]
-        add       r1, #8
-        vld1.32   {d1[1]}, [r1], r2
-        sub       r1, #8
-        pld       [r1]
-        pld       [r1, r2]
-        vshll.u8  q8, d0, #6
-        vshll.u8  q9, d1, #6
-        vshll.u8  q10, d2, #6
-        vmov      d22, d19
-        vst1.64   {d16, d17, d18}, [r0], r12
-        vst1.64   {d20, d21, d22}, [r0], r12
-        bne 0b
-        bx lr
+0:      subs            r3, #2
+        vld1.64         {d0}, [r1]
+        add             r1, #8
+        vld1.32         {d1[0]}, [r1], r2
+        sub             r1, #8
+        vld1.64         {d2}, [r1]
+        add             r1, #8
+        vld1.32         {d1[1]}, [r1], r2
+        sub             r1, #8
+        pld             [r1]
+        pld             [r1, r2]
+        vshll.u8        q8, d0, #6
+        vshll.u8        q9, d1, #6
+        vshll.u8        q10, d2, #6
+        vmov            d22, d19
+        vst1.64         {d16, d17, d18}, [r0], r12
+        vst1.64         {d20, d21, d22}, [r0], r12
+        bne             0b
+        bx              lr
 endfunc
 
 function ff_hevc_put_pixels_w16_neon_8, export=1
         init_put_pixels
-0:      subs r3, #2
-        vld1.8   {q0}, [r1], r2
-        vld1.8   {q1}, [r1], r2
-        pld       [r1]
-        pld       [r1, r2]
-        vshll.u8  q8, d0, #6
-        vshll.u8  q9, d1, #6
-        vshll.u8  q10, d2, #6
-        vshll.u8  q11, d3, #6
-        vst1.8    {q8, q9}, [r0], r12
-        vst1.8    {q10, q11}, [r0], r12
-        bne 0b
-        bx lr
+0:      subs            r3, #2
+        vld1.8          {q0}, [r1], r2
+        vld1.8          {q1}, [r1], r2
+        pld             [r1]
+        pld             [r1, r2]
+        vshll.u8        q8, d0, #6
+        vshll.u8        q9, d1, #6
+        vshll.u8        q10, d2, #6
+        vshll.u8        q11, d3, #6
+        vst1.8          {q8, q9}, [r0], r12
+        vst1.8          {q10, q11}, [r0], r12
+        bne             0b
+        bx              lr
 endfunc
 
 function ff_hevc_put_pixels_w24_neon_8, export=1
         init_put_pixels
-0:      subs r3, #1
-        vld1.8   {d0, d1, d2}, [r1], r2
-        pld       [r1]
-        vshll.u8  q10, d0, #6
-        vshll.u8  q11, d1, #6
-        vshll.u8  q12, d2, #6
-        vstm     r0, {q10, q11, q12}
-        add      r0, r12
-        bne 0b
-        bx lr
+0:      subs            r3, #1
+        vld1.8          {d0, d1, d2}, [r1], r2
+        pld             [r1]
+        vshll.u8        q10, d0, #6
+        vshll.u8        q11, d1, #6
+        vshll.u8        q12, d2, #6
+        vstm            r0, {q10, q11, q12}
+        add             r0, r12
+        bne             0b
+        bx              lr
 endfunc
 
 function ff_hevc_put_pixels_w32_neon_8, export=1
         init_put_pixels
-0:      subs r3, #1
-        vld1.8 {q0, q1}, [r1], r2
-        pld       [r1]
-        vshll.u8  q8, d0, #6
-        vshll.u8  q9, d1, #6
-        vshll.u8  q10, d2, #6
-        vshll.u8  q11, d3, #6
-        vstm    r0, {q8, q9, q10, q11}
-        add     r0, r12
-        bne 0b
-        bx lr
+0:      subs            r3, #1
+        vld1.8          {q0, q1}, [r1], r2
+        pld             [r1]
+        vshll.u8        q8, d0, #6
+        vshll.u8        q9, d1, #6
+        vshll.u8        q10, d2, #6
+        vshll.u8        q11, d3, #6
+        vstm            r0, {q8, q9, q10, q11}
+        add             r0, r12
+        bne             0b
+        bx              lr
 endfunc
 
 function ff_hevc_put_pixels_w48_neon_8, export=1
         init_put_pixels
-0:      subs r3, #1
-        vld1.8    {q0, q1}, [r1]
-        add r1, #32
-        vld1.8    {q2}, [r1], r2
-        sub r1, #32
-        pld       [r1]
-        vshll.u8  q8, d0, #6
-        vshll.u8  q9, d1, #6
-        vshll.u8  q10, d2, #6
-        vshll.u8  q11, d3, #6
-        vshll.u8  q12, d4, #6
-        vshll.u8  q13, d5, #6
-        vstm r0, {q8, q9, q10, q11, q12, q13}
-        add  r0, r12
-        bne 0b
-        bx lr
+0:      subs            r3, #1
+        vld1.8          {q0, q1}, [r1]
+        add             r1, #32
+        vld1.8          {q2}, [r1], r2
+        sub             r1, #32
+        pld             [r1]
+        vshll.u8        q8, d0, #6
+        vshll.u8        q9, d1, #6
+        vshll.u8        q10, d2, #6
+        vshll.u8        q11, d3, #6
+        vshll.u8        q12, d4, #6
+        vshll.u8        q13, d5, #6
+        vstm            r0, {q8, q9, q10, q11, q12, q13}
+        add             r0, r12
+        bne             0b
+        bx              lr
 endfunc
 
 function ff_hevc_put_pixels_w64_neon_8, export=1
         init_put_pixels
-0:      subs r3, #1
-        vld1.8    {q0, q1}, [r1]
-        add      r1, #32
-        vld1.8    {q2, q3}, [r1], r2
-        sub      r1, #32
-        pld       [r1]
-        vshll.u8  q8, d0, #6
-        vshll.u8  q9, d1, #6
-        vshll.u8  q10, d2, #6
-        vshll.u8  q11, d3, #6
-        vshll.u8  q12, d4, #6
-        vshll.u8  q13, d5, #6
-        vshll.u8  q14, d6, #6
-        vshll.u8  q15, d7, #6
-        vstm    r0, {q8, q9, q10, q11, q12, q13, q14, q15}
-        add r0, r12
-        bne 0b
-        bx lr
+0:      subs            r3, #1
+        vld1.8          {q0, q1}, [r1]
+        add             r1, #32
+        vld1.8          {q2, q3}, [r1], r2
+        sub             r1, #32
+        pld             [r1]
+        vshll.u8        q8, d0, #6
+        vshll.u8        q9, d1, #6
+        vshll.u8        q10, d2, #6
+        vshll.u8        q11, d3, #6
+        vshll.u8        q12, d4, #6
+        vshll.u8        q13, d5, #6
+        vshll.u8        q14, d6, #6
+        vshll.u8        q15, d7, #6
+        vstm            r0, {q8, q9, q10, q11, q12, q13, q14, q15}
+        add             r0, r12
+        bne             0b
+        bx              lr
 endfunc
 
 function ff_hevc_put_qpel_uw_pixels_neon_8, export=1
-        push   {r4-r9}
-        ldr    r5, [sp, #24] // width
-        ldr    r4, [sp, #28] // height
-        ldr    r8, [sp, #32] // src2
-        ldr    r9, [sp, #36] // src2stride
-        vpush {d8-d15}
-        cmp    r8, #0
-        bne    2f
-1:      subs r4, #1
-        vld1.8     {d0}, [r2], r3
-        vst1.8      d0, [r0], r1
-        bne 1b
-        vpop {d8-d15}
-        pop   {r4-r9}
-        bx lr
-2:      subs  r4, #1
-        vld1.8         {d0}, [r2], r3
-        vld1.16        {q1}, [r8], r9
-        vshll.u8       q0, d0, #6
-        vqadd.s16      q0, q1
-        vqrshrun.s16   d0, q0, #7
-        vst1.8      d0, [r0], r1
-        bne 2b
-        vpop {d8-d15}
-        pop   {r4-r9}
-        bx lr
+        push            {r4-r9}
+        ldr             r5, [sp, #24] // width
+        ldr             r4, [sp, #28] // height
+        ldr             r8, [sp, #32] // src2
+        ldr             r9, [sp, #36] // src2stride
+        vpush           {d8-d15}
+        cmp             r8, #0
+        bne             2f
+1:      subs            r4, #1
+        vld1.8          {d0}, [r2], r3
+        vst1.8          d0, [r0], r1
+        bne             1b
+        vpop            {d8-d15}
+        pop             {r4-r9}
+        bx              lr
+2:      subs            r4, #1
+        vld1.8          {d0}, [r2], r3
+        vld1.16         {q1}, [r8], r9
+        vshll.u8        q0, d0, #6
+        vqadd.s16       q0, q1
+        vqrshrun.s16    d0, q0, #7
+        vst1.8          d0, [r0], r1
+        bne             2b
+        vpop            {d8-d15}
+        pop             {r4-r9}
+        bx              lr
 endfunc
 
 .macro put_qpel_uw_pixels width, regs, regs2, regs3, regs4
 function ff_hevc_put_qpel_uw_pixels_w\width\()_neon_8, export=1
-        ldr    r12, [sp] // height
-1:      subs   r12, #4
-        vld1.32     {\regs}  , [r2], r3
-        vld1.32     {\regs2} , [r2], r3
-        vld1.32     {\regs3} , [r2], r3
-        vld1.32     {\regs4} , [r2], r3
-        vst1.32     {\regs}  , [r0], r1
-        vst1.32     {\regs2} , [r0], r1
-        vst1.32     {\regs3} , [r0], r1
-        vst1.32     {\regs4} , [r0], r1
-        bne 1b
-        bx lr
+        ldr             r12, [sp] // height
+1:      subs            r12, #4
+        vld1.32         {\regs}  , [r2], r3
+        vld1.32         {\regs2} , [r2], r3
+        vld1.32         {\regs3} , [r2], r3
+        vld1.32         {\regs4} , [r2], r3
+        vst1.32         {\regs}  , [r0], r1
+        vst1.32         {\regs2} , [r0], r1
+        vst1.32         {\regs3} , [r0], r1
+        vst1.32         {\regs4} , [r0], r1
+        bne             1b
+        bx              lr
 endfunc
 .endm
 
 .macro put_qpel_uw_pixels_m width, regs, regs2, regs3, regs4
 function ff_hevc_put_qpel_uw_pixels_w\width\()_neon_8, export=1
-        push   {r4-r5}
-        ldr    r12, [sp, #8] // height
-1:      subs r12, #2
-        mov      r4, r2
-        vld1.32   {\regs} , [r2]!
-        vld1.32   {\regs2} , [r2]
-        add      r2, r4, r3
-        mov      r4, r2
-        vld1.32   {\regs3} , [r2]!
-        vld1.32   {\regs4} , [r2]
-        add      r2, r4, r3
-        mov      r5, r0
-        vst1.32   {\regs} , [r0]!
-        vst1.32   {\regs2} , [r0]
-        add      r0, r5, r1
-        mov      r5, r0
-        vst1.32   {\regs3} , [r0]!
-        vst1.32   {\regs4} , [r0]
-        add      r0, r5, r1
-        bne 1b
-        pop   {r4-r5}
-        bx lr
+        push            {r4-r5}
+        ldr             r12, [sp, #8] // height
+1:      subs            r12, #2
+        mov             r4, r2
+        vld1.32         {\regs} , [r2]!
+        vld1.32         {\regs2} , [r2]
+        add             r2, r4, r3
+        mov             r4, r2
+        vld1.32         {\regs3} , [r2]!
+        vld1.32         {\regs4} , [r2]
+        add             r2, r4, r3
+        mov             r5, r0
+        vst1.32         {\regs} , [r0]!
+        vst1.32         {\regs2} , [r0]
+        add             r0, r5, r1
+        mov             r5, r0
+        vst1.32         {\regs3} , [r0]!
+        vst1.32         {\regs4} , [r0]
+        add             r0, r5, r1
+        bne             1b
+        pop             {r4-r5}
+        bx              lr
 endfunc
 .endm
 
