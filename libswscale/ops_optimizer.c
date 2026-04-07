@@ -967,14 +967,15 @@ int ff_sws_op_list_subpass(SwsOpList *ops1, SwsOpList **out_rest)
 
     /* Determine metadata for the intermediate format */
     const SwsPixelType type = op->type;
-    ops2->comps_src = prev->comps;
     ops2->src.format = get_planar_fmt(type, nb_planes);
     ops2->src.desc = av_pix_fmt_desc_get(ops2->src.format);
     get_input_size(ops1, &ops2->src);
     ops1->dst = ops2->src;
 
-    for (int i = 0; i < nb_planes; i++)
+    for (int i = 0; i < nb_planes; i++) {
         ops1->plane_dst[i] = ops2->plane_src[i] = i;
+        ops2->comps_src.flags[i] = prev->comps.flags[swiz_wr.in[i]];
+    }
 
     ff_sws_op_list_remove_at(ops1, idx, ops1->num_ops - idx);
     ff_sws_op_list_remove_at(ops2, 0, idx);
