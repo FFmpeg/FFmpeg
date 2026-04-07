@@ -292,7 +292,7 @@ op dither%1
 %xdefine MASK_COL(J) (0x8421 << J)
 %xdefine MASK_ALL    (1 << 20) - 1
 %xdefine MASK_LUMA   MASK(0, 0) | MASK_OFF(0)
-%xdefine MASK_ALPHA  MASK(3, 3) | MASK_OFF(3)
+%xdefine MASK_ALPHA  MASK(3, 3)
 %xdefine MASK_DIAG3  MASK(0, 0) | MASK(1, 1) | MASK(2, 2)
 %xdefine MASK_OFF3   MASK_OFF(0) | MASK_OFF(1) | MASK_OFF(2)
 %xdefine MASK_MAT3   MASK(0, 0) | MASK(0, 1) | MASK(0, 2) |\

@@ -216,7 +216,7 @@ typedef struct SwsLinearOp {
 enum {
     SWS_MASK_ALL   = (1 << 20) - 1,
     SWS_MASK_LUMA  = SWS_MASK(0, 0) | SWS_MASK_OFF(0),
-    SWS_MASK_ALPHA = SWS_MASK(3, 3) | SWS_MASK_OFF(3),
+    SWS_MASK_ALPHA = SWS_MASK(3, 3),
 
     SWS_MASK_DIAG3 = SWS_MASK(0, 0)  | SWS_MASK(1, 1)  | SWS_MASK(2, 2),
     SWS_MASK_OFF3  = SWS_MASK_OFF(0) | SWS_MASK_OFF(1) | SWS_MASK_OFF(2),
