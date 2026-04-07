@@ -212,6 +212,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *cur)
 {
     DecimateContext *decimate = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
+    AVFrame *out = NULL;
     int ret;
     DecimateResult result = decimate->ref ? decimate_frame(inlink->dst, cur, decimate->ref) : DECIMATE_KEEP_UPDATE;
 
@@ -222,16 +223,18 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *cur)
         break;
     case DECIMATE_KEEP_NO_UPDATE:
         decimate->drop_count = FFMIN(-1, decimate->drop_count-1);
-        if ((ret = ff_filter_frame(outlink, av_frame_clone(cur))) < 0)
-            return ret;
+        out = cur;
         break;
     case DECIMATE_KEEP_UPDATE:
+        out = av_frame_clone(cur);
+        if (!out) {
+            av_frame_free(&cur);
+            return AVERROR(ENOMEM);
+        }
         av_frame_free(&decimate->ref);
         decimate->ref = cur;
         decimate->drop_count = FFMIN(-1, decimate->drop_count-1);
         decimate->keep_count = 0;
-        if ((ret = ff_filter_frame(outlink, av_frame_clone(cur))) < 0)
-            return ret;
         break;
     }
 
@@ -242,8 +245,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *cur)
            decimate->drop_count,
            decimate->keep_count);
 
-    if (result != DECIMATE_KEEP_UPDATE)
+    if (result == DECIMATE_DROP) {
         av_frame_free(&cur);
+        return 0;
+    }
+
+    ret = ff_filter_frame(outlink, out);
+    if (ret < 0)
+        return ret;
 
     return 0;
 }
