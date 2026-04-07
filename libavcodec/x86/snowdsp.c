@@ -746,8 +746,8 @@ snow_inner_add_yblock_sse2_accum_16("1", "512")
 snow_inner_add_yblock_sse2_accum_16("0", "528")
 
              "mov %0, %%"FF_REG_d"           \n\t"
-             "psrlw $4, %%xmm1               \n\t"
-             "psrlw $4, %%xmm5               \n\t"
+             "psrlw $2, %%xmm1               \n\t"
+             "psrlw $2, %%xmm5               \n\t"
              "paddw   (%%"FF_REG_D"), %%xmm1 \n\t"
              "paddw 16(%%"FF_REG_D"), %%xmm5 \n\t"
              "paddw %%xmm3, %%xmm1           \n\t"
@@ -797,8 +797,8 @@ snow_inner_add_yblock_sse2_end_16
 
 #define snow_inner_add_yblock_mmx_mix(read_offset, write_offset)\
              "mov %0, %%"FF_REG_d"           \n\t"\
-             "psrlw $4, %%mm1                \n\t"\
-             "psrlw $4, %%mm5                \n\t"\
+             "psrlw $2, %%mm1                \n\t"\
+             "psrlw $2, %%mm5                \n\t"\
              "paddw "read_offset"(%%"FF_REG_D"), %%mm1   \n\t"\
              "paddw "read_offset"+8(%%"FF_REG_D"), %%mm5 \n\t"\
              "paddw %%mm3, %%mm1             \n\t"\

@@ -815,10 +815,9 @@ static int get_block_rd(SnowEncContext *enc, int mb_x, int mb_y,
         }
     }
 
-    /* copy the regions where obmc[] = (uint8_t)256 */
-    if(LOG2_OBMC_MAX == 8
-        && (mb_x == 0 || mb_x == b_stride-1)
-        && (mb_y == 0 || mb_y == b_height-1)){
+    /* copy the regions where obmc[] = (uint8_t)(1<<LOG2_OBMC_MAX) */
+    if ((mb_x == 0 || mb_x == b_stride-1) &&
+        (mb_y == 0 || mb_y == b_height-1)){
         if(mb_x == 0)
             x1 = block_w;
         else

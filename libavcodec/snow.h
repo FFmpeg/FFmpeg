@@ -45,7 +45,7 @@
 #define FRAC_BITS 4
 #define MAX_REF_FRAMES 8
 
-#define LOG2_OBMC_MAX 8
+#define LOG2_OBMC_MAX 6
 #define OBMC_MAX (1<<(LOG2_OBMC_MAX))
 typedef struct BlockNode{
     int16_t mx;                 ///< Motion vector component X, see mv_scale

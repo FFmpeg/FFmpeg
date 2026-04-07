@@ -131,10 +131,11 @@ void ff_snow_inner_add_yblock(const uint8_t *obmc, const int obmc_stride, uint8_
                     +obmc3[x] * block[1][x + y*src_stride]
                     +obmc4[x] * block[0][x + y*src_stride];
 
-            v <<= 8 - LOG2_OBMC_MAX;
-            if(FRAC_BITS != 8){
-                v >>= 8 - FRAC_BITS;
-            }
+#if FRAC_BITS > LOG2_OBMC_MAX
+            v <<= FRAC_BITS - LOG2_OBMC_MAX;
+#elif FRAC_BITS < LOG2_OBMC_MAX
+            v >>= LOG2_OBMC_MAX - FRAC_BITS;
+#endif
             if(add){
                 v += dst[x + src_x];
                 v = (v + (1<<(FRAC_BITS-1))) >> FRAC_BITS;
