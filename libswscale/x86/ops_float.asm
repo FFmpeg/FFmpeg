@@ -382,16 +382,18 @@ op dot3
         linear_mask luma,       MASK_LUMA
         linear_mask alpha,      MASK_ALPHA
         linear_mask lumalpha,   MASK_LUMA | MASK_ALPHA
-        linear_mask row0,       MASK_ROW(0)
-        linear_mask row0a,      MASK_ROW(0) | MASK_ALPHA
+        linear_mask yalpha,     MASK(1, 1)
+        linear_mask dot3a,      0x7 | MASK_ALPHA
+        linear_mask row0,       MASK_ROW(0) ^ MASK(0, 3)
         linear_mask diag3,      MASK_DIAG3
         linear_mask diag4,      MASK_DIAG4
         linear_mask diagoff3,   MASK_DIAG3 | MASK_OFF3
-        linear_mask matrix3,    MASK_MAT3
         linear_mask affine3,    MASK_MAT3 | MASK_OFF3
+        linear_mask affine3uv,  MASK_MAT3 | MASK_OFF(1) | MASK_OFF(2)
+        linear_mask affine3x,   MASK_MAT3 ^ MASK(0, 1) | MASK_OFF3
+        linear_mask affine3xa,  MASK_MAT3 ^ MASK(0, 1) | MASK_OFF3 | MASK_ALPHA
+        linear_mask affine3xy,  MASK_MAT3 ^ MASK(0, 0) ^ MASK(0, 1) | MASK_OFF3
         linear_mask affine3a,   MASK_MAT3 | MASK_OFF3 | MASK_ALPHA
-        linear_mask matrix4,    MASK_MAT4
-        linear_mask affine4,    MASK_MAT4 | MASK_OFF4
 %endmacro
 
 ;---------------------------------------------------------

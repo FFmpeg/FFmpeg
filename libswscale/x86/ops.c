@@ -738,17 +738,24 @@ static const SwsOpTable ops16##EXT = {                                          
     DECL_LINEAR(EXT, luma,      SWS_MASK_LUMA)                                  \
     DECL_LINEAR(EXT, alpha,     SWS_MASK_ALPHA)                                 \
     DECL_LINEAR(EXT, lumalpha,  SWS_MASK_LUMA | SWS_MASK_ALPHA)                 \
+    DECL_LINEAR(EXT, yalpha,    SWS_MASK(1, 1))                                 \
     DECL_LINEAR(EXT, dot3,      0x7)                                            \
-    DECL_LINEAR(EXT, row0,      SWS_MASK_ROW(0))                                \
-    DECL_LINEAR(EXT, row0a,     SWS_MASK_ROW(0) | SWS_MASK_ALPHA)               \
+    DECL_LINEAR(EXT, dot3a,     0x7 | SWS_MASK_ALPHA)                           \
+    DECL_LINEAR(EXT, row0,      SWS_MASK_ROW(0) ^ SWS_MASK(0, 3))               \
     DECL_LINEAR(EXT, diag3,     SWS_MASK_DIAG3)                                 \
     DECL_LINEAR(EXT, diag4,     SWS_MASK_DIAG4)                                 \
     DECL_LINEAR(EXT, diagoff3,  SWS_MASK_DIAG3 | SWS_MASK_OFF3)                 \
-    DECL_LINEAR(EXT, matrix3,   SWS_MASK_MAT3)                                  \
     DECL_LINEAR(EXT, affine3,   SWS_MASK_MAT3 | SWS_MASK_OFF3)                  \
-    DECL_LINEAR(EXT, affine3a,  SWS_MASK_MAT3 | SWS_MASK_OFF3 | SWS_MASK_ALPHA) \
-    DECL_LINEAR(EXT, matrix4,   SWS_MASK_MAT4)                                  \
-    DECL_LINEAR(EXT, affine4,   SWS_MASK_MAT4 | SWS_MASK_OFF4)                  \
+    DECL_LINEAR(EXT, affine3uv,                                                 \
+        SWS_MASK_MAT3 | SWS_MASK_OFF(1) | SWS_MASK_OFF(2))                      \
+    DECL_LINEAR(EXT, affine3x,                                                  \
+        SWS_MASK_MAT3 ^ SWS_MASK(0, 1) | SWS_MASK_OFF3)                         \
+    DECL_LINEAR(EXT, affine3xa,                                                 \
+        SWS_MASK_MAT3 ^ SWS_MASK(0, 1) | SWS_MASK_OFF3 | SWS_MASK_ALPHA)        \
+    DECL_LINEAR(EXT, affine3xy,                                                 \
+        SWS_MASK_MAT3 ^ SWS_MASK(0, 0) ^ SWS_MASK(0, 1) | SWS_MASK_OFF3)        \
+    DECL_LINEAR(EXT, affine3a,                                                  \
+        SWS_MASK_MAT3 | SWS_MASK_OFF3 | SWS_MASK_ALPHA)                         \
     DECL_FILTERS_GENERIC(EXT,  U8)                                              \
     DECL_FILTERS_GENERIC(EXT, U16)                                              \
     DECL_FILTERS_GENERIC(EXT, F32)                                              \
@@ -792,17 +799,19 @@ static const SwsOpTable ops32##EXT = {                                          
         &op_luma##EXT,                                                          \
         &op_alpha##EXT,                                                         \
         &op_lumalpha##EXT,                                                      \
+        &op_yalpha##EXT,                                                        \
         &op_dot3##EXT,                                                          \
+        &op_dot3a##EXT,                                                         \
         &op_row0##EXT,                                                          \
-        &op_row0a##EXT,                                                         \
         &op_diag3##EXT,                                                         \
         &op_diag4##EXT,                                                         \
         &op_diagoff3##EXT,                                                      \
-        &op_matrix3##EXT,                                                       \
         &op_affine3##EXT,                                                       \
+        &op_affine3uv##EXT,                                                     \
+        &op_affine3x##EXT,                                                      \
+        &op_affine3xa##EXT,                                                     \
+        &op_affine3xy##EXT,                                                     \
         &op_affine3a##EXT,                                                      \
-        &op_matrix4##EXT,                                                       \
-        &op_affine4##EXT,                                                       \
         REF_FILTERS(filter_fma_v, _U8##EXT),                                    \
         REF_FILTERS(filter_fma_v, _U16##EXT),                                   \
         REF_FILTERS(filter_fma_v, _F32##EXT),                                   \
