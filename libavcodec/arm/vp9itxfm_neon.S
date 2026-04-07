@@ -45,18 +45,18 @@ endconst
 @ need to address the individual d registers.
 @ r0,r1 == rq1, r2,r3 == rq1, etc
 .macro transpose16_q_4x_4x4 rq0, rq1, rq2, rq3, rq4, rq5, rq6, rq7, r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15
-        vtrn.32          \rq0, \rq1
-        vtrn.32          \rq2, \rq3
-        vtrn.32          \rq4, \rq5
-        vtrn.32          \rq6, \rq7
-        vtrn.16          \r0,  \r1
-        vtrn.16          \r2,  \r3
-        vtrn.16          \r4,  \r5
-        vtrn.16          \r6,  \r7
-        vtrn.16          \r8,  \r9
-        vtrn.16          \r10, \r11
-        vtrn.16          \r12, \r13
-        vtrn.16          \r14, \r15
+        vtrn.32         \rq0, \rq1
+        vtrn.32         \rq2, \rq3
+        vtrn.32         \rq4, \rq5
+        vtrn.32         \rq6, \rq7
+        vtrn.16         \r0,  \r1
+        vtrn.16         \r2,  \r3
+        vtrn.16         \r4,  \r5
+        vtrn.16         \r6,  \r7
+        vtrn.16         \r8,  \r9
+        vtrn.16         \r10, \r11
+        vtrn.16         \r12, \r13
+        vtrn.16         \r14, \r15
 .endm
 
 @ out1 = ((in1 + in2) * d0[0] + (1 << 13)) >> 14

@@ -322,44 +322,44 @@ endfunc
 .endm
 
 .macro tr_4x4 in0, in1, in2, in3, out0, out1, out2, out3, shift, tmp0, tmp1, tmp2, tmp3, tmp4
-         vshll.s16      \tmp0, \in0, #6
-         vmull.s16      \tmp2, \in1, d4[1]
-         vmov           \tmp1, \tmp0
-         vmull.s16      \tmp3, \in1, d4[3]
-         vmlal.s16      \tmp0, \in2, d4[0] @e0
-         vmlsl.s16      \tmp1, \in2, d4[0] @e1
-         vmlal.s16      \tmp2, \in3, d4[3] @o0
-         vmlsl.s16      \tmp3, \in3, d4[1] @o1
+        vshll.s16       \tmp0, \in0, #6
+        vmull.s16       \tmp2, \in1, d4[1]
+        vmov            \tmp1, \tmp0
+        vmull.s16       \tmp3, \in1, d4[3]
+        vmlal.s16       \tmp0, \in2, d4[0] @e0
+        vmlsl.s16       \tmp1, \in2, d4[0] @e1
+        vmlal.s16       \tmp2, \in3, d4[3] @o0
+        vmlsl.s16       \tmp3, \in3, d4[1] @o1
 
-         vadd.s32       \tmp4, \tmp0, \tmp2
-         vsub.s32       \tmp0, \tmp0, \tmp2
-         vadd.s32       \tmp2, \tmp1, \tmp3
-         vsub.s32       \tmp1, \tmp1, \tmp3
-         vqrshrn.s32    \out0, \tmp4, #\shift
-         vqrshrn.s32    \out3, \tmp0, #\shift
-         vqrshrn.s32    \out1, \tmp2, #\shift
-         vqrshrn.s32    \out2, \tmp1, #\shift
+        vadd.s32        \tmp4, \tmp0, \tmp2
+        vsub.s32        \tmp0, \tmp0, \tmp2
+        vadd.s32        \tmp2, \tmp1, \tmp3
+        vsub.s32        \tmp1, \tmp1, \tmp3
+        vqrshrn.s32     \out0, \tmp4, #\shift
+        vqrshrn.s32     \out3, \tmp0, #\shift
+        vqrshrn.s32     \out1, \tmp2, #\shift
+        vqrshrn.s32     \out2, \tmp1, #\shift
 .endm
 
 .macro tr_4x4_8 in0, in1, in2, in3, out0, out1, out2, out3, tmp0, tmp1, tmp2, tmp3
-         vshll.s16      \tmp0, \in0, #6
-         vld1.s16       {\in0}, [r1, :64]!
-         vmov           \tmp1, \tmp0
-         vmull.s16      \tmp2, \in1, \in0[1]
-         vmull.s16      \tmp3, \in1, \in0[3]
-         vmlal.s16      \tmp0, \in2, \in0[0] @e0
-         vmlsl.s16      \tmp1, \in2, \in0[0] @e1
-         vmlal.s16      \tmp2, \in3, \in0[3] @o0
-         vmlsl.s16      \tmp3, \in3, \in0[1] @o1
+        vshll.s16       \tmp0, \in0, #6
+        vld1.s16        {\in0}, [r1, :64]!
+        vmov            \tmp1, \tmp0
+        vmull.s16       \tmp2, \in1, \in0[1]
+        vmull.s16       \tmp3, \in1, \in0[3]
+        vmlal.s16       \tmp0, \in2, \in0[0] @e0
+        vmlsl.s16       \tmp1, \in2, \in0[0] @e1
+        vmlal.s16       \tmp2, \in3, \in0[3] @o0
+        vmlsl.s16       \tmp3, \in3, \in0[1] @o1
 
-         vld1.s16       {\in0}, [r1, :64]
+        vld1.s16        {\in0}, [r1, :64]
 
-         vadd.s32       \out0, \tmp0, \tmp2
-         vadd.s32       \out1, \tmp1, \tmp3
-         vsub.s32       \out2, \tmp1, \tmp3
-         vsub.s32       \out3, \tmp0, \tmp2
+        vadd.s32        \out0, \tmp0, \tmp2
+        vadd.s32        \out1, \tmp1, \tmp3
+        vsub.s32        \out2, \tmp1, \tmp3
+        vsub.s32        \out3, \tmp0, \tmp2
 
-         sub            r1,  r1,  #8
+        sub             r1,  r1,  #8
 .endm
 
 @ Do a 4x4 transpose, using q registers for the subtransposes that don't
@@ -682,7 +682,7 @@ function func_tr_16x4_\name
         mov             r4, #-32
         store16         d26, d27, d28, d29, d30, d31, d8, d9, r4
     .else
-        store_to_stack (\offset + 64), (\offset + 176), q4, q9, q10, q11, q3, q2, q1, q0
+        store_to_stack  (\offset + 64), (\offset + 176), q4, q9, q10, q11, q3, q2, q1, q0
     .endif
 
         bx              lr
@@ -900,7 +900,7 @@ function func_tr_32x4_\name
         add             r3, r11, #(32 + 3 * 64)
         scale_store     \shift
 
-        bx               r10
+        bx              r10
 endfunc
 .endm
 

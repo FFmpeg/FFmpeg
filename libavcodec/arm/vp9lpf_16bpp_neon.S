@@ -21,25 +21,25 @@
 #include "libavutil/arm/asm.S"
 
 .macro transpose16_q_8x8 rq0, rq1, rq2, rq3, rq4, rq5, rq6, rq7, r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15
-        vswp             \r1,  \r8  @ vtrn.64 \rq0, \rq4
-        vswp             \r3,  \r10 @ vtrn.64 \rq1, \rq5
-        vswp             \r5,  \r12 @ vtrn.64 \rq2, \rq6
-        vswp             \r7,  \r14 @ vtrn.64 \rq3, \rq7
-        vtrn.32          \rq0, \rq2
-        vtrn.32          \rq1, \rq3
-        vtrn.32          \rq4, \rq6
-        vtrn.32          \rq5, \rq7
-        vtrn.16          \rq0, \rq1
-        vtrn.16          \rq2, \rq3
-        vtrn.16          \rq4, \rq5
-        vtrn.16          \rq6, \rq7
+        vswp            \r1,  \r8  @ vtrn.64 \rq0, \rq4
+        vswp            \r3,  \r10 @ vtrn.64 \rq1, \rq5
+        vswp            \r5,  \r12 @ vtrn.64 \rq2, \rq6
+        vswp            \r7,  \r14 @ vtrn.64 \rq3, \rq7
+        vtrn.32         \rq0, \rq2
+        vtrn.32         \rq1, \rq3
+        vtrn.32         \rq4, \rq6
+        vtrn.32         \rq5, \rq7
+        vtrn.16         \rq0, \rq1
+        vtrn.16         \rq2, \rq3
+        vtrn.16         \rq4, \rq5
+        vtrn.16         \rq6, \rq7
 .endm
 
 .macro transpose16_4x4 r0, r1, r2, r3
-        vtrn.32          \r0, \r2
-        vtrn.32          \r1, \r3
-        vtrn.16          \r0, \r1
-        vtrn.16          \r2, \r3
+        vtrn.32         \r0, \r2
+        vtrn.32         \r1, \r3
+        vtrn.16         \r0, \r1
+        vtrn.16         \r2, \r3
 .endm
 
 @ Do a 4x4 transpose, using q registers for the subtransposes that don't

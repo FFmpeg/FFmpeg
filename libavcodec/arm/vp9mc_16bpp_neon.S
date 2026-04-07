@@ -148,16 +148,16 @@ endfunc
 @ Helper macros for vmull/vmlal with a constant from either d0 or d1 depending on index
 .macro vmull_lane dst, src, idx
 .if \idx < 4
-       vmull.s16        \dst, \src, d0[\idx]
+        vmull.s16       \dst, \src, d0[\idx]
 .else
-       vmull.s16        \dst, \src, d1[\idx - 4]
+        vmull.s16       \dst, \src, d1[\idx - 4]
 .endif
 .endm
 .macro vmlal_lane dst, src, idx
 .if \idx < 4
-       vmlal.s16        \dst, \src, d0[\idx]
+        vmlal.s16       \dst, \src, d0[\idx]
 .else
-       vmlal.s16        \dst, \src, d1[\idx - 4]
+        vmlal.s16       \dst, \src, d1[\idx - 4]
 .endif
 .endm
 

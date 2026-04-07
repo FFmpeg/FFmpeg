@@ -45,26 +45,26 @@ endconst
 @ need to address the individual d registers.
 @ r0,r1 == rq1, r2,r3 == rq1, etc
 .macro transpose32_q_2x_4x4 rq0, rq1, rq2, rq3, rq4, rq5, rq6, rq7, r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15
-        vswp             \r1,  \r4  @ vtrn.64 \rq0, \rq2
-        vswp             \r3,  \r6  @ vtrn.64 \rq1, \rq3
-        vswp             \r9,  \r12 @ vtrn.64 \rq4, \rq6
-        vswp             \r11, \r14 @ vtrn.64 \rq5, \rq7
-        vtrn.32          \rq0, \rq1
-        vtrn.32          \rq2, \rq3
-        vtrn.32          \rq4, \rq5
-        vtrn.32          \rq6, \rq7
+        vswp            \r1,  \r4  @ vtrn.64 \rq0, \rq2
+        vswp            \r3,  \r6  @ vtrn.64 \rq1, \rq3
+        vswp            \r9,  \r12 @ vtrn.64 \rq4, \rq6
+        vswp            \r11, \r14 @ vtrn.64 \rq5, \rq7
+        vtrn.32         \rq0, \rq1
+        vtrn.32         \rq2, \rq3
+        vtrn.32         \rq4, \rq5
+        vtrn.32         \rq6, \rq7
 .endm
 
 @ Do eight 2x2 transposes.
 .macro transpose32_8x_2x2 r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15
-        vtrn.32          \r0,  \r1
-        vtrn.32          \r2,  \r3
-        vtrn.32          \r4,  \r5
-        vtrn.32          \r6,  \r7
-        vtrn.32          \r8,  \r9
-        vtrn.32          \r10, \r11
-        vtrn.32          \r12, \r13
-        vtrn.32          \r14, \r15
+        vtrn.32         \r0,  \r1
+        vtrn.32         \r2,  \r3
+        vtrn.32         \r4,  \r5
+        vtrn.32         \r6,  \r7
+        vtrn.32         \r8,  \r9
+        vtrn.32         \r10, \r11
+        vtrn.32         \r12, \r13
+        vtrn.32         \r14, \r15
 .endm
 
 @ out1 = ((in1 + in2) * d0[0] + (1 << 13)) >> 14
