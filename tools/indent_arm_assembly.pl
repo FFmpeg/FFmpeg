@@ -172,6 +172,7 @@ while (<$in>) {
 
         my $orig_operand_indent = length($label) + length($indent) +
                                   length($instr) + length($origspace);
+        my $orig_indent = $indent;
 
         if ($indent_operands) {
             $rest = columns($rest);
@@ -215,8 +216,16 @@ while (<$in>) {
             $size -= $instr_end;
         }
         my $operand_space = " ";
-        if ($size > 0) {
-            $operand_space = spaces($size);
+        if ($rest =~ /^\.req/i) {
+            # A line like "alias .req reg" shouldn't necessarily be
+            # reindented like "     alias          .req reg"; keep the original
+            # indentation instead.
+            $indent = $orig_indent;
+            $operand_space = $origspace;
+        } else {
+            if ($size > 0) {
+                $operand_space = spaces($size);
+            }
         }
 
         # Lowercase register names. Only apply this on lines up to
