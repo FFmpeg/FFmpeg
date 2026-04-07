@@ -15,9 +15,18 @@ X86ASM-OBJS                     += x86/input.o                          \
                                    x86/yuv_2_rgb.o                      \
                                    x86/yuv2yuvX.o                       \
 
+SKIPHEADERS                     += x86/uops_macros.asm.h
+
 ifdef ARCH_X86_64
 X86ASM-OBJS-$(CONFIG_UNSTABLE)  += x86/ops_common.o                     \
                                    x86/ops_int.o                        \
                                    x86/ops_float.o                      \
                                    x86/ops.o
+
+$(SUBDIR)x86/ops_common.o: $(SUBDIR)x86/uops_macros.gen.asm
+$(SUBDIR)x86/ops_int.o: $(SUBDIR)x86/uops_macros.gen.asm
+$(SUBDIR)x86/ops_float.o: $(SUBDIR)x86/uops_macros.gen.asm
+$(SUBDIR)x86/uops_macros.gen.asm: $(SRC_PATH)/libswscale/x86/uops_macros.asm.h \
+                                  $(SRC_PATH)/libswscale/uops_macros.h
+	$(HOSTCC) $(CC_E) $(CPPFLAGS) $<
 endif

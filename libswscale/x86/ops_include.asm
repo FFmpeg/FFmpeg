@@ -19,6 +19,7 @@
 ;******************************************************************************
 
 %include "libavutil/x86/x86util.asm"
+%include "libswscale/x86/uops_macros.gen.asm"
 
 ; High-level explanation of how the x86 backend works:
 ;

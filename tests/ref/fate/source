@@ -28,6 +28,7 @@ compat/float/float.h
 compat/float/limits.h
 compat/stdbit/stdbit.h
 libavcodec/bitstream_template.h
+libswscale/x86/uops_macros.asm.h
 tools/decode_simple.h
 Use of av_clip() where av_clip_uintp2() could be used:
 Use of av_clip() where av_clip_intp2() could be used:
