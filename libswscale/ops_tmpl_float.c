@@ -197,17 +197,19 @@ DECL_ENTRY(linear_##NAME,                                                       
 WRAP_LINEAR(luma,      SWS_MASK_LUMA)
 WRAP_LINEAR(alpha,     SWS_MASK_ALPHA)
 WRAP_LINEAR(lumalpha,  SWS_MASK_LUMA | SWS_MASK_ALPHA)
+WRAP_LINEAR(yalpha,    SWS_MASK(1, 1)) /* ya alpha */
 WRAP_LINEAR(dot3,      0x7)
-WRAP_LINEAR(row0,      SWS_MASK_ROW(0))
-WRAP_LINEAR(row0a,     SWS_MASK_ROW(0) | SWS_MASK_ALPHA)
+WRAP_LINEAR(dot3a,     0x7 | SWS_MASK_ALPHA)
+WRAP_LINEAR(row0,      SWS_MASK_ROW(0) ^ SWS_MASK(0, 3)) /* row0 sans alpha */
 WRAP_LINEAR(diag3,     SWS_MASK_DIAG3)
 WRAP_LINEAR(diag4,     SWS_MASK_DIAG4)
 WRAP_LINEAR(diagoff3,  SWS_MASK_DIAG3 | SWS_MASK_OFF3)
-WRAP_LINEAR(matrix3,   SWS_MASK_MAT3)
 WRAP_LINEAR(affine3,   SWS_MASK_MAT3 | SWS_MASK_OFF3)
+WRAP_LINEAR(affine3uv, SWS_MASK_MAT3 | SWS_MASK_OFF(1) | SWS_MASK_OFF(2))
+WRAP_LINEAR(affine3x,  SWS_MASK_MAT3 ^ SWS_MASK(0, 1) | SWS_MASK_OFF3)
+WRAP_LINEAR(affine3xa, SWS_MASK_MAT3 ^ SWS_MASK(0, 1) | SWS_MASK_OFF3 | SWS_MASK_ALPHA)
+WRAP_LINEAR(affine3xy, SWS_MASK_MAT3 ^ SWS_MASK(0, 0) ^ SWS_MASK(0, 1) | SWS_MASK_OFF3)
 WRAP_LINEAR(affine3a,  SWS_MASK_MAT3 | SWS_MASK_OFF3 | SWS_MASK_ALPHA)
-WRAP_LINEAR(matrix4,   SWS_MASK_MAT4)
-WRAP_LINEAR(affine4,   SWS_MASK_MAT4 | SWS_MASK_OFF4)
 
 static const SwsOpTable fn(op_table_float) = {
     .block_size = SWS_BLOCK_SIZE,
@@ -238,17 +240,19 @@ static const SwsOpTable fn(op_table_float) = {
         &fn(op_linear_luma),
         &fn(op_linear_alpha),
         &fn(op_linear_lumalpha),
+        &fn(op_linear_yalpha),
         &fn(op_linear_dot3),
+        &fn(op_linear_dot3a),
         &fn(op_linear_row0),
-        &fn(op_linear_row0a),
         &fn(op_linear_diag3),
         &fn(op_linear_diag4),
         &fn(op_linear_diagoff3),
-        &fn(op_linear_matrix3),
         &fn(op_linear_affine3),
+        &fn(op_linear_affine3uv),
+        &fn(op_linear_affine3x),
+        &fn(op_linear_affine3xa),
+        &fn(op_linear_affine3xy),
         &fn(op_linear_affine3a),
-        &fn(op_linear_matrix4),
-        &fn(op_linear_affine4),
 
         &fn(op_filter1_v),
         &fn(op_filter2_v),
