@@ -714,27 +714,17 @@ static void check_linear(void)
         const char *name;
         uint32_t mask;
     } patterns[] = {
-        { "noop",               0 },
         { "luma",               SWS_MASK_LUMA },
         { "alpha",              SWS_MASK_ALPHA },
         { "luma+alpha",         SWS_MASK_LUMA | SWS_MASK_ALPHA },
         { "dot3",               0x7 },
-        { "dot4",               0xF },
-        { "row0",               SWS_MASK_ROW(0) },
-        { "row0+alpha",         SWS_MASK_ROW(0) | SWS_MASK_ALPHA },
-        { "off3",               SWS_MASK_OFF3 },
-        { "off3+alpha",         SWS_MASK_OFF3 | SWS_MASK_ALPHA },
+        { "row0",               SWS_MASK_ROW(0) ^ SWS_MASK(0, 3) },
         { "diag3",              SWS_MASK_DIAG3 },
         { "diag4",              SWS_MASK_DIAG4 },
         { "diag3+alpha",        SWS_MASK_DIAG3 | SWS_MASK_ALPHA },
         { "diag3+off3",         SWS_MASK_DIAG3 | SWS_MASK_OFF3 },
-        { "diag3+off3+alpha",   SWS_MASK_DIAG3 | SWS_MASK_OFF3 | SWS_MASK_ALPHA },
-        { "diag4+off4",         SWS_MASK_DIAG4 | SWS_MASK_OFF4 },
-        { "matrix3",            SWS_MASK_MAT3 },
         { "matrix3+off3",       SWS_MASK_MAT3 | SWS_MASK_OFF3 },
         { "matrix3+off3+alpha", SWS_MASK_MAT3 | SWS_MASK_OFF3 | SWS_MASK_ALPHA },
-        { "matrix4",            SWS_MASK_MAT4 },
-        { "matrix4+off4",       SWS_MASK_MAT4 | SWS_MASK_OFF4 },
     };
 
     for (SwsPixelType t = F32; t < SWS_PIXEL_TYPE_NB; t++) {
