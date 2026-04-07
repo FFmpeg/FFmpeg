@@ -338,6 +338,7 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
              * other components are explicitly stripped */
             for (int i = 0; i < op->rw.elems; i++) {
                 const int idx = op->rw.packed ? i : ops->plane_src[i];
+                av_assert0(!(ops->comps_src.flags[idx] & SWS_COMP_GARBAGE));
                 op->comps.flags[i] = ops->comps_src.flags[idx];
                 op->comps.min[i]   = ops->comps_src.min[idx];
                 op->comps.max[i]   = ops->comps_src.max[idx];
