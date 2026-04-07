@@ -28,25 +28,25 @@
  */
 @ void ff_int32_to_float_fmul_array8_vfp(FmtConvertContext *c, float *dst, const int32_t *src, const float *mul, int len)
 function ff_int32_to_float_fmul_array8_vfp, export=1
-        push    {lr}
-        ldr     a1, [sp, #4]
-        subs    lr, a1, #3*8
-        bcc     50f                        @ too short to pipeline
+        push            {lr}
+        ldr             a1, [sp, #4]
+        subs            lr, a1, #3*8
+        bcc             50f                        @ too short to pipeline
         @ Now need to find (len / 8) % 3. The approximation
         @ x / 24 = (x * 0xAB) >> 12
         @ is good for x < 4096, which is true for both AC3 and DCA.
-        mov     a1, #0xAB
-        ldr     ip, =0x03070000            @ RunFast mode, short vectors of length 8, stride 1
-        mul     a1, lr, a1
-        vpush   {s16-s31}
-        mov     a1, a1, lsr #12
-        add     a1, a1, a1, lsl #1
-        rsb     a1, a1, lr, lsr #3
-        cmp     a1, #1
-        fmrx    a1, FPSCR
-        fmxr    FPSCR, ip
-        beq     11f
-        blo     10f
+        mov             a1, #0xAB
+        ldr             ip, =0x03070000            @ RunFast mode, short vectors of length 8, stride 1
+        mul             a1, lr, a1
+        vpush           {s16-s31}
+        mov             a1, a1, lsr #12
+        add             a1, a1, a1, lsl #1
+        rsb             a1, a1, lr, lsr #3
+        cmp             a1, #1
+        fmrx            a1, FPSCR
+        fmxr            FPSCR, ip
+        beq             11f
+        blo             10f
         @ Array is (2 + multiple of 3) x 8 floats long
         @ drop through...
         vldmia          a3!, {s16-s23}
@@ -122,9 +122,9 @@ function ff_int32_to_float_fmul_array8_vfp, export=1
         vstmia          a2!, {s24-s27}
         vstmia          a2!, {s28-s31}
 
-        fmxr    FPSCR, a1
-        vpop    {s16-s31}
-        pop     {pc}
+        fmxr            FPSCR, a1
+        vpop            {s16-s31}
+        pop             {pc}
 
 10:     @ Array is (multiple of 3) x 8 floats long
         vldmia          a3!, {s8-s15}
@@ -158,9 +158,9 @@ function ff_int32_to_float_fmul_array8_vfp, export=1
         b               2b
 
 50:
-        ldr     lr, =0x03070000         @ RunFast mode, short vectors of length 8, stride 1
-        fmrx    ip, FPSCR
-        fmxr    FPSCR, lr
+        ldr             lr, =0x03070000         @ RunFast mode, short vectors of length 8, stride 1
+        fmrx            ip, FPSCR
+        fmxr            FPSCR, lr
 51:
         vldmia          a3!, {s8-s15}
         vldmia          a4!, {s0}
@@ -178,8 +178,8 @@ function ff_int32_to_float_fmul_array8_vfp, export=1
         vstmia          a2!, {s12-s15}
         bne             51b
 
-        fmxr    FPSCR, ip
-        pop     {pc}
+        fmxr            FPSCR, ip
+        pop             {pc}
 endfunc
 
 /**
@@ -195,9 +195,9 @@ VFP     len     .req    a3
 NOVFP   tmp     .req    a3
 NOVFP   len     .req    a4
 NOVFP   vmov    s0, a3
-        ldr     tmp, =0x03070000           @ RunFast mode, short vectors of length 8, stride 1
-        fmrx    ip, FPSCR
-        fmxr    FPSCR, tmp
+        ldr             tmp, =0x03070000           @ RunFast mode, short vectors of length 8, stride 1
+        fmrx            ip, FPSCR
+        fmxr            FPSCR, tmp
 1:
         vldmia          a2!, {s8-s15}
         vcvt.f32.s32    s8, s8
@@ -214,8 +214,8 @@ NOVFP   vmov    s0, a3
         vstmia          a1!, {s12-s15}
         bne             1b
 
-        fmxr    FPSCR, ip
-        bx      lr
+        fmxr            FPSCR, ip
+        bx              lr
 endfunc
         .unreq  tmp
         .unreq  len
