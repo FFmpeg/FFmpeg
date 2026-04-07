@@ -22,6 +22,7 @@
 #include <stdint.h>
 
 #include "libavutil/attributes.h"
+#include "avcodec.h"
 #include "codec.h"
 #include "config.h"
 
@@ -101,7 +102,6 @@ typedef struct FFCodecDefault {
 struct AVCodecContext;
 struct AVSubtitle;
 struct AVPacket;
-enum AVCodecConfig;
 
 enum FFCodecType {
     /* The codec is a decoder using the decode callback;
