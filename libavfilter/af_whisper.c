@@ -41,7 +41,8 @@
 typedef struct WhisperContext {
     const AVClass *class;
     char *model_path;
-    char *language;
+    const char *language;
+    char *language_str;
     bool translate;
     bool use_gpu;
     int gpu_device;
@@ -152,16 +153,17 @@ static int init(AVFilterContext *ctx)
     }
 
     if (!whisper_is_multilingual(wctx->ctx_wsp)) {
-        if (!wctx->translate && strcmp(wctx->language, "auto") == 0) {
+        if (!wctx->translate && strcmp(wctx->language_str, "auto") == 0) {
             av_log(ctx, AV_LOG_WARNING,
                    "Multilingual model not provided. Non-English audio may not be correctly transcribed.\n");
-        } else if (wctx->translate || (strcmp(wctx->language, "auto") != 0 && strcmp(wctx->language, "en") != 0)) {
+        } else if (wctx->translate || (strcmp(wctx->language_str, "auto") != 0 && strcmp(wctx->language_str, "en") != 0)) {
             av_log(ctx, AV_LOG_ERROR,
                    "%s requested but multilingual model not provided.\n", wctx->translate ? "Translation" : "Transcription");
             return AVERROR(ENOSYS);
         }
         wctx->language = "en";
-    }
+    } else
+        wctx->language = wctx->language_str;
 
     av_log(ctx, AV_LOG_INFO,
            "Whisper filter initialized: model: %s lang: %s queue: %" PRId64 " ms\n",
@@ -457,7 +459,7 @@ static int query_formats(const AVFilterContext *ctx,
 
 static const AVOption whisper_options[] = {
     { "model", "Path to the whisper.cpp model file", OFFSET(model_path), AV_OPT_TYPE_STRING,.flags = FLAGS },
-    { "language", "Language for transcription ('auto' for auto-detect)", OFFSET(language), AV_OPT_TYPE_STRING, {.str = "auto"}, .flags = FLAGS },
+    { "language", "Language for transcription ('auto' for auto-detect)", OFFSET(language_str), AV_OPT_TYPE_STRING, {.str = "auto"}, .flags = FLAGS },
     { "translate", "Translate from source language to English", OFFSET(translate), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, .flags = FLAGS },
     { "queue", "Audio queue size", OFFSET(queue), AV_OPT_TYPE_DURATION, {.i64 = 3000000}, 20000, HOURS, .flags = FLAGS },
     { "use_gpu", "Use GPU for processing", OFFSET(use_gpu), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, .flags = FLAGS },
