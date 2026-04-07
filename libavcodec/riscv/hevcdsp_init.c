@@ -27,6 +27,15 @@
 #include "libavcodec/hevc/dsp.h"
 #include "libavcodec/riscv/h26x/h2656dsp.h"
 
+void ff_hevc_add_residual_4x4_8_rvv(uint8_t *_dst, const int16_t *coeffs,
+                                     ptrdiff_t stride);
+void ff_hevc_add_residual_8x8_8_rvv(uint8_t *_dst, const int16_t *coeffs,
+                                     ptrdiff_t stride);
+void ff_hevc_add_residual_16x16_8_rvv(uint8_t *_dst, const int16_t *coeffs,
+                                       ptrdiff_t stride);
+void ff_hevc_add_residual_32x32_8_rvv(uint8_t *_dst, const int16_t *coeffs,
+                                       ptrdiff_t stride);
+
 #define RVV_FNASSIGN(member, v, h, fn, ext) \
         member[1][v][h] = ff_h2656_put_pixels_##8_##ext;  \
         member[3][v][h] = ff_h2656_put_pixels_##8_##ext;  \
@@ -58,6 +67,19 @@ void ff_hevc_dsp_init_riscv(HEVCDSPContext *c, const int bit_depth)
             case 8:
                 RVV_FNASSIGN(c->put_hevc_qpel, 0, 0, pel_pixels, rvv_128);
                 RVV_FNASSIGN(c->put_hevc_epel, 0, 0, pel_pixels, rvv_128);
+                break;
+            default:
+                break;
+        }
+    }
+
+    if (vlenb >= 16) {
+        switch (bit_depth){
+            case 8:
+                c->add_residual[0]             = ff_hevc_add_residual_4x4_8_rvv;
+                c->add_residual[1]             = ff_hevc_add_residual_8x8_8_rvv;
+                c->add_residual[2]             = ff_hevc_add_residual_16x16_8_rvv;
+                c->add_residual[3]             = ff_hevc_add_residual_32x32_8_rvv;
                 break;
             default:
                 break;
