@@ -557,14 +557,14 @@ endfunc
 .endm
 
 .macro add_member in, t0, t1, t2, t3, t4, t5, t6, t7, op0, op1, op2, op3, op4, op5, op6, op7
-        sum_sub q5,     \in, \t0, \op0
-        sum_sub q6,     \in, \t1, \op1
-        sum_sub q7,     \in, \t2, \op2
-        sum_sub q8,     \in, \t3, \op3
-        sum_sub q9,     \in, \t4, \op4
-        sum_sub q10,    \in, \t5, \op5
-        sum_sub q11,    \in, \t6, \op6
-        sum_sub q12,    \in, \t7, \op7
+        sum_sub         q5,  \in, \t0, \op0
+        sum_sub         q6,  \in, \t1, \op1
+        sum_sub         q7,  \in, \t2, \op2
+        sum_sub         q8,  \in, \t3, \op3
+        sum_sub         q9,  \in, \t4, \op4
+        sum_sub         q10, \in, \t5, \op5
+        sum_sub         q11, \in, \t6, \op6
+        sum_sub         q12, \in, \t7, \op7
 .endm
 
 .macro butterfly16 in0, in1, in2, in3, in4, in5, in6, in7
@@ -744,10 +744,10 @@ endfunc
 .endm
 
 .macro add_member32 in, t0, t1, t2, t3, op0, op1, op2, op3
-        sum_sub q10,     \in, \t0, \op0
-        sum_sub q11,     \in, \t1, \op1
-        sum_sub q12,     \in, \t2, \op2
-        sum_sub q13,     \in, \t3, \op3
+        sum_sub         q10, \in, \t0, \op0
+        sum_sub         q11, \in, \t1, \op1
+        sum_sub         q12, \in, \t2, \op2
+        sum_sub         q13, \in, \t3, \op3
 .endm
 
 .macro butterfly32 in0, in1, in2, in3
