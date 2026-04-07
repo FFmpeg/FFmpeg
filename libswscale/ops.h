@@ -29,19 +29,7 @@
 
 #include "graph.h"
 #include "filters.h"
-
-typedef enum SwsPixelType {
-    SWS_PIXEL_NONE = 0,
-    SWS_PIXEL_U8,
-    SWS_PIXEL_U16,
-    SWS_PIXEL_U32,
-    SWS_PIXEL_F32,
-    SWS_PIXEL_TYPE_NB
-} SwsPixelType;
-
-const char *ff_sws_pixel_type_name(SwsPixelType type);
-int ff_sws_pixel_type_size(SwsPixelType type) av_const;
-bool ff_sws_pixel_type_is_int(SwsPixelType type) av_const;
+#include "uops.h"
 
 typedef enum SwsOpType {
     SWS_OP_INVALID = 0,
@@ -77,24 +65,6 @@ typedef enum SwsOpType {
 } SwsOpType;
 
 const char *ff_sws_op_type_name(SwsOpType op);
-
-/**
- * Bit-mask of components. Exact meaning depends on the usage context.
- */
-typedef uint8_t SwsCompMask;
-enum {
-    SWS_COMP_NONE = 0,
-    SWS_COMP_ALL  = 0xF,
-#define SWS_COMP(X) (1 << (X))
-#define SWS_COMP_TEST(mask, X) (!!((mask) & SWS_COMP(X)))
-#define SWS_COMP_INV(mask) ((mask) ^ SWS_COMP_ALL)
-#define SWS_COMP_ELEMS(N) ((1 << (N)) - 1)
-#define SWS_COMP_MASK(X, Y, Z, W)   \
-    (((X) ? SWS_COMP(0) : 0) |      \
-     ((Y) ? SWS_COMP(1) : 0) |      \
-     ((Z) ? SWS_COMP(2) : 0) |      \
-     ((W) ? SWS_COMP(3) : 0))
-};
 
 /* Compute SwsCompMask from values with denominator != 0 */
 SwsCompMask ff_sws_comp_mask_q4(const AVRational q[4]);
