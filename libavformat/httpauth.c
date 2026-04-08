@@ -28,18 +28,20 @@
 #include "libavutil/md5.h"
 #include "urldecode.h"
 
-static void handle_basic_params(HTTPAuthState *state, const char *key,
+static void handle_basic_params(void *context, const char *key,
                                 int key_len, char **dest, int *dest_len)
 {
+    HTTPAuthState *state = context;
     if (!strncmp(key, "realm=", key_len)) {
         *dest     =        state->realm;
         *dest_len = sizeof(state->realm);
     }
 }
 
-static void handle_digest_params(HTTPAuthState *state, const char *key,
+static void handle_digest_params(void *context, const char *key,
                                  int key_len, char **dest, int *dest_len)
 {
+    HTTPAuthState *state = context;
     DigestParams *digest = &state->digest_params;
 
     if (!strncmp(key, "realm=", key_len)) {
@@ -63,9 +65,10 @@ static void handle_digest_params(HTTPAuthState *state, const char *key,
     }
 }
 
-static void handle_digest_update(HTTPAuthState *state, const char *key,
+static void handle_digest_update(void *context, const char *key,
                                  int key_len, char **dest, int *dest_len)
 {
+    HTTPAuthState *state = context;
     DigestParams *digest = &state->digest_params;
 
     if (!strncmp(key, "nextnonce=", key_len)) {
@@ -97,24 +100,21 @@ void ff_http_auth_handle_header(HTTPAuthState *state, const char *key,
             state->auth_type = HTTP_AUTH_BASIC;
             state->realm[0] = 0;
             state->stale = 0;
-            ff_parse_key_value(p, (ff_parse_key_val_cb) handle_basic_params,
-                               state);
+            ff_parse_key_value(p, handle_basic_params, state);
         } else if (av_stristart(value, "Digest ", &p) &&
                    state->auth_type <= HTTP_AUTH_DIGEST) {
             state->auth_type = HTTP_AUTH_DIGEST;
             memset(&state->digest_params, 0, sizeof(DigestParams));
             state->realm[0] = 0;
             state->stale = 0;
-            ff_parse_key_value(p, (ff_parse_key_val_cb) handle_digest_params,
-                               state);
+            ff_parse_key_value(p, handle_digest_params, state);
             choose_qop(state->digest_params.qop,
                        sizeof(state->digest_params.qop));
             if (!av_strcasecmp(state->digest_params.stale, "true"))
                 state->stale = 1;
         }
     } else if (!av_strcasecmp(key, "Authentication-Info")) {
-        ff_parse_key_value(value, (ff_parse_key_val_cb) handle_digest_update,
-                           state);
+        ff_parse_key_value(value, handle_digest_update, state);
     }
 }
 
