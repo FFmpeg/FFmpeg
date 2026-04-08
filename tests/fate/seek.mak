@@ -153,7 +153,7 @@ FATE_SEEK += $(FATE_SEEK_LAVF_CONTAINER)
 
 # files from fate-lavf-video
 
-FATE_SEEK_LAVF_VIDEO += gif y4m
+FATE_SEEK_LAVF_VIDEO += gif pdv y4m
 
 FATE_SEEK_LAVF_VIDEO := $(FATE_SEEK_LAVF_VIDEO:%=fate-seek-lavf-%)
 FATE_SEEK_LAVF_VIDEO := $(filter $(subst fate-,fate-seek-,$(FATE_LAVF_VIDEO)), $(FATE_SEEK_LAVF_VIDEO))
