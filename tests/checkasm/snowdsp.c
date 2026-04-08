@@ -46,7 +46,7 @@ static void checkasm_check_inner_add_yblock(const SnowDWTContext *const snowdsp)
         LOG2_MIN_BLOCKSIZE = 1,
         MAX_STRIDE         = 256,
     };
-    declare_func_emms(AV_CPU_FLAG_MMX, void, const uint8_t *obmc, const int obmc_stride,
+    declare_func(void, const uint8_t *obmc, const int obmc_stride,
                        uint8_t **block, int b_w, int b_h, int src_x,
                        int src_stride, IDWTELEM * const *lines,
                        int add, uint8_t *dst8);
@@ -104,8 +104,6 @@ static void checkasm_check_inner_add_yblock(const SnowDWTContext *const snowdsp)
                 blocks[3] += (b_h - 1) * src_stride;
                 src_stride = -src_stride;
             }
-            uint8_t *blocks_backup[4] = { blocks[0], blocks[1],
-                                          blocks[2], blocks[3] };
             IDWTELEM *lines[MAX_BLOCKSIZE];
 
             for (int k = 0; k < b_h; ++k)
@@ -124,24 +122,10 @@ static void checkasm_check_inner_add_yblock(const SnowDWTContext *const snowdsp)
             memcpy(dst8_new, dst8_ref, sizeof(dst8_new));
 
             call_ref(obmc, obmc_stride, blocks, b_w, b_h, src_x, src_stride, lines, 1, dst8p_ref);
-            memcpy(blocks, blocks_backup, sizeof(blocks));\
             call_new(obmc, obmc_stride, blocks, b_w, b_h, src_x, src_stride, lines, 1, dst8p_new);
 
             if (memcmp(dst8_ref, dst8_new, sizeof(dst8_new)))
                 fail();
-
-#undef CALL4
-#define CALL4(...)\
-    do {\
-        memcpy(blocks, blocks_backup, sizeof(blocks));\
-        tfunc(__VA_ARGS__); \
-        memcpy(blocks, blocks_backup, sizeof(blocks));\
-        tfunc(__VA_ARGS__); \
-        memcpy(blocks, blocks_backup, sizeof(blocks));\
-        tfunc(__VA_ARGS__); \
-        memcpy(blocks, blocks_backup, sizeof(blocks));\
-        tfunc(__VA_ARGS__); \
-    } while (0)
 
             bench_new(obmc, obmc_stride, blocks, b_w, b_h, src_x, src_stride, lines, 1, dst8p_new);
         }
