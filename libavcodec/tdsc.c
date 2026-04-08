@@ -546,7 +546,7 @@ static int tdsc_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
     /* Frames are deflated, need to inflate them first */
     ret = uncompress(ctx->deflatebuffer, &dlen, avpkt->data, avpkt->size);
-    if (ret) {
+    if (ret != Z_OK) {
         av_log(avctx, AV_LOG_ERROR, "Deflate error %d.\n", ret);
         return AVERROR_UNKNOWN;
     }
