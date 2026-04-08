@@ -435,6 +435,9 @@ static int tdsc_decode_tiles(AVCodecContext *avctx, int number_tiles)
             if (ret < 0)
                 return ret;
         } else if (tile_mode == MKTAG(' ','W','A','R')) {
+            if (3LL * w * h > tile_size)
+                return AVERROR_INVALIDDATA;
+
             /* Just copy the buffer to output */
             av_image_copy_plane(ctx->refframe->data[0] + x * 3 +
                                 ctx->refframe->linesize[0] * y,
