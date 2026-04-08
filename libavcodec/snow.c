@@ -20,6 +20,7 @@
 
 #include <assert.h>
 
+#include "libavutil/avassert.h"
 #include "libavutil/log.h"
 #include "libavutil/mem.h"
 #include "libavutil/thread.h"
@@ -118,6 +119,9 @@ void ff_snow_inner_add_yblock(const uint8_t *obmc, const int obmc_stride, uint8_
                               int src_x, int src_y, int src_stride, slice_buffer * sb, int add, uint8_t * dst8){
     int y, x;
     IDWTELEM * dst;
+
+    av_assume(add); // add == 0 is currently unused
+
     for(y=0; y<b_h; y++){
         //FIXME ugly misuse of obmc_stride
         const uint8_t *obmc1= obmc + y*obmc_stride;
