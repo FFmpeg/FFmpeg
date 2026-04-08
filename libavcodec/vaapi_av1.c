@@ -74,7 +74,19 @@ static int8_t vaapi_av1_get_bit_depth_idx(AVCodecContext *avctx)
     return bit_depth == 8 ? 0 : bit_depth == 10 ? 1 : 2;
 }
 
-static av_cold int vaapi_av1_decode_uninit(AVCodecContext *avctx);
+static av_cold int vaapi_av1_decode_uninit(AVCodecContext *avctx)
+{
+    VAAPIAV1DecContext *ctx = avctx->internal->hwaccel_priv_data;
+
+    av_frame_free(&ctx->tmp_frame);
+
+    for (int i = 0; i < FF_ARRAY_ELEMS(ctx->ref_tab); i++)
+        av_frame_free(&ctx->ref_tab[i].frame);
+
+    av_freep(&ctx->slice_params);
+
+    return ff_vaapi_decode_uninit(avctx);
+}
 
 static av_cold int vaapi_av1_decode_init(AVCodecContext *avctx)
 {
@@ -101,21 +113,6 @@ static av_cold int vaapi_av1_decode_init(AVCodecContext *avctx)
 
     return ret;
 }
-
-static av_cold int vaapi_av1_decode_uninit(AVCodecContext *avctx)
-{
-    VAAPIAV1DecContext *ctx = avctx->internal->hwaccel_priv_data;
-
-    av_frame_free(&ctx->tmp_frame);
-
-    for (int i = 0; i < FF_ARRAY_ELEMS(ctx->ref_tab); i++)
-        av_frame_free(&ctx->ref_tab[i].frame);
-
-    av_freep(&ctx->slice_params);
-
-    return ff_vaapi_decode_uninit(avctx);
-}
-
 
 static int vaapi_av1_start_frame(AVCodecContext *avctx,
                                  av_unused const AVBufferRef *buffer_ref,
