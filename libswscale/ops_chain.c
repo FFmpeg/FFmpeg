@@ -193,6 +193,7 @@ int ff_sws_op_compile_tables(SwsContext *ctx, const SwsOpTable *const tables[],
 
     for (int n = 0; n < num_tables; n++) {
         const SwsOpTable *table = tables[n];
+        av_assert0(!table->uops);
         if (table->block_size && table->block_size != block_size ||
             table->cpu_flags & ~cpu_flags)
             continue;
@@ -289,6 +290,105 @@ int ff_sws_setup_clear(const SwsImplParams *params, SwsImplResult *out)
         case SWS_PIXEL_U16: out->priv.u16[i] = q2pixel(uint16_t, value); break;
         case SWS_PIXEL_U32: out->priv.u32[i] = q2pixel(uint32_t, value); break;
         case SWS_PIXEL_F32: out->priv.f32[i] = q2pixel(float,    value); break;
+        default: return AVERROR(EINVAL);
+        }
+    }
+
+    return 0;
+}
+
+int ff_sws_uop_lookup(SwsContext *ctx, const SwsOpTable *const tables[],
+                      int num_tables, const SwsUOp *uop, const int block_size,
+                      SwsOpChain *chain)
+{
+    const unsigned cpu_flags = av_get_cpu_flags();
+    const SwsOpEntry *match = NULL;
+    int ret;
+
+    SwsImplParams params = {
+        .ctx = ctx,
+        .uop = uop
+    };
+
+    for (int n = 0; !match && n < num_tables; n++) {
+        const SwsOpTable *table = params.table = tables[n];
+        av_assert0(table->uops);
+        if (table->block_size && table->block_size != block_size ||
+            table->cpu_flags & ~cpu_flags)
+            continue;
+
+        for (int i = 0; table->entries[i]; i++) {
+            const SwsOpEntry *entry = table->entries[i];
+            const SwsUOp entry_uop = {
+                .uop  = entry->uop,
+                .type = entry->type,
+                .mask = entry->mask,
+                .par  = entry->par,
+            };
+
+            if (ff_sws_uop_cmp(uop, &entry_uop) != 0)
+                continue;
+            if (entry->check && !entry->check(&params))
+                continue;
+
+            match = entry;
+            break;
+        }
+    }
+
+    if (!match) {
+        char name[64];
+        ff_sws_uop_name(uop, name);
+        av_log(ctx, AV_LOG_DEBUG, "No implementation found for: %s\n", name);
+        return AVERROR(ENOTSUP);
+    }
+
+    SwsImplResult res = {0};
+    if (match->setup) {
+        ret = match->setup(&params, &res);
+        if (ret < 0)
+            return ret;
+    }
+
+    ret = ff_sws_op_chain_append(chain, res.func ? res.func : match->func,
+                                 res.free, &res.priv);
+    if (ret < 0) {
+        if (res.free)
+            res.free(&res.priv);
+        return ret;
+    }
+
+    chain->cpu_flags |= params.table->cpu_flags;
+    chain->over_read  = FFMAX(chain->over_read,  res.over_read);
+    chain->over_write = FFMAX(chain->over_write, res.over_write);
+    return 0;
+}
+
+int ff_sws_setup_scalar(const SwsImplParams *params, SwsImplResult *out)
+{
+    const SwsUOp *uop = params->uop;
+    const SwsPixel scalar = uop->data.scalar;
+    switch (uop->type) {
+    case SWS_PIXEL_U8:  out->priv.u8[0]  = scalar.u8;  break;
+    case SWS_PIXEL_U16: out->priv.u16[0] = scalar.u16; break;
+    case SWS_PIXEL_U32: out->priv.u32[0] = scalar.u32; break;
+    case SWS_PIXEL_F32: out->priv.f32[0] = scalar.f32; break;
+    default: return AVERROR(EINVAL);
+    }
+
+    return 0;
+}
+
+int ff_sws_setup_vec4(const SwsImplParams *params, SwsImplResult *out)
+{
+    const SwsUOp *uop = params->uop;
+    for (int i = 0; i < 4; i++) {
+        const SwsPixel vi = uop->data.vec4[i];
+        switch (uop->type) {
+        case SWS_PIXEL_U8:  out->priv.u8[i]  = vi.u8;  break;
+        case SWS_PIXEL_U16: out->priv.u16[i] = vi.u16; break;
+        case SWS_PIXEL_U32: out->priv.u32[i] = vi.u32; break;
+        case SWS_PIXEL_F32: out->priv.f32[i] = vi.f32; break;
         default: return AVERROR(EINVAL);
         }
     }
