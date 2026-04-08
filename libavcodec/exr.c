@@ -267,7 +267,9 @@ static int rle(uint8_t *dst, const uint8_t *src,
 static int rle_uncompress(const EXRContext *ctx, const uint8_t *src, int compressed_size,
                           int uncompressed_size, EXRThreadData *td)
 {
-    rle(td->tmp, src, compressed_size, uncompressed_size);
+    int ret = rle(td->tmp, src, compressed_size, uncompressed_size);
+    if (ret < 0)
+        return ret;
 
     av_assert1(uncompressed_size % 2 == 0);
 
