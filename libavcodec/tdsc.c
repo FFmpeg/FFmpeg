@@ -360,7 +360,8 @@ static int tdsc_decode_jpeg_tile(AVCodecContext *avctx, int tile_size,
     }
 
     ret = avcodec_receive_frame(ctx->jpeg_avctx, ctx->jpgframe);
-    if (ret < 0 || ctx->jpgframe->format != AV_PIX_FMT_YUVJ420P) {
+    if (ret < 0 || ctx->jpgframe->format != AV_PIX_FMT_YUVJ420P ||
+        w > ctx->jpgframe->width || h > ctx->jpgframe->height) {
         av_log(avctx, AV_LOG_ERROR,
                "JPEG decoding error (%d).\n", ret);
 
