@@ -616,26 +616,24 @@ static void ff_snow_vertical_compose97i_mmx(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM
 
 av_cold void ff_dwt_init_x86(SnowDWTContext *c)
 {
-    int mm_flags = av_get_cpu_flags();
+    int cpuflags = av_get_cpu_flags();
 
 #if HAVE_INLINE_ASM
-        if(mm_flags & AV_CPU_FLAG_SSE2 & 0){
-            c->horizontal_compose97i = ff_snow_horizontal_compose97i_sse2;
+    if (INLINE_MMXEXT(cpuflags)) {
+        c->horizontal_compose97i = ff_snow_horizontal_compose97i_mmx;
 #if HAVE_7REGS
-            c->vertical_compose97i = ff_snow_vertical_compose97i_sse2;
+        c->vertical_compose97i   = ff_snow_vertical_compose97i_mmx;
 #endif
-        }
-        else{
-            if (mm_flags & AV_CPU_FLAG_MMXEXT) {
-            c->horizontal_compose97i = ff_snow_horizontal_compose97i_mmx;
+    }
+    if (INLINE_SSE2(cpuflags) && 0) {
+        c->horizontal_compose97i = ff_snow_horizontal_compose97i_sse2;
 #if HAVE_7REGS
-            c->vertical_compose97i = ff_snow_vertical_compose97i_mmx;
+        c->vertical_compose97i   = ff_snow_vertical_compose97i_sse2;
 #endif
-            }
-        }
+    }
 #endif /* HAVE_INLINE_ASM */
 #if HAVE_SSSE3_EXTERNAL
-    if (EXTERNAL_SSSE3(mm_flags)) {
+    if (EXTERNAL_SSSE3(cpuflags)) {
         c->inner_add_yblock = ff_snow_inner_add_yblock_ssse3;
     }
 #endif
