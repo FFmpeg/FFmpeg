@@ -53,8 +53,6 @@ typedef struct slice_buffer_s {
     IDWTELEM *base_buffer;  ///< Buffer that this structure is caching.
 } slice_buffer;
 
-struct SnowDWTContext;
-
 typedef struct SnowDWTContext {
     void (*vertical_compose97i)(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2,
                                 IDWTELEM *b3, IDWTELEM *b4, IDWTELEM *b5,
