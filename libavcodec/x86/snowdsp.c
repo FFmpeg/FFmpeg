@@ -608,7 +608,6 @@ static void ff_snow_vertical_compose97i_mmx(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM
 
 #if HAVE_6REGS
 #define snow_inner_add_yblock_sse2_header \
-    IDWTELEM * * dst_array = sb->line + src_y;\
     x86_reg tmp;\
     __asm__ volatile(\
              "mov  %7, %%"FF_REG_c"          \n\t"\
@@ -669,7 +668,7 @@ static void ff_snow_vertical_compose97i_mmx(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM
 
 #define snow_inner_add_yblock_sse2_end_common2\
              "jnz 1b                         \n\t"\
-             :"+m"(dst8),"+m"(dst_array),"=&r"(tmp)\
+             :"+m"(dst8),"+m"(lines),"=&r"(tmp)\
              :\
              "rm"((x86_reg)(src_x<<1)),"m"(obmc),"a"(block),"m"(b_h),"m"(src_stride):\
              XMM_CLOBBERS("%xmm0", "%xmm1", "%xmm2", "%xmm3", "%xmm4", "%xmm5", "%xmm6", "%xmm7", )\
@@ -690,7 +689,8 @@ static void ff_snow_vertical_compose97i_mmx(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM
              snow_inner_add_yblock_sse2_end_common2
 
 static void inner_add_yblock_bw_8_obmc_16_bh_even_sse2(const uint8_t *obmc, const x86_reg obmc_stride, uint8_t * * block, int b_w, x86_reg b_h,
-                      int src_x, int src_y, x86_reg src_stride, slice_buffer * sb, int add, uint8_t * dst8){
+                      int src_x, x86_reg src_stride, IDWTELEM *const *lines, int add, uint8_t * dst8)
+{
 snow_inner_add_yblock_sse2_header
 snow_inner_add_yblock_sse2_start_8("xmm1", "xmm5", "3", "0")
 snow_inner_add_yblock_sse2_accum_8("2", "8")
@@ -738,7 +738,8 @@ snow_inner_add_yblock_sse2_end_8
 }
 
 static void inner_add_yblock_bw_16_obmc_32_sse2(const uint8_t *obmc, const x86_reg obmc_stride, uint8_t * * block, int b_w, x86_reg b_h,
-                      int src_x, int src_y, x86_reg src_stride, slice_buffer * sb, int add, uint8_t * dst8){
+                      int src_x, x86_reg src_stride, IDWTELEM *const *lines, int add, uint8_t * dst8)
+{
 snow_inner_add_yblock_sse2_header
 snow_inner_add_yblock_sse2_start_16("xmm1", "xmm5", "3", "0")
 snow_inner_add_yblock_sse2_accum_16("2", "16")
@@ -762,7 +763,6 @@ snow_inner_add_yblock_sse2_end_16
 }
 
 #define snow_inner_add_yblock_mmx_header \
-    IDWTELEM * * dst_array = sb->line + src_y;\
     x86_reg tmp;\
     __asm__ volatile(\
              "mov  %7, %%"FF_REG_c"          \n\t"\
@@ -818,13 +818,14 @@ snow_inner_add_yblock_sse2_end_16
              "add %%"FF_REG_c", %0                             \n\t"\
              "dec %2                         \n\t"\
              "jnz 1b                         \n\t"\
-             :"+m"(dst8),"+m"(dst_array),"=&r"(tmp)\
+             :"+m"(dst8),"+m"(lines),"=&r"(tmp)\
              :\
              "rm"((x86_reg)(src_x<<1)),"m"(obmc),"a"(block),"m"(b_h),"m"(src_stride):\
              "%"FF_REG_c"","%"FF_REG_S"","%"FF_REG_D"","%"FF_REG_d"");
 
 static void inner_add_yblock_bw_8_obmc_16_mmx(const uint8_t *obmc, const x86_reg obmc_stride, uint8_t * * block, int b_w, x86_reg b_h,
-                      int src_x, int src_y, x86_reg src_stride, slice_buffer * sb, int add, uint8_t * dst8){
+                      int src_x, x86_reg src_stride, IDWTELEM *const *lines, int add, uint8_t * dst8)
+{
 snow_inner_add_yblock_mmx_header
 snow_inner_add_yblock_mmx_start("mm1", "mm5", "3", "0", "0")
 snow_inner_add_yblock_mmx_accum("2", "8", "0")
@@ -835,7 +836,8 @@ snow_inner_add_yblock_mmx_end("16")
 }
 
 static void inner_add_yblock_bw_16_obmc_32_mmx(const uint8_t *obmc, const x86_reg obmc_stride, uint8_t * * block, int b_w, x86_reg b_h,
-                      int src_x, int src_y, x86_reg src_stride, slice_buffer * sb, int add, uint8_t * dst8){
+                      int src_x, x86_reg src_stride, IDWTELEM *const *lines, int add, uint8_t * dst8)
+{
 snow_inner_add_yblock_mmx_header
 snow_inner_add_yblock_mmx_start("mm1", "mm5", "3", "0", "0")
 snow_inner_add_yblock_mmx_accum("2", "16", "0")
@@ -852,27 +854,28 @@ snow_inner_add_yblock_mmx_end("32")
 }
 
 static void ff_snow_inner_add_yblock_sse2(const uint8_t *obmc, const int obmc_stride, uint8_t * * block, int b_w, int b_h,
-                           int src_x, int src_y, int src_stride, slice_buffer * sb, int add, uint8_t * dst8){
-
+                           int src_x, int src_stride, IDWTELEM *const *lines, int add, uint8_t * dst8)
+{
     if (b_w == 16)
-        inner_add_yblock_bw_16_obmc_32_sse2(obmc, obmc_stride, block, b_w, b_h, src_x,src_y, src_stride, sb, add, dst8);
+        inner_add_yblock_bw_16_obmc_32_sse2(obmc, obmc_stride, block, b_w, b_h, src_x, src_stride, lines, add, dst8);
     else if (b_w == 8 && obmc_stride == 16) {
         if (!(b_h & 1))
-            inner_add_yblock_bw_8_obmc_16_bh_even_sse2(obmc, obmc_stride, block, b_w, b_h, src_x,src_y, src_stride, sb, add, dst8);
+            inner_add_yblock_bw_8_obmc_16_bh_even_sse2(obmc, obmc_stride, block, b_w, b_h, src_x, src_stride, lines, add, dst8);
         else
-            inner_add_yblock_bw_8_obmc_16_mmx(obmc, obmc_stride, block, b_w, b_h, src_x,src_y, src_stride, sb, add, dst8);
+            inner_add_yblock_bw_8_obmc_16_mmx(obmc, obmc_stride, block, b_w, b_h, src_x, src_stride, lines, add, dst8);
     } else
-         ff_snow_inner_add_yblock(obmc, obmc_stride, block, b_w, b_h, src_x,src_y, src_stride, sb, add, dst8);
+         ff_snow_inner_add_yblock(obmc, obmc_stride, block, b_w, b_h, src_x, src_stride, lines, add, dst8);
 }
 
 static void ff_snow_inner_add_yblock_mmx(const uint8_t *obmc, const int obmc_stride, uint8_t * * block, int b_w, int b_h,
-                          int src_x, int src_y, int src_stride, slice_buffer * sb, int add, uint8_t * dst8){
+                          int src_x, int src_stride, IDWTELEM *const *lines, int add, uint8_t * dst8)
+{
     if (b_w == 16)
-        inner_add_yblock_bw_16_obmc_32_mmx(obmc, obmc_stride, block, b_w, b_h, src_x,src_y, src_stride, sb, add, dst8);
+        inner_add_yblock_bw_16_obmc_32_mmx(obmc, obmc_stride, block, b_w, b_h, src_x, src_stride, lines, add, dst8);
     else if (b_w == 8 && obmc_stride == 16)
-        inner_add_yblock_bw_8_obmc_16_mmx(obmc, obmc_stride, block, b_w, b_h, src_x,src_y, src_stride, sb, add, dst8);
+        inner_add_yblock_bw_8_obmc_16_mmx(obmc, obmc_stride, block, b_w, b_h, src_x, src_stride, lines, add, dst8);
     else
-        ff_snow_inner_add_yblock(obmc, obmc_stride, block, b_w, b_h, src_x,src_y, src_stride, sb, add, dst8);
+        ff_snow_inner_add_yblock(obmc, obmc_stride, block, b_w, b_h, src_x, src_stride, lines, add, dst8);
 }
 #endif /* HAVE_6REGS */
 

@@ -116,7 +116,8 @@ static av_cold void init_qpel(SnowContext *const s)
 }
 
 void ff_snow_inner_add_yblock(const uint8_t *obmc, const int obmc_stride, uint8_t * * block, int b_w, int b_h,
-                              int src_x, int src_y, int src_stride, slice_buffer * sb, int add, uint8_t * dst8){
+                              int src_x, int src_stride, IDWTELEM *const *lines, int add, uint8_t *dst8)
+{
     int y, x;
 
     av_assume(add); // add == 0 is currently unused
@@ -127,7 +128,7 @@ void ff_snow_inner_add_yblock(const uint8_t *obmc, const int obmc_stride, uint8_
         const uint8_t *obmc2= obmc1+ (obmc_stride>>1);
         const uint8_t *obmc3= obmc1+ obmc_stride*(obmc_stride>>1);
         const uint8_t *obmc4= obmc3+ (obmc_stride>>1);
-        IDWTELEM *dst = sb->line[src_y+y];
+        IDWTELEM *dst = lines[y];
         av_assert2(dst);
 
         for(x=0; x<b_w; x++){
