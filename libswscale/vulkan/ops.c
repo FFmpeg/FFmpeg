@@ -350,7 +350,7 @@ typedef struct SPIRVIDs {
 } SPIRVIDs;
 
 /* Section 1: Function to define all shader header data, and decorations */
-static void define_shader_header(FFVulkanShader *shd, SwsOpList *ops,
+static void define_shader_header(SwsContext *sws, FFVulkanShader *shd, SwsOpList *ops,
                                  SPICtx *spi, SPIRVIDs *id)
 {
     spi_OpCapability(spi, SpvCapabilityShader); /* Shader type */
@@ -399,6 +399,9 @@ static void define_shader_header(FFVulkanShader *shd, SwsOpList *ops,
         spi_OpDecorate(spi, id->dither[i].id, SpvDecorationBinding, i);
     }
 
+    if (!(sws->flags & SWS_BITEXACT))
+        return;
+
     /* All linear arithmetic ops must be decorated with NoContraction */
     for (int n = 0; n < ops->num_ops; n++) {
         const SwsOp *op = &ops->ops[n];
@@ -424,7 +427,7 @@ static void define_shader_header(FFVulkanShader *shd, SwsOpList *ops,
 }
 
 /* Section 2: Define all types and constants */
-static void define_shader_consts(SwsOpList *ops, SPICtx *spi, SPIRVIDs *id)
+static void define_shader_consts(SwsContext *sws, SwsOpList *ops, SPICtx *spi, SPIRVIDs *id)
 {
     /* Define scalar types */
     id->void_type    = spi_OpTypeVoid(spi);
@@ -537,39 +540,43 @@ static void define_shader_consts(SwsOpList *ops, SPICtx *spi, SPIRVIDs *id)
             }
             break;
         case SWS_OP_LINEAR: {
+            int tmp;
             float val;
             for (int i = 0; i < 4; i++) {
                 for (int j = 0; j < 4; j++) {
-                    val = op->lin.m[i][j].num/(float)op->lin.m[i][j].den;
+                    int k = sws->flags & SWS_BITEXACT ? i : j;
+                    int l = sws->flags & SWS_BITEXACT ? j : i;
+                    val = op->lin.m[k][l].num/(float)op->lin.m[k][l].den;
                     id->const_ids[id->nb_const_ids++] =
                         spi_OpConstantFloat(spi, f32_type, val);
                 }
-                id->const_ids[id->nb_const_ids++] =
-                    spi_OpConstantComposite(spi, id->f32vec4_type,
-                                            id->const_ids[id->nb_const_ids - 4],
-                                            id->const_ids[id->nb_const_ids - 3],
-                                            id->const_ids[id->nb_const_ids - 2],
-                                            id->const_ids[id->nb_const_ids - 1]);
+                tmp = spi_OpConstantComposite(spi, id->f32vec4_type,
+                                              id->const_ids[id->nb_const_ids - 4],
+                                              id->const_ids[id->nb_const_ids - 3],
+                                              id->const_ids[id->nb_const_ids - 2],
+                                              id->const_ids[id->nb_const_ids - 1]);
+                id->const_ids[id->nb_const_ids++] = tmp;
             }
 
-            id->const_ids[id->nb_const_ids++] =
-                spi_OpConstantComposite(spi, id->f32mat4_type,
-                                        id->const_ids[id->nb_const_ids - 5*4 + 4],
-                                        id->const_ids[id->nb_const_ids - 5*3 + 4],
-                                        id->const_ids[id->nb_const_ids - 5*2 + 4],
-                                        id->const_ids[id->nb_const_ids - 5*1 + 4]);
+            tmp = spi_OpConstantComposite(spi, id->f32mat4_type,
+                                          id->const_ids[id->nb_const_ids - 5*4 + 4],
+                                          id->const_ids[id->nb_const_ids - 5*3 + 4],
+                                          id->const_ids[id->nb_const_ids - 5*2 + 4],
+                                          id->const_ids[id->nb_const_ids - 5*1 + 4]);
+            id->const_ids[id->nb_const_ids++] = tmp;
 
             for (int i = 0; i < 4; i++) {
                 val = op->lin.m[i][4].num/(float)op->lin.m[i][4].den;
                 id->const_ids[id->nb_const_ids++] =
                     spi_OpConstantFloat(spi, f32_type, val);
             }
-            id->const_ids[id->nb_const_ids++] =
-                spi_OpConstantComposite(spi, id->f32vec4_type,
-                                        id->const_ids[id->nb_const_ids - 4],
-                                        id->const_ids[id->nb_const_ids - 3],
-                                        id->const_ids[id->nb_const_ids - 2],
-                                        id->const_ids[id->nb_const_ids - 1]);
+
+            tmp = spi_OpConstantComposite(spi, id->f32vec4_type,
+                                          id->const_ids[id->nb_const_ids - 4],
+                                          id->const_ids[id->nb_const_ids - 3],
+                                          id->const_ids[id->nb_const_ids - 2],
+                                          id->const_ids[id->nb_const_ids - 1]);
+            id->const_ids[id->nb_const_ids++] = tmp;
             break;
         }
         default:
@@ -653,6 +660,16 @@ static void define_shader_bindings(SwsOpList *ops, SPICtx *spi, SPIRVIDs *id,
                    SpvStorageClassUniformConstant, 0);
 }
 
+static int insert_vmat_linear(const SwsOp *op, SPICtx *spi, SPIRVIDs *id,
+                              int data, int const_off)
+{
+    data =  spi_OpMatrixTimesVector(spi, id->f32vec4_type,
+                                    id->const_ids[const_off + 4*5],
+                                    data);
+    return spi_OpFAdd(spi, id->f32vec4_type,
+                      id->const_ids[const_off + 4*5 + 1 + 4], data);
+}
+
 static int insert_bitexact_linear(const SwsOp *op, SPICtx *spi, SPIRVIDs *id,
                                   int data, int linear_ops_idx, int const_off)
 {
@@ -701,7 +718,7 @@ static int insert_bitexact_linear(const SwsOp *op, SPICtx *spi, SPIRVIDs *id,
                                     res[0], res[1], res[2], res[3]);
 }
 
-static int add_ops_spirv(VulkanPriv *p, FFVulkanOpsCtx *s,
+static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
                          SwsOpList *ops, FFVulkanShader *shd)
 {
     uint8_t spvbuf[1024*16];
@@ -775,8 +792,8 @@ static int add_ops_spirv(VulkanPriv *p, FFVulkanOpsCtx *s,
                                         id->nb_dither_bufs, 1, 0);
 
     /* Define shader header sections */
-    define_shader_header(shd, ops, spi, id);
-    define_shader_consts(ops, spi, id);
+    define_shader_header(sws, shd, ops, spi, id);
+    define_shader_consts(sws, ops, spi, id);
     define_shader_bindings(ops, spi, id, in_img_count, out_img_count);
 
     /* Main function starts here */
@@ -969,7 +986,10 @@ static int add_ops_spirv(VulkanPriv *p, FFVulkanOpsCtx *s,
             break;
         }
         case SWS_OP_LINEAR: {
-            data = insert_bitexact_linear(op, spi, id, data, nb_linear_ops, nb_const_ids);
+            if (sws->flags & SWS_BITEXACT)
+                data = insert_bitexact_linear(op, spi, id, data, nb_linear_ops, nb_const_ids);
+            else
+                data = insert_vmat_linear(op, spi, id, data, nb_const_ids);
             nb_linear_ops++;
             nb_const_ids += 5*5 + 1;
             break;
@@ -1067,7 +1087,7 @@ static void read_glsl(SwsOpList *ops, const SwsOp *op, FFVulkanShader *shd,
     }
 }
 
-static int add_ops_glsl(VulkanPriv *p, FFVulkanOpsCtx *s,
+static int add_ops_glsl(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
                         SwsOpList *ops, FFVulkanShader *shd)
 {
     int err;
@@ -1341,12 +1361,12 @@ static int compile(SwsContext *sws, SwsOpList *ops, SwsCompiledOp *out, int glsl
     if (glsl) {
         err = AVERROR(ENOTSUP);
 #if CONFIG_LIBSHADERC || CONFIG_LIBGLSLANG
-        err = add_ops_glsl(p, s, ops, &p->shd);
+        err = add_ops_glsl(sws, p, s, ops, &p->shd);
 #endif
     } else {
         err = AVERROR(ENOTSUP);
 #if HAVE_SPIRV_HEADERS_SPIRV_H || HAVE_SPIRV_UNIFIED1_SPIRV_H
-        err = add_ops_spirv(p, s, ops, &p->shd);
+        err = add_ops_spirv(sws, p, s, ops, &p->shd);
 #endif
     }
     if (err < 0)
