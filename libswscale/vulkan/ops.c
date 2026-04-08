@@ -315,6 +315,7 @@ typedef struct SPIRVIDs {
 
     int u32vec4_type;
     int f32vec4_type;
+    int f32mat4_type;
 
     /* Constants */
     int u32_p;
@@ -444,6 +445,7 @@ static void define_shader_consts(SwsOpList *ops, SPICtx *spi, SPIRVIDs *id)
 
     id->u32vec4_type = spi_OpTypeVector(spi, u32_type, 4);
     id->f32vec4_type = spi_OpTypeVector(spi, f32_type, 4);
+    id->f32mat4_type = spi_OpTypeMatrix(spi, id->f32vec4_type, 4);
 
     /* Constants */
     id->u32_p = spi_OpUndef(spi, u32_type);
@@ -456,8 +458,8 @@ static void define_shader_consts(SwsOpList *ops, SPICtx *spi, SPIRVIDs *id)
     id->nb_const_ids = 0;
     for (int n = 0; n < ops->num_ops; n++) {
         /* Make sure there's always enough space for the maximum number of
-         * constants a single operation needs (currently linear, 20 consts). */
-        av_assert0((id->nb_const_ids + 20) <= FF_ARRAY_ELEMS(id->const_ids));
+         * constants a single operation needs (currently linear, 31 consts). */
+        av_assert0((id->nb_const_ids + 31) <= FF_ARRAY_ELEMS(id->const_ids));
         const SwsOp *op = &ops->ops[n];
         switch (op->op) {
         case SWS_OP_CONVERT:
@@ -542,12 +544,32 @@ static void define_shader_consts(SwsOpList *ops, SPICtx *spi, SPIRVIDs *id)
                     id->const_ids[id->nb_const_ids++] =
                         spi_OpConstantFloat(spi, f32_type, val);
                 }
+                id->const_ids[id->nb_const_ids++] =
+                    spi_OpConstantComposite(spi, id->f32vec4_type,
+                                            id->const_ids[id->nb_const_ids - 4],
+                                            id->const_ids[id->nb_const_ids - 3],
+                                            id->const_ids[id->nb_const_ids - 2],
+                                            id->const_ids[id->nb_const_ids - 1]);
             }
+
+            id->const_ids[id->nb_const_ids++] =
+                spi_OpConstantComposite(spi, id->f32mat4_type,
+                                        id->const_ids[id->nb_const_ids - 5*4 + 4],
+                                        id->const_ids[id->nb_const_ids - 5*3 + 4],
+                                        id->const_ids[id->nb_const_ids - 5*2 + 4],
+                                        id->const_ids[id->nb_const_ids - 5*1 + 4]);
+
             for (int i = 0; i < 4; i++) {
                 val = op->lin.m[i][4].num/(float)op->lin.m[i][4].den;
                 id->const_ids[id->nb_const_ids++] =
                     spi_OpConstantFloat(spi, f32_type, val);
             }
+            id->const_ids[id->nb_const_ids++] =
+                spi_OpConstantComposite(spi, id->f32vec4_type,
+                                        id->const_ids[id->nb_const_ids - 4],
+                                        id->const_ids[id->nb_const_ids - 3],
+                                        id->const_ids[id->nb_const_ids - 2],
+                                        id->const_ids[id->nb_const_ids - 1]);
             break;
         }
         default:
@@ -654,20 +676,20 @@ static int insert_bitexact_linear(const SwsOp *op, SPICtx *spi, SPIRVIDs *id,
         res[j] = op->type == SWS_PIXEL_F32 ? id->f32_0 : id->u32_cid[0];
         if (op->lin.m[j][0].num)
             res[j] = spi_OpFMul(spi, type_s, tmp[0],
-                                id->const_ids[const_off + j*4 + 0]);
+                                id->const_ids[const_off + j*5 + 0]);
 
         if (op->lin.m[j][0].num && op->lin.m[j][4].num)
             res[j] = spi_OpFAdd(spi, type_s,
-                                id->const_ids[const_off + 4*4 + j], res[j]);
+                                id->const_ids[const_off + 4*5 + 1 + j], res[j]);
         else if (op->lin.m[j][4].num)
-            res[j] = id->const_ids[const_off + 4*4 + j];
+            res[j] = id->const_ids[const_off + 4*5 + 1 + j];
 
         for (int i = 1; i < 4; i++) {
             if (!op->lin.m[j][i].num)
                 continue;
 
             int v = spi_OpFMul(spi, type_s, tmp[i],
-                               id->const_ids[const_off + j*4 + i]);
+                               id->const_ids[const_off + j*5 + i]);
             if (op->lin.m[j][0].num || op->lin.m[j][4].num)
                 res[j] = spi_OpFAdd(spi, type_s, res[j], v);
             else
@@ -949,7 +971,7 @@ static int add_ops_spirv(VulkanPriv *p, FFVulkanOpsCtx *s,
         case SWS_OP_LINEAR: {
             data = insert_bitexact_linear(op, spi, id, data, nb_linear_ops, nb_const_ids);
             nb_linear_ops++;
-            nb_const_ids += 4*5;
+            nb_const_ids += 5*5 + 1;
             break;
         }
         case SWS_OP_UNPACK:
