@@ -51,6 +51,7 @@ static const AVOption swscale_options[] = {
         { "bitexact",        "bit-exact mode",                0,  AV_OPT_TYPE_CONST, { .i64 = SWS_BITEXACT       }, .flags = VE, .unit = "sws_flags" },
         { "error_diffusion", "error diffusion dither",        0,  AV_OPT_TYPE_CONST, { .i64 = SWS_ERROR_DIFFUSION}, .flags = VE, .unit = "sws_flags" },
         { "unstable",        "allow experimental new code",   0,  AV_OPT_TYPE_CONST, { .i64 = SWS_UNSTABLE       }, .flags = VE, .unit = "sws_flags" },
+        { "strict",          "require all metadata to be set",0,  AV_OPT_TYPE_CONST, { .i64 = SWS_STRICT         }, .flags = VE, .unit = "sws_flags" },
 
     { "scaler",          "set scaling algorithm",         OFFSET(scaler),       AV_OPT_TYPE_INT,    { .i64 = SWS_SCALE_AUTO     }, .flags = VE, .unit = "sws_scaler", .max = SWS_SCALE_NB - 1 },
     { "scaler_sub",      "set subsampling algorithm",     OFFSET(scaler_sub),   AV_OPT_TYPE_INT,    { .i64 = SWS_SCALE_AUTO     }, .flags = VE, .unit = "sws_scaler", .max = SWS_SCALE_NB - 1 },
