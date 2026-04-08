@@ -535,25 +535,18 @@ static void define_shader_consts(SwsOpList *ops, SPICtx *spi, SPIRVIDs *id)
             }
             break;
         case SWS_OP_LINEAR: {
+            float val;
             for (int i = 0; i < 4; i++) {
-                float val;
-                if (op->lin.m[i][0].num) {
-                    val = op->lin.m[i][0].num/(float)op->lin.m[i][0].den;
-                    id->const_ids[id->nb_const_ids++] =
-                        spi_OpConstantFloat(spi, f32_type, val);
-                }
-                if (op->lin.m[i][4].num) {
-                    val = op->lin.m[i][4].num/(float)op->lin.m[i][4].den;
-                    id->const_ids[id->nb_const_ids++] =
-                        spi_OpConstantFloat(spi, f32_type, val);
-                }
-                for (int j = 1; j < 4; j++) {
-                    if (!op->lin.m[i][j].num)
-                        continue;
+                for (int j = 0; j < 4; j++) {
                     val = op->lin.m[i][j].num/(float)op->lin.m[i][j].den;
                     id->const_ids[id->nb_const_ids++] =
                         spi_OpConstantFloat(spi, f32_type, val);
                 }
+            }
+            for (int i = 0; i < 4; i++) {
+                val = op->lin.m[i][4].num/(float)op->lin.m[i][4].den;
+                id->const_ids[id->nb_const_ids++] =
+                    spi_OpConstantFloat(spi, f32_type, val);
             }
             break;
         }
@@ -639,7 +632,7 @@ static void define_shader_bindings(SwsOpList *ops, SPICtx *spi, SPIRVIDs *id,
 }
 
 static int insert_bitexact_linear(const SwsOp *op, SPICtx *spi, SPIRVIDs *id,
-                                  int data, int linear_ops_idx, int *nb_const_ids)
+                                  int data, int linear_ops_idx, int const_off)
 {
     int type_s = op->type == SWS_PIXEL_F32 ? id->f32_type : id->u32_type;
     int type_v = op->type == SWS_PIXEL_F32 ? id->f32vec4_type : id->u32vec4_type;
@@ -661,20 +654,20 @@ static int insert_bitexact_linear(const SwsOp *op, SPICtx *spi, SPIRVIDs *id,
         res[j] = op->type == SWS_PIXEL_F32 ? id->f32_0 : id->u32_cid[0];
         if (op->lin.m[j][0].num)
             res[j] = spi_OpFMul(spi, type_s, tmp[0],
-                                id->const_ids[(*nb_const_ids)++]);
+                                id->const_ids[const_off + j*4 + 0]);
 
         if (op->lin.m[j][0].num && op->lin.m[j][4].num)
             res[j] = spi_OpFAdd(spi, type_s,
-                                id->const_ids[(*nb_const_ids)++], res[j]);
+                                id->const_ids[const_off + 4*4 + j], res[j]);
         else if (op->lin.m[j][4].num)
-            res[j] = id->const_ids[(*nb_const_ids)++];
+            res[j] = id->const_ids[const_off + 4*4 + j];
 
         for (int i = 1; i < 4; i++) {
             if (!op->lin.m[j][i].num)
                 continue;
 
             int v = spi_OpFMul(spi, type_s, tmp[i],
-                               id->const_ids[(*nb_const_ids)++]);
+                               id->const_ids[const_off + j*4 + i]);
             if (op->lin.m[j][0].num || op->lin.m[j][4].num)
                 res[j] = spi_OpFAdd(spi, type_s, res[j], v);
             else
@@ -954,8 +947,9 @@ static int add_ops_spirv(VulkanPriv *p, FFVulkanOpsCtx *s,
             break;
         }
         case SWS_OP_LINEAR: {
-            data = insert_bitexact_linear(op, spi, id, data, nb_linear_ops, &nb_const_ids);
+            data = insert_bitexact_linear(op, spi, id, data, nb_linear_ops, nb_const_ids);
             nb_linear_ops++;
+            nb_const_ids += 4*5;
             break;
         }
         case SWS_OP_UNPACK:
