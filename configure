@@ -7866,7 +7866,7 @@ fi
 if enabled vulkan; then
     check_headers spirv-headers/spirv.h ||
     check_headers spirv/unified1/spirv.h ||
-    warn "spirv-headers not found, swscale SPIR-V backend unavailable"
+    { requested vulkan && warn "spirv-headers not found, swscale SPIR-V backend unavailable"; }
 fi
 
 if enabled x86; then
