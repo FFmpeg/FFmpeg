@@ -402,7 +402,7 @@ static int tdsc_decode_tiles(AVCodecContext *avctx, int number_tiles)
         }
 
         tile_size = bytestream2_get_le32(&ctx->gbc);
-        if (bytestream2_get_bytes_left(&ctx->gbc) < tile_size)
+        if (bytestream2_get_bytes_left(&ctx->gbc) < tile_size + 24LL)
             return AVERROR_INVALIDDATA;
 
         tile_mode = bytestream2_get_le32(&ctx->gbc);
