@@ -74,22 +74,32 @@ static int8_t vaapi_av1_get_bit_depth_idx(AVCodecContext *avctx)
     return bit_depth == 8 ? 0 : bit_depth == 10 ? 1 : 2;
 }
 
+static av_cold int vaapi_av1_decode_uninit(AVCodecContext *avctx);
+
 static av_cold int vaapi_av1_decode_init(AVCodecContext *avctx)
 {
     VAAPIAV1DecContext *ctx = avctx->internal->hwaccel_priv_data;
 
+    int ret = ff_vaapi_decode_init(avctx);
+    if (ret < 0)
+        return ret;
+
     ctx->tmp_frame = av_frame_alloc();
-    if (!ctx->tmp_frame)
+    if (!ctx->tmp_frame) {
+        vaapi_av1_decode_uninit(avctx);
         return AVERROR(ENOMEM);
+    }
 
     for (int i = 0; i < FF_ARRAY_ELEMS(ctx->ref_tab); i++) {
         ctx->ref_tab[i].frame = av_frame_alloc();
-        if (!ctx->ref_tab[i].frame)
+        if (!ctx->ref_tab[i].frame) {
+            vaapi_av1_decode_uninit(avctx);
             return AVERROR(ENOMEM);
+        }
         ctx->ref_tab[i].valid = 0;
     }
 
-    return ff_vaapi_decode_init(avctx);
+    return ret;
 }
 
 static av_cold int vaapi_av1_decode_uninit(AVCodecContext *avctx)
