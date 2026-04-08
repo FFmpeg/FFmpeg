@@ -638,6 +638,54 @@ static void define_shader_bindings(SwsOpList *ops, SPICtx *spi, SPIRVIDs *id,
                    SpvStorageClassUniformConstant, 0);
 }
 
+static int insert_bitexact_linear(const SwsOp *op, SPICtx *spi, SPIRVIDs *id,
+                                  int data, int linear_ops_idx, int *nb_const_ids)
+{
+    int type_s = op->type == SWS_PIXEL_F32 ? id->f32_type : id->u32_type;
+    int type_v = op->type == SWS_PIXEL_F32 ? id->f32vec4_type : id->u32vec4_type;
+
+    int tmp[4];
+    tmp[0] = spi_OpCompositeExtract(spi, type_s, data, 0);
+    tmp[1] = spi_OpCompositeExtract(spi, type_s, data, 1);
+    tmp[2] = spi_OpCompositeExtract(spi, type_s, data, 2);
+    tmp[3] = spi_OpCompositeExtract(spi, type_s, data, 3);
+
+    int off = spi_reserve(spi, 0); /* Current offset */
+    spi->off = id->linear_deco_off[linear_ops_idx];
+    for (int i = 0; i < id->linear_deco_ops[linear_ops_idx]; i++)
+        spi_OpDecorate(spi, spi->id + i, SpvDecorationNoContraction);
+    spi->off = off;
+
+    int res[4];
+    for (int j = 0; j < 4; j++) {
+        res[j] = op->type == SWS_PIXEL_F32 ? id->f32_0 : id->u32_cid[0];
+        if (op->lin.m[j][0].num)
+            res[j] = spi_OpFMul(spi, type_s, tmp[0],
+                                id->const_ids[(*nb_const_ids)++]);
+
+        if (op->lin.m[j][0].num && op->lin.m[j][4].num)
+            res[j] = spi_OpFAdd(spi, type_s,
+                                id->const_ids[(*nb_const_ids)++], res[j]);
+        else if (op->lin.m[j][4].num)
+            res[j] = id->const_ids[(*nb_const_ids)++];
+
+        for (int i = 1; i < 4; i++) {
+            if (!op->lin.m[j][i].num)
+                continue;
+
+            int v = spi_OpFMul(spi, type_s, tmp[i],
+                               id->const_ids[(*nb_const_ids)++]);
+            if (op->lin.m[j][0].num || op->lin.m[j][4].num)
+                res[j] = spi_OpFAdd(spi, type_s, res[j], v);
+            else
+                res[j] = v;
+        }
+    }
+
+    return spi_OpCompositeConstruct(spi, type_v,
+                                    res[0], res[1], res[2], res[3]);
+}
+
 static int add_ops_spirv(VulkanPriv *p, FFVulkanOpsCtx *s,
                          SwsOpList *ops, FFVulkanShader *shd)
 {
@@ -906,45 +954,7 @@ static int add_ops_spirv(VulkanPriv *p, FFVulkanOpsCtx *s,
             break;
         }
         case SWS_OP_LINEAR: {
-            int tmp[4];
-            tmp[0] = spi_OpCompositeExtract(spi, type_s, data, 0);
-            tmp[1] = spi_OpCompositeExtract(spi, type_s, data, 1);
-            tmp[2] = spi_OpCompositeExtract(spi, type_s, data, 2);
-            tmp[3] = spi_OpCompositeExtract(spi, type_s, data, 3);
-
-            int off = spi_reserve(spi, 0); /* Current offset */
-            spi->off = id->linear_deco_off[nb_linear_ops];
-            for (int i = 0; i < id->linear_deco_ops[nb_linear_ops]; i++)
-                spi_OpDecorate(spi, spi->id + i, SpvDecorationNoContraction);
-            spi->off = off;
-
-            int res[4];
-            for (int j = 0; j < 4; j++) {
-                res[j] = op->type == SWS_PIXEL_F32 ? id->f32_0 : id->u32_cid[0];
-                if (op->lin.m[j][0].num)
-                    res[j] = spi_OpFMul(spi, type_s, tmp[0],
-                                        id->const_ids[nb_const_ids++]);
-
-                if (op->lin.m[j][0].num && op->lin.m[j][4].num)
-                    res[j] = spi_OpFAdd(spi, type_s,
-                                        id->const_ids[nb_const_ids++], res[j]);
-                else if (op->lin.m[j][4].num)
-                    res[j] = id->const_ids[nb_const_ids++];
-
-                for (int i = 1; i < 4; i++) {
-                    if (!op->lin.m[j][i].num)
-                        continue;
-
-                    int v = spi_OpFMul(spi, type_s, tmp[i],
-                                       id->const_ids[nb_const_ids++]);
-                    if (op->lin.m[j][0].num || op->lin.m[j][4].num)
-                        res[j] = spi_OpFAdd(spi, type_s, res[j], v);
-                    else
-                        res[j] = v;
-                }
-            }
-            data = spi_OpCompositeConstruct(spi, type_v,
-                                            res[0], res[1], res[2], res[3]);
+            data = insert_bitexact_linear(op, spi, id, data, nb_linear_ops, &nb_const_ids);
             nb_linear_ops++;
             break;
         }
