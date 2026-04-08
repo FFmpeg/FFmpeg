@@ -36,6 +36,7 @@ OBJS-$(CONFIG_UNSTABLE) +=                              \
        ops_memcpy.o                                     \
        ops_optimizer.o                                  \
        uops.o                                           \
+       uops_backend.o                                   \
 
 ifeq ($(CONFIG_UNSTABLE),yes)
 include $(SRC_PATH)/libswscale/vulkan/Makefile

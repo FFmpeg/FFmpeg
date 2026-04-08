@@ -32,6 +32,7 @@
 #include "ops_internal.h"
 
 extern const SwsOpBackend backend_c;
+extern const SwsOpBackend backend_uops;
 extern const SwsOpBackend backend_murder;
 extern const SwsOpBackend backend_aarch64;
 extern const SwsOpBackend backend_x86;
@@ -49,6 +50,7 @@ const SwsOpBackend * const ff_sws_op_backends[] = {
 #elif ARCH_X86_64 && HAVE_X86ASM
     &backend_x86,
 #endif
+    &backend_uops,
     &backend_c,
 #if HAVE_SPIRV_HEADERS_SPIRV_H || HAVE_SPIRV_UNIFIED1_SPIRV_H
     &backend_spirv,
