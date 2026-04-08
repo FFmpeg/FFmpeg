@@ -1,5 +1,5 @@
 /*
- * MMX and SSE2 optimized snow DSP utils
+ * ASM optimized Snow DSP utils
  * Copyright (c) 2005-2006 Robert Edele <yartrebo@earthlink.net>
  *
  * This file is part of FFmpeg.
@@ -33,194 +33,6 @@ void ff_snow_inner_add_yblock_ssse3(const uint8_t *obmc, const int obmc_stride,
                                     int add, uint8_t *dst8);
 
 #if HAVE_INLINE_ASM
-
-static void ff_snow_horizontal_compose97i_sse2(IDWTELEM *b, IDWTELEM *temp, int width){
-    const int w2= (width+1)>>1;
-    const int w_l= (width>>1);
-    const int w_r= w2 - 1;
-    int i;
-
-    { // Lift 0
-        IDWTELEM * const ref = b + w2 - 1;
-        IDWTELEM b_0 = b[0]; //By allowing the first entry in b[0] to be calculated twice
-        // (the first time erroneously), we allow the SSE2 code to run an extra pass.
-        // The savings in code and time are well worth having to store this value and
-        // calculate b[0] correctly afterwards.
-
-        i = 0;
-        __asm__ volatile(
-            "pcmpeqd   %%xmm7, %%xmm7         \n\t"
-            "pcmpeqd   %%xmm3, %%xmm3         \n\t"
-            "psllw         $1, %%xmm3         \n\t"
-            "paddw     %%xmm7, %%xmm3         \n\t"
-            "psllw        $13, %%xmm3         \n\t"
-        ::);
-        for(; i<w_l-15; i+=16){
-            __asm__ volatile(
-                "movdqu   (%1), %%xmm1        \n\t"
-                "movdqu 16(%1), %%xmm5        \n\t"
-                "movdqu  2(%1), %%xmm2        \n\t"
-                "movdqu 18(%1), %%xmm6        \n\t"
-                "paddw  %%xmm1, %%xmm2        \n\t"
-                "paddw  %%xmm5, %%xmm6        \n\t"
-                "paddw  %%xmm7, %%xmm2        \n\t"
-                "paddw  %%xmm7, %%xmm6        \n\t"
-                "pmulhw %%xmm3, %%xmm2        \n\t"
-                "pmulhw %%xmm3, %%xmm6        \n\t"
-                "paddw    (%0), %%xmm2        \n\t"
-                "paddw  16(%0), %%xmm6        \n\t"
-                "movdqa %%xmm2, (%0)          \n\t"
-                "movdqa %%xmm6, 16(%0)        \n\t"
-                :: "r"(&b[i]), "r"(&ref[i])
-                : "memory"
-            );
-        }
-        snow_horizontal_compose_lift_lead_out(i, b, b, ref, width, w_l, 0, W_DM, W_DO, W_DS);
-        b[0] = b_0 - ((W_DM * 2 * ref[1]+W_DO)>>W_DS);
-    }
-
-    { // Lift 1
-        IDWTELEM * const dst = b+w2;
-
-        i = 0;
-        for(; (((x86_reg)&dst[i]) & 0x1F) && i<w_r; i++){
-            dst[i] = dst[i] - (b[i] + b[i + 1]);
-        }
-        for(; i<w_r-15; i+=16){
-            __asm__ volatile(
-                "movdqu   (%1), %%xmm1        \n\t"
-                "movdqu 16(%1), %%xmm5        \n\t"
-                "movdqu  2(%1), %%xmm2        \n\t"
-                "movdqu 18(%1), %%xmm6        \n\t"
-                "paddw  %%xmm1, %%xmm2        \n\t"
-                "paddw  %%xmm5, %%xmm6        \n\t"
-                "movdqa   (%0), %%xmm0        \n\t"
-                "movdqa 16(%0), %%xmm4        \n\t"
-                "psubw  %%xmm2, %%xmm0        \n\t"
-                "psubw  %%xmm6, %%xmm4        \n\t"
-                "movdqa %%xmm0, (%0)          \n\t"
-                "movdqa %%xmm4, 16(%0)        \n\t"
-                :: "r"(&dst[i]), "r"(&b[i])
-                : "memory"
-            );
-        }
-        snow_horizontal_compose_lift_lead_out(i, dst, dst, b, width, w_r, 1, W_CM, W_CO, W_CS);
-    }
-
-    { // Lift 2
-        IDWTELEM * const ref = b+w2 - 1;
-        IDWTELEM b_0 = b[0];
-
-        i = 0;
-        __asm__ volatile(
-            "psllw         $15, %%xmm7        \n\t"
-            "pcmpeqw    %%xmm6, %%xmm6        \n\t"
-            "psrlw         $13, %%xmm6        \n\t"
-            "paddw      %%xmm7, %%xmm6        \n\t"
-        ::);
-        for(; i<w_l-15; i+=16){
-            __asm__ volatile(
-                "movdqu   (%1), %%xmm0        \n\t"
-                "movdqu 16(%1), %%xmm4        \n\t"
-                "movdqu  2(%1), %%xmm1        \n\t"
-                "movdqu 18(%1), %%xmm5        \n\t" //FIXME try aligned reads and shifts
-                "paddw  %%xmm6, %%xmm0        \n\t"
-                "paddw  %%xmm6, %%xmm4        \n\t"
-                "paddw  %%xmm7, %%xmm1        \n\t"
-                "paddw  %%xmm7, %%xmm5        \n\t"
-                "pavgw  %%xmm1, %%xmm0        \n\t"
-                "pavgw  %%xmm5, %%xmm4        \n\t"
-                "psubw  %%xmm7, %%xmm0        \n\t"
-                "psubw  %%xmm7, %%xmm4        \n\t"
-                "psraw      $1, %%xmm0        \n\t"
-                "psraw      $1, %%xmm4        \n\t"
-                "movdqa   (%0), %%xmm1        \n\t"
-                "movdqa 16(%0), %%xmm5        \n\t"
-                "paddw  %%xmm1, %%xmm0        \n\t"
-                "paddw  %%xmm5, %%xmm4        \n\t"
-                "psraw      $2, %%xmm0        \n\t"
-                "psraw      $2, %%xmm4        \n\t"
-                "paddw  %%xmm1, %%xmm0        \n\t"
-                "paddw  %%xmm5, %%xmm4        \n\t"
-                "movdqa %%xmm0, (%0)          \n\t"
-                "movdqa %%xmm4, 16(%0)        \n\t"
-                :: "r"(&b[i]), "r"(&ref[i])
-                : "memory"
-            );
-        }
-        snow_horizontal_compose_liftS_lead_out(i, b, b, ref, width, w_l);
-        b[0] = b_0 + ((2 * ref[1] + W_BO-1 + 4 * b_0) >> W_BS);
-    }
-
-    { // Lift 3
-        IDWTELEM * const src = b+w2;
-
-        i = 0;
-        for(; (((x86_reg)&temp[i]) & 0x1F) && i<w_r; i++){
-            temp[i] = src[i] - ((-W_AM*(b[i] + b[i+1]))>>W_AS);
-        }
-        for(; i<w_r-7; i+=8){
-            __asm__ volatile(
-                "movdqu  2(%1), %%xmm2        \n\t"
-                "movdqu 18(%1), %%xmm6        \n\t"
-                "paddw    (%1), %%xmm2        \n\t"
-                "paddw  16(%1), %%xmm6        \n\t"
-                "movdqu   (%0), %%xmm0        \n\t"
-                "movdqu 16(%0), %%xmm4        \n\t"
-                "paddw  %%xmm2, %%xmm0        \n\t"
-                "paddw  %%xmm6, %%xmm4        \n\t"
-                "psraw      $1, %%xmm2        \n\t"
-                "psraw      $1, %%xmm6        \n\t"
-                "paddw  %%xmm0, %%xmm2        \n\t"
-                "paddw  %%xmm4, %%xmm6        \n\t"
-                "movdqa %%xmm2, (%2)          \n\t"
-                "movdqa %%xmm6, 16(%2)        \n\t"
-                :: "r"(&src[i]), "r"(&b[i]), "r"(&temp[i])
-                 : "memory"
-               );
-        }
-        snow_horizontal_compose_lift_lead_out(i, temp, src, b, width, w_r, 1, -W_AM, W_AO+1, W_AS);
-    }
-
-    {
-        snow_interleave_line_header(&i, width, b, temp);
-
-        for (; (i & 0x3E) != 0x3E; i-=2){
-            b[i+1] = temp[i>>1];
-            b[i] = b[i>>1];
-        }
-        for (i-=62; i>=0; i-=64){
-            __asm__ volatile(
-                "movdqa      (%1), %%xmm0       \n\t"
-                "movdqa    16(%1), %%xmm2       \n\t"
-                "movdqa    32(%1), %%xmm4       \n\t"
-                "movdqa    48(%1), %%xmm6       \n\t"
-                "movdqa      (%1), %%xmm1       \n\t"
-                "movdqa    16(%1), %%xmm3       \n\t"
-                "movdqa    32(%1), %%xmm5       \n\t"
-                "movdqa    48(%1), %%xmm7       \n\t"
-                "punpcklwd   (%2), %%xmm0       \n\t"
-                "punpcklwd 16(%2), %%xmm2       \n\t"
-                "punpcklwd 32(%2), %%xmm4       \n\t"
-                "punpcklwd 48(%2), %%xmm6       \n\t"
-                "movdqa    %%xmm0, (%0)         \n\t"
-                "movdqa    %%xmm2, 32(%0)       \n\t"
-                "movdqa    %%xmm4, 64(%0)       \n\t"
-                "movdqa    %%xmm6, 96(%0)       \n\t"
-                "punpckhwd   (%2), %%xmm1       \n\t"
-                "punpckhwd 16(%2), %%xmm3       \n\t"
-                "punpckhwd 32(%2), %%xmm5       \n\t"
-                "punpckhwd 48(%2), %%xmm7       \n\t"
-                "movdqa    %%xmm1, 16(%0)       \n\t"
-                "movdqa    %%xmm3, 48(%0)       \n\t"
-                "movdqa    %%xmm5, 80(%0)       \n\t"
-                "movdqa    %%xmm7, 112(%0)      \n\t"
-                :: "r"(&(b)[i]), "r"(&(b)[i>>1]), "r"(&(temp)[i>>1])
-                 : "memory"
-               );
-        }
-    }
-}
 
 static void ff_snow_horizontal_compose97i_mmx(IDWTELEM *b, IDWTELEM *temp, int width){
     const int w2= (width+1)>>1;
@@ -396,29 +208,11 @@ static void ff_snow_horizontal_compose97i_mmx(IDWTELEM *b, IDWTELEM *temp, int w
 }
 
 #if HAVE_7REGS
-#define snow_vertical_compose_sse2_load_add(op,r,t0,t1,t2,t3)\
-        ""op" ("r",%%"FF_REG_d"), %%"t0"      \n\t"\
-        ""op" 16("r",%%"FF_REG_d"), %%"t1"    \n\t"\
-        ""op" 32("r",%%"FF_REG_d"), %%"t2"    \n\t"\
-        ""op" 48("r",%%"FF_REG_d"), %%"t3"    \n\t"
-
-#define snow_vertical_compose_sse2_load(r,t0,t1,t2,t3)\
-        snow_vertical_compose_sse2_load_add("movdqa",r,t0,t1,t2,t3)
-
-#define snow_vertical_compose_sse2_add(r,t0,t1,t2,t3)\
-        snow_vertical_compose_sse2_load_add("paddw",r,t0,t1,t2,t3)
-
 #define snow_vertical_compose_r2r_sub(s0,s1,s2,s3,t0,t1,t2,t3)\
         "psubw %%"s0", %%"t0" \n\t"\
         "psubw %%"s1", %%"t1" \n\t"\
         "psubw %%"s2", %%"t2" \n\t"\
         "psubw %%"s3", %%"t3" \n\t"
-
-#define snow_vertical_compose_sse2_store(w,s0,s1,s2,s3)\
-        "movdqa %%"s0", ("w",%%"FF_REG_d")    \n\t"\
-        "movdqa %%"s1", 16("w",%%"FF_REG_d")  \n\t"\
-        "movdqa %%"s2", 32("w",%%"FF_REG_d")  \n\t"\
-        "movdqa %%"s3", 48("w",%%"FF_REG_d")  \n\t"
 
 #define snow_vertical_compose_sra(n,t0,t1,t2,t3)\
         "psraw $"n", %%"t0" \n\t"\
@@ -437,85 +231,6 @@ static void ff_snow_horizontal_compose97i_mmx(IDWTELEM *b, IDWTELEM *temp, int w
         "pmulhw %%"s1", %%"t1" \n\t"\
         "pmulhw %%"s2", %%"t2" \n\t"\
         "pmulhw %%"s3", %%"t3" \n\t"
-
-#define snow_vertical_compose_sse2_move(s0,s1,s2,s3,t0,t1,t2,t3)\
-        "movdqa %%"s0", %%"t0" \n\t"\
-        "movdqa %%"s1", %%"t1" \n\t"\
-        "movdqa %%"s2", %%"t2" \n\t"\
-        "movdqa %%"s3", %%"t3" \n\t"
-
-static void ff_snow_vertical_compose97i_sse2(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, IDWTELEM *b3, IDWTELEM *b4, IDWTELEM *b5, int width){
-    x86_reg i = width;
-
-    while(i & 0x1F)
-    {
-        i--;
-        b4[i] -= (W_DM*(b3[i] + b5[i])+W_DO)>>W_DS;
-        b3[i] -= (W_CM*(b2[i] + b4[i])+W_CO)>>W_CS;
-        b2[i] += (W_BM*(b1[i] + b3[i])+4*b2[i]+W_BO)>>W_BS;
-        b1[i] += (W_AM*(b0[i] + b2[i])+W_AO)>>W_AS;
-    }
-    i+=i;
-
-         __asm__ volatile (
-        "jmp 2f                                      \n\t"
-        "1:                                          \n\t"
-        snow_vertical_compose_sse2_load("%4","xmm0","xmm2","xmm4","xmm6")
-        snow_vertical_compose_sse2_add("%6","xmm0","xmm2","xmm4","xmm6")
-
-
-        "pcmpeqw    %%xmm0, %%xmm0                   \n\t"
-        "pcmpeqw    %%xmm2, %%xmm2                   \n\t"
-        "paddw      %%xmm2, %%xmm2                   \n\t"
-        "paddw      %%xmm0, %%xmm2                   \n\t"
-        "psllw         $13, %%xmm2                   \n\t"
-        snow_vertical_compose_r2r_add("xmm0","xmm0","xmm0","xmm0","xmm1","xmm3","xmm5","xmm7")
-        snow_vertical_compose_r2r_pmulhw("xmm2","xmm2","xmm2","xmm2","xmm1","xmm3","xmm5","xmm7")
-        snow_vertical_compose_sse2_add("%5","xmm1","xmm3","xmm5","xmm7")
-        snow_vertical_compose_sse2_store("%5","xmm1","xmm3","xmm5","xmm7")
-        snow_vertical_compose_sse2_load("%4","xmm0","xmm2","xmm4","xmm6")
-        snow_vertical_compose_sse2_add("%3","xmm1","xmm3","xmm5","xmm7")
-        snow_vertical_compose_r2r_sub("xmm1","xmm3","xmm5","xmm7","xmm0","xmm2","xmm4","xmm6")
-        snow_vertical_compose_sse2_store("%4","xmm0","xmm2","xmm4","xmm6")
-
-        "pcmpeqw %%xmm7, %%xmm7                      \n\t"
-        "pcmpeqw %%xmm5, %%xmm5                      \n\t"
-        "psllw $15, %%xmm7                           \n\t"
-        "psrlw $13, %%xmm5                           \n\t"
-        "paddw %%xmm7, %%xmm5                        \n\t"
-        snow_vertical_compose_r2r_add("xmm5","xmm5","xmm5","xmm5","xmm0","xmm2","xmm4","xmm6")
-        "movq   (%2,%%"FF_REG_d"), %%xmm1            \n\t"
-        "movq  8(%2,%%"FF_REG_d"), %%xmm3            \n\t"
-        "paddw %%xmm7, %%xmm1                        \n\t"
-        "paddw %%xmm7, %%xmm3                        \n\t"
-        "pavgw %%xmm1, %%xmm0                        \n\t"
-        "pavgw %%xmm3, %%xmm2                        \n\t"
-        "movq 16(%2,%%"FF_REG_d"), %%xmm1            \n\t"
-        "movq 24(%2,%%"FF_REG_d"), %%xmm3            \n\t"
-        "paddw %%xmm7, %%xmm1                        \n\t"
-        "paddw %%xmm7, %%xmm3                        \n\t"
-        "pavgw %%xmm1, %%xmm4                        \n\t"
-        "pavgw %%xmm3, %%xmm6                        \n\t"
-        snow_vertical_compose_r2r_sub("xmm7","xmm7","xmm7","xmm7","xmm0","xmm2","xmm4","xmm6")
-        snow_vertical_compose_sra("1","xmm0","xmm2","xmm4","xmm6")
-        snow_vertical_compose_sse2_add("%3","xmm0","xmm2","xmm4","xmm6")
-
-        snow_vertical_compose_sra("2","xmm0","xmm2","xmm4","xmm6")
-        snow_vertical_compose_sse2_add("%3","xmm0","xmm2","xmm4","xmm6")
-        snow_vertical_compose_sse2_store("%3","xmm0","xmm2","xmm4","xmm6")
-        snow_vertical_compose_sse2_add("%1","xmm0","xmm2","xmm4","xmm6")
-        snow_vertical_compose_sse2_move("xmm0","xmm2","xmm4","xmm6","xmm1","xmm3","xmm5","xmm7")
-        snow_vertical_compose_sra("1","xmm0","xmm2","xmm4","xmm6")
-        snow_vertical_compose_r2r_add("xmm1","xmm3","xmm5","xmm7","xmm0","xmm2","xmm4","xmm6")
-        snow_vertical_compose_sse2_add("%2","xmm0","xmm2","xmm4","xmm6")
-        snow_vertical_compose_sse2_store("%2","xmm0","xmm2","xmm4","xmm6")
-
-        "2:                                          \n\t"
-        "sub $64, %%"FF_REG_d"                       \n\t"
-        "jge 1b                                      \n\t"
-        :"+d"(i)
-        :"r"(b0),"r"(b1),"r"(b2),"r"(b3),"r"(b4),"r"(b5));
-}
 
 #define snow_vertical_compose_mmx_load_add(op,r,t0,t1,t2,t3)\
         ""op" ("r",%%"FF_REG_d"), %%"t0"   \n\t"\
@@ -623,12 +338,6 @@ av_cold void ff_dwt_init_x86(SnowDWTContext *c)
         c->horizontal_compose97i = ff_snow_horizontal_compose97i_mmx;
 #if HAVE_7REGS
         c->vertical_compose97i   = ff_snow_vertical_compose97i_mmx;
-#endif
-    }
-    if (INLINE_SSE2(cpuflags) && 0) {
-        c->horizontal_compose97i = ff_snow_horizontal_compose97i_sse2;
-#if HAVE_7REGS
-        c->vertical_compose97i   = ff_snow_vertical_compose97i_sse2;
 #endif
     }
 #endif /* HAVE_INLINE_ASM */
