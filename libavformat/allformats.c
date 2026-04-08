@@ -385,6 +385,7 @@ extern const FFInputFormat  ff_pcm_u16le_demuxer;
 extern const FFOutputFormat ff_pcm_u16le_muxer;
 extern const FFInputFormat  ff_pcm_u8_demuxer;
 extern const FFOutputFormat ff_pcm_u8_muxer;
+extern const FFOutputFormat ff_pdv_muxer;
 extern const FFInputFormat  ff_pdv_demuxer;
 extern const FFInputFormat  ff_pjs_demuxer;
 extern const FFInputFormat  ff_pmp_demuxer;

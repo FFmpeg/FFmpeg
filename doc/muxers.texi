@@ -3274,6 +3274,19 @@ ogg files can be safely chained.
 
 @end table
 
+@section pdv
+
+Playdate Video muxer.
+
+This muxer writes the Playdate video container used by Panic's Playdate SDK.
+It requires a seekable output and a single PDV video stream.
+
+@table @option
+@item max_frames @var{frames}
+Reserve space for at most @var{frames} video frames in the file header. This
+option is mandatory.
+@end table
+
 @anchor{rcwtenc}
 @section rcwt
 
