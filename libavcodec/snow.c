@@ -115,8 +115,8 @@ static av_cold void init_qpel(SnowContext *const s)
     s->put_snow_qpel_pixels_tab[3][15] = put_snow_qpel2_mc33_8_c;
 }
 
-void ff_snow_inner_add_yblock(const uint8_t *obmc, const int obmc_stride, uint8_t * * block, int b_w, int b_h,
-                              int src_x, int src_stride, IDWTELEM *const *lines, int add, uint8_t *dst8)
+void ff_snow_inner_add_yblock_c(const uint8_t *obmc, const int obmc_stride, uint8_t **block, int b_w, int b_h,
+                                int src_x, int src_stride, IDWTELEM *const *lines, int add, uint8_t *dst8)
 {
     int y, x;
 

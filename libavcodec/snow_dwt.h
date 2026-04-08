@@ -137,10 +137,10 @@ void ff_slice_buffer_flush(slice_buffer *buf);
 void ff_slice_buffer_destroy(slice_buffer *buf);
 IDWTELEM *ff_slice_buffer_load_line(slice_buffer *buf, int line);
 
-void ff_snow_inner_add_yblock(const uint8_t *obmc, const int obmc_stride,
-                              uint8_t **block, int b_w, int b_h, int src_x,
-                              int src_stride, IDWTELEM *const *lines,
-                              int add, uint8_t *dst8);
+void ff_snow_inner_add_yblock_c(const uint8_t *obmc, const int obmc_stride,
+                                uint8_t **block, int b_w, int b_h, int src_x,
+                                int src_stride, IDWTELEM *const *lines,
+                                int add, uint8_t *dst8);
 
 int ff_w53_32_c(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2, ptrdiff_t line_size, int h);
 int ff_w97_32_c(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2, ptrdiff_t line_size, int h);

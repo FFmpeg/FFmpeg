@@ -24,7 +24,13 @@
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/x86/asm.h"
+#include "libavutil/x86/cpu.h"
 #include "libavcodec/snow_dwt.h"
+
+void ff_snow_inner_add_yblock_ssse3(const uint8_t *obmc, const int obmc_stride,
+                                    uint8_t **block, int b_w, int b_h, int src_x,
+                                    int src_stride, IDWTELEM *const *lines,
+                                    int add, uint8_t *dst8);
 
 #if HAVE_INLINE_ASM
 
@@ -864,7 +870,7 @@ static void ff_snow_inner_add_yblock_sse2(const uint8_t *obmc, const int obmc_st
         else
             inner_add_yblock_bw_8_obmc_16_mmx(obmc, obmc_stride, block, b_w, b_h, src_x, src_stride, lines, add, dst8);
     } else
-         ff_snow_inner_add_yblock(obmc, obmc_stride, block, b_w, b_h, src_x, src_stride, lines, add, dst8);
+         ff_snow_inner_add_yblock_c(obmc, obmc_stride, block, b_w, b_h, src_x, src_stride, lines, add, dst8);
 }
 
 static void ff_snow_inner_add_yblock_mmx(const uint8_t *obmc, const int obmc_stride, uint8_t * * block, int b_w, int b_h,
@@ -875,7 +881,7 @@ static void ff_snow_inner_add_yblock_mmx(const uint8_t *obmc, const int obmc_str
     else if (b_w == 8 && obmc_stride == 16)
         inner_add_yblock_bw_8_obmc_16_mmx(obmc, obmc_stride, block, b_w, b_h, src_x, src_stride, lines, add, dst8);
     else
-        ff_snow_inner_add_yblock(obmc, obmc_stride, block, b_w, b_h, src_x, src_stride, lines, add, dst8);
+        ff_snow_inner_add_yblock_c(obmc, obmc_stride, block, b_w, b_h, src_x, src_stride, lines, add, dst8);
 }
 #endif /* HAVE_6REGS */
 
@@ -883,9 +889,9 @@ static void ff_snow_inner_add_yblock_mmx(const uint8_t *obmc, const int obmc_str
 
 av_cold void ff_dwt_init_x86(SnowDWTContext *c)
 {
-#if HAVE_INLINE_ASM
     int mm_flags = av_get_cpu_flags();
 
+#if HAVE_INLINE_ASM
     if (mm_flags & AV_CPU_FLAG_MMX) {
         if(mm_flags & AV_CPU_FLAG_SSE2 & 0){
             c->horizontal_compose97i = ff_snow_horizontal_compose97i_sse2;
@@ -909,4 +915,9 @@ av_cold void ff_dwt_init_x86(SnowDWTContext *c)
         }
     }
 #endif /* HAVE_INLINE_ASM */
+#if HAVE_SSSE3_EXTERNAL
+    if (EXTERNAL_SSSE3(mm_flags)) {
+        c->inner_add_yblock = ff_snow_inner_add_yblock_ssse3;
+    }
+#endif
 }
