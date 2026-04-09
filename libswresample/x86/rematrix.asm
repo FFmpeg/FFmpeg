@@ -148,12 +148,7 @@ mix_1_1_int16_u_int %+ SUFFIX:
     mov%1  [outq + lenq + mmsize], m2
     add        lenq, mmsize*2
         jl .next
-%if mmsize == 8
-    emms
     RET
-%else
-    RET
-%endif
 %endmacro
 
 %macro MIX2_INT16 1
@@ -214,12 +209,7 @@ mix_2_1_int16_u_int %+ SUFFIX:
     mov%1  [outq + lenq + mmsize], m2
     add        lenq, mmsize*2
         jl .next
-%if mmsize == 8
-    emms
     RET
-%else
-    RET
-%endif
 %endmacro
 
 

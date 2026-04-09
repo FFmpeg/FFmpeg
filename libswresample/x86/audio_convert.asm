@@ -194,12 +194,7 @@ cglobal %2_to_%1_%3, 3, 3, 6, dst, src, len
     add lenq, 2*mmsize/(1<<%4)
 %endif
         jl .next
-%if mmsize == 8
-    emms
     RET
-%else
-    RET
-%endif
 %endmacro
 
 %macro PACK_6CH 8
@@ -284,12 +279,7 @@ pack_6ch_%2_to_%1_u_int %+ SUFFIX:
     add      dstq, mmsize*6
     sub      lend, mmsize/4
     jg .loop
-%if mmsize == 8
-    emms
     RET
-%else
-    RET
-%endif
 %endmacro
 
 %macro UNPACK_6CH 8
