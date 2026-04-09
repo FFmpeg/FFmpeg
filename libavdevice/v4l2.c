@@ -356,6 +356,15 @@ static void list_standards(AVFormatContext *ctx)
     }
 }
 
+static void mmap_free(struct video_data *s, int n)
+{
+    while (--n > 0) {
+        v4l2_munmap(s->buf_start[n], s->buf_len[n]);
+    }
+    av_freep(&s->buf_start);
+    av_freep(&s->buf_len);
+}
+
 static int mmap_init(AVFormatContext *ctx)
 {
     int i, res;
@@ -402,13 +411,14 @@ static int mmap_init(AVFormatContext *ctx)
         if (v4l2_ioctl(s->fd, VIDIOC_QUERYBUF, &buf) < 0) {
             res = AVERROR(errno);
             av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_QUERYBUF): %s\n", av_err2str(res));
-            return res;
+            goto fail;
         }
 
         if (s->multiplanar) {
             if (buf.length != 1) {
                 av_log(ctx, AV_LOG_ERROR, "multiplanar only supported when buf.length == 1\n");
-                return AVERROR_PATCHWELCOME;
+                res = AVERROR_PATCHWELCOME;
+                goto fail;
             }
             buf_length = buf.m.planes[0].length;
             buf_offset = buf.m.planes[0].m.mem_offset;
@@ -422,7 +432,8 @@ static int mmap_init(AVFormatContext *ctx)
             av_log(ctx, AV_LOG_ERROR,
                    "buf_len[%d] = %d < expected frame size %d\n",
                    i, s->buf_len[i], s->frame_size);
-            return AVERROR(ENOMEM);
+            res = AVERROR(ENOMEM);
+            goto fail;
         }
         s->buf_start[i] = v4l2_mmap(NULL, buf_length,
                                PROT_READ | PROT_WRITE, MAP_SHARED,
@@ -431,11 +442,15 @@ static int mmap_init(AVFormatContext *ctx)
         if (s->buf_start[i] == MAP_FAILED) {
             res = AVERROR(errno);
             av_log(ctx, AV_LOG_ERROR, "mmap: %s\n", av_err2str(res));
-            return res;
+            goto fail;
         }
     }
 
     return 0;
+
+fail:
+    mmap_free(s, i);
+    return res;
 }
 
 static int enqueue_buffer(struct video_data *s, struct v4l2_buffer *buf)
@@ -681,18 +696,13 @@ static int mmap_start(AVFormatContext *ctx)
 static void mmap_close(struct video_data *s)
 {
     enum v4l2_buf_type type;
-    int i;
 
     type = s->buf_type;
     /* We do not check for the result, because we could
      * not do anything about it anyway...
      */
     v4l2_ioctl(s->fd, VIDIOC_STREAMOFF, &type);
-    for (i = 0; i < s->buffers; i++) {
-        v4l2_munmap(s->buf_start[i], s->buf_len[i]);
-    }
-    av_freep(&s->buf_start);
-    av_freep(&s->buf_len);
+    mmap_free(s, s->buffers);
 }
 
 static int v4l2_set_parameters(AVFormatContext *ctx)
