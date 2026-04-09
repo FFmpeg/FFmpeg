@@ -1,0 +1,14 @@
+Testing av_dynamic_hdr_vivid_alloc()
+alloc: OK, size>0=yes
+defaults: system_start_code=0, num_windows=0
+write: system_start_code=1, num_windows=1
+params[0]: min=100/1 avg=500/1 var=200/1 max=1000/1
+alloc (no size): OK
+
+Testing av_dynamic_hdr_vivid_create_side_data()
+side_data: OK
+side_data write: system_start_code=2
+
+Testing OOM paths
+alloc OOM: OK
+side_data OOM: OK
