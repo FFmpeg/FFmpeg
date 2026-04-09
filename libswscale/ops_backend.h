@@ -102,17 +102,21 @@ typedef struct SwsOpIter {
                (pixel_t *) iter->out[2], (pixel_t *) iter->out[3], __VA_ARGS__)
 
 /* Helper macros to declare continuation functions */
-#define DECL_IMPL(NAME)                                                         \
-    static void fn(NAME)(SwsOpIter *restrict iter,                              \
-                         const SwsOpImpl *restrict impl,                        \
-                         block_t x, block_t y,                                  \
-                         block_t z, block_t w)
+#define DECL_IMPL(FUNC, NAME, ...)                                              \
+    static void av_flatten fn(NAME)(SwsOpIter *restrict iter,                   \
+                                    const SwsOpImpl *restrict impl,             \
+                                    void *restrict x, void *restrict y,         \
+                                    void *restrict z, void *restrict w)         \
+    {                                                                           \
+        CALL(FUNC, __VA_ARGS__);                                                \
+    }
 
-/* Helper macro to call into the next continuation with a given type */
-#define CONTINUE(TYPE, ...)                                                     \
+/* Helper macro to call into the next continuation */
+#define CONTINUE(X, Y, Z, W)                                                    \
     ((void (*)(SwsOpIter *, const SwsOpImpl *,                                  \
-               TYPE x, TYPE y, TYPE z, TYPE w)) impl->cont)                     \
-        (iter, &impl[1], __VA_ARGS__)
+               void *restrict, void *restrict,                                  \
+               void *restrict, void *restrict)) impl->cont)                     \
+        (iter, &impl[1], (X), (Y), (Z), (W))
 
 /* Helper macros for common op setup code */
 #define DECL_SETUP(NAME, PARAMS, OUT)                                           \
@@ -139,10 +143,7 @@ static inline int ff_setup_memdup(const void *c, size_t size, SwsImplResult *out
     DECL_FUNC(NAME, const bool X, const bool Y, const bool Z, const bool W)
 
 #define WRAP_PATTERN(FUNC, X, Y, Z, W, ...)                                     \
-    DECL_IMPL(FUNC##_##X##Y##Z##W)                                              \
-    {                                                                           \
-        CALL(FUNC, X, Y, Z, W);                                                 \
-    }                                                                           \
+    DECL_IMPL(FUNC, FUNC##_##X##Y##Z##W, X, Y, Z, W)                            \
                                                                                 \
     DECL_ENTRY(FUNC##_##X##Y##Z##W,                                             \
         .unused = { !X, !Y, !Z, !W },                                           \
