@@ -235,11 +235,13 @@ tests/checkasm/riscv/.* @Courmisch
 libavutil/tests/buffer.* @MarcosAsh
 libavutil/tests/hdr_dynamic_vivid_metadata.* @MarcosAsh
 libavutil/tests/tdrdi.* @MarcosAsh
+libavutil/tests/timestamp.* @MarcosAsh
 tests/ref/.*drawvg.* @ayosec
 tests/ref/fate/buffer @MarcosAsh
 tests/ref/fate/hdr_dynamic_vivid_metadata @MarcosAsh
 tests/ref/fate/sub-mcc.* @programmerjake
 tests/ref/fate/tdrdi @MarcosAsh
+tests/ref/fate/timestamp @MarcosAsh
 
 # Forgejo
 # =======

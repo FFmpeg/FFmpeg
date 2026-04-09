@@ -311,6 +311,7 @@ TESTPROGS = adler32                                                     \
             stereo3d                                                    \
             tdrdi                                                       \
             timecode                                                    \
+            timestamp                                                   \
             tree                                                        \
             twofish                                                     \
             utf8                                                        \

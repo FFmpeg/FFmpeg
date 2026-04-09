@@ -1,0 +1,23 @@
+Testing av_ts_make_string()
+NOPTS: NOPTS
+0: 0
+90000: 90000
+-1: -1
+INT64_MAX: 9223372036854775807
+INT64_MIN+1: -9223372036854775807
+
+Testing av_ts2str()
+NOPTS: NOPTS
+48000: 48000
+
+Testing av_ts_make_time_string2()
+NOPTS: NOPTS
+90000 at 1/90000: 1
+0 at 1/1000: 0
+48000 at 1/48000: 1
+44100 at 1/44100: 1
+-90000 at 1/90000: -1
+
+Testing av_ts_make_time_string()
+5000 at 1/1000: 5
+NOPTS: NOPTS

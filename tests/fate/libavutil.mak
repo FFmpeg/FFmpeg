@@ -232,6 +232,10 @@ FATE_LIBAVUTIL += fate-timecode
 fate-timecode: libavutil/tests/timecode$(EXESUF)
 fate-timecode: CMD = run libavutil/tests/timecode$(EXESUF)
 
+FATE_LIBAVUTIL += fate-timestamp
+fate-timestamp: libavutil/tests/timestamp$(EXESUF)
+fate-timestamp: CMD = run libavutil/tests/timestamp$(EXESUF)
+
 FATE_LIBAVUTIL += $(FATE_LIBAVUTIL-yes)
 FATE-$(CONFIG_AVUTIL) += $(FATE_LIBAVUTIL)
 fate-libavutil: $(FATE_LIBAVUTIL)
