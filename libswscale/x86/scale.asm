@@ -103,9 +103,6 @@ cglobal hscale%1to%2_%4, %5, 10, %6, pos0, dst, w, srcmem, filter, fltpos, fltsi
     mov32      pos0q, dword [fltposq+wq*4+ 0]   ; filterPos[0]
     mov32      pos1q, dword [fltposq+wq*4+ 4]   ; filterPos[1]
     movlh         m0, [srcq+pos0q*srcmul]       ; src[filterPos[0] + {0,1,2,3}]
-%if mmsize == 8
-    movlh         m1, [srcq+pos1q*srcmul]       ; src[filterPos[1] + {0,1,2,3}]
-%else ; mmsize == 16
 %if %1 > 8
     movhps        m0, [srcq+pos1q*srcmul]       ; src[filterPos[1] + {0,1,2,3}]
 %else ; %1 == 8
@@ -121,7 +118,6 @@ cglobal hscale%1to%2_%4, %5, 10, %6, pos0, dst, w, srcmem, filter, fltpos, fltsi
     punpckldq     m0, m4
     punpckldq     m1, m5
 %endif ; %1 == 8
-%endif ; mmsize == 8/16
 %if %1 == 8
     punpcklbw     m0, m3                        ; byte -> word
     punpcklbw     m1, m3                        ; byte -> word
@@ -153,17 +149,11 @@ cglobal hscale%1to%2_%4, %5, 10, %6, pos0, dst, w, srcmem, filter, fltpos, fltsi
     mov32      pos0q, dword [fltposq+wq*2+0]    ; filterPos[0]
     mov32      pos1q, dword [fltposq+wq*2+4]    ; filterPos[1]
     movbh         m0, [srcq+ pos0q   *srcmul]   ; src[filterPos[0] + {0,1,2,3,4,5,6,7}]
-%if mmsize == 8
-    movbh         m1, [srcq+(pos0q+4)*srcmul]   ; src[filterPos[0] + {4,5,6,7}]
-    movbh         m4, [srcq+ pos1q   *srcmul]   ; src[filterPos[1] + {0,1,2,3}]
-    movbh         m5, [srcq+(pos1q+4)*srcmul]   ; src[filterPos[1] + {4,5,6,7}]
-%else ; mmsize == 16
     movbh         m1, [srcq+ pos1q   *srcmul]   ; src[filterPos[1] + {0,1,2,3,4,5,6,7}]
     mov32      pos0q, dword [fltposq+wq*2+8]    ; filterPos[2]
     mov32      pos1q, dword [fltposq+wq*2+12]   ; filterPos[3]
     movbh         m4, [srcq+ pos0q   *srcmul]   ; src[filterPos[2] + {0,1,2,3,4,5,6,7}]
     movbh         m5, [srcq+ pos1q   *srcmul]   ; src[filterPos[3] + {0,1,2,3,4,5,6,7}]
-%endif ; mmsize == 8/16
 %if %1 == 8
     punpcklbw     m0, m3                        ; byte -> word
     punpcklbw     m1, m3                        ; byte -> word
