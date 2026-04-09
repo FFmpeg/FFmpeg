@@ -7630,10 +7630,8 @@ $makeinfo --version > /dev/null 2>&1 && enable makeinfo_command || disable makei
 if enabled makeinfo_command; then
   [ 0$($makeinfo --version | grep "texinfo" | sed 's/.*texinfo[^0-9]*\([0-9]*\)\..*/\1/') -ge 5 ] \
     && enable makeinfo_html || disable makeinfo_html
-else
-  if test "$makeinfo" != "$makeinfo_default" ; then
-    warn "Specified makeinfo \"$makeinfo\" not found."
-  fi
+elif test "$makeinfo" != "$makeinfo_default" ; then
+  warn "Specified makeinfo \"$makeinfo\" not found."
 fi
 
 disabled makeinfo_html && texi2html --help 2> /dev/null | grep -q 'init-file' && enable texi2html || disable texi2html
