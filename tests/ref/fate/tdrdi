@@ -1,0 +1,14 @@
+Testing av_tdrdi_alloc()
+alloc 1: size>0=yes, num_ref_displays=1
+display 0: width_exp=3 width_man=100 left=0 right=1
+
+Testing multiple displays
+alloc 3: num_ref_displays=3
+display 0: width_exp=1
+display 1: width_exp=2
+display 2: width_exp=3
+
+alloc (no size): OK
+
+Testing OOM paths
+alloc OOM: OK

@@ -188,6 +188,10 @@ FATE_LIBAVUTIL += fate-stereo3d
 fate-stereo3d: libavutil/tests/stereo3d$(EXESUF)
 fate-stereo3d: CMD = run libavutil/tests/stereo3d$(EXESUF)
 
+FATE_LIBAVUTIL += fate-tdrdi
+fate-tdrdi: libavutil/tests/tdrdi$(EXESUF)
+fate-tdrdi: CMD = run libavutil/tests/tdrdi$(EXESUF)
+
 FATE_LIBAVUTIL += fate-tree
 fate-tree: libavutil/tests/tree$(EXESUF)
 fate-tree: CMD = run libavutil/tests/tree$(EXESUF)

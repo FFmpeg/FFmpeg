@@ -309,6 +309,7 @@ TESTPROGS = adler32                                                     \
             softfloat                                                   \
             spherical                                                   \
             stereo3d                                                    \
+            tdrdi                                                       \
             timecode                                                    \
             tree                                                        \
             twofish                                                     \
