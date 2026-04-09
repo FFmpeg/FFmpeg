@@ -207,7 +207,6 @@ typedef struct WebPContext {
     int has_iccp;                       /* set after an ICCP chunk has been processed */
     int width;                          /* image width */
     int height;                         /* image height */
-    int lossless;                       /* indicates lossless or lossy */
 
     int nb_transforms;                  /* number of transforms */
     enum TransformType transforms[4];   /* transformations used in the image, in order */
@@ -1093,10 +1092,8 @@ static int vp8_lossless_decode_frame(AVCodecContext *avctx, AVFrame *p,
     WebPContext *s = avctx->priv_data;
     int w, h, ret, i, used;
 
-    if (!is_alpha_chunk) {
-        s->lossless = 1;
+    if (!is_alpha_chunk)
         avctx->pix_fmt = AV_PIX_FMT_ARGB;
-    }
 
     ret = init_get_bits8(&s->gb, data_start, data_size);
     if (ret < 0)
@@ -1309,7 +1306,6 @@ static int vp8_lossy_decode_frame(AVCodecContext *avctx, AVFrame *p,
         s->v.actually_webp = 1;
     }
     avctx->pix_fmt = s->has_alpha ? AV_PIX_FMT_YUVA420P : AV_PIX_FMT_YUV420P;
-    s->lossless = 0;
 
     if (data_size > INT_MAX) {
         av_log(avctx, AV_LOG_ERROR, "unsupported chunk size\n");
