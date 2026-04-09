@@ -263,6 +263,7 @@ TESTPROGS = adler32                                                     \
             base64                                                      \
             blowfish                                                    \
             bprint                                                      \
+            buffer                                                      \
             cast5                                                       \
             camellia                                                    \
             channel_layout                                              \

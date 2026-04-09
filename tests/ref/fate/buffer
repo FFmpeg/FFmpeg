@@ -1,0 +1,57 @@
+Testing av_buffer_alloc()
+alloc: size=64 data=set
+writable: 1
+refcount: 1
+after unref: null
+
+Testing av_buffer_allocz()
+allocz: zeroed=yes
+
+Testing av_buffer_create()
+create: size=32
+opaque: null
+custom_free called: yes
+
+Testing AV_BUFFER_FLAG_READONLY
+readonly writable: 0
+
+Testing av_buffer_ref()
+ref: refcount=2
+shared data: yes
+writable after ref: 0
+refcount after unref: 1
+writable after unref: 1
+
+Testing av_buffer_make_writable()
+make_writable ret: 1
+data preserved: yes
+now writable: 1
+original still valid: yes
+
+Testing av_buffer_realloc()
+realloc: size=32
+data preserved: yes
+realloc from null: OK
+
+Testing av_buffer_replace()
+replace: data=0x22
+refcount: 2
+replace with null: OK
+
+Testing av_buffer_pool()
+pool get: size=64
+pool reuse: size=64
+pool uninit: OK
+
+Testing av_buffer_pool_init2()
+pool2 get: size=64
+alloc2 called: yes
+pool_buffer_get_opaque: null
+pool_free called: yes
+
+Testing OOM paths
+alloc OOM: OK
+allocz OOM: OK
+pool init OOM: OK
+ref OOM: OK
+realloc OOM: OK

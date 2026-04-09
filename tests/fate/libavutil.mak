@@ -47,6 +47,10 @@ FATE_LIBAVUTIL += fate-bprint
 fate-bprint: libavutil/tests/bprint$(EXESUF)
 fate-bprint: CMD = run libavutil/tests/bprint$(EXESUF)
 
+FATE_LIBAVUTIL += fate-buffer
+fate-buffer: libavutil/tests/buffer$(EXESUF)
+fate-buffer: CMD = run libavutil/tests/buffer$(EXESUF)
+
 FATE_LIBAVUTIL += fate-cpu
 fate-cpu: libavutil/tests/cpu$(EXESUF)
 fate-cpu: CMD = runecho libavutil/tests/cpu$(EXESUF) $(CPUFLAGS:%=-c%) $(THREADS:%=-t%)

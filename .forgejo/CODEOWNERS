@@ -232,7 +232,9 @@ doc/.* @GyanD
 # tests
 # =====
 tests/checkasm/riscv/.* @Courmisch
+libavutil/tests/buffer.* @MarcosAsh
 tests/ref/.*drawvg.* @ayosec
+tests/ref/fate/buffer @MarcosAsh
 tests/ref/fate/sub-mcc.* @programmerjake
 
 # Forgejo
