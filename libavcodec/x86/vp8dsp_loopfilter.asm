@@ -1,5 +1,5 @@
 ;******************************************************************************
-;* VP8 MMXEXT optimizations
+;* VP8 ASM optimizations
 ;* Copyright (c) 2010 Ronald S. Bultje <rsbultje@gmail.com>
 ;* Copyright (c) 2010 Fiona Glaser <fiona@x264.com>
 ;*
@@ -381,7 +381,7 @@ cglobal vp8_%1_loop_filter16y_inner, 5, 5, 13, stack_size, dst, stride, flimE, f
     ; read
     lea           dst2q, [dst1q+strideq]
 %ifidn %1, v
-%if %2 == 8 && mmsize == 16
+%if %2 == 8
 %define movrow movh
 %else
 %define movrow mova
@@ -392,7 +392,7 @@ cglobal vp8_%1_loop_filter16y_inner, 5, 5, 13, stack_size, dst, stride, flimE, f
     movrow           m5, [dst2q]            ; q1
     movrow           m6, [dst2q+ strideq*1] ; q2
     movrow           m7, [dst2q+ strideq*2] ; q3
-%if mmsize == 16 && %2 == 8
+%if %2 == 8
     movhps           m0, [dst8q+mstrideq*4]
     movhps           m2, [dst8q+mstrideq*2]
     add           dst8q, strideq
@@ -498,7 +498,7 @@ cglobal vp8_%1_loop_filter16y_inner, 5, 5, 13, stack_size, dst, stride, flimE, f
     SWAP              7, 3           ; now m7 is zero
 %ifidn %1, v
     movrow           m3, [dst1q+mstrideq  ] ; p0
-%if mmsize == 16 && %2 == 8
+%if %2 == 8
     movhps           m3, [dst8q+mstrideq  ]
 %endif
 %elifdef m12
@@ -520,7 +520,7 @@ cglobal vp8_%1_loop_filter16y_inner, 5, 5, 13, stack_size, dst, stride, flimE, f
     SWAP              6, 4           ; now m6 is I
 %ifidn %1, v
     movrow           m4, [dst1q]     ; q0
-%if mmsize == 16 && %2 == 8
+%if %2 == 8
     movhps           m4, [dst8q]
 %endif
 %elifdef m8
@@ -574,10 +574,10 @@ cglobal vp8_%1_loop_filter16y_inner, 5, 5, 13, stack_size, dst, stride, flimE, f
     pand             m0, m7          ; normal_limit result
 
     ; filter_common; at this point, m2-m5=p1-q1 and m0 is filter_mask
-%ifdef m8 ; x86-64 && sse2
+%ifdef m8 ; x86-64
     mova             m8, [pb_80]
 %define m_pb_80 m8
-%else ; x86-32 or mmx/mmxext
+%else ; x86-32
 %define m_pb_80 [pb_80]
 %endif
     mova             m1, m4
@@ -648,7 +648,7 @@ cglobal vp8_%1_loop_filter16y_inner, 5, 5, 13, stack_size, dst, stride, flimE, f
     movrow [dst1q+mstrideq  ], m3
     movrow      [dst1q], m4
     movrow [dst1q+ strideq  ], m5
-%if mmsize == 16 && %2 == 8
+%if %2 == 8
     movhps [dst8q+mstrideq*2], m2
     movhps [dst8q+mstrideq  ], m3
     movhps      [dst8q], m4
@@ -688,14 +688,11 @@ INNER_LOOPFILTER h,  8
 %macro MBEDGE_LOOPFILTER 2
 %define stack_size 0
 %ifndef m8       ; stack layout: [0]=E, [1]=I, [2]=hev_thr
-%if mmsize == 16 ;               [3]=hev() result
+                 ;               [3]=hev() result
                  ;               [4]=filter tmp result
                  ;               [5]/[6] = p2/q2 backup
                  ;               [7]=lim_res sign result
 %define stack_size mmsize * -7
-%else ; 8        ; extra storage space for transposes
-%define stack_size mmsize * -8
-%endif
 %endif
 
 %if %2 == 8 ; chroma
@@ -723,11 +720,7 @@ cglobal vp8_%1_loop_filter16y_mbedge, 5, 5, 15, stack_size, dst1, stride, flimE,
 %define m_q0backup [rsp+mmsize*4]
 %define m_p2backup [rsp+mmsize*5]
 %define m_q2backup [rsp+mmsize*6]
-%if mmsize == 16
 %define m_limsign  [rsp]
-%else
-%define m_limsign  [rsp+mmsize*7]
-%endif
 
     mova        m_flimE, m0
     mova        m_flimI, m1
@@ -767,7 +760,7 @@ cglobal vp8_%1_loop_filter16y_mbedge, 5, 5, 15, stack_size, dst1, stride, flimE,
     ; read
     lea           dst2q, [dst1q+ strideq  ]
 %ifidn %1, v
-%if %2 == 8 && mmsize == 16
+%if %2 == 8
 %define movrow movh
 %else
 %define movrow mova
@@ -778,7 +771,7 @@ cglobal vp8_%1_loop_filter16y_mbedge, 5, 5, 15, stack_size, dst1, stride, flimE,
     movrow           m5, [dst2q]            ; q1
     movrow           m6, [dst2q+ strideq  ] ; q2
     movrow           m7, [dst2q+ strideq*2] ; q3
-%if mmsize == 16 && %2 == 8
+%if %2 == 8
     movhps           m0, [dst8q+mstrideq*4]
     movhps           m2, [dst8q+mstrideq*2]
     add           dst8q, strideq
@@ -886,7 +879,7 @@ cglobal vp8_%1_loop_filter16y_mbedge, 5, 5, 15, stack_size, dst1, stride, flimE,
     SWAP              7, 3           ; now m7 is zero
 %ifidn %1, v
     movrow           m3, [dst1q+mstrideq  ] ; p0
-%if mmsize == 16 && %2 == 8
+%if %2 == 8
     movhps           m3, [dst8q+mstrideq  ]
 %endif
 %elifdef m12
@@ -908,7 +901,7 @@ cglobal vp8_%1_loop_filter16y_mbedge, 5, 5, 15, stack_size, dst1, stride, flimE,
     SWAP              6, 4           ; now m6 is I
 %ifidn %1, v
     movrow           m4, [dst1q]     ; q0
-%if mmsize == 16 && %2 == 8
+%if %2 == 8
     movhps           m4, [dst8q]
 %endif
 %elifdef m8
@@ -962,10 +955,10 @@ cglobal vp8_%1_loop_filter16y_mbedge, 5, 5, 15, stack_size, dst1, stride, flimE,
     pand             m0, m7          ; normal_limit result
 
     ; filter_common; at this point, m2-m5=p1-q1 and m0 is filter_mask
-%ifdef m8 ; x86-64 && sse2
+%ifdef m8 ; x86-64
     mova             m8, [pb_80]
 %define m_pb_80 m8
-%else ; x86-32 or mmx/mmxext
+%else ; x86-32
 %define m_pb_80 [pb_80]
 %endif
     mova             m1, m4
@@ -1182,7 +1175,7 @@ cglobal vp8_%1_loop_filter16y_mbedge, 5, 5, 15, stack_size, dst1, stride, flimE,
     movrow     [dst1q], m4
     movrow     [dst2q], m5
     movrow [dst2q+ strideq  ], m6
-%if mmsize == 16 && %2 == 8
+%if %2 == 8
     add           dst8q, mstrideq
     movhps [dst8q+mstrideq*2], m1
     movhps [dst8q+mstrideq  ], m2
