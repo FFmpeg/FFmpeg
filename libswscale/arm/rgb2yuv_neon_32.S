@@ -48,27 +48,27 @@ alias   y8x16,  y16x16_e
 
 
 .macro init     src
-    // load s32x3x3, narrow to s16x3x3
-    vld3.i32    {q13_l, q14_l, q15_l},          [\src]!
-    vld3.i32    {q13_h[0], q14_h[0], q15_h[0]}, [\src]
+        // load s32x3x3, narrow to s16x3x3
+        vld3.i32        {q13_l, q14_l, q15_l},          [\src]!
+        vld3.i32        {q13_h[0], q14_h[0], q15_h[0]}, [\src]
 
-    vmovn.i32   CO_R, q13
-    vmovn.i32   CO_G, q14
-    vmovn.i32   CO_B, q15
+        vmovn.i32       CO_R, q13
+        vmovn.i32       CO_G, q14
+        vmovn.i32       CO_B, q15
 
-    vmov.u8     BIAS_Y, #16
-    vmov.u8     BIAS_U, #128
+        vmov.u8         BIAS_Y, #16
+        vmov.u8         BIAS_U, #128
 .endm
 
 
 .macro compute_y_16x1_step  action, s8x16, coeff
-    vmov.u8     n16x16_o,   #0
-    vtrn.u8     \s8x16,     n16x16_o
+        vmov.u8         n16x16_o,   #0
+        vtrn.u8         \s8x16,     n16x16_o
 
-    \action     y32x16_el,  \s8x16\()_l,    \coeff
-    \action     y32x16_eh,  \s8x16\()_h,    \coeff
-    \action     y32x16_ol,  n16x16_ol,      \coeff
-    \action     y32x16_oh,  n16x16_oh,      \coeff
+        \action         y32x16_el,  \s8x16\()_l,    \coeff
+        \action         y32x16_eh,  \s8x16\()_h,    \coeff
+        \action         y32x16_ol,  n16x16_ol,      \coeff
+        \action         y32x16_oh,  n16x16_oh,      \coeff
 .endm
 
 /*
@@ -77,17 +77,17 @@ alias   y8x16,  y16x16_e
  * clobber: q11-q15, r8x16, g8x16, b8x16
  */
 .macro compute_y_16x1
-    compute_y_16x1_step vmull, r8x16, CO_RY
-    compute_y_16x1_step vmlal, g8x16, CO_GY
-    compute_y_16x1_step vmlal, b8x16, CO_BY
+        compute_y_16x1_step vmull, r8x16, CO_RY
+        compute_y_16x1_step vmlal, g8x16, CO_GY
+        compute_y_16x1_step vmlal, b8x16, CO_BY
 
-    vrshrn.i32  y16x16_el,  y32x16_el,  #15
-    vrshrn.i32  y16x16_eh,  y32x16_eh,  #15
-    vrshrn.i32  y16x16_ol,  y32x16_ol,  #15
-    vrshrn.i32  y16x16_oh,  y32x16_oh,  #15
+        vrshrn.i32      y16x16_el,  y32x16_el,  #15
+        vrshrn.i32      y16x16_eh,  y32x16_eh,  #15
+        vrshrn.i32      y16x16_ol,  y32x16_ol,  #15
+        vrshrn.i32      y16x16_oh,  y32x16_oh,  #15
 
-    vtrn.8      y16x16_e,   y16x16_o
-    vadd.u8     y8x16,      y8x16,      BIAS_Y
+        vtrn.8          y16x16_e,   y16x16_o
+        vadd.u8         y8x16,      y8x16,      BIAS_Y
 .endm
 
 alias   c32x8_l,    q14
@@ -97,8 +97,8 @@ alias_qw    c16x8,  q13
 alias_qw    c8x8x2, q10
 
 .macro compute_chroma_8x1_step  action, s16x8, coeff
-    \action     c32x8_l,    \s16x8\()_l,    \coeff
-    \action     c32x8_h,    \s16x8\()_h,    \coeff
+        \action         c32x8_l,    \s16x8\()_l,    \coeff
+        \action         c32x8_h,    \s16x8\()_h,    \coeff
 .endm
 
 /*
@@ -107,16 +107,16 @@ alias_qw    c8x8x2, q10
  * clobber: q14-q15
  */
 .macro compute_chroma_8x1   c, C
-    compute_chroma_8x1_step vmull, r16x8, CO_R\C
-    compute_chroma_8x1_step vmlal, g16x8, CO_G\C
-    compute_chroma_8x1_step vmlal, b16x8, CO_B\C
+        compute_chroma_8x1_step vmull, r16x8, CO_R\C
+        compute_chroma_8x1_step vmlal, g16x8, CO_G\C
+        compute_chroma_8x1_step vmlal, b16x8, CO_B\C
 
-    vrshrn.i32  c16x8_l,    c32x8_l,    #15
-    vrshrn.i32  c16x8_h,    c32x8_h,    #15
-    vmovn.i16   \c\()8x8,   c16x8
-    vadd.u8     \c\()8x8,   \c\()8x8,   BIAS_\C
+        vrshrn.i32      c16x8_l,    c32x8_l,    #15
+        vrshrn.i32      c16x8_h,    c32x8_h,    #15
+        vmovn.i16       \c\()8x8,   c16x8
+        vadd.u8         \c\()8x8,   \c\()8x8,   BIAS_\C
 .endm
 
 
-    loop_420sp  rgbx, nv12, init, kernel_420_16x2, 32
+loop_420sp rgbx, nv12, init, kernel_420_16x2, 32
 #endif
