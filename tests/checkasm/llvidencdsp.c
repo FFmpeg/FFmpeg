@@ -28,12 +28,12 @@
 
 #include "checkasm.h"
 
-#define randomize_buffers(buf, size)              \
-    do {                                          \
-        for (size_t j = 0; j < size & ~3; j += 4) \
-            AV_WN32(buf + j, rnd());              \
-        for (size_t j = 0; j < size; ++j)         \
-            buf[j] = rnd();                       \
+#define randomize_buffers(buf, size)                \
+    do {                                            \
+        for (size_t j = 0; j < (size & ~3); j += 4) \
+            AV_WN32(buf + j, rnd());                \
+        for (size_t j = size & ~3; j < size; ++j)   \
+            buf[j] = rnd();                         \
     } while (0)
 
 static const struct {uint8_t w, h, s;} planes[] = {
