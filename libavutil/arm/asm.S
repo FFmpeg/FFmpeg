@@ -138,8 +138,8 @@ ELF     .size   \name, . - \name
 
 #if !HAVE_ARMV6T2_EXTERNAL
 .macro  movw    rd, val
-        mov     \rd, \val &  255
-        orr     \rd, \val & ~255
+        mov             \rd, \val &  255
+        orr             \rd, \val & ~255
 .endm
 #endif
 
