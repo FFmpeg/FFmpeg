@@ -670,7 +670,7 @@ function ff_sbc_enc_process_input_8s_neon, export=1
         vst1.16         {d16, d17, d18, d19}, [r7, :128]
         subs            r3,  r3,  #16
         bgt             1b
-        b 9f
+        b               9f
 7:
         @ proper 'pcm' alignment
         vld1.8          {d0, d1, d2, d3}, [r5, :128]

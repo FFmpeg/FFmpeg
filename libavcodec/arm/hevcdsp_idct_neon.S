@@ -385,7 +385,7 @@ function ff_hevc_idct_4x4_\bitdepth\()_neon, export=1
         tr_4x4          d16, d17, d18, d19, d0, d1, d2, d3, 20 - \bitdepth, q10, q11, q12, q13, q0
         transpose_4x4   q0, q1, d0, d1, d2, d3
         vst1.s16        {d0-d3}, [r0, :128]
-        bx lr
+        bx              lr
 endfunc
 .endm
 
