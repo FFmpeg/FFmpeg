@@ -214,9 +214,6 @@ fail:
 
 av_cold void ff_frame_pool_uninit(FFFramePool *pool)
 {
-    if (!pool->type)
-        return;
-
     for (int i = 0; i < 4; i++)
         av_buffer_pool_uninit(&pool->pools[i]);
 
