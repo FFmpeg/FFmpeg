@@ -253,8 +253,10 @@ cglobal yuv2planeX_%1, %3, 8, %2, filter, fltsize, src, dst, w, dither, offset
     jz              .no_rot
 %if mmsize == 16
     punpcklqdq  m_dith,  m_dith
-%endif ; mmsize == 16
+    psrldq      m_dith,  3
+%else
     PALIGNR     m_dith,  m_dith,  3,  m0
+%endif ; mmsize == 16
 .no_rot:
 %if mmsize == 16
     punpcklbw   m_dith,  m6
