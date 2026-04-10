@@ -443,17 +443,17 @@ function ff_vc1_inv_trans_8x4_neon, export=1
         @   src[6]   d5
         @   src[7]   d7
 
-        vc1_inv_trans_8x4_helper    add=4, add1beforeshift=0, rshift=3
+        vc1_inv_trans_8x4_helper add=4, add1beforeshift=0, rshift=3
 
         @ Move output to more standardized registers
-        vmov        d0, d16
-        vmov        d2, d17
-        vmov        d4, d18
-        vmov        d6, d19
-        vmov        d1, d21
-        vmov        d3, d20
-        vmov        d5, d23
-        vmov        d7, d22
+        vmov            d0, d16
+        vmov            d2, d17
+        vmov            d4, d18
+        vmov            d6, d19
+        vmov            d1, d21
+        vmov            d3, d20
+        vmov            d5, d23
+        vmov            d7, d22
 
         @ At this point:
         @   dst[0]   d0
@@ -473,7 +473,7 @@ function ff_vc1_inv_trans_8x4_neon, export=1
         @   row[2] q2
         @   row[3] q3
 
-        vc1_inv_trans_4x8_helper    add=64, rshift=7
+        vc1_inv_trans_4x8_helper add=64, rshift=7
 
         @ At this point:
         @   line[0].l   d0
@@ -523,7 +523,7 @@ function ff_vc1_inv_trans_4x8_neon, export=1
         vld4.16         {d1[2], d3[2], d5[2], d7[2]}, [r2,:64], r12
         vld4.16         {d1[3], d3[3], d5[3], d7[3]}, [r2,:64]
 
-        vc1_inv_trans_4x8_helper    add=4, rshift=3
+        vc1_inv_trans_4x8_helper add=4, rshift=3
 
         @ At this point:
         @   dst[0] = q0
@@ -533,7 +533,7 @@ function ff_vc1_inv_trans_4x8_neon, export=1
 
         transpose16     q0, q1, q2, q3  @ Transpose rows (registers) into columns
 
-        vc1_inv_trans_8x4_helper    add=64, add1beforeshift=1, rshift=7
+        vc1_inv_trans_8x4_helper add=64, add1beforeshift=1, rshift=7
 
         vld1.32         {d28[]},  [r0,:32], r1  @ read dest
         vld1.32         {d28[1]}, [r0,:32], r1
@@ -1817,8 +1817,8 @@ function ff_vc1_unescape_buffer_helper_neon, export=1
         @ Offset by 48 to screen out cases that are too short for us to handle,
         @ and also make it easy to test for loop termination, or to determine
         @ whether we need an odd number of half-iterations of the loop.
-        subs    r1, r1, #48
-        bmi     90f
+        subs            r1, r1, #48
+        bmi             90f
 
         @ Set up useful constants
         vmov.i32        q0, #0x3000000
