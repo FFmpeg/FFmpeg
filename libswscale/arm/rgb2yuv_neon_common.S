@@ -112,7 +112,7 @@ function \s_fmt\()_to_\d_fmt\()_neon_\precision, export=1
 
     sub         y_padding,      y_stride,       width
     sub         c_padding,      c_stride,       width
-    sub         src_padding,    src_stride,     width, LSL #2
+    sub         src_padding,    src_stride,     width, lsl #2
 
     add         y0_end,         y0,             width
     and         header,         width,          #15
@@ -202,7 +202,7 @@ endfunc
     vld4.8      {\a\()8x16_l, \b\()8x16_l, \c\()8x16_l, \d\()8x16_l},  [\src]!
     vld4.8      {\a\()8x16_h, \b\()8x16_h, \c\()8x16_h, \d\()8x16_h},  [\src]
     sub         \src,   \src,   #32
-    add         \src,   \src,   \count, LSL #2
+    add         \src,   \src,   \count, lsl #2
 .endif
 .endm
 
