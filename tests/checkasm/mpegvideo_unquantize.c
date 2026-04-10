@@ -36,7 +36,7 @@
     static_assert(!(_Alignof(TYPE) % 4),                  \
                   "can't use aligned stores");            \
     unsigned char *ptr = (unsigned char*)s;               \
-    for (size_t i = 0; i < sizeof(*s) & ~3; i += 4)       \
+    for (size_t i = 0; i < (sizeof(*s) & ~3); i += 4)     \
         AV_WN32A(ptr + i, rnd());                         \
     for (size_t i = sizeof(*s) & ~3; i < sizeof(*s); ++i) \
         ptr[i] = rnd();                                   \
