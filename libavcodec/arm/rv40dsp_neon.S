@@ -687,7 +687,7 @@ endfunc
 .endm
 
 /* void ff_rv40_weight_func_16_neon(uint8_t *dst, uint8_t *src1, uint8_t *src2,
-                                    int w1, int w2, int stride) */
+ *                                  int w1, int w2, int stride) */
 function ff_rv40_weight_func_16_neon, export=1
         ldr             r12, [sp]
         vmov            d0,  r3,  r12
@@ -704,7 +704,7 @@ function ff_rv40_weight_func_16_neon, export=1
 endfunc
 
 /* void ff_rv40_weight_func_8_neon(uint8_t *dst, uint8_t *src1, uint8_t *src2,
-                                   int w1, int w2, int stride) */
+ *                                 int w1, int w2, int stride) */
 function ff_rv40_weight_func_8_neon, export=1
         ldr             r12, [sp]
         vmov            d0,  r3,  r12
