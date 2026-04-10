@@ -2882,9 +2882,10 @@ static void try_export_flags(AVHWFramesContext *hwfc,
         ret = vk->GetPhysicalDeviceImageFormatProperties2(dev_hwctx->phys_dev,
                                                         &pinfo, &props);
 
-        av_log(hwfc, AV_LOG_VERBOSE, "GetPhysicalDeviceImageFormatProperties2: mod[%d]=0x%llx -> %s\n",
-               i, has_mods ? (unsigned long long)phy_dev_mod_info.drmFormatModifier : 0ULL,
-               ret == VK_SUCCESS ? "OK" : "FAIL");
+        if (has_mods)
+            av_log(hwfc, AV_LOG_VERBOSE, "GetPhysicalDeviceImageFormatProperties2: mod[%d]=0x%llx -> %s\n",
+                   i, (unsigned long long)phy_dev_mod_info.drmFormatModifier,
+                   ret == VK_SUCCESS ? "OK" : "FAIL");
         if (ret == VK_SUCCESS) {
             *iexp |= exp;
             *comp_handle_types |= eprops.externalMemoryProperties.compatibleHandleTypes;
