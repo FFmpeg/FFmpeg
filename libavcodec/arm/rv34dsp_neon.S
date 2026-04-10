@@ -70,7 +70,7 @@
 /* void rv34_idct_add_c(uint8_t *dst, int stride, int16_t *block) */
 function ff_rv34_idct_add_neon, export=1
         mov             r3,  r0
-        rv34_inv_transform   r2
+        rv34_inv_transform r2
         vmov.i16        q12, #0
         vrshrn.s32      d16, q1,  #10   @ (z0 + z3) >> 10
         vrshrn.s32      d17, q2,  #10   @ (z1 + z2) >> 10
@@ -99,7 +99,7 @@ endfunc
 
 /* void rv34_inv_transform_noround_neon(int16_t *block); */
 function ff_rv34_inv_transform_noround_neon, export=1
-        rv34_inv_transform   r0
+        rv34_inv_transform r0
         vshl.s32        q11, q2,  #1
         vshl.s32        q10, q1,  #1
         vshl.s32        q12, q3,  #1
