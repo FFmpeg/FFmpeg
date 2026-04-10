@@ -253,6 +253,9 @@ static const struct {
     #if CONFIG_SBC_ENCODER
         { "sbcdsp", checkasm_check_sbcdsp },
     #endif
+    #if CONFIG_SNOW_DECODER
+        { "snowdsp", checkasm_check_snowdsp },
+    #endif
     #if CONFIG_SVQ1_ENCODER
         { "svq1enc", checkasm_check_svq1enc },
     #endif
