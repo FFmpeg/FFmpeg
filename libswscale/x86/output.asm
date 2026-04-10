@@ -137,7 +137,11 @@ SECTION .text
     mova            m1, [yuv2yuvX_%1_start]
     mova            m2,  m1
 %endif ; %1 == 8/9/10/16
+%if ARCH_X86_32 && !HAVE_ALIGNED_STACK && (%1 == 8)
+    mov       cntr_reg, [rsp+32]
+%else
     movsx     cntr_reg,  fltsizem
+%endif
 .filterloop_%2_ %+ %%i:
     ; input pixels
     mov             r6, [srcq+gprsize*cntr_reg-2*gprsize]
@@ -233,15 +237,27 @@ SECTION .text
 %define movsx movsxd
 %endif
 
-cglobal yuv2planeX_%1, %3, 8, %2, filter, fltsize, src, dst, w, dither, offset
+%if %1 == 8
+%assign STACK_SIZE ARCH_X86_32*(32+mmsize*!HAVE_ALIGNED_STACK)
+%else
+%assign STACK_SIZE 0
+%endif
+
+cglobal yuv2planeX_%1, %3, 8, %2, -STACK_SIZE, filter, fltsize, src, dst, w, dither, offset
 %if %1 == 8 || %1 == 9 || %1 == 10
     pxor            m6,  m6
 %endif ; %1 == 8/9/10
 
 %if %1 == 8
 %if ARCH_X86_32
-%assign pad 0x2c - (stack_offset & 15)
-    SUB             rsp, pad
+%if !HAVE_ALIGNED_STACK
+    ; For 8-bit content on x86-32 we need the stack for both vector and GP regs.
+    ; If the stack is not suitably aligned, then x86inc aligns it for us, but
+    ; we can then no longer access the original location of fltsize, so copy
+    ; it here at a known offset of rsp.
+    mov       [rsp+32], fltsized
+%endif
+
 %define m_dith m7
 %else ; x86-64
 %define m_dith m9
@@ -304,16 +320,7 @@ cglobal yuv2planeX_%1, %3, 8, %2, filter, fltsize, src, dst, w, dither, offset
     yuv2planeX_mainloop %1, u
 %endif ; mmsize == 8/16
 
-%if %1 == 8
-%if ARCH_X86_32
-    ADD             rsp, pad
     RET
-%else ; x86-64
-    RET
-%endif ; x86-32/64
-%else ; %1 == 9/10/16
-    RET
-%endif ; %1 == 8/9/10/16
 %endmacro
 
 %if ARCH_X86_32 && HAVE_ALIGNED_STACK == 0
