@@ -267,7 +267,6 @@ void ff_yuv2planeX_ ## size ## _ ## opt(const int16_t *filter, int filterSize, \
     VSCALEX_FUNC(9,  opt); \
     VSCALEX_FUNC(10, opt)
 
-VSCALEX_FUNC(8, mmxext);
 VSCALEX_FUNCS(sse2);
 VSCALEX_FUNCS(sse4);
 VSCALEX_FUNC(16, sse4);
@@ -509,14 +508,6 @@ av_cold void ff_sws_init_swscale_x86(SwsInternal *c)
             c->yuv2planeX = yuv2yuvX_avx2;
 #endif
     }
-#if ARCH_X86_32 && !HAVE_ALIGNED_STACK
-    // The better yuv2planeX_8 functions need aligned stack on x86-32,
-    // so we use MMXEXT in this case if they are not available.
-    if (EXTERNAL_MMXEXT(cpu_flags)) {
-        if (c->dstBpc == 8 && !c->use_mmx_vfilter)
-            c->yuv2planeX = ff_yuv2planeX_8_mmxext;
-    }
-#endif /* ARCH_X86_32 && !HAVE_ALIGNED_STACK */
 
 #define ASSIGN_SCALE_FUNC2(hscalefn, filtersize, opt1, opt2) do { \
     if (c->srcBpc == 8) { \
