@@ -1399,8 +1399,8 @@ int ff_vk_decode_init(AVCodecContext *avctx)
         /* Reference (DPB) images use the same tiling and pNext chain as output.
          * If VK_VIDEO_DECODE_CAPABILITY_DPB_AND_OUTPUT_DISTINCT_BIT_KHR is 0, the
          * driver does not support separate output and DPB with different layouts/tiling. */
-        void *drm_create_pnext = ff_vk_find_struct(ctx->s.hwfc->create_pnext,
-                                                   VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_LIST_CREATE_INFO_EXT);
+        void *drm_create_pnext = (void *)ff_vk_find_struct(ctx->s.hwfc->create_pnext,
+                                                           VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_LIST_CREATE_INFO_EXT);
         if (drm_create_pnext) {
             dpb_hwfc->create_pnext = drm_create_pnext;
             dpb_hwfc->tiling       = VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT;
