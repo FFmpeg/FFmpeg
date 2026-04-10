@@ -67,8 +67,8 @@ WIN_UP_DAT0   .req    s28
         SBUF_DAT_THIS2 .req SBUF_DAT2
         SBUF_DAT_THIS3 .req SBUF_DAT3
   .ifnc "\head",""
-        vldr    d8, [P_SB, #OFFSET]        @ d8 = SBUF_DAT
-        vldr    d9, [P_SB, #OFFSET+8]
+        vldr            d8, [P_SB, #OFFSET]        @ d8 = SBUF_DAT
+        vldr            d9, [P_SB, #OFFSET+8]
   .endif
  .else
         SBUF_DAT_THIS0 .req SBUF_DAT_ALT0
@@ -76,34 +76,34 @@ WIN_UP_DAT0   .req    s28
         SBUF_DAT_THIS2 .req SBUF_DAT_ALT2
         SBUF_DAT_THIS3 .req SBUF_DAT_ALT3
   .ifnc "\head",""
-        vldr    d10, [P_SB, #OFFSET]       @ d10 = SBUF_DAT_ALT
-        vldr    d11, [P_SB, #OFFSET+8]
+        vldr            d10, [P_SB, #OFFSET]       @ d10 = SBUF_DAT_ALT
+        vldr            d11, [P_SB, #OFFSET+8]
   .endif
  .endif
  .ifnc "\tail",""
   .ifc "\half","ab"
-        vmls.f  VA0, SBUF_DAT_REV0, WIN_DN_DAT0  @ all operands treated as vectors
+        vmls.f          VA0, SBUF_DAT_REV0, WIN_DN_DAT0  @ all operands treated as vectors
   .else
-        vmla.f  VD0, SBUF_DAT_REV0, WIN_DN_DAT0  @ all operands treated as vectors
+        vmla.f          VD0, SBUF_DAT_REV0, WIN_DN_DAT0  @ all operands treated as vectors
   .endif
  .endif
  .ifnc "\head",""
-        vldr    d14, [P_WIN_UP, #OFFSET]   @ d14 = WIN_UP_DAT
-        vldr    d15, [P_WIN_UP, #OFFSET+8]
-        vldr    d12, [P_WIN_DN, #OFFSET]   @ d12 = WIN_DN_DAT
-        vldr    d13, [P_WIN_DN, #OFFSET+8]
-        vmov    SBUF_DAT_REV3, SBUF_DAT_THIS0
-        vmov    SBUF_DAT_REV2, SBUF_DAT_THIS1
-        vmov    SBUF_DAT_REV1, SBUF_DAT_THIS2
-        vmov    SBUF_DAT_REV0, SBUF_DAT_THIS3
+        vldr            d14, [P_WIN_UP, #OFFSET]   @ d14 = WIN_UP_DAT
+        vldr            d15, [P_WIN_UP, #OFFSET+8]
+        vldr            d12, [P_WIN_DN, #OFFSET]   @ d12 = WIN_DN_DAT
+        vldr            d13, [P_WIN_DN, #OFFSET+8]
+        vmov            SBUF_DAT_REV3, SBUF_DAT_THIS0
+        vmov            SBUF_DAT_REV2, SBUF_DAT_THIS1
+        vmov            SBUF_DAT_REV1, SBUF_DAT_THIS2
+        vmov            SBUF_DAT_REV0, SBUF_DAT_THIS3
   .ifc "\half","ab"
-        vmla.f  VB0, SBUF_DAT_THIS0, WIN_UP_DAT0
+        vmla.f          VB0, SBUF_DAT_THIS0, WIN_UP_DAT0
   .else
-        vmla.f  VC0, SBUF_DAT_THIS0, WIN_UP_DAT0
+        vmla.f          VC0, SBUF_DAT_THIS0, WIN_UP_DAT0
   .endif
-        teq     J_WRAP, #J
-        bne     2f             @ strongly predictable, so better than cond exec in this case
-        sub     P_SB, P_SB, #512*4
+        teq             J_WRAP, #J
+        bne             2f             @ strongly predictable, so better than cond exec in this case
+        sub             P_SB, P_SB, #512*4
 2:
   .set J, J - 64
   .set OFFSET, OFFSET + 64*4
@@ -121,87 +121,87 @@ WIN_UP_DAT0   .req    s28
  *                                float out[32], const float in[32], float scale)
  */
 function ff_synth_filter_float_vfp, export=1
-        push    {r3-r7,lr}
-        vpush   {s16-s31}
-        ldr     lr, [P_SB_OFF]
-        add     a2, ORIG_P_SB, lr, lsl #2 @ calculate synth_buf to pass to imdct_half
-        mov     P_SB, a2                  @ and keep a copy for ourselves
-        bic     J_WRAP, lr, #63           @ mangled to make testing for wrap easier in inner loop
-        sub     lr, lr, #32
-        and     lr, lr, #512-32
-        str     lr, [P_SB_OFF]            @ rotate offset, modulo buffer size, ready for next call
-        ldr     a3, [sp, #(16+6+2)*4]     @ fetch in from stack, to pass to imdct_half
-        mov     a4, #4                    @ sizeof(float)
-VFP     ldr     r12, [sp, #(16+6+3)*4]    @ fetch imdct_fn from stack
-NOVFP   ldr     r12, [sp, #(16+6+4)*4]    @ fetch imdct_fn from stack
-VFP     vmov    s16, SCALE                @ imdct_half is free to corrupt s0, but it contains one of our arguments in hardfp case
-        blx     r12
-VFP     vmov    SCALE, s16
+        push            {r3-r7,lr}
+        vpush           {s16-s31}
+        ldr             lr, [P_SB_OFF]
+        add             a2, ORIG_P_SB, lr, lsl #2 @ calculate synth_buf to pass to imdct_half
+        mov             P_SB, a2                  @ and keep a copy for ourselves
+        bic             J_WRAP, lr, #63           @ mangled to make testing for wrap easier in inner loop
+        sub             lr, lr, #32
+        and             lr, lr, #512-32
+        str             lr, [P_SB_OFF]            @ rotate offset, modulo buffer size, ready for next call
+        ldr             a3, [sp, #(16+6+2)*4]     @ fetch in from stack, to pass to imdct_half
+        mov             a4, #4                    @ sizeof(float)
+VFP     ldr             r12, [sp, #(16+6+3)*4]    @ fetch imdct_fn from stack
+NOVFP   ldr             r12, [sp, #(16+6+4)*4]    @ fetch imdct_fn from stack
+VFP     vmov            s16, SCALE                @ imdct_half is free to corrupt s0, but it contains one of our arguments in hardfp case
+        blx             r12
+VFP     vmov            SCALE, s16
 
-        fmrx    OLDFPSCR, FPSCR
-        ldr     lr, =0x03030000           @ RunFast mode, short vectors of length 4, stride 1
-        fmxr    FPSCR, lr
-        ldr     P_SB2_DN, [sp, #16*4]
-        ldr     P_WIN_DN, [sp, #(16+6+0)*4]
-        ldr     P_OUT_DN, [sp, #(16+6+1)*4]
-NOVFP   vldr    SCALE, [sp, #(16+6+3)*4]
+        fmrx            OLDFPSCR, FPSCR
+        ldr             lr, =0x03030000           @ RunFast mode, short vectors of length 4, stride 1
+        fmxr            FPSCR, lr
+        ldr             P_SB2_DN, [sp, #16*4]
+        ldr             P_WIN_DN, [sp, #(16+6+0)*4]
+        ldr             P_OUT_DN, [sp, #(16+6+1)*4]
+NOVFP   vldr            SCALE, [sp, #(16+6+3)*4]
 
 #define IMM_OFF_SKEW 956                   /* also valid immediate constant when you add 16*4 */
-        add     P_SB, P_SB, #IMM_OFF_SKEW  @ so we can use -ve offsets to use full immediate offset range
-        add     P_SB2_UP, P_SB2_DN, #16*4
-        add     P_WIN_UP, P_WIN_DN, #16*4+IMM_OFF_SKEW
-        add     P_OUT_UP, P_OUT_DN, #16*4
-        add     P_SB2_DN, P_SB2_DN, #16*4
-        add     P_WIN_DN, P_WIN_DN, #12*4+IMM_OFF_SKEW
-        add     P_OUT_DN, P_OUT_DN, #16*4
-        mov     I, #4
+        add             P_SB, P_SB, #IMM_OFF_SKEW  @ so we can use -ve offsets to use full immediate offset range
+        add             P_SB2_UP, P_SB2_DN, #16*4
+        add             P_WIN_UP, P_WIN_DN, #16*4+IMM_OFF_SKEW
+        add             P_OUT_UP, P_OUT_DN, #16*4
+        add             P_SB2_DN, P_SB2_DN, #16*4
+        add             P_WIN_DN, P_WIN_DN, #12*4+IMM_OFF_SKEW
+        add             P_OUT_DN, P_OUT_DN, #16*4
+        mov             I, #4
 1:
-        vldmia  P_SB2_UP!, {VB0-VB3}
-        vldmdb  P_SB2_DN!, {VA0-VA3}
+        vldmia          P_SB2_UP!, {VB0-VB3}
+        vldmdb          P_SB2_DN!, {VA0-VA3}
  .set J, 512 - 64
  .set OFFSET, -IMM_OFF_SKEW
-        inner_loop  ab,, head
+        inner_loop      ab,, head
  .rept 7
-        inner_loop  ab, tail, head
+        inner_loop      ab, tail, head
  .endr
-        inner_loop  ab, tail
-        add     P_WIN_UP, P_WIN_UP, #4*4
-        sub     P_WIN_DN, P_WIN_DN, #4*4
-        vmul.f  VB0, VB0, SCALE      @ SCALE treated as scalar
-        add     P_SB, P_SB, #(512+4)*4
-        subs    I, I, #1
-        vmul.f  VA0, VA0, SCALE
-        vstmia  P_OUT_UP!, {VB0-VB3}
-        vstmdb  P_OUT_DN!, {VA0-VA3}
-        bne     1b
+        inner_loop      ab, tail
+        add             P_WIN_UP, P_WIN_UP, #4*4
+        sub             P_WIN_DN, P_WIN_DN, #4*4
+        vmul.f          VB0, VB0, SCALE      @ SCALE treated as scalar
+        add             P_SB, P_SB, #(512+4)*4
+        subs            I, I, #1
+        vmul.f          VA0, VA0, SCALE
+        vstmia          P_OUT_UP!, {VB0-VB3}
+        vstmdb          P_OUT_DN!, {VA0-VA3}
+        bne             1b
 
-        add     P_SB2_DN, P_SB2_DN, #(16+28-12)*4
-        sub     P_SB2_UP, P_SB2_UP, #(16+16)*4
-        add     P_WIN_DN, P_WIN_DN, #(32+16+28-12)*4
-        mov     I, #4
+        add             P_SB2_DN, P_SB2_DN, #(16+28-12)*4
+        sub             P_SB2_UP, P_SB2_UP, #(16+16)*4
+        add             P_WIN_DN, P_WIN_DN, #(32+16+28-12)*4
+        mov             I, #4
 1:
-        vldr.d  d4, zero             @ d4 = VC0
-        vldr.d  d5, zero
-        vldr.d  d6, zero             @ d6 = VD0
-        vldr.d  d7, zero
+        vldr.d          d4, zero             @ d4 = VC0
+        vldr.d          d5, zero
+        vldr.d          d6, zero             @ d6 = VD0
+        vldr.d          d7, zero
  .set J, 512 - 64
  .set OFFSET, -IMM_OFF_SKEW
-        inner_loop  cd,, head
+        inner_loop      cd,, head
  .rept 7
-        inner_loop  cd, tail, head
+        inner_loop      cd, tail, head
  .endr
-        inner_loop  cd, tail
-        add     P_WIN_UP, P_WIN_UP, #4*4
-        sub     P_WIN_DN, P_WIN_DN, #4*4
-        add     P_SB, P_SB, #(512+4)*4
-        subs    I, I, #1
-        vstmia  P_SB2_UP!, {VC0-VC3}
-        vstmdb  P_SB2_DN!, {VD0-VD3}
-        bne     1b
+        inner_loop      cd, tail
+        add             P_WIN_UP, P_WIN_UP, #4*4
+        sub             P_WIN_DN, P_WIN_DN, #4*4
+        add             P_SB, P_SB, #(512+4)*4
+        subs            I, I, #1
+        vstmia          P_SB2_UP!, {VC0-VC3}
+        vstmdb          P_SB2_DN!, {VD0-VD3}
+        bne             1b
 
-        fmxr    FPSCR, OLDFPSCR
-        vpop    {s16-s31}
-        pop     {r3-r7,pc}
+        fmxr            FPSCR, OLDFPSCR
+        vpop            {s16-s31}
+        pop             {r3-r7,pc}
 endfunc
 
         .unreq  IMDCT
