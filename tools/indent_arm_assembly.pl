@@ -221,12 +221,12 @@ while (<$in>) {
 
         # Lowercase register names. Only apply this on lines up to
         # comments, as this can match common spec/code references in
-        # code comments. Split the string on // for comments, apply the
+        # code comments. Split the string on //, /* or @ for comments, apply the
         # substitution on the first segment (up to a comment char), and
         # join the string again.
-        my @parts = split(/\/\//, $rest);
+        my @parts = split(/(\/\/|\/\*|@)/, $rest);
         $parts[0] =~ s/\b([XWVQDSHBZP][0-9]+)\b/lc($1)/ge;
-        $rest = join('//', @parts);
+        $rest = join('', @parts);
 
         # Lowercase the aarch64 vector layout description, .8B -> .8b
         $rest =~ s/(\.[84216]*[BHSD])/lc($1)/ge;
