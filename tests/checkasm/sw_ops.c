@@ -117,11 +117,16 @@ static void check_ops(const char *report, const unsigned ranges[NB_PLANES],
     SwsContext *ctx = sws_alloc_context();
     SwsCompiledOp comp_ref = {0}, comp_new = {0};
     const SwsOpBackend *backend_new = NULL;
-    SwsOpList oplist = { .ops = (SwsOp *) ops };
     const SwsOp *read_op, *write_op;
     static const unsigned def_ranges[4] = {0};
     if (!ranges)
         ranges = def_ranges;
+
+    SwsOpList oplist = {
+        .ops = (SwsOp *) ops,
+        .plane_src = {0, 1, 2, 3},
+        .plane_dst = {0, 1, 2, 3},
+    };
 
     declare_func(void, const SwsOpExec *, const void *, int bx, int y, int bx_end, int y_end);
 
