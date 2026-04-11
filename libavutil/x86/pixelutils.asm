@@ -25,25 +25,34 @@
 
 SECTION .text
 
+%macro SAD_XMM_8x2 2
+    movq       %1, [src1q]
+    movq       m2, [src2q]
+    movhps     %1, [src1q+stride1q]
+    movhps     m2, [src2q+stride2q]
+%ifn %2
+    lea     src1q, [src1q+2*stride1q]
+    lea     src2q, [src2q+2*stride2q]
+%endif
+    psadbw     %1, m2
+%ifnidn %1, m0
+    paddw      m0, %1
+%endif
+%endmacro
+
 ;-------------------------------------------------------------------------------
-; int ff_pixelutils_sad_8x8_mmxext(const uint8_t *src1, ptrdiff_t stride1,
-;                                  const uint8_t *src2, ptrdiff_t stride2);
+; int ff_pixelutils_sad_8x8_sse2(const uint8_t *src1, ptrdiff_t stride1,
+;                                const uint8_t *src2, ptrdiff_t stride2);
 ;-------------------------------------------------------------------------------
-INIT_MMX mmxext
-cglobal pixelutils_sad_8x8, 4,4,0, src1, stride1, src2, stride2
-    pxor        m2, m2
-%rep 4
-    mova        m0, [src1q]
-    mova        m1, [src1q + stride1q]
-    psadbw      m0, [src2q]
-    psadbw      m1, [src2q + stride2q]
-    paddw       m2, m0
-    paddw       m2, m1
-    lea         src1q, [src1q + 2*stride1q]
-    lea         src2q, [src2q + 2*stride2q]
-%endrep
-    movd        eax, m2
-    emms
+INIT_XMM sse2
+cglobal pixelutils_sad_8x8, 4,4,3, src1, stride1, src2, stride2
+    SAD_XMM_8x2 m0, 0
+    SAD_XMM_8x2 m1, 0
+    SAD_XMM_8x2 m1, 0
+    SAD_XMM_8x2 m1, 1
+    movhlps     m1, m0
+    paddw       m0, m1
+    movd       eax, m0
     RET
 
 ;-------------------------------------------------------------------------------
