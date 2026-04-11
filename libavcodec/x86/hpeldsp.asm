@@ -92,9 +92,9 @@ PIXELS_X2 put, 16
 PIXELS_X2 avg, 16
 
 
-; void ff_put_no_rnd_pixels8_x2(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
+; void ff_put_no_rnd_pixels8_x2_approx(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 INIT_MMX mmxext
-cglobal put_no_rnd_pixels8_x2, 4,5
+cglobal put_no_rnd_pixels8_x2_approx, 4,5
     mova         m6, [pb_1]
     lea          r4, [r2*2]
 .loop:
@@ -127,13 +127,8 @@ cglobal put_no_rnd_pixels8_x2, 4,5
     RET
 
 
-%macro NO_RND_PIXELS_X2 1
-%if cpuflag(sse2)
-cglobal %1_no_rnd_pixels16_x2, 4,5,5
-%else
-; void ff_put_no_rnd_pixels8_x2_exact(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
-cglobal %1_no_rnd_pixels8_x2_exact, 4,5
-%endif
+%macro NO_RND_PIXELS_X2 2
+cglobal %1_no_rnd_pixels%2_x2, 4,5,5
     lea          r4, [r2*3]
     pcmpeqb      m4, m4
 .loop:
@@ -181,10 +176,10 @@ cglobal %1_no_rnd_pixels8_x2_exact, 4,5
 %endmacro
 
 INIT_MMX mmxext
-NO_RND_PIXELS_X2 put
+NO_RND_PIXELS_X2 put, 8
 INIT_XMM sse2
-NO_RND_PIXELS_X2 avg
-NO_RND_PIXELS_X2 put
+NO_RND_PIXELS_X2 avg, 16
+NO_RND_PIXELS_X2 put, 16
 
 ; void ff_put_pixels8_y2(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 %macro PUT_PIXELS8_Y2 0
@@ -225,9 +220,9 @@ INIT_XMM sse2
 PUT_PIXELS8_Y2
 
 
-; void ff_put_no_rnd_pixels8_y2(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
+; void ff_put_no_rnd_pixels8_y2_approx(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 INIT_MMX mmxext
-cglobal put_no_rnd_pixels8_y2, 4,5
+cglobal put_no_rnd_pixels8_y2_approx, 4,5
     mova         m6, [pb_1]
     lea          r4, [r2+r2]
     mova         m0, [r1]
@@ -256,13 +251,8 @@ cglobal put_no_rnd_pixels8_y2, 4,5
     RET
 
 
-%macro NO_RND_PIXELS_Y2 1
-%if cpuflag(sse2)
-cglobal %1_no_rnd_pixels16_y2, 4,5,4
-%else
-; void ff_put_no_rnd_pixels8_y2_exact(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
-cglobal %1_no_rnd_pixels8_y2_exact, 4,5
-%endif
+%macro NO_RND_PIXELS_Y2 2
+cglobal %1_no_rnd_pixels%2_y2, 4,5,4
     lea          r4, [r2*3]
     movu         m0, [r1]
     pcmpeqb      m3, m3
@@ -305,10 +295,10 @@ cglobal %1_no_rnd_pixels8_y2_exact, 4,5
 %endmacro
 
 INIT_MMX mmxext
-NO_RND_PIXELS_Y2 put
+NO_RND_PIXELS_Y2 put, 8
 INIT_XMM sse2
-NO_RND_PIXELS_Y2 avg
-NO_RND_PIXELS_Y2 put
+NO_RND_PIXELS_Y2 avg, 16
+NO_RND_PIXELS_Y2 put, 16
 
 ; void ff_avg_pixels8_y2(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 %macro AVG_PIXELS8_Y2 0

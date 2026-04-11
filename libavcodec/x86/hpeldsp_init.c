@@ -43,22 +43,22 @@ void ff_put_pixels16_y2_sse2(uint8_t *block, const uint8_t *pixels,
                              ptrdiff_t line_size, int h);
 void ff_avg_pixels16_y2_sse2(uint8_t *block, const uint8_t *pixels,
                              ptrdiff_t line_size, int h);
-void ff_put_no_rnd_pixels8_x2_mmxext(uint8_t *block, const uint8_t *pixels,
+void ff_put_no_rnd_pixels8_x2_approx_mmxext(uint8_t *block, const uint8_t *pixels,
+                                            ptrdiff_t line_size, int h);
+void ff_put_no_rnd_pixels8_x2_mmxext(uint8_t *block,
+                                     const uint8_t *pixels,
                                      ptrdiff_t line_size, int h);
-void ff_put_no_rnd_pixels8_x2_exact_mmxext(uint8_t *block,
-                                           const uint8_t *pixels,
-                                           ptrdiff_t line_size, int h);
 void ff_put_no_rnd_pixels16_x2_sse2(uint8_t *block, const uint8_t *pixels,
                                     ptrdiff_t line_size, int h);
 void ff_avg_no_rnd_pixels16_x2_sse2(uint8_t *block, const uint8_t *pixels,
                                     ptrdiff_t line_size, int h);
 void ff_put_pixels8_y2_mmxext(uint8_t *block, const uint8_t *pixels,
                               ptrdiff_t line_size, int h);
-void ff_put_no_rnd_pixels8_y2_mmxext(uint8_t *block, const uint8_t *pixels,
+void ff_put_no_rnd_pixels8_y2_approx_mmxext(uint8_t *block, const uint8_t *pixels,
+                                            ptrdiff_t line_size, int h);
+void ff_put_no_rnd_pixels8_y2_mmxext(uint8_t *block,
+                                     const uint8_t *pixels,
                                      ptrdiff_t line_size, int h);
-void ff_put_no_rnd_pixels8_y2_exact_mmxext(uint8_t *block,
-                                           const uint8_t *pixels,
-                                           ptrdiff_t line_size, int h);
 void ff_put_no_rnd_pixels16_y2_sse2(uint8_t *block, const uint8_t *pixels,
                                     ptrdiff_t line_size, int h);
 void ff_avg_no_rnd_pixels16_y2_sse2(uint8_t *block, const uint8_t *pixels,
@@ -84,12 +84,12 @@ static void hpeldsp_init_mmxext(HpelDSPContext *c, int flags)
     c->avg_pixels_tab[1][1] = ff_avg_pixels8_x2_mmxext;
     c->avg_pixels_tab[1][2] = ff_avg_pixels8_y2_mmxext;
 
-    c->put_no_rnd_pixels_tab[1][1] = ff_put_no_rnd_pixels8_x2_exact_mmxext;
-    c->put_no_rnd_pixels_tab[1][2] = ff_put_no_rnd_pixels8_y2_exact_mmxext;
+    c->put_no_rnd_pixels_tab[1][1] = ff_put_no_rnd_pixels8_x2_mmxext;
+    c->put_no_rnd_pixels_tab[1][2] = ff_put_no_rnd_pixels8_y2_mmxext;
 
     if (!(flags & AV_CODEC_FLAG_BITEXACT)) {
-        c->put_no_rnd_pixels_tab[1][1] = ff_put_no_rnd_pixels8_x2_mmxext;
-        c->put_no_rnd_pixels_tab[1][2] = ff_put_no_rnd_pixels8_y2_mmxext;
+        c->put_no_rnd_pixels_tab[1][1] = ff_put_no_rnd_pixels8_x2_approx_mmxext;
+        c->put_no_rnd_pixels_tab[1][2] = ff_put_no_rnd_pixels8_y2_approx_mmxext;
     }
 #endif /* HAVE_MMXEXT_EXTERNAL */
 }
