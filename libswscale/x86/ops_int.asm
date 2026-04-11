@@ -93,27 +93,12 @@ IF %1 > 3,  mov in3q,  [execq + SwsOpExec.in3]
 IF %1 > 1,  mov out1q, [execq + SwsOpExec.out1]
 IF %1 > 2,  mov out2q, [execq + SwsOpExec.out2]
 IF %1 > 3,  mov out3q, [execq + SwsOpExec.out3]
-            jmp [rsp] ; call into op chain
-
-; Declare a separate global label for the return point, so that we can append
-; it to the list of op function pointers from the C code, effectively ensuring
-; that we end up here again after the op chain finishes processing a line.
-; (See also: cglobal_label in x86inc.asm)
-%if FORMAT_ELF
-    global current_function %+ _return:function hidden
-%elif FORMAT_MACHO && HAVE_PRIVATE_EXTERN
-    global current_function %+ _return:private_extern
-%else
-    global current_function %+ _return
-%endif
-align function_align
-current_function %+ _return:
-
-            ; op chain always returns back here
+.loop:
+            call [rsp] ; call into op chain
             mov implq, [rsp + 8]
             inc bxd
             cmp bxd, [rsp + 20]
-            jne .continue
+            jne .loop
             ; end of line
             inc yd
             cmp yd, [rsp + 24]
@@ -131,7 +116,7 @@ IF %1 > 3,  add out3q, [execq + SwsOpExec.out_bump3]
             ; conditionally apply y bump (if non-NULL)
             mov tmp0q, [execq + SwsOpExec.in_bump_y]
             test tmp0q, tmp0q
-            jz .continue
+            jz .loop
             movsxd tmp0q, [tmp0q + yq * 4 - 4] ; load (signed) y bump
 %if %1 > 3
             mov tmp1q, tmp0q
@@ -150,8 +135,7 @@ IF %1 > 3,  add out3q, [execq + SwsOpExec.out_bump3]
 %endif
             imul tmp0q, [execq + SwsOpExec.in_stride0]
             add in0q, tmp0q
-.continue:
-            jmp [rsp]
+            jmp .loop
 .end:
             add rsp, 32
             RET
@@ -271,7 +255,6 @@ IF %1 > 3,  add in3q, mmsize * (1 + V2)
 
 %macro write_planar 1 ; elems
 op write_planar%1
-            LOAD_CONT tmp0q
             movu [out0q], mx
 IF %1 > 1,  movu [out1q], my
 IF %1 > 2,  movu [out2q], mz
@@ -286,7 +269,7 @@ IF %1 > 3,  movu [out3q + mmsize], mw2
 IF %1 > 1,  add out1q, mmsize * (1 + V2)
 IF %1 > 2,  add out2q, mmsize * (1 + V2)
 IF %1 > 3,  add out3q, mmsize * (1 + V2)
-            FINISH tmp0q
+            RET
 %endmacro
 
 %macro read_packed2 1 ; depth
@@ -325,7 +308,6 @@ IF %1 < 32, VBROADCASTI128 m12, [read%1_unpack2]
 %macro write_packed2 1 ; depth
 op write%1_packed2
 IF %1 < 32, VBROADCASTI128 m12, [write%1_pack2]
-            LOAD_CONT tmp0q
 %if cpuflag(avx2)
             vpermq mx, mx, q3120       ; { X0 X2 | X1 X3 }
             vpermq my, my, q3120       ; { Y0 Y2 | Y1 Y3 }
@@ -352,7 +334,7 @@ IF %1 < 32, VBROADCASTI128 m12, [write%1_pack2]
 IF V2,      movu [out0q + 2*mmsize], m10
 IF V2,      movu [out0q + 3*mmsize], m11
             add out0q, mmsize * (2 + V2 * 2)
-            FINISH tmp0q
+            RET
 %endmacro
 
 ; helper macro reused for both 3 and 4 component packed reads
@@ -433,11 +415,10 @@ IF1 V2,     read_packed_inner mx2, my2, mz2, mw2, in0q + %1 * mmsize, %1, %2
 %macro write_packed 2 ; num, depth
 op write%2_packed%1
 IF %2 < 32, VBROADCASTI128 m12, [write%2_pack%1]
-            LOAD_CONT tmp0q
             write_packed_inner mx, my, mz, mw, out0q, %1, %2
 IF1 V2,     write_packed_inner mx2, my2, mz2, mw2, out0q + %1 * mmsize, %1, %2
             add out0q, %1 * mmsize * (1 + V2)
-            FINISH tmp0q
+            RET
 %endmacro
 
 %macro rw_packed 1 ; depth
@@ -512,9 +493,8 @@ IF V2,  pshufb mx2, m8
 IF V2,  pmovmskb tmp1d, mx2
         mov [out0q],     tmp0d
 IF V2,  mov [out0q + (mmsize >> 3)], tmp1d
-        LOAD_CONT tmp0q
         add out0q, (mmsize >> 3) * (1 + V2)
-        FINISH tmp0q
+        RET
 %endmacro
 
 ;--------------------------

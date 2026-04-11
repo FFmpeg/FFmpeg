@@ -1006,9 +1006,6 @@ static int compile(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
 #define ASSIGN_PROCESS_FUNC(NAME)                               \
     do {                                                        \
         SWS_DECL_FUNC(NAME);                                    \
-        void NAME##_return(void);                               \
-        ret = ff_sws_op_chain_append(chain, NAME##_return,      \
-                                     NULL, &(SwsOpPriv) {0});   \
         out->func = NAME;                                       \
     } while (0)
 
