@@ -53,6 +53,7 @@ static void check_chroma_mc(void)
         ff_h264chroma_init(&h, bit_depth);
         randomize_buffers(bit_depth);
         for (int size = 0; size < 3; size++) {
+            int block_size = 8 >> size;
 
 #define CHECK_CHROMA_MC(name)                                                                             \
             do {                                                                                          \
@@ -61,13 +62,13 @@ static void check_chroma_mc(void)
                         for (int y = 0; y < 2; y++) {                                                     \
                             memcpy(dst0, src, 16 * 18 * SIZEOF_PIXEL);                                    \
                             memcpy(dst1, src, 16 * 18 * SIZEOF_PIXEL);                                    \
-                            call_ref(dst0, src, 16 * SIZEOF_PIXEL, 16, x, y);                             \
-                            call_new(dst1, src, 16 * SIZEOF_PIXEL, 16, x, y);                             \
+                            call_ref(dst0, src, 16 * SIZEOF_PIXEL, block_size, x, y);                     \
+                            call_new(dst1, src, 16 * SIZEOF_PIXEL, block_size, x, y);                     \
                             if (memcmp(dst0, dst1, 16 * 16 * SIZEOF_PIXEL)) {                             \
                                 fprintf(stderr, #name "_%d: x:%i, y:%i\n", bit_depth, x, y);              \
                                 fail();                                                                   \
                             }                                                                             \
-                            bench_new(dst1, src, 16 * SIZEOF_PIXEL, 16, x, y);                            \
+                            bench_new(dst1, src, 16 * SIZEOF_PIXEL, block_size, x, y);                    \
                         }                                                                                 \
                     }                                                                                     \
                 }                                                                                         \
