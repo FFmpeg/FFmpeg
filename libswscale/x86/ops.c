@@ -350,7 +350,8 @@ static int setup_filter_h(const SwsImplParams *params, SwsImplResult *out)
      * size, we need to gather 2/4 taps simultaneously and unroll the inner
      * loop over several packed samples.
      */
-    const int taps_align = sizeof(int32_t) / ff_sws_pixel_type_size(op->type);
+    const int pixel_size = ff_sws_pixel_type_size(op->type);
+    const int taps_align = sizeof(int32_t) / pixel_size;
     const int filter_size = filter->filter_size;
     const int block_size = params->table->block_size;
     const size_t aligned_size = FFALIGN(filter_size, taps_align);
@@ -419,6 +420,7 @@ static int setup_filter_h(const SwsImplParams *params, SwsImplResult *out)
     out->priv.ptr = weights.ptr;
     out->priv.uptr[1] = aligned_size;
     out->free = ff_op_priv_free;
+    out->over_read = (aligned_size - filter_size) * pixel_size;
     return 0;
 }
 
@@ -450,6 +452,7 @@ static int setup_filter_4x4_h(const SwsImplParams *params, SwsImplResult *out)
 {
     const SwsOp *op = params->op;
     const SwsFilterWeights *filter = op->rw.kernel;
+    const int pixel_size = ff_sws_pixel_type_size(op->type);
     const int sizeof_weights = hscale_sizeof_weight(op);
     const int block_size = params->table->block_size;
     const int taps_align = 16 / sizeof_weights; /* taps per iteration (XMM) */
@@ -500,6 +503,7 @@ static int setup_filter_4x4_h(const SwsImplParams *params, SwsImplResult *out)
     out->priv.ptr = weights.ptr;
     out->priv.uptr[1] = aligned_size * sizeof_weights;
     out->free = ff_op_priv_free;
+    out->over_read = (aligned_size - filter_size) * pixel_size;
     return 0;
 }
 
