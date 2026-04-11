@@ -186,7 +186,6 @@ NO_RND_PIXELS_X2 put, 16
 cglobal %1_pixels%2_y2, 4,5,3
     lea          r4, [r2*2]
     movu         m0, [r1]
-    sub          r0, r2
 .loop:
     movu         m1, [r1+r2]
     movu         m2, [r1+r4]
@@ -194,11 +193,11 @@ cglobal %1_pixels%2_y2, 4,5,3
     pavgb        m0, m1
     pavgb        m1, m2
 %ifidn %1,avg
-    pavgb        m0, [r0+r2]
-    pavgb        m1, [r0+r4]
+    pavgb        m0, [r0]
+    pavgb        m1, [r0+r2]
 %endif
-    mova    [r0+r2], m0
-    mova    [r0+r4], m1
+    mova       [r0], m0
+    mova    [r0+r2], m1
     movu         m1, [r1+r2]
     movu         m0, [r1+r4]
     add          r0, r4
@@ -206,11 +205,11 @@ cglobal %1_pixels%2_y2, 4,5,3
     pavgb        m2, m1
     pavgb        m1, m0
 %ifidn %1,avg
-    pavgb        m2, [r0+r2]
-    pavgb        m1, [r0+r4]
+    pavgb        m2, [r0]
+    pavgb        m1, [r0+r2]
 %endif
-    mova    [r0+r2], m2
-    mova    [r0+r4], m1
+    mova       [r0], m2
+    mova    [r0+r2], m1
     add          r0, r4
     sub         r3d, 4
     jne .loop
@@ -231,7 +230,6 @@ cglobal put_no_rnd_pixels8_y2_approx, 4,5
     mova         m6, [pb_1]
     lea          r4, [r2+r2]
     mova         m0, [r1]
-    sub          r0, r2
 .loop:
     mova         m1, [r1+r2]
     mova         m2, [r1+r4]
@@ -239,8 +237,8 @@ cglobal put_no_rnd_pixels8_y2_approx, 4,5
     psubusb      m1, m6
     pavgb        m0, m1
     pavgb        m1, m2
-    mova    [r0+r2], m0
-    mova    [r0+r4], m1
+    mova       [r0], m0
+    mova    [r0+r2], m1
     mova         m1, [r1+r2]
     mova         m0, [r1+r4]
     add          r0, r4
@@ -248,8 +246,8 @@ cglobal put_no_rnd_pixels8_y2_approx, 4,5
     psubusb      m1, m6
     pavgb        m2, m1
     pavgb        m1, m0
-    mova    [r0+r2], m2
-    mova    [r0+r4], m1
+    mova       [r0], m2
+    mova    [r0+r2], m1
     add          r0, r4
     sub         r3d, 4
     jne .loop
