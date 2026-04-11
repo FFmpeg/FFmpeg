@@ -318,10 +318,10 @@ static void check_ops(const char *report, const unsigned ranges[NB_PLANES],
     CHECK_RANGES(NAME, MK_RANGES(RANGE), N_IN, N_OUT, IN, OUT, __VA_ARGS__)
 
 #define CHECK_COMMON_RANGE(NAME, RANGE, IN, OUT, ...)                           \
-    CHECK_RANGE(FMT("%s_p1000", NAME), RANGE, 1, 1, IN, OUT, __VA_ARGS__);      \
-    CHECK_RANGE(FMT("%s_p1110", NAME), RANGE, 3, 3, IN, OUT, __VA_ARGS__);      \
+    CHECK_RANGE(FMT("%s_p1000", NAME), RANGE, 4, 4, IN, OUT, __VA_ARGS__);      \
+    CHECK_RANGE(FMT("%s_p1110", NAME), RANGE, 4, 4, IN, OUT, __VA_ARGS__);      \
     CHECK_RANGE(FMT("%s_p1111", NAME), RANGE, 4, 4, IN, OUT, __VA_ARGS__);      \
-    CHECK_RANGE(FMT("%s_p1001", NAME), RANGE, 4, 2, IN, OUT, __VA_ARGS__, {     \
+    CHECK_RANGE(FMT("%s_p1001", NAME), RANGE, 4, 4, IN, OUT, __VA_ARGS__, {     \
         .op = SWS_OP_SWIZZLE,                                                   \
         .type = OUT,                                                            \
         .swizzle = SWS_SWIZZLE(0, 3, 1, 2),                                     \
