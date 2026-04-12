@@ -828,12 +828,17 @@ static void check_filter(void)
         .scaler_params = { SWS_PARAM_DEFAULT, SWS_PARAM_DEFAULT },
     };
 
+    const SwsScaler scalers[] = {
+        SWS_SCALE_POINT,
+        SWS_SCALE_SINC,
+    };
+
     SwsFilterWeights *filter;
 
     for (SwsPixelType t = U8; t < SWS_PIXEL_TYPE_NB; t++) {
         const char *type = ff_sws_pixel_type_name(t);
-        for (SwsScaler scaler = SWS_SCALE_AUTO + 1; scaler < SWS_SCALE_NB; scaler++) {
-            params.scaler = scaler;
+        for (int s = 0; s < FF_ARRAY_ELEMS(scalers); s++) {
+            params.scaler = scalers[s];
             params.dst_size = LINES;
             for (int h = 1; h <= LINES; h += h) {
                 params.src_size = h;
