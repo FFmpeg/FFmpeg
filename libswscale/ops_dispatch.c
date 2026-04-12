@@ -242,11 +242,11 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
         alloc_size += aligned_w * sizeof(*exec->in_offset_x);
     }
 
-    uint8_t *tail_buf = av_fast_realloc(p->tail_buf, &p->tail_buf_size, alloc_size);
-    if (!tail_buf)
+    av_fast_mallocz(&p->tail_buf, &p->tail_buf_size, alloc_size);
+    if (!p->tail_buf)
         return AVERROR(ENOMEM);
-    p->tail_buf = tail_buf;
 
+    uint8_t *tail_buf = p->tail_buf;
     for (int i = 0; memcpy_in && i < p->planes_in; i++) {
         tail->in[i] = tail_buf;
         tail_buf += tail->in_stride[i] * in->height;
