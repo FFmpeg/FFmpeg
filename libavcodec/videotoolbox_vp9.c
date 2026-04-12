@@ -83,7 +83,7 @@ CFDataRef ff_videotoolbox_vpcc_extradata_create(AVCodecContext *avctx)
     p = vt_extradata;
 
     *p++ = 1; /* version */
-    AV_WB24(p + 1, 0); /* flags */
+    AV_WB24(p, 0); /* flags */
     p += 3;
 
    *p++ = h->h.profile;
