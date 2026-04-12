@@ -32,7 +32,6 @@
 #include <stdatomic.h>
 
 #include "libavutil/attributes.h"
-#include "libavutil/emms.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/mem_internal.h"
@@ -1651,7 +1650,6 @@ static int slice_decode_thread(AVCodecContext *c, void *arg)
         int ret;
 
         ret = mpeg_decode_slice(s, mb_y, &buf, end - buf);
-        emms_c();
         ff_dlog(c, "ret:%d resync:%d/%d mb:%d/%d ts:%d/%d ec:%d\n",
                 ret, s->c.resync_mb_x, s->c.resync_mb_y, s->c.mb_x, s->c.mb_y,
                 s->c.start_mb_y, s->c.end_mb_y, s->c.er.error_count);
@@ -2532,7 +2530,6 @@ static int decode_chunks(AVCodecContext *avctx, AVFrame *picture,
                     buf_ptr += 2; // FIXME add minimum number of bytes per slice
                 } else {
                     ret = mpeg_decode_slice(&s->slice, mb_y, &buf_ptr, input_size);
-                    emms_c();
 
                     if (ret < 0) {
                         if (avctx->err_recognition & AV_EF_EXPLODE)

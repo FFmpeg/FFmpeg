@@ -33,8 +33,8 @@
 #include "fpel.h"
 #include "hpeldsp.h"
 
-void ff_put_pixels8_x2_mmxext(uint8_t *block, const uint8_t *pixels,
-                              ptrdiff_t line_size, int h);
+void ff_put_pixels8_x2_sse2(uint8_t *block, const uint8_t *pixels,
+                            ptrdiff_t line_size, int h);
 void ff_put_pixels16_x2_sse2(uint8_t *block, const uint8_t *pixels,
                              ptrdiff_t line_size, int h);
 void ff_avg_pixels16_x2_sse2(uint8_t *block, const uint8_t *pixels,
@@ -43,22 +43,20 @@ void ff_put_pixels16_y2_sse2(uint8_t *block, const uint8_t *pixels,
                              ptrdiff_t line_size, int h);
 void ff_avg_pixels16_y2_sse2(uint8_t *block, const uint8_t *pixels,
                              ptrdiff_t line_size, int h);
-void ff_put_no_rnd_pixels8_x2_approx_mmxext(uint8_t *block, const uint8_t *pixels,
-                                            ptrdiff_t line_size, int h);
-void ff_put_no_rnd_pixels8_x2_mmxext(uint8_t *block,
-                                     const uint8_t *pixels,
-                                     ptrdiff_t line_size, int h);
+void ff_put_no_rnd_pixels8_x2_approx_sse2(uint8_t *block, const uint8_t *pixels,
+                                          ptrdiff_t line_size, int h);
+void ff_put_no_rnd_pixels8_x2_sse2(uint8_t *block, const uint8_t *pixels,
+                                   ptrdiff_t line_size, int h);
 void ff_put_no_rnd_pixels16_x2_sse2(uint8_t *block, const uint8_t *pixels,
                                     ptrdiff_t line_size, int h);
 void ff_avg_no_rnd_pixels16_x2_sse2(uint8_t *block, const uint8_t *pixels,
                                     ptrdiff_t line_size, int h);
-void ff_put_pixels8_y2_mmxext(uint8_t *block, const uint8_t *pixels,
-                              ptrdiff_t line_size, int h);
-void ff_put_no_rnd_pixels8_y2_approx_mmxext(uint8_t *block, const uint8_t *pixels,
-                                            ptrdiff_t line_size, int h);
-void ff_put_no_rnd_pixels8_y2_mmxext(uint8_t *block,
-                                     const uint8_t *pixels,
-                                     ptrdiff_t line_size, int h);
+void ff_put_pixels8_y2_sse2(uint8_t *block, const uint8_t *pixels,
+                            ptrdiff_t line_size, int h);
+void ff_put_no_rnd_pixels8_y2_approx_sse2(uint8_t *block, const uint8_t *pixels,
+                                          ptrdiff_t line_size, int h);
+void ff_put_no_rnd_pixels8_y2_sse2(uint8_t *block, const uint8_t *pixels,
+                                   ptrdiff_t line_size, int h);
 void ff_put_no_rnd_pixels16_y2_sse2(uint8_t *block, const uint8_t *pixels,
                                     ptrdiff_t line_size, int h);
 void ff_avg_no_rnd_pixels16_y2_sse2(uint8_t *block, const uint8_t *pixels,
@@ -69,29 +67,10 @@ void ff_put_no_rnd_pixels16_xy2_sse2(uint8_t *block, const uint8_t *pixels,
                                      ptrdiff_t line_size, int h);
 void ff_avg_no_rnd_pixels16_xy2_sse2(uint8_t *block, const uint8_t *pixels,
                                      ptrdiff_t line_size, int h);
-void ff_avg_pixels8_x2_mmxext(uint8_t *block, const uint8_t *pixels,
-                              ptrdiff_t line_size, int h);
-void ff_avg_pixels8_y2_mmxext(uint8_t *block, const uint8_t *pixels,
-                              ptrdiff_t line_size, int h);
-
-static void hpeldsp_init_mmxext(HpelDSPContext *c, int flags)
-{
-#if HAVE_MMXEXT_EXTERNAL
-    c->put_pixels_tab[1][1] = ff_put_pixels8_x2_mmxext;
-    c->put_pixels_tab[1][2] = ff_put_pixels8_y2_mmxext;
-
-    c->avg_pixels_tab[1][1] = ff_avg_pixels8_x2_mmxext;
-    c->avg_pixels_tab[1][2] = ff_avg_pixels8_y2_mmxext;
-
-    c->put_no_rnd_pixels_tab[1][1] = ff_put_no_rnd_pixels8_x2_mmxext;
-    c->put_no_rnd_pixels_tab[1][2] = ff_put_no_rnd_pixels8_y2_mmxext;
-
-    if (!(flags & AV_CODEC_FLAG_BITEXACT)) {
-        c->put_no_rnd_pixels_tab[1][1] = ff_put_no_rnd_pixels8_x2_approx_mmxext;
-        c->put_no_rnd_pixels_tab[1][2] = ff_put_no_rnd_pixels8_y2_approx_mmxext;
-    }
-#endif /* HAVE_MMXEXT_EXTERNAL */
-}
+void ff_avg_pixels8_x2_sse2(uint8_t *block, const uint8_t *pixels,
+                            ptrdiff_t line_size, int h);
+void ff_avg_pixels8_y2_sse2(uint8_t *block, const uint8_t *pixels,
+                            ptrdiff_t line_size, int h);
 
 static void hpeldsp_init_sse2(HpelDSPContext *c, int flags)
 {
@@ -106,19 +85,30 @@ static void hpeldsp_init_sse2(HpelDSPContext *c, int flags)
     c->put_no_rnd_pixels_tab[0][2] = ff_put_no_rnd_pixels16_y2_sse2;
     c->put_no_rnd_pixels_tab[0][3] = ff_put_no_rnd_pixels16_xy2_sse2;
 
+    c->put_no_rnd_pixels_tab[1][1] = ff_put_no_rnd_pixels8_x2_sse2;
+    c->put_no_rnd_pixels_tab[1][2] = ff_put_no_rnd_pixels8_y2_sse2;
     c->put_no_rnd_pixels_tab[1][0] =
     c->put_pixels_tab[1][0]        = ff_put_pixels8_sse2;
+    c->put_pixels_tab[1][1]        = ff_put_pixels8_x2_sse2;
+    c->put_pixels_tab[1][2]        = ff_put_pixels8_y2_sse2;
 
     c->avg_pixels_tab[0][0]        = ff_avg_pixels16_sse2;
     c->avg_pixels_tab[0][1]        = ff_avg_pixels16_x2_sse2;
     c->avg_pixels_tab[0][2]        = ff_avg_pixels16_y2_sse2;
     c->avg_pixels_tab[0][3]        = ff_avg_pixels16_xy2_sse2;
     c->avg_pixels_tab[1][0]        = ff_avg_pixels8_sse2;
+    c->avg_pixels_tab[1][1]        = ff_avg_pixels8_x2_sse2;
+    c->avg_pixels_tab[1][2]        = ff_avg_pixels8_y2_sse2;
 
     c->avg_no_rnd_pixels_tab[0]    = ff_avg_pixels16_sse2;
     c->avg_no_rnd_pixels_tab[1]    = ff_avg_no_rnd_pixels16_x2_sse2;
     c->avg_no_rnd_pixels_tab[2]    = ff_avg_no_rnd_pixels16_y2_sse2;
     c->avg_no_rnd_pixels_tab[3]    = ff_avg_no_rnd_pixels16_xy2_sse2;
+
+    if (!(flags & AV_CODEC_FLAG_BITEXACT)) {
+        c->put_no_rnd_pixels_tab[1][1] = ff_put_no_rnd_pixels8_x2_approx_sse2;
+        c->put_no_rnd_pixels_tab[1][2] = ff_put_no_rnd_pixels8_y2_approx_sse2;
+    }
 #endif /* HAVE_SSE2_EXTERNAL */
 }
 
@@ -137,9 +127,6 @@ static void hpeldsp_init_ssse3(HpelDSPContext *c, int flags)
 av_cold void ff_hpeldsp_init_x86(HpelDSPContext *c, int flags)
 {
     int cpu_flags = av_get_cpu_flags();
-
-    if (EXTERNAL_MMXEXT(cpu_flags))
-        hpeldsp_init_mmxext(c, flags);
 
     if (EXTERNAL_SSE2(cpu_flags))
         hpeldsp_init_sse2(c, flags);

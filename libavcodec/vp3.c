@@ -36,7 +36,6 @@
 #include <string.h>
 
 #include "libavutil/attributes.h"
-#include "libavutil/emms.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/mem.h"
 #include "libavutil/mem_internal.h"
@@ -1924,7 +1923,6 @@ static void vp3_draw_horiz_band(Vp3DecodeContext *s, int y)
     for (int i = 3; i < AV_NUM_DATA_POINTERS; i++)
         offset[i] = 0;
 
-    emms_c();
     s->avctx->draw_horiz_band(s->avctx, s->current_frame.f, offset, y, 3, h);
 }
 

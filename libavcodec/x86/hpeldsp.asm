@@ -34,138 +34,183 @@ cextern pw_8192
 SECTION .text
 
 ; void ff_put_pixels8_x2(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
-%macro PIXELS_X2 2
+%macro PIXELS_X2 4
 cglobal %1_pixels%2_x2, 4,5,4
     lea          r4, [r2*2]
 .loop:
-    movu         m0, [r1+1]
-    movu         m1, [r1+r2+1]
-%if cpuflag(sse2)
-    movu         m2, [r1]
-    movu         m3, [r1+r2]
-    pavgb        m0, m2
-    pavgb        m1, m3
-%else
+    mov%3        m0, [r1+1]
+    mov%3        m1, [r1+r2+1]
+%if %2 == mmsize && avx_enabled
     pavgb        m0, [r1]
     pavgb        m1, [r1+r2]
+%else
+    mov%3        m2, [r1]
+    mov%3        m3, [r1+r2]
+    pavgb        m0, m2
+    pavgb        m1, m3
 %endif
     add          r1, r4
 %ifidn %1,avg
+%if %2 == mmsize
     pavgb        m0, [r0]
     pavgb        m1, [r0+r2]
+%else
+    mov%4        m2, [r0]
+    mov%4        m3, [r0+r2]
+    pavgb        m0, m2
+    pavgb        m1, m3
 %endif
-    mova       [r0], m0
-    mova    [r0+r2], m1
+%endif
+    mov%4      [r0], m0
+    mov%4   [r0+r2], m1
     add          r0, r4
-    movu         m0, [r1+1]
-    movu         m1, [r1+r2+1]
-%if cpuflag(sse2)
-    movu         m2, [r1]
-    movu         m3, [r1+r2]
-    pavgb        m0, m2
-    pavgb        m1, m3
-%else
+    mov%3        m0, [r1+1]
+    mov%3        m1, [r1+r2+1]
+%if %2 == mmsize && avx_enabled
     pavgb        m0, [r1]
     pavgb        m1, [r1+r2]
+%else
+    mov%3        m2, [r1]
+    mov%3        m3, [r1+r2]
+    pavgb        m0, m2
+    pavgb        m1, m3
 %endif
     add          r1, r4
 %ifidn %1,avg
+%if %2 == mmsize
     pavgb        m0, [r0]
     pavgb        m1, [r0+r2]
+%else
+    mov%4        m2, [r0]
+    mov%4        m3, [r0+r2]
+    pavgb        m0, m2
+    pavgb        m1, m3
 %endif
-    mova       [r0], m0
-    mova    [r0+r2], m1
+%endif
+    mov%4      [r0], m0
+    mov%4   [r0+r2], m1
     add          r0, r4
     sub         r3d, 4
     jne .loop
     RET
 %endmacro
 
-INIT_MMX mmxext
-PIXELS_X2 put, 8
-PIXELS_X2 avg, 8
-
 INIT_XMM sse2
-PIXELS_X2 put, 16
-PIXELS_X2 avg, 16
+PIXELS_X2 put,  8, q, q
+PIXELS_X2 avg,  8, q, q
+
+PIXELS_X2 put, 16, u, a
+PIXELS_X2 avg, 16, u, a
 
 
 ; void ff_put_no_rnd_pixels8_x2_approx(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
-INIT_MMX mmxext
-cglobal put_no_rnd_pixels8_x2_approx, 4,5
-    mova         m6, [pb_1]
+INIT_XMM sse2
+cglobal put_no_rnd_pixels8_x2_approx, 4,5,5
+    mova         m4, [pb_1]
     lea          r4, [r2*2]
 .loop:
-    mova         m0, [r1]
-    mova         m2, [r1+r2]
-    mova         m1, [r1+1]
-    mova         m3, [r1+r2+1]
+    movq         m0, [r1]
+    movq         m1, [r1+1]
+    movhps       m0, [r1+r2]
+    movhps       m1, [r1+r2+1]
     add          r1, r4
-    psubusb      m0, m6
-    psubusb      m2, m6
+    psubusb      m0, m4
     pavgb        m0, m1
-    pavgb        m2, m3
-    mova       [r0], m0
-    mova    [r0+r2], m2
-    mova         m0, [r1]
-    mova         m1, [r1+1]
-    mova         m2, [r1+r2]
-    mova         m3, [r1+r2+1]
+    movq       [r0], m0
+    movhps  [r0+r2], m0
+    movq         m0, [r1]
+    movq         m1, [r1+1]
+    movhps       m0, [r1+r2]
+    movhps       m1, [r1+r2+1]
     add          r0, r4
     add          r1, r4
-    psubusb      m0, m6
-    psubusb      m2, m6
+    psubusb      m0, m4
     pavgb        m0, m1
-    pavgb        m2, m3
-    mova       [r0], m0
-    mova    [r0+r2], m2
+    movq       [r0], m0
+    movhps  [r0+r2], m0
     add          r0, r4
     sub         r3d, 4
     jne .loop
     RET
 
 
-%macro NO_RND_PIXELS_X2 2
+%macro NO_RND_PIXELS_X2 4
 cglobal %1_no_rnd_pixels%2_x2, 4,5,5
     lea          r4, [r2*3]
     pcmpeqb      m4, m4
 .loop:
-    movu         m0, [r1]
-    movu         m2, [r1+r2]
-    movu         m1, [r1+1]
-    movu         m3, [r1+r2+1]
+    mov%3        m0, [r1]
+%if %2 == mmsize
+    mov%3        m2, [r1+r2]
+    mov%3        m1, [r1+1]
+    mov%3        m3, [r1+r2+1]
+%else
+    movq         m1, [r1+1]
+    movhps       m0, [r1+r2]
+    movhps       m1, [r1+r2+1]
+%endif
     pxor         m0, m4
+%if %2 == mmsize
     pxor         m2, m4
+%endif
     pxor         m1, m4
+%if %2 == mmsize
     pxor         m3, m4
+%endif
     pavgb        m0, m1
+%if %2 == mmsize
     pavgb        m2, m3
+%endif
     pxor         m0, m4
+%if %2 == mmsize
     pxor         m2, m4
+%endif
 %ifidn %1, avg
     pavgb        m0, [r0]
     pavgb        m2, [r0+r2]
 %endif
-    mova       [r0], m0
-    mova    [r0+r2], m2
-    movu         m0, [r1+r2*2]
-    movu         m1, [r1+r2*2+1]
-    movu         m2, [r1+r4]
-    movu         m3, [r1+r4+1]
+    mov%4      [r0], m0
+%if %2 == mmsize
+    mov%4   [r0+r2], m2
+%else
+    movhps  [r0+r2], m0
+%endif
+    mov%3        m0, [r1+2*r2]
+%if %2 == mmsize
+    mov%3        m2, [r1+r4]
+    mov%3        m1, [r1+2*r2+1]
+    mov%3        m3, [r1+r4+1]
+%else
+    movq         m1, [r1+2*r2+1]
+    movhps       m0, [r1+r4]
+    movhps       m1, [r1+r4+1]
+%endif
     pxor         m0, m4
+%if %2 == mmsize
+    pxor         m2, m4
+%endif
     pxor         m1, m4
-    pxor         m2, m4
+%if %2 == mmsize
     pxor         m3, m4
+%endif
     pavgb        m0, m1
+%if %2 == mmsize
     pavgb        m2, m3
+%endif
     pxor         m0, m4
+%if %2 == mmsize
     pxor         m2, m4
+%endif
 %ifidn %1, avg
     pavgb        m0, [r0+r2*2]
     pavgb        m2, [r0+r4]
 %endif
-    mova  [r0+r2*2], m0
-    mova    [r0+r4], m2
+    mov%4 [r0+2*r2], m0
+%if %2 == mmsize
+    mov%4   [r0+r4], m2
+%else
+    movhps  [r0+r4], m0
+%endif
     lea          r1, [r1+r2*4]
     lea          r0, [r0+r2*4]
     sub         r3d, 4
@@ -173,95 +218,109 @@ cglobal %1_no_rnd_pixels%2_x2, 4,5,5
     RET
 %endmacro
 
-INIT_MMX mmxext
-NO_RND_PIXELS_X2 put, 8
 INIT_XMM sse2
-NO_RND_PIXELS_X2 avg, 16
-NO_RND_PIXELS_X2 put, 16
+NO_RND_PIXELS_X2 put,  8, q, q
+
+NO_RND_PIXELS_X2 avg, 16, u, a
+NO_RND_PIXELS_X2 put, 16, u, a
 
 ; void ff_put_pixels8_y2(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
-%macro PIXELS_Y2 2
-cglobal %1_pixels%2_y2, 4,5,3
+%macro PIXELS_Y2 4
+cglobal %1_pixels%2_y2, 4,5,5
+    mov%3        m0, [r1]
     lea          r4, [r2*2]
-    movu         m0, [r1]
 .loop:
-    movu         m1, [r1+r2]
-    movu         m2, [r1+r4]
+    mov%3        m1, [r1+r2]
+    mov%3        m2, [r1+r4]
     add          r1, r4
     pavgb        m0, m1
     pavgb        m1, m2
 %ifidn %1,avg
+%if %2 == mmsize
     pavgb        m0, [r0]
     pavgb        m1, [r0+r2]
+%else
+    mov%4        m3, [r0]
+    mov%4        m4, [r0+r2]
+    pavgb        m0, m3
+    pavgb        m1, m4
 %endif
-    mova       [r0], m0
-    mova    [r0+r2], m1
-    movu         m1, [r1+r2]
-    movu         m0, [r1+r4]
+%endif
+    mov%4      [r0], m0
+    mov%4   [r0+r2], m1
+    mov%3        m1, [r1+r2]
+    mov%3        m0, [r1+r4]
     add          r0, r4
     add          r1, r4
     pavgb        m2, m1
     pavgb        m1, m0
 %ifidn %1,avg
+%if %2 == mmsize
     pavgb        m2, [r0]
     pavgb        m1, [r0+r2]
+%else
+    mov%4        m3, [r0]
+    mov%4        m4, [r0+r2]
+    pavgb        m2, m3
+    pavgb        m1, m4
 %endif
-    mova       [r0], m2
-    mova    [r0+r2], m1
+%endif
+    mov%4      [r0], m2
+    mov%4   [r0+r2], m1
     add          r0, r4
     sub         r3d, 4
     jne .loop
     RET
 %endmacro
 
-INIT_MMX mmxext
-PIXELS_Y2 put, 8
-PIXELS_Y2 avg, 8
 INIT_XMM sse2
-PIXELS_Y2 put, 16
-PIXELS_Y2 avg, 16
+PIXELS_Y2 put,  8, q, q
+PIXELS_Y2 avg,  8, q, q
+
+PIXELS_Y2 put, 16, u, a
+PIXELS_Y2 avg, 16, u, a
 
 
 ; void ff_put_no_rnd_pixels8_y2_approx(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
-INIT_MMX mmxext
-cglobal put_no_rnd_pixels8_y2_approx, 4,5
-    mova         m6, [pb_1]
+INIT_XMM sse2
+cglobal put_no_rnd_pixels8_y2_approx, 4,5,4
+    mova         m3, [pb_1]
+    movq         m0, [r1]
     lea          r4, [r2+r2]
-    mova         m0, [r1]
 .loop:
-    mova         m1, [r1+r2]
-    mova         m2, [r1+r4]
+    movq         m1, [r1+r2]
+    movq         m2, [r1+r4]
     add          r1, r4
-    psubusb      m1, m6
+    psubusb      m1, m3
     pavgb        m0, m1
     pavgb        m1, m2
-    mova       [r0], m0
-    mova    [r0+r2], m1
-    mova         m1, [r1+r2]
-    mova         m0, [r1+r4]
+    movq       [r0], m0
+    movq    [r0+r2], m1
+    movq         m1, [r1+r2]
+    movq         m0, [r1+r4]
     add          r0, r4
     add          r1, r4
-    psubusb      m1, m6
+    psubusb      m1, m3
     pavgb        m2, m1
     pavgb        m1, m0
-    mova       [r0], m2
-    mova    [r0+r2], m1
+    movq       [r0], m2
+    movq    [r0+r2], m1
     add          r0, r4
     sub         r3d, 4
     jne .loop
     RET
 
 
-%macro NO_RND_PIXELS_Y2 2
+%macro NO_RND_PIXELS_Y2 4
 cglobal %1_no_rnd_pixels%2_y2, 4,5,4
+    mov%3        m0, [r1]
     lea          r4, [r2*3]
-    movu         m0, [r1]
     pcmpeqb      m3, m3
     add          r1, r2
     pxor         m0, m3
 .loop:
-    movu         m1, [r1]
-    movu         m2, [r1+r2]
+    mov%3        m1, [r1]
+    mov%3        m2, [r1+r2]
     pxor         m1, m3
     pxor         m2, m3
     pavgb        m0, m1
@@ -272,10 +331,10 @@ cglobal %1_no_rnd_pixels%2_y2, 4,5,4
     pavgb        m0, [r0]
     pavgb        m1, [r0+r2]
 %endif
-    mova       [r0], m0
-    mova    [r0+r2], m1
-    movu         m1, [r1+r2*2]
-    movu         m0, [r1+r4]
+    mov%4      [r0], m0
+    mov%4   [r0+r2], m1
+    mov%3        m1, [r1+r2*2]
+    mov%3        m0, [r1+r4]
     pxor         m1, m3
     pxor         m0, m3
     pavgb        m2, m1
@@ -286,8 +345,8 @@ cglobal %1_no_rnd_pixels%2_y2, 4,5,4
     pavgb        m2,[r0+r2*2]
     pavgb        m1,[r0+r4]
 %endif
-    mova  [r0+r2*2], m2
-    mova    [r0+r4], m1
+    mov%4 [r0+r2*2], m2
+    mov%4   [r0+r4], m1
     lea          r1, [r1+r2*4]
     lea          r0, [r0+r2*4]
     sub         r3d, 4
@@ -295,11 +354,11 @@ cglobal %1_no_rnd_pixels%2_y2, 4,5,4
     RET
 %endmacro
 
-INIT_MMX mmxext
-NO_RND_PIXELS_Y2 put, 8
 INIT_XMM sse2
-NO_RND_PIXELS_Y2 avg, 16
-NO_RND_PIXELS_Y2 put, 16
+NO_RND_PIXELS_Y2 put,  8, q, q
+
+NO_RND_PIXELS_Y2 avg, 16, u, a
+NO_RND_PIXELS_Y2 put, 16, u, a
 
 
 ; void ff_put_no_rnd_pixels8_xy2(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)

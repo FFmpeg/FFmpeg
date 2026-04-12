@@ -69,7 +69,7 @@ void checkasm_check_hpeldsp(void)
         TEST(put_no_rnd_pixels_tab, 2), // put_no_rnd_pixels_tab only has two usable blocksizes
         TEST(avg_no_rnd_pixels_tab, 1),
     };
-    declare_func_emms(AV_CPU_FLAG_MMX | AV_CPU_FLAG_MMXEXT, void, uint8_t *dst, const uint8_t *src, ptrdiff_t stride, int h);
+    declare_func(void, uint8_t *dst, const uint8_t *src, ptrdiff_t stride, int h);
 
     ff_hpeldsp_init(&hdsp, AV_CODEC_FLAG_BITEXACT);
 
