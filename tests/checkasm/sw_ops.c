@@ -799,13 +799,21 @@ static void check_linear(void)
 
 static void check_scale(void)
 {
-    for (SwsPixelType t = F32; t < SWS_PIXEL_TYPE_NB; t++) {
+    for (SwsPixelType t = U8; t < SWS_PIXEL_TYPE_NB; t++) {
         const char *type = ff_sws_pixel_type_name(t);
         const int bits = ff_sws_pixel_type_size(t) * 8;
         if (ff_sws_pixel_type_is_int(t)) {
-            /* Ensure the result won't exceed the value range */
             const unsigned max = (1 << bits) - 1;
-            const unsigned scale = rnd() & max;
+
+            /* Test fixed fast path for expansion from bits to full range */
+            CHECK_COMMON_RANGE(FMT("scale_full_%s", type), 1, t, t, {
+                .op    = SWS_OP_SCALE,
+                .type  = t,
+                .scale = {{ max, 1 }},
+            });
+
+            /* Ensure the result won't exceed the value range */
+            const unsigned scale = rnd() & (max >> 1);
             const unsigned range = max / (scale ? scale : 1);
             CHECK_COMMON_RANGE(FMT("scale_%s", type), range, t, t, {
                 .op    = SWS_OP_SCALE,
