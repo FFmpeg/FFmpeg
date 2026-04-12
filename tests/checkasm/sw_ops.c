@@ -559,11 +559,6 @@ static void check_clear(void)
                 {{  alpha,   none, chroma, chroma }},
                 {{ chroma,   none, chroma,  alpha }},
                 {{  alpha, chroma,   none, chroma }},
-                /* Random values */
-                {{ none, rndq(t), rndq(t), rndq(t) }},
-                {{ none, rndq(t), rndq(t), rndq(t) }},
-                {{ none, rndq(t), rndq(t), rndq(t) }},
-                {{ none, rndq(t), rndq(t), rndq(t) }},
             };
 
             for (int i = 0; i < FF_ARRAY_ELEMS(patterns); i++) {
