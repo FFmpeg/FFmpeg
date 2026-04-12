@@ -4248,7 +4248,7 @@ static int vulkan_map_to_drm(AVHWFramesContext *hwfc, AVFrame *dst,
         .sType = VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_PROPERTIES_EXT,
     };
     const int nb_sems = nb_images;
-
+    int free_drm_desc_on_err = 1;
     int sync_fd = -1;
 
     AVDRMFrameDescriptor *drm_desc = av_mallocz(sizeof(*drm_desc));
@@ -4285,6 +4285,9 @@ static int vulkan_map_to_drm(AVHWFramesContext *hwfc, AVFrame *dst,
     err = ff_hwframe_map_create(src->hw_frames_ctx, dst, src, &vulkan_unmap_to_drm, drm_desc);
     if (err < 0)
         goto end;
+
+    /* It will be freed in ff_hwframe_map_create callback */
+    free_drm_desc_on_err = 0;
 
     ret = vk->GetImageDrmFormatModifierPropertiesEXT(hwctx->act_dev, f->img[0],
                                                      &drm_mod);
@@ -4386,7 +4389,8 @@ static int vulkan_map_to_drm(AVHWFramesContext *hwfc, AVFrame *dst,
 end:
     for (int i = 0; i < drm_desc->nb_objects; i++)
         close(drm_desc->objects[i].fd);
-    av_free(drm_desc);
+    if (free_drm_desc_on_err)
+        av_free(drm_desc);
     if (sync_fd >= 0)
         close(sync_fd);
     return err;
@@ -4868,7 +4872,7 @@ end:
 static int vulkan_transfer_data_to(AVHWFramesContext *hwfc, AVFrame *dst,
                                    const AVFrame *src)
 {
-    VulkanDevicePriv *p = hwfc->device_ctx->hwctx;
+    av_unused VulkanDevicePriv *p = hwfc->device_ctx->hwctx;
 
     switch (src->format) {
 #if CONFIG_CUDA
