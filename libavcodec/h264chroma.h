@@ -22,7 +22,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
-typedef void (*h264_chroma_mc_func)(uint8_t *dst /*align 8*/, const uint8_t *src /*align 1*/, ptrdiff_t srcStride, int h, int x, int y);
+typedef void (*h264_chroma_mc_func)(uint8_t *dst /* align width * (bit_depth+7)/8) */,
+                                    const uint8_t *src /* align (bit_depth+7)/8) */,
+                                    ptrdiff_t srcStride, int h, int x, int y);
 
 typedef struct H264ChromaContext {
     h264_chroma_mc_func put_h264_chroma_pixels_tab[4];

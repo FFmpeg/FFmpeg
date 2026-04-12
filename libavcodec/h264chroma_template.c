@@ -26,7 +26,7 @@
 #include "bit_depth_template.c"
 
 #define H264_CHROMA_MC(OPNAME, OP)\
-MC2_STATIC void FUNCC(ff_ ## OPNAME ## h264_chroma_mc2)(uint8_t *_dst /*align 8*/, const uint8_t *_src /*align 1*/, ptrdiff_t stride, int h, int x, int y)\
+MC2_STATIC void FUNCC(ff_ ## OPNAME ## h264_chroma_mc2)(uint8_t *_dst, const uint8_t *_src, ptrdiff_t stride, int h, int x, int y)\
 {\
     pixel *dst = (pixel*)_dst;\
     const pixel *src = (const pixel*)_src;\
@@ -65,7 +65,7 @@ MC2_STATIC void FUNCC(ff_ ## OPNAME ## h264_chroma_mc2)(uint8_t *_dst /*align 8*
     }\
 }\
 \
-static void FUNCC(OPNAME ## h264_chroma_mc4)(uint8_t *_dst /*align 8*/, const uint8_t *_src /*align 1*/, ptrdiff_t stride, int h, int x, int y)\
+static void FUNCC(OPNAME ## h264_chroma_mc4)(uint8_t *_dst, const uint8_t *_src, ptrdiff_t stride, int h, int x, int y)\
 {\
     pixel *dst = (pixel*)_dst;\
     const pixel *src = (const pixel*)_src;\
@@ -110,7 +110,7 @@ static void FUNCC(OPNAME ## h264_chroma_mc4)(uint8_t *_dst /*align 8*/, const ui
     }\
 }\
 \
-static void FUNCC(OPNAME ## h264_chroma_mc8)(uint8_t *_dst /*align 8*/, const uint8_t *_src /*align 1*/, ptrdiff_t stride, int h, int x, int y)\
+static void FUNCC(OPNAME ## h264_chroma_mc8)(uint8_t *_dst, const uint8_t *_src, ptrdiff_t stride, int h, int x, int y)\
 {\
     pixel *dst = (pixel*)_dst;\
     const pixel *src = (const pixel*)_src;\
