@@ -206,6 +206,7 @@ static int setup_shift(const SwsImplParams *params, SwsImplResult *out)
     DECL_ASM(U##BITS, expand_bits##BITS##EXT,                                   \
         .op = SWS_OP_SCALE,                                                     \
         .scale = { .num = ((1 << (BITS)) - 1), .den = 1 },                      \
+        .unused = { false, true, true, true },                                  \
     );
 
 static int setup_dither(const SwsImplParams *params, SwsImplResult *out)
