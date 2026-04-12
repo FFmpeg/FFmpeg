@@ -28,6 +28,13 @@ typedef struct MemcpyPriv {
     uint8_t clear_value[4];
 } MemcpyPriv;
 
+/**
+ * Switch to loop if total padding exceeds this number of bytes. Chosen to
+ * align with the typical L1 cache size of modern CPUs, as this avoids the
+ * risk of the implementation loading one extra unnecessary cache line.
+ */
+#define SWS_MAX_PADDING 64
+
 /* Memcpy backend for trivial cases */
 
 static void process(const SwsOpExec *exec, const void *priv,
@@ -35,17 +42,23 @@ static void process(const SwsOpExec *exec, const void *priv,
 {
     const MemcpyPriv *p = priv;
     const int lines = y_end - y_start;
+    const int bytes = x_end * exec->block_size_out;
     av_assert1(x_start == 0 && x_end == exec->width);
 
     for (int i = 0; i < p->num_planes; i++) {
         uint8_t *out = exec->out[i];
         const int idx = p->index[i];
-        if (idx < 0) {
+        const int use_loop = exec->out_stride[i] > bytes + SWS_MAX_PADDING;
+        if (idx < 0 && !use_loop) {
             memset(out, p->clear_value[i], exec->out_stride[i] * lines);
-        } else if (exec->out_stride[i] == exec->in_stride[idx]) {
+        } else if (exec->out_stride[i] == exec->in_stride[idx] && !use_loop) {
             memcpy(out, exec->in[idx], exec->out_stride[i] * lines);
+        } else if (idx < 0) {
+            for (int y = y_start; y < y_end; y++) {
+                memset(out, p->clear_value[i], bytes);
+                out += exec->out_stride[i];
+            }
         } else {
-            const int bytes = x_end * exec->block_size_out;
             const uint8_t *in = exec->in[idx];
             for (int y = y_start; y < y_end; y++) {
                 memcpy(out, in, bytes);
