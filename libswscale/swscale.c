@@ -357,7 +357,6 @@ int ff_swscale(SwsInternal *c, const uint8_t *const src[], const int srcStride[]
 #if ARCH_X86
     if (   (uintptr_t) dst[0]&15 || (uintptr_t) dst[1]&15 || (uintptr_t) dst[2]&15
         || (uintptr_t)src2[0]&15 || (uintptr_t)src2[1]&15 || (uintptr_t)src2[2]&15
-        ||  dstStride[0]&15 ||  dstStride[1]&15 ||  dstStride[2]&15 ||  dstStride[3]&15
         || srcStride2[0]&15 || srcStride2[1]&15 || srcStride2[2]&15 || srcStride2[3]&15
     ) {
         SwsInternal *const ctx = c->parent ? sws_internal(c->parent) : c;
