@@ -111,7 +111,7 @@ static void set_range(AVRational *rangeq, unsigned range, unsigned range_def)
         *rangeq = (AVRational) { range, 1 };
 }
 
-static void check_compiled(const char *report, const SwsOpBackend *backend_new,
+static void check_compiled(const char *name, const SwsOpBackend *backend_new,
                            const SwsOp *read_op, const SwsOp *write_op,
                            const int ranges[NB_PLANES],
                            const SwsCompiledOp *comp_ref,
@@ -185,7 +185,7 @@ static void check_compiled(const char *report, const SwsOpBackend *backend_new,
     uintptr_t id = (uintptr_t) backend_new;
     id ^= (id << 6) + (id >> 2) + 0x9e3779b97f4a7c15 + comp_new->cpu_flags;
 
-    if (check_key((void*) id, "%s", report)) {
+    if (check_key((void*) id, "%s", name)) {
         exec.block_size_in  = comp_ref->block_size * rw_pixel_bits(read_op)  >> 3;
         exec.block_size_out = comp_ref->block_size * rw_pixel_bits(write_op) >> 3;
         for (int i = 0; i < NB_PLANES; i++) {
@@ -203,29 +203,29 @@ static void check_compiled(const char *report, const SwsOpBackend *backend_new,
         checkasm_call_checked(comp_new->func, &exec, comp_new->priv, 0, 0, PIXELS / comp_new->block_size, LINES);
 
         for (int i = 0; i < NB_PLANES; i++) {
-            const char *name = FMT("%s[%d]", report, i);
+            const char *desc = FMT("%s[%d]", name, i);
             const int stride = sizeof(dst0[i][0]);
 
             switch (write_op->type) {
             case U8:
                 checkasm_check(uint8_t, (void *) dst0[i], stride,
                                         (void *) dst1[i], stride,
-                                        write_size, LINES, name);
+                                        write_size, LINES, desc);
                 break;
             case U16:
                 checkasm_check(uint16_t, (void *) dst0[i], stride,
                                          (void *) dst1[i], stride,
-                                         write_size >> 1, LINES, name);
+                                         write_size >> 1, LINES, desc);
                 break;
             case U32:
                 checkasm_check(uint32_t, (void *) dst0[i], stride,
                                          (void *) dst1[i], stride,
-                                         write_size >> 2, LINES, name);
+                                         write_size >> 2, LINES, desc);
                 break;
             case F32:
                 checkasm_check(float_ulp, (void *) dst0[i], stride,
                                           (void *) dst1[i], stride,
-                                          write_size >> 2, LINES, name, 0);
+                                          write_size >> 2, LINES, desc, 0);
                 break;
             }
 
@@ -237,7 +237,7 @@ static void check_compiled(const char *report, const SwsOpBackend *backend_new,
     }
 }
 
-static void check_ops(const char *report, const unsigned ranges[NB_PLANES],
+static void check_ops(const char *name, const unsigned ranges[NB_PLANES],
                       const SwsOp *ops)
 {
     SwsContext *ctx = sws_alloc_context();
@@ -310,7 +310,7 @@ static void check_ops(const char *report, const unsigned ranges[NB_PLANES],
     }
 
     av_assert0(comp_ref.func && comp_new.func);
-    check_compiled(report, backend_new, read_op, write_op, ranges, &comp_ref, &comp_new);
+    check_compiled(name, backend_new, read_op, write_op, ranges, &comp_ref, &comp_new);
 
     if (comp_new.func != comp_ref.func)
         ff_sws_compiled_op_unref(&comp_new);
