@@ -262,12 +262,12 @@ enum AVFrameSideDataType {
      */
     AV_FRAME_DATA_EXIF,
 
-     /**
-      * HDR dynamic metadata associated with a video frame. The payload is
-      * an AVDynamicHDRSmpte2094App5 type and contains information for color
-      * volume transform as specified in the SMPTE 2094-50 standard.
-      */
-     AV_FRAME_DATA_DYNAMIC_HDR_SMPTE_2094_APP5,
+    /**
+     * HDR dynamic metadata associated with a video frame. The payload is
+     * an AVDynamicHDRSmpte2094App5 type and contains information for color
+     * volume transform as specified in the SMPTE 2094-50 standard.
+     */
+    AV_FRAME_DATA_DYNAMIC_HDR_SMPTE_2094_APP5,
 };
 
 enum AVActiveFormatDescription {
