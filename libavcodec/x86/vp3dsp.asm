@@ -1,5 +1,5 @@
 ;******************************************************************************
-;* MMX/SSE2-optimized functions for the VP3 decoder
+;* SSE2-optimized functions for the VP3 decoder
 ;* Copyright (c) 2007 Aurelien Jacobs <aurel@gnuage.org>
 ;*
 ;* This file is part of FFmpeg.
@@ -21,7 +21,7 @@
 
 %include "libavutil/x86/x86util.asm"
 
-; MMX-optimized functions cribbed from the original VP3 source code.
+; ASM-optimized functions cribbed from the original VP3 source code.
 
 SECTION_RODATA
 
@@ -421,9 +421,9 @@ cglobal vp3_idct_add, 3, 4, 9, dst, s, block, s3
     movq [dstq+s3q ], m5
 %endmacro
 
-INIT_MMX mmxext
-; void ff_vp3_idct_dc_add_mmxext(uint8_t *dest, ptrdiff_t stride, int16_t *block)
-cglobal vp3_idct_dc_add, 3, 4, 0, dst, s, block, dc
+INIT_XMM sse2
+; void ff_vp3_idct_dc_add_sse2(uint8_t *dest, ptrdiff_t stride, int16_t *block)
+cglobal vp3_idct_dc_add, 3, 4, 6, dst, s, block, dc
     movsx        dcd, word [blockq]
     mov word [blockq], 0
 %define s3q blockq
@@ -431,7 +431,7 @@ cglobal vp3_idct_dc_add, 3, 4, 0, dst, s, block, dc
     add          dcd, 15
     sar          dcd, 5
     movd          m0, dcd
-    pshufw        m0, m0, 0x0
+    SPLATW        m0, m0
     pxor          m1, m1
     psubw         m1, m0
     packuswb      m0, m0

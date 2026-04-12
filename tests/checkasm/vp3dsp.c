@@ -92,7 +92,7 @@ static void vp3_check_idct(int nb_bits)
         BUF_SIZE     = MAX_STRIDE * (NB_LINES - 1) + WIDTH,
     };
 
-    declare_func_emms(AV_CPU_FLAG_MMXEXT, void, uint8_t *dest, ptrdiff_t stride, int16_t *block);
+    declare_func(void, uint8_t *dest, ptrdiff_t stride, int16_t *block);
 
     DECLARE_ALIGNED(16, int16_t, block_new)[64];
     DECLARE_ALIGNED(16, int16_t, block_ref)[64];
