@@ -281,11 +281,6 @@ av_cold void ff_qpeldsp_init_x86(QpelDSPContext *c)
 {
     int cpu_flags = av_get_cpu_flags();
 
-    if (X86_MMXEXT(cpu_flags)) {
-#if HAVE_MMXEXT_EXTERNAL
-        c->avg_qpel_pixels_tab[1][0] = ff_avg_pixels8x8_mmxext;
-#endif /* HAVE_MMXEXT_EXTERNAL */
-    }
 #if HAVE_SSE2_EXTERNAL
     if (EXTERNAL_SSE2(cpu_flags)) {
         c->put_no_rnd_qpel_pixels_tab[0][0] =
@@ -293,6 +288,7 @@ av_cold void ff_qpeldsp_init_x86(QpelDSPContext *c)
         c->put_no_rnd_qpel_pixels_tab[1][0] =
         c->put_qpel_pixels_tab[1][0] = ff_put_pixels8x8_sse2;
         c->avg_qpel_pixels_tab[0][0] = ff_avg_pixels16x16_sse2;
+        c->avg_qpel_pixels_tab[1][0] = ff_avg_pixels8x8_sse2;
 
         SET_V_QPEL_FUNCS (16, sse2,);
         SET_V_QPEL_FUNCS (8,  sse2,);

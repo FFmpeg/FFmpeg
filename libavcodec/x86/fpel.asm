@@ -25,8 +25,40 @@
 
 SECTION .text
 
-; void ff_put/avg_pixels(uint8_t *block, const uint8_t *pixels,
-;                        ptrdiff_t line_size, int h)
+INIT_XMM sse2
+; void ff_avg_pixels8x8_sse2(uint8_t *block, const uint8_t *pixels,
+;                            ptrdiff_t line_size)
+cglobal avg_pixels8x8, 3,5,6
+    mov         r3d, 8
+    jmp         avg_pixels8_after_prologue
+
+; void ff_avg_pixels8_sse2(uint8_t *block, const uint8_t *pixels,
+;                          ptrdiff_t line_size, int h)
+cglobal avg_pixels8, 4,5,6
+avg_pixels8_after_prologue:
+    lea          r4, [r2*3]
+.loop:
+    movq         m0, [r1]
+    movq         m1, [r0]
+    movhps       m0, [r1+r2]
+    movhps       m1, [r0+r2]
+    movq         m2, [r1+r2*2]
+    movq         m3, [r0+r2*2]
+    pavgb        m0, m1
+    movq         m4, [r1+r4]
+    pavgb        m2, m3
+    movq         m5, [r0+r4]
+    lea          r1, [r1+r2*4]
+    pavgb        m4, m5
+    movq       [r0], m0
+    movhps  [r0+r2], m0
+    movq  [r0+r2*2], m2
+    movq    [r0+r4], m4
+    lea          r0, [r0+r2*4]
+    sub         r3d, 4
+    jne       .loop
+    RET
+
 %macro OP_PIXELS 2-3 0
 %if %2 == mmsize/2
 %define LOAD movh
@@ -35,11 +67,13 @@ SECTION .text
 %define LOAD movu
 %define SAVE mova
 %endif
-cglobal %1_pixels%2x%2, 3,5+4*%3,%3 ? 4 : 0
+cglobal %1_pixels%2x%2, 3,5+4*%3,4
     mov         r3d, %2
     jmp         %1_pixels%2_after_prologue
 
-cglobal %1_pixels%2, 4,5+4*%3,%3 ? 4 : 0
+; void ff_put/avg_pixels(uint8_t *block, const uint8_t *pixels,
+;                        ptrdiff_t line_size, int h)
+cglobal %1_pixels%2, 4,5+4*%3,4
 %1_pixels%2_after_prologue:
     lea          r4, [r2*3]
 .loop:
@@ -76,10 +110,6 @@ cglobal %1_pixels%2, 4,5+4*%3,%3 ? 4 : 0
     RET
 %endmacro
 
-INIT_MMX mmxext
-OP_PIXELS avg, 8
-
-INIT_XMM sse2
 OP_PIXELS put, 8, UNIX64
 OP_PIXELS put, 16
 OP_PIXELS avg, 16

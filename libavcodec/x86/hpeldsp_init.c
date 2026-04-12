@@ -80,7 +80,6 @@ static void hpeldsp_init_mmxext(HpelDSPContext *c, int flags)
     c->put_pixels_tab[1][1] = ff_put_pixels8_x2_mmxext;
     c->put_pixels_tab[1][2] = ff_put_pixels8_y2_mmxext;
 
-    c->avg_pixels_tab[1][0] = ff_avg_pixels8_mmxext;
     c->avg_pixels_tab[1][1] = ff_avg_pixels8_x2_mmxext;
     c->avg_pixels_tab[1][2] = ff_avg_pixels8_y2_mmxext;
 
@@ -114,6 +113,7 @@ static void hpeldsp_init_sse2(HpelDSPContext *c, int flags)
     c->avg_pixels_tab[0][1]        = ff_avg_pixels16_x2_sse2;
     c->avg_pixels_tab[0][2]        = ff_avg_pixels16_y2_sse2;
     c->avg_pixels_tab[0][3]        = ff_avg_pixels16_xy2_sse2;
+    c->avg_pixels_tab[1][0]        = ff_avg_pixels8_sse2;
 
     c->avg_no_rnd_pixels_tab[0]    = ff_avg_pixels16_sse2;
     c->avg_no_rnd_pixels_tab[1]    = ff_avg_no_rnd_pixels16_x2_sse2;

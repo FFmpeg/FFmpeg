@@ -71,7 +71,7 @@ static void check_cavs_qpeldsp(void)
         TEST(put_cavs_qpel_pixels_tab),
         TEST(avg_cavs_qpel_pixels_tab),
     };
-    declare_func_emms(AV_CPU_FLAG_MMX | AV_CPU_FLAG_MMXEXT, void, uint8_t *dst, const uint8_t *src, ptrdiff_t stride);
+    declare_func(void, uint8_t *dst, const uint8_t *src, ptrdiff_t stride);
 
     ff_cavsdsp_init(&cavsdsp);
 
