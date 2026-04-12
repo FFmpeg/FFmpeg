@@ -111,7 +111,7 @@ static void set_range(AVRational *rangeq, unsigned range, unsigned range_def)
         *rangeq = (AVRational) { range, 1 };
 }
 
-static void check_compiled(const char *name, const SwsOpBackend *backend_new,
+static void check_compiled(const char *name, const SwsOpBackend *backend,
                            const SwsOp *read_op, const SwsOp *write_op,
                            const int ranges[NB_PLANES],
                            const SwsCompiledOp *comp_ref,
@@ -124,6 +124,7 @@ static void check_compiled(const char *name, const SwsOpBackend *backend_new,
     static DECLARE_ALIGNED_64(char, dst0)[NB_PLANES][LINES][PIXELS * sizeof(uint32_t[4])];
     static DECLARE_ALIGNED_64(char, dst1)[NB_PLANES][LINES][PIXELS * sizeof(uint32_t[4])];
 
+    av_assert0(PIXELS % comp_new->block_size == 0);
     for (int p = 0; p < NB_PLANES; p++) {
         void *plane = src0[p];
         switch (read_op->type) {
@@ -178,14 +179,14 @@ static void check_compiled(const char *name, const SwsOpBackend *backend_new,
     }
 
     /**
-     * Don't use check_func() because the actual function pointer may be a
-     * wrapper shared by multiple implementations. Instead, take a hash of both
-     * the backend pointer and the active CPU flags.
+     * We can't use `check_func()` alone because the actual function pointer
+     * may be a wrapper or entry point shared by multiple implementations.
+     * Solve it by hashing in the active CPU flags as well.
      */
-    uintptr_t id = (uintptr_t) backend_new;
+    uintptr_t id = (uintptr_t) comp_new->func;
     id ^= (id << 6) + (id >> 2) + 0x9e3779b97f4a7c15 + comp_new->cpu_flags;
 
-    if (check_key((void*) id, "%s", name)) {
+    if (check_key((void*) id, "%s/%s", name, backend->name)) {
         exec.block_size_in  = comp_ref->block_size * rw_pixel_bits(read_op)  >> 3;
         exec.block_size_out = comp_ref->block_size * rw_pixel_bits(write_op) >> 3;
         for (int i = 0; i < NB_PLANES; i++) {
@@ -283,37 +284,51 @@ static void check_ops(const char *name, const unsigned ranges[NB_PLANES],
         }
     }
 
-    /* Compile `ops` using both the asm and c backends */
-    SwsCompiledOp comp_ref = {0}, comp_new = {0};
-    const SwsOpBackend *backend_new = NULL;
-
-    for (int n = 0; ff_sws_op_backends[n]; n++) {
-        const SwsOpBackend *backend = ff_sws_op_backends[n];
-        const bool is_ref = !strcmp(backend->name, "c");
-        if (is_ref || !comp_new.func) {
-            SwsCompiledOp comp;
-            int ret = ff_sws_ops_compile_backend(ctx, backend, &oplist, &comp);
-            if (ret == AVERROR(ENOTSUP))
-                continue;
-            else if (ret < 0)
-                fail();
-            else if (PIXELS % comp.block_size != 0)
-                fail();
-
-            if (is_ref)
-                comp_ref = comp;
-            if (!comp_new.func) {
-                comp_new = comp;
-                backend_new = backend;
+    static const SwsOpBackend *backend_ref;
+    if (!backend_ref) {
+         for (int n = 0; ff_sws_op_backends[n]; n++) {
+            if (!strcmp(ff_sws_op_backends[n]->name, "c")) {
+                backend_ref = ff_sws_op_backends[n];
+                break;
             }
         }
+        av_assert0(backend_ref);
     }
 
-    av_assert0(comp_ref.func && comp_new.func);
-    check_compiled(name, backend_new, read_op, write_op, ranges, &comp_ref, &comp_new);
+    /* Always compile `ops` using the C backend as a reference */
+    SwsCompiledOp comp_ref = {0};
+    int ret = ff_sws_ops_compile_backend(ctx, backend_ref, &oplist, &comp_ref);
+    if (ret < 0) {
+        av_assert0(ret != AVERROR(ENOTSUP));
+        fail();
+        goto done;
+    }
 
-    if (comp_new.func != comp_ref.func)
+    /* Iterate over every other backend, and test it against the C reference */
+    for (int n = 0; ff_sws_op_backends[n]; n++) {
+        const SwsOpBackend *backend = ff_sws_op_backends[n];
+        if (backend->hw_format != AV_PIX_FMT_NONE || backend == backend_ref)
+            continue;
+
+        if (!av_get_cpu_flags()) {
+            /* Also test once with the existing C reference to set the baseline */
+            check_compiled(name, backend, read_op, write_op, ranges, &comp_ref, &comp_ref);
+        }
+
+        SwsCompiledOp comp_new = {0};
+        int ret = ff_sws_ops_compile_backend(ctx, backend, &oplist, &comp_new);
+        if (ret == AVERROR(ENOTSUP)) {
+            continue;
+        } else if (ret < 0) {
+            fail();
+            goto done;
+        }
+
+        check_compiled(name, backend, read_op, write_op, ranges, &comp_ref, &comp_new);
         ff_sws_compiled_op_unref(&comp_new);
+    }
+
+done:
     ff_sws_compiled_op_unref(&comp_ref);
     sws_free_context(&ctx);
 }
