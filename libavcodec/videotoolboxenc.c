@@ -2119,7 +2119,7 @@ static int copy_replace_length_codes(
             uint8_t *new_sei;
             old_sei_length = find_sei_end(avctx, dst_box, box_len, &new_sei);
             if (old_sei_length < 0)
-                return status;
+                return old_sei_length;
 
             wrote_bytes = write_sei(sei,
                                     SEI_TYPE_USER_DATA_REGISTERED_ITU_T_T35,
