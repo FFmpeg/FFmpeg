@@ -101,6 +101,12 @@ av_cold int ff_mpv_decode_init(MpegEncContext *s, AVCodecContext *avctx)
     ff_mpv_idct_init(s);
 
     ff_h264chroma_init(&s->h264chroma, 8); //for lowres
+    // lowres may use the following width 2 functions with a height of 1,
+    // yet the H.264 decoder uses them with at least two rows.
+    // Override them with the C versions so that ASM functions can process
+    // two rows at a time.
+    s->h264chroma.avg_h264_chroma_pixels_tab[2] = ff_avg_h264_chroma_mc2_8_c;
+    s->h264chroma.put_h264_chroma_pixels_tab[2] = ff_put_h264_chroma_mc2_8_c;
     s->h264chroma.avg_h264_chroma_pixels_tab[3] = avg_h264_chroma_mc1;
     s->h264chroma.put_h264_chroma_pixels_tab[3] = put_h264_chroma_mc1;
 

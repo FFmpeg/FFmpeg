@@ -39,4 +39,9 @@ void ff_h264chroma_init_mips(H264ChromaContext *c, int bit_depth);
 void ff_h264chroma_init_loongarch(H264ChromaContext *c, int bit_depth);
 void ff_h264chroma_init_riscv(H264ChromaContext *c, int bit_depth);
 
+void ff_put_h264_chroma_mc2_8_c(uint8_t *dst, const uint8_t *src,
+                                ptrdiff_t srcStride, int h, int x, int y);
+void ff_avg_h264_chroma_mc2_8_c(uint8_t *dst, const uint8_t *src,
+                                ptrdiff_t srcStride, int h, int x, int y);
+
 #endif /* AVCODEC_H264CHROMA_H */
