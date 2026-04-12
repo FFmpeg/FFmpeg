@@ -20,6 +20,18 @@
 
 #include "ops_backend.h"
 
+/**
+ * We want to disable FP contraction because this is a reference backend that
+ * establishes a bit-exact reference result.
+ */
+#ifdef __clang__
+#pragma STDC FP_CONTRACT OFF
+#elif AV_GCC_VERSION_AT_LEAST(4, 8)
+#pragma GCC optimize ("fp-contract=off")
+#elif defined(_MSC_VER)
+#pragma fp_contract (off)
+#endif
+
 #if AV_GCC_VERSION_AT_LEAST(4, 4)
 #pragma GCC optimize ("finite-math-only")
 #endif
