@@ -163,6 +163,16 @@ process_fn 4
 ; For the clean multiples (e.g. rgba -> argb), we also define AVX2 and AVX512
 ; versions that can handle a larger number of bytes at once.
 
+%macro MOVSIZE 3 ; size, dst, src
+    %if %1 <= 4
+        movd %2, %3
+    %elif %1 <= 8
+        movq %2, %3
+    %else
+        movu %2, %3
+    %endif
+%endmacro
+
 %macro packed_shuffle 2 ; size_in, size_out
 cglobal packed_shuffle%1_%2, 6, 10, 2, \
     exec, shuffle, bx, y, bxend, yend, src, dst, src_stride, dst_stride
@@ -185,15 +195,9 @@ cglobal packed_shuffle%1_%2, 6, 10, 2, \
             sub srcq, srcidxq
             sub dstq, dstidxq
 .loop:
-    %if %1 <= 4
-            movd m0, [srcq + srcidxq]
-    %elif %1 <= 8
-            movq m0, [srcq + srcidxq]
-    %else
-            movu m0, [srcq + srcidxq]
-    %endif
+            MOVSIZE %1, m0, [srcq + srcidxq]
             pshufb m0, m1
-            movu [dstq + dstidxq], m0
+            MOVSIZE %2, [dstq + dstidxq], m0
             add srcidxq, %1
 IF %1 != %2,add dstidxq, %2
             jnz .loop

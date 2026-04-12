@@ -869,6 +869,13 @@ static bool op_is_type_invariant(const SwsOp *op)
     return false;
 }
 
+static int movsize(const int bytes, const int mmsize)
+{
+    return bytes <= 4 ? 4 : /* movd */
+           bytes <= 8 ? 8 : /* movq */
+           mmsize;          /* movu */
+}
+
 static int solve_shuffle(const SwsOpList *ops, int mmsize, SwsCompiledOp *out)
 {
     uint8_t shuffle[16];
@@ -888,17 +895,14 @@ static int solve_shuffle(const SwsOpList *ops, int mmsize, SwsCompiledOp *out)
     const int num_lanes = mmsize / 16;
     const int in_total  = num_lanes * read_bytes;
     const int out_total = num_lanes * write_bytes;
-    const int read_size = in_total <= 4 ? 4 : /* movd */
-                          in_total <= 8 ? 8 : /* movq */
-                          mmsize;             /* movu */
 
     *out = (SwsCompiledOp) {
         .priv        = av_memdup(shuffle, sizeof(shuffle)),
         .free        = av_free,
         .slice_align = 1,
         .block_size  = pixels * num_lanes,
-        .over_read   = read_size - in_total,
-        .over_write  = mmsize - out_total,
+        .over_read   = movsize(in_total,  mmsize) - in_total,
+        .over_write  = movsize(out_total, mmsize) - out_total,
         .cpu_flags   = mmsize > 32 ? AV_CPU_FLAG_AVX512 :
                        mmsize > 16 ? AV_CPU_FLAG_AVX2 :
                                      AV_CPU_FLAG_SSE4,
