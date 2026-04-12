@@ -33,6 +33,7 @@
 /lls
 /log
 /lzo
+/mathematics
 /md5
 /murmur3
 /opt
@@ -43,7 +44,9 @@
 /pixfmt_best
 /random_seed
 /rational
+/rc4
 /ripemd
+/samplefmt
 /sha
 /sha512
 /side_data_array
@@ -51,6 +54,7 @@
 /spherical
 /stereo3d
 /tea
+/timecode
 /tree
 /twofish
 /utf8
