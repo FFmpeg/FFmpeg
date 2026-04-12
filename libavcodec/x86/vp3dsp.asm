@@ -34,7 +34,6 @@ vp3_idct_data: times 8 dw 64277
                times 8 dw 12785
 
 cextern pb_80
-cextern pb_FE
 
 cextern pw_4
 cextern pw_8
@@ -155,40 +154,35 @@ cglobal vp3_h_loop_filter, 3, 4, 6
     RET
 
 %macro PAVGB_NO_RND 0
-    mova   m4, m0
-    mova   m5, m2
-    pand   m4, m1
-    pand   m5, m3
-    pxor   m1, m0
-    pxor   m3, m2
-    pand   m1, m6
-    pand   m3, m6
-    psrlq  m1, 1
-    psrlq  m3, 1
-    paddb  m4, m1
-    paddb  m5, m3
+    pxor          m0, m4
+    pxor          m1, m4
+    pavgb         m0, m1
+    pxor          m0, m4
 %endmacro
 
-INIT_MMX mmx
-cglobal put_vp_no_rnd_pixels8_l2, 5, 6, 0, dst, src1, src2, stride, h, stride3
-    mova   m6, [pb_FE]
+INIT_XMM sse2
+; void ff_vp3_put_no_rnd_pixels8_l2_sse2(uint8_t *dst, const uint8_t *a,
+;                                        const uint8_t *b, ptrdiff_t stride,
+;                                        int h)
+cglobal vp3_put_no_rnd_pixels8_l2, 5, 6, 5, dst, src1, src2, stride, h, stride3
     lea    stride3q,[strideq+strideq*2]
+    pcmpeqb       m4, m4
 .loop:
-    mova   m0, [src1q]
-    mova   m1, [src2q]
-    mova   m2, [src1q+strideq]
-    mova   m3, [src2q+strideq]
+    movq          m0, [src1q]
+    movq          m1, [src2q]
+    movhps        m0, [src1q+strideq]
+    movhps        m1, [src2q+strideq]
     PAVGB_NO_RND
-    mova   [dstq], m4
-    mova   [dstq+strideq], m5
+    movq      [dstq], m0
+    movhps [dstq+strideq], m0
 
-    mova   m0, [src1q+strideq*2]
-    mova   m1, [src2q+strideq*2]
-    mova   m2, [src1q+stride3q]
-    mova   m3, [src2q+stride3q]
+    movq          m0, [src1q+strideq*2]
+    movq          m1, [src2q+strideq*2]
+    movhps        m0, [src1q+stride3q]
+    movhps        m1, [src2q+stride3q]
     PAVGB_NO_RND
-    mova   [dstq+strideq*2], m4
-    mova   [dstq+stride3q],  m5
+    movq   [dstq+strideq*2], m0
+    movhps [dstq+stride3q],  m0
 
     lea    src1q, [src1q+strideq*4]
     lea    src2q, [src2q+strideq*4]

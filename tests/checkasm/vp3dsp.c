@@ -47,7 +47,7 @@ static void vp3_check_put_no_rnd_pixels_l2(const VP3DSPContext *const vp3dsp)
         BUF_SIZE     = MAX_STRIDE * (HEIGHT - 1) + WIDTH,
         SRC_BUF_SIZE = BUF_SIZE + (WIDTH - 1), ///< WIDTH-1 to use misaligned input
     };
-    declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *dst,
+    declare_func(void, uint8_t *dst,
                  const uint8_t *a, const uint8_t *b,
                  ptrdiff_t stride, int h);
 
