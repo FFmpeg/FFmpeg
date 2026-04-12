@@ -634,18 +634,18 @@ cglobal pred8x8_top_dc_8, 2,5
     RET
 
 ;-----------------------------------------------------------------------------
-; void ff_pred8x8_dc_8_mmxext(uint8_t *src, ptrdiff_t stride)
+; void ff_pred8x8_dc_8_sse2(uint8_t *src, ptrdiff_t stride)
 ;-----------------------------------------------------------------------------
 
-INIT_MMX mmxext
-cglobal pred8x8_dc_8, 2,5
+INIT_XMM sse2
+cglobal pred8x8_dc_8, 2,5,5
     sub       r0, r1
-    pxor      m7, m7
+    pxor      m4, m4
     movd      m0, [r0+0]
     movd      m1, [r0+4]
-    psadbw    m0, m7            ; s0
+    psadbw    m0, m4            ; s0
     mov       r4, r0
-    psadbw    m1, m7            ; s1
+    psadbw    m1, m4            ; s1
 
     movzx    r2d, byte [r0+r1*1-1]
     movzx    r3d, byte [r0+r1*2-1]
@@ -671,27 +671,25 @@ cglobal pred8x8_dc_8, 2,5
     mov       r0, r4
     punpcklwd m2, m3
     punpckldq m0, m2            ; s0, s1, s2, s3
-    pshufw    m3, m0, 11110110b ; s2, s1, s3, s3
+    pshuflw   m3, m0, 11110110b ; s2, s1, s3, s3
     lea       r2, [r0+r1*2]
-    pshufw    m0, m0, 01110100b ; s0, s1, s3, s1
+    pshuflw   m0, m0, 01110100b ; s0, s1, s3, s1
     paddw     m0, m3
     lea       r3, [r2+r1*2]
     psrlw     m0, 2
-    pavgw     m0, m7            ; s0+s2, s1, s3, s1+s3
+    pavgw     m0, m4            ; s0+s2, s1, s3, s1+s3
     lea       r4, [r3+r1*2]
     packuswb  m0, m0
     punpcklbw m0, m0
-    movq      m1, m0
-    punpcklbw m0, m0
-    punpckhbw m1, m1
+    punpcklwd m0, m0
     movq [r0+r1*1], m0
     movq [r0+r1*2], m0
     movq [r2+r1*1], m0
     movq [r2+r1*2], m0
-    movq [r3+r1*1], m1
-    movq [r3+r1*2], m1
-    movq [r4+r1*1], m1
-    movq [r4+r1*2], m1
+    movhps [r3+r1*1], m0
+    movhps [r3+r1*2], m0
+    movhps [r4+r1*1], m0
+    movhps [r4+r1*2], m0
     RET
 
 ;-----------------------------------------------------------------------------
