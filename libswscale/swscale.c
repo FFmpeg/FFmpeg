@@ -1224,8 +1224,10 @@ static int frame_alloc_buffers(SwsContext *sws, AVFrame *frame)
     for (int i = 0; i < nb_planes; i++) {
         frame->linesize[i] = pool->linesize[i];
         frame->buf[i] = av_buffer_pool_get(pool->pools[i]);
-        if (!frame->buf[i])
+        if (!frame->buf[i]) {
+            av_frame_unref(frame);
             return AVERROR(ENOMEM);
+        }
         frame->data[i] = frame->buf[i]->data;
     }
 
