@@ -152,6 +152,7 @@ typedef struct SwsAArch64Context {
     RasmOp op0_func;
     RasmOp op1_impl;
     RasmOp cont;
+    RasmNode *load_cont_node;
 
     /* Vector registers. Two banks (low and high) are used. */
     RasmOp vl[ 4];
@@ -378,6 +379,18 @@ static void asmgen_process_return(SwsAArch64Context *s, const SwsAArch64OpImplPa
 }
 
 /*********************************************************************/
+/**
+ * Set node where the continuation address will be loaded and impl will
+ * be incremented. This should be done right after impl->priv has been
+ * used.
+ */
+static void asmgen_set_load_cont_node(SwsAArch64Context *s)
+{
+    RasmContext *r = s->rctx;
+    s->load_cont_node = rasm_get_current_node(r);
+}
+
+/*********************************************************************/
 /* gather raw pixels from planes */
 /* AARCH64_SWS_OP_READ_BIT */
 /* AARCH64_SWS_OP_READ_NIBBLE */
@@ -401,6 +414,7 @@ static void asmgen_op_read_bit(SwsAArch64Context *s, const SwsAArch64OpImplParam
      * ushl actually performs a right shift. */
     rasm_annotate_next(r, "v128 shift_vec = impl->priv.v128;");
     i_ldr(r, shift_vec.q, a64op_off(s->impl, offsetof_impl_priv));
+    asmgen_set_load_cont_node(s);
 
     if (p->block_size == 16) {
         i_ldrh(r, wtmp,        a64op_post(s->in[0], 2));    CMT("uint16_t tmp = *in[0]++;");
@@ -528,6 +542,7 @@ static void asmgen_op_write_bit(SwsAArch64Context *s, const SwsAArch64OpImplPara
 
     rasm_annotate_next(r, "v128 shift_vec = impl->priv.v128;");
     i_ldr(r, shift_vec.q, a64op_off(s->impl, offsetof_impl_priv));
+    asmgen_set_load_cont_node(s);
 
     if (p->block_size == 8) {
         i_ushl(r, vl[0].b8,    vl[0].b8,   shift_vec.b8);   CMT("vl[0] <<= shift_vec;");
@@ -896,6 +911,7 @@ static void asmgen_op_clear(SwsAArch64Context *s, const SwsAArch64OpImplParams *
      */
 
     i_ldr(r, v_q(clear_vec), a64op_off(s->impl, offsetof_impl_priv));   CMT("v128 clear_vec = impl->priv.v128;");
+    asmgen_set_load_cont_node(s);
 
     LOOP_MASK      (p, i) { i_dup(r, vl[i], a64op_elem(clear_vec, i));  CMTF("vl[%u] = broadcast(clear_vec[%u])", i, i); }
     LOOP_MASK_VH(s, p, i) { i_dup(r, vh[i], a64op_elem(clear_vec, i));  CMTF("vh[%u] = broadcast(clear_vec[%u])", i, i); }
@@ -1024,6 +1040,7 @@ static void asmgen_op_min(SwsAArch64Context *s, const SwsAArch64OpImplParams *p)
     RasmOp min_vec = s->vt[4];
 
     i_ldr(r, v_q(min_vec), a64op_off(s->impl, offsetof_impl_priv)); CMT("v128 min_vec = impl->priv.v128;");
+    asmgen_set_load_cont_node(s);
     LOOP_MASK(p, i) { i_dup(r, vt[i], a64op_elem(min_vec, i));      CMTF("v128 vmin%u = min_vec[%u];", i, i); }
 
     if (p->type == AARCH64_PIXEL_F32) {
@@ -1048,6 +1065,7 @@ static void asmgen_op_max(SwsAArch64Context *s, const SwsAArch64OpImplParams *p)
     RasmOp max_vec = s->vt[4];
 
     i_ldr(r, v_q(max_vec), a64op_off(s->impl, offsetof_impl_priv)); CMT("v128 max_vec = impl->priv.v128;");
+    asmgen_set_load_cont_node(s);
     LOOP_MASK(p, i) { i_dup(r, vt[i], a64op_elem(max_vec, i));      CMTF("v128 vmax%u = max_vec[%u];", i, i); }
 
     if (p->type == AARCH64_PIXEL_F32) {
@@ -1072,6 +1090,7 @@ static void asmgen_op_scale(SwsAArch64Context *s, const SwsAArch64OpImplParams *
     RasmOp scale_vec = s->vt[0];
 
     i_add (r, priv_ptr, s->impl, IMM(offsetof_impl_priv));          CMT("v128 *scale_vec_ptr = &impl->priv;");
+    asmgen_set_load_cont_node(s);
     i_ld1r(r, vv_1(scale_vec), a64op_base(priv_ptr));               CMT("v128 scale_vec = broadcast(*scale_vec_ptr);");
 
     if (p->type == AARCH64_PIXEL_F32) {
@@ -1195,6 +1214,7 @@ static void asmgen_op_linear(SwsAArch64Context *s, const SwsAArch64OpImplParams 
     case 4: coeff_veclist = vv_4(vc[0], vc[1], vc[2], vc[3]); break;
     }
     i_ldr(r, ptr, a64op_off(s->impl, offsetof_impl_priv));  CMT("v128 *vcoeff_ptr = impl->priv.ptr;");
+    asmgen_set_load_cont_node(s);
     i_ld1(r, coeff_veclist, a64op_base(ptr));               CMT("coeff_veclist = *vcoeff_ptr;");
 
     /* Compute mask for rows that must be saved before being overwritten. */
@@ -1262,6 +1282,7 @@ static void asmgen_op_dither(SwsAArch64Context *s, const SwsAArch64OpImplParams 
     }
 
     i_ldr(r, ptr, a64op_off(s->impl, offsetof_impl_priv));  CMT("void *ptr = impl->priv.ptr;");
+    asmgen_set_load_cont_node(s);
 
     /**
      * We use ubfiz to mask and shift left in one single instruction:
@@ -1365,7 +1386,7 @@ static void asmgen_op_cps(SwsAArch64Context *s, const SwsAArch64OpImplParams *p)
     reshape_all_vectors(s, s->el_count, el_size);
 
     /* Common start for continuation-passing style (CPS) functions. */
-    i_ldr(r, s->cont, a64op_off(s->impl, offsetof_impl_cont));  CMT("SwsFuncPtr cont = impl->cont;");
+    asmgen_set_load_cont_node(s);
 
     switch (p->op) {
     case AARCH64_SWS_OP_READ_BIT:     asmgen_op_read_bit(s, p);     break;
@@ -1395,8 +1416,13 @@ static void asmgen_op_cps(SwsAArch64Context *s, const SwsAArch64OpImplParams *p)
         break;
     }
 
+    /* Load continuation address and increment impl pointer. */
+    RasmNode *node = rasm_set_current_node(r, s->load_cont_node);
+    RasmOp impl_post = a64op_post(s->impl, sizeof_impl);
+    i_ldr(r, s->cont, impl_post);                   CMT("SwsFuncPtr cont = (impl++)->cont;");
+    rasm_set_current_node(r, node);
+
     /* Common end for CPS functions. */
-    i_add(r, s->impl, s->impl, IMM(sizeof_impl));   CMT("impl += 1;");
     i_br (r, s->cont);                              CMT("jump to cont");
 }
 
