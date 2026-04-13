@@ -271,6 +271,7 @@ static const char insn_names[AARCH64_INSN_NB][8] = {
     [AARCH64_INSN_ADR   ] = "adr",
     [AARCH64_INSN_AND   ] = "and",
     [AARCH64_INSN_B     ] = "b",
+    [AARCH64_INSN_BCOND ] = "b",
     [AARCH64_INSN_BR    ] = "br",
     [AARCH64_INSN_CMP   ] = "cmp",
     [AARCH64_INSN_CSEL  ] = "csel",
@@ -342,7 +343,7 @@ static void print_node_insn(const RasmContext *rctx,
     indent_to(fp, pos, line_start, INSTR_INDENT);
 
     int op_start = 0;
-    if (node->insn.id == AARCH64_INSN_B && rasm_op_type(node->insn.op[0]) == AARCH64_OP_COND) {
+    if (node->insn.id == AARCH64_INSN_BCOND) {
         pos_fprintf(fp, pos, "b.%-14s", cond_name(a64op_cond_val(node->insn.op[0])));
         op_start = 1;
     } else if (rasm_op_type(node->insn.op[0]) == RASM_OP_NONE) {
