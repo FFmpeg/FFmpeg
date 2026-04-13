@@ -584,7 +584,7 @@ cglobal pred8x8_vertical_8, 2,2
 ;-----------------------------------------------------------------------------
 
 %macro PRED8x8_H 0
-cglobal pred8x8_horizontal_8, 2,3
+cglobal pred8x8_horizontal_8, 2,3,3
     mov       r2, 4
 %if cpuflag(ssse3)
     mova      m2, [pb_3]
@@ -592,17 +592,17 @@ cglobal pred8x8_horizontal_8, 2,3
 .loop:
     SPLATB_LOAD m0, r0+r1*0-1, m2
     SPLATB_LOAD m1, r0+r1*1-1, m2
-    mova [r0+r1*0], m0
-    mova [r0+r1*1], m1
+    movq [r0+r1*0], m0
+    movq [r0+r1*1], m1
     lea       r0, [r0+r1*2]
     dec       r2
     jg .loop
     RET
 %endmacro
 
-INIT_MMX mmxext
+INIT_XMM sse2
 PRED8x8_H
-INIT_MMX ssse3
+INIT_XMM ssse3
 PRED8x8_H
 
 ;-----------------------------------------------------------------------------
