@@ -362,9 +362,8 @@ static void list_standards(AVFormatContext *ctx)
 
 static void mmap_free(struct video_data *s, int n)
 {
-    while (--n > 0) {
-        v4l2_munmap(s->buf_data[n].start, s->buf_data[n].len);
-    }
+    for (int i = 0; i < n; i++)
+        v4l2_munmap(s->buf_data[i].start, s->buf_data[i].len);
     av_freep(&s->buf_data);
 }
 
