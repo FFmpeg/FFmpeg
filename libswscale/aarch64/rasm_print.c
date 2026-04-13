@@ -272,6 +272,7 @@ static const char insn_names[AARCH64_INSN_NB][8] = {
     [AARCH64_INSN_AND   ] = "and",
     [AARCH64_INSN_B     ] = "b",
     [AARCH64_INSN_BCOND ] = "b",
+    [AARCH64_INSN_BLR   ] = "blr",
     [AARCH64_INSN_BR    ] = "br",
     [AARCH64_INSN_CMP   ] = "cmp",
     [AARCH64_INSN_CSEL  ] = "csel",

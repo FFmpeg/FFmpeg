@@ -249,6 +249,7 @@ typedef enum AArch64InsnId {
     AARCH64_INSN_AND,
     AARCH64_INSN_B,
     AARCH64_INSN_BCOND,
+    AARCH64_INSN_BLR,
     AARCH64_INSN_BR,
     AARCH64_INSN_CMP,
     AARCH64_INSN_CSEL,
@@ -351,6 +352,7 @@ static inline uint8_t a64op_gpr_size(RasmOp op) { return op.u8[1]; }
 
 static inline RasmOp a64op_gpw(uint8_t n) { return a64op_make_gpr(n, sizeof(uint32_t)); }
 static inline RasmOp a64op_gpx(uint8_t n) { return a64op_make_gpr(n, sizeof(uint64_t)); }
+static inline RasmOp a64op_lr (void)      { return a64op_make_gpr(30, sizeof(uint64_t)); }
 static inline RasmOp a64op_sp (void)      { return a64op_make_gpr(31, sizeof(uint64_t)); }
 
 /* modifiers */
@@ -540,6 +542,7 @@ static inline RasmOp a64cond_nv(void) { return a64op_cond(AARCH64_COND_NV); }
 #define i_and(rctx,    op0, op1, op2     ) rasm_add_insn(rctx, AARCH64_INSN_AND,    op0, op1, op2, OPN)
 #define i_b(rctx,      op0               ) rasm_add_insn(rctx, AARCH64_INSN_B,      op0, OPN, OPN, OPN)
 #define i_bcond(rctx,  op0, op1          ) rasm_add_insn(rctx, AARCH64_INSN_BCOND,  op0, op1, OPN, OPN)
+#define i_blr(rctx,    op0               ) rasm_add_insn(rctx, AARCH64_INSN_BLR,    op0, OPN, OPN, OPN)
 #define i_br(rctx,     op0               ) rasm_add_insn(rctx, AARCH64_INSN_BR,     op0, OPN, OPN, OPN)
 #define i_cmp(rctx,    op0, op1          ) rasm_add_insn(rctx, AARCH64_INSN_CMP,    op0, op1, OPN, OPN)
 #define i_csel(rctx,   op0, op1, op2, op3) rasm_add_insn(rctx, AARCH64_INSN_CSEL,   op0, op1, op2, op3)
