@@ -53,13 +53,10 @@ typedef struct SwsOpIter {
 } SwsOpIter;
 
 #ifdef __clang__
-#  define SWS_FUNC
 #  define SWS_LOOP AV_PRAGMA(clang loop vectorize(assume_safety))
 #elif defined(__GNUC__)
-#  define SWS_FUNC __attribute__((optimize("tree-vectorize")))
 #  define SWS_LOOP AV_PRAGMA(GCC ivdep)
 #else
-#  define SWS_FUNC
 #  define SWS_LOOP
 #endif
 
@@ -106,10 +103,10 @@ typedef struct SwsOpIter {
 
 /* Helper macros to declare continuation functions */
 #define DECL_IMPL(NAME)                                                         \
-    static SWS_FUNC void fn(NAME)(SwsOpIter *restrict iter,                     \
-                                  const SwsOpImpl *restrict impl,               \
-                                  block_t x, block_t y,                         \
-                                  block_t z, block_t w)
+    static void fn(NAME)(SwsOpIter *restrict iter,                              \
+                         const SwsOpImpl *restrict impl,                        \
+                         block_t x, block_t y,                                  \
+                         block_t z, block_t w)
 
 /* Helper macro to call into the next continuation with a given type */
 #define CONTINUE(TYPE, ...)                                                     \

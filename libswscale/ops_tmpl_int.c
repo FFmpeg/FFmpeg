@@ -419,7 +419,7 @@ WRAP_COMMON_PATTERNS(convert_float,
  * Note that this is only safe to do if no arguments are duplicated.
  */
 #define DECL_SWIZZLE(X, Y, Z, W)                                                \
-static SWS_FUNC void                                                            \
+static void                                                                     \
 fn(swizzle_##X##Y##Z##W)(SwsOpIter *restrict iter,                              \
                          const SwsOpImpl *restrict impl,                        \
                          block_t c0, block_t c1, block_t c2, block_t c3)        \
@@ -453,7 +453,7 @@ DECL_SWIZZLE(0, 3, 2, 1)
 
 /* Broadcast luma -> rgb (only used for y(a) -> rgb(a)) */
 #define DECL_EXPAND_LUMA(X, W, T0, T1)                                          \
-static SWS_FUNC void                                                            \
+static void                                                                     \
 fn(expand_luma_##X##W)(SwsOpIter *restrict iter,                                \
                        const SwsOpImpl *restrict impl,                          \
                        block_t c0, block_t c1,  block_t c2, block_t c3)         \
