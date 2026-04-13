@@ -805,6 +805,62 @@ static void print_dynamic_hdr10_plus(AVTextFormatContext *tfc, const AVDynamicHD
     }
 }
 
+static void print_dynamic_hdr_smpte2094_app5(AVTextFormatContext *tfc, const AVDynamicHDRSmpte2094App5 *metadata)
+{
+    if (!metadata)
+        return;
+    print_int("application_version", metadata->application_version);
+    print_int("minimum_application_version", metadata->minimum_application_version);
+    print_int("has_custom_hdr_reference_white_flag", metadata->has_custom_hdr_reference_white_flag);
+    print_int("has_adaptive_tone_map_flag", metadata->has_adaptive_tone_map_flag);
+
+    if (metadata->has_custom_hdr_reference_white_flag)
+        print_int("hdr_reference_white", metadata->hdr_reference_white);
+
+    if (!metadata->has_adaptive_tone_map_flag)
+        return;
+
+    print_int("baseline_hdr_headroom", metadata->baseline_hdr_headroom);
+    print_int("use_reference_white_tone_mapping_flag", metadata->use_reference_white_tone_mapping_flag);
+
+    if (metadata->use_reference_white_tone_mapping_flag)
+        return;
+
+    print_int("num_alternate_images", metadata->num_alternate_images);
+    print_int("gain_application_space_chromaticities_flag", metadata->gain_application_space_chromaticities_flag);
+    print_int("has_common_component_mix_params_flag", metadata->has_common_component_mix_params_flag);
+    print_int("has_common_curve_params_flag", metadata->has_common_curve_params_flag);
+
+    if (metadata->gain_application_space_chromaticities_flag == 3) {
+        for (int i = 0; i < 8; i++)
+            print_int("gain_application_space_chromaticities", metadata->gain_application_space_chromaticities[i]);
+    }
+
+    for (int a = 0; a < metadata->num_alternate_images; a++) {
+        print_int("alternate_hdr_headroom", metadata->alternate_hdr_headrooms[a]);
+
+        print_int("component_mixing_type", metadata->component_mixing_type[a]);
+        if (metadata->component_mixing_type[a] == 3) {
+            for (int k = 0; k < 6; k++) {
+                print_int("has_component_mixing_coefficient_flag", metadata->has_component_mixing_coefficient_flag[a][k]);
+                if (metadata->has_component_mixing_coefficient_flag[a][k])
+                    print_int("component_mixing_coefficient", metadata->component_mixing_coefficient[a][k]);
+            }
+        }
+
+        print_int("gain_curve_num_control_points_minus_1", metadata->gain_curve_num_control_points_minus_1[a]);
+        print_int("gain_curve_use_pchip_slope_flag", metadata->gain_curve_use_pchip_slope_flag[a]);
+        for (int c = 0; c <= metadata->gain_curve_num_control_points_minus_1[a]; c++)
+            print_int("gain_curve_control_point_x", metadata->gain_curve_control_points_x[a][c]);
+        for (int c = 0; c <= metadata->gain_curve_num_control_points_minus_1[a]; c++)
+            print_int("gain_curve_control_point_y", metadata->gain_curve_control_points_y[a][c]);
+        if (!metadata->gain_curve_use_pchip_slope_flag[a]) {
+            for (int c = 0; c <= metadata->gain_curve_num_control_points_minus_1[a]; c++)
+                print_int("gain_curve_control_point_theta", metadata->gain_curve_control_points_theta[a][c]);
+        }
+    }
+}
+
 static void print_dynamic_hdr_vivid(AVTextFormatContext *tfc, const AVDynamicHDRVivid *metadata)
 {
     if (!metadata)
@@ -1384,6 +1440,9 @@ static void print_frame_side_data(AVTextFormatContext *tfc,
         } else if (sd->type == AV_FRAME_DATA_DYNAMIC_HDR_PLUS) {
             AVDynamicHDRPlus *metadata = (AVDynamicHDRPlus *)sd->data;
             print_dynamic_hdr10_plus(tfc, metadata);
+        } else if (sd->type == AV_FRAME_DATA_DYNAMIC_HDR_SMPTE_2094_APP5) {
+            AVDynamicHDRSmpte2094App5 *metadata = (AVDynamicHDRSmpte2094App5 *)sd->data;
+            print_dynamic_hdr_smpte2094_app5(tfc, metadata);
         } else if (sd->type == AV_FRAME_DATA_CONTENT_LIGHT_LEVEL) {
             print_context_light_level(tfc, (AVContentLightMetadata *)sd->data);
         } else if (sd->type == AV_FRAME_DATA_ICC_PROFILE) {
