@@ -306,9 +306,9 @@ cglobal vp3_put_no_rnd_pixels8_l2, 5, 6, 5, dst, src1, src2, stride, h, stride3
     movdqa      O(7), m%8
 %endmacro
 
-%macro VP3_IDCT 1
-%define I(x) [%1+16*x]
-%define O(x) [%1+16*x]
+%macro VP3_IDCT 0
+%define I(x) [blockq+16*x]
+%define O(x) [blockq+16*x]
 %define C(x) [vp3_idct_data+16*(x-1)]
 %define SHIFT(x)
 %define ADD(x)
@@ -316,7 +316,7 @@ cglobal vp3_put_no_rnd_pixels8_l2, 5, 6, 5, dst, src1, src2, stride, h, stride3
 %if ARCH_X86_64
         TRANSPOSE8x8W 0, 1, 2, 3, 4, 5, 6, 7, 8
 %else
-        TRANSPOSE8x8W 0, 1, 2, 3, 4, 5, 6, 7, [%1], [%1+16]
+        TRANSPOSE8x8W 0, 1, 2, 3, 4, 5, 6, 7, [blockq], [blockq+16]
 %endif
         PUT_BLOCK 0, 1, 2, 3, 4, 5, 6, 7
 
@@ -328,11 +328,11 @@ cglobal vp3_put_no_rnd_pixels8_l2, 5, 6, 5, dst, src1, src2, stride, h, stride3
 
 INIT_XMM sse2
 ; void ff_vp3_idct_put_sse2(uint8_t *dest, ptrdiff_t stride, int16_t *block)
-cglobal vp3_idct_put, 3, 4, 9
-    VP3_IDCT      r2
+cglobal vp3_idct_put, 3, 4, 9, dst, s, block, s3
+    VP3_IDCT
 
     mova          m4, [pb_80]
-    lea           r3, [r1*3]
+    lea          s3q, [sq*3]
     mova          m0, [r2+mmsize*0]
     mova          m1, [r2+mmsize*2]
     mova          m2, [r2+mmsize*4]
@@ -345,95 +345,97 @@ cglobal vp3_idct_put, 3, 4, 9
     paddb         m1, m4
     paddb         m2, m4
     paddb         m3, m4
-    movq   [r0     ], m0
-    movhps [r0+r1  ], m0
-    movq   [r0+r1*2], m1
-    movhps [r0+r3  ], m1
-    lea           r0, [r0+r1*4]
-    movq   [r0     ], m2
-    movhps [r0+r1  ], m2
-    movq   [r0+r1*2], m3
-    movhps [r0+r3  ], m3
+    movq   [dstq   ], m0
+    movhps [dstq+sq], m0
+    movq [dstq+sq*2], m1
+    movhps [dstq+s3q], m1
+    lea         dstq, [dstq+sq*4]
+    movq   [dstq   ], m2
+    movhps [dstq+sq], m2
+    movq [dstq+sq*2], m3
+    movhps [dstq+s3q], m3
 
     pxor          m0, m0
 %assign offset 0
 %rep 128/mmsize
-    mova [r2+offset], m0
+    mova [blockq+offset], m0
 %assign offset offset+mmsize
 %endrep
     RET
 
 ; void ff_vp3_idct_add_sse2(uint8_t *dest, ptrdiff_t stride, int16_t *block)
-cglobal vp3_idct_add, 3, 4, 9
-    VP3_IDCT      r2
+cglobal vp3_idct_add, 3, 4, 9, dst, s, block, s3
+    VP3_IDCT
 
-    lea           r3, [r1*3]
+    lea          s3q, [sq*3]
     pxor          m4, m4
 %assign i 0
 %rep 2
-    movq          m0, [r0]
-    movq          m1, [r0+r1]
-    movq          m2, [r0+r1*2]
-    movq          m3, [r0+r3]
+    movq          m0, [dstq]
+    movq          m1, [dstq+sq]
+    movq          m2, [dstq+sq*2]
+    movq          m3, [dstq+s3q]
     punpcklbw     m0, m4
     punpcklbw     m1, m4
     punpcklbw     m2, m4
     punpcklbw     m3, m4
-    paddsw        m0, [r2+ 0+i]
-    paddsw        m1, [r2+16+i]
-    paddsw        m2, [r2+32+i]
-    paddsw        m3, [r2+48+i]
+    paddsw        m0, [blockq+ 0+i]
+    paddsw        m1, [blockq+16+i]
+    paddsw        m2, [blockq+32+i]
+    paddsw        m3, [blockq+48+i]
     packuswb      m0, m1
     packuswb      m2, m3
-    movq   [r0     ], m0
-    movhps [r0+r1  ], m0
-    movq   [r0+r1*2], m2
-    movhps [r0+r3  ], m2
+    movq   [dstq   ], m0
+    movhps [dstq+sq], m0
+    movq [dstq+sq*2], m2
+    movhps [dstq+s3q], m2
 %if i == 0
-    lea           r0, [r0+r1*4]
+    lea         dstq, [dstq+sq*4]
 %endif
 %assign i i+64
 %endrep
 %assign i 0
 %rep 128/mmsize
-    mova    [r2+i], m4
+    mova  [blockq+i], m4
 %assign i i+mmsize
 %endrep
     RET
 
 %macro DC_ADD 0
-    movq          m2, [r0     ]
-    movq          m3, [r0+r1  ]
+    movq          m2, [dstq     ]
+    movq          m3, [dstq+sq  ]
     paddusb       m2, m0
-    movq          m4, [r0+r1*2]
+    movq          m4, [dstq+sq*2]
     paddusb       m3, m0
-    movq          m5, [r0+r2  ]
+    movq          m5, [dstq+s3q ]
     paddusb       m4, m0
     paddusb       m5, m0
     psubusb       m2, m1
     psubusb       m3, m1
-    movq   [r0     ], m2
+    movq [dstq     ], m2
     psubusb       m4, m1
-    movq   [r0+r1  ], m3
+    movq [dstq+sq  ], m3
     psubusb       m5, m1
-    movq   [r0+r1*2], m4
-    movq   [r0+r2  ], m5
+    movq [dstq+sq*2], m4
+    movq [dstq+s3q ], m5
 %endmacro
 
 INIT_MMX mmxext
-cglobal vp3_idct_dc_add, 3, 4
-    movsx         r3, word [r2]
-    mov    word [r2], 0
-    lea           r2, [r1*3]
-    add           r3, 15
-    sar           r3, 5
-    movd          m0, r3d
+; void ff_vp3_idct_dc_add_mmxext(uint8_t *dest, ptrdiff_t stride, int16_t *block)
+cglobal vp3_idct_dc_add, 3, 4, 0, dst, s, block, dc
+    movsx        dcd, word [blockq]
+    mov word [blockq], 0
+%define s3q blockq
+    lea          s3q, [sq*3]
+    add          dcd, 15
+    sar          dcd, 5
+    movd          m0, dcd
     pshufw        m0, m0, 0x0
     pxor          m1, m1
     psubw         m1, m0
     packuswb      m0, m0
     packuswb      m1, m1
     DC_ADD
-    lea           r0, [r0+r1*4]
+    lea         dstq, [dstq+sq*4]
     DC_ADD
     RET
