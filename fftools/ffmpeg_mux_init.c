@@ -1635,6 +1635,12 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
         }
     }
 
+    // Audio/video filters and subtitle encoding subtract the output start
+    // time before scheduling; streamcopy does so later in the muxer.
+    if (ost->enc && mux->of.start_time != AV_NOPTS_VALUE && ms->sch_idx >= 0)
+        sch_mux_stream_set_dts_pacing_offset(mux->sch, mux->sch_idx,
+                                              ms->sch_idx, mux->of.start_time);
+
     if (src.type != SCH_NODE_TYPE_NONE) {
         ret = sch_connect(mux->sch,
                           src, SCH_MSTREAM(mux->sch_idx, ms->sch_idx));

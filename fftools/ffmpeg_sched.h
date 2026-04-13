@@ -286,6 +286,14 @@ void sch_mux_stream_buffering(Scheduler *sch, unsigned mux_idx, unsigned stream_
                               size_t data_threshold, int max_packets);
 
 /**
+ * Set the timestamp offset (in AV_TIME_BASE_Q) that the upstream pipeline
+ * subtracted from this stream's packets. The scheduler adds it back when
+ * comparing DTS across streams for pacing. Defaults to 0 (streamcopy).
+ */
+void sch_mux_stream_set_dts_pacing_offset(Scheduler *sch, unsigned mux_idx,
+                                          unsigned stream_idx, int64_t offset);
+
+/**
  * Signal to the scheduler that the specified muxed stream is initialized and
  * ready. Muxing is started once all the streams are ready.
  */

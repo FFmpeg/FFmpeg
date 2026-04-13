@@ -265,7 +265,58 @@ fate-hls-fmp4-big-init: tests/data/hls_fmp4_big_init.m3u8
 fate-hls-fmp4-big-init: CLEANFILES = tests/data/hls_fmp4_big_init.m3u8 tests/data/hls_fmp4_big_init.mp4 tests/data/hls_fmp4_big_init_*.m4s
 fate-hls-fmp4-big-init: CMD = framecrc -i $(TARGET_PATH)/tests/data/hls_fmp4_big_init.m3u8 -map 0:a:99 -c copy
 
+# Regression test for cross-stream pacing with output -ss. The transcoded
+# video's timestamps are rebased before the scheduler observes them, whereas
+# copied audio is rebased by of_streamcopy() after the scheduler observes it.
+# Comparing these different timelines can starve audio in early HLS segments.
+tests/data/hls_sched_v.mkv: TAG = GEN
+tests/data/hls_sched_v.mkv: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
+	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
+	-f lavfi -i "testsrc2=size=128x72:rate=24:d=180" \
+	-c:v mpeg4 -g 500 -flags +bitexact \
+	-an -y $(TARGET_PATH)/tests/data/hls_sched_v.mkv 2>/dev/null
+
+tests/data/hls_sched_a.mka: TAG = GEN
+tests/data/hls_sched_a.mka: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
+	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
+	-f lavfi -i "aevalsrc=sin(2*PI*440*t):d=180:sample_rate=44100" \
+	-c:a mp2fixed -b:a 128k \
+	-vn -y $(TARGET_PATH)/tests/data/hls_sched_a.mka 2>/dev/null
+
+tests/data/hls_sched_extaudio.m3u8: TAG = GEN
+tests/data/hls_sched_extaudio.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) tests/data/hls_sched_v.mkv tests/data/hls_sched_a.mka | tests/data
+	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
+	-ss 120 -noaccurate_seek -i $(TARGET_PATH)/tests/data/hls_sched_v.mkv \
+	-ss 120 -noaccurate_seek -i $(TARGET_PATH)/tests/data/hls_sched_a.mka \
+	-ss 120 -map 0:v -map 1:a -c:v mpeg2video -flags +bitexact \
+	-c:a copy -copyts -avoid_negative_ts disabled \
+	-f hls -hls_time 2 -hls_list_size 0 \
+	-hls_segment_filename $(TARGET_PATH)/tests/data/hls_sched_extaudio_%d.ts \
+	$(TARGET_PATH)/tests/data/hls_sched_extaudio.m3u8 2>/dev/null
+
+FATE_HLSENC_FFMPEG_FFPROBE-$(call ALLYES, TESTSRC2_FILTER AEVALSRC_FILTER ARESAMPLE_FILTER LAVFI_INDEV \
+    MPEG4_ENCODER MPEG2VIDEO_ENCODER MP2FIXED_ENCODER \
+    WRAPPED_AVFRAME_DECODER MPEG4_DECODER MPEG2VIDEO_DECODER MP2_DECODER \
+    $(if $(HAVE_BIGENDIAN),PCM_F64BE_DECODER,PCM_F64LE_DECODER) \
+    MPEG4VIDEO_PARSER MPEGVIDEO_PARSER MPEGAUDIO_PARSER \
+    MATROSKA_MUXER MATROSKA_AUDIO_MUXER MATROSKA_DEMUXER MPEGTS_DEMUXER \
+    HLS_MUXER MPEGTS_MUXER FILE_PROTOCOL) += fate-hls-sched-extaudio
+fate-hls-sched-extaudio: tests/data/hls_sched_extaudio.m3u8
+fate-hls-sched-extaudio: CLEANFILES = tests/data/hls_sched_extaudio.m3u8 tests/data/hls_sched_extaudio_*.ts tests/data/hls_sched_v.mkv tests/data/hls_sched_a.mka
+# Probe the first HLS segment's audio stream parameters. Without the fix,
+# audio is starved during the segment's window and only sample_rate=0,
+# channels=0 are reported (the MPEG-TS PSI declares the codec but no audio
+# packets are present). With the fix, audio reaches the segment in time.
+fate-hls-sched-extaudio: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -bitexact -threads $(THREADS) \
+    -analyzeduration 10000000 -probesize 10000000 \
+    -show_entries stream=codec_type,codec_name,sample_rate,channels \
+    -print_format default=nw=1 \
+    $(TARGET_PATH)/tests/data/hls_sched_extaudio_0.ts
+fate-hls-sched-extaudio: CMP = diff
+
 FATE_HLSENC_LAVFI-yes := $(if $(call FRAMECRC), $(FATE_HLSENC_LAVFI-yes))
 
+FATE_FFMPEG_FFPROBE += $(FATE_HLSENC_FFMPEG_FFPROBE-yes)
+
 FATE_FFMPEG += $(FATE_HLSENC_LAVFI-yes)
-fate-hlsenc: $(FATE_HLSENC-yes) $(FATE_HLSENC_PROBE-yes) $(FATE_HLSENC_LAVFI-yes)
+fate-hlsenc: $(FATE_HLSENC-yes) $(FATE_HLSENC_PROBE-yes) $(FATE_HLSENC_LAVFI-yes) $(FATE_HLSENC_FFMPEG_FFPROBE-yes)

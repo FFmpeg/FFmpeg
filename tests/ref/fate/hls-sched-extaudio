@@ -1,0 +1,6 @@
+codec_name=mpeg2video
+codec_type=video
+codec_name=mp2
+codec_type=audio
+sample_rate=44100
+channels=1

@@ -198,12 +198,22 @@ typedef struct SchMuxStream {
     // an EOF was generated while flushing the pre-mux queue
     int                 init_eof;
 
+    // offset (in AV_TIME_BASE_Q) subtracted by the upstream pipeline
+    // (e.g. filter ts_offset), added back when computing last_dts_paced
+    // so that cross-stream pacing compares on a common source timeline
+    int64_t             dts_pacing_offset;
+
     ////////////////////////////////////////////////////////////
     // The following are protected by Scheduler.schedule_lock //
 
     /* dts+duration of the last packet sent to this stream
-       in AV_TIME_BASE_Q */
+       in AV_TIME_BASE_Q, as observed by the muxer (no offset applied);
+       feeds progressing_dts() -> sch->last_dts -> CLI progress display */
     int64_t             last_dts;
+    /* last_dts + dts_pacing_offset, kept on a common source timeline
+       across streams; consumed by trailing_dts() and the choke check
+       in schedule_update_locked() */
+    int64_t             last_dts_paced;
     // this stream no longer accepts input
     int                 source_finished;
     ////////////////////////////////////////////////////////////
@@ -447,10 +457,10 @@ static int64_t trailing_dts(const Scheduler *sch)
 
             if (ms->source_finished)
                 continue;
-            if (ms->last_dts == AV_NOPTS_VALUE)
+            if (ms->last_dts_paced == AV_NOPTS_VALUE)
                 return AV_NOPTS_VALUE;
 
-            min_dts = FFMIN(min_dts, ms->last_dts);
+            min_dts = FFMIN(min_dts, ms->last_dts_paced);
         }
     }
 
@@ -704,7 +714,8 @@ int sch_add_mux_stream(Scheduler *sch, unsigned mux_idx)
     if (!ms->pre_mux_queue.fifo)
         return AVERROR(ENOMEM);
 
-    ms->last_dts = AV_NOPTS_VALUE;
+    ms->last_dts       = AV_NOPTS_VALUE;
+    ms->last_dts_paced = AV_NOPTS_VALUE;
 
     return stream_idx;
 }
@@ -1248,6 +1259,21 @@ void sch_mux_stream_buffering(Scheduler *sch, unsigned mux_idx, unsigned stream_
     ms->pre_mux_queue.data_threshold = data_threshold;
 }
 
+void sch_mux_stream_set_dts_pacing_offset(Scheduler *sch, unsigned mux_idx,
+                                          unsigned stream_idx, int64_t offset)
+{
+    SchMux       *mux;
+    SchMuxStream *ms;
+
+    av_assert0(mux_idx < sch->nb_mux);
+    mux = &sch->mux[mux_idx];
+
+    av_assert0(stream_idx < mux->nb_streams);
+    ms = &mux->streams[stream_idx];
+
+    ms->dts_pacing_offset = offset;
+}
+
 int sch_mux_stream_ready(Scheduler *sch, unsigned mux_idx, unsigned stream_idx)
 {
     SchMux *mux;
@@ -1457,9 +1483,9 @@ static void schedule_update_locked(Scheduler *sch)
             // and not too far ahead of the trailing stream
             if (ms->source_finished)
                 continue;
-            if (dts == AV_NOPTS_VALUE && ms->last_dts != AV_NOPTS_VALUE)
+            if (dts == AV_NOPTS_VALUE && ms->last_dts_paced != AV_NOPTS_VALUE)
                 continue;
-            if (dts != AV_NOPTS_VALUE && ms->last_dts - dts >= SCHEDULE_TOLERANCE)
+            if (dts != AV_NOPTS_VALUE && ms->last_dts_paced - dts >= SCHEDULE_TOLERANCE)
                 continue;
 
             // resolve the source to unchoke
@@ -2053,8 +2079,12 @@ update_schedule:
     if (dts != AV_NOPTS_VALUE || !pkt) {
         pthread_mutex_lock(&sch->schedule_lock);
 
-        if (pkt) ms->last_dts = dts;
-        else     ms->source_finished = 1;
+        if (pkt) {
+            ms->last_dts       = dts;
+            ms->last_dts_paced = dts + ms->dts_pacing_offset;
+        } else {
+            ms->source_finished = 1;
+        }
 
         schedule_update_locked(sch);
 
