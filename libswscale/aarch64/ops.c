@@ -221,7 +221,7 @@ static int aarch64_compile(SwsContext *ctx, const SwsOpList *ops,
             goto error;
     }
 
-    /* Look up process/process_return functions. */
+    /* Look up process function. */
     const SwsOp *read  = ff_sws_op_list_input(&rest);
     const SwsOp *write = ff_sws_op_list_output(&rest);
     const int read_planes  = read ? (read->rw.packed ? 1 : read->rw.elems) : 0;
@@ -230,18 +230,12 @@ static int aarch64_compile(SwsContext *ctx, const SwsOpList *ops,
     for (int i = 0; i < FFMAX(read_planes, write_planes); i++)
         MASK_SET(mask, i, 1);
 
-    SwsAArch64OpImplParams process_params = { .op = AARCH64_SWS_OP_PROCESS,        .mask = mask };
-    SwsAArch64OpImplParams return_params  = { .op = AARCH64_SWS_OP_PROCESS_RETURN, .mask = mask };
+    SwsAArch64OpImplParams process_params = { .op = AARCH64_SWS_OP_PROCESS, .mask = mask };
     SwsFuncPtr process_func = ff_sws_aarch64_lookup(&process_params);
-    SwsFuncPtr return_func  = ff_sws_aarch64_lookup(&return_params);
-    if (!process_func || !return_func) {
+    if (!process_func) {
         ret = AVERROR(ENOTSUP);
         goto error;
     }
-
-    ret = ff_sws_op_chain_append(chain, return_func, NULL, &(SwsOpPriv) { 0 });
-    if (ret < 0)
-        goto error;
 
     out->func      = (SwsOpFunc) process_func;
     out->cpu_flags = chain->cpu_flags;

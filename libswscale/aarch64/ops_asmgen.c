@@ -260,14 +260,14 @@ static void asmgen_epilogue(SwsAArch64Context *s, const RasmOp *regs, unsigned n
 }
 
 /*********************************************************************/
-/* Callee-saved registers (r19-r28). */
-#define MAX_SAVED_REGS 10
+/* Callee-saved registers (r19-r28, fp, and lr). */
+#define MAX_SAVED_REGS 12
 
 static void clobber_gpr(RasmOp regs[MAX_SAVED_REGS], unsigned *count,
                         RasmOp gpr)
 {
     const int n = a64op_gpr_n(gpr);
-    if (n >= 19 && n <= 28)
+    if (n >= 19 && n <= 30)
         regs[(*count)++] = gpr;
 }
 
@@ -276,6 +276,7 @@ static unsigned clobbered_gprs(const SwsAArch64Context *s,
                                RasmOp regs[MAX_SAVED_REGS])
 {
     unsigned count = 0;
+    clobber_gpr(regs, &count, a64op_lr());
     LOOP_MASK(p, i) {
         clobber_gpr(regs, &count, s->in[i]);
         clobber_gpr(regs, &count, s->out[i]);
@@ -292,9 +293,8 @@ static void asmgen_process(SwsAArch64Context *s, const SwsAArch64OpImplParams *p
     char buf[64];
 
     /**
-     * The process/process_return functions for aarch64 work similarly
-     * to the x86 backend. The description in x86/ops_include.asm mostly
-     * holds as well here.
+     * The process function for aarch64 works similarly to the x86 backend.
+     * The description in x86/ops_include.asm mostly holds as well here.
      */
 
     aarch64_op_impl_func_name(func_name, sizeof(func_name), p);
@@ -329,49 +329,38 @@ static void asmgen_process(SwsAArch64Context *s, const SwsAArch64OpImplParams *p
         i_ldr(r, s->out_bump[i], a64op_off(s->exec, offsetof_exec_out_bump + (i * sizeof(ptrdiff_t))));
     }
 
-    /* Reset x and jump to first kernel. */
-    i_mov(r, s->bx, s->bx_start);   CMT("bx = bx_start;");
-    i_mov(r, s->impl, s->op1_impl); CMT("impl = op1_impl;");
-    i_br (r, s->op0_func);          CMT("jump to op0_func");
-}
+    int first_row  = rasm_new_label(r, NULL);
+    int next_row   = rasm_new_label(r, NULL);
+    int next_block = rasm_new_label(r, NULL);
 
-static void asmgen_process_return(SwsAArch64Context *s, const SwsAArch64OpImplParams *p)
-{
-    RasmContext *r = s->rctx;
-    char func_name[128];
+    /* Jump to first row (skips padding). */
+    i_b  (r, rasm_op_label(first_row));     CMT("goto first_row;");
 
-    aarch64_op_impl_func_name(func_name, sizeof(func_name), p);
-
-    rasm_func_begin(r, func_name, true, true);
-
-    /* Reset impl to first kernel. */
-    i_mov(r, s->impl, s->op1_impl);         CMT("impl = op1_impl;");
-
-    /* Perform horizontal loop. */
-    int loop = rasm_new_label(r, NULL);
-    i_add(r, s->bx, s->bx, IMM(1));         CMT("bx += 1;");
-    i_cmp(r, s->bx, s->bx_end);             CMT("if (bx != bx_end)");
-    i_bne(r, loop);                         CMT("    goto loop;");
-
-    /* Perform vertical loop. */
-    int end = rasm_new_label(r, NULL);
-    i_add(r, s->y, s->y, IMM(1));           CMT("y += 1;");
-    i_cmp(r, s->y, s->y_end);               CMT("if (y == y_end)");
-    i_beq(r, end);                          CMT("    goto end;");
-
-    /* Perform padding and reset x, preparing for next row. */
+    /* Perform padding, preparing for next row. */
+    rasm_add_label(r, next_row);            CMT("next_row:");
     LOOP_MASK(p, i) { i_add(r, s->in[i],  s->in[i],  s->in_bump[i]);  CMTF("in[%u] += in_bump[%u];", i, i); }
     LOOP_MASK(p, i) { i_add(r, s->out[i], s->out[i], s->out_bump[i]); CMTF("out[%u] += out_bump[%u];", i, i); }
+
+    /* First row (reset x). */
+    rasm_add_label(r, first_row);           CMT("first_row:");
     i_mov(r, s->bx, s->bx_start);           CMT("bx = bx_start;");
 
-    /* Loop back or end of function. */
-    rasm_add_label(r, loop);                CMT("loop:");
-    i_br (r, s->op0_func);                  CMT("jump to op0_func");
-    rasm_add_label(r, end);                 CMT("end:");
+    /* Reset impl and call first kernel. */
+    rasm_add_label(r, next_block);          CMT("next_block:");
+    i_mov(r, s->impl, s->op1_impl);         CMT("impl = op1_impl;");
+    i_blr(r, s->op0_func);                  CMT("op0_func();");
+
+    /* Perform horizontal loop. */
+    i_add(r, s->bx, s->bx, IMM(1));         CMT("bx += 1;");
+    i_cmp(r, s->bx, s->bx_end);             CMT("if (bx != bx_end)");
+    i_bne(r, next_block);                   CMT("    goto next_block;");
+
+    /* Perform vertical loop. */
+    i_add(r, s->y, s->y, IMM(1));           CMT("y += 1;");
+    i_cmp(r, s->y, s->y_end);               CMT("if (y != y_end)");
+    i_bne(r, next_row);                     CMT("    goto next_row;");
 
     /* Function epilogue */
-    RasmOp saved_regs[MAX_SAVED_REGS];
-    unsigned nsaved = clobbered_gprs(s, p, saved_regs);
     if (nsaved)
         asmgen_epilogue(s, saved_regs, nsaved);
 
@@ -1367,9 +1356,28 @@ static void asmgen_op_cps(SwsAArch64Context *s, const SwsAArch64OpImplParams *p)
 {
     RasmContext *r = s->rctx;
 
+    bool is_read = false;
+    bool is_write = false;
+    switch (p->op) {
+    case AARCH64_SWS_OP_READ_BIT:
+    case AARCH64_SWS_OP_READ_NIBBLE:
+    case AARCH64_SWS_OP_READ_PACKED:
+    case AARCH64_SWS_OP_READ_PLANAR:
+        is_read = true;
+        break;
+    case AARCH64_SWS_OP_WRITE_BIT:
+    case AARCH64_SWS_OP_WRITE_NIBBLE:
+    case AARCH64_SWS_OP_WRITE_PACKED:
+    case AARCH64_SWS_OP_WRITE_PLANAR:
+        is_write = true;
+        break;
+    default:
+        break;
+    }
+
     char func_name[128];
     aarch64_op_impl_func_name(func_name, sizeof(func_name), p);
-    rasm_func_begin(r, func_name, true, true);
+    rasm_func_begin(r, func_name, true, !is_read);
 
     /**
      * Set up vector register dimensions and reshape all vectors
@@ -1416,14 +1424,18 @@ static void asmgen_op_cps(SwsAArch64Context *s, const SwsAArch64OpImplParams *p)
         break;
     }
 
-    /* Load continuation address and increment impl pointer. */
-    RasmNode *node = rasm_set_current_node(r, s->load_cont_node);
-    RasmOp impl_post = a64op_post(s->impl, sizeof_impl);
-    i_ldr(r, s->cont, impl_post);                   CMT("SwsFuncPtr cont = (impl++)->cont;");
-    rasm_set_current_node(r, node);
-
-    /* Common end for CPS functions. */
-    i_br (r, s->cont);                              CMT("jump to cont");
+    if (is_write) {
+        /* Write functions return directly. */
+        i_ret(r);
+    } else {
+        /* Load continuation address and increment impl pointer. */
+        RasmNode *node = rasm_set_current_node(r, s->load_cont_node);
+        RasmOp impl_post = a64op_post(s->impl, sizeof_impl);
+        i_ldr(r, s->cont, impl_post);                   CMT("SwsFuncPtr cont = (impl++)->cont;");
+        rasm_set_current_node(r, node);
+        /* Common end for remaining CPS functions. */
+        i_br (r, s->cont);                              CMT("jump to cont");
+    }
 }
 
 static void asmgen_op(SwsAArch64Context *s, const SwsAArch64OpImplParams *p)
@@ -1431,9 +1443,6 @@ static void asmgen_op(SwsAArch64Context *s, const SwsAArch64OpImplParams *p)
     switch (p->op) {
     case AARCH64_SWS_OP_PROCESS:
         asmgen_process(s, p);
-        break;
-    case AARCH64_SWS_OP_PROCESS_RETURN:
-        asmgen_process_return(s, p);
         break;
     default:
         asmgen_op_cps(s, p);
@@ -1561,9 +1570,11 @@ static int asmgen(void)
 
     /**
      * The entry point of the SwsOpFunc is the `process` function. The
+     * first kernel function is called from `process`, and subsequent
      * kernel functions are chained by directly branching to the next
-     * operation, using a continuation-passing style design. The exit
-     * point of the SwsOpFunc is the `process_return` function.
+     * operation, using a continuation-passing style design. The last
+     * operation must be a write operation, which returns from the call
+     * to the `process` function.
      *
      * The GPRs used by the entire call-chain are listed below.
      *
@@ -1586,6 +1597,9 @@ static int asmgen(void)
      * The read/write data pointers and padding values first use up the
      * remaining free caller-saved registers, and only then are the
      * caller-saved registers (r19-r28) used.
+     *
+     * The Link Register (r30) is used when calling the first kernel,
+     * so it must be saved.
      */
 
     /* SwsOpFunc arguments. */

@@ -77,7 +77,6 @@ static const char *aarch64_pixel_type_name(SwsAArch64PixelType fmt)
 static const char op_types[AARCH64_SWS_OP_TYPE_NB][32] = {
     [AARCH64_SWS_OP_NONE          ] = "AARCH64_SWS_OP_NONE",
     [AARCH64_SWS_OP_PROCESS       ] = "AARCH64_SWS_OP_PROCESS",
-    [AARCH64_SWS_OP_PROCESS_RETURN] = "AARCH64_SWS_OP_PROCESS_RETURN",
     [AARCH64_SWS_OP_READ_BIT      ] = "AARCH64_SWS_OP_READ_BIT",
     [AARCH64_SWS_OP_READ_NIBBLE   ] = "AARCH64_SWS_OP_READ_NIBBLE",
     [AARCH64_SWS_OP_READ_PACKED   ] = "AARCH64_SWS_OP_READ_PACKED",
@@ -114,7 +113,6 @@ static const char *aarch64_op_type(SwsAArch64OpType op)
 static const char op_type_names[AARCH64_SWS_OP_TYPE_NB][16] = {
     [AARCH64_SWS_OP_NONE          ] = "none",
     [AARCH64_SWS_OP_PROCESS       ] = "process",
-    [AARCH64_SWS_OP_PROCESS_RETURN] = "process_return",
     [AARCH64_SWS_OP_READ_BIT      ] = "read_bit",
     [AARCH64_SWS_OP_READ_NIBBLE   ] = "read_nibble",
     [AARCH64_SWS_OP_READ_PACKED   ] = "read_packed",
@@ -326,7 +324,6 @@ static const ParamField field_dither_size_log2 = { PARAM_FIELD(dither.size_log2)
 #define MAX_LEVELS 8
 static const ParamField *op_fields[AARCH64_SWS_OP_TYPE_NB][MAX_LEVELS] = {
     [AARCH64_SWS_OP_PROCESS       ] = { &field_op,                                                                                  &field_mask },
-    [AARCH64_SWS_OP_PROCESS_RETURN] = { &field_op,                                                                                  &field_mask },
     [AARCH64_SWS_OP_READ_BIT      ] = { &field_op,                                                  &field_block_size, &field_type, &field_mask },
     [AARCH64_SWS_OP_READ_NIBBLE   ] = { &field_op,                                                  &field_block_size, &field_type, &field_mask },
     [AARCH64_SWS_OP_READ_PACKED   ] = { &field_op,                                                  &field_block_size, &field_type, &field_mask },

@@ -72,7 +72,7 @@ error:
     return ret;
 }
 
-/* Collect the parameters for the process/process_return functions. */
+/* Collect the parameters for the process function. */
 static int aarch64_collect_process(const SwsOpList *ops, struct AVTreeNode **root)
 {
     const SwsOp *read  = ff_sws_op_list_input(ops);
@@ -89,11 +89,6 @@ static int aarch64_collect_process(const SwsOpList *ops, struct AVTreeNode **roo
         .mask = mask,
     };
 
-    ret = aarch64_collect_op(&params, root);
-    if (ret < 0)
-        return ret;
-
-    params.op = AARCH64_SWS_OP_PROCESS_RETURN;
     ret = aarch64_collect_op(&params, root);
     if (ret < 0)
         return ret;
