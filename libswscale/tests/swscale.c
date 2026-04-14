@@ -793,8 +793,8 @@ static int init_ref(AVFrame *ref, const struct options *opts)
     if (!ctx || !rgb)
         goto error;
 
-    rgb->width  = opts->w / 12;
-    rgb->height = opts->h / 12;
+    rgb->width  = opts->w > 32 ? opts->w / 12 : opts->w;
+    rgb->height = opts->h > 32 ? opts->h / 12 : opts->h;
     rgb->format = AV_PIX_FMT_RGBA;
     ret = av_frame_get_buffer(rgb, 32);
     if (ret < 0)
