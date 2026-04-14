@@ -1,3 +1,5 @@
+ifeq ($(CONFIG_CHECKASM),yes)
+
 # libavcodec tests
 # subsystems
 AVCODECOBJS-$(CONFIG_AC3DSP)            += ac3dsp.o
@@ -170,3 +172,5 @@ checkasmclean:
 	$(RM) $(CHECKASM) $(CLEANSUFFIXES:%=tests/checkasm/%) $(CLEANSUFFIXES:%=tests/checkasm/$(ARCH)/%) $(CHECKASMOBJS)
 
 .PHONY: checkasm
+
+endif # CONFIG_CHECKASM

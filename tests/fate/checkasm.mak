@@ -1,3 +1,4 @@
+ifeq ($(CONFIG_CHECKASM),yes)
 FATE_CHECKASM = fate-checkasm-aacencdsp                                 \
                 fate-checkasm-aacpsdsp                                  \
                 fate-checkasm-ac3dsp                                    \
@@ -102,3 +103,5 @@ $(FATE_CHECKASM): CMP = null
 
 FATE += $(FATE_CHECKASM)
 fate-checkasm: $(FATE_CHECKASM)
+
+endif # CONFIG_CHECKASM
