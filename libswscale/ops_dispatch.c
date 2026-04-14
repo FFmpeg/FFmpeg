@@ -235,20 +235,25 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
         p->tail_size_in = pixel_bytes(tail_size,  p->pixel_bits_in, AV_ROUND_UP);
     }
 
+    const size_t alloc_width = aligned_w - safe_width;
     for (int i = 0; memcpy_in && i < p->planes_in; i++) {
-        size_t block_size = pixel_bytes(comp->block_size, p->pixel_bits_in, AV_ROUND_UP);
-        block_size += comp->over_read;
-        block_size = FFMAX(block_size, p->tail_size_in);
-        tail->in_stride[i] = FFALIGN(block_size, align);
+        size_t needed_size;
+        if (exec->in_offset_x) {
+            /* The input offset map is already padded to multiples of the block
+             * size, and clamps the input offsets to the image boundaries; so
+             * we just need to compensate for the comp->over_read */
+            needed_size = p->tail_size_in;
+        } else {
+            needed_size = pixel_bytes(alloc_width, p->pixel_bits_in, AV_ROUND_UP);
+        }
+        tail->in_stride[i] = FFALIGN(needed_size + comp->over_read, align);
         tail->in_bump[i] = tail->in_stride[i] - exec->block_size_in;
         alloc_size += tail->in_stride[i] * in->height;
     }
 
     for (int i = 0; p->memcpy_out && i < p->planes_out; i++) {
-        size_t block_size = pixel_bytes(comp->block_size, p->pixel_bits_out, AV_ROUND_UP);
-        block_size += comp->over_write;
-        block_size = FFMAX(block_size, p->tail_size_out);
-        tail->out_stride[i] = FFALIGN(block_size, align);
+        size_t needed_size = pixel_bytes(alloc_width, p->pixel_bits_out, AV_ROUND_UP);
+        tail->out_stride[i] = FFALIGN(needed_size + comp->over_write, align);
         tail->out_bump[i] = tail->out_stride[i] - exec->block_size_out;
         alloc_size += tail->out_stride[i] * out->height;
     }
