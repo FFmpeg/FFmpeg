@@ -49,6 +49,7 @@ typedef struct SwsOpPass {
     bool memcpy_first;
     bool memcpy_last;
     bool memcpy_out;
+    size_t tail_blocks;
     uint8_t *tail_buf; /* extra memory for fixing unpadded tails */
     unsigned int tail_buf_size;
 } SwsOpPass;
@@ -220,8 +221,10 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
     size_t alloc_size = 0;
     *tail = *exec;
 
-    av_assert0(num_blocks >= 1);
-    const size_t safe_width = (num_blocks - 1) * block_size;
+    p->tail_blocks = 1;
+    av_assert0(num_blocks >= p->tail_blocks);
+
+    const size_t safe_width = (num_blocks - p->tail_blocks) * block_size;
     const size_t tail_size  = pass->width - safe_width;
     p->tail_off_out  = pixel_bytes(safe_width, p->pixel_bits_out, AV_ROUND_DOWN);
     p->tail_size_out = pixel_bytes(tail_size,  p->pixel_bits_out, AV_ROUND_UP);
@@ -246,15 +249,17 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
         } else {
             needed_size = pixel_bytes(alloc_width, p->pixel_bits_in, AV_ROUND_UP);
         }
+        size_t loop_size   = p->tail_blocks * exec->block_size_in;
         tail->in_stride[i] = FFALIGN(needed_size + comp->over_read, align);
-        tail->in_bump[i] = tail->in_stride[i] - exec->block_size_in;
+        tail->in_bump[i]   = tail->in_stride[i] - loop_size;
         alloc_size += tail->in_stride[i] * in->height;
     }
 
     for (int i = 0; p->memcpy_out && i < p->planes_out; i++) {
-        size_t needed_size = pixel_bytes(alloc_width, p->pixel_bits_out, AV_ROUND_UP);
+        size_t needed_size  = pixel_bytes(alloc_width, p->pixel_bits_out, AV_ROUND_UP);
+        size_t loop_size    = p->tail_blocks * exec->block_size_out;
         tail->out_stride[i] = FFALIGN(needed_size + comp->over_write, align);
-        tail->out_bump[i] = tail->out_stride[i] - exec->block_size_out;
+        tail->out_bump[i]   = tail->out_stride[i] - loop_size;
         alloc_size += tail->out_stride[i] * out->height;
     }
 
@@ -329,7 +334,8 @@ static void op_pass_run(const SwsFrame *out, const SwsFrame *in, const int y,
     const bool memcpy_in  = p->memcpy_last && y + h == pass->height ||
                             p->memcpy_first && y == 0;
     const bool memcpy_out = p->memcpy_out;
-    const size_t num_blocks = p->num_blocks;
+    const size_t num_blocks  = p->num_blocks;
+    const size_t tail_blocks = p->tail_blocks;
 
     get_row_data(p, y, exec.in, exec.out);
     if (!memcpy_in && !memcpy_out) {
@@ -338,18 +344,18 @@ static void op_pass_run(const SwsFrame *out, const SwsFrame *in, const int y,
         return;
     }
 
-    /* Non-aligned case (slow path); process num_blocks - 1 main blocks and
+    /* Non-aligned case (slow path); process main blocks as normal, and
      * a separate tail (via memcpy into an appropriately padded buffer) */
-    if (num_blocks > 1) {
+    if (num_blocks > tail_blocks) {
         for (int i = 0; i < 4; i++) {
-            /* We process one fewer block, so the in_bump needs to be increased
+            /* We process fewer blocks, so the in_bump needs to be increased
              * to reflect that the plane pointers are left on the last block,
              * not the end of the processed line, after each loop iteration */
-            exec.in_bump[i]  += exec.block_size_in;
-            exec.out_bump[i] += exec.block_size_out;
+            exec.in_bump[i]  += exec.block_size_in  * tail_blocks;
+            exec.out_bump[i] += exec.block_size_out * tail_blocks;
         }
 
-        comp->func(&exec, comp->priv, 0, y, num_blocks - 1, y + h);
+        comp->func(&exec, comp->priv, 0, y, num_blocks - tail_blocks, y + h);
     }
 
     DECLARE_ALIGNED_32(SwsOpExec, tail) = p->exec_tail;
@@ -373,21 +379,23 @@ static void op_pass_run(const SwsFrame *out, const SwsFrame *in, const int y,
                        exec.in[i], exec.in_stride[i], h, p->tail_size_in);
         } else {
             /* Reuse input pointers directly */
+            const size_t loop_size = tail_blocks * exec.block_size_in;
             tail.in[i]        = exec.in[i];
             tail.in_stride[i] = exec.in_stride[i];
-            tail.in_bump[i]   = exec.in_stride[i] - exec.block_size_in;
+            tail.in_bump[i]   = exec.in_stride[i] - loop_size;
         }
     }
 
     for (int i = 0; !memcpy_out && i < p->planes_out; i++) {
         /* Reuse output pointers directly */
+        const size_t loop_size = tail_blocks * exec.block_size_out;
         tail.out[i]        = exec.out[i];
         tail.out_stride[i] = exec.out_stride[i];
-        tail.out_bump[i]   = exec.out_stride[i] - exec.block_size_out;
+        tail.out_bump[i]   = exec.out_stride[i] - loop_size;
     }
 
     /* Dispatch kernel over tail */
-    comp->func(&tail, comp->priv, num_blocks - 1, y, num_blocks, y + h);
+    comp->func(&tail, comp->priv, num_blocks - tail_blocks, y, num_blocks, y + h);
 
     for (int i = 0; memcpy_out && i < p->planes_out; i++) {
         copy_lines(exec.out[i], exec.out_stride[i],
