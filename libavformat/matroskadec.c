@@ -3964,6 +3964,31 @@ static int matroska_parse_block_additional(MatroskaDemuxContext *matroska,
 
                 break;
             }
+            case ITU_T_T35_PROVIDER_CODE_SMPTE: {
+                AVDynamicHDRSmpte2094App5 *hdr_smpte_2094_app5;
+                size_t hdr_smpte_2094_app5_size;
+
+                provider_oriented_code = bytestream2_get_be16u(&bc);
+                if (provider_oriented_code != 1)
+                    break; // ignore
+
+                hdr_smpte_2094_app5 = av_dynamic_hdr_smpte2094_app5_alloc(&hdr_smpte_2094_app5_size);
+                if (!hdr_smpte_2094_app5_size)
+                    return AVERROR(ENOMEM);
+
+                if ((res = av_dynamic_hdr_smpte2094_app5_from_t35(hdr_smpte_2094_app5,
+                                                                  bc.buffer,
+                                                                  bytestream2_get_bytes_left(&bc))) < 0 ||
+                    (res = av_packet_add_side_data(pkt,
+                                                   AV_PKT_DATA_DYNAMIC_HDR_SMPTE_2094_APP5,
+                                                   (uint8_t *)hdr_smpte_2094_app5,
+                                                   hdr_smpte_2094_app5_size)) < 0) {
+                    av_free(hdr_smpte_2094_app5);
+                    return res;
+                }
+
+                break;
+            }
             default:
                 break;
             }

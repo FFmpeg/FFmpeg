@@ -1542,12 +1542,13 @@ int ff_decode_frame_props_from_pkt(const AVCodecContext *avctx,
                                    AVFrame *frame, const AVPacket *pkt)
 {
     static const SideDataMap sd[] = {
-        { AV_PKT_DATA_A53_CC,                     AV_FRAME_DATA_A53_CC },
-        { AV_PKT_DATA_AFD,                        AV_FRAME_DATA_AFD },
-        { AV_PKT_DATA_DYNAMIC_HDR10_PLUS,         AV_FRAME_DATA_DYNAMIC_HDR_PLUS },
-        { AV_PKT_DATA_S12M_TIMECODE,              AV_FRAME_DATA_S12M_TIMECODE },
-        { AV_PKT_DATA_SKIP_SAMPLES,               AV_FRAME_DATA_SKIP_SAMPLES },
-        { AV_PKT_DATA_LCEVC,                      AV_FRAME_DATA_LCEVC },
+        { AV_PKT_DATA_A53_CC,                      AV_FRAME_DATA_A53_CC },
+        { AV_PKT_DATA_AFD,                         AV_FRAME_DATA_AFD },
+        { AV_PKT_DATA_DYNAMIC_HDR10_PLUS,          AV_FRAME_DATA_DYNAMIC_HDR_PLUS },
+        { AV_PKT_DATA_DYNAMIC_HDR_SMPTE_2094_APP5, AV_FRAME_DATA_DYNAMIC_HDR_SMPTE_2094_APP5 },
+        { AV_PKT_DATA_S12M_TIMECODE,               AV_FRAME_DATA_S12M_TIMECODE },
+        { AV_PKT_DATA_SKIP_SAMPLES,                AV_FRAME_DATA_SKIP_SAMPLES },
+        { AV_PKT_DATA_LCEVC,                       AV_FRAME_DATA_LCEVC },
         { AV_PKT_DATA_NB }
     };
 

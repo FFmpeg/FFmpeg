@@ -369,6 +369,13 @@ enum AVPacketSideDataType {
      AV_PKT_DATA_EXIF,
 
     /**
+     * HDR dynamic metadata associated with a video frame. The payload is an
+     * AVDynamicHDRSmpte2094App5 type and contains information for color volume
+     * transform as specified in the SMPTE 2094-50 standard.
+     */
+    AV_PKT_DATA_DYNAMIC_HDR_SMPTE_2094_APP5,
+
+    /**
      * The number of side data types.
      * This is not part of the public API/ABI in the sense that it may
      * change when new side data types are added.
