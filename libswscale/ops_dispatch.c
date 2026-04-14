@@ -340,15 +340,17 @@ static void op_pass_run(const SwsFrame *out, const SwsFrame *in, const int y,
 
     /* Non-aligned case (slow path); process num_blocks - 1 main blocks and
      * a separate tail (via memcpy into an appropriately padded buffer) */
-    for (int i = 0; i < 4; i++) {
-        /* We process one fewer block, so the in_bump needs to be increased
-         * to reflect that the plane pointers are left on the last block,
-         * not the end of the processed line, after each loop iteration */
-        exec.in_bump[i]  += exec.block_size_in;
-        exec.out_bump[i] += exec.block_size_out;
-    }
+    if (num_blocks > 1) {
+        for (int i = 0; i < 4; i++) {
+            /* We process one fewer block, so the in_bump needs to be increased
+             * to reflect that the plane pointers are left on the last block,
+             * not the end of the processed line, after each loop iteration */
+            exec.in_bump[i]  += exec.block_size_in;
+            exec.out_bump[i] += exec.block_size_out;
+        }
 
-    comp->func(&exec, comp->priv, 0, y, num_blocks - 1, y + h);
+        comp->func(&exec, comp->priv, 0, y, num_blocks - 1, y + h);
+    }
 
     DECLARE_ALIGNED_32(SwsOpExec, tail) = p->exec_tail;
     tail.slice_y = y;
