@@ -358,7 +358,7 @@ int av_packet_unpack_dictionary(const uint8_t *data, size_t size,
     if (!dict || !data || !size)
         return 0;
     end = data + size;
-    if (size && end[-1])
+    if (end[-1])
         return AVERROR_INVALIDDATA;
     while (data < end) {
         const uint8_t *key = data;
