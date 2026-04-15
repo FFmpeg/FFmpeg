@@ -193,10 +193,10 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
 
     size_t safe_blocks = num_blocks;
     for (int i = 0; i < p->planes_in; i++) {
-        int idx        = p->idx_in[i];
-        int chroma     = idx == 1 || idx == 2;
-        int sub_x      = chroma ? indesc->log2_chroma_w : 0;
-        int sub_y      = chroma ? indesc->log2_chroma_h : 0;
+        int idx    = p->idx_in[i];
+        int chroma = idx == 1 || idx == 2;
+        int sub_x  = chroma ? indesc->log2_chroma_w : 0;
+        int sub_y  = chroma ? indesc->log2_chroma_h : 0;
         size_t safe_bytes = safe_bytes_pad(in->linesize[idx], comp->over_read);
         size_t safe_blocks_in;
         if (exec->in_offset_x) {
@@ -224,10 +224,10 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
     }
 
     for (int i = 0; i < p->planes_out; i++) {
-        int idx        = p->idx_out[i];
-        int chroma     = idx == 1 || idx == 2;
-        int sub_x      = chroma ? outdesc->log2_chroma_w : 0;
-        int sub_y      = chroma ? outdesc->log2_chroma_h : 0;
+        int idx    = p->idx_out[i];
+        int chroma = idx == 1 || idx == 2;
+        int sub_x  = chroma ? outdesc->log2_chroma_w : 0;
+        int sub_y  = chroma ? outdesc->log2_chroma_h : 0;
         size_t safe_bytes = safe_bytes_pad(out->linesize[idx], comp->over_write);
         size_t safe_blocks_out = safe_bytes / exec->block_size_out;
         if (safe_blocks_out < num_blocks) {
