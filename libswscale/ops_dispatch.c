@@ -467,8 +467,17 @@ static int compile(SwsGraph *graph, const SwsOpList *ops, SwsPass *input,
             goto fail;
         }
 
-        for (int x = 0; x < filter->dst_size; x++)
-            offset[x] = filter->offsets[x] * p->pixel_bits_in >> 3;
+        for (int x = 0; x < filter->dst_size; x++) {
+            /* Sanity check; if the tap would land on a half-pixel, we cannot
+             * reasonably expect the implementation to know about this. Just
+             * error out in such (theoretical) cases. */
+            int64_t bits = (int64_t) filter->offsets[x] * p->pixel_bits_in;
+            if ((bits & 0x7) || (bits >> 3) > INT32_MAX) {
+                ret = AVERROR(EINVAL);
+                goto fail;
+            }
+            offset[x] = bits >> 3;
+        }
         for (int x = filter->dst_size; x < pixels; x++)
             offset[x] = offset[filter->dst_size - 1];
         p->exec_base.in_offset_x = offset;
