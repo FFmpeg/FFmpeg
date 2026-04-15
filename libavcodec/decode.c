@@ -1626,7 +1626,7 @@ int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
     AVCodecInternal    *avci = avctx->internal;
     DecodeContext        *dc = decode_ctx(avci);
 
-    dc->lcevc.frame = dc->lcevc.ctx && avctx->codec_type == AVMEDIA_TYPE_VIDEO &&
+    dc->lcevc.frame = dc->lcevc.ctx &&
                       av_frame_get_side_data(frame, AV_FRAME_DATA_LCEVC);
 
     if (dc->lcevc.frame) {
@@ -1700,7 +1700,7 @@ int ff_attach_decode_data(AVCodecContext *avctx, AVFrame *frame)
     DecodeContext        *dc = decode_ctx(avci);
 
     if (!dc->lcevc.frame) {
-        dc->lcevc.frame = dc->lcevc.ctx && avctx->codec_type == AVMEDIA_TYPE_VIDEO &&
+        dc->lcevc.frame = dc->lcevc.ctx &&
                           av_frame_get_side_data(frame, AV_FRAME_DATA_LCEVC);
 
         if (dc->lcevc.frame) {
