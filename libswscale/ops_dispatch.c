@@ -162,7 +162,7 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
         int sub_y      = chroma ? indesc->log2_chroma_h : 0;
         size_t plane_w    = AV_CEIL_RSHIFT(aligned_w, sub_x);
         size_t plane_pad  = AV_CEIL_RSHIFT(comp->over_read, sub_x);
-        size_t plane_size = plane_w * p->pixel_bits_in >> 3;
+        size_t plane_size = (plane_w * p->pixel_bits_in + 7) >> 3;
         size_t total_size = plane_size + plane_pad;
         size_t loop_size  = num_blocks * exec->block_size_in;
         if (in->linesize[idx] >= 0) {
@@ -184,7 +184,7 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
         int sub_y      = chroma ? outdesc->log2_chroma_h : 0;
         size_t plane_w    = AV_CEIL_RSHIFT(aligned_w, sub_x);
         size_t plane_pad  = AV_CEIL_RSHIFT(comp->over_write, sub_x);
-        size_t plane_size = plane_w * p->pixel_bits_out >> 3;
+        size_t plane_size = (plane_w * p->pixel_bits_out + 7) >> 3;
         size_t loop_size  = num_blocks * exec->block_size_out;
         p->memcpy_out |= plane_size + plane_pad > FFABS(out->linesize[idx]);
         exec->out[i]        = out->data[idx];
