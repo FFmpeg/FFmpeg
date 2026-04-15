@@ -361,11 +361,11 @@ int ff_lcevc_parse_frame(FFLCEVCContext *lcevc, const AVFrame *frame,
                          enum AVPixelFormat *format, int *width, int *height, void *logctx)
 {
     LCEVCRawProcessBlock *block = NULL;
-    LCEVCRawGlobalConfig *gc = NULL;
-    AVFrameSideData *sd = av_frame_get_side_data(frame, AV_FRAME_DATA_LCEVC);
+    const LCEVCRawGlobalConfig *gc;
+    const AVFrameSideData *sd = av_frame_get_side_data(frame, AV_FRAME_DATA_LCEVC);
     int ret;
 
-    ret = ff_cbs_read(lcevc->cbc, lcevc->frag, sd->buf, sd->data, sd->size);
+    ret = ff_cbs_read(lcevc->cbc, lcevc->frag, NULL, sd->data, sd->size);
     if (ret < 0) {
         av_log(logctx, AV_LOG_ERROR, "Failed to parse Access Unit.\n");
         goto end;
