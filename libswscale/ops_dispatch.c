@@ -430,9 +430,18 @@ static int compile(SwsGraph *graph, const SwsOpList *ops, SwsPass *input,
     p->exec_base = (SwsOpExec) {
         .width  = dst->width,
         .height = dst->height,
-        .block_size_in  = comp->block_size * p->pixel_bits_in  >> 3,
-        .block_size_out = comp->block_size * p->pixel_bits_out >> 3,
     };
+
+    const int64_t block_bits_in  = (int64_t) comp->block_size * p->pixel_bits_in;
+    const int64_t block_bits_out = (int64_t) comp->block_size * p->pixel_bits_out;
+    if (block_bits_in & 0x7 || block_bits_out & 0x7) {
+        av_log(ctx, AV_LOG_ERROR, "Block size must be a multiple of the pixel size.\n");
+        ret = AVERROR(EINVAL);
+        goto fail;
+    }
+
+    p->exec_base.block_size_in  = block_bits_in  >> 3;
+    p->exec_base.block_size_out = block_bits_out >> 3;
 
     for (int i = 0; i < 4; i++) {
         p->idx_in[i]  = i < p->planes_in  ? ops->plane_src[i] : -1;
