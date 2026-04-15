@@ -102,6 +102,13 @@ $(foreach N,$(FATE_CBS_DISCARD_TYPES),$(eval $(call FATE_CBS_DISCARD_TEST,h264,$
 
 FATE_CBS_H264-$(call ALLYES, MOV_DEMUXER H264_MUXER H264_PARSER FILTER_UNITS_BSF H264_METADATA_BSF) += $(FATE_CBS_h264_DISCARD)
 
+# H.264 metadata BSF test
+
+fate-cbs-h264-metadata-sei: CMD = md5 -i $(TARGET_SAMPLES)/h264-conformance/SVA_Base_B.264 -c:v copy -bsf:v h264_metadata=sei_user_data=dc45e9bde2d19e43dc45e9bde2d19e43+hello:aud=insert:display_orientation=insert:rotate=90 -f h264
+fate-cbs-h264-metadata-sei: CMP = oneline
+fate-cbs-h264-metadata-sei: REF = 8ac33852613e9e06c1ac1bb9db7ee700
+FATE_CBS_H264-$(call ALLYES, H264_DEMUXER H264_METADATA_BSF H264_MUXER) += fate-cbs-h264-metadata-sei
+
 FATE_SAMPLES_FFMPEG += $(FATE_CBS_H264-yes)
 fate-cbs-h264: $(FATE_CBS_H264-yes)
 
