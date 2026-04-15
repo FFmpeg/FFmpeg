@@ -42,8 +42,7 @@ typedef struct FrameDecodeData {
      * stored in the post_process_opaque object.
      */
     int (*post_process)(void *logctx, AVFrame *frame);
-    void *post_process_opaque;
-    void (*post_process_opaque_free)(void *opaque);
+    void *post_process_opaque;                        ///< RefStruct reference
 
     /**
      * Per-frame private data for hwaccels.

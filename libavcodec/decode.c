@@ -1676,8 +1676,7 @@ static void decode_data_free(AVRefStructOpaque unused, void *obj)
 {
     FrameDecodeData *fdd = obj;
 
-    if (fdd->post_process_opaque_free)
-        fdd->post_process_opaque_free(fdd->post_process_opaque);
+    av_refstruct_unref(&fdd->post_process_opaque);
 
     if (fdd->hwaccel_priv_free)
         fdd->hwaccel_priv_free(fdd->hwaccel_priv);
@@ -1748,7 +1747,6 @@ int ff_attach_decode_data(AVCodecContext *avctx, AVFrame *frame)
         validate_avframe_allocation(avctx, frame_ctx->frame);
 
         fdd->post_process_opaque = frame_ctx;
-        fdd->post_process_opaque_free = ff_lcevc_unref;
         fdd->post_process = ff_lcevc_process;
     }
     dc->lcevc.frame = 0;

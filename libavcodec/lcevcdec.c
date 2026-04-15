@@ -464,9 +464,3 @@ fail:
     av_refstruct_unref(&lcevc);
     return ret;
 }
-
-void ff_lcevc_unref(void *opaque)
-{
-    FFLCEVCFrame *lcevc = opaque;
-    av_refstruct_unref(&lcevc);
-}
