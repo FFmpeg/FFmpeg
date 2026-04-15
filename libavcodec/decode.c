@@ -1726,15 +1726,9 @@ int ff_attach_decode_data(AVCodecContext *avctx, AVFrame *frame)
             return 0;
         }
 
-        frame_ctx = av_mallocz(sizeof(*frame_ctx));
+        frame_ctx = av_refstruct_pool_get(dc->lcevc.ctx->frame_pool);
         if (!frame_ctx)
             return AVERROR(ENOMEM);
-
-        frame_ctx->frame = av_frame_alloc();
-        if (!frame_ctx->frame) {
-            av_free(frame_ctx);
-            return AVERROR(ENOMEM);
-        }
 
         frame_ctx->lcevc = av_refstruct_ref(dc->lcevc.ctx);
         frame_ctx->frame->width  = dc->lcevc.width;
@@ -1747,7 +1741,7 @@ int ff_attach_decode_data(AVCodecContext *avctx, AVFrame *frame)
 
         ret = avctx->get_buffer2(avctx, frame_ctx->frame, 0);
         if (ret < 0) {
-            ff_lcevc_unref(frame_ctx);
+            av_refstruct_unref(&frame_ctx);
             return ret;
         }
 

@@ -300,7 +300,33 @@ static void lcevc_free(AVRefStructOpaque unused, void *obj)
         ff_cbs_fragment_free(lcevc->frag);
     av_freep(&lcevc->frag);
     ff_cbs_close(&lcevc->cbc);
+    av_refstruct_pool_uninit(&lcevc->frame_pool);
     memset(lcevc, 0, sizeof(*lcevc));
+}
+
+static av_cold int lcevc_frame_init_cb(AVRefStructOpaque unused, void *obj)
+{
+    FFLCEVCFrame *frame = obj;
+
+    frame->frame = av_frame_alloc();
+    if (!frame->frame)
+        return AVERROR(ENOMEM);
+    return 0;
+}
+
+static void lcevc_frame_reset_cb(AVRefStructOpaque unused, void *obj)
+{
+    FFLCEVCFrame *frame = obj;
+
+    av_frame_unref(frame->frame);
+    av_refstruct_unref(&frame->lcevc);
+}
+
+static av_cold void lcevc_frame_free_entry_cb(AVRefStructOpaque unused, void *obj)
+{
+    FFLCEVCFrame *frame = obj;
+
+    av_frame_free(&frame->frame);
 }
 
 static int lcevc_init(FFLCEVCContext *lcevc, void *logctx)
@@ -423,6 +449,15 @@ int ff_lcevc_alloc(FFLCEVCContext **plcevc, void *logctx)
     lcevc->cbc->decompose_unit_types    = decompose_unit_types;
     lcevc->cbc->nb_decompose_unit_types = FF_ARRAY_ELEMS(decompose_unit_types);
 
+    lcevc->frame_pool = av_refstruct_pool_alloc_ext(sizeof(FFLCEVCFrame), 0, NULL,
+                                                    lcevc_frame_init_cb,
+                                                    lcevc_frame_reset_cb,
+                                                    lcevc_frame_free_entry_cb, NULL);
+    if (!lcevc->frame_pool) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
     *plcevc = lcevc;
     return 0;
 fail:
@@ -433,7 +468,5 @@ fail:
 void ff_lcevc_unref(void *opaque)
 {
     FFLCEVCFrame *lcevc = opaque;
-    av_refstruct_unref(&lcevc->lcevc);
-    av_frame_free(&lcevc->frame);
-    av_free(opaque);
+    av_refstruct_unref(&lcevc);
 }

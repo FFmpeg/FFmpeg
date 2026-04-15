@@ -35,6 +35,7 @@ typedef struct FFLCEVCContext {
     LCEVC_DecoderHandle decoder;
     struct CodedBitstreamContext *cbc;
     struct CodedBitstreamFragment *frag;
+    struct AVRefStructPool *frame_pool; ///< pool of FFLCEVCFrame
     int initialized;
 } FFLCEVCContext;
 
