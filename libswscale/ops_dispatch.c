@@ -153,6 +153,23 @@ static inline size_t pixel_bytes(size_t pixels, int pixel_bits,
     }
 }
 
+static size_t safe_bytes_pad(int linesize, int plane_pad)
+{
+    av_assert1(linesize);
+    int64_t safe_bytes = FFABS((int64_t) linesize) - plane_pad;
+    return FFMAX(safe_bytes, 0);
+}
+
+static size_t safe_blocks_offset(size_t num_blocks, unsigned block_size,
+                                 ptrdiff_t safe_offset,
+                                 const int32_t *offset_bytes)
+{
+    size_t safe_blocks = num_blocks;
+    while (safe_blocks && offset_bytes[safe_blocks * block_size - 1] > safe_offset)
+        safe_blocks--;
+    return safe_blocks;
+}
+
 static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
                          const SwsPass *pass)
 {
@@ -174,20 +191,31 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
     p->memcpy_last  = false;
     p->memcpy_out   = false;
 
+    size_t safe_blocks = num_blocks;
     for (int i = 0; i < p->planes_in; i++) {
         int idx        = p->idx_in[i];
         int chroma     = idx == 1 || idx == 2;
         int sub_x      = chroma ? indesc->log2_chroma_w : 0;
         int sub_y      = chroma ? indesc->log2_chroma_h : 0;
-        size_t plane_w    = AV_CEIL_RSHIFT(aligned_w, sub_x);
-        size_t plane_size = pixel_bytes(plane_w, p->pixel_bits_in, AV_ROUND_UP);
-        size_t total_size = plane_size + comp->over_read;
-        size_t loop_size  = num_blocks * exec->block_size_in;
-        if (in->linesize[idx] >= 0) {
-            p->memcpy_last |= total_size > in->linesize[idx];
+        size_t safe_bytes = safe_bytes_pad(in->linesize[idx], comp->over_read);
+        size_t safe_blocks_in;
+        if (exec->in_offset_x) {
+            size_t filter_size = pixel_bytes(p->filter_size, p->pixel_bits_in,
+                                             AV_ROUND_UP);
+            safe_blocks_in = safe_blocks_offset(num_blocks, block_size,
+                                                safe_bytes - filter_size,
+                                                exec->in_offset_x);
         } else {
-            p->memcpy_first |= total_size > -in->linesize[idx];
+            safe_blocks_in = safe_bytes / exec->block_size_in;
         }
+
+        if (safe_blocks_in < num_blocks) {
+            p->memcpy_first |= in->linesize[idx] < 0;
+            p->memcpy_last  |= in->linesize[idx] > 0;
+            safe_blocks = FFMIN(safe_blocks, safe_blocks_in);
+        }
+
+        size_t loop_size   = num_blocks * exec->block_size_in;
         exec->in[i]        = in->data[idx];
         exec->in_stride[i] = in->linesize[idx];
         exec->in_bump[i]   = in->linesize[idx] - loop_size;
@@ -200,10 +228,14 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
         int chroma     = idx == 1 || idx == 2;
         int sub_x      = chroma ? outdesc->log2_chroma_w : 0;
         int sub_y      = chroma ? outdesc->log2_chroma_h : 0;
-        size_t plane_w    = AV_CEIL_RSHIFT(aligned_w, sub_x);
-        size_t plane_size = pixel_bytes(plane_w, p->pixel_bits_out, AV_ROUND_UP);
-        size_t loop_size  = num_blocks * exec->block_size_out;
-        p->memcpy_out |= plane_size + comp->over_write > FFABS(out->linesize[idx]);
+        size_t safe_bytes = safe_bytes_pad(out->linesize[idx], comp->over_write);
+        size_t safe_blocks_out = safe_bytes / exec->block_size_out;
+        if (safe_blocks_out < num_blocks) {
+            p->memcpy_out = true;
+            safe_blocks   = FFMIN(safe_blocks, safe_blocks_out);
+        }
+
+        size_t loop_size    = num_blocks * exec->block_size_out;
         exec->out[i]        = out->data[idx];
         exec->out_stride[i] = out->linesize[idx];
         exec->out_bump[i]   = out->linesize[idx] - loop_size;
@@ -212,8 +244,10 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
     }
 
     const bool memcpy_in = p->memcpy_first || p->memcpy_last;
-    if (!memcpy_in && !p->memcpy_out)
+    if (!memcpy_in && !p->memcpy_out) {
+        av_assert0(safe_blocks == num_blocks);
         return 0;
+    }
 
     /* Set-up tail section parameters and buffers */
     SwsOpExec *tail = &p->exec_tail;
@@ -221,13 +255,11 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
     size_t alloc_size = 0;
     *tail = *exec;
 
-    p->tail_blocks = 1;
-    av_assert0(num_blocks >= p->tail_blocks);
-
-    const size_t safe_width = (num_blocks - p->tail_blocks) * block_size;
+    const size_t safe_width = safe_blocks * block_size;
     const size_t tail_size  = pass->width - safe_width;
     p->tail_off_out  = pixel_bytes(safe_width, p->pixel_bits_out, AV_ROUND_DOWN);
     p->tail_size_out = pixel_bytes(tail_size,  p->pixel_bits_out, AV_ROUND_UP);
+    p->tail_blocks   = num_blocks - safe_blocks;
 
     if (exec->in_offset_x) {
         p->tail_off_in  = exec->in_offset_x[safe_width];
@@ -395,6 +427,7 @@ static void op_pass_run(const SwsFrame *out, const SwsFrame *in, const int y,
     }
 
     /* Dispatch kernel over tail */
+    av_assert1(tail_blocks > 0);
     comp->func(&tail, comp->priv, num_blocks - tail_blocks, y, num_blocks, y + h);
 
     for (int i = 0; memcpy_out && i < p->planes_out; i++) {
