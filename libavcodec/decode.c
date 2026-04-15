@@ -1570,7 +1570,7 @@ int ff_decode_frame_props_from_pkt(const AVCodecContext *avctx,
     }
 
     if (avctx->flags & AV_CODEC_FLAG_COPY_OPAQUE) {
-        int ret = av_buffer_replace(&frame->opaque_ref, pkt->opaque_ref);
+        ret = av_buffer_replace(&frame->opaque_ref, pkt->opaque_ref);
         if (ret < 0)
             return ret;
         frame->opaque = pkt->opaque;
@@ -1630,7 +1630,7 @@ int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
                       av_frame_get_side_data(frame, AV_FRAME_DATA_LCEVC);
 
     if (dc->lcevc.frame) {
-        int ret = ff_lcevc_parse_frame(dc->lcevc.ctx, frame, &dc->lcevc.format,
+        ret = ff_lcevc_parse_frame(dc->lcevc.ctx, frame, &dc->lcevc.format,
                                        &dc->lcevc.width, &dc->lcevc.height, avctx);
         if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))
             return ret;
