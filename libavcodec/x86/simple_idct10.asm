@@ -120,11 +120,11 @@ SECTION .text
 
 define_constants _lo
 
-cglobal simple_idct8, 1, 1, 16, 32, block
+cglobal simple_idct8, 1, 1, 16, block
     IDCT_FN    "", 11, pw_32, 20, "store"
 RET
 
-cglobal simple_idct8_put, 3, 4, 16, 32, pixels, lsize, block
+cglobal simple_idct8_put, 3, 4, 16, pixels, lsize, block
     IDCT_FN    "", 11, pw_32, 20
     lea       r3, [3*lsizeq]
     lea       r2, [pixelsq + r3]
@@ -135,7 +135,7 @@ cglobal simple_idct8_put, 3, 4, 16, 32, pixels, lsize, block
     STORE_HI_LO PASS8ROWS(pixelsq, r2, lsizeq, r3), m8, m1, m4, m9
 RET
 
-cglobal simple_idct8_add, 3, 4, 16, 32, pixels, lsize, block
+cglobal simple_idct8_add, 3, 4, 16, pixels, lsize, block
     IDCT_FN    "", 11, pw_32, 20
     lea r2, [3*lsizeq]
     %if cpuflag(sse4)
@@ -173,21 +173,21 @@ RET
 
 define_constants _hi
 
-cglobal simple_idct10, 1, 1, 16, block
+cglobal simple_idct10, 1, 1, 14, block
     IDCT_FN    "", 12, "", 19, "store"
     RET
 
-cglobal simple_idct10_put, 3, 3, 16, pixels, lsize, block
+cglobal simple_idct10_put, 3, 3, 14, pixels, lsize, block
     IDCT_FN    "", 12, "", 19, "put", 0, pw_1023
     RET
 
-cglobal simple_idct12, 1, 1, 16, block
+cglobal simple_idct12, 1, 1, 14, block
     ; coeffs are already 15bits, adding the offset would cause
     ; overflow in the input
     IDCT_FN    "", 15, pw_2, 16, "store"
     RET
 
-cglobal simple_idct12_put, 3, 3, 16, pixels, lsize, block
+cglobal simple_idct12_put, 3, 3, 14, pixels, lsize, block
     ; range isn't known, so the C simple_idct range is used
     ; Also, using a bias on input overflows, so use the bias
     ; on output of the first butterfly instead

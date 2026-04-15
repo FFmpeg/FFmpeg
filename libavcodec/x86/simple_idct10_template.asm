@@ -81,7 +81,7 @@
     ; a2 -= W6 * row[2];
     ; a3 -= W2 * row[2];
 %ifstr %1
-    mova        m15, [pd_round_ %+ %2]
+    mova        m11, [pd_round_ %+ %2]
 %else
     paddw       m10, [%1]
 %endif
@@ -96,14 +96,14 @@
     pmaddwd     m1, [w4_plus_w2]
 %ifstr %1
     ; Adding 1<<(%2-1) for >=15 bits values
-    paddd       m2, m15
-    paddd       m3, m15
-    paddd       m4, m15
-    paddd       m5, m15
-    paddd       m6, m15
-    paddd       m7, m15
-    paddd       m0, m15
-    paddd       m1, m15
+    paddd       m2, m11
+    paddd       m3, m11
+    paddd       m4, m11
+    paddd       m5, m11
+    paddd       m6, m11
+    paddd       m7, m11
+    paddd       m0, m11
+    paddd       m1, m11
 %endif
 
     ; a0: -1*row[0]-1*row[2]
@@ -141,7 +141,7 @@
     mova        m10,[blockq+ 16]       ; { row[1] }[0-7]
     mova        m8, [blockq+ 48]       ; { row[3] }[0-7]
     mova        m13,[blockq+ 80]       ; { row[5] }[0-7]
-    mova        m14,[blockq+112]       ; { row[7] }[0-7]
+    mova        m11,[blockq+112]       ; { row[7] }[0-7]
     mova   [blockq+ 16], m1
     mova   [blockq+ 48], m3
     mova   [blockq+ 80], m5
@@ -150,7 +150,7 @@
     pmullw      m10,[%3+ 16]
     pmullw      m8, [%3+ 48]
     pmullw      m13,[%3+ 80]
-    pmullw      m14,[%3+112]
+    pmullw      m11,[%3+112]
 %endif
 
     ; b0 = MUL(W1, row[1]);
@@ -184,7 +184,7 @@
     ; MAC(b2,  W3, row[7]);
     ; MAC(b3,  W3, row[5]);
     ; MAC(b3, -W1, row[7]);
-    SBUTTERFLY3 wd,  8,  9, 13, 14 ; { row[5], row[7] }[0-3]/[4-7]
+    SBUTTERFLY3 wd,  8,  9, 13, 11 ; { row[5], row[7] }[0-3]/[4-7]
 
     ; b0: -1*row[5]+1*row[7]
     ; b1: -1*row[5]+1*row[7]
@@ -270,33 +270,34 @@
     por      m1, [blockq+112]       ; { row[7] }[0-7]
     pxor     m2,  m2
     pcmpeqw  m1,  m2
-    psllw    m2,  m10, 3
-    pand     m2,  m1
+    psllw   m15,  m10, 3
+    pand    m15,  m1
+%if avx_enabled
     pcmpeqb  m3,  m3
-    pxor     m1,  m3
-    mova    [rsp],    m1
-    mova    [rsp+16], m2
+    pxor    m14,  m1, m3
+%else
+    pcmpeqb m14, m14
+    pxor    m14,  m1
+%endif
 
     IDCT_1D  %1,  %2
 
-    mova     m5, [rsp]
-    mova     m6, [rsp+16]
-    pand     m8,  m5
-    por      m8,  m6
-    pand     m0,  m5
-    por      m0,  m6
-    pand     m1,  m5
-    por      m1,  m6
-    pand     m2,  m5
-    por      m2,  m6
-    pand     m4,  m5
-    por      m4,  m6
-    pand     m11, m5
-    por      m11, m6
-    pand     m9,  m5
-    por      m9,  m6
-    pand     m10, m5
-    por      m10, m6
+    pand     m8,  m14
+    pand     m0,  m14
+    por      m8,  m15
+    por      m0,  m15
+    pand     m1,  m14
+    pand     m2,  m14
+    por      m1,  m15
+    por      m2,  m15
+    pand     m4,  m14
+    pand     m11, m14
+    por      m4,  m15
+    por      m11, m15
+    pand     m9,  m14
+    pand     m10, m14
+    por      m9,  m15
+    por      m10, m15
 %else
     IDCT_1D     %1, %2
 %endif
