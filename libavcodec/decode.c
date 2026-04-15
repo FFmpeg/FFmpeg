@@ -1676,7 +1676,10 @@ static void decode_data_free(AVRefStructOpaque unused, void *obj)
 {
     FrameDecodeData *fdd = obj;
 
-    av_refstruct_unref(&fdd->post_process_opaque);
+    if (CONFIG_LIBLCEVC_DEC)
+        av_refstruct_unref(&fdd->post_process_opaque);
+    else
+        av_assert1(!fdd->post_process_opaque);
 
     if (fdd->hwaccel_priv_free)
         fdd->hwaccel_priv_free(fdd->hwaccel_priv);
