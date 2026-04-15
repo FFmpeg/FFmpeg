@@ -254,8 +254,14 @@ static int setup_dither(const SwsImplParams *params, SwsImplResult *out)
     return 0;
 }
 
-#define DECL_DITHER(DECL_MACRO, EXT, SIZE)                                      \
-    DECL_MACRO(F32, dither##SIZE##EXT,                                          \
+#define DECL_DITHER0(EXT)                                                       \
+    DECL_COMMON_PATTERNS(F32, dither0##EXT,                                     \
+        .op    = SWS_OP_DITHER,                                                 \
+        .setup = setup_dither,                                                  \
+    );
+
+#define DECL_DITHER(EXT, SIZE)                                                  \
+    DECL_ASM(F32, dither##SIZE##EXT,                                            \
         .op    = SWS_OP_DITHER,                                                 \
         .setup = setup_dither,                                                  \
         .dither_size = SIZE,                                                    \
@@ -726,15 +732,15 @@ static const SwsOpTable ops16##EXT = {                                          
     DECL_EXPAND(EXT,   U8, U32)                                                 \
     DECL_MIN_MAX(EXT)                                                           \
     DECL_SCALE(EXT)                                                             \
-    DECL_DITHER(DECL_COMMON_PATTERNS, EXT, 0)                                   \
-    DECL_DITHER(DECL_ASM, EXT, 1)                                               \
-    DECL_DITHER(DECL_ASM, EXT, 2)                                               \
-    DECL_DITHER(DECL_ASM, EXT, 3)                                               \
-    DECL_DITHER(DECL_ASM, EXT, 4)                                               \
-    DECL_DITHER(DECL_ASM, EXT, 5)                                               \
-    DECL_DITHER(DECL_ASM, EXT, 6)                                               \
-    DECL_DITHER(DECL_ASM, EXT, 7)                                               \
-    DECL_DITHER(DECL_ASM, EXT, 8)                                               \
+    DECL_DITHER0(EXT)                                                           \
+    DECL_DITHER(EXT, 1)                                                         \
+    DECL_DITHER(EXT, 2)                                                         \
+    DECL_DITHER(EXT, 3)                                                         \
+    DECL_DITHER(EXT, 4)                                                         \
+    DECL_DITHER(EXT, 5)                                                         \
+    DECL_DITHER(EXT, 6)                                                         \
+    DECL_DITHER(EXT, 7)                                                         \
+    DECL_DITHER(EXT, 8)                                                         \
     DECL_LINEAR(EXT, luma,      SWS_MASK_LUMA)                                  \
     DECL_LINEAR(EXT, alpha,     SWS_MASK_ALPHA)                                 \
     DECL_LINEAR(EXT, lumalpha,  SWS_MASK_LUMA | SWS_MASK_ALPHA)                 \
