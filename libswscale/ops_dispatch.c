@@ -20,6 +20,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/cpu.h"
+#include "libavutil/mathematics.h"
 #include "libavutil/mem.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/refstruct.h"
@@ -134,6 +135,23 @@ static inline void get_row_data(const SwsOpPass *p, const int y_dst,
         out[i] = base->out[i] + (y_dst >> base->out_sub_y[i]) * base->out_stride[i];
 }
 
+static inline size_t pixel_bytes(size_t pixels, int pixel_bits,
+                                 enum AVRounding rounding)
+{
+    const uint64_t bits = (uint64_t) pixels * pixel_bits;
+    switch (rounding) {
+    case AV_ROUND_ZERO:
+    case AV_ROUND_DOWN:
+        return bits >> 3;
+    case AV_ROUND_INF:
+    case AV_ROUND_UP:
+        return (bits + 7) >> 3;
+    default:
+        av_unreachable("Invalid rounding mode");
+        return (size_t) -1;
+    }
+}
+
 static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
                          const SwsPass *pass)
 {
@@ -162,7 +180,7 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
         int sub_y      = chroma ? indesc->log2_chroma_h : 0;
         size_t plane_w    = AV_CEIL_RSHIFT(aligned_w, sub_x);
         size_t plane_pad  = AV_CEIL_RSHIFT(comp->over_read, sub_x);
-        size_t plane_size = (plane_w * p->pixel_bits_in + 7) >> 3;
+        size_t plane_size = pixel_bytes(plane_w, p->pixel_bits_in, AV_ROUND_UP);
         size_t total_size = plane_size + plane_pad;
         size_t loop_size  = num_blocks * exec->block_size_in;
         if (in->linesize[idx] >= 0) {
@@ -184,7 +202,7 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
         int sub_y      = chroma ? outdesc->log2_chroma_h : 0;
         size_t plane_w    = AV_CEIL_RSHIFT(aligned_w, sub_x);
         size_t plane_pad  = AV_CEIL_RSHIFT(comp->over_write, sub_x);
-        size_t plane_size = (plane_w * p->pixel_bits_out + 7) >> 3;
+        size_t plane_size = pixel_bytes(plane_w, p->pixel_bits_out, AV_ROUND_UP);
         size_t loop_size  = num_blocks * exec->block_size_out;
         p->memcpy_out |= plane_size + plane_pad > FFABS(out->linesize[idx]);
         exec->out[i]        = out->data[idx];
@@ -207,20 +225,20 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
     av_assert0(num_blocks >= 1);
     const size_t safe_width = (num_blocks - 1) * block_size;
     const size_t tail_size  = pass->width - safe_width;
-    p->tail_off_out  = safe_width * p->pixel_bits_out >> 3;
-    p->tail_size_out = (tail_size * p->pixel_bits_out + 7) >> 3;
+    p->tail_off_out  = pixel_bytes(safe_width, p->pixel_bits_out, AV_ROUND_DOWN);
+    p->tail_size_out = pixel_bytes(tail_size,  p->pixel_bits_out, AV_ROUND_UP);
 
     if (exec->in_offset_x) {
         p->tail_off_in  = exec->in_offset_x[safe_width];
         p->tail_size_in = exec->in_offset_x[pass->width - 1] - p->tail_off_in;
-        p->tail_size_in += (p->filter_size * p->pixel_bits_in + 7) >> 3;
+        p->tail_size_in += pixel_bytes(p->filter_size, p->pixel_bits_in, AV_ROUND_UP);
     } else {
-        p->tail_off_in  = safe_width * p->pixel_bits_in >> 3;
-        p->tail_size_in = (tail_size * p->pixel_bits_in + 7) >> 3;
+        p->tail_off_in  = pixel_bytes(safe_width, p->pixel_bits_in, AV_ROUND_DOWN);
+        p->tail_size_in = pixel_bytes(tail_size,  p->pixel_bits_in, AV_ROUND_UP);
     }
 
     for (int i = 0; memcpy_in && i < p->planes_in; i++) {
-        size_t block_size = (comp->block_size * p->pixel_bits_in + 7) >> 3;
+        size_t block_size = pixel_bytes(comp->block_size, p->pixel_bits_in, AV_ROUND_UP);
         block_size += comp->over_read;
         block_size = FFMAX(block_size, p->tail_size_in);
         tail->in_stride[i] = FFALIGN(block_size, align);
@@ -229,7 +247,7 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
     }
 
     for (int i = 0; p->memcpy_out && i < p->planes_out; i++) {
-        size_t block_size = (comp->block_size * p->pixel_bits_out + 7) >> 3;
+        size_t block_size = pixel_bytes(comp->block_size, p->pixel_bits_out, AV_ROUND_UP);
         block_size += comp->over_write;
         block_size = FFMAX(block_size, p->tail_size_out);
         tail->out_stride[i] = FFALIGN(block_size, align);
