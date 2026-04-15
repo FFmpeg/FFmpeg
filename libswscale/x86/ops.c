@@ -25,21 +25,21 @@
 
 #include "../ops_chain.h"
 
-#define DECL_ENTRY(TYPE, NAME, ...)                                             \
+#define DECL_ENTRY(TYPE, MASK, NAME, ...)                                       \
     static const SwsOpEntry op_##NAME = {                                       \
         .type = SWS_PIXEL_##TYPE,                                               \
+        .mask = MASK,                                                           \
         __VA_ARGS__                                                             \
     }
 
-#define DECL_ASM(TYPE, NAME, ...)                                               \
+#define DECL_ASM(TYPE, MASK, NAME, ...)                                         \
     void ff_##NAME(void);                                                       \
-    DECL_ENTRY(TYPE, NAME,                                                      \
+    DECL_ENTRY(TYPE, MASK, NAME,                                                \
         .func = ff_##NAME,                                                      \
         __VA_ARGS__)
 
 #define DECL_PATTERN(TYPE, NAME, X, Y, Z, W, ...)                               \
-    DECL_ASM(TYPE, p##X##Y##Z##W##_##NAME,                                      \
-        .unused = { !X, !Y, !Z, !W },                                           \
+    DECL_ASM(TYPE, SWS_COMP_MASK(X, Y, Z, W), p##X##Y##Z##W##_##NAME,           \
         __VA_ARGS__                                                             \
     )
 
@@ -74,7 +74,7 @@ static int setup_rw(const SwsImplParams *params, SwsImplResult *out)
 }
 
 #define DECL_RW(EXT, TYPE, NAME, OP, ELEMS, PACKED, FRAC)                       \
-    DECL_ASM(TYPE, NAME##ELEMS##EXT,                                            \
+    DECL_ASM(TYPE, SWS_COMP_ELEMS(ELEMS), NAME##ELEMS##EXT,                     \
         .op = SWS_OP_##OP,                                                      \
         .rw = { .elems = ELEMS, .packed = PACKED, .frac = FRAC },               \
         .setup = setup_rw,                                                      \
@@ -89,12 +89,12 @@ static int setup_rw(const SwsImplParams *params, SwsImplResult *out)
     DECL_RW(EXT, U##DEPTH, write##DEPTH##_packed, WRITE, 4, true,  0)           \
 
 #define DECL_PACK_UNPACK(EXT, TYPE, X, Y, Z, W)                                 \
-    DECL_ASM(TYPE, pack_##X##Y##Z##W##EXT,                                      \
+    DECL_ASM(TYPE, SWS_COMP(0), pack_##X##Y##Z##W##EXT,                         \
         .op = SWS_OP_PACK,                                                      \
         .pack.pattern = {X, Y, Z, W},                                           \
     );                                                                          \
                                                                                 \
-    DECL_ASM(TYPE, unpack_##X##Y##Z##W##EXT,                                    \
+    DECL_ASM(TYPE, SWS_COMP_MASK(X, Y, Z, W), unpack_##X##Y##Z##W##EXT,         \
         .op = SWS_OP_UNPACK,                                                    \
         .pack.pattern = {X, Y, Z, W},                                           \
     );                                                                          \
@@ -108,22 +108,22 @@ static int setup_swap_bytes(const SwsImplParams *params, SwsImplResult *out)
 }
 
 #define DECL_SWAP_BYTES(EXT, TYPE, X, Y, Z, W)                                  \
-    DECL_ENTRY(TYPE, p##X##Y##Z##W##_swap_bytes_##TYPE##EXT,                    \
+    DECL_ENTRY(TYPE, SWS_COMP_MASK(X, Y, Z, W),                                 \
+               p##X##Y##Z##W##_swap_bytes_##TYPE##EXT,                          \
         .op = SWS_OP_SWAP_BYTES,                                                \
-        .unused = { !X, !Y, !Z, !W },                                           \
         .func = ff_p##X##Y##Z##W##_shuffle##EXT,                                \
         .setup = setup_swap_bytes,                                              \
     );
 
 #define DECL_CLEAR_ALPHA(EXT, IDX)                                              \
-    DECL_ASM(U8, clear_alpha##IDX##EXT,                                         \
+    DECL_ASM(U8, SWS_COMP_ALL, clear_alpha##IDX##EXT,                           \
         .op = SWS_OP_CLEAR,                                                     \
         .clear.mask = SWS_COMP(IDX),                                            \
         .clear.value[IDX] = { -1, 1 },                                          \
     );                                                                          \
 
 #define DECL_CLEAR_ZERO(EXT, IDX)                                               \
-    DECL_ASM(U8, clear_zero##IDX##EXT,                                          \
+    DECL_ASM(U8, SWS_COMP_ALL, clear_zero##IDX##EXT,                            \
         .op = SWS_OP_CLEAR,                                                     \
         .clear.mask = SWS_COMP(IDX),                                            \
         .clear.value[IDX] = { 0, 1 },                                           \
@@ -138,14 +138,14 @@ static int setup_clear(const SwsImplParams *params, SwsImplResult *out)
 }
 
 #define DECL_CLEAR(EXT, X, Y, Z, W)                                             \
-    DECL_PATTERN(U8, clear##EXT, X, Y, Z, W,                                    \
+    DECL_ASM(U8, SWS_COMP_ALL, p##X##Y##Z##W##_clear##EXT,                      \
         .op = SWS_OP_CLEAR,                                                     \
         .setup = setup_clear,                                                   \
         .clear.mask = SWS_COMP_MASK(!X, !Y, !Z, !W),                            \
     );
 
 #define DECL_SWIZZLE(EXT, X, Y, Z, W)                                           \
-    DECL_ASM(U8, swizzle_##X##Y##Z##W##EXT,                                     \
+    DECL_ASM(U8, SWS_COMP_ALL, swizzle_##X##Y##Z##W##EXT,                       \
         .op = SWS_OP_SWIZZLE,                                                   \
         .swizzle.in = {X, Y, Z, W},                                             \
     );
@@ -203,10 +203,9 @@ static int setup_shift(const SwsImplParams *params, SwsImplResult *out)
     );
 
 #define DECL_EXPAND_BITS(EXT, BITS)                                             \
-    DECL_ASM(U##BITS, expand_bits##BITS##EXT,                                   \
+    DECL_ASM(U##BITS, SWS_COMP(0), expand_bits##BITS##EXT,                      \
         .op = SWS_OP_SCALE,                                                     \
         .scale = { .num = ((1 << (BITS)) - 1), .den = 1 },                      \
-        .unused = { false, true, true, true },                                  \
     );
 
 static int setup_dither(const SwsImplParams *params, SwsImplResult *out)
@@ -261,7 +260,7 @@ static int setup_dither(const SwsImplParams *params, SwsImplResult *out)
     );
 
 #define DECL_DITHER(EXT, SIZE)                                                  \
-    DECL_ASM(F32, dither##SIZE##EXT,                                            \
+    DECL_ASM(F32, SWS_COMP_ALL, dither##SIZE##EXT,                              \
         .op    = SWS_OP_DITHER,                                                 \
         .setup = setup_dither,                                                  \
         .dither_size = SIZE,                                                    \
@@ -285,7 +284,7 @@ static int setup_linear(const SwsImplParams *params, SwsImplResult *out)
 }
 
 #define DECL_LINEAR(EXT, NAME, MASK)                                            \
-    DECL_ASM(F32, NAME##EXT,                                                    \
+    DECL_ASM(F32, SWS_COMP_ALL, NAME##EXT,                                      \
         .op    = SWS_OP_LINEAR,                                                 \
         .setup = setup_linear,                                                  \
         .linear_mask = (MASK),                                                  \
@@ -514,7 +513,7 @@ static int setup_filter_4x4_h(const SwsImplParams *params, SwsImplResult *out)
 }
 
 #define DECL_FILTER(EXT, TYPE, DIR, NAME, ELEMS, ...)                           \
-    DECL_ASM(TYPE, NAME##ELEMS##_##TYPE##EXT,                                   \
+    DECL_ASM(TYPE, SWS_COMP_ELEMS(ELEMS), NAME##ELEMS##_##TYPE##EXT,            \
         .op = SWS_OP_READ,                                                      \
         .rw.elems = ELEMS,                                                      \
         .rw.filter = SWS_OP_FILTER_##DIR,                                       \

@@ -64,10 +64,6 @@ int ff_sws_op_chain_append(SwsOpChain *chain, SwsFuncPtr func,
  * Match an operation against a reference operation. Returns a score for how
  * well the reference matches the operation, or 0 if there is no match.
  *
- * If `ref->comps` has any flags set, they must be set in `op` as well.
- * Likewise, if `ref->comps` has any components marked as unused, they must be
- * marked as unused in `ops` as well.
- *
  * For unfiltered SWS_OP_READ/SWS_OP_WRITE, SWS_OP_SWAP_BYTES and
  * SWS_OP_SWIZZLE, the exact type is not checked, just the size.
  *
@@ -99,14 +95,12 @@ static int op_match(const SwsOp *op, const SwsOpEntry *entry)
         break;
     }
 
-    for (int i = 0; i < 4; i++) {
-        if (entry->unused[i]) {
-            if (op->comps.unused[i])
-                score += 1; /* Operating on fewer components is better .. */
-            else
-                return 0; /* .. but not too few! */
-        }
-    }
+    const SwsCompMask needed = ff_sws_comp_mask_needed(op);
+    if (needed & ~entry->mask)
+        return 0; /* Entry doesn't compute all needed components */
+
+    /* Otherwise, operating on fewer components is better */
+    score += av_popcount(SWS_COMP_INV(entry->mask));
 
     /* Flexible variants always match, but lower the score to prioritize more
      * specific implementations if they exist */

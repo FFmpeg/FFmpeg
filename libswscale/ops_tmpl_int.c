@@ -129,7 +129,7 @@ static av_flatten void fn(FUNC##ELEMS)(SwsOpIter *restrict iter,                
         iter->in[i] += sizeof(block_t) * (PACKED ? ELEMS : 1) >> FRAC;          \
 }                                                                               \
                                                                                 \
-DECL_ENTRY(FUNC##ELEMS,                                                         \
+DECL_ENTRY(FUNC##ELEMS, SWS_COMP_ELEMS(ELEMS),                                  \
     .op = SWS_OP_READ,                                                          \
     .rw = {                                                                     \
         .elems  = ELEMS,                                                        \
@@ -157,7 +157,7 @@ static av_flatten void fn(FUNC##ELEMS)(SwsOpIter *restrict iter,                
         iter->out[i] += sizeof(block_t) * (PACKED ? ELEMS : 1) >> FRAC;         \
 }                                                                               \
                                                                                 \
-DECL_ENTRY(FUNC##ELEMS,                                                         \
+DECL_ENTRY(FUNC##ELEMS, SWS_COMP_ALL,                                           \
     .op = SWS_OP_WRITE,                                                         \
     .rw = {                                                                     \
         .elems  = ELEMS,                                                        \
@@ -339,14 +339,14 @@ DECL_FUNC(unpack, const int bits0, const int bits1, const int bits2, const int b
 #define WRAP_PACK_UNPACK(X, Y, Z, W)                                            \
 DECL_IMPL(pack, pack_##X##Y##Z##W, X, Y, Z, W)                                  \
                                                                                 \
-DECL_ENTRY(pack_##X##Y##Z##W,                                                   \
+DECL_ENTRY(pack_##X##Y##Z##W, SWS_COMP(0),                                      \
     .op = SWS_OP_PACK,                                                          \
     .pack.pattern = { X, Y, Z, W },                                             \
 );                                                                              \
                                                                                 \
 DECL_IMPL(unpack, unpack_##X##Y##Z##W, X, Y, Z, W)                              \
                                                                                 \
-DECL_ENTRY(unpack_##X##Y##Z##W,                                                 \
+DECL_ENTRY(unpack_##X##Y##Z##W, SWS_COMP_MASK(X, Y, Z, W),                      \
     .op = SWS_OP_UNPACK,                                                        \
     .pack.pattern = { X, Y, Z, W },                                             \
 );
@@ -438,7 +438,7 @@ fn(swizzle_##X##Y##Z##W)(SwsOpIter *restrict iter,                              
     CONTINUE(c##X, c##Y, c##Z, c##W);                                           \
 }                                                                               \
                                                                                 \
-DECL_ENTRY(swizzle_##X##Y##Z##W,                                                \
+DECL_ENTRY(swizzle_##X##Y##Z##W, SWS_COMP_ALL,                                  \
     .op = SWS_OP_SWIZZLE,                                                       \
     .swizzle.in = { X, Y, Z, W },                                               \
 );
@@ -476,7 +476,7 @@ DECL_FUNC(expand_luma_##X##W##_impl,                                            
                                                                                 \
 DECL_IMPL(expand_luma_##X##W##_impl, expand_luma_##X##W, x, y, z, w)            \
                                                                                 \
-DECL_ENTRY(expand_luma_##X##W,                                                  \
+DECL_ENTRY(expand_luma_##X##W, SWS_COMP_ALL,                                    \
     .op = SWS_OP_SWIZZLE,                                                       \
     .swizzle.in = { X, 0, 0, W },                                               \
 );

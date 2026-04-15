@@ -104,7 +104,7 @@ DECL_FUNC(dither, const int size_log2)
 #define WRAP_DITHER(N)                                                          \
 DECL_IMPL(dither, dither##N, N)                                                 \
                                                                                 \
-DECL_ENTRY(dither##N,                                                           \
+DECL_ENTRY(dither##N, SWS_COMP_ALL,                                             \
     .op = SWS_OP_DITHER,                                                        \
     .dither_size = N,                                                           \
     .setup = fn(setup_dither),                                                  \
@@ -188,7 +188,7 @@ DECL_FUNC(linear_mask, const uint32_t mask)
 #define WRAP_LINEAR(NAME, MASK)                                                 \
 DECL_IMPL(linear_mask, linear_##NAME, MASK)                                     \
                                                                                 \
-DECL_ENTRY(linear_##NAME,                                                       \
+DECL_ENTRY(linear_##NAME, SWS_COMP_ALL,                                         \
     .op    = SWS_OP_LINEAR,                                                     \
     .setup = fn(setup_linear),                                                  \
     .linear_mask = (MASK),                                                      \

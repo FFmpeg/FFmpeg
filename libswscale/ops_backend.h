@@ -131,10 +131,11 @@ static inline int ff_setup_memdup(const void *c, size_t size, SwsImplResult *out
 }
 
 /* Helper macro for declaring op table entries */
-#define DECL_ENTRY(NAME, ...)                                                   \
+#define DECL_ENTRY(NAME, MASK, ...)                                             \
     static const SwsOpEntry fn(op_##NAME) = {                                   \
         .func = (SwsFuncPtr) fn(NAME),                                          \
         .type = PIXEL_TYPE,                                                     \
+        .mask = (MASK),                                                         \
         __VA_ARGS__                                                             \
     }
 
@@ -144,11 +145,7 @@ static inline int ff_setup_memdup(const void *c, size_t size, SwsImplResult *out
 
 #define WRAP_PATTERN(FUNC, X, Y, Z, W, ...)                                     \
     DECL_IMPL(FUNC, FUNC##_##X##Y##Z##W, X, Y, Z, W)                            \
-                                                                                \
-    DECL_ENTRY(FUNC##_##X##Y##Z##W,                                             \
-        .unused = { !X, !Y, !Z, !W },                                           \
-        __VA_ARGS__                                                             \
-    )
+    DECL_ENTRY(FUNC##_##X##Y##Z##W, SWS_COMP_MASK(X, Y, Z, W), __VA_ARGS__)
 
 #define WRAP_COMMON_PATTERNS(FUNC, ...)                                         \
     WRAP_PATTERN(FUNC, 1, 0, 0, 0, __VA_ARGS__);                                \

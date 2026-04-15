@@ -120,8 +120,8 @@ typedef struct SwsOpEntry {
     /* Kernel metadata; reduced size subset of SwsOp */
     SwsOpType op;
     SwsPixelType type;
+    SwsCompMask mask; /* mask of active components (after operation) */
     bool flexible; /* if true, only the type and op are matched */
-    bool unused[4]; /* for kernels which operate on a subset of components */
 
     union { /* extra data defining the operation, unless `flexible` is true */
         SwsReadWriteOp rw;

@@ -81,7 +81,7 @@ DECL_PATTERN(clear)
 #define WRAP_CLEAR(X, Y, Z, W)                                                  \
 DECL_IMPL(clear, clear##_##X##Y##Z##W, X, Y, Z, W)                              \
                                                                                 \
-DECL_ENTRY(clear##_##X##Y##Z##W,                                                \
+DECL_ENTRY(clear##_##X##Y##Z##W, SWS_COMP_ALL,                                  \
     .setup = ff_sws_setup_clear,                                                \
     .op = SWS_OP_CLEAR,                                                         \
     .clear.mask = SWS_COMP_MASK(!X, !Y, !Z, !W),                                \
@@ -300,7 +300,7 @@ static av_flatten void fn(FUNC##ELEMS##SUFFIX)(SwsOpIter *restrict iter,        
     CALL_READ(FUNC##SUFFIX, ELEMS);                                             \
 }                                                                               \
                                                                                 \
-DECL_ENTRY(FUNC##ELEMS##SUFFIX,                                                 \
+DECL_ENTRY(FUNC##ELEMS##SUFFIX, SWS_COMP_ELEMS(ELEMS),                          \
     .op = SWS_OP_READ,                                                          \
     .setup = fn(setup_filter##SUFFIX),                                          \
     .rw.elems = ELEMS,                                                          \
