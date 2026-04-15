@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <assert.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
@@ -1833,7 +1834,6 @@ fail:
 
 static int reget_buffer_internal(AVCodecContext *avctx, AVFrame *frame, int flags)
 {
-    AVFrame *tmp;
     int ret;
 
     av_assert0(avctx->codec_type == AVMEDIA_TYPE_VIDEO);
@@ -1855,22 +1855,37 @@ static int reget_buffer_internal(AVCodecContext *avctx, AVFrame *frame, int flag
     if ((flags & FF_REGET_BUFFER_FLAG_READONLY) || av_frame_is_writable(frame))
         return ff_decode_frame_props(avctx, frame);
 
-    tmp = av_frame_alloc();
-    if (!tmp)
-        return AVERROR(ENOMEM);
+    uint8_t *data[AV_VIDEO_MAX_PLANES];
+    AVBufferRef *buf[AV_VIDEO_MAX_PLANES];
+    int linesize[AV_VIDEO_MAX_PLANES];
 
-    av_frame_move_ref(tmp, frame);
+    static_assert(AV_VIDEO_MAX_PLANES <= FF_ARRAY_ELEMS(frame->data) &&
+                  AV_VIDEO_MAX_PLANES <= FF_ARRAY_ELEMS(frame->buf)  &&
+                  AV_VIDEO_MAX_PLANES <= FF_ARRAY_ELEMS(frame->linesize),
+                  "Copying code needs to be adjusted");
+    static_assert(sizeof(frame->linesize[0]) == sizeof(linesize[0]),
+                  "linesize needs to be switched to ptrdiff_t");
+
+    for (int i = 0; i < AV_VIDEO_MAX_PLANES; ++i) {
+        data[i]       = frame->data[i];
+        linesize[i]   = frame->linesize[i];
+        buf[i]        = frame->buf[i];
+        frame->buf[i] = NULL;
+    }
+    av_assert1(!frame->buf[AV_VIDEO_MAX_PLANES] && !frame->extended_buf);
+
+    av_frame_unref(frame);
 
     ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF);
-    if (ret < 0) {
-        av_frame_free(&tmp);
-        return ret;
+    if (ret >= 0) {
+        av_image_copy2(frame->data, frame->linesize,
+                       data, linesize,
+                       frame->format, frame->width, frame->height);
     }
+    for (int i = 0; i < AV_VIDEO_MAX_PLANES; ++i)
+        av_buffer_unref(&buf[i]);
 
-    av_frame_copy(frame, tmp);
-    av_frame_free(&tmp);
-
-    return 0;
+    return ret;
 }
 
 int ff_reget_buffer(AVCodecContext *avctx, AVFrame *frame, int flags)
