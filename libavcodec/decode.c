@@ -1556,15 +1556,17 @@ int ff_decode_frame_props_from_pkt(const AVCodecContext *avctx,
     frame->pts          = pkt->pts;
     frame->duration     = pkt->duration;
 
-    ret = side_data_map(frame, pkt->side_data, pkt->side_data_elems, ff_sd_global_map);
-    if (ret < 0)
-        return ret;
+    if (pkt->side_data_elems) {
+        ret = side_data_map(frame, pkt->side_data, pkt->side_data_elems, ff_sd_global_map);
+        if (ret < 0)
+            return ret;
 
-    ret = side_data_map(frame, pkt->side_data, pkt->side_data_elems, sd);
-    if (ret < 0)
-        return ret;
+        ret = side_data_map(frame, pkt->side_data, pkt->side_data_elems, sd);
+        if (ret < 0)
+            return ret;
 
-    add_metadata_from_side_data(pkt, frame);
+        add_metadata_from_side_data(pkt, frame);
+    }
 
     if (pkt->flags & AV_PKT_FLAG_DISCARD) {
         frame->flags |= AV_FRAME_FLAG_DISCARD;
