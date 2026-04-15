@@ -146,8 +146,11 @@ static int fifo_thread_write_header(FifoThreadContext *ctx)
         ffstream(avf2->streams[i])->cur_dts = 0;
 
     ret = avformat_write_header(avf2, &format_options);
-    if (!ret)
+    if (!ret) {
         ctx->header_written = 1;
+    } else {
+        ff_format_io_close(avf2, &avf2->pb);
+    }
 
     // Check for options unrecognized by underlying muxer
     if (format_options) {
