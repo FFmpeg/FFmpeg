@@ -326,22 +326,21 @@ cglobal vp3_put_no_rnd_pixels8_l2, 5, 6, 5, dst, src1, src2, stride, h, stride3
         PUT_BLOCK 0, 1, 2, 3, 4, 5, 6, 7
 %endmacro
 
-%macro vp3_idct_funcs 0
+INIT_XMM sse2
+; void ff_vp3_idct_put_sse2(uint8_t *dest, ptrdiff_t stride, int16_t *block)
 cglobal vp3_idct_put, 3, 4, 9
     VP3_IDCT      r2
 
     mova          m4, [pb_80]
     lea           r3, [r1*3]
-%assign %%i 0
-%rep 16/mmsize
-    mova          m0, [r2+mmsize*0+%%i]
-    mova          m1, [r2+mmsize*2+%%i]
-    mova          m2, [r2+mmsize*4+%%i]
-    mova          m3, [r2+mmsize*6+%%i]
-    packsswb      m0, [r2+mmsize*1+%%i]
-    packsswb      m1, [r2+mmsize*3+%%i]
-    packsswb      m2, [r2+mmsize*5+%%i]
-    packsswb      m3, [r2+mmsize*7+%%i]
+    mova          m0, [r2+mmsize*0]
+    mova          m1, [r2+mmsize*2]
+    mova          m2, [r2+mmsize*4]
+    mova          m3, [r2+mmsize*6]
+    packsswb      m0, [r2+mmsize*1]
+    packsswb      m1, [r2+mmsize*3]
+    packsswb      m2, [r2+mmsize*5]
+    packsswb      m3, [r2+mmsize*7]
     paddb         m0, m4
     paddb         m1, m4
     paddb         m2, m4
@@ -350,30 +349,27 @@ cglobal vp3_idct_put, 3, 4, 9
     movhps [r0+r1  ], m0
     movq   [r0+r1*2], m1
     movhps [r0+r3  ], m1
-%if %%i == 0
     lea           r0, [r0+r1*4]
-%endif
     movq   [r0     ], m2
     movhps [r0+r1  ], m2
     movq   [r0+r1*2], m3
     movhps [r0+r3  ], m3
-%assign %%i %%i+8
-%endrep
 
     pxor          m0, m0
-%assign %%offset 0
+%assign offset 0
 %rep 128/mmsize
-    mova [r2+%%offset], m0
-%assign %%offset %%offset+mmsize
+    mova [r2+offset], m0
+%assign offset offset+mmsize
 %endrep
     RET
 
+; void ff_vp3_idct_add_sse2(uint8_t *dest, ptrdiff_t stride, int16_t *block)
 cglobal vp3_idct_add, 3, 4, 9
     VP3_IDCT      r2
 
     lea           r3, [r1*3]
     pxor          m4, m4
-%assign %%i 0
+%assign i 0
 %rep 2
     movq          m0, [r0]
     movq          m1, [r0+r1]
@@ -383,31 +379,27 @@ cglobal vp3_idct_add, 3, 4, 9
     punpcklbw     m1, m4
     punpcklbw     m2, m4
     punpcklbw     m3, m4
-    paddsw        m0, [r2+ 0+%%i]
-    paddsw        m1, [r2+16+%%i]
-    paddsw        m2, [r2+32+%%i]
-    paddsw        m3, [r2+48+%%i]
+    paddsw        m0, [r2+ 0+i]
+    paddsw        m1, [r2+16+i]
+    paddsw        m2, [r2+32+i]
+    paddsw        m3, [r2+48+i]
     packuswb      m0, m1
     packuswb      m2, m3
     movq   [r0     ], m0
     movhps [r0+r1  ], m0
     movq   [r0+r1*2], m2
     movhps [r0+r3  ], m2
-%if %%i == 0
+%if i == 0
     lea           r0, [r0+r1*4]
 %endif
-%assign %%i %%i+64
+%assign i i+64
 %endrep
-%assign %%i 0
+%assign i 0
 %rep 128/mmsize
-    mova    [r2+%%i], m4
-%assign %%i %%i+mmsize
+    mova    [r2+i], m4
+%assign i i+mmsize
 %endrep
     RET
-%endmacro
-
-INIT_XMM sse2
-vp3_idct_funcs
 
 %macro DC_ADD 0
     movq          m2, [r0     ]
