@@ -228,6 +228,7 @@ https://developer.apple.com/library/archive/documentation/AudioVideo/Conceptual/
 /* DVB descriptor_tag_extension values from
    ETSI EN 300 468 Table 109: Possible locations of extended descriptors */
 #define SUPPLEMENTARY_AUDIO_DESCRIPTOR 0x06
+#define AC4_DESCRIPTOR 0x15
 
 /** see "Dolby Vision Streams Within the MPEG-2 Transport Stream Format"
 https://professional.dolby.com/siteassets/content-creation/dolby-vision-for-content-creators/dolby-vision-bitstreams-in-mpeg-2-transport-stream-multiplex-v1.2.pdf */

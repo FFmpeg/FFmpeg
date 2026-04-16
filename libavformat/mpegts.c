@@ -2320,6 +2320,10 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
             }
             break;
         }
+        if (ext_desc_tag == AC4_DESCRIPTOR) {
+            st->codecpar->codec_id = AV_CODEC_ID_AC4;
+            st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+        }
         break;
     case AC3_DESCRIPTOR:
     case ENHANCED_AC3_DESCRIPTOR:
