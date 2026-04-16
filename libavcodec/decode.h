@@ -93,9 +93,13 @@ int ff_attach_decode_data(AVFrame *frame);
  */
 int ff_copy_palette(void *dst, const AVPacket *src, void *logctx);
 
-/**
- * Check that the provided frame dimensions are valid and set them on the codec
- * context.
+/*
+ * Validate and set video frame dimensions on AVCodecContext.
+ *
+ * Dimensions accepted here satisfy FFmpeg's generic image-size validation
+ * (see av_image_check_size2()). Decoder code normally should not duplicate
+ * generic width/height overflow checks before ff_get_buffer(); add local
+ * checks only for codec-specific derived sizes or complexity bounds.
  */
 int ff_set_dimensions(AVCodecContext *s, int width, int height);
 
