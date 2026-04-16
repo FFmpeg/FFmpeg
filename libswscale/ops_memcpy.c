@@ -51,13 +51,13 @@ static void process(const SwsOpExec *exec, const void *priv,
         const int use_loop = exec->out_stride[i] > bytes + SWS_MAX_PADDING;
         if (idx < 0 && !use_loop) {
             memset(out, p->clear_value[i], exec->out_stride[i] * lines);
-        } else if (exec->out_stride[i] == exec->in_stride[idx] && !use_loop) {
-            memcpy(out, exec->in[idx], exec->out_stride[i] * lines);
         } else if (idx < 0) {
             for (int y = y_start; y < y_end; y++) {
                 memset(out, p->clear_value[i], bytes);
                 out += exec->out_stride[i];
             }
+        } else if (exec->out_stride[i] == exec->in_stride[idx] && !use_loop) {
+            memcpy(out, exec->in[idx], exec->out_stride[i] * lines);
         } else {
             const uint8_t *in = exec->in[idx];
             for (int y = y_start; y < y_end; y++) {
