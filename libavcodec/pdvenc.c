@@ -44,7 +44,6 @@ typedef struct PDVEncContext {
 static av_cold int encode_init(AVCodecContext *avctx)
 {
     PDVEncContext *s = avctx->priv_data;
-    size_t frame_size;
     int ret;
 
     ret = av_image_check_size(avctx->width, avctx->height, 0, avctx);
@@ -53,14 +52,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     s->row_size   = (avctx->width + 7) >> 3;
 
-    ret = av_size_mult(s->row_size, avctx->height, &frame_size);
-    if (ret < 0 || frame_size > INT_MAX) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Cannot allocate frame buffer for dimensions %dx%d.\n",
-               avctx->width, avctx->height);
-        return AVERROR(EINVAL);
-    }
-    s->frame_size = frame_size;
+    s->frame_size = s->row_size * avctx->height;
 
     s->previous_frame = av_malloc(s->frame_size);
     s->work_frame     = av_malloc(s->frame_size);
