@@ -47,11 +47,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
     size_t frame_size;
     int ret;
 
-    if (avctx->pix_fmt != AV_PIX_FMT_MONOBLACK) {
-        av_log(avctx, AV_LOG_ERROR, "Only monob pixel format is supported.\n");
-        return AVERROR(EINVAL);
-    }
-
     ret = av_image_check_size(avctx->width, avctx->height, 0, avctx);
     if (ret < 0)
         return ret;
