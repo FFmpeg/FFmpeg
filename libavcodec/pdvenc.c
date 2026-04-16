@@ -57,24 +57,15 @@ static av_cold int encode_init(AVCodecContext *avctx)
     s->previous_frame = av_malloc(s->frame_size);
     s->work_frame     = av_malloc(s->frame_size);
     if (!s->previous_frame || !s->work_frame)
-        goto fail;
+        return AVERROR(ENOMEM);
 
     avctx->bits_per_coded_sample = 1;
 
-    ret = ff_deflate_init(&s->zstream,
-                          avctx->compression_level == FF_COMPRESSION_DEFAULT ?
-                          Z_DEFAULT_COMPRESSION :
-                          av_clip(avctx->compression_level, 0, 9),
-                          avctx);
-    if (ret < 0)
-        goto fail;
-
-    return 0;
-
-fail:
-    av_freep(&s->work_frame);
-    av_freep(&s->previous_frame);
-    return ret < 0 ? ret : AVERROR(ENOMEM);
+    return ff_deflate_init(&s->zstream,
+                           avctx->compression_level == FF_COMPRESSION_DEFAULT ?
+                           Z_DEFAULT_COMPRESSION :
+                           av_clip(avctx->compression_level, 0, 9),
+                           avctx);
 }
 
 static av_cold int encode_end(AVCodecContext *avctx)
