@@ -191,17 +191,26 @@ cglobal vp3_put_no_rnd_pixels8_l2, 5, 6, 5, dst, src1, src2, stride, h, stride3
     jnz .loop
     RET
 
-%macro VP3_1D_IDCT_SSE2 0
+%macro VP3_1D_IDCT_SSE2 1
+%ifn %1
     movdqa        m2, I(3)      ; xmm2 = i3
+%else
+    SWAP           0, 2, 3, 1
+    SWAP           7, 5
+%endif
     movdqa        m6, C(3)      ; xmm6 = c3
     movdqa        m4, m2        ; xmm4 = i3
+%ifn %1
     movdqa        m7, I(5)      ; xmm7 = i5
+%endif
     pmulhw        m4, m6        ; xmm4 = c3 * i3 - i3
     movdqa        m1, C(5)      ; xmm1 = c5
     pmulhw        m6, m7        ; xmm6 = c3 * i5 - i5
     movdqa        m5, m1        ; xmm5 = c5
     pmulhw        m1, m2        ; xmm1 = c5 * i3 - i3
+%ifn %1
     movdqa        m3, I(1)      ; xmm3 = i1
+%endif
     pmulhw        m5, m7        ; xmm5 = c5 * i5 - i5
     movdqa        m0, C(1)      ; xmm0 = c1
     paddw         m4, m2        ; xmm4 = c3 * i3
@@ -295,15 +304,11 @@ cglobal vp3_put_no_rnd_pixels8_l2, 5, 6, 5, dst, src1, src2, stride, h, stride3
     SHIFT(m0)                   ; xmm0 = op0
 %endmacro
 
-%macro PUT_BLOCK 8
-    movdqa      O(0), m%1
-    movdqa      O(1), m%2
-    movdqa      O(2), m%3
-    movdqa      O(3), m%4
-    movdqa      O(4), m%5
-    movdqa      O(5), m%6
-    movdqa      O(6), m%7
-    movdqa      O(7), m%8
+%macro PUT_BLOCK 1-*
+    %rep %0
+        mova    O(%1), m%1
+        %rotate 1
+    %endrep
 %endmacro
 
 %macro VP3_IDCT 0
@@ -312,18 +317,17 @@ cglobal vp3_put_no_rnd_pixels8_l2, 5, 6, 5, dst, src1, src2, stride, h, stride3
 %define C(x) [vp3_idct_data+16*(x-1)]
 %define SHIFT(x)
 %define ADD(x)
-        VP3_1D_IDCT_SSE2
+        VP3_1D_IDCT_SSE2 0
 %if ARCH_X86_64
         TRANSPOSE8x8W 0, 1, 2, 3, 4, 5, 6, 7, 8
 %else
         TRANSPOSE8x8W 0, 1, 2, 3, 4, 5, 6, 7, [blockq], [blockq+16]
 %endif
-        PUT_BLOCK 0, 1, 2, 3, 4, 5, 6, 7
+        PUT_BLOCK 0, 2, 4, 6, 7
 
 %define SHIFT(x) psraw  x, 4
 %define ADD(x)   paddsw x, [pw_8]
-        VP3_1D_IDCT_SSE2
-        PUT_BLOCK 0, 1, 2, 3, 4, 5, 6, 7
+        VP3_1D_IDCT_SSE2 1
 %endmacro
 
 INIT_XMM sse2
@@ -331,29 +335,25 @@ INIT_XMM sse2
 cglobal vp3_idct_put, 3, 4, 9, dst, s, block, s3
     VP3_IDCT
 
-    mova          m4, [pb_80]
     lea          s3q, [sq*3]
-    mova          m0, [r2+mmsize*0]
-    mova          m1, [r2+mmsize*2]
-    mova          m2, [r2+mmsize*4]
-    mova          m3, [r2+mmsize*6]
-    packsswb      m0, [r2+mmsize*1]
-    packsswb      m1, [r2+mmsize*3]
-    packsswb      m2, [r2+mmsize*5]
-    packsswb      m3, [r2+mmsize*7]
-    paddb         m0, m4
-    paddb         m1, m4
-    paddb         m2, m4
-    paddb         m3, m4
+    packsswb      m0, m1
+    mova          m1, [pb_80]
+    packsswb      m2, m3
+    packsswb      m4, m5
+    packsswb      m6, m7
+    paddb         m0, m1
+    paddb         m2, m1
+    paddb         m4, m1
+    paddb         m6, m1
     movq   [dstq   ], m0
     movhps [dstq+sq], m0
-    movq [dstq+sq*2], m1
-    movhps [dstq+s3q], m1
+    movq [dstq+sq*2], m2
+    movhps [dstq+s3q], m2
     lea         dstq, [dstq+sq*4]
-    movq   [dstq   ], m2
-    movhps [dstq+sq], m2
-    movq [dstq+sq*2], m3
-    movhps [dstq+s3q], m3
+    movq   [dstq   ], m4
+    movhps [dstq+sq], m4
+    movq [dstq+sq*2], m6
+    movhps [dstq+s3q], m6
 
     pxor          m0, m0
 %assign offset 0
@@ -363,40 +363,41 @@ cglobal vp3_idct_put, 3, 4, 9, dst, s, block, s3
 %endrep
     RET
 
+%macro IDCT_ADD 9
+    movq          %1, [dstq]
+    movq          %2, [dstq+sq]
+    movq          %3, [dstq+sq*2]
+    movq          %4, [dstq+s3q]
+    punpcklbw     %1, %5
+    punpcklbw     %2, %5
+    punpcklbw     %3, %5
+    punpcklbw     %4, %5
+    paddsw        %1, %6
+    paddsw        %2, %7
+    paddsw        %3, %8
+    paddsw        %4, %9
+    packuswb      %1, %2
+    packuswb      %3, %4
+    movq   [dstq   ], %1
+    movhps [dstq+sq], %1
+    movq [dstq+sq*2], %3
+    movhps [dstq+s3q], %3
+%endmacro
+
 ; void ff_vp3_idct_add_sse2(uint8_t *dest, ptrdiff_t stride, int16_t *block)
 cglobal vp3_idct_add, 3, 4, 9, dst, s, block, s3
     VP3_IDCT
+    PUT_BLOCK 3, 4, 5, 6, 7
 
     lea          s3q, [sq*3]
-    pxor          m4, m4
-%assign i 0
-%rep 2
-    movq          m0, [dstq]
-    movq          m1, [dstq+sq]
-    movq          m2, [dstq+sq*2]
-    movq          m3, [dstq+s3q]
-    punpcklbw     m0, m4
-    punpcklbw     m1, m4
-    punpcklbw     m2, m4
-    punpcklbw     m3, m4
-    paddsw        m0, [blockq+ 0+i]
-    paddsw        m1, [blockq+16+i]
-    paddsw        m2, [blockq+32+i]
-    paddsw        m3, [blockq+48+i]
-    packuswb      m0, m1
-    packuswb      m2, m3
-    movq   [dstq   ], m0
-    movhps [dstq+sq], m0
-    movq [dstq+sq*2], m2
-    movhps [dstq+s3q], m2
-%if i == 0
+    pxor          m3, m3
+    IDCT_ADD m4, m5, m6, m7, m3, m0, m1, m2, [blockq+48]
     lea         dstq, [dstq+sq*4]
-%endif
-%assign i i+64
-%endrep
+    IDCT_ADD m4, m5, m6, m7, m3, [blockq+64], [blockq+80], [blockq+96], [blockq+112]
+
 %assign i 0
 %rep 128/mmsize
-    mova  [blockq+i], m4
+    mova  [blockq+i], m3
 %assign i i+mmsize
 %endrep
     RET
