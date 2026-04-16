@@ -223,6 +223,7 @@ typedef struct AVSContext {
     int qp_fixed;
     int pic_qp_fixed;
     int cbp;
+    DECLARE_ALIGNED(32, int16_t, block)[64];
     uint8_t permutated_scantable[64];
 
     /** intra prediction is done with un-deblocked samples
@@ -244,7 +245,6 @@ typedef struct AVSContext {
     uint8_t *edge_emu_buffer;
 
     int got_keyframe;
-    int16_t *block;
 } AVSContext;
 
 extern const uint8_t     ff_cavs_chroma_qp[64];

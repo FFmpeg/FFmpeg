@@ -770,11 +770,10 @@ int ff_cavs_init_top_lines(AVSContext *h)
     h->col_mv        = av_calloc(h->mb_width * h->mb_height,
                                  4 * sizeof(*h->col_mv));
     h->col_type_base = av_mallocz(h->mb_width * h->mb_height);
-    h->block         = av_mallocz(64 * sizeof(int16_t));
 
     if (!h->top_qp || !h->top_mv[0] || !h->top_mv[1] || !h->top_pred_Y ||
         !h->top_border_y || !h->top_border_u || !h->top_border_v ||
-        !h->col_mv || !h->col_type_base || !h->block) {
+        !h->col_mv || !h->col_type_base) {
         av_freep(&h->top_qp);
         av_freep(&h->top_mv[0]);
         av_freep(&h->top_mv[1]);
@@ -784,7 +783,6 @@ int ff_cavs_init_top_lines(AVSContext *h)
         av_freep(&h->top_border_v);
         av_freep(&h->col_mv);
         av_freep(&h->col_type_base);
-        av_freep(&h->block);
         return AVERROR(ENOMEM);
     }
     return 0;
@@ -850,7 +848,6 @@ av_cold int ff_cavs_end(AVCodecContext *avctx)
     av_freep(&h->top_border_v);
     av_freep(&h->col_mv);
     av_freep(&h->col_type_base);
-    av_freep(&h->block);
     av_freep(&h->edge_emu_buffer);
     return 0;
 }
