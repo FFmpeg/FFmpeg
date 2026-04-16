@@ -158,7 +158,7 @@ static int pdv_write_trailer(AVFormatContext *s)
     PDVMuxContext *pdv = s->priv_data;
     int64_t payload_size = avio_tell(s->pb);
     const uint32_t table_gap = 4U * (pdv->max_frames - pdv->nb_frames);
-    int ret;
+    int64_t ret;
 
     if (payload_size < 0)
         return AVERROR(EIO);
