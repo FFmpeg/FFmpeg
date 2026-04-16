@@ -80,17 +80,8 @@ static int pdv_write_header(AVFormatContext *s)
         return AVERROR(EINVAL);
     }
 
-    if (s->nb_streams != 1) {
-        av_log(s, AV_LOG_ERROR, "PDV muxer supports exactly one stream.\n");
-        return AVERROR(EINVAL);
-    }
-
     st = s->streams[0];
 
-    if (st->codecpar->width <= 0 || st->codecpar->height <= 0) {
-        av_log(s, AV_LOG_ERROR, "Invalid output dimensions.\n");
-        return AVERROR(EINVAL);
-    }
     if (st->codecpar->width > UINT16_MAX || st->codecpar->height > UINT16_MAX) {
         av_log(s, AV_LOG_ERROR, "Output dimensions exceed PDV limits.\n");
         return AVERROR(EINVAL);
