@@ -798,7 +798,7 @@ static void check_scale(void)
         const char *type = ff_sws_pixel_type_name(t);
         const int bits = ff_sws_pixel_type_size(t) * 8;
         if (ff_sws_pixel_type_is_int(t)) {
-            const unsigned max = (1 << bits) - 1;
+            const unsigned max = UINT32_MAX >> (32 - bits);
 
             /* Test fixed fast path for expansion from bits to full range */
             CHECK_COMMON_RANGE(FMT("scale_full_%s", type), 1, t, t, {
