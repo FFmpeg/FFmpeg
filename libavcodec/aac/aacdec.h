@@ -433,9 +433,9 @@ typedef struct AACDecProc {
 
     int (*sbr_ctx_alloc_init)(AACDecContext *ac, ChannelElement **che, int id_aac);
     int (*sbr_decode_extension)(AACDecContext *ac, ChannelElement *che,
-                                GetBitContext *gb, int crc, int cnt, int id_aac);
-    void (*sbr_apply)(AACDecContext *ac, ChannelElement *che,
-                      int id_aac, void /* INTFLOAT */ *L, void /* INTFLOAT */ *R);
+                                GetBitContext *gb, int crc, int cnt, int id_aac, int fl960);
+    void (*sbr_apply)(AACDecContext *ac, ChannelElement *che, int id_aac, int fl960,
+                      void /* INTFLOAT */ *L, void /* INTFLOAT */ *R);
     void (*sbr_ctx_close)(ChannelElement *che);
 } AACDecProc;
 
@@ -557,7 +557,6 @@ struct AACDecContext {
 
     OutputConfiguration oc[2];
     int warned_num_aac_frames;
-    int warned_960_sbr;
     unsigned warned_71_wide;
     int warned_gain_control;
     int warned_he_aac_mono;

@@ -636,12 +636,11 @@ static const int8_t ceil_log2[] = {
 };
 
 static int read_sbr_grid(AACDecContext *ac, SpectralBandReplication *sbr,
-                         GetBitContext *gb, SBRData *ch_data)
+                         GetBitContext *gb, SBRData *ch_data, int numTimeSlots)
 {
     int i;
     int bs_pointer = 0;
-    // frameLengthFlag ? 15 : 16; 960 sample length frames unsupported; this value is numTimeSlots
-    int abs_bord_trail = 16;
+    int abs_bord_trail = numTimeSlots;
     int num_rel_lead, num_rel_trail;
     unsigned bs_num_env_old = ch_data->bs_num_env;
     int bs_frame_class, bs_num_env;
@@ -991,15 +990,15 @@ static void read_sbr_extension(AACDecContext *ac, SpectralBandReplication *sbr,
 }
 
 static int read_sbr_single_channel_element(AACDecContext *ac,
-                                            SpectralBandReplication *sbr,
-                                            GetBitContext *gb)
+                                           SpectralBandReplication *sbr,
+                                           GetBitContext *gb, int numTimeSlots)
 {
     int ret;
 
     if (get_bits1(gb)) // bs_data_extra
         skip_bits(gb, 4); // bs_reserved
 
-    if (read_sbr_grid(ac, sbr, gb, &sbr->data[0]))
+    if (read_sbr_grid(ac, sbr, gb, &sbr->data[0], numTimeSlots))
         return -1;
     read_sbr_dtdf(sbr, gb, &sbr->data[0], 0);
     read_sbr_invf(sbr, gb, &sbr->data[0]);
@@ -1015,8 +1014,8 @@ static int read_sbr_single_channel_element(AACDecContext *ac,
 }
 
 static int read_sbr_channel_pair_element(AACDecContext *ac,
-                                          SpectralBandReplication *sbr,
-                                          GetBitContext *gb)
+                                         SpectralBandReplication *sbr,
+                                         GetBitContext *gb, int numTimeSlots)
 {
     int ret;
 
@@ -1024,7 +1023,7 @@ static int read_sbr_channel_pair_element(AACDecContext *ac,
         skip_bits(gb, 8); // bs_reserved
 
     if ((sbr->bs_coupling = get_bits1(gb))) {
-        if (read_sbr_grid(ac, sbr, gb, &sbr->data[0]))
+        if (read_sbr_grid(ac, sbr, gb, &sbr->data[0], numTimeSlots))
             return -1;
         copy_sbr_grid(&sbr->data[1], &sbr->data[0]);
         read_sbr_dtdf(sbr, gb, &sbr->data[0], 0);
@@ -1041,8 +1040,8 @@ static int read_sbr_channel_pair_element(AACDecContext *ac,
         if((ret = read_sbr_noise(ac, sbr, gb, &sbr->data[1], 1)) < 0)
             return ret;
     } else {
-        if (read_sbr_grid(ac, sbr, gb, &sbr->data[0]) ||
-            read_sbr_grid(ac, sbr, gb, &sbr->data[1]))
+        if (read_sbr_grid(ac, sbr, gb, &sbr->data[0], numTimeSlots) ||
+            read_sbr_grid(ac, sbr, gb, &sbr->data[1], numTimeSlots))
             return -1;
         read_sbr_dtdf(sbr, gb, &sbr->data[0], 0);
         read_sbr_dtdf(sbr, gb, &sbr->data[1], 0);
@@ -1067,7 +1066,7 @@ static int read_sbr_channel_pair_element(AACDecContext *ac,
 }
 
 static unsigned int read_sbr_data(AACDecContext *ac, SpectralBandReplication *sbr,
-                                  GetBitContext *gb, int id_aac)
+                                  GetBitContext *gb, int id_aac, int numTimeSlots)
 {
     unsigned int cnt = get_bits_count(gb);
 
@@ -1075,12 +1074,12 @@ static unsigned int read_sbr_data(AACDecContext *ac, SpectralBandReplication *sb
     sbr->ready_for_dequant = 1;
 
     if (id_aac == TYPE_SCE || id_aac == TYPE_CCE) {
-        if (read_sbr_single_channel_element(ac, sbr, gb)) {
+        if (read_sbr_single_channel_element(ac, sbr, gb, numTimeSlots)) {
             sbr_turnoff(sbr);
             return get_bits_count(gb) - cnt;
         }
     } else if (id_aac == TYPE_CPE) {
-        if (read_sbr_channel_pair_element(ac, sbr, gb)) {
+        if (read_sbr_channel_pair_element(ac, sbr, gb, numTimeSlots)) {
             sbr_turnoff(sbr);
             return get_bits_count(gb) - cnt;
         }
@@ -1133,12 +1132,13 @@ static void sbr_reset(AACDecContext *ac, SpectralBandReplication *sbr)
  */
 int AAC_RENAME(ff_aac_sbr_decode_extension)(AACDecContext *ac, ChannelElement *che,
                                             GetBitContext *gb_host, int crc,
-                                            int cnt, int id_aac)
+                                            int cnt, int id_aac, int fl960)
 {
     SpectralBandReplication *sbr = get_sbr(che);
     unsigned int num_sbr_bits = 0, num_align_bits;
     unsigned bytes_read;
     GetBitContext gbc = *gb_host, *gb = &gbc;
+    int numTimeSlots = fl960 ? 15 : 16;
     skip_bits_long(gb_host, cnt*8 - 4);
 
     sbr->reset = 0;
@@ -1166,7 +1166,7 @@ int AAC_RENAME(ff_aac_sbr_decode_extension)(AACDecContext *ac, ChannelElement *c
         sbr_reset(ac, sbr);
 
     if (sbr->start)
-        num_sbr_bits  += read_sbr_data(ac, sbr, gb, id_aac);
+        num_sbr_bits += read_sbr_data(ac, sbr, gb, id_aac, numTimeSlots);
 
     num_align_bits = ((cnt << 3) - 4 - num_sbr_bits) & 7;
     bytes_read = ((num_sbr_bits + num_align_bits + 4) >> 3);
@@ -1272,7 +1272,7 @@ int ff_aac_sbr_decode_usac_data(AACDecContext *ac, ChannelElement *che,
     if (sbr_ch == 1) { /* sbr_single_channel_element */
         /* if (harmonicSBR) ... */
 
-        if (read_sbr_grid(ac, sbr, gb, &sbr->data[0]))
+        if (read_sbr_grid(ac, sbr, gb, &sbr->data[0], 16))
             return -1;
 
         read_sbr_dtdf(sbr, gb, &sbr->data[0], indep_flag);
@@ -1291,7 +1291,7 @@ int ff_aac_sbr_decode_usac_data(AACDecContext *ac, ChannelElement *che,
 
         /* if (harmonicSBR) ... */
 
-        if (read_sbr_grid(ac, sbr, gb, &sbr->data[0]))
+        if (read_sbr_grid(ac, sbr, gb, &sbr->data[0], 16))
             return -1;
         copy_sbr_grid(&sbr->data[1], &sbr->data[0]);
 
@@ -1323,9 +1323,9 @@ int ff_aac_sbr_decode_usac_data(AACDecContext *ac, ChannelElement *che,
 
         /* if (harmonicSBR) ... */
 
-        if (read_sbr_grid(ac, sbr, gb, &sbr->data[0]))
+        if (read_sbr_grid(ac, sbr, gb, &sbr->data[0], 16))
             return -1;
-        if (read_sbr_grid(ac, sbr, gb, &sbr->data[1]))
+        if (read_sbr_grid(ac, sbr, gb, &sbr->data[1], 16))
             return -1;
 
         read_sbr_dtdf(sbr, gb, &sbr->data[0], indep_flag);
@@ -1369,16 +1369,17 @@ static void sbr_qmf_analysis(AVFloatDSPContext *dsp, AVTXContext *mdct,
                              av_tx_fn mdct_fn,
 #endif /* USE_FIXED */
                              SBRDSPContext *sbrdsp, const INTFLOAT *in, INTFLOAT *x,
-                             INTFLOAT z[320], INTFLOAT W[2][32][32][2], int buf_idx)
+                             INTFLOAT z[320], INTFLOAT W[2][32][32][2], int buf_idx,
+                             int numTimeSlots)
 {
     int i;
 #if USE_FIXED
     int j;
 #endif
-    memcpy(x    , x+1024, (320-32)*sizeof(x[0]));
-    memcpy(x+288, in,         1024*sizeof(x[0]));
-    for (i = 0; i < 32; i++) { // numTimeSlots*RATE = 16*2 as 960 sample frames
-                               // are not supported
+    int nb = numTimeSlots * 64;
+    memcpy(x    , x+nb, (320-32)*sizeof(x[0]));
+    memcpy(x+288, in,         nb*sizeof(x[0]));
+    for (i = 0; i < numTimeSlots*2; i++) { // RATE*numTimeSlots = 2* 16 or 15
         dsp->vector_fmul_reverse(z, sbr_qmf_window_ds, x, 320);
         sbrdsp->sum64x5(z);
         sbrdsp->qmf_pre_shuffle(z);
@@ -1417,13 +1418,14 @@ static void sbr_qmf_synthesis(AVTXContext *mdct, av_tx_fn mdct_fn,
 #endif /* USE_FIXED */
                               INTFLOAT *out, INTFLOAT X[2][38][64],
                               INTFLOAT mdct_buf[2][64],
-                              INTFLOAT *v0, int *v_off, const unsigned int div)
+                              INTFLOAT *v0, int *v_off, int numTimeSlots,
+                              const unsigned int div)
 {
     int i, n;
     const INTFLOAT *sbr_qmf_window = div ? sbr_qmf_window_ds : sbr_qmf_window_us;
     const int step = 128 >> div;
     INTFLOAT *v;
-    for (i = 0; i < 32; i++) {
+    for (i = 0; i < numTimeSlots*2; i++) {
         if (*v_off < step) {
             int saved_samples = (1280 - 128) >> div;
             memcpy(&v0[SBR_SYNTHESIS_BUF_SIZE - saved_samples], v0, saved_samples * sizeof(INTFLOAT));
@@ -1463,11 +1465,11 @@ static void sbr_qmf_synthesis(AVTXContext *mdct, av_tx_fn mdct_fn,
 /// Generate the subband filtered lowband
 static int sbr_lf_gen(SpectralBandReplication *sbr,
                       INTFLOAT X_low[32][40][2], const INTFLOAT W[2][32][32][2],
-                      int buf_idx)
+                      int buf_idx, int numTimeSlots)
 {
     int i, k;
     const int t_HFGen = 8;
-    const int i_f = 32;
+    const int i_f = numTimeSlots*2;
     memset(X_low, 0, 32*sizeof(*X_low));
     for (k = 0; k < sbr->kx[1]; k++) {
         for (i = t_HFGen; i < i_f + t_HFGen; i++) {
@@ -1523,10 +1525,10 @@ static int sbr_hf_gen(AACDecContext *ac, SpectralBandReplication *sbr,
 /// Generate the subband filtered lowband
 static int sbr_x_gen(SpectralBandReplication *sbr, INTFLOAT X[2][38][64],
                      const INTFLOAT Y0[38][64][2], const INTFLOAT Y1[38][64][2],
-                     const INTFLOAT X_low[32][40][2], int ch)
+                     const INTFLOAT X_low[32][40][2], int ch, int numTimeSlots)
 {
     int k, i;
-    const int i_f = 32;
+    const int i_f = numTimeSlots*2;
     const int i_Temp = FFMAX(2*sbr->data[ch].t_env_num_env_old - i_f, 0);
     memset(X, 0, 2*sizeof(*X));
     for (k = 0; k < sbr->kx[0]; k++) {
@@ -1681,7 +1683,7 @@ static void sbr_env_estimate(AAC_FLOAT (*e_curr)[48], INTFLOAT X_high[64][40][2]
 }
 
 void AAC_RENAME(ff_aac_sbr_apply)(AACDecContext *ac, ChannelElement *che,
-                                  int id_aac, void *L_, void *R_)
+                                  int id_aac, int fl960, void *L_, void *R_)
 {
     INTFLOAT *L = L_, *R = R_;
     SpectralBandReplication *sbr = get_sbr(che);
@@ -1689,6 +1691,7 @@ void AAC_RENAME(ff_aac_sbr_apply)(AACDecContext *ac, ChannelElement *che,
     int ch;
     int nch = (id_aac == TYPE_CPE) ? 2 : 1;
     int err;
+    int numTimeSlots = fl960 ? 15 : 16;
 
     if (id_aac != sbr->id_aac) {
         av_log(ac->avctx, id_aac == TYPE_LFE ? AV_LOG_VERBOSE : AV_LOG_WARNING,
@@ -1718,10 +1721,10 @@ void AAC_RENAME(ff_aac_sbr_apply)(AACDecContext *ac, ChannelElement *che,
         sbr_qmf_analysis(ac->fdsp, sbr->mdct_ana, sbr->mdct_ana_fn, &sbr->dsp,
                          ch ? R : L, sbr->data[ch].analysis_filterbank_samples,
                          (INTFLOAT*)sbr->qmf_filter_scratch,
-                         sbr->data[ch].W, sbr->data[ch].Ypos);
+                         sbr->data[ch].W, sbr->data[ch].Ypos, numTimeSlots);
         sbr->c.sbr_lf_gen(sbr, sbr->X_low,
                           (const INTFLOAT (*)[32][32][2]) sbr->data[ch].W,
-                          sbr->data[ch].Ypos);
+                          sbr->data[ch].Ypos, numTimeSlots);
         sbr->data[ch].Ypos ^= 1;
         if (sbr->start) {
             sbr->c.sbr_hf_inverse_filter(&sbr->dsp, sbr->alpha0, sbr->alpha1,
@@ -1749,9 +1752,9 @@ void AAC_RENAME(ff_aac_sbr_apply)(AACDecContext *ac, ChannelElement *che,
 
         /* synthesis */
         sbr->c.sbr_x_gen(sbr, sbr->X[ch],
-                  (const INTFLOAT (*)[64][2]) sbr->data[ch].Y[1-sbr->data[ch].Ypos],
-                  (const INTFLOAT (*)[64][2]) sbr->data[ch].Y[  sbr->data[ch].Ypos],
-                  (const INTFLOAT (*)[40][2]) sbr->X_low, ch);
+                         (const INTFLOAT (*)[64][2]) sbr->data[ch].Y[1-sbr->data[ch].Ypos],
+                         (const INTFLOAT (*)[64][2]) sbr->data[ch].Y[  sbr->data[ch].Ypos],
+                         (const INTFLOAT (*)[40][2]) sbr->X_low, ch, numTimeSlots);
     }
 
     if (ac->oc[1].m4ac.ps == 1) {
@@ -1767,13 +1770,13 @@ void AAC_RENAME(ff_aac_sbr_apply)(AACDecContext *ac, ChannelElement *che,
                       L, sbr->X[0], sbr->qmf_filter_scratch,
                       sbr->data[0].synthesis_filterbank_samples,
                       &sbr->data[0].synthesis_filterbank_samples_offset,
-                      downsampled);
+                      numTimeSlots, downsampled);
     if (nch == 2)
         sbr_qmf_synthesis(sbr->mdct, sbr->mdct_fn, &sbr->dsp, ac->fdsp,
                           R, sbr->X[1], sbr->qmf_filter_scratch,
                           sbr->data[1].synthesis_filterbank_samples,
                           &sbr->data[1].synthesis_filterbank_samples_offset,
-                          downsampled);
+                          numTimeSlots, downsampled);
 }
 
 static void aacsbr_func_ptr_init(AACSBRContext *c)

@@ -124,14 +124,14 @@ typedef struct SpectralBandReplication SpectralBandReplication;
 typedef struct AACSBRContext {
     int (*sbr_lf_gen)(SpectralBandReplication *sbr,
                       INTFLOAT X_low[32][40][2], const INTFLOAT W[2][32][32][2],
-                      int buf_idx);
+                      int buf_idx, int numTimeSlots);
     void (*sbr_hf_assemble)(INTFLOAT Y1[38][64][2],
                             const INTFLOAT X_high[64][40][2],
                             SpectralBandReplication *sbr, SBRData *ch_data,
                             const int e_a[2]);
     int (*sbr_x_gen)(SpectralBandReplication *sbr, INTFLOAT X[2][38][64],
                      const INTFLOAT Y0[38][64][2], const INTFLOAT Y1[38][64][2],
-                     const INTFLOAT X_low[32][40][2], int ch);
+                     const INTFLOAT X_low[32][40][2], int ch, int numTimeSlots);
     void (*sbr_hf_inverse_filter)(SBRDSPContext *dsp,
                                   INTFLOAT (*alpha0)[2], INTFLOAT (*alpha1)[2],
                                   const INTFLOAT X_low[32][40][2], int k0);

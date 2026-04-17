@@ -6,6 +6,7 @@ version <next>:
 - LCEVC track muxing support in MP4 muxer
 - Playdate video encoder and muxer
 - Add v360_vulkan filter
+- HE-AAC 960 decoding (DAB+)
 
 
 version 8.1:

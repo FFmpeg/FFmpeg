@@ -889,12 +889,6 @@ static int decode_ga_specific_config(AACDecContext *ac, AVCodecContext *avctx,
     int tags = 0;
 
     m4ac->frame_length_short = get_bits1(gb);
-    if (m4ac->frame_length_short && m4ac->sbr == 1) {
-      avpriv_report_missing_feature(avctx, "SBR with 960 frame length");
-      if (ac) ac->warned_960_sbr = 1;
-      m4ac->sbr = 0;
-      m4ac->ps = 0;
-    }
 
     if (get_bits1(gb))       // dependsOnCoreCoder
         skip_bits(gb, 14);   // coreCoderDelay
@@ -1950,13 +1944,6 @@ static int decode_extension_payload(AACDecContext *ac, GetBitContext *gb, int cn
         if (!che) {
             av_log(ac->avctx, AV_LOG_ERROR, "SBR was found before the first channel element.\n");
             return res;
-        } else if (ac->oc[1].m4ac.frame_length_short) {
-            if (!ac->warned_960_sbr)
-              avpriv_report_missing_feature(ac->avctx,
-                                            "SBR with 960 frame length");
-            ac->warned_960_sbr = 1;
-            skip_bits_long(gb, 8 * cnt - 4);
-            return res;
         } else if (!ac->oc[1].m4ac.sbr) {
             av_log(ac->avctx, AV_LOG_ERROR, "SBR signaled to be not-present but was found in the bitstream.\n");
             skip_bits_long(gb, 8 * cnt - 4);
@@ -1977,7 +1964,8 @@ static int decode_extension_payload(AACDecContext *ac, GetBitContext *gb, int cn
             ac->avctx->profile = AV_PROFILE_AAC_HE;
         }
 
-        ac->proc.sbr_decode_extension(ac, che, gb, crc_flag, cnt, elem_type);
+        ac->proc.sbr_decode_extension(ac, che, gb, crc_flag, cnt, elem_type,
+                                      ac->oc[1].m4ac.frame_length_short);
 
         if (ac->oc[1].m4ac.ps == 1 && !ac->warned_he_aac_mono) {
             av_log(ac->avctx, AV_LOG_VERBOSE, "Treating HE-AAC mono as stereo.\n");
@@ -2087,6 +2075,7 @@ static void spectral_to_sample(AACDecContext *ac, int samples)
                     }
                     if (ac->oc[1].m4ac.sbr > 0) {
                         ac->proc.sbr_apply(ac, che, type,
+                                           ac->oc[1].m4ac.frame_length_short,
                                            che->ch[0].output,
                                            che->ch[1].output);
                     }

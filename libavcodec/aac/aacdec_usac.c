@@ -1671,7 +1671,7 @@ static int decode_usac_core_coder(AACDecContext *ac, AACUSACConfig *usac,
     spectrum_decode(ac, usac, che, core_nb_channels);
 
     if (ac->oc[1].m4ac.sbr > 0) {
-        ac->proc.sbr_apply(ac, che, nb_channels == 2 ? TYPE_CPE : TYPE_SCE,
+        ac->proc.sbr_apply(ac, che, nb_channels == 2 ? TYPE_CPE : TYPE_SCE, 0,
                            che->ch[0].output,
                            che->ch[1].output);
     }
