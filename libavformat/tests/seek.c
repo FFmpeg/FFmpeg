@@ -66,6 +66,7 @@ int main(int argc, char **argv)
     int firstback=0;
     int frame_count = 1;
     int duration = 4;
+    int seekfirst_stream = -1;
 
     for(i=2; i<argc; i+=2){
         if       (!strcmp(argv[i], "-seekforw")){
@@ -73,6 +74,8 @@ int main(int argc, char **argv)
         } else if(!strcmp(argv[i], "-seekback")){
             seekfirst = atoi(argv[i+1]);
             firstback = 1;
+        } else if(!strcmp(argv[i], "-stream_id")){
+            seekfirst_stream = atoi(argv[i+1]);
         } else if(!strcmp(argv[i], "-frames")){
             frame_count = atoi(argv[i+1]);
         } else if(!strcmp(argv[i], "-duration")){
@@ -113,8 +116,8 @@ int main(int argc, char **argv)
     }
 
     if(seekfirst != AV_NOPTS_VALUE){
-        if(firstback)   avformat_seek_file(ic, -1, INT64_MIN, seekfirst, seekfirst, 0);
-        else            avformat_seek_file(ic, -1, seekfirst, seekfirst, INT64_MAX, 0);
+        if(firstback)   avformat_seek_file(ic, seekfirst_stream, INT64_MIN, seekfirst, seekfirst, 0);
+        else            avformat_seek_file(ic, seekfirst_stream, seekfirst, seekfirst, INT64_MAX, 0);
     }
     for(i=0; ; i++){
         AVPacket pkt = { 0 };
