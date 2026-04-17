@@ -2848,6 +2848,8 @@ static int mkv_write_block(void *logctx, MatroskaMuxContext *mkv,
 {
     const AVCodecParameters *par  = st->codecpar;
     uint8_t t35_buf[6 + AV_HDR_PLUS_MAX_PAYLOAD_SIZE];
+#define SMPTE_2094_APP5_MAX_SIZE 855
+    uint8_t smpte_2094_app5_buf[5 + SMPTE_2094_APP5_MAX_SIZE];
     uint8_t *side_data;
     size_t side_data_size;
     uint64_t additional_id;
@@ -2947,11 +2949,8 @@ static int mkv_write_block(void *logctx, MatroskaMuxContext *mkv,
                                             AV_PKT_DATA_DYNAMIC_HDR_SMPTE_2094_APP5,
                                             &side_data_size);
         if (side_data && side_data_size) {
-            // The maximum possible payload size for SMPTE_2094_APP5 metadata is
-            // 855 bytes. So it will fit into the t35_buf which is of size
-            // 6 + AV_HDR_PLUS_MAX_PAYLOAD_SIZE = 913.
-            uint8_t *payload = t35_buf;
-            size_t payload_size = sizeof(t35_buf) - 5;
+            uint8_t *payload = smpte_2094_app5_buf;
+            size_t payload_size = sizeof(smpte_2094_app5_buf) - 5;
 
             bytestream_put_byte(&payload, ITU_T_T35_COUNTRY_CODE_US);
             bytestream_put_be16(&payload, ITU_T_T35_PROVIDER_CODE_SMPTE);
