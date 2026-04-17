@@ -98,6 +98,12 @@ enum AACUSACLoudnessExt {
     UNIDRCLOUDEXT_EQ = 0x1,
 };
 
+enum AACUSACDRCExt {
+    UNIDRCCONFEXT_TERM = 0x0,
+    UNIDRCCONFEXT_PARAM_DRC = 0x1,
+    UNIDRCCONFEXT_V1 = 0x2,
+};
+
 // Supposed to be equal to AAC_RENAME() in case of USE_FIXED.
 #define RENAME_FIXED(name) name ## _fixed
 
@@ -377,6 +383,13 @@ typedef struct AACUsacElemConfig {
         uint32_t pl_data_offset;
         uint8_t *pl_buf;
     } ext;
+
+    struct {
+        struct {
+            int lower;
+            int upper;
+        } loudness;
+    } drc;
 } AACUsacElemConfig;
 
 typedef struct AACUSACConfig {

@@ -49,7 +49,7 @@ static inline uint32_t get_escaped_value(GetBitContext *gb, int nb1, int nb2, in
     return val;
 }
 
-/* ISO/IEC 23003-3, Table 74 — bsOutputChannelPos */
+/* ISO/IEC 23003-3, Table 74: bsOutputChannelPos */
 static const enum AVChannel usac_ch_pos_to_av[64] = {
     [0] = AV_CHAN_FRONT_LEFT,
     [1] = AV_CHAN_FRONT_RIGHT,
@@ -227,7 +227,7 @@ static int decode_usac_element_pair(AACDecContext *ac,
         e->mps.phase_coding = get_bits1(gb); /* bsPhaseCoding */
 
         e->mps.otts_bands_phase_present = get_bits1(gb);
-        int otts_bands_phase = ((int[]){0,10,10,7,5,3,2,2})[e->mps.freq_res]; // Table 109 — Default value of bsOttBandsPhase
+        int otts_bands_phase = ((int[]){0,10,10,7,5,3,2,2})[e->mps.freq_res]; // Table 109:  Default value of bsOttBandsPhase
         if (e->mps.otts_bands_phase_present) { /* bsOttBandsPhasePresent */
             otts_bands_phase = get_bits(gb, 5); /* bsOttBandsPhase */
             if (otts_bands_phase > numBands)
@@ -248,6 +248,114 @@ static int decode_usac_element_pair(AACDecContext *ac,
         }
         if (e->mps.temp_shape_config == 2)
             e->mps.env_quant_mode = get_bits1(gb); /* bsEnvQuantMode */
+    }
+
+    return 0;
+}
+
+/* ISO/IEC 23003-4, Table 62: channelLayout() */
+static int decode_drc_channel_layout(GetBitContext *gb)
+{
+    int base_channel_count = get_bits(gb, 7); /* baseChannelCount */
+    if (get_bits1(gb)) { /* layoutSignallingPresent */
+        if (get_bits(gb, 8) == 0) /* definedLayout == 0 */
+            for (int i = 0; i < base_channel_count; i++)
+                skip_bits(gb, 7); /* speakerPosition */
+    }
+    return base_channel_count;
+}
+
+/* ISO/IEC 23003-4, Table 63: downmixInstructions() */
+static void skip_drc_downmix_instructions(GetBitContext *gb, int base_channel_count)
+{
+    int target_channel_count;
+    skip_bits(gb, 7); /* downmixId */
+    target_channel_count = get_bits(gb, 7); /* targetChannelCount */
+    skip_bits(gb, 8); /* targetLayout */
+    if (get_bits1(gb)) /* downmixCoefficientsPresent */
+        skip_bits_long(gb, 4 * target_channel_count * base_channel_count);
+}
+
+/* ISO/IEC 23003-4, Table 70: drcInstructionsBasic(), common with the
+ * uniDrc variant up to the loudness-target fields. */
+static void decode_drc_instructions_basic(AACUsacElemConfig *e, GetBitContext *gb)
+{
+    int set_effects;
+
+    skip_bits(gb, 6); /* drcSetId */
+    skip_bits(gb, 4); /* drcLocation */
+    skip_bits(gb, 7); /* downmixId */
+    if (get_bits1(gb)) { /* additionalDownmixIdPresent */
+        int add_downmix_cnt = get_bits(gb, 3); /* additionalDownmixIdCount */
+        for (int j = 0; j < add_downmix_cnt; j++)
+            skip_bits(gb, 7); /* additionalDownmixId */
+    }
+
+    set_effects = get_bits(gb, 16); /* drcSetEffect */
+    if ((set_effects & (3 << 10)) == 0) {
+        if (get_bits1(gb)) /* limiterPeakTargetPresent */
+            skip_bits(gb, 8); /* bsLimiterPeakTarget */
+    }
+
+    if (get_bits1(gb)) { /* drcSetTargetLoudnessPresent */
+        e->drc.loudness.upper = get_bits(gb, 6); /* bsDrcSetTargetLoudnessValueUpper */
+        if (get_bits1(gb)) /* drcSetTargetLoudnessValueLowerPresent */
+            e->drc.loudness.lower = get_bits(gb, 6); /* bsDrcSetTargetLoudnessValueLower */
+    }
+}
+
+/* ISO/IEC 23003-4, Table 57: uniDrcConfig() */
+static int decode_drc_config(AACDecContext *ac, AACUsacElemConfig *e,
+                             GetBitContext *gb)
+{
+    int nb_downmix_instr, nb_coeff_basic = 0, nb_instr_basic = 0;
+    int nb_coeff_uni, nb_instr_uni;
+    int base_channel_count;
+
+    e->drc.loudness.lower = -1;
+    e->drc.loudness.upper = -1;
+
+    if (get_bits1(gb)) /* sampleRatePresent */
+        skip_bits(gb, 18); /* bsSampleRate */
+
+    nb_downmix_instr = get_bits(gb, 7); /* downmixInstructionsCount */
+
+    if (get_bits1(gb)) { /* drcDescriptionBasicPresent */
+        nb_coeff_basic = get_bits(gb, 3); /* drcCoefficientsBasicCount */
+        nb_instr_basic = get_bits(gb, 4); /* drcInstructionsBasicCount */
+    }
+
+    nb_coeff_uni = get_bits(gb, 3); /* drcCoefficientsUniDrcCount */
+    nb_instr_uni = get_bits(gb, 6); /* drcInstructionsUniDrcCount */
+
+    if (nb_coeff_uni || nb_instr_uni) {
+        avpriv_report_missing_feature(ac->avctx,
+                                      "AAC USAC uniDrc DRC processing");
+        return AVERROR_PATCHWELCOME;
+    }
+
+    base_channel_count = decode_drc_channel_layout(gb);
+
+    for (int i = 0; i < nb_downmix_instr; i++)
+        skip_drc_downmix_instructions(gb, base_channel_count);
+
+    for (int i = 0; i < nb_coeff_basic; i++)
+        skip_bits(gb, 4 + 7); /* drcLocation, drcCharacteristic */
+
+    for (int i = 0; i < nb_instr_basic; i++)
+        decode_drc_instructions_basic(e, gb);
+
+    if (get_bits1(gb)) { /* uniDrcConfigExtPresent */
+        enum AACUSACDRCExt type;
+        while ((type = get_bits(gb, 4)) != UNIDRCCONFEXT_TERM) {
+            uint8_t size_bits = get_bits(gb, 4) + 4; /* bitSizeLen */
+            uint32_t bit_size = get_bits_long(gb, size_bits) + 1; /* extBitSize */
+            switch (type) {
+            default:
+                skip_bits_long(gb, bit_size);
+                break;
+            }
+        }
     }
 
     return 0;
@@ -276,9 +384,25 @@ static int decode_usac_extension(AACDecContext *ac, AACUsacElemConfig *e,
         break;
     case ID_EXT_ELE_SAOC:
         break;
-    case ID_EXT_ELE_UNI_DRC:
-        break;
 #endif
+    case ID_EXT_ELE_UNI_DRC: {
+        int start = get_bits_count(gb);
+        int ret = decode_drc_config(ac, e, gb);
+        int skip = 8*ext_config_len - (get_bits_count(gb) - start);
+        if (ret == AVERROR_PATCHWELCOME) {
+            /* Unsupported uniDrcConfig(): ignore the DRC metadata and treat
+             * the element as fill so the stream stays decodable. */
+            e->ext.type = ID_EXT_ELE_FILL;
+            ret = 0;
+        }
+        if (ret < 0)
+            return ret;
+        if (skip < 0)
+            return AVERROR_INVALIDDATA;
+        /* The config is byte-padded to usacExtElementConfigLength */
+        skip_bits_long(gb, skip);
+        break;
+    }
     case ID_EXT_ELE_FILL:
         break; /* This is what the spec does */
     case ID_EXT_ELE_AUDIOPREROLL:
@@ -1827,6 +1951,10 @@ static int parse_ext_ele(AACDecContext *ac, AACUsacElemConfig *e,
             break;
         case ID_EXT_ELE_AUDIOPREROLL:
             ret = parse_audio_preroll(ac, gb2);
+            break;
+        case ID_EXT_ELE_UNI_DRC:
+            /* uniDrcGain() payload: DRC is not applied, just consume the
+             * bits via skip_bits_long below. */
             break;
         default:
             /* This should never happen */
