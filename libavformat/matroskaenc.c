@@ -2925,8 +2925,8 @@ static int mkv_write_block(void *logctx, MatroskaMuxContext *mkv,
     if (par->codec_type == AVMEDIA_TYPE_VIDEO) {
         side_data = av_packet_get_side_data(pkt,
                                             AV_PKT_DATA_DYNAMIC_HDR10_PLUS,
-                                            &side_data_size);
-        if (side_data && side_data_size) {
+                                            NULL);
+        if (side_data) {
             uint8_t *payload = t35_buf;
             size_t payload_size = sizeof(t35_buf) - 6;
 
@@ -2947,8 +2947,8 @@ static int mkv_write_block(void *logctx, MatroskaMuxContext *mkv,
         }
         side_data = av_packet_get_side_data(pkt,
                                             AV_PKT_DATA_DYNAMIC_HDR_SMPTE_2094_APP5,
-                                            &side_data_size);
-        if (side_data && side_data_size) {
+                                            NULL);
+        if (side_data) {
             uint8_t *payload = smpte_2094_app5_buf;
             size_t payload_size = sizeof(smpte_2094_app5_buf) - 5;
 
