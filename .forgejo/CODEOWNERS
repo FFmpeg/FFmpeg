@@ -237,6 +237,7 @@ libavutil/tests/ambient_viewing_environment.* @MarcosAsh
 libavutil/tests/buffer.* @MarcosAsh
 libavutil/tests/csp.* @MarcosAsh
 libavutil/tests/dovi_meta.* @MarcosAsh
+libavutil/tests/downmix_info.* @MarcosAsh
 libavutil/tests/hdr_dynamic_vivid_metadata.* @MarcosAsh
 libavutil/tests/mastering_display_metadata.* @MarcosAsh
 libavutil/tests/pixdesc.* @MarcosAsh
@@ -248,6 +249,7 @@ tests/ref/fate/ambient_viewing_environment @MarcosAsh
 tests/ref/fate/buffer @MarcosAsh
 tests/ref/fate/csp @MarcosAsh
 tests/ref/fate/dovi_meta @MarcosAsh
+tests/ref/fate/downmix_info @MarcosAsh
 tests/ref/fate/hdr_dynamic_vivid_metadata @MarcosAsh
 tests/ref/fate/mastering_display_metadata @MarcosAsh
 tests/ref/fate/pixdesc @MarcosAsh

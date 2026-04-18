@@ -1,0 +1,8 @@
+Testing av_downmix_info_update_side_data()
+create: OK
+defaults: type=0 center=0.000 center_ltrt=0.000 surround=0.000 surround_ltrt=0.000 lfe=0.000
+write: type=2 center=0.500 center_ltrt=0.625 surround=0.250 surround_ltrt=0.375 lfe=0.125
+reuse: same_pointer=yes preserved_type=2 preserved_center=0.500
+
+Testing OOM path
+OOM: OK
