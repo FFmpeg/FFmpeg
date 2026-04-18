@@ -754,6 +754,9 @@ fate-filter-frei0r-filter: CMD = framecrc -lavfi "testsrc2=r=1:d=5,frei0r=enable
 fate-filter-frei0r-filter-unaligned: CMD = framecrc -lavfi "testsrc2=s=328x240:r=1:d=5,frei0r=filter_name=distort0r"
 FATE_FFMPEG += $(FATE_FILTER_FREI0R-yes)
 
+FATE_FILTER_FREI0R_SRC-$(call FILTERFRAMECRC, FREI0R_SRC) = fate-filter-frei0r-source
+fate-filter-frei0r-source: CMD = framecrc -lavfi "frei0r_src=200x200:5:onecol0r:1/2/3" -frames:v 5
+FATE_FFMPEG += $(FATE_FILTER_FREI0R_SRC-yes)
 #
 # Metadata tests
 #
