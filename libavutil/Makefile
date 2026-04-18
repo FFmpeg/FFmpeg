@@ -285,6 +285,7 @@ TESTPROGS = adler32                                                     \
             fifo                                                        \
             film_grain_params                                           \
             hash                                                        \
+            hdr_dynamic_metadata                                        \
             hdr_dynamic_vivid_metadata                                  \
             hmac                                                        \
             hwdevice                                                    \

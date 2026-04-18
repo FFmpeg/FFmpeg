@@ -119,6 +119,10 @@ FATE_LIBAVUTIL += fate-hash
 fate-hash: libavutil/tests/hash$(EXESUF)
 fate-hash: CMD = run libavutil/tests/hash$(EXESUF)
 
+FATE_LIBAVUTIL += fate-hdr_dynamic_metadata
+fate-hdr_dynamic_metadata: libavutil/tests/hdr_dynamic_metadata$(EXESUF)
+fate-hdr_dynamic_metadata: CMD = run libavutil/tests/hdr_dynamic_metadata$(EXESUF)
+
 FATE_LIBAVUTIL += fate-hdr_dynamic_vivid_metadata
 fate-hdr_dynamic_vivid_metadata: libavutil/tests/hdr_dynamic_vivid_metadata$(EXESUF)
 fate-hdr_dynamic_vivid_metadata: CMD = run libavutil/tests/hdr_dynamic_vivid_metadata$(EXESUF)

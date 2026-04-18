@@ -1,0 +1,146 @@
+=== AVDynamicHDRPlus ===
+Testing av_dynamic_hdr_plus_alloc()
+alloc: OK size>0=yes
+alloc (no size): OK
+
+Testing av_dynamic_hdr_plus_create_side_data()
+create_side_data: OK
+
+Testing av_dynamic_hdr_plus_to_t35() size query
+size query: ret=0 required>0=yes
+
+Testing av_dynamic_hdr_plus_to_t35() allocation
+alloc mode: ret=0 size_match=yes
+
+Testing av_dynamic_hdr_plus_to_t35() existing buffer
+existing buf: ret=0 same_pointer=yes size_match=yes
+
+Testing av_dynamic_hdr_plus_to_t35() buffer too small
+too small: ret==AVERROR_BUFFER_TOO_SMALL=yes
+
+Testing round trip, conforming ST 2094-40 Version 1 payload
+round trip: ret=0
+decoded:
+  application_version=1 num_windows=1 targeted_system_display_maximum_luminance=400/1
+  targeted_system_display_actual_peak_luminance_flag=0
+  mastering_display_actual_peak_luminance_flag=0
+  window 0:
+    maxscl: 50000/100000 60000/100000 99000/100000 average_maxrgb=40000/100000
+    distribution_maxrgb: n=9 1%=1000/100000 5%=0/100000 10%=255/100000 25%=25000/100000 50%=50000/100000 75%=75000/100000 90%=90000/100000 95%=95000/100000 99%=99000/100000
+    fraction_bright_pixels=250/1000
+    tone_mapping_flag=1 knee=512/4095,1024/4095 anchors=9: 100/1023 200/1023 300/1023 400/1023 500/1023 600/1023 700/1023 800/1023 900/1023
+    color_saturation_mapping_flag=0
+
+Testing that to_t35() overrides application_version
+input=7 ret=0 decoded application_version=1
+
+Testing round trip, synthetic payload (branch coverage only)
+round trip: ret=0
+decoded:
+  application_version=1 num_windows=2 targeted_system_display_maximum_luminance=10000/1
+  targeted_system_display_actual_peak_luminance_flag=1
+    targeted_peak 2x3: 0/15 1/15 2/15 3/15 4/15 5/15
+  mastering_display_actual_peak_luminance_flag=1
+    mastering_peak 3x2: 15/15 14/15 13/15 12/15 11/15 10/15
+  window 0:
+    maxscl: 50000/100000 60000/100000 70000/100000 average_maxrgb=40000/100000
+    distribution_maxrgb: n=2 50%=30000/100000 99%=90000/100000
+    fraction_bright_pixels=250/1000
+    tone_mapping_flag=1 knee=500/4095,800/4095 anchors=3: 100/1023 500/1023 900/1023
+    color_saturation_mapping_flag=1 weight=8/8
+  window 1:
+    corners: ul=100/1,120/1 lr=500/1,520/1
+    ellipse: center=300,320 rotation=45 semimajor_int=50 semimajor_ext=100 semiminor_ext=80 overlap=1
+    maxscl: 20000/100000 30000/100000 40000/100000 average_maxrgb=25000/100000
+    distribution_maxrgb: n=1 25%=12500/100000
+    fraction_bright_pixels=100/1000
+    tone_mapping_flag=1 knee=501/4095,801/4095 anchors=3: 101/1023 501/1023 901/1023
+    color_saturation_mapping_flag=1 weight=9/8
+
+Testing error paths
+to_t35 NULL s: ret==AVERROR(EINVAL)=yes
+to_t35 no data no size: ret==AVERROR(EINVAL)=yes
+from_t35 NULL s: ret==AVERROR(EINVAL)=yes
+from_t35 oversized: ret==AVERROR(EINVAL)=yes
+
+Testing OOM path
+alloc OOM: OK
+
+=== AVDynamicHDRSmpte2094App5 ===
+Testing av_dynamic_hdr_smpte2094_app5_alloc()
+alloc: OK size>0=yes
+
+Testing av_dynamic_hdr_smpte2094_app5_create_side_data()
+create_side_data: OK
+
+Testing av_dynamic_hdr_smpte2094_app5_to_t35()
+size query: ret=0 required>0=yes
+alloc mode: ret=0 size_match=yes
+
+Testing round trip, no adaptive tone map
+round trip: ret=0
+decoded:
+  application_version=1 minimum_application_version=0
+  has_custom_hdr_reference_white_flag=1 hdr_reference_white=0x0203
+  has_adaptive_tone_map_flag=0
+
+Testing round trip, reference-white tone mapping
+round trip: ret=0
+decoded:
+  application_version=2 minimum_application_version=0
+  has_custom_hdr_reference_white_flag=0
+  has_adaptive_tone_map_flag=1
+  baseline_hdr_headroom=0x0abc use_reference_white_tone_mapping_flag=1
+
+Testing round trip, per-image mixing and curve parameters
+round trip: ret=0
+decoded:
+  application_version=1 minimum_application_version=0
+  has_custom_hdr_reference_white_flag=0
+  has_adaptive_tone_map_flag=1
+  baseline_hdr_headroom=0x0abc use_reference_white_tone_mapping_flag=0
+  num_alternate_images=2 chromaticities_flag=3 has_common_component_mix_params_flag=0 has_common_curve_params_flag=0
+  chromaticities: 0x0064 0x00c8 0x012c 0x0190 0x01f4 0x0258 0x02bc 0x0320
+  alternate 0: hdr_headroom=0x0100 component_mixing_type=3
+    mixing flag:coefficient: 0:0x0000 1:0x1001 0:0x0000 1:0x1003 0:0x0000 1:0x1005
+    curve: num_control_points=2 use_pchip_slope=0
+    x: 0x2000 0x2001
+    y: 0x3000 0x3001
+    theta: 0x4000 0x4001
+  alternate 1: hdr_headroom=0x0101 component_mixing_type=3
+    mixing flag:coefficient: 0:0x0000 1:0x1011 0:0x0000 1:0x1013 0:0x0000 1:0x1015
+    curve: num_control_points=2 use_pchip_slope=0
+    x: 0x2010 0x2011
+    y: 0x3010 0x3011
+    theta: 0x4010 0x4011
+
+Testing round trip, common mixing and curve parameters
+round trip: ret=0
+decoded:
+  application_version=1 minimum_application_version=0
+  has_custom_hdr_reference_white_flag=0
+  has_adaptive_tone_map_flag=1
+  baseline_hdr_headroom=0x0def use_reference_white_tone_mapping_flag=0
+  num_alternate_images=3 chromaticities_flag=0 has_common_component_mix_params_flag=1 has_common_curve_params_flag=1
+  alternate 0: hdr_headroom=0x0200 component_mixing_type=1
+    curve: num_control_points=3 use_pchip_slope=1
+    x: 0x5000 0x5001 0x5002
+    y: 0x6000 0x6001 0x6002
+  alternate 1: hdr_headroom=0x0201 component_mixing_type=1
+    curve: num_control_points=3 use_pchip_slope=1
+    x: 0x5000 0x5001 0x5002
+    y: 0x6010 0x6011 0x6012
+  alternate 2: hdr_headroom=0x0202 component_mixing_type=1
+    curve: num_control_points=3 use_pchip_slope=1
+    x: 0x5000 0x5001 0x5002
+    y: 0x6020 0x6021 0x6022
+
+Testing error paths
+to_t35 NULL s: ret==AVERROR(EINVAL)=yes
+from_t35 NULL s: ret==AVERROR(EINVAL)=yes
+to_t35 invalid application_version: ret==AVERROR_INVALIDDATA=yes
+to_t35 invalid minimum_application_version: ret==AVERROR_INVALIDDATA=yes
+to_t35 too many alternate images: ret==AVERROR_INVALIDDATA=yes
+
+Testing OOM path
+alloc OOM: OK
