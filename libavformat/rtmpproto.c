@@ -2273,9 +2273,14 @@ static int update_offset(RTMPContext *rt, int size)
 {
     int old_flv_size;
 
+    if (size < 0)
+        return AVERROR(EINVAL);
+
     // generate packet header and put data into buffer for FLV demuxer
     if (rt->flv_off < rt->flv_size) {
         // There is old unread data in the buffer, thus append at the end
+        if (rt->flv_size > INT_MAX - size)
+            return AVERROR(ERANGE);
         old_flv_size  = rt->flv_size;
         rt->flv_size += size;
     } else {
@@ -2302,7 +2307,11 @@ static int append_flv_data(RTMPContext *rt, RTMPPacket *pkt, int skip)
         rt->has_video = 1;
     }
 
+    if (size > INT_MAX - 15)
+        return AVERROR(ERANGE);
     old_flv_size = update_offset(rt, size + 15);
+    if (old_flv_size < 0)
+        return old_flv_size;
 
     if ((ret = av_reallocp(&rt->flv_data, rt->flv_size)) < 0) {
         rt->flv_size = rt->flv_off = 0;
@@ -2432,48 +2441,50 @@ static int rtmp_parse_result(URLContext *s, RTMPContext *rt, RTMPPacket *pkt)
 static int handle_metadata(RTMPContext *rt, RTMPPacket *pkt)
 {
     int ret, old_flv_size, type;
-    const uint8_t *next;
-    uint8_t *p;
+    PutByteContext pbc;
+    GetByteContext gbc;
     uint32_t size;
     uint32_t ts, cts, pts = 0;
 
     old_flv_size = update_offset(rt, pkt->size);
+    if (old_flv_size < 0)
+        return old_flv_size;
 
     if ((ret = av_reallocp(&rt->flv_data, rt->flv_size)) < 0) {
         rt->flv_size = rt->flv_off = 0;
         return ret;
     }
 
-    next = pkt->data;
-    p    = rt->flv_data + old_flv_size;
+    bytestream2_init(&gbc, pkt->data, pkt->size);
+    bytestream2_init_writer(&pbc, rt->flv_data, rt->flv_size);
+    bytestream2_skip_p(&pbc, old_flv_size);
 
     /* copy data while rewriting timestamps */
     ts = pkt->timestamp;
 
-    while (next - pkt->data < pkt->size - RTMP_HEADER) {
-        type = bytestream_get_byte(&next);
-        size = bytestream_get_be24(&next);
-        cts  = bytestream_get_be24(&next);
-        cts |= bytestream_get_byte(&next) << 24;
+    while (bytestream2_get_bytes_left(&gbc) > RTMP_HEADER) {
+        type = bytestream2_get_byte(&gbc);
+        size = bytestream2_get_be24(&gbc);
+        cts  = bytestream2_get_be24(&gbc);
+        cts |= bytestream2_get_byte(&gbc) << 24;
         if (!pts)
             pts = cts;
         ts += cts - pts;
         pts = cts;
-        if (size + 3 + 4 > pkt->data + pkt->size - next)
+        if (size + 3 + 4 > bytestream2_get_bytes_left(&gbc))
             break;
-        bytestream_put_byte(&p, type);
-        bytestream_put_be24(&p, size);
-        bytestream_put_be24(&p, ts);
-        bytestream_put_byte(&p, ts >> 24);
-        memcpy(p, next, size + 3 + 4);
-        p    += size + 3;
-        bytestream_put_be32(&p, size + RTMP_HEADER);
-        next += size + 3 + 4;
+        bytestream2_put_byte(&pbc, type);
+        bytestream2_put_be24(&pbc, size);
+        bytestream2_put_be24(&pbc, ts);
+        bytestream2_put_byte(&pbc, ts >> 24);
+        bytestream2_copy_buffer(&pbc, &gbc, size + 3);
+        bytestream2_skip(&gbc, 4);
+        bytestream2_put_be32(&pbc, size + RTMP_HEADER);
     }
-    if (p != rt->flv_data + rt->flv_size) {
+    if (bytestream2_tell_p(&pbc) != rt->flv_size) {
         av_log(rt, AV_LOG_WARNING, "Incomplete flv packets in "
                                      "RTMP_PT_METADATA packet\n");
-        rt->flv_size = p - rt->flv_data;
+        rt->flv_size = bytestream2_tell_p(&pbc);
     }
 
     return 0;
