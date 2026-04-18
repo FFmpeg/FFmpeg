@@ -383,8 +383,10 @@ int ff_alsa_get_device_list(AVDeviceInfoList *device_list, snd_pcm_stream_t stre
                 ret = AVERROR(ENOMEM);
                 goto fail;
             }
-            new_device->device_name = av_strdup(name);
-            if ((tmp = strrchr(descr, '\n')) && tmp[1])
+            new_device->device_name = av_strdup(name ? name : "");
+            if (!descr)
+                new_device->device_description = av_strdup("");
+            else if ((tmp = strrchr(descr, '\n')) && tmp[1])
                 new_device->device_description = av_strdup(&tmp[1]);
             else
                 new_device->device_description = av_strdup(descr);
