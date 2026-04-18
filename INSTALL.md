@@ -1,4 +1,4 @@
-## Installing FFmpeg
+# Installing FFmpeg
 
 0. If you like to include source plugins, merge them before configure
 for example run tools/merge-all-source-plugins
@@ -14,15 +14,11 @@ path when launching `configure`, e.g. `/ffmpegdir/ffmpeg/configure`.
 
 3. Type `make install` to install all binaries and libraries you built.
 
-NOTICE
-------
+## NOTICE
 
- - Non system dependencies (e.g. libx264, libvpx) are disabled by default.
+- Non system dependencies (e.g. libx264, libvpx) are disabled by default.
 
-NOTICE for Package Maintainers
-------------------------------
+## NOTICE for Package Maintainers
 
- - It is recommended to build FFmpeg twice, first with minimal external dependencies so
-   that 3rd party packages, which depend on FFmpegs libavutil/libavfilter/libavcodec/libavformat
-   can then be built. And last build FFmpeg with full dependencies (which may in turn depend on
-   some of these 3rd party packages). This avoids circular dependencies during build.
+- It is recommended to build FFmpeg twice, first with minimal external dependencies so that 3rd party packages, which depend on FFmpegs libavutil/libavfilter/libavcodec/libavformat
+can then be built. And last build FFmpeg with full dependencies (which may in turn depend on some of these 3rd party packages). This avoids circular dependencies during build.
