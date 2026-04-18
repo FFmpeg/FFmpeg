@@ -311,6 +311,7 @@ TESTPROGS = adler32                                                     \
             sha                                                         \
             sha512                                                      \
             samplefmt                                                   \
+            side_data                                                   \
             side_data_array                                             \
             softfloat                                                   \
             spherical                                                   \

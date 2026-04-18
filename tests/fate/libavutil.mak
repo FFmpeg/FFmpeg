@@ -204,6 +204,10 @@ FATE_LIBAVUTIL += fate-samplefmt
 fate-samplefmt: libavutil/tests/samplefmt$(EXESUF)
 fate-samplefmt: CMD = run libavutil/tests/samplefmt$(EXESUF)
 
+FATE_LIBAVUTIL += fate-side_data
+fate-side_data: libavutil/tests/side_data$(EXESUF)
+fate-side_data: CMD = run libavutil/tests/side_data$(EXESUF)
+
 FATE_LIBAVUTIL += fate-side_data_array
 fate-side_data_array: libavutil/tests/side_data_array$(EXESUF)
 fate-side_data_array: CMD = run libavutil/tests/side_data_array$(EXESUF)
