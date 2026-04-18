@@ -59,8 +59,6 @@ typedef struct ApvEncContext {
 
     oapv_frms_t ifrms;      // frames for input
 
-    int num_frames;         // number of frames in an access unit
-
     int preset_id;          // preset of apv ( fastest, fast, medium, slow, placebo)
 
     int qp;                 // quantization parameter (QP) [0,63]
@@ -129,6 +127,121 @@ static inline int get_color_format(enum AVPixelFormat pix_fmt)
     return cf;
 }
 
+static inline int get_chroma_format_idc(enum AVPixelFormat pix_fmt)
+{
+    int cfi = -1;
+
+    switch (pix_fmt) {
+    case AV_PIX_FMT_GRAY10:
+        cfi = APV_CHROMA_FORMAT_400;
+        break;
+    case AV_PIX_FMT_YUV422P10:
+    case AV_PIX_FMT_YUV422P12:
+        cfi = APV_CHROMA_FORMAT_422;
+        break;
+    case AV_PIX_FMT_YUV444P10:
+    case AV_PIX_FMT_YUV444P12:
+        cfi = APV_CHROMA_FORMAT_444;
+        break;
+    case AV_PIX_FMT_YUVA444P10:
+    case AV_PIX_FMT_YUVA444P12:
+        cfi = APV_CHROMA_FORMAT_4444;
+        break;
+    default:
+        av_assert0(cfi >= 0);
+    }
+
+    return cfi;
+}
+
+static inline int get_min_profile(enum AVPixelFormat pix_fmt)
+{
+    int profile = AV_PROFILE_UNKNOWN;
+
+    switch (pix_fmt) {
+    case AV_PIX_FMT_GRAY10:
+        profile = AV_PROFILE_APV_400_10;
+        break;
+    case AV_PIX_FMT_YUV422P10:
+        profile = AV_PROFILE_APV_422_10;
+        break;
+    case AV_PIX_FMT_YUV422P12:
+        profile = AV_PROFILE_APV_422_12;
+        break;
+    case AV_PIX_FMT_YUV444P10:
+        profile = AV_PROFILE_APV_444_10;
+        break;
+    case AV_PIX_FMT_YUV444P12:
+        profile = AV_PROFILE_APV_444_12;
+        break;
+    case AV_PIX_FMT_YUVA444P10:
+        profile = AV_PROFILE_APV_4444_10;
+        break;
+    case AV_PIX_FMT_YUVA444P12:
+        profile = AV_PROFILE_APV_4444_12;
+        break;
+    default:
+        av_assert0(profile != AV_PROFILE_UNKNOWN);
+    }
+
+    return profile;
+}
+
+static int profile_is_compatible(enum AVPixelFormat pix_fmt, int profile)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    const int chroma_format_idc = get_chroma_format_idc(pix_fmt);
+    const int bit_depth = desc->comp[0].depth;
+
+    av_assert0(desc);
+
+    switch (profile) {
+    case AV_PROFILE_APV_422_10:
+        return chroma_format_idc == APV_CHROMA_FORMAT_422 && bit_depth == 10;
+    case AV_PROFILE_APV_422_12:
+        return chroma_format_idc == APV_CHROMA_FORMAT_422 &&
+               bit_depth >= 10 && bit_depth <= 12;
+    case AV_PROFILE_APV_444_10:
+        return chroma_format_idc >= APV_CHROMA_FORMAT_422 &&
+               chroma_format_idc <= APV_CHROMA_FORMAT_444 &&
+               bit_depth == 10;
+    case AV_PROFILE_APV_444_12:
+        return chroma_format_idc >= APV_CHROMA_FORMAT_422 &&
+               chroma_format_idc <= APV_CHROMA_FORMAT_444 &&
+               bit_depth >= 10 && bit_depth <= 12;
+    case AV_PROFILE_APV_4444_10:
+        return chroma_format_idc >= APV_CHROMA_FORMAT_422 &&
+               chroma_format_idc <= APV_CHROMA_FORMAT_4444 &&
+               bit_depth == 10;
+    case AV_PROFILE_APV_4444_12:
+        return chroma_format_idc >= APV_CHROMA_FORMAT_422 &&
+               chroma_format_idc <= APV_CHROMA_FORMAT_4444 &&
+               bit_depth >= 10 && bit_depth <= 12;
+    case AV_PROFILE_APV_400_10:
+        return chroma_format_idc == APV_CHROMA_FORMAT_400 && bit_depth == 10;
+    default:
+        return 0;
+    }
+}
+
+static int validate_profile(AVCodecContext *avctx, int profile)
+{
+    const int minimum = get_min_profile(avctx->pix_fmt);
+    const char *profile_name = av_get_profile_name(avctx->codec, profile);
+    const char *minimum_name = av_get_profile_name(avctx->codec, minimum);
+
+    if (!profile_is_compatible(avctx->pix_fmt, profile)) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Profile %s (%d) is incompatible with pixel format %s; minimum compatible profile is %s (%d)\n",
+               profile_name ? profile_name : "unknown", profile,
+               av_get_pix_fmt_name(avctx->pix_fmt),
+               minimum_name ? minimum_name : "unknown", minimum);
+        return AVERROR(EINVAL);
+    }
+
+    return 0;
+}
+
 static oapv_imgb_t *apv_imgb_create(AVCodecContext *avctx)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
@@ -180,22 +293,12 @@ fail:
 }
 
 /**
- * The function returns a pointer to the object of the oapve_cdesc_t type.
- * oapve_cdesc_t contains all encoder parameters that should be initialized before the encoder is used.
+ * Populate the liboapv configuration from AVCodecContext and encoder options.
  *
- * The field values of the oapve_cdesc_t structure are populated based on:
- * - the corresponding field values of the AvCodecConetxt structure,
- * - the apv encoder specific option values,
- *
- * The order of processing input data and populating the apve_cdsc structure
- * 1) first, the fields of the AVCodecContext structure corresponding to the provided input options are processed,
- *    (i.e -pix_fmt yuv422p -s:v 1920x1080 -r 30 -profile:v 0)
- * 2) then apve-specific options added as AVOption to the apv AVCodec implementation
- *    (i.e -preset 0)
- *
- * Keep in mind that, there are options that can be set in different ways.
- * In this case, please follow the above-mentioned order of processing.
- * The most recent assignments overwrite the previous values.
+ * AVCodecContext fields are applied first, followed by liboapv private options
+ * and finally oapv-params. The APV profile defaults to the minimum profile
+ * implied by pix_fmt, and later overrides must remain compatible with that
+ * pixel format.
  *
  * @param[in] avctx codec context (AVCodecContext)
  * @param[out] cdsc contains all APV encoder encoder parameters that should be initialized before the encoder is use
@@ -228,6 +331,13 @@ static int get_conf(AVCodecContext *avctx, oapve_cdesc_t *cdsc)
         cdsc->param[FRM_IDX].fps_den = avctx->time_base.num;
     }
 
+    cdsc->param[FRM_IDX].profile_idc = get_min_profile(avctx->pix_fmt);
+    if (avctx->profile != AV_PROFILE_UNKNOWN) {
+        ret = validate_profile(avctx, avctx->profile);
+        if (ret < 0)
+            return ret;
+        cdsc->param[FRM_IDX].profile_idc = avctx->profile;
+    }
     cdsc->param[FRM_IDX].preset = apv->preset_id;
     cdsc->param[FRM_IDX].qp = apv->qp;
     if (avctx->bit_rate / 1000 > INT_MAX || avctx->rc_max_rate / 1000 > INT_MAX) {
@@ -274,6 +384,12 @@ static int get_conf(AVCodecContext *avctx, oapve_cdesc_t *cdsc)
         if (ret < 0)
             av_log(avctx, AV_LOG_WARNING, "Error parsing option '%s = %s'.\n", en->key, en->value);
     }
+
+    ret = validate_profile(avctx, cdsc->param[FRM_IDX].profile_idc);
+    if (ret < 0)
+        return ret;
+
+    avctx->profile = cdsc->param[FRM_IDX].profile_idc;
 
     return 0;
 }
@@ -426,7 +542,7 @@ static av_cold int liboapve_close(AVCodecContext *avctx)
 {
     ApvEncContext *apv = avctx->priv_data;
 
-    for (int i = 0; i < apv->num_frames; i++) {
+    for (int i = 0; i < apv->ifrms.num_frms; i++) {
         if (apv->ifrms.frm[i].imgb != NULL)
             apv->ifrms.frm[i].imgb->release(apv->ifrms.frm[i].imgb);
         apv->ifrms.frm[i].imgb = NULL;
