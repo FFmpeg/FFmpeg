@@ -1,14 +1,17 @@
-The basis transforms used for FFT and various other derived functions are based
-on the following unrollings.
+# Transforms
+
+The basis transforms used for FFT and various other derived functions are based on the following unrollings.
 The functions can be easily adapted to double precision floats as well.
 
-# Parity permutation
+## Parity permutation
+
 The basis transforms described here all use the following permutation:
 
 ``` C
 void ff_tx_gen_split_radix_parity_revtab(int *revtab, int len, int inv,
                                          int basis, int dual_stride);
 ```
+
 Parity means even and odd complex numbers will be split, e.g. the even
 coefficients will come first, after which the odd coefficients will be
 placed. For example, a 4-point transform's coefficients after reordering:
@@ -33,7 +36,8 @@ register or 0. This allows to reuse SSE functions as dual-transform
 functions in AVX mode.
 If length is smaller than basis/2 this function will not do anything.
 
-# 4-point FFT transform
+## 4-point FFT transform
+
 The only permutation this transform needs is to swap the `z[1]` and `z[2]`
 elements when performing an inverse transform, which in the assembly code is
 hardcoded with the function itself being templated and duplicated for each
@@ -80,7 +84,8 @@ static void fft4(FFTComplex *z)
 }
 ```
 
-# 8-point AVX FFT transform
+## 8-point AVX FFT transform
+
 Input must be pre-permuted using the parity lookup table, generated via
 `ff_tx_gen_split_radix_parity_revtab`.
 
@@ -193,7 +198,8 @@ This theme continues throughout the document. Note that in the actual assembly c
 the paths are interleaved to improve unit saturation and CPU dependency tracking, so
 to more clearly see them, you'll need to deinterleave the instructions.
 
-# 8-point SSE/ARM64 FFT transform
+## 8-point SSE/ARM64 FFT transform
+
 Input must be pre-permuted using the parity lookup table, generated via
 `ff_tx_gen_split_radix_parity_revtab`.
 
@@ -305,7 +311,8 @@ static void fft8(FFTComplex *z)
 Most functions here are highly tuned to use x86's addsub instruction to save on
 external sign mask loading.
 
-# 16-point AVX FFT transform
+## 16-point AVX FFT transform
+
 This version expects the output of the 8 and 4-point transforms to follow the
 even/odd convention established above.
 
@@ -445,7 +452,8 @@ static void fft16(FFTComplex *z)
 }
 ```
 
-# AVX split-radix synthesis
+## AVX split-radix synthesis
+
 To create larger transforms, the following unrolling of the C split-radix
 function is used.
 
@@ -705,8 +713,8 @@ beginning to overlap, particularly `[o1]` with `[0]` after the second iteration.
 To iterate further, set `z = &z[16]` via `z += 8` for the second iteration. After
 the 4th iteration, the layout resets, so repeat the same.
 
+## 15-point AVX FFT transform
 
-# 15-point AVX FFT transform
 The 15-point transform is based on the following unrolling. The input
 must be permuted via the following loop:
 
