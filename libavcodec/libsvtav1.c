@@ -215,6 +215,23 @@ static int config_enc_params(EbSvtAv1EncConfiguration *param,
     const AVPixFmtDescriptor *desc;
     av_unused const AVDictionaryEntry *en = NULL;
 
+#if !SVT_AV1_CHECK_VERSION(3, 0, 0)
+    // SVT-AV1 < 3.0.0 requires input dimensions of at least 64x64. Reject
+    // smaller inputs explicitly here to produce a clear error rather than
+    // relying on the library's internal validation, which may silently fail
+    // to produce output and cause the caller to hang.
+    // Sub-64px inputs were enabled upstream in MR !2356 (first released in
+    // v3.0.0); for those versions the library validates the dimensions
+    // itself.
+    if (avctx->width < 64 || avctx->height < 64) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Input dimensions %dx%d are smaller than the minimum 64x64 "
+               "supported by SVT-AV1 < 3.0.0.\n",
+               avctx->width, avctx->height);
+        return AVERROR(EINVAL);
+    }
+#endif
+
     // Update param from options
     if (svt_enc->enc_mode >= -1)
         param->enc_mode             = svt_enc->enc_mode;
