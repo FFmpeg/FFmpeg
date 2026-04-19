@@ -2,7 +2,7 @@ The last version increases of all libraries were on 2025-03-28
 
 API changes, most recent first:
 
-2026-04-xx - xxxxxxxxxx - lavc 60.30.100 - packet.h
+2026-04-14 - 7faa6ee2aa - lavc 62.30.100 - packet.h
   Add AV_PKT_DATA_DYNAMIC_HDR_SMPTE_2094_APP5 side data type.
 
 2026-04-09 - 6ba6db4f19 - lavu 60.30.100 - hdr_dynamic_metadata.h frame.h
