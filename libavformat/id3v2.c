@@ -132,16 +132,17 @@ const char * const ff_id3v2_picture_types[21] = {
 };
 
 const CodecMime ff_id3v2_mime_tags[] = {
-    { "image/gif",  AV_CODEC_ID_GIF   },
-    { "image/jpeg", AV_CODEC_ID_MJPEG },
-    { "image/jpg",  AV_CODEC_ID_MJPEG },
-    { "image/png",  AV_CODEC_ID_PNG   },
-    { "image/tiff", AV_CODEC_ID_TIFF  },
-    { "image/bmp",  AV_CODEC_ID_BMP   },
-    { "image/webp", AV_CODEC_ID_WEBP  },
-    { "JPG",        AV_CODEC_ID_MJPEG }, /* ID3v2.2  */
-    { "PNG",        AV_CODEC_ID_PNG   }, /* ID3v2.2  */
-    { "",           AV_CODEC_ID_NONE  },
+    { "image/gif",  AV_CODEC_ID_GIF    },
+    { "image/jpeg", AV_CODEC_ID_MJPEG  },
+    { "image/jpg",  AV_CODEC_ID_MJPEG  },
+    { "image/jxl",  AV_CODEC_ID_JPEGXL },
+    { "image/png",  AV_CODEC_ID_PNG    },
+    { "image/tiff", AV_CODEC_ID_TIFF   },
+    { "image/bmp",  AV_CODEC_ID_BMP    },
+    { "image/webp", AV_CODEC_ID_WEBP   },
+    { "JPG",        AV_CODEC_ID_MJPEG  }, /* ID3v2.2  */
+    { "PNG",        AV_CODEC_ID_PNG    }, /* ID3v2.2  */
+    { "",           AV_CODEC_ID_NONE   },
 };
 
 int ff_id3v2_match(const uint8_t *buf, const char *magic)

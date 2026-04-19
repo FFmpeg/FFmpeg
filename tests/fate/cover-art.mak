@@ -57,6 +57,11 @@ FATE_COVER_ART_REMUX-$(call ALLYES, MOV_DEMUXER OGG_DEMUXER   \
                        += fate-cover-art-flac-remux
 fate-cover-art-flac-remux: CMD = transcode mov $(TARGET_SAMPLES)/lossless-audio/inside.m4a flac "-map 0 -map 1:v -map 1:v -af channelmap=channel_layout=FL+FC,aresample -c:a flac -multi_dim_quant 1 -c:v:0 copy -metadata:s:v:0 comment=Illustration -metadata:s:v:0 title=OpenMusic  -filter:v:1 scale -c:v:1 png -metadata:s:v:1 title=landscape -c:v:2 copy -filter:v:3 scale -metadata:s:v:2 title=portrait -c:v:3 bmp  -metadata:s:v:3 comment=Conductor -c:v:4 copy -t 0.4" "-map 0 -map 0:a -c:a:0 copy -c:v copy" "-show_entries format_tags:stream_tags:stream_disposition=attached_pic:stream=index,codec_name" "-f ogg -i $(TARGET_SAMPLES)/cover_art/ogg_vorbiscomment_cover.opus"
 
+FATE_COVER_ART_REMUX-$(call ALLYES, MP3_DEMUXER MP3_MUXER \
+                                    JPEGXL_ANIM_DEMUXER PIPE_PROTOCOL)     \
+                       += fate-cover-art-mp3-jxl-remux
+fate-cover-art-mp3-jxl-remux: CMD = run_with_temp "$(FFMPEG) -nostdin -hide_banner -loglevel error -i $(TARGET_SAMPLES)/audiomatch/square3.mp3 -i $(TARGET_SAMPLES)/jxl/lenna-256.jxl -map 0:a -map 1:v -c copy -disposition:v:0 attached_pic -id3v2_version 3 -f mp3 -y" "ffprobe$(PROGSSUF)$(EXESUF) -bitexact -show_entries stream=codec_name,codec_type -show_entries stream_disposition=attached_pic -of compact=p=0:nk=1" mp3
+
 FCA_TEMP-$(call ALLYES, RAWVIDEO_MUXER) = $(FATE_COVER_ART-yes)
 FATE_COVER_ART = $(FCA_TEMP-yes)
 $(FATE_COVER_ART): CMP = oneline
