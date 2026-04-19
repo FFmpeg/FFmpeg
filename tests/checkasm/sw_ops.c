@@ -117,6 +117,16 @@ static void check_compiled(const char *name, const SwsOpBackend *backend,
                            const SwsCompiledOp *comp_ref,
                            const SwsCompiledOp *comp_new)
 {
+    /**
+     * We can't use `check_func()` alone because the actual function pointer
+     * may be a wrapper or entry point shared by multiple implementations.
+     * Solve it by hashing in the active CPU flags as well.
+     */
+    uintptr_t id = (uintptr_t) comp_new->func;
+    id ^= (id << 6) + (id >> 2) + 0x9e3779b97f4a7c15 + comp_new->cpu_flags;
+    if (!check_key((void *) id, "%s/%s", name, backend->name))
+        return;
+
     declare_func(void, const SwsOpExec *, const void *, int bx, int y, int bx_end, int y_end);
 
     static DECLARE_ALIGNED_64(char, src0)[NB_PLANES][LINES][PIXELS * sizeof(uint32_t[4])];
@@ -178,15 +188,6 @@ static void check_compiled(const char *name, const SwsOpBackend *backend,
         exec.in_offset_x = in_offset_x;
     }
 
-    /**
-     * We can't use `check_func()` alone because the actual function pointer
-     * may be a wrapper or entry point shared by multiple implementations.
-     * Solve it by hashing in the active CPU flags as well.
-     */
-    uintptr_t id = (uintptr_t) comp_new->func;
-    id ^= (id << 6) + (id >> 2) + 0x9e3779b97f4a7c15 + comp_new->cpu_flags;
-
-    if (check_key((void*) id, "%s/%s", name, backend->name)) {
         exec.block_size_in  = comp_ref->block_size * rw_pixel_bits(read_op)  >> 3;
         exec.block_size_out = comp_ref->block_size * rw_pixel_bits(write_op) >> 3;
         for (int i = 0; i < NB_PLANES; i++) {
@@ -235,7 +236,6 @@ static void check_compiled(const char *name, const SwsOpBackend *backend,
         }
 
         bench(comp_new->func, &exec, comp_new->priv, 0, 0, PIXELS / comp_new->block_size, LINES);
-    }
 }
 
 static void check_ops(const char *name, const unsigned ranges[NB_PLANES],
