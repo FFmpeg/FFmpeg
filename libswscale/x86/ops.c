@@ -209,14 +209,8 @@ static int setup_shift(const SwsImplParams *params, SwsImplResult *out)
 static int setup_dither(const SwsImplParams *params, SwsImplResult *out)
 {
     const SwsOp *op = params->op;
-    /* 1x1 matrix / single constant */
-    if (!op->dither.size_log2) {
-        const AVRational k = op->dither.matrix[0];
-        out->priv.f32[0] = (float) k.num / k.den;
-        return 0;
-    }
-
     const int size = 1 << op->dither.size_log2;
+    const int stride = size * sizeof(float);
     const int8_t *off = op->dither.y_offset;
     int max_offset = 0;
     for (int i = 0; i < 4; i++) {
@@ -224,11 +218,17 @@ static int setup_dither(const SwsImplParams *params, SwsImplResult *out)
             max_offset = FFMAX(max_offset, off[i] & (size - 1));
     }
 
+    /* 1x1 matrix / single constant */
+    if (!op->dither.size_log2) {
+        const AVRational k = op->dither.matrix[0];
+        out->priv.f32[0] = (float) k.num / k.den;
+        goto store_offsets;
+    }
+
     /* Allocate extra rows to allow over-reading for row offsets. Note that
      * max_offset is currently never larger than 5, so the extra space needed
      * for this over-allocation is bounded by 5 * size * sizeof(float),
      * typically 320 bytes for a 16x16 dither matrix. */
-    const int stride = size * sizeof(float);
     const int num_rows = size + max_offset;
     float *matrix = out->priv.ptr = av_mallocz(num_rows * stride);
     if (!matrix)
@@ -240,6 +240,7 @@ static int setup_dither(const SwsImplParams *params, SwsImplResult *out)
 
     memcpy(&matrix[size * size], matrix, max_offset * stride);
 
+store_offsets:
     /* Store relative pointer offset to each row inside extra space */
     static_assert(sizeof(out->priv.ptr) <= sizeof(int16_t[4]),
                   ">8 byte pointers not supported");
@@ -250,12 +251,6 @@ static int setup_dither(const SwsImplParams *params, SwsImplResult *out)
 
     return 0;
 }
-
-#define DECL_DITHER0(EXT)                                                       \
-    DECL_COMMON_PATTERNS(F32, dither0##EXT,                                     \
-        .op    = SWS_OP_DITHER,                                                 \
-        .setup = setup_dither,                                                  \
-    );
 
 #define DECL_DITHER(EXT, SIZE)                                                  \
     DECL_ASM(F32, SWS_COMP_ALL, dither##SIZE##EXT,                              \
@@ -729,7 +724,7 @@ static const SwsOpTable ops16##EXT = {                                          
     DECL_EXPAND(EXT,   U8, U32)                                                 \
     DECL_MIN_MAX(EXT)                                                           \
     DECL_SCALE(EXT)                                                             \
-    DECL_DITHER0(EXT)                                                           \
+    DECL_DITHER(EXT, 0)                                                         \
     DECL_DITHER(EXT, 1)                                                         \
     DECL_DITHER(EXT, 2)                                                         \
     DECL_DITHER(EXT, 3)                                                         \
@@ -790,7 +785,7 @@ static const SwsOpTable ops32##EXT = {                                          
         REF_COMMON_PATTERNS(min##EXT),                                          \
         REF_COMMON_PATTERNS(max##EXT),                                          \
         REF_COMMON_PATTERNS(scale##EXT),                                        \
-        REF_COMMON_PATTERNS(dither0##EXT),                                      \
+        &op_dither0##EXT,                                                       \
         &op_dither1##EXT,                                                       \
         &op_dither2##EXT,                                                       \
         &op_dither3##EXT,                                                       \

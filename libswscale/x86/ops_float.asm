@@ -209,28 +209,15 @@ IF W,   mulps mw2, m8
 ;---------------------------------------------------------
 ; Dithering
 
-%macro dither0 0
-op dither0
-        ; constant offset for all channels
-        vbroadcastss m8, [implq + SwsOpImpl.priv]
-        LOAD_CONT tmp0q
-IF X,   addps mx, m8
-IF Y,   addps my, m8
-IF Z,   addps mz, m8
-IF W,   addps mw, m8
-IF X,   addps mx2, m8
-IF Y,   addps my2, m8
-IF Z,   addps mz2, m8
-IF W,   addps mw2, m8
-        CONTINUE tmp0q
-%endmacro
-
 %macro dither_row 5 ; size_log2, comp_idx, matrix, out, out2
         mov tmp0w, [implq + SwsOpImpl.priv + (4 + %2) * 2] ; priv.u16[4 + i]
         ; test is tmp0w < 0
         test tmp0w, tmp0w
         js .skip%2
-%if %1 == 1
+%if %1 == 0
+        addps %4, m8
+        addps %5, m8
+%elif %1 == 1
         vbroadcastsd m8, [%3 + tmp0q]
         addps %4, m8
         addps %5, m8
@@ -247,6 +234,10 @@ IF W,   addps mw2, m8
 
 %macro dither 1 ; size_log2
 op dither%1
+%if %1 == 0
+        ; dither offset is constant
+        vbroadcastss m8, [implq + SwsOpImpl.priv]
+%else
         ; dither matrix is stored indirectly at the private data address
         mov tmp1q, [implq + SwsOpImpl.priv]
         ; add y offset. note that for 2x2, we would only need to look at the
@@ -264,6 +255,7 @@ op dither%1
         and tmp0d, (4 << %1) - 1
         add tmp1q, tmp0q
     %endif
+%endif
         dither_row %1, 0, tmp1q, mx, mx2
         dither_row %1, 1, tmp1q, my, my2
         dither_row %1, 2, tmp1q, mz, mz2
@@ -272,7 +264,7 @@ op dither%1
 %endmacro
 
 %macro dither_fns 0
-        decl_common_patterns dither0
+        dither 0
         dither 1
         dither 2
         dither 3
