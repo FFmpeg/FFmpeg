@@ -45,13 +45,6 @@ DECL_SETUP(setup_dither, params, out)
 {
     const SwsOp *op = params->op;
     const int size = 1 << op->dither.size_log2;
-    if (size == 1) {
-        /* We special case this value */
-        av_assert1(!av_cmp_q(op->dither.matrix[0], av_make_q(1, 2)));
-        out->priv.ptr = NULL;
-        return 0;
-    }
-
     const int width = FFMAX(size, SWS_BLOCK_SIZE);
     pixel_t *matrix = out->priv.ptr = av_malloc(sizeof(pixel_t) * size * width);
     if (!matrix)
@@ -90,7 +83,7 @@ DECL_FUNC(dither, const int size_log2)
         const int row = (y_line + offset[IDX]) & mask;                                   \
         SWS_LOOP                                                                         \
         for (int i = 0; i < SWS_BLOCK_SIZE; i++)                                         \
-            VAR[i] += size_log2 ? matrix[row * width + base + i] : (pixel_t) 0.5;        \
+            VAR[i] += matrix[row * width + base + i];                                    \
     }
 
     DITHER_COMP(x, 0)
