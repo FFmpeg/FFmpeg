@@ -111,7 +111,7 @@ static void set_range(AVRational *rangeq, unsigned range, unsigned range_def)
         *rangeq = (AVRational) { range, 1 };
 }
 
-static void check_compiled(const char *name, const SwsOpBackend *backend,
+static void check_compiled(const char *name,
                            const SwsOp *read_op, const SwsOp *write_op,
                            const int ranges[NB_PLANES],
                            const SwsCompiledOp *comp_ref,
@@ -124,7 +124,7 @@ static void check_compiled(const char *name, const SwsOpBackend *backend,
      */
     uintptr_t id = (uintptr_t) comp_new->func;
     id ^= (id << 6) + (id >> 2) + 0x9e3779b97f4a7c15 + comp_new->cpu_flags;
-    if (!check_key(id, "%s/%s", name, backend->name))
+    if (!check_key(id, "%s", name))
         return;
 
     declare_func(void, const SwsOpExec *, const void *, int bx, int y, int bx_end, int y_end);
@@ -304,16 +304,14 @@ static void check_ops(const char *name, const unsigned ranges[NB_PLANES],
         goto done;
     }
 
+    /* Check with the C backend to establish a reference */
+    check_compiled(name, read_op, write_op, ranges, &comp_ref, &comp_ref);
+
     /* Iterate over every other backend, and test it against the C reference */
     for (int n = 0; ff_sws_op_backends[n]; n++) {
         const SwsOpBackend *backend = ff_sws_op_backends[n];
         if (backend->hw_format != AV_PIX_FMT_NONE || backend == backend_ref)
             continue;
-
-        if (!checkasm_get_cpu_info()) {
-            /* Also test once with the existing C reference to set the baseline */
-            check_compiled(name, backend, read_op, write_op, ranges, &comp_ref, &comp_ref);
-        }
 
         SwsCompiledOp comp_new = {0};
         int ret = ff_sws_ops_compile(ctx, backend, &oplist, &comp_new);
@@ -324,7 +322,9 @@ static void check_ops(const char *name, const unsigned ranges[NB_PLANES],
             goto done;
         }
 
-        check_compiled(name, backend, read_op, write_op, ranges, &comp_ref, &comp_new);
+        /* Distinguish backends from each other even with same CPU flags */
+        checkasm_set_func_variant("%s_%s", backend->name, checkasm_get_cpu_suffix());
+        check_compiled(name, read_op, write_op, ranges, &comp_ref, &comp_new);
         ff_sws_compiled_op_unref(&comp_new);
     }
 
