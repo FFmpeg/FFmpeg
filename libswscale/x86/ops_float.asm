@@ -18,7 +18,7 @@
 ;* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ;******************************************************************************
 
-%include "ops_common.asm"
+%include "ops_include.asm"
 %define SWS_FILTER_SCALE (1 << 14)
 
 SECTION_RODATA

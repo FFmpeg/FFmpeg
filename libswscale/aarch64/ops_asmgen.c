@@ -293,7 +293,7 @@ static void asmgen_process(SwsAArch64Context *s, const SwsAArch64OpImplParams *p
 
     /**
      * The process/process_return functions for aarch64 work similarly
-     * to the x86 backend. The description in x86/ops_common.asm mostly
+     * to the x86 backend. The description in x86/ops_include.asm mostly
      * holds as well here.
      */
 

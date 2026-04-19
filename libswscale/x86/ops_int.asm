@@ -18,7 +18,7 @@
 ;* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ;******************************************************************************
 
-%include "ops_common.asm"
+%include "ops_include.asm"
 
 SECTION_RODATA
 
@@ -58,12 +58,12 @@ const1w: times 16 dw 0x01
 SECTION .text
 
 ;---------------------------------------------------------
-; Global entry point. See `ops_common.asm` for info.
+; Global entry point. See `ops_include.asm` for info.
 
 %macro process_fn 1 ; number of planes
 cglobal sws_process%1_x86, 6, 7 + 2 * %1, 16
             ; Args:
-            ;   execq, implq, bxd, yd as defined in ops_common.int
+            ;   execq, implq, bxd, yd as defined in ops_include.asm
             ;   bx_end and y_end are initially in tmp0d / tmp1d
             ;   (see SwsOpFunc signature)
             ;
