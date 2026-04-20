@@ -238,7 +238,7 @@ static int apng_read_header(AVFormatContext *s)
     }
 }
 
-static int decode_fctl_chunk(AVFormatContext *s, APNGDemuxContext *ctx, AVPacket *pkt)
+static int decode_fctl_chunk(AVFormatContext *s, APNGDemuxContext *ctx)
 {
     uint32_t sequence_number, width, height, x_offset, y_offset;
     uint16_t delay_num, delay_den;
@@ -341,7 +341,7 @@ static int apng_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (len != APNG_FCTL_CHUNK_SIZE)
             return AVERROR_INVALIDDATA;
 
-        if ((ret = decode_fctl_chunk(s, ctx, pkt)) < 0)
+        if ((ret = decode_fctl_chunk(s, ctx)) < 0)
             return ret;
 
         /* fcTL may be followed by other chunks before fdAT or IDAT */
