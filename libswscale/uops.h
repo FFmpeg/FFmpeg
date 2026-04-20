@@ -32,6 +32,7 @@
 #include "libavutil/attributes.h"
 
 typedef struct SwsFilterWeights SwsFilterWeights;
+typedef struct SwsOpList        SwsOpList;
 
 typedef enum SwsPixelType {
     SWS_PIXEL_NONE = 0,
@@ -210,5 +211,13 @@ void ff_sws_uop_list_free(SwsUOpList **ops);
 
 /* Takes over ownership of `uop` and sets it to {0}, even on failure. */
 int ff_sws_uop_list_append(SwsUOpList *uops, SwsUOp *uop);
+
+/**
+ * Translate a list of operations down to micro-ops, which can be further
+ * optimized and then directly executed by backends.
+ *
+ * Return 0 or a negative error code.
+ */
+int ff_sws_ops_translate(const SwsOpList *ops, SwsUOpList *uops);
 
 #endif
