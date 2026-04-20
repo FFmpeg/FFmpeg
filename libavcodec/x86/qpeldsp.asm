@@ -25,7 +25,6 @@
 
 SECTION_RODATA
 
-cextern pb_1
 cextern pw_3
 pw_15: times 4 dw 15
 cextern pw_16
