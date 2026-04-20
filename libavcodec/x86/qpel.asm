@@ -84,37 +84,3 @@ PIXELS_L2 avg, 8
 INIT_XMM sse2
 PIXELS_L2 put, 16, 17
 PIXELS_L2 avg, 16
-
-%macro PIXELS16_L2 1
-%define OP op_%1
-; void ff_avg/put_pixels16x16_l2_mmxext(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
-;                                       ptrdiff_t dstStride, ptrdiff_t src1Stride)
-cglobal %1_pixels16x16_l2, 5,6
-%1_pixels16x16_after_prologue_ %+ cpuname:
-    mov         r5d, 16
-.loop:
-    mova         m0, [r1]
-    mova         m1, [r1+8]
-    add          r1, r4
-    pavgb        m0, [r2]
-    pavgb        m1, [r2+8]
-    OP           m0, [r0]
-    OP           m1, [r0+8]
-    add          r0, r3
-    mova         m0, [r1]
-    mova         m1, [r1+8]
-    add          r1, r4
-    pavgb        m0, [r2+16]
-    pavgb        m1, [r2+24]
-    OP           m0, [r0]
-    OP           m1, [r0+8]
-    add          r0, r3
-    add          r2, 32
-    sub         r5d, 2
-    jne       .loop
-    RET
-%endmacro
-
-INIT_MMX mmxext
-PIXELS16_L2 put
-PIXELS16_L2 avg

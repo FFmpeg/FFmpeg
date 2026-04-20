@@ -116,61 +116,11 @@ INIT_XMM sse2
 PUT_NO_RND_PIXELS_L2 16, 17
 
 
-; void ff_put_no_rnd_pixels16x16_l2(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
-;                                   ptrdiff_t dstStride, ptrdiff_t src1Stride)
-INIT_MMX mmxext
-cglobal put_no_rnd_pixels16x16_l2, 5,6
-    pcmpeqb      m6, m6
-    mov         r5d, 16
-.loop:
-    mova         m0, [r1]
-    mova         m1, [r1+8]
-    add          r1, r4
-    mova         m2, [r2]
-    mova         m3, [r2+8]
-    pxor         m0, m6
-    pxor         m1, m6
-    pxor         m2, m6
-    pxor         m3, m6
-    PAVGB        m0, m2
-    PAVGB        m1, m3
-    pxor         m0, m6
-    pxor         m1, m6
-    mova       [r0], m0
-    mova     [r0+8], m1
-    add          r0, r3
-    mova         m0, [r1]
-    mova         m1, [r1+8]
-    add          r1, r4
-    mova         m2, [r2+16]
-    mova         m3, [r2+24]
-    pxor         m0, m6
-    pxor         m1, m6
-    pxor         m2, m6
-    pxor         m3, m6
-    PAVGB        m0, m2
-    PAVGB        m1, m3
-    pxor         m0, m6
-    pxor         m1, m6
-    mova       [r0], m0
-    mova     [r0+8], m1
-    add          r0, r3
-    add          r2, 32
-    sub         r5d, 2
-    jne .loop
-    RET
-
-
 %macro MPEG4_QPEL16_H_LOWPASS 1
-cglobal %1_mpeg4_qpel16_h_lowpass, 5, 5, 8, 16*notcpuflag(sse2), dst, src, dstride, srcstride, h
-%if notcpuflag(ssse3)
-    pxor         m7, m7
-%else
+cglobal %1_mpeg4_qpel16_h_lowpass, 5, 5, 8, dst, src, dstride, srcstride, h
     mova         m7, [coeff16_0]
-%endif
 .loop:
     movu         m0, [srcq]
-%if cpuflag(ssse3)
     pshufb       m1, m0, [shuffle_mask16_0]
     pmaddubsw    m2, m1, m7
     pshufb       m0, [shuffle_mask16_1]
@@ -205,131 +155,11 @@ cglobal %1_mpeg4_qpel16_h_lowpass, 5, 5, 8, 16*notcpuflag(sse2), dst, src, dstri
     pavgb        m2, [dstq]
 %endif
     mova     [dstq], m2
-%else
-    mova         m1, m0
-    mova         m2, m0
-    punpcklbw    m0, m7
-    punpckhbw    m1, m7
-    pshufw       m5, m0, 0x90
-    pshufw       m6, m0, 0x41
-    mova         m3, m2
-    mova         m4, m2
-    psllq        m2, 8
-    psllq        m3, 16
-    psllq        m4, 24
-    punpckhbw    m2, m7
-    punpckhbw    m3, m7
-    punpckhbw    m4, m7
-    paddw        m5, m3
-    paddw        m6, m2
-    paddw        m5, m5
-    psubw        m6, m5
-    pshufw       m5, m0, 6
-    pmullw       m6, [pw_3]
-    paddw        m0, m4
-    paddw        m5, m1
-    pmullw       m0, [pw_20]
-    psubw        m0, m5
-    paddw        m6, [PW_ROUND]
-    paddw        m0, m6
-    psraw        m0, 5
-    mova    [rsp+8], m0
-    mova         m0, [r1+5]
-    mova         m5, m0
-    mova         m6, m0
-    psrlq        m0, 8
-    psrlq        m5, 16
-    punpcklbw    m0, m7
-    punpcklbw    m5, m7
-    paddw        m2, m0
-    paddw        m3, m5
-    paddw        m2, m2
-    psubw        m3, m2
-    mova         m2, m6
-    psrlq        m6, 24
-    punpcklbw    m2, m7
-    punpcklbw    m6, m7
-    pmullw       m3, [pw_3]
-    paddw        m1, m2
-    paddw        m4, m6
-    pmullw       m1, [pw_20]
-    psubw        m3, m4
-    paddw        m1, [PW_ROUND]
-    paddw        m3, m1
-    psraw        m3, 5
-    mova         m1, [rsp+8]
-    packuswb     m1, m3
-    OP_MOV     [r0], m1, m4
-    mova         m1, [r1+9]
-    mova         m4, m1
-    mova         m3, m1
-    psrlq        m1, 8
-    psrlq        m4, 16
-    punpcklbw    m1, m7
-    punpcklbw    m4, m7
-    paddw        m5, m1
-    paddw        m0, m4
-    paddw        m5, m5
-    psubw        m0, m5
-    mova         m5, m3
-    psrlq        m3, 24
-    pmullw       m0, [pw_3]
-    punpcklbw    m3, m7
-    paddw        m2, m3
-    psubw        m0, m2
-    mova         m2, m5
-    punpcklbw    m2, m7
-    punpckhbw    m5, m7
-    paddw        m6, m2
-    pmullw       m6, [pw_20]
-    paddw        m0, [PW_ROUND]
-    paddw        m0, m6
-    psraw        m0, 5
-    paddw        m3, m5
-    pshufw       m6, m5, 0xf9
-    paddw        m6, m4
-    pshufw       m4, m5, 0xbe
-    pshufw       m5, m5, 0x6f
-    paddw        m4, m1
-    paddw        m5, m2
-    paddw        m6, m6
-    psubw        m4, m6
-    pmullw       m3, [pw_20]
-    pmullw       m4, [pw_3]
-    psubw        m3, m5
-    paddw        m4, [PW_ROUND]
-    paddw        m4, m3
-    psraw        m4, 5
-    packuswb     m0, m4
-    OP_MOV   [r0+8], m0, m4
-    add          r1, r3
-%endif
     add        dstq, dstrideq
     dec          hd
     jne .loop
     RET
 %endmacro
-
-%macro PUT_OP 2-3
-    mova %1, %2
-%endmacro
-
-%macro AVG_OP 2-3
-    mova  %3, %1
-    pavgb %2, %3
-    mova  %1, %2
-%endmacro
-
-INIT_MMX mmxext
-%define PW_ROUND pw_16
-%define OP_MOV PUT_OP
-MPEG4_QPEL16_H_LOWPASS put
-%define PW_ROUND pw_16
-%define OP_MOV AVG_OP
-MPEG4_QPEL16_H_LOWPASS avg
-%define PW_ROUND pw_15
-%define OP_MOV PUT_OP
-MPEG4_QPEL16_H_LOWPASS put_no_rnd
 
 INIT_XMM ssse3
 %define PW_ROUND pw_16
@@ -341,7 +171,6 @@ MPEG4_QPEL16_H_LOWPASS put_no_rnd
 
 %macro MPEG4_QPEL8_H_LOWPASS 1
 cglobal %1_mpeg4_qpel8_h_lowpass, 5, 5, 8+2*ARCH_X86_64, dst, src, dstride, srcstride, h
-%if cpuflag(ssse3)
     mova         m4, [PW_ROUND]
     mova         m5, [coeff8_0]
 %if ARCH_X86_64
@@ -350,11 +179,7 @@ cglobal %1_mpeg4_qpel8_h_lowpass, 5, 5, 8+2*ARCH_X86_64, dst, src, dstride, srcs
 %endif
     mova         m6, [coeff8_3]
     mova         m7, [shuffle_mask8]
-%else
-    pxor         m7, m7
-%endif
 .loop:
-%if cpuflag(ssse3)
     movq         m0, [srcq]
     movq         m1, [srcq+1]
     punpcklbw    m0, m1
@@ -385,72 +210,11 @@ cglobal %1_mpeg4_qpel8_h_lowpass, 5, 5, 8+2*ARCH_X86_64, dst, src, dstride, srcs
     pavgb        m1, m2
 %endif
     movq     [dstq], m1
-%else
-    mova         m0, [r1]
-    mova         m1, m0
-    mova         m2, m0
-    punpcklbw    m0, m7
-    punpckhbw    m1, m7
-    pshufw       m5, m0, 0x90
-    pshufw       m6, m0, 0x41
-    mova         m3, m2
-    mova         m4, m2
-    psllq        m2, 8
-    psllq        m3, 16
-    psllq        m4, 24
-    punpckhbw    m2, m7
-    punpckhbw    m3, m7
-    punpckhbw    m4, m7
-    paddw        m5, m3
-    paddw        m6, m2
-    paddw        m5, m5
-    psubw        m6, m5
-    pshufw       m5, m0, 0x6
-    pmullw       m6, [pw_3]
-    paddw        m0, m4
-    paddw        m5, m1
-    pmullw       m0, [pw_20]
-    psubw        m0, m5
-    paddw        m6, [PW_ROUND]
-    paddw        m0, m6
-    psraw        m0, 5
-    movh         m5, [r1+5]
-    punpcklbw    m5, m7
-    pshufw       m6, m5, 0xf9
-    paddw        m1, m5
-    paddw        m2, m6
-    pshufw       m6, m5, 0xbe
-    pshufw       m5, m5, 0x6f
-    paddw        m3, m6
-    paddw        m4, m5
-    paddw        m2, m2
-    psubw        m3, m2
-    pmullw       m1, [pw_20]
-    pmullw       m3, [pw_3]
-    psubw        m3, m4
-    paddw        m1, [PW_ROUND]
-    paddw        m3, m1
-    psraw        m3, 5
-    packuswb     m0, m3
-    OP_MOV     [r0], m0, m4
-    add          r1, r3
-%endif
     add        dstq, dstrideq
     dec          hd
     jne .loop
     RET
 %endmacro
-
-INIT_MMX mmxext
-%define PW_ROUND pw_16
-%define OP_MOV PUT_OP
-MPEG4_QPEL8_H_LOWPASS put
-%define PW_ROUND pw_16
-%define OP_MOV AVG_OP
-MPEG4_QPEL8_H_LOWPASS avg
-%define PW_ROUND pw_15
-%define OP_MOV PUT_OP
-MPEG4_QPEL8_H_LOWPASS put_no_rnd
 
 INIT_XMM ssse3
 %define PW_ROUND pw_16

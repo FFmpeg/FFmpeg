@@ -44,9 +44,6 @@ void ff_put_no_rnd_pixels8x8_l2_mmxext(uint8_t *dst,
 void ff_put_no_rnd_pixels8x9_l2_mmxext(uint8_t *dst,
                                        const uint8_t *src1, const uint8_t *src2,
                                        ptrdiff_t dstStride, ptrdiff_t src1Stride);
-void ff_put_no_rnd_pixels16x16_l2_mmxext(uint8_t *dst,
-                                         const uint8_t *src1, const uint8_t *src2,
-                                         ptrdiff_t dstStride, ptrdiff_t src1Stride);
 void ff_put_no_rnd_pixels16x16_l2_sse2(uint8_t *dst,
                                        const uint8_t *src1, const uint8_t *src2,
                                        ptrdiff_t dstStride, ptrdiff_t src1Stride);
@@ -266,17 +263,11 @@ MACRO(put,,                SIZE, SIZEP1, HXMM, VXMM, HVXMM, L2) \
 MACRO(avg,,                SIZE, SIZEP1, HXMM, VXMM, HVXMM, L2) \
 MACRO(put_no_rnd, no_rnd_, SIZE, SIZEP1, HXMM, VXMM, HVXMM, L2)
 
-QPEL3(QPEL_H,   8,  9, mmxext, mmxext, mmxext, mmxext)
 QPEL3(QPEL_H,   8,  9, ssse3, sse2, ssse3, mmxext)
-
-QPEL3(QPEL_H,  16, 17, mmxext, mmxext, mmxext, mmxext)
 QPEL3(QPEL_H,  16, 17, ssse3, sse2, ssse3, sse2)
-
 QPEL3(QPEL_V,   8,  9, ssse3, sse2, ssse3, mmxext)
-QPEL3(QPEL_HV,  8,  9, mmxext, sse2, sse2, mmxext)
 QPEL3(QPEL_HV,  8,  9, ssse3, sse2, ssse3, mmxext)
 QPEL3(QPEL_V,  16, 17, ssse3, sse2, ssse3, sse2)
-QPEL3(QPEL_HV, 16, 17, mmxext, sse2, sse2, sse2)
 QPEL3(QPEL_HV, 16, 17, ssse3, sse2, ssse3, sse2)
 
 #define SET_QPEL_FUNC(OP, X, Y, SIZE, CPU, PREFIX) \
@@ -315,8 +306,6 @@ av_cold void ff_qpeldsp_init_x86(QpelDSPContext *c)
     if (X86_MMXEXT(cpu_flags)) {
 #if HAVE_MMXEXT_EXTERNAL
         c->avg_qpel_pixels_tab[1][0] = ff_avg_pixels8x8_mmxext;
-        SET_H_QPEL_FUNCS(16, mmxext,);
-        SET_H_QPEL_FUNCS(8, mmxext,);
 #endif /* HAVE_MMXEXT_EXTERNAL */
     }
 #if HAVE_SSE2_EXTERNAL
@@ -328,9 +317,7 @@ av_cold void ff_qpeldsp_init_x86(QpelDSPContext *c)
         c->avg_qpel_pixels_tab[0][0] = ff_avg_pixels16x16_sse2;
 
         SET_V_QPEL_FUNCS (16, sse2,);
-        SET_HV_QPEL_FUNCS(16, sse2,);
         SET_V_QPEL_FUNCS (8,  sse2,);
-        SET_HV_QPEL_FUNCS(8,  sse2,);
     }
 #endif
     if (EXTERNAL_SSSE3(cpu_flags)) {
