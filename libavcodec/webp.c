@@ -1374,8 +1374,6 @@ static int webp_decode_frame(AVCodecContext *avctx, AVFrame *p,
     }
 
     while (bytestream2_get_bytes_left(&gb) > 8) {
-        char chunk_str[5] = { 0 };
-
         chunk_type = bytestream2_get_le32(&gb);
         chunk_size = bytestream2_get_le32(&gb);
         if (chunk_size == UINT32_MAX)
@@ -1516,15 +1514,13 @@ exif_end:
         case MKTAG('A', 'N', 'I', 'M'):
         case MKTAG('A', 'N', 'M', 'F'):
         case MKTAG('X', 'M', 'P', ' '):
-            AV_WL32(chunk_str, chunk_type);
             av_log(avctx, AV_LOG_WARNING, "skipping unsupported chunk: %s\n",
-                   chunk_str);
+                   av_fourcc2str(chunk_type));
             bytestream2_skip(&gb, chunk_size);
             break;
         default:
-            AV_WL32(chunk_str, chunk_type);
             av_log(avctx, AV_LOG_VERBOSE, "skipping unknown chunk: %s\n",
-                   chunk_str);
+                   av_fourcc2str(chunk_type));
             bytestream2_skip(&gb, chunk_size);
             break;
         }
