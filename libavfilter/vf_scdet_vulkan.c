@@ -19,12 +19,14 @@
  */
 
 #include "libavutil/avassert.h"
-#include "libavutil/vulkan_spirv.h"
 #include "libavutil/opt.h"
 #include "libavutil/timestamp.h"
 #include "vulkan_filter.h"
 
 #include "filters.h"
+
+extern const unsigned char ff_scdet_comp_spv_data[];
+extern const unsigned int ff_scdet_comp_spv_len;
 
 typedef struct SceneDetectVulkanContext {
     FFVulkanContext vkctx;
@@ -52,25 +54,13 @@ typedef struct SceneDetectBuf {
 static av_cold int init_filter(AVFilterContext *ctx)
 {
     int err;
-    uint8_t *spv_data;
-    size_t spv_len;
-    void *spv_opaque = NULL;
     SceneDetectVulkanContext *s = ctx->priv;
     FFVulkanContext *vkctx = &s->vkctx;
-    FFVulkanShader *shd;
-    FFVkSPIRVCompiler *spv;
-    FFVulkanDescriptorSetBinding *desc;
 
     const AVPixFmtDescriptor *pixdesc = av_pix_fmt_desc_get(s->vkctx.input_format);
     const int lumaonly = !(pixdesc->flags & AV_PIX_FMT_FLAG_RGB) &&
                          (pixdesc->flags & AV_PIX_FMT_FLAG_PLANAR);
     s->nb_planes = lumaonly ? 1 : av_pix_fmt_count_planes(s->vkctx.input_format);
-
-    spv = ff_vk_spirv_init();
-    if (!spv) {
-        av_log(ctx, AV_LOG_ERROR, "Unable to initialize SPIR-V compiler!\n");
-        return AVERROR_EXTERNAL;
-    }
 
     s->qf = ff_vk_qf_find(vkctx, VK_QUEUE_COMPUTE_BIT, 0);
     if (!s->qf) {
@@ -80,76 +70,41 @@ static av_cold int init_filter(AVFilterContext *ctx)
     }
 
     RET(ff_vk_exec_pool_init(vkctx, s->qf, &s->e, s->qf->num*4, 0, 0, 0, NULL));
-    RET(ff_vk_shader_init(vkctx, &s->shd, "scdet",
-                          VK_SHADER_STAGE_COMPUTE_BIT,
-                          (const char *[]) { "GL_KHR_shader_subgroup_arithmetic" }, 1,
-                          32, 32, 1,
-                          0));
-    shd = &s->shd;
 
-    desc = (FFVulkanDescriptorSetBinding []) {
-        {
-            .name       = "prev_img",
+    SPEC_LIST_CREATE(sl, 2, 2*sizeof(uint32_t))
+    SPEC_LIST_ADD(sl, 0, 32, s->nb_planes);
+    SPEC_LIST_ADD(sl, 1, 32, SLICES);
+
+    ff_vk_shader_load(&s->shd, VK_SHADER_STAGE_COMPUTE_BIT, sl,
+                      (int []) { 32, 32, 1 }, 0);
+
+    const FFVulkanDescriptorSetBinding desc[] = {
+        { /* prev_img */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
+            .elems  = av_pix_fmt_count_planes(s->vkctx.input_format),
+        },
+        { /* cur_img */
             .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-            .mem_layout = ff_vk_shader_rep_fmt(s->vkctx.input_format, FF_VK_REP_UINT),
-            .mem_quali  = "readonly",
-            .dimensions = 2,
-            .elems      = av_pix_fmt_count_planes(s->vkctx.input_format),
             .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
-        }, {
-            .name       = "cur_img",
-            .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-            .mem_layout = ff_vk_shader_rep_fmt(s->vkctx.input_format, FF_VK_REP_UINT),
-            .mem_quali  = "readonly",
-            .dimensions = 2,
             .elems      = av_pix_fmt_count_planes(s->vkctx.input_format),
-            .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
-        }, {
-            .name        = "sad_buffer",
+        },
+        { /* sad_buffer */
             .type        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
             .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
-            .buf_content = "uint frame_sad[];",
         }
     };
+    ff_vk_shader_add_descriptor_set(vkctx, &s->shd, desc, 3, 0, 0);
 
-    RET(ff_vk_shader_add_descriptor_set(vkctx, &s->shd, desc, 3, 0, 0));
-
-    GLSLC(0, shared uint wg_sum;                                              );
-    GLSLC(0, void main()                                                      );
-    GLSLC(0, {                                                                );
-    GLSLF(1,     const uint slice = gl_WorkGroupID.x %% %u;            ,SLICES);
-    GLSLC(1,     const ivec2 pos = ivec2(gl_GlobalInvocationID.xy);           );
-    GLSLC(1,     wg_sum = 0;                                                  );
-    GLSLC(1,     barrier();                                                   );
-    for (int i = 0; i < s->nb_planes; i++) {
-        GLSLF(1, if (IS_WITHIN(pos, imageSize(cur_img[%d]))) {              ,i);
-        GLSLF(2,     uvec4 prev = imageLoad(prev_img[%d], pos);             ,i);
-        GLSLF(2,     uvec4 cur  = imageLoad(cur_img[%d],  pos);             ,i);
-        GLSLC(2,     uvec4 sad = abs(ivec4(cur) - ivec4(prev));               );
-        GLSLC(2,     uint sum = subgroupAdd(sad.x + sad.y + sad.z);           );
-        GLSLC(2,     if (subgroupElect())                                     );
-        GLSLC(3,         atomicAdd(wg_sum, sum);                              );
-        GLSLC(1, }                                                            );
-    }
-    GLSLC(1,     barrier();                                                   );
-    GLSLC(1,     if (gl_LocalInvocationIndex == 0)                            );
-    GLSLC(2,         atomicAdd(frame_sad[slice], wg_sum);                     );
-    GLSLC(0, }                                                                );
-
-    RET(spv->compile_shader(vkctx, spv, &s->shd, &spv_data, &spv_len, "main",
-                            &spv_opaque));
-    RET(ff_vk_shader_link(vkctx, &s->shd, spv_data, spv_len, "main"));
+    RET(ff_vk_shader_link(vkctx, &s->shd,
+                          ff_scdet_comp_spv_data,
+                          ff_scdet_comp_spv_len, "main"));
 
     RET(ff_vk_shader_register_exec(vkctx, &s->e, &s->shd));
 
     s->initialized = 1;
 
 fail:
-    if (spv_opaque)
-        spv->free_shader(spv, &spv_opaque);
-    if (spv)
-        spv->uninit(&spv);
-
     return err;
 }
 
