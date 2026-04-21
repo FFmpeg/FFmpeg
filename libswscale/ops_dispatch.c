@@ -539,6 +539,7 @@ static int compile(SwsGraph *graph, const SwsOpList *ops, SwsPass *input,
             ret = AVERROR(ENOMEM);
             goto fail;
         }
+        p->exec_base.in_offset_x = offset;
 
         for (int x = 0; x < filter->dst_size; x++) {
             /* Sanity check; if the tap would land on a half-pixel, we cannot
@@ -553,7 +554,6 @@ static int compile(SwsGraph *graph, const SwsOpList *ops, SwsPass *input,
         }
         for (int x = filter->dst_size; x < pixels; x++)
             offset[x] = offset[filter->dst_size - 1];
-        p->exec_base.in_offset_x = offset;
         p->exec_base.block_size_in = 0; /* ptr does not advance */
         p->filter_size = filter->filter_size;
     }
