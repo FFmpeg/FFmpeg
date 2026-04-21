@@ -1889,7 +1889,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             s->x = bbox->x;
             s->y = bbox->y - s->fontsize;
         }
-        draw_text(ctx, frame);
+        ret = draw_text(ctx, frame);
+        if (ret < 0) {
+            av_frame_free(&frame);
+            return ret;
+        }
     }
 
     return ff_filter_frame(outlink, frame);
