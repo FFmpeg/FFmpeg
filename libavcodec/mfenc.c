@@ -904,6 +904,8 @@ static int64_t mf_encv_input_score(AVCodecContext *avctx, IMFMediaType *type)
 static int mf_encv_input_adjust(AVCodecContext *avctx, IMFMediaType *type)
 {
     enum AVPixelFormat pix_fmt = ff_media_type_to_pix_fmt((IMFAttributes *)type);
+    AVRational framerate;
+
     if (avctx->pix_fmt == AV_PIX_FMT_D3D11) {
         if (pix_fmt != AV_PIX_FMT_NV12 && pix_fmt != AV_PIX_FMT_D3D11) {
             av_log(avctx, AV_LOG_ERROR, "unsupported input pixel format set\n");
@@ -916,7 +918,16 @@ static int mf_encv_input_adjust(AVCodecContext *avctx, IMFMediaType *type)
         }
     }
 
-    //ff_MFSetAttributeSize((IMFAttributes *)type, &MF_MT_FRAME_SIZE, avctx->width, avctx->height);
+    ff_MFSetAttributeSize((IMFAttributes *)type, &MF_MT_FRAME_SIZE, avctx->width, avctx->height);
+    IMFAttributes_SetUINT32(type, &MF_MT_INTERLACE_MODE, MFVideoInterlace_Progressive);
+
+    if (avctx->framerate.num > 0 && avctx->framerate.den > 0) {
+        framerate = avctx->framerate;
+    } else {
+        framerate = av_inv_q(avctx->time_base);
+    }
+
+    ff_MFSetAttributeRatio((IMFAttributes *)type, &MF_MT_FRAME_RATE, framerate.num, framerate.den);
 
     return 0;
 }
