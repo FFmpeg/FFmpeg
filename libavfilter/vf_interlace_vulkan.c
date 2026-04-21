@@ -18,13 +18,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/vulkan_spirv.h"
 #include "libavutil/opt.h"
 #include "vulkan_filter.h"
 
 #include "tinterlace.h"
 #include "filters.h"
 #include "video.h"
+
+extern const unsigned char ff_interlace_comp_spv_data[];
+extern const unsigned int ff_interlace_comp_spv_len;
 
 typedef struct InterlaceVulkanContext {
     FFVulkanContext vkctx;
@@ -41,51 +43,12 @@ typedef struct InterlaceVulkanContext {
     AVFrame *cur; /* first frame in pair */
 } InterlaceVulkanContext;
 
-static const char lowpass_off[] = {
-    C(0, vec4 get_line(sampler2D tex, const vec2 pos)                         )
-    C(0, {                                                                    )
-    C(1,     return texture(tex, pos);                                        )
-    C(0, }                                                                    )
-};
-
-static const char lowpass_lin[] = {
-    C(0, vec4 get_line(sampler2D tex, const vec2 pos)                         )
-    C(0, {                                                                    )
-    C(1,     return 0.50 * texture(tex, pos) +                                )
-    C(1,            0.25 * texture(tex, pos - ivec2(0, 1)) +                  )
-    C(1,            0.25 * texture(tex, pos + ivec2(0, 1));                   )
-    C(0, }                                                                    )
-};
-
-static const char lowpass_complex[] = {
-    C(0, vec4 get_line(sampler2D tex, const vec2 pos)                         )
-    C(0, {                                                                    )
-    C(1,     return  0.75  * texture(tex, pos) +                              )
-    C(1,             0.25  * texture(tex, pos - ivec2(0, 1)) +                )
-    C(1,             0.25  * texture(tex, pos + ivec2(0, 1)) +                )
-    C(1,            -0.125 * texture(tex, pos - ivec2(0, 2)) +                )
-    C(1,            -0.125 * texture(tex, pos + ivec2(0, 2));                 )
-    C(0, }                                                                    )
-};
-
 static av_cold int init_filter(AVFilterContext *ctx)
 {
     int err;
-    uint8_t *spv_data;
-    size_t spv_len;
-    void *spv_opaque = NULL;
     InterlaceVulkanContext *s = ctx->priv;
     FFVulkanContext *vkctx = &s->vkctx;
     const int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
-    FFVulkanShader *shd;
-    FFVkSPIRVCompiler *spv;
-    FFVulkanDescriptorSetBinding *desc;
-
-    spv = ff_vk_spirv_init();
-    if (!spv) {
-        av_log(ctx, AV_LOG_ERROR, "Unable to initialize SPIR-V compiler!\n");
-        return AVERROR_EXTERNAL;
-    }
 
     s->qf = ff_vk_qf_find(vkctx, VK_QUEUE_COMPUTE_BIT, 0);
     if (!s->qf) {
@@ -98,88 +61,44 @@ static av_cold int init_filter(AVFilterContext *ctx)
     RET(ff_vk_init_sampler(vkctx, &s->sampler, 1,
                            s->lowpass == VLPF_OFF ? VK_FILTER_NEAREST
                                                   : VK_FILTER_LINEAR));
-    RET(ff_vk_shader_init(vkctx, &s->shd, "interlace",
-                          VK_SHADER_STAGE_COMPUTE_BIT,
-                          NULL, 0,
-                          32, 32, 1,
-                          0));
-    shd = &s->shd;
 
-    desc = (FFVulkanDescriptorSetBinding []) {
-        {
-            .name       = "top_field",
-            .type       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .dimensions = 2,
-            .elems      = planes,
-            .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
-            .samplers   = DUP_SAMPLER(s->sampler),
+    SPEC_LIST_CREATE(sl, 2, 2*sizeof(int))
+    SPEC_LIST_ADD(sl, 0, 32, s->lowpass);
+    SPEC_LIST_ADD(sl, 1, 32, planes);
+
+    ff_vk_shader_load(&s->shd, VK_SHADER_STAGE_COMPUTE_BIT,
+                      sl, (uint32_t []) { 32, 1, planes }, 0);
+
+    const FFVulkanDescriptorSetBinding desc[] = {
+        { /* top_field */
+            .type     = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .stages   = VK_SHADER_STAGE_COMPUTE_BIT,
+            .samplers = DUP_SAMPLER(s->sampler),
+            .elems    = planes,
         },
-        {
-            .name       = "bot_field",
-            .type       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .dimensions = 2,
-            .elems      = planes,
-            .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
-            .samplers   = DUP_SAMPLER(s->sampler),
+        { /* bot_field */
+            .type     = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .stages   = VK_SHADER_STAGE_COMPUTE_BIT,
+            .samplers = DUP_SAMPLER(s->sampler),
+            .elems    = planes,
         },
-        {
-            .name       = "output_img",
-            .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-            .mem_layout = ff_vk_shader_rep_fmt(s->vkctx.output_format, FF_VK_REP_FLOAT),
-            .mem_quali  = "writeonly",
-            .dimensions = 2,
-            .elems      = planes,
-            .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
+        { /* output_img */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
+            .elems  = planes,
         },
     };
+    ff_vk_shader_add_descriptor_set(vkctx, &s->shd, desc, 3, 0, 0);
 
-    RET(ff_vk_shader_add_descriptor_set(vkctx, shd, desc, 3, 0, 0));
-
-    switch (s->lowpass) {
-    case VLPF_OFF:
-        GLSLD(lowpass_off);
-        break;
-    case VLPF_LIN:
-        GLSLD(lowpass_lin);
-        break;
-    case VLPF_CMP:
-        GLSLD(lowpass_complex);
-        break;
-    }
-
-    GLSLC(0, void main()                                                  );
-    GLSLC(0, {                                                            );
-    GLSLC(1,     vec4 res;                                                );
-    GLSLC(1,     ivec2 size;                                              );
-    GLSLC(1,     const ivec2 pos = ivec2(gl_GlobalInvocationID.xy);       );
-    GLSLC(1,     const vec2 ipos = pos + vec2(0.5);                       );
-    for (int i = 0; i < planes; i++) {
-        GLSLC(0,                                                          );
-        GLSLF(1,  size = imageSize(output_img[%i]);                     ,i);
-        GLSLC(1,  if (!IS_WITHIN(pos, size))                              );
-        GLSLC(2,      return;                                             );
-        GLSLC(1,  if (pos.y %% 2 == 0)                                    );
-        GLSLF(1,      res = get_line(top_field[%i], ipos);              ,i);
-        GLSLC(1,  else                                                    );
-        GLSLF(1,      res = get_line(bot_field[%i], ipos);              ,i);
-        GLSLF(1,  imageStore(output_img[%i], pos, res);                 ,i);
-    }
-    GLSLC(0, }                                                            );
-
-    RET(spv->compile_shader(vkctx, spv, &s->shd, &spv_data, &spv_len, "main",
-                            &spv_opaque));
-    RET(ff_vk_shader_link(vkctx, &s->shd, spv_data, spv_len, "main"));
+    RET(ff_vk_shader_link(vkctx, &s->shd,
+                          ff_interlace_comp_spv_data,
+                          ff_interlace_comp_spv_len, "main"));
 
     RET(ff_vk_shader_register_exec(vkctx, &s->e, &s->shd));
 
     s->initialized = 1;
 
 fail:
-    if (spv_opaque)
-        spv->free_shader(spv, &spv_opaque);
-    if (spv)
-        spv->uninit(&spv);
-
     return err;
 }
 
