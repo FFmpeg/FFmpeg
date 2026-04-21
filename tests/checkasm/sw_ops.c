@@ -188,54 +188,54 @@ static void check_compiled(const char *name, const SwsOpBackend *backend,
         exec.in_offset_x = in_offset_x;
     }
 
-        exec.block_size_in  = comp_ref->block_size * rw_pixel_bits(read_op)  >> 3;
-        exec.block_size_out = comp_ref->block_size * rw_pixel_bits(write_op) >> 3;
-        for (int i = 0; i < NB_PLANES; i++) {
-            exec.in[i]  = (void *) src0[i];
-            exec.out[i] = (void *) dst0[i];
-        }
-        checkasm_call(comp_ref->func, &exec, comp_ref->priv, 0, 0, PIXELS / comp_ref->block_size, LINES);
+    exec.block_size_in  = comp_ref->block_size * rw_pixel_bits(read_op)  >> 3;
+    exec.block_size_out = comp_ref->block_size * rw_pixel_bits(write_op) >> 3;
+    for (int i = 0; i < NB_PLANES; i++) {
+        exec.in[i]  = (void *) src0[i];
+        exec.out[i] = (void *) dst0[i];
+    }
+    checkasm_call(comp_ref->func, &exec, comp_ref->priv, 0, 0, PIXELS / comp_ref->block_size, LINES);
 
-        exec.block_size_in  = comp_new->block_size * rw_pixel_bits(read_op)  >> 3;
-        exec.block_size_out = comp_new->block_size * rw_pixel_bits(write_op) >> 3;
-        for (int i = 0; i < NB_PLANES; i++) {
-            exec.in[i]  = (void *) src1[i];
-            exec.out[i] = (void *) dst1[i];
-        }
-        checkasm_call_checked(comp_new->func, &exec, comp_new->priv, 0, 0, PIXELS / comp_new->block_size, LINES);
+    exec.block_size_in  = comp_new->block_size * rw_pixel_bits(read_op)  >> 3;
+    exec.block_size_out = comp_new->block_size * rw_pixel_bits(write_op) >> 3;
+    for (int i = 0; i < NB_PLANES; i++) {
+        exec.in[i]  = (void *) src1[i];
+        exec.out[i] = (void *) dst1[i];
+    }
+    checkasm_call_checked(comp_new->func, &exec, comp_new->priv, 0, 0, PIXELS / comp_new->block_size, LINES);
 
-        for (int i = 0; i < NB_PLANES; i++) {
-            const char *desc = FMT("%s[%d]", name, i);
-            const int stride = sizeof(dst0[i][0]);
+    for (int i = 0; i < NB_PLANES; i++) {
+        const char *desc = FMT("%s[%d]", name, i);
+        const int stride = sizeof(dst0[i][0]);
 
-            switch (write_op->type) {
-            case U8:
-                checkasm_check(uint8_t, (void *) dst0[i], stride,
-                                        (void *) dst1[i], stride,
-                                        write_size, LINES, desc);
-                break;
-            case U16:
-                checkasm_check(uint16_t, (void *) dst0[i], stride,
-                                         (void *) dst1[i], stride,
-                                         write_size >> 1, LINES, desc);
-                break;
-            case U32:
-                checkasm_check(uint32_t, (void *) dst0[i], stride,
-                                         (void *) dst1[i], stride,
-                                         write_size >> 2, LINES, desc);
-                break;
-            case F32:
-                checkasm_check(float_ulp, (void *) dst0[i], stride,
-                                          (void *) dst1[i], stride,
-                                          write_size >> 2, LINES, desc, 0);
-                break;
-            }
-
-            if (write_op->rw.packed)
-                break;
+        switch (write_op->type) {
+        case U8:
+            checkasm_check(uint8_t, (void *) dst0[i], stride,
+                                    (void *) dst1[i], stride,
+                                    write_size, LINES, desc);
+            break;
+        case U16:
+            checkasm_check(uint16_t, (void *) dst0[i], stride,
+                                     (void *) dst1[i], stride,
+                                     write_size >> 1, LINES, desc);
+            break;
+        case U32:
+            checkasm_check(uint32_t, (void *) dst0[i], stride,
+                                     (void *) dst1[i], stride,
+                                     write_size >> 2, LINES, desc);
+            break;
+        case F32:
+            checkasm_check(float_ulp, (void *) dst0[i], stride,
+                                      (void *) dst1[i], stride,
+                                      write_size >> 2, LINES, desc, 0);
+            break;
         }
 
-        bench(comp_new->func, &exec, comp_new->priv, 0, 0, PIXELS / comp_new->block_size, LINES);
+        if (write_op->rw.packed)
+            break;
+    }
+
+    bench(comp_new->func, &exec, comp_new->priv, 0, 0, PIXELS / comp_new->block_size, LINES);
 }
 
 static void check_ops(const char *name, const unsigned ranges[NB_PLANES],
