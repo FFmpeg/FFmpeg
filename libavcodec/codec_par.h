@@ -231,7 +231,7 @@ typedef struct AVCodecParameters {
      *
      * The amount of padding (in samples) inserted by the encoder at
      * the beginning of the audio. I.e. this number of leading decoded samples
-     * must be discarded by the caller to get the original audio without leading
+     * must be discarded to get the original audio without leading
      * padding.
      *
      * Audio only.
@@ -242,7 +242,7 @@ typedef struct AVCodecParameters {
      *
      * The amount of padding (in samples) appended by the encoder to
      * the end of the audio. I.e. this number of decoded samples must be
-     * discarded by the caller from the end of the stream to get the original
+     * discarded from the end of the stream to get the original
      * audio without any trailing padding.
      *
      * Audio only.
