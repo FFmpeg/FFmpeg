@@ -194,11 +194,8 @@ static int apng_read_header(AVFormatContext *s)
         if (acTL_found && ctx->num_play != 1) {
             int64_t size   = avio_size(pb);
             int64_t offset = avio_tell(pb);
-            if (size < 0) {
-                return size;
-            } else if (offset < 0) {
-                return offset;
-            } else if ((ret = ffio_ensure_seekback(pb, size - offset)) < 0) {
+            if (size < 0 || offset < 0 ||
+                (ret = ffio_ensure_seekback(pb, size - offset)) < 0) {
                 av_log(s, AV_LOG_WARNING, "Could not ensure seekback, will not loop\n");
                 ctx->num_play = 1;
             }
