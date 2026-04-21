@@ -224,9 +224,8 @@ static av_cold int libvorbis_get_priming_samples(vorbis_info *vi, AVCodecContext
             ret = vorbis_error_to_averror(ret);
             goto error;
         }
+        avctx->initial_padding = av_vorbis_parse_frame(s->vp, op.packet, op.bytes);
     }
-
-    avctx->initial_padding = av_vorbis_parse_frame(s->vp, op.packet, op.bytes);
 
     ret = 0;
 error:
