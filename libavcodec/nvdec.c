@@ -732,8 +732,18 @@ int ff_nvdec_frame_params(AVCodecContext *avctx,
     chroma_444 = supports_444 && cuvid_chroma_format == cudaVideoChromaFormat_444;
 
     frames_ctx->format            = AV_PIX_FMT_CUDA;
-    frames_ctx->width             = (avctx->coded_width + 1) & ~1;
-    frames_ctx->height            = (avctx->coded_height + 1) & ~1;
+    // NVDEC target dimensions must be even-aligned for internal surface allocation.
+    // For chroma-subsampled formats (420/422), the output dimensions must also be
+    // even. For monochrome/444, keep the original output dimensions and only
+    // even-align the NVDEC target — the frame copy will crop to avctx dimensions.
+    if (cuvid_chroma_format == cudaVideoChromaFormat_420 ||
+        cuvid_chroma_format == cudaVideoChromaFormat_422) {
+        frames_ctx->width         = (avctx->coded_width  + 1) & ~1;
+        frames_ctx->height        = (avctx->coded_height + 1) & ~1;
+    } else {
+        frames_ctx->width         = avctx->coded_width;
+        frames_ctx->height        = avctx->coded_height;
+    }
     /*
      * We add two extra frames to the pool to account for deinterlacing filters
      * holding onto their frames.
