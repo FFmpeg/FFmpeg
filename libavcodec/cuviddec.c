@@ -164,9 +164,17 @@ static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* form
         avctx->height = cuinfo.display_area.bottom - cuinfo.display_area.top;
     }
 
-    // target width/height need to be multiples of two
-    cuinfo.ulTargetWidth = avctx->width = (avctx->width + 1) & ~1;
-    cuinfo.ulTargetHeight = avctx->height = (avctx->height + 1) & ~1;
+    // NVDEC target dimensions must be even-aligned for internal surface allocation.
+    // For chroma-subsampled formats (420/422), the output dimensions must also be
+    // even. For monochrome/444, keep the original output dimensions and only
+    // even-align the NVDEC target — the frame copy will crop to avctx dimensions.
+    cuinfo.ulTargetWidth  = (avctx->width + 1) & ~1;
+    cuinfo.ulTargetHeight = (avctx->height + 1) & ~1;
+    if (format->chroma_format == cudaVideoChromaFormat_420 ||
+        format->chroma_format == cudaVideoChromaFormat_422) {
+        avctx->width  = cuinfo.ulTargetWidth;
+        avctx->height = cuinfo.ulTargetHeight;
+    }
 
     // aspect ratio conversion, 1:1, depends on scaled resolution
     cuinfo.target_rect.left = 0;
