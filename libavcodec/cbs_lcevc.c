@@ -455,9 +455,6 @@ static int cbs_lcevc_read_nal_unit(CodedBitstreamContext *ctx,
                      return AVERROR(ENOMEM);
                 slice->data = unit->data + slice->header_size;
             }
-
-            if (err < 0)
-                return err;
         }
         break;
     default:
