@@ -117,6 +117,10 @@ typedef struct VulkanDeviceFeatures {
 #ifdef VK_KHR_shader_relaxed_extended_instruction
     VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR relaxed_extended_instruction;
 #endif
+
+#ifdef VK_KHR_internally_synchronized_queues
+    VkPhysicalDeviceInternallySynchronizedQueuesFeaturesKHR internal_queue_sync;
+#endif
 } VulkanDeviceFeatures;
 
 typedef struct VulkanDevicePriv {
@@ -289,6 +293,11 @@ static void device_features_init(AVHWDeviceContext *ctx, VulkanDeviceFeatures *f
     FF_VK_STRUCT_EXT(s, &feats->device, &feats->relaxed_extended_instruction, FF_VK_EXT_RELAXED_EXTENDED_INSTR,
                      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR);
 #endif
+
+#ifdef VK_KHR_internally_synchronized_queues
+    FF_VK_STRUCT_EXT(s, &feats->device, &feats->internal_queue_sync, FF_VK_EXT_INTERNAL_QUEUE_SYNC,
+                     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INTERNALLY_SYNCHRONIZED_QUEUES_FEATURES_KHR);
+#endif
 }
 
 /* Copy all needed device features */
@@ -392,6 +401,10 @@ static void device_features_copy_needed(VulkanDeviceFeatures *dst, VulkanDeviceF
 
 #ifdef VK_KHR_shader_expect_assume
     COPY_VAL(expect_assume.shaderExpectAssume);
+#endif
+
+#ifdef VK_KHR_internally_synchronized_queues
+    COPY_VAL(internal_queue_sync.internallySynchronizedQueues);
 #endif
 
 #undef COPY_VAL
@@ -712,6 +725,9 @@ static const VulkanOptExtension optional_device_exts[] = {
     { VK_KHR_VIDEO_MAINTENANCE_1_EXTENSION_NAME,              FF_VK_EXT_VIDEO_MAINTENANCE_1    },
 #ifdef VK_KHR_video_maintenance2
     { VK_KHR_VIDEO_MAINTENANCE_2_EXTENSION_NAME,              FF_VK_EXT_VIDEO_MAINTENANCE_2    },
+#endif
+#ifdef VK_KHR_internally_synchronized_queues
+    { VK_KHR_INTERNALLY_SYNCHRONIZED_QUEUES_EXTENSION_NAME,   FF_VK_EXT_INTERNAL_QUEUE_SYNC    },
 #endif
 
     /* Imports/exports */
@@ -1782,11 +1798,13 @@ static void vulkan_device_uninit(AVHWDeviceContext *ctx)
 {
     VulkanDevicePriv *p = ctx->hwctx;
 
-    for (uint32_t i = 0; i < p->nb_tot_qfs; i++) {
-        pthread_mutex_destroy(p->qf_mutex[i]);
-        av_freep(&p->qf_mutex[i]);
+    if (p->qf_mutex) {
+        for (uint32_t i = 0; i < p->nb_tot_qfs; i++) {
+            pthread_mutex_destroy(p->qf_mutex[i]);
+            av_freep(&p->qf_mutex[i]);
+        }
+        av_freep(&p->qf_mutex);
     }
-    av_freep(&p->qf_mutex);
 
     ff_vk_uninit(&p->vkctx);
 }
@@ -1901,13 +1919,15 @@ end:
 static void lock_queue(AVHWDeviceContext *ctx, uint32_t queue_family, uint32_t index)
 {
     VulkanDevicePriv *p = ctx->hwctx;
-    pthread_mutex_lock(&p->qf_mutex[queue_family][index]);
+    if (p->qf_mutex)
+        pthread_mutex_lock(&p->qf_mutex[queue_family][index]);
 }
 
 static void unlock_queue(AVHWDeviceContext *ctx, uint32_t queue_family, uint32_t index)
 {
     VulkanDevicePriv *p = ctx->hwctx;
-    pthread_mutex_unlock(&p->qf_mutex[queue_family][index]);
+    if (p->qf_mutex)
+        pthread_mutex_unlock(&p->qf_mutex[queue_family][index]);
 }
 
 static int vulkan_device_init(AVHWDeviceContext *ctx)
@@ -2005,27 +2025,30 @@ static int vulkan_device_init(AVHWDeviceContext *ctx)
 
     vk->GetPhysicalDeviceQueueFamilyProperties2(hwctx->phys_dev, &qf_num, qf);
 
-    p->qf_mutex = av_calloc(qf_num, sizeof(*p->qf_mutex));
-    if (!p->qf_mutex) {
-        err = AVERROR(ENOMEM);
-        goto end;
-    }
     p->nb_tot_qfs = qf_num;
 
-    for (uint32_t i = 0; i < qf_num; i++) {
-        p->qf_mutex[i] = av_calloc(qf[i].queueFamilyProperties.queueCount,
-                                   sizeof(**p->qf_mutex));
-        if (!p->qf_mutex[i]) {
+    if (!(p->vkctx.extensions & FF_VK_EXT_INTERNAL_QUEUE_SYNC)) {
+        p->qf_mutex = av_calloc(qf_num, sizeof(*p->qf_mutex));
+        if (!p->qf_mutex) {
             err = AVERROR(ENOMEM);
             goto end;
         }
-        for (uint32_t j = 0; j < qf[i].queueFamilyProperties.queueCount; j++) {
-            err = pthread_mutex_init(&p->qf_mutex[i][j], NULL);
-            if (err != 0) {
-                av_log(ctx, AV_LOG_ERROR, "pthread_mutex_init failed : %s\n",
-                       av_err2str(err));
-                err = AVERROR(err);
+
+        for (uint32_t i = 0; i < qf_num; i++) {
+            p->qf_mutex[i] = av_calloc(qf[i].queueFamilyProperties.queueCount,
+                                       sizeof(**p->qf_mutex));
+            if (!p->qf_mutex[i]) {
+                err = AVERROR(ENOMEM);
                 goto end;
+            }
+            for (uint32_t j = 0; j < qf[i].queueFamilyProperties.queueCount; j++) {
+                err = pthread_mutex_init(&p->qf_mutex[i][j], NULL);
+                if (err != 0) {
+                    av_log(ctx, AV_LOG_ERROR, "pthread_mutex_init failed : %s\n",
+                           av_err2str(err));
+                    err = AVERROR(err);
+                    goto end;
+                }
             }
         }
     }
