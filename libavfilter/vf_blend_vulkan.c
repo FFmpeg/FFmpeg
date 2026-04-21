@@ -21,8 +21,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/random_seed.h"
-#include "libavutil/vulkan_spirv.h"
 #include "libavutil/opt.h"
 #include "vulkan_filter.h"
 
@@ -31,14 +29,15 @@
 #include "blend.h"
 #include "video.h"
 
+extern const unsigned char ff_blend_comp_spv_data[];
+extern const unsigned int ff_blend_comp_spv_len;
+
 #define IN_TOP    0
 #define IN_BOTTOM 1
 
 typedef struct FilterParamsVulkan {
-    const char *blend;
-    const char *blend_func;
-    double opacity;
-    enum BlendMode mode;
+    float opacity[4];
+    int mode[4];
 } FilterParamsVulkan;
 
 typedef struct BlendVulkanContext {
@@ -50,63 +49,28 @@ typedef struct BlendVulkanContext {
     AVVulkanDeviceQueueFamily *qf;
     FFVulkanShader shd;
 
-    FilterParamsVulkan params[4];
-    double all_opacity;
+    FilterParamsVulkan params;
+    float all_opacity;
     /* enum BlendMode */
     int all_mode;
 } BlendVulkanContext;
-
-#define DEFINE_BLEND_MODE(MODE, EXPR) \
-static const char blend_##MODE[] = "blend_"#MODE; \
-static const char blend_##MODE##_func[] = { \
-    C(0, vec4 blend_##MODE(vec4 top, vec4 bottom, float opacity) {   ) \
-    C(1,     vec4 dst = EXPR;                                        ) \
-    C(1,     return dst;                                             ) \
-    C(0, }                                                           ) \
-};
-
-#define A top
-#define B bottom
-
-#define FN(EXPR) A + ((EXPR) - A) * opacity
-
-DEFINE_BLEND_MODE(NORMAL, A * opacity + B * (1.0f - opacity))
-DEFINE_BLEND_MODE(MULTIPLY, FN(1.0f * A * B / 1.0f))
-
-static inline void init_blend_func(FilterParamsVulkan *param)
-{
-#define CASE(MODE) case BLEND_##MODE: \
-            param->blend = blend_##MODE;\
-            param->blend_func =  blend_##MODE##_func; \
-            break;
-
-    switch (param->mode) {
-    CASE(NORMAL)
-    CASE(MULTIPLY)
-    default: param->blend = NULL; break;
-    }
-
-#undef CASE
-}
 
 static int config_params(AVFilterContext *avctx)
 {
     BlendVulkanContext *s = avctx->priv;
 
-    for (int plane = 0; plane < FF_ARRAY_ELEMS(s->params); plane++) {
-        FilterParamsVulkan *param = &s->params[plane];
+    if (s->all_opacity < 1.0) {
+        s->params.opacity[0] = s->all_opacity;
+        s->params.opacity[1] = s->all_opacity;
+        s->params.opacity[2] = s->all_opacity;
+        s->params.opacity[3] = s->all_opacity;
+    }
 
-        if (s->all_mode >= 0)
-            param->mode = s->all_mode;
-        if (s->all_opacity < 1)
-            param->opacity = s->all_opacity;
-
-        init_blend_func(param);
-        if (!param->blend) {
-            av_log(avctx, AV_LOG_ERROR,
-                   "Currently the blend mode specified is not supported yet.\n");
-            return AVERROR(EINVAL);
-        }
+    if (s->all_mode >= 0) {
+        s->params.mode[0] = s->all_mode;
+        s->params.mode[1] = s->all_mode;
+        s->params.mode[2] = s->all_mode;
+        s->params.mode[3] = s->all_mode;
     }
 
     return 0;
@@ -125,21 +89,12 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
 static av_cold int init_filter(AVFilterContext *avctx)
 {
     int err = 0;
-    uint8_t *spv_data;
-    size_t spv_len;
-    void *spv_opaque = NULL;
     BlendVulkanContext *s = avctx->priv;
     FFVulkanContext *vkctx = &s->vkctx;
     const int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
-    FFVulkanShader *shd = &s->shd;
-    FFVkSPIRVCompiler *spv;
     FFVulkanDescriptorSetBinding *desc;
 
-    spv = ff_vk_spirv_init();
-    if (!spv) {
-        av_log(avctx, AV_LOG_ERROR, "Unable to initialize SPIR-V compiler!\n");
-        return AVERROR_EXTERNAL;
-    }
+    config_params(avctx);
 
     s->qf = ff_vk_qf_find(vkctx, VK_QUEUE_COMPUTE_BIT, 0);
     if (!s->qf) {
@@ -149,86 +104,44 @@ static av_cold int init_filter(AVFilterContext *avctx)
     }
 
     RET(ff_vk_exec_pool_init(vkctx, s->qf, &s->e, s->qf->num*4, 0, 0, 0, NULL));
-    RET(ff_vk_shader_init(vkctx, &s->shd, "blend",
-                          VK_SHADER_STAGE_COMPUTE_BIT,
-                          NULL, 0,
-                          32, 32, 1,
-                          0));
+
+    SPEC_LIST_CREATE(sl, 1, 1*sizeof(uint32_t))
+    SPEC_LIST_ADD(sl, 0, 32, planes);
+
+    ff_vk_shader_load(&s->shd, VK_SHADER_STAGE_COMPUTE_BIT, sl,
+                      (int []) { 32, 32, 1 }, 0);
+
+    ff_vk_shader_add_push_const(&s->shd, 0, sizeof(s->params),
+                                VK_SHADER_STAGE_COMPUTE_BIT);
 
     desc = (FFVulkanDescriptorSetBinding []) {
-        {
-            .name       = "top_images",
-            .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-            .mem_layout = ff_vk_shader_rep_fmt(s->vkctx.input_format, FF_VK_REP_FLOAT),
-            .mem_quali  = "readonly",
-            .dimensions = 2,
-            .elems      = planes,
-            .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
+        { /* top_images */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
+            .elems  = planes,
         },
-        {
-            .name       = "bottom_images",
-            .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-            .mem_layout = ff_vk_shader_rep_fmt(s->vkctx.input_format, FF_VK_REP_FLOAT),
-            .mem_quali  = "readonly",
-            .dimensions = 2,
-            .elems      = planes,
-            .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
+        { /* bottom_images */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
+            .elems  = planes,
         },
-        {
-            .name       = "output_images",
-            .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-            .mem_layout = ff_vk_shader_rep_fmt(s->vkctx.output_format, FF_VK_REP_FLOAT),
-            .mem_quali  = "writeonly",
-            .dimensions = 2,
-            .elems      = planes,
-            .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
+        { /* output_images */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
+            .elems  = planes,
         },
     };
+    ff_vk_shader_add_descriptor_set(vkctx, &s->shd, desc, 3, 0, 0);
 
-    RET(ff_vk_shader_add_descriptor_set(vkctx, &s->shd, desc, 3, 0, 0));
-
-    for (int i = 0, j = 0; i < planes; i++) {
-        for (j = 0; j < i; j++)
-            if (s->params[i].blend_func == s->params[j].blend_func)
-                break;
-        /* note: the bracket is needed, for GLSLD is a macro with multiple statements. */
-        if (j == i) {
-            GLSLD(s->params[i].blend_func);
-        }
-    }
-
-    GLSLC(0, void main()                                                    );
-    GLSLC(0, {                                                              );
-    GLSLC(1,     ivec2 size;                                                );
-    GLSLC(1,     const ivec2 pos = ivec2(gl_GlobalInvocationID.xy);         );
-    for (int i = 0; i < planes; i++) {
-        GLSLC(0,                                                            );
-        GLSLF(1, size = imageSize(output_images[%i]);                     ,i);
-        GLSLC(1, if (IS_WITHIN(pos, size)) {                                );
-        GLSLF(2,     const vec4 top = imageLoad(top_images[%i], pos);       ,i);
-        GLSLF(2,     const vec4 bottom = imageLoad(bottom_images[%i], pos); ,i);
-        GLSLF(2,     const float opacity = %f;                            ,s->params[i].opacity);
-        GLSLF(2,     vec4 dst = %s(top, bottom, opacity);                 ,s->params[i].blend);
-        GLSLC(0,                                                            );
-        GLSLF(2,     imageStore(output_images[%i], pos, dst);             ,i);
-        GLSLC(1, }                                                          );
-    }
-    GLSLC(0, }                                                              );
-
-    RET(spv->compile_shader(vkctx, spv, shd, &spv_data, &spv_len, "main",
-                            &spv_opaque));
-    RET(ff_vk_shader_link(vkctx, shd, spv_data, spv_len, "main"));
+    RET(ff_vk_shader_link(vkctx, &s->shd,
+                          ff_blend_comp_spv_data,
+                          ff_blend_comp_spv_len, "main"));
 
     RET(ff_vk_shader_register_exec(vkctx, &s->e, &s->shd));
 
     s->initialized = 1;
 
 fail:
-    if (spv_opaque)
-        spv->free_shader(spv, &spv_opaque);
-    if (spv)
-        spv->uninit(&spv);
-
     return err;
 }
 
@@ -265,7 +178,7 @@ static int blend_frame(FFFrameSync *fs)
 
     RET(ff_vk_filter_process_Nin(&s->vkctx, &s->e, &s->shd,
                                  out, (AVFrame *[]){ top, bottom }, 2,
-                                 VK_NULL_HANDLE, 1, NULL, 0));
+                                 VK_NULL_HANDLE, 1, &s->params, sizeof(s->params)));
 
     return ff_filter_frame(outlink, out);
 
@@ -342,19 +255,59 @@ static int activate(AVFilterContext *avctx)
 #define FLAGS (AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_VIDEO_PARAM)
 
 static const AVOption blend_vulkan_options[] = {
-    { "c0_mode", "set component #0 blend mode", OFFSET(params[0].mode), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, BLEND_NB - 1, FLAGS, .unit = "mode" },
-    { "c1_mode", "set component #1 blend mode", OFFSET(params[1].mode), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, BLEND_NB - 1, FLAGS, .unit = "mode" },
-    { "c2_mode", "set component #2 blend mode", OFFSET(params[2].mode), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, BLEND_NB - 1, FLAGS, .unit = "mode" },
-    { "c3_mode", "set component #3 blend mode", OFFSET(params[3].mode), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, BLEND_NB - 1, FLAGS, .unit = "mode" },
+    { "c0_mode", "set component #0 blend mode", OFFSET(params.mode[0]), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, BLEND_NB - 1, FLAGS, .unit = "mode" },
+    { "c1_mode", "set component #1 blend mode", OFFSET(params.mode[1]), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, BLEND_NB - 1, FLAGS, .unit = "mode" },
+    { "c2_mode", "set component #2 blend mode", OFFSET(params.mode[2]), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, BLEND_NB - 1, FLAGS, .unit = "mode" },
+    { "c3_mode", "set component #3 blend mode", OFFSET(params.mode[3]), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, BLEND_NB - 1, FLAGS, .unit = "mode" },
     { "all_mode", "set blend mode for all components", OFFSET(all_mode), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, BLEND_NB - 1, FLAGS, .unit = "mode" },
-        { "normal",   "", 0, AV_OPT_TYPE_CONST, { .i64 = BLEND_NORMAL   }, 0, 0, FLAGS, .unit = "mode" },
-        { "multiply", "", 0, AV_OPT_TYPE_CONST, { .i64 = BLEND_MULTIPLY }, 0, 0, FLAGS, .unit = "mode" },
+      { "addition",   "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_ADDITION},   0, 0, FLAGS, .unit = "mode" },
+      { "addition128","", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_GRAINMERGE}, 0, 0, FLAGS, .unit = "mode" },
+      { "grainmerge", "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_GRAINMERGE}, 0, 0, FLAGS, .unit = "mode" },
+      { "and",        "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_AND},        0, 0, FLAGS, .unit = "mode" },
+      { "average",    "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_AVERAGE},    0, 0, FLAGS, .unit = "mode" },
+      { "burn",       "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_BURN},       0, 0, FLAGS, .unit = "mode" },
+      { "darken",     "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_DARKEN},     0, 0, FLAGS, .unit = "mode" },
+      { "difference", "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_DIFFERENCE}, 0, 0, FLAGS, .unit = "mode" },
+      { "difference128", "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_GRAINEXTRACT}, 0, 0, FLAGS, .unit = "mode" },
+      { "grainextract", "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_GRAINEXTRACT}, 0, 0, FLAGS, .unit = "mode" },
+      { "divide",     "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_DIVIDE},     0, 0, FLAGS, .unit = "mode" },
+      { "dodge",      "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_DODGE},      0, 0, FLAGS, .unit = "mode" },
+      { "exclusion",  "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_EXCLUSION},  0, 0, FLAGS, .unit = "mode" },
+      { "extremity",  "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_EXTREMITY},  0, 0, FLAGS, .unit = "mode" },
+      { "freeze",     "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_FREEZE},     0, 0, FLAGS, .unit = "mode" },
+      { "glow",       "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_GLOW},       0, 0, FLAGS, .unit = "mode" },
+      { "hardlight",  "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_HARDLIGHT},  0, 0, FLAGS, .unit = "mode" },
+      { "hardmix",    "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_HARDMIX},    0, 0, FLAGS, .unit = "mode" },
+      { "heat",       "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_HEAT},       0, 0, FLAGS, .unit = "mode" },
+      { "lighten",    "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_LIGHTEN},    0, 0, FLAGS, .unit = "mode" },
+      { "linearlight","", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_LINEARLIGHT},0, 0, FLAGS, .unit = "mode" },
+      { "multiply",   "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_MULTIPLY},   0, 0, FLAGS, .unit = "mode" },
+      { "multiply128","", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_MULTIPLY128},0, 0, FLAGS, .unit = "mode" },
+      { "negation",   "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_NEGATION},   0, 0, FLAGS, .unit = "mode" },
+      { "normal",     "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_NORMAL},     0, 0, FLAGS, .unit = "mode" },
+      { "or",         "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_OR},         0, 0, FLAGS, .unit = "mode" },
+      { "overlay",    "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_OVERLAY},    0, 0, FLAGS, .unit = "mode" },
+      { "phoenix",    "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_PHOENIX},    0, 0, FLAGS, .unit = "mode" },
+      { "pinlight",   "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_PINLIGHT},   0, 0, FLAGS, .unit = "mode" },
+      { "reflect",    "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_REFLECT},    0, 0, FLAGS, .unit = "mode" },
+      { "screen",     "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_SCREEN},     0, 0, FLAGS, .unit = "mode" },
+      { "softlight",  "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_SOFTLIGHT},  0, 0, FLAGS, .unit = "mode" },
+      { "subtract",   "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_SUBTRACT},   0, 0, FLAGS, .unit = "mode" },
+      { "vividlight", "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_VIVIDLIGHT}, 0, 0, FLAGS, .unit = "mode" },
+      { "xor",        "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_XOR},        0, 0, FLAGS, .unit = "mode" },
+      { "softdifference","", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_SOFTDIFFERENCE}, 0, 0, FLAGS, .unit = "mode" },
+      { "geometric",  "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_GEOMETRIC},  0, 0, FLAGS, .unit = "mode" },
+      { "harmonic",   "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_HARMONIC},   0, 0, FLAGS, .unit = "mode" },
+      { "bleach",     "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_BLEACH},     0, 0, FLAGS, .unit = "mode" },
+      { "stain",      "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_STAIN},      0, 0, FLAGS, .unit = "mode" },
+      { "interpolate","", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_INTERPOLATE},0, 0, FLAGS, .unit = "mode" },
+      { "hardoverlay","", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_HARDOVERLAY},0, 0, FLAGS, .unit = "mode" },
 
-    { "c0_opacity",  "set color component #0 opacity", OFFSET(params[0].opacity), AV_OPT_TYPE_DOUBLE, { .dbl = 1 }, 0, 1, FLAGS },
-    { "c1_opacity",  "set color component #1 opacity", OFFSET(params[1].opacity), AV_OPT_TYPE_DOUBLE, { .dbl = 1 }, 0, 1, FLAGS },
-    { "c2_opacity",  "set color component #2 opacity", OFFSET(params[2].opacity), AV_OPT_TYPE_DOUBLE, { .dbl = 1 }, 0, 1, FLAGS },
-    { "c3_opacity",  "set color component #3 opacity", OFFSET(params[3].opacity), AV_OPT_TYPE_DOUBLE, { .dbl = 1 }, 0, 1, FLAGS },
-    { "all_opacity", "set opacity for all color components", OFFSET(all_opacity), AV_OPT_TYPE_DOUBLE, { .dbl = 1 }, 0, 1, FLAGS },
+    { "c0_opacity",  "set color component #0 opacity", OFFSET(params.opacity[0]), AV_OPT_TYPE_FLOAT, { .dbl = 1.0 }, 0, 1, FLAGS },
+    { "c1_opacity",  "set color component #1 opacity", OFFSET(params.opacity[1]), AV_OPT_TYPE_FLOAT, { .dbl = 1.0 }, 0, 1, FLAGS },
+    { "c2_opacity",  "set color component #2 opacity", OFFSET(params.opacity[2]), AV_OPT_TYPE_FLOAT, { .dbl = 1.0 }, 0, 1, FLAGS },
+    { "c3_opacity",  "set color component #3 opacity", OFFSET(params.opacity[3]), AV_OPT_TYPE_FLOAT, { .dbl = 1.0 }, 0, 1, FLAGS },
+    { "all_opacity", "set opacity for all color components", OFFSET(all_opacity), AV_OPT_TYPE_FLOAT, { .dbl = 1.0 }, 0, 1, FLAGS },
 
     { NULL }
 };

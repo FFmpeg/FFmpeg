@@ -2,6 +2,7 @@ clean::
 	$(RM) $(CLEANSUFFIXES:%=libavfilter/vulkan/%)
 
 OBJS-$(CONFIG_AVGBLUR_VULKAN_FILTER) += vulkan/avgblur.comp.spv.o
+OBJS-$(CONFIG_BLEND_VULKAN_FILTER) += vulkan/blend.comp.spv.o
 OBJS-$(CONFIG_BWDIF_VULKAN_FILTER) += vulkan/bwdif.comp.spv.o
 OBJS-$(CONFIG_CHROMABER_VULKAN_FILTER) += vulkan/chromaber.comp.spv.o
 OBJS-$(CONFIG_COLOR_VULKAN_FILTER) += vulkan/color.comp.spv.o
