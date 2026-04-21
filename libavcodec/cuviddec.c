@@ -916,7 +916,7 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
     if (probe_desc && probe_desc->nb_components)
         probed_bit_depth = probe_desc->comp[0].depth;
 
-    if (probe_desc && !probe_desc->log2_chroma_w && !probe_desc->log2_chroma_h)
+    if (probe_desc && probe_desc->nb_components > 1 && !probe_desc->log2_chroma_w && !probe_desc->log2_chroma_h)
         is_yuv444 = 1;
 
 #ifdef NVDEC_HAVE_422_SUPPORT
