@@ -9,6 +9,7 @@ OBJS-$(CONFIG_COLOR_VULKAN_FILTER) += vulkan/color.comp.spv.o
 OBJS-$(CONFIG_GBLUR_VULKAN_FILTER) += vulkan/gblur.comp.spv.o
 OBJS-$(CONFIG_SCALE_VULKAN_FILTER) += vulkan/debayer.comp.spv.o
 OBJS-$(CONFIG_SCDET_VULKAN_FILTER) += vulkan/scdet.comp.spv.o
+OBJS-$(CONFIG_OVERLAY_VULKAN_FILTER) += vulkan/overlay.comp.spv.o
 OBJS-$(CONFIG_FLIP_VULKAN_FILTER) += vulkan/flip.comp.spv.o
 OBJS-$(CONFIG_TRANSPOSE_VULKAN_FILTER) += vulkan/transpose.comp.spv.o
 OBJS-$(CONFIG_V360_VULKAN_FILTER) += vulkan/v360.comp.spv.o
