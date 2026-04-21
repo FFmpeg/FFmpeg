@@ -28,6 +28,9 @@
 #define IN_B  1
 #define IN_NB 2
 
+extern const unsigned char ff_xfade_comp_spv_data[];
+extern const unsigned int ff_xfade_comp_spv_len;
+
 typedef struct XFadeParameters {
     float progress;
 } XFadeParameters;
@@ -86,254 +89,12 @@ enum XFadeTransitions {
     NB_TRANSITIONS,
 };
 
-static const char transition_fade[] = {
-    C(0, void transition(int idx, ivec2 pos, float progress)                   )
-    C(0, {                                                                     )
-    C(1,     vec4 a = texture(a_images[idx], pos);                             )
-    C(1,     vec4 b = texture(b_images[idx], pos);                             )
-    C(1,     imageStore(output_images[idx], pos, mix(a, b, progress));         )
-    C(0, }                                                                     )
-};
-
-static const char transition_wipeleft[] = {
-    C(0, void transition(int idx, ivec2 pos, float progress)                   )
-    C(0, {                                                                     )
-    C(1,     ivec2 size = imageSize(output_images[idx]);                       )
-    C(1,     int  s = int(size.x * (1.0 - progress));                          )
-    C(1,     vec4 a = texture(a_images[idx], pos);                             )
-    C(1,     vec4 b = texture(b_images[idx], pos);                             )
-    C(1,     imageStore(output_images[idx], pos, pos.x > s ? b : a);           )
-    C(0, }                                                                     )
-};
-
-static const char transition_wiperight[] = {
-    C(0, void transition(int idx, ivec2 pos, float progress)                   )
-    C(0, {                                                                     )
-    C(1,     ivec2 size = imageSize(output_images[idx]);                       )
-    C(1,     int  s = int(size.x * progress);                                  )
-    C(1,     vec4 a = texture(a_images[idx], pos);                             )
-    C(1,     vec4 b = texture(b_images[idx], pos);                             )
-    C(1,     imageStore(output_images[idx], pos, pos.x > s ? a : b);           )
-    C(0, }                                                                     )
-};
-
-static const char transition_wipeup[] = {
-    C(0, void transition(int idx, ivec2 pos, float progress)                   )
-    C(0, {                                                                     )
-    C(1,     ivec2 size = imageSize(output_images[idx]);                       )
-    C(1,     int  s = int(size.y * (1.0 - progress));                          )
-    C(1,     vec4 a = texture(a_images[idx], pos);                             )
-    C(1,     vec4 b = texture(b_images[idx], pos);                             )
-    C(1,     imageStore(output_images[idx], pos, pos.y > s ? b : a);           )
-    C(0, }                                                                     )
-};
-
-static const char transition_wipedown[] = {
-    C(0, void transition(int idx, ivec2 pos, float progress)                   )
-    C(0, {                                                                     )
-    C(1,     ivec2 size = imageSize(output_images[idx]);                       )
-    C(1,     int  s = int(size.y * progress);                                  )
-    C(1,     vec4 a = texture(a_images[idx], pos);                             )
-    C(1,     vec4 b = texture(b_images[idx], pos);                             )
-    C(1,     imageStore(output_images[idx], pos, pos.y > s ? a : b);           )
-    C(0, }                                                                     )
-};
-
-#define SHADER_SLIDE_COMMON                                                              \
-    C(0, void slide(int idx, ivec2 pos, float progress, ivec2 direction)               ) \
-    C(0, {                                                                             ) \
-    C(1,     ivec2 size = imageSize(output_images[idx]);                               ) \
-    C(1,     ivec2 pi = ivec2(progress * size);                                        ) \
-    C(1,     ivec2 p = pos + pi * direction;                                           ) \
-    C(1,     ivec2 f = p % size;                                                       ) \
-    C(1,     f = f + size * ivec2(f.x < 0, f.y < 0);                                   ) \
-    C(1,     vec4 a = texture(a_images[idx], f);                                       ) \
-    C(1,     vec4 b = texture(b_images[idx], f);                                       ) \
-    C(1,     vec4 r = (p.y >= 0 && p.x >= 0 && size.y > p.y &&  size.x > p.x) ? a : b; ) \
-    C(1,     imageStore(output_images[idx], pos, r);                                   ) \
-    C(0, }                                                                             )
-
-static const char transition_slidedown[] = {
-    SHADER_SLIDE_COMMON
-    C(0, void transition(int idx, ivec2 pos, float progress)                   )
-    C(0, {                                                                     )
-    C(1,     slide(idx, pos, progress, ivec2(0, -1));                          )
-    C(0, }                                                                     )
-};
-
-static const char transition_slideup[] = {
-    SHADER_SLIDE_COMMON
-    C(0, void transition(int idx, ivec2 pos, float progress)                   )
-    C(0, {                                                                     )
-    C(1,     slide(idx, pos, progress, ivec2(0, +1));                          )
-    C(0, }                                                                     )
-};
-
-static const char transition_slideleft[] = {
-    SHADER_SLIDE_COMMON
-    C(0, void transition(int idx, ivec2 pos, float progress)                   )
-    C(0, {                                                                     )
-    C(1,     slide(idx, pos, progress, ivec2(+1, 0));                          )
-    C(0, }                                                                     )
-};
-
-static const char transition_slideright[] = {
-    SHADER_SLIDE_COMMON
-    C(0, void transition(int idx, ivec2 pos, float progress)                   )
-    C(0, {                                                                     )
-    C(1,     slide(idx, pos, progress, ivec2(-1, 0));                          )
-    C(0, }                                                                     )
-};
-
-#define SHADER_CIRCLE_COMMON                                                     \
-    C(0, void circle(int idx, ivec2 pos, float progress, bool open)            ) \
-    C(0, {                                                                     ) \
-    C(1,     const ivec2 half_size = imageSize(output_images[idx]) / 2;        ) \
-    C(1,     const float z = dot(half_size, half_size);                        ) \
-    C(1,     float p = ((open ? (1.0 - progress) : progress) - 0.5) * 3.0;     ) \
-    C(1,     ivec2 dsize = pos - half_size;                                    ) \
-    C(1,     float sm = dot(dsize, dsize) / z + p;                             ) \
-    C(1,     vec4 a = texture(a_images[idx], pos);                             ) \
-    C(1,     vec4 b = texture(b_images[idx], pos);                             ) \
-    C(1,     imageStore(output_images[idx], pos, \
-                        mix(open ? b : a, open ? a : b, \
-                            smoothstep(0.f, 1.f, sm)));                        ) \
-    C(0, }                                                                     )
-
-static const char transition_circleopen[] = {
-    SHADER_CIRCLE_COMMON
-    C(0, void transition(int idx, ivec2 pos, float progress)                   )
-    C(0, {                                                                     )
-    C(1,     circle(idx, pos, progress, true);                                 )
-    C(0, }                                                                     )
-};
-
-static const char transition_circleclose[] = {
-    SHADER_CIRCLE_COMMON
-    C(0, void transition(int idx, ivec2 pos, float progress)                   )
-    C(0, {                                                                     )
-    C(1,     circle(idx, pos, progress, false);                                )
-    C(0, }                                                                     )
-};
-
-#define SHADER_FRAND_FUNC                                                        \
-    C(0, float frand(vec2 v)                                                   ) \
-    C(0, {                                                                     ) \
-    C(1,     return fract(sin(dot(v, vec2(12.9898, 78.233))) * 43758.545);     ) \
-    C(0, }                                                                     )
-
-static const char transition_dissolve[] = {
-    SHADER_FRAND_FUNC
-    C(0, void transition(int idx, ivec2 pos, float progress)                   )
-    C(0, {                                                                     )
-    C(1,     float sm = frand(pos) * 2.0 + (1.0 - progress) * 2.0 - 1.5;       )
-    C(1,     vec4 a = texture(a_images[idx], pos);                             )
-    C(1,     vec4 b = texture(b_images[idx], pos);                             )
-    C(1,     imageStore(output_images[idx], pos, sm >= 0.5 ? a : b);           )
-    C(0, }                                                                     )
-};
-
-static const char transition_pixelize[] = {
-    C(0, void transition(int idx, ivec2 pos, float progress)                                  )
-    C(0, {                                                                                    )
-    C(1,     ivec2 size = imageSize(output_images[idx]);                                      )
-    C(1,     float d = min(progress, 1.0 - progress);                                         )
-    C(1,     float dist = ceil(d * 50.0) / 50.0;                                              )
-    C(1,     float sq = 2.0 * dist * min(size.x, size.y) / 20.0;                              )
-    C(1,     float sx = dist > 0.0 ? min((floor(pos.x / sq) + 0.5) * sq, size.x - 1) : pos.x; )
-    C(1,     float sy = dist > 0.0 ? min((floor(pos.y / sq) + 0.5) * sq, size.y - 1) : pos.y; )
-    C(1,     vec4 a = texture(a_images[idx], vec2(sx, sy));                                   )
-    C(1,     vec4 b = texture(b_images[idx], vec2(sx, sy));                                   )
-    C(1,     imageStore(output_images[idx], pos, mix(a, b, progress));                        )
-    C(0, }                                                                                    )
-};
-
-static const char transition_wipetl[] = {
-    C(0, void transition(int idx, ivec2 pos, float progress)                                  )
-    C(0, {                                                                                    )
-    C(1,     ivec2 size = imageSize(output_images[idx]);                                      )
-    C(1,     float zw = size.x * (1.0 - progress);                                            )
-    C(1,     float zh = size.y * (1.0 - progress);                                            )
-    C(1,     vec4 a = texture(a_images[idx], pos);                                            )
-    C(1,     vec4 b = texture(b_images[idx], pos);                                            )
-    C(1,     imageStore(output_images[idx], pos, (pos.y <= zh && pos.x <= zw) ? a : b);       )
-    C(0, }                                                                                    )
-};
-
-static const char transition_wipetr[] = {
-    C(0, void transition(int idx, ivec2 pos, float progress)                                  )
-    C(0, {                                                                                    )
-    C(1,     ivec2 size = imageSize(output_images[idx]);                                      )
-    C(1,     float zw = size.x * (progress);                                                  )
-    C(1,     float zh = size.y * (1.0 - progress);                                            )
-    C(1,     vec4 a = texture(a_images[idx], pos);                                            )
-    C(1,     vec4 b = texture(b_images[idx], pos);                                            )
-    C(1,     imageStore(output_images[idx], pos, (pos.y <= zh && pos.x > zw) ? a : b);        )
-    C(0, }                                                                                    )
-};
-
-static const char transition_wipebl[] = {
-    C(0, void transition(int idx, ivec2 pos, float progress)                                  )
-    C(0, {                                                                                    )
-    C(1,     ivec2 size = imageSize(output_images[idx]);                                      )
-    C(1,     float zw = size.x * (1.0 - progress);                                            )
-    C(1,     float zh = size.y * (progress);                                                  )
-    C(1,     vec4 a = texture(a_images[idx], pos);                                            )
-    C(1,     vec4 b = texture(b_images[idx], pos);                                            )
-    C(1,     imageStore(output_images[idx], pos, (pos.y > zh && pos.x <= zw) ? a : b);        )
-    C(0, }                                                                                    )
-};
-
-static const char transition_wipebr[] = {
-    C(0, void transition(int idx, ivec2 pos, float progress)                                  )
-    C(0, {                                                                                    )
-    C(1,     ivec2 size = imageSize(output_images[idx]);                                      )
-    C(1,     float zw = size.x * (progress);                                                  )
-    C(1,     float zh = size.y * (progress);                                                  )
-    C(1,     vec4 a = texture(a_images[idx], pos);                                            )
-    C(1,     vec4 b = texture(b_images[idx], pos);                                            )
-    C(1,     imageStore(output_images[idx], pos, (pos.y > zh && pos.x > zw) ? a : b);         )
-    C(0, }                                                                                    )
-};
-
-static const char* transitions_map[NB_TRANSITIONS] = {
-    [FADE]          = transition_fade,
-    [WIPELEFT]      = transition_wipeleft,
-    [WIPERIGHT]     = transition_wiperight,
-    [WIPEUP]        = transition_wipeup,
-    [WIPEDOWN]      = transition_wipedown,
-    [SLIDEDOWN]     = transition_slidedown,
-    [SLIDEUP]       = transition_slideup,
-    [SLIDELEFT]     = transition_slideleft,
-    [SLIDERIGHT]    = transition_slideright,
-    [CIRCLEOPEN]    = transition_circleopen,
-    [CIRCLECLOSE]   = transition_circleclose,
-    [DISSOLVE]      = transition_dissolve,
-    [PIXELIZE]      = transition_pixelize,
-    [WIPETL]        = transition_wipetl,
-    [WIPETR]        = transition_wipetr,
-    [WIPEBL]        = transition_wipebl,
-    [WIPEBR]        = transition_wipebr,
-};
-
 static av_cold int init_vulkan(AVFilterContext *avctx)
 {
     int err = 0;
-    uint8_t *spv_data;
-    size_t spv_len;
-    void *spv_opaque = NULL;
     XFadeVulkanContext *s = avctx->priv;
     FFVulkanContext *vkctx = &s->vkctx;
     const int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
-    FFVulkanShader *shd = &s->shd;
-    FFVkSPIRVCompiler *spv;
-    FFVulkanDescriptorSetBinding *desc;
-
-    spv = ff_vk_spirv_init();
-    if (!spv) {
-        av_log(avctx, AV_LOG_ERROR, "Unable to initialize SPIR-V compiler!\n");
-        return AVERROR_EXTERNAL;
-    }
 
     s->qf = ff_vk_qf_find(vkctx, VK_QUEUE_COMPUTE_BIT, 0);
     if (!s->qf) {
@@ -344,75 +105,44 @@ static av_cold int init_vulkan(AVFilterContext *avctx)
 
     RET(ff_vk_exec_pool_init(vkctx, s->qf, &s->e, s->qf->num*4, 0, 0, 0, NULL));
     RET(ff_vk_init_sampler(vkctx, &s->sampler, 1, VK_FILTER_NEAREST));
-    RET(ff_vk_shader_init(vkctx, &s->shd, "xfade",
-                          VK_SHADER_STAGE_COMPUTE_BIT,
-                          NULL, 0,
-                          32, 32, 1,
-                          0));
 
-    desc = (FFVulkanDescriptorSetBinding []) {
-        {
-            .name       = "a_images",
+    SPEC_LIST_CREATE(sl, 2, 2*sizeof(int))
+    SPEC_LIST_ADD(sl, 0, 32, s->transition);
+    SPEC_LIST_ADD(sl, 1, 32, planes);
+
+    ff_vk_shader_load(&s->shd, VK_SHADER_STAGE_COMPUTE_BIT,
+                      NULL, (int []) { 32, 32, 1 }, 0);
+
+    const FFVulkanDescriptorSetBinding desc[] = {
+        { /* a_images */
             .type       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .dimensions = 2,
-            .elems      = planes,
             .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
             .samplers   = DUP_SAMPLER(s->sampler),
         },
-        {
-            .name       = "b_images",
+        { /* b_images */
             .type       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .dimensions = 2,
-            .elems      = planes,
             .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
             .samplers   = DUP_SAMPLER(s->sampler),
         },
-        {
-            .name       = "output_images",
+        { /* output_images */
             .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-            .mem_layout = ff_vk_shader_rep_fmt(s->vkctx.output_format, FF_VK_REP_FLOAT),
-            .mem_quali  = "writeonly",
-            .dimensions = 2,
-            .elems      = planes,
             .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
         },
     };
-
-    RET(ff_vk_shader_add_descriptor_set(vkctx, &s->shd, desc, 3, 0, 0));
-
-    GLSLC(0, layout(push_constant, std430) uniform pushConstants {                 );
-    GLSLC(1,    float progress;                                                    );
-    GLSLC(0, };                                                                    );
+    ff_vk_shader_add_descriptor_set(vkctx, &s->shd, desc, 3, 0, 0);
 
     ff_vk_shader_add_push_const(&s->shd, 0, sizeof(XFadeParameters),
                                 VK_SHADER_STAGE_COMPUTE_BIT);
 
-    // Add the right transition type function to the shader
-    GLSLD(transitions_map[s->transition]);
-
-    GLSLC(0, void main()                                                  );
-    GLSLC(0, {                                                            );
-    GLSLC(1,     ivec2 pos = ivec2(gl_GlobalInvocationID.xy);             );
-    GLSLF(1,     int planes = %i;                                  ,planes);
-    GLSLC(1,     for (int i = 0; i < planes; i++) {                       );
-    GLSLC(2,        transition(i, pos, progress);                         );
-    GLSLC(1,     }                                                        );
-    GLSLC(0, }                                                            );
-
-    RET(spv->compile_shader(vkctx, spv, shd, &spv_data, &spv_len, "main",
-                            &spv_opaque));
-    RET(ff_vk_shader_link(vkctx, shd, spv_data, spv_len, "main"));
+    RET(ff_vk_shader_link(vkctx, &s->shd,
+                          ff_xfade_comp_spv_data,
+                          ff_xfade_comp_spv_len, "main"));
 
     RET(ff_vk_shader_register_exec(vkctx, &s->e, &s->shd));
 
     s->initialized = 1;
 
 fail:
-    if (spv_opaque)
-        spv->free_shader(spv, &spv_opaque);
-    if (spv)
-        spv->uninit(&spv);
-
     return err;
 }
 
