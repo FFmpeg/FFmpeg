@@ -7961,6 +7961,15 @@ check_warning -Wempty-body
 # This roughly matches the default thread stack size on Musl, which is 128 KiB,
 # leaving some headroom for caller frames.
 check_warning -Wstack-usage=122880
+
+# GCC accepts warning option level 5 here to warn about all fallthroughs
+# that are not explicitly marked with the appropriate attribute
+if enabled gcc; then
+    check_warning -Wimplicit-fallthrough=5
+else
+    check_warning -Wimplicit-fallthrough
+fi
+
 check_c_warning -Wmissing-prototypes
 check_c_warning -Wstrict-prototypes
 check_c_warning -Wunterminated-string-initialization
