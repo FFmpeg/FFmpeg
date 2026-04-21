@@ -173,19 +173,19 @@ endstruc
     %undef ADD_MUL
 %endmacro
 
-; Declare an operation kernel twice, once with V2=0 and once with V2=1
+; Declare a set of operations with the high half enabled / disabled
 %macro decl_v2 2+ ; v2, func
-    %xdefine V2 %1
+    %assign V2 %1
     %2
     %undef V2
 %endmacro
 
 ; Declare an operation kernel specialized to a given subset of active components
 %macro decl_pattern 5+ ; X, Y, Z, W, func
-    %xdefine X %1
-    %xdefine Y %2
-    %xdefine Z %3
-    %xdefine W %4
+    %assign X %1
+    %assign Y %2
+    %assign Z %3
+    %assign W %4
     %5
     %undef X
     %undef Y
