@@ -17,9 +17,8 @@
  */
 
 #include "libavutil/avassert.h"
-#include "libavutil/random_seed.h"
 #include "libavutil/opt.h"
-#include "libavutil/vulkan_spirv.h"
+
 #include "vulkan_filter.h"
 #include "filters.h"
 #include "video.h"
