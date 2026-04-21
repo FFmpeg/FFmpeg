@@ -512,7 +512,7 @@ int ff_swscale(SwsInternal *c, const uint8_t *const src[], const int srcStride[]
         if (!enough_lines)
             break;  // we can't output a dstY line so let's try with the next slice
 
-#if HAVE_MMX_INLINE
+#if ARCH_X86 && HAVE_MMX
         ff_updateMMXDitherTables(c, dstY);
         c->dstW_mmx = c->opts.dst_w;
 #endif

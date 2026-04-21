@@ -55,6 +55,7 @@ DECLARE_ASM_CONST(8, uint64_t, M24C) = 0x0000FF0000FF0000LL;
 #define RENAME(a) a ## _mmxext
 #include "swscale_template.c"
 #endif
+#endif /* HAVE_INLINE_ASM */
 
 void ff_updateMMXDitherTables(SwsInternal *c, int dstY)
 {
@@ -172,7 +173,6 @@ void ff_updateMMXDitherTables(SwsInternal *c, int dstY)
         }
     }
 }
-#endif /* HAVE_INLINE_ASM */
 
 #define YUV2YUVX_FUNC_MMX(opt, step)  \
 void ff_yuv2yuvX_ ##opt(const int16_t *filter, int filterSize, int srcOffset, \
@@ -489,23 +489,98 @@ av_cold void ff_sws_init_range_convert_x86(SwsInternal *c)
 av_cold void ff_sws_init_swscale_x86(SwsInternal *c)
 {
     int cpu_flags = av_get_cpu_flags();
+    enum AVPixelFormat dst_format = c->opts.dst_format;
 
+    c->use_mmx_vfilter = 0;
+
+    if (X86_MMXEXT(cpu_flags)) {
+        if (!is16BPS(dst_format) && !isNBPS(dst_format) && !isSemiPlanarYUV(dst_format)
+            && dst_format != AV_PIX_FMT_GRAYF32BE && dst_format != AV_PIX_FMT_GRAYF32LE
+            && !(c->opts.flags & SWS_BITEXACT)) {
+            if (c->opts.flags & SWS_ACCURATE_RND) {
 #if HAVE_MMXEXT_INLINE
-    if (INLINE_MMXEXT(cpu_flags))
-        sws_init_swscale_mmxext(c);
+                if (!(c->opts.flags & SWS_FULL_CHR_H_INT)) {
+                    switch (c->opts.dst_format) {
+                    case AV_PIX_FMT_RGB32:   c->yuv2packedX = yuv2rgb32_X_ar_mmxext;   break;
+#if HAVE_6REGS
+                    case AV_PIX_FMT_BGR24:   c->yuv2packedX = yuv2bgr24_X_ar_mmxext;   break;
 #endif
-    if(c->use_mmx_vfilter && !(c->opts.flags & SWS_ACCURATE_RND)) {
+                    case AV_PIX_FMT_RGB555:  c->yuv2packedX = yuv2rgb555_X_ar_mmxext;  break;
+                    case AV_PIX_FMT_RGB565:  c->yuv2packedX = yuv2rgb565_X_ar_mmxext;  break;
+                    case AV_PIX_FMT_YUYV422: c->yuv2packedX = yuv2yuyv422_X_ar_mmxext; break;
+                    default: break;
+                    }
+                }
+#endif
+            } else {
 #if HAVE_MMXEXT_EXTERNAL
-        if (EXTERNAL_MMXEXT(cpu_flags))
-            c->yuv2planeX = yuv2yuvX_mmxext;
-#endif
+                c->use_mmx_vfilter = 1;
+                c->yuv2planeX = yuv2yuvX_mmxext;
 #if HAVE_SSE3_EXTERNAL
-        if (EXTERNAL_SSE3(cpu_flags))
-            c->yuv2planeX = yuv2yuvX_sse3;
+                if (EXTERNAL_SSE3(cpu_flags))
+                    c->yuv2planeX = yuv2yuvX_sse3;
 #endif
 #if HAVE_AVX2_EXTERNAL
-        if (EXTERNAL_AVX2_FAST(cpu_flags))
-            c->yuv2planeX = yuv2yuvX_avx2;
+                if (EXTERNAL_AVX2_FAST(cpu_flags))
+                    c->yuv2planeX = yuv2yuvX_avx2;
+#endif
+#endif /* HAVE_MMXEXT_EXTERNAL */
+#if HAVE_MMXEXT_INLINE
+                if (!(c->opts.flags & SWS_FULL_CHR_H_INT)) {
+                    switch (c->opts.dst_format) {
+                    case AV_PIX_FMT_RGB32:   c->yuv2packedX = yuv2rgb32_X_mmxext;   break;
+                    case AV_PIX_FMT_BGR32:   c->yuv2packedX = yuv2bgr32_X_mmxext;   break;
+#if HAVE_6REGS
+                    case AV_PIX_FMT_BGR24:   c->yuv2packedX = yuv2bgr24_X_mmxext;   break;
+#endif
+                    case AV_PIX_FMT_RGB555:  c->yuv2packedX = yuv2rgb555_X_mmxext;  break;
+                    case AV_PIX_FMT_RGB565:  c->yuv2packedX = yuv2rgb565_X_mmxext;  break;
+                    case AV_PIX_FMT_YUYV422: c->yuv2packedX = yuv2yuyv422_X_mmxext; break;
+                    default: break;
+                    }
+                }
+#endif
+            }
+#if HAVE_MMXEXT_INLINE
+            if (!(c->opts.flags & SWS_FULL_CHR_H_INT)) {
+                switch (c->opts.dst_format) {
+                case AV_PIX_FMT_RGB32:
+                    c->yuv2packed1 = yuv2rgb32_1_mmxext;
+                    c->yuv2packed2 = yuv2rgb32_2_mmxext;
+                    break;
+                case AV_PIX_FMT_BGR24:
+                    c->yuv2packed1 = yuv2bgr24_1_mmxext;
+                    c->yuv2packed2 = yuv2bgr24_2_mmxext;
+                    break;
+                case AV_PIX_FMT_RGB555:
+                    c->yuv2packed1 = yuv2rgb555_1_mmxext;
+                    c->yuv2packed2 = yuv2rgb555_2_mmxext;
+                    break;
+                case AV_PIX_FMT_RGB565:
+                    c->yuv2packed1 = yuv2rgb565_1_mmxext;
+                    c->yuv2packed2 = yuv2rgb565_2_mmxext;
+                    break;
+                case AV_PIX_FMT_YUYV422:
+                    c->yuv2packed1 = yuv2yuyv422_1_mmxext;
+                    c->yuv2packed2 = yuv2yuyv422_2_mmxext;
+                    break;
+                default:
+                    break;
+                }
+            }
+#endif
+        }
+#if HAVE_MMXEXT_INLINE
+        if (c->srcBpc == 8 && c->dstBpc <= 14) {
+            // Use the new MMX scaler if the MMXEXT one can't be used (it is faster than the x86 ASM one).
+            if (c->opts.flags & SWS_FAST_BILINEAR && c->canMMXEXTBeUsed) {
+                c->hyscale_fast = ff_hyscale_fast_mmxext;
+                c->hcscale_fast = ff_hcscale_fast_mmxext;
+            } else {
+                c->hyscale_fast = NULL;
+                c->hcscale_fast = NULL;
+            }
+        }
 #endif
     }
 
