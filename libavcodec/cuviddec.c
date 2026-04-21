@@ -1103,7 +1103,7 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
     // Skip first 4 bytes of AV1CodecConfigurationRecord to keep configOBUs
     // only, otherwise cuvidParseVideoData report unknown error.
     if (avctx->codec->id == AV_CODEC_ID_AV1 &&
-            extradata_size > 4 &&
+            extradata_size >= 4 &&
             extradata[0] & 0x80) {
         extradata += 4;
         extradata_size -= 4;
