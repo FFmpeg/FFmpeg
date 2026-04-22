@@ -2537,6 +2537,14 @@ static int mov_write_dvcc_dvvc_tag(AVFormatContext *s, AVIOContext *pb, AVDOVIDe
     return 32; /* 8 + 24 */
 }
 
+static int mov_write_hvce_tag(AVIOContext *pb, const AVPacketSideData *sd)
+{
+    avio_wb32(pb, 8 + sd->size);
+    ffio_wfourcc(pb, "hvcE");
+    avio_write(pb, sd->data, sd->size);
+    return 8 + sd->size;
+}
+
 static int mov_write_clap_tag(AVIOContext *pb, MOVTrack *track,
                               uint32_t top, uint32_t bottom,
                               uint32_t left, uint32_t right)
@@ -3003,6 +3011,15 @@ static int mov_write_video_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
             mov_write_dvcc_dvvc_tag(s, pb, (AVDOVIDecoderConfigurationRecord *)dovi->data);
         } else if (dovi) {
             av_log(mov->fc, AV_LOG_WARNING, "Not writing 'dvcC'/'dvvC' box. Requires -strict unofficial.\n");
+        }
+
+        const AVPacketSideData *hvce = av_packet_side_data_get(track->st->codecpar->coded_side_data,
+                                                               track->st->codecpar->nb_coded_side_data,
+                                                               AV_PKT_DATA_HEVC_CONF);
+        if (hvce && mov->fc->strict_std_compliance <= FF_COMPLIANCE_UNOFFICIAL) {
+            mov_write_hvce_tag(pb, hvce);
+        } else if (hvce) {
+            av_log(mov->fc, AV_LOG_WARNING, "Not writing 'hvcE' box. Requires -strict unofficial.\n");
         }
     }
 
