@@ -291,8 +291,10 @@ static av_cold int libvorbis_encode_init(AVCodecContext *avctx)
     if (!(avctx->flags & AV_CODEC_FLAG_BITEXACT))
         vorbis_comment_add_tag(&s->vc, "encoder", LIBAVCODEC_IDENT);
 
-    if ((ret = vorbis_analysis_headerout(&s->vd, &s->vc, &header, &header_comm,
-                                         &header_code))) {
+    ret = vorbis_analysis_headerout(&s->vd, &s->vc, &header, &header_comm,
+                                    &header_code);
+    vorbis_comment_clear(&s->vc);
+    if (ret) {
         ret = vorbis_error_to_averror(ret);
         goto error;
     }
@@ -323,8 +325,6 @@ static av_cold int libvorbis_encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "invalid extradata\n");
         return ret;
     }
-
-    vorbis_comment_clear(&s->vc);
 
     if ((ret = libvorbis_get_priming_samples(&s->vi, avctx)))
         return ret;
