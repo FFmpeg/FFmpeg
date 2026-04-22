@@ -328,7 +328,7 @@ static av_cold int libvorbis_encode_init(AVCodecContext *avctx)
     }
 
     if ((ret = libvorbis_get_priming_samples(&s->vi, avctx)))
-        return ret;
+        goto error;
 
     avctx->frame_size = LIBVORBIS_FRAME_SIZE;
     ff_af_queue_init(avctx, &s->afq);
