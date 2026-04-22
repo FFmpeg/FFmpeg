@@ -2503,6 +2503,26 @@ static int mkv_parse_dvcc_dvvc(AVFormatContext *s, AVStream *st, const MatroskaT
     return ff_isom_parse_dvcc_dvvc(s, st, bin->data, bin->size);
 }
 
+static int mkv_parse_hvce(AVFormatContext *s, AVStream *st, EbmlBin *bin)
+{
+    AVPacketSideData *sd;
+
+    if (bin->size < 23) {
+        av_log(s, AV_LOG_ERROR, "Invalid hvcE size %d\n", bin->size);
+        return AVERROR_INVALIDDATA;
+    }
+
+    sd = av_packet_side_data_new(&st->codecpar->coded_side_data,
+                                 &st->codecpar->nb_coded_side_data,
+                                 AV_PKT_DATA_HEVC_CONF,
+                                 bin->size, 0);
+    if (!sd)
+        return AVERROR(ENOMEM);
+
+    memcpy(sd->data, bin->data, bin->size);
+    return 0;
+}
+
 static int mkv_parse_block_addition_mappings(AVFormatContext *s, AVStream *st, MatroskaTrack *track)
 {
     const EbmlList *mappings_list = &track->block_addition_mappings;
@@ -2535,6 +2555,11 @@ static int mkv_parse_block_addition_mappings(AVFormatContext *s, AVStream *st, M
         case MATROSKA_BLOCK_ADD_ID_TYPE_DVCC:
         case MATROSKA_BLOCK_ADD_ID_TYPE_DVVC:
             if ((ret = mkv_parse_dvcc_dvvc(s, st, track, &mapping->extradata)) < 0)
+                return ret;
+
+            break;
+        case MATROSKA_BLOCK_ADD_ID_TYPE_HVCE:
+            if ((ret = mkv_parse_hvce(s, st, &mapping->extradata)) < 0)
                 return ret;
 
             break;

@@ -1,5 +1,5 @@
-cf2732a0d8f93e0a8695c1a1c7979b01 *tests/data/fate/mov-dovi-hvce-mkv-to-mp4.mp4
-667954 tests/data/fate/mov-dovi-hvce-mkv-to-mp4.mp4
+1d9ac9b893ed7e990b06fa13ebd97901 *tests/data/fate/mov-dovi-hvce-mkv-to-mp4.mp4
+668149 tests/data/fate/mov-dovi-hvce-mkv-to-mp4.mp4
 #extradata 0:      187, 0x34a930cb
 #tb 0: 1/16000
 #media_type 0: video
@@ -19,5 +19,8 @@ el_present_flag=1
 bl_present_flag=1
 dv_bl_signal_compatibility_id=6
 dv_md_compression=none
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=HEVC enhancement-layer decoder configuration
 [/SIDE_DATA]
 [/STREAM]
