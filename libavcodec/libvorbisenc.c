@@ -323,7 +323,8 @@ static av_cold int libvorbis_encode_init(AVCodecContext *avctx)
     s->vp = av_vorbis_parse_init(avctx->extradata, avctx->extradata_size);
     if (!s->vp) {
         av_log(avctx, AV_LOG_ERROR, "invalid extradata\n");
-        return ret;
+        ret = AVERROR_UNKNOWN;
+        goto error;
     }
 
     if ((ret = libvorbis_get_priming_samples(&s->vi, avctx)))
