@@ -12,6 +12,7 @@ version <next>:
 - SMPTE 2094-50 metadata support and passthrough
 - ProRes RAW VideoToolbox hwaccel
 - APV Vulkan hwaccel
+- Animated WebP decoder
 
 
 version 8.1:
