@@ -1084,27 +1084,3 @@ int ff_sws_enum_op_lists(SwsContext *ctx, void *opaque,
 
     return 0;
 }
-
-struct EnumOpaque {
-    void *opaque;
-    int (*cb)(SwsContext *ctx, void *opaque, SwsOp *op);
-};
-
-static int enum_ops(SwsContext *ctx, void *opaque, SwsOpList *ops)
-{
-    struct EnumOpaque *priv = opaque;
-    for (int i = 0; i < ops->num_ops; i++) {
-        int ret = priv->cb(ctx, priv->opaque, &ops->ops[i]);
-        if (ret < 0)
-            return ret;
-    }
-    return 0;
-}
-
-int ff_sws_enum_ops(SwsContext *ctx, void *opaque,
-                    enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
-                    int (*cb)(SwsContext *ctx, void *opaque, SwsOp *op))
-{
-    struct EnumOpaque priv = { opaque, cb };
-    return ff_sws_enum_op_lists(ctx, &priv, src_fmt, dst_fmt, enum_ops);
-}
