@@ -805,57 +805,43 @@ cglobal pred8x8_tm_vp8_8, 2,3,6
 ; void ff_pred8x8l_top_dc_8(uint8_t *src, int has_topleft, int has_topright,
 ;                           ptrdiff_t stride)
 ;-----------------------------------------------------------------------------
-%macro PRED8x8L_TOP_DC 0
-cglobal pred8x8l_top_dc_8, 4,4
+INIT_XMM sse2
+cglobal pred8x8l_top_dc_8, 4,4,6
     sub          r0, r3
-    pxor        mm7, mm7
-    movq        mm0, [r0-8]
-    movq        mm3, [r0]
-    movq        mm1, [r0+8]
-    movq        mm2, mm3
-    movq        mm4, mm3
-    PALIGNR     mm2, mm0, 7, mm0
-    PALIGNR     mm1, mm4, 1, mm4
+    movu         m2, [r0-8]
+    movu         m3, [r0]
+    mova         m1, m3
+    psrldq       m2, 7
+    psrldq       m1, 1
     test        r1d, r1d ; top_left
-    jz .fix_lt_2
+    jnz .has_topleft
+    pxor         m5, m3, m2
+    psllq        m5, 56
+    psrlq        m5, 56
+    pxor         m2, m5
+.has_topleft:
     test        r2d, r2d ; top_right
-    jz .fix_tr_1
-    jmp .body
-.fix_lt_2:
-    movq        mm5, mm3
-    pxor        mm5, mm2
-    psllq       mm5, 56
-    psrlq       mm5, 56
-    pxor        mm2, mm5
-    test        r2d, r2d ; top_right
-    jnz .body
-.fix_tr_1:
-    movq        mm5, mm3
-    pxor        mm5, mm1
-    psrlq       mm5, 56
-    psllq       mm5, 56
-    pxor        mm1, mm5
-.body:
-    PRED4x4_LOWPASS mm0, mm2, mm1, mm3, mm5
-    psadbw   mm7, mm0
-    paddw    mm7, [pw_4]
-    psrlw    mm7, 3
-    pshufw   mm7, mm7, 0
-    packuswb mm7, mm7
+    jnz .has_topright
+    pxor         m5, m3, m1
+    psrlq        m5, 56
+    psllq        m5, 56
+    pxor         m1, m5
+.has_topright:
+    pxor     m4, m4
+    PRED4x4_LOWPASS m0, m2, m1, m3, m5
+    psadbw   m4, m0
+    paddw    m4, [pw_4]
+    psrlw    m4, 3
+    SPLATW   m4, m4, 0
+    packuswb m4, m4
 %rep 3
-    movq [r0+r3*1], mm7
-    movq [r0+r3*2], mm7
+    movq [r0+r3*1], m4
+    movq [r0+r3*2], m4
     lea    r0, [r0+r3*2]
 %endrep
-    movq [r0+r3*1], mm7
-    movq [r0+r3*2], mm7
+    movq [r0+r3*1], m4
+    movq [r0+r3*2], m4
     RET
-%endmacro
-
-INIT_MMX mmxext
-PRED8x8L_TOP_DC
-INIT_MMX ssse3
-PRED8x8L_TOP_DC
 
 ;-----------------------------------------------------------------------------
 ; void ff_pred8x8l_dc_8(uint8_t *src, int has_topleft, int has_topright,
