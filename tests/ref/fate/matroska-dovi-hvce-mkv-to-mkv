@@ -1,5 +1,5 @@
-c956733710b9d1d439c766d5ef8f27d9 *tests/data/fate/matroska-dovi-hvce-mkv-to-mkv.matroska
-667960 tests/data/fate/matroska-dovi-hvce-mkv-to-mkv.matroska
+d9c448202481e87d921bb81f268082e6 *tests/data/fate/matroska-dovi-hvce-mkv-to-mkv.matroska
+668201 tests/data/fate/matroska-dovi-hvce-mkv-to-mkv.matroska
 #extradata 0:      187, 0x34a930cb
 #tb 0: 1/1000
 #media_type 0: video
@@ -19,5 +19,8 @@ el_present_flag=1
 bl_present_flag=1
 dv_bl_signal_compatibility_id=6
 dv_md_compression=none
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=HEVC enhancement-layer decoder configuration
 [/SIDE_DATA]
 [/STREAM]

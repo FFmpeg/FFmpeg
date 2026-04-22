@@ -1785,6 +1785,26 @@ static void mkv_write_blockadditionmapping(AVFormatContext *s, const MatroskaMux
 
         end_ebml_master(pb, mapping);
     }
+
+    sd = av_packet_side_data_get(par->coded_side_data, par->nb_coded_side_data,
+                                 AV_PKT_DATA_HEVC_CONF);
+    if (sd) {
+        ebml_master mapping;
+        uint64_t expected_size = (2 + 1 + (sizeof(HVCE_BLOCK_TYPE_NAME) - 1))
+                                + (2 + 1 + 4)
+                                + (2 + ebml_length_size(sd->size) + sd->size);
+
+        mapping = start_ebml_master(pb, MATROSKA_ID_TRACKBLKADDMAPPING, expected_size);
+
+        put_ebml_string(pb, MATROSKA_ID_BLKADDIDNAME, HVCE_BLOCK_TYPE_NAME);
+        put_ebml_uint(pb, MATROSKA_ID_BLKADDIDTYPE, MATROSKA_BLOCK_ADD_ID_TYPE_HVCE);
+        put_ebml_binary(pb, MATROSKA_ID_BLKADDIDEXTRADATA, sd->data, sd->size);
+
+        end_ebml_master(pb, mapping);
+
+        // DV Profile 7 EL uses BlockAddID 1; ensure MaxBlockAdditionID reflects this.
+        track->max_blockaddid = FFMAX(track->max_blockaddid, 1);
+    }
 #endif
 }
 
