@@ -11,4 +11,7 @@ bl_present_flag=1
 dv_bl_signal_compatibility_id=6
 dv_md_compression=none
 [/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=HEVC enhancement-layer decoder configuration
+[/SIDE_DATA]
 [/STREAM]
