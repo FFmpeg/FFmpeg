@@ -54,9 +54,10 @@ cglobal yuv2yuvX, 7, 7, 6+2*cpuflag(sse3), filter, filterSize, src, dest, dstW, 
     jz                   .offset
 
     ; offset != 0 path.
-    psrlq                m5, m3, 0x18
-    psllq                m3, m3, 0x28
-    por                  m3, m3, m5
+%if notcpuflag(avx2)
+    punpcklqdq           m3, m3
+%endif
+    psrldq               m3, 3
 
 .offset:
     add offsetq, srcq
