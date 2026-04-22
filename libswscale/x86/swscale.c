@@ -174,19 +174,6 @@ void ff_updateMMXDitherTables(SwsInternal *c, int dstY)
     }
 }
 
-#define YUV2YUVX_FUNC_MMX(opt, step)  \
-void ff_yuv2yuvX_ ##opt(const int16_t *filter, int filterSize, int srcOffset, \
-                           uint8_t *dest, int dstW,  \
-                           const uint8_t *dither, int offset); \
-static void yuv2yuvX_ ##opt(const int16_t *filter, int filterSize, \
-                           const int16_t **src, uint8_t *dest, int dstW, \
-                           const uint8_t *dither, int offset) \
-{ \
-    if(dstW > 0) \
-        ff_yuv2yuvX_ ##opt(filter, filterSize - 1, 0, dest - offset, dstW + offset, dither, offset); \
-    return; \
-}
-
 #define YUV2YUVX_FUNC(opt, step)  \
 void ff_yuv2yuvX_ ##opt(const int16_t *filter, int filterSize, int srcOffset, \
                            uint8_t *dest, int dstW,  \
@@ -198,25 +185,35 @@ static void yuv2yuvX_ ##opt(const int16_t *filter, int filterSize, \
     int remainder = (dstW % step); \
     int pixelsProcessed = dstW - remainder; \
     if(((uintptr_t)dest) & 15){ \
-        yuv2yuvX_mmxext(filter, filterSize, src, dest, dstW, dither, offset); \
+        yuv2yuvX_sse2(filter, filterSize, src, dest, dstW, dither, offset); \
         return; \
     } \
     if(pixelsProcessed > 0) \
         ff_yuv2yuvX_ ##opt(filter, filterSize - 1, 0, dest - offset, pixelsProcessed + offset, dither, offset); \
     if(remainder > 0){ \
-      ff_yuv2yuvX_mmxext(filter, filterSize - 1, pixelsProcessed, dest - offset, pixelsProcessed + remainder + offset, dither, offset); \
+        ff_yuv2yuvX_sse2(filter, filterSize - 1, pixelsProcessed, dest - offset, pixelsProcessed + remainder + offset, dither, offset); \
     } \
     return; \
 }
 
-#if HAVE_MMXEXT_EXTERNAL
-YUV2YUVX_FUNC_MMX(mmxext, 16)
-#endif
+#if HAVE_SSE2_EXTERNAL
+void ff_yuv2yuvX_sse2(const int16_t *filter, int filterSize, int srcOffset,
+                      uint8_t *dest, int dstW,
+                      const uint8_t *dither, int offset);
+static void yuv2yuvX_sse2(const int16_t *filter, int filterSize,
+                          const int16_t **src, uint8_t *dest, int dstW,
+                           const uint8_t *dither, int offset)
+{
+    if (dstW > 0)
+        ff_yuv2yuvX_sse2(filter, filterSize - 1, 0, dest - offset, dstW + offset, dither, offset);
+    return;
+}
 #if HAVE_SSE3_EXTERNAL
 YUV2YUVX_FUNC(sse3, 32)
 #endif
 #if HAVE_AVX2_EXTERNAL
 YUV2YUVX_FUNC(avx2, 64)
+#endif
 #endif
 
 #define SCALE_FUNC(filter_n, from_bpc, to_bpc, opt) \
@@ -513,18 +510,20 @@ av_cold void ff_sws_init_swscale_x86(SwsInternal *c)
                 }
 #endif
             } else {
-#if HAVE_MMXEXT_EXTERNAL
-                c->use_mmx_vfilter = 1;
-                c->yuv2planeX = yuv2yuvX_mmxext;
+#if HAVE_SSE2_EXTERNAL
+                if (EXTERNAL_SSE2(cpu_flags)) {
+                    c->use_mmx_vfilter = 1;
+                    c->yuv2planeX = yuv2yuvX_sse2;
 #if HAVE_SSE3_EXTERNAL
-                if (EXTERNAL_SSE3(cpu_flags))
-                    c->yuv2planeX = yuv2yuvX_sse3;
+                    if (EXTERNAL_SSE3(cpu_flags))
+                        c->yuv2planeX = yuv2yuvX_sse3;
 #endif
 #if HAVE_AVX2_EXTERNAL
-                if (EXTERNAL_AVX2_FAST(cpu_flags))
-                    c->yuv2planeX = yuv2yuvX_avx2;
+                    if (EXTERNAL_AVX2_FAST(cpu_flags))
+                        c->yuv2planeX = yuv2yuvX_avx2;
 #endif
-#endif /* HAVE_MMXEXT_EXTERNAL */
+                }
+#endif /* HAVE_SSE2_EXTERNAL */
 #if HAVE_MMXEXT_INLINE
                 if (!(c->opts.flags & SWS_FULL_CHR_H_INT)) {
                     switch (c->opts.dst_format) {

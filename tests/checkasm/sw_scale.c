@@ -181,9 +181,9 @@ static void check_yuv2yuvX(int accurate, int bit_depth, int dst_pix_format)
     static const int input_sizes[] = {8, 24, 128, 144, 256, 512};
     const char *accurate_str = (accurate) ? "accurate" : "approximate";
 
-    declare_func_emms(AV_CPU_FLAG_MMX, void, const int16_t *filter,
-                      int filterSize, const int16_t **src, uint8_t *dest,
-                      int dstW, const uint8_t *dither, int offset);
+    declare_func(void, const int16_t *filter,
+                       int filterSize, const int16_t **src, uint8_t *dest,
+                       int dstW, const uint8_t *dither, int offset);
 
     const int16_t **src;
     LOCAL_ALIGNED_16(int16_t, src_pixels, [LARGEST_FILTER * LARGEST_INPUT_SIZE]);

@@ -34,13 +34,13 @@ SECTION .text
 ;-----------------------------------------------------------------------------
 
 %macro YUV2YUVX_FUNC 0
-cglobal yuv2yuvX, 7, 7, 8, filter, filterSize, src, dest, dstW, dither, offset
+cglobal yuv2yuvX, 7, 7, 6+2*cpuflag(sse3), filter, filterSize, src, dest, dstW, dither, offset
 %if notcpuflag(sse3)
-%define movr mova
+%define movr movq
 %define unroll 1
 %else
 %define movr movdqu
-%define unroll 2
+%define unroll 4
 %endif
     movsxdifnidn         dstWq, dstWd
     movsxdifnidn         offsetq, offsetd
@@ -67,14 +67,14 @@ cglobal yuv2yuvX, 7, 7, 8, filter, filterSize, src, dest, dstW, dither, offset
     mov                  srcq, [filterSizeq]
     punpcklbw            m3, m0
     psllw                m1, m1, 3
-    paddw                m3, m3, m1
-    psraw                m7, m3, 4
+    paddw                m1, m3
+    psraw                m1, 4
 .outerloop:
-    mova                 m4, m7
-    mova                 m3, m7
+    mova                 m3, m1
 %if cpuflag(sse3)
-    mova                 m6, m7
-    mova                 m1, m7
+    mova                 m4, m1
+    mova                 m6, m1
+    mova                 m7, m1
 %endif
 .loop:
 %if cpuflag(avx2)
@@ -82,31 +82,37 @@ cglobal yuv2yuvX, 7, 7, 8, filter, filterSize, src, dest, dstW, dither, offset
 %elif cpuflag(sse3)
     movddup              m0, [filterSizeq + 8]
 %else
-    mova                 m0, [filterSizeq + 8]
+    movq                 m0, [filterSizeq + 8]
+    punpcklqdq           m0, m0
 %endif
+
+%if cpuflag(sse3)
     pmulhw               m2, m0, [srcq + offsetq * 2]
     pmulhw               m5, m0, [srcq + offsetq * 2 + mmsize]
     paddw                m3, m3, m2
     paddw                m4, m4, m5
-%if cpuflag(sse3)
     pmulhw               m2, m0, [srcq + offsetq * 2 + 2 * mmsize]
     pmulhw               m5, m0, [srcq + offsetq * 2 + 3 * mmsize]
     paddw                m6, m6, m2
-    paddw                m1, m1, m5
+    paddw                m7, m7, m5
+%else
+    movu                 m2, [srcq + offsetq * 2]
+    pmulhw               m2, m0
+    paddw                m3, m2
 %endif
     add                  filterSizeq, 0x10
     mov                  srcq, [filterSizeq]
     test                 srcq, srcq
     jnz                  .loop
     psraw                m3, m3, 3
+%if cpuflag(sse3)
     psraw                m4, m4, 3
-%if cpuflag(sse3)
     psraw                m6, m6, 3
-    psraw                m1, m1, 3
-%endif
+    psraw                m7, m7, 3
     packuswb             m3, m3, m4
-%if cpuflag(sse3)
-    packuswb             m6, m6, m1
+    packuswb             m6, m6, m7
+%else
+    packuswb             m3, m3
 %endif
     mov                  srcq, [filterq]
 %if cpuflag(avx2)
@@ -117,14 +123,14 @@ cglobal yuv2yuvX, 7, 7, 8, filter, filterSize, src, dest, dstW, dither, offset
 %if cpuflag(sse3)
     movr                 [destq + offsetq + mmsize], m6
 %endif
-    add                  offsetq, mmsize * unroll
+    add                  offsetq, mmsize / 2 * unroll
     mov                  filterSizeq, filterq
     cmp                  offsetq, dstWq
     jb                  .outerloop
     RET
 %endmacro
 
-INIT_MMX mmxext
+INIT_XMM sse2
 YUV2YUVX_FUNC
 INIT_XMM sse3
 YUV2YUVX_FUNC
