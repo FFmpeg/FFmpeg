@@ -41,6 +41,8 @@ FATE_MOV_FFPROBE-$(call FRAMEMD5, MOV, H264, H264_PARSER) += fate-mov-neg-firstp
 
 FATE_MOV_FFPROBE-$(call FRAMEMD5, MOV, MPEG4, H264_PARSER) += fate-mov-mp4-extended-atom \
 
+FATE_MOV_FFPROBE-$(call DEMDEC, MOV, HEVC) += fate-mov-dovi-hvce-mp4-read
+
 FATE_MOV_FASTSTART = fate-mov-faststart-4gb-overflow \
 
 FATE_SAMPLES_FFMPEG += $(FATE_MOV-yes) $(FATE_MOV_REMUX-yes)
@@ -142,6 +144,8 @@ fate-mov-displaymatrix: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stre
 fate-mov-read-amve: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream_side_data_list -select_streams v -v 0 $(TARGET_SAMPLES)/mov/amve.mov
 
 fate-mov-spherical-mono: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream_side_data_list -select_streams v -v 0 $(TARGET_SAMPLES)/mov/spherical.mov
+
+fate-mov-dovi-hvce-mp4-read: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream_side_data_list -select_streams v -v 0 $(TARGET_SAMPLES)/mov/dovi-p7-hvce.mp4
 
 fate-mov-gpmf-remux: CMD = md5 -i $(TARGET_SAMPLES)/mov/fake-gp-media-with-real-gpmf.mp4 -map 0 -c copy -fflags +bitexact -f mp4
 fate-mov-gpmf-remux: CMP = oneline
@@ -254,6 +258,16 @@ fate-mov-mp4-disposition-mpegts-remux: CMD = transcode mpegts $(TARGET_SAMPLES)/
 FATE_MOV_FFMPEG_FFPROBE_SAMPLES-$(call REMUX, MP4 MOV, H264_DECODER) \
                           += fate-mov-write-amve
 fate-mov-write-amve: CMD = transcode mov $(TARGET_SAMPLES)/mov/amve.mov mp4 "-c:v copy" "-c:v copy -t 0.5" "-show_entries stream_side_data_list"
+
+# These tests check that Dolby Vision Profile 7 dual-layer content with an
+# hvcE (enhancement-layer HEVC configuration) is preserved on MP4 remux.
+FATE_MOV_FFMPEG_FFPROBE_SAMPLES-$(call REMUX, MP4 MOV, HEVC_DECODER) \
+                          += fate-mov-dovi-hvce-mp4-to-mp4
+fate-mov-dovi-hvce-mp4-to-mp4: CMD = transcode mov $(TARGET_SAMPLES)/mov/dovi-p7-hvce.mp4 mp4 "-map 0 -c copy -strict unofficial" "-map 0 -c copy" "-show_entries stream_side_data_list -select_streams v"
+
+FATE_MOV_FFMPEG_FFPROBE_SAMPLES-$(call REMUX, MP4 MOV, MATROSKA_DEMUXER HEVC_DECODER) \
+                          += fate-mov-dovi-hvce-mkv-to-mp4
+fate-mov-dovi-hvce-mkv-to-mp4: CMD = transcode matroska $(TARGET_SAMPLES)/mkv/dovi-p7-hvce.mkv mp4 "-map 0 -c copy -strict unofficial" "-map 0 -c copy" "-show_entries stream_side_data_list -select_streams v"
 
 FATE_SAMPLES_FFMPEG_FFPROBE += $(FATE_MOV_FFMPEG_FFPROBE_SAMPLES-yes)
 FATE_SAMPLES_FFMPEG += $(FATE_MOV_FFMPEG_SAMPLES-yes)

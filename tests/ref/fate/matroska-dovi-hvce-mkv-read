@@ -1,0 +1,14 @@
+[STREAM]
+[SIDE_DATA]
+side_data_type=DOVI configuration record
+dv_version_major=1
+dv_version_minor=0
+dv_profile=7
+dv_level=6
+rpu_present_flag=1
+el_present_flag=1
+bl_present_flag=1
+dv_bl_signal_compatibility_id=6
+dv_md_compression=none
+[/SIDE_DATA]
+[/STREAM]

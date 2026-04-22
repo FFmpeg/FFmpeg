@@ -1,0 +1,23 @@
+c2144d96764e79e0b449431b0b19a585 *tests/data/fate/matroska-dovi-hvce-mp4-to-mkv.matroska
+667808 tests/data/fate/matroska-dovi-hvce-mp4-to-mkv.matroska
+#extradata 0:      187, 0x34a930cb
+#tb 0: 1/1000
+#media_type 0: video
+#codec_id 0: hevc
+#dimensions 0: 3840x2160
+#sar 0: 1/1
+0,       -123,          0,       41,   666936, 0x27d831d4
+[STREAM]
+[SIDE_DATA]
+side_data_type=DOVI configuration record
+dv_version_major=1
+dv_version_minor=0
+dv_profile=7
+dv_level=6
+rpu_present_flag=1
+el_present_flag=1
+bl_present_flag=1
+dv_bl_signal_compatibility_id=6
+dv_md_compression=none
+[/SIDE_DATA]
+[/STREAM]

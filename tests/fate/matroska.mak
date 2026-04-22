@@ -122,6 +122,19 @@ FATE_MATROSKA_FFMPEG_FFPROBE-$(call REMUX, MATROSKA, MOV_DEMUXER     \
                                += fate-matroska-dovi-write-config8
 fate-matroska-dovi-write-config8: CMD = transcode mov $(TARGET_SAMPLES)/hevc/dv84.mov matroska "-c copy" "-map 0 -c copy -t 0.4" "-show_entries stream_side_data_list -select_streams v"
 
+# These tests check that Dolby Vision Profile 7 dual-layer content is correctly
+# handled: both the dvcC BlockAdditionMapping and the hvcE BlockAdditionMapping
+# (carrying the enhancement-layer HEVCDecoderConfigurationRecord) must survive
+# remux. Two source formats are tested: MP4 (hvcE box) and Matroska (hvcE
+# BlockAdditionMapping).
+FATE_MATROSKA_FFMPEG_FFPROBE-$(call REMUX, MATROSKA, MOV_DEMUXER HEVC_DECODER) \
+                               += fate-matroska-dovi-hvce-mp4-to-mkv
+fate-matroska-dovi-hvce-mp4-to-mkv: CMD = transcode mov $(TARGET_SAMPLES)/mov/dovi-p7-hvce.mp4 matroska "-map 0 -c copy" "-map 0 -c copy" "-show_entries stream_side_data_list -select_streams v"
+
+FATE_MATROSKA_FFMPEG_FFPROBE-$(call REMUX, MATROSKA, MATROSKA_DEMUXER HEVC_DECODER) \
+                               += fate-matroska-dovi-hvce-mkv-to-mkv
+fate-matroska-dovi-hvce-mkv-to-mkv: CMD = transcode matroska $(TARGET_SAMPLES)/mkv/dovi-p7-hvce.mkv matroska "-map 0 -c copy" "-map 0 -c copy" "-show_entries stream_side_data_list -select_streams v"
+
 # This tests the scenario like tickets #4536, #5784 where
 # the first packet (with the overall lowest dts) is a video packet,
 # whereas an audio packet to be muxed later has the overall lowest pts
@@ -274,6 +287,9 @@ fate-webm-hdr10-plus-remux: CMD = transcode webm $(TARGET_SAMPLES)/mkv/hdr10_plu
 FATE_MATROSKA_FFMPEG_FFPROBE-$(call REMUX, MATROSKA, VP9_DECODER VP9_PARSER) \
                                += fate-matroska-hdr10-plus-remux
 fate-matroska-hdr10-plus-remux: CMD = transcode webm $(TARGET_SAMPLES)/mkv/hdr10_plus_vp9_sample.webm matroska "-map 0 -c:v copy" "-map 0 -c:v copy" "-show_packets"
+
+FATE_MATROSKA_FFPROBE-$(call ALLYES, MATROSKA_DEMUXER HEVC_DECODER) += fate-matroska-dovi-hvce-mkv-read
+fate-matroska-dovi-hvce-mkv-read: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream_side_data_list -select_streams v -v 0 $(TARGET_SAMPLES)/mkv/dovi-p7-hvce.mkv
 
 fate-matroska-side-data-pref-codec: CMD = run ffprobe$(PROGSSUF)$(EXESUF) $(TARGET_SAMPLES)/mkv/hdr10tags-both.mkv \
     -select_streams v:0 -show_streams -show_frames -show_entries stream=stream_side_data:frame=frame_side_data_list
