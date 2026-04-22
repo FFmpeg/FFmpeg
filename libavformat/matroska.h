@@ -363,6 +363,7 @@ typedef enum {
   MATROSKA_BLOCK_ADD_ID_TYPE_ITU_T_T35              = 4,
   MATROSKA_BLOCK_ADD_ID_TYPE_DVCC                   = 0x64766343, // MKBETAG('d','v','c','C')
   MATROSKA_BLOCK_ADD_ID_TYPE_DVVC                   = 0x64767643, // MKBETAG('d','v','v','C')
+  MATROSKA_BLOCK_ADD_ID_TYPE_HVCE                   = 0x68766345, // MKBETAG('h','v','c','E')
 } MatroskaBlockAddIDType;
 
 #define MATROSKA_BLOCK_ADD_ID_OPAQUE 1
@@ -437,5 +438,6 @@ extern const char * const ff_matroska_video_stereo_mode[MATROSKA_VIDEO_STEREOMOD
 #define CODEC_PRIVATE_SIZE "webm_dash_manifest_codec_priv_size"
 
 #define DVCC_DVVC_BLOCK_TYPE_NAME "Dolby Vision configuration"
+#define HVCE_BLOCK_TYPE_NAME      "HEVC enhancement-layer configuration"
 
 #endif /* AVFORMAT_MATROSKA_H */
