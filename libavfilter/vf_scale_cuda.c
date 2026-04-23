@@ -389,8 +389,11 @@ static av_cold int cudascale_config_props(AVFilterLink *outlink)
         w_adj = inlink->sample_aspect_ratio.num ?
         (double)inlink->sample_aspect_ratio.num / inlink->sample_aspect_ratio.den : 1;
 
-    ff_scale_adjust_dimensions(inlink, &w, &h,
-                               s->force_original_aspect_ratio, s->force_divisible_by, w_adj);
+    ret = ff_scale_adjust_dimensions(inlink, &w, &h,
+                                     s->force_original_aspect_ratio,
+                                     s->force_divisible_by, w_adj);
+    if (ret < 0)
+        goto fail;
 
     if (((int64_t)h * inlink->w) > INT_MAX  ||
         ((int64_t)w * inlink->h) > INT_MAX)
