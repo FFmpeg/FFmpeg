@@ -619,7 +619,9 @@ static int scale_d3d12_config_props(AVFilterLink *outlink)
     }
 
     /* Adjust dimensions to meet codec/hardware alignment requirements */
-    ff_scale_adjust_dimensions(inlink, &s->width, &s->height, 0, 1, 1.f);
+    ret = ff_scale_adjust_dimensions(inlink, &s->width, &s->height, 0, 1, 1.f);
+    if (ret < 0)
+        return ret;
 
     outlink->w = s->width;
     outlink->h = s->height;
