@@ -294,8 +294,11 @@ int amf_init_filter_config(AVFilterLink *outlink, enum AVPixelFormat *in_format)
     if (ctx->reset_sar && inlink->sample_aspect_ratio.num)
         w_adj = (double) inlink->sample_aspect_ratio.num / inlink->sample_aspect_ratio.den;
 
-    ff_scale_adjust_dimensions(inlink, &ctx->width, &ctx->height,
-                               ctx->force_original_aspect_ratio, ctx->force_divisible_by, w_adj);
+    err = ff_scale_adjust_dimensions(inlink, &ctx->width, &ctx->height,
+                                     ctx->force_original_aspect_ratio,
+                                     ctx->force_divisible_by, w_adj);
+    if (err < 0)
+        return err;
 
     av_buffer_unref(&ctx->amf_device_ref);
     av_buffer_unref(&ctx->hwframes_in_ref);
