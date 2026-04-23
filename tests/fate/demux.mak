@@ -175,6 +175,17 @@ fate-ts-demux: CMD = ffprobe_demux $(TARGET_SAMPLES)/ac3/mp3ac325-4864-small.ts
 FATE_FFPROBE_DEMUX-$(CONFIG_MPEGTS_DEMUXER) += fate-ts-timed-id3-demux
 fate-ts-timed-id3-demux: CMD = ffprobe_demux $(TARGET_SAMPLES)/mpegts/id3.ts
 
+tests/data/id3.ts: TAG = GEN
+tests/data/id3.ts: $(SAMPLES)/mpegts/id3.ts | tests/data
+	$(Q)cp $< $@
+
+tests/data/id3.m3u8: tests/data/id3.ts | tests/data
+	$(Q)printf '#EXTM3U\n#EXT-X-TARGETDURATION:2\n#EXTINF:2,\nid3.ts\n#EXT-X-ENDLIST\n' > $@
+
+FATE_FFPROBE_DEMUX-$(call DEMDEC, MPEGTS HLS) += fate-ts-timed-id3-hls-demux
+fate-ts-timed-id3-hls-demux: tests/data/id3.m3u8
+fate-ts-timed-id3-hls-demux: CMD = ffprobe_demux $(TARGET_PATH)/tests/data/id3.m3u8
+
 FATE_SAMPLES_DEMUX-$(call PARSERDEM, JPEGXS, IMAGE_JPEGXS_PIPE, CONCAT_PROTOCOL) += fate-jxs-concat-demux
 fate-jxs-concat-demux: CMD = framecrc "-i concat:$(TARGET_SAMPLES)/jxs/lena.jxs|$(TARGET_SAMPLES)/jxs/lena.jxs -c:v copy"
 
