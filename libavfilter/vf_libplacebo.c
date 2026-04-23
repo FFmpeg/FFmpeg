@@ -1499,9 +1499,9 @@ static int libplacebo_config_output(AVFilterLink *outlink)
         }
     }
 
-    ff_scale_adjust_dimensions(inlink, &outlink->w, &outlink->h,
-                               force_oar, s->force_divisible_by,
-                               s->reset_sar ? sar_in : 1.0);
+    RET(ff_scale_adjust_dimensions(inlink, &outlink->w, &outlink->h,
+                                   force_oar, s->force_divisible_by,
+                                   s->reset_sar ? sar_in : 1.0));
 
     if (s->fit_mode == FIT_SCALE_DOWN && s->fit_sense == FIT_CONSTRAINT) {
         int w_adj = s->reset_sar ? sar_in * inlink->w : inlink->w;
