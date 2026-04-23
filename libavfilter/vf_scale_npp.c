@@ -640,9 +640,11 @@ static int config_props(AVFilterLink *outlink)
         w_adj = IS_SCALE2REF(ctx) ? s->var_values[VAR_S2R_MAIN_SAR] :
                                     s->var_values[VAR_SAR];
 
-    ff_scale_adjust_dimensions(inlink, &s->w, &s->h,
-                               s->force_original_aspect_ratio,
-                               s->force_divisible_by, w_adj);
+    ret = ff_scale_adjust_dimensions(inlink, &s->w, &s->h,
+                                     s->force_original_aspect_ratio,
+                                     s->force_divisible_by, w_adj);
+    if (ret < 0)
+        goto fail;
 
     if (s->w > INT_MAX || s->h > INT_MAX ||
         (s->h * inlink->w) > INT_MAX ||
