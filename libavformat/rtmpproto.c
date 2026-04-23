@@ -1208,6 +1208,10 @@ static int rtmp_calc_swfhash(URLContext *s)
     if (!memcmp(in_data, "CWS", 3)) {
 #if CONFIG_ZLIB
         int64_t out_size;
+        if (in_size < 8) {
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
+        }
         /* Decompress the SWF player file using Zlib. */
         if (!(out_data = av_malloc(8))) {
             ret = AVERROR(ENOMEM);
