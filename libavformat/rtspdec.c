@@ -190,7 +190,7 @@ static int rtsp_read_announce(AVFormatContext *s)
         rtsp_send_reply(s, RTSP_STATUS_SERVICE, NULL, request.seq);
         return AVERROR_OPTION_NOT_FOUND;
     }
-    if (request.content_length) {
+    if (request.content_length > 0) {
         sdp = av_malloc(request.content_length + 1);
         if (!sdp)
             return AVERROR(ENOMEM);
@@ -214,10 +214,10 @@ static int rtsp_read_announce(AVFormatContext *s)
         return 0;
     }
     av_log(s, AV_LOG_ERROR,
-           "Content-Length header value exceeds sdp allocated buffer (4KB)\n");
+           "Invalid ANNOUNCE Content-Length %d\n", request.content_length);
     rtsp_send_reply(s, RTSP_STATUS_INTERNAL,
-                    "Content-Length exceeds buffer size", request.seq);
-    return AVERROR(EIO);
+                    "Invalid Content-Length", request.seq);
+    return AVERROR_INVALIDDATA;
 }
 
 static int rtsp_read_options(AVFormatContext *s)
