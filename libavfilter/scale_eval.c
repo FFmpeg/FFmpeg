@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <inttypes.h>
 #include <stdint.h>
 #include "scale_eval.h"
 #include "libavutil/eval.h"
@@ -185,6 +186,13 @@ int ff_scale_adjust_dimensions(AVFilterLink *inlink,
 
     if ((int32_t)w != w || (int32_t)h != h)
         return AVERROR(EINVAL);
+
+    if (w <= 0 || h <= 0) {
+        av_log(inlink->dst, AV_LOG_ERROR,
+               "Rescaled dimensions %"PRId64"x%"PRId64" are invalid, "
+               "output dimensions must be positive.\n", w, h);
+        return AVERROR(EINVAL);
+    }
 
     *ret_w = w;
     *ret_h = h;
