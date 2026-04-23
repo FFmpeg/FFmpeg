@@ -8883,6 +8883,13 @@ static int mov_read_iref_dimg(MOVContext *c, AVIOContext *pb, int version)
         return AVERROR_INVALIDDATA;
     }
 
+    entries = avio_rb16(pb);
+    if (!entries) {
+        av_log(c->fc, AV_LOG_ERROR,
+               "Derived image item references no input images\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     grid = av_realloc_array(c->heif_grid, c->nb_heif_grid + 1U,
                             sizeof(*c->heif_grid));
     if (!grid)
@@ -8890,7 +8897,6 @@ static int mov_read_iref_dimg(MOVContext *c, AVIOContext *pb, int version)
     c->heif_grid = grid;
     grid = &grid[c->nb_heif_grid];
 
-    entries = avio_rb16(pb);
     grid->tile_id_list = av_malloc_array(entries, sizeof(*grid->tile_id_list));
     grid->tile_item_list = av_calloc(entries, sizeof(*grid->tile_item_list));
     if (!grid->tile_id_list || !grid->tile_item_list) {
