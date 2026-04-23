@@ -566,6 +566,8 @@ static int read_seek(AVFormatContext *s, int stream_index,
         frame_cnt  = caf->frames_per_packet * packet_cnt - st->codecpar->initial_padding;
     } else if (sti->nb_index_entries) {
         packet_cnt = av_index_search_timestamp(st, timestamp, flags);
+        if (packet_cnt < 0)
+            return -1;
         frame_cnt  = sti->index_entries[packet_cnt].timestamp;
         pos        = sti->index_entries[packet_cnt].pos;
     } else {
