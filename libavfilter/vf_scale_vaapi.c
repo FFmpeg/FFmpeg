@@ -87,8 +87,11 @@ static int scale_vaapi_config_output(AVFilterLink *outlink)
         w_adj = inlink->sample_aspect_ratio.num ?
         (double)inlink->sample_aspect_ratio.num / inlink->sample_aspect_ratio.den : 1;
 
-    ff_scale_adjust_dimensions(inlink, &vpp_ctx->output_width, &vpp_ctx->output_height,
-                               ctx->force_original_aspect_ratio, ctx->force_divisible_by, w_adj);
+    err = ff_scale_adjust_dimensions(inlink, &vpp_ctx->output_width, &vpp_ctx->output_height,
+                                     ctx->force_original_aspect_ratio,
+                                     ctx->force_divisible_by, w_adj);
+    if (err < 0)
+        return err;
 
     if (inlink->w == vpp_ctx->output_width && inlink->h == vpp_ctx->output_height &&
         (vpp_ctx->input_frames->sw_format == vpp_ctx->output_format ||
