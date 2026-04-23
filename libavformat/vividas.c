@@ -588,7 +588,9 @@ static int viv_read_header(AVFormatContext *s)
         block_type = avio_r8(pb);
 
         if (block_type == 22) {
-            avio_read(pb, keybuffer, 187);
+            ret = ffio_read_size(pb, keybuffer, 187);
+            if (ret < 0)
+                return ret;
             b22_key = decode_key(keybuffer);
             b22_size = avio_rl32(pb);
         }
