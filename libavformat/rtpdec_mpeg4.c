@@ -134,7 +134,7 @@ static int rtp_parse_mp4_au(PayloadContext *data, const uint8_t *buf, int len)
        length in bits */
     au_headers_length = AV_RB16(buf);
 
-    if (au_headers_length > RTP_MAX_PACKET_LENGTH)
+    if (au_headers_length == 0 || au_headers_length > RTP_MAX_PACKET_LENGTH)
       return -1;
 
     data->au_headers_length_bytes = (au_headers_length + 7) / 8;
