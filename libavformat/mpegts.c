@@ -43,6 +43,7 @@
 #include "demux.h"
 #include "mpeg.h"
 #include "isom.h"
+#include "id3v2.h"
 #if CONFIG_ICONV
 #include <iconv.h>
 #endif
@@ -1029,6 +1030,30 @@ static void new_data_packet(const uint8_t *buffer, int len, AVPacket *pkt)
     pkt->size = len;
 }
 
+static int timed_id3_update_metadata(AVStream *s, AVPacket *pkt)
+{
+    FFIOContext id3_buf;
+    ID3v2ExtraMeta *extra_meta = NULL;
+    AVDictionary *metadata = NULL;
+    int ret = 0;
+
+    ffio_init_read_context(&id3_buf, pkt->data, pkt->size);
+    ff_id3v2_read_dict(&id3_buf.pub, &metadata, ID3v2_DEFAULT_MAGIC, &extra_meta);
+    ret = ff_id3v2_parse_priv_dict(&metadata, extra_meta);
+    ff_id3v2_free_extra_meta(&extra_meta);
+
+    if (ret < 0 || !av_dict_count(metadata))
+        goto end;
+
+    ret = av_dict_copy(&s->metadata, metadata, 0);
+    if (ret == 0)
+        s->event_flags |= AVSTREAM_EVENT_FLAG_METADATA_UPDATED;
+
+end:
+    av_dict_free(&metadata);
+    return ret;
+}
+
 static int new_pes_packet(PESContext *pes, AVPacket *pkt)
 {
     uint8_t *sd;
@@ -1082,6 +1107,12 @@ static int new_pes_packet(PESContext *pes, AVPacket *pkt)
     if (!sd)
         return AVERROR(ENOMEM);
     *sd = pes->stream_id;
+
+    if (pes->st->codecpar->codec_id == AV_CODEC_ID_TIMED_ID3) {
+        int ret = timed_id3_update_metadata(pes->st, pkt);
+        if (ret < 0)
+            return ret;
+    }
 
     return 0;
 }
