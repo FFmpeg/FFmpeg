@@ -609,7 +609,7 @@ PRED8x8_H
 ; void ff_pred8x8_top_dc_8_sse2(uint8_t *src, ptrdiff_t stride)
 ;-----------------------------------------------------------------------------
 INIT_XMM sse2
-cglobal pred8x8_top_dc_8, 2,5
+cglobal pred8x8_top_dc_8, 2,5,2
     sub         r0, r1
     movq      xmm0, [r0]
     pxor      xmm1, xmm1
@@ -682,10 +682,10 @@ cglobal pred8x8_dc_8, 2,5,5
     packuswb  m0, m0
     punpcklbw m0, m0
     punpcklwd m0, m0
-    movq [r0+r1*1], m0
-    movq [r0+r1*2], m0
-    movq [r2+r1*1], m0
-    movq [r2+r1*2], m0
+    movq   [r0+r1*1], m0
+    movq   [r0+r1*2], m0
+    movq   [r2+r1*1], m0
+    movq   [r2+r1*2], m0
     movhps [r3+r1*1], m0
     movhps [r3+r1*2], m0
     movhps [r4+r1*1], m0
