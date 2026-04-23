@@ -87,6 +87,7 @@ void ff_hls_senc_read_audio_setup_info(HLSAudioSetupInfo *info, const uint8_t *b
         return;
 
     memcpy(info->setup_data, buf, info->setup_data_length);
+    memset(info->setup_data + info->setup_data_length, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 }
 
 int ff_hls_senc_parse_audio_setup_info(AVStream *st, HLSAudioSetupInfo *info)
