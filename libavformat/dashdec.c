@@ -21,6 +21,7 @@
  */
 #include <libxml/parser.h>
 #include <time.h>
+#include "libavutil/avassert.h"
 #include "libavutil/bprint.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
@@ -2019,6 +2020,44 @@ static int open_demux_for_component(AVFormatContext *s, struct representation *p
 
         // copy disposition
         st->disposition = ist->disposition;
+    }
+
+    for (i = 0; i < pls->ctx->nb_stream_groups; i++) {
+        AVStreamGroup *istg = pls->ctx->stream_groups[i];
+        AVStreamGroup *stg;
+
+        if (istg->type != AV_STREAM_GROUP_PARAMS_LCEVC)
+            continue;
+
+        stg = avformat_stream_group_create(s, istg->type, NULL);
+        if (!stg)
+            return AVERROR(ENOMEM);
+
+        stg->id = s->nb_stream_groups;
+
+        for (int j = 0; j < istg->nb_streams; j++) {
+            AVStream *ist = istg->streams[j];
+            AVStream *st = s->streams[ist->index + pls->stream_index];
+            ret = avformat_stream_group_add_stream(stg, st);
+            if (ret < 0)
+                return ret;
+        }
+
+        switch (stg->type) {
+        case AV_STREAM_GROUP_PARAMS_LCEVC: {
+            AVStreamGroupLCEVC *ilcevc = istg->params.lcevc;
+            AVStreamGroupLCEVC *lcevc = stg->params.lcevc;
+            ret = av_opt_copy(lcevc, ilcevc);
+            if (ret < 0)
+                return ret;
+            break;
+        }
+        default:
+            av_unreachable("Unsupported Stream Group type should have been checked above");
+        }
+
+        // copy disposition
+        stg->disposition = istg->disposition;
     }
 
     return 0;
