@@ -52,7 +52,7 @@ typedef struct HLSAudioSetupInfo {
     uint16_t            priming;
     uint8_t             version;
     uint8_t             setup_data_length;
-    uint8_t             setup_data[HLS_MAX_AUDIO_SETUP_DATA_LEN];
+    uint8_t             setup_data[HLS_MAX_AUDIO_SETUP_DATA_LEN + AV_INPUT_BUFFER_PADDING_SIZE];
 } HLSAudioSetupInfo;
 
 
