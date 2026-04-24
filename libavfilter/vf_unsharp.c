@@ -157,9 +157,9 @@ static int name##_##nbits(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
                 const uint##nbits##_t *srx = src - steps_y * src_stride + x - steps_x;                \
                 uint##nbits##_t *dsx       = dst - steps_y * dst_stride + x - steps_x;                \
                                                                                                       \
-                res = (int32_t)*srx + ((((int32_t) * srx -                                            \
-                      (int32_t)((tmp1 + halfscale) >> scalebits)) * amount) >> (8+nbits));            \
-                *dsx = av_clip_uint##nbits(res);                                                      \
+                res = (int32_t)*srx + (int32_t)(((int64_t)((int32_t)*srx -                            \
+                      (int32_t)((tmp1 + halfscale) >> scalebits)) * amount) >> 16);                   \
+                *dsx = av_clip_uintp2(res, s->bitdepth);                                              \
             }                                                                                         \
         }                                                                                             \
         if (y >= 0) {                                                                                 \
