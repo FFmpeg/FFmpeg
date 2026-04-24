@@ -507,7 +507,17 @@ int ff_vk_exec_pool_init(FFVulkanContext *s, AVVulkanDeviceQueueFamily *qf,
         /* Queue index distribution */
         e->qi = i % qf->num;
         e->qf = qf->idx;
-        vk->GetDeviceQueue(s->hwctx->act_dev, qf->idx, e->qi, &e->queue);
+        VkDeviceQueueInfo2 qinfo = {
+            .sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_INFO_2,
+#ifdef VK_KHR_internally_synchronized_queues
+            .flags            = (s->extensions & FF_VK_EXT_INTERNAL_QUEUE_SYNC)
+                                    ? VK_DEVICE_QUEUE_CREATE_INTERNALLY_SYNCHRONIZED_BIT_KHR
+                                    : 0,
+#endif
+            .queueFamilyIndex = qf->idx,
+            .queueIndex       = e->qi,
+        };
+        vk->GetDeviceQueue2(s->hwctx->act_dev, &qinfo, &e->queue);
     }
 
     return 0;

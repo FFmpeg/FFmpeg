@@ -121,7 +121,7 @@ typedef uint64_t FFVulkanExtensions;
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              CmdDispatchBase)                                       \
                                                                                          \
     /* Queue */                                                                          \
-    MACRO(1, 1, FF_VK_EXT_NO_FLAG,              GetDeviceQueue)                          \
+    MACRO(1, 1, FF_VK_EXT_NO_FLAG,              GetDeviceQueue2)                         \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              QueueSubmit)                             \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              QueueSubmit2)                              \
                                                                                          \
