@@ -733,8 +733,8 @@ AVFilterFormats *ff_alpha_mode_straight(void)
 AVFilterFormats *ff_all_alpha_modes(void)
 {
     AVFilterFormats *ret = NULL;
-    for (int range = 0; range < AVALPHA_MODE_NB; range++) {
-        if (ff_add_format(&ret, range) < 0)
+    for (int am = 0; am < AVALPHA_MODE_NB; am++) {
+        if (ff_add_format(&ret, am) < 0)
             return NULL;
     }
 
