@@ -224,6 +224,34 @@ fate-hls-start-number: tests/data/hls_start_number.m3u8
 fate-hls-start-number: CMD = sed -n -e /^\#EXT-X-MEDIA-SEQUENCE:/p -e /^[^\#]/p $(TARGET_PATH)/tests/data/hls_start_number.m3u8
 fate-hls-start-number: CMP = diff
 
+tests/data/hls_iframes_single_mpegts.m3u8: TAG = GEN
+tests/data/hls_iframes_single_mpegts.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
+	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
+	-f lavfi -i "testsrc2=size=128x72:rate=1:d=3" -f hls -hls_time 1 -map 0:v \
+	-hls_list_size 0 -c:v mpeg2video -g 1 -flags +bitexact \
+	-hls_segment_type mpegts -hls_flags iframes_only+single_file \
+	-hls_segment_filename /dev/null \
+	$(TARGET_PATH)/tests/data/hls_iframes_single_mpegts.m3u8 2>/dev/null
+
+FATE_HLSENC_LAVFI-$(call ALLYES, TESTSRC2_FILTER LAVFI_INDEV MPEG2VIDEO_ENCODER HLS_MUXER MPEGTS_MUXER FILE_PROTOCOL) += fate-hls-iframes-single-mpegts
+fate-hls-iframes-single-mpegts: tests/data/hls_iframes_single_mpegts.m3u8
+fate-hls-iframes-single-mpegts: CMD = sed -n -e /^\#EXT-X-BYTERANGE:/p $(TARGET_PATH)/tests/data/hls_iframes_single_mpegts.m3u8
+fate-hls-iframes-single-mpegts: CMP = diff
+
+tests/data/hls_iframes_single_fmp4.m3u8: TAG = GEN
+tests/data/hls_iframes_single_fmp4.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
+	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
+	-f lavfi -i "testsrc2=size=128x72:rate=1:d=3" -f hls -hls_time 1 -map 0:v \
+	-hls_list_size 0 -c:v mpeg2video -g 1 -flags +bitexact -dct int \
+	-hls_segment_type fmp4 -hls_flags iframes_only+single_file \
+	-hls_segment_filename /dev/null \
+	$(TARGET_PATH)/tests/data/hls_iframes_single_fmp4.m3u8 2>/dev/null
+
+FATE_HLSENC_LAVFI-$(call ALLYES, TESTSRC2_FILTER LAVFI_INDEV MPEG2VIDEO_ENCODER HLS_MUXER MOV_MUXER FILE_PROTOCOL) += fate-hls-iframes-single-fmp4
+fate-hls-iframes-single-fmp4: tests/data/hls_iframes_single_fmp4.m3u8
+fate-hls-iframes-single-fmp4: CMD = sed -n -e /^\#EXT-X-MAP:/p -e /^\#EXT-X-BYTERANGE:/p $(TARGET_PATH)/tests/data/hls_iframes_single_fmp4.m3u8
+fate-hls-iframes-single-fmp4: CMP = diff
+
 FATE_HLSENC_LAVFI-yes := $(if $(call FRAMECRC), $(FATE_HLSENC_LAVFI-yes))
 
 FATE_FFMPEG += $(FATE_HLSENC_LAVFI-yes)
