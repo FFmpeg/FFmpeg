@@ -151,8 +151,8 @@ static void process(const SwsFrame *dst, const SwsFrame *src, int y, int h,
     ff_vk_exec_bind_shader(&p->s->vkctx, ec, &p->shd);
 
     vk->CmdDispatch(ec->buf,
-                    FFALIGN(src_f->width, p->shd.lg_size[0])/p->shd.lg_size[0],
-                    FFALIGN(src_f->height, p->shd.lg_size[1])/p->shd.lg_size[1],
+                    FFALIGN(dst_f->width, p->shd.lg_size[0])/p->shd.lg_size[0],
+                    FFALIGN(dst_f->height, p->shd.lg_size[1])/p->shd.lg_size[1],
                     1);
 
     ff_vk_exec_submit(&p->s->vkctx, ec);
@@ -997,7 +997,7 @@ static int add_ops_glsl(VulkanPriv *p, FFVulkanOpsCtx *s,
     GLSLC(0, void main()                                                      );
     GLSLC(0, {                                                                );
     GLSLC(1,     ivec2 pos = ivec2(gl_GlobalInvocationID.xy);                 );
-    GLSLC(1,     ivec2 size = imageSize(src_img[0]);                          );
+    GLSLC(1,     ivec2 size = imageSize(dst_img[0]);                          );
     GLSLC(1,     if (any(greaterThanEqual(pos, size)))                        );
     GLSLC(2,         return;                                                  );
     GLSLC(0,                                                                  );
