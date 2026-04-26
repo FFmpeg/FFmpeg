@@ -82,6 +82,13 @@ int ff_sws_vk_init(SwsContext *sws, AVBufferRef *dev_ref)
     return 0;
 }
 
+AVBufferRef *ff_sws_vk_device_ref(SwsContext *sws)
+{
+    SwsInternal *c = sws_internal(sws);
+    FFVulkanOpsCtx *s = c->hw_priv;
+    return s ? s->vkctx.device_ref : NULL;
+}
+
 #define MAX_DITHER_BUFS 4
 
 typedef struct VulkanPriv {

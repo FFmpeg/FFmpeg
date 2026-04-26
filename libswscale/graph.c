@@ -21,6 +21,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/cpu.h"
 #include "libavutil/error.h"
+#include "libavutil/hwcontext.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/macros.h"
 #include "libavutil/mem.h"
@@ -38,6 +39,9 @@
 #include "graph.h"
 #include "ops.h"
 #include "ops_dispatch.h"
+#if CONFIG_VULKAN
+#include "vulkan/ops.h"
+#endif
 
 int ff_sws_pass_aligned_width(const SwsPass *pass, int width)
 {
@@ -86,6 +90,31 @@ static int frame_alloc_planes(AVFrame *dst)
     return 0;
 }
 
+#if CONFIG_VULKAN
+static int pass_alloc_output_hw(SwsPass *pass, AVFrame *avframe,
+                                AVBufferRef *dev_ref)
+{
+    SwsPassBuffer *buffer = pass->output;
+    AVBufferRef *frames_ref = av_hwframe_ctx_alloc(dev_ref);
+    if (!frames_ref)
+        return AVERROR(ENOMEM);
+
+    AVHWFramesContext *hwfc = (AVHWFramesContext *)frames_ref->data;
+    hwfc->format    = AV_PIX_FMT_VULKAN;
+    hwfc->sw_format = pass->format;
+    hwfc->width     = buffer->width;
+    hwfc->height    = buffer->height;
+
+    int ret = av_hwframe_ctx_init(frames_ref);
+    if (ret >= 0) {
+        avframe->format = AV_PIX_FMT_VULKAN;
+        ret = av_hwframe_get_buffer(frames_ref, avframe, 0);
+    }
+    av_buffer_unref(&frames_ref);
+    return ret;
+}
+#endif
+
 static int pass_alloc_output(SwsPass *pass)
 {
     if (!pass || pass->output->avframe)
@@ -95,16 +124,35 @@ static int pass_alloc_output(SwsPass *pass)
     AVFrame *avframe = av_frame_alloc();
     if (!avframe)
         return AVERROR(ENOMEM);
-    avframe->format = pass->format;
     avframe->width  = buffer->width;
     avframe->height = buffer->height;
 
-    int ret = frame_alloc_planes(avframe);
+    int ret;
+
+#if CONFIG_VULKAN
+    const SwsGraph *graph = pass->graph;
+    if (graph->src.hw_format == AV_PIX_FMT_VULKAN &&
+        graph->dst.hw_format == AV_PIX_FMT_VULKAN) {
+        AVBufferRef *dev_ref = ff_sws_vk_device_ref(graph->ctx);
+        if (dev_ref) {
+            ret = pass_alloc_output_hw(pass, avframe, dev_ref);
+            if (ret >= 0)
+                goto done;
+            av_frame_unref(avframe);
+        }
+    }
+#endif
+
+    avframe->format = pass->format;
+    ret = frame_alloc_planes(avframe);
     if (ret < 0) {
         av_frame_free(&avframe);
         return ret;
     }
 
+#if CONFIG_VULKAN
+done:
+#endif
     buffer->avframe = avframe;
     ff_sws_frame_from_avframe(&buffer->frame, avframe);
     return 0;

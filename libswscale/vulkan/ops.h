@@ -38,4 +38,10 @@ typedef struct FFVulkanOpsCtx {
 
 int ff_sws_vk_init(SwsContext *sws, AVBufferRef *dev_ref);
 
+/**
+ * Returns the Vulkan device reference associated with `sws`, or NULL if
+ * Vulkan has not been initialized for this context.
+ */
+AVBufferRef *ff_sws_vk_device_ref(SwsContext *sws);
+
 #endif /* SWSCALE_VULKAN_OPS_H */
