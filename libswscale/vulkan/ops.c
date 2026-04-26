@@ -1003,6 +1003,44 @@ static void add_desc_read_write(FFVulkanDescriptorSetBinding *out_desc,
 #define QSTR "(%i/%i%s)"
 #define QTYPE(Q) (Q).num, (Q).den, cur_type == SWS_PIXEL_F32 ? ".0f" : ""
 
+static void read_glsl(SwsOpList *ops, const SwsOp *op, FFVulkanShader *shd,
+                      int idx, const char *type_name,
+                      const char *type_v, const char *type_s)
+{
+    const SwsFilterWeights *wd = op->rw.kernel;
+    if (op->rw.filter) {
+        const char *axis    = op->rw.filter == SWS_OP_FILTER_H ? "pos.x" : "pos.y";
+        const char *coord_x = op->rw.filter == SWS_OP_FILTER_H ? "o + i" : "pos.x";
+        const char *coord_y = op->rw.filter == SWS_OP_FILTER_H ? "pos.y" : "o + i";
+        GLSLC(1, tmp = vec4(0);                                               );
+        av_bprintf(&shd->src, "    int o = filter_o%i[%s];\n", idx, axis);
+        av_bprintf(&shd->src, "    for (int i = 0; i < %i; i++) {\n",
+                   wd->filter_size);
+        av_bprintf(&shd->src, "        float w = filter_w%i[%s][i];\n",
+                   idx, axis);
+        if (op->rw.packed) {
+            GLSLF(2, tmp += w * %s(imageLoad(src_img[%i], ivec2(%s, %s)));     ,
+                  type_v, ops->plane_src[0], coord_x, coord_y);
+        } else {
+            for (int i = 0; i < op->rw.elems; i++)
+                GLSLF(2,
+                      tmp.%c += w * %s(imageLoad(src_img[%i], ivec2(%s, %s))[0]); ,
+                      "xyzw"[i], type_s, ops->plane_src[i], coord_x, coord_y);
+        }
+        GLSLC(1, }                                                            );
+        GLSLC(1, f32 = tmp;                                                   );
+    } else {
+        if (op->rw.packed) {
+            GLSLF(1, %s = %s(imageLoad(src_img[%i], pos));                     ,
+                  type_name, type_v, ops->plane_src[0]);
+        } else {
+            for (int i = 0; i < op->rw.elems; i++)
+                GLSLF(1, %s.%c = %s(imageLoad(src_img[%i], pos)[0]);           ,
+                      type_name, "xyzw"[i], type_s, ops->plane_src[i]);
+        }
+    }
+}
+
 static int add_ops_glsl(VulkanPriv *p, FFVulkanOpsCtx *s,
                         SwsOpList *ops, FFVulkanShader *shd)
 {
@@ -1109,16 +1147,9 @@ static int add_ops_glsl(VulkanPriv *p, FFVulkanOpsCtx *s,
 
         switch (op->op) {
         case SWS_OP_READ: {
-            if (op->rw.frac || op->rw.filter) {
+            if (op->rw.frac)
                 return AVERROR(ENOTSUP);
-            } else if (op->rw.packed) {
-                GLSLF(1, %s = %s(imageLoad(src_img[%i], pos));                 ,
-                      type_name, type_v, ops->plane_src[0]);
-            } else {
-                for (int i = 0; i < op->rw.elems; i++)
-                    GLSLF(1, %s.%c = %s(imageLoad(src_img[%i], pos)[0]);       ,
-                          type_name, "xyzw"[i], type_s, ops->plane_src[i]);
-            }
+            read_glsl(ops, op, shd, n, type_name, type_v, type_s);
             break;
         }
         case SWS_OP_WRITE: {
