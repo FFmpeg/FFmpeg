@@ -90,13 +90,14 @@ AVBufferRef *ff_sws_vk_device_ref(SwsContext *sws)
 }
 
 #define MAX_DITHER_BUFS 4
+#define MAX_DATA_BUFS (MAX_DITHER_BUFS)
 
 typedef struct VulkanPriv {
     FFVulkanOpsCtx *s;
     FFVkExecPool e;
     FFVulkanShader shd;
-    FFVkBuffer dither_buf[MAX_DITHER_BUFS];
-    int nb_dither_buf;
+    FFVkBuffer data_bufs[MAX_DATA_BUFS];
+    int nb_data_bufs;
     enum FFVkShaderRepFormat src_rep;
     enum FFVkShaderRepFormat dst_rep;
 } VulkanPriv;
@@ -164,54 +165,68 @@ static void free_fn(void *priv)
     VulkanPriv *p = priv;
     ff_vk_exec_pool_free(&p->s->vkctx, &p->e);
     ff_vk_shader_free(&p->s->vkctx, &p->shd);
-    for (int i = 0; i < p->nb_dither_buf; i++)
-        ff_vk_free_buf(&p->s->vkctx, &p->dither_buf[i]);
+    for (int i = 0; i < p->nb_data_bufs; i++)
+        ff_vk_free_buf(&p->s->vkctx, &p->data_bufs[i]);
     av_refstruct_unref(&p->s);
     av_free(priv);
 }
 
-static int create_dither_bufs(FFVulkanOpsCtx *s, VulkanPriv *p, SwsOpList *ops)
+static int create_dither_buf(FFVulkanOpsCtx *s, VulkanPriv *p,
+                             const SwsDitherOp *dd, FFVkBuffer *buf)
 {
     int err;
-    p->nb_dither_buf = 0;
+
+    int size = (1 << dd->size_log2);
+    err = ff_vk_create_buf(&s->vkctx, buf,
+                           size*size*sizeof(float), NULL, NULL,
+                           VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                           VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
+                           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+    if (err < 0)
+        return err;
+
+    float *dither_data;
+    err = ff_vk_map_buffer(&s->vkctx, buf, (uint8_t **)&dither_data, 0);
+    if (err < 0)
+        goto fail;
+
+    for (int i = 0; i < size; i++) {
+        for (int j = 0; j < size; j++) {
+            const AVRational r = dd->matrix[i*size + j];
+            dither_data[i*size + j] = r.num/(float)r.den;
+        }
+    }
+
+    ff_vk_unmap_buffer(&s->vkctx, buf, 1);
+
+    return 0;
+
+fail:
+    ff_vk_free_buf(&p->s->vkctx, buf);
+    return err;
+}
+
+static int create_bufs(FFVulkanOpsCtx *s, VulkanPriv *p, SwsOpList *ops)
+{
+    int err;
+    p->nb_data_bufs = 0;
     for (int n = 0; n < ops->num_ops; n++) {
         const SwsOp *op = &ops->ops[n];
-        if (op->op != SWS_OP_DITHER)
-            continue;
-        av_assert0(p->nb_dither_buf + 1 <= MAX_DITHER_BUFS);
-
-        int size = (1 << op->dither.size_log2);
-        int idx = p->nb_dither_buf;
-        err = ff_vk_create_buf(&s->vkctx, &p->dither_buf[idx],
-                               size*size*sizeof(float), NULL, NULL,
-                               VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                               VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
-                               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-        if (err < 0)
-            goto fail;
-        p->nb_dither_buf++;
-
-        float *dither_data;
-        err = ff_vk_map_buffer(&s->vkctx, &p->dither_buf[idx],
-                               (uint8_t **)&dither_data, 0);
-        if (err < 0)
-            goto fail;
-
-        for (int i = 0; i < size; i++) {
-            for (int j = 0; j < size; j++) {
-                const AVRational r = op->dither.matrix[i*size + j];
-                dither_data[i*size + j] = r.num/(float)r.den;
-            }
+        if (op->op == SWS_OP_DITHER) {
+            av_assert0(p->nb_data_bufs + 1 <= FF_ARRAY_ELEMS(p->data_bufs));
+            err = create_dither_buf(s, p, &op->dither,
+                                    &p->data_bufs[p->nb_data_bufs]);
+            if (err < 0)
+                goto fail;
+            p->nb_data_bufs++;
         }
-
-        ff_vk_unmap_buffer(&s->vkctx, &p->dither_buf[idx], 1);
     }
 
     return 0;
 
 fail:
-    for (int i = 0; i < p->nb_dither_buf; i++)
-        ff_vk_free_buf(&p->s->vkctx, &p->dither_buf[i]);
+    for (int i = 0; i < p->nb_data_bufs; i++)
+        ff_vk_free_buf(&p->s->vkctx, &p->data_bufs[i]);
     return err;
 }
 
@@ -227,7 +242,7 @@ struct DitherData {
 };
 
 typedef struct SPIRVIDs {
-    int in_vars[3 + MAX_DITHER_BUFS];
+    int in_vars[3 + MAX_DATA_BUFS];
 
     int glfn;
     int ep;
@@ -598,7 +613,7 @@ static int add_ops_spirv(VulkanPriv *p, FFVulkanOpsCtx *s,
     if (op_r)
         p->src_rep = op_r->type == SWS_PIXEL_F32 ? FF_VK_REP_FLOAT : FF_VK_REP_UINT;
 
-    FFVulkanDescriptorSetBinding desc_set[MAX_DITHER_BUFS] = {
+    FFVulkanDescriptorSetBinding desc_set[MAX_DATA_BUFS] = {
         {
             .type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
             .stages = VK_SHADER_STAGE_COMPUTE_BIT,
@@ -613,7 +628,7 @@ static int add_ops_spirv(VulkanPriv *p, FFVulkanOpsCtx *s,
     ff_vk_shader_add_descriptor_set(&s->vkctx, shd, desc_set, 2, 0, 0);
 
     /* Create dither buffers */
-    int err = create_dither_bufs(s, p, ops);
+    int err = create_bufs(s, p, ops);
     if (err < 0)
         return err;
 
@@ -965,7 +980,7 @@ static int add_ops_glsl(VulkanPriv *p, FFVulkanOpsCtx *s,
     add_desc_read_write(&buf_desc[nb_desc++], &p->dst_rep, write);
     ff_vk_shader_add_descriptor_set(&s->vkctx, shd, buf_desc, nb_desc, 0, 0);
 
-    err = create_dither_bufs(s, p, ops);
+    err = create_bufs(s, p, ops);
     if (err < 0)
         return err;
 
@@ -1213,9 +1228,9 @@ static int compile(SwsContext *sws, SwsOpList *ops, SwsCompiledOp *out, int glsl
     if (err < 0)
         goto fail;
 
-    for (int i = 0; i < p->nb_dither_buf; i++)
+    for (int i = 0; i < p->nb_data_bufs; i++)
         ff_vk_shader_update_desc_buffer(&s->vkctx, &p->e.contexts[0], &p->shd,
-                                        1, i, 0, &p->dither_buf[i],
+                                        1, i, 0, &p->data_bufs[i],
                                         0, VK_WHOLE_SIZE, VK_FORMAT_UNDEFINED);
 
     *out = (SwsCompiledOp) {
