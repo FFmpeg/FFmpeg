@@ -1,0 +1,27 @@
+1d3dcf6e56ee623bcee8bc2d87098a9d *tests/data/fate/generic-tags-remux-vorbiscomment.flac
+8647 tests/data/fate/generic-tags-remux-vorbiscomment.flac
+#extradata 0:       34, 0x93a20b79
+#tb 0: 1/44100
+#media_type 0: audio
+#codec_id 0: flac
+#sample_rate 0: 44100
+#channel_layout_name 0: mono
+[FORMAT]
+TAG:album=Hurry Up, We're Dreaming
+TAG:album_artist=M83
+TAG:artist=M83
+TAG:comment=I love M83
+TAG:composer=Anthony Gonzalez
+TAG:copyright=2011 M83 Recording Inc
+TAG:date=2011-10-17
+TAG:disc=1
+TAG:disc_subtitle=Hurry Up
+TAG:encoded_by=Tau
+TAG:filename=Intro.mp3
+TAG:genre=Electronic
+TAG:language=eng
+TAG:performer=Anthony Gonzalez
+TAG:publisher=M83 Recording Inc
+TAG:title=Intro
+TAG:track=1/11
+[/FORMAT]

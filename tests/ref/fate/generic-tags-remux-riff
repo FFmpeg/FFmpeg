@@ -1,0 +1,19 @@
+9571b4873186aae56de614a2aada6150 *tests/data/fate/generic-tags-remux-riff.wav
+246 tests/data/fate/generic-tags-remux-riff.wav
+#tb 0: 1/44100
+#media_type 0: audio
+#codec_id 0: pcm_s16le
+#sample_rate 0: 44100
+#channel_layout_name 0: mono
+[FORMAT]
+TAG:artist=M83
+TAG:comment=I love M83
+TAG:copyright=2011 M83 Recording Inc
+TAG:date=2011-10-17
+TAG:genre=Electronic
+TAG:language=eng
+TAG:title=Intro
+TAG:album=Hurry Up, We're Dreaming
+TAG:track=1/11
+TAG:encoded_by=Tau
+[/FORMAT]

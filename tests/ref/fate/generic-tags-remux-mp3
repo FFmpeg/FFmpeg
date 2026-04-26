@@ -1,0 +1,34 @@
+ID3v2 frame TALB (26 bytes):|.Hurry Up, We're Dreaming.|
+ID3v2 frame TPE2 (5 bytes):|.M83.|
+ID3v2 frame TPE1 (5 bytes):|.M83.|
+ID3v2 frame TXXX (20 bytes):|.comment.I love M83.|
+ID3v2 frame TCOM (18 bytes):|.Anthony Gonzalez.|
+ID3v2 frame TCOP (24 bytes):|.2011 M83 Recording Inc.|
+ID3v2 frame TDRC (12 bytes):|.2011-10-17.|
+ID3v2 frame TPOS (3 bytes):|.1.|
+ID3v2 frame TXXX (24 bytes):|.disc_subtitle.Hurry Up.|
+ID3v2 frame TENC (5 bytes):|.Tau.|
+ID3v2 frame TXXX (20 bytes):|.filename.Intro.mp3.|
+ID3v2 frame TCON (12 bytes):|.Electronic.|
+ID3v2 frame TLAN (5 bytes):|.eng.|
+ID3v2 frame TPE3 (18 bytes):|.Anthony Gonzalez.|
+ID3v2 frame TPUB (19 bytes):|.M83 Recording Inc.|
+ID3v2 frame TIT2 (7 bytes):|.Intro.|
+ID3v2 frame TRCK (6 bytes):|.1/11.|
+album=Hurry Up, We're Dreaming
+album_artist=M83
+artist=M83
+comment=I love M83
+composer=Anthony Gonzalez
+copyright=2011 M83 Recording Inc
+date=2011-10-17
+disc=1
+disc_subtitle=Hurry Up
+encoded_by=Tau
+filename=Intro.mp3
+genre=Electronic
+language=eng
+performer=Anthony Gonzalez
+publisher=M83 Recording Inc
+title=Intro
+track=1/11

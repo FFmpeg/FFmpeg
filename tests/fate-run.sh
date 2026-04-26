@@ -689,6 +689,18 @@ venc_data(){
     run tools/venc_data_dump${EXECSUF} ${file} ${stream} ${frames} ${threads} ${thread_type}
 }
 
+generic_tags(){
+    src_fmt="$1"
+    srcfile="$2"
+    enc_fmt="$3"
+    enc_codec="$4"
+    extra_args="${5:-}"
+    transcode "$src_fmt" "$srcfile" "$enc_fmt" \
+        "-c:a $enc_codec $extra_args" \
+        "-c copy" \
+        "-show_entries format_tags"
+}
+
 null(){
     :
 }
