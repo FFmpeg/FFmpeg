@@ -799,14 +799,14 @@ static int scale_frame(AVFilterLink *link, AVFrame **frame_in,
             scale->var_values[VAR_T] = TS2T(in->pts, link->time_base);
         }
 
-        link->dst->inputs[0]->format        = in->format;
-        link->dst->inputs[0]->w             = in->width;
-        link->dst->inputs[0]->h             = in->height;
-        link->dst->inputs[0]->colorspace    = in->colorspace;
-        link->dst->inputs[0]->color_range   = in->color_range;
+        link->format              = in->format;
+        link->w                   = in->width;
+        link->h                   = in->height;
+        link->colorspace          = in->colorspace;
+        link->color_range         = in->color_range;
 
-        link->dst->inputs[0]->sample_aspect_ratio.den = in->sample_aspect_ratio.den;
-        link->dst->inputs[0]->sample_aspect_ratio.num = in->sample_aspect_ratio.num;
+        link->sample_aspect_ratio.den = in->sample_aspect_ratio.den;
+        link->sample_aspect_ratio.num = in->sample_aspect_ratio.num;
 
         if ((ret = config_props(outlink)) < 0)
             goto err;
