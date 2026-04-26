@@ -90,7 +90,8 @@ AVBufferRef *ff_sws_vk_device_ref(SwsContext *sws)
 }
 
 #define MAX_DITHER_BUFS 4
-#define MAX_DATA_BUFS (MAX_DITHER_BUFS)
+#define MAX_FILT_BUFS 4
+#define MAX_DATA_BUFS (MAX_DITHER_BUFS + MAX_FILT_BUFS*4)
 
 typedef struct VulkanPriv {
     FFVulkanOpsCtx *s;
@@ -171,6 +172,41 @@ static void free_fn(void *priv)
     av_free(priv);
 }
 
+static int create_filter_buf(FFVulkanOpsCtx *s, VulkanPriv *p,
+                             const SwsFilterWeights *wd, FFVkBuffer *buf)
+{
+    int err;
+
+    /* Weights */
+    err = ff_vk_create_buf(&s->vkctx, buf,
+                           wd->num_weights*sizeof(float) +
+                           wd->dst_size*sizeof(int32_t), NULL, NULL,
+                           VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                           VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
+                           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+    if (err < 0)
+        goto fail;
+
+    float *weights_data;
+    err = ff_vk_map_buffer(&s->vkctx, buf,
+                           (uint8_t **)&weights_data, 0);
+    if (err < 0)
+        goto fail;
+    for (int i = 0; i < wd->num_weights; i++)
+        weights_data[i] = (float) wd->weights[i] / SWS_FILTER_SCALE;
+
+    memcpy(weights_data + wd->num_weights,
+           wd->offsets, wd->dst_size*sizeof(int32_t));
+
+    ff_vk_unmap_buffer(&s->vkctx, buf, 1);
+
+    return 0;
+
+fail:
+    ff_vk_free_buf(&p->s->vkctx, buf);
+    return 0;
+}
+
 static int create_dither_buf(FFVulkanOpsCtx *s, VulkanPriv *p,
                              const SwsDitherOp *dd, FFVkBuffer *buf)
 {
@@ -215,6 +251,21 @@ static int create_bufs(FFVulkanOpsCtx *s, VulkanPriv *p, SwsOpList *ops)
         if (op->op == SWS_OP_DITHER) {
             av_assert0(p->nb_data_bufs + 1 <= FF_ARRAY_ELEMS(p->data_bufs));
             err = create_dither_buf(s, p, &op->dither,
+                                    &p->data_bufs[p->nb_data_bufs]);
+            if (err < 0)
+                goto fail;
+            p->nb_data_bufs++;
+        } else if (op->op == SWS_OP_FILTER_H || op->op == SWS_OP_FILTER_V) {
+            av_assert0(p->nb_data_bufs + 1 <= FF_ARRAY_ELEMS(p->data_bufs));
+            err = create_filter_buf(s, p, op->filter.kernel,
+                                    &p->data_bufs[p->nb_data_bufs]);
+            if (err < 0)
+                goto fail;
+            p->nb_data_bufs++;
+        } else if ((op->op == SWS_OP_READ ||
+                    op->op == SWS_OP_WRITE) && op->rw.filter) {
+            av_assert0(p->nb_data_bufs + 1 <= FF_ARRAY_ELEMS(p->data_bufs));
+            err = create_filter_buf(s, p, op->rw.kernel,
                                     &p->data_bufs[p->nb_data_bufs]);
             if (err < 0)
                 goto fail;
@@ -995,6 +1046,26 @@ static int add_ops_glsl(VulkanPriv *p, FFVulkanOpsCtx *s,
             snprintf(data_buf_name[nb_desc], 256, "dither_buf%i", n);
             snprintf(data_str_name[nb_desc], 256, "float dither_mat%i[%i][%i];",
                      n, size, size);
+            buf_desc[nb_desc] = (FFVulkanDescriptorSetBinding) {
+                .name        = data_buf_name[nb_desc],
+                .type        = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
+                .mem_layout  = "scalar",
+                .buf_content = data_str_name[nb_desc],
+            };
+            nb_desc++;
+        } else if (op->op == SWS_OP_FILTER_H || op->op == SWS_OP_FILTER_V ||
+                   ((op->op == SWS_OP_READ || op->op == SWS_OP_WRITE) &&
+                    op->rw.filter)) {
+            const SwsFilterWeights *wd = (op->op == SWS_OP_READ ||
+                                          op->op == SWS_OP_WRITE) ?
+                                         op->rw.kernel : op->filter.kernel;
+            snprintf(data_buf_name[nb_desc], 256, "filter_buf%i", n);
+            snprintf(data_str_name[nb_desc], 256,
+                     "float filter_w%i[%i][%i];\n"
+                 "    int filter_o%i[%i];",
+                     n, wd->dst_size, wd->filter_size,
+                     n, wd->dst_size);
             buf_desc[nb_desc] = (FFVulkanDescriptorSetBinding) {
                 .name        = data_buf_name[nb_desc],
                 .type        = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
