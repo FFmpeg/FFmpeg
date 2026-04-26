@@ -58,7 +58,6 @@ int ff_hls_write_file_entry(AVIOContext *out, int insert_discont,
                             int64_t pos /* Used only if HLS_SINGLE_FILE flag is set */,
                             const char *baseurl /* Ignored if NULL */,
                             const char *filename, double *prog_date_time,
-                            int64_t video_keyframe_size, int64_t video_keyframe_pos,
                             int iframe_mode);
 void ff_hls_write_end_list (AVIOContext *out);
 
