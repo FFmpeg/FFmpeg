@@ -985,25 +985,25 @@ static int add_ops_glsl(VulkanPriv *p, FFVulkanOpsCtx *s,
         return err;
 
     nb_desc = 0;
-    char dither_buf_name[MAX_DITHER_BUFS][64];
-    char dither_mat_name[MAX_DITHER_BUFS][64];
+    char data_buf_name[MAX_DATA_BUFS][256];
+    char data_str_name[MAX_DATA_BUFS][256];
     for (int n = 0; n < ops->num_ops; n++) {
         const SwsOp *op = &ops->ops[n];
-        if (op->op != SWS_OP_DITHER)
-            continue;
-        int size = (1 << op->dither.size_log2);
-        av_assert0(size < 8192);
-        snprintf(dither_buf_name[nb_desc], 64, "dither_buf%i", n);
-        snprintf(dither_mat_name[nb_desc], 64, "float dither_mat%i[%i][%i];",
-                 n, size, size);
-        buf_desc[nb_desc] = (FFVulkanDescriptorSetBinding) {
-            .name        = dither_buf_name[nb_desc],
-            .type        = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
-            .mem_layout  = "scalar",
-            .buf_content = dither_mat_name[nb_desc],
-        };
-        nb_desc++;
+        if (op->op == SWS_OP_DITHER) {
+            int size = (1 << op->dither.size_log2);
+            av_assert0(size < 8192);
+            snprintf(data_buf_name[nb_desc], 256, "dither_buf%i", n);
+            snprintf(data_str_name[nb_desc], 256, "float dither_mat%i[%i][%i];",
+                     n, size, size);
+            buf_desc[nb_desc] = (FFVulkanDescriptorSetBinding) {
+                .name        = data_buf_name[nb_desc],
+                .type        = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
+                .mem_layout  = "scalar",
+                .buf_content = data_str_name[nb_desc],
+            };
+            nb_desc++;
+        }
     }
     if (nb_desc)
         ff_vk_shader_add_descriptor_set(&s->vkctx, shd, buf_desc,
