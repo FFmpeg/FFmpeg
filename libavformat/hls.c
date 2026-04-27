@@ -174,6 +174,14 @@ struct playlist {
     int n_init_sections;
     struct segment **init_sections;
     int is_subtitle; /* Indicates if it's a subtitle playlist */
+
+    /* Some HLS streams repeat the current timed-ID3 metadata at every segment
+     * boundary so late-joining clients get a fresh copy. Track the last seen
+     * value to avoid raising AVSTREAM_EVENT_FLAG_METADATA_UPDATED spuriously
+     * on those duplicates. timed_id3_stream_index is the subdemuxer stream
+     * index of the first timed-ID3 stream seen; -1 if none. */
+    AVDictionary *timed_id3_metadata;
+    int timed_id3_stream_index;
 };
 
 /*
@@ -275,6 +283,7 @@ static void free_playlist_list(HLSContext *c)
         av_freep(&pls->renditions);
         av_freep(&pls->id3_buf);
         av_dict_free(&pls->id3_initial);
+        av_dict_free(&pls->timed_id3_metadata);
         ff_id3v2_free_extra_meta(&pls->id3_deferred_extra);
         av_freep(&pls->init_sec_buf);
         av_packet_free(&pls->pkt);
@@ -335,6 +344,7 @@ static struct playlist *new_playlist(HLSContext *c, const char *url,
 
     pls->is_id3_timestamped = -1;
     pls->id3_mpegts_timestamp = AV_NOPTS_VALUE;
+    pls->timed_id3_stream_index = -1;
 
     dynarray_add(&c->playlists, &c->n_playlists, pls);
     return pls;
@@ -2108,6 +2118,16 @@ static int update_streams_from_subdemuxer(AVFormatContext *s, struct playlist *p
         err = set_stream_info_from_input_stream(st, pls, ist);
         if (err < 0)
             return err;
+
+        if (ist->codecpar->codec_id == AV_CODEC_ID_TIMED_ID3) {
+            if (pls->timed_id3_stream_index < 0)
+                pls->timed_id3_stream_index = ist_idx;
+            else
+                av_log(s, AV_LOG_WARNING,
+                       "Playlist has multiple timed ID3 streams; "
+                       "only stream %d will be used for metadata propagation\n",
+                       pls->timed_id3_stream_index);
+        }
     }
 
     return 0;
@@ -2553,6 +2573,29 @@ static int compare_ts_with_wrapdetect(int64_t ts_a, struct playlist *pls_a,
     return av_compare_mod(scaled_ts_a, scaled_ts_b, 1LL << 33);
 }
 
+/**
+ * Check whether any entry in @p update differs from the corresponding entry
+ * in @p current.
+ *
+ * HLS segments can repeat timed ID3 metadata in every segment so that
+ * listeners joining mid-stream immediately receive the current track
+ * information. Only signal a metadata change when values actually differ
+ * to avoid spurious updates on every segment boundary.
+ */
+static int metadata_has_changed(const AVDictionary *current,
+                                 const AVDictionary *update)
+{
+    if (av_dict_count(current) != av_dict_count(update))
+        return 1;
+    const AVDictionaryEntry *e = NULL;
+    while ((e = av_dict_iterate(update, e))) {
+        const AVDictionaryEntry *cur = av_dict_get(current, e->key, NULL, 0);
+        if (!cur || strcmp(cur->value, e->value))
+            return 1;
+    }
+    return 0;
+}
+
 static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     HLSContext *c = s->priv_data;
@@ -2693,6 +2736,24 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
 
         ist = pls->ctx->streams[pls->pkt->stream_index];
         st = pls->main_streams[pls->pkt->stream_index];
+
+        // Propagate timed-ID3 metadata changes to the main stream, suppressing
+        // duplicate packets that repeat unchanged metadata at segment boundaries.
+        if (ist->codecpar->codec_id == AV_CODEC_ID_TIMED_ID3 &&
+            pls->pkt->stream_index == pls->timed_id3_stream_index &&
+            ist->event_flags & AVSTREAM_EVENT_FLAG_METADATA_UPDATED) {
+            ist->event_flags &= ~AVSTREAM_EVENT_FLAG_METADATA_UPDATED;
+            if (metadata_has_changed(pls->timed_id3_metadata, ist->metadata)) {
+                int ret = av_dict_copy(&st->metadata, ist->metadata, 0);
+                if (ret < 0)
+                    return ret;
+                av_dict_free(&pls->timed_id3_metadata);
+                ret = av_dict_copy(&pls->timed_id3_metadata, ist->metadata, 0);
+                if (ret < 0)
+                    return ret;
+                st->event_flags |= AVSTREAM_EVENT_FLAG_METADATA_UPDATED;
+            }
+        }
 
         av_packet_move_ref(pkt, pls->pkt);
         pkt->stream_index = st->index;
