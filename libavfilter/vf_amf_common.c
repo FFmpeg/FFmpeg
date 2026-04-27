@@ -400,8 +400,7 @@ AVFrame *amf_amfsurface_to_avframe(AVFilterContext *avctx, AMFSurface* pSurface)
             int ret = av_hwframe_get_buffer(ctx->hwframes_out_ref, frame, 0);
             if (ret < 0) {
                 av_log(avctx, AV_LOG_ERROR, "Get hw frame failed.\n");
-                av_frame_free(&frame);
-                return NULL;
+                goto fail;
             }
             frame->data[0] = (uint8_t *)pSurface;
             frame->buf[1] = av_buffer_create((uint8_t *)pSurface, sizeof(AMFSurface),
@@ -410,7 +409,7 @@ AVFrame *amf_amfsurface_to_avframe(AVFilterContext *avctx, AMFSurface* pSurface)
                                             AV_BUFFER_FLAG_READONLY);
         } else { // FIXME: add processing of other hw formats
             av_log(ctx, AV_LOG_ERROR, "Unknown pixel format\n");
-            return NULL;
+            goto fail;
         }
     } else {
 
@@ -448,13 +447,16 @@ AVFrame *amf_amfsurface_to_avframe(AVFilterContext *avctx, AMFSurface* pSurface)
         default:
             {
                 av_log(avctx, AV_LOG_ERROR, "Unsupported memory type : %d\n", pSurface->pVtbl->GetMemoryType(pSurface));
-                return NULL;
+                goto fail;
             }
         }
     }
 
 
     return frame;
+fail:
+    av_frame_free(&frame);
+    return NULL;
 }
 
 int amf_avframe_to_amfsurface(AVFilterContext *avctx, const AVFrame *frame, AMFSurface** ppSurface)
