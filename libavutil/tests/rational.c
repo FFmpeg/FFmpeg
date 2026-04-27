@@ -53,6 +53,59 @@ int main(void)
         }
     }
 
+    /* Check overflow behavior and edge cases */
+    static const AVRational unit_mul_q[][3] = {
+        {{INT_MAX, 2},      { 2, 1},            { INT_MAX, 1}},
+        {{INT_MAX, 2},      {-2, 1},            {-INT_MAX, 1}},
+        {{INT_MAX, 2},      { 0, 1},            {0, 1}},
+        {{INT_MIN, 2},      { 2, 1},            {-INT_MAX, 1}}, /* not INT_MIN */
+        {{INT_MIN, 2},      {-2, 1},            { INT_MAX, 1}},
+        {{INT_MIN, 2},      { 0, 1},            {0, 1}},
+        {{INT_MAX >> 8, 1}, {INT_MAX >> 8, 1},  {INT_MAX, 1}},
+        {{1, INT_MAX >> 8}, {1, INT_MAX >> 8},  {0, 1}},
+        {{1, 1},            {0, 0},             {0, 0}},
+        {{0, 1},            {0, 0},             {0, 0}},
+    };
+
+    for (i = 0; i < FF_ARRAY_ELEMS(unit_mul_q); i++) {
+        for (int c = 0; c < 2; c++) { /* test commutativity */
+            AVRational a = unit_mul_q[i][c ? 1 : 0];
+            AVRational b = unit_mul_q[i][c ? 0 : 1];
+            AVRational c = unit_mul_q[i][2];
+            AVRational r = av_mul_q(a, b);
+            if (r.num != c.num || r.den != c.den) {
+                av_log(NULL, AV_LOG_ERROR, "%d/%d * %d/%d = %d/%d, expected %d/%d\n",
+                       a.num, a.den, b.num, b.den, r.num, r.den, c.num, c.den);
+            }
+        }
+    }
+
+    static const AVRational unit_add_q[][3] = {
+        {{INT_MAX, 1},      { 2, 2},            { INT_MAX, 1}},
+        {{INT_MAX, 1},      {-2, 2},            { INT_MAX - 1, 1}},
+        {{INT_MAX, 1},      { 0, 2},            { INT_MAX, 1}},
+        {{INT_MIN, 1},      { 2, 2},            {-INT_MAX, 1}},
+        {{INT_MIN, 1},      {-2, 2},            {-INT_MAX, 1}},
+        {{INT_MIN, 1},      { 0, 2},            {-INT_MAX, 1}},
+        {{INT_MAX - 10, 1}, {20, 1},            { INT_MAX, 1}},
+        {{2, INT_MAX},      {2, INT_MAX},       {4, INT_MAX}},
+        {{1, 1},            {0, 0},             {0, 0}},
+        {{0, 1},            {0, 0},             {0, 0}},
+    };
+
+    for (i = 0; i < FF_ARRAY_ELEMS(unit_add_q); i++) {
+        for (int c = 0; c < 2; c++) { /* test commutativity */
+            AVRational a = unit_add_q[i][c ? 1 : 0];
+            AVRational b = unit_add_q[i][c ? 0 : 1];
+            AVRational c = unit_add_q[i][2];
+            AVRational r = av_add_q(a, b);
+            if (r.num != c.num || r.den != c.den) {
+                av_log(NULL, AV_LOG_ERROR, "%d/%d + %d/%d = %d/%d, expected %d/%d\n",
+                       a.num, a.den, b.num, b.den, r.num, r.den, c.num, c.den);
+            }
+        }
+    }
+
     for (i = 0; i < FF_ARRAY_ELEMS(numlist); i++) {
         int64_t a = numlist[i];
 
