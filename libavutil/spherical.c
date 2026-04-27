@@ -26,13 +26,14 @@
 AVSphericalMapping *av_spherical_alloc(size_t *size)
 {
     AVSphericalMapping *spherical = av_mallocz(sizeof(AVSphericalMapping));
+
+    if (size)
+        *size = spherical ? sizeof(*spherical) : 0;
+
     if (!spherical)
         return NULL;
 
     spherical->projection = AV_SPHERICAL_RECTILINEAR;
-
-    if (size)
-        *size = sizeof(*spherical);
 
     return spherical;
 }

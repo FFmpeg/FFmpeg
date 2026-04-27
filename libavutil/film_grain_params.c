@@ -25,7 +25,7 @@ AVFilmGrainParams *av_film_grain_params_alloc(size_t *size)
     AVFilmGrainParams *params = av_mallocz(sizeof(AVFilmGrainParams));
 
     if (size)
-        *size = sizeof(*params);
+        *size = params ? sizeof(*params) : 0;
 
     return params;
 }

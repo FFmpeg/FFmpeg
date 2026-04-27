@@ -27,11 +27,9 @@ AVDOVIDecoderConfigurationRecord *av_dovi_alloc(size_t *size)
 {
     AVDOVIDecoderConfigurationRecord *dovi =
         av_mallocz(sizeof(AVDOVIDecoderConfigurationRecord));
-    if (!dovi)
-        return NULL;
 
-     if (size)
-        *size = sizeof(*dovi);
+    if (size)
+        *size = dovi ? sizeof(*dovi) : 0;
 
     return dovi;
 }
@@ -47,11 +45,12 @@ typedef struct AVDOVIMetadataInternal {
 AVDOVIMetadata *av_dovi_metadata_alloc(size_t *size)
 {
     AVDOVIMetadataInternal *dovi = av_mallocz(sizeof(AVDOVIMetadataInternal));
-    if (!dovi)
-        return NULL;
 
     if (size)
-        *size = sizeof(*dovi);
+        *size = dovi ? sizeof(*dovi) : 0;
+
+    if (!dovi)
+        return NULL;
 
     dovi->metadata = (struct AVDOVIMetadata) {
         .header_offset      = offsetof(AVDOVIMetadataInternal, header),

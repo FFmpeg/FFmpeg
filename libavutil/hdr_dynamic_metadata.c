@@ -36,11 +36,9 @@ static const int32_t saturation_weight_den = 8;
 AVDynamicHDRPlus *av_dynamic_hdr_plus_alloc(size_t *size)
 {
     AVDynamicHDRPlus *hdr_plus = av_mallocz(sizeof(AVDynamicHDRPlus));
-    if (!hdr_plus)
-        return NULL;
 
     if (size)
-        *size = sizeof(*hdr_plus);
+        *size = hdr_plus ? sizeof(*hdr_plus) : 0;
 
     return hdr_plus;
 }
@@ -399,11 +397,9 @@ int av_dynamic_hdr_plus_to_t35(const AVDynamicHDRPlus *s, uint8_t **data, size_t
 AVDynamicHDRSmpte2094App5 *av_dynamic_hdr_smpte2094_app5_alloc(size_t *size)
 {
     AVDynamicHDRSmpte2094App5 *smpte2094_app5 = av_mallocz(sizeof(AVDynamicHDRSmpte2094App5));
-    if (!smpte2094_app5)
-        return NULL;
 
     if (size)
-        *size = sizeof(*smpte2094_app5);
+        *size = smpte2094_app5 ? sizeof(*smpte2094_app5) : 0;
 
     return smpte2094_app5;
 }

@@ -24,11 +24,9 @@
 AVDynamicHDRVivid *av_dynamic_hdr_vivid_alloc(size_t *size)
 {
     AVDynamicHDRVivid *hdr_vivid = av_mallocz(sizeof(AVDynamicHDRVivid));
-    if (!hdr_vivid)
-        return NULL;
 
     if (size)
-        *size = sizeof(*hdr_vivid);
+        *size = hdr_vivid ? sizeof(*hdr_vivid) : 0;
 
     return hdr_vivid;
 }

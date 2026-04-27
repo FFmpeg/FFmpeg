@@ -32,13 +32,14 @@ AVAmbientViewingEnvironment *av_ambient_viewing_environment_alloc(size_t *size)
 {
     AVAmbientViewingEnvironment *env =
         av_mallocz(sizeof(AVAmbientViewingEnvironment));
+
+    if (size)
+        *size = env ? sizeof(*env) : 0;
+
     if (!env)
         return NULL;
 
     get_defaults(env);
-
-     if (size)
-        *size = sizeof(*env);
 
     return env;
 }

@@ -39,13 +39,14 @@ AVStereo3D *av_stereo3d_alloc(void)
 AVStereo3D *av_stereo3d_alloc_size(size_t *size)
 {
     AVStereo3D *stereo = av_mallocz(sizeof(AVStereo3D));
+
+    if (size)
+        *size = stereo ? sizeof(*stereo) : 0;
+
     if (!stereo)
         return NULL;
 
     get_defaults(stereo);
-
-    if (size)
-        *size = sizeof(*stereo);
 
     return stereo;
 }

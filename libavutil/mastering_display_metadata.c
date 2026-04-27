@@ -44,13 +44,14 @@ AVMasteringDisplayMetadata *av_mastering_display_metadata_alloc(void)
 AVMasteringDisplayMetadata *av_mastering_display_metadata_alloc_size(size_t *size)
 {
     AVMasteringDisplayMetadata *mastering = av_mallocz(sizeof(AVMasteringDisplayMetadata));
+
+    if (size)
+        *size = mastering ? sizeof(*mastering) : 0;
+
     if (!mastering)
         return NULL;
 
     get_defaults(mastering);
-
-    if (size)
-        *size = sizeof(*mastering);
 
     return mastering;
 }
@@ -74,7 +75,7 @@ AVContentLightMetadata *av_content_light_metadata_alloc(size_t *size)
     AVContentLightMetadata *metadata = av_mallocz(sizeof(AVContentLightMetadata));
 
     if (size)
-        *size = sizeof(*metadata);
+        *size = metadata ? sizeof(*metadata) : 0;
 
     return metadata;
 }
