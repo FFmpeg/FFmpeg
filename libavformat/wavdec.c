@@ -885,7 +885,9 @@ static int w64_read_header(AVFormatContext *s)
     if (avio_rl64(pb) < 16 + 8 + 16 + 8 + 16 + 8)
         return AVERROR_INVALIDDATA;
 
-    avio_read(pb, guid, 16);
+    ret = ffio_read_size(pb, guid, 16);
+    if (ret < 0)
+        return ret;
     if (memcmp(guid, ff_w64_guid_wave, 16)) {
         av_log(s, AV_LOG_ERROR, "could not find wave guid\n");
         return AVERROR_INVALIDDATA;
