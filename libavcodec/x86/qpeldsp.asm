@@ -44,28 +44,11 @@ coeff16_1: times 2 db 20, -6, 20, -6, -6, 20, -6, 20
 
 SECTION .text
 
-%macro PUT_NO_RND_PIXELS_L2 2
-; void ff_put_no_rnd_pixels8x9_l2(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
-;                                 ptrdiff_t dstStride, ptrdiff_t src1Stride)
-cglobal put_no_rnd_pixels%1x%2_l2, 5,6,5
-    movu         m0, [r1]
-    mova         m1, [r2]
-    pcmpeqb      m4, m4
-    add          r1, r4
-    add          r2, %1
-    pxor         m0, m4
-    pxor         m1, m4
-    pavgb        m0, m1
-    pxor         m0, m4
-    mova       [r0], m0
-    add          r0, r3
-    jmp          put_no_rnd_pixels%1x%1_after_prologue_ %+ cpuname
-
+%macro PUT_NO_RND_PIXELS_L2 1
 ; void ff_put_no_rnd_pixels8x8_l2(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
 ;                                 ptrdiff_t dstStride, ptrdiff_t src1Stride)
 cglobal put_no_rnd_pixels%1x%1_l2, 5,6,5
     pcmpeqb      m4, m4
-put_no_rnd_pixels%1x%1_after_prologue_ %+ cpuname:
     mov         r5d, %1
 .loop:
     movu         m0, [r1]
@@ -111,14 +94,42 @@ put_no_rnd_pixels%1x%1_after_prologue_ %+ cpuname:
 %endmacro
 
 INIT_MMX mmxext
-PUT_NO_RND_PIXELS_L2 8, 9
+PUT_NO_RND_PIXELS_L2 8
 INIT_XMM sse2
-PUT_NO_RND_PIXELS_L2 16, 17
+PUT_NO_RND_PIXELS_L2 16
 
+%macro L2 5
+%ifidn %2, l2
+%ifidn %1, put_no_rnd
+%ifn UNIX64
+    pcmpeqb      %5, %5
+%endif
+    pxor         %4, PW_FF
+    pxor         %3, PW_FF
+    pavgb        %3, %4
+    pxor         %3, PW_FF
+%else ; avg or put
+    pavgb        %3, %4
+%endif
+%endif
+%endmacro
 
-%macro MPEG4_QPEL16_H_LOWPASS 1
+%macro MPEG4_QPEL16_H_LOWPASS 1-2 ""
+%ifidn %2, l2
+cglobal %1_mpeg4_qpel16_h_lowpass_l2, 6, 6, 8+UNIX64, dst, src, dstride, srcstride, h, offset
+%else
 cglobal %1_mpeg4_qpel16_h_lowpass, 5, 5, 8, dst, src, dstride, srcstride, h
+%endif
     mova         m7, [coeff16_0]
+%define PW_FF m1
+%ifidn %1, put_no_rnd
+%ifidn %2, l2
+%if UNIX64
+    pcmpeqb      m8, m8
+%define PW_FF m8
+%endif
+%endif
+%endif
 .loop:
     movu         m0, [srcq]
     pshufb       m1, m0, [shuffle_mask16_0]
@@ -137,12 +148,15 @@ cglobal %1_mpeg4_qpel16_h_lowpass, 5, 5, 8, dst, src, dstride, srcstride, h
     paddw        m4, [PW_ROUND]
     palignr      m1, m6, m0, 4
     pmaddubsw    m1, [coeff16_1]
-    add        srcq, srcstrideq
     paddw        m2, m5
     palignr      m5, m6, m0, 8
     pmaddubsw    m5, [coeff16_1]
     palignr      m6, m0, 12
+%ifidn %2, l2
+    movu         m0, [srcq+offsetq]
+%endif
     pmaddubsw    m6, m7
+    add        srcq, srcstrideq
     paddw        m2, [PW_ROUND]
     paddw        m4, m1
     paddw        m2, m3
@@ -151,6 +165,7 @@ cglobal %1_mpeg4_qpel16_h_lowpass, 5, 5, 8, dst, src, dstride, srcstride, h
     paddw        m4, m6
     psraw        m4, 5
     packuswb     m2, m4
+    L2           %1, %2, m2, m0, m1
 %ifidn %1, avg
     pavgb        m2, [dstq]
 %endif
@@ -164,18 +179,34 @@ cglobal %1_mpeg4_qpel16_h_lowpass, 5, 5, 8, dst, src, dstride, srcstride, h
 INIT_XMM ssse3
 %define PW_ROUND pw_16
 MPEG4_QPEL16_H_LOWPASS put
+MPEG4_QPEL16_H_LOWPASS put, l2
 %define PW_ROUND pw_16
 MPEG4_QPEL16_H_LOWPASS avg
+MPEG4_QPEL16_H_LOWPASS avg, l2
 %define PW_ROUND pw_15
 MPEG4_QPEL16_H_LOWPASS put_no_rnd
+MPEG4_QPEL16_H_LOWPASS put_no_rnd, l2
 
-%macro MPEG4_QPEL8_H_LOWPASS 1
+%macro MPEG4_QPEL8_H_LOWPASS 1-2 ""
+%ifidn %2, l2
+cglobal %1_mpeg4_qpel8_h_lowpass_l2, 6, 6, 8+2*ARCH_X86_64+UNIX64, dst, src, dstride, srcstride, h, offset
+%else
 cglobal %1_mpeg4_qpel8_h_lowpass, 5, 5, 8+2*ARCH_X86_64, dst, src, dstride, srcstride, h
+%endif
     mova         m4, [PW_ROUND]
     mova         m5, [coeff8_0]
 %if ARCH_X86_64
     mova         m8, [coeff8_1]
     mova         m9, [coeff8_2]
+%endif
+%define PW_FF m0
+%ifidn %1, put_no_rnd
+%ifidn %2, l2
+%if UNIX64
+    pcmpeqb     m10, m10
+%define PW_FF m10
+%endif
+%endif
 %endif
     mova         m6, [coeff8_3]
     mova         m7, [shuffle_mask8]
@@ -200,12 +231,16 @@ cglobal %1_mpeg4_qpel8_h_lowpass, 5, 5, 8+2*ARCH_X86_64, dst, src, dstride, srcs
 %endif
     pshufb       m0, m7
     pmaddubsw    m0, m6
-    add        srcq, srcstrideq
     paddw        m1, m4
     paddw        m1, m3
+%ifidn %2, l2
+    movq         m3, [srcq+offsetq]
+%endif
+    add        srcq, srcstrideq
     paddw        m1, m0
     psraw        m1, 5
     packuswb     m1, m1
+    L2           %1, %2, m1, m3, m0
 %ifidn %1, avg
     pavgb        m1, m2
 %endif
@@ -219,10 +254,13 @@ cglobal %1_mpeg4_qpel8_h_lowpass, 5, 5, 8+2*ARCH_X86_64, dst, src, dstride, srcs
 INIT_XMM ssse3
 %define PW_ROUND pw_16
 MPEG4_QPEL8_H_LOWPASS put
+MPEG4_QPEL8_H_LOWPASS put, l2
 %define PW_ROUND pw_16
 MPEG4_QPEL8_H_LOWPASS avg
+MPEG4_QPEL8_H_LOWPASS avg, l2
 %define PW_ROUND pw_15
 MPEG4_QPEL8_H_LOWPASS put_no_rnd
+MPEG4_QPEL8_H_LOWPASS put_no_rnd, l2
 
 
 %macro QPEL_V_LOW 5
