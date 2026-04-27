@@ -817,7 +817,7 @@ static int atrac9_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
     *got_frame_ptr = 1;
 
-    return avctx->block_align;
+    return frames < s->frame_count ? (get_bits_count(&gb) >> 3) : avctx->block_align;
 }
 
 static av_cold void atrac9_decode_flush(AVCodecContext *avctx)
