@@ -785,6 +785,7 @@ static av_always_inline void mpv_motion_internal(MpegEncContext *s,
             }
             break;
         }
+        av_unreachable("MV_TYPE_16X8 is only used by MPEG-1/2");
     case MV_TYPE_DMV:
         if (CONFIG_SMALL || is_mpeg12) {
             if (s->picture_structure == PICT_FRAME) {
@@ -815,6 +816,7 @@ static av_always_inline void mpv_motion_internal(MpegEncContext *s,
             }
             break;
         }
+        av_unreachable("MV_TYPE_DMV is only used by MPEG-1/2");
     default:
         av_unreachable("No other mpegvideo MV types exist");
     }
