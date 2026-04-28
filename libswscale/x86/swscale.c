@@ -91,7 +91,6 @@ void ff_updateMMXDitherTables(SwsInternal *c, int dstY)
         const int16_t **chrUSrcPtr = (const int16_t **)(void*) chrUPlane->line + firstChrSrcY - chrUPlane->sliceY;
         const int16_t **alpSrcPtr  = (CONFIG_SWSCALE_ALPHA && hasAlpha) ? (const int16_t **)(void*) alpPlane->line + firstLumSrcY - alpPlane->sliceY : NULL;
 
-        int i;
         if (firstLumSrcY < 0 || firstLumSrcY + vLumFilterSize > c->opts.src_h) {
             const int16_t **tmpY = (const int16_t **) lumPlane->tmp;
 
@@ -132,7 +131,7 @@ void ff_updateMMXDitherTables(SwsInternal *c, int dstY)
 
         if (flags & SWS_ACCURATE_RND) {
             int s= APCK_SIZE / 8;
-            for (i=0; i<vLumFilterSize; i+=2) {
+            for (int i = 0; i < vLumFilterSize; i += 2) {
                 *(const void**)&lumMmxFilter[s*i              ]= lumSrcPtr[i  ];
                 *(const void**)&lumMmxFilter[s*i+APCK_PTR2/4  ]= lumSrcPtr[i+(vLumFilterSize>1)];
                 lumMmxFilter[s*i+APCK_COEF/4  ]=
@@ -145,7 +144,7 @@ void ff_updateMMXDitherTables(SwsInternal *c, int dstY)
                     alpMmxFilter[s*i+APCK_COEF/4+1]= lumMmxFilter[s*i+APCK_COEF/4  ];
                 }
             }
-            for (i=0; i<vChrFilterSize; i+=2) {
+            for (int i = 0; i < vChrFilterSize; i += 2) {
                 *(const void**)&chrMmxFilter[s*i              ]= chrUSrcPtr[i  ];
                 *(const void**)&chrMmxFilter[s*i+APCK_PTR2/4  ]= chrUSrcPtr[i+(vChrFilterSize>1)];
                 chrMmxFilter[s*i+APCK_COEF/4  ]=
@@ -153,7 +152,7 @@ void ff_updateMMXDitherTables(SwsInternal *c, int dstY)
                     + (vChrFilterSize>1 ? vChrFilter[chrDstY*vChrFilterSize + i + 1] * (1 << 16) : 0);
             }
         } else {
-            for (i=0; i<vLumFilterSize; i++) {
+            for (int i = 0; i < vLumFilterSize; i++) {
                 *(const void**)&lumMmxFilter[4*i+0]= lumSrcPtr[i];
                 lumMmxFilter[4*i+2]=
                 lumMmxFilter[4*i+3]=
@@ -164,7 +163,7 @@ void ff_updateMMXDitherTables(SwsInternal *c, int dstY)
                     alpMmxFilter[4*i+3]= lumMmxFilter[4*i+2];
                 }
             }
-            for (i=0; i<vChrFilterSize; i++) {
+            for (int i = 0; i < vChrFilterSize; i++) {
                 *(const void**)&chrMmxFilter[4*i+0]= chrUSrcPtr[i];
                 chrMmxFilter[4*i+2]=
                 chrMmxFilter[4*i+3]=
