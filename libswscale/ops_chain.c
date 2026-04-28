@@ -24,8 +24,6 @@
 
 #include "ops_chain.h"
 
-#define Q(N) ((AVRational) { N, 1 })
-
 SwsOpChain *ff_sws_op_chain_alloc(void)
 {
     return av_mallocz(sizeof(SwsOpChain));

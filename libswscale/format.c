@@ -33,7 +33,6 @@
 #include "libavutil/hwcontext.h"
 #endif
 
-#define Q(N) ((AVRational) { N, 1 })
 #define Q0   Q(0)
 #define Q1   Q(1)
 
