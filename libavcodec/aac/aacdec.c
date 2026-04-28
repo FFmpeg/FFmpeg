@@ -676,6 +676,7 @@ ChannelElement *ff_aac_get_che(AACDecContext *ac, int type, int elem_id)
             ac->tags_mapped++;
             return ac->tag_che_map[type][elem_id] = ac->che[type][elem_id];
         }
+        av_fallthrough;
     case 13:
         if (ac->tags_mapped > 3 && ((type == TYPE_CPE && elem_id < 8) ||
                                     (type == TYPE_SCE && elem_id < 6) ||
@@ -683,17 +684,20 @@ ChannelElement *ff_aac_get_che(AACDecContext *ac, int type, int elem_id)
             ac->tags_mapped++;
             return ac->tag_che_map[type][elem_id] = ac->che[type][elem_id];
         }
+        av_fallthrough;
     case 12:
     case 7:
         if (ac->tags_mapped == 3 && type == TYPE_CPE) {
             ac->tags_mapped++;
             return ac->tag_che_map[TYPE_CPE][elem_id] = ac->che[TYPE_CPE][2];
         }
+        av_fallthrough;
     case 11:
         if (ac->tags_mapped == 3 && type == TYPE_SCE) {
             ac->tags_mapped++;
             return ac->tag_che_map[TYPE_SCE][elem_id] = ac->che[TYPE_SCE][1];
         }
+        av_fallthrough;
     case 6:
         /* Some streams incorrectly code 5.1 audio as
          * SCE[0] CPE[0] CPE[1] SCE[1]
@@ -711,11 +715,13 @@ ChannelElement *ff_aac_get_che(AACDecContext *ac, int type, int elem_id)
             ac->tags_mapped++;
             return ac->tag_che_map[type][elem_id] = ac->che[TYPE_LFE][0];
         }
+        av_fallthrough;
     case 5:
         if (ac->tags_mapped == 2 && type == TYPE_CPE) {
             ac->tags_mapped++;
             return ac->tag_che_map[TYPE_CPE][elem_id] = ac->che[TYPE_CPE][1];
         }
+        av_fallthrough;
     case 4:
         /* Some streams incorrectly code 4.0 audio as
          * SCE[0] CPE[0] LFE[0]
@@ -739,6 +745,7 @@ ChannelElement *ff_aac_get_che(AACDecContext *ac, int type, int elem_id)
             ac->tags_mapped++;
             return ac->tag_che_map[TYPE_SCE][elem_id] = ac->che[TYPE_SCE][1];
         }
+        av_fallthrough;
     case 3:
     case 2:
         if (ac->tags_mapped == (ac->oc[1].m4ac.chan_config != 2) &&
@@ -750,11 +757,13 @@ ChannelElement *ff_aac_get_che(AACDecContext *ac, int type, int elem_id)
             ac->tags_mapped++;
             return ac->tag_che_map[TYPE_SCE][elem_id] = ac->che[TYPE_SCE][1];
         }
+        av_fallthrough;
     case 1:
         if (!ac->tags_mapped && type == TYPE_SCE) {
             ac->tags_mapped++;
             return ac->tag_che_map[TYPE_SCE][elem_id] = ac->che[TYPE_SCE][0];
         }
+        av_fallthrough;
     default:
         return NULL;
     }
