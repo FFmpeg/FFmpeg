@@ -763,7 +763,8 @@ switch(c->dstBpc){ \
 
 #define INPUT_PLANER_RGB_A_FUNC_CASE_NOBREAK(fmt, name, opt)          \
         case fmt:                                                     \
-            c->readAlpPlanar = ff_planar_##name##_to_a_##opt;
+            c->readAlpPlanar = ff_planar_##name##_to_a_##opt;         \
+            av_fallthrough;
 
 #define INPUT_PLANER_RGBA_YUV_FUNC_CASE(rgb_fmt, rgba_fmt, name, opt) \
         case rgba_fmt:                                                \
