@@ -90,6 +90,8 @@ static int lz4_decompress(AVCodecContext *avctx,
             unsigned char current;
             do {
                 current = bytestream2_get_byte(gb);
+                if (current > INT_MAX - num_literals)
+                    return AVERROR_INVALIDDATA;
                 num_literals += current;
             } while (current == 255);
         }
@@ -122,6 +124,8 @@ static int lz4_decompress(AVCodecContext *avctx,
 
             do {
                 current = bytestream2_get_byte(gb);
+                if (current > INT_MAX - match_length)
+                    return AVERROR_INVALIDDATA;
                 match_length += current;
             } while (current == 255);
         }
