@@ -82,7 +82,7 @@ static int op_match(const SwsOp *op, const SwsOpEntry *entry)
     case SWS_OP_WRITE:
         if (op->rw.filter && op->type != entry->type)
             return 0;
-        /* fall through */;
+        av_fallthrough;
     case SWS_OP_SWAP_BYTES:
     case SWS_OP_SWIZZLE:
         /* Only the size matters for these operations */
