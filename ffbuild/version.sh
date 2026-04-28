@@ -34,8 +34,8 @@ test "$revision" || revision=$(cd "$1" && cat RELEASE 2> /dev/null)
 # Append the Git hash if we have one
 test "$revision" && test "$git_hash" && revision="$revision-$git_hash"
 
-# releases extract the version number from the VERSION file
-version=$(cd "$1" && cat VERSION 2> /dev/null)
+# releases extract the version number from the FF_VERSION file
+version=$(cd "$1" && cat FF_VERSION 2> /dev/null)
 test "$version" || version=$revision
 
 test -n "$3" && version=$version-$3
