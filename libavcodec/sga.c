@@ -451,6 +451,7 @@ static int sga_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         if (ret < 0)
             return ret;
         bytestream2_init(gb, s->uncompressed, ret + s->metadata_size);
+        av_fallthrough;
     case 0xE7:
     case 0xC1:
         s->tiledata_size = s->nb_tiles * 32;
