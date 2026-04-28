@@ -836,6 +836,7 @@ static int set_pix_fmt(AVCodecContext *avctx, vpx_codec_caps_t codec_caps,
     case AV_PIX_FMT_GBRP:
     case AV_PIX_FMT_GBRAP:
         ctx->vpx_cs = VPX_CS_SRGB;
+        av_fallthrough;
     case AV_PIX_FMT_YUV444P:
     case AV_PIX_FMT_YUVA444P:
         if (avctx->colorspace == AVCOL_SPC_RGB)
@@ -877,6 +878,7 @@ static int set_pix_fmt(AVCodecContext *avctx, vpx_codec_caps_t codec_caps,
     case AV_PIX_FMT_GBRP12:
     case AV_PIX_FMT_GBRAP12:
         ctx->vpx_cs = VPX_CS_SRGB;
+        av_fallthrough;
     case AV_PIX_FMT_YUV444P10:
     case AV_PIX_FMT_YUVA444P10:
     case AV_PIX_FMT_YUV444P12:
