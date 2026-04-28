@@ -724,15 +724,11 @@ retry:
                 goto retry;
             }
 
-            /* Merge consecutive scaling operations (that don't overflow) */
+            /* Merge consecutive scaling operations */
             if (next->op == SWS_OP_SCALE) {
-                int64_t p = op->scale.factor.num * (int64_t) next->scale.factor.num;
-                int64_t q = op->scale.factor.den * (int64_t) next->scale.factor.den;
-                if (FFABS(p) <= INT_MAX && FFABS(q) <= INT_MAX) {
-                    av_reduce(&op->scale.factor.num, &op->scale.factor.den, p, q, INT_MAX);
-                    ff_sws_op_list_remove_at(ops, n + 1, 1);
-                    goto retry;
-                }
+                op->scale.factor = av_mul_q(op->scale.factor, next->scale.factor);
+                ff_sws_op_list_remove_at(ops, n + 1, 1);
+                goto retry;
             }
 
             /* Scaling by exact power of two */
