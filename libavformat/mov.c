@@ -8254,7 +8254,7 @@ static int mov_read_dops(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return 0;
     st = c->fc->streams[c->fc->nb_streams-1];
 
-    if ((uint64_t)atom.size > (1<<30) || atom.size < 11)
+    if ((uint64_t)atom.size > (1<<30) || atom.size < 11 || st->codecpar->extradata)
         return AVERROR_INVALIDDATA;
 
     /* Check OpusSpecificBox version. */
