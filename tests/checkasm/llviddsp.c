@@ -145,7 +145,7 @@ static void check_add_left_pred_16(LLVidDSPContext *c, unsigned mask, int width,
 
     res0 = call_ref(dst0, src0, mask, width, acc);
     res1 = call_new(dst1, src1, mask, width, acc);
-    if ((res0 &0xFFFF) != (res1 &0xFFFF)|| memcmp(dst0, dst1, width))
+    if ((res0 & 0xFFFF) != (res1 & 0xFFFF) || memcmp(dst0, dst1, width * sizeof(*dst0)))
         fail();
     bench_new(dst1, src1, mask, width, acc);
 
