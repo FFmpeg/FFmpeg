@@ -428,6 +428,7 @@ static void fix_transparency(TeletextContext *ctx, AVSubtitleRect *sub_rect, vbi
                 case VBI_OPAQUE:
                     if (!ctx->transparent_bg)
                         break;
+                    av_fallthrough;
                 case VBI_SEMI_TRANSPARENT:
                     if (ctx->opacity > 0) {
                         if (ctx->opacity < 255)
@@ -436,6 +437,7 @@ static void fix_transparency(TeletextContext *ctx, AVSubtitleRect *sub_rect, vbi
                                     *pixel += VBI_NB_COLORS;
                         break;
                     }
+                    av_fallthrough;
                 case VBI_TRANSPARENT_FULL:
                     for(; pixel < pixelnext; pixel++)
                         if (*pixel == vc->background)
