@@ -51,7 +51,7 @@ static int vdpau_mpeg_start_frame(AVCodecContext *avctx,
         ref = ff_vdpau_get_surface_id(s->next_pic.ptr->f);
         assert(ref != VDP_INVALID_HANDLE);
         info->backward_reference = ref;
-        /* fall through to forward prediction */
+        av_fallthrough;
     case AV_PICTURE_TYPE_P:
         ref = ff_vdpau_get_surface_id(s->last_pic.ptr->f);
         info->forward_reference  = ref;
