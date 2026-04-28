@@ -33,9 +33,6 @@
 #include "libavutil/hwcontext.h"
 #endif
 
-#define Q0   Q(0)
-#define Q1   Q(1)
-
 #define RET(x)                                                                 \
     do {                                                                       \
         int _ret = (x);                                                        \
@@ -997,12 +994,12 @@ static SwsClearOp fmt_clear(const SwsFormat *fmt)
     SwsClearOp c = {0};
     if (!has_chroma) {
         c.mask |= SWS_COMP(1) | SWS_COMP(2);
-        c.value[1] = c.value[2] = Q0;
+        c.value[1] = c.value[2] = Q(0);
     }
 
     if (!has_alpha) {
         c.mask |= SWS_COMP(3);
-        c.value[3] = Q0;
+        c.value[3] = Q(0);
     }
 
     return c;
@@ -1046,7 +1043,7 @@ int ff_sws_decode_pixfmt(SwsOpList *ops, const SwsFormat *fmt)
         for (int c = 0; c < desc->nb_components; c++) {
             const int bits   = desc->comp[c].depth + shift.amount;
             const int idx    = swizzle.in[is_ya ? 3 * c : c];
-            comps->min[idx]  = Q0;
+            comps->min[idx]  = Q(0);
             if (bits < 32) /* FIXME: AVRational is limited to INT_MAX */
                 comps->max[idx] = Q((1ULL << bits) - 1);
         }
@@ -1133,7 +1130,7 @@ int ff_sws_encode_pixfmt(SwsOpList *ops, const SwsFormat *fmt)
             .op   = SWS_OP_CLEAR,
             .type = pixel_type,
             .clear.mask = SWS_COMP(3),
-            .clear.value[3] = Q0,
+            .clear.value[3] = Q(0),
         }));
     }
 
@@ -1181,11 +1178,14 @@ static inline AVRational av_neg_q(AVRational x)
 
 static SwsLinearOp fmt_encode_range(const SwsFormat *fmt, bool *incomplete)
 {
+    const AVRational q0 = Q(0);
+    const AVRational q1 = Q(1);
+
     SwsLinearOp c = { .m = {
-        { Q1, Q0, Q0, Q0, Q0 },
-        { Q0, Q1, Q0, Q0, Q0 },
-        { Q0, Q0, Q1, Q0, Q0 },
-        { Q0, Q0, Q0, Q1, Q0 },
+        { q1, q0, q0, q0, q0 },
+        { q0, q1, q0, q0, q0 },
+        { q0, q0, q1, q0, q0 },
+        { q0, q0, q0, q1, q0 },
     }};
 
     const AVPixFmtDescriptor *desc = fmt_desc_decoded(fmt->format);
@@ -1255,7 +1255,7 @@ static SwsLinearOp fmt_decode_range(const SwsFormat *fmt, bool *incomplete)
 
     /* Explicitly initialize alpha for sanity */
     if (!(fmt->desc->flags & AV_PIX_FMT_FLAG_ALPHA))
-        c.m[3][4] = Q1;
+        c.m[3][4] = Q(1);
 
     c.mask = ff_sws_linear_mask(&c);
     return c;
@@ -1271,7 +1271,7 @@ static AVRational *generate_bayer_matrix(const int size_log2)
         return NULL;
 
     /* Start with a 1x1 matrix */
-    m[0] = Q0;
+    m[0] = Q(0);
 
     /* Generate three copies of the current, appropriately scaled and offset */
     for (int sz = 1; sz < size; sz <<= 1) {
@@ -1417,11 +1417,13 @@ linear_mat3(const AVRational m00, const AVRational m01, const AVRational m02,
             const AVRational m10, const AVRational m11, const AVRational m12,
             const AVRational m20, const AVRational m21, const AVRational m22)
 {
+    const AVRational q0 = Q(0);
+    const AVRational q1 = Q(1);
     SwsLinearOp c = {{
-        { m00, m01, m02, Q0, Q0 },
-        { m10, m11, m12, Q0, Q0 },
-        { m20, m21, m22, Q0, Q0 },
-        {  Q0,  Q0,  Q0, Q1, Q0 },
+        { m00, m01, m02, q0, q0 },
+        { m10, m11, m12, q0, q0 },
+        { m20, m21, m22, q0, q0 },
+        {  q0,  q0,  q0, q1, q0 },
     }};
 
     c.mask = ff_sws_linear_mask(&c);
@@ -1477,6 +1479,10 @@ int ff_sws_decode_colors(SwsContext *ctx, SwsPixelType type,
     if (!pixel_type)
          return AVERROR(ENOTSUP);
 
+    const AVRational q0 = Q(0);
+    const AVRational q1 = Q(1);
+    const AVRational q2 = Q(2);
+
     RET(ff_sws_op_list_append(ops, &(SwsOp) {
         .op         = SWS_OP_CONVERT,
         .type       = pixel_type,
@@ -1504,10 +1510,10 @@ int ff_sws_decode_colors(SwsContext *ctx, SwsPixelType type,
     case AVCOL_SPC_BT709:
     case AVCOL_SPC_SMPTE240M:
     case AVCOL_SPC_BT2020_NCL: {
-        AVRational crg = av_sub_q(Q0, av_div_q(c->cr, c->cg));
-        AVRational cbg = av_sub_q(Q0, av_div_q(c->cb, c->cg));
-        AVRational m02 = av_mul_q(Q(2), av_sub_q(Q1, c->cr));
-        AVRational m21 = av_mul_q(Q(2), av_sub_q(Q1, c->cb));
+        AVRational crg = av_sub_q(q0, av_div_q(c->cr, c->cg));
+        AVRational cbg = av_sub_q(q0, av_div_q(c->cb, c->cg));
+        AVRational m02 = av_mul_q(q2, av_sub_q(q1, c->cr));
+        AVRational m21 = av_mul_q(q2, av_sub_q(q1, c->cb));
         AVRational m11 = av_mul_q(cbg, m21);
         AVRational m12 = av_mul_q(crg, m02);
 
@@ -1515,9 +1521,9 @@ int ff_sws_decode_colors(SwsContext *ctx, SwsPixelType type,
             .type = type,
             .op   = SWS_OP_LINEAR,
             .lin  = linear_mat3(
-                Q1,  Q0, m02,
-                Q1, m11, m12,
-                Q1, m21,  Q0
+                q1,  q0, m02,
+                q1, m11, m12,
+                q1, m21,  q0
             ),
         });
     }
@@ -1527,9 +1533,9 @@ int ff_sws_decode_colors(SwsContext *ctx, SwsPixelType type,
             .type = type,
             .op   = SWS_OP_LINEAR,
             .lin  = linear_mat3(
-                Q1, Q(-1), Q( 1),
-                Q1, Q( 1), Q( 0),
-                Q1, Q(-1), Q(-1)
+                q1, av_make_q(-1, 1), av_make_q( 1, 1),
+                q1, av_make_q( 1, 1), av_make_q( 0, 1),
+                q1, av_make_q(-1, 1), av_make_q(-1, 1)
             ),
         });
 
@@ -1576,8 +1582,8 @@ int ff_sws_encode_colors(SwsContext *ctx, SwsPixelType type,
     case AVCOL_SPC_BT709:
     case AVCOL_SPC_SMPTE240M:
     case AVCOL_SPC_BT2020_NCL: {
-        AVRational cb1 = av_sub_q(c->cb, Q1);
-        AVRational cr1 = av_sub_q(c->cr, Q1);
+        AVRational cb1 = av_sub_q(c->cb, av_make_q(1, 1));
+        AVRational cr1 = av_sub_q(c->cr, av_make_q(1, 1));
         AVRational m20 = av_make_q(1,2);
         AVRational m10 = av_mul_q(m20, av_div_q(c->cr, cb1));
         AVRational m11 = av_mul_q(m20, av_div_q(c->cg, cb1));
@@ -1643,7 +1649,7 @@ int ff_sws_encode_colors(SwsContext *ctx, SwsPixelType type,
         RET(ff_sws_op_list_append(ops, &(SwsOp) {
             .op    = SWS_OP_MAX,
             .type  = type,
-            .clamp = {{ Q0, Q0, Q0, Q0 }},
+            .clamp = {{ Q(0), Q(0), Q(0), Q(0) }},
         }));
 
         RET(ff_sws_op_list_append(ops, &(SwsOp) {
