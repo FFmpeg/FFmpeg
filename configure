@@ -2449,6 +2449,7 @@ BUILTIN_LIST="
     mm_empty
     rdtsc
     sem_timedwait
+    int128
 "
 HAVE_LIST_CMDLINE="
     inline_asm
@@ -6953,6 +6954,7 @@ fi
 check_builtin MemoryBarrier windows.h "MemoryBarrier()"
 check_builtin gmtime_r time.h "time_t *time; struct tm *tm; gmtime_r(time, tm)"
 check_builtin localtime_r time.h "time_t *time; struct tm *tm; localtime_r(time, tm)"
+check_builtin int128 "" "volatile __int128 i128var = 1; i128var <<= 100;"
 
 check_builtin float16 "" "_Float16 f16var"
 if enabled float16; then
