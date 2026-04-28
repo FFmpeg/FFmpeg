@@ -414,24 +414,28 @@ static int config_output(AVFilterLink *outlink)
     switch (s->in.format) {
     case SIDE_BY_SIDE_2_LR:
         s->aspect.num  *= 2;
+        av_fallthrough;
     case SIDE_BY_SIDE_LR:
         s->width        = inlink->w / 2;
         s->in.off_right = s->width;
         break;
     case SIDE_BY_SIDE_2_RL:
         s->aspect.num  *= 2;
+        av_fallthrough;
     case SIDE_BY_SIDE_RL:
         s->width        = inlink->w / 2;
         s->in.off_left  = s->width;
         break;
     case ABOVE_BELOW_2_LR:
         s->aspect.den  *= 2;
+        av_fallthrough;
     case ABOVE_BELOW_LR:
         s->in.row_right =
         s->height       = inlink->h / 2;
         break;
     case ABOVE_BELOW_2_RL:
         s->aspect.den  *= 2;
+        av_fallthrough;
     case ABOVE_BELOW_RL:
         s->in.row_left  =
         s->height       = inlink->h / 2;
@@ -496,18 +500,21 @@ static int config_output(AVFilterLink *outlink)
     }
     case SIDE_BY_SIDE_2_LR:
         s->aspect.den   *= 2;
+        av_fallthrough;
     case SIDE_BY_SIDE_LR:
         s->out.width     = s->width * 2;
         s->out.off_right = s->width;
         break;
     case SIDE_BY_SIDE_2_RL:
         s->aspect.den   *= 2;
+        av_fallthrough;
     case SIDE_BY_SIDE_RL:
         s->out.width     = s->width * 2;
         s->out.off_left  = s->width;
         break;
     case ABOVE_BELOW_2_LR:
         s->aspect.num   *= 2;
+        av_fallthrough;
     case ABOVE_BELOW_LR:
         s->out.height    = s->height * 2;
         s->out.row_right = s->height;
@@ -524,6 +531,7 @@ static int config_output(AVFilterLink *outlink)
         break;
     case ABOVE_BELOW_2_RL:
         s->aspect.num   *= 2;
+        av_fallthrough;
     case ABOVE_BELOW_RL:
         s->out.height    = s->height * 2;
         s->out.row_left  = s->height;
@@ -805,6 +813,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
                 oleft->linesize[i]  *= 2;
                 oright->linesize[i] *= 2;
             }
+            av_fallthrough;
         case ABOVE_BELOW_LR:
         case ABOVE_BELOW_RL:
         case ABOVE_BELOW_2_LR:
@@ -836,6 +845,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
             for (j = h; j < h + b; j++)
                 memset(oleft->data[i] + j * s->linesize[i], 0, s->linesize[i]);
         }
+        av_fallthrough;
     case SIDE_BY_SIDE_LR:
     case SIDE_BY_SIDE_RL:
     case SIDE_BY_SIDE_2_LR:
@@ -872,6 +882,7 @@ copy:
         break;
     case MONO_L:
         iright = ileft;
+        av_fallthrough;
     case MONO_R:
         switch (s->in.format) {
         case INTERLEAVE_ROWS_LR:
@@ -879,6 +890,7 @@ copy:
             for (i = 0; i < s->nb_planes; i++) {
                 out->linesize[i] *= 2;
             }
+            av_fallthrough;
         case ABOVE_BELOW_LR:
         case ABOVE_BELOW_RL:
         case ABOVE_BELOW_2_LR:
