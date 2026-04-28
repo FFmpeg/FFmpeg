@@ -116,9 +116,9 @@ PUT_NO_RND_PIXELS_L2 16
 
 %macro MPEG4_QPEL16_H_LOWPASS 1-2 ""
 %ifidn %2, l2
-cglobal %1_mpeg4_qpel16_h_lowpass_l2, 6, 6, 8+UNIX64, dst, src, dstride, srcstride, h, offset
+cglobal mpeg4_%1_qpel16_h_lowpass_l2, 6, 6, 8+UNIX64, dst, src, dstride, srcstride, h, offset
 %else
-cglobal %1_mpeg4_qpel16_h_lowpass, 5, 5, 8, dst, src, dstride, srcstride, h
+cglobal mpeg4_%1_qpel16_h_lowpass, 5, 5, 8, dst, src, dstride, srcstride, h
 %endif
     mova         m7, [coeff16_0]
 %define PW_FF m1
@@ -189,9 +189,9 @@ MPEG4_QPEL16_H_LOWPASS put_no_rnd, l2
 
 %macro MPEG4_QPEL8_H_LOWPASS 1-2 ""
 %ifidn %2, l2
-cglobal %1_mpeg4_qpel8_h_lowpass_l2, 6, 6, 8+2*ARCH_X86_64+UNIX64, dst, src, dstride, srcstride, h, offset
+cglobal mpeg4_%1_qpel8_h_lowpass_l2, 6, 6, 8+2*ARCH_X86_64+UNIX64, dst, src, dstride, srcstride, h, offset
 %else
-cglobal %1_mpeg4_qpel8_h_lowpass, 5, 5, 8+2*ARCH_X86_64, dst, src, dstride, srcstride, h
+cglobal mpeg4_%1_qpel8_h_lowpass, 5, 5, 8+2*ARCH_X86_64, dst, src, dstride, srcstride, h
 %endif
     mova         m4, [PW_ROUND]
     mova         m5, [coeff8_0]
@@ -287,7 +287,7 @@ MPEG4_QPEL8_H_LOWPASS put_no_rnd, l2
 %endmacro
 
 %macro MPEG4_QPEL16_V_LOWPASS 1
-cglobal %1_mpeg4_qpel16_v_lowpass, 4, 6, 7, 544
+cglobal mpeg4_%1_qpel16_v_lowpass, 4, 6, 7, 544
     mov         r4d, 17
     mov          r5, rsp
     pxor         m4, m4
@@ -355,7 +355,7 @@ cglobal %1_mpeg4_qpel16_v_lowpass, 4, 6, 7, 544
 %endmacro
 
 %macro MPEG4_QPEL8_V_LOWPASS 1
-cglobal %1_mpeg4_qpel8_v_lowpass, 4, 6, 7, 144
+cglobal mpeg4_%1_qpel8_v_lowpass, 4, 6, 7, 144
     mov         r4d, 9
     mov          r5, rsp
     pxor         m2, m2
