@@ -215,6 +215,7 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVIOContext *pb,
             break;
         case AV_CODEC_ID_COOK:
             sti->need_parsing = AVSTREAM_PARSE_HEADERS;
+            av_fallthrough;
         case AV_CODEC_ID_ATRAC3:
         case AV_CODEC_ID_SIPR:
             if (read_all) {
