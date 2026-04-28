@@ -7,6 +7,7 @@
 /base64
 /blowfish
 /bprint
+/buffer
 /camellia
 /cast5
 /channel_layout
@@ -25,6 +26,7 @@
 /file
 /film_grain_params
 /hash
+/hdr_dynamic_vivid_metadata
 /hmac
 /hwdevice
 /imgutils
@@ -53,8 +55,10 @@
 /softfloat
 /spherical
 /stereo3d
+/tdrdi
 /tea
 /timecode
+/timestamp
 /tree
 /twofish
 /utf8
