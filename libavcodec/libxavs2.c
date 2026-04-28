@@ -195,6 +195,7 @@ static int xavs2_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                 xavs2_copy_frame(&pic, frame);
                 break;
             }
+            av_fallthrough;
         default:
             av_log(avctx, AV_LOG_ERROR, "Unsupported pixel format\n");
             return AVERROR(EINVAL);
