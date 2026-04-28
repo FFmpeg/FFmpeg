@@ -3058,6 +3058,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     break;
                 case AV_CODEC_ID_MPEG2VIDEO:
                     if (s->c.mb_x == 0 && s->c.mb_y != 0) is_gob_start = 1;
+                    av_fallthrough;
                 case AV_CODEC_ID_MPEG1VIDEO:
                     if (s->c.codec_id == AV_CODEC_ID_MPEG1VIDEO && s->c.mb_y >= 175 ||
                         s->mb_skip_run)
