@@ -291,7 +291,7 @@ static void check_ops(const char *name, const unsigned ranges[NB_PLANES],
             oplist.comps_src.min[p] = (AVRational64) { 0, 1 };
             break;
         case F32:
-            if (ranges[p] && ranges[p] <= INT_MAX) {
+            if (ranges[p]) {
                 oplist.comps_src.max[p] = (AVRational64) { ranges[p], 1 };
                 oplist.comps_src.min[p] = (AVRational64) { 0, 1 };
             }
