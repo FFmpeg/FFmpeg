@@ -25,6 +25,7 @@
 
 #include "config.h"
 #include "libavutil/attributes.h"
+#include "libavutil/attributes_internal.h"
 #include "libavutil/cpu.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/x86/cpu.h"
@@ -32,6 +33,7 @@
 #include "fpel.h"
 #include "qpel.h"
 
+FF_VISIBILITY_PUSH_HIDDEN
 void ff_put_no_rnd_pixels8x8_l2_mmxext(uint8_t *dst,
                                        const uint8_t *src1, const uint8_t *src2,
                                        ptrdiff_t dstStride, ptrdiff_t src1Stride);
@@ -303,3 +305,4 @@ av_cold void ff_qpeldsp_init_x86(QpelDSPContext *c)
         SET_HV_QPEL_FUNCS(16, ssse3,);
     }
 }
+FF_VISIBILITY_POP_HIDDEN
