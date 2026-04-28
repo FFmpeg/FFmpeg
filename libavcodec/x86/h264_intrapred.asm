@@ -1030,51 +1030,37 @@ PRED8x8L_HORIZONTAL
 ;                             ptrdiff_t stride)
 ;-----------------------------------------------------------------------------
 
-%macro PRED8x8L_VERTICAL 0
-cglobal pred8x8l_vertical_8, 4,4
+INIT_XMM sse2
+cglobal pred8x8l_vertical_8, 4,4,5
     sub          r0, r3
-    movq        mm0, [r0-8]
-    movq        mm3, [r0]
-    movq        mm1, [r0+8]
-    movq        mm2, mm3
-    movq        mm4, mm3
-    PALIGNR     mm2, mm0, 7, mm0
-    PALIGNR     mm1, mm4, 1, mm4
+    movu         m2, [r0-8]
+    movu         m3, [r0]
+    mova         m1, m3
+    psrldq       m2, 7
+    psrldq       m1, 1
     test        r1d, r1d ; top_left
-    jz .fix_lt_2
-    test        r2d, r2d ; top_right
-    jz .fix_tr_1
-    jmp .body
-.fix_lt_2:
-    movq        mm5, mm3
-    pxor        mm5, mm2
-    psllq       mm5, 56
-    psrlq       mm5, 56
-    pxor        mm2, mm5
+    jnz .check_tr
+    pxor         m4, m3, m2
+    psllq        m4, 56
+    psrlq        m4, 56
+    pxor         m2, m4
+.check_tr:
     test        r2d, r2d ; top_right
     jnz .body
-.fix_tr_1:
-    movq        mm5, mm3
-    pxor        mm5, mm1
-    psrlq       mm5, 56
-    psllq       mm5, 56
-    pxor        mm1, mm5
+    pxor         m4, m3, m1
+    psrlq        m4, 56
+    psllq        m4, 56
+    pxor         m1, m4
 .body:
-    PRED4x4_LOWPASS mm3, mm2, mm1, mm3, mm5
+    PRED4x4_LOWPASS m3, m2, m1, m3, m4
 %rep 3
-    movq [r0+r3*1], mm3
-    movq [r0+r3*2], mm3
+    movq  [r0+r3*1], m3
+    movq  [r0+r3*2], m3
     lea    r0, [r0+r3*2]
 %endrep
-    movq [r0+r3*1], mm3
-    movq [r0+r3*2], mm3
+    movq  [r0+r3*1], m3
+    movq  [r0+r3*2], m3
     RET
-%endmacro
-
-INIT_MMX mmxext
-PRED8x8L_VERTICAL
-INIT_MMX ssse3
-PRED8x8L_VERTICAL
 
 ;-----------------------------------------------------------------------------
 ; void ff_pred8x8l_down_left_8(uint8_t *src, int has_topleft,
