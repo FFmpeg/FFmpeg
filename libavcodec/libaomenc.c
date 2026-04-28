@@ -475,7 +475,7 @@ static int set_pix_fmt(AVCodecContext *avctx, aom_codec_caps_t codec_caps,
     switch (avctx->pix_fmt) {
     case AV_PIX_FMT_GRAY8:
         enccfg->monochrome = 1;
-        /* Fall-through */
+        av_fallthrough;
     case AV_PIX_FMT_YUV420P:
         enccfg->g_profile = AV_PROFILE_AV1_MAIN;
         *img_fmt = AOM_IMG_FMT_I420;
@@ -492,7 +492,7 @@ static int set_pix_fmt(AVCodecContext *avctx, aom_codec_caps_t codec_caps,
     case AV_PIX_FMT_GRAY10:
     case AV_PIX_FMT_GRAY12:
         enccfg->monochrome = 1;
-        /* Fall-through */
+        av_fallthrough;
     case AV_PIX_FMT_YUV420P10:
     case AV_PIX_FMT_YUV420P12:
         if (codec_caps & AOM_CODEC_CAP_HIGHBITDEPTH) {
