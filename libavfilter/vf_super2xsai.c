@@ -271,6 +271,7 @@ static int config_input(AVFilterLink *inlink)
     case AV_PIX_FMT_RGB565BE:
     case AV_PIX_FMT_BGR565BE:
         s->is_be = 1;
+        av_fallthrough;
     case AV_PIX_FMT_RGB565LE:
     case AV_PIX_FMT_BGR565LE:
         s->hi_pixel_mask   = 0xF7DEF7DE;
@@ -283,6 +284,7 @@ static int config_input(AVFilterLink *inlink)
     case AV_PIX_FMT_BGR555BE:
     case AV_PIX_FMT_RGB555BE:
         s->is_be = 1;
+        av_fallthrough;
     case AV_PIX_FMT_BGR555LE:
     case AV_PIX_FMT_RGB555LE:
         s->hi_pixel_mask   = 0x7BDE7BDE;
