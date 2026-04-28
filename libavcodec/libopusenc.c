@@ -287,6 +287,7 @@ static av_cold int libopus_encode_init(AVCodecContext *avctx)
         /* Frame sizes less than 10 ms can only use MDCT mode, so switching to
          * RESTRICTED_LOWDELAY avoids an unnecessary extra 2.5ms lookahead. */
         opus->opts.application = OPUS_APPLICATION_RESTRICTED_LOWDELAY;
+        av_fallthrough;
     case 480:
     case 960:
     case 1920:
