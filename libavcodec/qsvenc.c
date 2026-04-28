@@ -904,6 +904,7 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
         if (q->extbrc) {
             q->extco2.LookAheadDepth = q->look_ahead_depth;
         }
+        av_fallthrough;
 #if QSV_HAVE_VCM
     case MFX_RATECONTROL_VCM:
 #endif
@@ -949,6 +950,7 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
         break;
     case MFX_RATECONTROL_LA_ICQ:
         q->extco2.LookAheadDepth = q->look_ahead_depth;
+        av_fallthrough;
     case MFX_RATECONTROL_ICQ:
         q->param.mfx.ICQQuality  = av_clip(avctx->global_quality, 1, 51);
         break;
