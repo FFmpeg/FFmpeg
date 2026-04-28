@@ -2781,6 +2781,7 @@ static int process_output_surface(AVCodecContext *avctx, AVPacket *pkt, NvencSur
     switch (lock_params.pictureType) {
     case NV_ENC_PIC_TYPE_IDR:
         pkt->flags |= AV_PKT_FLAG_KEY;
+        av_fallthrough;
     case NV_ENC_PIC_TYPE_I:
         pict_type = AV_PICTURE_TYPE_I;
         break;
