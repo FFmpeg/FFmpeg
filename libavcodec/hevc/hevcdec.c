@@ -3196,6 +3196,7 @@ static int find_finish_setup_nal(const HEVCContext *s)
         case HEVC_NAL_RASL_R:
             if (!get_bits1(&gb)) // first_slice_segment_in_pic_flag
                 continue;
+            av_fallthrough;
         case HEVC_NAL_VPS:
         case HEVC_NAL_SPS:
         case HEVC_NAL_PPS:
