@@ -1249,7 +1249,7 @@ av_cold int ff_aac_decode_init(AVCodecContext *avctx)
         ac->oc[1].m4ac.chan_config = i;
 
         if (ac->oc[1].m4ac.chan_config) {
-            int ret = ff_aac_set_default_channel_config(ac, avctx, layout_map,
+            ret = ff_aac_set_default_channel_config(ac, avctx, layout_map,
                                                         &layout_map_tags,
                                                         ac->oc[1].m4ac.chan_config);
             if (!ret)
