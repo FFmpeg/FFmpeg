@@ -310,6 +310,7 @@ static int tta_decode_frame(AVCodecContext *avctx, AVFrame *frame,
             else if (rice->sum1 > ff_tta_shift_16[rice->k1 + 1])
                 rice->k1++;
             value += ff_tta_shift_1[rice->k0];
+            av_fallthrough;
         default:
             rice->sum0 += value - (rice->sum0 >> 4);
             if (rice->k0 > 0 && rice->sum0 < ff_tta_shift_16[rice->k0])
