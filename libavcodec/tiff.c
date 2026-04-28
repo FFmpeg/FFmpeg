@@ -1232,11 +1232,11 @@ static int init_image(TiffContext *s, AVFrame *frame)
     return 1;
 }
 
-static void set_sar(TiffContext *s, unsigned tag, unsigned num, unsigned den)
+static void set_sar(TiffContext *s, unsigned tag, unsigned numerator, unsigned denumerator)
 {
     int offset = tag == TIFF_YRES ? 2 : 0;
-    s->res[offset++] = num;
-    s->res[offset]   = den;
+    s->res[offset++] = numerator;
+    s->res[offset]   = denumerator;
     if (s->res[0] && s->res[1] && s->res[2] && s->res[3]) {
         uint64_t num = s->res[2] * (uint64_t)s->res[1];
         uint64_t den = s->res[0] * (uint64_t)s->res[3];
@@ -1256,7 +1256,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
     AVFrameSideData *sd;
     GetByteContext gb_temp;
     unsigned tag, type, count, off, value = 0, value2 = 1; // value2 is a denominator so init. to 1
-    int i, start;
+    int start;
     int pos;
     int ret;
     double *dp;
@@ -1331,7 +1331,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
                 s->bpp = 0;
                 if (bytestream2_get_bytes_left(&s->gb) < type_sizes[type] * count)
                     return AVERROR_INVALIDDATA;
-                for (i = 0; i < count; i++)
+                for (int i = 0; i < count; i++)
                     s->bpp += ff_tget(&s->gb, type, s->le);
                 break;
             default:
@@ -1485,14 +1485,14 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
 
                 s->black_level[i] = value / (float)value2;
             } else if (type == AV_TIFF_SRATIONAL) {
-                int value  = ff_tget_long(&s->gb, s->le);
-                int value2 = ff_tget_long(&s->gb, s->le);
-                if (!value2) {
+                int val  = ff_tget_long(&s->gb, s->le);
+                int val2 = ff_tget_long(&s->gb, s->le);
+                if (!val2) {
                     av_log(s->avctx, AV_LOG_WARNING, "Invalid denominator\n");
-                    value2 = 1;
+                    val2 = 1;
                 }
 
-                s->black_level[i] = value / (float)value2;
+                s->black_level[i] = val / (float)val2;
             } else {
                 s->black_level[i] = ff_tget(&s->gb, type, s->le);
             }
@@ -1570,7 +1570,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
             return AVERROR_INVALIDDATA;
         }
 
-        for (i = 0; i < count / 3; i++) {
+        for (unsigned i = 0; i < count / 3; i++) {
             uint32_t p = 0xFF000000;
             p |= (ff_tget(&pal_gb[0], type, s->le) >> off) << 16;
             p |= (ff_tget(&pal_gb[1], type, s->le) >> off) << 8;
@@ -1588,7 +1588,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
             av_log(s->avctx, AV_LOG_ERROR, "subsample count invalid\n");
             return AVERROR_INVALIDDATA;
         }
-        for (i = 0; i < count; i++) {
+        for (unsigned i = 0; i < count; i++) {
             s->subsampling[i] = ff_tget(&s->gb, type, s->le);
             if (s->subsampling[i] <= 0) {
                 av_log(s->avctx, AV_LOG_ERROR, "subsampling %d is invalid\n", s->subsampling[i]);
@@ -1648,7 +1648,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
             s->geotag_count = 0;
             goto end;
         }
-        for (i = 0; i < s->geotag_count; i++) {
+        for (int i = 0; i < s->geotag_count; i++) {
             unsigned val;
             s->geotags[i].key    = ff_tget_short(&s->gb, s->le);
             s->geotags[i].type   = ff_tget_short(&s->gb, s->le);
@@ -1675,9 +1675,9 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
             av_log(s->avctx, AV_LOG_ERROR, "Error allocating temporary buffer\n");
             goto end;
         }
-        for (i = 0; i < count; i++)
+        for (unsigned i = 0; i < count; i++)
             dp[i] = ff_tget_double(&s->gb, s->le);
-        for (i = 0; i < s->geotag_count; i++) {
+        for (int i = 0; i < s->geotag_count; i++) {
             if (s->geotags[i].type == TIFF_GEO_DOUBLE_PARAMS) {
                 if (s->geotags[i].count == 0
                     || s->geotags[i].offset + s->geotags[i].count > count) {
@@ -1699,7 +1699,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         break;
     case TIFF_GEO_ASCII_PARAMS:
         pos = bytestream2_tell(&s->gb);
-        for (i = 0; i < s->geotag_count; i++) {
+        for (int i = 0; i < s->geotag_count; i++) {
             if (s->geotags[i].type == TIFF_GEO_ASCII_PARAMS) {
                 if (s->geotags[i].count == 0
                     || s->geotags[i].offset +  s->geotags[i].count > count) {
@@ -1843,13 +1843,13 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
     case DNG_COLOR_MATRIX2:
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
-                int value  = ff_tget_long(&s->gb, s->le);
-                int value2 = ff_tget_long(&s->gb, s->le);
-                if (!value2) {
+                int val  = ff_tget_long(&s->gb, s->le);
+                int val2 = ff_tget_long(&s->gb, s->le);
+                if (!val2) {
                     av_log(s->avctx, AV_LOG_WARNING, "Invalid denominator\n");
-                    value2 = 1;
+                    val2 = 1;
                 }
-                s->color_matrix[i][j] = value / (float)value2;
+                s->color_matrix[i][j] = val / (float)val2;
             }
             s->use_color_matrix = 1;
         }
@@ -1858,13 +1858,13 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
     case DNG_CAMERA_CALIBRATION2:
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
-                int value  = ff_tget_long(&s->gb, s->le);
-                int value2 = ff_tget_long(&s->gb, s->le);
-                if (!value2) {
+                int val  = ff_tget_long(&s->gb, s->le);
+                int val2 = ff_tget_long(&s->gb, s->le);
+                if (!val2) {
                     av_log(s->avctx, AV_LOG_WARNING, "Invalid denominator\n");
-                    value2 = 1;
+                    val2 = 1;
                 }
-                s->camera_calibration[i][j] = value / (float)value2;
+                s->camera_calibration[i][j] = val / (float)val2;
             }
         }
         break;
@@ -1935,7 +1935,6 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
     int le, ret, plane, planes;
     int i, j, entries, stride;
     unsigned soff, ssize;
-    uint8_t *dst;
     GetByteContext stripsizes;
     GetByteContext stripdata;
     int retry_for_subifd, retry_for_page;
@@ -2197,8 +2196,8 @@ again:
         uint8_t *five_planes = NULL;
         int remaining = avpkt->size;
         int decoded_height;
+        uint8_t *dst = p->data[plane];
         stride = p->linesize[plane];
-        dst = p->data[plane];
         if (s->photometric == TIFF_PHOTOMETRIC_SEPARATED &&
             s->avctx->pix_fmt == AV_PIX_FMT_RGBA) {
             stride = stride * 5 / 4;
