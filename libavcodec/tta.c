@@ -261,9 +261,8 @@ static int tta_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         s->ch_ctx[i].predictor = 0;
         ff_tta_filter_init(filter, ff_tta_filter_configs[s->bps-1]);
         if (s->format == FORMAT_ENCRYPTED) {
-            int i;
-            for (i = 0; i < 8; i++)
-                filter->qm[i] = sign_extend(s->crc_pass[i], 8);
+            for (int j = 0; j < 8; j++)
+                filter->qm[j] = sign_extend(s->crc_pass[j], 8);
         }
         ff_tta_rice_init(&s->ch_ctx[i].rice, 10, 10);
     }
