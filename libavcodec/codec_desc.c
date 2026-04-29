@@ -2009,6 +2009,14 @@ static const AVCodecDescriptor codec_descriptors[] = {
                      AV_CODEC_PROP_LOSSLESS,
         .mime_types= MT("image/jxs"),
     },
+    {
+        .id        = AV_CODEC_ID_WEBP_ANIM,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "webp_anim",
+        .long_name = NULL_IF_CONFIG_SMALL("Animated WebP"),
+        .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_LOSSLESS,
+        .mime_types= MT("image/webp"),
+    },
 
     /* various PCM "codecs" */
     {
