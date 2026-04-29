@@ -7928,7 +7928,7 @@ static int mov_create_dvd_sub_decoder_specific_info(MOVTrack *track,
     int i, width = 720, height = 480;
     int have_palette = 0, have_size = 0;
     uint32_t palette[16];
-    char *cur = track->extradata[track->last_stsd_index];
+    char *cur = st->codecpar->extradata;
 
     while (cur && *cur) {
         if (strncmp("palette:", cur, 8) == 0) {
