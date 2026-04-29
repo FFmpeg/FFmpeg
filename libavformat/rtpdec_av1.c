@@ -249,7 +249,7 @@ static int av1_handle_packet(AVFormatContext *ctx, PayloadContext *data,
             // ignore and remove OBUs according to spec
             if ((obu_type == AV1_OBU_TEMPORAL_DELIMITER) ||
                 (obu_type == AV1_OBU_TILE_LIST)) {
-                pktpos += obu_size;
+                buf_ptr += obu_size;
                 rem_pkt_size -= obu_size;
                 // TODO: This probably breaks if the OBU_TILE_LIST is fragmented
                 // into the next RTP packet, so at least check and fail here
