@@ -159,8 +159,7 @@ static void h264_initialise_ref_list(H264Context *h, H264SliceContext *sl)
                                   h->long_ref, 16, 1, h->picture_structure);
             av_assert0(len <= 32);
 
-            if (len < sl->ref_count[list])
-                memset(&sl->ref_list[list][len], 0, sizeof(H264Ref) * (sl->ref_count[list] - len));
+            memset(&sl->ref_list[list][len], 0, sizeof(H264Ref) * (32 - len));
             lens[list] = len;
         }
 
@@ -180,8 +179,7 @@ static void h264_initialise_ref_list(H264Context *h, H264SliceContext *sl)
                               h-> long_ref, 16, 1, h->picture_structure);
         av_assert0(len <= 32);
 
-        if (len < sl->ref_count[0])
-            memset(&sl->ref_list[0][len], 0, sizeof(H264Ref) * (sl->ref_count[0] - len));
+        memset(&sl->ref_list[0][len], 0, sizeof(H264Ref) * (32 - len));
     }
 #ifdef TRACE
     for (i = 0; i < sl->ref_count[0]; i++) {
