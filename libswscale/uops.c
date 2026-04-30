@@ -731,9 +731,9 @@ static int register_all_uops(SwsContext *ctx, void *graph, SwsOpList *ops)
 
 static const SwsFlags flags[] = {
     0,
-
-    /* SWS_ACCURATE_RND may insert extra 1x1 dither ops (for accurate rounding) */
-    SWS_ACCURATE_RND,
+    SWS_ACCURATE_RND,   /* may insert extra 1x1 dither ops (for accurate rounding) */
+    SWS_BITEXACT,       /* prevents some FMA optimizations */
+    SWS_ACCURATE_RND | SWS_BITEXACT,
 };
 
 /* Limit the range of av_tree_enumerate() to only matching uop and type */
