@@ -11584,6 +11584,7 @@ static int can_seek_to_key_sample(AVStream *st, int sample, int64_t requested_pt
     if (sample >= sc->sample_offsets_count)
         return 1;
 
+    av_assert0(sample >= 0);
     key_sample_dts = sti->index_entries[sample].timestamp;
     key_sample_pts = key_sample_dts + sc->sample_offsets[sample] + sc->dts_shift;
 
@@ -11627,6 +11628,8 @@ static int mov_seek_stream(AVFormatContext *s, AVStream *st, int64_t timestamp, 
 
         next_ts = timestamp - FFMAX(sc->min_sample_duration, 1);
         requested_sample = av_index_search_timestamp(st, next_ts, flags);
+        if (requested_sample < 0)
+            return AVERROR_INVALIDDATA;
 
         // If we've reached a different sample trying to find a good pts to
         // seek to, give up searching because we'll end up seeking back to
