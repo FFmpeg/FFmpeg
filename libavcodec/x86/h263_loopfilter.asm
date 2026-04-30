@@ -22,8 +22,10 @@
 
 %include "libavutil/x86/x86util.asm"
 
-cextern pb_FC
+SECTION_RODATA
+
 cextern h263_loop_filter_strength
+pb_FC: times 16 db 0xFC
 
 SECTION .text
 
