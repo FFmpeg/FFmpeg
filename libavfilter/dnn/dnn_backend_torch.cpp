@@ -345,7 +345,11 @@ static int execute_model_th(THRequestItem *request, Queue *lltask_queue)
     }
 
     if (task->async) {
-        return ff_dnn_start_inference_async(th_model->ctx, &request->exec_module);
+        ret = ff_dnn_start_inference_async(th_model->ctx, &request->exec_module);
+        if (ret != 0) {
+            goto err;
+        }
+        return 0;
     } else {
         // Synchronous execution path
         ret = th_start_inference((void *)(request));
