@@ -37,6 +37,9 @@ const AVMetadataConv ff_asf_metadata_conv[] = {
     { "WM/Language",             "language"         },
     { "WM/OriginalFilename",     "filename"         },
     { "WM/PartOfSet",            "disc"             },
+    /* SetSubTitle can be found in this mapping:
+     * https://learn.microsoft.com/en-gb/windows/win32/wmformat/id3-tag-support */
+    { "WM/SetSubTitle",          "disc_subtitle"    },
     { "WM/Publisher",            "publisher"        },
     { "WM/Tool",                 "encoder"          },
     { "WM/TrackNumber",          "track"            },
