@@ -386,6 +386,7 @@ struct AVFrame;
  creation_time-- date when the file was created, preferably in ISO 8601.
  date         -- date when the work was created, preferably in ISO 8601.
  disc         -- number of a subset, e.g. disc in a multi-disc collection.
+ disc_subtitle-- title of a subset, e.g. disc subtitle in a multi-disc collection.
  encoder      -- name/settings of the software/hardware that produced the file.
  encoded_by   -- person/group who created the file.
  filename     -- original name of the file.
