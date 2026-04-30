@@ -677,7 +677,7 @@ static const AVClass ff_##short_name##_mediacodec_dec_class = { \
 };
 
 #define DECLARE_MEDIACODEC_ADEC(short_name, full_name, codec_id, bsf)                          \
-DECLARE_MEDIACODEC_VCLASS(short_name)                                                          \
+DECLARE_MEDIACODEC_ACLASS(short_name)                                                          \
 const FFCodec ff_ ## short_name ## _mediacodec_decoder = {                                     \
     .p.name         = #short_name "_mediacodec",                                               \
     CODEC_LONG_NAME(full_name " Android MediaCodec decoder"),                                  \
