@@ -32,10 +32,12 @@
  * http://xiph.org/vorbis/doc/v-comment.html
  */
 const AVMetadataConv ff_vorbiscomment_metadata_conv[] = {
-    { "ALBUMARTIST", "album_artist"},
-    { "TRACKNUMBER", "track"  },
-    { "DISCNUMBER",  "disc"   },
-    { "DESCRIPTION", "comment" },
+    { "ALBUMARTIST",  "album_artist"  },
+    { "TRACKNUMBER",  "track"         },
+    { "DISCNUMBER",   "disc"          },
+    /* Adapted from <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#disc-subtitle> */
+    { "DISCSUBTITLE", "disc_subtitle" },
+    { "DESCRIPTION",  "comment"       },
     { 0 }
 };
 
