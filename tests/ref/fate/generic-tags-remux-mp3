@@ -6,7 +6,7 @@ ID3v2 frame TCOM (18 bytes):|.Anthony Gonzalez.|
 ID3v2 frame TCOP (24 bytes):|.2011 M83 Recording Inc.|
 ID3v2 frame TDRC (12 bytes):|.2011-10-17.|
 ID3v2 frame TPOS (3 bytes):|.1.|
-ID3v2 frame TXXX (24 bytes):|.disc_subtitle.Hurry Up.|
+ID3v2 frame TSST (10 bytes):|.Hurry Up.|
 ID3v2 frame TENC (5 bytes):|.Tau.|
 ID3v2 frame TXXX (20 bytes):|.filename.Intro.mp3.|
 ID3v2 frame TCON (12 bytes):|.Electronic.|
