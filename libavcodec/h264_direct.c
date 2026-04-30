@@ -121,26 +121,30 @@ void ff_h264_direct_ref_list_init(const H264Context *const h, H264SliceContext *
 {
     H264Ref *const ref1 = &sl->ref_list[1][0];
     H264Picture *const cur = h->cur_pic_ptr;
-    int list, j, field;
+    int list, field;
     int sidx     = (h->picture_structure & 1) ^ 1;
     int ref1sidx = (ref1->reference      & 1) ^ 1;
 
-    for (list = 0; list < sl->list_count; list++) {
-        cur->ref_count[sidx][list] = sl->ref_count[list];
-        for (j = 0; j < sl->ref_count[list]; j++)
-            cur->ref_poc[sidx][list][j] = 4 * sl->ref_list[list][j].parent->frame_num +
-                                          (sl->ref_list[list][j].reference & 3);
-    }
+    /* Updates to cur_pic are not safe once ff_thread_finish_setup() has been
+     * called (other threads may already be reading these fields). */
+    if (!h->setup_finished) {
+        for (list = 0; list < sl->list_count; list++) {
+            cur->ref_count[sidx][list] = sl->ref_count[list];
+            for (int j = 0; j < sl->ref_count[list]; j++)
+                cur->ref_poc[sidx][list][j] = 4 * sl->ref_list[list][j].parent->frame_num +
+                                                 (sl->ref_list[list][j].reference & 3);
+        }
 
-    if (h->picture_structure == PICT_FRAME) {
-        memcpy(cur->ref_count[1], cur->ref_count[0], sizeof(cur->ref_count[0]));
-        memcpy(cur->ref_poc[1],   cur->ref_poc[0],   sizeof(cur->ref_poc[0]));
-    }
+        if (h->picture_structure == PICT_FRAME) {
+            memcpy(cur->ref_count[1], cur->ref_count[0], sizeof(cur->ref_count[0]));
+            memcpy(cur->ref_poc[1],   cur->ref_poc[0],   sizeof(cur->ref_poc[0]));
+        }
 
-    if (h->current_slice == 0) {
-        cur->mbaff = FRAME_MBAFF(h);
-    } else {
-        av_assert0(cur->mbaff == FRAME_MBAFF(h));
+        if (h->current_slice == 0) {
+            cur->mbaff = FRAME_MBAFF(h);
+        } else {
+            av_assert0(cur->mbaff == FRAME_MBAFF(h));
+        }
     }
 
     sl->col_fieldoff = 0;
