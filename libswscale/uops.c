@@ -540,7 +540,8 @@ static bool is_expand_bit(SwsPixelType type, AVRational factor)
     return false;
 }
 
-static int translate_op(SwsUOpList *uops, SwsUOpFlags flags, const SwsOp *op)
+static int translate_op(SwsUOpList *uops, SwsUOpFlags flags, const SwsOp *op,
+                        const SwsComps *input)
 {
     switch (op->op) {
     case SWS_OP_FILTER_H:
@@ -640,13 +641,14 @@ static int translate_op(SwsUOpList *uops, SwsUOpFlags flags, const SwsOp *op)
     return ff_sws_uop_list_append(uops, &uop);
 }
 
-int ff_sws_ops_translate(const SwsOpList *ops, SwsUOpFlags flags,
-                         SwsUOpList *uops)
+int ff_sws_ops_translate(const SwsOpList *ops, SwsUOpFlags flags, SwsUOpList *uops)
 {
+    SwsComps input = ops->comps_src;
     for (int i = 0; i < ops->num_ops; i++) {
-        int ret = translate_op(uops, flags, &ops->ops[i]);
+        int ret = translate_op(uops, flags, &ops->ops[i], &input);
         if (ret < 0)
             return ret;
+        input = ops->ops[i].comps;
     }
     return 0;
 }
