@@ -77,6 +77,12 @@ enum {
      ((W) ? SWS_COMP(3) : 0))
 };
 
+typedef uint32_t SwsUOpFlags;
+typedef enum SwsUOpFlagBits {
+    SWS_UOP_FLAG_NONE = 0,
+    SWS_UOP_FLAG_FMA  = (1 << 0), /* platform supports FMA ops */
+} SwsUOpFlagBits;
+
 typedef enum SwsUOpType {
     SWS_UOP_INVALID = 0,
 
@@ -219,7 +225,8 @@ int ff_sws_uop_list_append(SwsUOpList *uops, SwsUOp *uop);
  *
  * Return 0 or a negative error code.
  */
-int ff_sws_ops_translate(const SwsOpList *ops, SwsUOpList *uops);
+int ff_sws_ops_translate(const SwsOpList *ops, SwsUOpFlags flags,
+                         SwsUOpList *uops);
 
 /**
  * Generate a set of boilerplate C preprocessor macros for describing and

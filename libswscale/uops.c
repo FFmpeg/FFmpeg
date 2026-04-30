@@ -540,7 +540,7 @@ static bool is_expand_bit(SwsPixelType type, AVRational factor)
     return false;
 }
 
-static int translate_op(SwsUOpList *uops, const SwsOp *op)
+static int translate_op(SwsUOpList *uops, SwsUOpFlags flags, const SwsOp *op)
 {
     switch (op->op) {
     case SWS_OP_FILTER_H:
@@ -640,10 +640,11 @@ static int translate_op(SwsUOpList *uops, const SwsOp *op)
     return ff_sws_uop_list_append(uops, &uop);
 }
 
-int ff_sws_ops_translate(const SwsOpList *ops, SwsUOpList *uops)
+int ff_sws_ops_translate(const SwsOpList *ops, SwsUOpFlags flags,
+                         SwsUOpList *uops)
 {
     for (int i = 0; i < ops->num_ops; i++) {
-        int ret = translate_op(uops, &ops->ops[i]);
+        int ret = translate_op(uops, flags, &ops->ops[i]);
         if (ret < 0)
             return ret;
     }
@@ -677,7 +678,7 @@ static int register_uops(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
     if (!uops)
         return AVERROR(ENOMEM);
 
-    int ret = ff_sws_ops_translate(ops, uops);
+    int ret = ff_sws_ops_translate(ops, 0, uops);
     if (ret < 0)
         goto fail;
 

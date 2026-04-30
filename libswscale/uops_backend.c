@@ -149,7 +149,7 @@ static int compile(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
         goto fail;
     }
 
-    ret = ff_sws_ops_translate(ops, uops);
+    ret = ff_sws_ops_translate(ops, 0, uops);
     if (ret < 0)
         goto fail;
 
