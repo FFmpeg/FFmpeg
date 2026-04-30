@@ -674,13 +674,13 @@ static int register_uop(struct AVTreeNode **root, const SwsUOp *uop)
     return 0;
 }
 
-static int register_uops(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
+static int register_flags(SwsContext *ctx, SwsOpList *ops, SwsUOpFlags flags)
 {
     SwsUOpList *uops = ff_sws_uop_list_alloc();
     if (!uops)
         return AVERROR(ENOMEM);
 
-    int ret = ff_sws_ops_translate(ops, 0, uops);
+    int ret = ff_sws_ops_translate(ops, flags, uops);
     if (ret < 0)
         goto fail;
 
@@ -692,9 +692,24 @@ static int register_uops(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
     }
 
 fail:
-    *out = (SwsCompiledOp) {0}; /* dummy value, will be immediately freed */
     ff_sws_uop_list_free(&uops);
     return ret;
+}
+
+static const SwsUOpFlags uop_flags[] = {
+    0,
+};
+
+static int register_uops(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
+{
+    for (int i = 0; i < FF_ARRAY_ELEMS(uop_flags); i++) {
+        int ret = register_flags(ctx, ops, uop_flags[i]);
+        if (ret < 0)
+            return ret;
+    }
+
+    *out = (SwsCompiledOp) {0}; /* dummy value, will be immediately freed */
+    return 0;
 }
 
 /* Dummy backend that just registers all seen uops */
