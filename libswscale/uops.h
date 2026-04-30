@@ -31,6 +31,7 @@
 
 #include "libavutil/attributes.h"
 
+typedef struct SwsContext       SwsContext;
 typedef struct SwsFilterWeights SwsFilterWeights;
 typedef struct SwsOpList        SwsOpList;
 
@@ -225,8 +226,8 @@ int ff_sws_uop_list_append(SwsUOpList *uops, SwsUOp *uop);
  *
  * Return 0 or a negative error code.
  */
-int ff_sws_ops_translate(const SwsOpList *ops, SwsUOpFlags flags,
-                         SwsUOpList *uops);
+int ff_sws_ops_translate(SwsContext *ctx, const SwsOpList *ops,
+                         SwsUOpFlags flags, SwsUOpList *uops);
 
 /**
  * Generate a set of boilerplate C preprocessor macros for describing and

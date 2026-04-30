@@ -43,7 +43,7 @@ static int print_ops(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
     if (!uops)
         return AVERROR(ENOMEM);
 
-    int ret = ff_sws_ops_translate(ops, 0, uops);
+    int ret = ff_sws_ops_translate(ctx, ops, 0, uops);
     if (ret == AVERROR(ENOTSUP)) {
         av_log(NULL, AV_LOG_INFO, " Retrying with split passes:\n");
         goto fail;
