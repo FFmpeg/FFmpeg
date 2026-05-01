@@ -140,7 +140,7 @@ typedef struct SwsOpBackend {
      *
      * Returns 0 or a negative error code.
      */
-    int (*compile)(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out);
+    int (*compile)(SwsContext *ctx, const SwsOpList *ops, SwsCompiledOp *out);
 
     /**
      * If NONE, backend only supports software frames.

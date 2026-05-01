@@ -251,7 +251,7 @@ fail:
     return err;
 }
 
-static int create_bufs(FFVulkanOpsCtx *s, VulkanPriv *p, SwsOpList *ops)
+static int create_bufs(FFVulkanOpsCtx *s, VulkanPriv *p, const SwsOpList *ops)
 {
     int err;
     p->nb_data_bufs = 0;
@@ -390,8 +390,8 @@ typedef struct SPIRVIDs {
 } SPIRVIDs;
 
 /* Section 1: Function to define all shader header data, and decorations */
-static void define_shader_header(SwsContext *sws, FFVulkanShader *shd, SwsOpList *ops,
-                                 SPICtx *spi, SPIRVIDs *id)
+static void define_shader_header(SwsContext *sws, FFVulkanShader *shd,
+                                 const SwsOpList *ops, SPICtx *spi, SPIRVIDs *id)
 {
     spi_OpCapability(spi, SpvCapabilityShader); /* Shader type */
 
@@ -492,7 +492,8 @@ static void define_shader_header(SwsContext *sws, FFVulkanShader *shd, SwsOpList
 }
 
 /* Section 2: Define all types and constants */
-static void define_shader_consts(SwsContext *sws, SwsOpList *ops, SPICtx *spi, SPIRVIDs *id)
+static void define_shader_consts(SwsContext *sws, const SwsOpList *ops,
+                                 SPICtx *spi, SPIRVIDs *id)
 {
     /* Define scalar types */
     id->void_type    = spi_OpTypeVoid(spi);
@@ -651,7 +652,7 @@ static void define_shader_consts(SwsContext *sws, SwsOpList *ops, SPICtx *spi, S
 }
 
 /* Section 3: Define bindings */
-static void define_shader_bindings(SwsOpList *ops, SPICtx *spi, SPIRVIDs *id,
+static void define_shader_bindings(const SwsOpList *ops, SPICtx *spi, SPIRVIDs *id,
                                    int in_img_count, int out_img_count)
 {
     id->dither_ptr_elem_id = spi_OpTypePointer(spi, SpvStorageClassUniform,
@@ -908,7 +909,7 @@ static int read_filtered(SPICtx *spi, SPIRVIDs *id, const SwsOpList *ops,
 }
 
 static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
-                         SwsOpList *ops, FFVulkanShader *shd)
+                         const SwsOpList *ops, FFVulkanShader *shd)
 {
     uint8_t spvbuf[1024*16];
     SPICtx spi_context = { 0 }, *spi = &spi_context;
@@ -1311,7 +1312,7 @@ static void add_desc_read_write(FFVulkanDescriptorSetBinding *out_desc,
 #define QSTR "(%i/%i%s)"
 #define QTYPE(Q) (Q).num, (Q).den, cur_type == SWS_PIXEL_F32 ? ".0f" : ""
 
-static void read_glsl(SwsOpList *ops, const SwsOp *op, FFVulkanShader *shd,
+static void read_glsl(const SwsOpList *ops, const SwsOp *op, FFVulkanShader *shd,
                       int idx, const char *type_name,
                       const char *type_v, const char *type_s)
 {
@@ -1356,7 +1357,7 @@ static void read_glsl(SwsOpList *ops, const SwsOp *op, FFVulkanShader *shd,
 }
 
 static int add_ops_glsl(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
-                        SwsOpList *ops, FFVulkanShader *shd)
+                        const SwsOpList *ops, FFVulkanShader *shd)
 {
     int err;
     uint8_t *spv_data;
@@ -1608,7 +1609,8 @@ static int add_ops_glsl(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
 }
 #endif
 
-static int compile(SwsContext *sws, SwsOpList *ops, SwsCompiledOp *out, int glsl)
+static int compile(SwsContext *sws, const SwsOpList *ops, SwsCompiledOp *out,
+                   int glsl)
 {
     int err;
     SwsInternal *c = sws_internal(sws);
@@ -1682,7 +1684,8 @@ fail:
 }
 
 #if HAVE_SPIRV_HEADERS_SPIRV_H || HAVE_SPIRV_UNIFIED1_SPIRV_H
-static int compile_spirv(SwsContext *sws, SwsOpList *ops, SwsCompiledOp *out)
+static int compile_spirv(SwsContext *sws, const SwsOpList *ops,
+                         SwsCompiledOp *out)
 {
     return compile(sws, ops, out, 0);
 }
@@ -1696,7 +1699,8 @@ const SwsOpBackend backend_spirv = {
 #endif
 
 #if CONFIG_LIBSHADERC || CONFIG_LIBGLSLANG
-static int compile_glsl(SwsContext *sws, SwsOpList *ops, SwsCompiledOp *out)
+static int compile_glsl(SwsContext *sws, const SwsOpList *ops,
+                        SwsCompiledOp *out)
 {
     return compile(sws, ops, out, 1);
 }

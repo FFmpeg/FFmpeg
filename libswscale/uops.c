@@ -769,7 +769,7 @@ static int register_uop(struct AVTreeNode **root, const SwsUOp *uop)
     return 0;
 }
 
-static int register_flags(SwsContext *ctx, SwsOpList *ops, SwsUOpFlags flags)
+static int register_flags(SwsContext *ctx, const SwsOpList *ops, SwsUOpFlags flags)
 {
     SwsUOpList *uops = ff_sws_uop_list_alloc();
     if (!uops)
@@ -796,7 +796,8 @@ static const SwsUOpFlags uop_flags[] = {
     SWS_UOP_FLAG_FMA, /* x86 backend */
 };
 
-static int register_uops(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
+static int register_uops(SwsContext *ctx, const SwsOpList *ops,
+                         SwsCompiledOp *out)
 {
     for (int i = 0; i < FF_ARRAY_ELEMS(uop_flags); i++) {
         int ret = register_flags(ctx, ops, uop_flags[i]);

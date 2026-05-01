@@ -32,7 +32,7 @@
 
 static int pass_idx;
 
-static int print_ops(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
+static int print_ops(SwsContext *ctx, const SwsOpList *ops, SwsCompiledOp *out)
 {
     if (pass_idx > 0)
         av_log(NULL, AV_LOG_INFO, " Sub-pass #%d:\n", pass_idx);

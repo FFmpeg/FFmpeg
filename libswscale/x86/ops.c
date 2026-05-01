@@ -565,7 +565,7 @@ static void normalize_clear(SwsUOp *uop)
         uop->data.vec4[i].u32 = expand32(uop->type, uop->data.vec4[i]);
 }
 
-static int compile(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
+static int compile(SwsContext *ctx, const SwsOpList *ops, SwsCompiledOp *out)
 {
     const int cpu_flags = av_get_cpu_flags();
     int ret, mmsize;

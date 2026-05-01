@@ -134,7 +134,7 @@ static void process(const SwsOpExec *exec, const void *priv,
     }
 }
 
-static int compile(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
+static int compile(SwsContext *ctx, const SwsOpList *ops, SwsCompiledOp *out)
 {
     int ret;
 

@@ -172,7 +172,8 @@ static int aarch64_optimize(SwsAArch64BackendContext *bctx, SwsOpList *ops)
 }
 
 /*********************************************************************/
-static int aarch64_compile(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
+static int aarch64_compile(SwsContext *ctx, const SwsOpList *ops,
+                           SwsCompiledOp *out)
 {
     SwsAArch64BackendContext bctx;
     int ret;
