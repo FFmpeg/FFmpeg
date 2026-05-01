@@ -528,7 +528,7 @@ fate-filter-scalechroma: CMD = framecrc -flags bitexact -s 352x288 -pix_fmt yuv4
 # filter and potentially hanging downstream encoders (issue #22817).
 # Verify that such invalid dimensions are now rejected explicitly.
 FATE_FILTER-$(call ALLYES, SCALE_FILTER COLOR_FILTER LAVFI_INDEV WRAPPED_AVFRAME_ENCODER NULL_MUXER) += fate-filter-scale-zero-dim
-fate-filter-scale-zero-dim: CMD = ! $(FFMPEG) -nostdin -hide_banner -f lavfi -i "color=c=red:s=3000x2:d=1" -vf "scale=iw/2:-2,scale=iw/3:-2,scale=iw/2:-2" -f null none
+fate-filter-scale-zero-dim: CMD = ! run $(FFMPEG) -nostdin -hide_banner -f lavfi -i "color=c=red:s=3000x2:d=1" -vf "scale=iw/2:-2,scale=iw/3:-2,scale=iw/2:-2" -f null none
 fate-filter-scale-zero-dim: CMP = null
 
 FATE_FILTER_VSYNTH_VIDEO_FILTER-$(CONFIG_VFLIP_FILTER) += fate-filter-vflip
