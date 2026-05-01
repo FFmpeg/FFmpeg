@@ -82,20 +82,34 @@ static float pvq_band_cost(CeltPVQ *pvq, CeltFrame *f, OpusRangeCoder *rc, int b
 static void step_collect_psy_metrics(OpusPsyContext *s, int index)
 {
     int silence = 0, ch, i, j;
+    /* The MDCT analysis covers 2 * OPUS_BLOCK_SIZE(bsize_analysis) samples.
+     * Each bufqueue entry holds avctx->frame_size samples (120 historically,
+     * 960 after c3aea7628c for default settings). steps_per_half is how many
+     * bufqueue entries fill one MDCT half-window.
+     *
+     * bufqueue[0] is reserved for the previous packet's overlap (initially the
+     * empty padding frame). The audio that step N analyzes starts at
+     * bufqueue[index + 1]; bufqueue[index] is its preceding overlap. */
+    const int half_samples   = OPUS_BLOCK_SIZE(s->bsize_analysis);
+    const int step_samples   = s->avctx->frame_size;
+    const int steps_per_half = half_samples / step_samples;
     OpusPsyStep *st = s->steps[index];
 
     st->index = index;
 
     for (ch = 0; ch < s->avctx->ch_layout.nb_channels; ch++) {
-        const int lap_size = (1 << s->bsize_analysis);
-        for (i = 1; i <= FFMIN(lap_size, index); i++) {
-            const int offset = i*120;
-            AVFrame *cur = ff_bufqueue_peek(s->bufqueue, index - i);
+        memset(s->scratch, 0, sizeof(float) * (half_samples << 1));
+
+        for (i = 1; i <= FFMIN(steps_per_half, index + 1); i++) {
+            const int offset = (steps_per_half - i) * step_samples;
+            AVFrame *cur = ff_bufqueue_peek(s->bufqueue, index + 1 - i);
             memcpy(&s->scratch[offset], cur->extended_data[ch], cur->nb_samples*sizeof(float));
         }
-        for (i = 0; i < lap_size; i++) {
-            const int offset = i*120 + lap_size;
-            AVFrame *cur = ff_bufqueue_peek(s->bufqueue, index + i);
+        for (i = 0; i < steps_per_half; i++) {
+            if (index + 1 + i >= s->bufqueue->available)
+                break;
+            const int offset = (steps_per_half + i) * step_samples;
+            AVFrame *cur = ff_bufqueue_peek(s->bufqueue, index + 1 + i);
             memcpy(&s->scratch[offset], cur->extended_data[ch], cur->nb_samples*sizeof(float));
         }
 
@@ -187,6 +201,13 @@ static void search_for_change_points(OpusPsyContext *s, float tgt_change,
 
 static int flush_silent_frames(OpusPsyContext *s)
 {
+    /* buffered_steps and silent_frames count psy steps, each of which is
+     * avctx->frame_size samples (120 historically, up to 960 after
+     * c3aea7628c). The CELT framesize fsize we pick must consume at least
+     * one psy step per emitted packet, otherwise postencode_update would
+     * compute steps_out = 0 and the psy state would stall while bufqueue
+     * and afq drain. */
+    const int step_samples = s->avctx->frame_size;
     int fsize, silent_frames;
 
     for (silent_frames = 0; silent_frames < s->buffered_steps; silent_frames++)
@@ -196,9 +217,15 @@ static int flush_silent_frames(OpusPsyContext *s)
         return 0;
 
     for (fsize = CELT_BLOCK_960; fsize > CELT_BLOCK_120; fsize--) {
-        if ((1 << fsize) > silent_frames)
+        const int packet_samples   = OPUS_BLOCK_SIZE(fsize);
+        const int steps_per_packet = packet_samples / step_samples;
+
+        if (steps_per_packet < 1 || silent_frames < steps_per_packet)
             continue;
-        s->p.frames = FFMIN(silent_frames / (1 << fsize), 48 >> fsize);
+        /* 48 * CELT_SHORT_BLOCKSIZE = 5760 samples = 120 ms; matches the
+         * historical (48 >> fsize) cap for frame_size = 120. */
+        s->p.frames = FFMIN(silent_frames / steps_per_packet,
+                            (48 * CELT_SHORT_BLOCKSIZE) / packet_samples);
         s->p.framesize = fsize;
         return 1;
     }
@@ -230,7 +257,10 @@ int ff_opus_psy_process(OpusPsyContext *s, OpusPacketInfo *p)
     float total_energy_change = 0.0f;
 
     if (s->buffered_steps < s->max_steps && !s->eof) {
-        const int awin = (1 << s->bsize_analysis);
+        /* awin counts how many bufqueue entries fill one MDCT half-window.
+         * With frame_size=120 this is 8 (matches the historical 1 << bsize_analysis);
+         * with frame_size=960 it is 1, so we collect every call. */
+        const int awin = OPUS_BLOCK_SIZE(s->bsize_analysis) / s->avctx->frame_size;
         if (++s->steps_to_process >= awin) {
             step_collect_psy_metrics(s, s->buffered_steps - awin + 1);
             s->steps_to_process = 0;
@@ -258,7 +288,8 @@ int ff_opus_psy_process(OpusPsyContext *s, OpusPacketInfo *p)
 void ff_opus_psy_celt_frame_init(OpusPsyContext *s, CeltFrame *f, int index)
 {
     int i, neighbouring_points = 0, start_offset = 0;
-    int radius = (1 << s->p.framesize), step_offset = radius*index;
+    int steps_per_frame = OPUS_BLOCK_SIZE(s->p.framesize) / s->avctx->frame_size;
+    int step_offset = steps_per_frame*index;
     int silence = 1;
 
     f->start_band = (s->p.mode == OPUS_MODE_HYBRID) ? 17 : 0;
@@ -266,8 +297,17 @@ void ff_opus_psy_celt_frame_init(OpusPsyContext *s, CeltFrame *f, int index)
     f->channels   = s->avctx->ch_layout.nb_channels;
     f->size       = s->p.framesize;
 
-    for (i = 0; i < (1 << f->size); i++)
-        silence &= s->steps[index*(1 << f->size) + i]->silence;
+    for (i = 0; i < steps_per_frame; i++)
+        silence &= s->steps[index * steps_per_frame + i]->silence;
+
+    /* If we reach EOF with fewer collected psy steps than this packet wants
+     * to encode, the slots beyond buffered_steps were zeroed by the previous
+     * postencode_update and contain no valid analysis data. Encoding garbage
+     * with the full rate budget can overrun the range coder buffer (rng_bytes
+     * exceeds the per-frame size passed to ff_opus_rc_enc_end), so force a
+     * silent packet instead. */
+    if (s->eof && step_offset >= s->buffered_steps)
+        silence = 1;
 
     f->silence = silence;
     if (f->silence) {
@@ -282,8 +322,8 @@ void ff_opus_psy_celt_frame_init(OpusPsyContext *s, CeltFrame *f, int index)
         }
     }
 
-    for (i = start_offset; i < FFMIN(radius, s->inflection_points_count - start_offset); i++) {
-        if (s->inflection_points[i] < (step_offset + radius)) {
+    for (i = start_offset; i < FFMIN(steps_per_frame, s->inflection_points_count - start_offset); i++) {
+        if (s->inflection_points[i] < (step_offset + steps_per_frame)) {
             neighbouring_points++;
         }
     }
@@ -316,6 +356,7 @@ static void celt_gauge_psy_weight(OpusPsyContext *s, OpusPsyStep **start,
 {
     int i, f, ch;
     int frame_size = OPUS_BLOCK_SIZE(s->p.framesize);
+    int steps_per_frame = frame_size / s->avctx->frame_size;
     float rate, frame_bits = 0;
 
     /* Used for the global ROTATE flag */
@@ -329,7 +370,7 @@ static void celt_gauge_psy_weight(OpusPsyContext *s, OpusPsyStep **start,
     for (i = 0; i < CELT_MAX_BANDS; i++) {
         float weight = 0.0f;
         float tonal_contrib = 0.0f;
-        for (f = 0; f < (1 << s->p.framesize); f++) {
+        for (f = 0; f < steps_per_frame; f++) {
             weight = start[f]->stereo[i];
             for (ch = 0; ch < s->avctx->ch_layout.nb_channels; ch++) {
                 weight += start[f]->change_amp[ch][i] + start[f]->tone[ch][i] + start[f]->energy[ch][i];
@@ -349,7 +390,7 @@ static void celt_gauge_psy_weight(OpusPsyContext *s, OpusPsyStep **start,
 
     for (i = 0; i < CELT_MAX_BANDS; i++) {
         f_out->alloc_boost[i] = (int)((band_score[i]/max_score)*3.0f);
-        frame_bits += band_score[i]*8.0f;
+        //TODO: implements frame_bits adjustment.
     }
 
     tonal /= 1333136.0f;
@@ -425,6 +466,7 @@ static void celt_search_for_intensity(OpusPsyContext *s, CeltFrame *f)
 static int celt_search_for_tf(OpusPsyContext *s, OpusPsyStep **start, CeltFrame *f)
 {
     int i, j, k, cway, config[2][CELT_MAX_BANDS] = { { 0 } };
+    int steps_per_frame = OPUS_BLOCK_SIZE(f->size) / s->avctx->frame_size;
     float score[2] = { 0 };
 
     for (cway = 0; cway < 2; cway++) {
@@ -439,7 +481,7 @@ static int celt_search_for_tf(OpusPsyContext *s, OpusPsyStep **start, CeltFrame 
         for (i = 0; i < CELT_MAX_BANDS; i++) {
             float iscore0 = 0.0f;
             float iscore1 = 0.0f;
-            for (j = 0; j < (1 << f->size); j++) {
+            for (j = 0; j < steps_per_frame; j++) {
                 for (k = 0; k < s->avctx->ch_layout.nb_channels; k++) {
                     iscore0 += start[j]->tone[k][i]*start[j]->change_amp[k][i]/mag[0];
                     iscore1 += start[j]->tone[k][i]*start[j]->change_amp[k][i]/mag[1];
@@ -459,7 +501,8 @@ static int celt_search_for_tf(OpusPsyContext *s, OpusPsyStep **start, CeltFrame 
 int ff_opus_psy_celt_frame_process(OpusPsyContext *s, CeltFrame *f, int index)
 {
     int start_transient_flag = f->transient;
-    OpusPsyStep **start = &s->steps[index * (1 << s->p.framesize)];
+    int steps_per_frame = OPUS_BLOCK_SIZE(s->p.framesize) / s->avctx->frame_size;
+    OpusPsyStep **start = &s->steps[index * steps_per_frame];
 
     if (f->silence)
         return 0;
@@ -480,7 +523,7 @@ int ff_opus_psy_celt_frame_process(OpusPsyContext *s, CeltFrame *f, int index)
 void ff_opus_psy_postencode_update(OpusPsyContext *s, CeltFrame *f)
 {
     int i, frame_size = OPUS_BLOCK_SIZE(s->p.framesize);
-    int steps_out = s->p.frames*(frame_size/120);
+    int steps_out = s->p.frames*(frame_size/s->avctx->frame_size);
     void *tmp[FF_BUFQUEUE_SIZE];
     float ideal_fbits;
 
@@ -502,7 +545,8 @@ void ff_opus_psy_postencode_update(OpusPsyContext *s, CeltFrame *f)
 
     for (i = 0; i < s->p.frames; i++) {
         s->avg_is_band += f[i].intensity_stereo;
-        s->lambda *= ideal_fbits / f[i].framebits;
+        if (f[i].framebits > 0)
+            s->lambda *= ideal_fbits / f[i].framebits;
     }
 
     s->avg_is_band /= (s->p.frames + 1);
@@ -522,7 +566,9 @@ av_cold int ff_opus_psy_init(OpusPsyContext *s, AVCodecContext *avctx,
     s->options = options;
     s->avctx = avctx;
     s->bufqueue = bufqueue;
-    s->max_steps = ceilf(s->options->max_delay_ms/2.5f);
+    s->max_steps = ceilf(s->options->max_delay_ms * avctx->sample_rate /
+        (1000.0f * avctx->frame_size));
+
     s->bsize_analysis = CELT_BLOCK_960;
     s->avg_is_band = CELT_MAX_BANDS - 1;
     s->inflection_points_count = 0;
