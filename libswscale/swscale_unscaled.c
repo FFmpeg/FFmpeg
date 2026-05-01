@@ -126,9 +126,13 @@ static void copyPlane(const uint8_t *src, int srcStride,
                       int srcSliceY, int srcSliceH, int width,
                       uint8_t *dst, int dstStride)
 {
+    if (!srcSliceH)
+        return;
+    av_assert0(srcSliceH > 0);
+
     dst += dstStride * srcSliceY;
     if (dstStride == srcStride && srcStride > 0) {
-        memcpy(dst, src, srcSliceH * dstStride);
+        memcpy(dst, src, (srcSliceH - 1) * dstStride + width);
     } else {
         int i;
         for (i = 0; i < srcSliceH; i++) {
