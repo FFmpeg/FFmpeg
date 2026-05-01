@@ -58,7 +58,8 @@ struct options {
     int bench;
     int flags;
     int dither;
-    int unscaled;
+    int scaler;
+    int scaler_sub;
     int align_src;
     int align_dst;
     int api;
@@ -69,6 +70,8 @@ struct options {
 struct mode {
     SwsFlags flags;
     SwsDither dither;
+    SwsScaler scaler;
+    SwsScaler scaler_sub;
 };
 
 struct test_results {
@@ -245,10 +248,12 @@ static int scale_new(AVFrame *dst, const AVFrame *src,
                      const struct mode *mode, const struct options *opts,
                      int64_t *out_time)
 {
-    sws_src_dst->flags  = mode->flags;
-    sws_src_dst->dither = mode->dither;
-    sws_src_dst->threads = opts->threads;
-    sws_src_dst->backends = opts->backends;
+    sws_src_dst->flags      = mode->flags;
+    sws_src_dst->dither     = mode->dither;
+    sws_src_dst->scaler     = mode->scaler;
+    sws_src_dst->scaler_sub = mode->scaler_sub;
+    sws_src_dst->threads    = opts->threads;
+    sws_src_dst->backends   = opts->backends;
 
     int ret = sws_frame_setup(sws_src_dst, dst, src);
     if (ret < 0) {
@@ -292,6 +297,8 @@ static int scale_legacy(AVFrame *dst, const AVFrame *src,
     sws_legacy->dst_format = dst->format;
     sws_legacy->flags      = mode->flags;
     sws_legacy->dither     = mode->dither;
+    sws_legacy->scaler     = mode->scaler;
+    sws_legacy->scaler_sub = mode->scaler_sub;
     sws_legacy->threads    = opts->threads;
 
     av_frame_unref(dst);
@@ -447,7 +454,7 @@ static void print_test_params(char *buf, size_t buf_size,
                               const struct mode *mode, const struct options *opts)
 {
     snprintf(buf, buf_size,
-             "%-*s %*dx%*d -> %-*s %*dx%*d, flags=0x%0*x dither=%u",
+             "%-*s %*dx%*d -> %-*s %*dx%*d, flags=0x%0*x dither=%u scaler=%d/%d",
              opts->pretty ? 14 : 0, av_get_pix_fmt_name(src->format),
              opts->pretty ?  4 : 0, src->width,
              opts->pretty ?  4 : 0, src->height,
@@ -455,7 +462,9 @@ static void print_test_params(char *buf, size_t buf_size,
              opts->pretty ?  4 : 0, dst->width,
              opts->pretty ?  4 : 0, dst->height,
              opts->pretty ?  8 : 0, mode->flags,
-             mode->dither);
+             mode->dither,
+             mode->scaler,
+             mode->scaler_sub);
 }
 
 static void print_results(const AVFrame *ref, const AVFrame *src, const AVFrame *dst,
@@ -704,13 +713,13 @@ static int run_self_tests(const AVFrame *ref, const struct options *opts)
 
     for (src_fmt = src_fmt_min; src_fmt <= src_fmt_max; src_fmt++) {
         if ((!fmt_is_supported_by_hw(src_fmt)) ||
-            (opts->unscaled && fmt_is_subsampled(src_fmt)))
+            (opts->scaler < 0 && fmt_is_subsampled(src_fmt)))
             continue;
         if (!sws_test_format(src_fmt, 0) || !sws_test_format(src_fmt, 1))
             continue;
         for (dst_fmt = dst_fmt_min; dst_fmt <= dst_fmt_max; dst_fmt++) {
             if ((!fmt_is_supported_by_hw(dst_fmt)) ||
-                (opts->unscaled && fmt_is_subsampled(dst_fmt)))
+                (opts->scaler < 0 && fmt_is_subsampled(dst_fmt)))
                 continue;
             if (!sws_test_format(dst_fmt, 0) || !sws_test_format(dst_fmt, 1))
                 continue;
@@ -718,11 +727,16 @@ static int run_self_tests(const AVFrame *ref, const struct options *opts)
                 for (int w = 0; w < FF_ARRAY_ELEMS(dst_w_values); w++) {
                     for (int f = 0; f < FF_ARRAY_ELEMS(flags); f++) {
                         struct mode mode = {
-                            .flags  = opts->flags  >= 0 ? opts->flags  : flags[f],
-                            .dither = opts->dither >= 0 ? opts->dither : SWS_DITHER_AUTO,
+                            .flags      = opts->flags      >= 0 ? opts->flags      : flags[f],
+                            .dither     = opts->dither     >= 0 ? opts->dither     : SWS_DITHER_AUTO,
+                            .scaler     = opts->scaler     >= 0 ? opts->scaler     : SWS_SCALE_AUTO,
+                            .scaler_sub = opts->scaler_sub >= 0 ? opts->scaler_sub : SWS_SCALE_AUTO,
                         };
                         int dst_w = (opts->dst_w >= 0) ? opts->dst_w : dst_w_values[w];
                         int dst_h = (opts->dst_h >= 0) ? opts->dst_h : dst_h_values[h];
+
+                        if (opts->scaler >= 0 && opts->w == dst_w && opts->h == dst_h)
+                            continue;
 
                         if (ff_sfc64_get(&prng_state) <= UINT64_MAX * opts->prob) {
                             ret = run_test(src_fmt, dst_fmt, dst_w, dst_h,
@@ -731,17 +745,17 @@ static int run_self_tests(const AVFrame *ref, const struct options *opts)
                                 goto error;
                         }
 
-                        if (opts->flags >= 0 || opts->unscaled)
+                        if (opts->flags >= 0 || opts->scaler != SWS_SCALE_AUTO)
                             break;
                     }
                     if (opts->dst_w >= 0 || opts->dst_h >= 0)
                         break;
-                    if (opts->unscaled)
+                    if (opts->scaler < 0)
                         break;
                 }
                 if (opts->dst_w >= 0 || opts->dst_h >= 0)
                     break;
-                if (opts->unscaled)
+                if (opts->scaler < 0)
                     break;
             }
         }
@@ -771,13 +785,14 @@ static int run_file_tests(const AVFrame *ref, FILE *fp, const struct options *op
         int n = 0;
 
         ret = sscanf(buf,
-                     "%20s %dx%d -> %20s %dx%d, flags=0x%x dither=%u, "
+                     "%20s %dx%d -> %20s %dx%d, flags=0x%x dither=%u scaler=%u/%u, "
                      "SSIM={Y=%f U=%f V=%f A=%f} loss=%e%n",
                      src_fmt_str, &sw, &sh, dst_fmt_str, &dw, &dh,
                      &mode.flags, &mode.dither,
+                     &mode.scaler, &mode.scaler_sub,
                      &r.ssim[0], &r.ssim[1], &r.ssim[2], &r.ssim[3],
                      &r.loss, &n);
-        if (ret != 13) {
+        if (ret != 15) {
             av_log(NULL, AV_LOG_FATAL,
                    "Malformed reference file in line %d\n", line);
             goto error;
@@ -895,6 +910,7 @@ static int parse_implementation(const char *str)
 
 static int parse_options(int argc, char **argv, struct options *opts, FILE **fp)
 {
+    SwsContext *dummy = sws_alloc_context();
     char *buf = NULL;
     int ret;
 
@@ -924,8 +940,11 @@ static int parse_options(int argc, char **argv, struct options *opts, FILE **fp)
                     "       Test with a specific dither mode\n"
                     "   -backends <backends>\n"
                     "       Restrict to the given set of allowed swscale backends\n"
-                    "   -unscaled <1 or 0>\n"
-                    "       If 1, test only conversions that do not involve scaling\n"
+                    "   -scaler <algorithm>\n"
+                    "       Test with a specified scaler algorithm\n"
+                    "       If 'none', test only conversions that do not involve scaling\n"
+                    "   -scaler_sub <algorithm>\n"
+                    "       Test with a specified scaler algorithm for chroma planes\n"
                     "   -align_src <alignment>\n"
                     "       If nonzero, allocate source buffers with a custom stride alignment\n"
                     "   -align_dst <alignment>\n"
@@ -992,27 +1011,33 @@ static int parse_options(int argc, char **argv, struct options *opts, FILE **fp)
                 opts->iters = iters;
             }
         } else if (!strcmp(argv[i], "-flags")) {
-            SwsContext *dummy = sws_alloc_context();
             const AVOption *flags_opt = av_opt_find(dummy, "sws_flags", NULL, 0, 0);
             ret = av_opt_eval_flags(dummy, flags_opt, argv[i + 1], &opts->flags);
-            sws_free_context(&dummy);
             if (ret < 0) {
                 fprintf(stderr, "invalid flags %s\n", argv[i + 1]);
                 goto end;
             }
         } else if (!strcmp(argv[i], "-backends")) {
-            SwsContext *dummy = sws_alloc_context();
             const AVOption *backends_opt = av_opt_find(dummy, "sws_backends", NULL, 0, 0);
             ret = av_opt_eval_flags(dummy, backends_opt, argv[i + 1], &opts->backends);
-            sws_free_context(&dummy);
             if (ret < 0) {
                 fprintf(stderr, "invalid backends %s\n", argv[i + 1]);
                 goto end;
             }
         } else if (!strcmp(argv[i], "-dither")) {
             opts->dither = atoi(argv[i + 1]);
-        } else if (!strcmp(argv[i], "-unscaled")) {
-            opts->unscaled = atoi(argv[i + 1]);
+        } else if (!strcmp(argv[i], "-scaler") || !strcmp(argv[i], "-scaler_sub")) {
+            int opt_is_scaler = !strcmp(argv[i], "-scaler");
+            if (opt_is_scaler && !strcmp(argv[i + 1], "none")) {
+                opts->scaler = -1;
+                continue;
+            }
+            const AVOption *scaler_opt = av_opt_find(dummy, "scaler", NULL, 0, 0);
+            ret = av_opt_eval_int(dummy, scaler_opt, argv[i + 1], opt_is_scaler ? &opts->scaler : &opts->scaler_sub);
+            if (ret < 0) {
+                fprintf(stderr, "invalid scaler algorithm %s\n", argv[i + 1]);
+                goto end;
+            }
         } else if (!strcmp(argv[i], "-align_src")) {
             opts->align_src = atoi(argv[i + 1]);
             if (opts->align_src < 0 || (opts->align_src & (opts->align_src - 1))) {
@@ -1073,6 +1098,7 @@ bad_option:
     ret = 0;
 
 end:
+    sws_free_context(&dummy);
     av_freep(&buf);
     return ret;
 }
@@ -1080,17 +1106,19 @@ end:
 int main(int argc, char **argv)
 {
     struct options opts = {
-        .src_fmt = AV_PIX_FMT_NONE,
-        .dst_fmt = AV_PIX_FMT_NONE,
-        .w       = -1,
-        .h       = -1,
-        .dst_w   = -1,
-        .dst_h   = -1,
-        .threads = 1,
-        .iters   = 1,
-        .prob    = 1.0,
-        .flags   = -1,
-        .dither  = -1,
+        .src_fmt    = AV_PIX_FMT_NONE,
+        .dst_fmt    = AV_PIX_FMT_NONE,
+        .w          = -1,
+        .h          = -1,
+        .dst_w      = -1,
+        .dst_h      = -1,
+        .threads    = 1,
+        .iters      = 1,
+        .prob       = 1.0,
+        .flags      = -1,
+        .dither     = -1,
+        .scaler     = SWS_SCALE_AUTO,
+        .scaler_sub = SWS_SCALE_AUTO,
     };
 
     AVFrame *ref = NULL;
