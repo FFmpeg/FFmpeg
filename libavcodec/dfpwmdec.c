@@ -101,15 +101,16 @@ static int dfpwm_dec_frame(struct AVCodecContext *ctx, AVFrame *frame,
 {
     DFPWMState *state = ctx->priv_data;
     int ret;
+    uint64_t nb_samples = packet->size * 8LL / ctx->ch_layout.nb_channels;
 
     if (packet->size * 8LL % ctx->ch_layout.nb_channels)
         return AVERROR_PATCHWELCOME;
 
-    frame->nb_samples = packet->size * 8LL / ctx->ch_layout.nb_channels;
-    if (frame->nb_samples <= 0) {
+    if (nb_samples > INT_MAX || !nb_samples) {
         av_log(ctx, AV_LOG_ERROR, "invalid number of samples in packet\n");
         return AVERROR_INVALIDDATA;
     }
+    frame->nb_samples = nb_samples;
 
     if ((ret = ff_get_buffer(ctx, frame, 0)) < 0)
         return ret;
