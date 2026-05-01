@@ -65,14 +65,14 @@ static av_cold int encode_init(AVCodecContext *avctx)
     flags1 = 0;
     flags2 = 1;
     if (avctx->codec->id == AV_CODEC_ID_WMAV1) {
-        extradata             = av_malloc(4);
+        extradata             = av_mallocz(4 + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!extradata)
             return AVERROR(ENOMEM);
         avctx->extradata_size = 4;
         AV_WL16(extradata, flags1);
         AV_WL16(extradata + 2, flags2);
     } else if (avctx->codec->id == AV_CODEC_ID_WMAV2) {
-        extradata             = av_mallocz(10);
+        extradata             = av_mallocz(10 + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!extradata)
             return AVERROR(ENOMEM);
         avctx->extradata_size = 10;
