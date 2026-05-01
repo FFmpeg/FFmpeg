@@ -22,6 +22,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/mem.h"
+#include "libavutil/x86/cpu.h"
 
 #include "../ops_chain.h"
 
@@ -846,18 +847,6 @@ static const SwsOpTable *const tables[] = {
     &ops32_avx2,
 };
 
-static av_const int get_mmsize(const int cpu_flags)
-{
-    if (cpu_flags & AV_CPU_FLAG_AVX512)
-        return 64;
-    else if (cpu_flags & AV_CPU_FLAG_AVX2)
-        return 32;
-    else if (cpu_flags & AV_CPU_FLAG_SSE4)
-        return 16;
-    else
-        return AVERROR(ENOTSUP);
-}
-
 /**
  * Returns true if the operation's implementation only depends on the block
  * size, and not the underlying pixel type
@@ -975,11 +964,16 @@ static void normalize_clear(SwsOp *op)
 
 static int compile(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
 {
-    int ret;
     const int cpu_flags = av_get_cpu_flags();
-    const int mmsize = get_mmsize(cpu_flags);
-    if (mmsize < 0)
-        return mmsize;
+    int ret, mmsize;
+    if (X86_AVX512(cpu_flags))
+        mmsize = 64;
+    else if (X86_AVX2(cpu_flags))
+        mmsize = 32;
+    else if (X86_SSE4(cpu_flags))
+        mmsize = 16;
+    else
+        return AVERROR(ENOTSUP);
 
     /* Special fast path for in-place packed shuffle */
     ret = solve_shuffle(ops, mmsize, out);
