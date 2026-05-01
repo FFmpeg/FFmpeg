@@ -120,26 +120,11 @@ typedef struct SwsImplResult {
 } SwsImplResult;
 
 typedef struct SwsOpEntry {
-    /* Kernel metadata; reduced size subset of SwsOp */
-    union {
-        SwsOpType op;
-        SwsUOpType uop;
-    };
+    /* Kernel metadata; reduced size subset of SwsUOp (sans data) */
+    SwsUOpType uop;
     SwsPixelType type;
     SwsCompMask mask;
-    bool flexible; /* if true, only the type and op are matched (for ops only) */
-
-    union { /* extra data defining the operation, unless `flexible` is true */
-        SwsUOpParams   par;
-        SwsReadWriteOp rw;
-        SwsPackOp      pack;
-        SwsSwizzleOp   swizzle;
-        SwsConvertOp   convert;
-        SwsClearOp     clear;
-        uint32_t       linear_mask; /* subset of SwsLinearOp */
-        int            dither_size; /* subset of SwsDitherOp */
-        AVRational     scale;       /* scale factor for SWS_OP_SCALE */
-    };
+    SwsUOpParams par;
 
     /* Kernel implementation */
     SwsFuncPtr func;
@@ -148,7 +133,6 @@ typedef struct SwsOpEntry {
 } SwsOpEntry;
 
 /* Setup helpers for common/trivial operation types */
-int ff_sws_setup_shift(const SwsImplParams *params, SwsImplResult *out);
 int ff_sws_setup_scale(const SwsImplParams *params, SwsImplResult *out);
 int ff_sws_setup_clamp(const SwsImplParams *params, SwsImplResult *out);
 int ff_sws_setup_clear(const SwsImplParams *params, SwsImplResult *out);
@@ -170,19 +154,8 @@ static inline void ff_op_priv_unref(SwsOpPriv *priv)
 struct SwsOpTable {
     unsigned cpu_flags;   /* required CPU flags for this table */
     int block_size;       /* fixed block size of this table */
-    bool uops;            /* if true, entries are uops, not ops */
     const SwsOpEntry *entries[]; /* terminated by NULL */
 };
-
-/**
- * "Compile" a single op by looking it up in a list of fixed size op tables.
- * See `op_match` in `ops_chain.c` for details on how the matching works.
- *
- * Returns 0 or a negative error code.
- */
-int ff_sws_op_compile_tables(SwsContext *ctx, const SwsOpTable *const tables[],
-                             int num_tables, const SwsOp *op,
-                             const int block_size, SwsOpChain *chain);
 
 /**
  * "Compile" a single uop by looking it up in a list of fixed size uop tables,

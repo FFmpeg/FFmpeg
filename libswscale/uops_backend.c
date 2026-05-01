@@ -95,7 +95,6 @@
 
 static const SwsOpTable op_table = {
     .block_size = SWS_BLOCK_SIZE,
-    .uops = true,
     .entries = {
         REF_ALL_UOPS(U8)
         REF_ALL_UOPS(U16)
