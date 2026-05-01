@@ -645,6 +645,7 @@ static int opt_map(void *optctx, const char *opt, const char *arg)
             for (i = 0; i < o->nb_stream_maps; i++) {
                 m = &o->stream_maps[i];
                 if (file_idx == m->file_index &&
+                    !m->linklabel &&
                     m->stream_index >= 0 &&
                     m->stream_index < input_files[m->file_index]->nb_streams &&
                     stream_specifier_match(&ss,
