@@ -45,7 +45,7 @@
 ; - bxd, yd: current line and block number, used as loop counters in sws_process.
 ;   Also used by e.g. the dithering code to do position-dependent dithering.
 ;
-; - tmp0, tmp1: two temporary registers which are NOT preserved between kernels
+; - tmp0, tmp1, tmp2: temporary registers which are NOT preserved between kernels
 ;
 ; - inNq, outNq: plane pointers. These are incremented automatically after the
 ;   corresponding read/write operation, by the read/write kernels themselves.
@@ -62,8 +62,8 @@
 ; The "high half" registers are only sometimes used; in order to enable
 ; processing more pixels at the same time. See `decl_v2` below, which allows
 ; assembling the same operation twice, once with only the lower half (V2=0),
-; and once with both halves (V2=1). The remaining vectors are free for use
-; inside operation kernels, starting from m8.
+; and once with both halves (V2=1). The remaining vectors (m8-m15) are free for
+; use inside operation kernels.
 ;
 ; The basic rule is that we always use the full set of both vector registers
 ; when processing the largest element size within a pixel chain. For example,
