@@ -240,7 +240,6 @@ static int tdsc_load_cursor(AVCodecContext *avctx)
                     bits <<= 1;
                 }
             }
-            dst += ctx->cursor_stride - ctx->cursor_w * 4;
         }
 
         dst = ctx->cursor;
@@ -272,7 +271,6 @@ static int tdsc_load_cursor(AVCodecContext *avctx)
                     bits <<= 1;
                 }
             }
-            dst += ctx->cursor_stride - ctx->cursor_w * 4;
         }
         break;
     case CUR_FMT_BGRA:
