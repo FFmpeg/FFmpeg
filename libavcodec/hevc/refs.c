@@ -162,7 +162,10 @@ static HEVCFrame *alloc_frame(HEVCContext *s, HEVCLayerContext *l)
         if (ret < 0)
             goto fail;
 
-        frame->rpl = av_refstruct_allocz(s->pkt.nb_nals * sizeof(*frame->rpl));
+        size_t rpl_bytes;
+        if (av_size_mult(s->pkt.nb_nals, sizeof(*frame->rpl), &rpl_bytes) < 0)
+            goto fail;
+        frame->rpl = av_refstruct_allocz(rpl_bytes);
         if (!frame->rpl)
             goto fail;
         frame->nb_rpl_elems = s->pkt.nb_nals;
