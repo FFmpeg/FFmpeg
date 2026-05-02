@@ -1240,7 +1240,7 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
         av_log(ost, AV_LOG_VERBOSE, "input stream %d:%d",
                ist->file->index, ist->index);
     else if (ofilter)
-        av_log(ost, AV_LOG_VERBOSE, "complex filtergraph %d:[%s]\n",
+        av_log(ost, AV_LOG_VERBOSE, "complex filtergraph %d:[%s]",
                ofilter->graph->index, ofilter->name);
     else if (type == AVMEDIA_TYPE_ATTACHMENT)
         av_log(ost, AV_LOG_VERBOSE, "attached file");
