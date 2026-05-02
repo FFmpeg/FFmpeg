@@ -2704,7 +2704,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
                     for (int k = i-1; k > -1; k--) {
                         for (int o = 1; o < order; o++)
-                            delta += sf_codes[(i-1) - k] * coefs[(o*8) + k];
+                            delta += sf_codes[(i-1) - k] * (unsigned)coefs[(o*8) + k];
                     }
 
                     sample = sf_codes[i] * 2048;
