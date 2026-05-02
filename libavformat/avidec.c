@@ -1836,6 +1836,10 @@ static int avi_load_index(AVFormatContext *s)
             avi->index_loaded=2;
             ret = 0;
         }else if (tag == MKTAG('L', 'I', 'S', 'T')) {
+            if (size < 4) {
+                av_log(s, AV_LOG_WARNING, "Invalid size (%u) LIST in index\n", size);
+                break;
+            }
             uint32_t tag1 = avio_rl32(pb);
 
             if (tag1 == MKTAG('I', 'N', 'F', 'O'))
