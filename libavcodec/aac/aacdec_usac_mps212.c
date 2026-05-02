@@ -464,10 +464,10 @@ static int ec_pair_dec(GetBitContext *gb,
     }
 
     if (pair) {
-        p_data[0] = data_pair[0];
-        p_data[1] = data_pair[1];
+        p_data[0] = data_diff[0];
+        p_data[1] = data_diff[1];
     } else {
-        p_data[0] = data_pair[0];
+        p_data[0] = data_diff[0];
         p_data[1] = NULL;
     }
 
@@ -480,7 +480,7 @@ static int ec_pair_dec(GetBitContext *gb,
     if (pair && (diff_freq[0] || diff_time_back))
         diff_freq[1] = !get_bits1(gb);
 
-    int time_pair;
+    int time_pair = 0;
     huff_decode(gb, p_data, data_type, diff_freq,
                 nb_bands, &time_pair);
 
@@ -534,11 +534,11 @@ static int ec_pair_dec(GetBitContext *gb,
     }
 
     /* Decode LSBs */
-    attach_lsb(gb, p_data[0], quant_offset, attach_lsb_flag,
-               nb_bands, p_data[0]);
+    attach_lsb(gb, data_pair[0], quant_offset, attach_lsb_flag,
+               nb_bands, data_pair[0]);
     if (pair)
-        attach_lsb(gb, p_data[1], quant_offset, attach_lsb_flag,
-                   nb_bands, p_data[1]);
+        attach_lsb(gb, data_pair[1], quant_offset, attach_lsb_flag,
+                   nb_bands, data_pair[1]);
 
     memcpy(&set1[start_band], data_pair[0], 2*nb_bands);
     if (pair)
