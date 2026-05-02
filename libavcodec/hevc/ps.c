@@ -1280,6 +1280,9 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
         sps->bit_depth             = rf->bit_depth_luma;
         sps->width                 = rf->pic_width_in_luma_samples;
         sps->height                = rf->pic_height_in_luma_samples;
+        if ((ret = av_image_check_size(sps->width,
+                                       sps->height, 0, avctx)) < 0)
+            return ret;
 
         sps->pic_conf_win.left_offset   = rf->conf_win_left_offset;
         sps->pic_conf_win.right_offset  = rf->conf_win_right_offset;
