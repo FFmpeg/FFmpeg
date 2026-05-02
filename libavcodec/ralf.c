@@ -157,6 +157,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     if (ctx->max_frame_size > (1 << 20) || !ctx->max_frame_size) {
         av_log(avctx, AV_LOG_ERROR, "invalid frame size %d\n",
                ctx->max_frame_size);
+        return AVERROR_INVALIDDATA;
     }
     ctx->max_frame_size = FFMAX(ctx->max_frame_size, avctx->sample_rate);
 
