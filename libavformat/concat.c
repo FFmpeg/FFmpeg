@@ -45,7 +45,7 @@ struct concat_data {
     struct concat_nodes *nodes;    ///< list of nodes to concat
     size_t               length;   ///< number of cat'ed nodes
     size_t               current;  ///< index of currently read node
-    uint64_t total_size;
+    int64_t total_size;
 };
 
 static av_cold int concat_close(URLContext *h)
