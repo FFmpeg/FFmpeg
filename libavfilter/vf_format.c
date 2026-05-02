@@ -118,41 +118,20 @@ static av_cold int init(AVFilterContext *ctx)
     enum AVAlphaMode alm;
     int ret;
 
-    for (char *sep, *cur = s->pix_fmts; cur; cur = sep) {
-        sep = strchr(cur, '|');
-        if (sep && *sep)
-            *sep++ = 0;
-        if ((ret = parse_pixel_format(&pix_fmt, cur, ctx)) < 0 ||
-            (ret = ff_add_format(&s->formats, pix_fmt)) < 0)
-            return ret;
+    #define PARSE_LIST(strfield, fmtfield, tvar, parse) \
+    for (char *sep, *cur = s->strfield; cur; cur = sep) { \
+        sep = strchr(cur, '|'); \
+        if (sep && *sep) \
+            *sep++ = 0; \
+        if ((ret = parse(&tvar, cur, ctx)) < 0 || \
+            (ret = ff_add_format(&s->fmtfield, tvar)) < 0) \
+            return ret; \
     }
 
-    for (char *sep, *cur = s->csps; cur; cur = sep) {
-        sep = strchr(cur, '|');
-        if (sep && *sep)
-            *sep++ = 0;
-        if ((ret = parse_color_space(&csp, cur, ctx)) < 0 ||
-            (ret = ff_add_format(&s->color_spaces, csp)) < 0)
-            return ret;
-    }
-
-    for (char *sep, *cur = s->ranges; cur; cur = sep) {
-        sep = strchr(cur, '|');
-        if (sep && *sep)
-            *sep++ = 0;
-        if ((ret = parse_color_range(&crg, cur, ctx)) < 0 ||
-            (ret = ff_add_format(&s->color_ranges, crg)) < 0)
-            return ret;
-    }
-
-    for (char *sep, *cur = s->alphamodes; cur; cur = sep) {
-        sep = strchr(cur, '|');
-        if (sep && *sep)
-            *sep++ = 0;
-        if ((ret = parse_alpha_mode(&alm, cur, ctx)) < 0 ||
-            (ret = ff_add_format(&s->alpha_modes, alm)) < 0)
-            return ret;
-    }
+    PARSE_LIST(pix_fmts, formats, pix_fmt, parse_pixel_format)
+    PARSE_LIST(csps, color_spaces, csp, parse_color_space)
+    PARSE_LIST(ranges, color_ranges, crg, parse_color_range)
+    PARSE_LIST(alphamodes, alpha_modes, alm, parse_alpha_mode)
 
     if (!strcmp(ctx->filter->name, "noformat")) {
         if ((ret = invert_formats(&s->formats,      ff_all_formats(AVMEDIA_TYPE_VIDEO))) < 0 ||
