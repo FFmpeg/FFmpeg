@@ -84,6 +84,12 @@ static int config_props(AVFilterLink *inlink)
 
     kerndeint->is_packed_rgb = av_pix_fmt_desc_get(inlink->format)->flags & AV_PIX_FMT_FLAG_RGB;
     kerndeint->vsub = desc->log2_chroma_h;
+    if (AV_CEIL_RSHIFT(inlink->h, kerndeint->vsub) < 4) {
+        av_log(inlink->dst, AV_LOG_ERROR,
+               "Input height %d is too small; minimum chroma plane height is 4\n",
+               inlink->h);
+        return AVERROR(EINVAL);
+    }
 
     ret = av_image_alloc(kerndeint->tmp_data, kerndeint->tmp_linesize,
                          inlink->w, inlink->h, inlink->format, 16);
