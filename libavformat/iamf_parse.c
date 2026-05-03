@@ -38,7 +38,7 @@ static int opus_decoder_config(IAMFCodecConfig *codec_config,
 {
     int ret, left = len - avio_tell(pb);
 
-    if (left < 11 || codec_config->audio_roll_distance >= 0)
+    if (left < 11 || codec_config->audio_roll_distance >= 0 || left > INT_MAX - 8)
         return AVERROR_INVALIDDATA;
 
     codec_config->extradata = av_malloc(left + 8);
