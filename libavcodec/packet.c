@@ -316,7 +316,7 @@ const char *av_packet_side_data_name(enum AVPacketSideDataType type)
     return NULL;
 }
 
-uint8_t *av_packet_pack_dictionary(AVDictionary *dict, size_t *size)
+uint8_t *av_packet_pack_dictionary(const AVDictionary *dict, size_t *size)
 {
     uint8_t *data = NULL;
     *size = 0;
