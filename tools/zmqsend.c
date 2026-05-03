@@ -55,7 +55,7 @@ static void usage(void)
 int main(int argc, char **argv)
 {
     AVBPrint src;
-    char *src_buf, *recv_buf;
+    char *src_buf = NULL, *recv_buf;
     int c;
     int recv_buf_size, ret = 0;
     void *zmq_ctx, *socket;
@@ -165,6 +165,7 @@ int main(int argc, char **argv)
     av_free(recv_buf);
 
 end:
+    av_freep(&src_buf);
     zmq_close(socket);
     zmq_ctx_destroy(zmq_ctx);
     return ret;
