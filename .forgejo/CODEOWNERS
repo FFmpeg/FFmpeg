@@ -157,7 +157,7 @@ libavformat/mlv.* @pross
 libavformat/mm.* @pross
 libavformat/msp.* @pross
 libavformat/mv.* @pross
-libavformat/ogg* @toots
+libavformat/ogg.* @toots
 libavformat/pp_bnk.* @zane
 libavformat/rm.* @pross
 libavformat/sauce.* @pross
