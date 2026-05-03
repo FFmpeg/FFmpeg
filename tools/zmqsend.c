@@ -166,6 +166,8 @@ int main(int argc, char **argv)
 
 end:
     av_freep(&src_buf);
+    if (strcmp(infilename, "stdin"))
+        fclose(infile);
     zmq_close(socket);
     zmq_ctx_destroy(zmq_ctx);
     return ret;
