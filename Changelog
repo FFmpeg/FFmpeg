@@ -1,6 +1,89 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 8.1.1:
+ avcodec/aac/aacdec_usac_mps212: fix attach_lsb() OOB after huff_decode
+ avcodec/dfpwmdec: Check nb_samples
+ avcodec/alsdec: do not set nbits invalidly
+ swscale/swscale_unscaled: adjust last line copy
+ swscale/swscale: Check srcSliceY and srcSliceH
+ avformat/avidec: check LIST size in avi_load_index()
+ avformat/avidec: validate INFO list size before parsing
+ avformat/matroskadec: Check audio.sub_packet_h * audio.frame_size
+ libavformat/xwma: fix overflow in seek position
+ avformat/pcm: Use 64bit for byte_rate
+ avcodec/adpcm: signed integer overflow in ADPCM_N64
+ avcodec/hevc/ps: validate rep_format dimensions in multi-layer SPS
+ avfilter/vf_kerndeint: Check for minimum height
+ avcodec/ralf: Add the missing return statement after the error log
+ avfilter/vf_codecview: Clamp block to the visible frame region
+ avcodec/zmbv: reject XOR data that overruns the decompression buffer
+ avcodec/rasc: fix heap use-after-free in decode_move()
+ avformat/rtpdec_mpeg4: reject zero-length AU header sections
+ avcodec/hevc/refs: Check multiplication in alloc_frame()
+ fftools/ffmpeg_opt: validate stream index in negative map handling
+ avformat/rtmpproto: prevent integer overflow accumulating FLV buffer size
+ avformat/rtmpproto: validate compressed SWF header length
+ avformat/rtsp: Fix out-of-bounds read in SDP parser when control_url is empty
+ avformat/rtpdec_latm: avoid integer overflow in LATM length parsing
+ avcodec/h264: recompute per-slice direct mode state for every slice
+ avcodec/h264_refs: Clear stale pointers from ref_list
+ avcodec/pdvdec: Check input space before buffer allocation
+ avformat/concat: guard total_size overflow
+ avformat/iamf_parse.c: Fix potential integer overflow in opus_decoder_config()
+ avcodec/wmaenc: Fix missing padding in extradata
+ avformat: Fix various extradata padding issues
+ avcodec/tdsc: remove double stride adjustment
+ avformat/cafdec: fix negative index use in read_seek
+ avcodec/notchlc: Check 255 loops
+ avformat/rtpdec_jpeg: check qtable_len
+ avformat/vividas: use-of-uninitialized-value in keybuffer
+ avcodec/tdsc: Check jpeg size
+ avcodec/tdsc: Better input size check
+ avcodec/tdsc: Check tile_size
+ avcodec/decode: Better documentation for ff_set_dimensions()
+ avformat/mov: Limit maximum box size for mov_read_lhvc()
+ avformat/mov: reject dimg references with zero entries
+ avformat/mov: check extradata in mov_read_dops()
+ avformat/mov: Check read size for opus extradata
+ avformat/rtspdec: reject non-positive ANNOUNCE Content-Length
+ avformat/wavdec: Fix use-of-uninitialized-value in find_guid()
+ lavfi: vf_drawtext: check memory allocation
+ avcodec/svq1dec: Check input space for minimum
+ avcodec/vp9: Rollback dimensions when format is rejected
+ avformat/rtpdec_qdm2: Check block_size
+ avfilter/vf_ssim360: fix integer overflow in tape_length allocation
+ avcodec/escape130: Initialize old_y_avg
+ avutil/samplefmt: Dont claim that av_get_sample_fmt_string checks sample_fmt
+ swscale: fix signed integer overflow in color conversion arithmetic
+ avformat: check avio_read() return values in dss/dtshd/mlv
+ avformat/whip: check RTP history packet size before RTX retransmission
+ avcodec/aac/aacdec_usac: Implement missing bits of otts_bands_phase and residual_bands computation
+ avcodec/alsdec: preserve full float value in zero-truncated samples
+ avcodec/alsdec: propagate read_diff_float_data() errors in read_frame_data()
+ avcodec/alsdec: fix mantissa unpacking in compressed Part A path
+ avfilter/vf_drawtext: fix newline rendered as .notdef glyph
+ avcodec/pngdec: fix dead overflow check in decode_text_to_exif()
+ avcodec/vp9: fix cbs fragment leak on error
+ libavfilter/vf_v360: fix operator precedence in stereo loop condition
+ avcodec/alsdec: fix abs(INT_MIN) UB in read_diff_float_data()
+ avformat/rsd: reject short ADPCM_THP extradata reads
+ avformat/mov: Handle integer overflow in MOV parser
+ avcodec/dvdsub_parser: Fix buf_size check
+ avfilter/af_pan: fix sscanf() return value checks in parse_channel_name
+ avutil/bswap: fix implicit conversion warning in av_bswap64
+ avcodec/h2645_sei: don't use provider_code uninitialized
+ (fforge/pr/22943) avformat/hls_sample_encryption: add missing padding for audio setup buffer
+ (fforge/pr/22826) lavc/videotoolbox_vp9: fix vpcC flags offset
+ lavc/videotoolboxenc: return SEI parse errors
+ vulkan: fix encode feedback query handling
+ avcodec/cbs_lcevc: fix writing process blocks with size 6
+ avformat/mov: don't try to create an LCEVC group if there's a single track
+ (fforge/pr/22563) aarch64: Add Armv9.3-A GCS (Guarded Control Stack) support
+ aarch64: hevcdsp: Make returns match the call site
+ (fforge/pr/22545) avcodec/lcevcdec: don't try to derive final dimensions from SAR
+ avcodec/lcevc_parser: move the resolution type table to a header
+ avcodec/cbs_lcevc: don't look for process blocks if the unit was not decomposed
 
 version 8.1:
 - ffprobe -codec option
