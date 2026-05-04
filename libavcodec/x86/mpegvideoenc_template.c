@@ -1,5 +1,5 @@
 /*
- * MPEG video MMX templates
+ * MPEG video DCT template
  *
  * Copyright (c) 2002 Michael Niedermayer <michaelni@gmx.at>
  *
@@ -32,7 +32,6 @@
 #include "mpegvideoencdsp.h"
 
 #undef SPREADW
-#undef PMAXW
 #undef PMAX
 #undef SAVE_SIGN
 #undef RESTORE_SIGN
