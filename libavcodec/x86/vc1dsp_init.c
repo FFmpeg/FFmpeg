@@ -97,6 +97,9 @@ void ff_vc1_inv_trans_8x8_dc_mmxext(uint8_t *dest, ptrdiff_t linesize,
 #define MSPEL_FUNCS_SIZE(X, Y, SIZE, XMM) \
     MSPEL_FUNC(put, X, Y, SIZE, XMM);     \
     MSPEL_FUNC(avg, X, Y, SIZE, XMM)
+#define MSPEL_FUNCS(X, Y, XMM)            \
+    MSPEL_FUNCS_SIZE(X, Y,  8, XMM);      \
+    MSPEL_FUNCS_SIZE(X, Y, 16, XMM)
 
 av_cold void ff_vc1dsp_init_x86(VC1DSPContext *dsp)
 {
@@ -141,9 +144,9 @@ av_cold void ff_vc1dsp_init_x86(VC1DSPContext *dsp)
         dsp->put_no_rnd_vc1_chroma_pixels_tab[0] = ff_put_vc1_chroma_mc8_nornd_ssse3;
         dsp->avg_no_rnd_vc1_chroma_pixels_tab[0] = ff_avg_vc1_chroma_mc8_nornd_ssse3;
 
-        MSPEL_FUNCS_SIZE(1, 0, 8, ssse3);
-        MSPEL_FUNCS_SIZE(2, 0, 8, ssse3);
-        MSPEL_FUNCS_SIZE(3, 0, 8, ssse3);
+        MSPEL_FUNCS(1, 0, ssse3);
+        MSPEL_FUNCS(2, 0, ssse3);
+        MSPEL_FUNCS(3, 0, ssse3);
     }
     if (EXTERNAL_SSE4(cpu_flags)) {
         dsp->vc1_h_loop_filter8  = ff_vc1_h_loop_filter8_sse4;

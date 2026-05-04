@@ -200,6 +200,7 @@ HOR_16B_SHIFT2 OP_AVG, avg
 %endif ; HAVE_MMX_INLINE
 
 %define MOV8  movq
+%define MOV16 movu
 
 INIT_XMM ssse3
 %macro HOR_8B 2
@@ -223,7 +224,7 @@ cglobal vc1_%1_mspel_mc30_%2, 4, 4, 6, dst, src, stride, rnd
 
 vc1_%1_mspel_mc30_%2_after_prologue:
     movd              m0, rndd
-    WIN64_SPILL_XMM    7
+    WIN64_SPILL_XMM    7+(%2>>4)
 %define hd  rndd
     mov               hd, %2
     SPLATW            m0, m0
@@ -233,6 +234,7 @@ vc1_%1_mspel_mc30_%2_after_prologue:
     MOV%2             m5, [srcq+1]
     MOV%2             m6, [srcq+2]
 
+%if %2 == 8
     punpcklbw         m3, m4
     pmaddubsw         m3, m1
 %ifidn %1,avg
@@ -249,6 +251,26 @@ vc1_%1_mspel_mc30_%2_after_prologue:
     pavgb             m3, m4
 %endif
     movq          [dstq], m3
+%else
+    SBUTTERFLY        bw, 3, 4, 7
+    pmaddubsw         m3, m1
+    pmaddubsw         m4, m1
+    SBUTTERFLY        bw, 6, 5, 7
+    pmaddubsw         m6, m2
+    pmaddubsw         m5, m2
+    add             srcq, strideq
+    psubw             m3, m0
+    psubw             m4, m0
+    paddw             m3, m6
+    paddw             m4, m5
+    psraw             m3, 6
+    psraw             m4, 6
+    packuswb          m3, m4
+%ifidn %1, avg
+    pavgb             m3, [dstq]
+%endif
+    mova          [dstq], m3
+%endif
     add             dstq, strideq
     dec               hd
     jnz            .loop
@@ -257,3 +279,6 @@ vc1_%1_mspel_mc30_%2_after_prologue:
 
 HOR_8B put, 8
 HOR_8B avg, 8
+
+HOR_8B put, 16
+HOR_8B avg, 16
