@@ -21,6 +21,12 @@
 
 %include "libavutil/x86/x86util.asm"
 
+SECTION_RODATA
+
+pb_m4_36: times 8 db -4, 36
+pb_m4_53: times 8 db -4, 53
+pb_m3_18: times 8 db -3, 18
+
 cextern pw_9
 cextern pw_128
 
@@ -192,3 +198,62 @@ HOR_16B_SHIFT2 OP_PUT, put
 INIT_MMX mmxext
 HOR_16B_SHIFT2 OP_AVG, avg
 %endif ; HAVE_MMX_INLINE
+
+%define MOV8  movq
+
+INIT_XMM ssse3
+%macro HOR_8B 2
+
+cglobal vc1_%1_mspel_mc10_%2, 4, 4, 6, dst, src, stride, rnd
+    mova              m1, [pb_m4_53]
+    mova              m2, [pb_m3_18]
+    sub             rndd, 32
+    jmp               vc1_%1_mspel_mc30_%2_after_prologue
+
+cglobal vc1_%1_mspel_mc20_%2, 4, 4, 6, dst, src, stride, rnd
+    mova              m1, [pb_m4_36]
+    lea             rndd, [4*rndd-32]
+    mova              m2, m1
+    jmp               vc1_%1_mspel_mc30_%2_after_prologue
+
+cglobal vc1_%1_mspel_mc30_%2, 4, 4, 6, dst, src, stride, rnd
+    mova              m2, [pb_m4_53]
+    mova              m1, [pb_m3_18]
+    sub             rndd, 32
+
+vc1_%1_mspel_mc30_%2_after_prologue:
+    movd              m0, rndd
+    WIN64_SPILL_XMM    7
+%define hd  rndd
+    mov               hd, %2
+    SPLATW            m0, m0
+.loop:
+    MOV%2             m3, [srcq-1]
+    MOV%2             m4, [srcq]
+    MOV%2             m5, [srcq+1]
+    MOV%2             m6, [srcq+2]
+
+    punpcklbw         m3, m4
+    pmaddubsw         m3, m1
+%ifidn %1,avg
+    movq              m4, [dstq]
+%endif
+    punpcklbw         m6, m5
+    pmaddubsw         m6, m2
+    add             srcq, strideq
+    psubw             m3, m0
+    paddw             m3, m6
+    psraw             m3, 6
+    packuswb          m3, m3
+%ifidn %1,avg
+    pavgb             m3, m4
+%endif
+    movq          [dstq], m3
+    add             dstq, strideq
+    dec               hd
+    jnz            .loop
+    RET
+%endmacro
+
+HOR_8B put, 8
+HOR_8B avg, 8

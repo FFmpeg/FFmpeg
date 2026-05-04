@@ -89,6 +89,14 @@ void ff_vc1_inv_trans_8x4_dc_mmxext(uint8_t *dest, ptrdiff_t linesize,
 void ff_vc1_inv_trans_8x8_dc_mmxext(uint8_t *dest, ptrdiff_t linesize,
                                     int16_t *block);
 
+#define MSPEL_FUNC(OP, X, Y, SIZE, XMM)                                     \
+    void ff_vc1_ ## OP ## _mspel_mc ## X ## Y ## _ ## SIZE ##_ ## XMM       \
+             (uint8_t *dst, const uint8_t *src, ptrdiff_t stride, int rnd); \
+    dsp->OP ## _vc1_mspel_pixels_tab[SIZE == 8][X + 4 * Y] =                \
+        ff_vc1_ ## OP ## _mspel_mc ## X ## Y## _ ## SIZE ##_ ## XMM
+#define MSPEL_FUNCS_SIZE(X, Y, SIZE, XMM) \
+    MSPEL_FUNC(put, X, Y, SIZE, XMM);     \
+    MSPEL_FUNC(avg, X, Y, SIZE, XMM)
 
 av_cold void ff_vc1dsp_init_x86(VC1DSPContext *dsp)
 {
@@ -132,6 +140,10 @@ av_cold void ff_vc1dsp_init_x86(VC1DSPContext *dsp)
         ASSIGN_LF816(ssse3);
         dsp->put_no_rnd_vc1_chroma_pixels_tab[0] = ff_put_vc1_chroma_mc8_nornd_ssse3;
         dsp->avg_no_rnd_vc1_chroma_pixels_tab[0] = ff_avg_vc1_chroma_mc8_nornd_ssse3;
+
+        MSPEL_FUNCS_SIZE(1, 0, 8, ssse3);
+        MSPEL_FUNCS_SIZE(2, 0, 8, ssse3);
+        MSPEL_FUNCS_SIZE(3, 0, 8, ssse3);
     }
     if (EXTERNAL_SSE4(cpu_flags)) {
         dsp->vc1_h_loop_filter8  = ff_vc1_h_loop_filter8_sse4;
