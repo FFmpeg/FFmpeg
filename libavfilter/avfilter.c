@@ -1109,6 +1109,9 @@ int ff_filter_frame(AVFilterLink *link, AVFrame *frame)
     filter_unblock(link->dst);
     ret = ff_framequeue_add(&li->fifo, frame);
     if (ret < 0) {
+        const FFFrameQueueGlobal *global = li->fifo.global;
+        if (ret == AVERROR(ENOMEM) && global->queued >= global->max_queued)
+            av_log(link->dst, AV_LOG_ERROR, "Exhausted frame queue capacity (%zu frames)\n", global->max_queued);
         av_frame_free(&frame);
         return ret;
     }
