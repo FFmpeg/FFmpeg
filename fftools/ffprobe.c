@@ -344,7 +344,6 @@ static const char *print_input_filename;
 static const AVInputFormat *iformat = NULL;
 static const char *output_filename = NULL;
 
-static const char unit_second_str[]         = "s"    ;
 static const char unit_hertz_str[]          = "Hz"   ;
 static const char unit_byte_str[]           = "byte" ;
 static const char unit_bit_per_second_str[] = "bit/s";
@@ -455,7 +454,8 @@ static void log_callback(void *ptr, int level, const char *fmt, va_list vl)
 #define print_ts(k, v)          avtext_print_ts(tfc, k, v, 0)
 #define print_duration_time(k, v, tb) avtext_print_time(tfc, k, v, tb, 1)
 #define print_duration_ts(k, v)       avtext_print_ts(tfc, k, v, 1)
-#define print_val(k, v, u)      avtext_print_unit_integer(tfc, k, v, u)
+#define print_val(k, v, u)            avtext_print_unit_integer(tfc, k, v, AV_TEXTFORMAT_VALUE_FMT_INT, u)
+#define print_int_fmt(k, v, f, u)     avtext_print_unit_integer(tfc, k, v, f, u)
 
 static void print_integers(AVTextFormatContext *tfc, const char *key,
                            const void *data, int size, const char *format,
@@ -1342,7 +1342,7 @@ static void show_packet(AVTextFormatContext *tfc, InputFile *ifile, AVPacket *pk
     print_time("dts_time",        pkt->dts, &st->time_base);
     print_duration_ts("duration",        pkt->duration);
     print_duration_time("duration_time", pkt->duration, &st->time_base);
-    print_val("size",             pkt->size, unit_byte_str);
+    print_int_fmt("size",         pkt->size, AV_TEXTFORMAT_VALUE_FMT_BYTE, unit_byte_str);
     if (pkt->pos != -1) print_fmt    ("pos", "%"PRId64, pkt->pos);
     else                print_str_opt("pos", "N/A");
     print_fmt("flags", "%c%c%c",      pkt->flags & AV_PKT_FLAG_KEY ? 'K' : '_',
@@ -1505,7 +1505,7 @@ static void show_frame(AVTextFormatContext *tfc, AVFrame *frame, AVStream *strea
     print_duration_time("duration_time",     frame->duration, &stream->time_base);
     if (fd && fd->pkt_pos != -1)  print_fmt    ("pkt_pos", "%"PRId64, fd->pkt_pos);
     else                          print_str_opt("pkt_pos", "N/A");
-    if (fd && fd->pkt_size != -1) print_val    ("pkt_size", fd->pkt_size, unit_byte_str);
+    if (fd && fd->pkt_size != -1) print_int_fmt("pkt_size", fd->pkt_size, AV_TEXTFORMAT_VALUE_FMT_BYTE, unit_byte_str);
     else                          print_str_opt("pkt_size", "N/A");
 
     switch (stream->codecpar->codec_type) {
@@ -2448,7 +2448,7 @@ static int show_format(AVTextFormatContext *tfc, InputFile *ifile)
     }
     print_time("start_time",      fmt_ctx->start_time, &AV_TIME_BASE_Q);
     print_time("duration",        fmt_ctx->duration,   &AV_TIME_BASE_Q);
-    if (size >= 0) print_val    ("size", size, unit_byte_str);
+    if (size >= 0) print_int_fmt("size", size, AV_TEXTFORMAT_VALUE_FMT_BYTE, unit_byte_str);
     else           print_str_opt("size", "N/A");
     if (fmt_ctx->bit_rate > 0) print_val    ("bit_rate", fmt_ctx->bit_rate, unit_bit_per_second_str);
     else                       print_str_opt("bit_rate", "N/A");

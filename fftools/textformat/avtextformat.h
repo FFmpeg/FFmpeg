@@ -161,6 +161,13 @@ struct AVTextFormatContext {
     unsigned int string_validation_utf8_flags;
 };
 
+typedef enum {
+    AV_TEXTFORMAT_VALUE_FMT_INT,
+    AV_TEXTFORMAT_VALUE_FMT_BYTE,
+    AV_TEXTFORMAT_VALUE_FMT_DOUBLE = 0x100,
+    AV_TEXTFORMAT_VALUE_FMT_SECOND,
+} AVTextFormatValueFormat;
+
 #define AV_TEXTFORMAT_PRINT_STRING_OPTIONAL 1
 #define AV_TEXTFORMAT_PRINT_STRING_VALIDATE 2
 
@@ -178,7 +185,7 @@ void avtext_print_integer(AVTextFormatContext *tctx, const char *key, int64_t va
 
 int avtext_print_string(AVTextFormatContext *tctx, const char *key, const char *val, int flags);
 
-void avtext_print_unit_integer(AVTextFormatContext *tctx, const char *key, int64_t val, const char *unit);
+void avtext_print_unit_integer(AVTextFormatContext *tctx, const char *key, int64_t val, AVTextFormatValueFormat fmt, const char *unit);
 
 void avtext_print_rational(AVTextFormatContext *tctx, const char *key, AVRational q, char sep);
 
