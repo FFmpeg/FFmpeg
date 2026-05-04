@@ -23,7 +23,12 @@
 
 SECTION_RODATA
 
+pb_m4_18: times 8 db -4, 18
+pb_53_m3: times 8 db 53, -3
+pb_m3_53: times 8 db -3, 53
+pb_18_m4: times 8 db 18, -4
 pb_m4_36: times 8 db -4, 36
+pb_36_m4: times 8 db 36, -4
 pb_m4_53: times 8 db -4, 53
 pb_m3_18: times 8 db -3, 18
 
@@ -282,3 +287,67 @@ HOR_8B avg, 8
 
 HOR_8B put, 16
 HOR_8B avg, 16
+
+%macro VER_8B 2
+cglobal vc1_%1_mspel_mc01_%2, 4, 4, 6, dst, src, stride, rnd
+    mova              m1, [pb_m4_18]
+    mova              m2, [pb_53_m3]
+    add             rndd, 31
+    jmp               vc1_%1_mspel_mc03_%2_after_prologue
+
+cglobal vc1_%1_mspel_mc02_%2, 4, 4, 6, dst, src, stride, rnd
+    mova              m1, [pb_m4_36]
+    mova              m2, [pb_36_m4]
+    lea             rndd, [4*rndd+28]
+    jmp               vc1_%1_mspel_mc03_%2_after_prologue
+
+cglobal vc1_%1_mspel_mc03_%2, 4, 4, 6, dst, src, stride, rnd
+    mova              m1, [pb_m3_53]
+    mova              m2, [pb_18_m4]
+    add             rndd, 31
+
+vc1_%1_mspel_mc03_%2_after_prologue:
+    neg          strideq
+    movd              m0, rndd
+    WIN64_SPILL_XMM    8
+    MOV%2             m3, [srcq+strideq]
+    neg          strideq
+    MOV%2             m4, [srcq]
+    MOV%2             m5, [srcq+strideq]
+    SPLATW            m0, m0
+    lea             srcq, [srcq+2*strideq]
+%define hd  rndd
+    punpcklbw         m3, m5
+    mov               hd, %2
+
+.loop:
+    MOV%2             m6, [srcq]
+    pmaddubsw         m3, m1
+    punpcklbw         m4, m6
+    pmaddubsw         m7, m4, m2
+    paddw             m3, m0
+    add             srcq, strideq
+    paddw             m7, m3
+    mova              m3, m4
+%ifidn %1, avg
+    movq              m4, [dstq]
+%endif
+    psraw             m7, 6
+%ifnidn %1, avg
+    mova              m4, m5
+%endif
+    packuswb          m7, m7
+%ifidn %1, avg
+    pavgb             m7, m4
+    mova              m4, m5
+%endif
+    movq          [dstq], m7
+    add             dstq, strideq
+    mova              m5, m6
+    dec               hd
+    jnz            .loop
+    RET
+%endmacro
+
+VER_8B put, 8
+VER_8B avg, 8
