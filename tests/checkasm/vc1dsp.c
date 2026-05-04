@@ -306,18 +306,18 @@ static void check_inv_trans_adding(void)
 
     ff_vc1dsp_init(&h);
 
-    for (size_t t = 0; t < FF_ARRAY_ELEMS(tests); ++t) {
-        void (*func)(uint8_t *, ptrdiff_t, int16_t *) = *(void **)((intptr_t) &h + tests[t].offset);
-        if (check_func(func, "vc1dsp.%s", tests[t].name)) {
+    for (size_t k = 0; k < FF_ARRAY_ELEMS(tests); ++k) {
+        void (*func)(uint8_t *, ptrdiff_t, int16_t *) = *(void **)((intptr_t) &h + tests[k].offset);
+        if (check_func(func, "vc1dsp.%s", tests[k].name)) {
             matrix *coeffs;
             declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *, ptrdiff_t, int16_t *);
             RANDOMIZE_BUFFER16(inv_trans_in, 8 * 8);
             RANDOMIZE_BUFFER8(inv_trans_out, 10 * 24);
-            coeffs = generate_inverse_quantized_transform_coefficients(tests[t].width, tests[t].height);
-            for (int j = 0; j < tests[t].height; ++j)
-                for (int i = 0; i < tests[t].width; ++i) {
+            coeffs = generate_inverse_quantized_transform_coefficients(tests[k].width, tests[k].height);
+            for (int j = 0; j < tests[k].height; ++j)
+                for (int i = 0; i < tests[k].width; ++i) {
                     int idx = j * 8 + i;
-                    inv_trans_in1[idx] = inv_trans_in0[idx] = coeffs->d[j * tests[t].width + i];
+                    inv_trans_in1[idx] = inv_trans_in0[idx] = coeffs->d[j * tests[k].width + i];
                 }
             call_ref(inv_trans_out0 + 24 + 8, 24, inv_trans_in0);
             call_new(inv_trans_out1 + 24 + 8, 24, inv_trans_in1);
@@ -352,10 +352,10 @@ static void check_loop_filter(void)
 
     ff_vc1dsp_init(&h);
 
-    for (size_t t = 0; t < FF_ARRAY_ELEMS(tests); ++t) {
-        void (*func)(uint8_t *, ptrdiff_t, int) = *(void **)((intptr_t) &h + tests[t].offset);
+    for (size_t k = 0; k < FF_ARRAY_ELEMS(tests); ++k) {
+        void (*func)(uint8_t *, ptrdiff_t, int) = *(void **)((intptr_t) &h + tests[k].offset);
         declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *, ptrdiff_t, int);
-        if (check_func(func, "vc1dsp.%s", tests[t].name)) {
+        if (check_func(func, "vc1dsp.%s", tests[k].name)) {
             for (int count = 1000; count > 0; --count) {
                 int pq = rnd() % 31 + 1;
                 RANDOMIZE_BUFFER8_MID_WEIGHTED(filter_buf, 24 * 48);
@@ -368,9 +368,9 @@ static void check_loop_filter(void)
         for (int j = 0; j < 24; ++j)
             for (int i = 0; i < 48; ++i)
                 filter_buf1[j * 48 + i] = 0x60 + 0x40 * (i >= 16 && j >= 4);
-        if (check_func(func, "vc1dsp.%s_bestcase", tests[t].name))
+        if (check_func(func, "vc1dsp.%s_bestcase", tests[k].name))
             bench_new(filter_buf1 + 4 * 48 + 16, 48, 1);
-        if (check_func(func, "vc1dsp.%s_worstcase", tests[t].name))
+        if (check_func(func, "vc1dsp.%s_worstcase", tests[k].name))
             bench_new(filter_buf1 + 4 * 48 + 16, 48, 31);
     }
 }
@@ -475,13 +475,13 @@ static void check_mspel_pixels(void)
 
     ff_vc1dsp_init(&h);
 
-    for (size_t t = 0; t < FF_ARRAY_ELEMS(tests); ++t) {
-        const vc1op_pixels_func (*func)[16] = (vc1op_pixels_func(*)[16])((char*)&h + tests[t].offset);
+    for (size_t k = 0; k < FF_ARRAY_ELEMS(tests); ++k) {
+        const vc1op_pixels_func (*func)[16] = (vc1op_pixels_func(*)[16])((char*)&h + tests[k].offset);
         for (unsigned j = 0; j < 2; ++j) {
             const unsigned blocksize = 16 >> j;
 
             for (unsigned dxy = 0; dxy < 16; ++dxy) {
-                if (!check_func(func[j][dxy], "vc1dsp.%s_mc%u%u_%u", tests[t].name, dxy & 3, dxy >> 2, blocksize))
+                if (!check_func(func[j][dxy], "vc1dsp.%s_mc%u%u_%u", tests[k].name, dxy & 3, dxy >> 2, blocksize))
                     continue;
                 declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *, const uint8_t*, ptrdiff_t, int);
                 size_t dst_offset = (rnd() % (MAX_BLOCK_SIZE / blocksize)) * blocksize;
