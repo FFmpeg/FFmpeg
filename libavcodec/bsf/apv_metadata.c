@@ -32,6 +32,8 @@ typedef struct APVMetadataContext {
     int transfer_characteristics;
     int matrix_coefficients;
     int full_range_flag;
+
+    int delete_filler;
 } APVMetadataContext;
 
 
@@ -62,6 +64,8 @@ static int apv_metadata_update_frame_header(AVBSFContext *bsf,
 static int apv_metadata_update_fragment(AVBSFContext *bsf, AVPacket *pkt,
                                         CodedBitstreamFragment *frag)
 {
+    APVMetadataContext *ctx = bsf->priv_data;
+    const CodedBitstreamAPVContext *priv = ctx->common.input->priv_data;
     int err, i;
 
     for (i = 0; i < frag->nb_units; i++) {
@@ -70,6 +74,72 @@ static int apv_metadata_update_fragment(AVBSFContext *bsf, AVPacket *pkt,
             err = apv_metadata_update_frame_header(bsf, &pbu->frame_header);
             if (err < 0)
                 return err;
+        }
+    }
+
+    if (ctx->delete_filler) {
+        // Types of filler to delete:
+        // - Filler PBUs.
+        // - Filler at end of frame PBUs.
+        // - Dummy bytes trailing in tile data.
+        // - Filler at end of AU info PBUs.
+        // - Filler at end of metadata PBUs.
+        // - Filler metadata payloads.
+
+        for (i = frag->nb_units - 1; i >= 0; i--) {
+            switch (frag->units[i].type) {
+            case APV_PBU_FILLER:
+                ff_cbs_delete_unit(frag, i);
+                break;
+            case APV_PBU_PRIMARY_FRAME:
+            case APV_PBU_NON_PRIMARY_FRAME:
+            case APV_PBU_PREVIEW_FRAME:
+            case APV_PBU_DEPTH_FRAME:
+            case APV_PBU_ALPHA_FRAME:
+                {
+                    APVRawFrame *frame = frag->units[i].content;
+                    frame->filler.filler_size = 0;
+                    for (int t = 0; t < priv->num_tiles; t++)
+                        frame->tile[t].tile_dummy_byte_size = 0;
+                    // tile_size[t] may be wrong here, but are
+                    // recalculated during CBS write.
+                }
+                break;
+            case APV_PBU_ACCESS_UNIT_INFORMATION:
+                {
+                    APVRawAUInfo *au_info = frag->units[i].content;
+                    au_info->filler.filler_size = 0;
+                }
+                break;
+            case APV_PBU_METADATA:
+                {
+                    APVRawMetadata *md = frag->units[i].content;
+                    int k = 0;
+                    md->filler.filler_size = 0;
+                    for (int j = 0; j < md->metadata_count; j++) {
+                        APVRawMetadataPayload *pl = &md->payloads[j];
+                        if (pl->payload_type == APV_METADATA_FILLER) {
+                            // Drop this payload.
+                        } else {
+                            if (k < j)
+                                md->payloads[k] = md->payloads[j];
+                            ++k;
+                        }
+                    }
+                    if (k == 0) {
+                        // This metadata PBU contained only a filler
+                        // payload, so now we have to delete the whole
+                        // thing because a metadata PBU must contain at
+                        // least one payload.
+                        ff_cbs_delete_unit(frag, i);
+                    } else {
+                        md->metadata_count = k;
+                        // metadata_size may be wrong here, but is
+                        // recalculated during CBS write.
+                    }
+                }
+                break;
+            }
         }
     }
 
@@ -108,6 +178,9 @@ static const AVOption apv_metadata_options[] = {
         { .i64 = 0 }, .flags = FLAGS, .unit = "cr" },
     { "pc", "PC (full) range",    0, AV_OPT_TYPE_CONST,
         { .i64 = 1 }, .flags = FLAGS, .unit = "cr" },
+
+    { "delete_filler", "Delete all filler in the stream",
+        OFFSET(delete_filler), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, FLAGS },
 
     { NULL }
 };
