@@ -1,5 +1,5 @@
 /*
- * VP6 MMX/SSE2 optimizations
+ * VP6 SSE2 optimizations
  * Copyright (C) 2009  Sebastien Lucas <sebastien.lucas@gmail.com>
  * Copyright (C) 2009  Zuxy Meng <zuxy.meng@gmail.com>
  *
