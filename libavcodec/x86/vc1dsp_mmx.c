@@ -351,7 +351,6 @@ static void OP ## vc1_mspel_mc(uint8_t *dst, const uint8_t *src, ptrdiff_t strid
         ::: "memory"\
     );\
 \
-    if (vmode) { /* Vertical filter to apply */\
         if (hmode) { /* Horizontal filter to apply, output to tmp */\
             static const int shift_value[] = { 0, 5, 1, 5 };\
             int              shift = (shift_value[hmode]+shift_value[vmode])>>1;\
@@ -368,10 +367,6 @@ static void OP ## vc1_mspel_mc(uint8_t *dst, const uint8_t *src, ptrdiff_t strid
             vc1_put_shift_8bits[vmode](dst, src, stride, 1-rnd, stride);\
             return;\
         }\
-    }\
-\
-    /* Horizontal mode with no vertical mode */\
-    vc1_put_shift_8bits[hmode](dst, src, stride, rnd, 1);\
 } \
 static void OP ## vc1_mspel_mc_16(uint8_t *dst, const uint8_t *src, \
                                   int stride, int hmode, int vmode, int rnd)\
@@ -421,17 +416,14 @@ DECLARE_FUNCTION(0, 1)
 DECLARE_FUNCTION(0, 2)
 DECLARE_FUNCTION(0, 3)
 
-DECLARE_FUNCTION(1, 0)
 DECLARE_FUNCTION(1, 1)
 DECLARE_FUNCTION(1, 2)
 DECLARE_FUNCTION(1, 3)
 
-DECLARE_FUNCTION(2, 0)
 DECLARE_FUNCTION(2, 1)
 DECLARE_FUNCTION(2, 2)
 DECLARE_FUNCTION(2, 3)
 
-DECLARE_FUNCTION(3, 0)
 DECLARE_FUNCTION(3, 1)
 DECLARE_FUNCTION(3, 2)
 DECLARE_FUNCTION(3, 3)
@@ -446,17 +438,14 @@ av_cold void ff_vc1dsp_init_mmx(VC1DSPContext *dsp)
     FN_ASSIGN(put_, 0, 2, _mmx);
     FN_ASSIGN(put_, 0, 3, _mmx);
 
-    FN_ASSIGN(put_, 1, 0, _mmx);
     FN_ASSIGN(put_, 1, 1, _mmx);
     FN_ASSIGN(put_, 1, 2, _mmx);
     FN_ASSIGN(put_, 1, 3, _mmx);
 
-    FN_ASSIGN(put_, 2, 0, _mmx);
     FN_ASSIGN(put_, 2, 1, _mmx);
     FN_ASSIGN(put_, 2, 2, _mmx);
     FN_ASSIGN(put_, 2, 3, _mmx);
 
-    FN_ASSIGN(put_, 3, 0, _mmx);
     FN_ASSIGN(put_, 3, 1, _mmx);
     FN_ASSIGN(put_, 3, 2, _mmx);
     FN_ASSIGN(put_, 3, 3, _mmx);
@@ -468,17 +457,14 @@ av_cold void ff_vc1dsp_init_mmxext(VC1DSPContext *dsp)
     FN_ASSIGN(avg_, 0, 2, _mmxext);
     FN_ASSIGN(avg_, 0, 3, _mmxext);
 
-    FN_ASSIGN(avg_, 1, 0, _mmxext);
     FN_ASSIGN(avg_, 1, 1, _mmxext);
     FN_ASSIGN(avg_, 1, 2, _mmxext);
     FN_ASSIGN(avg_, 1, 3, _mmxext);
 
-    FN_ASSIGN(avg_, 2, 0, _mmxext);
     FN_ASSIGN(avg_, 2, 1, _mmxext);
     FN_ASSIGN(avg_, 2, 2, _mmxext);
     FN_ASSIGN(avg_, 2, 3, _mmxext);
 
-    FN_ASSIGN(avg_, 3, 0, _mmxext);
     FN_ASSIGN(avg_, 3, 1, _mmxext);
     FN_ASSIGN(avg_, 3, 2, _mmxext);
     FN_ASSIGN(avg_, 3, 3, _mmxext);
