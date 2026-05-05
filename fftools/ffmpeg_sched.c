@@ -1302,7 +1302,14 @@ int sch_mux_sub_heartbeat_add(Scheduler *sch, unsigned mux_idx, unsigned stream_
     return 0;
 }
 
-static void unchoke_for_stream(Scheduler *sch, SchedulerNode src);
+enum {
+    UNCHOKE_DEMUX  = (1 << 0),
+    UNCHOKE_FILTER = (1 << 1),
+
+    UNCHOKE_ALL = UNCHOKE_DEMUX | UNCHOKE_FILTER,
+};
+
+static void unchoke_for_stream(Scheduler *sch, SchedulerNode src, int flags);
 
 // Unchoke any filter graphs that are downstream of this node, to prevent it
 // from getting stuck trying to push data to a full queue
@@ -1331,8 +1338,8 @@ static void unchoke_downstream(Scheduler *sch, SchedulerNode *dst)
             fg->waiter.choked_next = 0;
         } else {
             // ensure that this filter graph is not stuck waiting for
-            // input from a different upstream demuxer
-            unchoke_for_stream(sch, fg->inputs[fg->best_input].src);
+            // input from a different upstream source
+            unchoke_for_stream(sch, fg->inputs[fg->best_input].src, UNCHOKE_ALL);
         }
         break;
     default:
@@ -1341,7 +1348,7 @@ static void unchoke_downstream(Scheduler *sch, SchedulerNode *dst)
     }
 }
 
-static void unchoke_for_stream(Scheduler *sch, SchedulerNode src)
+static void unchoke_for_stream(Scheduler *sch, SchedulerNode src, int flags)
 {
     while (1) {
         SchFilterGraph *fg;
@@ -1352,9 +1359,11 @@ static void unchoke_for_stream(Scheduler *sch, SchedulerNode src)
             demux = &sch->demux[src.idx];
             if (demux->waiter.choked_next == 0)
                 return; // prevent infinite loop
-            demux->waiter.choked_next = 0;
-            for (int i = 0; i < demux->nb_streams; i++)
-                unchoke_downstream(sch, demux->streams[i].dst);
+            if (flags & UNCHOKE_DEMUX) {
+                demux->waiter.choked_next = 0;
+                for (int i = 0; i < demux->nb_streams; i++)
+                    unchoke_downstream(sch, demux->streams[i].dst);
+            }
             return;
         case SCH_NODE_TYPE_DEC:
             src = sch->dec[src.idx].src;
@@ -1367,7 +1376,8 @@ static void unchoke_for_stream(Scheduler *sch, SchedulerNode src)
             // the filtergraph contains internal sources and
             // requested to be scheduled directly
             if (fg->best_input == fg->nb_inputs) {
-                fg->waiter.choked_next = 0;
+                if (flags & UNCHOKE_FILTER)
+                    fg->waiter.choked_next = 0;
                 return;
             }
             src = fg->inputs[fg->best_input].src;
@@ -1453,7 +1463,7 @@ static void schedule_update_locked(Scheduler *sch)
                 continue;
 
             // resolve the source to unchoke
-            unchoke_for_stream(sch, ms->src);
+            unchoke_for_stream(sch, ms->src, UNCHOKE_ALL);
             have_unchoked = 1;
         }
     }
@@ -1466,7 +1476,7 @@ static void schedule_update_locked(Scheduler *sch)
         for (unsigned j = 0; j < fg->nb_inputs; j++) {
             SchFilterIn *fi = &fg->inputs[j];
             if (fi->receive_finished && !fi->send_finished)
-                unchoke_for_stream(sch, fi->src);
+                unchoke_for_stream(sch, fi->src, UNCHOKE_ALL);
         }
     }
 
