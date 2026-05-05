@@ -144,9 +144,9 @@ av_cold void ff_vc1dsp_init_x86(VC1DSPContext *dsp)
         dsp->put_no_rnd_vc1_chroma_pixels_tab[0] = ff_put_vc1_chroma_mc8_nornd_ssse3;
         dsp->avg_no_rnd_vc1_chroma_pixels_tab[0] = ff_avg_vc1_chroma_mc8_nornd_ssse3;
 
-        MSPEL_FUNCS_SIZE(0, 1, 8, ssse3);
-        MSPEL_FUNCS_SIZE(0, 2, 8, ssse3);
-        MSPEL_FUNCS_SIZE(0, 3, 8, ssse3);
+        MSPEL_FUNCS(0, 1, ssse3);
+        MSPEL_FUNCS(0, 2, ssse3);
+        MSPEL_FUNCS(0, 3, ssse3);
         MSPEL_FUNCS(1, 0, ssse3);
         MSPEL_FUNCS(2, 0, ssse3);
         MSPEL_FUNCS(3, 0, ssse3);

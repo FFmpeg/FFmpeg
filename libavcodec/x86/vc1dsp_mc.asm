@@ -287,40 +287,64 @@ HOR_8B avg, 8
 HOR_8B put, 16
 HOR_8B avg, 16
 
+%macro SETUP_COEFFS 3 ; width, coeff1, coeff2
+    ASSERT (%3-%2 == 16)
+%if ARCH_X86_64 || (%1 == 8)
+    mova          m1, [%2]
+    mova          m2, [%3]
+%define COEFF0 m1
+%define COEFF1 m2
+%define M8 m8
+%define M9 m9
+%else
+    lea           r4, [%2]
+%define COEFF0 [r4]
+%define COEFF1 [r4+(%3-%2)]
+%define M8 m1
+%define M9 m2
+%endif
+%endmacro
+
 %macro VER_8B 2
-cglobal vc1_%1_mspel_mc01_%2, 4, 4, 6, dst, src, stride, rnd
-    mova              m1, [pb_m4_18]
-    mova              m2, [pb_53_m3]
+cglobal vc1_%1_mspel_mc01_%2, 4, 4+ARCH_X86_32*(%2>>4), 6, dst, src, stride, rnd
+    SETUP_COEFFS %2, pb_m4_18, pb_53_m3
     add             rndd, 31
     jmp               vc1_%1_mspel_mc03_%2_after_prologue
 
-cglobal vc1_%1_mspel_mc02_%2, 4, 4, 6, dst, src, stride, rnd
-    mova              m1, [pb_m4_36]
-    mova              m2, [pb_36_m4]
+cglobal vc1_%1_mspel_mc02_%2, 4, 4+ARCH_X86_32*(%2>>4), 6, dst, src, stride, rnd
+    SETUP_COEFFS %2, pb_m4_36, pb_36_m4
     lea             rndd, [4*rndd+28]
     jmp               vc1_%1_mspel_mc03_%2_after_prologue
 
-cglobal vc1_%1_mspel_mc03_%2, 4, 4, 6, dst, src, stride, rnd
-    mova              m1, [pb_m3_53]
-    mova              m2, [pb_18_m4]
+cglobal vc1_%1_mspel_mc03_%2, 4, 4+ARCH_X86_32*(%2>>4), 6, dst, src, stride, rnd
+    SETUP_COEFFS %2, pb_m3_53, pb_18_m4
     add             rndd, 31
 
 vc1_%1_mspel_mc03_%2_after_prologue:
     neg          strideq
     movd              m0, rndd
-    WIN64_SPILL_XMM    8
+    WIN64_SPILL_XMM    8, 8+3*(%2>>4)
     MOV%2             m3, [srcq+strideq]
     neg          strideq
     MOV%2             m4, [srcq]
     MOV%2             m5, [srcq+strideq]
     SPLATW            m0, m0
+%if %2 == 16
+    WIN64_PUSH_XMM    11, 8
+%endif
     lea             srcq, [srcq+2*strideq]
 %define hd  rndd
+%if %2 == 8
     punpcklbw         m3, m5
+%else
+    punpcklbw         m7, m3, m5
+    punpckhbw         m3, m5
+%endif
     mov               hd, %2
 
 .loop:
     MOV%2             m6, [srcq]
+%if %2 == 8
     pmaddubsw         m3, m1
     punpcklbw         m4, m6
     pmaddubsw         m7, m4, m2
@@ -341,6 +365,43 @@ vc1_%1_mspel_mc03_%2_after_prologue:
     mova              m4, m5
 %endif
     movq          [dstq], m7
+%else
+    pmaddubsw         m7, COEFF0
+    pmaddubsw         m3, COEFF0
+    punpcklbw         M8, m4, m6
+    punpckhbw         m4, m6
+    pmaddubsw         M9, M8, COEFF1
+    paddw             m7, m0
+%if ARCH_X86_64
+    pmaddubsw        m10, m4, m2
+    paddw             m3, m0
+    paddw             m9, m7
+    mova              m7, m8
+    psraw             m9, 6
+    paddw            m10, m3
+%else
+    paddw             m3, m0
+    paddw             M9, m7
+    mova              m7, M8
+    pmaddubsw         M8, m4, COEFF1
+    psraw             M9, 6
+    paddw             M8, m3
+%endif
+    add             srcq, strideq
+    mova              m3, m4
+%if ARCH_X86_64
+    psraw            m10, 6
+    packuswb          m9, m10
+%else
+    psraw             M8, 6
+    packuswb          M9, M8
+%endif
+%ifidn %1, avg
+    pavgb             M9, [dstq]
+%endif
+    mova              m4, m5
+    mova          [dstq], M9
+%endif
     add             dstq, strideq
     mova              m5, m6
     dec               hd
@@ -350,3 +411,6 @@ vc1_%1_mspel_mc03_%2_after_prologue:
 
 VER_8B put, 8
 VER_8B avg, 8
+
+VER_8B put, 16
+VER_8B avg, 16
