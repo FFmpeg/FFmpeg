@@ -1424,12 +1424,17 @@ static void schedule_update_locked(Scheduler *sch)
     atomic_store(&sch->last_dts, progressing_dts(sch, 0));
 
     // initialize our internal state
-    for (unsigned type = 0; type < 2; type++)
-        for (unsigned i = 0; i < (type ? sch->nb_filters : sch->nb_demux); i++) {
-            SchWaiter *w = type ? &sch->filters[i].waiter : &sch->demux[i].waiter;
-            w->choked_prev = atomic_load(&w->choked);
-            w->choked_next = 1;
-        }
+#define RESET_WAITER(field)                                                    \
+    do {                                                                       \
+        for (unsigned i = 0; i < sch->nb_##field; i++) {                       \
+            SchWaiter *w   = &sch->field[i].waiter;                            \
+            w->choked_prev = atomic_load(&w->choked);                          \
+            w->choked_next = 1;                                                \
+        }                                                                      \
+    } while (0)
+
+    RESET_WAITER(demux);
+    RESET_WAITER(filters);
 
     // figure out the sources that are allowed to proceed
     for (unsigned i = 0; i < sch->nb_mux; i++) {
@@ -1466,28 +1471,35 @@ static void schedule_update_locked(Scheduler *sch)
     }
 
     // make sure to unchoke at least one source, if still available
-    for (unsigned type = 0; !have_unchoked && type < 2; type++)
-        for (unsigned i = 0; i < (type ? sch->nb_filters : sch->nb_demux); i++) {
-            int exited = type ? sch->filters[i].task_exited : sch->demux[i].task_exited;
-            SchWaiter *w = type ? &sch->filters[i].waiter : &sch->demux[i].waiter;
-            if (!exited) {
-                w->choked_next = 0;
-                have_unchoked  = 1;
-                break;
-            }
-        }
+#define UNCHOKE_ONCE(field)                                                    \
+    do {                                                                       \
+        for (unsigned i = 0; !have_unchoked && i < sch->nb_##field; i++) {     \
+            SchWaiter *w = &sch->field[i].waiter;                              \
+            if (!sch->field[i].task_exited) {                                  \
+                w->choked_next = 0;                                            \
+                have_unchoked  = 1;                                            \
+                break;                                                         \
+            }                                                                  \
+        }                                                                      \
+    } while (0)
 
-    for (unsigned type = 0; type < 2; type++) {
-        for (unsigned i = 0; i < (type ? sch->nb_filters : sch->nb_demux); i++) {
-            SchWaiter *w = type ? &sch->filters[i].waiter : &sch->demux[i].waiter;
-            if (w->choked_prev != w->choked_next) {
-                waiter_set(w, w->choked_next);
-                if (!type)
-                    choke_demux(sch, i, w->choked_next);
-            }
-        }
-    }
+    UNCHOKE_ONCE(demux);
+    UNCHOKE_ONCE(filters);
 
+#define UPDATE_WAITER(field)                                                   \
+    do {                                                                       \
+        for (unsigned i = 0; i < sch->nb_##field; i++) {                       \
+            SchWaiter *w = &sch->field[i].waiter;                              \
+            if (w->choked_prev != w->choked_next) {                            \
+                waiter_set(w, w->choked_next);                                 \
+                if (offsetof(Scheduler, field) == offsetof(Scheduler, demux))  \
+                    choke_demux(sch, i, w->choked_next);                       \
+            }                                                                  \
+        }                                                                      \
+    } while (0)
+
+    UPDATE_WAITER(demux);
+    UPDATE_WAITER(filters);
 }
 
 enum {
