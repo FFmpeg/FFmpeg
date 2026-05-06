@@ -3145,7 +3145,7 @@ static int FUNC(slice_header) (CodedBitstreamContext *ctx, RWContext *rw,
 
     if (!pps->pps_rect_slice_flag &&
         pps->num_tiles_in_pic - current->sh_slice_address > 1)
-        ue(sh_num_tiles_in_slice_minus1, 0, pps->num_tiles_in_pic - 1);
+        ue(sh_num_tiles_in_slice_minus1, 0, pps->num_tiles_in_pic - 1 - current->sh_slice_address);
     else
         infer(sh_num_tiles_in_slice_minus1, 0);
 
