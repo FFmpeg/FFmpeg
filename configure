@@ -5211,7 +5211,7 @@ msvc_common_flags(){
             -lstdc++)             ;;
             -l*)                  echo ${flag#-l}.lib ;;
             -LARGEADDRESSAWARE)   echo $flag ;;
-            -L*) [ "$_flags_type" = "link" ] && echo -libpath:${flag#-L} ;;
+            -L*) [ "$_flags_type" != "link" ] || echo -libpath:${flag#-L} ;;
             -Wl,*)                ;;
             *)                    echo $flag ;;
         esac
