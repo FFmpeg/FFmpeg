@@ -326,6 +326,12 @@ static void print_codec(const AVCodec *c)
         printf("hardware ");
     if (c->capabilities & AV_CODEC_CAP_HYBRID)
         printf("hybrid ");
+    if (c->capabilities & AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE)
+        printf("reorderedopaque ");
+    if (c->capabilities & AV_CODEC_CAP_ENCODER_FLUSH)
+        printf("flush ");
+    if (c->capabilities & AV_CODEC_CAP_ENCODER_RECON_FRAME)
+        printf("reconframe ");
     if (!c->capabilities)
         printf("none");
     printf("\n");
