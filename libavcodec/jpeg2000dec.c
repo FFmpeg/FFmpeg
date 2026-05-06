@@ -2451,8 +2451,14 @@ static void jpeg2000_dec_cleanup(Jpeg2000DecoderContext *s)
     memset(s->qntsty, 0, sizeof(s->qntsty));
     memset(s->properties, 0, sizeof(s->properties));
     memset(&s->poc  , 0, sizeof(s->poc));
+    memset(s->roi_shift, 0, sizeof(s->roi_shift));
     s->numXtiles = s->numYtiles = 0;
     s->ncomponents = 0;
+    s->has_ppm = 0;
+    s->isHT = 0;
+    s->precision = 0;
+    s->colour_space = 0;
+    s->pal8 = 0;
 }
 
 static int jpeg2000_read_main_headers(Jpeg2000DecoderContext *s)
