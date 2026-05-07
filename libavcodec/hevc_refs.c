@@ -401,12 +401,14 @@ static HEVCFrame *generate_missing_ref(HEVCContext *s, int poc)
         return NULL;
 
     if (!s->avctx->hwaccel) {
+        int nb_planes = s->ps.sps->chroma_format_idc ? 3 : 1;
         if (!s->ps.sps->pixel_shift) {
-            for (i = 0; frame->frame->data[i]; i++)
+            for (i = 0; i < nb_planes; i++)
+
                 memset(frame->frame->data[i], 1 << (s->ps.sps->bit_depth - 1),
                        frame->frame->linesize[i] * AV_CEIL_RSHIFT(s->ps.sps->height, s->ps.sps->vshift[i]));
         } else {
-            for (i = 0; frame->frame->data[i]; i++)
+            for (i = 0; i < nb_planes; i++)
                 for (y = 0; y < (s->ps.sps->height >> s->ps.sps->vshift[i]); y++) {
                     uint8_t *dst = frame->frame->data[i] + y * frame->frame->linesize[i];
                     AV_WN16(dst, 1 << (s->ps.sps->bit_depth - 1));
