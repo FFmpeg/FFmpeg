@@ -39,6 +39,7 @@
 #include "h264_parse.h"
 #include "h264_ps.h"
 #include "hevc/parse.h"
+#include "hevc/sei.h"
 #include "hwconfig.h"
 #include "internal.h"
 #include "jni.h"
@@ -274,6 +275,7 @@ static int hevc_set_extradata(AVCodecContext *avctx, FFAMediaFormat *format)
     }
 
 done:
+    ff_hevc_reset_sei(&sei);
     ff_hevc_ps_uninit(&ps);
 
     av_freep(&vps_data);
