@@ -110,6 +110,13 @@ struct JNIAMediaFormatFields {
 
     jmethodID to_string_id;
 
+    jclass bytebuffer_class;
+    jmethodID bytebuffer_wrap_id;
+    jmethodID bytebuffer_duplicate_id;
+    jmethodID bytebuffer_slice_id;
+    jmethodID bytebuffer_remaining_id;
+    jmethodID bytebuffer_get_id;
+
 };
 
 #define OFFSET(x) offsetof(struct JNIAMediaFormatFields, x)
@@ -133,6 +140,13 @@ static const struct FFJniField jni_amediaformat_mapping[] = {
         { "android/media/MediaFormat", "setString", "(Ljava/lang/String;Ljava/lang/String;)V", FF_JNI_METHOD, OFFSET(set_string_id), 1 },
 
         { "android/media/MediaFormat", "toString", "()Ljava/lang/String;", FF_JNI_METHOD, OFFSET(to_string_id), 1 },
+
+    { "java/nio/ByteBuffer", NULL, NULL, FF_JNI_CLASS, OFFSET(bytebuffer_class), 1 },
+        { "java/nio/ByteBuffer", "wrap", "([B)Ljava/nio/ByteBuffer;", FF_JNI_STATIC_METHOD, OFFSET(bytebuffer_wrap_id), 1 },
+        { "java/nio/ByteBuffer", "duplicate", "()Ljava/nio/ByteBuffer;", FF_JNI_METHOD, OFFSET(bytebuffer_duplicate_id), 1 },
+        { "java/nio/ByteBuffer", "slice", "()Ljava/nio/ByteBuffer;", FF_JNI_METHOD, OFFSET(bytebuffer_slice_id), 1 },
+        { "java/nio/ByteBuffer", "remaining", "()I", FF_JNI_METHOD, OFFSET(bytebuffer_remaining_id), 1 },
+        { "java/nio/ByteBuffer", "get", "([B)Ljava/nio/ByteBuffer;", FF_JNI_METHOD, OFFSET(bytebuffer_get_id), 1 },
 
     { NULL }
 };
@@ -921,6 +935,8 @@ static int mediaformat_jni_getBuffer(FFAMediaFormat* ctx, const char *name, void
     av_assert0(format != NULL);
 
     JNI_GET_ENV_OR_RETURN(env, format, 0);
+    *data = NULL;
+    *size = 0;
 
     key = ff_jni_utf_chars_to_jstring(env, name, format);
     if (!key) {
@@ -940,18 +956,97 @@ static int mediaformat_jni_getBuffer(FFAMediaFormat* ctx, const char *name, void
         goto fail;
     }
 
-    *data = (*env)->GetDirectBufferAddress(env, result);
-    *size = (*env)->GetDirectBufferCapacity(env, result);
+    if (result) {
+        jobject duplicate = NULL;
+        jobject slice = NULL;
+        jbyteArray byte_array = NULL;
+        jint remaining = 0;
+        void *src = NULL;
 
-    if (*data && *size) {
-        void *src = *data;
-        *data = av_malloc(*size);
-        if (!*data) {
+        duplicate = (*env)->CallObjectMethod(env, result, format->jfields.bytebuffer_duplicate_id);
+        if ((ret = ff_jni_exception_check(env, 1, format)) < 0 || !duplicate) {
             ret = 0;
             goto fail;
         }
 
-        memcpy(*data, src, *size);
+        slice = (*env)->CallObjectMethod(env, duplicate, format->jfields.bytebuffer_slice_id);
+        if ((ret = ff_jni_exception_check(env, 1, format)) < 0 || !slice) {
+            ret = 0;
+            (*env)->DeleteLocalRef(env, duplicate);
+            goto fail;
+        }
+
+        remaining = (*env)->CallIntMethod(env, slice, format->jfields.bytebuffer_remaining_id);
+        if ((ret = ff_jni_exception_check(env, 1, format)) < 0 || remaining < 0) {
+            ret = 0;
+            (*env)->DeleteLocalRef(env, slice);
+            (*env)->DeleteLocalRef(env, duplicate);
+            goto fail;
+        }
+        if (!remaining) {
+            ret = 1;
+            (*env)->DeleteLocalRef(env, slice);
+            (*env)->DeleteLocalRef(env, duplicate);
+            goto fail;
+        }
+
+        src = (*env)->GetDirectBufferAddress(env, slice);
+        if (src) {
+            *size = (size_t)remaining;
+            *data = av_malloc(*size);
+            if (!*data) {
+                ret = 0;
+                (*env)->DeleteLocalRef(env, slice);
+                (*env)->DeleteLocalRef(env, duplicate);
+                goto fail;
+            }
+            memcpy(*data, src, *size);
+        } else {
+            byte_array = (*env)->NewByteArray(env, remaining);
+            if (!byte_array) {
+                ret = 0;
+                (*env)->DeleteLocalRef(env, slice);
+                (*env)->DeleteLocalRef(env, duplicate);
+                goto fail;
+            }
+
+            (*env)->CallObjectMethod(env, slice, format->jfields.bytebuffer_get_id, byte_array);
+            if ((ret = ff_jni_exception_check(env, 1, format)) < 0) {
+                ret = 0;
+                (*env)->DeleteLocalRef(env, byte_array);
+                (*env)->DeleteLocalRef(env, slice);
+                (*env)->DeleteLocalRef(env, duplicate);
+                goto fail;
+            }
+
+            *size = (size_t)remaining;
+            *data = av_malloc(*size);
+            if (!*data) {
+                ret = 0;
+                (*env)->DeleteLocalRef(env, byte_array);
+                (*env)->DeleteLocalRef(env, slice);
+                (*env)->DeleteLocalRef(env, duplicate);
+                goto fail;
+            }
+
+            (*env)->GetByteArrayRegion(env, byte_array, 0, remaining, (jbyte *)*data);
+            if ((ret = ff_jni_exception_check(env, 1, format)) < 0) {
+                ret = 0;
+                av_freep(data);
+                (*env)->DeleteLocalRef(env, byte_array);
+                (*env)->DeleteLocalRef(env, slice);
+                (*env)->DeleteLocalRef(env, duplicate);
+                goto fail;
+            }
+
+            (*env)->DeleteLocalRef(env, byte_array);
+        }
+
+        (*env)->DeleteLocalRef(env, slice);
+        (*env)->DeleteLocalRef(env, duplicate);
+    } else {
+        ret = 0;
+        goto fail;
     }
 
     ret = 1;
@@ -1115,7 +1210,7 @@ static void mediaformat_jni_setBuffer(FFAMediaFormat* ctx, const char* name, voi
     JNIEnv *env = NULL;
     jstring key = NULL;
     jobject buffer = NULL;
-    void *buffer_data = NULL;
+    jbyteArray byte_array = NULL;
     FFAMediaFormatJni *format = (FFAMediaFormatJni *)ctx;
 
     av_assert0(format != NULL);
@@ -1131,15 +1226,19 @@ static void mediaformat_jni_setBuffer(FFAMediaFormat* ctx, const char* name, voi
         goto fail;
     }
 
-    buffer_data = av_malloc(size);
-    if (!buffer_data) {
+    byte_array = (*env)->NewByteArray(env, (jsize)size);
+    if (!byte_array) {
         goto fail;
     }
 
-    memcpy(buffer_data, data, size);
+    (*env)->SetByteArrayRegion(env, byte_array, 0, (jsize)size, (const jbyte *)data);
+    if (ff_jni_exception_check(env, 1, format) < 0) {
+        goto fail;
+    }
 
-    buffer = (*env)->NewDirectByteBuffer(env, buffer_data, size);
-    if (!buffer) {
+    buffer = (*env)->CallStaticObjectMethod(env, format->jfields.bytebuffer_class,
+                                            format->jfields.bytebuffer_wrap_id, byte_array);
+    if ((ff_jni_exception_check(env, 1, format) < 0) || !buffer) {
         goto fail;
     }
 
@@ -1150,6 +1249,7 @@ static void mediaformat_jni_setBuffer(FFAMediaFormat* ctx, const char* name, voi
 
 fail:
     (*env)->DeleteLocalRef(env, key);
+    (*env)->DeleteLocalRef(env, byte_array);
     (*env)->DeleteLocalRef(env, buffer);
 }
 
