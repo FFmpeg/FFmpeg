@@ -772,14 +772,6 @@ av_cold int ff_vulkan_encode_init(AVCodecContext *avctx, FFVulkanEncodeContext *
         return AVERROR(EINVAL);
     }
 
-    if ((ctx->enc_caps.supportedEncodeFeedbackFlags & feedback_flags) !=
-        feedback_flags) {
-        av_log (avctx, AV_LOG_ERROR,
-                "Driver does not support required encode feedback flags "
-                "(BUFFER_OFFSET and BYTES_WRITTEN).\n");
-        return AVERROR(ENOTSUP);
-    }
-
     ctx->base.op = &vulkan_base_encode_ops;
     ctx->codec = codec;
 
@@ -879,6 +871,14 @@ av_cold int ff_vulkan_encode_init(AVCodecContext *avctx, FFVulkanEncodeContext *
         return AVERROR(EINVAL);
     } else if (ret != VK_SUCCESS) {
         return AVERROR_EXTERNAL;
+    }
+
+    if ((ctx->enc_caps.supportedEncodeFeedbackFlags & feedback_flags) !=
+        feedback_flags) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Driver does not support required encode feedback flags "
+               "(BUFFER_OFFSET and BYTES_WRITTEN).\n");
+        return AVERROR(ENOTSUP);
     }
 
     err = init_rc(avctx, ctx);
