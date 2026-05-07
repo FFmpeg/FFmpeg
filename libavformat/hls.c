@@ -2168,6 +2168,22 @@ static int hls_read_header(AVFormatContext *s)
     if ((ret = ffio_copy_url_options(s->pb, &c->avio_opts)) < 0)
         return ret;
 
+    /* http_persistent and http_multiple auto-detection both rely on the
+     * AVIOContext being backed by the builtin URLContext. Neither works
+     * when io_open is overridden with a custom callback. */
+    if (!ffio_geturlcontext(s->pb)) {
+        if (c->http_persistent) {
+            av_log(s, AV_LOG_WARNING, "Disabling http_persistent due to custom io_open.\n");
+            c->http_persistent = 0;
+        }
+        /* Only auto-detection is disabled, enabling http_multiple can still work
+         * with custom io_open. */
+        if (c->http_multiple == -1) {
+            av_log(s, AV_LOG_WARNING, "Disabling http_multiple due to custom io_open.\n");
+            c->http_multiple = 0;
+        }
+    }
+
     /* XXX: Some HLS servers don't like being sent the range header,
        in this case, we need to set http_seekable = 0 to disable
        the range header */
