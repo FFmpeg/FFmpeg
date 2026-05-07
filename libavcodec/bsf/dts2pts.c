@@ -413,11 +413,23 @@ static int hevc_init_nb_frame(AVBSFContext *ctx, int poc)
     return 0;
 }
 
-static int same_gop(void *opaque, void *elem)
+typedef struct DTS2PTSCollect {
+    int gop;
+    DTS2PTSNode **out;
+    int count;
+    int max;
+} DTS2PTSCollect;
+
+static int collect_same_gop(void *opaque, void *elem)
 {
+    DTS2PTSCollect *c = opaque;
     DTS2PTSNode *node = elem;
-    int gop = ((int *)opaque)[1];
-    return FFDIFFSIGN(gop, node->gop);
+    if (node->gop == c->gop) {
+        if (c->count < c->max)
+            c->out[c->count] = node;
+        c->count++;
+    }
+    return 0;
 }
 
 static int hevc_queue_frame(AVBSFContext *ctx, AVPacket *pkt, int poc, bool *queued)
@@ -441,10 +453,26 @@ static int hevc_queue_frame(AVBSFContext *ctx, AVPacket *pkt, int poc, bool *que
     }
 
     if (poc < s->nb_frame && hevc->gop == s->gop) {
-        int tmp[] = {s->nb_frame - poc, s->gop};
+        int dec = s->nb_frame - poc;
+        DTS2PTSNode *nodes[HEVC_MAX_DPB_SIZE * 2];
+        DTS2PTSCollect c = { s->gop, nodes, 0, FF_ARRAY_ELEMS(nodes) };
 
-        s->nb_frame -= tmp[0];
-        av_tree_enumerate(s->root, tmp, same_gop, dec_poc);
+        s->nb_frame -= dec;
+
+        av_tree_enumerate(s->root, &c, NULL, collect_same_gop);
+        av_assert0(c.count <= c.max);
+        for (int i = 0; i < c.count; i++) {
+            struct AVTreeNode *tnode = NULL;
+            DTS2PTSNode *r;
+            av_tree_insert(&s->root, nodes[i], cmp_insert, &tnode);
+            nodes[i]->poc -= dec;
+            r = av_tree_insert(&s->root, nodes[i], cmp_insert, &tnode);
+            if (r && r != nodes[i]) {
+                *r = *nodes[i];
+                av_refstruct_unref(&nodes[i]);
+                av_free(tnode);
+            }
+        }
     }
 
     ret = alloc_and_insert_node(ctx, pkt->dts, pkt->duration, s->nb_frame, 1, s->gop);
