@@ -43,6 +43,9 @@
 
 #include "libswscale/swscale.h"
 
+#define IMPL_NEW    0
+#define IMPL_LEGACY 1
+
 struct options {
     enum AVPixelFormat src_fmt;
     enum AVPixelFormat dst_fmt;
@@ -58,7 +61,7 @@ struct options {
     int unscaled;
     int align_src;
     int align_dst;
-    int legacy;
+    int api;
     int pretty;
     int backends;
 };
@@ -597,9 +600,9 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
     if (ret < 0)
         goto error;
 
-    ret = opts->legacy  ? scale_legacy(dst, src, mode, opts, &r.time)
-        : hw_device_ctx ? scale_hw(dst, src, mode, opts, &r.time)
-                        : scale_new(dst, src, mode, opts, &r.time);
+    ret = (opts->api == IMPL_LEGACY) ? scale_legacy(dst, src, mode, opts, &r.time)
+        : hw_device_ctx              ? scale_hw(dst, src, mode, opts, &r.time)
+        :                              scale_new(dst, src, mode, opts, &r.time);
     if (ret < 0) {
         if (ret == AVERROR(ENOTSUP))
             ret = 0;
@@ -616,7 +619,7 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
 
     get_ssim(r.ssim, out, ref, comps);
 
-    if (opts->legacy) {
+    if (opts->api == IMPL_LEGACY) {
         /* Legacy swscale does not perform bit accurate upconversions of low
          * bit depth RGB. This artificially improves the SSIM score because the
          * resulting error deletes some of the input dither noise. This gives
@@ -630,7 +633,7 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
     }
 
     r.loss = get_loss(r.ssim);
-    if (!opts->legacy && r.loss - expected_loss > 1e-2 && dst_w >= ref->width && dst_h >= ref->height) {
+    if ((opts->api != IMPL_LEGACY) && r.loss - expected_loss > 1e-2 && dst_w >= ref->width && dst_h >= ref->height) {
         ret = -1;
         goto bad_loss;
     }
@@ -881,6 +884,15 @@ static int parse_size(struct options *opts, const char *str, char **pbuf)
     return ret;
 }
 
+static int parse_implementation(const char *str)
+{
+    if (!strcmp(str, "legacy"))
+        return IMPL_LEGACY;
+    if (!strcmp(str, "new"))
+        return IMPL_NEW;
+    return -1;
+}
+
 static int parse_options(int argc, char **argv, struct options *opts, FILE **fp)
 {
     char *buf = NULL;
@@ -918,8 +930,8 @@ static int parse_options(int argc, char **argv, struct options *opts, FILE **fp)
                     "       If nonzero, allocate source buffers with a custom stride alignment\n"
                     "   -align_dst <alignment>\n"
                     "       If nonzero, allocate destination buffers with a custom stride alignment\n"
-                    "   -legacy <1 or 0>\n"
-                    "       If 1, force using legacy swscale for the main conversion\n"
+                    "   -api <new or legacy>\n"
+                    "       Use selected swscale API for the main conversion (default: new)\n"
                     "   -hw <device>\n"
                     "       Use Vulkan hardware acceleration on the specified device for the main conversion\n"
                     "   -threads <threads>\n"
@@ -1013,8 +1025,13 @@ static int parse_options(int argc, char **argv, struct options *opts, FILE **fp)
                 fprintf(stderr, "invalid alignment %s\n", argv[i + 1]);
                 return -1;
             }
-        } else if (!strcmp(argv[i], "-legacy")) {
-            opts->legacy = atoi(argv[i + 1]);
+        } else if (!strcmp(argv[i], "-api")) {
+            ret = parse_implementation(argv[i + 1]);
+            if (ret < 0) {
+                fprintf(stderr, "invalid api %s\n", argv[i + 1]);
+                goto end;
+            }
+            opts->api = ret;
         } else if (!strcmp(argv[i], "-hw")) {
             ret = av_hwdevice_ctx_create(&hw_device_ctx,
                                          AV_HWDEVICE_TYPE_VULKAN,
