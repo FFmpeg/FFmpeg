@@ -73,7 +73,7 @@ static int ff_smpte436m_to_eia608_filter(AVBSFContext *ctx, AVPacket *out)
         return 0;
     }
     if (ret != AVERROR_EOF)
-        return ret;
+        goto fail;
     ret = AVERROR(EAGAIN);
 
 fail:
