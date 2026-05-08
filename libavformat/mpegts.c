@@ -280,6 +280,8 @@ EXTERN const FFInputFormat ff_mpegts_demuxer;
 static struct Program * get_program(MpegTSContext *ts, unsigned int programid)
 {
     int i;
+    if (!ts)
+        return NULL;
     for (i = 0; i < ts->nb_prg; i++) {
         if (ts->prg[i].id == programid) {
             return &ts->prg[i];
@@ -1836,9 +1838,9 @@ static const uint8_t opus_channel_map[8][8] = {
 };
 
 static int parse_mpeg2_extension_descriptor(AVFormatContext *fc, AVStream *st, int prg_id,
-                                            const uint8_t **pp, const uint8_t *desc_end)
+                                            const uint8_t **pp, const uint8_t *desc_end,
+                                            MpegTSContext *ts)
 {
-    MpegTSContext *ts = fc->priv_data;
     int ext_tag = get8(pp, desc_end);
 
     switch (ext_tag) {
@@ -2438,7 +2440,7 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
         break;
     case EXTENSION_DESCRIPTOR: /* descriptor extension */
         {
-            int ret = parse_mpeg2_extension_descriptor(fc, st, prg_id, pp, desc_end);
+            int ret = parse_mpeg2_extension_descriptor(fc, st, prg_id, pp, desc_end, ts);
 
             if (ret < 0)
                 return ret;
