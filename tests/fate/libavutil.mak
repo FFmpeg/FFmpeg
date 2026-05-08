@@ -156,6 +156,10 @@ FATE_LIBAVUTIL += fate-parseutils
 fate-parseutils: libavutil/tests/parseutils$(EXESUF)
 fate-parseutils: CMD = run libavutil/tests/parseutils$(EXESUF)
 
+FATE_LIBAVUTIL += fate-pixdesc
+fate-pixdesc: libavutil/tests/pixdesc$(EXESUF)
+fate-pixdesc: CMD = run libavutil/tests/pixdesc$(EXESUF)
+
 FATE_LIBAVUTIL-$(CONFIG_PIXELUTILS) += fate-pixelutils
 fate-pixelutils: libavutil/tests/pixelutils$(EXESUF)
 fate-pixelutils: CMD = run libavutil/tests/pixelutils$(EXESUF)
