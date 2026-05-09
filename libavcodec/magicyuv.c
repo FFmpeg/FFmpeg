@@ -570,6 +570,13 @@ static int magy_decode_frame(AVCodecContext *avctx, AVFrame *p,
                "invalid slice height: %d\n", s->slice_height);
         return AVERROR_INVALIDDATA;
     }
+    if (s->vshift[1] && (s->slice_height & ((1 << s->vshift[1]) - 1))) {
+        av_log(avctx, AV_LOG_ERROR,
+               "slice_height %d is not aligned to chroma vertical "
+               "subsampling (must be a multiple of %d)\n",
+               s->slice_height, 1 << s->vshift[1]);
+        return AVERROR_INVALIDDATA;
+    }
 
     bytestream2_skipu(&gb, 4);
 
