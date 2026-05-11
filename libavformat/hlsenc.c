@@ -1157,9 +1157,7 @@ static int parse_playlist(AVFormatContext *s, const char *url, VariantStream *vs
     const char *end;
     double discont_program_date_time = 0;
 
-    if ((ret = ffio_open_whitelist(&in, url, AVIO_FLAG_READ,
-                                   &s->interrupt_callback, NULL,
-                                   s->protocol_whitelist, s->protocol_blacklist)) < 0)
+    if ((ret = s->io_open(s, &in, url, AVIO_FLAG_READ, NULL)) < 0)
         return ret;
 
     ff_get_chomp_line(in, line, sizeof(line));
@@ -1269,7 +1267,7 @@ static int parse_playlist(AVFormatContext *s, const char *url, VariantStream *vs
     }
 
 fail:
-    avio_close(in);
+    ff_format_io_close(s, &in);
     return ret;
 }
 
