@@ -490,7 +490,7 @@ static void dash_free(AVFormatContext *s)
             if (!c->single_file)
                 ffio_free_dyn_buf(&os->ctx->pb);
             else
-                avio_close(os->ctx->pb);
+                ff_format_io_close(s, &os->ctx->pb);
         }
         ff_format_io_close(s, &os->out);
         avformat_free_context(os->ctx);
@@ -1458,7 +1458,7 @@ static int dash_init(AVFormatContext *s)
             ret = s->io_open(s, &os->out, filename, AVIO_FLAG_WRITE, &opts);
         } else {
             ctx->url = av_strdup(filename);
-            ret = avio_open2(&ctx->pb, filename, AVIO_FLAG_WRITE, NULL, &opts);
+            ret = s->io_open(s, &ctx->pb, filename, AVIO_FLAG_WRITE, &opts);
         }
         av_dict_free(&opts);
         if (ret < 0)
