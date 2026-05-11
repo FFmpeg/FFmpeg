@@ -21,7 +21,10 @@ a mail for every change to every issue.
 
 The subscription URL for the ffmpeg-trac list is:
 https://lists.ffmpeg.org/mailman/listinfo/ffmpeg-trac
-The URL of the webinterface of the tracker is:
+The primary issue tracker is:
+https://code.ffmpeg.org/FFmpeg/FFmpeg/issues
+
+Legacy issues may still exist on:
 https://trac.ffmpeg.org
 
 Type:
