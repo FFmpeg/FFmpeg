@@ -100,6 +100,9 @@ Print specific debug info.
 Possible values:
 @table @samp
 @item ts
+Print timestamp information.
+@item id3v2
+Print ID3v2 frame data when demuxing files containing ID3v2 tags.
 @end table
 
 @item max_delay @var{integer} (@emph{input/output})
