@@ -39,6 +39,7 @@
 #include "libavutil/avutil.h"
 #include "libavutil/bprint.h"
 #include "libavutil/channel_layout.h"
+#include "libavutil/downmix_info.h"
 #include "libavutil/display.h"
 #include "libavutil/film_grain_params.h"
 #include "libavutil/hdr_dynamic_metadata.h"
@@ -456,6 +457,7 @@ static void log_callback(void *ptr, int level, const char *fmt, va_list vl)
 #define print_duration_ts(k, v)       avtext_print_ts(tfc, k, v, 1)
 #define print_val(k, v, u)            avtext_print_unit_integer(tfc, k, v, AV_TEXTFORMAT_VALUE_FMT_INT, u)
 #define print_int_fmt(k, v, f, u)     avtext_print_unit_integer(tfc, k, v, f, u)
+#define print_decibel(k, v)           avtext_print_unit_double(tfc, k, v, AV_TEXTFORMAT_VALUE_FMT_DECIBEL, 0)
 
 static void print_integers(AVTextFormatContext *tfc, const char *key,
                            const void *data, int size, const char *format,
@@ -505,6 +507,30 @@ static inline int show_tags(AVTextFormatContext *tfc, AVDictionary *tags, int se
     avtext_print_section_footer(tfc);
 
     return ret;
+}
+
+static void print_downmix_info(AVTextFormatContext *tfc,
+                                      const AVDownmixInfo *downmix_info)
+{
+    switch (downmix_info->preferred_downmix_type) {
+    case AV_DOWNMIX_TYPE_LORO:
+        print_str("preferred_downmix_type", "loro");
+        break;
+    case AV_DOWNMIX_TYPE_LTRT:
+        print_str("preferred_downmix_type", "ltrt");
+        break;
+    case AV_DOWNMIX_TYPE_DPLII:
+        print_str("preferred_downmix_type", "dplII");
+        break;
+    default:
+        print_str("preferred_downmix_type", "unknown");
+        break;
+    }
+    print_decibel("center_mix_level_db", downmix_info->center_mix_level);
+    print_decibel("center_mix_level_ltrt_db", downmix_info->center_mix_level_ltrt);
+    print_decibel("surround_mix_level_db", downmix_info->surround_mix_level);
+    print_decibel("surround_mix_level_ltrt_db", downmix_info->surround_mix_level_ltrt);
+    print_decibel("lfe_mix_level_db", downmix_info->lfe_mix_level);
 }
 
 static void print_displaymatrix(AVTextFormatContext *tfc, const int32_t matrix[9])
@@ -1418,7 +1444,9 @@ static void print_frame_side_data(AVTextFormatContext *tfc,
         avtext_print_section_header(tfc, sd, SECTION_ID_FRAME_SIDE_DATA);
         name = av_frame_side_data_name(sd->type);
         print_str("side_data_type", name ? name : "unknown");
-        if (sd->type == AV_FRAME_DATA_DISPLAYMATRIX && sd->size >= 9*4) {
+        if (sd->type == AV_FRAME_DATA_DOWNMIX_INFO) {
+            print_downmix_info(tfc, (AVDownmixInfo *)sd->data);
+        } else if (sd->type == AV_FRAME_DATA_DISPLAYMATRIX && sd->size >= 9*4) {
             print_displaymatrix(tfc, (const int32_t*)sd->data);
         } else if (sd->type == AV_FRAME_DATA_AFD && sd->size > 0) {
             print_int("active_format", *sd->data);
