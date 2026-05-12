@@ -191,12 +191,6 @@ static bool op_commute_filter(SwsOp *op, SwsOp *prev)
         prev->type = SWS_PIXEL_F32;
         return true;
     case SWS_OP_CONVERT:
-        if (prev->convert.to == SWS_PIXEL_F32) {
-            av_assert0(!prev->convert.expand);
-            FFSWAP(SwsPixelType, op->type, prev->type);
-            return true;
-        }
-        return false;
     case SWS_OP_INVALID:
     case SWS_OP_READ:
     case SWS_OP_WRITE:
@@ -366,6 +360,18 @@ retry:
             if (op_commute_filter(op, prev)) {
                 FFSWAP(SwsOp, *op, *prev);
                 goto retry;
+            }
+
+            /* Merge filter with prior conversion */
+            if (prev->op == SWS_OP_CONVERT && !prev->convert.expand) {
+                int size_from = ff_sws_pixel_type_size(prev->type);
+                int size_to   = ff_sws_pixel_type_size(op->type);
+                av_assert1(prev->convert.to == op->type);
+                if (size_from < size_to) {
+                    op->type = prev->type;
+                    ff_sws_op_list_remove_at(ops, n - 1, 1);
+                    goto retry;
+                }
             }
             break;
         }
