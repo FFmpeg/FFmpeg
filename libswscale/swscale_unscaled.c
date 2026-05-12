@@ -1838,9 +1838,8 @@ static rgbConvFn findRgbConvFn(SwsInternal *c)
     const int dstId = c->dstFormatBpp;
     rgbConvFn conv = NULL;
 
-#define IS_NOT_NE(bpp, desc) \
-    (((bpp + 7) >> 3) == 2 && \
-     (!(desc->flags & AV_PIX_FMT_FLAG_BE) != !HAVE_BIGENDIAN))
+#define IS_NOT_NE(Bpp, desc) \
+    (Bpp == 2 && (!(desc->flags & AV_PIX_FMT_FLAG_BE) != !HAVE_BIGENDIAN))
 
 #define CONV_IS(src, dst) (srcFormat == AV_PIX_FMT_##src && dstFormat == AV_PIX_FMT_##dst)
 
