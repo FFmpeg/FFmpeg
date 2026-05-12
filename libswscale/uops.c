@@ -482,7 +482,7 @@ static int translate_rw_op(SwsContext *ctx, SwsUOpList *ops, SwsUOpFlags flags,
     if (op->rw.filter.op) {
         if (op->op == SWS_OP_WRITE || op->rw.frac || op->rw.packed)
             return AVERROR(ENOTSUP);
-        uop.par.filter.type = SWS_PIXEL_F32;
+        uop.par.filter.type = op->rw.filter.type;
         uop.data.kernel = av_refstruct_ref(op->rw.filter.kernel);
         if (op->rw.filter.op == SWS_OP_FILTER_H) {
             uop.uop = SWS_UOP_READ_PLANAR_FH;

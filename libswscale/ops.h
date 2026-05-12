@@ -107,6 +107,7 @@ typedef struct SwsReadWriteOp {
     struct {
         SwsOpType op;               /* some value of SWS_OP_FILTER_* */
         SwsFilterWeights *kernel;   /* (refstruct) */
+        SwsPixelType type;          /* pixel type to store result as */
     } filter;
 } SwsReadWriteOp;
 
@@ -205,6 +206,7 @@ uint32_t ff_sws_linear_mask(SwsLinearOp);
 
 typedef struct SwsFilterOp {
     SwsFilterWeights *kernel; /* filter kernel (refstruct) */
+    SwsPixelType type;        /* pixel type to store result as */
 } SwsFilterOp;
 
 typedef struct SwsOp {

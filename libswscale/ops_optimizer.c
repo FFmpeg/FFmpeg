@@ -54,9 +54,11 @@ static bool op_commute_clear(SwsOp *op, SwsOp *next)
     case SWS_OP_MAX:
     case SWS_OP_SCALE:
     case SWS_OP_READ:
+        ff_sws_apply_op_q(next, op->clear.value);
+        return true;
     case SWS_OP_FILTER_H:
     case SWS_OP_FILTER_V:
-        ff_sws_apply_op_q(next, op->clear.value);
+        op->type = next->filter.type;
         return true;
     case SWS_OP_SWIZZLE:
         op->clear.mask = ff_sws_comp_mask_swizzle(op->clear.mask, next->swizzle);
@@ -115,8 +117,10 @@ static bool op_commute_swizzle(SwsOp *op, SwsOp *next)
     case SWS_OP_LSHIFT:
     case SWS_OP_RSHIFT:
     case SWS_OP_SCALE:
+        return true;
     case SWS_OP_FILTER_H:
     case SWS_OP_FILTER_V:
+        op->type = next->filter.type;
         return true;
 
     /**
@@ -183,12 +187,14 @@ static bool op_commute_swizzle(SwsOp *op, SwsOp *next)
  */
 static bool op_commute_filter(SwsOp *op, SwsOp *prev)
 {
+    av_assert0(!ff_sws_pixel_type_is_int(op->filter.type));
+
     switch (prev->op) {
     case SWS_OP_SWIZZLE:
     case SWS_OP_SCALE:
     case SWS_OP_LINEAR:
     case SWS_OP_DITHER:
-        prev->type = SWS_PIXEL_F32;
+        prev->type = op->filter.type;
         return true;
     case SWS_OP_CONVERT:
     case SWS_OP_INVALID:
@@ -418,7 +424,7 @@ retry:
                     op->rw.elems = nb_planes;
                     RET(ff_sws_op_list_insert_at(ops, n + 1, &(SwsOp) {
                         .op = SWS_OP_SWIZZLE,
-                        .type = op->rw.filter.op ? SWS_PIXEL_F32 : op->type,
+                        .type = op->rw.filter.op ? op->rw.filter.type : op->type,
                         .swizzle = swiz,
                     }));
                     goto retry;
@@ -745,6 +751,7 @@ retry:
                 !prev->rw.packed && !prev->rw.frac) {
                 prev->rw.filter.op = op->op;
                 prev->rw.filter.kernel = av_refstruct_ref(op->filter.kernel);
+                prev->rw.filter.type = op->filter.type;
                 ff_sws_op_list_remove_at(ops, n, 1);
                 goto retry;
             }

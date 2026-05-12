@@ -469,6 +469,7 @@ static void check_filter(const char *name, const SwsUOp *uop)
                     .rw.filter = {
                         .op     = is_vert ? SWS_OP_FILTER_V : SWS_OP_FILTER_H,
                         .kernel = filter,
+                        .type   = SWS_PIXEL_F32,
                     },
                 }, {
                     .op        = SWS_OP_WRITE,

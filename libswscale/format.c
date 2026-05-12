@@ -1640,6 +1640,7 @@ static int add_filter(SwsContext *ctx, SwsPixelType type, SwsOpList *ops,
         .type = type,
         .op   = filter,
         .filter.kernel = kernel,
+        .filter.type   = type,
     });
 }
 
