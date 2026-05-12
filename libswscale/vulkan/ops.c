@@ -875,6 +875,18 @@ static int add_ops_spirv(VulkanPriv *p, FFVulkanOpsCtx *s,
             nb_linear_ops++;
             break;
         }
+        case SWS_OP_UNPACK:
+            if (ops->src.format == AV_PIX_FMT_X2BGR10)
+                data = spi_OpVectorShuffle(spi, type_v, data, data, 3, 2, 1, 0);
+            else
+                data = spi_OpVectorShuffle(spi, type_v, data, data, 3, 0, 1, 2);
+            break;
+        case SWS_OP_PACK:
+            if (ops->dst.format == AV_PIX_FMT_X2BGR10)
+                data = spi_OpVectorShuffle(spi, type_v, data, data, 3, 2, 1, 0);
+            else
+                data = spi_OpVectorShuffle(spi, type_v, data, data, 1, 2, 3, 0);
+            break;
         default:
             return AVERROR(ENOTSUP);
         }
@@ -1104,6 +1116,16 @@ static int add_ops_glsl(VulkanPriv *p, FFVulkanOpsCtx *s,
                 }
             }
             av_bprintf(&shd->src, "    f32 = tmp;\n");
+            break;
+        case SWS_OP_UNPACK:
+            /* MSB->LSB indexing */
+            av_bprintf(&shd->src, "    %s = %s.%s;\n", type_name, type_name,
+                       ops->src.format == AV_PIX_FMT_X2BGR10 ? "wzyx" : "wxyz");
+            break;
+        case SWS_OP_PACK:
+            /* LSB->MSB indexing */
+            av_bprintf(&shd->src, "    %s = %s.%s;\n", type_name, type_name,
+                       ops->dst.format == AV_PIX_FMT_X2BGR10 ? "wzyx" : "yzwx");
             break;
         default:
             return AVERROR(ENOTSUP);
