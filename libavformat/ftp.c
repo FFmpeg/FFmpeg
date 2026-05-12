@@ -745,6 +745,11 @@ static int ftp_connect(URLContext *h, const char *url)
     av_free(s->path);
     s->path = newpath;
 
+    if (strpbrk(s->path, "\r\n")) {
+        av_log(h, AV_LOG_ERROR, "Path contains CR/LF characters\n");
+        return AVERROR(EINVAL);
+    }
+
     return 0;
 }
 
