@@ -326,7 +326,19 @@ static void free_rendition_list(HLSContext *c)
 static struct playlist *new_playlist(HLSContext *c, const char *url,
                                      const char *base)
 {
-    struct playlist *pls = av_mallocz(sizeof(struct playlist));
+    struct playlist *pls;
+    char abs_url[MAX_URL_SIZE];
+
+    ff_make_absolute_url(abs_url, sizeof(abs_url), base, url);
+    if (!abs_url[0])
+        return NULL;
+
+    for (int i = 0; i < c->n_playlists; i++) {
+        if (!strcmp(c->playlists[i]->url, abs_url))
+            return c->playlists[i];
+    }
+
+    pls = av_mallocz(sizeof(struct playlist));
     if (!pls)
         return NULL;
     pls->pkt = av_packet_alloc();
@@ -334,12 +346,7 @@ static struct playlist *new_playlist(HLSContext *c, const char *url,
         av_free(pls);
         return NULL;
     }
-    ff_make_absolute_url(pls->url, sizeof(pls->url), base, url);
-    if (!pls->url[0]) {
-        av_packet_free(&pls->pkt);
-        av_free(pls);
-        return NULL;
-    }
+    av_strlcpy(pls->url, abs_url, sizeof(pls->url));
     pls->seek_timestamp = AV_NOPTS_VALUE;
 
     pls->is_id3_timestamped = -1;
