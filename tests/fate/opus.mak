@@ -37,8 +37,13 @@ fate-opus-silk-lbrr:         CMP_TARGET = 0
 fate-opus-tron.6ch.tinypkts: CMP_SHIFT = 1440
 fate-opus-tron.6ch.tinypkts: CMP_TARGET = 0
 
+FATE_OPUS_ENC-$(call FILTERFRAMECRC, ANULLSRC ARESAMPLE, OPUS_ENCODER) += fate-opus-enc-silence
+fate-opus-enc-silence: CMD = framecrc -auto_conversion_filters -filter_complex "anullsrc=r=48000:cl=stereo:d=0.021" -c:a opus -strict -2
+
 FATE_SAMPLES_FFMPEG += $(FATE_OPUS)
+FATE_FFMPEG += $(FATE_OPUS_ENC-yes)
 fate-opus-celt: $(FATE_OPUS_CELT-yes)
 fate-opus-hybrid: $(FATE_OPUS_HYBRID-yes)
 fate-opus-silk: $(FATE_OPUS_SILK-yes)
-fate-opus: $(FATE_OPUS)
+fate-opus-enc: $(FATE_OPUS_ENC-yes)
+fate-opus: $(FATE_OPUS) $(FATE_OPUS_ENC-yes)
