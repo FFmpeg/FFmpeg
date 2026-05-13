@@ -1068,3 +1068,276 @@ function ff_hevc_ref_filter_strong_8_neon, export=1
 endfunc
 
 .purgem strong_smooth
+
+// =============================================================================
+// Angular Prediction
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// pred_angular_mode_10_8: Horizontal prediction (mode 10)
+// Caller must ensure top[-1] and left[-1] are valid (used for edge smoothing
+// when c_idx == 0 and size < 32).
+// Arguments:
+// x0: src
+// x1: top (only used for edge smoothing)
+// x2: left
+// x3: stride
+// w4: c_idx
+// w5: log2_size
+// -----------------------------------------------------------------------------
+function ff_hevc_pred_angular_mode_10_8_neon, export=1
+        cmp             w5, #3
+        b.lt            .Lmode10_4x4
+        b.eq            .Lmode10_8x8
+        cmp             w5, #4
+        b.eq            .Lmode10_16x16
+
+        // --- size 32: 2 rows per iteration using ld2r ---
+        mov             w7, #32
+        add             x8, x0, x3              // x8 = row 1 pointer
+        lsl             x9, x3, #1              // x9 = stride * 2
+.Lmode10_32x32_row:
+        ld2r            {v0.16b, v1.16b}, [x2], #2
+        subs            w7, w7, #2
+        stp             q0, q0, [x0]
+        stp             q1, q1, [x8]
+        add             x0, x0, x9
+        add             x8, x8, x9
+        b.gt            .Lmode10_32x32_row
+        // size 32 never does edge smoothing
+        ret
+
+        // --- size 16: 2 rows per iteration using ld2r + dual pointer ---
+.Lmode10_16x16:
+        mov             x6, x0                  // save src base
+        mov             x7, x2                  // save left base for edge smooth
+        add             x8, x0, x3              // x8 = odd-row pointer
+        lsl             x9, x3, #1              // x9 = stride * 2
+        mov             w10, #16
+.Lmode10_16x16_row:
+        ld2r            {v0.16b, v1.16b}, [x2], #2
+        subs            w10, w10, #2
+        st1             {v0.16b}, [x0], x9
+        st1             {v1.16b}, [x8], x9
+        b.gt            .Lmode10_16x16_row
+        mov             x2, x7                  // restore left base
+        b               .Lmode10_edge_smooth
+
+        // --- size 8: ld4r to load 4 rows at once ---
+.Lmode10_8x8:
+        mov             x6, x0                  // save src base
+        mov             x7, x2                  // save left base for edge smooth
+        add             x8, x0, x3              // x8 = odd-row pointer
+        lsl             x9, x3, #1              // x9 = stride * 2
+        ld4r            {v0.8b, v1.8b, v2.8b, v3.8b}, [x2], #4
+        st1             {v0.8b}, [x0], x9
+        st1             {v1.8b}, [x8], x9
+        ld4r            {v4.8b, v5.8b, v6.8b, v7.8b}, [x2], #4
+        st1             {v2.8b}, [x0], x9
+        st1             {v3.8b}, [x8], x9
+        st1             {v4.8b}, [x0], x9
+        st1             {v5.8b}, [x8], x9
+        st1             {v6.8b}, [x0]
+        st1             {v7.8b}, [x8]
+        mov             x2, x7                  // restore left base
+        b               .Lmode10_edge_smooth
+
+        // --- size 4: ld4r to load all 4 rows at once ---
+.Lmode10_4x4:
+        mov             x6, x0                  // save src base
+        ld4r            {v0.8b, v1.8b, v2.8b, v3.8b}, [x2]
+        str             s0, [x0]
+        str             s1, [x0, x3]
+        add             x0, x0, x3, lsl #1
+        str             s2, [x0]
+        str             s3, [x0, x3]
+
+.Lmode10_edge_smooth:
+        cbnz            w4, .Lmode10_ret
+
+        sub             x7, x1, #1              // top - 1 (hoisted early)
+        mov             x0, x6                  // restore src base
+
+        ld1r            {v5.16b}, [x2]          // left[0] broadcast
+        ld1r            {v1.16b}, [x7]          // top[-1] broadcast
+
+        cmp             w5, #3
+        b.lt            .Lmode10_smooth_4
+        b.eq            .Lmode10_smooth_8
+
+        // size 16 edge smoothing: out[x] = clip8(left[0] + (top[x] - top[-1]) / 2)
+        ldr             q2, [x1]                // top[0..15]
+        uhsub           v2.16b, v2.16b, v1.16b  // signed half-difference
+        usqadd          v5.16b, v2.16b          // sat_u8(left[0] + signed_delta)
+        st1             {v5.16b}, [x0]
+        ret
+
+.Lmode10_smooth_4:
+        ldr             s2, [x1]                // top[0..3]
+        uhsub           v2.8b, v2.8b, v1.8b
+        usqadd          v5.8b, v2.8b
+        st1             {v5.s}[0], [x0]
+        ret
+
+.Lmode10_smooth_8:
+        ldr             d2, [x1]                // top[0..7]
+        uhsub           v2.8b, v2.8b, v1.8b
+        usqadd          v5.8b, v2.8b
+        st1             {v5.8b}, [x0]
+
+.Lmode10_ret:
+        ret
+endfunc
+
+// -----------------------------------------------------------------------------
+// pred_angular_mode_26_8: Vertical prediction (mode 26)
+// Caller must ensure top[-1] and left[-1] are valid (used for edge smoothing
+// when c_idx == 0 and size < 32).
+// Arguments:
+// x0: src
+// x1: top
+// x2: left (only used for edge smoothing)
+// x3: stride
+// w4: c_idx
+// w5: log2_size
+// -----------------------------------------------------------------------------
+function ff_hevc_pred_angular_mode_26_8_neon, export=1
+        mov             x7, x0                  // x7 = write pointer (preserve x0)
+
+        cmp             w5, #3
+        b.lt            .Lmode26_4x4
+        b.eq            .Lmode26_8x8
+        cmp             w5, #4
+        b.eq            .Lmode26_16x16
+        // fall-through to 32x32
+
+        // --- size 32 ---
+        ldp             q0, q1, [x1]            // Load top[0..31] once
+        mov             w9, #32
+.Lmode26_32x32_row:
+        subs            w9, w9, #1
+        st1             {v0.16b, v1.16b}, [x7], x3
+        b.gt            .Lmode26_32x32_row
+        b               .Lmode26_edge_smooth
+
+        // --- size 16 ---
+.Lmode26_16x16:
+        ldr             q0, [x1]                // Load top[0..15] once
+        mov             w9, #16
+.Lmode26_16x16_row:
+        subs            w9, w9, #1
+        st1             {v0.16b}, [x7], x3
+        b.gt            .Lmode26_16x16_row
+        b               .Lmode26_edge_smooth
+
+        // --- size 8 ---
+.Lmode26_8x8:
+        ldr             d0, [x1]                // Load top[0..7] once
+        mov             w9, #8
+.Lmode26_8x8_row:
+        subs            w9, w9, #1
+        st1             {v0.8b}, [x7], x3
+        b.gt            .Lmode26_8x8_row
+        b               .Lmode26_edge_smooth
+
+        // --- size 4 ---
+.Lmode26_4x4:
+        ldr             s0, [x1]                // Load top[0..3] once
+        mov             w9, #4
+.Lmode26_4x4_row:
+        subs            w9, w9, #1
+        str             s0, [x7]
+        add             x7, x7, x3
+        b.gt            .Lmode26_4x4_row
+
+.Lmode26_edge_smooth:
+        cbnz            w4, .Lmode26_ret
+        cmp             w5, #5
+        b.ge            .Lmode26_ret
+
+        // Edge smoothing: out[y] = clip8(top[0] + (left[y] - left[-1]) / 2)
+        ld1r            {v5.16b}, [x1]          // top[0] broadcast
+        sub             x8, x2, #1
+        ld1r            {v1.16b}, [x8]          // left[-1] broadcast
+
+        cmp             w5, #3
+        b.lt            .Lmode26_smooth_4
+        b.eq            .Lmode26_smooth_8
+
+        // size 16
+        ldr             q2, [x2]                // left[0..15]
+        uhsub           v2.16b, v2.16b, v1.16b  // signed half-difference
+        usqadd          v5.16b, v2.16b          // sat_u8(top[0] + signed_delta)
+
+        // Store smoothed column[0] for 16 rows using precomputed addresses
+        // Reordered to avoid direct dependency chains
+        add             x10, x0, x3, lsl #1     // x10 = row 2
+        add             x9, x0, x3              // x9 = row 1
+        add             x11, x10, x3            // x11 = row 3
+        st1             {v5.b}[0], [x0]
+        add             x0, x10, x3, lsl #1     // x0 = row 4 (after last use of old x0)
+        st1             {v5.b}[1], [x9]
+        st1             {v5.b}[2], [x10]
+        st1             {v5.b}[3], [x11]
+        add             x10, x0, x3, lsl #1     // x10 = row 6
+        add             x9, x0, x3              // x9 = row 5
+        add             x11, x10, x3            // x11 = row 7
+        st1             {v5.b}[4], [x0]
+        add             x0, x10, x3, lsl #1     // x0 = row 8
+        st1             {v5.b}[5], [x9]
+        st1             {v5.b}[6], [x10]
+        st1             {v5.b}[7], [x11]
+        add             x10, x0, x3, lsl #1     // x10 = row 10
+        add             x9, x0, x3              // x9 = row 9
+        add             x11, x10, x3            // x11 = row 11
+        st1             {v5.b}[8], [x0]
+        add             x0, x10, x3, lsl #1     // x0 = row 12
+        st1             {v5.b}[9], [x9]
+        st1             {v5.b}[10], [x10]
+        st1             {v5.b}[11], [x11]
+        add             x10, x0, x3, lsl #1     // x10 = row 14
+        add             x9, x0, x3              // x9 = row 13
+        add             x11, x10, x3            // x11 = row 15
+        st1             {v5.b}[12], [x0]
+        st1             {v5.b}[13], [x9]
+        st1             {v5.b}[14], [x10]
+        st1             {v5.b}[15], [x11]
+        b               .Lmode26_ret
+
+.Lmode26_smooth_4:
+        ldr             s2, [x2]                // left[0..3]
+        uhsub           v2.8b, v2.8b, v1.8b
+        usqadd          v5.8b, v2.8b
+        add             x10, x0, x3, lsl #1
+        add             x9, x0, x3
+        add             x11, x10, x3
+        st1             {v5.b}[0], [x0]
+        st1             {v5.b}[1], [x9]
+        st1             {v5.b}[2], [x10]
+        st1             {v5.b}[3], [x11]
+        b               .Lmode26_ret
+
+.Lmode26_smooth_8:
+        ldr             d2, [x2]                // left[0..7]
+        uhsub           v2.8b, v2.8b, v1.8b
+        usqadd          v5.8b, v2.8b
+        add             x10, x0, x3, lsl #1     // x10 = row 2
+        add             x9, x0, x3              // x9 = row 1
+        add             x11, x10, x3            // x11 = row 3
+        st1             {v5.b}[0], [x0]
+        add             x0, x10, x3, lsl #1     // x0 = row 4
+        st1             {v5.b}[1], [x9]
+        st1             {v5.b}[2], [x10]
+        st1             {v5.b}[3], [x11]
+        add             x10, x0, x3, lsl #1
+        add             x9, x0, x3
+        add             x11, x10, x3
+        st1             {v5.b}[4], [x0]
+        st1             {v5.b}[5], [x9]
+        st1             {v5.b}[6], [x10]
+        st1             {v5.b}[7], [x11]
+        b               .Lmode26_ret
+
+.Lmode26_ret:
+        ret
+endfunc

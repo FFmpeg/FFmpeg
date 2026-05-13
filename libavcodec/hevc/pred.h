@@ -52,4 +52,26 @@ void ff_hevc_pred_init(HEVCPredContext *hpc, int bit_depth);
 void ff_hevc_pred_init_mips(HEVCPredContext *hpc, int bit_depth);
 void ff_hevc_pred_init_aarch64(HEVCPredContext *hpc, int bit_depth);
 
+/* C angular prediction fallbacks (non-static for arch-specific partial override) */
+#define HEVC_PRED_ANGULAR_DECL(depth)                                         \
+void ff_hevc_pred_angular_0_ ## depth(uint8_t *src, const uint8_t *top,       \
+                                      const uint8_t *left, ptrdiff_t stride,  \
+                                      int c_idx, int mode);                   \
+void ff_hevc_pred_angular_1_ ## depth(uint8_t *src, const uint8_t *top,       \
+                                      const uint8_t *left, ptrdiff_t stride,  \
+                                      int c_idx, int mode);                   \
+void ff_hevc_pred_angular_2_ ## depth(uint8_t *src, const uint8_t *top,       \
+                                      const uint8_t *left, ptrdiff_t stride,  \
+                                      int c_idx, int mode);                   \
+void ff_hevc_pred_angular_3_ ## depth(uint8_t *src, const uint8_t *top,       \
+                                      const uint8_t *left, ptrdiff_t stride,  \
+                                      int c_idx, int mode);
+
+HEVC_PRED_ANGULAR_DECL(8)
+HEVC_PRED_ANGULAR_DECL(9)
+HEVC_PRED_ANGULAR_DECL(10)
+HEVC_PRED_ANGULAR_DECL(12)
+
+#undef HEVC_PRED_ANGULAR_DECL
+
 #endif /* AVCODEC_HEVC_PRED_H */
