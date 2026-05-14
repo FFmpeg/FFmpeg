@@ -1857,6 +1857,10 @@ When true, use Timestamp-based Packet Delivery mode. The default behavior
 depends on the transmission type: enabled in live mode, disabled in file
 mode.
 
+@item ipv6only=@var{1|0}
+Accept IPv4 or not while using the IPv6 wildcard address. This should be set
+when listening on a IPv6 wildcard address.
+
 @end table
 
 For more information see: @url{https://github.com/Haivision/srt}.
