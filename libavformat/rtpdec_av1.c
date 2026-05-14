@@ -278,13 +278,9 @@ static int av1_handle_packet(AVFormatContext *ctx, PayloadContext *data,
             if (data->needs_td) {
                 output_size += 2; // for Temporal Delimiter (TD)
             }
-            if (pkt->data) {
-                if ((result = av_grow_packet(pkt, output_size)) < 0)
-                    return result;
-            } else {
-                if ((result = av_new_packet(pkt, output_size) < 0))
-                    return result;
-            }
+            result = av_grow_packet(pkt, output_size);
+            if (result < 0)
+                return result;
 
             if (data->needs_td) {
                 // restore TD
