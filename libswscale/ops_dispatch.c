@@ -547,7 +547,7 @@ static int compile(SwsGraph *graph, const SwsOpBackend *backend,
     const int64_t block_bits_in  = (int64_t) comp->block_size * p->pixel_bits_in;
     const int64_t block_bits_out = (int64_t) comp->block_size * p->pixel_bits_out;
     if (block_bits_in & 0x7 || block_bits_out & 0x7) {
-        av_log(ctx, AV_LOG_ERROR, "Block size must be a multiple of the pixel size.\n");
+        av_log(ctx, AV_LOG_ERROR, "Block size must be byte-aligned.\n");
         ret = AVERROR(EINVAL);
         goto fail;
     }
