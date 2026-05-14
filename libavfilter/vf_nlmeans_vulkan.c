@@ -19,19 +19,24 @@
  */
 
 #include "libavutil/mem.h"
-#include "libavutil/random_seed.h"
-#include "libavutil/vulkan_spirv.h"
 #include "libavutil/opt.h"
 #include "vulkan_filter.h"
 
 #include "filters.h"
 #include "video.h"
 
-#define TYPE_NAME  "vec4"
+extern const unsigned char ff_nlmeans_horizontal_comp_spv_data[];
+extern const unsigned int  ff_nlmeans_horizontal_comp_spv_len;
+extern const unsigned char ff_nlmeans_vertical_comp_spv_data[];
+extern const unsigned int  ff_nlmeans_vertical_comp_spv_len;
+extern const unsigned char ff_nlmeans_weights_comp_spv_data[];
+extern const unsigned int  ff_nlmeans_weights_comp_spv_len;
+extern const unsigned char ff_nlmeans_denoise_comp_spv_data[];
+extern const unsigned int  ff_nlmeans_denoise_comp_spv_len;
+
+/* Must be kept in sync with the definitions in the nlmeans_* shaders */
 #define TYPE_ELEMS 4
 #define TYPE_SIZE  (TYPE_ELEMS*4)
-#define TYPE_BLOCK_ELEMS 16
-#define TYPE_BLOCK_SIZE (TYPE_SIZE * TYPE_BLOCK_ELEMS)
 #define WG_SIZE 32
 
 typedef struct NLMeansVulkanContext {
@@ -80,210 +85,60 @@ typedef struct IntegralPushData {
     uint32_t nb_components;
 } IntegralPushData;
 
-static void shared_shd_def(FFVulkanShader *shd) {
-    GLSLC(0, #extension GL_ARB_gpu_shader_int64 : require                     );
-    GLSLC(0,                                                                  );
-    GLSLF(0, #define DTYPE %s                                                 ,TYPE_NAME);
-    GLSLF(0, #define T_ALIGN %i                                               ,TYPE_SIZE);
-    GLSLF(0, #define T_BLOCK_ELEMS %i                                         ,TYPE_BLOCK_ELEMS);
-    GLSLF(0, #define T_BLOCK_ALIGN %i                                         ,TYPE_BLOCK_SIZE);
-    GLSLC(0,                                                                  );
-    GLSLC(0, layout(buffer_reference, buffer_reference_align = T_ALIGN) buffer DataBuffer {  );
-    GLSLC(1,     DTYPE v[];                                                   );
-    GLSLC(0, };                                                               );
-    GLSLC(0, struct Block {                                                   );
-    GLSLC(1,     DTYPE data[T_BLOCK_ELEMS];                                   );
-    GLSLC(0, };                                                               );
-    GLSLC(0, layout(buffer_reference, buffer_reference_align = T_BLOCK_ALIGN) buffer BlockBuffer {  );
-    GLSLC(1,     Block v[];                                                   );
-    GLSLC(0, };                                                               );
-    GLSLC(0, layout(push_constant, std430) uniform pushConstants {            );
-    GLSLC(1,     uvec4 width;                                                 );
-    GLSLC(1,     uvec4 height;                                                );
-    GLSLC(1,     vec4 strength;                                               );
-    GLSLC(1,     uvec4 comp_off;                                              );
-    GLSLC(1,     uvec4 comp_plane;                                            );
-    GLSLC(1,     DataBuffer integral_base;                                    );
-    GLSLC(1,     uint64_t integral_size;                                      );
-    GLSLC(1,     uint64_t int_stride;                                         );
-    GLSLC(1,     uint xyoffs_start;                                           );
-    GLSLC(1,     uint nb_components;                                          );
-    GLSLC(0, };                                                               );
-    GLSLC(0,                                                                  );
-
-    ff_vk_shader_add_push_const(shd, 0, sizeof(IntegralPushData),
-                                VK_SHADER_STAGE_COMPUTE_BIT);
-}
-
 static av_cold int init_integral_pipeline(FFVulkanContext *vkctx, FFVkExecPool *exec,
                                           FFVulkanShader *shd_horizontal,
                                           FFVulkanShader *shd_vertical,
-                                          FFVkSPIRVCompiler *spv,
-                                          const AVPixFmtDescriptor *desc, int planes)
+                                          int planes)
 {
     int err;
-    uint8_t *spv_data;
-    size_t spv_len;
-    void *spv_opaque = NULL;
     FFVulkanShader *shd;
-    FFVulkanDescriptorSetBinding *desc_set;
 
+    /* Horizontal pass */
     shd = shd_horizontal;
-    RET(ff_vk_shader_init(vkctx, shd, "nlmeans_horizontal",
-                          VK_SHADER_STAGE_COMPUTE_BIT,
-                          (const char *[]) { "GL_EXT_buffer_reference",
-                                             "GL_EXT_buffer_reference2" }, 2,
-                          WG_SIZE, 1, 1,
-                          0));
-    shared_shd_def(shd);
+    ff_vk_shader_load(shd, VK_SHADER_STAGE_COMPUTE_BIT, NULL,
+                      (uint32_t []) { WG_SIZE, 1, 1 }, 0);
 
-    GLSLC(0,                                                                     );
-    GLSLC(0, void main()                                                         );
-    GLSLC(0, {                                                                   );
-    GLSLC(1,     uint64_t offset;                                                );
-    GLSLC(1,     DataBuffer dst;                                                 );
-    GLSLC(1,     BlockBuffer b_dst;                                              );
-    GLSLC(1,     Block block;                                                    );
-    GLSLC(1,     DTYPE s2;                                                       );
-    GLSLC(1,     DTYPE prefix_sum;                                               );
-    GLSLC(1,     ivec2 pos;                                                      );
-    GLSLC(1,     int k;                                                          );
-    GLSLC(1,     int o;                                                          );
-    GLSLC(0,                                                                     );
-    GLSLC(1,     DataBuffer integral_data;                                       );
-    GLSLC(0,                                                                     );
-    GLSLC(1,     uint c_plane;                                                   );
-    GLSLC(0,                                                                     );
-    GLSLC(1,     uint comp_idx = uint(gl_WorkGroupID.y);                         );
-    GLSLC(1,     uint invoc_idx = uint(gl_WorkGroupID.z);                        );
-    GLSLC(0,                                                                     );
-    GLSLC(1,     if (strength[comp_idx] == 0.0)                                  );
-    GLSLC(2,         return;                                                     );
-    GLSLC(0,                                                                     );
-    GLSLC(1,     offset = integral_size * (invoc_idx * nb_components + comp_idx); );
-    GLSLC(1,     integral_data = DataBuffer(uint64_t(integral_base) + offset);   );
-    GLSLC(0,                                                                     );
-    GLSLC(1,     c_plane = comp_plane[comp_idx];                                 );
-    GLSLC(0,                                                                     );
-    GLSLC(1,     pos.y = int(gl_GlobalInvocationID.x);                           );
-    GLSLC(1,     if (pos.y < height[c_plane]) {                                  );
-    GLSLC(2,         prefix_sum = DTYPE(0);                                      );
-    GLSLC(2,         offset = int_stride * uint64_t(pos.y);                      );
-    GLSLC(2,         b_dst = BlockBuffer(uint64_t(integral_data) + offset);      );
-    GLSLC(0,                                                                     );
-    GLSLC(2,         for (k = 0; k * T_BLOCK_ELEMS < width[c_plane]; k++) {      );
-    GLSLC(3,             block = b_dst.v[k];                                     );
-    GLSLC(3,             for (o = 0; o < T_BLOCK_ELEMS; o++) {                   );
-    GLSLC(4,                 s2 = block.data[o];                                 );
-    GLSLC(4,                 block.data[o] = s2 + prefix_sum;                    );
-    GLSLC(4,                 prefix_sum += s2;                                   );
-    GLSLC(3,             }                                                       );
-    GLSLC(3,             b_dst.v[k] = block;                                     );
-    GLSLC(2,         }                                                           );
-    GLSLC(1,     }                                                               );
-    GLSLC(0, }                                                                   );
+    ff_vk_shader_add_push_const(shd, 0, sizeof(IntegralPushData),
+                                VK_SHADER_STAGE_COMPUTE_BIT);
 
-    RET(spv->compile_shader(vkctx, spv, shd, &spv_data, &spv_len, "main", &spv_opaque));
-    RET(ff_vk_shader_link(vkctx, shd, spv_data, spv_len, "main"));
+    RET(ff_vk_shader_link(vkctx, shd,
+                          ff_nlmeans_horizontal_comp_spv_data,
+                          ff_nlmeans_horizontal_comp_spv_len, "main"));
 
     RET(ff_vk_shader_register_exec(vkctx, exec, shd));
 
+    /* Vertical pass */
     shd = shd_vertical;
-    RET(ff_vk_shader_init(vkctx, shd, "nlmeans_vertical",
-                          VK_SHADER_STAGE_COMPUTE_BIT,
-                          (const char *[]) { "GL_EXT_buffer_reference",
-                                             "GL_EXT_buffer_reference2" }, 2,
-                          WG_SIZE, 1, 1,
-                          0));
-    shared_shd_def(shd);
+    ff_vk_shader_load(shd, VK_SHADER_STAGE_COMPUTE_BIT, NULL,
+                      (uint32_t []) { WG_SIZE, 1, 1 }, 0);
 
-    desc_set = (FFVulkanDescriptorSetBinding []) {
-        {
-            .name       = "input_img",
-            .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-            .mem_layout = ff_vk_shader_rep_fmt(vkctx->input_format, FF_VK_REP_FLOAT),
-            .mem_quali  = "readonly",
-            .dimensions = 2,
-            .elems      = planes,
-            .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
+    ff_vk_shader_add_push_const(shd, 0, sizeof(IntegralPushData),
+                                VK_SHADER_STAGE_COMPUTE_BIT);
+
+    const FFVulkanDescriptorSetBinding desc_set_img[] = {
+        { /* input_img */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
+            .elems  = planes,
         },
     };
-    RET(ff_vk_shader_add_descriptor_set(vkctx, shd, desc_set, 1, 0, 0));
+    ff_vk_shader_add_descriptor_set(vkctx, shd, desc_set_img, 1, 0, 0);
 
-    desc_set = (FFVulkanDescriptorSetBinding []) {
-        {
-            .name        = "xyoffsets_buffer",
-            .type        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-            .mem_quali   = "readonly",
-            .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
-            .buf_content = "ivec2 xyoffsets[];",
+    const FFVulkanDescriptorSetBinding desc_set_xyoffsets[] = {
+        { /* xyoffsets_buffer */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
         },
     };
-    RET(ff_vk_shader_add_descriptor_set(vkctx, shd, desc_set, 1, 1, 0));
+    ff_vk_shader_add_descriptor_set(vkctx, shd, desc_set_xyoffsets, 1, 1, 0);
 
-    GLSLC(0,                                                                     );
-    GLSLC(0, void main()                                                         );
-    GLSLC(0, {                                                                   );
-    GLSLC(1,     uint64_t offset;                                                );
-    GLSLC(1,     DataBuffer dst;                                                 );
-    GLSLC(1,     float s1;                                                       );
-    GLSLC(1,     DTYPE s2;                                                       );
-    GLSLC(1,     DTYPE prefix_sum;                                               );
-    GLSLC(1,     uvec2 size;                                                     );
-    GLSLC(1,     ivec2 pos;                                                      );
-    GLSLC(1,     ivec2 pos_off;                                                  );
-    GLSLC(0,                                                                     );
-    GLSLC(1,     DataBuffer integral_data;                                       );
-    GLSLF(1,     ivec2 offs[%i];                                                 ,TYPE_ELEMS);
-    GLSLC(0,                                                                     );
-    GLSLC(1,     uint c_off;                                                     );
-    GLSLC(1,     uint c_plane;                                                   );
-    GLSLC(0,                                                                     );
-    GLSLC(1,     uint comp_idx = uint(gl_WorkGroupID.y);                         );
-    GLSLC(1,     uint invoc_idx = uint(gl_WorkGroupID.z);                        );
-    GLSLC(0,                                                                     );
-    GLSLC(1,     if (strength[comp_idx] == 0.0)                                  );
-    GLSLC(2,         return;                                                     );
-    GLSLC(0,                                                                     );
-    GLSLC(1,     offset = integral_size * (invoc_idx * nb_components + comp_idx); );
-    GLSLC(1,     integral_data = DataBuffer(uint64_t(integral_base) + offset);   );
-    for (int i = 0; i < TYPE_ELEMS; i++)
-        GLSLF(1, offs[%i] = xyoffsets[xyoffs_start + %i*invoc_idx + %i];         ,i,TYPE_ELEMS,i);
-    GLSLC(0,                                                                     );
-    GLSLC(1,     c_off = comp_off[comp_idx];                                     );
-    GLSLC(1,     c_plane = comp_plane[comp_idx];                                 );
-    GLSLC(1,     size = imageSize(input_img[c_plane]);                           );
-    GLSLC(0,                                                                     );
-    GLSLC(1,     pos.x = int(gl_GlobalInvocationID.x);                           );
-    GLSLC(1,     if (pos.x < width[c_plane]) {                                   );
-    GLSLC(2,         prefix_sum = DTYPE(0);                                      );
-    GLSLC(2,         for (pos.y = 0; pos.y < height[c_plane]; pos.y++) {         );
-    GLSLC(3,             offset = int_stride * uint64_t(pos.y);                  );
-    GLSLC(3,             dst = DataBuffer(uint64_t(integral_data) + offset);     );
-    GLSLC(4,             s1 = imageLoad(input_img[c_plane], pos)[c_off];         );
-    for (int i = 0; i < TYPE_ELEMS; i++) {
-        GLSLF(4,         pos_off = pos + offs[%i];                               ,i);
-        GLSLC(4,         if (!IS_WITHIN(uvec2(pos_off), size))                   );
-        GLSLF(5,             s2[%i] = s1;                                        ,i);
-        GLSLC(4,         else                                                    );
-        GLSLF(5,             s2[%i] = imageLoad(input_img[c_plane], pos_off)[c_off]; ,i);
-    }
-    GLSLC(4,             s2 = (s1 - s2) * (s1 - s2);                             );
-    GLSLC(3,             dst.v[pos.x] = s2 + prefix_sum;                         );
-    GLSLC(3,             prefix_sum += s2;                                       );
-    GLSLC(2,         }                                                           );
-    GLSLC(1,     }                                                               );
-    GLSLC(0, }                                                                   );
-
-    RET(spv->compile_shader(vkctx, spv, shd, &spv_data, &spv_len, "main", &spv_opaque));
-    RET(ff_vk_shader_link(vkctx, shd, spv_data, spv_len, "main"));
+    RET(ff_vk_shader_link(vkctx, shd,
+                          ff_nlmeans_vertical_comp_spv_data,
+                          ff_nlmeans_vertical_comp_spv_len, "main"));
 
     RET(ff_vk_shader_register_exec(vkctx, exec, shd));
 
 fail:
-    if (spv_opaque)
-        spv->free_shader(spv, &spv_opaque);
-
     return err;
 }
 
@@ -305,172 +160,48 @@ typedef struct WeightsPushData {
 } WeightsPushData;
 
 static av_cold int init_weights_pipeline(FFVulkanContext *vkctx, FFVkExecPool *exec,
-                                         FFVulkanShader *shd,
-                                         FFVkSPIRVCompiler *spv,
-                                         const AVPixFmtDescriptor *desc,
-                                         int planes)
+                                         FFVulkanShader *shd, int planes)
 {
     int err;
-    uint8_t *spv_data;
-    size_t spv_len;
-    void *spv_opaque = NULL;
-    FFVulkanDescriptorSetBinding *desc_set;
 
-    RET(ff_vk_shader_init(vkctx, shd, "nlmeans_weights",
-                          VK_SHADER_STAGE_COMPUTE_BIT,
-                          (const char *[]) { "GL_EXT_buffer_reference",
-                                             "GL_EXT_buffer_reference2" }, 2,
-                          WG_SIZE, WG_SIZE, 1,
-                          0));
-
-    GLSLC(0, #extension GL_ARB_gpu_shader_int64 : require                     );
-    GLSLC(0,                                                                  );
-    GLSLF(0, #define DTYPE %s                                                 ,TYPE_NAME);
-    GLSLF(0, #define T_ALIGN %i                                               ,TYPE_SIZE);
-    GLSLC(0,                                                                  );
-    GLSLC(0, layout(buffer_reference, buffer_reference_align = T_ALIGN) buffer DataBuffer {  );
-    GLSLC(1,     DTYPE v[];                                                   );
-    GLSLC(0, };                                                               );
-    GLSLC(0, layout(push_constant, std430) uniform pushConstants {            );
-    GLSLC(1,     uvec4 width;                                                 );
-    GLSLC(1,     uvec4 height;                                                );
-    GLSLC(1,     uvec4 ws_offset;                                             );
-    GLSLC(1,     uvec4 ws_stride;                                             );
-    GLSLC(1,     ivec4 patch_size;                                            );
-    GLSLC(1,     vec4 strength;                                               );
-    GLSLC(1,     uvec4 comp_off;                                              );
-    GLSLC(1,     uvec4 comp_plane;                                            );
-    GLSLC(1,     DataBuffer integral_base;                                    );
-    GLSLC(1,     uint64_t integral_size;                                      );
-    GLSLC(1,     uint64_t int_stride;                                         );
-    GLSLC(1,     uint xyoffs_start;                                           );
-    GLSLC(1,     uint ws_count;                                               );
-    GLSLC(1,     uint nb_components;                                          );
-    GLSLC(0, };                                                               );
-    GLSLC(0,                                                                  );
+    ff_vk_shader_load(shd, VK_SHADER_STAGE_COMPUTE_BIT, NULL,
+                      (uint32_t []) { WG_SIZE, WG_SIZE, 1 }, 0);
 
     ff_vk_shader_add_push_const(shd, 0, sizeof(WeightsPushData),
                                 VK_SHADER_STAGE_COMPUTE_BIT);
 
-    desc_set = (FFVulkanDescriptorSetBinding []) {
-        {
-            .name       = "input_img",
-            .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-            .mem_layout = ff_vk_shader_rep_fmt(vkctx->input_format, FF_VK_REP_FLOAT),
-            .mem_quali  = "readonly",
-            .dimensions = 2,
-            .elems      = planes,
-            .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
+    const FFVulkanDescriptorSetBinding desc_set[] = {
+        { /* input_img */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
+            .elems  = planes,
         },
-        {
-            .name        = "weights_buffer",
-            .type        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-            .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
-            .buf_content = "float weights[];",
+        { /* weights_buffer */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
         },
-        {
-            .name        = "sums_buffer",
-            .type        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-            .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
-            .buf_content = "float sums[];",
+        { /* sums_buffer */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
         },
     };
-    RET(ff_vk_shader_add_descriptor_set(vkctx, shd, desc_set, 3, 0, 0));
+    ff_vk_shader_add_descriptor_set(vkctx, shd, desc_set, 3, 0, 0);
 
-    desc_set = (FFVulkanDescriptorSetBinding []) {
-        {
-            .name        = "xyoffsets_buffer",
-            .type        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-            .mem_quali   = "readonly",
-            .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
-            .buf_content = "ivec2 xyoffsets[];",
+    const FFVulkanDescriptorSetBinding desc_set_xyoffsets[] = {
+        { /* xyoffsets_buffer */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
         },
     };
-    RET(ff_vk_shader_add_descriptor_set(vkctx, shd, desc_set, 1, 1, 0));
+    ff_vk_shader_add_descriptor_set(vkctx, shd, desc_set_xyoffsets, 1, 1, 0);
 
-    GLSLC(0,                                                                     );
-    GLSLC(0, void main()                                                         );
-    GLSLC(0, {                                                                   );
-    GLSLC(1,     uint64_t offset;                                                );
-    GLSLC(1,     DataBuffer dst;                                                 );
-    GLSLC(1,     uvec2 size;                                                     );
-    GLSLC(1,     ivec2 pos;                                                      );
-    GLSLC(1,     ivec2 pos_off;                                                  );
-    GLSLC(1,     int p;                                                          );
-    GLSLC(1,     float s;                                                        );
-    GLSLC(0,                                                                     );
-    GLSLC(1,     DataBuffer integral_data;                                       );
-    GLSLF(1,     ivec2 offs[%i];                                                 ,TYPE_ELEMS);
-    GLSLC(0,                                                                     );
-    GLSLC(1,     uint c_off;                                                     );
-    GLSLC(1,     uint c_plane;                                                   );
-    GLSLC(1,     uint ws_off;                                                    );
-    GLSLC(0,                                                                     );
-    GLSLC(1,     pos = ivec2(gl_GlobalInvocationID.xy);                          );
-    GLSLC(1,     uint comp_idx = uint(gl_WorkGroupID.z) %% nb_components;        );
-    GLSLC(1,     uint invoc_idx = uint(gl_WorkGroupID.z) / nb_components;        );
-    GLSLC(0,                                                                     );
-    GLSLC(1,     c_off = comp_off[comp_idx];                                     );
-    GLSLC(1,     c_plane = comp_plane[comp_idx];                                 );
-    GLSLC(1,     p = patch_size[comp_idx];                                       );
-    GLSLC(1,     s = strength[comp_idx];                                         );
-    GLSLC(1,     if (s == 0.0 || pos.x < p || pos.y < p || pos.x >= width[c_plane] - p || pos.y >= height[c_plane] - p) );
-    GLSLC(2,         return;                                                     );
-    GLSLC(0,                                                                     );
-    GLSLC(1,     offset = integral_size * (invoc_idx * nb_components + comp_idx); );
-    GLSLC(1,     integral_data = DataBuffer(uint64_t(integral_base) + offset);   );
-    for (int i = 0; i < TYPE_ELEMS; i++)
-        GLSLF(1, offs[%i] = xyoffsets[xyoffs_start + %i*invoc_idx + %i];         ,i,TYPE_ELEMS,i);
-    GLSLC(0,                                                                     );
-    GLSLC(1,     ws_off = ws_count * invoc_idx + ws_offset[comp_idx] + pos.y * ws_stride[comp_idx] + pos.x; );
-    GLSLC(1,     size = imageSize(input_img[c_plane]);                           );
-    GLSLC(0,                                                                     );
-    GLSLC(1,     DTYPE a;                                                        );
-    GLSLC(1,     DTYPE b;                                                        );
-    GLSLC(1,     DTYPE c;                                                        );
-    GLSLC(1,     DTYPE d;                                                        );
-    GLSLC(0,                                                                     );
-    GLSLC(1,     DTYPE patch_diff;                                               );
-    GLSLC(1,     vec4 src;                                                       );
-    GLSLC(1,     vec4 w;                                                         );
-    GLSLC(1,     float w_sum;                                                    );
-    GLSLC(1,     float sum;                                                      );
-    GLSLC(0,                                                                     );
-    for (int i = 0; i < 4; i++) {
-        GLSLF(1,     pos_off = pos + offs[%i];                                   ,i);
-        GLSLC(1,     if (!IS_WITHIN(uvec2(pos_off), size))                       );
-        GLSLF(2,         src[%i] = imageLoad(input_img[c_plane], pos)[c_off];    ,i);
-        GLSLC(1,     else                                                        );
-        GLSLF(2,         src[%i] = imageLoad(input_img[c_plane], pos_off)[c_off]; ,i);
-    }
-    GLSLC(0,                                                                     );
-    GLSLC(1,         offset = int_stride * uint64_t(pos.y - p);                  );
-    GLSLC(1,         dst = DataBuffer(uint64_t(integral_data) + offset);         );
-    GLSLC(1,         a = dst.v[pos.x - p];                                       );
-    GLSLC(1,         c = dst.v[pos.x + p];                                       );
-    GLSLC(1,         offset = int_stride * uint64_t(pos.y + p);                  );
-    GLSLC(1,         dst = DataBuffer(uint64_t(integral_data) + offset);         );
-    GLSLC(1,         b = dst.v[pos.x - p];                                       );
-    GLSLC(1,         d = dst.v[pos.x + p];                                       );
-    GLSLC(0,                                                                     );
-    GLSLC(1,         patch_diff = d + a - b - c;                                 );
-    GLSLC(1,         w = exp(patch_diff * s);                                    );
-    GLSLC(1,         w_sum = w[0] + w[1] + w[2] + w[3];                          );
-    GLSLC(1,         sum = dot(w, src * 255);                                    );
-    GLSLC(0,                                                                     );
-    GLSLC(1,         weights[ws_off] += w_sum;                                   );
-    GLSLC(1,         sums[ws_off] += sum;                                        );
-    GLSLC(0, }                                                                   );
-
-    RET(spv->compile_shader(vkctx, spv, shd, &spv_data, &spv_len, "main", &spv_opaque));
-    RET(ff_vk_shader_link(vkctx, shd, spv_data, spv_len, "main"));
+    RET(ff_vk_shader_link(vkctx, shd,
+                          ff_nlmeans_weights_comp_spv_data,
+                          ff_nlmeans_weights_comp_spv_len, "main"));
 
     RET(ff_vk_shader_register_exec(vkctx, exec, shd));
 
 fail:
-    if (spv_opaque)
-        spv->free_shader(spv, &spv_opaque);
-
     return err;
 }
 
@@ -485,121 +216,49 @@ typedef struct DenoisePushData {
 } DenoisePushData;
 
 static av_cold int init_denoise_pipeline(FFVulkanContext *vkctx, FFVkExecPool *exec,
-                                         FFVulkanShader *shd, FFVkSPIRVCompiler *spv,
-                                         const AVPixFmtDescriptor *desc, int planes)
+                                         FFVulkanShader *shd, int planes)
 {
     int err;
-    uint8_t *spv_data;
-    size_t spv_len;
-    void *spv_opaque = NULL;
-    FFVulkanDescriptorSetBinding *desc_set;
-    RET(ff_vk_shader_init(vkctx, shd, "nlmeans_denoise",
-                          VK_SHADER_STAGE_COMPUTE_BIT,
-                          (const char *[]) { "GL_EXT_buffer_reference",
-                                             "GL_EXT_buffer_reference2" }, 2,
-                          WG_SIZE, WG_SIZE, 1,
-                          0));
 
-    GLSLC(0, layout(push_constant, std430) uniform pushConstants {        );
-    GLSLC(1,    uvec4 comp_off;                                           );
-    GLSLC(1,    uvec4 comp_plane;                                         );
-    GLSLC(1,    uvec4 ws_offset;                                          );
-    GLSLC(1,    uvec4 ws_stride;                                          );
-    GLSLC(1,    uint32_t ws_count;                                        );
-    GLSLC(1,    uint32_t t;                                               );
-    GLSLC(1,    uint32_t nb_components;                                   );
-    GLSLC(0, };                                                           );
+    ff_vk_shader_load(shd, VK_SHADER_STAGE_COMPUTE_BIT, NULL,
+                      (uint32_t []) { WG_SIZE, WG_SIZE, 1 }, 0);
 
     ff_vk_shader_add_push_const(shd, 0, sizeof(DenoisePushData),
                                 VK_SHADER_STAGE_COMPUTE_BIT);
 
-    desc_set = (FFVulkanDescriptorSetBinding []) {
-        {
-            .name        = "input_img",
-            .type        = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-            .mem_layout  = ff_vk_shader_rep_fmt(vkctx->input_format, FF_VK_REP_FLOAT),
-            .mem_quali   = "readonly",
-            .dimensions  = 2,
-            .elems       = planes,
-            .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
+    const FFVulkanDescriptorSetBinding desc_set_img[] = {
+        { /* input_img */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
+            .elems  = planes,
         },
-        {
-            .name        = "output_img",
-            .type        = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-            .mem_layout  = ff_vk_shader_rep_fmt(vkctx->output_format, FF_VK_REP_FLOAT),
-            .mem_quali   = "writeonly",
-            .dimensions  = 2,
-            .elems       = planes,
-            .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
+        { /* output_img */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
+            .elems  = planes,
         },
     };
-    RET(ff_vk_shader_add_descriptor_set(vkctx, shd, desc_set, 2, 0, 0));
+    ff_vk_shader_add_descriptor_set(vkctx, shd, desc_set_img, 2, 0, 0);
 
-    desc_set = (FFVulkanDescriptorSetBinding []) {
-        {
-            .name        = "weights_buffer",
-            .type        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-            .mem_quali   = "readonly",
-            .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
-            .buf_content = "float weights[];",
+    const FFVulkanDescriptorSetBinding desc_set_ws[] = {
+        { /* weights_buffer */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
         },
-        {
-            .name        = "sums_buffer",
-            .type        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-            .mem_quali   = "readonly",
-            .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
-            .buf_content = "float sums[];",
+        { /* sums_buffer */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
         },
     };
+    ff_vk_shader_add_descriptor_set(vkctx, shd, desc_set_ws, 2, 0, 0);
 
-    RET(ff_vk_shader_add_descriptor_set(vkctx, shd, desc_set, 2, 0, 0));
-
-    GLSLC(0, void main()                                                      );
-    GLSLC(0, {                                                                );
-    GLSLC(1,     const ivec2 pos = ivec2(gl_GlobalInvocationID.xy);           );
-    GLSLC(1,     const uint plane = uint(gl_WorkGroupID.z);                   );
-    GLSLC(1,     const uvec2 size = imageSize(output_img[plane]);             );
-    GLSLC(0,                                                                  );
-    GLSLC(1,     uint c_off;                                                  );
-    GLSLC(1,     uint c_plane;                                                );
-    GLSLC(1,     uint ws_off;                                                 );
-    GLSLC(0,                                                                  );
-    GLSLC(1,     float w_sum;                                                 );
-    GLSLC(1,     float sum;                                                   );
-    GLSLC(1,     vec4 src;                                                    );
-    GLSLC(1,     vec4 r;                                                      );
-    GLSLC(1,     uint invoc_idx;                                              );
-    GLSLC(1,     uint comp_idx;                                               );
-    GLSLC(0,                                                                  );
-    GLSLC(1,     if (!IS_WITHIN(pos, size))                                   );
-    GLSLC(2,         return;                                                  );
-    GLSLC(0,                                                                  );
-    GLSLC(1,     src = imageLoad(input_img[plane], pos);                      );
-    GLSLC(1,     for (comp_idx = 0; comp_idx < nb_components; comp_idx++) {   );
-    GLSLC(2,         if (plane == comp_plane[comp_idx]) {                     );
-    GLSLC(3,             w_sum = 0.0;                                         );
-    GLSLC(3,             sum = 0.0;                                           );
-    GLSLC(3,             for (invoc_idx = 0; invoc_idx < t; invoc_idx++) {    );
-    GLSLC(4,                 ws_off = ws_count * invoc_idx + ws_offset[comp_idx] + pos.y * ws_stride[comp_idx] + pos.x; );
-    GLSLC(4,                 w_sum += weights[ws_off];                        );
-    GLSLC(4,                 sum += sums[ws_off];                             );
-    GLSLC(3,             }                                                    );
-    GLSLC(3,             c_off = comp_off[comp_idx];                          );
-    GLSLC(3,             r[c_off] = (sum + src[c_off] * 255) / (1.0 + w_sum) / 255; );
-    GLSLC(2,         }                                                        );
-    GLSLC(1,     }                                                            );
-    GLSLC(1,     imageStore(output_img[plane], pos, r);                       );
-    GLSLC(0, }                                                                );
-
-    RET(spv->compile_shader(vkctx, spv, shd, &spv_data, &spv_len, "main", &spv_opaque));
-    RET(ff_vk_shader_link(vkctx, shd, spv_data, spv_len, "main"));
+    RET(ff_vk_shader_link(vkctx, shd,
+                          ff_nlmeans_denoise_comp_spv_data,
+                          ff_nlmeans_denoise_comp_spv_len, "main"));
 
     RET(ff_vk_shader_register_exec(vkctx, exec, shd));
 
 fail:
-    if (spv_opaque)
-        spv->free_shader(spv, &spv_opaque);
-
     return err;
 }
 
@@ -610,14 +269,8 @@ static av_cold int init_filter(AVFilterContext *ctx)
     NLMeansVulkanContext *s = ctx->priv;
     FFVulkanContext *vkctx = &s->vkctx;
     const int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
-    FFVkSPIRVCompiler *spv = NULL;
     int *offsets_buf;
     int offsets_dispatched = 0, nb_dispatches = 0;
-
-    const AVPixFmtDescriptor *desc;
-    desc = av_pix_fmt_desc_get(vkctx->output_format);
-    if (!desc)
-        return AVERROR(EINVAL);
 
     if (!(s->opts.r & 1)) {
         s->opts.r |= 1;
@@ -682,12 +335,6 @@ static av_cold int init_filter(AVFilterContext *ctx)
 
     s->opts.t = FFMIN(s->opts.t, (FFALIGN(s->nb_offsets, TYPE_ELEMS) / TYPE_ELEMS));
 
-    spv = ff_vk_spirv_init();
-    if (!spv) {
-        av_log(ctx, AV_LOG_ERROR, "Unable to initialize SPIR-V compiler!\n");
-        return AVERROR_EXTERNAL;
-    }
-
     s->qf = ff_vk_qf_find(vkctx, VK_QUEUE_COMPUTE_BIT, 0);
     if (!s->qf) {
         av_log(ctx, AV_LOG_ERROR, "Device has no compute queues\n");
@@ -698,11 +345,11 @@ static av_cold int init_filter(AVFilterContext *ctx)
     RET(ff_vk_exec_pool_init(vkctx, s->qf, &s->e, 1, 0, 0, 0, NULL));
 
     RET(init_integral_pipeline(vkctx, &s->e, &s->shd_horizontal, &s->shd_vertical,
-                               spv, desc, planes));
+                               planes));
 
-    RET(init_weights_pipeline(vkctx, &s->e, &s->shd_weights, spv, desc, planes));
+    RET(init_weights_pipeline(vkctx, &s->e, &s->shd_weights, planes));
 
-    RET(init_denoise_pipeline(vkctx, &s->e, &s->shd_denoise, spv, desc, planes));
+    RET(init_denoise_pipeline(vkctx, &s->e, &s->shd_denoise, planes));
 
     RET(ff_vk_shader_update_desc_buffer(vkctx, &s->e.contexts[0], &s->shd_vertical,
                                         1, 0, 0,
@@ -726,9 +373,6 @@ static av_cold int init_filter(AVFilterContext *ctx)
     s->initialized = 1;
 
 fail:
-    if (spv)
-        spv->uninit(&spv);
-
     return err;
 }
 
