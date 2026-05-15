@@ -2552,6 +2552,7 @@ int sch_filter_receive(Scheduler *sch, unsigned fg_idx,
                        unsigned *in_idx, AVFrame *frame)
 {
     SchFilterGraph *fg;
+    int ret, idx;
 
     av_assert0(fg_idx < sch->nb_filters);
     fg = &sch->filters[fg_idx];
@@ -2572,13 +2573,19 @@ int sch_filter_receive(Scheduler *sch, unsigned fg_idx,
     }
 
     if (*in_idx == fg->nb_inputs) {
+        // drain incoming frames before waiting, to avoid blocking downstream
+        ret = tq_receive(fg->queue, &idx, frame, THREAD_QUEUE_FLAG_NO_BLOCK);
+        if (ret >= 0) {
+            av_assert0(idx >= 0);
+            *in_idx = idx;
+            return 0;
+        }
+
         int terminate = waiter_wait(sch, &fg->waiter);
         return terminate ? AVERROR_EOF : AVERROR(EAGAIN);
     }
 
     while (1) {
-        int ret, idx;
-
         ret = tq_receive(fg->queue, &idx, frame, 0);
         if (idx < 0)
             return AVERROR_EOF;
