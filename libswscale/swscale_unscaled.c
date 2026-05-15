@@ -818,7 +818,7 @@ static void packed16togbra16(const uint8_t *src, int srcStride,
 
 static void packed30togbra10(const uint8_t *src, int srcStride,
                              uint16_t *dst[], const int dstStride[], int srcSliceH,
-                             int swap, int bpc, int width)
+                             int swap, int bpc, int shift, int width)
 {
     int x, h, i;
     int dst_alpha = dst[3] != NULL;
@@ -835,23 +835,23 @@ static void packed30togbra10(const uint8_t *src, int srcStride,
                 for (x = 0; x < width; x++) {
                     unsigned p = AV_RL32(src_line);
                     component = (p >> 20) & 0x3FF;
-                    dst[0][x] = av_bswap16(component << scale_high | component >> scale_low);
+                    dst[0][x] = av_bswap16((component << scale_high | component >> scale_low) << shift);
                     component = (p >> 10) & 0x3FF;
-                    dst[1][x] = av_bswap16(component << scale_high | component >> scale_low);
+                    dst[1][x] = av_bswap16((component << scale_high | component >> scale_low) << shift);
                     component =  p        & 0x3FF;
-                    dst[2][x] = av_bswap16(component << scale_high | component >> scale_low);
-                    dst[3][x] = av_bswap16(alpha_val);
+                    dst[2][x] = av_bswap16((component << scale_high | component >> scale_low) << shift);
+                    dst[3][x] = av_bswap16(alpha_val) << shift;
                     src_line++;
                 }
             } else {
                 for (x = 0; x < width; x++) {
                     unsigned p = AV_RL32(src_line);
                     component = (p >> 20) & 0x3FF;
-                    dst[0][x] = av_bswap16(component << scale_high | component >> scale_low);
+                    dst[0][x] = av_bswap16((component << scale_high | component >> scale_low) << shift);
                     component = (p >> 10) & 0x3FF;
-                    dst[1][x] = av_bswap16(component << scale_high | component >> scale_low);
+                    dst[1][x] = av_bswap16((component << scale_high | component >> scale_low) << shift);
                     component =  p        & 0x3FF;
-                    dst[2][x] = av_bswap16(component << scale_high | component >> scale_low);
+                    dst[2][x] = av_bswap16((component << scale_high | component >> scale_low) << shift);
                     src_line++;
                 }
             }
@@ -861,23 +861,23 @@ static void packed30togbra10(const uint8_t *src, int srcStride,
                 for (x = 0; x < width; x++) {
                     unsigned p = AV_RL32(src_line);
                     component = (p >> 20) & 0x3FF;
-                    dst[0][x] = component << scale_high | component >> scale_low;
+                    dst[0][x] = (component << scale_high | component >> scale_low) << shift;
                     component = (p >> 10) & 0x3FF;
-                    dst[1][x] = component << scale_high | component >> scale_low;
+                    dst[1][x] = (component << scale_high | component >> scale_low) << shift;
                     component =  p        & 0x3FF;
-                    dst[2][x] = component << scale_high | component >> scale_low;
-                    dst[3][x] = alpha_val;
+                    dst[2][x] = (component << scale_high | component >> scale_low) << shift;
+                    dst[3][x] = alpha_val << shift;
                     src_line++;
                 }
             } else {
                 for (x = 0; x < width; x++) {
                     unsigned p = AV_RL32(src_line);
                     component = (p >> 20) & 0x3FF;
-                    dst[0][x] = component << scale_high | component >> scale_low;
+                    dst[0][x] = (component << scale_high | component >> scale_low) << shift;
                     component = (p >> 10) & 0x3FF;
-                    dst[1][x] = component << scale_high | component >> scale_low;
+                    dst[1][x] = (component << scale_high | component >> scale_low) << shift;
                     component =  p        & 0x3FF;
-                    dst[2][x] = component << scale_high | component >> scale_low;
+                    dst[2][x] = (component << scale_high | component >> scale_low) << shift;
                     src_line++;
                 }
             }
@@ -899,6 +899,7 @@ static int Rgb16ToPlanarRgb16Wrapper(SwsInternal *c, const uint8_t *const src[],
     const AVPixFmtDescriptor *src_format = av_pix_fmt_desc_get(c->opts.src_format);
     const AVPixFmtDescriptor *dst_format = av_pix_fmt_desc_get(c->opts.dst_format);
     int bpc = dst_format->comp[0].depth;
+    int shift = dst_format->comp[0].shift;
     int alpha = src_format->flags & AV_PIX_FMT_FLAG_ALPHA;
     int swap = 0;
     int i;
@@ -935,7 +936,7 @@ static int Rgb16ToPlanarRgb16Wrapper(SwsInternal *c, const uint8_t *const src[],
         av_assert0(bpc >= 10);
         packed30togbra10(src[0], srcStride[0],
                          dst2013, stride2013, srcSliceH, swap,
-                         bpc, c->opts.src_w);
+                         bpc, shift, c->opts.src_w);
         break;
     case AV_PIX_FMT_BGR48LE:
     case AV_PIX_FMT_BGR48BE:
@@ -949,7 +950,7 @@ static int Rgb16ToPlanarRgb16Wrapper(SwsInternal *c, const uint8_t *const src[],
         av_assert0(bpc >= 10);
         packed30togbra10(src[0], srcStride[0],
                          dst1023, stride1023, srcSliceH, swap,
-                         bpc, c->opts.src_w);
+                         bpc, shift, c->opts.src_w);
         break;
     default:
         av_log(c, AV_LOG_ERROR,
@@ -1081,11 +1082,10 @@ static void gbr16ptopacked16(const uint16_t *src[], const int srcStride[],
 
 static void gbr16ptopacked30(const uint16_t *src[], const int srcStride[],
                              uint8_t *dst, int dstStride, int srcSliceH,
-                             int swap, int bpp, int width)
+                             int swap, int shift, int width)
 {
     int x, h, i;
-    int shift = bpp - 10;
-    av_assert0(bpp >= 0);
+    av_assert0(shift >= 0);
     for (h = 0; h < srcSliceH; h++) {
         uint8_t *dest = dst + dstStride * h;
 
@@ -1125,6 +1125,7 @@ static int planarRgb16ToRgb16Wrapper(SwsInternal *c, const uint8_t *const src[],
     const AVPixFmtDescriptor *src_format = av_pix_fmt_desc_get(c->opts.src_format);
     const AVPixFmtDescriptor *dst_format = av_pix_fmt_desc_get(c->opts.dst_format);
     int bits_per_sample = src_format->comp[0].depth;
+    int shift = src_format->comp[0].shift;
     int swap = 0;
     if ( HAVE_BIGENDIAN && !(src_format->flags & AV_PIX_FMT_FLAG_BE) ||
         !HAVE_BIGENDIAN &&   src_format->flags & AV_PIX_FMT_FLAG_BE)
@@ -1168,12 +1169,12 @@ static int planarRgb16ToRgb16Wrapper(SwsInternal *c, const uint8_t *const src[],
     case AV_PIX_FMT_X2RGB10LE:
         gbr16ptopacked30(src201, stride201,
                          dst[0] + srcSliceY * dstStride[0], dstStride[0],
-                         srcSliceH, swap, bits_per_sample, c->opts.src_w);
+                         srcSliceH, swap, bits_per_sample + shift - 10, c->opts.src_w);
         break;
     case AV_PIX_FMT_X2BGR10LE:
         gbr16ptopacked30(src102, stride102,
                          dst[0] + srcSliceY * dstStride[0], dstStride[0],
-                         srcSliceH, swap, bits_per_sample, c->opts.src_w);
+                         srcSliceH, swap, bits_per_sample + shift - 10, c->opts.src_w);
         break;
     default:
         av_log(c, AV_LOG_ERROR,
