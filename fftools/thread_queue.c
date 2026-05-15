@@ -194,7 +194,7 @@ static int receive_locked(ThreadQueue *tq, int *stream_idx,
     return nb_finished == tq->nb_streams ? AVERROR_EOF : AVERROR(EAGAIN);
 }
 
-int tq_receive(ThreadQueue *tq, int *stream_idx, void *data)
+int tq_receive(ThreadQueue *tq, int *stream_idx, void *data, int flags)
 {
     int ret;
 

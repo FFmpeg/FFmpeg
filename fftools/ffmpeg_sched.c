@@ -2228,7 +2228,7 @@ int sch_mux_receive(Scheduler *sch, unsigned mux_idx, AVPacket *pkt)
     av_assert0(mux_idx < sch->nb_mux);
     mux = &sch->mux[mux_idx];
 
-    ret = tq_receive(mux->queue, &stream_idx, pkt);
+    ret = tq_receive(mux->queue, &stream_idx, pkt, 0);
     pkt->stream_index = stream_idx;
     return ret;
 }
@@ -2322,7 +2322,7 @@ int sch_dec_receive(Scheduler *sch, unsigned dec_idx, AVPacket *pkt)
         dec->expect_end_ts = 0;
     }
 
-    ret = tq_receive(dec->queue, &dummy, pkt);
+    ret = tq_receive(dec->queue, &dummy, pkt, 0);
     av_assert0(dummy <= 0);
 
     // got a flush packet, on the next call to this function the decoder
@@ -2463,7 +2463,7 @@ int sch_enc_receive(Scheduler *sch, unsigned enc_idx, AVFrame *frame)
     av_assert0(enc_idx < sch->nb_enc);
     enc = &sch->enc[enc_idx];
 
-    ret = tq_receive(enc->queue, &dummy, frame);
+    ret = tq_receive(enc->queue, &dummy, frame, 0);
     av_assert0(dummy <= 0);
 
     return ret;
@@ -2579,7 +2579,7 @@ int sch_filter_receive(Scheduler *sch, unsigned fg_idx,
     while (1) {
         int ret, idx;
 
-        ret = tq_receive(fg->queue, &idx, frame);
+        ret = tq_receive(fg->queue, &idx, frame, 0);
         if (idx < 0)
             return AVERROR_EOF;
         else if (ret >= 0) {

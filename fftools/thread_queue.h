@@ -74,6 +74,8 @@ void tq_choke(ThreadQueue *tq, int choked);
  *                   written here
  * @param data the data item will be written here on success using the
  *             callback provided to tq_alloc()
+ * @param flags currently unused
+ *
  * @return
  * - 0 a data item was successfully read; *stream_idx contains a non-negative
  *   stream index
@@ -81,7 +83,8 @@ void tq_choke(ThreadQueue *tq, int choked);
  *   side has marked the given stream as finished. This will happen at most once
  *   for each stream. When *stream_idx is -1, all streams are done.
  */
-int tq_receive(ThreadQueue *tq, int *stream_idx, void *data);
+int tq_receive(ThreadQueue *tq, int *stream_idx, void *data, int flags);
+
 /**
  * Mark the given stream finished from the receiving side.
  */
