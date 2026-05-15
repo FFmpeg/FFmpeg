@@ -211,7 +211,7 @@ int tq_receive(ThreadQueue *tq, int *stream_idx, void *data, int flags)
         if (can_read != av_container_fifo_can_read(tq->fifo))
             pthread_cond_broadcast(&tq->cond);
 
-        if (ret == AVERROR(EAGAIN)) {
+        if (ret == AVERROR(EAGAIN) && !(flags & THREAD_QUEUE_FLAG_NO_BLOCK)) {
             pthread_cond_wait(&tq->cond, &tq->lock);
             continue;
         }

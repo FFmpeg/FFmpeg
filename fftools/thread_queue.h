@@ -26,6 +26,12 @@ enum ThreadQueueType {
     THREAD_QUEUE_PACKETS,
 };
 
+enum ThreadQueueFlags {
+    /* When set, tq_receive() will return AVERROR(EAGAIN) instead of blocking
+     * when the queue is empty or choked. */
+    THREAD_QUEUE_FLAG_NO_BLOCK = (1 << 0),
+};
+
 typedef struct ThreadQueue ThreadQueue;
 
 /**
@@ -74,7 +80,7 @@ void tq_choke(ThreadQueue *tq, int choked);
  *                   written here
  * @param data the data item will be written here on success using the
  *             callback provided to tq_alloc()
- * @param flags currently unused
+ * @param flags combination of THREAD_QUEUE_FLAG_*
  *
  * @return
  * - 0 a data item was successfully read; *stream_idx contains a non-negative
