@@ -26,6 +26,7 @@ func ff_flac_lpc16_rvv, zve32x, b
         vsetvl  zero, a2, t0
         vle32.v v8, (a1)
         sub     a4, a4, a2
+        blez    a4, 2f
         vle32.v v16, (a0)
         sh2add  a0, a2, a0
         vmv.s.x v0, zero
@@ -41,7 +42,7 @@ func ff_flac_lpc16_rvv, zve32x, b
         sw      t0, (a0)
         addi    a0, a0, 4
         bnez    a4, 1b
-
+2:
         ret
 endfunc
 
