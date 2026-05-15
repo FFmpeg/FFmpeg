@@ -196,8 +196,8 @@ static av_always_inline int vc1_filter_line(uint8_t *src, ptrdiff_t stride, int 
  * @param pq block quantizer
  * @see 8.6
  */
-static inline void vc1_loop_filter(uint8_t *src, ptrdiff_t step, ptrdiff_t stride,
-                                   int len, int pq)
+static av_always_inline void vc1_loop_filter(uint8_t *src, ptrdiff_t step,
+                                             ptrdiff_t stride, int len, int pq)
 {
     int i;
     int filt3;
