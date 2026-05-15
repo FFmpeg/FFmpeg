@@ -555,9 +555,10 @@ static int init_frame(AVFrame **pframe, const AVFrame *ref,
 static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
                     int dst_w, int dst_h,
                     const struct mode *mode, const struct options *opts,
-                    const AVFrame *ref, AVFrame *src,
+                    const AVFrame *ref, AVFrame **psrc,
                     const struct test_results *ref_r)
 {
+    AVFrame *src = *psrc;
     AVFrame *dst = NULL, *out = NULL;
     const int comps = fmt_comps(src_fmt) & fmt_comps(dst_fmt);
     int ret;
@@ -575,12 +576,11 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
 
     struct test_results r = { 0 };
 
-    if (src->format != src_fmt) {
-        av_frame_unref(src);
-        av_frame_copy_props(src, ref);
-        src->width  = ref->width;
-        src->height = ref->height;
-        src->format = src_fmt;
+    if (!src || src->format != src_fmt) {
+        av_frame_free(psrc);
+        ret = init_frame(&src, ref, ref->width, ref->height, src_fmt);
+        if (ret < 0)
+            goto error;
         if (opts->align_src) {
             ret = av_frame_get_buffer(src, opts->align_src);
             if (ret < 0)
@@ -590,6 +590,7 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
         ret = checked_sws_scale_frame(sws_ref_src, src, ref);
         if (ret < 0)
             goto error;
+        *psrc = src;
     }
 
     ret = init_frame(&dst, ref, dst_w, dst_h, dst_fmt);
@@ -689,9 +690,7 @@ static int run_self_tests(const AVFrame *ref, const struct options *opts)
                        src_fmt_max = AV_PIX_FMT_NB - 1,
                        dst_fmt_max = AV_PIX_FMT_NB - 1;
 
-    AVFrame *src = av_frame_alloc();
-    if (!src)
-        return AVERROR(ENOMEM);
+    AVFrame *src = NULL;
 
     int ret = 0;
 
@@ -724,7 +723,7 @@ static int run_self_tests(const AVFrame *ref, const struct options *opts)
 
                         if (ff_sfc64_get(&prng_state) <= UINT64_MAX * opts->prob) {
                             ret = run_test(src_fmt, dst_fmt, dst_w, dst_h,
-                                           &mode, opts, ref, src, NULL);
+                                           &mode, opts, ref, &src, NULL);
                             if (ret < 0)
                                 goto error;
                         }
@@ -757,9 +756,7 @@ static int run_file_tests(const AVFrame *ref, FILE *fp, const struct options *op
     char buf[256];
     int ret = 0;
 
-    AVFrame *src = av_frame_alloc();
-    if (!src)
-        return AVERROR(ENOMEM);
+    AVFrame *src = NULL;
 
     for (int line = 1; fgets(buf, sizeof(buf), fp); line++) {
         char src_fmt_str[21], dst_fmt_str[21];
@@ -814,7 +811,7 @@ static int run_file_tests(const AVFrame *ref, FILE *fp, const struct options *op
             opts->dst_fmt != AV_PIX_FMT_NONE && dst_fmt != opts->dst_fmt)
             continue;
 
-        ret = run_test(src_fmt, dst_fmt, dw, dh, &mode, opts, ref, src, &r);
+        ret = run_test(src_fmt, dst_fmt, dw, dh, &mode, opts, ref, &src, &r);
         if (ret < 0)
             goto error;
     }
