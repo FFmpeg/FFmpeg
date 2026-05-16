@@ -186,7 +186,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     if (hh2 > 9) hh2 = 9, mm2 = 59, ss2 = 59, ms2 = 99;
 
     text_len = strlen(p);
-    while (text_len > 0 && p[text_len - 1] == '\r' || p[text_len - 1] == '\n')
+    while (text_len > 0 && (p[text_len - 1] == '\r' || p[text_len - 1] == '\n'))
         text_len--;
 
     dialogue->line = av_asprintf("%s%ld,%d:%02d:%02d.%02d,%d:%02d:%02d.%02d,%.*s",
