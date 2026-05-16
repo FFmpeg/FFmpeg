@@ -16,6 +16,7 @@ version <next>:
 - Animated WebP demuxer
 - Remove CELT decoding support (doesn't affect Opus CELT)
 - Remove ogg/celt parsing
+- Bitstream filter to split Dolby Vision multi-layer HEVC
 
 
 version 8.1:

@@ -124,6 +124,33 @@ that this level currently behaves the same as @samp{limited} in libavcodec.
 @end table
 @end table
 
+@section dovi_split
+
+Split a Dolby Vision Profile 7 multi-layer HEVC bitstream. Profile 7 carries the
+enhancement-layer HEVC bitstream interleaved inside the base-layer access units,
+wrapped in user-unspecified NAL units of type 63 (UNSPEC63), and the RPU metadata
+as a sibling user-unspecified NAL of type 62 (UNSPEC62).
+
+@table @option
+@item mode
+Which Dolby Vision components to keep in the output bitstream.
+@table @samp
+@item bl
+Base layer only: drop every UNSPEC63 (EL) and every UNSPEC62 (RPU).
+The output is a plain HEVC stream with no Dolby Vision markers. This is the
+default.
+@item bl_rpu
+Base layer with the RPU NAL kept.
+@item el
+Enhancement layer only: for every UNSPEC63 NAL, strip the two-byte outer NAL
+header and emit the inner payload. The result is a standalone HEVC bitstream.
+UNSPEC62 (RPU) is dropped.
+@item el_rpu
+Enhancement layer with the RPU NAL kept verbatim. Same as @samp{el}, but the
+UNSPEC62 RPU NALs are also emitted alongside the unwrapped EL NALs.
+@end table
+@end table
+
 @section dump_extra
 
 Add extradata to the beginning of the filtered packets except when
