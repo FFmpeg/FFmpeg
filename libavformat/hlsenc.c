@@ -703,7 +703,7 @@ static int do_encrypt(AVFormatContext *s, VariantStream *vs)
             return ret;
         avio_seek(pb, 0, SEEK_CUR);
         avio_write(pb, key, KEYSIZE);
-        avio_close(pb);
+        ff_format_io_close(s, &pb);
     }
     return 0;
 }
