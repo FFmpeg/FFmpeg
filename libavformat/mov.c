@@ -32,6 +32,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/bprint.h"
 #include "libavutil/channel_layout.h"
+#include "libavutil/dovi_meta.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/intfloat.h"
@@ -11065,6 +11066,79 @@ static int mov_parse_lcevc_streams(AVFormatContext *s)
     return 0;
 }
 
+static int mov_parse_dovi_streams(AVFormatContext *s)
+{
+    int err;
+
+    if (s->nb_streams <= 1)
+        return 0;
+
+    /* Identify legacy dual-track Dolby Vision profile 7 carriage per Annex
+     * C of "Dolby Vision Streams Within the ISO Base Media File Format",
+     * v2.7.1. The 'vdep' track reference type is shared with depth video
+     * and multi-view dependencies. The spec-mandated DV-specific sample
+     * entry combined with the dvcC configuration record disambiguates
+     * those uses. */
+    for (int i = 0; i < s->nb_streams; i++) {
+        AVStreamGroup *stg;
+        AVStream *st = s->streams[i];
+        AVStream *st_base;
+        MOVStreamContext *sc = st->priv_data;
+        MovTref *tag = mov_find_tref_tag(sc, MKTAG('v','d','e','p'));
+        const AVPacketSideData *sd;
+        const AVDOVIDecoderConfigurationRecord *dovi;
+
+        if (st->codecpar->codec_id != AV_CODEC_ID_HEVC || !tag)
+            continue;
+
+        if (st->codecpar->codec_tag != MKTAG('d','v','h','e') &&
+            st->codecpar->codec_tag != MKTAG('d','v','h','1'))
+            continue;
+
+        sd = av_packet_side_data_get(st->codecpar->coded_side_data,
+                                     st->codecpar->nb_coded_side_data,
+                                     AV_PKT_DATA_DOVI_CONF);
+        if (!sd)
+            continue;
+        dovi = (const AVDOVIDecoderConfigurationRecord *)sd->data;
+
+        /* EL track of a dual-track stream: rpu_present_flag = 1,
+         * el_present_flag = 1, bl_present_flag = 0, dv_profile = 7. */
+        if (dovi->dv_profile != 7 || !dovi->rpu_present_flag ||
+            !dovi->el_present_flag || dovi->bl_present_flag)
+            continue;
+
+        st_base = mov_find_reference_track(s, st, tag->id, tag->nb_id, 0);
+        if (!st_base) {
+            int loglevel = (s->error_recognition & AV_EF_EXPLODE) ? AV_LOG_ERROR : AV_LOG_WARNING;
+            av_log(s, loglevel, "Failed to find base layer for Dolby Vision EL stream\n");
+            if (s->error_recognition & AV_EF_EXPLODE)
+                return AVERROR_INVALIDDATA;
+            continue;
+        }
+
+        stg = avformat_stream_group_create(s, AV_STREAM_GROUP_PARAMS_DOLBY_VISION, NULL);
+        if (!stg)
+            return AVERROR(ENOMEM);
+
+        stg->id = st->id;
+
+        err = avformat_stream_group_add_stream(stg, st_base);
+        if (err < 0)
+            return err;
+
+        err = avformat_stream_group_add_stream(stg, st);
+        if (err < 0)
+            return err;
+
+        stg->params.layered_video->el_index = stg->nb_streams - 1;
+        stg->params.layered_video->width = st_base->codecpar->width;
+        stg->params.layered_video->height = st_base->codecpar->height;
+    }
+
+    return 0;
+}
+
 static void fix_stream_ids(AVFormatContext *s)
 {
     int highest_id = 0, lowest_iamf_id = INT_MAX;
@@ -11165,6 +11239,11 @@ static int mov_read_header(AVFormatContext *s)
 
     /* Create LCEVC stream groups. */
     err = mov_parse_lcevc_streams(s);
+    if (err < 0)
+        return err;
+
+    /* Create Dolby Vision Profile 7 stream groups. */
+    err = mov_parse_dovi_streams(s);
     if (err < 0)
         return err;
 
