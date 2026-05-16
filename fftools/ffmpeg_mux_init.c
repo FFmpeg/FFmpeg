@@ -2557,6 +2557,7 @@ static int of_map_group(Muxer *mux, AVDictionary **dict, AVBPrint *bp, const cha
     }
     case AV_STREAM_GROUP_PARAMS_LCEVC:
     case AV_STREAM_GROUP_PARAMS_TREF:
+    case AV_STREAM_GROUP_PARAMS_DOLBY_VISION:
         break;
     default:
         av_log(mux, AV_LOG_ERROR, "Unsupported mapped group type %d.\n", stg->type);

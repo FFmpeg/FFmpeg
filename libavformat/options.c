@@ -380,6 +380,22 @@ static const AVClass tref_class = {
     .option     = tref_options,
 };
 
+#define OFFSET(x) offsetof(AVStreamGroupLayeredVideo, x)
+static const AVOption layered_video_options[] = {
+    { "el_index", "Index of the enhancement layer stream within the group", OFFSET(el_index),
+        AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, FLAGS },
+    { "video_size", "size of the final layered video presentation", OFFSET(width),
+        AV_OPT_TYPE_IMAGE_SIZE, { .str = NULL }, 0, INT_MAX, FLAGS },
+    { NULL },
+};
+#undef OFFSET
+
+static const AVClass layered_video_class = {
+    .class_name = "AVStreamGroupLayeredVideo",
+    .version    = LIBAVUTIL_VERSION_INT,
+    .option     = layered_video_options,
+};
+
 static void *stream_group_child_next(void *obj, void *prev)
 {
     AVStreamGroup *stg = obj;
@@ -395,6 +411,8 @@ static void *stream_group_child_next(void *obj, void *prev)
             return stg->params.lcevc;
         case AV_STREAM_GROUP_PARAMS_TREF:
             return stg->params.tref;
+        case AV_STREAM_GROUP_PARAMS_DOLBY_VISION:
+            return stg->params.layered_video;
         default:
             break;
         }
@@ -427,6 +445,9 @@ static const AVClass *stream_group_child_iterate(void **opaque)
         break;
     case AV_STREAM_GROUP_PARAMS_TREF:
         ret = &tref_class;
+        break;
+    case AV_STREAM_GROUP_PARAMS_DOLBY_VISION:
+        ret = &layered_video_class;
         break;
     default:
         break;
@@ -510,6 +531,13 @@ AVStreamGroup *avformat_stream_group_create(AVFormatContext *s,
             goto fail;
         stg->params.tref->av_class = &tref_class;
         av_opt_set_defaults(stg->params.tref);
+        break;
+    case AV_STREAM_GROUP_PARAMS_DOLBY_VISION:
+        stg->params.layered_video = av_mallocz(sizeof(*stg->params.layered_video));
+        if (!stg->params.layered_video)
+            goto fail;
+        stg->params.layered_video->av_class = &layered_video_class;
+        av_opt_set_defaults(stg->params.layered_video);
         break;
     default:
         goto fail;

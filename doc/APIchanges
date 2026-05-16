@@ -5,6 +5,7 @@ API changes, most recent first:
 2026-05-xx - xxxxxxxxxx - lavf 62.19.100 - avformat.h
   Add AVStreamGroupLayeredVideo
   Add AVStreamGroup.params.layered_video
+  Add AV_STREAM_GROUP_PARAMS_DOLBY_VISION
 
 2026-05-xx - xxxxxxxxxx - lavc 62.35.100 - packet.h
   Add AV_PKT_DATA_HEVC_CONF side data type.
