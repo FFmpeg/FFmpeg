@@ -2077,6 +2077,8 @@ static int dash_read_header(AVFormatContext *s)
 
         if (ret)
             return ret;
+        if (rep->ctx->nb_streams == 0)
+            return AVERROR_PATCHWELCOME;
         rep->stream_index = stream_index;
         ++stream_index;
     }
@@ -2095,6 +2097,8 @@ static int dash_read_header(AVFormatContext *s)
 
         if (ret)
             return ret;
+        if (rep->ctx->nb_streams == 0)
+            return AVERROR_PATCHWELCOME;
         rep->stream_index = stream_index;
         ++stream_index;
     }
@@ -2113,6 +2117,8 @@ static int dash_read_header(AVFormatContext *s)
 
         if (ret)
             return ret;
+        if (rep->ctx->nb_streams == 0)
+            return AVERROR_PATCHWELCOME;
         rep->stream_index = stream_index;
         ++stream_index;
     }
