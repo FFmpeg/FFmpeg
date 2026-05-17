@@ -271,6 +271,7 @@ TESTPROGS = adler32                                                     \
             color_utils                                                 \
             cpu                                                         \
             crc                                                         \
+            csp                                                         \
             des                                                         \
             detection_bbox                                              \
             dict                                                        \

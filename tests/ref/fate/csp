@@ -1,0 +1,131 @@
+Testing av_csp_luma_coeffs_from_avcsp()
+csp=gbr              -> cr=100000/100000 cg=100000/100000 cb=100000/100000
+csp=bt709            -> cr=21260/100000 cg=71520/100000 cb=7220/100000
+csp=unknown          -> NULL
+csp=reserved         -> NULL
+csp=fcc              -> cr=30000/100000 cg=59000/100000 cb=11000/100000
+csp=bt470bg          -> cr=29900/100000 cg=58700/100000 cb=11400/100000
+csp=smpte170m        -> cr=29900/100000 cg=58700/100000 cb=11400/100000
+csp=smpte240m        -> cr=21200/100000 cg=70100/100000 cb=8700/100000
+csp=ycgco            -> cr=25000/100000 cg=50000/100000 cb=25000/100000
+csp=bt2020nc         -> cr=26270/100000 cg=67800/100000 cb=5930/100000
+csp=bt2020c          -> cr=26270/100000 cg=67800/100000 cb=5930/100000
+csp=smpte2085        -> NULL
+csp=chroma-derived-nc -> NULL
+csp=chroma-derived-c -> NULL
+csp=ictcp            -> NULL
+csp=ipt-c2           -> NULL
+csp=ycgco-re         -> NULL
+csp=ycgco-ro         -> NULL
+csp=AVCOL_SPC_NB         -> NULL
+
+Testing av_csp_primaries_desc_from_id() round trip
+prm=reserved         -> NULL
+prm=bt709            ->
+  wp =(31270/100000, 32900/100000)
+  r  =(64000/100000, 33000/100000)
+  g  =(30000/100000, 60000/100000)
+  b  =(15000/100000, 6000/100000)
+  round-trip id=bt709            desc=OK
+prm=unknown          -> NULL
+prm=reserved         -> NULL
+prm=bt470m           ->
+  wp =(31000/100000, 31600/100000)
+  r  =(67000/100000, 33000/100000)
+  g  =(21000/100000, 71000/100000)
+  b  =(14000/100000, 8000/100000)
+  round-trip id=bt470m           desc=OK
+prm=bt470bg          ->
+  wp =(31270/100000, 32900/100000)
+  r  =(64000/100000, 33000/100000)
+  g  =(29000/100000, 60000/100000)
+  b  =(15000/100000, 6000/100000)
+  round-trip id=bt470bg          desc=OK
+prm=smpte170m        ->
+  wp =(31270/100000, 32900/100000)
+  r  =(63000/100000, 34000/100000)
+  g  =(31000/100000, 59500/100000)
+  b  =(15500/100000, 7000/100000)
+  round-trip id=smpte170m        desc=OK
+prm=smpte240m        ->
+  wp =(31270/100000, 32900/100000)
+  r  =(63000/100000, 34000/100000)
+  g  =(31000/100000, 59500/100000)
+  b  =(15500/100000, 7000/100000)
+  round-trip id=smpte170m        desc=OK
+prm=film             ->
+  wp =(31000/100000, 31600/100000)
+  r  =(68100/100000, 31900/100000)
+  g  =(24300/100000, 69200/100000)
+  b  =(14500/100000, 4900/100000)
+  round-trip id=film             desc=OK
+prm=bt2020           ->
+  wp =(31270/100000, 32900/100000)
+  r  =(70800/100000, 29200/100000)
+  g  =(17000/100000, 79700/100000)
+  b  =(13100/100000, 4600/100000)
+  round-trip id=bt2020           desc=OK
+prm=smpte428         ->
+  wp =(1/3, 1/3)
+  r  =(73500/100000, 26500/100000)
+  g  =(27400/100000, 71800/100000)
+  b  =(16700/100000, 900/100000)
+  round-trip id=smpte428         desc=OK
+prm=smpte431         ->
+  wp =(31400/100000, 35100/100000)
+  r  =(68000/100000, 32000/100000)
+  g  =(26500/100000, 69000/100000)
+  b  =(15000/100000, 6000/100000)
+  round-trip id=smpte431         desc=OK
+prm=smpte432         ->
+  wp =(31270/100000, 32900/100000)
+  r  =(68000/100000, 32000/100000)
+  g  =(26500/100000, 69000/100000)
+  b  =(15000/100000, 6000/100000)
+  round-trip id=smpte432         desc=OK
+prm=?                -> NULL
+prm=?                -> NULL
+prm=?                -> NULL
+prm=?                -> NULL
+prm=?                -> NULL
+prm=?                -> NULL
+prm=?                -> NULL
+prm=?                -> NULL
+prm=?                -> NULL
+prm=ebu3213          ->
+  wp =(31270/100000, 32900/100000)
+  r  =(63000/100000, 34000/100000)
+  g  =(29500/100000, 60500/100000)
+  b  =(15500/100000, 7700/100000)
+  round-trip id=ebu3213          desc=OK
+prm=vgamut           ->
+  wp =(31270/100000, 32900/100000)
+  r  =(73000/100000, 28000/100000)
+  g  =(16500/100000, 84000/100000)
+  b  =(10000/100000, -2999/100000)
+  round-trip id=unknown          desc=ext-no-base-match
+prm=AVCOL_PRI_NB         -> NULL
+garbage desc -> unknown (expect AVCOL_PRI_UNSPECIFIED)
+
+Testing av_csp_approximate_{trc,eotf}_gamma()
+trc=reserved         trc_gamma=0.000000 eotf_gamma=0.000000
+trc=bt709            trc_gamma=1.961000 eotf_gamma=2.200000
+trc=unknown          trc_gamma=0.000000 eotf_gamma=0.000000
+trc=reserved         trc_gamma=0.000000 eotf_gamma=0.000000
+trc=bt470m           trc_gamma=2.200000 eotf_gamma=2.200000
+trc=bt470bg          trc_gamma=2.800000 eotf_gamma=2.800000
+trc=smpte170m        trc_gamma=1.961000 eotf_gamma=2.200000
+trc=smpte240m        trc_gamma=1.961000 eotf_gamma=2.200000
+trc=linear           trc_gamma=1.000000 eotf_gamma=1.000000
+trc=log100           trc_gamma=0.000000 eotf_gamma=0.000000
+trc=log316           trc_gamma=0.000000 eotf_gamma=0.000000
+trc=iec61966-2-4     trc_gamma=0.000000 eotf_gamma=0.000000
+trc=bt1361e          trc_gamma=1.961000 eotf_gamma=2.200000
+trc=iec61966-2-1     trc_gamma=2.200000 eotf_gamma=2.200000
+trc=bt2020-10        trc_gamma=1.961000 eotf_gamma=2.200000
+trc=bt2020-12        trc_gamma=1.961000 eotf_gamma=2.200000
+trc=smpte2084        trc_gamma=0.000000 eotf_gamma=0.000000
+trc=smpte428         trc_gamma=2.600000 eotf_gamma=2.600000
+trc=arib-std-b67     trc_gamma=0.000000 eotf_gamma=0.000000
+trc=vlog             trc_gamma=2.200000 eotf_gamma=2.200000
+trc=AVCOL_TRC_NB         trc_gamma=0.000000 eotf_gamma=0.000000

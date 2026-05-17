@@ -16,6 +16,7 @@
 /cpu
 /cpu_init
 /crc
+/csp
 /des
 /detection_bbox
 /dict

@@ -73,6 +73,10 @@ FATE_LIBAVUTIL += fate-color_utils
 fate-color_utils: libavutil/tests/color_utils$(EXESUF)
 fate-color_utils: CMD = run libavutil/tests/color_utils$(EXESUF)
 
+FATE_LIBAVUTIL += fate-csp
+fate-csp: libavutil/tests/csp$(EXESUF)
+fate-csp: CMD = run libavutil/tests/csp$(EXESUF)
+
 FATE_LIBAVUTIL += fate-des
 fate-des: libavutil/tests/des$(EXESUF)
 fate-des: CMD = run libavutil/tests/des$(EXESUF)
