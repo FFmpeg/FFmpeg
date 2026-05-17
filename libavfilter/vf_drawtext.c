@@ -801,11 +801,11 @@ static int load_glyph(AVFilterContext *ctx, Glyph **glyph_ptr, uint32_t code, in
                 goto error;
             }
             glyph->bglyph[idx] = (FT_BitmapGlyph)tmp_glyph;
-            if (glyph->bglyph[idx]->bitmap.pixel_mode == FT_PIXEL_MODE_MONO) {
-                av_log(ctx, AV_LOG_ERROR, "Monocromatic (1bpp) fonts are not supported.\n");
-                ret = AVERROR(EINVAL);
-                goto error;
-            }
+        }
+        if (glyph->bglyph[idx]->bitmap.pixel_mode == FT_PIXEL_MODE_MONO) {
+            av_log(ctx, AV_LOG_ERROR, "Monocromatic (1bpp) fonts are not supported.\n");
+            ret = AVERROR(EINVAL);
+            goto error;
         }
         if (s->borderw && !glyph->border_bglyph[idx]) {
             FT_Glyph tmp_glyph = glyph->border_glyph;
