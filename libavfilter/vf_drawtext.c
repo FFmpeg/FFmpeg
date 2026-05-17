@@ -1026,16 +1026,17 @@ static int glyph_enu_free(void *opaque, void *elem)
 {
     Glyph *glyph = elem;
 
-    FT_Done_Glyph(glyph->glyph);
-    FT_Done_Glyph(glyph->border_glyph);
     for (int t = 0; t < 16; ++t) {
-        if (glyph->bglyph[t] != NULL) {
-            FT_Done_Glyph((FT_Glyph)glyph->bglyph[t]);
-        }
-        if (glyph->border_bglyph[t] != NULL) {
-            FT_Done_Glyph((FT_Glyph)glyph->border_bglyph[t]);
-        }
+        FT_Glyph bg  = (FT_Glyph)glyph->bglyph[t];
+        FT_Glyph bbg = (FT_Glyph)glyph->border_bglyph[t];
+        if (bg && bg != glyph->glyph && bg != glyph->border_glyph)
+            FT_Done_Glyph(bg);
+        if (bbg && bbg != glyph->glyph && bbg != glyph->border_glyph)
+            FT_Done_Glyph(bbg);
     }
+    if (glyph->border_glyph && glyph->border_glyph != glyph->glyph)
+        FT_Done_Glyph(glyph->border_glyph);
+    FT_Done_Glyph(glyph->glyph);
     av_free(elem);
     return 0;
 }
