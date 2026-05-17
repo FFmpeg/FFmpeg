@@ -829,8 +829,9 @@ static int glyph_enu_free(void *opaque, void *elem)
 {
     Glyph *glyph = elem;
 
+    if (glyph->border_glyph && glyph->border_glyph != glyph->glyph)
+        FT_Done_Glyph(glyph->border_glyph);
     FT_Done_Glyph(glyph->glyph);
-    FT_Done_Glyph(glyph->border_glyph);
     av_free(elem);
     return 0;
 }
