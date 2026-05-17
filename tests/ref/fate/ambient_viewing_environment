@@ -1,0 +1,19 @@
+Testing av_ambient_viewing_environment_alloc(&size)
+alloc: OK, size_set=yes
+illuminance=0/1, light_x=0/1, light_y=0/1
+
+Testing av_ambient_viewing_environment_alloc(NULL)
+alloc(NULL): OK
+illuminance=0/1, light_x=0/1, light_y=0/1
+
+Testing write/read back
+illuminance=314/10, light_x=15635/50000, light_y=16450/50000
+
+Testing av_ambient_viewing_environment_create_side_data()
+side_data: OK
+illuminance=0/1, light_x=0/1, light_y=0/1
+
+Testing OOM paths
+alloc OOM: OK
+alloc(NULL) OOM: OK
+side_data OOM: OK

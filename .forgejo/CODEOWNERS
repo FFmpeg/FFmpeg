@@ -232,11 +232,13 @@ doc/.* @GyanD
 # tests
 # =====
 tests/checkasm/riscv/.* @Courmisch
+libavutil/tests/ambient_viewing_environment.* @MarcosAsh
 libavutil/tests/buffer.* @MarcosAsh
 libavutil/tests/hdr_dynamic_vivid_metadata.* @MarcosAsh
 libavutil/tests/tdrdi.* @MarcosAsh
 libavutil/tests/timestamp.* @MarcosAsh
 tests/ref/.*drawvg.* @ayosec
+tests/ref/fate/ambient_viewing_environment @MarcosAsh
 tests/ref/fate/buffer @MarcosAsh
 tests/ref/fate/hdr_dynamic_vivid_metadata @MarcosAsh
 tests/ref/fate/sub-mcc.* @programmerjake

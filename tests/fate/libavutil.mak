@@ -13,6 +13,10 @@ fate-aes_ctr: libavutil/tests/aes_ctr$(EXESUF)
 fate-aes_ctr: CMD = run libavutil/tests/aes_ctr$(EXESUF)
 fate-aes_ctr: CMP = null
 
+FATE_LIBAVUTIL += fate-ambient_viewing_environment
+fate-ambient_viewing_environment: libavutil/tests/ambient_viewing_environment$(EXESUF)
+fate-ambient_viewing_environment: CMD = run libavutil/tests/ambient_viewing_environment$(EXESUF)
+
 FATE_LIBAVUTIL += fate-camellia
 fate-camellia: libavutil/tests/camellia$(EXESUF)
 fate-camellia: CMD = run libavutil/tests/camellia$(EXESUF)

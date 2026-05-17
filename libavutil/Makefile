@@ -258,6 +258,7 @@ SKIPHEADERS-$(CONFIG_SHADER_COMPRESSION) += zlib_utils.h
 TESTPROGS = adler32                                                     \
             aes                                                         \
             aes_ctr                                                     \
+            ambient_viewing_environment                                 \
             audio_fifo                                                  \
             avstring                                                    \
             base64                                                      \
