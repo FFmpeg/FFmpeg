@@ -3341,6 +3341,75 @@ static int matroska_parse_tracks(AVFormatContext *s)
     return 0;
 }
 
+static int matroska_parse_dovi_streams(AVFormatContext *s)
+{
+    AVStream *bl_st = NULL, *el_st = NULL;
+    AVStreamGroup *stg;
+    int err;
+
+    /* Matroska has no explicit cross-track Dolby Vision reference, so the
+     * pairing is recovered from the dvcC/dvvC config records. Find a single
+     * HEVC track whose record declares a profile 7 enhancement layer
+     * (el_present_flag=1) and a single sibling HEVC BL candidate. If either
+     * side is ambiguous, leave the streams ungrouped. */
+    if (s->nb_streams <= 1)
+        return 0;
+
+    for (int i = 0; i < s->nb_streams; i++) {
+        AVStream *st = s->streams[i];
+        const AVPacketSideData *sd;
+        const AVDOVIDecoderConfigurationRecord *dovi;
+
+        if (st->codecpar->codec_id != AV_CODEC_ID_HEVC)
+            continue;
+
+        sd = av_packet_side_data_get(st->codecpar->coded_side_data,
+                                     st->codecpar->nb_coded_side_data,
+                                     AV_PKT_DATA_DOVI_CONF);
+        if (sd) {
+            dovi = (const AVDOVIDecoderConfigurationRecord *)sd->data;
+            if (dovi->dv_profile == 7 && dovi->el_present_flag) {
+                /* bl_present_flag is not checked, because the files in the
+                 * wild set it to 1 for EL stream, while the expectation, based
+                 * on Dolby spec for MPEG-TS would be that it's set to 0.
+                 * Ignore this, if we have EL track and single other video track
+                 * it's safe to assume it's BL. */
+                if (el_st)
+                    return 0;
+                el_st = st;
+                continue;
+            }
+        }
+
+        if (bl_st)
+            return 0;
+        bl_st = st;
+    }
+
+    if (!el_st || !bl_st)
+        return 0;
+
+    stg = avformat_stream_group_create(s, AV_STREAM_GROUP_PARAMS_DOLBY_VISION, NULL);
+    if (!stg)
+        return AVERROR(ENOMEM);
+
+    stg->id = el_st->id;
+
+    err = avformat_stream_group_add_stream(stg, bl_st);
+    if (err < 0)
+        return err;
+
+    err = avformat_stream_group_add_stream(stg, el_st);
+    if (err < 0)
+        return err;
+
+    stg->params.layered_video->el_index = stg->nb_streams - 1;
+    stg->params.layered_video->width = bl_st->codecpar->width;
+    stg->params.layered_video->height = bl_st->codecpar->height;
+
+    return 0;
+}
+
 static int matroska_read_header(AVFormatContext *s)
 {
     FFFormatContext *const si = ffformatcontext(s);
@@ -3489,6 +3558,10 @@ static int matroska_read_header(AVFormatContext *s)
     matroska_add_index_entries(matroska);
 
     matroska_convert_tags(s);
+
+    res = matroska_parse_dovi_streams(s);
+    if (res < 0)
+        return res;
 
     return 0;
 }
