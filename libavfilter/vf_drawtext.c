@@ -779,11 +779,13 @@ static int load_glyph(AVFilterContext *ctx, Glyph **glyph_ptr, uint32_t code, in
     FT_Vector shift;
     struct AVTreeNode *node = NULL;
     int ret = 0;
+    int cached = 0;
 
     /* get glyph */
     dummy.code = code;
     dummy.fontsize = s->fontsize;
     glyph = av_tree_find(s->glyphs, &dummy, glyph_cmp, NULL);
+    cached = !!glyph;
     if (!glyph) {
         if (FT_Load_Glyph(s->face, code, s->ft_load_flags)) {
             return AVERROR(EINVAL);
@@ -800,11 +802,12 @@ static int load_glyph(AVFilterContext *ctx, Glyph **glyph_ptr, uint32_t code, in
             goto error;
         }
         if (s->borderw) {
-            glyph->border_glyph = glyph->glyph;
-            if (FT_Glyph_StrokeBorder(&glyph->border_glyph, s->stroker, 0, 0)) {
+            FT_Glyph tmp = glyph->glyph;
+            if (FT_Glyph_StrokeBorder(&tmp, s->stroker, 0, 0)) {
                 ret = AVERROR_EXTERNAL;
                 goto error;
             }
+            glyph->border_glyph = tmp;
         }
         /* measure text height to calculate text_height (or the maximum text height) */
         FT_Glyph_Get_CBox(glyph->glyph, FT_GLYPH_BBOX_SUBPIXELS, &glyph->bbox);
@@ -815,13 +818,15 @@ static int load_glyph(AVFilterContext *ctx, Glyph **glyph_ptr, uint32_t code, in
             goto error;
         }
         av_tree_insert(&s->glyphs, glyph, glyph_cmp, &node);
+        cached = 1;
     } else {
         if (s->borderw && !glyph->border_glyph) {
-            glyph->border_glyph = glyph->glyph;
-            if (FT_Glyph_StrokeBorder(&glyph->border_glyph, s->stroker, 0, 0)) {
+            FT_Glyph tmp = glyph->glyph;
+            if (FT_Glyph_StrokeBorder(&tmp, s->stroker, 0, 0)) {
                 ret = AVERROR_EXTERNAL;
                 goto error;
             }
+            glyph->border_glyph = tmp;
         }
     }
 
@@ -860,10 +865,13 @@ static int load_glyph(AVFilterContext *ctx, Glyph **glyph_ptr, uint32_t code, in
     return 0;
 
 error:
-    if (glyph && glyph->glyph)
-        FT_Done_Glyph(glyph->glyph);
-
-    av_freep(&glyph);
+    if (glyph && !cached) {
+        if (glyph->border_glyph && glyph->border_glyph != glyph->glyph)
+            FT_Done_Glyph(glyph->border_glyph);
+        if (glyph->glyph)
+            FT_Done_Glyph(glyph->glyph);
+        av_freep(&glyph);
+    }
     av_freep(&node);
     return ret;
 }
