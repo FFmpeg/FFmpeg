@@ -313,7 +313,8 @@ static int mcc_read_header(AVFormatContext *s)
 
             if (v >= 16 && v <= 35) {
                 int idx = v - 16;
-                bytestream2_put_buffer(&pb, aliases[idx].value, aliases[idx].len);
+                if (aliases[idx].len)
+                    bytestream2_put_buffer(&pb, aliases[idx].value, aliases[idx].len);
             } else {
                 uint8_t vv;
 
