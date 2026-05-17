@@ -73,6 +73,7 @@
 #define M2TS_PMT_PID                      0x0100
 #define M2TS_PCR_PID                      0x1001
 #define M2TS_VIDEO_PID                    0x1011
+#define M2TS_VIDEO_EL_PID                 0x1015
 #define M2TS_AUDIO_START_PID              0x1100
 #define M2TS_PGSSUB_START_PID             0x1200
 #define M2TS_TEXTSUB_PID                  0x1800
