@@ -21,6 +21,7 @@
 #include "libavutil/pixdesc.h"
 #include "libswscale/ops.h"
 #include "libswscale/ops_dispatch.h"
+#include "libswscale/ops_internal.h"
 #include "libswscale/format.h"
 
 #ifdef _WIN32
@@ -36,24 +37,34 @@ static int print_ops(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
         av_log(NULL, AV_LOG_INFO, " Sub-pass #%d:\n", pass_idx);
 
     ff_sws_op_list_print(NULL, AV_LOG_INFO, AV_LOG_INFO, ops);
-    *out = (SwsCompiledOp) {0}; /* dummy value, will be immediately freed */
 
-    bool has_filters = false;
-    for (int i = 0; i < ops->num_ops; i++) {
-        const SwsOp *op = &ops->ops[i];
-        if (op->op == SWS_OP_FILTER_H || op->op == SWS_OP_FILTER_V) {
-            has_filters = true;
-            break;
-        }
-    }
+    SwsUOpList *uops = ff_sws_uop_list_alloc();
+    if (!uops)
+        return AVERROR(ENOMEM);
 
-    if (has_filters) {
+    int ret = ff_sws_ops_translate(ops, uops);
+    if (ret == AVERROR(ENOTSUP)) {
         av_log(NULL, AV_LOG_INFO, " Retrying with split passes:\n");
-        return AVERROR(ENOTSUP);
+        goto fail;
+    } else if (ret < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Error translating ops: %s\n", av_err2str(ret));
+        goto fail;
     }
 
+    av_log(NULL, AV_LOG_INFO, " translated micro-ops:\n");
+    for (int i = 0; i < uops->num_ops; i++) {
+        char name[SWS_UOP_NAME_MAX];
+        ff_sws_uop_name(&uops->ops[i], name);
+        av_log(NULL, AV_LOG_INFO, "    %s\n", name);
+    }
+
+    *out = (SwsCompiledOp) {0}; /* dummy value, will be immediately freed */
     pass_idx++;
     return 0;
+
+fail:
+    ff_sws_uop_list_free(&uops);
+    return ret;
 }
 
 /* Dummy backend that just prints all seen op lists */
