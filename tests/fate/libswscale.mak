@@ -47,6 +47,13 @@ ifneq ($(HAVE_BIGENDIAN),yes)
 FATE_LIBSWSCALE-$(CONFIG_UNSTABLE) += fate-sws-ops-list
 fate-sws-ops-list: libswscale/tests/sws_ops$(EXESUF)
 fate-sws-ops-list: CMD = run libswscale/tests/sws_ops$(EXESUF) | do_md5sum | cut -d" " -f1
+
+# Disable on bigendian because it would result in a different iteration order
+# (and thus output) due to sorting by memcmp() on the parameters struct.
+FATE_LIBSWSCALE-$(CONFIG_UNSTABLE) += fate-sws-uops-macros
+fate-sws-uops-macros: libswscale/tests/sws_ops$(EXESUF)
+fate-sws-uops-macros: REF = $(SRC_PATH)/libswscale/uops_macros.h
+fate-sws-uops-macros: CMD = run libswscale/tests/sws_ops$(EXESUF) -macros
 endif
 
 FATE_LIBSWSCALE += $(FATE_LIBSWSCALE-yes)

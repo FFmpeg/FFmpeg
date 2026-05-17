@@ -182,6 +182,7 @@ typedef struct SwsUOp {
         SwsPixel scalar;
         SwsPixel vec4[4];
         SwsPixel mat4[4][5];        /* row major */
+        void *opaque;               /* reserved for internal use */
     } data;
 } SwsUOp;
 
@@ -219,5 +220,17 @@ int ff_sws_uop_list_append(SwsUOpList *uops, SwsUOp *uop);
  * Return 0 or a negative error code.
  */
 int ff_sws_ops_translate(const SwsOpList *ops, SwsUOpList *uops);
+
+/**
+ * Generate a set of boilerplate C preprocessor macros for describing and
+ * programmatically iterating over all possible SwsUOps.
+ *
+ * This function can be quite slow as it iterates over every possible
+ * combination of pixel formats and flags.
+ *
+ * Returns 0 or a negative error code. On success, an allocated string is
+ * returned via `out_str`, and must be av_free()'d by the caller.
+ */
+int ff_sws_uops_macros_gen(char **out_str);
 
 #endif
