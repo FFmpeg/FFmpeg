@@ -1834,6 +1834,15 @@ continue_on_failed2:
 
 done:
     av_free(textdup);
+    if (ret < 0) {
+        if (s->lines) {
+            for (int l = 0; l < s->line_count; ++l)
+                hb_destroy(&s->lines[l].hb_data);
+        }
+        av_freep(&s->lines);
+        av_freep(&s->tab_clusters);
+        s->line_count = 0;
+    }
     return ret;
 }
 
@@ -2023,7 +2032,7 @@ static int draw_text(AVFilterContext *ctx, AVFrame *frame)
 
             ret = load_glyph(ctx, &glyph, hb->glyph_info[t].codepoint, shift_x64, shift_y64);
             if (ret != 0) {
-                return ret;
+                goto fail;
             }
             g_info->code = hb->glyph_info[t].codepoint;
             g_info->x = (x64 + true_x) >> 6;
@@ -2085,23 +2094,25 @@ static int draw_text(AVFilterContext *ctx, AVFrame *frame)
         if (s->shadowx || s->shadowy) {
             if ((ret = draw_glyphs(s, frame, &shadowcolor, &metrics,
                     s->shadowx, s->shadowy, s->borderw)) < 0) {
-                return ret;
+                goto fail;
             }
         }
 
         if (s->borderw) {
             if ((ret = draw_glyphs(s, frame, &bordercolor, &metrics,
                     0, 0, s->borderw)) < 0) {
-                return ret;
+                goto fail;
             }
         }
 
         if ((ret = draw_glyphs(s, frame, &fontcolor, &metrics, 0,
                 0, 0)) < 0) {
-            return ret;
+            goto fail;
         }
     }
 
+    ret = 0;
+fail:
     // FREE data structures
     for (int l = 0; l < s->line_count; ++l) {
         TextLine *line = &s->lines[l];
@@ -2110,8 +2121,9 @@ static int draw_text(AVFilterContext *ctx, AVFrame *frame)
     }
     av_freep(&s->lines);
     av_freep(&s->tab_clusters);
+    s->line_count = 0;
 
-    return 0;
+    return ret;
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
