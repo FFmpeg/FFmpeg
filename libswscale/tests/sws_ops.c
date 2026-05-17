@@ -96,6 +96,8 @@ int main(int argc, char **argv)
 {
     enum AVPixelFormat src_fmt = AV_PIX_FMT_NONE;
     enum AVPixelFormat dst_fmt = AV_PIX_FMT_NONE;
+    SwsContext *ctx = NULL;
+    SwsGraph *graph = NULL;
     int ret = 1;
 
 #ifdef _WIN32
@@ -147,28 +149,24 @@ bad_option:
         }
     }
 
-    SwsContext *ctx = sws_alloc_context();
+    /* Allocate dummy graph and context for ff_sws_compile_pass() */
+    graph = ff_sws_graph_alloc();
+    if (!graph)
+        goto fail;
+    graph->ctx = ctx = sws_alloc_context();
     if (!ctx)
         goto fail;
     ctx->scaler = SWS_SCALE_BILINEAR; /* reduce filter generation overhead */
 
     av_log_set_callback(log_stdout);
 
-    /* Allocate dummy graph and context for ff_sws_compile_pass() */
-    SwsGraph *graph = ff_sws_graph_alloc();
-    if (!graph) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
-    graph->ctx = ctx;
-
     ret = ff_sws_enum_op_lists(ctx, graph, src_fmt, dst_fmt, print_passes);
-    ff_sws_graph_free(&graph);
     if (ret < 0)
         goto fail;
 
     ret = 0;
 fail:
     sws_free_context(&ctx);
+    ff_sws_graph_free(&graph);
     return ret;
 }
