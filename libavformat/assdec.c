@@ -72,6 +72,15 @@ static int read_dialogue(ASSContext *ass, AVBPrint *dst, const uint8_t *p,
         *start = (hh1*3600LL + mm1*60LL + ss1) * 100LL + ms1;
         *duration = end - *start;
 
+        /* Events with duration <= 0 are output by some authoring scripts and
+         * are simply treated as hidden by renderers. We cannot output such
+         * events as actual packets since this would cause their duration to be
+         * guessed by later processing like compute_pkt_fields().
+         * Hence, such events are written to the header like non-dialogue
+         * events like comments are. */
+        if (*duration <= 0)
+          return -1;
+
         av_bprint_clear(dst);
         av_bprintf(dst, "%u,%d,%s", ass->readorder++, layer, p + pos);
         if (!av_bprint_is_complete(dst))
