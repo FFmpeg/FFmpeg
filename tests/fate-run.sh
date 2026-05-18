@@ -113,6 +113,35 @@ run_with_temp(){
     run $process_tmp $tmpfile
 }
 
+# Overwrite bytes at a specific offset in a binary file.
+# Usage: patch_bytes file offset octal-byte-string
+patch_bytes(){
+    file=$1
+    offset=$2
+    bytes=$3
+    printf "%b" "$bytes" |
+        dd of="$file" bs=1 seek="$offset" conv=notrunc 2>/dev/null
+}
+
+# Like run_with_temp but applies byte patches between creation and processing,
+# allowing on-the-fly generation of files with controlled header corruption.
+# Patches are trailing offset/bytes pairs; multiple pairs may be specified.
+# Usage: run_with_patched_temp create_cmd process_cmd ext [offset bytes ...]
+run_with_patched_temp(){
+    create_tmp=$1
+    process_tmp=$2
+    filext=$3
+    tmpfile=${outdir}/$test.$filext
+    cleanfiles="$cleanfiles $tmpfile"
+    shift 3
+    run $create_tmp $tmpfile || return 1
+    while [ $# -ge 2 ]; do
+        patch_bytes "$tmpfile" "$1" "$2"
+        shift 2
+    done
+    run $process_tmp $tmpfile
+}
+
 probefmt(){
     run ffprobe${PROGSUF}${EXECSUF} -bitexact -threads $threads -show_entries format=format_name -print_format default=nw=1:nk=1 "$@"
 }
