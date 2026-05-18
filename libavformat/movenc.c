@@ -8620,6 +8620,9 @@ static int mov_init(AVFormatContext *s)
                 const AVStream *st2 = stg->streams[j];
                 int index = -1;
 
+                if (j == tref->metadata_index)
+                    continue;
+
                 for (int k = 0; k < mov->nb_tracks; k++) {
                     if (mov->tracks[k].st != st2)
                         continue;
