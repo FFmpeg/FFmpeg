@@ -114,7 +114,7 @@ static int fill_codec_config(IAMFContext *iamf, const AVStreamGroup *stg,
 
     if (!st->codecpar->frame_size) {
         av_log(log_ctx, AV_LOG_ERROR, "frame_size is unset for stream id %d\n",
-               st->codecpar->codec_id);
+               st->id);
         return AVERROR(EINVAL);
     }
 
