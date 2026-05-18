@@ -5393,7 +5393,12 @@ static int mov_write_moov_tag(AVIOContext *pb, MOVMuxContext *mov,
                 int ret = mov_add_tref_id(mov, tag, track->track_id);
                 if (ret < 0)
                     return ret;
-                //src_trk may have a different timescale than the tmcd track
+            }
+            if (track->nb_src_track) {
+                /* Derive the duration from the first source track, matching
+                 * the convention used by get_pts_range() and the rtp/lvc1
+                 * branches above. The source may use a different timescale. */
+                int src_trk = track->src_track[0];
                 track->track_duration = av_rescale(mov->tracks[src_trk].track_duration,
                                                    track->timescale,
                                                    mov->tracks[src_trk].timescale);
