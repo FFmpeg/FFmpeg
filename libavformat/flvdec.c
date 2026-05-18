@@ -1565,6 +1565,10 @@ skip:
 
     for (;;) {
         int track_size = size;
+        if (size < 0) {
+            ret = FFERROR_REDO;
+            goto leave;
+        }
 
         if (multitrack_type != MultitrackTypeOneTrack) {
             track_size = avio_rb24(s->pb);
