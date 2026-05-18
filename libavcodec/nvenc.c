@@ -1358,6 +1358,11 @@ static av_cold int nvenc_setup_h264_config(AVCodecContext *avctx)
         case NV_ENC_H264_PROFILE_BASELINE:
             cc->profileGUID = NV_ENC_H264_PROFILE_BASELINE_GUID;
             avctx->profile = AV_PROFILE_H264_BASELINE;
+            if (cc->frameIntervalP > 1) {
+                av_log(avctx, AV_LOG_WARNING,
+                       "B-frames are not supported by H.264 Baseline profile, disabling.\n");
+                cc->frameIntervalP = 1;
+            }
             break;
         case NV_ENC_H264_PROFILE_MAIN:
             cc->profileGUID = NV_ENC_H264_PROFILE_MAIN_GUID;
