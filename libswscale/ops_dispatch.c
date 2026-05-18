@@ -143,6 +143,18 @@ static inline void get_row_data(const SwsOpPass *p, const int y_dst,
         out[i] = base->out[i] + (y_dst >> base->out_sub_y[i]) * base->out_stride[i];
 }
 
+static inline int get_lines_in(const SwsOpPass *p, const int y, const int h,
+                               const int plane)
+{
+    const SwsOpExec *base = &p->exec_base;
+    if (!p->offsets_y)
+        return h >> base->in_sub_y[plane];
+
+    const int y0 = p->offsets_y[y] >> base->in_sub_y[plane];
+    const int y1 = p->offsets_y[y + h - 1] >> base->in_sub_y[plane];
+    return y1 - y0 + 1;
+}
+
 static inline size_t pixel_bytes(size_t pixels, int pixel_bits,
                                  enum AVRounding rounding)
 {
@@ -423,8 +435,9 @@ static void op_pass_run(const SwsFrame *out, const SwsFrame *in, const int y,
 
     for (int i = 0; i < p->planes_in; i++) {
         if (memcpy_in) {
+            const int lines = get_lines_in(p, y, h, i);
             copy_lines((uint8_t *) tail.in[i], tail.in_stride[i],
-                       exec.in[i], exec.in_stride[i], h, p->tail_size_in);
+                       exec.in[i], exec.in_stride[i], lines, p->tail_size_in);
         } else {
             /* Reuse input pointers directly */
             const size_t loop_size = tail_blocks * exec.block_size_in;
@@ -447,8 +460,9 @@ static void op_pass_run(const SwsFrame *out, const SwsFrame *in, const int y,
     comp->func(&tail, comp->priv, num_blocks - tail_blocks, y, num_blocks, y + h);
 
     for (int i = 0; memcpy_out && i < p->planes_out; i++) {
+        const int lines = h >> tail.out_sub_y[i];
         copy_lines(exec.out[i], exec.out_stride[i],
-                   tail.out[i], tail.out_stride[i], h, p->tail_size_out);
+                   tail.out[i], tail.out_stride[i], lines, p->tail_size_out);
     }
 }
 
