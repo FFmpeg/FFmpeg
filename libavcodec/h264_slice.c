@@ -316,8 +316,10 @@ static void color_frame(AVFrame *frame, const int c[4])
         int bytes  = is_chroma ? AV_CEIL_RSHIFT(frame->width,  desc->log2_chroma_w) : frame->width;
         int height = is_chroma ? AV_CEIL_RSHIFT(frame->height, desc->log2_chroma_h) : frame->height;
         if (desc->comp[0].depth >= 9) {
-            ((uint16_t*)dst)[0] = c[p];
-            av_memcpy_backptr(dst + 2, 2, bytes - 2);
+            if (bytes >= 1)
+                ((uint16_t*)dst)[0] = c[p];
+            if (bytes >= 2)
+                av_memcpy_backptr(dst + 2, 2, 2 * (bytes - 1));
             dst += frame->linesize[p];
             for (int y = 1; y < height; y++) {
                 memcpy(dst, frame->data[p], 2*bytes);
