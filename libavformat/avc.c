@@ -23,6 +23,7 @@
 #include "libavutil/mem.h"
 #include "libavcodec/h264.h"
 #include "libavcodec/get_bits.h"
+#include "libavcodec/golomb.h"
 #include "avio.h"
 #include "avc.h"
 #include "avio_internal.h"
@@ -192,19 +193,6 @@ static const AVRational avc_sample_aspect_ratio[17] = {
     {   2,  1 },
 };
 
-static inline int get_ue_golomb(GetBitContext *gb) {
-    int i;
-    for (i = 0; i < 32 && !get_bits1(gb); i++)
-        ;
-    return get_bitsz(gb, i) + (1 << i) - 1;
-}
-
-static inline int get_se_golomb(GetBitContext *gb) {
-    int v = get_ue_golomb(gb) + 1;
-    int sign = -(v & 1);
-    return ((v >> 1) ^ sign) - sign;
-}
-
 int ff_avc_decode_sps(H264SPS *sps, const uint8_t *buf, int buf_size)
 {
     int i, j, ret, rbsp_size, aspect_ratio_idc, pic_order_cnt_type;
@@ -233,19 +221,19 @@ int ff_avc_decode_sps(H264SPS *sps, const uint8_t *buf, int buf_size)
     sps->constraint_set_flags |= get_bits1(&gb) << 5; // constraint_set5_flag
     skip_bits(&gb, 2); // reserved_zero_2bits
     sps->level_idc = get_bits(&gb, 8);
-    sps->id = get_ue_golomb(&gb);
+    sps->id = get_ue_golomb_long(&gb);
 
     if (sps->profile_idc == 100 || sps->profile_idc == 110 ||
         sps->profile_idc == 122 || sps->profile_idc == 244 || sps->profile_idc ==  44 ||
         sps->profile_idc ==  83 || sps->profile_idc ==  86 || sps->profile_idc == 118 ||
         sps->profile_idc == 128 || sps->profile_idc == 138 || sps->profile_idc == 139 ||
         sps->profile_idc == 134) {
-        sps->chroma_format_idc = get_ue_golomb(&gb); // chroma_format_idc
+        sps->chroma_format_idc = get_ue_golomb_long(&gb); // chroma_format_idc
         if (sps->chroma_format_idc == 3) {
             skip_bits1(&gb); // separate_colour_plane_flag
         }
-        sps->bit_depth_luma = get_ue_golomb(&gb) + 8;
-        sps->bit_depth_chroma = get_ue_golomb(&gb) + 8;
+        sps->bit_depth_luma = get_ue_golomb_long(&gb) + 8;
+        sps->bit_depth_chroma = get_ue_golomb_long(&gb) + 8;
         skip_bits1(&gb); // qpprime_y_zero_transform_bypass_flag
         if (get_bits1(&gb)) { // seq_scaling_matrix_present_flag
             for (i = 0; i < ((sps->chroma_format_idc != 3) ? 8 : 12); i++) {
@@ -256,7 +244,7 @@ int ff_avc_decode_sps(H264SPS *sps, const uint8_t *buf, int buf_size)
                 sizeOfScalingList = i < 6 ? 16 : 64;
                 for (j = 0; j < sizeOfScalingList; j++) {
                     if (nextScale != 0) {
-                        delta_scale = get_se_golomb(&gb);
+                        delta_scale = get_se_golomb_long(&gb);
                         nextScale = (lastScale + delta_scale) & 0xff;
                     }
                     lastScale = nextScale == 0 ? lastScale : nextScale;
@@ -269,24 +257,24 @@ int ff_avc_decode_sps(H264SPS *sps, const uint8_t *buf, int buf_size)
         sps->bit_depth_chroma = 8;
     }
 
-    get_ue_golomb(&gb); // log2_max_frame_num_minus4
-    pic_order_cnt_type = get_ue_golomb(&gb);
+    get_ue_golomb_long(&gb); // log2_max_frame_num_minus4
+    pic_order_cnt_type = get_ue_golomb_long(&gb);
 
     if (pic_order_cnt_type == 0) {
-        get_ue_golomb(&gb); // log2_max_pic_order_cnt_lsb_minus4
+        get_ue_golomb_long(&gb); // log2_max_pic_order_cnt_lsb_minus4
     } else if (pic_order_cnt_type == 1) {
         skip_bits1(&gb);    // delta_pic_order_always_zero
-        get_se_golomb(&gb); // offset_for_non_ref_pic
-        get_se_golomb(&gb); // offset_for_top_to_bottom_field
-        num_ref_frames_in_pic_order_cnt_cycle = get_ue_golomb(&gb);
+        get_se_golomb_long(&gb); // offset_for_non_ref_pic
+        get_se_golomb_long(&gb); // offset_for_top_to_bottom_field
+        num_ref_frames_in_pic_order_cnt_cycle = get_ue_golomb_long(&gb);
         for (i = 0; i < num_ref_frames_in_pic_order_cnt_cycle; i++)
-            get_se_golomb(&gb); // offset_for_ref_frame
+            get_se_golomb_long(&gb); // offset_for_ref_frame
     }
 
-    get_ue_golomb(&gb); // max_num_ref_frames
+    get_ue_golomb_long(&gb); // max_num_ref_frames
     skip_bits1(&gb); // gaps_in_frame_num_value_allowed_flag
-    get_ue_golomb(&gb); // pic_width_in_mbs_minus1
-    get_ue_golomb(&gb); // pic_height_in_map_units_minus1
+    get_ue_golomb_long(&gb); // pic_width_in_mbs_minus1
+    get_ue_golomb_long(&gb); // pic_height_in_map_units_minus1
 
     sps->frame_mbs_only_flag = get_bits1(&gb);
     if (!sps->frame_mbs_only_flag)
@@ -295,10 +283,10 @@ int ff_avc_decode_sps(H264SPS *sps, const uint8_t *buf, int buf_size)
     skip_bits1(&gb); // direct_8x8_inference_flag
 
     if (get_bits1(&gb)) { // frame_cropping_flag
-        get_ue_golomb(&gb); // frame_crop_left_offset
-        get_ue_golomb(&gb); // frame_crop_right_offset
-        get_ue_golomb(&gb); // frame_crop_top_offset
-        get_ue_golomb(&gb); // frame_crop_bottom_offset
+        get_ue_golomb_long(&gb); // frame_crop_left_offset
+        get_ue_golomb_long(&gb); // frame_crop_right_offset
+        get_ue_golomb_long(&gb); // frame_crop_top_offset
+        get_ue_golomb_long(&gb); // frame_crop_bottom_offset
     }
 
     if (get_bits1(&gb)) { // vui_parameters_present_flag
