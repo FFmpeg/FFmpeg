@@ -450,6 +450,9 @@ static int png_decode_idat(PNGDecContext *s, GetByteContext *gb,
     return 0;
 }
 
+/* Hard cap on decompressed zTXt/iCCP payloads to defeat decompression bombs. */
+#define PNG_ZBUF_MAX_DECOMPRESSED (16 * 1024 * 1024)
+
 static int decode_zbuf(AVBPrint *bp, const uint8_t *data,
                        const uint8_t *data_end, void *logctx)
 {
@@ -466,6 +469,13 @@ static int decode_zbuf(AVBPrint *bp, const uint8_t *data,
     av_bprint_init(bp, 0, AV_BPRINT_SIZE_UNLIMITED);
 
     while (zstream->avail_in > 0) {
+        if (bp->len > PNG_ZBUF_MAX_DECOMPRESSED) {
+            av_log(logctx, AV_LOG_ERROR,
+                   "Compressed PNG chunk expands beyond %d bytes, aborting\n",
+                   PNG_ZBUF_MAX_DECOMPRESSED);
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
+        }
         av_bprint_get_buffer(bp, 2, &buf, &buf_size);
         if (buf_size < 2) {
             ret = AVERROR(ENOMEM);
