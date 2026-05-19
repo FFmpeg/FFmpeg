@@ -34,6 +34,10 @@ void ff_rtp_send_aac(AVFormatContext *s1, const uint8_t *buff, int size)
 
     /* skip ADTS header, if present */
     if ((s1->streams[0]->codecpar->extradata_size) == 0) {
+        if (size < 7) {
+            av_log(s1, AV_LOG_ERROR, "AAC packet too small for ADTS header\n");
+            return;
+        }
         size -= 7;
         buff += 7;
     }
