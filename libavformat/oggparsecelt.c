@@ -27,6 +27,9 @@
 #include "internal.h"
 #include "oggdec.h"
 
+/* CELT-over-Ogg streams use at most a couple of vorbiscomment "extra" headers. */
+#define CELT_MAX_EXTRA_HEADERS 16
+
 struct oggcelt_private {
     int extra_headers_left;
 };
@@ -62,6 +65,12 @@ static int celt_header(AVFormatContext *s, int idx)
         overlap          = AV_RL32(p + 48);
         /* unused bytes per packet field skipped */
         extra_headers    = AV_RL32(p + 56);
+        if (extra_headers > CELT_MAX_EXTRA_HEADERS) {
+            av_log(s, AV_LOG_ERROR,
+                   "Too many CELT extra headers (%u)\n", extra_headers);
+            av_free(priv);
+            return AVERROR_INVALIDDATA;
+        }
         st->codecpar->codec_type     = AVMEDIA_TYPE_AUDIO;
         st->codecpar->codec_id       = AV_CODEC_ID_CELT;
         st->codecpar->sample_rate    = sample_rate;
