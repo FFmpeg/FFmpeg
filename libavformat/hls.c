@@ -953,9 +953,14 @@ static int parse_playlist(HLSContext *c, const char *url,
                 goto fail;
             }
             if (av_strstart(ptr, "TIME-OFFSET=", &time_offset_value)) {
-                float offset = strtof(time_offset_value, NULL);
-                pls->start_time_offset = offset * AV_TIME_BASE;
-                pls->time_offset_flag = 1;
+                double offset = strtod(time_offset_value, NULL) * AV_TIME_BASE;
+                if (offset >= -0x1p63 && offset < 0x1p63) {
+                    pls->start_time_offset = offset;
+                    pls->time_offset_flag = 1;
+                } else {
+                    av_log(c->ctx, AV_LOG_WARNING, "TIME-OFFSET value is"
+                                                    "invalid, it will be ignored");
+                }
             } else {
                 av_log(c->ctx, AV_LOG_WARNING, "#EXT-X-START value is"
                                                 "invalid, it will be ignored");
