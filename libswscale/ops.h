@@ -242,6 +242,11 @@ typedef struct SwsOp {
 SwsCompMask ff_sws_comp_mask_needed(const SwsOp *op);
 
 /**
+ * Return the number of planes involved in a read/write operation.
+ */
+int ff_sws_rw_op_planes(const SwsOp *op);
+
+/**
  * Describe an operation in human-readable form.
  */
 void ff_sws_op_desc(AVBPrint *bp, const SwsOp *op);

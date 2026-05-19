@@ -634,8 +634,8 @@ static int compile(SwsContext *ctx, const SwsOpList *ops, SwsCompiledOp *out)
 
     const SwsOp *read      = ff_sws_op_list_input(ops);
     const SwsOp *write     = ff_sws_op_list_output(ops);
-    const int read_planes  = read ? (read->rw.packed ? 1 : read->rw.elems) : 0;
-    const int write_planes = write->rw.packed ? 1 : write->rw.elems;
+    const int read_planes  = read ? ff_sws_rw_op_planes(read) : 0;
+    const int write_planes = ff_sws_rw_op_planes(write);
     switch (FFMAX(read_planes, write_planes)) {
     case 1: out->func = ff_sws_process1_x86; break;
     case 2: out->func = ff_sws_process2_x86; break;

@@ -166,6 +166,12 @@ SwsCompMask ff_sws_comp_mask_needed(const SwsOp *op)
     return mask;
 }
 
+int ff_sws_rw_op_planes(const SwsOp *op)
+{
+    av_assert2(op->op == SWS_OP_READ || op->op == SWS_OP_WRITE);
+    return op->rw.packed ? 1 : op->rw.elems;
+}
+
 /* biased towards `a` */
 static AVRational av_min_q(AVRational a, AVRational b)
 {
@@ -736,7 +742,7 @@ bool ff_sws_op_list_is_noop(const SwsOpList *ops)
      * between them, e.g. rgbap <-> gbrap, which doesn't currently exist.
      * However, the check is cheap and lets me sleep at night.
      */
-    const int num_planes = read->rw.packed ? 1 : read->rw.elems;
+    const int num_planes = ff_sws_rw_op_planes(read);
     for (int i = 0; i < num_planes; i++) {
         if (ops->plane_src[i] != ops->plane_dst[i])
             return false;
@@ -983,7 +989,7 @@ void ff_sws_op_list_print(void *log, int lev, int lev_extra,
         ff_sws_op_desc(&bp, op);
 
         if (op->op == SWS_OP_READ || op->op == SWS_OP_WRITE) {
-            const int planes = op->rw.packed ? 1 : op->rw.elems;
+            const int planes = ff_sws_rw_op_planes(op);
             desc_plane_order(&bp, planes,
                 op->op == SWS_OP_READ ? ops->plane_src : ops->plane_dst);
         }

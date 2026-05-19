@@ -462,11 +462,6 @@ static void op_pass_run(const SwsFrame *out, const SwsFrame *in, const int y,
     }
 }
 
-static int rw_planes(const SwsOp *op)
-{
-    return op->rw.packed ? 1 : op->rw.elems;
-}
-
 static int rw_pixel_bits(const SwsOp *op)
 {
     const int elems = op->rw.packed ? op->rw.elems : 1;
@@ -526,8 +521,8 @@ static int compile(SwsGraph *graph, const SwsOpBackend *backend,
     const AVPixFmtDescriptor *outdesc = av_pix_fmt_desc_get(dst->format);
     const SwsOp *read  = ff_sws_op_list_input(ops);
     const SwsOp *write = ff_sws_op_list_output(ops);
-    p->planes_in  = rw_planes(read);
-    p->planes_out = rw_planes(write);
+    p->planes_in  = ff_sws_rw_op_planes(read);
+    p->planes_out = ff_sws_rw_op_planes(write);
     p->pixel_bits_in  = rw_pixel_bits(read);
     p->pixel_bits_out = rw_pixel_bits(write);
     p->exec_base = (SwsOpExec) {
