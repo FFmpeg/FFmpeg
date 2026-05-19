@@ -225,7 +225,8 @@ static int magy_decode_slice10(AVCodecContext *avctx, void *tdata,
                 s->llviddsp.add_left_pred_int16(dst, dst, max, width, 0);
                 dst += stride;
             }
-            lefttop = left = dst[0];
+            if (1 + interlaced < height)
+                lefttop = left = dst[0];
             for (k = 1 + interlaced; k < height; k++) {
                 magicyuv_median_pred16(dst, dst - fake_stride, dst, width, &left, &lefttop, max);
                 lefttop = left = dst[0];
