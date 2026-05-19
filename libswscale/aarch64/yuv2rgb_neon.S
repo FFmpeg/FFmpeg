@@ -63,7 +63,23 @@
         add             w17, w0, w0, lsl #1
         sub             w3, w3, w17                                     // w3 = linesize  - width * 3 (padding)
   .else
+   .ifc \ofmt,rgb565le
+        sub             w3, w3, w0, lsl #1                              // w3 = linesize  - width * 2 (padding)
+   .else
+    .ifc \ofmt,bgr565le
+        sub             w3, w3, w0, lsl #1                              // w3 = linesize  - width * 2 (padding)
+    .else
+     .ifc \ofmt,rgb555le
+        sub             w3, w3, w0, lsl #1                              // w3 = linesize  - width * 2 (padding)
+     .else
+      .ifc \ofmt,bgr555le
+        sub             w3, w3, w0, lsl #1                              // w3 = linesize  - width * 2 (padding)
+      .else
         sub             w3, w3, w0, lsl #2                              // w3 = linesize  - width * 4 (padding)
+      .endif
+     .endif
+    .endif
+   .endif
   .endif
  .endif
 .endif
@@ -96,7 +112,23 @@
         add             w17, w0, w0, lsl #1
         sub             w3, w3, w17                                     // w3 = linesize  - width * 3 (padding)
   .else
+   .ifc \ofmt,rgb565le
+        sub             w3, w3, w0, lsl #1                              // w3 = linesize  - width * 2 (padding)
+   .else
+    .ifc \ofmt,bgr565le
+        sub             w3, w3, w0, lsl #1                              // w3 = linesize  - width * 2 (padding)
+    .else
+     .ifc \ofmt,rgb555le
+        sub             w3, w3, w0, lsl #1                              // w3 = linesize  - width * 2 (padding)
+     .else
+      .ifc \ofmt,bgr555le
+        sub             w3, w3, w0, lsl #1                              // w3 = linesize  - width * 2 (padding)
+      .else
         sub             w3, w3, w0, lsl #2                              // w3 = linesize  - width * 4 (padding)
+      .endif
+     .endif
+    .endif
+   .endif
   .endif
  .endif
 .endif
@@ -139,7 +171,23 @@
         add             w17, w0, w0, lsl #1
         sub             w3, w3, w17                                     // w3 = linesize  - width * 3 (padding)
   .else
+   .ifc \ofmt,rgb565le
+        sub             w3, w3, w0, lsl #1                              // w3 = linesize  - width * 2 (padding)
+   .else
+    .ifc \ofmt,bgr565le
+        sub             w3, w3, w0, lsl #1                              // w3 = linesize  - width * 2 (padding)
+    .else
+     .ifc \ofmt,rgb555le
+        sub             w3, w3, w0, lsl #1                              // w3 = linesize  - width * 2 (padding)
+     .else
+      .ifc \ofmt,bgr555le
+        sub             w3, w3, w0, lsl #1                              // w3 = linesize  - width * 2 (padding)
+      .else
         sub             w3, w3, w0, lsl #2                              // w3 = linesize  - width * 4 (padding)
+      .endif
+     .endif
+    .endif
+   .endif
   .endif
  .endif
 .endif
@@ -230,9 +278,63 @@
         mov             \a2, v29.8b                                     // real alpha (next 8 pixels)
 .endm
 
+// The 16bpp output paths use v8/v9 to assemble packed pixels before the
+// final st1. v8/v9 are AAPCS callee-saved (low 64 bits must be preserved),
+// so each function spills d8/d9 to the stack on entry and reloads on exit.
+// Other output formats don't touch v8-v15, so the save/restore is gated.
+.macro save_d8_d9_if_16bpp ofmt
+.ifc \ofmt,rgb565le
+        stp             d8, d9, [sp, #-0x10]!
+.endif
+.ifc \ofmt,bgr565le
+        stp             d8, d9, [sp, #-0x10]!
+.endif
+.ifc \ofmt,rgb555le
+        stp             d8, d9, [sp, #-0x10]!
+.endif
+.ifc \ofmt,bgr555le
+        stp             d8, d9, [sp, #-0x10]!
+.endif
+.endm
+
+.macro restore_d8_d9_if_16bpp ofmt
+.ifc \ofmt,rgb565le
+        ldp             d8, d9, [sp], #0x10
+.endif
+.ifc \ofmt,bgr565le
+        ldp             d8, d9, [sp], #0x10
+.endif
+.ifc \ofmt,rgb555le
+        ldp             d8, d9, [sp], #0x10
+.endif
+.ifc \ofmt,bgr555le
+        ldp             d8, d9, [sp], #0x10
+.endif
+.endm
+
+// Pack 8 pixels of 16bpp output. The three channels are extracted via ushr,
+// widened to u16, then merged via shift-left-insert:
+//   dst = (high << high_shl) | (mid << 5) | low
+// For RGB565LE  pass (B, G, R) as (low, mid, high), g_shr=2, high_shl=11.
+// For BGR565LE  pass (R, G, B), g_shr=2, high_shl=11.
+// For RGB555LE  pass (B, G, R), g_shr=3, high_shl=10.
+// For BGR555LE  pass (R, G, B), g_shr=3, high_shl=10.
+// Clobbers v20-v23.
+.macro pack_rgb16 dst, low_ch, mid_ch, high_ch, g_shr, high_shl
+        ushr            v20.8b, \high_ch\().8b, #3
+        ushr            v21.8b, \mid_ch\().8b,  #\g_shr
+        ushr            v22.8b, \low_ch\().8b,  #3
+        uxtl            \dst\().8h, v22.8b
+        uxtl            v23.8h, v21.8b
+        sli             \dst\().8h, v23.8h, #5
+        uxtl            v23.8h, v20.8b
+        sli             \dst\().8h, v23.8h, #\high_shl
+.endm
+
 .macro declare_func ifmt ofmt
 function ff_\ifmt\()_to_\ofmt\()_neon, export=1
         load_args_\ifmt \ofmt
+        save_d8_d9_if_16bpp \ofmt
 
         movi            v31.8h, #4, lsl #8                              // 128 * (1<<3) (loop-invariant)
         movi            v30.8b, #255                                    // alpha = 255  (loop-invariant)
@@ -313,8 +415,40 @@ function ff_\ifmt\()_to_\ofmt\()_neon, export=1
         st1             {  v6.8b,  v7.8b }, [x10], #16
         st1             { v18.8b, v19.8b }, [x15], #16
   .else
+   .ifc \ofmt,rgb565le
+        compute_rgb     v4.8b,v5.8b,v6.8b, v16.8b,v17.8b,v18.8b
+        // RGB565 LE: (R[7:3] << 11) | (G[7:2] << 5) | B[7:3]
+        pack_rgb16      v8,  v6,  v5,  v4,  2, 11
+        pack_rgb16      v9,  v18, v17, v16, 2, 11
+        st1             { v8.8h, v9.8h}, [x2], #32
+   .else
+    .ifc \ofmt,bgr565le
+        compute_rgb     v4.8b,v5.8b,v6.8b, v16.8b,v17.8b,v18.8b
+        // BGR565 LE: (B[7:3] << 11) | (G[7:2] << 5) | R[7:3]
+        pack_rgb16      v8,  v4,  v5,  v6,  2, 11
+        pack_rgb16      v9,  v16, v17, v18, 2, 11
+        st1             { v8.8h, v9.8h}, [x2], #32
+    .else
+     .ifc \ofmt,rgb555le
+        compute_rgb     v4.8b,v5.8b,v6.8b, v16.8b,v17.8b,v18.8b
+        // RGB555 LE: (R[7:3] << 10) | (G[7:3] << 5) | B[7:3]
+        pack_rgb16      v8,  v6,  v5,  v4,  3, 10
+        pack_rgb16      v9,  v18, v17, v16, 3, 10
+        st1             { v8.8h, v9.8h}, [x2], #32
+     .else
+      .ifc \ofmt,bgr555le
+        compute_rgb     v4.8b,v5.8b,v6.8b, v16.8b,v17.8b,v18.8b
+        // BGR555 LE: (B[7:3] << 10) | (G[7:3] << 5) | R[7:3]
+        pack_rgb16      v8,  v4,  v5,  v6,  3, 10
+        pack_rgb16      v9,  v16, v17, v18, 3, 10
+        st1             { v8.8h, v9.8h}, [x2], #32
+      .else
         st4             { v4.8b, v5.8b, v6.8b, v7.8b}, [x2], #32
         st4             {v16.8b,v17.8b,v18.8b,v19.8b}, [x2], #32
+      .endif
+     .endif
+    .endif
+   .endif
   .endif
  .endif
 .endif
@@ -330,6 +464,7 @@ function ff_\ifmt\()_to_\ofmt\()_neon, export=1
         subs            w1, w1, #1                                      // height -= 1
         b.gt            1b
         mov             w0, w9
+        restore_d8_d9_if_16bpp \ofmt
         ret
 endfunc
 .endm
@@ -348,6 +483,18 @@ declare_rgb_funcs nv12
 declare_rgb_funcs nv21
 declare_rgb_funcs yuv420p
 declare_rgb_funcs yuv422p
+
+.macro declare_rgb16_funcs ifmt
+        declare_func    \ifmt, rgb565le
+        declare_func    \ifmt, bgr565le
+        declare_func    \ifmt, rgb555le
+        declare_func    \ifmt, bgr555le
+.endm
+
+declare_rgb16_funcs nv12
+declare_rgb16_funcs nv21
+declare_rgb16_funcs yuv420p
+declare_rgb16_funcs yuv422p
 
 .macro declare_yuva_funcs ifmt
         declare_func    \ifmt, argb
