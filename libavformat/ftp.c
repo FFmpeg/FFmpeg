@@ -98,6 +98,16 @@ static const AVClass ftp_context_class = {
 
 static int ftp_close(URLContext *h);
 
+static int is_bad_string(const unsigned char *s)
+{
+    while(*s) {
+        if (*s < 0x20 || *s == 0x7F || *s == 0xFF)
+            return 1;
+        s++;
+    }
+    return 0;
+}
+
 static int ftp_getc(FTPContext *s)
 {
     int len;
@@ -248,13 +258,13 @@ static int ftp_auth(FTPContext *s)
     static const int user_codes[] = {331, 230, 0};
     static const int pass_codes[] = {230, 0};
 
-    if (strpbrk(s->user, "\r\n"))
+    if (is_bad_string(s->user))
         return AVERROR(EINVAL);
     snprintf(buf, sizeof(buf), "USER %s\r\n", s->user);
     err = ftp_send_command(s, buf, user_codes, NULL);
     if (err == 331) {
         if (s->password) {
-            if (strpbrk(s->password, "\r\n"))
+            if (is_bad_string(s->password))
                 return AVERROR(EINVAL);
             snprintf(buf, sizeof(buf), "PASS %s\r\n", s->password);
             err = ftp_send_command(s, buf, pass_codes, NULL);
@@ -724,8 +734,8 @@ static int ftp_connect(URLContext *h, const char *url)
     av_free(s->path);
     s->path = newpath;
 
-    if (strpbrk(s->path, "\r\n")) {
-        av_log(h, AV_LOG_ERROR, "Path contains CR/LF characters\n");
+    if (is_bad_string(s->path)) {
+        av_log(h, AV_LOG_ERROR, "Path contains non-printable characters\n");
         return AVERROR(EINVAL);
     }
 
