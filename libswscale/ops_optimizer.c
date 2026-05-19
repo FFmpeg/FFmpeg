@@ -816,8 +816,7 @@ int ff_sws_solve_shuffle(const SwsOpList *const ops, uint8_t shuffle[],
         return AVERROR(EINVAL);
 
     const SwsOp *read = ff_sws_op_list_input(ops);
-    if (!read || read->rw.frac || read->rw.filter.op ||
-        (!read->rw.packed && read->rw.elems > 1))
+    if (!read || read->rw.frac || read->rw.filter.op || ff_sws_rw_op_planes(read) > 1)
         return AVERROR(ENOTSUP);
 
     const int read_size = ff_sws_pixel_type_size(read->type);
@@ -867,8 +866,7 @@ int ff_sws_solve_shuffle(const SwsOpList *const ops, uint8_t shuffle[],
         }
 
         case SWS_OP_WRITE: {
-            if (op->rw.frac || op->rw.filter.op ||
-                (!op->rw.packed && op->rw.elems > 1))
+            if (op->rw.frac || op->rw.filter.op || ff_sws_rw_op_planes(op) > 1)
                 return AVERROR(ENOTSUP);
 
             /* Initialize to no-op */
