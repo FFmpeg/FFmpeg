@@ -427,6 +427,11 @@ static int decode_frame(AVCodecContext *avctx,
     /* Flags */
     int flags = bytestream2_get_be16(&gb_hdr);
     int align = (flags >> 1) & 0x7;
+    if (align > 4) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Invalid tile alignment %d (max 4)\n", align);
+        return AVERROR_INVALIDDATA;
+    }
 
     /* Quantization matrix */
     if (flags & 1)
