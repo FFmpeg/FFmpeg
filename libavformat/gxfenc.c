@@ -669,8 +669,11 @@ static int gxf_init_timecode(AVFormatContext *s, GXFTimecode *tc, const char *tc
     if (sscanf(tcstr, "%d:%d:%d%c%d", &tc->hh, &tc->mm, &tc->ss, &c, &tc->ff) != 5) {
         av_log(s, AV_LOG_ERROR, "unable to parse timecode, "
                                 "syntax: hh:mm:ss[:;.]ff\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
+
+    if (tc->hh > 31U  || tc->mm > 255U || tc->ss > 255U || tc->ff > (255U >> (fields == 2)))
+        return AVERROR(EINVAL);
 
     tc->color = 0;
     tc->drop = c != ':';
@@ -803,8 +806,11 @@ static int gxf_write_header(AVFormatContext *s)
         sc->order = s->nb_streams - st->index;
     }
 
-    if (tcr && vsc)
-        gxf_init_timecode(s, &gxf->tc, tcr->value, vsc->fields);
+    if (tcr && vsc) {
+        ret = gxf_init_timecode(s, &gxf->tc, tcr->value, vsc->fields);
+        if (ret < 0)
+            return ret;
+    }
 
     gxf_init_timecode_track(&gxf->timecode_track, vsc);
     gxf->flags |= 0x200000; // time code track is non-drop frame
