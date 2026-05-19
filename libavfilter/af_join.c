@@ -469,7 +469,7 @@ static int try_push_frame(AVFilterContext *ctx)
         for (j = 0; j < nb_buffers; j++)
             if (s->buffers[j]->buffer == buf->buffer)
                 break;
-        if (j == i)
+        if (j == nb_buffers)
             s->buffers[nb_buffers++] = buf;
     }
 
