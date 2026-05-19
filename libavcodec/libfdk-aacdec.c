@@ -269,7 +269,7 @@ static av_cold int fdk_aac_decode_init(AVCodecContext *avctx)
     }
 
     if (s->downmix_layout.nb_channels > 0 &&
-        s->downmix_layout.order != AV_CHANNEL_ORDER_NATIVE) {
+        s->downmix_layout.order == AV_CHANNEL_ORDER_NATIVE) {
         int downmix_channels = -1;
 
         switch (s->downmix_layout.u.mask) {
