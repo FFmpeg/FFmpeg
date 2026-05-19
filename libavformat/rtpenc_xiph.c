@@ -38,6 +38,10 @@ void ff_rtp_send_xiph(AVFormatContext *s1, const uint8_t *buff, int size)
     uint8_t *q;
 
     max_pkt_size = s->max_payload_size - 6; // ident+frag+tdt/vdt+pkt_num+pkt_length
+    if (max_pkt_size <= 0) {
+        av_log(s1, AV_LOG_ERROR, "Max payload size too small for Xiph RTP\n");
+        return;
+    }
 
     // set xiph data type
     switch (*buff) {
