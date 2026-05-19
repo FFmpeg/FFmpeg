@@ -406,11 +406,11 @@ static inline void yuvPlanartoyuy2_c(const uint8_t *ysrc, const uint8_t *usrc,
 
         for (i = 0; i < chromWidth; i++) {
 #if HAVE_BIGENDIAN
-            *idst++ = (yc[0] << 24) + (uc[0] << 16) +
+            *idst++ = ((unsigned)yc[0] << 24) + (uc[0] << 16) +
                       (yc[1] <<  8) + (vc[0] <<  0);
 #else
             *idst++ = yc[0] + (uc[0] << 8) +
-                      (yc[1] << 16) + (vc[0] << 24);
+                      (yc[1] << 16) + ((unsigned)vc[0] << 24);
 #endif
             yc += 2;
             uc++;
