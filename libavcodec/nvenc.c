@@ -1162,6 +1162,13 @@ static av_cold int nvenc_setup_rate_control(AVCodecContext *avctx)
 #ifdef NVENC_HAVE_QP_CHROMA_OFFSETS
     ctx->encode_config.rcParams.cbQPIndexOffset = ctx->qp_cb_offset;
     ctx->encode_config.rcParams.crQPIndexOffset = ctx->qp_cr_offset;
+
+    if (avctx->codec->id == AV_CODEC_ID_AV1 &&
+        ctx->qp_cr_offset != ctx->qp_cb_offset)
+        av_log(avctx, AV_LOG_WARNING,
+               "av1_nvenc: qp_cr_offset is currently ignored by the NVENC driver "
+               "(deltaQ_v_ac is forced equal to deltaQ_u_ac); only qp_cb_offset "
+               "takes effect.\n");
 #else
     if (ctx->qp_cb_offset || ctx->qp_cr_offset)
         av_log(avctx, AV_LOG_WARNING, "Failed setting QP CB/CR offsets, SDK 11.1 or greater required at compile time.\n");
