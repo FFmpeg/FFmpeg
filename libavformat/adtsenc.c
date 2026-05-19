@@ -76,6 +76,10 @@ static int adts_decode_extradata(AVFormatContext *s, ADTSContext *adts, const ui
         av_log(s, AV_LOG_ERROR, "Escape sample rate index illegal in ADTS\n");
         return AVERROR_INVALIDDATA;
     }
+    if (adts->channel_conf > 7) {
+        av_log(s, AV_LOG_ERROR, "channelConfiguration > 7 is not supported in ADTS\n");
+        return AVERROR_INVALIDDATA;
+    }
     if (get_bits(&gb, 1)) {
         av_log(s, AV_LOG_ERROR, "960/120 MDCT window is not allowed in ADTS\n");
         return AVERROR_INVALIDDATA;
