@@ -171,8 +171,9 @@ int ff_sws_rw_op_planes(const SwsOp *op)
 {
     av_assert2(op->op == SWS_OP_READ || op->op == SWS_OP_WRITE);
     switch (op->rw.mode) {
-    case SWS_RW_PLANAR: return op->rw.elems;
-    case SWS_RW_PACKED: return 1;
+    case SWS_RW_PLANAR:  return op->rw.elems;
+    case SWS_RW_PACKED:  return 1;
+    case SWS_RW_PALETTE: return 2;
     }
 
     av_unreachable("Invalid read/write mode!");
@@ -384,8 +385,9 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
             for (int i = 0; i < op->rw.elems; i++) {
                 int idx = 0;
                 switch (op->rw.mode) {
-                case SWS_RW_PACKED: idx = i; break;
-                case SWS_RW_PLANAR: idx = ops->plane_src[i]; break;
+                case SWS_RW_PALETTE: idx = i; break;
+                case SWS_RW_PACKED:  idx = i; break;
+                case SWS_RW_PLANAR:  idx = ops->plane_src[i]; break;
                 }
 
                 av_assert0(!(ops->comps_src.flags[idx] & SWS_COMP_GARBAGE));
@@ -864,8 +866,9 @@ static void print_q4(AVBPrint *bp, const AVRational q4[4], SwsCompMask mask)
 }
 
 static const char *const rw_mode_names[] = {
-    [SWS_RW_PLANAR] = "planar",
-    [SWS_RW_PACKED] = "packed",
+    [SWS_RW_PLANAR]     = "planar",
+    [SWS_RW_PACKED]     = "packed",
+    [SWS_RW_PALETTE]    = "palette"
 };
 
 void ff_sws_op_desc(AVBPrint *bp, const SwsOp *op)
