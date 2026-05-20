@@ -45,6 +45,7 @@ typedef struct SwsOpPass {
     int pixel_bits_out;
     int idx_in[4];
     int idx_out[4];
+    int palette_idx;
     int *offsets_y;
     int filter_size_h;
     bool memcpy_first;
@@ -268,6 +269,11 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
         exec->out_bump[i]   = out->linesize[idx] - loop_size;
     }
 
+    if (p->palette_idx >= 0) {
+        exec->in[1] = in->data[p->palette_idx];
+        exec->in_stride[1] = exec->in_bump[1] = 0;
+    }
+
     const bool memcpy_in = p->memcpy_first || p->memcpy_last;
     if (!memcpy_in && !p->memcpy_out) {
         av_assert0(safe_blocks == num_blocks);
@@ -463,8 +469,18 @@ static void op_pass_run(const SwsFrame *out, const SwsFrame *in, const int y,
     }
 }
 
+static int rw_data_planes(const SwsOp *op)
+{
+    /* Exclude the palette plane from the plane count, since it does not need
+     * to be directly processed/adjusted by the dispatch layer */
+    return op->rw.mode == SWS_RW_PALETTE ? 1 : ff_sws_rw_op_planes(op);
+}
+
 static int rw_pixel_bits(const SwsOp *op)
 {
+    if (op->rw.mode == SWS_RW_PALETTE)
+        return 8; /* index size */
+
     int elems = 0;
     switch (op->rw.mode) {
     case SWS_RW_PLANAR: elems = 1; break;
@@ -527,8 +543,9 @@ static int compile(SwsGraph *graph, const SwsOpBackend *backend,
     const AVPixFmtDescriptor *outdesc = av_pix_fmt_desc_get(dst->format);
     const SwsOp *read  = ff_sws_op_list_input(ops);
     const SwsOp *write = ff_sws_op_list_output(ops);
-    p->planes_in  = ff_sws_rw_op_planes(read);
-    p->planes_out = ff_sws_rw_op_planes(write);
+    p->palette_idx = read->rw.mode == SWS_RW_PALETTE ? ops->plane_src[1] : -1;
+    p->planes_in  = rw_data_planes(read);
+    p->planes_out = rw_data_planes(write);
     p->pixel_bits_in  = rw_pixel_bits(read);
     p->pixel_bits_out = rw_pixel_bits(write);
     p->exec_base = (SwsOpExec) {
