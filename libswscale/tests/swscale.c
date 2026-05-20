@@ -28,6 +28,7 @@
 
 #undef HAVE_AV_CONFIG_H
 #include "libavutil/cpu.h"
+#include "libavutil/avstring.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/lfg.h"
@@ -47,6 +48,8 @@ struct options {
     enum AVPixelFormat dst_fmt;
     double prob;
     int w, h;
+    int dst_w;
+    int dst_h;
     int threads;
     int iters;
     int bench;
@@ -677,8 +680,8 @@ static inline int fmt_is_supported_by_hw(enum AVPixelFormat fmt)
 
 static int run_self_tests(const AVFrame *ref, const struct options *opts)
 {
-    const int dst_w[] = { opts->w, opts->w - opts->w / 3, opts->w + opts->w / 3 };
-    const int dst_h[] = { opts->h, opts->h - opts->h / 3, opts->h + opts->h / 3 };
+    const int dst_w_values[] = { opts->w, opts->w - opts->w / 3, opts->w + opts->w / 3 };
+    const int dst_h_values[] = { opts->h, opts->h - opts->h / 3, opts->h + opts->h / 3 };
 
     enum AVPixelFormat src_fmt, dst_fmt,
                        src_fmt_min = 0,
@@ -709,16 +712,18 @@ static int run_self_tests(const AVFrame *ref, const struct options *opts)
                 continue;
             if (!sws_test_format(dst_fmt, 0) || !sws_test_format(dst_fmt, 1))
                 continue;
-            for (int h = 0; h < FF_ARRAY_ELEMS(dst_h); h++) {
-                for (int w = 0; w < FF_ARRAY_ELEMS(dst_w); w++) {
+            for (int h = 0; h < FF_ARRAY_ELEMS(dst_h_values); h++) {
+                for (int w = 0; w < FF_ARRAY_ELEMS(dst_w_values); w++) {
                     for (int f = 0; f < FF_ARRAY_ELEMS(flags); f++) {
                         struct mode mode = {
                             .flags  = opts->flags  >= 0 ? opts->flags  : flags[f],
                             .dither = opts->dither >= 0 ? opts->dither : SWS_DITHER_AUTO,
                         };
+                        int dst_w = (opts->dst_w >= 0) ? opts->dst_w : dst_w_values[w];
+                        int dst_h = (opts->dst_h >= 0) ? opts->dst_h : dst_h_values[h];
 
                         if (ff_sfc64_get(&prng_state) <= UINT64_MAX * opts->prob) {
-                            ret = run_test(src_fmt, dst_fmt, dst_w[w], dst_h[h],
+                            ret = run_test(src_fmt, dst_fmt, dst_w, dst_h,
                                            &mode, opts, ref, src, NULL);
                             if (ret < 0)
                                 goto error;
@@ -727,9 +732,13 @@ static int run_self_tests(const AVFrame *ref, const struct options *opts)
                         if (opts->flags >= 0 || opts->unscaled)
                             break;
                     }
+                    if (opts->dst_w >= 0 || opts->dst_h >= 0)
+                        break;
                     if (opts->unscaled)
                         break;
                 }
+                if (opts->dst_w >= 0 || opts->dst_h >= 0)
+                    break;
                 if (opts->unscaled)
                     break;
             }
@@ -851,8 +860,33 @@ error:
     return ret;
 }
 
+static int parse_size(struct options *opts, const char *str, char **pbuf)
+{
+    int ret = av_parse_video_size(&opts->w, &opts->h, str);
+    if (ret < 0 && strchr(str, ':')) {
+        av_freep(pbuf);
+        char *buf = av_strdup(str);
+        if (!buf)
+            return AVERROR(ENOMEM);
+        *pbuf = buf;
+        char *saveptr = NULL;
+        char *s = av_strtok(buf, ":", &saveptr);
+        if (s) {
+            ret = av_parse_video_size(&opts->w, &opts->h, s);
+            if (ret >= 0) {
+                s = av_strtok(NULL, ":", &saveptr);
+                if (s) {
+                    ret = av_parse_video_size(&opts->dst_w, &opts->dst_h, s);
+                }
+            }
+        }
+    }
+    return ret;
+}
+
 static int parse_options(int argc, char **argv, struct options *opts, FILE **fp)
 {
+    char *buf = NULL;
     int ret;
 
     for (int i = 1; i < argc; i += 2) {
@@ -870,8 +904,9 @@ static int parse_options(int argc, char **argv, struct options *opts, FILE **fp)
                     "       Only test the specified destination pixel format\n"
                     "   -src <pixfmt>\n"
                     "       Only test the specified source pixel format\n"
-                    "   -s <size>\n"
+                    "   -s <size>[:<size>]\n"
                     "       Set frame size (WxH or abbreviation)\n"
+                    "       Optionally set destination frame size (after a ':' separator character).\n"
                     "   -bench <iters>\n"
                     "       Run benchmarks with the specified number of iterations. This mode also sets the frame size to 1920x1080 (unless -s is specified)\n"
                     "   -flags <flags>\n"
@@ -933,9 +968,9 @@ static int parse_options(int argc, char **argv, struct options *opts, FILE **fp)
                 goto end;
             }
         } else if (!strcmp(argv[i], "-s")) {
-            if (av_parse_video_size(&opts->w, &opts->h, argv[i + 1]) < 0) {
+            ret = parse_size(opts, argv[i + 1], &buf);
+            if (ret < 0) {
                 fprintf(stderr, "invalid frame size %s\n", argv[i + 1]);
-                ret = AVERROR(EINVAL);
                 goto end;
             }
         } else if (!strcmp(argv[i], "-bench")) {
@@ -1024,6 +1059,7 @@ bad_option:
     ret = 0;
 
 end:
+    av_freep(&buf);
     return ret;
 }
 
@@ -1034,6 +1070,8 @@ int main(int argc, char **argv)
         .dst_fmt = AV_PIX_FMT_NONE,
         .w       = -1,
         .h       = -1,
+        .dst_w   = -1,
+        .dst_h   = -1,
         .threads = 1,
         .iters   = 1,
         .prob    = 1.0,
