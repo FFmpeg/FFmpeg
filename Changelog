@@ -145,7 +145,7 @@ version 8.0.2:
  swscale/rgb2rgb_template: fix signed shift into sign bit
  swresample: Check ch layouts in swr_alloc_set_opts2()
  swresample: Check user chlayout in swr_set_matrix()
- avcodec/bmp: fix indention
+ avcodec/bmp: fix indentation
  avcodec/exr: Handle axmax like bxmin in 04d7a6d3db56ea1a93908ff2d3d312e3fc40a58c
  avformat/flvdec: Check *size in cts parsing
  avcodec/prores_raw: Tiles of width less than 16 result in undefined behavior
@@ -254,14 +254,14 @@ version 8.0.2:
  avcodec/decode: Optimize lcevc away if disabled
  avcodec/decode: Put lcevc fields into structure of their own
  avcodec/decode: Don't allocate LCEVC context for non-video
- hwcontext_vulkan: add support for implict DRM sync for export
+ hwcontext_vulkan: add support for implicit DRM sync for export
  (fforge/pr/21329) lavc/vvc: Prevent OOB write to slice_top_left_ctu_x in PPS CBS
  lavc/vvc: Error on inter slice with no reference pics
  forgejo: backport CI job names
  avformat/img2dec: reject input images too big to fit into a single packet
  (fforge/pr/21350) cbs_vp9: Always update loop filter and segmentation from current frame
  (fforge/pr/21330) avformat/iamf_writer: check that stream count is consistent for ambisonic Audio Elements
- avformat/iamf_writer: fix writting some ambisonics fields in Audio Elements
+ avformat/iamf_writer: fix writing some ambisonics fields in Audio Elements
  avformat/iamf_parse: fix setting denominator in AVIAMFLayer.demixing_matrix
  tests/fate/filter-video: add two feedback tests
  avfilter/vf_feedback: fix feedback block
