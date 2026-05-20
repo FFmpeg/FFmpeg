@@ -56,6 +56,9 @@ static const char *tprintf(char buf[], size_t size, const char *fmt, ...)
 
 static int rw_pixel_bits(const SwsOp *op)
 {
+    if (op->rw.mode == SWS_RW_PALETTE)
+        return 8; /* index size */
+
     int elems = 0;
     switch (op->rw.mode) {
     case SWS_RW_PLANAR: elems = 1; break;
@@ -175,6 +178,11 @@ static void check_compiled(const char *name,
         exec.out_stride[i] = sizeof(dst0[i][0]);
         exec.in_bump[i]  = exec.in_stride[i]  - read_size;
         exec.out_bump[i] = exec.out_stride[i] - write_size;
+    }
+
+    if (read_op->rw.mode == SWS_RW_PALETTE) {
+        static_assert(sizeof(src0[1]) >= sizeof(uint32_t[256]), "palette plane too small");
+        exec.in_bump[1] = exec.in_stride[1] = 0;
     }
 
     int32_t in_bump_y[LINES];
@@ -403,8 +411,9 @@ static void check_read(const char *name, const SwsUOp *uop)
     switch (uop->uop) {
     case SWS_UOP_READ_PACKED:
     case SWS_UOP_READ_BIT:
-    case SWS_UOP_READ_NIBBLE: mode = SWS_RW_PACKED; break;
-    case SWS_UOP_READ_PLANAR: mode = SWS_RW_PLANAR; break;
+    case SWS_UOP_READ_NIBBLE:  mode = SWS_RW_PACKED; break;
+    case SWS_UOP_READ_PLANAR:  mode = SWS_RW_PLANAR; break;
+    case SWS_UOP_READ_PALETTE: mode = SWS_RW_PALETTE; break;
     default: return;
     }
 
@@ -764,6 +773,7 @@ void checkasm_check_sw_ops(void)
     CHECK_FOR(READ_PACKED,      check_read);
     CHECK_FOR(READ_NIBBLE,      check_read);
     CHECK_FOR(READ_BIT,         check_read);
+    CHECK_FOR(READ_PALETTE,     check_read);
     CHECK_FOR(WRITE_PLANAR,     check_write);
     CHECK_FOR(WRITE_PACKED,     check_write);
     CHECK_FOR(WRITE_NIBBLE,     check_write);
