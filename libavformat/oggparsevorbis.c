@@ -223,8 +223,11 @@ static int fixup_vorbis_headers(AVFormatContext *as,
     int i, offset, len, err;
     int buf_len;
     unsigned char *ptr;
+    uint64_t total_len = (uint64_t)priv->len[0] + priv->len[1] + priv->len[2];
+    if (total_len + total_len / 255 + 64 > INT_MAX)
+        return AVERROR_INVALIDDATA;
 
-    len = priv->len[0] + priv->len[1] + priv->len[2];
+    len = total_len;
     buf_len = len + len / 255 + 64;
 
     if (*buf)
