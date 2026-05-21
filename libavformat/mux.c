@@ -524,7 +524,7 @@ static int compute_muxer_pkt_fields(AVFormatContext *s, AVStream *st, AVPacket *
         fci->missing_ts_warning = 1;
     }
 
-    if (s->debug & FF_FDEBUG_TS)
+    if (s->debug & AV_FDEBUG_TS)
         av_log(s, AV_LOG_DEBUG, "compute_muxer_pkt_fields: pts:%s dts:%s cur_dts:%s b:%d size:%d st:%d\n",
             av_ts2str(pkt->pts), av_ts2str(pkt->dts), av_ts2str(sti->cur_dts), delay, pkt->size, pkt->stream_index);
 
@@ -572,7 +572,7 @@ static int compute_muxer_pkt_fields(AVFormatContext *s, AVStream *st, AVPacket *
         return AVERROR(EINVAL);
     }
 
-    if (s->debug & FF_FDEBUG_TS)
+    if (s->debug & AV_FDEBUG_TS)
         av_log(s, AV_LOG_DEBUG, "av_write_frame: pts2:%s dts2:%s\n",
             av_ts2str(pkt->pts), av_ts2str(pkt->dts));
 
@@ -1095,7 +1095,7 @@ static int write_packet_common(AVFormatContext *s, AVStream *st, AVPacket *pkt, 
 {
     int ret;
 
-    if (s->debug & FF_FDEBUG_TS)
+    if (s->debug & AV_FDEBUG_TS)
         av_log(s, AV_LOG_DEBUG, "%s size:%d dts:%s pts:%s\n", __func__,
                pkt->size, av_ts2str(pkt->dts), av_ts2str(pkt->pts));
 

@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
     if (!s)
         return 1;
 
-    s->debug |= FF_FDEBUG_ID3V2;
+    s->debug |= AV_FDEBUG_ID3V2;
 
     ret = avio_open(&s->pb, argv[1], AVIO_FLAG_READ);
     if (ret < 0) {

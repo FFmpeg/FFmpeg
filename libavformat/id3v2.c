@@ -1055,7 +1055,7 @@ static void id3v2_parse(AVIOContext *pb, AVDictionary **metadata,
                 pbx = &pb_local.pub; // read from sync buffer
             }
 #endif
-            if (s && (s->debug & FF_FDEBUG_ID3V2)) {
+            if (s && (s->debug & AV_FDEBUG_ID3V2)) {
                 int64_t pos = avio_tell(pbx);
                 uint8_t *buf = av_malloc(tlen + 3U);
                 if (buf) {

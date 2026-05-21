@@ -1558,8 +1558,12 @@ typedef struct AVFormatContext {
      * Flags to enable debugging.
      */
     int debug;
-#define FF_FDEBUG_TS        0x0001
-#define FF_FDEBUG_ID3V2     0x0002
+#define AV_FDEBUG_TS        0x0001
+#define AV_FDEBUG_ID3V2     0x0002
+
+#if FF_API_FDEBUG_TS
+#define FF_FDEBUG_TS AV_FDEBUG_TS
+#endif
 
     /**
      * The maximum number of streams.

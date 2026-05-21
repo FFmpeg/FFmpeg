@@ -1090,7 +1090,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
         pkt->pts > pkt->dts)
         presentation_delayed = 1;
 
-    if (s->debug & FF_FDEBUG_TS)
+    if (s->debug & AV_FDEBUG_TS)
         av_log(s, AV_LOG_DEBUG,
             "IN delayed:%d pts:%s, dts:%s cur_dts:%s st:%d pc:%p duration:%"PRId64" delay:%d onein_oneout:%d\n",
             presentation_delayed, av_ts2str(pkt->pts), av_ts2str(pkt->dts), av_ts2str(sti->cur_dts),
@@ -1160,7 +1160,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     if (pkt->dts > sti->cur_dts)
         sti->cur_dts = pkt->dts;
 
-    if (s->debug & FF_FDEBUG_TS)
+    if (s->debug & AV_FDEBUG_TS)
         av_log(s, AV_LOG_DEBUG, "OUTdelayed:%d/%d pts:%s, dts:%s cur_dts:%s st:%d (%d)\n",
             presentation_delayed, delay, av_ts2str(pkt->pts), av_ts2str(pkt->dts), av_ts2str(sti->cur_dts), st->index, st->id);
 
@@ -1471,7 +1471,7 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                    av_ts2str(pkt->dts),
                    pkt->size);
         }
-        if (s->debug & FF_FDEBUG_TS)
+        if (s->debug & AV_FDEBUG_TS)
             av_log(s, AV_LOG_DEBUG,
                    "ff_read_packet stream=%d, pts=%s, dts=%s, size=%d, duration=%"PRId64", flags=%d\n",
                    pkt->stream_index,
@@ -1568,7 +1568,7 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
         fci->metafree = metaret == AVERROR_OPTION_NOT_FOUND;
     }
 
-    if (s->debug & FF_FDEBUG_TS)
+    if (s->debug & AV_FDEBUG_TS)
         av_log(s, AV_LOG_DEBUG,
                "read_frame_internal stream=%d, pts=%s, dts=%s, "
                "size=%d, duration=%"PRId64", flags=%d\n",
