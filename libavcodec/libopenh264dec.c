@@ -42,10 +42,20 @@ static av_cold int svc_decode_close(AVCodecContext *avctx)
 {
     SVCContext *s = avctx->priv_data;
 
-    if (s->decoder)
+    if (s->decoder) {
         WelsDestroyDecoder(s->decoder);
+        s->decoder = NULL;
+    }
 
     return 0;
+}
+
+static av_cold int svc_decode_init(AVCodecContext *avctx);
+
+static void svc_decode_flush(AVCodecContext *avctx)
+{
+    svc_decode_close(avctx);
+    svc_decode_init(avctx);
 }
 
 static av_cold int svc_decode_init(AVCodecContext *avctx)
@@ -75,6 +85,7 @@ static av_cold int svc_decode_init(AVCodecContext *avctx)
 
     if ((*s->decoder)->Initialize(s->decoder, &param) != cmResultSuccess) {
         av_log(avctx, AV_LOG_ERROR, "Initialize failed\n");
+        svc_decode_close(avctx);
         return AVERROR_UNKNOWN;
     }
 
@@ -94,6 +105,15 @@ static int svc_decode_frame(AVCodecContext *avctx, AVFrame *avframe,
 #if OPENH264_VER_AT_LEAST(1, 7)
     int opt;
 #endif
+
+    /* svc_decode_flush() tears the decoder down and re-initializes it. If that
+     * re-init failed (e.g. WelsCreateDecoder/Initialize OOM) s->decoder is left
+     * NULL; the void flush callback cannot report this, so guard here to turn a
+     * NULL dereference into a recoverable error. */
+    if (!s->decoder) {
+        av_log(avctx, AV_LOG_ERROR, "decoder not initialized\n");
+        return AVERROR(EINVAL);
+    }
 
     if (!avpkt->data) {
 #if OPENH264_VER_AT_LEAST(1, 9)
@@ -162,6 +182,7 @@ const FFCodec ff_libopenh264_decoder = {
     .init           = svc_decode_init,
     FF_CODEC_DECODE_CB(svc_decode_frame),
     .close          = svc_decode_close,
+    .flush          = svc_decode_flush,
     .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS |
                       FF_CODEC_CAP_INIT_CLEANUP,
