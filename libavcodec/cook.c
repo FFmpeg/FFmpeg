@@ -1077,6 +1077,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
     int s = 0;
     unsigned int channel_mask = 0;
     int samples_per_frame = 0;
+    int total_channels = 0;
     int ret;
     q->avctx = avctx;
 
@@ -1232,10 +1233,12 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
         q->subpacket[s].gains2.now      = q->subpacket[s].gain_3;
         q->subpacket[s].gains2.previous = q->subpacket[s].gain_4;
 
-        if (q->num_subpackets + q->subpacket[s].num_channels > q->avctx->channels) {
-            av_log(avctx, AV_LOG_ERROR, "Too many subpackets %d for channels %d\n", q->num_subpackets, q->avctx->channels);
+        if (total_channels + q->subpacket[s].num_channels > q->avctx->channels) {
+            av_log(avctx, AV_LOG_ERROR, "Too many subpacket channels %d for channels %d\n",
+                   total_channels + q->subpacket[s].num_channels, q->avctx->channels);
             return AVERROR_INVALIDDATA;
         }
+        total_channels += q->subpacket[s].num_channels;
 
         q->num_subpackets++;
         s++;
