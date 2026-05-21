@@ -15,6 +15,7 @@ version <next>:
 - Animated WebP decoder
 - Animated WebP demuxer
 - Remove CELT decoding support (doesn't affect Opus CELT)
+- Remove ogg/celt parsing
 
 
 version 8.1:

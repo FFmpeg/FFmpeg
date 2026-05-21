@@ -123,7 +123,6 @@ struct ogg {
 
 #define OGG_NOGRANULE_VALUE (-1ull)
 
-extern const struct ogg_codec ff_celt_codec;
 extern const struct ogg_codec ff_dirac_codec;
 extern const struct ogg_codec ff_flac_codec;
 extern const struct ogg_codec ff_ogm_audio_codec;
