@@ -22,11 +22,11 @@
 
 func ff_flac_lpc16_rvv, zve32x, b
         lpad    0
+        ble     a4, a2, 2f
         vtype_vli t0, a2, t2, e32, ta, ma
         vsetvl  zero, a2, t0
         vle32.v v8, (a1)
         sub     a4, a4, a2
-        blez    a4, 2f
         vle32.v v16, (a0)
         sh2add  a0, a2, a0
         vmv.s.x v0, zero
@@ -49,6 +49,7 @@ endfunc
 #if (__riscv_xlen == 64)
 func ff_flac_lpc32_rvv, zve64x, zba
         lpad    0
+        ble     a4, a2, 2f
         addi    t2, a2, -16
         ble     t2, zero, ff_flac_lpc32_rvv_simple
         vsetivli zero, 1, e64, m1, ta, ma
@@ -75,12 +76,13 @@ func ff_flac_lpc32_rvv, zve64x, zba
         sw      t0, (a0)
         addi    a0, a0, 4
         bnez    a4, 1b
-
+2:
         ret
 endfunc
 
 func ff_flac_lpc32_rvv_simple, zve64x, b
         lpad    0
+        ble     a4, a2, 2f
         vtype_vli t3, a2, t1, e64, ta, ma
         vntypei t2, t3
         vsetvl  zero, a2, t3 // e64
@@ -104,12 +106,13 @@ func ff_flac_lpc32_rvv_simple, zve64x, b
         sw      t0, (a0)
         addi    a0, a0, 4
         bnez    a4, 1b
-
+2:
         ret
 endfunc
 
 func ff_flac_lpc33_rvv, zve64x, b
         lpad    0
+        ble     a5, a3, 2f
         vtype_vli t0, a3, t1, e64, ta, ma
         vsetvl  zero, a3, t0
         vmv.s.x v0, zero
@@ -132,7 +135,7 @@ func ff_flac_lpc33_rvv, zve64x, b
         sd      t0, (a0)
         addi    a0, a0, 8
         bnez    a5, 1b
-
+2:
         ret
 endfunc
 #endif

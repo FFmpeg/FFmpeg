@@ -74,12 +74,25 @@ static void check_lpc(int pred_order, int bps)
     for (int i = 0; i < BUF_SIZE; i++)
         dst[i] = sign_extend(rnd(), bps);
 
-    memcpy(dst0, dst, BUF_SIZE * sizeof (int32_t));
-    memcpy(dst1, dst, BUF_SIZE * sizeof (int32_t));
-    call_ref(dst0, coeffs, pred_order, qlevel, BUF_SIZE);
-    call_new(dst1, coeffs, pred_order, qlevel, BUF_SIZE);
-    if (memcmp(dst0, dst1, BUF_SIZE * sizeof (int32_t)) != 0)
-       fail();
+    const int test_lens[] = {
+        0,
+        pred_order - 1,
+        pred_order,
+        pred_order + 1,
+        BUF_SIZE,
+    };
+
+    for (int k = 0; k < FF_ARRAY_ELEMS(test_lens); k++) {
+        int len = test_lens[k];
+        if (len < 0 || len > BUF_SIZE) continue;
+
+        memcpy(dst0, dst, BUF_SIZE * sizeof (int32_t));
+        memcpy(dst1, dst, BUF_SIZE * sizeof (int32_t));
+        call_ref(dst0, coeffs, pred_order, qlevel, len);
+        call_new(dst1, coeffs, pred_order, qlevel, len);
+        if (memcmp(dst0, dst1, BUF_SIZE * sizeof (int32_t)) != 0)
+           fail();
+    }
     bench_new(dst, coeffs, pred_order, qlevel, BUF_SIZE);
 }
 
@@ -103,12 +116,25 @@ static void check_lpc33(int pred_order)
         dst[i] = sign_extend64(((int64_t)rnd() << 1) | (rnd() & 1), 33);
     }
 
-    memcpy(dst0, dst, BUF_SIZE * sizeof (int64_t));
-    memcpy(dst1, dst, BUF_SIZE * sizeof (int64_t));
-    call_ref(dst0, residuals, coeffs, pred_order, qlevel, BUF_SIZE);
-    call_new(dst1, residuals, coeffs, pred_order, qlevel, BUF_SIZE);
-    if (memcmp(dst0, dst1, BUF_SIZE * sizeof (int64_t)) != 0)
-       fail();
+    const int test_lens[] = {
+        0,
+        pred_order - 1,
+        pred_order,
+        pred_order + 1,
+        BUF_SIZE,
+    };
+
+    for (int k = 0; k < FF_ARRAY_ELEMS(test_lens); k++) {
+        int len = test_lens[k];
+        if (len < 0 || len > BUF_SIZE) continue;
+
+        memcpy(dst0, dst, BUF_SIZE * sizeof (int64_t));
+        memcpy(dst1, dst, BUF_SIZE * sizeof (int64_t));
+        call_ref(dst0, residuals, coeffs, pred_order, qlevel, len);
+        call_new(dst1, residuals, coeffs, pred_order, qlevel, len);
+        if (memcmp(dst0, dst1, BUF_SIZE * sizeof (int64_t)) != 0)
+           fail();
+    }
     bench_new(dst, residuals, coeffs, pred_order, qlevel, BUF_SIZE);
 }
 
