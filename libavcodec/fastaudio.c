@@ -114,6 +114,8 @@ static int fastaudio_decode(AVCodecContext *avctx, void *data,
     int ret;
 
     subframes = pkt->size / (40 * avctx->channels);
+    if (subframes <= 0 || subframes > INT_MAX / 256)
+        return AVERROR_INVALIDDATA;
     frame->nb_samples = subframes * 256;
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
