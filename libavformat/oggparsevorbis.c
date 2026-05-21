@@ -608,6 +608,13 @@ static int vorbis_packet(AVFormatContext *s, int idx)
         priv->comment_size = 0;
         av_freep(&priv->setup);
         priv->setup_size = 0;
+
+        av_vorbis_parse_free(&priv->vp);
+        priv->vp = av_vorbis_parse_init(os->new_extradata, os->new_extradata_size);
+        if (!priv->vp) {
+            av_log(s, AV_LOG_ERROR, "Failed to re-initialize Vorbis parser\n");
+            return AVERROR_INVALIDDATA;
+        }
     }
 
     return skip_packet;
