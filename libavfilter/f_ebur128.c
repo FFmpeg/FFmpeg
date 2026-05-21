@@ -445,15 +445,22 @@ static int config_audio_output(AVFilterLink *outlink)
     if (!ebur128->ch_weighting || !ebur128->dsp.y || !ebur128->dsp.z)
         return AVERROR(ENOMEM);
 
-#define I400_BINS(x)  ((x) * 4 / 10)
+#define I400_BINS(x)  ((x) * 2 / 5)
 #define I3000_BINS(x) ((x) * 3)
+
+    if (outlink->sample_rate  > INT_MAX/3U || outlink->sample_rate < 3)
+        return AVERROR(EINVAL);
 
     ebur128->i400.cache_size = I400_BINS(outlink->sample_rate);
     ebur128->i3000.cache_size = I3000_BINS(outlink->sample_rate);
+    size_t i400_count, i3000_count;
+    if (av_size_mult(nb_channels, ebur128->i400.cache_size,  &i400_count)  < 0 || i400_count  > INT_MAX ||
+        av_size_mult(nb_channels, ebur128->i3000.cache_size, &i3000_count) < 0 || i3000_count > INT_MAX)
+        return AVERROR(EINVAL);
     ebur128->i400.sum = av_calloc(nb_channels, sizeof(*ebur128->i400.sum));
     ebur128->i3000.sum = av_calloc(nb_channels, sizeof(*ebur128->i3000.sum));
-    ebur128->i400.cache = av_calloc(nb_channels * ebur128->i400.cache_size, sizeof(*ebur128->i400.cache));
-    ebur128->i3000.cache = av_calloc(nb_channels * ebur128->i3000.cache_size, sizeof(*ebur128->i3000.cache));
+    ebur128->i400.cache  = av_calloc(i400_count,  sizeof(*ebur128->i400.cache));
+    ebur128->i3000.cache = av_calloc(i3000_count, sizeof(*ebur128->i3000.cache));
     if (!ebur128->i400.sum || !ebur128->i3000.sum ||
         !ebur128->i400.cache || !ebur128->i3000.cache)
         return AVERROR(ENOMEM);
