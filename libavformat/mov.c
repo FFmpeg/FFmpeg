@@ -2146,6 +2146,12 @@ static int mov_read_colr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                 return AVERROR(ENOMEM);
             icc_profile = sd->data;
         } else {
+            if (c->heif_icc_profile_items >= c->fc->max_streams) {
+                av_log(c->fc, AV_LOG_WARNING,
+                       "HEIF ICC profile copies exceed cap %d; ignoring further items\n",
+                       c->fc->max_streams);
+                return 0;
+            }
             av_freep(&item->icc_profile);
             icc_profile = item->icc_profile = av_malloc(atom.size - 4);
             if (!icc_profile) {
@@ -2153,6 +2159,7 @@ static int mov_read_colr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                 return AVERROR(ENOMEM);
             }
             item->icc_profile_size = atom.size - 4;
+            c->heif_icc_profile_items++;
         }
         ret = ffio_read_size(pb, icc_profile, atom.size - 4);
         if (ret < 0)
