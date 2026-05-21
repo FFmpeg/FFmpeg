@@ -14,6 +14,7 @@ version <next>:
 - APV Vulkan hwaccel
 - Animated WebP decoder
 - Animated WebP demuxer
+- Remove CELT decoding support (doesn't affect Opus CELT)
 
 
 version 8.1:
