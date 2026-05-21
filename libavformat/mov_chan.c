@@ -499,11 +499,24 @@ int ff_mov_get_channel_layout_tag(const AVCodecParameters *par,
     /* if no tag was found, use channel bitmap or description as a backup if possible */
     if (tag == 0) {
         uint32_t *channel_desc;
-        if (par->ch_layout.order == AV_CHANNEL_ORDER_NATIVE &&
-            par->ch_layout.u.mask < 0x40000) {
-            *layout = MOV_CH_LAYOUT_USE_BITMAP;
-            *bitmap = (uint32_t)par->ch_layout.u.mask;
-            return 0;
+
+        if (par->ch_layout.order == AV_CHANNEL_ORDER_NATIVE) {
+            /* Parsers and encoders (e.g. AC3, AAC, ALAC) indicate/propagate the bitstream's
+             * channel configuration using "standard" layouts in AV_CHANNEL_ORDER_NATIVE but
+             * the encoded bitstream's channels are not actually in that order. Don't return
+             * a channel layout bitmap or description using a conflicting channel order, as
+             * some software will incorrectly override the bitstream-provided information
+             * using the chan atom's data instead (e.g. afinfo/afplay for AAC in MOV) */
+            if (layouts != mov_ch_layouts_wav) {
+                *layout = MOV_CH_LAYOUT_UNKNOWN;
+                return 0;
+            }
+
+            if (par->ch_layout.u.mask < 0x40000) {
+                *layout = MOV_CH_LAYOUT_USE_BITMAP;
+                *bitmap = (uint32_t)par->ch_layout.u.mask;
+                return 0;
+            }
         } else if (par->ch_layout.order == AV_CHANNEL_ORDER_UNSPEC)
             return AVERROR(ENOSYS);
 

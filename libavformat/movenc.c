@@ -1017,6 +1017,11 @@ static int mov_write_chan_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *tra
         return ret;
     }
 
+    /* no predefined tag found + ch_layout in AV_CHANNEL_ORDER_NATIVE
+     * but bitstream channels not actually in native order */
+    if (layout_tag == MOV_CH_LAYOUT_UNKNOWN)
+        return 0;
+
     if (layout_tag == MOV_CH_LAYOUT_MONO && track->mono_as_fc > 0) {
         av_assert0(!channel_desc);
         channel_desc = av_malloc(sizeof(*channel_desc));
