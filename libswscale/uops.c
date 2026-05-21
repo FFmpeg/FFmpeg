@@ -841,6 +841,8 @@ static int translate_op(SwsContext *ctx, SwsUOpList *uops, SwsUOpFlags flags,
         uop.uop = SWS_UOP_SWAP_BYTES;
         uop.type = pixel_type_to_int(op->type);
         break;
+    default:
+        return AVERROR(ENOTSUP);
     }
 
     av_assert0(uop.uop != SWS_UOP_INVALID);
