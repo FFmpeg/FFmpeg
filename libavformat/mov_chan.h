@@ -170,15 +170,6 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
 int ff_mov_get_channel_config_from_layout(const AVChannelLayout *layout, int *config);
 
 /**
- * Get AVChannelLayout from ISO/IEC 23001-8 ChannelConfiguration.
- *
- * @return 1  if the config was unknown, layout is untouched in this case
- *         0  if the config was found
- *         <0 on error
- */
-int ff_mov_get_channel_layout_from_config(int config, AVChannelLayout *layout, uint64_t omitted_channel_map);
-
-/**
  * Get ISO/IEC 23001-8 OutputChannelPosition from AVChannelLayout.
  */
 int ff_mov_get_channel_positions_from_layout(const AVChannelLayout *layout,

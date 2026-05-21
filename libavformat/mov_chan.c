@@ -684,7 +684,14 @@ int ff_mov_get_channel_config_from_layout(const AVChannelLayout *layout, int *co
     return 0;
 }
 
-int ff_mov_get_channel_layout_from_config(int config, AVChannelLayout *layout, uint64_t omitted_channel_map)
+/**
+ * Get AVChannelLayout from ISO/IEC 23001-8 ChannelConfiguration.
+ *
+ * @return 1  if the config was unknown, layout is untouched in this case
+ *         0  if the config was found
+ *         <0 on error
+ */
+static int mov_get_channel_layout_from_config(int config, AVChannelLayout *layout, uint64_t omitted_channel_map)
 {
     if (config > 0) {
         uint32_t layout_tag;
@@ -770,7 +777,7 @@ int ff_mov_read_chnl(AVFormatContext *s, AVIOContext *pb, AVStream *st)
                 return ret;
         } else {
             uint64_t omitted_channel_map = avio_rb64(pb);
-            ret = ff_mov_get_channel_layout_from_config(layout, &st->codecpar->ch_layout, omitted_channel_map);
+            ret = mov_get_channel_layout_from_config(layout, &st->codecpar->ch_layout, omitted_channel_map);
             if (ret < 0)
                 return ret;
         }
