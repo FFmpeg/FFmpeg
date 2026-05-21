@@ -175,6 +175,7 @@ include $(SRC_PATH)/tests/fate/checkasm.mak
 # Must be included after lavf-container.mak
 include $(SRC_PATH)/tests/fate/concatdec.mak
 include $(SRC_PATH)/tests/fate/cover-art.mak
+include $(SRC_PATH)/tests/fate/dashenc.mak
 include $(SRC_PATH)/tests/fate/dca.mak
 include $(SRC_PATH)/tests/fate/demux.mak
 include $(SRC_PATH)/tests/fate/dfa.mak

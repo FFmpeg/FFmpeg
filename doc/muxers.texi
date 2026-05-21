@@ -1330,10 +1330,20 @@ element. Imply that the @option{single_file} option is set to
 @var{true}. In the template, @code{$ext$} is replaced with the file
 name extension specific for the segment format.
 
+@item availability_start_time_ms @var{milliseconds}
+Set the MPD @code{availabilityStartTime} attribute as Unix epoch time in
+milliseconds. If set to @code{0}, the wall clock is used when the first
+packet is written. This is useful for live outputs that need a stable
+availability start time across restarts.
+
 @item streaming @var{bool}
 Enable or disable chunk streaming mode of output. In chunk streaming
 mode, each frame will be a @code{moof} fragment which forms a
 chunk. This is disabled by default.
+
+@item suggested_presentation_delay @var{duration}
+Set the MPD @code{suggestedPresentationDelay} attribute. If set to
+@code{0}, the last segment duration is used.
 
 @item target_latency @var{target_latency}
 Set an intended target latency in seconds for serving (fractional
