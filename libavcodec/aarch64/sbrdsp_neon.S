@@ -46,17 +46,40 @@ function ff_sbr_sum64x5_neon, export=1
         add             x3, x0, #192*4
         add             x4, x0, #256*4
         mov             x5, #64
-1:      ld1             {v0.4s}, [x0]
-        ld1             {v1.4s}, [x1], #16
-        fadd            v0.4s, v0.4s, v1.4s
-        ld1             {v2.4s}, [x2], #16
-        fadd            v0.4s, v0.4s, v2.4s
-        ld1             {v3.4s}, [x3], #16
-        fadd            v0.4s, v0.4s, v3.4s
-        ld1             {v4.4s}, [x4], #16
-        fadd            v0.4s, v0.4s, v4.4s
-        st1             {v0.4s}, [x0], #16
-        subs            x5, x5, #4
+1:      ldp             q0,  q1,  [x0]
+        ldp             q2,  q3,  [x0, #32]
+        ldp             q4,  q5,  [x1]
+        ldp             q6,  q7,  [x1, #32]
+        ldp             q16, q17, [x2]
+        ldp             q18, q19, [x2, #32]
+        add             x1,  x1,  #64
+        add             x2,  x2,  #64
+        subs            x5,  x5,  #16
+        fadd            v0.4s,   v0.4s,   v4.4s
+        fadd            v1.4s,   v1.4s,   v5.4s
+        fadd            v2.4s,   v2.4s,   v6.4s
+        fadd            v3.4s,   v3.4s,   v7.4s
+        ldp             q20, q21, [x3]
+        ldp             q22, q23, [x3, #32]
+        add             x3,  x3,  #64
+        fadd            v0.4s,   v0.4s,   v16.4s
+        fadd            v1.4s,   v1.4s,   v17.4s
+        fadd            v2.4s,   v2.4s,   v18.4s
+        fadd            v3.4s,   v3.4s,   v19.4s
+        ldp             q24, q25, [x4]
+        ldp             q26, q27, [x4, #32]
+        add             x4,  x4,  #64
+        fadd            v0.4s,   v0.4s,   v20.4s
+        fadd            v1.4s,   v1.4s,   v21.4s
+        fadd            v2.4s,   v2.4s,   v22.4s
+        fadd            v3.4s,   v3.4s,   v23.4s
+        fadd            v0.4s,   v0.4s,   v24.4s
+        fadd            v1.4s,   v1.4s,   v25.4s
+        fadd            v2.4s,   v2.4s,   v26.4s
+        fadd            v3.4s,   v3.4s,   v27.4s
+        stp             q0,  q1,  [x0]
+        stp             q2,  q3,  [x0, #32]
+        add             x0,  x0,  #64
         b.gt            1b
         ret
 endfunc
