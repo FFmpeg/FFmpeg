@@ -385,6 +385,7 @@ typedef struct MOVContext {
     int nb_heif_grid;
     int64_t idat_offset;
     int interleaved_read;
+    unsigned heif_icc_profile_items;
 } MOVContext;
 
 int ff_mp4_read_descr_len(AVIOContext *pb);
