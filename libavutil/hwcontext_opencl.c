@@ -77,7 +77,7 @@
 #include <VideoToolbox/VideoToolbox.h>
 #endif
 
-#if HAVE_OPENCL_VAAPI_INTEL_MEDIA && CONFIG_LIBMFX
+#if HAVE_OPENCL_VAAPI_INTEL_MEDIA && CONFIG_QSV
 extern int ff_qsv_get_surface_base_handle(mfxFrameSurface1 *surf,
                                           enum AVHWDeviceType base_dev_typ,
                                           void **base_handle);
@@ -2278,7 +2278,7 @@ static int opencl_map_from_qsv(AVHWFramesContext *dst_fc, AVFrame *dst,
     cl_int cle;
     int err, p;
 
-#if CONFIG_LIBMFX
+#if CONFIG_QSV
     if (src->format == AV_PIX_FMT_QSV) {
         void *base_handle;
         mfxFrameSurface1 *mfx_surface = (mfxFrameSurface1*)src->data[3];
