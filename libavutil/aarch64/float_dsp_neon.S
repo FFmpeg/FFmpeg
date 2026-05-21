@@ -178,15 +178,26 @@ function ff_vector_fmul_reverse_neon, export=1
 endfunc
 
 function ff_butterflies_float_neon, export=1
-1:      ld1             {v0.4s}, [x0]
+        subs            w2,  w2,  #8
+        b.lt            2f
+1:      ldp             q0,  q1,  [x0]
+        ldp             q2,  q3,  [x1]
+        subs            w2,  w2,  #8
+        fadd            v4.4s,   v0.4s,  v2.4s
+        fadd            v5.4s,   v1.4s,  v3.4s
+        fsub            v0.4s,   v0.4s,  v2.4s
+        fsub            v1.4s,   v1.4s,  v3.4s
+        st1             {v4.4s,  v5.4s}, [x0], #32
+        st1             {v0.4s,  v1.4s}, [x1], #32
+        b.ge            1b
+2:      tbz             w2,  #2,  3f
+        ld1             {v0.4s}, [x0]
         ld1             {v1.4s}, [x1]
-        subs            w2,  w2,  #4
         fsub            v2.4s,   v0.4s,  v1.4s
         fadd            v3.4s,   v0.4s,  v1.4s
-        st1             {v2.4s}, [x1],   #16
-        st1             {v3.4s}, [x0],   #16
-        b.gt            1b
-        ret
+        st1             {v2.4s}, [x1]
+        st1             {v3.4s}, [x0]
+3:      ret
 endfunc
 
 function ff_scalarproduct_float_neon, export=1
