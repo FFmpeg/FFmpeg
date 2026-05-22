@@ -1,0 +1,7 @@
+#extradata 0:      187, 0x327c2e4f
+#tb 0: 1/1000
+#media_type 0: video
+#codec_id 0: hevc
+#dimensions 0: 1920x1080
+#sar 0: 1/1
+0,       -125,          0,       41,   175656, 0x5363c806

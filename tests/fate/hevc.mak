@@ -247,6 +247,18 @@ fate-hevc-bsf-dts2pts-idr-cra: CMD = transcode "hevc" $(TARGET_SAMPLES)/hevc-con
 FATE_HEVC-$(call FRAMECRC, MOV HEVC,, HEVC_PARSER MOV_MUXER DTS2PTS_BSF) += fate-hevc-bsf-dts2pts-cra
 fate-hevc-bsf-dts2pts-cra: CMD = transcode "hevc" $(TARGET_SAMPLES)/hevc-conformance/RAP_A_docomo_4.bit mov "-c:v copy -bsf:v dts2pts -frames:v 80" "-c:v copy"
 
+FATE_HEVC-$(call FRAMECRC, MATROSKA,, HEVC_PARSER DOVI_SPLIT_BSF) += fate-hevc-bsf-dovi-split-bl
+fate-hevc-bsf-dovi-split-bl: CMD = framecrc -i $(TARGET_SAMPLES)/mkv/dovi-p7-hvce.mkv -c:v copy -bsf:v dovi_split=mode=bl
+
+FATE_HEVC-$(call FRAMECRC, MATROSKA,, HEVC_PARSER DOVI_SPLIT_BSF) += fate-hevc-bsf-dovi-split-bl-rpu
+fate-hevc-bsf-dovi-split-bl-rpu: CMD = framecrc -i $(TARGET_SAMPLES)/mkv/dovi-p7-hvce.mkv -c:v copy -bsf:v dovi_split=mode=bl_rpu
+
+FATE_HEVC-$(call FRAMECRC, MATROSKA,, HEVC_PARSER DOVI_SPLIT_BSF) += fate-hevc-bsf-dovi-split-el
+fate-hevc-bsf-dovi-split-el: CMD = framecrc -i $(TARGET_SAMPLES)/mkv/dovi-p7-hvce.mkv -c:v copy -bsf:v dovi_split=mode=el
+
+FATE_HEVC-$(call FRAMECRC, MATROSKA,, HEVC_PARSER DOVI_SPLIT_BSF) += fate-hevc-bsf-dovi-split-el-rpu
+fate-hevc-bsf-dovi-split-el-rpu: CMD = framecrc -i $(TARGET_SAMPLES)/mkv/dovi-p7-hvce.mkv -c:v copy -bsf:v dovi_split=mode=el_rpu
+
 fate-hevc-skiploopfilter: CMD = framemd5 -skip_loop_filter nokey -i $(TARGET_SAMPLES)/hevc-conformance/SAO_D_Samsung_5.bit -sws_flags bitexact
 FATE_HEVC-$(call FRAMEMD5, HEVC, HEVC, HEVC_PARSER) += fate-hevc-skiploopfilter
 
