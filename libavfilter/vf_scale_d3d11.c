@@ -25,6 +25,7 @@
 #include "libavutil/pixdesc.h"
 #include "compat/w32dlfcn.h"
 
+#include <initguid.h>
 #include "libavutil/hwcontext.h"
 #include "libavutil/hwcontext_d3d11va.h"
 
