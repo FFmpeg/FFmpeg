@@ -477,6 +477,17 @@ int ff_vk_exec_pool_init(FFVulkanContext *s, AVVulkanDeviceQueueFamily *qf,
 
     pool->pool_size = nb_contexts;
 
+#ifdef VK_KHR_internally_synchronized_queues
+    /* Check if the extension and its flag are actually enabled */
+    int internal_queue_sync = 0;
+    if (s->extensions & FF_VK_EXT_INTERNAL_QUEUE_SYNC) {
+        const VkPhysicalDeviceInternallySynchronizedQueuesFeaturesKHR *iqs;
+        iqs = ff_vk_find_struct(s->hwctx->device_features.pNext,
+                                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INTERNALLY_SYNCHRONIZED_QUEUES_FEATURES_KHR);
+        internal_queue_sync = iqs && iqs->internallySynchronizedQueues;
+    }
+#endif
+
     /* Init contexts */
     for (int i = 0; i < pool->pool_size; i++) {
         FFVkExecContext *e = &pool->contexts[i];
@@ -510,9 +521,8 @@ int ff_vk_exec_pool_init(FFVulkanContext *s, AVVulkanDeviceQueueFamily *qf,
         VkDeviceQueueInfo2 qinfo = {
             .sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_INFO_2,
 #ifdef VK_KHR_internally_synchronized_queues
-            .flags            = (s->extensions & FF_VK_EXT_INTERNAL_QUEUE_SYNC)
-                                    ? VK_DEVICE_QUEUE_CREATE_INTERNALLY_SYNCHRONIZED_BIT_KHR
-                                    : 0,
+            .flags            = internal_queue_sync ?
+                                VK_DEVICE_QUEUE_CREATE_INTERNALLY_SYNCHRONIZED_BIT_KHR : 0,
 #endif
             .queueFamilyIndex = qf->idx,
             .queueIndex       = e->qi,
