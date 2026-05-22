@@ -438,6 +438,7 @@ static ssize_t gnutls_url_pull(gnutls_transport_ptr_t transport,
     URLContext *uc = s->is_dtls ? s->udp : s->tcp;
     int ret = ffurl_read(uc, buf, len);
     if (ret >= 0) {
+#if CONFIG_UDP_PROTOCOL
         if (s->is_dtls && s->listen && !c->dest_addr_len) {
             int err_ret;
 
@@ -449,6 +450,7 @@ static ssize_t gnutls_url_pull(gnutls_transport_ptr_t transport,
             }
             av_log(c, AV_LOG_TRACE, "Set UDP remote addr on UDP socket, now 'connected'\n");
         }
+#endif
         return ret;
     }
     if (ret == AVERROR_EXIT)

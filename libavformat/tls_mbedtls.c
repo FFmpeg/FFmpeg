@@ -383,6 +383,7 @@ static int mbedtls_recv(void *ctx, unsigned char *buf, size_t len)
     URLContext *h = shr->is_dtls ? shr->udp : shr->tcp;
     int ret = ffurl_read(h, buf, len);
     if (ret >= 0) {
+#if CONFIG_UDP_PROTOCOL
         if (shr->is_dtls && shr->listen && !tls_ctx->dest_addr_len) {
             int err_ret;
 
@@ -394,6 +395,7 @@ static int mbedtls_recv(void *ctx, unsigned char *buf, size_t len)
             }
             av_log(tls_ctx, AV_LOG_TRACE, "Set UDP remote addr on UDP socket, now 'connected'\n");
         }
+#endif
         /* Skip non-DTLS packets such as STUN to avoid failures. */
         if (shr->is_dtls && !ff_is_dtls_packet(buf, ret))
             return MBEDTLS_ERR_SSL_WANT_READ;
