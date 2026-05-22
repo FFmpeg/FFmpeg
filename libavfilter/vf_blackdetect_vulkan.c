@@ -24,7 +24,6 @@
 #include "vulkan_filter.h"
 
 #include "filters.h"
-#include "video.h"
 
 extern const unsigned char ff_blackdetect_comp_spv_data[];
 extern const unsigned int ff_blackdetect_comp_spv_len;
@@ -38,12 +37,15 @@ typedef struct BlackDetectVulkanContext {
     FFVulkanShader shd;
     AVBufferPool *sum_buf_pool;
 
-    double black_min_duration_time;
     double picture_black_ratio_th;
     double pixel_black_th;
     int    alpha;
 
-    int64_t black_start;
+    int64_t black_start;             ///< pts start time of the first black picture
+    int64_t last_pts;                ///< pts of the last filtered frame
+    double  black_min_duration_time; ///< minimum duration of detected black, in seconds
+    int64_t black_min_duration;      ///< minimum duration of detected black, expressed in timebase units
+    AVRational time_base;
 } BlackDetectVulkanContext;
 
 typedef struct BlackDetectPushData {
@@ -60,6 +62,7 @@ static av_cold int init_filter(AVFilterContext *ctx)
     int err;
     BlackDetectVulkanContext *s = ctx->priv;
     FFVulkanContext *vkctx = &s->vkctx;
+    const AVFilterLink *inlink = ctx->inputs[0];
     const int plane = s->alpha ? 3 : 0;
 
     const AVPixFmtDescriptor *pixdesc = av_pix_fmt_desc_get(s->vkctx.input_format);
@@ -106,9 +109,10 @@ static av_cold int init_filter(AVFilterContext *ctx)
 
     RET(ff_vk_shader_register_exec(vkctx, &s->e, &s->shd));
 
+    s->time_base = inlink->time_base;
+    s->black_min_duration = s->black_min_duration_time / av_q2d(s->time_base);
     s->black_start = AV_NOPTS_VALUE;
     s->initialized = 1;
-
 
 fail:
     return err;
@@ -117,16 +121,16 @@ fail:
 static void report_black_region(AVFilterContext *ctx, int64_t black_end)
 {
     BlackDetectVulkanContext *s = ctx->priv;
-    const AVFilterLink *inlink = ctx->inputs[0];
+
     if (s->black_start == AV_NOPTS_VALUE)
         return;
 
-    if ((black_end - s->black_start) >= s->black_min_duration_time / av_q2d(inlink->time_base)) {
+    if ((black_end - s->black_start) >= s->black_min_duration) {
         av_log(ctx, AV_LOG_INFO,
                "black_start:%s black_end:%s black_duration:%s\n",
-               av_ts2timestr(s->black_start, &inlink->time_base),
-               av_ts2timestr(black_end, &inlink->time_base),
-               av_ts2timestr(black_end - s->black_start, &inlink->time_base));
+               av_ts2timestr(s->black_start, &s->time_base),
+               av_ts2timestr(black_end, &s->time_base),
+               av_ts2timestr(black_end - s->black_start, &s->time_base));
     }
 }
 
@@ -302,6 +306,7 @@ static int blackdetect_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
     RET(ff_vk_exec_submit(vkctx, exec));
     ff_vk_exec_wait(vkctx, exec);
     evaluate(link, in, sum);
+    s->last_pts = in->pts;
 
     av_buffer_unref(&sum_buf);
     return ff_filter_frame(outlink, in);
@@ -317,11 +322,12 @@ fail:
 static void blackdetect_vulkan_uninit(AVFilterContext *avctx)
 {
     BlackDetectVulkanContext *s = avctx->priv;
-    AVFilterLink *inlink = avctx->inputs[0];
-    FilterLink *inl = ff_filter_link(inlink);
     FFVulkanContext *vkctx = &s->vkctx;
 
-    report_black_region(avctx, inl->current_pts);
+    /* the input link may be gone here: during graph teardown the upstream
+     * filter can be freed first. Use the cached pts of the last frame */
+    if (s->initialized)
+        report_black_region(avctx, s->last_pts);
 
     ff_vk_exec_pool_free(vkctx, &s->e);
     ff_vk_shader_free(vkctx, &s->shd);
