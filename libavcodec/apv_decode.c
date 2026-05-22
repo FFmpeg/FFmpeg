@@ -591,6 +591,18 @@ static int apv_receive_frame(AVCodecContext *avctx, AVFrame *frame)
     return err;
 }
 
+#if HAVE_THREADS
+static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
+{
+    APVDecodeContext *asrc = src->priv_data;
+    APVDecodeContext *adst = dst->priv_data;
+
+    adst->pix_fmt = asrc->pix_fmt;
+
+    return 0;
+}
+#endif
+
 const FFCodec ff_apv_decoder = {
     .p.name                = "apv",
     CODEC_LONG_NAME("Advanced Professional Video"),
@@ -601,6 +613,7 @@ const FFCodec ff_apv_decoder = {
     .flush                 = apv_decode_flush,
     .close                 = apv_decode_close,
     FF_CODEC_RECEIVE_FRAME_CB(apv_receive_frame),
+    UPDATE_THREAD_CONTEXT(update_thread_context),
     .p.capabilities        = AV_CODEC_CAP_DR1 |
                              AV_CODEC_CAP_SLICE_THREADS |
                              AV_CODEC_CAP_FRAME_THREADS,
