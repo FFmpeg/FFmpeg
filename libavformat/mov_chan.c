@@ -349,6 +349,12 @@ static const struct {
     { AV_CODEC_ID_PCM_F32BE, mov_ch_layouts_wav    },
     { AV_CODEC_ID_PCM_F64LE, mov_ch_layouts_wav    },
     { AV_CODEC_ID_PCM_F64BE, mov_ch_layouts_wav    },
+    { AV_CODEC_ID_ADPCM_IMA_QT, mov_ch_layouts_wav },
+    { AV_CODEC_ID_MACE3,        mov_ch_layouts_wav },
+    { AV_CODEC_ID_MACE6,        mov_ch_layouts_wav },
+    { AV_CODEC_ID_PCM_ALAW,     mov_ch_layouts_wav },
+    { AV_CODEC_ID_PCM_MULAW,    mov_ch_layouts_wav },
+    { AV_CODEC_ID_SPEEX,        mov_ch_layouts_wav },
     { AV_CODEC_ID_NONE,    NULL                    },
 };
 
