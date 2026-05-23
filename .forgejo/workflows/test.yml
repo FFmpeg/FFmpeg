@@ -75,9 +75,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          path: ffmpeg
       - name: Configure
         run: |
-          ./configure --pkg-config-flags="--static" $FFBUILD_TARGET_FLAGS $FF_CONFIGURE \
+          mkdir build && cd build
+          ../ffmpeg/configure --pkg-config-flags="--static" $FFBUILD_TARGET_FLAGS $FF_CONFIGURE \
               --cc="$CC" --cxx="$CXX" --ar="$AR" --ranlib="$RANLIB" --nm="$NM" \
               --extra-cflags="$FF_CFLAGS" --extra-cxxflags="$FF_CXXFLAGS" \
               --extra-libs="$FF_LIBS" --extra-ldflags="$FF_LDFLAGS" --extra-ldexeflags="$FF_LDEXEFLAGS" \
@@ -87,7 +90,7 @@ jobs:
           cat ffbuild/config.log
           exit ${CFGRES:-0}
       - name: Build
-        run: make -j$(nproc)
+        run: make -C build -j$(nproc)
       - name: Restore Cached Fate-Suite
         id: cache
         uses: actions/cache/restore@v5
@@ -99,7 +102,7 @@ jobs:
       - name: Sync Fate-Suite
         id: fate
         run: |
-          make fate-rsync SAMPLES=$PWD/fate-suite
+          make -C build fate-rsync SAMPLES=$PWD/fate-suite
           echo "hash=$(find fate-suite -type f -printf "%P %s %T@\n" | sort | sha256sum | cut -d' ' -f1)" >> $FORGEJO_OUTPUT
       - name: Cache Fate-Suite
         uses: actions/cache/save@v5
@@ -113,6 +116,6 @@ jobs:
             export WINEDEBUG=-all
             export FREI0R_PATH="$(winepath -w "$FREI0R_PATH")"
           fi
-          LD_LIBRARY_PATH="$(printf "%s:" "$PWD"/lib*)$PWD" make fate fate-build SAMPLES="$PWD/fate-suite" -j$(nproc) || FATERES=$?
+          LD_LIBRARY_PATH="$(printf "%s:" "$PWD"/lib*)$PWD" make -C build fate fate-build SAMPLES="$PWD/fate-suite" -j$(nproc) || FATERES=$?
           find . -name "*.err" -exec printf '::group::%s\n' {} \; -exec cat {} \; -exec printf '::endgroup::\n' \;
           exit ${FATERES:-0}
