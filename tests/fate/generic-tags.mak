@@ -1,8 +1,8 @@
 tests/data/generic-tags.mp3: TAG = GEN
-tests/data/generic-tags.mp3: ffmpeg$(PROGSSUF)$(EXESUF) tests/generic-tags.ffmeta | tests/data
+tests/data/generic-tags.mp3: ffmpeg$(PROGSSUF)$(EXESUF) $(SRC_PATH)/tests/generic-tags.ffmeta | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
 	    -i $(TARGET_SAMPLES)/audiomatch/square3.mp3 \
-        -f ffmetadata -i $(TARGET_PATH)/tests/generic-tags.ffmeta \
+        -f ffmetadata -i $(SRC_PATH)/tests/generic-tags.ffmeta \
         -c:a copy -map_metadata 1 $(TARGET_PATH)/$@ -y 2>/dev/null
 
 ID3V2_TESTBIN = libavformat/tests/id3v2$(EXESUF)
