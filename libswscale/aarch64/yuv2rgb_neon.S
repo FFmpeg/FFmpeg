@@ -63,22 +63,10 @@
         add             w17, w0, w0, lsl #1
         sub             w3, w3, w17                                     // w3 = linesize  - width * 3 (padding)
   .else
-   .ifc \ofmt,rgb565le
+   .if rgb16
         sub             w3, w3, w0, lsl #1                              // w3 = linesize  - width * 2 (padding)
    .else
-    .ifc \ofmt,bgr565le
-        sub             w3, w3, w0, lsl #1                              // w3 = linesize  - width * 2 (padding)
-    .else
-     .ifc \ofmt,rgb555le
-        sub             w3, w3, w0, lsl #1                              // w3 = linesize  - width * 2 (padding)
-     .else
-      .ifc \ofmt,bgr555le
-        sub             w3, w3, w0, lsl #1                              // w3 = linesize  - width * 2 (padding)
-      .else
         sub             w3, w3, w0, lsl #2                              // w3 = linesize  - width * 4 (padding)
-      .endif
-     .endif
-    .endif
    .endif
   .endif
  .endif
@@ -112,22 +100,10 @@
         add             w17, w0, w0, lsl #1
         sub             w3, w3, w17                                     // w3 = linesize  - width * 3 (padding)
   .else
-   .ifc \ofmt,rgb565le
+   .if rgb16
         sub             w3, w3, w0, lsl #1                              // w3 = linesize  - width * 2 (padding)
    .else
-    .ifc \ofmt,bgr565le
-        sub             w3, w3, w0, lsl #1                              // w3 = linesize  - width * 2 (padding)
-    .else
-     .ifc \ofmt,rgb555le
-        sub             w3, w3, w0, lsl #1                              // w3 = linesize  - width * 2 (padding)
-     .else
-      .ifc \ofmt,bgr555le
-        sub             w3, w3, w0, lsl #1                              // w3 = linesize  - width * 2 (padding)
-      .else
         sub             w3, w3, w0, lsl #2                              // w3 = linesize  - width * 4 (padding)
-      .endif
-     .endif
-    .endif
    .endif
   .endif
  .endif
@@ -171,22 +147,10 @@
         add             w17, w0, w0, lsl #1
         sub             w3, w3, w17                                     // w3 = linesize  - width * 3 (padding)
   .else
-   .ifc \ofmt,rgb565le
+   .if rgb16
         sub             w3, w3, w0, lsl #1                              // w3 = linesize  - width * 2 (padding)
    .else
-    .ifc \ofmt,bgr565le
-        sub             w3, w3, w0, lsl #1                              // w3 = linesize  - width * 2 (padding)
-    .else
-     .ifc \ofmt,rgb555le
-        sub             w3, w3, w0, lsl #1                              // w3 = linesize  - width * 2 (padding)
-     .else
-      .ifc \ofmt,bgr555le
-        sub             w3, w3, w0, lsl #1                              // w3 = linesize  - width * 2 (padding)
-      .else
         sub             w3, w3, w0, lsl #2                              // w3 = linesize  - width * 4 (padding)
-      .endif
-     .endif
-    .endif
    .endif
   .endif
  .endif
@@ -278,36 +242,50 @@
         mov             \a2, v29.8b                                     // real alpha (next 8 pixels)
 .endm
 
-// The 16bpp output paths use v8/v9 to assemble packed pixels before the
-// final st1. v8/v9 are AAPCS callee-saved (low 64 bits must be preserved),
-// so each function spills d8/d9 to the stack on entry and reloads on exit.
-// Other output formats don't touch v8-v15, so the save/restore is gated.
-.macro save_d8_d9_if_16bpp ofmt
+// Map ofmt to .set predicates: rgb16=1 for the four 16bpp LE ofmts
+// (r_first=1 for rgb*, 0 for bgr*; gshift/hshift = 2/11 for 565,
+// 3/10 for 555), letting sibling macros branch on .if rgb16 instead of
+// repeating a four-way .ifc cascade.
+.macro set_rgb16_predicates ofmt
+        .set rgb16,     0
+        .set r_first,   0
+        .set gshift,    0
+        .set hshift,    0
 .ifc \ofmt,rgb565le
-        stp             d8, d9, [sp, #-0x10]!
+        .set rgb16,     1
+        .set r_first,   1
+        .set gshift,    2
+        .set hshift,   11
 .endif
 .ifc \ofmt,bgr565le
-        stp             d8, d9, [sp, #-0x10]!
+        .set rgb16,     1
+        .set gshift,    2
+        .set hshift,   11
 .endif
 .ifc \ofmt,rgb555le
-        stp             d8, d9, [sp, #-0x10]!
+        .set rgb16,     1
+        .set r_first,   1
+        .set gshift,    3
+        .set hshift,   10
 .endif
 .ifc \ofmt,bgr555le
+        .set rgb16,     1
+        .set gshift,    3
+        .set hshift,   10
+.endif
+.endm
+
+// 16bpp packing uses v8/v9 as the accumulator. AAPCS-64 requires d8/d9
+// callee-saved (low 64 bits of v8/v9); other ofmts don't touch v8-v15,
+// so the spill is gated on rgb16.
+.macro save_d8_d9_if_16bpp
+.if rgb16
         stp             d8, d9, [sp, #-0x10]!
 .endif
 .endm
 
-.macro restore_d8_d9_if_16bpp ofmt
-.ifc \ofmt,rgb565le
-        ldp             d8, d9, [sp], #0x10
-.endif
-.ifc \ofmt,bgr565le
-        ldp             d8, d9, [sp], #0x10
-.endif
-.ifc \ofmt,rgb555le
-        ldp             d8, d9, [sp], #0x10
-.endif
-.ifc \ofmt,bgr555le
+.macro restore_d8_d9_if_16bpp
+.if rgb16
         ldp             d8, d9, [sp], #0x10
 .endif
 .endm
@@ -333,8 +311,9 @@
 
 .macro declare_func ifmt ofmt
 function ff_\ifmt\()_to_\ofmt\()_neon, export=1
+        set_rgb16_predicates \ofmt
         load_args_\ifmt \ofmt
-        save_d8_d9_if_16bpp \ofmt
+        save_d8_d9_if_16bpp
 
         movi            v31.8h, #4, lsl #8                              // 128 * (1<<3) (loop-invariant)
         movi            v30.8b, #255                                    // alpha = 255  (loop-invariant)
@@ -415,39 +394,21 @@ function ff_\ifmt\()_to_\ofmt\()_neon, export=1
         st1             {  v6.8b,  v7.8b }, [x10], #16
         st1             { v18.8b, v19.8b }, [x15], #16
   .else
-   .ifc \ofmt,rgb565le
+   .if rgb16
         compute_rgb     v4.8b,v5.8b,v6.8b, v16.8b,v17.8b,v18.8b
-        // RGB565 LE: (R[7:3] << 11) | (G[7:2] << 5) | B[7:3]
-        pack_rgb16      v8,  v6,  v5,  v4,  2, 11
-        pack_rgb16      v9,  v18, v17, v16, 2, 11
+    .if r_first
+        // rgb*le: (R << hshift) | (G << 5) | B
+        pack_rgb16      v8,  v6,  v5,  v4,  gshift, hshift
+        pack_rgb16      v9,  v18, v17, v16, gshift, hshift
+    .else
+        // bgr*le: (B << hshift) | (G << 5) | R
+        pack_rgb16      v8,  v4,  v5,  v6,  gshift, hshift
+        pack_rgb16      v9,  v16, v17, v18, gshift, hshift
+    .endif
         st1             { v8.8h, v9.8h}, [x2], #32
    .else
-    .ifc \ofmt,bgr565le
-        compute_rgb     v4.8b,v5.8b,v6.8b, v16.8b,v17.8b,v18.8b
-        // BGR565 LE: (B[7:3] << 11) | (G[7:2] << 5) | R[7:3]
-        pack_rgb16      v8,  v4,  v5,  v6,  2, 11
-        pack_rgb16      v9,  v16, v17, v18, 2, 11
-        st1             { v8.8h, v9.8h}, [x2], #32
-    .else
-     .ifc \ofmt,rgb555le
-        compute_rgb     v4.8b,v5.8b,v6.8b, v16.8b,v17.8b,v18.8b
-        // RGB555 LE: (R[7:3] << 10) | (G[7:3] << 5) | B[7:3]
-        pack_rgb16      v8,  v6,  v5,  v4,  3, 10
-        pack_rgb16      v9,  v18, v17, v16, 3, 10
-        st1             { v8.8h, v9.8h}, [x2], #32
-     .else
-      .ifc \ofmt,bgr555le
-        compute_rgb     v4.8b,v5.8b,v6.8b, v16.8b,v17.8b,v18.8b
-        // BGR555 LE: (B[7:3] << 10) | (G[7:3] << 5) | R[7:3]
-        pack_rgb16      v8,  v4,  v5,  v6,  3, 10
-        pack_rgb16      v9,  v16, v17, v18, 3, 10
-        st1             { v8.8h, v9.8h}, [x2], #32
-      .else
         st4             { v4.8b, v5.8b, v6.8b, v7.8b}, [x2], #32
         st4             {v16.8b,v17.8b,v18.8b,v19.8b}, [x2], #32
-      .endif
-     .endif
-    .endif
    .endif
   .endif
  .endif
@@ -464,7 +425,7 @@ function ff_\ifmt\()_to_\ofmt\()_neon, export=1
         subs            w1, w1, #1                                      // height -= 1
         b.gt            1b
         mov             w0, w9
-        restore_d8_d9_if_16bpp \ofmt
+        restore_d8_d9_if_16bpp
         ret
 endfunc
 .endm
