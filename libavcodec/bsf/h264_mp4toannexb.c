@@ -82,7 +82,8 @@ static void count_or_copy(uint8_t **out, uint64_t *out_size,
 }
 
 static int h264_extradata_to_annexb(AVBSFContext *ctx,
-                                    uint8_t *extradata, int extradata_size)
+                                    const uint8_t *extradata, int extradata_size,
+                                    uint8_t **out_extradata, int *out_extradata_size)
 {
     H264BSFContext *s = ctx->priv_data;
     GetByteContext ogb, *gb = &ogb;
@@ -172,9 +173,12 @@ pps:
                "The resulting stream may not play.\n");
     }
 
-    av_freep(&ctx->par_out->extradata);
-    ctx->par_out->extradata      = out;
-    ctx->par_out->extradata_size = total_size;
+    if (out_extradata && out_extradata_size) {
+        av_freep(out_extradata);
+        *out_extradata      = out;
+        *out_extradata_size = total_size;
+    } else
+        av_freep(&out);
 
     s->length_size      = length_size;
     s->new_idr          = 1;
@@ -271,7 +275,9 @@ static int h264_mp4toannexb_init(AVBSFContext *ctx)
     }
     return h264_extradata_to_annexb(ctx,
                                     ctx->par_in->extradata,
-                                    ctx->par_in->extradata_size);
+                                    ctx->par_in->extradata_size,
+                                    &ctx->par_out->extradata,
+                                    &ctx->par_out->extradata_size);
 }
 
 static int h264_mp4toannexb_filter(AVBSFContext *ctx, AVPacket *opkt)
@@ -294,7 +300,7 @@ static int h264_mp4toannexb_filter(AVBSFContext *ctx, AVPacket *opkt)
     extradata = av_packet_get_side_data(in, AV_PKT_DATA_NEW_EXTRADATA,
                                         &extradata_size);
     if (extradata && extradata[0] == 1) {
-        ret = h264_extradata_to_annexb(ctx, extradata, extradata_size);
+        ret = h264_extradata_to_annexb(ctx, extradata, extradata_size, NULL, NULL);
         if (ret < 0)
             goto fail;
         av_packet_side_data_remove(in->side_data, &in->side_data_elems,
