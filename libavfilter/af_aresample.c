@@ -177,7 +177,7 @@ static int config_output(AVFilterLink *outlink)
         av_opt_set_double(aresample->swr, "lfe_mix_level", di->lfe_mix_level, 0);
         av_opt_set_int(aresample->swr, "matrix_encoding", matrix_encoding, 0);
 
-        if (av_channel_layout_compare(&outlink->ch_layout, &out_layout))
+        if (av_channel_layout_compare(&outlink->ch_layout, &inlink->ch_layout))
             av_frame_side_data_remove(&outlink->side_data, &outlink->nb_side_data,
                                       AV_FRAME_DATA_DOWNMIX_INFO);
     }
