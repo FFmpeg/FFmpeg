@@ -11619,6 +11619,12 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
 #endif
         else if (st->codecpar->codec_id == AV_CODEC_ID_APV && sample->size > 4) {
             const uint32_t au_size = avio_rb32(sc->pb);
+            if (au_size > sample->size - 4) {
+                av_log(s, AV_LOG_ERROR,
+                       "APV au_size %u exceeds sample body %d\n",
+                       au_size, sample->size - 4);
+                return AVERROR_INVALIDDATA;
+            }
             ret = av_get_packet(sc->pb, pkt, au_size);
         } else
             ret = av_get_packet(sc->pb, pkt, sample->size);
