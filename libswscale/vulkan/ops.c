@@ -290,6 +290,25 @@ struct DitherData {
         int struct_ptr_id;
         int id;
         int mask_id;
+        int binding;
+};
+
+struct FilterData {
+    SwsOpType filter;
+    int filter_size;
+    int dst_size;
+    int num_weights;
+
+    int arr_w_in_id;
+    int arr_w_out_id;
+    int arr_o_id;
+    int struct_id;
+    int struct_ptr_id;
+
+    int id; /* buffer ID */
+    int binding; /* descriptor idx in desc set 1 */
+
+    int tap_const_base;
 };
 
 typedef struct SPIRVIDs {
@@ -334,6 +353,10 @@ typedef struct SPIRVIDs {
     int dither_ptr_elem_id;
     int nb_dither_bufs;
 
+    struct FilterData filt[MAX_FILT_BUFS];
+    int filt_o_ptr_id;
+    int nb_filter_bufs;
+
     int out_img_type;
     int out_img_array_id;
 
@@ -370,7 +393,8 @@ static void define_shader_header(SwsContext *sws, FFVulkanShader *shd, SwsOpList
 
     /* Entrypoint */
     id->ep = spi_OpEntryPoint(spi, SpvExecutionModelGLCompute, "main",
-                                id->in_vars, 3 + id->nb_dither_bufs);
+                                id->in_vars,
+                                3 + id->nb_dither_bufs + id->nb_filter_bufs);
     spi_OpExecutionMode(spi, id->ep, SpvExecutionModeLocalSize,
                         shd->lg_size, 3);
 
@@ -396,7 +420,24 @@ static void define_shader_header(SwsContext *sws, FFVulkanShader *shd, SwsOpList
         spi_OpDecorate(spi, id->dither[i].struct_id, SpvDecorationBlock);
         spi_OpMemberDecorate(spi, id->dither[i].struct_id, 0, SpvDecorationOffset, 0);
         spi_OpDecorate(spi, id->dither[i].id, SpvDecorationDescriptorSet, 1);
-        spi_OpDecorate(spi, id->dither[i].id, SpvDecorationBinding, i);
+        spi_OpDecorate(spi, id->dither[i].id, SpvDecorationBinding,
+                       id->dither[i].binding);
+    }
+
+    for (int i = 0; i < id->nb_filter_bufs; i++) {
+        struct FilterData *f = &id->filt[i];
+        spi_OpDecorate(spi, f->arr_w_in_id, SpvDecorationArrayStride,
+                       sizeof(float));
+        spi_OpDecorate(spi, f->arr_w_out_id, SpvDecorationArrayStride,
+                       f->filter_size*sizeof(float));
+        spi_OpDecorate(spi, f->arr_o_id, SpvDecorationArrayStride,
+                       sizeof(int32_t));
+        spi_OpDecorate(spi, f->struct_id, SpvDecorationBlock);
+        spi_OpMemberDecorate(spi, f->struct_id, 0, SpvDecorationOffset, 0);
+        spi_OpMemberDecorate(spi, f->struct_id, 1, SpvDecorationOffset,
+                             f->num_weights*sizeof(float));
+        spi_OpDecorate(spi, f->id, SpvDecorationDescriptorSet, 1);
+        spi_OpDecorate(spi, f->id, SpvDecorationBinding, f->binding);
     }
 
     if (!(sws->flags & SWS_BITEXACT))
@@ -605,6 +646,32 @@ static void define_shader_bindings(SwsOpList *ops, SPICtx *spi, SPIRVIDs *id,
                                       SpvStorageClassUniform, 0);
     }
 
+    /* Filter buffers: struct { float w[dst_size][filter_size]; int o[dst_size]; } */
+    id->filt_o_ptr_id = 0;
+    if (id->nb_filter_bufs)
+        id->filt_o_ptr_id = spi_OpTypePointer(spi, SpvStorageClassUniform,
+                                              id->i32_type);
+
+    for (int i = 0; i < id->nb_filter_bufs; i++) {
+        struct FilterData *f = &id->filt[i];
+        int fs_id = spi_OpConstantUInt(spi, id->u32_type, f->filter_size);
+        int ds_id = spi_OpConstantUInt(spi, id->u32_type, f->dst_size);
+
+        spi_OpTypeArray(spi, id->f32_type, f->arr_w_in_id, fs_id);
+        spi_OpTypeArray(spi, f->arr_w_in_id, f->arr_w_out_id, ds_id);
+        spi_OpTypeArray(spi, id->i32_type, f->arr_o_id, ds_id);
+        spi_OpTypeStruct(spi, f->struct_id, f->arr_w_out_id, f->arr_o_id);
+        f->struct_ptr_id = spi_OpTypePointer(spi, SpvStorageClassUniform,
+                                             f->struct_id);
+        f->id = spi_OpVariable(spi, f->id, f->struct_ptr_id,
+                               SpvStorageClassUniform, 0);
+
+        /* Signed tap-index constants 0..filter_size-1 (consecutive <id>s) */
+        f->tap_const_base = spi_OpConstantInt(spi, id->i32_type, 0);
+        for (int t = 1; t < f->filter_size; t++)
+            spi_OpConstantInt(spi, id->i32_type, t);
+    }
+
     const SwsOp *op_w = ff_sws_op_list_output(ops);
     const SwsOp *op_r = ff_sws_op_list_input(ops);
 
@@ -718,6 +785,70 @@ static int insert_bitexact_linear(const SwsOp *op, SPICtx *spi, SPIRVIDs *id,
                                     res[0], res[1], res[2], res[3]);
 }
 
+static int read_filtered(SPICtx *spi, SPIRVIDs *id, const SwsOpList *ops,
+                         const SwsOp *op, const struct FilterData *f,
+                         const int *in_img, int gid, int gi2)
+{
+    const int is_h = f->filter == SWS_OP_FILTER_H;
+
+    /* Buffer array index along the filtered axis: pos.x (H) or pos.y (V) */
+    int axis = spi_OpCompositeExtract(spi, id->u32_type, gid, is_h ? 0 : 1);
+
+    /* int o = filter_o[axis]; */
+    int o_ptr = spi_OpAccessChain(spi, id->filt_o_ptr_id, f->id,
+                                  id->u32_cid[1], axis);
+    int o = spi_OpLoad(spi, id->i32_type, o_ptr, SpvMemoryAccessMaskNone, 0);
+
+    /* Signed pixel position, for the non-filtered coordinate axis */
+    int pos_x = spi_OpCompositeExtract(spi, id->i32_type, gi2, 0);
+    int pos_y = spi_OpCompositeExtract(spi, id->i32_type, gi2, 1);
+
+    /* Accumulators, initialized to zero */
+    int acc_s[4] = { id->f32_0, id->f32_0, id->f32_0, id->f32_0 };
+    int acc_v = id->f32_0;
+    if (op->rw.packed)
+        acc_v = spi_OpCompositeConstruct(spi, id->f32vec4_type,
+                                         id->f32_0, id->f32_0,
+                                         id->f32_0, id->f32_0);
+
+    for (int t = 0; t < f->filter_size; t++) {
+        /* float w = filter_w[axis][t]; */
+        int w_ptr = spi_OpAccessChain(spi, id->dither_ptr_elem_id, f->id,
+                                      id->u32_cid[0], axis,
+                                      f->tap_const_base + t);
+        int w = spi_OpLoad(spi, id->f32_type, w_ptr,
+                           SpvMemoryAccessMaskNone, 0);
+
+        /* Source coordinate, filtered axis offset by the tap index */
+        int c = t ? spi_OpIAdd(spi, id->i32_type, o, f->tap_const_base + t) : o;
+        int coord = is_h ?
+            spi_OpCompositeConstruct(spi, id->i32vec2_type, c, pos_y) :
+            spi_OpCompositeConstruct(spi, id->i32vec2_type, pos_x, c);
+
+        if (op->rw.packed) {
+            int px = spi_OpImageRead(spi, id->f32vec4_type,
+                                     in_img[ops->plane_src[0]], coord,
+                                     SpvImageOperandsMaskNone);
+            px = spi_OpVectorTimesScalar(spi, id->f32vec4_type, px, w);
+            acc_v = spi_OpFAdd(spi, id->f32vec4_type, acc_v, px);
+        } else {
+            for (int e = 0; e < op->rw.elems; e++) {
+                int px = spi_OpImageRead(spi, id->f32vec4_type,
+                                         in_img[ops->plane_src[e]], coord,
+                                         SpvImageOperandsMaskNone);
+                px = spi_OpCompositeExtract(spi, id->f32_type, px, 0);
+                px = spi_OpFMul(spi, id->f32_type, w, px);
+                acc_s[e] = spi_OpFAdd(spi, id->f32_type, acc_s[e], px);
+            }
+        }
+    }
+
+    if (op->rw.packed)
+        return acc_v;
+    return spi_OpCompositeConstruct(spi, id->f32vec4_type,
+                                    acc_s[0], acc_s[1], acc_s[2], acc_s[3]);
+}
+
 static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
                          SwsOpList *ops, FFVulkanShader *shd)
 {
@@ -763,33 +894,60 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
     if (err < 0)
         return err;
 
-    /* Entrypoint inputs: gl_GlobalInvocationID, input and output images, dither */
+    /* Entrypoint inputs; gl_GlobalInvocationID, input and output images, dither */
     id->in_vars[0] = spi_get_id(spi);
     id->in_vars[1] = spi_get_id(spi);
     id->in_vars[2] = spi_get_id(spi);
 
-    /* Create dither buffer descriptor set */
+    /* Create dither and filter buffer descriptor set. Both are collected in
+     * op order, so the bindings match the buffer order from create_bufs().*/
     id->nb_dither_bufs = 0;
+    id->nb_filter_bufs = 0;
+    int nb_data_bufs = 0;
     for (int n = 0; n < ops->num_ops; n++) {
         const SwsOp *op = &ops->ops[n];
-        if (op->op != SWS_OP_DITHER)
+        int var_id = 0;
+
+        if (op->op == SWS_OP_DITHER) {
+            if (id->nb_dither_bufs >= MAX_DITHER_BUFS)
+                return AVERROR(ENOTSUP);
+            struct DitherData *d = &id->dither[id->nb_dither_bufs++];
+            d->size      = 1 << op->dither.size_log2;
+            d->arr_1d_id = spi_get_id(spi);
+            d->arr_2d_id = spi_get_id(spi);
+            d->struct_id = spi_get_id(spi);
+            d->id        = spi_get_id(spi);
+            d->binding   = nb_data_bufs;
+            var_id       = d->id;
+        } else if (op->op == SWS_OP_READ && op->rw.filter) {
+            if (id->nb_filter_bufs >= MAX_FILT_BUFS)
+                return AVERROR(ENOTSUP);
+            const SwsFilterWeights *wd = op->rw.kernel;
+            struct FilterData *f = &id->filt[id->nb_filter_bufs++];
+            f->filter       = op->rw.filter;
+            f->filter_size  = wd->filter_size;
+            f->dst_size     = wd->dst_size;
+            f->num_weights  = wd->num_weights;
+            f->arr_w_in_id  = spi_get_id(spi);
+            f->arr_w_out_id = spi_get_id(spi);
+            f->arr_o_id     = spi_get_id(spi);
+            f->struct_id    = spi_get_id(spi);
+            f->id           = spi_get_id(spi);
+            f->binding      = nb_data_bufs;
+            var_id          = f->id;
+        } else {
             continue;
+        }
 
-        id->dither[id->nb_dither_bufs].size = 1 << op->dither.size_log2;
-        id->dither[id->nb_dither_bufs].arr_1d_id = spi_get_id(spi);
-        id->dither[id->nb_dither_bufs].arr_2d_id = spi_get_id(spi);
-        id->dither[id->nb_dither_bufs].struct_id = spi_get_id(spi);
-        id->dither[id->nb_dither_bufs].id = spi_get_id(spi);
-        id->in_vars[3 + id->nb_dither_bufs] = id->dither[id->nb_dither_bufs].id;
-
-        desc_set[id->nb_dither_bufs++] = (FFVulkanDescriptorSetBinding) {
+        id->in_vars[3 + nb_data_bufs] = var_id;
+        desc_set[nb_data_bufs++] = (FFVulkanDescriptorSetBinding) {
             .type        = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
             .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
         };
     }
-    if (id->nb_dither_bufs)
+    if (nb_data_bufs)
         ff_vk_shader_add_descriptor_set(&s->vkctx, shd, desc_set,
-                                        id->nb_dither_bufs, 1, 0);
+                                        nb_data_bufs, 1, 0);
 
     /* Define shader header sections */
     define_shader_header(sws, shd, ops, spi, id);
@@ -856,6 +1014,7 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
     int nb_const_ids = 0;
     int nb_dither_bufs = 0;
     int nb_linear_ops = 0;
+    int nb_filter_used = 0;
 
     /* Operations */
     for (int n = 0; n < ops->num_ops; n++) {
@@ -871,8 +1030,12 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
 
         switch (op->op) {
         case SWS_OP_READ:
-            if (op->rw.frac || op->rw.filter) {
+            if (op->rw.frac) {
                 return AVERROR(ENOTSUP);
+            } else if (op->rw.filter) {
+                data = read_filtered(spi, id, ops, op,
+                                     &id->filt[nb_filter_used++],
+                                     in_img, gid, gi2);
             } else if (op->rw.packed) {
                 data = spi_OpImageRead(spi, type_v, in_img[ops->plane_src[0]],
                                        gid, SpvImageOperandsMaskNone);
