@@ -46,7 +46,9 @@ struct RangeCoder {
     uint     low;
     uint     range;
     uint16_t outstanding_count;
-    uint8_t  outstanding_byte;
+    /* note: -1 is the value at init, and it has a different meaning from 0xFF,
+     * so we have to handle both, meaning we have to keep this signed */
+    int16_t  outstanding_byte;
 };
 
 shared RangeCoder rc;
@@ -61,29 +63,29 @@ void rac_init(uint bs_start, uint bs_len)
     rc.low = 0;
     rc.range = 0xFF00;
     rc.outstanding_count = uint16_t(0);
-    rc.outstanding_byte = uint8_t(0xFF);
+    rc.outstanding_byte = int16_t(-1);
 }
 
 #ifdef FULL_RENORM
-/* Full renorm version that can handle outstanding_byte == 0xFF */
+/* Full renorm version that can handle the initial outstanding_byte < 0 */
 void renorm_encoder(void)
 {
-    if (rc.outstanding_byte == 0xFF) {
-        rc.outstanding_byte = uint8_t(rc.low >> 8);
+    if (rc.outstanding_byte < int16_t(0)) {
+        rc.outstanding_byte = int16_t(rc.low >> 8);
     } else if (rc.low <= 0xFF00) {
-        slice_data[rc.bs_off++].v = rc.outstanding_byte;
+        slice_data[rc.bs_off++].v = uint8_t(rc.outstanding_byte);
         uint16_t cnt = rc.outstanding_count;
         for (; cnt > 0; cnt--)
             slice_data[rc.bs_off++].v = uint8_t(0xFF);
         rc.outstanding_count = uint16_t(0);
-        rc.outstanding_byte = uint8_t(rc.low >> 8);
+        rc.outstanding_byte = int16_t(rc.low >> 8);
     } else if (rc.low >= 0x10000) {
-        slice_data[rc.bs_off++].v = rc.outstanding_byte + uint8_t(1);
+        slice_data[rc.bs_off++].v = uint8_t(rc.outstanding_byte) + uint8_t(1);
         uint16_t cnt = rc.outstanding_count;
         for (; cnt > 0; cnt--)
             slice_data[rc.bs_off++].v = uint8_t(0x00);
         rc.outstanding_count = uint16_t(0);
-        rc.outstanding_byte = uint8_t(bitfieldExtract(rc.low, 8, 8));
+        rc.outstanding_byte = int16_t(bitfieldExtract(rc.low, 8, 8));
     } else {
         rc.outstanding_count++;
     }
@@ -108,10 +110,10 @@ void renorm_encoder(void)
         return;
     }
 
-    uint8_t outstanding_byte = rc.outstanding_byte;
+    uint8_t outstanding_byte = uint8_t(rc.outstanding_byte);
 
     rc.outstanding_count = uint16_t(0);
-    rc.outstanding_byte  = uint8_t(low >> 8);
+    rc.outstanding_byte  = int16_t(low >> 8);
 
     uint8_t obs = uint8_t(low > 0xFF00);
     uint8_t fill = obs - uint8_t(1); /* unsigned underflow */
