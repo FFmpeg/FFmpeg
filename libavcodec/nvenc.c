@@ -591,12 +591,24 @@ static int nvenc_check_capabilities(AVCodecContext *avctx)
 #ifdef NVENC_HAVE_BFRAME_REF_MODE
     tmp = (ctx->b_ref_mode >= 0) ? ctx->b_ref_mode : NV_ENC_BFRAME_REF_MODE_DISABLED;
     ret = nvenc_check_cap(avctx, NV_ENC_CAPS_SUPPORT_BFRAME_REF_MODE);
-    if (tmp == NV_ENC_BFRAME_REF_MODE_EACH && ret != 1 && ret != 3) {
-        av_log(avctx, AV_LOG_WARNING, "Each B frame as reference is not supported\n");
-        return AVERROR(ENOSYS);
-    } else if (tmp != NV_ENC_BFRAME_REF_MODE_DISABLED && ret == 0) {
-        av_log(avctx, AV_LOG_WARNING, "B frames as references are not supported\n");
-        return AVERROR(ENOSYS);
+    switch (tmp) {
+    case NV_ENC_BFRAME_REF_MODE_DISABLED:
+        break;
+    case NV_ENC_BFRAME_REF_MODE_EACH:
+        if (!(ret & 1)) {
+            av_log(avctx, AV_LOG_WARNING, "Each B frame reference mode is not supported\n");
+            return AVERROR(ENOSYS);
+        }
+        break;
+    case NV_ENC_BFRAME_REF_MODE_MIDDLE:
+        if (!(ret & 2)) {
+            av_log(avctx, AV_LOG_WARNING, "Middle B frame reference mode is not supported\n");
+            return AVERROR(ENOSYS);
+        }
+        break;
+    default:
+        av_log(avctx, AV_LOG_ERROR, "Unknown B frame reference mode!\n");
+        return AVERROR_BUG;
     }
 #else
     tmp = (ctx->b_ref_mode >= 0) ? ctx->b_ref_mode : 0;
