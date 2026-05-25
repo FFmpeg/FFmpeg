@@ -11776,12 +11776,15 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
 #endif
         else if (st->codecpar->codec_id == AV_CODEC_ID_APV && sample->size > 4) {
-            const uint32_t au_size = avio_rb32(sc->pb);
+            uint32_t au_size = avio_rb32(sc->pb);
+            int explode = !!(mov->fc->error_recognition & AV_EF_EXPLODE);
             if (au_size > sample->size - 4) {
-                av_log(s, AV_LOG_ERROR,
+                av_log(s, explode ? AV_LOG_ERROR : AV_LOG_WARNING,
                        "APV au_size %u exceeds sample body %d\n",
                        au_size, sample->size - 4);
-                return AVERROR_INVALIDDATA;
+                if (explode)
+                    return AVERROR_INVALIDDATA;
+                au_size = sample->size - 4;
             }
             ret = av_get_packet(sc->pb, pkt, au_size);
         } else
