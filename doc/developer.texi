@@ -488,6 +488,11 @@ later on.
 Also if you have doubts about splitting or not splitting, do not hesitate to
 ask/discuss it on the developer mailing list.
 
+@subheading Bug fixes intended for backporting should stay focused.
+Keep bug fixes as small as possible while fully fixing the reported issue.
+Changes not needed for correctness or robustness should be submitted separately,
+especially if they increase complexity or affect backporting.
+
 @subheading Cosmetic changes should be kept in separate patches.
 We refuse source indentation and other cosmetic changes if they are mixed
 with functional changes, such commits will be rejected and removed. However,
