@@ -149,7 +149,7 @@ PutBitContext pb;
 void init_golomb(void)
 {
     hdr_len = rac_terminate();
-    init_put_bits(pb, OFFBUF(u8buf, rc.bs_start, hdr_len),
+    init_put_bits(pb, OFFBUF(u8buf, slice_data, rc.bs_start + hdr_len),
                   slice_size_max - hdr_len);
 }
 
