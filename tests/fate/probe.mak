@@ -19,6 +19,12 @@ fate-probe-format-codec-dts-in-wav: REF = dts
 FATE_PROBE_FORMAT-$(call ALLYES, WAV_DEMUXER DTS_DEMUXER) += fate-probe-format-mp3-with-art
 fate-probe-format-mp3-with-art: REF = mp3
 
+FATE_PROBE_FORMAT-$(CONFIG_MPEGTS_DEMUXER) += fate-probe-format-mpegts-png-prefix
+fate-probe-format-mpegts-png-prefix: REF = mpegts
+
+FATE_PROBE_FORMAT-$(call ALLYES, IMAGE_TIFF_PIPE_DEMUXER MPEGTS_DEMUXER) += fate-probe-format-tiff-not-mpegts
+fate-probe-format-tiff-not-mpegts: REF = tiff_pipe
+
 FATE_PROBE_FORMAT = $(FATE_PROBE_FORMAT-yes)
 
 FATE_SAMPLES_FFPROBE += $(FATE_PROBE_FORMAT)
