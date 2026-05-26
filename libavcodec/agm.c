@@ -409,12 +409,14 @@ static int decode_inter_plane(AGMContext *s, GetBitContext *gb, int size,
                 int map = s->map[x];
 
                 if (orig_mv_x >= -32) {
-                    if (y * 8 + mv_y < 0 || y * 8 + mv_y + 8 > h ||
-                        x * 8 + mv_x < 0 || x * 8 + mv_x + 8 > w)
+                    int src_y = (s->blocks_h - 1 - y) * 8 - mv_y;
+                    int src_x = x * 8 + mv_x;
+                    if (src_y < 0 || src_y + 8 > h ||
+                        src_x < 0 || src_x + 8 > w)
                         return AVERROR_INVALIDDATA;
 
                     copy_block8(frame->data[plane] + (s->blocks_h - 1 - y) * 8 * frame->linesize[plane] + x * 8,
-                                prev->data[plane] + ((s->blocks_h - 1 - y) * 8 - mv_y) * prev->linesize[plane] + (x * 8 + mv_x),
+                                prev->data[plane] + src_y * prev->linesize[plane] + src_x,
                                 frame->linesize[plane], prev->linesize[plane], 8);
                     if (map) {
                         s->idsp.idct(s->wblocks + x * 64);
@@ -446,12 +448,14 @@ static int decode_inter_plane(AGMContext *s, GetBitContext *gb, int size,
                     return ret;
 
                 if (orig_mv_x >= -32) {
-                    if (y * 8 + mv_y < 0 || y * 8 + mv_y + 8 > h ||
-                        x * 8 + mv_x < 0 || x * 8 + mv_x + 8 > w)
+                    int src_y = (s->blocks_h - 1 - y) * 8 - mv_y;
+                    int src_x = x * 8 + mv_x;
+                    if (src_y < 0 || src_y + 8 > h ||
+                        src_x < 0 || src_x + 8 > w)
                         return AVERROR_INVALIDDATA;
 
                     copy_block8(frame->data[plane] + (s->blocks_h - 1 - y) * 8 * frame->linesize[plane] + x * 8,
-                                prev->data[plane] + ((s->blocks_h - 1 - y) * 8 - mv_y) * prev->linesize[plane] + (x * 8 + mv_x),
+                                prev->data[plane] + src_y * prev->linesize[plane] + src_x,
                                 frame->linesize[plane], prev->linesize[plane], 8);
                     if (map) {
                         s->idsp.idct(s->block);
