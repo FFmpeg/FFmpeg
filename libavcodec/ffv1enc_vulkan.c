@@ -72,6 +72,7 @@ typedef struct VulkanEncodeFFv1Context {
 
     FFVulkanShader rct_search;
     FFVulkanShader remap;
+    FFVulkanShader sort32;
     FFVulkanShader setup;
     FFVulkanShader reset;
     FFVulkanShader enc;
@@ -101,6 +102,8 @@ typedef struct VulkanEncodeFFv1Context {
     int optimize_rct;
 
     int is_rgb;
+    int is_float32;
+    uint32_t max_pixels_per_slice;
     int ppi;
     int chunks;
 } VulkanEncodeFFv1Context;
@@ -140,6 +143,12 @@ extern const unsigned int ff_ffv1_enc_remap_comp_spv_len;
 
 extern const unsigned char ff_ffv1_enc_rgb_float_comp_spv_data[];
 extern const unsigned int ff_ffv1_enc_rgb_float_comp_spv_len;
+
+extern const unsigned char ff_ffv1_enc_rgb_float_golomb_comp_spv_data[];
+extern const unsigned int ff_ffv1_enc_rgb_float_golomb_comp_spv_len;
+
+extern const unsigned char ff_ffv1_enc_sort32_comp_spv_data[];
+extern const unsigned int ff_ffv1_enc_sort32_comp_spv_len;
 
 static int run_rct_search(AVCodecContext *avctx, FFVkExecContext *exec,
                           AVFrame *enc_in, VkImageView *enc_in_views,
@@ -195,6 +204,37 @@ static int run_remap(AVCodecContext *avctx, FFVkExecContext *exec,
 
     ff_vk_exec_bind_shader(&fv->s, exec, &fv->remap);
     ff_vk_shader_update_push_const(&fv->s, exec, &fv->remap,
+                                   VK_SHADER_STAGE_COMPUTE_BIT,
+                                   0, sizeof(FFv1ShaderParams), pd);
+
+    vk->CmdDispatch(exec->buf, fv->ctx.num_h_slices, fv->ctx.num_v_slices, 1);
+
+    return 0;
+}
+
+static int run_sort32(AVCodecContext *avctx, FFVkExecContext *exec,
+                      AVFrame *enc_in, VkImageView *enc_in_views,
+                      FFVkBuffer *units_buf, uint32_t units_size,
+                      FFv1ShaderParams *pd)
+{
+    VulkanEncodeFFv1Context *fv = avctx->priv_data;
+    FFV1Context *f = &fv->ctx;
+    FFVulkanFunctions *vk = &fv->s.vkfn;
+
+    /* Update descriptors */
+    ff_vk_shader_update_img_array(&fv->s, exec, &fv->sort32,
+                                  enc_in, enc_in_views,
+                                  1, 1,
+                                  VK_IMAGE_LAYOUT_GENERAL,
+                                  VK_NULL_HANDLE);
+    ff_vk_shader_update_desc_buffer(&fv->s, exec, &fv->sort32,
+                                    1, 2, 0,
+                                    units_buf,
+                                    0, units_size*f->slice_count,
+                                    VK_FORMAT_UNDEFINED);
+
+    ff_vk_exec_bind_shader(&fv->s, exec, &fv->sort32);
+    ff_vk_shader_update_push_const(&fv->s, exec, &fv->sort32,
                                    VK_SHADER_STAGE_COMPUTE_BIT,
                                    0, sizeof(FFv1ShaderParams), pd);
 
@@ -279,15 +319,19 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
     slice_data_buf = (FFVkBuffer *)slice_data_ref->data;
 
     if (f->remap_mode) {
-        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fv->s.frames->sw_format);
-        remap_data_size = 4*(1 << desc->comp[0].depth)*sizeof(uint32_t);
+        if (fv->is_float32) {
+            /* Per (slice, plane): [units : max_pixels*2 uints] + [bitmap : max_pixels uints]. */
+            remap_data_size = 4*fv->max_pixels_per_slice*3*sizeof(uint32_t);
+        } else {
+            const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fv->s.frames->sw_format);
+            remap_data_size = 4*(1 << desc->comp[0].depth)*sizeof(uint32_t);
+        }
 
         RET(ff_vk_get_pooled_buffer(&fv->s, &fv->remap_data_pool,
                                     &remap_data_ref,
                                     VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                                     NULL, remap_data_size*f->slice_count,
                                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
-
         remap_data_buf = (FFVkBuffer *)remap_data_ref->data;
     }
 
@@ -348,6 +392,7 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
         .pic_mode = !(pict->flags & AV_FRAME_FLAG_INTERLACED) ? 3 :
                     !(pict->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST) ? 2 : 1,
         .slice_size_max = out_data_buf->size / f->slice_count,
+        .max_pixels_per_slice = fv->max_pixels_per_slice,
     };
 
     for (int i = 0; i < f->quant_table_count; i++) {
@@ -420,8 +465,13 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
     }
 
     if (f->remap_mode) {
-        RET(run_remap(avctx, exec, src, src_views,
-                      remap_data_buf, remap_data_size, &pd));
+        if (fv->is_float32) {
+            RET(run_sort32(avctx, exec, src, src_views,
+                           remap_data_buf, remap_data_size, &pd));
+        } else {
+            RET(run_remap(avctx, exec, src, src_views,
+                          remap_data_buf, remap_data_size, &pd));
+        }
 
         /* Make sure the writes are visible to the setup shader */
         ff_vk_buf_barrier(buf_bar[nb_buf_bar++], remap_data_buf,
@@ -519,6 +569,14 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
                       COMPUTE_SHADER_BIT, SHADER_WRITE_BIT, NONE_KHR,
                       COMPUTE_SHADER_BIT, SHADER_READ_BIT, SHADER_WRITE_BIT,
                       0, slice_data_size*f->slice_count);
+
+    /* Setup writes the per-pixel compact_idx (or compact_idx-of-value)
+     * back into the remap buffer; the encode shader reads it. */
+    if (f->remap_mode)
+        ff_vk_buf_barrier(buf_bar[nb_buf_bar++], remap_data_buf,
+                          COMPUTE_SHADER_BIT, SHADER_READ_BIT, SHADER_WRITE_BIT,
+                          COMPUTE_SHADER_BIT, SHADER_READ_BIT, NONE_KHR,
+                          0, remap_data_size*f->slice_count);
     if (f->key_frame || fv->force_pcm)
         ff_vk_buf_barrier(buf_bar[nb_buf_bar++], slice_data_buf,
                           COMPUTE_SHADER_BIT, SHADER_WRITE_BIT, NONE_KHR,
@@ -906,6 +964,54 @@ fail:
     return err;
 }
 
+static int init_sort32_shader(AVCodecContext *avctx, VkSpecializationInfo *sl)
+{
+    int err;
+    VulkanEncodeFFv1Context *fv = avctx->priv_data;
+    FFVulkanShader *shd = &fv->sort32;
+
+    uint32_t wg_x = FFMIN(fv->max_pixels_per_slice, 256);
+    ff_vk_shader_load(shd, VK_SHADER_STAGE_COMPUTE_BIT, sl,
+                      (uint32_t []) { wg_x, 1, 1 }, 0);
+
+    ff_vk_shader_add_push_const(shd, 0, sizeof(FFv1ShaderParams),
+                                VK_SHADER_STAGE_COMPUTE_BIT);
+
+    const FFVulkanDescriptorSetBinding desc_set_const[] = {
+        { /* rangecoder_buf */
+            .type   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
+        },
+    };
+    ff_vk_shader_add_descriptor_set(&fv->s, shd, desc_set_const, 1, 1, 0);
+
+    const FFVulkanDescriptorSetBinding desc_set[] = {
+        { /* slice_data_buf */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
+        },
+        { /* src */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
+            .elems  = av_pix_fmt_count_planes(fv->s.frames->sw_format),
+        },
+        { /* units */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
+        },
+    };
+    ff_vk_shader_add_descriptor_set(&fv->s, shd, desc_set, 3, 0, 0);
+
+    RET(ff_vk_shader_link(&fv->s, shd,
+                          ff_ffv1_enc_sort32_comp_spv_data,
+                          ff_ffv1_enc_sort32_comp_spv_len, "main"));
+
+    RET(ff_vk_shader_register_exec(&fv->s, &fv->exec_pool, shd));
+
+fail:
+    return err;
+}
+
 static int init_remap_shader(AVCodecContext *avctx, VkSpecializationInfo *sl)
 {
     int err;
@@ -1105,9 +1211,14 @@ static int init_encode_shader(AVCodecContext *avctx, VkSpecializationInfo *sl)
                                     4 + fv->is_rgb + !!f->remap_mode, 0, 0);
 
     if (f->remap_mode) {
-        ff_vk_shader_link(&fv->s, shd,
-                          ff_ffv1_enc_rgb_float_comp_spv_data,
-                          ff_ffv1_enc_rgb_float_comp_spv_len, "main");
+        if (fv->ctx.ac == AC_GOLOMB_RICE)
+            ff_vk_shader_link(&fv->s, shd,
+                              ff_ffv1_enc_rgb_float_golomb_comp_spv_data,
+                              ff_ffv1_enc_rgb_float_golomb_comp_spv_len, "main");
+        else
+            ff_vk_shader_link(&fv->s, shd,
+                              ff_ffv1_enc_rgb_float_comp_spv_data,
+                              ff_ffv1_enc_rgb_float_comp_spv_len, "main");
     } else if (fv->ctx.ac == AC_GOLOMB_RICE) {
         if (fv->is_rgb)
             ff_vk_shader_link(&fv->s, shd,
@@ -1304,6 +1415,26 @@ static av_cold int vulkan_encode_ffv1_init(AVCodecContext *avctx)
     fv->is_rgb = !(f->colorspace == 0 && avctx->sw_pix_fmt != AV_PIX_FMT_YA8) &&
                  !(avctx->sw_pix_fmt == AV_PIX_FMT_YA8);
 
+    fv->is_float32 = (avctx->sw_pix_fmt == AV_PIX_FMT_GBRPF32 ||
+                      avctx->sw_pix_fmt == AV_PIX_FMT_GBRAPF32);
+
+    if (fv->is_float32) {
+        /* Compute the worst-case slice geometry. With version >= 4 the slice
+         * boundaries are computed via slice_coord() which rounds up, so any
+         * single slice has at most ceil(width/num_h_slices) * ceil(height/num_v_slices)
+         * pixels. */
+        uint32_t mw = (avctx->width  + f->num_h_slices - 1) / f->num_h_slices;
+        uint32_t mh = (avctx->height + f->num_v_slices - 1) / f->num_v_slices;
+        /* Round up to next pow2 for bitonic sort */
+        uint32_t n = 1;
+        uint32_t pn = mw*mh;
+        while (n < pn)
+            n <<= 1;
+        if (n < 2)
+            n = 2;
+        fv->max_pixels_per_slice = n;
+    }
+
     /* Init rct search shader */
     fv->optimize_rct = fv->is_rgb && f->version >= 4 &&
                        !fv->force_pcm && fv->optimize_rct;
@@ -1325,7 +1456,10 @@ static av_cold int vulkan_encode_ffv1_init(AVCodecContext *avctx)
     }
 
     if (f->remap_mode) {
-        err = init_remap_shader(avctx, sl);
+        if (fv->is_float32)
+            err = init_sort32_shader(avctx, sl);
+        else
+            err = init_remap_shader(avctx, sl);
         if (err < 0)
             return err;
     }
@@ -1420,6 +1554,7 @@ static av_cold int vulkan_encode_ffv1_close(AVCodecContext *avctx)
     ff_vk_shader_free(&fv->s, &fv->reset);
     ff_vk_shader_free(&fv->s, &fv->setup);
     ff_vk_shader_free(&fv->s, &fv->remap);
+    ff_vk_shader_free(&fv->s, &fv->sort32);
     ff_vk_shader_free(&fv->s, &fv->rct_search);
 
     if (fv->exec_ctx_info) {

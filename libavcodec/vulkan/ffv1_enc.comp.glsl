@@ -40,8 +40,8 @@ layout (set = 1, binding = 1, scalar) writeonly buffer slice_results_buf {
  * denormals before we get to look at them. */
 layout (set = 1, binding = 3) uniform uimage2D src[];
 #ifdef FLOAT
-layout (set = 1, binding = 5) readonly buffer fltmap_buf {
-    uint fltmap[][4][65536];
+layout (set = 1, binding = 5, scalar) readonly buffer fltmap_buf {
+    uint fltmap[];
 };
 #endif
 
@@ -239,11 +239,24 @@ ivec4 load_components(uint slice_idx, in SliceContext sc, ivec2 pos)
 {
     ivec4 pix;
 #ifdef FLOAT
-    /* Source view is r16_uint so imageLoad returns the raw fp16 bit pattern
-     * in .x; no conversion is performed and denormals survive. */
-    for (int i = 0; i < color_planes; i++) {
-        uint iv = imageLoad(src[i], pos)[0] & 0xFFFFu;
-        pix[i] = int(fltmap[slice_idx][i][iv]);
+    if (c_bits >= 32) {
+        /* 32-bit float: per-pixel-position bitmap lookup. The bitmap region
+         * follows the units region in the same buffer. */
+        ivec2 rel = pos - sc.slice_pos;
+        uint pixel_idx = uint(rel.x + sc.slice_dim.x*rel.y);
+        uint plane_stride = max_pixels_per_slice*3u;
+        for (int i = 0; i < color_planes; i++) {
+            uint base = (slice_idx*4u + uint(i))*plane_stride
+                        + max_pixels_per_slice*2u;
+            pix[i] = int(fltmap[base + pixel_idx]);
+        }
+    } else {
+        /* 16-bit float: value-indexed lookup. Source view is r16_uint so
+         * imageLoad returns the raw fp16 bit pattern in .x. */
+        for (int i = 0; i < color_planes; i++) {
+            uint iv = imageLoad(src[i], pos)[0] & 0xFFFFu;
+            pix[i] = int(fltmap[(slice_idx*4u + uint(i))*65536u + iv]);
+        }
     }
 #else
     pix = ivec4(imageLoad(src[0], pos));

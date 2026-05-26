@@ -75,6 +75,7 @@ layout (push_constant, scalar) uniform pushConstants {
     ivec2 sar;
     int pic_mode;
     uint slice_size_max;
+    uint max_pixels_per_slice;
 };
 
 #include "rangecoder.glsl"
