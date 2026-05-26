@@ -517,6 +517,20 @@ static int decode_frame(AVCodecContext *avctx,
     }
     av_assert1(n == s->nb_tiles);
 
+    /**
+     * Any data between last tile and frame end is vendor-specific metadata:
+     * [psim record]  4 be32 size + "psim" + pascal string + payload
+     * <more records, if any>, or:
+     * [eomd]         4 be32 size=8 + "eomd" fourcc (end of metadata)
+     * [padding]      zero-fill to next-frame alignment
+     *
+     * Known records (feel free to extend):
+     * com.panasonic.Semi-Pro.optical_correction (IEEE doubles):
+     *     R - radial polynomial? + padding: [ k0, k1, k2, k3, pad0, pad1 ]
+     *     G, B: same
+     *     Trailer: optical center in normalized frame coords: [ x, y ]
+     */
+
     ret = ff_thread_get_buffer(avctx, frame, 0);
     if (ret < 0)
         return ret;
