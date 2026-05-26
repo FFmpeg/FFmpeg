@@ -108,7 +108,7 @@ void process(ivec2 pos)
     }
 }
 
-void coeff_search(inout SliceContext sc)
+void coeff_search(uint slice_idx)
 {
     uvec2 img_size = imageSize(src[0]);
     uint sxs = slice_coord(img_size.x, gl_WorkGroupID.x + 0,
@@ -139,7 +139,7 @@ void coeff_search(inout SliceContext sc)
                 min_idx = i;
             }
         }
-        sc.slice_rct_coef = rct_y_coeff[min_idx];
+        slice_ctx[slice_idx].slice_rct_coef = rct_y_coeff[min_idx];
     }
 }
 
@@ -149,5 +149,5 @@ void main(void)
         return;
 
     const uint slice_idx = gl_WorkGroupID.y*gl_NumWorkGroups.x + gl_WorkGroupID.x;
-    coeff_search(slice_ctx[slice_idx]);
+    coeff_search(slice_idx);
 }
