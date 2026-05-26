@@ -2670,7 +2670,7 @@ void ff_get_unscaled_swscale(SwsInternal *c)
         (srcFormat == AV_PIX_FMT_NV24 || srcFormat == AV_PIX_FMT_NV42))
         c->convert_unscaled = nv24ToYuv420Wrapper;
 
-#define isPlanarGray(x) (isGray(x) && (x) != AV_PIX_FMT_YA8 && (x) != AV_PIX_FMT_YA16LE && (x) != AV_PIX_FMT_YA16BE)
+#define isPlanarGray(x) (isGray(x) && !isALPHA(x))
 
     /* simple copy */
     if ( srcFormat == dstFormat ||
