@@ -411,7 +411,12 @@ static int decode_frame(AVCodecContext *avctx,
         avctx->pix_fmt = ret;
     }
 
-    bytestream2_skip(&gb_hdr, 1 * 4); /* 4 reserved bytes */
+    /* RecommendedCrop: pixel margins to discard after debayer. Order is
+     * left/right/top/bottom */
+    uint8_t crop_l = bytestream2_get_byte(&gb_hdr);
+    uint8_t crop_r = bytestream2_get_byte(&gb_hdr);
+    uint8_t crop_t = bytestream2_get_byte(&gb_hdr);
+    uint8_t crop_b = bytestream2_get_byte(&gb_hdr);
 
     /* BayerPattern: 0=RGGB, 1/2/3 = alternates */
     int bayer_pattern = bytestream2_get_be16(&gb_hdr) & 0x3;
@@ -547,8 +552,12 @@ static int decode_frame(AVCodecContext *avctx,
         avctx->execute2(avctx, decode_tiles, frame, NULL, s->nb_tiles);
     }
 
-    frame->pict_type = AV_PICTURE_TYPE_I;
-    frame->flags    |= AV_FRAME_FLAG_KEY;
+    frame->pict_type   = AV_PICTURE_TYPE_I;
+    frame->flags      |= AV_FRAME_FLAG_KEY;
+    frame->crop_left   = crop_l;
+    frame->crop_right  = crop_r;
+    frame->crop_top    = crop_t;
+    frame->crop_bottom = crop_b;
 
     AVRawColorParams *rcp = av_raw_color_params_create_side_data(frame);
     if (!rcp)
