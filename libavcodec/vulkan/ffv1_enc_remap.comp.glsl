@@ -45,7 +45,7 @@ void load_fltmap(uint slice_idx, uint p)
     uint sye = slice_coord(img_size.y, gl_WorkGroupID.y + 1,
                            gl_NumWorkGroups.y, 0);
 
-    for (uint i = gl_LocalInvocationIndex; i < 32768;
+    for (uint i = gl_LocalInvocationIndex; i < 65536u;
          i += (gl_WorkGroupSize.x * gl_WorkGroupSize.y))
         fltmap[slice_idx][p][i] = 0;
 
