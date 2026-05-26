@@ -236,6 +236,7 @@ static const SwsOpTable fn(op_table_float) = {
         &fn(op_clear_0001),
         &fn(op_clear_1000),
         &fn(op_clear_1100),
+        &fn(op_clear_0100),
 
         &fn(op_linear_luma),
         &fn(op_linear_alpha),
