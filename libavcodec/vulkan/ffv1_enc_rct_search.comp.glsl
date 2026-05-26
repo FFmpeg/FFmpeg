@@ -126,6 +126,10 @@ void coeff_search(inout SliceContext sc)
         }
     }
 
+    /* All lanes must have finished accumulating into score_mode before
+     * lane (0,0) inspects it for the argmin. */
+    barrier();
+
     if (gl_LocalInvocationID.x == 0 && gl_LocalInvocationID.y == 0) {
         uint min_score = 0xFFFFFFFF;
         uint min_idx = 3;
