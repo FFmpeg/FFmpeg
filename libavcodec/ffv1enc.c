@@ -506,6 +506,8 @@ av_cold int ff_ffv1_write_extradata(AVCodecContext *avctx)
     if (f->version > 2) {
         put_symbol(&c, state, f->ec, 0);
         put_symbol(&c, state, f->intra = (f->avctx->gop_size < 2), 0);
+        if (f->combined_version >= 0x40004)
+            put_symbol(&c, state, f->flt, 0);
     }
 
     f->avctx->extradata_size = ff_rac_terminate(&c, 0);
