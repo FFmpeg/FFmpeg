@@ -135,6 +135,7 @@ static int config_output(AVFilterLink *outlink)
     int64_t out_rate;
     const AVFrameSideData *sd;
     enum AVSampleFormat out_format;
+    enum AVMatrixEncoding matrix_encoding = AV_MATRIX_ENCODING_NONE;
     char inchl_buf[128], outchl_buf[128];
 
     ret = swr_alloc_set_opts2(&aresample->swr,
@@ -148,7 +149,6 @@ static int config_output(AVFilterLink *outlink)
                                 AV_FRAME_DATA_DOWNMIX_INFO);
     if (sd) {
         const AVDownmixInfo *di = (AVDownmixInfo *)sd->data;
-        enum AVMatrixEncoding matrix_encoding = AV_MATRIX_ENCODING_NONE;
         double center_mix_level, surround_mix_level;
 
         switch (di->preferred_downmix_type) {
@@ -168,6 +168,14 @@ static int config_output(AVFilterLink *outlink)
             break;
         }
 
+        // Don't use Dolby Surround compatible coeffs when not downmixing to stereo
+        if (av_channel_layout_compare(&outlink->ch_layout,
+                                      &(AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO)) {
+            matrix_encoding    = AV_MATRIX_ENCODING_NONE;
+            center_mix_level   = di->center_mix_level;
+            surround_mix_level = di->surround_mix_level;
+        }
+
         av_log(ctx, AV_LOG_VERBOSE, "Mix levels: center %f - "
                "surround %f - lfe %f.\n",
                center_mix_level, surround_mix_level, di->lfe_mix_level);
@@ -176,10 +184,22 @@ static int config_output(AVFilterLink *outlink)
         av_opt_set_double(aresample->swr, "slev", surround_mix_level, 0);
         av_opt_set_double(aresample->swr, "lfe_mix_level", di->lfe_mix_level, 0);
         av_opt_set_int(aresample->swr, "matrix_encoding", matrix_encoding, 0);
+    }
 
-        if (av_channel_layout_compare(&outlink->ch_layout, &inlink->ch_layout))
-            av_frame_side_data_remove(&outlink->side_data, &outlink->nb_side_data,
-                                      AV_FRAME_DATA_DOWNMIX_INFO);
+    if (av_channel_layout_compare(&outlink->ch_layout, &inlink->ch_layout)) {
+        av_frame_side_data_remove_by_props(&outlink->side_data, &outlink->nb_side_data,
+                                           AV_SIDE_DATA_PROP_CHANNEL_DEPENDENT);
+
+        if (matrix_encoding != AV_MATRIX_ENCODING_NONE) {
+            AVFrameSideData *side_data = av_frame_side_data_new(&outlink->side_data, &outlink->nb_side_data,
+                                                                AV_FRAME_DATA_MATRIXENCODING,
+                                                                sizeof(matrix_encoding), 0);
+
+            if (!side_data)
+                return AVERROR(ENOMEM);
+
+            *(enum AVMatrixEncoding *)side_data->data = matrix_encoding;
+        }
     }
 
     ret = swr_init(aresample->swr);
