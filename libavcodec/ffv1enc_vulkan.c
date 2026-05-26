@@ -368,8 +368,12 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
     ff_vk_exec_start(&fv->s, exec);
     fd->idx = exec->idx;
 
+    /* For float pixel formats we want the raw bit pattern, not a value
+     * already passed through fp16/fp32 conversion (which can flush
+     * denormals). Use a UINT view in that case. */
     RET(ff_vk_create_imageviews(&fv->s, exec, src_views, src,
-                                FF_VK_REP_NATIVE));
+                                f->remap_mode ? FF_VK_REP_UINT
+                                              : FF_VK_REP_NATIVE));
 
     ff_vk_exec_add_dep_buf(&fv->s, exec, &slice_data_ref, 1, has_inter);
     ff_vk_exec_add_dep_buf(&fv->s, exec, &fd->out_data_ref, 1, 1);

@@ -1927,8 +1927,8 @@ static VkFormat map_fmt_to_rep(VkFormat fmt, enum FFVkShaderRepFormat rep_fmt)
         {
             VK_FORMAT_R16_SFLOAT,
             VK_FORMAT_R16_SFLOAT,
-            VK_FORMAT_UNDEFINED,
-            VK_FORMAT_UNDEFINED,
+            VK_FORMAT_R16_SINT,
+            VK_FORMAT_R16_UINT,
         },
     };
 #undef REPS_FMT_PACK

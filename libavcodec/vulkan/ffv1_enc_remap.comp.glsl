@@ -27,7 +27,7 @@
 #include "common.glsl"
 #include "ffv1_common.glsl"
 
-layout (set = 1, binding = 1) uniform image2D src[];
+layout (set = 1, binding = 1) uniform uimage2D src[];
 
 layout (set = 1, binding = 2) buffer fltmap_buf {
     uint fltmap[][4][65536];
@@ -53,8 +53,9 @@ void load_fltmap(uint slice_idx, uint p)
 
     for (uint y = sys + gl_LocalInvocationID.y; y < sye; y += gl_WorkGroupSize.y) {
         for (uint x = sxs + gl_LocalInvocationID.x; x < sxe; x += gl_WorkGroupSize.x) {
-            vec4 pix = imageLoad(src[p], ivec2(x, y));
-            uint16_t pix_idx = float16BitsToUint16(float16_t(pix[0]));
+            /* Source view is r16_uint so the .x lane is the raw fp16 bit
+             * pattern; no conversion is performed and denormals survive. */
+            uint pix_idx = imageLoad(src[p], ivec2(x, y))[0] & 0xFFFFu;
             atomicOr(fltmap[slice_idx][p][pix_idx], 1);
         }
     }

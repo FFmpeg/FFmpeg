@@ -34,13 +34,15 @@ layout (set = 0, binding = 2, scalar) uniform crc_ieee_buf {
 layout (set = 1, binding = 1, scalar) writeonly buffer slice_results_buf {
     uint32_t slice_results[];
 };
+/* Source images are bound as UINT (raw bits) regardless of the underlying
+ * pixel format. Integer formats are passed through unchanged; for float
+ * formats this avoids the fp16/fp32 conversion that would otherwise flush
+ * denormals before we get to look at them. */
+layout (set = 1, binding = 3) uniform uimage2D src[];
 #ifdef FLOAT
-layout (set = 1, binding = 3) uniform image2D src[];
 layout (set = 1, binding = 5) readonly buffer fltmap_buf {
     uint fltmap[][4][65536];
 };
-#else
-layout (set = 1, binding = 3) uniform uimage2D src[];
 #endif
 
 #ifndef GOLOMB
@@ -237,9 +239,10 @@ ivec4 load_components(uint slice_idx, in SliceContext sc, ivec2 pos)
 {
     ivec4 pix;
 #ifdef FLOAT
+    /* Source view is r16_uint so imageLoad returns the raw fp16 bit pattern
+     * in .x; no conversion is performed and denormals survive. */
     for (int i = 0; i < color_planes; i++) {
-        float16_t v = float16_t(imageLoad(src[i], pos));
-        uint16_t iv = float16BitsToUint16(v);
+        uint iv = imageLoad(src[i], pos)[0] & 0xFFFFu;
         pix[i] = int(fltmap[slice_idx][i][iv]);
     }
 #else
