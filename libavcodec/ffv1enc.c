@@ -1222,6 +1222,69 @@ static void choose_rct_params(const FFV1Context *f, FFV1SliceContext *sc,
     sc->slice_rct_ry_coef = rct_y_coeff[best][0];
 }
 
+static void choose_rct_params_bayer(const FFV1Context *f, FFV1SliceContext *sc,
+                                    const uint8_t *src[4], const int stride[4],
+                                    int w, int h)
+{
+    static const int rct_y_coeff[NB_Y_COEFF][2] = {
+        { 0, 0 }, { 1, 1 }, { 2, 2 }, { 0, 2 }, { 2, 0 }, { 4, 0 }, { 0, 4 }, { 0, 3 },
+        { 3, 0 }, { 3, 1 }, { 1, 3 }, { 1, 2 }, { 2, 1 }, { 0, 1 }, { 1, 0 },
+    };
+    int stat[NB_Y_COEFF] = {0};
+    int16_t *sample[3];
+    int i, best;
+
+    /* Walk in 2x2 blocks, build per-block gm/b/r, evaluate prediction-error */
+    w >>= 1;
+    for (i = 0; i < 3; i++)
+        sample[i] = sc->sample_buffer + i*w;
+
+    for (int y = 0; y < h; y += 2) {
+        int last_gm = 0, last_b = 0, last_r = 0;
+        for (int x = 0; x < w; x++) {
+            const uint16_t *l1 = (const uint16_t *)(src[0] + stride[0]*(y + 0) + x*2*2);
+            const uint16_t *l2 = (const uint16_t *)(src[0] + stride[0]*(y + 1) + x*2*2);
+            int r  = l1[0];
+            int gr = l1[1];
+            int gb = l2[0];
+            int b  = l2[1];
+            int gd = gr - gb;
+            int gm = gb + (gd >> 1);
+
+            int agm = gm - last_gm;
+            int ab  = b  - last_b;
+            int ar  = r  - last_r;
+
+            if (x && y) {
+                int bgm = agm - sample[0][x];
+                int bb  = ab  - sample[1][x];
+                int br  = ar  - sample[2][x];
+
+                br -= bgm;
+                bb -= bgm;
+
+                for (i = 0; i < NB_Y_COEFF; i++)
+                    stat[i] += FFABS(bgm + ((br*rct_y_coeff[i][0] + bb*rct_y_coeff[i][1]) >> 2));
+            }
+            sample[0][x] = agm;
+            sample[1][x] = ab;
+            sample[2][x] = ar;
+
+            last_gm = gm;
+            last_b  = b;
+            last_r  = r;
+        }
+    }
+
+    best = 0;
+    for (i = 1; i < NB_Y_COEFF; i++)
+        if (stat[i] < stat[best])
+            best = i;
+
+    sc->slice_rct_by_coef = rct_y_coeff[best][1];
+    sc->slice_rct_ry_coef = rct_y_coeff[best][0];
+}
+
 static void encode_histogram_remap(FFV1Context *f, FFV1SliceContext *sc)
 {
     int len = 1 << f->bits_per_raw_sample;
@@ -1686,6 +1749,8 @@ static int encode_slice(AVCodecContext *c, void *arg)
     sc->slice_coding_mode = 0;
     if (f->version > 3 && f->colorspace == 1) {
         choose_rct_params(f, sc, planes, p->linesize, width, height);
+    } else if (f->bayer) {
+        choose_rct_params_bayer(f, sc, planes, p->linesize, width, height);
     } else {
         sc->slice_rct_by_coef = 1;
         sc->slice_rct_ry_coef = 1;
