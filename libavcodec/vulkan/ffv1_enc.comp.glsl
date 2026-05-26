@@ -164,6 +164,9 @@ void encode_line(in SliceContext sc, readonly uimage2D img, uint state_off,
         w = ceil_rshift(w, chroma_shift.x);
         sp >>= chroma_shift;
     }
+#elif defined(FLOAT)
+    if (bits == 0)
+        return;
 #endif
 
     linecache_load(img, sp, y, comp);
