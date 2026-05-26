@@ -122,6 +122,8 @@ layout (set = 1, binding = 0, scalar) SB_QUALI buffer slice_ctx_buf {
 uint slice_coord(uint width, uint sx, uint num_h_slices, uint chroma_shift)
 {
     uint mpw = 1 << chroma_shift;
+    if (colorspace == 2)
+        mpw = max(mpw, 2u);
     uint awidth = align(width, mpw);
 
     if ((version < 4) || ((version == 4) && (micro_version < 3)))

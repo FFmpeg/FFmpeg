@@ -35,7 +35,7 @@ void update_vlc_state(inout VlcState state, in int v)
     int drift = state.drift;
     int count = state.count;
     int bias = state.bias;
-    state.error_sum += uint16_t(abs(v));
+    state.error_sum += uint32_t(abs(v));
     drift           += v;
 
     if (count == 128) { // FIXME: variable

@@ -41,6 +41,15 @@ void ff_ffv1_vk_set_common_sl(AVCodecContext *avctx, FFV1Context *f,
     }
 
     int bits = desc->comp[0].depth;
+    /* Bayer pixfmts report misleading per-component depth in comp[0].depth
+     * (it counts the fraction of bits each component contributes per output
+     * pixel, not the per-sample bit width). Use bits_per_raw_sample. The
+     * encoder fills f->bits_per_raw_sample directly; the decoder only
+     * fills f->avctx->bits_per_raw_sample. Prefer the FFV1Context field
+     * with the avctx field as a fallback so this works from both sides. */
+    if (f->bayer)
+        bits = f->bits_per_raw_sample ? f->bits_per_raw_sample
+                                      : f->avctx->bits_per_raw_sample;
     SPEC_LIST_ADD(sl,  5, 32, (uint32_t)(1ULL << bits));
     SPEC_LIST_ADD(sl,  6, 32, f->colorspace);
     SPEC_LIST_ADD(sl,  7, 32, f->transparency);

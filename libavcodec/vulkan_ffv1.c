@@ -54,6 +54,12 @@ extern const unsigned int ff_ffv1_dec_rgb_float_comp_spv_len;
 extern const unsigned char ff_ffv1_dec_rgb_float_golomb_comp_spv_data[];
 extern const unsigned int ff_ffv1_dec_rgb_float_golomb_comp_spv_len;
 
+extern const unsigned char ff_ffv1_dec_bayer_comp_spv_data[];
+extern const unsigned int ff_ffv1_dec_bayer_comp_spv_len;
+
+extern const unsigned char ff_ffv1_dec_bayer_golomb_comp_spv_data[];
+extern const unsigned int ff_ffv1_dec_bayer_golomb_comp_spv_len;
+
 const FFVulkanDecodeDescriptor ff_vk_dec_ffv1_desc = {
     .codec_id         = AV_CODEC_ID_FFV1,
     .queue_flags      = VK_QUEUE_COMPUTE_BIT,
@@ -393,7 +399,10 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
         nb_img_bar = 0;
         nb_buf_bar = 0;
 
-        for (int i = 0; i < color_planes; i++)
+        /* The intermediate frame has 4 planes (GBRAP16/32). Clear all of
+         * them since the bayer decoder uses all four. */
+        int n_dec_planes = f->bayer ? 4 : color_planes;
+        for (int i = 0; i < n_dec_planes; i++)
             vk->CmdClearColorImage(exec->buf, vkf->img[i], VK_IMAGE_LAYOUT_GENERAL,
                                    &((VkClearColorValue) { 0 }),
                                    1, &((VkImageSubresourceRange) {
@@ -519,7 +528,7 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
                                       1, 5,
                                       VK_IMAGE_LAYOUT_GENERAL,
                                       VK_NULL_HANDLE);
-    if (fltmap_buf)
+    if (fltmap_buf && !f->bayer)
         ff_vk_shader_update_desc_buffer(&ctx->s, exec, &fv->decode,
                                         1, 6, 0,
                                         fltmap_buf,
@@ -651,7 +660,8 @@ static int init_decode_shader(FFV1Context *f, FFVulkanContext *s,
                               FFVkExecPool *pool, FFVulkanShader *shd,
                               AVHWFramesContext *dec_frames_ctx,
                               AVHWFramesContext *out_frames_ctx,
-                              VkSpecializationInfo *sl, int ac, int rgb)
+                              VkSpecializationInfo *sl, int ac, int rgb,
+                              int bayer)
 {
     int err;
 
@@ -707,10 +717,19 @@ static int init_decode_shader(FFV1Context *f, FFVulkanContext *s,
         },
     };
     ff_vk_shader_add_descriptor_set(s, shd, desc_set,
-                                    5 + rgb + (f->micro_version >= 9),
+                                    5 + rgb + (!bayer && f->micro_version >= 9),
                                     0, 0);
 
-    if (f->version >=4 && f->micro_version >= 9) {
+    if (bayer) {
+        if (ac == AC_GOLOMB_RICE)
+            ff_vk_shader_link(s, shd,
+                              ff_ffv1_dec_bayer_golomb_comp_spv_data,
+                              ff_ffv1_dec_bayer_golomb_comp_spv_len, "main");
+        else
+            ff_vk_shader_link(s, shd,
+                              ff_ffv1_dec_bayer_comp_spv_data,
+                              ff_ffv1_dec_bayer_comp_spv_len, "main");
+    } else if (f->version >=4 && f->micro_version >= 9) {
         if (ac == AC_GOLOMB_RICE)
             ff_vk_shader_link(s, shd,
                               ff_ffv1_dec_rgb_float_golomb_comp_spv_data,
@@ -809,7 +828,7 @@ static int vk_decode_ffv1_init(AVCodecContext *avctx)
     FFv1VulkanDecodeContext *fv;
 
     if (f->version < 3 ||
-        (f->version == 4 && f->micro_version >= 10))
+        (f->version == 4 && f->micro_version >= 10 && !f->bayer))
         return AVERROR(ENOTSUP);
 
     /* Streams with a low amount of slices will usually be much slower
@@ -861,7 +880,7 @@ static int vk_decode_ffv1_init(AVCodecContext *avctx)
 
     /* Decode shaders */
     RET(init_decode_shader(f, &ctx->s, &ctx->exec_pool, &fv->decode,
-                           dctx, hwfc, sl, f->ac, is_rgb));
+                           dctx, hwfc, sl, f->ac, is_rgb, f->bayer));
 
     /* Init static data */
     RET(ff_ffv1_vk_init_consts(&ctx->s, &fv->consts_buf, f));

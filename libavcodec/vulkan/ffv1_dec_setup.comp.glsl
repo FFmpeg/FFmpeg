@@ -191,7 +191,7 @@ bool decode_slice_header(uint slice_idx, inout SliceContext sc)
     if (version >= 4) {
         sc.slice_reset_contexts = get_rac(rc_state[0]);
         sc.slice_coding_mode = get_usymbol(0);
-        if (sc.slice_coding_mode != 1 && colorspace == 1) {
+        if (sc.slice_coding_mode != 1 && colorspace != 0) {
             sc.slice_rct_coef.g = int(get_usymbol(0));
             sc.slice_rct_coef.r = int(get_usymbol(0));
             if (sc.slice_rct_coef.g + sc.slice_rct_coef.r > 4)
