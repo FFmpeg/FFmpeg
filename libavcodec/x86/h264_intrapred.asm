@@ -958,72 +958,69 @@ cglobal pred8x8l_dc_8, 4,5,6
 ;                               int has_topright, ptrdiff_t stride)
 ;-----------------------------------------------------------------------------
 
-%macro PRED8x8L_HORIZONTAL 0
-cglobal pred8x8l_horizontal_8, 4,4
+INIT_XMM sse2
+cglobal pred8x8l_horizontal_8, 4,4,6
     sub          r0, r3
     lea          r2, [r0+r3*2]
-    movq        mm0, [r0+r3*1-8]
+    movd         m0, [r0+r3*1-4]
     test        r1d, r1d
     lea          r1, [r0+r3]
     cmovnz       r1, r0
-    punpckhbw   mm0, [r1+r3*0-8]
-    movq        mm1, [r2+r3*1-8]
-    punpckhbw   mm1, [r0+r3*2-8]
+    movd         m4, [r1+r3*0-4]
+    punpcklbw    m0, m4
+    movd         m1, [r2+r3*1-4]
+    movd         m4, [r0+r3*2-4]
+    punpcklbw    m1, m4
     mov          r2, r0
-    punpckhwd   mm1, mm0
+    punpcklwd    m1, m0
     lea          r0, [r0+r3*4]
-    movq        mm2, [r0+r3*1-8]
-    punpckhbw   mm2, [r0+r3*0-8]
+    movd         m2, [r0+r3*1-4]
+    movd         m4, [r0+r3*0-4]
+    punpcklbw    m2, m4
     lea          r0, [r0+r3*2]
-    movq        mm3, [r0+r3*1-8]
-    punpckhbw   mm3, [r0+r3*0-8]
-    punpckhwd   mm3, mm2
-    punpckhdq   mm3, mm1
+    movd         m3, [r0+r3*1-4]
+    movd         m4, [r0+r3*0-4]
+    punpcklbw    m3, m4
+    punpcklwd    m3, m2
+    punpckhdq    m3, m1
+    pshufd       m3, m3, 0xee
     lea          r0, [r0+r3*2]
-    movq        mm0, [r0+r3*0-8]
-    movq        mm1, [r1+r3*0-8]
+    movq         m0, [r0+r3*0-8]
+    movq         m1, [r1+r3*0-8]
     mov          r0, r2
-    movq        mm4, mm3
-    movq        mm2, mm3
-    PALIGNR     mm4, mm0, 7, mm0
-    PALIGNR     mm1, mm2, 1, mm2
-    movq        mm0, mm4
-    PRED4x4_LOWPASS mm2, mm1, mm4, mm3, mm5
-    movq        mm4, mm0
-    movq        mm7, mm2
-    PRED4x4_LOWPASS mm4, mm3, mm0, mm4, mm5
-    psllq       mm4, 56
-    PALIGNR     mm7, mm4, 7, mm3
-    movq        mm3, mm7
+    mova         m2, m3
+    punpcklqdq   m0, m3
+    psrldq       m0, 7
+    mova         m4, m0
+    punpcklqdq   m2, m1
+    psrldq       m2, 1
+    PRED4x4_LOWPASS m1, m2, m4, m3, m5
+    mova        m4, m0
+    PRED4x4_LOWPASS m2, m3, m0, m4, m5
+    psllq       m2, 56
+    punpcklqdq  m2, m1
+    psrldq      m2, 7
     lea         r1, [r0+r3*2]
-    movq       mm7, mm3
-    punpckhbw  mm3, mm3
-    punpcklbw  mm7, mm7
-    pshufw     mm0, mm3, 0xff
-    pshufw     mm1, mm3, 0xaa
+    punpcklbw   m2, m2
+    pshufhw     m0, m2, 0xff
+    pshufhw     m1, m2, 0xaa
     lea         r2, [r1+r3*2]
-    pshufw     mm2, mm3, 0x55
-    pshufw     mm3, mm3, 0x00
-    pshufw     mm4, mm7, 0xff
-    pshufw     mm5, mm7, 0xaa
-    pshufw     mm6, mm7, 0x55
-    pshufw     mm7, mm7, 0x00
-    movq [r0+r3*1], mm0
-    movq [r0+r3*2], mm1
-    movq [r1+r3*1], mm2
-    movq [r1+r3*2], mm3
-    movq [r2+r3*1], mm4
-    movq [r2+r3*2], mm5
+    pshufhw     m3, m2, 0x55
+    pshufhw     m4, m2, 0x00
+    movhps   [r0+r3*1], m0
+    movhps   [r0+r3*2], m1
+    movhps   [r1+r3*1], m3
+    movhps   [r1+r3*2], m4
+    pshuflw     m0, m2, 0xff
+    pshuflw     m1, m2, 0xaa
+    pshuflw     m3, m2, 0x55
+    pshuflw     m4, m2, 0x00
+    movq [r2+r3*1], m0
+    movq [r2+r3*2], m1
     lea         r0, [r2+r3*2]
-    movq [r0+r3*1], mm6
-    movq [r0+r3*2], mm7
+    movq [r0+r3*1], m3
+    movq [r0+r3*2], m4
     RET
-%endmacro
-
-INIT_MMX mmxext
-PRED8x8L_HORIZONTAL
-INIT_MMX ssse3
-PRED8x8L_HORIZONTAL
 
 ;-----------------------------------------------------------------------------
 ; void ff_pred8x8l_vertical_8(uint8_t *src, int has_topleft, int has_topright,
