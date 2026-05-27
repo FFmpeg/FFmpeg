@@ -58,11 +58,20 @@ jobs:
         with:
           path: fate-suite
           key: fate-suite-${{ steps.fate.outputs.hash }}
+      - name: Inject PR Samples
+        id: inject
+        if: ${{ forge.event_name == 'pull_request' }}
+        run: SAMPLES=$PWD/fate-suite .forgejo/inject-pr-samples.py ${{ forge.event.pull_request.number }}
       - name: Run Fate
         run: |
           LD_LIBRARY_PATH="$(printf "%s:" "$PWD"/lib*)$PWD" make fate fate-build SAMPLES="$PWD/fate-suite" -j$(nproc) || FATERES=$?
           find . -name "*.err" -exec printf '::group::%s\n' {} \; -exec cat {} \; -exec printf '::endgroup::\n' \;
           exit ${FATERES:-0}
+      - name: Fail if new samples were injected
+        if: ${{ steps.inject.outputs.new_samples == 'true' }}
+        run: |
+          echo "New FATE samples were injected from PR attachments. Please add them to the official fate-suite before merging."
+          exit 1
   run_fate_full:
     name: Fate (Full, ${{ matrix.target_exec }})
     strategy:
@@ -110,6 +119,10 @@ jobs:
         with:
           path: fate-suite
           key: fate-suite-${{ steps.fate.outputs.hash }}
+      - name: Inject PR Samples
+        id: inject
+        if: ${{ forge.event_name == 'pull_request' }}
+        run: SAMPLES=$PWD/fate-suite ffmpeg/.forgejo/inject-pr-samples.py ${{ forge.event.pull_request.number }}
       - name: Run Fate
         run: |
           if [[ "${{ matrix.target_exec }}" == "wine" ]]; then
@@ -119,3 +132,8 @@ jobs:
           LD_LIBRARY_PATH="$(printf "%s:" "$PWD"/lib*)$PWD" make -C build fate fate-build SAMPLES="$PWD/fate-suite" -j$(nproc) || FATERES=$?
           find . -name "*.err" -exec printf '::group::%s\n' {} \; -exec cat {} \; -exec printf '::endgroup::\n' \;
           exit ${FATERES:-0}
+      - name: Fail if new samples were injected
+        if: ${{ steps.inject.outputs.new_samples == 'true' }}
+        run: |
+          echo "New FATE samples were injected from PR attachments. Please add them to the official fate-suite before merging."
+          exit 1
