@@ -159,6 +159,10 @@ static int get_stream_info(AVCodecContext *avctx, AVFrame *frame)
            channel_counts[ACT_BACK_TOP]  + channel_counts[ACT_TOP]);
 
     switch (channel_counts[ACT_FRONT]) {
+    case 5:
+        ch_layout |= AV_CH_LAYOUT_STEREO | AV_CH_FRONT_CENTER |
+                     AV_CH_FRONT_LEFT_OF_CENTER | AV_CH_FRONT_RIGHT_OF_CENTER;
+        break;
     case 4:
         ch_layout |= AV_CH_LAYOUT_STEREO | AV_CH_FRONT_LEFT_OF_CENTER |
                      AV_CH_FRONT_RIGHT_OF_CENTER;
