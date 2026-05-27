@@ -875,6 +875,91 @@ static int decode_pce(AVCodecContext *avctx, MPEG4AudioConfig *m4ac,
         av_log(avctx, AV_LOG_ERROR, "decode_pce: " overread_err);
         return AVERROR_INVALIDDATA;
     }
+
+    // Height extension
+    int height_ext = 0;
+    if (comment_len >= 16 + (num_front * 2 + num_side * 2 + num_back * 2))
+        height_ext = show_bits(gb, 8) == 0xAC;
+    if (height_ext) {
+        uint8_t height_map[4 /* ChannelPosition */][16 /* Channel */]; // 0 == base, 1 == top, 2 == bottom.
+        uint8_t tag[6 /* ChannelPosition */ ][16 /* Channel */][3];
+        int i, invalid = 0, height_tags = 0;
+
+        skip_bits(gb, 8);
+
+        // Read height extension bits to height_map, which define which layer each element belongs to.
+        // Also make a copy of layout_map that will then be used to rearrange it.
+        for (i = 0; i < num_front; i++) {
+            int height = get_bits(gb, 2);
+            invalid |= height > 2;
+            height_map [AAC_CHANNEL_FRONT][i] = height;
+            memcpy(&tag[AAC_CHANNEL_FRONT][i], layout_map + height_tags, sizeof(*layout_map));
+            height_tags++;
+        }
+        for (i = 0; i < num_side; i++) {
+            int height = get_bits(gb, 2);
+            invalid |= height > 2;
+            height_map [AAC_CHANNEL_SIDE][i] = height;
+            memcpy(&tag[AAC_CHANNEL_SIDE][i], layout_map + height_tags, sizeof(*layout_map));
+            height_tags++;
+        }
+        for (i = 0; i < num_back; i++) {
+            int height = get_bits(gb, 2);
+            invalid |= height > 2;
+            height_map [AAC_CHANNEL_BACK][i] = height;
+            memcpy(&tag[AAC_CHANNEL_BACK][i], layout_map + height_tags, sizeof(*layout_map));
+            height_tags++;
+        }
+        for (i = 0; i < num_lfe; i++) {
+            memcpy(&tag[AAC_CHANNEL_LFE][i], layout_map + height_tags, sizeof(*layout_map));
+            height_tags++;
+        }
+        for (i = 0; i < num_cc; i++) {
+            memcpy(&tag[AAC_CHANNEL_CC][i], layout_map + height_tags, sizeof(*layout_map));
+            height_tags++;
+        }
+        av_assert0(height_tags == tags);
+
+        if (!invalid) {
+            height_tags = 0;
+            // For each height layer, check that an element belongs to it and copy it back to layout_map.
+            // We need to take into account LFE and CC elements that may be present.
+            for (i = 0; i < 3; i++) {
+                for (int j = 0; j < num_front; j++) {
+                    if (height_map[AAC_CHANNEL_FRONT][j] == i) {
+                        memcpy(layout_map + height_tags, &tag[AAC_CHANNEL_FRONT][j], sizeof(*layout_map));
+                        height_tags++;
+                    }
+                }
+                for (int j = 0; j < num_side; j++) {
+                    if (height_map[AAC_CHANNEL_SIDE][j] == i) {
+                        memcpy(layout_map + height_tags, &tag[AAC_CHANNEL_SIDE][j], sizeof(*layout_map));
+                        height_tags++;
+                    }
+                }
+                for (int j = 0; j < num_back; j++) {
+                    if (height_map[AAC_CHANNEL_BACK][j] == i) {
+                        memcpy(layout_map + height_tags, &tag[AAC_CHANNEL_BACK][j], sizeof(*layout_map));
+                        height_tags++;
+                    }
+                }
+                if (i == 0) { // Base height, copy LFE and CC elements before moving to Top and Bottom
+                    for (int j = 0; j < num_lfe; j++) {
+                        memcpy(layout_map + height_tags, &tag[AAC_CHANNEL_LFE][j], sizeof(*layout_map));
+                        height_tags++;
+                    }
+                    for (int j = 0; j < num_cc; j++, height_tags++) {
+                        memcpy(layout_map + height_tags, &tag[AAC_CHANNEL_CC][j], sizeof(*layout_map));
+                        height_tags++;
+                    }
+                }
+            }
+            av_assert0(height_tags == tags);
+        }
+
+        comment_len -= 8 + (num_front * 2 + num_side * 2 + num_back * 2);
+    }
+
     skip_bits_long(gb, comment_len);
     return tags;
 }
