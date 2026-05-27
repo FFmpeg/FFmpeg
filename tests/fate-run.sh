@@ -431,9 +431,12 @@ lavf_container_fate()
     file=${outdir}/lavf.$t
     cleanfiles="$cleanfiles $file"
     input="${target_samples}/$1"
+    ffprobe_opts=$5
     do_avconv $file -auto_conversion_filters $DEC_OPTS $2 -i "$input" \
               "$ENC_OPTS -metadata title=lavftest" $3 -vcodec copy -acodec copy || return
     do_avconv_crc $file -auto_conversion_filters $DEC_OPTS -i $target_path/$file $4
+    test -z "$ffprobe_opts" || \
+        run ffprobe${PROGSUF}${EXECSUF} -bitexact -threads $threads $ffprobe_opts $file || return
 }
 
 lavf_image(){
