@@ -42,6 +42,7 @@
 #include "libavutil/hwcontext.h"
 
 #include "libswscale/swscale.h"
+#include "libswscale/format.h"
 
 #define IMPL_NEW    0
 #define IMPL_LEGACY 1
@@ -675,9 +676,6 @@ static inline int fmt_is_subsampled(enum AVPixelFormat fmt)
 
 static inline int fmt_is_supported_by_hw(enum AVPixelFormat fmt)
 {
-    if (!hw_device_constr)
-        return 1;
-
     /* Semi-planar formats are only supported by the legacy path, which
      * does not support hardware frames. */
     if (fmt == AV_PIX_FMT_NV24 || fmt == AV_PIX_FMT_P410 ||
@@ -689,6 +687,28 @@ static inline int fmt_is_supported_by_hw(enum AVPixelFormat fmt)
             return 1;
     }
     return 0;
+}
+
+static inline int fmt_disabled(const struct options *opts, enum AVPixelFormat fmt)
+{
+    return (hw_device_constr && !fmt_is_supported_by_hw(fmt)) ||
+           (opts->scaler < 0 && fmt_is_subsampled(fmt));
+}
+
+static inline int test_formats(const struct options *opts,
+                               enum AVPixelFormat src, enum AVPixelFormat dst)
+{
+    /* Test auxiliary conversions */
+    if (!ff_sws_test_pixfmt_backend(SWS_BACKEND_LEGACY, src, 1) ||
+        !ff_sws_test_pixfmt_backend(SWS_BACKEND_LEGACY, dst, 0))
+        return 0;
+
+    /* Test main conversion */
+    enum SwsBackend backend = opts->backends ? opts->backends : SWS_BACKEND_STABLE;
+    if (opts->api == IMPL_LEGACY)
+        backend = SWS_BACKEND_LEGACY; /* Legacy API forces legacy backend */
+    return ff_sws_test_pixfmt_backend(backend, src, 0) &&
+           ff_sws_test_pixfmt_backend(backend, dst, 1);
 }
 
 static int run_self_tests(const AVFrame *ref, const struct options *opts)
@@ -712,16 +732,12 @@ static int run_self_tests(const AVFrame *ref, const struct options *opts)
         dst_fmt_min = dst_fmt_max = opts->dst_fmt;
 
     for (src_fmt = src_fmt_min; src_fmt <= src_fmt_max; src_fmt++) {
-        if ((!fmt_is_supported_by_hw(src_fmt)) ||
-            (opts->scaler < 0 && fmt_is_subsampled(src_fmt)))
-            continue;
-        if (!sws_test_format(src_fmt, 0) || !sws_test_format(src_fmt, 1))
+        if (fmt_disabled(opts, src_fmt))
             continue;
         for (dst_fmt = dst_fmt_min; dst_fmt <= dst_fmt_max; dst_fmt++) {
-            if ((!fmt_is_supported_by_hw(dst_fmt)) ||
-                (opts->scaler < 0 && fmt_is_subsampled(dst_fmt)))
+            if (fmt_disabled(opts, dst_fmt))
                 continue;
-            if (!sws_test_format(dst_fmt, 0) || !sws_test_format(dst_fmt, 1))
+            if (!test_formats(opts, src_fmt, dst_fmt))
                 continue;
             for (int h = 0; h < FF_ARRAY_ELEMS(dst_h_values); h++) {
                 for (int w = 0; w < FF_ARRAY_ELEMS(dst_w_values); w++) {
