@@ -47,23 +47,31 @@ int ff_dca_set_channel_layout(AVCodecContext *avctx, int *ch_remap, int dca_mask
     DCAContext *s = avctx->priv_data;
 
     int dca_ch, wav_ch, nchannels = 0;
+    const uint8_t *dca2wav;
+
+    if (dca_mask == DCA_SPEAKER_LAYOUT_7POINT0_WIDE ||
+        dca_mask == DCA_SPEAKER_LAYOUT_7POINT1_WIDE)
+        dca2wav = dca2wav_wide;
+    else
+        dca2wav = dca2wav_norm;
 
     av_channel_layout_uninit(&avctx->ch_layout);
     if (s->output_channel_order == CHANNEL_ORDER_CODED) {
+        int ret;
         for (dca_ch = 0; dca_ch < DCA_SPEAKER_COUNT; dca_ch++)
             if (dca_mask & (1U << dca_ch))
                 ch_remap[nchannels++] = dca_ch;
-        avctx->ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
-        avctx->ch_layout.nb_channels = nchannels;
+        ret = av_channel_layout_custom_init(&avctx->ch_layout, nchannels);
+        if (ret < 0)
+            return ret;
+
+        nchannels = 0;
+        for (dca_ch = 0; dca_ch < DCA_SPEAKER_COUNT; dca_ch++)
+            if (dca_mask & (1U << dca_ch))
+                avctx->ch_layout.u.map[nchannels++].id = dca2wav[dca_ch];
     } else {
         int wav_mask = 0;
         int wav_map[18];
-        const uint8_t *dca2wav;
-        if (dca_mask == DCA_SPEAKER_LAYOUT_7POINT0_WIDE ||
-            dca_mask == DCA_SPEAKER_LAYOUT_7POINT1_WIDE)
-            dca2wav = dca2wav_wide;
-        else
-            dca2wav = dca2wav_norm;
         for (dca_ch = 0; dca_ch < 28; dca_ch++) {
             if (dca_mask & (1 << dca_ch)) {
                 wav_ch = dca2wav[dca_ch];
