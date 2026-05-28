@@ -252,17 +252,19 @@ void write_slice_header(uint slice_idx, inout SliceContext sc)
     if (version >= 4) {
         put_rac(rc_state[0], force_pcm);
         put_usymbol(uint(force_pcm), 0);
-        if (!force_pcm && colorspace == 1) {
+        if (!force_pcm && colorspace != 0) {
             put_usymbol(sc.slice_rct_coef.g, 0);
             put_usymbol(sc.slice_rct_coef.r, 0);
         }
 
-        if (remap_mode != 0) {
+        if (micro_version >= 4) {
             put_usymbol(remap_mode, 0);
-            if (c_bits >= 32)
-                encode_float32_remap(slice_idx, sc);
-            else
-                encode_histogram_remap(slice_idx, sc);
+            if (remap_mode != 0) {
+                if (c_bits >= 32)
+                    encode_float32_remap(slice_idx, sc);
+                else
+                    encode_histogram_remap(slice_idx, sc);
+            }
         }
     }
 }

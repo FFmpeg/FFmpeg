@@ -79,6 +79,9 @@ void encode_line_pcm(in SliceContext sc, readonly uimage2D img,
         return;
 
     int w = sc.slice_dim.x;
+#ifdef BAYER
+    w >>= 1;
+#endif
 
 #ifndef RGB
     if (p > 0 && p < 3) {
@@ -100,6 +103,9 @@ void encode_line(in SliceContext sc, readonly uimage2D img, uint state_off,
                  uint8_t quant_table_idx, in int run_index)
 {
     int w = sc.slice_dim.x;
+#ifdef BAYER
+    w >>= 1;
+#endif
 
 #ifndef RGB
     if (p > 0 && p < 3) {
@@ -160,6 +166,9 @@ void encode_line(in SliceContext sc, readonly uimage2D img, uint state_off,
                  uint8_t quant_table_idx, inout int run_index)
 {
     int w = sc.slice_dim.x;
+#ifdef BAYER
+    w >>= 1;
+#endif
 
 #ifndef RGB
     if (p > 0 && p < 3) {
@@ -301,6 +310,41 @@ void preload_rgb(uint slice_idx, in SliceContext sc, ivec2 sp, int w, int y,
     memoryBarrierImage();
     barrier();
 }
+
+#ifdef BAYER
+void preload_bayer(in SliceContext sc, ivec2 sp, int w, int y, bool apply_rct)
+{
+    int offset = rct_offset;
+
+    for (uint x = gl_LocalInvocationID.x; x < w; x += gl_WorkGroupSize.x) {
+        ivec2 lpos = sp + LADDR(ivec2(x, y));
+        ivec2 src_pos = sc.slice_pos + ivec2(int(x) << 1, y << 1);
+
+        int r  = int(imageLoad(src[0], src_pos + ivec2(0, 0))[0]);
+        int gr = int(imageLoad(src[0], src_pos + ivec2(1, 0))[0]);
+        int gb = int(imageLoad(src[0], src_pos + ivec2(0, 1))[0]);
+        int b  = int(imageLoad(src[0], src_pos + ivec2(1, 1))[0]);
+
+        if (apply_rct) {
+            int gd = gr - gb;
+            int gm = gb + (gd >> 1);
+            b -= gm;
+            r -= gm;
+            gm += (b*sc.slice_rct_coef.g + r*sc.slice_rct_coef.r) >> 2;
+            b += offset;
+            r += offset;
+            gd += offset;
+            gr = gm;
+            gb = gd;
+        }
+
+        imageStore(tmp, lpos, ivec4(gr, gb, b, r));
+    }
+
+    memoryBarrierImage();
+    barrier();
+}
+#endif
 #endif
 
 void encode_slice(in SliceContext sc, uint slice_idx)
@@ -308,13 +352,39 @@ void encode_slice(in SliceContext sc, uint slice_idx)
     ivec2 sp = sc.slice_pos;
     u16vec4 bits = get_slice_bits(sc);
 
-#ifdef RGB
+#ifdef BAYER
+    int bayer_w = sc.slice_dim.x >> 1;
+    int bayer_h = sc.slice_dim.y >> 1;
+    sp.x >>= 1;
+    sp.y = int(gl_WorkGroupID.y)*rgb_linecache;
+    /* c_bits = bps + 1 for is_rgb pixfmts (Bayer is treated as RGB). gm uses
+     * raw bps; gd/b-gm/r-gm need an extra bit for the RCT difference. PCM
+     * stores raw samples so all planes use bps. */
+    if (sc.slice_coding_mode == 0)
+        bits = u16vec4(c_bits - 1, c_bits, c_bits, c_bits);
+    else
+        bits = u16vec4(c_bits - 1, c_bits - 1, c_bits - 1, c_bits - 1);
+#elif defined(RGB)
     sp.y = int(gl_WorkGroupID.y)*rgb_linecache;
 #endif
 
 #ifndef GOLOMB
     if (force_pcm) {
-#ifndef RGB
+#ifdef BAYER
+        for (int y = 0; y < bayer_h; y++) {
+            preload_bayer(sc, sp, bayer_w, y, false);
+
+            for (uint c = 0; c < 4; c++)
+                encode_line_pcm(sc, tmp, sp, y, 0, c);
+        }
+#elif defined(RGB)
+        for (int y = 0; y < sc.slice_dim.y; y++) {
+            preload_rgb(slice_idx, sc, sp, sc.slice_dim.x, y, false);
+
+            for (uint c = 0; c < color_planes; c++)
+                encode_line_pcm(sc, tmp, sp, y, 0, rgb_plane_order[c]);
+        }
+#else
         for (int c = 0; c < color_planes; c++) {
 
             int h = sc.slice_dim.y;
@@ -328,27 +398,45 @@ void encode_slice(in SliceContext sc, uint slice_idx)
             for (int y = 0; y < h; y++)
                 encode_line_pcm(sc, src[p], sp, y, p, comp);
         }
-#else
-        for (int y = 0; y < sc.slice_dim.y; y++) {
-            preload_rgb(slice_idx, sc, sp, sc.slice_dim.x, y, false);
-
-            for (uint c = 0; c < color_planes; c++)
-                encode_line_pcm(sc, tmp, sp, y, 0, rgb_plane_order[c]);
-        }
 #endif
         return;
     }
 #endif
 
+#ifdef BAYER
+    u32vec4 slice_state_off = (slice_idx*codec_planes +
+                               uvec4(0, 2, 1, 1))*plane_state_size;
+#else
     u32vec4 slice_state_off = (slice_idx*codec_planes +
                                uvec4(0, 1, 1, 2))*plane_state_size;
+#endif
 
 #ifdef GOLOMB
     slice_state_off >>= 3;
     init_golomb();
 #endif
 
-#ifndef RGB
+#ifdef BAYER
+    int run_index = 0;
+    for (int y = 0; y < bayer_h; y++) {
+        preload_bayer(sc, sp, bayer_w, y, true);
+
+        for (uint c = 0; c < 4; c++)
+            encode_line(sc, tmp, slice_state_off[c],
+                        sp, y, 0, c, bits[c],
+                        U8(context_model), run_index);
+    }
+#elif defined(RGB)
+    int run_index = 0;
+    for (int y = 0; y < sc.slice_dim.y; y++) {
+        preload_rgb(slice_idx, sc, sp, sc.slice_dim.x, y, true);
+
+        for (uint c = 0; c < color_planes; c++)
+            encode_line(sc, tmp, slice_state_off[c],
+                        sp, y, 0, rgb_plane_order[c], bits[c],
+                        U8(context_model), run_index);
+    }
+#else
     for (uint c = 0; c < color_planes; c++) {
         int run_index = 0;
 
@@ -362,16 +450,6 @@ void encode_slice(in SliceContext sc, uint slice_idx)
         for (int y = 0; y < h; y++)
             encode_line(sc, src[p], slice_state_off[c], sp, y, p,
                         comp, bits[c], U8(context_model), run_index);
-    }
-#else
-    int run_index = 0;
-    for (int y = 0; y < sc.slice_dim.y; y++) {
-        preload_rgb(slice_idx, sc, sp, sc.slice_dim.x, y, true);
-
-        for (uint c = 0; c < color_planes; c++)
-            encode_line(sc, tmp, slice_state_off[c],
-                        sp, y, 0, rgb_plane_order[c], bits[c],
-                        U8(context_model), run_index);
     }
 #endif
 }

@@ -150,6 +150,12 @@ extern const unsigned int ff_ffv1_enc_rgb_float_golomb_comp_spv_len;
 extern const unsigned char ff_ffv1_enc_sort32_comp_spv_data[];
 extern const unsigned int ff_ffv1_enc_sort32_comp_spv_len;
 
+extern const unsigned char ff_ffv1_enc_bayer_comp_spv_data[];
+extern const unsigned int ff_ffv1_enc_bayer_comp_spv_len;
+
+extern const unsigned char ff_ffv1_enc_bayer_golomb_comp_spv_data[];
+extern const unsigned int ff_ffv1_enc_bayer_golomb_comp_spv_len;
+
 static int run_rct_search(AVCodecContext *avctx, FFVkExecContext *exec,
                           AVFrame *enc_in, VkImageView *enc_in_views,
                           FFVkBuffer *slice_data_buf, uint32_t slice_data_size,
@@ -1210,7 +1216,16 @@ static int init_encode_shader(AVCodecContext *avctx, VkSpecializationInfo *sl)
     ff_vk_shader_add_descriptor_set(&fv->s, shd, desc_set,
                                     4 + fv->is_rgb + !!f->remap_mode, 0, 0);
 
-    if (f->remap_mode) {
+    if (f->bayer) {
+        if (fv->ctx.ac == AC_GOLOMB_RICE)
+            ff_vk_shader_link(&fv->s, shd,
+                              ff_ffv1_enc_bayer_golomb_comp_spv_data,
+                              ff_ffv1_enc_bayer_golomb_comp_spv_len, "main");
+        else
+            ff_vk_shader_link(&fv->s, shd,
+                              ff_ffv1_enc_bayer_comp_spv_data,
+                              ff_ffv1_enc_bayer_comp_spv_len, "main");
+    } else if (f->remap_mode) {
         if (fv->ctx.ac == AC_GOLOMB_RICE)
             ff_vk_shader_link(&fv->s, shd,
                               ff_ffv1_enc_rgb_float_golomb_comp_spv_data,
@@ -1262,8 +1277,9 @@ static av_cold int vulkan_encode_ffv1_init(AVCodecContext *avctx)
     if (err < 0)
         return err;
 
-    /* Target version 3 by default */
-    f->version = 3;
+    /* Target version 3 by default; Bayer is a version 4 feature (the legacy
+     * v3 bits-per-plane increment would mismatch the shaders' c_bits-1). */
+    f->version = f->bayer ? 4 : 3;
 
     err = ff_ffv1_encode_init(avctx);
     if (err < 0)
@@ -1288,9 +1304,9 @@ static av_cold int vulkan_encode_ffv1_init(AVCodecContext *avctx)
             return AVERROR_INVALIDDATA;
     }
 
-    /* We target version 4.3 */
+    /* We target version 4.3 by default, remap is 4.9, Bayer is 4.10 */
     if (f->version == 4)
-        f->micro_version = f->remap_mode ? 9 : 3;
+        f->micro_version = f->bayer ? 10 : (f->remap_mode ? 9 : 3);
 
     f->num_h_slices = fv->num_h_slices;
     f->num_v_slices = fv->num_v_slices;
@@ -1437,7 +1453,7 @@ static av_cold int vulkan_encode_ffv1_init(AVCodecContext *avctx)
 
     /* Init rct search shader */
     fv->optimize_rct = fv->is_rgb && f->version >= 4 &&
-                       !fv->force_pcm && fv->optimize_rct;
+                       !fv->force_pcm && fv->optimize_rct && !f->bayer;
 
     /* Init shader specialization consts */
     SPEC_LIST_CREATE(sl, 19, 19*sizeof(uint32_t))
