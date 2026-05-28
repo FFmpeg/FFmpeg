@@ -203,7 +203,7 @@ OBJS-$(CONFIG_AAC_FIXED_DECODER)       += aactab.o \
                                           sbrdsp_fixed.o aacpsdsp_fixed.o cbrt_data_fixed.o \
                                           $(if $(!CONFIG_HARDCODED_TABLES), cbrt_tablegen_common.o)
 OBJS-$(CONFIG_AAC_ENCODER)             += aacenc.o aaccoder.o aacenctab.o    \
-                                          aacpsy.o aactab.o      \
+                                          aacpsy.o aactab.o aacencdsp.o \
                                           aacenc_is.o \
                                           aacenc_tns.o \
                                           psymodel.o kbdwin.o \
