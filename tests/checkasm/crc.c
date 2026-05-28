@@ -87,14 +87,12 @@ void checkasm_check_crc(void)
         struct CustomTest *prev;
         AVCRC ctx[1024];
     } *ctx = NULL;
-    struct CustomTest *new = malloc(sizeof(*new));
+    struct CustomTest *new = av_mallocz(sizeof(*new));
     static int le, bits;
     static uint32_t poly;
 
     if (!new)
         fail();
-
-    memset(new, 0, sizeof(*new));
 
     if (!ctx) {
         le   = rnd() & 1;
@@ -103,7 +101,7 @@ void checkasm_check_crc(void)
     }
     av_assert0(av_crc_init(new->ctx, le, bits, poly, sizeof(new->ctx)) >= 0);
     if (ctx && !memcmp(ctx->ctx, new->ctx, sizeof(new->ctx))) {
-        free(new);
+        av_free(new);
     } else {
         new->prev = ctx;
         ctx = new;
