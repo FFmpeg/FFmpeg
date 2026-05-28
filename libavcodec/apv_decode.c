@@ -208,14 +208,13 @@ static int apv_decode_tile_component(AVCodecContext *avctx, void *data,
 {
     APVRawFrame                      *input = data;
     APVDecodeContext                   *apv = avctx->priv_data;
-    const CodedBitstreamAPVContext *apv_cbc = apv->cbc->priv_data;
     const APVDerivedTileInfo     *tile_info = &apv->tile_info;
-
-    int tile_index = job / apv_cbc->num_comp;
-    int comp_index = job % apv_cbc->num_comp;
-
     const AVPixFmtDescriptor *pix_fmt_desc =
         av_pix_fmt_desc_get(avctx->pix_fmt);
+    int nb_components = pix_fmt_desc->nb_components;
+
+    int tile_index = job / nb_components;
+    int comp_index = job % nb_components;
 
     int sub_w_shift = comp_index == 0 ? 0 : pix_fmt_desc->log2_chroma_w;
     int sub_h_shift = comp_index == 0 ? 0 : pix_fmt_desc->log2_chroma_h;
@@ -266,7 +265,7 @@ static int apv_decode_tile_component(AVCodecContext *avctx, void *data,
         int qp = tile->tile_header.tile_qp[comp_index];
         int level_scale = apv_level_scale[qp % 6];
 
-        bit_depth = apv_cbc->bit_depth;
+        bit_depth = input->frame_header.frame_info.bit_depth_minus8 + 8;
         qp_shift  = qp / 6;
 
         for (int y = 0; y < 8; y++) {
