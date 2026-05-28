@@ -1633,6 +1633,11 @@ static int setup_queue_families(AVHWDeviceContext *ctx, VkDeviceCreateInfo *cd)
     }
 
     hwctx->nb_qf = 0;
+    hwctx->queue_flags = 0;
+#ifdef VK_KHR_internally_synchronized_queues
+    if (p->vkctx.extensions & FF_VK_EXT_INTERNAL_QUEUE_SYNC)
+        hwctx->queue_flags |= VK_DEVICE_QUEUE_CREATE_INTERNALLY_SYNCHRONIZED_BIT_KHR;
+#endif
 
     /* Pick each queue family to use. */
 #define PICK_QF(type, vid_op)                                            \
@@ -1727,14 +1732,9 @@ static int setup_queue_families(AVHWDeviceContext *ctx, VkDeviceCreateInfo *cd)
             weights[j] = 1.0;
 
         pc = (VkDeviceQueueCreateInfo *)cd->pQueueCreateInfos;
-        VkDeviceQueueCreateFlags qflags = 0;
-#ifdef VK_KHR_internally_synchronized_queues
-        if (p->vkctx.extensions & FF_VK_EXT_INTERNAL_QUEUE_SYNC)
-            qflags |= VK_DEVICE_QUEUE_CREATE_INTERNALLY_SYNCHRONIZED_BIT_KHR;
-#endif
         pc[cd->queueCreateInfoCount++] = (VkDeviceQueueCreateInfo) {
             .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-            .flags = qflags,
+            .flags = hwctx->queue_flags,
             .queueFamilyIndex = hwctx->qf[i].idx,
             .queueCount = hwctx->qf[i].num,
             .pQueuePriorities = weights,

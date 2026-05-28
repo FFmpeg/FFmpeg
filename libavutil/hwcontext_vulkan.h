@@ -199,6 +199,9 @@ typedef struct AVVulkanDeviceContext {
      */
     AVVulkanDeviceQueueFamily qf[64];
     int nb_qf;
+
+    /* Queue creation flags, for vkGetDeviceQueue2. */
+    VkDeviceQueueCreateFlags queue_flags;
 } AVVulkanDeviceContext;
 
 /**
