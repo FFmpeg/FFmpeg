@@ -160,21 +160,17 @@ static int get_stream_info(AVCodecContext *avctx, AVFrame *frame)
 
     switch (channel_counts[ACT_FRONT]) {
     case 5:
-        ch_layout |= AV_CH_LAYOUT_STEREO | AV_CH_FRONT_CENTER |
-                     AV_CH_FRONT_LEFT_OF_CENTER | AV_CH_FRONT_RIGHT_OF_CENTER;
-        break;
     case 4:
-        ch_layout |= AV_CH_LAYOUT_STEREO | AV_CH_FRONT_LEFT_OF_CENTER |
+        ch_layout |= AV_CH_FRONT_LEFT_OF_CENTER |
                      AV_CH_FRONT_RIGHT_OF_CENTER;
-        break;
+        av_fallthrough;
     case 3:
-        ch_layout |= AV_CH_LAYOUT_STEREO | AV_CH_FRONT_CENTER;
-        break;
     case 2:
         ch_layout |= AV_CH_LAYOUT_STEREO;
-        break;
+        av_fallthrough;
     case 1:
-        ch_layout |= AV_CH_FRONT_CENTER;
+        if (channel_counts[ACT_FRONT] & 1)
+            ch_layout |= AV_CH_FRONT_CENTER;
         break;
     default:
         av_log(avctx, AV_LOG_WARNING,
@@ -183,6 +179,7 @@ static int get_stream_info(AVCodecContext *avctx, AVFrame *frame)
         ch_error = 1;
         break;
     }
+
     if (channel_counts[ACT_SIDE] > 0) {
         if (channel_counts[ACT_SIDE] == 2) {
             ch_layout |= AV_CH_SIDE_LEFT | AV_CH_SIDE_RIGHT;
@@ -196,16 +193,15 @@ static int get_stream_info(AVCodecContext *avctx, AVFrame *frame)
     if (channel_counts[ACT_BACK] > 0) {
         switch (channel_counts[ACT_BACK]) {
         case 4:
-            ch_layout |= AV_CH_BACK_LEFT | AV_CH_BACK_RIGHT | AV_CH_SIDE_LEFT | AV_CH_SIDE_RIGHT;
-            break;
+            ch_layout |= AV_CH_SIDE_LEFT | AV_CH_SIDE_RIGHT;
+            av_fallthrough;
         case 3:
-            ch_layout |= AV_CH_BACK_LEFT | AV_CH_BACK_RIGHT | AV_CH_BACK_CENTER;
-            break;
         case 2:
             ch_layout |= AV_CH_BACK_LEFT | AV_CH_BACK_RIGHT;
-            break;
+            av_fallthrough;
         case 1:
-            ch_layout |= AV_CH_BACK_CENTER;
+            if (channel_counts[ACT_BACK] & 1)
+                ch_layout |= AV_CH_BACK_CENTER;
             break;
         default:
             av_log(avctx, AV_LOG_WARNING,
@@ -228,14 +224,12 @@ static int get_stream_info(AVCodecContext *avctx, AVFrame *frame)
     if (channel_counts[ACT_FRONT_TOP] > 0) {
         switch (channel_counts[ACT_FRONT_TOP]) {
         case 3:
-            ch_layout |= AV_CH_TOP_FRONT_LEFT | AV_CH_TOP_FRONT_RIGHT |
-                         AV_CH_TOP_FRONT_CENTER;
-            break;
         case 2:
             ch_layout |= AV_CH_TOP_FRONT_LEFT | AV_CH_TOP_FRONT_RIGHT;
-            break;
+            av_fallthrough;
         case 1:
-            ch_layout |= AV_CH_TOP_FRONT_CENTER;
+            if (channel_counts[ACT_FRONT_TOP] & 1)
+                ch_layout |= AV_CH_TOP_FRONT_CENTER;
             break;
         default:
             av_log(avctx, AV_LOG_WARNING,
