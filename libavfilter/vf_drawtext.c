@@ -1370,23 +1370,25 @@ static int draw_glyphs(DrawTextContext *s, AVFrame *frame,
 static int shape_text_hb(DrawTextContext *s, HarfbuzzData* hb, const char* text, int textLen)
 {
     hb->buf = hb_buffer_create();
-    if(!hb_buffer_allocation_successful(hb->buf)) {
-        return AVERROR(ENOMEM);
-    }
+    if(!hb_buffer_allocation_successful(hb->buf))
+        goto fail;
     hb_buffer_set_direction(hb->buf, HB_DIRECTION_LTR);
     hb_buffer_set_script(hb->buf, HB_SCRIPT_LATIN);
     hb_buffer_set_language(hb->buf, hb_language_from_string("en", -1));
     hb_buffer_guess_segment_properties(hb->buf);
     hb->font = hb_ft_font_create_referenced(s->face);
-    if(hb->font == NULL) {
-        return AVERROR(ENOMEM);
-    }
+    if(hb->font == NULL)
+        goto fail;
     hb_buffer_add_utf8(hb->buf, text, textLen, 0, -1);
     hb_shape(hb->font, hb->buf, NULL, 0);
     hb->glyph_info = hb_buffer_get_glyph_infos(hb->buf, &hb->glyph_count);
     hb->glyph_pos = hb_buffer_get_glyph_positions(hb->buf, &hb->glyph_count);
 
     return 0;
+fail:
+    hb_buffer_destroy(hb->buf);
+    hb->buf = NULL;
+    return AVERROR(ENOMEM);
 }
 
 static void hb_destroy(HarfbuzzData *hb)
