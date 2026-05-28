@@ -1169,6 +1169,10 @@ static int ftp_move(URLContext *h_src, URLContext *h_dst)
     av_url_split(0, 0, 0, 0, 0, 0, 0,
                  path, sizeof(path),
                  h_dst->filename);
+    if (is_bad_string(path)) {
+        ret = AVERROR(EINVAL);
+        goto cleanup;
+    }
     ret = snprintf(command, sizeof(command), "RNTO %s\r\n", path);
     if (ret >= sizeof(command)) {
         ret = AVERROR(ENOSYS);
