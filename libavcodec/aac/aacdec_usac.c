@@ -85,6 +85,16 @@ static const enum AVChannel usac_ch_pos_to_av[64] = {
     [31] = AV_CHAN_TOP_SURROUND_RIGHT, ///< -110 degrees, Rvs, TpRS
 };
 
+/* ISO/IEC 23003-4, Table A.48: bit width of bsMethodValue depends on methodDef. */
+static int methodvalue_width(int method_def)
+{
+    switch (method_def) {
+    case 7: return 5; /* mixing level */
+    case 8: return 2; /* room type */
+    default: return 8; /* loudness (0..6, 9) + reserved */
+    }
+}
+
 static int decode_loudness_info(AACDecContext *ac, AACUSACLoudnessInfo *info,
                                 GetBitContext *gb)
 {
@@ -103,12 +113,33 @@ static int decode_loudness_info(AACDecContext *ac, AACUSACLoudnessInfo *info,
     info->nb_measurements = get_bits(gb, 4);
     for (int i = 0; i < info->nb_measurements; i++) {
         info->measurements[i].method_def = get_bits(gb, 4);
-        info->measurements[i].method_val = get_unary(gb, 0, 8);
+        info->measurements[i].method_val =
+            get_bits(gb, methodvalue_width(info->measurements[i].method_def));
         info->measurements[i].measurement = get_bits(gb, 4);
         info->measurements[i].reliability = get_bits(gb, 2);
     }
 
     return 0;
+}
+
+/* Pick the bsMethodValue of a program- or anchor-loudness measurement.
+ * Per ISO/IEC 23003-4 6.1.2.5, downmixId and drcSetId identify the signal a
+ * loudnessInfo() applies to; only downmixId == 0 (base layout) together with
+ * drcSetId == 0 (no DRC) describes the unprocessed signal we output, so
+ * measurements for any other downmix/DRC set must not be used. */
+static int select_loudness_measurement(const AACUSACConfig *usac)
+{
+    for (int i = 0; i < usac->loudness.nb_info; i++) {
+        const AACUSACLoudnessInfo *info = &usac->loudness.info[i];
+        if (info->downmix_id != 0 || info->drc_set_id != 0)
+            continue;
+        for (int j = 0; j < info->nb_measurements; j++) {
+            int method = info->measurements[j].method_def;
+            if (method == 1 || method == 2)
+                return info->measurements[j].method_val;
+        }
+    }
+    return -1;
 }
 
 static int decode_loudness_set(AACDecContext *ac, AACUSACConfig *usac,
@@ -134,15 +165,15 @@ static int decode_loudness_set(AACDecContext *ac, AACUSACConfig *usac,
     if (get_bits1(gb)) { /* loudnessInfoSetExtPresent */
         enum AACUSACLoudnessExt type;
         while ((type = get_bits(gb, 4)) != UNIDRCLOUDEXT_TERM) {
-            uint8_t size_bits = get_bits(gb, 4) + 4;
-            uint8_t bit_size = get_bits(gb, size_bits) + 1;
+            uint8_t size_bits = get_bits(gb, 4) + 4; /* bitSizeLen */
+            uint32_t bit_size = get_bits_long(gb, size_bits) + 1; /* bitSize */
             switch (type) {
             case UNIDRCLOUDEXT_EQ:
                 avpriv_report_missing_feature(ac->avctx, "loudnessInfoV1");
                 return AVERROR_PATCHWELCOME;
             default:
-                for (int i = 0; i < bit_size; i++)
-                    skip_bits1(gb);
+                skip_bits_long(gb, bit_size);
+                break;
             }
         }
     }
@@ -497,6 +528,7 @@ int ff_aac_usac_config_decode(AACDecContext *ac, AVCodecContext *avctx,
         return AVERROR_PATCHWELCOME;
 
     memset(usac, 0, sizeof(*usac));
+    usac->loudness.input_method_val = -1;
 
     freq_idx = get_bits(gb, 5); /* usacSamplingFrequencyIndex */
     if (freq_idx == 0x1f) {
@@ -695,6 +727,13 @@ int ff_aac_usac_config_decode(AACDecContext *ac, AVCodecContext *avctx,
     }
 
     ac->avctx->profile = AV_PROFILE_AAC_USAC;
+
+    usac->loudness.input_method_val = select_loudness_measurement(usac);
+    if (usac->loudness.input_method_val >= 0)
+        av_log(avctx, AV_LOG_VERBOSE,
+               "USAC input loudness: %.2f LKFS (bsMethodValue=%d)\n",
+               -57.75f + 0.25f * usac->loudness.input_method_val,
+               usac->loudness.input_method_val);
 
     ret = ff_aac_usac_reset_state(ac, oc);
     if (ret < 0)
@@ -2088,6 +2127,28 @@ int ff_aac_usac_decode_frame(AVCodecContext *avctx, AACDecContext *ac,
         av_frame_unref(ac->frame);
         frame->flags = indep_flag ? AV_FRAME_FLAG_KEY : 0x0;
         *got_frame_ptr = 0;
+    }
+
+    if (samples && ac->target_level) {
+        int method_val = usac->loudness.input_method_val;
+        if (method_val < 0) {
+            if (!ac->warned_loudness_missing) {
+                av_log(avctx, AV_LOG_WARNING,
+                       "target_level set but no program/anchor loudness "
+                       "measurement available; normalization skipped\n");
+                ac->warned_loudness_missing = 1;
+            }
+        } else {
+            /* Per ISO/IEC 23003-4 Table A.48: L = -57.75 + 0.25 * μ */
+            float input_loudness = -57.75f + 0.25f * method_val;
+            float gain_dB = (float)ac->target_level - input_loudness;
+            float gain = powf(10.0f, gain_dB / 20.0f);
+
+            for (int ch = 0; ch < frame->ch_layout.nb_channels; ch++)
+                ac->fdsp->vector_fmul_scalar((float *)frame->extended_data[ch],
+                                             (float *)frame->extended_data[ch],
+                                             gain, frame->nb_samples);
+        }
     }
 
     /* for dual-mono audio (SCE + SCE) */

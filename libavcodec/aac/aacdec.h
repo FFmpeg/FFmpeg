@@ -405,6 +405,13 @@ typedef struct AACUSACConfig {
         AACUSACLoudnessInfo album_info[64];
         uint8_t nb_info;
         AACUSACLoudnessInfo info[64];
+
+        /**
+         * Raw bsMethodValue (μ) of the program/anchor-loudness measurement
+         * selected for normalization at config time. -1 == none found.
+         * L_LKFS = -57.75 + 0.25 * input_method_val.
+         */
+        int input_method_val;
     } loudness;
 } AACUSACConfig;
 
@@ -567,6 +574,13 @@ struct AACDecContext {
     /** @} */
 
     enum AACOutputChannelOrder output_channel_order;
+
+    /**
+     * Target output loudness in dBFS, used for xHE-AAC loudness normalization
+     * based on the parsed loudnessInfoSet() metadata. 0 disables normalization.
+     */
+    int target_level;
+    int warned_loudness_missing;
 
     OutputConfiguration oc[2];
     int warned_num_aac_frames;

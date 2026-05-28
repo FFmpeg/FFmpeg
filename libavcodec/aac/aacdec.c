@@ -2648,6 +2648,9 @@ static const AVOption options[] = {
       { "coded",    "order in which the channels are coded in the bitstream",
         0, AV_OPT_TYPE_CONST, { .i64 = CHANNEL_ORDER_CODED }, .flags = AACDEC_FLAGS, .unit = "channel_order" },
 
+    { "target_level", "Target output loudness in dBFS for xHE-AAC normalization (0 = disabled)",
+        OFF(target_level), AV_OPT_TYPE_INT, { .i64 = 0 }, -70, 0, AACDEC_FLAGS },
+
     {NULL},
 };
 
