@@ -727,18 +727,9 @@ static int init_vulkan(AVFilterContext *avctx, const AVVulkanDeviceContext *hwct
             .lock_queue     = lock_queue,
             .unlock_queue   = unlock_queue,
             .queue_ctx      = avctx->hw_device_ctx->data,
-            .queue_graphics = {
-                .index = VK_QUEUE_FAMILY_IGNORED,
-                .count = 0,
-            },
-            .queue_compute = {
-                .index = VK_QUEUE_FAMILY_IGNORED,
-                .count = 0,
-            },
-            .queue_transfer = {
-                .index = VK_QUEUE_FAMILY_IGNORED,
-                .count = 0,
-            },
+            .queue_graphics = { VK_QUEUE_FAMILY_IGNORED },
+            .queue_compute  = { VK_QUEUE_FAMILY_IGNORED },
+            .queue_transfer = { VK_QUEUE_FAMILY_IGNORED },
             /* This is the highest version created by hwcontext_vulkan.c */
             .max_api_version = VK_API_VERSION_1_3,
         };
