@@ -44,17 +44,19 @@ static void check_crc(const AVCRC *table_new, const char *name, unsigned idx)
         return;
 
     DECLARE_ALIGNED(4, uint8_t, buf)[8192];
-    size_t offset = rnd() & 31;
+    static size_t offsets[AV_CRC_MAX + 1];
     static size_t sizes[AV_CRC_MAX + 1];
     static unsigned sizes_initialized = 0;
     uint32_t prev_crc = rnd();
 
     if (!(sizes_initialized & (1 << idx))) {
         sizes_initialized |= 1 << idx;
-        sizes[idx] = rnd() % (sizeof(buf) - 1 - offset);
+        offsets[idx] = rnd() & 31;
+        sizes[idx] = rnd() % (sizeof(buf) - 1 - offsets[idx]);
     }
 
     size_t size = sizes[idx];
+    size_t offset = offsets[idx];
 
     for (size_t j = 0; j < sizeof(buf); j += 4)
         AV_WN32A(buf + j, rnd());
