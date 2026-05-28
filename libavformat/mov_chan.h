@@ -181,8 +181,9 @@ int ff_mov_get_channel_positions_from_layout(const AVChannelLayout *layout,
  * @param s     AVFormatContext
  * @param pb    AVIOContext
  * @param st    The stream to set codec values for
+ * @param version Version of the tag
  * @return      0 if ok, or negative AVERROR code on failure
  */
-int ff_mov_read_chnl(AVFormatContext *s, AVIOContext *pb, AVStream *st);
+int ff_mov_read_chnl(AVFormatContext *s, AVIOContext *pb, AVStream *st, int version);
 
 #endif /* AVFORMAT_MOV_CHAN_H */

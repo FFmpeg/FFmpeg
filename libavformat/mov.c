@@ -1237,14 +1237,14 @@ static int mov_read_chnl(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     version = avio_r8(pb);
     flags   = avio_rb24(pb);
-    if (version != 0 || flags != 0) {
+    if (version > 1 || flags != 0) {
         av_log(c->fc, AV_LOG_ERROR,
                "Unsupported 'chnl' box with version %d, flags: %#x",
                version, flags);
         return AVERROR_INVALIDDATA;
     }
 
-    ret = ff_mov_read_chnl(c->fc, pb, st);
+    ret = ff_mov_read_chnl(c->fc, pb, st, version);
     if (ret < 0)
         return ret;
 
