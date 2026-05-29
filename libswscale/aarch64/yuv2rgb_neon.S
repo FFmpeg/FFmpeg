@@ -324,6 +324,22 @@
         dst_load_args_packed_2l 3
 .endm
 
+.macro dst_load_args_rgb565le_2l
+        dst_load_args_packed_2l 2
+.endm
+
+.macro dst_load_args_bgr565le_2l
+        dst_load_args_packed_2l 2
+.endm
+
+.macro dst_load_args_rgb555le_2l
+        dst_load_args_packed_2l 2
+.endm
+
+.macro dst_load_args_bgr555le_2l
+        dst_load_args_packed_2l 2
+.endm
+
 // 2-lines-at-a-time planar dst loader. \sp_off is the byte offset at
 // which the caller's [sp+0] arg now lives (i.e., however many bytes the
 // caller pushed before invoking this macro). declare_2l_gbrp spills
@@ -560,6 +576,22 @@
         st1             {  v6.8b,  v7.8b }, [\rdst1], #16
         st1             { v18.8b, v19.8b }, [\rdst2], #16
 .endif
+.if rgb16
+ .ifc \ifmt,yuva420p
+        .error "yuva420p->rgb16 is dispatched through the yuv420p path (rgb16 has no alpha channel)"
+ .endif
+        compute_rgb     v4, v5, v6, v16, v17, v18
+ .if r_first
+        // rgb*le: (R << hshift) | (G << 5) | B
+        pack_rgb16_2l   v8,  v6,  v5,  v4,  gshift, hshift
+        pack_rgb16_2l   v9,  v18, v17, v16, gshift, hshift
+ .else
+        // bgr*le: (B << hshift) | (G << 5) | R
+        pack_rgb16_2l   v8,  v4,  v5,  v6,  gshift, hshift
+        pack_rgb16_2l   v9,  v16, v17, v18, gshift, hshift
+ .endif
+        st1             { v8.8h, v9.8h}, [\rdst0], #32
+.endif
 .endm
 
 // Map ofmt to .set predicates: rgb16=1 for the four 16bpp LE ofmts
@@ -627,6 +659,21 @@
         sli             \dst\().8h, v23.8h, #5
         uxtl            v23.8h, v20.8b
         sli             \dst\().8h, v23.8h, #\high_shl
+.endm
+
+// As pack_rgb16 but uses v26-v29 as scratch (luma temps, dead after
+// compute_rgb), so v20-v25 chroma contributions survive for the
+// second luma row. yuva420p->rgb16 is dispatched through the yuv420p
+// path, so v28/v29 aliasing alpha is not a concern here.
+.macro pack_rgb16_2l dst, low_ch, mid_ch, high_ch, g_shr, high_shl
+        ushr            v26.8b, \high_ch\().8b, #3
+        ushr            v27.8b, \mid_ch\().8b,  #\g_shr
+        ushr            v28.8b, \low_ch\().8b,  #3
+        uxtl            \dst\().8h, v28.8b
+        uxtl            v29.8h, v27.8b
+        sli             \dst\().8h, v29.8h, #5
+        uxtl            v29.8h, v26.8b
+        sli             \dst\().8h, v29.8h, #\high_shl
 .endm
 
 .macro declare_func ifmt ofmt
@@ -777,12 +824,14 @@ endfunc
 // subsampled sources (chrSrcVSubSample > 0).
 .macro declare_2l_packed ifmt ofmt
 function ff_\ifmt\()_to_\ofmt\()_neon, export=1
+        set_rgb16_predicates \ofmt
         uxtw            widthx, width
         dup             v3.8h, y_offset
         dup             v0.8h, y_coeff
         ld1             {v1.1d}, [table_ptr]
         src_load_args_\ifmt\()_2l
         dst_load_args_\ofmt\()_2l
+        save_d8_d9_if_16bpp
 
         movi            v31.8h, #4, lsl #8                              // 128 * (1<<3) (loop-invariant)
         movi            v30.8b, #255                                    // alpha = 255  (loop-invariant)
@@ -801,6 +850,7 @@ function ff_\ifmt\()_to_\ofmt\()_neon, export=1
         subs            height, height, #2
         b.gt            1b
         mov             w0, orig_height
+        restore_d8_d9_if_16bpp
         ret
 endfunc
 .endm
@@ -870,10 +920,18 @@ declare_rgb_funcs           yuv422p
         declare_func    \ifmt, bgr555le
 .endm
 
-declare_rgb16_funcs nv12
-declare_rgb16_funcs nv21
-declare_rgb16_funcs yuv420p
-declare_rgb16_funcs yuv422p
+.macro declare_rgb16_funcs_2l ifmt
+        declare_2l_packed \ifmt, rgb565le
+        declare_2l_packed \ifmt, bgr565le
+        declare_2l_packed \ifmt, rgb555le
+        declare_2l_packed \ifmt, bgr555le
+.endm
+
+// Subsampled inputs take the 2-line rgb16 path; yuv422p stays single-row.
+declare_rgb16_funcs_2l nv12
+declare_rgb16_funcs_2l nv21
+declare_rgb16_funcs_2l yuv420p
+declare_rgb16_funcs    yuv422p
 
 .macro declare_yuva_funcs ifmt
         declare_func    \ifmt, argb
