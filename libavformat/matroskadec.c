@@ -1339,6 +1339,13 @@ static int ebml_parse(MatroskaDemuxContext *matroska,
 
             if ((unsigned)list->nb_elem + 1 >= UINT_MAX / syntax->list_elem_size)
                 return AVERROR(ENOMEM);
+            if (syntax->id == MATROSKA_ID_TRACKENTRY &&
+                list->nb_elem >= matroska->ctx->max_streams) {
+                av_log(matroska->ctx, AV_LOG_ERROR,
+                       "Number of tracks exceeds max_streams (%d)\n",
+                       matroska->ctx->max_streams);
+                return AVERROR(EINVAL);
+            }
             newelem = av_fast_realloc(list->elem,
                                       &list->alloc_elem_size,
                                       (list->nb_elem + 1) * syntax->list_elem_size);
