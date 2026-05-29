@@ -62,6 +62,12 @@ int ff_itut_t35_parse_buffer(FFITUTT35 *const itut_t35, const uint8_t *buf,
                 return AVERROR_INVALIDDATA;
             provider_oriented_code = bytestream2_get_be32u(&gb);
             switch (provider_oriented_code) {
+            case MKBETAG('D', 'T', 'G', '1'): // afd_data
+                if (bytestream2_get_bytes_left(&gb) < 2)
+                    return AVERROR_INVALIDDATA;
+                if (!(bytestream2_get_byteu(&gb) & 0x40)) // active_format_flag
+                    return 0; //ignore
+                break;
             case MKBETAG('G', 'A', '9', '4'): // closed captions
                 break;
             default: // ignore unsupported identifiers
@@ -151,6 +157,14 @@ int ff_itut_t35_parse_payload_to_struct(FFITUTT35 *const itut_t35, FFITUTT35Aux 
             break;
         case ITU_T_T35_PROVIDER_CODE_ATSC:
             switch (itut_t35->provider_oriented_code) {
+            case MKBETAG('D', 'T', 'G', '1'): // afd_data
+                metadata->afd = av_buffer_alloc(1);
+                if (!metadata->afd)
+                    return AVERROR(ENOMEM);
+
+                *metadata->afd->data = *itut_t35->payload & 0xf;
+
+                break;
             case MKBETAG('G', 'A', '9', '4'): // closed captions
                 ret = ff_parse_a53_cc(&metadata->a53_cc, itut_t35->payload, itut_t35->payload_size);
                 if (ret < 0)
@@ -258,6 +272,12 @@ int ff_itut_t35_parse_payload_to_frame(FFITUTT35 *const itut_t35, FFITUTT35Aux *
     ret = ff_itut_t35_parse_payload_to_struct(itut_t35, aux, &metadata, avctx->err_recognition);
     if (ret < 0)
         return ret;
+
+    if (metadata.afd) {
+        if (!av_frame_new_side_data_from_buf(frame, AV_FRAME_DATA_AFD, metadata.afd))
+            av_buffer_unref(&metadata.afd);
+        metadata.afd = NULL;
+    }
 
     if (metadata.a53_cc) {
         ret = ff_frame_new_side_data_from_buf(avctx, frame, AV_FRAME_DATA_A53_CC, &metadata.a53_cc);

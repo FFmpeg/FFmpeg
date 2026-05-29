@@ -58,6 +58,7 @@ typedef struct FFITUTT35 {
 } FFITUTT35;
 
 typedef struct FFITUTT35Meta {
+    AVBufferRef *afd;
     AVBufferRef *a53_cc;
     AVBufferRef *lcevc;
     AVBufferRef *hdr_plus;
