@@ -97,6 +97,11 @@
 // double as the line-2 luma and dst pointers.
 #define l2_srcY       x16
 #define l2_dst0       x17
+// Planar 2-line variant needs three line-2 dst pointers. x16/x17 are
+// already taken by l2_srcY/l2_dst0, so l2_dst1/l2_dst2 land in the
+// AAPCS callee-saved range and the 2-line gbrp prologue spills them.
+#define l2_dst1       x19
+#define l2_dst2       x20
 
 // --------------------------------------------------------------------
 // Source-side argument unpacking.
@@ -319,6 +324,35 @@
         dst_load_args_packed_2l 3
 .endm
 
+// 2-lines-at-a-time planar dst loader. \sp_off is the byte offset at
+// which the caller's [sp+0] arg now lives (i.e., however many bytes the
+// caller pushed before invoking this macro). declare_2l_gbrp spills
+// x19/x20 (16 bytes) and passes 16; the on-stack args end up at:
+//   [sp + sp_off +  0] int     linesize0
+//   [sp + sp_off +  8] uint8_t *dst1
+//   [sp + sp_off + 16] int     linesize1
+//   [sp + sp_off + 24] uint8_t *dst2
+//   [sp + sp_off + 32] int     linesize2
+.macro dst_load_args_planar_2l sp_off
+        ldr             dstPadding0w, [sp, #(\sp_off +  0)]
+        ldr             dst1,         [sp, #(\sp_off +  8)]
+        ldr             dstPadding1w, [sp, #(\sp_off + 16)]
+        ldr             dst2,         [sp, #(\sp_off + 24)]
+        ldr             dstPadding2w, [sp, #(\sp_off + 32)]
+        sxtw            dstPadding0,  dstPadding0w
+        sxtw            dstPadding1,  dstPadding1w
+        sxtw            dstPadding2,  dstPadding2w
+        add             l2_dst0,      dst0,         dstPadding0          // l2_dst0 = dst0 + linesize0
+        add             l2_dst1,      dst1,         dstPadding1          // l2_dst1 = dst1 + linesize1
+        add             l2_dst2,      dst2,         dstPadding2          // l2_dst2 = dst2 + linesize2
+        lsl             dstPadding0,  dstPadding0,  #1
+        lsl             dstPadding1,  dstPadding1,  #1
+        lsl             dstPadding2,  dstPadding2,  #1
+        sub             dstPadding0,  dstPadding0,  widthx               // = 2*linesize0 - width
+        sub             dstPadding1,  dstPadding1,  widthx
+        sub             dstPadding2,  dstPadding2,  widthx
+.endm
+
 // --------------------------------------------------------------------
 // Per-input chroma load (run inside the inner loop).
 
@@ -404,6 +438,15 @@
 .macro dst_increment_packed_2l
         add             dst0,    dst0,    dstPadding0
         add             l2_dst0, l2_dst0, dstPadding0
+.endm
+
+.macro dst_increment_planar_2l
+        add             dst0,    dst0,    dstPadding0
+        add             l2_dst0, l2_dst0, dstPadding0
+        add             dst1,    dst1,    dstPadding1
+        add             l2_dst1, l2_dst1, dstPadding1
+        add             dst2,    dst2,    dstPadding2
+        add             l2_dst2, l2_dst2, dstPadding2
 .endm
 
 // --------------------------------------------------------------------
@@ -510,6 +553,12 @@
         compute_rgb     v6, v5, v4, v18, v17, v16
         st3             { v4.8b, v5.8b, v6.8b}, [\rdst0], #24
         st3             {v16.8b,v17.8b,v18.8b}, [\rdst0], #24
+.endif
+.ifc \ofmt,gbrp
+        compute_rgb     v18, v4, v6, v19, v5, v7
+        st1             {  v4.8b,  v5.8b }, [\rdst0], #16
+        st1             {  v6.8b,  v7.8b }, [\rdst1], #16
+        st1             { v18.8b, v19.8b }, [\rdst2], #16
 .endif
 .endm
 
@@ -765,16 +814,53 @@ endfunc
         declare_2l_packed \ifmt, bgr24
 .endm
 
-// Vertically-subsampled inputs: packed RGB outputs go through the
-// 2-lines path; gbrp stays on the single-row declare_func (extended
-// in a follow-up). yuv422p has full-height chroma -- no sharing, so
-// it keeps the single-row path for every ofmt.
+// 2-lines-at-a-time variant for the gbrp planar output. Six dst pointers
+// (three per row) exhaust the caller-saved registers, so x19/x20 are
+// spilled AAPCS-style. Stack args for the line-1 dst1/dst2/linesize are
+// read after the spill, so dst_load_args_planar_2l uses the shifted
+// offsets.
+.macro declare_2l_gbrp ifmt
+function ff_\ifmt\()_to_gbrp_neon, export=1
+        uxtw            widthx, width
+        dup             v3.8h, y_offset
+        dup             v0.8h, y_coeff
+        ld1             {v1.1d}, [table_ptr]
+
+        stp             x19, x20, [sp, #-0x10]!                         // callee-saved (line2 planar ptrs)
+
+        src_load_args_\ifmt\()_2l
+        dst_load_args_planar_2l 16                                      // 16 = bytes pushed above
+
+        movi            v31.8h, #4, lsl #8                              // 128 * (1<<3) (loop-invariant)
+        mov             orig_height, height
+1:
+        mov             cur_width, width
+2:
+        load_chroma_\ifmt
+        chroma_to_rgb_offsets
+        process_row     \ifmt, gbrp, srcY,    srcY,    dst0,    dst1,    dst2
+        process_row     \ifmt, gbrp, l2_srcY, l2_srcY, l2_dst0, l2_dst1, l2_dst2
+        subs            cur_width, cur_width, #16
+        b.gt            2b
+        dst_increment_planar_2l
+        src_increment_\ifmt\()_2l
+        subs            height, height, #2
+        b.gt            1b
+        mov             w0, orig_height
+        ldp             x19, x20, [sp], #0x10                           // restore callee-saved
+        ret
+endfunc
+.endm
+
+// Vertically-subsampled inputs: both packed RGB and gbrp go through the
+// 2-lines path. yuv422p has full-height chroma -- no sharing, so it
+// keeps the single-row path for every ofmt.
 declare_rgb_funcs_2l_packed nv12
-declare_func                nv12, gbrp
+declare_2l_gbrp             nv12
 declare_rgb_funcs_2l_packed nv21
-declare_func                nv21, gbrp
+declare_2l_gbrp             nv21
 declare_rgb_funcs_2l_packed yuv420p
-declare_func                yuv420p, gbrp
+declare_2l_gbrp             yuv420p
 declare_rgb_funcs           yuv422p
 
 .macro declare_rgb16_funcs ifmt
