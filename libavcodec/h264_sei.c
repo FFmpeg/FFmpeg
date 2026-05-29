@@ -56,7 +56,6 @@ void ff_h264_sei_uninit(H264SEIContext *h)
     h->buffering_period.present    = 0;
     h->common.frame_packing.present       = 0;
     h->common.display_orientation.present = 0;
-    h->common.afd.present                 =  0;
 
     ff_h2645_sei_reset(&h->common);
 }

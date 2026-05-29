@@ -767,7 +767,7 @@ static int check_film_grain(VVCContext *s, VVCFrameContext *fc)
 
     fc->ref->needs_fg = (fc->sei.common.film_grain_characteristics &&
         fc->sei.common.film_grain_characteristics->present ||
-        fc->sei.common.aom_film_grain.enable) &&
+        fc->sei.common.itut_t35.aom_film_grain.enable) &&
         !(s->avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN) &&
         !s->avctx->hwaccel;
 

@@ -191,9 +191,8 @@ static int alloc_picture(H264Context *h, H264Picture *pic)
 
     av_assert0(!pic->f->data[0]);
 
-    if (h->sei.common.lcevc.info) {
-        HEVCSEILCEVC *lcevc = &h->sei.common.lcevc;
-        ret = ff_frame_new_side_data_from_buf(h->avctx, pic->f, AV_FRAME_DATA_LCEVC, &lcevc->info);
+    if (h->sei.common.itut_t35.lcevc) {
+        ret = ff_frame_new_side_data_from_buf(h->avctx, pic->f, AV_FRAME_DATA_LCEVC, &h->sei.common.itut_t35.lcevc);
         if (ret < 0)
             return ret;
     }

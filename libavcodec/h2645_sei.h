@@ -25,12 +25,12 @@
 #include "libavutil/frame.h"
 #include "libavutil/film_grain_params.h"
 
-#include "aom_film_grain.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #include "codec_id.h"
 #include "get_bits.h"
 #include "h2645_vui.h"
+#include "itut35.h"
 #include "sei.h"
 
 typedef struct H2645SEIA53Caption {
@@ -126,11 +126,7 @@ typedef struct H2645SEIContentLight {
 } H2645SEIContentLight;
 
 typedef struct H2645SEI {
-    H2645SEIA53Caption a53_caption;
-    H2645SEIAFD afd;
-    HEVCSEIDynamicHDRPlus  dynamic_hdr_plus;     //< HEVC only
-    HEVCSEIDynamicHDRVivid dynamic_hdr_vivid;    //< HEVC only
-    HEVCSEILCEVC lcevc;
+    FFITUTT35Meta itut_t35;
     H2645SEIUnregistered unregistered;
     H2645SEIFramePacking frame_packing;
     H2645SEIDisplayOrientation display_orientation;
@@ -138,7 +134,6 @@ typedef struct H2645SEI {
     H2645SEIAmbientViewingEnvironment ambient_viewing_environment;
     H2645SEIMasteringDisplay mastering_display;
     H2645SEIContentLight content_light;
-    AVFilmGrainAFGS1Params aom_film_grain;
 
     // Dynamic allocations due to large size.
     H2645SEIFilmGrainCharacteristics *film_grain_characteristics;
