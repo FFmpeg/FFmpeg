@@ -91,6 +91,13 @@
 #define tmp           w17
 #define tmpx          x17
 
+// Second-row scratch for the 2-lines-at-a-time paths. chroma_rewind and
+// tmp are unused there (the chroma row is consumed by both output rows
+// in the same iteration, so the rewind csel/add is gone), so x16/x17
+// double as the line-2 luma and dst pointers.
+#define l2_srcY       x16
+#define l2_dst0       x17
+
 // --------------------------------------------------------------------
 // Source-side argument unpacking.
 
@@ -153,6 +160,43 @@
         sub             srcPaddingA,  srcPaddingA,  widthx              // alpha is full resolution
         neg             chroma_rewind, widthx
         asr             chroma_rewind, chroma_rewind, #1
+.endm
+
+// 2-lines-at-a-time variants: compute l2_srcY = srcY + srcStride[0]
+// up front and pre-double srcPaddingY so the row-end increment advances
+// both luma pointers by a full pair-stride. Chroma advances once per
+// pair, so srcPaddingC/U/V are computed the same way as the single-row
+// case. No chroma_rewind is needed (a chroma row is consumed by both
+// output rows in the same inner iteration).
+
+.macro src_load_args_nv12_2l
+        ldp             srcPaddingYw, srcPaddingCw, [x6]
+        ldp             srcY,         srcC,         [x5]
+        sxtw            srcPaddingY,  srcPaddingYw
+        sxtw            srcPaddingC,  srcPaddingCw
+        add             l2_srcY,      srcY,         srcPaddingY         // l2_srcY = srcY + linesizeY
+        lsl             srcPaddingY,  srcPaddingY,  #1
+        sub             srcPaddingY,  srcPaddingY,  widthx              // = 2*linesizeY - width
+        sub             srcPaddingC,  srcPaddingC,  widthx
+.endm
+
+.macro src_load_args_nv21_2l
+        src_load_args_nv12_2l
+.endm
+
+.macro src_load_args_yuv420p_2l
+        ldp             srcPaddingYw, srcPaddingUw, [x6]
+        ldr             srcPaddingVw, [x6, #8]
+        ldp             srcY,         srcU,         [x5]
+        ldr             srcV,         [x5, #16]
+        sxtw            srcPaddingY,  srcPaddingYw
+        sxtw            srcPaddingU,  srcPaddingUw
+        sxtw            srcPaddingV,  srcPaddingVw
+        add             l2_srcY,      srcY,         srcPaddingY         // l2_srcY = srcY + linesizeY
+        lsl             srcPaddingY,  srcPaddingY,  #1
+        sub             srcPaddingY,  srcPaddingY,  widthx              // = 2*linesizeY - width
+        sub             srcPaddingU,  srcPaddingU,  widthx, lsr #1
+        sub             srcPaddingV,  srcPaddingV,  widthx, lsr #1
 .endm
 
 // --------------------------------------------------------------------
@@ -231,6 +275,50 @@
         dst_load_args_planar
 .endm
 
+// 2-lines-at-a-time dst loader. Pre-compute l2_dst = dst + linesize
+// and pre-double dstPadding so the row-end advance covers both rows.
+
+.macro dst_load_args_packed_2l bpp
+        ldr             dstPadding0w, [sp]                              // linesize0
+        sxtw            dstPadding0,  dstPadding0w
+        add             l2_dst0,      dst0,         dstPadding0         // l2_dst0 = dst0 + linesize0
+        lsl             dstPadding0,  dstPadding0,  #1
+.ifc \bpp,2
+        sub             dstPadding0,  dstPadding0,  widthx, lsl #1      // = 2*linesize0 - width*2
+.endif
+.ifc \bpp,3
+        sub             dstPadding0,  dstPadding0,  widthx, lsl #1
+        sub             dstPadding0,  dstPadding0,  widthx              // = 2*linesize0 - width*3
+.endif
+.ifc \bpp,4
+        sub             dstPadding0,  dstPadding0,  widthx, lsl #2      // = 2*linesize0 - width*4
+.endif
+.endm
+
+.macro dst_load_args_argb_2l
+        dst_load_args_packed_2l 4
+.endm
+
+.macro dst_load_args_rgba_2l
+        dst_load_args_packed_2l 4
+.endm
+
+.macro dst_load_args_abgr_2l
+        dst_load_args_packed_2l 4
+.endm
+
+.macro dst_load_args_bgra_2l
+        dst_load_args_packed_2l 4
+.endm
+
+.macro dst_load_args_rgb24_2l
+        dst_load_args_packed_2l 3
+.endm
+
+.macro dst_load_args_bgr24_2l
+        dst_load_args_packed_2l 3
+.endm
+
 // --------------------------------------------------------------------
 // Per-input chroma load (run inside the inner loop).
 
@@ -293,6 +381,31 @@
         add             srcV, srcV, srcPaddingV                         // srcV += srcPaddingV
 .endm
 
+// 2-lines-at-a-time row-end increments. srcPaddingY already covers two
+// luma rows; chroma advances by a single chroma row per pair.
+
+.macro src_increment_nv12_2l
+        add             srcY,    srcY,    srcPaddingY
+        add             l2_srcY, l2_srcY, srcPaddingY
+        add             srcC,    srcC,    srcPaddingC
+.endm
+
+.macro src_increment_nv21_2l
+        src_increment_nv12_2l
+.endm
+
+.macro src_increment_yuv420p_2l
+        add             srcY,    srcY,    srcPaddingY
+        add             l2_srcY, l2_srcY, srcPaddingY
+        add             srcU,    srcU,    srcPaddingU
+        add             srcV,    srcV,    srcPaddingV
+.endm
+
+.macro dst_increment_packed_2l
+        add             dst0,    dst0,    dstPadding0
+        add             l2_dst0, l2_dst0, dstPadding0
+.endm
+
 // --------------------------------------------------------------------
 // Shared compute / pack helpers.
 
@@ -321,6 +434,83 @@
         compute_rgb     \r1, \g1, \b1, \r2, \g2, \b2
         mov             \a1\().8b, v28.8b                               // real alpha (first 8 pixels)
         mov             \a2\().8b, v29.8b                               // real alpha (next 8 pixels)
+.endm
+
+// Chroma -> RGB offsets, computed once per pixel column for both luma rows.
+// In:  v18/v19 (widened chroma from load_chroma_<ifmt>).
+// Out: v20-v25 (R1, R2, G1, G2, B1, B2).
+.macro chroma_to_rgb_offsets
+        sub             v18.8h, v18.8h, v31.8h                          // U*(1<<3) - 128*(1<<3)
+        sub             v19.8h, v19.8h, v31.8h                          // V*(1<<3) - 128*(1<<3)
+        sqdmulh         v20.8h, v19.8h, v1.h[0]                         // V * v2r            (R)
+        sqdmulh         v22.8h, v18.8h, v1.h[1]                         // U * u2g
+        sqdmulh         v19.8h, v19.8h, v1.h[2]                         //           V * v2g
+        sqdmulh         v24.8h, v18.8h, v1.h[3]                         // U * u2b            (B)
+        add             v22.8h, v22.8h, v19.8h                          // U * u2g + V * v2g  (G)
+        zip2            v21.8h, v20.8h, v20.8h                          // R2
+        zip1            v20.8h, v20.8h, v20.8h                          // R1
+        zip2            v23.8h, v22.8h, v22.8h                          // G2
+        zip1            v22.8h, v22.8h, v22.8h                          // G1
+        zip2            v25.8h, v24.8h, v24.8h                          // B2
+        zip1            v24.8h, v24.8h, v24.8h                          // B1
+.endm
+
+// Load and scale 16 luma samples from \rsrcY into v26 (Y1) / v27 (Y2).
+// v0 = y_coeff, v3 = y_offset (loop-invariant).
+.macro load_luma rsrcY
+        ld1             {v2.16b}, [\rsrcY], #16                         // load luma
+        ushll           v26.8h, v2.8b,  #3                              // Y1*(1<<3)
+        ushll2          v27.8h, v2.16b, #3                              // Y2*(1<<3)
+        sub             v26.8h, v26.8h, v3.8h                           // Y1*(1<<3) - y_offset
+        sub             v27.8h, v27.8h, v3.8h                           // Y2*(1<<3) - y_offset
+        sqdmulh         v26.8h, v26.8h, v0.8h                           // (Y1 * y_coeff) >> 15
+        sqdmulh         v27.8h, v27.8h, v0.8h                           // (Y2 * y_coeff) >> 15
+.endm
+
+// Process one output row for the 2-lines path: load 16 luma px from \rsrcY,
+// combine with the shared chroma offsets in v20-v25, and store 16 px in
+// format \ofmt. Packed callers pass the same dst three times; rsrcA, rdst1,
+// rdst2 are reserved for the gbrp/yuva extensions added in later commits.
+.macro process_row ifmt, ofmt, rsrcY, rsrcA, rdst0, rdst1, rdst2
+        load_luma       \rsrcY
+.ifc \ofmt,argb // a r g b
+        compute_rgb     v5, v6, v7, v17, v18, v19
+        mov             v4.8b,  v30.8b
+        mov             v16.8b, v30.8b
+        st4             { v4.8b, v5.8b, v6.8b, v7.8b}, [\rdst0], #32
+        st4             {v16.8b,v17.8b,v18.8b,v19.8b}, [\rdst0], #32
+.endif
+.ifc \ofmt,rgba // r g b a
+        compute_rgb     v4, v5, v6, v16, v17, v18
+        mov             v7.8b,  v30.8b
+        mov             v19.8b, v30.8b
+        st4             { v4.8b, v5.8b, v6.8b, v7.8b}, [\rdst0], #32
+        st4             {v16.8b,v17.8b,v18.8b,v19.8b}, [\rdst0], #32
+.endif
+.ifc \ofmt,abgr // a b g r
+        compute_rgb     v7, v6, v5, v19, v18, v17
+        mov             v4.8b,  v30.8b
+        mov             v16.8b, v30.8b
+        st4             { v4.8b, v5.8b, v6.8b, v7.8b}, [\rdst0], #32
+        st4             {v16.8b,v17.8b,v18.8b,v19.8b}, [\rdst0], #32
+.endif
+.ifc \ofmt,bgra // b g r a
+        compute_rgb     v6, v5, v4, v18, v17, v16
+        mov             v7.8b,  v30.8b
+        mov             v19.8b, v30.8b
+        st4             { v4.8b, v5.8b, v6.8b, v7.8b}, [\rdst0], #32
+        st4             {v16.8b,v17.8b,v18.8b,v19.8b}, [\rdst0], #32
+.endif
+.ifc \ofmt,rgb24
+        compute_rgb     v4, v5, v6, v16, v17, v18
+        st3             { v4.8b, v5.8b, v6.8b}, [\rdst0], #24
+        st3             {v16.8b,v17.8b,v18.8b}, [\rdst0], #24
+.endif
+.ifc \ofmt,bgr24
+        compute_rgb     v6, v5, v4, v18, v17, v16
+        st3             { v4.8b, v5.8b, v6.8b}, [\rdst0], #24
+        st3             {v16.8b,v17.8b,v18.8b}, [\rdst0], #24
+.endif
 .endm
 
 // Map ofmt to .set predicates: rgb16=1 for the four 16bpp LE ofmts
@@ -526,10 +716,66 @@ endfunc
         declare_func    \ifmt, bgr24
 .endm
 
-declare_rgb_funcs nv12
-declare_rgb_funcs nv21
-declare_rgb_funcs yuv420p
-declare_rgb_funcs yuv422p
+// 2-lines-at-a-time variant of declare_func for the single-dst-pointer
+// packed outputs (argb/rgba/abgr/bgra/rgb24/bgr24) with vertically-
+// subsampled inputs (nv12/nv21/yuv420p). Two consecutive output rows
+// share one chroma row, so the chroma -> RGB offsets (v20-v25) are
+// computed once and applied to both luma rows.
+//
+// Precondition: slice height is even. SET_FF_YUVX_TO_RGBX_FUNC gates
+// on !(src_h & 1); scale_internal()'s macro_height_src check in
+// libswscale/swscale.c rejects any odd srcSliceH for vertically-
+// subsampled sources (chrSrcVSubSample > 0).
+.macro declare_2l_packed ifmt ofmt
+function ff_\ifmt\()_to_\ofmt\()_neon, export=1
+        uxtw            widthx, width
+        dup             v3.8h, y_offset
+        dup             v0.8h, y_coeff
+        ld1             {v1.1d}, [table_ptr]
+        src_load_args_\ifmt\()_2l
+        dst_load_args_\ofmt\()_2l
+
+        movi            v31.8h, #4, lsl #8                              // 128 * (1<<3) (loop-invariant)
+        movi            v30.8b, #255                                    // alpha = 255  (loop-invariant)
+        mov             orig_height, height
+1:
+        mov             cur_width, width
+2:
+        load_chroma_\ifmt
+        chroma_to_rgb_offsets
+        process_row     \ifmt, \ofmt, srcY,    srcY,    dst0,    dst0,    dst0
+        process_row     \ifmt, \ofmt, l2_srcY, l2_srcY, l2_dst0, l2_dst0, l2_dst0
+        subs            cur_width, cur_width, #16
+        b.gt            2b
+        dst_increment_packed_2l
+        src_increment_\ifmt\()_2l
+        subs            height, height, #2
+        b.gt            1b
+        mov             w0, orig_height
+        ret
+endfunc
+.endm
+
+.macro declare_rgb_funcs_2l_packed ifmt
+        declare_2l_packed \ifmt, argb
+        declare_2l_packed \ifmt, rgba
+        declare_2l_packed \ifmt, abgr
+        declare_2l_packed \ifmt, bgra
+        declare_2l_packed \ifmt, rgb24
+        declare_2l_packed \ifmt, bgr24
+.endm
+
+// Vertically-subsampled inputs: packed RGB outputs go through the
+// 2-lines path; gbrp stays on the single-row declare_func (extended
+// in a follow-up). yuv422p has full-height chroma -- no sharing, so
+// it keeps the single-row path for every ofmt.
+declare_rgb_funcs_2l_packed nv12
+declare_func                nv12, gbrp
+declare_rgb_funcs_2l_packed nv21
+declare_func                nv21, gbrp
+declare_rgb_funcs_2l_packed yuv420p
+declare_func                yuv420p, gbrp
+declare_rgb_funcs           yuv422p
 
 .macro declare_rgb16_funcs ifmt
         declare_func    \ifmt, rgb565le
