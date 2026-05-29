@@ -102,6 +102,10 @@
 // AAPCS callee-saved range and the 2-line gbrp prologue spills them.
 #define l2_dst1       x19
 #define l2_dst2       x20
+// yuva420p 2-line carries a per-row alpha pointer (alpha is full
+// resolution -- each output row reads its own 16 bytes). x14 is free
+// for the yuva packed variants (no planar gbrp dst there).
+#define l2_srcA       x14
 
 // --------------------------------------------------------------------
 // Source-side argument unpacking.
@@ -202,6 +206,27 @@
         sub             srcPaddingY,  srcPaddingY,  widthx              // = 2*linesizeY - width
         sub             srcPaddingU,  srcPaddingU,  widthx, lsr #1
         sub             srcPaddingV,  srcPaddingV,  widthx, lsr #1
+.endm
+
+.macro src_load_args_yuva420p_2l
+        ldp             srcPaddingYw, srcPaddingUw, [x6]
+        ldr             srcPaddingVw, [x6, #8]
+        ldr             srcPaddingAw, [x6, #12]                         // srcStride[3]
+        ldp             srcY,         srcU,         [x5]
+        ldr             srcV,         [x5, #16]
+        ldr             srcA,         [x5, #24]                         // src[3]
+        sxtw            srcPaddingY,  srcPaddingYw
+        sxtw            srcPaddingU,  srcPaddingUw
+        sxtw            srcPaddingV,  srcPaddingVw
+        sxtw            srcPaddingA,  srcPaddingAw
+        add             l2_srcY,      srcY,         srcPaddingY         // l2_srcY = srcY + linesizeY
+        add             l2_srcA,      srcA,         srcPaddingA         // l2_srcA = srcA + linesizeA
+        lsl             srcPaddingY,  srcPaddingY,  #1
+        lsl             srcPaddingA,  srcPaddingA,  #1
+        sub             srcPaddingY,  srcPaddingY,  widthx              // = 2*linesizeY - width
+        sub             srcPaddingU,  srcPaddingU,  widthx, lsr #1
+        sub             srcPaddingV,  srcPaddingV,  widthx, lsr #1
+        sub             srcPaddingA,  srcPaddingA,  widthx              // = 2*linesizeA - width
 .endm
 
 // --------------------------------------------------------------------
@@ -451,6 +476,15 @@
         add             srcV,    srcV,    srcPaddingV
 .endm
 
+.macro src_increment_yuva420p_2l
+        add             srcY,    srcY,    srcPaddingY
+        add             l2_srcY, l2_srcY, srcPaddingY
+        add             srcU,    srcU,    srcPaddingU
+        add             srcV,    srcV,    srcPaddingV
+        add             srcA,    srcA,    srcPaddingA
+        add             l2_srcA, l2_srcA, srcPaddingA
+.endm
+
 .macro dst_increment_packed_2l
         add             dst0,    dst0,    dstPadding0
         add             l2_dst0, l2_dst0, dstPadding0
@@ -526,37 +560,60 @@
         sqdmulh         v27.8h, v27.8h, v0.8h                           // (Y2 * y_coeff) >> 15
 .endm
 
-// Process one output row for the 2-lines path: load 16 luma px from \rsrcY,
-// combine with the shared chroma offsets in v20-v25, and store 16 px in
-// format \ofmt. Packed callers pass the same dst three times; rsrcA, rdst1,
-// rdst2 are reserved for the gbrp/yuva extensions added in later commits.
+// Process one output row: load 16 luma px from \rsrcY, combine with the
+// shared chroma offsets in v20-v25, and store 16 px in format \ofmt.
+// Packed callers pass the same dst three times.
 .macro process_row ifmt, ofmt, rsrcY, rsrcA, rdst0, rdst1, rdst2
+        set_rgb16_predicates \ofmt
         load_luma       \rsrcY
+.ifc \ifmt,yuva420p
+        ld1             {v28.8b, v29.8b}, [\rsrcA], #16                 // 16 alpha bytes
+.endif
 .ifc \ofmt,argb // a r g b
         compute_rgb     v5, v6, v7, v17, v18, v19
+ .ifc \ifmt,yuva420p
+        mov             v4.8b,  v28.8b
+        mov             v16.8b, v29.8b
+ .else
         mov             v4.8b,  v30.8b
         mov             v16.8b, v30.8b
+ .endif
         st4             { v4.8b, v5.8b, v6.8b, v7.8b}, [\rdst0], #32
         st4             {v16.8b,v17.8b,v18.8b,v19.8b}, [\rdst0], #32
 .endif
 .ifc \ofmt,rgba // r g b a
         compute_rgb     v4, v5, v6, v16, v17, v18
+ .ifc \ifmt,yuva420p
+        mov             v7.8b,  v28.8b
+        mov             v19.8b, v29.8b
+ .else
         mov             v7.8b,  v30.8b
         mov             v19.8b, v30.8b
+ .endif
         st4             { v4.8b, v5.8b, v6.8b, v7.8b}, [\rdst0], #32
         st4             {v16.8b,v17.8b,v18.8b,v19.8b}, [\rdst0], #32
 .endif
 .ifc \ofmt,abgr // a b g r
         compute_rgb     v7, v6, v5, v19, v18, v17
+ .ifc \ifmt,yuva420p
+        mov             v4.8b,  v28.8b
+        mov             v16.8b, v29.8b
+ .else
         mov             v4.8b,  v30.8b
         mov             v16.8b, v30.8b
+ .endif
         st4             { v4.8b, v5.8b, v6.8b, v7.8b}, [\rdst0], #32
         st4             {v16.8b,v17.8b,v18.8b,v19.8b}, [\rdst0], #32
 .endif
 .ifc \ofmt,bgra // b g r a
         compute_rgb     v6, v5, v4, v18, v17, v16
+ .ifc \ifmt,yuva420p
+        mov             v7.8b,  v28.8b
+        mov             v19.8b, v29.8b
+ .else
         mov             v7.8b,  v30.8b
         mov             v19.8b, v30.8b
+ .endif
         st4             { v4.8b, v5.8b, v6.8b, v7.8b}, [\rdst0], #32
         st4             {v16.8b,v17.8b,v18.8b,v19.8b}, [\rdst0], #32
 .endif
@@ -630,13 +687,15 @@
 // 16bpp packing uses v8/v9 as the accumulator. AAPCS-64 requires d8/d9
 // callee-saved (low 64 bits of v8/v9); other ofmts don't touch v8-v15,
 // so the spill is gated on rgb16.
-.macro save_d8_d9_if_16bpp
+.macro save_d8_d9_if_16bpp ofmt
+        set_rgb16_predicates \ofmt
 .if rgb16
         stp             d8, d9, [sp, #-0x10]!
 .endif
 .endm
 
-.macro restore_d8_d9_if_16bpp
+.macro restore_d8_d9_if_16bpp ofmt
+        set_rgb16_predicates \ofmt
 .if rgb16
         ldp             d8, d9, [sp], #0x10
 .endif
@@ -678,14 +737,13 @@
 
 .macro declare_func ifmt ofmt
 function ff_\ifmt\()_to_\ofmt\()_neon, export=1
-        set_rgb16_predicates \ofmt
         uxtw            widthx, width                                   // ensure upper 32 bits of widthx are zero
         dup             v3.8h, y_offset                                 // broadcast y_offset before w2 is reused
         dup             v0.8h, y_coeff                                  // broadcast y_coeff  before w3 is reused
         ld1             {v1.1d}, [table_ptr]                            // load yuv2rgb_table before x4 is reused
         src_load_args_\ifmt
         dst_load_args_\ofmt
-        save_d8_d9_if_16bpp
+        save_d8_d9_if_16bpp \ofmt
 
         movi            v31.8h, #4, lsl #8                              // 128 * (1<<3) (loop-invariant)
         movi            v30.8b, #255                                    // alpha = 255  (loop-invariant)
@@ -797,7 +855,7 @@ function ff_\ifmt\()_to_\ofmt\()_neon, export=1
         subs            height, height, #1                              // height -= 1
         b.gt            1b
         mov             w0, orig_height                                 // return orig_height
-        restore_d8_d9_if_16bpp
+        restore_d8_d9_if_16bpp \ofmt
         ret
 endfunc
 .endm
@@ -824,14 +882,13 @@ endfunc
 // subsampled sources (chrSrcVSubSample > 0).
 .macro declare_2l_packed ifmt ofmt
 function ff_\ifmt\()_to_\ofmt\()_neon, export=1
-        set_rgb16_predicates \ofmt
         uxtw            widthx, width
         dup             v3.8h, y_offset
         dup             v0.8h, y_coeff
         ld1             {v1.1d}, [table_ptr]
         src_load_args_\ifmt\()_2l
         dst_load_args_\ofmt\()_2l
-        save_d8_d9_if_16bpp
+        save_d8_d9_if_16bpp \ofmt
 
         movi            v31.8h, #4, lsl #8                              // 128 * (1<<3) (loop-invariant)
         movi            v30.8b, #255                                    // alpha = 255  (loop-invariant)
@@ -850,7 +907,7 @@ function ff_\ifmt\()_to_\ofmt\()_neon, export=1
         subs            height, height, #2
         b.gt            1b
         mov             w0, orig_height
-        restore_d8_d9_if_16bpp
+        restore_d8_d9_if_16bpp \ofmt
         ret
 endfunc
 .endm
@@ -940,4 +997,49 @@ declare_rgb16_funcs    yuv422p
         declare_func    \ifmt, bgra
 .endm
 
-declare_yuva_funcs yuva420p
+// 2-lines-at-a-time path for yuva420p -> {argb,rgba,abgr,bgra}. Chroma
+// is vertically subsampled and shared between the two output rows; the
+// alpha plane is full resolution, so each row loads its own 16 alpha
+// bytes via process_row's \rsrcA arg (srcA / l2_srcA). The constant
+// alpha (v30) is never read in this path, so its prologue movi is
+// omitted.
+.macro declare_2l_yuva ofmt
+.ifc \ofmt,gbrp
+        .error "yuva420p->gbrp is dispatched through the yuv420p path (gbrp has no alpha channel)"
+.endif
+function ff_yuva420p_to_\ofmt\()_neon, export=1
+        uxtw            widthx, width
+        dup             v3.8h, y_offset
+        dup             v0.8h, y_coeff
+        ld1             {v1.1d}, [table_ptr]
+        src_load_args_yuva420p_2l
+        dst_load_args_\ofmt\()_2l
+
+        movi            v31.8h, #4, lsl #8                              // 128 * (1<<3) (loop-invariant)
+        mov             orig_height, height
+1:
+        mov             cur_width, width
+2:
+        load_chroma_yuv420p
+        chroma_to_rgb_offsets
+        process_row     yuva420p, \ofmt, srcY,    srcA,    dst0,    dst0,    dst0
+        process_row     yuva420p, \ofmt, l2_srcY, l2_srcA, l2_dst0, l2_dst0, l2_dst0
+        subs            cur_width, cur_width, #16
+        b.gt            2b
+        dst_increment_packed_2l
+        src_increment_yuva420p_2l
+        subs            height, height, #2
+        b.gt            1b
+        mov             w0, orig_height
+        ret
+endfunc
+.endm
+
+.macro declare_yuva_funcs_2l
+        declare_2l_yuva argb
+        declare_2l_yuva rgba
+        declare_2l_yuva abgr
+        declare_2l_yuva bgra
+.endm
+
+declare_yuva_funcs_2l
