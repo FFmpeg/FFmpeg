@@ -1065,19 +1065,27 @@ typedef struct AVStreamGroupTileGrid {
 } AVStreamGroupTileGrid;
 
 /**
- * AVStreamGroupLCEVC is meant to define the relation between video streams
- * and a data stream containing LCEVC enhancement layer NALUs.
+ * AVStreamGroupLayeredVideo is meant to define the relation between a base
+ * layer video stream and a separate enhancement layer stream that together
+ * form a single layered video presentation (for example a video stream and a
+ * data stream containing LCEVC enhancement layer NALUs, or Dolby Vision
+ * Profile 7 dual-layer encoding).
  *
- * No more than one stream of
- * @ref AVCodecParameters.codec_id "codec_id" AV_CODEC_ID_LCEVC shall be present.
+ * The enhancement layer stream is identified by @ref el_index.
  */
-typedef struct AVStreamGroupLCEVC {
+typedef struct AVStreamGroupLayeredVideo {
     const AVClass *av_class;
 
     /**
-     * Index of the LCEVC data stream in AVStreamGroup.
+     * Index of the enhancement layer stream in AVStreamGroup.
      */
-    unsigned int lcevc_index;
+    union {
+        unsigned int el_index;
+        /**
+         * Alias for @ref el_index, kept for backward compatibility.
+         */
+        unsigned int lcevc_index;
+    };
     /**
      * Width of the final stream for presentation.
      */
@@ -1086,7 +1094,14 @@ typedef struct AVStreamGroupLCEVC {
      * Height of the final image for presentation.
      */
     int height;
-} AVStreamGroupLCEVC;
+} AVStreamGroupLayeredVideo;
+
+/**
+ * Alias kept for backward compatibility.
+ *
+ * AVStreamGroupLCEVC was renamed to @ref AVStreamGroupLayeredVideo.
+ */
+#define AVStreamGroupLCEVC AVStreamGroupLayeredVideo
 
 /**
  * AVStreamGroupTREF is meant to define the relation between video, audio,
@@ -1152,6 +1167,7 @@ typedef struct AVStreamGroup {
         struct AVIAMFAudioElement *iamf_audio_element;
         struct AVIAMFMixPresentation *iamf_mix_presentation;
         struct AVStreamGroupTileGrid *tile_grid;
+        struct AVStreamGroupLayeredVideo *layered_video;
         struct AVStreamGroupLCEVC *lcevc;
         struct AVStreamGroupTREF *tref;
     } params;
