@@ -63,6 +63,7 @@ typedef struct FFITUTT35Meta {
     AVBufferRef *lcevc;
     AVBufferRef *hdr_plus;
     AVBufferRef *hdr_smpte2094_app5;
+    AVBufferRef *hdr_vivid;
     AVBufferRef *dovi;
     AVFilmGrainAFGS1Params aom_film_grain;
 } FFITUTT35Meta;

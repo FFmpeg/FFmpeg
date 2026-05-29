@@ -26,6 +26,7 @@
 #include "atsc_a53.h"
 #include "bytestream.h"
 #include "decode.h"
+#include "dynamic_hdr_vivid.h"
 #include "dovi_rpu.h"
 #include "itut35.h"
 #include "version.h"
@@ -118,6 +119,24 @@ int ff_itut_t35_parse_buffer(FFITUTT35 *const itut_t35, const uint8_t *buf,
 
         switch (provider_code) {
         case ITU_T_T35_PROVIDER_CODE_VNOVA:
+            break;
+        default: // ignore unsupported provider codes
+            return 0;
+        }
+        break;
+    case ITU_T_T35_COUNTRY_CODE_CN:
+        if (bytestream2_get_bytes_left(&gb) < 2)
+            return AVERROR_INVALIDDATA;
+        provider_code = bytestream2_get_be16u(&gb);
+
+        switch (provider_code) {
+        case ITU_T_T35_PROVIDER_CODE_HDR_VIVID:
+            if (bytestream2_get_bytes_left(&gb) < 2)
+                return AVERROR_INVALIDDATA;
+
+            provider_oriented_code = bytestream2_get_be16u(&gb);
+            if (provider_oriented_code != 0x0005)
+                return 0; //ignore
             break;
         default: // ignore unsupported provider codes
             return 0;
@@ -254,6 +273,32 @@ int ff_itut_t35_parse_payload_to_struct(FFITUTT35 *const itut_t35, FFITUTT35Aux 
             break;
         }
         break;
+    case ITU_T_T35_COUNTRY_CODE_CN:
+        switch (itut_t35->provider_code) {
+        case ITU_T_T35_PROVIDER_CODE_HDR_VIVID: {
+            size_t size;
+            AVDynamicHDRVivid *hdr_vivid = av_dynamic_hdr_vivid_alloc(&size);
+            if (!hdr_vivid)
+                return AVERROR(ENOMEM);
+
+            ret = ff_parse_itu_t_t35_to_dynamic_hdr_vivid(hdr_vivid, itut_t35->payload,
+                                                          itut_t35->payload_size);
+            if (ret < 0) {
+                av_free(hdr_vivid);
+                return ret;
+            }
+
+            metadata->hdr_vivid = av_buffer_create((uint8_t *)hdr_vivid, size, NULL, NULL, 0);
+            if (!metadata->hdr_vivid) {
+                av_free(hdr_vivid);
+                return AVERROR(ENOMEM);
+            }
+            break;
+        }
+        default:
+            break;
+        }
+        break;
 
     default:
         // ignore unsupported provider codes
@@ -324,6 +369,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (metadata.lcevc) {
         ret = ff_frame_new_side_data_from_buf(avctx, frame, AV_FRAME_DATA_LCEVC,
                                              &metadata.lcevc);
+        if (ret < 0)
+            return ret;
+    }
+
+    if (metadata.hdr_vivid) {
+        ret = ff_frame_new_side_data_from_buf(avctx, frame, AV_FRAME_DATA_DYNAMIC_HDR_VIVID,
+                                              &metadata.hdr_vivid);
         if (ret < 0)
             return ret;
     }
