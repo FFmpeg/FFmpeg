@@ -80,6 +80,7 @@ static const char * const pred8x8_modes[4][11] = {
         [ALZHEIMER_DC_0L0_PRED8x8] = "mad_cow_dc_0l0",
     },
     { /* VP8 */
+        [DC_PRED8x8    ] = "dc_rv40",
         [PLANE_PRED8x8 ] = "tm_vp8",
         [DC_127_PRED8x8] = "dc_127_vp8",
         [DC_129_PRED8x8] = "dc_129_vp8",

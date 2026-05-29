@@ -710,15 +710,16 @@ cglobal pred8x8_dc_8, 2,5,5
 ; void ff_pred8x8_dc_rv40_8(uint8_t *src, ptrdiff_t stride)
 ;-----------------------------------------------------------------------------
 
-INIT_MMX mmxext
-cglobal pred8x8_dc_rv40_8, 2,7
+INIT_XMM sse2
+cglobal pred8x8_dc_rv40_8, 2,7,2
     mov       r4, r0
     sub       r0, r1
-    pxor      mm0, mm0
-    psadbw    mm0, [r0]
+    movq      m1, [r0]
+    pxor      m0, m0
+    psadbw    m0, m1
     dec        r0
     movzx     r5d, byte [r0+r1*1]
-    movd      r6d, mm0
+    movd      r6d, m0
     lea        r0, [r0+r1*2]
 %rep 3
     movzx     r2d, byte [r0+r1*0]
@@ -731,13 +732,13 @@ cglobal pred8x8_dc_rv40_8, 2,7
     add       r5d, r6d
     lea       r2d, [r2+r5+8]
     shr       r2d, 4
-    movd      mm0, r2d
-    punpcklbw mm0, mm0
-    pshufw    mm0, mm0, 0
+    movd       m0, r2d
+    punpcklbw  m0, m0
+    pshuflw    m0, m0, 0
     mov       r3d, 4
 .loop:
-    movq [r4+r1*0], mm0
-    movq [r4+r1*1], mm0
+    movq [r4+r1*0], m0
+    movq [r4+r1*1], m0
     lea   r4, [r4+r1*2]
     dec   r3d
     jg .loop
