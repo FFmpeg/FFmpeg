@@ -143,40 +143,28 @@ static int set_pix_fmt(AVCodecContext *avctx, struct aom_image *img)
     }
 }
 
-static int decode_metadata_itu_t_t35(AVFrame *frame,
+static int decode_metadata_itu_t_t35(AVCodecContext *avctx, AVFrame *frame,
                                      const uint8_t *buffer, size_t buffer_size)
 {
+    FFITUTT35 itut35 = { 0 };
+    int ret;
+
     if (buffer_size < 6)
         return AVERROR(EINVAL);
 
-    GetByteContext bc;
-    bytestream2_init(&bc, buffer, buffer_size);
+    ret = ff_itut_t35_parse_buffer(&itut35, buffer, buffer_size, 0);
+    if (ret <= 0)
+        return ret;
 
-    const int country_code = bytestream2_get_byteu(&bc);
-    const int provider_code = bytestream2_get_be16u(&bc);
-    const int provider_oriented_code = bytestream2_get_be16u(&bc);
-    const int application_identifier = bytestream2_get_byteu(&bc);
-
-    // See "HDR10+ AV1 Metadata Handling Specification" v1.0.1, Section 2.1.
-    if (country_code == ITU_T_T35_COUNTRY_CODE_US
-        && provider_code == ITU_T_T35_PROVIDER_CODE_SAMSUNG
-        && provider_oriented_code == 0x0001
-        && application_identifier == 0x04) {
-        // HDR10+
-        AVDynamicHDRPlus *hdr_plus = av_dynamic_hdr_plus_create_side_data(frame);
-        if (!hdr_plus)
-            return AVERROR(ENOMEM);
-
-        int res = av_dynamic_hdr_plus_from_t35(hdr_plus, bc.buffer,
-                                               bytestream2_get_bytes_left(&bc));
-        if (res < 0)
-            return res;
-    }
+    ret = ff_itut_t35_parse_payload_to_frame(&itut35, NULL, avctx, frame);
+    if (ret < 0)
+        return ret;
 
     return 0;
 }
 
-static int decode_metadata(AVFrame *frame, const struct aom_image *img)
+static int decode_metadata(AVCodecContext *avctx, AVFrame *frame,
+                           const struct aom_image *img)
 {
     const size_t num_metadata = aom_img_num_metadata(img);
     for (size_t i = 0; i < num_metadata; ++i) {
@@ -186,7 +174,7 @@ static int decode_metadata(AVFrame *frame, const struct aom_image *img)
 
         switch (metadata->type) {
         case OBU_METADATA_TYPE_ITUT_T35: {
-            int res = decode_metadata_itu_t_t35(frame, metadata->payload, metadata->sz);
+            int res = decode_metadata_itu_t_t35(avctx, frame, metadata->payload, metadata->sz);
             if (res < 0)
                 return res;
             break;
@@ -276,7 +264,7 @@ static int aom_decode(AVCodecContext *avctx, AVFrame *picture,
             av_image_copy(picture->data, picture->linesize, planes,
                           stride, avctx->pix_fmt, img->d_w, img->d_h);
         }
-        ret = decode_metadata(picture, img);
+        ret = decode_metadata(avctx, picture, img);
         if (ret < 0) {
             av_log(avctx, AV_LOG_ERROR, "Failed to decode metadata\n");
             return ret;
