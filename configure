@@ -2796,6 +2796,7 @@ CONFIG_EXTRA="
     intrax8
     iso_media
     iso_writer
+    itut_t35
     ividsp
     jpegtables
     lgplv3
@@ -3099,6 +3100,7 @@ iamfenc_deps="iamf"
 inflate_wrapper_deps="zlib"
 intrax8_select="blockdsp wmv2dsp"
 iso_media_select="mpeg4audio"
+itut_t35_select="atsc_a53 dovi_rpudec"
 me_cmp_select="idctdsp"
 mpeg_er_select="error_resilience"
 mpegaudio_select="mpegaudiodsp mpegaudioheader"
