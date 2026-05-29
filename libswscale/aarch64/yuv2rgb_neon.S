@@ -21,59 +21,93 @@
 
 #include "libavutil/aarch64/asm.S"
 
+// Register aliases for the single-row code. The 32/64-bit view split
+// covers prologue-transient roles for x8/x10 (table pointer / scalar
+// coefficients are dropped into vector regs and the GPR is reused for
+// the loop counter / planar output pointer).
+#define width         w0
+#define height        w1
+#define dst0          x2
+#define dstPadding0   w3
+#define srcY          x4
+#define srcPaddingY   w5
+#define srcC          x6
+#define srcU          x6
+#define srcPaddingC   w7
+#define srcPaddingU   w7
+#define srcV          x13
+#define srcPaddingV   w14
+#define srcA          x15
+#define srcPaddingA   w16
+#define dst1          x10
+#define dst2          x15
+#define dstPadding1   w12
+#define dstPadding2   w16
+
+// Prologue: load table / y_offset / y_coeff from the stack.
+#define table_ptr     x8
+#define y_offset      w9
+#define y_coeff       w10
+
+// Body loop state. Reuses x8/w9 once the prologue has consumed them.
+#define cur_width     w8
+#define orig_height   w9
+#define chroma_rewind w11
+#define tmp           w17
+
 .macro load_yoff_ycoeff yoff ycoeff
 #if defined(__APPLE__)
-        ldp             w9, w10, [sp, #\yoff]
+        ldp             y_offset, y_coeff, [sp, #\yoff]
 #else
-        ldr             w9,  [sp, #\yoff]
-        ldr             w10, [sp, #\ycoeff]
+        ldr             y_offset, [sp, #\yoff]
+        ldr             y_coeff,  [sp, #\ycoeff]
 #endif
 .endm
 
-.macro load_dst1_dst2 dst1 linesize1 dst2 linesize2
+.macro load_dst1_dst2 a_dst1 a_linesize1 a_dst2 a_linesize2
 #if defined(__APPLE__)
 #define DST_OFFSET 8
 #else
 #define DST_OFFSET 0
 #endif
-        ldr             x10, [sp, #\dst1      - DST_OFFSET]
-        ldr             w12, [sp, #\linesize1 - DST_OFFSET]
-        ldr             x15, [sp, #\dst2      - DST_OFFSET]
-        ldr             w16, [sp, #\linesize2 - DST_OFFSET]
+        ldr             dst1,        [sp, #\a_dst1      - DST_OFFSET]
+        ldr             dstPadding1, [sp, #\a_linesize1 - DST_OFFSET]
+        ldr             dst2,        [sp, #\a_dst2      - DST_OFFSET]
+        ldr             dstPadding2, [sp, #\a_linesize2 - DST_OFFSET]
 #undef DST_OFFSET
-        sub             w12, w12, w0                                    // w12 = linesize1 - width     (padding1)
-        sub             w16, w16, w0                                    // w16 = linesize2 - width     (padding2)
+        sub             dstPadding1, dstPadding1, width                 // padding1 = linesize1 - width
+        sub             dstPadding2, dstPadding2, width                 // padding2 = linesize2 - width
 .endm
 
 .macro load_args_nv12 ofmt
-        ldr             x8,  [sp]                                       // table
+        ldr             table_ptr, [sp]                                 // table
         load_yoff_ycoeff 8, 16                                           // y_offset, y_coeff
-        ld1             {v1.1d}, [x8]
-        dup             v0.8h, w10
-        dup             v3.8h, w9
+        ld1             {v1.1d}, [table_ptr]
+        dup             v0.8h, y_coeff
+        dup             v3.8h, y_offset
 .ifc \ofmt,gbrp
         load_dst1_dst2  24, 32, 40, 48
-        sub             w3, w3, w0                                      // w3 = linesize  - width     (padding)
+        sub             dstPadding0, dstPadding0, width                 // dstPadding0 = linesize  - width     (padding)
 .else
  .ifc \ofmt,rgb24
-        add             w17, w0, w0, lsl #1
-        sub             w3, w3, w17                                     // w3 = linesize  - width * 3 (padding)
+        add             tmp, width, width, lsl #1
+        sub             dstPadding0, dstPadding0, tmp                   // dstPadding0 = linesize  - width * 3 (padding)
  .else
   .ifc \ofmt,bgr24
-        add             w17, w0, w0, lsl #1
-        sub             w3, w3, w17                                     // w3 = linesize  - width * 3 (padding)
+        add             tmp, width, width, lsl #1
+        sub             dstPadding0, dstPadding0, tmp                   // dstPadding0 = linesize  - width * 3 (padding)
   .else
    .if rgb16
-        sub             w3, w3, w0, lsl #1                              // w3 = linesize  - width * 2 (padding)
+        sub             dstPadding0, dstPadding0, width, lsl #1         // dstPadding0 = linesize  - width * 2 (padding)
    .else
-        sub             w3, w3, w0, lsl #2                              // w3 = linesize  - width * 4 (padding)
+        sub             dstPadding0, dstPadding0, width, lsl #2         // dstPadding0 = linesize  - width * 4 (padding)
    .endif
   .endif
  .endif
 .endif
-        sub             w5, w5, w0                                      // w5 = linesizeY - width     (paddingY)
-        sub             w7, w7, w0                                      // w7 = linesizeC - width     (paddingC)
-        neg             w11, w0
+        sub             srcPaddingY, srcPaddingY, width                 // srcPaddingY = linesizeY - width    (paddingY)
+        sub             srcPaddingC, srcPaddingC, width                 // srcPaddingC = linesizeC - width    (paddingC)
+        neg             chroma_rewind, width
 .endm
 
 .macro load_args_nv21 ofmt
@@ -81,100 +115,100 @@
 .endm
 
 .macro load_args_yuv420p ofmt
-        ldr             x13, [sp]                                       // srcV
-        ldr             w14, [sp, #8]                                   // linesizeV
-        ldr             x8,  [sp, #16]                                  // table
+        ldr             srcV,        [sp]                               // srcV
+        ldr             srcPaddingV, [sp, #8]                           // linesizeV
+        ldr             table_ptr,   [sp, #16]                          // table
         load_yoff_ycoeff 24, 32                                          // y_offset, y_coeff
-        ld1             {v1.1d}, [x8]
-        dup             v0.8h, w10
-        dup             v3.8h, w9
+        ld1             {v1.1d}, [table_ptr]
+        dup             v0.8h, y_coeff
+        dup             v3.8h, y_offset
 .ifc \ofmt,gbrp
         load_dst1_dst2  40, 48, 56, 64
-        sub             w3, w3, w0                                      // w3 = linesize  - width     (padding)
+        sub             dstPadding0, dstPadding0, width                 // dstPadding0 = linesize  - width     (padding)
 .else
  .ifc \ofmt,rgb24
-        add             w17, w0, w0, lsl #1
-        sub             w3, w3, w17                                     // w3 = linesize  - width * 3 (padding)
+        add             tmp, width, width, lsl #1
+        sub             dstPadding0, dstPadding0, tmp                   // dstPadding0 = linesize  - width * 3 (padding)
  .else
   .ifc \ofmt,bgr24
-        add             w17, w0, w0, lsl #1
-        sub             w3, w3, w17                                     // w3 = linesize  - width * 3 (padding)
+        add             tmp, width, width, lsl #1
+        sub             dstPadding0, dstPadding0, tmp                   // dstPadding0 = linesize  - width * 3 (padding)
   .else
    .if rgb16
-        sub             w3, w3, w0, lsl #1                              // w3 = linesize  - width * 2 (padding)
+        sub             dstPadding0, dstPadding0, width, lsl #1         // dstPadding0 = linesize  - width * 2 (padding)
    .else
-        sub             w3, w3, w0, lsl #2                              // w3 = linesize  - width * 4 (padding)
+        sub             dstPadding0, dstPadding0, width, lsl #2         // dstPadding0 = linesize  - width * 4 (padding)
    .endif
   .endif
  .endif
 .endif
-        sub             w5, w5, w0                                      // w5 = linesizeY - width     (paddingY)
-        sub             w7,  w7,  w0, lsr #1                            // w7  = linesizeU - width / 2 (paddingU)
-        sub             w14, w14, w0, lsr #1                            // w14 = linesizeV - width / 2 (paddingV)
-        lsr             w11, w0, #1
-        neg             w11, w11
+        sub             srcPaddingY, srcPaddingY, width                 // srcPaddingY = linesizeY - width     (paddingY)
+        sub             srcPaddingU, srcPaddingU, width, lsr #1         // srcPaddingU = linesizeU - width / 2 (paddingU)
+        sub             srcPaddingV, srcPaddingV, width, lsr #1         // srcPaddingV = linesizeV - width / 2 (paddingV)
+        lsr             chroma_rewind, width, #1
+        neg             chroma_rewind, chroma_rewind
 .endm
 
 .macro load_args_yuva420p ofmt
         load_args_yuv420p \ofmt
 #if defined(__APPLE__)
-        ldr             x15, [sp, #32]                                  // srcA
-        ldr             w16, [sp, #40]                                  // linesizeA
+        ldr             srcA,        [sp, #32]                          // srcA
+        ldr             srcPaddingA, [sp, #40]                          // linesizeA
 #else
-        ldr             x15, [sp, #40]                                  // srcA
-        ldr             w16, [sp, #48]                                  // linesizeA
+        ldr             srcA,        [sp, #40]                          // srcA
+        ldr             srcPaddingA, [sp, #48]                          // linesizeA
 #endif
-        sub             w16, w16, w0                                    // w16 = linesizeA - width    (paddingA)
+        sub             srcPaddingA, srcPaddingA, width                 // srcPaddingA = linesizeA - width    (paddingA)
 .endm
 
 .macro load_args_yuv422p ofmt
-        ldr             x13, [sp]                                       // srcV
-        ldr             w14, [sp, #8]                                   // linesizeV
-        ldr             x8,  [sp, #16]                                  // table
+        ldr             srcV,        [sp]                               // srcV
+        ldr             srcPaddingV, [sp, #8]                           // linesizeV
+        ldr             table_ptr,   [sp, #16]                          // table
         load_yoff_ycoeff 24, 32                                          // y_offset, y_coeff
-        ld1             {v1.1d}, [x8]
-        dup             v0.8h, w10
-        dup             v3.8h, w9
+        ld1             {v1.1d}, [table_ptr]
+        dup             v0.8h, y_coeff
+        dup             v3.8h, y_offset
 .ifc \ofmt,gbrp
         load_dst1_dst2  40, 48, 56, 64
-        sub             w3, w3, w0                                      // w3 = linesize  - width     (padding)
+        sub             dstPadding0, dstPadding0, width                 // dstPadding0 = linesize  - width     (padding)
 .else
  .ifc \ofmt,rgb24
-        add             w17, w0, w0, lsl #1
-        sub             w3, w3, w17                                     // w3 = linesize  - width * 3 (padding)
+        add             tmp, width, width, lsl #1
+        sub             dstPadding0, dstPadding0, tmp                   // dstPadding0 = linesize  - width * 3 (padding)
  .else
   .ifc \ofmt,bgr24
-        add             w17, w0, w0, lsl #1
-        sub             w3, w3, w17                                     // w3 = linesize  - width * 3 (padding)
+        add             tmp, width, width, lsl #1
+        sub             dstPadding0, dstPadding0, tmp                   // dstPadding0 = linesize  - width * 3 (padding)
   .else
    .if rgb16
-        sub             w3, w3, w0, lsl #1                              // w3 = linesize  - width * 2 (padding)
+        sub             dstPadding0, dstPadding0, width, lsl #1         // dstPadding0 = linesize  - width * 2 (padding)
    .else
-        sub             w3, w3, w0, lsl #2                              // w3 = linesize  - width * 4 (padding)
+        sub             dstPadding0, dstPadding0, width, lsl #2         // dstPadding0 = linesize  - width * 4 (padding)
    .endif
   .endif
  .endif
 .endif
-        sub             w5, w5, w0                                      // w5 = linesizeY - width     (paddingY)
-        sub             w7,  w7,  w0, lsr #1                            // w7  = linesizeU - width / 2 (paddingU)
-        sub             w14, w14, w0, lsr #1                            // w14 = linesizeV - width / 2 (paddingV)
+        sub             srcPaddingY, srcPaddingY, width                 // srcPaddingY = linesizeY - width     (paddingY)
+        sub             srcPaddingU, srcPaddingU, width, lsr #1         // srcPaddingU = linesizeU - width / 2 (paddingU)
+        sub             srcPaddingV, srcPaddingV, width, lsr #1         // srcPaddingV = linesizeV - width / 2 (paddingV)
 .endm
 
 .macro load_chroma_nv12
-        ld2             {v16.8b, v17.8b}, [x6], #16
+        ld2             {v16.8b, v17.8b}, [srcC], #16
         ushll           v18.8h, v16.8b, #3
         ushll           v19.8h, v17.8b, #3
 .endm
 
 .macro load_chroma_nv21
-        ld2             {v16.8b, v17.8b}, [x6], #16
+        ld2             {v16.8b, v17.8b}, [srcC], #16
         ushll           v19.8h, v16.8b, #3
         ushll           v18.8h, v17.8b, #3
 .endm
 
 .macro load_chroma_yuv420p
-        ld1             {v16.8b}, [ x6], #8
-        ld1             {v17.8b}, [x13], #8
+        ld1             {v16.8b}, [srcU], #8
+        ld1             {v17.8b}, [srcV], #8
         ushll           v18.8h, v16.8b, #3
         ushll           v19.8h, v17.8b, #3
 .endm
@@ -188,9 +222,9 @@
 .endm
 
 .macro increment_nv12
-        ands            w17, w1, #1
-        csel            w17, w7, w11, ne                                // incC = (h & 1) ? paddincC : -width
-        add             x6,  x6, w17, sxtw                              // srcC += incC
+        ands            tmp, height, #1
+        csel            tmp, srcPaddingC, chroma_rewind, ne             // incC = (h & 1) ? paddingC : -width
+        add             srcC, srcC, tmp, sxtw                           // srcC += incC
 .endm
 
 .macro increment_nv21
@@ -198,21 +232,21 @@
 .endm
 
 .macro increment_yuv420p
-        ands            w17, w1, #1
-        csel            w17,  w7, w11, ne                               // incU = (h & 1) ? paddincU : -width/2
-        add             x6,  x6,  w17, sxtw                             // srcU += incU
-        csel            w17, w14, w11, ne                               // incV = (h & 1) ? paddincV : -width/2
-        add             x13, x13, w17, sxtw                             // srcV += incV
+        ands            tmp, height, #1
+        csel            tmp, srcPaddingU, chroma_rewind, ne             // incU = (h & 1) ? paddingU : -width/2
+        add             srcU, srcU, tmp, sxtw                           // srcU += incU
+        csel            tmp, srcPaddingV, chroma_rewind, ne             // incV = (h & 1) ? paddingV : -width/2
+        add             srcV, srcV, tmp, sxtw                           // srcV += incV
 .endm
 
 .macro increment_yuva420p
         increment_yuv420p
-        add             x15, x15, w16, sxtw                             // srcA += paddingA (every row)
+        add             srcA, srcA, srcPaddingA, sxtw                   // srcA += paddingA (every row)
 .endm
 
 .macro increment_yuv422p
-        add             x6,  x6,  w7, sxtw                              // srcU += incU
-        add             x13, x13, w14, sxtw                             // srcV += incV
+        add             srcU, srcU, srcPaddingU, sxtw                   // srcU += paddingU
+        add             srcV, srcV, srcPaddingV, sxtw                   // srcV += paddingV
 .endm
 
 .macro compute_rgb r1 g1 b1 r2 g2 b2
@@ -292,7 +326,7 @@
 
 // Pack 8 pixels of 16bpp output. The three channels are extracted via ushr,
 // widened to u16, then merged via shift-left-insert:
-//   dst = (high << high_shl) | (mid << 5) | low
+//   dst0 = (high << high_shl) | (mid << 5) | low
 // For RGB565LE  pass (B, G, R) as (low, mid, high), g_shr=2, high_shl=11.
 // For BGR565LE  pass (R, G, B), g_shr=2, high_shl=11.
 // For RGB555LE  pass (B, G, R), g_shr=3, high_shl=10.
@@ -317,18 +351,18 @@ function ff_\ifmt\()_to_\ofmt\()_neon, export=1
 
         movi            v31.8h, #4, lsl #8                              // 128 * (1<<3) (loop-invariant)
         movi            v30.8b, #255                                    // alpha = 255  (loop-invariant)
-        mov             w9, w1
+        mov             orig_height, height
 1:
-        mov             w8, w0                                          // w8 = width
+        mov             cur_width, width
 2:
         load_chroma_\ifmt
         sub             v18.8h, v18.8h, v31.8h                          // U*(1<<3) - 128*(1<<3)
         sub             v19.8h, v19.8h, v31.8h                          // V*(1<<3) - 128*(1<<3)
         sqdmulh         v20.8h, v19.8h, v1.h[0]                         // V * v2r            (R)
         sqdmulh         v22.8h, v18.8h, v1.h[1]                         // U * u2g
-        ld1             {v2.16b}, [x4], #16                             // load luma (interleaved)
+        ld1             {v2.16b}, [srcY], #16                           // load luma (interleaved)
 .ifc \ifmt,yuva420p
-        ld1             {v28.8b, v29.8b}, [x15], #16                    // load 16 alpha bytes
+        ld1             {v28.8b, v29.8b}, [srcA], #16                   // load 16 alpha bytes
 .endif
         sqdmulh         v19.8h, v19.8h, v1.h[2]                         //           V * v2g
         sqdmulh         v24.8h, v18.8h, v1.h[3]                         // U * u2b            (B)
@@ -380,19 +414,19 @@ function ff_\ifmt\()_to_\ofmt\()_neon, export=1
 
 .ifc \ofmt,rgb24
         compute_rgb     v4,v5,v6, v16,v17,v18
-        st3             { v4.8b, v5.8b, v6.8b}, [x2], #24
-        st3             {v16.8b,v17.8b,v18.8b}, [x2], #24
+        st3             { v4.8b, v5.8b, v6.8b}, [dst0], #24
+        st3             {v16.8b,v17.8b,v18.8b}, [dst0], #24
 .else
  .ifc \ofmt,bgr24
         compute_rgb     v6,v5,v4, v18,v17,v16
-        st3             { v4.8b, v5.8b, v6.8b}, [x2], #24
-        st3             {v16.8b,v17.8b,v18.8b}, [x2], #24
+        st3             { v4.8b, v5.8b, v6.8b}, [dst0], #24
+        st3             {v16.8b,v17.8b,v18.8b}, [dst0], #24
  .else
   .ifc \ofmt,gbrp
         compute_rgb     v18,v4,v6, v19,v5,v7
-        st1             {  v4.8b,  v5.8b }, [x2],  #16
-        st1             {  v6.8b,  v7.8b }, [x10], #16
-        st1             { v18.8b, v19.8b }, [x15], #16
+        st1             {  v4.8b,  v5.8b }, [dst0],  #16
+        st1             {  v6.8b,  v7.8b }, [dst1], #16
+        st1             { v18.8b, v19.8b }, [dst2], #16
   .else
    .if rgb16
         compute_rgb     v4,v5,v6, v16,v17,v18
@@ -405,26 +439,26 @@ function ff_\ifmt\()_to_\ofmt\()_neon, export=1
         pack_rgb16      v8,  v4,  v5,  v6,  gshift, hshift
         pack_rgb16      v9,  v16, v17, v18, gshift, hshift
     .endif
-        st1             { v8.8h, v9.8h}, [x2], #32
+        st1             { v8.8h, v9.8h}, [dst0], #32
    .else
-        st4             { v4.8b, v5.8b, v6.8b, v7.8b}, [x2], #32
-        st4             {v16.8b,v17.8b,v18.8b,v19.8b}, [x2], #32
+        st4             { v4.8b, v5.8b, v6.8b, v7.8b}, [dst0], #32
+        st4             {v16.8b,v17.8b,v18.8b,v19.8b}, [dst0], #32
    .endif
   .endif
  .endif
 .endif
-        subs            w8, w8, #16                                     // width -= 16
+        subs            cur_width, cur_width, #16                       // width -= 16
         b.gt            2b
-        add             x2, x2, w3, sxtw                                // dst  += padding
+        add             dst0, dst0, dstPadding0, sxtw                   // dst0 += padding
 .ifc \ofmt,gbrp
-        add             x10, x10, w12, sxtw                             // dst1 += padding1
-        add             x15, x15, w16, sxtw                             // dst2 += padding2
+        add             dst1, dst1, dstPadding1, sxtw                   // dst1 += padding1
+        add             dst2, dst2, dstPadding2, sxtw                   // dst2 += padding2
 .endif
-        add             x4, x4, w5, sxtw                                // srcY += paddingY
+        add             srcY, srcY, srcPaddingY, sxtw                   // srcY += paddingY
         increment_\ifmt
-        subs            w1, w1, #1                                      // height -= 1
+        subs            height, height, #1                              // height -= 1
         b.gt            1b
-        mov             w0, w9
+        mov             w0, orig_height                                 // return orig_height
         restore_d8_d9_if_16bpp
         ret
 endfunc
