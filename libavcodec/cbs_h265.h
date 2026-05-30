@@ -211,7 +211,8 @@ typedef struct H265RawVPS {
     uint16_t vps_num_hrd_parameters;
     uint16_t hrd_layer_set_idx[HEVC_MAX_LAYER_SETS];
     uint8_t cprms_present_flag[HEVC_MAX_LAYER_SETS];
-    H265RawHRDParameters hrd_parameters[HEVC_MAX_LAYER_SETS];
+    H265RawHRDParameters *hrd_parameters;
+    AVBufferRef          *hrd_parameters_ref;
 
     uint8_t vps_extension_flag;
     H265RawExtensionData extension_data;
