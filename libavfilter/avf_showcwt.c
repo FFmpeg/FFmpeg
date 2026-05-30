@@ -1060,7 +1060,7 @@ static int output_frame(AVFilterContext *ctx)
             for (int p = 0; p < nb_planes; p++) {
                 ptrdiff_t linesize = s->outpicref->linesize[p];
 
-                for (int y = 0; y < s->sono_size; y++) {
+                for (int y = 0; y < s->sono_size - 1; y++) {
                     uint8_t *dst = s->outpicref->data[p] + y * linesize;
 
                     memmove(dst, dst + linesize, s->w);
