@@ -182,8 +182,11 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         error("Failed to allocate pkt");
 
     io_buffer = av_malloc(io_buffer_size);
-    if (!io_buffer)
-        error("Failed to allocate io_buffer");
+    if (!io_buffer) {
+        avformat_free_context(avfmt);
+        av_packet_free(&pkt);
+        return 0;
+    }
 
     opaque.filesize = filesize;
     opaque.pos      = 0;
