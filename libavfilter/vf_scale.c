@@ -658,7 +658,8 @@ static int config_props(AVFilterLink *outlink)
     if (scale->reset_sar)
         outlink->sample_aspect_ratio = (AVRational){1, 1};
     else if (inlink0->sample_aspect_ratio.num){
-        outlink->sample_aspect_ratio = av_mul_q((AVRational){outlink->h * inlink0->w, outlink->w * inlink0->h}, inlink0->sample_aspect_ratio);
+        AVRational q = av_div_q((AVRational){inlink0->w, inlink0->h}, (AVRational){outlink->w, outlink->h});
+        outlink->sample_aspect_ratio = av_mul_q(q, inlink0->sample_aspect_ratio);
     } else
         outlink->sample_aspect_ratio = inlink0->sample_aspect_ratio;
 
