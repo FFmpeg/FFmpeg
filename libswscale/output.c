@@ -1499,7 +1499,7 @@ yuv2rgba64_full_1_c_template(SwsInternal *c, const int32_t *buf0,
 {
     const int32_t *ubuf0 = ubuf[0], *vbuf0 = vbuf[0];
     int i;
-    int A = 0xffff<<14;
+    SUINT A = 0xffff<<14;
 
     if (uvalpha == 0) {
         for (i = 0; i < dstW; i++) {
@@ -1513,7 +1513,7 @@ yuv2rgba64_full_1_c_template(SwsInternal *c, const int32_t *buf0,
             Y += (1 << 13) - (1 << 29);
 
             if (hasAlpha) {
-                A = abuf0[i] * (1 << 11);
+                A = abuf0[i] * (SUINT)(1 << 11);
 
                 A += 1 << 13;
             }
@@ -1535,7 +1535,7 @@ yuv2rgba64_full_1_c_template(SwsInternal *c, const int32_t *buf0,
     } else {
         const int32_t *ubuf1 = ubuf[1], *vbuf1 = vbuf[1];
         unsigned uvalpha1 = 4096 - uvalpha;
-        int A = 0xffff<<14;
+        SUINT A = 0xffff<<14;
         av_assert2(uvalpha <= 4096U);
 
         for (i = 0; i < dstW; i++) {
@@ -1549,7 +1549,7 @@ yuv2rgba64_full_1_c_template(SwsInternal *c, const int32_t *buf0,
             Y += (1 << 13) - (1 << 29);
 
             if (hasAlpha) {
-                A = abuf0[i] * (1 << 11);
+                A = abuf0[i] * (SUINT)(1 << 11);
 
                 A += 1 << 13;
             }
