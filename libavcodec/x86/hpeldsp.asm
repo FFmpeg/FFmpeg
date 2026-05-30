@@ -28,8 +28,6 @@
 %include "libavutil/x86/x86util.asm"
 
 cextern pb_1
-cextern pw_1
-cextern pw_2
 
 cextern pw_8192
 
@@ -305,10 +303,14 @@ NO_RND_PIXELS_Y2 put, 16
 
 
 ; void ff_put_no_rnd_pixels8_xy2(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
-%macro SET_PIXELS8_XY2 2-3
-cglobal %1%3_pixels8_xy2, 4,5,5
+%macro SET_PIXELS8_XY2 1-2
+cglobal %1%2_pixels8_xy2, 4,5,5
     mova        m4, [pb_1]
-    mova        m3, [%2]
+%ifidn %2, _no_rnd
+    pcmpeqw     m3, m3
+%else
+    mova        m3, [pw_8192]
+%endif
     movh        m0, [r1]
     movh        m2, [r1+1]
     punpcklbw   m2, m0
@@ -320,8 +322,8 @@ cglobal %1%3_pixels8_xy2, 4,5,5
     movh        m1, [r1+r4+1]
     punpcklbw   m0, m1
     pmaddubsw   m0, m4
-%ifidn %3, _no_rnd
-    paddw       m2, m3
+%ifidn %2, _no_rnd
+    psubw       m2, m3
     paddw       m2, m0
     psrlw       m2, 2
 %else
@@ -342,8 +344,8 @@ cglobal %1%3_pixels8_xy2, 4,5,5
     movh        m2, [r1+r4+1]
     punpcklbw   m2, m1
     pmaddubsw   m2, m4
-%ifidn %3, _no_rnd
-    paddw       m0, m3
+%ifidn %2, _no_rnd
+    psubw       m0, m3
     paddw       m0, m2
     psrlw       m0, 2
 %else
@@ -365,18 +367,21 @@ cglobal %1%3_pixels8_xy2, 4,5,5
 %endmacro
 
 INIT_XMM ssse3
-SET_PIXELS8_XY2 put, pw_1, _no_rnd
-SET_PIXELS8_XY2 avg, pw_8192
-SET_PIXELS8_XY2 put, pw_8192
+SET_PIXELS8_XY2 put, _no_rnd
+SET_PIXELS8_XY2 avg
+SET_PIXELS8_XY2 put
 
 
 ; void ff_avg_pixels16_xy2(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
-%macro SET_PIXELS_XY2 2-3
-cglobal %1%3_pixels16_xy2, 4,5,8
+%macro SET_PIXELS_XY2 1-2
+cglobal %1%2_pixels16_xy2, 4,5,8
     pxor        m7, m7
-    mova        m6, [%2]
     movu        m0, [r1]
     movu        m4, [r1+1]
+    pcmpeqw     m6, m6
+%ifnidn %2, _no_rnd
+    paddw       m6, m6
+%endif
     mova        m1, m0
     mova        m5, m4
     punpcklbw   m0, m7
@@ -398,8 +403,8 @@ cglobal %1%3_pixels16_xy2, 4,5,8
     punpckhbw   m3, m7
     paddw       m0, m2
     paddw       m1, m3
-    paddw       m4, m6
-    paddw       m5, m6
+    psubw       m4, m6
+    psubw       m5, m6
     paddw       m4, m0
     paddw       m5, m1
     psrlw       m4, 2
@@ -424,8 +429,8 @@ cglobal %1%3_pixels16_xy2, 4,5,8
     punpckhbw   m5, m7
     paddw       m4, m2
     paddw       m5, m3
-    paddw       m0, m6
-    paddw       m1, m6
+    psubw       m0, m6
+    psubw       m1, m6
     paddw       m0, m4
     paddw       m1, m5
     psrlw       m0, 2
@@ -445,10 +450,10 @@ cglobal %1%3_pixels16_xy2, 4,5,8
 %endmacro
 
 INIT_XMM sse2
-SET_PIXELS_XY2 put, pw_2
-SET_PIXELS_XY2 avg, pw_2
-SET_PIXELS_XY2 put, pw_1, _no_rnd
-SET_PIXELS_XY2 avg, pw_1, _no_rnd
+SET_PIXELS_XY2 put
+SET_PIXELS_XY2 avg
+SET_PIXELS_XY2 put, _no_rnd
+SET_PIXELS_XY2 avg, _no_rnd
 
 %macro SSSE3_PIXELS_XY2 1-2
 cglobal %1_pixels16_xy2, 4,5,%2
