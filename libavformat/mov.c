@@ -11037,8 +11037,8 @@ static int mov_parse_lcevc_streams(AVFormatContext *s)
             return AVERROR(ENOMEM);
 
         stg->id = st->id;
-        stg->params.lcevc->width  = st->codecpar->width;
-        stg->params.lcevc->height = st->codecpar->height;
+        stg->params.layered_video->width  = st->codecpar->width;
+        stg->params.layered_video->height = st->codecpar->height;
 
         while (st_base = mov_find_reference_track(s, st, tag->id, tag->nb_id, j)) {
             err = avformat_stream_group_add_stream(stg, st_base);
@@ -11060,7 +11060,7 @@ static int mov_parse_lcevc_streams(AVFormatContext *s)
         if (err < 0)
             return err;
 
-        stg->params.lcevc->lcevc_index = stg->nb_streams - 1;
+        stg->params.layered_video->el_index = stg->nb_streams - 1;
     }
 
     return 0;

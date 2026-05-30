@@ -811,11 +811,12 @@ static void dump_stream_group(const AVFormatContext *ic, uint8_t *printed,
         break;
     }
     case AV_STREAM_GROUP_PARAMS_LCEVC: {
-        const AVStreamGroupLCEVC *lcevc = stg->params.lcevc;
+        const AVStreamGroupLayeredVideo *lcevc = stg->params.layered_video;
         AVCodecContext *avctx = avcodec_alloc_context3(NULL);
         const char *ptr = NULL;
         av_log(NULL, AV_LOG_INFO, " LCEVC:");
-        if (avctx && stg->nb_streams && !avcodec_parameters_to_context(avctx, stg->streams[0]->codecpar)) {
+        if (avctx && stg->nb_streams == 2 &&
+            !avcodec_parameters_to_context(avctx, stg->streams[!lcevc->el_index]->codecpar)) {
             avctx->width  = lcevc->width;
             avctx->height = lcevc->height;
             avctx->coded_width  = lcevc->width;

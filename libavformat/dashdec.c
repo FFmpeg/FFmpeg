@@ -2064,8 +2064,8 @@ static int open_demux_for_component(AVFormatContext *s, struct representation *p
 
         switch (stg->type) {
         case AV_STREAM_GROUP_PARAMS_LCEVC: {
-            AVStreamGroupLCEVC *ilcevc = istg->params.lcevc;
-            AVStreamGroupLCEVC *lcevc = stg->params.lcevc;
+            AVStreamGroupLayeredVideo *ilcevc = istg->params.layered_video;
+            AVStreamGroupLayeredVideo *lcevc = stg->params.layered_video;
             ret = av_opt_copy(lcevc, ilcevc);
             if (ret < 0)
                 return ret;
@@ -2285,8 +2285,8 @@ static int dash_read_header(AVFormatContext *s)
         AVStreamGroup *stg = avformat_stream_group_create(s, AV_STREAM_GROUP_PARAMS_LCEVC, NULL);
         if (!stg)
             return AVERROR(ENOMEM);
-        stg->params.lcevc->width  = rep->assoc_stream[0]->codecpar->width;
-        stg->params.lcevc->height = rep->assoc_stream[0]->codecpar->height;
+        stg->params.layered_video->width  = rep->assoc_stream[0]->codecpar->width;
+        stg->params.layered_video->height = rep->assoc_stream[0]->codecpar->height;
         ret = avformat_stream_group_add_stream(stg, ref->assoc_stream[0]);
         if (ret < 0)
             return ret;
@@ -2294,7 +2294,7 @@ static int dash_read_header(AVFormatContext *s)
         if (ret < 0)
             return ret;
         stg->id = stg->index;
-        stg->params.lcevc->lcevc_index = stg->nb_streams - 1;
+        stg->params.layered_video->el_index = stg->nb_streams - 1;
     }
 
     return 0;

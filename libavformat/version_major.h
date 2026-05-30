@@ -49,6 +49,8 @@
 
 #define FF_API_FDEBUG_TS                (LIBAVFORMAT_VERSION_MAJOR < 63)
 
+#define FF_API_LCEVC_STRUCT             (LIBAVFORMAT_VERSION_MAJOR < 64)
+
 #define FF_API_R_FRAME_RATE            1
 
 #endif /* AVFORMAT_VERSION_MAJOR_H */

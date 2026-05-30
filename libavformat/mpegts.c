@@ -2670,7 +2670,7 @@ static void create_stream_groups(MpegTSContext *ts, struct Program *prg)
             switch (grp->type) {
             case AV_STREAM_GROUP_PARAMS_LCEVC:
                 if (grp->streams[j]->codecpar->codec_id == AV_CODEC_ID_LCEVC)
-                    stg->params.lcevc->lcevc_index = stg->nb_streams - 1;
+                    stg->params.layered_video->el_index = stg->nb_streams - 1;
                 break;
             case AV_STREAM_GROUP_PARAMS_DOLBY_VISION:
                 if (j == 0) {

@@ -1079,13 +1079,18 @@ typedef struct AVStreamGroupLayeredVideo {
     /**
      * Index of the enhancement layer stream in AVStreamGroup.
      */
+#if FF_API_LCEVC_STRUCT
     union {
+#endif
         unsigned int el_index;
+#if FF_API_LCEVC_STRUCT
         /**
          * Alias for @ref el_index, kept for backward compatibility.
          */
+        attribute_deprecated
         unsigned int lcevc_index;
     };
+#endif
     /**
      * Width of the final stream for presentation.
      */
@@ -1096,12 +1101,14 @@ typedef struct AVStreamGroupLayeredVideo {
     int height;
 } AVStreamGroupLayeredVideo;
 
+#if FF_API_LCEVC_STRUCT
 /**
  * Alias kept for backward compatibility.
  *
  * AVStreamGroupLCEVC was renamed to @ref AVStreamGroupLayeredVideo.
  */
 #define AVStreamGroupLCEVC AVStreamGroupLayeredVideo
+#endif
 
 /**
  * AVStreamGroupTREF is meant to define the relation between video, audio,
@@ -1169,7 +1176,13 @@ typedef struct AVStreamGroup {
         struct AVIAMFMixPresentation *iamf_mix_presentation;
         struct AVStreamGroupTileGrid *tile_grid;
         struct AVStreamGroupLayeredVideo *layered_video;
+#if FF_API_LCEVC_STRUCT
+        /**
+         * deprecated, use layered_video.
+         */
+        attribute_deprecated
         struct AVStreamGroupLCEVC *lcevc;
+#endif
         struct AVStreamGroupTREF *tref;
     } params;
 

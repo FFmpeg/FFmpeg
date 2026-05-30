@@ -8265,12 +8265,12 @@ static int mov_init(AVFormatContext *s)
                 av_log(s, AV_LOG_ERROR, "Exactly two Streams are supported for Stream Groups of type LCEVC\n");
                 return AVERROR(EINVAL);
             }
-            AVStreamGroupLCEVC *lcevc = stg->params.lcevc;
-            if (lcevc->lcevc_index > 1)
+            AVStreamGroupLayeredVideo *lcevc = stg->params.layered_video;
+            if (lcevc->el_index > 1)
                 return AVERROR(EINVAL);
-            AVStream *st = stg->streams[lcevc->lcevc_index];
+            AVStream *st = stg->streams[lcevc->el_index];
             if (st->codecpar->codec_id != AV_CODEC_ID_LCEVC) {
-                av_log(s, AV_LOG_ERROR, "Stream #%u is not an LCEVC stream\n", lcevc->lcevc_index);
+                av_log(s, AV_LOG_ERROR, "Stream #%u is not an LCEVC stream\n", lcevc->el_index);
                 return AVERROR(EINVAL);
             }
         }
@@ -8614,14 +8614,14 @@ static int mov_init(AVFormatContext *s)
 
         switch (stg->type) {
         case AV_STREAM_GROUP_PARAMS_LCEVC: {
-            AVStreamGroupLCEVC *lcevc = stg->params.lcevc;
-            AVStream *st    = stg->streams[lcevc->lcevc_index];
+            AVStreamGroupLayeredVideo *lcevc = stg->params.layered_video;
+            AVStream *st    = stg->streams[lcevc->el_index];
             MOVTrack *track = st->priv_data;
 
             for (int j = 0; j < mov->nb_tracks; j++) {
                 MOVTrack *trk = &mov->tracks[j];
 
-                if (trk->st == stg->streams[!lcevc->lcevc_index]) {
+                if (trk->st == stg->streams[!lcevc->el_index]) {
                     track->src_track = av_malloc(sizeof(*track->src_track));
                     if (!track->src_track)
                         return AVERROR(ENOMEM);

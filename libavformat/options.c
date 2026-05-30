@@ -350,22 +350,6 @@ static const AVClass tile_grid_class = {
     .option     = tile_grid_options,
 };
 
-#define OFFSET(x) offsetof(AVStreamGroupLCEVC, x)
-static const AVOption lcevc_options[] = {
-    { "lcevc_index", "Index of the LCEVC stream within the group", OFFSET(lcevc_index),
-        AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, FLAGS },
-    { "video_size", "size of video after LCEVC enhancement has been applied", OFFSET(width),
-        AV_OPT_TYPE_IMAGE_SIZE, { .str = NULL }, 0, INT_MAX, FLAGS },
-    { NULL },
-};
-#undef OFFSET
-
-static const AVClass lcevc_class = {
-    .class_name = "AVStreamGroupLCEVC",
-    .version    = LIBAVUTIL_VERSION_INT,
-    .option     = lcevc_options,
-};
-
 #define OFFSET(x) offsetof(AVStreamGroupTREF, x)
 static const AVOption tref_options[] = {
     { "metadata_index", "Index of the data stream within the group", OFFSET(metadata_index),
@@ -380,14 +364,24 @@ static const AVClass tref_class = {
     .option     = tref_options,
 };
 
+#if FF_API_LCEVC_STRUCT
+FF_DISABLE_DEPRECATION_WARNINGS
+#endif
 #define OFFSET(x) offsetof(AVStreamGroupLayeredVideo, x)
 static const AVOption layered_video_options[] = {
+#if FF_API_LCEVC_STRUCT
+    { "lcevc_index", "Index of the LCEVC stream within the group", OFFSET(lcevc_index),
+        AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, FLAGS | AV_OPT_FLAG_DEPRECATED },
+#endif
     { "el_index", "Index of the enhancement layer stream within the group", OFFSET(el_index),
         AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, FLAGS },
     { "video_size", "size of the final layered video presentation", OFFSET(width),
         AV_OPT_TYPE_IMAGE_SIZE, { .str = NULL }, 0, INT_MAX, FLAGS },
     { NULL },
 };
+#if FF_API_LCEVC_STRUCT
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 #undef OFFSET
 
 static const AVClass layered_video_class = {
@@ -407,10 +401,9 @@ static void *stream_group_child_next(void *obj, void *prev)
             return stg->params.iamf_mix_presentation;
         case AV_STREAM_GROUP_PARAMS_TILE_GRID:
             return stg->params.tile_grid;
-        case AV_STREAM_GROUP_PARAMS_LCEVC:
-            return stg->params.lcevc;
         case AV_STREAM_GROUP_PARAMS_TREF:
             return stg->params.tref;
+        case AV_STREAM_GROUP_PARAMS_LCEVC:
         case AV_STREAM_GROUP_PARAMS_DOLBY_VISION:
             return stg->params.layered_video;
         default:
@@ -440,12 +433,10 @@ static const AVClass *stream_group_child_iterate(void **opaque)
     case AV_STREAM_GROUP_PARAMS_TILE_GRID:
         ret = &tile_grid_class;
         break;
-    case AV_STREAM_GROUP_PARAMS_LCEVC:
-        ret = &lcevc_class;
-        break;
     case AV_STREAM_GROUP_PARAMS_TREF:
         ret = &tref_class;
         break;
+    case AV_STREAM_GROUP_PARAMS_LCEVC:
     case AV_STREAM_GROUP_PARAMS_DOLBY_VISION:
         ret = &layered_video_class;
         break;
@@ -518,13 +509,6 @@ AVStreamGroup *avformat_stream_group_create(AVFormatContext *s,
         stg->params.tile_grid->av_class = &tile_grid_class;
         av_opt_set_defaults(stg->params.tile_grid);
         break;
-    case AV_STREAM_GROUP_PARAMS_LCEVC:
-        stg->params.lcevc = av_mallocz(sizeof(*stg->params.lcevc));
-        if (!stg->params.lcevc)
-            goto fail;
-        stg->params.lcevc->av_class = &lcevc_class;
-        av_opt_set_defaults(stg->params.lcevc);
-        break;
     case AV_STREAM_GROUP_PARAMS_TREF:
         stg->params.tref = av_mallocz(sizeof(*stg->params.tref));
         if (!stg->params.tref)
@@ -532,6 +516,7 @@ AVStreamGroup *avformat_stream_group_create(AVFormatContext *s,
         stg->params.tref->av_class = &tref_class;
         av_opt_set_defaults(stg->params.tref);
         break;
+    case AV_STREAM_GROUP_PARAMS_LCEVC:
     case AV_STREAM_GROUP_PARAMS_DOLBY_VISION:
         stg->params.layered_video = av_mallocz(sizeof(*stg->params.layered_video));
         if (!stg->params.layered_video)
