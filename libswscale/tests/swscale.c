@@ -27,6 +27,7 @@
 #include <signal.h>
 
 #undef HAVE_AV_CONFIG_H
+#include "config.h"
 #include "libavutil/cpu.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
@@ -41,6 +42,10 @@
 #include "libavutil/hwcontext.h"
 
 #include "libswscale/swscale.h"
+#include "libswscale/format.h"
+#if CONFIG_UNSTABLE
+#include "libswscale/ops.h"
+#endif
 
 struct options {
     enum AVPixelFormat src_fmt;
@@ -225,7 +230,7 @@ static void unref_buffers(AVFrame *frame)
 static int checked_sws_scale_frame(SwsContext *c, AVFrame *dst, const AVFrame *src)
 {
     int ret = sws_scale_frame(c, dst, src);
-    if (ret < 0) {
+    if (ret < 0 && ret != AVERROR(ENOTSUP)) {
         av_log(NULL, AV_LOG_ERROR, "Failed %s ---> %s\n",
                av_get_pix_fmt_name(src->format), av_get_pix_fmt_name(dst->format));
     }
@@ -641,6 +646,37 @@ static inline int fmt_is_subsampled(enum AVPixelFormat fmt)
            av_pix_fmt_desc_get(fmt)->log2_chroma_h != 0;
 }
 
+/* Returns 1 if the (src_fmt, dst_fmt) pair can be expressed by the new
+ * swscale ops infrastructure, 0 if it would fall back to the legacy path.
+ * Used to skip pairs that cannot run on hardware frames. */
+static int hw_pair_supported(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt)
+{
+#if CONFIG_UNSTABLE
+    SwsContext *ctx;
+    SwsFormat src, dst;
+    SwsOpList *ops = NULL;
+    bool incomplete = false;
+    int ret;
+
+    ctx = sws_alloc_context();
+    if (!ctx)
+        return 0;
+
+    ff_fmt_from_pixfmt(src_fmt, &src);
+    src.width = src.height = 96;
+    ff_fmt_from_pixfmt(dst_fmt, &dst);
+    dst.width = dst.height = 96;
+    ff_infer_colors(&src.color, &dst.color);
+
+    ret = ff_sws_op_list_generate(ctx, &src, &dst, &ops, &incomplete);
+    ff_sws_op_list_free(&ops);
+    sws_free_context(&ctx);
+    return ret >= 0;
+#else
+    return 1;
+#endif
+}
+
 static inline int fmt_is_supported_by_hw(enum AVPixelFormat fmt)
 {
     if (!hw_device_constr)
@@ -692,6 +728,8 @@ static int run_self_tests(const AVFrame *ref, const struct options *opts)
                 (opts->unscaled && fmt_is_subsampled(dst_fmt)))
                 continue;
             if (!sws_test_format(dst_fmt, 0) || !sws_test_format(dst_fmt, 1))
+                continue;
+            if (hw_device_ctx && !hw_pair_supported(src_fmt, dst_fmt))
                 continue;
             for (int h = 0; h < FF_ARRAY_ELEMS(dst_h); h++) {
                 for (int w = 0; w < FF_ARRAY_ELEMS(dst_w); w++) {
