@@ -24,6 +24,7 @@
 
 #include "libavutil/frame.h"
 #include "avcodec.h"
+#include "aom_film_grain.h"
 #include "dovi_rpu.h"
 
 #define ITU_T_T35_COUNTRY_CODE_CN 0x26
@@ -62,6 +63,7 @@ typedef struct FFITUTT35Meta {
     AVBufferRef *hdr_plus;
     AVBufferRef *hdr_smpte2094_app5;
     AVBufferRef *dovi;
+    AVFilmGrainAFGS1Params aom_film_grain;
 } FFITUTT35Meta;
 
 typedef struct FFITUTT35Aux {

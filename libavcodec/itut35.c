@@ -68,6 +68,14 @@ int ff_itut_t35_parse_buffer(FFITUTT35 *const itut_t35, const uint8_t *buf,
                 return 0;
             }
             break;
+        case ITU_T_T35_PROVIDER_CODE_AOM:
+            if (bytestream2_get_bytes_left(&gb) < 1)
+                return AVERROR_INVALIDDATA;
+
+            provider_oriented_code = bytestream2_get_byteu(&gb);
+            if (provider_oriented_code != 0x0001)
+                return 0; // ignore
+            break;
         case ITU_T_T35_PROVIDER_CODE_SAMSUNG:
             if (bytestream2_get_bytes_left(&gb) < 3)
                 return AVERROR_INVALIDDATA;
@@ -135,6 +143,12 @@ int ff_itut_t35_parse_payload_to_struct(FFITUTT35 *const itut_t35, FFITUTT35Aux 
     switch (itut_t35->country_code) {
     case ITU_T_T35_COUNTRY_CODE_US:
         switch (itut_t35->provider_code) {
+        case ITU_T_T35_PROVIDER_CODE_AOM:
+            ret = ff_aom_parse_film_grain_sets(&metadata->aom_film_grain,
+                                               itut_t35->payload, itut_t35->payload_size);
+            if (ret < 0)
+                return ret;
+            break;
         case ITU_T_T35_PROVIDER_CODE_ATSC:
             switch (itut_t35->provider_oriented_code) {
             case MKBETAG('G', 'A', '9', '4'): // closed captions
@@ -255,6 +269,12 @@ FF_DISABLE_DEPRECATION_WARNINGS
         avctx->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
+    }
+
+    if (metadata.aom_film_grain.enable) {
+        ret = ff_aom_attach_film_grain_sets(&metadata.aom_film_grain, frame);
+        if (ret < 0)
+            return ret;
     }
 
     if (metadata.hdr_plus) {
