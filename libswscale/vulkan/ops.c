@@ -826,6 +826,9 @@ static int read_filtered(SPICtx *spi, SPIRVIDs *id, const SwsOpList *ops,
     const int is_h = f->filter == SWS_OP_FILTER_H;
     const int src_interlaced = ops->src.interlaced;
 
+    const int src_float = op->type == SWS_PIXEL_F32;
+    const int read_vtype = src_float ? id->f32vec4_type : id->u32vec4_type;
+
     /* Buffer array index along the filtered axis: pos.x (H) or pos.y (V) */
     int axis = spi_OpCompositeExtract(spi, id->u32_type, gid, is_h ? 0 : 1);
 
@@ -874,17 +877,24 @@ static int read_filtered(SPICtx *spi, SPIRVIDs *id, const SwsOpList *ops,
             spi_OpCompositeConstruct(spi, id->i32vec2_type, pos_x, c);
 
         if (op->rw.packed) {
-            int px = spi_OpImageRead(spi, id->f32vec4_type,
+            int px = spi_OpImageRead(spi, read_vtype,
                                      in_img[ops->plane_src[0]], coord,
                                      SpvImageOperandsMaskNone);
+            if (!src_float)
+                px = spi_OpConvertUToF(spi, id->f32vec4_type, px);
             px = spi_OpVectorTimesScalar(spi, id->f32vec4_type, px, w);
             acc_v = spi_OpFAdd(spi, id->f32vec4_type, acc_v, px);
         } else {
             for (int e = 0; e < op->rw.elems; e++) {
-                int px = spi_OpImageRead(spi, id->f32vec4_type,
+                int px = spi_OpImageRead(spi, read_vtype,
                                          in_img[ops->plane_src[e]], coord,
                                          SpvImageOperandsMaskNone);
-                px = spi_OpCompositeExtract(spi, id->f32_type, px, 0);
+                if (src_float) {
+                    px = spi_OpCompositeExtract(spi, id->f32_type, px, 0);
+                } else {
+                    px = spi_OpCompositeExtract(spi, id->u32_type, px, 0);
+                    px = spi_OpConvertUToF(spi, id->f32_type, px);
+                }
                 px = spi_OpFMul(spi, id->f32_type, w, px);
                 acc_s[e] = spi_OpFAdd(spi, id->f32_type, acc_s[e], px);
             }
