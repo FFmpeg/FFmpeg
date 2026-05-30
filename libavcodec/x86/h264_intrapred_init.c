@@ -134,7 +134,6 @@ PRED8x8L(down_left, 8, sse2)
 PRED8x8L(down_left, 8, ssse3)
 PRED8x8L(down_right, 8, sse2)
 PRED8x8L(vertical_right, 8, sse2)
-PRED8x8L(vertical_right, 8, ssse3)
 PRED8x8L(vertical_left, 8, sse2)
 PRED8x8L(vertical_left, 8, ssse3)
 PRED8x8L(horizontal_up, 8, sse2)
@@ -228,7 +227,6 @@ av_cold void ff_h264_pred_init_x86(H264PredContext *h, int codec_id,
             if (chroma_format_idc <= 1)
                 h->pred8x8  [HOR_PRED8x8      ] = ff_pred8x8_horizontal_8_ssse3;
             h->pred8x8l [DIAG_DOWN_LEFT_PRED  ] = ff_pred8x8l_down_left_8_ssse3;
-            h->pred8x8l [VERT_RIGHT_PRED      ] = ff_pred8x8l_vertical_right_8_ssse3;
             h->pred8x8l [VERT_LEFT_PRED       ] = ff_pred8x8l_vertical_left_8_ssse3;
             h->pred8x8l [HOR_DOWN_PRED        ] = ff_pred8x8l_horizontal_down_8_ssse3;
             if (codec_id == AV_CODEC_ID_VP7 || codec_id == AV_CODEC_ID_VP8) {

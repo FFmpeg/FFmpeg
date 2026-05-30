@@ -1264,88 +1264,82 @@ cglobal pred8x8l_down_right_8, 4,5,7
 ;                                   int has_topright, ptrdiff_t stride)
 ;-----------------------------------------------------------------------------
 
-%macro PRED8x8L_VERTICAL_RIGHT 0
+INIT_XMM sse2
 cglobal pred8x8l_vertical_right_8, 4,5,6
     sub          r0, r3
     lea          r4, [r0+r3*2]
-    movq        mm0, [r0+r3*1-8]
-    punpckhbw   mm0, [r0+r3*0-8]
-    movq        mm1, [r4+r3*1-8]
-    punpckhbw   mm1, [r0+r3*2-8]
+    movd       xmm0, [r0+r3*1-4]
+    movd       xmm2, [r0+r3*0-4]
+    punpcklbw  xmm0, xmm2
+    movd       xmm1, [r4+r3*1-4]
+    movd       xmm3, [r0+r3*2-4]
+    punpcklbw  xmm1, xmm3
     mov          r4, r0
-    punpckhwd   mm1, mm0
+    punpcklwd  xmm1, xmm0
     lea          r0, [r0+r3*4]
-    movq        mm2, [r0+r3*1-8]
-    punpckhbw   mm2, [r0+r3*0-8]
+    movd       xmm2, [r0+r3*1-4]
+    movd       xmm5, [r0+r3*0-4]
+    punpcklbw  xmm2, xmm5
     lea          r0, [r0+r3*2]
-    movq        mm3, [r0+r3*1-8]
-    punpckhbw   mm3, [r0+r3*0-8]
-    punpckhwd   mm3, mm2
-    punpckhdq   mm3, mm1
+    movd       xmm3, [r0+r3*1-4]
+    movd       xmm5, [r0+r3*0-4]
+    punpcklbw  xmm3, xmm5
+    punpcklwd  xmm3, xmm2
+    punpckhdq  xmm3, xmm1
+    pshufd     xmm3, xmm3, 0xee
     lea          r0, [r0+r3*2]
-    movq        mm0, [r0+r3*0-8]
-    movq        mm1, [r4]
+    movq       xmm0, [r0+r3*0-8]
+    movq       xmm1, [r4]
     mov          r0, r4
-    movq        mm4, mm3
-    movq        mm2, mm3
-    PALIGNR     mm4, mm0, 7, mm0
-    PALIGNR     mm1, mm2, 1, mm2
+    punpcklqdq xmm0, xmm3
+    psrldq     xmm0, 7
+    mova       xmm4, xmm0
+    punpcklqdq xmm2, xmm3, xmm1
+    psrldq     xmm2, 1
+    mova       xmm1, xmm2
     test        r1d, r1d
     jnz .do_left
 .fix_lt_1:
-    movq        mm5, mm3
-    pxor        mm5, mm4
-    psrlq       mm5, 56
-    psllq       mm5, 48
-    pxor        mm1, mm5
-    jmp .do_left
+    pxor       xmm5, xmm3, xmm4
+    psrlq      xmm5, 56
+    psllq      xmm5, 48
+    pxor       xmm1, xmm5
+.do_left:
+    PRED4x4_LOWPASS xmm2, xmm1, xmm4, xmm3, xmm5
+    movq       xmm0, xmm2
+    movu       xmm2, [r0-8]
+    movu       xmm1, [r0]
+    mova       xmm3, xmm1
+    psrldq     xmm2, 7
+    psrldq     xmm1, 1
+    jnz .check_tr
 .fix_lt_2:
-    movq        mm5, mm3
-    pxor        mm5, mm2
-    psllq       mm5, 56
-    psrlq       mm5, 56
-    pxor        mm2, mm5
+    pxor       xmm5, xmm3, xmm2
+    psllq      xmm5, 56
+    psrlq      xmm5, 56
+    pxor       xmm2, xmm5
+.check_tr:
     test        r2d, r2d
     jnz .do_top
 .fix_tr_1:
-    movq        mm5, mm3
-    pxor        mm5, mm1
-    psrlq       mm5, 56
-    psllq       mm5, 56
-    pxor        mm1, mm5
-    jmp .do_top
-.do_left:
-    movq        mm0, mm4
-    PRED4x4_LOWPASS mm3, mm1, mm4, mm3, mm5
-    movq2dq    xmm0, mm3
-    movq        mm0, [r0-8]
-    movq        mm3, [r0]
-    movq        mm1, [r0+8]
-    movq        mm2, mm3
-    movq        mm4, mm3
-    PALIGNR     mm2, mm0, 7, mm0
-    PALIGNR     mm1, mm4, 1, mm4
-    test        r1d, r1d
-    jz .fix_lt_2
-    test        r2d, r2d
-    jz .fix_tr_1
+    pxor       xmm5, xmm3, xmm1
+    psrlq      xmm5, 56
+    psllq      xmm5, 56
+    pxor       xmm1, xmm5
 .do_top:
-    PRED4x4_LOWPASS mm3, mm2, mm1, mm3, mm5
+    PRED4x4_LOWPASS xmm4, xmm2, xmm1, xmm3, xmm5
     lea           r1, [r0+r3*2]
-    movq2dq     xmm4, mm3
     pslldq      xmm4, 8
     por         xmm0, xmm4
     movdqa      xmm1, xmm0
-    lea           r2, [r1+r3*2]
+    lea           r2, [r0+r3*4]
     movdqa      xmm2, xmm0
     movdqa      xmm3, xmm0
     pslldq      xmm0, 1
     pslldq      xmm1, 2
     pavgb       xmm2, xmm0
-INIT_XMM cpuname
     PRED4x4_LOWPASS xmm0, xmm3, xmm1, xmm0, xmm5
-    movdqa      xmm4, [pw_ff00]
-    pandn       xmm4, xmm0
+    pandn       xmm4, [pw_ff00], xmm0
     movdqa      xmm5, xmm0
     psrlw       xmm0, 8
     packuswb    xmm4, xmm0
@@ -1370,12 +1364,6 @@ INIT_XMM cpuname
     movq        [r1+r3*2], xmm5
     movq        [r1+r3*1], xmm2
     RET
-%endmacro
-
-INIT_MMX sse2
-PRED8x8L_VERTICAL_RIGHT
-INIT_MMX ssse3
-PRED8x8L_VERTICAL_RIGHT
 
 ;-----------------------------------------------------------------------------
 ; void ff_pred8x8l_vertical_left_8(uint8_t *src, int has_topleft,
