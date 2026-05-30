@@ -1096,10 +1096,10 @@ static int glyph_enu_border_free(void *opaque, void *elem)
 
     if (glyph->border_glyph != NULL) {
         for (int t = 0; t < 16; ++t) {
-            if (glyph->border_bglyph[t] != NULL) {
-                FT_Done_Glyph((FT_Glyph)glyph->border_bglyph[t]);
-                glyph->border_bglyph[t] = NULL;
-            }
+            FT_Glyph bbg = (FT_Glyph)glyph->border_bglyph[t];
+            if (bbg && bbg != glyph->border_glyph)
+                FT_Done_Glyph(bbg);
+            glyph->border_bglyph[t] = NULL;
         }
         FT_Done_Glyph(glyph->border_glyph);
         glyph->border_glyph = NULL;
