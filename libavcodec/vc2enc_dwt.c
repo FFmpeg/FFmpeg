@@ -141,7 +141,7 @@ static void vc2_subband_dwt_53(VC2TransformContext *t, dwtcoef *data,
                                ptrdiff_t stride, int width, int height)
 {
     int x, y;
-    dwtcoef *synth = t->buffer, *synthl = synth, *datal = data;
+    uint32_t *synth = (uint32_t *)t->buffer, *synthl = synth, *datal = (uint32_t *)data;
     const ptrdiff_t synth_width  = width  << 1;
     const ptrdiff_t synth_height = height << 1;
 
@@ -161,16 +161,16 @@ static void vc2_subband_dwt_53(VC2TransformContext *t, dwtcoef *data,
     for (y = 0; y < synth_height; y++) {
         /* Lifting stage 2. */
         for (x = 0; x < width - 1; x++)
-            synthl[2 * x + 1] -= (synthl[2 * x] + synthl[2 * x + 2] + 1) >> 1;
+            synthl[2 * x + 1] -= (dwtcoef)(synthl[2 * x] + synthl[2 * x + 2] + 1) >> 1;
 
-        synthl[synth_width - 1] -= (2*synthl[synth_width - 2] + 1) >> 1;
+        synthl[synth_width - 1] -= (dwtcoef)(2*synthl[synth_width - 2] + 1) >> 1;
 
         /* Lifting stage 1. */
-        synthl[0] += (2*synthl[1] + 2) >> 2;
+        synthl[0] += (dwtcoef)(2*synthl[1] + 2) >> 2;
         for (x = 1; x < width - 1; x++)
-            synthl[2 * x] += (synthl[2 * x - 1] + synthl[2 * x + 1] + 2) >> 2;
+            synthl[2 * x] += (dwtcoef)(synthl[2 * x - 1] + synthl[2 * x + 1] + 2) >> 2;
 
-        synthl[synth_width - 2] += (synthl[synth_width - 3] + synthl[synth_width - 1] + 2) >> 2;
+        synthl[synth_width - 2] += (dwtcoef)(synthl[synth_width - 3] + synthl[synth_width - 1] + 2) >> 2;
 
         synthl += synth_width;
     }
@@ -178,37 +178,37 @@ static void vc2_subband_dwt_53(VC2TransformContext *t, dwtcoef *data,
     /* Vertical synthesis: Lifting stage 2. */
     synthl = synth + synth_width;
     for (x = 0; x < synth_width; x++)
-        synthl[x] -= (synthl[x - synth_width] + synthl[x + synth_width] + 1) >> 1;
+        synthl[x] -= (dwtcoef)(synthl[x - synth_width] + synthl[x + synth_width] + 1) >> 1;
 
     synthl = synth + (synth_width << 1);
     for (y = 1; y < height - 1; y++) {
         for (x = 0; x < synth_width; x++)
-            synthl[x + synth_width] -= (synthl[x] + synthl[x + synth_width * 2] + 1) >> 1;
+            synthl[x + synth_width] -= (dwtcoef)(synthl[x] + synthl[x + synth_width * 2] + 1) >> 1;
         synthl += (synth_width << 1);
     }
 
     synthl = synth + (synth_height - 1) * synth_width;
     for (x = 0; x < synth_width; x++)
-        synthl[x] -= (2*synthl[x - synth_width] + 1) >> 1;
+        synthl[x] -= (dwtcoef)(2*synthl[x - synth_width] + 1) >> 1;
 
     /* Vertical synthesis: Lifting stage 1. */
     synthl = synth;
     for (x = 0; x < synth_width; x++)
-        synthl[x] += (2*synthl[synth_width + x] + 2) >> 2;
+        synthl[x] += (dwtcoef)(2*synthl[synth_width + x] + 2) >> 2;
 
     synthl = synth + (synth_width << 1);
     for (y = 1; y < height - 1; y++) {
         for (x = 0; x < synth_width; x++)
-            synthl[x] += (synthl[x + synth_width] + synthl[x - synth_width] + 2) >> 2;
+            synthl[x] += (dwtcoef)(synthl[x + synth_width] + synthl[x - synth_width] + 2) >> 2;
         synthl += (synth_width << 1);
     }
 
     synthl = synth + (synth_height - 2)*synth_width;
     for (x = 0; x < synth_width; x++)
-        synthl[x] += (synthl[x - synth_width] + synthl[x + synth_width] + 2) >> 2;
+        synthl[x] += (dwtcoef)(synthl[x - synth_width] + synthl[x + synth_width] + 2) >> 2;
 
 
-    deinterleave(data, stride, width, height, synth);
+    deinterleave(data, stride, width, height, (dwtcoef *)synth);
 }
 
 static av_always_inline void dwt_haar(VC2TransformContext *t, dwtcoef *data,
@@ -216,7 +216,7 @@ static av_always_inline void dwt_haar(VC2TransformContext *t, dwtcoef *data,
                                       const int s)
 {
     int x, y;
-    dwtcoef *synth = t->buffer, *synthl = synth, *datal = data;
+    uint32_t *synth = (uint32_t *)t->buffer, *synthl = synth, *datal = (uint32_t *)data;
     const ptrdiff_t synth_width  = width  << 1;
     const ptrdiff_t synth_height = height << 1;
 
@@ -225,7 +225,7 @@ static av_always_inline void dwt_haar(VC2TransformContext *t, dwtcoef *data,
         for (x = 0; x < synth_width; x += 2) {
             synthl[y*synth_width + x + 1] = (datal[y*stride + x + 1] - datal[y*stride + x]) * (1 << s);
             synthl[y*synth_width + x] = datal[y*stride + x + 0] * (1 << s) +
-                                        ((synthl[y*synth_width + x + 1] + 1) >> 1);
+                                        ((dwtcoef)(synthl[y*synth_width + x + 1] + 1) >> 1);
         }
     }
 
@@ -235,11 +235,11 @@ static av_always_inline void dwt_haar(VC2TransformContext *t, dwtcoef *data,
             synthl[(y + 1)*synth_width + x] = synthl[(y + 1)*synth_width + x] -
                                               synthl[y*synth_width + x];
             synthl[y*synth_width + x] = synthl[y*synth_width + x] +
-                                        ((synthl[(y + 1)*synth_width + x] + 1) >> 1);
+                                        ((dwtcoef)(synthl[(y + 1)*synth_width + x] + 1) >> 1);
         }
     }
 
-    deinterleave(data, stride, width, height, synth);
+    deinterleave(data, stride, width, height, (dwtcoef *)synth);
 }
 
 static void vc2_subband_dwt_haar(VC2TransformContext *t, dwtcoef *data,
