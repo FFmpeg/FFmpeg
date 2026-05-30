@@ -489,6 +489,10 @@ static int FUNC(vps)(CodedBitstreamContext *ctx, RWContext *rw,
         if (current->vps_poc_proportional_to_timing_flag)
             ue(vps_num_ticks_poc_diff_one_minus1, 0, UINT32_MAX - 1);
         ue(vps_num_hrd_parameters, 0, current->vps_num_layer_sets_minus1 + 1);
+        if (current->vps_num_hrd_parameters > 0)
+            allocate(current->hrd_parameters,
+                     current->vps_num_hrd_parameters *
+                     sizeof(*current->hrd_parameters));
         for (i = 0; i < current->vps_num_hrd_parameters; i++) {
             ues(hrd_layer_set_idx[i],
                 current->vps_base_layer_internal_flag ? 0 : 1,

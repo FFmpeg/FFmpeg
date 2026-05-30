@@ -142,7 +142,7 @@ static int FUNC_H265(name) args
                                         AV_INPUT_BUFFER_PADDING_SIZE); \
         if (!name ## _ref) \
             return AVERROR(ENOMEM); \
-        name = name ## _ref->data; \
+        name = (void *)name ## _ref->data; \
     } while (0)
 
 #define FUNC(name) FUNC_H265(name)
@@ -715,7 +715,18 @@ static void cbs_h265_free_sei(AVRefStructOpaque unused, void *content)
 }
 
 static CodedBitstreamUnitTypeDescriptor cbs_h265_unit_types[] = {
-    CBS_UNIT_TYPE_INTERNAL_REF(HEVC_NAL_VPS, H265RawVPS, extension_data.data),
+    {
+        .nb_unit_types     = 1,
+        .unit_type.list    = { HEVC_NAL_VPS },
+        .content_type      = CBS_CONTENT_TYPE_INTERNAL_REFS,
+        .content_size      = sizeof(H265RawVPS),
+        .type.ref          = {
+            .nb_offsets = 2,
+            .offsets    = { offsetof(H265RawVPS, extension_data.data),
+                            offsetof(H265RawVPS, hrd_parameters) }
+        },
+    },
+
     CBS_UNIT_TYPE_INTERNAL_REF(HEVC_NAL_SPS, H265RawSPS, extension_data.data),
     CBS_UNIT_TYPE_INTERNAL_REF(HEVC_NAL_PPS, H265RawPPS, extension_data.data),
 
