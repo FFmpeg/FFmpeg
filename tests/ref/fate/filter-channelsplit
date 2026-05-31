@@ -1,2 +1,16 @@
-0,a,SHA256=a4f03d92f82d074d20bcc49ffcbb28911ae85b097142249a890af59422eb0da8
-1,a,SHA256=c2f021f2b2faa1629674e6126ce5f997ef2034ecd3a15df595a98aefa40614e9
+#format: stream checksums
+#version: 2
+#hash: SHA256
+#tb 0: 1/44100
+#media_type 0: audio
+#codec_id 0: pcm_s16le
+#sample_rate 0: 44100
+#channel_layout_name 0: 1 channels (FL)
+#tb 1: 1/44100
+#media_type 1: audio
+#codec_id 1: pcm_s16le
+#sample_rate 1: 44100
+#channel_layout_name 1: 1 channels (FR)
+#stream#, size, hash
+0,      529200, a4f03d92f82d074d20bcc49ffcbb28911ae85b097142249a890af59422eb0da8
+1,      529200, c2f021f2b2faa1629674e6126ce5f997ef2034ecd3a15df595a98aefa40614e9

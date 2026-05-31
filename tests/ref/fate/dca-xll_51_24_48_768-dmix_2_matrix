@@ -1,1 +1,10 @@
-0,a,MD5=6395033e2bfda75a343deb3a61934d42
+#format: stream checksums
+#version: 2
+#hash: MD5
+#tb 0: 1/48000
+#media_type 0: audio
+#codec_id 0: pcm_s24le
+#sample_rate 0: 48000
+#channel_layout_name 0: stereo
+#stream#, size, hash
+0,       12288, 6395033e2bfda75a343deb3a61934d42

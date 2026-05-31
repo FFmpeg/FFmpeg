@@ -32,7 +32,10 @@
 
 struct HashContext {
     const AVClass *avclass;
-    struct AVHashContext **hashes;
+    struct {
+        struct AVHashContext *hash;
+        int64_t stream_size;
+    } *hashes;
     char *hash_name;
     int per_stream;
     int format_version;
@@ -45,24 +48,10 @@ struct HashContext {
 #define FORMAT_VERSION_OPT \
     { "format_version", "file format version", OFFSET(format_version), AV_OPT_TYPE_INT, {.i64 = 2}, 1, 2, ENC }
 
-#if CONFIG_HASH_MUXER || CONFIG_STREAMHASH_MUXER
-static const AVOption hash_streamhash_options[] = {
-    HASH_OPT("sha256"),
-    { NULL },
-};
-
-static const AVClass hash_streamhashenc_class = {
-    .class_name = "(stream) hash muxer",
-    .item_name  = av_default_item_name,
-    .option     = hash_streamhash_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-#endif
-
-#if CONFIG_FRAMEHASH_MUXER
-static const AVOption framehash_options[] = {
-    HASH_OPT("sha256"),
+#if CONFIG_FRAMEHASH_MUXER | CONFIG_STREAMHASH_MUXER | CONFIG_HASH_MUXER
+static const AVOption hash_options[] = {
     FORMAT_VERSION_OPT,
+    HASH_OPT("sha256"),
     { NULL },
 };
 #endif
@@ -91,33 +80,65 @@ static int hash_init(struct AVFormatContext *s)
     c->hashes = av_mallocz(sizeof(*c->hashes));
     if (!c->hashes)
         return AVERROR(ENOMEM);
-    res = av_hash_alloc(&c->hashes[0], c->hash_name);
+    res = av_hash_alloc(&c->hashes->hash, c->hash_name);
     if (res < 0)
         return res;
-    av_hash_init(c->hashes[0]);
+    av_hash_init(c->hashes->hash);
+    return 0;
+}
+
+static int hash_write_packet(struct AVFormatContext *s, AVPacket *pkt)
+{
+    struct HashContext *c = s->priv_data;
+    av_hash_update(c->hashes->hash, pkt->data, pkt->size);
     return 0;
 }
 #endif
 
-#if CONFIG_STREAMHASH_MUXER
-static int streamhash_init(struct AVFormatContext *s)
+#if CONFIG_STREAMHASH_MUXER || CONFIG_FRAMEHASH_MUXER || CONFIG_FRAMEMD5_MUXER
+static void hash_print_extradata(struct AVFormatContext *s)
 {
-    int res, i;
-    struct HashContext *c = s->priv_data;
-    c->per_stream = 1;
-    c->hashes = av_calloc(s->nb_streams, sizeof(*c->hashes));
-    if (!c->hashes)
-        return AVERROR(ENOMEM);
+    int i;
+
     for (i = 0; i < s->nb_streams; i++) {
-        res = av_hash_alloc(&c->hashes[i], c->hash_name);
-        if (res < 0) {
-            return res;
+        const AVStream *st = s->streams[i];
+        const AVCodecParameters *par = st->codecpar;
+        if (par->extradata) {
+            struct HashContext *c = s->priv_data;
+            char buf[AV_HASH_MAX_SIZE*2+1];
+
+            av_hash_init(c->hashes->hash);
+            av_hash_update(c->hashes->hash, par->extradata, par->extradata_size);
+            av_hash_final_hex(c->hashes->hash, buf, sizeof(buf));
+            avio_printf(s->pb, "#extradata %d, %31d, %s\n", i, par->extradata_size, buf);
         }
-        av_hash_init(c->hashes[i]);
     }
-    return 0;
 }
 #endif
+
+static void hash_print_sidedata(struct AVFormatContext *s,
+                                const AVPacketSideData *sd, int side_data_elems)
+{
+    struct HashContext *c = s->priv_data;
+    char buf[AV_HASH_MAX_SIZE*2+128];
+
+    avio_printf(s->pb, ", S=%d", side_data_elems);
+    for (int i = 0; i < side_data_elems; i++) {
+        av_hash_init(c->hashes->hash);
+        if (HAVE_BIGENDIAN && sd[i].type == AV_PKT_DATA_PALETTE) {
+            for (size_t j = 0; j < sd[i].size; j += sizeof(uint32_t)) {
+                uint32_t data = AV_RL32(sd[i].data + j);
+                av_hash_update(c->hashes->hash, (uint8_t *)&data, sizeof(uint32_t));
+            }
+        } else
+            av_hash_update(c->hashes->hash, sd[i].data, sd[i].size);
+        snprintf(buf, sizeof(buf) - (AV_HASH_MAX_SIZE * 2 + 1),
+                 ", %8zu, ", sd[i].size);
+        size_t len = strlen(buf);
+        av_hash_final_hex(c->hashes->hash, buf + len, sizeof(buf) - len);
+        avio_write(s->pb, buf, strlen(buf));
+    }
+}
 
 #if CONFIG_HASH_MUXER || CONFIG_MD5_MUXER || CONFIG_STREAMHASH_MUXER
 static char get_media_type_char(enum AVMediaType type)
@@ -132,13 +153,6 @@ static char get_media_type_char(enum AVMediaType type)
     }
 }
 
-static int hash_write_packet(struct AVFormatContext *s, AVPacket *pkt)
-{
-    struct HashContext *c = s->priv_data;
-    av_hash_update(c->hashes[c->per_stream ? pkt->stream_index : 0], pkt->data, pkt->size);
-    return 0;
-}
-
 static int hash_write_trailer(struct AVFormatContext *s)
 {
     struct HashContext *c = s->priv_data;
@@ -146,15 +160,25 @@ static int hash_write_trailer(struct AVFormatContext *s)
     for (int i = 0; i < num_hashes; i++) {
         char buf[AV_HASH_MAX_SIZE*2+128];
         if (c->per_stream) {
-            AVStream *st = s->streams[i];
-            snprintf(buf, sizeof(buf) - 200, "%d,%c,%s=", i, get_media_type_char(st->codecpar->codec_type),
-                     av_hash_get_name(c->hashes[i]));
+            if (c->format_version < 2) {
+                AVStream *st = s->streams[i];
+                snprintf(buf, sizeof(buf) - 200, "%d,%c,%s=", i, get_media_type_char(st->codecpar->codec_type),
+                         av_hash_get_name(c->hashes[i].hash));
+            } else
+                snprintf(buf, sizeof(buf) - 200, "%d, %11"PRId64", ", i, c->hashes[i].stream_size);
         } else {
-            snprintf(buf, sizeof(buf) - 200, "%s=", av_hash_get_name(c->hashes[i]));
+            snprintf(buf, sizeof(buf) - 200, "%s=", av_hash_get_name(c->hashes[i].hash));
         }
-        av_hash_final_hex(c->hashes[i], buf + strlen(buf), sizeof(buf) - strlen(buf));
-        av_strlcatf(buf, sizeof(buf), "\n");
+        av_hash_final_hex(c->hashes[i].hash, buf + strlen(buf), sizeof(buf) - strlen(buf));
         avio_write(s->pb, buf, strlen(buf));
+
+        if (c->per_stream && c->format_version >= 2) {
+            const AVStream *st = s->streams[i];
+            if (st->codecpar->nb_coded_side_data)
+                hash_print_sidedata(s, st->codecpar->coded_side_data, st->codecpar->nb_coded_side_data);
+        }
+
+        avio_printf(s->pb, "\n");
     }
 
     return 0;
@@ -167,13 +191,20 @@ static void hash_free(struct AVFormatContext *s)
     if (c->hashes) {
         int num_hashes = c->per_stream ? s->nb_streams : 1;
         for (int i = 0; i < num_hashes; i++) {
-            av_hash_freep(&c->hashes[i]);
+            av_hash_freep(&c->hashes[i].hash);
         }
     }
     av_freep(&c->hashes);
 }
 
 #if CONFIG_HASH_MUXER
+static const AVClass hash_hashenc_class = {
+    .class_name = "hash muxer",
+    .item_name  = av_default_item_name,
+    .option     = &hash_options[1],
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 const FFOutputFormat ff_hash_muxer = {
     .p.name            = "hash",
     .p.long_name       = NULL_IF_CONFIG_SMALL("Hash testing"),
@@ -186,7 +217,7 @@ const FFOutputFormat ff_hash_muxer = {
     .deinit            = hash_free,
     .p.flags           = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT |
                          AVFMT_TS_NEGATIVE,
-    .p.priv_class      = &hash_streamhashenc_class,
+    .p.priv_class      = &hash_hashenc_class,
 };
 #endif
 
@@ -215,6 +246,54 @@ const FFOutputFormat ff_md5_muxer = {
 #endif
 
 #if CONFIG_STREAMHASH_MUXER
+static int streamhash_init(struct AVFormatContext *s)
+{
+    int res, i;
+    struct HashContext *c = s->priv_data;
+    c->per_stream = 1;
+    c->hashes = av_calloc(s->nb_streams, sizeof(*c->hashes));
+    if (!c->hashes)
+        return AVERROR(ENOMEM);
+    for (i = 0; i < s->nb_streams; i++) {
+        res = av_hash_alloc(&c->hashes[i].hash, c->hash_name);
+        if (res < 0) {
+            return res;
+        }
+        av_hash_init(c->hashes[i].hash);
+    }
+    return 0;
+}
+
+static int streamhash_write_header(struct AVFormatContext *s)
+{
+    struct HashContext *c = s->priv_data;
+    if (c->format_version < 2)
+        return 0;
+    avio_printf(s->pb, "#format: stream checksums\n"
+                       "#version: %d\n"
+                       "#hash: %s\n", c->format_version, av_hash_get_name(c->hashes->hash));
+    hash_print_extradata(s);
+    ff_framehash_write_header(s);
+    avio_printf(s->pb, "#stream#, size, hash\n");
+    av_hash_init(c->hashes->hash);
+    return 0;
+}
+
+static int streamhash_write_packet(struct AVFormatContext *s, AVPacket *pkt)
+{
+    struct HashContext *c = s->priv_data;
+    av_hash_update(c->hashes[pkt->stream_index].hash, pkt->data, pkt->size);
+    c->hashes[pkt->stream_index].stream_size += pkt->size;
+    return 0;
+}
+
+static const AVClass streamhashenc_class = {
+    .class_name = "stream hash muxer",
+    .item_name  = av_default_item_name,
+    .option     = hash_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 const FFOutputFormat ff_streamhash_muxer = {
     .p.name            = "streamhash",
     .p.long_name       = NULL_IF_CONFIG_SMALL("Per-stream hash testing"),
@@ -222,37 +301,17 @@ const FFOutputFormat ff_streamhash_muxer = {
     .p.audio_codec     = AV_CODEC_ID_PCM_S16LE,
     .p.video_codec     = AV_CODEC_ID_RAWVIDEO,
     .init              = streamhash_init,
-    .write_packet      = hash_write_packet,
+    .write_header      = streamhash_write_header,
+    .write_packet      = streamhash_write_packet,
     .write_trailer     = hash_write_trailer,
     .deinit            = hash_free,
     .p.flags           = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT |
                          AVFMT_TS_NEGATIVE,
-    .p.priv_class      = &hash_streamhashenc_class,
+    .p.priv_class      = &streamhashenc_class,
 };
 #endif
 
 #if CONFIG_FRAMEHASH_MUXER || CONFIG_FRAMEMD5_MUXER
-static void framehash_print_extradata(struct AVFormatContext *s)
-{
-    int i;
-
-    for (i = 0; i < s->nb_streams; i++) {
-        AVStream *st = s->streams[i];
-        AVCodecParameters *par = st->codecpar;
-        if (par->extradata) {
-            struct HashContext *c = s->priv_data;
-            char buf[AV_HASH_MAX_SIZE*2+1];
-
-            avio_printf(s->pb, "#extradata %d, %31d, ", i, par->extradata_size);
-            av_hash_init(c->hashes[0]);
-            av_hash_update(c->hashes[0], par->extradata, par->extradata_size);
-            av_hash_final_hex(c->hashes[0], buf, sizeof(buf));
-            avio_write(s->pb, buf, strlen(buf));
-            avio_printf(s->pb, "\n");
-        }
-    }
-}
-
 static int framehash_init(struct AVFormatContext *s)
 {
     int res;
@@ -261,7 +320,7 @@ static int framehash_init(struct AVFormatContext *s)
     c->hashes = av_mallocz(sizeof(*c->hashes));
     if (!c->hashes)
         return AVERROR(ENOMEM);
-    res = av_hash_alloc(&c->hashes[0], c->hash_name);
+    res = av_hash_alloc(&c->hashes->hash, c->hash_name);
     if (res < 0)
         return res;
     return 0;
@@ -272,8 +331,8 @@ static int framehash_write_header(struct AVFormatContext *s)
     struct HashContext *c = s->priv_data;
     avio_printf(s->pb, "#format: frame checksums\n");
     avio_printf(s->pb, "#version: %d\n", c->format_version);
-    avio_printf(s->pb, "#hash: %s\n", av_hash_get_name(c->hashes[0]));
-    framehash_print_extradata(s);
+    avio_printf(s->pb, "#hash: %s\n", av_hash_get_name(c->hashes->hash));
+    hash_print_extradata(s);
     ff_framehash_write_header(s);
     avio_printf(s->pb, "#stream#, dts,        pts, duration,     size, hash\n");
     return 0;
@@ -284,33 +343,17 @@ static int framehash_write_packet(struct AVFormatContext *s, AVPacket *pkt)
     struct HashContext *c = s->priv_data;
     char buf[AV_HASH_MAX_SIZE*2+128];
     int len;
-    av_hash_init(c->hashes[0]);
-    av_hash_update(c->hashes[0], pkt->data, pkt->size);
+    av_hash_init(c->hashes->hash);
+    av_hash_update(c->hashes->hash, pkt->data, pkt->size);
 
     snprintf(buf, sizeof(buf) - (AV_HASH_MAX_SIZE * 2 + 1), "%d, %10"PRId64", %10"PRId64", %8"PRId64", %8d, ",
              pkt->stream_index, pkt->dts, pkt->pts, pkt->duration, pkt->size);
     len = strlen(buf);
-    av_hash_final_hex(c->hashes[0], buf + len, sizeof(buf) - len);
+    av_hash_final_hex(c->hashes->hash, buf + len, sizeof(buf) - len);
     avio_write(s->pb, buf, strlen(buf));
 
     if (c->format_version > 1 && pkt->side_data_elems) {
-        int i;
-        avio_printf(s->pb, ", S=%d", pkt->side_data_elems);
-        for (i = 0; i < pkt->side_data_elems; i++) {
-            av_hash_init(c->hashes[0]);
-            if (HAVE_BIGENDIAN && pkt->side_data[i].type == AV_PKT_DATA_PALETTE) {
-                for (size_t j = 0; j < pkt->side_data[i].size; j += sizeof(uint32_t)) {
-                    uint32_t data = AV_RL32(pkt->side_data[i].data + j);
-                    av_hash_update(c->hashes[0], (uint8_t *)&data, sizeof(uint32_t));
-                }
-            } else
-                av_hash_update(c->hashes[0], pkt->side_data[i].data, pkt->side_data[i].size);
-            snprintf(buf, sizeof(buf) - (AV_HASH_MAX_SIZE * 2 + 1),
-                     ", %8zu, ", pkt->side_data[i].size);
-            len = strlen(buf);
-            av_hash_final_hex(c->hashes[0], buf + len, sizeof(buf) - len);
-            avio_write(s->pb, buf, strlen(buf));
-        }
+        hash_print_sidedata(s, pkt->side_data, pkt->side_data_elems);
     }
 
     avio_printf(s->pb, "\n");
@@ -322,7 +365,7 @@ static int framehash_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 static const AVClass framehash_class = {
     .class_name = "frame hash muxer",
     .item_name  = av_default_item_name,
-    .option     = framehash_options,
+    .option     = hash_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 

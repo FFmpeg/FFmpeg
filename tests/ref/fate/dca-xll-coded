@@ -1,1 +1,10 @@
-0ae67d520a46776046ab5ab7d1c6a387
+#format: stream checksums
+#version: 2
+#hash: MD5
+#tb 0: 1/48000
+#media_type 0: audio
+#codec_id 0: pcm_s24le
+#sample_rate 0: 48000
+#channel_layout_name 0: 8 channels (FC+FL+FR+BL+BR+LFE+FLC+FRC)
+#stream#, size, hash
+0,    14401536, 0ae67d520a46776046ab5ab7d1c6a387

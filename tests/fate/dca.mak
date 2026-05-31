@@ -78,10 +78,10 @@ fate-dca-core: CMP = oneoff
 fate-dca-core: REF = $(SAMPLES)/dts/dts.pcm
 
 FATE_DCA-$(call DEMDEC, DTS, DCA, ARESAMPLE_FILTER PCM_S24LE_ENCODER PCM_S24LE_MUXER) += fate-dca-xll
-fate-dca-xll: CMD = md5 -i $(TARGET_SAMPLES)/dts/master_audio_7.1_24bit.dts -f s24le -af aresample
+fate-dca-xll: CMD = fmtstdout "streamhash -hash md5" -i $(TARGET_SAMPLES)/dts/master_audio_7.1_24bit.dts -c:a pcm_s24le -af aresample
 
 FATE_DCA-$(call DEMDEC, DTS, DCA, ARESAMPLE_FILTER PCM_S24LE_ENCODER PCM_S24LE_MUXER) += fate-dca-xll-coded
-fate-dca-xll-coded: CMD = md5 -channel_order coded -i $(TARGET_SAMPLES)/dts/master_audio_7.1_24bit.dts -f s24le -af aresample
+fate-dca-xll-coded: CMD = fmtstdout "streamhash -hash md5" -channel_order coded -i $(TARGET_SAMPLES)/dts/master_audio_7.1_24bit.dts -c:a pcm_s24le -af aresample
 
 FATE_DCA-$(call PCM, DTS, DCA, ARESAMPLE_FILTER) += fate-dts_es
 fate-dts_es: CMD = pcm -i $(TARGET_SAMPLES)/dts/dts_es.dts
