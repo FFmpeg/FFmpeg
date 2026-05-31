@@ -1320,8 +1320,10 @@ static int dvdvideo_subp_stream_analyze(AVFormatContext *s, uint32_t offset, sub
 
     entry->startcode = 0x20 + (offset & 0x1F);
 
-    if (subp_attr.lang_extension == 9)
+    if (subp_attr.code_extension == 9)
         entry->disposition |= AV_DISPOSITION_FORCED;
+    if (subp_attr.code_extension >= 13 && subp_attr.code_extension <= 15)
+        entry->disposition |= AV_DISPOSITION_COMMENT;
 
     memcpy(&entry->clut, c->play_state.pgc->palette, FF_DVDCLUT_CLUT_SIZE);
 
