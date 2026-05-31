@@ -69,6 +69,7 @@ static av_cold int cri_decode_init(AVCodecContext *avctx)
     s->jpeg_avctx->flags = avctx->flags;
     s->jpeg_avctx->flags2 = avctx->flags2;
     s->jpeg_avctx->idct_algo = avctx->idct_algo;
+    s->jpeg_avctx->max_pixels = avctx->max_pixels;
     ret = avcodec_open2(s->jpeg_avctx, NULL, NULL);
     if (ret < 0)
         return ret;
