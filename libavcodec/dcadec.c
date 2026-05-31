@@ -41,7 +41,7 @@ int ff_dca_set_channel_layout(AVCodecContext *avctx, int *ch_remap, int dca_mask
 
     static const uint8_t dca2wav_wide[28] = {
          2,  0, 1, 4,  5,  3,  8,  4,  5,  9, 10, 6, 7, 12,
-        13, 14, 3, 9, 10, 11, 12, 14, 16, 15, 17, 8, 4,  5,
+        13, 14, 3, 6,  7, 11, 12, 14, 16, 15, 17, 8, 4,  5,
     };
 
     DCAContext *s = avctx->priv_data;
