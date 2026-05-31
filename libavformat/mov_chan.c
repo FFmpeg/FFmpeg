@@ -375,6 +375,7 @@ static int mov_get_channel_layout(AVChannelLayout *ch_layout, uint32_t tag, uint
     /* find the channel layout for the specified layout tag */
     layout_map = find_layout_map(tag, map);
     if (layout_map) {
+        AVChannelLayout tmp = { 0 };
         int ret;
         int map_layout_nb_channels = tag & 0xFFFF;
         int nb_channels = ch_layout->nb_channels;
@@ -383,19 +384,23 @@ static int mov_get_channel_layout(AVChannelLayout *ch_layout, uint32_t tag, uint
         if (omitted_channel_map >> map_layout_nb_channels)
             return AVERROR_INVALIDDATA;
 
-        av_channel_layout_uninit(ch_layout);
-        ret = av_channel_layout_custom_init(ch_layout, nb_channels);
+        ret = av_channel_layout_custom_init(&tmp, nb_channels);
         if (ret < 0)
             return ret;
 
         for (int i = 0, idx = 0; i < map_layout_nb_channels && idx < nb_channels; i++, omitted_channel_map >>= 1) {
             if (!(omitted_channel_map & 1)) {
                 enum AVChannel id = layout_map[i].id;
-                ch_layout->u.map[idx++].id = (id != AV_CHAN_NONE ? id : AV_CHAN_UNKNOWN);
+                tmp.u.map[idx++].id = (id != AV_CHAN_NONE ? id : AV_CHAN_UNKNOWN);
             }
         }
 
-        return av_channel_layout_retype(ch_layout, 0, AV_CHANNEL_LAYOUT_RETYPE_FLAG_CANONICAL);
+        ret = av_channel_layout_retype(&tmp, 0, AV_CHANNEL_LAYOUT_RETYPE_FLAG_CANONICAL);
+        if (ret < 0)
+            return ret;
+
+        av_channel_layout_uninit(ch_layout);
+        *ch_layout = tmp;
     }
     return 0;
 }
@@ -543,6 +548,7 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
         return 0;
 
     if (layout_tag == MOV_CH_LAYOUT_USE_DESCRIPTIONS) {
+        AVChannelLayout tmp = { 0 };
         int nb_channels = ch_layout->nb_channels;
 
         if (!num_descr || num_descr < nb_channels) {
@@ -562,8 +568,7 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
             num_descr = nb_channels;
         }
 
-        av_channel_layout_uninit(ch_layout);
-        ret = av_channel_layout_custom_init(ch_layout, nb_channels);
+        ret = av_channel_layout_custom_init(&tmp, nb_channels);
         if (ret < 0)
             goto out;
 
@@ -580,12 +585,15 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
             avio_rl32(pb);                      // mCoordinates[1]
             avio_rl32(pb);                      // mCoordinates[2]
             size -= 20;
-            ch_layout->u.map[i].id = mov_get_channel_id(label);
+            tmp.u.map[i].id = mov_get_channel_id(label);
         }
 
-        ret = av_channel_layout_retype(ch_layout, 0, AV_CHANNEL_LAYOUT_RETYPE_FLAG_CANONICAL);
+        ret = av_channel_layout_retype(&tmp, 0, AV_CHANNEL_LAYOUT_RETYPE_FLAG_CANONICAL);
         if (ret < 0)
             goto out;
+
+       av_channel_layout_uninit(ch_layout);
+       *ch_layout = tmp;
     } else if (layout_tag == MOV_CH_LAYOUT_USE_BITMAP) {
         if (!ch_layout->nb_channels || av_popcount(bitmap) == ch_layout->nb_channels) {
             if (bitmap < 0x40000) {
@@ -737,11 +745,10 @@ int ff_mov_read_chnl(AVFormatContext *s, AVIOContext *pb, AVStream *st)
 
         av_log(s, AV_LOG_TRACE, "'chnl' layout %d\n", layout);
         if (!layout) {
-            AVChannelLayout *ch_layout = &st->codecpar->ch_layout;
+            AVChannelLayout tmp = { 0 }, *ch_layout = &st->codecpar->ch_layout;
             int nb_channels = ch_layout->nb_channels;
 
-            av_channel_layout_uninit(ch_layout);
-            ret = av_channel_layout_custom_init(ch_layout, nb_channels);
+            ret = av_channel_layout_custom_init(&tmp, nb_channels);
             if (ret < 0)
                 return ret;
 
@@ -762,12 +769,15 @@ int ff_mov_read_chnl(AVFormatContext *s, AVIOContext *pb, AVStream *st)
                     channel = AV_CHAN_UNKNOWN;
                 }
 
-                ch_layout->u.map[i].id = channel;
+                tmp.u.map[i].id = channel;
             }
 
-            ret = av_channel_layout_retype(ch_layout, 0, AV_CHANNEL_LAYOUT_RETYPE_FLAG_CANONICAL);
+            ret = av_channel_layout_retype(&tmp, 0, AV_CHANNEL_LAYOUT_RETYPE_FLAG_CANONICAL);
             if (ret < 0)
                 return ret;
+
+            av_channel_layout_uninit(ch_layout);
+            *ch_layout = tmp;
         } else {
             uint64_t omitted_channel_map = avio_rb64(pb);
             ret = ff_mov_get_channel_layout_from_config(layout, &st->codecpar->ch_layout, omitted_channel_map);
