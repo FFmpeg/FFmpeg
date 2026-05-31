@@ -2381,6 +2381,12 @@ static int decode_frame_ga(AVCodecContext *avctx, AACDecContext *ac,
         ac->oc[1].status = OC_LOCKED;
     }
 
+    if (samples && avctx->sample_rate <= 0) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Cannot output a frame without a valid sample rate\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     if (!ac->frame->data[0] && samples) {
         av_log(avctx, AV_LOG_ERROR, "no frame data found\n");
         return AVERROR_INVALIDDATA;
