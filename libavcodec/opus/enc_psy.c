@@ -312,6 +312,7 @@ void ff_opus_psy_celt_frame_init(OpusPsyContext *s, CeltFrame *f, int index)
     f->silence = silence;
     if (f->silence) {
         f->framebits = 0; /* Otherwise the silence flag eats up 16(!) bits */
+        f->intensity_stereo = f->end_band; /* Read by postencode_update for avg_is_band */
         return;
     }
 
