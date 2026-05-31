@@ -62,6 +62,7 @@ static av_cold int imm5_init(AVCodecContext *avctx)
     ctx->h264_avctx->thread_count = 1;
     ctx->h264_avctx->flags        = avctx->flags;
     ctx->h264_avctx->flags2       = avctx->flags2;
+    ctx->h264_avctx->max_pixels   = avctx->max_pixels;
     ret = avcodec_open2(ctx->h264_avctx, NULL, NULL);
     if (ret < 0)
         return ret;
@@ -73,6 +74,7 @@ static av_cold int imm5_init(AVCodecContext *avctx)
     ctx->hevc_avctx->thread_count = 1;
     ctx->hevc_avctx->flags        = avctx->flags;
     ctx->hevc_avctx->flags2       = avctx->flags2;
+    ctx->hevc_avctx->max_pixels   = avctx->max_pixels;
     ret = avcodec_open2(ctx->hevc_avctx, NULL, NULL);
     if (ret < 0)
         return ret;
