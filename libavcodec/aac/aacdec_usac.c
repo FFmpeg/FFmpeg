@@ -1390,11 +1390,10 @@ static void decode_tsd(GetBitContext *gb, int *data,
             break;
         }
         int64_t c = k - p + 1;
-        for (int h = 2; h <= p; h++) {
-            c *= k - p + h;
-            c /= h;
+        for (int h = 2; h <= p && c <= s; h++) {
+            c += c*(k-p)/h;
         }
-        if (s >= (int)c) { /* c is long long for up to 32 slots */
+        if (s >= c) {
             s -= c;
             data[k] = 1;
             p--;
