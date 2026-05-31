@@ -913,6 +913,7 @@ OBJS-$(CONFIG_PCM_F64LE_ENCODER)          += pcm.o
 OBJS-$(CONFIG_PCM_LXF_DECODER)            += pcm.o
 OBJS-$(CONFIG_PCM_MULAW_DECODER)          += pcm.o
 OBJS-$(CONFIG_PCM_MULAW_ENCODER)          += pcm.o
+OBJS-$(CONFIG_PCM_PAMF_DECODER)           += pcm-bluray.o
 OBJS-$(CONFIG_PCM_S8_DECODER)             += pcm.o
 OBJS-$(CONFIG_PCM_S8_ENCODER)             += pcm.o
 OBJS-$(CONFIG_PCM_S8_PLANAR_DECODER)      += pcm.o

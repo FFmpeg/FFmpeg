@@ -795,6 +795,10 @@ static int get_audio_frame_duration(enum AVCodecID id, int sr, int ch, int ba,
                     return (frame_bytes - 4) / ((FFALIGN(ch, 2) * bps) / 8);
                 case AV_CODEC_ID_S302M:
                     return 2 * (frame_bytes / ((bps + 4) / 4)) / ch;
+                case AV_CODEC_ID_PCM_PAMF:
+                    if (bps != 16 && bps != 20 && bps != 24)
+                        return 0;
+                    return frame_bytes / (FFALIGN(ch, 2) * (bps == 16 ? 2 : 3));
                 }
             }
         }

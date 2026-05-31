@@ -577,6 +577,7 @@ extern const FFCodec ff_pcm_f64le_decoder;
 extern const FFCodec ff_pcm_lxf_decoder;
 extern const FFCodec ff_pcm_mulaw_encoder;
 extern const FFCodec ff_pcm_mulaw_decoder;
+extern const FFCodec ff_pcm_pamf_decoder;
 extern const FFCodec ff_pcm_s8_encoder;
 extern const FFCodec ff_pcm_s8_decoder;
 extern const FFCodec ff_pcm_s8_planar_encoder;
