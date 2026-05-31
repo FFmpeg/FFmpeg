@@ -2096,7 +2096,7 @@ static int64_t http_seek_internal(URLContext *h, int64_t off, int whence, int fo
     uint8_t discard[4096];
 
     if (whence == AVSEEK_SIZE)
-        return s->filesize;
+        return s->filesize == UINT64_MAX ? AVERROR(ENOSYS) : s->filesize;
     else if ((s->filesize == UINT64_MAX && whence == SEEK_END))
         return AVERROR(ENOSYS);
 
