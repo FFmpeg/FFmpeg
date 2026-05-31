@@ -233,6 +233,9 @@ static int64_t file_seek(URLContext *h, int64_t pos, int whence)
     FileContext *c = h->priv_data;
     int64_t ret;
 
+    if (c->follow && (whence == SEEK_END || whence == AVSEEK_SIZE))
+        return AVERROR(ENOSYS); /* true size is not known */
+
     if (whence == AVSEEK_SIZE) {
         struct stat st;
         ret = fstat(c->fd, &st);
