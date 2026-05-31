@@ -4625,7 +4625,8 @@ static CueDesc get_cue_desc(AVFormatContext *s, int64_t ts, int64_t cues_start) 
         cue_desc.end_offset = cues_start - matroska->segment_start;
     }
 
-    if (cue_desc.end_time_ns < cue_desc.start_time_ns)
+    if (cue_desc.end_time_ns < cue_desc.start_time_ns ||
+        cue_desc.end_time_ns - (uint64_t)cue_desc.start_time_ns > INT64_MAX)
         return (CueDesc) {-1, -1, -1, -1};
 
     return cue_desc;
@@ -4819,11 +4820,14 @@ static int64_t webm_dash_manifest_compute_bandwidth(AVFormatContext *s, int64_t 
             bits_per_second = 0.0;
             do {
                 int64_t desc_bytes = desc_end.end_offset - desc_beg.start_offset;
-                int64_t desc_ns = desc_end.end_time_ns - desc_beg.start_time_ns;
                 double desc_sec, calc_bits_per_second, percent, mod_bits_per_second;
                 if (desc_bytes <= 0 || desc_bytes > INT64_MAX/8)
                     return -1;
+                if (desc_end.end_time_ns <= desc_beg.start_time_ns ||
+                    desc_end.end_time_ns - (uint64_t)desc_beg.start_time_ns > INT64_MAX)
+                    return -1;
 
+                int64_t desc_ns = desc_end.end_time_ns - desc_beg.start_time_ns;
                 desc_sec = desc_ns / nano_seconds_per_second;
                 calc_bits_per_second = (desc_bytes * 8) / desc_sec;
 
