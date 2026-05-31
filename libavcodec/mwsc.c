@@ -66,6 +66,9 @@ static int rle_uncompress(GetByteContext *gb, PutByteContext *pb, GetByteContext
         } else if (run == 255) {
             int pos = bytestream2_tell_p(pb);
 
+            if (!gbp)
+                return AVERROR_INVALIDDATA;
+
             bytestream2_seek(gbp, pos, SEEK_SET);
 
             if (pos + width - w < fill)
@@ -129,11 +132,16 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
         return ret;
 
     bytestream2_init(&gb, s->decomp_buf, zstream->total_out);
-    bytestream2_init(&gbp, s->prev_frame->data[0], avctx->height * s->prev_frame->linesize[0]);
+    if (s->prev_frame->data[0])
+        bytestream2_init(&gbp, s->prev_frame->data[0], avctx->height * s->prev_frame->linesize[0]);
     bytestream2_init_writer(&pb, frame->data[0], avctx->height * frame->linesize[0]);
 
-    frame->key_frame = rle_uncompress(&gb, &pb, &gbp, avctx->width, avctx->height, avctx->width * 3,
-                                      frame->linesize[0], s->prev_frame->linesize[0]);
+    ret = rle_uncompress(&gb, &pb, s->prev_frame->data[0] ? &gbp : NULL,
+                         avctx->width, avctx->height, avctx->width * 3,
+                         frame->linesize[0], s->prev_frame->linesize[0]);
+    if (ret < 0)
+        return ret;
+    frame->key_frame = ret;
 
     frame->pict_type = frame->key_frame ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
 
