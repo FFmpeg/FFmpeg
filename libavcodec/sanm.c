@@ -1551,6 +1551,9 @@ static int old_codec47(SANMVideoContext *ctx, GetByteContext *gb, int top, int l
     if (width > ctx->aligned_width)
         return AVERROR_INVALIDDATA;
 
+    if (FFALIGN(height, 8) > ctx->aligned_height)
+        return AVERROR_INVALIDDATA;
+
     if (bytestream2_get_bytes_left(gb) < 26)
          return AVERROR_INVALIDDATA;
 
