@@ -113,17 +113,16 @@ PRED16x16_H
 ;-----------------------------------------------------------------------------
 
 %macro PRED16x16_DC 0
-cglobal pred16x16_dc_8, 2,7
+cglobal pred16x16_dc_8, 2,7,2
     mov       r4, r0
     sub       r0, r1
-    pxor      mm0, mm0
-    pxor      mm1, mm1
-    psadbw    mm0, [r0+0]
-    psadbw    mm1, [r0+8]
+    pxor      m0, m0
+    psadbw    m0, [r0]
+    psrldq    m1, m0, 8
     dec        r0
     movzx     r5d, byte [r0+r1*1]
-    paddw     mm0, mm1
-    movd      r6d, mm0
+    paddw      m0, m1
+    movd      r6d, m0
     lea        r0, [r0+r1*2]
 %rep 7
     movzx     r2d, byte [r0+r1*0]
