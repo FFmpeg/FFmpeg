@@ -8611,21 +8611,24 @@ Same as the @ref{subtitles} filter, except that it doesn't require libavcodec
 and libavformat to work. On the other hand, it is limited to ASS (Advanced
 Substation Alpha) subtitles files.
 
-This filter accepts the following option in addition to the common options from
-the @ref{subtitles} filter:
+This filter accepts @option{filename}/@option{f}, @option{original_size},
+@option{fontsdir}, and @option{alpha} from the @ref{subtitles} filter, plus the
+following option:
 
 @table @option
 @item shaping
-Set the shaping engine
+Set the shaping engine.
 
 Available values are:
 @table @samp
 @item auto
 The default libass shaping engine, which is the best available.
 @item simple
-Fast, font-agnostic shaper that can do only substitutions
+Fast, font-agnostic shaper that can do only substitutions.
 @item complex
-Slower shaper using OpenType for substitutions and positioning
+Slower shaper using OpenType for substitutions and positioning. Required
+for correct rendering of complex scripts such as Arabic, Hebrew, Devanagari
+and Thai. Requires libass to be built with HarfBuzz.
 @end table
 
 The default is @code{auto}.
@@ -23389,6 +23392,23 @@ at least libass release 0.17.0 (or LIBASS_VERSION 0x01600010), @emph{and} libass
 have been built with libunibreak.
 
 The option is enabled by default except for native ASS.
+
+@item shaping
+Set the shaping engine.
+
+Available values are:
+@table @samp
+@item auto
+The default libass shaping engine, which is the best available.
+@item simple
+Fast, font-agnostic shaper that can do only substitutions.
+@item complex
+Slower shaper using OpenType for substitutions and positioning. Required
+for correct rendering of complex scripts such as Arabic, Hebrew, Devanagari
+and Thai. Requires libass to be built with HarfBuzz.
+@end table
+
+The default is @code{auto}.
 @end table
 
 If the first key is not specified, it is assumed that the first value
