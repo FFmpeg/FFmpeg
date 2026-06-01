@@ -28,6 +28,7 @@
 #include "ops.h"
 #include "ops_internal.h"
 #include "ops_dispatch.h"
+#include "swscale_internal.h"
 
 typedef struct SwsOpPass {
     SwsCompiledOp comp;
@@ -96,10 +97,12 @@ int ff_sws_ops_compile(SwsContext *ctx, const SwsOpBackend *backend,
     if (backend)
         return compile_backend(ctx, backend, ops, out);
 
+    const SwsBackend enabled = ff_sws_enabled_backends(ctx);
     for (int n = 0; ff_sws_op_backends[n]; n++) {
         const SwsOpBackend *backend = ff_sws_op_backends[n];
         if (ops->src.hw_format != backend->hw_format ||
-            ops->dst.hw_format != backend->hw_format)
+            ops->dst.hw_format != backend->hw_format ||
+            !(enabled & backend->flags))
             continue;
         if (compile_backend(ctx, backend, ops, out) < 0)
             continue;

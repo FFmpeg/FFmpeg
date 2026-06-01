@@ -81,6 +81,8 @@ static inline SwsInternal *sws_internal(const SwsContext *sws)
     return (SwsInternal *) sws;
 }
 
+SwsBackend ff_sws_enabled_backends(const SwsContext *ctx);
+
 typedef struct Range {
     unsigned int start;
     unsigned int len;

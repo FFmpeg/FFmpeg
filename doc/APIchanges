@@ -2,6 +2,9 @@ The last version increases of all libraries were on 2025-03-28
 
 API changes, most recent first:
 
+2026-06-xx - xxxxxxxxxx - lsws 9.8.100 - swscale.h
+  Add enum SwsBackend and SwsContext.backends
+
 2026-06-xx - xxxxxxxxxxx - lavu 60.32.100 - hwcontext_vulkan.h
   Add AVVulkanDeviceContext.queue_flags.
 

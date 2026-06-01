@@ -68,6 +68,18 @@
 #include "vulkan/ops.h"
 #endif
 
+SwsBackend ff_sws_enabled_backends(const SwsContext *ctx)
+{
+    if (ctx->backends)
+        return ctx->backends;
+
+    SwsBackend fallback = SWS_BACKEND_STABLE;
+    if (ctx->flags & SWS_UNSTABLE)
+        fallback |= SWS_BACKEND_UNSTABLE;
+
+    return fallback;
+}
+
 /**
  * Allocate and return an SwsContext without performing initialization.
  */

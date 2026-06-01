@@ -129,6 +129,7 @@ void ff_sws_compiled_op_unref(SwsCompiledOp *comp);
 
 typedef struct SwsOpBackend {
     const char *name; /* Descriptive name for this backend */
+    SwsBackend flags; /* Set of SWS_BACKEND_* */
 
     /**
      * Compile an operation list to an implementation chain. May modify `ops`

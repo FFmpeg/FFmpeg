@@ -191,6 +191,47 @@ No blending
 
 @end table
 
+@item sws_backends
+Set the allowed swscale backends. This is a flags option, so multiple backends
+may be combined.
+
+@table @samp
+@item auto
+Automatic selection. Equal to either @samp{stable} or @samp{all} depending on
+whether or not the @samp{unstable} flag is set. This is the default value.
+
+@item stable
+All stable backends.
+
+@item unstable
+All unstable backends.
+
+@item all
+All available backends.
+
+@item legacy
+Legacy swscale code.
+
+@item c
+Template-based reference code.
+
+@item memcpy
+Fast path using libc @code{memcpy}.
+
+@item x86
+x86 SIMD kernels.
+
+@item aarch64
+AArch64 NEON kernels.
+
+@item spirv
+Vulkan SPIR-V backend.
+
+@item glsl
+Vulkan GLSL backend.
+
+@end table
+
 @end table
 
 @c man end SCALER OPTIONS

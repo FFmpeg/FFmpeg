@@ -1689,6 +1689,7 @@ static int compile_spirv(SwsContext *sws, SwsOpList *ops, SwsCompiledOp *out)
 
 const SwsOpBackend backend_spirv = {
     .name      = "spirv",
+    .flags     = SWS_BACKEND_SPIRV,
     .compile   = compile_spirv,
     .hw_format = AV_PIX_FMT_VULKAN,
 };
@@ -1702,6 +1703,7 @@ static int compile_glsl(SwsContext *sws, SwsOpList *ops, SwsCompiledOp *out)
 
 const SwsOpBackend backend_glsl = {
     .name      = "glsl",
+    .flags     = SWS_BACKEND_GLSL,
     .compile   = compile_glsl,
     .hw_format = AV_PIX_FMT_VULKAN,
 };

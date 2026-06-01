@@ -548,6 +548,9 @@ static int add_legacy_sws_pass(SwsGraph *graph, const SwsFormat *src,
 {
     int ret, warned = 0;
     SwsContext *const ctx = graph->ctx;
+    const SwsBackend backend = ff_sws_enabled_backends(ctx);
+    if (!(backend & SWS_BACKEND_LEGACY))
+        return AVERROR(ENOTSUP);
     if (src->hw_format != AV_PIX_FMT_NONE || dst->hw_format != AV_PIX_FMT_NONE)
         return AVERROR(ENOTSUP);
 
@@ -626,8 +629,12 @@ static int add_convert_pass(SwsGraph *graph, const SwsFormat *src,
     SwsContext *ctx = graph->ctx;
     int ret = AVERROR(ENOTSUP);
 
-    /* Mark the entire new ops infrastructure as experimental for now */
-    if (!(ctx->flags & SWS_UNSTABLE))
+    /* Preemptively skip the ops list generation if the backend was
+     * constrained to the legacy implementation only. This would
+     * normally also fail in ff_sws_compile_pass() with the same
+     * error, but this way saves a bit of unnecessary overhead */
+    const SwsBackend backends = ff_sws_enabled_backends(ctx);
+    if (backends == SWS_BACKEND_LEGACY)
         goto fail;
 
     SwsOpList *ops;
@@ -908,6 +915,7 @@ static int opts_equal(const SwsContext *c1, const SwsContext *c2)
            c1->intent        == c2->intent        &&
            c1->scaler        == c2->scaler        &&
            c1->scaler_sub    == c2->scaler_sub    &&
+           c1->backends      == c2->backends      &&
            !memcmp(c1->scaler_params, c2->scaler_params, sizeof(c1->scaler_params));
 
 }

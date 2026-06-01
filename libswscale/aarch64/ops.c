@@ -254,6 +254,7 @@ error:
 /*********************************************************************/
 const SwsOpBackend backend_aarch64 = {
     .name      = "aarch64",
+    .flags     = SWS_BACKEND_AARCH64,
     .compile   = aarch64_compile,
     .hw_format = AV_PIX_FMT_NONE,
 };
