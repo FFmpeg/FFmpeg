@@ -1441,6 +1441,9 @@ static int validate_params(SwsContext *ctx)
     VALIDATE(threads,       0, SWS_MAX_THREADS);
     VALIDATE(dither,        0, SWS_DITHER_NB - 1)
     VALIDATE(alpha_blend,   0, SWS_ALPHA_BLEND_NB - 1)
+    VALIDATE(intent,        0, SWS_INTENT_NB - 1);
+    VALIDATE(scaler,        0, SWS_SCALE_NB - 1)
+    VALIDATE(scaler_sub,    0, SWS_SCALE_NB - 1)
     return 0;
 }
 
