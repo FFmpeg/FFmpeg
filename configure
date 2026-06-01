@@ -7886,7 +7886,7 @@ if enabled x86; then
     esac
 elif enabled_any aarch64 ppc64 && ! enabled bigendian; then
     case $target_os in
-        linux)
+        linux|mingw32*|mingw64*|win32|win64)
             ;;
         *)
             disable ffnvcodec cuvid nvdec nvenc
