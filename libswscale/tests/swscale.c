@@ -62,6 +62,7 @@ struct options {
     int align_dst;
     int legacy;
     int pretty;
+    int backends;
 };
 
 struct mode {
@@ -246,6 +247,7 @@ static int scale_new(AVFrame *dst, const AVFrame *src,
     sws_src_dst->flags  = mode->flags;
     sws_src_dst->dither = mode->dither;
     sws_src_dst->threads = opts->threads;
+    sws_src_dst->backends = opts->backends;
 
     int ret = sws_frame_setup(sws_src_dst, dst, src);
     if (ret < 0) {
@@ -912,6 +914,8 @@ static int parse_options(int argc, char **argv, struct options *opts, FILE **fp)
                     "       Test with a specific combination of flags\n"
                     "   -dither <mode>\n"
                     "       Test with a specific dither mode\n"
+                    "   -backends <backends>\n"
+                    "       Restrict to the given set of allowed swscale backends\n"
                     "   -unscaled <1 or 0>\n"
                     "       If 1, test only conversions that do not involve scaling\n"
                     "   -align_src <alignment>\n"
@@ -982,6 +986,15 @@ static int parse_options(int argc, char **argv, struct options *opts, FILE **fp)
             sws_free_context(&dummy);
             if (ret < 0) {
                 fprintf(stderr, "invalid flags %s\n", argv[i + 1]);
+                return -1;
+            }
+        } else if (!strcmp(argv[i], "-backends")) {
+            SwsContext *dummy = sws_alloc_context();
+            const AVOption *backends_opt = av_opt_find(dummy, "sws_backends", NULL, 0, 0);
+            int ret = av_opt_eval_flags(dummy, backends_opt, argv[i + 1], &opts->backends);
+            sws_free_context(&dummy);
+            if (ret < 0) {
+                fprintf(stderr, "invalid backends %s\n", argv[i + 1]);
                 return -1;
             }
         } else if (!strcmp(argv[i], "-dither")) {
