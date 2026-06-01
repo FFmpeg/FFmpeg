@@ -831,8 +831,8 @@ static int decode_pce(AVCodecContext *avctx, MPEG4AudioConfig *m4ac,
     sampling_index = get_bits(gb, 4);
     if (m4ac->sampling_index != sampling_index)
         av_log(avctx, AV_LOG_WARNING,
-               "Sample rate index in program config element does not "
-               "match the sample rate index configured by the container.\n");
+               "Sample rate index (%d) in program config element does not "
+               "match the sample rate index (%d) configured by the container.\n", sampling_index, m4ac->sampling_index);
 
     num_front       = get_bits(gb, 4);
     num_side        = get_bits(gb, 4);
