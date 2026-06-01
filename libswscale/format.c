@@ -554,9 +554,25 @@ bool ff_infer_colors(SwsColor *src, SwsColor *dst)
     return incomplete;
 }
 
-int sws_test_format(enum AVPixelFormat format, int output)
+/* Variant of sws_test_format() for the ops-based code */
+static int test_format_ops(enum AVPixelFormat format, int output);
+static int test_format_legacy(enum AVPixelFormat format, int output)
 {
     return output ? sws_isSupportedOutput(format) : sws_isSupportedInput(format);
+}
+
+int ff_sws_test_pixfmt_backend(const SwsBackend backends,
+                               enum AVPixelFormat format, int output)
+{
+    /* The only non-ops backend is the legacy backend */
+    const SwsBackend backends_ops = SWS_BACKEND_ALL ^ SWS_BACKEND_LEGACY;
+    return ((backends & SWS_BACKEND_LEGACY) && test_format_legacy(format, output)) ||
+           ((backends & backends_ops)       && test_format_ops(format, output));
+}
+
+int sws_test_format(enum AVPixelFormat format, int output)
+{
+    return ff_sws_test_pixfmt_backend(SWS_BACKEND_STABLE, format, output);
 }
 
 int sws_test_hw_format(enum AVPixelFormat format)
@@ -611,10 +627,10 @@ static int test_loc(enum AVChromaLocation loc)
     return (unsigned)loc < AVCHROMA_LOC_NB;
 }
 
-int ff_test_fmt(const SwsFormat *fmt, int output)
+int ff_test_fmt(const SwsBackend backends, const SwsFormat *fmt, int output)
 {
     return fmt->width > 0 && fmt->height > 0            &&
-           sws_test_format    (fmt->format,     output) &&
+           ff_sws_test_pixfmt_backend(backends, fmt->format, output) &&
            sws_test_colorspace(fmt->csp,        output) &&
            sws_test_primaries (fmt->color.prim, output) &&
            sws_test_transfer  (fmt->color.trc,  output) &&
@@ -627,7 +643,7 @@ int sws_test_frame(const AVFrame *frame, int output)
 {
     for (int field = 0; field < 2; field++) {
         const SwsFormat fmt = ff_fmt_from_frame(frame, field);
-        if (!ff_test_fmt(&fmt, output))
+        if (!ff_test_fmt(SWS_BACKEND_STABLE, &fmt, output))
             return 0;
         if (!fmt.interlaced)
             break;
@@ -905,6 +921,18 @@ static int fmt_analyze(enum AVPixelFormat fmt, SwsReadWriteOp *rw_op,
     }
 
     return 0;
+}
+
+static int test_format_ops(enum AVPixelFormat format, int output)
+{
+    SwsReadWriteOp rw;
+    SwsSwizzleOp swizzle;
+    SwsPackOp pack;
+    SwsShiftOp shift;
+    SwsPixelType pixel_type, raw_type;
+    int ret = fmt_analyze(format, &rw, &pack, &swizzle, &shift,
+                          &pixel_type, &raw_type);
+    return ret == 0;
 }
 
 static SwsSwizzleOp swizzle_inv(SwsSwizzleOp swiz) {
@@ -1670,4 +1698,11 @@ fail:
     return ret;
 }
 
-#endif /* CONFIG_UNSTABLE */
+#else /* !CONFIG_UNSTABLE */
+
+static int test_format_ops(enum AVPixelFormat format, int output)
+{
+    return 0;
+}
+
+#endif

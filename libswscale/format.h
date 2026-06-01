@@ -149,7 +149,18 @@ static inline int ff_fmt_align(enum AVPixelFormat fmt)
     }
 }
 
-int ff_test_fmt(const SwsFormat *fmt, int output);
+/* Internal helper to test a format for either the legacy backend or the
+ * ops-based backends, depending on `backends` (must be nonzero). */
+int ff_sws_test_pixfmt_backend(const SwsBackend backends,
+                               enum AVPixelFormat format, int output);
+
+/**
+ * Statically test if a given format is supported by the given set of
+ * backends. This is a heuristic, which may have false positives if a
+ * specific backend does not actually implement all operations that would be
+ * required to support the format.
+ */
+int ff_test_fmt(SwsBackend backends, const SwsFormat *fmt, int output);
 
 /* Returns true if the formats are incomplete, false otherwise */
 bool ff_infer_colors(SwsColor *src, SwsColor *dst);
