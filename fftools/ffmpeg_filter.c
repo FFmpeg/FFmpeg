@@ -1037,6 +1037,7 @@ void fg_free(FilterGraph **pfg)
         av_frame_free(&ifp->opts.fallback);
 
         av_buffer_unref(&ifp->hw_frames_ctx);
+        av_channel_layout_uninit(&ifp->ch_layout);
         av_freep(&ifilter->linklabel);
         av_freep(&ifp->opts.name);
         av_frame_side_data_free(&ifp->side_data, &ifp->nb_side_data);
