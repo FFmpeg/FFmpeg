@@ -58,6 +58,8 @@ struct options {
     int flags;
     int dither;
     int unscaled;
+    int align_src;
+    int align_dst;
     int legacy;
     int pretty;
 };
@@ -255,6 +257,12 @@ static int scale_new(AVFrame *dst, const AVFrame *src,
     int64_t time = av_gettime_relative();
     for (int i = 0; ret >= 0 && i < opts->iters; i++) {
         unref_buffers(dst);
+        if (opts->align_dst) {
+            ret = av_frame_get_buffer(dst, opts->align_dst);
+            if (ret < 0)
+                return ret;
+        }
+
         ret = checked_sws_scale_frame(sws_src_dst, dst, src);
     }
     *out_time = av_gettime_relative() - time;
@@ -287,7 +295,7 @@ static int scale_legacy(AVFrame *dst, const AVFrame *src,
     dst->width  = sws_legacy->dst_w;
     dst->height = sws_legacy->dst_h;
     dst->format = sws_legacy->dst_format;
-    ret = av_frame_get_buffer(dst, 0);
+    ret = av_frame_get_buffer(dst, opts->align_dst);
     if (ret < 0)
         goto error;
 
@@ -573,6 +581,12 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
         src->width  = ref->width;
         src->height = ref->height;
         src->format = src_fmt;
+        if (opts->align_src) {
+            ret = av_frame_get_buffer(src, opts->align_src);
+            if (ret < 0)
+                goto error;
+        }
+
         ret = checked_sws_scale_frame(sws_ref_src, src, ref);
         if (ret < 0)
             goto error;
@@ -900,6 +914,10 @@ static int parse_options(int argc, char **argv, struct options *opts, FILE **fp)
                     "       Test with a specific dither mode\n"
                     "   -unscaled <1 or 0>\n"
                     "       If 1, test only conversions that do not involve scaling\n"
+                    "   -align_src <alignment>\n"
+                    "       If nonzero, allocate source buffers with a custom stride alignment\n"
+                    "   -align_dst <alignment>\n"
+                    "       If nonzero, allocate destination buffers with a custom stride alignment\n"
                     "   -legacy <1 or 0>\n"
                     "       If 1, force using legacy swscale for the main conversion\n"
                     "   -hw <device>\n"
@@ -970,6 +988,18 @@ static int parse_options(int argc, char **argv, struct options *opts, FILE **fp)
             opts->dither = atoi(argv[i + 1]);
         } else if (!strcmp(argv[i], "-unscaled")) {
             opts->unscaled = atoi(argv[i + 1]);
+        } else if (!strcmp(argv[i], "-align_src")) {
+            opts->align_src = atoi(argv[i + 1]);
+            if (opts->align_src < 0 || (opts->align_src & (opts->align_src - 1))) {
+                fprintf(stderr, "invalid alignment %s\n", argv[i + 1]);
+                return -1;
+            }
+        } else if (!strcmp(argv[i], "-align_dst")) {
+            opts->align_dst = atoi(argv[i + 1]);
+            if (opts->align_dst < 0 || (opts->align_dst & (opts->align_dst - 1))) {
+                fprintf(stderr, "invalid alignment %s\n", argv[i + 1]);
+                return -1;
+            }
         } else if (!strcmp(argv[i], "-legacy")) {
             opts->legacy = atoi(argv[i + 1]);
         } else if (!strcmp(argv[i], "-hw")) {
