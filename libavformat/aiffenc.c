@@ -147,12 +147,6 @@ static int aiff_write_header(AVFormatContext *s)
         avio_wb32(pb, 0xA2805140);
     }
 
-    if (par->ch_layout.order == AV_CHANNEL_ORDER_NATIVE && par->ch_layout.nb_channels > 2) {
-        ffio_wfourcc(pb, "CHAN");
-        avio_wb32(pb, 12);
-        ff_mov_write_chan(pb, par->ch_layout.u.mask);
-    }
-
     put_meta(s, "title",     MKBETAG('N', 'A', 'M', 'E'));
     put_meta(s, "author",    MKBETAG('A', 'U', 'T', 'H'));
     put_meta(s, "copyright", MKBETAG('(', 'c', ')', ' '));
@@ -191,6 +185,14 @@ static int aiff_write_header(AVFormatContext *s)
         ffio_wfourcc(pb, "wave");
         avio_wb32(pb, par->extradata_size);
         avio_write(pb, par->extradata, par->extradata_size);
+    }
+
+    /* CHAN chunk; a decoder may use the channel count when parsing this chunk,
+     * so let's write it after the COMM chunk which indicates said channel count. */
+    if (par->ch_layout.order == AV_CHANNEL_ORDER_NATIVE && par->ch_layout.nb_channels > 2) {
+        ffio_wfourcc(pb, "CHAN");
+        avio_wb32(pb, 12);
+        ff_mov_write_chan(pb, par->ch_layout.u.mask);
     }
 
     /* Sound data chunk */
