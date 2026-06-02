@@ -173,9 +173,12 @@ int ff_sws_uop_lookup(SwsContext *ctx, const SwsOpTable *const tables[],
         return ret;
     }
 
+    for (int i = 0; i < 4; i++) {
+        chain->over_read[i]  = FFMAX(chain->over_read[i],  res.over_read[i]);
+        chain->over_write[i] = FFMAX(chain->over_write[i], res.over_write[i]);
+    }
+
     chain->cpu_flags |= params.table->cpu_flags;
-    chain->over_read  = FFMAX(chain->over_read,  res.over_read);
-    chain->over_write = FFMAX(chain->over_write, res.over_write);
     return 0;
 }
 

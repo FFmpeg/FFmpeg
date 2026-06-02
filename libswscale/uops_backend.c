@@ -165,12 +165,13 @@ static int compile(SwsContext *ctx, const SwsOpList *ops, SwsCompiledOp *out)
         .slice_align = 1,
         .block_size  = SWS_BLOCK_SIZE,
         .cpu_flags   = chain->cpu_flags,
-        .over_read   = chain->over_read,
-        .over_write  = chain->over_write,
         .priv        = chain,
         .free        = ff_sws_op_chain_free_cb,
         .func        = process,
     };
+
+    memcpy(out->over_read,  chain->over_read,  sizeof(out->over_read));
+    memcpy(out->over_write, chain->over_write, sizeof(out->over_write));
 
     av_log(ctx, AV_LOG_DEBUG, "Compiled micro-ops:\n");
     for (int i = 0; i < uops->num_ops; i++) {

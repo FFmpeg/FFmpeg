@@ -81,8 +81,12 @@ static int compile_backend(SwsContext *ctx, const SwsOpBackend *backend,
     *out = compiled;
 
     av_log(ctx, AV_LOG_VERBOSE, "Compiled using backend '%s': "
-           "block size = %d, over-read = %d, over-write = %d, cpu flags = 0x%x\n",
-           backend->name, out->block_size, out->over_read, out->over_write,
+           "block size = %d, over-read = {%d %d %d %d}, over-write = {%d %d %d %d}, "
+           "cpu flags = 0x%x\n", backend->name, out->block_size,
+           out->over_read[0], out->over_read[1],
+           out->over_read[2], out->over_read[3],
+           out->over_write[0], out->over_write[1],
+           out->over_write[2], out->over_write[3],
            out->cpu_flags);
 
     ff_sws_op_list_print(ctx, AV_LOG_VERBOSE, AV_LOG_TRACE, ops);
@@ -229,7 +233,7 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
             input_bytes = pixel_bytes(plane_w, p->pixel_bits_in, AV_ROUND_UP);
         }
 
-        size_t safe_bytes = safe_bytes_pad(input_bytes, comp->over_read);
+        size_t safe_bytes = safe_bytes_pad(input_bytes, comp->over_read[i]);
         size_t safe_blocks_in;
         if (exec->in_offset_x) {
             size_t filter_size = pixel_bytes(p->filter_size_h, p->pixel_bits_in,
@@ -260,7 +264,7 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
         int chroma = idx == 1 || idx == 2;
         int sub_x  = chroma ? outdesc->log2_chroma_w : 0;
         int sub_y  = chroma ? outdesc->log2_chroma_h : 0;
-        size_t safe_bytes = safe_bytes_pad(out->linesize[idx], comp->over_write);
+        size_t safe_bytes = safe_bytes_pad(out->linesize[idx], comp->over_write[i]);
         size_t safe_blocks_out = safe_bytes / exec->block_size_out;
         if (safe_blocks_out < num_blocks) {
             p->memcpy_out = true;
@@ -314,7 +318,7 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
             needed_size = pixel_bytes(alloc_width, p->pixel_bits_in, AV_ROUND_UP);
         }
         size_t loop_size   = p->tail_blocks * exec->block_size_in;
-        tail->in_stride[i] = FFALIGN(needed_size + comp->over_read, align);
+        tail->in_stride[i] = FFALIGN(needed_size + comp->over_read[i], align);
         tail->in_bump[i]   = tail->in_stride[i] - loop_size;
         alloc_size += tail->in_stride[i] * in->height;
     }
@@ -322,7 +326,7 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
     for (int i = 0; p->memcpy_out && i < p->planes_out; i++) {
         size_t needed_size  = pixel_bytes(alloc_width, p->pixel_bits_out, AV_ROUND_UP);
         size_t loop_size    = p->tail_blocks * exec->block_size_out;
-        tail->out_stride[i] = FFALIGN(needed_size + comp->over_write, align);
+        tail->out_stride[i] = FFALIGN(needed_size + comp->over_write[i], align);
         tail->out_bump[i]   = tail->out_stride[i] - loop_size;
         alloc_size += tail->out_stride[i] * out->height;
     }
@@ -484,17 +488,22 @@ static int rw_pixel_bits(const SwsOp *op)
     return elems * size * bits;
 }
 
-static void align_pass(SwsPass *pass, int block_size, int over_rw, int pixel_bits)
+static void align_pass(SwsPass *pass, int block_size, const int *over_rw,
+                       int pixel_bits)
 {
     if (!pass)
         return;
 
     /* Add at least as many pixels as needed to cover the padding requirement */
-    const int pad = (over_rw * 8 + pixel_bits - 1) / pixel_bits;
+    int pad_max = 0;
+    for (int i = 0; i < 4; i++) {
+        const int pad = (over_rw[i] * 8 + pixel_bits - 1) / pixel_bits;
+        pad_max = FFMAX(pad_max, pad);
+    }
 
     SwsPassBuffer *buf = pass->output;
     buf->width_align = FFMAX(buf->width_align, block_size);
-    buf->width_pad = FFMAX(buf->width_pad, pad);
+    buf->width_pad = FFMAX(buf->width_pad, pad_max);
 }
 
 static int compile(SwsGraph *graph, const SwsOpBackend *backend,

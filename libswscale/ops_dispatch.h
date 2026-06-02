@@ -119,9 +119,9 @@ typedef struct SwsCompiledOp {
     int cpu_flags;   /* active set of CPU flags (informative) */
 
     /* Execution parameters for non-opaque functions only */
-    int block_size;  /* number of pixels processed per iteration */
-    int over_read;   /* implementation over-reads input by this many bytes */
-    int over_write;  /* implementation over-writes output by this many bytes */
+    int block_size;     /* number of pixels processed per iteration */
+    int over_read[4];   /* implementation over-reads input by this many bytes */
+    int over_write[4];  /* implementation over-writes output by this many bytes */
 
     /* Arbitrary private data */
     void *priv;
