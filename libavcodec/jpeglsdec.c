@@ -501,7 +501,7 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s)
         if (s->bits <= 8) {
             uint8_t *src = s->picture_ptr->data[0];
 
-            for (i = 0; i < s->height; i++) {
+            for (i = 0; i < decoded_height; i++) {
                 switch(s->xfrm) {
                 case 1:
                     for (x = off; x + 2 < w; x += 3) {
