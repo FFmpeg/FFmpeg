@@ -54,8 +54,8 @@ typedef struct SwsOpExec {
     /* Extra metadata, may or may not be useful */
     int32_t width, height;      /* Overall output image dimensions */
     int32_t slice_y, slice_h;   /* Start and height of current slice */
-    int32_t block_size_in;      /* Size of a block of pixels in bytes */
-    int32_t block_size_out;
+    int32_t block_size_in[4];   /* Size of a block of pixels in bytes */
+    int32_t block_size_out[4];
 
     /* Subsampling factors for each plane */
     uint8_t in_sub_y[4], out_sub_y[4];
@@ -81,7 +81,7 @@ typedef struct SwsOpExec {
 } SwsOpExec;
 
 static_assert(sizeof(SwsOpExec) == 24 * sizeof(void *) +
-                                   6  * sizeof(int32_t) +
+                                   12 * sizeof(int32_t) +
                                    16 * sizeof(uint8_t) +
                                    2  * sizeof(void *),
               "SwsOpExec layout mismatch");

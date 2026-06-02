@@ -242,7 +242,7 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
                                                 safe_bytes - filter_size,
                                                 exec->in_offset_x);
         } else {
-            safe_blocks_in = safe_bytes / exec->block_size_in;
+            safe_blocks_in = safe_bytes / exec->block_size_in[i];
         }
 
         if (safe_blocks_in < num_blocks) {
@@ -251,7 +251,7 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
             safe_blocks = FFMIN(safe_blocks, safe_blocks_in);
         }
 
-        size_t loop_size   = num_blocks * exec->block_size_in;
+        size_t loop_size   = num_blocks * exec->block_size_in[i];
         exec->in[i]        = in->data[idx];
         exec->in_stride[i] = in->linesize[idx];
         exec->in_bump[i]   = in->linesize[idx] - loop_size;
@@ -265,13 +265,13 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
         int sub_x  = chroma ? outdesc->log2_chroma_w : 0;
         int sub_y  = chroma ? outdesc->log2_chroma_h : 0;
         size_t safe_bytes = safe_bytes_pad(out->linesize[idx], comp->over_write[i]);
-        size_t safe_blocks_out = safe_bytes / exec->block_size_out;
+        size_t safe_blocks_out = safe_bytes / exec->block_size_out[i];
         if (safe_blocks_out < num_blocks) {
             p->memcpy_out = true;
             safe_blocks   = FFMIN(safe_blocks, safe_blocks_out);
         }
 
-        size_t loop_size    = num_blocks * exec->block_size_out;
+        size_t loop_size    = num_blocks * exec->block_size_out[i];
         exec->out[i]        = out->data[idx];
         exec->out_stride[i] = out->linesize[idx];
         exec->out_bump[i]   = out->linesize[idx] - loop_size;
@@ -317,7 +317,7 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
         } else {
             needed_size = pixel_bytes(alloc_width, p->pixel_bits_in, AV_ROUND_UP);
         }
-        size_t loop_size   = p->tail_blocks * exec->block_size_in;
+        size_t loop_size   = p->tail_blocks * exec->block_size_in[i];
         tail->in_stride[i] = FFALIGN(needed_size + comp->over_read[i], align);
         tail->in_bump[i]   = tail->in_stride[i] - loop_size;
         alloc_size += tail->in_stride[i] * in->height;
@@ -325,7 +325,7 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
 
     for (int i = 0; p->memcpy_out && i < p->planes_out; i++) {
         size_t needed_size  = pixel_bytes(alloc_width, p->pixel_bits_out, AV_ROUND_UP);
-        size_t loop_size    = p->tail_blocks * exec->block_size_out;
+        size_t loop_size    = p->tail_blocks * exec->block_size_out[i];
         tail->out_stride[i] = FFALIGN(needed_size + comp->over_write[i], align);
         tail->out_bump[i]   = tail->out_stride[i] - loop_size;
         alloc_size += tail->out_stride[i] * out->height;
@@ -419,8 +419,8 @@ static void op_pass_run(const SwsFrame *out, const SwsFrame *in, const int y,
             /* We process fewer blocks, so the in_bump needs to be increased
              * to reflect that the plane pointers are left on the last block,
              * not the end of the processed line, after each loop iteration */
-            exec.in_bump[i]  += exec.block_size_in  * tail_blocks;
-            exec.out_bump[i] += exec.block_size_out * tail_blocks;
+            exec.in_bump[i]  += exec.block_size_in[i]  * tail_blocks;
+            exec.out_bump[i] += exec.block_size_out[i] * tail_blocks;
         }
 
         comp->func(&exec, comp->priv, 0, y, num_blocks - tail_blocks, y + h);
@@ -448,7 +448,7 @@ static void op_pass_run(const SwsFrame *out, const SwsFrame *in, const int y,
                        exec.in[i], exec.in_stride[i], lines, p->tail_size_in);
         } else {
             /* Reuse input pointers directly */
-            const size_t loop_size = tail_blocks * exec.block_size_in;
+            const size_t loop_size = tail_blocks * exec.block_size_in[i];
             tail.in[i]        = exec.in[i];
             tail.in_stride[i] = exec.in_stride[i];
             tail.in_bump[i]   = exec.in_stride[i] - loop_size;
@@ -457,7 +457,7 @@ static void op_pass_run(const SwsFrame *out, const SwsFrame *in, const int y,
 
     for (int i = 0; !memcpy_out && i < p->planes_out; i++) {
         /* Reuse output pointers directly */
-        const size_t loop_size = tail_blocks * exec.block_size_out;
+        const size_t loop_size = tail_blocks * exec.block_size_out[i];
         tail.out[i]        = exec.out[i];
         tail.out_stride[i] = exec.out_stride[i];
         tail.out_bump[i]   = exec.out_stride[i] - loop_size;
@@ -552,8 +552,10 @@ static int compile(SwsGraph *graph, const SwsOpBackend *backend,
         goto fail;
     }
 
-    p->exec_base.block_size_in  = block_bits_in  >> 3;
-    p->exec_base.block_size_out = block_bits_out >> 3;
+    for (int i = 0; i < 4; i++) {
+        p->exec_base.block_size_in[i]  = block_bits_in  >> 3;
+        p->exec_base.block_size_out[i] = block_bits_out >> 3;
+    }
 
     for (int i = 0; i < 4; i++) {
         p->idx_in[i]  = i < p->planes_in  ? ops->plane_src[i] : -1;
@@ -602,7 +604,8 @@ static int compile(SwsGraph *graph, const SwsOpBackend *backend,
         }
         for (int x = filter->dst_size; x < pixels; x++)
             offset[x] = offset[filter->dst_size - 1];
-        p->exec_base.block_size_in = 0; /* ptr does not advance */
+        for (int i = 0; i < 4; i++)
+            p->exec_base.block_size_in[i] = 0; /* ptr does not advance */
         p->filter_size_h = filter->filter_size;
     }
 

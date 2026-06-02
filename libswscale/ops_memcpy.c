@@ -43,12 +43,12 @@ static void process(const SwsOpExec *exec, const void *priv,
 {
     const MemcpyPriv *p = priv;
     const int lines = y_end - y_start;
-    const int bytes = x_end * exec->block_size_out;
     av_assert1(x_start == 0 && x_end == exec->width);
 
     for (int i = 0; i < p->num_planes; i++) {
         uint8_t *out = exec->out[i];
         const int idx = p->index[i];
+        const int bytes = x_end * exec->block_size_out[i];
         const int use_loop = exec->out_stride[i] > bytes + SWS_MAX_PADDING;
         if (idx < 0 && !use_loop) {
             memset(out, p->clear_value[i], exec->out_stride[i] * lines);

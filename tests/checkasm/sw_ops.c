@@ -190,19 +190,19 @@ static void check_compiled(const char *name,
         exec.in_offset_x = in_offset_x;
     }
 
-    exec.block_size_in  = comp_ref->block_size * rw_pixel_bits(read_op)  >> 3;
-    exec.block_size_out = comp_ref->block_size * rw_pixel_bits(write_op) >> 3;
     for (int i = 0; i < NB_PLANES; i++) {
         exec.in[i]  = (void *) src0[i];
         exec.out[i] = (void *) dst0[i];
+        exec.block_size_in[i]  = comp_ref->block_size * rw_pixel_bits(read_op)  >> 3;
+        exec.block_size_out[i] = comp_ref->block_size * rw_pixel_bits(write_op) >> 3;
     }
     checkasm_call(comp_ref->func, &exec, comp_ref->priv, 0, 0, PIXELS / comp_ref->block_size, LINES);
 
-    exec.block_size_in  = comp_new->block_size * rw_pixel_bits(read_op)  >> 3;
-    exec.block_size_out = comp_new->block_size * rw_pixel_bits(write_op) >> 3;
     for (int i = 0; i < NB_PLANES; i++) {
         exec.in[i]  = (void *) src1[i];
         exec.out[i] = (void *) dst1[i];
+        exec.block_size_in[i]  = comp_new->block_size * rw_pixel_bits(read_op)  >> 3;
+        exec.block_size_out[i] = comp_new->block_size * rw_pixel_bits(write_op) >> 3;
     }
     checkasm_call_checked(comp_new->func, &exec, comp_new->priv, 0, 0, PIXELS / comp_new->block_size, LINES);
 
