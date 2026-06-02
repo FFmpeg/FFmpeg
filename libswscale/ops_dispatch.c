@@ -201,7 +201,6 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
                          const SwsPass *pass)
 {
     const AVPixFmtDescriptor *indesc  = av_pix_fmt_desc_get(in->format);
-    const AVPixFmtDescriptor *outdesc = av_pix_fmt_desc_get(out->format);
     const bool float_in = indesc->flags & AV_PIX_FMT_FLAG_FLOAT;
 
     SwsOpPass *p = pass->priv;
@@ -221,15 +220,11 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
 
     size_t safe_blocks = num_blocks;
     for (int i = 0; i < p->planes_in; i++) {
-        int idx    = p->idx_in[i];
-        int chroma = idx == 1 || idx == 2;
-        int sub_x  = chroma ? indesc->log2_chroma_w : 0;
-        int sub_y  = chroma ? indesc->log2_chroma_h : 0;
-
+        const int idx = p->idx_in[i];
         size_t input_bytes = in->linesize[idx];
         if (p->filter_size_h && float_in) {
             /* Floating point inputs may contain NaN / Infinity in the padding */
-            const int plane_w = AV_CEIL_RSHIFT(in->width, sub_x);
+            const int plane_w = AV_CEIL_RSHIFT(in->width, exec->in_sub_x[i]);
             input_bytes = pixel_bytes(plane_w, p->pixel_bits_in, AV_ROUND_UP);
         }
 
@@ -255,15 +250,10 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
         exec->in[i]        = in->data[idx];
         exec->in_stride[i] = in->linesize[idx];
         exec->in_bump[i]   = in->linesize[idx] - loop_size;
-        exec->in_sub_y[i]  = sub_y;
-        exec->in_sub_x[i]  = sub_x;
     }
 
     for (int i = 0; i < p->planes_out; i++) {
-        int idx    = p->idx_out[i];
-        int chroma = idx == 1 || idx == 2;
-        int sub_x  = chroma ? outdesc->log2_chroma_w : 0;
-        int sub_y  = chroma ? outdesc->log2_chroma_h : 0;
+        const int idx = p->idx_out[i];
         size_t safe_bytes = safe_bytes_pad(out->linesize[idx], comp->over_write[i]);
         size_t safe_blocks_out = safe_bytes / exec->block_size_out[i];
         if (safe_blocks_out < num_blocks) {
@@ -275,8 +265,6 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
         exec->out[i]        = out->data[idx];
         exec->out_stride[i] = out->linesize[idx];
         exec->out_bump[i]   = out->linesize[idx] - loop_size;
-        exec->out_sub_y[i]  = sub_y;
-        exec->out_sub_x[i]  = sub_x;
     }
 
     const bool memcpy_in = p->memcpy_first || p->memcpy_last;
@@ -521,6 +509,7 @@ static int compile(SwsGraph *graph, const SwsOpBackend *backend,
         goto fail; /* nothing to do, just return */
 
     const SwsCompiledOp *comp = &p->comp;
+    const SwsFormat *src = &ops->src;
     const SwsFormat *dst = &ops->dst;
     if (p->comp.opaque) {
         SwsCompiledOp c = *comp;
@@ -533,6 +522,8 @@ static int compile(SwsGraph *graph, const SwsOpBackend *backend,
         return ret;
     }
 
+    const AVPixFmtDescriptor *indesc  = av_pix_fmt_desc_get(src->format);
+    const AVPixFmtDescriptor *outdesc = av_pix_fmt_desc_get(dst->format);
     const SwsOp *read  = ff_sws_op_list_input(ops);
     const SwsOp *write = ff_sws_op_list_output(ops);
     p->planes_in  = rw_planes(read);
@@ -552,14 +543,29 @@ static int compile(SwsGraph *graph, const SwsOpBackend *backend,
         goto fail;
     }
 
-    for (int i = 0; i < 4; i++) {
-        p->exec_base.block_size_in[i]  = block_bits_in  >> 3;
-        p->exec_base.block_size_out[i] = block_bits_out >> 3;
+    for (int i = 0; i < 4; i++)
+        p->idx_in[i] = p->idx_out[i] = -1;
+
+    for (int i = 0; i < p->planes_in; i++) {
+        const int idx = ops->plane_src[i];
+        const int chroma = idx == 1 || idx == 2;
+        const int sub_x = chroma ? indesc->log2_chroma_w : 0;
+        const int sub_y = chroma ? indesc->log2_chroma_h : 0;
+        p->exec_base.in_sub_x[i] = sub_x;
+        p->exec_base.in_sub_y[i] = sub_y;
+        p->exec_base.block_size_in[i] = block_bits_in >> 3;
+        p->idx_in[i] = idx;
     }
 
-    for (int i = 0; i < 4; i++) {
-        p->idx_in[i]  = i < p->planes_in  ? ops->plane_src[i] : -1;
-        p->idx_out[i] = i < p->planes_out ? ops->plane_dst[i] : -1;
+    for (int i = 0; i < p->planes_out; i++) {
+        const int idx = ops->plane_dst[i];
+        const int chroma = idx == 1 || idx == 2;
+        const int sub_x = chroma ? outdesc->log2_chroma_w : 0;
+        const int sub_y = chroma ? outdesc->log2_chroma_h : 0;
+        p->exec_base.out_sub_x[i] = sub_x;
+        p->exec_base.out_sub_y[i] = sub_y;
+        p->exec_base.block_size_out[i] = block_bits_out >> 3;
+        p->idx_out[i] = idx;
     }
 
     const SwsFilterWeights *filter = read->rw.filter.kernel;
