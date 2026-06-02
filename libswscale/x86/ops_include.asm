@@ -70,9 +70,9 @@
 ; if we load 8-bit values and convert them to 32-bit floats internally, then
 ; we would have an operation chain which combines an SSE4 V2=0 u8 kernel (128
 ; bits = 16 pixels) with an AVX2 V2=1 f32 kernel (512 bits = 16 pixels). This
-; keeps the number of pixels being processed (the block size) constant. The
-; V2 setting is suffixed to the operation name (_m1 or _m2) during name
-; mangling.
+; keeps the number of pixels being processed (BLOCK_WIDTH) constant. The V2
+; setting is suffixed to the operation name (_m1 or _m2), along with any other
+; custom NAME_SUFFIX (e.g. for operation variants).
 ;
 ; This design leaves us with the following set of possibilities:
 ;
@@ -92,15 +92,7 @@
 ; - 16-bit kernels: m1_avx2, m2_avx2
 ; - 32-bit kernels: m2_avx2
 ;
-; This is achieved by macro'ing each operation kernel and declaring it once
-; per SIMD version, and (if needed) once per V2 setting using decl_v2. (See
-; the bottom of ops_int.asm for an example)
-;
-; Finally, we overload some operation kernel to different number of components,
-; using the `decl_pattern` and `decl_common_patterns` macros. Inside these
-; kernels, the variables X, Y, Z and W will be set to 0 or 1 respectively,
-; depending on which components are active for this particular kernel instance.
-; They will receive the _pXYZW prefix during name mangling.
+; See the bottom of ops_int.asm for an example.
 
 struc SwsOpExec
     .in0 resq 1
@@ -147,17 +139,55 @@ struc SwsOpImpl
     .next resb 0
 endstruc
 
+%define SWS_COMP_NONE           0
+%define SWS_COMP_ALL            0xF
+%define SWS_COMP(X)             (1 << (X))
+%define SWS_COMP_TEST(mask, X)  (((mask) >> X) & 1)
+%define SWS_COMP_INV(mask)      ((mask) ^ SWS_COMP_ALL)
+%define SWS_COMP_ELEMS(N)       ((1 << (N)) - 1)
+
 ;---------------------------------------------------------
 ; Common macros for declaring operations
 
-; Declare an operation kernel with the correct name mangling.
-%macro op 1 ; name
-    %ifdef X
-        %define ADD_PAT(name) p %+ X %+ Y %+ Z %+ W %+ _ %+ name
+; Declare an operation kernel, calling a provided macro to generate the body.
+; Note: This is automatically called by the DECL_*() macros
+%macro DECL_OP 5-6+ ; macro, name, type, uop, mask
+    ; Declare named variables for common macro parameters
+    %ifdef NAME_SUFFIX
+        %xdefine NAME %2 %+ NAME_SUFFIX
     %else
-        %define ADD_PAT(name) name
+        %xdefine NAME %2
     %endif
+    %xdefine TYPE %3
+    %xdefine UOP  %4
+    %xdefine MASK %5
 
+    ; Declare X/Y/Z/W based on the provided mask
+    %assign X SWS_COMP_TEST(MASK, 0)
+    %assign Y SWS_COMP_TEST(MASK, 1)
+    %assign Z SWS_COMP_TEST(MASK, 2)
+    %assign W SWS_COMP_TEST(MASK, 3)
+    %assign COMPS (X + Y + Z + W)
+
+    ; Declare BYTES and BITS based on the ops type
+    %ifidn TYPE, SWS_PIXEL_U8
+        %assign BYTES 1
+    %elifidn TYPE, SWS_PIXEL_U16
+        %assign BYTES 2
+    %else
+        %assign BYTES 4
+    %endif
+    %assign BITS (BYTES * 8)
+
+    ; Calculate block size helpers
+    %ifdef V2
+        %assign BLOCK_SIZE (mmsize * (1 + V2))
+    %else
+        %assign BLOCK_SIZE (mmsize)
+    %endif
+    %assign BLOCK_WIDTH (BLOCK_SIZE / BYTES)
+
+    ; Add the correct name mangling / suffix for decl_v2
     %ifdef V2
         %if V2
             %define ADD_MUL(name) name %+ _m2
@@ -168,10 +198,30 @@ endstruc
         %define ADD_MUL(name) name
     %endif
 
-    cglobal ADD_PAT(ADD_MUL(%1)), 0, 0, 0 ; already allocated by entry point
+    cglobal ADD_MUL(NAME), 0, 0, 0 ; already allocated by entry point
+    %1 %6 ; call the provided macro to generate the kernel body
 
-    %undef ADD_PAT
+    %undef NAME
+    %undef UOP
+    %undef TYPE
+    %undef MASK
+    %undef X
+    %undef Y
+    %undef Z
+    %undef W
+    %undef COMPS
+    %undef BYTES
+    %undef BITS
+    %undef BLOCK_SIZE
+    %undef BLOCK_WIDTH
     %undef ADD_MUL
+%endmacro
+
+; Declare a set of operations with a custom name suffix
+%macro decl_suffix 2+ ; suffix, func
+    %xdefine NAME_SUFFIX %1
+    %2
+    %undef NAME_SUFFIX
 %endmacro
 
 ; Declare a set of operations with the high half enabled / disabled
@@ -179,27 +229,6 @@ endstruc
     %assign V2 %1
     %2
     %undef V2
-%endmacro
-
-; Declare an operation kernel specialized to a given subset of active components
-%macro decl_pattern 5+ ; X, Y, Z, W, func
-    %assign X %1
-    %assign Y %2
-    %assign Z %3
-    %assign W %4
-    %5
-    %undef X
-    %undef Y
-    %undef Z
-    %undef W
-%endmacro
-
-; Declare an operation kernel specialized to each common component pattern
-%macro decl_common_patterns 1+ ; func
-    decl_pattern 1, 0, 0, 0, %1 ; y
-    decl_pattern 1, 0, 0, 1, %1 ; ya
-    decl_pattern 1, 1, 1, 0, %1 ; yuv
-    decl_pattern 1, 1, 1, 1, %1 ; yuva
 %endmacro
 
 ;---------------------------------------------------------
@@ -287,6 +316,9 @@ endstruc
     CONTINUE tmp0q
 %endmacro
 
+;---------------------------------------------------------
+; Miscellaneous helpers
+
 ; Helper for inline conditionals; used to conditionally include single lines
 %macro IF 2+ ; cond, body
     %if %1
@@ -298,5 +330,45 @@ endstruc
 %macro IF1 2+
     %if %1
         %2
+    %endif
+%endmacro
+
+%macro shl_log2 2 ; dst, amount
+    %if %2 == 64
+        shl %1, 6
+    %elif %2 == 32
+        shl %1, 5
+    %elif %2 == 16
+        shl %1, 4
+    %elif %2 == 8
+        shl %1, 3
+    %elif %2 == 4
+        shl %1, 2
+    %elif %2 == 2
+        shl %1, 1
+    %elif %2 == 1
+        ; no-op
+    %else
+        %error "Unsupported value for shl_log2"
+    %endif
+%endmacro
+
+%macro assert 1-2 ; cond, message
+    %if !(%1)
+        %if %0 > 1
+            %error %2
+        %else
+            %error Assertion failed: %1
+        %endif
+    %endif
+%endmacro
+
+%macro assert_idn 2-3 ; expr1, expr2, message
+    %ifnidn %1, %2
+        %if %0 > 2
+            %error %3
+        %else
+            %error Assertion failed: %1 == %2
+        %endif
     %endif
 %endmacro

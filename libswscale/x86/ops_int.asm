@@ -1,5 +1,5 @@
 ;******************************************************************************
-;* Copyright (c) 2025 Niklas Haas
+;* Copyright (c) 2025-2026 Niklas Haas
 ;*
 ;* This file is part of FFmpeg.
 ;*
@@ -23,9 +23,6 @@
 SECTION_RODATA
 
 align 16
-expand16_shuf:  db   0,  0,  2,  2,  4,  4,  6,  6,  8,  8, 10, 10, 12, 12, 14, 14
-expand32_shuf:  db   0,  0,  0,  0,  4,  4,  4,  4,  8,  8,  8,  8, 12, 12, 12, 12
-
 read8_unpack2:  db   0,  2,  4,  6,  8, 10, 12, 14,  1,  3,  5,  7,  9, 11, 13, 15
 read8_unpack3:  db   0,  3,  6,  9,  1,  4,  7, 10,  2,  5,  8, 11, -1, -1, -1, -1
 read8_unpack4:  db   0,  4,  8, 12,  1,  5,  9, 13,  2,  6, 10, 14,  3,  7, 11, 15
@@ -35,255 +32,117 @@ read16_unpack4: db   0,  1,  8,  9,  2,  3, 10, 11,  4,  5, 12, 13,  6,  7, 14, 
 write8_pack2:   db   0,  8,  1,  9,  2, 10,  3, 11,  4, 12,  5, 13,  6, 14,  7, 15
 write8_pack3:   db   0,  4,  8,  1,  5,  9,  2,  6, 10,  3,  7, 11, -1, -1, -1, -1
 write16_pack3:  db   0,  1,  4,  5,  8,  9,  2,  3,  6,  7, 10, 11, -1, -1, -1, -1
-
 %define write8_pack4  read8_unpack4
 %define write16_pack4 read16_unpack2
 %define write16_pack2 read16_unpack4
 
-align 32
-bits_shuf:      db   0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,  1,  1,  1,  1, \
-                     2,  2,  2,  2,  2,  2,  2,  2,  3,  3,  3,  3,  3,  3,  3,  3
 bits_mask:      db 128, 64, 32, 16,  8,  4,  2,  1,128, 64, 32, 16,  8,  4,  2,  1
-bits_reverse:   db   7,  6,  5,  4,  3,  2,  1,  0, 15, 14, 13, 12, 11, 10,  9,  8,
+bits_reverse:   db   7,  6,  5,  4,  3,  2,  1,  0, 15, 14, 13, 12, 11, 10,  9,  8
+nibbles_pack:   times 8 dw 0x0110
+
+swap16:     db  1,  0,  3,  2,  5,  4,  7,  6,  9,  8, 11, 10, 13, 12, 15, 14
+swap32:     db  3,  2,  1,  0,  7,  6,  5,  4, 11, 10,  9,  8, 15, 14, 13, 12
+expand16:   db  0, 0, 2, 2, 4, 4, 6, 6, 8, 8, 10, 10, 12, 12, 14, 14
+expand32:   db  0, 0, 0, 0, 4, 4, 4, 4, 8, 8,  8,  8, 12, 12, 12, 12
 
 align 32
+bits_shuf: times 8 db 0
+           times 8 db 1
+           times 8 db 2
+           times 8 db 3
+
 mask1: times 32 db 0x01
 mask2: times 32 db 0x03
 mask3: times 32 db 0x07
 mask4: times 32 db 0x0F
 
-const1b equ mask1
-const1w: times 16 dw 0x01
+const1b  equ mask1
+const1w: times 16 dw 0x1
 
 SECTION .text
 
 ;---------------------------------------------------------
+; Helper macros for BITS-dependent sized instructions
+
+%macro bitfn 2+
+    %if BITS == 8
+        %1%+b %2
+    %elif BITS == 16
+        %1%+w %2
+    %elif BITS == 32
+        %1%+d %2
+    %endif
+%endmacro
+
+%define psllx           bitfn psll,
+%define psrlx           bitfn psrl,
+%define pcmpeqx         bitfn pcmpeq,
+%define pmullx          bitfn pmull,
+%define vpbroadcastx    bitfn vpbroadcast,
+
+;---------------------------------------------------------
 ; Planar reads / writes
 
-%macro read_planar 1 ; elems
-op read_planar%1
-            movu mx, [in0q]
-IF %1 > 1,  movu my, [in1q]
-IF %1 > 2,  movu mz, [in2q]
-IF %1 > 3,  movu mw, [in3q]
+%macro READ_PLANAR 0
+IF X,   movu mx, [in0q]
+IF Y,   movu my, [in1q]
+IF Z,   movu mz, [in2q]
+IF W,   movu mw, [in3q]
 %if V2
-            movu mx2, [in0q + mmsize]
-IF %1 > 1,  movu my2, [in1q + mmsize]
-IF %1 > 2,  movu mz2, [in2q + mmsize]
-IF %1 > 3,  movu mw2, [in3q + mmsize]
+IF X,   movu mx2, [in0q + mmsize]
+IF Y,   movu my2, [in1q + mmsize]
+IF Z,   movu mz2, [in2q + mmsize]
+IF W,   movu mw2, [in3q + mmsize]
 %endif
-            LOAD_CONT tmp0q
-            add in0q, mmsize * (1 + V2)
-IF %1 > 1,  add in1q, mmsize * (1 + V2)
-IF %1 > 2,  add in2q, mmsize * (1 + V2)
-IF %1 > 3,  add in3q, mmsize * (1 + V2)
-            CONTINUE tmp0q
-%endmacro
-
-%macro write_planar 1 ; elems
-op write_planar%1
-            movu [out0q], mx
-IF %1 > 1,  movu [out1q], my
-IF %1 > 2,  movu [out2q], mz
-IF %1 > 3,  movu [out3q], mw
-%if V2
-            movu [out0q + mmsize], mx2
-IF %1 > 1,  movu [out1q + mmsize], my2
-IF %1 > 2,  movu [out2q + mmsize], mz2
-IF %1 > 3,  movu [out3q + mmsize], mw2
-%endif
-            add out0q, mmsize * (1 + V2)
-IF %1 > 1,  add out1q, mmsize * (1 + V2)
-IF %1 > 2,  add out2q, mmsize * (1 + V2)
-IF %1 > 3,  add out3q, mmsize * (1 + V2)
-            RET
-%endmacro
-
-%macro read_packed2 1 ; depth
-op read%1_packed2
-            movu m8,  [in0q + 0*mmsize]
-            movu m9,  [in0q + 1*mmsize]
-    IF V2,  movu m10, [in0q + 2*mmsize]
-    IF V2,  movu m11, [in0q + 3*mmsize]
-IF %1 < 32, VBROADCASTI128 m12, [read%1_unpack2]
-            LOAD_CONT tmp0q
-            add in0q, mmsize * (2 + V2 * 2)
-%if %1 == 32
-            shufps m8, m8, q3120
-            shufps m9, m9, q3120
-    IF V2,  shufps m10, m10, q3120
-    IF V2,  shufps m11, m11, q3120
-%else
-            pshufb m8, m12              ; { X0 Y0 | X1 Y1 }
-            pshufb m9, m12              ; { X2 Y2 | X3 Y3 }
-    IF V2,  pshufb m10, m12
-    IF V2,  pshufb m11, m12
-%endif
-            unpcklpd mx, m8, m9         ; { X0 X2 | X1 X3 }
-            unpckhpd my, m8, m9         ; { Y0 Y2 | Y1 Y3 }
-    IF V2,  unpcklpd mx2, m10, m11
-    IF V2,  unpckhpd my2, m10, m11
-%if cpuflag(avx2)
-            vpermq mx, mx, q3120       ; { X0 X1 | X2 X3 }
-            vpermq my, my, q3120       ; { Y0 Y1 | Y2 Y3 }
-    IF V2,  vpermq mx2, mx2, q3120
-    IF V2,  vpermq my2, my2, q3120
-%endif
-            CONTINUE tmp0q
-%endmacro
-
-%macro write_packed2 1 ; depth
-op write%1_packed2
-IF %1 < 32, VBROADCASTI128 m12, [write%1_pack2]
-%if cpuflag(avx2)
-            vpermq mx, mx, q3120       ; { X0 X2 | X1 X3 }
-            vpermq my, my, q3120       ; { Y0 Y2 | Y1 Y3 }
-    IF V2,  vpermq mx2, mx2, q3120
-    IF V2,  vpermq my2, my2, q3120
-%endif
-            unpcklpd m8, mx, my        ; { X0 Y0 | X1 Y1 }
-            unpckhpd m9, mx, my        ; { X2 Y2 | X3 Y3 }
-    IF V2,  unpcklpd m10, mx2, my2
-    IF V2,  unpckhpd m11, mx2, my2
-%if %1 == 32
-            shufps m8, m8, q3120
-            shufps m9, m9, q3120
-    IF V2,  shufps m10, m10, q3120
-    IF V2,  shufps m11, m11, q3120
-%else
-            pshufb m8, m12
-            pshufb m9, m12
-    IF V2,  pshufb m10, m12
-    IF V2,  pshufb m11, m12
-%endif
-            movu [out0q + 0*mmsize], m8
-            movu [out0q + 1*mmsize], m9
-IF V2,      movu [out0q + 2*mmsize], m10
-IF V2,      movu [out0q + 3*mmsize], m11
-            add out0q, mmsize * (2 + V2 * 2)
-            RET
-%endmacro
-
-; helper macro reused for both 3 and 4 component packed reads
-%macro read_packed_inner 7 ; x, y, z, w, addr, num, depth
-            movu xm8,  [%5 + 0  * %6]
-            movu xm9,  [%5 + 4  * %6]
-            movu xm10, [%5 + 8  * %6]
-            movu xm11, [%5 + 12 * %6]
-    %if cpuflag(avx2)
-            vinserti128 m8,  m8,  [%5 + 16 * %6], 1
-            vinserti128 m9,  m9,  [%5 + 20 * %6], 1
-            vinserti128 m10, m10, [%5 + 24 * %6], 1
-            vinserti128 m11, m11, [%5 + 28 * %6], 1
-    %endif
-    %if %7 == 32
-            mova %1, m8
-            mova %2, m9
-            mova %3, m10
-            mova %4, m11
-    %else
-            pshufb %1, m8,  m12         ; { X0 Y0 Z0 W0 | X4 Y4 Z4 W4 }
-            pshufb %2, m9,  m12         ; { X1 Y1 Z1 W1 | X5 Y5 Z5 W5 }
-            pshufb %3, m10, m12         ; { X2 Y2 Z2 W2 | X6 Y6 Z6 W6 }
-            pshufb %4, m11, m12         ; { X3 Y3 Z3 W3 | X7 Y7 Z7 W7 }
-    %endif
-            punpckldq m8,  %1, %2       ; { X0 X1 Y0 Y1 | X4 X5 Y4 Y5 }
-            punpckldq m9,  %3, %4       ; { X2 X3 Y2 Y3 | X6 X7 Y6 Y7 }
-            punpckhdq m10, %1, %2       ; { Z0 Z1 W0 W1 | Z4 Z5 W4 W5 }
-            punpckhdq m11, %3, %4       ; { Z2 Z3 W2 W3 | Z6 Z7 W6 W7 }
-            punpcklqdq %1, m8, m9       ; { X0 X1 X2 X3 | X4 X5 X6 X7 }
-            punpckhqdq %2, m8, m9       ; { Y0 Y1 Y2 Y3 | Y4 Y5 Y6 Y7 }
-            punpcklqdq %3, m10, m11     ; { Z0 Z1 Z2 Z3 | Z4 Z5 Z6 Z7 }
-IF %6 > 3,  punpckhqdq %4, m10, m11     ; { W0 W1 W2 W3 | W4 W5 W6 W7 }
-%endmacro
-
-%macro read_packed 2 ; num, depth
-op read%2_packed%1
-IF %2 < 32, VBROADCASTI128 m12, [read%2_unpack%1]
-            LOAD_CONT tmp0q
-            read_packed_inner mx, my, mz, mw, in0q, %1, %2
-IF1 V2,     read_packed_inner mx2, my2, mz2, mw2, in0q + %1 * mmsize, %1, %2
-            add in0q, %1 * mmsize * (1 + V2)
-            CONTINUE tmp0q
-%endmacro
-
-%macro write_packed_inner 7 ; x, y, z, w, addr, num, depth
-        punpckldq m8,  %1, %2       ; { X0 Y0 X1 Y1 | X4 Y4 X5 Y5 }
-        punpckldq m9,  %3, %4       ; { Z0 W0 Z1 W1 | Z4 W4 Z5 W5 }
-        punpckhdq m10, %1, %2       ; { X2 Y2 X3 Y3 | X6 Y6 X7 Y7 }
-        punpckhdq m11, %3, %4       ; { Z2 W2 Z3 W3 | Z6 W6 Z7 W7 }
-        punpcklqdq %1, m8, m9       ; { X0 Y0 Z0 W0 | X4 Y4 Z4 W4 }
-        punpckhqdq %2, m8, m9       ; { X1 Y1 Z1 W1 | X5 Y5 Z5 W5 }
-        punpcklqdq %3, m10, m11     ; { X2 Y2 Z2 W2 | X6 Y6 Z6 W6 }
-        punpckhqdq %4, m10, m11     ; { X3 Y3 Z3 W3 | X7 Y7 Z7 W7 }
-    %if %7 == 32
-        mova m8,  %1
-        mova m9,  %2
-        mova m10, %3
-        mova m11, %4
-    %else
-        pshufb m8,  %1, m12
-        pshufb m9,  %2, m12
-        pshufb m10, %3, m12
-        pshufb m11, %4, m12
-    %endif
-        movu [%5 +  0*%6], xm8
-        movu [%5 +  4*%6], xm9
-        movu [%5 +  8*%6], xm10
-        movu [%5 + 12*%6], xm11
-    %if cpuflag(avx2)
-        vextracti128 [%5 + 16*%6], m8, 1
-        vextracti128 [%5 + 20*%6], m9, 1
-        vextracti128 [%5 + 24*%6], m10, 1
-        vextracti128 [%5 + 28*%6], m11, 1
-    %endif
-%endmacro
-
-%macro write_packed 2 ; num, depth
-op write%2_packed%1
-IF %2 < 32, VBROADCASTI128 m12, [write%2_pack%1]
-            write_packed_inner mx, my, mz, mw, out0q, %1, %2
-IF1 V2,     write_packed_inner mx2, my2, mz2, mw2, out0q + %1 * mmsize, %1, %2
-            add out0q, %1 * mmsize * (1 + V2)
-            RET
-%endmacro
-
-%macro rw_packed 1 ; depth
-        read_packed2 %1
-        read_packed 3, %1
-        read_packed 4, %1
-        write_packed2 %1
-        write_packed 3, %1
-        write_packed 4, %1
-%endmacro
-
-%macro read_nibbles 0
-op read_nibbles1
-%if cpuflag(avx2)
-        movu xmx,  [in0q]
-IF V2,  movu xmx2, [in0q + 16]
-%else
-        movq xmx,  [in0q]
-IF V2,  movq xmx2, [in0q + 8]
-%endif
-        VBROADCASTI128 m8, [mask4]
         LOAD_CONT tmp0q
-        add in0q, (mmsize >> 1) * (1 + V2)
-        pmovzxbw mx, xmx
-IF V2,  pmovzxbw mx2, xmx2
-        psllw my, mx, 8
-IF V2,  psllw my2, mx2, 8
-        psrlw mx, 4
-IF V2,  psrlw mx2, 4
-        pand my, m8
-IF V2,  pand my2, m8
-        por mx, my
-IF V2,  por mx2, my2
+IF X,   add in0q, BLOCK_SIZE
+IF Y,   add in1q, BLOCK_SIZE
+IF Z,   add in2q, BLOCK_SIZE
+IF W,   add in3q, BLOCK_SIZE
         CONTINUE tmp0q
 %endmacro
 
-%macro read_bits 0
-op read_bits1
+%macro READ_NIBBLE 0
+assert COMPS == 1
+        VBROADCASTI128 m12, [mask4]
+        LOAD_CONT tmp0q
+        pmovzxbw mx,  [in0q]
+IF V2,  pmovzxbw mx2, [in0q + (mmsize >> 1)]
+        add in0q, BLOCK_WIDTH >> 1
+        psllw m8, mx, 8     ; { 00 AB 00 CD ... }
+        psrlw mx, 4         ; { 0A 00 0C 00 ... }
+        pand m8, m12        ; { 00 0B 00 0D ... }
+        por mx, m8          ; { 0A 0B 0C 0D ... }
+%if V2
+        psllw m9, mx2, 8
+        psrlw mx2, 4
+        pand m9, m12
+        por mx2, m9
+%endif
+        CONTINUE tmp0q
+%endmacro
+
+%macro WRITE_NIBBLE 0
+assert COMPS == 1
+        VBROADCASTI128 m12, [nibbles_pack]
+        pmaddubsw mx, m12
+        packuswb mx, mx
+%if V2
+        pmaddubsw mx2, m12
+        packuswb mx2, mx2
+%endif
+%if cpuflag(avx2)
+        vpermq mx, mx, q3120
+IF V2,  vpermq mx2, mx2, q3120
+%endif
+        movu [out0q], xmx
+IF V2,  movu [out0q + (mmsize >> 1)], xmx2
+        add out0q, BLOCK_WIDTH >> 1
+        RET
+%endmacro
+
+%macro READ_BIT 0
+assert COMPS == 1
 %if cpuflag(avx2)
         vpbroadcastd mx,  [in0q]
 IF V2,  vpbroadcastd mx2, [in0q + 4]
@@ -295,7 +154,7 @@ IF V2,  movd mx2, [in0q + 2]
         VBROADCASTI128 m9,  [bits_mask]
         VBROADCASTI128 m10, [const1b]
         LOAD_CONT tmp0q
-        add in0q, (mmsize >> 3) * (1 + V2)
+        add in0q, BLOCK_WIDTH >> 3
         pshufb mx,  m8
 IF V2,  pshufb mx2, m8
         pand mx,  m9
@@ -307,10 +166,8 @@ IF V2,  pand mx2, m10
         CONTINUE tmp0q
 %endmacro
 
-; TODO: write_nibbles
-
-%macro write_bits 0
-op write_bits1
+%macro WRITE_BIT 0
+assert COMPS == 1
         VBROADCASTI128 m8, [bits_reverse]
         psllw mx,  7
 IF V2,  psllw mx2, 7
@@ -325,57 +182,204 @@ IF V2,  mov [out0q + (mmsize >> 3)], tmp1d
         mov [out0q], tmp0w
 IF V2,  mov [out0q + (mmsize >> 3)], tmp1w
 %endif
-        add out0q, (mmsize >> 3) * (1 + V2)
+        add out0q, BLOCK_WIDTH >> 3
         RET
 %endmacro
 
-;--------------------------
-; Pixel packing / unpacking
+%macro WRITE_PLANAR 0
+IF X,   movu [out0q], mx
+IF Y,   movu [out1q], my
+IF Z,   movu [out2q], mz
+IF W,   movu [out3q], mw
+%if V2
+IF X,   movu [out0q + mmsize], mx2
+IF Y,   movu [out1q + mmsize], my2
+IF Z,   movu [out2q + mmsize], mz2
+IF W,   movu [out3q + mmsize], mw2
+%endif
+IF X,   add out0q, BLOCK_WIDTH
+IF Y,   add out1q, BLOCK_WIDTH
+IF Z,   add out2q, BLOCK_WIDTH
+IF W,   add out3q, BLOCK_WIDTH
+        RET
+%endmacro
 
-%macro pack_generic 3-4 0 ; x, y, z, w
-op pack_%1%2%3%4
+;---------------------------------------------------------
+; Packed reads, packing and unpacking
+
+%macro read_packed2 0
+        movu m8,  [in0q + 0 * mmsize]
+        movu m9,  [in0q + 1 * mmsize]
+IF V2,  movu m10, [in0q + 2 * mmsize]
+IF V2,  movu m11, [in0q + 3 * mmsize]
+    %if BITS == 32
+        shufps m8, m8, q3120
+        shufps m9, m9, q3120
+IF V2,  shufps m10, m10, q3120
+IF V2,  shufps m11, m11, q3120
+    %else
+        pshufb m8, m12              ; { X0 Y0 | X1 Y1 }
+        pshufb m9, m12              ; { X2 Y2 | X3 Y3 }
+IF V2,  pshufb m10, m12
+IF V2,  pshufb m11, m12
+    %endif
+        unpcklpd mx, m8, m9         ; { X0 X2 | X1 X3 }
+        unpckhpd my, m8, m9         ; { Y0 Y2 | Y1 Y3 }
+IF V2,  unpcklpd mx2, m10, m11
+IF V2,  unpckhpd my2, m10, m11
+    %if cpuflag(avx2)
+        vpermq mx, mx, q3120       ; { X0 X1 | X2 X3 }
+        vpermq my, my, q3120       ; { Y0 Y1 | Y2 Y3 }
+IF V2,  vpermq mx2, mx2, q3120
+IF V2,  vpermq my2, my2, q3120
+    %endif
+%endmacro
+
+%macro read_packed34 5 ; x, y, z, w, addr
+        movu xm8,  [%5 + 0  * COMPS]
+        movu xm9,  [%5 + 4  * COMPS]
+        movu xm10, [%5 + 8  * COMPS]
+        movu xm11, [%5 + 12 * COMPS]
+    %if cpuflag(avx2)
+        vinserti128 m8,  m8,  [%5 + 16 * COMPS], 1
+        vinserti128 m9,  m9,  [%5 + 20 * COMPS], 1
+        vinserti128 m10, m10, [%5 + 24 * COMPS], 1
+        vinserti128 m11, m11, [%5 + 28 * COMPS], 1
+    %endif
+    %if BITS == 32
+        mova %1, m8
+        mova %2, m9
+        mova %3, m10
+        mova %4, m11
+    %else
+        pshufb %1, m8,  m12         ; { X0 Y0 Z0 W0 | X4 Y4 Z4 W4 }
+        pshufb %2, m9,  m12         ; { X1 Y1 Z1 W1 | X5 Y5 Z5 W5 }
+        pshufb %3, m10, m12         ; { X2 Y2 Z2 W2 | X6 Y6 Z6 W6 }
+        pshufb %4, m11, m12         ; { X3 Y3 Z3 W3 | X7 Y7 Z7 W7 }
+    %endif
+        punpckldq m8,  %1, %2       ; { X0 X1 Y0 Y1 | X4 X5 Y4 Y5 }
+        punpckldq m9,  %3, %4       ; { X2 X3 Y2 Y3 | X6 X7 Y6 Y7 }
+        punpckhdq m10, %1, %2       ; { Z0 Z1 W0 W1 | Z4 Z5 W4 W5 }
+        punpckhdq m11, %3, %4       ; { Z2 Z3 W2 W3 | Z6 Z7 W6 W7 }
+        punpcklqdq %1, m8, m9       ; { X0 X1 X2 X3 | X4 X5 X6 X7 }
+        punpckhqdq %2, m8, m9       ; { Y0 Y1 Y2 Y3 | Y4 Y5 Y6 Y7 }
+        punpcklqdq %3, m10, m11     ; { Z0 Z1 Z2 Z3 | Z4 Z5 Z6 Z7 }
+IF W,   punpckhqdq %4, m10, m11     ; { W0 W1 W2 W3 | W4 W5 W6 W7 }
+%endmacro
+
+%macro READ_PACKED 0
+    %if BITS < 32
+        VBROADCASTI128 m12, [ read %+ BITS %+ _unpack %+ COMPS ]
+    %endif
+        LOAD_CONT tmp0q
+    %if COMPS == 2
+        read_packed2
+    %else
+        read_packed34 mx,  my,  mz,  mw,  in0q
+IF1 V2, read_packed34 mx2, my2, mz2, mw2, in0q + mmsize * COMPS
+    %endif
+        add in0q, BLOCK_SIZE * COMPS
+        CONTINUE tmp0q
+%endmacro
+
+%macro write_packed2 0
+    %if cpuflag(avx2)
+        vpermq mx, mx, q3120       ; { X0 X2 | X1 X3 }
+        vpermq my, my, q3120       ; { Y0 Y2 | Y1 Y3 }
+IF V2,  vpermq mx2, mx2, q3120
+IF V2,  vpermq my2, my2, q3120
+    %endif
+        unpcklpd m8, mx, my        ; { X0 Y0 | X1 Y1 }
+        unpckhpd m9, mx, my        ; { X2 Y2 | X3 Y3 }
+IF V2,  unpcklpd m10, mx2, my2
+IF V2,  unpckhpd m11, mx2, my2
+    %if BITS == 32
+        shufps m8, m8, q3120
+        shufps m9, m9, q3120
+IF V2,  shufps m10, m10, q3120
+IF V2,  shufps m11, m11, q3120
+    %else
+        pshufb m8, m12
+        pshufb m9, m12
+IF V2,  pshufb m10, m12
+IF V2,  pshufb m11, m12
+    %endif
+        movu [out0q + 0 * mmsize], m8
+        movu [out0q + 1 * mmsize], m9
+IF V2,  movu [out0q + 2 * mmsize], m10
+IF V2,  movu [out0q + 3 * mmsize], m11
+%endmacro
+
+%macro write_packed34 5 ; x, y, z, w, addr
+        punpckldq m8,  %1, %2       ; { X0 Y0 X1 Y1 | X4 Y4 X5 Y5 }
+        punpckldq m9,  %3, %4       ; { Z0 W0 Z1 W1 | Z4 W4 Z5 W5 }
+        punpckhdq m10, %1, %2       ; { X2 Y2 X3 Y3 | X6 Y6 X7 Y7 }
+        punpckhdq m11, %3, %4       ; { Z2 W2 Z3 W3 | Z6 W6 Z7 W7 }
+        punpcklqdq %1, m8, m9       ; { X0 Y0 Z0 W0 | X4 Y4 Z4 W4 }
+        punpckhqdq %2, m8, m9       ; { X1 Y1 Z1 W1 | X5 Y5 Z5 W5 }
+        punpcklqdq %3, m10, m11     ; { X2 Y2 Z2 W2 | X6 Y6 Z6 W6 }
+        punpckhqdq %4, m10, m11     ; { X3 Y3 Z3 W3 | X7 Y7 Z7 W7 }
+    %if BITS == 32
+        mova m8,  %1
+        mova m9,  %2
+        mova m10, %3
+        mova m11, %4
+    %else
+        pshufb m8,  %1, m12
+        pshufb m9,  %2, m12
+        pshufb m10, %3, m12
+        pshufb m11, %4, m12
+    %endif
+        movu [%5 +  0 * COMPS], xm8
+        movu [%5 +  4 * COMPS], xm9
+        movu [%5 +  8 * COMPS], xm10
+        movu [%5 + 12 * COMPS], xm11
+    %if cpuflag(avx2)
+        vextracti128 [%5 + 16 * COMPS], m8,  1
+        vextracti128 [%5 + 20 * COMPS], m9,  1
+        vextracti128 [%5 + 24 * COMPS], m10, 1
+        vextracti128 [%5 + 28 * COMPS], m11, 1
+    %endif
+%endmacro
+
+%macro WRITE_PACKED 0
+    %if BITS < 32
+        VBROADCASTI128 m12, [ write %+ BITS %+ _pack %+ COMPS ]
+    %endif
+        LOAD_CONT tmp0q
+    %if COMPS == 2
+        write_packed2
+    %else
+        write_packed34 mx,  my,  mz,  mw,  out0q
+IF1 V2, write_packed34 mx2, my2, mz2, mw2, out0q + mmsize * COMPS
+    %endif
+        add out0q, BLOCK_SIZE * COMPS
+        RET
+%endmacro
+
+%macro PACK 4 ; x, y, z, w
         ; pslld works for all sizes because the input should not overflow
 IF %2,  pslld mx, %4+%3+%2
 IF %3,  pslld my, %4+%3
 IF %4,  pslld mz, %4
-IF %2,  por mx, my
-IF %3,  por mx, mz
-IF %4,  por mx, mw
+IF Y,   por mx, my
+IF Z,   por mx, mz
+IF W,   por mx, mw
     %if V2
 IF %2,  pslld mx2, %4+%3+%2
 IF %3,  pslld my2, %4+%3
 IF %4,  pslld mz2, %4
-IF %2,  por mx2, my2
-IF %3,  por mx2, mz2
-IF %4,  por mx2, mw2
+IF Y,   por mx2, my2
+IF Z,   por mx2, mz2
+IF W,   por mx2, mw2
     %endif
         CONTINUE
 %endmacro
 
-%macro unpack 5-6 0 ; type, bits, x, y, z, w
-op unpack_%3%4%5%6
-        ; clear high bits by shifting left
-IF %6,  vpsll%1 mw, mx, %2 - (%6)
-IF %5,  vpsll%1 mz, mx, %2 - (%6+%5)
-IF %4,  vpsll%1 my, mx, %2 - (%6+%5+%4)
-        psrl%1 mx, %4+%5+%6
-IF %4,  psrl%1 my, %2 - %4
-IF %5,  psrl%1 mz, %2 - %5
-IF %6,  psrl%1 mw, %2 - %6
-    %if V2
-IF %6,  vpsll%1 mw2, mx2, %2 - (%6)
-IF %5,  vpsll%1 mz2, mx2, %2 - (%6+%5)
-IF %4,  vpsll%1 my2, mx2, %2 - (%6+%5+%4)
-        psrl%1 mx2, %4+%5+%6
-IF %4,  psrl%1 my2, %2 - %4
-IF %5,  psrl%1 mz2, %2 - %5
-IF %6,  psrl%1 mw2, %2 - %6
-    %endif
-        CONTINUE
-%endmacro
-
-%macro unpack8 3 ; x, y, z
-op unpack_%1%2%3 %+ 0
+%macro UNPACK 4 ; x, y, z, w
+        LOAD_CONT tmp0q
+%if BITS == 8
+        assert MASK == SWS_COMP_ELEMS(3)
         pand mz, mx, [mask%3]
         psrld my, mx, %3
         psrld mx, %3+%2
@@ -388,522 +392,464 @@ op unpack_%1%2%3 %+ 0
         pand my2, [mask%2]
         pand mx2, [mask%1]
     %endif
-        CONTINUE
-%endmacro
-
-;---------------------------------------------------------
-; Generic byte order shuffle (packed swizzle, endian, etc)
-
-%macro shuffle 0
-op shuffle
-        VBROADCASTI128 m8, [implq + SwsOpImpl.priv]
-        LOAD_CONT tmp0q
-IF X,   pshufb mx, m8
-IF Y,   pshufb my, m8
-IF Z,   pshufb mz, m8
-IF W,   pshufb mw, m8
-%if V2
-IF X,   pshufb mx2, m8
-IF Y,   pshufb my2, m8
-IF Z,   pshufb mz2, m8
-IF W,   pshufb mw2, m8
+%else
+        ; clear high bits by shifting left
+IF W,   psllx mw, mx, BITS - (%4)
+IF Z,   psllx mz, mx, BITS - (%4+%3)
+IF Y,   psllx my, mx, BITS - (%4+%3+%2)
+        psrlx mx, %2+%3+%4
+IF Y,   psrlx my, BITS - %2
+IF Z,   psrlx mz, BITS - %3
+IF W,   psrlx mw, BITS - %4
+    %if V2
+IF W,   psllx mw2, mx2, BITS - (%4)
+IF Z,   psllx mz2, mx2, BITS - (%4+%3)
+IF Y,   psllx my2, mx2, BITS - (%4+%3+%2)
+        psrlx mx2, %2+%3+%4
+IF Y,   psrlx my2, BITS - %2
+IF Z,   psrlx mz2, BITS - %3
+IF W,   psrlx mw2, BITS - %4
+    %endif
 %endif
         CONTINUE tmp0q
-%endmacro
-
-;---------------------------------------------------------
-; Clearing
-
-%macro clear_alpha 3 ; idx, vreg, vreg2
-op clear_alpha%1
-        LOAD_CONT tmp0q
-        pcmpeqb %2, %2
-IF V2,  mova %3, %2
-        CONTINUE tmp0q
-%endmacro
-
-%macro clear_zero 3 ; idx, vreg, vreg2
-op clear_zero%1
-        LOAD_CONT tmp0q
-        pxor %2, %2
-IF V2,  mova %3, %2
-        CONTINUE tmp0q
-%endmacro
-
-%macro clear_generic 0
-op clear
-            LOAD_CONT tmp0q
-%if cpuflag(avx2)
-    IF X,   vpbroadcastd mx, [implq + SwsOpImpl.priv + 0]
-    IF Y,   vpbroadcastd my, [implq + SwsOpImpl.priv + 4]
-    IF Z,   vpbroadcastd mz, [implq + SwsOpImpl.priv + 8]
-    IF W,   vpbroadcastd mw, [implq + SwsOpImpl.priv + 12]
-%else ; !cpuflag(avx2)
-    IF X,   movd mx, [implq + SwsOpImpl.priv + 0]
-    IF Y,   movd my, [implq + SwsOpImpl.priv + 4]
-    IF Z,   movd mz, [implq + SwsOpImpl.priv + 8]
-    IF W,   movd mw, [implq + SwsOpImpl.priv + 12]
-    IF X,   pshufd mx, mx, 0
-    IF Y,   pshufd my, my, 0
-    IF Z,   pshufd mz, mz, 0
-    IF W,   pshufd mw, mw, 0
-%endif
-%if V2
-    IF X,   mova mx2, mx
-    IF Y,   mova my2, my
-    IF Z,   mova mz2, mz
-    IF W,   mova mw2, mw
-%endif
-            CONTINUE tmp0q
-%endmacro
-
-%macro clear_funcs 0
-        decl_pattern 0, 0, 0, 1, clear_generic
-        decl_pattern 1, 0, 0, 0, clear_generic
-        decl_pattern 1, 1, 0, 0, clear_generic
-        decl_pattern 0, 1, 0, 0, clear_generic
-        decl_pattern 0, 1, 1, 0, clear_generic
-        decl_pattern 0, 0, 1, 1, clear_generic
-        decl_pattern 1, 0, 1, 0, clear_generic
-        decl_pattern 0, 1, 0, 1, clear_generic
-        decl_pattern 0, 1, 1, 1, clear_generic
-        decl_pattern 1, 0, 1, 1, clear_generic
-        decl_pattern 1, 1, 0, 1, clear_generic
-%endmacro
-
-;---------------------------------------------------------
-; Swizzling and duplicating
-
-; mA := mB, mB := mC, ... mX := mA across both halves
-%macro vrotate 2-* ; A, B, C, ...
-    %rep %0
-        %assign rot_a %1 + 4
-        %assign rot_b %2 + 4
-        mova m%1, m%2
-        IF V2, mova m%[rot_a], m%[rot_b]
-    %rotate 1
-    %endrep
-    %undef rot_a
-    %undef rot_b
-%endmacro
-
-%macro swizzle_funcs 0
-op swizzle_3012
-    LOAD_CONT tmp0q
-    vrotate 8, 0, 3, 2, 1
-    CONTINUE tmp0q
-
-op swizzle_3021
-    LOAD_CONT tmp0q
-    vrotate 8, 0, 3, 1
-    CONTINUE tmp0q
-
-op swizzle_2103
-    LOAD_CONT tmp0q
-    vrotate 8, 0, 2
-    CONTINUE tmp0q
-
-op swizzle_3210
-    LOAD_CONT tmp0q
-    vrotate 8, 0, 3
-    vrotate 8, 1, 2
-    CONTINUE tmp0q
-
-op swizzle_3102
-    LOAD_CONT tmp0q
-    vrotate 8, 0, 3, 2
-    CONTINUE tmp0q
-
-op swizzle_3201
-    LOAD_CONT tmp0q
-    vrotate 8, 0, 3, 1, 2
-    CONTINUE tmp0q
-
-op swizzle_1203
-    LOAD_CONT tmp0q
-    vrotate 8, 0, 1, 2
-    CONTINUE tmp0q
-
-op swizzle_1023
-    LOAD_CONT tmp0q
-    vrotate 8, 0, 1
-    CONTINUE tmp0q
-
-op swizzle_2013
-    LOAD_CONT tmp0q
-    vrotate 8, 0, 2, 1
-    CONTINUE tmp0q
-
-op swizzle_2310
-    LOAD_CONT tmp0q
-    vrotate 8, 0, 2, 1, 3
-    CONTINUE tmp0q
-
-op swizzle_2130
-    LOAD_CONT tmp0q
-    vrotate 8, 0, 2, 3
-    CONTINUE tmp0q
-
-op swizzle_1230
-    LOAD_CONT tmp0q
-    vrotate 8, 0, 1, 2, 3
-    CONTINUE tmp0q
-
-op swizzle_1320
-    LOAD_CONT tmp0q
-    vrotate 8, 0, 1, 3
-    CONTINUE tmp0q
-
-op swizzle_0213
-    LOAD_CONT tmp0q
-    vrotate 8, 1, 2
-    CONTINUE tmp0q
-
-op swizzle_0231
-    LOAD_CONT tmp0q
-    vrotate 8, 1, 2, 3
-    CONTINUE tmp0q
-
-op swizzle_0312
-    LOAD_CONT tmp0q
-    vrotate 8, 1, 3, 2
-    CONTINUE tmp0q
-
-op swizzle_3120
-    LOAD_CONT tmp0q
-    vrotate 8, 0, 3
-    CONTINUE tmp0q
-
-op swizzle_0321
-    LOAD_CONT tmp0q
-    vrotate 8, 1, 3
-    CONTINUE tmp0q
-
-op swizzle_0003
-    LOAD_CONT tmp0q
-    mova my, mx
-    mova mz, mx
-%if V2
-    mova my2, mx2
-    mova mz2, mx2
-%endif
-    CONTINUE tmp0q
-
-op swizzle_0001
-    LOAD_CONT tmp0q
-    mova mw, my
-    mova mz, mx
-    mova my, mx
-%if V2
-    mova mw2, my2
-    mova mz2, mx2
-    mova my2, mx2
-%endif
-    CONTINUE tmp0q
-
-op swizzle_3000
-    LOAD_CONT tmp0q
-    mova my, mx
-    mova mz, mx
-    mova mx, mw
-    mova mw, my
-%if V2
-    mova my2, mx2
-    mova mz2, mx2
-    mova mx2, mw2
-    mova mw2, my2
-%endif
-    CONTINUE tmp0q
-
-op swizzle_1000
-    LOAD_CONT tmp0q
-    mova mz, mx
-    mova mw, mx
-    mova mx, my
-    mova my, mz
-%if V2
-    mova mz2, mx2
-    mova mw2, mx2
-    mova mx2, my2
-    mova my2, mz2
-%endif
-    CONTINUE tmp0q
 %endmacro
 
 ;---------------------------------------------------------
 ; Pixel type conversions
 
-%macro conv8to16 1 ; type
-op %1_U8_U16
-            LOAD_CONT tmp0q
-%if V2
-    %if cpuflag(avx2)
-    IF X,   vextracti128 xmx2, mx, 1
-    IF Y,   vextracti128 xmy2, my, 1
-    IF Z,   vextracti128 xmz2, mz, 1
-    IF W,   vextracti128 xmw2, mw, 1
-    %else
-    IF X,   psrldq xmx2, mx, 8
-    IF Y,   psrldq xmy2, my, 8
-    IF Z,   psrldq xmz2, mz, 8
-    IF W,   psrldq xmw2, mw, 8
-    %endif
-    IF X,   pmovzxbw mx2, xmx2
-    IF Y,   pmovzxbw my2, xmy2
-    IF Z,   pmovzxbw mz2, xmz2
-    IF W,   pmovzxbw mw2, xmw2
-%endif ; V2
-    IF X,   pmovzxbw mx, xmx
-    IF Y,   pmovzxbw my, xmy
-    IF Z,   pmovzxbw mz, xmz
-    IF W,   pmovzxbw mw, xmw
-
-%ifidn %1, expand
-            VBROADCASTI128 m8, [expand16_shuf]
-    %if V2
-    IF X,   pshufb mx2, m8
-    IF Y,   pshufb my2, m8
-    IF Z,   pshufb mz2, m8
-    IF W,   pshufb mw2, m8
-    %endif
-    IF X,   pshufb mx, m8
-    IF Y,   pshufb my, m8
-    IF Z,   pshufb mz, m8
-    IF W,   pshufb mw, m8
-%endif ; expand
-            CONTINUE tmp0q
+%macro cast8to16 4 ; reg, reg2, xreg, xreg2
+IF V2,  vextracti128 %4, %1, 1
+        pmovzxbw %1, %3
+IF V2,  pmovzxbw %2, %4
 %endmacro
 
-%macro conv16to8 0
-op convert_U16_U8
-        LOAD_CONT tmp0q
+%macro cast16to8 4 ; reg, reg2, xreg, xreg2
 %if V2
-        ; this code technically works for the !V2 case as well, but slower
-IF X,   packuswb mx, mx2
-IF Y,   packuswb my, my2
-IF Z,   packuswb mz, mz2
-IF W,   packuswb mw, mw2
-IF X,   vpermq mx, mx, q3120
-IF Y,   vpermq my, my, q3120
-IF Z,   vpermq mz, mz, q3120
-IF W,   vpermq mw, mw, q3120
+        packuswb %1, %2
+        vpermq %1, %1, q3120
 %else
-IF X,   vextracti128  xm8, mx, 1
-IF Y,   vextracti128  xm9, my, 1
-IF Z,   vextracti128 xm10, mz, 1
-IF W,   vextracti128 xm11, mw, 1
-        vzeroupper
-IF X,   packuswb xmx, xm8
-IF Y,   packuswb xmy, xm9
-IF Z,   packuswb xmz, xm10
-IF W,   packuswb xmw, xm11
+        vextracti128  %4, %1, 1
+        packuswb %3, %4
+%endif
+%endmacro
+
+%macro cast8to32 4 ; reg, reg2, xreg, xreg2
+        psrldq %4, %3, 8
+        pmovzxbd %1, %3
+        pmovzxbd %2, %4
+%endmacro
+
+%macro cast32to8 4 ; reg, reg2, xreg, xreg2
+        packusdw %1, %2
+        vextracti128 %4, %1, 1
+        packuswb %3, %4
+        vpshufd %3, %3, q3120
+%endmacro
+
+%macro cast16to32 4 ; reg, reg2, xreg, xreg2
+        vextracti128 %4, %1, 1
+        pmovzxwd %1, %3
+        pmovzxwd %2, %4
+%endmacro
+
+%macro cast32to16 4 ; reg, reg2, xreg, xreg2
+        packusdw %1, %2
+        vpermq %1, %1, q3120
+%endmacro
+
+%macro CAST_TO 0
+%ifidn UOP, SWS_UOP_TO_U8
+    %assign BITS_TO 8
+%elifidn UOP, SWS_UOP_TO_U16
+    %assign BITS_TO 16
+%else
+    %assign BITS_TO 32
+%endif
+
+        LOAD_CONT tmp0q
+%ifidn TYPE, SWS_PIXEL_F32
+IF X,   cvttps2dq mx, mx
+IF Y,   cvttps2dq my, my
+IF Z,   cvttps2dq mz, mz
+IF W,   cvttps2dq mw, mw
+IF X,   cvttps2dq mx2, mx2
+IF Y,   cvttps2dq my2, my2
+IF Z,   cvttps2dq mz2, mz2
+IF W,   cvttps2dq mw2, mw2
+%endif
+%if BITS != BITS_TO
+        ; integer size conversion
+IF1 X,  cast %+ BITS %+ to %+ BITS_TO mx, mx2, xmx, xmx2
+IF1 Y,  cast %+ BITS %+ to %+ BITS_TO my, my2, xmy, xmy2
+IF1 Z,  cast %+ BITS %+ to %+ BITS_TO mz, mz2, xmz, xmz2
+IF1 W,  cast %+ BITS %+ to %+ BITS_TO mw, mw2, xmw, xmw2
+    %if cpuflag(avx2) && (BITS > BITS_TO && !V2 || BITS >= BITS_TO * 4)
+        ; clear upper bits after reducing the register size
+        vzeroupper ; TMP
+    %endif
+%endif
+%ifidn UOP, SWS_UOP_TO_F32
+IF X,   vcvtdq2ps mx, mx
+IF Y,   vcvtdq2ps my, my
+IF Z,   vcvtdq2ps mz, mz
+IF W,   vcvtdq2ps mw, mw
+IF X,   vcvtdq2ps mx2, mx2
+IF Y,   vcvtdq2ps my2, my2
+IF Z,   vcvtdq2ps mz2, mz2
+IF W,   vcvtdq2ps mw2, mw2
 %endif
         CONTINUE tmp0q
 %endmacro
 
-%macro conv8to32 1 ; type
-op %1_U8_U32
+;---------------------------------------------------------
+; Permuting, copying and clearing
+
+%macro MOV_IDX 2 ; dstidx, srcidx
+        %assign DST2 4 + %1
+        %assign SRC2 4 + %2
+        mova m %+ %1,   m %+ %2
+IF V2,  mova m %+ DST2, m %+ SRC2
+%endmacro
+
+; decompose a permutation into unique cycles and emit a minimal set of mova
+; instructions for each cycle
+%macro PERMUTE_CYCLES 4 ; x, y, z, w
+%assign IN0 %1
+%assign IN1 %2
+%assign IN2 %3
+%assign IN3 %4
+%assign TMP 8
+
         LOAD_CONT tmp0q
-IF X,   psrldq xmx2, xmx, 8
-IF Y,   psrldq xmy2, xmy, 8
-IF Z,   psrldq xmz2, xmz, 8
-IF W,   psrldq xmw2, xmw, 8
-IF X,   pmovzxbd mx, xmx
-IF Y,   pmovzxbd my, xmy
-IF Z,   pmovzxbd mz, xmz
-IF W,   pmovzxbd mw, xmw
-IF X,   pmovzxbd mx2, xmx2
-IF Y,   pmovzxbd my2, xmy2
-IF Z,   pmovzxbd mz2, xmz2
-IF W,   pmovzxbd mw2, xmw2
-%ifidn %1, expand
-        VBROADCASTI128 m8, [expand32_shuf]
+%rep 4
+    %ifndef CUR
+        ; start of new cycle, find next register not in correct location
+        %if X
+            %assign CUR IN0
+            %assign IN0 TMP
+        %elif Y
+            %assign CUR IN1
+            %assign IN1 TMP
+        %elif Z
+            %assign CUR IN2
+            %assign IN2 TMP
+        %elif W
+            %assign CUR IN3
+            %assign IN3 TMP
+        %else
+            %exitrep ; all registers happy
+        %endif
+        MOV_IDX TMP, CUR ; preserve previous value of CUR
+    %endif
+    %ifdef CUR ; work-around for NASM bug
+        ; rotate CUR <- in[CUR] and follow the cycle
+        %assign NEXT IN %+ CUR
+        MOV_IDX CUR, NEXT
+
+        %if CUR == 0
+            %assign X 0
+        %elif CUR == 1
+            %assign Y 0
+        %elif CUR == 2
+            %assign Z 0
+        %else
+            %assign W 0
+        %endif
+
+        %assign CUR NEXT
+        %if CUR == TMP ; end of cycle
+            %assign TMP TMP+1 ; pick non-overlapping tmp register for next cycle
+            %undef CUR
+        %endif
+    %endif
+%endrep
+
+        CONTINUE tmp0q
+%endmacro
+
+%macro COPY 4 ; x, y, z, w
+        LOAD_CONT tmp0q
+IF X,   mova m8,  m%1
+IF Y,   mova m9,  m%2
+IF Z,   mova m10, m%3
+IF W,   mova m11, m%4
+IF X,   mova mx, m8
+IF Y,   mova my, m9
+IF Z,   mova mz, m10
+IF W,   mova mw, m11
+%if V2
+        %assign x2 4 + %1
+        %assign y2 4 + %2
+        %assign z2 4 + %3
+        %assign w2 4 + %4
+IF X,   mova m12, m %+ x2
+IF Y,   mova m13, m %+ y2
+IF Z,   mova m14, m %+ z2
+IF W,   mova m15, m %+ w2
+IF X,   mova mx2, m12
+IF Y,   mova my2, m13
+IF Z,   mova mz2, m14
+IF W,   mova mw2, m15
+%endif
+        CONTINUE tmp0q
+%endmacro
+
+%macro clear 3 ; idx, reg, reg2
+%if SWS_COMP_TEST(ZERO_MASK, %1)
+        pxor %2, %2
+%elif SWS_COMP_TEST(ONE_MASK, %1)
+        pcmpeqb %2, %2
+%elif cpuflag(avx)
+        vpbroadcastd %2, [implq + SwsOpImpl.priv + 4 * %1]
+%else
+        movd %2, [implq + SwsOpImpl.priv + 4 * %1]
+        pshufd %2, %2, 0
+%endif
+IF V2,  mova %3, %2
+%endmacro
+
+%macro CLEAR 2
+%assign ONE_MASK  %1
+%assign ZERO_MASK %2
+IF1 X,  clear 0, mx, mx2
+IF1 Y,  clear 1, my, my2
+IF1 Z,  clear 2, mz, mz2
+IF1 W,  clear 3, mw, mw2
+        CONTINUE
+%endmacro
+
+;---------------------------------------------------------
+; Bit manipulation
+
+%macro SWAP_BYTES 0
+        VBROADCASTI128 m8, [swap %+ BITS]
 IF X,   pshufb mx, m8
 IF Y,   pshufb my, m8
 IF Z,   pshufb mz, m8
 IF W,   pshufb mw, m8
+%if V2
 IF X,   pshufb mx2, m8
 IF Y,   pshufb my2, m8
 IF Z,   pshufb mz2, m8
 IF W,   pshufb mw2, m8
-%endif ; expand
-        CONTINUE tmp0q
+%endif
+        CONTINUE
 %endmacro
 
-%macro conv32to8 0
-op convert_U32_U8
-        LOAD_CONT tmp0q
-IF X,   packusdw mx, mx2
-IF Y,   packusdw my, my2
-IF Z,   packusdw mz, mz2
-IF W,   packusdw mw, mw2
-IF X,   vextracti128 xmx2, mx, 1
-IF Y,   vextracti128 xmy2, my, 1
-IF Z,   vextracti128 xmz2, mz, 1
-IF W,   vextracti128 xmw2, mw, 1
-        vzeroupper
-IF X,   packuswb xmx, xmx2
-IF Y,   packuswb xmy, xmy2
-IF Z,   packuswb xmz, xmz2
-IF W,   packuswb xmw, xmw2
-IF X,   vpshufd xmx, xmx, q3120
-IF Y,   vpshufd xmy, xmy, q3120
-IF Z,   vpshufd xmz, xmz, q3120
-IF W,   vpshufd xmw, xmw, q3120
-        CONTINUE tmp0q
-%endmacro
-
-%macro conv16to32 0
-op convert_U16_U32
-        LOAD_CONT tmp0q
-IF X,   vextracti128 xmx2, mx, 1
-IF Y,   vextracti128 xmy2, my, 1
-IF Z,   vextracti128 xmz2, mz, 1
-IF W,   vextracti128 xmw2, mw, 1
-IF X,   pmovzxwd mx, xmx
-IF Y,   pmovzxwd my, xmy
-IF Z,   pmovzxwd mz, xmz
-IF W,   pmovzxwd mw, xmw
-IF X,   pmovzxwd mx2, xmx2
-IF Y,   pmovzxwd my2, xmy2
-IF Z,   pmovzxwd mz2, xmz2
-IF W,   pmovzxwd mw2, xmw2
-        CONTINUE tmp0q
-%endmacro
-
-%macro conv32to16 0
-op convert_U32_U16
-        LOAD_CONT tmp0q
-IF X,   packusdw mx, mx2
-IF Y,   packusdw my, my2
-IF Z,   packusdw mz, mz2
-IF W,   packusdw mw, mw2
-IF X,   vpermq mx, mx, q3120
-IF Y,   vpermq my, my, q3120
-IF Z,   vpermq mz, mz, q3120
-IF W,   vpermq mw, mw, q3120
-        CONTINUE tmp0q
-%endmacro
-
-;---------------------------------------------------------
-; Shifting and scaling
-
-%macro lshift16 0
-op lshift16
-        vmovq xm8, [implq + SwsOpImpl.priv]
-        LOAD_CONT tmp0q
-IF X,   psllw mx, xm8
-IF Y,   psllw my, xm8
-IF Z,   psllw mz, xm8
-IF W,   psllw mw, xm8
+%macro EXPAND_BIT 0
+%if BITS == 8
+        VBROADCASTI128 m8, [const1b]
+%elif BITS == 16
+        VBROADCASTI128 m8, [const1w]
+%else
+        assert 0, EXPAND_BIT is not implemented for 32-bit types
+%endif
+IF X,   pcmpeqx mx, m8
+IF Y,   pcmpeqx my, m8
+IF Z,   pcmpeqx mz, m8
+IF W,   pcmpeqx mw, m8
 %if V2
-IF X,   psllw mx2, xm8
-IF Y,   psllw my2, xm8
-IF Z,   psllw mz2, xm8
-IF W,   psllw mw2, xm8
+IF X,   pcmpeqx mx2, m8
+IF Y,   pcmpeqx my2, m8
+IF Z,   pcmpeqx mz2, m8
+IF W,   pcmpeqx mw2, m8
+%endif
+        CONTINUE
+%endmacro
+
+%macro EXPAND_BYTE 0
+        assert BITS == 8
+%ifidn UOP, SWS_UOP_EXPAND_PAIR
+        %assign BITS_TO BITS * 2
+%elifidn UOP, SWS_UOP_EXPAND_QUAD
+        %assign BITS_TO BITS * 4
+%endif
+        VBROADCASTI128 m8, [expand %+ BITS_TO]
+        LOAD_CONT tmp0q
+IF1 X,  cast8to %+ BITS_TO mx, mx2, xmx, xmx2
+IF1 Y,  cast8to %+ BITS_TO my, my2, xmy, xmy2
+IF1 Z,  cast8to %+ BITS_TO mz, mz2, xmz, xmz2
+IF1 W,  cast8to %+ BITS_TO mw, mw2, xmw, xmw2
+IF X,   pshufb mx, m8
+IF Y,   pshufb my, m8
+IF Z,   pshufb mz, m8
+IF W,   pshufb mw, m8
+    %if V2
+IF X,   pshufb mx2, m8
+IF Y,   pshufb my2, m8
+IF Z,   pshufb mz2, m8
+IF W,   pshufb mw2, m8
+    %endif
+        CONTINUE tmp0q
+%endmacro
+
+%macro LSHIFT 1 ; shift
+        LOAD_CONT tmp0q
+IF X,   psllx mx, %1
+IF Y,   psllx my, %1
+IF Z,   psllx mz, %1
+IF W,   psllx mw, %1
+%if V2
+IF X,   psllx mx2, %1
+IF Y,   psllx my2, %1
+IF Z,   psllx mz2, %1
+IF W,   psllx mw2, %1
 %endif
         CONTINUE tmp0q
 %endmacro
 
-%macro rshift16 0
-op rshift16
-        vmovq xm8, [implq + SwsOpImpl.priv]
+%macro RSHIFT 1 ; shift
         LOAD_CONT tmp0q
-IF X,   psrlw mx, xm8
-IF Y,   psrlw my, xm8
-IF Z,   psrlw mz, xm8
-IF W,   psrlw mw, xm8
+IF X,   psrlx mx, %1
+IF Y,   psrlx my, %1
+IF Z,   psrlx mz, %1
+IF W,   psrlx mw, %1
 %if V2
-IF X,   psrlw mx2, xm8
-IF Y,   psrlw my2, xm8
-IF Z,   psrlw mz2, xm8
-IF W,   psrlw mw2, xm8
+IF X,   psrlx mx2, %1
+IF Y,   psrlx my2, %1
+IF Z,   psrlx mz2, %1
+IF W,   psrlx mw2, %1
 %endif
         CONTINUE tmp0q
 %endmacro
 
-; special cases for expanding bits to full range
-%macro expand_bits 2 ; bits, suffix
-op expand_bits%1
-        mova m8, [const1%2]
+;---------------------------------------------------------
+; Arithmetic operations
+
+%macro pmull4 6 ; suffix, x, y, z, w, k
+IF X,   pmull%1 %2, %6
+IF Y,   pmull%1 %3, %6
+IF Z,   pmull%1 %4, %6
+IF W,   pmull%1 %5, %6
+%endmacro
+
+%macro scale8 5 ; mx, my, mz, mw, k
+IF X,   mova m8,  %1
+IF Y,   mova m9,  %2
+IF Z,   mova m10, %3
+IF W,   mova m11, %4
+IF X,   punpcklbw %1,  m15
+IF Y,   punpcklbw %2,  m15
+IF Z,   punpcklbw %3,  m15
+IF W,   punpcklbw %4,  m15
+IF X,   punpckhbw m8,  m15
+IF Y,   punpckhbw m9,  m15
+IF Z,   punpckhbw m10, m15
+IF W,   punpckhbw m11, m15
+        pmull4 w, %1, %2, %3,  %4,  m12
+        pmull4 w, m8, m9, m10, m11, m12
+IF X,   packuswb %1, m8
+IF Y,   packuswb %2, m9
+IF Z,   packuswb %3, m10
+IF W,   packuswb %4, m11
+%endmacro
+
+%macro SCALE 0
         LOAD_CONT tmp0q
-        pcmpeq%2 mx, m8
-IF V2,  pcmpeq%2 mx2, m8
+%if BITS == 8
+        vpbroadcastw m12, [implq + SwsOpImpl.priv]
+        pxor m15, m15
+        scale8 mx,  my,  mz,  mw,  m12
+IF1 V2, scale8 mx2, my2, mz2, mw2, m12
+%else
+        vpbroadcastx m12, [implq + SwsOpImpl.priv]
+        pmull4 x, mx,  my,  mz,  mw,  m12
+IF1 V2, pmull4 x, mx2, my2, mz2, mw2, m12
+%endif
         CONTINUE tmp0q
 %endmacro
 
-;---------------------------------------------------------
-; Macro instantiations for kernel functions
-
-%macro funcs_u8 0
-    read_planar 1
-    read_planar 2
-    read_planar 3
-    read_planar 4
-    write_planar 1
-    write_planar 2
-    write_planar 3
-    write_planar 4
-
-    rw_packed 8
-    read_nibbles
-    read_bits
-    write_bits
-    expand_bits 8, b
-
-    pack_generic 1, 2, 1
-    pack_generic 3, 3, 2
-    pack_generic 2, 3, 3
-    unpack8 1, 2, 1
-    unpack8 3, 3, 2
-    unpack8 2, 3, 3
-
-    clear_alpha 0, mx, mx2
-    clear_alpha 1, my, my2
-    clear_alpha 3, mw, mw2
-    clear_zero  0, mx, mx2
-    clear_zero  1, my, my2
-    clear_zero  3, mw, mw2
-    clear_funcs
-    swizzle_funcs
-
-    decl_common_patterns shuffle
+%macro ADD 0
+assert 0, SWS_UOP_ADD is not implemented for integer types
 %endmacro
 
-%macro funcs_u16 0
-    rw_packed 16
-    expand_bits 16, w
-    pack_generic  4, 4, 4
-    pack_generic  5, 5, 5
-    pack_generic  5, 6, 5
-    unpack w, 16, 4, 4, 4
-    unpack w, 16, 5, 5, 5
-    unpack w, 16, 5, 6, 5
-    decl_common_patterns conv8to16 convert
-    decl_common_patterns conv8to16 expand
-    decl_common_patterns conv16to8
-    decl_common_patterns lshift16
-    decl_common_patterns rshift16
+%macro MIN 0
+assert 0, SWS_UOP_MIN is not implemented for integer types
+%endmacro
+
+%macro MAX 0
+assert 0, SWS_UOP_MAX is not implemented for integer types
+%endmacro
+
+%macro LINEAR_FMA 0-*
+assert 0, SWS_UOP_LINEAR_FMA is not implemented for integer types
+%endmacro
+
+%macro DITHER 0-*
+assert 0, SWS_UOP_DITHER is not implemented for integer types
+%endmacro
+
+;---------------------------------------------------------
+; Instantiate above macros to generate all uop kernels
+
+%macro decl_ops 1 ; type
+    DECL_%1_READ_PACKED     (READ_PACKED)
+    DECL_%1_READ_NIBBLE     (READ_NIBBLE)
+    DECL_%1_READ_BIT        (READ_BIT)
+    DECL_%1_WRITE_PACKED    (WRITE_PACKED)
+    DECL_%1_WRITE_NIBBLE    (WRITE_NIBBLE)
+    DECL_%1_WRITE_BIT       (WRITE_BIT)
+    DECL_%1_PERMUTE         (PERMUTE_CYCLES)
+    DECL_%1_COPY            (COPY)
+    DECL_%1_SWAP_BYTES      (SWAP_BYTES)
+    DECL_%1_EXPAND_BIT      (EXPAND_BIT)
+    DECL_%1_SCALE           (SCALE)
+    DECL_%1_ADD             (ADD)
+    DECL_%1_MIN             (MIN)
+    DECL_%1_MAX             (MAX)
+    DECL_%1_UNPACK          (UNPACK)
+    DECL_%1_PACK            (PACK)
+    DECL_%1_LSHIFT          (LSHIFT)
+    DECL_%1_RSHIFT          (RSHIFT)
+    DECL_%1_LINEAR_FMA      (LINEAR_FMA)
+    DECL_%1_DITHER          (DITHER)
+%endmacro
+
+%macro decl_type_invariant 0
+    DECL_U8_READ_PLANAR     (READ_PLANAR)
+    DECL_U8_WRITE_PLANAR    (WRITE_PLANAR)
+    DECL_U8_CLEAR           (CLEAR)
+%endmacro
+
+%macro decl_cast_u16 0
+    DECL_U8_TO_U16          (CAST_TO)
+    DECL_U16_TO_U8          (CAST_TO)
+    DECL_U8_EXPAND_PAIR     (EXPAND_BYTE)
+%endmacro
+
+%macro decl_cast_u32 0
+    DECL_U8_TO_U32          (CAST_TO)
+    DECL_U32_TO_U8          (CAST_TO)
+    DECL_U16_TO_U32         (CAST_TO)
+    DECL_U32_TO_U16         (CAST_TO)
+    DECL_U8_EXPAND_QUAD     (EXPAND_BYTE)
+%endmacro
+
+%macro decl_cast_f32 0
+    DECL_U8_TO_F32          (CAST_TO)
+    DECL_F32_TO_U8          (CAST_TO)
+    DECL_U16_TO_F32         (CAST_TO)
+    DECL_F32_TO_U16         (CAST_TO)
+    DECL_U32_TO_F32         (CAST_TO)
+    DECL_F32_TO_U32         (CAST_TO)
 %endmacro
 
 INIT_XMM sse4
-decl_v2 0, funcs_u8
-decl_v2 1, funcs_u8
+decl_v2 0, decl_ops U8
+decl_v2 1, decl_ops U8
+decl_v2 0, decl_type_invariant
+decl_v2 1, decl_type_invariant
 
 INIT_YMM avx2
-decl_v2 0, funcs_u8
-decl_v2 1, funcs_u8
-decl_v2 0, funcs_u16
-decl_v2 1, funcs_u16
+decl_v2 0, decl_ops U8
+decl_v2 1, decl_ops U8
+decl_v2 0, decl_ops U16
+decl_v2 1, decl_ops U16
+decl_v2 0, decl_type_invariant
+decl_v2 1, decl_type_invariant
+decl_v2 0, decl_cast_u16
+decl_v2 1, decl_cast_u16
 
-INIT_YMM avx2
-decl_v2 1, rw_packed 32
-decl_v2 1, pack_generic  10, 10, 10,  2
-decl_v2 1, pack_generic   2, 10, 10, 10
-decl_v2 1, unpack d, 32, 10, 10, 10,  2
-decl_v2 1, unpack d, 32,  2, 10, 10, 10
-decl_common_patterns conv8to32 convert
-decl_common_patterns conv8to32 expand
-decl_common_patterns conv32to8
-decl_common_patterns conv16to32
-decl_common_patterns conv32to16
+decl_v2 1, decl_ops U32
+decl_v2 1, decl_cast_u32
+decl_v2 1, decl_cast_f32
