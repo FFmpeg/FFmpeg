@@ -216,7 +216,7 @@ static inline int yuv420_gbrp_ssse3(SwsInternal *c, const uint8_t *const src[],
     int y, h_size, vshift;
 
     h_size = (c->opts.dst_w + 7) & ~7;
-    if (h_size * 3 > FFABS(dstStride[0]))
+    if (h_size > FFABS(dstStride[0]))
         h_size -= 8;
 
     vshift = c->opts.src_format != AV_PIX_FMT_YUV422P;
