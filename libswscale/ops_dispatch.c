@@ -551,8 +551,8 @@ static int compile(SwsGraph *graph, const SwsOpBackend *backend,
         p->idx_out[i] = i < p->planes_out ? ops->plane_dst[i] : -1;
     }
 
-    const SwsFilterWeights *filter = read->rw.kernel;
-    if (read->rw.filter == SWS_OP_FILTER_V) {
+    const SwsFilterWeights *filter = read->rw.filter.kernel;
+    if (read->rw.filter.op == SWS_OP_FILTER_V) {
         p->offsets_y = av_refstruct_ref(filter->offsets);
 
         /* Compute relative pointer bumps for each output line */
@@ -570,7 +570,7 @@ static int compile(SwsGraph *graph, const SwsOpBackend *backend,
         }
         bump[filter->dst_size - 1] = 0;
         p->exec_base.in_bump_y = bump;
-    } else if (read->rw.filter == SWS_OP_FILTER_H) {
+    } else if (read->rw.filter.op == SWS_OP_FILTER_H) {
         /* Compute pixel offset map for each output line */
         const int pixels = FFALIGN(filter->dst_size, p->comp.block_size);
         int32_t *offset = av_malloc_array(pixels, sizeof(*offset));

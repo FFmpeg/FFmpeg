@@ -412,7 +412,7 @@ retry:
                     op->rw.elems = nb_planes;
                     RET(ff_sws_op_list_insert_at(ops, n + 1, &(SwsOp) {
                         .op = SWS_OP_SWIZZLE,
-                        .type = op->rw.filter ? SWS_PIXEL_F32 : op->type,
+                        .type = op->rw.filter.op ? SWS_PIXEL_F32 : op->type,
                         .swizzle = swiz,
                     }));
                     goto retry;
@@ -735,10 +735,10 @@ retry:
         case SWS_OP_FILTER_H:
         case SWS_OP_FILTER_V:
             /* Merge with prior simple planar read */
-            if (prev->op == SWS_OP_READ && !prev->rw.filter &&
+            if (prev->op == SWS_OP_READ && !prev->rw.filter.op &&
                 !prev->rw.packed && !prev->rw.frac) {
-                prev->rw.filter = op->op;
-                prev->rw.kernel = av_refstruct_ref(op->filter.kernel);
+                prev->rw.filter.op = op->op;
+                prev->rw.filter.kernel = av_refstruct_ref(op->filter.kernel);
                 ff_sws_op_list_remove_at(ops, n, 1);
                 goto retry;
             }
@@ -803,7 +803,7 @@ int ff_sws_solve_shuffle(const SwsOpList *const ops, uint8_t shuffle[],
         return AVERROR(EINVAL);
 
     const SwsOp *read = ff_sws_op_list_input(ops);
-    if (!read || read->rw.frac || read->rw.filter ||
+    if (!read || read->rw.frac || read->rw.filter.op ||
         (!read->rw.packed && read->rw.elems > 1))
         return AVERROR(ENOTSUP);
 
@@ -854,7 +854,7 @@ int ff_sws_solve_shuffle(const SwsOpList *const ops, uint8_t shuffle[],
         }
 
         case SWS_OP_WRITE: {
-            if (op->rw.frac || op->rw.filter ||
+            if (op->rw.frac || op->rw.filter.op ||
                 (!op->rw.packed && op->rw.elems > 1))
                 return AVERROR(ENOTSUP);
 
@@ -938,10 +938,10 @@ static void get_input_size(const SwsOpList *ops, SwsFormat *fmt)
     fmt->height = ops->src.height;
 
     const SwsOp *read = ff_sws_op_list_input(ops);
-    if (read && read->rw.filter == SWS_OP_FILTER_V) {
-        fmt->height = read->rw.kernel->dst_size;
-    } else if (read && read->rw.filter == SWS_OP_FILTER_H) {
-        fmt->width = read->rw.kernel->dst_size;
+    if (read && read->rw.filter.op == SWS_OP_FILTER_V) {
+        fmt->height = read->rw.filter.kernel->dst_size;
+    } else if (read && read->rw.filter.op == SWS_OP_FILTER_H) {
+        fmt->width = read->rw.filter.kernel->dst_size;
     }
 }
 

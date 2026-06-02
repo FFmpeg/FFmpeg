@@ -272,9 +272,9 @@ static int create_bufs(FFVulkanOpsCtx *s, VulkanPriv *p, const SwsOpList *ops)
                 goto fail;
             p->nb_data_bufs++;
         } else if ((op->op == SWS_OP_READ ||
-                    op->op == SWS_OP_WRITE) && op->rw.filter) {
+                    op->op == SWS_OP_WRITE) && op->rw.filter.op) {
             av_assert0(p->nb_data_bufs + 1 <= FF_ARRAY_ELEMS(p->data_bufs));
-            err = create_filter_buf(s, p, op->rw.kernel,
+            err = create_filter_buf(s, p, op->rw.filter.kernel,
                                     &p->data_bufs[p->nb_data_bufs]);
             if (err < 0)
                 goto fail;
@@ -981,12 +981,12 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
             d->id        = spi_get_id(spi);
             d->binding   = nb_data_bufs;
             var_id       = d->id;
-        } else if (op->op == SWS_OP_READ && op->rw.filter) {
+        } else if (op->op == SWS_OP_READ && op->rw.filter.op) {
             if (id->nb_filter_bufs >= MAX_FILT_BUFS)
                 return AVERROR(ENOTSUP);
-            const SwsFilterWeights *wd = op->rw.kernel;
+            const SwsFilterWeights *wd = op->rw.filter.kernel;
             struct FilterData *f = &id->filt[id->nb_filter_bufs++];
-            f->filter       = op->rw.filter;
+            f->filter       = op->rw.filter.op;
             f->filter_size  = wd->filter_size;
             f->dst_size     = wd->dst_size;
             f->num_weights  = wd->num_weights;
@@ -1130,9 +1130,9 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
 
         switch (op->op) {
         case SWS_OP_READ:
-            if (op->rw.frac) {
+            if (op->rw.frac || op->rw.filter.op) {
                 return AVERROR(ENOTSUP);
-            } else if (op->rw.filter) {
+            } else if (op->rw.filter.op) {
                 data = read_filtered(spi, id, ops, op,
                                      &id->filt[nb_filter_used++],
                                      in_img, gid, gi2);
@@ -1152,7 +1152,7 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
             }
             break;
         case SWS_OP_WRITE:
-            if (op->rw.frac || op->rw.filter) {
+            if (op->rw.frac || op->rw.filter.op) {
                 return AVERROR(ENOTSUP);
             } else if (op->rw.packed) {
                 spi_OpImageWrite(spi, out_img[ops->plane_dst[0]], dst_gid, data,
@@ -1316,13 +1316,13 @@ static void read_glsl(const SwsOpList *ops, const SwsOp *op, FFVulkanShader *shd
                       int idx, const char *type_name,
                       const char *type_v, const char *type_s)
 {
-    const SwsFilterWeights *wd = op->rw.kernel;
+    const SwsFilterWeights *wd = op->rw.filter.kernel;
     const int interlaced = ops->src.interlaced;
-    if (op->rw.filter) {
-        const char *axis    = op->rw.filter == SWS_OP_FILTER_H ? "pos.x" : "pos.y";
-        const char *coord_x = op->rw.filter == SWS_OP_FILTER_H ? "o + i" : "pos.x";
+    if (op->rw.filter.op) {
+        const char *axis    = op->rw.filter.op == SWS_OP_FILTER_H ? "pos.x" : "pos.y";
+        const char *coord_x = op->rw.filter.op == SWS_OP_FILTER_H ? "o + i" : "pos.x";
         const char *coord_y;
-        if (op->rw.filter == SWS_OP_FILTER_H)
+        if (op->rw.filter.op == SWS_OP_FILTER_H)
             coord_y = interlaced ? "spos.y" : "pos.y";
         else
             coord_y = interlaced ? "((o + i) * 2 + int(params.field))" : "o + i";
@@ -1411,10 +1411,10 @@ static int add_ops_glsl(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
             nb_desc++;
         } else if (op->op == SWS_OP_FILTER_H || op->op == SWS_OP_FILTER_V ||
                    ((op->op == SWS_OP_READ || op->op == SWS_OP_WRITE) &&
-                    op->rw.filter)) {
+                    op->rw.filter.op)) {
             const SwsFilterWeights *wd = (op->op == SWS_OP_READ ||
                                           op->op == SWS_OP_WRITE) ?
-                                         op->rw.kernel : op->filter.kernel;
+                                         op->rw.filter.kernel : op->filter.kernel;
             snprintf(data_buf_name[nb_desc], 256, "filter_buf%i", n);
             snprintf(data_str_name[nb_desc], 256,
                      "float filter_w%i[%i][%i];\n"
@@ -1486,7 +1486,7 @@ static int add_ops_glsl(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
         }
         case SWS_OP_WRITE: {
             const char *dst_pos = ops->dst.interlaced ? "dpos" : "pos";
-            if (op->rw.frac || op->rw.filter) {
+            if (op->rw.frac || op->rw.filter.op) {
                 return AVERROR(ENOTSUP);
             } else if (op->rw.packed) {
                 GLSLF(1, imageStore(dst_img[%i], %s, %s(%s));                   ,

@@ -173,8 +173,8 @@ static void check_compiled(const char *name,
     }
 
     int32_t in_bump_y[LINES];
-    if (read_op->rw.filter == SWS_OP_FILTER_V) {
-        const int *offsets = read_op->rw.kernel->offsets;
+    if (read_op->rw.filter.op == SWS_OP_FILTER_V) {
+        const int *offsets = read_op->rw.filter.kernel->offsets;
         for (int y = 0; y < LINES - 1; y++)
             in_bump_y[y] = offsets[y + 1] - offsets[y] - 1;
         in_bump_y[LINES - 1] = 0;
@@ -182,8 +182,8 @@ static void check_compiled(const char *name,
     }
 
     int32_t in_offset_x[PIXELS];
-    if (read_op->rw.filter == SWS_OP_FILTER_H) {
-        const int *offsets = read_op->rw.kernel->offsets;
+    if (read_op->rw.filter.op == SWS_OP_FILTER_H) {
+        const int *offsets = read_op->rw.filter.kernel->offsets;
         const int rw_bits = rw_pixel_bits(read_op);
         for (int x = 0; x < PIXELS; x++)
             in_offset_x[x] = offsets[x] * rw_bits >> 3;
@@ -466,8 +466,10 @@ static void check_filter(const char *name, const SwsUOp *uop)
                     .op        = SWS_OP_READ,
                     .type      = uop->type,
                     .rw.elems  = num,
-                    .rw.filter = is_vert ? SWS_OP_FILTER_V : SWS_OP_FILTER_H,
-                    .rw.kernel = filter,
+                    .rw.filter = {
+                        .op     = is_vert ? SWS_OP_FILTER_V : SWS_OP_FILTER_H,
+                        .kernel = filter,
+                    },
                 }, {
                     .op        = SWS_OP_WRITE,
                     .type      = SWS_PIXEL_F32,

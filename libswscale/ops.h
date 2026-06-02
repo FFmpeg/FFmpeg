@@ -104,8 +104,10 @@ typedef struct SwsReadWriteOp {
      * Note: As with SWS_OP_FILTER_*, if a filter kernel is in use, the read
      * operation will always output floating point values.
      */
-    SwsOpType filter;         /* some value of SWS_OP_FILTER_* */
-    SwsFilterWeights *kernel; /* (refstruct) */
+    struct {
+        SwsOpType op;               /* some value of SWS_OP_FILTER_* */
+        SwsFilterWeights *kernel;   /* (refstruct) */
+    } filter;
 } SwsReadWriteOp;
 
 typedef struct SwsPackOp {

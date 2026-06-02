@@ -475,16 +475,16 @@ static int translate_rw_op(SwsContext *ctx, SwsUOpList *ops, SwsUOpFlags flags,
     };
 
     /* Non-filtered reads don't care about the exact pixel contents */
-    if (!op->rw.filter)
+    if (!op->rw.filter.op)
         uop.type = pixel_type_to_int(op->type);
 
     const bool is_read = op->op == SWS_OP_READ;
-    if (op->rw.filter) {
+    if (op->rw.filter.op) {
         if (op->op == SWS_OP_WRITE || op->rw.frac || op->rw.packed)
             return AVERROR(ENOTSUP);
         uop.par.filter.type = SWS_PIXEL_F32;
-        uop.data.kernel = av_refstruct_ref(op->rw.kernel);
-        if (op->rw.filter == SWS_OP_FILTER_H) {
+        uop.data.kernel = av_refstruct_ref(op->rw.filter.kernel);
+        if (op->rw.filter.op == SWS_OP_FILTER_H) {
             uop.uop = SWS_UOP_READ_PLANAR_FH;
         } else if (check_filter_fma(ctx, flags, op)) {
             uop.uop = SWS_UOP_READ_PLANAR_FV_FMA;
