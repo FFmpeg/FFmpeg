@@ -29,6 +29,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/downmix_info.h"
+#include "libavutil/iamf.h"
 #include "libavutil/mem.h"
 #include "libavutil/replaygain.h"
 #include "libavutil/timestamp.h"
@@ -165,6 +166,85 @@ static void dump_audio_service_type(AVFilterContext *ctx, AVFrameSideData *sd)
     }
 }
 
+static void dump_iamf_parameter_definition(AVFilterContext *ctx, const AVFrameSideData *sd)
+{
+    const AVIAMFParamDefinition *param = (AVIAMFParamDefinition *)sd->data;
+
+    switch (param->type) {
+        case AV_IAMF_PARAMETER_DEFINITION_MIX_GAIN:
+            av_log(ctx, AV_LOG_INFO, "iamf mix gain parameters: ");
+            break;
+        case AV_IAMF_PARAMETER_DEFINITION_DEMIXING:
+            av_log(ctx, AV_LOG_INFO, "iamf demixing parameters: ");
+            break;
+        case AV_IAMF_PARAMETER_DEFINITION_RECON_GAIN:
+            av_log(ctx, AV_LOG_INFO, "iamf recon gain parameters: ");
+            break;
+        default:
+            av_log(ctx, AV_LOG_ERROR, "unknown iamf parameter definition type: %d",
+                param->type);
+            return;
+    }
+
+    av_log(ctx, AV_LOG_INFO,
+        "nb_subblocks=%d, "
+        "parameter_id=%d, "
+        "parameter_rate=%d, "
+        "duration=%d, "
+        "constant_subblock_duration=%d,",
+        param->nb_subblocks,
+        param->parameter_id,
+        param->parameter_rate,
+        param->duration,
+        param->constant_subblock_duration
+    );
+
+    for (unsigned i = 0; i < param->nb_subblocks; i++) {
+        const void *subblock = av_iamf_param_definition_get_subblock(param, i);
+
+        av_log(ctx, AV_LOG_INFO, " subblock[%d]={ ", i);
+        switch (param->type) {
+            case AV_IAMF_PARAMETER_DEFINITION_MIX_GAIN: {
+                const AVIAMFMixGain *mix = subblock;
+                av_log(ctx, AV_LOG_INFO,
+                    "subblock_duration=%d, "
+                    "animation_type=%d, "
+                    "start_point_value=%d/%d, "
+                    "end_point_value=%d/%d, "
+                    "control_point_value=%d/%d, "
+                    "control_point_relative_time=%d/%d",
+                    mix->subblock_duration,
+                    mix->animation_type,
+                    mix->start_point_value.num, mix->start_point_value.den,
+                    mix->end_point_value.num, mix->end_point_value.den,
+                    mix->control_point_value.num, mix->control_point_value.den,
+                    mix->control_point_relative_time.num, mix->control_point_relative_time.den
+                );
+                break;
+            }
+            case AV_IAMF_PARAMETER_DEFINITION_DEMIXING: {
+                const AVIAMFDemixingInfo *demix = subblock;
+                av_log(ctx, AV_LOG_INFO,
+                    "subblock_duration=%d, "
+                    "dmixp_mode=%d",
+                    demix->subblock_duration,
+                    demix->dmixp_mode
+                );
+                break;
+            }
+            case AV_IAMF_PARAMETER_DEFINITION_RECON_GAIN: {
+                const AVIAMFReconGain *recon = subblock;
+                av_log(ctx, AV_LOG_INFO,
+                    "subblock_duration=%d", recon->subblock_duration
+                );
+                break;
+            }
+        }
+        av_log(ctx, AV_LOG_INFO, (i == param->nb_subblocks - 1) ? " }" : " },");
+    }
+
+}
+
 static void dump_unknown(AVFilterContext *ctx, AVFrameSideData *sd)
 {
     av_log(ctx, AV_LOG_INFO, "unknown side data type: %d, size "
@@ -224,6 +304,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
         case AV_FRAME_DATA_DOWNMIX_INFO:   dump_downmix   (ctx, sd); break;
         case AV_FRAME_DATA_REPLAYGAIN:     dump_replaygain(ctx, sd); break;
         case AV_FRAME_DATA_AUDIO_SERVICE_TYPE: dump_audio_service_type(ctx, sd); break;
+        case AV_FRAME_DATA_IAMF_DEMIXING_INFO_PARAM:
+        case AV_FRAME_DATA_IAMF_MIX_GAIN_PARAM:
+        case AV_FRAME_DATA_IAMF_RECON_GAIN_INFO_PARAM:
+            dump_iamf_parameter_definition(ctx, sd);
+            break;
         default:                           dump_unknown   (ctx, sd); break;
         }
 
