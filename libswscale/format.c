@@ -734,20 +734,20 @@ typedef struct FmtInfo {
     int            shift;
 } FmtInfo;
 
-#define BITSTREAM_FMT(SWIZ, FRAC, PACKED, ...) (FmtInfo) {      \
-    .rw = { .elems = 1, .frac = FRAC, .packed = PACKED },       \
+#define BITSTREAM_FMT(SWIZ, FRAC, MODE, ...) (FmtInfo) {        \
+    .rw = { .elems = 1, .frac = FRAC, .mode = MODE },           \
     .swizzle = SWIZ,                                            \
     __VA_ARGS__                                                 \
 }
 
 #define SUBPACKED_FMT(SWIZ, ...) (FmtInfo) {                    \
-    .rw = { .elems = 1, .packed = true },                       \
+    .rw = { .elems = 1, .mode = SWS_RW_PACKED },                \
     .swizzle = SWIZ,                                            \
     .pack.pattern = {__VA_ARGS__},                              \
 }
 
 #define PACKED_FMT(SWIZ, N, ...) (FmtInfo) {                    \
-    .rw = { .elems = N, .packed = (N) > 1 },                    \
+    .rw = { .elems = N, .mode = SWS_RW_PACKED },                \
     .swizzle = SWIZ,                                            \
     __VA_ARGS__                                                 \
 }
@@ -767,9 +767,9 @@ static FmtInfo fmt_info_irregular(enum AVPixelFormat fmt)
     /* Bitstream formats */
     case AV_PIX_FMT_MONOWHITE:
     case AV_PIX_FMT_MONOBLACK:
-        return BITSTREAM_FMT(RGBA, 3, false);
-    case AV_PIX_FMT_RGB4: return BITSTREAM_FMT(RGBA, 1, true, .pack = {{ 1, 2, 1 }});
-    case AV_PIX_FMT_BGR4: return BITSTREAM_FMT(BGRA, 1, true, .pack = {{ 1, 2, 1 }});
+        return BITSTREAM_FMT(RGBA, 3, SWS_RW_PLANAR);
+    case AV_PIX_FMT_RGB4: return BITSTREAM_FMT(RGBA, 1, SWS_RW_PACKED, .pack = {{ 1, 2, 1 }});
+    case AV_PIX_FMT_BGR4: return BITSTREAM_FMT(BGRA, 1, SWS_RW_PACKED, .pack = {{ 1, 2, 1 }});
 
     /* Sub-packed 8-bit aligned formats */
     case AV_PIX_FMT_RGB4_BYTE:  return SUBPACKED_FMT(RGBA, 1, 2, 1);
@@ -865,10 +865,14 @@ static int fmt_analyze_regular(const AVPixFmtDescriptor *desc, SwsReadWriteOp *r
         *swizzle = swiz;
     }
 
+    SwsReadWriteMode mode = SWS_RW_PLANAR;
+    if (desc->nb_components > 1 && !(desc->flags & AV_PIX_FMT_FLAG_PLANAR))
+        mode = SWS_RW_PACKED;
+
     *shift = (SwsShiftOp) { desc->comp[0].shift };
     *rw_op = (SwsReadWriteOp) {
-        .elems  = desc->nb_components,
-        .packed = desc->nb_components > 1 && !(desc->flags & AV_PIX_FMT_FLAG_PLANAR),
+        .elems = desc->nb_components,
+        .mode  = mode,
     };
     return 0;
 }

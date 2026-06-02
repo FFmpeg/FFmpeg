@@ -852,7 +852,7 @@ static int read_filtered(SPICtx *spi, SPIRVIDs *id, const SwsOpList *ops,
     /* Accumulators, initialized to zero */
     int acc_s[4] = { id->f32_0, id->f32_0, id->f32_0, id->f32_0 };
     int acc_v = id->f32_0;
-    if (op->rw.packed)
+    if (op->rw.mode == SWS_RW_PACKED)
         acc_v = spi_OpCompositeConstruct(spi, id->f32vec4_type,
                                          id->f32_0, id->f32_0,
                                          id->f32_0, id->f32_0);
@@ -877,7 +877,7 @@ static int read_filtered(SPICtx *spi, SPIRVIDs *id, const SwsOpList *ops,
             spi_OpCompositeConstruct(spi, id->i32vec2_type, c, pos_y) :
             spi_OpCompositeConstruct(spi, id->i32vec2_type, pos_x, c);
 
-        if (op->rw.packed) {
+        if (op->rw.mode == SWS_RW_PACKED) {
             int px = spi_OpImageRead(spi, read_vtype,
                                      in_img[ops->plane_src[0]], coord,
                                      SpvImageOperandsMaskNone);
@@ -902,7 +902,7 @@ static int read_filtered(SPICtx *spi, SPIRVIDs *id, const SwsOpList *ops,
         }
     }
 
-    if (op->rw.packed)
+    if (op->rw.mode == SWS_RW_PACKED)
         return acc_v;
     return spi_OpCompositeConstruct(spi, id->f32vec4_type,
                                     acc_s[0], acc_s[1], acc_s[2], acc_s[3]);
@@ -1136,7 +1136,7 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
                 data = read_filtered(spi, id, ops, op,
                                      &id->filt[nb_filter_used++],
                                      in_img, gid, gi2);
-            } else if (op->rw.packed) {
+            } else if (op->rw.mode == SWS_RW_PACKED) {
                 data = spi_OpImageRead(spi, type_v, in_img[ops->plane_src[0]],
                                        src_gid, SpvImageOperandsMaskNone);
             } else {
@@ -1154,7 +1154,7 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
         case SWS_OP_WRITE:
             if (op->rw.frac || op->rw.filter.op) {
                 return AVERROR(ENOTSUP);
-            } else if (op->rw.packed) {
+            } else if (op->rw.mode == SWS_RW_PACKED) {
                 spi_OpImageWrite(spi, out_img[ops->plane_dst[0]], dst_gid, data,
                                  SpvImageOperandsMaskNone);
             } else {
@@ -1332,7 +1332,7 @@ static void read_glsl(const SwsOpList *ops, const SwsOp *op, FFVulkanShader *shd
                    wd->filter_size);
         av_bprintf(&shd->src, "        float w = filter_w%i[%s][i];\n",
                    idx, axis);
-        if (op->rw.packed) {
+        if (op->rw.mode == SWS_RW_PACKED) {
             GLSLF(2, tmp += w * %s(imageLoad(src_img[%i], ivec2(%s, %s)));     ,
                   type_v, ops->plane_src[0], coord_x, coord_y);
         } else {
@@ -1345,7 +1345,7 @@ static void read_glsl(const SwsOpList *ops, const SwsOp *op, FFVulkanShader *shd
         GLSLC(1, f32 = tmp;                                                   );
     } else {
         const char *src_pos = interlaced ? "spos" : "pos";
-        if (op->rw.packed) {
+        if (op->rw.mode == SWS_RW_PACKED) {
             GLSLF(1, %s = %s(imageLoad(src_img[%i], %s));                      ,
                   type_name, type_v, ops->plane_src[0], src_pos);
         } else {
@@ -1488,7 +1488,7 @@ static int add_ops_glsl(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
             const char *dst_pos = ops->dst.interlaced ? "dpos" : "pos";
             if (op->rw.frac || op->rw.filter.op) {
                 return AVERROR(ENOTSUP);
-            } else if (op->rw.packed) {
+            } else if (op->rw.mode == SWS_RW_PACKED) {
                 GLSLF(1, imageStore(dst_img[%i], %s, %s(%s));                   ,
                       ops->plane_dst[0], dst_pos, type_v, type_name);
             } else {

@@ -405,7 +405,7 @@ retry:
         switch (op->op) {
         case SWS_OP_READ:
             /* "Compress" planar reads where not all components are needed */
-            if (!op->rw.packed) {
+            if (op->rw.mode == SWS_RW_PLANAR) {
                 SwsSwizzleOp swiz = SWS_SWIZZLE(0, 1, 2, 3);
                 int nb_planes = 0;
                 for (int i = 0; i < op->rw.elems; i++) {
@@ -529,7 +529,7 @@ retry:
             }
 
             /* Swizzle planes instead of components, if possible */
-            if (prev->op == SWS_OP_READ && !prev->rw.packed) {
+            if (prev->op == SWS_OP_READ && prev->rw.mode == SWS_RW_PLANAR) {
                 for (int dst = 0; dst < prev->rw.elems; dst++) {
                     const int src = op->swizzle.in[dst];
                     if (src > dst && src < prev->rw.elems) {
@@ -545,7 +545,7 @@ retry:
                 }
             }
 
-            if (next->op == SWS_OP_WRITE && !next->rw.packed) {
+            if (next->op == SWS_OP_WRITE && next->rw.mode == SWS_RW_PLANAR) {
                 for (int dst = 0; dst < next->rw.elems; dst++) {
                     const int src = op->swizzle.in[dst];
                     if (src > dst && src < next->rw.elems) {
@@ -748,7 +748,7 @@ retry:
         case SWS_OP_FILTER_V:
             /* Merge with prior simple planar read */
             if (prev->op == SWS_OP_READ && !prev->rw.filter.op &&
-                !prev->rw.packed && !prev->rw.frac) {
+                prev->rw.mode == SWS_RW_PLANAR && !prev->rw.frac) {
                 prev->rw.filter.op = op->op;
                 prev->rw.filter.kernel = av_refstruct_ref(op->filter.kernel);
                 prev->rw.filter.type = op->filter.type;

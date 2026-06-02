@@ -169,7 +169,13 @@ SwsCompMask ff_sws_comp_mask_needed(const SwsOp *op)
 int ff_sws_rw_op_planes(const SwsOp *op)
 {
     av_assert2(op->op == SWS_OP_READ || op->op == SWS_OP_WRITE);
-    return op->rw.packed ? 1 : op->rw.elems;
+    switch (op->rw.mode) {
+    case SWS_RW_PLANAR: return op->rw.elems;
+    case SWS_RW_PACKED: return 1;
+    }
+
+    av_unreachable("Invalid read/write mode!");
+    return 0;
 }
 
 /* biased towards `a` */
@@ -376,7 +382,12 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
             /* Active components are taken from the user-provided values,
              * other components are explicitly stripped */
             for (int i = 0; i < op->rw.elems; i++) {
-                const int idx = op->rw.packed ? i : ops->plane_src[i];
+                int idx = 0;
+                switch (op->rw.mode) {
+                case SWS_RW_PACKED: idx = i; break;
+                case SWS_RW_PLANAR: idx = ops->plane_src[i]; break;
+                }
+
                 av_assert0(!(ops->comps_src.flags[idx] & SWS_COMP_GARBAGE));
                 op->comps.flags[i] = ops->comps_src.flags[idx];
                 op->comps.min[i]   = ops->comps_src.min[idx];
@@ -731,7 +742,7 @@ bool ff_sws_op_list_is_noop(const SwsOpList *ops)
     const SwsOp *write = ff_sws_op_list_output(ops);
     if (!read || !write || ops->num_ops > 2 ||
         read->type != write->type ||
-        read->rw.packed != write->rw.packed ||
+        read->rw.mode != write->rw.mode ||
         read->rw.elems != write->rw.elems ||
         read->rw.frac != write->rw.frac)
         return false;
@@ -857,6 +868,11 @@ static void print_q4(AVBPrint *bp, const AVRational q4[4], SwsCompMask mask)
     av_bprintf(bp, "}");
 }
 
+static const char *const rw_mode_names[] = {
+    [SWS_RW_PLANAR] = "planar",
+    [SWS_RW_PACKED] = "packed",
+};
+
 void ff_sws_op_desc(AVBPrint *bp, const SwsOp *op)
 {
     const char *name  = ff_sws_op_type_name(op->op);
@@ -870,7 +886,7 @@ void ff_sws_op_desc(AVBPrint *bp, const SwsOp *op)
     case SWS_OP_READ:
     case SWS_OP_WRITE:
         av_bprintf(bp, "%-20s: %d elem(s) %s >> %d", name,
-                   op->rw.elems,  op->rw.packed ? "packed" : "planar",
+                   op->rw.elems, rw_mode_names[op->rw.mode],
                    op->rw.frac);
         if (!op->rw.filter.op)
             break;

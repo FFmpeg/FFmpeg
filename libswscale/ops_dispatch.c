@@ -464,7 +464,12 @@ static void op_pass_run(const SwsFrame *out, const SwsFrame *in, const int y,
 
 static int rw_pixel_bits(const SwsOp *op)
 {
-    const int elems = op->rw.packed ? op->rw.elems : 1;
+    int elems = 0;
+    switch (op->rw.mode) {
+    case SWS_RW_PLANAR: elems = 1; break;
+    case SWS_RW_PACKED: elems = op->rw.elems; break;
+    }
+
     const int size  = ff_sws_pixel_type_size(op->type);
     const int bits  = 8 >> op->rw.frac;
     av_assert1(bits >= 1);

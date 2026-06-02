@@ -56,7 +56,12 @@ static const char *tprintf(char buf[], size_t size, const char *fmt, ...)
 
 static int rw_pixel_bits(const SwsOp *op)
 {
-    const int elems = op->rw.packed ? op->rw.elems : 1;
+    int elems = 0;
+    switch (op->rw.mode) {
+    case SWS_RW_PLANAR: elems = 1; break;
+    case SWS_RW_PACKED: elems = op->rw.elems; break;
+    }
+
     const int size  = ff_sws_pixel_type_size(op->type);
     const int bits  = 8 >> op->rw.frac;
     av_assert1(bits >= 1);
@@ -233,7 +238,7 @@ static void check_compiled(const char *name,
             break;
         }
 
-        if (write_op->rw.packed)
+        if (write_op->rw.mode == SWS_RW_PACKED)
             break;
     }
 
@@ -394,13 +399,22 @@ static AVRational rndq(SwsPixelType t)
 
 static void check_read(const char *name, const SwsUOp *uop)
 {
+    SwsReadWriteMode mode;
+    switch (uop->uop) {
+    case SWS_UOP_READ_PACKED:
+    case SWS_UOP_READ_BIT:
+    case SWS_UOP_READ_NIBBLE: mode = SWS_RW_PACKED; break;
+    case SWS_UOP_READ_PLANAR: mode = SWS_RW_PLANAR; break;
+    default: return;
+    }
+
     const int num = mask_num(uop->mask);
     check_ops(name, NULL, (SwsOp[]) {
         {
             .op        = SWS_OP_READ,
             .type      = uop->type,
             .rw.elems  = num,
-            .rw.packed = uop->uop != SWS_UOP_READ_PLANAR,
+            .rw.mode   = mode,
             .rw.frac   = uop->uop == SWS_UOP_READ_BIT    ? 3 :
                          uop->uop == SWS_UOP_READ_NIBBLE ? 1 : 0,
         }, {
@@ -413,6 +427,15 @@ static void check_read(const char *name, const SwsUOp *uop)
 
 static void check_write(const char *name, const SwsUOp *uop)
 {
+    SwsReadWriteMode mode;
+    switch (uop->uop) {
+    case SWS_UOP_WRITE_BIT:
+    case SWS_UOP_WRITE_NIBBLE:
+    case SWS_UOP_READ_PACKED: mode = SWS_RW_PACKED; break;
+    case SWS_UOP_READ_PLANAR: mode = SWS_RW_PLANAR; break;
+    default: return;
+    }
+
     const int frac = uop->uop == SWS_UOP_WRITE_BIT    ? 3 :
                      uop->uop == SWS_UOP_WRITE_NIBBLE ? 1 : 0;
     const int num = mask_num(uop->mask);
@@ -428,7 +451,7 @@ static void check_write(const char *name, const SwsUOp *uop)
             .op        = SWS_OP_WRITE,
             .type      = uop->type,
             .rw.elems  = num,
-            .rw.packed = uop->uop != SWS_UOP_WRITE_PLANAR,
+            .rw.mode   = mode,
             .rw.frac   = frac,
         }, {0}
     });

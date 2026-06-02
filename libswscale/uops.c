@@ -480,7 +480,7 @@ static int translate_rw_op(SwsContext *ctx, SwsUOpList *ops, SwsUOpFlags flags,
 
     const bool is_read = op->op == SWS_OP_READ;
     if (op->rw.filter.op) {
-        if (op->op == SWS_OP_WRITE || op->rw.frac || op->rw.packed)
+        if (op->op == SWS_OP_WRITE || op->rw.frac || op->rw.mode != SWS_RW_PLANAR)
             return AVERROR(ENOTSUP);
         uop.par.filter.type = op->rw.filter.type;
         uop.data.kernel = av_refstruct_ref(op->rw.filter.kernel);
@@ -491,7 +491,7 @@ static int translate_rw_op(SwsContext *ctx, SwsUOpList *ops, SwsUOpFlags flags,
         } else {
             uop.uop = SWS_UOP_READ_PLANAR_FV;
         }
-    } else if (op->rw.packed && op->rw.elems > 1) {
+    } else if (op->rw.mode == SWS_RW_PACKED && op->rw.elems > 1) {
         if (op->rw.frac)
             return AVERROR(ENOTSUP);
         uop.uop = is_read ? SWS_UOP_READ_PACKED : SWS_UOP_WRITE_PACKED;

@@ -88,10 +88,12 @@ static int convert_to_aarch64_impl(SwsContext *ctx, const SwsOpList *ops, int n,
             out->op = AARCH64_SWS_OP_READ_NIBBLE;
         else if (op->rw.frac == 3)
             out->op = AARCH64_SWS_OP_READ_BIT;
-        else if (op->rw.packed && op->rw.elems != 1)
+        else if (op->rw.mode == SWS_RW_PACKED)
             out->op = AARCH64_SWS_OP_READ_PACKED;
-        else
+        else if (op->rw.mode == SWS_RW_PLANAR)
             out->op = AARCH64_SWS_OP_READ_PLANAR;
+        else
+            return AVERROR(ENOTSUP);
         break;
     case SWS_OP_WRITE:
         if (op->rw.filter.op)
@@ -104,10 +106,12 @@ static int convert_to_aarch64_impl(SwsContext *ctx, const SwsOpList *ops, int n,
             out->op = AARCH64_SWS_OP_WRITE_NIBBLE;
         else if (op->rw.frac == 3)
             out->op = AARCH64_SWS_OP_WRITE_BIT;
-        else if (op->rw.packed && op->rw.elems != 1)
+        else if (op->rw.mode == SWS_RW_PACKED)
             out->op = AARCH64_SWS_OP_WRITE_PACKED;
-        else
+        else if (op->rw.mode == SWS_RW_PLANAR)
             out->op = AARCH64_SWS_OP_WRITE_PLANAR;
+        else
+            return AVERROR(ENOTSUP);
         break;
     case SWS_OP_SWAP_BYTES: out->op = AARCH64_SWS_OP_SWAP_BYTES; break;
     case SWS_OP_SWIZZLE:    out->op = AARCH64_SWS_OP_SWIZZLE;    break;
