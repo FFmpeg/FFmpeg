@@ -495,8 +495,13 @@ IF V2,  psllw mx2, 7
 IF V2,  pshufb mx2, m8
         pmovmskb tmp0d, mx
 IF V2,  pmovmskb tmp1d, mx2
-        mov [out0q],     tmp0d
+%if mmsize >= 32
+        mov [out0q], tmp0d
 IF V2,  mov [out0q + (mmsize >> 3)], tmp1d
+%else
+        mov [out0q], tmp0w
+IF V2,  mov [out0q + (mmsize >> 3)], tmp1w
+%endif
         add out0q, (mmsize >> 3) * (1 + V2)
         RET
 %endmacro
