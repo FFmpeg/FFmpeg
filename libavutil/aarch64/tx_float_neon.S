@@ -438,6 +438,239 @@ endfunc
 FFT16_FN float,    0
 FFT16_FN ns_float, 1
 
+const tab_15pt, align=4
+        .float           1.0,  1.0, -1.0,  -1.0
+endconst
+
+// Tab_53 twiddles (v28..v30) duplicated/pre-signed once, instead of per
+// transform: v8/v9 = -+tab[8,9]/[10,11], v25/v28/v29 = tab[0,1]/[2,3]/[4,5],
+// v10 = +-tab[6,7]. v30 keeps tab[8..11]. Callers preserve d8-d10.
+.macro FFT15_DERIVE_CONSTS
+        dup             v8.2d,  v30.d[0]
+        dup             v9.2d,  v30.d[1]
+        dup             v10.2d, v29.d[1]
+        dup             v25.2d, v28.d[0]
+        dup             v28.2d, v28.d[1]
+        dup             v29.2d, v29.d[0]
+        fmul            v8.4s,  v8.4s,  v31.4s
+        fmul            v9.4s,  v9.4s,  v31.4s
+        fmul            v10.4s, v10.4s, v24.4s
+.endm
+
+.macro FFT15_LOAD no_perm, advance=0
+.if \no_perm == 1
+        // Writebacks leave x2 a whole transform (120B) ahead for the PFA loop
+        ld1             { v0.4s },                [x2], #16   // in[0,1]
+        ld1r            { v1.2d },                [x2], #8    // in[2] duplicated
+        ld1             { v2.4s, v3.4s, v4.4s },  [x2], #48   // in[3..8]
+        ld1             { v5.4s, v6.4s, v7.4s },  [x2], #48   // in[9..14]
+.else
+        ldp             w10, w11, [x4]          // lut[0,1]
+        ldr             w12, [x4, #8]           // lut[2]
+        ldp             w13, w14, [x4, #12]     // lut[3,4]
+        ldp             w15, w16, [x4, #20]     // lut[5,6]
+
+        ldr             d0, [x2, x10, lsl #3]
+        add             x10, x2, x11, lsl #3
+        add             x12, x2, x12, lsl #3
+        ld1             { v0.d }[1], [x10]
+        ld1r            { v1.2d }, [x12]
+
+        ldr             d2, [x2, x13, lsl #3]
+        add             x13, x2, x14, lsl #3
+        ldr             d3, [x2, x15, lsl #3]
+        add             x15, x2, x16, lsl #3
+        ld1             { v2.d }[1], [x13]
+        ld1             { v3.d }[1], [x15]
+
+        ldp             w10, w11, [x4, #28]     // lut[7,8]
+        ldp             w12, w13, [x4, #36]     // lut[9,10]
+        ldp             w14, w15, [x4, #44]     // lut[11,12]
+        ldp             w16, w17, [x4, #52]     // lut[13,14]
+.if \advance == 1
+        add             x4, x4, #60
+.endif
+
+        ldr             d4, [x2, x10, lsl #3]
+        add             x10, x2, x11, lsl #3
+        ldr             d5, [x2, x12, lsl #3]
+        add             x12, x2, x13, lsl #3
+        ldr             d6, [x2, x14, lsl #3]
+        add             x14, x2, x15, lsl #3
+        ldr             d7, [x2, x16, lsl #3]
+        add             x16, x2, x17, lsl #3
+        ld1             { v4.d }[1], [x10]
+        ld1             { v5.d }[1], [x12]
+        ld1             { v6.d }[1], [x14]
+        ld1             { v7.d }[1], [x16]
+.endif
+.endm
+
+// Single 15-point FFT (see doc/transforms.md and the AVX2 FFT15); each ymm
+// becomes a pair of quads holding 2 complex each. Uses the derived constants
+// and tab_15pt in v24 (dc fold sign); with hoist_strides=1 the caller
+// provides x6/x7 = stride*3/*5.
+.macro FFT15_CORE hoist_strides=0
+.if \hoist_strides == 0
+        add             x6, x3, x3, lsl #1                  // stride*3
+        add             x7, x3, x3, lsl #2                  // stride*5
+.endif
+        add             x8, x1, x7                          // &out[5]
+        add             x9, x8, x7                          // &out[10]
+
+        // 4x parallel 3pt over in[3..14] (the in[11..14] -+ signs are folded
+        // into the twiddles: k = in[11..14] + Q4 -+ Q0), interleaved with the
+        // dc 3pt over in[0..2] ([dc] tagged, v0 = dc[0] dup, v1 = dc[1,2])
+        fsub            v16.4s,  v2.4s,  v4.4s              // q[0,1]raw = in[3,4]-in[7,8]
+        ext             v26.16b, v0.16b, v0.16b, #8         // [dc] (in1, in0)
+        fsub            v17.4s,  v3.4s,  v5.4s              // q[2,3]raw = in[5,6]-in[9,10]
+        fadd            v27.4s,  v0.4s,  v26.4s             // [dc] pc[1]raw = in0+in1
+        fadd            v2.4s,   v2.4s,  v4.4s              // q[4,5]raw
+        fsub            v20.4s,  v0.4s,  v26.4s             // [dc] (in0-in1, in1-in0)
+        fadd            v3.4s,   v3.4s,  v5.4s              // q[6,7]raw
+        rev64           v20.4s,  v20.4s                     // [dc] pc[0]raw in hi half
+        rev64           v16.4s,  v16.4s                     // q[0,1]raw re/im-swapped
+        ext             v21.16b, v20.16b, v27.16b, #8       // [dc] (pc[0], pc[1])
+        rev64           v17.4s,  v17.4s                     // q[2,3]raw re/im-swapped
+        fadd            v0.4s,   v1.4s,  v27.4s             // [dc] dc[0] = in2 + pc[1]raw (dup)
+        fadd            v22.4s,  v6.4s,  v2.4s              // y[0,1] = in[11,12] + q[4,5]
+        fmul            v21.4s,  v21.4s, v30.4s             // [dc] pc[0,1] scaled by tab[8..11]
+        fadd            v23.4s,  v7.4s,  v3.4s              // y[2,3] = in[13,14] + q[6,7]
+        fmul            v16.4s,  v16.4s, v8.4s              // Q0[0,1]
+        ext             v26.16b, v21.16b, v21.16b, #8       // [dc] (pc[1], pc[0])
+        fmul            v17.4s,  v17.4s, v8.4s              // Q0[2,3]
+        fmla            v21.4s,  v26.4s, v24.4s             // [dc] (dc[1]_int, dc[2]_int)
+        fmla            v6.4s,   v2.4s,  v9.4s              // M[0,1] = in[11,12] + q*Q4mult
+        fmla            v7.4s,   v3.4s,  v9.4s              // M[2,3] = in[13,14] + q*Q4mult
+        fmla            v1.4s,   v21.4s, v31.4s             // [dc] v1 = (dc[1], dc[2])  — DC done
+        fsub            v4.4s,   v6.4s,  v16.4s             // k[0,1] = M[0,1] - Q0[0,1]
+        fsub            v5.4s,   v7.4s,  v17.4s             // k[2,3] = M[2,3] - Q0[2,3]
+        fadd            v2.4s,   v6.4s,  v16.4s             // k[4,5] = M[0,1] + Q0[0,1]
+        fadd            v3.4s,   v7.4s,  v17.4s             // k[6,7] = M[2,3] + Q0[2,3]
+
+        // 4pt butterflies on y (v22,v23), k[0..3] (v4,v5), k[4..7] (v2,v3);
+        // one shared swapped operand per pair leaves the hi t's half-swapped,
+        // which the dup-symmetric twiddles absorb and the output stage uses
+        ext             v16.16b, v23.16b, v23.16b, #8        // (y3, y2)
+        ext             v17.16b, v5.16b,  v5.16b,  #8        // (k3, k2)
+        ext             v20.16b, v3.16b,  v3.16b,  #8        // (k7, k6)
+        fsub            v21.4s, v22.4s, v16.4s               // (t3, t2)
+        fadd            v22.4s, v22.4s, v16.4s               // (t0, t1)
+        fsub            v26.4s, v4.4s,  v17.4s               // (t7, t6)
+        fadd            v4.4s,  v4.4s,  v17.4s               // (t4, t5)
+        fsub            v27.4s, v2.4s,  v20.4s               // (t11, t10)
+        fadd            v2.4s,  v2.4s,  v20.4s               // (t8, t9)
+
+        // the 3 direct outputs: out[0,10,5] = dc[0,1,2] + t[0,4,8] + t[1,5,9]
+        ext             v16.16b, v22.16b, v22.16b, #8        // (t1, t0)
+        zip1            v17.2d, v4.2d, v2.2d                  // (t4, t8)
+        zip2            v20.2d, v4.2d, v2.2d                  // (t5, t9)
+        fadd            v16.4s, v16.4s, v22.4s                // t[0]+t[1]
+        fadd            v17.4s, v17.4s, v20.4s                // (t[4]+t[5], t[8]+t[9])
+        fadd            v16.4s, v16.4s, v0.4s                 // out[0]
+        fadd            v17.4s, v17.4s, v1.4s                 // (out[10], out[5])
+        st1             { v16.d }[0], [x1]
+        st1             { v17.d }[1], [x8]
+        st1             { v17.d }[0], [x9]
+
+        // twiddles; swap(t * tab) = swap(t) * tab as every multiplier is
+        // dup-symmetric. lo chunks seed the accumulator with dc[] (= the
+        // output stage's dc preadd): m = dc + t*v25 - swap(t)*v28; hi chunks
+        // r = t*v29 + swap(t)*v10, v10's +- giving r[3] += t[2]/r[2] -= t[3]
+        // in half-swapped order. Accumulates are spread out for the A53
+        ext             v16.16b, v22.16b, v22.16b, #8         // (t1, t0)
+        mov             v6.16b,  v0.16b                       // m0 = dc[0]
+        ext             v17.16b, v21.16b, v21.16b, #8         // (t2, t3)
+        fmul            v7.4s,  v21.4s, v29.4s                // (r3, r2)
+        fmla            v6.4s,  v22.4s, v25.4s                // m0 += t[0,1]*r_lo
+        dup             v18.2d, v1.d[0]                       // m1 = dc[1]
+        fmla            v18.4s, v4.4s,  v25.4s                // m1 += t[4,5]*r_lo
+        fmls            v6.4s,  v16.4s, v28.4s                // m0 -= swap*nt_lo
+        ext             v16.16b, v4.16b,  v4.16b,  #8         // (t5, t4)
+        fmla            v7.4s,  v17.4s, v10.4s                // (r3, r2) += swap*nt_hi
+        ext             v17.16b, v26.16b, v26.16b, #8         // (t6, t7)
+        fmls            v18.4s, v16.4s, v28.4s                // m1 -= swap*nt_lo
+        fmul            v23.4s, v26.4s, v29.4s                // (r7, r6)
+        dup             v19.2d, v1.d[1]                       // m2 = dc[2]
+        fmla            v19.4s, v2.4s,  v25.4s                // m2 += t[8,9]*r_lo
+        ext             v16.16b, v2.16b,  v2.16b,  #8         // (t9, t8)
+        fmla            v23.4s, v17.4s, v10.4s                // (r7, r6)
+        ext             v17.16b, v27.16b, v27.16b, #8         // (t10, t11)
+        fmul            v5.4s,  v27.4s, v29.4s                // (r11, r10)
+        fmls            v19.4s, v16.4s, v28.4s                // m2 -= swap*nt_lo
+        fmla            v5.4s,  v17.4s, v10.4s                // (r11, r10)
+
+        // output butterflies around rot(x) = (x.im, -x.re): out = m +- rot(r_hi).
+        // The half-swap makes rev(r_hi) a plain rev64, and u = rev*v31 is
+        // exact (+-1.0), so each +-rot pair is one non-destructive fsub/fadd
+        rev64           v16.4s, v7.4s                         // (r3.im, r3.re, r2.im, r2.re)
+        rev64           v17.4s, v23.4s                        // (r7.im, r7.re, r6.im, r6.re)
+        rev64           v20.4s, v5.4s                         // (r11.im, ..., r10.re)
+        fmul            v16.4s, v16.4s, v31.4s                // u0
+        fmul            v17.4s, v17.4s, v31.4s                // u1
+        fmul            v20.4s, v20.4s, v31.4s                // u2
+        fsub            v7.4s,  v6.4s,  v16.4s                // (out6, out3)   = m0 + rot
+        fadd            v6.4s,  v6.4s,  v16.4s                // (out9, out12)  = m0 - rot
+        fsub            v23.4s, v18.4s, v17.4s                // (out1, out13)
+        fadd            v22.4s, v18.4s, v17.4s                // (out4, out7)
+        fsub            v5.4s,  v19.4s, v20.4s                // (out11, out8)
+        fadd            v4.4s,  v19.4s, v20.4s                // (out14, out2)
+
+        add             x10, x1, x6, lsl #1                   // &out[6]
+        add             x11, x1, x6                           // &out[3]
+        st1             { v7.d }[0], [x10]
+        st1             { v7.d }[1], [x11]
+        add             x12, x8, x3, lsl #2                   // &out[9]
+        add             x13, x1, x6, lsl #2                   // &out[12]
+        st1             { v6.d }[0], [x12]
+        st1             { v6.d }[1], [x13]
+        add             x10, x1, x3                           // &out[1]
+        add             x11, x9, x6                           // &out[13]
+        st1             { v23.d }[0], [x10]
+        st1             { v23.d }[1], [x11]
+        add             x12, x1, x3, lsl #2                   // &out[4]
+        add             x13, x8, x3, lsl #1                   // &out[7]
+        st1             { v22.d }[0], [x12]
+        st1             { v22.d }[1], [x13]
+        add             x10, x9, x3                           // &out[11]
+        add             x11, x1, x3, lsl #3                   // &out[8]
+        st1             { v5.d }[0], [x10]
+        st1             { v5.d }[1], [x11]
+        add             x12, x9, x3, lsl #2                   // &out[14]
+        add             x13, x1, x3, lsl #1                   // &out[2]
+        st1             { v4.d }[0], [x12]
+        st1             { v4.d }[1], [x13]
+.endm
+
+.macro FFT15_FN name, no_perm
+function ff_tx_fft15_\name\()_neon, export=1
+        stp             d8,  d9,  [sp, #-32]!
+        str             d10, [sp, #16]
+
+        SETUP_LUT       \no_perm
+
+        movrel          x5, X(ff_tx_tab_53_float)
+        ld1             { v28.4s, v29.4s, v30.4s }, [x5]    // 5pt cos, 5pt sin, 3pt
+
+        movrel          x5, tab_15pt
+        ld1             { v24.4s }, [x5]                    // sign mask
+
+        LOAD_SUBADD
+        FFT15_DERIVE_CONSTS
+
+        FFT15_LOAD      \no_perm
+
+        FFT15_CORE
+
+        ldr             d10, [sp, #16]
+        ldp             d8,  d9,  [sp], #32
+        ret
+endfunc
+.endm
+
+FFT15_FN float,    0
+FFT15_FN ns_float, 1
+
 .macro SETUP_SR_RECOMB len, re, im, dec
         ldr             w5, =(\len - 4*7)
         movrel          \re, X(ff_tx_tab_\len\()_float)
