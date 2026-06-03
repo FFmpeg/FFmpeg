@@ -169,6 +169,7 @@ int ff_itut_t35_parse_payload_to_struct(FFITUTT35 *const itut_t35, FFITUTT35Aux 
     case ITU_T_T35_COUNTRY_CODE_US:
         switch (itut_t35->provider_code) {
         case ITU_T_T35_PROVIDER_CODE_AOM:
+            ff_aom_uninit_film_grain_params(&metadata->aom_film_grain);
             ret = ff_aom_parse_film_grain_sets(&metadata->aom_film_grain,
                                                itut_t35->payload, itut_t35->payload_size);
             if (ret < 0)
@@ -177,6 +178,7 @@ int ff_itut_t35_parse_payload_to_struct(FFITUTT35 *const itut_t35, FFITUTT35Aux 
         case ITU_T_T35_PROVIDER_CODE_ATSC:
             switch (itut_t35->provider_oriented_code) {
             case MKBETAG('D', 'T', 'G', '1'): // afd_data
+                av_buffer_unref(&metadata->afd);
                 metadata->afd = av_buffer_alloc(1);
                 if (!metadata->afd)
                     return AVERROR(ENOMEM);
@@ -205,6 +207,7 @@ int ff_itut_t35_parse_payload_to_struct(FFITUTT35 *const itut_t35, FFITUTT35Aux 
             if (ret < 0)
                 return ret;
 
+            av_buffer_unref(&metadata->hdr_plus);
             metadata->hdr_plus = av_buffer_create((uint8_t *)hdr_plus, size, NULL, NULL, 0);
             if (!metadata->hdr_plus) {
                 av_free(hdr_plus);
@@ -228,6 +231,7 @@ int ff_itut_t35_parse_payload_to_struct(FFITUTT35 *const itut_t35, FFITUTT35Aux 
             if (ret <= 0)
                 return ret;
 
+            av_buffer_unref(&metadata->dovi);
             metadata->dovi = av_buffer_create((uint8_t *)dovi, ret, NULL, NULL, 0);
             if (!metadata->dovi) {
                 av_free(dovi);
@@ -247,6 +251,7 @@ int ff_itut_t35_parse_payload_to_struct(FFITUTT35 *const itut_t35, FFITUTT35Aux 
             if (ret < 0)
                 return ret;
 
+            av_buffer_unref(&metadata->hdr_smpte2094_app5);
             metadata->hdr_smpte2094_app5 = av_buffer_create((uint8_t *)hdr_smpte2094_app5, size, NULL, NULL, 0);
             if (!metadata->hdr_smpte2094_app5) {
                 av_free(hdr_smpte2094_app5);
@@ -262,6 +267,7 @@ int ff_itut_t35_parse_payload_to_struct(FFITUTT35 *const itut_t35, FFITUTT35Aux 
     case ITU_T_T35_COUNTRY_CODE_UK:
         switch (itut_t35->provider_code) {
         case ITU_T_T35_PROVIDER_CODE_VNOVA:
+            av_buffer_unref(&metadata->lcevc);
             metadata->lcevc = av_buffer_alloc(itut_t35->payload_size);
             if (!metadata->lcevc)
                 return AVERROR(ENOMEM);
@@ -288,6 +294,7 @@ int ff_itut_t35_parse_payload_to_struct(FFITUTT35 *const itut_t35, FFITUTT35Aux 
                 return ret;
             }
 
+            av_buffer_unref(&metadata->hdr_vivid);
             metadata->hdr_vivid = av_buffer_create((uint8_t *)hdr_vivid, size, NULL, NULL, 0);
             if (!metadata->hdr_vivid) {
                 av_free(hdr_vivid);
