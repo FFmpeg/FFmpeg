@@ -387,9 +387,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
 void ff_itut_t35_unref(FFITUTT35Meta *metadata)
 {
+    ff_aom_uninit_film_grain_params(&metadata->aom_film_grain);
+    av_buffer_unref(&metadata->afd);
     av_buffer_unref(&metadata->a53_cc);
     av_buffer_unref(&metadata->hdr_plus);
     av_buffer_unref(&metadata->hdr_smpte2094_app5);
     av_buffer_unref(&metadata->lcevc);
     av_buffer_unref(&metadata->dovi);
+    av_buffer_unref(&metadata->hdr_vivid);
 }
