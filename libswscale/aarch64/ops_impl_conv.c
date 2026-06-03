@@ -124,6 +124,9 @@ static int convert_to_aarch64_impl(SwsContext *ctx, const SwsOpList *ops, int n,
     case SWS_OP_SCALE:      out->op = AARCH64_SWS_OP_SCALE;      break;
     case SWS_OP_LINEAR:     out->op = AARCH64_SWS_OP_LINEAR;     break;
     case SWS_OP_DITHER:     out->op = AARCH64_SWS_OP_DITHER;     break;
+    case SWS_OP_FILTER_H:
+    case SWS_OP_FILTER_V:
+        return AVERROR(ENOTSUP);
     }
 
     switch (out->op) {

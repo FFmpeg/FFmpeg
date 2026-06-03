@@ -118,6 +118,8 @@ static int register_op(SwsContext *ctx, void *opaque, SwsOpList *ops)
     for (int i = 0; i < rest.num_ops; i++) {
         SwsAArch64OpImplParams params = { 0 };
         ret = convert_to_aarch64_impl(ctx, &rest, i, block_size, &params);
+        if (ret == AVERROR(ENOTSUP))
+            continue;
         if (ret < 0)
             goto end;
         ret = aarch64_collect_op(&params, root);
