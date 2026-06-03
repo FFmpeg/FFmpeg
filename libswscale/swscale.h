@@ -180,9 +180,9 @@ typedef enum SwsFlags {
     SWS_BITEXACT       = 1 << 19,
 
     /**
-     * Allow using experimental new code paths. This may be faster, slower,
-     * or produce different output, with semantics subject to change at any
-     * point in time. For testing and debugging purposes only.
+     * Allow/prefer using experimental new code paths. This may be faster,
+     * slower, or produce different output, with semantics subject to change
+     * at any point in time. For testing and debugging purposes only.
      */
     SWS_UNSTABLE = 1 << 20,
 

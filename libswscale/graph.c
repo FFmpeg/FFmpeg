@@ -658,11 +658,20 @@ static int add_convert_pass(SwsGraph *graph, const SwsFormat *src,
                             const SwsFormat *dst, SwsPass *input,
                             SwsPass **output)
 {
+    SwsContext *ctx = graph->ctx;
     int ret;
 
-    ret = add_ops_convert_pass(graph, src, dst, input, output);
-    if (ret == AVERROR(ENOTSUP))
+    if (ctx->flags & SWS_UNSTABLE) {
+        /* Prefer unstable ops backend over legacy backend */
+        ret = add_ops_convert_pass(graph, src, dst, input, output);
+        if (ret == AVERROR(ENOTSUP))
+            ret = add_legacy_sws_pass(graph, src, dst, input, output);
+    } else {
+        /* Prefer legacy backend for stability reasons */
         ret = add_legacy_sws_pass(graph, src, dst, input, output);
+        if (ret == AVERROR(ENOTSUP))
+            ret = add_ops_convert_pass(graph, src, dst, input, output);
+    }
 
     return ret;
 }
