@@ -2393,6 +2393,7 @@ int ff_mjpeg_decode_frame_from_buf(AVCodecContext *avctx, AVFrame *frame,
     int is16bit;
 
     s->force_pal8 = 0;
+    s->total_ls_decoded_height = 0;
 
     s->buf_size = buf_size;
 

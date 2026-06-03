@@ -139,6 +139,7 @@ typedef struct MJpegDecodeContext {
     int mjpb_skiptosod;
 
     int cur_scan; /* current scan, used by JPEG-LS */
+    int64_t total_ls_decoded_height; /* cumulative JPEG-LS rows decoded in the current packet */
     int flipped; /* true if picture is flipped */
 
     uint16_t (*ljpeg_buffer)[4];

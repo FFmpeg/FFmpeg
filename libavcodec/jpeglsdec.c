@@ -365,6 +365,15 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s)
     int off = 0, stride = 1, width, shift, ret = 0;
     int decoded_height = 0;
 
+    /* Bound the total amount of JPEG-LS decoding work per packet:
+     * Per T.87, ILV=0 uses one scan per component while ILV=1/2 use a single
+     * interleaved scan, and ff_mjpeg_decode_sof() rejects subsampled JPEG-LS,
+     * so a valid image needs at most height * nb_components
+     * (<= height * MAX_COMPONENTS) rows of decoding. The extra factor of 2
+     * is slack so odd, damaged and weird files are not rejected. */
+    if (s->total_ls_decoded_height > s->height * 2LL * MAX_COMPONENTS)
+        return AVERROR_INVALIDDATA;
+
     if (!state) {
         state = av_malloc(sizeof(*state));
         if (!state)
@@ -492,6 +501,8 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s)
         ret = AVERROR_PATCHWELCOME;
         goto end;
     }
+
+    s->total_ls_decoded_height += decoded_height;
 
     if (s->xfrm && s->nb_components == 3) {
         int x, w;
