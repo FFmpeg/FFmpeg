@@ -487,6 +487,7 @@ static int init_legacy_subpass(SwsGraph *graph, SwsContext *sws,
                                 setup_legacy_swscale, sws, free_legacy_swscale, &pass);
     if (ret < 0)
         return ret;
+    pass->backend = SWS_BACKEND_LEGACY;
 
     /**
      * For slice threading, we need to create sub contexts, similar to how
@@ -853,6 +854,7 @@ int ff_sws_graph_init(SwsGraph *graph, SwsContext *ctx, const SwsFormat *dst,
 
     /* Resolve output buffers for all intermediate passes */
     for (int i = 0; i < graph->num_passes; i++) {
+        graph->backend |= graph->passes[i]->backend;
         ret = pass_alloc_output(graph->passes[i]->input);
         if (ret < 0)
             goto error;

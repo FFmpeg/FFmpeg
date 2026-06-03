@@ -111,6 +111,9 @@ typedef struct SwsCompiledOp {
      */
     bool opaque;
 
+    /* Set by ff_sws_ops_compile(), informative */
+    const struct SwsOpBackend *backend;
+
     /* Execution parameters for all functions */
     int slice_align; /* slice height alignment */
     int cpu_flags;   /* active set of CPU flags (informative) */

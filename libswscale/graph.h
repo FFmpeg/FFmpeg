@@ -81,6 +81,7 @@ struct SwsPass {
      * are always equal to (or smaller than, for the last slice) `slice_h`.
      */
     SwsPassFunc run;
+    SwsBackend backend; /* backend this pass is using, or 0 */
     enum AVPixelFormat format; /* new pixel format */
     int width, height; /* new output size */
     int slice_h;       /* filter granularity */
@@ -124,6 +125,7 @@ typedef struct SwsGraph {
     int num_threads; /* resolved at init() time */
     bool incomplete; /* set during init() if formats had to be inferred */
     bool noop;       /* set during init() if the graph is a no-op */
+    SwsBackend backend; /* backends this graph is using, set during init() */
 
     AVBufferRef *hw_frames_ref;
 

@@ -77,6 +77,7 @@ static int compile_backend(SwsContext *ctx, const SwsOpBackend *backend,
         goto fail;
     }
 
+    compiled.backend = backend;
     *out = compiled;
 
     av_log(ctx, AV_LOG_VERBOSE, "Compiled using backend '%s': "
@@ -515,9 +516,12 @@ static int compile(SwsGraph *graph, const SwsOpBackend *backend,
     if (p->comp.opaque) {
         SwsCompiledOp c = *comp;
         av_free(p);
-        return ff_sws_graph_add_pass(graph, dst->format, dst->width, dst->height,
-                                     input, c.slice_align, c.func_opaque,
-                                     NULL, c.priv, c.free, output);
+        ret = ff_sws_graph_add_pass(graph, dst->format, dst->width, dst->height,
+                                    input, c.slice_align, c.func_opaque,
+                                    NULL, c.priv, c.free, output);
+        if (ret >= 0)
+            (*output)->backend = comp->backend->flags;
+        return ret;
     }
 
     const SwsOp *read  = ff_sws_op_list_input(ops);
@@ -599,6 +603,7 @@ static int compile(SwsGraph *graph, const SwsOpBackend *backend,
     if (ret < 0)
         return ret;
 
+    (*output)->backend = comp->backend->flags;
     align_pass(input,   comp->block_size, comp->over_read,  p->pixel_bits_in);
     align_pass(*output, comp->block_size, comp->over_write, p->pixel_bits_out);
     return 0;
