@@ -189,8 +189,8 @@ fail:
     return ret;
 }
 
-const SwsOpBackend backend_uops = {
-    .name       = "uops",
+const SwsOpBackend backend_c = {
+    .name       = "c",
     .flags      = SWS_BACKEND_C,
     .compile    = compile,
     .hw_format  = AV_PIX_FMT_NONE,
