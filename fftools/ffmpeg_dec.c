@@ -136,6 +136,8 @@ void dec_free(Decoder **pdec)
         av_frame_free(&dp->sub_prev[i]);
     av_frame_free(&dp->sub_heartbeat);
 
+    av_freep(&dp->dec.subtitle_header);
+
     av_freep(&dp->parent_name);
 
     av_freep(&dp->views_requested);
@@ -1621,8 +1623,15 @@ static int dec_open(DecoderPriv *dp, AVDictionary **dec_opts,
             dp->dec_ctx->extra_hw_frames = extra_frames;
     }
 
-    dp->dec.subtitle_header      = dp->dec_ctx->subtitle_header;
-    dp->dec.subtitle_header_size = dp->dec_ctx->subtitle_header_size;
+    if (dp->dec_ctx->subtitle_header) {
+        /* ASS code assumes this buffer is null terminated so add extra byte. */
+        dp->dec.subtitle_header = av_mallocz(dp->dec_ctx->subtitle_header_size + 1);
+        if (!dp->dec.subtitle_header)
+            return AVERROR(ENOMEM);
+        memcpy(dp->dec.subtitle_header, dp->dec_ctx->subtitle_header,
+               dp->dec_ctx->subtitle_header_size);
+        dp->dec.subtitle_header_size = dp->dec_ctx->subtitle_header_size;
+    }
 
     if (param_out) {
         if (dp->dec_ctx->codec_type == AVMEDIA_TYPE_AUDIO) {
