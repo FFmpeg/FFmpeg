@@ -41,7 +41,17 @@
 /* check that a given sample format is supported by the encoder */
 static int check_sample_fmt(const AVCodec *codec, enum AVSampleFormat sample_fmt)
 {
-    const enum AVSampleFormat *p = codec->sample_fmts;
+    const void *out_config;
+    int ret = avcodec_get_supported_config(NULL, codec, AV_CODEC_CONFIG_SAMPLE_FORMAT,
+                                           0, &out_config, NULL);
+    if (ret < 0) {
+        fprintf(stderr, "Error getting supported sample formats\n");
+        exit(1);
+    }
+    const enum AVSampleFormat *p = out_config;
+
+    if (!p)
+        return 1;
 
     while (*p != AV_SAMPLE_FMT_NONE) {
         if (*p == sample_fmt)
@@ -54,13 +64,19 @@ static int check_sample_fmt(const AVCodec *codec, enum AVSampleFormat sample_fmt
 /* just pick the highest supported samplerate */
 static int select_sample_rate(const AVCodec *codec)
 {
-    const int *p;
+    const void *out_config;
+    int ret = avcodec_get_supported_config(NULL, codec, AV_CODEC_CONFIG_SAMPLE_RATE,
+                                           0, &out_config, NULL);
+    if (ret < 0) {
+        fprintf(stderr, "Error getting supported sample rates\n");
+        exit(1);
+    }
+    const int *p = out_config;
     int best_samplerate = 0;
 
-    if (!codec->supported_samplerates)
+    if (!p)
         return 44100;
 
-    p = codec->supported_samplerates;
     while (*p) {
         if (!best_samplerate || abs(44100 - *p) < abs(44100 - best_samplerate))
             best_samplerate = *p;
@@ -72,13 +88,19 @@ static int select_sample_rate(const AVCodec *codec)
 /* select layout with the highest channel count */
 static int select_channel_layout(const AVCodec *codec, AVChannelLayout *dst)
 {
-    const AVChannelLayout *p, *best_ch_layout;
+    const void *out_config;
+    int ret = avcodec_get_supported_config(NULL, codec, AV_CODEC_CONFIG_CHANNEL_LAYOUT,
+                                           0, &out_config, NULL);
+    if (ret < 0) {
+        fprintf(stderr, "Error getting supported channel layouts\n");
+        exit(1);
+    }
+    const AVChannelLayout *p = out_config, *best_ch_layout;
     int best_nb_channels   = 0;
 
-    if (!codec->ch_layouts)
+    if (!p)
         return av_channel_layout_copy(dst, &(AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO);
 
-    p = codec->ch_layouts;
     while (p->nb_channels) {
         int nb_channels = p->nb_channels;
 
