@@ -1439,6 +1439,7 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s)
     int linesize[MAX_COMPONENTS];
     GetBitContext mb_bitmask_gb = {0}; // initialize to silence gcc warning
     int bytes_per_pixel = 1 + (s->bits > 8);
+    int field_pos = -1;
     int ret;
 
     if (s->avctx->codec_id == AV_CODEC_ID_MXPEG) {
@@ -1572,9 +1573,11 @@ next_field:
     if (s->interlaced &&
         bytestream2_get_bytes_left(&s->gB) > 2 &&
         bytestream2_tell(&s->gB) > 2 &&
+        bytestream2_tell(&s->gB) != field_pos &&
         s->gB.buffer[-2] == 0xFF &&
         s->gB.buffer[-1] == 0xD1) {
         av_log(s->avctx, AV_LOG_DEBUG, "AVRn interlaced picture marker found\n");
+        field_pos = bytestream2_tell(&s->gB);
         s->bottom_field ^= 1;
 
         goto next_field;
