@@ -21,6 +21,7 @@
  * Based on cache.c by Michael Niedermayer
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/crc.h"
@@ -639,7 +640,7 @@ retry:
     case BLOCK_FAILED:
         if (!s->retry_errors)
             return AVERROR(EIO);
-        /* fall through */
+        av_fallthrough;
     case BLOCK_NONE:
         if (s->read_only)
             break; /* don't mark block as pending */
