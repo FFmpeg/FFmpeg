@@ -866,6 +866,12 @@ static int on2avc_decode_frame(AVCodecContext * avctx, AVFrame *frame,
             av_log(avctx, AV_LOG_ERROR, "No subframes present\n");
             return AVERROR_INVALIDDATA;
         }
+        if (num_frames > INT_MAX / ON2AVC_SUBFRAME_SIZE) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Too many subframes (%d); per-frame sample count overflows\n",
+                   num_frames);
+            return AVERROR_INVALIDDATA;
+        }
 
         /* get output buffer */
         frame->nb_samples = ON2AVC_SUBFRAME_SIZE * num_frames;
