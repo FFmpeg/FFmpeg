@@ -27,11 +27,8 @@
 #include "libavutil/hwcontext.h"
 #include "libavutil/log.h"
 #include "libavutil/pixfmt.h"
-#include "libavutil/rational.h"
-#include "libavutil/samplefmt.h"
 
 #include "libavcodec/codec_id.h"
-#include "libavcodec/version_major.h"
 
 /**
  * @addtogroup lavc_core
@@ -191,18 +188,6 @@ typedef struct AVCodec {
     int capabilities;
     uint8_t max_lowres;                     ///< maximum value for lowres supported by the decoder
 
-    /**
-     * Deprecated codec capabilities.
-     */
-    attribute_deprecated
-    const AVRational *supported_framerates; ///< @deprecated use avcodec_get_supported_config()
-    attribute_deprecated
-    const enum AVPixelFormat *pix_fmts;     ///< @deprecated use avcodec_get_supported_config()
-    attribute_deprecated
-    const int *supported_samplerates;       ///< @deprecated use avcodec_get_supported_config()
-    attribute_deprecated
-    const enum AVSampleFormat *sample_fmts; ///< @deprecated use avcodec_get_supported_config()
-
     const AVClass *priv_class;              ///< AVClass for the private context
     const AVProfile *profiles;              ///< array of recognized profiles, or NULL if unknown, array is terminated by {AV_PROFILE_UNKNOWN}
 
@@ -217,13 +202,6 @@ typedef struct AVCodec {
      * (usually AVCodec.name will be of the form "<codec_name>_<wrapper_name>").
      */
     const char *wrapper_name;
-
-    /**
-     * Array of supported channel layouts, terminated with a zeroed layout.
-     * @deprecated use avcodec_get_supported_config()
-     */
-    attribute_deprecated
-    const AVChannelLayout *ch_layouts;
 } AVCodec;
 
 /**

@@ -58,7 +58,7 @@ static int priv_data_size_wrong(const FFCodec *codec)
 
 #define ARRAY_CHECK(field, var, type, is_sentinel, check, sentinel_check) \
 do {                                                                      \
-    const type *ptr = codec->field;                                       \
+    const type *ptr = codec2->field;                                      \
     if (!ptr)                                                             \
         break;                                                            \
     type var = *ptr;                                                      \
@@ -102,17 +102,16 @@ int main(void){
             ERR_EXT("Codec %s has unsupported type %s\n",
                     get_type_string(codec->type));
         if (codec->type != AVMEDIA_TYPE_AUDIO) {
-FF_DISABLE_DEPRECATION_WARNINGS
-            if (codec->ch_layouts || codec->sample_fmts ||
-                codec->supported_samplerates)
+#if defined(ASSERT_LEVEL) && ASSERT_LEVEL >= 2
+            if (codec2->ch_layouts || codec2->sample_fmts ||
+                codec2->supported_samplerates)
                 ERR("Non-audio codec %s has audio-only fields set\n");
-FF_ENABLE_DEPRECATION_WARNINGS
+#endif
             if (codec->capabilities & (AV_CODEC_CAP_SMALL_LAST_FRAME |
                                        AV_CODEC_CAP_CHANNEL_CONF     |
                                        AV_CODEC_CAP_VARIABLE_FRAME_SIZE))
                 ERR("Non-audio codec %s has audio-only capabilities set\n");
         } else {
-FF_DISABLE_DEPRECATION_WARNINGS
             ARRAY_CHECK(supported_samplerates, sample_rate, int, sample_rate == 0,
                         sample_rate > 0, 1);
             ARRAY_CHECK(sample_fmts, sample_fmt, enum AVSampleFormat, sample_fmt == AV_SAMPLE_FMT_NONE,
@@ -120,14 +119,14 @@ FF_DISABLE_DEPRECATION_WARNINGS
             static const AVChannelLayout zero_channel_layout = { 0 };
             ARRAY_CHECK(ch_layouts, ch_layout, AVChannelLayout, ch_layout.nb_channels == 0,
                         av_channel_layout_check(&ch_layout), !memcmp(ptr, &zero_channel_layout, sizeof(ch_layout)));
-FF_ENABLE_DEPRECATION_WARNINGS
         }
         if (codec->type != AVMEDIA_TYPE_VIDEO) {
-FF_DISABLE_DEPRECATION_WARNINGS
-            if (codec->pix_fmts || codec->supported_framerates ||
-                codec2->color_ranges || codec2->alpha_modes)
+            if (codec2->color_ranges ||
+#if defined(ASSERT_LEVEL) && ASSERT_LEVEL >= 2
+                codec2->pix_fmts || codec2->supported_framerates ||
+#endif
+                codec2->alpha_modes)
                 ERR("Non-video codec %s has video-only fields set\n");
-FF_ENABLE_DEPRECATION_WARNINGS
             if (codec2->caps_internal & FF_CODEC_CAP_EXPORTS_CROPPING)
                 ERR("Non-video codec %s exports cropping\n");
         }
@@ -176,8 +175,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             if (codec2->update_thread_context || codec2->update_thread_context_for_user || codec2->bsfs)
                 ERR("Encoder %s has decoder-only thread functions or bsf.\n");
             if (codec->type == AVMEDIA_TYPE_AUDIO) {
-FF_DISABLE_DEPRECATION_WARNINGS
-                if (!codec->sample_fmts) {
+                if (!codec2->sample_fmts) {
                     av_log(NULL, AV_LOG_FATAL, "Encoder %s is missing the sample_fmts field\n", codec->name);
                     ret = 1;
                 }
@@ -186,7 +184,6 @@ FF_DISABLE_DEPRECATION_WARNINGS
                             av_pix_fmt_desc_get(pix_fmt), 1);
                 ARRAY_CHECK(supported_framerates, framerate, AVRational, framerate.num == 0,
                             framerate.num > 0 && framerate.den > 0, framerate.den == 0);
-FF_ENABLE_DEPRECATION_WARNINGS
             }
             if (codec2->caps_internal & (FF_CODEC_CAP_USES_PROGRESSFRAMES |
                                         FF_CODEC_CAP_SETS_PKT_DTS |
@@ -225,10 +222,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 codec2->caps_internal & FF_CODEC_CAP_SETS_PKT_DTS)
                 ERR("Decoder %s is marked as setting pkt_dts when it doesn't have"
                     "any effect\n");
-FF_DISABLE_DEPRECATION_WARNINGS
-            if (codec->type == AVMEDIA_TYPE_VIDEO && (codec->pix_fmts || codec->supported_framerates))
+            if (codec->type == AVMEDIA_TYPE_VIDEO && (codec2->pix_fmts || codec2->supported_framerates))
                 ERR("Decoder %s sets pix_fmts or supported_framerates.\n");
-FF_ENABLE_DEPRECATION_WARNINGS
         }
         if (priv_data_size_wrong(codec2))
             ERR_EXT("Private context of codec %s is impossibly-sized (size %d).",

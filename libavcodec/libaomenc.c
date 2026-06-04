@@ -1622,7 +1622,7 @@ static const AVClass class_aom = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-FFCodec ff_libaom_av1_encoder = {
+const FFCodec ff_libaom_av1_encoder = {
     .p.name         = "libaom-av1",
     CODEC_LONG_NAME("libaom AV1"),
     .p.type         = AVMEDIA_TYPE_VIDEO,

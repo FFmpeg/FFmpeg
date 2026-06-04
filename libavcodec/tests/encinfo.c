@@ -60,7 +60,14 @@ int main(int argc, char **argv)
         return AVERROR(ENOMEM);
 
     ctx->sample_rate = sample_rate;
-    ctx->sample_fmt  = codec->sample_fmts ? codec->sample_fmts[0] : AV_SAMPLE_FMT_S16;
+    const void *sample_fmts;
+    ret = avcodec_get_supported_config(ctx, NULL, AV_CODEC_CONFIG_SAMPLE_FORMAT, 0, &sample_fmts, NULL);
+    if (ret < 0) {
+        fprintf(stderr, "avcodec_get_supported_config failed: %d\n", ret);
+        avcodec_free_context(&ctx);
+        return 1;
+    }
+    ctx->sample_fmt = sample_fmts ? *(const enum AVSampleFormat*)sample_fmts : AV_SAMPLE_FMT_S16;
     av_channel_layout_default(&ctx->ch_layout, channels);
 
     ret = avcodec_open2(ctx, codec, NULL);

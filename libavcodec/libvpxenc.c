@@ -2214,7 +2214,7 @@ static const AVClass class_vp9 = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-FFCodec ff_libvpx_vp9_encoder = {
+const FFCodec ff_libvpx_vp9_encoder = {
     .p.name         = "libvpx-vp9",
     CODEC_LONG_NAME("libvpx VP9"),
     .p.type         = AVMEDIA_TYPE_VIDEO,

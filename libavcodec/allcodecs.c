@@ -28,8 +28,6 @@
 #include <string.h>
 
 #include "config.h"
-#include "libavutil/thread.h"
-#include "avcodec.h"
 #include "codec.h"
 #include "codec_id.h"
 #include "codec_internal.h"
@@ -769,7 +767,7 @@ extern const FFCodec ff_pcm_mulaw_at_encoder;
 extern const FFCodec ff_pcm_mulaw_at_decoder;
 extern const FFCodec ff_qdmc_at_decoder;
 extern const FFCodec ff_qdm2_at_decoder;
-extern FFCodec ff_libaom_av1_encoder;
+extern const FFCodec ff_libaom_av1_encoder;
 /* preferred over libaribb24 */
 extern const FFCodec ff_libaribcaption_decoder;
 extern const FFCodec ff_libaribb24_decoder;
@@ -816,7 +814,7 @@ extern const FFCodec ff_libvorbis_encoder;
 extern const FFCodec ff_libvorbis_decoder;
 extern const FFCodec ff_libvpx_vp8_encoder;
 extern const FFCodec ff_libvpx_vp8_decoder;
-extern FFCodec ff_libvpx_vp9_encoder;
+extern const FFCodec ff_libvpx_vp9_encoder;
 extern const FFCodec ff_libvpx_vp9_decoder;
 extern const FFCodec ff_libvvenc_encoder;
 /* preferred over libwebp */
@@ -825,7 +823,7 @@ extern const FFCodec ff_libwebp_encoder;
 extern const FFCodec ff_libx262_encoder;
 extern const FFCodec ff_libx264_encoder;
 extern const FFCodec ff_libx264rgb_encoder;
-extern FFCodec ff_libx265_encoder;
+extern const FFCodec ff_libx265_encoder;
 extern const FFCodec ff_libxeve_encoder;
 extern const FFCodec ff_libxevd_decoder;
 extern const FFCodec ff_libxavs_encoder;
@@ -940,52 +938,10 @@ const FFCodec * codec_list[] = {
 #include "libavcodec/codec_list.c"
 #endif
 
-static AVOnce av_codec_static_init = AV_ONCE_INIT;
-static void av_codec_init_static(void)
-{
-    int dummy;
-    for (int i = 0; codec_list[i]; i++) {
-        /* Backward compatibility with deprecated public fields */
-        const FFCodec *codec = codec_list[i];
-        if (!codec->get_supported_config)
-            continue;
-
-FF_DISABLE_DEPRECATION_WARNINGS
-        switch (codec->p.type) {
-        case AVMEDIA_TYPE_VIDEO:
-            if (!codec->p.pix_fmts)
-                codec->get_supported_config(NULL, &codec->p,
-                                            AV_CODEC_CONFIG_PIX_FORMAT, 0,
-                                            (const void **) &codec->p.pix_fmts,
-                                            &dummy);
-            break;
-        case AVMEDIA_TYPE_AUDIO:
-            codec->get_supported_config(NULL, &codec->p,
-                                        AV_CODEC_CONFIG_SAMPLE_FORMAT, 0,
-                                        (const void **) &codec->p.sample_fmts,
-                                        &dummy);
-            codec->get_supported_config(NULL, &codec->p,
-                                        AV_CODEC_CONFIG_SAMPLE_RATE, 0,
-                                        (const void **) &codec->p.supported_samplerates,
-                                        &dummy);
-            codec->get_supported_config(NULL, &codec->p,
-                                        AV_CODEC_CONFIG_CHANNEL_LAYOUT, 0,
-                                        (const void **) &codec->p.ch_layouts,
-                                        &dummy);
-            break;
-        default:
-            break;
-        }
-FF_ENABLE_DEPRECATION_WARNINGS
-    }
-}
-
 const AVCodec *av_codec_iterate(void **opaque)
 {
     uintptr_t i = (uintptr_t)*opaque;
     const FFCodec *c = codec_list[i];
-
-    ff_thread_once(&av_codec_static_init, av_codec_init_static);
 
     if (c) {
         *opaque = (void*)(i + 1);

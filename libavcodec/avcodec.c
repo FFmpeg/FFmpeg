@@ -726,7 +726,7 @@ int avcodec_receive_frame(AVCodecContext *avctx, AVFrame *frame)
     do {                                                                    \
         if (codec->type != (allowed_type))                                  \
             return AVERROR(EINVAL);                                         \
-        const field_type *ptr = codec->field;                               \
+        const field_type *ptr = codec2->field;                              \
         *out_configs = ptr;                                                 \
         if (ptr) {                                                          \
             for (int i = 0;; i++) {                                         \
@@ -772,7 +772,6 @@ int ff_default_get_supported_config(const AVCodecContext *avctx,
     const FFCodec *codec2 = ffcodec(codec);
 
     switch (config) {
-FF_DISABLE_DEPRECATION_WARNINGS
     case AV_CODEC_CONFIG_PIX_FORMAT:
         WRAP_CONFIG(AVMEDIA_TYPE_VIDEO, pix_fmts, pix_fmt, enum AVPixelFormat, pix_fmt == AV_PIX_FMT_NONE);
     case AV_CODEC_CONFIG_FRAME_RATE:
@@ -783,7 +782,6 @@ FF_DISABLE_DEPRECATION_WARNINGS
         WRAP_CONFIG(AVMEDIA_TYPE_AUDIO, sample_fmts, sample_fmt, enum AVSampleFormat, sample_fmt == AV_SAMPLE_FMT_NONE);
     case AV_CODEC_CONFIG_CHANNEL_LAYOUT:
         WRAP_CONFIG(AVMEDIA_TYPE_AUDIO, ch_layouts, ch_layout, AVChannelLayout, ch_layout.nb_channels == 0);
-FF_ENABLE_DEPRECATION_WARNINGS
 
     case AV_CODEC_CONFIG_COLOR_RANGE:
         if (codec->type != AVMEDIA_TYPE_VIDEO)
