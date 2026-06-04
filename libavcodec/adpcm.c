@@ -1174,7 +1174,7 @@ static int get_nb_samples(AVCodecContext *avctx, GetByteContext *gb,
 
     if(ch <= 0)
         return 0;
-    if (buf_size > INT_MAX / 2)
+    if (buf_size > INT_MAX / 14)
         return 0;
 
     switch (avctx->codec->id) {
