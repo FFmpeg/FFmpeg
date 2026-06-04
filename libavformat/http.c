@@ -1546,6 +1546,14 @@ static void bprint_escaped_path(AVBPrint *bp, const char *path)
     }
 }
 
+static uint64_t request_size(URLContext *h)
+{
+    HTTPContext *s = h->priv_data;
+    if (s->initial_requests)
+        return s->initial_request_size;
+    return s->request_size;
+}
+
 static int http_connect(URLContext *h, const char *path, const char *local_path,
                         const char *hoststr, const char *auth,
                         const char *proxyauth)
@@ -1618,8 +1626,8 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     // server supports seeking by analysing the reply headers.
     if (!has_header(s->headers, "\r\nRange: ") && !post && (s->off > 0 || s->end_off || s->seekable != 0)) {
         av_bprintf(&request, "Range: bytes=%"PRIu64"-", s->off);
-        if ((s->initial_requests || s->request_size) && s->seekable != 0) {
-            uint64_t req_size = s->initial_requests ? s->initial_request_size : s->request_size;
+        uint64_t req_size = request_size(h);
+        if (req_size && s->seekable != 0) {
             uint64_t target_off = s->off + req_size;
             if (target_off < s->off) /* overflow */
                 target_off = UINT64_MAX;
