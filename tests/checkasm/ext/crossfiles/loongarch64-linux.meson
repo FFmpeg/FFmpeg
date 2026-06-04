@@ -1,0 +1,13 @@
+[binaries]
+c = 'loongarch64-unknown-linux-gnu-gcc'
+cpp = 'loongarch64-unknown-linux-gnu-c++'
+ar = 'loongarch64-unknown-linux-gnu-ar'
+strip = 'loongarch64-unknown-linux-gnu-strip'
+pkgconfig = 'pkg-config'
+exe_wrapper = 'qemu-loongarch64'
+
+[host_machine]
+system = 'linux'
+cpu_family = 'loongarch64'
+cpu = 'loongarch64'
+endian = 'little'

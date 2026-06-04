@@ -1,0 +1,99 @@
+<body>
+  <div class="content">
+    <h1 class='title'>checkasm performance measurements</h1>
+    <p class="no-print"><a href="#grokularation">want to understand this report?</a></p>
+    <h1 id="overview"><a href="#overview">overview</a></h1>
+    <div class="no-print">
+      <button id="toggleOverview">Collapse All</button>
+      <span class="overview-info">
+        <select id="sort-overview" class="select">
+          <option value="report-index">index</option>
+          <option value="lex">name</option>
+          <option value="colex">suffix</option>
+          <option value="duration">time ascending</option>
+          <option value="rev-duration">time descending</option>
+        </select>
+        <a href="#controls-explanation" class="info" title="click bar/label to zoom; x-axis to toggle logarithmic scale; background to reset">&#9432;</a>
+        <a id="legend-toggle" class="chevron button"></a>
+      </span>
+    </div>
+    <aside id="overview-charts"></aside>
+    <main id="reports"></main>
+  </div>
+
+  <aside id="controls-explanation" class="explanation no-print">
+    <h1><a href="#controls-explanation">controls</a></h1>
+
+    <p>
+      The overview chart can be controlled by clicking the following elements:
+      <ul>
+        <li><em>a bar or its label</em> zooms the x-axis to that bar</li>
+        <li><em>the background</em> resets zoom to the entire chart</li>
+        <li><em>the x-axis</em> toggles between linear and logarithmic scale</li>
+        <li><em>the chevron</em> in the top-right toggles the the legend</li>
+        <li><em>a group name in the legend</em> shows/hides that group</li>
+      </ul>
+    </p>
+
+  </aside>
+
+  <aside id="grokularation" class="explanation">
+
+    <h1><a href="#grokularation">understanding this report</a></h1>
+
+    <p>
+      In this report, each function benchmarked by checkasm is assigned a section of its own.
+      <span class="no-print">The charts in each section are active; if you hover your mouse over data points and annotations, you will see more details.</span>
+    </p>
+
+    <ul>
+      <li>
+        The chart on the left is a <a href="http://en.wikipedia.org/wiki/Kernel_density_estimation">kernel density estimate</a> (also known as a KDE) of time measurements.
+        This graphs the probability of any given time measurement occurring. This function is estimated from a <a href="https://en.wikipedia.org/wiki/Log-normal_distribution">Log-normal
+        distribution</a> fitted to the measurement data. The peak corresponds to the most likely execution time (point estimate).
+      </li>
+
+      <li>
+        The chart on the right is the raw data from which the kernel density estimate is built.
+        The <em>x</em>-axis indicates the number of loop iterations, while the <em>y</em>-axis shows measured execution time for the given number of loop iterations.
+        The line behind the values is the linear regression estimate of execution time for a given number of iterations.
+        Ideally, all measurements will be on (or very near) this line.
+        The transparent area behind it shows the 95% confidence interval for the execution time estimate.
+        Note that, for technical reasons, when <code>bench_run()</code> is called multiple times in the same
+        function, only the last call's measurements are shown in this chart.
+      </li>
+    </ul>
+
+    <p>
+      Under the charts is a small table. They show the results of a log-space linear regression
+      run on the measurements displayed in the right-hand chart.
+    </p>
+
+    <ul>
+      <li>
+        <em>Adjusted cycles</em> is the estimated number of CPU cycles taken by a single function
+        call, after subtracting the overhead of the measurement loop and function call itself.
+      </li>
+      <li>
+        <em>Adjusted time</em> is the estimated time taken by a single function call, after
+        normalization by the estimated hardware timer tick frequency, and includes extra variance
+        from the uncertainty of the tick rate estimation.
+      </li>
+      <li>
+        <em>Raw cycles</em> and <em>Raw time</em> reflect the raw data collected from the underlying
+        hardware counter, before subtracting the measurement overhead.
+      </li>
+    </ul>
+  </aside>
+
+  <footer>
+    <div class="content">
+      <h1 class="colophon-header">colophon</h1>
+      <p>
+        This report was created using the <a id="checkasm-version" href="https://code.videolan.org/videolan/checkasm">checkasm</a>
+        assembly testing and performance analysis tool. The data analysis and report template was copied from
+        the <a href=" http://hackage.haskell.org/package/criterion">Haskell criterion</a> library.
+      </p>
+    </div>
+  </footer>
+</body>

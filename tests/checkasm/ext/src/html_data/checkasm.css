@@ -1,0 +1,163 @@
+html,body {
+  padding: 0; margin: 0;
+  font-family: sans-serif;
+}
+* {
+    -webkit-tap-highlight-color: transparent;
+}
+div.scatter, div.kde {
+  position: relative;
+  display: inline-block;
+  box-sizing: border-box;
+  width: 50%;
+  padding: 0 2em;
+}
+.content, .explanation {
+  margin: auto;
+  max-width: 1000px;
+  padding: 0 20px;
+}
+
+#legend-toggle {
+  cursor: pointer;
+}
+
+.overview-info {
+  float:right;
+}
+
+.overview-info a {
+  display: inline-block;
+  margin-left: 10px;
+}
+.overview-info .info {
+  font-size: 120%;
+  font-weight: 400;
+  vertical-align: middle;
+  line-height: 1em;
+}
+.chevron {
+  position:relative;
+  color: black;
+  display:block;
+  transition-property: transform;
+  transition-duration: 400ms;
+  line-height: 1em;
+  font-size: 180%;
+}
+.chevron.right {
+  transform: scale(-1,1);
+}
+.chevron::before {
+  vertical-align: middle;
+  content:"\2039";
+}
+
+#cpu-info {
+  font-size: 90%;
+}
+
+select, button {
+  outline: none;
+  border: none;
+  background: transparent;
+  margin-left: 2em;
+}
+
+footer .content {
+  padding: 0;
+}
+
+span#explain-interactivity {
+  display-block: inline;
+  float: right;
+  color: #444;
+  font-size: 0.7em;
+}
+
+@media screen and (max-width: 800px) {
+  div.scatter, div.kde {
+    width: 100%;
+    display: block;
+  }
+  .report-details .outliers {
+    margin: auto;
+  }
+  .report-details table {
+    margin: auto;
+  }
+}
+table.analysis .low, table.analysis .high {
+  opacity: 0.5;
+}
+.report-details {
+  margin: 1em 0;
+  page-break-inside: avoid;
+}
+a, a:hover, a:visited, a:active {
+  text-decoration: none;
+  color: #309ef2;
+}
+h1.title {
+  font-weight: 600;
+}
+h1 {
+  font-weight: 400;
+  margin-bottom: 0.2em;
+}
+#overview-chart {
+  width: 100%; /*height is determined by number of rows in JavaScript */
+}
+summary {
+    font-size: 1.17em;
+    font-weight: bold;
+    cursor: pointer;
+    color: #309ef2;
+}
+.report-details summary {
+    font-size: 1.5em;
+}
+footer {
+  background: #777777;
+  color: #ffffff;
+  padding: 20px;
+}
+footer a, footer a:hover, footer a:visited, footer a:active {
+  text-decoration: underline;
+  color: #fff;
+}
+
+#configuration em {
+  font-weight: 600;
+  font-style: normal;
+}
+
+.explanation {
+  margin-top: 3em;
+}
+
+.explanation h1 {
+  font-size: 2.6em;
+}
+
+#grokularation.explanation li {
+  margin: 1em 0;
+}
+
+#controls-explanation.explanation em {
+  font-weight: 600;
+  font-style: normal;
+}
+
+@media print {
+  footer {
+    background: transparent;
+    color: black;
+  }
+  footer a, footer a:hover, footer a:visited, footer a:active {
+    color: #309ef2;
+  }
+  .no-print {
+    display: none;
+  }
+}

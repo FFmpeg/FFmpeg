@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doxygenlayout version="2.0">
+  <navindex>
+    <tab type="mainpage" visible="yes" title=""/>
+    <tab type="pages" visible="yes" title="" intro=""/>
+    <tab type="filelist" visible="yes" title="API Reference" intro=""/>
+    <tab type="examples" visible="yes" title="" intro=""/>
+  </navindex>
+
+  <!-- Layout definition for a file page -->
+  <file>
+    <briefdescription visible="no"/>
+    <includes visible="no"/>
+    <includegraph visible="no"/>
+    <includedbygraph visible="no"/>
+    <detaileddescription visible="yes" title=""/>
+    <sourcelink visible="yes"/>
+    <memberdecl>
+      <interfaces visible="yes" title=""/>
+      <classes visible="yes" title=""/>
+      <structs visible="yes" title=""/>
+      <exceptions visible="yes" title=""/>
+      <namespaces visible="yes" title=""/>
+      <concepts visible="yes" title=""/>
+      <constantgroups visible="yes" title=""/>
+      <defines visible="yes" title=""/>
+      <typedefs visible="yes" title=""/>
+      <sequences visible="yes" title=""/>
+      <dictionaries visible="yes" title=""/>
+      <enums visible="yes" title=""/>
+      <functions visible="yes" title=""/>
+      <variables visible="yes" title=""/>
+      <properties visible="yes" title=""/>
+      <membergroups visible="yes"/>
+    </memberdecl>
+    <memberdef>
+      <inlineclasses visible="yes" title=""/>
+      <defines visible="yes" title=""/>
+      <typedefs visible="yes" title=""/>
+      <sequences visible="yes" title=""/>
+      <dictionaries visible="yes" title=""/>
+      <enums visible="yes" title=""/>
+      <functions visible="yes" title=""/>
+      <variables visible="yes" title=""/>
+      <properties visible="yes" title=""/>
+    </memberdef>
+    <authorsection/>
+  </file>
+</doxygenlayout>
