@@ -8900,7 +8900,7 @@ EOF
     fi
 
     cat >> $TMPH <<EOF
-#endif /* FFMPEG_CHECKASM_CONFIG_H */
+#endif /* FFMPEG_CHECKASM_CONFIG_GENERATED_H */
 EOF
 
     cp_if_changed $TMPH checkasm_config_generated.h
