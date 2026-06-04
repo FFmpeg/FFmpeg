@@ -795,6 +795,12 @@ function ff_tx_mdct_inv_float_neon, export=1
         madd            x14, x5,  x3,  x2           // in2 = in + (N-1)*stride
         lsr             w7,  w21, #1                // len2
 
+        cmp             x3,  #4                     // contiguous input and
+        b.ne            6f                          // len2 % 4 == 0 takes the
+        tst             w21, #7                     // single-sweep path
+        b.eq            3f
+
+6:
         // pre-rotation via gather: z[i] = (in2[-k], in1[k])*exp[i], 2 cx/iter
         mov             x13, x19
         mov             x15, x22
@@ -818,7 +824,53 @@ function ff_tx_mdct_inv_float_neon, export=1
         st1             { v5.4s }, [x13], #16
         subs            w7,  w7,  #2
         b.gt            1b
+        b               4f
 
+        // pre-rotation, contiguous: the input is effectively (im, re, im, ...)
+        // interleaved, so sweep it once from both ends with the planes
+        // ld2-split: low ims pair with high res (outputs p, p+1) and high ims
+        // with low res (outputs p'-1, p', p' = len2-1-p), scattered through
+        // the inverse map (2nd half of s->map) with the natural twiddles
+3:
+        add             x15, x22, x21, lsl #2       // exp + len2          (asc)
+        add             x4,  x4,  x21, lsl #1       // map + len2          (asc)
+        sub             x10, x14, #12               // &in[N-4]            (desc)
+        add             x12, x15, x21, lsl #2
+        sub             x12, x12, #16               // exp + (N-2)         (desc)
+        add             x13, x4,  x21, lsl #1
+        sub             x13, x13, #8                // map + (N-2)         (desc)
+5:
+        ld2             { v6.2s, v7.2s }, [x2], #16  // (im_p, im_p1) (re_p', re_p'm1)
+        ld2             { v16.2s, v17.2s }, [x10]    // (im_p'm1, im_p') (re_p1, re_p)
+        sub             x10, x10, #16
+        rev64           v17.2s, v17.2s              // (re_p, re_p1)
+        ld2             { v1.2s, v2.2s }, [x15], #16 // A: er, ei
+        rev64           v7.2s, v7.2s                // (re_p'm1, re_p')
+        ld2             { v3.2s, v4.2s }, [x12]      // B: er, ei
+        sub             x12, x12, #16
+        fmul            v5.2s,  v17.2s, v1.2s       // A: re*er
+        fmul            v18.2s, v17.2s, v2.2s       // A: re*ei
+        fmul            v19.2s, v7.2s,  v3.2s       // B: re*er
+        fmul            v20.2s, v7.2s,  v4.2s       // B: re*ei
+        fmls            v5.2s,  v6.2s,  v2.2s       // A: z.re plane
+        fmla            v18.2s, v6.2s,  v1.2s       // A: z.im plane
+        fmls            v19.2s, v16.2s, v4.2s       // B: z.re plane
+        fmla            v20.2s, v16.2s, v3.2s       // B: z.im plane
+        ldp             w16, w17, [x4], #8          // inv_map[p, p+1]
+        zip1            v0.2s,  v5.2s,  v18.2s      // z_p
+        zip2            v1.2s,  v5.2s,  v18.2s      // z_p1
+        str             d0,  [x19, w16, uxtw #3]
+        str             d1,  [x19, w17, uxtw #3]
+        ldp             w16, w17, [x13]             // inv_map[p'-1, p']
+        sub             x13, x13, #8
+        zip1            v2.2s,  v19.2s, v20.2s      // z_p'm1
+        zip2            v3.2s,  v19.2s, v20.2s      // z_p'
+        str             d2,  [x19, w16, uxtw #3]
+        str             d3,  [x19, w17, uxtw #3]
+        subs            w7,  w7,  #4
+        b.gt            5b
+
+4:
         ldr             x5,  [x20, #40]             // fn[0]
         ldr             x0,  [x20, #32]             // sub[0]
         mov             x1,  x19

@@ -149,7 +149,11 @@ static av_cold int mdct_inv_init(AVTXContext *s, const FFTXCodelet *cd,
                                 inv, scale)))
         return ret;
 
-    s->map = av_malloc((len >> 1)*sizeof(*s->map));
+    /* The map holds the gather map (first half, used by the strided
+     * pre-rotation) followed by its inverse (second half): the contiguous
+     * stride==4 path reads the input in order and scatters output complex i
+     * to position s->map[len2 + j], where j is the contiguous input index. */
+    s->map = av_malloc(len*sizeof(*s->map));
     if (!s->map)
         return AVERROR(ENOMEM);
 
@@ -158,7 +162,11 @@ static av_cold int mdct_inv_init(AVTXContext *s, const FFTXCodelet *cd,
     if ((ret = ff_tx_mdct_gen_exp_float(s, s->map)))
         return ret;
 
-    /* Pre-double the map indices (saves a shift in the hot path). */
+    /* Invert the gather map for the contiguous path (before doubling). */
+    for (int i = 0; i < (len >> 1); i++)
+        s->map[(len >> 1) + s->map[i]] = i;
+
+    /* Pre-double the gather-map indices (saves a shift in the strided path). */
     for (int i = 0; i < (len >> 1); i++)
         s->map[i] <<= 1;
 
