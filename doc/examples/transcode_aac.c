@@ -152,6 +152,7 @@ static int open_output_file(const char *filename,
     AVIOContext *output_io_context = NULL;
     AVStream *stream               = NULL;
     const AVCodec *output_codec    = NULL;
+    const void *sample_fmts;
     int error;
 
     /* Open the output file to write to it. */
@@ -207,8 +208,12 @@ static int open_output_file(const char *filename,
     /* Set the basic encoder parameters.
      * The input file's sample rate is used to avoid a sample rate conversion. */
     av_channel_layout_default(&avctx->ch_layout, OUTPUT_CHANNELS);
+    error = avcodec_get_supported_config(avctx, NULL, AV_CODEC_CONFIG_SAMPLE_FORMAT,
+                                         0, &sample_fmts, NULL);
+    av_assert0(error >= 0);
+    avctx->sample_fmt     = sample_fmts ? *(const enum AVSampleFormat*)sample_fmts
+                                        : input_codec_context->sample_fmt;
     avctx->sample_rate    = input_codec_context->sample_rate;
-    avctx->sample_fmt     = output_codec->sample_fmts[0];
     avctx->bit_rate       = OUTPUT_BIT_RATE;
 
     /* Set the sample rate for the container. */
