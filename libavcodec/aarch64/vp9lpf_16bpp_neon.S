@@ -56,9 +56,7 @@
         mov             x11, v4.d[0]
         mov             x12, v4.d[1]
         adds            x11, x11, x12
-        b.ne            1f
-        ret             x10
-1:
+        b.eq            9f
 
 .if \wd >= 8
         dup             v0.8h,  w5
@@ -189,13 +187,7 @@
         // If no pixels need flat8in, jump to flat8out
         // (or to a writeout of the inner 4 pixels, for wd=8)
 .if \wd >= 8
-.if \wd == 16
         b.eq            6f
-.else
-        b.ne            1f
-        ret             x13
-1:
-.endif
 
         // flat8in
         add             \tmp1\().8h, v20.8h, v21.8h
@@ -249,20 +241,16 @@
         mov             x11, v2.d[0]
         mov             x12, v2.d[1]
         adds            x11, x11, x12
-        b.ne            1f
         // If no pixels needed flat8in nor flat8out, jump to a
         // writeout of the inner 4 pixels
-        ret             x14
-1:
+        b.eq            7f
 
         mov             x11, v7.d[0]
         mov             x12, v7.d[1]
         adds            x11, x11, x12
-        b.ne            1f
         // If no pixels need flat8out, jump to a writeout of the inner 6 pixels
-        ret             x15
+        b.eq            8f
 
-1:
         // flat8out
         // This writes all outputs into v2-v17 (skipping v6 and v16).
         // If this part is skipped, the output is read from v21-v26 (which is the input
@@ -378,35 +366,57 @@
 // while we need those for inputs/outputs in wd=16 and use v8-v15
 // for temp registers there instead.
 function vp9_loop_filter_4
+        mov             x13, #0
         loop_filter     4,  v16, v17, v18, v19, v28, v29, v30, v31
+        ret
+9:
+        mov             x13, #(1<<9)
         ret
 endfunc
 
 function vp9_loop_filter_8
+        mov             x13, #0
         loop_filter     8,  v16, v17, v18, v19, v28, v29, v30, v31
+        ret
+6:
+        mov             x13, #(1<<6)
+        ret
+9:
+        mov             x13, #(1<<9)
         ret
 endfunc
 
 function vp9_loop_filter_16
+        mov             x13, #0
         loop_filter     16, v8,  v9,  v10, v11, v12, v13, v14, v15
+        ret
+7:
+        mov             x13, #(1<<7)
+        ret
+8:
+        mov             x13, #(1<<8)
+        ret
+9:
+        mov             x13, #(1<<9)
         ret
 endfunc
 
 .macro loop_filter_4
         bl              vp9_loop_filter_4
+        tbnz            x13, #9, 9f
 .endm
 
 .macro loop_filter_8
-        // calculate alternative 'return' targets
-        adr             x13, 6f
         bl              vp9_loop_filter_8
+        tbnz            x13, #6, 6f
+        tbnz            x13, #9, 9f
 .endm
 
 .macro loop_filter_16
-        // calculate alternative 'return' targets
-        adr             x14, 7f
-        adr             x15, 8f
         bl              vp9_loop_filter_16
+        tbnz            x13, #7, 7f
+        tbnz            x13, #8, 8f
+        tbnz            x13, #9, 9f
 .endm
 
 
@@ -540,7 +550,7 @@ function vp9_loop_filter_v_4_8_16_neon
         st1             {v23.8h}, [x9], x1
         st1             {v25.8h}, [x0], x1
         sub             x0,  x0,  x1, lsl #1
-
+9:
         ret             x10
 endfunc
 
@@ -588,7 +598,7 @@ function vp9_loop_filter_h_4_8_16_neon
         st1             {v25.d}[1], [x0], x1
         sub             x0,  x0,  x1, lsl #3
         add             x0,  x0,  #4
-
+9:
         ret             x10
 endfunc
 
@@ -619,7 +629,7 @@ function vp9_loop_filter_v_8_8_16_neon
         st1             {v26.8h}, [x0], x1
         sub             x0,  x0,  x1, lsl #1
         sub             x0,  x0,  x1
-
+9:
         ret             x10
 6:
         sub             x9,  x0,  x1, lsl #1
@@ -670,7 +680,7 @@ function vp9_loop_filter_h_8_8_16_neon
         st1             {v27.8h}, [x0], x1
         sub             x0,  x0,  x1, lsl #3
         add             x0,  x0,  #8
-
+9:
         ret             x10
 6:
         // If we didn't need to do the flat8in part, we use the same writeback
@@ -742,7 +752,7 @@ function vp9_loop_filter_v_16_8_16_neon
         st1             {v17.8h}, [x0], x1
         sub             x0,  x0,  x1, lsl #3
         add             x0,  x0,  x1
-
+9:
         ret             x10
 8:
         add             x9,  x9,  x1, lsl #2
@@ -820,7 +830,7 @@ function vp9_loop_filter_h_16_8_16_neon
         st1             {v9.8h},  [x9], x1
         st1             {v31.8h}, [x0], x1
         sub             x0,  x0,  x1, lsl #3
-
+9:
         ret             x10
 8:
         // The same writeback as in loop_filter_h_8_8
