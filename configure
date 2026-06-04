@@ -8173,8 +8173,8 @@ elif enabled gcc; then
     enabled extra_warnings || check_disable_warning -Wno-maybe-uninitialized
     if enabled x86_32; then
         case $target_os in
-        *bsd*)
-            # BSDs don't guarantee a 16 byte aligned stack, but we can
+        *bsd*|mingw*|win*|cygwin*)
+            # These targets don't guarantee a 16 byte aligned stack, but we can
             # request GCC to try to maintain 16 byte alignment throughout
             # function calls. Library entry points that might call assembly
             # functions align the stack. (The parameter means 2^4 bytes.)
