@@ -25,6 +25,8 @@
 #include <gnutls/dtls.h>
 #include <gnutls/x509.h>
 
+#include "config_components.h"
+
 #include "avformat.h"
 #include "network.h"
 #include "os_support.h"

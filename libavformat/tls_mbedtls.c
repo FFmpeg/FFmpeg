@@ -32,6 +32,8 @@
 #include <psa/crypto.h>
 #endif
 
+#include "config_components.h"
+
 #include "avformat.h"
 #include "internal.h"
 #include "network.h"
