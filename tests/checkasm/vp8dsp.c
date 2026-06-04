@@ -309,7 +309,7 @@ static void check_mc(VP8DSPContext *d)
                         CLEAR_BUF_RECT(dst1);
                         call_ref(dst0, dst0_stride, src, SRC_BUF_STRIDE, height, mx, my);
                         call_new(dst1, dst1_stride, src, SRC_BUF_STRIDE, height, mx, my);
-                        checkasm_check_padded(uint8_t, dst0, dst0_stride, dst1, dst1_stride, size, height, "dst");
+                        checkasm_check_rect_padded(dst0, dst0_stride, dst1, dst1_stride, size, height, "dst");
                         bench_new(dst1, size, src, SRC_BUF_STRIDE, height, mx, my);
                     }
                 }

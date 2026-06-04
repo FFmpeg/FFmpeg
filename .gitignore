@@ -39,6 +39,8 @@
 /ffmpeg
 /ffplay
 /ffprobe
+/checkasm_config_generated.asm
+/checkasm_config_generated.h
 /config.asm
 /config.h
 /config_components.asm
