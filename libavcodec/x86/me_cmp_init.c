@@ -73,6 +73,8 @@ int ff_vsad16u_approx_sse2(MPVEncContext *v, const uint8_t *pix1, const uint8_t 
                            ptrdiff_t stride, int h);
 int ff_median_sad16_ssse3(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                           ptrdiff_t stride, int h);
+int ff_median_sad8_ssse3(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+                         ptrdiff_t stride, int h);
 
 #define hadamard_func(cpu)                                                       \
     int ff_hadamard8_diff_ ## cpu(MPVEncContext *s, const uint8_t *src1,         \
@@ -175,6 +177,7 @@ av_cold void ff_me_cmp_init_x86(MECmpContext *c, AVCodecContext *avctx)
 
 #if ARCH_X86_64
         c->median_sad[0] = ff_median_sad16_ssse3;
+        c->median_sad[1] = ff_median_sad8_ssse3;
 #endif
     }
 }

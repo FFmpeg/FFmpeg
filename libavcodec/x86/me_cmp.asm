@@ -837,6 +837,17 @@ VSAD_APPROX 16, u
     psrldq    %4, %2, 2         ; V columns 9-16
 %endmacro
 
+; Same as LOAD_V16 for one row of 8 pixels.
+; %1: V columns 0-7, %2: V columns 1-8 (column 8 is zero), %3: scratch register
+%macro LOAD_V8 3
+    movq      %1, [pix1q]
+    movq      %2, [pix2q]
+    punpcklbw %1, %3
+    punpcklbw %2, %3
+    psubw     %1, %2            ; V columns 0-7
+    psrldq    %2, %1, 2         ; V columns 1-8
+%endmacro
+
 ; Accumulate abs(%5 - mid_pred(%2, %3, %2 + %3 - %4)) into %1, using
 ; mid_pred(a, b, c) == max(min(a, b), min(max(a, b), c)).  The top predictor
 ; %2 is not needed afterwards and is clobbered.
@@ -926,5 +937,69 @@ cglobal median_sad16, 5, 5, 15, v, pix1, pix2, stride, h
 
 INIT_XMM ssse3
 MEDIAN_SAD16
+
+; Accumulate one row's cost from the previous and current row vectors.
+; %1: previous row V columns 0-7, %2: previous row V columns 1-8
+; %3: current  row V columns 0-7, %4: current  row V columns 1-8 (loaded here)
+; m0/m1 are the accumulators, m7/m8 temporaries, m9 scratch.
+%macro PROCESS_ROW8 4
+    LOAD_V8   %3, %4, m9
+    add       pix1q, strideq
+    add       pix2q, strideq
+    ; column 0: abs(V(0) - V(-stride))
+    psubw     m7, %3, %1
+    pabsw     m7, m7
+    paddw     m1, m7
+    ; columns 1-8
+    MEDIAN_ABS_ACC m0, %2, %3, %1, %4, m7, m8
+%endmacro
+
+; Register layout:
+;   m0  accumulator for columns 1-8 (the last word is discarded at the end)
+;   m1  accumulator for column 0 (only the first word is used)
+;   m2, m3  one row's V (columns 0-7, 1-8)
+;   m5, m6  the other row's V (columns 0-7, 1-8)
+;   m7, m8 temporaries
+;   m9  scratch register for LOAD_V8
+; As in median_sad16 the loop is unrolled by two so the two register sets
+; alternate the roles of previous and current row.
+%macro MEDIAN_SAD8 0
+cglobal median_sad8, 5, 5, 10, v, pix1, pix2, stride, h
+    LOAD_V8   m2, m3, m9
+    add       pix1q, strideq
+    add       pix2q, strideq
+
+    ; first row: abs(V(0)) + sum of abs(V(j) - V(j-1))
+    pabsw     m1, m2
+    psubw     m0, m3, m2
+    pabsw     m0, m0
+
+    sub       hd, 1
+    jle       .end
+.loop:
+    PROCESS_ROW8 m2, m3, m5, m6
+    sub       hd, 1
+    jle       .end
+    PROCESS_ROW8 m5, m6, m2, m3
+    sub       hd, 1
+    jg        .loop
+.end:
+    ; column 8 lies outside of the block and column 0 only contributes its
+    ; first word; the kept columns may end up in any lane since the final sum
+    ; is horizontal anyway
+    pslldq    m0, 2
+    pslldq    m1, 14
+    paddw     m0, m1
+    pxor      m4, m4
+    punpckhwd m7, m0, m4
+    punpcklwd m0, m4
+    paddd     m0, m7
+    HADDD     m0, m7
+    movd      eax, m0
+    RET
+%endmacro
+
+INIT_XMM ssse3
+MEDIAN_SAD8
 
 %endif ; ARCH_X86_64
