@@ -470,7 +470,8 @@ redo:
             s->nb_retries++;
         }
 
-        av_log(h, AV_LOG_WARNING, "Will reconnect at %"PRIu64" in %d second(s).\n", off, reconnect_delay);
+        av_log(h, AV_LOG_WARNING, "Will %s at %"PRIu64" in %d second(s).\n",
+               s->willclose ? "reconnect" : "retry", off, reconnect_delay);
         ret = ff_network_sleep_interruptible(1000U * 1000 * reconnect_delay, &h->interrupt_callback);
         if (ret != AVERROR(ETIMEDOUT))
             goto fail;
@@ -1914,7 +1915,8 @@ retry:
             reconnect_delay_total > s->reconnect_delay_total_max)
             return AVERROR(EIO);
 
-        av_log(h, AV_LOG_WARNING, "Will reconnect at %"PRIu64" in %d second(s), error=%s.\n", s->off, reconnect_delay, av_err2str(read_ret));
+        av_log(h, AV_LOG_WARNING, "Will %s at %"PRIu64" in %d second(s), error=%s.\n", s->willclose ? "reconnect" : "retry",
+               s->off, reconnect_delay, av_err2str(read_ret));
         err = ff_network_sleep_interruptible(1000U*1000*reconnect_delay, &h->interrupt_callback);
         if (err != AVERROR(ETIMEDOUT))
             return err;
