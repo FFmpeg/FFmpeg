@@ -147,11 +147,15 @@ $(CHECKASMOBJS): CFLAGS  := -I$(SRC_PATH)/tests/checkasm/ext/include $(CFLAGS)
 $(CHECKASMOBJS): ASFLAGS := -I$(SRC_PATH)/tests/checkasm/ext/include $(ASFLAGS)
 OUTDIRS += $(CHECKASMDIRS)
 
-# Expose checkasm_config_generated.h/asm to checkasm tests as well, as it
+# Expose checkasm_config_header_generated.h to checkasm tests as well, as it
 # modifies the behavior of include/checkasm/header_config.h
-$(CHECKASMOBJS): CFLAGS      += -DCHECKASM_HAVE_GENERATED_H
-$(CHECKASMOBJS): ASFLAGS     += -DCHECKASM_HAVE_GENERATED_H
-$(CHECKASMOBJS): X86ASMFLAGS += -DCHECKASM_HAVE_GENERATED_H
+$(CHECKASMOBJS): CFLAGS      += -DCHECKASM_HAVE_HEADER_GENERATED_H
+$(CHECKASMOBJS): ASFLAGS     += -DCHECKASM_HAVE_HEADER_GENERATED_H
+
+# Expose checkasm_config_generated.h/asm only to checkasm itself.
+$(EXT_CHECKASMOBJS): CFLAGS      += -DCHECKASM_HAVE_GENERATED_H
+$(EXT_CHECKASMOBJS): ASFLAGS     += -DCHECKASM_HAVE_GENERATED_H
+$(EXT_CHECKASMOBJS): X86ASMFLAGS += -DCHECKASM_HAVE_GENERATED_H
 
 tests/checkasm/checkasm.o: CFLAGS += -Umain
 
