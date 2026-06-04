@@ -37,6 +37,7 @@ TX_DECL_FN(fft_sr,    neon)
 TX_DECL_FN(fft_sr_ns, neon)
 TX_DECL_FN(fft_pfa_15xM, neon)
 TX_DECL_FN(fft_pfa_15xM_ns, neon)
+TX_DECL_FN(mdct_inv, neon)
 
 static av_cold int neon_init(AVTXContext *s, const FFTXCodelet *cd,
                              uint64_t flags, FFTXCodeletOptions *opts,
@@ -121,6 +122,49 @@ static av_cold int fft_pfa_init(AVTXContext *s, const FFTXCodelet *cd,
     return 0;
 }
 
+/* Inverse MDCT: a pre-rotation, an in-place len/2 complex FFT, and a
+ * post-rotation. Mirrors the generic ff_tx_mdct_init / x86 m_inv_init, but the
+ * subtransform is called with a normal blr (no FF_TX_ASM_CALL on aarch64). */
+static av_cold int mdct_inv_init(AVTXContext *s, const FFTXCodelet *cd,
+                                 uint64_t flags, FFTXCodeletOptions *opts,
+                                 int len, int inv, const void *scale)
+{
+    int ret;
+    FFTXCodeletOptions sub_opts = { .map_dir = FF_TX_MAP_GATHER };
+
+    /* The pre-rotation processes two output complex at a time, so len/2 must
+     * be even.  Real codecs always satisfy this; bail out otherwise so the
+     * generic C MDCT is used. */
+    if (len & 3)
+        return AVERROR(ENOSYS);
+
+    s->scale_d = *((const float *)scale);
+    s->scale_f = s->scale_d;
+
+    flags &= ~FF_TX_OUT_OF_PLACE; /* The subtransform is in-place */
+    flags |=  AV_TX_INPLACE;
+    flags |=  FF_TX_PRESHUFFLE;   /* This function handles the permute step */
+
+    if ((ret = ff_tx_init_subtx(s, TX_TYPE(FFT), flags, &sub_opts, len >> 1,
+                                inv, scale)))
+        return ret;
+
+    s->map = av_malloc((len >> 1)*sizeof(*s->map));
+    if (!s->map)
+        return AVERROR(ENOMEM);
+
+    memcpy(s->map, s->sub->map, (len >> 1)*sizeof(*s->map));
+
+    if ((ret = ff_tx_mdct_gen_exp_float(s, s->map)))
+        return ret;
+
+    /* Pre-double the map indices (saves a shift in the hot path). */
+    for (int i = 0; i < (len >> 1); i++)
+        s->map[i] <<= 1;
+
+    return 0;
+}
+
 const FFTXCodelet * const ff_tx_codelet_list_float_aarch64[] = {
     TX_DEF(fft2,      FFT,  2,  2, 2, 0, 128, NULL,      neon, NEON, AV_TX_INPLACE, 0),
     TX_DEF(fft2,      FFT,  2,  2, 2, 0, 192, neon_init, neon, NEON, AV_TX_INPLACE | FF_TX_PRESHUFFLE, 0),
@@ -141,6 +185,8 @@ const FFTXCodelet * const ff_tx_codelet_list_float_aarch64[] = {
 
     TX_DEF(fft_pfa_15xM,    FFT, 60, TX_LEN_UNLIMITED, 15, 2, 128, fft_pfa_init, neon, NEON, AV_TX_INPLACE, 0),
     TX_DEF(fft_pfa_15xM_ns, FFT, 60, TX_LEN_UNLIMITED, 15, 2, 192, fft_pfa_init, neon, NEON, AV_TX_INPLACE | FF_TX_PRESHUFFLE, 0),
+
+    TX_DEF(mdct_inv, MDCT, 16, TX_LEN_UNLIMITED, 2, TX_FACTOR_ANY, 256, mdct_inv_init, neon, NEON, FF_TX_INVERSE_ONLY, 0),
 
     NULL,
 };
