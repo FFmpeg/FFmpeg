@@ -43,6 +43,7 @@
 #include "copy_block.h"
 #include "decode.h"
 #include "exif.h"
+#include "exif_internal.h"
 #include "hwaccel_internal.h"
 #include "hwconfig.h"
 #include "idctdsp.h"

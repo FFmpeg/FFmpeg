@@ -230,33 +230,4 @@ int ff_decode_content_light_new_ext(const AVCodecContext *avctx,
                                     AVFrameSideData ***sd, int *nb_sd,
                                     struct AVContentLightMetadata **clm);
 
-enum AVExifHeaderMode;
-
-/**
- * Attach the data buffer to the frame. This is mostly a wrapper for
- * av_side_data_new_from_buffer, but it checks if the orientation tag is
- * present in the provided EXIF buffer. If it is, it zeroes it out and
- * attaches that information as an AV_FRAME_DATA_DISPLAYMATRIX instead
- * of including it in the AV_FRAME_DATA_EXIF side data buffer.
- *
- * *buf is ALWAYS consumed by this function and NULL written in its place, even
- * on failure.
- */
-int ff_decode_exif_attach_buffer(AVCodecContext *avctx, AVFrame *frame, AVBufferRef **buf,
-                                 enum AVExifHeaderMode header_mode);
-
-struct AVExifMetadata;
-
-/**
- * Attach an already-parsed EXIF metadata struct to the frame as a side data
- * buffer. It writes the EXIF IFD into the buffer and attaches the buffer to
- * the frame.
- *
- * If the metadata struct contains an orientation tag, it will be zeroed before
- * writing, and instead, an AV_FRAME_DATA_DISPLAYMATRIX will be attached in
- * addition to the AV_FRAME_DATA_EXIF side data.
- */
-int ff_decode_exif_attach_ifd(AVCodecContext *avctx, AVFrame *frame,
-                              const struct AVExifMetadata *ifd);
-
 #endif /* AVCODEC_DECODE_H */

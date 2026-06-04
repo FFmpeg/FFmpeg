@@ -49,6 +49,7 @@
 #include "codec_internal.h"
 #include "decode.h"
 #include "exif.h"
+#include "exif_internal.h"
 #include "hwaccel_internal.h"
 #include "hwconfig.h"
 #include "internal.h"
