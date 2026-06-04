@@ -1,0 +1,16 @@
+[binaries]
+c = 'clang'
+cpp = 'clang++'
+ar = 'aarch64-linux-gnu-ar'
+strip = 'aarch64-linux-gnu-strip'
+exe_wrapper = 'qemu-aarch64'
+
+[properties]
+c_args = '-target aarch64-linux-gnu'
+c_link_args = '-target aarch64-linux-gnu'
+
+[host_machine]
+system = 'linux'
+cpu_family = 'aarch64'
+cpu = 'aarch64'
+endian = 'little'

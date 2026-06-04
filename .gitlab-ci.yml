@@ -1,0 +1,407 @@
+stages:
+    - style
+    - build
+    - test
+    - bench
+    - deploy
+
+.debian-amd64-common:
+    image: registry.videolan.org/dav1d-debian-unstable:20251231153127
+    stage: test
+    tags:
+        - docker
+        - amd64
+
+.debian-llvm-mingw-common:
+    image: registry.videolan.org/vlc-debian-llvm-msvcrt:20250305204125
+    stage: test
+    tags:
+        - docker
+        - amd64
+
+.debian-aarch64-common:
+    image: registry.videolan.org/dav1d-debian-bookworm-aarch64:20250215002814
+    stage: test
+    tags:
+        - docker
+        - aarch64
+
+.debian-armv7-common:
+    image: registry.videolan.org/dav1d-debian-bookworm-armv7:20250215014239
+    stage: test
+    tags:
+        - docker
+        - armv7
+
+.debian-ppc64le-common:
+    image: registry.videolan.org/dav1d-debian-unstable-ppc64le:20250215003029
+    stage: test
+    tags:
+        - docker
+        - ppc64le
+
+.android-common:
+    image: registry.videolan.org/vlc-debian-android:20241118101328
+    stage: build
+    tags:
+        - docker
+        - amd64
+
+style-check:
+    extends: .debian-amd64-common
+    stage: style
+    script:
+        - git grep -I -n -P "\t|\r| $" -- . ':(exclude)*/compat/*' ':(exclude)ext-build-test.make' && echo "Trailing whitespace" && exit 1
+        - git grep -I -l -z "" -- . ':(exclude)*/compat/*' | while IFS= read -r -d '' i; do
+              if [ -n "$(tail -c 1 "$i")" ]; then
+                  echo "No newline at end of $i";
+                  exit 1;
+              fi;
+          done
+        - rg '[\u061c\u2000-\u200f\u2028-\u202f\u205f-\u206f]' ./ && echo "Invisible Unicode characters" && exit 1
+        - git remote rm upstream 2> /dev/null || true
+        - git remote add upstream https://code.videolan.org/videolan/checkasm.git
+        - git fetch -q upstream master
+        - for i in $(git rev-list HEAD ^upstream/master); do
+              echo "Checking commit message of $i";
+              msg="$(git log --format=%B -n 1 $i)";
+              if [ -n "$(echo "$msg" | awk "NR==2")" ]; then
+                  echo "Malformed commit message in $i, second line must be empty";
+                  exit 1;
+              fi;
+              if echo "$msg" | head -1 | grep -q '\.$'; then
+                  echo "Malformed commit message in $i, trailing period in subject line";
+                  exit 1;
+              fi;
+          done
+
+x86inc-check:
+    extends: .debian-amd64-common
+    stage: style
+    script:
+        - git remote rm x86inc 2> /dev/null || true
+        - git remote add x86inc https://code.videolan.org/videolan/x86inc.asm.git
+        - git fetch -q x86inc master
+        - git diff --exit-code x86inc/master:x86inc.asm src/x86/x86inc.asm
+    allow_failure: true
+
+build-docs:
+    extends: .debian-amd64-common
+    stage: build
+    artifacts:
+        paths:
+            - build/docs/html
+        expire_in: 1 day
+    script:
+        - meson setup build -Ddocs=enabled
+        - cd build && meson compile docs
+
+.test-common:
+    script:
+        - meson setup build --buildtype release
+                            --default-library both
+                            --werror
+        - cd build && ninja
+        - meson test -v
+        - time meson test --bench -v
+
+test-debian:
+    extends:
+        - .test-common
+        - .debian-amd64-common
+    tags:
+        - docker
+        - avx2
+        - amd64
+    artifacts:
+        paths:
+            - build/
+        expire_in: 1 day
+
+test-debian-static:
+    extends: .debian-amd64-common
+    script:
+        - meson setup build --buildtype release
+                            --default-library static
+                            --werror
+        - cd build && ninja
+        - meson test -v
+        - time meson test --bench -v
+        - nm -A -g src/libcheckasm.a | grep " [ABCDGRST] " | (! grep -v " _*checkasm_")
+
+test-debian-notests:
+    extends: .debian-amd64-common
+    script:
+        - meson setup build --buildtype release
+                            --default-library shared
+                            -Dtests=disabled
+                            --werror
+        - cd build && ninja
+        - meson test -v
+
+test-debian32:
+    extends: .debian-amd64-common
+    script:
+        - meson setup build --buildtype release
+                            --werror
+                            --cross-file crossfiles/i686-linux32.meson
+        - cd build && ninja
+        - meson test -v
+        - time meson test --bench -v
+    artifacts:
+        paths:
+            - build/
+        expire_in: 1 day
+
+test-debian-avx:
+    extends:
+        - .test-common
+        - .debian-amd64-common
+    tags:
+        - docker
+        - avx2
+        - amd64
+    variables:
+        CFLAGS: '-mavx'
+
+test-debian-avx512:
+    extends:
+        - .test-common
+        - .debian-amd64-common
+    tags:
+        - docker
+        - amd64-avx512
+    variables:
+        CFLAGS: '-mavx'
+
+test-debian-clang:
+    extends:
+        - .test-common
+        - .debian-amd64-common
+    variables:
+        CC: clang
+        CC_LD: mold
+
+test-debian-qemu:
+    extends: .debian-amd64-common
+    tags:
+        - docker
+        - avx2
+        - amd64
+    script:
+        - meson setup build --buildtype debug
+        - cd build && ninja
+        - exit_code=0
+        - meson test -v --wrapper 'qemu-x86_64 -cpu Conroe' || exit_code=$((exit_code + $?))
+        - meson test -v --wrapper 'qemu-x86_64 -cpu Penryn' || exit_code=$((exit_code + $?))
+        - time meson test --bench -v --wrapper 'qemu-x86_64 -cpu Conroe' || exit_code=$((exit_code + $?))
+        - time meson test --bench -v --wrapper 'qemu-x86_64 -cpu Penryn' || exit_code=$((exit_code + $?))
+        - if [ $exit_code -ne 0 ]; then exit $exit_code; fi
+
+test-win:
+    extends: .debian-amd64-common
+    script:
+        - wineserver -p && wine wineboot
+        - meson setup build --buildtype release
+                            --werror
+                            --libdir lib
+                            --prefix "$(pwd)/build/checkasm_install"
+                            --cross-file crossfiles/${CROSSFILE}.meson
+                            --default-library both
+        - cd build && ninja install
+        - meson test -v
+        - time meson test --bench -v
+        - ${CROSSFILE}-nm -A -g src/libcheckasm.a | grep " [ABCDGRST] " | (! grep -E -v " \.| _*checkasm_")
+    artifacts:
+        name: "$CI_JOB_NAME-$CI_COMMIT_REF_SLUG"
+        paths:
+            - build/checkasm_install/
+        expire_in: 1 week
+    parallel:
+      matrix:
+        - CROSSFILE: [i686-w64-mingw32, x86_64-w64-mingw32]
+
+build-win-arm:
+    extends: .debian-llvm-mingw-common
+    stage: build
+    script:
+        - meson setup build --buildtype release
+                            --werror
+                            --libdir lib
+                            --prefix "$(pwd)/build/checkasm_install"
+                            --cross-file crossfiles/${CROSSFILE}.meson
+                            --default-library both
+        - cd build && ninja install
+        - ${CROSSFILE}-nm -A -g src/libcheckasm.a | grep " [ABCDGRST] " | (! grep -E -v " \.| _*checkasm_")
+    artifacts:
+        name: "$CI_JOB_NAME-$CI_COMMIT_REF_SLUG"
+        paths:
+            - build/checkasm_install/
+        expire_in: 1 week
+    parallel:
+      matrix:
+        - CROSSFILE: [armv7-w64-mingw32, aarch64-w64-mingw32]
+
+.build-android-common:
+    extends: .android-common
+    stage: build
+    script:
+        - meson setup build --buildtype release
+                            --werror
+                            --libdir lib
+                            --prefix "$(pwd)/build/checkasm_install"
+                            --cross-file $CROSSFILE
+                            --default-library both
+        - cd build && ninja install
+
+build-android-armv7:
+    extends: .build-android-common
+    variables:
+        CROSSFILE: crossfiles/arm-android.meson
+    rules:
+        - if: '$CI_COMMIT_BRANCH'
+
+build-android-aarch64:
+    extends: .build-android-common
+    variables:
+        CROSSFILE: crossfiles/aarch64-android.meson
+    rules:
+        - if: '$CI_COMMIT_BRANCH'
+
+test-debian-aarch64:
+    extends:
+        - .test-common
+        - .debian-aarch64-common
+
+test-debian-aarch64-clang-5:
+    extends:
+        - .test-common
+        - .debian-aarch64-common
+    variables:
+        CC: clang-5.0
+        CFLAGS: '-integrated-as'
+
+test-debian-aarch64-clang-18:
+    extends: .debian-amd64-common
+    variables:
+        QEMU_LD_PREFIX: /usr/aarch64-linux-gnu/
+    script:
+        - meson setup build --buildtype release
+                            --werror
+                            --cross-file crossfiles/aarch64-linux-clang.meson
+        - cd build && ninja
+        - meson test -v
+        - time meson test --bench -v
+
+.test-macos-common:
+    stage: test
+    script:
+        - meson setup build --buildtype release
+                            --default-library both
+                            --werror
+        - cd build && ninja
+        - meson test -v
+        - time meson test --bench -v
+
+test-macos-x86_64:
+    extends: .test-macos-common
+    tags:
+        - amd64
+        - macos
+
+test-macos-arm64:
+    extends: .test-macos-common
+    tags:
+        - macos-xcode26
+
+test-debian-armv7:
+    extends: .debian-armv7-common
+    script:
+        - linux32 meson setup build --buildtype release
+                                    --werror
+        - cd build && ninja
+        - meson test -v
+        - time meson test --bench -v
+
+test-debian-armv7-clang-5:
+    extends: .debian-armv7-common
+    variables:
+        CC: clang-5.0
+        CFLAGS: '-integrated-as'
+    script:
+        - linux32 meson setup build --buildtype release
+        - cd build && ninja
+        - meson test -v
+        - time meson test --bench -v
+
+test-debian-ppc64le:
+    extends:
+        - .test-common
+        - .debian-ppc64le-common
+    variables:
+        CC: gcc-13
+
+test-debian-riscv64:
+    extends: .debian-amd64-common
+    variables:
+        QEMU_LD_PREFIX: /usr/riscv64-linux-gnu/
+    script:
+        - meson setup build --buildtype release
+                            --default-library both
+                            --werror
+                            --cross-file crossfiles/${CROSSFILE}.meson
+        - cd build && ninja
+        - meson test -v
+        - time meson test --bench -v
+    parallel:
+      matrix:
+        - CROSSFILE: [ riscv64-linux, riscv64-linux-clang ]
+          QEMU_CPU:
+            - rv64,v=true,vext_spec=v1.0,vlen=128,elen=64
+            - rv64,v=true,vext_spec=v1.0,vlen=256,elen=64
+
+test-debian-loongarch64:
+    extends:
+        - .debian-amd64-common
+    variables:
+        QEMU_CPU: max-loongarch-cpu
+        QEMU_LD_PREFIX: /opt/cross-tools/target/
+    script:
+        - meson setup build --buildtype release
+                            --default-library both
+                            --werror
+                            --cross-file crossfiles/loongarch64-linux.meson
+        - cd build && ninja
+        - meson test -v
+        - time meson test --bench -v
+
+test-debian-asan:
+    extends: .debian-amd64-common
+    variables:
+        ASAN_OPTIONS: 'detect_leaks=0'
+    script:
+        - meson setup build --buildtype debugoptimized
+                            -Db_sanitize=address
+        - cd build && ninja
+        - exit_code=0
+        - meson test -v || exit_code=$((exit_code + $?))
+        - time meson test --bench -v || exit_code=$((exit_code + $?))
+        - if [ $exit_code -ne 0 ]; then exit $exit_code; fi
+
+test-ext-build:
+    extends: .debian-amd64-common
+    script:
+        - mkdir -p build && cd build
+        - make -f ../ext-build-test.make NASM_FMT=elf64 -j$(getconf _NPROCESSORS_ONLN) EXTRA_CFLAGS=-Werror
+        - ./checkasm-selftest
+
+deploy-docs:
+    extends: .debian-amd64-common
+    stage: deploy
+    needs: ["build-docs"]
+    rules:
+        - if: '$CI_COMMIT_BRANCH == "master"'
+    script:
+        - mv build/docs/html public
+    pages:
+        publish: public

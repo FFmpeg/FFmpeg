@@ -1,0 +1,20 @@
+# Project information
+PROJECT_NAME           = "checkasm"
+PROJECT_BRIEF          = "Assembly testing and benchmarking framework"
+PROJECT_NUMBER         = @VERSION@
+
+# Input / output settings
+INPUT                  = @INPUT@
+LAYOUT_FILE            = @LAYOUT_FILE@
+EXCLUDE_SYMBOLS        = internal
+EXTRACT_STATIC         = YES
+MARKDOWN_SUPPORT       = YES
+
+OUTPUT_DIRECTORY       = @BUILDDIR@
+GENERATE_LATEX         = NO
+
+# Misc settings
+OPTIMIZE_OUTPUT_FOR_C  = YES
+TYPEDEF_HIDES_STRUCT   = YES
+WARN_IF_UNDOCUMENTED   = NO
+STRIP_FROM_PATH        = @INCDIR@

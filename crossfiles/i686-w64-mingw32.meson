@@ -1,0 +1,16 @@
+[binaries]
+c = 'i686-w64-mingw32-gcc'
+cpp = 'i686-w64-mingw32-g++'
+ar = 'i686-w64-mingw32-ar'
+strip = 'i686-w64-mingw32-strip'
+windres = 'i686-w64-mingw32-windres'
+exe_wrapper = 'wine'
+
+[properties]
+c_link_args = ['-static-libgcc']
+
+[host_machine]
+system = 'windows'
+cpu_family = 'x86'
+cpu = 'i686'
+endian = 'little'
