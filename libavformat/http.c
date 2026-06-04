@@ -71,18 +71,13 @@ typedef enum {
 
 typedef struct HTTPContext {
     const AVClass *class;
-    URLContext *hd;
     unsigned char buffer[BUFFER_SIZE], *buf_ptr, *buf_end;
-    int line_count;
-    int http_code;
-    /* Used if "Transfer-Encoding: chunked" otherwise -1. */
-    uint64_t chunksize;
-    int chunkend;
-    uint64_t off, end_off, filesize, range_end;
-    char *uri;
+
+    /*************************
+     * Configuration options *
+     *************************/
+    uint64_t off, end_off; /* `off` is also mutated by seeking / reading */
     char *location;
-    HTTPAuthState auth_state;
-    HTTPAuthState proxy_auth_state;
     char *http_proxy;
     char *headers;
     char *mime_type;
@@ -90,38 +85,16 @@ typedef struct HTTPContext {
     char *user_agent;
     char *referer;
     char *content_type;
-    /* Set if the server correctly handles Connection: close and will close
-     * the connection after feeding us the content. */
-    int willclose;
     int seekable;           /**< Control seekability, 0 = disable, 1 = enable, -1 = probe. */
     int chunked_post;
-    /* A flag which indicates if the end of chunked encoding has been sent. */
-    int end_chunked_post;
-    /* A flag which indicates we have finished to read POST reply. */
-    int end_header;
-    /* A flag which indicates if we use persistent connections. */
-    int multiple_requests;
+    int multiple_requests; /**< A flag which indicates if we use persistent connections. */
     uint8_t *post_data;
     int post_datalen;
-    int is_akamai;
-    int is_mediagateway;
     char *cookies;          ///< holds newline (\n) delimited Set-Cookie header field values (without the "Set-Cookie: " field name)
-    /* A dictionary containing cookies keyed by cookie name */
-    AVDictionary *cookie_dict;
     int icy;
-    /* how much data was read since the last ICY metadata packet */
-    uint64_t icy_data_read;
-    /* after how many bytes of read data a new metadata packet will be found */
-    uint64_t icy_metaint;
     char *icy_metadata_headers;
     char *icy_metadata_packet;
     AVDictionary *metadata;
-#if CONFIG_ZLIB
-    int compressed;
-    z_stream inflate_stream;
-    uint8_t *inflate_buffer;
-#endif /* CONFIG_ZLIB */
-    AVDictionary *chained_options;
     /* -1 = try to send if applicable, 0 = always disabled, 1 = always enabled */
     int send_expect_100;
     char *method;
@@ -129,26 +102,32 @@ typedef struct HTTPContext {
     int reconnect_at_eof;
     int reconnect_on_network_error;
     int reconnect_streamed;
+    int reconnect_max_retries;
     int reconnect_delay_max;
+    int reconnect_delay_total_max;
     char *reconnect_on_http_error;
     int listen;
     char *resource;
     int reply_code;
-    int is_multi_client;
-    HandshakeState handshake_step;
-    int is_connected_server;
     int short_seek_size;
-    int64_t expires;
-    char *new_location;
-    AVDictionary *redirect_cache;
-    uint64_t filesize_from_content_range;
+    int max_redirects;
     int respect_retry_after;
-    unsigned int retry_after;
-    int reconnect_max_retries;
-    int reconnect_delay_total_max;
-    uint64_t initial_request_size;
     uint64_t request_size;
-    int initial_requests; /* whether or not to limit requests to initial_request_size */
+    uint64_t initial_request_size;
+
+    /**********************
+     * Context-wide state *
+     **********************/
+    HTTPAuthState auth_state; /* auth_state.auth_type is also a config option */
+    HTTPAuthState proxy_auth_state;
+    uint64_t filesize;
+    int is_akamai;
+    int is_mediagateway;
+    /* A dictionary containing cookies keyed by cookie name */
+    AVDictionary *cookie_dict;
+    AVDictionary *chained_options;
+    AVDictionary *redirect_cache;
+
     /* Connection statistics */
     int nb_connections;
     int nb_requests;
@@ -157,7 +136,49 @@ typedef struct HTTPContext {
     int nb_redirects;
     int64_t sum_latency; /* divide by nb_requests */
     int64_t max_latency;
-    int max_redirects;
+
+    /************************
+     * Per-connection state *
+     ************************/
+    URLContext *hd;
+    char *uri;
+    char *new_location;
+    int http_code;
+    int64_t expires;
+    /* Used if "Transfer-Encoding: chunked" otherwise -1. */
+    uint64_t chunksize;
+    int chunkend;
+    uint64_t range_end;
+    /* Set if the server correctly handles Connection: close and will close
+     * the connection after feeding us the content. */
+    int willclose;
+    /* A flag which indicates if the end of chunked encoding has been sent. */
+    int end_chunked_post;
+    /* A flag which indicates we have finished to read POST reply. */
+    int end_header;
+    /* how much data was read since the last ICY metadata packet */
+    uint64_t icy_data_read;
+    /* after how many bytes of read data a new metadata packet will be found */
+    uint64_t icy_metaint;
+#if CONFIG_ZLIB
+    int compressed;
+    z_stream inflate_stream;
+    uint8_t *inflate_buffer;
+#endif /* CONFIG_ZLIB */
+    unsigned int retry_after;
+    int initial_requests; /* whether or not to limit requests to initial_request_size */
+
+    /* Temporary during header parsing */
+    uint64_t filesize_from_content_range;
+    int line_count;
+
+    /******************
+     * Listener state *
+     ******************/
+    /* URLContext *hd; */
+    HandshakeState handshake_step;
+    int is_multi_client;
+    int is_connected_server;
 } HTTPContext;
 
 #define OFFSET(x) offsetof(HTTPContext, x)
