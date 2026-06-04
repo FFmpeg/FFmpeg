@@ -127,7 +127,7 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
                        enum AVCodecID codec_id)
 {
     AVCodecContext *c;
-    int i;
+    int ret;
 
     /* find the encoder */
     *codec = avcodec_find_encoder(codec_id);
@@ -157,21 +157,37 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
     ost->enc = c;
 
     switch ((*codec)->type) {
-    case AVMEDIA_TYPE_AUDIO:
-        c->sample_fmt  = (*codec)->sample_fmts ?
-            (*codec)->sample_fmts[0] : AV_SAMPLE_FMT_FLTP;
+    case AVMEDIA_TYPE_AUDIO: {
+        const void *codec_config;
         c->bit_rate    = 64000;
-        c->sample_rate = 44100;
-        if ((*codec)->supported_samplerates) {
-            c->sample_rate = (*codec)->supported_samplerates[0];
-            for (i = 0; (*codec)->supported_samplerates[i]; i++) {
-                if ((*codec)->supported_samplerates[i] == 44100)
+        ret = avcodec_get_supported_config(c, NULL, AV_CODEC_CONFIG_SAMPLE_FORMAT,
+                                           0, &codec_config, NULL);
+        if (ret < 0) {
+            fprintf(stderr, "Failed to get supported sample formats\n");
+            exit(1);
+        }
+        c->sample_fmt  = codec_config ? *(const enum AVSampleFormat*)codec_config
+                                      : AV_SAMPLE_FMT_FLTP;
+        ret = avcodec_get_supported_config(c, NULL, AV_CODEC_CONFIG_SAMPLE_RATE,
+                                           0, &codec_config, NULL);
+        if (ret < 0) {
+            fprintf(stderr, "Failed to get supported sample rates\n");
+            exit(1);
+        }
+        if (codec_config) {
+            const int *supported_samplerates = codec_config;
+            c->sample_rate = supported_samplerates[0];
+            for (; *supported_samplerates; supported_samplerates++) {
+                if (*supported_samplerates == 44100)
                     c->sample_rate = 44100;
             }
+        } else {
+            c->sample_rate = 44100;
         }
         av_channel_layout_copy(&c->ch_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO);
         ost->st->time_base = (AVRational){ 1, c->sample_rate };
         break;
+    }
 
     case AVMEDIA_TYPE_VIDEO:
         c->codec_id = codec_id;
