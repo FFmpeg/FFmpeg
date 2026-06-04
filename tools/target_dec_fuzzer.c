@@ -105,6 +105,9 @@ const uint32_t maxiteration = 8096;
 
 static const uint64_t FUZZ_TAG = 0x4741542D5A5A5546ULL;
 
+static uint64_t alloc_pixels;
+static uint64_t max_alloc_pixels;
+
 static int fuzz_video_get_buffer(AVCodecContext *ctx, AVFrame *frame)
 {
     ptrdiff_t linesize1[4];
@@ -113,6 +116,11 @@ static int fuzz_video_get_buffer(AVCodecContext *ctx, AVFrame *frame)
     int i, ret, w = frame->width, h = frame->height;
 
     avcodec_align_dimensions2(ctx, &w, &h, linesize_align);
+
+    alloc_pixels += (uint64_t)w * h;
+    if (alloc_pixels > max_alloc_pixels)
+        return AVERROR(ENOMEM);
+
     ret = av_image_fill_linesizes(frame->linesize, ctx->pix_fmt, w);
     if (ret < 0)
         return ret;
@@ -355,6 +363,9 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 
     maxsamples_per_frame = FFMIN(maxsamples_per_frame, maxsamples);
     maxpixels_per_frame  = FFMIN(maxpixels_per_frame , maxpixels);
+
+    alloc_pixels     = 0;
+    max_alloc_pixels = maxpixels;
 
     AVCodecContext* ctx = avcodec_alloc_context3(&c->p);
     AVCodecContext* parser_avctx = avcodec_alloc_context3(NULL);
