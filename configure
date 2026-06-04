@@ -8872,7 +8872,7 @@ if enabled checkasm; then
 #define CHECKASM_VERSION "1.2.0"
 EOF
 
-    print_config HAVE_ "$TMPH" elf_aux_info getauxval ioctl isatty linux_perf pthread_np_h pthread_setaffinity_np sigaction siglongjmp clock_gettime prctl
+    print_config HAVE_ "$TMPH" elf_aux_info getauxval ioctl isatty linux_perf pthread_np_h pthread_setaffinity_np sigaction siglongjmp clock_gettime prctl stdbit_h
 
     if enabled aarch64; then
         print_config HAVE_ "$TMPH" as_archext_sve_directive sve
