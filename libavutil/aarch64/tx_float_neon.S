@@ -671,6 +671,105 @@ endfunc
 FFT15_FN float,    0
 FFT15_FN ns_float, 1
 
+// 15xM PFA (len = 15*M, M a power of two), like the x86 fft_pfa_15xM:
+// dim1 = M 15pt transforms scattered into s->tmp at sub_map[i], spaced M
+// apart; dim2 = 15 in-place M-pt subtransforms (plain blr, the uniform ABI
+// needs no asm-call variant); post = out[i*stride] = s->tmp[out_map[i]].
+// AVTXContext offsets: len=0, map=8, tmp=24, sub=32, fn[0]=40.
+.macro PFA_15_FN name, no_perm
+function ff_tx_fft_pfa_15xM_\name\()_neon, export=1
+        AARCH64_SIGN_LINK_REGISTER
+        stp             x29, x30, [sp, #-128]!
+        mov             x29, sp
+        stp             x19, x20, [sp, #16]
+        stp             x21, x22, [sp, #32]
+        stp             x23, x24, [sp, #48]
+        stp             x25, x26, [sp, #64]
+        stp             x27, x28, [sp, #80]
+        stp             d8,  d9,  [sp, #96]
+        str             d10, [sp, #112]
+
+        mov             x25, x0                     // root context
+        mov             x26, x1                     // user out
+        mov             x27, x3                     // user stride (bytes)
+
+        ldr             w19, [x0, #0]               // len = 15*M
+        ldr             x20, [x0, #24]              // s->tmp
+        ldr             x23, [x0, #32]              // s->sub
+        ldr             w24, [x23, #0]              // M
+        ldr             x28, [x23, #8]              // sub_map
+        lsl             x3,  x24, #3                // M*8 = 15pt output stride
+.if \no_perm == 0
+        ldr             x4,  [x0, #8]               // in_map, advanced by the loads
+.endif
+
+        movrel          x5, X(ff_tx_tab_53_float)
+        ld1             { v28.4s, v29.4s, v30.4s }, [x5]
+        movrel          x5, tab_15pt
+        ld1             { v24.4s }, [x5]
+        LOAD_SUBADD
+        FFT15_DERIVE_CONSTS
+        add             x6,  x3, x3, lsl #1         // stride*3
+        add             x7,  x3, x3, lsl #2         // stride*5
+1:
+        ldr             w10, [x28], #4              // sub_map[i]
+        add             x1,  x20, x10, lsl #3
+        FFT15_LOAD      \no_perm, advance=1
+        FFT15_CORE      hoist_strides=1
+        subs            w19, w19, #15
+        b.gt            1b
+
+        ldr             x28, [x25, #40]             // ctx->fn[0]
+        mov             x21, x20                    // column base
+        mov             w19, #15
+2:
+        mov             x0,  x23
+        mov             x1,  x21
+        mov             x2,  x21
+        mov             x3,  #8
+        blr             x28                         // M-point FFT, in-place
+        add             x21, x21, x24, lsl #3
+        subs            w19, w19, #1
+        b.gt            2b
+
+        // out[i*stride] = s->tmp[out_map[i]], unrolled by 4 (len % 60 == 0)
+        ldr             w19, [x25, #0]              // len
+        ldr             x22, [x25, #8]              // s->map
+        add             x22, x22, x19, lsl #2       // out_map = map + len
+        mov             x10, x26
+        lsl             x11, x27, #1                // 2*stride
+        add             x12, x27, x11               // 3*stride
+3:
+        ldp             w13, w14, [x22], #8         // out_map[i,   i+1]
+        ldp             w15, w16, [x22], #8         // out_map[i+2, i+3]
+        ldr             d0,  [x20, x13, lsl #3]
+        ldr             d1,  [x20, x14, lsl #3]
+        ldr             d2,  [x20, x15, lsl #3]
+        ldr             d3,  [x20, x16, lsl #3]
+        str             d0,  [x10]
+        str             d1,  [x10, x27]
+        str             d2,  [x10, x11]
+        str             d3,  [x10, x12]
+        add             x10, x10, x11, lsl #1
+        subs            w19, w19, #4
+        b.gt            3b
+
+        ldp             x19, x20, [sp, #16]
+        ldp             x21, x22, [sp, #32]
+        ldp             x23, x24, [sp, #48]
+        ldp             x25, x26, [sp, #64]
+        ldp             x27, x28, [sp, #80]
+        ldp             d8,  d9,  [sp, #96]
+        ldr             d10, [sp, #112]
+        ldp             x29, x30, [sp], #128
+        AARCH64_VALIDATE_LINK_REGISTER
+        ret
+endfunc
+.endm
+
+PFA_15_FN float,    0
+PFA_15_FN ns_float, 1
+
 .macro SETUP_SR_RECOMB len, re, im, dec
         ldr             w5, =(\len - 4*7)
         movrel          \re, X(ff_tx_tab_\len\()_float)

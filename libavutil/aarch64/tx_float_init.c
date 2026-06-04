@@ -19,6 +19,7 @@
 #define TX_FLOAT
 #include "libavutil/tx_priv.h"
 #include "libavutil/attributes.h"
+#include "libavutil/mem.h"
 #include "libavutil/aarch64/cpu.h"
 
 TX_DECL_FN(fft2,      neon)
@@ -34,6 +35,8 @@ TX_DECL_FN(fft32,     neon)
 TX_DECL_FN(fft32_ns,  neon)
 TX_DECL_FN(fft_sr,    neon)
 TX_DECL_FN(fft_sr_ns, neon)
+TX_DECL_FN(fft_pfa_15xM, neon)
+TX_DECL_FN(fft_pfa_15xM_ns, neon)
 
 static av_cold int neon_init(AVTXContext *s, const FFTXCodelet *cd,
                              uint64_t flags, FFTXCodeletOptions *opts,
@@ -46,11 +49,29 @@ static av_cold int neon_init(AVTXContext *s, const FFTXCodelet *cd,
         return ff_tx_gen_split_radix_parity_revtab(s, len, inv, opts, 8, 0);
 }
 
+/* Reorder one 15-point map so the loads in the pre-permuted assembly path
+ * become simple contiguous chunks. Mirrors the x86 FFT15 init. */
+static void fft15_permute_map(int *map)
+{
+    int cnt = 0, tmp[15];
+    memcpy(tmp, map, 15*sizeof(*tmp));
+    for (int i = 1; i < 15; i += 3)
+        map[cnt++] = tmp[i];
+    for (int i = 2; i < 15; i += 3)
+        map[cnt++] = tmp[i];
+    for (int i = 0; i < 15; i += 3)
+        map[cnt++] = tmp[i];
+    memmove(&map[7], &map[6], 4*sizeof(int));
+    memmove(&map[3], &map[1], 4*sizeof(int));
+    map[1] = tmp[2];
+    map[2] = tmp[0];
+}
+
 static av_cold int fft15_init(AVTXContext *s, const FFTXCodelet *cd,
                               uint64_t flags, FFTXCodeletOptions *opts,
                               int len, int inv, const void *scale)
 {
-    int ret, cnt = 0, tmp[15];
+    int ret;
     FFTXCodeletOptions sub_opts = { .map_dir = FF_TX_MAP_GATHER };
 
     ff_tx_init_tabs_float(len);
@@ -58,19 +79,44 @@ static av_cold int fft15_init(AVTXContext *s, const FFTXCodelet *cd,
     if ((ret = ff_tx_gen_pfa_input_map(s, &sub_opts, 3, 5)) < 0)
         return ret;
 
-    /* Reorder the 15-pt map so the loads in the pre-permuted assembly path
-     * become simple contiguous chunks. Mirrors the x86 FFT15 init. */
-    memcpy(tmp, s->map, 15*sizeof(*tmp));
-    for (int i = 1; i < 15; i += 3)
-        s->map[cnt++] = tmp[i];
-    for (int i = 2; i < 15; i += 3)
-        s->map[cnt++] = tmp[i];
-    for (int i = 0; i < 15; i += 3)
-        s->map[cnt++] = tmp[i];
-    memmove(&s->map[7], &s->map[6], 4*sizeof(int));
-    memmove(&s->map[3], &s->map[1], 4*sizeof(int));
-    s->map[1] = tmp[2];
-    s->map[2] = tmp[0];
+    fft15_permute_map(s->map);
+
+    return 0;
+}
+
+/* 15xM prime-factor FFT: M inlined 15-point transforms followed by 15 calls to
+ * a power-of-two subtransform. Mirrors the x86 fft_pfa_15xM, but the aarch64
+ * ABI lets us call the subtransform normally, so no FF_TX_ASM_CALL is needed. */
+static av_cold int fft_pfa_init(AVTXContext *s, const FFTXCodelet *cd,
+                                uint64_t flags, FFTXCodeletOptions *opts,
+                                int len, int inv, const void *scale)
+{
+    int ret;
+    int sub_len = len / cd->factors[0];
+    FFTXCodeletOptions sub_opts = { .map_dir = FF_TX_MAP_SCATTER };
+
+    flags &= ~FF_TX_OUT_OF_PLACE; /* We want the subtransform to be */
+    flags |=  AV_TX_INPLACE;      /* in-place */
+    flags |=  FF_TX_PRESHUFFLE;   /* This function handles the permute step */
+
+    if ((ret = ff_tx_init_subtx(s, TX_TYPE(FFT), flags, &sub_opts,
+                                sub_len, inv, scale)))
+        return ret;
+
+    if ((ret = ff_tx_gen_compound_mapping(s, opts, s->inv,
+                                          cd->factors[0], sub_len)))
+        return ret;
+
+    /* The 15-point transform is itself a compound one, so embed its input map
+     * and apply the same load-friendly reorder used by fft15_init. */
+    TX_EMBED_INPUT_PFA_MAP(s->map, len, 3, 5);
+    for (int k = 0; k < sub_len; k++)
+        fft15_permute_map(&s->map[k*15]);
+
+    if (!(s->tmp = av_malloc(len*sizeof(*s->tmp))))
+        return AVERROR(ENOMEM);
+
+    ff_tx_init_tabs_float(len / sub_len);
 
     return 0;
 }
@@ -92,6 +138,9 @@ const FFTXCodelet * const ff_tx_codelet_list_float_aarch64[] = {
 
     TX_DEF(fft_sr,    FFT, 64, 131072, 2, 0, 128, neon_init, neon, NEON, 0, 0),
     TX_DEF(fft_sr_ns, FFT, 64, 131072, 2, 0, 192, neon_init, neon, NEON, AV_TX_INPLACE | FF_TX_PRESHUFFLE, 0),
+
+    TX_DEF(fft_pfa_15xM,    FFT, 60, TX_LEN_UNLIMITED, 15, 2, 128, fft_pfa_init, neon, NEON, AV_TX_INPLACE, 0),
+    TX_DEF(fft_pfa_15xM_ns, FFT, 60, TX_LEN_UNLIMITED, 15, 2, 192, fft_pfa_init, neon, NEON, AV_TX_INPLACE | FF_TX_PRESHUFFLE, 0),
 
     NULL,
 };
