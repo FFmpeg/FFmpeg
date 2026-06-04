@@ -167,9 +167,9 @@ typedef struct AACQuantizeBandCostCacheEntry {
 
 typedef struct AACPCEInfo {
     AVChannelLayout layout;
-    int num_ele[4];                              ///< front, side, back, lfe
-    int pairing[3][8];                           ///< front, side, back
-    int index[4][8];                             ///< front, side, back, lfe
+    uint8_t num_ele[4];                          ///< front, side, back, lfe
+    uint8_t pairing[3][8];                       ///< front, side, back
+    uint8_t index[4][8];                         ///< front, side, back, lfe
     uint8_t config_map[16];                      ///< configs the encoder's channel specific settings
     uint8_t reorder_map[16];                     ///< maps channels from lavc to aac order
 } AACPCEInfo;
