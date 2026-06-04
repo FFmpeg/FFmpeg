@@ -809,3 +809,122 @@ VSAD_APPROX 8,  a
 INIT_XMM sse2
 VSAD_APPROX 16, a
 VSAD_APPROX 16, u
+
+;---------------------------------------------------------------------
+;int ff_median_sad_<opt>(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+;                        ptrdiff_t stride, int h);
+;---------------------------------------------------------------------
+%if ARCH_X86_64
+
+; Load one row of 16 pixels from pix1/pix2 and compute V = pix1 - pix2 as
+; int16 words.  No zero register is needed: both byte vectors are unpacked
+; against the same scratch register %5, so its garbage high bytes cancel in
+; the subtraction.  The shifted columns are derived from the unshifted word
+; vectors, so no out-of-bounds loads are made.
+; %1: V columns 0-7,  %2: V columns 8-15
+; %3: V columns 1-8,  %4: V columns 9-16 (column 16 is zero)
+; %5: scratch register, its contents are irrelevant
+%macro LOAD_V16 5
+    movu      %1, [pix1q]
+    movu      %3, [pix2q]
+    punpckhbw %2, %1, %5
+    punpcklbw %1, %5
+    punpckhbw %4, %3, %5
+    punpcklbw %3, %5
+    psubw     %1, %3            ; V columns 0-7
+    psubw     %2, %4            ; V columns 8-15
+    palignr   %3, %2, %1, 2     ; V columns 1-8
+    psrldq    %4, %2, 2         ; V columns 9-16
+%endmacro
+
+; Accumulate abs(%5 - mid_pred(%2, %3, %2 + %3 - %4)) into %1, using
+; mid_pred(a, b, c) == max(min(a, b), min(max(a, b), c)).  The top predictor
+; %2 is not needed afterwards and is clobbered.
+; %1: accumulator, %2: top, %3: left, %4: topleft, %5: values being predicted
+; %6, %7: temporaries
+%macro MEDIAN_ABS_ACC 7
+    paddw     %6, %2, %3        ; top + left
+    psubw     %6, %4            ; top + left - topleft
+    pminsw    %7, %2, %3        ; min(top, left)
+    pmaxsw    %2, %3            ; max(top, left)
+    pminsw    %2, %6
+    pmaxsw    %7, %2            ; mid_pred(top, left, top + left - topleft)
+    psubw     %6, %5, %7
+    pabsw     %6, %6
+    paddw     %1, %6
+%endmacro
+
+; Accumulate one row's cost from the previous and current row vectors.
+; %1-%4: previous row V (columns 0-7, 8-15, 1-8, 9-16)
+; %5-%8: current  row V (columns 0-7, 8-15, 1-8, 9-16), loaded here
+; m0-m2 are the accumulators, m11/m12 temporaries, m14 scratch.  The top
+; predictors %3/%4 are consumed by MEDIAN_ABS_ACC, but they belong to the
+; previous row and are reloaded before being needed again.
+%macro PROCESS_ROW16 8
+    LOAD_V16  %5, %6, %7, %8, m14
+    add       pix1q, strideq
+    add       pix2q, strideq
+    ; column 0: abs(V(0) - V(-stride))
+    psubw     m11, %5, %1
+    pabsw     m11, m11
+    paddw     m2, m11
+    ; columns 1-8 and 9-16
+    MEDIAN_ABS_ACC m0, %3, %5, %1, %7, m11, m12
+    MEDIAN_ABS_ACC m1, %4, %6, %2, %8, m11, m12
+%endmacro
+
+; Register layout:
+;   m0  accumulator for columns 1-8
+;   m1  accumulator for columns 9-16 (the last word is discarded at the end)
+;   m2  accumulator for column 0 (only the first word is used)
+;   m3-m6   one row's V (columns 0-7, 8-15, 1-8, 9-16)
+;   m7-m10  the other row's V (columns 0-7, 8-15, 1-8, 9-16)
+;   m11, m12 temporaries
+;   m14 scratch register for LOAD_V16
+; The loop is unrolled by two so the two register sets alternate the roles of
+; previous and current row, which removes the per-row register copies.
+%macro MEDIAN_SAD16 0
+cglobal median_sad16, 5, 5, 15, v, pix1, pix2, stride, h
+    LOAD_V16  m3, m4, m5, m6, m14
+    add       pix1q, strideq
+    add       pix2q, strideq
+
+    ; first row: abs(V(0)) + sum of abs(V(j) - V(j-1))
+    pabsw     m2, m3
+    psubw     m0, m5, m3
+    pabsw     m0, m0
+    psubw     m1, m6, m4
+    pabsw     m1, m1
+
+    sub       hd, 1
+    jle       .end
+.loop:
+    PROCESS_ROW16 m3, m4, m5, m6, m7, m8, m9, m10
+    sub       hd, 1
+    jle       .end
+    PROCESS_ROW16 m7, m8, m9, m10, m3, m4, m5, m6
+    sub       hd, 1
+    jg        .loop
+.end:
+    ; column 16 lies outside of the block and column 0 only contributes its
+    ; first word; the kept columns may end up in any lane since the final sum
+    ; is horizontal anyway
+    pslldq    m1, 2
+    pslldq    m2, 14
+    paddw     m0, m1
+    paddw     m0, m2
+    ; the per-word sums are at most 16 * 510, but their total needs more than
+    ; 16 bits: widen to dwords before the horizontal sum
+    pxor      m1, m1
+    punpckhwd m12, m0, m1
+    punpcklwd m0, m1
+    paddd     m0, m12
+    HADDD     m0, m12
+    movd      eax, m0
+    RET
+%endmacro
+
+INIT_XMM ssse3
+MEDIAN_SAD16
+
+%endif ; ARCH_X86_64

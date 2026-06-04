@@ -22,6 +22,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/x86/cpu.h"
@@ -70,6 +71,8 @@ int ff_vsad16_approx_sse2(MPVEncContext *v, const uint8_t *pix1, const uint8_t *
                    ptrdiff_t stride, int h);
 int ff_vsad16u_approx_sse2(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                            ptrdiff_t stride, int h);
+int ff_median_sad16_ssse3(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+                          ptrdiff_t stride, int h);
 
 #define hadamard_func(cpu)                                                       \
     int ff_hadamard8_diff_ ## cpu(MPVEncContext *s, const uint8_t *src1,         \
@@ -169,5 +172,9 @@ av_cold void ff_me_cmp_init_x86(MECmpContext *c, AVCodecContext *avctx)
         c->sum_abs_dctelem   = ff_sum_abs_dctelem_ssse3;
         c->hadamard8_diff[0] = ff_hadamard8_diff16_ssse3;
         c->hadamard8_diff[1] = ff_hadamard8_diff_ssse3;
+
+#if ARCH_X86_64
+        c->median_sad[0] = ff_median_sad16_ssse3;
+#endif
     }
 }
