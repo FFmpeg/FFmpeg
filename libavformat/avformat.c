@@ -102,14 +102,11 @@ void ff_free_stream_group(AVStreamGroup **pstg)
                                  &stg->params.tile_grid->nb_coded_side_data);
         av_freep(&stg->params.tile_grid);
         break;
-    case AV_STREAM_GROUP_PARAMS_LCEVC:
-        av_opt_free(stg->params.lcevc);
-        av_freep(&stg->params.lcevc);
-        break;
     case AV_STREAM_GROUP_PARAMS_TREF:
         av_opt_free(stg->params.tref);
         av_freep(&stg->params.tref);
         break;
+    case AV_STREAM_GROUP_PARAMS_LCEVC:
     case AV_STREAM_GROUP_PARAMS_DOLBY_VISION:
         av_opt_free(stg->params.layered_video);
         av_freep(&stg->params.layered_video);
