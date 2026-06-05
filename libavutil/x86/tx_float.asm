@@ -1874,6 +1874,8 @@ cglobal fft_pfa_15xM_float, 4, 14, 16, 320, ctx, out, in, stride, len, lut, buf,
     mov lutq, [ctxq + AVTXContext.map]              ; load subtransform's map
     movsxd lenq, dword [ctxq + AVTXContext.len]     ; load subtransform's length
 
+    vzeroupper
+
 .dim2:
     call tgt5q                                      ; call the FFT
     lea inq,  [inq  + lenq*8]
