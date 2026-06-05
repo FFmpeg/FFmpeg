@@ -555,6 +555,11 @@ static int add_legacy_sws_pass(SwsGraph *graph, const SwsFormat *src,
     if (src->hw_format != AV_PIX_FMT_NONE || dst->hw_format != AV_PIX_FMT_NONE)
         return AVERROR(ENOTSUP);
 
+    /* Re-check this here because this might not be excluded if the caller was
+     * testing against multiple backends */
+    if (!sws_isSupportedInput(src->format) || !sws_isSupportedOutput(dst->format))
+        return AVERROR(ENOTSUP);
+
     SwsContext *sws = sws_alloc_context();
     if (!sws)
         return AVERROR(ENOMEM);
