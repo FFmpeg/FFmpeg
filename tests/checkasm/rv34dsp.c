@@ -120,7 +120,7 @@ static void test_rv34_idct_add(const RV34DSPContext *const s)
             memcmp(block_ref, block_new, sizeof(block_new)))
             fail();
 
-        bench_new(dst_new, stride, block_new);
+        bench_new(dst_newp, stride, block_new);
     }
 
     report("rv34_idct_add");
