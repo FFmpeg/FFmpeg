@@ -659,6 +659,15 @@ static int add_ops_convert_pass(SwsGraph *graph, const SwsFormat *src,
 #endif
 }
 
+static bool prefer_ops_backend(SwsContext *ctx, const SwsFormat *src, const SwsFormat *dst)
+{
+    if (ctx->flags & SWS_UNSTABLE)
+        return true;
+    if (isFloat(src->format) || isFloat(dst->format))
+        return true; /* ops backend has better support for float formats */
+    return false; /* default to legacy for stability reasons */
+}
+
 static int add_convert_pass(SwsGraph *graph, const SwsFormat *src,
                             const SwsFormat *dst, SwsPass *input,
                             SwsPass **output)
@@ -666,13 +675,11 @@ static int add_convert_pass(SwsGraph *graph, const SwsFormat *src,
     SwsContext *ctx = graph->ctx;
     int ret;
 
-    if (ctx->flags & SWS_UNSTABLE) {
-        /* Prefer unstable ops backend over legacy backend */
+    if (prefer_ops_backend(ctx, src, dst)) {
         ret = add_ops_convert_pass(graph, src, dst, input, output);
         if (ret == AVERROR(ENOTSUP))
             ret = add_legacy_sws_pass(graph, src, dst, input, output);
     } else {
-        /* Prefer legacy backend for stability reasons */
         ret = add_legacy_sws_pass(graph, src, dst, input, output);
         if (ret == AVERROR(ENOTSUP))
             ret = add_ops_convert_pass(graph, src, dst, input, output);
