@@ -310,6 +310,7 @@ const AVCodecTag ff_codec_movvideo_tags[] = {
 
 const AVCodecTag ff_codec_movaudio_tags[] = {
     { AV_CODEC_ID_AAC,             MKTAG('m', 'p', '4', 'a') },
+    { AV_CODEC_ID_APPLE_APAC,      MKTAG('a', 'p', 'a', 'c') },
     { AV_CODEC_ID_AC3,             MKTAG('a', 'c', '-', '3') }, /* ETSI TS 102 366 Annex F */
     { AV_CODEC_ID_AC3,             MKTAG('s', 'a', 'c', '3') }, /* Nero Recode */
     { AV_CODEC_ID_AC4,             MKTAG('a', 'c', '-', '4') },
