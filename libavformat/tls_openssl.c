@@ -851,16 +851,38 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
     }
 
     init_bio_method(h);
-    if (!s->listen && !s->numerichost) {
+    if (!s->listen) {
+        // Pin a numeric host to the certificate's iPAddress SAN and everything else
+        // to the hostname. Classify s->host with the same AI_NUMERICHOST rule tls.c
+        // uses and hand OpenSSL the binary address, so legacy numeric forms (e.g.
+        // 2130706433) are pinned as IPs instead of falling back to hostname matching.
+        // A verifyhost=<name> override leaves s->host non-numeric and binds by name.
+        struct addrinfo hints = { .ai_flags = AI_NUMERICHOST }, *ai = NULL;
+        int is_numeric_host = !getaddrinfo(s->host, NULL, &hints, &ai);
+        int ok;
+
         // By default OpenSSL does too lax wildcard matching
         SSL_set_hostflags(c->ssl, X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS);
-        if (!SSL_set1_host(c->ssl, s->host)) {
-            av_log(h, AV_LOG_ERROR, "Failed to set hostname for TLS/SSL verification: %s\n",
-                openssl_get_error(c));
+        if (is_numeric_host) {
+            void *addr = ai->ai_family == AF_INET6 ?
+                (void *)&((struct sockaddr_in6 *)ai->ai_addr)->sin6_addr :
+                (void *)&((struct sockaddr_in  *)ai->ai_addr)->sin_addr;
+            ok = X509_VERIFY_PARAM_set1_ip(SSL_get0_param(c->ssl), addr,
+                                           ai->ai_family == AF_INET6 ? 16 : 4);
+        } else {
+            ok = SSL_set1_host(c->ssl, s->host);
+        }
+        if (ai)
+            freeaddrinfo(ai);
+        if (!ok) {
+            av_log(h, AV_LOG_ERROR, "Failed to set %s for TLS/SSL verification: %s\n",
+                is_numeric_host ? "IP" : "hostname", openssl_get_error(c));
             ret = AVERROR_EXTERNAL;
             goto fail;
         }
-        if (!SSL_set_tlsext_host_name(c->ssl, s->host)) {
+        // SNI MUST NOT carry a literal IP address (RFC 6066 sec. 3); suppress it for
+        // numeric transport hosts, matching the GnuTLS backend.
+        if (!s->numerichost && !SSL_set_tlsext_host_name(c->ssl, s->host)) {
             av_log(h, AV_LOG_ERROR, "Failed to set hostname for SNI: %s\n", openssl_get_error(c));
             ret = AVERROR_EXTERNAL;
             goto fail;
