@@ -16,6 +16,9 @@ fate-probe-format-codec-trac11581: REF = pcm_s16le
 FATE_PROBE_FORMAT-$(call ALLYES, WAV_DEMUXER DTS_DEMUXER) += fate-probe-format-codec-dts-in-wav
 fate-probe-format-codec-dts-in-wav: REF = dts
 
+FATE_PROBE_FORMAT-$(call ALLYES, WAV_DEMUXER DTS_DEMUXER) += fate-probe-format-mp3-with-art
+fate-probe-format-mp3-with-art: REF = mp3
+
 FATE_PROBE_FORMAT = $(FATE_PROBE_FORMAT-yes)
 
 FATE_SAMPLES_FFPROBE += $(FATE_PROBE_FORMAT)
