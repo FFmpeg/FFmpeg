@@ -699,8 +699,8 @@ static inline int test_formats(const struct options *opts,
                                enum AVPixelFormat src, enum AVPixelFormat dst)
 {
     /* Test auxiliary conversions */
-    if (!ff_sws_test_pixfmt_backend(SWS_BACKEND_LEGACY, src, 1) ||
-        !ff_sws_test_pixfmt_backend(SWS_BACKEND_LEGACY, dst, 0))
+    if (!ff_sws_test_pixfmt_backend(sws_ref_src->backends, src, 1) ||
+        !ff_sws_test_pixfmt_backend(sws_dst_out->backends, dst, 0))
         return 0;
 
     /* Test main conversion */
@@ -1154,6 +1154,8 @@ int main(int argc, char **argv)
         goto error;
     sws_ref_src->flags = SWS_BILINEAR | SWS_BITEXACT | SWS_ACCURATE_RND;
     sws_dst_out->flags = SWS_BILINEAR | SWS_BITEXACT | SWS_ACCURATE_RND;
+    sws_ref_src->backends = SWS_BACKEND_ALL;
+    sws_dst_out->backends = SWS_BACKEND_ALL;
 
     ref = av_frame_alloc();
     if (!ref)
