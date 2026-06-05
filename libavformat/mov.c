@@ -4876,7 +4876,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
             sc->time_offset = start_time -  (uint64_t)empty_duration;
             sc->min_corrected_pts = start_time;
             if (!mov->advanced_editlist)
-                current_dts = -sc->time_offset;
+                current_dts = -av_clip64(sc->time_offset, -INT64_MAX, INT64_MAX);
         }
 
         if (!multiple_edits && !mov->advanced_editlist &&
@@ -4897,8 +4897,10 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
         int rap_group_present = sc->rap_group_count && sc->rap_group;
         int key_off = (sc->keyframe_count && sc->keyframes[0] > 0) || (sc->stps_count && sc->stps_data[0] > 0);
 
+        av_assert0(sc->dts_shift >= 0);
+        if (current_dts < INT64_MIN + sc->dts_shift)
+            return;
         current_dts -= sc->dts_shift;
-
         if (!sc->sample_count || sti->nb_index_entries || sc->tts_count)
             return;
         if (sc->sample_count >= UINT_MAX / sizeof(*sti->index_entries) - sti->nb_index_entries)
@@ -4994,6 +4996,8 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                 current_offset += sample_size;
                 stream_size += sample_size;
 
+                if (current_dts > INT64_MAX - sc->tts_data[stts_index].duration)
+                    return;
                 current_dts += sc->tts_data[stts_index].duration;
 
                 distance++;
@@ -5103,6 +5107,8 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                        size, samples);
 
                 current_offset += size;
+                if (current_dts > INT64_MAX - samples)
+                    return;
                 current_dts += samples;
                 chunk_samples -= samples;
             }
@@ -5120,9 +5126,9 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
 
     // Update start time of the stream.
     if (st->start_time == AV_NOPTS_VALUE && st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && sti->nb_index_entries > 0) {
-        st->start_time = sti->index_entries[0].timestamp + sc->dts_shift;
+        st->start_time = av_sat_add64(sti->index_entries[0].timestamp, sc->dts_shift);
         if (sc->tts_data) {
-            st->start_time += sc->tts_data[0].offset;
+            st->start_time = av_sat_add64(st->start_time, sc->tts_data[0].offset);
         }
     }
 
