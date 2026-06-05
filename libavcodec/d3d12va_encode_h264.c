@@ -45,6 +45,7 @@ typedef struct D3D12VAEncodeH264Context {
     int profile;
     int level;
     int deblock;
+    int constrained_intra_pred;
     int idr_pic_id;
 
     // Writer structures.
@@ -258,6 +259,7 @@ static int d3d12va_encode_h264_init_sequence_params(AVCodecContext *avctx)
     sps->log2_max_frame_num_minus4 = FFMAX(av_ceil_log2(base_ctx->gop_size) - 4, 0);
     ctx->gop.pH264GroupOfPictures->log2_max_frame_num_minus4 = sps->log2_max_frame_num_minus4;
     pps->deblocking_filter_control_present_flag = 1;
+    pps->constrained_intra_pred_flag = priv->constrained_intra_pred;
 
     return 0;
 }
@@ -318,6 +320,16 @@ static int d3d12va_encode_h264_get_encoder_caps(AVCodecContext *avctx)
         } else {
             av_log(avctx, AV_LOG_WARNING, "CABAC entropy coding is not supported by the driver, falling back to CAVLC.\n");
             priv->unit_opts.cabac = 0;
+        }
+    }
+
+    // Constrained intra prediction configuration
+    if (priv->constrained_intra_pred) {
+        if (h264_caps.SupportFlags & D3D12_VIDEO_ENCODER_CODEC_CONFIGURATION_SUPPORT_H264_FLAG_CONSTRAINED_INTRAPREDICTION_SUPPORT) {
+            config->ConfigurationFlags |= D3D12_VIDEO_ENCODER_CODEC_CONFIGURATION_H264_FLAG_USE_CONSTRAINED_INTRAPREDICTION;
+        } else {
+            av_log(avctx, AV_LOG_WARNING, "Constrained intra prediction is not supported by the driver, disabling.\n");
+            priv->constrained_intra_pred = 0;
         }
     }
 
@@ -652,6 +664,9 @@ static const AVOption d3d12va_encode_h264_options[] = {
       OFFSET(unit_opts.cabac), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, FLAGS, "coder" },
         { "cavlc", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 0 }, INT_MIN, INT_MAX, FLAGS, "coder" },
         { "cabac", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 1 }, INT_MIN, INT_MAX, FLAGS, "coder" },
+
+    { "constrained_intra_pred", "Constrained intra prediction (constrained_intra_pred_flag)",
+      OFFSET(constrained_intra_pred), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
 
     { NULL },
 };

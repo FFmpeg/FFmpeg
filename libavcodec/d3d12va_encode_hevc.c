@@ -46,6 +46,7 @@ typedef struct D3D12VAEncodeHEVCContext {
     int qp;
     int profile;
     int level;
+    int constrained_intra_pred;
 
     // Writer structures.
     FFHWBaseEncodeH265 units;
@@ -376,6 +377,7 @@ static int d3d12va_encode_hevc_init_sequence_params(AVCodecContext *avctx)
                                                         D3D12_VIDEO_ENCODER_CODEC_CONFIGURATION_HEVC_FLAG_DISABLE_LOOP_FILTER_ACROSS_SLICES);
 
     pps->deblocking_filter_control_present_flag = 1;
+    pps->constrained_intra_pred_flag = priv->constrained_intra_pred;
 
     return 0;
 }
@@ -387,6 +389,7 @@ static int d3d12va_encode_hevc_get_encoder_caps(AVCodecContext *avctx)
     uint8_t min_cu_size, max_cu_size;
     FFHWBaseEncodeContext *base_ctx = avctx->priv_data;
     D3D12VAEncodeContext     *ctx = avctx->priv_data;
+    D3D12VAEncodeHEVCContext *priv = avctx->priv_data;
     D3D12_VIDEO_ENCODER_CODEC_CONFIGURATION_HEVC *config;
     D3D12_VIDEO_ENCODER_CODEC_CONFIGURATION_SUPPORT_HEVC hevc_caps;
 
@@ -438,6 +441,16 @@ static int d3d12va_encode_hevc_get_encoder_caps(AVCodecContext *avctx)
 
     if (hevc_caps.SupportFlags & D3D12_VIDEO_ENCODER_CODEC_CONFIGURATION_SUPPORT_HEVC_FLAG_TRANSFORM_SKIP_SUPPORT)
         config->ConfigurationFlags |= D3D12_VIDEO_ENCODER_CODEC_CONFIGURATION_HEVC_FLAG_ENABLE_TRANSFORM_SKIPPING;
+
+    // Constrained intra prediction configuration
+    if (priv->constrained_intra_pred) {
+        if (hevc_caps.SupportFlags & D3D12_VIDEO_ENCODER_CODEC_CONFIGURATION_SUPPORT_HEVC_FLAG_CONSTRAINED_INTRAPREDICTION_SUPPORT) {
+            config->ConfigurationFlags |= D3D12_VIDEO_ENCODER_CODEC_CONFIGURATION_HEVC_FLAG_USE_CONSTRAINED_INTRAPREDICTION;
+        } else {
+            av_log(avctx, AV_LOG_WARNING, "Constrained intra prediction is not supported by the driver, disabling.\n");
+            priv->constrained_intra_pred = 0;
+        }
+    }
 
     if (hevc_caps.SupportFlags & D3D12_VIDEO_ENCODER_CODEC_CONFIGURATION_SUPPORT_HEVC_FLAG_P_FRAMES_IMPLEMENTED_AS_LOW_DELAY_B_FRAMES)
         ctx->bi_not_empty = 1;
@@ -779,6 +792,9 @@ static const AVOption d3d12va_encode_hevc_options[] = {
     { LEVEL("6.1", 183) },
     { LEVEL("6.2", 186) },
 #undef LEVEL
+
+    { "constrained_intra_pred", "Constrained intra prediction (constrained_intra_pred_flag)",
+      OFFSET(constrained_intra_pred), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
 
     { NULL },
 };
