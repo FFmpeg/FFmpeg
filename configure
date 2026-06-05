@@ -5627,7 +5627,11 @@ if test "$cpu" = host; then
                             q
                         }" $TMPE
             }
-            cpu=$(check_native -march || check_native -mcpu)
+            if cpu=$(check_native -march); then
+                native_cpuflags="-march=native"
+            elif cpu=$(check_native -mcpu); then
+                native_cpuflags="-mcpu=native"
+            fi
         ;;
         clang)
             check_native(){
@@ -5639,7 +5643,7 @@ if test "$cpu" = host; then
                             q
                         }" $TMPE
             }
-            cpu=$(check_native -march)
+            cpu=$(check_native -march) && native_cpuflags="-march=native"
         ;;
     esac
 
@@ -6011,6 +6015,9 @@ else
 fi
 
 if [ "$cpu" != generic ]; then
+    # For --cpu=host, use the compiler's =native for codegen. $cpu is
+    # only the resolved name used for feature gating above.
+    test -n "$native_cpuflags" && cpuflags=$native_cpuflags
     add_allcflags $cpuflags
     add_asflags $cpuflags
     test "$cc_type" = "$ld_type" && add_ldflags $cpuflags
