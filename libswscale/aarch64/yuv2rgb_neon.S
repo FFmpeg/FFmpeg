@@ -216,30 +216,30 @@
 .endm
 
 .macro compute_rgb r1 g1 b1 r2 g2 b2
-        add             v20.8h, v26.8h, v20.8h                          // Y1 + R1
-        add             v21.8h, v27.8h, v21.8h                          // Y2 + R2
-        add             v22.8h, v26.8h, v22.8h                          // Y1 + G1
-        add             v23.8h, v27.8h, v23.8h                          // Y2 + G2
-        add             v24.8h, v26.8h, v24.8h                          // Y1 + B1
-        add             v25.8h, v27.8h, v25.8h                          // Y2 + B2
-        sqrshrun        \r1, v20.8h, #1                                 // clip_u8((Y1 + R1) >> 1)
-        sqrshrun        \r2, v21.8h, #1                                 // clip_u8((Y2 + R1) >> 1)
-        sqrshrun        \g1, v22.8h, #1                                 // clip_u8((Y1 + G1) >> 1)
-        sqrshrun        \g2, v23.8h, #1                                 // clip_u8((Y2 + G1) >> 1)
-        sqrshrun        \b1, v24.8h, #1                                 // clip_u8((Y1 + B1) >> 1)
-        sqrshrun        \b2, v25.8h, #1                                 // clip_u8((Y2 + B1) >> 1)
+        add             \r1\().8h, v26.8h, v20.8h                       // Y1 + R1
+        add             \r2\().8h, v27.8h, v21.8h                       // Y2 + R2
+        add             \g1\().8h, v26.8h, v22.8h                       // Y1 + G1
+        add             \g2\().8h, v27.8h, v23.8h                       // Y2 + G2
+        add             \b1\().8h, v26.8h, v24.8h                       // Y1 + B1
+        add             \b2\().8h, v27.8h, v25.8h                       // Y2 + B2
+        sqrshrun        \r1\().8b, \r1\().8h, #1                        // clip_u8((Y1 + R1) >> 1)
+        sqrshrun        \r2\().8b, \r2\().8h, #1                        // clip_u8((Y2 + R2) >> 1)
+        sqrshrun        \g1\().8b, \g1\().8h, #1                        // clip_u8((Y1 + G1) >> 1)
+        sqrshrun        \g2\().8b, \g2\().8h, #1                        // clip_u8((Y2 + G2) >> 1)
+        sqrshrun        \b1\().8b, \b1\().8h, #1                        // clip_u8((Y1 + B1) >> 1)
+        sqrshrun        \b2\().8b, \b2\().8h, #1                        // clip_u8((Y2 + B2) >> 1)
 .endm
 
 .macro compute_rgba r1 g1 b1 a1 r2 g2 b2 a2
         compute_rgb     \r1, \g1, \b1, \r2, \g2, \b2
-        mov             \a1, v30.8b
-        mov             \a2, v30.8b
+        mov             \a1\().8b, v30.8b
+        mov             \a2\().8b, v30.8b
 .endm
 
 .macro compute_rgba_alpha r1 g1 b1 a1 r2 g2 b2 a2
         compute_rgb     \r1, \g1, \b1, \r2, \g2, \b2
-        mov             \a1, v28.8b                                     // real alpha (first 8 pixels)
-        mov             \a2, v29.8b                                     // real alpha (next 8 pixels)
+        mov             \a1\().8b, v28.8b                               // real alpha (first 8 pixels)
+        mov             \a2\().8b, v29.8b                               // real alpha (next 8 pixels)
 .endm
 
 // Map ofmt to .set predicates: rgb16=1 for the four 16bpp LE ofmts
@@ -348,54 +348,54 @@ function ff_\ifmt\()_to_\ofmt\()_neon, export=1
 
 .ifc \ofmt,argb // 1 2 3 0
  .ifc \ifmt,yuva420p
-        compute_rgba_alpha v5.8b,v6.8b,v7.8b,v4.8b, v17.8b,v18.8b,v19.8b,v16.8b
+        compute_rgba_alpha v5,v6,v7,v4, v17,v18,v19,v16
  .else
-        compute_rgba    v5.8b,v6.8b,v7.8b,v4.8b, v17.8b,v18.8b,v19.8b,v16.8b
+        compute_rgba    v5,v6,v7,v4, v17,v18,v19,v16
  .endif
 .endif
 
 .ifc \ofmt,rgba // 0 1 2 3
  .ifc \ifmt,yuva420p
-        compute_rgba_alpha v4.8b,v5.8b,v6.8b,v7.8b, v16.8b,v17.8b,v18.8b,v19.8b
+        compute_rgba_alpha v4,v5,v6,v7, v16,v17,v18,v19
  .else
-        compute_rgba    v4.8b,v5.8b,v6.8b,v7.8b, v16.8b,v17.8b,v18.8b,v19.8b
+        compute_rgba    v4,v5,v6,v7, v16,v17,v18,v19
  .endif
 .endif
 
 .ifc \ofmt,abgr // 3 2 1 0
  .ifc \ifmt,yuva420p
-        compute_rgba_alpha v7.8b,v6.8b,v5.8b,v4.8b, v19.8b,v18.8b,v17.8b,v16.8b
+        compute_rgba_alpha v7,v6,v5,v4, v19,v18,v17,v16
  .else
-        compute_rgba    v7.8b,v6.8b,v5.8b,v4.8b, v19.8b,v18.8b,v17.8b,v16.8b
+        compute_rgba    v7,v6,v5,v4, v19,v18,v17,v16
  .endif
 .endif
 
 .ifc \ofmt,bgra // 2 1 0 3
  .ifc \ifmt,yuva420p
-        compute_rgba_alpha v6.8b,v5.8b,v4.8b,v7.8b, v18.8b,v17.8b,v16.8b,v19.8b
+        compute_rgba_alpha v6,v5,v4,v7, v18,v17,v16,v19
  .else
-        compute_rgba    v6.8b,v5.8b,v4.8b,v7.8b, v18.8b,v17.8b,v16.8b,v19.8b
+        compute_rgba    v6,v5,v4,v7, v18,v17,v16,v19
  .endif
 .endif
 
 .ifc \ofmt,rgb24
-        compute_rgb     v4.8b,v5.8b,v6.8b, v16.8b,v17.8b,v18.8b
+        compute_rgb     v4,v5,v6, v16,v17,v18
         st3             { v4.8b, v5.8b, v6.8b}, [x2], #24
         st3             {v16.8b,v17.8b,v18.8b}, [x2], #24
 .else
  .ifc \ofmt,bgr24
-        compute_rgb     v6.8b,v5.8b,v4.8b, v18.8b,v17.8b,v16.8b
+        compute_rgb     v6,v5,v4, v18,v17,v16
         st3             { v4.8b, v5.8b, v6.8b}, [x2], #24
         st3             {v16.8b,v17.8b,v18.8b}, [x2], #24
  .else
   .ifc \ofmt,gbrp
-        compute_rgb     v18.8b,v4.8b,v6.8b, v19.8b,v5.8b,v7.8b
+        compute_rgb     v18,v4,v6, v19,v5,v7
         st1             {  v4.8b,  v5.8b }, [x2],  #16
         st1             {  v6.8b,  v7.8b }, [x10], #16
         st1             { v18.8b, v19.8b }, [x15], #16
   .else
    .if rgb16
-        compute_rgb     v4.8b,v5.8b,v6.8b, v16.8b,v17.8b,v18.8b
+        compute_rgb     v4,v5,v6, v16,v17,v18
     .if r_first
         // rgb*le: (R << hshift) | (G << 5) | B
         pack_rgb16      v8,  v6,  v5,  v4,  gshift, hshift
