@@ -415,8 +415,9 @@ static int rv10_decode_packet(AVCodecContext *avctx, const uint8_t *buf,
     H263DecContext *const h = &rv->h;
     int mb_count, mb_pos, left, start_mb_x, active_bits_size, ret;
 
+    if ((ret = init_get_bits8(&h->gb, buf, FFMAX(buf_size, buf_size2))) < 0)
+        return ret;
     active_bits_size = buf_size * 8;
-    init_get_bits(&h->gb, buf, FFMAX(buf_size, buf_size2) * 8);
     if (h->c.codec_id == AV_CODEC_ID_RV10)
         mb_count = rv10_decode_picture_header(h);
     else
