@@ -36,6 +36,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
+#include "libavutil/parseutils.h"
 #include "libavutil/log.h"
 #include "libavutil/random_seed.h"
 #include "libavutil/time.h"
@@ -1222,23 +1223,26 @@ static int parse_playlist(AVFormatContext *s, const char *url, VariantStream *vs
                 }
             }
         } else if (av_strstart(line, "#EXT-X-PROGRAM-DATE-TIME:", &ptr)) {
-            struct tm program_date_time;
-            int y,M,d,h,m,sec;
-            double ms;
-            if (sscanf(ptr, "%d-%d-%dT%d:%d:%d.%lf", &y, &M, &d, &h, &m, &sec, &ms) != 7) {
+            struct tm program_date_time = { 0 };
+            double ms = 0;
+            char *q = av_small_strptime(ptr, "%Y-%m-%dT%H:%M:%S", &program_date_time);
+
+            if (!q) {
                 ret = AVERROR_INVALIDDATA;
                 goto fail;
             }
-
-            program_date_time.tm_year = y - 1900;
-            program_date_time.tm_mon = M - 1;
-            program_date_time.tm_mday = d;
-            program_date_time.tm_hour = h;
-            program_date_time.tm_min = m;
-            program_date_time.tm_sec = sec;
+            if (*q == '.')
+                ms = atof(q + 1);
             program_date_time.tm_isdst = -1;
 
-            discont_program_date_time = mktime(&program_date_time);
+            errno = 0;
+            time_t t = mktime(&program_date_time);
+            if (t == (time_t)-1 && errno == EOVERFLOW) {
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
+            }
+            discont_program_date_time = t;
+
             discont_program_date_time += (double)(ms / 1000);
         } else if (av_strstart(line, "#", NULL)) {
             continue;
