@@ -322,17 +322,16 @@ static void filter16_3x3(uint8_t *dstp, int width,
     int x;
 
     for (x = 0; x < width; x++) {
-        int sum = AV_RN16A(&c[0][2 * x]) * matrix[0] +
-                  AV_RN16A(&c[1][2 * x]) * matrix[1] +
-                  AV_RN16A(&c[2][2 * x]) * matrix[2] +
-                  AV_RN16A(&c[3][2 * x]) * matrix[3] +
-                  AV_RN16A(&c[4][2 * x]) * matrix[4] +
-                  AV_RN16A(&c[5][2 * x]) * matrix[5] +
-                  AV_RN16A(&c[6][2 * x]) * matrix[6] +
-                  AV_RN16A(&c[7][2 * x]) * matrix[7] +
-                  AV_RN16A(&c[8][2 * x]) * matrix[8];
-        sum = (int)(sum * rdiv + bias + 0.5f);
-        dst[x] = av_clip(sum, 0, peak);
+        unsigned sum = (unsigned)AV_RN16A(&c[0][2 * x]) * matrix[0] +
+                  (unsigned)AV_RN16A(&c[1][2 * x]) * matrix[1] +
+                  (unsigned)AV_RN16A(&c[2][2 * x]) * matrix[2] +
+                  (unsigned)AV_RN16A(&c[3][2 * x]) * matrix[3] +
+                  (unsigned)AV_RN16A(&c[4][2 * x]) * matrix[4] +
+                  (unsigned)AV_RN16A(&c[5][2 * x]) * matrix[5] +
+                  (unsigned)AV_RN16A(&c[6][2 * x]) * matrix[6] +
+                  (unsigned)AV_RN16A(&c[7][2 * x]) * matrix[7] +
+                  (unsigned)AV_RN16A(&c[8][2 * x]) * matrix[8];
+        dst[x] = av_clip((int)sum * rdiv + bias + 0.5f, 0, peak);
     }
 }
 
@@ -345,13 +344,13 @@ static void filter16_5x5(uint8_t *dstp, int width,
     int x;
 
     for (x = 0; x < width; x++) {
-        int i, sum = 0;
+        int i;
+        unsigned sum = 0;
 
         for (i = 0; i < 25; i++)
-            sum += AV_RN16A(&c[i][2 * x]) * matrix[i];
+            sum += (unsigned)AV_RN16A(&c[i][2 * x]) * matrix[i];
 
-        sum = (int)(sum * rdiv + bias + 0.5f);
-        dst[x] = av_clip(sum, 0, peak);
+        dst[x] = av_clip((int)sum * rdiv + bias + 0.5f, 0, peak);
     }
 }
 
@@ -364,13 +363,13 @@ static void filter16_7x7(uint8_t *dstp, int width,
     int x;
 
     for (x = 0; x < width; x++) {
-        int i, sum = 0;
+        int i;
+        unsigned sum = 0;
 
         for (i = 0; i < 49; i++)
-            sum += AV_RN16A(&c[i][2 * x]) * matrix[i];
+            sum += (unsigned)AV_RN16A(&c[i][2 * x]) * matrix[i];
 
-        sum = (int)(sum * rdiv + bias + 0.5f);
-        dst[x] = av_clip(sum, 0, peak);
+        dst[x] = av_clip((int)sum * rdiv + bias + 0.5f, 0, peak);
     }
 }
 
@@ -383,13 +382,13 @@ static void filter16_row(uint8_t *dstp, int width,
     int x;
 
     for (x = 0; x < width; x++) {
-        int i, sum = 0;
+        int i;
+        unsigned sum = 0;
 
         for (i = 0; i < 2 * radius + 1; i++)
-            sum += AV_RN16A(&c[i][2 * x]) * matrix[i];
+            sum += (unsigned)AV_RN16A(&c[i][2 * x]) * matrix[i];
 
-        sum = (int)(sum * rdiv + bias + 0.5f);
-        dst[x] = av_clip(sum, 0, peak);
+        dst[x] = av_clip((int)sum * rdiv + bias + 0.5f, 0, peak);
     }
 }
 
@@ -398,7 +397,7 @@ static void filter16_column(uint8_t *dstp, int height,
                             const uint8_t *c[], int peak, int radius,
                             int dstride, int stride, int size)
 {
-    DECLARE_ALIGNED(64, int, sum)[16];
+    DECLARE_ALIGNED(64, unsigned, sum)[16];
     uint16_t *dst = (uint16_t *)dstp;
     const int width = FFMIN(16, size);
 
@@ -407,12 +406,11 @@ static void filter16_column(uint8_t *dstp, int height,
         memset(sum, 0, sizeof(sum));
         for (int i = 0; i < 2 * radius + 1; i++) {
             for (int off16 = 0; off16 < width; off16++)
-                sum[off16] += AV_RN16A(&c[i][0 + y * stride + off16 * 2]) * matrix[i];
+                sum[off16] += (unsigned)AV_RN16A(&c[i][0 + y * stride + off16 * 2]) * matrix[i];
         }
 
         for (int off16 = 0; off16 < width; off16++) {
-            sum[off16] = (int)(sum[off16] * rdiv + bias + 0.5f);
-            dst[off16] = av_clip(sum[off16], 0, peak);
+            dst[off16] = av_clip((int)sum[off16] * rdiv + bias + 0.5f, 0, peak);
         }
         dst += dstride / 2;
     }
@@ -426,13 +424,13 @@ static void filter_7x7(uint8_t *dst, int width,
     int x;
 
     for (x = 0; x < width; x++) {
-        int i, sum = 0;
+        int i;
+        unsigned sum = 0;
 
         for (i = 0; i < 49; i++)
-            sum += c[i][x] * matrix[i];
+            sum += (unsigned)c[i][x] * matrix[i];
 
-        sum = (int)(sum * rdiv + bias + 0.5f);
-        dst[x] = av_clip_uint8(sum);
+        dst[x] = av_clip_uint8((int)sum * rdiv + bias + 0.5f);
     }
 }
 
@@ -444,13 +442,13 @@ static void filter_5x5(uint8_t *dst, int width,
     int x;
 
     for (x = 0; x < width; x++) {
-        int i, sum = 0;
+        int i;
+        unsigned sum = 0;
 
         for (i = 0; i < 25; i++)
-            sum += c[i][x] * matrix[i];
+            sum += (unsigned)c[i][x] * matrix[i];
 
-        sum = (int)(sum * rdiv + bias + 0.5f);
-        dst[x] = av_clip_uint8(sum);
+        dst[x] = av_clip_uint8((int)sum * rdiv + bias + 0.5f);
     }
 }
 
@@ -465,11 +463,10 @@ static void filter_3x3(uint8_t *dst, int width,
     int x;
 
     for (x = 0; x < width; x++) {
-        int sum = c0[x] * matrix[0] + c1[x] * matrix[1] + c2[x] * matrix[2] +
-                  c3[x] * matrix[3] + c4[x] * matrix[4] + c5[x] * matrix[5] +
-                  c6[x] * matrix[6] + c7[x] * matrix[7] + c8[x] * matrix[8];
-        sum = (int)(sum * rdiv + bias + 0.5f);
-        dst[x] = av_clip_uint8(sum);
+        unsigned sum = (unsigned)c0[x] * matrix[0] + (unsigned)c1[x] * matrix[1] + (unsigned)c2[x] * matrix[2] +
+                       (unsigned)c3[x] * matrix[3] + (unsigned)c4[x] * matrix[4] + (unsigned)c5[x] * matrix[5] +
+                       (unsigned)c6[x] * matrix[6] + (unsigned)c7[x] * matrix[7] + (unsigned)c8[x] * matrix[8];
+        dst[x] = av_clip_uint8((int)sum * rdiv + bias + 0.5f);
     }
 }
 
@@ -481,13 +478,13 @@ static void filter_row(uint8_t *dst, int width,
     int x;
 
     for (x = 0; x < width; x++) {
-        int i, sum = 0;
+        int i;
+        unsigned sum = 0;
 
         for (i = 0; i < 2 * radius + 1; i++)
-            sum += c[i][x] * matrix[i];
+            sum += (unsigned)c[i][x] * matrix[i];
 
-        sum = (int)(sum * rdiv + bias + 0.5f);
-        dst[x] = av_clip_uint8(sum);
+        dst[x] = av_clip_uint8((int)sum * rdiv + bias + 0.5f);
     }
 }
 
@@ -496,19 +493,18 @@ static void filter_column(uint8_t *dst, int height,
                           const uint8_t *c[], int peak, int radius,
                           int dstride, int stride, int size)
 {
-    DECLARE_ALIGNED(64, int, sum)[16];
+    DECLARE_ALIGNED(64, unsigned, sum)[16];
 
     for (int y = 0; y < height; y++) {
         memset(sum, 0, sizeof(sum));
 
         for (int i = 0; i < 2 * radius + 1; i++) {
             for (int off16 = 0; off16 < 16; off16++)
-                sum[off16] += c[i][0 + y * stride + off16] * matrix[i];
+                sum[off16] += (unsigned)c[i][0 + y * stride + off16] * matrix[i];
         }
 
         for (int off16 = 0; off16 < 16; off16++) {
-            sum[off16] = (int)(sum[off16] * rdiv + bias + 0.5f);
-            dst[off16] = av_clip_uint8(sum[off16]);
+            dst[off16] = av_clip_uint8((int)sum[off16] * rdiv + bias + 0.5f);
         }
         dst += dstride;
     }
