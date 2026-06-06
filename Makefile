@@ -187,7 +187,8 @@ clean::
 	$(RM) -rf coverage.info coverage.info.in lcov
 
 distclean:: clean
-	$(RM) .version checkasm_config_generated.* config.asm config.h config_components.* mapfile  \
+	$(RM) .version config.asm config.h config_components.* mapfile \
+		checkasm_config_generated.* checkasm_header_config_generated.h \
 		ffbuild/.config ffbuild/config.* libavutil/avconfig.h \
 		version.h libavutil/ffversion.h libavcodec/codec_names.h \
 		libavcodec/bsf_list.c libavformat/protocol_list.c \
