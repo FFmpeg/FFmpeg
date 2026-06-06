@@ -1428,7 +1428,9 @@ static int rv34_decode_slice(RV34DecContext *r, int end, const uint8_t* buf, int
     int mb_pos, slice_type;
     int res;
 
-    init_get_bits(&r->s.gb, buf, buf_size*8);
+    res = init_get_bits8(&r->s.gb, buf, buf_size);
+    if (res < 0)
+        return res;
     res = r->parse_slice_header(r, gb, &r->si);
     if(res < 0){
         av_log(s->avctx, AV_LOG_ERROR, "Incorrect or unknown slice header\n");
@@ -1652,8 +1654,9 @@ int ff_rv34_decode_frame(AVCodecContext *avctx, AVFrame *pict,
         av_log(avctx, AV_LOG_ERROR, "Slice offset is invalid\n");
         return AVERROR_INVALIDDATA;
     }
-    init_get_bits(&s->gb, buf+offset, (buf_size-offset)*8);
-    if(r->parse_slice_header(r, &r->s.gb, &si) < 0 || si.start){
+    if ((ret = init_get_bits8(&s->gb, buf+offset, buf_size-offset)) < 0)
+        return ret;
+    if (r->parse_slice_header(r, &r->s.gb, &si) < 0 || si.start) {
         av_log(avctx, AV_LOG_ERROR, "First slice header is incorrect\n");
         return AVERROR_INVALIDDATA;
     }
@@ -1782,8 +1785,10 @@ int ff_rv34_decode_frame(AVCodecContext *avctx, AVFrame *pict,
                 av_log(avctx, AV_LOG_ERROR, "Slice offset is invalid\n");
                 break;
             }
-            init_get_bits(&s->gb, buf+offset1, (buf_size-offset1)*8);
-            if(r->parse_slice_header(r, &r->s.gb, &si) < 0){
+            ret = init_get_bits8(&s->gb, buf+offset1, buf_size-offset1);
+            if (ret < 0)
+                return ret;
+            if (r->parse_slice_header(r, &r->s.gb, &si) < 0) {
                 size = offset2 - offset;
             }else
                 r->si.end = si.start;
