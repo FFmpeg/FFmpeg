@@ -156,7 +156,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *ref)
 
     while (1) {
         char cmd_buf[1024];
-        char *recv_buf, *send_buf;
+        char *recv_buf = NULL, *send_buf = NULL;
         int recv_buf_size;
         Command cmd = {0};
         int ret;
