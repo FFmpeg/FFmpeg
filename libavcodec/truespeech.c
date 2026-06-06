@@ -323,6 +323,11 @@ static int truespeech_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                "Too small input buffer (%d bytes), need at least 32 bytes\n", buf_size);
         return -1;
     }
+    if (iterations > INT_MAX / 240) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Too large input buffer (%d bytes); per-block sample count overflows\n", buf_size);
+        return AVERROR_INVALIDDATA;
+    }
 
     /* get output buffer */
     frame->nb_samples = iterations * 240;
