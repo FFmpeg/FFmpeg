@@ -101,8 +101,8 @@ static int sum_##name(AVFilterContext *ctx, void *arg,       \
                                     sizeof(type);            \
         const int h = s->planeheight[c];                     \
         const int w = s->planewidth[c];                      \
-        const int slice_start = (h * jobnr) / nb_jobs;       \
-        const int slice_end = (h * (jobnr+1)) / nb_jobs;     \
+        const int slice_start = ff_slice_pos(h, jobnr, nb_jobs); \
+        const int slice_end = ff_slice_pos(h, jobnr + 1, nb_jobs); \
         const type *src1 = (const type *)master->data[c] +   \
                             linesize1 * slice_start;         \
         const type *src2 = (const type *)ref->data[c] +      \
@@ -147,8 +147,8 @@ static int corr_##name(AVFilterContext *ctx, void *arg,      \
         const type *src2 = (const type *)ref->data[c];       \
         const int h = s->planeheight[c];                     \
         const int w = s->planewidth[c];                      \
-        const int slice_start = (h * jobnr) / nb_jobs;       \
-        const int slice_end = (h * (jobnr+1)) / nb_jobs;     \
+        const int slice_start = ff_slice_pos(h, jobnr, nb_jobs); \
+        const int slice_end = ff_slice_pos(h, jobnr + 1, nb_jobs); \
         const float scale = 1.f / s->max[c];                 \
         const float mean1 = s->mean[c][0];                   \
         const float mean2 = s->mean[c][1];                   \

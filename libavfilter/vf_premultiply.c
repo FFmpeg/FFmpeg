@@ -507,8 +507,8 @@ static int premultiply_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_
     int p;
 
     for (p = 0; p < s->nb_planes; p++) {
-        const int slice_start = (s->height[p] * jobnr) / nb_jobs;
-        const int slice_end = (s->height[p] * (jobnr+1)) / nb_jobs;
+        const int slice_start = ff_slice_pos(s->height[p], jobnr, nb_jobs);
+        const int slice_end = ff_slice_pos(s->height[p], jobnr + 1, nb_jobs);
 
         if (!((1 << p) & s->planes) || p == 3) {
             av_image_copy_plane(out->data[p] + slice_start * out->linesize[p],

@@ -130,8 +130,8 @@ static int filter_slice_nn##name(AVFilterContext *ctx, void *arg, int jobnr, \
         const int height = s->planeheight[p];                                \
         const int wx = vsub * shx * height * 0.5f / hsub;                    \
         const int wy = hsub * shy * width  * 0.5f / vsub;                    \
-        const int slice_start = (height * jobnr) / nb_jobs;                  \
-        const int slice_end = (height * (jobnr+1)) / nb_jobs;                \
+        const int slice_start = ff_slice_pos(height, jobnr, nb_jobs);        \
+        const int slice_end = ff_slice_pos(height, jobnr + 1, nb_jobs);      \
         const int src_linesize = in->linesize[p] / sizeof(type);             \
         const int dst_linesize = out->linesize[p] / sizeof(type);            \
         const type *src = (const type *)in->data[p];                         \
@@ -177,8 +177,8 @@ static int filter_slice_bl##name(AVFilterContext *ctx, void *arg, int jobnr, \
         const int height = s->planeheight[p];                                \
         const float wx = vsub * shx * height * 0.5f / hsub;                  \
         const float wy = hsub * shy * width  * 0.5f / vsub;                  \
-        const int slice_start = (height * jobnr) / nb_jobs;                  \
-        const int slice_end = (height * (jobnr+1)) / nb_jobs;                \
+        const int slice_start = ff_slice_pos(height, jobnr, nb_jobs);        \
+        const int slice_end = ff_slice_pos(height, jobnr + 1, nb_jobs);      \
         const int src_linesize = in->linesize[p] / sizeof(type);             \
         const int dst_linesize = out->linesize[p] / sizeof(type);            \
         const type *src = (const type *)in->data[p];                         \

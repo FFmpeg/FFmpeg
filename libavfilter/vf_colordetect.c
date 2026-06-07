@@ -132,8 +132,8 @@ static int detect_range(AVFilterContext *ctx, void *arg,
     ColorDetectContext *s = ctx->priv;
     const AVFrame *in = arg;
     const ptrdiff_t stride = in->linesize[0];
-    const int y_start = (in->height * jobnr) / nb_jobs;
-    const int y_end = (in->height * (jobnr + 1)) / nb_jobs;
+    const int y_start = ff_slice_pos(in->height, jobnr, nb_jobs);
+    const int y_end = ff_slice_pos(in->height, jobnr + 1, nb_jobs);
     const int h_slice = y_end - y_start;
 
     if (s->dsp.detect_range(in->data[0] + y_start * stride, stride,
@@ -151,8 +151,8 @@ static int detect_alpha(AVFilterContext *ctx, void *arg,
     const AVFrame *in = arg;
     const int w = in->width;
     const int h = in->height;
-    const int y_start = (h * jobnr) / nb_jobs;
-    const int y_end = (h * (jobnr + 1)) / nb_jobs;
+    const int y_start = ff_slice_pos(h, jobnr, nb_jobs);
+    const int y_end = ff_slice_pos(h, jobnr + 1, nb_jobs);
     const int h_slice = y_end - y_start;
 
     const int nb_planes = (s->desc->flags & AV_PIX_FMT_FLAG_RGB) ? 3 : 1;

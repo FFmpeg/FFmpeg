@@ -2193,8 +2193,8 @@ static int xfade_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     XFadeContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
     ThreadData *td = arg;
-    int slice_start = (outlink->h *  jobnr   ) / nb_jobs;
-    int slice_end   = (outlink->h * (jobnr+1)) / nb_jobs;
+    int slice_start = ff_slice_pos(outlink->h, jobnr, nb_jobs);
+    int slice_end   = ff_slice_pos(outlink->h, jobnr + 1, nb_jobs);
 
     s->transitionf(ctx, td->xf[0], td->xf[1], td->out, td->progress, slice_start, slice_end, jobnr);
 

@@ -234,8 +234,8 @@ static int tx_channel(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     AFFTFiltContext *s = ctx->priv;
     const int channels = s->channels;
-    const int start = (channels * jobnr) / nb_jobs;
-    const int end = (channels * (jobnr+1)) / nb_jobs;
+    const int start = ff_slice_pos(channels, jobnr, nb_jobs);
+    const int end = ff_slice_pos(channels, jobnr + 1, nb_jobs);
 
     for (int ch = start; ch < end; ch++) {
         AVComplexFloat *fft_in = s->fft_in[ch];
@@ -254,8 +254,8 @@ static int filter_channel(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
     const float *window_lut = s->window_func_lut;
     const float f = sqrtf(1.f - s->overlap);
     const int channels = s->channels;
-    const int start = (channels * jobnr) / nb_jobs;
-    const int end = (channels * (jobnr+1)) / nb_jobs;
+    const int start = ff_slice_pos(channels, jobnr, nb_jobs);
+    const int end = ff_slice_pos(channels, jobnr + 1, nb_jobs);
     double values[VAR_VARS_NB];
 
     memcpy(values, arg, sizeof(values));

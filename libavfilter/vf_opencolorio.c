@@ -19,6 +19,7 @@
  */
 
 #include "avfilter.h"
+#include "filters.h"
 #include "formats.h"
 #include "libavutil/half2float.h"
 #include "libavutil/opt.h"
@@ -55,8 +56,8 @@ static int ocio_filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_
     AVFrame *in = td->in;
     AVFrame *out = td->out;
     const int height = out->height;
-    const int slice_start = (height * jobnr) / nb_jobs;
-    const int slice_end = (height * (jobnr + 1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(height, jobnr + 1, nb_jobs);
     const int slice_h = slice_end - slice_start;
 
     return ocio_apply(ctx, s->ocio, in, out, slice_start, slice_h);

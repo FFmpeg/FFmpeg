@@ -168,8 +168,8 @@ DEFINE_BLEND_EXPR(float, 32bit, 4)
 static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     ThreadData *td = arg;
-    int slice_start = (td->h *  jobnr   ) / nb_jobs;
-    int slice_end   = (td->h * (jobnr+1)) / nb_jobs;
+    int slice_start = ff_slice_pos(td->h, jobnr, nb_jobs);
+    int slice_end   = ff_slice_pos(td->h, jobnr + 1, nb_jobs);
     int height      = slice_end - slice_start;
     const uint8_t *top    = td->top->data[td->plane];
     const uint8_t *bottom = td->bottom->data[td->plane];

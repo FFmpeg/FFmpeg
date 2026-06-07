@@ -316,8 +316,8 @@ static inline int selective_color_##nbits(AVFilterContext *ctx, ThreadData *td, 
     const SelectiveColorContext *s = ctx->priv;                                                         \
     const int height = in->height;                                                                      \
     const int width  = in->width;                                                                       \
-    const int slice_start = (height *  jobnr   ) / nb_jobs;                                             \
-    const int slice_end   = (height * (jobnr+1)) / nb_jobs;                                             \
+    const int slice_start = ff_slice_pos(height, jobnr, nb_jobs);                                       \
+    const int slice_end   = ff_slice_pos(height, jobnr + 1, nb_jobs);                                   \
     const int dst_linesize = out->linesize[0] / ((nbits + 7) / 8);                                      \
     const int src_linesize =  in->linesize[0] / ((nbits + 7) / 8);                                      \
     const uint8_t roffset = s->rgba_map[R];                                                             \

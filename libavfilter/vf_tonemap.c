@@ -185,8 +185,8 @@ static int tonemap_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
     AVFrame *in = td->in;
     AVFrame *out = td->out;
     const AVPixFmtDescriptor *desc = td->desc;
-    const int slice_start = (in->height * jobnr) / nb_jobs;
-    const int slice_end = (in->height * (jobnr+1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(in->height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(in->height, jobnr + 1, nb_jobs);
     double peak = td->peak;
 
     for (int y = slice_start; y < slice_end; y++)

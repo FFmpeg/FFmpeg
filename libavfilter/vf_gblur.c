@@ -61,8 +61,8 @@ static int filter_horizontally(AVFilterContext *ctx, void *arg, int jobnr, int n
     ThreadData *td = arg;
     const int height = td->height;
     const int width = td->width;
-    const int slice_start = (height *  jobnr   ) / nb_jobs;
-    const int slice_end   = (height * (jobnr+1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(height, jobnr, nb_jobs);
+    const int slice_end   = ff_slice_pos(height, jobnr + 1, nb_jobs);
     const float boundaryscale = s->boundaryscale;
     const int steps = s->steps;
     const float nu = s->nu;
@@ -83,8 +83,8 @@ static int filter_vertically(AVFilterContext *ctx, void *arg, int jobnr, int nb_
     ThreadData *td = arg;
     const int height = td->height;
     const int width = td->width;
-    const int slice_start = (width *  jobnr   ) / nb_jobs;
-    const int slice_end   = (width * (jobnr+1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(width, jobnr, nb_jobs);
+    const int slice_end   = ff_slice_pos(width, jobnr + 1, nb_jobs);
     const float boundaryscale = s->boundaryscaleV;
     const int steps = s->steps;
     const float nu = s->nuV;
@@ -105,8 +105,8 @@ static int filter_postscale(AVFilterContext *ctx, void *arg, int jobnr, int nb_j
     const int height = td->height;
     const int width = td->width;
     const int awidth = FFALIGN(width, 64);
-    const int slice_start = (height *  jobnr   ) / nb_jobs;
-    const int slice_end   = (height * (jobnr+1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(height, jobnr, nb_jobs);
+    const int slice_end   = ff_slice_pos(height, jobnr + 1, nb_jobs);
     const float postscale = s->postscale * s->postscaleV;
     const int slice_size = slice_end - slice_start;
 

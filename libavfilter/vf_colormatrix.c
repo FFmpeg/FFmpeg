@@ -209,8 +209,8 @@ static int process_slice_uyvy422(AVFilterContext *ctx, void *arg, int jobnr, int
     const int width = src->width*2;
     const int src_pitch = src->linesize[0];
     const int dst_pitch = dst->linesize[0];
-    const int slice_start = (height *  jobnr   ) / nb_jobs;
-    const int slice_end   = (height * (jobnr+1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(height, jobnr, nb_jobs);
+    const int slice_end   = ff_slice_pos(height, jobnr + 1, nb_jobs);
     const unsigned char *srcp = src->data[0] + slice_start * src_pitch;
     unsigned char *dstp = dst->data[0] + slice_start * dst_pitch;
     const int c2 = td->c2;
@@ -245,8 +245,8 @@ static int process_slice_yuv444p(AVFilterContext *ctx, void *arg, int jobnr, int
     AVFrame *dst = td->dst;
     const int height = src->height;
     const int width = src->width;
-    const int slice_start = (height *  jobnr   ) / nb_jobs;
-    const int slice_end   = (height * (jobnr+1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(height, jobnr, nb_jobs);
+    const int slice_end   = ff_slice_pos(height, jobnr + 1, nb_jobs);
     const int src_pitchY  = src->linesize[0];
     const int src_pitchUV = src->linesize[1];
     const unsigned char *srcpU = src->data[1] + slice_start * src_pitchUV;
@@ -292,8 +292,8 @@ static int process_slice_yuv422p(AVFilterContext *ctx, void *arg, int jobnr, int
     AVFrame *dst = td->dst;
     const int height = src->height;
     const int width = src->width;
-    const int slice_start = (height *  jobnr   ) / nb_jobs;
-    const int slice_end   = (height * (jobnr+1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(height, jobnr, nb_jobs);
+    const int slice_end   = ff_slice_pos(height, jobnr + 1, nb_jobs);
     const int src_pitchY  = src->linesize[0];
     const int src_pitchUV = src->linesize[1];
     const unsigned char *srcpU = src->data[1] + slice_start * src_pitchUV;
@@ -340,8 +340,8 @@ static int process_slice_yuv420p(AVFilterContext *ctx, void *arg, int jobnr, int
     AVFrame *dst = td->dst;
     const int height = FFALIGN(src->height, 2) >> 1;
     const int width = src->width;
-    const int slice_start = ((height *  jobnr   ) / nb_jobs) << 1;
-    const int slice_end   = ((height * (jobnr+1)) / nb_jobs) << 1;
+    const int slice_start = (ff_slice_pos(height, jobnr, nb_jobs)) << 1;
+    const int slice_end   = (ff_slice_pos(height, jobnr + 1, nb_jobs)) << 1;
     const int src_pitchY  = src->linesize[0];
     const int src_pitchUV = src->linesize[1];
     const int dst_pitchY  = dst->linesize[0];
