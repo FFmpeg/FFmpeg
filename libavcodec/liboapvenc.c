@@ -287,11 +287,8 @@ static int get_conf(AVCodecContext *avctx, oapve_cdesc_t *cdsc)
     }
 
     /* read options from AVCodecContext */
-    if (avctx->width > 0)
-        cdsc->param[FRM_IDX].w = avctx->width;
-
-    if (avctx->height > 0)
-        cdsc->param[FRM_IDX].h = avctx->height;
+    cdsc->param[FRM_IDX].w = avctx->width;
+    cdsc->param[FRM_IDX].h = avctx->height;
 
     if (avctx->framerate.num > 0) {
         cdsc->param[FRM_IDX].fps_num = avctx->framerate.num;
