@@ -121,7 +121,7 @@ static inline int get_color_format(enum AVPixelFormat pix_fmt)
         cf = OAPV_CF_YCBCR4444;
         break;
     default:
-        av_assert0(cf != OAPV_CF_UNKNOWN);
+        av_unreachable("Already checked via CODEC_PIXFMTS");
     }
 
     return cf;
@@ -148,7 +148,7 @@ static inline int get_chroma_format_idc(enum AVPixelFormat pix_fmt)
         cfi = APV_CHROMA_FORMAT_4444;
         break;
     default:
-        av_assert0(cfi >= 0);
+        av_unreachable("Already checked via CODEC_PIXFMTS");
     }
 
     return cfi;
@@ -181,7 +181,7 @@ static inline int get_min_profile(enum AVPixelFormat pix_fmt)
         profile = AV_PROFILE_APV_4444_12;
         break;
     default:
-        av_assert0(profile != AV_PROFILE_UNKNOWN);
+        av_unreachable("Already checked via CODEC_PIXFMTS");
     }
 
     return profile;
