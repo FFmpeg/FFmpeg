@@ -5,6 +5,7 @@ version <next>:
 - DTS:X height channels in the DCA decoder
 - LCEVC raw demuxer and muxer
 - AVS+ (AVS1-P16, Broadcasting profile) support in the Chinese AVS decoder
+- PCM PAMF decoder
 
 version 9.1:
 - ASTC image encoding and decoding via libastcenc, with .astc and KTX 1.0 muxers and demuxers
