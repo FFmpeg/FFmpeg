@@ -34,6 +34,7 @@
 #include "avfilter.h"
 #include "bwdifdsp.h"
 #include "ccfifo.h"
+#include "filters.h"
 #include "internal.h"
 #include "yadif.h"
 
@@ -54,7 +55,7 @@ typedef struct ThreadData {
 // and the frame is a multiple of 4 high then filter_line will never be called
 static inline int job_start(const int jobnr, const int nb_jobs, const int h)
 {
-    return jobnr >= nb_jobs ? h : ((h * jobnr) / nb_jobs) & ~3;
+    return jobnr >= nb_jobs ? h : (ff_slice_pos(h, jobnr, nb_jobs)) & ~3;
 }
 
 static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)

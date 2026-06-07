@@ -21,6 +21,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/x86/cpu.h"
+#include "libavfilter/filters.h"
 #include "libavfilter/lut3d.h"
 
 #define DEFINE_INTERP_FUNC(name, format, opt)                                                                                                       \
@@ -33,8 +34,8 @@ static int interp_##name##_##format##_##opt(AVFilterContext *ctx, void *arg, int
     AVFrame *in  = td->in;                                                                                                                          \
     AVFrame *out = td->out;                                                                                                                         \
     int has_alpha = in->linesize[3] && out != in;                                                                                                   \
-    int slice_start = (in->height *  jobnr   ) / nb_jobs;                                                                                           \
-    int slice_end   = (in->height * (jobnr+1)) / nb_jobs;                                                                                           \
+    int slice_start = ff_slice_pos(in->height, jobnr, nb_jobs);                                                                                     \
+    int slice_end   = ff_slice_pos(in->height, jobnr + 1, nb_jobs);                                                                                 \
     ff_interp_##name##_##format##_##opt(lut3d, prelut, in, out, slice_start, slice_end, has_alpha);                                                            \
     return 0;                                                                                                                                       \
 }

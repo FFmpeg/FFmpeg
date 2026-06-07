@@ -24,6 +24,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/tx.h"
 #include "internal.h"
+#include "filters.h"
 #include "video.h"
 #include "window_func.h"
 
@@ -547,8 +548,8 @@ static int denoise(AVFilterContext *ctx, void *arg,
         PlaneContext *p = &s->planes[plane];
         const int nox = p->nox;
         const int noy = p->noy;
-        const int slice_start = (noy * jobnr) / nb_jobs;
-        const int slice_end = (noy * (jobnr+1)) / nb_jobs;
+        const int slice_start = ff_slice_pos(noy, jobnr, nb_jobs);
+        const int slice_end = ff_slice_pos(noy, jobnr + 1, nb_jobs);
 
         if (!((1 << plane) & s->planesf) || ctx->is_disabled)
             continue;

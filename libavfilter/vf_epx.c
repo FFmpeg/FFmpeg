@@ -19,6 +19,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "internal.h"
+#include "filters.h"
 #include "video.h"
 
 typedef struct EPXContext {
@@ -47,8 +48,8 @@ static int epx2_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     ThreadData *td = arg;
     const AVFrame *in = td->in;
     AVFrame *out = td->out;
-    const int slice_start = (in->height *  jobnr   ) / nb_jobs;
-    const int slice_end   = (in->height * (jobnr+1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(in->height, jobnr, nb_jobs);
+    const int slice_end   = ff_slice_pos(in->height, jobnr + 1, nb_jobs);
 
     for (int p = 0; p < 1; p++) {
         const int width = in->width;
@@ -114,8 +115,8 @@ static int epx3_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     ThreadData *td = arg;
     const AVFrame *in = td->in;
     AVFrame *out = td->out;
-    const int slice_start = (in->height *  jobnr   ) / nb_jobs;
-    const int slice_end   = (in->height * (jobnr+1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(in->height, jobnr, nb_jobs);
+    const int slice_end   = ff_slice_pos(in->height, jobnr + 1, nb_jobs);
 
     for (int p = 0; p < 1; p++) {
         const int width = in->width;

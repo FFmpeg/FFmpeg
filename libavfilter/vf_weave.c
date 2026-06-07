@@ -22,6 +22,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
@@ -108,8 +109,8 @@ static int weave_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 
     for (int i = 0; i < s->nb_planes; i++) {
         const int height = s->planeheight[i];
-        const int start = (height * jobnr) / nb_jobs;
-        const int end = (height * (jobnr+1)) / nb_jobs;
+        const int start = ff_slice_pos(height, jobnr, nb_jobs);
+        const int end = ff_slice_pos(height, jobnr + 1, nb_jobs);
         const int compensation = 2*end > s->outheight[i];
 
         av_image_copy_plane(out->data[i] + out->linesize[i] * field1 +

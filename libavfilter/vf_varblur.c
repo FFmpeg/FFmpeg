@@ -22,6 +22,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "framesync.h"
 #include "internal.h"
 #include "video.h"
@@ -214,8 +215,8 @@ static int blur_planes(AVFilterContext *ctx, void *arg,
 
     for (int plane = 0; plane < s->nb_planes; plane++) {
         const int height = s->planeheight[plane];
-        const int slice_start = (height * jobnr) / nb_jobs;
-        const int slice_end = (height * (jobnr+1)) / nb_jobs;
+        const int slice_start = ff_slice_pos(height, jobnr, nb_jobs);
+        const int slice_end = ff_slice_pos(height, jobnr + 1, nb_jobs);
         const int width = s->planewidth[plane];
         const int linesize = in->linesize[plane];
         const int dst_linesize = out->linesize[plane];

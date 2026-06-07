@@ -23,6 +23,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "drawutils.h"
 #include "internal.h"
 #include "video.h"
@@ -109,8 +110,8 @@ static int temperature_slice8(AVFilterContext *ctx, void *arg, int jobnr, int nb
     const float mix = s->mix;
     const float preserve = s->preserve;
     const float *color = s->color;
-    const int slice_start = (height * jobnr) / nb_jobs;
-    const int slice_end = (height * (jobnr + 1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(height, jobnr + 1, nb_jobs);
     const ptrdiff_t glinesize = frame->linesize[0];
     const ptrdiff_t blinesize = frame->linesize[1];
     const ptrdiff_t rlinesize = frame->linesize[2];
@@ -151,8 +152,8 @@ static int temperature_slice16(AVFilterContext *ctx, void *arg, int jobnr, int n
     const float preserve = s->preserve;
     const float mix = s->mix;
     const float *color = s->color;
-    const int slice_start = (height * jobnr) / nb_jobs;
-    const int slice_end = (height * (jobnr + 1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(height, jobnr + 1, nb_jobs);
     const ptrdiff_t glinesize = frame->linesize[0] / sizeof(uint16_t);
     const ptrdiff_t blinesize = frame->linesize[1] / sizeof(uint16_t);
     const ptrdiff_t rlinesize = frame->linesize[2] / sizeof(uint16_t);
@@ -196,8 +197,8 @@ static int temperature_slice8p(AVFilterContext *ctx, void *arg, int jobnr, int n
     const uint8_t roffset = s->rgba_map[R];
     const uint8_t goffset = s->rgba_map[G];
     const uint8_t boffset = s->rgba_map[B];
-    const int slice_start = (height * jobnr) / nb_jobs;
-    const int slice_end = (height * (jobnr + 1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(height, jobnr + 1, nb_jobs);
     const ptrdiff_t linesize = frame->linesize[0];
     uint8_t *ptr = frame->data[0] + slice_start * linesize;
 
@@ -236,8 +237,8 @@ static int temperature_slice16p(AVFilterContext *ctx, void *arg, int jobnr, int 
     const uint8_t roffset = s->rgba_map[R];
     const uint8_t goffset = s->rgba_map[G];
     const uint8_t boffset = s->rgba_map[B];
-    const int slice_start = (height * jobnr) / nb_jobs;
-    const int slice_end = (height * (jobnr + 1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(height, jobnr + 1, nb_jobs);
     const ptrdiff_t linesize = frame->linesize[0] / sizeof(uint16_t);
     uint16_t *ptr = (uint16_t *)frame->data[0] + slice_start * linesize;
 

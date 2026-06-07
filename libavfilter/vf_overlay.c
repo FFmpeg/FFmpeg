@@ -26,6 +26,7 @@
  */
 
 #include "avfilter.h"
+#include "filters.h"
 #include "formats.h"
 #include "libavutil/common.h"
 #include "libavutil/eval.h"
@@ -389,8 +390,8 @@ static av_always_inline void blend_slice_packed_rgb(AVFilterContext *ctx,
     i = FFMAX(-y, 0);
     imax = FFMIN3(-y + dst_h, FFMIN(src_h, dst_h), y + src_h);
 
-    slice_start = i + (imax * jobnr) / nb_jobs;
-    slice_end = i + (imax * (jobnr+1)) / nb_jobs;
+    slice_start = i + ff_slice_pos(imax, jobnr, nb_jobs);
+    slice_end = i + ff_slice_pos(imax, jobnr + 1, nb_jobs);
 
     sp = src->data[0] + (slice_start)     * src->linesize[0];
     dp = dst->data[0] + (y + slice_start) * dst->linesize[0];
@@ -482,8 +483,8 @@ static av_always_inline void blend_plane_##depth##_##nbits##bits(AVFilterContext
     j = FFMAX(-yp, 0);                                                                                     \
     jmax = FFMIN3(-yp + dst_hp, FFMIN(src_hp, dst_hp), yp + src_hp);                                       \
                                                                                                            \
-    slice_start = j + (jmax * jobnr) / nb_jobs;                                                            \
-    slice_end = j + (jmax * (jobnr+1)) / nb_jobs;                                                          \
+    slice_start = j + ff_slice_pos(jmax, jobnr, nb_jobs);                                                  \
+    slice_end = j + ff_slice_pos(jmax, jobnr + 1, nb_jobs);                                                \
                                                                                                            \
     sp = (uint##depth##_t *)(src->data[i] + (slice_start) * src->linesize[i]);                             \
     dp = (uint##depth##_t *)(dst->data[dst_plane]                                                          \
@@ -592,9 +593,8 @@ static inline void alpha_composite_##depth##_##nbits##bits(const AVFrame *src, c
                                                                                                            \
     imax = FFMIN3(-y + dst_h, FFMIN(src_h, dst_h), y + src_h);                                             \
     i = FFMAX(-y, 0);                                                                                      \
-                                                                                                           \
-    slice_start = i + (imax * jobnr) / nb_jobs;                                                            \
-    slice_end = i + ((imax * (jobnr+1)) / nb_jobs);                                                        \
+    slice_start = i + ff_slice_pos(imax, jobnr, nb_jobs);                                                  \
+    slice_end =   i + (ff_slice_pos(imax, jobnr + 1, nb_jobs));                                            \
                                                                                                            \
     sa = (uint##depth##_t *)(src->data[3] + (slice_start) * src->linesize[3]);                             \
     da = (uint##depth##_t *)(dst->data[3] + (y + slice_start) * dst->linesize[3]);                         \

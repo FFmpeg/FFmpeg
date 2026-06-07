@@ -21,6 +21,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
 #include "video.h"
 
@@ -43,8 +44,8 @@ static int do_lumakey_slice8(AVFilterContext *ctx, void *arg, int jobnr, int nb_
 {
     LumakeyContext *s = ctx->priv;
     AVFrame *frame = arg;
-    const int slice_start = (frame->height * jobnr) / nb_jobs;
-    const int slice_end = (frame->height * (jobnr + 1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(frame->height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(frame->height, jobnr + 1, nb_jobs);
     uint8_t *alpha = frame->data[3] + slice_start * frame->linesize[3];
     const uint8_t *luma = frame->data[0] + slice_start * frame->linesize[0];
     const int so = s->so;
@@ -75,8 +76,8 @@ static int do_lumakey_slice16(AVFilterContext *ctx, void *arg, int jobnr, int nb
 {
     LumakeyContext *s = ctx->priv;
     AVFrame *frame = arg;
-    const int slice_start = (frame->height * jobnr) / nb_jobs;
-    const int slice_end = (frame->height * (jobnr + 1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(frame->height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(frame->height, jobnr + 1, nb_jobs);
     uint16_t *alpha = (uint16_t *)(frame->data[3] + slice_start * frame->linesize[3]);
     const uint16_t *luma = (const uint16_t *)(frame->data[0] + slice_start * frame->linesize[0]);
     const int so = s->so;

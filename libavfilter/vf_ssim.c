@@ -39,6 +39,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "drawutils.h"
 #include "framesync.h"
 #include "internal.h"
@@ -248,8 +249,8 @@ static int ssim_plane_16bit(AVFilterContext *ctx, void *arg,
         const int ref_stride = td->ref_linesize[c];
         int width = td->planewidth[c];
         int height = td->planeheight[c];
-        const int slice_start = ((height >> 2) * jobnr) / nb_jobs;
-        const int slice_end = ((height >> 2) * (jobnr+1)) / nb_jobs;
+        const int slice_start = ff_slice_pos(height >> 2, jobnr, nb_jobs);
+        const int slice_end = ff_slice_pos(height >> 2, jobnr + 1, nb_jobs);
         const int ystart = FFMAX(1, slice_start);
         int z = ystart - 1;
         double ssim = 0.0;
@@ -291,8 +292,8 @@ static int ssim_plane(AVFilterContext *ctx, void *arg,
         const int ref_stride = td->ref_linesize[c];
         int width = td->planewidth[c];
         int height = td->planeheight[c];
-        const int slice_start = ((height >> 2) * jobnr) / nb_jobs;
-        const int slice_end = ((height >> 2) * (jobnr+1)) / nb_jobs;
+        const int slice_start = ff_slice_pos(height >> 2, jobnr, nb_jobs);
+        const int slice_end = ff_slice_pos(height >> 2, jobnr + 1, nb_jobs);
         const int ystart = FFMAX(1, slice_start);
         int z = ystart - 1;
         double ssim = 0.0;

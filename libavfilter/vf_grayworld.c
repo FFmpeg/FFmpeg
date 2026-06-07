@@ -29,6 +29,7 @@
 #include "libavutil/opt.h"
 
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
 #include "video.h"
 
@@ -135,8 +136,8 @@ static int convert_frame(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
     AVFrame *in = td->in;
     AVFrame *out = td->out;
     AVFilterLink *outlink = ctx->outputs[0];
-    const int slice_start = (out->height * jobnr) / nb_jobs;
-    const int slice_end = (out->height * (jobnr + 1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(out->height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(out->height, jobnr + 1, nb_jobs);
     float rgb[3], lab[3];
 
     for (int i = slice_start; i < slice_end; i++) {
@@ -202,8 +203,8 @@ static int correct_frame(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
     ThreadData *td = arg;
     AVFrame *out = td->out;
     AVFilterLink *outlink = ctx->outputs[0];
-    const int slice_start = (out->height * jobnr) / nb_jobs;
-    const int slice_end = (out->height * (jobnr + 1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(out->height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(out->height, jobnr + 1, nb_jobs);
     float rgb[3], lab[3];
 
     for (int i = slice_start; i < slice_end; i++) {

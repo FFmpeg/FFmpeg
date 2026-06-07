@@ -25,6 +25,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
 #include "video.h"
 
@@ -981,9 +982,9 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     AVFrame *out = td->out;
 
     for (int plane = 0; plane < s->nb_planes; plane++) {
-        const int slice_start = (s->height[plane] * jobnr) / nb_jobs;
-        const int slice_end = (s->height[plane] * (jobnr+1)) / nb_jobs;
-        const int islice_start = (s->height[s->index] * jobnr) / nb_jobs;
+        const int slice_start = ff_slice_pos(s->height[plane], jobnr, nb_jobs);
+        const int slice_end = ff_slice_pos(s->height[plane], jobnr + 1, nb_jobs);
+        const int islice_start = ff_slice_pos(s->height[s->index], jobnr, nb_jobs);
         ptrdiff_t ilinesize = in->linesize[s->index];
         ptrdiff_t slinesize = in->linesize[plane];
         ptrdiff_t dlinesize = out->linesize[plane];

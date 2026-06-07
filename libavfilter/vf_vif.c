@@ -30,6 +30,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "framesync.h"
 #include "internal.h"
 
@@ -214,8 +215,8 @@ static int vif_filter1d(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     int dst_stride = td->dst_stride;
     int filt_w = td->filter_width;
     float *temp = td->temp[jobnr];
-    const int slice_start = (h * jobnr) / nb_jobs;
-    const int slice_end = (h * (jobnr+1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(h, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(h, jobnr + 1, nb_jobs);
 
     for (int i = slice_start; i < slice_end; i++) {
         /** Vertical pass. */
