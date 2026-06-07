@@ -570,17 +570,6 @@ static av_cold int liboapve_close(AVCodecContext *avctx)
 #define OFFSET(x) offsetof(ApvEncContext, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 
-static const enum AVPixelFormat supported_pixel_formats[] = {
-    AV_PIX_FMT_GRAY10,
-    AV_PIX_FMT_YUV422P10,
-    AV_PIX_FMT_YUV422P12,
-    AV_PIX_FMT_YUV444P10,
-    AV_PIX_FMT_YUV444P12,
-    AV_PIX_FMT_YUVA444P10,
-    AV_PIX_FMT_YUVA444P12,
-    AV_PIX_FMT_NONE
-};
-
 static const AVOption liboapv_options[] = {
     { "preset", "Encoding preset for setting encoding speed (optimization level control)", OFFSET(preset_id), AV_OPT_TYPE_INT, { .i64 = OAPV_PRESET_DEFAULT }, OAPV_PRESET_FASTEST, OAPV_PRESET_PLACEBO, VE, .unit = "preset" },
     { "fastest", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = OAPV_PRESET_FASTEST }, INT_MIN, INT_MAX, VE, .unit = "preset" },
@@ -620,7 +609,10 @@ const FFCodec ff_liboapv_encoder = {
     .defaults           = liboapve_defaults,
     .p.capabilities     = AV_CODEC_CAP_OTHER_THREADS | AV_CODEC_CAP_DR1,
     .p.wrapper_name     = "liboapv",
-    .p.pix_fmts         = supported_pixel_formats,
     .p.profiles         = NULL_IF_CONFIG_SMALL(ff_apv_profiles),
     .caps_internal      = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_AUTO_THREADS | FF_CODEC_CAP_NOT_INIT_THREADSAFE,
+    CODEC_PIXFMTS(AV_PIX_FMT_GRAY10,
+                  AV_PIX_FMT_YUV422P10,  AV_PIX_FMT_YUV422P12,
+                  AV_PIX_FMT_YUV444P10,  AV_PIX_FMT_YUV444P12,
+                  AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_YUVA444P12),
 };
