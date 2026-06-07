@@ -39,6 +39,7 @@ typedef struct FFLCEVCContext {
     struct CodedBitstreamContext *cbc;
     struct CodedBitstreamFragment *frag;
     struct AVRefStructPool *frame_pool; ///< pool of FFLCEVCFrame
+    int loglevel;
     int initialized;
 } FFLCEVCContext;
 
@@ -49,7 +50,7 @@ typedef struct FFLCEVCFrame {
     struct AVFrame *frame;
 } FFLCEVCFrame;
 
-int ff_lcevc_alloc(FFLCEVCContext **plcevc);
+int ff_lcevc_alloc(FFLCEVCContext **plcevc, int loglevel);
 int ff_lcevc_process(void *logctx, struct AVFrame *frame);
 int ff_lcevc_parse_frame(FFLCEVCContext *lcevc, const struct AVFrame *frame,
                          enum AVPixelFormat *format, int *width, int *height);

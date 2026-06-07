@@ -2140,7 +2140,7 @@ av_cold int ff_decode_preinit(AVCodecContext *avctx)
     if (!(avctx->export_side_data & AV_CODEC_EXPORT_DATA_ENHANCEMENTS)) {
         if (avctx->codec_type == AVMEDIA_TYPE_VIDEO) {
 #if CONFIG_LIBLCEVC_DEC
-            ret = ff_lcevc_alloc(&dc->lcevc.ctx);
+            ret = ff_lcevc_alloc(&dc->lcevc.ctx, av_log_get_level() + avctx->log_level_offset);
             if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))
                 return ret;
 #endif

@@ -277,14 +277,28 @@ static int lcevc_receive_frame(FFLCEVCFrame *frame_ctx, AVFrame *out)
     return lcevc_flush_pictures(lcevc);
 }
 
+static const uint8_t level_map[LCEVC_LogLevelCount] = {
+    [LCEVC_LogFatal]   = AV_LOG_FATAL,
+    [LCEVC_LogError]   = AV_LOG_ERROR,
+    [LCEVC_LogWarning] = AV_LOG_WARNING,
+    [LCEVC_LogInfo]    = AV_LOG_INFO,
+    [LCEVC_LogDebug]   = AV_LOG_DEBUG,
+    [LCEVC_LogTrace]   = AV_LOG_TRACE,
+};
+
 static void event_callback(LCEVC_DecoderHandle dec, LCEVC_Event event,
     LCEVC_PictureHandle pic, const LCEVC_DecodeInformation *info,
     const uint8_t *data, uint32_t size, void *logctx)
 {
     switch (event) {
-    case LCEVC_Log:
-        av_log(logctx, AV_LOG_INFO, "%s\n", data);
+    case LCEVC_Log: {
+        unsigned int level = 0;
+        int ret = sscanf(data, "%u ", &level);
+        if (ret != 1 || level >= LCEVC_LogLevelCount || !level_map[level])
+            break;
+        av_log(logctx, level_map[level], "%s\n", data);
         break;
+    }
     default:
         break;
     }
@@ -331,17 +345,38 @@ static av_cold void lcevc_frame_free_entry_cb(AVRefStructOpaque unused, void *ob
     av_frame_free(&frame->frame);
 }
 
+static int get_log_level(int level)
+{
+    if (level <= AV_LOG_QUIET)
+        return LCEVC_LogDisabled;
+    if (level <= AV_LOG_FATAL)
+        return LCEVC_LogFatal;
+    if (level <= AV_LOG_ERROR)
+        return LCEVC_LogError;
+    if (level <= AV_LOG_WARNING)
+        return LCEVC_LogWarning;
+    if (level <= AV_LOG_INFO)
+        return LCEVC_LogInfo;
+    if (level <= AV_LOG_DEBUG)
+        return LCEVC_LogDebug;
+
+    return LCEVC_LogTrace;
+}
+
 static int lcevc_init(FFLCEVCContext *lcevc)
 {
     LCEVC_AccelContextHandle dummy = { 0 };
     const int32_t event = LCEVC_Log;
+    int level;
 
     if (LCEVC_CreateDecoder(&lcevc->decoder, dummy) != LCEVC_Success) {
         av_log(lcevc, AV_LOG_ERROR, "Failed to create LCEVC decoder\n");
         return AVERROR_EXTERNAL;
     }
 
-    LCEVC_ConfigureDecoderInt(lcevc->decoder, "log_level", 4);
+    level = get_log_level(lcevc->loglevel);
+
+    LCEVC_ConfigureDecoderInt(lcevc->decoder, "log_level", level);
     LCEVC_ConfigureDecoderIntArray(lcevc->decoder, "events", 1, &event);
     LCEVC_SetDecoderEventCallback(lcevc->decoder, event_callback, lcevc);
 
@@ -437,7 +472,7 @@ static const AVClass lcevcdec_context_class = {
     .category       = AV_CLASS_CATEGORY_DECODER,
 };
 
-int ff_lcevc_alloc(FFLCEVCContext **plcevc)
+int ff_lcevc_alloc(FFLCEVCContext **plcevc, int loglevel)
 {
     FFLCEVCContext *lcevc = NULL;
     int ret;
@@ -469,6 +504,7 @@ int ff_lcevc_alloc(FFLCEVCContext **plcevc)
     }
 
     lcevc->class = &lcevcdec_context_class;
+    lcevc->loglevel = loglevel;
 
     *plcevc = lcevc;
     return 0;
