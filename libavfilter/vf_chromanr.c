@@ -104,8 +104,8 @@ static int distance ## _slice##name(AVFilterContext *ctx, void *arg,            
                                                                                          \
     {                                                                                    \
         const int h = s->planeheight[0];                                                 \
-        const int slice_start = (h * jobnr) / nb_jobs;                                   \
-        const int slice_end = (h * (jobnr+1)) / nb_jobs;                                 \
+        const int slice_start = ff_slice_pos(h, jobnr, nb_jobs);                         \
+        const int slice_end = ff_slice_pos(h, jobnr + 1, nb_jobs);                       \
                                                                                          \
         av_image_copy_plane(out->data[0] + slice_start * out->linesize[0],               \
                             out->linesize[0],                                            \
