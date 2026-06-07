@@ -43,8 +43,8 @@ static int do_despill_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_j
     DespillContext *s = ctx->priv;
     AVFrame *frame = arg;
     const int ro = s->co[0], go = s->co[1], bo = s->co[2], ao = s->co[3];
-    const int slice_start = (frame->height * jobnr) / nb_jobs;
-    const int slice_end = (frame->height * (jobnr + 1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(frame->height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(frame->height, jobnr + 1, nb_jobs);
     const float brightness = s->brightness;
     const float redscale = s->redscale;
     const float greenscale = s->greenscale;

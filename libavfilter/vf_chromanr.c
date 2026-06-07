@@ -97,8 +97,8 @@ static int distance ## _slice##name(AVFilterContext *ctx, void *arg,            
     const int thres_v = s->thres_v;                                                      \
     const int h = s->planeheight[1];                                                     \
     const int w = s->planewidth[1];                                                      \
-    const int slice_start = (h * jobnr) / nb_jobs;                                       \
-    const int slice_end = (h * (jobnr+1)) / nb_jobs;                                     \
+    const int slice_start = ff_slice_pos(h, jobnr, nb_jobs);                             \
+    const int slice_end = ff_slice_pos(h, jobnr + 1, nb_jobs);                           \
     type *out_uptr = (type *)(out->data[1] + slice_start * out_ulinesize);               \
     type *out_vptr = (type *)(out->data[2] + slice_start * out_vlinesize);               \
                                                                                          \

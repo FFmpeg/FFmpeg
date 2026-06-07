@@ -345,8 +345,8 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
         const float *weights = s->weights[p];
         const int h = s->planeheight[p];
         const int w = s->planewidth[p];
-        const int slice_start = (h * jobnr) / nb_jobs;
-        const int slice_end = (h * (jobnr+1)) / nb_jobs;
+        const int slice_start = ff_slice_pos(h, jobnr, nb_jobs);
+        const int slice_end = ff_slice_pos(h, jobnr + 1, nb_jobs);
         const uint8_t *src = in->data[p] + slice_start * in->linesize[p];
         uint8_t *dst = out->data[p] + slice_start * out->linesize[p];
         const int thra = s->thra[p];

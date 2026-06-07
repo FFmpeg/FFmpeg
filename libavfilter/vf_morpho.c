@@ -802,8 +802,8 @@ static int morpho_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     for (int p = 0; p < s->nb_planes; p++) {
         const int width = s->planewidth[p];
         const int height = s->planeheight[p];
-        const int y0 = (height *  jobnr   ) / nb_jobs;
-        const int y1 = (height * (jobnr+1)) / nb_jobs;
+        const int y0 = ff_slice_pos(height, jobnr, nb_jobs);
+        const int y1 = ff_slice_pos(height, jobnr + 1, nb_jobs);
         const int depth = s->depth;
 
         if (ctx->is_disabled || !(s->planes & (1 << p))) {
@@ -857,8 +857,8 @@ static int morpho_sliceX(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
 
     for (int p = 0; p < s->nb_planes; p++) {
         const int height = s->planeheight[p];
-        const int y0 = (height *  jobnr   ) / nb_jobs;
-        const int y1 = (height * (jobnr+1)) / nb_jobs;
+        const int y0 = ff_slice_pos(height, jobnr, nb_jobs);
+        const int y1 = ff_slice_pos(height, jobnr + 1, nb_jobs);
 
         if (ctx->is_disabled || !(s->planes & (1 << p))) {
 copy:

@@ -81,8 +81,8 @@ static int lagfun_frame##name(AVFilterContext *ctx, void *arg,            \
     AVFrame *out = td->out;                                               \
                                                                           \
     for (int p = 0; p < s->nb_planes; p++) {                              \
-        const int slice_start = (s->planeheight[p] * jobnr) / nb_jobs;    \
-        const int slice_end = (s->planeheight[p] * (jobnr+1)) / nb_jobs;  \
+        const int slice_start = ff_slice_pos(s->planeheight[p], jobnr, nb_jobs); \
+        const int slice_end = ff_slice_pos(s->planeheight[p], jobnr + 1, nb_jobs); \
         const int width = s->planewidth[p];                               \
         const type *src = (const type *)in->data[p] +                     \
                           slice_start * in->linesize[p] / sizeof(type);   \

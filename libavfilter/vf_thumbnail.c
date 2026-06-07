@@ -149,8 +149,8 @@ static int do_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     int *hist = s->thread_histogram + HIST_SIZE * jobnr;
     const int h = frame->height;
     const int w = frame->width;
-    const int slice_start = (h * jobnr) / nb_jobs;
-    const int slice_end = (h * (jobnr+1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(h, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(h, jobnr + 1, nb_jobs);
     const uint8_t *p = frame->data[0] + slice_start * frame->linesize[0];
 
     memset(hist, 0, sizeof(*hist) * HIST_SIZE);
@@ -195,8 +195,8 @@ static int do_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
         break;
     default:
         for (int plane = 0; plane < 3; plane++) {
-            const int slice_start = (s->planeheight[plane] * jobnr) / nb_jobs;
-            const int slice_end = (s->planeheight[plane] * (jobnr+1)) / nb_jobs;
+            const int slice_start = ff_slice_pos(s->planeheight[plane], jobnr, nb_jobs);
+            const int slice_end = ff_slice_pos(s->planeheight[plane], jobnr + 1, nb_jobs);
             const uint8_t *p = frame->data[plane] + slice_start * frame->linesize[plane];
             const ptrdiff_t linesize = frame->linesize[plane];
             const int planewidth = s->planewidth[plane];

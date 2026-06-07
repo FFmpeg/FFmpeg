@@ -116,8 +116,8 @@ static int do_chromakey_slice(AVFilterContext *avctx, void *arg, int jobnr, int 
 {
     AVFrame *frame = arg;
 
-    const int slice_start = (frame->height * jobnr) / nb_jobs;
-    const int slice_end = (frame->height * (jobnr + 1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(frame->height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(frame->height, jobnr + 1, nb_jobs);
 
     ChromakeyContext *ctx = avctx->priv;
 
@@ -146,8 +146,8 @@ static int do_chromakey16_slice(AVFilterContext *avctx, void *arg, int jobnr, in
 {
     AVFrame *frame = arg;
 
-    const int slice_start = (frame->height * jobnr) / nb_jobs;
-    const int slice_end = (frame->height * (jobnr + 1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(frame->height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(frame->height, jobnr + 1, nb_jobs);
 
     ChromakeyContext *ctx = avctx->priv;
 
@@ -180,8 +180,8 @@ static int do_chromahold_slice(AVFilterContext *avctx, void *arg, int jobnr, int
 {
     ChromakeyContext *ctx = avctx->priv;
     AVFrame *frame = arg;
-    const int slice_start = ((frame->height >> ctx->vsub_log2) * jobnr) / nb_jobs;
-    const int slice_end = ((frame->height >> ctx->vsub_log2) * (jobnr + 1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(frame->height >> ctx->vsub_log2, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(frame->height >> ctx->vsub_log2, jobnr + 1, nb_jobs);
 
     int x, y, alpha;
 
@@ -217,8 +217,8 @@ static int do_chromahold16_slice(AVFilterContext *avctx, void *arg, int jobnr, i
 {
     ChromakeyContext *ctx = avctx->priv;
     AVFrame *frame = arg;
-    const int slice_start = ((frame->height >> ctx->vsub_log2) * jobnr) / nb_jobs;
-    const int slice_end = ((frame->height >> ctx->vsub_log2) * (jobnr + 1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(frame->height >> ctx->vsub_log2, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(frame->height >> ctx->vsub_log2, jobnr + 1, nb_jobs);
     const int mid = ctx->mid;
     double max = ctx->max;
 

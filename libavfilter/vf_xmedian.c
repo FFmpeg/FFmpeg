@@ -145,8 +145,8 @@ static int median_frames ## name(AVFilterContext *ctx, void *arg, int jobnr, int
     type values[256];                                                                           \
                                                                                                 \
     for (int p = 0; p < s->nb_planes; p++) {                                                    \
-        const int slice_start = (s->height[p] * jobnr) / nb_jobs;                               \
-        const int slice_end = (s->height[p] * (jobnr+1)) / nb_jobs;                             \
+        const int slice_start = ff_slice_pos(s->height[p], jobnr, nb_jobs);                     \
+        const int slice_end = ff_slice_pos(s->height[p], jobnr + 1, nb_jobs);                   \
         const int width = s->width[p];                                                          \
         type *dst = (type *)(out->data[p] + slice_start * out->linesize[p]);                    \
         ptrdiff_t dst_linesize = out->linesize[p] / sizeof(type);                               \

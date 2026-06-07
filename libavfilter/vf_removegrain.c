@@ -523,8 +523,8 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     const int om = in->linesize[i] - 1;
     const int o0 = in->linesize[i]    ;
     const int op = in->linesize[i] + 1;
-    int start = (height *  jobnr   ) / nb_jobs;
-    int end   = (height * (jobnr+1)) / nb_jobs;
+    int start = ff_slice_pos(height, jobnr, nb_jobs);
+    int end   = ff_slice_pos(height, jobnr + 1, nb_jobs);
     int x, y;
 
     start = FFMAX(1, start);

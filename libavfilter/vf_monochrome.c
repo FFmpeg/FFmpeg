@@ -87,8 +87,8 @@ static int monochrome_slice8(AVFilterContext *ctx, void *arg, int jobnr, int nb_
     const float imax = 1.f / max;
     const int width = frame->width;
     const int height = frame->height;
-    const int slice_start = (height * jobnr) / nb_jobs;
-    const int slice_end = (height * (jobnr + 1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(height, jobnr + 1, nb_jobs);
     const ptrdiff_t ylinesize = frame->linesize[0];
     const ptrdiff_t ulinesize = frame->linesize[1];
     const ptrdiff_t vlinesize = frame->linesize[2];
@@ -126,8 +126,8 @@ static int monochrome_slice16(AVFilterContext *ctx, void *arg, int jobnr, int nb
     const float imax = 1.f / max;
     const int width = frame->width;
     const int height = frame->height;
-    const int slice_start = (height * jobnr) / nb_jobs;
-    const int slice_end = (height * (jobnr + 1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(height, jobnr + 1, nb_jobs);
     const ptrdiff_t ylinesize = frame->linesize[0] / 2;
     const ptrdiff_t ulinesize = frame->linesize[1] / 2;
     const ptrdiff_t vlinesize = frame->linesize[2] / 2;
@@ -164,8 +164,8 @@ static int clear_slice8(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     const int subh = s->subh;
     const int width = AV_CEIL_RSHIFT(frame->width, subw);
     const int height = AV_CEIL_RSHIFT(frame->height, subh);
-    const int slice_start = (height * jobnr) / nb_jobs;
-    const int slice_end = (height * (jobnr + 1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(height, jobnr + 1, nb_jobs);
     const ptrdiff_t ulinesize = frame->linesize[1];
     const ptrdiff_t vlinesize = frame->linesize[2];
 
@@ -190,8 +190,8 @@ static int clear_slice16(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
     const int subh = s->subh;
     const int width = AV_CEIL_RSHIFT(frame->width, subw);
     const int height = AV_CEIL_RSHIFT(frame->height, subh);
-    const int slice_start = (height * jobnr) / nb_jobs;
-    const int slice_end = (height * (jobnr + 1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(height, jobnr + 1, nb_jobs);
     const ptrdiff_t ulinesize = frame->linesize[1] / 2;
     const ptrdiff_t vlinesize = frame->linesize[2] / 2;
 

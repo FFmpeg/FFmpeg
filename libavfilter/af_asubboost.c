@@ -108,8 +108,8 @@ static int filter_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
     const double b2 = s->b2;
     const double a1 = -s->a1;
     const double a2 = -s->a2;
-    const int start = (in->ch_layout.nb_channels * jobnr) / nb_jobs;
-    const int end = (in->ch_layout.nb_channels * (jobnr+1)) / nb_jobs;
+    const int start = ff_slice_pos(in->ch_layout.nb_channels, jobnr, nb_jobs);
+    const int end = ff_slice_pos(in->ch_layout.nb_channels, jobnr + 1, nb_jobs);
     const int buffer_samples = s->buffer_samples;
 
     for (int ch = start; ch < end; ch++) {

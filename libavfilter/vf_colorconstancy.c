@@ -270,8 +270,8 @@ static int slice_get_derivative(AVFilterContext* ctx, void* arg, int jobnr, int 
         if (dir == DIR_X) {
             /** Applying gauss horizontally along each row */
             const uint8_t *src = in->data[plane];
-            slice_start = (height * jobnr      ) / nb_jobs;
-            slice_end   = (height * (jobnr + 1)) / nb_jobs;
+            slice_start = ff_slice_pos(height, jobnr, nb_jobs);
+            slice_end   = ff_slice_pos(height, jobnr + 1, nb_jobs);
 
             for (r = slice_start; r < slice_end; ++r) {
                 for (c = 0; c < width; ++c) {
@@ -285,8 +285,8 @@ static int slice_get_derivative(AVFilterContext* ctx, void* arg, int jobnr, int 
         } else {
             /** Applying gauss vertically along each column */
             const double *src = td->data[src_index][plane];
-            slice_start = (width * jobnr      ) / nb_jobs;
-            slice_end   = (width * (jobnr + 1)) / nb_jobs;
+            slice_start = ff_slice_pos(width, jobnr, nb_jobs);
+            slice_end   = ff_slice_pos(width, jobnr + 1, nb_jobs);
 
             for (c = slice_start; c < slice_end; ++c) {
                 for (r = 0; r < height; ++r) {
@@ -448,8 +448,8 @@ static int filter_slice_grey_edge(AVFilterContext* ctx, void* arg, int jobnr, in
         const int height        = s->planeheight[plane];
         const int width         = s->planewidth[plane];
         const int in_linesize   = in->linesize[plane];
-        const int slice_start   = (height * jobnr) / nb_jobs;
-        const int slice_end     = (height * (jobnr+1)) / nb_jobs;
+        const int slice_start   = ff_slice_pos(height, jobnr, nb_jobs);
+        const int slice_end     = ff_slice_pos(height, jobnr + 1, nb_jobs);
         const uint8_t *img_data = in->data[plane];
         const double *src       = td->data[INDEX_NORM][plane];
         double *dst             = td->data[INDEX_DST][plane];

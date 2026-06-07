@@ -125,8 +125,8 @@ static int filter_channels_## name(AVFilterContext *ctx, void *arg, \
     ThreadData *td = arg;                                           \
     AVFrame *out = td->out;                                         \
     AVFrame *in = td->in;                                           \
-    const int start = (in->ch_layout.nb_channels * jobnr) / nb_jobs; \
-    const int end = (in->ch_layout.nb_channels * (jobnr+1)) / nb_jobs; \
+    const int start = ff_slice_pos(in->ch_layout.nb_channels, jobnr, nb_jobs); \
+    const int end = ff_slice_pos(in->ch_layout.nb_channels, jobnr + 1, nb_jobs); \
     const type level = s->level;                                    \
                                                                     \
     for (int ch = start; ch < end; ch++) {                          \

@@ -46,8 +46,8 @@ static int exposure_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
     ThreadData *td = arg;
     const int width = td->out->width;
     const int height = td->out->height;
-    const int slice_start = (height * jobnr) / nb_jobs;
-    const int slice_end = (height * (jobnr + 1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(height, jobnr + 1, nb_jobs);
     const float black = s->black;
     const float scale = s->scale;
 

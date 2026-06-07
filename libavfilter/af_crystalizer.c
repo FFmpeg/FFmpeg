@@ -65,8 +65,8 @@ static int filter_## inverse ##_## fmt ##_## clp(AVFilterContext *ctx, \
     const int channels = td->channels;                                 \
     const type mult = td->mult;                                        \
     const type scale = one / (-mult + one);                            \
-    const int start = (channels * jobnr) / nb_jobs;                    \
-    const int end = (channels * (jobnr+1)) / nb_jobs;                  \
+    const int start = ff_slice_pos(channels, jobnr, nb_jobs);          \
+    const int end = ff_slice_pos(channels, jobnr + 1, nb_jobs);        \
                                                                        \
     if (packed) {                                                      \
         type *prv = p[0];                                              \

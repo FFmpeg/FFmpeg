@@ -388,8 +388,8 @@ static av_always_inline void hqx_filter(const ThreadData *td, int jobnr, int nb_
     const uint32_t *r2y = td->rgbtoyuv;
     const int height = in->height;
     const int width  = in->width;
-    const int slice_start = (height *  jobnr   ) / nb_jobs;
-    const int slice_end   = (height * (jobnr+1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(height, jobnr, nb_jobs);
+    const int slice_end   = ff_slice_pos(height, jobnr + 1, nb_jobs);
     const int dst_linesize = out->linesize[0];
     const int src_linesize =  in->linesize[0];
     uint8_t       *dst = out->data[0] + slice_start * dst_linesize * n;

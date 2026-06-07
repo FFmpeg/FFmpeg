@@ -695,9 +695,9 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     const int height = s->planeheight[plane];
     const int block_pos_bottom = FFMAX(0, height - s->block_size);
     const int block_pos_right  = FFMAX(0, width - s->block_size);
-    const int slice_start = (((height + block_step - 1) / block_step) * jobnr / nb_jobs) * block_step;
+    const int slice_start = ff_slice_pos((height + block_step - 1) / block_step, jobnr, nb_jobs) * block_step;
     const int slice_end = (jobnr == nb_jobs - 1) ? block_pos_bottom + block_step :
-                          (((height + block_step - 1) / block_step) * (jobnr + 1) / nb_jobs) * block_step;
+                          ff_slice_pos((height + block_step - 1) / block_step, jobnr + 1, nb_jobs) * block_step;
 
     memset(sc->num, 0, width * height * sizeof(float));
     memset(sc->den, 0, width * height * sizeof(float));

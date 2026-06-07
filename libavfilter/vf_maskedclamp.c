@@ -94,8 +94,8 @@ static int maskedclamp_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_
         const ptrdiff_t dlinesize = td->d->linesize[p];
         const int w = s->width[p];
         const int h = s->height[p];
-        const int slice_start = (h * jobnr) / nb_jobs;
-        const int slice_end = (h * (jobnr+1)) / nb_jobs;
+        const int slice_start = ff_slice_pos(h, jobnr, nb_jobs);
+        const int slice_end = ff_slice_pos(h, jobnr + 1, nb_jobs);
         const uint8_t *bsrc = td->b->data[p] + slice_start * blinesize;
         const uint8_t *darksrc = td->o->data[p] + slice_start * darklinesize;
         const uint8_t *brightsrc = td->m->data[p] + slice_start * brightlinesize;

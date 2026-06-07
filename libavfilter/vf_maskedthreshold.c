@@ -154,8 +154,8 @@ static int threshold_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
         const ptrdiff_t dst_linesize = td->dst->linesize[p];
         const int w = s->planewidth[p];
         const int h = s->planeheight[p];
-        const int slice_start = (h * jobnr) / nb_jobs;
-        const int slice_end = (h * (jobnr+1)) / nb_jobs;
+        const int slice_start = ff_slice_pos(h, jobnr, nb_jobs);
+        const int slice_end = ff_slice_pos(h, jobnr + 1, nb_jobs);
         const uint8_t *src = td->src->data[p] + slice_start * src_linesize;
         const uint8_t *ref = td->ref->data[p] + slice_start * ref_linesize;
         uint8_t *dst = td->dst->data[p] + slice_start * dst_linesize;

@@ -354,8 +354,8 @@ static int deinterlace_slice(AVFilterContext *ctx, void *arg,
         const int height = s->planeheight[plane];
         const int src_linesize = in->linesize[plane];
         const int dst_linesize = out->linesize[plane];
-        const int start = (int)((int64_t)height * jobnr / nb_jobs);
-        const int end = (int)((int64_t)height * (jobnr + 1) / nb_jobs);
+        const int start = ff_slice_pos(height, jobnr, nb_jobs);
+        const int end = ff_slice_pos(height, jobnr + 1, nb_jobs);
         const uint8_t *prev_line, *prev2_line, *next_line, *next2_line, *in_line;
         const uint8_t *prev3_line, *next3_line;
         uint8_t *out_line;

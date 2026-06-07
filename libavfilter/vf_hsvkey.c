@@ -88,8 +88,8 @@ static int do_hsvkey_slice(AVFilterContext *avctx, void *arg, int jobnr, int nb_
 {
     HSVKeyContext *s = avctx->priv;
     AVFrame *frame = arg;
-    const int slice_start = (frame->height * jobnr) / nb_jobs;
-    const int slice_end = (frame->height * (jobnr + 1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(frame->height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(frame->height, jobnr + 1, nb_jobs);
     const int hsub_log2 = s->hsub_log2;
     const int vsub_log2 = s->vsub_log2;
     const float hue = s->hue;
@@ -113,8 +113,8 @@ static int do_hsvkey16_slice(AVFilterContext *avctx, void *arg, int jobnr, int n
 {
     HSVKeyContext *s = avctx->priv;
     AVFrame *frame = arg;
-    const int slice_start = (frame->height * jobnr) / nb_jobs;
-    const int slice_end = (frame->height * (jobnr + 1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(frame->height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(frame->height, jobnr + 1, nb_jobs);
     const int hsub_log2 = s->hsub_log2;
     const int vsub_log2 = s->vsub_log2;
     const float hue = s->hue;
@@ -143,8 +143,8 @@ static int do_hsvhold_slice(AVFilterContext *avctx, void *arg, int jobnr, int nb
     const int vsub_log2 = s->vsub_log2;
     const int width = frame->width >> hsub_log2;
     const int height = frame->height >> vsub_log2;
-    const int slice_start = (height * jobnr) / nb_jobs;
-    const int slice_end = (height * (jobnr + 1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(height, jobnr + 1, nb_jobs);
     const float scale = s->scale;
     const float hue = s->hue;
     const float sat = s->sat;
@@ -179,8 +179,8 @@ static int do_hsvhold16_slice(AVFilterContext *avctx, void *arg, int jobnr, int 
     const int vsub_log2 = s->vsub_log2;
     const int width = frame->width >> hsub_log2;
     const int height = frame->height >> vsub_log2;
-    const int slice_start = (height * jobnr) / nb_jobs;
-    const int slice_end = (height * (jobnr + 1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(height, jobnr + 1, nb_jobs);
     const float scale = s->scale;
     const float half = s->half;
     const float hue = s->hue;
