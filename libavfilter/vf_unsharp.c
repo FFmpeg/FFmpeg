@@ -110,8 +110,8 @@ static int name##_##nbits(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
     const int height = td->height;                                                                    \
     const int sc_offset = jobnr * 2 * steps_y;                                                        \
     const int sr_offset = jobnr * (MAX_MATRIX_SIZE - 1);                                              \
-    const int slice_start = (height * jobnr) / nb_jobs;                                               \
-    const int slice_end = (height * (jobnr+1)) / nb_jobs;                                             \
+    const int slice_start = ff_slice_pos(height, jobnr, nb_jobs);                                     \
+    const int slice_end = ff_slice_pos(height, jobnr + 1, nb_jobs);                                   \
                                                                                                       \
     int32_t res;                                                                                      \
     int x, y, z;                                                                                      \

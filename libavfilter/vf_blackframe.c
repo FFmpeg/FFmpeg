@@ -68,8 +68,8 @@ static const enum AVPixelFormat pix_fmts[] = {
 static int blackframe_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     ThreadData *td = arg;
-    int slice_start = (td->height * jobnr) / nb_jobs;
-    int slice_end   = (td->height * (jobnr+1)) / nb_jobs;
+    int slice_start = ff_slice_pos(td->height, jobnr, nb_jobs);
+    int slice_end   = ff_slice_pos(td->height, jobnr + 1, nb_jobs);
     const uint8_t *p;
     unsigned int black_pixels_count = 0;
 

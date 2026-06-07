@@ -397,8 +397,8 @@ static av_always_inline void blend_slice_packed_rgb(AVFilterContext *ctx,
     i = FFMAX(-y, 0);
     imax = FFMIN3(-y + dst_h, FFMIN(src_h, dst_h), y + src_h);
 
-    slice_start = i + (imax * jobnr) / nb_jobs;
-    slice_end = i + (imax * (jobnr+1)) / nb_jobs;
+    slice_start = i + ff_slice_pos(imax, jobnr, nb_jobs);
+    slice_end = i + ff_slice_pos(imax, jobnr + 1, nb_jobs);
 
     sp = src->data[0] + (slice_start)     * src->linesize[0];
     dp = dst->data[0] + (y + slice_start) * dst->linesize[0];
@@ -484,8 +484,8 @@ static av_always_inline void blend_plane_##depth##_##nbits##bits(AVFilterContext
                                                                                                            \
     const int jmin = FFMAX(-yp, 0), jmax = FFMIN3(-yp + dst_hp, FFMIN(src_hp, dst_hp), yp + src_hp);       \
     const int kmin = FFMAX(-xp, 0), kmax = FFMIN(-xp + dst_wp, src_wp);                                    \
-    const int slice_start = jmin + (jmax *  jobnr)      / nb_jobs;                                         \
-    const int slice_end   = jmin + (jmax * (jobnr + 1)) / nb_jobs;                                         \
+    const int slice_start = jmin + ff_slice_pos(jmax, jobnr, nb_jobs);                                     \
+    const int slice_end   = jmin + ff_slice_pos(jmax, jobnr + 1, nb_jobs);                                 \
                                                                                                            \
     const uint8_t *sp = src->data[i] + (slice_start) * src->linesize[i];                                   \
     uint8_t       *dp = dst->data[dst_plane]                                                               \
@@ -594,8 +594,8 @@ static inline void alpha_composite_##depth##_##nbits##bits(const AVFrame *src, c
                                                                                                            \
     const int imin = FFMAX(-y, 0), imax = FFMIN3(-y + dst_h, FFMIN(src_h, dst_h), y + src_h);              \
     const int jmin = FFMAX(-x, 0), jmax = FFMIN(-x + dst_w, src_w);                                        \
-    const int slice_start = imin + ( imax *  jobnr)      / nb_jobs;                                        \
-    const int slice_end   = imin + ((imax * (jobnr + 1)) / nb_jobs);                                       \
+    const int slice_start = imin + ff_slice_pos(imax, jobnr, nb_jobs);                                     \
+    const int slice_end   = imin + (ff_slice_pos(imax, jobnr + 1, nb_jobs));                               \
                                                                                                            \
     const uint8_t *sa = src->data[3] +     (slice_start) * src->linesize[3];                               \
     uint8_t       *da = dst->data[3] + (y + slice_start) * dst->linesize[3];                               \

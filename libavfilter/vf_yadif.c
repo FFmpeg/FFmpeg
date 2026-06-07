@@ -193,8 +193,8 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     int refs = s->cur->linesize[td->plane];
     int df = (s->csp->comp[td->plane].depth + 7) / 8;
     int pix_3 = 3 * df;
-    int slice_start = (td->h *  jobnr   ) / nb_jobs;
-    int slice_end   = (td->h * (jobnr+1)) / nb_jobs;
+    int slice_start = ff_slice_pos(td->h, jobnr, nb_jobs);
+    int slice_end   = ff_slice_pos(td->h, jobnr + 1, nb_jobs);
     int y;
     int edge = 3 + MAX_ALIGN / df - 1;
 

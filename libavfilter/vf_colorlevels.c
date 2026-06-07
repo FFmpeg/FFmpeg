@@ -106,8 +106,8 @@ typedef struct ThreadData {
     const int linesize = s->linesize;                                           \
     const int step = s->step;                                                   \
     const int process_h = td->h;                                                \
-    const int slice_start = (process_h *  jobnr   ) / nb_jobs;                  \
-    const int slice_end   = (process_h * (jobnr+1)) / nb_jobs;                  \
+    const int slice_start = ff_slice_pos(process_h, jobnr, nb_jobs);            \
+    const int slice_end   = ff_slice_pos(process_h, jobnr + 1, nb_jobs);        \
     const int src_linesize = td->src_linesize / sizeof(type);                   \
     const int dst_linesize = td->dst_linesize / sizeof(type);                   \
     const type *src_r = (const type *)(td->srcrow[R]) + src_linesize * slice_start; \

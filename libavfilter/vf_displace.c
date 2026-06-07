@@ -90,8 +90,8 @@ static int displace_planar(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
     for (int plane = 0; plane < s->nb_planes; plane++) {
         const int h = s->height[plane];
         const int w = s->width[plane];
-        const int slice_start = (h *  jobnr   ) / nb_jobs;
-        const int slice_end   = (h * (jobnr+1)) / nb_jobs;
+        const int slice_start = ff_slice_pos(h, jobnr, nb_jobs);
+        const int slice_end   = ff_slice_pos(h, jobnr + 1, nb_jobs);
         const int dlinesize = out->linesize[plane];
         const int slinesize = in->linesize[plane];
         const int xlinesize = xin->linesize[plane];
@@ -171,8 +171,8 @@ static int displace_packed(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
     const int step = s->step;
     const int h = s->height[0];
     const int w = s->width[0];
-    const int slice_start = (h *  jobnr   ) / nb_jobs;
-    const int slice_end   = (h * (jobnr+1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(h, jobnr, nb_jobs);
+    const int slice_end   = ff_slice_pos(h, jobnr + 1, nb_jobs);
     const int dlinesize = out->linesize[0];
     const int slinesize = in->linesize[0];
     const int xlinesize = xin->linesize[0];

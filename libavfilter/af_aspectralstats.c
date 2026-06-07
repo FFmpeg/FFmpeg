@@ -438,8 +438,8 @@ static int filter_channel(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
     const float *window_func_lut = s->window_func_lut;
     AVFrame *in = arg;
     const int channels = s->nb_channels;
-    const int start = (channels * jobnr) / nb_jobs;
-    const int end = (channels * (jobnr+1)) / nb_jobs;
+    const int start = ff_slice_pos(channels, jobnr, nb_jobs);
+    const int end = ff_slice_pos(channels, jobnr + 1, nb_jobs);
     const int offset = s->win_size - s->hop_size;
 
     for (int ch = start; ch < end; ch++) {

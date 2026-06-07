@@ -48,8 +48,8 @@ static int do_backgroundkey_slice(AVFilterContext *avctx, void *arg, int jobnr, 
 {
     BackgroundkeyContext *s = avctx->priv;
     AVFrame *frame = arg;
-    const int slice_start = (frame->height * jobnr) / nb_jobs;
-    const int slice_end = (frame->height * (jobnr + 1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(frame->height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(frame->height, jobnr + 1, nb_jobs);
     const int min_diff = (255 + 255 + 255) * s->similarity;
     const float blend = s->blend;
     const int hsub = s->hsub_log2;
@@ -91,8 +91,8 @@ static int do_backgroundkey16_slice(AVFilterContext *avctx, void *arg, int jobnr
 {
     BackgroundkeyContext *s = avctx->priv;
     AVFrame *frame = arg;
-    const int slice_start = (frame->height * jobnr) / nb_jobs;
-    const int slice_end = (frame->height * (jobnr + 1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(frame->height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(frame->height, jobnr + 1, nb_jobs);
     const int hsub = s->hsub_log2;
     const int vsub = s->vsub_log2;
     const int max = s->max;

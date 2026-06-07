@@ -269,8 +269,8 @@ static int fn(filter_channels)(AVFilterContext *ctx, void *arg, int jobnr, int n
     const ftype tqfactor = s->tqfactor;
     const ftype itqfactor = ONE / tqfactor;
     const ftype fg = TAN(M_PI * tfrequency / sample_rate);
-    const int start = (in->ch_layout.nb_channels * jobnr) / nb_jobs;
-    const int end = (in->ch_layout.nb_channels * (jobnr+1)) / nb_jobs;
+    const int start = ff_slice_pos(in->ch_layout.nb_channels, jobnr, nb_jobs);
+    const int end = ff_slice_pos(in->ch_layout.nb_channels, jobnr + 1, nb_jobs);
     const int is_disabled = ctx->is_disabled;
     const int detection = s->detection;
     const int tftype = s->tftype;

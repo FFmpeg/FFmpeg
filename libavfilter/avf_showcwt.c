@@ -446,8 +446,8 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     const ptrdiff_t alinesize = s->outpicref->linesize[3];
     const float log_factor = 1.f/logf(s->logarithmic_basis);
     const int count = s->frequency_band_count;
-    const int start = (count * jobnr) / nb_jobs;
-    const int end = (count * (jobnr+1)) / nb_jobs;
+    const int start = ff_slice_pos(count, jobnr, nb_jobs);
+    const int end = ff_slice_pos(count, jobnr + 1, nb_jobs);
     const int nb_channels = s->nb_channels;
     const int iscale = s->intensity_scale;
     const int ihop_index = s->ihop_index;
@@ -650,8 +650,8 @@ static int run_channel_cwt(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
     const float scale = 1.f / input_padding_size;
     const int ihop_size = s->ihop_size;
     const int count = s->frequency_band_count;
-    const int start = (count * jobnr) / nb_jobs;
-    const int end = (count * (jobnr+1)) / nb_jobs;
+    const int start = ff_slice_pos(count, jobnr, nb_jobs);
+    const int end = ff_slice_pos(count, jobnr + 1, nb_jobs);
 
     for (int y = start; y < end; y++) {
         AVComplexFloat *chout = ((AVComplexFloat *)s->ch_out->extended_data[y]) + ch * ihop_size;
@@ -1222,8 +1222,8 @@ static int run_channels_cwt_prepare(AVFilterContext *ctx, void *arg, int jobnr, 
 {
     ShowCWTContext *s = ctx->priv;
     const int count = s->nb_channels;
-    const int start = (count * jobnr) / nb_jobs;
-    const int end = (count * (jobnr+1)) / nb_jobs;
+    const int start = ff_slice_pos(count, jobnr, nb_jobs);
+    const int end = ff_slice_pos(count, jobnr + 1, nb_jobs);
 
     for (int ch = start; ch < end; ch++)
         run_channel_cwt_prepare(ctx, arg, jobnr, ch);

@@ -84,8 +84,8 @@ static int dedotcrawl##name(AVFilterContext *ctx, void *arg,     \
     int p3_linesize = s->frames[3]->linesize[0] / div;           \
     int p4_linesize = s->frames[4]->linesize[0] / div;           \
     const int h = s->planeheight[0];                             \
-    int slice_start = (h * jobnr) / nb_jobs;                     \
-    int slice_end = (h * (jobnr+1)) / nb_jobs;                   \
+    int slice_start = ff_slice_pos(h, jobnr, nb_jobs);           \
+    int slice_end = ff_slice_pos(h, jobnr + 1, nb_jobs);         \
     type *p0 = (type *)s->frames[0]->data[0];                    \
     type *p1 = (type *)s->frames[1]->data[0];                    \
     type *p3 = (type *)s->frames[3]->data[0];                    \
@@ -159,8 +159,8 @@ static int derainbow##name(AVFilterContext *ctx, void *arg,  \
     AVFrame *out = td->out;                                  \
     const int plane = td->plane;                             \
     const int h = s->planeheight[plane];                     \
-    int slice_start = (h * jobnr) / nb_jobs;                 \
-    int slice_end = (h * (jobnr+1)) / nb_jobs;               \
+    int slice_start = ff_slice_pos(h, jobnr, nb_jobs);       \
+    int slice_end = ff_slice_pos(h, jobnr + 1, nb_jobs);     \
     int src_linesize = s->frames[2]->linesize[plane] / div;  \
     int dst_linesize = out->linesize[plane] / div;           \
     int p0_linesize = s->frames[0]->linesize[plane] / div;   \

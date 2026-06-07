@@ -757,8 +757,8 @@ static int filter_slice_packed(AVFilterContext *ctx, void *arg, int jobnr, int n
     const uint8_t g = curves->rgba_map[G];
     const uint8_t b = curves->rgba_map[B];
     const uint8_t a = curves->rgba_map[A];
-    const int slice_start = (in->height *  jobnr   ) / nb_jobs;
-    const int slice_end   = (in->height * (jobnr+1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(in->height, jobnr, nb_jobs);
+    const int slice_end   = ff_slice_pos(in->height, jobnr + 1, nb_jobs);
 
     if (curves->is_16bit) {
         for (y = slice_start; y < slice_end; y++) {
@@ -805,8 +805,8 @@ static int filter_slice_planar(AVFilterContext *ctx, void *arg, int jobnr, int n
     const uint8_t g = curves->rgba_map[G];
     const uint8_t b = curves->rgba_map[B];
     const uint8_t a = curves->rgba_map[A];
-    const int slice_start = (in->height *  jobnr   ) / nb_jobs;
-    const int slice_end   = (in->height * (jobnr+1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(in->height, jobnr, nb_jobs);
+    const int slice_end   = ff_slice_pos(in->height, jobnr + 1, nb_jobs);
 
     if (curves->is_16bit) {
         for (y = slice_start; y < slice_end; y++) {
