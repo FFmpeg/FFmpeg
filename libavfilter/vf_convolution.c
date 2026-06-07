@@ -582,8 +582,8 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
         const int dstride = out->linesize[plane];
         const int sizeh = mode == MATRIX_COLUMN ? width : height;
         const int sizew = mode == MATRIX_COLUMN ? height : width;
-        const int slice_start = (sizeh * jobnr) / nb_jobs;
-        const int slice_end = (sizeh * (jobnr+1)) / nb_jobs;
+        const int slice_start = ff_slice_pos(sizeh, jobnr, nb_jobs);
+        const int slice_end = ff_slice_pos(sizeh, jobnr + 1, nb_jobs);
         const float rdiv = s->rdiv[plane];
         const float bias = s->bias[plane];
         const uint8_t *src = in->data[plane];

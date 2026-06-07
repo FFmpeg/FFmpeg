@@ -358,8 +358,8 @@ struct thread_data {
     const uint16_t (*tab)[256*256] = (const uint16_t (*)[256*256])s->lut;\
     const int step = s->step;\
 \
-    const int slice_start = (h *  jobnr   ) / nb_jobs;\
-    const int slice_end   = (h * (jobnr+1)) / nb_jobs;\
+    const int slice_start = ff_slice_pos(h, jobnr, nb_jobs); \
+    const int slice_end   = ff_slice_pos(h, jobnr + 1, nb_jobs); \
 
 /* packed, 16-bit */
 static int lut_packed_16bits(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
@@ -441,8 +441,8 @@ static int lut_packed_8bits(AVFilterContext *ctx, void *arg, int jobnr, int nb_j
         int w = AV_CEIL_RSHIFT(td->w, hsub);\
         const uint16_t *tab = s->lut[plane];\
 \
-        const int slice_start = (h *  jobnr   ) / nb_jobs;\
-        const int slice_end   = (h * (jobnr+1)) / nb_jobs;\
+        const int slice_start = ff_slice_pos(h, jobnr, nb_jobs); \
+        const int slice_end   = ff_slice_pos(h, jobnr + 1, nb_jobs); \
 
 /* planar >8 bit depth */
 static int lut_planar_16bits(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)

@@ -103,8 +103,8 @@ static int do_slice_##name##_##xall(AVFilterContext *ctx,            \
     const int step = s->step;                                        \
     const int width = frame->width;                                  \
     const int process_h = frame->height;                             \
-    const int slice_start = (process_h *  jobnr   ) / nb_jobs;       \
-    const int slice_end   = (process_h * (jobnr+1)) / nb_jobs;       \
+    const int slice_start = ff_slice_pos(process_h, jobnr, nb_jobs); \
+    const int slice_end   = ff_slice_pos(process_h, jobnr + 1, nb_jobs); \
     const ptrdiff_t linesize = frame->linesize[0] / sizeof(type);    \
     type *row = (type *)frame->data[0] + linesize * slice_start;     \
     const uint8_t offset_r = s->rgba_map[R];                         \

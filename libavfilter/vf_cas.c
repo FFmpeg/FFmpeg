@@ -52,8 +52,8 @@ static int cas_slice8(AVFilterContext *avctx, void *arg, int jobnr, int nb_jobs)
     AVFrame *in = s->in;
 
     for (int p = 0; p < s->nb_planes; p++) {
-        const int slice_start = (s->planeheight[p] * jobnr) / nb_jobs;
-        const int slice_end = (s->planeheight[p] * (jobnr+1)) / nb_jobs;
+        const int slice_start = ff_slice_pos(s->planeheight[p], jobnr, nb_jobs);
+        const int slice_end = ff_slice_pos(s->planeheight[p], jobnr + 1, nb_jobs);
         const int linesize = out->linesize[p];
         const int in_linesize = in->linesize[p];
         const int w = s->planewidth[p];
@@ -119,8 +119,8 @@ static int cas_slice16(AVFilterContext *avctx, void *arg, int jobnr, int nb_jobs
     AVFrame *in = s->in;
 
     for (int p = 0; p < s->nb_planes; p++) {
-        const int slice_start = (s->planeheight[p] * jobnr) / nb_jobs;
-        const int slice_end = (s->planeheight[p] * (jobnr+1)) / nb_jobs;
+        const int slice_start = ff_slice_pos(s->planeheight[p], jobnr, nb_jobs);
+        const int slice_end = ff_slice_pos(s->planeheight[p], jobnr + 1, nb_jobs);
         const int linesize = out->linesize[p] / 2;
         const int in_linesize = in->linesize[p] / 2;
         const int w = s->planewidth[p];

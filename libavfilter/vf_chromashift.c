@@ -64,8 +64,8 @@ static int smear_slice ## depth(AVFilterContext *ctx, void *arg, int jobnr, int 
     const int crv = s->crv;                                                               \
     const int h = s->height[1];                                                           \
     const int w = s->width[1];                                                            \
-    const int slice_start = (h * jobnr) / nb_jobs;                                        \
-    const int slice_end = (h * (jobnr+1)) / nb_jobs;                                      \
+    const int slice_start = ff_slice_pos(h, jobnr, nb_jobs);                              \
+    const int slice_end = ff_slice_pos(h, jobnr + 1, nb_jobs);                            \
     const type *su = (const type *)in->data[1];                                           \
     const type *sv = (const type *)in->data[2];                                           \
     type *du = (type *)out->data[1] + slice_start * ulinesize;                            \
@@ -106,8 +106,8 @@ static int wrap_slice ## depth(AVFilterContext *ctx, void *arg, int jobnr, int n
     const int crv = s->crv;                                                               \
     const int h = s->height[1];                                                           \
     const int w = s->width[1];                                                            \
-    const int slice_start = (h * jobnr) / nb_jobs;                                        \
-    const int slice_end = (h * (jobnr+1)) / nb_jobs;                                      \
+    const int slice_start = ff_slice_pos(h, jobnr, nb_jobs);                              \
+    const int slice_end = ff_slice_pos(h, jobnr + 1, nb_jobs);                            \
     const type *su = (const type *)in->data[1];                                           \
     const type *sv = (const type *)in->data[2];                                           \
     type *du = (type *)out->data[1] + slice_start * ulinesize;                            \
@@ -169,8 +169,8 @@ static int rgbasmear_slice ## depth(AVFilterContext *ctx, void *arg, int jobnr, 
     const int av = s->av;                                                                 \
     const int h = s->height[1];                                                           \
     const int w = s->width[1];                                                            \
-    const int slice_start = (h * jobnr) / nb_jobs;                                        \
-    const int slice_end = (h * (jobnr+1)) / nb_jobs;                                      \
+    const int slice_start = ff_slice_pos(h, jobnr, nb_jobs);                              \
+    const int slice_end = ff_slice_pos(h, jobnr + 1, nb_jobs);                            \
     const type *sr = (const type *)in->data[2];                                           \
     const type *sg = (const type *)in->data[0];                                           \
     const type *sb = (const type *)in->data[1];                                           \
@@ -236,8 +236,8 @@ static int rgbawrap_slice ## depth(AVFilterContext *ctx, void *arg, int jobnr, i
     const int av = s->av;                                                                 \
     const int h = s->height[1];                                                           \
     const int w = s->width[1];                                                            \
-    const int slice_start = (h * jobnr) / nb_jobs;                                        \
-    const int slice_end = (h * (jobnr+1)) / nb_jobs;                                      \
+    const int slice_start = ff_slice_pos(h, jobnr, nb_jobs);                              \
+    const int slice_end = ff_slice_pos(h, jobnr + 1, nb_jobs);                            \
     const type *sr = (const type *)in->data[2];                                           \
     const type *sg = (const type *)in->data[0];                                           \
     const type *sb = (const type *)in->data[1];                                           \

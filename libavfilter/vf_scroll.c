@@ -80,8 +80,8 @@ static int scroll_slice(AVFilterContext *ctx, void *arg, int jobnr,
         const uint8_t *src = in->data[p];
         const int h = s->planeheight[p];
         const int w = s->planewidth[p] * s->bytes;
-        const int slice_start = (h * jobnr) / nb_jobs;
-        const int slice_end = (h * (jobnr+1)) / nb_jobs;
+        const int slice_start = ff_slice_pos(h, jobnr, nb_jobs);
+        const int slice_end = ff_slice_pos(h, jobnr + 1, nb_jobs);
         uint8_t *dst = out->data[p] + slice_start * out->linesize[p];
 
         for (int y = slice_start; y < slice_end; y++) {

@@ -98,8 +98,8 @@ typedef struct ThreadData {
     const stype limit[2] = { s->llimit, s->hlimit };                                            \
                                                                                                 \
     for (int p = 0; p < s->nb_planes; p++) {                                                    \
-        const int slice_start = (s->height[p] * jobnr) / nb_jobs;                               \
-        const int slice_end = (s->height[p] * (jobnr+1)) / nb_jobs;                             \
+        const int slice_start = ff_slice_pos(s->height[p], jobnr, nb_jobs);                     \
+        const int slice_end = ff_slice_pos(s->height[p], jobnr + 1, nb_jobs);                   \
         type *dst = (type *)(out->data[p] + slice_start * out->linesize[p]);                    \
         ptrdiff_t dst_linesize = out->linesize[p] / sizeof(type);                               \
                                                                                                 \

@@ -146,8 +146,8 @@ static int deband_8_c(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
         const int dst_linesize = out->linesize[p];
         const int src_linesize = in->linesize[p];
         const int thr = s->thr[p];
-        const int start = (s->planeheight[p] *  jobnr   ) / nb_jobs;
-        const int end   = (s->planeheight[p] * (jobnr+1)) / nb_jobs;
+        const int start = ff_slice_pos(s->planeheight[p], jobnr, nb_jobs);
+        const int end   = ff_slice_pos(s->planeheight[p], jobnr + 1, nb_jobs);
         const int w = s->planewidth[p] - 1;
         const int h = s->planeheight[p] - 1;
 
@@ -187,8 +187,8 @@ static int deband_8_coupling_c(AVFilterContext *ctx, void *arg, int jobnr, int n
     ThreadData *td = arg;
     AVFrame *in = td->in;
     AVFrame *out = td->out;
-    const int start = (s->planeheight[0] *  jobnr   ) / nb_jobs;
-    const int end   = (s->planeheight[0] * (jobnr+1)) / nb_jobs;
+    const int start = ff_slice_pos(s->planeheight[0], jobnr, nb_jobs);
+    const int end   = ff_slice_pos(s->planeheight[0], jobnr + 1, nb_jobs);
     int x, y, p;
 
     for (y = start; y < end; y++) {
@@ -252,8 +252,8 @@ static int deband_16_coupling_c(AVFilterContext *ctx, void *arg, int jobnr, int 
     ThreadData *td = arg;
     AVFrame *in = td->in;
     AVFrame *out = td->out;
-    const int start = (s->planeheight[0] *  jobnr   ) / nb_jobs;
-    const int end   = (s->planeheight[0] * (jobnr+1)) / nb_jobs;
+    const int start = ff_slice_pos(s->planeheight[0], jobnr, nb_jobs);
+    const int end   = ff_slice_pos(s->planeheight[0], jobnr + 1, nb_jobs);
     int x, y, p, z;
 
     for (y = start; y < end; y++) {
@@ -327,8 +327,8 @@ static int deband_16_c(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
         const int dst_linesize = out->linesize[p] / 2;
         const int src_linesize = in->linesize[p] / 2;
         const int thr = s->thr[p];
-        const int start = (s->planeheight[p] *  jobnr   ) / nb_jobs;
-        const int end   = (s->planeheight[p] * (jobnr+1)) / nb_jobs;
+        const int start = ff_slice_pos(s->planeheight[p], jobnr, nb_jobs);
+        const int end   = ff_slice_pos(s->planeheight[p], jobnr + 1, nb_jobs);
         const int w = s->planewidth[p] - 1;
         const int h = s->planeheight[p] - 1;
 

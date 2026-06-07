@@ -153,8 +153,8 @@ static int color_balance8_p(AVFilterContext *ctx, void *arg, int jobnr, int nb_j
     ThreadData *td = arg;
     AVFrame *in = td->in;
     AVFrame *out = td->out;
-    const int slice_start = (out->height * jobnr) / nb_jobs;
-    const int slice_end = (out->height * (jobnr+1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(out->height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(out->height, jobnr + 1, nb_jobs);
     const uint8_t *srcg = in->data[0] + slice_start * in->linesize[0];
     const uint8_t *srcb = in->data[1] + slice_start * in->linesize[1];
     const uint8_t *srcr = in->data[2] + slice_start * in->linesize[2];
@@ -206,8 +206,8 @@ static int color_balance16_p(AVFilterContext *ctx, void *arg, int jobnr, int nb_
     ThreadData *td = arg;
     AVFrame *in = td->in;
     AVFrame *out = td->out;
-    const int slice_start = (out->height * jobnr) / nb_jobs;
-    const int slice_end = (out->height * (jobnr+1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(out->height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(out->height, jobnr + 1, nb_jobs);
     const uint16_t *srcg = (const uint16_t *)in->data[0] + slice_start * in->linesize[0] / 2;
     const uint16_t *srcb = (const uint16_t *)in->data[1] + slice_start * in->linesize[1] / 2;
     const uint16_t *srcr = (const uint16_t *)in->data[2] + slice_start * in->linesize[2] / 2;
@@ -261,8 +261,8 @@ static int color_balance8(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
     AVFrame *in = td->in;
     AVFrame *out = td->out;
     AVFilterLink *outlink = ctx->outputs[0];
-    const int slice_start = (out->height * jobnr) / nb_jobs;
-    const int slice_end = (out->height * (jobnr+1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(out->height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(out->height, jobnr + 1, nb_jobs);
     const uint8_t *srcrow = in->data[0] + slice_start * in->linesize[0];
     const uint8_t roffset = s->rgba_map[R];
     const uint8_t goffset = s->rgba_map[G];
@@ -312,8 +312,8 @@ static int color_balance16(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
     AVFrame *in = td->in;
     AVFrame *out = td->out;
     AVFilterLink *outlink = ctx->outputs[0];
-    const int slice_start = (out->height * jobnr) / nb_jobs;
-    const int slice_end = (out->height * (jobnr+1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(out->height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(out->height, jobnr + 1, nb_jobs);
     const uint16_t *srcrow = (const uint16_t *)in->data[0] + slice_start * in->linesize[0] / 2;
     const uint8_t roffset = s->rgba_map[R];
     const uint8_t goffset = s->rgba_map[G];

@@ -84,8 +84,8 @@ static int convert_frame_partial(AVFilterContext *ctx, void *arg, int jobnr, int
 
     ThreadData_convert_frame *td = arg;
 
-    const int slice_start = (NUM_CELLS * jobnr) / nb_jobs;
-    const int slice_end = (NUM_CELLS * (jobnr+1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(NUM_CELLS, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(NUM_CELLS, jobnr + 1, nb_jobs);
 
     int width = td->in->width, height = td->in->height, linesize = td->in->linesize[0], skip = td->skip;
     const uint8_t *data = td->in->data[0];
@@ -149,8 +149,8 @@ static int blend_frame_partial(AVFilterContext *ctx, void *arg, int jobnr, int n
     ThreadData_blend_frame *td = arg;
     const uint16_t s_mul = td->s_mul;
     const uint16_t t_mul = 0x100 - s_mul;
-    const int slice_start = (td->target->height * jobnr) / nb_jobs;
-    const int slice_end = (td->target->height * (jobnr+1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(td->target->height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(td->target->height, jobnr + 1, nb_jobs);
     const int linesize = td->target->linesize[0];
 
     for (y = slice_start; y < slice_end; y++) {

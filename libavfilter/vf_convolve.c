@@ -189,8 +189,8 @@ static int fft_horizontal(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
     AVComplexFloat *hdata_out = td->hdata_out;
     const int plane = td->plane;
     const int n = td->n;
-    int start = (n * jobnr) / nb_jobs;
-    int end = (n * (jobnr+1)) / nb_jobs;
+    int start = ff_slice_pos(n, jobnr, nb_jobs);
+    int end = ff_slice_pos(n, jobnr + 1, nb_jobs);
     int y;
 
     for (y = start; y < end; y++) {
@@ -376,8 +376,8 @@ static int fft_vertical(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     AVComplexFloat *vdata_out = td->vdata_out;
     const int plane = td->plane;
     const int n = td->n;
-    int start = (n * jobnr) / nb_jobs;
-    int end = (n * (jobnr+1)) / nb_jobs;
+    int start = ff_slice_pos(n, jobnr, nb_jobs);
+    int end = ff_slice_pos(n, jobnr + 1, nb_jobs);
     int y, x;
 
     for (y = start; y < end; y++) {
@@ -401,8 +401,8 @@ static int ifft_vertical(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
     AVComplexFloat *vdata_in = td->vdata_in;
     const int plane = td->plane;
     const int n = td->n;
-    int start = (n * jobnr) / nb_jobs;
-    int end = (n * (jobnr+1)) / nb_jobs;
+    int start = ff_slice_pos(n, jobnr, nb_jobs);
+    int end = ff_slice_pos(n, jobnr + 1, nb_jobs);
     int y, x;
 
     for (y = start; y < end; y++) {
@@ -425,8 +425,8 @@ static int ifft_horizontal(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
     AVComplexFloat *hdata_in = td->hdata_in;
     const int plane = td->plane;
     const int n = td->n;
-    int start = (n * jobnr) / nb_jobs;
-    int end = (n * (jobnr+1)) / nb_jobs;
+    int start = ff_slice_pos(n, jobnr, nb_jobs);
+    int end = ff_slice_pos(n, jobnr + 1, nb_jobs);
     int y;
 
     for (y = start; y < end; y++) {
@@ -518,8 +518,8 @@ static int complex_multiply(AVFilterContext *ctx, void *arg, int jobnr, int nb_j
     AVComplexFloat *filter = td->vdata_in;
     const float noise = s->noise;
     const int n = td->n;
-    int start = (n * jobnr) / nb_jobs;
-    int end = (n * (jobnr+1)) / nb_jobs;
+    int start = ff_slice_pos(n, jobnr, nb_jobs);
+    int end = ff_slice_pos(n, jobnr + 1, nb_jobs);
     int y, x;
 
     for (y = start; y < end; y++) {
@@ -548,8 +548,8 @@ static int complex_xcorrelate(AVFilterContext *ctx, void *arg, int jobnr, int nb
     AVComplexFloat *filter = td->vdata_in;
     const int n = td->n;
     const float scale = 1.f / (n * n);
-    int start = (n * jobnr) / nb_jobs;
-    int end = (n * (jobnr+1)) / nb_jobs;
+    int start = ff_slice_pos(n, jobnr, nb_jobs);
+    int end = ff_slice_pos(n, jobnr + 1, nb_jobs);
 
     for (int y = start; y < end; y++) {
         int yn = y * n;
@@ -578,8 +578,8 @@ static int complex_divide(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
     AVComplexFloat *filter = td->vdata_in;
     const float noise = s->noise;
     const int n = td->n;
-    int start = (n * jobnr) / nb_jobs;
-    int end = (n * (jobnr+1)) / nb_jobs;
+    int start = ff_slice_pos(n, jobnr, nb_jobs);
+    int end = ff_slice_pos(n, jobnr + 1, nb_jobs);
     int y, x;
 
     for (y = start; y < end; y++) {
