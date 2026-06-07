@@ -451,11 +451,6 @@ static int liboapve_encode(AVCodecContext *avctx, AVPacket *avpkt,
     oapv_imgb_t *imgb = frm->imgb;
     int ret;
 
-    if (avctx->width != frame->width || avctx->height != frame->height || avctx->pix_fmt != frame->format) {
-        av_log(avctx, AV_LOG_ERROR, "Dimension changes are not supported\n");
-        return AVERROR(EINVAL);
-    }
-
     av_image_copy2((uint8_t **)imgb->a, imgb->s, frame->data, frame->linesize,
                    frame->format, frame->width, frame->height);
 
