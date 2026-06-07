@@ -96,95 +96,65 @@ static int apv_imgb_getref(oapv_imgb_t * imgb)
  */
 static inline int get_color_format(enum AVPixelFormat pix_fmt)
 {
-    int cf = OAPV_CF_UNKNOWN;
-
     switch (pix_fmt) {
-    case AV_PIX_FMT_GRAY10:
-        cf = OAPV_CF_YCBCR400;
-        break;
-    case AV_PIX_FMT_YUV422P10:
-        cf = OAPV_CF_YCBCR422;
-        break;
-    case AV_PIX_FMT_YUV422P12:
-        cf = OAPV_CF_YCBCR422;
-        break;
-    case AV_PIX_FMT_YUV444P10:
-        cf = OAPV_CF_YCBCR444;
-        break;
-    case AV_PIX_FMT_YUV444P12:
-        cf = OAPV_CF_YCBCR444;
-        break;
-    case AV_PIX_FMT_YUVA444P10:
-        cf = OAPV_CF_YCBCR4444;
-        break;
-    case AV_PIX_FMT_YUVA444P12:
-        cf = OAPV_CF_YCBCR4444;
-        break;
     default:
         av_unreachable("Already checked via CODEC_PIXFMTS");
+    case AV_PIX_FMT_GRAY10:
+        return OAPV_CF_YCBCR400;
+    case AV_PIX_FMT_YUV422P10:
+        return OAPV_CF_YCBCR422;
+    case AV_PIX_FMT_YUV422P12:
+        return OAPV_CF_YCBCR422;
+    case AV_PIX_FMT_YUV444P10:
+        return OAPV_CF_YCBCR444;
+    case AV_PIX_FMT_YUV444P12:
+        return OAPV_CF_YCBCR444;
+    case AV_PIX_FMT_YUVA444P10:
+        return OAPV_CF_YCBCR4444;
+    case AV_PIX_FMT_YUVA444P12:
+        return OAPV_CF_YCBCR4444;
     }
-
-    return cf;
 }
 
 static inline int get_chroma_format_idc(enum AVPixelFormat pix_fmt)
 {
-    int cfi = -1;
-
     switch (pix_fmt) {
-    case AV_PIX_FMT_GRAY10:
-        cfi = APV_CHROMA_FORMAT_400;
-        break;
-    case AV_PIX_FMT_YUV422P10:
-    case AV_PIX_FMT_YUV422P12:
-        cfi = APV_CHROMA_FORMAT_422;
-        break;
-    case AV_PIX_FMT_YUV444P10:
-    case AV_PIX_FMT_YUV444P12:
-        cfi = APV_CHROMA_FORMAT_444;
-        break;
-    case AV_PIX_FMT_YUVA444P10:
-    case AV_PIX_FMT_YUVA444P12:
-        cfi = APV_CHROMA_FORMAT_4444;
-        break;
     default:
         av_unreachable("Already checked via CODEC_PIXFMTS");
+    case AV_PIX_FMT_GRAY10:
+        return APV_CHROMA_FORMAT_400;
+    case AV_PIX_FMT_YUV422P10:
+    case AV_PIX_FMT_YUV422P12:
+        return APV_CHROMA_FORMAT_422;
+    case AV_PIX_FMT_YUV444P10:
+    case AV_PIX_FMT_YUV444P12:
+        return APV_CHROMA_FORMAT_444;
+    case AV_PIX_FMT_YUVA444P10:
+    case AV_PIX_FMT_YUVA444P12:
+        return APV_CHROMA_FORMAT_4444;
     }
-
-    return cfi;
 }
 
 static inline int get_min_profile(enum AVPixelFormat pix_fmt)
 {
-    int profile = AV_PROFILE_UNKNOWN;
-
     switch (pix_fmt) {
-    case AV_PIX_FMT_GRAY10:
-        profile = AV_PROFILE_APV_400_10;
-        break;
-    case AV_PIX_FMT_YUV422P10:
-        profile = AV_PROFILE_APV_422_10;
-        break;
-    case AV_PIX_FMT_YUV422P12:
-        profile = AV_PROFILE_APV_422_12;
-        break;
-    case AV_PIX_FMT_YUV444P10:
-        profile = AV_PROFILE_APV_444_10;
-        break;
-    case AV_PIX_FMT_YUV444P12:
-        profile = AV_PROFILE_APV_444_12;
-        break;
-    case AV_PIX_FMT_YUVA444P10:
-        profile = AV_PROFILE_APV_4444_10;
-        break;
-    case AV_PIX_FMT_YUVA444P12:
-        profile = AV_PROFILE_APV_4444_12;
-        break;
     default:
         av_unreachable("Already checked via CODEC_PIXFMTS");
+    case AV_PIX_FMT_GRAY10:
+        return AV_PROFILE_APV_400_10;
+    case AV_PIX_FMT_YUV422P10:
+        return AV_PROFILE_APV_422_10;
+    case AV_PIX_FMT_YUV422P12:
+        return AV_PROFILE_APV_422_12;
+    case AV_PIX_FMT_YUV444P10:
+        return AV_PROFILE_APV_444_10;
+    case AV_PIX_FMT_YUV444P12:
+        return AV_PROFILE_APV_444_12;
+    case AV_PIX_FMT_YUVA444P10:
+        return AV_PROFILE_APV_4444_10;
+    case AV_PIX_FMT_YUVA444P12:
+        return AV_PROFILE_APV_4444_12;
     }
-
-    return profile;
 }
 
 static int profile_is_compatible(enum AVPixelFormat pix_fmt, int profile)
