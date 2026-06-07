@@ -46,6 +46,12 @@ void ff_h2645_decode_common_vui_params(GetBitContext *gb, H2645VUI *vui, void *l
         else if (vui->aspect_ratio_idc == EXTENDED_SAR) {
             vui->sar.num = get_bits(gb, 16);
             vui->sar.den = get_bits(gb, 16);
+            if (!vui->sar.num || !vui->sar.den) {
+                av_log(logctx, AV_LOG_WARNING,
+                       "Invalid SAR %d/%d in bitstream, treating as unspecified.\n",
+                       vui->sar.num, vui->sar.den);
+                vui->sar = (AVRational){ 0, 1 };
+            }
         } else
             av_log(logctx, AV_LOG_WARNING,
                    "Unknown SAR index: %u.\n", vui->aspect_ratio_idc);
