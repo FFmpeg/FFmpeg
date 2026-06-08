@@ -18,13 +18,13 @@
 
 #include "libavutil/hwcontext_amf.h"
 #include "libavutil/hwcontext_amf_internal.h"
+#include "libavutil/pixdesc.h"
 #include "amfdec.h"
 #include "codec_internal.h"
 #include "hwconfig.h"
 #include "libavutil/time.h"
 #include "decode.h"
 #include "decode_bsf.h"
-#include "libavutil/mastering_display_metadata.h"
 
 #if CONFIG_D3D11VA
 #include "libavutil/hwcontext_d3d11va.h"
@@ -233,11 +233,25 @@ static int amf_init_frames_context(AVCodecContext *avctx, int sw_format, int new
 
     ret = av_hwframe_ctx_init(avctx->hw_frames_ctx);
     if (ret < 0) {
-        av_log(NULL, AV_LOG_ERROR, "Error initializing a AMF frame pool\n");
+        av_log(avctx, AV_LOG_ERROR, "Error initializing a AMF frame pool\n");
         av_buffer_unref(&avctx->hw_frames_ctx);
         return ret;
     }
     return 0;
+}
+
+static int amf_reinit_frames_context(AVCodecContext *avctx, int sw_format,
+                                     int new_width, int new_height)
+{
+    if (!avctx->hw_device_ctx)
+        return 0;
+
+    av_buffer_unref(&avctx->hw_frames_ctx);
+    avctx->hw_frames_ctx = av_hwframe_ctx_alloc(avctx->hw_device_ctx);
+    if (!avctx->hw_frames_ctx)
+        return AVERROR(ENOMEM);
+
+    return amf_init_frames_context(avctx, sw_format, new_width, new_height);
 }
 
 static int amf_decode_init(AVCodecContext *avctx)
@@ -321,6 +335,122 @@ fail:
     return ret;
 }
 
+static int amf_color_primaries_valid(enum AVColorPrimaries pri)
+{
+    return pri != AVCOL_PRI_UNSPECIFIED && pri != AVCOL_PRI_RESERVED0 &&
+           pri != AVCOL_PRI_RESERVED && av_color_primaries_name(pri);
+}
+
+static int amf_color_trc_valid(enum AVColorTransferCharacteristic trc)
+{
+    return trc != AVCOL_TRC_UNSPECIFIED && trc != AVCOL_TRC_RESERVED0 &&
+           trc != AVCOL_TRC_RESERVED && av_color_transfer_name(trc);
+}
+
+static enum AVColorPrimaries amf_to_av_primaries(enum AMF_COLOR_PRIMARIES_ENUM pri)
+{
+    enum AVColorPrimaries avpri = (enum AVColorPrimaries)pri;
+
+    switch (pri) {
+    case AMF_COLOR_PRIMARIES_UNDEFINED:
+    case AMF_COLOR_PRIMARIES_UNSPECIFIED:
+    case AMF_COLOR_PRIMARIES_RESERVED:
+        return AVCOL_PRI_UNSPECIFIED;
+    default:
+        if (amf_color_primaries_valid(avpri))
+            return avpri;
+        return AVCOL_PRI_UNSPECIFIED;
+    }
+}
+
+static enum AVColorTransferCharacteristic amf_to_av_trc(enum AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM trc)
+{
+    enum AVColorTransferCharacteristic avtrc = (enum AVColorTransferCharacteristic)trc;
+
+    switch (trc) {
+    case AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED:
+    case AMF_COLOR_TRANSFER_CHARACTERISTIC_UNSPECIFIED:
+    case AMF_COLOR_TRANSFER_CHARACTERISTIC_RESERVED:
+        return AVCOL_TRC_UNSPECIFIED;
+    default:
+        if (amf_color_trc_valid(avtrc))
+            return avtrc;
+        return AVCOL_TRC_UNSPECIFIED;
+    }
+}
+
+static enum AVColorRange amf_to_av_range(enum AMF_COLOR_RANGE_ENUM range)
+{
+    switch (range) {
+    case AMF_COLOR_RANGE_FULL:
+        return AVCOL_RANGE_JPEG;
+    case AMF_COLOR_RANGE_STUDIO:
+        return AVCOL_RANGE_MPEG;
+    default:
+        return AVCOL_RANGE_UNSPECIFIED;
+    }
+}
+
+static enum AVColorSpace amf_to_av_colorspace(enum AMF_VIDEO_CONVERTER_COLOR_PROFILE_ENUM profile)
+{
+    switch (profile) {
+    case AMF_VIDEO_CONVERTER_COLOR_PROFILE_601:
+    case AMF_VIDEO_CONVERTER_COLOR_PROFILE_FULL_601:
+        return AVCOL_SPC_SMPTE170M;
+    case AMF_VIDEO_CONVERTER_COLOR_PROFILE_709:
+    case AMF_VIDEO_CONVERTER_COLOR_PROFILE_FULL_709:
+        return AVCOL_SPC_BT709;
+    case AMF_VIDEO_CONVERTER_COLOR_PROFILE_2020:
+    case AMF_VIDEO_CONVERTER_COLOR_PROFILE_FULL_2020:
+        return AVCOL_SPC_BT2020_NCL;
+    default:
+        return AVCOL_SPC_UNSPECIFIED;
+    }
+}
+
+static void amf_read_surface_color(AVCodecContext *avctx, AMFSurface *surface,
+                                   AVFrame *frame)
+{
+    AMFVariantStruct var = {0};
+    AMF_RESULT res;
+    enum AVColorPrimaries primaries = avctx->color_primaries;
+    enum AVColorTransferCharacteristic trc = avctx->color_trc;
+    enum AVColorSpace colorspace = avctx->colorspace;
+    enum AVColorRange range = avctx->color_range;
+
+    res = surface->pVtbl->GetProperty(surface, AMF_VIDEO_DECODER_COLOR_PRIMARIES, &var);
+    if (res == AMF_OK)
+        primaries = amf_to_av_primaries((enum AMF_COLOR_PRIMARIES_ENUM)var.int64Value);
+    AMFVariantClear(&var);
+
+    res = surface->pVtbl->GetProperty(surface, AMF_VIDEO_DECODER_COLOR_TRANSFER_CHARACTERISTIC, &var);
+    if (res == AMF_OK)
+        trc = amf_to_av_trc((enum AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM)var.int64Value);
+    AMFVariantClear(&var);
+
+    res = surface->pVtbl->GetProperty(surface, AMF_VIDEO_DECODER_COLOR_PROFILE, &var);
+    if (res == AMF_OK)
+        colorspace = amf_to_av_colorspace((enum AMF_VIDEO_CONVERTER_COLOR_PROFILE_ENUM)var.int64Value);
+    AMFVariantClear(&var);
+
+    if (primaries != AVCOL_PRI_UNSPECIFIED || trc != AVCOL_TRC_UNSPECIFIED ||
+         colorspace != AVCOL_SPC_UNSPECIFIED) {
+        res = surface->pVtbl->GetProperty(surface, AMF_VIDEO_DECODER_COLOR_RANGE, &var);
+        if (res == AMF_OK)
+            range = amf_to_av_range((enum AMF_COLOR_RANGE_ENUM)var.int64Value);
+        AMFVariantClear(&var);
+    }
+    avctx->color_primaries = primaries;
+    avctx->color_trc       = trc;
+    avctx->colorspace      = colorspace;
+    avctx->color_range     = range;
+
+    frame->color_primaries = primaries;
+    frame->color_trc       = trc;
+    frame->colorspace      = colorspace;
+    frame->color_range     = range;
+}
+
 static AMF_RESULT amf_get_property_buffer(AMFData *object, const wchar_t *name, AMFBuffer **val)
 {
     AMF_RESULT res;
@@ -340,6 +470,37 @@ static AMF_RESULT amf_get_property_buffer(AMFData *object, const wchar_t *name, 
         AMFVariantClear(&var);
     }
     return res;
+}
+
+static int amf_attach_hdr_metadata(AVCodecContext *avctx, AMFSurface *surface, AVFrame *frame)
+{
+    AMFBuffer *hdrmeta_buffer = NULL;
+    AMFHDRMetadata *hdrmeta;
+    AMF_RESULT res;
+    int ret;
+
+    if (frame->color_trc != AVCOL_TRC_SMPTE2084)
+        return 0;
+
+    res = amf_get_property_buffer((AMFData *)surface, AMF_VIDEO_DECODER_HDR_METADATA,
+                                  &hdrmeta_buffer);
+    if (!hdrmeta_buffer)
+        return 0;
+
+    if (res != AMF_OK) {
+        hdrmeta_buffer->pVtbl->Release(hdrmeta_buffer);
+        return AVERROR(EINVAL);
+    }
+
+    hdrmeta = (AMFHDRMetadata *)hdrmeta_buffer->pVtbl->GetNative(hdrmeta_buffer);
+    if (!hdrmeta) {
+        hdrmeta_buffer->pVtbl->Release(hdrmeta_buffer);
+        return AVERROR(EINVAL);
+    }
+
+    ret = av_amf_attach_hdr_metadata(frame, hdrmeta);
+    hdrmeta_buffer->pVtbl->Release(hdrmeta_buffer);
+    return ret;
 }
 
 static int amf_amfsurface_to_avframe(AVCodecContext *avctx, AMFSurface* surface, AVFrame *frame)
@@ -407,24 +568,12 @@ static int amf_amfsurface_to_avframe(AVCodecContext *avctx, AMFSurface* surface,
     if (frame->duration < 0)
         frame->duration = 0;
 
-    frame->color_range = avctx->color_range;
-    frame->colorspace = avctx->colorspace;
-    frame->color_trc = avctx->color_trc;
-    frame->color_primaries = avctx->color_primaries;
+    amf_read_surface_color(avctx, surface, frame);
 
-    if (frame->color_trc == AVCOL_TRC_SMPTE2084) {
-        AMFBuffer * hdrmeta_buffer = NULL;
-        ret = amf_get_property_buffer((AMFData *)surface, AMF_VIDEO_DECODER_HDR_METADATA, &hdrmeta_buffer);
-        if (hdrmeta_buffer != NULL) {
-            AMFHDRMetadata * hdrmeta = (AMFHDRMetadata*)hdrmeta_buffer->pVtbl->GetNative(hdrmeta_buffer);
-            if (ret != AMF_OK)
-                return ret;
+    ret = amf_attach_hdr_metadata(avctx, surface, frame);
+    if (ret < 0)
+        return ret;
 
-            ret = av_amf_attach_hdr_metadata(frame, hdrmeta);
-            if (ret < 0)
-                return ret;
-        }
-    }
     return 0;
 }
 
@@ -617,10 +766,10 @@ static int amf_decode_frame(AVCodecContext *avctx, struct AVFrame *frame)
             if (res != AMF_OK) {
                 return AVERROR(EINVAL);
             }
-            int ret = amf_init_frames_context(avctx, av_amf_to_av_format(format_var.int64Value), avctx->coded_width, avctx->coded_height);
+            int ret = amf_reinit_frames_context(avctx, av_amf_to_av_format(format_var.int64Value), avctx->coded_width, avctx->coded_height);
             if (ret < 0)
                 return ret;
-        }else
+        } else
             return AVERROR_EOF;
     } else {
         av_log(avctx, AV_LOG_ERROR, "Unknown result from QueryOutput %d\n", res);
