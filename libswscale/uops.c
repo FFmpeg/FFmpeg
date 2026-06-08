@@ -69,6 +69,7 @@ static const struct {
     UOP_NAME(TO_F32,            "to_f32"),
     UOP_NAME(SCALE,             "scale"),
     UOP_NAME(LINEAR,            "linear"),
+    UOP_NAME(LINEAR_FMA,        "linear_fma"),
     UOP_NAME(ADD,               "add"),
     UOP_NAME(MIN,               "min"),
     UOP_NAME(MAX,               "max"),
@@ -174,6 +175,7 @@ void ff_sws_uop_name(const SwsUOp *op, char buf[SWS_UOP_NAME_MAX])
         }
         break;
     case SWS_UOP_LINEAR:
+    case SWS_UOP_LINEAR_FMA:
         for (int i = 0; i < 4; i++) {
             if (!SWS_COMP_TEST(op->mask, i))
                 continue;
@@ -183,6 +185,8 @@ void ff_sws_uop_name(const SwsUOp *op, char buf[SWS_UOP_NAME_MAX])
                     av_bprint_chars(&bp, '1', 1);
                 else if (par->lin.zero & SWS_MASK(i, j))
                     av_bprint_chars(&bp, '0', 1);
+                else if (par->lin.exact & SWS_MASK(i, j))
+                    av_bprint_chars(&bp, 'X', 1);
                 else
                     av_bprint_chars(&bp, 'x', 1);
             }
@@ -235,8 +239,11 @@ static int generate_entry_struct(void *opaque, void *key)
                    par->clear.one, par->clear.zero);
         break;
     case SWS_UOP_LINEAR:
+    case SWS_UOP_LINEAR_FMA:
         av_bprintf(bp, ", .par.lin.one = 0x%x, .par.lin.zero = 0x%x",
                    par->lin.one, par->lin.zero);
+        if (uop->uop == SWS_UOP_LINEAR_FMA)
+            av_bprintf(bp, ", .par.lin.exact = 0x%x", par->lin.exact);
         break;
     case SWS_UOP_DITHER:
         av_bprintf(bp, ", .par.dither = { .y_offset = {%u, %u, %u, %u}, .size_log2 = %u }",
@@ -282,7 +289,10 @@ static int generate_entry_args(void *opaque, void *key)
         av_bprintf(bp, ", 0x%05x, 0x%05x", par->clear.one, par->clear.zero);
         break;
     case SWS_UOP_LINEAR:
+    case SWS_UOP_LINEAR_FMA:
         av_bprintf(bp, ", 0x%05x, 0x%05x", par->lin.one, par->lin.zero);
+        if (uop->uop == SWS_UOP_LINEAR_FMA)
+            av_bprintf(bp, ", 0x%05x", par->lin.exact);
         break;
     case SWS_UOP_DITHER:
         av_bprintf(bp, ", %u, %u, %u, %u, %u",
@@ -362,6 +372,35 @@ static SwsPixelType pixel_type_to_int(const SwsPixelType type)
 
     av_unreachable("Invalid pixel type!");
     return SWS_PIXEL_NONE;
+}
+
+static bool exact_product_f32(float a, float b)
+{
+    volatile float prod   = a * b;
+    volatile float result = b ? prod / b : 0.0f;
+    return !b || result == a;
+}
+
+static bool exact_prod(SwsPixelType type, SwsPixel coef,
+                       const SwsComps *comps, int idx)
+{
+    const AVRational minq = comps->min[idx];
+    const AVRational maxq = comps->max[idx];
+    if (ff_sws_pixel_type_is_int(type))
+        return true;
+    else if (!minq.den || !maxq.den)
+        return false; /* unknown bounds */
+
+    const SwsPixel min = pixel_from_q(type, minq);
+    const SwsPixel max = pixel_from_q(type, maxq);
+    switch (type) {
+    case SWS_PIXEL_F32:
+        return exact_product_f32(coef.f32, min.f32) &&
+               exact_product_f32(coef.f32, max.f32);
+    }
+
+    av_unreachable("Invalid pixel type!");
+    return false;
 }
 
 static int translate_rw_op(SwsUOpList *ops, const SwsOp *op)
@@ -499,24 +538,38 @@ static int translate_dither_op(SwsUOpList *ops, const SwsOp *op)
     return ff_sws_uop_list_append(ops, &uop);
 }
 
-static int translate_linear_op(SwsUOpList *ops, const SwsOp *op)
+static int translate_linear_op(SwsContext *ctx, SwsUOpList *ops,
+                               SwsUOpFlags flags, const SwsOp *op,
+                               const SwsComps *input)
 {
     SwsUOp uop = {
         .type = op->type,
         .uop  = SWS_UOP_LINEAR,
     };
 
+    const bool bitexact = ctx->flags & SWS_BITEXACT;
+    uint32_t exact = 0;
+
     for (int i = 0; i < 4; i++) {
         if (SWS_OP_NEEDED(op, i) && (op->lin.mask & SWS_MASK_ROW(i)))
             uop.mask |= SWS_COMP(i);
         for (int j = 0; j < 5; j++) {
             const AVRational k = op->lin.m[i][j];
-            uop.data.mat4[i][j] = Q2PIXEL(k);
+            const SwsPixel px = Q2PIXEL(k);
+            uop.data.mat4[i][j] = px;
             if (k.num == 0)
                 uop.par.lin.zero |= SWS_MASK(i, j);
             else if (k.num == k.den)
                 uop.par.lin.one |= SWS_MASK(i, j);
+            else if (j < 4 && (!bitexact || exact_prod(uop.type, px, input, j)))
+                exact |= SWS_MASK(i, j);
         }
+    }
+
+    if (flags & SWS_UOP_FLAG_FMA) {
+        /* multiplication by 1 and 0 are always exact by definition */
+        uop.uop = SWS_UOP_LINEAR_FMA;
+        uop.par.lin.exact = exact | uop.par.lin.zero | uop.par.lin.one;
     }
 
     return ff_sws_uop_list_append(ops, &uop);
@@ -555,7 +608,7 @@ static int translate_op(SwsContext *ctx, SwsUOpList *uops, SwsUOpFlags flags,
     case SWS_OP_DITHER:
         return translate_dither_op(uops, op);
     case SWS_OP_LINEAR:
-        return translate_linear_op(uops, op);
+        return translate_linear_op(ctx, uops, flags, op, input);
     default:
         break;
     }
@@ -699,6 +752,7 @@ fail:
 
 static const SwsUOpFlags uop_flags[] = {
     0,
+    SWS_UOP_FLAG_FMA, /* x86 backend */
 };
 
 static int register_uops(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)

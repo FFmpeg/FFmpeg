@@ -127,6 +127,7 @@ typedef enum SwsUOpType {
     SWS_UOP_RSHIFT,          /* mask = components to shift */
     SWS_UOP_CLEAR,           /* mask = components to clear */
     SWS_UOP_LINEAR,          /* mask = non-trivial output rows */
+    SWS_UOP_LINEAR_FMA,      /* with SWS_UOP_FLAG_FMA */
     SWS_UOP_DITHER,          /* mask = components to dither */
 
     /* Platform-specific uops would go here */
@@ -153,6 +154,9 @@ typedef struct SwsClearUOp {
 typedef struct SwsLinearUOp {
     uint32_t one;  /* mask of coefficients equal to one */
     uint32_t zero; /* mask of coefficients equal to zero */
+
+    /* for SWS_UOP_LINEAR_FMA only */
+    uint32_t exact; /* mask of coefficients whose product is exact */
 } SwsLinearUOp;
 
 typedef struct SwsDitherUOp {
