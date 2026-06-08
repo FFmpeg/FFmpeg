@@ -46,10 +46,14 @@ static const int dst_fmts[] = {
     AV_PIX_FMT_BGRA,
     AV_PIX_FMT_RGB24,
     AV_PIX_FMT_BGR24,
-    AV_PIX_FMT_RGB565,
-    AV_PIX_FMT_BGR565,
-    AV_PIX_FMT_RGB555,
-    AV_PIX_FMT_BGR555,
+    AV_PIX_FMT_RGB565LE,
+    AV_PIX_FMT_BGR565LE,
+    AV_PIX_FMT_RGB555LE,
+    AV_PIX_FMT_BGR555LE,
+    AV_PIX_FMT_RGB565BE,
+    AV_PIX_FMT_BGR565BE,
+    AV_PIX_FMT_RGB555BE,
+    AV_PIX_FMT_BGR555BE,
 //     AV_PIX_FMT_RGB444,
 //     AV_PIX_FMT_BGR444,
 //     AV_PIX_FMT_RGB8,
@@ -71,31 +75,31 @@ static int cmp_off_by_n(const uint8_t *ref, const uint8_t *test, size_t n, int a
     return 0;
 }
 
-static int cmp_555_by_n(const uint8_t *ref, const uint8_t *test, size_t n, int accuracy)
+static int cmp_555_by_n(const uint8_t *ref, const uint8_t *test, size_t n, int accuracy, int is_be)
 {
-    const uint16_t *ref16  = (const uint16_t *) ref;
-    const uint16_t *test16 = (const uint16_t *) test;
     for (size_t i = 0; i < n; i++) {
-        if (abs(( ref16[i]        & 0x1f) - ( test16[i]        & 0x1f)) > accuracy)
+        uint16_t r = is_be ? AV_RB16(ref  + i * 2) : AV_RL16(ref  + i * 2);
+        uint16_t t = is_be ? AV_RB16(test + i * 2) : AV_RL16(test + i * 2);
+        if (abs(( r        & 0x1f) - ( t        & 0x1f)) > accuracy)
             return 1;
-        if (abs(((ref16[i] >>  5) & 0x1f) - ((test16[i] >>  5) & 0x1f)) > accuracy)
+        if (abs(((r >>  5) & 0x1f) - ((t >>  5) & 0x1f)) > accuracy)
             return 1;
-        if (abs(((ref16[i] >> 10) & 0x1f) - ((test16[i] >> 10) & 0x1f)) > accuracy)
+        if (abs(((r >> 10) & 0x1f) - ((t >> 10) & 0x1f)) > accuracy)
             return 1;
     }
     return 0;
 }
 
-static int cmp_565_by_n(const uint8_t *ref, const uint8_t *test, size_t n, int accuracy)
+static int cmp_565_by_n(const uint8_t *ref, const uint8_t *test, size_t n, int accuracy, int is_be)
 {
-    const uint16_t *ref16  = (const uint16_t *) ref;
-    const uint16_t *test16 = (const uint16_t *) test;
     for (size_t i = 0; i < n; i++) {
-        if (abs(( ref16[i]        & 0x1f) - ( test16[i]        & 0x1f)) > accuracy)
+        uint16_t r = is_be ? AV_RB16(ref  + i * 2) : AV_RL16(ref  + i * 2);
+        uint16_t t = is_be ? AV_RB16(test + i * 2) : AV_RL16(test + i * 2);
+        if (abs(( r        & 0x1f) - ( t        & 0x1f)) > accuracy)
             return 1;
-        if (abs(((ref16[i] >>  5) & 0x3f) - ((test16[i] >>  5) & 0x3f)) > accuracy)
+        if (abs(((r >>  5) & 0x3f) - ((t >>  5) & 0x3f)) > accuracy)
             return 1;
-        if (abs(((ref16[i] >> 11) & 0x1f) - ((test16[i] >> 11) & 0x1f)) > accuracy)
+        if (abs(((r >> 11) & 0x1f) - ((t >> 11) & 0x1f)) > accuracy)
             return 1;
     }
     return 0;
@@ -199,19 +203,27 @@ static void check_yuv2rgb(int src_pix_fmt)
                                          dst1_0 + row * dstStride[0],
                                          width * sample_size, 3))
                             fail();
-                } else if (dst_pix_fmt == AV_PIX_FMT_RGB565 ||
-                           dst_pix_fmt == AV_PIX_FMT_BGR565) {
+                } else if (dst_pix_fmt == AV_PIX_FMT_RGB565LE ||
+                           dst_pix_fmt == AV_PIX_FMT_BGR565LE ||
+                           dst_pix_fmt == AV_PIX_FMT_RGB565BE ||
+                           dst_pix_fmt == AV_PIX_FMT_BGR565BE) {
+                    int is_be = dst_pix_fmt == AV_PIX_FMT_RGB565BE ||
+                                dst_pix_fmt == AV_PIX_FMT_BGR565BE;
                     for (int row = 0; row < srcSliceH; row++)
                         if (cmp_565_by_n(dst0_0 + row * dstStride[0],
                                          dst1_0 + row * dstStride[0],
-                                         width, 2))
+                                         width, 2, is_be))
                             fail();
-                } else if (dst_pix_fmt == AV_PIX_FMT_RGB555 ||
-                           dst_pix_fmt == AV_PIX_FMT_BGR555) {
+                } else if (dst_pix_fmt == AV_PIX_FMT_RGB555LE ||
+                           dst_pix_fmt == AV_PIX_FMT_BGR555LE ||
+                           dst_pix_fmt == AV_PIX_FMT_RGB555BE ||
+                           dst_pix_fmt == AV_PIX_FMT_BGR555BE) {
+                    int is_be = dst_pix_fmt == AV_PIX_FMT_RGB555BE ||
+                                dst_pix_fmt == AV_PIX_FMT_BGR555BE;
                     for (int row = 0; row < srcSliceH; row++)
                         if (cmp_555_by_n(dst0_0 + row * dstStride[0],
                                          dst1_0 + row * dstStride[0],
-                                         width, 2))
+                                         width, 2, is_be))
                             fail();
                 } else if (dst_pix_fmt == AV_PIX_FMT_GBRP) {
                     for (int p = 0; p < 3; p++)

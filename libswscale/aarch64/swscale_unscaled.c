@@ -95,6 +95,10 @@ DECLARE_FF_YUVX_TO_PACKED_RGB_FUNCS(yuvx, rgb565le)                             
 DECLARE_FF_YUVX_TO_PACKED_RGB_FUNCS(yuvx, bgr565le)                                         \
 DECLARE_FF_YUVX_TO_PACKED_RGB_FUNCS(yuvx, rgb555le)                                         \
 DECLARE_FF_YUVX_TO_PACKED_RGB_FUNCS(yuvx, bgr555le)                                         \
+DECLARE_FF_YUVX_TO_PACKED_RGB_FUNCS(yuvx, rgb565be)                                         \
+DECLARE_FF_YUVX_TO_PACKED_RGB_FUNCS(yuvx, bgr565be)                                         \
+DECLARE_FF_YUVX_TO_PACKED_RGB_FUNCS(yuvx, rgb555be)                                         \
+DECLARE_FF_YUVX_TO_PACKED_RGB_FUNCS(yuvx, bgr555be)                                         \
 
 DECLARE_FF_YUVX_TO_ALL_RGB16_FUNCS(nv12)
 DECLARE_FF_YUVX_TO_ALL_RGB16_FUNCS(nv21)
@@ -161,6 +165,10 @@ static int nv24_to_yuv420p_neon_wrapper(SwsInternal *c, const uint8_t *const src
     SET_FF_YUVX_TO_RGBX_FUNC(yuvx, YUVX, bgr565le, BGR565LE, accurate_rnd);                 \
     SET_FF_YUVX_TO_RGBX_FUNC(yuvx, YUVX, rgb555le, RGB555LE, accurate_rnd);                 \
     SET_FF_YUVX_TO_RGBX_FUNC(yuvx, YUVX, bgr555le, BGR555LE, accurate_rnd);                 \
+    SET_FF_YUVX_TO_RGBX_FUNC(yuvx, YUVX, rgb565be, RGB565BE, accurate_rnd);                 \
+    SET_FF_YUVX_TO_RGBX_FUNC(yuvx, YUVX, bgr565be, BGR565BE, accurate_rnd);                 \
+    SET_FF_YUVX_TO_RGBX_FUNC(yuvx, YUVX, rgb555be, RGB555BE, accurate_rnd);                 \
+    SET_FF_YUVX_TO_RGBX_FUNC(yuvx, YUVX, bgr555be, BGR555BE, accurate_rnd);                 \
 } while (0)
 
 static void get_unscaled_swscale_neon(SwsInternal *c) {
@@ -186,6 +194,10 @@ static void get_unscaled_swscale_neon(SwsInternal *c) {
     SET_FF_YUVX_TO_RGBX_FUNC(yuv420p, YUVA420P, bgr565le, BGR565LE, accurate_rnd);
     SET_FF_YUVX_TO_RGBX_FUNC(yuv420p, YUVA420P, rgb555le, RGB555LE, accurate_rnd);
     SET_FF_YUVX_TO_RGBX_FUNC(yuv420p, YUVA420P, bgr555le, BGR555LE, accurate_rnd);
+    SET_FF_YUVX_TO_RGBX_FUNC(yuv420p, YUVA420P, rgb565be, RGB565BE, accurate_rnd);
+    SET_FF_YUVX_TO_RGBX_FUNC(yuv420p, YUVA420P, bgr565be, BGR565BE, accurate_rnd);
+    SET_FF_YUVX_TO_RGBX_FUNC(yuv420p, YUVA420P, rgb555be, RGB555BE, accurate_rnd);
+    SET_FF_YUVX_TO_RGBX_FUNC(yuv420p, YUVA420P, bgr555be, BGR555BE, accurate_rnd);
 
     if (c->opts.dst_format == AV_PIX_FMT_YUV420P &&
         (c->opts.src_format == AV_PIX_FMT_NV24 || c->opts.src_format == AV_PIX_FMT_NV42) &&
@@ -221,6 +233,10 @@ av_cold SwsFunc ff_yuv2rgb_init_aarch64(SwsInternal *c)
         case AV_PIX_FMT_BGR565LE: return yuv420p_to_bgr565le_neon_wrapper;
         case AV_PIX_FMT_RGB555LE: return yuv420p_to_rgb555le_neon_wrapper;
         case AV_PIX_FMT_BGR555LE: return yuv420p_to_bgr555le_neon_wrapper;
+        case AV_PIX_FMT_RGB565BE: return yuv420p_to_rgb565be_neon_wrapper;
+        case AV_PIX_FMT_BGR565BE: return yuv420p_to_bgr565be_neon_wrapper;
+        case AV_PIX_FMT_RGB555BE: return yuv420p_to_rgb555be_neon_wrapper;
+        case AV_PIX_FMT_BGR555BE: return yuv420p_to_bgr555be_neon_wrapper;
         }
     } else if (c->opts.src_format == AV_PIX_FMT_YUVA420P) {
         switch (c->opts.dst_format) {
@@ -238,6 +254,10 @@ av_cold SwsFunc ff_yuv2rgb_init_aarch64(SwsInternal *c)
         case AV_PIX_FMT_BGR565LE: return yuv420p_to_bgr565le_neon_wrapper;
         case AV_PIX_FMT_RGB555LE: return yuv420p_to_rgb555le_neon_wrapper;
         case AV_PIX_FMT_BGR555LE: return yuv420p_to_bgr555le_neon_wrapper;
+        case AV_PIX_FMT_RGB565BE: return yuv420p_to_rgb565be_neon_wrapper;
+        case AV_PIX_FMT_BGR565BE: return yuv420p_to_bgr565be_neon_wrapper;
+        case AV_PIX_FMT_RGB555BE: return yuv420p_to_rgb555be_neon_wrapper;
+        case AV_PIX_FMT_BGR555BE: return yuv420p_to_bgr555be_neon_wrapper;
         }
     } else if (c->opts.src_format == AV_PIX_FMT_YUV422P) {
         switch (c->opts.dst_format) {
@@ -252,6 +272,10 @@ av_cold SwsFunc ff_yuv2rgb_init_aarch64(SwsInternal *c)
         case AV_PIX_FMT_BGR565LE: return yuv422p_to_bgr565le_neon_wrapper;
         case AV_PIX_FMT_RGB555LE: return yuv422p_to_rgb555le_neon_wrapper;
         case AV_PIX_FMT_BGR555LE: return yuv422p_to_bgr555le_neon_wrapper;
+        case AV_PIX_FMT_RGB565BE: return yuv422p_to_rgb565be_neon_wrapper;
+        case AV_PIX_FMT_BGR565BE: return yuv422p_to_bgr565be_neon_wrapper;
+        case AV_PIX_FMT_RGB555BE: return yuv422p_to_rgb555be_neon_wrapper;
+        case AV_PIX_FMT_BGR555BE: return yuv422p_to_bgr555be_neon_wrapper;
         }
     }
     return NULL;

@@ -301,6 +301,22 @@
         dst_load_args_packed 2
 .endm
 
+.macro dst_load_args_rgb565be
+        dst_load_args_packed 2
+.endm
+
+.macro dst_load_args_bgr565be
+        dst_load_args_packed 2
+.endm
+
+.macro dst_load_args_rgb555be
+        dst_load_args_packed 2
+.endm
+
+.macro dst_load_args_bgr555be
+        dst_load_args_packed 2
+.endm
+
 .macro dst_load_args_gbrp
         dst_load_args_planar
 .endm
@@ -362,6 +378,22 @@
 .endm
 
 .macro dst_load_args_bgr555le_2l
+        dst_load_args_packed_2l 2
+.endm
+
+.macro dst_load_args_rgb565be_2l
+        dst_load_args_packed_2l 2
+.endm
+
+.macro dst_load_args_bgr565be_2l
+        dst_load_args_packed_2l 2
+.endm
+
+.macro dst_load_args_rgb555be_2l
+        dst_load_args_packed_2l 2
+.endm
+
+.macro dst_load_args_bgr555be_2l
         dst_load_args_packed_2l 2
 .endm
 
@@ -639,11 +671,11 @@
  .endif
         compute_rgb     v4, v5, v6, v16, v17, v18
  .if r_first
-        // rgb*le: (R << hshift) | (G << 5) | B
+        // rgb*: (R << hshift) | (G << 5) | B
         pack_rgb16_2l   v8,  v6,  v5,  v4,  gshift, hshift
         pack_rgb16_2l   v9,  v18, v17, v16, gshift, hshift
  .else
-        // bgr*le: (B << hshift) | (G << 5) | R
+        // bgr*: (B << hshift) | (G << 5) | R
         pack_rgb16_2l   v8,  v4,  v5,  v6,  gshift, hshift
         pack_rgb16_2l   v9,  v16, v17, v18, gshift, hshift
  .endif
@@ -651,15 +683,16 @@
 .endif
 .endm
 
-// Map ofmt to .set predicates: rgb16=1 for the four 16bpp LE ofmts
+// Map ofmt to .set predicates: rgb16=1 for the eight 16bpp ofmts
 // (r_first=1 for rgb*, 0 for bgr*; gshift/hshift = 2/11 for 565,
-// 3/10 for 555), letting sibling macros branch on .if rgb16 instead of
-// repeating a four-way .ifc cascade.
+// 3/10 for 555; is_be=1 for the BE variants), letting sibling macros
+// branch on .if rgb16 / .if is_be instead of repeating .ifc cascades.
 .macro set_rgb16_predicates ofmt
         .set rgb16,     0
         .set r_first,   0
         .set gshift,    0
         .set hshift,    0
+        .set is_be,     0
 .ifc \ofmt,rgb565le
         .set rgb16,     1
         .set r_first,   1
@@ -681,6 +714,32 @@
         .set rgb16,     1
         .set gshift,    3
         .set hshift,   10
+.endif
+.ifc \ofmt,rgb565be
+        .set rgb16,     1
+        .set r_first,   1
+        .set gshift,    2
+        .set hshift,   11
+        .set is_be,     1
+.endif
+.ifc \ofmt,bgr565be
+        .set rgb16,     1
+        .set gshift,    2
+        .set hshift,   11
+        .set is_be,     1
+.endif
+.ifc \ofmt,rgb555be
+        .set rgb16,     1
+        .set r_first,   1
+        .set gshift,    3
+        .set hshift,   10
+        .set is_be,     1
+.endif
+.ifc \ofmt,bgr555be
+        .set rgb16,     1
+        .set gshift,    3
+        .set hshift,   10
+        .set is_be,     1
 .endif
 .endm
 
@@ -704,10 +763,10 @@
 // Pack 8 pixels of 16bpp output. The three channels are extracted via ushr,
 // widened to u16, then merged via shift-left-insert:
 //   dst = (high << high_shl) | (mid << 5) | low
-// For RGB565LE  pass (B, G, R) as (low, mid, high), g_shr=2, high_shl=11.
-// For BGR565LE  pass (R, G, B), g_shr=2, high_shl=11.
-// For RGB555LE  pass (B, G, R), g_shr=3, high_shl=10.
-// For BGR555LE  pass (R, G, B), g_shr=3, high_shl=10.
+// For RGB565LE/BE  pass (B, G, R) as (low, mid, high), g_shr=2, high_shl=11.
+// For BGR565LE/BE  pass (R, G, B), g_shr=2, high_shl=11.
+// For RGB555LE/BE  pass (B, G, R), g_shr=3, high_shl=10.
+// For BGR555LE/BE  pass (R, G, B), g_shr=3, high_shl=10.
 // Clobbers v20-v23.
 .macro pack_rgb16 dst, low_ch, mid_ch, high_ch, g_shr, high_shl
         ushr            v20.8b, \high_ch\().8b, #3
@@ -718,6 +777,9 @@
         sli             \dst\().8h, v23.8h, #5
         uxtl            v23.8h, v20.8b
         sli             \dst\().8h, v23.8h, #\high_shl
+.if is_be
+        rev16           \dst\().16b, \dst\().16b
+.endif
 .endm
 
 // As pack_rgb16 but uses v26-v29 as scratch (luma temps, dead after
@@ -733,6 +795,9 @@
         sli             \dst\().8h, v29.8h, #5
         uxtl            v29.8h, v26.8b
         sli             \dst\().8h, v29.8h, #\high_shl
+.if is_be
+        rev16           \dst\().16b, \dst\().16b
+.endif
 .endm
 
 .macro declare_func ifmt ofmt
@@ -827,11 +892,11 @@ function ff_\ifmt\()_to_\ofmt\()_neon, export=1
    .if rgb16
         compute_rgb     v4,v5,v6, v16,v17,v18
     .if r_first
-        // rgb*le: (R << hshift) | (G << 5) | B
+        // rgb*: (R << hshift) | (G << 5) | B
         pack_rgb16      v8,  v6,  v5,  v4,  gshift, hshift
         pack_rgb16      v9,  v18, v17, v16, gshift, hshift
     .else
-        // bgr*le: (B << hshift) | (G << 5) | R
+        // bgr*: (B << hshift) | (G << 5) | R
         pack_rgb16      v8,  v4,  v5,  v6,  gshift, hshift
         pack_rgb16      v9,  v16, v17, v18, gshift, hshift
     .endif
@@ -970,25 +1035,43 @@ declare_rgb_funcs_2l_packed yuv420p
 declare_2l_gbrp             yuv420p
 declare_rgb_funcs           yuv422p
 
-.macro declare_rgb16_funcs ifmt
+.macro declare_rgb16le_funcs ifmt
         declare_func    \ifmt, rgb565le
         declare_func    \ifmt, bgr565le
         declare_func    \ifmt, rgb555le
         declare_func    \ifmt, bgr555le
 .endm
 
-.macro declare_rgb16_funcs_2l ifmt
+.macro declare_rgb16le_funcs_2l ifmt
         declare_2l_packed \ifmt, rgb565le
         declare_2l_packed \ifmt, bgr565le
         declare_2l_packed \ifmt, rgb555le
         declare_2l_packed \ifmt, bgr555le
 .endm
 
+.macro declare_rgb16be_funcs ifmt
+        declare_func    \ifmt, rgb565be
+        declare_func    \ifmt, bgr565be
+        declare_func    \ifmt, rgb555be
+        declare_func    \ifmt, bgr555be
+.endm
+
+.macro declare_rgb16be_funcs_2l ifmt
+        declare_2l_packed \ifmt, rgb565be
+        declare_2l_packed \ifmt, bgr565be
+        declare_2l_packed \ifmt, rgb555be
+        declare_2l_packed \ifmt, bgr555be
+.endm
+
 // Subsampled inputs take the 2-line rgb16 path; yuv422p stays single-row.
-declare_rgb16_funcs_2l nv12
-declare_rgb16_funcs_2l nv21
-declare_rgb16_funcs_2l yuv420p
-declare_rgb16_funcs    yuv422p
+declare_rgb16le_funcs_2l nv12
+declare_rgb16be_funcs_2l nv12
+declare_rgb16le_funcs_2l nv21
+declare_rgb16be_funcs_2l nv21
+declare_rgb16le_funcs_2l yuv420p
+declare_rgb16be_funcs_2l yuv420p
+declare_rgb16le_funcs    yuv422p
+declare_rgb16be_funcs    yuv422p
 
 .macro declare_yuva_funcs ifmt
         declare_func    \ifmt, argb
