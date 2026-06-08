@@ -135,6 +135,10 @@ typedef enum SwsUOpType {
     SWS_UOP_TYPE_NB,
 } SwsUOpType;
 
+typedef struct SwsFilterUOp {
+    SwsPixelType type; /* pixel type to store result as */
+} SwsFilterUOp;
+
 typedef struct SwsShiftUOp {
     uint8_t amount;
 } SwsShiftUOp;
@@ -172,6 +176,7 @@ typedef struct SwsDitherUOp {
 int ff_sws_dither_height(const SwsDitherUOp *dither);
 
 typedef union SwsUOpParams {
+    SwsFilterUOp    filter; /* for SWS_UOP_READ_*_FV/FH */
     SwsShiftUOp     shift;
     SwsSwizzleUOp   swizzle;
     SwsPackUOp      pack;

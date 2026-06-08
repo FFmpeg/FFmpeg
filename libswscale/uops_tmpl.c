@@ -219,6 +219,9 @@ SWS_FOR_STRUCT(PX, WRITE_BIT,       DECL_ENTRY)
 
 DECL_SETUP(setup_filter_v, params, out)
 {
+    if (params->uop->par.filter.type != SWS_PIXEL_F32)
+        return AVERROR(ENOTSUP);
+
     const SwsFilterWeights *filter = params->uop->data.kernel;
     static_assert(sizeof(out->priv.ptr) <= sizeof(int32_t[2]),
                   ">8 byte pointers not supported");
@@ -238,8 +241,9 @@ DECL_SETUP(setup_filter_v, params, out)
 }
 
 /* Fully general vertical planar filter case */
-DECL_READ(read_planar_fv, const SwsCompMask mask)
+DECL_READ(read_planar_fv, const SwsCompMask mask, const SwsPixelType type)
 {
+    av_assert2(type == SWS_PIXEL_F32);
     const SwsOpExec *exec = iter->exec;
     const float *restrict weights = impl->priv.ptr;
     const int filter_size = impl->priv.i32[2];
@@ -278,6 +282,9 @@ DECL_READ(read_planar_fv, const SwsCompMask mask)
 
 DECL_SETUP(setup_filter_h, params, out)
 {
+    if (params->uop->par.filter.type != SWS_PIXEL_F32)
+        return AVERROR(ENOTSUP);
+
     SwsFilterWeights *filter = params->uop->data.kernel;
     out->priv.ptr = av_refstruct_ref(filter->weights);
     out->priv.i32[2] = filter->filter_size;
@@ -286,8 +293,9 @@ DECL_SETUP(setup_filter_h, params, out)
 }
 
 /* Fully general horizontal planar filter case */
-DECL_READ(read_planar_fh, const SwsCompMask mask)
+DECL_READ(read_planar_fh, const SwsCompMask mask, const SwsPixelType type)
 {
+    av_assert2(type == SWS_PIXEL_F32);
     const SwsOpExec *exec = iter->exec;
     const int *restrict weights = impl->priv.ptr;
     const int filter_size = impl->priv.i32[2];

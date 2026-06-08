@@ -144,6 +144,11 @@ void ff_sws_uop_name(const SwsUOp *op, char buf[SWS_UOP_NAME_MAX])
 
     const SwsUOpParams *par = &op->par;
     switch (op->uop) {
+    case SWS_UOP_READ_PLANAR_FH:
+    case SWS_UOP_READ_PLANAR_FV:
+    case SWS_UOP_READ_PLANAR_FV_FMA:
+        av_bprintf(&bp, "_%s", ff_sws_pixel_type_name(par->filter.type));
+        break;
     case SWS_UOP_LSHIFT:
     case SWS_UOP_RSHIFT:
         av_bprintf(&bp, "_%u", par->shift.amount);
@@ -219,6 +224,11 @@ static int generate_entry_struct(void *opaque, void *key)
 
     const SwsUOpParams *par = &uop->par;
     switch (uop->uop) {
+    case SWS_UOP_READ_PLANAR_FH:
+    case SWS_UOP_READ_PLANAR_FV:
+    case SWS_UOP_READ_PLANAR_FV_FMA:
+        av_bprintf(bp, ", .par.filter.type = %s", pixel_types[par->filter.type].full);
+        break;
     case SWS_UOP_LSHIFT:
     case SWS_UOP_RSHIFT:
         av_bprintf(bp, ", .par.shift.amount = %u", par->shift.amount);
@@ -270,6 +280,11 @@ static int generate_entry_args(void *opaque, void *key)
 
     const SwsUOpParams *par = &uop->par;
     switch (uop->uop) {
+    case SWS_UOP_READ_PLANAR_FH:
+    case SWS_UOP_READ_PLANAR_FV:
+    case SWS_UOP_READ_PLANAR_FV_FMA:
+        av_bprintf(bp, ", %s", pixel_types[par->filter.type].full);
+        break;
     case SWS_UOP_LSHIFT:
     case SWS_UOP_RSHIFT:
         av_bprintf(bp, ", %u", par->shift.amount);
@@ -440,6 +455,7 @@ static int translate_rw_op(SwsContext *ctx, SwsUOpList *ops, SwsUOpFlags flags,
     if (op->rw.filter) {
         if (op->op == SWS_OP_WRITE || op->rw.frac || op->rw.packed)
             return AVERROR(ENOTSUP);
+        uop.par.filter.type = SWS_PIXEL_F32;
         uop.data.kernel = av_refstruct_ref(op->rw.kernel);
         if (op->rw.filter == SWS_OP_FILTER_H) {
             uop.uop = SWS_UOP_READ_PLANAR_FH;
