@@ -1133,7 +1133,7 @@ static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
     max_width_minus1  = tmp_width_val - 1;
     max_height_minus1 = tmp_height_val - 1;
 
-    flag(sps_subpic_info_present_flag);
+    u(1, sps_subpic_info_present_flag, 0, !current->sps_res_change_in_clvs_allowed_flag);
     if (current->sps_subpic_info_present_flag) {
         ue(sps_num_subpics_minus1, 0, VVC_MAX_SLICES - 1);
         if (current->sps_num_subpics_minus1 > 0) {
