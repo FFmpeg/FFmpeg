@@ -502,95 +502,25 @@ IF W,   vcvtdq2ps mw2, mw2
 %endmacro
 
 ;---------------------------------------------------------
-; Permuting, copying and clearing
+; Moving, copying and clearing
 
-%macro MOV_IDX 2 ; dstidx, srcidx
-        %assign DST2 4 + %1
-        %assign SRC2 4 + %2
-        mova m %+ %1,   m %+ %2
-IF V2,  mova m %+ DST2, m %+ SRC2
-%endmacro
-
-; decompose a permutation into unique cycles and emit a minimal set of mova
-; instructions for each cycle
-%macro PERMUTE_CYCLES 4 ; x, y, z, w
-%assign IN0 %1
-%assign IN1 %2
-%assign IN2 %3
-%assign IN3 %4
-%assign TMP 8
+%macro MOVE 13 ; num, dst0..dst5, src0..src5
+%assign NUM_MOVES %1
+%define DST %2
+%define SRC %8
 
         LOAD_CONT tmp0q
-%rep 4
-    %ifndef CUR
-        ; start of new cycle, find next register not in correct location
-        %if X
-            %assign CUR IN0
-            %assign IN0 TMP
-        %elif Y
-            %assign CUR IN1
-            %assign IN1 TMP
-        %elif Z
-            %assign CUR IN2
-            %assign IN2 TMP
-        %elif W
-            %assign CUR IN3
-            %assign IN3 TMP
-        %else
-            %exitrep ; all registers happy
-        %endif
-        MOV_IDX TMP, CUR ; preserve previous value of CUR
+%rep NUM_MOVES
+        %assign dstidx %2 < 0 ? 8 : %2
+        %assign srcidx %8 < 0 ? 8 : %8
+        mova m %+ dstidx, m %+ srcidx
+    %if V2
+        %assign dstidx dstidx + 4
+        %assign srcidx srcidx + 4
+        mova m %+ dstidx, m %+ srcidx
     %endif
-    %ifdef CUR ; work-around for NASM bug
-        ; rotate CUR <- in[CUR] and follow the cycle
-        %assign NEXT IN %+ CUR
-        MOV_IDX CUR, NEXT
-
-        %if CUR == 0
-            %assign X 0
-        %elif CUR == 1
-            %assign Y 0
-        %elif CUR == 2
-            %assign Z 0
-        %else
-            %assign W 0
-        %endif
-
-        %assign CUR NEXT
-        %if CUR == TMP ; end of cycle
-            %assign TMP TMP+1 ; pick non-overlapping tmp register for next cycle
-            %undef CUR
-        %endif
-    %endif
+%rotate 1
 %endrep
-
-        CONTINUE tmp0q
-%endmacro
-
-%macro COPY 4 ; x, y, z, w
-        LOAD_CONT tmp0q
-IF X,   mova m8,  m%1
-IF Y,   mova m9,  m%2
-IF Z,   mova m10, m%3
-IF W,   mova m11, m%4
-IF X,   mova mx, m8
-IF Y,   mova my, m9
-IF Z,   mova mz, m10
-IF W,   mova mw, m11
-%if V2
-        %assign x2 4 + %1
-        %assign y2 4 + %2
-        %assign z2 4 + %3
-        %assign w2 4 + %4
-IF X,   mova m12, m %+ x2
-IF Y,   mova m13, m %+ y2
-IF Z,   mova m14, m %+ z2
-IF W,   mova m15, m %+ w2
-IF X,   mova mx2, m12
-IF Y,   mova my2, m13
-IF Z,   mova mz2, m14
-IF W,   mova mw2, m15
-%endif
         CONTINUE tmp0q
 %endmacro
 
@@ -789,8 +719,7 @@ assert 0, SWS_UOP_DITHER is not implemented for integer types
     DECL_%1_WRITE_PACKED    (WRITE_PACKED)
     DECL_%1_WRITE_NIBBLE    (WRITE_NIBBLE)
     DECL_%1_WRITE_BIT       (WRITE_BIT)
-    DECL_%1_PERMUTE         (PERMUTE_CYCLES)
-    DECL_%1_COPY            (COPY)
+    DECL_%1_MOVE            (MOVE)
     DECL_%1_SWAP_BYTES      (SWAP_BYTES)
     DECL_%1_EXPAND_BIT      (EXPAND_BIT)
     DECL_%1_SCALE           (SCALE)
