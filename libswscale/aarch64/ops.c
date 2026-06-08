@@ -222,22 +222,24 @@ static int aarch64_compile(SwsContext *ctx, const SwsOpList *ops,
     }
 
     /* Look up process function. */
+    void ff_sws_process_0001_neon(void);
+    void ff_sws_process_0011_neon(void);
+    void ff_sws_process_0111_neon(void);
+    void ff_sws_process_1111_neon(void);
+
     const SwsOp *read  = ff_sws_op_list_input(&rest);
     const SwsOp *write = ff_sws_op_list_output(&rest);
     const int read_planes  = read ? (read->rw.packed ? 1 : read->rw.elems) : 0;
     const int write_planes = write->rw.packed ? 1 : write->rw.elems;
-    SwsAArch64OpMask mask = 0;
-    for (int i = 0; i < FFMAX(read_planes, write_planes); i++)
-        MASK_SET(mask, i, 1);
-
-    SwsAArch64OpImplParams process_params = { .op = AARCH64_SWS_OP_PROCESS, .mask = mask };
-    SwsFuncPtr process_func = ff_sws_aarch64_lookup(&process_params);
-    if (!process_func) {
-        ret = AVERROR(ENOTSUP);
-        goto error;
+    SwsOpFunc process_func = NULL;
+    switch (FFMAX(read_planes, write_planes)) {
+    case 1: process_func = (SwsOpFunc) ff_sws_process_0001_neon; break;
+    case 2: process_func = (SwsOpFunc) ff_sws_process_0011_neon; break;
+    case 3: process_func = (SwsOpFunc) ff_sws_process_0111_neon; break;
+    case 4: process_func = (SwsOpFunc) ff_sws_process_1111_neon; break;
     }
 
-    out->func      = (SwsOpFunc) process_func;
+    out->func      = process_func;
     out->cpu_flags = chain->cpu_flags;
 
 error:

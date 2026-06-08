@@ -3,10 +3,6 @@
  * To regenerate, run: make sws_ops_entries_aarch64
  */
 
-{ .op = AARCH64_SWS_OP_PROCESS, .mask = 0x0001 },
-{ .op = AARCH64_SWS_OP_PROCESS, .mask = 0x0011 },
-{ .op = AARCH64_SWS_OP_PROCESS, .mask = 0x0111 },
-{ .op = AARCH64_SWS_OP_PROCESS, .mask = 0x1111 },
 { .op = AARCH64_SWS_OP_READ_BIT, .block_size = 8, .type = AARCH64_PIXEL_U8, .mask = 0x0001 },
 { .op = AARCH64_SWS_OP_READ_BIT, .block_size = 16, .type = AARCH64_PIXEL_U8, .mask = 0x0001 },
 { .op = AARCH64_SWS_OP_READ_NIBBLE, .block_size = 8, .type = AARCH64_PIXEL_U8, .mask = 0x0001 },

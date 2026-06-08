@@ -37,7 +37,6 @@ typedef enum SwsAArch64PixelType {
 /* Similar to SwsOpType */
 typedef enum SwsAArch64OpType {
     AARCH64_SWS_OP_NONE = 0,
-    AARCH64_SWS_OP_PROCESS,
     AARCH64_SWS_OP_READ_BIT,
     AARCH64_SWS_OP_READ_NIBBLE,
     AARCH64_SWS_OP_READ_PACKED,

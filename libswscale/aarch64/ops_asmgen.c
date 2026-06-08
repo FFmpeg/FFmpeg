@@ -272,12 +272,12 @@ static void clobber_gpr(RasmOp regs[MAX_SAVED_REGS], unsigned *count,
 }
 
 static unsigned clobbered_gprs(const SwsAArch64Context *s,
-                               const SwsAArch64OpImplParams *p,
+                               SwsAArch64OpMask mask,
                                RasmOp regs[MAX_SAVED_REGS])
 {
     unsigned count = 0;
     clobber_gpr(regs, &count, a64op_lr());
-    LOOP_MASK(p, i) {
+    LOOP(mask, i) {
         clobber_gpr(regs, &count, s->in[i]);
         clobber_gpr(regs, &count, s->out[i]);
         clobber_gpr(regs, &count, s->in_bump[i]);
@@ -286,7 +286,7 @@ static unsigned clobbered_gprs(const SwsAArch64Context *s,
     return count;
 }
 
-static void asmgen_process(SwsAArch64Context *s, const SwsAArch64OpImplParams *p)
+static void asmgen_process(SwsAArch64Context *s, SwsAArch64OpMask mask)
 {
     RasmContext *r = s->rctx;
     char func_name[128];
@@ -297,13 +297,13 @@ static void asmgen_process(SwsAArch64Context *s, const SwsAArch64OpImplParams *p
      * The description in x86/ops_include.asm mostly holds as well here.
      */
 
-    aarch64_op_impl_func_name(func_name, sizeof(func_name), p);
+    snprintf(func_name, sizeof(func_name), "ff_sws_process_%04x_neon", mask);
 
     rasm_func_begin(r, func_name, true, false);
 
     /* Function prologue */
     RasmOp saved_regs[MAX_SAVED_REGS];
-    unsigned nsaved = clobbered_gprs(s, p, saved_regs);
+    unsigned nsaved = clobbered_gprs(s, mask, saved_regs);
     if (nsaved)
         asmgen_prologue(s, saved_regs, nsaved);
 
@@ -312,19 +312,19 @@ static void asmgen_process(SwsAArch64Context *s, const SwsAArch64OpImplParams *p
     i_add(r, s->op1_impl, s->impl, IMM(sizeof_impl));               CMT("SwsOpImpl *op1_impl = impl + 1;");
 
     /* Load values from exec. */
-    LOOP_MASK(p, i) {
+    LOOP(mask, i) {
         rasm_annotate_nextf(r, buf, sizeof(buf), "in[%u] = exec->in[%u];", i, i);
         i_ldr(r, s->in[i],       a64op_off(s->exec, offsetof_exec_in       + (i * sizeof(uint8_t *))));
     }
-    LOOP_MASK(p, i) {
+    LOOP(mask, i) {
         rasm_annotate_nextf(r, buf, sizeof(buf), "out[%u] = exec->out[%u];", i, i);
         i_ldr(r, s->out[i],      a64op_off(s->exec, offsetof_exec_out      + (i * sizeof(uint8_t *))));
     }
-    LOOP_MASK(p, i) {
+    LOOP(mask, i) {
         rasm_annotate_nextf(r, buf, sizeof(buf), "in_bump[%u] = exec->in_bump[%u];", i, i);
         i_ldr(r, s->in_bump[i],  a64op_off(s->exec, offsetof_exec_in_bump  + (i * sizeof(ptrdiff_t))));
     }
-    LOOP_MASK(p, i) {
+    LOOP(mask, i) {
         rasm_annotate_nextf(r, buf, sizeof(buf), "out_bump[%u] = exec->out_bump[%u];", i, i);
         i_ldr(r, s->out_bump[i], a64op_off(s->exec, offsetof_exec_out_bump + (i * sizeof(ptrdiff_t))));
     }
@@ -338,8 +338,8 @@ static void asmgen_process(SwsAArch64Context *s, const SwsAArch64OpImplParams *p
 
     /* Perform padding, preparing for next row. */
     rasm_add_label(r, next_row);            CMT("next_row:");
-    LOOP_MASK(p, i) { i_add(r, s->in[i],  s->in[i],  s->in_bump[i]);  CMTF("in[%u] += in_bump[%u];", i, i); }
-    LOOP_MASK(p, i) { i_add(r, s->out[i], s->out[i], s->out_bump[i]); CMTF("out[%u] += out_bump[%u];", i, i); }
+    LOOP(mask, i) { i_add(r, s->in[i],  s->in[i],  s->in_bump[i]);  CMTF("in[%u] += in_bump[%u];", i, i); }
+    LOOP(mask, i) { i_add(r, s->out[i], s->out[i], s->out_bump[i]); CMTF("out[%u] += out_bump[%u];", i, i); }
 
     /* First row (reset x). */
     rasm_add_label(r, first_row);           CMT("first_row:");
@@ -1438,18 +1438,6 @@ static void asmgen_op_cps(SwsAArch64Context *s, const SwsAArch64OpImplParams *p)
     }
 }
 
-static void asmgen_op(SwsAArch64Context *s, const SwsAArch64OpImplParams *p)
-{
-    switch (p->op) {
-    case AARCH64_SWS_OP_PROCESS:
-        asmgen_process(s, p);
-        break;
-    default:
-        asmgen_op_cps(s, p);
-        break;
-    }
-}
-
 /*********************************************************************/
 static void aarch64_op_impl_lookup_str(char *buf, size_t size, const SwsAArch64OpImplParams *params,
                                        const SwsAArch64OpImplParams *prev, const char *p_str)
@@ -1641,10 +1629,16 @@ static int asmgen(void)
     s.in_bump [3] = a64op_gpx(26);
     s.out_bump[3] = a64op_gpx(27);
 
+    /* Generate all process functions using rasm. */
+    asmgen_process(&s, 0x0001);
+    asmgen_process(&s, 0x0011);
+    asmgen_process(&s, 0x0111);
+    asmgen_process(&s, 0x1111);
+
     /* Generate all functions from ops_entries.c using rasm. */
     const SwsAArch64OpImplParams *params = impl_params;
     while (params->op) {
-        asmgen_op(&s, params++);
+        asmgen_op_cps(&s, params++);
         if (rctx->error) {
             ret = rctx->error;
             goto error;
