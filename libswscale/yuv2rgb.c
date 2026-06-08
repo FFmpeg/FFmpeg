@@ -599,11 +599,15 @@ SwsFunc ff_yuv2rgb_get_func_ptr(SwsInternal *c)
             return yuv422p_rgb24_c;
         case AV_PIX_FMT_BGR24:
             return yuv422p_bgr24_c;
-        case AV_PIX_FMT_RGB565:
-        case AV_PIX_FMT_BGR565:
+        case AV_PIX_FMT_RGB565BE:
+        case AV_PIX_FMT_BGR565BE:
+        case AV_PIX_FMT_RGB565LE:
+        case AV_PIX_FMT_BGR565LE:
             return yuv422p_bgr16;
-        case AV_PIX_FMT_RGB555:
-        case AV_PIX_FMT_BGR555:
+        case AV_PIX_FMT_RGB555BE:
+        case AV_PIX_FMT_BGR555BE:
+        case AV_PIX_FMT_RGB555LE:
+        case AV_PIX_FMT_BGR555LE:
             return yuv422p_bgr15;
         case AV_PIX_FMT_RGB444:
         case AV_PIX_FMT_BGR444:
@@ -642,11 +646,15 @@ SwsFunc ff_yuv2rgb_get_func_ptr(SwsInternal *c)
             return yuv2rgb_c_24_rgb;
         case AV_PIX_FMT_BGR24:
             return yuv2rgb_c_24_bgr;
-        case AV_PIX_FMT_RGB565:
-        case AV_PIX_FMT_BGR565:
+        case AV_PIX_FMT_RGB565BE:
+        case AV_PIX_FMT_BGR565BE:
+        case AV_PIX_FMT_RGB565LE:
+        case AV_PIX_FMT_BGR565LE:
             return yuv2rgb_c_16_ordered_dither;
-        case AV_PIX_FMT_RGB555:
-        case AV_PIX_FMT_BGR555:
+        case AV_PIX_FMT_RGB555BE:
+        case AV_PIX_FMT_BGR555BE:
+        case AV_PIX_FMT_RGB555LE:
+        case AV_PIX_FMT_BGR555LE:
             return yuv2rgb_c_15_ordered_dither;
         case AV_PIX_FMT_RGB444:
         case AV_PIX_FMT_BGR444:
