@@ -5144,6 +5144,7 @@ tmpfile TMPO   .o
 tmpfile TMPS   .S
 tmpfile TMPSH  .sh
 tmpfile TMPV   .ver
+tmpfile TMPRSP .rsp
 
 unset -f mktemp
 
@@ -8268,7 +8269,8 @@ esac
 
 if [ "$response_files" != "no" ]; then
     ar_out=${FFTMPDIR}/test$LIBSUF
-    respfile="@/dev/null"
+    echo > "$TMPRSP"
+    respfile="@$TMPRSP"
     out_arg="$(echo $ar_o | sed "s;\$@;$ar_out;g")"
     if test_cmd $ar $arflags $out_arg $respfile; then
         response_files="yes"
