@@ -56,6 +56,13 @@ typedef struct SwsFilterParams {
      */
     int src_size;
     int dst_size;
+
+    /**
+     * The sample offset, in units of input pixels. This is added onto all
+     * sampled coordinates directly, i.e. a value of offset = 1.0 would shift
+     * the output to the top/left by one whole source pixel.
+     */
+    double offset;
 } SwsFilterParams;
 
 /**
@@ -88,6 +95,7 @@ typedef struct SwsFilterWeights {
      */
     int src_size;
     int dst_size;
+    double offset;
 
     /**
      * Extra metadata about the filter, used to inform the optimizer / range
