@@ -4292,6 +4292,20 @@ static int v360_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     return 0;
 }
 
+static int get_output_dimension(AVFilterContext *ctx, const char *name,
+                                float val, int *dim)
+{
+    if (!isfinite(val) || val < 1.f || val > INT16_MAX) {
+        av_log(ctx, AV_LOG_ERROR,
+               "Output %s %g is outside the allowed range [1, %d].\n",
+               name, val, INT16_MAX);
+        return AVERROR(EINVAL);
+    }
+
+    *dim = lrintf(val);
+    return 0;
+}
+
 static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
@@ -4461,6 +4475,15 @@ static int config_output(AVFilterLink *outlink)
 
     if (s->in_transpose)
         FFSWAP(int, s->in_width, s->in_height);
+
+    // The remap code stores input coordinates in int16_t
+    if (s->in_width < 1 || s->in_width > INT16_MAX ||
+        s->in_height < 1 || s->in_height > INT16_MAX) {
+        av_log(ctx, AV_LOG_ERROR,
+               "Input dimensions %dx%d are outside the allowed range [1, %d].\n",
+               s->in_width, s->in_height, INT16_MAX);
+        return AVERROR(EINVAL);
+    }
 
     switch (s->in) {
     case EQUIRECTANGULAR:
@@ -4779,11 +4802,17 @@ static int config_output(AVFilterLink *outlink)
     if (s->width > 0 && s->height <= 0 && s->h_fov > 0.f && s->v_fov > 0.f &&
         s->out == FLAT && s->d_fov == 0.f) {
         w = s->width;
-        h = w / tanf(s->h_fov * M_PI / 360.f) * tanf(s->v_fov * M_PI / 360.f);
+        err = get_output_dimension(ctx, "height",
+                                   w / tanf(s->h_fov * M_PI / 360.f) * tanf(s->v_fov * M_PI / 360.f), &h);
+        if (err < 0)
+            return err;
     } else if (s->width <= 0 && s->height > 0 && s->h_fov > 0.f && s->v_fov > 0.f &&
         s->out == FLAT && s->d_fov == 0.f) {
         h = s->height;
-        w = h / tanf(s->v_fov * M_PI / 360.f) * tanf(s->h_fov * M_PI / 360.f);
+        err = get_output_dimension(ctx, "width",
+                                   h / tanf(s->v_fov * M_PI / 360.f) * tanf(s->h_fov * M_PI / 360.f), &w);
+        if (err < 0)
+            return err;
     } else if (s->width > 0 && s->height > 0) {
         w = s->width;
         h = s->height;
@@ -4796,6 +4825,13 @@ static int config_output(AVFilterLink *outlink)
 
         if (s->in_transpose)
             FFSWAP(int, w, h);
+    }
+
+    if (w < 1 || w > INT16_MAX || h < 1 || h > INT16_MAX) {
+        av_log(ctx, AV_LOG_ERROR,
+               "Output dimensions %dx%d are outside the allowed range [1, %d].\n",
+               w, h, INT16_MAX);
+        return AVERROR(EINVAL);
     }
 
     s->width  = w;
