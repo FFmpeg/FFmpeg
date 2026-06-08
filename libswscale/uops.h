@@ -91,6 +91,7 @@ typedef enum SwsUOpType {
     SWS_UOP_READ_PLANAR,     /* simple planar byte-aligned read */
     SWS_UOP_READ_PLANAR_FH,  /* planar read with horizontal filter */
     SWS_UOP_READ_PLANAR_FV,  /* planar read with vertical filter */
+    SWS_UOP_READ_PLANAR_FV_FMA,
     SWS_UOP_READ_PACKED,     /* simple packed byte-aligned read */
     SWS_UOP_READ_NIBBLE,     /* fractional read (4 bits) from single plane */
     SWS_UOP_READ_BIT,        /* fractional read (1 bit) from single plane */

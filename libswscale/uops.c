@@ -41,15 +41,16 @@ int ff_sws_uop_cmp(const SwsUOp *a, const SwsUOp *b)
 }
 
 static const struct {
-    char full[24];
-    char abbr[16];
-    char macro[16];
+    char full[32];
+    char abbr[32];
+    char macro[32];
 } uop_names[SWS_UOP_TYPE_NB] = {
 #define UOP_NAME(OP, ABBR) [SWS_UOP_##OP] = { "SWS_UOP_" #OP, ABBR, #OP }
     UOP_NAME(INVALID,           "invalid"),
     UOP_NAME(READ_PLANAR,       "read_planar"),
     UOP_NAME(READ_PLANAR_FH,    "read_planar_fh"),
     UOP_NAME(READ_PLANAR_FV,    "read_planar_fv"),
+    UOP_NAME(READ_PLANAR_FV_FMA,"read_planar_fv_fma"),
     UOP_NAME(READ_PACKED,       "read_packed"),
     UOP_NAME(READ_NIBBLE,       "read_nibble"),
     UOP_NAME(READ_BIT,          "read_bit"),
@@ -314,6 +315,7 @@ static void uop_uninit(SwsUOp *uop)
         break;
     case SWS_UOP_READ_PLANAR_FH:
     case SWS_UOP_READ_PLANAR_FV:
+    case SWS_UOP_READ_PLANAR_FV_FMA:
         av_refstruct_unref(&uop->data.kernel);
         break;
     }
@@ -403,7 +405,26 @@ static bool exact_prod(SwsPixelType type, SwsPixel coef,
     return false;
 }
 
-static int translate_rw_op(SwsUOpList *ops, const SwsOp *op)
+static bool check_filter_fma(SwsContext *ctx, SwsUOpFlags flags, const SwsOp *op)
+{
+    if (!(flags & SWS_UOP_FLAG_FMA))
+        return false;
+    if (!(ctx->flags & SWS_BITEXACT))
+        return true;
+    if (!ff_sws_pixel_type_is_int(op->type))
+        return false;
+
+    const int bits = ff_sws_pixel_type_size(op->type) * 8;
+    const uint64_t max_val = UINT64_MAX >> (64 - bits);
+
+    /* Maximum value representable losslessly as float. Note that this is
+     * currently true only for U8, but that may change if we ever update the
+     * value of SWS_FILTER_SCALE. */
+    return max_val * SWS_FILTER_SCALE <= (1 << 22);
+}
+
+static int translate_rw_op(SwsContext *ctx, SwsUOpList *ops, SwsUOpFlags flags,
+                           const SwsOp *op)
 {
     SwsUOp uop = {
         .type = op->type,
@@ -419,10 +440,14 @@ static int translate_rw_op(SwsUOpList *ops, const SwsOp *op)
     if (op->rw.filter) {
         if (op->op == SWS_OP_WRITE || op->rw.frac || op->rw.packed)
             return AVERROR(ENOTSUP);
-        uop.uop = op->rw.filter == SWS_OP_FILTER_H
-                    ? SWS_UOP_READ_PLANAR_FH
-                    : SWS_UOP_READ_PLANAR_FV;
         uop.data.kernel = av_refstruct_ref(op->rw.kernel);
+        if (op->rw.filter == SWS_OP_FILTER_H) {
+            uop.uop = SWS_UOP_READ_PLANAR_FH;
+        } else if (check_filter_fma(ctx, flags, op)) {
+            uop.uop = SWS_UOP_READ_PLANAR_FV_FMA;
+        } else {
+            uop.uop = SWS_UOP_READ_PLANAR_FV;
+        }
     } else if (op->rw.packed && op->rw.elems > 1) {
         if (op->rw.frac)
             return AVERROR(ENOTSUP);
@@ -602,7 +627,7 @@ static int translate_op(SwsContext *ctx, SwsUOpList *uops, SwsUOpFlags flags,
         return AVERROR(ENOTSUP); /* always handled by subpass splitting */
     case SWS_OP_READ:
     case SWS_OP_WRITE:
-        return translate_rw_op(uops, op);
+        return translate_rw_op(ctx, uops, flags, op);
     case SWS_OP_SWIZZLE:
         return translate_swizzle(uops, op);
     case SWS_OP_DITHER:
