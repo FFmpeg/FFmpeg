@@ -60,6 +60,7 @@ static const struct {
     UOP_NAME(WRITE_BIT,         "write_bit"),
     UOP_NAME(PERMUTE,           "permute"),
     UOP_NAME(COPY,              "copy"),
+    UOP_NAME(MOVE,              "move"),
     UOP_NAME(SWAP_BYTES,        "swap_bytes"),
     UOP_NAME(EXPAND_BIT,        "expand_bit"),
     UOP_NAME(EXPAND_PAIR,       "expand_pair"),
@@ -161,6 +162,14 @@ void ff_sws_uop_name(const SwsUOp *op, char buf[SWS_UOP_NAME_MAX])
                 av_bprint_chars(&bp, "xyzw"[par->swizzle.in[i]], 1);
         }
         break;
+    case SWS_UOP_MOVE:
+        av_bprint_chars(&bp, '_', 1);
+        for (int i = 0; i < par->move.num_moves; i++)
+            av_bprint_chars(&bp, "txyzw"[par->move.dst[i] + 1], 1);
+        av_bprint_chars(&bp, '_', 1);
+        for (int i = 0; i < par->move.num_moves; i++)
+            av_bprint_chars(&bp, "txyzw"[par->move.src[i] + 1], 1);
+        break;
     case SWS_UOP_PACK:
     case SWS_UOP_UNPACK:
         av_bprint_chars(&bp, '_', 1);
@@ -239,6 +248,15 @@ static int generate_entry_struct(void *opaque, void *key)
                    par->swizzle.in[0], par->swizzle.in[1],
                    par->swizzle.in[2], par->swizzle.in[3]);
         break;
+    case SWS_UOP_MOVE:
+        av_bprintf(bp, ", .par.move.num_moves = %d", par->move.num_moves);
+        av_bprintf(bp, ", .par.move.dst = {%d, %d, %d, %d, %d, %d}",
+                   par->move.dst[0], par->move.dst[1], par->move.dst[2],
+                   par->move.dst[3], par->move.dst[4], par->move.dst[5]);
+        av_bprintf(bp, ", .par.move.src = {%d, %d, %d, %d, %d, %d}",
+                   par->move.src[0], par->move.src[1], par->move.src[2],
+                   par->move.src[3], par->move.src[4], par->move.src[5]);
+        break;
     case SWS_UOP_PACK:
     case SWS_UOP_UNPACK:
         av_bprintf(bp, ", .par.pack.pattern = {%d, %d, %d, %d}",
@@ -294,6 +312,15 @@ static int generate_entry_args(void *opaque, void *key)
         av_bprintf(bp, ", %d, %d, %d, %d",
                    par->swizzle.in[0], par->swizzle.in[1],
                    par->swizzle.in[2], par->swizzle.in[3]);
+        break;
+    case SWS_UOP_MOVE:
+        av_bprintf(bp, ", %d", par->move.num_moves);
+        av_bprintf(bp, ", %d, %d, %d, %d, %d, %d",
+                   par->move.dst[0], par->move.dst[1], par->move.dst[2],
+                   par->move.dst[3], par->move.dst[4], par->move.dst[5]);
+        av_bprintf(bp, ", %d, %d, %d, %d, %d, %d",
+                   par->move.src[0], par->move.src[1], par->move.src[2],
+                   par->move.src[3], par->move.src[4], par->move.src[5]);
         break;
     case SWS_UOP_PACK:
     case SWS_UOP_UNPACK:
@@ -480,8 +507,93 @@ static int translate_rw_op(SwsContext *ctx, SwsUOpList *ops, SwsUOpFlags flags,
     return ff_sws_uop_list_append(ops, &uop);
 }
 
-static int translate_swizzle(SwsUOpList *ops, const SwsOp *op)
+static int count_idx(const int *arr, size_t size, int val)
 {
+    int num = 0;
+    for (size_t i = 0; i < size; i++) {
+        if (arr[i] == val)
+            num++;
+    }
+
+    return num;
+}
+
+static int translate_move(SwsUOpList *ops, const SwsOp *op)
+{
+    SwsUOp uop = {
+        .uop  = SWS_UOP_MOVE,
+        .type = pixel_type_to_int(op->type),
+    };
+    SwsMoveUOp *par = &uop.par.move;
+
+    /* Mask of components that are not yet satisfied */
+    SwsCompMask todo = ff_sws_comp_mask_needed(op);
+    for (int i = 0; i < 4; i++) {
+        if (op->swizzle.in[i] == i)
+            todo &= ~SWS_COMP(i);
+    }
+
+    /* Mask of components whose value is required for the final output */
+    SwsCompMask needed = 0;
+    for (int i = 0; i < 4; i++) {
+        if (SWS_OP_NEEDED(op, i))
+            needed |= SWS_COMP(op->swizzle.in[i]);
+    }
+
+    /* Current mapping of registers to components */
+    int idx[4 + 1] = { 0, 1, 2, 3, -1 }; /* +1 for tmp */
+
+    /* Decompose the swizzle mask into a series of register-register moves */
+    while (todo) {
+        int dst = -1, src = -1;
+
+        /* Find next unsatisfied dst <- src move that doesn't clobber a value */
+        for (dst = 0; dst < 4; dst++) {
+            if (!SWS_COMP_TEST(todo, dst))
+                continue; /* already satisfied */
+            const int cur = idx[dst];
+            if (count_idx(idx, FF_ARRAY_ELEMS(idx), cur) == 1 && SWS_COMP_TEST(needed, cur))
+                continue; /* clobbers last remaining, still-needed value */
+            for (src = 0; src < FF_ARRAY_ELEMS(idx); src++) {
+                if (idx[src] == op->swizzle.in[dst]) {
+                    /* Prevent read-after-write dependency. */
+                    if (par->num_moves > 0 && src == par->dst[par->num_moves - 1])
+                        src = par->src[par->num_moves - 1];
+                    break;
+                }
+            }
+            av_assert1(src < FF_ARRAY_ELEMS(idx));
+            todo &= ~SWS_COMP(dst);
+            break;
+        }
+
+        if (dst == 4) {
+            /* Stuck in a cycle, break it by saving to the scratch register */
+            dst = 4;
+            for (src = 0; src < 4; src++) {
+                if (SWS_COMP_TEST(todo, src)) {
+                    needed &= ~SWS_COMP(idx[src]);
+                    break;
+                }
+            }
+            av_assert1(src < 4);
+        }
+
+        av_assert0(par->num_moves < SWS_UOP_MOVE_MAX);
+        par->dst[par->num_moves] = dst > 3 ? -1 : dst;
+        par->src[par->num_moves] = src > 3 ? -1 : src;
+        par->num_moves++;
+        idx[dst] = idx[src];
+    }
+
+    return ff_sws_uop_list_append(ops, &uop);
+}
+
+static int translate_swizzle(SwsUOpList *ops, SwsUOpFlags flags, const SwsOp *op)
+{
+    if (flags & SWS_UOP_FLAG_MOVE)
+        return translate_move(ops, op);
+
     SwsUOp uop = {
         .type = pixel_type_to_int(op->type),
         .uop  = SWS_UOP_PERMUTE,
@@ -645,7 +757,7 @@ static int translate_op(SwsContext *ctx, SwsUOpList *uops, SwsUOpFlags flags,
     case SWS_OP_WRITE:
         return translate_rw_op(ctx, uops, flags, op);
     case SWS_OP_SWIZZLE:
-        return translate_swizzle(uops, op);
+        return translate_swizzle(uops, flags, op);
     case SWS_OP_DITHER:
         return translate_dither_op(uops, op);
     case SWS_OP_LINEAR:
@@ -793,7 +905,7 @@ fail:
 
 static const SwsUOpFlags uop_flags[] = {
     0,
-    SWS_UOP_FLAG_FMA, /* x86 backend */
+    SWS_UOP_FLAG_FMA | SWS_UOP_FLAG_MOVE, /* x86 backend */
 };
 
 static int register_uops(SwsContext *ctx, const SwsOpList *ops,

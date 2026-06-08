@@ -82,6 +82,7 @@ typedef uint32_t SwsUOpFlags;
 typedef enum SwsUOpFlagBits {
     SWS_UOP_FLAG_NONE = 0,
     SWS_UOP_FLAG_FMA  = (1 << 0), /* platform supports FMA ops */
+    SWS_UOP_FLAG_MOVE = (1 << 1), /* platform supports SWS_UOP_MOVE */
 } SwsUOpFlagBits;
 
 typedef enum SwsUOpType {
@@ -104,6 +105,7 @@ typedef enum SwsUOpType {
     /* Data rearrangement uops; mask = non-trivial and needed components */
     SWS_UOP_PERMUTE,         /* rearrange components (no duplicates) */
     SWS_UOP_COPY,            /* copy/duplicate components */
+    SWS_UOP_MOVE,            /* series of register-register assignments */
 
     /* Data conversion / manipulation uops; mask = affected components */
     SWS_UOP_SWAP_BYTES,      /* swap byte order in components */
@@ -147,6 +149,16 @@ typedef struct SwsSwizzleUOp {
     uint8_t in[4]; /* input component for each output component */
 } SwsSwizzleUOp;
 
+typedef struct SwsMoveUOp {
+    /* The worst case number of moves (for two independent cycles) */
+    #define SWS_UOP_MOVE_MAX 6
+    int num_moves;
+
+    /* This may involve a temporary register (index -1) */
+    int8_t dst[SWS_UOP_MOVE_MAX]; /* destination register index */
+    int8_t src[SWS_UOP_MOVE_MAX]; /* source register index */
+} SwsMoveUOp;
+
 typedef struct SwsPackUOp {
     uint8_t pattern[4]; /* bit depth pattern, from MSB to LSB */
 } SwsPackUOp;
@@ -179,6 +191,7 @@ typedef union SwsUOpParams {
     SwsFilterUOp    filter; /* for SWS_UOP_READ_*_FV/FH */
     SwsShiftUOp     shift;
     SwsSwizzleUOp   swizzle;
+    SwsMoveUOp      move;
     SwsPackUOp      pack;
     SwsClearUOp     clear;
     SwsLinearUOp    lin;
