@@ -282,6 +282,62 @@ IF1 V2, read_packed34 mx2, my2, mz2, mw2, in0q + mmsize * COMPS
         CONTINUE tmp0q
 %endmacro
 
+%macro read_pal8 6 ; x, y, z, w, palette, index
+%if cpuflag(avx2)
+        pmovzxbd %1, [%6 + 0]
+        pmovzxbd %2, [%6 + 8]
+        pmovzxbd %3, [%6 + 16]
+        pmovzxbd %4, [%6 + 24]
+        vperm2i128 m8,  %1, %3, q0200
+        vperm2i128 m9,  %1, %3, q0301
+        vperm2i128 m10, %2, %4, q0200
+        vperm2i128 m11, %2, %4, q0301
+        pcmpeqb m14, m14
+        pcmpeqb m15, m15
+        vpgatherdd %1, [%5 + 4 * m8], m14
+        vpgatherdd %2, [%5 + 4 * m9], m15
+        pcmpeqb m14, m14
+        pcmpeqb m15, m15
+        vpgatherdd %3, [%5 + 4 * m10], m14
+        vpgatherdd %4, [%5 + 4 * m11], m15
+        pshufb %1, m12
+        pshufb %2, m12
+        pshufb %3, m12
+        pshufb %4, m12
+        punpckldq m8,  %1, %2
+        punpckldq m9,  %3, %4
+        punpckhdq m10, %1, %2
+        punpckhdq m11, %3, %4
+        punpcklqdq %1, m8, m9
+        punpckhqdq %2, m8, m9
+        punpcklqdq %3, m10, m11
+        punpckhqdq %4, m10, m11
+%else ; !cpuflag(avx2)
+    %assign i 0
+    %rep 16
+        movzx tmp1d, byte [%6 + i]
+        pinsrb %1, [%5 + 4 * tmp1q + 0], i
+        pinsrb %2, [%5 + 4 * tmp1q + 1], i
+        pinsrb %3, [%5 + 4 * tmp1q + 2], i
+        pinsrb %4, [%5 + 4 * tmp1q + 3], i
+    %assign i i+1
+    %endrep
+%endif
+%endmacro
+
+%macro READ_PALETTE 0
+assert COMPS == 4
+assert BITS  == 8
+    %if cpuflag(avx2)
+        VBROADCASTI128 m12, [read8_unpack4]
+    %endif
+        LOAD_CONT tmp0q
+        read_pal8 mx,  my,  mz,  mw,  in1q, in0q
+IF1 V2, read_pal8 mx2, my2, mz2, mw2, in1q, in0q + mmsize
+        add in0q, BLOCK_SIZE
+        CONTINUE tmp0q
+%endmacro
+
 %macro write_packed2 0
     %if cpuflag(avx2)
         vpermq mx, mx, q3120       ; { X0 X2 | X1 X3 }
@@ -716,6 +772,7 @@ assert 0, SWS_UOP_DITHER is not implemented for integer types
     DECL_%1_READ_PACKED     (READ_PACKED)
     DECL_%1_READ_NIBBLE     (READ_NIBBLE)
     DECL_%1_READ_BIT        (READ_BIT)
+    DECL_%1_READ_PALETTE    (READ_PALETTE)
     DECL_%1_WRITE_PACKED    (WRITE_PACKED)
     DECL_%1_WRITE_NIBBLE    (WRITE_NIBBLE)
     DECL_%1_WRITE_BIT       (WRITE_BIT)

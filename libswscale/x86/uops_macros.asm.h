@@ -57,6 +57,7 @@
     {DEF_MACRO(READ_PLANAR_FH,      TYPE)}, \
     {DEF_MACRO(READ_PLANAR_FV,      TYPE)}, \
     {DEF_MACRO(READ_PLANAR_FV_FMA,  TYPE)}, \
+    {DEF_MACRO(READ_PALETTE,        TYPE)}, \
     {DEF_MACRO(WRITE_BIT,           TYPE)}, \
     {DEF_MACRO(WRITE_NIBBLE,        TYPE)}, \
     {DEF_MACRO(WRITE_PACKED,        TYPE)}, \

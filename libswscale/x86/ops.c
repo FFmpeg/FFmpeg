@@ -312,6 +312,7 @@ static bool uop_is_type_invariant(const SwsUOpType uop)
 SWS_FOR_STRUCT(TYPE, READ_PACKED,     DECL_ENTRY, EXT, NULL, setup_rw_packed)   \
 SWS_FOR_STRUCT(TYPE, READ_NIBBLE,     DECL_ENTRY, EXT, NULL, NULL)              \
 SWS_FOR_STRUCT(TYPE, READ_BIT,        DECL_ENTRY, EXT, NULL, NULL)              \
+SWS_FOR_STRUCT(TYPE, READ_PALETTE,    DECL_ENTRY, EXT, NULL, NULL)              \
 SWS_FOR_STRUCT(TYPE, WRITE_PACKED,    DECL_ENTRY, EXT, NULL, setup_rw_packed)   \
 SWS_FOR_STRUCT(TYPE, WRITE_NIBBLE,    DECL_ENTRY, EXT, NULL, NULL)              \
 SWS_FOR_STRUCT(TYPE, WRITE_BIT,       DECL_ENTRY, EXT, NULL, NULL)              \
@@ -334,6 +335,7 @@ SWS_FOR_STRUCT(TYPE, DITHER,          DECL_ENTRY, EXT, NULL, setup_dither)      
     SWS_FOR(TYPE, READ_PACKED,    REF_ENTRY, EXT)                               \
     SWS_FOR(TYPE, READ_NIBBLE,    REF_ENTRY, EXT)                               \
     SWS_FOR(TYPE, READ_BIT,       REF_ENTRY, EXT)                               \
+    SWS_FOR(TYPE, READ_PALETTE,   REF_ENTRY, EXT)                               \
     SWS_FOR(TYPE, WRITE_PACKED,   REF_ENTRY, EXT)                               \
     SWS_FOR(TYPE, WRITE_NIBBLE,   REF_ENTRY, EXT)                               \
     SWS_FOR(TYPE, WRITE_BIT,      REF_ENTRY, EXT)                               \
