@@ -1181,6 +1181,12 @@ RIFF Wave Audio demuxer.
 
 This demuxer accepts the following options:
 @table @option
+@item ignore_length @var{bool}
+Ignore the size of the @code{data} chunk and keep reading until the end of the file if set.
+May be useful to read broken or partial files where the header was not properly updated,
+but will misinterpret files with non-audio chunks after the @code{data} chunk.
+Default is disabled.
+
 @item max_size
 Specify the maximum packet size in bytes for the demuxed packets. By default
 this is set to 0, which means that a sensible value is chosen based on the
