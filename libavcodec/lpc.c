@@ -207,16 +207,18 @@ int ff_lpc_calc_ref_coefs(LPCContext *s,
 }
 
 double ff_lpc_calc_ref_coefs_f(LPCContext *s, const float *samples, int len,
-                               int order, double *ref)
+                               int order, double *ref, int apply_window)
 {
     int i;
     double signal = 0.0f, avg_err = 0.0f;
     double autoc[MAX_LPC_ORDER+1] = {0}, error[MAX_LPC_ORDER+1] = {0};
     const double a = 0.5f, b = 1.0f - a;
 
-    /* Apply windowing */
+    /* Apply windowing. apply_window == 0 uses a rectangular (unity) window: a Hann
+     * taper zeros the edges, which over a very short region (e.g. a short-block TNS
+     * region of a few dozen lines) discards most of the data and wrecks the fit. */
     for (i = 0; i <= len / 2; i++) {
-        double weight = a - b*cos((2*M_PI*i)/(len - 1));
+        double weight = apply_window ? a - b*cos((2*M_PI*i)/(len - 1)) : 1.0;
         s->windowed_samples[i] = weight*samples[i];
         s->windowed_samples[len-1-i] = weight*samples[len-1-i];
     }
