@@ -1047,11 +1047,10 @@ int ff_sws_decode_pixfmt(SwsOpList *ops, const SwsFormat *fmt)
          * canonical order {Y, U, V, A} */
         const int is_ya = desc->nb_components == 2;
         for (int c = 0; c < desc->nb_components; c++) {
-            const int bits   = desc->comp[c].depth + shift.amount;
-            const int idx    = swizzle.in[is_ya ? 3 * c : c];
-            comps->min[idx]  = Q(0);
-            if (bits < 32) /* FIXME: AVRational is limited to INT_MAX */
-                comps->max[idx] = intmax_q64(bits);
+            const int bits  = desc->comp[c].depth + shift.amount;
+            const int idx   = swizzle.in[is_ya ? 3 * c : c];
+            comps->min[idx] = Q(0);
+            comps->max[idx] = intmax_q64(bits);
         }
     }
 
