@@ -66,6 +66,7 @@
     SWS_FOR(TYPE, READ_PACKED,    REF_ENTRY)                \
     SWS_FOR(TYPE, READ_NIBBLE,    REF_ENTRY)                \
     SWS_FOR(TYPE, READ_BIT,       REF_ENTRY)                \
+    SWS_FOR(TYPE, READ_PALETTE,   REF_ENTRY)                \
     SWS_FOR(TYPE, PERMUTE,        REF_ENTRY)                \
     SWS_FOR(TYPE, COPY,           REF_ENTRY)                \
     SWS_FOR(TYPE, WRITE_PLANAR,   REF_ENTRY)                \

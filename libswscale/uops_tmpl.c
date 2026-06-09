@@ -163,6 +163,24 @@ DECL_READ(read_nibble, const SwsCompMask mask)
     CONTINUE(x, y, z, w);
 }
 
+DECL_READ(read_palette, const SwsCompMask mask)
+{
+    av_assert2(mask == SWS_COMP_ELEMS(4));
+
+    SWS_LOOP
+    for (int i = 0; i < SWS_BLOCK_SIZE; i++) {
+        const pixel_t index = in0[i];
+        const pixel_t *value = &in1[index * 4];
+        x[i] = value[0];
+        y[i] = value[1];
+        z[i] = value[2];
+        w[i] = value[3];
+    }
+
+    iter->in[0] += SIZEOF_BLOCK;
+    CONTINUE(x, y, z, w);
+}
+
 DECL_WRITE(write_bit, const SwsCompMask mask)
 {
     av_assert2(mask == SWS_COMP_ELEMS(1));
@@ -199,6 +217,7 @@ SWS_FOR(PX, READ_PLANAR,    DECL_IMPL_READ,     read_planar)
 SWS_FOR(PX, READ_PACKED,    DECL_IMPL_READ,     read_packed)
 SWS_FOR(PX, READ_NIBBLE,    DECL_IMPL_READ,     read_nibble)
 SWS_FOR(PX, READ_BIT,       DECL_IMPL_READ,     read_bit)
+SWS_FOR(PX, READ_PALETTE,   DECL_IMPL_READ,     read_palette)
 SWS_FOR(PX, WRITE_PLANAR,   DECL_IMPL_WRITE,    write_planar)
 SWS_FOR(PX, WRITE_PACKED,   DECL_IMPL_WRITE,    write_packed)
 SWS_FOR(PX, WRITE_NIBBLE,   DECL_IMPL_WRITE,    write_nibble)
@@ -208,6 +227,7 @@ SWS_FOR_STRUCT(PX, READ_PLANAR,     DECL_ENTRY)
 SWS_FOR_STRUCT(PX, READ_PACKED,     DECL_ENTRY)
 SWS_FOR_STRUCT(PX, READ_NIBBLE,     DECL_ENTRY)
 SWS_FOR_STRUCT(PX, READ_BIT,        DECL_ENTRY)
+SWS_FOR_STRUCT(PX, READ_PALETTE,    DECL_ENTRY)
 SWS_FOR_STRUCT(PX, WRITE_PLANAR,    DECL_ENTRY)
 SWS_FOR_STRUCT(PX, WRITE_PACKED,    DECL_ENTRY)
 SWS_FOR_STRUCT(PX, WRITE_NIBBLE,    DECL_ENTRY)
