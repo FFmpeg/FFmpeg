@@ -1293,7 +1293,7 @@ static int process_line(URLContext *h, char *line, int line_count, int *parsed_h
         } else if (!av_strcasecmp(tag, "Proxy-Authenticate")) {
             ff_http_auth_handle_header(&s->proxy_auth_state, tag, p);
         } else if (!av_strcasecmp(tag, "Connection")) {
-            if (!strcmp(p, "close"))
+            if (!av_strcasecmp(p, "close"))
                 s->willclose = 1;
         } else if (!av_strcasecmp(tag, "Server")) {
             if (!av_strcasecmp(p, "AkamaiGHost")) {
