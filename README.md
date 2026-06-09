@@ -169,4 +169,4 @@ This project was forked from [dav1d's](https://code.videolan.org/videolan/dav1d)
 
 This choice was made because dav1d was the closest to being feature complete, while also being permissively licensed and using a modern CI and build system. Some changes have been ported over from FFmpeg's copy of checkasm, with permission to relicense.
 
-checkasm's original authors include Henrik Gramner, Loren Merritt, Fiona Glaser and others. This fork is maintained by Niklas Haas.
+checkasm's original authors include Henrik Gramner, Loren Merritt, Fiona Glaser and others. This fork is maintained by Niklas Haas and Martin Storsjö.

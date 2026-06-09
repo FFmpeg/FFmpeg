@@ -114,7 +114,7 @@ jobs:
       - name: Set CFLAGS
         if: matrix.uwp
         run: |
-          echo "CFLAGS=-DWINAPI_FAMILY=WINAPI_FAMILY_APP" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+          echo "CFLAGS=-DWINAPI_FAMILY=WINAPI_FAMILY_PHONE_APP" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
       - name: Build and test
         run: |
           meson setup build --buildtype release `

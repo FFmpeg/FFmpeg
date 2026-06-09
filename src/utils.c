@@ -410,9 +410,11 @@ COLD void checkasm_setup_fprintf(void)
 static int get_terminal_width(void)
 {
 #ifdef _WIN32
+  #if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
     CONSOLE_SCREEN_BUFFER_INFO csbi;
     if (GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi))
         return csbi.srWindow.Right - csbi.srWindow.Left + 1;
+  #endif
 #elif defined(__OS2__)
     int dst[2];
     _scrsize(dst);

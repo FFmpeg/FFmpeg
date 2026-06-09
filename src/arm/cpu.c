@@ -303,6 +303,7 @@ COLD const char *checkasm_get_arm_cpuinfo(char *buf, size_t buflen, int affinity
   #ifdef _WIN32
 COLD const char *checkasm_get_arm_win32_reg(char *buf, size_t buflen, int affinity)
 {
+    #if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
     HKEY key;
     if (RegOpenKeyExA(HKEY_LOCAL_MACHINE,
                       "Hardware\\Description\\System\\CentralProcessor", 0, KEY_READ,
@@ -374,6 +375,10 @@ COLD const char *checkasm_get_arm_win32_reg(char *buf, size_t buflen, int affini
         pos += snprintf(buf + pos, buflen - pos, " (%s)", cpu_name);
 
     return buf;
+    #else
+    (void) print_cores;
+    return NULL;
+    #endif
 }
   #endif
 #endif
