@@ -937,7 +937,11 @@ static int test_format_ops(enum AVPixelFormat format, int output)
     SwsPixelType pixel_type, raw_type;
     int ret = fmt_analyze(format, &rw, &pack, &swizzle, &shift,
                           &pixel_type, &raw_type);
-    return ret == 0;
+    if (ret < 0)
+        return 0;
+    if (rw.mode == SWS_RW_PALETTE && output)
+        return 0; /* palettes are currently only supported as input */
+    return 1;
 }
 
 static void swizzle_inv(SwsSwizzleOp *swiz)
@@ -1084,6 +1088,9 @@ int ff_sws_encode_pixfmt(SwsOpList *ops, const SwsFormat *fmt)
 
     RET(fmt_analyze(fmt->format, &rw_op, &pack, &swizzle, &shift,
                     &pixel_type, &raw_type));
+
+    if (rw_op.mode == SWS_RW_PALETTE)
+        return AVERROR(ENOTSUP);
 
     if (shift.amount) {
         RET(ff_sws_op_list_append(ops, &(SwsOp) {
