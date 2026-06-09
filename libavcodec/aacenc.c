@@ -278,15 +278,15 @@ static const AACPCEInfo aac_pce_configs[] = {
         .pairing = { { 0, 1, 1 }, { 0 }, { 1 }, },
         .index = { { 0, 0, 1 }, { 0 }, { 2 }, { 0 }, },
         .config_map = { 5, TYPE_SCE, TYPE_CPE, TYPE_CPE, TYPE_CPE, TYPE_LFE },
-        .reorder_map = { 2, 0, 1, 4, 5, 6, 7, 3 },
+        .reorder_map = { 2, 4, 5, 0, 1, 6, 7, 3 },
     },
     {
         .layout = AV_CHANNEL_LAYOUT_7POINT1_WIDE_BACK,
         .num_ele = { 3, 0, 1, 1 },
         .pairing = { { 0, 1, 1 }, { 0 }, { 1 } },
-        .index = { { 0, 0, 2 }, { 0 }, { 1 }, { 0 } },
+        .index = { { 0, 0, 1 }, { 0 }, { 2 }, { 0 } },
         .config_map = { 5, TYPE_SCE, TYPE_CPE, TYPE_CPE, TYPE_CPE, TYPE_LFE },
-        .reorder_map = { 2, 0, 1, 4, 5, 6, 7, 3 },
+        .reorder_map = { 2, 6, 7, 0, 1, 4, 5, 3 },
     },
     {
         .layout = AV_CHANNEL_LAYOUT_OCTAGONAL,
