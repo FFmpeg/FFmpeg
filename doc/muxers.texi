@@ -3833,6 +3833,76 @@ ffmpeg -i ... -map 0 -flags +global_header -c:v libx264 -c:a aac
 @end example
 @end itemize
 
+@section wav
+
+RIFF Wave Audio muxer.
+
+@subsection Options
+
+@table @option
+
+@item rf64 @var{mode}
+Choose whether to use the RF64 file format instead of RIFF.
+RF64 allows files larger than 4 gigabytes, but RF64 support is not as
+universal as RIFF.
+
+The following modes are recognized:
+@table @samp
+@item auto
+Start writing a standard RIFF file to retain compatibility with non-RF64-aware
+software, but switch to RF64 if the output file grows larger than 4 gigabytes.
+Reserves a small amount of extra space in the header using a @code{JUNK} chunk,
+which should be ignored by all compliant RIFF readers, but some extremely
+simplistic WAV readers may be confused by this.
+
+@item always
+Always use the RF64 format regardless of file size. The output file will only
+be readable by RF64-compatible software and is no longer a standard RIFF WAVE
+file.
+
+@item never
+Always use plain RIFF, never RF64. This mode is the most compatible with legacy
+software, but if the output file grows beyond 4 gigabytes, the 32-bit size field
+in the @code{data} chunk will no longer be able to correctly represent the size,
+and most audio software will not be able to read some or all of the data.
+(The @ref{wav} demuxer's @code{ignore_length} option can be used to recover such
+a file.)
+This is the default mode.
+@end table
+
+@item write_bext @var{bool}
+Add a Broadcast Wave Format @code{BEXT} chunk containing extended audio
+metadata if enabled. Defaults to false.
+
+@item write_peak @var{mode}
+Add a Peak Envelope chunk (EBU Tech 3285 Supplement 3) if enabled.
+Defaults to off.
+
+@table @samp
+@item off
+Do not add the Peak Envelope chunk.
+
+@item on
+Add the Peak Envelope chunk, calculating the peak values based on the
+@code{peak_block_size}, @code{peak_format}, and @code{peak_ppv} options.
+
+@item only
+Like @code{on}, but skip writing the actual audio data (no @code{data}
+chunk will be written to the file; only the Peak Envelope and other metadata
+chunks will be written.)
+@end table
+
+@item peak_block_size @var{int}
+Number of audio samples used to generate each peak frame, up to 65536.
+Default is 256.
+
+@item peak_format @var{format}
+The format of the peak envelope data (1: uint8, 2: uint16). Default is 2 (uint16).
+
+@item peak_ppv @var{int}
+Number of peak points per peak value (1 or 2). Default is 2.
+@end table
+
 @section webm_chunk
 
 WebM Live Chunk Muxer.
