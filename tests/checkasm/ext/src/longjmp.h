@@ -32,7 +32,7 @@
 
 #include "checkasm_config.h"
 
-#if defined(_WIN32) && !ARCH_X86_32
+#if defined(_WIN32) && !(defined(__i386__) || defined(_M_IX86))
 
   #include <windows.h>
 

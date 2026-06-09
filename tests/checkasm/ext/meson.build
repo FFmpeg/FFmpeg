@@ -24,7 +24,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 project('checkasm', 'c',
-  version: '1.2.0',
+  version: '1.3.0',
   default_options: ['c_std=c11',
                     'buildtype=debugoptimized',
                     'default_library=static',

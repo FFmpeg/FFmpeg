@@ -395,6 +395,40 @@ test-ext-build:
         - make -f ../ext-build-test.make NASM_FMT=elf64 -j$(getconf _NPROCESSORS_ONLN) EXTRA_CFLAGS=-Werror
         - ./checkasm-selftest
 
+test-dav1d:
+    extends: .debian-amd64-common
+    script:
+        - git clone --depth 1 --branch master https://code.videolan.org/videolan/dav1d.git
+        - cd dav1d
+        - ln -s ../.. subprojects/checkasm
+        - meson setup build --buildtype debugoptimized
+                            --werror
+                            -Dtrim_dsp=false
+        - cd build && ninja
+        - meson test -v checkasm
+
+test-dav2d:
+    extends: .debian-amd64-common
+    script:
+        - git clone --depth 1 --branch main https://code.videolan.org/videolan/dav2d.git
+        - cd dav2d
+        - ln -s ../.. subprojects/checkasm
+        - meson setup build --buildtype debugoptimized
+                            --werror
+                            -Dtrim_dsp=false
+        - cd build && ninja
+        - meson test -v checkasm
+
+test-ffmpeg:
+    extends: .debian-amd64-common
+    script:
+        - git clone --depth 1 --branch master https://code.ffmpeg.org/ffmpeg/ffmpeg
+        - cd ffmpeg
+        - rm -rf tests/checkasm/ext
+        - ln -s ../../.. tests/checkasm/ext
+        - ./configure --enable-gpl
+        - make -j$(getconf _NPROCESSORS_ONLN) run-checkasm
+
 deploy-docs:
     extends: .debian-amd64-common
     stage: deploy
