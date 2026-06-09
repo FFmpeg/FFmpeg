@@ -54,6 +54,7 @@ static const struct {
     UOP_NAME(READ_PACKED,       "read_packed"),
     UOP_NAME(READ_NIBBLE,       "read_nibble"),
     UOP_NAME(READ_BIT,          "read_bit"),
+    UOP_NAME(READ_PALETTE,      "read_palette"),
     UOP_NAME(WRITE_PLANAR,      "write_planar"),
     UOP_NAME(WRITE_PACKED,      "write_packed"),
     UOP_NAME(WRITE_NIBBLE,      "write_nibble"),
@@ -500,7 +501,9 @@ static int translate_rw_op(SwsContext *ctx, SwsUOpList *ops, SwsUOpFlags flags,
             return AVERROR(ENOTSUP);
         uop.uop = is_read ? SWS_UOP_READ_PACKED : SWS_UOP_WRITE_PACKED;
     } else if (op->rw.mode == SWS_RW_PALETTE) {
-        return AVERROR(ENOTSUP);
+        if (op->rw.frac || !is_read)
+            return AVERROR(ENOTSUP);
+        uop.uop = SWS_UOP_READ_PALETTE;
     } else if (op->rw.frac == 3) {
         uop.uop = is_read ? SWS_UOP_READ_BIT : SWS_UOP_WRITE_BIT;
     } else if (op->rw.frac == 1) {

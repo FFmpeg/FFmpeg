@@ -96,6 +96,7 @@ typedef enum SwsUOpType {
     SWS_UOP_READ_PACKED,     /* simple packed byte-aligned read */
     SWS_UOP_READ_NIBBLE,     /* fractional read (4 bits) from single plane */
     SWS_UOP_READ_BIT,        /* fractional read (1 bit) from single plane */
+    SWS_UOP_READ_PALETTE,    /* indexed read from palette in plane 1 */
 
     SWS_UOP_WRITE_PLANAR,    /* simple planar byte-aligned write */
     SWS_UOP_WRITE_PACKED,    /* simple packed byte-aligned write */

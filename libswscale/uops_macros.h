@@ -75,6 +75,8 @@
     MACRO(__VA_ARGS__, u8_read_bit_x                           , SWS_PIXEL_U8 , SWS_UOP_READ_BIT        , 0x1)
 #define SWS_FOR_STRUCT_U8_READ_BIT(MACRO, ...) \
     MACRO(__VA_ARGS__, u8_read_bit_x                           , .type = SWS_PIXEL_U8 , .uop = SWS_UOP_READ_BIT        , .mask = 0x1)
+#define SWS_FOR_U8_READ_PALETTE(MACRO, ...)
+#define SWS_FOR_STRUCT_U8_READ_PALETTE(MACRO, ...)
 #define SWS_FOR_U8_WRITE_PLANAR(MACRO, ...) \
     MACRO(__VA_ARGS__, u8_write_planar_x                       , SWS_PIXEL_U8 , SWS_UOP_WRITE_PLANAR    , 0x1) \
     MACRO(__VA_ARGS__, u8_write_planar_xy                      , SWS_PIXEL_U8 , SWS_UOP_WRITE_PLANAR    , 0x3) \
@@ -393,6 +395,8 @@
 #define SWS_FOR_STRUCT_U16_READ_NIBBLE(MACRO, ...)
 #define SWS_FOR_U16_READ_BIT(MACRO, ...)
 #define SWS_FOR_STRUCT_U16_READ_BIT(MACRO, ...)
+#define SWS_FOR_U16_READ_PALETTE(MACRO, ...)
+#define SWS_FOR_STRUCT_U16_READ_PALETTE(MACRO, ...)
 #define SWS_FOR_U16_WRITE_PLANAR(MACRO, ...) \
     MACRO(__VA_ARGS__, u16_write_planar_x                      , SWS_PIXEL_U16, SWS_UOP_WRITE_PLANAR    , 0x1) \
     MACRO(__VA_ARGS__, u16_write_planar_xy                     , SWS_PIXEL_U16, SWS_UOP_WRITE_PLANAR    , 0x3) \
@@ -681,6 +685,8 @@
 #define SWS_FOR_STRUCT_U32_READ_NIBBLE(MACRO, ...)
 #define SWS_FOR_U32_READ_BIT(MACRO, ...)
 #define SWS_FOR_STRUCT_U32_READ_BIT(MACRO, ...)
+#define SWS_FOR_U32_READ_PALETTE(MACRO, ...)
+#define SWS_FOR_STRUCT_U32_READ_PALETTE(MACRO, ...)
 #define SWS_FOR_U32_WRITE_PLANAR(MACRO, ...) \
     MACRO(__VA_ARGS__, u32_write_planar_x                      , SWS_PIXEL_U32, SWS_UOP_WRITE_PLANAR    , 0x1) \
     MACRO(__VA_ARGS__, u32_write_planar_xy                     , SWS_PIXEL_U32, SWS_UOP_WRITE_PLANAR    , 0x3) \
@@ -945,6 +951,8 @@
 #define SWS_FOR_STRUCT_F32_READ_NIBBLE(MACRO, ...)
 #define SWS_FOR_F32_READ_BIT(MACRO, ...)
 #define SWS_FOR_STRUCT_F32_READ_BIT(MACRO, ...)
+#define SWS_FOR_F32_READ_PALETTE(MACRO, ...)
+#define SWS_FOR_STRUCT_F32_READ_PALETTE(MACRO, ...)
 #define SWS_FOR_F32_WRITE_PLANAR(MACRO, ...)
 #define SWS_FOR_STRUCT_F32_WRITE_PLANAR(MACRO, ...)
 #define SWS_FOR_F32_WRITE_PACKED(MACRO, ...)
