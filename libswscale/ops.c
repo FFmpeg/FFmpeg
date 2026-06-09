@@ -218,17 +218,21 @@ void ff_sws_apply_op_q(const SwsOp *op, AVRational64 x[4])
         return;
     }
     case SWS_OP_SWAP_BYTES:
-        av_assert1(ff_sws_pixel_type_is_int(op->type));
-        switch (ff_sws_pixel_type_size(op->type)) {
-        case 2:
-            for (int i = 0; i < 4; i++)
+        switch (op->type) {
+        case SWS_PIXEL_U16:
+            for (int i = 0; i < 4; i++) {
+                av_assert2(x[i].num >= 0 && x[i].num <= UINT16_MAX);
                 x[i].num = av_bswap16(x[i].num);
-            break;
-        case 4:
-            for (int i = 0; i < 4; i++)
+            }
+            return;
+        case SWS_PIXEL_U32:
+            for (int i = 0; i < 4; i++) {
+                av_assert2(x[i].num >= 0 && x[i].num <= UINT32_MAX);
                 x[i].num = av_bswap32(x[i].num);
-            break;
+            }
+            return;
         }
+        av_unreachable("Invalid pixel type for SWS_OP_SWAP_BYTES!");
         return;
     case SWS_OP_CLEAR:
         for (int i = 0; i < 4; i++) {
