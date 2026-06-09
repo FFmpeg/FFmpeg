@@ -1750,6 +1750,20 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
         }
     }
 
+    if (!s->needs_pce && chcfg == 7 /* 7.1(wide) */ && !s->options.allow_71wide) {
+        /**
+         * FFmpeg used to produce out-of-spec AAC files that mistagged 7.1
+         * as 7.1(wide), and this wark-around is still enabled by default in
+         * aacdec.c, so avoid producing such files in the rare case that the
+         * user correctly passed 7.1(wide) channel layout content.
+         */
+        av_log(avctx, AV_LOG_INFO, "Forcing the use of PCE to encode 7.1(wide) "
+               "channel layout to avoid ambiguity. Set -aac_allow_71wide 1 to "
+               "override this behavior and force the use of spec-compliant "
+               "channel configuration ID.\n");
+        s->needs_pce = 1;
+    }
+
     if (s->needs_pce) {
         char buf[64];
         for (i = 0; i < FF_ARRAY_ELEMS(aac_pce_configs); i++)
@@ -1896,6 +1910,7 @@ static const AVOption aacenc_options[] = {
     {"aac_tns", "Temporal noise shaping", offsetof(AACEncContext, options.tns), AV_OPT_TYPE_BOOL, {.i64 = 1}, -1, 1, AACENC_FLAGS},
     {"aac_pce", "Forces the use of PCEs", offsetof(AACEncContext, options.pce), AV_OPT_TYPE_BOOL, {.i64 = 0}, -1, 1, AACENC_FLAGS},
     {"aac_nmr_speed", "NMR coder speed level: 0 = slowest/best, higher trades quality for speed", offsetof(AACEncContext, options.nmr_speed), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 4, AACENC_FLAGS},
+    {"aac_allow_71wide", "Allow non-PCE use of 7.1(wide) channel layout", offsetof(AACEncContext, options.allow_71wide), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, AACENC_FLAGS},
     FF_AAC_PROFILE_OPTS
     {NULL}
 };

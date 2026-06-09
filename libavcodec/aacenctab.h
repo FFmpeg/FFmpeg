@@ -52,7 +52,7 @@ static const AVChannelLayout aac_normal_chan_layouts[15] = {
     AV_CHANNEL_LAYOUT_4POINT0,
     AV_CHANNEL_LAYOUT_5POINT0_BACK,
     AV_CHANNEL_LAYOUT_5POINT1_BACK,
-    { 0 }, // AV_CHANNEL_LAYOUT_7POINT1_WIDE_BACK, disabled in favor or PCE configuration
+    AV_CHANNEL_LAYOUT_7POINT1_WIDE_BACK,
     { 0 },
     { 0 },
     { 0 },
@@ -70,7 +70,7 @@ static const uint8_t aac_chan_configs[14][6] = {
     {3, TYPE_SCE, TYPE_CPE, TYPE_SCE},                     // 4 channels - front center + stereo + back center
     {3, TYPE_SCE, TYPE_CPE, TYPE_CPE},                     // 5 channels - front center + stereo + back stereo
     {4, TYPE_SCE, TYPE_CPE, TYPE_CPE, TYPE_LFE},           // 6 channels - front center + stereo + back stereo + LFE
-    {0},
+    {5, TYPE_SCE, TYPE_CPE, TYPE_CPE, TYPE_CPE, TYPE_LFE}, // 8 channels - front center + front center stereo + front stereo + back stereo + LFE
     {0},
     {0},
     {0},
@@ -90,7 +90,7 @@ static const uint8_t aac_chan_maps[14][AAC_MAX_CHANNELS] = {
     { 2, 0, 1, 3 },
     { 2, 0, 1, 3, 4 },
     { 2, 0, 1, 4, 5, 3 },
-    { 0 },
+    { 2, 6, 7, 0, 1, 4, 5, 3 },
     { 0 },
     { 0 },
     { 0 },

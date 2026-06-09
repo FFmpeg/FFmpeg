@@ -71,6 +71,7 @@ typedef struct AACEncOptions {
     int mid_side;
     int intensity_stereo;
     int nmr_speed;          ///< NMR coder speed level: 0 = slowest/best, higher is faster
+    int allow_71wide;
 } AACEncOptions;
 
 /**
