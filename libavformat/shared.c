@@ -858,9 +858,7 @@ static int shared_get_short_seek(URLContext *h)
 {
     SharedContext *s = h->priv_data;
     int ret = ffurl_get_short_seek(s->inner);
-    if (ret < 0)
-        return ret;
-    return FFMAX(ret, s->block_size);
+    return ret > 0 ? FFMAX(ret, s->block_size) : s->block_size;
 }
 
 #define OFFSET(x) offsetof(SharedContext, x)
