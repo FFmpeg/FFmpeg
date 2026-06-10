@@ -774,100 +774,6 @@ fail:
     return ret;
 }
 
-/**
- * Once the DTLS role has been negotiated - active for the DTLS client or passive for the
- * DTLS server - we proceed to set up the DTLS state and initiate the handshake.
- */
-static int dtls_start(URLContext *h, const char *url, int flags, AVDictionary **options)
-{
-    TLSContext *c = h->priv_data;
-    TLSShared *s = &c->tls_shared;
-    int ret = 0;
-    s->is_dtls = 1;
-
-    if (!c->tls_shared.external_sock) {
-        if ((ret = ff_tls_open_underlying(&c->tls_shared, h, url, options)) < 0) {
-            av_log(c, AV_LOG_ERROR, "Failed to connect %s\n", url);
-            return ret;
-        }
-    }
-
-    c->ctx = SSL_CTX_new(s->listen ? DTLS_server_method() : DTLS_client_method());
-    if (!c->ctx) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
-
-    ret = openssl_init_ca_key_cert(h);
-    if (ret < 0) goto fail;
-
-    /* Note, this doesn't check that the peer certificate actually matches the requested hostname. */
-    if (s->verify)
-        SSL_CTX_set_verify(c->ctx, SSL_VERIFY_PEER|SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
-
-    if (s->use_srtp) {
-        /**
-         * The profile for OpenSSL's SRTP is SRTP_AES128_CM_SHA1_80, see ssl/d1_srtp.c.
-         * The profile for FFmpeg's SRTP is SRTP_AES128_CM_HMAC_SHA1_80, see libavformat/srtp.c.
-         */
-        const char* profiles = "SRTP_AES128_CM_SHA1_80";
-        if (SSL_CTX_set_tlsext_use_srtp(c->ctx, profiles)) {
-            av_log(c, AV_LOG_ERROR, "Init SSL_CTX_set_tlsext_use_srtp failed, profiles=%s, %s\n",
-                profiles, openssl_get_error(c));
-            ret = AVERROR(EINVAL);
-            goto fail;
-        }
-    }
-
-    /* The ssl should not be created unless the ctx has been initialized. */
-    c->ssl = SSL_new(c->ctx);
-    if (!c->ssl) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
-
-    if (!s->listen && !s->numerichost)
-        SSL_set_tlsext_host_name(c->ssl, s->host);
-
-    /* Setup the callback for logging. */
-    SSL_set_ex_data(c->ssl, 0, c);
-    SSL_CTX_set_info_callback(c->ctx, openssl_info_callback);
-
-    /**
-     * We have set the MTU to fragment the DTLS packet. It is important to note that the
-     * packet is split to ensure that each handshake packet is smaller than the MTU.
-     */
-    if (s->mtu <= 0)
-        s->mtu = 1096;
-    SSL_set_options(c->ssl, SSL_OP_NO_QUERY_MTU);
-    SSL_set_mtu(c->ssl, s->mtu);
-    DTLS_set_link_mtu(c->ssl, s->mtu);
-    init_bio_method(h);
-
-    /* This seems to be necessary despite explicitly setting client/server method above. */
-    if (s->listen)
-        SSL_set_accept_state(c->ssl);
-    else
-        SSL_set_connect_state(c->ssl);
-
-    /* The SSL_do_handshake can't be called if DTLS hasn't prepare for udp. */
-    if (!c->tls_shared.external_sock) {
-        ret = dtls_handshake(h);
-        // Fatal SSL error, for example, no available suite when peer is DTLS 1.0 while we are DTLS 1.2.
-        if (ret < 0) {
-            av_log(c, AV_LOG_ERROR, "Failed to drive SSL context, ret=%d\n", ret);
-            return AVERROR(EIO);
-        }
-    }
-
-    av_log(c, AV_LOG_VERBOSE, "Setup ok, MTU=%d\n", c->tls_shared.mtu);
-
-    return 0;
-fail:
-    tls_close(h);
-    return ret;
-}
-
 static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **options)
 {
     TLSContext *c = h->priv_data;
@@ -992,6 +898,14 @@ fail:
     return ret;
 }
 
+static int dtls_open(URLContext *h, const char *uri, int flags, AVDictionary **options)
+{
+    TLSContext *c = h->priv_data;
+    TLSShared *s = &c->tls_shared;
+    s->is_dtls = 1;
+    return tls_open(h, uri, flags, options);
+}
+
 static int tls_read(URLContext *h, uint8_t *buf, int size)
 {
     TLSContext *c = h->priv_data;
@@ -1081,7 +995,7 @@ static const AVClass dtls_class = {
 
 const URLProtocol ff_dtls_protocol = {
     .name           = "dtls",
-    .url_open2      = dtls_start,
+    .url_open2      = dtls_open,
     .url_handshake  = dtls_handshake,
     .url_close      = tls_close,
     .url_read       = tls_read,
