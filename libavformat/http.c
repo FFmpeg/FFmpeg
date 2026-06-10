@@ -1189,6 +1189,8 @@ static int process_line(URLContext *h, char *line, int line_count, int *parsed_h
             method = p;
             while (*p && !av_isspace(*p))
                 p++;
+            if (!av_isspace(*p))
+                return ff_http_averror(400, AVERROR(EIO));
             *(p++) = '\0';
             av_log(h, AV_LOG_TRACE, "Received method: %s\n", method);
             if (s->method) {
@@ -1215,6 +1217,8 @@ static int process_line(URLContext *h, char *line, int line_count, int *parsed_h
             resource = p;
             while (*p && !av_isspace(*p))
                 p++;
+            if (!av_isspace(*p))
+                return ff_http_averror(400, AVERROR(EIO));
             *(p++) = '\0';
             av_log(h, AV_LOG_TRACE, "Requested resource: %s\n", resource);
             if (!(s->resource = av_strdup(resource)))
