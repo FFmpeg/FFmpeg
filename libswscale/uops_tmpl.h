@@ -85,7 +85,7 @@ typedef struct SwsOpIter {
 
 /* Helper macros to make writing common function signatures less painful */
 #define DECL_FUNC(NAME, ...)                                                    \
-    static av_always_inline void                                                \
+    av_always_inline static void                                                \
         fn(NAME)(SwsOpIter *restrict iter, const SwsOpImpl *restrict impl,      \
                  pixel_t *restrict x, pixel_t *restrict y,                      \
                  pixel_t *restrict z, pixel_t *restrict w,                      \
@@ -112,12 +112,12 @@ typedef struct SwsOpIter {
 
 /* Helper macros for common op setup code */
 #define DECL_SETUP(NAME, PARAMS, OUT)                                           \
-    static av_unused int fn(NAME)(const SwsImplParams *PARAMS,                  \
+    av_unused static int fn(NAME)(const SwsImplParams *PARAMS,                  \
                                   SwsImplResult *OUT)
 
 /* Helper macro for declaring kernel entry points */
 #define DECL_IMPL(FUNC, NAME, TYPE, UOP, ...)                                   \
-    static av_flatten void NAME##_c(SwsOpIter *restrict iter,                   \
+    av_flatten static void NAME##_c(SwsOpIter *restrict iter,                   \
                                     const SwsOpImpl *restrict impl,             \
                                     void *restrict x, void *restrict y,         \
                                     void *restrict z, void *restrict w)         \
