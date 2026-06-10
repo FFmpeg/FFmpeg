@@ -370,10 +370,23 @@ int ff_mp4_read_dec_config_descr(void *logctx, AVStream *st, AVIOContext *pb)
                 st->codecpar->sample_rate = cfg.ext_sample_rate;
             else
                 st->codecpar->sample_rate = cfg.sample_rate;
+            switch (cfg.object_type) {
+            case AOT_AAC_MAIN:
+            case AOT_AAC_LC:
+            case AOT_AAC_SSR:
+            case AOT_AAC_LTP:
+            case AOT_ER_AAC_LC:
+            case AOT_ER_AAC_LD:
+            case AOT_ER_AAC_ELD:
+            case AOT_USAC:
+                st->codecpar->frame_size = cfg.frame_length;
+                break;
+            }
             av_log(logctx, AV_LOG_TRACE, "mp4a config channels %d obj %d ext obj %d "
-                    "sample rate %d ext sample rate %d\n", cfg.channels,
+                    "sample rate %d ext sample rate %d frame_length %d\n", cfg.channels,
                     cfg.object_type, cfg.ext_object_type,
-                    cfg.sample_rate, cfg.ext_sample_rate);
+                    cfg.sample_rate, cfg.ext_sample_rate,
+                    cfg.frame_length);
             if (!(st->codecpar->codec_id = ff_codec_get_id(mp4_audio_types,
                                                         cfg.object_type)))
                 st->codecpar->codec_id = AV_CODEC_ID_AAC;
