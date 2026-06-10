@@ -7,7 +7,7 @@ duration_ts=529200
 start_time=0.000000
 duration=12.000000
 [/FORMAT]
-packet|pts=-1024|dts=-1024|duration=1024|flags=KD_|
+packet|pts=-1024|dts=-1024|duration=1024|flags=KD_|side_datum/skip_samples:side_data_type=Skip Samples|side_datum/skip_samples:skip_samples=1024|side_datum/skip_samples:discard_padding=0|side_datum/skip_samples:skip_reason=0|side_datum/skip_samples:discard_reason=0
 packet|pts=0|dts=0|duration=1024|flags=K__
 packet|pts=1024|dts=1024|duration=1024|flags=K__
 packet|pts=2048|dts=2048|duration=1024|flags=K__
@@ -22,7 +22,7 @@ packet|pts=524288|dts=524288|duration=1024|flags=K__
 packet|pts=525312|dts=525312|duration=1024|flags=K__
 packet|pts=526336|dts=526336|duration=1024|flags=K__
 packet|pts=527360|dts=527360|duration=1024|flags=K__
-packet|pts=528384|dts=528384|duration=816|flags=K__|
+packet|pts=528384|dts=528384|duration=816|flags=K__|side_datum/skip_samples:side_data_type=Skip Samples|side_datum/skip_samples:skip_samples=0|side_datum/skip_samples:discard_padding=208|side_datum/skip_samples:skip_reason=0|side_datum/skip_samples:discard_reason=0
 stream|nb_read_packets=518
 frame|pts=0|pkt_dts=0|best_effort_timestamp=0|nb_samples=1024
 frame|pts=1024|pkt_dts=1024|best_effort_timestamp=1024|nb_samples=1024

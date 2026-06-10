@@ -7,7 +7,7 @@ duration_ts=102400
 start_time=0.000000
 duration=2.321995
 [/FORMAT]
-packet|pts=-1024|dts=-1024|duration=1024|flags=KD_|
+packet|pts=-1024|dts=-1024|duration=1024|flags=KD_|side_datum/skip_samples:side_data_type=Skip Samples|side_datum/skip_samples:skip_samples=1024|side_datum/skip_samples:discard_padding=0|side_datum/skip_samples:skip_reason=0|side_datum/skip_samples:discard_reason=0
 packet|pts=0|dts=0|duration=1024|flags=K__
 packet|pts=1024|dts=1024|duration=1024|flags=K__
 packet|pts=2048|dts=2048|duration=1024|flags=K__
