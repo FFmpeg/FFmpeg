@@ -1613,7 +1613,7 @@ and cache the same block at the same time. If this timeout elapses, it's
 assumed that the other process may have gotten stuck or died in the meantime.
 
 If set to zero, no waiting is done and all processes will immediately race
-to try and fetch the same missing blocks themselves. Defaults to 0.
+to try and fetch the same missing blocks themselves. Defaults to 10000 (10 ms).
 
 @item retry_errors
 If true (the default), transient read errors from the underlying input stream
