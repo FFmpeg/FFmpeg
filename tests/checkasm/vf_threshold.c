@@ -22,8 +22,11 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem_internal.h"
 
-#define WIDTH 256
-#define WIDTH_PADDED 256 + 32
+#define WIDTH        256
+#define HEIGHT       3
+#define WIDTH_PADDED (WIDTH + 32)
+#define LINESIZE_MAX (WIDTH_PADDED + 32)
+#define BUF_SIZE     (LINESIZE_MAX * HEIGHT)
 
 #define randomize_buffers(buf, size)     \
     do {                                 \
@@ -34,14 +37,15 @@
     } while (0)
 
 static void check_threshold(int depth){
-    LOCAL_ALIGNED_32(uint8_t, in       , [WIDTH_PADDED]);
-    LOCAL_ALIGNED_32(uint8_t, threshold, [WIDTH_PADDED]);
-    LOCAL_ALIGNED_32(uint8_t, min      , [WIDTH_PADDED]);
-    LOCAL_ALIGNED_32(uint8_t, max      , [WIDTH_PADDED]);
-    LOCAL_ALIGNED_32(uint8_t, out_ref  , [WIDTH_PADDED]);
-    LOCAL_ALIGNED_32(uint8_t, out_new  , [WIDTH_PADDED]);
+    LOCAL_ALIGNED_32(uint8_t, in       , [BUF_SIZE]);
+    LOCAL_ALIGNED_32(uint8_t, threshold, [BUF_SIZE]);
+    LOCAL_ALIGNED_32(uint8_t, min      , [BUF_SIZE]);
+    LOCAL_ALIGNED_32(uint8_t, max      , [BUF_SIZE]);
+    LOCAL_ALIGNED_32(uint8_t, out_ref  , [BUF_SIZE]);
+    LOCAL_ALIGNED_32(uint8_t, out_new  , [BUF_SIZE]);
     ptrdiff_t line_size = WIDTH_PADDED;
-    int w = WIDTH;
+    int step = depth > 8 ? 2 : 1;
+    int w = WIDTH / step;
 
     declare_func(void, const uint8_t *in, const uint8_t *threshold,
                  const uint8_t *min, const uint8_t *max, uint8_t *out,
@@ -53,26 +57,46 @@ static void check_threshold(int depth){
     s.depth = depth;
     ff_threshold_init(&s);
 
-    memset(in,     0, WIDTH_PADDED);
-    memset(threshold, 0, WIDTH_PADDED);
-    memset(min, 0, WIDTH_PADDED);
-    memset(max, 0, WIDTH_PADDED);
-    memset(out_ref, 0, WIDTH_PADDED);
-    memset(out_new, 0, WIDTH_PADDED);
-    randomize_buffers(in, WIDTH);
-    randomize_buffers(threshold, WIDTH);
-    randomize_buffers(min, WIDTH);
-    randomize_buffers(max, WIDTH);
-
-    if (depth == 16)
-        w /= 2;
+    memset(in,        0, BUF_SIZE);
+    memset(threshold, 0, BUF_SIZE);
+    memset(min,       0, BUF_SIZE);
+    memset(max,       0, BUF_SIZE);
+    randomize_buffers(in,        BUF_SIZE);
+    randomize_buffers(threshold, BUF_SIZE);
+    randomize_buffers(min,       BUF_SIZE);
+    randomize_buffers(max,       BUF_SIZE);
 
     if (check_func(s.threshold, "threshold%d", depth)) {
-        call_ref(in, threshold, min, max, out_ref, line_size, line_size, line_size, line_size, line_size, w, 1);
-        call_new(in, threshold, min, max, out_new, line_size, line_size, line_size, line_size, line_size, w, 1);
-        if (memcmp(out_ref, out_new, WIDTH))
+        for (int i = 1; i < w; i++) {
+            memset(out_ref, 0xAA, BUF_SIZE);
+            memset(out_new, 0xAA, BUF_SIZE);
+            call_ref(in, threshold, min, max, out_ref,
+                     line_size, line_size, line_size, line_size, line_size, i, 1);
+            call_new(in, threshold, min, max, out_new,
+                     line_size, line_size, line_size, line_size, line_size, i, 1);
+            if (memcmp(out_ref, out_new, BUF_SIZE))
+                fail();
+        }
+        memset(out_ref, 0xAA, BUF_SIZE);
+        memset(out_new, 0xAA, BUF_SIZE);
+        call_ref(in, threshold, min, max, out_ref,
+                 line_size, line_size, line_size, line_size, line_size, w, HEIGHT);
+        call_new(in, threshold, min, max, out_new,
+                 line_size, line_size, line_size, line_size, line_size, w, HEIGHT);
+        if (memcmp(out_ref, out_new, BUF_SIZE))
             fail();
-        bench_new(in, threshold, min, max, out_new, line_size, line_size, line_size, line_size, line_size, w, 1);
+        memset(out_ref, 0xAA, BUF_SIZE);
+        memset(out_new, 0xAA, BUF_SIZE);
+        call_ref(in, threshold, min, max, out_ref,
+                 line_size + 0,  line_size + 8,  line_size + 16,
+                 line_size + 24, line_size + 32, w, HEIGHT);
+        call_new(in, threshold, min, max, out_new,
+                 line_size + 0,  line_size + 8,  line_size + 16,
+                 line_size + 24, line_size + 32, w, HEIGHT);
+        if (memcmp(out_ref, out_new, BUF_SIZE))
+            fail();
+        bench_new(in, threshold, min, max, out_new,
+                  line_size, line_size, line_size, line_size, line_size, w, 1);
     }
 }
 
@@ -80,6 +104,12 @@ void checkasm_check_vf_threshold(void)
 {
     check_threshold(8);
     report("threshold8");
+
+    check_threshold(10);
+    report("threshold10");
+
+    check_threshold(12);
+    report("threshold12");
 
     check_threshold(16);
     report("threshold16");
