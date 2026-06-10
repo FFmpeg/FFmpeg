@@ -34,6 +34,7 @@ OBJS-$(CONFIG_UNSTABLE) +=                              \
        ops_dispatch.o                                   \
        ops_memcpy.o                                     \
        ops_optimizer.o                                  \
+       rational64.o                                     \
        uops.o                                           \
        uops_backend.o                                   \
 
