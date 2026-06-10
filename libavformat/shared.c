@@ -745,11 +745,15 @@ retry:
         else if (ret < 0) {
             av_log(h, AV_LOG_ERROR, "Failed to read block 0x%"PRIx64": %s\n",
                    block_id, av_err2str(ret));
+            int new_state = BLOCK_FAILED;
+            if (ret == AVERROR(EAGAIN) || ret == AVERROR_EXIT)
+                new_state = BLOCK_NONE; /* transient error, allow retries */
+
             /* Try to mark block as failed; ignore errors - any mismatch
              * here will mean that either another thread already marked it
              * as failed, or successfully cached it in the meantime */
             atomic_compare_exchange_strong_explicit(&block->state, &state,
-                                                    BLOCK_FAILED,
+                                                    new_state,
                                                     memory_order_relaxed,
                                                     memory_order_relaxed);
             return ret;
