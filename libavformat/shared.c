@@ -790,7 +790,8 @@ retry:
     }
 
     size = FFMIN(bytes_read - offset, size);
-    av_assert0(size > 0);
+    if (size <= 0)
+        return AVERROR_EOF;
     if (tmp != buf)
         memcpy(buf, &tmp[offset], size);
     s->pos += size;
