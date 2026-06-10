@@ -3580,6 +3580,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .type      = AVMEDIA_TYPE_AUDIO,
         .name      = "apple_apac",
         .long_name = NULL_IF_CONFIG_SMALL("Apple Positional Audio Codec"),
+        .props     = AV_CODEC_PROP_LOSSY,
     },
 
     /* subtitle codecs */
