@@ -577,6 +577,222 @@ static void apply_intensity_stereo(ChannelElement *cpe)
     }
 }
 
+/* Intensity stereo is only allowed when its irreducible image error */
+#define NMR_IS_IMG_GATE 0.5f
+
+/* Frequency in Hz for the lower limit of intensity stereo */
+#define NMR_IS_LOW_LIMIT 6100
+
+/* Rate ceiling (bits/sample/channel) above which intensity is skipped, ~145kbps */
+#define NMR_IS_MAXBPS 1.52f
+
+/* The rate ceiling is lifted on hard-to-code frames. The signal is the bit
+ * reservoir going into deficit: a negative fill means the trellis is spending
+ * more than the nominal rate to hold quality (operating lambda has climbed). */
+#define NMR_IS_FILLGAIN 0.27f
+#define NMR_IS_FILLMAX  0.40f
+
+/* M/S thresholds: a band is recoded as mid+side when the side is negligible */
+#define NMR_MS_EQUIV 0.01f
+#define NMR_MS_MASK  0.0f
+
+/* PNS-stereo decorrelation gate: a band may be noise-substituted in a CPE only if its
+ * side energy is at least this fraction of its mid energy, i.e. the image is genuinely
+ * wide (channels decorrelated). PNS renders uncorrelated noise per channel, so it only
+ * preserves the image on already-wide bands; a much stricter bar than I/S (which can
+ * collapse correlated bands). Lower = more PNS / more imaging risk. */
+#define NMR_PNS_STEREO_DECORR 0.6f
+
+/* Recode one band's window group as mid+side in place, updating the psy band
+ * energies/thresholds to the M/S spectra. The threshold is halved as a coarse guard
+ * against L/R unmasking of the independently-quantized M/S noise (M/S is a lossless
+ * rotation but lossy coding). Used for the M/S decision and the intensity fallback. */
+static void nmr_apply_ms_band(AACEncContext *s, ChannelElement *cpe,
+                              int w, int g, int start, int len, int gl)
+{
+    SingleChannelElement *sce0 = &cpe->ch[0];
+    SingleChannelElement *sce1 = &cpe->ch[1];
+    cpe->ms_mask[w*16+g] = 1;
+    for (int w2 = 0; w2 < gl; w2++) {
+        FFPsyBand *b0 = &s->psy.ch[s->cur_channel+0].psy_bands[(w+w2)*16+g];
+        FFPsyBand *b1 = &s->psy.ch[s->cur_channel+1].psy_bands[(w+w2)*16+g];
+        float *L = sce0->coeffs + start + (w+w2)*128;
+        float *R = sce1->coeffs + start + (w+w2)*128;
+        float em = 0.0f, es = 0.0f;
+        for (int i = 0; i < len; i++) {
+            float m = (L[i] + R[i]) * 0.5f;
+            R[i] = m - R[i]; L[i] = m;
+            em += L[i]*L[i]; es += R[i]*R[i];
+        }
+        b0->threshold = b1->threshold = FFMIN(b0->threshold, b1->threshold) * 0.5f;
+        b0->energy = em; b1->energy = es;
+    }
+}
+
+/* Intensity-stereo perceptual test for one band's window group: collapse the pair
+ * to a single carrier (L + p*R)*scale that the decoder rescales per channel, and
+ * check that the irreducible image error, which no bit budget can reduce, is
+ * masked in both channels. On success returns 1 and fills the carrier scale, the
+ * decoder's R/carrier ratio sr_, and the phase p. The caller restricts this to HF
+ * bands with energy in both channels. */
+static int nmr_is_image_masked(AACEncContext *s, ChannelElement *cpe,
+                               int w, int g, int start, int len, int gl,
+                               float ener0, float ener1, float dot,
+                               float minthr0, float minthr1,
+                               float *scale_out, float *sr_out, int *p_out)
+{
+    int p = dot >= 0.0f ? 1 : -1;
+    float ener01 = ener0 + ener1 + 2*p*dot;     /* energy of L + p*R */
+    if (ener01 <= FLT_MIN)
+        return 0;
+    float scale = sqrtf(ener0 / ener01);        /* carrier = (L + p*R)*scale */
+    float sr_   = sqrtf(ener1 / ener0);         /* decoder: R = p*sr_*carrier */
+    float img0 = 0.0f, img1 = 0.0f;
+    for (int w2 = 0; w2 < gl; w2++) {
+        const float *L = cpe->ch[0].coeffs + start + (w+w2)*128;
+        const float *R = cpe->ch[1].coeffs + start + (w+w2)*128;
+        for (int i = 0; i < len; i++) {
+            float c  = (L[i] + p*R[i]) * scale;
+            float dl = L[i] - c, dr = R[i] - p*sr_*c;
+            img0 += dl*dl; img1 += dr*dr;
+        }
+    }
+    if (img0 >= NMR_IS_IMG_GATE * minthr0 * gl ||
+        img1 >= NMR_IS_IMG_GATE * minthr1 * gl)
+        return 0;
+    *scale_out = scale; *sr_out = sr_; *p_out = p;
+    return 1;
+}
+
+/* Recode one band's window group as intensity stereo in place: replace L with the
+ * carrier, zero R, signal the phase via the side channel's band type, and fold the
+ * pair's masking into the surviving (carrier) channel. */
+static void nmr_apply_is_band(AACEncContext *s, ChannelElement *cpe,
+                              int w, int g, int start, int len, int gl,
+                              float scale, float sr_, int p,
+                              float ener0, float ener1)
+{
+    cpe->is_mask[w*16+g] = 1;
+    cpe->ch[0].is_ener[w*16+g] = scale;
+    cpe->ch[1].is_ener[w*16+g] = ener0 / ener1;
+    cpe->ch[1].band_type[w*16+g] = p > 0 ? INTENSITY_BT : INTENSITY_BT2;
+    for (int w2 = 0; w2 < gl; w2++) {
+        FFPsyBand *b0 = &s->psy.ch[s->cur_channel+0].psy_bands[(w+w2)*16+g];
+        FFPsyBand *b1 = &s->psy.ch[s->cur_channel+1].psy_bands[(w+w2)*16+g];
+        float *L = cpe->ch[0].coeffs + start + (w+w2)*128;
+        float *R = cpe->ch[1].coeffs + start + (w+w2)*128;
+        float ec = 0.0f;
+        for (int i = 0; i < len; i++) {
+            L[i] = (L[i] + p*R[i]) * scale;
+            R[i] = 0.0f;
+            ec += L[i]*L[i];
+        }
+        b0->threshold = FFMIN(b0->threshold, b1->threshold / FFMAX(sr_*sr_, 1e-9f));
+        b0->energy = ec; b1->energy = 0.0f;
+    }
+}
+
+/*
+ * Per-band stereo-mode decision (L/R vs M/S vs intensity) for the NMR coder,
+ * made before quantization from the psychoacoustic model alone, so the
+ * quantizer search allocates natively on the spectra that are actually coded.
+ */
+static void nmr_decide_stereo(AACEncContext *s, ChannelElement *cpe)
+{
+    SingleChannelElement *sce0 = &cpe->ch[0];
+    SingleChannelElement *sce1 = &cpe->ch[1];
+    IndividualChannelStream *ics = &sce0->ics;
+    const AVCodecContext *avctx = s->psy.avctx;
+    const float freq_mult = avctx->sample_rate / (1024.0f / ics->num_windows) / 2.0f;
+    const float bps = avctx->bit_rate > 0 ?
+                      (float)avctx->bit_rate / avctx->sample_rate / avctx->ch_layout.nb_channels : 0.0f;
+    int is_count = 0;
+
+    /* Stereo decision, with no bitrate dependence. Start from full L/R and depart from
+     * it only where the change is inaudible. M/S and I/S differ in what they trade:
+     *   M/S  recodes the pair as mid+side -- an invertible rotation, but the M and S
+     *        are quantized independently, so it is lossy coding whose noise un-mixes
+     *        back to L/R. Used where it barely changes the result (the side is
+     *        negligible vs the mid, so it is ~equivalent to L/R at the same rate) --
+     *        OR where the doubled side energy is masked.
+     *   I/S  drops the side phase and keeps its energy, where the residual image error
+     *        is masked. Used for the decorrelated HF that M/S cannot help.
+     * Both tests are content/perceptual and frame-stable, so the image holds. */
+
+    /* I/S rate gate: eligible at/below ~128 kbps, with the ceiling lifted on hard
+     * frames (bit reservoir in deficit) so a starved high-rate passage can still
+     * call on intensity. Where an I/S candidate is found but IS is not eligible, fall
+     * back to M/S: not free, but ~equivalent to L/R there and it lets the energy
+     * compact into the mid. */
+    const float rate_frame = avctx->bit_rate * 1024.0f / FFMAX(avctx->sample_rate, 1);
+    const float deficit = (s->nmr && rate_frame > 0.0f)
+                          ? FFMAX(0.0f, -(float)s->nmr->rc_fill / rate_frame) : 0.0f;
+    const float is_bonus = FFMIN(NMR_IS_FILLMAX, NMR_IS_FILLGAIN * deficit);
+    const int allow_is = s->options.intensity_stereo && bps < NMR_IS_MAXBPS + is_bonus;
+
+    for (int w = 0; w < ics->num_windows; w += ics->group_len[w]) {
+        int start = 0;
+        for (int g = 0; g < ics->num_swb; start += ics->swb_sizes[g++]) {
+            int len = ics->swb_sizes[g], gl = ics->group_len[w];
+            float ener0 = 0.0f, ener1 = 0.0f, dot = 0.0f, es_tot = 0.0f, em_tot = 0.0f;
+            float minthr0 = FLT_MAX, minthr1 = FLT_MAX;
+
+            cpe->is_mask[w*16+g] = 0;
+            cpe->ms_mask[w*16+g] = 0;
+
+            for (int w2 = 0; w2 < gl; w2++) {
+                FFPsyBand *b0 = &s->psy.ch[s->cur_channel+0].psy_bands[(w+w2)*16+g];
+                FFPsyBand *b1 = &s->psy.ch[s->cur_channel+1].psy_bands[(w+w2)*16+g];
+                const float *L = sce0->coeffs + start + (w+w2)*128;
+                const float *R = sce1->coeffs + start + (w+w2)*128;
+                float el = 0.0f, er = 0.0f, em = 0.0f, es = 0.0f, d = 0.0f;
+                for (int i = 0; i < len; i++) {
+                    float m  = (L[i] + R[i]) * 0.5f;
+                    float sv = m - R[i];
+                    el += L[i]*L[i]; er += R[i]*R[i];
+                    em += m*m; es += sv*sv; d += L[i]*R[i];
+                }
+                ener0 += el; ener1 += er; dot += d; es_tot += es; em_tot += em;
+                minthr0 = FFMIN(minthr0, b0->threshold);
+                minthr1 = FFMIN(minthr1, b1->threshold);
+            }
+            float thr_g = FFMIN(minthr0, minthr1) * gl;   /* group masking budget */
+
+            /* PNS-stereo reservation. Reserve a band for noise substitution only if it
+             * is noise-like in both channels (intersected can_pns) and clearly
+             * decorrelated (wide image). */
+            if (cpe->ch[0].can_pns[w*16+g] && cpe->ch[1].can_pns[w*16+g] &&
+                es_tot > NMR_PNS_STEREO_DECORR * em_tot)
+                continue;
+            cpe->ch[0].can_pns[w*16+g] = cpe->ch[1].can_pns[w*16+g] = 0;
+
+            int ms_ok = s->options.mid_side &&
+                        (s->options.mid_side == 1 ||
+                         es_tot < NMR_MS_EQUIV * em_tot ||
+                         es_tot < NMR_MS_MASK  * thr_g);
+            float scale, sr_; int p;
+            int is_ok = !ms_ok &&
+                        start * freq_mult > NMR_IS_LOW_LIMIT &&
+                        ener0 > FLT_MIN && ener1 > FLT_MIN &&
+                        nmr_is_image_masked(s, cpe, w, g, start, len, gl,
+                                            ener0, ener1, dot, minthr0, minthr1,
+                                            &scale, &sr_, &p);
+
+            if (ms_ok) {
+                nmr_apply_ms_band(s, cpe, w, g, start, len, gl);
+            } else if (is_ok && allow_is) {
+                nmr_apply_is_band(s, cpe, w, g, start, len, gl,
+                                  scale, sr_, p, ener0, ener1);
+                is_count++;
+            } else if (is_ok && s->options.mid_side) {
+                nmr_apply_ms_band(s, cpe, w, g, start, len, gl);
+            }
+            /* else: keep full L/R stereo */
+        }
+    }
+    cpe->is_mode = !!is_count;
+}
+
 static void apply_mid_side_stereo(ChannelElement *cpe)
 {
     int w, w2, g, i;
@@ -950,12 +1166,6 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                 s->psy.bitres.alloc /= chans;
             }
             s->cur_type = tag;
-            for (ch = 0; ch < chans; ch++) {
-                s->cur_channel = start_ch + ch;
-                if (s->options.pns && s->coder->mark_pns)
-                    s->coder->mark_pns(s, avctx, &cpe->ch[ch]);
-                s->coder->search_for_quantizers(avctx, s, &cpe->ch[ch], s->lambda);
-            }
             if (chans > 1
                 && wi[0].window_type[0] == wi[1].window_type[0]
                 && wi[0].window_shape   == wi[1].window_shape) {
@@ -968,26 +1178,75 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                     }
                 }
             }
-            for (ch = 0; ch < chans; ch++) { /* TNS and PNS */
+
+            const int use_tns = s->options.tns && s->coder->search_for_tns &&
+                                s->coder->apply_tns_filt;
+
+            /* The NMR coder rate-controls itself and never re-quantizes, so TNS must run
+             * before the quantizer */
+            const int tns_first = s->options.coder == AAC_CODER_NMR;
+            if (tns_first && use_tns) {
+                for (ch = 0; ch < chans; ch++) {
+                    sce = &cpe->ch[ch];
+                    s->cur_channel = start_ch + ch;
+                    /* mono: mark_pns before TNS so the region cap sees PNS bands. Stereo
+                     * PNS is marked in its own block (below) after the stereo decision. */
+                    if (chans == 1 && s->options.pns && s->coder->mark_pns)
+                        s->coder->mark_pns(s, avctx, sce);
+                    s->coder->search_for_tns(s, sce);
+                    s->coder->apply_tns_filt(s, sce);
+                    if (sce->tns.present)
+                        tns_mode = 1;
+                }
+            }
+
+            /* NMR stereo PNS (imaging-safe). Mark each channel's noise-like bands on the
+             * original L/R psy, then keep PNS only where BOTH channels are noise-like. */
+            if (chans == 2 && cpe->common_window && tns_first &&
+                s->options.pns && s->coder->mark_pns) {
+                s->cur_channel = start_ch;     s->coder->mark_pns(s, avctx, &cpe->ch[0]);
+                s->cur_channel = start_ch + 1; s->coder->mark_pns(s, avctx, &cpe->ch[1]);
+                for (int b = 0; b < 128; b++)
+                    if (!cpe->ch[0].can_pns[b] || !cpe->ch[1].can_pns[b])
+                        cpe->ch[0].can_pns[b] = cpe->ch[1].can_pns[b] = 0;
+            }
+
+            /* The NMR coder decides I/S and M/S BEFORE quantization, from the psy model,
+             * and the trellis then allocates natively on the coeffs actually coded. */
+            if (chans == 2 && cpe->common_window && s->options.coder == AAC_CODER_NMR &&
+                (s->options.mid_side || s->options.intensity_stereo)) {
+                s->cur_channel = start_ch;
+                nmr_decide_stereo(s, cpe);
+            }
+            for (ch = 0; ch < chans; ch++) {
+                s->cur_channel = start_ch + ch;
+                /* NMR PNS is mono-only */
+                if (s->options.pns && s->coder->mark_pns && !tns_first)
+                    s->coder->mark_pns(s, avctx, &cpe->ch[ch]);
+                s->coder->search_for_quantizers(avctx, s, &cpe->ch[ch], s->lambda);
+            }
+            for (ch = 0; ch < chans; ch++) { /* TNS (non-NMR) and PNS */
                 sce = &cpe->ch[ch];
                 s->cur_channel = start_ch + ch;
-                if (s->options.tns && s->coder->search_for_tns)
+                if (!tns_first && use_tns) {
                     s->coder->search_for_tns(s, sce);
-                if (s->options.tns && s->coder->apply_tns_filt)
                     s->coder->apply_tns_filt(s, sce);
-                if (sce->tns.present)
-                    tns_mode = 1;
+                    if (sce->tns.present)
+                        tns_mode = 1;
+                }
                 if (s->options.pns && s->coder->search_for_pns)
                     s->coder->search_for_pns(s, avctx, sce);
             }
             s->cur_channel = start_ch;
             if (s->options.intensity_stereo) { /* Intensity Stereo */
-                if (s->coder->search_for_is)
-                    s->coder->search_for_is(s, avctx, cpe);
+                if (s->options.coder != AAC_CODER_NMR) { /* NMR: decided pre-search */
+                    if (s->coder->search_for_is)
+                        s->coder->search_for_is(s, avctx, cpe);
+                    apply_intensity_stereo(cpe);
+                }
                 if (cpe->is_mode) is_mode = 1;
-                apply_intensity_stereo(cpe);
             }
-            if (s->options.mid_side) { /* Mid/Side stereo */
+            if (s->options.mid_side && s->options.coder != AAC_CODER_NMR) { /* Mid/Side stereo */
                 if (s->options.mid_side == -1 && s->coder->search_for_ms)
                     s->coder->search_for_ms(s, cpe);
                 else if (cpe->common_window)
@@ -1015,11 +1274,19 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             break;
         }
 
+        frame_bits = put_bits_count(&s->pb);
+
+        /* The NMR coder rate-controls itself (global-lambda reservoir servo):
+         * per-frame bits intentionally float around the nominal rate, so skip
+         * the lambda rate loop and only intervene on a hard overflow. */
+        if (s->options.coder == AAC_CODER_NMR && avctx->bit_rate_tolerance != 0 &&
+            frame_bits < 6144 * s->channels - 3)
+            break;
+
         /* rate control stuff
          * allow between the nominal bitrate, and what psy's bit reservoir says to target
          * but drift towards the nominal bitrate always
          */
-        frame_bits = put_bits_count(&s->pb);
         rate_bits = avctx->bit_rate * 1024 / avctx->sample_rate;
         rate_bits = FFMIN(rate_bits, 6144 * s->channels - 3);
         too_many_bits = FFMAX(target_bits, rate_bits);
@@ -1087,9 +1354,26 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     flush_put_bits(&s->pb);
 
     s->last_frame_pb_count = put_bits_count(&s->pb);
+
+    /* NMR rate accounting: how many bits the frame really took beyond what the
+     * trellis counted; feeds the next frame's budget correction */
+    if (s->nmr) {
+        int counted = 0;
+        for (i = 0; i < s->channels; i++)
+            counted += s->nmr->counted[i];
+        if (counted > 0) {
+            float side = (float)s->last_frame_pb_count - counted;
+            if (s->nmr->side_inited) {
+                s->nmr->side_ema += 0.125f * (side - s->nmr->side_ema);
+            } else {
+                s->nmr->side_ema    = side;
+                s->nmr->side_inited = 1;
+            }
+        }
+    }
     avpkt->size            = put_bytes_output(&s->pb);
 
-    s->lambda_sum += s->lambda;
+    s->lambda_sum += (s->nmr && s->nmr->lam_rc > 0.0f) ? s->nmr->lam_rc : s->lambda;
     s->lambda_count++;
 
     ff_af_queue_remove(&s->afq, avctx->frame_size, &avpkt->pts,
@@ -1114,6 +1398,7 @@ static av_cold int aac_encode_end(AVCodecContext *avctx)
     av_freep(&s->buffer.samples);
     av_freep(&s->cpe);
     av_freep(&s->fdsp);
+    av_freep(&s->nmr);
     ff_af_queue_close(&s->afq);
     return 0;
 }
@@ -1146,6 +1431,12 @@ static av_cold int alloc_buffers(AVCodecContext *avctx, AACEncContext *s)
 
     for(ch = 0; ch < s->channels; ch++)
         s->planar_samples[ch] = s->buffer.samples + 3 * 1024 * ch;
+
+    if (s->options.coder == AAC_CODER_NMR) {
+        s->nmr = av_mallocz(sizeof(*s->nmr));
+        if (!s->nmr)
+            return AVERROR(ENOMEM);
+    }
 
     return 0;
 }
@@ -1243,6 +1534,33 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     if (s->channels > 3)
         s->options.mid_side = 0;
 
+    /* Coding bandwidth, fixed at init time */
+    if (avctx->cutoff > 0) {
+        s->bandwidth = avctx->cutoff;
+    } else {
+        int frame_br = (avctx->flags & AV_CODEC_FLAG_QSCALE) ?
+                       (avctx->bit_rate / 2.0f * (s->lambda / 120.f) * 1.5f) :
+                       (avctx->bit_rate / avctx->ch_layout.nb_channels);
+
+        /* For NMR, the rate to bandwidth conversion was tuned to maximize metrics
+         * over a variable cutoff x bitrate combo */
+        if (s->options.coder == AAC_CODER_NMR && frame_br >= 32000) {
+            static const int rates[] = { 32000, 48000, 64000, 96000 };
+            static const int bws[]   = { 14000, 15000, 18000, 20000 };
+            for (int i = 0; i < FF_ARRAY_ELEMS(rates) - 2 && frame_br > rates[i + 1]; i++);
+            s->bandwidth = bws[i] + (int)((int64_t)(bws[i + 1] - bws[i]) *
+                                          (frame_br - rates[i]) / (rates[i + 1] - rates[i]));
+            s->bandwidth = FFMIN3(s->bandwidth, 22000, avctx->sample_rate / 2);
+        } else {
+            if (s->options.pns || s->options.intensity_stereo)
+                frame_br *= 1.15f;
+            s->bandwidth = FFMAX(3000, AAC_CUTOFF_FROM_BITRATE(frame_br, 1,
+                                                               avctx->sample_rate));
+        }
+
+        s->bandwidth = FFMIN(FFMAX(s->bandwidth, 8000), avctx->sample_rate / 2);
+    }
+
     // Initialize static tables
     ff_aac_float_common_init();
 
@@ -1262,7 +1580,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     for (i = 0; i < s->chan_map[0]; i++)
         grouping[i] = s->chan_map[i + 1] == TYPE_CPE;
     if ((ret = ff_psy_init(&s->psy, avctx, 2, sizes, lengths,
-                           s->chan_map[0], grouping)) < 0)
+                           s->chan_map[0], grouping, s->bandwidth)) < 0)
         return ret;
     ff_lpc_init(&s->lpc, 2*avctx->frame_size, TNS_MAX_ORDER, FF_LPC_TYPE_LEVINSON);
     s->random_state = 0x1f2e3d4c;
@@ -1279,11 +1597,13 @@ static const AVOption aacenc_options[] = {
     {"aac_coder", "Coding algorithm", offsetof(AACEncContext, options.coder), AV_OPT_TYPE_INT, {.i64 = AAC_CODER_TWOLOOP}, 0, AAC_CODER_NB-1, AACENC_FLAGS, .unit = "coder"},
         {"twoloop",  "Two loop searching method", 0, AV_OPT_TYPE_CONST, {.i64 = AAC_CODER_TWOLOOP}, INT_MIN, INT_MAX, AACENC_FLAGS, .unit = "coder"},
         {"fast",     "Fast search",               0, AV_OPT_TYPE_CONST, {.i64 = AAC_CODER_FAST},    INT_MIN, INT_MAX, AACENC_FLAGS, .unit = "coder"},
+        {"nmr",      "Noise-to-mask ratio scalefactor trellis", 0, AV_OPT_TYPE_CONST, {.i64 = AAC_CODER_NMR}, INT_MIN, INT_MAX, AACENC_FLAGS, .unit = "coder"},
     {"aac_ms", "Force M/S stereo coding", offsetof(AACEncContext, options.mid_side), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, AACENC_FLAGS},
     {"aac_is", "Intensity stereo coding", offsetof(AACEncContext, options.intensity_stereo), AV_OPT_TYPE_BOOL, {.i64 = 1}, -1, 1, AACENC_FLAGS},
     {"aac_pns", "Perceptual noise substitution", offsetof(AACEncContext, options.pns), AV_OPT_TYPE_BOOL, {.i64 = 1}, -1, 1, AACENC_FLAGS},
     {"aac_tns", "Temporal noise shaping", offsetof(AACEncContext, options.tns), AV_OPT_TYPE_BOOL, {.i64 = 1}, -1, 1, AACENC_FLAGS},
     {"aac_pce", "Forces the use of PCEs", offsetof(AACEncContext, options.pce), AV_OPT_TYPE_BOOL, {.i64 = 0}, -1, 1, AACENC_FLAGS},
+    {"aac_nmr_speed", "NMR coder speed level: 0 = slowest/best, higher trades quality for speed", offsetof(AACEncContext, options.nmr_speed), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 4, AACENC_FLAGS},
     FF_AAC_PROFILE_OPTS
     {NULL}
 };

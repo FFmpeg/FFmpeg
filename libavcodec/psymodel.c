@@ -27,7 +27,7 @@ extern const FFPsyModel ff_aac_psy_model;
 
 av_cold int ff_psy_init(FFPsyContext *ctx, AVCodecContext *avctx, int num_lens,
                         const uint8_t **bands, const int* num_bands,
-                        int num_groups, const uint8_t *group_map)
+                        int num_groups, const uint8_t *group_map, int cutoff)
 {
     int i, j, k = 0;
 
@@ -36,7 +36,7 @@ av_cold int ff_psy_init(FFPsyContext *ctx, AVCodecContext *avctx, int num_lens,
     ctx->group     = av_calloc(num_groups, sizeof(ctx->group[0]));
     ctx->bands     = av_memdup(bands,     num_lens * sizeof(ctx->bands[0]));
     ctx->num_bands = av_memdup(num_bands, num_lens * sizeof(ctx->num_bands[0]));
-    ctx->cutoff    = avctx->cutoff;
+    ctx->cutoff    = cutoff ? cutoff : avctx->cutoff;
 
     if (!ctx->ch || !ctx->group || !ctx->bands || !ctx->num_bands) {
         ff_psy_end(ctx);

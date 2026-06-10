@@ -71,7 +71,6 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
     int destbits = avctx->bit_rate * 1024.0 / avctx->sample_rate
         / ((avctx->flags & AV_CODEC_FLAG_QSCALE) ? 2.0f : avctx->ch_layout.nb_channels)
         * (lambda / 120.f);
-    int refbits = destbits;
     int toomanybits, toofewbits;
     char nzs[128];
     uint8_t nextband[128];
@@ -172,32 +171,8 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
     /** and zero out above cutoff frequency */
     {
         int wlen = 1024 / sce->ics.num_windows;
-        int bandwidth;
-
-        /**
-         * Scale, psy gives us constant quality, this LP only scales
-         * bitrate by lambda, so we save bits on subjectively unimportant HF
-         * rather than increase quantization noise. Adjust nominal bitrate
-         * to effective bitrate according to encoding parameters,
-         * AAC_CUTOFF_FROM_BITRATE is calibrated for effective bitrate.
-         */
-        float rate_bandwidth_multiplier = 1.5f;
-        int frame_bit_rate = (avctx->flags & AV_CODEC_FLAG_QSCALE)
-            ? (refbits * rate_bandwidth_multiplier * avctx->sample_rate / 1024)
-            : (avctx->bit_rate / avctx->ch_layout.nb_channels);
-
-        /** Compensate for extensions that increase efficiency */
-        if (s->options.pns || s->options.intensity_stereo)
-            frame_bit_rate *= 1.15f;
-
-        if (avctx->cutoff > 0) {
-            bandwidth = avctx->cutoff;
-        } else {
-            bandwidth = FFMAX(3000, AAC_CUTOFF_FROM_BITRATE(frame_bit_rate, 1, avctx->sample_rate));
-            s->psy.cutoff = bandwidth;
-        }
-
-        cutoff = bandwidth * 2 * wlen / avctx->sample_rate;
+        /* the bandwidth is fixed at init and shared with the psy model */
+        cutoff = s->bandwidth * 2 * wlen / avctx->sample_rate;
         pns_start_pos = NOISE_LOW_LIMIT * 2 * wlen / avctx->sample_rate;
     }
 

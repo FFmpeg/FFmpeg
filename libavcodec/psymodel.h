@@ -151,12 +151,13 @@ typedef struct FFPsyModel {
  * @param num_bands  number of scalefactor bands for all frame lengths
  * @param num_groups number of channel groups
  * @param group_map  array with # of channels in group - 1, for each group
+ * @param cutoff     analysis bandwidth in Hz, 0 to derive it from avctx
  *
  * @return zero if successful, a negative value if not
  */
 int ff_psy_init(FFPsyContext *ctx, AVCodecContext *avctx, int num_lens,
                 const uint8_t **bands, const int *num_bands,
-                int num_groups, const uint8_t *group_map);
+                int num_groups, const uint8_t *group_map, int cutoff);
 
 /**
  * Determine what group a channel belongs to.

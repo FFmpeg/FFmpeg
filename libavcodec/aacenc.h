@@ -44,6 +44,7 @@
 typedef enum AACCoder {
     AAC_CODER_TWOLOOP,
     AAC_CODER_FAST,
+    AAC_CODER_NMR,
 
     AAC_CODER_NB,
 }AACCoder;
@@ -69,6 +70,7 @@ typedef struct AACEncOptions {
     int pce;
     int mid_side;
     int intensity_stereo;
+    int nmr_speed;          ///< NMR coder speed level: 0 = slowest/best, higher is faster
 } AACEncOptions;
 
 /**
@@ -165,6 +167,28 @@ typedef struct AACQuantizeBandCostCacheEntry {
     uint16_t generation;
 } AACQuantizeBandCostCacheEntry;
 
+/** per-band scalefactor candidates above the finest codeable sf (NMR coder) */
+#define NMR_NCAND 96
+
+/**
+ * NMR coder per-band candidate cost curves (~96 KiB) and rate-control carry-over
+ */
+typedef struct AACNMRCurves {
+    float nd[128][NMR_NCAND];                    ///< dist / threshold per candidate
+    int   nb[128][NMR_NCAND];                    ///< spectral bits per candidate
+    float lam[16];                               ///< per-channel operating lambda of the previous frame, 0 = none yet
+    int   counted[16];                           ///< per-channel bits the trellis accounted for in the last solve
+    float side_ema;                              ///< running estimate of real-minus-counted bits per frame
+    int   side_inited;                           ///< side_ema holds a measurement
+
+    int64_t rc_frame_num;                        ///< frame the reservoir was last advanced for
+    float   lam_rc;                              ///< global-lambda rate control: operating lambda, 0 until bootstrapped
+    int     rc_fill;                             ///< virtual bit reservoir fill, + = bits saved vs nominal
+    int     frames_since_short;                  ///< long-block frames since the last short run (the "gap"): large = isolated transient
+    int     prev_was_short;                      ///< previous frame was a short block (for run-start detection)
+    float   run_burst;                           ///< transient bit-burst factor, set at run start and held across the short run
+} AACNMRCurves;
+
 typedef struct AACPCEInfo {
     AVChannelLayout layout;
     uint8_t num_ele[4];                          ///< front, side, back, lfe
@@ -194,6 +218,7 @@ typedef struct AACEncContext {
     LPCContext lpc;                              ///< used by TNS
     int samplerate_index;                        ///< MPEG-4 samplerate index
     int channels;                                ///< channel count
+    int bandwidth;                               ///< coding bandwidth in Hz, fixed at init; the psy model and the coders' band cutoff agree on it
     const uint8_t *reorder_map;                  ///< lavc to aac reorder map
     const uint8_t *chan_map;                     ///< channel configuration map
 
@@ -216,6 +241,7 @@ typedef struct AACEncContext {
     AACQuantizeBandCostCacheEntry quantize_band_cost_cache[256][128]; ///< memoization area for quantize_band_cost
 
     AACEncDSPContext aacdsp;
+    AACNMRCurves *nmr;                            ///< NMR coder scratch (NULL unless coder == nmr)
 
     struct {
         float *samples;

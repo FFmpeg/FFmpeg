@@ -59,6 +59,7 @@
 #define NOISE_LAMBDA_REPLACE 1.948f
 
 #include "libavcodec/aaccoder_trellis.h"
+#include "libavcodec/aaccoder_nmr.h"
 
 typedef float (*quantize_and_encode_band_func)(struct AACEncContext *s, PutBitContext *pb,
                                                const float *in, float *quant, const float *scaled,
@@ -866,5 +867,18 @@ const AACCoefficientsEncoder ff_aac_coders[AAC_CODER_NB] = {
         ff_aac_search_for_tns,
         search_for_ms,
         ff_aac_search_for_is,
+    },
+    [AAC_CODER_NMR] = {
+        search_for_quantizers_nmr,
+        codebook_trellis_rate,
+        quantize_and_encode_band,
+        ff_aac_encode_tns_info,
+        ff_aac_apply_tns,
+        set_special_band_scalefactors,
+        NULL,                    /* PNS decided in the trellis (search_for_quantizers_nmr) */
+        mark_pns,
+        ff_aac_search_for_tns,
+        NULL,
+        NULL,
     },
 };
