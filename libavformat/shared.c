@@ -315,13 +315,11 @@ static int shared_open(URLContext *h, const char *arg, int flags, AVDictionary *
         }
     }
 
-    if (!s->cache_data) {
-        /* Temporary buffer needed for pread/pwrite() fallback */
-        s->tmp_buf = av_malloc(s->block_size);
-        if (!s->tmp_buf) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
+    /* Temporary buffer needed for pread/pwrite() fallback */
+    s->tmp_buf = av_malloc(s->block_size);
+    if (!s->tmp_buf) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
     }
 
     h->max_packet_size = s->block_size;
