@@ -154,7 +154,8 @@ int avcodec_parameters_from_context(AVCodecParameters *par,
 
     switch (par->codec_type) {
     case AVMEDIA_TYPE_VIDEO:
-        par->format              = codec->pix_fmt;
+        par->format              = codec->sw_pix_fmt != AV_PIX_FMT_NONE ?
+                                   codec->sw_pix_fmt : codec->pix_fmt;
         par->width               = codec->width;
         par->height              = codec->height;
         par->field_order         = codec->field_order;
