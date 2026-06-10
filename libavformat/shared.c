@@ -371,8 +371,7 @@ static int cache_map(URLContext *h, int64_t filesize)
 static int spacemap_remap(URLContext *h, size_t map_size)
 {
     SharedContext *s = h->priv_data;
-    struct flock fl = { .l_type  = F_WRLCK };
-    int ret, did_grow = 0;
+    int ret, did_grow = 0, locked = 0;
     if (map_size <= s->map_size)
         return 0;
 
@@ -388,12 +387,12 @@ static int spacemap_remap(URLContext *h, size_t map_size)
         goto skip_resize;
 
     /* Lock the spacemap to ensure nobody else is currently resizing it */
-    ret = fcntl(s->mapfd, F_SETLKW, &fl);
+    ret = flock(s->mapfd, LOCK_EX);
     if (ret < 0) {
         ret = AVERROR(errno);
         goto fail;
     }
-    fl.l_type = F_UNLCK;
+    locked = 1;
 
     /* Refresh filesize after acquiring the lock */
     ret = fstat(s->mapfd, &st);
@@ -425,15 +424,16 @@ skip_resize:
         goto fail;
     }
 
-    /* fl.l_type is set to F_UNLCK only after successful lock */
-    if (fl.l_type == F_UNLCK)
-        fcntl(s->mapfd, F_SETLK, &fl);
+    if (locked) {
+        flock(s->mapfd, LOCK_UN);
+        locked = 0;
+    }
 
     return did_grow;
 
 fail:
-    if (fl.l_type == F_UNLCK)
-        fcntl(s->mapfd, F_SETLK, &fl);
+    if (locked)
+        flock(s->mapfd, LOCK_UN);
     av_log(h, AV_LOG_ERROR, "Failed to resize space map: %s\n", av_err2str(ret));
     return ret;
 }
