@@ -95,10 +95,13 @@ static int methodvalue_width(int method_def)
     }
 }
 
+/* ISO/IEC 23003-4, Table 58/60: loudnessInfo(), loudnessInfoV1().
+ * The only difference in V1 is the added eqSetId field. */
 static int decode_loudness_info(AACDecContext *ac, AACUSACLoudnessInfo *info,
-                                GetBitContext *gb)
+                                GetBitContext *gb, int v1)
 {
     info->drc_set_id = get_bits(gb, 6);
+    info->eq_set_id = v1 ? get_bits(gb, 6) : 0;
     info->downmix_id = get_bits(gb, 7);
 
     if ((info->sample_peak.present = get_bits1(gb))) /* samplePeakLevelPresent */
@@ -122,16 +125,46 @@ static int decode_loudness_info(AACDecContext *ac, AACUSACLoudnessInfo *info,
     return 0;
 }
 
+/* ISO/IEC 23003-4, Table 61: loudnessInfoSetExtension(), UNIDRCLOUDEXT_EQ */
+static int decode_loudness_set_v1(AACDecContext *ac, AACUSACConfig *usac,
+                                  GetBitContext *gb)
+{
+    int ret;
+    int nb_album = get_bits(gb, 6); /* loudnessInfoV1AlbumCount */
+    int nb_info = get_bits(gb, 6); /* loudnessInfoV1Count */
+
+    for (int i = 0; i < nb_album; i++) {
+        AACUSACLoudnessInfo tmp;
+        ret = decode_loudness_info(ac, &tmp, gb, 1);
+        if (ret < 0)
+            return ret;
+        if (usac->loudness.nb_album < FF_ARRAY_ELEMS(usac->loudness.album_info))
+            usac->loudness.album_info[usac->loudness.nb_album++] = tmp;
+    }
+
+    for (int i = 0; i < nb_info; i++) {
+        AACUSACLoudnessInfo tmp;
+        ret = decode_loudness_info(ac, &tmp, gb, 1);
+        if (ret < 0)
+            return ret;
+        if (usac->loudness.nb_info < FF_ARRAY_ELEMS(usac->loudness.info))
+            usac->loudness.info[usac->loudness.nb_info++] = tmp;
+    }
+
+    return 0;
+}
+
 /* Pick the bsMethodValue of a program- or anchor-loudness measurement.
- * Per ISO/IEC 23003-4 6.1.2.5, downmixId and drcSetId identify the signal a
- * loudnessInfo() applies to; only downmixId == 0 (base layout) together with
- * drcSetId == 0 (no DRC) describes the unprocessed signal we output, so
- * measurements for any other downmix/DRC set must not be used. */
+ * Per ISO/IEC 23003-4 6.1.2.5, downmixId, drcSetId and eqSetId identify the
+ * signal a loudnessInfo() applies to; only downmixId == 0 (base layout)
+ * together with drcSetId == 0 and eqSetId == 0 (no DRC/EQ) describes the
+ * unprocessed signal we output, so measurements for any other
+ * downmix/DRC/EQ set must not be used. */
 static int select_loudness_measurement(const AACUSACConfig *usac)
 {
     for (int i = 0; i < usac->loudness.nb_info; i++) {
         const AACUSACLoudnessInfo *info = &usac->loudness.info[i];
-        if (info->downmix_id != 0 || info->drc_set_id != 0)
+        if (info->downmix_id != 0 || info->drc_set_id != 0 || info->eq_set_id != 0)
             continue;
         for (int j = 0; j < info->nb_measurements; j++) {
             int method = info->measurements[j].method_def;
@@ -151,13 +184,13 @@ static int decode_loudness_set(AACDecContext *ac, AACUSACConfig *usac,
     usac->loudness.nb_info = get_bits(gb, 6); /* loudnessInfoCount */
 
     for (int i = 0; i < usac->loudness.nb_album; i++) {
-        ret = decode_loudness_info(ac, &usac->loudness.album_info[i], gb);
+        ret = decode_loudness_info(ac, &usac->loudness.album_info[i], gb, 0);
         if (ret < 0)
             return ret;
     }
 
     for (int i = 0; i < usac->loudness.nb_info; i++) {
-        ret = decode_loudness_info(ac, &usac->loudness.info[i], gb);
+        ret = decode_loudness_info(ac, &usac->loudness.info[i], gb, 0);
         if (ret < 0)
             return ret;
     }
@@ -167,14 +200,23 @@ static int decode_loudness_set(AACDecContext *ac, AACUSACConfig *usac,
         while ((type = get_bits(gb, 4)) != UNIDRCLOUDEXT_TERM) {
             uint8_t size_bits = get_bits(gb, 4) + 4; /* bitSizeLen */
             uint32_t bit_size = get_bits_long(gb, size_bits) + 1; /* bitSize */
+            int start = get_bits_count(gb);
+            int skip;
             switch (type) {
             case UNIDRCLOUDEXT_EQ:
-                avpriv_report_missing_feature(ac->avctx, "loudnessInfoV1");
-                return AVERROR_PATCHWELCOME;
+                ret = decode_loudness_set_v1(ac, usac, gb);
+                if (ret < 0)
+                    return ret;
+                break;
             default:
-                skip_bits_long(gb, bit_size);
                 break;
             }
+            /* The extension size is explicit, so unparsed (or unknown)
+             * data can be skipped without desynchronizing. */
+            skip = bit_size - (get_bits_count(gb) - start);
+            if (skip < 0)
+                return AVERROR_INVALIDDATA;
+            skip_bits_long(gb, skip);
         }
     }
 

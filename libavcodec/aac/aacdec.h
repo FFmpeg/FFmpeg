@@ -308,6 +308,7 @@ typedef struct ChannelElement {
 
 typedef struct AACUSACLoudnessInfo {
     uint8_t drc_set_id : 6;
+    uint8_t eq_set_id : 6; /* loudnessInfoV1() only, 0 otherwise */
     uint8_t downmix_id : 7;
     struct {
         uint16_t lvl : 12;
