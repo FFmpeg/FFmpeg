@@ -874,29 +874,51 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
     TLSShared *s = &c->tls_shared;
     int ret;
 
-    if ((ret = ff_tls_open_underlying(s, h, uri, options)) < 0)
-        goto fail;
+    if (!c->tls_shared.external_sock) {
+        if ((ret = ff_tls_open_underlying(&c->tls_shared, h, uri, options)) < 0)
+            goto fail;
+    }
 
     // We want to support all versions of TLS >= 1.0, but not the deprecated
     // and insecure SSLv2 and SSLv3.  Despite the name, TLS_*_method()
     // enables support for all versions of SSL and TLS, and we then disable
     // support for the old protocols immediately after creating the context.
-    c->ctx = SSL_CTX_new(s->listen ? TLS_server_method() : TLS_client_method());
+    if (s->is_dtls)
+        c->ctx = SSL_CTX_new(s->listen ? DTLS_server_method() : DTLS_client_method());
+    else
+        c->ctx = SSL_CTX_new(s->listen ? TLS_server_method() : TLS_client_method());
     if (!c->ctx) {
         av_log(h, AV_LOG_ERROR, "%s\n", openssl_get_error(c));
         ret = AVERROR(EIO);
         goto fail;
     }
-    if (!SSL_CTX_set_min_proto_version(c->ctx, TLS1_VERSION)) {
-        av_log(h, AV_LOG_ERROR, "Failed to set minimum TLS version to TLSv1\n");
-        ret = AVERROR_EXTERNAL;
-        goto fail;
+    if (!s->is_dtls) {
+        if (!SSL_CTX_set_min_proto_version(c->ctx, TLS1_VERSION)) {
+            av_log(h, AV_LOG_ERROR, "Failed to set minimum TLS version to TLSv1\n");
+            ret = AVERROR_EXTERNAL;
+            goto fail;
+        }
     }
     ret = openssl_init_ca_key_cert(h);
     if (ret < 0) goto fail;
 
     if (s->verify)
         SSL_CTX_set_verify(c->ctx, SSL_VERIFY_PEER|SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
+
+    if (s->is_dtls && s->use_srtp) {
+        /**
+         * The profile for OpenSSL's SRTP is SRTP_AES128_CM_SHA1_80, see ssl/d1_srtp.c.
+         * The profile for FFmpeg's SRTP is SRTP_AES128_CM_HMAC_SHA1_80, see libavformat/srtp.c.
+         */
+        const char *profiles = "SRTP_AES128_CM_SHA1_80";
+        if (SSL_CTX_set_tlsext_use_srtp(c->ctx, profiles)) {
+            av_log(c, AV_LOG_ERROR, "Init SSL_CTX_set_tlsext_use_srtp failed, profiles=%s, %s\n",
+                profiles, openssl_get_error(c));
+            ret = AVERROR(EINVAL);
+            goto fail;
+        }
+    }
+
     c->ssl = SSL_new(c->ctx);
     if (!c->ssl) {
         av_log(h, AV_LOG_ERROR, "%s\n", openssl_get_error(c));
@@ -905,6 +927,19 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
     }
     SSL_set_ex_data(c->ssl, 0, c);
     SSL_CTX_set_info_callback(c->ctx, openssl_info_callback);
+
+    if (s->is_dtls) {
+        /**
+         * We have set the MTU to fragment the DTLS packet. It is important to note that the
+         * packet is split to ensure that each handshake packet is smaller than the MTU.
+         */
+        if (s->mtu <= 0)
+            s->mtu = 1096;
+        SSL_set_options(c->ssl, SSL_OP_NO_QUERY_MTU);
+        SSL_set_mtu(c->ssl, s->mtu);
+        DTLS_set_link_mtu(c->ssl, s->mtu);
+    }
+
     init_bio_method(h);
     if (!s->listen && !s->numerichost) {
         // By default OpenSSL does too lax wildcard matching
@@ -921,14 +956,34 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
             goto fail;
         }
     }
-    ret = s->listen ? SSL_accept(c->ssl) : SSL_connect(c->ssl);
-    if (ret == 0) {
-        av_log(h, AV_LOG_ERROR, "Unable to negotiate TLS/SSL session\n");
-        ret = AVERROR(EIO);
-        goto fail;
-    } else if (ret < 0) {
-        ret = print_ssl_error(h, ret);
-        goto fail;
+
+    if (s->is_dtls) {
+        /* This seems to be necessary despite explicitly setting client/server method above. */
+        if (s->listen)
+            SSL_set_accept_state(c->ssl);
+        else
+            SSL_set_connect_state(c->ssl);
+
+        /* The SSL_do_handshake can't be called if DTLS hasn't prepared for udp. */
+        if (!c->tls_shared.external_sock) {
+            ret = dtls_handshake(h);
+            // Fatal SSL error, for example, no available suite when peer is DTLS 1.0 while we are DTLS 1.2.
+            if (ret < 0) {
+                av_log(c, AV_LOG_ERROR, "Failed to drive SSL context, ret=%d\n", ret);
+                return AVERROR(EIO);
+            }
+        }
+        av_log(c, AV_LOG_VERBOSE, "Setup ok, MTU=%d\n", c->tls_shared.mtu);
+    } else {
+        ret = s->listen ? SSL_accept(c->ssl) : SSL_connect(c->ssl);
+        if (ret == 0) {
+            av_log(h, AV_LOG_ERROR, "Unable to negotiate TLS/SSL session\n");
+            ret = AVERROR(EIO);
+            goto fail;
+        } else if (ret < 0) {
+            ret = print_ssl_error(h, ret);
+            goto fail;
+        }
     }
 
     return 0;
