@@ -323,6 +323,7 @@ static int shared_open(URLContext *h, const char *arg, int flags, AVDictionary *
 
     h->max_packet_size = s->block_size;
     h->min_packet_size = s->block_size;
+    ret = 0;
 
 fail:
     if (ret < 0)
