@@ -61,7 +61,7 @@ static int print_ops(SwsContext *ctx, const SwsOpList *ops, SwsCompiledOp *out)
 
     *out = (SwsCompiledOp) {0}; /* dummy value, will be immediately freed */
     pass_idx++;
-    return 0;
+    ret = 0;
 
 fail:
     ff_sws_uop_list_free(&uops);
