@@ -65,10 +65,12 @@ fate-aac-ap05_48: REF = $(SAMPLES)/aac/ap05_48.s16
 FATE_AAC += fate-aac-fd_2_c1_ms_0x01
 fate-aac-fd_2_c1_ms_0x01: CMD = pcm -i $(TARGET_SAMPLES)/aac/Fd_2_c1_Ms_0x01.mp4
 fate-aac-fd_2_c1_ms_0x01: REF = $(SAMPLES)/aac/Fd_2_c1_Ms_0x01.s16
+fate-aac-fd_2_c1_ms_0x01: SIZE_TOLERANCE = 3052
 
 FATE_AAC += fate-aac-fd_2_c1_ms_0x04
 fate-aac-fd_2_c1_ms_0x04: CMD = pcm -i $(TARGET_SAMPLES)/aac/Fd_2_c1_Ms_0x04.mp4
 fate-aac-fd_2_c1_ms_0x04: REF = $(SAMPLES)/aac/Fd_2_c1_Ms_0x04.s16
+fate-aac-fd_2_c1_ms_0x04: SIZE_TOLERANCE = 3436
 
 FATE_AAC += fate-aac-er_ad6000np_44_ep0
 fate-aac-er_ad6000np_44_ep0: CMD = pcm -i $(TARGET_SAMPLES)/aac/er_ad6000np_44_ep0.mp4
@@ -77,10 +79,12 @@ fate-aac-er_ad6000np_44_ep0: REF = $(SAMPLES)/aac/er_ad6000np_44.s16
 FATE_AAC += fate-aac-er_eld1001np_44_ep0
 fate-aac-er_eld1001np_44_ep0: CMD = pcm -i $(TARGET_SAMPLES)/aac/er_eld1001np_44_ep0.mp4
 fate-aac-er_eld1001np_44_ep0: REF = $(SAMPLES)/aac/er_eld1001np_44.s16
+fate-aac-er_eld1001np_44_ep0: SIZE_TOLERANCE = 110
 
 FATE_AAC += fate-aac-er_eld2000np_48_ep0
 fate-aac-er_eld2000np_48_ep0: CMD = pcm -i $(TARGET_SAMPLES)/aac/er_eld2000np_48_ep0.mp4
 fate-aac-er_eld2000np_48_ep0: REF = $(SAMPLES)/aac/er_eld2000np_48_ep0.s16
+fate-aac-er_eld2000np_48_ep0: SIZE_TOLERANCE = 128
 
 FATE_AAC += fate-aac-er_eld2100np_48_ep0
 fate-aac-er_eld2100np_48_ep0: CMD = pcm -i $(TARGET_SAMPLES)/aac/er_eld2100np_48_ep0.mp4
@@ -137,10 +141,12 @@ fate-aac-fixed-er_ad6000np_44_ep0: REF = $(SAMPLES)/aac/er_ad6000np_44.s16
 FATE_AAC_FIXED += fate-aac-fixed-er_eld1001np_44_ep0
 fate-aac-fixed-er_eld1001np_44_ep0: CMD = pcm -c aac_fixed -i $(TARGET_SAMPLES)/aac/er_eld1001np_44_ep0.mp4
 fate-aac-fixed-er_eld1001np_44_ep0: REF = $(SAMPLES)/aac/er_eld1001np_44.s16
+fate-aac-fixed-er_eld1001np_44_ep0: SIZE_TOLERANCE = 110
 
 FATE_AAC_FIXED += fate-aac-fixed-er_eld2000np_48_ep0
 fate-aac-fixed-er_eld2000np_48_ep0: CMD = pcm -c aac_fixed -i $(TARGET_SAMPLES)/aac/er_eld2000np_48_ep0.mp4
 fate-aac-fixed-er_eld2000np_48_ep0: REF = $(SAMPLES)/aac/er_eld2000np_48_ep0.s16
+fate-aac-fixed-er_eld2000np_48_ep0: SIZE_TOLERANCE = 128
 
 fate-aac-ct%: CMD = pcm -i $(TARGET_SAMPLES)/aac/CT_DecoderCheck/$(@:fate-aac-ct-%=%)
 fate-aac-ct%: REF = $(SAMPLES)/aac/CT_DecoderCheck/aacPlusv2.wav

@@ -22,7 +22,7 @@ packet|pts=524288|dts=524288|duration=1024|flags=K__
 packet|pts=525312|dts=525312|duration=1024|flags=K__
 packet|pts=526336|dts=526336|duration=1024|flags=K__
 packet|pts=527360|dts=527360|duration=1024|flags=K__
-packet|pts=528384|dts=528384|duration=816|flags=K__
+packet|pts=528384|dts=528384|duration=816|flags=K__|
 stream|nb_read_packets=518
 frame|pts=0|pkt_dts=0|best_effort_timestamp=0|nb_samples=1024
 frame|pts=1024|pkt_dts=1024|best_effort_timestamp=1024|nb_samples=1024
@@ -39,5 +39,5 @@ frame|pts=524288|pkt_dts=524288|best_effort_timestamp=524288|nb_samples=1024
 frame|pts=525312|pkt_dts=525312|best_effort_timestamp=525312|nb_samples=1024
 frame|pts=526336|pkt_dts=526336|best_effort_timestamp=526336|nb_samples=1024
 frame|pts=527360|pkt_dts=527360|best_effort_timestamp=527360|nb_samples=1024
-frame|pts=528384|pkt_dts=528384|best_effort_timestamp=528384|nb_samples=1024
+frame|pts=528384|pkt_dts=528384|best_effort_timestamp=528384|nb_samples=816
 stream|nb_read_frames=517
