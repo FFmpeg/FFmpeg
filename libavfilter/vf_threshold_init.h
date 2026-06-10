@@ -86,6 +86,8 @@ av_unused static void ff_threshold_init(ThresholdContext *s)
 
 #if ARCH_X86 && HAVE_X86ASM
     ff_threshold_init_x86(s);
+#elif ARCH_AARCH64
+    ff_threshold_init_aarch64(s);
 #endif
 }
 

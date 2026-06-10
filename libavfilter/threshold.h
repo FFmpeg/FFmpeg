@@ -47,5 +47,6 @@ typedef struct ThresholdContext {
 } ThresholdContext;
 
 void ff_threshold_init_x86(ThresholdContext *s);
+void ff_threshold_init_aarch64(ThresholdContext *s);
 
 #endif /* AVFILTER_THRESHOLD_H */
