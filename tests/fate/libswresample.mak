@@ -1105,5 +1105,12 @@ fate-swr-custom-rematrix: CMP = oneline
 fate-swr-custom-rematrix: REF = 2a14a44deb4ae26e3b474ddbfbc048f8
 
 FATE_SWR += $(FATE_SWR_CUSTOM_REMATRIX-yes)
+
+FATE_SWR_REALLOC-$(CONFIG_SWRESAMPLE) += fate-swr-resample-realloc
+fate-swr-resample-realloc: libswresample/tests/swresample_resample_realloc$(EXESUF)
+fate-swr-resample-realloc: CMD = run libswresample/tests/swresample_resample_realloc$(EXESUF)
+
+FATE_SWR += $(FATE_SWR_REALLOC-yes)
+
 FATE_FFMPEG += $(FATE_SWR)
 fate-swr: $(FATE_SWR)

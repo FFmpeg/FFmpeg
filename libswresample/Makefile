@@ -24,4 +24,5 @@ SHLIBOBJS              += log2_tab.o
 # Windows resource file
 SHLIBOBJS-$(HAVE_GNU_WINDRES) += swresampleres.o
 
-TESTPROGS = swresample
+TESTPROGS = swresample \
+            swresample_resample_realloc \
