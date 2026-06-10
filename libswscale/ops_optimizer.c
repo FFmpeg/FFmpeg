@@ -493,6 +493,24 @@ retry:
                 ff_sws_op_list_remove_at(ops, n + 1, 1);
                 goto retry;
             }
+
+            /* Fold into linear op */
+            if (next->op == SWS_OP_LINEAR) {
+                for (int j = 0; j < 4; j++) {
+                    if (!SWS_COMP_TEST(op->clear.mask, j))
+                        continue;
+
+                    const AVRational64 x = op->clear.value[j];
+                    for (int i = 0; i < 4; i++) {
+                        const AVRational64 kx = ff_mul_q64(next->lin.m[i][j], x);
+                        next->lin.m[i][4] = ff_add_q64(next->lin.m[i][4], kx);
+                        next->lin.m[i][j] = Q(0);
+                    }
+                }
+
+                ff_sws_op_list_remove_at(ops, n, 1);
+                goto retry;
+            }
             break;
 
         case SWS_OP_SWIZZLE:
