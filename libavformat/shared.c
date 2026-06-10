@@ -600,7 +600,7 @@ static int shared_read(URLContext *h, unsigned char *buf, int size)
     Block *const block = &s->spacemap->blocks[block_id];
     unsigned short state = atomic_load_explicit(&block->state, memory_order_acquire);
     int64_t pending_since = 0;
-    int verify_read = 0;
+    int verify_read = 0, is_race = 0;
 
 retry:
     switch (state) {
@@ -661,11 +661,14 @@ retry:
     case BLOCK_PENDING:
         /* Another thread is busy fetching this block, wait for it to finish */
         if (!s->timeout) {
+            is_race = 1;
             break; /* no timeout requested, immediately race to fetch block */
         } else if (pending_since) {
             int64_t new = av_gettime_relative();
-            if (new - pending_since >= s->timeout)
+            if (new - pending_since >= s->timeout) {
+                is_race = 1;
                 break; /* timeout expired, try to fetch the block ourselves */
+            }
         } else {
             pending_since = av_gettime_relative();
         }
@@ -720,7 +723,7 @@ retry:
     }
 
     int write_back = 1;
-    if (s->cache_data) {
+    if (s->cache_data && !is_race) {
         /* Read directly into memory mapped cache file */
         tmp = s->cache_data + block_pos;
         write_back = 0;
