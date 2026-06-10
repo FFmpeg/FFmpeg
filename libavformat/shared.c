@@ -292,8 +292,11 @@ static int shared_open(URLContext *h, const char *arg, int flags, AVDictionary *
         if (filesize < 0 && filesize != AVERROR(ENOSYS)) {
             ret = (int) filesize;
             goto fail;
-        } else if (filesize > 0)
-            set_filesize(h, filesize);
+        } else if (filesize > 0) {
+            ret = set_filesize(h, filesize);
+            if (ret < 0)
+                goto fail;
+        }
     }
 
     if (filesize > 0) {
@@ -804,8 +807,10 @@ static int64_t shared_seek(URLContext *h, int64_t pos, int whence)
         if (filesize)
             return filesize;
         res = ffurl_seek(s->inner, pos, whence);
-        if (res > 0)
-            set_filesize(h, res);
+        if (res > 0) {
+            if (set_filesize(h, res) < 0)
+                return AVERROR(EINVAL);
+        }
         return res;
     case SEEK_SET:
         break;
@@ -821,7 +826,9 @@ static int64_t shared_seek(URLContext *h, int64_t pos, int whence)
         res = ffurl_seek(s->inner, pos, whence);
         if (res < 0)
             return res;
-        set_filesize(h, res - pos); /* Opportunistically update known filesize */
+        /* Opportunistically update known filesize */
+        if (set_filesize(h, res - pos) < 0)
+            return AVERROR(EINVAL);
         av_log(h, AV_LOG_DEBUG, "Inner seek to 0x%"PRIx64"\n", res);
         return s->pos = s->inner_pos = res;
     default:
