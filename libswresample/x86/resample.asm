@@ -198,7 +198,8 @@ cglobal resample_common_%1, 1, 7, 2, ctx, phase_count, dst, frac, \
     add                        fracd, dst_incr_modd
     packssdw                      m0, m0
     add                       indexd, dst_incr_divd
-    movd                      [dstq], m0
+    movd                     filterd, m0
+    mov                       [dstq], filterw
 %else ; float/double
     ; horizontal sum & store
 %if mmsize == 32
@@ -478,7 +479,8 @@ cglobal resample_linear_%1, 1, 7, 5, ctx, min_filter_length_x4, filter2, \
     paddd                         m0, m1
     psrad                         m0, 15
     packssdw                      m0, m0
-    movd                      [dstq], m0
+    movd                         eax, m0
+    mov                       [dstq], ax
 
     ; note that for imul/idiv, I need to move filter to edx/eax for each:
     ; - 32bit: eax=r0[filter1], edx=r2[filter2]
