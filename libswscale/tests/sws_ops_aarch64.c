@@ -93,14 +93,12 @@ static int register_op(SwsContext *ctx, void *opaque, SwsOpList *ops)
         }
     }
 
-    /* Make on-stack copy of `ops` to iterate over */
-    SwsOpList rest = *ops;
     /* Use at most two full vregs during the widest precision section */
     int block_size = (ff_sws_op_list_max_size(ops) == 4) ? 8 : 16;
 
-    for (int i = 0; i < rest.num_ops; i++) {
+    for (int i = 0; i < ops->num_ops; i++) {
         SwsAArch64OpImplParams params = { 0 };
-        ret = convert_to_aarch64_impl(ctx, &rest, i, block_size, &params);
+        ret = convert_to_aarch64_impl(ctx, ops, i, block_size, &params);
         if (ret == AVERROR(ENOTSUP))
             continue;
         if (ret < 0)
