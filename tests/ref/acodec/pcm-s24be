@@ -1,4 +1,4 @@
-90ed890d45e9ea8edb37d2e2e09227df *tests/data/fate/acodec-pcm-s24be.mov
+bc5d7b749b49cd4af7f6cdec53266511 *tests/data/fate/acodec-pcm-s24be.mov
 1588323 tests/data/fate/acodec-pcm-s24be.mov
 95e54b261530a1bcf6de6fe3b21dc5f6 *tests/data/fate/acodec-pcm-s24be.out.wav
 stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  1058400/  1058400

@@ -116,7 +116,7 @@ static const AVOption options[] = {
       { "hybrid_fragmented", "For recoverability, write a fragmented file that is converted to non-fragmented at the end.", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_HYBRID_FRAGMENTED}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, .unit = "movflags" },
     { "min_frag_duration", "Minimum fragment duration", offsetof(MOVMuxContext, min_fragment_duration), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
     { "mov_gamma", "gamma value for gama atom", offsetof(MOVMuxContext, gamma), AV_OPT_TYPE_FLOAT, {.dbl = 0.0 }, 0.0, 10, AV_OPT_FLAG_ENCODING_PARAM},
-    { "movie_timescale", "set movie timescale", offsetof(MOVMuxContext, movie_timescale), AV_OPT_TYPE_INT, {.i64 = MOV_TIMESCALE}, 1, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
+    { "movie_timescale", "set movie timescale", offsetof(MOVMuxContext, movie_timescale), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
     FF_RTP_FLAG_OPTS(MOVMuxContext, rtp_flags),
     { "skip_iods", "Skip writing iods atom.", offsetof(MOVMuxContext, iods_skip), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM},
     { "use_editlist", "use edit list", offsetof(MOVMuxContext, use_editlist), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, AV_OPT_FLAG_ENCODING_PARAM},
@@ -8416,10 +8416,10 @@ static int mov_init(AVFormatContext *s)
         st->priv_data = &mov->tracks[i++];
     }
 
+    AVRational movie_timescale = (AVRational) { 0, 1 };
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st= s->streams[i];
         MOVTrack *track = st->priv_data;
-        AVDictionaryEntry *lang = av_dict_get(st->metadata, "language", NULL,0);
 
         if (!track)
             continue;
@@ -8428,6 +8428,22 @@ static int mov_init(AVFormatContext *s)
             track->st  = st;
             track->par = st->codecpar;
         }
+
+        movie_timescale = av_gcd_q(movie_timescale, st->time_base, INT_MAX, MOV_TIMESCALE_Q);
+        if (!av_cmp_q(movie_timescale, MOV_TIMESCALE_Q))
+            break;
+    }
+    if (!mov->movie_timescale)
+        mov->movie_timescale = FFMAX(movie_timescale.den, MOV_TIMESCALE);
+
+    for (i = 0; i < s->nb_streams; i++) {
+        AVStream *st= s->streams[i];
+        MOVTrack *track = st->priv_data;
+        AVDictionaryEntry *lang = av_dict_get(st->metadata, "language", NULL,0);
+
+        if (!track)
+            continue;
+
         track->language = ff_mov_iso639_to_lang(lang?lang->value:"und", mov->mode!=MODE_MOV);
         if (track->language < 0)
             track->language = 32767;  // Unspecified Macintosh language code

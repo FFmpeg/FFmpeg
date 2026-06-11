@@ -1,11 +1,11 @@
 [STREAM]
 index=0
 start_pts=0
-duration_ts=103326
+duration_ts=103360
 [/STREAM]
 [FORMAT]
 start_time=0.000000
-duration=2.342993
+duration=2.343764
 [/FORMAT]
 packet|pts=-1024|dts=-1024|duration=1024|flags=KD_|
 packet|pts=0|dts=0|duration=1024|flags=K__
