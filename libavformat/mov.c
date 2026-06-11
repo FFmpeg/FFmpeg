@@ -9360,6 +9360,12 @@ static int mov_read_ispe(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     av_log(c->fc, AV_LOG_TRACE, "ispe: item_id %d, width %"PRIu32", height %"PRIu32"\n",
            c->cur_item_id, width, height);
 
+    if (!width || !height || width > INT_MAX || height > INT_MAX) {
+        av_log(c->fc, AV_LOG_ERROR, "Invalid ispe dimensions %"PRIu32"x%"PRIu32"\n",
+               width, height);
+        return AVERROR_INVALIDDATA;
+    }
+
     item = get_heif_item(c, c->cur_item_id);
     if (item) {
         item->width  = width;
@@ -10355,8 +10361,10 @@ static int read_image_grid(AVFormatContext *s, const HEIFGrid *grid,
 {
     MOVContext *c = s->priv_data;
     const HEIFItem *item = grid->item;
+    int64_t coded_width = 0, coded_height = 0;
     int64_t offset = 0, pos = avio_tell(s->pb);
-    int x = 0, y = 0, i = 0;
+    int64_t x = 0, y = 0;
+    int i = 0;
     int tile_rows, tile_cols;
     int flags, size;
 
@@ -10398,9 +10406,15 @@ static int read_image_grid(AVFormatContext *s, const HEIFGrid *grid,
         return AVERROR_INVALIDDATA;
 
     for (int i = 0; i < tile_cols; i++)
-        tile_grid->coded_width  += grid->tile_item_list[i]->width;
+        coded_width  += grid->tile_item_list[i]->width;
     for (int i = 0; i < size; i += tile_cols)
-        tile_grid->coded_height += grid->tile_item_list[i]->height;
+        coded_height += grid->tile_item_list[i]->height;
+
+    if (coded_width > INT_MAX || coded_height > INT_MAX)
+        return AVERROR_INVALIDDATA;
+
+    tile_grid->coded_width  = coded_width;
+    tile_grid->coded_height = coded_height;
 
     tile_grid->offsets = av_calloc(tile_grid->nb_tiles, sizeof(*tile_grid->offsets));
     if (!tile_grid->offsets)
