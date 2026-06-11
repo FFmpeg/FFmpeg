@@ -47,9 +47,10 @@
 
 #include "libswresample/swresample.h"
 
-#include "avcodec.h"
-#include "codec_internal.h"
-#include "decode.h"
+#include "libavcodec/avcodec.h"
+#include "libavcodec/codec_internal.h"
+#include "libavcodec/decode.h"
+
 #include "opus.h"
 #include "tab.h"
 #include "celt.h"

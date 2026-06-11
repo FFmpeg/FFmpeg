@@ -21,7 +21,6 @@
 
 #include <float.h>
 
-#include "encode.h"
 #include "enc.h"
 #include "pvq.h"
 #include "enc_psy.h"
@@ -32,9 +31,11 @@
 #include "libavutil/mem.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/opt.h"
-#include "bytestream.h"
-#include "audio_frame_queue.h"
-#include "codec_internal.h"
+
+#include "libavcodec/audio_frame_queue.h"
+#include "libavcodec/bytestream.h"
+#include "libavcodec/codec_internal.h"
+#include "libavcodec/encode.h"
 
 typedef struct OpusEncContext {
     AVClass *av_class;

@@ -30,5 +30,3 @@ OBJS-$(CONFIG_OPUS_ENCODER) +=  \
 
 STLIBOBJS-$(CONFIG_MATROSKA_MUXER)   += opus/frame_duration_tab.o
 STLIBOBJS-$(CONFIG_WEBM_MUXER)       += opus/frame_duration_tab.o
-
-libavcodec/opus/%.o: CPPFLAGS += -I$(SRC_PATH)/libavcodec/

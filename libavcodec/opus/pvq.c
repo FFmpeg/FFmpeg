@@ -28,7 +28,7 @@
 #include "config_components.h"
 
 #include "libavutil/mem.h"
-#include "mathops.h"
+#include "libavcodec/mathops.h"
 #include "tab.h"
 #include "pvq.h"
 
