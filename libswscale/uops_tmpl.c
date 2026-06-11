@@ -837,11 +837,12 @@ DECL_FUNC(linear, const SwsCompMask mask, const uint32_t one, const uint32_t zer
     ((one & SWS_MASK(I, J)) ? (val) : c.m[I][J] * (val))
 
 #define LIN_ROW(I, var) do {                                    \
-    var[i] = (zero & SWS_MASK(I, 4)) ? 0 : c.k[I];              \
-    if (!(zero & SWS_MASK(I, 0))) var[i] += LIN_VAL(I, 0, xx);  \
-    if (!(zero & SWS_MASK(I, 1))) var[i] += LIN_VAL(I, 1, yy);  \
-    if (!(zero & SWS_MASK(I, 2))) var[i] += LIN_VAL(I, 2, zz);  \
-    if (!(zero & SWS_MASK(I, 3))) var[i] += LIN_VAL(I, 3, ww);  \
+    pixel_t tmp = (zero & SWS_MASK(I, 4)) ? 0 : c.k[I];         \
+    if (!(zero & SWS_MASK(I, 0))) tmp += LIN_VAL(I, 0, xx);     \
+    if (!(zero & SWS_MASK(I, 1))) tmp += LIN_VAL(I, 1, yy);     \
+    if (!(zero & SWS_MASK(I, 2))) tmp += LIN_VAL(I, 2, zz);     \
+    if (!(zero & SWS_MASK(I, 3))) tmp += LIN_VAL(I, 3, ww);     \
+    var[i] = tmp;                                               \
 } while (0)
 
         if (X) LIN_ROW(0, x);
