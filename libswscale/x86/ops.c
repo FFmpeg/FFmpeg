@@ -575,11 +575,11 @@ static int compile(SwsContext *ctx, const SwsOpList *ops, SwsCompiledOp *out)
 {
     const int cpu_flags = av_get_cpu_flags();
     int ret, mmsize;
-    if (X86_AVX512(cpu_flags))
+    if (EXTERNAL_AVX512(cpu_flags))
         mmsize = 64;
-    else if (X86_AVX2(cpu_flags))
+    else if (EXTERNAL_AVX2(cpu_flags))
         mmsize = 32;
-    else if (X86_SSE4(cpu_flags))
+    else if (EXTERNAL_SSE4(cpu_flags))
         mmsize = 16;
     else
         return AVERROR(ENOTSUP);
@@ -600,7 +600,7 @@ static int compile(SwsContext *ctx, const SwsOpList *ops, SwsCompiledOp *out)
     }
 
     SwsUOpFlags flags = SWS_UOP_FLAG_MOVE;
-    if (X86_FMA4(cpu_flags))
+    if (EXTERNAL_FMA3(cpu_flags))
         flags |= SWS_UOP_FLAG_FMA;
 
     ret = ff_sws_ops_translate(ctx, ops, flags, uops);
