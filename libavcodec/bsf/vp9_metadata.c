@@ -19,11 +19,11 @@
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 
-#include "bsf.h"
-#include "bsf_internal.h"
-#include "cbs.h"
-#include "cbs_bsf.h"
-#include "cbs_vp9.h"
+#include "libavcodec/bsf.h"
+#include "libavcodec/bsf_internal.h"
+#include "libavcodec/cbs.h"
+#include "libavcodec/cbs_bsf.h"
+#include "libavcodec/cbs_vp9.h"
 
 typedef struct VP9MetadataContext {
     CBSBSFContext common;

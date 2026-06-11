@@ -19,12 +19,12 @@
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
 
-#include "bsf.h"
-#include "bsf_internal.h"
-#include "cbs.h"
-#include "cbs_bsf.h"
-#include "cbs_lcevc.h"
-#include "lcevc.h"
+#include "libavcodec/bsf.h"
+#include "libavcodec/bsf_internal.h"
+#include "libavcodec/cbs.h"
+#include "libavcodec/cbs_bsf.h"
+#include "libavcodec/cbs_lcevc.h"
+#include "libavcodec/lcevc.h"
 
 typedef struct LCEVCMetadataContext {
     CBSBSFContext common;

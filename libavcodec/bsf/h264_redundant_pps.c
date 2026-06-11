@@ -20,14 +20,14 @@
 
 #include "libavutil/log.h"
 
-#include "bsf.h"
-#include "bsf_internal.h"
-#include "cbs.h"
-#include "cbs_bsf.h"
-#include "cbs_h264.h"
-#include "codec_id.h"
-#include "h264.h"
-#include "packet.h"
+#include "libavcodec/bsf.h"
+#include "libavcodec/bsf_internal.h"
+#include "libavcodec/cbs.h"
+#include "libavcodec/cbs_bsf.h"
+#include "libavcodec/cbs_h264.h"
+#include "libavcodec/codec_id.h"
+#include "libavcodec/h264.h"
+#include "libavcodec/packet.h"
 
 #define NEW_GLOBAL_PIC_INIT_QP 26
 

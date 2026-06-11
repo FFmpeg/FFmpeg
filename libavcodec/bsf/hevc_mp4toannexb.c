@@ -24,12 +24,12 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
 
-#include "bsf.h"
-#include "bsf_internal.h"
-#include "bytestream.h"
-#include "defs.h"
+#include "libavcodec/bsf.h"
+#include "libavcodec/bsf_internal.h"
+#include "libavcodec/bytestream.h"
+#include "libavcodec/defs.h"
 
-#include "hevc/hevc.h"
+#include "libavcodec/hevc/hevc.h"
 
 #define MIN_HEVCC_LENGTH 23
 

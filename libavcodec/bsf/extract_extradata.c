@@ -22,20 +22,20 @@
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 
-#include "av1.h"
-#include "av1_parse.h"
-#include "bsf.h"
-#include "bsf_internal.h"
-#include "bytestream.h"
-#include "h2645_parse.h"
-#include "h264.h"
-#include "lcevc.h"
-#include "lcevc_parse.h"
-#include "startcode.h"
-#include "vc1_common.h"
-#include "vvc.h"
+#include "libavcodec/av1.h"
+#include "libavcodec/av1_parse.h"
+#include "libavcodec/bsf.h"
+#include "libavcodec/bsf_internal.h"
+#include "libavcodec/bytestream.h"
+#include "libavcodec/h2645_parse.h"
+#include "libavcodec/h264.h"
+#include "libavcodec/lcevc.h"
+#include "libavcodec/lcevc_parse.h"
+#include "libavcodec/startcode.h"
+#include "libavcodec/vc1_common.h"
+#include "libavcodec/vvc.h"
 
-#include "hevc/hevc.h"
+#include "libavcodec/hevc/hevc.h"
 
 typedef struct ExtractExtradataContext {
     const AVClass *class;

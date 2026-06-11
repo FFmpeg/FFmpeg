@@ -20,8 +20,8 @@
 
 #include <inttypes.h>
 
-#include "bsf.h"
-#include "bsf_internal.h"
+#include "libavcodec/bsf.h"
+#include "libavcodec/bsf_internal.h"
 
 #include "libavutil/adler32.h"
 #include "libavutil/log.h"

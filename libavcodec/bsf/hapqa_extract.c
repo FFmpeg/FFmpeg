@@ -25,10 +25,10 @@
  * extract one of the two textures of the HAQA
  */
 
-#include "bsf.h"
-#include "bsf_internal.h"
-#include "bytestream.h"
-#include "hap.h"
+#include "libavcodec/bsf.h"
+#include "libavcodec/bsf_internal.h"
+#include "libavcodec/bytestream.h"
+#include "libavcodec/hap.h"
 
 #include "libavutil/opt.h"
 

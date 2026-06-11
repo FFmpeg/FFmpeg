@@ -32,10 +32,10 @@
 
 #include "libavutil/avassert.h"
 
-#include "bsf.h"
-#include "bsf_internal.h"
-#include "cbs.h"
-#include "cbs_av1.h"
+#include "libavcodec/bsf.h"
+#include "libavcodec/bsf_internal.h"
+#include "libavcodec/cbs.h"
+#include "libavcodec/cbs_av1.h"
 
 typedef struct AV1FSplitContext {
     AVPacket *buffer_pkt;

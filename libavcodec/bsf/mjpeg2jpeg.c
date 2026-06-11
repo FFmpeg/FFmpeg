@@ -29,10 +29,10 @@
 #include "libavutil/error.h"
 #include "libavutil/intreadwrite.h"
 
-#include "bsf.h"
-#include "bsf_internal.h"
-#include "jpegtables.h"
-#include "mjpeg.h"
+#include "libavcodec/bsf.h"
+#include "libavcodec/bsf_internal.h"
+#include "libavcodec/jpegtables.h"
+#include "libavcodec/mjpeg.h"
 
 static const uint8_t jpeg_header[] = {
     0xff, 0xd8,                     // SOI

@@ -24,10 +24,10 @@
 
 #include <stddef.h>
 
-#include "bsf.h"
-#include "bsf_internal.h"
-#include "bytestream.h"
-#include "get_bits.h"
+#include "libavcodec/bsf.h"
+#include "libavcodec/bsf_internal.h"
+#include "libavcodec/bytestream.h"
+#include "libavcodec/get_bits.h"
 
 typedef struct VP9SFSplitContext {
     AVPacket *buffer_pkt;

@@ -24,12 +24,12 @@
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 
-#include "bsf.h"
-#include "bsf_internal.h"
-#include "h2645_parse.h"
-#include "packet.h"
+#include "libavcodec/bsf.h"
+#include "libavcodec/bsf_internal.h"
+#include "libavcodec/h2645_parse.h"
+#include "libavcodec/packet.h"
 
-#include "hevc/hevc.h"
+#include "libavcodec/hevc/hevc.h"
 
 enum DOVISplitMode {
     DOVI_SPLIT_BL     = 0,

@@ -20,18 +20,18 @@
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 
-#include "bsf.h"
-#include "bsf_internal.h"
-#include "cbs.h"
-#include "cbs_bsf.h"
-#include "cbs_av1.h"
-#include "cbs_h265.h"
-#include "dovi_rpu.h"
-#include "h2645data.h"
-#include "h265_profile_level.h"
-#include "itut35.h"
+#include "libavcodec/bsf.h"
+#include "libavcodec/bsf_internal.h"
+#include "libavcodec/cbs.h"
+#include "libavcodec/cbs_bsf.h"
+#include "libavcodec/cbs_av1.h"
+#include "libavcodec/cbs_h265.h"
+#include "libavcodec/dovi_rpu.h"
+#include "libavcodec/h2645data.h"
+#include "libavcodec/h265_profile_level.h"
+#include "libavcodec/itut35.h"
 
-#include "hevc/hevc.h"
+#include "libavcodec/hevc/hevc.h"
 
 typedef struct DoviRpuContext {
     CBSBSFContext common;
