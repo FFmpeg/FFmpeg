@@ -131,6 +131,17 @@ void ff_hls_write_playlist_header(AVIOContext *out, int version, int allowcache,
     }
 }
 
+void ff_hls_write_discontinuity_sequence(AVIOContext *out,
+                                         int64_t discontinuity_sequence)
+{
+    if (!out)
+        return;
+    avio_printf(out, "#EXT-X-DISCONTINUITY-SEQUENCE:%"PRId64"\n",
+                discontinuity_sequence);
+    av_log(NULL, AV_LOG_VERBOSE, "EXT-X-DISCONTINUITY-SEQUENCE:%"PRId64"\n",
+           discontinuity_sequence);
+}
+
 void ff_hls_write_init_file(AVIOContext *out, const char *filename,
                             int byterange_mode, int64_t size, int64_t pos)
 {

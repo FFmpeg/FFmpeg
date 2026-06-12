@@ -148,6 +148,9 @@ typedef struct VariantStream {
     int nb_entries;
     int discontinuity_set;
     int discontinuity;
+    int64_t discontinuity_sequence;
+    int discontinuity_sequence_set;
+    int discont_start_in_playlist;
     int reference_stream_index;
 
     int64_t total_size;
@@ -1093,6 +1096,24 @@ static int sls_flag_use_localtime_filename(AVFormatContext *oc, HLSContext *c, V
     return 0;
 }
 
+static void hls_increment_discontinuity_sequence(VariantStream *vs)
+{
+    if (vs->discontinuity_sequence < INT64_MAX)
+        vs->discontinuity_sequence++;
+}
+
+static void hls_update_discontinuity_sequence(VariantStream *vs,
+                                              const HLSSegment *segment)
+{
+    if (vs->discont_start_in_playlist) {
+        hls_increment_discontinuity_sequence(vs);
+        vs->discont_start_in_playlist = 0;
+    }
+
+    if (segment && segment->discont)
+        hls_increment_discontinuity_sequence(vs);
+}
+
 /* Create a new segment and append it to the segment list */
 static int hls_append_segment(struct AVFormatContext *s, HLSContext *hls,
                               VariantStream *vs, double duration, int64_t pos,
@@ -1176,6 +1197,7 @@ static int hls_append_segment(struct AVFormatContext *s, HLSContext *hls,
         en = vs->segments;
         if (!en->next->discont_program_date_time && !en->discont_program_date_time)
             vs->initial_prog_date_time += en->duration;
+        hls_update_discontinuity_sequence(vs, en);
         vs->segments = en->next;
         if (en && hls->flags & HLS_DELETE_SEGMENTS &&
                 !(hls->flags & HLS_SINGLE_FILE)) {
@@ -1256,6 +1278,19 @@ static int parse_playlist(AVFormatContext *s, const char *url, VariantStream *vs
             else {
               av_log(hls, AV_LOG_DEBUG, "Found playlist sequence number: %"PRId64"\n", tmp_sequence);
               vs->sequence = tmp_sequence;
+            }
+        } else if (av_strstart(line, "#EXT-X-DISCONTINUITY-SEQUENCE:", &ptr)) {
+            int64_t tmp_sequence = strtoll(ptr, NULL, 10);
+            if (tmp_sequence < 0) {
+                av_log(hls, AV_LOG_WARNING,
+                       "Found playlist discontinuity sequence number was negative: %"PRId64", omitting\n",
+                       tmp_sequence);
+            } else {
+                av_log(hls, AV_LOG_DEBUG,
+                       "Found playlist discontinuity sequence number: %"PRId64"\n",
+                       tmp_sequence);
+                vs->discontinuity_sequence = tmp_sequence;
+                vs->discontinuity_sequence_set = 1;
             }
         } else if (av_strstart(line, "#EXT-X-DISCONTINUITY", &ptr)) {
             is_segment = 1;
@@ -1615,6 +1650,8 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
     double prog_date_time = vs->initial_prog_date_time;
     double *prog_date_time_p = (hls->flags & HLS_PROGRAM_DATE_TIME) ? &prog_date_time : NULL;
     int byterange_mode = (hls->flags & HLS_SINGLE_FILE) || (hls->max_seg_size > 0);
+    int write_discontinuity_sequence = (hls->flags & HLS_APPEND_LIST) || (hls->flags & HLS_DISCONT_START) || vs->discontinuity_sequence_set;
+    int discont_start_written = 0;
 
     hls->version = 2;
     if (!(hls->flags & HLS_ROUND_DURATIONS)) {
@@ -1658,9 +1695,16 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
     ff_hls_write_playlist_header(byterange_mode ? hls->m3u8_out : vs->out, hls->version, hls->allowcache,
                                  target_duration, sequence, hls->pl_type, hls->flags & HLS_I_FRAMES_ONLY);
 
+    if (write_discontinuity_sequence) {
+        ff_hls_write_discontinuity_sequence(byterange_mode ? hls->m3u8_out : vs->out, vs->discontinuity_sequence);
+    }
+
     if ((hls->flags & HLS_DISCONT_START) && sequence==hls->start_sequence && vs->discontinuity_set==0) {
         avio_printf(byterange_mode ? hls->m3u8_out : vs->out, "#EXT-X-DISCONTINUITY\n");
         vs->discontinuity_set = 1;
+        vs->discont_start_in_playlist = 1;
+
+        discont_start_written = 1;
     }
     if (vs->has_video && (hls->flags & HLS_INDEPENDENT_SEGMENTS)) {
         avio_printf(byterange_mode ? hls->m3u8_out : vs->out, "#EXT-X-INDEPENDENT-SEGMENTS\n");
@@ -1707,6 +1751,17 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
         }
         ff_hls_write_playlist_header(hls->sub_m3u8_out, hls->version, hls->allowcache,
                                      target_duration, sequence, PLAYLIST_TYPE_NONE, 0);
+
+        if (write_discontinuity_sequence) {
+            ff_hls_write_discontinuity_sequence(hls->sub_m3u8_out,
+                                                vs->discontinuity_sequence);
+        }
+
+        // To sync discontinuity sequence between main and sub playlists
+        if (write_discontinuity_sequence && discont_start_written) {
+            avio_printf(hls->sub_m3u8_out, "#EXT-X-DISCONTINUITY\n");
+        }
+
         for (en = vs->segments; en; en = en->next) {
             ret = ff_hls_write_file_entry(hls->sub_m3u8_out, en->discont, byterange_mode,
                                           en->duration, 0, en->size, en->pos,

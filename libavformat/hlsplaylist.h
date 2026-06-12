@@ -50,6 +50,8 @@ void ff_hls_write_stream_info(AVStream *st, AVIOContext *out, int bandwidth,
 void ff_hls_write_playlist_header(AVIOContext *out, int version, int allowcache,
                                   int target_duration, int64_t sequence,
                                   uint32_t playlist_type, int iframe_mode);
+void ff_hls_write_discontinuity_sequence(AVIOContext *out,
+                                  int64_t discontinuity_sequence);
 void ff_hls_write_init_file(AVIOContext *out, const char *filename,
                             int byterange_mode, int64_t size, int64_t pos);
 int ff_hls_write_file_entry(AVIOContext *out, int insert_discont,
