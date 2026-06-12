@@ -810,17 +810,19 @@ static void dump_stream_group(const AVFormatContext *ic, uint8_t *printed,
         }
         break;
     }
+    case AV_STREAM_GROUP_PARAMS_DOLBY_VISION:
     case AV_STREAM_GROUP_PARAMS_LCEVC: {
-        const AVStreamGroupLayeredVideo *lcevc = stg->params.layered_video;
+        const AVStreamGroupLayeredVideo *layered_video = stg->params.layered_video;
         AVCodecContext *avctx = avcodec_alloc_context3(NULL);
         const char *ptr = NULL;
-        av_log(NULL, AV_LOG_INFO, " LCEVC:");
+        av_log(NULL, AV_LOG_INFO, " %s:", stg->type == AV_STREAM_GROUP_PARAMS_DOLBY_VISION ?
+                                          "Dolby Vision" : "LCEVC");
         if (avctx && stg->nb_streams == 2 &&
-            !avcodec_parameters_to_context(avctx, stg->streams[!lcevc->el_index]->codecpar)) {
-            avctx->width  = lcevc->width;
-            avctx->height = lcevc->height;
-            avctx->coded_width  = lcevc->width;
-            avctx->coded_height = lcevc->height;
+            !avcodec_parameters_to_context(avctx, stg->streams[!layered_video->el_index]->codecpar)) {
+            avctx->width  = layered_video->width;
+            avctx->height = layered_video->height;
+            avctx->coded_width  = layered_video->width;
+            avctx->coded_height = layered_video->height;
             if (ic->dump_separator)
                 av_opt_set(avctx, "dump_separator", ic->dump_separator, 0);
             buf[0] = 0;
