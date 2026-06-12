@@ -25,12 +25,13 @@
 
 #include "libavutil/imgutils.h"
 #include "libavutil/mem.h"
-#include "golomb.h"
-#include "h2645_vui.h"
+#include "libavutil/refstruct.h"
+
+#include "libavcodec/golomb.h"
+#include "libavcodec/h2645_vui.h"
 #include "data.h"
 #include "ps.h"
-#include "profiles.h"
-#include "libavutil/refstruct.h"
+#include "libavcodec/profiles.h"
 
 static const uint8_t default_scaling_list_intra[] = {
     16, 16, 16, 16, 17, 18, 21, 24,

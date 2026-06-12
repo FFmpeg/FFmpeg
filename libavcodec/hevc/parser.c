@@ -23,14 +23,15 @@
 #include "libavutil/common.h"
 #include "libavutil/mem.h"
 
-#include "golomb.h"
+#include "libavcodec/golomb.h"
+#include "libavcodec/parser_internal.h"
+#include "libavcodec/h2645_parse.h"
+#include "libavcodec/parser.h"
+
 #include "hevc.h"
-#include "parser_internal.h"
 #include "parse.h"
 #include "ps.h"
 #include "sei.h"
-#include "h2645_parse.h"
-#include "parser.h"
 
 #define START_CODE 0x000001 ///< start_code_prefix_one_3bytes
 

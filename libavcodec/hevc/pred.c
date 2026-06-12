@@ -25,19 +25,19 @@
 #include "pred.h"
 
 #define BIT_DEPTH 8
-#include "pred_template.c"
+#include "libavcodec/hevc/pred_template.c"
 #undef BIT_DEPTH
 
 #define BIT_DEPTH 9
-#include "pred_template.c"
+#include "libavcodec/hevc/pred_template.c"
 #undef BIT_DEPTH
 
 #define BIT_DEPTH 10
-#include "pred_template.c"
+#include "libavcodec/hevc/pred_template.c"
 #undef BIT_DEPTH
 
 #define BIT_DEPTH 12
-#include "pred_template.c"
+#include "libavcodec/hevc/pred_template.c"
 #undef BIT_DEPTH
 
 void ff_hevc_pred_init(HEVCPredContext *hpc, int bit_depth)

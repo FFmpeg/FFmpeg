@@ -25,11 +25,11 @@
 #include "libavutil/mem.h"
 #include "libavutil/stereo3d.h"
 
-#include "decode.h"
+#include "libavcodec/decode.h"
 #include "hevc.h"
 #include "hevcdec.h"
-#include "progressframe.h"
-#include "thread.h"
+#include "libavcodec/progressframe.h"
+#include "libavcodec/thread.h"
 #include "libavutil/refstruct.h"
 
 void ff_hevc_unref_frame(HEVCFrame *frame, int flags)

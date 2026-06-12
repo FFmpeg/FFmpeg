@@ -18,9 +18,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "put_golomb.h"
+#include "libavcodec/put_golomb.h"
 #include "ps.h"
-#include "put_bits.h"
+#include "libavcodec/put_bits.h"
 
 static void write_ptl_layer(PutBitContext *pb, PTLCommon *ptl)
 {

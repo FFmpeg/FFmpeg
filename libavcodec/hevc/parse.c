@@ -16,8 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "bytestream.h"
-#include "h2645_parse.h"
+#include "libavcodec/bytestream.h"
+#include "libavcodec/h2645_parse.h"
 #include "hevc.h"
 #include "parse.h"
 

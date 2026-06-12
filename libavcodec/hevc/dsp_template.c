@@ -20,13 +20,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "get_bits.h"
+#include "libavcodec/get_bits.h"
 #include "hevcdec.h"
 
-#include "bit_depth_template.c"
+#include "libavcodec/bit_depth_template.c"
 #include "dsp.h"
-#include "h26x/h2656_sao_template.c"
-#include "h26x/h2656_inter_template.c"
+#include "libavcodec/h26x/h2656_sao_template.c"
+#include "libavcodec/h26x/h2656_inter_template.c"
 
 static void FUNC(put_pcm)(uint8_t *_dst, ptrdiff_t stride, int width, int height,
                           GetBitContext *gb, int pcm_bit_depth)
@@ -836,7 +836,7 @@ static void FUNC(put_hevc_epel_bi_w_hv)(uint8_t *_dst, ptrdiff_t _dststride,
 #define TQ2 pix[2  * xstride + 3 * ystride]
 #define TQ3 pix[3  * xstride + 3 * ystride]
 
-#include "h26x/h2656_deblock_template.c"
+#include "libavcodec/h26x/h2656_deblock_template.c"
 
 static void FUNC(hevc_loop_filter_luma)(uint8_t *_pix,
                                         ptrdiff_t _xstride, ptrdiff_t _ystride,

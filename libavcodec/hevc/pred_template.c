@@ -22,7 +22,7 @@
 
 #include "libavutil/pixdesc.h"
 
-#include "bit_depth_template.c"
+#include "libavcodec/bit_depth_template.c"
 #include "pred.h"
 
 static void FUNC(ref_filter_3tap)(uint8_t *filtered_left,
