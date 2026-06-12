@@ -762,7 +762,7 @@ static int compute_kernel(AVFilterContext *ctx)
             }
         }
 
-        for (int n = b; n >= a; n--) {
+        for (int n = b - 1; n >= a; n--) {
             if (tkernel[n+range] != 0.f) {
                 if (tkernel[n+range] > FLT_MIN)
                     av_log(ctx, AV_LOG_DEBUG, "out of range kernel %g\n", tkernel[n+range]);
