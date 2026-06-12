@@ -34,6 +34,10 @@ void ff_rtp_send_amr(AVFormatContext *s1, const uint8_t *buff, int size)
     int max_header_toc_size   = 1 + s->max_frames_per_packet;
     uint8_t *p;
     int len;
+    int max_size = st->codecpar->codec_id == AV_CODEC_ID_AMR_NB ? 32 : 61;
+
+    if (size < 1 || size > max_size)
+        return;
 
     /* Test if the packet must be sent. */
     len = s->buf_ptr - s->buf;
