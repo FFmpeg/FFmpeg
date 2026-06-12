@@ -1618,6 +1618,14 @@ void ff_vk_set_perm(enum AVPixelFormat pix_fmt, int lut[4], int inv)
         lut[2] = 1;
         lut[3] = 3;
         break;
+    case AV_PIX_FMT_BGRA:
+    case AV_PIX_FMT_BGR0:
+        /* Stored in RGBA images, so reverse them */
+        lut[0] = 2;
+        lut[1] = 1;
+        lut[2] = 0;
+        lut[3] = 3;
+        break;
     default:
         lut[0] = 0;
         lut[1] = 1;
