@@ -817,6 +817,7 @@ static int config_output(AVFilterLink *outlink)
     float maximum_frequency = fminf(s->maximum_frequency, limit_frequency);
     float minimum_frequency = s->minimum_frequency;
     float scale = 1.f, factor;
+    double nb_samples;
     int ret;
 
     if (minimum_frequency >= maximum_frequency) {
@@ -886,11 +887,11 @@ static int config_output(AVFilterLink *outlink)
     if (!s->frequency_band)
         return AVERROR(ENOMEM);
 
-    s->nb_consumed_samples = inlink->sample_rate *
-                             frequency_band(s->frequency_band,
-                                            s->frequency_band_count, maximum_frequency - minimum_frequency,
-                                            minimum_frequency, s->frequency_scale, s->deviation);
-    s->nb_consumed_samples = FFMIN(s->nb_consumed_samples, 65536);
+    nb_samples = inlink->sample_rate *
+                 frequency_band(s->frequency_band,
+                                s->frequency_band_count, maximum_frequency - minimum_frequency,
+                                minimum_frequency, s->frequency_scale, s->deviation);
+    s->nb_consumed_samples = av_clip(av_clipd(nb_samples, 1, 65536), 1, 65536);
 
     s->nb_threads = FFMIN(s->frequency_band_count, ff_filter_get_nb_threads(ctx));
     s->nb_channels = inlink->ch_layout.nb_channels;
