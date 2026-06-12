@@ -188,8 +188,10 @@ FATE_SEEK_EXTRA-$(call ALLYES, MOV_DEMUXER) += fate-seek-extra-mp4
 FATE_SEEK_EXTRA-$(call ALLYES, MOV_DEMUXER) += fate-seek-empty-edit-mp4
 FATE_SEEK_EXTRA-$(call ALLYES, MOV_DEMUXER) += fate-seek-test-iibbibb-mp4
 FATE_SEEK_EXTRA-$(call ALLYES, MOV_DEMUXER) += fate-seek-test-iibbibb-neg-ctts-mp4
+FATE_SEEK_EXTRA-$(CONFIG_WAV_DEMUXER)       += fate-seek-bad-avg-byterate
 
 fate-seek-extra-mp3:  CMD = run libavformat/tests/seek$(EXESUF) $(TARGET_SAMPLES)/gapless/gapless.mp3 -fastseek 1
+fate-seek-bad-avg-byterate: CMD = run libavformat/tests/seek$(EXESUF) $(TARGET_SAMPLES)/wav/wrong-avg-byterate.wav -seekback 500 -stream_id 0
 fate-seek-extra-mp4:  CMD = run libavformat/tests/seek$(EXESUF) $(TARGET_SAMPLES)/mov/buck480p30_na.mp4 -duration 180 -frames 4
 fate-seek-empty-edit-mp4:  CMD = run libavformat/tests/seek$(EXESUF) $(TARGET_SAMPLES)/mov/empty_edit_5s.mp4 -duration 15 -frames 4
 fate-seek-test-iibbibb-mp4:  CMD = run libavformat/tests/seek$(EXESUF) $(TARGET_SAMPLES)/mov/test_iibbibb.mp4 -duration 13 -frames 4

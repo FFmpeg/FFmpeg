@@ -1,7 +1,3 @@
-FATE_WAV_SAMPLES-$(CONFIG_WAV_DEMUXER) += fate-wav-bad-avg-byterate
-fate-wav-bad-avg-byterate: libavformat/tests/seek$(EXESUF)
-fate-wav-bad-avg-byterate: CMD = run libavformat/tests/seek$(EXESUF) $(TARGET_SAMPLES)/wav/wrong-avg-byterate.wav -seekback 500 -stream_id 0
-
 FATE_WAV_ENCINFO-$(CONFIG_ADPCM_MS_ENCODER) += fate-wav-enc-adpcm-ms-encinfo
 fate-wav-enc-adpcm-ms-encinfo: libavcodec/tests/encinfo$(EXESUF)
 fate-wav-enc-adpcm-ms-encinfo: CMD = run libavcodec/tests/encinfo$(EXESUF) adpcm_ms
@@ -112,8 +108,7 @@ fate-wav-pcm-mulaw-bad-blockalign: CMD = run_with_patched_temp \
     -i $(TARGET_PATH)/tests/data/asynth-44100-2.wav -c:a pcm_mulaw -fflags +bitexact -y" \
     "$(WAV_BITRATE_PROBE)" wav 32 "\0001\0000"
 
-FATE_EXTERN         += $(FATE_WAV_SAMPLES-yes)
 FATE-yes            += $(FATE_WAV_ENCINFO-yes)
 FATE_FFMPEG_FFPROBE += $(FATE_WAV_BITRATE-yes)
 
-fate-wav: $(FATE_WAV_SAMPLES-yes) $(FATE_WAV_ENCINFO-yes) $(FATE_WAV_BITRATE-yes)
+fate-wav: $(FATE_WAV_ENCINFO-yes) $(FATE_WAV_BITRATE-yes)
