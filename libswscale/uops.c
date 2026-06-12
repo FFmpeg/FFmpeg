@@ -706,6 +706,7 @@ static int translate_linear_op(SwsContext *ctx, SwsUOpList *ops,
     for (int i = 0; i < 4; i++) {
         if (SWS_OP_NEEDED(op, i) && (op->lin.mask & SWS_MASK_ROW(i)))
             uop.mask |= SWS_COMP(i);
+        bool nonzero = (op->lin.m[i][4].num != 0);
         for (int j = 0; j < 5; j++) {
             const AVRational k = op->lin.m[i][j];
             const SwsPixel px = Q2PIXEL(k);
@@ -714,8 +715,10 @@ static int translate_linear_op(SwsContext *ctx, SwsUOpList *ops,
                 uop.par.lin.zero |= SWS_MASK(i, j);
             else if (j < 4 && k.num == k.den)
                 uop.par.lin.one |= SWS_MASK(i, j);
-            else if (j < 4 && (!bitexact || exact_prod(uop.type, px, input, j)))
+            else if (j < 4 && nonzero && (!bitexact || exact_prod(uop.type, px, input, j)))
                 exact |= SWS_MASK(i, j);
+            if (k.num != 0)
+                nonzero = true;
         }
     }
 
