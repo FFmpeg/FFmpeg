@@ -712,7 +712,7 @@ static int translate_linear_op(SwsContext *ctx, SwsUOpList *ops,
             uop.data.mat4[i][j] = px;
             if (k.num == 0)
                 uop.par.lin.zero |= SWS_MASK(i, j);
-            else if (k.num == k.den)
+            else if (j < 4 && k.num == k.den)
                 uop.par.lin.one |= SWS_MASK(i, j);
             else if (j < 4 && (!bitexact || exact_prod(uop.type, px, input, j)))
                 exact |= SWS_MASK(i, j);
