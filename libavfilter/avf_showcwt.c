@@ -1167,7 +1167,7 @@ static int output_frame(AVFilterContext *ctx)
                 ptrdiff_t linesize = s->outpicref->linesize[p];
                 const int fill = p > 0 && p < 3 ? 128 : 0;
 
-                for (int y = s->h - s->pos; y >= 0; y--) {
+                for (int y = FFMIN(s->pos, s->sono_size - 1); y >= 0; y--) {
                     uint8_t *dst = s->outpicref->data[p] + y * linesize;
 
                     memset(dst, fill, s->w);
