@@ -235,10 +235,15 @@ FF_ENABLE_DEPRECATION_WARNINGS
                     codec2->priv_data_size);
         if (!(desc = avcodec_descriptor_get(codec->id))) {
             ERR("Codec %s lacks a corresponding descriptor\n");
-        } else if (desc->type != codec->type)
-            ERR_EXT("The type of AVCodec %s and its AVCodecDescriptor differ: "
-                    "%s vs %s\n",
-                    get_type_string(codec->type), get_type_string(desc->type));
+        } else {
+            if (desc->type != codec->type)
+                ERR_EXT("The type of AVCodec %s and its AVCodecDescriptor %s "
+                        "differ: %s vs %s\n",
+                        desc->name, get_type_string(codec->type), get_type_string(desc->type));
+            if (desc->props & AV_CODEC_PROP_ENHANCEMENT)
+                ERR_EXT("Codec descriptor for codec %s (descriptor name %s) has "
+                        "AV_CODEC_PROP_ENHANCEMENT flag set.\n", desc->name);
+        }
     }
     return ret;
 }
