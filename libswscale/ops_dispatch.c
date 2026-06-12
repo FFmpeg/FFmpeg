@@ -673,17 +673,47 @@ fail:
     return ret;
 }
 
+/* Return a mask of all planes matching any flag in `flags` */
+static SwsCompMask plane_mask_flags(const SwsOp *op, SwsCompFlags flags)
+{
+    SwsCompMask planes = 0;
+    for (int c = 0; c < 4; c++) {
+        if (op->comps.flags[c] & flags)
+            planes |= SWS_COMP(c);
+    }
+
+    return planes;
+}
+
 /* Takes over ownership of *pops, even on failure */
 static int compile_subpass(const CompileArgs *args, SwsOpList **pops,
                            SwsPass *link, SwsPass *input, SwsPass **output)
 {
+    int ret;
     SwsContext *ctx = args->graph->ctx;
     SwsOpList *ops  = *pops;
     SwsOpList *rest = NULL;
     SwsPass *tmp = NULL;
     *pops = NULL;
 
-    int ret = compile_single(args, ops, link, input, output);
+    if (args->flags & SWS_OP_FLAG_SPLIT_MEMCPY) {
+        /* Split off copied and constant planes into a separate subpass,
+         * since these are likely to be handled by the memcpy backend */
+        av_assert0(ops->num_ops >= 2);
+        const SwsOp *prev = &ops->ops[ops->num_ops - 2];
+        SwsCompMask planes = plane_mask_flags(prev, SWS_COMP_COPY | SWS_COMP_CONST);
+        RET(ff_sws_op_list_split_planes(ops, &rest, planes));
+        if (rest) {
+            /* Parallel split: share input and link all outputs together */
+            av_log(ctx, AV_LOG_DEBUG, "Splitting const/memcpy planes: %s\n",
+                   ff_sws_comp_mask_str(planes));
+            RET(compile_subpass(args, &ops,  link, input, &tmp));
+            RET(compile_subpass(args, &rest, tmp, input, output));
+            return 0;
+        }
+    }
+
+    ret = compile_single(args, ops, link, input, output);
     if (ret != AVERROR(ENOTSUP))
         goto fail; /* either success or a hard error */
 

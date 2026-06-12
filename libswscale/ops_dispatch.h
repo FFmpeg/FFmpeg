@@ -168,6 +168,9 @@ enum SwsOpCompileFlags {
 
     /* Discard the compiled op lists instead of generating passes */
     SWS_OP_FLAG_DRY_RUN = 1 << 1,
+
+    /* Split off copied/cleared planes into separate subpasses */
+    SWS_OP_FLAG_SPLIT_MEMCPY = 1 << 2,
 };
 
 /**
