@@ -294,16 +294,6 @@ static void put_chunk(AVFormatContext *s, int type,
     asf->seqno++;
 }
 
-/* convert from av time to windows time */
-static int64_t unix_to_file_time(int64_t ti)
-{
-    int64_t t;
-
-    t  = ti * INT64_C(10);
-    t += INT64_C(116444736000000000);
-    return t;
-}
-
 static int32_t get_send_time(ASFContext *asf, int64_t pres_time, uint64_t *offset)
 {
     int32_t send_time = 0;
@@ -442,7 +432,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
     hpos          = put_header(pb, &ff_asf_file_header);
     ff_put_guid(pb, &ff_asf_my_guid);
     avio_wl64(pb, file_size);
-    avio_wl64(pb, unix_to_file_time(asf->creation_time));
+    avio_wl64(pb, ff_asf_avtime_to_filetime(asf->creation_time));
     avio_wl64(pb, asf->nb_packets); /* number of packets */
     avio_wl64(pb, duration); /* end time stamp (in 100ns units) */
     avio_wl64(pb, asf->duration); /* duration (in 100ns units) */
