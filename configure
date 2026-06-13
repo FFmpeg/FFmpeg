@@ -2445,6 +2445,7 @@ ARCH_FEATURES="
     simd_align_16
     simd_align_32
     simd_align_64
+    x86_sse2avx
 "
 
 BUILTIN_LIST="
@@ -6882,6 +6883,7 @@ EOF
         enabled avx2      && check_x86asm avx2_external      "vextracti128 xmm0, ymm0, 0"
         enabled xop       && check_x86asm xop_external       "vpmacsdd xmm0, xmm1, xmm2, xmm3"
         enabled fma4      && check_x86asm fma4_external      "vfmaddps ymm0, ymm1, ymm2, ymm3"
+        enabled avx       && check_x86asm avx_external       "vpermilpd ymm0, ymm1, 0x72"
     fi
 
     case "$cpu" in
@@ -6891,6 +6893,8 @@ EOF
     esac
 
     check_cc intrinsics_sse2 emmintrin.h "__m128i test = _mm_setzero_si128()"
+
+    enabled avx_external && test_cpp_condition stddef.h "defined(__AVX__) && __AVX__" && enable x86_sse2avx
 
 elif enabled loongarch; then
     enabled lsx && check_inline_asm lsx '"vadd.b $vr0, $vr1, $vr2"' '-mlsx' && append LSXFLAGS '-mlsx'

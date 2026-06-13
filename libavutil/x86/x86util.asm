@@ -27,6 +27,10 @@
 %define public_prefix  avpriv
 %define cpuflags_mmxext cpuflags_mmx2
 
+%if HAVE_X86_SSE2AVX
+%define FORCE_VEX_ENCODING 1
+%endif
+
 %include "libavutil/x86/x86inc.asm"
 
 ; expands to [base],...,[base+7*stride]
