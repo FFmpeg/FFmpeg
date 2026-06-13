@@ -39,6 +39,7 @@ int main(int argc, char **argv) {
     int i, pos;
     int siglen, datlen;
     int bestpos = 0;
+    const double eps = 0.161;
     double bestc = 0;
     double sigamp = 0;
     int16_t *signal, *data;
@@ -109,8 +110,13 @@ int main(int argc, char **argv) {
             bestpos = pos;
         }
     }
-    printf("presig: %d postsig:%d c:%7.4f lenerr:%d\n", bestpos, datlen - siglen - bestpos, bestc / sigamp, datlen - siglen);
+    printf("presig: %d postsig:%d lenerr:%d\n", bestpos, datlen - siglen - bestpos, datlen - siglen);
 
+    sigamp = bestc / sigamp;
+    if (fabs(1.0 - sigamp) > eps) {
+        printf("c: |1.0 - %.4f| > %.3f\n", sigamp, eps);
+        goto read_fail;
+    }
     free(data);
     free(signal);
     return 0;
