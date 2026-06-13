@@ -37,14 +37,7 @@
 #include "asf.h"
 #include "asfcrypt.h"
 
-#define ASF_BOOL                              0x2
-#define ASF_WORD                              0x5
-#define ASF_GUID                              0x6
-#define ASF_DWORD                             0x3
-#define ASF_QWORD                             0x4
-#define ASF_UNICODE                           0x0
 #define ASF_FLAG_BROADCAST                    0x1
-#define ASF_BYTE_ARRAY                        0x1
 #define ASF_TYPE_AUDIO                        0x2
 #define ASF_TYPE_VIDEO                        0x1
 #define ASF_STREAM_NUM                        0x7F
