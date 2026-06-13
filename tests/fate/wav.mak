@@ -15,7 +15,7 @@ fate-wav-enc-adpcm-ms-bitrate: CMD = run_with_temp \
     -show_entries stream=codec_name,bit_rate:format=duration -print_format default=nk=1" \
     wav
 
-FATE_WAV_BITRATE-$(call ALLYES, ADPCM_IMA_WAV_ENCODER PCM_S16LE_DECODER WAV_MUXER WAV_DEMUXER FILE_PROTOCOL) += fate-wav-enc-adpcm-ima-wav-bitrate
+FATE_WAV_BITRATE-$(call ALLYES, ADPCM_IMA_WAV_ENCODER PCM_S16LE_DECODER WAV_MUXER WAV_DEMUXER FILE_PROTOCOL SWRESAMPLE) += fate-wav-enc-adpcm-ima-wav-bitrate
 fate-wav-enc-adpcm-ima-wav-bitrate: tests/data/asynth-44100-2.wav
 fate-wav-enc-adpcm-ima-wav-bitrate: CMD = run_with_temp \
     "$(FFMPEG) -nostdin -hide_banner -loglevel quiet \
@@ -52,28 +52,28 @@ fate-wav-pcm-s16le-bad-blockalign: CMD = run_with_patched_temp \
     -i $(TARGET_PATH)/tests/data/asynth-44100-2.wav -c:a copy -fflags +bitexact -y" \
     "$(WAV_BITRATE_PROBE)" wav 32 "\0002\0000"
 
-FATE_WAV_BITRATE-$(call ALLYES, PCM_S16LE_DECODER PCM_U8_ENCODER WAV_MUXER WAV_DEMUXER FILE_PROTOCOL) += fate-wav-pcm-u8-wrong-avg-byterate
+FATE_WAV_BITRATE-$(call ALLYES, PCM_S16LE_DECODER PCM_U8_ENCODER WAV_MUXER WAV_DEMUXER FILE_PROTOCOL SWRESAMPLE) += fate-wav-pcm-u8-wrong-avg-byterate
 fate-wav-pcm-u8-wrong-avg-byterate: tests/data/asynth-44100-2.wav
 fate-wav-pcm-u8-wrong-avg-byterate: CMD = run_with_patched_temp \
     "$(FFMPEG) -nostdin -loglevel quiet \
     -i $(TARGET_PATH)/tests/data/asynth-44100-2.wav -c:a pcm_u8 -fflags +bitexact -y" \
     "$(WAV_BITRATE_PROBE)" wav 28 "\0104\0254\0000\0000"
 
-FATE_WAV_BITRATE-$(call ALLYES, PCM_S16LE_DECODER PCM_U8_ENCODER WAV_MUXER WAV_DEMUXER FILE_PROTOCOL) += fate-wav-pcm-u8-bad-blockalign
+FATE_WAV_BITRATE-$(call ALLYES, PCM_S16LE_DECODER PCM_U8_ENCODER WAV_MUXER WAV_DEMUXER FILE_PROTOCOL SWRESAMPLE) += fate-wav-pcm-u8-bad-blockalign
 fate-wav-pcm-u8-bad-blockalign: tests/data/asynth-44100-2.wav
 fate-wav-pcm-u8-bad-blockalign: CMD = run_with_patched_temp \
     "$(FFMPEG) -nostdin -loglevel quiet \
     -i $(TARGET_PATH)/tests/data/asynth-44100-2.wav -c:a pcm_u8 -fflags +bitexact -y" \
     "$(WAV_BITRATE_PROBE)" wav 32 "\0001\0000"
 
-FATE_WAV_BITRATE-$(call ALLYES, PCM_S16LE_DECODER PCM_S24LE_ENCODER WAV_MUXER WAV_DEMUXER FILE_PROTOCOL) += fate-wav-pcm-s24le-wrong-avg-byterate
+FATE_WAV_BITRATE-$(call ALLYES, PCM_S16LE_DECODER PCM_S24LE_ENCODER WAV_MUXER WAV_DEMUXER FILE_PROTOCOL SWRESAMPLE) += fate-wav-pcm-s24le-wrong-avg-byterate
 fate-wav-pcm-s24le-wrong-avg-byterate: tests/data/asynth-44100-2.wav
 fate-wav-pcm-s24le-wrong-avg-byterate: CMD = run_with_patched_temp \
     "$(FFMPEG) -nostdin -loglevel quiet \
     -i $(TARGET_PATH)/tests/data/asynth-44100-2.wav -c:a pcm_s24le -fflags +bitexact -y" \
     "$(WAV_BITRATE_PROBE)" wav 28 "\0020\0261\0002\0000"
 
-FATE_WAV_BITRATE-$(call ALLYES, PCM_S16LE_DECODER PCM_S24LE_ENCODER WAV_MUXER WAV_DEMUXER FILE_PROTOCOL) += fate-wav-pcm-s24le-bad-blockalign
+FATE_WAV_BITRATE-$(call ALLYES, PCM_S16LE_DECODER PCM_S24LE_ENCODER WAV_MUXER WAV_DEMUXER FILE_PROTOCOL SWRESAMPLE) += fate-wav-pcm-s24le-bad-blockalign
 fate-wav-pcm-s24le-bad-blockalign: tests/data/asynth-44100-2.wav
 fate-wav-pcm-s24le-bad-blockalign: CMD = run_with_patched_temp \
     "$(FFMPEG) -nostdin -loglevel quiet \
