@@ -1616,7 +1616,7 @@ static int asf_read_header(AVFormatContext *s)
             break;
         asf->offset = avio_tell(pb);
         if ((ret = ff_get_guid(pb, &guid)) < 0) {
-            if (ret == AVERROR_EOF && asf->data_reached)
+            if (avio_feof(pb) && asf->data_reached)
                 break;
             else
                 goto failed;
