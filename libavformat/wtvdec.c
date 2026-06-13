@@ -26,13 +26,11 @@
  */
 
 #include <inttypes.h>
-#include <time.h>
 
 #include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/mem.h"
-#include "libavutil/time_internal.h"
 #include "avformat.h"
 #include "avio_internal.h"
 #include "demux.h"
@@ -385,51 +383,19 @@ static int read_probe(const AVProbeData *p)
 }
 
 /**
- * Convert win32 FILETIME to ISO-8601 string
- * @return <0 on error
+ * Convert crazy time (100ns since 1 Jan 0001) to av time (unix timestamp in microseconds)
  */
-static int filetime_to_iso8601(char *buf, int buf_size, int64_t value)
+static int64_t crazytime_to_avtime(int64_t value)
 {
-    time_t t = (value / 10000000LL) - 11644473600LL;
-    struct tm tmbuf;
-    struct tm *tm = gmtime_r(&t, &tmbuf);
-    if (!tm)
-        return -1;
-    if (!strftime(buf, buf_size, "%Y-%m-%d %H:%M:%S", tm))
-        return -1;
-    return 0;
+    return (value / 10LL) - 719162LL*86400000000LL;
 }
 
 /**
- * Convert crazy time (100ns since 1 Jan 0001) to ISO-8601 string
- * @return <0 on error
+ * Convert OLE DATE to av time (unix timestamp in microseconds)
  */
-static int crazytime_to_iso8601(char *buf, int buf_size, int64_t value)
+static int64_t oledate_to_avtime(int64_t value)
 {
-    time_t t = (value / 10000000LL) - 719162LL*86400LL;
-    struct tm tmbuf;
-    struct tm *tm = gmtime_r(&t, &tmbuf);
-    if (!tm)
-        return -1;
-    if (!strftime(buf, buf_size, "%Y-%m-%d %H:%M:%S", tm))
-        return -1;
-    return 0;
-}
-
-/**
- * Convert OLE DATE to ISO-8601 string
- * @return <0 on error
- */
-static int oledate_to_iso8601(char *buf, int buf_size, int64_t value)
-{
-    time_t t = (av_int2double(value) - 25569.0) * 86400;
-    struct tm tmbuf;
-    struct tm *tm= gmtime_r(&t, &tmbuf);
-    if (!tm)
-        return -1;
-    if (!strftime(buf, buf_size, "%Y-%m-%d %H:%M:%S", tm))
-        return -1;
-    return 0;
+    return (av_int2double(value) - 25569.0) * 86400000000;
 }
 
 static void get_attachment(AVFormatContext *s, AVIOContext *pb, int length)
@@ -489,15 +455,15 @@ static void get_tag(AVFormatContext *s, AVIOContext *pb, const char *key, int ty
         int64_t num = avio_rl64(pb);
         if (!strcmp(key, "WM/EncodingTime") ||
             !strcmp(key, "WM/MediaOriginalBroadcastDateTime")) {
-            if (filetime_to_iso8601(buf, sizeof(buf), num) < 0)
-                return;
+            ff_dict_set_timestamp(&s->metadata, key, ff_asf_filetime_to_avtime(num));
+            return;
         } else if (!strcmp(key, "WM/WMRVEncodeTime") ||
                    !strcmp(key, "WM/WMRVEndTime")) {
-            if (crazytime_to_iso8601(buf, sizeof(buf), num) < 0)
-                return;
+            ff_dict_set_timestamp(&s->metadata, key, crazytime_to_avtime(num));
+            return;
         } else if (!strcmp(key, "WM/WMRVExpirationDate")) {
-            if (oledate_to_iso8601(buf, sizeof(buf), num) < 0)
-                return;
+            ff_dict_set_timestamp(&s->metadata, key, oledate_to_avtime(num));
+            return;
         } else if (!strcmp(key, "WM/WMRVBitrate"))
             snprintf(buf, sizeof(buf), "%f", av_int2double(num));
         else
