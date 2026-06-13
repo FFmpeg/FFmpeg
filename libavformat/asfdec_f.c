@@ -295,6 +295,7 @@ static int asf_read_file_properties(AVFormatContext *s)
     asf->hdr.max_bitrate = avio_rl32(pb);
     s->packet_size       = asf->hdr.max_pktsize;
 
+    ff_dict_set_timestamp(&s->metadata, "creation_time", ff_asf_filetime_to_avtime(asf->hdr.create_time));
     return 0;
 }
 
