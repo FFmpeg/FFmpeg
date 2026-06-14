@@ -509,6 +509,9 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
     if (!shr->external_sock) {
         if ((ret = ff_tls_open_underlying(shr, h, uri, options)) < 0)
             goto fail;
+    } else if (!shr->host) {
+        if ((ret = ff_tls_parse_host(shr, shr->underlying_host, sizeof(shr->underlying_host), NULL, uri)) < 0)
+            goto fail;
     }
 
 #ifdef MBEDTLS_PSA_CRYPTO_C

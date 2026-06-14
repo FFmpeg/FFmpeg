@@ -783,6 +783,9 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
     if (!c->tls_shared.external_sock) {
         if ((ret = ff_tls_open_underlying(&c->tls_shared, h, uri, options)) < 0)
             goto fail;
+    } else if (!s->host) {
+        if ((ret = ff_tls_parse_host(s, s->underlying_host, sizeof(s->underlying_host), NULL, uri)) < 0)
+            goto fail;
     }
 
     // We want to support all versions of TLS >= 1.0, but not the deprecated
