@@ -1801,6 +1801,11 @@ static int istg_parse_tile_grid(const OptionsContext *o, Demuxer *d, InputStream
 
     if (tg->nb_tiles == 1)
         return 0;
+    if (!tg->nb_tiles) {
+        av_log(istg, AV_LOG_FATAL, "A demuxer exported an invalid tile group stream group. "
+                                   "This is a bug, please report it.\n");
+        return AVERROR_BUG;
+    }
 
     memset(&opts, 0, sizeof(opts));
 
