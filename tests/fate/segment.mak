@@ -40,7 +40,6 @@ FATE_SEGMENT-$(call FRAMECRC, MOV HLS MATROSKA, H264, H264_PARSER H264_MP4TOANNE
 FATE_SEGMENT += fate-segment-adts-to-mkv
 fate-segment-adts-to-mkv: tests/data/adts-to-mkv.m3u8
 fate-segment-adts-to-mkv: CMD = framecrc -flags +bitexact -i $(TARGET_PATH)/tests/data/adts-to-mkv.m3u8 -c copy
-fate-segment-adts-to-mkv: REF = $(SRC_PATH)/tests/ref/fate/segment-adts-to-mkv-header-all
 FATE_SEGMENT-$(call FRAMECRC, AAC HLS MATROSKA, AAC, AAC_ADTSTOASC_BSF MATROSKA_MUXER SEGMENT_MUXER) += fate-segment-adts-to-mkv
 
 FATE_SEGMENT_ALLPARTS = $(FATE_SEGMENT_PARTS)
