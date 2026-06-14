@@ -262,14 +262,29 @@ Evaluating '7000000B*random(0)'
 Evaluating 'squish(2)'
 'squish(2)' -> 0.000335
 
+Evaluating '-squish(2)'
+'-squish(2)' -> -0.000335
+
 Evaluating 'gauss(0.1)'
 'gauss(0.1)' -> 0.396953
+
+Evaluating '-gauss(0.1)'
+'-gauss(0.1)' -> -0.396953
 
 Evaluating 'hypot(4,3)'
 'hypot(4,3)' -> 5.000000
 
 Evaluating 'gcd(30,55)*print(min(9,1))'
 'gcd(30,55)*print(min(9,1))' -> 5.000000
+
+Evaluating '-print(42)'
+'-print(42)' -> -42.000000
+
+Evaluating 'lerp(0, 100, 0.5)'
+'lerp(0, 100, 0.5)' -> 50.000000
+
+Evaluating '-lerp(0, 100, 0.5)'
+'-lerp(0, 100, 0.5)' -> -50.000000
 
 Evaluating 'bitor(42, 12)'
 'bitor(42, 12)' -> 46.000000

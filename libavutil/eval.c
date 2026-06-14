@@ -201,8 +201,8 @@ static double eval_expr(Parser *p, AVExpr *e)
         case e_func0:  return e->value * e->func0(eval_expr(p, e->param[0]));
         case e_func1:  return e->value * e->func1(p->opaque, eval_expr(p, e->param[0]));
         case e_func2:  return e->value * e->func2(p->opaque, eval_expr(p, e->param[0]), eval_expr(p, e->param[1]));
-        case e_squish: return 1/(1+exp(4*eval_expr(p, e->param[0])));
-        case e_gauss: { double d = eval_expr(p, e->param[0]); return exp(-d*d/2)/sqrt(2*M_PI); }
+        case e_squish: return e->value/(1+exp(4*eval_expr(p, e->param[0])));
+        case e_gauss: { double d = eval_expr(p, e->param[0]); return e->value * exp(-d*d/2)/sqrt(2*M_PI); }
         case e_ld:     return e->value * p->var[av_clip(eval_expr(p, e->param[0]), 0, VARS-1)];
         case e_isnan:  return e->value * !!isnan(eval_expr(p, e->param[0]));
         case e_isinf:  return e->value * !!isinf(eval_expr(p, e->param[0]));
@@ -233,13 +233,13 @@ static double eval_expr(Parser *p, AVExpr *e)
             double v0 = eval_expr(p, e->param[0]);
             double v1 = eval_expr(p, e->param[1]);
             double f  = eval_expr(p, e->param[2]);
-            return v0 + (v1 - v0) * f;
+            return e->value * (v0 + (v1 - v0) * f);
         }
         case e_print: {
             double x = eval_expr(p, e->param[0]);
             int level = e->param[1] ? av_clip(eval_expr(p, e->param[1]), INT_MIN, INT_MAX) : AV_LOG_INFO;
             av_log(p, level, "%f\n", x);
-            return x;
+            return e->value * x;
         }
 
 #define COMPUTE_NEXT_RANDOM()                                        \
