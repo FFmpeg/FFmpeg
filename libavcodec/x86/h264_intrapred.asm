@@ -71,10 +71,14 @@ cglobal pred16x16_vertical_8, 2,3
 %macro PRED16x16_H 0
 cglobal pred16x16_horizontal_8, 2,3
     mov       r2, 8
-%if cpuflag(ssse3)
+%if cpuflag(ssse3) && notcpuflag(avx2)
     mova      m2, [pb_3]
 %endif
 .loop:
+%if cpuflag(avx2)
+    vpbroadcastb m0, [r0+r1*0-1]
+    vpbroadcastb m1, [r0+r1*1-1]
+%else
     movd      m0, [r0+r1*0-4]
     movd      m1, [r0+r1*1-4]
 
@@ -86,6 +90,7 @@ cglobal pred16x16_horizontal_8, 2,3
     punpcklbw m1, m1
     SPLATW    m0, m0, 3
     SPLATW    m1, m1, 3
+%endif
 %endif
 
     mova [r0+r1*0], m0
@@ -99,6 +104,8 @@ cglobal pred16x16_horizontal_8, 2,3
 INIT_XMM sse2
 PRED16x16_H
 INIT_XMM ssse3
+PRED16x16_H
+INIT_XMM avx2
 PRED16x16_H
 
 ;-----------------------------------------------------------------------------
@@ -586,12 +593,17 @@ cglobal pred8x8_vertical_8, 2,2
 %macro PRED8x8_H 0
 cglobal pred8x8_horizontal_8, 2,3,3
     mov       r2, 4
-%if cpuflag(ssse3)
+%if cpuflag(ssse3) && notcpuflag(avx2)
     mova      m2, [pb_3]
 %endif
 .loop:
+%if cpuflag(avx2)
+    vpbroadcastb m0, [r0+r1*0-1]
+    vpbroadcastb m1, [r0+r1*1-1]
+%else
     SPLATB_LOAD m0, r0+r1*0-1, m2
     SPLATB_LOAD m1, r0+r1*1-1, m2
+%endif
     movq [r0+r1*0], m0
     movq [r0+r1*1], m1
     lea       r0, [r0+r1*2]
@@ -603,6 +615,8 @@ cglobal pred8x8_horizontal_8, 2,3,3
 INIT_XMM sse2
 PRED8x8_H
 INIT_XMM ssse3
+PRED8x8_H
+INIT_XMM avx2
 PRED8x8_H
 
 ;-----------------------------------------------------------------------------

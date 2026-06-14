@@ -102,6 +102,7 @@ PRED16x16(horizontal, 10, sse2)
 PRED16x16(vertical, 8, sse)
 PRED16x16(horizontal, 8, sse2)
 PRED16x16(horizontal, 8, ssse3)
+PRED16x16(horizontal, 8, avx2)
 PRED16x16(dc, 8, sse2)
 PRED16x16(dc, 8, ssse3)
 PRED16x16(plane_h264, 8, sse2)
@@ -119,6 +120,7 @@ PRED8x8(dc, 8, sse2)
 PRED8x8(vertical, 8, sse2)
 PRED8x8(horizontal, 8, sse2)
 PRED8x8(horizontal, 8, ssse3)
+PRED8x8(horizontal, 8, avx2)
 PRED8x8(plane, 8, sse2)
 PRED8x8(plane, 8, ssse3)
 PRED8x8(tm_vp8, 8, sse2)
@@ -256,6 +258,9 @@ av_cold void ff_h264_pred_init_x86(H264PredContext *h, int codec_id,
         }
 
         if(EXTERNAL_AVX2(cpu_flags)){
+            h->pred16x16[HOR_PRED8x8          ] = ff_pred16x16_horizontal_8_avx2;
+            if (chroma_format_idc <= 1)
+                h->pred8x8  [HOR_PRED8x8      ] = ff_pred8x8_horizontal_8_avx2;
             if (codec_id == AV_CODEC_ID_VP8) {
                 h->pred16x16[PLANE_PRED8x8    ] = ff_pred16x16_tm_vp8_8_avx2;
             }
