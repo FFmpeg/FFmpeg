@@ -306,9 +306,9 @@ static int remap##ws##_##bits##bit_slice(AVFilterContext *ctx, void *arg, int jo
             const int slice_end   = (height * (jobnr + 1)) / nb_jobs;                                      \
                                                                                                            \
             for (int y = slice_start; y < slice_end && !mask; y++) {                                       \
-                const int16_t *const u = r->u[map] + (y - slice_start) * uv_linesize * ws * ws;            \
-                const int16_t *const v = r->v[map] + (y - slice_start) * uv_linesize * ws * ws;            \
-                const int16_t *const ker = r->ker[map] + (y - slice_start) * uv_linesize * ws * ws;        \
+                const int16_t *const u = r->u[map] + (y - slice_start) * (int64_t)uv_linesize * ws * ws;    \
+                const int16_t *const v = r->v[map] + (y - slice_start) * (int64_t)uv_linesize * ws * ws;    \
+                const int16_t *const ker = r->ker[map] + (y - slice_start) * (int64_t)uv_linesize * ws * ws;\
                                                                                                            \
                 s->remap_line(dst + y * out_linesize, width, src, in_linesize, u, v, ker);                 \
             }                                                                                              \
@@ -4102,9 +4102,9 @@ static av_always_inline int v360_slice(AVFilterContext *ctx, void *arg, int jobn
 
         for (int j = slice_start; j < slice_end; j++) {
             for (int i = 0; i < width; i++) {
-                int16_t *u = r->u[p] + ((j - slice_start) * uv_linesize + i) * elements;
-                int16_t *v = r->v[p] + ((j - slice_start) * uv_linesize + i) * elements;
-                int16_t *ker = r->ker[p] + ((j - slice_start) * uv_linesize + i) * elements;
+                int16_t *u = r->u[p] + ((j - slice_start) * (int64_t)uv_linesize + i) * elements;
+                int16_t *v = r->v[p] + ((j - slice_start) * (int64_t)uv_linesize + i) * elements;
+                int16_t *ker = r->ker[p] + ((j - slice_start) * (int64_t)uv_linesize + i) * elements;
                 uint8_t  *mask8  = (p || !r->mask) ? NULL : r->mask + ((j - slice_start) * s->pr_width[0] + i);
                 uint16_t *mask16 = (p || !r->mask) ? NULL : (uint16_t *)r->mask + ((j - slice_start) * s->pr_width[0] + i);
                 int in_mask, out_mask;
