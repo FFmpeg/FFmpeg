@@ -30,6 +30,10 @@ FATE_GAPLESS-$(call TRANSCODE, PCM_S16LE AAC, WAV MOV, ARESAMPLE_FILTER) += fate
 FATE_GAPLESS-$(call TRANSCODE, PCM_S16LE AAC, WAV MOV, ARESAMPLE_FILTER) += fate-audiomatch-dolby-44100-stereo-he2-mp4
 FATE_GAPLESS-$(call TRANSCODE, PCM_S16LE AAC, WAV MOV, ARESAMPLE_FILTER) += fate-audiomatch-dolby-44100-stereo-lc-mp4
 
+FATE_GAPLESS-$(call TRANSCODE, PCM_S16LE AAC, WAV MOV, ARESAMPLE_FILTER) += fate-audiomatch-fdkaac-44100-stereo-he-m4a
+FATE_GAPLESS-$(call TRANSCODE, PCM_S16LE AAC, WAV MOV, ARESAMPLE_FILTER) += fate-audiomatch-fdkaac-44100-stereo-he2-m4a
+FATE_GAPLESS-$(call TRANSCODE, PCM_S16LE AAC, WAV MOV, ARESAMPLE_FILTER) += fate-audiomatch-fdkaac-44100-stereo-lc-m4a
+
 FATE_GAPLESS-$(call TRANSCODE, PCM_S16LE AAC, WAV MOV, ARESAMPLE_FILTER) += fate-audiomatch-nero-16000-mono-lc-m4a
 FATE_GAPLESS-$(call TRANSCODE, PCM_S16LE AAC, WAV MOV, ARESAMPLE_FILTER) += fate-audiomatch-nero-44100-mono-lc-m4a
 FATE_GAPLESS-$(call TRANSCODE, PCM_S16LE AAC, WAV MOV, ARESAMPLE_FILTER) += fate-audiomatch-nero-16000-mono-he-m4a
@@ -40,6 +44,9 @@ FATE_GAPLESS-$(call TRANSCODE, PCM_S16LE AAC, WAV MOV, ARESAMPLE_FILTER) += fate
 FATE_GAPLESS-$(call TRANSCODE, PCM_S16LE AAC, WAV MOV, ARESAMPLE_FILTER) += fate-audiomatch-nero-44100-stereo-he2-m4a
 FATE_GAPLESS-$(call TRANSCODE, PCM_S16LE AAC, WAV MOV, ARESAMPLE_FILTER) += fate-audiomatch-nero-16000-stereo-lc-m4a
 FATE_GAPLESS-$(call TRANSCODE, PCM_S16LE AAC, WAV MOV, ARESAMPLE_FILTER) += fate-audiomatch-nero-44100-stereo-lc-m4a
+
+FATE_GAPLESS-$(call TRANSCODE, PCM_S16LE OPUS, WAV OGG, ARESAMPLE_FILTER) += fate-audiomatch-opus-48000-stereo-opus
+FATE_GAPLESS-$(call TRANSCODE, PCM_S16LE OPUS, WAV MATROSKA, ARESAMPLE_FILTER) += fate-audiomatch-opus-48000-stereo-mka
 
 FATE_GAPLESS-$(call TRANSCODE, PCM_S16LE AAC, WAV MOV, ARESAMPLE_FILTER) += fate-audiomatch-quicktime7-44100-stereo-lc-mp4 fate-audiomatch-quicktimeX-44100-stereo-lc-m4a
 
@@ -81,6 +88,10 @@ fate-audiomatch-faac-44100-mono-lc-m4a:  CMD = audio_match $(TARGET_SAMPLES)/aud
 fate-audiomatch-faac-44100-stereo-lc-adts: CMD = audio_match $(TARGET_SAMPLES)/audiomatch/tones_faac_44100_stereo_aac_lc.adts  $(SAMPLES)/audiomatch/tones_44100_stereo.wav
 fate-audiomatch-faac-44100-stereo-lc-m4a:  CMD = audio_match $(TARGET_SAMPLES)/audiomatch/tones_faac_44100_stereo_aac_lc.m4a   $(SAMPLES)/audiomatch/tones_44100_stereo.wav
 
+fate-audiomatch-fdkaac-44100-stereo-lc-m4a:  CMD = audio_match $(TARGET_SAMPLES)/audiomatch/tones_fdkaac_44100_stereo_aac_lc.m4a   $(SAMPLES)/audiomatch/tones_44100_stereo.wav
+fate-audiomatch-fdkaac-44100-stereo-he-m4a:  CMD = audio_match $(TARGET_SAMPLES)/audiomatch/tones_fdkaac_44100_stereo_aac_he.m4a   $(SAMPLES)/audiomatch/tones_44100_stereo.wav
+fate-audiomatch-fdkaac-44100-stereo-he2-m4a: CMD = audio_match $(TARGET_SAMPLES)/audiomatch/tones_fdkaac_44100_stereo_aac_he2.m4a  $(SAMPLES)/audiomatch/tones_44100_stereo.wav
+
 fate-audiomatch-nero-16000-mono-lc-m4a:  CMD = audio_match $(TARGET_SAMPLES)/audiomatch/tones_nero_16000_mono_aac_lc.m4a   $(SAMPLES)/audiomatch/tones_16000_mono.wav
 fate-audiomatch-nero-16000-mono-he-m4a:  CMD = audio_match $(TARGET_SAMPLES)/audiomatch/tones_nero_16000_mono_aac_he.m4a   $(SAMPLES)/audiomatch/tones_16000_mono.wav
 fate-audiomatch-nero-16000-stereo-lc-m4a:  CMD = audio_match $(TARGET_SAMPLES)/audiomatch/tones_nero_16000_stereo_aac_lc.m4a   $(SAMPLES)/audiomatch/tones_16000_stereo.wav
@@ -91,6 +102,9 @@ fate-audiomatch-nero-44100-mono-he-m4a:  CMD = audio_match $(TARGET_SAMPLES)/aud
 fate-audiomatch-nero-44100-stereo-lc-m4a:  CMD = audio_match $(TARGET_SAMPLES)/audiomatch/tones_nero_44100_stereo_aac_lc.m4a   $(SAMPLES)/audiomatch/tones_44100_stereo.wav
 fate-audiomatch-nero-44100-stereo-he-m4a:  CMD = audio_match $(TARGET_SAMPLES)/audiomatch/tones_nero_44100_stereo_aac_he.m4a   $(SAMPLES)/audiomatch/tones_44100_stereo.wav
 fate-audiomatch-nero-44100-stereo-he2-m4a: CMD = audio_match $(TARGET_SAMPLES)/audiomatch/tones_nero_44100_stereo_aac_he2.m4a  $(SAMPLES)/audiomatch/tones_44100_stereo.wav
+
+fate-audiomatch-opus-48000-stereo-opus: CMD = audio_match $(TARGET_SAMPLES)/audiomatch/tones_opus_48000_stereo.opus  $(SAMPLES)/audiomatch/tones_44100_stereo.wav "-ar 44100"
+fate-audiomatch-opus-48000-stereo-mka:  CMD = audio_match $(TARGET_SAMPLES)/audiomatch/tones_opus_48000_stereo.mka   $(SAMPLES)/audiomatch/tones_44100_stereo.wav "-ar 44100"
 
 fate-audiomatch-quicktime7-44100-stereo-lc-mp4: CMD = audio_match $(TARGET_SAMPLES)/audiomatch/tones_quicktime7_44100_stereo_aac_lc.mp4  $(SAMPLES)/audiomatch/tones_44100_stereo.wav
 fate-audiomatch-quicktimeX-44100-stereo-lc-m4a: CMD = audio_match $(TARGET_SAMPLES)/audiomatch/tones_quicktimeX_44100_stereo_aac_lc.m4a  $(SAMPLES)/audiomatch/tones_44100_stereo.wav
