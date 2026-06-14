@@ -3550,6 +3550,13 @@ Wrap around segment index once it reaches @var{limit}.
 @item segment_start_number @var{number}
 Set the sequence number of the first segment. Defaults to @code{0}.
 
+@item segment_wrap_number @var{number}
+Set the number of times the segment index is assumed to have already wrapped
+when generating the indexes reported in the segment list. Together with
+@option{segment_wrap} and @option{segment_start_number} it offsets the reported
+index, which is computed as @code{segment_start_number + segment_wrap *
+segment_wrap_number}. Defaults to @code{0}.
+
 @item strftime @var{1|0}
 Use the @code{strftime} function to define the name of the new
 segments to write. If this is selected, the output segment name must
@@ -3576,6 +3583,25 @@ argument must be a time duration specification, and defaults to 0.
 If enabled, write an empty segment if there are no packets during the period a
 segment would usually span. Otherwise, the segment will be filled with the next
 packet written. Defaults to @code{0}.
+
+@item write_header_trailer @var{bool}
+Write a header to the first segment and a trailer to the last one, instead of
+writing a header and a trailer to every individual segment. Disabling it
+(@code{false}) also forces @option{individual_header_trailer} to @code{false},
+so that no segment is given a header or trailer. Default value is @code{true}.
+
+@item individual_header_trailer @var{bool}
+If enabled, write a complete header and trailer to every segment, making each
+segment an independently usable file. If disabled (@code{false}), only the first
+segment is given a header and only the last one a trailer. It is forced to
+@code{false} when @option{write_header_trailer} is @code{false} or when
+@option{segment_header_filename} is set. Default value is @code{true}.
+
+@item segment_header_filename @var{name}
+Write the stream header to a separate file named @var{name} instead of storing
+it in the segments. Setting it forces @option{write_header_trailer} to
+@code{true} and @option{individual_header_trailer} to @code{false}, so the
+header is written only once, to @var{name}. Unset by default.
 @end table
 
 Make sure to require a closed GOP when encoding and to set the GOP
