@@ -2364,6 +2364,8 @@ av_cold void ff_decode_flush_buffers(AVCodecContext *avctx)
     av_packet_unref(avci->last_pkt_props);
     av_packet_unref(avci->in_pkt);
 
+    dc->pts_correction_num_faulty_pts =
+    dc->pts_correction_num_faulty_dts = 0;
     dc->pts_correction_last_pts =
     dc->pts_correction_last_dts = INT64_MIN;
 
