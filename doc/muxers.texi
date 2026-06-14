@@ -2761,6 +2761,14 @@ song lyrics with an audio file, such as MP3, Vorbis, or MIDI.
 
 This muxer accepts a single @samp{subrip} or @samp{text} subtitles stream.
 
+@subsection Options
+@table @option
+@item precision @var{number}
+Set the number of decimal digits used for the fractional (sub-second)
+part of the timestamps. Range is @code{1} to @code{6}. Default is
+@code{2}, i.e. centiseconds.
+@end table
+
 @subsection Metadata
 The following metadata tags are converted to the format corresponding
 metadata:
