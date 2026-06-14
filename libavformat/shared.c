@@ -657,6 +657,8 @@ retry:
 
         tmp += (ptrdiff_t) offset;
         size = FFMIN(size, block_size - offset);
+        if (size <= 0)
+            return AVERROR_EOF;
         if (s->verify) {
             verify_read = 1;
             break; /* fall through to the cache miss logic */
