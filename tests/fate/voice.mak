@@ -94,5 +94,24 @@ fate-truespeech: CMD = pcm -i $(TARGET_SAMPLES)/truespeech/a6.wav
 fate-truespeech: CMP = oneoff
 fate-truespeech: REF = $(SAMPLES)/truespeech/a6.pcm
 
+# This test reproduces a float-cast-overflow in the comfortnoise decoder
+# (cngdec.c) when fed with a 24-byte all-zero G.723.1 frame.
+# The bug causes positive float values to overflow to negative integer values
+# during clipping, resulting in massive negative bias (RMS near 0dB).
+# The fixed version clips correctly, resulting in quieter output (RMS < -3dB).
+tests/data/g723_1-comfortnoise-overflow.bin: TAG = GEN
+tests/data/g723_1-comfortnoise-overflow.bin: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
+	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
+	    -lavfi nullsrc=s=4x4,format=yuv420p,geq=lum=0:cb=0:cr=0 \
+	    -vframes 1 -f rawvideo -y $(TARGET_PATH)/$@ 2>/dev/null
+
+FATE_VOICE-$(call FILTERDEMDECENCMUX, ASTATS NULLSRC FORMAT GEQ, G723_1, \
+                                      COMFORTNOISE WRAPPED_AVFRAME, PCM_S16LE RAWVIDEO, \
+                                      NULL RAWVIDEO, LAVFI_INDEV) += fate-comfortnoise
+fate-comfortnoise: tests/data/g723_1-comfortnoise-overflow.bin
+fate-comfortnoise: CMP = grep
+fate-comfortnoise: REF = RMS level dB: \(-[3-9]\|-[1-9][0-9]\)
+fate-comfortnoise: CMD = ffmpeg -f g723_1 -codec:a comfortnoise -i $(TARGET_PATH)/tests/data/g723_1-comfortnoise-overflow.bin -af astats -c:a pcm_s16le -f null -
+
 FATE_SAMPLES_FFMPEG += $(FATE_VOICE-yes)
 fate-voice: $(FATE_VOICE-yes)
