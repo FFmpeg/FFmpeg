@@ -1834,7 +1834,7 @@ static int http_read_stream(URLContext *h, uint8_t *buf, int size)
     int conn_attempts = 1;
 
     if (!s->hd)
-        return AVERROR_EOF;
+        return s->off < s->filesize ? AVERROR(EIO) : AVERROR_EOF;
 
     if (s->end_chunked_post && !s->end_header) {
         err = http_read_header(h);
