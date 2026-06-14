@@ -2169,14 +2169,16 @@ static int64_t http_seek_internal(URLContext *h, int64_t off, int whence, int fo
         s->hd = NULL;
     }
 
-    /* if it fails, continue on old connection */
     if ((ret = http_open_cnx(h, &options)) < 0) {
+        /* if it fails, continue on old connection if possible */
+        if (old_hd) {
+            memcpy(s->buffer, old_buf, old_buf_size);
+            s->buf_ptr = s->buffer;
+            s->buf_end = s->buffer + old_buf_size;
+            s->hd      = old_hd;
+            s->off     = old_off;
+        }
         av_dict_free(&options);
-        memcpy(s->buffer, old_buf, old_buf_size);
-        s->buf_ptr = s->buffer;
-        s->buf_end = s->buffer + old_buf_size;
-        s->hd      = old_hd;
-        s->off     = old_off;
         return ret;
     }
     av_dict_free(&options);
