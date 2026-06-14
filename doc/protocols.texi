@@ -1716,8 +1716,8 @@ be initialized if it does not already exist.
 
 @item cache_verify
 If true, verify any data read from the cache against the underlying input
-stream, and report any mismatches. Note that this will make the cache layer
-effectively useless. This is purely a debug option.
+stream, and error out on any mismatches. Note that this will make the cache
+layer effectively useless. This is purely a debug option.
 
 @item cache_timeout
 If set to a nonzero value, specifies the maximum time (in microseconds) to wait
