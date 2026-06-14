@@ -175,7 +175,7 @@ void ff_rv40_ ## OP ## _chroma_mc ## SIZE ## _ ## XMM(uint8_t *dst, const uint8_
 
 av_cold void ff_rv40dsp_init_x86(RV34DSPContext *c)
 {
-    av_unused int cpu_flags = av_get_cpu_flags();
+    int cpu_flags = av_get_cpu_flags();
 
     if (EXTERNAL_SSE2(cpu_flags)) {
         c->put_pixels_tab[0][15]        = put_rv40_qpel16_mc33_sse2;
