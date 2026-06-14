@@ -44,9 +44,6 @@ static void cavs_idct8_add_sse2(uint8_t *dst, int16_t *block, ptrdiff_t stride)
     ff_add_pixels_clamped_sse2(b2, dst, stride);
 }
 
-#endif /* HAVE_SSE2_EXTERNAL */
-
-#if HAVE_SSE2_EXTERNAL
 #define DEF_QPEL(OPNAME) \
     void ff_ ## OPNAME ## _cavs_qpel8_mc20_sse2(uint8_t *dst, const uint8_t *src, ptrdiff_t stride);     \
     void ff_ ## OPNAME ## _cavs_qpel8_mc02_sse2(uint8_t *dst, const uint8_t *src, ptrdiff_t stride);     \
@@ -89,9 +86,9 @@ QPEL_CAVS_XMM(avg, sse2)
 
 av_cold void ff_cavsdsp_init_x86(CAVSDSPContext *c)
 {
-    av_unused int cpu_flags = av_get_cpu_flags();
-
 #if HAVE_SSE2_EXTERNAL
+    int cpu_flags = av_get_cpu_flags();
+
     if (EXTERNAL_SSE2(cpu_flags)) {
         c->put_cavs_qpel_pixels_tab[0][ 0] = ff_put_pixels16x16_sse2;
         c->put_cavs_qpel_pixels_tab[0][ 2] = put_cavs_qpel16_mc20_sse2;
