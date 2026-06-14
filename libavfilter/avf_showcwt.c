@@ -1141,7 +1141,7 @@ static int output_frame(AVFilterContext *ctx)
         case DIRECTION_RL:
             for (int p = 0; p < nb_planes; p++) {
                 ptrdiff_t linesize = s->outpicref->linesize[p];
-                const int size = s->w - s->pos;
+                const int size = FFMIN(s->pos + 1, s->sono_size);
                 const int fill = p > 0 && p < 3 ? 128 : 0;
 
                 for (int y = 0; y < s->h; y++) {
