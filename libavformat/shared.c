@@ -681,7 +681,7 @@ read_block:
         av_fallthrough;
 
     case BLOCK_NONE:
-        if (s->read_only)
+        if (s->read_only || s->write_err)
             break; /* don't mark block as pending */
         if (atomic_compare_exchange_strong_explicit(&block->state, &state,
                                                     BLOCK_PENDING,
