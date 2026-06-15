@@ -402,8 +402,10 @@ static int mov_get_channel_layout(AVChannelLayout *ch_layout, uint32_t tag, uint
         }
 
         ret = av_channel_layout_retype(&tmp, 0, AV_CHANNEL_LAYOUT_RETYPE_FLAG_CANONICAL);
-        if (ret < 0)
+        if (ret < 0) {
+            av_channel_layout_uninit(&tmp);
             return ret;
+        }
 
         av_channel_layout_uninit(ch_layout);
         *ch_layout = tmp;
@@ -596,6 +598,7 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
             if (pb->eof_reached) {
                 av_log(s, AV_LOG_ERROR,
                        "reached EOF while reading channel layout\n");
+                av_channel_layout_uninit(&tmp);
                 return AVERROR_INVALIDDATA;
             }
             label     = avio_rb32(pb);          // mChannelLabel
@@ -608,8 +611,10 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
         }
 
         ret = av_channel_layout_retype(&tmp, 0, AV_CHANNEL_LAYOUT_RETYPE_FLAG_CANONICAL);
-        if (ret < 0)
+        if (ret < 0) {
+            av_channel_layout_uninit(&tmp);
             goto out;
+        }
 
         av_channel_layout_uninit(ch_layout);
         *ch_layout = tmp;
@@ -813,8 +818,10 @@ int ff_mov_read_chnl(AVFormatContext *s, AVIOContext *pb, AVStream *st, int vers
             }
 
             ret = av_channel_layout_retype(&tmp, 0, AV_CHANNEL_LAYOUT_RETYPE_FLAG_CANONICAL);
-            if (ret < 0)
+            if (ret < 0) {
+                av_channel_layout_uninit(&tmp);
                 return ret;
+            }
             av_channel_layout_uninit(ch_layout);
             *ch_layout = tmp;
         } else {
