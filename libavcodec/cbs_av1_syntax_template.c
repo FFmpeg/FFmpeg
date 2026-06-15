@@ -186,9 +186,12 @@ static int FUNC(decoder_model_info)(CodedBitstreamContext *ctx, RWContext *rw,
 static int FUNC(sequence_header_obu)(CodedBitstreamContext *ctx, RWContext *rw,
                                      AV1RawSequenceHeader *current)
 {
+    CodedBitstreamAV1Context *priv = ctx->priv_data;
     int i, err;
 
     HEADER("Sequence Header");
+
+    priv->seen_frame_header = 0;
 
     fc(3, seq_profile, FF_PROFILE_AV1_MAIN,
                        FF_PROFILE_AV1_PROFESSIONAL);
