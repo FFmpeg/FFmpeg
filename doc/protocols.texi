@@ -1069,9 +1069,26 @@ It runs transfers on a dedicated event-loop thread shared per
 @code{AVFormatContext}, so all of a demuxer's connections (for example HLS
 segments) reuse libcurl's connection cache and HTTP/2 and HTTP/3 multiplexing.
 
-The native @code{http} protocol stays the default; to use libcurl explicitly,
-prefix the URL with @code{libcurl:}, for example
+The native @code{http} protocol stays the default. There are two ways to use
+libcurl instead:
+
+@itemize @bullet
+@item
+Prefix the URL with @code{libcurl:} to force it explicitly, for example
 @code{libcurl:https://example.com/video.mp4}.
+
+@item
+Set the @option{prefer_libcurl} option to route @code{http://} and
+@code{https://} URLs through libcurl transparently.
+@end itemize
+
+@table @option
+@item prefer_libcurl
+When set to @code{1}, open @code{http(s)} URLs with the libcurl protocol instead
+of the native one. This is a generic IO option rather than a libcurl-specific
+one, so it also applies on builds without libcurl (where it has no effect).
+Default is @code{0}.
+@end table
 
 The libcurl protocol accepts the following options.
 
