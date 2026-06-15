@@ -35,6 +35,8 @@ fate-id3v2-utf16-bom: CMD = transcode wav $(TARGET_SAMPLES)/audio-reference/yo.r
 FATE_ID3V2_FFPROBE-$(CONFIG_ASF_DEMUXER) += fate-id3v2-wma-comm
 fate-id3v2-wma-comm: CMD = probetags $(TARGET_SAMPLES)/cover_art/wma_with_ID3_APIC_trimmed.wma
 
+FATE_ID3V2_FFPROBE-$(CONFIG_ASF_O_DEMUXER) += fate-id3v2-wma-comm-asf_o
+fate-id3v2-wma-comm-asf_o: CMD = probetags -f asf_o $(TARGET_SAMPLES)/cover_art/wma_with_ID3_APIC_trimmed.wma
 
 # Round-trip: write COMM with descriptor, read back (legacy: descriptor as key).
 FATE_ID3V2_RAW-$(call REMUX, MP3) += fate-id3v2-comm-descriptor
