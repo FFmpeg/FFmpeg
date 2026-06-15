@@ -202,13 +202,11 @@ static int asf_probe(const AVProbeData *pd)
         return 0;
 }
 
-/* size of type 2 (BOOL) is 32bit for "Extended Content Description Object"
- * but 16 bit for "Metadata Object" and "Metadata Library Object" */
-static int get_value(AVIOContext *pb, int type, int type2_size)
+static int get_value(AVIOContext *pb, int type)
 {
     switch (type) {
     case ASF_BOOL:
-        return (type2_size == 32) ? avio_rl32(pb) : avio_rl16(pb);
+        return avio_rl16(pb);
     case ASF_DWORD:
         return avio_rl32(pb);
     case ASF_QWORD:
@@ -220,7 +218,7 @@ static int get_value(AVIOContext *pb, int type, int type2_size)
     }
 }
 
-static void get_tag(AVFormatContext *s, const char *key, int type, int len, int type2_size)
+static void get_tag(AVFormatContext *s, const char *key, int type, int len)
 {
     ASFContext *asf = s->priv_data;
     char *value = NULL;
@@ -254,7 +252,7 @@ static void get_tag(AVFormatContext *s, const char *key, int type, int len, int 
     case ASF_DWORD:
     case ASF_QWORD:
     case ASF_WORD: {
-        uint64_t num = get_value(s->pb, type, type2_size);
+        uint64_t num = get_value(s->pb, type);
         snprintf(value, LEN, "%"PRIu64, num);
         break;
     }
@@ -544,10 +542,10 @@ static int asf_read_content_desc(AVFormatContext *s)
     len3 = avio_rl16(pb);
     len4 = avio_rl16(pb);
     len5 = avio_rl16(pb);
-    get_tag(s, "title", 0, len1, 32);
-    get_tag(s, "author", 0, len2, 32);
-    get_tag(s, "copyright", 0, len3, 32);
-    get_tag(s, "comment", 0, len4, 32);
+    get_tag(s, "title", 0, len1);
+    get_tag(s, "author", 0, len2);
+    get_tag(s, "copyright", 0, len3);
+    get_tag(s, "comment", 0, len4);
     avio_skip(pb, len5);
 
     return 0;
@@ -573,15 +571,19 @@ static int asf_read_ext_content_desc(AVFormatContext *s)
         value_len  = avio_rl16(pb);
         if (!value_type && value_len % 2)
             value_len += 1;
+        /* size of type 2 (BOOL) is 32bit for "Extended Content Description Object"
+         * but 16 bit for "Metadata Object" and "Metadata Library Object" */
+        if (value_type == ASF_BOOL)
+            value_type = ASF_DWORD;
         /* My sample has that stream set to 0 maybe that mean the container.
          * ASF stream count starts at 1. I am using 0 to the container value
          * since it's unused. */
         if (!strcmp(name, "AspectRatioX"))
-            asf->dar[0].num = get_value(s->pb, value_type, 32);
+            asf->dar[0].num = get_value(s->pb, value_type);
         else if (!strcmp(name, "AspectRatioY"))
-            asf->dar[0].den = get_value(s->pb, value_type, 32);
+            asf->dar[0].den = get_value(s->pb, value_type);
         else
-            get_tag(s, name, value_type, value_len, 32);
+            get_tag(s, name, value_type, value_len);
     }
 
     return 0;
@@ -640,15 +642,15 @@ static int asf_read_metadata(AVFormatContext *s)
                 i, stream_num, name_len_utf16, value_type, value_len, name);
 
         if (!strcmp(name, "AspectRatioX")){
-            int aspect_x = get_value(s->pb, value_type, 16);
+            int aspect_x = get_value(s->pb, value_type);
             if(stream_num < 128)
                 asf->dar[stream_num].num = aspect_x;
         } else if(!strcmp(name, "AspectRatioY")){
-            int aspect_y = get_value(s->pb, value_type, 16);
+            int aspect_y = get_value(s->pb, value_type);
             if(stream_num < 128)
                 asf->dar[stream_num].den = aspect_y;
         } else {
-            get_tag(s, name, value_type, value_len, 16);
+            get_tag(s, name, value_type, value_len);
         }
         av_freep(&name);
     }
@@ -779,17 +781,17 @@ static int asf_read_header(AVFormatContext *s)
                     len= avio_rl32(pb);
                     if (len > UINT16_MAX)
                         return AVERROR_INVALIDDATA;
-                    get_tag(s, "ASF_Protection_Type", -1, len, 32);
+                    get_tag(s, "ASF_Protection_Type", -1, len);
 
                     len= avio_rl32(pb);
                     if (len > UINT16_MAX)
                         return AVERROR_INVALIDDATA;
-                    get_tag(s, "ASF_Key_ID", -1, len, 32);
+                    get_tag(s, "ASF_Key_ID", -1, len);
 
                     len= avio_rl32(pb);
                     if (len > UINT16_MAX)
                         return AVERROR_INVALIDDATA;
-                    get_tag(s, "ASF_License_URL", -1, len, 32);
+                    get_tag(s, "ASF_License_URL", -1, len);
                 } else if (!ff_guidcmp(&g, &ff_asf_ext_content_encryption)) {
                     av_log(s, AV_LOG_WARNING,
                            "Ext DRM protected stream detected, decoding will likely fail!\n");
