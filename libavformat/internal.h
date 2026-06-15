@@ -23,8 +23,6 @@
 
 #include <stdint.h>
 
-#include "config_components.h"
-
 #include "packet_internal.h"
 
 #include "avformat.h"
@@ -120,6 +118,13 @@ typedef struct FFFormatContext {
     AVDictionary *id3v2_meta;
 
     int missing_streams;
+
+    /**
+     * Shared libcurl event loop, created on demand on the first use. Freed on
+     * context free. This allows to share libcurl state across URLContexts,
+     * scoped to this context.
+     */
+    struct CurlLoop *curl_loop;
 } FFFormatContext;
 
 static av_always_inline FFFormatContext *ffformatcontext(AVFormatContext *s)
@@ -606,6 +611,12 @@ int ff_copy_whiteblacklists(AVFormatContext *dst, const AVFormatContext *src);
  * @return >=0 on success, negative AVERROR in case of failure
  */
 int ff_format_io_close(AVFormatContext *s, AVIOContext **pb);
+
+/**
+ * Release a libcurl event loop and set *loop to NULL.
+ * No-op when @p loop or *loop is NULL.
+ */
+void ff_curl_loop_free(struct CurlLoop **loop);
 
 /**
  * Utility function to check if the file uses http or https protocol

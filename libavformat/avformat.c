@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config_components.h"
+
 #include <math.h>
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
@@ -187,6 +189,9 @@ void avformat_free_context(AVFormatContext *s)
     av_freep(&s->chapters);
     av_dict_free(&s->metadata);
     av_dict_free(&si->id3v2_meta);
+#if CONFIG_LIBCURL_PROTOCOL
+    ff_curl_loop_free(&si->curl_loop);
+#endif
     av_packet_free(&si->pkt);
     av_packet_free(&si->parse_pkt);
     ff_packet_list_free(&si->packet_buffer);
