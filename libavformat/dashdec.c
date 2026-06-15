@@ -137,14 +137,14 @@ typedef struct DASHContext {
     struct representation **subtitles;
 
     /* MediaPresentationDescription Attribute */
-    uint64_t media_presentation_duration;
-    uint64_t suggested_presentation_delay;
-    uint64_t availability_start_time;
-    uint64_t availability_end_time;
-    uint64_t publish_time;
-    uint64_t minimum_update_period;
-    uint64_t time_shift_buffer_depth;
-    uint64_t min_buffer_time;
+    int64_t media_presentation_duration;
+    int64_t suggested_presentation_delay;
+    int64_t availability_start_time;
+    int64_t availability_end_time;
+    int64_t publish_time;
+    int64_t minimum_update_period;
+    int64_t time_shift_buffer_depth;
+    int64_t min_buffer_time;
 
     /* Period Attribute */
     uint64_t period_duration;
@@ -180,12 +180,12 @@ static int aligned(int val)
     return ((val + 0x3F) >> 6) << 6;
 }
 
-static uint64_t get_current_time_in_sec(void)
+static int64_t get_current_time_in_sec(void)
 {
     return  av_gettime() / 1000000;
 }
 
-static uint64_t get_utc_date_time_insec(AVFormatContext *s, const char *datetime)
+static int64_t get_utc_date_time_insec(AVFormatContext *s, const char *datetime)
 {
     struct tm timeinfo;
     int year = 0;
@@ -1456,7 +1456,7 @@ static int64_t calc_cur_seg_no(AVFormatContext *s, struct representation *pls)
         } else if (pls->fragment_duration){
             av_log(s, AV_LOG_TRACE, "in fragment_duration mode fragment_timescale = %"PRId64", presentation_timeoffset = %"PRId64"\n", pls->fragment_timescale, pls->presentation_timeoffset);
             if (pls->presentation_timeoffset) {
-                num = pls->first_seq_no + (((get_current_time_in_sec() - c->availability_start_time) * pls->fragment_timescale)-pls->presentation_timeoffset) / pls->fragment_duration - c->min_buffer_time;
+                num = pls->first_seq_no + ((get_current_time_in_sec() - c->availability_start_time) * pls->fragment_timescale) / pls->fragment_duration - c->min_buffer_time;
             } else if (c->publish_time > 0 && !c->availability_start_time) {
                 if (c->min_buffer_time) {
                     num = pls->first_seq_no + (((c->publish_time + pls->fragment_duration) - c->suggested_presentation_delay) * pls->fragment_timescale) / pls->fragment_duration - c->min_buffer_time;
