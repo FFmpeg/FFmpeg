@@ -819,13 +819,14 @@ static int get_block_rd(SnowEncContext *enc, int mb_x, int mb_y,
     if ((mb_x == 0 || mb_x == b_stride-1) &&
         (mb_y == 0 || mb_y == b_height-1)){
         if(mb_x == 0)
-            x1 = block_w;
+            x1 = FFMIN(x1, block_w);
         else
-            x0 = block_w;
+            x0 = FFMAX(x0, block_w);
         if(mb_y == 0)
-            y1 = block_h;
+            y1 = FFMIN(y1, block_h);
         else
-            y0 = block_h;
+            y0 = FFMAX(y0, block_h);
+        x0 = FFMIN(x0, x1);
         for(y=y0; y<y1; y++)
             memcpy(dst + sx+x0 + (sy+y)*ref_stride, cur + x0 + y*ref_stride, x1-x0);
     }
