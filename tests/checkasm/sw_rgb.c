@@ -39,7 +39,8 @@
 
 static const uint8_t width[] = {12, 16, 20, 32, 36, 128};
 static const struct {uint8_t w, h;} planes[] = {
-    {12,16}, {16,16}, {20,23}, {32,18}, {8,128}, {128,128}
+    {12,16}, {16,16}, {20,23}, {32,18}, {8,128}, {128,128},
+    {1,1}, {1,4}, {3,8}, {13,16}, {21,9}, {63,7}, {127,5}
 };
 
 #define MAX_STRIDE 128
@@ -92,9 +93,9 @@ static void check_uyvy_to_422p(void)
     memcpy(src1, src0, MAX_STRIDE * MAX_HEIGHT * 2);
 
     if (check_func(uyvytoyuv422, "uyvytoyuv422")) {
-        for (i = 0; i < 6; i ++) {
+        for (i = 0; i < FF_ARRAY_ELEMS(planes); i ++) {
             int w = planes[i].w, h = planes[i].h;
-            int srcStride = 2 * w;
+            int srcStride = 2 * w + (w & 1);   // UYVY odd width reads V at src[2w]
 
             memset(dst_y_0, 0, MAX_STRIDE * MAX_HEIGHT);
             memset(dst_y_1, 0, MAX_STRIDE * MAX_HEIGHT);
