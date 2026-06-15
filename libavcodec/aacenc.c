@@ -214,7 +214,7 @@ static const AACPCEInfo aac_pce_configs[] = {
         .pairing = { { 1, 1 }, { 0 }, { 1 } },
         .index = { { 0, 1 }, { 0 }, { 2 }, },
         .config_map = { 3, TYPE_CPE, TYPE_CPE, TYPE_CPE, },
-        .reorder_map = { 0, 1, 2, 3, 4, 5 },
+        .reorder_map = { 2, 3, 0, 1, 4, 5 },
     },
     {
         .layout = AV_CHANNEL_LAYOUT_HEXAGONAL,
@@ -246,7 +246,7 @@ static const AACPCEInfo aac_pce_configs[] = {
         .pairing = { { 1, 1 }, { 0 }, { 1 }, },
         .index = { { 0, 1 }, { 0 }, { 2 }, { 0 }, },
         .config_map = { 4, TYPE_CPE, TYPE_CPE, TYPE_CPE, TYPE_LFE, },
-        .reorder_map = { 0, 1, 3, 4, 5, 6, 2 },
+        .reorder_map = { 3, 4, 0, 1, 5, 6, 2 },
     },
     {
         .layout = AV_CHANNEL_LAYOUT_7POINT0,
@@ -262,7 +262,7 @@ static const AACPCEInfo aac_pce_configs[] = {
         .pairing = { { 0, 1, 1 }, { 0 }, { 1 }, },
         .index = { { 0, 0, 1 }, { 0 }, { 2 }, },
         .config_map = { 4, TYPE_SCE, TYPE_CPE, TYPE_CPE, TYPE_CPE },
-        .reorder_map = { 2, 0, 1, 3, 4, 5, 6 },
+        .reorder_map = { 2, 3, 4, 0, 1, 5, 6 },
     },
     {
         .layout = AV_CHANNEL_LAYOUT_7POINT1,
