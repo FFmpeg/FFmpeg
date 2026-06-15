@@ -153,7 +153,8 @@ static int io_open_default(AVFormatContext *s, AVIOContext **pb,
 
     av_log(s, loglevel, "Opening \'%s\' for %s\n", url, flags & AVIO_FLAG_WRITE ? "writing" : "reading");
 
-    return ffio_open_whitelist(pb, url, flags, &s->interrupt_callback, options, s->protocol_whitelist, s->protocol_blacklist);
+    return ffio_open_whitelist2(pb, url, flags, &s->interrupt_callback, options,
+                                s->protocol_whitelist, s->protocol_blacklist, s);
 }
 
 static int io_close2_default(AVFormatContext *s, AVIOContext *pb)

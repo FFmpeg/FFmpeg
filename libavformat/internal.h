@@ -23,6 +23,8 @@
 
 #include <stdint.h>
 
+#include "config_components.h"
+
 #include "packet_internal.h"
 
 #include "avformat.h"

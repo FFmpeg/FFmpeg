@@ -365,16 +365,17 @@ int ffurl_alloc(URLContext **puc, const char *filename, int flags,
     return AVERROR_PROTOCOL_NOT_FOUND;
 }
 
-int ffurl_open_whitelist(URLContext **puc, const char *filename, int flags,
-                         const AVIOInterruptCB *int_cb, AVDictionary **options,
-                         const char *whitelist, const char* blacklist,
-                         URLContext *parent)
+static int url_open_whitelist(URLContext **puc, const char *filename, int flags,
+                              const AVIOInterruptCB *int_cb, AVDictionary **options,
+                              const char *whitelist, const char* blacklist,
+                              URLContext *parent, AVFormatContext *avfc)
 {
     AVDictionary *tmp_opts = NULL;
     AVDictionaryEntry *e;
     int ret = ffurl_alloc(puc, filename, flags, int_cb);
     if (ret < 0)
         return ret;
+    (*puc)->avfc = avfc;
     if (parent) {
         ret = av_opt_copy(*puc, parent);
         if (ret < 0)
@@ -413,6 +414,15 @@ int ffurl_open_whitelist(URLContext **puc, const char *filename, int flags,
 fail:
     ffurl_closep(puc);
     return ret;
+}
+
+int ffurl_open_whitelist(URLContext **puc, const char *filename, int flags,
+                         const AVIOInterruptCB *int_cb, AVDictionary **options,
+                         const char *whitelist, const char* blacklist,
+                         URLContext *parent)
+{
+    return url_open_whitelist(puc, filename, flags, int_cb, options,
+                              whitelist, blacklist, parent, NULL);
 }
 
 int ffio_fdopen(AVIOContext **sp, URLContext *h)
@@ -474,16 +484,18 @@ int ffio_fdopen(AVIOContext **sp, URLContext *h)
     return 0;
 }
 
-int ffio_open_whitelist(AVIOContext **s, const char *filename, int flags,
-                        const AVIOInterruptCB *int_cb, AVDictionary **options,
-                        const char *whitelist, const char *blacklist)
+int ffio_open_whitelist2(AVIOContext **s, const char *filename, int flags,
+                         const AVIOInterruptCB *int_cb, AVDictionary **options,
+                         const char *whitelist, const char *blacklist,
+                         AVFormatContext *avfc)
 {
     URLContext *h;
     int err;
 
     *s = NULL;
 
-    err = ffurl_open_whitelist(&h, filename, flags, int_cb, options, whitelist, blacklist, NULL);
+    err = url_open_whitelist(&h, filename, flags, int_cb, options, whitelist,
+                             blacklist, NULL, avfc);
     if (err < 0)
         return err;
     err = ffio_fdopen(s, h);
@@ -492,6 +504,14 @@ int ffio_open_whitelist(AVIOContext **s, const char *filename, int flags,
         return err;
     }
     return 0;
+}
+
+int ffio_open_whitelist(AVIOContext **s, const char *filename, int flags,
+                        const AVIOInterruptCB *int_cb, AVDictionary **options,
+                        const char *whitelist, const char *blacklist)
+{
+    return ffio_open_whitelist2(s, filename, flags, int_cb, options,
+                                whitelist, blacklist, NULL);
 }
 
 int avio_open2(AVIOContext **s, const char *filename, int flags,
