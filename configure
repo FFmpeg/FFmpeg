@@ -308,6 +308,7 @@ External library support:
   --enable-libxevdb        enable EVC decoding via libxevd (Base profile) [no]
   --enable-libxavs         enable AVS encoding via xavs [no]
   --enable-libxavs2        enable AVS2 encoding via xavs2 [no]
+  --enable-libcurl         enable HTTP(S) protocol support via libcurl [autodetect]
   --enable-libxcb          enable X11 grabbing using XCB [autodetect]
   --enable-libxcb-shm      enable X11 grabbing shm communication [autodetect]
   --enable-libxcb-xfixes   enable X11 grabbing mouse rendering [autodetect]
@@ -1980,6 +1981,7 @@ EXTERNAL_AUTODETECT_LIBRARY_LIST="
     bzlib
     coreimage
     iconv
+    libcurl
     libxcb
     libxcb_shm
     libxcb_shape
@@ -4115,6 +4117,8 @@ ipns_gateway_protocol_select="https_protocol"
 libamqp_protocol_deps="librabbitmq"
 libamqp_protocol_select="network"
 librist_protocol_deps="librist"
+libcurl_protocol_deps="libcurl"
+libcurl_protocol_select="network"
 librist_protocol_select="network"
 librtmp_protocol_deps="librtmp"
 librtmpe_protocol_deps="librtmp"
@@ -7312,6 +7316,7 @@ enabled libbluray         && require_pkg_config libbluray libbluray libbluray/bl
 enabled libbs2b           && require_pkg_config libbs2b libbs2b bs2b.h bs2b_open
 enabled libcaca           && require_pkg_config libcaca caca caca.h caca_create_canvas
 enabled libcodec2         && require libcodec2 codec2/codec2.h codec2_create -lcodec2
+enabled libcurl           && check_pkg_config libcurl "libcurl >= 7.88.0" curl/curl.h curl_easy_init
 enabled libdav1d          && require_pkg_config libdav1d "dav1d >= 1.0.0" "dav1d/dav1d.h" dav1d_version
 enabled libdavs2          && require_pkg_config libdavs2 "davs2 >= 1.6.0" davs2.h davs2_decoder_open
 enabled libdc1394         && require_pkg_config libdc1394 libdc1394-2 dc1394/dc1394.h dc1394_new
