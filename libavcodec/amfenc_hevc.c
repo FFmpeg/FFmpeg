@@ -66,11 +66,12 @@ static const AVOption options[] = {
     { "6.1",            "", 0, AV_OPT_TYPE_CONST, { .i64 = AMF_LEVEL_6_1 }, 0, 0, VE, .unit = "level" },
     { "6.2",            "", 0, AV_OPT_TYPE_CONST, { .i64 = AMF_LEVEL_6_2 }, 0, 0, VE, .unit = "level" },
 
-    { "quality",        "Set the encoding quality preset",  OFFSET(quality),    AV_OPT_TYPE_INT,   { .i64 = -1 }, -1, AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_SPEED, VE, .unit = "quality" },
-    { "preset",         "Set the encoding quality preset",  OFFSET(quality),    AV_OPT_TYPE_INT,   { .i64 = -1 }, -1, AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_SPEED, VE, .unit = "quality" },
+    { "quality",        "Set the encoding quality preset",  OFFSET(quality),    AV_OPT_TYPE_INT,   { .i64 = -1 }, -1, AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_HIGH_QUALITY, VE, .unit = "quality" },
+    { "preset",         "Set the encoding quality preset",  OFFSET(quality),    AV_OPT_TYPE_INT,   { .i64 = -1 }, -1, AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_HIGH_QUALITY, VE, .unit = "quality" },
     { "quality",        "", 0, AV_OPT_TYPE_CONST, { .i64 = AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_QUALITY  }, 0, 0, VE, .unit = "quality" },
     { "balanced",       "", 0, AV_OPT_TYPE_CONST, { .i64 = AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_BALANCED }, 0, 0, VE, .unit = "quality" },
     { "speed",          "", 0, AV_OPT_TYPE_CONST, { .i64 = AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_SPEED    }, 0, 0, VE, .unit = "quality" },
+    { "high_quality",   "", 0, AV_OPT_TYPE_CONST, { .i64 = AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_HIGH_QUALITY  }, 0, 0, VE, .unit = "quality" },
 
     { "latency",        "enables low latency mode",         OFFSET(latency),    AV_OPT_TYPE_BOOL,{.i64 = -1 },  -1, 1, VE },
 
