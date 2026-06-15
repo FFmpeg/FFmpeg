@@ -948,7 +948,7 @@ static int decode_pce(AVCodecContext *avctx, MPEG4AudioConfig *m4ac,
                         memcpy(layout_map + height_tags, &tag[AAC_CHANNEL_LFE][j], sizeof(*layout_map));
                         height_tags++;
                     }
-                    for (int j = 0; j < num_cc; j++, height_tags++) {
+                    for (int j = 0; j < num_cc; j++) {
                         memcpy(layout_map + height_tags, &tag[AAC_CHANNEL_CC][j], sizeof(*layout_map));
                         height_tags++;
                     }
