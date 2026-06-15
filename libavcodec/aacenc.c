@@ -245,7 +245,7 @@ static const AACPCEInfo aac_pce_configs[] = {
         .num_ele = { 2, 0, 1, 1 },
         .pairing = { { 1, 1 }, { 0 }, { 1 }, },
         .index = { { 0, 1 }, { 0 }, { 2 }, { 0 }, },
-        .config_map = { 3, TYPE_CPE, TYPE_CPE, TYPE_CPE, TYPE_LFE, },
+        .config_map = { 4, TYPE_CPE, TYPE_CPE, TYPE_CPE, TYPE_LFE, },
         .reorder_map = { 0, 1, 3, 4, 5, 6, 2 },
     },
     {
