@@ -72,7 +72,7 @@ static void check_shuffle_bytes(void * func, const char * report)
     }
 }
 
-static void check_uyvy_to_422p(void)
+static void check_interleaved_to_planar(void *func, const char *report, int odd_tail)
 {
     int i;
 
@@ -92,10 +92,10 @@ static void check_uyvy_to_422p(void)
     randomize_buffers(src0, MAX_STRIDE * MAX_HEIGHT * 2);
     memcpy(src1, src0, MAX_STRIDE * MAX_HEIGHT * 2);
 
-    if (check_func(uyvytoyuv422, "uyvytoyuv422")) {
+    if (check_func(func, "%s", report)) {
         for (i = 0; i < FF_ARRAY_ELEMS(planes); i ++) {
             int w = planes[i].w, h = planes[i].h;
-            int srcStride = 2 * w + (w & 1);   // UYVY odd width reads V at src[2w]
+            int srcStride = 2 * w + (w & 1 ? odd_tail : 0);
 
             memset(dst_y_0, 0, MAX_STRIDE * MAX_HEIGHT);
             memset(dst_y_1, 0, MAX_STRIDE * MAX_HEIGHT);
@@ -960,8 +960,10 @@ void checkasm_check_sw_rgb(void)
     }
     report("rgb24tobgr32");
 
-    check_uyvy_to_422p();
+    check_interleaved_to_planar(uyvytoyuv422, "uyvytoyuv422", 1);
     report("uyvytoyuv422");
+    check_interleaved_to_planar(yuyvtoyuv422, "yuyvtoyuv422", 2);
+    report("yuyvtoyuv422");
 
     check_interleave_bytes();
     report("interleave_bytes");
