@@ -1387,7 +1387,7 @@ static av_cold int vulkan_encode_ffv1_init(AVCodecContext *avctx)
     maxsize = ff_ffv1_encode_buffer_size(avctx);
     if (maxsize > fv->s.props_11.maxMemoryAllocationSize) {
         av_log(avctx, AV_LOG_WARNING, "Encoding buffer size (%zu) larger "
-                                      "than maximum device allocation (%zu), clipping\n",
+                                      "than maximum device allocation (%"PRIu64"), clipping\n",
                maxsize, fv->s.props_11.maxMemoryAllocationSize);
         maxsize = fv->s.props_11.maxMemoryAllocationSize;
     }
