@@ -431,8 +431,8 @@ static void check_write(const char *name, const SwsUOp *uop)
     switch (uop->uop) {
     case SWS_UOP_WRITE_BIT:
     case SWS_UOP_WRITE_NIBBLE:
-    case SWS_UOP_READ_PACKED: mode = SWS_RW_PACKED; break;
-    case SWS_UOP_READ_PLANAR: mode = SWS_RW_PLANAR; break;
+    case SWS_UOP_WRITE_PACKED: mode = SWS_RW_PACKED; break;
+    case SWS_UOP_WRITE_PLANAR: mode = SWS_RW_PLANAR; break;
     default: return;
     }
 
