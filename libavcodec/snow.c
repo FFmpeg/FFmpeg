@@ -470,11 +470,9 @@ static void mc_block_hpel ## dx ## dy ## b_w(uint8_t *dst, const uint8_t *src, p
     mc_block(NULL, dst, src-(HTAPS_MAX/2-1)-(HTAPS_MAX/2-1)*stride, stride, b_w, b_w, dx, dy);\
 }
 
-mca( 0, 0,16)
 mca( 8, 0,16)
 mca( 0, 8,16)
 mca( 8, 8,16)
-mca( 0, 0,8)
 mca( 8, 0,8)
 mca( 0, 8,8)
 mca( 8, 8,8)
@@ -509,7 +507,6 @@ av_cold int ff_snow_common_init(AVCodecContext *avctx){
     s->hdsp.put_no_rnd_pixels_tab[1][dy/4+dx/8]=\
         mc_block_hpel ## dx ## dy ## 8;
 
-    mcfh(0, 0)
     mcfh(8, 0)
     mcfh(0, 8)
     mcfh(8, 8)
