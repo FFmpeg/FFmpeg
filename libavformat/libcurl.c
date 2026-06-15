@@ -23,12 +23,14 @@
 
 #include <curl/curl.h>
 #include <inttypes.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "libavutil/avstring.h"
 #include "libavutil/error.h"
 #include "libavutil/fifo.h"
+#include "libavutil/log.h"
 #include "libavutil/macros.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
@@ -39,8 +41,11 @@
 #include "http.h"
 #include "internal.h"
 #include "url.h"
+#include "version.h"
 
+#define DEFAULT_USER_AGENT "Lavf/" AV_STRINGIFY(LIBAVFORMAT_VERSION)
 #define CURL_DEFAULT_BUFFER_SIZE (4 << 20)
+
 /* Blocking waits wake up this often so url_read()/open can poll the interrupt
  * callback. */
 #define CURL_WAIT_US 100000
@@ -80,8 +85,28 @@ struct CurlContext {
     CurlLoop       *loop;
     int             private_loop;  /* loop is owned by this context (not shared) */
     CURL           *easy;
+    struct curl_slist *header_list;
 
+    /* AVOptions. */
+    char           *user_agent;
+    char           *referer;
+    char           *headers;
+    char           *http_proxy;
+    char           *cookies;
+    char           *ca_file;
+    char           *cert_file;
+    char           *key_file;
+    char           *location;   /* effective URL after redirects (output) */
+    int64_t         off;        /* initial byte offset */
+    int64_t         end_off;    /* exclusive upper byte bound (0 = none) */
+    int             tls_verify;
+    int             seekable_opt;
+    int             connect_timeout;
+    int             max_redirects;
+    int             multiple_requests;
+    int             http_version;
     int64_t         buffer_size;
+    int64_t         request_size;
     int             max_retries;
 
     int64_t         logical_pos; /* next byte url_read() will return, caller side */
@@ -239,6 +264,19 @@ static size_t header_callback(char *ptr, size_t size, size_t nitems, void *userd
     pthread_mutex_lock(&c->mutex);
     if (status >= 200 && status < 300) {
         c->stream_ok = 1;
+        /* Capture the post-redirect URL, this is exposed as "location" AVOption
+         * for compatibility with http.c. */
+        if (!c->probed) {
+            const char *eff = NULL;
+            if (curl_easy_getinfo(c->easy, CURLINFO_EFFECTIVE_URL, &eff) == CURLE_OK
+                && eff) {
+                char *dup = av_strdup(eff);
+                if (dup) {
+                    av_free(c->location);
+                    c->location = dup;
+                }
+            }
+        }
         /* A compressed body is addressed in encoded form, so byte offsets are
          * meaningless: not seekable. Note that we prefer compression over
          * seekability, servers doesn't offer media in compressed form, so it
@@ -283,8 +321,20 @@ static int xferinfo_callback(void *userdata, curl_off_t dltotal, curl_off_t dlno
 static void start_request(CurlContext *c)
 {
     if (!c->probed || c->seekable) {
-        char range[32];
-        snprintf(range, sizeof(range), "%"PRIu64"-", c->request_start);
+        uint64_t start = c->request_start;
+        char range[48];
+        if (c->request_size > 0 || c->end_off > 0) {
+            uint64_t end = UINT64_MAX;
+            if (c->request_size > 0)
+                end = start + c->request_size - 1;
+            if (c->content_size > 0)
+                end = FFMIN(end, (uint64_t)c->content_size - 1);
+            if (c->end_off > 0)
+                end = FFMIN(end, (uint64_t)c->end_off - 1);
+            snprintf(range, sizeof(range), "%"PRIu64"-%"PRIu64, start, end);
+        } else {
+            snprintf(range, sizeof(range), "%"PRIu64"-", start);
+        }
         curl_easy_setopt(c->easy, CURLOPT_RANGE, range);
     } else {
         curl_easy_setopt(c->easy, CURLOPT_RANGE, NULL);
@@ -307,12 +357,14 @@ static void start_request(CurlContext *c)
 /* Transfer finished (or failed) */
 static void on_done(CurlContext *c, CURLcode code)
 {
+    uint64_t received;
     int aborted;
 
     pthread_mutex_lock(&c->mutex);
-    aborted = c->aborted;
+    aborted  = c->aborted;
+    received = c->request_received;
     /* Advance past delivered bytes so a retry or seek resumes at the right offset. */
-    c->request_start    += c->request_received;
+    c->request_start    += received;
     c->request_received  = 0;
     pthread_mutex_unlock(&c->mutex);
 
@@ -329,6 +381,17 @@ static void on_done(CurlContext *c, CURLcode code)
     }
 
     if (code == CURLE_OK && !aborted && c->stream_ok) {
+        c->retry_count = 0;
+        if (c->seekable && c->request_size > 0) {
+            int64_t file_end = c->end_off > 0 ? c->end_off : c->content_size;
+            int more = file_end > 0
+                       ? (int64_t)c->request_start < file_end
+                       : received >= (uint64_t)c->request_size;
+            if (more) {
+                start_request(c);
+                return;
+            }
+        }
         pthread_mutex_lock(&c->mutex);
         c->eof = 1;
         pthread_cond_broadcast(&c->cond);
@@ -576,6 +639,58 @@ void ff_curl_loop_free(struct CurlLoop **loop)
 
 static int libcurl_close(URLContext *h);
 
+static int debug_callback(CURL *easy, curl_infotype type, char *data,
+                          size_t size, void *userdata)
+{
+    CurlContext *c = userdata;
+    const char *prefix, *p = data, *end = data + size;
+
+    switch (type) {
+    case CURLINFO_TEXT:       prefix = "* "; break;
+    case CURLINFO_HEADER_IN:  prefix = "< "; break;
+    case CURLINFO_HEADER_OUT: prefix = "> "; break;
+    default:                  return 0;
+    }
+
+    /* Split multiline payload into each log. */
+    while (p < end) {
+        const char *nl = memchr(p, '\n', end - p);
+        size_t len = (nl ? nl : end) - p;
+        while (len && p[len - 1] == '\r')
+            len--;
+        av_log(c->h, AV_LOG_DEBUG, "%s%.*s\n", prefix, (int)len, p);
+        if (!nl)
+            break;
+        p = nl + 1;
+    }
+    return 0;
+}
+
+/* Build the custom request header list from the referer and headers options. */
+static struct curl_slist *build_headers(CurlContext *c)
+{
+    struct curl_slist *list = NULL;
+
+    if (c->referer && c->referer[0]) {
+        char *h = av_asprintf("Referer: %s", c->referer);
+        if (h) {
+            list = curl_slist_append(list, h);
+            av_free(h);
+        }
+    }
+    if (c->headers && c->headers[0]) {
+        char *copy = av_strdup(c->headers);
+        char *line, *saveptr = NULL;
+        if (copy) {
+            for (line = av_strtok(copy, "\r\n", &saveptr); line;
+                 line = av_strtok(NULL, "\r\n", &saveptr))
+                list = curl_slist_append(list, line);
+            av_free(copy);
+        }
+    }
+    return list;
+}
+
 static void setup_curl(CurlContext *c)
 {
     CURL *e = c->easy;
@@ -597,9 +712,58 @@ static void setup_curl(CurlContext *c)
     curl_easy_setopt(e, CURLOPT_XFERINFOFUNCTION, xferinfo_callback);
     curl_easy_setopt(e, CURLOPT_XFERINFODATA, c);
 
+    if (av_log_get_level() >= AV_LOG_DEBUG) {
+        curl_easy_setopt(e, CURLOPT_VERBOSE, 1L);
+        curl_easy_setopt(e, CURLOPT_DEBUGFUNCTION, debug_callback);
+        curl_easy_setopt(e, CURLOPT_DEBUGDATA, c);
+    }
+
     curl_easy_setopt(e, CURLOPT_FOLLOWLOCATION, 1L);
-    curl_easy_setopt(e, CURLOPT_TCP_KEEPALIVE, 1L);
+    curl_easy_setopt(e, CURLOPT_MAXREDIRS, (long)c->max_redirects);
+    curl_easy_setopt(e, CURLOPT_HTTP_VERSION, (long)c->http_version);
+    curl_easy_setopt(e, CURLOPT_TCP_KEEPALIVE, c->multiple_requests ? 1L : 0L);
+    curl_easy_setopt(e, CURLOPT_FORBID_REUSE,  c->multiple_requests ? 0L : 1L);
+    curl_easy_setopt(e, CURLOPT_HSTS_CTRL, (long)CURLHSTS_ENABLE);
     curl_easy_setopt(e, CURLOPT_ACCEPT_ENCODING, "");
+    if (c->connect_timeout > 0)
+        curl_easy_setopt(e, CURLOPT_CONNECTTIMEOUT_MS,
+                         (long)c->connect_timeout * 1000);
+
+    if (c->user_agent && c->user_agent[0])
+        curl_easy_setopt(e, CURLOPT_USERAGENT, c->user_agent);
+    if (c->http_proxy && c->http_proxy[0])
+        curl_easy_setopt(e, CURLOPT_PROXY, c->http_proxy);
+
+    curl_easy_setopt(e, CURLOPT_SSL_OPTIONS, (long)CURLSSLOPT_NATIVE_CA);
+    curl_easy_setopt(e, CURLOPT_SSL_VERIFYPEER, c->tls_verify ? 1L : 0L);
+    curl_easy_setopt(e, CURLOPT_SSL_VERIFYHOST, c->tls_verify ? 2L : 0L);
+    if (c->ca_file)
+        curl_easy_setopt(e, CURLOPT_CAINFO, c->ca_file);
+    if (c->cert_file)
+        curl_easy_setopt(e, CURLOPT_SSLCERT, c->cert_file);
+    if (c->key_file)
+        curl_easy_setopt(e, CURLOPT_SSLKEY, c->key_file);
+
+    if (c->cookies && c->cookies[0]) {
+        char *copy = av_strdup(c->cookies);
+        char *line, *saveptr = NULL;
+        curl_easy_setopt(e, CURLOPT_COOKIEFILE, ""); /* enable the cookie engine */
+        if (copy) {
+            for (line = av_strtok(copy, "\r\n", &saveptr); line;
+                 line = av_strtok(NULL, "\r\n", &saveptr)) {
+                char *sc = av_asprintf("Set-Cookie: %s", line);
+                if (sc) {
+                    curl_easy_setopt(e, CURLOPT_COOKIELIST, sc);
+                    av_free(sc);
+                }
+            }
+            av_free(copy);
+        }
+    }
+
+    c->header_list = build_headers(c);
+    if (c->header_list)
+        curl_easy_setopt(e, CURLOPT_HTTPHEADER, c->header_list);
 }
 
 static void curl_cond_wait(CurlContext *c)
@@ -647,13 +811,18 @@ static int libcurl_open(URLContext *h, const char *url, int flags,
         return AVERROR(ENOSYS);
 
     CurlContext *c = h->priv_data;
+    const char *eff_url = h->filename;
     int ret;
 
     c->h = h;
     c->content_size = -1;
-    c->max_retries  = 5;
-    if (c->buffer_size <= 0)
-        c->buffer_size = CURL_DEFAULT_BUFFER_SIZE;
+    c->request_start = c->off;
+    c->logical_pos   = c->off;
+
+    /* Report the request URL until header_callback replaces it post-redirect. */
+    av_strstart(eff_url, "libcurl:", &eff_url);
+    av_freep(&c->location);
+    c->location = av_strdup(eff_url);
 
     ret = pthread_mutex_init(&c->mutex, NULL);
     if (ret)
@@ -689,6 +858,8 @@ static int libcurl_open(URLContext *h, const char *url, int flags,
     if (ret < 0)
         goto fail;
 
+    if (c->seekable_opt == 0)
+        c->seekable = 0;
     h->is_streamed = !c->seekable;
 
     return 0;
@@ -795,6 +966,8 @@ static int libcurl_close(URLContext *h)
         c->loop = NULL;
     }
 
+    if (c->header_list)
+        curl_slist_free_all(c->header_list);
     av_fifo_freep2(&c->fifo);
     pthread_cond_destroy(&c->cond);
     pthread_mutex_destroy(&c->mutex);
@@ -802,9 +975,45 @@ static int libcurl_close(URLContext *h)
     return 0;
 }
 
+#define OFFSET(x) offsetof(CurlContext, x)
+#define D AV_OPT_FLAG_DECODING_PARAM
+#define E AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+    { "user_agent", "override User-Agent header", OFFSET(user_agent), AV_OPT_TYPE_STRING, { .str = DEFAULT_USER_AGENT }, 0, 0, D },
+    { "referer", "override Referer header", OFFSET(referer), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, D },
+    { "headers", "set custom HTTP headers, can override built in default headers", OFFSET(headers), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, D | E },
+    { "http_proxy", "set HTTP proxy to tunnel through", OFFSET(http_proxy), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, D | E },
+    { "cookies", "set cookies to be sent in applicable future requests, use newline delimited Set-Cookie HTTP field value syntax", OFFSET(cookies), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, D },
+    { "location", "the actual location of the data received", OFFSET(location), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, D | E },
+    { "offset", "initial byte offset", OFFSET(off), AV_OPT_TYPE_INT64, { .i64 = 0 }, 0, INT64_MAX, D },
+    { "end_offset", "try to limit the request to bytes preceding this offset", OFFSET(end_off), AV_OPT_TYPE_INT64, { .i64 = 0 }, 0, INT64_MAX, D },
+    { "seekable", "control seekability of connection", OFFSET(seekable_opt), AV_OPT_TYPE_BOOL, { .i64 = -1 }, -1, 1, D },
+    { "tls_verify", "verify the peer certificate and hostname", OFFSET(tls_verify), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, D | E },
+    { "ca_file", "certificate authority bundle file", OFFSET(ca_file), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, D | E },
+    { "cert_file", "client certificate file", OFFSET(cert_file), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, D | E },
+    { "key_file", "client private key file", OFFSET(key_file), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, D | E },
+    { "connect_timeout", "connection timeout in seconds (0 = libcurl default)", OFFSET(connect_timeout), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, D | E },
+    { "max_redirects", "maximum number of redirects to follow", OFFSET(max_redirects), AV_OPT_TYPE_INT, { .i64 = 16 }, 0, INT_MAX, D },
+    { "multiple_requests", "reuse the connection across requests (HTTP keep-alive)", OFFSET(multiple_requests), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, D | E },
+    { "max_retries", "maximum number of retries after a recoverable error", OFFSET(max_retries), AV_OPT_TYPE_INT, { .i64 = 5 }, 0, INT_MAX, D },
+    { "buffer_size", "receive buffer size in bytes", OFFSET(buffer_size), AV_OPT_TYPE_INT64, { .i64 = CURL_DEFAULT_BUFFER_SIZE }, 1024, INT64_MAX, D },
+    { "request_size", "split a transfer into ranged requests of at most this many bytes (0 = unlimited)", OFFSET(request_size), AV_OPT_TYPE_INT64, { .i64 = 0 }, 0, INT64_MAX, D },
+    { "http_version", "HTTP version to use", OFFSET(http_version), AV_OPT_TYPE_INT, { .i64 = CURL_HTTP_VERSION_NONE }, 0, INT_MAX, D, .unit = "http_version" },
+        { "auto",              "negotiate the best supported version",  0, AV_OPT_TYPE_CONST, { .i64 = CURL_HTTP_VERSION_NONE },                0, 0, D, .unit = "http_version" },
+        { "1.0",               "HTTP/1.0",                              0, AV_OPT_TYPE_CONST, { .i64 = CURL_HTTP_VERSION_1_0 },                 0, 0, D, .unit = "http_version" },
+        { "1.1",               "HTTP/1.1",                              0, AV_OPT_TYPE_CONST, { .i64 = CURL_HTTP_VERSION_1_1 },                 0, 0, D, .unit = "http_version" },
+        { "2",                 "HTTP/2",                                0, AV_OPT_TYPE_CONST, { .i64 = CURL_HTTP_VERSION_2 },                   0, 0, D, .unit = "http_version" },
+        { "2tls",              "HTTP/2 over TLS only",                  0, AV_OPT_TYPE_CONST, { .i64 = CURL_HTTP_VERSION_2TLS },                0, 0, D, .unit = "http_version" },
+        { "2-prior-knowledge", "HTTP/2 without an upgrade handshake",   0, AV_OPT_TYPE_CONST, { .i64 = CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE },   0, 0, D, .unit = "http_version" },
+        { "3",                 "HTTP/3, fall back to earlier versions", 0, AV_OPT_TYPE_CONST, { .i64 = CURL_HTTP_VERSION_3 },                   0, 0, D, .unit = "http_version" },
+        { "3only",             "HTTP/3 only",                           0, AV_OPT_TYPE_CONST, { .i64 = CURL_HTTP_VERSION_3ONLY },               0, 0, D, .unit = "http_version" },
+    { NULL }
+};
+
 static const AVClass libcurl_context_class = {
     .class_name = "libcurl",
     .item_name  = av_default_item_name,
+    .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 

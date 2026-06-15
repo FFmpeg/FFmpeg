@@ -1061,6 +1061,93 @@ The Real-Time Messaging Protocol tunneled through HTTPS (RTMPTS) is used
 for streaming multimedia content within HTTPS requests to traverse
 firewalls.
 
+@section libcurl
+
+HTTP and HTTPS access through the libcurl library, available as an alternative to
+the native @code{http} protocol when FFmpeg is built with @code{--enable-libcurl}.
+It runs transfers on a dedicated event-loop thread shared per
+@code{AVFormatContext}, so all of a demuxer's connections (for example HLS
+segments) reuse libcurl's connection cache and HTTP/2 and HTTP/3 multiplexing.
+
+The native @code{http} protocol stays the default; to use libcurl explicitly,
+prefix the URL with @code{libcurl:}, for example
+@code{libcurl:https://example.com/video.mp4}.
+
+The libcurl protocol accepts the following options.
+
+@table @option
+@item user_agent
+Override the @code{User-Agent} header. Defaults to @code{Lavf/<version>}.
+
+@item referer
+Set the @code{Referer} header.
+
+@item headers
+Set custom HTTP headers, overriding internal defaults. Multiple headers are
+separated by newlines.
+
+@item http_proxy
+Set the HTTP proxy to tunnel through.
+
+@item cookies
+Cookies to be sent in future requests, given as newline-delimited
+@code{Set-Cookie}-style values.
+
+@item location
+The actual location of the data after following redirects. This is an output
+option, read with @command{av_opt_get}; demuxers use it to resolve relative URLs.
+
+@item offset
+Initial byte offset of the request. Default is @code{0}.
+
+@item end_offset
+If greater than @code{0}, limit the request to the bytes preceding this offset.
+Together with @option{offset} this requests a sub-range of the resource, as used
+for HLS byte-range segments.
+
+@item seekable
+Control seekability of the connection. If set to @code{0} the stream is treated
+as non-seekable, @code{1} forces seekable, and @code{-1} (the default) lets it be
+detected from the server response.
+
+@item tls_verify
+Verify the peer certificate and host name. Enabled by default.
+
+@item ca_file
+Path to a certificate authority bundle that overrides the system store.
+
+@item cert_file
+@item key_file
+Client certificate and private key files for mutual TLS.
+
+@item connect_timeout
+Connection timeout in seconds. @code{0} (the default) uses libcurl's own timeout.
+
+@item max_redirects
+Maximum number of redirects to follow. Default is @code{16}.
+
+@item multiple_requests
+Reuse the connection across requests (HTTP keep-alive). Enabled by default;
+setting it to @code{0} uses a fresh connection per transfer.
+
+@item http_version
+HTTP version to use: @code{auto} (default), @code{1.0}, @code{1.1}, @code{2},
+@code{2tls}, @code{2-prior-knowledge}, @code{3} or @code{3only}.
+
+@item buffer_size
+Size in bytes of the receive buffer. Default is 4 MiB.
+
+@item request_size
+If greater than @code{0}, split a seekable transfer into ranged requests of at
+most this many bytes each. Default is @code{0} (a single request).
+
+@item max_retries
+Maximum number of retries after a recoverable error on a seekable transfer.
+Default is @code{5}.
+@end table
+
+For more information see: @url{https://curl.se/libcurl/}.
+
 @section libsmbclient
 
 libsmbclient permits one to manipulate CIFS/SMB network resources.
