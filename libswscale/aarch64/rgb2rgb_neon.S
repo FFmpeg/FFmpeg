@@ -795,11 +795,78 @@ w17 - set to 1 if last line has to be handled separately (odd height)
         add             x2, x2, x7
 .endm
 
+// width is processed in whole pixel pairs; if the original width was odd this
+// emits the trailing column for one line, matching the C reference. w15 holds
+// the odd-width flag, the pointers are at the end of the even part of the line.
+.macro write_last_odd_column src_fmt, dst_fmt, is_final_odd_line=0, y_off=0
+.ifc \dst_fmt, yuv422
+        cbz             w15, 0f
+.ifc \src_fmt, uyvy
+        ldrb            w12, [x3, #1]                     // Y = src[2w-1]
+        strb            w12, [x0]
+        ldrb            w12, [x3]                         // U = src[2w-2]
+        strb            w12, [x1]
+        ldrb            w12, [x3, #2]                     // V = src[2w]
+        strb            w12, [x2]
+.else
+        ldrb            w12, [x3]                         // Y = src[2w-2]
+        strb            w12, [x0]
+        ldrb            w12, [x3, #1]                     // U = src[2w-1]
+        strb            w12, [x1]
+        ldrb            w12, [x3, #3]                     // V = src[2w+1]
+        strb            w12, [x2]
+.endif
+0:
+.endif
+.ifc \dst_fmt, yuv420
+        cbz             w15, 0f
+.if \is_final_odd_line
+        ldrb            w12, [x3, #\y_off]                // luma only; chroma is skipped on the odd last line
+        strb            w12, [x0]
+.else
+.ifc \src_fmt, uyvy
+        ldrb            w12, [x3, #1]                     // Y, top line
+        strb            w12, [x0]
+        ldrb            w12, [x13, #1]                    // Y, bottom line
+        strb            w12, [x10]
+        ldrb            w12, [x3]                         // U = (top + bottom) >> 1
+        ldrb            w14, [x13]
+        add             w12, w12, w14
+        lsr             w12, w12, #1
+        strb            w12, [x1]
+        ldrb            w12, [x3, #2]                     // V = (top + bottom) >> 1
+        ldrb            w14, [x13, #2]
+        add             w12, w12, w14
+        lsr             w12, w12, #1
+        strb            w12, [x2]
+.else
+        ldrb            w12, [x3]                         // Y, top line
+        strb            w12, [x0]
+        ldrb            w12, [x13]                        // Y, bottom line
+        strb            w12, [x10]
+        ldrb            w12, [x3, #1]                     // U = (top + bottom) >> 1
+        ldrb            w14, [x13, #1]
+        add             w12, w12, w14
+        lsr             w12, w12, #1
+        strb            w12, [x1]
+        ldrb            w12, [x3, #3]                     // V = (top + bottom) >> 1
+        ldrb            w14, [x13, #3]
+        add             w12, w12, w14
+        lsr             w12, w12, #1
+        strb            w12, [x2]
+.endif
+.endif
+0:
+.endif
+.endm
+
 .macro interleaved_yuv_to_planar src_fmt, dst_fmt
 function ff_\src_fmt\()to\dst_fmt\()_neon, export=1
         sxtw            x6, w6
         sxtw            x7, w7
         ldrsw           x8, [sp]
+        and             w15, w4, #1                       // odd width: trailing column via epilogue
+        bic             w4, w4, #1                        // process whole pixel pairs
         ands            w11, w4, #~31                     // choose between fast and slow path
 
 .ifc \dst_fmt, yuv420
@@ -825,6 +892,7 @@ function ff_\src_fmt\()to\dst_fmt\()_neon, export=1
         b.ne            2b
         fastpath_shift_back_pointers \src_fmt, \dst_fmt, 0
         fastpath_iteration \src_fmt, \dst_fmt, 0, 0
+        write_last_odd_column \src_fmt, \dst_fmt
         subs            w5, w5, #1
         move_pointers_to_next_line \src_fmt, \dst_fmt
         b.ne            1b
@@ -837,16 +905,24 @@ function ff_\src_fmt\()to\dst_fmt\()_neon, export=1
         b.ne            4b
         fastpath_shift_back_pointers \src_fmt, \dst_fmt, 1
         fastpath_iteration \src_fmt, \dst_fmt, 1, 1
+.ifc \src_fmt, uyvy
+        write_last_odd_column \src_fmt, \dst_fmt, 1, 1
+.else
+        write_last_odd_column \src_fmt, \dst_fmt, 1, 0
+.endif
 3:
 .endif
         ret
 
 6:                                                        // slow path - width is at most 31
         and             w9, w4, #31
+        cbz             w9, 9f                            // even part empty (orig width 0 or 1)
 7:
         subs            w9, w9, #2
         slowpath_iteration \src_fmt, \dst_fmt, 0
         b.ne            7b
+9:
+        write_last_odd_column \src_fmt, \dst_fmt
         subs            w5, w5, #1
         move_pointers_to_next_line \src_fmt, \dst_fmt
         b.ne            6b
@@ -857,10 +933,13 @@ function ff_\src_fmt\()to\dst_fmt\()_neon, export=1
 .ifc \src_fmt, uyvy
         add             x3, x3, #1
 .endif
+        cbz             w9, 10f                           // even part empty (orig width 0 or 1)
 5:
         subs            w9, w9, #2
         slowpath_iteration \src_fmt, \dst_fmt, 1
         b.ne            5b
+10:
+        write_last_odd_column \src_fmt, \dst_fmt, 1, 0
 8:
 .endif
         ret
