@@ -193,6 +193,7 @@ cglobal uyvytoyuv422, 9, 14, 8 + cpuflag(avx2) + cpuflag(avx512icl), ydst, udst,
     movsxdifnidn   src_strideq, src_strided
 
     mov     back_wq, wq
+    and          wq, -2     ; process whole UYVY pairs; trailing odd column via epilogue
     mov      whalfq, wq
     shr      whalfq, 1     ; whalf = width / 2
 
@@ -212,7 +213,7 @@ cglobal uyvytoyuv422, 9, 14, 8 + cpuflag(avx2) + cpuflag(avx512icl), ydst, udst,
 
     ;calc scalar loop count
     and       xq, mmsize * 2 - 1
-    je .loop_simd
+    je .skip_tail
 
 %if mmsize == 64
     shr     xq, 1
@@ -292,6 +293,7 @@ cglobal uyvytoyuv422, 9, 14, 8 + cpuflag(avx2) + cpuflag(avx512icl), ydst, udst,
 %endif
 
     ; check if simd loop is need
+.skip_tail:
     cmp      wq, 0
     jge .end_line
 
@@ -378,6 +380,15 @@ cglobal uyvytoyuv422, 9, 14, 8 + cpuflag(avx2) + cpuflag(avx512icl), ydst, udst,
         jl .loop_simd
 
     .end_line:
+        test    back_wq, 1
+        jz .skip_last
+        mov       tmpb, [srcq + 1]
+        mov     [ydstq], tmpb
+        mov       tmpb, [srcq + 0]
+        mov     [udstq], tmpb
+        mov       tmpb, [srcq + 2]
+        mov     [vdstq], tmpb
+    .skip_last:
         add        srcq, src_strideq
         add        ydstq, lum_strideq
         add        udstq, chrom_strideq
@@ -385,6 +396,7 @@ cglobal uyvytoyuv422, 9, 14, 8 + cpuflag(avx2) + cpuflag(avx512icl), ydst, udst,
 
         ;restore initial state of line variable
         mov           wq, back_wq
+        and           wq, -2
         mov          xq, wq
         mov      whalfq, wq
         shr      whalfq, 1     ; whalf = width / 2
