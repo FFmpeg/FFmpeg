@@ -22,6 +22,9 @@
 #include "config_components.h"
 
 #include <curl/curl.h>
+#include <inttypes.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "libavutil/avstring.h"
 #include "libavutil/error.h"
@@ -48,12 +51,14 @@ enum cmd_kind {
     CMD_ADD,     /* add the easy handle to the multi and start the transfer */
     CMD_REMOVE,  /* remove the easy handle from the multi */
     CMD_UNPAUSE, /* resume a transfer paused because the FIFO was full */
+    CMD_SEEK,    /* restart the transfer at a new byte offset */
 };
 
 typedef struct CurlCmd {
     enum cmd_kind   kind;
     CurlContext    *ctx;
-    int             sync;   /* caller waits for completion, flips by done */
+    int64_t         pos;    /* CMD_SEEK target offset */
+    int             sync;   /* caller waits for completion */
     int             done;
     struct CurlCmd *next;
 } CurlCmd;
@@ -77,9 +82,20 @@ struct CurlContext {
     CURL           *easy;
 
     int64_t         buffer_size;
+    int             max_retries;
+
+    int64_t         logical_pos; /* next byte url_read() will return, caller side */
 
     /* Producer bookkeeping, touched only by the loop thread. */
-    int             active;     /* currently added to the multi */
+    int             active;          /* currently added to the multi */
+    uint64_t        request_start;   /* absolute offset the current request began at */
+    uint64_t        request_received;/* bytes delivered in the current request */
+    int             retry_count;     /* consecutive recoverable failures */
+
+    /* Per-response-block header scratch, loop thread only. */
+    int             hdr_accept_ranges;
+    int             hdr_compressed;
+    int64_t         hdr_content_total;
 
     /* Probe result. Set by the loop thread, read by url_open() once probed. */
     int             probed;
@@ -119,6 +135,24 @@ static int curlcode_to_averror(CURLcode code)
     }
 }
 
+static int is_recoverable(CURLcode code)
+{
+    switch (code) {
+    case CURLE_RECV_ERROR:
+    case CURLE_SEND_ERROR:
+    case CURLE_PARTIAL_FILE:
+    case CURLE_OPERATION_TIMEDOUT:
+    case CURLE_GOT_NOTHING:
+    case CURLE_COULDNT_CONNECT:
+    case CURLE_COULDNT_RESOLVE_HOST:
+    case CURLE_HTTP2:
+    case CURLE_HTTP2_STREAM:
+        return 1;
+    default:
+        return 0;
+    }
+}
+
 /* ------------------------------------------------------------------------- */
 /* curl callbacks (run on the loop thread)                                   */
 /* ------------------------------------------------------------------------- */
@@ -146,10 +180,21 @@ static size_t write_callback(char *ptr, size_t size, size_t nmemb, void *userdat
 
     av_fifo_write(c->fifo, ptr, bytes);
     c->paused = 0;
+    c->request_received += bytes;
     pthread_cond_broadcast(&c->cond);
     pthread_mutex_unlock(&c->mutex);
 
     return bytes;
+}
+
+/* Parse the total length out of a "Content-Range: bytes a-b/total" value.
+ * Returns the total, or -1 if unknown ("*") or unparsable. */
+static int64_t parse_content_range_total(const char *v)
+{
+    const char *slash = strchr(v, '/');
+    if (!slash || slash[1] == '*')
+        return -1;
+    return strtoll(slash + 1, NULL, 10);
 }
 
 static size_t header_callback(char *ptr, size_t size, size_t nitems, void *userdata)
@@ -159,7 +204,26 @@ static size_t header_callback(char *ptr, size_t size, size_t nitems, void *userd
     size_t n = len;
     long status = 0;
 
-    /* Act only on the blank line that terminates a header block. */
+    if (av_strncasecmp(ptr, "HTTP/", 5) == 0) {
+        c->hdr_accept_ranges = 0;
+        c->hdr_compressed    = 0;
+        c->hdr_content_total = -1;
+        return len;
+    }
+    if (av_strncasecmp(ptr, "Accept-Ranges:", 14) == 0) {
+        c->hdr_accept_ranges = !!av_stristr(ptr + 14, "bytes");
+        return len;
+    }
+    if (av_strncasecmp(ptr, "Content-Encoding:", 17) == 0) {
+        c->hdr_compressed = !av_stristr(ptr + 17, "identity");
+        return len;
+    }
+    if (av_strncasecmp(ptr, "Content-Range:", 14) == 0) {
+        c->hdr_content_total = parse_content_range_total(ptr + 14);
+        return len;
+    }
+
+    /* Otherwise act only on the blank line that terminates the header block. */
     while (n && (ptr[n - 1] == '\r' || ptr[n - 1] == '\n'))
         n--;
     if (n)
@@ -175,6 +239,22 @@ static size_t header_callback(char *ptr, size_t size, size_t nitems, void *userd
     pthread_mutex_lock(&c->mutex);
     if (status >= 200 && status < 300) {
         c->stream_ok = 1;
+        /* A compressed body is addressed in encoded form, so byte offsets are
+         * meaningless: not seekable. Note that we prefer compression over
+         * seekability, servers doesn't offer media in compressed form, so it
+         * gives us free compression for other payloads like text playlist. */
+        c->seekable = !c->hdr_compressed &&
+                      (status == 206 || c->hdr_accept_ranges);
+        if (c->seekable) {
+            int64_t total = c->hdr_content_total;
+            if (total < 0 && status != 206) {
+                curl_off_t cl = -1;
+                if (curl_easy_getinfo(c->easy, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T,
+                                      &cl) == CURLE_OK && cl >= 0)
+                    total = cl;
+            }
+            c->content_size = total;
+        }
     } else {
         c->stream_ok = 0;
         if (!c->error)
@@ -198,23 +278,81 @@ static int xferinfo_callback(void *userdata, curl_off_t dltotal, curl_off_t dlno
     return aborted; /* non-zero aborts the transfer */
 }
 
+/* (Re)issue the request for the current offset and add it to the multi. Loop
+ * thread only. */
+static void start_request(CurlContext *c)
+{
+    if (!c->probed || c->seekable) {
+        char range[32];
+        snprintf(range, sizeof(range), "%"PRIu64"-", c->request_start);
+        curl_easy_setopt(c->easy, CURLOPT_RANGE, range);
+    } else {
+        curl_easy_setopt(c->easy, CURLOPT_RANGE, NULL);
+    }
+    c->request_received = 0;
+    c->active = 1;
+    CURLMcode res = curl_multi_add_handle(c->loop->multi, c->easy);
+    if (res != CURLM_OK) {
+        av_log(c->h, AV_LOG_ERROR, "curl_multi_add_handle: %s\n",
+               curl_multi_strerror(res));
+        c->active = 0;
+        pthread_mutex_lock(&c->mutex);
+        if (!c->error)
+            c->error = AVERROR(EIO);
+        pthread_cond_broadcast(&c->cond);
+        pthread_mutex_unlock(&c->mutex);
+    }
+}
+
 /* Transfer finished (or failed) */
 static void on_done(CurlContext *c, CURLcode code)
 {
+    int aborted;
+
     pthread_mutex_lock(&c->mutex);
+    aborted = c->aborted;
+    /* Advance past delivered bytes so a retry or seek resumes at the right offset. */
+    c->request_start    += c->request_received;
+    c->request_received  = 0;
+    pthread_mutex_unlock(&c->mutex);
+
     if (!c->probed) {
         /* Connection died before any usable header arrived. */
-        c->probed = 1;
+        pthread_mutex_lock(&c->mutex);
+        c->probed    = 1;
         c->stream_ok = 0;
         if (!c->error)
             c->error = curlcode_to_averror(code);
-    } else if (code == CURLE_OK && !c->aborted) {
-        c->eof = 1;
-    } else if (!c->aborted && !c->error) {
-        c->error = curlcode_to_averror(code);
+        pthread_cond_broadcast(&c->cond);
+        pthread_mutex_unlock(&c->mutex);
+        return;
     }
-    pthread_cond_broadcast(&c->cond);
-    pthread_mutex_unlock(&c->mutex);
+
+    if (code == CURLE_OK && !aborted && c->stream_ok) {
+        pthread_mutex_lock(&c->mutex);
+        c->eof = 1;
+        pthread_cond_broadcast(&c->cond);
+        pthread_mutex_unlock(&c->mutex);
+        return;
+    }
+
+    /* Resume seekable transfers after a recoverable error. */
+    if (!aborted && c->seekable && is_recoverable(code) &&
+        c->retry_count < c->max_retries) {
+        c->retry_count++;
+        av_log(c->h, AV_LOG_WARNING, "%s, retrying (#%d) from %"PRIu64"\n",
+               curl_easy_strerror(code), c->retry_count, c->request_start);
+        start_request(c);
+        return;
+    }
+
+    if (!aborted) {
+        pthread_mutex_lock(&c->mutex);
+        if (!c->error)
+            c->error = curlcode_to_averror(code);
+        pthread_cond_broadcast(&c->cond);
+        pthread_mutex_unlock(&c->mutex);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -227,8 +365,7 @@ static void execute_command(CurlLoop *loop, CurlCmd *cmd)
 
     switch (cmd->kind) {
     case CMD_ADD:
-        c->active = 1;
-        curl_multi_add_handle(loop->multi, c->easy);
+        start_request(c);
         break;
     case CMD_REMOVE:
         if (c->active) {
@@ -238,6 +375,21 @@ static void execute_command(CurlLoop *loop, CurlCmd *cmd)
         break;
     case CMD_UNPAUSE:
         curl_easy_pause(c->easy, CURLPAUSE_CONT);
+        break;
+    case CMD_SEEK:
+        if (c->active) {
+            curl_multi_remove_handle(loop->multi, c->easy);
+            c->active = 0;
+        }
+        pthread_mutex_lock(&c->mutex);
+        av_fifo_reset2(c->fifo);
+        c->paused = 0;
+        c->eof    = 0;
+        c->error  = 0;
+        pthread_mutex_unlock(&c->mutex);
+        c->request_start = cmd->pos;
+        c->retry_count   = 0;
+        start_request(c);
         break;
     }
 }
@@ -301,7 +453,8 @@ static void *curl_worker(void *arg)
 
 /* Dispatch a command to the loop. For sync commands the caller blocks until the
  * loop thread has executed it. Returns 0 or a negative AVERROR. */
-static int curl_dispatch(CurlLoop *loop, enum cmd_kind kind, CurlContext *c, int sync)
+static int curl_dispatch(CurlLoop *loop, enum cmd_kind kind, CurlContext *c,
+                         int64_t pos, int sync)
 {
     CurlCmd stackcmd = {0};
     CurlCmd *cmd = sync ? &stackcmd : av_mallocz(sizeof(*cmd));
@@ -311,6 +464,7 @@ static int curl_dispatch(CurlLoop *loop, enum cmd_kind kind, CurlContext *c, int
 
     cmd->kind = kind;
     cmd->ctx  = c;
+    cmd->pos  = pos;
     cmd->sync = sync;
 
     pthread_mutex_lock(&loop->mutex);
@@ -497,6 +651,7 @@ static int libcurl_open(URLContext *h, const char *url, int flags,
 
     c->h = h;
     c->content_size = -1;
+    c->max_retries  = 5;
     if (c->buffer_size <= 0)
         c->buffer_size = CURL_DEFAULT_BUFFER_SIZE;
 
@@ -526,7 +681,7 @@ static int libcurl_open(URLContext *h, const char *url, int flags,
     }
     setup_curl(c);
 
-    ret = curl_dispatch(c->loop, CMD_ADD, c, 0);
+    ret = curl_dispatch(c->loop, CMD_ADD, c, 0, 0);
     if (ret < 0)
         goto fail;
 
@@ -559,9 +714,10 @@ static int libcurl_read(URLContext *h, unsigned char *buf, int size)
             av_fifo_read(c->fifo, buf, n);
             /* Resume a paused transfer once the FIFO is at least half empty. */
             unpause = c->paused && av_fifo_can_write(c->fifo) * 2 >= c->buffer_size;
+            c->logical_pos += n;
             pthread_mutex_unlock(&c->mutex);
             if (unpause)
-                curl_dispatch(c->loop, CMD_UNPAUSE, c, 0);
+                curl_dispatch(c->loop, CMD_UNPAUSE, c, 0, 0);
             return n;
         }
         if (c->error) {
@@ -585,6 +741,43 @@ static int libcurl_read(URLContext *h, unsigned char *buf, int size)
     return ret;
 }
 
+static int64_t libcurl_seek(URLContext *h, int64_t pos, int whence)
+{
+    CurlContext *c = h->priv_data;
+    int64_t newpos;
+
+    if (whence == AVSEEK_SIZE)
+        return c->content_size >= 0 ? c->content_size : AVERROR(ENOSYS);
+
+    if (!c->seekable)
+        return AVERROR(ENOSYS);
+
+    switch (whence) {
+    case SEEK_SET:
+        newpos = pos;
+        break;
+    case SEEK_CUR:
+        newpos = c->logical_pos + pos;
+        break;
+    case SEEK_END:
+        if (c->content_size < 0)
+            return AVERROR(ENOSYS);
+        newpos = c->content_size + pos;
+        break;
+    default:
+        return AVERROR(EINVAL);
+    }
+    if (newpos < 0)
+        return AVERROR(EINVAL);
+
+    /* Restart the transfer at the new offset. Any failure of the new request
+     * surfaces on the following url_read(). */
+    curl_dispatch(c->loop, CMD_SEEK, c, newpos, 1);
+    c->logical_pos = newpos;
+
+    return newpos;
+}
+
 static int libcurl_close(URLContext *h)
 {
     CurlContext *c = h->priv_data;
@@ -592,7 +785,7 @@ static int libcurl_close(URLContext *h)
     if (c->loop) {
         if (c->easy) {
             /* Ensure the handle is out of the multi before we free it. */
-            curl_dispatch(c->loop, CMD_REMOVE, c, 1);
+            curl_dispatch(c->loop, CMD_REMOVE, c, 0, 1);
             curl_easy_cleanup(c->easy);
             c->easy = NULL;
         }
@@ -619,6 +812,7 @@ const URLProtocol ff_libcurl_protocol = {
     .name            = "libcurl",
     .url_open2       = libcurl_open,
     .url_read        = libcurl_read,
+    .url_seek        = libcurl_seek,
     .url_close       = libcurl_close,
     .priv_data_size  = sizeof(CurlContext),
     .priv_data_class = &libcurl_context_class,
