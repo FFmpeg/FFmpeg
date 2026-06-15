@@ -204,8 +204,10 @@ int ff_itut_t35_parse_payload_to_struct(FFITUTT35 *const itut_t35, FFITUTT35Aux 
 
             ret = av_dynamic_hdr_plus_from_t35(hdr_plus, itut_t35->payload,
                                                itut_t35->payload_size);
-            if (ret < 0)
+            if (ret < 0) {
+                av_free(hdr_plus);
                 return ret;
+            }
 
             av_buffer_unref(&metadata->hdr_plus);
             metadata->hdr_plus = av_buffer_create((uint8_t *)hdr_plus, size, NULL, NULL, 0);
@@ -248,8 +250,10 @@ int ff_itut_t35_parse_payload_to_struct(FFITUTT35 *const itut_t35, FFITUTT35Aux 
 
             ret = av_dynamic_hdr_smpte2094_app5_from_t35(hdr_smpte2094_app5, itut_t35->payload,
                                                          itut_t35->payload_size);
-            if (ret < 0)
+            if (ret < 0) {
+                av_free(hdr_smpte2094_app5);
                 return ret;
+            }
 
             av_buffer_unref(&metadata->hdr_smpte2094_app5);
             metadata->hdr_smpte2094_app5 = av_buffer_create((uint8_t *)hdr_smpte2094_app5, size, NULL, NULL, 0);
