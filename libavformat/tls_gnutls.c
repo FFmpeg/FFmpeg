@@ -31,6 +31,7 @@
 #include "url.h"
 #include "tls.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/thread.h"
 #include "libavutil/random_seed.h"
@@ -538,6 +539,21 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
     if (!s->external_sock) {
         if ((ret = ff_tls_open_underlying(s, h, uri, options)) < 0)
             goto fail;
+    } else if (!s->host) {
+        /* With an external socket ff_tls_open_underlying() is skipped, so the
+         * host (used for SNI below) is never parsed. Parse it here to avoid
+         * passing a NULL s->host to gnutls_server_name_set(), which crashes. */
+        struct addrinfo hints = { .ai_flags = AI_NUMERICHOST }, *ai = NULL;
+        av_url_split(NULL, 0, NULL, 0, s->underlying_host, sizeof(s->underlying_host),
+                     NULL, NULL, 0, uri);
+        if (!getaddrinfo(s->underlying_host, NULL, &hints, &ai)) {
+            s->numerichost = 1;
+            freeaddrinfo(ai);
+        }
+        if (!(s->host = av_strdup(s->underlying_host))) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
     }
 
     if (s->is_dtls)
