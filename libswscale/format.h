@@ -174,8 +174,8 @@ typedef enum SwsPixelType SwsPixelType;
  *
  * Returns 0 on success, or a negative error code on failure.
  */
-int ff_sws_decode_pixfmt(SwsOpList *ops, enum AVPixelFormat fmt);
-int ff_sws_encode_pixfmt(SwsOpList *ops, enum AVPixelFormat fmt);
+int ff_sws_decode_pixfmt(SwsOpList *ops, const SwsFormat *fmt);
+int ff_sws_encode_pixfmt(SwsOpList *ops, const SwsFormat *fmt);
 
 /**
  * Append a set of operations for transforming decoded pixel values to/from
