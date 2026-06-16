@@ -589,7 +589,7 @@ static enum AVMediaType get_content_type(xmlNodePtr node)
     return type;
 }
 
-static struct fragment *get_fragment(char *range)
+static struct fragment *get_fragment(AVFormatContext *s, char *range)
 {
     struct fragment *seg = av_mallocz(sizeof(struct fragment));
 
@@ -600,6 +600,11 @@ static struct fragment *get_fragment(char *range)
     if (range) {
         char *str_end_offset;
         char *str_offset = av_strtok(range, "-", &str_end_offset);
+        if (!str_offset) {
+            av_log(s, AV_LOG_WARNING, "%s will get invalid range\n", range);
+            av_freep(&seg);
+            return NULL;
+        }
         seg->url_offset = strtoll(str_offset, NULL, 10);
         seg->size = strtoll(str_end_offset, NULL, 10) - seg->url_offset + 1;
     }
@@ -625,7 +630,7 @@ static int parse_manifest_segmenturlnode(AVFormatContext *s, struct representati
         range_val = xmlGetProp(fragmenturl_node, "range");
         if (initialization_val || range_val) {
             free_fragment(&rep->init_section);
-            rep->init_section = get_fragment(range_val);
+            rep->init_section = get_fragment(s, range_val);
             xmlFree(range_val);
             if (!rep->init_section) {
                 xmlFree(initialization_val);
@@ -646,7 +651,7 @@ static int parse_manifest_segmenturlnode(AVFormatContext *s, struct representati
         media_val = xmlGetProp(fragmenturl_node, "media");
         range_val = xmlGetProp(fragmenturl_node, "mediaRange");
         if (media_val || range_val) {
-            struct fragment *seg = get_fragment(range_val);
+            struct fragment *seg = get_fragment(s, range_val);
             xmlFree(range_val);
             if (!seg) {
                 xmlFree(media_val);
