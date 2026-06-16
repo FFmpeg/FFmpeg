@@ -77,6 +77,22 @@ static int register_op(SwsContext *ctx, void *opaque, SwsOpList *ops)
     struct AVTreeNode **root = (struct AVTreeNode **) opaque;
     int ret;
 
+    /* Skip ops lists which include filtering, since this is still not
+     * supported. */
+    for (int i = 0; i < ops->num_ops; i++) {
+        const SwsOp *op = &ops->ops[i];
+        switch (op->op) {
+        case SWS_OP_READ:
+        case SWS_OP_WRITE:
+            if (op->rw.filter.op)
+                return 0;
+            break;
+        case SWS_OP_FILTER_H:
+        case SWS_OP_FILTER_V:
+            return 0;
+        }
+    }
+
     /* Make on-stack copy of `ops` to iterate over */
     SwsOpList rest = *ops;
     /* Use at most two full vregs during the widest precision section */
