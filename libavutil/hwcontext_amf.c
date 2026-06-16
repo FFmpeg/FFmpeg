@@ -819,6 +819,77 @@ static int amf_device_derive(AVHWDeviceContext *device_ctx,
     }
 }
 
+static void amf_unmap_frame(av_unused AVHWFramesContext *unused, HWMapDescriptor *hwmap)
+{
+    AMFSurface1 *surface1 = hwmap->priv;
+    AMF_IFACE_CALL(surface1, Unmap);
+    AMF_IFACE_CALL(surface1, Release);
+}
+
+static int amf_map_frame(AVHWFramesContext *device_ctx, AVFrame *dst, const AVFrame *src, int flags)
+{
+    AMFSurface *surface = (AMFSurface *)src->data[0];
+    AMFSurface1 *surface1 = NULL;
+    size_t *linesizes = NULL;
+    uint8_t **map = NULL;
+    int amf_mem_flags = AMF_MEMORY_CPU_NONE;
+    const AMFGuid guid = IID_AMFSurface1();
+    AMF_RESULT res = AMF_FAIL;
+    size_t plane_count = 0;
+    int ret = -1;
+
+    AMF_RETURN_IF_FALSE(device_ctx, surface != NULL, AVERROR(EINVAL) , "Source surface is null");
+
+    res = AMF_IFACE_CALL(surface, QueryInterface, &guid, (void**)&surface1);
+    AMF_RETURN_IF_FALSE(device_ctx, res == AMF_OK, AVERROR_UNKNOWN, "QueryInterface(AMFSurface1) failed with error %d\n", res);
+
+    if (flags & AV_HWFRAME_MAP_READ)
+        amf_mem_flags |= AMF_MEMORY_CPU_READ;
+
+    if (flags & AV_HWFRAME_MAP_WRITE)
+        amf_mem_flags |= AMF_MEMORY_CPU_WRITE;
+
+    plane_count = AMF_IFACE_CALL(surface, GetPlanesCount);
+    linesizes = av_malloc_array(sizeof(size_t), plane_count);
+    AMF_GOTO_FAIL_IF_FALSE(device_ctx, linesizes, AVERROR(ENOMEM), "Unable to allocate line sizes array\n");
+
+    map = av_malloc_array(sizeof(uint8_t *), plane_count);
+    AMF_GOTO_FAIL_IF_FALSE(device_ctx, map, AVERROR(ENOMEM), "Unable to allocate mapping buffer\n");
+
+    dst->format = av_amf_to_av_format(AMF_IFACE_CALL(surface, GetFormat));
+
+    res = AMF_IFACE_CALL(surface1, Map, amf_mem_flags, plane_count, linesizes, (void**)map);
+    AMF_GOTO_FAIL_IF_FALSE(device_ctx, res == AMF_OK, AVERROR_UNKNOWN, "AMFSurface1->Map() failed with error %d\n", res);
+
+    ret = ff_hwframe_map_create(src->hw_frames_ctx, dst, src, &amf_unmap_frame, surface1);
+    AMF_GOTO_FAIL_IF_FALSE(device_ctx, ret >= 0, ret, "ff_hwframe_map_create failed with error %d\n", ret);
+
+    dst->width  = src->width;
+    dst->height = src->height;
+    av_frame_copy_props(dst, src);
+
+    // The dst frame is no longer a hardware frame, from the perspective of any dst frame consumer.
+    av_buffer_unref(&dst->hw_frames_ctx);
+
+    for (int plane = 0; plane < plane_count; ++plane)
+    {
+        dst->data[plane] = map[plane];
+        dst->linesize[plane] = linesizes[plane];
+    }
+
+fail:
+    if (map)
+        av_free(map);
+
+    if (linesizes)
+        av_free(linesizes);
+
+    if (ret < 0 && surface1 != NULL)
+        AMF_IFACE_CALL(surface1, Release);
+
+    return ret;
+}
+
 const HWContextType ff_hwcontext_type_amf = {
     .type                 = AV_HWDEVICE_TYPE_AMF,
     .name                 = "AMF",
@@ -836,6 +907,7 @@ const HWContextType ff_hwcontext_type_amf = {
     .transfer_get_formats = amf_transfer_get_formats,
     .transfer_data_to     = amf_transfer_data_to,
     .transfer_data_from   = amf_transfer_data_from,
+    .map_from             = amf_map_frame,
 
     .pix_fmts             = (const enum AVPixelFormat[]){ AV_PIX_FMT_AMF_SURFACE, AV_PIX_FMT_NONE },
 };

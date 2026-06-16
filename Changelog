@@ -17,6 +17,7 @@ version <next>:
 - Remove CELT decoding support (doesn't affect Opus CELT)
 - Remove ogg/celt parsing
 - Bitstream filter to split Dolby Vision multi-layer HEVC
+- Add AMF hardware memory mapping support.
 
 
 version 8.1:
