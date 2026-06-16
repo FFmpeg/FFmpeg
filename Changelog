@@ -3,6 +3,16 @@ releases are sorted from youngest to oldest.
 
 
 version 8.1.2:
+ libavcodec/jpeg2000htdec: remove trailing whitespace
+ libavdevice/alsa.c: fix NULL pointer dereference
+ avcodec/libjxlenc: check orientation tag metadata before reading
+ avformat/icecast: reject CR/LF in metadata header values
+ avfilter/avf_showspectrum: Fix allocation check
+ avformat/sctp: add size check in sctp_read() matching sctp_write()
+ avcodec/jpeg2000: Fix undefined behavior on ROI shift-up
+ aacdec_usac_mps212: reject reserved freq_res value
+ avcodec/aac/aacdec_usac_mps212: Off-by-one bounds check in ff_aac_ec_data_deci()
+ Update for 8.1.2
  avcodec/snowenc: fix out-of-bounds memcpy in get_block_rd() for narrow planes
  avutil/eval: apply unary sign to print, squish, gauss and lerp
  avcodec/cbs_av1_syntax_template: reset seen_frame_header on sequence headers
