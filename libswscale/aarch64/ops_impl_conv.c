@@ -155,15 +155,16 @@ static int convert_to_aarch64_impl(SwsContext *ctx, const SwsOpList *ops, int n,
             out->type = AARCH64_PIXEL_U32;
         break;
     case AARCH64_SWS_OP_SWIZZLE:
+        /* Recompute mask taking identity swizzle into account */
         out->mask = 0;
-        MASK_SET(out->mask, 0, op->swizzle.in[0] != 0);
-        MASK_SET(out->mask, 1, op->swizzle.in[1] != 1);
-        MASK_SET(out->mask, 2, op->swizzle.in[2] != 2);
-        MASK_SET(out->mask, 3, op->swizzle.in[3] != 3);
-        MASK_SET(out->swizzle, 0, op->swizzle.in[0]);
-        MASK_SET(out->swizzle, 1, op->swizzle.in[1]);
-        MASK_SET(out->swizzle, 2, op->swizzle.in[2]);
-        MASK_SET(out->swizzle, 3, op->swizzle.in[3]);
+        for (int i = 0; i < 4; i++) {
+            if (SWS_OP_NEEDED(op, i) && op->swizzle.in[i] != i) {
+                MASK_SET(out->mask, i, 1);
+                MASK_SET(out->swizzle, i, op->swizzle.in[i]);
+            } else {
+                MASK_SET(out->swizzle, i, 0xf);
+            }
+        }
         /* The element size and type don't matter. */
         out->block_size = block_size * ff_sws_pixel_type_size(op->type);
         out->type = AARCH64_PIXEL_U8;
