@@ -57,7 +57,7 @@ typedef enum SwsOpType {
     SWS_OP_LINEAR,          /* generalized linear affine transform */
     SWS_OP_DITHER,          /* add dithering noise */
 
-    /* Filtering operations. Always output floating point. */
+    /* Filtering operations. */
     SWS_OP_FILTER_H,        /* horizontal filtering */
     SWS_OP_FILTER_V,        /* vertical filtering */
 
