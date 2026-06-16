@@ -88,9 +88,9 @@ static int convert_to_aarch64_impl(SwsContext *ctx, const SwsOpList *ops, int n,
             out->op = AARCH64_SWS_OP_READ_NIBBLE;
         else if (op->rw.frac == 3)
             out->op = AARCH64_SWS_OP_READ_BIT;
-        else if (op->rw.mode == SWS_RW_PACKED)
+        else if (op->rw.mode == SWS_RW_PACKED && op->rw.elems > 1)
             out->op = AARCH64_SWS_OP_READ_PACKED;
-        else if (op->rw.mode == SWS_RW_PLANAR)
+        else if (op->rw.mode == SWS_RW_PACKED || op->rw.mode == SWS_RW_PLANAR)
             out->op = AARCH64_SWS_OP_READ_PLANAR;
         else
             return AVERROR(ENOTSUP);
@@ -106,9 +106,9 @@ static int convert_to_aarch64_impl(SwsContext *ctx, const SwsOpList *ops, int n,
             out->op = AARCH64_SWS_OP_WRITE_NIBBLE;
         else if (op->rw.frac == 3)
             out->op = AARCH64_SWS_OP_WRITE_BIT;
-        else if (op->rw.mode == SWS_RW_PACKED)
+        else if (op->rw.mode == SWS_RW_PACKED && op->rw.elems > 1)
             out->op = AARCH64_SWS_OP_WRITE_PACKED;
-        else if (op->rw.mode == SWS_RW_PLANAR)
+        else if (op->rw.mode == SWS_RW_PACKED || op->rw.mode == SWS_RW_PLANAR)
             out->op = AARCH64_SWS_OP_WRITE_PLANAR;
         else
             return AVERROR(ENOTSUP);
