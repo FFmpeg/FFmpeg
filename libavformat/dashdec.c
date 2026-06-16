@@ -1498,8 +1498,7 @@ static int64_t calc_max_seg_no(struct representation *pls, DASHContext *c)
         num = pls->first_seq_no + pls->n_timelines - 1;
         for (i = 0; i < pls->n_timelines; i++) {
             if (pls->timelines[i]->repeat == -1) {
-                int length_of_each_segment = pls->timelines[i]->duration / pls->fragment_timescale;
-                num =  c->period_duration / length_of_each_segment;
+                num = pls->timelines[i]->duration ? av_rescale(c->period_duration, pls->fragment_timescale, pls->timelines[i]->duration) : pls->first_seq_no;
             } else {
                 num += pls->timelines[i]->repeat;
             }
