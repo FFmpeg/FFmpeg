@@ -1838,10 +1838,10 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                                   EDGE_WIDTH  , EDGE_WIDTH  , EDGE_TOP | EDGE_BOTTOM);
         if (s->current_picture->data[2]) {
             enc->mpvencdsp.draw_edges(s->current_picture->data[1],
-                                      s->current_picture->linesize[1], w>>s->chroma_h_shift, h>>s->chroma_v_shift,
+                                      s->current_picture->linesize[1], AV_CEIL_RSHIFT(w, s->chroma_h_shift), AV_CEIL_RSHIFT(h, s->chroma_v_shift),
                                       EDGE_WIDTH>>s->chroma_h_shift, EDGE_WIDTH>>s->chroma_v_shift, EDGE_TOP | EDGE_BOTTOM);
             enc->mpvencdsp.draw_edges(s->current_picture->data[2],
-                                      s->current_picture->linesize[2], w>>s->chroma_h_shift, h>>s->chroma_v_shift,
+                                      s->current_picture->linesize[2], AV_CEIL_RSHIFT(w, s->chroma_h_shift), AV_CEIL_RSHIFT(h, s->chroma_v_shift),
                                       EDGE_WIDTH>>s->chroma_h_shift, EDGE_WIDTH>>s->chroma_v_shift, EDGE_TOP | EDGE_BOTTOM);
         }
     }
