@@ -882,7 +882,7 @@ static int config_output(AVFilterLink *outlink)
                  frequency_band(s->frequency_band,
                                 s->frequency_band_count, maximum_frequency - minimum_frequency,
                                 minimum_frequency, s->frequency_scale, s->deviation);
-    s->nb_consumed_samples = av_clip(av_clipd(nb_samples, 1, 65536), 1, 65536);
+    s->nb_consumed_samples = av_clipd(nb_samples, 1, 65536);
 
     s->nb_threads = FFMIN(s->frequency_band_count, ff_filter_get_nb_threads(ctx));
     s->nb_channels = inlink->ch_layout.nb_channels;
