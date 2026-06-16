@@ -544,13 +544,15 @@ static int get_dc(SnowContext *s, int mb_x, int mb_y, int plane_index){
 
         for(y2= FFMAX(y, 0); y2<FFMIN(h, y+block_h); y2++){
             for(x2= FFMAX(x, 0); x2<FFMIN(w, x+block_w); x2++){
-                int index= x2-(block_w*mb_x - block_w/2) + (y2-(block_h*mb_y - block_h/2))*obmc_stride;
+                int col= x2-(block_w*mb_x - block_w/2);
+                int row= y2-(block_h*mb_y - block_h/2);
+                int index= col + row*obmc_stride;
                 int obmc_v= obmc[index];
                 int d;
-                if(y<0) obmc_v += obmc[index + block_h*obmc_stride];
-                if(x<0) obmc_v += obmc[index + block_w];
-                if(y+block_h>h) obmc_v += obmc[index - block_h*obmc_stride];
-                if(x+block_w>w) obmc_v += obmc[index - block_w];
+                if(y<0)                              obmc_v += obmc[index + block_h*obmc_stride];
+                if(x<0)                              obmc_v += obmc[index + block_w];
+                if(y+block_h>h  && row-block_h >= 0) obmc_v += obmc[index - block_h*obmc_stride];
+                if(x+block_w>w  && col-block_w >= 0) obmc_v += obmc[index - block_w];
                 //FIXME precalculate this or simplify it somehow else
 
                 d = -dst[index] + (1<<(FRAC_BITS-1));
