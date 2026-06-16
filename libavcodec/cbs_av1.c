@@ -943,6 +943,10 @@ static int cbs_av1_read_unit(CodedBitstreamContext *ctx,
         {
             AV1RawTileGroup *tile_group = obu->header.obu_type == AV1_OBU_FRAME ? &obu->obu.frame.tile_group
                                                                                 : &obu->obu.tile_group;
+
+            if (!priv->seen_frame_header)
+                return AVERROR_INVALIDDATA;
+
             err = cbs_av1_ref_tile_data(ctx, unit, &gbc,
                                         &tile_group->data_ref,
                                         &tile_group->data,
