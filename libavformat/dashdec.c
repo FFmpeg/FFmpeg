@@ -600,7 +600,7 @@ static struct fragment *get_fragment(AVFormatContext *s, char *range)
     if (range) {
         char *str_end_offset;
         char *str_offset = av_strtok(range, "-", &str_end_offset);
-        if (!str_offset) {
+        if (!str_offset || !str_end_offset) {
             av_log(s, AV_LOG_WARNING, "%s will get invalid range\n", range);
             av_freep(&seg);
             return NULL;
