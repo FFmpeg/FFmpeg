@@ -90,6 +90,47 @@ FATE_AAC += fate-aac-er_eld2100np_48_ep0
 fate-aac-er_eld2100np_48_ep0: CMD = pcm -i $(TARGET_SAMPLES)/aac/er_eld2100np_48_ep0.mp4
 fate-aac-er_eld2100np_48_ep0: REF = $(SAMPLES)/aac/er_eld2100np_48.s16
 
+# USAC (xHE-AAC); the samples and references are from the ISO/IEC 23003-3
+# conformance suite, except for xhe_target_level, which was encoded by exhale
+FATE_AAC_USAC += fate-aac-usac-fd_1_c1_0x03
+fate-aac-usac-fd_1_c1_0x03: CMD = pcm -i $(TARGET_SAMPLES)/aac/usac/Fd_1_c1_0x03.mp4
+fate-aac-usac-fd_1_c1_0x03: REF = $(SAMPLES)/aac/usac/Fd_1_c1_0x03.s16
+
+FATE_AAC_USAC += fate-aac-usac-fd_1_c1_0x04
+fate-aac-usac-fd_1_c1_0x04: CMD = pcm -i $(TARGET_SAMPLES)/aac/usac/Fd_1_c1_0x04.mp4
+fate-aac-usac-fd_1_c1_0x04: REF = $(SAMPLES)/aac/usac/Fd_1_c1_0x04.s16
+
+FATE_AAC_USAC += fate-aac-usac-fd_2_c1_0x03
+fate-aac-usac-fd_2_c1_0x03: CMD = pcm -i $(TARGET_SAMPLES)/aac/usac/Fd_2_c1_0x03.mp4
+fate-aac-usac-fd_2_c1_0x03: REF = $(SAMPLES)/aac/usac/Fd_2_c1_0x03.s16
+
+FATE_AAC_USAC += fate-aac-usac-fd_2_c1_0x05
+fate-aac-usac-fd_2_c1_0x05: CMD = pcm -i $(TARGET_SAMPLES)/aac/usac/Fd_2_c1_0x05.mp4
+fate-aac-usac-fd_2_c1_0x05: REF = $(SAMPLES)/aac/usac/Fd_2_c1_0x05.s16
+
+FATE_AAC_USAC += fate-aac-usac-fd_2_c1_tns_0x04
+fate-aac-usac-fd_2_c1_tns_0x04: CMD = pcm -i $(TARGET_SAMPLES)/aac/usac/Fd_2_c1_Tns_0x04.mp4
+fate-aac-usac-fd_2_c1_tns_0x04: REF = $(SAMPLES)/aac/usac/Fd_2_c1_Tns_0x04.s16
+
+FATE_AAC_USAC += fate-aac-usac-ln-16
+fate-aac-usac-ln-16: CMD = pcm -target_level -16 -i $(TARGET_SAMPLES)/aac/usac/Ext_2_c1_Ln_0x03.mp4
+fate-aac-usac-ln-16: REF = $(SAMPLES)/aac/usac/Ext_2_c1_Ln_0x03__Lou-16.s16
+
+FATE_AAC_USAC += fate-aac-usac-ln-24
+fate-aac-usac-ln-24: CMD = pcm -target_level -24 -i $(TARGET_SAMPLES)/aac/usac/Ext_2_c1_Ln_0x03.mp4
+fate-aac-usac-ln-24: REF = $(SAMPLES)/aac/usac/Ext_2_c1_Ln_0x03__Lou-24.s16
+
+FATE_AAC_USAC += fate-aac-usac-ln-31
+fate-aac-usac-ln-31: CMD = pcm -target_level -31 -i $(TARGET_SAMPLES)/aac/usac/Ext_2_c1_Ln_0x03.mp4
+fate-aac-usac-ln-31: REF = $(SAMPLES)/aac/usac/Ext_2_c1_Ln_0x03__Lou-31.s16
+
+FATE_AAC_USAC += fate-aac-usac-target-level
+fate-aac-usac-target-level: CMD = pcm -target_level -24 -i $(TARGET_SAMPLES)/aac/usac/xhe_target_level.m4a
+fate-aac-usac-target-level: REF = $(SAMPLES)/aac/usac/xhe_target_level.s16
+fate-aac-usac-target-level: SIZE_TOLERANCE = 512
+
+FATE_AAC += $(FATE_AAC_USAC)
+
 FATE_AAC_FIXED += fate-aac-fixed-al04_44
 fate-aac-fixed-al04_44: CMD = pcm -c aac_fixed -i $(TARGET_SAMPLES)/aac/al04_44.mp4
 fate-aac-fixed-al04_44: REF = $(SAMPLES)/aac/al04_44.s16
