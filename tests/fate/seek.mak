@@ -199,15 +199,30 @@ fate-seek-test-iibbibb-neg-ctts-mp4:  CMD = run libavformat/tests/seek$(EXESUF) 
 fate-seek-cache-pipe: CMD = cat $(SAMPLES)/gapless/gapless.mp3 | run libavformat/tests/seek$(EXESUF) cache:pipe:0 -read_ahead_limit -1
 fate-seek-mkv-codec-delay:   CMD = run libavformat/tests/seek$(EXESUF) $(TARGET_SAMPLES)/mkv/codec_delay_opus.mkv
 
+# A master playlist with separate audio and video media playlists with different DTS.
+tests/data/hls-seek.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
+	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
+        -f lavfi -i "testsrc2=size=128x72:rate=10:d=6" \
+        -f lavfi -i "aevalsrc=cos(2*PI*t)*sin(2*PI*(440+4*t)*t):d=6" \
+        -map 0:v -map 1:a -c:v mpeg2video -bf 2 -g 15 -dct int -idct int -flags +bitexact -c:a mp2fixed \
+        -f hls -hls_time 2 -hls_list_size 0 \
+        -var_stream_map "v:0,agroup:a a:0,agroup:a,default:yes" -master_pl_name hls-seek.m3u8 \
+        -hls_segment_filename $(TARGET_PATH)/tests/data/hls-seek-s%v-%d.ts \
+        $(TARGET_PATH)/tests/data/hls-seek-v%v.m3u8 2>/dev/null
+
 FATE_SEEK_EXTRA += $(FATE_SEEK_EXTRA-yes)
 
+FATE_SEEK_FFMPEG-$(call ALLYES, TESTSRC2_FILTER AEVALSRC_FILTER LAVFI_INDEV MPEG2VIDEO_ENCODER MP2FIXED_ENCODER HLS_MUXER MPEGTS_MUXER HLS_DEMUXER MPEGTS_DEMUXER FILE_PROTOCOL) += fate-seek-hls
+fate-seek-hls: tests/data/hls-seek.m3u8
+fate-seek-hls: CMD = run libavformat/tests/seek$(EXESUF) $(TARGET_PATH)/tests/data/hls-seek.m3u8 -duration 6
 
-$(FATE_SEEK) $(FATE_SAMPLES_SEEK) $(FATE_SEEK_EXTRA): libavformat/tests/seek$(EXESUF)
+$(FATE_SEEK) $(FATE_SAMPLES_SEEK) $(FATE_SEEK_EXTRA) $(FATE_SEEK_FFMPEG-yes): libavformat/tests/seek$(EXESUF)
 $(FATE_SEEK) $(FATE_SAMPLES_SEEK): CMD = run libavformat/tests/seek$(EXESUF) $(TARGET_PATH)/tests/data/$(SRC)
 $(FATE_SEEK) $(FATE_SAMPLES_SEEK): fate-seek-%: fate-%
 $(subst fate-seek-,fate-,$(FATE_SAMPLES_SEEK) $(FATE_SEEK)): KEEP_FILES ?= 1
 fate-seek-%: REF = $(SRC_PATH)/tests/ref/seek/$(@:fate-seek-%=%)
 
 FATE_AVCONV += $(FATE_SEEK)
+FATE_FFMPEG += $(FATE_SEEK_FFMPEG-yes)
 FATE_SAMPLES_AVCONV += $(FATE_SAMPLES_SEEK) $(FATE_SEEK_EXTRA)
-fate-seek:     $(FATE_SEEK) $(FATE_SAMPLES_SEEK) $(FATE_SEEK_EXTRA)
+fate-seek:     $(FATE_SEEK) $(FATE_SAMPLES_SEEK) $(FATE_SEEK_EXTRA) $(FATE_SEEK_FFMPEG-yes)
