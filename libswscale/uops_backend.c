@@ -93,7 +93,7 @@
     SWS_FOR(TYPE, DITHER,         REF_ENTRY)                \
     /* end of macro */
 
-static const SwsOpTable op_table = {
+static const SwsUOpTable uop_table = {
     .block_size = SWS_BLOCK_SIZE,
     .entries = {
         REF_ALL_UOPS(U8)
@@ -154,7 +154,7 @@ static int compile(SwsContext *ctx, const SwsOpList *ops, SwsCompiledOp *out)
 
     av_assert0(uops->num_ops > 0);
     for (int i = 0; i < uops->num_ops; i++) {
-        const SwsOpTable *table = &op_table;
+        const SwsUOpTable *table = &uop_table;
         ret = ff_sws_uop_lookup(ctx, &table, 1, &uops->ops[i],
                                 SWS_BLOCK_SIZE, chain);
         if (ret < 0)

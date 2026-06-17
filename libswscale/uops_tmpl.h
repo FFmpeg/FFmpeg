@@ -135,9 +135,9 @@ typedef struct SwsOpIter {
               (pixel_t *) iter->out[0], (pixel_t *) iter->out[1],               \
               (pixel_t *) iter->out[2], (pixel_t *) iter->out[3])
 
-#define REF_ENTRY(DUMMY, NAME, ...) &op_##NAME,
+#define REF_ENTRY(DUMMY, NAME, ...) &uop_##NAME,
 #define DECL_ENTRY(SETUP, NAME, ...)                                            \
-    static const SwsOpEntry op_##NAME = {                                       \
+    static const SwsUOpEntry uop_##NAME = {                                     \
         .func = (SwsFuncPtr) NAME##_c,                                          \
         __VA_ARGS__,                                                            \
         SETUP                                                                   \

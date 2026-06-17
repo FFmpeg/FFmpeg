@@ -113,12 +113,12 @@ int ff_sws_setup_clear(const SwsImplParams *params, SwsImplResult *out)
     return 0;
 }
 
-int ff_sws_uop_lookup(SwsContext *ctx, const SwsOpTable *const tables[],
+int ff_sws_uop_lookup(SwsContext *ctx, const SwsUOpTable *const tables[],
                       int num_tables, const SwsUOp *uop, const int block_size,
                       SwsOpChain *chain)
 {
     const unsigned cpu_flags = av_get_cpu_flags();
-    const SwsOpEntry *match = NULL;
+    const SwsUOpEntry *match = NULL;
     int ret;
 
     SwsImplParams params = {
@@ -127,13 +127,13 @@ int ff_sws_uop_lookup(SwsContext *ctx, const SwsOpTable *const tables[],
     };
 
     for (int n = 0; !match && n < num_tables; n++) {
-        const SwsOpTable *table = params.table = tables[n];
+        const SwsUOpTable *table = params.table = tables[n];
         if (table->block_size && table->block_size != block_size ||
             table->cpu_flags & ~cpu_flags)
             continue;
 
         for (int i = 0; table->entries[i]; i++) {
-            const SwsOpEntry *entry = table->entries[i];
+            const SwsUOpEntry *entry = table->entries[i];
             const SwsUOp entry_uop = {
                 .uop  = entry->uop,
                 .type = entry->type,

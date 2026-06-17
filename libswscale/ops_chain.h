@@ -37,7 +37,7 @@
  * that is an implementation detail of the specific backend.
  */
 
-typedef struct SwsOpTable SwsOpTable;
+typedef struct SwsUOpTable SwsUOpTable;
 
 /**
  * Private data for each kernel.
@@ -103,7 +103,7 @@ int ff_sws_op_chain_append(SwsOpChain *chain, SwsFuncPtr func,
                            void (*free)(SwsOpPriv *), const SwsOpPriv *priv);
 
 typedef struct SwsImplParams {
-    const SwsOpTable *table;
+    const SwsUOpTable *table;
     union {
         const SwsUOp *uop;
         const SwsOp *op;
@@ -112,14 +112,14 @@ typedef struct SwsImplParams {
 } SwsImplParams;
 
 typedef struct SwsImplResult {
-    SwsFuncPtr func; /* overrides `SwsOpEntry.func` if non-NULL */
+    SwsFuncPtr func; /* overrides `SwsUOpEntry.func` if non-NULL */
     SwsOpPriv priv; /* private data for this implementation instance */
     void (*free)(SwsOpPriv *priv); /* free function for `priv` */
     int over_read[4];  /* implementation over-reads input by this many bytes */
     int over_write[4]; /* implementation over-writes output by this many bytes */
 } SwsImplResult;
 
-typedef struct SwsOpEntry {
+typedef struct SwsUOpEntry {
     /* Kernel metadata; reduced size subset of SwsUOp (sans data) */
     SwsUOpType uop;
     SwsPixelType type;
@@ -130,7 +130,7 @@ typedef struct SwsOpEntry {
     SwsFuncPtr func;
     int (*setup)(const SwsImplParams *params, SwsImplResult *out); /* optional */
     bool (*check)(const SwsImplParams *params); /* optional, return true if supported */
-} SwsOpEntry;
+} SwsUOpEntry;
 
 /* Setup helpers for common/trivial operation types */
 int ff_sws_setup_scale(const SwsImplParams *params, SwsImplResult *out);
@@ -151,10 +151,10 @@ static inline void ff_op_priv_unref(SwsOpPriv *priv)
     av_refstruct_unref(&priv->ptr);
 }
 
-struct SwsOpTable {
+struct SwsUOpTable {
     unsigned cpu_flags;   /* required CPU flags for this table */
     int block_size;       /* fixed block size of this table */
-    const SwsOpEntry *entries[]; /* terminated by NULL */
+    const SwsUOpEntry *entries[]; /* terminated by NULL */
 };
 
 /**
@@ -163,7 +163,7 @@ struct SwsOpTable {
  *
  * Returns 0 or a negative error code.
  */
-int ff_sws_uop_lookup(SwsContext *ctx, const SwsOpTable *const tables[],
+int ff_sws_uop_lookup(SwsContext *ctx, const SwsUOpTable *const tables[],
                       int num_tables, const SwsUOp *uop, const int block_size,
                       SwsOpChain *chain);
 
