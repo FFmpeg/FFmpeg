@@ -97,14 +97,4 @@ int ff_sws_solve_shuffle(const SwsOpList *ops, uint8_t shuffle[], int size,
  */
 int ff_sws_op_list_split_at(SwsOpList *ops1, SwsOpList **ops2, int index);
 
-/**
- * Eliminate SWS_OP_FILTER_* operations by merging them with prior SWS_OP_READ
- * operations. This may require splitting the op list into multiple subpasses,
- * along filter boundaries. After this function, `ops` will no longer contain
- * bare filtering operations. The remainder, if any, is output to `out_rest`.
- *
- * Returns 0 or a negative error code.
- */
-int ff_sws_op_list_subpass(SwsOpList *ops, SwsOpList **out_rest);
-
 #endif /* SWSCALE_OPS_INTERNAL_H */

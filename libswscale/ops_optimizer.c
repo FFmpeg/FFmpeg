@@ -1057,15 +1057,3 @@ fail:
     ff_sws_op_list_free(&ops2);
     return ret;
 }
-
-int ff_sws_op_list_subpass(SwsOpList *ops, SwsOpList **out_rest)
-{
-    for (int idx = 0; idx < ops->num_ops; idx++) {
-        const SwsOp *op = &ops->ops[idx];
-        if (op->op == SWS_OP_FILTER_H || op->op == SWS_OP_FILTER_V)
-            return ff_sws_op_list_split_at(ops, out_rest, idx);
-    }
-
-    *out_rest = NULL;
-    return 0;
-}
