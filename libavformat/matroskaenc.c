@@ -2995,7 +2995,7 @@ static int mkv_write_block(void *logctx, MatroskaMuxContext *mkv,
 
             lcevc = av_malloc(payload_size);
             if (!lcevc)
-                return ret;
+                return AVERROR(ENOMEM);
 
             AV_WB8 (lcevc + 0, ITU_T_T35_COUNTRY_CODE_UK);
             AV_WB8 (lcevc + 1, 0); // t35_uk_country_code_second_octet
