@@ -503,25 +503,12 @@ static void search_for_pns(AACEncContext *s, AVCodecContext *avctx, SingleChanne
     const float dist_bias = av_clipf(4.f * 120 / lambda, 0.25f, 4.0f);
     const float pns_transient_energy_r = FFMIN(0.7f, lambda / 140.f);
 
-    int refbits = avctx->bit_rate * 1024.0 / avctx->sample_rate
-        / ((avctx->flags & AV_CODEC_FLAG_QSCALE) ? 2.0f : avctx->ch_layout.nb_channels)
-        * (lambda / 120.f);
-
-    /** Keep this in sync with twoloop's cutoff selection */
-    float rate_bandwidth_multiplier = 1.5f;
     int prev = -1000, prev_sf = -1;
-    int frame_bit_rate = (avctx->flags & AV_CODEC_FLAG_QSCALE)
-        ? (refbits * rate_bandwidth_multiplier * avctx->sample_rate / 1024)
-        : (avctx->bit_rate / avctx->ch_layout.nb_channels);
 
-    frame_bit_rate *= 1.15f;
-
-    if (avctx->cutoff > 0) {
-        bandwidth = avctx->cutoff;
-    } else {
-        bandwidth = FFMAX(3000, AAC_CUTOFF_FROM_BITRATE(frame_bit_rate, 1, avctx->sample_rate));
-    }
-
+    /* PNS candidacy must use the coder's actual coding bandwidth (s->bandwidth,
+     * fixed at init), not a separate heuristic, or it evaluates a different band
+     * range than the coder later codes. */
+    bandwidth = s->bandwidth;
     cutoff = bandwidth * 2 * wlen / avctx->sample_rate;
 
     memcpy(sce->band_alt, sce->band_type, sizeof(sce->band_type));
@@ -640,24 +627,10 @@ static void mark_pns(AACEncContext *s, AVCodecContext *avctx, SingleChannelEleme
     const float spread_threshold = FFMIN(0.75f, NOISE_SPREAD_THRESHOLD*FFMAX(0.5f, lambda/100.f));
     const float pns_transient_energy_r = FFMIN(0.7f, lambda / 140.f);
 
-    int refbits = avctx->bit_rate * 1024.0 / avctx->sample_rate
-        / ((avctx->flags & AV_CODEC_FLAG_QSCALE) ? 2.0f : avctx->ch_layout.nb_channels)
-        * (lambda / 120.f);
-
-    /** Keep this in sync with twoloop's cutoff selection */
-    float rate_bandwidth_multiplier = 1.5f;
-    int frame_bit_rate = (avctx->flags & AV_CODEC_FLAG_QSCALE)
-        ? (refbits * rate_bandwidth_multiplier * avctx->sample_rate / 1024)
-        : (avctx->bit_rate / avctx->ch_layout.nb_channels);
-
-    frame_bit_rate *= 1.15f;
-
-    if (avctx->cutoff > 0) {
-        bandwidth = avctx->cutoff;
-    } else {
-        bandwidth = FFMAX(3000, AAC_CUTOFF_FROM_BITRATE(frame_bit_rate, 1, avctx->sample_rate));
-    }
-
+    /* PNS candidacy must use the coder's actual coding bandwidth (s->bandwidth,
+     * fixed at init), not a separate heuristic, or it evaluates a different band
+     * range than the coder later codes (NMR relies on this output directly). */
+    bandwidth = s->bandwidth;
     cutoff = bandwidth * 2 * wlen / avctx->sample_rate;
 
     memcpy(sce->band_alt, sce->band_type, sizeof(sce->band_type));

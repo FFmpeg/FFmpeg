@@ -1591,9 +1591,11 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
         if (s->options.coder == AAC_CODER_NMR && frame_br >= 32000) {
             static const int rates[] = { 32000, 48000, 64000, 96000 };
             static const int bws[]   = { 14000, 15000, 18000, 20000 };
-            for (int i = 0; i < FF_ARRAY_ELEMS(rates) - 2 && frame_br > rates[i + 1]; i++);
-            s->bandwidth = bws[i] + (int)((int64_t)(bws[i + 1] - bws[i]) *
-                                          (frame_br - rates[i]) / (rates[i + 1] - rates[i]));
+            int bw_i = 0;
+            for (; bw_i < FF_ARRAY_ELEMS(rates) - 2 && frame_br > rates[bw_i + 1]; bw_i++)
+                ;
+            s->bandwidth = bws[bw_i] + (int)((int64_t)(bws[bw_i + 1] - bws[bw_i]) *
+                                             (frame_br - rates[bw_i]) / (rates[bw_i + 1] - rates[bw_i]));
             s->bandwidth = FFMIN3(s->bandwidth, 22000, avctx->sample_rate / 2);
         } else {
             if (s->options.pns || s->options.intensity_stereo)
@@ -1638,7 +1640,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
 
 #define AACENC_FLAGS AV_OPT_FLAG_ENCODING_PARAM | AV_OPT_FLAG_AUDIO_PARAM
 static const AVOption aacenc_options[] = {
-    {"aac_coder", "Coding algorithm", offsetof(AACEncContext, options.coder), AV_OPT_TYPE_INT, {.i64 = AAC_CODER_TWOLOOP}, 0, AAC_CODER_NB-1, AACENC_FLAGS, .unit = "coder"},
+    {"aac_coder", "Coding algorithm", offsetof(AACEncContext, options.coder), AV_OPT_TYPE_INT, {.i64 = AAC_CODER_NMR}, 0, AAC_CODER_NB-1, AACENC_FLAGS, .unit = "coder"},
         {"twoloop",  "Two loop searching method", 0, AV_OPT_TYPE_CONST, {.i64 = AAC_CODER_TWOLOOP}, INT_MIN, INT_MAX, AACENC_FLAGS, .unit = "coder"},
         {"fast",     "Fast search",               0, AV_OPT_TYPE_CONST, {.i64 = AAC_CODER_FAST},    INT_MIN, INT_MAX, AACENC_FLAGS, .unit = "coder"},
         {"nmr",      "Noise-to-mask ratio scalefactor trellis", 0, AV_OPT_TYPE_CONST, {.i64 = AAC_CODER_NMR}, INT_MIN, INT_MAX, AACENC_FLAGS, .unit = "coder"},
