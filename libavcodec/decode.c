@@ -369,12 +369,18 @@ static int discard_samples(AVCodecContext *avctx, AVFrame *frame, int64_t *disca
                 int64_t diff_ts = av_rescale_q(avci->skip_samples,
                                                (AVRational){1, avctx->sample_rate},
                                                avctx->pkt_timebase);
-                if (frame->pts != AV_NOPTS_VALUE)
-                    frame->pts += diff_ts;
-                if (frame->pkt_dts != AV_NOPTS_VALUE)
-                    frame->pkt_dts += diff_ts;
-                if (frame->duration >= diff_ts)
-                    frame->duration -= diff_ts;
+                if (diff_ts != AV_NOPTS_VALUE) {
+                    if (frame->pts != AV_NOPTS_VALUE)
+                        frame->pts = av_sat_add64(frame->pts, diff_ts);
+                    if (frame->pkt_dts != AV_NOPTS_VALUE)
+                        frame->pkt_dts = av_sat_add64(frame->pkt_dts, diff_ts);
+                    if (frame->duration >= diff_ts)
+                        frame->duration = av_sat_sub64(frame->duration, diff_ts);
+                } else {
+                    frame->pts = AV_NOPTS_VALUE;
+                    frame->pkt_dts = AV_NOPTS_VALUE;
+                    frame->duration = 0;
+                }
             } else
                 av_log(avctx, AV_LOG_WARNING, "Could not update timestamps for skipped samples.\n");
 
@@ -395,7 +401,7 @@ static int discard_samples(AVCodecContext *avctx, AVFrame *frame, int64_t *disca
                 int64_t diff_ts = av_rescale_q(frame->nb_samples - discard_padding,
                                                (AVRational){1, avctx->sample_rate},
                                                avctx->pkt_timebase);
-                frame->duration = diff_ts;
+                frame->duration = diff_ts == AV_NOPTS_VALUE ? 0 : diff_ts;
             } else
                 av_log(avctx, AV_LOG_WARNING, "Could not update timestamps for discarded samples.\n");
 
