@@ -1133,13 +1133,14 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
             if (op->rw.frac || op->rw.filter.op) {
                 return AVERROR(ENOTSUP);
             } else if (op->rw.filter.op) {
+                av_assert0(op->rw.mode != SWS_RW_PALETTE);
                 data = read_filtered(spi, id, ops, op,
                                      &id->filt[nb_filter_used++],
                                      in_img, gid, gi2);
             } else if (op->rw.mode == SWS_RW_PACKED) {
                 data = spi_OpImageRead(spi, type_v, in_img[ops->plane_src[0]],
                                        src_gid, SpvImageOperandsMaskNone);
-            } else {
+            } else if (op->rw.mode == SWS_RW_PLANAR) {
                 int tmp[4] = { uid, uid, uid, uid };
                 for (int i = 0; i < op->rw.elems; i++) {
                     tmp[i] = spi_OpImageRead(spi, type_v,
@@ -1149,6 +1150,8 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
                 }
                 data = spi_OpCompositeConstruct(spi, type_v,
                                                 tmp[0], tmp[1], tmp[2], tmp[3]);
+            } else {
+                return AVERROR(ENOTSUP);
             }
             break;
         case SWS_OP_WRITE:
@@ -1481,7 +1484,14 @@ static int add_ops_glsl(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
         case SWS_OP_READ: {
             if (op->rw.frac)
                 return AVERROR(ENOTSUP);
-            read_glsl(ops, op, shd, n, type_name, type_v, type_s);
+            switch (op->rw.mode) {
+            case SWS_RW_PLANAR:
+            case SWS_RW_PACKED:
+                read_glsl(ops, op, shd, n, type_name, type_v, type_s);
+                break;
+            default:
+                return AVERROR(ENOTSUP);
+            }
             break;
         }
         case SWS_OP_WRITE: {
