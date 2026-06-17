@@ -6,6 +6,7 @@ tests/data/live_no_endlist.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 
 FATE_HLSENC-$(call FILTERDEMDECENCMUX, HDCD AEVALSRC ARESAMPLE, HLS MPEGTS, MP2 PCM_F64LE, MP2FIXED PCM_S24LE, HLS MPEGTS PCM_S24LE, LAVFI_INDEV) += fate-hls-live-no-endlist
 fate-hls-live-no-endlist: tests/data/live_no_endlist.m3u8
+fate-hls-live-no-endlist: CLEANFILES = tests/data/live_no_endlist.m3u8 tests/data/live_no_endlist_*.ts
 fate-hls-live-no-endlist: SRC = $(TARGET_PATH)/tests/data/live_no_endlist.m3u8
 fate-hls-live-no-endlist: CMD = md5 -i $(SRC) -af hdcd=process_stereo=false -t 6 -f s24le
 fate-hls-live-no-endlist: CMP = oneline
@@ -20,6 +21,7 @@ tests/data/event_no_endlist.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 
 FATE_HLSENC-$(call FILTERDEMDECENCMUX, HDCD AEVALSRC ARESAMPLE, HLS MPEGTS, MP2 PCM_F64LE, MP2FIXED PCM_S24LE, HLS MPEGTS PCM_S24LE, LAVFI_INDEV) += fate-hls-event-no-endlist
 fate-hls-event-no-endlist: tests/data/event_no_endlist.m3u8
+fate-hls-event-no-endlist: CLEANFILES = tests/data/event_no_endlist.m3u8 tests/data/event_no_endlist_*.ts
 fate-hls-event-no-endlist: SRC = $(TARGET_PATH)/tests/data/event_no_endlist.m3u8
 fate-hls-event-no-endlist: CMD = md5 -ss 3 -i $(SRC) -af hdcd=process_stereo=false -t 3 -f s24le
 fate-hls-event-no-endlist: CMP = oneline
@@ -33,6 +35,7 @@ tests/data/live_last_endlist.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 
 FATE_HLSENC-$(call FILTERDEMDECENCMUX, HDCD AEVALSRC ARESAMPLE, HLS MPEGTS, MP2 PCM_F64LE, MP2FIXED PCM_S24LE, HLS MPEGTS PCM_S24LE, LAVFI_INDEV) += fate-hls-live-last-endlist
 fate-hls-live-last-endlist: tests/data/live_last_endlist.m3u8
+fate-hls-live-last-endlist: CLEANFILES = tests/data/live_last_endlist.m3u8 tests/data/live_last_endlist_*.ts
 fate-hls-live-last-endlist: SRC = $(TARGET_PATH)/tests/data/live_last_endlist.m3u8
 fate-hls-live-last-endlist: CMD = md5 -i $(SRC) -af hdcd=process_stereo=false -t 6 -f s24le
 fate-hls-live-last-endlist: CMP = oneline
@@ -47,6 +50,7 @@ tests/data/live_endlist.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 
 FATE_HLSENC-$(call FILTERDEMDECENCMUX, HDCD AEVALSRC ARESAMPLE, HLS MPEGTS, MP2 PCM_F64LE, MP2FIXED PCM_S24LE, HLS MPEGTS PCM_S24LE, LAVFI_INDEV ) += fate-hls-live-endlist
 fate-hls-live-endlist: tests/data/live_endlist.m3u8
+fate-hls-live-endlist: CLEANFILES = tests/data/live_endlist.m3u8 tests/data/live_endlist_*.ts
 fate-hls-live-endlist: SRC = $(TARGET_PATH)/tests/data/live_endlist.m3u8
 fate-hls-live-endlist: CMD = md5 -i $(SRC) -af hdcd=process_stereo=false -t 20 -f s24le
 fate-hls-live-endlist: CMP = oneline
@@ -60,6 +64,7 @@ tests/data/hls_segment_size.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 
 FATE_HLSENC-$(call FILTERDEMDECENCMUX, AEVALSRC ARESAMPLE, HLS MPEGTS, MP2 PCM_F64LE, MP2FIXED, HLS MPEGTS, LAVFI_INDEV) += fate-hls-segment-size
 fate-hls-segment-size: tests/data/hls_segment_size.m3u8
+fate-hls-segment-size: CLEANFILES = tests/data/hls_segment_size.m3u8 tests/data/hls_segment_size_*.ts
 fate-hls-segment-size: CMD = framecrc -auto_conversion_filters -flags +bitexact -i $(TARGET_PATH)/tests/data/hls_segment_size.m3u8 -vf setpts=N*23
 
 tests/data/hls_segment_single.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
@@ -70,6 +75,7 @@ tests/data/hls_segment_single.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 
 FATE_HLSENC-$(call FILTERDEMDECENCMUX, AEVALSRC ARESAMPLE, HLS MPEGTS, MP2 PCM_F64LE, MP2FIXED, HLS MPEGTS, LAVFI_INDEV) += fate-hls-segment-single
 fate-hls-segment-single: tests/data/hls_segment_single.m3u8
+fate-hls-segment-single: CLEANFILES = tests/data/hls_segment_single.m3u8 tests/data/hls_segment_single.ts
 fate-hls-segment-single: CMD = framecrc -auto_conversion_filters -flags +bitexact -i $(TARGET_PATH)/tests/data/hls_segment_single.m3u8 -vf setpts=N*23
 
 tests/data/hls_init_time.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
@@ -80,6 +86,7 @@ tests/data/hls_init_time.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 
 FATE_HLSENC-$(call FILTERDEMDECENCMUX, AEVALSRC ARESAMPLE, HLS MPEGTS, MP2 PCM_F64LE, MP2FIXED, HLS MPEGTS, LAVFI_INDEV) += fate-hls-init-time
 fate-hls-init-time: tests/data/hls_init_time.m3u8
+fate-hls-init-time: CLEANFILES = tests/data/hls_init_time.m3u8 tests/data/hls_init_time_*.ts
 fate-hls-init-time: CMD = framecrc -auto_conversion_filters -flags +bitexact -i $(TARGET_PATH)/tests/data/hls_init_time.m3u8 -vf setpts=N*23
 
 tests/data/hls_list_size.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
@@ -90,6 +97,7 @@ tests/data/hls_list_size.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 
 FATE_HLSENC-$(call FILTERDEMDECENCMUX, AEVALSRC ARESAMPLE, HLS MPEGTS, MP2 PCM_F64LE, MP2FIXED, HLS MPEGTS, LAVFI_INDEV) += fate-hls-list-size
 fate-hls-list-size: tests/data/hls_list_size.m3u8
+fate-hls-list-size: CLEANFILES = tests/data/hls_list_size.m3u8 tests/data/hls_list_size_*.ts
 fate-hls-list-size: CMD = framecrc -auto_conversion_filters -flags +bitexact -i $(TARGET_PATH)/tests/data/hls_list_size.m3u8 -vf setpts=N*23
 
 tests/data/hls_fmp4.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
@@ -101,6 +109,7 @@ tests/data/hls_fmp4.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 
 FATE_HLSENC-$(call FILTERDEMDECENCMUX, AEVALSRC ARESAMPLE, HLS MPEGTS, MP2 PCM_F64LE, MP2FIXED, HLS MPEGTS, LAVFI_INDEV) += fate-hls-fmp4
 fate-hls-fmp4: tests/data/hls_fmp4.m3u8
+fate-hls-fmp4: CLEANFILES = tests/data/hls_fmp4.m3u8 tests/data/hls_fmp4_[0-9]*.m4s
 fate-hls-fmp4: CMD = framecrc -auto_conversion_filters -flags +bitexact -i $(TARGET_PATH)/tests/data/hls_fmp4.m3u8 -vf setpts=N*23
 
 tests/data/hls_fmp4_ac3.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
@@ -114,6 +123,7 @@ FATE_HLSENC-yes := $(if $(call FRAMECRC), $(FATE_HLSENC-yes))
 
 FATE_HLSENC_PROBE-$(call DEMMUX, HLS AC3, HLS MP4, AC3_DECODER) += fate-hls-fmp4_ac3
 fate-hls-fmp4_ac3: tests/data/hls_fmp4_ac3.m3u8
+fate-hls-fmp4_ac3: CLEANFILES = tests/data/hls_fmp4_ac3.m3u8 tests/data/hls_fmp4_ac3_*.m4s tests/data/now_ac3.mp4
 fate-hls-fmp4_ac3: CMD = probeaudiostream $(TARGET_PATH)/tests/data/now_ac3.mp4
 
 
@@ -128,6 +138,7 @@ FATE_HLSENC-yes := $(if $(call FRAMECRC), $(FATE_HLSENC-yes))
 
 FATE_HLSENC_PROBE-$(call FRAMECRC, HLS) += fate-hls-cmfa
 fate-hls-cmfa: tests/data/hls_cmfa.m3u8
+fate-hls-cmfa: CLEANFILES = tests/data/hls_cmfa.m3u8 tests/data/hls_fmp4_[0-9]*.cmfa tests/data/now.cmfa
 fate-hls-cmfa: CMD = framecrc -i $(TARGET_PATH)/tests/data/hls_cmfa.m3u8 -c copy
 
 FATE_SAMPLES_FFMPEG += $(FATE_HLSENC-yes)
@@ -144,6 +155,7 @@ tests/data/hls_playlist_type_vod.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 
 FATE_HLSENC_LAVFI-$(call ALLYES, TESTSRC2_FILTER LAVFI_INDEV MPEG2VIDEO_ENCODER HLS_MUXER MPEGTS_MUXER FILE_PROTOCOL) += fate-hls-playlist-type-vod
 fate-hls-playlist-type-vod: tests/data/hls_playlist_type_vod.m3u8
+fate-hls-playlist-type-vod: CLEANFILES = tests/data/hls_playlist_type_vod.m3u8 tests/data/hls_playlist_type_vod_*.ts
 fate-hls-playlist-type-vod: CMD = sed -n -e /^\#EXT-X-PLAYLIST-TYPE:/p -e /^\#EXT-X-ENDLIST/p $(TARGET_PATH)/tests/data/hls_playlist_type_vod.m3u8
 fate-hls-playlist-type-vod: CMP = diff
 
@@ -156,6 +168,7 @@ tests/data/hls_playlist_type_event.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 
 FATE_HLSENC_LAVFI-$(call ALLYES, TESTSRC2_FILTER LAVFI_INDEV MPEG2VIDEO_ENCODER HLS_MUXER MPEGTS_MUXER FILE_PROTOCOL) += fate-hls-playlist-type-event
 fate-hls-playlist-type-event: tests/data/hls_playlist_type_event.m3u8
+fate-hls-playlist-type-event: CLEANFILES = tests/data/hls_playlist_type_event.m3u8 tests/data/hls_playlist_type_event_*.ts
 fate-hls-playlist-type-event: CMD = sed -n -e /^\#EXT-X-PLAYLIST-TYPE:/p -e /^\#EXT-X-ENDLIST/p $(TARGET_PATH)/tests/data/hls_playlist_type_event.m3u8
 fate-hls-playlist-type-event: CMP = diff
 
@@ -168,6 +181,7 @@ tests/data/hls_round_durations.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 
 FATE_HLSENC_LAVFI-$(call ALLYES, TESTSRC2_FILTER LAVFI_INDEV MPEG2VIDEO_ENCODER HLS_MUXER MPEGTS_MUXER FILE_PROTOCOL) += fate-hls-round-durations
 fate-hls-round-durations: tests/data/hls_round_durations.m3u8
+fate-hls-round-durations: CLEANFILES = tests/data/hls_round_durations.m3u8 tests/data/hls_round_durations_*.ts
 fate-hls-round-durations: CMD = sed -n -e /^\#EXTINF:/p $(TARGET_PATH)/tests/data/hls_round_durations.m3u8
 fate-hls-round-durations: CMP = diff
 
@@ -180,6 +194,7 @@ tests/data/hls_discont_start.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 
 FATE_HLSENC_LAVFI-$(call ALLYES, TESTSRC2_FILTER LAVFI_INDEV MPEG2VIDEO_ENCODER HLS_MUXER MPEGTS_MUXER FILE_PROTOCOL) += fate-hls-discont-start
 fate-hls-discont-start: tests/data/hls_discont_start.m3u8
+fate-hls-discont-start: CLEANFILES = tests/data/hls_discont_start.m3u8 tests/data/hls_discont_start_*.ts
 fate-hls-discont-start: CMD = sed -n -e /^\#EXT-X-DISCONTINUITY/p -e /^\#EXTINF:/p -e /^[^\#]/p $(TARGET_PATH)/tests/data/hls_discont_start.m3u8
 fate-hls-discont-start: CMP = diff
 
@@ -192,6 +207,7 @@ tests/data/hls_independent_segments.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/dat
 
 FATE_HLSENC_LAVFI-$(call ALLYES, TESTSRC2_FILTER LAVFI_INDEV MPEG2VIDEO_ENCODER HLS_MUXER MPEGTS_MUXER FILE_PROTOCOL) += fate-hls-independent-segments
 fate-hls-independent-segments: tests/data/hls_independent_segments.m3u8
+fate-hls-independent-segments: CLEANFILES = tests/data/hls_independent_segments.m3u8 tests/data/hls_independent_segments_*.ts
 fate-hls-independent-segments: CMD = sed -n -e /^\#EXT-X-INDEPENDENT-SEGMENTS/p $(TARGET_PATH)/tests/data/hls_independent_segments.m3u8
 fate-hls-independent-segments: CMP = diff
 
@@ -204,6 +220,7 @@ tests/data/hls_start_number.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 
 FATE_HLSENC_LAVFI-$(call ALLYES, TESTSRC2_FILTER LAVFI_INDEV MPEG2VIDEO_ENCODER HLS_MUXER MPEGTS_MUXER FILE_PROTOCOL) += fate-hls-start-number
 fate-hls-start-number: tests/data/hls_start_number.m3u8
+fate-hls-start-number: CLEANFILES = tests/data/hls_start_number.m3u8 tests/data/hls_start_number_*.ts
 fate-hls-start-number: CMD = sed -n -e /^\#EXT-X-MEDIA-SEQUENCE:/p -e /^[^\#]/p $(TARGET_PATH)/tests/data/hls_start_number.m3u8
 fate-hls-start-number: CMP = diff
 
@@ -217,6 +234,7 @@ tests/data/hls_iframes_single_mpegts.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/da
 
 FATE_HLSENC_LAVFI-$(call ALLYES, TESTSRC2_FILTER LAVFI_INDEV MPEG2VIDEO_ENCODER HLS_MUXER MPEGTS_MUXER FILE_PROTOCOL) += fate-hls-iframes-single-mpegts
 fate-hls-iframes-single-mpegts: tests/data/hls_iframes_single_mpegts.m3u8
+fate-hls-iframes-single-mpegts: CLEANFILES = tests/data/hls_iframes_single_mpegts.m3u8 tests/data/hls_iframes_single_mpegts.ts
 fate-hls-iframes-single-mpegts: CMD = sed -n -e /^\#EXT-X-BYTERANGE:/p $(TARGET_PATH)/tests/data/hls_iframes_single_mpegts.m3u8
 fate-hls-iframes-single-mpegts: CMP = diff
 
@@ -230,6 +248,7 @@ tests/data/hls_iframes_single_fmp4.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 
 FATE_HLSENC_LAVFI-$(call ALLYES, TESTSRC2_FILTER LAVFI_INDEV MPEG2VIDEO_ENCODER HLS_MUXER MOV_MUXER FILE_PROTOCOL) += fate-hls-iframes-single-fmp4
 fate-hls-iframes-single-fmp4: tests/data/hls_iframes_single_fmp4.m3u8
+fate-hls-iframes-single-fmp4: CLEANFILES = tests/data/hls_iframes_single_fmp4.m3u8 tests/data/hls_iframes_single_fmp4.mp4
 fate-hls-iframes-single-fmp4: CMD = sed -n -e /^\#EXT-X-MAP:/p -e /^\#EXT-X-BYTERANGE:/p $(TARGET_PATH)/tests/data/hls_iframes_single_fmp4.m3u8
 fate-hls-iframes-single-fmp4: CMP = diff
 
