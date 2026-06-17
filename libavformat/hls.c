@@ -231,6 +231,7 @@ typedef struct HLSContext {
     int prefer_x_start;
     int first_packet;
     int64_t first_timestamp;
+    struct playlist *first_timestamp_pls;
     int64_t cur_timestamp;
     AVIOInterruptCB *interrupt_callback;
     AVDictionary *avio_opts;
@@ -1113,7 +1114,8 @@ static int parse_playlist(HLSContext *c, const char *url,
         }
     }
     if (prev_segments) {
-        if (pls->start_seq_no > prev_start_seq_no && c->first_timestamp != AV_NOPTS_VALUE) {
+        if (pls->start_seq_no > prev_start_seq_no && c->first_timestamp != AV_NOPTS_VALUE &&
+            c->first_timestamp_pls == pls) {
             int64_t prev_timestamp = c->first_timestamp;
             int i;
             int64_t diff = pls->start_seq_no - prev_start_seq_no;
@@ -2256,6 +2258,7 @@ static int hls_read_header(AVFormatContext *s)
 
     c->first_packet = 1;
     c->first_timestamp = AV_NOPTS_VALUE;
+    c->first_timestamp_pls = NULL;
     c->cur_timestamp = AV_NOPTS_VALUE;
 
     if ((ret = ffio_copy_url_options(s->pb, &c->avio_opts)) < 0)
@@ -2718,6 +2721,7 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
 
                         if (c->first_timestamp == AV_NOPTS_VALUE) {
                             c->first_timestamp = ts;
+                            c->first_timestamp_pls = pls;
 
                             if (pls->type == PLS_TYPE_EVENT)
                                 for (unsigned k = 0; k < s->nb_streams; k++) {
