@@ -688,6 +688,13 @@ static int compile_subpass(const CompileArgs *args, SwsOpList **pops,
         const SwsOp *op = &ops->ops[idx];
         if (op->op == SWS_OP_FILTER_H || op->op == SWS_OP_FILTER_V) {
             RET(ff_sws_op_list_split_at(ops, &rest, idx));
+            if (ff_sws_op_list_is_noop(ops)) {
+                /* Prevent infinite recursion by avoiding splitting in a way
+                 * that does not meaningfully reduce the number of operations
+                 * performed in the second part. */
+                FFSWAP(SwsOpList *, ops, rest);
+                break;
+            }
             /* Serial split: feed first pass into second */
             RET(compile_subpass(args, &ops,  input, &tmp));
             RET(compile_subpass(args, &rest, tmp, output));
