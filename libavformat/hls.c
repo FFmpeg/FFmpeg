@@ -105,6 +105,7 @@ struct playlist {
     uint8_t* read_buffer;
     AVIOContext *input;
     int input_read_done;
+    int input_reuse;
     AVIOContext *input_next;
     int input_next_requested;
     AVFormatContext *parent;
@@ -290,6 +291,7 @@ static void free_playlist_list(HLSContext *c)
         av_freep(&pls->pb.pub.buffer);
         ff_format_io_close(c->ctx, &pls->input);
         pls->input_read_done = 0;
+        pls->input_reuse = 0;
         ff_format_io_close(c->ctx, &pls->input_next);
         pls->input_next_requested = 0;
         if (pls->ctx) {
@@ -1167,6 +1169,21 @@ static struct segment *next_segment(struct playlist *pls)
     return pls->segments[n];
 }
 
+/* True if 'next' can be reached by seeking the open 'in' instead of reopening.
+ * An unencrypted, contiguous byte range directly following 'cur' in the same
+ * seekable resource (i.e. consecutive EXT-X-BYTERANGE segments). */
+static int segment_reusable(AVIOContext *in, const struct segment *cur,
+                            const struct segment *next)
+{
+    return in && cur && next &&
+           (in->seekable & AVIO_SEEKABLE_NORMAL) &&
+           cur->size >= 0 && next->size >= 0 &&
+           next->url_offset == cur->url_offset + cur->size &&
+           cur->key_type == KEY_NONE && next->key_type == KEY_NONE &&
+           next->init_section == cur->init_section &&
+           !strcmp(next->url, cur->url);
+}
+
 static int read_from_url(struct playlist *pls, struct segment *seg,
                          uint8_t *buf, int buf_size)
 {
@@ -1421,14 +1438,48 @@ static int open_input(HLSContext *c, struct playlist *pls, struct segment *seg, 
     int ret;
     int is_http = 0;
 
+    /* Reuse a kept-open connection to the same resource by seeking instead of
+     * reopening. For contiguous ranges the seek is a no-op and issues no request. */
+    if (*in && pls->input_reuse && seg->key_type == KEY_NONE &&
+        ((*in)->seekable & AVIO_SEEKABLE_NORMAL)) {
+        int64_t seek_ret = avio_seek(*in, seg->url_offset, SEEK_SET);
+        pls->input_reuse = 0;
+        if (seek_ret >= 0) {
+            av_log(pls->parent, AV_LOG_VERBOSE,
+                   "HLS reusing connection for url '%s', offset %"PRId64", playlist %d\n",
+                   seg->url, seg->url_offset, pls->index);
+            pls->input_read_done = 0;
+            pls->cur_seg_offset = 0;
+            return 0;
+        }
+        /* Seek failed: drop the connection and reopen. */
+        ff_format_io_close(pls->parent, in);
+    }
+    pls->input_reuse = 0;
+
     if (c->http_persistent)
         av_dict_set(&opts, "multiple_requests", "1", 0);
 
     if (seg->size >= 0) {
-        /* try to restrict the HTTP request to the part we want
-         * (if this is in fact a HTTP request) */
+        /* Restrict the request to the wanted byte range. The end is extended
+         * across following contiguous segments of the same resource so one
+         * connection serves the whole run. */
+        int64_t end_offset = seg->url_offset + seg->size;
+        if (seg == current_segment(pls)) {
+            int64_t n = pls->cur_seq_no - pls->start_seq_no + 1;
+            while (n < pls->n_segments) {
+                struct segment *ns = pls->segments[n];
+                if (ns->size < 0 || ns->url_offset != end_offset ||
+                    ns->key_type != KEY_NONE ||
+                    ns->init_section != seg->init_section ||
+                    strcmp(ns->url, seg->url))
+                    break;
+                end_offset = ns->url_offset + ns->size;
+                n++;
+            }
+        }
         av_dict_set_int(&opts, "offset", seg->url_offset, 0);
-        av_dict_set_int(&opts, "end_offset", seg->url_offset + seg->size, 0);
+        av_dict_set_int(&opts, "end_offset", end_offset, 0);
     }
 
     av_log(pls->parent, AV_LOG_VERBOSE, "HLS request for url '%s', offset %"PRId64", playlist %d\n",
@@ -1699,7 +1750,7 @@ restart:
 
     seg = current_segment(v);
 
-    if (!v->input || (c->http_persistent && v->input_read_done)) {
+    if (!v->input || v->input_read_done) {
         /* load/update Media Initialization Section, if any */
         ret = update_init_section(v, seg);
         if (ret)
@@ -1745,7 +1796,8 @@ restart:
 
     seg = next_segment(v);
     if (c->http_multiple == 1 && !v->input_next_requested &&
-        seg && seg->key_type == KEY_NONE && av_strstart(seg->url, "http", NULL)) {
+        seg && seg->key_type == KEY_NONE && av_strstart(seg->url, "http", NULL) &&
+        !segment_reusable(v->input, current_segment(v), seg)) {
         ret = open_input(c, v, seg, &v->input_next);
         if (ret < 0) {
             if (ff_check_interrupt(c->interrupt_callback))
@@ -1777,7 +1829,15 @@ restart:
 
         return ret;
     }
-    if (c->http_persistent &&
+    if (ret == 0 && segment_reusable(v->input, seg, next_segment(v))) {
+        /* Clean boundary, and the next segment continues this resource. Keep
+         * the connection open and read it as a whole. Note that splitting
+         * segments in these cases is useful for dynamic variant/quality
+         * switching, but this is not supported by our HLS demuxer, so we
+         * join the ranges. */
+        v->input_reuse = 1;
+        v->input_read_done = 1;
+    } else if (c->http_persistent &&
         seg->key_type == KEY_NONE && av_strstart(seg->url, "http", NULL)) {
         v->input_read_done = 1;
     } else {
@@ -2356,6 +2416,7 @@ static int hls_read_header(AVFormatContext *s)
             ff_format_io_close(pls->parent, &pls->input);
             pls->input = NULL;
             pls->input_read_done = 0;
+            pls->input_reuse = 0;
             ff_format_io_close(pls->parent, &pls->input_next);
             pls->input_next = NULL;
             pls->input_next_requested = 0;
@@ -2526,6 +2587,7 @@ static int recheck_discard_flags(AVFormatContext *s, int first)
         } else if (first && !cur_needed && pls->needed) {
             ff_format_io_close(pls->parent, &pls->input);
             pls->input_read_done = 0;
+            pls->input_reuse = 0;
             ff_format_io_close(pls->parent, &pls->input_next);
             pls->input_next_requested = 0;
             if (pls->is_subtitle)
@@ -2848,6 +2910,7 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
         AVIOContext *const pb = &pls->pb.pub;
         ff_format_io_close(pls->parent, &pls->input);
         pls->input_read_done = 0;
+        pls->input_reuse = 0;
         ff_format_io_close(pls->parent, &pls->input_next);
         pls->input_next_requested = 0;
         av_packet_unref(pls->pkt);
