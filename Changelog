@@ -3,6 +3,11 @@ releases are sorted from youngest to oldest.
 
 
 version 8.1.2:
+ swscale/x86/rgb_2_rgb: fix uyvytoyuv422 overwrite on odd width
+ swscale/aarch64: fix uyvy/yuyv to yuv420p/yuv422p on odd width
+ avcodec/snowenc: fix SIGFPE in get_dc() when a block lies outside the plane
+ avcodec/snowenc: fix out-of-bounds OBMC read in get_dc() for narrow planes
+ (fforge/pr/23505) avformat/tls_gnutls:fix crash when connecting to peer
  libavcodec/jpeg2000htdec: remove trailing whitespace
  libavdevice/alsa.c: fix NULL pointer dereference
  avcodec/libjxlenc: check orientation tag metadata before reading
