@@ -8429,10 +8429,11 @@ static int mov_init(AVFormatContext *s)
             track->par = st->codecpar;
         }
 
-        movie_timescale = av_gcd_q(movie_timescale, st->time_base, INT_MAX, MOV_TIMESCALE_Q);
-        if (!av_cmp_q(movie_timescale, MOV_TIMESCALE_Q))
-            break;
+        movie_timescale = av_gcd_q(movie_timescale, st->time_base, INT_MAX, (AVRational){1,0});
     }
+    if (!movie_timescale.den)
+        movie_timescale = MOV_TIMESCALE_Q;
+
     if (!mov->movie_timescale)
         mov->movie_timescale = FFMAX(movie_timescale.den, MOV_TIMESCALE);
 
