@@ -26,6 +26,7 @@ gen=${16:-no}
 hwaccel=${17:-none}
 report_type=${18:-standard}
 keep=${19:-0}
+test "$keep" -ge 1 || cleanfiles=${20}
 
 outdir="tests/data/fate"
 outfile="${outdir}/${test}"
@@ -253,7 +254,7 @@ enc_dec_pcm(){
     src_file=$(target_path $4)
     shift 4
     encfile="${outdir}/${test}.${out_fmt}"
-    cleanfiles=$encfile
+    cleanfiles="$cleanfiles $encfile"
     encfile=$(target_path ${encfile})
     ffmpeg -auto_conversion_filters -i $src_file "$@" -f $out_fmt -y ${encfile} || return
     ffmpeg -auto_conversion_filters -bitexact -i ${encfile} -c:a pcm_${pcm_fmt} -fflags +bitexact -f ${dec_fmt} -
@@ -719,7 +720,7 @@ concat(){
 
     concatfile="${outdir}/${test}.ffconcat"
     packetfile="${outdir}/${test}.ffprobe"
-    cleanfiles="$concatfile $packetfile"
+    cleanfiles="$cleanfiles $concatfile $packetfile"
 
     awk "{gsub(/%SRCFILE%/, \"$sample\"); print}" $template > $concatfile
 
@@ -806,7 +807,8 @@ fi
 
 if test $err = 0; then
     if test $keep -lt 2; then
-        rm -f $outfile $errfile $cmpfile $cleanfiles
+        set +f
+        rm -f "$outfile" "$errfile" "$cmpfile" $cleanfiles
     fi
 elif test $gen = "no"; then
     echo "Test $test failed. Look at $errfile for details."
