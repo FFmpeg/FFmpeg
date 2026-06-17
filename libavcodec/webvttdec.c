@@ -29,6 +29,7 @@
 #include "ass.h"
 #include "codec_internal.h"
 #include "libavutil/bprint.h"
+#include "libavutil/mathematics.h"
 
 static const struct {
     const char *from;
@@ -48,9 +49,71 @@ static const struct {
     {"u", "{\\u1}"}, {"/u", "{\\u0}"},
 };
 
-static int webvtt_event_to_ass(AVBPrint *buf, const char *p)
+/* parse a WebVTT timestamp string (HH:MM:SS.mmm or MM:SS.mmm).
+ * Returns milliseconds or -1 on failure. */
+static int64_t parse_webvtt_timestamp(const char *buf)
+{
+    int h = 0, m = 0, s = 0, ms = 0;
+
+    if (sscanf(buf, "%d:%2d:%2d.%3d", &h, &m, &s, &ms) == 4) {
+        if (m > 59 || s > 59)
+            return -1;
+        return (int64_t)h * 3600000 + m * 60000 + s * 1000 + ms;
+    }
+    if (sscanf(buf, "%2d:%2d.%3d", &m, &s, &ms) == 3) {
+        if (m > 59 || s > 59)
+            return -1;
+        return m * 60000 + s * 1000 + ms;
+    }
+
+    return -1;
+}
+
+/* validate a cue timestamp tag body: must be digits/colons/periods,
+ * parseable, strictly within (cue_start, cue_end), and after prev_ts.
+ * Returns 1 and writes to *ts_out on success, 0 on failure. */
+static int read_cue_timestamp(const char *body, int len,
+                              int64_t cue_start, int64_t cue_end,
+                              int64_t prev_ts, int64_t *ts_out)
+{
+    int64_t ts;
+
+    if (len < 1 || !av_isdigit(body[0]))
+        return 0;
+    if ((int)strspn(body, "0123456789:.") != len)
+        return 0;
+
+    ts = parse_webvtt_timestamp(body);
+    if (ts <= cue_start || ts >= cue_end)
+        return 0;
+    if (prev_ts >= 0 && ts <= prev_ts)
+        return 0;
+
+    *ts_out = ts;
+    return 1;
+}
+
+/* Append the pending segment text, prefixed by a {\kf} karaoke override when
+ * dur_cs > 0.  A {\kf} must precede the text it times, so segments are buffered
+ * in \seg and flushed once their duration (the span up to the next timestamp,
+ * or the cue end) is known. */
+static void flush_segment(AVBPrint *buf, AVBPrint *seg, int64_t dur_cs)
+{
+    if (dur_cs > 0)
+        av_bprintf(buf, "{\\kf%"PRId64"}", dur_cs);
+    av_bprintf(buf, "%s", seg->str);
+    av_bprint_clear(seg);
+}
+
+static int webvtt_event_to_ass(AVBPrint *buf, const char *p,
+                               int64_t cue_start_ms, int64_t cue_end_ms)
 {
     int i, again = 0;
+    int64_t prev_ts = -1, ts;
+    int64_t start_cs = 0;       /* cs from cue start where the pending segment begins */
+    AVBPrint seg;
+
+    av_bprint_init(&seg, 0, AV_BPRINT_SIZE_UNLIMITED);
 
     while (*p) {
         if (*p == '<') {
@@ -59,10 +122,26 @@ static int webvtt_event_to_ass(AVBPrint *buf, const char *p)
             if (!tag_end)
                 break;
             len = tag_end - p + 1;
+
+            /* A cue timestamp ends the pending segment; flush it with its own
+             * duration (rounded against cue start, then differenced, so the
+             * durations telescope to the cue length without drift). */
+            if (len > 2 &&
+                read_cue_timestamp(p + 1, (int)(len - 2),
+                                   cue_start_ms, cue_end_ms, prev_ts, &ts)) {
+                int64_t end_cs = (ts - cue_start_ms + 5) / 10;
+                flush_segment(buf, &seg, end_cs - start_cs);
+                start_cs = end_cs;
+                prev_ts  = ts;
+                p += len;
+                again = 1;
+                continue;
+            }
+
             for (i = 0; i < FF_ARRAY_ELEMS(webvtt_valid_tags); i++) {
                 const char *from = webvtt_valid_tags[i].from;
                 if(!strncmp(p + 1, from, strlen(from))) {
-                    av_bprintf(buf, "%s", webvtt_valid_tags[i].to);
+                    av_bprintf(&seg, "%s", webvtt_valid_tags[i].to);
                     break;
                 }
             }
@@ -74,7 +153,7 @@ static int webvtt_event_to_ass(AVBPrint *buf, const char *p)
             const char *from = webvtt_tag_replace[i].from;
             const size_t len = strlen(from);
             if (!strncmp(p, from, len)) {
-                av_bprintf(buf, "%s", webvtt_tag_replace[i].to);
+                av_bprintf(&seg, "%s", webvtt_tag_replace[i].to);
                 p += len;
                 again = 1;
                 break;
@@ -86,11 +165,18 @@ static int webvtt_event_to_ass(AVBPrint *buf, const char *p)
             continue;
         }
         if (p[0] == '\n' && p[1])
-            av_bprintf(buf, "\\N");
+            av_bprintf(&seg, "\\N");
         else if (*p != '\r')
-            av_bprint_chars(buf, *p, 1);
+            av_bprint_chars(&seg, *p, 1);
         p++;
     }
+
+    /* Flush the final segment.  With no cue timestamp this is the whole cue,
+     * emitted untimed (duration 0 -> no {\kf}). */
+    flush_segment(buf, &seg,
+                  prev_ts < 0 ? 0 : (cue_end_ms - cue_start_ms + 5) / 10 - start_cs);
+
+    av_bprint_finalize(&seg, NULL);
     return 0;
 }
 
@@ -101,9 +187,21 @@ static int webvtt_decode_frame(AVCodecContext *avctx, AVSubtitle *sub,
     const char *ptr = avpkt->data;
     FFASSDecoderContext *s = avctx->priv_data;
     AVBPrint buf;
+    AVRational ms = { 1, 1000 };
+    int64_t start_ms = 0, end_ms = 0;
+
+    /* Inline cue timestamps are absolute milliseconds on the media timeline.
+     * Convert the packet timing to the same unit via pkt_timebase instead of
+     * assuming a 1/1000 time base.  If the timing is unknown, leave both at 0
+     * so every inline timestamp is rejected and the cue is emitted verbatim. */
+    if (avpkt->pts != AV_NOPTS_VALUE && avctx->pkt_timebase.num) {
+        start_ms = av_rescale_q(avpkt->pts, avctx->pkt_timebase, ms);
+        end_ms   = start_ms + av_rescale_q(avpkt->duration, avctx->pkt_timebase, ms);
+    }
 
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
-    if (ptr && avpkt->size > 0 && !webvtt_event_to_ass(&buf, ptr))
+    if (ptr && avpkt->size > 0 &&
+        !webvtt_event_to_ass(&buf, ptr, start_ms, end_ms))
         ret = ff_ass_add_rect(sub, buf.str, s->readorder++, 0, NULL, NULL);
     av_bprint_finalize(&buf, NULL);
     if (ret < 0)
