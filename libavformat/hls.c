@@ -2019,8 +2019,11 @@ static int find_timestamp_in_playlist(HLSContext *c, struct playlist *pls,
                   0 : c->first_timestamp;
 
     if (timestamp < pos) {
+        /* Seeking before the start of the playlist, clamp to the first segment. */
         *seq_no = pls->start_seq_no;
-        return 0;
+        if (seg_start_ts)
+            *seg_start_ts = pos;
+        return 1;
     }
 
     for (i = 0; i < pls->n_segments; i++) {
