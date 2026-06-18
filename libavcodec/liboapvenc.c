@@ -628,12 +628,9 @@ static av_cold int liboapve_close(AVCodecContext *avctx)
     ApvEncContext *apv = avctx->priv_data;
 
     for (unsigned int i = 0; i < apv->nb_payloads; i++) {
-        if (apv->payloads[i].data) {
-            av_free(apv->payloads[i].data);
-            apv->payloads[i].data = NULL;
-        }
+        av_freep(&apv->payloads[i].data);
     }
-    av_free(apv->payloads);
+    av_freep(&apv->payloads);
 
     for (int i = 0; i < apv->ifrms.num_frms; i++) {
         if (apv->ifrms.frm[i].imgb != NULL)
