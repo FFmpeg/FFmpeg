@@ -144,11 +144,11 @@ SwsCompMask ff_sws_comp_mask_q4(const AVRational q[4])
     return mask;
 }
 
-SwsCompMask ff_sws_comp_mask_swizzle(const SwsCompMask mask, const SwsSwizzleOp swiz)
+SwsCompMask ff_sws_comp_mask_swizzle(const SwsCompMask mask, const SwsSwizzleOp *swiz)
 {
     SwsCompMask res = 0;
     for (int i = 0; i < 4; i++) {
-        const int src = swiz.in[i];
+        const int src = swiz->in[i];
         if (SWS_COMP_TEST(mask, src))
             res |= SWS_COMP(i);
     }

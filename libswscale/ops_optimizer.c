@@ -61,7 +61,7 @@ static bool op_commute_clear(SwsOp *op, SwsOp *next)
         op->type = next->filter.type;
         return true;
     case SWS_OP_SWIZZLE:
-        op->clear.mask = ff_sws_comp_mask_swizzle(op->clear.mask, next->swizzle);
+        op->clear.mask = ff_sws_comp_mask_swizzle(op->clear.mask, &next->swizzle);
         ff_sws_apply_op_q(next, op->clear.value);
         return true;
     case SWS_OP_SWAP_BYTES:
