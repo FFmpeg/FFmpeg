@@ -2,6 +2,12 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 8.0.3:
+ Bump for 8.0.3
+ fix missing padding for AV1 extradata
+ fix crash when stsz_sample_size is zero and sample_sizes is null
+ Fix out-of-bounds write errors in yuv2rgb_lasx.c file.
+ bound manifest reloads and fragment-open retries
+ Fail with any inner stream count being 0
  swscale/x86/rgb_2_rgb: fix uyvytoyuv422 overwrite on odd width
  swscale/aarch64: fix uyvy/yuyv to yuv420p/yuv422p on odd width
  avcodec/snowenc: fix SIGFPE in get_dc() when a block lies outside the plane
