@@ -156,6 +156,11 @@ static av_cold int pulse_read_header(AVFormatContext *s)
 
     pa_channel_map_init_extend(&cmap, pd->channels, PA_CHANNEL_MAP_WAVEEX);
 
+    if (!pa_sample_spec_valid(&ss)) {
+        av_log(s, AV_LOG_ERROR, "Invalid sample spec.\n");
+        return AVERROR(EINVAL);
+    }
+
     st = avformat_new_stream(s, NULL);
 
     if (!st) {
