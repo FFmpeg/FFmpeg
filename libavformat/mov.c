@@ -11626,6 +11626,7 @@ static int get_eia608_packet(AVIOContext *pb, AVPacket *pkt, int src_size)
 static int mov_finalize_packet(AVFormatContext *s, AVStream *st, AVIndexEntry *sample,
                                 int64_t current_index, AVPacket *pkt)
 {
+    MOVContext *mov = s->priv_data;
     MOVStreamContext *sc = st->priv_data;
 
     pkt->stream_index = sc->ffindex;
@@ -11647,7 +11648,7 @@ static int mov_finalize_packet(AVFormatContext *s, AVStream *st, AVIndexEntry *s
         pkt->pts = pkt->dts;
     }
 
-    if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
+    if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && !mov->fragment.found_tfhd &&
         sc->current_sample >= ffstream(st)->nb_index_entries) {
         int64_t pts   = av_rescale_q(pkt->pts,     st->time_base, (AVRational){ 1, st->codecpar->sample_rate });
         int64_t total = av_rescale_q(st->duration, st->time_base, (AVRational){ 1, st->codecpar->sample_rate });
