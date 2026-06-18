@@ -1,5 +1,5 @@
-5febd4af0b197d8d0756fcaa99c066a2 *tests/data/fate/matroska-encoding-delay.matroska
-961258 tests/data/fate/matroska-encoding-delay.matroska
+e0a9bc2eff3a462c6664488d9126b1f0 *tests/data/fate/matroska-encoding-delay.matroska
+961246 tests/data/fate/matroska-encoding-delay.matroska
 #extradata 0:       22, 0x32ea0490
 #tb 0: 1/1000
 #media_type 0: video
@@ -21,7 +21,7 @@
 1,         86,         86,       24,     1152, 0xc9e85398
 1,        110,        110,       24,     1152, 0xda1287d3
 0,        120,        120,       40,   238290, 0xbe18b18f
-1,        134,        134,       16,     1152, 0x1c9a6102, S=1, Skip Samples,       10, 0x03050081
+1,        134,        134,       24,     1152, 0x1c9a6102
 [PACKET]
 codec_type=audio
 stream_index=1

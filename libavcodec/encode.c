@@ -229,6 +229,53 @@ int ff_encode_get_frame(AVCodecContext *avctx, AVFrame *frame)
     return 0;
 }
 
+static int encode_set_packet_props(AVCodecContext *avctx, AVPacket *avpkt, const AVFrame *frame)
+{
+    AVCodecInternal *avci = avctx->internal;
+    EncodeContext     *ec = encode_ctx(avci);
+
+    if (avpkt->pts == AV_NOPTS_VALUE) {
+        avpkt->pts = frame->pts;
+        if (avctx->codec->type == AVMEDIA_TYPE_AUDIO && avpkt->pts != AV_NOPTS_VALUE)
+            avpkt->pts -= ff_samples_to_time_base(avctx, avctx->initial_padding);
+    }
+
+    if (!avpkt->duration) {
+        if (frame->duration)
+            avpkt->duration = frame->duration;
+        else if (avctx->codec->type == AVMEDIA_TYPE_AUDIO) {
+            avpkt->duration = ff_samples_to_time_base(avctx,
+                                                      frame->nb_samples);
+        }
+        if (avctx->codec->type == AVMEDIA_TYPE_AUDIO) {
+            AVFrameSideData *frame_sd = av_frame_get_side_data(frame, AV_FRAME_DATA_SKIP_SAMPLES);
+
+            if (frame_sd && frame_sd->size >= 10) {
+                int skip_samples    = AV_RL32(frame_sd->data + 0);
+                int discard_padding = AV_RL32(frame_sd->data + 4);
+
+                if (discard_padding > 0 && avctx->frame_size && ec->last_audio_frame) {
+                    avpkt->duration = av_sat_add64(avpkt->duration, ff_samples_to_time_base(avctx, avctx->initial_padding));
+                    avpkt->duration = FFMIN(avpkt->duration, ff_samples_to_time_base(avctx, avctx->frame_size));
+                    discard_padding = avctx->frame_size - ff_samples_from_time_base(avctx, avpkt->duration);
+                }
+
+                if (skip_samples > 0 || discard_padding > 0) {
+                    uint8_t *packet_sd = av_packet_new_side_data(avpkt, AV_PKT_DATA_SKIP_SAMPLES, 10);
+                    if (!packet_sd)
+                         return AVERROR(ENOMEM);
+                    AV_WL32A(packet_sd + 0, skip_samples);
+                    AV_WL32A(packet_sd + 4, discard_padding);
+                    AV_WL8  (packet_sd + 8, AV_RB8(frame_sd->data + 8));
+                    AV_WL8  (packet_sd + 9, AV_RB8(frame_sd->data + 9));
+                }
+            }
+        }
+    }
+
+    return 0;
+}
+
 int ff_encode_reordered_opaque(AVCodecContext *avctx,
                                AVPacket *pkt, const AVFrame *frame)
 {
@@ -265,31 +312,9 @@ int ff_encode_encode_cb(AVCodecContext *avctx, AVPacket *avpkt,
         // encoders with delay have to set the timestamps themselves
         if (!(avctx->codec->capabilities & AV_CODEC_CAP_DELAY) ||
             (frame && (codec->caps_internal & FF_CODEC_CAP_EOF_FLUSH))) {
-            if (avpkt->pts == AV_NOPTS_VALUE)
-                avpkt->pts = frame->pts;
-
-            if (!avpkt->duration) {
-                if (frame->duration)
-                    avpkt->duration = frame->duration;
-                else if (avctx->codec->type == AVMEDIA_TYPE_AUDIO) {
-                    avpkt->duration = ff_samples_to_time_base(avctx,
-                                                              frame->nb_samples);
-                }
-                if (avctx->codec->type == AVMEDIA_TYPE_AUDIO) {
-                    AVFrameSideData *sd = av_frame_get_side_data(frame, AV_FRAME_DATA_SKIP_SAMPLES);
-                    if (sd && sd->size >= 10) {
-                        uint8_t *skip_samples = av_packet_new_side_data(avpkt, AV_PKT_DATA_SKIP_SAMPLES, 10);
-                        if (!skip_samples) {
-                            ret = AVERROR(ENOMEM);
-                            goto unref;
-                        }
-                        AV_WL32A(skip_samples + 0, AV_RL32(sd->data + 0));
-                        AV_WL32A(skip_samples + 4, AV_RL32(sd->data + 4));
-                        AV_WB8  (skip_samples + 8, AV_RB8 (sd->data + 8));
-                        AV_WB8  (skip_samples + 9, AV_RB8 (sd->data + 9));
-                    }
-                }
-            }
+            ret = encode_set_packet_props(avctx, avpkt, frame);
+            if (ret < 0)
+                goto unref;
 
             ret = ff_encode_reordered_opaque(avctx, avpkt, frame);
             if (ret < 0)
