@@ -956,24 +956,16 @@ static void get_input_size(const SwsOpList *ops, SwsFormat *fmt)
     }
 }
 
-int ff_sws_op_list_subpass(SwsOpList *ops1, SwsOpList **out_rest)
+int ff_sws_op_list_split_at(SwsOpList *ops1, SwsOpList **out_ops2, int index)
 {
-    const SwsOp *op;
-    int ret, idx;
-
-    for (idx = 0; idx < ops1->num_ops; idx++) {
-        op = &ops1->ops[idx];
-        if (op->op == SWS_OP_FILTER_H || op->op == SWS_OP_FILTER_V)
-            break;
-    }
-
-    if (idx == ops1->num_ops) {
-        *out_rest = NULL;
+    int ret;
+    if (index <= 0 || index >= ops1->num_ops) {
+        *out_ops2 = NULL;
         return 0;
     }
 
-    av_assert0(idx > 0);
-    const SwsOp *prev = &ops1->ops[idx - 1];
+    const SwsOp *op = &ops1->ops[index];
+    const SwsOp *prev = &ops1->ops[index - 1];
 
     SwsOpList *ops2 = ff_sws_op_list_duplicate(ops1);
     if (!ops2)
@@ -1010,8 +1002,8 @@ int ff_sws_op_list_subpass(SwsOpList *ops1, SwsOpList **out_rest)
         ops2->comps_src.max[i]    = prev->comps.max[idx];
     }
 
-    ff_sws_op_list_remove_at(ops1, idx, ops1->num_ops - idx);
-    ff_sws_op_list_remove_at(ops2, 0, idx);
+    ff_sws_op_list_remove_at(ops1, index, ops1->num_ops - index);
+    ff_sws_op_list_remove_at(ops2, 0, index);
     op = NULL; /* the above command may invalidate op */
 
     if (swiz_wr.mask != SWS_SWIZZLE(0, 1, 2, 3).mask) {
@@ -1058,10 +1050,22 @@ int ff_sws_op_list_subpass(SwsOpList *ops1, SwsOpList **out_rest)
     if (ret < 0)
         goto fail;
 
-    *out_rest = ops2;
+    *out_ops2 = ops2;
     return 0;
 
 fail:
     ff_sws_op_list_free(&ops2);
     return ret;
+}
+
+int ff_sws_op_list_subpass(SwsOpList *ops, SwsOpList **out_rest)
+{
+    for (int idx = 0; idx < ops->num_ops; idx++) {
+        const SwsOp *op = &ops->ops[idx];
+        if (op->op == SWS_OP_FILTER_H || op->op == SWS_OP_FILTER_V)
+            return ff_sws_op_list_split_at(ops, out_rest, idx);
+    }
+
+    *out_rest = NULL;
+    return 0;
 }
