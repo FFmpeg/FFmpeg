@@ -697,7 +697,7 @@ static void check_linear(const char *name, const SwsUOp *uop)
         }
     }
 
-    lin.mask = ff_sws_linear_mask(lin);
+    lin.mask = ff_sws_linear_mask(&lin);
     CHECK(name, 4, 4, type, type, {
         .op   = SWS_OP_LINEAR,
         .type = type,

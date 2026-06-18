@@ -216,7 +216,7 @@ enum {
 };
 
 /* Helper function to compute the correct mask */
-uint32_t ff_sws_linear_mask(SwsLinearOp);
+uint32_t ff_sws_linear_mask(const SwsLinearOp *c);
 
 typedef struct SwsFilterOp {
     SwsFilterWeights *kernel; /* filter kernel (refstruct) */

@@ -1203,7 +1203,7 @@ static SwsLinearOp fmt_encode_range(const SwsFormat *fmt, bool *incomplete)
         c.m[0][0] = av_neg_q(c.m[0][0]);
     }
 
-    c.mask = ff_sws_linear_mask(c);
+    c.mask = ff_sws_linear_mask(&c);
     return c;
 }
 
@@ -1222,7 +1222,7 @@ static SwsLinearOp fmt_decode_range(const SwsFormat *fmt, bool *incomplete)
     if (!(fmt->desc->flags & AV_PIX_FMT_FLAG_ALPHA))
         c.m[3][4] = Q1;
 
-    c.mask = ff_sws_linear_mask(c);
+    c.mask = ff_sws_linear_mask(&c);
     return c;
 }
 
@@ -1388,7 +1388,7 @@ linear_mat3(const AVRational m00, const AVRational m01, const AVRational m02,
         {  Q0,  Q0,  Q0, Q1, Q0 },
     }};
 
-    c.mask = ff_sws_linear_mask(c);
+    c.mask = ff_sws_linear_mask(&c);
     return c;
 }
 

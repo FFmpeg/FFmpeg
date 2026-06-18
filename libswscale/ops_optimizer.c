@@ -331,7 +331,7 @@ static bool extract_swizzle(SwsLinearOp *op, SwsComps prev, SwsSwizzleOp *out_sw
     if (swiz.mask == SWS_SWIZZLE(0, 1, 2, 3).mask)
         return false; /* no swizzle was identified */
 
-    c.mask = ff_sws_linear_mask(c);
+    c.mask = ff_sws_linear_mask(&c);
     *out_swiz = swiz;
     *op = c;
     return true;
@@ -658,7 +658,7 @@ retry:
                         op->lin.m[i][j] = sum;
                     }
                 }
-                op->lin.mask = ff_sws_linear_mask(op->lin);
+                op->lin.mask = ff_sws_linear_mask(&op->lin);
                 ff_sws_op_list_remove_at(ops, n + 1, 1);
                 goto retry;
             }

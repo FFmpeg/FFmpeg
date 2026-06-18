@@ -773,12 +773,12 @@ int ff_sws_op_list_max_size(const SwsOpList *ops)
     return max_size;
 }
 
-uint32_t ff_sws_linear_mask(const SwsLinearOp c)
+uint32_t ff_sws_linear_mask(const SwsLinearOp *c)
 {
     uint32_t mask = 0;
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 5; j++) {
-            if (av_cmp_q(c.m[i][j], Q(i == j)))
+            if (av_cmp_q(c->m[i][j], Q(i == j)))
                 mask |= SWS_MASK(i, j);
         }
     }
