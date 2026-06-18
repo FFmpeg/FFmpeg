@@ -49,7 +49,7 @@ bool ff_sws_lut3d_test_fmt(enum AVPixelFormat fmt, int output)
     return fmt == AV_PIX_FMT_RGBA64;
 }
 
-enum AVPixelFormat ff_sws_lut3d_pick_pixfmt(SwsFormat fmt, int output)
+enum AVPixelFormat ff_sws_lut3d_pick_pixfmt(const SwsFormat *fmt, int output)
 {
     return AV_PIX_FMT_RGBA64;
 }

@@ -70,7 +70,7 @@ bool ff_sws_lut3d_test_fmt(enum AVPixelFormat fmt, int output);
 /**
  * Pick the best compatible pixfmt for a given SwsFormat.
  */
-enum AVPixelFormat ff_sws_lut3d_pick_pixfmt(SwsFormat fmt, int output);
+enum AVPixelFormat ff_sws_lut3d_pick_pixfmt(const SwsFormat *fmt, int output);
 
 /**
  * Recalculate the (static) 3DLUT state with new settings. This will recompute

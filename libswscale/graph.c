@@ -756,8 +756,8 @@ static int adapt_colors(SwsGraph *graph, SwsFormat src, SwsFormat dst,
     if (!lut)
         return AVERROR(ENOMEM);
 
-    fmt_in  = ff_sws_lut3d_pick_pixfmt(src, 0);
-    fmt_out = ff_sws_lut3d_pick_pixfmt(dst, 1);
+    fmt_in  = ff_sws_lut3d_pick_pixfmt(&src, 0);
+    fmt_out = ff_sws_lut3d_pick_pixfmt(&dst, 1);
     if (fmt_in != src.format) {
         SwsFormat tmp = src;
         tmp.format = fmt_in;
