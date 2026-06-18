@@ -30,6 +30,12 @@
 #include "ops_dispatch.h"
 #include "swscale_internal.h"
 
+#define RET(x)                                                                 \
+    do {                                                                       \
+        if ((ret = (x)) < 0)                                                   \
+            goto fail;                                                         \
+    } while (0)
+
 typedef struct SwsOpPass {
     SwsCompiledOp comp;
     SwsOpExec exec_base;
@@ -663,6 +669,44 @@ fail:
     return ret;
 }
 
+/* Takes over ownership of *pops, even on failure */
+static int compile_subpass(const CompileArgs *args, SwsOpList **pops,
+                           SwsPass *input, SwsPass **output)
+{
+    SwsContext *ctx = args->graph->ctx;
+    SwsOpList *ops  = *pops;
+    SwsOpList *rest = NULL;
+    SwsPass *tmp = NULL;
+    *pops = NULL;
+
+    int ret = compile_single(args, ops, input, output);
+    if (ret != AVERROR(ENOTSUP))
+        goto fail; /* either success or a hard error */
+
+    /* Find any unresolved filter */
+    for (int idx = 1; idx < ops->num_ops - 1; idx++) {
+        const SwsOp *op = &ops->ops[idx];
+        if (op->op == SWS_OP_FILTER_H || op->op == SWS_OP_FILTER_V) {
+            RET(ff_sws_op_list_split_at(ops, &rest, idx));
+            /* Serial split: feed first pass into second */
+            RET(compile_subpass(args, &ops,  input, &tmp));
+            RET(compile_subpass(args, &rest, tmp, output));
+            return 0;
+        }
+    }
+
+    /* If we didn't find any more operations to eliminate, then this ops list
+     * is simply unsupported by any of the available backends */
+    av_log(ctx, AV_LOG_WARNING, "No backend found for operations:\n");
+    ff_sws_op_list_print(ctx, AV_LOG_WARNING, AV_LOG_TRACE, ops);
+    ret = AVERROR(ENOTSUP);
+
+fail:
+    ff_sws_op_list_free(&ops);
+    ff_sws_op_list_free(&rest);
+    return ret;
+}
+
 int ff_sws_compile_pass(SwsGraph *graph, const SwsOpBackend *backend,
                         SwsOpList **pops, int flags, SwsPass *input,
                         SwsPass **output)
@@ -700,48 +744,15 @@ int ff_sws_compile_pass(SwsGraph *graph, const SwsOpBackend *backend,
         .flags   = flags,
     };
 
-    ret = compile_single(&args, ops, input, output);
-    if (ret != AVERROR(ENOTSUP))
+    ret = compile_subpass(&args, &ops, input, output);
+    if (ret < 0)
         goto out;
 
-    av_log(ctx, AV_LOG_DEBUG, "Retrying with separated filter passes.\n");
-    SwsPass *prev = input;
-    bool first = true;
-    while (ops) {
-        SwsOpList *rest;
-        ret = ff_sws_op_list_subpass(ops, &rest);
-        if (ret < 0)
-            goto out;
-
-        if (first && !rest) {
-            /* No point in compiling an unsplit pass again */
-            ret = AVERROR(ENOTSUP);
-            goto out;
-        }
-
-        ret = compile_single(&args, ops, prev, &prev);
-        if (ret < 0) {
-            ff_sws_op_list_free(&rest);
-            goto out;
-        }
-
-        ff_sws_op_list_free(&ops);
-        first = false;
-        ops = rest;
-    }
-
-    if (output) {
-        /* Return last subpass successfully compiled */
-        av_log(ctx, AV_LOG_VERBOSE, "Using %d separate passes.\n",
-               graph->num_passes - passes_orig);
-        *output = prev;
-    }
+    const int num_passes = graph->num_passes - passes_orig;
+    if (num_passes > 1)
+        av_log(ctx, AV_LOG_VERBOSE, "Using %d separate passes.\n", num_passes);
 
 out:
-    if (ret == AVERROR(ENOTSUP)) {
-        av_log(ctx, AV_LOG_WARNING, "No backend found for operations:\n");
-        ff_sws_op_list_print(ctx, AV_LOG_WARNING, AV_LOG_TRACE, ops);
-    }
     if (ret < 0)
         ff_sws_graph_rollback(graph, passes_orig);
     ff_sws_op_list_free(&ops);
