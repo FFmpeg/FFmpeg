@@ -97,4 +97,17 @@ int ff_sws_solve_shuffle(const SwsOpList *ops, uint8_t shuffle[], int size,
  */
 int ff_sws_op_list_split_at(SwsOpList *ops1, SwsOpList **ops2, int index);
 
+/**
+ * Reduce an op list into a reduced subset that operates only on a given
+ * subset of planes. No effect if the output is not planar, or if the plane
+ * mask is empty or equal to all planes.
+ *
+ * @param ops1 Updated in-place to contain only the selected planes.
+ * @param ops2 The removed remainder is returned here, or NULL if no-op.
+ * @param planes A mask of the plane indices to keep.
+ *
+ * Returns 0 or a negative error code.
+ */
+int ff_sws_op_list_split_planes(SwsOpList *ops1, SwsOpList **ops2, SwsCompMask planes);
+
 #endif /* SWSCALE_OPS_INTERNAL_H */

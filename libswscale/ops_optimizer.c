@@ -808,6 +808,68 @@ retry:
     return 0;
 }
 
+static int select_planes(SwsOpList *ops, SwsCompMask planes)
+{
+    SwsSwizzleOp swiz = SWS_SWIZZLE(0, 1, 2, 3);
+    SwsOp *write = &ops->ops[ops->num_ops - 1];
+    av_assert0(write->op == SWS_OP_WRITE);
+
+    write->rw.elems = 0;
+    for (int src = 0; src < 4; src++) {
+        if (!SWS_COMP_TEST(planes, src))
+            continue; /* plane not selected */
+        const int dst = write->rw.elems++;
+        av_assert2(src >= dst);
+        swiz.in[dst] = src;
+        FFSWAP(int, ops->plane_dst[dst], ops->plane_dst[src]);
+    }
+
+    /* Insert swizzle to select desired planes */
+    int ret = ff_sws_op_list_insert_at(ops, ops->num_ops - 1, &(SwsOp) {
+        .op      = SWS_OP_SWIZZLE,
+        .type    = write->type,
+        .swizzle = swiz,
+    });
+    if (ret < 0)
+        return ret;
+
+    /* The optimizer will take care of the rest */
+    return ff_sws_op_list_optimize(ops);
+}
+
+int ff_sws_op_list_split_planes(SwsOpList *ops1, SwsOpList **out_ops2, SwsCompMask planes)
+{
+    const SwsOp *write = ff_sws_op_list_output(ops1);
+    if (!write || write->rw.mode != SWS_RW_PLANAR) {
+        *out_ops2 = NULL;
+        return 0;
+    }
+
+    const SwsCompMask full = SWS_COMP_ELEMS(write->rw.elems);
+    const SwsCompMask mask1 = planes & full;
+    const SwsCompMask mask2 = full ^ mask1;
+    if (!mask1 || !mask2) {
+        /* Nothing to filter */
+        *out_ops2 = NULL;
+        return 0;
+    }
+
+    SwsOpList *ops2 = ff_sws_op_list_duplicate(ops1);
+    if (!ops2)
+        return AVERROR(ENOMEM);
+
+    int ret;
+    if ((ret = select_planes(ops1, mask1)) < 0 ||
+        (ret = select_planes(ops2, mask2)) < 0)
+    {
+        ff_sws_op_list_free(&ops2);
+        return ret;
+    }
+
+    *out_ops2 = ops2;
+    return 0;
+}
+
 int ff_sws_solve_shuffle(const SwsOpList *const ops, uint8_t shuffle[],
                          int size, uint8_t clear_val,
                          int *read_bytes, int *write_bytes)
