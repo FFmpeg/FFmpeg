@@ -109,15 +109,15 @@ typedef struct Gamut {
     ICh peak; /* updated as needed in loop body when hue changes */
 } Gamut;
 
-static Gamut gamut_from_colorspace(SwsColor fmt)
+static Gamut gamut_from_colorspace(const SwsColor *fmt)
 {
-    const AVColorPrimariesDesc *encoding = av_csp_primaries_desc_from_id(fmt.prim);
+    const AVColorPrimariesDesc *encoding = av_csp_primaries_desc_from_id(fmt->prim);
     const AVColorPrimariesDesc content = {
-        .prim = fmt.gamut,
+        .prim = fmt->gamut,
         .wp   = encoding->wp,
     };
 
-    const float Lw = av_q2d(fmt.max_luma), Lb = av_q2d(fmt.min_luma);
+    const float Lw = av_q2d(fmt->max_luma), Lb = av_q2d(fmt->min_luma);
     const float Imax = pq_oetf(Lw);
 
     return (Gamut) {
@@ -125,13 +125,13 @@ static Gamut gamut_from_colorspace(SwsColor fmt)
         .lms2encoding = ff_sws_ipt_lms2rgb(encoding),
         .lms2content  = ff_sws_ipt_lms2rgb(&content),
         .content2lms  = ff_sws_ipt_rgb2lms(&content),
-        .eotf         = av_csp_itu_eotf(fmt.trc),
-        .eotf_inv     = av_csp_itu_eotf_inv(fmt.trc),
+        .eotf         = av_csp_itu_eotf(fmt->trc),
+        .eotf_inv     = av_csp_itu_eotf_inv(fmt->trc),
         .wp           = encoding->wp,
         .Imin         = pq_oetf(Lb),
         .Imax         = Imax,
-        .Imax_frame   = fmt.frame_peak.den ? pq_oetf(av_q2d(fmt.frame_peak)) : Imax,
-        .Iavg_frame   = fmt.frame_avg.den  ? pq_oetf(av_q2d(fmt.frame_avg))  : 0.0f,
+        .Imax_frame   = fmt->frame_peak.den ? pq_oetf(av_q2d(fmt->frame_peak)) : Imax,
+        .Iavg_frame   = fmt->frame_avg.den  ? pq_oetf(av_q2d(fmt->frame_avg))  : 0.0f,
         .Lb           = Lb,
         .Lw           = Lw,
     };
@@ -695,8 +695,8 @@ int ff_sws_color_map_generate_dynamic(v3u16_t *input, v3u16_t *output,
         .size_input     = size_input,
         .size_output_I  = size_I,
         .size_output_PT = size_PT,
-        .src            = gamut_from_colorspace(map->src),
-        .dst            = gamut_from_colorspace(map->dst),
+        .src            = gamut_from_colorspace(&map->src),
+        .dst            = gamut_from_colorspace(&map->dst),
     };
 
     switch (ctx.map.intent) {
@@ -744,8 +744,8 @@ void ff_sws_tone_map_generate(v2u16_t *lut, int size, const SwsColorMap *map)
 {
     CmsCtx ctx = {
         .map = *map,
-        .src = gamut_from_colorspace(map->src),
-        .dst = gamut_from_colorspace(map->dst),
+        .src = gamut_from_colorspace(&map->src),
+        .dst = gamut_from_colorspace(&map->dst),
     };
 
     const float src_scale  = (ctx.src.Imax - ctx.src.Imin) / (size - 1);
