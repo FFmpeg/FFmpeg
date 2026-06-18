@@ -243,7 +243,8 @@ static int exact_log2_q(const AVRational x)
  * If a linear operation can be reduced to a scalar multiplication, returns
  * the corresponding scaling factor, or 0 otherwise.
  */
-static bool extract_scalar(const SwsLinearOp *c, SwsComps comps, SwsComps prev,
+static bool extract_scalar(const SwsLinearOp *c,
+                           const SwsComps *comps, const SwsComps *prev,
                            SwsScaleOp *out_scale)
 {
     SwsScaleOp scale = {0};
@@ -254,8 +255,8 @@ static bool extract_scalar(const SwsLinearOp *c, SwsComps comps, SwsComps prev,
 
     for (int i = 0; i < 4; i++) {
         const AVRational s = c->m[i][i];
-        if ((prev.flags[i]  & SWS_COMP_ZERO) ||
-            (comps.flags[i] & SWS_COMP_GARBAGE))
+        if ((prev->flags[i]  & SWS_COMP_ZERO) ||
+            (comps->flags[i] & SWS_COMP_GARBAGE))
             continue;
         if (scale.factor.den && av_cmp_q(s, scale.factor))
             return false;
@@ -268,7 +269,7 @@ static bool extract_scalar(const SwsLinearOp *c, SwsComps comps, SwsComps prev,
 }
 
 /* Extracts an integer clear operation (subset) from the given linear op. */
-static bool extract_constant_rows(SwsLinearOp *c, SwsComps prev,
+static bool extract_constant_rows(SwsLinearOp *c, const SwsComps *prev,
                                   SwsClearOp *out_clear)
 {
     SwsClearOp clear = {0};
@@ -278,7 +279,7 @@ static bool extract_constant_rows(SwsLinearOp *c, SwsComps prev,
         bool const_row = c->m[i][4].den == 1; /* offset is integer */
         for (int j = 0; j < 4; j++) {
             const_row &= c->m[i][j].num == 0 || /* scalar is zero */
-                         (prev.flags[j] & SWS_COMP_ZERO); /* input is zero */
+                         (prev->flags[j] & SWS_COMP_ZERO); /* input is zero */
         }
         if (const_row && (c->mask & SWS_MASK_ROW(i))) {
             clear.mask |= SWS_COMP(i);
@@ -297,7 +298,8 @@ static bool extract_constant_rows(SwsLinearOp *c, SwsComps prev,
 
 /* Unswizzle a linear operation by aligning single-input rows with
  * their corresponding diagonal */
-static bool extract_swizzle(SwsLinearOp *op, SwsComps prev, SwsSwizzleOp *out_swiz)
+static bool extract_swizzle(SwsLinearOp *op, const SwsComps *prev,
+                            SwsSwizzleOp *out_swiz)
 {
     SwsSwizzleOp swiz = SWS_SWIZZLE(0, 1, 2, 3);
     SwsLinearOp c = *op;
@@ -306,7 +308,7 @@ static bool extract_swizzle(SwsLinearOp *op, SwsComps prev, SwsSwizzleOp *out_sw
     uint32_t nonzero = 0;
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
-            if (!c.m[i][j].num || (prev.flags[j] & SWS_COMP_ZERO))
+            if (!c.m[i][j].num || (prev->flags[j] & SWS_COMP_ZERO))
                 continue;
             nonzero |= SWS_MASK(i, j);
         }
@@ -686,7 +688,7 @@ retry:
             }
 
             /* Convert constant rows to explicit clear instruction */
-            if (extract_constant_rows(&op->lin, prev->comps, &clear)) {
+            if (extract_constant_rows(&op->lin, &prev->comps, &clear)) {
                 RET(ff_sws_op_list_insert_at(ops, n + 1, &(SwsOp) {
                     .op    = SWS_OP_CLEAR,
                     .type  = op->type,
@@ -697,14 +699,14 @@ retry:
             }
 
             /* Multiplication by scalar constant */
-            if (extract_scalar(&op->lin, op->comps, prev->comps, &scale)) {
+            if (extract_scalar(&op->lin, &op->comps, &prev->comps, &scale)) {
                 op->op    = SWS_OP_SCALE;
                 op->scale = scale;
                 goto retry;
             }
 
             /* Swizzle by fixed pattern */
-            if (extract_swizzle(&op->lin, prev->comps, &swizzle)) {
+            if (extract_swizzle(&op->lin, &prev->comps, &swizzle)) {
                 RET(ff_sws_op_list_insert_at(ops, n, &(SwsOp) {
                     .op      = SWS_OP_SWIZZLE,
                     .type    = op->type,
