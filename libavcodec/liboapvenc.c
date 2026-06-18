@@ -29,6 +29,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/internal.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
@@ -398,6 +399,13 @@ static int get_conf(AVCodecContext *avctx, oapve_cdesc_t *cdsc)
         }
     }
 
+    ret = validate_profile(avctx, cdsc->param[FRM_IDX].profile_idc);
+    if (ret < 0)
+        return ret;
+
+    avctx->profile = cdsc->param[FRM_IDX].profile_idc;
+
+
     return 0;
 }
 
@@ -454,12 +462,6 @@ static int handle_side_data(AVCodecContext *avctx, ApvEncContext *apv)
             return ret;
         }
     }
-
-    ret = validate_profile(avctx, cdsc->param[FRM_IDX].profile_idc);
-    if (ret < 0)
-        return ret;
-
-    avctx->profile = cdsc->param[FRM_IDX].profile_idc;
 
     return 0;
 }
