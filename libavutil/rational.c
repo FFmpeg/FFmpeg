@@ -100,7 +100,11 @@ AVRational av_add_q(AVRational b, AVRational c) {
 
 AVRational av_sub_q(AVRational b, AVRational c)
 {
-    return av_add_q(b, (AVRational) { -c.num, c.den });
+    av_reduce(&b.num, &b.den,
+               b.num * (int64_t) c.den -
+               c.num * (int64_t) b.den,
+               b.den * (int64_t) c.den, INT_MAX);
+    return b;
 }
 
 AVRational av_d2q(double d, int max)
