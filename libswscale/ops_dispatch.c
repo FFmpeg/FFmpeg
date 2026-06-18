@@ -511,19 +511,26 @@ static void align_pass(SwsPass *pass, int block_size, const int *over_rw,
     buf->width_pad = FFMAX(buf->width_pad, pad_max);
 }
 
-static int compile(SwsGraph *graph, const SwsOpBackend *backend,
-                   const SwsOpList *ops, int flags, SwsPass *input,
-                   SwsPass **output)
+/* Unchanging part of parameter list */
+typedef struct CompileArgs {
+    const SwsOpBackend *backend;
+    SwsGraph *graph;
+    int flags;
+} CompileArgs;
+
+static int compile_single(const CompileArgs *args, const SwsOpList *ops,
+                          SwsPass *input, SwsPass **output)
 {
+    SwsGraph *graph = args->graph;
     SwsContext *ctx = graph->ctx;
     SwsOpPass *p = av_mallocz(sizeof(*p));
     if (!p)
         return AVERROR(ENOMEM);
 
-    int ret = ff_sws_ops_compile(ctx, backend, ops, &p->comp);
+    int ret = ff_sws_ops_compile(ctx, args->backend, ops, &p->comp);
     if (ret < 0)
         goto fail;
-    else if (flags & SWS_OP_FLAG_DRY_RUN)
+    else if (args->flags & SWS_OP_FLAG_DRY_RUN)
         goto fail; /* nothing to do, just return */
 
     const SwsCompiledOp *comp = &p->comp;
@@ -687,7 +694,13 @@ int ff_sws_compile_pass(SwsGraph *graph, const SwsOpBackend *backend,
         goto out;
     }
 
-    ret = compile(graph, backend, ops, flags, input, output);
+    const CompileArgs args = {
+        .backend = backend,
+        .graph   = graph,
+        .flags   = flags,
+    };
+
+    ret = compile_single(&args, ops, input, output);
     if (ret != AVERROR(ENOTSUP))
         goto out;
 
@@ -706,7 +719,7 @@ int ff_sws_compile_pass(SwsGraph *graph, const SwsOpBackend *backend,
             goto out;
         }
 
-        ret = compile(graph, backend, ops, flags, prev, &prev);
+        ret = compile_single(&args, ops, prev, &prev);
         if (ret < 0) {
             ff_sws_op_list_free(&rest);
             goto out;
