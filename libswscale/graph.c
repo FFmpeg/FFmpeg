@@ -719,9 +719,12 @@ static void run_lut3d(const SwsFrame *out, const SwsFrame *in, int y, int h,
                        out->linesize[0], pass->width, h);
 }
 
-static int adapt_colors(SwsGraph *graph, SwsFormat src, SwsFormat dst,
-                        SwsPass *input, SwsPass **output)
+static int adapt_colors(SwsGraph *graph, const SwsFormat *src_fmt,
+                        const SwsFormat *dst_fmt, SwsPass *input,
+                        SwsPass **output)
 {
+    SwsFormat src = *src_fmt;
+    SwsFormat dst = *dst_fmt;
     enum AVPixelFormat fmt_in, fmt_out;
     SwsColorMap map = {0};
     SwsLut3D *lut;
@@ -790,7 +793,7 @@ static int init_passes(SwsGraph *graph)
     SwsPass *pass = NULL; /* read from main input image */
     int ret;
 
-    ret = adapt_colors(graph, src, dst, pass, &pass);
+    ret = adapt_colors(graph, &src, &dst, pass, &pass);
     if (ret < 0)
         return ret;
     src.format = pass ? pass->format : src.format;
