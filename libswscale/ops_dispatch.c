@@ -664,13 +664,6 @@ int ff_sws_compile_pass(SwsGraph *graph, const SwsOpBackend *backend,
     SwsOpList *ops = *pops;
     int ret = 0;
 
-    /* Check if the whole operation graph is an end-to-end no-op */
-    if (ff_sws_op_list_is_noop(ops)) {
-        if (output)
-            *output = input;
-        goto out;
-    }
-
     const SwsOp *write = ff_sws_op_list_output(ops);
     if (!write) {
         av_log(ctx, AV_LOG_ERROR, "Last operation must be SWS_OP_WRITE.\n");
@@ -684,6 +677,13 @@ int ff_sws_compile_pass(SwsGraph *graph, const SwsOpBackend *backend,
             goto out;
         av_log(ctx, AV_LOG_DEBUG, "Operation list after optimizing:\n");
         ff_sws_op_list_print(ctx, AV_LOG_DEBUG, AV_LOG_TRACE, ops);
+    }
+
+    /* Check if the whole operation graph is an end-to-end no-op */
+    if (ff_sws_op_list_is_noop(ops)) {
+        if (output)
+            *output = input;
+        goto out;
     }
 
     ret = compile(graph, backend, ops, input, output);
