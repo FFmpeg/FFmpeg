@@ -952,7 +952,8 @@ static int register_all_uops(SwsContext *ctx, void *graph, SwsOpList *ops)
     if (!copy)
         return AVERROR(ENOMEM);
 
-    return ff_sws_compile_pass(graph, &backend_uops, &copy, 0, NULL, NULL);
+    const int flags = SWS_OP_FLAG_DRY_RUN;
+    return ff_sws_compile_pass(graph, &backend_uops, &copy, flags, NULL, NULL);
 }
 
 static const SwsFlags flags[] = {

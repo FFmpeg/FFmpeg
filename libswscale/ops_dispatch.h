@@ -165,6 +165,9 @@ int ff_sws_ops_compile(SwsContext *ctx, const SwsOpBackend *backend,
 enum SwsOpCompileFlags {
     /* Automatically optimize the operations when compiling */
     SWS_OP_FLAG_OPTIMIZE = 1 << 0,
+
+    /* Discard the compiled op lists instead of generating passes */
+    SWS_OP_FLAG_DRY_RUN = 1 << 1,
 };
 
 /**
@@ -175,9 +178,8 @@ enum SwsOpCompileFlags {
  *            will be set to NULL, even on failure.
  * @param flags Set of SwsOpCompileFlags
  * @param input The input for the compiled passes. (Optional)
- * @param output The resulting final output pass will be stored here. If NULL,
- *               no output passes are created, and any compiled functions are
- *               instead immediately freed.
+ * @param output The resulting final output pass will be stored here.
+ *               Optional if using SWS_OP_FLAG_DRY_RUN.
  */
 int ff_sws_compile_pass(SwsGraph *graph, const SwsOpBackend *backend,
                         SwsOpList **ops, int flags, SwsPass *input,

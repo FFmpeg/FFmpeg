@@ -512,7 +512,8 @@ static void align_pass(SwsPass *pass, int block_size, const int *over_rw,
 }
 
 static int compile(SwsGraph *graph, const SwsOpBackend *backend,
-                   const SwsOpList *ops, SwsPass *input, SwsPass **output)
+                   const SwsOpList *ops, int flags, SwsPass *input,
+                   SwsPass **output)
 {
     SwsContext *ctx = graph->ctx;
     SwsOpPass *p = av_mallocz(sizeof(*p));
@@ -522,7 +523,7 @@ static int compile(SwsGraph *graph, const SwsOpBackend *backend,
     int ret = ff_sws_ops_compile(ctx, backend, ops, &p->comp);
     if (ret < 0)
         goto fail;
-    else if (!output)
+    else if (flags & SWS_OP_FLAG_DRY_RUN)
         goto fail; /* nothing to do, just return */
 
     const SwsCompiledOp *comp = &p->comp;
@@ -686,7 +687,7 @@ int ff_sws_compile_pass(SwsGraph *graph, const SwsOpBackend *backend,
         goto out;
     }
 
-    ret = compile(graph, backend, ops, input, output);
+    ret = compile(graph, backend, ops, flags, input, output);
     if (ret != AVERROR(ENOTSUP))
         goto out;
 
@@ -705,7 +706,7 @@ int ff_sws_compile_pass(SwsGraph *graph, const SwsOpBackend *backend,
             goto out;
         }
 
-        ret = compile(graph, backend, ops, prev, output ? &prev : NULL);
+        ret = compile(graph, backend, ops, flags, prev, &prev);
         if (ret < 0) {
             ff_sws_op_list_free(&rest);
             goto out;
