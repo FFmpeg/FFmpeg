@@ -364,11 +364,6 @@ void ff_sws_op_list_update_comps(SwsOpList *ops);
  */
 int ff_sws_op_list_optimize(SwsOpList *ops);
 
-enum SwsOpCompileFlags {
-    /* Automatically optimize the operations when compiling */
-    SWS_OP_FLAG_OPTIMIZE = 1 << 0,
-};
-
 /**
  * Helper function to enumerate over all possible (optimized) operation lists,
  * under the current set of options in `ctx`, and run the given callback on

@@ -162,6 +162,11 @@ extern const SwsOpBackend *const ff_sws_op_backends[];
 int ff_sws_ops_compile(SwsContext *ctx, const SwsOpBackend *backend,
                        const SwsOpList *ops, SwsCompiledOp *out);
 
+enum SwsOpCompileFlags {
+    /* Automatically optimize the operations when compiling */
+    SWS_OP_FLAG_OPTIMIZE = 1 << 0,
+};
+
 /**
  * Resolves an operation list to a graph pass. The last op must be a write.
  *
