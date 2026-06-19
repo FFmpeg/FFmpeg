@@ -74,6 +74,20 @@ typedef struct SwsFilterParams {
     int dst_size;
 
     /**
+     * The virtual output size. If zero, this is assumed to be the same as
+     * `dst_size`. Matters for e.g. chroma subsampling, where the the luma
+     * plane may be smaller than the dst_size. For example, a 99x99 input
+     * image has a chroma size of 50x50, which would be 100x100 after
+     * chroma upscaling; but is sampled only at 99x99 resolution. In this
+     * instance, dst_size is 99x99 and virtual_size is 100x100.
+     *
+     * The upscaling offset from this shift is implicit and does not need
+     * to be accounted for in `offset`. In other words, `offset` is taken
+     * relative to the virtual size, not the sampled size.
+     */
+    double virtual_size;
+
+    /**
      * The sample offset, in units of input pixels. This is added onto all
      * sampled coordinates directly, i.e. a value of offset = 1.0 would shift
      * the output to the top/left by one whole source pixel.
@@ -111,6 +125,7 @@ typedef struct SwsFilterWeights {
      */
     int src_size;
     int dst_size;
+    double virtual_size;
     double offset;
 
     /**
