@@ -393,12 +393,10 @@ retry:
         SwsOp *next = n + 1 < ops->num_ops ? &ops->ops[n + 1] : &dummy;
 
         /* common helper variable */
+        const SwsCompMask needed = ff_sws_comp_mask_needed(op);
         bool noop = true;
 
-        if (!SWS_OP_NEEDED(op, 0) && !SWS_OP_NEEDED(op, 1) &&
-            !SWS_OP_NEEDED(op, 2) && !SWS_OP_NEEDED(op, 3) &&
-            op->op != SWS_OP_WRITE)
-        {
+        if (!needed && op->op != SWS_OP_WRITE) {
             /* Remove any operation whose output is not needed */
             ff_sws_op_list_remove_at(ops, n, 1);
             goto retry;
