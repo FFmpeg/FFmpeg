@@ -194,7 +194,11 @@ int ff_sws_filter_generate(void *log, const SwsFilterParams *params,
     if (scaler == SWS_SCALE_AUTO)
         scaler = SWS_SCALE_BICUBIC;
 
-    const double ratio = (double) params->dst_size / params->src_size;
+    double virtual_size = params->virtual_size;
+    if (!virtual_size)
+        virtual_size = params->dst_size;
+
+    const double ratio = virtual_size / params->src_size;
     double stretch = 1.0;
     if (ratio < 1.0 && scaler != SWS_SCALE_POINT) {
         /* Widen filter for downscaling (anti-aliasing) */
@@ -257,6 +261,7 @@ int ff_sws_filter_generate(void *log, const SwsFilterParams *params,
     memcpy(filter->name, fun.name, sizeof(filter->name));
     filter->src_size = params->src_size;
     filter->dst_size = params->dst_size;
+    filter->virtual_size = virtual_size;
     filter->offset = params->offset;
     filter->filter_size = filter_size;
     if (filter->filter_size == 1)
