@@ -338,6 +338,7 @@ OBJS-$(CONFIG_IPU_DEMUXER)               += ipudec.o rawdec.o
 OBJS-$(CONFIG_IRCAM_DEMUXER)             += ircamdec.o ircam.o pcm.o
 OBJS-$(CONFIG_IRCAM_MUXER)               += ircamenc.o ircam.o rawenc.o
 OBJS-$(CONFIG_ISS_DEMUXER)               += iss.o
+OBJS-$(CONFIG_ITERM2_MUXER)              += iterm2enc.o
 OBJS-$(CONFIG_IV8_DEMUXER)               += iv8.o
 OBJS-$(CONFIG_IVF_DEMUXER)               += ivfdec.o
 OBJS-$(CONFIG_IVF_MUXER)                 += ivfenc.o

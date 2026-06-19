@@ -2722,6 +2722,58 @@ computer-generated compositions.
 
 This muxer accepts a single audio stream containing PCM data.
 
+@section iterm2
+iTerm2 inline image protocol muxer.
+
+This muxer writes video frames as OSC 1337 inline images for display in
+terminals that support the iTerm2 image protocol. Use @option{-re} to limit
+the output rate to the source framerate; without it, frames are emitted as
+fast as they are encoded, which is usually not desired for live display.
+
+Frames are sent with the multipart form of the protocol, which splits each
+image across several short control sequences. This avoids the per-sequence
+size limit that otherwise discards large frames, and requires iTerm2 3.5 or
+newer.
+
+The output is a self-contained byte stream and can be redirected to a file.
+Replaying the file with @command{cat} displays the images in the terminal.
+
+@subsection Options
+@table @option
+@item display_width @var{size}
+Set the displayed image width. @var{size} can be @samp{auto}, @var{N} terminal
+cells, @var{N}px pixels, or @var{N}% of the terminal width. When unset, the
+terminal derives the width from the image.
+
+@item display_height @var{size}
+Set the displayed image height. @var{size} uses the same syntax as
+@option{display_width}. When unset, the terminal derives the height from the
+image.
+
+@item keep_aspect @var{bool}
+Preserve the input aspect ratio when scaling. Default is enabled.
+
+@item tmux @var{bool}
+Wrap image data in tmux DCS passthrough. This requires a tmux version whose
+passthrough sequence size limit is large enough for image data, with
+passthrough enabled via @command{tmux set -g allow-passthrough on}. Default is
+disabled.
+@end table
+
+@subsection Examples
+
+Display a video in an iTerm2 terminal:
+@example
+ffmpeg -re -i input.mp4 -f iterm2 -
+@end example
+
+Scale the displayed image to 40 terminal cells tall. Inside tmux, enable
+passthrough first with @command{tmux set -g allow-passthrough on}, then add
+@option{tmux}:
+@example
+ffmpeg -re -i input.mp4 -f iterm2 -display_height 40 -tmux 1 -
+@end example
+
 @section ivf
 On2 IVF muxer.
 
