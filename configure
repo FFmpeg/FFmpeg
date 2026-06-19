@@ -2656,6 +2656,7 @@ TOOLCHAIN_FEATURES="
     symver_asm_label
     symver_gnu_asm
     vfp_args
+    x86_32_7regs
     xform_asm
     xmm_clobbers
 "
@@ -6849,6 +6850,14 @@ EOF
     check_inline_asm ebx_available '""::"b"(0)' &&
         check_inline_asm ebx_available '"":::"%ebx"'
 
+    # check whether 7 registers are available on x86-32
+    # Since https://github.com/llvm/llvm-project/commit/0d471b3f64d3116bd57c79d872f7384fff80daa5,
+    # Clang can save/restore EBP around clobber-only asm, so the EBP
+    # crash probe alone can be a false positive for 7-register asm.
+    disable x86_32_7regs
+    enabled_all x86_32 ebx_available ebp_available &&
+        check_inline_asm x86_32_7regs '"" :: "r"(0), "r"(1), "r"(2), "r"(3), "g"(4), "r"(5) : "%eax", "%edx"'
+
     # check whether xmm clobbers are supported
     check_inline_asm xmm_clobbers '"":::"%xmm0"'
 
@@ -8508,6 +8517,9 @@ if enabled x86; then
     echo "CMOV is fast              ${fast_cmov-no}"
     echo "EBX available             ${ebx_available-no}"
     echo "EBP available             ${ebp_available-no}"
+fi
+if enabled x86_32; then
+    echo "7 registers available     ${x86_32_7regs-no}"
 fi
 if enabled aarch64; then
     echo "NEON enabled              ${neon-no}"
