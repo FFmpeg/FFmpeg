@@ -388,6 +388,7 @@ SwsFormat ff_fmt_from_frame(const AVFrame *frame, int field)
     if (frame->flags & AV_FRAME_FLAG_INTERLACED) {
         fmt.height = (fmt.height + (field == FIELD_TOP)) >> 1;
         fmt.interlaced = 1;
+        fmt.field = field;
     }
 
     /* Set luminance and gamut information */

@@ -77,6 +77,7 @@ static inline void ff_color_update_dynamic(SwsColor *dst, const SwsColor *src)
 typedef struct SwsFormat {
     int width, height;
     int interlaced;
+    int field;
     enum AVPixelFormat format;
     enum AVPixelFormat hw_format;
     enum AVColorRange range;
@@ -126,6 +127,7 @@ static inline int ff_fmt_equal(const SwsFormat *fmt1, const SwsFormat *fmt2)
     return fmt1->width      == fmt2->width      &&
            fmt1->height     == fmt2->height     &&
            fmt1->interlaced == fmt2->interlaced &&
+           fmt1->field      == fmt2->field      &&
            fmt1->format     == fmt2->format     &&
            fmt1->range      == fmt2->range      &&
            fmt1->csp        == fmt2->csp        &&
