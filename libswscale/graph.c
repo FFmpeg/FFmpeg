@@ -405,7 +405,7 @@ static void get_chroma_pos(SwsGraph *graph, int *h_chr_pos, int *v_chr_pos,
          * For 4x vertical subsampling (v_sub == 2), they are only placed
          * next to every *other* even row, so we need to shift by three luma
          * rows to get to the chroma sample. */
-        if (graph->field == FIELD_BOTTOM)
+        if (fmt->field == FIELD_BOTTOM)
             y_pos += (256 << sub_y) - 256;
 
         /* Luma row distance is doubled for fields, so halve offsets */
@@ -846,7 +846,7 @@ static void graph_uninit(SwsGraph *graph)
 }
 
 int ff_sws_graph_init(SwsGraph *graph, SwsContext *ctx, const SwsFormat *dst,
-                      const SwsFormat *src, int field)
+                      const SwsFormat *src)
 {
     int ret;
     if (graph->ctx) {
@@ -857,8 +857,9 @@ int ff_sws_graph_init(SwsGraph *graph, SwsContext *ctx, const SwsFormat *dst,
     graph->ctx = ctx;
     graph->src = *src;
     graph->dst = *dst;
-    graph->field = field;
     graph->opts_copy = *ctx;
+    av_assert0(src->interlaced == dst->interlaced);
+    av_assert0(src->field      == dst->field);
 
     if (ctx->threads == 1) {
         graph->num_threads = 1;
@@ -895,13 +896,13 @@ error:
 }
 
 int ff_sws_graph_create(SwsContext *ctx, const SwsFormat *dst, const SwsFormat *src,
-                        int field, SwsGraph **out_graph)
+                        SwsGraph **out_graph)
 {
     SwsGraph *graph = ff_sws_graph_alloc();
     if (!graph)
         return AVERROR(ENOMEM);
 
-    int ret = ff_sws_graph_init(graph, ctx, dst, src, field);
+    int ret = ff_sws_graph_init(graph, ctx, dst, src);
     if (ret < 0) {
         ff_sws_graph_free(&graph);
         return ret;
@@ -950,7 +951,7 @@ static int opts_equal(const SwsContext *c1, const SwsContext *c2)
 }
 
 int ff_sws_graph_reinit(SwsGraph *graph, SwsContext *ctx, const SwsFormat *dst,
-                        const SwsFormat *src, int field)
+                        const SwsFormat *src)
 {
     if (ff_fmt_equal(&graph->src, src) && ff_fmt_equal(&graph->dst, dst) &&
         opts_equal(ctx, &graph->opts_copy))
@@ -960,7 +961,7 @@ int ff_sws_graph_reinit(SwsGraph *graph, SwsContext *ctx, const SwsFormat *dst,
     }
 
     graph_uninit(graph);
-    return ff_sws_graph_init(graph, ctx, dst, src, field);
+    return ff_sws_graph_init(graph, ctx, dst, src);
 }
 
 void ff_sws_graph_update_metadata(SwsGraph *graph, const SwsColor *color)
@@ -971,16 +972,17 @@ void ff_sws_graph_update_metadata(SwsGraph *graph, const SwsColor *color)
     ff_color_update_dynamic(&graph->src.color, color);
 }
 
-static void get_field(SwsGraph *graph, const AVFrame *avframe, SwsFrame *frame)
+static void get_field(SwsGraph *graph, const SwsFormat *fmt,
+                      const AVFrame *avframe, SwsFrame *frame)
 {
     ff_sws_frame_from_avframe(frame, avframe);
 
     if (!(avframe->flags & AV_FRAME_FLAG_INTERLACED)) {
-        av_assert1(!graph->field);
+        av_assert1(!fmt->field);
         return;
     }
 
-    if (graph->field == FIELD_BOTTOM) {
+    if (fmt->field == FIELD_BOTTOM) {
         /* Odd rows, offset by one line */
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
         for (int i = 0; i < 4; i++) {
@@ -995,7 +997,7 @@ static void get_field(SwsGraph *graph, const AVFrame *avframe, SwsFrame *frame)
     for (int i = 0; i < 4; i++)
         frame->linesize[i] <<= 1;
 
-    frame->height = (frame->height + (graph->field == FIELD_TOP)) >> 1;
+    frame->height = (frame->height + (fmt->field == FIELD_TOP)) >> 1;
 }
 
 int ff_sws_graph_run(SwsGraph *graph, const AVFrame *dst, const AVFrame *src)
@@ -1004,8 +1006,8 @@ int ff_sws_graph_run(SwsGraph *graph, const AVFrame *dst, const AVFrame *src)
     av_assert0(src->format == graph->src.hw_format || src->format == graph->src.format);
 
     SwsFrame src_field, dst_field;
-    get_field(graph, dst, &dst_field);
-    get_field(graph, src, &src_field);
+    get_field(graph, &graph->dst, dst, &dst_field);
+    get_field(graph, &graph->src, src, &src_field);
 
     for (int i = 0; i < graph->num_passes; i++) {
         const SwsPass *pass = graph->passes[i];

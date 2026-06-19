@@ -143,7 +143,6 @@ typedef struct SwsGraph {
      * Currently active format and processing parameters.
      */
     SwsFormat src, dst;
-    int field;
 
     /**
      * Temporary execution state inside ff_sws_graph_run(); used to pass
@@ -166,13 +165,13 @@ SwsGraph *ff_sws_graph_alloc(void);
  * negative error.
  */
 int ff_sws_graph_init(SwsGraph *graph, SwsContext *ctx, const SwsFormat *dst,
-                      const SwsFormat *src, int field);
+                      const SwsFormat *src);
 
 /**
  * Allocate and initialize the filter graph. Returns 0 or a negative error.
  */
 int ff_sws_graph_create(SwsContext *ctx, const SwsFormat *dst, const SwsFormat *src,
-                        int field, SwsGraph **out_graph);
+                        SwsGraph **out_graph);
 
 
 /**
@@ -223,7 +222,7 @@ void ff_sws_graph_update_metadata(SwsGraph *graph, const SwsColor *color);
  * will have no effect.
  */
 int ff_sws_graph_reinit(SwsGraph *graph, SwsContext *ctx, const SwsFormat *dst,
-                        const SwsFormat *src, int field);
+                        const SwsFormat *src);
 
 /**
  * Dispatch the filter graph on a single field of the given frames. Internally

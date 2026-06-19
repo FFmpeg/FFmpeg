@@ -153,7 +153,7 @@ static void process(const SwsFrame *dst, const SwsFrame *src, int y, int h,
     });
 
     if (p->interlaced) {
-        uint32_t field = pass->graph ? pass->graph->field : 0;
+        uint32_t field = pass->graph ? pass->graph->dst.field : 0;
         ff_vk_shader_update_push_const(&p->s->vkctx, ec, &p->shd,
                                        VK_SHADER_STAGE_COMPUTE_BIT,
                                        0, sizeof(field), &field);
