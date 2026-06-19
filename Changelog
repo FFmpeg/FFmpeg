@@ -2,6 +2,16 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 7.1.5:
+ tests/checkasm/sw_rgb: don't write random data past the end of the buffer
+ swscale/alphablend: don't overread alpha plane on subsampled odd size
+ avcodec/vp8: Maintain consistency of frame pointers
+ avcodec/jpeg2000dec: clear array length when freeing it
+ av1dec: Don't crash if decoding of some frames have failed
+ avcodec/tdsc: propagate max_pixels to the JPEG tile decoder
+ avcodec/imm5: propagate max_pixels to the H264/HEVC sub-decoders
+ avcodec/cri: propagate max_pixels to the JPEG tile decoder
+ swscale: Fix out-of-bounds write errors in yuv2rgb_lasx.c file.
+ update for 7.1.5
  avformat/mov: fix crash when stsz_sample_size is zero and sample_sizes is null
  avformat/dashdec: Fail with any inner stream count being 0
  swscale/x86/rgb_2_rgb: fix uyvytoyuv422 overwrite on odd width
