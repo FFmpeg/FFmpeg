@@ -1512,7 +1512,7 @@ int sws_frame_setup(SwsContext *ctx, const AVFrame *dst, const AVFrame *src)
 
         src_ok = ff_test_fmt(backends, &src_fmt, 0);
         dst_ok = ff_test_fmt(backends, &dst_fmt, 1);
-        if ((!src_ok || !dst_ok) && !ff_props_equal(&src_fmt, &dst_fmt)) {
+        if ((!src_ok || !dst_ok) && !ff_fmt_equal(&src_fmt, &dst_fmt)) {
             err_msg = src_ok ? "Unsupported output" : "Unsupported input";
             ret = AVERROR(ENOTSUP);
             goto fail;
