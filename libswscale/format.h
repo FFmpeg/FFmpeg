@@ -161,6 +161,13 @@ int ff_test_fmt(SwsBackend backends, const SwsFormat *fmt, int output);
 /* Returns true if the formats are incomplete, false otherwise */
 bool ff_infer_colors(SwsColor *src, SwsColor *dst);
 
+/**
+ * Wrapper around av_chroma_location_enum_to_pos() that accounts for
+ * the per-field offset introduced by interlacing.
+ */
+void ff_sws_chroma_pos(const SwsFormat *fmt, bool *incomplete,
+                       int *out_xpos, int *out_ypos);
+
 typedef struct SwsOpList SwsOpList;
 typedef enum SwsPixelType SwsPixelType;
 
