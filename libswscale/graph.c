@@ -201,6 +201,10 @@ int ff_sws_graph_add_pass(SwsGraph *graph, enum AVPixelFormat fmt,
         goto fail;
     }
 
+    pass->output->height = pass->height;
+    pass->output->width  = pass->width;
+    pass->output->width_align = 1;
+
     if (!align) {
         pass->slice_h = pass->height;
         pass->num_slices = 1;
@@ -209,11 +213,6 @@ int ff_sws_graph_add_pass(SwsGraph *graph, enum AVPixelFormat fmt,
         pass->slice_h = FFALIGN(pass->slice_h, align);
         pass->num_slices = (pass->height + pass->slice_h - 1) / pass->slice_h;
     }
-
-    /* Align output buffer to include extra slice padding */
-    pass->output->height = pass->slice_h * pass->num_slices;
-    pass->output->width  = pass->width;
-    pass->output->width_align = 1;
 
     ret = av_dynarray_add_nofree(&graph->passes, &graph->num_passes, pass);
     if (ret < 0)
