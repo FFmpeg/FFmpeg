@@ -691,8 +691,9 @@ static inline int fmt_is_supported_by_hw(enum AVPixelFormat fmt)
 
 static inline int fmt_disabled(const struct options *opts, enum AVPixelFormat fmt)
 {
+    const int scaler_sub = opts->scaler_sub ? opts->scaler_sub : opts->scaler;
     return (hw_device_constr && !fmt_is_supported_by_hw(fmt)) ||
-           (opts->scaler < 0 && fmt_is_subsampled(fmt));
+           (scaler_sub < 0 && fmt_is_subsampled(fmt));
 }
 
 static inline int test_formats(const struct options *opts,
