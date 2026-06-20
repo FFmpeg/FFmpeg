@@ -681,10 +681,24 @@ void ff_sws_frame_from_avframe(SwsFrame *dst, const AVFrame *src)
 
 #if CONFIG_UNSTABLE
 
+/**
+ * Returns the underlying descriptor for fake formats like PAL8 whose
+ * descriptors alone do not fully describe the pixel data.
+ */
+static inline const AVPixFmtDescriptor *fmt_desc_decoded(enum AVPixelFormat fmt)
+{
+    if (fmt == AV_PIX_FMT_PAL8)
+        return av_pix_fmt_desc_get(AV_PIX_FMT_RGB32);
+
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
+    av_assert0(!(desc->flags & AV_PIX_FMT_FLAG_PAL));
+    return desc;
+}
+
 /* Returns the type suitable for a pixel after fully decoding/unpacking it */
 static SwsPixelType fmt_pixel_type(enum AVPixelFormat fmt)
 {
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
+    const AVPixFmtDescriptor *desc = fmt_desc_decoded(fmt);
     const int bits = FFALIGN(desc->comp[0].depth, 8);
     if (desc->flags & AV_PIX_FMT_FLAG_FLOAT) {
         switch (bits) {
@@ -824,6 +838,18 @@ static FmtInfo fmt_info_irregular(enum AVPixelFormat fmt)
     case AV_PIX_FMT_XV48LE:
     case AV_PIX_FMT_XV48BE:
         return PACKED_FMT(UYVA, 4);
+
+    /* Miscellaneous irregular formats */
+    case AV_PIX_FMT_PAL8:
+        return (FmtInfo) {
+            .rw = { .elems = 4, .mode = SWS_RW_PALETTE },
+            /* PAL8 is explicitly defined as endian-dependent */
+        #if AV_HAVE_BIGENDIAN
+            .swizzle = ARGB,
+        #else
+            .swizzle = BGRA,
+        #endif
+        };
     }
 
     return (FmtInfo) {0};
@@ -965,8 +991,9 @@ static void swizzle_inv(SwsSwizzleOp *swiz)
  */
 static SwsClearOp fmt_clear(const SwsFormat *fmt)
 {
-    const bool has_chroma = fmt->desc->nb_components >= 3;
-    const bool has_alpha  = fmt->desc->flags & AV_PIX_FMT_FLAG_ALPHA;
+    const AVPixFmtDescriptor *desc = fmt_desc_decoded(fmt->format);
+    const bool has_chroma = desc->nb_components >= 3;
+    const bool has_alpha  = desc->flags & AV_PIX_FMT_FLAG_ALPHA;
 
     SwsClearOp c = {0};
     if (!has_chroma) {
@@ -990,7 +1017,7 @@ static SwsClearOp fmt_clear(const SwsFormat *fmt)
 
 int ff_sws_decode_pixfmt(SwsOpList *ops, const SwsFormat *fmt)
 {
-    const AVPixFmtDescriptor *desc = fmt->desc;
+    const AVPixFmtDescriptor *desc = fmt_desc_decoded(fmt->format);
     SwsPixelType pixel_type, raw_type;
     SwsReadWriteOp rw_op;
     SwsSwizzleOp swizzle;
@@ -1079,7 +1106,7 @@ int ff_sws_decode_pixfmt(SwsOpList *ops, const SwsFormat *fmt)
 
 int ff_sws_encode_pixfmt(SwsOpList *ops, const SwsFormat *fmt)
 {
-    const AVPixFmtDescriptor *desc = fmt->desc;
+    const AVPixFmtDescriptor *desc = fmt_desc_decoded(fmt->format);
     SwsPixelType pixel_type, raw_type;
     SwsReadWriteOp rw_op;
     SwsSwizzleOp swizzle;
@@ -1162,23 +1189,24 @@ static SwsLinearOp fmt_encode_range(const SwsFormat *fmt, bool *incomplete)
         { Q0, Q0, Q0, Q1, Q0 },
     }};
 
-    const int depth0 = fmt->desc->comp[0].depth;
-    const int depth1 = fmt->desc->comp[1].depth;
-    const int depth2 = fmt->desc->comp[2].depth;
-    const int depth3 = fmt->desc->comp[3].depth;
+    const AVPixFmtDescriptor *desc = fmt_desc_decoded(fmt->format);
+    const int depth0 = desc->comp[0].depth;
+    const int depth1 = desc->comp[1].depth;
+    const int depth2 = desc->comp[2].depth;
+    const int depth3 = desc->comp[3].depth;
 
-    if (fmt->desc->flags & AV_PIX_FMT_FLAG_FLOAT)
+    if (desc->flags & AV_PIX_FMT_FLAG_FLOAT)
         return c; /* floats are directly output as-is */
 
     av_assert0(depth0 < 32 && depth1 < 32 && depth2 < 32 && depth3 < 32);
-    if (fmt->csp == AVCOL_SPC_RGB || (fmt->desc->flags & AV_PIX_FMT_FLAG_XYZ)) {
+    if (fmt->csp == AVCOL_SPC_RGB || (desc->flags & AV_PIX_FMT_FLAG_XYZ)) {
         c.m[0][0] = Q((1 << depth0) - 1);
         c.m[1][1] = Q((1 << depth1) - 1);
         c.m[2][2] = Q((1 << depth2) - 1);
     } else if (fmt->range == AVCOL_RANGE_JPEG) {
         /* Full range YUV */
         c.m[0][0] = Q((1 << depth0) - 1);
-        if (fmt->desc->nb_components >= 3) {
+        if (desc->nb_components >= 3) {
             /* This follows the ITU-R convention, which is slightly different
              * from the JFIF convention. */
             c.m[1][1] = Q((1 << depth1) - 1);
@@ -1192,7 +1220,7 @@ static SwsLinearOp fmt_encode_range(const SwsFormat *fmt, bool *incomplete)
             *incomplete = true;
         c.m[0][0] = Q(219 << (depth0 - 8));
         c.m[0][4] = Q( 16 << (depth0 - 8));
-        if (fmt->desc->nb_components >= 3) {
+        if (desc->nb_components >= 3) {
             c.m[1][1] = Q(224 << (depth1 - 8));
             c.m[2][2] = Q(224 << (depth2 - 8));
             c.m[1][4] = Q(128 << (depth1 - 8));
@@ -1200,8 +1228,8 @@ static SwsLinearOp fmt_encode_range(const SwsFormat *fmt, bool *incomplete)
         }
     }
 
-    if (fmt->desc->flags & AV_PIX_FMT_FLAG_ALPHA) {
-        const bool is_ya = fmt->desc->nb_components == 2;
+    if (desc->flags & AV_PIX_FMT_FLAG_ALPHA) {
+        const bool is_ya = desc->nb_components == 2;
         c.m[3][3] = Q((1 << (is_ya ? depth1 : depth3)) - 1);
     }
 
@@ -1351,7 +1379,8 @@ static int fmt_dither(SwsContext *ctx, SwsOpList *ops,
             dither.y_offset[i] = offsets_16x16[i];
         }
 
-        if (src->desc->nb_components < 3 && bpc >= 8) {
+        const AVPixFmtDescriptor *src_desc = fmt_desc_decoded(src->format);
+        if (src_desc->nb_components < 3 && bpc >= 8) {
             /**
              * For high-bit-depth sources without chroma, use same matrix
              * offset for all color channels. This prevents introducing color

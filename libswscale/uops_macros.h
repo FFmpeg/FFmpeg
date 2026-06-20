@@ -75,8 +75,10 @@
     MACRO(__VA_ARGS__, u8_read_bit_x                           , SWS_PIXEL_U8 , SWS_UOP_READ_BIT        , 0x1)
 #define SWS_FOR_STRUCT_U8_READ_BIT(MACRO, ...) \
     MACRO(__VA_ARGS__, u8_read_bit_x                           , .type = SWS_PIXEL_U8 , .uop = SWS_UOP_READ_BIT        , .mask = 0x1)
-#define SWS_FOR_U8_READ_PALETTE(MACRO, ...)
-#define SWS_FOR_STRUCT_U8_READ_PALETTE(MACRO, ...)
+#define SWS_FOR_U8_READ_PALETTE(MACRO, ...) \
+    MACRO(__VA_ARGS__, u8_read_palette_xyzw                    , SWS_PIXEL_U8 , SWS_UOP_READ_PALETTE    , 0xf)
+#define SWS_FOR_STRUCT_U8_READ_PALETTE(MACRO, ...) \
+    MACRO(__VA_ARGS__, u8_read_palette_xyzw                    , .type = SWS_PIXEL_U8 , .uop = SWS_UOP_READ_PALETTE    , .mask = 0xf)
 #define SWS_FOR_U8_WRITE_PLANAR(MACRO, ...) \
     MACRO(__VA_ARGS__, u8_write_planar_x                       , SWS_PIXEL_U8 , SWS_UOP_WRITE_PLANAR    , 0x1) \
     MACRO(__VA_ARGS__, u8_write_planar_xy                      , SWS_PIXEL_U8 , SWS_UOP_WRITE_PLANAR    , 0x3) \
