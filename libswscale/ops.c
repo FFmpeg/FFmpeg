@@ -361,7 +361,6 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
         SwsOp *op = &ops->ops[n];
 
         switch (op->op) {
-        case SWS_OP_READ:
         case SWS_OP_LINEAR:
         case SWS_OP_DITHER:
         case SWS_OP_SWAP_BYTES:
@@ -392,11 +391,6 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
                 op->comps.flags[i] = ops->comps_src.flags[idx];
                 op->comps.min[i]   = ops->comps_src.min[idx];
                 op->comps.max[i]   = ops->comps_src.max[idx];
-            }
-            for (int i = op->rw.elems; i < 4; i++) {
-                op->comps.flags[i] = prev.flags[i];
-                op->comps.min[i]   = prev.min[i];
-                op->comps.max[i]   = prev.max[i];
             }
 
             if (op->rw.filter.op) {
