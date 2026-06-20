@@ -1005,8 +1005,11 @@ int ff_sws_op_list_subpass(SwsOpList *ops1, SwsOpList **out_rest)
     ops1->dst = ops2->src;
 
     for (int i = 0; i < nb_planes; i++) {
+        const int idx = swiz_wr.in[i];
         ops1->plane_dst[i] = ops2->plane_src[i] = i;
-        ops2->comps_src.flags[i] = prev->comps.flags[swiz_wr.in[i]];
+        ops2->comps_src.flags[i]  = prev->comps.flags[idx];
+        ops2->comps_src.min[i]    = prev->comps.min[idx];
+        ops2->comps_src.max[i]    = prev->comps.max[idx];
     }
 
     ff_sws_op_list_remove_at(ops1, idx, ops1->num_ops - idx);
