@@ -305,32 +305,19 @@ void ff_sws_apply_op_q(const SwsOp *op, AVRational x[4])
     av_unreachable("Invalid operation type!");
 }
 
-/* merge_comp_flags() forms a monoid with SWS_COMP_IDENTITY as the null element */
 enum {
-    SWS_COMP_IDENTITY = SWS_COMP_ZERO | SWS_COMP_EXACT,
+    SWS_COMP_IDENTITY = SWS_COMP_ZERO | SWS_COMP_EXACT |
+                        SWS_COMP_COPY | SWS_COMP_CONST,
+
+    SWS_COMP_DIRTY = ~(SWS_COMP_COPY | SWS_COMP_CONST),
 };
 
+/* merge_comp_flags() forms a monoid with SWS_COMP_IDENTITY as the null element */
 static SwsCompFlags merge_comp_flags(SwsCompFlags a, SwsCompFlags b)
 {
     const SwsCompFlags flags_or  = SWS_COMP_GARBAGE;
     const SwsCompFlags flags_and = SWS_COMP_IDENTITY;
     return ((a & b) & flags_and) | ((a | b) & flags_or);
-}
-
-/* Linearly propagate flags per component */
-static void propagate_flags(SwsOp *op, const SwsComps *prev)
-{
-    for (int i = 0; i < 4; i++)
-        op->comps.flags[i] = prev->flags[i];
-}
-
-/* Clear undefined values in dst with src */
-static void clear_undefined_values(AVRational dst[4], const AVRational src[4])
-{
-    for (int i = 0; i < 4; i++) {
-        if (dst[i].den == 0)
-            dst[i] = src[i];
-    }
 }
 
 static void apply_filter_weights(SwsComps *comps, const SwsComps *prev,
@@ -339,7 +326,7 @@ static void apply_filter_weights(SwsComps *comps, const SwsComps *prev,
     const AVRational posw = { weights->sum_positive, SWS_FILTER_SCALE };
     const AVRational negw = { weights->sum_negative, SWS_FILTER_SCALE };
     for (int i = 0; i < 4; i++) {
-        comps->flags[i] = prev->flags[i];
+        comps->flags[i] = prev->flags[i] & SWS_COMP_DIRTY;
         /* Only point sampling preserves exactness */
         if (weights->filter_size != 1)
             comps->flags[i] &= ~SWS_COMP_EXACT;
@@ -391,9 +378,19 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
                 }
 
                 av_assert0(!(ops->comps_src.flags[idx] & SWS_COMP_GARBAGE));
-                op->comps.flags[i] = ops->comps_src.flags[idx];
+                op->comps.flags[i] = ops->comps_src.flags[idx] & SWS_COMP_DIRTY;
                 op->comps.min[i]   = ops->comps_src.min[idx];
                 op->comps.max[i]   = ops->comps_src.max[idx];
+
+                /**
+                 * Don't mark packed or fractional reads as a copy, because the
+                 * read operation implicitly unpacks the data into separate
+                 * components. The only case in which op lists involving such
+                 * reads can be refcopies is in the case of a true noop, which
+                 * is already covered by the no-op check.
+                 */
+                if (op->rw.mode == SWS_RW_PLANAR && !op->rw.frac)
+                    op->comps.flags[i] |= SWS_COMP_COPY;
             }
 
             if (op->rw.filter.op) {
@@ -403,7 +400,7 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
             break;
         case SWS_OP_SWAP_BYTES:
             for (int i = 0; i < 4; i++) {
-                op->comps.flags[i] = prev.flags[i] ^ SWS_COMP_SWAPPED;
+                op->comps.flags[i] = (prev.flags[i] ^ SWS_COMP_SWAPPED) & SWS_COMP_DIRTY;
                 op->comps.min[i]   = prev.min[i];
                 op->comps.max[i]   = prev.max[i];
             }
@@ -411,27 +408,35 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
         case SWS_OP_WRITE:
             for (int i = 0; i < op->rw.elems; i++)
                 av_assert1(!(prev.flags[i] & SWS_COMP_GARBAGE));
-            av_fallthrough;
+            for (int i = 0; i < 4; i++)
+                op->comps.flags[i] = prev.flags[i];
+            break;
         case SWS_OP_LSHIFT:
         case SWS_OP_RSHIFT:
-            propagate_flags(op, &prev);
+            for (int i = 0; i < 4; i++)
+                op->comps.flags[i] = prev.flags[i] & SWS_COMP_DIRTY;
             break;
         case SWS_OP_MIN:
-            propagate_flags(op, &prev);
-            clear_undefined_values(op->comps.max, op->clamp.limit);
+        case SWS_OP_MAX: {
+            AVRational *bound = op->op == SWS_OP_MIN ? op->comps.max : op->comps.min;
+            for (int i = 0; i < 4; i++) {
+                op->comps.flags[i] = prev.flags[i];
+                if (op->clamp.limit[i].den)
+                    op->comps.flags[i] &= SWS_COMP_DIRTY;
+                if (!bound[i].den) /* reset undefined bounds to known range */
+                    bound[i] = op->clamp.limit[i];
+            }
             break;
-        case SWS_OP_MAX:
-            propagate_flags(op, &prev);
-            clear_undefined_values(op->comps.min, op->clamp.limit);
-            break;
+        }
         case SWS_OP_DITHER:
             for (int i = 0; i < 4; i++) {
-                op->comps.min[i] = prev.min[i];
-                op->comps.max[i] = prev.max[i];
+                op->comps.flags[i] = prev.flags[i];
+                op->comps.min[i]   = prev.min[i];
+                op->comps.max[i]   = prev.max[i];
                 if (op->dither.y_offset[i] < 0)
                     continue;
                 /* Strip zero flag because of the nonzero dithering offset */
-                op->comps.flags[i] = prev.flags[i] & ~SWS_COMP_ZERO;
+                op->comps.flags[i] &= ~SWS_COMP_ZERO & SWS_COMP_DIRTY;
                 op->comps.min[i] = av_add_q(op->comps.min[i], op->dither.min);
                 op->comps.max[i] = av_add_q(op->comps.max[i], op->dither.max);
             }
@@ -441,7 +446,7 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
                 const int pattern = op->pack.pattern[i];
                 if (pattern) {
                     av_assert1(pattern < 32);
-                    op->comps.flags[i] = prev.flags[0];
+                    op->comps.flags[i] = prev.flags[0] & SWS_COMP_DIRTY;
                     op->comps.min[i]   = Q(0);
                     op->comps.max[i]   = Q((1ULL << pattern) - 1);
                 } else
@@ -456,13 +461,13 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
                 if (i > 0) /* clear remaining comps for sanity */
                     op->comps.flags[i] = SWS_COMP_GARBAGE;
             }
-            op->comps.flags[0] = flags;
+            op->comps.flags[0] = flags & SWS_COMP_DIRTY;
             break;
         }
         case SWS_OP_CLEAR:
             for (int i = 0; i < 4; i++) {
                 if (SWS_COMP_TEST(op->clear.mask, i)) {
-                    op->comps.flags[i] = 0;
+                    op->comps.flags[i] = SWS_COMP_CONST;
                     if (op->clear.value[i].num == 0)
                         op->comps.flags[i] |= SWS_COMP_ZERO;
                     if (op->clear.value[i].den == 1)
@@ -479,6 +484,8 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
         case SWS_OP_CONVERT:
             for (int i = 0; i < 4; i++) {
                 op->comps.flags[i] = prev.flags[i];
+                if (!(prev.flags[i] & SWS_COMP_EXACT) || op->convert.expand)
+                    op->comps.flags[i] &= SWS_COMP_DIRTY;
                 if (ff_sws_pixel_type_is_int(op->convert.to))
                     op->comps.flags[i] |= SWS_COMP_EXACT;
             }
@@ -487,6 +494,7 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
             for (int i = 0; i < 4; i++) {
                 SwsCompFlags flags = SWS_COMP_IDENTITY;
                 AVRational min = Q(0), max = Q(0);
+                bool first = true;
                 for (int j = 0; j < 4; j++) {
                     const AVRational k = op->lin.m[i][j];
                     AVRational mink = av_mul_q(prev.min[j], k);
@@ -499,10 +507,13 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
                             FFSWAP(AVRational, mink, maxk);
                         min = av_add_q(min, mink);
                         max = av_add_q(max, maxk);
+                        if (!first || av_cmp_q(k, Q(1)))
+                            flags &= SWS_COMP_DIRTY;
+                        first = false;
                     }
                 }
                 if (op->lin.m[i][4].num) { /* nonzero offset */
-                    flags &= ~SWS_COMP_ZERO;
+                    flags &= ~SWS_COMP_ZERO & SWS_COMP_DIRTY;
                     if (op->lin.m[i][4].den != 1) /* fractional offset */
                         flags &= ~SWS_COMP_EXACT;
                     min = av_add_q(min, op->lin.m[i][4]);
@@ -515,7 +526,7 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
             break;
         case SWS_OP_SCALE:
             for (int i = 0; i < 4; i++) {
-                op->comps.flags[i] = prev.flags[i];
+                op->comps.flags[i] = prev.flags[i] & SWS_COMP_DIRTY;
                 if (op->scale.factor.den != 1) /* fractional scale */
                     op->comps.flags[i] &= ~SWS_COMP_EXACT;
                 if (op->scale.factor.num < 0)
@@ -831,6 +842,10 @@ static char describe_comp_flags(SwsCompFlags flags)
         return '0';
     else if (flags & SWS_COMP_SWAPPED)
         return 'z';
+    else if (flags & SWS_COMP_CONST)
+        return '$';
+    else if (flags & SWS_COMP_COPY)
+        return '=';
     else if (flags & SWS_COMP_EXACT)
         return '+';
     else
@@ -1026,7 +1041,7 @@ void ff_sws_op_list_print(void *log, int lev, int lev_extra,
 
     }
 
-    av_log(log, lev, "    (X = unused, z = byteswapped, + = exact, 0 = zero)\n");
+    av_log(log, lev, "    ('X' unused, 'z' byteswapped, '=' copied, '$' const, '+' integer, '0' zero)\n");
 }
 
 #define DUMMY_SIZE 16
