@@ -60,7 +60,7 @@ int ff_cbs_sei_alloc_message_payload(SEIRawMessage *message,
             av_buffer_create(message->payload, desc->size,
                              free_func, NULL, 0);
     } else {
-        message->payload_ref = av_buffer_alloc(desc->size);
+        message->payload_ref = av_buffer_allocz(desc->size);
     }
     if (!message->payload_ref) {
         av_freep(&message->payload);
