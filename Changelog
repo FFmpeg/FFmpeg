@@ -1,6 +1,120 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 6.1.6:
+ configure: do not use interval regexp operators with awk
+ configure: fix symbol prefix detection
+ configure: Disable linker warnings for common symbols
+ avformat/av1dec: Check bits left before get_leb128()
+ avformat/dhav: Check amount read
+ avformat/mov: ensure required number of bytes is read
+ avcodec/cbs_sei: Always zero-initialize SEI payload
+ avformat/nuv: return early if header id fails to read
+ avformat/mpegts: Don't use uninitialized value in av_log()
+ avformat/hls: update current segment reference before use
+ avcodec/parser: Reset *buf_size on realloc failure
+ avfilter/af_stereotools: round-up max size of buffer
+ avcodec/hevc/hevcdec: Clean sao_pixel_buffer_v on allocation
+ avcodec/hevc/hevcdec: initialize qp_y_tab
+ swscale/alphablend: don't overread alpha plane on subsampled odd size
+ avformat/mov: fix crash when trying to get a fragment time for a non-existing fragment
+ aarch64/hpeldsp_neon: fix out-of-bounds read
+ avcodec/jpeg2000dec: clear array length when freeing it
+ av1dec: Don't crash if decoding of some frames have failed
+ avformat/dashdec: Fail with any inner stream count being 0
+ swscale/x86/rgb_2_rgb: fix uyvytoyuv422 overwrite on odd width
+ avcodec/snowenc: fix SIGFPE in get_dc() when a block lies outside the plane
+ avcodec/snowenc: fix out-of-bounds OBMC read in get_dc() for narrow planes
+ avcodec/snowenc: fix out-of-bounds memcpy in get_block_rd() for narrow planes
+ avformat/icecast: reject CR/LF in metadata header values
+ avfilter/avf_showspectrum: Fix allocation check
+ avformat/sctp: add size check in sctp_read() matching sctp_write()
+ avcodec/cbs_av1_syntax_template: reset seen_frame_header on sequence headers
+ avfilter/convolution: compute user matrix products in unsigned
+ avformat/mpegts: use av_fast_realloc() for prg
+ avfilter/avf_showcwt: avoid undefined float to int conversion of nb_consumed_samples
+ avfilter/avf_showcwt: fix out of array read in compute_kernel
+ avfilter/v360: compute remap table offsets in 64bit
+ avfilter/v360: reject out-of-range dimensions
+ swresample/x86/resample: write only int16 in the int16 resampler
+ avformat/rtpenc_amr: Check input size
+ swscale/ppc: fix ASAN stack-buffer-overflow in yuv2planeX
+ swscale/ppc: fix LOAD_FILTER overread in VSX path
+ avfilter: use ff_slice_pos() for per-slice boundary computation
+ avfilter: add ff_slice_pos() helper for slice boundaries
+ avfilter/estdif: avoid signed overflow in slice boundary calculation
+ avformat/rtspdec: bound Content-Length in the ANNOUNCE handler to SDP_MAX_SIZE
+ avcodec/cbs_h266_syntax_template: reject subpic info with res_change_in_clvs
+ avcodec/misc4: Check nb channels
+ avcodec/rv10, rv34: check init_get_bits8() before RealVideo bit access
+ avformat/http: reject request-line tokens not terminated by whitespace
+ avcodec/agm: validate actual src_y against prev plane in decode_inter_plane
+ avcodec/hevc/ps: Check window parameters
+ avcodec/hevc/ps: Factor window reading out
+ avcodec/truespeech: reject iterations count whose * 240 product overflows 32-bit
+ avcodec/on2avc: reject subframe count whose * SUBFRAME_SIZE product overflows 32-bit
+ avfilter/zmq: initialize send_buf before shared cleanup on parse failure
+ avcodec/adpcm: fix signed integer overflow in get_nb_samples()
+ avformat/matroskadec: avoid signed overflow in DASH cue time differences
+ avcodec/fastaudio: reject subframes count whose * 256 product overflows 32-bit
+ avcodec/vc2enc_dwt: avoid signed overflow in the 9/7 DWT lifting
+ avcodec/vc2enc_dwt: avoid signed overflow in the 5/3 and Haar DWT
+ avcodec/mwsc: do not dereference a missing reference frame
+ avcodec/misc4: reject invalid sample rate
+ tools/target_dem_fuzzer: do not exit on io_buffer allocation failure
+ avformat/gxfenc: Check timecode and propagate error
+ swscale/rgb2rgb_template: use unsigned for <<24
+ avformat/matroskadec: bound TRACKENTRY parsing by max_streams
+ avcodec/diracdec: fix heap buffer overflow in edge_emu_buffer
+ avformat/rtmppkt: Check recursion depth
+ avcodec/jpeglsdec: only apply color transform to decoded rows
+ avcodec/aac/aacdec: reject decoded frame without a valid sample rate
+ avformat/iff: check av_get_packet() result in ANIM branch
+ avcodec/cbs_h266_syntax_template: Fix pps_exp_slice_height_in_ctus_minus1 range
+ lavc/vvc: Stricter bound on pps_exp_slice_height_in_ctus_minus1
+ avfilter/vf_drawtext: Avoid double free in glyph_enu_border_free()
+ avfilter/vf_drawtext: plug error-path leaks in measure_text/draw_text
+ avfilter/vf_drawtext: avoid double-free of aliased FT_Glyph in glyph_enu_free
+ avfilter/vf_drawtext: don't double-free glyph that has been cached in tree
+ avfilter/vf_drawtext: always check pixel_mode == FT_PIXEL_MODE_MONO
+ avcodec/cook: bound subpacket channel sum against channel count
+ avformat/mxfdec: Remove unneeded check
+ avformat/ftp: Check string used for RNTO
+ avformat/ftp: Check for Telnet IAC characters and other non printable ASCII chars
+ avformat/ftp: reject CR/LF in the URL path to prevent FTP command injection
+ avcodec/jpeg2000dec: Clear header derived variables
+ avformat/avc: Adjust get_ue_golomb() to handle 32 bit
+ avcodec/x86/vorbisdsp: change cmpleps to cmpltps in inverse coupling
+ avfilter/af_join: fix wrong loop bound in buffer dedup (use-after-free)
+ avcodec/h264_slice: guard color_frame() against chroma-width underflow
+ avcodec/magicyuv: reject slice_height misaligned with chroma vshift
+ avcodec/magicyuv: Expand the s->interlaced slice-height sanity check
+ avcodec/magicyuv: Fix 1 line MEDIAN slices
+ avformat/mxfdec: zero-init Sony MPEG-4 extradata and add padding
+ avformat/soxdec: Check sample_rate for nan
+ tests/tiny_ssim: fixed mistake in ssim_c1 calculation
+ avformat/hls: Check TIME-OFFSET value
+ avformat/hls: Check url_offset and size
+ avformat/ty: check rec_size
+ avformat/rtpenc_xiph: bail out when the max payload size underflows
+ avformat/rtpenc_aac: reject packets smaller than the ADTS header
+ avcodec/jpeg2000dec: compute mask in decode_clnpass() like in decode_sigpass()
+ avformat/vividas: fix misaligned access
+ avcodec/g2meet: The stack is EPIC_PIX_STACK_SIZE
+ avfilter/boxblur: Fix off by one errors
+ avcodec/diracdec: Enlarge `mctmp` to cover the worst-case `blheight·ybsep + yblen` rows, and break the MC loop when no output rows remain
+ tools/zmqsend: free the AVBprint buffer after using it
+ [Wave] Fix issues with unaligned metadata chunks.
+ avcodec/cbs_h266_syntax_template: tighten sh_num_tiles_in_slice_minus1 upper bound
+ avcodec/hevc: limit missing-ref fill to coded planes
+ avcodec/hdrdec: fix pixel count decrement in RLE decompress loop
+ (fforge/pr/23191) avformat/oggparsecelt: bound extra_headers to avoid an effectively infinite loop
+ (fforge/pr/23115) avformat/demux: use correct close function for custom io
+ avformat/hlsenc: use correct close function for custom io
+ avformat/hlsenc: respect io_open set in AVFormatContext
+ avformat/dashenc: respect io_open set in AVFormatContext
+ avformat/dashdec: respect io_open set in AVFormatContext
+
 version 6.1.5
  avcodec/dfpwmdec: Check nb_samples
  avcodec/alsdec: do not set nbits invalidly
