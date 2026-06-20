@@ -123,7 +123,7 @@ static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
     s->filter_slice_edges = av_mallocz(ctb_count);
     s->tab_slice_address  = av_malloc_array(pic_size_in_ctb,
                                       sizeof(*s->tab_slice_address));
-    s->qp_y_tab           = av_malloc_array(pic_size_in_ctb,
+    s->qp_y_tab           = av_calloc(pic_size_in_ctb,
                                       sizeof(*s->qp_y_tab));
     if (!s->qp_y_tab || !s->filter_slice_edges || !s->tab_slice_address)
         goto fail;
