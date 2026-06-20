@@ -34,20 +34,19 @@ static int pass_idx;
 
 static int print_ops(SwsContext *ctx, const SwsOpList *ops, SwsCompiledOp *out)
 {
-    if (pass_idx > 0)
-        av_log(NULL, AV_LOG_INFO, " Sub-pass #%d:\n", pass_idx);
-
-    ff_sws_op_list_print(NULL, AV_LOG_INFO, AV_LOG_INFO, ops);
-
     SwsUOpList *uops = ff_sws_uop_list_alloc();
     if (!uops)
         return AVERROR(ENOMEM);
 
     int ret = ff_sws_ops_translate(ctx, ops, 0, uops);
-    if (ret == AVERROR(ENOTSUP)) {
-        av_log(NULL, AV_LOG_INFO, " Retrying with split passes:\n");
+    if (ret == AVERROR(ENOTSUP))
         goto fail;
-    } else if (ret < 0) {
+
+    if (pass_idx > 0)
+        av_log(NULL, AV_LOG_INFO, " Sub-pass #%d:\n", pass_idx);
+
+    ff_sws_op_list_print(NULL, AV_LOG_INFO, AV_LOG_INFO, ops);
+    if (ret < 0) {
         av_log(NULL, AV_LOG_ERROR, "Error translating ops: %s\n", av_err2str(ret));
         goto fail;
     }
