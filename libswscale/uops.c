@@ -155,6 +155,10 @@ void ff_sws_uop_name(const SwsUOp *op, char buf[SWS_UOP_NAME_MAX])
         av_bprintf(&bp, "_%u", par->shift.amount);
         break;
     case SWS_UOP_PERMUTE:
+        av_bprint_chars(&bp, '_', 1);
+        for (int i = 0; i < 4; i++)
+            av_bprint_chars(&bp, "xyzw"[par->swizzle.in[i]], 1);
+        break;
     case SWS_UOP_COPY:
         av_bprint_chars(&bp, '_', 1);
         for (int i = 0; i < 4; i++) {
@@ -597,13 +601,13 @@ static int translate_swizzle(SwsUOpList *ops, SwsUOpFlags flags, const SwsOp *op
     SwsUOp uop = {
         .type = pixel_type_to_int(op->type),
         .uop  = SWS_UOP_PERMUTE,
-        .mask = ff_sws_comp_mask_needed(op),
         .par.swizzle.in = {0, 1, 2, 3},
     };
 
+    SwsCompMask needed = ff_sws_comp_mask_needed(op);
     SwsCompMask seen = 0;
     for (int i = 0; i < 4; i++) {
-        if (!SWS_COMP_TEST(uop.mask, i))
+        if (!SWS_COMP_TEST(needed, i))
             continue;
         const int src = op->swizzle.in[i];
         if (SWS_COMP_TEST(seen, src))
@@ -615,7 +619,7 @@ static int translate_swizzle(SwsUOpList *ops, SwsUOpFlags flags, const SwsOp *op
     if (uop.uop == SWS_UOP_PERMUTE) {
         /* Prevent overlap by moving unused components to unseen indices */
         for (int i = 0; i < 4; i++) {
-            if (SWS_COMP_TEST(uop.mask, i))
+            if (SWS_COMP_TEST(needed, i))
                 continue;
 
             /* Prefer identity mapping if possible */
@@ -634,10 +638,14 @@ static int translate_swizzle(SwsUOpList *ops, SwsUOpFlags flags, const SwsOp *op
         }
     }
 
-    /* Remove remaining trivial / identity components from the mask */
-    for (int i = 0; i < 4; i++) {
-        if (uop.par.swizzle.in[i] == i)
-            uop.mask &= ~SWS_COMP(i);
+    if (uop.uop == SWS_UOP_COPY) {
+        /* Remove remaining trivial / identity components from the mask */
+        for (int i = 0; i < 4; i++) {
+            if (uop.par.swizzle.in[i] == i)
+                needed &= ~SWS_COMP(i);
+        }
+
+        uop.mask = needed;
     }
 
     return ff_sws_uop_list_append(ops, &uop);
