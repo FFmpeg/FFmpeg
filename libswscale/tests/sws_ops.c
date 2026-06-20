@@ -92,7 +92,7 @@ static int print_passes(SwsContext *ctx, void *graph, SwsOpList *ops)
         return AVERROR(ENOMEM);
 
     pass_idx = 0;
-    const int flags = SWS_OP_FLAG_DRY_RUN;
+    const int flags = SWS_OP_FLAG_DRY_RUN | SWS_OP_FLAG_SPLIT_MEMCPY;
     return ff_sws_compile_pass(graph, &backend_print, &copy, flags, NULL, NULL);
 }
 static void log_stdout(void *avcl, int level, const char *fmt, va_list vl)
