@@ -752,7 +752,8 @@ bool ff_sws_op_list_is_noop(const SwsOpList *ops)
         read->type != write->type ||
         read->rw.mode != write->rw.mode ||
         read->rw.elems != write->rw.elems ||
-        read->rw.frac != write->rw.frac)
+        read->rw.frac != write->rw.frac ||
+        read->rw.filter.op || write->rw.filter.op)
         return false;
 
     /**
