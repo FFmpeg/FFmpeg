@@ -83,7 +83,7 @@ struct SwsPass {
     SwsPassFunc run;
     SwsBackend backend; /* backend this pass is using, or 0 */
     enum AVPixelFormat format; /* new pixel format */
-    int width, height; /* new output size */
+    int lines;         /* pass dispatch size */
     int slice_h;       /* filter granularity */
     int num_slices;
 
@@ -184,6 +184,7 @@ int ff_sws_graph_create(SwsContext *ctx, const SwsFormat *dst, const SwsFormat *
  * @param w      Width of the output image.
  * @param h      Height of the output image.
  * @param input  Previous pass to read from, or NULL for the input image.
+ * @param lines  Override the number of lines processed for this pass. (Optional)
  * @param align  Minimum slice alignment for this pass, or 0 for no threading.
  * @param run    Filter function to run.
  * @param setup  Optional setup function to run from the main thread.
@@ -194,7 +195,8 @@ int ff_sws_graph_create(SwsContext *ctx, const SwsFormat *dst, const SwsFormat *
  */
 int ff_sws_graph_add_pass(SwsGraph *graph, enum AVPixelFormat fmt,
                           int width, int height, SwsPass *input,
-                          int align, SwsPassFunc run, SwsPassSetup setup,
+                          int lines, int align,
+                          SwsPassFunc run, SwsPassSetup setup,
                           void *priv, void (*free)(void *priv),
                           SwsPass **out_pass);
 

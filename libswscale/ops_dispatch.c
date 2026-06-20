@@ -202,6 +202,7 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
 {
     const AVPixFmtDescriptor *indesc  = av_pix_fmt_desc_get(in->format);
     const bool float_in = indesc->flags & AV_PIX_FMT_FLAG_FLOAT;
+    const int width = out->width;
 
     SwsOpPass *p = pass->priv;
     SwsOpExec *exec = &p->exec_base;
@@ -209,9 +210,9 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
 
     /* Set up main loop parameters */
     const unsigned block_size = comp->block_size;
-    const size_t num_blocks   = (pass->width + block_size - 1) / block_size;
+    const size_t num_blocks   = (width + block_size - 1) / block_size;
     const size_t aligned_w    = num_blocks * block_size;
-    if (aligned_w < pass->width) /* overflow */
+    if (aligned_w < width) /* overflow */
         return AVERROR(EINVAL);
     p->num_blocks   = num_blocks;
     p->memcpy_first = false;
@@ -280,14 +281,14 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
     *tail = *exec;
 
     const size_t safe_width = safe_blocks * block_size;
-    const size_t tail_size  = pass->width - safe_width;
+    const size_t tail_size  = width - safe_width;
     p->tail_off_out  = pixel_bytes(safe_width, p->pixel_bits_out, AV_ROUND_DOWN);
     p->tail_size_out = pixel_bytes(tail_size,  p->pixel_bits_out, AV_ROUND_UP);
     p->tail_blocks   = num_blocks - safe_blocks;
 
     if (exec->in_offset_x) {
         p->tail_off_in  = exec->in_offset_x[safe_width];
-        p->tail_size_in = exec->in_offset_x[pass->width - 1] - p->tail_off_in;
+        p->tail_size_in = exec->in_offset_x[width - 1] - p->tail_off_in;
         p->tail_size_in += pixel_bytes(p->filter_size_h, p->pixel_bits_in, AV_ROUND_UP);
     } else {
         p->tail_off_in  = pixel_bytes(safe_width, p->pixel_bits_in, AV_ROUND_DOWN);
@@ -387,7 +388,7 @@ static void op_pass_run(const SwsFrame *out, const SwsFrame *in, const int y,
      *    memcpy the last column on the output side if unpadded.
      */
 
-    const bool memcpy_in  = p->memcpy_last && y + h == pass->height ||
+    const bool memcpy_in  = p->memcpy_last && y + h == pass->lines ||
                             p->memcpy_first && y == 0;
     const bool memcpy_out = p->memcpy_out;
     const size_t num_blocks  = p->num_blocks;
@@ -515,7 +516,7 @@ static int compile(SwsGraph *graph, const SwsOpBackend *backend,
         SwsCompiledOp c = *comp;
         av_free(p);
         ret = ff_sws_graph_add_pass(graph, dst->format, dst->width, dst->height,
-                                    input, c.slice_align, c.func_opaque,
+                                    input, 0, c.slice_align, c.func_opaque,
                                     NULL, c.priv, c.free, output);
         if (ret >= 0)
             (*output)->backend = comp->backend->flags;
@@ -616,7 +617,7 @@ static int compile(SwsGraph *graph, const SwsOpBackend *backend,
     }
 
     ret = ff_sws_graph_add_pass(graph, dst->format, dst->width, dst->height,
-                                input, comp->slice_align, op_pass_run,
+                                input, 0, comp->slice_align, op_pass_run,
                                 op_pass_setup, p, op_pass_free, output);
     if (ret < 0)
         return ret;
