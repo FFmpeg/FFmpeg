@@ -163,8 +163,7 @@ int ff_sws_ops_compile(SwsContext *ctx, const SwsOpBackend *backend,
                        const SwsOpList *ops, SwsCompiledOp *out);
 
 /**
- * Resolves an operation list to a graph pass. The first and last operations
- * must be a read/write respectively.
+ * Resolves an operation list to a graph pass. The last op must be a write.
  *
  * @param backend Force the use of a specific backend (Optional)
  * @param ops Operations to compile. Ownership passes to this function, and
