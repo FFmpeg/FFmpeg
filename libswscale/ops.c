@@ -281,7 +281,7 @@ enum {
 /* merge_comp_flags() forms a monoid with SWS_COMP_IDENTITY as the null element */
 static SwsCompFlags merge_comp_flags(SwsCompFlags a, SwsCompFlags b)
 {
-    const SwsCompFlags flags_or  = SWS_COMP_GARBAGE;
+    const SwsCompFlags flags_or  = SWS_COMP_GARBAGE | SWS_COMP_SWAPPED;
     const SwsCompFlags flags_and = SWS_COMP_IDENTITY;
     return ((a & b) & flags_and) | ((a | b) & flags_or);
 }
