@@ -22,6 +22,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "drawutils.h"
 #include "formats.h"
 #include "internal.h"
@@ -111,8 +112,8 @@ typedef struct ThreadData {
     ColorLevelsContext *s = ctx->priv;                          \
     const ThreadData *td = arg;                                 \
     const int process_h = td->h;                                \
-    const int slice_start = (process_h *  jobnr   ) / nb_jobs;  \
-    const int slice_end   = (process_h * (jobnr+1)) / nb_jobs;  \
+    const int slice_start = ff_slice_pos(process_h, jobnr, nb_jobs);  \
+    const int slice_end   = ff_slice_pos(process_h, jobnr + 1, nb_jobs);  \
     const uint8_t *srcrow = td->srcrow;                         \
     uint8_t *dstrow = td->dstrow;                               \
     const int step = s->step;

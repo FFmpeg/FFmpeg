@@ -23,6 +23,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "drawutils.h"
 #include "formats.h"
 #include "internal.h"
@@ -129,8 +130,8 @@ static av_always_inline int filter_slice_rgba_planar(AVFilterContext *ctx, void 
     const float sr = s->sr;
     const float sg = s->sg;
     const float sb = s->sb;
-    const int slice_start = (out->height * jobnr) / nb_jobs;
-    const int slice_end = (out->height * (jobnr+1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(out->height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(out->height, jobnr + 1, nb_jobs);
     const uint8_t *srcg = in->data[0] + slice_start * in->linesize[0];
     const uint8_t *srcb = in->data[1] + slice_start * in->linesize[1];
     const uint8_t *srcr = in->data[2] + slice_start * in->linesize[2];
@@ -215,8 +216,8 @@ static av_always_inline int filter_slice_rgba16_planar(AVFilterContext *ctx, voi
     const float sr = s->sr;
     const float sg = s->sg;
     const float sb = s->sb;
-    const int slice_start = (out->height * jobnr) / nb_jobs;
-    const int slice_end = (out->height * (jobnr+1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(out->height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(out->height, jobnr + 1, nb_jobs);
     const uint16_t *srcg = (const uint16_t *)(in->data[0] + slice_start * in->linesize[0]);
     const uint16_t *srcb = (const uint16_t *)(in->data[1] + slice_start * in->linesize[1]);
     const uint16_t *srcr = (const uint16_t *)(in->data[2] + slice_start * in->linesize[2]);
@@ -401,8 +402,8 @@ static av_always_inline int filter_slice_rgba_packed(AVFilterContext *ctx, void 
     const float sr = s->sr;
     const float sg = s->sg;
     const float sb = s->sb;
-    const int slice_start = (out->height * jobnr) / nb_jobs;
-    const int slice_end = (out->height * (jobnr+1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(out->height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(out->height, jobnr + 1, nb_jobs);
     const uint8_t roffset = s->rgba_map[R];
     const uint8_t goffset = s->rgba_map[G];
     const uint8_t boffset = s->rgba_map[B];
@@ -483,8 +484,8 @@ static av_always_inline int filter_slice_rgba16_packed(AVFilterContext *ctx, voi
     const float sr = s->sr;
     const float sg = s->sg;
     const float sb = s->sb;
-    const int slice_start = (out->height * jobnr) / nb_jobs;
-    const int slice_end = (out->height * (jobnr+1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(out->height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(out->height, jobnr + 1, nb_jobs);
     const uint8_t roffset = s->rgba_map[R];
     const uint8_t goffset = s->rgba_map[G];
     const uint8_t boffset = s->rgba_map[B];

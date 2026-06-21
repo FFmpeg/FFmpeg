@@ -26,6 +26,7 @@
 #include "libavutil/qsort.h"
 
 #include "avfilter.h"
+#include "filters.h"
 #include "formats.h"
 #include "internal.h"
 #include "framesync.h"
@@ -153,8 +154,8 @@ static int median_frames16(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
     int values[256];
 
     for (int p = 0; p < s->nb_planes; p++) {
-        const int slice_start = (s->height[p] * jobnr) / nb_jobs;
-        const int slice_end = (s->height[p] * (jobnr+1)) / nb_jobs;
+        const int slice_start = ff_slice_pos(s->height[p], jobnr, nb_jobs);
+        const int slice_end = ff_slice_pos(s->height[p], jobnr + 1, nb_jobs);
         uint16_t *dst = (uint16_t *)(out->data[p] + slice_start * out->linesize[p]);
 
         if (!((1 << p) & s->planes)) {
@@ -198,8 +199,8 @@ static int median_frames8(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
     int values[256];
 
     for (int p = 0; p < s->nb_planes; p++) {
-        const int slice_start = (s->height[p] * jobnr) / nb_jobs;
-        const int slice_end = (s->height[p] * (jobnr+1)) / nb_jobs;
+        const int slice_start = ff_slice_pos(s->height[p], jobnr, nb_jobs);
+        const int slice_end = ff_slice_pos(s->height[p], jobnr + 1, nb_jobs);
         uint8_t *dst = out->data[p] + slice_start * out->linesize[p];
 
         if (!((1 << p) & s->planes)) {

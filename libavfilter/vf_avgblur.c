@@ -24,6 +24,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
@@ -71,8 +72,8 @@ static int filter_horizontally_##name(AVFilterContext *ctx, void *arg, int jobnr
     ThreadData *td = arg;                                                                     \
     const int height = td->height;                                                            \
     const int width = td->width;                                                              \
-    const int slice_start = (height *  jobnr   ) / nb_jobs;                                   \
-    const int slice_end   = (height * (jobnr+1)) / nb_jobs;                                   \
+    const int slice_start = ff_slice_pos(height, jobnr, nb_jobs);                                   \
+    const int slice_end   = ff_slice_pos(height, jobnr + 1, nb_jobs);                                   \
     const int radius = FFMIN(s->radius, width / 2);                                           \
     const int linesize = td->linesize / sizeof(type);                                         \
     float *buffer = s->buffer;                                                                \
@@ -124,8 +125,8 @@ static int filter_vertically_##name(AVFilterContext *ctx, void *arg, int jobnr, 
     ThreadData *td = arg;                                                                     \
     const int height = td->height;                                                            \
     const int width = td->width;                                                              \
-    const int slice_start = (width *  jobnr   ) / nb_jobs;                                    \
-    const int slice_end   = (width * (jobnr+1)) / nb_jobs;                                    \
+    const int slice_start = ff_slice_pos(width, jobnr, nb_jobs);                                    \
+    const int slice_end   = ff_slice_pos(width, jobnr + 1, nb_jobs);                                    \
     const int radius = FFMIN(s->radiusV, height / 2);                                         \
     const int linesize = td->linesize / sizeof(type);                                         \
     type *buffer = (type *)td->ptr;                                                           \

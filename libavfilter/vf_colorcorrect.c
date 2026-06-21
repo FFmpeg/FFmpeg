@@ -23,6 +23,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/imgutils.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
@@ -59,8 +60,8 @@ static int colorcorrect_slice8(AVFilterContext *ctx, void *arg, int jobnr, int n
     const float imax = 1.f / max;
     const int width = frame->width;
     const int height = frame->height;
-    const int slice_start = (height * jobnr) / nb_jobs;
-    const int slice_end = (height * (jobnr + 1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(height, jobnr + 1, nb_jobs);
     const int ylinesize = frame->linesize[0];
     const int ulinesize = frame->linesize[1];
     const int vlinesize = frame->linesize[2];
@@ -99,8 +100,8 @@ static int colorcorrect_slice16(AVFilterContext *ctx, void *arg, int jobnr, int 
     const float imax = 1.f / max;
     const int width = frame->width;
     const int height = frame->height;
-    const int slice_start = (height * jobnr) / nb_jobs;
-    const int slice_end = (height * (jobnr + 1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(height, jobnr + 1, nb_jobs);
     const int ylinesize = frame->linesize[0] / 2;
     const int ulinesize = frame->linesize[1] / 2;
     const int vlinesize = frame->linesize[2] / 2;

@@ -32,6 +32,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "internal.h"
+#include "filters.h"
 
 #define MAX_NB_THREADS 32
 #define NB_PLANES 4
@@ -375,8 +376,8 @@ static int slice_geq_filter(AVFilterContext *ctx, void *arg, int jobnr, int nb_j
     const int width = td->width;
     const int plane = td->plane;
     const int linesize = td->linesize;
-    const int slice_start = (height *  jobnr) / nb_jobs;
-    const int slice_end = (height * (jobnr+1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(height, jobnr + 1, nb_jobs);
     int x, y;
 
     double values[VAR_VARS_NB];

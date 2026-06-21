@@ -25,6 +25,7 @@
 #include "libavutil/pixdesc.h"
 
 #include "avfilter.h"
+#include "filters.h"
 #include "formats.h"
 #include "internal.h"
 #include "framesync.h"
@@ -149,8 +150,8 @@ static int mix_frames(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 
     if (s->depth <= 8) {
         for (p = 0; p < s->nb_planes; p++) {
-            const int slice_start = (s->height[p] * jobnr) / nb_jobs;
-            const int slice_end = (s->height[p] * (jobnr+1)) / nb_jobs;
+            const int slice_start = ff_slice_pos(s->height[p], jobnr, nb_jobs);
+            const int slice_end = ff_slice_pos(s->height[p], jobnr + 1, nb_jobs);
             uint8_t *dst = out->data[p] + slice_start * out->linesize[p];
 
             for (y = slice_start; y < slice_end; y++) {
@@ -171,8 +172,8 @@ static int mix_frames(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
         }
     } else {
         for (p = 0; p < s->nb_planes; p++) {
-            const int slice_start = (s->height[p] * jobnr) / nb_jobs;
-            const int slice_end = (s->height[p] * (jobnr+1)) / nb_jobs;
+            const int slice_start = ff_slice_pos(s->height[p], jobnr, nb_jobs);
+            const int slice_end = ff_slice_pos(s->height[p], jobnr + 1, nb_jobs);
             uint16_t *dst = (uint16_t *)(out->data[p] + slice_start * out->linesize[p]);
 
             for (y = slice_start; y < slice_end; y++) {

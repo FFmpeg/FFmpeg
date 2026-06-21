@@ -21,6 +21,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/imgutils.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
@@ -58,8 +59,8 @@ static int do_colorkey_slice(AVFilterContext *avctx, void *arg, int jobnr, int n
 {
     AVFrame *frame = arg;
 
-    const int slice_start = (frame->height * jobnr) / nb_jobs;
-    const int slice_end = (frame->height * (jobnr + 1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(frame->height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(frame->height, jobnr + 1, nb_jobs);
 
     ColorkeyContext *ctx = avctx->priv;
 
@@ -84,8 +85,8 @@ static int do_colorhold_slice(AVFilterContext *avctx, void *arg, int jobnr, int 
 {
     AVFrame *frame = arg;
 
-    const int slice_start = (frame->height * jobnr) / nb_jobs;
-    const int slice_end = (frame->height * (jobnr + 1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(frame->height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(frame->height, jobnr + 1, nb_jobs);
 
     ColorkeyContext *ctx = avctx->priv;
 

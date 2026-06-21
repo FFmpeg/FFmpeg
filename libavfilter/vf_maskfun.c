@@ -22,6 +22,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
@@ -157,8 +158,8 @@ static int maskfun##name(AVFilterContext *ctx, void *arg,    \
         const int linesize = out->linesize[p] / div;         \
         const int w = s->width[p];                           \
         const int h = s->height[p];                          \
-        const int slice_start = (h * jobnr) / nb_jobs;       \
-        const int slice_end = (h * (jobnr+1)) / nb_jobs;     \
+        const int slice_start = ff_slice_pos(h, jobnr, nb_jobs); \
+        const int slice_end = ff_slice_pos(h, jobnr + 1, nb_jobs); \
         type *dst = (type *)out->data[p] + slice_start * linesize; \
                                                              \
         if (!((1 << p) & s->planes))                         \

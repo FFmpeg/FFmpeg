@@ -32,6 +32,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/pixdesc.h"
 #include "internal.h"
+#include "filters.h"
 
 #define LB_MASK       0x00FEFEFE
 #define RED_BLUE_MASK 0x00FF00FF
@@ -218,8 +219,8 @@ static av_always_inline void xbr_filter(const ThreadData *td, int jobnr, int nb_
     const AVFrame *input = td->in;
     AVFrame *output = td->out;
     const uint32_t *r2y = td->rgbtoyuv;
-    const int slice_start = (input->height *  jobnr   ) / nb_jobs;
-    const int slice_end   = (input->height * (jobnr+1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(input->height, jobnr, nb_jobs);
+    const int slice_end   = ff_slice_pos(input->height, jobnr + 1, nb_jobs);
     const int nl = output->linesize[0] >> 2;
     const int nl1 = nl + nl;
     const int nl2 = nl1 + nl;

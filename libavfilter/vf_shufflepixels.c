@@ -29,6 +29,7 @@
 #include "libavutil/random_seed.h"
 
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
 #include "video.h"
 
@@ -211,8 +212,8 @@ static int shuffle_horizontal## name(AVFilterContext *ctx, void *arg,        \
     AVFrame *out = td->out;                                                  \
                                                                              \
     for (int p = 0; p < s->nb_planes; p++) {                                 \
-        const int slice_start = (s->planeheight[p] * jobnr) / nb_jobs;       \
-        const int slice_end = (s->planeheight[p] * (jobnr+1)) / nb_jobs;     \
+        const int slice_start = ff_slice_pos(s->planeheight[p], jobnr, nb_jobs); \
+        const int slice_end = ff_slice_pos(s->planeheight[p], jobnr + 1, nb_jobs); \
         type *dst = (type *)(out->data[p] + slice_start * out->linesize[p]); \
         const type *src = (const type *)(in->data[p] +                       \
                                          slice_start * in->linesize[p]);     \
@@ -244,8 +245,8 @@ static int shuffle_vertical## name(AVFilterContext *ctx, void *arg,          \
     AVFrame *out = td->out;                                                  \
                                                                              \
     for (int p = 0; p < s->nb_planes; p++) {                                 \
-        const int slice_start = (s->planeheight[p] * jobnr) / nb_jobs;       \
-        const int slice_end = (s->planeheight[p] * (jobnr+1)) / nb_jobs;     \
+        const int slice_start = ff_slice_pos(s->planeheight[p], jobnr, nb_jobs); \
+        const int slice_end = ff_slice_pos(s->planeheight[p], jobnr + 1, nb_jobs); \
         type *dst = (type *)(out->data[p] + slice_start * out->linesize[p]); \
         const int32_t *map = s->map;                                         \
                                                                              \
@@ -274,8 +275,8 @@ static int shuffle_block## name(AVFilterContext *ctx, void *arg,             \
     AVFrame *out = td->out;                                                  \
                                                                              \
     for (int p = 0; p < s->nb_planes; p++) {                                 \
-        const int slice_start = (s->planeheight[p] * jobnr) / nb_jobs;       \
-        const int slice_end = (s->planeheight[p] * (jobnr+1)) / nb_jobs;     \
+        const int slice_start = ff_slice_pos(s->planeheight[p], jobnr, nb_jobs); \
+        const int slice_end = ff_slice_pos(s->planeheight[p], jobnr + 1, nb_jobs); \
         type *dst = (type *)(out->data[p] + slice_start * out->linesize[p]); \
         const type *src = (const type *)in->data[p];                         \
         const int32_t *map = s->map + slice_start * s->planewidth[p];        \

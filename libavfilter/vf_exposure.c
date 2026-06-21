@@ -23,6 +23,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/imgutils.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
@@ -44,8 +45,8 @@ static int exposure_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
     AVFrame *frame = arg;
     const int width = frame->width;
     const int height = frame->height;
-    const int slice_start = (height * jobnr) / nb_jobs;
-    const int slice_end = (height * (jobnr + 1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(height, jobnr + 1, nb_jobs);
     const float black = s->black;
     const float scale = s->scale;
 

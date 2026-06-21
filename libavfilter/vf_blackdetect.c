@@ -29,6 +29,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/timestamp.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
 
 typedef struct BlackDetectContext {
@@ -157,8 +158,8 @@ static int black_counter(AVFilterContext *ctx, void *arg,
     const int linesize = in->linesize[0];
     const int w = in->width;
     const int h = in->height;
-    const int start = (h * jobnr) / nb_jobs;
-    const int end = (h * (jobnr+1)) / nb_jobs;
+    const int start = ff_slice_pos(h, jobnr, nb_jobs);
+    const int end = ff_slice_pos(h, jobnr + 1, nb_jobs);
     const int size = end - start;
     unsigned int counter = 0;
 

@@ -26,6 +26,7 @@
 #include "libavcodec/avfft.h"
 
 #include "avfilter.h"
+#include "filters.h"
 #include "formats.h"
 #include "framesync.h"
 #include "internal.h"
@@ -170,8 +171,8 @@ static int fft_horizontal(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
     FFTComplex *hdata = td->hdata;
     const int plane = td->plane;
     const int n = td->n;
-    int start = (n * jobnr) / nb_jobs;
-    int end = (n * (jobnr+1)) / nb_jobs;
+    int start = ff_slice_pos(n, jobnr, nb_jobs);
+    int end = ff_slice_pos(n, jobnr + 1, nb_jobs);
     int y;
 
     for (y = start; y < end; y++) {
@@ -265,8 +266,8 @@ static int fft_vertical(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     FFTComplex *vdata = td->vdata;
     const int plane = td->plane;
     const int n = td->n;
-    int start = (n * jobnr) / nb_jobs;
-    int end = (n * (jobnr+1)) / nb_jobs;
+    int start = ff_slice_pos(n, jobnr, nb_jobs);
+    int end = ff_slice_pos(n, jobnr + 1, nb_jobs);
     int y, x;
 
     for (y = start; y < end; y++) {
@@ -290,8 +291,8 @@ static int ifft_vertical(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
     FFTComplex *vdata = td->vdata;
     const int plane = td->plane;
     const int n = td->n;
-    int start = (n * jobnr) / nb_jobs;
-    int end = (n * (jobnr+1)) / nb_jobs;
+    int start = ff_slice_pos(n, jobnr, nb_jobs);
+    int end = ff_slice_pos(n, jobnr + 1, nb_jobs);
     int y, x;
 
     for (y = start; y < end; y++) {
@@ -314,8 +315,8 @@ static int ifft_horizontal(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
     FFTComplex *hdata = td->hdata;
     const int plane = td->plane;
     const int n = td->n;
-    int start = (n * jobnr) / nb_jobs;
-    int end = (n * (jobnr+1)) / nb_jobs;
+    int start = ff_slice_pos(n, jobnr, nb_jobs);
+    int end = ff_slice_pos(n, jobnr + 1, nb_jobs);
     int y;
 
     for (y = start; y < end; y++) {
@@ -387,8 +388,8 @@ static int complex_multiply(AVFilterContext *ctx, void *arg, int jobnr, int nb_j
     FFTComplex *filter = td->vdata;
     const float noise = s->noise;
     const int n = td->n;
-    int start = (n * jobnr) / nb_jobs;
-    int end = (n * (jobnr+1)) / nb_jobs;
+    int start = ff_slice_pos(n, jobnr, nb_jobs);
+    int end = ff_slice_pos(n, jobnr + 1, nb_jobs);
     int y, x;
 
     for (y = start; y < end; y++) {
@@ -418,8 +419,8 @@ static int complex_divide(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
     FFTComplex *filter = td->vdata;
     const float noise = s->noise;
     const int n = td->n;
-    int start = (n * jobnr) / nb_jobs;
-    int end = (n * (jobnr+1)) / nb_jobs;
+    int start = ff_slice_pos(n, jobnr, nb_jobs);
+    int end = ff_slice_pos(n, jobnr + 1, nb_jobs);
     int y, x;
 
     for (y = start; y < end; y++) {

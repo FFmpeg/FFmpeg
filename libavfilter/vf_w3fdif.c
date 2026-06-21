@@ -26,6 +26,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
@@ -382,8 +383,8 @@ static int deinterlace_plane_slice(AVFilterContext *ctx, void *arg,
     const int cur_line_stride = cur->linesize[plane];
     const int adj_line_stride = adj->linesize[plane];
     const int dst_line_stride = out->linesize[plane];
-    const int start = (height * jobnr) / nb_jobs;
-    const int end = (height * (jobnr+1)) / nb_jobs;
+    const int start = ff_slice_pos(height, jobnr, nb_jobs);
+    const int end = ff_slice_pos(height, jobnr + 1, nb_jobs);
     const int max = s->max;
     const int interlaced = cur->interlaced_frame;
     const int tff = s->field == (s->parity == -1 ? interlaced ? cur->top_field_first : 1 :

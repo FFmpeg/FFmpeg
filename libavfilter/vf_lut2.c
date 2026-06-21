@@ -24,6 +24,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "drawutils.h"
 #include "formats.h"
 #include "internal.h"
@@ -256,8 +257,8 @@ static int lut2_##zname##_##xname##_##yname(AVFilterContext *ctx,               
     int p, y, x;                                                                 \
                                                                                  \
     for (p = 0; p < s->nb_planes; p++) {                                         \
-        const int slice_start = (s->heightx[p] * jobnr) / nb_jobs;               \
-        const int slice_end = (s->heightx[p] * (jobnr+1)) / nb_jobs;             \
+        const int slice_start = ff_slice_pos(s->heightx[p], jobnr, nb_jobs);     \
+        const int slice_end = ff_slice_pos(s->heightx[p], jobnr + 1, nb_jobs);   \
         const uint16_t *lut = s->lut[p];                                         \
         const xtype *srcxx;                                                      \
         const ytype *srcyy;                                                      \

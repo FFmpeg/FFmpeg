@@ -21,6 +21,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "audio.h"
 #include "formats.h"
 
@@ -93,8 +94,8 @@ static int filter_flt(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     const int channels = td->channels;
     const float mult = td->mult;
     const int clip = td->clip;
-    const int start = (channels * jobnr) / nb_jobs;
-    const int end = (channels * (jobnr+1)) / nb_jobs;
+    const int start = ff_slice_pos(channels, jobnr, nb_jobs);
+    const int end = ff_slice_pos(channels, jobnr + 1, nb_jobs);
     float *prv = p[0];
     int n, c;
 
@@ -128,8 +129,8 @@ static int filter_dbl(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     const int channels = td->channels;
     double mult = td->mult;
     const int clip = td->clip;
-    const int start = (channels * jobnr) / nb_jobs;
-    const int end = (channels * (jobnr+1)) / nb_jobs;
+    const int start = ff_slice_pos(channels, jobnr, nb_jobs);
+    const int end = ff_slice_pos(channels, jobnr + 1, nb_jobs);
     double *prv = p[0];
     int n, c;
 
@@ -164,8 +165,8 @@ static int filter_fltp(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     const int channels = td->channels;
     float mult = td->mult;
     const int clip = td->clip;
-    const int start = (channels * jobnr) / nb_jobs;
-    const int end = (channels * (jobnr+1)) / nb_jobs;
+    const int start = ff_slice_pos(channels, jobnr, nb_jobs);
+    const int end = ff_slice_pos(channels, jobnr + 1, nb_jobs);
     int n, c;
 
     for (c = start; c < end; c++) {
@@ -197,8 +198,8 @@ static int filter_dblp(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     const int channels = td->channels;
     const double mult = td->mult;
     const int clip = td->clip;
-    const int start = (channels * jobnr) / nb_jobs;
-    const int end = (channels * (jobnr+1)) / nb_jobs;
+    const int start = ff_slice_pos(channels, jobnr, nb_jobs);
+    const int end = ff_slice_pos(channels, jobnr + 1, nb_jobs);
     int n, c;
 
     for (c = start; c < end; c++) {
@@ -231,8 +232,8 @@ static int ifilter_flt(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     const float mult = -td->mult;
     const float div = -td->mult + 1.f;
     const int clip = td->clip;
-    const int start = (channels * jobnr) / nb_jobs;
-    const int end = (channels * (jobnr+1)) / nb_jobs;
+    const int start = ff_slice_pos(channels, jobnr, nb_jobs);
+    const int end = ff_slice_pos(channels, jobnr + 1, nb_jobs);
     float *prv = p[0];
     int n, c;
 
@@ -267,8 +268,8 @@ static int ifilter_dbl(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     const double mult = -td->mult;
     const double div = -td->mult + 1.f;
     const int clip = td->clip;
-    const int start = (channels * jobnr) / nb_jobs;
-    const int end = (channels * (jobnr+1)) / nb_jobs;
+    const int start = ff_slice_pos(channels, jobnr, nb_jobs);
+    const int end = ff_slice_pos(channels, jobnr + 1, nb_jobs);
     double *prv = p[0];
     int n, c;
 
@@ -304,8 +305,8 @@ static int ifilter_fltp(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     const float mult = -td->mult;
     const float div = -td->mult + 1.f;
     const int clip = td->clip;
-    const int start = (channels * jobnr) / nb_jobs;
-    const int end = (channels * (jobnr+1)) / nb_jobs;
+    const int start = ff_slice_pos(channels, jobnr, nb_jobs);
+    const int end = ff_slice_pos(channels, jobnr + 1, nb_jobs);
     int n, c;
 
     for (c = start; c < end; c++) {
@@ -338,8 +339,8 @@ static int ifilter_dblp(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     const double mult = -td->mult;
     const double div = -td->mult + 1.f;
     const int clip = td->clip;
-    const int start = (channels * jobnr) / nb_jobs;
-    const int end = (channels * (jobnr+1)) / nb_jobs;
+    const int start = ff_slice_pos(channels, jobnr, nb_jobs);
+    const int end = ff_slice_pos(channels, jobnr + 1, nb_jobs);
     int n, c;
 
     for (c = start; c < end; c++) {
