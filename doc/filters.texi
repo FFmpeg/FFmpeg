@@ -29694,6 +29694,25 @@ more than 16 bits integer data per component, such as @code{rgb96} and
 A string describing the desired output frame rate, evaluated as an expression.
 The following constants are available: @code{source_fps}. The default value is
 @code{60}.
+
+@item perf
+Optical flow performance level, trading motion-estimation quality for speed.
+This is the dominant cost at high resolutions. Possible values are:
+@table @samp
+@item slow
+Highest quality, slowest. This is the default.
+@item medium
+Balanced quality and speed.
+@item fast
+Lowest quality, fastest.
+@end table
+
+@item grid
+Optical flow output grid size in pixels. A coarser grid computes fewer flow
+vectors, making it faster and less memory hungry at the cost of flow detail.
+Possible values are @code{auto} (the default; selects the finest grid the
+device supports, usually 1x1), @code{1}, @code{2}, @code{4} and @code{8}. Only
+grid sizes the device advertises are accepted.
 @end table
 
 @section gblur_vulkan

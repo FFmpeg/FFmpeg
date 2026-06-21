@@ -89,6 +89,10 @@ typedef struct FRUCVulkanContext {
     VkFormat                     input_format;   ///< grayscale input format
     VkFormat                     flow_format;    ///< flow vector format
 
+    /* Tuning options. */
+    int                          perf_level;     ///< VkOpticalFlowPerformanceLevelNV
+    int                          opt_grid_size;  ///< requested grid in pixels (0 = finest)
+
     int width;          ///< luma width
     int height;         ///< luma height
     int flow_width;
@@ -131,6 +135,24 @@ typedef struct FRUCVulkanContext {
 static const AVOption fruc_vulkan_options[] = {
     { "fps", "A string describing the desired output frame rate",
       OFFSET(requested_frame_rate), AV_OPT_TYPE_STRING, { .str = "60" }, 0, 0, FLAGS },
+    { "perf", "Optical flow performance level (quality versus speed)",
+      OFFSET(perf_level), AV_OPT_TYPE_INT, { .i64 = VK_OPTICAL_FLOW_PERFORMANCE_LEVEL_SLOW_NV },
+      VK_OPTICAL_FLOW_PERFORMANCE_LEVEL_SLOW_NV, VK_OPTICAL_FLOW_PERFORMANCE_LEVEL_FAST_NV,
+      FLAGS, .unit = "perf" },
+        { "slow",   "Highest quality, slowest", 0, AV_OPT_TYPE_CONST,
+          { .i64 = VK_OPTICAL_FLOW_PERFORMANCE_LEVEL_SLOW_NV },   0, 0, FLAGS, .unit = "perf" },
+        { "medium", "Balanced quality and speed", 0, AV_OPT_TYPE_CONST,
+          { .i64 = VK_OPTICAL_FLOW_PERFORMANCE_LEVEL_MEDIUM_NV }, 0, 0, FLAGS, .unit = "perf" },
+        { "fast",   "Lowest quality, fastest", 0, AV_OPT_TYPE_CONST,
+          { .i64 = VK_OPTICAL_FLOW_PERFORMANCE_LEVEL_FAST_NV },   0, 0, FLAGS, .unit = "perf" },
+    { "grid", "Optical flow output grid size in pixels (coarser is faster)",
+      OFFSET(opt_grid_size), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 8, FLAGS, .unit = "grid" },
+        { "auto", "Finest grid the device supports", 0, AV_OPT_TYPE_CONST,
+          { .i64 = 0 }, 0, 0, FLAGS, .unit = "grid" },
+        { "1", "1x1", 0, AV_OPT_TYPE_CONST, { .i64 = 1 }, 0, 0, FLAGS, .unit = "grid" },
+        { "2", "2x2", 0, AV_OPT_TYPE_CONST, { .i64 = 2 }, 0, 0, FLAGS, .unit = "grid" },
+        { "4", "4x4", 0, AV_OPT_TYPE_CONST, { .i64 = 4 }, 0, 0, FLAGS, .unit = "grid" },
+        { "8", "8x8", 0, AV_OPT_TYPE_CONST, { .i64 = 8 }, 0, 0, FLAGS, .unit = "grid" },
     { NULL }
 };
 
@@ -495,29 +517,52 @@ static av_cold int init_filter(AVFilterContext *avctx)
         return AVERROR(ENOTSUP);
     }
 
+    static const struct {
+        int                          size;
+        VkOpticalFlowGridSizeFlagsNV bit;
+    } grid_map[] = {
+        { 1, VK_OPTICAL_FLOW_GRID_SIZE_1X1_BIT_NV },
+        { 2, VK_OPTICAL_FLOW_GRID_SIZE_2X2_BIT_NV },
+        { 4, VK_OPTICAL_FLOW_GRID_SIZE_4X4_BIT_NV },
+        { 8, VK_OPTICAL_FLOW_GRID_SIZE_8X8_BIT_NV },
+    };
+
     grids = vkctx->optical_flow_props.supportedOutputGridSizes;
-    if (grids & VK_OPTICAL_FLOW_GRID_SIZE_1X1_BIT_NV) {
-        s->grid_size = 1;
-        s->grid_bit  = VK_OPTICAL_FLOW_GRID_SIZE_1X1_BIT_NV;
-    } else if (grids & VK_OPTICAL_FLOW_GRID_SIZE_2X2_BIT_NV) {
-        s->grid_size = 2;
-        s->grid_bit  = VK_OPTICAL_FLOW_GRID_SIZE_2X2_BIT_NV;
-    } else if (grids & VK_OPTICAL_FLOW_GRID_SIZE_4X4_BIT_NV) {
-        s->grid_size = 4;
-        s->grid_bit  = VK_OPTICAL_FLOW_GRID_SIZE_4X4_BIT_NV;
-    } else if (grids & VK_OPTICAL_FLOW_GRID_SIZE_8X8_BIT_NV) {
-        s->grid_size = 8;
-        s->grid_bit  = VK_OPTICAL_FLOW_GRID_SIZE_8X8_BIT_NV;
+    if (s->opt_grid_size) {
+        /* Honour an explicit grid request, erroring if the device lacks it. */
+        VkOpticalFlowGridSizeFlagsNV want = 0;
+        for (int i = 0; i < FF_ARRAY_ELEMS(grid_map); i++)
+            if (grid_map[i].size == s->opt_grid_size)
+                want = grid_map[i].bit;
+        if (!want || !(grids & want)) {
+            av_log(avctx, AV_LOG_ERROR, "Requested optical flow grid size %d is not "
+                   "supported by the device (supported mask 0x%x)\n",
+                   s->opt_grid_size, grids);
+            return AVERROR(ENOTSUP);
+        }
+        s->grid_size = s->opt_grid_size;
+        s->grid_bit  = want;
     } else {
-        av_log(avctx, AV_LOG_ERROR, "No supported optical flow output grid size\n");
-        return AVERROR(ENOTSUP);
+        /* Auto: pick the finest (smallest) grid the device supports. */
+        s->grid_size = 0;
+        for (int i = 0; i < FF_ARRAY_ELEMS(grid_map); i++) {
+            if (grids & grid_map[i].bit) {
+                s->grid_size = grid_map[i].size;
+                s->grid_bit  = grid_map[i].bit;
+                break;
+            }
+        }
+        if (!s->grid_size) {
+            av_log(avctx, AV_LOG_ERROR, "No supported optical flow output grid size\n");
+            return AVERROR(ENOTSUP);
+        }
     }
 
     s->flow_width  = (s->width  + s->grid_size - 1) / s->grid_size;
     s->flow_height = (s->height + s->grid_size - 1) / s->grid_size;
 
-    av_log(avctx, AV_LOG_INFO, "optical flow: grid %d, flow %dx%d, bidir=%d, "
-           "min %dx%d max %dx%d\n", s->grid_size, s->flow_width, s->flow_height,
+    av_log(avctx, AV_LOG_INFO, "optical flow: perf %d, grid %d, flow %dx%d, bidir=%d, "
+           "min %dx%d max %dx%d\n", s->perf_level, s->grid_size, s->flow_width, s->flow_height,
            vkctx->optical_flow_props.bidirectionalFlowSupported,
            vkctx->optical_flow_props.minWidth, vkctx->optical_flow_props.minHeight,
            vkctx->optical_flow_props.maxWidth, vkctx->optical_flow_props.maxHeight);
@@ -595,7 +640,7 @@ static av_cold int init_filter(AVFilterContext *avctx)
             .imageFormat      = s->input_format,
             .flowVectorFormat = s->flow_format,
             .outputGridSize   = s->grid_bit,
-            .performanceLevel = VK_OPTICAL_FLOW_PERFORMANCE_LEVEL_SLOW_NV,
+            .performanceLevel = s->perf_level,
             .flags            = VK_OPTICAL_FLOW_SESSION_CREATE_BOTH_DIRECTIONS_BIT_NV,
         }, vkctx->hwctx->alloc, &s->session);
     if (ret != VK_SUCCESS) {
