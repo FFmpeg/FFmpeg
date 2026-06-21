@@ -29,6 +29,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "drawutils.h"
 #include "formats.h"
 #include "framesync.h"
@@ -104,8 +105,8 @@ int compute_images_msad(AVFilterContext *ctx, void *arg,
     for (int c = 0; c < td->nb_components; c++) {
         const int outw = td->planewidth[c];
         const int outh = td->planeheight[c];
-        const int slice_start = (outh * jobnr) / nb_jobs;
-        const int slice_end = (outh * (jobnr+1)) / nb_jobs;
+        const int slice_start = ff_slice_pos(outh, jobnr, nb_jobs);
+        const int slice_end = ff_slice_pos(outh, jobnr + 1, nb_jobs);
         const int ref_linesize = td->ref_linesize[c];
         const int main_linesize = td->main_linesize[c];
         const uint8_t *main_line = td->main_data[c] + main_linesize * slice_start;
@@ -132,8 +133,8 @@ int compute_images_identity(AVFilterContext *ctx, void *arg,
     for (int c = 0; c < td->nb_components; c++) {
         const int outw = td->planewidth[c];
         const int outh = td->planeheight[c];
-        const int slice_start = (outh * jobnr) / nb_jobs;
-        const int slice_end = (outh * (jobnr+1)) / nb_jobs;
+        const int slice_start = ff_slice_pos(outh, jobnr, nb_jobs);
+        const int slice_end = ff_slice_pos(outh, jobnr + 1, nb_jobs);
         const int ref_linesize = td->ref_linesize[c];
         const int main_linesize = td->main_linesize[c];
         const uint8_t *main_line = td->main_data[c] + main_linesize * slice_start;

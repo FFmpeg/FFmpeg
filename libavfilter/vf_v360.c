@@ -40,6 +40,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
@@ -304,8 +305,8 @@ static int remap##ws##_##bits##bit_slice(AVFilterContext *ctx, void *arg, int jo
             const int width = s->pr_width[plane];                                                          \
             const int height = s->pr_height[plane];                                                        \
                                                                                                            \
-            const int slice_start = (height *  jobnr     ) / nb_jobs;                                      \
-            const int slice_end   = (height * (jobnr + 1)) / nb_jobs;                                      \
+            const int slice_start = ff_slice_pos(height, jobnr, nb_jobs);                                  \
+            const int slice_end   = ff_slice_pos(height, jobnr + 1, nb_jobs);                              \
                                                                                                            \
             for (int y = slice_start; y < slice_end && !mask; y++) {                                       \
                 const int16_t *const u = r->u[map] + (y - slice_start) * (int64_t)uv_linesize * ws * ws;    \
@@ -4242,8 +4243,8 @@ static int v360_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
         const int height = s->pr_height[p];
         const int in_width = s->inplanewidth[p];
         const int in_height = s->inplaneheight[p];
-        const int slice_start = (height *  jobnr     ) / nb_jobs;
-        const int slice_end   = (height * (jobnr + 1)) / nb_jobs;
+        const int slice_start = ff_slice_pos(height, jobnr, nb_jobs);
+        const int slice_end   = ff_slice_pos(height, jobnr + 1, nb_jobs);
         const int elements = s->elements;
         float du, dv;
         float vec[3];

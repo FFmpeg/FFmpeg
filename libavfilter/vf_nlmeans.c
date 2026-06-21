@@ -33,6 +33,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "formats.h"
 #include "internal.h"
 #include "vf_nlmeans.h"
@@ -292,8 +293,8 @@ static int nlmeans_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
     const struct thread_data *td = arg;
     const ptrdiff_t src_linesize = td->src_linesize;
     const int process_h = td->endy - td->starty;
-    const int slice_start = (process_h *  jobnr   ) / nb_jobs;
-    const int slice_end   = (process_h * (jobnr+1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(process_h, jobnr, nb_jobs);
+    const int slice_end   = ff_slice_pos(process_h, jobnr + 1, nb_jobs);
     const int starty = td->starty + slice_start;
     const int endy   = td->starty + slice_end;
     const int p = td->p;

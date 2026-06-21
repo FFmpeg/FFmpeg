@@ -23,6 +23,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/imgutils.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "drawutils.h"
 #include "formats.h"
 #include "internal.h"
@@ -69,8 +70,8 @@ static int do_colorkey_slice##name(AVFilterContext *avctx,         \
                                    int jobnr, int nb_jobs)         \
 {                                                                  \
     AVFrame *frame = arg;                                          \
-    const int slice_start = (frame->height * jobnr) / nb_jobs;     \
-    const int slice_end = (frame->height * (jobnr + 1)) / nb_jobs; \
+    const int slice_start = ff_slice_pos(frame->height, jobnr, nb_jobs); \
+    const int slice_end = ff_slice_pos(frame->height, jobnr + 1, nb_jobs); \
     ColorkeyContext *ctx = avctx->priv;                            \
     const float similarity = ctx->similarity;                      \
     const float iblend = 1.f / ctx->blend;                         \
@@ -104,8 +105,8 @@ static int do_colorhold_slice##name(AVFilterContext *avctx, void *arg, \
                               int jobnr, int nb_jobs)                  \
 {                                                                      \
     AVFrame *frame = arg;                                              \
-    const int slice_start = (frame->height * jobnr) / nb_jobs;         \
-    const int slice_end = (frame->height * (jobnr + 1)) / nb_jobs;     \
+    const int slice_start = ff_slice_pos(frame->height, jobnr, nb_jobs); \
+    const int slice_end = ff_slice_pos(frame->height, jobnr + 1, nb_jobs); \
     ColorkeyContext *ctx = avctx->priv;                                \
     const int depth = ctx->depth;                                      \
     const int max = ctx->max;                                          \

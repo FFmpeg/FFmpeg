@@ -24,6 +24,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "internal.h"
+#include "filters.h"
 
 enum FilterMode {
     FILTER_NONE = -1,
@@ -217,8 +218,8 @@ static int filter8_brng(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     AVFrame *out = td->out;
     const int w = in->width;
     const int h = in->height;
-    const int slice_start = (h *  jobnr   ) / nb_jobs;
-    const int slice_end   = (h * (jobnr+1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(h, jobnr, nb_jobs);
+    const int slice_end   = ff_slice_pos(h, jobnr + 1, nb_jobs);
     int x, y, score = 0;
 
     for (y = slice_start; y < slice_end; y++) {
@@ -252,8 +253,8 @@ static int filter16_brng(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
     const int mult = 1 << (s->depth - 8);
     const int w = in->width;
     const int h = in->height;
-    const int slice_start = (h *  jobnr   ) / nb_jobs;
-    const int slice_end   = (h * (jobnr+1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(h, jobnr, nb_jobs);
+    const int slice_end   = ff_slice_pos(h, jobnr + 1, nb_jobs);
     int x, y, score = 0;
 
     for (y = slice_start; y < slice_end; y++) {
@@ -291,8 +292,8 @@ static int filter8_tout(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     AVFrame *out = td->out;
     const int w = in->width;
     const int h = in->height;
-    const int slice_start = (h *  jobnr   ) / nb_jobs;
-    const int slice_end   = (h * (jobnr+1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(h, jobnr, nb_jobs);
+    const int slice_end   = ff_slice_pos(h, jobnr + 1, nb_jobs);
     const uint8_t *p = in->data[0];
     int lw = in->linesize[0];
     int x, y, score = 0, filt;
@@ -339,8 +340,8 @@ static int filter16_tout(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
     AVFrame *out = td->out;
     const int w = in->width;
     const int h = in->height;
-    const int slice_start = (h *  jobnr   ) / nb_jobs;
-    const int slice_end   = (h * (jobnr+1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(h, jobnr, nb_jobs);
+    const int slice_end   = ff_slice_pos(h, jobnr + 1, nb_jobs);
     const uint16_t *p = (uint16_t *)in->data[0];
     int lw = in->linesize[0] / 2;
     int x, y, score = 0, filt;
@@ -382,8 +383,8 @@ static int filter8_vrep(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     AVFrame *out = td->out;
     const int w = in->width;
     const int h = in->height;
-    const int slice_start = (h *  jobnr   ) / nb_jobs;
-    const int slice_end   = (h * (jobnr+1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(h, jobnr, nb_jobs);
+    const int slice_end   = ff_slice_pos(h, jobnr + 1, nb_jobs);
     const uint8_t *p = in->data[0];
     const int lw = in->linesize[0];
     int x, y, score = 0;
@@ -416,8 +417,8 @@ static int filter16_vrep(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
     AVFrame *out = td->out;
     const int w = in->width;
     const int h = in->height;
-    const int slice_start = (h *  jobnr   ) / nb_jobs;
-    const int slice_end   = (h * (jobnr+1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(h, jobnr, nb_jobs);
+    const int slice_end   = ff_slice_pos(h, jobnr + 1, nb_jobs);
     const uint16_t *p = (uint16_t *)in->data[0];
     const int lw = in->linesize[0] / 2;
     int x, y, score = 0;
@@ -463,8 +464,8 @@ static int compute_sat_hue_metrics8(AVFilterContext *ctx, void *arg, int jobnr, 
     AVFrame *dst_sat = td->dst_sat;
     AVFrame *dst_hue = td->dst_hue;
 
-    const int slice_start = (s->chromah *  jobnr   ) / nb_jobs;
-    const int slice_end   = (s->chromah * (jobnr+1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(s->chromah, jobnr, nb_jobs);
+    const int slice_end   = ff_slice_pos(s->chromah, jobnr + 1, nb_jobs);
 
     const int lsz_u = src->linesize[1];
     const int lsz_v = src->linesize[2];
@@ -502,8 +503,8 @@ static int compute_sat_hue_metrics16(AVFilterContext *ctx, void *arg, int jobnr,
     AVFrame *dst_hue = td->dst_hue;
     const int mid = 1 << (s->depth - 1);
 
-    const int slice_start = (s->chromah *  jobnr   ) / nb_jobs;
-    const int slice_end   = (s->chromah * (jobnr+1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(s->chromah, jobnr, nb_jobs);
+    const int slice_end   = ff_slice_pos(s->chromah, jobnr + 1, nb_jobs);
 
     const int lsz_u = src->linesize[1] / 2;
     const int lsz_v = src->linesize[2] / 2;

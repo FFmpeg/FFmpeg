@@ -30,6 +30,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/imgutils.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
 
 typedef struct YAEPContext {
@@ -102,8 +103,8 @@ static int pre_calculate_row_##name(AVFilterContext *ctx, void *arg,     \
     const int linesize     = td->src_linesize / sizeof(type);            \
     const int sat_linesize = s->sat_linesize;                            \
                                                                          \
-    const int starty = height * jobnr     / nb_jobs;                     \
-    const int endy   = height * (jobnr+1) / nb_jobs;                     \
+    const int starty = ff_slice_pos(height, jobnr, nb_jobs);             \
+    const int endy   = ff_slice_pos(height, jobnr + 1, nb_jobs);         \
                                                                          \
     uint64_t *sat        = s->sat + (starty + 1) * sat_linesize;         \
     uint64_t *square_sat = s->square_sat + (starty + 1) * sat_linesize;  \
@@ -137,8 +138,8 @@ static int pre_calculate_col(AVFilterContext *ctx, void *arg,
     const int height       = td->height;
     const int sat_linesize = s->sat_linesize;
 
-    const int startx = width * jobnr       / nb_jobs;
-    const int endx   = width * (jobnr + 1) / nb_jobs;
+    const int startx = ff_slice_pos(width, jobnr, nb_jobs);
+    const int endx   = ff_slice_pos(width, jobnr + 1, nb_jobs);
 
     uint64_t *sat, *square_sat;
     int x, y;
@@ -176,8 +177,8 @@ static int filter_slice_##name(AVFilterContext *ctx, void *arg, int jobnr, int n
     const type *src = (const type *)td->src;                                                              \
     type *dst = (type *)td->dst;                                                                          \
                                                                                                           \
-    const int starty = height * jobnr       / nb_jobs;                                                    \
-    const int endy   = height * (jobnr + 1) / nb_jobs;                                                    \
+    const int starty = ff_slice_pos(height, jobnr, nb_jobs);                                              \
+    const int endy   = ff_slice_pos(height, jobnr + 1, nb_jobs);                                          \
                                                                                                           \
     int x, y;                                                                                             \
     int lower_x, higher_x;                                                                                \

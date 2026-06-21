@@ -22,6 +22,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
@@ -171,8 +172,8 @@ static int limitdiff_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
         const int thr2 = s->thr2;
         const int w = s->planewidth[p];
         const int h = s->planeheight[p];
-        const int slice_start = (h * jobnr) / nb_jobs;
-        const int slice_end = (h * (jobnr+1)) / nb_jobs;
+        const int slice_start = ff_slice_pos(h, jobnr, nb_jobs);
+        const int slice_end = ff_slice_pos(h, jobnr + 1, nb_jobs);
         const uint8_t *filtered = td->filtered->data[p] + slice_start * filtered_linesize;
         const uint8_t *source = td->source->data[p] + slice_start * source_linesize;
         const uint8_t *reference = td->reference->data[p] + slice_start * reference_linesize;

@@ -33,6 +33,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/imgutils.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
@@ -221,8 +222,8 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     int clip_max = (1 << (yadif->csp->comp[td->plane].depth)) - 1;
     int df = (yadif->csp->comp[td->plane].depth + 7) / 8;
     int refs = linesize / df;
-    int slice_start = (td->h *  jobnr   ) / nb_jobs;
-    int slice_end   = (td->h * (jobnr+1)) / nb_jobs;
+    int slice_start = ff_slice_pos(td->h, jobnr, nb_jobs);
+    int slice_end   = ff_slice_pos(td->h, jobnr + 1, nb_jobs);
     int y;
 
     for (y = slice_start; y < slice_end; y++) {

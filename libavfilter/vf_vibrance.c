@@ -21,6 +21,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/imgutils.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "drawutils.h"
 #include "formats.h"
 #include "internal.h"
@@ -69,8 +70,8 @@ static int vibrance_slice8(AVFilterContext *avctx, void *arg, int jobnr, int nb_
     const float sgintensity = alternate * FFSIGN(gintensity);
     const float sbintensity = alternate * FFSIGN(bintensity);
     const float srintensity = alternate * FFSIGN(rintensity);
-    const int slice_start = (height * jobnr) / nb_jobs;
-    const int slice_end = (height * (jobnr + 1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(height, jobnr + 1, nb_jobs);
     const int glinesize = frame->linesize[0];
     const int blinesize = frame->linesize[1];
     const int rlinesize = frame->linesize[2];
@@ -128,8 +129,8 @@ static int vibrance_slice16(AVFilterContext *avctx, void *arg, int jobnr, int nb
     const float sgintensity = alternate * FFSIGN(gintensity);
     const float sbintensity = alternate * FFSIGN(bintensity);
     const float srintensity = alternate * FFSIGN(rintensity);
-    const int slice_start = (height * jobnr) / nb_jobs;
-    const int slice_end = (height * (jobnr + 1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(height, jobnr + 1, nb_jobs);
     const int glinesize = frame->linesize[0] / 2;
     const int blinesize = frame->linesize[1] / 2;
     const int rlinesize = frame->linesize[2] / 2;
@@ -189,8 +190,8 @@ static int vibrance_slice8p(AVFilterContext *avctx, void *arg, int jobnr, int nb
     const float sgintensity = alternate * FFSIGN(gintensity);
     const float sbintensity = alternate * FFSIGN(bintensity);
     const float srintensity = alternate * FFSIGN(rintensity);
-    const int slice_start = (height * jobnr) / nb_jobs;
-    const int slice_end = (height * (jobnr + 1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(height, jobnr + 1, nb_jobs);
     const int linesize = frame->linesize[0];
     uint8_t *ptr = frame->data[0] + slice_start * linesize;
 
@@ -246,8 +247,8 @@ static int vibrance_slice16p(AVFilterContext *avctx, void *arg, int jobnr, int n
     const float sgintensity = alternate * FFSIGN(gintensity);
     const float sbintensity = alternate * FFSIGN(bintensity);
     const float srintensity = alternate * FFSIGN(rintensity);
-    const int slice_start = (height * jobnr) / nb_jobs;
-    const int slice_end = (height * (jobnr + 1)) / nb_jobs;
+    const int slice_start = ff_slice_pos(height, jobnr, nb_jobs);
+    const int slice_end = ff_slice_pos(height, jobnr + 1, nb_jobs);
     const int linesize = frame->linesize[0] / 2;
     uint16_t *ptr = (uint16_t *)frame->data[0] + slice_start * linesize;
 
