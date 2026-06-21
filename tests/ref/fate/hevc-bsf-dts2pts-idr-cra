@@ -1,4 +1,4 @@
-e2374650488cf8f905c441d6f4a3cff4 *tests/data/fate/hevc-bsf-dts2pts-idr-cra.mov
+81d05ed8ec426d7732ce4f73176c50fe *tests/data/fate/hevc-bsf-dts2pts-idr-cra.mov
 375266 tests/data/fate/hevc-bsf-dts2pts-idr-cra.mov
 #extradata 0:      648, 0x30a7fa5c
 #tb 0: 1/1200000
