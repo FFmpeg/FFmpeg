@@ -5410,7 +5410,7 @@ static int mov_write_moov_tag(AVIOContext *pb, MOVMuxContext *mov,
                 if (ret < 0)
                     return ret;
             }
-            if (track->nb_src_track) {
+            if (mov->nb_meta_tmcd && track->nb_src_track) {
                 /* Derive the duration from the first source track, matching
                  * the convention used by get_pts_range() and the rtp/lvc1
                  * branches above. The source may use a different timescale. */
