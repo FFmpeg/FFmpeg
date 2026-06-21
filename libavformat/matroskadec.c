@@ -2708,6 +2708,10 @@ static int matroska_parse_tracks(AVFormatContext *s)
                 st->codecpar->block_align = track->audio.sub_packet_size;
                 extradata_offset       = 78;
             }
+            if (st->codecpar->block_align <= 0 ||
+                track->audio.sub_packet_h * (unsigned)track->audio.frame_size > INT_MAX ||
+                track->audio.frame_size * track->audio.sub_packet_h < st->codecpar->block_align)
+                return AVERROR_INVALIDDATA;
             track->audio.buf = av_malloc_array(track->audio.sub_packet_h,
                                                track->audio.frame_size);
             if (!track->audio.buf)
