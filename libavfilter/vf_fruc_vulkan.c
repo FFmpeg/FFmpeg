@@ -59,6 +59,7 @@ typedef struct GrayscalePushData {
 typedef struct InterpolatePushData {
     float   t;
     int32_t planes;
+    float   luma_weights[4];    ///< RGB->Y weights, matching the grayscale pass
     float   plane_size[4][2];   ///< visible texel extent of each plane
 } InterpolatePushData;
 
@@ -1001,6 +1002,7 @@ static int interpolate_frame(AVFilterContext *avctx, AVFrame *out, float t)
         .t         = t,
         .planes    = av_pix_fmt_count_planes(vkctx->output_format),
     };
+    memcpy(pd.luma_weights, s->luma_weights, sizeof(pd.luma_weights));
     /* The shader works in the visible frame's coordinate space; the source and
      * output images may each be allocated larger than that. */
     for (int i = 0; i < pd.planes; i++) {

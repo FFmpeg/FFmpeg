@@ -38,6 +38,20 @@ layout (set = 0, binding = 4) uniform isampler2D flow_bwd;
 
 #define FLOW_FIXED_POINT_SCALE (1.0 / 32.0)
 
+// Thresholds for the spurious-flow guard
+
+/* STATIC_LUMA_SIGMA is the per-pixel luma tolerance for calling a region "static" */
+#define STATIC_LUMA_SIGMA 0.03
+/* WARP_NEAR_PX is the threshold below which a warp is small enough that it won't
+   ever be considered "long range" */
+#define WARP_NEAR_PX 5.0
+/* WARP_FAR_PX is the threshold above which a warp is large enough that it will
+   always be considered "long range" */
+#define WARP_FAR_PX  20.0
+/* WARP_REACH_SCALE is the factor by which a warp's reach is scaled before the
+ * range test. Higher values will trigger the guard for smaller displacements. */
+#define WARP_REACH_SCALE 1.0
+
 /* These Picard values were established empirically on a couple of different
  * samples, but one could easily imagine reaching a different conclusion from
  * different data. */
@@ -47,6 +61,7 @@ layout (set = 0, binding = 4) uniform isampler2D flow_bwd;
 layout (push_constant, scalar) uniform pushConstants {
     float t;          /* interpolation position in [0, 1] between f0 and f1 */
     int planes;
+    vec4 luma_weights; /* RGB->Y weights, matching the grayscale pass */
     /* Visible extent of each plane. Neither the source textures nor the output
      * storage images need match it: a hardware decoder allocates its frames
      * padded up to its alignment, and the output frames context may be the
@@ -95,7 +110,28 @@ void main()
 
         vec4 c0 = texture(f0_img[i], f0_uv(s0, i));
         vec4 c1 = texture(f1_img[i], f1_uv(s1, i));
+        vec4 warped = mix(c0, c1, t);
 
-        imageStore(out_img[i], pos, mix(c0, c1, t));
+        /* Spurious-flow guard. In textureless regions the flow
+         * engine invents bogus flows we need to ignore. */
+        vec4 z0 = texture(f0_img[i], f0_uv(base, i));
+        vec4 z1 = texture(f1_img[i], f1_uv(base, i));
+        vec4 stat = mix(z0, z1, t);
+
+        /* Key staticness off the same weighted luma the grayscale pass feeds the
+         * flow engine. */
+        float lz = abs(dot(texture(f0_img[0], f0_uv(base, 0)), luma_weights) -
+                       dot(texture(f1_img[0], f1_uv(base, 0)), luma_weights));
+        float staticness = exp(-(lz * lz) / (STATIC_LUMA_SIGMA * STATIC_LUMA_SIGMA));
+
+        float disp = max(length((s0 - base) * luma_size),
+                         length((s1 - base) * luma_size));
+        /* smoothstep is used to transition between the two thresholds and avoid
+         * abrupt changes at the boundary. */
+        float reach = smoothstep(WARP_NEAR_PX, WARP_FAR_PX, disp * WARP_REACH_SCALE);
+
+        vec4 result = mix(warped, stat, staticness * reach);
+
+        imageStore(out_img[i], pos, result);
     }
 }
