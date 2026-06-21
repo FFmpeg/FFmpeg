@@ -25,7 +25,7 @@
 #include "isom.h"
 #include "movenc.h"
 #include "movenc_ttml.h"
-#include "libavcodec/packet_internal.h"
+#include "packet_internal.h"
 
 static const unsigned char empty_ttml_document[] =
     "<tt xml:lang=\"\" xmlns=\"http://www.w3.org/ns/ttml\" />";
@@ -122,7 +122,7 @@ static int mov_write_ttml_document_from_queue(AVFormatContext *s,
         return ret;
     }
 
-    while (!avpriv_packet_list_get(&track->squashed_packet_queue, pkt)) {
+    while (!ff_packet_list_get(&track->squashed_packet_queue, pkt)) {
         int64_t pts_before      = pkt->pts;
         int64_t duration_before = pkt->duration;
 
@@ -139,7 +139,7 @@ static int mov_write_ttml_document_from_queue(AVFormatContext *s,
                 continue;
             } else if (pkt->pts >= end_ts) {
                 // starts after this fragment, put back to original queue
-                ret = avpriv_packet_list_put(&track->squashed_packet_queue,
+                ret = ff_packet_list_put(&track->squashed_packet_queue,
                                              pkt, NULL,
                                              FF_PACKETLIST_FLAG_PREPEND);
                 if (ret < 0)
@@ -160,7 +160,7 @@ static int mov_write_ttml_document_from_queue(AVFormatContext *s,
                 // order to handle multiple subtitles at the same time.
                 int64_t offset = end_ts - pkt->pts;
 
-                ret = avpriv_packet_list_put(&back_to_queue_list,
+                ret = ff_packet_list_put(&back_to_queue_list,
                                              pkt, av_packet_ref,
                                              FF_PACKETLIST_FLAG_PREPEND);
                 if (ret < 0)
@@ -216,8 +216,8 @@ static int mov_write_ttml_document_from_queue(AVFormatContext *s,
 
 cleanup:
     av_packet_unref(pkt);
-    while (!avpriv_packet_list_get(&back_to_queue_list, pkt)) {
-        ret = avpriv_packet_list_put(&track->squashed_packet_queue,
+    while (!ff_packet_list_get(&back_to_queue_list, pkt)) {
+        ret = ff_packet_list_put(&track->squashed_packet_queue,
                                      pkt, av_packet_ref,
                                      FF_PACKETLIST_FLAG_PREPEND);
 
@@ -226,7 +226,7 @@ cleanup:
         av_packet_unref(pkt);
 
         if (ret < 0) {
-            avpriv_packet_list_free(&back_to_queue_list);
+            ff_packet_list_free(&back_to_queue_list);
             break;
         }
     }

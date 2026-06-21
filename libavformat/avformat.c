@@ -33,7 +33,7 @@
 #include "libavcodec/codec.h"
 #include "libavcodec/bsf.h"
 #include "libavcodec/codec_desc.h"
-#include "libavcodec/packet_internal.h"
+#include "packet_internal.h"
 #include "avformat.h"
 #include "avformat_internal.h"
 #include "avio.h"
@@ -138,9 +138,9 @@ void ff_flush_packet_queue(AVFormatContext *s)
 {
     FormatContextInternal *const fci = ff_fc_internal(s);
     FFFormatContext *const si = &fci->fc;
-    avpriv_packet_list_free(&fci->parse_queue);
-    avpriv_packet_list_free(&si->packet_buffer);
-    avpriv_packet_list_free(&fci->raw_packet_buffer);
+    ff_packet_list_free(&fci->parse_queue);
+    ff_packet_list_free(&si->packet_buffer);
+    ff_packet_list_free(&fci->raw_packet_buffer);
 
     fci->raw_packet_buffer_size = 0;
 }
@@ -189,7 +189,7 @@ void avformat_free_context(AVFormatContext *s)
     av_dict_free(&si->id3v2_meta);
     av_packet_free(&si->pkt);
     av_packet_free(&si->parse_pkt);
-    avpriv_packet_list_free(&si->packet_buffer);
+    ff_packet_list_free(&si->packet_buffer);
     av_freep(&s->streams);
     av_freep(&s->stream_groups);
     if (s->iformat)

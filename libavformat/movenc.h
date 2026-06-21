@@ -26,7 +26,7 @@
 
 #include "avformat.h"
 #include "movenccenc.h"
-#include "libavcodec/packet_internal.h"
+#include "packet_internal.h"
 
 #define MOV_FRAG_INFO_ALLOC_INCREMENT 64
 #define MOV_INDEX_CLUSTER_SIZE 1024

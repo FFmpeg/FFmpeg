@@ -57,7 +57,7 @@
 #include "libavcodec/flac.h"
 #include "libavcodec/itut35.h"
 #include "libavcodec/mpeg4audio.h"
-#include "libavcodec/packet_internal.h"
+#include "packet_internal.h"
 
 #include "avformat.h"
 #include "avio_internal.h"
@@ -3584,7 +3584,7 @@ static int matroska_deliver_packet(MatroskaDemuxContext *matroska,
         MatroskaTrack *tracks = matroska->tracks.elem;
         MatroskaTrack *track;
 
-        avpriv_packet_list_get(&matroska->queue, pkt);
+        ff_packet_list_get(&matroska->queue, pkt);
         track = &tracks[pkt->stream_index];
         if (track->has_palette) {
             uint8_t *pal = av_packet_new_side_data(pkt, AV_PKT_DATA_PALETTE, AVPALETTE_SIZE);
@@ -3606,7 +3606,7 @@ static int matroska_deliver_packet(MatroskaDemuxContext *matroska,
  */
 static void matroska_clear_queue(MatroskaDemuxContext *matroska)
 {
-    avpriv_packet_list_free(&matroska->queue);
+    ff_packet_list_free(&matroska->queue);
 }
 
 static int matroska_parse_laces(MatroskaDemuxContext *matroska, uint8_t **buf,
@@ -3772,7 +3772,7 @@ static int matroska_parse_rm_audio(MatroskaDemuxContext *matroska,
         track->audio.buf_timecode = AV_NOPTS_VALUE;
         pkt->pos                  = pos;
         pkt->stream_index         = st->index;
-        ret = avpriv_packet_list_put(&matroska->queue, pkt, NULL, 0);
+        ret = ff_packet_list_put(&matroska->queue, pkt, NULL, 0);
         if (ret < 0) {
             av_packet_unref(pkt);
             return AVERROR(ENOMEM);
@@ -3991,7 +3991,7 @@ static int matroska_parse_webvtt(MatroskaDemuxContext *matroska,
     pkt->duration = duration;
     pkt->pos = pos;
 
-    err = avpriv_packet_list_put(&matroska->queue, pkt, NULL, 0);
+    err = ff_packet_list_put(&matroska->queue, pkt, NULL, 0);
     if (err < 0) {
         av_packet_unref(pkt);
         return AVERROR(ENOMEM);
@@ -4255,7 +4255,7 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
     pkt->pos = pos;
     pkt->duration = lace_duration;
 
-    res = avpriv_packet_list_put(&matroska->queue, pkt, NULL, 0);
+    res = ff_packet_list_put(&matroska->queue, pkt, NULL, 0);
     if (res < 0) {
         av_packet_unref(pkt);
         return AVERROR(ENOMEM);

@@ -16,15 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_PACKET_INTERNAL_H
-#define AVCODEC_PACKET_INTERNAL_H
-
-#include <stdint.h>
-
-#include "packet.h"
-
-#define AVPACKET_IS_EMPTY(pkt) (!(pkt)->data && !(pkt)->side_data_elems)
-
-int ff_side_data_set_prft(AVPacket *pkt, int64_t timestamp);
-
-#endif // AVCODEC_PACKET_INTERNAL_H
+/* decklink is the only libavdevice user of the ff_packet_list_*() API, which
+ * lives in libavformat; compile a private copy into libavdevice for shared
+ * builds (static builds resolve the symbols from libavformat). */
+#include "libavformat/packet_list.c"

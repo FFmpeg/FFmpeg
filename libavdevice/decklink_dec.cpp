@@ -39,7 +39,7 @@ extern "C" {
 
 extern "C" {
 #include "config.h"
-#include "libavcodec/packet_internal.h"
+#include "libavformat/packet_internal.h"
 #include "libavformat/avformat.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avutil.h"

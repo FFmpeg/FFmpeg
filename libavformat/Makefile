@@ -27,6 +27,7 @@ OBJS = allformats.o         \
        nal.o                \
        options.o            \
        os_support.o         \
+       packet_list.o        \
        protocols.o          \
        riff.o               \
        sdp.o                \

@@ -25,7 +25,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 
-#include "libavcodec/packet_internal.h"
+#include "libavformat/packet_internal.h"
 #include "libavformat/demux.h"
 #include "libavformat/internal.h"
 

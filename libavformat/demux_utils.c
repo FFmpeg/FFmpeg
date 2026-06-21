@@ -23,7 +23,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavcodec/bytestream.h"
-#include "libavcodec/packet_internal.h"
+#include "packet_internal.h"
 #include "avformat.h"
 #include "avformat_internal.h"
 #include "avio_internal.h"
@@ -95,7 +95,7 @@ int avformat_queue_attached_pictures(AVFormatContext *s)
                 continue;
             }
 
-            ret = avpriv_packet_list_put(&fci->raw_packet_buffer,
+            ret = ff_packet_list_put(&fci->raw_packet_buffer,
                                          &s->streams[i]->attached_pic,
                                          av_packet_ref, 0);
             if (ret < 0)

@@ -48,7 +48,7 @@
 
 extern "C" {
 #include "libavutil/mem.h"
-#include "libavcodec/packet_internal.h"
+#include "libavformat/packet_internal.h"
 #include "libavfilter/ccfifo.h"
 }
 #include "libavutil/thread.h"

@@ -55,7 +55,7 @@
 #include "libavcodec/golomb.h"
 #include "libavcodec/h264.h"
 #include "libavcodec/jpeg2000.h"
-#include "libavcodec/packet_internal.h"
+#include "packet_internal.h"
 #include "libavcodec/rangecoder.h"
 #include "libavcodec/startcode.h"
 #include "avformat.h"
@@ -3596,7 +3596,7 @@ static int mxf_interleave_get_packet(AVFormatContext *s, AVPacket *out, int flus
 
         if (ffstream(s->streams[pktl->pkt.stream_index])->last_in_packet_buffer == pktl)
             ffstream(s->streams[pktl->pkt.stream_index])->last_in_packet_buffer = NULL;
-        avpriv_packet_list_get(&si->packet_buffer, out);
+        ff_packet_list_get(&si->packet_buffer, out);
         av_log(s, AV_LOG_TRACE, "out st:%d dts:%"PRId64"\n", out->stream_index, out->dts);
         return 1;
     } else {

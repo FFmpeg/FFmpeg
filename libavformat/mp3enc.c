@@ -30,7 +30,7 @@
 #include "libavcodec/mpegaudio.h"
 #include "libavcodec/mpegaudiodata.h"
 #include "libavcodec/mpegaudiodecheader.h"
-#include "libavcodec/packet_internal.h"
+#include "packet_internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
 #include "libavutil/dict.h"
@@ -389,7 +389,7 @@ static int mp3_queue_flush(AVFormatContext *s)
     mp3_write_xing(s);
 
     while (mp3->queue.head) {
-        avpriv_packet_list_get(&mp3->queue, pkt);
+        ff_packet_list_get(&mp3->queue, pkt);
         if (write && (ret = mp3_write_audio_packet(s, pkt)) < 0)
             write = 0;
         av_packet_unref(pkt);
@@ -531,7 +531,7 @@ static int mp3_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (pkt->stream_index == mp3->audio_stream_idx) {
         if (mp3->pics_to_write) {
             /* buffer audio packets until we get all the pictures */
-            int ret = avpriv_packet_list_put(&mp3->queue, pkt, NULL, 0);
+            int ret = ff_packet_list_put(&mp3->queue, pkt, NULL, 0);
 
             if (ret < 0) {
                 av_log(s, AV_LOG_WARNING, "Not enough memory to buffer audio. Skipping picture streams\n");
@@ -639,7 +639,7 @@ static void mp3_deinit(struct AVFormatContext *s)
 {
     MP3Context *mp3 = s->priv_data;
 
-    avpriv_packet_list_free(&mp3->queue);
+    ff_packet_list_free(&mp3->queue);
     av_freep(&mp3->xing_frame);
 }
 

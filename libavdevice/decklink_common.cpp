@@ -409,7 +409,7 @@ void ff_decklink_packet_queue_flush(DecklinkPacketQueue *q)
     AVPacket pkt;
 
     pthread_mutex_lock(&q->mutex);
-    while (avpriv_packet_list_get(&q->pkt_list, &pkt) == 0) {
+    while (ff_packet_list_get(&q->pkt_list, &pkt) == 0) {
         av_packet_unref(&pkt);
     }
     q->nb_packets = 0;
@@ -452,7 +452,7 @@ int ff_decklink_packet_queue_put(DecklinkPacketQueue *q, AVPacket *pkt)
 
     pthread_mutex_lock(&q->mutex);
 
-    ret = avpriv_packet_list_put(&q->pkt_list, pkt, NULL, 0);
+    ret = ff_packet_list_put(&q->pkt_list, pkt, NULL, 0);
     if (ret == 0) {
         q->nb_packets++;
         q->size += pkt_size + sizeof(AVPacket);
@@ -472,7 +472,7 @@ int ff_decklink_packet_queue_get(DecklinkPacketQueue *q, AVPacket *pkt, int bloc
     pthread_mutex_lock(&q->mutex);
 
     for (;; ) {
-        ret = avpriv_packet_list_get(&q->pkt_list, pkt);
+        ret = ff_packet_list_get(&q->pkt_list, pkt);
         if (ret == 0) {
             q->nb_packets--;
             q->size -= pkt->size + sizeof(AVPacket);
