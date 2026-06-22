@@ -1089,8 +1089,8 @@ static av_cold int dxv_init(AVCodecContext *avctx)
         return ret;
     }
 
-    /* Since codec is based on 4x4 blocks, size is aligned to 4 */
-    avctx->coded_width  = FFALIGN(avctx->width,  TEXTURE_BLOCK_W);
+    /* Codec is based on 4x4 blocks, but in practice width is aligned to 16 */
+    avctx->coded_width  = FFALIGN(avctx->width,  16);
     avctx->coded_height = FFALIGN(avctx->height, TEXTURE_BLOCK_H);
 
     ff_texturedsp_init(&ctx->texdsp);
