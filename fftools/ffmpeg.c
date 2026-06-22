@@ -216,6 +216,16 @@ void term_init(void)
 #endif
 
 #if HAVE_TERMIOS_H
+    /* A closed fd 0 is later reused by the first opened input file. read_key()
+     * would then read from that input instead of the terminal and corrupt the
+     * stream, so disable interaction when fd 0 is not an open descriptor.
+     */
+    if (stdin_interaction && fcntl(0, F_GETFD) == -1) {
+        av_log(NULL, AV_LOG_WARNING,
+               "fd 0 is not an open file descriptor, stdin interaction disabled\n");
+        stdin_interaction = 0;
+    }
+
     if (stdin_interaction) {
         struct termios tty;
         if (tcgetattr (0, &tty) == 0) {
