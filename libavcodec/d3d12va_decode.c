@@ -61,8 +61,20 @@ static ID3D12Resource *get_reference_only_resource(AVCodecContext *avctx, ID3D12
         return NULL;
     }
 
-    // find unused resource
-    for (i = 0; i < ctx->max_num_ref; i++) {
+    // Reuse the slot already mapped to this output resource. Output surfaces are
+    // recycled by the frame pool, so without this the same output_resource would
+    // be assigned a new slot every time it is reused, leaking slots until the
+    // pool is exhausted.
+    for (i = 0; i < ctx->max_num_ref + 1; i++) {
+        if (reference_only_map[i].resource != NULL &&
+            reference_only_map[i].output_resource == output_resource) {
+            reference_only_map[i].used = 1;
+            return reference_only_map[i].resource;
+        }
+    }
+
+    // Find an unused resource.
+    for (i = 0; i < ctx->max_num_ref + 1; i++) {
         if (!reference_only_map[i].used && reference_only_map[i].resource != NULL) {
             reference_only_map[i].used = 1;
             resource = reference_only_map[i].resource;
@@ -71,13 +83,13 @@ static ID3D12Resource *get_reference_only_resource(AVCodecContext *avctx, ID3D12
         }
     }
 
-    // find space to allocate
-    for (i = 0; i < ctx->max_num_ref; i++) {
+    // Find space to allocate.
+    for (i = 0; i < ctx->max_num_ref + 1; i++) {
         if (reference_only_map[i].resource == NULL)
             break;
     }
 
-    if (i == ctx->max_num_ref) {
+    if (i == ctx->max_num_ref + 1) {
         av_log(avctx, AV_LOG_ERROR, "No space for new Reference frame!\n");
         return NULL;
     }
@@ -105,7 +117,7 @@ static void free_reference_only_resources(AVCodecContext *avctx)
     int i;
     ReferenceFrame *reference_only_map = ctx->reference_only_map;
     if (reference_only_map != NULL) {
-        for (i = 0; i < ctx->max_num_ref; i++) {
+        for (i = 0; i < ctx->max_num_ref + 1; i++) {
             if (reference_only_map[i].resource != NULL) {
                 D3D12_OBJECT_RELEASE(reference_only_map[i].resource);
             }
@@ -123,7 +135,7 @@ static void prepare_reference_only_resources(AVCodecContext *avctx)
     if (reference_only_map == NULL)
         return;
     memset(ctx->ref_only_resources, 0, ctx->max_num_ref * sizeof(*(ctx->ref_only_resources)));
-    for (j = 0; j < ctx->max_num_ref; j++) {
+    for (j = 0; j < ctx->max_num_ref + 1; j++) {
         for (i = 0; i < ctx->max_num_ref; i++) {
             if (reference_only_map[j].used && reference_only_map[j].output_resource == ctx->ref_resources[i]) {
                 ctx->ref_only_resources[i] = reference_only_map[j].resource;
