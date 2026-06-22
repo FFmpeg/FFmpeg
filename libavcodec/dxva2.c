@@ -458,6 +458,7 @@ static DXGI_FORMAT d3d11va_map_sw_to_hw_format(enum AVPixelFormat pix_fmt)
     switch (pix_fmt) {
     case AV_PIX_FMT_NV12:       return DXGI_FORMAT_NV12;
     case AV_PIX_FMT_P010:       return DXGI_FORMAT_P010;
+    case AV_PIX_FMT_P012:       return DXGI_FORMAT_P016;
     case AV_PIX_FMT_YUV420P:    return DXGI_FORMAT_420_OPAQUE;
     default:                    return DXGI_FORMAT_UNKNOWN;
     }
@@ -627,8 +628,11 @@ int ff_dxva2_common_frame_params(AVCodecContext *avctx,
     else
         num_surfaces += 2;
 
-    frames_ctx->sw_format = avctx->sw_pix_fmt == AV_PIX_FMT_YUV420P10 ?
-                            AV_PIX_FMT_P010 : AV_PIX_FMT_NV12;
+    switch (avctx->sw_pix_fmt) {
+    case AV_PIX_FMT_YUV420P10: frames_ctx->sw_format = AV_PIX_FMT_P010; break;
+    case AV_PIX_FMT_YUV420P12: frames_ctx->sw_format = AV_PIX_FMT_P012; break;
+    default:                   frames_ctx->sw_format = AV_PIX_FMT_NV12; break;
+    }
     frames_ctx->width = FFALIGN(avctx->coded_width, surface_alignment);
     frames_ctx->height = FFALIGN(avctx->coded_height, surface_alignment);
     frames_ctx->initial_pool_size = num_surfaces;
