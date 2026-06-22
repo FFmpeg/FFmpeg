@@ -1186,6 +1186,43 @@ __device__ static inline T Subsample_Bicubic(cudaTextureObject_t tex,
 #undef PIX
 }
 
+enum ScaleDir {
+    SCALE_DIR_X,
+    SCALE_DIR_Y,
+};
+
+template<typename T, int dir>
+__device__ static inline T Subsample_Generic(cudaTextureObject_t tex,
+                                             int xo, int yo,
+                                             int dst_width, int dst_height,
+                                             int src_left, int src_top,
+                                             int src_width, int src_height,
+                                             int bit_depth, float param,
+                                             const float *weights, const int *offsets,
+                                             int filter_size)
+{
+    const float factor = bit_depth > 8 ? 0xFFFF : 0xFF;
+
+    floatT sum;
+    vec_set_scalar(sum, 0.0f);
+
+    if (dir == SCALE_DIR_X) {
+        const float *row = &weights[xo * filter_size];
+        const float x = 0.5f + src_left + offsets[xo];
+        const float y = 0.5f + src_top  + yo;
+        for (int i = 0; i < filter_size; i++)
+            sum += tex2D<floatT>(tex, x + i, y) * row[i];
+    } else {
+        const float *col = &weights[yo * filter_size];
+        const float x = 0.5f + src_left + xo;
+        const float y = 0.5f + src_top  + offsets[yo];
+        for (int i = 0; i < filter_size; i++)
+            sum += tex2D<floatT>(tex, x, y + i) * col[i];
+    }
+
+    return from_floatN<T, floatT>(sum * factor);
+}
+
 /// --- FUNCTION EXPORTS ---
 
 #define KERNEL_ARGS(T) CUDAScaleKernelParams params
@@ -1373,4 +1410,46 @@ LANCZOS_KERNELS_RGB(rgb0)
 LANCZOS_KERNELS_RGB(bgr0)
 LANCZOS_KERNELS_RGB(rgba)
 LANCZOS_KERNELS_RGB(bgra)
+
+#define GENERIC_KERNEL(D, DIR, C, S) \
+    __global__ void Subsample_Generic_##D##_##C##S(                     \
+        KERNEL_ARGS(Convert_##C::out_T##S))                             \
+    {                                                                   \
+        SUBSAMPLE((Convert_##C::Convert##S<                             \
+                       Subsample_Generic<Convert_##C::in_T, DIR>,       \
+                       Subsample_Generic<Convert_##C::in_T_uv, DIR> >), \
+                  Convert_##C::out_T##S) \
+    }
+
+#define GENERIC_KERNEL_RAW(C) \
+    GENERIC_KERNEL(h, SCALE_DIR_X, C,)      \
+    GENERIC_KERNEL(h, SCALE_DIR_X, C,_uv)   \
+    GENERIC_KERNEL(v, SCALE_DIR_Y, C,)      \
+    GENERIC_KERNEL(v, SCALE_DIR_Y, C,_uv)
+
+#define GENERIC_KERNELS(C) \
+    GENERIC_KERNEL_RAW(planar8_ ## C)       \
+    GENERIC_KERNEL_RAW(planar10_ ## C)      \
+    GENERIC_KERNEL_RAW(planar16_ ## C)      \
+    GENERIC_KERNEL_RAW(semiplanar8_ ## C)   \
+    GENERIC_KERNEL_RAW(semiplanar10_ ## C)  \
+    GENERIC_KERNEL_RAW(semiplanar16_ ## C)
+
+#define GENERIC_KERNELS_RGB(C) \
+    GENERIC_KERNEL_RAW(rgb0_ ## C)  \
+    GENERIC_KERNEL_RAW(bgr0_ ## C)  \
+    GENERIC_KERNEL_RAW(rgba_ ## C)  \
+    GENERIC_KERNEL_RAW(bgra_ ## C)
+
+GENERIC_KERNELS(planar8)
+GENERIC_KERNELS(planar10)
+GENERIC_KERNELS(planar16)
+GENERIC_KERNELS(semiplanar8)
+GENERIC_KERNELS(semiplanar10)
+GENERIC_KERNELS(semiplanar16)
+
+GENERIC_KERNELS_RGB(rgb0)
+GENERIC_KERNELS_RGB(bgr0)
+GENERIC_KERNELS_RGB(rgba)
+GENERIC_KERNELS_RGB(bgra)
 }
