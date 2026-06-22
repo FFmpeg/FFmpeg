@@ -44,6 +44,11 @@ typedef struct {
     int src_height;
     float param;
     int mpeg_range;
+
+    /* Weights for the generic filter kernel */
+    CUdeviceptr weights;
+    CUdeviceptr offsets;
+    int filter_size;
 } CUDAScaleKernelParams;
 
 #endif

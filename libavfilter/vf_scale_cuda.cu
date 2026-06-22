@@ -28,7 +28,9 @@ using subsample_function_t = T (*)(cudaTextureObject_t tex, int xo, int yo,
                                    int dst_width, int dst_height,
                                    int src_left, int src_top,
                                    int src_width, int src_height,
-                                   int bit_depth, float param);
+                                   int bit_depth, float param,
+                                   const float *weights, const int *offsets,
+                                   int filter_size);
 
 // --- CONVERSION LOGIC ---
 
@@ -90,14 +92,16 @@ static inline __device__ ushort conv_16to10pl(ushort in)
     __device__ static inline void N(cudaTextureObject_t src_tex[4], T *dst[4], int xo, int yo, \
                                     int dst_width, int dst_height, int dst_pitch,              \
                                     int src_left, int src_top, int src_width, int src_height,  \
-                                    float param, int mpeg_range)
+                                    float param, int mpeg_range,                               \
+                                    const float *weights, const int *offsets, int filter_size)
 
 #define SUB_F(m, plane) \
     subsample_func_##m(src_tex[plane], xo, yo, \
                        dst_width, dst_height,  \
                        src_left, src_top,      \
                        src_width, src_height,  \
-                       in_bit_depth, param)
+                       in_bit_depth, param,    \
+                       weights, offsets, filter_size)
 
 // FFmpeg passes pitch in bytes, CUDA uses potentially larger types
 #define FIXED_PITCH \
@@ -1095,7 +1099,9 @@ __device__ static inline T Subsample_Nearest(cudaTextureObject_t tex,
                                              int dst_width, int dst_height,
                                              int src_left, int src_top,
                                              int src_width, int src_height,
-                                             int bit_depth, float param)
+                                             int bit_depth, float param,
+                                             const float *weights, const int *offsets,
+                                             int filter_size)
 {
     float hscale = (float)src_width / (float)dst_width;
     float vscale = (float)src_height / (float)dst_height;
@@ -1111,7 +1117,9 @@ __device__ static inline T Subsample_Bilinear(cudaTextureObject_t tex,
                                               int dst_width, int dst_height,
                                               int src_left, int src_top,
                                               int src_width, int src_height,
-                                              int bit_depth, float param)
+                                              int bit_depth, float param,
+                                              const float *weights, const int *offsets,
+                                              int filter_size)
 {
     float hscale = (float)src_width / (float)dst_width;
     float vscale = (float)src_height / (float)dst_height;
@@ -1143,7 +1151,9 @@ __device__ static inline T Subsample_Bicubic(cudaTextureObject_t tex,
                                              int dst_width, int dst_height,
                                              int src_left, int src_top,
                                              int src_width, int src_height,
-                                             int bit_depth, float param)
+                                             int bit_depth, float param,
+                                             const float *weights, const int *offsets,
+                                             int filter_size)
 {
     float hscale = (float)src_width / (float)dst_width;
     float vscale = (float)src_height / (float)dst_height;
@@ -1197,7 +1207,10 @@ __device__ static inline T Subsample_Bicubic(cudaTextureObject_t tex,
         params.dst_width, params.dst_height, params.dst_pitch, \
         params.src_left, params.src_top,                \
         params.src_width, params.src_height,            \
-        params.param, params.mpeg_range);
+        params.param, params.mpeg_range,                \
+        (const float*) params.weights,                  \
+        (const int*) params.offsets,                    \
+        params.filter_size);
 
 extern "C" {
 
