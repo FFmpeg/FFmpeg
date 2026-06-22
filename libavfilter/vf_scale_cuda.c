@@ -417,32 +417,32 @@ static av_cold int cudascale_load_functions(AVFilterContext *ctx)
         s->interp_use_linear = 0;
         s->interp_as_integer = 0;
     } else {
-    switch(s->interp_algo) {
-    case INTERP_ALGO_NEAREST:
-        function_infix = "Nearest";
-        s->interp_use_linear = 0;
-        s->interp_as_integer = 1;
-        break;
-    case INTERP_ALGO_BILINEAR:
-        function_infix = "Bilinear";
-        s->interp_use_linear = 1;
-        s->interp_as_integer = 1;
-        break;
-    case INTERP_ALGO_DEFAULT:
-    case INTERP_ALGO_BICUBIC:
-        function_infix = "Bicubic";
-        s->interp_use_linear = 0;
-        s->interp_as_integer = 0;
-        break;
-    case INTERP_ALGO_LANCZOS:
-        function_infix = "Lanczos";
-        s->interp_use_linear = 0;
-        s->interp_as_integer = 0;
-        break;
-    default:
-        av_log(ctx, AV_LOG_ERROR, "Unknown interpolation algorithm\n");
-        return AVERROR_BUG;
-    }
+        switch(s->interp_algo) {
+        case INTERP_ALGO_NEAREST:
+            function_infix = "Nearest";
+            s->interp_use_linear = 0;
+            s->interp_as_integer = 1;
+            break;
+        case INTERP_ALGO_BILINEAR:
+            function_infix = "Bilinear";
+            s->interp_use_linear = 1;
+            s->interp_as_integer = 1;
+            break;
+        case INTERP_ALGO_DEFAULT:
+        case INTERP_ALGO_BICUBIC:
+            function_infix = "Bicubic";
+            s->interp_use_linear = 0;
+            s->interp_as_integer = 0;
+            break;
+        case INTERP_ALGO_LANCZOS:
+            function_infix = "Lanczos";
+            s->interp_use_linear = 0;
+            s->interp_as_integer = 0;
+            break;
+        default:
+            av_log(ctx, AV_LOG_ERROR, "Unknown interpolation algorithm\n");
+            return AVERROR_BUG;
+        }
     }
 
     ret = CHECK_CU(cu->cuCtxPushCurrent(cuda_ctx));
