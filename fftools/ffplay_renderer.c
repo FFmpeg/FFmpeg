@@ -23,9 +23,7 @@
 #include "ffplay_renderer.h"
 
 #if (SDL_VERSION_ATLEAST(2, 0, 6) && CONFIG_LIBPLACEBO)
-/* Get PL_API_VER */
-#include <libplacebo/config.h>
-#define HAVE_VULKAN_RENDERER (PL_API_VER >= 278)
+#define HAVE_VULKAN_RENDERER 1
 #else
 #define HAVE_VULKAN_RENDERER 0
 #endif
