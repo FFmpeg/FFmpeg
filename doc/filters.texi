@@ -27479,6 +27479,12 @@ frame-consumer that exhausts the limited decoder frame pool.
 If set to 1, frames are passed through as-is if they match the desired output
 parameters. This is the default behaviour.
 
+@item use_filters
+If set to 1, filter with a generic weight LUT instead of using fixed-function
+shader kernels. May be faster or slower depending on the hardware. A value
+of @code{auto} (the default) enables this automatically when required for
+correct anti-aliasing when downscaling.
+
 @item param
 Algorithm-Specific parameter.
 
