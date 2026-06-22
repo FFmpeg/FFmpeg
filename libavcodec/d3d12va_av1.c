@@ -174,10 +174,18 @@ static av_cold int d3d12va_av1_decode_init(AVCodecContext *avctx)
 
     int ret;
 
-    if (avctx->profile != AV_PROFILE_AV1_MAIN)
+    switch (avctx->profile) {
+    case AV_PROFILE_AV1_MAIN:
+        ctx->cfg.DecodeProfile = D3D12_VIDEO_DECODE_PROFILE_AV1_PROFILE0;
+        break;
+    case AV_PROFILE_AV1_PROFESSIONAL:
+        ctx->cfg.DecodeProfile = avctx->sw_pix_fmt == AV_PIX_FMT_YUV420P12 ?
+                                 D3D12_VIDEO_DECODE_PROFILE_AV1_12BIT_PROFILE2_420 :
+                                 D3D12_VIDEO_DECODE_PROFILE_AV1_PROFILE2;
+        break;
+    default:
         return AVERROR(EINVAL);
-
-    ctx->cfg.DecodeProfile = D3D12_VIDEO_DECODE_PROFILE_AV1_PROFILE0;
+    }
 
     ctx->max_num_ref = FF_ARRAY_ELEMS(pp.RefFrameMapTextureIndex) + 1;
 

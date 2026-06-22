@@ -70,6 +70,7 @@ static const struct {
 } supported_formats[] = {
     { DXGI_FORMAT_NV12, AV_PIX_FMT_NV12 },
     { DXGI_FORMAT_P010, AV_PIX_FMT_P010 },
+    { DXGI_FORMAT_P016, AV_PIX_FMT_P012 },
 };
 
 static void d3d12va_default_lock(void *ctx)
@@ -144,7 +145,7 @@ static int d3d12va_create_helper_objects(AVHWFramesContext *ctx)
         .NodeMask = 0,
     };
 
-    s->luma_component_size = FFALIGN(ctx->width * (frames_hwctx->format == DXGI_FORMAT_P010 ? 2 : 1),
+    s->luma_component_size = FFALIGN(ctx->width * (frames_hwctx->format != DXGI_FORMAT_NV12 ? 2 : 1),
                                      D3D12_TEXTURE_DATA_PITCH_ALIGNMENT) * ctx->height;
 
     DX_CHECK(ID3D12Device_CreateFence(device_hwctx->device, 0, D3D12_FENCE_FLAG_NONE,
@@ -490,7 +491,7 @@ static int d3d12va_transfer_data(AVHWFramesContext *ctx, AVFrame *dst,
     }
 
     for (int i = 0; i < 4; i++)
-        linesizes[i] = FFALIGN(frame->width * (frames_hwctx->format == DXGI_FORMAT_P010 ? 2 : 1),
+        linesizes[i] = FFALIGN(frame->width * (frames_hwctx->format != DXGI_FORMAT_NV12 ? 2 : 1),
                                D3D12_TEXTURE_DATA_PITCH_ALIGNMENT);
 
     staging_y_location = (D3D12_TEXTURE_COPY_LOCATION) {
@@ -498,7 +499,7 @@ static int d3d12va_transfer_data(AVHWFramesContext *ctx, AVFrame *dst,
         .PlacedFootprint = {
             .Offset = 0,
             .Footprint = {
-                .Format   = frames_hwctx->format == DXGI_FORMAT_P010 ?
+                .Format   = frames_hwctx->format != DXGI_FORMAT_NV12 ?
                                                     DXGI_FORMAT_R16_UNORM : DXGI_FORMAT_R8_UNORM,
                 .Width    = ctx->width,
                 .Height   = ctx->height,
@@ -513,7 +514,7 @@ static int d3d12va_transfer_data(AVHWFramesContext *ctx, AVFrame *dst,
         .PlacedFootprint = {
             .Offset = s->luma_component_size,
             .Footprint = {
-                .Format   = frames_hwctx->format == DXGI_FORMAT_P010 ?
+                .Format   = frames_hwctx->format != DXGI_FORMAT_NV12 ?
                                                     DXGI_FORMAT_R16G16_UNORM : DXGI_FORMAT_R8G8_UNORM,
                 .Width    = ctx->width  >> 1,
                 .Height   = ctx->height >> 1,
