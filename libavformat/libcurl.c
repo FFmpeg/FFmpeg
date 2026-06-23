@@ -919,10 +919,15 @@ static int64_t libcurl_seek(URLContext *h, int64_t pos, int whence)
     CurlContext *c = h->priv_data;
     int64_t newpos;
 
-    if (whence == AVSEEK_SIZE)
-        return c->content_size >= 0 ? c->content_size : AVERROR(ENOSYS);
+    pthread_mutex_lock(&c->mutex);
+    const int64_t content_size = c->content_size;
+    const int seekable = c->seekable;
+    pthread_mutex_unlock(&c->mutex);
 
-    if (!c->seekable)
+    if (whence == AVSEEK_SIZE)
+        return content_size >= 0 ? content_size : AVERROR(ENOSYS);
+
+    if (!seekable)
         return AVERROR(ENOSYS);
 
     switch (whence) {
@@ -933,9 +938,9 @@ static int64_t libcurl_seek(URLContext *h, int64_t pos, int whence)
         newpos = c->logical_pos + pos;
         break;
     case SEEK_END:
-        if (c->content_size < 0)
+        if (content_size < 0)
             return AVERROR(ENOSYS);
-        newpos = c->content_size + pos;
+        newpos = content_size + pos;
         break;
     default:
         return AVERROR(EINVAL);
