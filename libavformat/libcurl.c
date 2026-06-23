@@ -71,6 +71,7 @@ typedef struct CurlCmd {
 typedef struct CurlLoop {
     pthread_t       thread;
     CURLM          *multi;
+    CURLSH         *share;   /* shared cookies/DNS/TLS sessions/HSTS */
 
     pthread_mutex_t mutex;   /* guards the command queue, exit and cmd->done */
     pthread_cond_t  cond;    /* signaled when a sync command completes */
@@ -567,14 +568,20 @@ static CurlLoop *curl_loop_create(void)
         goto fail3;
     curl_multi_setopt(loop->multi, CURLMOPT_PIPELINING, CURLPIPE_MULTIPLEX);
 
-    if (pthread_create(&loop->thread, NULL, curl_worker, loop)) {
-        curl_multi_cleanup(loop->multi);
+    loop->share = curl_share_init();
+    if (!loop->share)
         goto fail3;
-    }
+    curl_share_setopt(loop->share, CURLSHOPT_SHARE, CURL_LOCK_DATA_COOKIE);
+    curl_share_setopt(loop->share, CURLSHOPT_SHARE, CURL_LOCK_DATA_HSTS);
+
+    if (pthread_create(&loop->thread, NULL, curl_worker, loop))
+        goto fail3;
 
     return loop;
 
 fail3:
+    curl_multi_cleanup(loop->multi);
+    curl_share_cleanup(loop->share);
     curl_global_cleanup();
 fail2:
     pthread_cond_destroy(&loop->cond);
@@ -594,6 +601,7 @@ static void curl_loop_destroy(CurlLoop *loop)
     pthread_join(loop->thread, NULL);
 
     curl_multi_cleanup(loop->multi);
+    curl_share_cleanup(loop->share);
     pthread_cond_destroy(&loop->cond);
     pthread_mutex_destroy(&loop->mutex);
     av_free(loop);
@@ -702,6 +710,7 @@ static void setup_curl(CurlContext *c)
     curl_easy_setopt(e, CURLOPT_URL, url);
     curl_easy_setopt(e, CURLOPT_PRIVATE, c);
     curl_easy_setopt(e, CURLOPT_NOSIGNAL, 1L);
+    curl_easy_setopt(e, CURLOPT_SHARE, c->loop->share);
 
     curl_easy_setopt(e, CURLOPT_WRITEFUNCTION, write_callback);
     curl_easy_setopt(e, CURLOPT_WRITEDATA, c);
