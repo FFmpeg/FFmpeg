@@ -298,7 +298,7 @@ static void checkasm_check_hevc_qpel_bi_w(void)
     declare_func(void, uint8_t *dst, ptrdiff_t dststride, const uint8_t *src, ptrdiff_t srcstride,
                  const int16_t *src2,
                  int height, int denom, int wx0, int wx1,
-                 int ox0, int ox1, intptr_t mx, intptr_t my, int width);
+                 int ox, intptr_t mx, intptr_t my, int width);
 
     for (bit_depth = 8; bit_depth <= 12; bit_depth++) {
         ff_hevc_dsp_init(&h, bit_depth);
@@ -324,16 +324,16 @@ static void checkasm_check_hevc_qpel_bi_w(void)
                                     CLEAR_PIXEL_RECT(dst1);
                                     call_ref(dst0, dst0_stride,
                                              src0, sizes[idx] * SIZEOF_PIXEL,
-                                             ref0, sizes[idx], *denom, *wx, *wx, *ox, *ox, i, j, sizes[idx]);
+                                             ref0, sizes[idx], *denom, *wx, *wx, *ox + *ox, i, j, sizes[idx]);
                                     call_new(dst1, dst1_stride,
                                              src1, sizes[idx] * SIZEOF_PIXEL,
-                                             ref1, sizes[idx], *denom, *wx, *wx, *ox, *ox, i, j, sizes[idx]);
+                                             ref1, sizes[idx], *denom, *wx, *wx, *ox + *ox, i, j, sizes[idx]);
                                     checkasm_check_pixel_padded(dst0, dst0_stride,
                                                                 dst1, dst1_stride,
                                                                 sizes[idx], sizes[idx], "dst");
                                     bench_new(dst1, dst1_stride,
                                               src1, sizes[idx] * SIZEOF_PIXEL,
-                                              ref1, sizes[idx], *denom, *wx, *wx, *ox, *ox, i, j, sizes[idx]);
+                                              ref1, sizes[idx], *denom, *wx, *wx, *ox + *ox, i, j, sizes[idx]);
                                 }
                             }
                         }
@@ -571,7 +571,7 @@ static void checkasm_check_hevc_epel_bi_w(void)
     declare_func(void, uint8_t *dst, ptrdiff_t dststride, const uint8_t *src, ptrdiff_t srcstride,
                  const int16_t *src2,
                  int height, int denom, int wx0, int wx1,
-                 int ox0, int ox1, intptr_t mx, intptr_t my, int width);
+                 int ox, intptr_t mx, intptr_t my, int width);
 
     for (bit_depth = 8; bit_depth <= 12; bit_depth++) {
         ff_hevc_dsp_init(&h, bit_depth);
@@ -597,16 +597,16 @@ static void checkasm_check_hevc_epel_bi_w(void)
                                     CLEAR_PIXEL_RECT(dst1);
                                     call_ref(dst0, dst0_stride,
                                              src0, sizes[idx] * SIZEOF_PIXEL,
-                                             ref0, sizes[idx], *denom, *wx, *wx, *ox, *ox, i, j, sizes[idx]);
+                                             ref0, sizes[idx], *denom, *wx, *wx, *ox + *ox, i, j, sizes[idx]);
                                     call_new(dst1, dst1_stride,
                                              src1, sizes[idx] * SIZEOF_PIXEL,
-                                             ref1, sizes[idx], *denom, *wx, *wx, *ox, *ox, i, j, sizes[idx]);
+                                             ref1, sizes[idx], *denom, *wx, *wx, *ox + *ox, i, j, sizes[idx]);
                                     checkasm_check_pixel_padded(dst0, dst0_stride,
                                                                 dst1, dst1_stride,
                                                                 sizes[idx], sizes[idx], "dst");
                                     bench_new(dst1, dst1_stride,
                                               src1, sizes[idx] * SIZEOF_PIXEL,
-                                              ref1, sizes[idx], *denom, *wx, *wx, *ox, *ox, i, j, sizes[idx]);
+                                              ref1, sizes[idx], *denom, *wx, *wx, *ox + *ox, i, j, sizes[idx]);
                                 }
                             }
                         }

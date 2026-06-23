@@ -575,7 +575,7 @@ mc_rep_uni_w(12, 8, 64, sse4)
 #define mc_rep_bi_w(bitd, step, W, opt) \
 void ff_hevc_put_bi_w##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t dststride, const int16_t *_src, \
                                           const int16_t *_src2, int height,                        \
-                                          int denom,  int _wx0,  int _wx1, int _ox0, int _ox1)     \
+                                          int denom, int wx0, int wx1, int ox)                     \
 {                                                                                                                       \
     int i;                                                                                                              \
     uint8_t *dst;                                                                                                       \
@@ -584,7 +584,7 @@ void ff_hevc_put_bi_w##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t dststride, co
         const int16_t *src2 = _src2 + i;                                                                                \
         dst  = _dst  + (i * ((bitd + 7) / 8));                                                                          \
         ff_hevc_put_bi_w##step##_##bitd##_##opt(dst, dststride, src, src2,                         \
-                                                height, denom, _wx0, _wx1, _ox0, _ox1);            \
+                                                height, denom, wx0, wx1, ox);                      \
     }                                                                                                                   \
 }
 
@@ -672,13 +672,13 @@ static void hevc_put_bi_w_##name##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t _d
                                                      const uint8_t *_src, ptrdiff_t _srcstride,      \
                                                      const int16_t *_src2,                           \
                                                      int height, int denom,                          \
-                                                     int _wx0, int _wx1, int _ox0, int _ox1,         \
+                                                     int wx0, int wx1, int ox,                       \
                                                      intptr_t mx, intptr_t my, int width)            \
 {                                                                                                    \
     LOCAL_ALIGNED_16(int16_t, temp, [71 * MAX_PB_SIZE]);                                             \
     hevc_put_##name##W##_##bitd##_##opt(temp, _src, _srcstride, height, mx, my, width);              \
     ff_hevc_put_bi_w##W##_##bitd##_##opt(_dst, _dststride, temp, _src2,                              \
-                                         height, denom, _wx0, _wx1, _ox0, _ox1);                     \
+                                         height, denom, wx0, wx1, ox);                               \
 }
 
 #define mc_bi_w_funcs(name, bitd, opt)      \

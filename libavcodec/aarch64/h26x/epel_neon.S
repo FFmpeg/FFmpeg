@@ -476,12 +476,11 @@ endfunc
 .macro load_bi_w_pixels_param
         ldrsw           x8, [sp]            // wx1
 #if defined(__APPLE__)
-        ldpsw           x9, x10, [sp, #4]   // ox0, ox1
-        ldrsw           x11, [sp, #32]      // width
+        ldrsw           x9, [sp, #4]        // ox
+        ldrsw           x11, [sp, #24]      // width
 #else
-        ldrsw           x9, [sp, #8]        // ox0
-        ldrsw           x10, [sp, #16]      // ox1
-        ldrsw           x11, [sp, #40]      // width
+        ldrsw           x9, [sp, #8]        // ox
+        ldrsw           x11, [sp, #32]      // width
 #endif
 .endm
 
@@ -490,13 +489,12 @@ function ff_hevc_put_hevc_pel_bi_w_pixels4_8_neon, export=1
         add             w6, w6, #6              // log2Wd
         dup             v0.8h, w7               // wx0
         dup             v1.8h, w8               // wx1
-        add             w9, w9, w10
-        add             w9, w9, #1              // ox0 + ox1 + 1
+        add             w9, w9, #1              // ox + 1
         lsl             w9, w9, w6
         add             w7, w6, #1              // (log2Wd + 1)
         mov             x8, #(2 * HEVC_MAX_PB_SIZE)
         neg             w7, w7
-        dup             v2.4s, w9               // (ox0 + ox1 + 1) << logwWd
+        dup             v2.4s, w9               // (ox + 1) << logwWd
         dup             v6.4s, w7               // -(log2Wd + 1)
 1:
         ld1             {v4.8b}, [x2], x3       // load src
@@ -519,13 +517,12 @@ function ff_hevc_put_hevc_pel_bi_w_pixels6_8_neon, export=1
         add             w6, w6, #6              // log2Wd
         dup             v0.8h, w7               // wx0
         dup             v1.8h, w8               // wx1
-        add             w9, w9, w10
-        add             w9, w9, #1              // ox0 + ox1 + 1
+        add             w9, w9, #1              // ox + 1
         lsl             w9, w9, w6
         add             w7, w6, #1              // (log2Wd + 1)
         mov             x8, #(2 * HEVC_MAX_PB_SIZE)
         neg             w7, w7
-        dup             v2.4s, w9               // (ox0 + ox1 + 1) << logwWd
+        dup             v2.4s, w9               // (ox + 1) << logwWd
         dup             v6.4s, w7               // -(log2Wd + 1)
         sub             x1, x1, #4
 1:
@@ -555,13 +552,12 @@ function ff_hevc_put_hevc_pel_bi_w_pixels8_8_neon, export=1
         add             w6, w6, #6              // log2Wd
         dup             v0.8h, w7               // wx0
         dup             v1.8h, w8               // wx1
-        add             w9, w9, w10
-        add             w9, w9, #1              // ox0 + ox1 + 1
+        add             w9, w9, #1              // ox + 1
         lsl             w9, w9, w6
         add             w7, w6, #1              // (log2Wd + 1)
         mov             x8, #(2 * HEVC_MAX_PB_SIZE)
         neg             w7, w7
-        dup             v2.4s, w9               // (ox0 + ox1 + 1) << logwWd
+        dup             v2.4s, w9               // (ox + 1) << logwWd
         dup             v6.4s, w7               // -(log2Wd + 1)
 1:
         ld1             {v4.8b}, [x2], x3       // load src
@@ -589,13 +585,12 @@ function ff_hevc_put_hevc_pel_bi_w_pixels12_8_neon, export=1
         add             w6, w6, #6              // log2Wd
         dup             v0.8h, w7               // wx0
         dup             v1.8h, w8               // wx1
-        add             w9, w9, w10
-        add             w9, w9, #1              // ox0 + ox1 + 1
+        add             w9, w9, #1              // ox + 1
         lsl             w9, w9, w6
         add             w7, w6, #1              // (log2Wd + 1)
         mov             x8, #(2 * HEVC_MAX_PB_SIZE)
         neg             w7, w7
-        dup             v2.4s, w9               // (ox0 + ox1 + 1) << logwWd
+        dup             v2.4s, w9               // (ox + 1) << logwWd
         dup             v6.4s, w7               // -(log2Wd + 1)
         sub             x1, x1, #8
 1:
@@ -637,13 +632,12 @@ function ff_hevc_put_hevc_pel_bi_w_pixels16_8_neon, export=1
         add             w6, w6, #6              // log2Wd
         dup             v0.8h, w7               // wx0
         dup             v1.8h, w8               // wx1
-        add             w9, w9, w10
-        add             w9, w9, #1              // ox0 + ox1 + 1
+        add             w9, w9, #1              // ox + 1
         lsl             w9, w9, w6
         add             w7, w6, #1              // (log2Wd + 1)
         mov             x8, #(2 * HEVC_MAX_PB_SIZE)
         neg             w7, w7
-        dup             v2.4s, w9               // (ox0 + ox1 + 1) << logwWd
+        dup             v2.4s, w9               // (ox + 1) << logwWd
         dup             v6.4s, w7               // -(log2Wd + 1)
 1:
         ld1             {v24.16b}, [x2], x3          // load src
@@ -688,13 +682,12 @@ function ff_hevc_put_hevc_pel_bi_w_pixels24_8_neon, export=1
         add             w6, w6, #6              // log2Wd
         dup             v0.8h, w7               // wx0
         dup             v1.8h, w8               // wx1
-        add             w9, w9, w10
-        add             w9, w9, #1              // ox0 + ox1 + 1
+        add             w9, w9, #1              // ox + 1
         lsl             w9, w9, w6
         add             w7, w6, #1              // (log2Wd + 1)
         mov             x8, #(2 * HEVC_MAX_PB_SIZE)
         neg             w7, w7
-        dup             v2.4s, w9               // (ox0 + ox1 + 1) << logwWd
+        dup             v2.4s, w9               // (ox + 1) << logwWd
         dup             v6.4s, w7               // -(log2Wd + 1)
         mov             x7, #24
         sub             x3, x3, x11
@@ -765,13 +758,12 @@ function ff_hevc_put_hevc_pel_bi_w_pixels32_8_neon, export=1
         add             w6, w6, #6              // log2Wd
         dup             v0.8h, w7               // wx0
         dup             v1.8h, w8               // wx1
-        add             w9, w9, w10
-        add             w9, w9, #1              // ox0 + ox1 + 1
+        add             w9, w9, #1              // ox + 1
         lsl             w9, w9, w6
         add             w7, w6, #1              // (log2Wd + 1)
         mov             x8, #(2 * HEVC_MAX_PB_SIZE)
         neg             w7, w7
-        dup             v2.4s, w9               // (ox0 + ox1 + 1) << logwWd
+        dup             v2.4s, w9               // (ox + 1) << logwWd
         dup             v6.4s, w7               // -(log2Wd + 1)
         sub             x3, x3, x11
         sub             x8, x8, x11, lsl #1

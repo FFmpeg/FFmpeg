@@ -1090,7 +1090,7 @@ cglobal hevc_put_uni_w%1_%2, 6, 6, 7, dst, dststride, src, height, denom, wx, ox
     jnz               .loop                      ; height loop
     RET
 
-cglobal hevc_put_bi_w%1_%2, 4, 6, 6, dst, dststride, src, src2, height, denom, wx0, wx1, ox0, ox1
+cglobal hevc_put_bi_w%1_%2, 4, 6, 6, dst, dststride, src, src2, height, denom, wx0, wx1, ox
     movifnidn        r5d, denomm
     movd              m3, wx0m         ; WX0
     lea              r5d, [r5d+14-%2]  ; shift = 14 - bitd + denom
@@ -1100,8 +1100,7 @@ cglobal hevc_put_bi_w%1_%2, 4, 6, 6, dst, dststride, src, src2, height, denom, w
     inc              r5d
     movd              m5, r5d          ; shift+1
     pshufd            m2, m2, 0
-    mov              r5d, ox0m
-    add              r5d, ox1m
+    mov              r5d, oxm
 %if %2 != 8
     shl              r5d, %2-8         ; ox << (bitd - 8)
 %endif
