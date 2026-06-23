@@ -860,6 +860,8 @@ static int libcurl_open(URLContext *h, const char *url, int flags,
 
     if (c->seekable_opt == 0)
         c->seekable = 0;
+    else if (c->seekable_opt == 1)
+        c->seekable = 1;
     h->is_streamed = !c->seekable;
 
     return 0;
