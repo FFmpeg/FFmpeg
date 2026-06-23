@@ -26,8 +26,7 @@
 #define OFFSET(x) offsetof(NvencContext, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    { "preset",       "Set the encoding preset",            OFFSET(preset),       AV_OPT_TYPE_INT,   { .i64 = PRESET_P4 }, PRESET_DEFAULT, PRESET_P7, VE, .unit = "preset" },
-    { "default",      "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = PRESET_DEFAULT }, 0, 0, VE, .unit = "preset" },
+    { "preset",       "Set the encoding preset",            OFFSET(preset),       AV_OPT_TYPE_INT,   { .i64 = PRESET_P4 }, PRESET_SLOW, PRESET_P7, VE, .unit = "preset" },
     { "slow",         "hq 2 passes",                        0,                    AV_OPT_TYPE_CONST, { .i64 = PRESET_SLOW },    0, 0, VE, .unit = "preset" },
     { "medium",       "hq 1 pass",                          0,                    AV_OPT_TYPE_CONST, { .i64 = PRESET_MEDIUM },  0, 0, VE, .unit = "preset" },
     { "fast",         "hp 1 pass",                          0,                    AV_OPT_TYPE_CONST, { .i64 = PRESET_FAST },    0, 0, VE, .unit = "preset" },

@@ -211,16 +211,6 @@ static void nvenc_map_preset(NvencContext *ctx)
         PRESET_ALIAS(SLOW,   P7, NVENC_TWO_PASSES),
         PRESET_ALIAS(MEDIUM, P4, NVENC_ONE_PASS),
         PRESET_ALIAS(FAST,   P1, NVENC_ONE_PASS),
-        // Compat aliases
-        PRESET_ALIAS(DEFAULT,             P4, NVENC_DEPRECATED_PRESET),
-        PRESET_ALIAS(HP,                  P1, NVENC_DEPRECATED_PRESET),
-        PRESET_ALIAS(HQ,                  P7, NVENC_DEPRECATED_PRESET),
-        PRESET_ALIAS(BD,                  P5, NVENC_DEPRECATED_PRESET),
-        PRESET_ALIAS(LOW_LATENCY_DEFAULT, P4, NVENC_DEPRECATED_PRESET | NVENC_LOWLATENCY),
-        PRESET_ALIAS(LOW_LATENCY_HP,      P1, NVENC_DEPRECATED_PRESET | NVENC_LOWLATENCY),
-        PRESET_ALIAS(LOW_LATENCY_HQ,      P7, NVENC_DEPRECATED_PRESET | NVENC_LOWLATENCY),
-        PRESET_ALIAS(LOSSLESS_DEFAULT,    P4, NVENC_DEPRECATED_PRESET | NVENC_LOSSLESS),
-        PRESET_ALIAS(LOSSLESS_HP,         P1, NVENC_DEPRECATED_PRESET | NVENC_LOSSLESS),
     };
 
     GUIDTuple *t = &presets[ctx->preset];
@@ -713,9 +703,6 @@ static av_cold int nvenc_setup_device(AVCodecContext *avctx)
     }
 
     nvenc_map_preset(ctx);
-
-    if (ctx->flags & NVENC_DEPRECATED_PRESET)
-        av_log(avctx, AV_LOG_WARNING, "The selected preset is deprecated. Use p1 to p7 + -tune or fast/medium/slow.\n");
 
     if (avctx->pix_fmt == AV_PIX_FMT_CUDA || avctx->pix_fmt == AV_PIX_FMT_D3D11 || avctx->hw_frames_ctx || avctx->hw_device_ctx) {
         AVHWFramesContext   *frames_ctx;

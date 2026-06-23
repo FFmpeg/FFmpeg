@@ -111,18 +111,9 @@ typedef struct NvencDynLoadFunctions
 } NvencDynLoadFunctions;
 
 enum {
-    PRESET_DEFAULT = 0,
-    PRESET_SLOW,
+    PRESET_SLOW = 0,
     PRESET_MEDIUM,
     PRESET_FAST,
-    PRESET_HP,
-    PRESET_HQ,
-    PRESET_BD ,
-    PRESET_LOW_LATENCY_DEFAULT ,
-    PRESET_LOW_LATENCY_HQ ,
-    PRESET_LOW_LATENCY_HP,
-    PRESET_LOSSLESS_DEFAULT,
-    PRESET_LOSSLESS_HP,
     PRESET_P1,
     PRESET_P2,
     PRESET_P3,
@@ -161,8 +152,6 @@ enum {
     NVENC_LOSSLESS   = 2,
     NVENC_ONE_PASS   = 4,
     NVENC_TWO_PASSES = 8,
-
-    NVENC_DEPRECATED_PRESET = 0x8000,
 };
 
 enum {
