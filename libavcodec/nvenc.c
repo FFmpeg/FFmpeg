@@ -48,13 +48,7 @@
 
 #define NVENC_CAP 0x30
 
-#ifndef NVENC_NO_DEPRECATED_RC
-#define IS_CBR(rc) (rc == NV_ENC_PARAMS_RC_CBR ||             \
-                    rc == NV_ENC_PARAMS_RC_CBR_LOWDELAY_HQ || \
-                    rc == NV_ENC_PARAMS_RC_CBR_HQ)
-#else
 #define IS_CBR(rc) (rc == NV_ENC_PARAMS_RC_CBR)
-#endif
 
 const enum AVPixelFormat ff_nvenc_pix_fmts[] = {
     AV_PIX_FMT_YUV420P,
@@ -951,26 +945,10 @@ static void nvenc_override_rate_control(AVCodecContext *avctx)
     case NV_ENC_PARAMS_RC_CONSTQP:
         set_constqp(avctx);
         return;
-#ifndef NVENC_NO_DEPRECATED_RC
-    case NV_ENC_PARAMS_RC_VBR_MINQP:
-        if (avctx->qmin < 0 && ctx->qmin < 0) {
-            av_log(avctx, AV_LOG_WARNING,
-                   "The variable bitrate rate-control requires "
-                   "the 'qmin' option set.\n");
-            set_vbr(avctx);
-            return;
-        }
-        /* fall through */
-    case NV_ENC_PARAMS_RC_VBR_HQ:
-#endif
     case NV_ENC_PARAMS_RC_VBR:
         set_vbr(avctx);
         break;
     case NV_ENC_PARAMS_RC_CBR:
-#ifndef NVENC_NO_DEPRECATED_RC
-    case NV_ENC_PARAMS_RC_CBR_HQ:
-    case NV_ENC_PARAMS_RC_CBR_LOWDELAY_HQ:
-#endif
         break;
     }
 
@@ -1054,13 +1032,6 @@ static av_cold int nvenc_setup_rate_control(AVCodecContext *avctx)
         } else if (ctx->quality >= 0.0f) {
             ctx->rc = NV_ENC_PARAMS_RC_VBR;
         }
-    }
-
-    if (ctx->rc >= 0 && ctx->rc & RC_MODE_DEPRECATED) {
-        av_log(avctx, AV_LOG_WARNING, "Specified rc mode is deprecated.\n");
-        av_log(avctx, AV_LOG_WARNING, "Use -rc constqp/cbr/vbr, -tune and -multipass instead.\n");
-
-        ctx->rc &= ~RC_MODE_DEPRECATED;
     }
 
     ctx->encode_config.rcParams.cbQPIndexOffset = ctx->qp_cb_offset;
@@ -1241,15 +1212,6 @@ static av_cold int nvenc_setup_h264_config(AVCodecContext *avctx)
     }
 
     h264->outputPictureTimingSEI = 1;
-
-#ifndef NVENC_NO_DEPRECATED_RC
-    if (cc->rcParams.rateControlMode == NV_ENC_PARAMS_RC_CBR_LOWDELAY_HQ ||
-        cc->rcParams.rateControlMode == NV_ENC_PARAMS_RC_CBR_HQ ||
-        cc->rcParams.rateControlMode == NV_ENC_PARAMS_RC_VBR_HQ) {
-        h264->adaptiveTransformMode = NV_ENC_H264_ADAPTIVE_TRANSFORM_ENABLE;
-        h264->fmoMode = NV_ENC_H264_FMO_DISABLE;
-    }
-#endif
 
     if (ctx->flags & NVENC_LOSSLESS) {
         h264->qpPrimeYZeroTransformBypassFlag = 1;

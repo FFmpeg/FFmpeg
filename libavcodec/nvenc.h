@@ -39,8 +39,6 @@ typedef void ID3D11Device;
 #include "avcodec.h"
 
 #define MAX_REGISTERED_FRAMES 64
-#define RC_MODE_DEPRECATED 0x800000
-#define RCD(rc_mode) ((rc_mode) | RC_MODE_DEPRECATED)
 
 #define NVENCAPI_CHECK_VERSION(major, minor) \
     ((major) < NVENCAPI_MAJOR_VERSION || ((major) == NVENCAPI_MAJOR_VERSION && (minor) <= NVENCAPI_MINOR_VERSION))
@@ -52,7 +50,6 @@ typedef void ID3D11Device;
 
 // SDK 12.1 compile time feature checks
 #if NVENCAPI_CHECK_VERSION(12, 1)
-#define NVENC_NO_DEPRECATED_RC
 #define NVENC_HAVE_SPLIT_FRAME_ENCODING
 #endif
 
