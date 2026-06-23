@@ -43,45 +43,44 @@ int ff_sws_uop_cmp(const SwsUOp *a, const SwsUOp *b)
 static const struct {
     char full[32];
     char abbr[32];
-    char macro[32];
 } uop_names[SWS_UOP_TYPE_NB] = {
-#define UOP_NAME(OP, ABBR) [SWS_UOP_##OP] = { "SWS_UOP_" #OP, ABBR, #OP }
-    UOP_NAME(INVALID,           "invalid"),
-    UOP_NAME(READ_PLANAR,       "read_planar"),
-    UOP_NAME(READ_PLANAR_FH,    "read_planar_fh"),
-    UOP_NAME(READ_PLANAR_FV,    "read_planar_fv"),
-    UOP_NAME(READ_PLANAR_FV_FMA,"read_planar_fv_fma"),
-    UOP_NAME(READ_PACKED,       "read_packed"),
-    UOP_NAME(READ_NIBBLE,       "read_nibble"),
-    UOP_NAME(READ_BIT,          "read_bit"),
-    UOP_NAME(READ_PALETTE,      "read_palette"),
-    UOP_NAME(WRITE_PLANAR,      "write_planar"),
-    UOP_NAME(WRITE_PACKED,      "write_packed"),
-    UOP_NAME(WRITE_NIBBLE,      "write_nibble"),
-    UOP_NAME(WRITE_BIT,         "write_bit"),
-    UOP_NAME(PERMUTE,           "permute"),
-    UOP_NAME(COPY,              "copy"),
-    UOP_NAME(MOVE,              "move"),
-    UOP_NAME(SWAP_BYTES,        "swap_bytes"),
-    UOP_NAME(EXPAND_BIT,        "expand_bit"),
-    UOP_NAME(EXPAND_PAIR,       "expand_pair"),
-    UOP_NAME(EXPAND_QUAD,       "expand_quad"),
-    UOP_NAME(TO_U8,             "to_u8"),
-    UOP_NAME(TO_U16,            "to_u16"),
-    UOP_NAME(TO_U32,            "to_u32"),
-    UOP_NAME(TO_F32,            "to_f32"),
-    UOP_NAME(SCALE,             "scale"),
-    UOP_NAME(LINEAR,            "linear"),
-    UOP_NAME(LINEAR_FMA,        "linear_fma"),
-    UOP_NAME(ADD,               "add"),
-    UOP_NAME(MIN,               "min"),
-    UOP_NAME(MAX,               "max"),
-    UOP_NAME(UNPACK,            "unpack"),
-    UOP_NAME(PACK,              "pack"),
-    UOP_NAME(LSHIFT,            "lshift"),
-    UOP_NAME(RSHIFT,            "rshift"),
-    UOP_NAME(CLEAR,             "clear"),
-    UOP_NAME(DITHER,            "dither"),
+#define UOP_NAME(OP, ABBR) [OP] = { #OP, ABBR }
+    UOP_NAME(SWS_UOP_INVALID,            "invalid"),
+    UOP_NAME(SWS_UOP_READ_PLANAR,        "read_planar"),
+    UOP_NAME(SWS_UOP_READ_PLANAR_FH,     "read_planar_fh"),
+    UOP_NAME(SWS_UOP_READ_PLANAR_FV,     "read_planar_fv"),
+    UOP_NAME(SWS_UOP_READ_PLANAR_FV_FMA, "read_planar_fv_fma"),
+    UOP_NAME(SWS_UOP_READ_PACKED,        "read_packed"),
+    UOP_NAME(SWS_UOP_READ_NIBBLE,        "read_nibble"),
+    UOP_NAME(SWS_UOP_READ_BIT,           "read_bit"),
+    UOP_NAME(SWS_UOP_READ_PALETTE,       "read_palette"),
+    UOP_NAME(SWS_UOP_WRITE_PLANAR,       "write_planar"),
+    UOP_NAME(SWS_UOP_WRITE_PACKED,       "write_packed"),
+    UOP_NAME(SWS_UOP_WRITE_NIBBLE,       "write_nibble"),
+    UOP_NAME(SWS_UOP_WRITE_BIT,          "write_bit"),
+    UOP_NAME(SWS_UOP_PERMUTE,            "permute"),
+    UOP_NAME(SWS_UOP_COPY,               "copy"),
+    UOP_NAME(SWS_UOP_MOVE,               "move"),
+    UOP_NAME(SWS_UOP_SWAP_BYTES,         "swap_bytes"),
+    UOP_NAME(SWS_UOP_EXPAND_BIT,         "expand_bit"),
+    UOP_NAME(SWS_UOP_EXPAND_PAIR,        "expand_pair"),
+    UOP_NAME(SWS_UOP_EXPAND_QUAD,        "expand_quad"),
+    UOP_NAME(SWS_UOP_TO_U8,              "to_u8"),
+    UOP_NAME(SWS_UOP_TO_U16,             "to_u16"),
+    UOP_NAME(SWS_UOP_TO_U32,             "to_u32"),
+    UOP_NAME(SWS_UOP_TO_F32,             "to_f32"),
+    UOP_NAME(SWS_UOP_SCALE,              "scale"),
+    UOP_NAME(SWS_UOP_LINEAR,             "linear"),
+    UOP_NAME(SWS_UOP_LINEAR_FMA,         "linear_fma"),
+    UOP_NAME(SWS_UOP_ADD,                "add"),
+    UOP_NAME(SWS_UOP_MIN,                "min"),
+    UOP_NAME(SWS_UOP_MAX,                "max"),
+    UOP_NAME(SWS_UOP_UNPACK,             "unpack"),
+    UOP_NAME(SWS_UOP_PACK,               "pack"),
+    UOP_NAME(SWS_UOP_LSHIFT,             "lshift"),
+    UOP_NAME(SWS_UOP_RSHIFT,             "rshift"),
+    UOP_NAME(SWS_UOP_CLEAR,              "clear"),
+    UOP_NAME(SWS_UOP_DITHER,             "dither"),
 #undef UOP_NAME
 };
 
@@ -1057,7 +1056,7 @@ int ff_sws_uops_macros_gen(char **out_str)
     SwsUOp key = { .data.opaque = bp };
     for (key.type = SWS_PIXEL_NONE + 1; key.type < SWS_PIXEL_TYPE_NB; key.type++) {
         for (key.uop = SWS_UOP_INVALID + 1; key.uop < SWS_UOP_TYPE_NB; key.uop++) {
-            const char *macro  = uop_names[key.uop].macro;
+            const char *macro  = uop_names[key.uop].full + sizeof("SWS_UOP_") - 1;
             const char *prefix = pixel_types[key.type].prefix;
             av_bprintf(bp, "#define SWS_FOR_%s%s(MACRO, ...)", prefix, macro);
             av_tree_enumerate(root, &key, enum_type, generate_entry_args);
