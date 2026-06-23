@@ -661,6 +661,16 @@ static int ensure_playlist(HLSContext *c, struct playlist **pls, const char *url
     return 0;
 }
 
+static int is_native_http(AVIOContext *pb)
+{
+#if !CONFIG_HTTP_PROTOCOL
+    return 0;
+#else
+    URLContext *uc = ffio_geturlcontext(pb);
+    return uc && !strncmp(uc->prot->name, "http", 4);
+#endif
+}
+
 static int open_url_keepalive(AVFormatContext *s, AVIOContext **pb,
                               const char *url, AVDictionary **options)
 {
@@ -730,7 +740,7 @@ static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
     av_dict_copy(&tmp, *opts, 0);
     av_dict_copy(&tmp, opts2, 0);
 
-    if (is_http && c->http_persistent && *pb) {
+    if (is_http && c->http_persistent && is_native_http(*pb)) {
         ret = open_url_keepalive(c->ctx, pb, url, &tmp);
         if (ret == AVERROR_EXIT) {
             av_dict_free(&tmp);
@@ -745,6 +755,7 @@ static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
             ret = s->io_open(s, pb, url, AVIO_FLAG_READ, &tmp);
         }
     } else {
+        av_assert0(!*pb);
         ret = s->io_open(s, pb, url, AVIO_FLAG_READ, &tmp);
     }
     if (ret >= 0) {
@@ -862,7 +873,7 @@ static int parse_playlist(HLSContext *c, const char *url,
         if (ret < 0)
             return ret;
 
-        if (is_http && c->http_persistent)
+        if (is_http && c->http_persistent && is_native_http(in))
             c->playlist_pb = in;
         else
             close_in = 1;
@@ -1754,6 +1765,7 @@ static int read_data_continuous(void *opaque, uint8_t *buf, int buf_size)
     struct segment *seg;
 
     if (c->http_persistent && v->input_read_done) {
+        av_assert0(v->input);
         ret = reload_playlist(v, c);
         if (ret < 0)
             return ret;
@@ -1855,7 +1867,7 @@ restart:
          * join the ranges. */
         v->input_reuse = 1;
         v->input_read_done = 1;
-    } else if (c->http_persistent &&
+    } else if (c->http_persistent && is_native_http(v->input) &&
         seg->key_type == KEY_NONE && av_strstart(seg->url, "http", NULL)) {
         v->input_read_done = 1;
     } else {
