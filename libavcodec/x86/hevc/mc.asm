@@ -1090,27 +1090,17 @@ cglobal hevc_put_uni_w%1_%2, 6, 6, 7, dst, dststride, src, height, denom, wx, ox
     jnz               .loop                      ; height loop
     RET
 
-cglobal hevc_put_bi_w%1_%2, 4, 6, 10, dst, dststride, src, src2, height, denom, wx0, wx1, ox0, ox1
+cglobal hevc_put_bi_w%1_%2, 4, 6, 6, dst, dststride, src, src2, height, denom, wx0, wx1, ox0, ox1
     movifnidn        r5d, denomm
-%if %1 <= 4
-    pxor              m1, m1
-%endif
-    movd              m2, wx0m         ; WX0
+    movd              m3, wx0m         ; WX0
     lea              r5d, [r5d+14-%2]  ; shift = 14 - bitd + denom
-    movd              m3, wx1m         ; WX1
+    movd              m2, wx1m         ; WX1
     movd              m0, r5d          ; shift
-%if %1 <= 4
-    punpcklwd         m2, m1
-    punpcklwd         m3, m1
-%else
-    punpcklwd         m2, m2
-    punpcklwd         m3, m3
-%endif
+    punpcklwd         m2, m3
     inc              r5d
     movd              m5, r5d          ; shift+1
     pshufd            m2, m2, 0
     mov              r5d, ox0m
-    pshufd            m3, m3, 0
     add              r5d, ox1m
 %if %2 != 8
     shl              r5d, %2-8         ; ox << (bitd - 8)
@@ -1128,26 +1118,16 @@ cglobal hevc_put_bi_w%1_%2, 4, 6, 10, dst, dststride, src, src2, height, denom, 
 
 .loop:
    SIMPLE_LOAD        %1, 10, srcq,  m0
-   SIMPLE_LOAD        %1, 10, src2q, m8
+   SIMPLE_LOAD        %1, 10, src2q, m1
 %if %1 <= 4
     punpcklwd         m0, m1
-    punpcklwd         m8, m1
-    pmaddwd           m0, m3
-    pmaddwd           m8, m2
+    pmaddwd           m0, m2
     paddd             m0, m4
-    paddd             m0, m8
     psrad             m0, m5
 %else
-    pmulhw            m6, m0, m3
-    pmullw            m0, m3
-    pmulhw            m7, m8, m2
-    pmullw            m8, m2
-    punpckhwd         m1, m0, m6
-    punpcklwd         m0, m6
-    punpckhwd         m9, m8, m7
-    punpcklwd         m8, m7
-    paddd             m0, m8
-    paddd             m1, m9
+    SBUTTERFLY        wd, 0, 1, 3
+    pmaddwd           m0, m2
+    pmaddwd           m1, m2
     paddd             m0, m4
     paddd             m1, m4
     psrad             m0, m5
