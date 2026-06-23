@@ -97,7 +97,7 @@ typedef struct HEVCDSPContext {
                                        int height, intptr_t mx, intptr_t my, int width);
     void (*put_hevc_epel_bi_w[10][2][2])(uint8_t *dst, ptrdiff_t dststride,
                                          const uint8_t *_src, ptrdiff_t _srcstride, const int16_t *src2,
-                                         int height, int denom, int wx0, int ox0, int wx1,
+                                         int height, int denom, int wx0, int wx1, int ox0,
                                          int ox1, intptr_t mx, intptr_t my, int width);
 
     void (*hevc_h_loop_filter_luma)(uint8_t *pix, ptrdiff_t stride,
