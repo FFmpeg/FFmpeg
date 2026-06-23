@@ -1536,6 +1536,7 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     uint64_t off = s->off;
     const char *method;
     int send_expect_100 = 0;
+    int keep_alive = 1;
 
     av_bprint_init_for_buffer(&request, s->buffer, sizeof(s->buffer));
 
@@ -1612,8 +1613,10 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     if (send_expect_100 && !has_header(s->headers, "\r\nExpect: "))
         av_bprintf(&request, "Expect: 100-continue\r\n");
 
-    if (!has_header(s->headers, "\r\nConnection: "))
-        av_bprintf(&request, "Connection: %s\r\n", s->multiple_requests ? "keep-alive" : "close");
+    if (!has_header(s->headers, "\r\nConnection: ")) {
+        keep_alive = s->multiple_requests;
+        av_bprintf(&request, "Connection: %s\r\n", keep_alive ? "keep-alive" : "close");
+    }
 
     if (!has_header(s->headers, "\r\nHost: "))
         av_bprintf(&request, "Host: %s\r\n", hoststr);
@@ -1665,7 +1668,7 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     s->icy_data_read    = 0;
     s->filesize         = UINT64_MAX;
     s->range_end        = 0;
-    s->willclose        = 0;
+    s->willclose        = !keep_alive;
     s->end_chunked_post = 0;
     s->end_header       = 0;
 #if CONFIG_ZLIB
