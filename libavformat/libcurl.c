@@ -996,7 +996,7 @@ static const AVOption options[] = {
     { "max_redirects", "maximum number of redirects to follow", OFFSET(max_redirects), AV_OPT_TYPE_INT, { .i64 = 16 }, 0, INT_MAX, D },
     { "multiple_requests", "reuse the connection across requests (HTTP keep-alive)", OFFSET(multiple_requests), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, D | E },
     { "max_retries", "maximum number of retries after a recoverable error", OFFSET(max_retries), AV_OPT_TYPE_INT, { .i64 = 5 }, 0, INT_MAX, D },
-    { "buffer_size", "receive buffer size in bytes", OFFSET(buffer_size), AV_OPT_TYPE_INT64, { .i64 = CURL_DEFAULT_BUFFER_SIZE }, 1024, INT64_MAX, D },
+    { "buffer_size", "receive buffer size in bytes", OFFSET(buffer_size), AV_OPT_TYPE_INT64, { .i64 = CURL_DEFAULT_BUFFER_SIZE }, CURL_MAX_WRITE_SIZE, INT64_MAX, D },
     { "request_size", "split a transfer into ranged requests of at most this many bytes (0 = unlimited)", OFFSET(request_size), AV_OPT_TYPE_INT64, { .i64 = 0 }, 0, INT64_MAX, D },
     { "http_version", "HTTP version to use", OFFSET(http_version), AV_OPT_TYPE_INT, { .i64 = CURL_HTTP_VERSION_NONE }, 0, INT_MAX, D, .unit = "http_version" },
         { "auto",              "negotiate the best supported version",  0, AV_OPT_TYPE_CONST, { .i64 = CURL_HTTP_VERSION_NONE },                0, 0, D, .unit = "http_version" },
