@@ -753,10 +753,10 @@ static void setup_curl(CurlContext *c)
     if (c->key_file)
         curl_easy_setopt(e, CURLOPT_SSLKEY, c->key_file);
 
+    curl_easy_setopt(e, CURLOPT_COOKIEFILE, "");
     if (c->cookies && c->cookies[0]) {
         char *copy = av_strdup(c->cookies);
         char *line, *saveptr = NULL;
-        curl_easy_setopt(e, CURLOPT_COOKIEFILE, ""); /* enable the cookie engine */
         if (copy) {
             for (line = av_strtok(copy, "\r\n", &saveptr); line;
                  line = av_strtok(NULL, "\r\n", &saveptr)) {
