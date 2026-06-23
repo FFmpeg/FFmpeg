@@ -299,26 +299,26 @@ static int vsink_query_formats(const AVFilterContext *ctx,
     const BufferSinkContext *buf = ctx->priv;
     int ret;
 
-        if (buf->nb_pixel_formats) {
-            ret = ff_set_pixel_formats_from_list2(ctx, cfg_in, cfg_out, buf->pixel_formats);
-            if (ret < 0)
-                return ret;
-        }
-        if (buf->nb_colorspaces) {
-            ret = ff_set_common_color_spaces_from_list2(ctx, cfg_in, cfg_out, buf->colorspaces);
-            if (ret < 0)
-                return ret;
-        }
-        if (buf->nb_colorranges) {
-            ret = ff_set_common_color_ranges_from_list2(ctx, cfg_in, cfg_out, buf->colorranges);
-            if (ret < 0)
-                return ret;
-        }
-        if (buf->nb_alphamodes) {
-            ret = ff_set_common_alpha_modes_from_list2(ctx, cfg_in, cfg_out, buf->alphamodes);
-            if (ret < 0)
-                return ret;
-        }
+    if (buf->nb_pixel_formats) {
+        ret = ff_set_pixel_formats_from_list2(ctx, cfg_in, cfg_out, buf->pixel_formats);
+        if (ret < 0)
+            return ret;
+    }
+    if (buf->nb_colorspaces) {
+        ret = ff_set_common_color_spaces_from_list2(ctx, cfg_in, cfg_out, buf->colorspaces);
+        if (ret < 0)
+            return ret;
+    }
+    if (buf->nb_colorranges) {
+        ret = ff_set_common_color_ranges_from_list2(ctx, cfg_in, cfg_out, buf->colorranges);
+        if (ret < 0)
+            return ret;
+    }
+    if (buf->nb_alphamodes) {
+        ret = ff_set_common_alpha_modes_from_list2(ctx, cfg_in, cfg_out, buf->alphamodes);
+        if (ret < 0)
+            return ret;
+    }
 
     return 0;
 }
@@ -330,21 +330,21 @@ static int asink_query_formats(const AVFilterContext *ctx,
     const BufferSinkContext *buf = ctx->priv;
     int ret;
 
-        if (buf->nb_sample_formats) {
-            ret = ff_set_sample_formats_from_list2(ctx, cfg_in, cfg_out, buf->sample_formats);
-            if (ret < 0)
-                return ret;
-        }
-        if (buf->nb_samplerates) {
-            ret = ff_set_common_samplerates_from_list2(ctx, cfg_in, cfg_out, buf->samplerates);
-            if (ret < 0)
-                return ret;
-        }
-        if (buf->nb_channel_layouts) {
-            ret = ff_set_common_channel_layouts_from_list2(ctx, cfg_in, cfg_out, buf->channel_layouts);
-            if (ret < 0)
-                return ret;
-        }
+    if (buf->nb_sample_formats) {
+        ret = ff_set_sample_formats_from_list2(ctx, cfg_in, cfg_out, buf->sample_formats);
+        if (ret < 0)
+            return ret;
+    }
+    if (buf->nb_samplerates) {
+        ret = ff_set_common_samplerates_from_list2(ctx, cfg_in, cfg_out, buf->samplerates);
+        if (ret < 0)
+            return ret;
+    }
+    if (buf->nb_channel_layouts) {
+        ret = ff_set_common_channel_layouts_from_list2(ctx, cfg_in, cfg_out, buf->channel_layouts);
+        if (ret < 0)
+            return ret;
+    }
 
     return 0;
 }
