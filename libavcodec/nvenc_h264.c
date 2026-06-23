@@ -26,11 +26,7 @@
 #define OFFSET(x) offsetof(NvencContext, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-#ifdef NVENC_HAVE_NEW_PRESETS
     { "preset",       "Set the encoding preset",            OFFSET(preset),       AV_OPT_TYPE_INT,   { .i64 = PRESET_P4 },     PRESET_DEFAULT, PRESET_P7,          VE, .unit = "preset" },
-#else
-    { "preset",       "Set the encoding preset",            OFFSET(preset),       AV_OPT_TYPE_INT,   { .i64 = PRESET_MEDIUM }, PRESET_DEFAULT, PRESET_LOSSLESS_HP, VE, .unit = "preset" },
-#endif
     { "default",      "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = PRESET_DEFAULT },             0, 0, VE, .unit = "preset" },
     { "slow",         "hq 2 passes",                        0,                    AV_OPT_TYPE_CONST, { .i64 = PRESET_SLOW },                0, 0, VE, .unit = "preset" },
     { "medium",       "hq 1 pass",                          0,                    AV_OPT_TYPE_CONST, { .i64 = PRESET_MEDIUM },              0, 0, VE, .unit = "preset" },
@@ -43,7 +39,6 @@ static const AVOption options[] = {
     { "llhp",         "low latency hp",                     0,                    AV_OPT_TYPE_CONST, { .i64 = PRESET_LOW_LATENCY_HP },      0, 0, VE, .unit = "preset" },
     { "lossless",     "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = PRESET_LOSSLESS_DEFAULT },    0, 0, VE, .unit = "preset" },
     { "losslesshp",   "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = PRESET_LOSSLESS_HP },         0, 0, VE, .unit = "preset" },
-#ifdef NVENC_HAVE_NEW_PRESETS
     { "p1",          "fastest (lowest quality)",            0,                    AV_OPT_TYPE_CONST, { .i64 = PRESET_P1 },                  0, 0, VE, .unit = "preset" },
     { "p2",          "faster (lower quality)",              0,                    AV_OPT_TYPE_CONST, { .i64 = PRESET_P2 },                  0, 0, VE, .unit = "preset" },
     { "p3",          "fast (low quality)",                  0,                    AV_OPT_TYPE_CONST, { .i64 = PRESET_P3 },                  0, 0, VE, .unit = "preset" },
@@ -56,7 +51,6 @@ static const AVOption options[] = {
     { "ll",          "Low latency",                         0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_TUNING_INFO_LOW_LATENCY },              0, 0, VE, .unit = "tune" },
     { "ull",         "Ultra low latency",                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_TUNING_INFO_ULTRA_LOW_LATENCY },        0, 0, VE, .unit = "tune" },
     { "lossless",    "Lossless",                            0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_TUNING_INFO_LOSSLESS },                 0, 0, VE, .unit = "tune" },
-#endif
     { "profile",      "Set the encoding profile",           OFFSET(profile),      AV_OPT_TYPE_INT,   { .i64 = NV_ENC_H264_PROFILE_HIGH }, NV_ENC_H264_PROFILE_BASELINE, NV_ENC_H264_PROFILE_HIGH_444P, VE, .unit = "profile" },
     { "baseline",     "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_H264_PROFILE_BASELINE },  0, 0, VE, .unit = "profile" },
     { "main",         "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_H264_PROFILE_MAIN },      0, 0, VE, .unit = "profile" },
@@ -68,11 +62,7 @@ static const AVOption options[] = {
     { "high422",      "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_H264_PROFILE_HIGH_422 },  0, 0, VE, .unit = "profile" },
 #endif
     { "high444p",     "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_H264_PROFILE_HIGH_444P }, 0, 0, VE, .unit = "profile" },
-#ifdef NVENC_HAVE_H264_LVL6
     { "level",        "Set the encoding level restriction", OFFSET(level),        AV_OPT_TYPE_INT,   { .i64 = NV_ENC_LEVEL_AUTOSELECT }, NV_ENC_LEVEL_AUTOSELECT, NV_ENC_LEVEL_H264_62, VE, .unit = "level" },
-#else
-    { "level",        "Set the encoding level restriction", OFFSET(level),        AV_OPT_TYPE_INT,   { .i64 = NV_ENC_LEVEL_AUTOSELECT }, NV_ENC_LEVEL_AUTOSELECT, NV_ENC_LEVEL_H264_52, VE, .unit = "level" },
-#endif
     { "auto",         "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_LEVEL_AUTOSELECT },    0, 0, VE, .unit = "level" },
     { "1",            "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_LEVEL_H264_1 },        0, 0, VE, .unit = "level" },
     { "1.0",          "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_LEVEL_H264_1 },        0, 0, VE, .unit = "level" },
@@ -97,11 +87,9 @@ static const AVOption options[] = {
     { "5.0",          "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_LEVEL_H264_5 },        0, 0, VE, .unit = "level" },
     { "5.1",          "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_LEVEL_H264_51 },       0, 0, VE, .unit = "level" },
     { "5.2",          "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_LEVEL_H264_52 },       0, 0, VE, .unit = "level" },
-#ifdef NVENC_HAVE_H264_LVL6
     { "6.0",          "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_LEVEL_H264_60 },       0, 0, VE, .unit = "level" },
     { "6.1",          "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_LEVEL_H264_61 },       0, 0, VE, .unit = "level" },
     { "6.2",          "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_LEVEL_H264_62 },       0, 0, VE, .unit = "level" },
-#endif
     { "rc",           "Override the preset rate-control",   OFFSET(rc),           AV_OPT_TYPE_INT,   { .i64 = -1 },                                  -1, INT_MAX, VE, .unit = "rc" },
     { "constqp",      "Constant QP mode",                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_PARAMS_RC_CONSTQP },                   0, 0, VE, .unit = "rc" },
     { "vbr",          "Variable bitrate mode",              0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_PARAMS_RC_VBR },                       0, 0, VE, .unit = "rc" },
@@ -187,38 +175,27 @@ static const AVOption options[] = {
     { "cavlc",        "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_H264_ENTROPY_CODING_MODE_CAVLC      }, 0, 0, VE, .unit = "coder" },
     { "ac",           "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_H264_ENTROPY_CODING_MODE_CABAC      }, 0, 0, VE, .unit = "coder" },
     { "vlc",          "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_H264_ENTROPY_CODING_MODE_CAVLC      }, 0, 0, VE, .unit = "coder" },
-#ifdef NVENC_HAVE_BFRAME_REF_MODE
     { "b_ref_mode",   "Use B frames as references",         OFFSET(b_ref_mode),   AV_OPT_TYPE_INT,   { .i64 = -1 }, -1, NV_ENC_BFRAME_REF_MODE_MIDDLE, VE, .unit = "b_ref_mode" },
     { "disabled",     "B frames will not be used for reference", 0,               AV_OPT_TYPE_CONST, { .i64 = NV_ENC_BFRAME_REF_MODE_DISABLED }, 0, 0, VE, .unit = "b_ref_mode" },
     { "each",         "Each B frame will be used for reference", 0,               AV_OPT_TYPE_CONST, { .i64 = NV_ENC_BFRAME_REF_MODE_EACH }, 0, 0, VE, .unit = "b_ref_mode" },
     { "middle",       "Only (number of B frames)/2 will be used for reference", 0,AV_OPT_TYPE_CONST, { .i64 = NV_ENC_BFRAME_REF_MODE_MIDDLE }, 0, 0, VE, .unit = "b_ref_mode" },
-#else
-    { "b_ref_mode",   "(not supported)",                    OFFSET(b_ref_mode),   AV_OPT_TYPE_INT,   { .i64 = -1 }, -1, INT_MAX, VE, .unit = "b_ref_mode" },
-    { "disabled",     "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = 0 }, 0, 0,         VE, .unit = "b_ref_mode" },
-    { "each",         "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = 1 }, 0, 0,         VE, .unit = "b_ref_mode" },
-    { "middle",       "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = 2 }, 0, 0,         VE, .unit = "b_ref_mode" },
-#endif
     { "a53cc",        "Use A53 Closed Captions (if available)", OFFSET(a53_cc),   AV_OPT_TYPE_BOOL,  { .i64 = 1 }, 0, 1, VE },
 #ifdef NVENC_HAVE_TIME_CODE
     { "s12m_tc",      "Use timecode (if available)",        OFFSET(s12m_tc),      AV_OPT_TYPE_BOOL,  { .i64 = 1 }, 0, 1, VE },
 #endif
     { "dpb_size",     "Specifies the DPB size used for encoding (0 means automatic)",
                                                             OFFSET(dpb_size),     AV_OPT_TYPE_INT,   { .i64 = 0 }, 0, INT_MAX, VE },
-#ifdef NVENC_HAVE_MULTIPASS
     { "multipass",    "Set the multipass encoding",         OFFSET(multipass),    AV_OPT_TYPE_INT,   { .i64 = NV_ENC_MULTI_PASS_DISABLED },         NV_ENC_MULTI_PASS_DISABLED, NV_ENC_TWO_PASS_FULL_RESOLUTION, VE, .unit = "multipass" },
     { "disabled",     "Single Pass",                        0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_MULTI_PASS_DISABLED },         0,                          0,                               VE, .unit = "multipass" },
     { "qres",         "Two Pass encoding is enabled where first Pass is quarter resolution",
                                                             0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_TWO_PASS_QUARTER_RESOLUTION }, 0,                          0,                               VE, .unit = "multipass" },
     { "fullres",      "Two Pass encoding is enabled where first Pass is full resolution",
                                                             0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_TWO_PASS_FULL_RESOLUTION },    0,                          0,                               VE, .unit = "multipass" },
-#endif
 #ifdef NVENC_HAVE_H264_10BIT_SUPPORT
     { "highbitdepth", "Enable 10 bit encode for 8 bit input",OFFSET(highbitdepth),AV_OPT_TYPE_BOOL,  { .i64 = 0 }, 0, 1, VE },
 #endif
-#ifdef NVENC_HAVE_LDKFS
     { "ldkfs",        "Low delay key frame scale; Specifies the Scene Change frame size increase allowed in case of single frame VBV and CBR",
                                                             OFFSET(ldkfs),        AV_OPT_TYPE_INT,   { .i64 = 0 }, 0, UCHAR_MAX, VE },
-#endif
     { "extra_sei",    "Pass on extra SEI data (e.g. a53 cc) to be included in the bitstream",
                                                             OFFSET(extra_sei),    AV_OPT_TYPE_BOOL,  { .i64 = 1 }, 0, 1, VE },
     { "udu_sei",      "Pass on user data unregistered SEI if available",
@@ -231,10 +208,8 @@ static const AVOption options[] = {
                                                             OFFSET(max_slice_size), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
     { "constrained-encoding", "Enable constrainedFrame encoding where each slice in the constrained picture is independent of other slices",
                                                             OFFSET(constrained_encoding), AV_OPT_TYPE_BOOL,  { .i64 = 0 }, 0, 1, VE },
-#ifdef NVENC_HAVE_FILLER_DATA
     { "cbr_padding",  "Pad the bitstream to ensure bitrate does not drop below the target in CBR mode",
                                                             OFFSET(cbr_padding),  AV_OPT_TYPE_BOOL,  { .i64 = 0 }, 0, 1, VE },
-#endif
 #ifdef NVENC_HAVE_H264_AND_AV1_TEMPORAL_FILTER
     { "tf_level",     "Specifies the strength of the temporal filtering",
                                                             OFFSET(tf_level),     AV_OPT_TYPE_INT,   { .i64 = -1 }, -1, INT_MAX, VE, .unit = "tf_level" },
