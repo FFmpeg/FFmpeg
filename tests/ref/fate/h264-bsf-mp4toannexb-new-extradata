@@ -1,3 +1,5 @@
+a48f175bf3458410d1dd1907682b92d3 *tests/data/fate/h264-bsf-mp4toannexb-new-extradata.h264
+4642 tests/data/fate/h264-bsf-mp4toannexb-new-extradata.h264
 #tb 0: 1/25
 #media_type 0: video
 #codec_id 0: rawvideo

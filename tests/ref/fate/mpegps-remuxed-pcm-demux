@@ -1,3 +1,5 @@
+28e5de42b1b00d7fa6f98df6a82d122c *tests/data/fate/mpegps-remuxed-pcm-demux.mpeg
+90112 tests/data/fate/mpegps-remuxed-pcm-demux.mpeg
 #tb 0: 1/90000
 #media_type 0: audio
 #codec_id 0: pcm_dvd

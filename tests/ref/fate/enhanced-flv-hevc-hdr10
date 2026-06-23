@@ -1,3 +1,5 @@
+b0de4208f06896778e948558cd9abae7 *tests/data/fate/enhanced-flv-hevc-hdr10.flv
+78196 tests/data/fate/enhanced-flv-hevc-hdr10.flv
 #extradata 0:      110, 0xf07e1884
 #tb 0: 1/1000
 #media_type 0: video
