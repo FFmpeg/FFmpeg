@@ -28,6 +28,7 @@
 #include <string.h>
 
 #include "libavutil/avstring.h"
+#include "libavutil/bprint.h"
 #include "libavutil/error.h"
 #include "libavutil/fifo.h"
 #include "libavutil/log.h"
@@ -699,6 +700,44 @@ static struct curl_slist *build_headers(CurlContext *c)
     return list;
 }
 
+static int setup_protocols(CurlContext *c)
+{
+    const char *wl = c->h->protocol_whitelist;
+    const char *bl = c->h->protocol_blacklist;
+    if (!wl && !bl)
+        return 0;
+
+    AVBPrint bp;
+    av_bprint_init(&bp, 0, AV_BPRINT_SIZE_AUTOMATIC);
+
+    curl_version_info_data *info = curl_version_info(CURLVERSION_NOW);
+    for (const char *const *p = info->protocols; *p; p++) {
+        const char *proto = *p;
+        if (av_strcasecmp(proto, "http") && av_strcasecmp(proto, "https"))
+            continue; /* only http(s) are supported by libcurl.c at the moment */
+        if (wl && av_match_list(proto, wl, ',') <= 0)
+            continue;
+        if (bl && av_match_list(proto, bl, ',') > 0)
+            continue;
+        if (bp.len)
+            av_bprint_chars(&bp, ',', 1);
+        av_bprintf(&bp, "%s", proto);
+    }
+
+    if (!av_bprint_is_complete(&bp))
+        return AVERROR(ENOMEM);
+
+    if (!bp.len) {
+        av_log(c->h, AV_LOG_ERROR, "Set of allowed protocols is empty.\n");
+        return AVERROR(EINVAL);
+    }
+
+    curl_easy_setopt(c->easy, CURLOPT_PROTOCOLS_STR, bp.str);
+    curl_easy_setopt(c->easy, CURLOPT_REDIR_PROTOCOLS_STR, bp.str);
+    av_bprint_finalize(&bp, NULL);
+    return 0;
+}
+
 static void setup_curl(CurlContext *c)
 {
     CURL *e = c->easy;
@@ -857,6 +896,11 @@ static int libcurl_open(URLContext *h, const char *url, int flags,
         ret = AVERROR(ENOMEM);
         goto fail;
     }
+
+    ret = setup_protocols(c);
+    if (ret < 0)
+        goto fail;
+
     setup_curl(c);
 
     ret = curl_dispatch(c->loop, CMD_ADD, c, 0, 0);
@@ -1042,4 +1086,5 @@ const URLProtocol ff_libcurl_protocol = {
     .priv_data_size  = sizeof(CurlContext),
     .priv_data_class = &libcurl_context_class,
     .flags           = URL_PROTOCOL_FLAG_NETWORK,
+    .default_whitelist = "http,https,libcurl",
 };
