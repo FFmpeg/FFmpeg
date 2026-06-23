@@ -792,6 +792,7 @@ static int hls_mux_init(AVFormatContext *s, VariantStream *vs)
     oc->io_open                  = s->io_open;
     oc->io_close2                = s->io_close2;
     oc->strict_std_compliance    = s->strict_std_compliance;
+    oc->flags                    = s->flags;
     av_dict_copy(&oc->metadata, s->metadata, 0);
 
     if (vs->vtt_oformat) {
@@ -799,6 +800,7 @@ static int hls_mux_init(AVFormatContext *s, VariantStream *vs)
         if (ret < 0)
             return ret;
         vtt_oc          = vs->vtt_avf;
+        vtt_oc->flags   = s->flags;
         av_dict_copy(&vtt_oc->metadata, s->metadata, 0);
     }
 
