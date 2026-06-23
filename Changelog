@@ -19,6 +19,7 @@ version <next>:
 - Bitstream filter to split Dolby Vision multi-layer HEVC
 - Add AMF hardware memory mapping support.
 - ONNX Runtime DNN backend with GPU execution provider support
+- Remove deprecated NVENC options and support for pre-11.1 SDK versions
 
 
 version 8.1:
