@@ -156,8 +156,8 @@ static int decode_tag(AVCodecContext *avctx, AVFrame *frame,
 
     blocks     = buf_size / NELLY_BLOCK_LEN;
 
-    if (blocks <= 0) {
-        av_log(avctx, AV_LOG_ERROR, "Packet is too small\n");
+    if (blocks <= 0 || blocks > INT_MAX / NELLY_SAMPLES) {
+        av_log(avctx, AV_LOG_ERROR, "Packet is too small or too large\n");
         return AVERROR_INVALIDDATA;
     }
 
