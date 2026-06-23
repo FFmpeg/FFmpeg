@@ -190,6 +190,12 @@ typedef struct SwsLinearUOp {
     uint32_t exact; /* mask of coefficients whose product is exact */
 } SwsLinearUOp;
 
+#define SWS_MASK(I, J)  (1 << (5 * (I) + (J)))
+#define SWS_MASK_OFF(I) SWS_MASK(I, 4)
+#define SWS_MASK_ROW(I) (0x1F << (5 * (I)))
+#define SWS_MASK_COL(J) (0x8421 << J)
+#define SWS_MASK_DIAG4  (0x41041)
+
 typedef struct SwsDitherUOp {
     uint8_t y_offset[4];
     uint8_t size_log2;

@@ -198,12 +198,6 @@ typedef struct SwsLinearOp {
     uint32_t mask; /* m[i][j] <-> 1 << (5 * i + j) */
 } SwsLinearOp;
 
-#define SWS_MASK(I, J)  (1 << (5 * (I) + (J)))
-#define SWS_MASK_OFF(I) SWS_MASK(I, 4)
-#define SWS_MASK_ROW(I) (0x1F << (5 * (I)))
-#define SWS_MASK_COL(J) (0x8421 << J)
-#define SWS_MASK_DIAG4  (0x41041)
-
 /* Helper function to compute the correct mask */
 uint32_t ff_sws_linear_mask(const SwsLinearOp *c);
 
