@@ -202,22 +202,7 @@ typedef struct SwsLinearOp {
 #define SWS_MASK_OFF(I) SWS_MASK(I, 4)
 #define SWS_MASK_ROW(I) (0x1F << (5 * (I)))
 #define SWS_MASK_COL(J) (0x8421 << J)
-
-enum {
-    SWS_MASK_ALL   = (1 << 20) - 1,
-    SWS_MASK_LUMA  = SWS_MASK(0, 0) | SWS_MASK_OFF(0),
-    SWS_MASK_ALPHA = SWS_MASK(3, 3),
-
-    SWS_MASK_DIAG3 = SWS_MASK(0, 0)  | SWS_MASK(1, 1)  | SWS_MASK(2, 2),
-    SWS_MASK_OFF3  = SWS_MASK_OFF(0) | SWS_MASK_OFF(1) | SWS_MASK_OFF(2),
-    SWS_MASK_MAT3  = SWS_MASK(0, 0)  | SWS_MASK(0, 1)  | SWS_MASK(0, 2) |
-                     SWS_MASK(1, 0)  | SWS_MASK(1, 1)  | SWS_MASK(1, 2) |
-                     SWS_MASK(2, 0)  | SWS_MASK(2, 1)  | SWS_MASK(2, 2),
-
-    SWS_MASK_DIAG4 = SWS_MASK_DIAG3  | SWS_MASK(3, 3),
-    SWS_MASK_OFF4  = SWS_MASK_OFF3   | SWS_MASK_OFF(3),
-    SWS_MASK_MAT4  = SWS_MASK_ALL & ~SWS_MASK_OFF4,
-};
+#define SWS_MASK_DIAG4  (0x41041)
 
 /* Helper function to compute the correct mask */
 uint32_t ff_sws_linear_mask(const SwsLinearOp *c);

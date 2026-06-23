@@ -794,47 +794,6 @@ uint32_t ff_sws_linear_mask(const SwsLinearOp *c)
     return mask;
 }
 
-static const char *describe_lin_mask(uint32_t mask)
-{
-    /* Try to be fairly descriptive without assuming too much */
-    static const struct {
-        char name[24];
-        uint32_t mask;
-    } patterns[] = {
-        { "noop",               0 },
-        { "luma",               SWS_MASK_LUMA },
-        { "alpha",              SWS_MASK_ALPHA },
-        { "luma+alpha",         SWS_MASK_LUMA | SWS_MASK_ALPHA },
-        { "dot3",               0x7 },
-        { "dot4",               0xF },
-        { "row0",               SWS_MASK_ROW(0) },
-        { "row0+alpha",         SWS_MASK_ROW(0) | SWS_MASK_ALPHA },
-        { "col0",               SWS_MASK_COL(0) },
-        { "col0+off3",          SWS_MASK_COL(0) | SWS_MASK_OFF3 },
-        { "off3",               SWS_MASK_OFF3 },
-        { "off3+alpha",         SWS_MASK_OFF3 | SWS_MASK_ALPHA },
-        { "diag3",              SWS_MASK_DIAG3 },
-        { "diag4",              SWS_MASK_DIAG4 },
-        { "diag3+alpha",        SWS_MASK_DIAG3 | SWS_MASK_ALPHA },
-        { "diag3+off3",         SWS_MASK_DIAG3 | SWS_MASK_OFF3 },
-        { "diag3+off3+alpha",   SWS_MASK_DIAG3 | SWS_MASK_OFF3 | SWS_MASK_ALPHA },
-        { "diag4+off4",         SWS_MASK_DIAG4 | SWS_MASK_OFF4 },
-        { "matrix3",            SWS_MASK_MAT3 },
-        { "matrix3+off3",       SWS_MASK_MAT3 | SWS_MASK_OFF3 },
-        { "matrix3+off3+alpha", SWS_MASK_MAT3 | SWS_MASK_OFF3 | SWS_MASK_ALPHA },
-        { "matrix4",            SWS_MASK_MAT4 },
-        { "matrix4+off4",       SWS_MASK_MAT4 | SWS_MASK_OFF4 },
-    };
-
-    for (int i = 0; i < FF_ARRAY_ELEMS(patterns); i++) {
-        if (!(mask & ~patterns[i].mask))
-            return patterns[i].name;
-    }
-
-    av_unreachable("Invalid linear mask!");
-    return "ERR";
-}
-
 static char describe_comp_flags(SwsCompFlags flags)
 {
     if (flags & SWS_COMP_GARBAGE)
@@ -951,7 +910,7 @@ void ff_sws_op_desc(AVBPrint *bp, const SwsOp *op)
         av_bprintf(bp, " <= x");
         break;
     case SWS_OP_LINEAR:
-        av_bprintf(bp, "%-20s: %s [", name, describe_lin_mask(op->lin.mask));
+        av_bprintf(bp, "%-20s: [", name);
         for (int i = 0; i < 4; i++) {
             av_bprintf(bp, "%s[", i ? " " : "");
             for (int j = 0; j < 5; j++) {
