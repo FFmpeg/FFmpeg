@@ -287,7 +287,7 @@ struct AVVkFrame {
     /**
      * Updated after every barrier. One per VkImage.
      */
-    VkAccessFlagBits access[AV_NUM_DATA_POINTERS];
+    VkAccessFlagBits2 access[AV_NUM_DATA_POINTERS];
     VkImageLayout layout[AV_NUM_DATA_POINTERS];
 
     /**
