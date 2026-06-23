@@ -30,7 +30,7 @@ static const uint32_t pixel_mask[] = { 0xffffffff, 0x01ff01ff, 0x03ff03ff, 0x07f
 static const uint32_t pixel_mask16[] = { 0x00ff00ff, 0x01ff01ff, 0x03ff03ff, 0x07ff07ff, 0x0fff0fff };
 static const int sizes[] = { -1, 4, 6, 8, 12, 16, 24, 32, 48, 64 };
 static const int weights[] = { 0, 128, 255, -1 };
-static const int denoms[] = {0, 7, 12, -1 };
+static const int denoms[] = {0, 7, -1 };
 static const int offsets[] = {0, 255, -1 };
 
 #define SIZEOF_PIXEL ((bit_depth + 7) / 8)
