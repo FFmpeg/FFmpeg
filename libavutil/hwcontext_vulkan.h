@@ -307,11 +307,6 @@ struct AVVkFrame {
     uint64_t sem_value[AV_NUM_DATA_POINTERS];
 
     /**
-     * Internal data.
-     */
-    struct AVVkFrameInternal *internal;
-
-    /**
      * Describes the binding offset of each image to the VkDeviceMemory.
      * One per VkImage.
      */
@@ -323,6 +318,11 @@ struct AVVkFrame {
      * One per VkImage.
      */
     uint32_t queue_family[AV_NUM_DATA_POINTERS];
+
+    /**
+     * Internal data. Not to be accessed by users in any way.
+     */
+    struct AVVkFrameInternal *internal;
 };
 
 /**
