@@ -989,11 +989,10 @@ static av_cold int nvenc_setup_rate_control(AVCodecContext *avctx)
 {
     NvencContext *ctx = avctx->priv_data;
 
-    if (avctx->global_quality > 0)
-        av_log(avctx, AV_LOG_WARNING, "Using global_quality with nvenc is deprecated. Use qp instead.\n");
-
-    if (ctx->cqp < 0 && avctx->global_quality > 0)
-        ctx->cqp = avctx->global_quality;
+    if (avctx->global_quality > 0) {
+        av_log(avctx, AV_LOG_ERROR, "Using global_quality with nvenc is not supported. Use qp instead.\n");
+        return AVERROR(EINVAL);
+    }
 
     if (avctx->bit_rate > 0) {
         ctx->encode_config.rcParams.averageBitRate = avctx->bit_rate;
