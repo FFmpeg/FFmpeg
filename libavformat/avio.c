@@ -377,14 +377,19 @@ extern const URLProtocol ff_libcurl_protocol;
  * of the native one. Controlled by the per-open "prefer_libcurl" option. */
 static int prefer_libcurl(const char *filename, AVDictionary **options)
 {
+    URLContext dummy = { .av_class = &url_context_class };
     AVDictionaryEntry *e;
 
-    if (!options || !(e = av_dict_get(*options, "prefer_libcurl", NULL, 0)) ||
-        !atoi(e->value))
+    if (!av_strstart(filename, "http://",  NULL) &&
+        !av_strstart(filename, "https://", NULL))
         return 0;
 
-    return av_strstart(filename, "http://",  NULL) ||
-           av_strstart(filename, "https://", NULL);
+    if (!options || !(e = av_dict_get(*options, "prefer_libcurl", NULL, 0)))
+        return 0;
+    if (av_opt_set(&dummy, "prefer_libcurl", e->value, 0) < 0)
+        return 0;
+
+    return dummy.prefer_libcurl;
 }
 #endif
 
