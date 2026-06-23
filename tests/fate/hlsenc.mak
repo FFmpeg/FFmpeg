@@ -228,7 +228,7 @@ tests/data/hls_iframes_single_mpegts.m3u8: TAG = GEN
 tests/data/hls_iframes_single_mpegts.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
 	-f lavfi -i "testsrc2=size=128x72:rate=1:d=3" -f hls -hls_time 1 -map 0:v \
-	-hls_list_size 0 -c:v mpeg2video -g 1 -flags +bitexact \
+	-hls_list_size 0 -c:v mpeg2video -g 1 -bitexact \
 	-hls_segment_type mpegts -hls_flags iframes_only+single_file \
 	-hls_segment_filename $(TARGET_PATH)/tests/data/hls_iframes_single_mpegts.ts \
 	$(TARGET_PATH)/tests/data/hls_iframes_single_mpegts.m3u8 2>/dev/null
@@ -242,7 +242,7 @@ tests/data/hls_iframes_single_fmp4.m3u8: TAG = GEN
 tests/data/hls_iframes_single_fmp4.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
 	-f lavfi -i "testsrc2=size=128x72:rate=1:d=3" -f hls -hls_time 1 -map 0:v \
-	-hls_list_size 0 -c:v mpeg2video -g 1 -flags +bitexact -dct int \
+	-hls_list_size 0 -c:v mpeg2video -g 1 -bitexact -dct int \
 	-hls_segment_type fmp4 -hls_flags iframes_only+single_file \
 	-hls_segment_filename $(TARGET_PATH)/tests/data/hls_iframes_single_fmp4.mp4 \
 	$(TARGET_PATH)/tests/data/hls_iframes_single_fmp4.m3u8 2>/dev/null
