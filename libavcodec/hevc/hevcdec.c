@@ -185,7 +185,7 @@ static int pred_weight_table(SliceHeader *sh, void *logctx,
         av_log(logctx, AV_LOG_ERROR, "luma_log2_weight_denom %d is invalid\n", luma_log2_weight_denom);
         return AVERROR_INVALIDDATA;
     }
-    sh->luma_log2_weight_denom = av_clip_uintp2(luma_log2_weight_denom, 3);
+    sh->luma_log2_weight_denom = luma_log2_weight_denom;
     if (sps->chroma_format_idc != 0) {
         int64_t chroma_log2_weight_denom = luma_log2_weight_denom + (int64_t)get_se_golomb(gb);
         if (chroma_log2_weight_denom < 0 || chroma_log2_weight_denom > 7) {
