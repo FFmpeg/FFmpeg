@@ -234,10 +234,8 @@ typedef struct NvencContext
     int level;
     int tier;
     int rc;
-    int cbr;
     int tile_rows;
     int tile_cols;
-    int twopass;
     int device;
     int flags;
     int async_depth;
