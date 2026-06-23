@@ -1011,6 +1011,12 @@ static SwsClearOp fmt_clear(const SwsFormat *fmt)
 #  define NATIVE_ENDIAN_FLAG 0
 #endif
 
+static inline AVRational intmax_q(int bits)
+{
+    av_assert1(bits >= 0 && bits < 32);
+    return Q(UINT32_MAX >> (32 - bits));
+}
+
 int ff_sws_decode_pixfmt(SwsOpList *ops, const SwsFormat *fmt)
 {
     const AVPixFmtDescriptor *desc = fmt_desc_decoded(fmt->format);
@@ -1045,7 +1051,7 @@ int ff_sws_decode_pixfmt(SwsOpList *ops, const SwsFormat *fmt)
             const int idx    = swizzle.in[is_ya ? 3 * c : c];
             comps->min[idx]  = Q(0);
             if (bits < 32) /* FIXME: AVRational is limited to INT_MAX */
-                comps->max[idx] = Q((1ULL << bits) - 1);
+                comps->max[idx] = intmax_q(bits);
         }
     }
 
@@ -1197,19 +1203,18 @@ static SwsLinearOp fmt_encode_range(const SwsFormat *fmt, bool *incomplete)
     if (desc->flags & AV_PIX_FMT_FLAG_FLOAT)
         return c; /* floats are directly output as-is */
 
-    av_assert0(depth0 < 32 && depth1 < 32 && depth2 < 32 && depth3 < 32);
     if (fmt->csp == AVCOL_SPC_RGB || (desc->flags & AV_PIX_FMT_FLAG_XYZ)) {
-        c.m[0][0] = Q((1 << depth0) - 1);
-        c.m[1][1] = Q((1 << depth1) - 1);
-        c.m[2][2] = Q((1 << depth2) - 1);
+        c.m[0][0] = intmax_q(depth0);
+        c.m[1][1] = intmax_q(depth1);
+        c.m[2][2] = intmax_q(depth2);
     } else if (fmt->range == AVCOL_RANGE_JPEG) {
         /* Full range YUV */
-        c.m[0][0] = Q((1 << depth0) - 1);
+        c.m[0][0] = intmax_q(depth0);
         if (desc->nb_components >= 3) {
             /* This follows the ITU-R convention, which is slightly different
              * from the JFIF convention. */
-            c.m[1][1] = Q((1 << depth1) - 1);
-            c.m[2][2] = Q((1 << depth2) - 1);
+            c.m[1][1] = intmax_q(depth1);
+            c.m[2][2] = intmax_q(depth2);
             c.m[1][4] = Q(1 << (depth1 - 1));
             c.m[2][4] = Q(1 << (depth2 - 1));
         }
@@ -1229,7 +1234,7 @@ static SwsLinearOp fmt_encode_range(const SwsFormat *fmt, bool *incomplete)
 
     if (desc->flags & AV_PIX_FMT_FLAG_ALPHA) {
         const bool is_ya = desc->nb_components == 2;
-        c.m[3][3] = Q((1 << (is_ya ? depth1 : depth3)) - 1);
+        c.m[3][3] = intmax_q(is_ya ? depth1 : depth3);
     }
 
     if (fmt->format == AV_PIX_FMT_MONOWHITE) {
@@ -1642,7 +1647,7 @@ int ff_sws_encode_colors(SwsContext *ctx, SwsPixelType type,
         for (int i = 0; i < dst->desc->nb_components; i++) {
             /* Clamp to legal pixel range */
             const int idx = i * (is_ya ? 3 : 1);
-            range.limit[idx] = Q((1 << dst->desc->comp[i].depth) - 1);
+            range.limit[idx] = intmax_q(dst->desc->comp[i].depth);
         }
 
         RET(fmt_dither(ctx, ops, type, src, dst));
