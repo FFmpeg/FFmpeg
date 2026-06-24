@@ -70,6 +70,8 @@ typedef struct CurlCmd {
 } CurlCmd;
 
 typedef struct CurlLoop {
+    AVFormatContext *avfc;  /* owning context (if any) */
+
     pthread_t       thread;
     CURLM          *multi;
     CURLSH         *share;   /* shared cookies/DNS/TLS sessions/HSTS */
@@ -548,11 +550,12 @@ static int curl_dispatch(CurlLoop *loop, enum cmd_kind kind, CurlContext *c,
     return 0;
 }
 
-static CurlLoop *curl_loop_create(void)
+static CurlLoop *curl_loop_create(AVFormatContext *avfc)
 {
     CurlLoop *loop = av_mallocz(sizeof(*loop));
     if (!loop)
         return NULL;
+    loop->avfc = avfc;
 
     if (pthread_mutex_init(&loop->mutex, NULL))
         goto fail;
@@ -618,7 +621,7 @@ static void curl_loop_destroy(CurlLoop *loop)
 static int curl_loop_attach(CurlContext *c, AVFormatContext *avfc)
 {
     if (!avfc) {
-        c->loop = curl_loop_create();
+        c->loop = curl_loop_create(NULL);
         c->private_loop = 1;
         return c->loop ? 0 : AVERROR(ENOMEM);
     }
@@ -626,7 +629,7 @@ static int curl_loop_attach(CurlContext *c, AVFormatContext *avfc)
     pthread_mutex_lock(&curl_loop_lock);
     c->loop = ffformatcontext(avfc)->curl_loop;
     if (!c->loop) {
-        c->loop = curl_loop_create();
+        c->loop = curl_loop_create(avfc);
         ffformatcontext(avfc)->curl_loop = c->loop;
     }
     pthread_mutex_unlock(&curl_loop_lock);
