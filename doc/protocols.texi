@@ -1166,9 +1166,18 @@ read request larger than this size (without a seek in between), after which
 the implementation will continue using requests as usual. Disabled (set to 0)
 by default.
 
+Note that if enabling this option, it's strongly recommended to also set
+@option{short_seek_size} to the same value or higher, otherwise the HTTP
+connection may be closed and recreated for each subsequent initial request.
+
 @item max_retries
 Maximum number of retries after a recoverable error on a seekable transfer.
 Default is @code{5}.
+
+@item short_seek_size
+Set the threshold, in bytes, for when a readahead should be preferred over a seek and
+new HTTP request. This is useful, for example, to make sure the same connection
+is used for reading large video packets with small audio packets in between.
 @end table
 
 For more information see: @url{https://curl.se/libcurl/}.

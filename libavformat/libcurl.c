@@ -120,6 +120,7 @@ struct CurlContext {
     int64_t         buffer_size;
     int64_t         request_size;
     int64_t         initial_request_size;
+    int64_t         short_seek_size;
     int             max_retries;
 
     int64_t         logical_pos; /* next byte url_read() will return, caller side */
@@ -131,6 +132,7 @@ struct CurlContext {
     int64_t         request_end;     /* expected end of request, or -1 if unknown */
     int             retry_count;     /* consecutive recoverable failures */
     int             is_initial;      /* using reduced request size */
+    int             seek_queued;     /* soft seeking; drain remaining bytes until done */
 
     /* Per-response-block header scratch, loop thread only. */
     int             hdr_accept_ranges;
@@ -209,6 +211,11 @@ static size_t write_callback(char *ptr, size_t size, size_t nmemb, void *userdat
     if (c->aborted || !c->stream_ok) {
         pthread_mutex_unlock(&c->mutex);
         return CURL_WRITEFUNC_ERROR;
+    }
+
+    if (c->seek_queued) {
+        pthread_mutex_unlock(&c->mutex);
+        return bytes; /* discard */
     }
 
     space = av_fifo_can_write(c->fifo);
@@ -487,6 +494,13 @@ static void on_done(CurlContext *c, CURLcode code)
     if (aborted)
         return;
 
+    if (c->seek_queued) {
+        /* previous soft seek drain finished; can start new request now */
+        c->seek_queued = 0;
+        start_request(c);
+        return;
+    }
+
     if (code == CURLE_OK && c->stream_ok) {
         c->retry_count = 0;
         int64_t file_end = c->content_size > 0 ? c->content_size - 1 : -1;
@@ -531,6 +545,19 @@ static void on_done(CurlContext *c, CURLcode code)
 /* event loop thread + command queue                                         */
 /* ------------------------------------------------------------------------- */
 
+static int test_short_seek(CurlContext *c)
+{
+    if (c->seek_queued)
+        return 1; /* short seek already queued */
+
+    if (c->short_seek_size <= 0 || /* short seek disabled */
+        c->request_end < 0)        /* content size not known */
+        return 0;
+
+    const int64_t last = c->request_end - c->request_start;
+    return last - c->request_received < c->short_seek_size;
+}
+
 static void execute_command(CurlLoop *loop, CurlCmd *cmd)
 {
     CurlContext *c = cmd->ctx;
@@ -553,18 +580,25 @@ static void execute_command(CurlLoop *loop, CurlCmd *cmd)
         curl_easy_pause(c->easy, CURLPAUSE_CONT);
         break;
     case CMD_SEEK:
-        if (c->active) {
+        if (c->active && test_short_seek(c)) {
+            c->seek_queued = 1;
+        } else if (c->active) {
             curl_multi_remove_handle(loop->multi, c->easy);
             c->active = 0;
         }
         pthread_mutex_lock(&c->mutex);
         av_fifo_reset2(c->fifo);
+        const int was_paused = c->paused;
         c->paused = 0;
         c->status = 0;
         pthread_mutex_unlock(&c->mutex);
-        c->request_start = cmd->pos;
-        c->retry_count   = 0;
-        start_request(c);
+        c->request_start    = cmd->pos;
+        c->request_received = 0;
+        c->retry_count      = 0;
+        if (!c->seek_queued)
+            start_request(c);
+        else if (was_paused)
+            curl_easy_pause(c->easy, CURLPAUSE_CONT);
         break;
     }
 }
@@ -1174,6 +1208,14 @@ static int libcurl_close(URLContext *h)
     return 0;
 }
 
+static int libcurl_get_short_seek(URLContext *h)
+{
+    CurlContext *c = h->priv_data;
+    if (c->short_seek_size >= 1)
+        return FFMIN(c->short_seek_size, INT_MAX);
+    return AVERROR(ENOSYS);
+}
+
 #define OFFSET(x) offsetof(CurlContext, x)
 #define D AV_OPT_FLAG_DECODING_PARAM
 #define E AV_OPT_FLAG_ENCODING_PARAM
@@ -1207,6 +1249,7 @@ static const AVOption options[] = {
         { "2-prior-knowledge", "HTTP/2 without an upgrade handshake",   0, AV_OPT_TYPE_CONST, { .i64 = CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE },   0, 0, D, .unit = "http_version" },
         { "3",                 "HTTP/3, fall back to earlier versions", 0, AV_OPT_TYPE_CONST, { .i64 = CURL_HTTP_VERSION_3 },                   0, 0, D, .unit = "http_version" },
         { "3only",             "HTTP/3 only",                           0, AV_OPT_TYPE_CONST, { .i64 = CURL_HTTP_VERSION_3ONLY },               0, 0, D, .unit = "http_version" },
+    { "short_seek_size", "threshold to favor readahead over seek", OFFSET(short_seek_size), AV_OPT_TYPE_INT64, { .i64 = 0 }, 0, INT64_MAX, D },
     { NULL }
 };
 
@@ -1223,6 +1266,7 @@ const URLProtocol ff_libcurl_protocol = {
     .url_read        = libcurl_read,
     .url_seek        = libcurl_seek,
     .url_close       = libcurl_close,
+    .url_get_short_seek = libcurl_get_short_seek,
     .priv_data_size  = sizeof(CurlContext),
     .priv_data_class = &libcurl_context_class,
     .flags           = URL_PROTOCOL_FLAG_NETWORK,
