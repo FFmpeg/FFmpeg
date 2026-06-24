@@ -62,6 +62,30 @@ typedef struct InterpolatePushData {
     float   plane_size[4][2];   ///< visible texel extent of each plane
 } InterpolatePushData;
 
+/* Double-buffer the per-pair optical flow resources so one pair's flow execution
+ * overlaps the previous pair's interpolations instead of stalling on shared
+ * images. The session bakes in its image bindings, so each slot owns its session,
+ * grayscale and flow images. Two suffice: the flow engine is serial. */
+#define FRUC_NB_SLOTS 2
+
+typedef struct FRUCFlowSlot {
+    VkOpticalFlowSessionNV session;
+
+    VkImage        gray_img[2];     ///< grayscale inputs (INPUT, REFERENCE)
+    VkDeviceMemory gray_mem[2];
+    VkImageView    gray_view[2];
+
+    VkImage        flow_img[2];     ///< [0] forward, [1] backward
+    VkDeviceMemory flow_mem[2];
+    VkImageView    flow_view[2];      ///< native (SFIXED5) view, bound to the OF session
+    VkImageView    flow_sint_view[2]; ///< R16G16_SINT reinterpret view for sampling
+
+    /* sem_interp value reached by the pair that last used this slot; the next
+     * pair to reuse it waits here before overwriting the flow images. Zero (the
+     * initial value) is satisfied immediately, covering the first use. */
+    uint64_t       interp_done;
+} FRUCFlowSlot;
+
 typedef struct FRUCVulkanContext {
     FFVulkanContext vkctx;
 
@@ -92,8 +116,7 @@ typedef struct FRUCVulkanContext {
     uint64_t       gen;             ///< source pair generation (sem_gray/sem_flow value)
     uint64_t       interp_value;    ///< monotonic interpolation counter (sem_interp value)
 
-    /* Optical flow session and associated images. */
-    VkOpticalFlowSessionNV       session;
+    /* Optical flow session parameters (images live per-slot, see slots[]). */
     VkOpticalFlowGridSizeFlagsNV grid_bit;
     int                          grid_size;
     VkFormat                     input_format;   ///< grayscale input format
@@ -109,14 +132,8 @@ typedef struct FRUCVulkanContext {
     int flow_height;
     float luma_weights[4];  ///< RGB->Y weights for the grayscale pass
 
-    VkImage        gray_img[2];     ///< grayscale inputs (INPUT, REFERENCE)
-    VkDeviceMemory gray_mem[2];
-    VkImageView    gray_view[2];
-
-    VkImage        flow_img[2];     ///< [0] forward, [1] backward
-    VkDeviceMemory flow_mem[2];
-    VkImageView    flow_view[2];      ///< native (SFIXED5) view, bound to the OF session
-    VkImageView    flow_sint_view[2]; ///< R16G16_SINT reinterpret view for sampling
+    /* Double-buffered optical flow resources, indexed by (gen % FRUC_NB_SLOTS). */
+    FRUCFlowSlot slots[FRUC_NB_SLOTS];
 
     int flow_valid;                 ///< flow computed for current (f0, f1) pair
 
@@ -264,39 +281,44 @@ static int init_image_layouts(FRUCVulkanContext *s)
     FFVulkanContext *vkctx = &s->vkctx;
     FFVulkanFunctions *vk = &vkctx->vkfn;
     FFVkExecContext *exec = ff_vk_exec_get(vkctx, &s->e);
-    VkImage imgs[4] = { s->gray_img[0], s->gray_img[1],
-                        s->flow_img[0], s->flow_img[1] };
-    VkImageMemoryBarrier2 bar[4];
+    VkImageMemoryBarrier2 bar[4 * FRUC_NB_SLOTS];
+    int nb_bar = 0;
     int err;
 
     err = ff_vk_exec_start(vkctx, exec);
     if (err < 0)
         return err;
 
-    for (int i = 0; i < 4; i++) {
-        bar[i] = (VkImageMemoryBarrier2) {
-            .sType         = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-            .srcStageMask  = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
-            .srcAccessMask = 0,
-            .dstStageMask  = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
-            .dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT,
-            .oldLayout     = VK_IMAGE_LAYOUT_UNDEFINED,
-            .newLayout     = VK_IMAGE_LAYOUT_GENERAL,
-            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .image         = imgs[i],
-            .subresourceRange = {
-                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                .levelCount = 1,
-                .layerCount = 1,
-            },
-        };
+    for (int slot = 0; slot < FRUC_NB_SLOTS; slot++) {
+        FRUCFlowSlot *fs = &s->slots[slot];
+        VkImage imgs[4] = { fs->gray_img[0], fs->gray_img[1],
+                            fs->flow_img[0], fs->flow_img[1] };
+
+        for (int i = 0; i < 4; i++) {
+            bar[nb_bar++] = (VkImageMemoryBarrier2) {
+                .sType         = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+                .srcStageMask  = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                .srcAccessMask = 0,
+                .dstStageMask  = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                .dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT,
+                .oldLayout     = VK_IMAGE_LAYOUT_UNDEFINED,
+                .newLayout     = VK_IMAGE_LAYOUT_GENERAL,
+                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .image         = imgs[i],
+                .subresourceRange = {
+                    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                    .levelCount = 1,
+                    .layerCount = 1,
+                },
+            };
+        }
     }
 
     vk->CmdPipelineBarrier2(exec->buf, &(VkDependencyInfo) {
         .sType                   = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
         .pImageMemoryBarriers    = bar,
-        .imageMemoryBarrierCount = 4,
+        .imageMemoryBarrierCount = nb_bar,
     });
 
     err = ff_vk_exec_submit(vkctx, exec);
@@ -490,11 +512,11 @@ static av_cold int init_filter(AVFilterContext *avctx)
     }
 
     RET(ff_vk_exec_pool_init(vkctx, s->qf, &s->e, FF_VK_DEFAULT_EXEC_CONTEXTS, 0, 0, 0, NULL));
-    /* Use more than one optical flow context so that the optical flow execution
-     * for the next frame pair can be recorded and submitted without first
+    /* One optical flow context per slot so that the optical flow execution for
+     * the next frame pair can be recorded and submitted without first
      * host-waiting the previous pair's execution to retire its command buffer. */
     RET(ff_vk_exec_pool_init(vkctx, s->qf_of, &s->e_of,
-                             2, 0, 0, 0, NULL));
+                             FRUC_NB_SLOTS, 0, 0, 0, NULL));
     RET(ff_vk_init_sampler(vkctx, &s->sampler, 0, VK_FILTER_LINEAR));
     /* Flow is sampled through an integer view and its format has no linear
      * filtering support, so use nearest. Requires normalised coords and as we
@@ -602,76 +624,76 @@ static av_cold int init_filter(AVFilterContext *avctx)
         }
     }
 
-    /* Create the persistent optical flow images. */
-    RET(create_of_image(s, &s->gray_img[0], &s->gray_mem[0], &s->gray_view[0],
-                        s->input_format, s->width, s->height,
-                        VK_OPTICAL_FLOW_USAGE_INPUT_BIT_NV,
-                        VK_IMAGE_USAGE_STORAGE_BIT, 0));
-    RET(create_of_image(s, &s->gray_img[1], &s->gray_mem[1], &s->gray_view[1],
-                        s->input_format, s->width, s->height,
-                        VK_OPTICAL_FLOW_USAGE_INPUT_BIT_NV,
-                        VK_IMAGE_USAGE_STORAGE_BIT, 0));
-    /* The flow images must be created mutable, as we need to sample the raw
-     * integers through an R16G16_SINT view. SFIXED5 advertises SAMPLED_IMAGE,
-     * but if you try and use a float sampler, it will read the values as
-     * R16G16_SFLOAT, resulting in garbage. So we have to read the raw bits and
-     * rescale them (value/32) ourselves. */
-    RET(create_of_image(s, &s->flow_img[0], &s->flow_mem[0], &s->flow_view[0],
-                        s->flow_format, s->flow_width, s->flow_height,
-                        VK_OPTICAL_FLOW_USAGE_OUTPUT_BIT_NV,
-                        VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT));
-    RET(create_of_image(s, &s->flow_img[1], &s->flow_mem[1], &s->flow_view[1],
-                        s->flow_format, s->flow_width, s->flow_height,
-                        VK_OPTICAL_FLOW_USAGE_OUTPUT_BIT_NV,
-                        VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT));
-
-    for (int i = 0; i < 2; i++) {
-        VkImageViewCreateInfo view_info = {
-            .sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-            .image    = s->flow_img[i],
-            .viewType = VK_IMAGE_VIEW_TYPE_2D,
-            .format   = VK_FORMAT_R16G16_SINT,
-            .components = ff_comp_identity_map,
-            .subresourceRange = {
-                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                .levelCount = 1,
-                .layerCount = 1,
-            },
-        };
-        if (vk->CreateImageView(vkctx->hwctx->act_dev, &view_info,
-                                vkctx->hwctx->alloc, &s->flow_sint_view[i]) != VK_SUCCESS) {
-            av_log(avctx, AV_LOG_ERROR, "Failed to create flow SINT view\n");
-            return AVERROR_EXTERNAL;
-        }
-    }
-
-    RET(init_image_layouts(s));
-
     if (!vkctx->optical_flow_props.bidirectionalFlowSupported) {
         av_log(avctx, AV_LOG_ERROR, "Device optical flow engine does not support "
                "bidirectional flow, which this filter requires\n");
         return AVERROR(ENOTSUP);
     }
 
-    /* Create the optical flow session, requesting forward and backward flow. */
-    ret = vk->CreateOpticalFlowSessionNV(vkctx->hwctx->act_dev,
-        &(VkOpticalFlowSessionCreateInfoNV) {
-            .sType            = VK_STRUCTURE_TYPE_OPTICAL_FLOW_SESSION_CREATE_INFO_NV,
-            .width            = s->width,
-            .height           = s->height,
-            .imageFormat      = s->input_format,
-            .flowVectorFormat = s->flow_format,
-            .outputGridSize   = s->grid_bit,
-            .performanceLevel = s->perf_level,
-            .flags            = VK_OPTICAL_FLOW_SESSION_CREATE_BOTH_DIRECTIONS_BIT_NV,
-        }, vkctx->hwctx->alloc, &s->session);
-    if (ret != VK_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to create optical flow session: %s\n",
-               ff_vk_ret2str(ret));
-        return AVERROR_EXTERNAL;
-    }
+    /* Create the persistent optical flow images and sessions, one set per slot
+     * so consecutive source pairs round-robin between independent resources. */
+    for (int slot = 0; slot < FRUC_NB_SLOTS; slot++) {
+        FRUCFlowSlot *fs = &s->slots[slot];
 
-    {
+        RET(create_of_image(s, &fs->gray_img[0], &fs->gray_mem[0], &fs->gray_view[0],
+                            s->input_format, s->width, s->height,
+                            VK_OPTICAL_FLOW_USAGE_INPUT_BIT_NV,
+                            VK_IMAGE_USAGE_STORAGE_BIT, 0));
+        RET(create_of_image(s, &fs->gray_img[1], &fs->gray_mem[1], &fs->gray_view[1],
+                            s->input_format, s->width, s->height,
+                            VK_OPTICAL_FLOW_USAGE_INPUT_BIT_NV,
+                            VK_IMAGE_USAGE_STORAGE_BIT, 0));
+        /* The flow images must be created mutable, as we need to sample the raw
+        * integers through an R16G16_SINT view. SFIXED5 advertises SAMPLED_IMAGE,
+        * but if you try and use a float sampler, it will read the values as
+        * R16G16_SFLOAT, resulting in garbage. So we have to read the raw bits and
+        * rescale them (value/32) ourselves. */
+        RET(create_of_image(s, &fs->flow_img[0], &fs->flow_mem[0], &fs->flow_view[0],
+                            s->flow_format, s->flow_width, s->flow_height,
+                            VK_OPTICAL_FLOW_USAGE_OUTPUT_BIT_NV,
+                            VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT));
+        RET(create_of_image(s, &fs->flow_img[1], &fs->flow_mem[1], &fs->flow_view[1],
+                            s->flow_format, s->flow_width, s->flow_height,
+                            VK_OPTICAL_FLOW_USAGE_OUTPUT_BIT_NV,
+                            VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT));
+
+        for (int i = 0; i < 2; i++) {
+            VkImageViewCreateInfo view_info = {
+                .sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+                .image    = fs->flow_img[i],
+                .viewType = VK_IMAGE_VIEW_TYPE_2D,
+                .format   = VK_FORMAT_R16G16_SINT,
+                .components = ff_comp_identity_map,
+                .subresourceRange = {
+                    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                    .levelCount = 1,
+                    .layerCount = 1,
+                },
+            };
+            if (vk->CreateImageView(vkctx->hwctx->act_dev, &view_info,
+                                    vkctx->hwctx->alloc, &fs->flow_sint_view[i]) != VK_SUCCESS) {
+                av_log(avctx, AV_LOG_ERROR, "Failed to create flow SINT view\n");
+                return AVERROR_EXTERNAL;
+            }
+        }
+
+        ret = vk->CreateOpticalFlowSessionNV(vkctx->hwctx->act_dev,
+            &(VkOpticalFlowSessionCreateInfoNV) {
+                .sType            = VK_STRUCTURE_TYPE_OPTICAL_FLOW_SESSION_CREATE_INFO_NV,
+                .width            = s->width,
+                .height           = s->height,
+                .imageFormat      = s->input_format,
+                .flowVectorFormat = s->flow_format,
+                .outputGridSize   = s->grid_bit,
+                .performanceLevel = s->perf_level,
+                .flags            = VK_OPTICAL_FLOW_SESSION_CREATE_BOTH_DIRECTIONS_BIT_NV,
+            }, vkctx->hwctx->alloc, &fs->session);
+        if (ret != VK_SUCCESS) {
+            av_log(avctx, AV_LOG_ERROR, "Failed to create optical flow session: %s\n",
+                   ff_vk_ret2str(ret));
+            return AVERROR_EXTERNAL;
+        }
+
         static const VkOpticalFlowSessionBindingPointNV binding_points[] = {
             VK_OPTICAL_FLOW_SESSION_BINDING_POINT_INPUT_NV,
             VK_OPTICAL_FLOW_SESSION_BINDING_POINT_REFERENCE_NV,
@@ -679,12 +701,11 @@ static av_cold int init_filter(AVFilterContext *avctx)
             VK_OPTICAL_FLOW_SESSION_BINDING_POINT_BACKWARD_FLOW_VECTOR_NV,
         };
         const VkImageView binding_views[] = {
-            s->gray_view[0], s->gray_view[1],
-            s->flow_view[0], s->flow_view[1],
+            fs->gray_view[0], fs->gray_view[1],
+            fs->flow_view[0], fs->flow_view[1],
         };
-
         for (int i = 0; i < FF_ARRAY_ELEMS(binding_points); i++) {
-            ret = vk->BindOpticalFlowSessionImageNV(vkctx->hwctx->act_dev, s->session,
+            ret = vk->BindOpticalFlowSessionImageNV(vkctx->hwctx->act_dev, fs->session,
                 binding_points[i], binding_views[i], VK_IMAGE_LAYOUT_GENERAL);
             if (ret != VK_SUCCESS) {
                 av_log(avctx, AV_LOG_ERROR, "Failed to bind optical flow session "
@@ -693,6 +714,8 @@ static av_cold int init_filter(AVFilterContext *avctx)
             }
         }
     }
+
+    RET(init_image_layouts(s));
 
     /* Grayscale extraction shader. */
     ff_vk_shader_load(&s->grayscale, VK_SHADER_STAGE_COMPUTE_BIT, NULL,
@@ -818,6 +841,9 @@ static int compute_flow(AVFilterContext *avctx)
     /* This pair's generation; sem_gray and sem_flow are signalled with it. */
     s->gen++;
 
+    /* Round-robin slot for this pair's optical flow resources. */
+    FRUCFlowSlot *fs = &s->slots[s->gen % FRUC_NB_SLOTS];
+
     /* --- Grayscale extraction on the compute queue. --- */
     exec = ff_vk_exec_get(vkctx, &s->e);
     err = ff_vk_exec_start(vkctx, exec);
@@ -830,12 +856,19 @@ static int compute_flow(AVFilterContext *avctx)
     RET(ff_vk_exec_add_dep_frame(vkctx, exec, s->f1,
                                  VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
                                  VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT));
-    /* The grayscale images are a single instance reused every pair, and the
-     * previous pair's optical flow reads them. Wait for that read to retire
-     * (sem_flow at the previous generation) before overwriting them. */
-    if (s->gen > 1)
-        ff_vk_exec_add_dep_wait_sem(vkctx, exec, s->sem_flow, s->gen - 1,
+    /* Wait for the prior occupant of this slot (FRUC_NB_SLOTS pairs ago) to
+     * finish reading its grayscale images on the flow engine before overwriting
+     * them; the slot's first uses have no prior occupant. */
+    if (s->gen > FRUC_NB_SLOTS)
+        ff_vk_exec_add_dep_wait_sem(vkctx, exec, s->sem_flow, s->gen - FRUC_NB_SLOTS,
                                     VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT);
+    /* Serialize the sem_gray signals: the exec pool may round-robin consecutive
+     * generations onto different queues, which have no implicit ordering, so
+     * wait for the previous generation's signal before emitting this one.
+     * Otherwise generation N+1 could signal the smaller value N+1 before N,
+     * which is invalid for a timeline semaphore. Value 0 is the initial state. */
+    ff_vk_exec_add_dep_wait_sem(vkctx, exec, s->sem_gray, s->gen - 1,
+                                VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT);
     ff_vk_exec_add_dep_signal_sem(vkctx, exec, s->sem_gray, s->gen,
                                   VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT);
     RET(ff_vk_create_imageviews(vkctx, exec, f0_views, s->f0, FF_VK_REP_FLOAT));
@@ -848,9 +881,9 @@ static int compute_flow(AVFilterContext *avctx)
                             f1_views[0], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                             s->sampler);
     ff_vk_shader_update_img(vkctx, exec, &s->grayscale, 0, 1, 0,
-                            s->gray_view[0], VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
+                            fs->gray_view[0], VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
     ff_vk_shader_update_img(vkctx, exec, &s->grayscale, 0, 1, 1,
-                            s->gray_view[1], VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
+                            fs->gray_view[1], VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
 
     ff_vk_exec_bind_shader(vkctx, exec, &s->grayscale);
     ff_vk_shader_update_push_const(vkctx, exec, &s->grayscale,
@@ -870,10 +903,10 @@ static int compute_flow(AVFilterContext *avctx)
                         VK_ACCESS_SHADER_READ_BIT,
                         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                         VK_QUEUE_FAMILY_IGNORED);
-    of_image_barrier(&img_bar[nb_img_bar++], s->gray_img[0],
+    of_image_barrier(&img_bar[nb_img_bar++], fs->gray_img[0],
                      VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT, 0,
                      VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_WRITE_BIT);
-    of_image_barrier(&img_bar[nb_img_bar++], s->gray_img[1],
+    of_image_barrier(&img_bar[nb_img_bar++], fs->gray_img[1],
                      VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT, 0,
                      VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_WRITE_BIT);
 
@@ -901,19 +934,23 @@ static int compute_flow(AVFilterContext *avctx)
     /* Wait for the grayscale writes, signal once the flow has been written. */
     ff_vk_exec_add_dep_wait_sem(vkctx, exec, s->sem_gray, s->gen,
                                 VK_PIPELINE_STAGE_2_OPTICAL_FLOW_BIT_NV);
-    /* The flow images are a single instance reused every pair. The previous
-     * pair's interpolations sampled them; wait for the last such read to retire
-     * (the highest interpolation value signalled so far, which belongs to the
-     * previous pair since this pair has produced none yet) before overwriting
-     * them. A value of 0 is the initial state and is satisfied immediately. */
-    ff_vk_exec_add_dep_wait_sem(vkctx, exec, s->sem_interp, s->interp_value,
+    /* Wait for the slot's prior occupant to finish sampling its flow images
+     * (fs->interp_done) before overwriting them; 0 is the initial state of an
+     * unused slot and is satisfied immediately. */
+    ff_vk_exec_add_dep_wait_sem(vkctx, exec, s->sem_interp, fs->interp_done,
+                                VK_PIPELINE_STAGE_2_OPTICAL_FLOW_BIT_NV);
+    /* Serialize the sem_flow signals for the same reason as sem_gray above: the
+     * optical flow contexts may span multiple queues, so wait for the previous
+     * generation's flow signal before signaling this one to keep the timeline
+     * values monotonic. Value 0 is the initial state. */
+    ff_vk_exec_add_dep_wait_sem(vkctx, exec, s->sem_flow, s->gen - 1,
                                 VK_PIPELINE_STAGE_2_OPTICAL_FLOW_BIT_NV);
     ff_vk_exec_add_dep_signal_sem(vkctx, exec, s->sem_flow, s->gen,
                                   VK_PIPELINE_STAGE_2_OPTICAL_FLOW_BIT_NV);
 
     /* The flow images stay in VK_IMAGE_LAYOUT_GENERAL and the semaphores handle
      * cross-queue visibility, so no image barriers are needed here. */
-    vk->CmdOpticalFlowExecuteNV(exec->buf, s->session,
+    vk->CmdOpticalFlowExecuteNV(exec->buf, fs->session,
         &(VkOpticalFlowExecuteInfoNV) {
             .sType = VK_STRUCTURE_TYPE_OPTICAL_FLOW_EXECUTE_INFO_NV,
         });
@@ -981,6 +1018,9 @@ static int interpolate_frame(AVFilterContext *avctx, AVFrame *out, float t)
             return err;
     }
 
+    /* Same slot compute_flow selected for this pair's generation. */
+    FRUCFlowSlot *fs = &s->slots[s->gen % FRUC_NB_SLOTS];
+
     exec = ff_vk_exec_get(vkctx, &s->e);
     err = ff_vk_exec_start(vkctx, exec);
     if (err < 0)
@@ -997,6 +1037,8 @@ static int interpolate_frame(AVFilterContext *avctx, AVFrame *out, float t)
                                 VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT);
     ff_vk_exec_add_dep_signal_sem(vkctx, exec, s->sem_interp, ++s->interp_value,
                                   VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT);
+    /* Record this pair's value so the next occupant of the slot can fence on it. */
+    fs->interp_done = s->interp_value;
 
     RET(ff_vk_exec_add_dep_frame(vkctx, exec, out,
                                  VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
@@ -1021,9 +1063,9 @@ static int interpolate_frame(AVFilterContext *avctx, AVFrame *out, float t)
     ff_vk_shader_update_img_array(vkctx, exec, &s->interpolate, out, out_views,
                                   0, 2, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
     ff_vk_shader_update_img(vkctx, exec, &s->interpolate, 0, 3, 0,
-                            s->flow_sint_view[0], VK_IMAGE_LAYOUT_GENERAL, s->flow_sampler);
+                            fs->flow_sint_view[0], VK_IMAGE_LAYOUT_GENERAL, s->flow_sampler);
     ff_vk_shader_update_img(vkctx, exec, &s->interpolate, 0, 4, 0,
-                            s->flow_sint_view[1], VK_IMAGE_LAYOUT_GENERAL, s->flow_sampler);
+                            fs->flow_sint_view[1], VK_IMAGE_LAYOUT_GENERAL, s->flow_sampler);
 
     ff_vk_exec_bind_shader(vkctx, exec, &s->interpolate);
     ff_vk_shader_update_push_const(vkctx, exec, &s->interpolate,
@@ -1048,10 +1090,10 @@ static int interpolate_frame(AVFilterContext *avctx, AVFrame *out, float t)
                         VK_ACCESS_SHADER_READ_BIT,
                         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                         VK_QUEUE_FAMILY_IGNORED);
-    of_image_barrier(&img_bar[nb_img_bar++], s->flow_img[0],
+    of_image_barrier(&img_bar[nb_img_bar++], fs->flow_img[0],
                      VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT, 0,
                      VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_READ_BIT);
-    of_image_barrier(&img_bar[nb_img_bar++], s->flow_img[1],
+    of_image_barrier(&img_bar[nb_img_bar++], fs->flow_img[1],
                      VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT, 0,
                      VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_READ_BIT);
 
@@ -1425,18 +1467,21 @@ static av_cold void uninit(AVFilterContext *avctx)
         vk->DestroySemaphore(vkctx->hwctx->act_dev, s->sem_flow, vkctx->hwctx->alloc);
     if (s->sem_interp)
         vk->DestroySemaphore(vkctx->hwctx->act_dev, s->sem_interp, vkctx->hwctx->alloc);
-    if (s->session)
-        vk->DestroyOpticalFlowSessionNV(vkctx->hwctx->act_dev, s->session,
-                                        vkctx->hwctx->alloc);
-    for (int i = 0; i < 2; i++) {
-        if (s->gray_view[i])
-            vk->DestroyImageView(vkctx->hwctx->act_dev, s->gray_view[i], vkctx->hwctx->alloc);
-        ff_vk_image_free(vkctx, &s->gray_img[i], &s->gray_mem[i]);
-        if (s->flow_view[i])
-            vk->DestroyImageView(vkctx->hwctx->act_dev, s->flow_view[i], vkctx->hwctx->alloc);
-        if (s->flow_sint_view[i])
-            vk->DestroyImageView(vkctx->hwctx->act_dev, s->flow_sint_view[i], vkctx->hwctx->alloc);
-        ff_vk_image_free(vkctx, &s->flow_img[i], &s->flow_mem[i]);
+    for (int slot = 0; slot < FRUC_NB_SLOTS; slot++) {
+        FRUCFlowSlot *fs = &s->slots[slot];
+        if (fs->session)
+            vk->DestroyOpticalFlowSessionNV(vkctx->hwctx->act_dev, fs->session,
+                                            vkctx->hwctx->alloc);
+        for (int i = 0; i < 2; i++) {
+            if (fs->gray_view[i])
+                vk->DestroyImageView(vkctx->hwctx->act_dev, fs->gray_view[i], vkctx->hwctx->alloc);
+            ff_vk_image_free(vkctx, &fs->gray_img[i], &fs->gray_mem[i]);
+            if (fs->flow_view[i])
+                vk->DestroyImageView(vkctx->hwctx->act_dev, fs->flow_view[i], vkctx->hwctx->alloc);
+            if (fs->flow_sint_view[i])
+                vk->DestroyImageView(vkctx->hwctx->act_dev, fs->flow_sint_view[i], vkctx->hwctx->alloc);
+            ff_vk_image_free(vkctx, &fs->flow_img[i], &fs->flow_mem[i]);
+        }
     }
 
     ff_vk_shader_free(vkctx, &s->grayscale);
