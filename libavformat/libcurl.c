@@ -1058,6 +1058,9 @@ static int64_t libcurl_seek(URLContext *h, int64_t pos, int whence)
     if (newpos < 0)
         return AVERROR(EINVAL);
 
+    if (newpos == c->logical_pos)
+        return newpos;
+
     /* Restart the transfer at the new offset. Any failure of the new request
      * surfaces on the following url_read(). */
     curl_dispatch(c->loop, CMD_SEEK, c, newpos, 1);
