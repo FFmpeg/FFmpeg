@@ -80,6 +80,14 @@ typedef struct CurlLoop {
     pthread_cond_t  cond;    /* signaled when a sync command completes */
     CurlCmd        *cmd_head, *cmd_tail;
     int             exit;
+
+    /* Connection statistics (updated by loop thread) */
+    int64_t        total_bytes;
+    int64_t        total_time_us;
+    int            num_connections;
+    int            num_redirects;
+    int            num_requests;
+    int            num_retries;
 } CurlLoop;
 
 struct CurlContext {
@@ -343,6 +351,7 @@ static void start_request(CurlContext *c)
     } else {
         curl_easy_setopt(c->easy, CURLOPT_RANGE, NULL);
     }
+    c->loop->num_requests++;
     c->request_received = 0;
     c->active = 1;
     CURLMcode res = curl_multi_add_handle(c->loop->multi, c->easy);
@@ -358,6 +367,30 @@ static void start_request(CurlContext *c)
     }
 }
 
+static void update_statistics(CurlContext *c)
+{
+    CurlLoop *loop = c->loop;
+    CURL *e = c->easy;
+
+    curl_off_t recv = 0, time = 0;
+    curl_easy_getinfo(e, CURLINFO_SIZE_DOWNLOAD_T,  &recv);
+    curl_easy_getinfo(e, CURLINFO_TOTAL_TIME_T,     &time);
+
+    if (recv) {
+        av_log(c->h, AV_LOG_DEBUG, "%"PRId64" bytes received in %"PRId64" ms\n",
+               (int64_t) recv, (int64_t) time / 1000);
+
+        loop->total_bytes   += recv;
+        loop->total_time_us += time;
+    }
+
+    long num_conns = 0, num_redirs = 0;
+    curl_easy_getinfo(e, CURLINFO_NUM_CONNECTS,     &num_conns);
+    curl_easy_getinfo(e, CURLINFO_REDIRECT_COUNT,   &num_redirs);
+    loop->num_connections += (int) num_conns;
+    loop->num_redirects   += (int) num_redirs;
+}
+
 /* Transfer finished (or failed) */
 static void on_done(CurlContext *c, CURLcode code)
 {
@@ -371,6 +404,7 @@ static void on_done(CurlContext *c, CURLcode code)
     c->request_start    += received;
     c->request_received  = 0;
     pthread_mutex_unlock(&c->mutex);
+    update_statistics(c);
 
     if (!c->probed) {
         /* Connection died before any usable header arrived. */
@@ -407,6 +441,7 @@ static void on_done(CurlContext *c, CURLcode code)
     if (!aborted && c->seekable && is_recoverable(code) &&
         c->retry_count < c->max_retries) {
         c->retry_count++;
+        c->loop->num_retries++;
         av_log(c->h, AV_LOG_WARNING, "%s, retrying (#%d) from %"PRIu64"\n",
                curl_easy_strerror(code), c->retry_count, c->request_start);
         start_request(c);
@@ -437,6 +472,7 @@ static void execute_command(CurlLoop *loop, CurlCmd *cmd)
     case CMD_REMOVE:
         if (c->active) {
             curl_multi_remove_handle(loop->multi, c->easy);
+            update_statistics(c);
             c->active = 0;
         }
         break;
@@ -595,6 +631,23 @@ fail:
     return NULL;
 }
 
+static void print_statistics(CurlLoop *loop)
+{
+    AVFormatContext *avfc = loop->avfc;
+    if (!loop->total_bytes)
+        return;
+
+    double time = (double) loop->total_time_us / 1000000.0;
+    double avg  = time ? loop->total_bytes / time : 0;
+    av_log(avfc, AV_LOG_VERBOSE,
+           "libcurl: Overall %"PRId64" bytes received in %.0f ms = %.0f kB/s\n",
+           loop->total_bytes, time * 1e3, avg / 1e3);
+
+    av_log(avfc, AV_LOG_VERBOSE,
+           "libcurl: %d connections, %d redirects, %d requests, %d retries\n",
+           loop->num_connections, loop->num_redirects, loop->num_requests, loop->num_retries);
+}
+
 static void curl_loop_destroy(CurlLoop *loop)
 {
     pthread_mutex_lock(&loop->mutex);
@@ -603,6 +656,7 @@ static void curl_loop_destroy(CurlLoop *loop)
     pthread_mutex_unlock(&loop->mutex);
 
     pthread_join(loop->thread, NULL);
+    print_statistics(loop);
 
     curl_multi_cleanup(loop->multi);
     curl_share_cleanup(loop->share);
