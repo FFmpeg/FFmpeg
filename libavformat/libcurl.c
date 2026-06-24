@@ -132,7 +132,9 @@ struct CurlContext {
     /* Per-response-block header scratch, loop thread only. */
     int             hdr_accept_ranges;
     int             hdr_compressed;
-    int64_t         hdr_content_total;
+    int64_t         hdr_content_start; /* inclusive start, or -1 */
+    int64_t         hdr_content_end;   /* inclusive end,   or -1 */
+    int64_t         hdr_content_total; /* if known, or -1 */
 
     /* Probe result. Set by the loop thread, read by url_open() once probed. */
     int             probed;
@@ -224,14 +226,31 @@ static size_t write_callback(char *ptr, size_t size, size_t nmemb, void *userdat
     return bytes;
 }
 
-/* Parse the total length out of a "Content-Range: bytes a-b/total" value.
- * Returns the total, or -1 if unknown ("*") or unparsable. */
-static int64_t parse_content_range_total(const char *v)
+static int64_t parse_offset(const char *s)
 {
-    const char *slash = strchr(v, '/');
-    if (!slash || slash[1] == '*')
-        return -1;
-    return strtoll(slash + 1, NULL, 10);
+    int64_t v = strtoll(s, NULL, 10);
+    return v < 0 ? -1 : v;
+}
+
+/* "bytes $from-$to/$document_size" */
+static void parse_content_range(CurlContext *c, const char *v)
+{
+    while (av_isspace(*v))
+        v++;
+
+    if (av_strncasecmp(v, "bytes ", 6))
+        return;
+
+    const char *range = v + 6, *end;
+    if (range[0] != '*') {
+        c->hdr_content_start = parse_offset(range);
+        if ((end = strchr(range, '-')))
+            c->hdr_content_end = parse_offset(end + 1);
+    }
+
+    const char *slash = strchr(range, '/');
+    if (slash && slash[1] != '*')
+        c->hdr_content_total = parse_offset(slash + 1);
 }
 
 static size_t header_callback(char *ptr, size_t size, size_t nitems, void *userdata)
@@ -244,6 +263,8 @@ static size_t header_callback(char *ptr, size_t size, size_t nitems, void *userd
     if (av_strncasecmp(ptr, "HTTP/", 5) == 0) {
         c->hdr_accept_ranges = 0;
         c->hdr_compressed    = 0;
+        c->hdr_content_start = -1;
+        c->hdr_content_end   = -1;
         c->hdr_content_total = -1;
         return len;
     }
@@ -256,7 +277,7 @@ static size_t header_callback(char *ptr, size_t size, size_t nitems, void *userd
         return len;
     }
     if (av_strncasecmp(ptr, "Content-Range:", 14) == 0) {
-        c->hdr_content_total = parse_content_range_total(ptr + 14);
+        parse_content_range(c, ptr + 14);
         return len;
     }
 
