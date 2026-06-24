@@ -375,7 +375,8 @@ extern const URLProtocol ff_libcurl_protocol;
 
 /* Decide whether an http(s) URL should be routed to the libcurl protocol instead
  * of the native one. Controlled by the per-open "prefer_libcurl" option. */
-static int prefer_libcurl(const char *filename, AVDictionary **options)
+static int prefer_libcurl(const char *filename, AVDictionary **options,
+                          URLContext *parent)
 {
     URLContext dummy = { .av_class = &url_context_class };
     AVDictionaryEntry *e;
@@ -383,6 +384,9 @@ static int prefer_libcurl(const char *filename, AVDictionary **options)
     if (!av_strstart(filename, "http://",  NULL) &&
         !av_strstart(filename, "https://", NULL))
         return 0;
+
+    if (parent && parent->prefer_libcurl)
+        return 1;
 
     if (!options || !(e = av_dict_get(*options, "prefer_libcurl", NULL, 0)))
         return 0;
@@ -405,7 +409,7 @@ static int url_open_whitelist(URLContext **puc, const char *filename, int flags,
 #if CONFIG_LIBCURL_PROTOCOL
     /* The option itself is applied to the URLContext further down; here it only
      * picks the protocol, before the context exists. */
-    if (prefer_libcurl(filename, options))
+    if (prefer_libcurl(filename, options, parent))
         ret = url_alloc_for_protocol(puc, &ff_libcurl_protocol, filename, flags,
                                      int_cb);
     else
