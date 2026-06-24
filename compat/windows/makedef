@@ -33,6 +33,11 @@ if [ ! -f "$vscript" ]; then
 fi
 
 for object in "$@"; do
+    case "$object" in
+    @*)
+        object="${object#@}"
+        ;;
+    esac
     if [ ! -f "$object" ]; then
         echo "Object does not exist: ${object}" >&2
         exit 1

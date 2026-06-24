@@ -86,14 +86,15 @@ $(SUBDIR)$(SLIBNAME): $(SUBDIR)$(SLIBNAME_WITH_MAJOR)
 	$(Q)cd ./$(SUBDIR) && $(LN_S) $(SLIBNAME_WITH_MAJOR) $(SLIBNAME)
 
 $(SUBDIR)$(SLIBNAME_WITH_MAJOR): $(OBJS) $(SHLIBOBJS) $(SUBDIR)lib$(NAME).ver
-	$(SLIB_CREATE_DEF_CMD)
 ifeq ($(RESPONSE_FILES),yes)
 ifeq ($(HAVE_BUILTIN_FILE),yes)
 	$$(file >$$@.objs,$$(filter %.o,$$^))
 else
 	$(Q)echo $$(filter %.o,$$^) > $$@.objs
 endif
-
+endif
+	$(SLIB_CREATE_DEF_CMD)
+ifeq ($(RESPONSE_FILES),yes)
 	$$(call LINK,$$(call $(NAME)LINK_SO_ARGS) $$(LD_O) @$$@.objs $$(call $(NAME)LINK_EXTRA))
 else
 	$$(call LINK,$$(call $(NAME)LINK_SO_ARGS) $$(LD_O) $$(filter %.o,$$^) $$(call $(NAME)LINK_EXTRA))
