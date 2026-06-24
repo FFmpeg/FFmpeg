@@ -702,7 +702,7 @@ static av_cold int init_filter(AVFilterContext *avctx)
                           ff_fruc_grayscale_comp_spv_len, "main"));
     RET(ff_vk_shader_register_exec(vkctx, &s->e, &s->grayscale));
 
-    /* Interpolation shader. */
+    /* Motion compensated interpolation shader. */
     ff_vk_shader_load(&s->interpolate, VK_SHADER_STAGE_COMPUTE_BIT, NULL,
                       (uint32_t []) { 32, 32, 1 }, 0);
     ff_vk_shader_add_push_const(&s->interpolate, 0, sizeof(InterpolatePushData),
@@ -905,7 +905,7 @@ static void plane_wh(const AVPixFmtDescriptor *desc, int width, int height,
     *h = sub ? AV_CEIL_RSHIFT(height, desc->log2_chroma_h) : height;
 }
 
-/* Produce the output frame at temporal position t. */
+/* Produce the motion compensated output frame at temporal position t. */
 static int interpolate_frame(AVFilterContext *avctx, AVFrame *out, float t)
 {
     int err;

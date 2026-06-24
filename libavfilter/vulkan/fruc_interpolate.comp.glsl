@@ -30,12 +30,19 @@ layout (set = 0, binding = 0) uniform sampler2D f0_img[];
 layout (set = 0, binding = 1) uniform sampler2D f1_img[];
 layout (set = 0, binding = 2) uniform writeonly image2D out_img[];
 
-/* Forward (f0 -> f1) and backward (f1 -> f0) flow fields. These are bound for
- * descriptor-set compatibility with the C code but are not consulted yet: this
- * initial implementation performs a plain temporal blend. Motion-compensated
- * warping using these fields is introduced in a subsequent change. */
+/* Forward (f0 -> f1) and backward (f1 -> f0) flow fields. The NV optical flow
+ * engine writes signed fixed point (S10.5) vectors, sampled here as raw
+ * integers; dividing by 32 (2^5) yields correct values. */
 layout (set = 0, binding = 3) uniform isampler2D flow_fwd;
 layout (set = 0, binding = 4) uniform isampler2D flow_bwd;
+
+#define FLOW_FIXED_POINT_SCALE (1.0 / 32.0)
+
+/* These Picard values were established empirically on a couple of different
+ * samples, but one could easily imagine reaching a different conclusion from
+ * different data. */
+#define PICARD_ITERS 6
+#define PICARD_OMEGA 0.5
 
 layout (push_constant, scalar) uniform pushConstants {
     float t;          /* interpolation position in [0, 1] between f0 and f1 */
@@ -49,6 +56,12 @@ layout (push_constant, scalar) uniform pushConstants {
 };
 
 #define luma_size (plane_size[0]) /* what the flow vectors are expressed against */
+
+/* Normalized forward/backward flow at a normalized position. The flow vectors
+ * are relative to the original Luma, so must be converted to a resolution independent
+ * displacement that can be applied to other planes with different dimensions. */
+vec2 flow_at_fwd(vec2 p) { return vec2(texture(flow_fwd, p).xy) * FLOW_FIXED_POINT_SCALE / luma_size; }
+vec2 flow_at_bwd(vec2 p) { return vec2(texture(flow_bwd, p).xy) * FLOW_FIXED_POINT_SCALE / luma_size; }
 
 /* Convert a coordinate normalized against a plane's visible extent into the
  * source texture's own normalized space. The identity unless that source image
@@ -71,8 +84,17 @@ void main()
 
         vec2 base = (vec2(pos) + 0.5) / size;
 
-        vec4 c0 = texture(f0_img[i], f0_uv(base, i));
-        vec4 c1 = texture(f1_img[i], f1_uv(base, i));
+        /* The flow is anchored on the f0/f1 grids, not the intermediate frame.
+         * Recover the source position on each grid by Picard iteration. */
+        vec2 s0 = base;
+        vec2 s1 = base;
+        for (int k = 0; k < PICARD_ITERS; k++) {
+            s0 = mix(s0, base - t * flow_at_fwd(s0), PICARD_OMEGA);
+            s1 = mix(s1, base - (1.0 - t) * flow_at_bwd(s1), PICARD_OMEGA);
+        }
+
+        vec4 c0 = texture(f0_img[i], f0_uv(s0, i));
+        vec4 c1 = texture(f1_img[i], f1_uv(s1, i));
 
         imageStore(out_img[i], pos, mix(c0, c1, t));
     }

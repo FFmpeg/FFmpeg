@@ -29680,9 +29680,9 @@ Frame rate up-conversion using the NVIDIA Vulkan optical flow extension
 (@code{VK_NV_optical_flow}), implemented on the GPU using Vulkan.
 
 For each pair of consecutive input frames the filter computes a forward and
-backward optical flow field on the device's optical flow engine. Intermediate
-frames at the requested output frame rate are produced by proportionally blending
-the two source frames. The frame timing logic mirrors the @code{framerate} filter.
+backward optical flow field on the device's optical flow engine, and uses those
+fields to synthesise motion-compensated intermediate frames at the requested
+output frame rate. The frame timing logic mirrors the @code{framerate} filter.
 
 Planar and semi-planar YUV, gray, and packed RGB whose sampled channels are
 already in component order are supported. Packed YUV, planar RGB, formats with
