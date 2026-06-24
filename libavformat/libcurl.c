@@ -119,6 +119,7 @@ struct CurlContext {
     int             http_version;
     int64_t         buffer_size;
     int64_t         request_size;
+    int64_t         initial_request_size;
     int             max_retries;
 
     int64_t         logical_pos; /* next byte url_read() will return, caller side */
@@ -129,6 +130,7 @@ struct CurlContext {
     uint64_t        request_received;/* bytes delivered in the current request */
     int64_t         request_end;     /* expected end of request, or -1 if unknown */
     int             retry_count;     /* consecutive recoverable failures */
+    int             is_initial;      /* using reduced request size */
 
     /* Per-response-block header scratch, loop thread only. */
     int             hdr_accept_ranges;
@@ -362,10 +364,13 @@ static void start_request(CurlContext *c)
     if (!c->probed || c->seekable) {
         uint64_t start = c->request_start;
         char range[48];
-        if (c->request_size > 0 || c->end_off > 0) {
+        int64_t request_size = c->request_size;
+        if (c->is_initial && c->initial_request_size > 0)
+            request_size = c->initial_request_size;
+        if (request_size > 0 || c->end_off > 0) {
             uint64_t end = UINT64_MAX;
-            if (c->request_size > 0)
-                end = start + c->request_size - 1;
+            if (request_size > 0)
+                end = start + request_size - 1;
             if (c->content_size > 0)
                 end = FFMIN(end, (uint64_t)c->content_size - 1);
             if (c->end_off > 0)
@@ -452,6 +457,7 @@ static void on_done(CurlContext *c, CURLcode code)
         if (c->end_off > 0)
             file_end = FFMIN(file_end, c->end_off - 1);
         if (c->seekable && c->request_end >= 0 && c->request_end < file_end) {
+            c->is_initial = 0;
             start_request(c);
             return;
         }
@@ -949,6 +955,7 @@ static int libcurl_open(URLContext *h, const char *url, int flags,
     c->request_start = c->off;
     c->request_end   = -1;
     c->logical_pos   = c->off;
+    c->is_initial    = 1;
 
     /* Report the request URL until header_callback replaces it post-redirect. */
     av_strstart(eff_url, "libcurl:", &eff_url);
@@ -1144,6 +1151,7 @@ static const AVOption options[] = {
     { "max_retries", "maximum number of retries after a recoverable error", OFFSET(max_retries), AV_OPT_TYPE_INT, { .i64 = 5 }, 0, INT_MAX, D },
     { "buffer_size", "receive buffer size in bytes", OFFSET(buffer_size), AV_OPT_TYPE_INT64, { .i64 = CURL_DEFAULT_BUFFER_SIZE }, CURL_MAX_WRITE_SIZE, INT64_MAX, D },
     { "request_size", "split a transfer into ranged requests of at most this many bytes (0 = unlimited)", OFFSET(request_size), AV_OPT_TYPE_INT64, { .i64 = 0 }, 0, INT64_MAX, D },
+    { "initial_request_size", "size (in bytes) of initial requests made during probing / header parsing", OFFSET(initial_request_size), AV_OPT_TYPE_INT64, { .i64 = 0 }, 0, INT64_MAX, D },
     { "http_version", "HTTP version to use", OFFSET(http_version), AV_OPT_TYPE_INT, { .i64 = CURL_HTTP_VERSION_NONE }, 0, INT_MAX, D, .unit = "http_version" },
         { "auto",              "negotiate the best supported version",  0, AV_OPT_TYPE_CONST, { .i64 = CURL_HTTP_VERSION_NONE },                0, 0, D, .unit = "http_version" },
         { "1.0",               "HTTP/1.0",                              0, AV_OPT_TYPE_CONST, { .i64 = CURL_HTTP_VERSION_1_0 },                 0, 0, D, .unit = "http_version" },

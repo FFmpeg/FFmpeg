@@ -1158,6 +1158,14 @@ Size in bytes of the receive buffer. Default is 4 MiB.
 If greater than @code{0}, split a seekable transfer into ranged requests of at
 most this many bytes each. Default is @code{0} (a single request).
 
+@item initial_request_size
+Limit the size of initial requests. Similar to @code{request_size}, but only
+used during initial format parsing. Useful for formats like MXF or MOV that
+require frequent seeks during header parsing. Lasts until the demuxer makes a
+read request larger than this size (without a seek in between), after which
+the implementation will continue using requests as usual. Disabled (set to 0)
+by default.
+
 @item max_retries
 Maximum number of retries after a recoverable error on a seekable transfer.
 Default is @code{5}.
