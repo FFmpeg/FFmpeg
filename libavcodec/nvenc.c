@@ -55,13 +55,16 @@ const enum AVPixelFormat ff_nvenc_pix_fmts[] = {
     AV_PIX_FMT_NV12,
     AV_PIX_FMT_P010,
     AV_PIX_FMT_YUV444P,
+    AV_PIX_FMT_P012,      // Truncated to 10bits
     AV_PIX_FMT_P016,      // Truncated to 10bits
 #ifdef NVENC_HAVE_422_SUPPORT
     AV_PIX_FMT_NV16,
     AV_PIX_FMT_P210,
+    AV_PIX_FMT_P212,      // Truncated to 10bits
     AV_PIX_FMT_P216,
 #endif
     AV_PIX_FMT_YUV444P10MSB,
+    AV_PIX_FMT_YUV444P12MSB, // Truncated to 10bits
     AV_PIX_FMT_YUV444P16, // Truncated to 10bits
     AV_PIX_FMT_0RGB32,
     AV_PIX_FMT_RGB32,
@@ -90,10 +93,13 @@ const AVCodecHWConfigInternal *const ff_nvenc_hw_configs[] = {
 };
 
 #define IS_10BIT(pix_fmt)  (pix_fmt == AV_PIX_FMT_P010         || \
+                            pix_fmt == AV_PIX_FMT_P012         || \
                             pix_fmt == AV_PIX_FMT_P016         || \
                             pix_fmt == AV_PIX_FMT_P210         || \
+                            pix_fmt == AV_PIX_FMT_P212         || \
                             pix_fmt == AV_PIX_FMT_P216         || \
                             pix_fmt == AV_PIX_FMT_YUV444P10MSB || \
+                            pix_fmt == AV_PIX_FMT_YUV444P12MSB || \
                             pix_fmt == AV_PIX_FMT_YUV444P16    || \
                             pix_fmt == AV_PIX_FMT_X2RGB10      || \
                             pix_fmt == AV_PIX_FMT_X2BGR10      || \
@@ -109,6 +115,7 @@ const AVCodecHWConfigInternal *const ff_nvenc_hw_configs[] = {
 
 #define IS_YUV444(pix_fmt) (pix_fmt == AV_PIX_FMT_YUV444P      || \
                             pix_fmt == AV_PIX_FMT_YUV444P10MSB || \
+                            pix_fmt == AV_PIX_FMT_YUV444P12MSB || \
                             pix_fmt == AV_PIX_FMT_YUV444P16    || \
                             pix_fmt == AV_PIX_FMT_GBRP         || \
                             pix_fmt == AV_PIX_FMT_GBRP10MSB    || \
@@ -117,6 +124,7 @@ const AVCodecHWConfigInternal *const ff_nvenc_hw_configs[] = {
 
 #define IS_YUV422(pix_fmt) (pix_fmt == AV_PIX_FMT_NV16 || \
                             pix_fmt == AV_PIX_FMT_P210 || \
+                            pix_fmt == AV_PIX_FMT_P212 || \
                             pix_fmt == AV_PIX_FMT_P216)
 
 #define IS_GBRP(pix_fmt) (pix_fmt == AV_PIX_FMT_GBRP      || \
@@ -1829,6 +1837,7 @@ static NV_ENC_BUFFER_FORMAT nvenc_map_buffer_format(enum AVPixelFormat pix_fmt)
     case AV_PIX_FMT_NV12:
         return NV_ENC_BUFFER_FORMAT_NV12;
     case AV_PIX_FMT_P010:
+    case AV_PIX_FMT_P012:
     case AV_PIX_FMT_P016:
         return NV_ENC_BUFFER_FORMAT_YUV420_10BIT;
     case AV_PIX_FMT_GBRP:
@@ -1838,6 +1847,7 @@ static NV_ENC_BUFFER_FORMAT nvenc_map_buffer_format(enum AVPixelFormat pix_fmt)
     case AV_PIX_FMT_GBRP10MSB:
     case AV_PIX_FMT_YUV444P16:
     case AV_PIX_FMT_YUV444P10MSB:
+    case AV_PIX_FMT_YUV444P12MSB:
         return NV_ENC_BUFFER_FORMAT_YUV444_10BIT;
     case AV_PIX_FMT_0RGB32:
     case AV_PIX_FMT_RGB32:
@@ -1853,6 +1863,7 @@ static NV_ENC_BUFFER_FORMAT nvenc_map_buffer_format(enum AVPixelFormat pix_fmt)
     case AV_PIX_FMT_NV16:
         return NV_ENC_BUFFER_FORMAT_NV16;
     case AV_PIX_FMT_P210:
+    case AV_PIX_FMT_P212:
     case AV_PIX_FMT_P216:
         return NV_ENC_BUFFER_FORMAT_P210;
 #endif
