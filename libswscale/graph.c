@@ -880,23 +880,6 @@ error:
     return ret;
 }
 
-int ff_sws_graph_create(SwsContext *ctx, const SwsFormat *dst, const SwsFormat *src,
-                        SwsGraph **out_graph)
-{
-    SwsGraph *graph = ff_sws_graph_alloc();
-    if (!graph)
-        return AVERROR(ENOMEM);
-
-    int ret = ff_sws_graph_init(graph, ctx, dst, src);
-    if (ret < 0) {
-        ff_sws_graph_free(&graph);
-        return ret;
-    }
-
-    *out_graph = graph;
-    return 0;
-}
-
 void ff_sws_graph_rollback(SwsGraph *graph, int since_idx)
 {
     for (int i = since_idx; i < graph->num_passes; i++)

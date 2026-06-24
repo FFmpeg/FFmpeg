@@ -13,8 +13,9 @@ threaded error diffusion pass following a multi-threaded scaling pass.
 
 SwsGraph is internally recreated whenever the image format, dimensions or
 settings change in any way. sws_scale_frame() is itself just a light-weight
-wrapper that runs ff_sws_graph_create() whenever the format changes, splits
-interlaced images into separate fields, and calls ff_sws_graph_run() on each.
+wrapper that runs ff_sws_graph_reinit() initially and on format changes,
+splits interlaced images into separate fields, and calls ff_sws_graph_run()
+on each.
 
 From the point of view of SwsGraph itself, all inputs are progressive.
 

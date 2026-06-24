@@ -167,12 +167,6 @@ SwsGraph *ff_sws_graph_alloc(void);
 int ff_sws_graph_init(SwsGraph *graph, SwsContext *ctx, const SwsFormat *dst,
                       const SwsFormat *src);
 
-/**
- * Allocate and initialize the filter graph. Returns 0 or a negative error.
- */
-int ff_sws_graph_create(SwsContext *ctx, const SwsFormat *dst, const SwsFormat *src,
-                        SwsGraph **out_graph);
-
 
 /**
  * Allocate and add a new pass to the filter graph. Takes over ownership of
