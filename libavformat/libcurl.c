@@ -127,6 +127,7 @@ struct CurlContext {
     int             active;          /* currently added to the multi */
     uint64_t        request_start;   /* absolute offset the current request began at */
     uint64_t        request_received;/* bytes delivered in the current request */
+    int64_t         request_end;     /* expected end of request, or -1 if unknown */
     int             retry_count;     /* consecutive recoverable failures */
 
     /* Per-response-block header scratch, loop thread only. */
@@ -325,6 +326,11 @@ static size_t header_callback(char *ptr, size_t size, size_t nitems, void *userd
                     total = cl;
             }
             c->content_size = total;
+
+            if (c->hdr_content_end >= 0)
+                c->request_end = c->hdr_content_end;
+            else
+                c->request_end = c->content_size - 1;
         }
     } else {
         c->stream_ok = 0;
@@ -374,6 +380,7 @@ static void start_request(CurlContext *c)
     }
     c->loop->num_requests++;
     c->request_received = 0;
+    c->request_end = -1;
     c->active = 1;
     CURLMcode res = curl_multi_add_handle(c->loop->multi, c->easy);
     if (res != CURLM_OK) {
@@ -441,15 +448,12 @@ static void on_done(CurlContext *c, CURLcode code)
 
     if (code == CURLE_OK && !aborted && c->stream_ok) {
         c->retry_count = 0;
-        if (c->seekable && c->request_size > 0) {
-            int64_t file_end = c->end_off > 0 ? c->end_off : c->content_size;
-            int more = file_end > 0
-                       ? (int64_t)c->request_start < file_end
-                       : received >= (uint64_t)c->request_size;
-            if (more) {
-                start_request(c);
-                return;
-            }
+        int64_t file_end = c->content_size - 1;
+        if (c->end_off > 0)
+            file_end = FFMIN(file_end, c->end_off - 1);
+        if (c->seekable && c->request_end >= 0 && c->request_end < file_end) {
+            start_request(c);
+            return;
         }
         pthread_mutex_lock(&c->mutex);
         c->eof = 1;
@@ -943,6 +947,7 @@ static int libcurl_open(URLContext *h, const char *url, int flags,
     c->h = h;
     c->content_size = -1;
     c->request_start = c->off;
+    c->request_end   = -1;
     c->logical_pos   = c->off;
 
     /* Report the request URL until header_callback replaces it post-redirect. */
