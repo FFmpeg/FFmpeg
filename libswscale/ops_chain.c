@@ -60,6 +60,7 @@ int ff_sws_op_chain_append(SwsOpChain *chain, SwsFuncPtr func,
 
 #define q2pixel(type, q) ((q).den ? (type) (q).num / (q).den : 0)
 
+#if ARCH_AARCH64
 int ff_sws_setup_scale(const SwsImplParams *params, SwsImplResult *out)
 {
     const SwsOp *op = params->op;
@@ -110,6 +111,7 @@ int ff_sws_setup_clear(const SwsImplParams *params, SwsImplResult *out)
 
     return 0;
 }
+#endif
 
 int ff_sws_uop_lookup(SwsContext *ctx, const SwsUOpTable *const tables[],
                       int num_tables, const SwsUOp *uop, const int block_size,
