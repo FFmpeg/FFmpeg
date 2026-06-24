@@ -1472,6 +1472,7 @@ static int create_master_playlist(AVFormatContext *s,
             avg_bandwidth = vs->avg_bitrate;
         } else {
             bandwidth = 0;
+            avg_bandwidth = 0;
             if (vid_st)
                 bandwidth += get_stream_bit_rate(vid_st);
             if (aud_st)
