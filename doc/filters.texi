@@ -29674,6 +29674,28 @@ Flips an image horizontally.
 
 Flips an image along both the vertical and horizontal axis.
 
+@section fruc_vulkan
+
+Frame rate up-conversion using the NVIDIA Vulkan optical flow extension
+(@code{VK_NV_optical_flow}), implemented on the GPU using Vulkan.
+
+For each pair of consecutive input frames the filter computes a forward and
+backward optical flow field on the device's optical flow engine. Intermediate
+frames at the requested output frame rate are produced by proportionally blending
+the two source frames. The frame timing logic mirrors the @code{framerate} filter.
+
+Planar and semi-planar YUV, gray, and packed RGB whose sampled channels are
+already in component order are supported. Packed YUV, planar RGB, formats with
+more than 16 bits integer data per component, such as @code{rgb96} and
+@code{gray32}, and Bayer formats are not.
+
+@table @option
+@item fps
+A string describing the desired output frame rate, evaluated as an expression.
+The following constants are available: @code{source_fps}. The default value is
+@code{60}.
+@end table
+
 @section gblur_vulkan
 
 Apply Gaussian blur filter on Vulkan frames.
