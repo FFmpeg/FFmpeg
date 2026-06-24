@@ -29,6 +29,7 @@
 
 #include "graph.h"
 #include "filters.h"
+#include "rational64.h"
 #include "uops.h"
 
 typedef enum SwsOpType {
@@ -67,7 +68,7 @@ typedef enum SwsOpType {
 const char *ff_sws_op_type_name(SwsOpType op);
 
 /* Compute SwsCompMask from values with denominator != 0 */
-SwsCompMask ff_sws_comp_mask_q4(const AVRational q[4]);
+SwsCompMask ff_sws_comp_mask_q4(const AVRational64 q[4]);
 
 typedef enum SwsCompFlags {
     SWS_COMP_GARBAGE = 1 << 0, /* contents are undefined / garbage data */
@@ -83,7 +84,7 @@ typedef struct SwsComps {
 
     /* Keeps track of the known possible value range, or {0, 0} for undefined
      * or (unknown range) floating point inputs */
-    AVRational min[4], max[4];
+    AVRational64 min[4], max[4];
 } SwsComps;
 
 typedef enum SwsReadWriteMode {
@@ -158,7 +159,7 @@ typedef struct SwsShiftOp {
 
 typedef struct SwsClearOp {
     SwsCompMask mask;    /* mask of components to clear */
-    AVRational value[4]; /* value to set */
+    AVRational64 value[4]; /* value to set */
 } SwsClearOp;
 
 typedef struct SwsConvertOp {
@@ -167,16 +168,16 @@ typedef struct SwsConvertOp {
 } SwsConvertOp;
 
 typedef struct SwsClampOp {
-    AVRational limit[4]; /* per-component min/max value */
+    AVRational64 limit[4]; /* per-component min/max value */
 } SwsClampOp;
 
 typedef struct SwsScaleOp {
-    AVRational factor; /* scalar multiplication factor */
+    AVRational64 factor; /* scalar multiplication factor */
 } SwsScaleOp;
 
 typedef struct SwsDitherOp {
-    AVRational *matrix; /* tightly packed dither matrix (refstruct) */
-    AVRational min, max; /* minimum/maximum value in `matrix` */
+    AVRational64 *matrix; /* tightly packed dither matrix (refstruct) */
+    AVRational64 min, max; /* minimum/maximum value in `matrix` */
     int size_log2; /* size (in bits) of the dither matrix */
     int8_t y_offset[4]; /* row offset for each component, or -1 for ignored */
 } SwsDitherOp;
@@ -194,7 +195,7 @@ typedef struct SwsLinearOp {
      * example the common subset of {A, E, G, J, M, O} can be implemented with
      * just three fused multiply-add operations.
      */
-    AVRational m[4][5];
+    AVRational64 m[4][5];
     uint32_t mask; /* m[i][j] <-> 1 << (5 * i + j) */
 } SwsLinearOp;
 
@@ -254,9 +255,9 @@ void ff_sws_op_desc(AVBPrint *bp, const SwsOp *op);
 void ff_sws_op_uninit(SwsOp *op);
 
 /**
- * Apply an operation to an AVRational. No-op for read/write operations.
+ * Apply an operation to an AVRational64. No-op for read/write operations.
  */
-void ff_sws_apply_op_q(const SwsOp *op, AVRational x[4]);
+void ff_sws_apply_op_q(const SwsOp *op, AVRational64 x[4]);
 
 /**
  * Helper struct for representing a list of operations.

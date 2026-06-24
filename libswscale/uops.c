@@ -95,7 +95,7 @@ static const struct {
     [SWS_PIXEL_F32]  = { "SWS_PIXEL_F32",  "F32_" },
 };
 
-static SwsPixel pixel_from_q(SwsPixelType type, AVRational val)
+static SwsPixel pixel_from_q64(SwsPixelType type, AVRational64 val)
 {
     av_assert1(val.den != 0);
     switch (type) {
@@ -111,7 +111,7 @@ static SwsPixel pixel_from_q(SwsPixelType type, AVRational val)
     return (SwsPixel) {0};
 }
 
-#define Q2PIXEL(val) pixel_from_q(op->type, val)
+#define Q2PIXEL(val) pixel_from_q64(op->type, val)
 
 static bool pixel_is_1s(SwsPixelType type, SwsPixel val)
 {
@@ -427,15 +427,15 @@ static bool exact_product_f32(float a, float b)
 static bool exact_prod(SwsPixelType type, SwsPixel coef,
                        const SwsComps *comps, int idx)
 {
-    const AVRational minq = comps->min[idx];
-    const AVRational maxq = comps->max[idx];
+    const AVRational64 minq = comps->min[idx];
+    const AVRational64 maxq = comps->max[idx];
     if (ff_sws_pixel_type_is_int(type))
         return true;
     else if (!minq.den || !maxq.den)
         return false; /* unknown bounds */
 
-    const SwsPixel min = pixel_from_q(type, minq);
-    const SwsPixel max = pixel_from_q(type, maxq);
+    const SwsPixel min = pixel_from_q64(type, minq);
+    const SwsPixel max = pixel_from_q64(type, maxq);
     switch (type) {
     case SWS_PIXEL_F32:
         return exact_product_f32(coef.f32, min.f32) &&
@@ -715,7 +715,7 @@ static int translate_linear_op(SwsContext *ctx, SwsUOpList *ops,
             uop.mask |= SWS_COMP(i);
         bool nonzero = (op->lin.m[i][4].num != 0);
         for (int j = 0; j < 5; j++) {
-            const AVRational k = op->lin.m[i][j];
+            const AVRational64 k = op->lin.m[i][j];
             const SwsPixel px = Q2PIXEL(k);
             uop.data.mat4[i][j] = px;
             if (k.num == 0)
@@ -738,7 +738,7 @@ static int translate_linear_op(SwsContext *ctx, SwsUOpList *ops,
     return ff_sws_uop_list_append(ops, &uop);
 }
 
-static bool is_expand_bit(SwsPixelType type, AVRational factor)
+static bool is_expand_bit(SwsPixelType type, AVRational64 factor)
 {
     if (factor.den != 1)
         return false;
@@ -821,7 +821,7 @@ static int translate_op(SwsContext *ctx, SwsUOpList *uops, SwsUOpFlags flags,
         for (int i = 0; i < 4; i++) {
             if (!SWS_COMP_TEST(op->clear.mask, i))
                 continue;
-            const AVRational v = op->clear.value[i];
+            const AVRational64 v = op->clear.value[i];
             const SwsPixel px = Q2PIXEL(op->clear.value[i]);
             uop.data.vec4[i] = px;
             if (v.num == 0)

@@ -26,9 +26,9 @@
 #include "ops.h"
 #include "ops_dispatch.h"
 
-#define Q(N) ((AVRational) { N, 1 })
+#define Q(N) ((AVRational64) { N, 1 })
 
-static inline AVRational ff_sws_pixel_expand(SwsPixelType from, SwsPixelType to)
+static inline AVRational64 ff_sws_pixel_expand(SwsPixelType from, SwsPixelType to)
 {
     const int src = ff_sws_pixel_type_size(from);
     const int dst = ff_sws_pixel_type_size(to);

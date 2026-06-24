@@ -63,7 +63,7 @@ int ff_sws_op_chain_append(SwsOpChain *chain, SwsFuncPtr func,
 int ff_sws_setup_scale(const SwsImplParams *params, SwsImplResult *out)
 {
     const SwsOp *op = params->op;
-    const AVRational factor = op->scale.factor;
+    const AVRational64 factor = op->scale.factor;
     switch (op->type) {
     case SWS_PIXEL_U8:  out->priv.u8[0]  = q2pixel(uint8_t,  factor); break;
     case SWS_PIXEL_U16: out->priv.u16[0] = q2pixel(uint16_t, factor); break;
@@ -79,7 +79,7 @@ int ff_sws_setup_clamp(const SwsImplParams *params, SwsImplResult *out)
 {
     const SwsOp *op = params->op;
     for (int i = 0; i < 4; i++) {
-        const AVRational limit = op->clamp.limit[i];
+        const AVRational64 limit = op->clamp.limit[i];
         switch (op->type) {
         case SWS_PIXEL_U8:  out->priv.u8[i]  = q2pixel(uint8_t,  limit); break;
         case SWS_PIXEL_U16: out->priv.u16[i] = q2pixel(uint16_t, limit); break;
@@ -96,7 +96,7 @@ int ff_sws_setup_clear(const SwsImplParams *params, SwsImplResult *out)
 {
     const SwsOp *op = params->op;
     for (int i = 0; i < 4; i++) {
-        const AVRational value = op->clear.value[i];
+        const AVRational64 value = op->clear.value[i];
         if (!value.den)
             continue;
         switch (op->type) {

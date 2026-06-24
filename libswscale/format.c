@@ -1011,10 +1011,10 @@ static SwsClearOp fmt_clear(const SwsFormat *fmt)
 #  define NATIVE_ENDIAN_FLAG 0
 #endif
 
-static inline AVRational intmax_q(int bits)
+static inline AVRational64 intmax_q64(int bits)
 {
-    av_assert1(bits >= 0 && bits < 32);
-    return Q(UINT32_MAX >> (32 - bits));
+    av_assert1(bits >= 0 && bits < 64);
+    return Q(UINT64_MAX >> (64 - bits));
 }
 
 int ff_sws_decode_pixfmt(SwsOpList *ops, const SwsFormat *fmt)
@@ -1051,7 +1051,7 @@ int ff_sws_decode_pixfmt(SwsOpList *ops, const SwsFormat *fmt)
             const int idx    = swizzle.in[is_ya ? 3 * c : c];
             comps->min[idx]  = Q(0);
             if (bits < 32) /* FIXME: AVRational is limited to INT_MAX */
-                comps->max[idx] = intmax_q(bits);
+                comps->max[idx] = intmax_q64(bits);
         }
     }
 
@@ -1177,15 +1177,15 @@ int ff_sws_encode_pixfmt(SwsOpList *ops, const SwsFormat *fmt)
     return 0;
 }
 
-static inline AVRational av_neg_q(AVRational x)
+static inline AVRational64 av_neg_q64(AVRational64 x)
 {
-    return (AVRational) { -x.num, x.den };
+    return (AVRational64) { -x.num, x.den };
 }
 
 static SwsLinearOp fmt_encode_range(const SwsFormat *fmt, bool *incomplete)
 {
-    const AVRational q0 = Q(0);
-    const AVRational q1 = Q(1);
+    const AVRational64 q0 = Q(0);
+    const AVRational64 q1 = Q(1);
 
     SwsLinearOp c = { .m = {
         { q1, q0, q0, q0, q0 },
@@ -1204,17 +1204,17 @@ static SwsLinearOp fmt_encode_range(const SwsFormat *fmt, bool *incomplete)
         return c; /* floats are directly output as-is */
 
     if (fmt->csp == AVCOL_SPC_RGB || (desc->flags & AV_PIX_FMT_FLAG_XYZ)) {
-        c.m[0][0] = intmax_q(depth0);
-        c.m[1][1] = intmax_q(depth1);
-        c.m[2][2] = intmax_q(depth2);
+        c.m[0][0] = intmax_q64(depth0);
+        c.m[1][1] = intmax_q64(depth1);
+        c.m[2][2] = intmax_q64(depth2);
     } else if (fmt->range == AVCOL_RANGE_JPEG) {
         /* Full range YUV */
-        c.m[0][0] = intmax_q(depth0);
+        c.m[0][0] = intmax_q64(depth0);
         if (desc->nb_components >= 3) {
             /* This follows the ITU-R convention, which is slightly different
              * from the JFIF convention. */
-            c.m[1][1] = intmax_q(depth1);
-            c.m[2][2] = intmax_q(depth2);
+            c.m[1][1] = intmax_q64(depth1);
+            c.m[2][2] = intmax_q64(depth2);
             c.m[1][4] = Q(1 << (depth1 - 1));
             c.m[2][4] = Q(1 << (depth2 - 1));
         }
@@ -1234,13 +1234,13 @@ static SwsLinearOp fmt_encode_range(const SwsFormat *fmt, bool *incomplete)
 
     if (desc->flags & AV_PIX_FMT_FLAG_ALPHA) {
         const bool is_ya = desc->nb_components == 2;
-        c.m[3][3] = intmax_q(is_ya ? depth1 : depth3);
+        c.m[3][3] = intmax_q64(is_ya ? depth1 : depth3);
     }
 
     if (fmt->format == AV_PIX_FMT_MONOWHITE) {
         /* This format is inverted, 0 = white, 1 = black */
-        c.m[0][4] = av_add_q(c.m[0][4], c.m[0][0]);
-        c.m[0][0] = av_neg_q(c.m[0][0]);
+        c.m[0][4] = av_add_q64(c.m[0][4], c.m[0][0]);
+        c.m[0][0] = av_neg_q64(c.m[0][0]);
     }
 
     c.mask = ff_sws_linear_mask(&c);
@@ -1254,8 +1254,8 @@ static SwsLinearOp fmt_decode_range(const SwsFormat *fmt, bool *incomplete)
     /* Invert main diagonal + offset: x = s * y + k  ==>  y = (x - k) / s */
     for (int i = 0; i < 4; i++) {
         av_assert1(c.m[i][i].num);
-        c.m[i][i] = av_inv_q(c.m[i][i]);
-        c.m[i][4] = av_mul_q(c.m[i][4], av_neg_q(c.m[i][i]));
+        c.m[i][i] = av_inv_q64(c.m[i][i]);
+        c.m[i][4] = av_mul_q64(c.m[i][4], av_neg_q64(c.m[i][i]));
     }
 
     /* Explicitly initialize alpha for sanity */
@@ -1266,11 +1266,11 @@ static SwsLinearOp fmt_decode_range(const SwsFormat *fmt, bool *incomplete)
     return c;
 }
 
-static AVRational *generate_bayer_matrix(const int size_log2)
+static AVRational64 *generate_bayer_matrix(const int size_log2)
 {
     const int size = 1 << size_log2;
     const int num_entries = size * size;
-    AVRational *m = av_refstruct_allocz(sizeof(*m) * num_entries);
+    AVRational64 *m = av_refstruct_allocz(sizeof(*m) * num_entries);
     av_assert1(size_log2 < 16);
     if (!m)
         return NULL;
@@ -1283,10 +1283,10 @@ static AVRational *generate_bayer_matrix(const int size_log2)
         const int den = 4 * sz * sz;
         for (int y = 0; y < sz; y++) {
             for (int x = 0; x < sz; x++) {
-                const AVRational cur = m[y * size + x];
-                m[(y + sz) * size + x + sz] = av_add_q(cur, av_make_q(1, den));
-                m[(y     ) * size + x + sz] = av_add_q(cur, av_make_q(2, den));
-                m[(y + sz) * size + x     ] = av_add_q(cur, av_make_q(3, den));
+                const AVRational64 cur = m[y * size + x];
+                m[(y + sz) * size + x + sz] = av_add_q64(cur, av_make_q64(1, den));
+                m[(y     ) * size + x + sz] = av_add_q64(cur, av_make_q64(2, den));
+                m[(y + sz) * size + x     ] = av_add_q64(cur, av_make_q64(3, den));
             }
         }
     }
@@ -1302,7 +1302,7 @@ static AVRational *generate_bayer_matrix(const int size_log2)
      * To make the average value equal to 1/2 = N/(2N), add a bias of 1/(2N).
      */
     for (int i = 0; i < num_entries; i++)
-        m[i] = av_add_q(m[i], av_make_q(1, 2 * num_entries));
+        m[i] = av_add_q64(m[i], av_make_q64(1, 2 * num_entries));
 
     return m;
 }
@@ -1341,10 +1341,10 @@ static int fmt_dither(SwsContext *ctx, SwsOpList *ops,
     case SWS_DITHER_NONE:
         if (ctx->flags & SWS_ACCURATE_RND) {
             /* Add constant 0.5 for correct rounding */
-            AVRational *bias = av_refstruct_allocz(sizeof(*bias));
+            AVRational64 *bias = av_refstruct_allocz(sizeof(*bias));
             if (!bias)
                 return AVERROR(ENOMEM);
-            *bias = (AVRational) {1, 2};
+            *bias = (AVRational64) {1, 2};
             return ff_sws_op_list_append(ops, &(SwsOp) {
                 .op   = SWS_OP_DITHER,
                 .type = type,
@@ -1369,9 +1369,9 @@ static int fmt_dither(SwsContext *ctx, SwsOpList *ops,
         const int size = 1 << dither.size_log2;
         dither.min = dither.max = dither.matrix[0];
         for (int i = 1; i < size * size; i++) {
-            if (av_cmp_q(dither.min, dither.matrix[i]) > 0)
+            if (av_cmp_q64(dither.min, dither.matrix[i]) > 0)
                 dither.min = dither.matrix[i];
-            if (av_cmp_q(dither.matrix[i], dither.max) > 0)
+            if (av_cmp_q64(dither.matrix[i], dither.max) > 0)
                 dither.max = dither.matrix[i];
         }
 
@@ -1417,18 +1417,18 @@ static int fmt_dither(SwsContext *ctx, SwsOpList *ops,
     return AVERROR(EINVAL);
 }
 
+#define Q64(x) av_make_q64((x).num, (x).den)
+
 static inline SwsLinearOp
 linear_mat3(const AVRational m00, const AVRational m01, const AVRational m02,
             const AVRational m10, const AVRational m11, const AVRational m12,
             const AVRational m20, const AVRational m21, const AVRational m22)
 {
-    const AVRational q0 = Q(0);
-    const AVRational q1 = Q(1);
     SwsLinearOp c = {{
-        { m00, m01, m02, q0, q0 },
-        { m10, m11, m12, q0, q0 },
-        { m20, m21, m22, q0, q0 },
-        {  q0,  q0,  q0, q1, q0 },
+        { Q64(m00), Q64(m01), Q64(m02), Q(0), Q(0) },
+        { Q64(m10), Q64(m11), Q64(m12), Q(0), Q(0) },
+        { Q64(m20), Q64(m21), Q64(m22), Q(0), Q(0) },
+        {     Q(0),     Q(0),     Q(0), Q(1), Q(0) },
     }};
 
     c.mask = ff_sws_linear_mask(&c);
@@ -1484,9 +1484,9 @@ int ff_sws_decode_colors(SwsContext *ctx, SwsPixelType type,
     if (!pixel_type)
          return AVERROR(ENOTSUP);
 
-    const AVRational q0 = Q(0);
-    const AVRational q1 = Q(1);
-    const AVRational q2 = Q(2);
+    const AVRational q0 = av_make_q(0, 1);
+    const AVRational q1 = av_make_q(1, 1);
+    const AVRational q2 = av_make_q(2, 1);
 
     RET(ff_sws_op_list_append(ops, &(SwsOp) {
         .op         = SWS_OP_CONVERT,
@@ -1647,7 +1647,7 @@ int ff_sws_encode_colors(SwsContext *ctx, SwsPixelType type,
         for (int i = 0; i < dst->desc->nb_components; i++) {
             /* Clamp to legal pixel range */
             const int idx = i * (is_ya ? 3 : 1);
-            range.limit[idx] = intmax_q(dst->desc->comp[i].depth);
+            range.limit[idx] = intmax_q64(dst->desc->comp[i].depth);
         }
 
         RET(fmt_dither(ctx, ops, type, src, dst));

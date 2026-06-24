@@ -237,7 +237,7 @@ static int create_dither_buf(FFVulkanOpsCtx *s, VulkanPriv *p,
 
     for (int i = 0; i < size; i++) {
         for (int j = 0; j < size; j++) {
-            const AVRational r = dd->matrix[i*size + j];
+            const AVRational64 r = dd->matrix[i*size + j];
             dither_data[i*size + j] = r.num/(float)r.den;
         }
     }
@@ -533,7 +533,7 @@ static void define_shader_consts(SwsContext *sws, const SwsOpList *ops,
         switch (op->op) {
         case SWS_OP_CONVERT:
             if (ff_sws_pixel_type_is_int(op->convert.to) && op->convert.expand) {
-                AVRational m = ff_sws_pixel_expand(op->type, op->convert.to);
+                AVRational64 m = ff_sws_pixel_expand(op->type, op->convert.to);
                 int tmp = spi_OpConstantUInt(spi, id->u32_type, m.num);
                 tmp = spi_OpConstantComposite(spi, id->u32vec4_type,
                                               tmp, tmp, tmp, tmp);
@@ -544,7 +544,7 @@ static void define_shader_consts(SwsContext *sws, const SwsOpList *ops,
             for (int i = 0; i < 4; i++) {
                 if (!SWS_COMP_TEST(op->clear.mask, i))
                     continue;
-                AVRational cv = op->clear.value[i];
+                AVRational64 cv = op->clear.value[i];
                 if (op->type == SWS_PIXEL_F32) {
                     float q = (float)cv.num/cv.den;
                     id->const_ids[id->nb_const_ids++] =
@@ -584,7 +584,7 @@ static void define_shader_consts(SwsContext *sws, const SwsOpList *ops,
         case SWS_OP_MAX:
             for (int i = 0; i < 4; i++) {
                 int tmp;
-                AVRational cl = op->clamp.limit[i];
+                AVRational64 cl = op->clamp.limit[i];
                 if (!op->clamp.limit[i].den) {
                     continue;
                 } else if (op->type == SWS_PIXEL_F32) {
@@ -1312,7 +1312,7 @@ static void add_desc_read_write(FFVulkanDescriptorSetBinding *out_desc,
     *out_rep = op->type == SWS_PIXEL_F32 ? FF_VK_REP_FLOAT : FF_VK_REP_UINT;
 }
 
-#define QSTR "(%i/%i%s)"
+#define QSTR "(%"PRId64"/%"PRId64"%s)"
 #define QTYPE(Q) (Q).num, (Q).den, cur_type == SWS_PIXEL_F32 ? ".0f" : ""
 
 static void read_glsl(const SwsOpList *ops, const SwsOp *op, FFVulkanShader *shd,
@@ -1546,8 +1546,8 @@ static int add_ops_glsl(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
             break;
         case SWS_OP_CONVERT:
             if (ff_sws_pixel_type_is_int(cur_type) && op->convert.expand) {
-                const AVRational sc = ff_sws_pixel_expand(op->type, op->convert.to);
-                av_bprintf(&shd->src, "    %s = %s((%s*%i)/%i);\n",
+                const AVRational64 sc = ff_sws_pixel_expand(op->type, op->convert.to);
+                av_bprintf(&shd->src, "    %s = %s((%s*%"PRId64")/%"PRId64");\n",
                            type_name, type_v, ff_sws_pixel_type_name(op->type),
                            sc.num, sc.den);
             } else {

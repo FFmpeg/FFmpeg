@@ -134,7 +134,7 @@ const char *ff_sws_op_type_name(SwsOpType op)
     return "ERR";
 }
 
-SwsCompMask ff_sws_comp_mask_q4(const AVRational q[4])
+SwsCompMask ff_sws_comp_mask_q4(const AVRational64 q[4])
 {
     SwsCompMask mask = 0;
     for (int i = 0; i < 4; i++) {
@@ -181,17 +181,17 @@ int ff_sws_rw_op_planes(const SwsOp *op)
 }
 
 /* biased towards `a` */
-static AVRational av_min_q(AVRational a, AVRational b)
+static AVRational64 av_min_q64(AVRational64 a, AVRational64 b)
 {
-    return av_cmp_q(a, b) == 1 ? b : a;
+    return av_cmp_q64(a, b) == 1 ? b : a;
 }
 
-static AVRational av_max_q(AVRational a, AVRational b)
+static AVRational64 av_max_q64(AVRational64 a, AVRational64 b)
 {
-    return av_cmp_q(a, b) == -1 ? b : a;
+    return av_cmp_q64(a, b) == -1 ? b : a;
 }
 
-void ff_sws_apply_op_q(const SwsOp *op, AVRational x[4])
+void ff_sws_apply_op_q(const SwsOp *op, AVRational64 x[4])
 {
     uint64_t mask[4];
     int shift[4];
@@ -238,9 +238,9 @@ void ff_sws_apply_op_q(const SwsOp *op, AVRational x[4])
         return;
     case SWS_OP_LSHIFT: {
         av_assert1(ff_sws_pixel_type_is_int(op->type));
-        AVRational mult = Q(1 << op->shift.amount);
+        AVRational64 mult = Q(1 << op->shift.amount);
         for (int i = 0; i < 4; i++)
-            x[i] = x[i].den ? av_mul_q(x[i], mult) : x[i];
+            x[i] = x[i].den ? av_mul_q64(x[i], mult) : x[i];
         return;
     }
     case SWS_OP_RSHIFT: {
@@ -250,18 +250,18 @@ void ff_sws_apply_op_q(const SwsOp *op, AVRational x[4])
         return;
     }
     case SWS_OP_SWIZZLE: {
-        const AVRational orig[4] = { x[0], x[1], x[2], x[3] };
+        const AVRational64 orig[4] = { x[0], x[1], x[2], x[3] };
         for (int i = 0; i < 4; i++)
             x[i] = orig[op->swizzle.in[i]];
         return;
     }
     case SWS_OP_CONVERT:
         if (ff_sws_pixel_type_is_int(op->convert.to)) {
-            const AVRational scale = ff_sws_pixel_expand(op->type, op->convert.to);
+            const AVRational64 scale = ff_sws_pixel_expand(op->type, op->convert.to);
             for (int i = 0; i < 4; i++) {
                 x[i] = x[i].den ? Q(x[i].num / x[i].den) : x[i];
                 if (op->convert.expand)
-                    x[i] = av_mul_q(x[i], scale);
+                    x[i] = av_mul_q64(x[i], scale);
             }
         }
         return;
@@ -269,31 +269,31 @@ void ff_sws_apply_op_q(const SwsOp *op, AVRational x[4])
         av_assert1(!ff_sws_pixel_type_is_int(op->type));
         for (int i = 0; i < 4; i++) {
             if (op->dither.y_offset[i] >= 0 && x[i].den)
-                x[i] = av_add_q(x[i], av_make_q(1, 2));
+                x[i] = av_add_q64(x[i], av_make_q64(1, 2));
         }
         return;
     case SWS_OP_MIN:
         for (int i = 0; i < 4; i++)
-            x[i] = av_min_q(x[i], op->clamp.limit[i]);
+            x[i] = av_min_q64(x[i], op->clamp.limit[i]);
         return;
     case SWS_OP_MAX:
         for (int i = 0; i < 4; i++)
-            x[i] = av_max_q(x[i], op->clamp.limit[i]);
+            x[i] = av_max_q64(x[i], op->clamp.limit[i]);
         return;
     case SWS_OP_LINEAR: {
         av_assert1(!ff_sws_pixel_type_is_int(op->type));
-        const AVRational orig[4] = { x[0], x[1], x[2], x[3] };
+        const AVRational64 orig[4] = { x[0], x[1], x[2], x[3] };
         for (int i = 0; i < 4; i++) {
-            AVRational sum = op->lin.m[i][4];
+            AVRational64 sum = op->lin.m[i][4];
             for (int j = 0; j < 4; j++)
-                sum = av_add_q(sum, av_mul_q(orig[j], op->lin.m[i][j]));
+                sum = av_add_q64(sum, av_mul_q64(orig[j], op->lin.m[i][j]));
             x[i] = sum;
         }
         return;
     }
     case SWS_OP_SCALE:
         for (int i = 0; i < 4; i++)
-            x[i] = x[i].den ? av_mul_q(x[i], op->scale.factor) : x[i];
+            x[i] = x[i].den ? av_mul_q64(x[i], op->scale.factor) : x[i];
         return;
     case SWS_OP_FILTER_H:
     case SWS_OP_FILTER_V:
@@ -323,18 +323,18 @@ static SwsCompFlags merge_comp_flags(SwsCompFlags a, SwsCompFlags b)
 static void apply_filter_weights(SwsComps *comps, const SwsComps *prev,
                                  const SwsFilterWeights *weights)
 {
-    const AVRational posw = { weights->sum_positive, SWS_FILTER_SCALE };
-    const AVRational negw = { weights->sum_negative, SWS_FILTER_SCALE };
+    const AVRational64 posw = { weights->sum_positive, SWS_FILTER_SCALE };
+    const AVRational64 negw = { weights->sum_negative, SWS_FILTER_SCALE };
     for (int i = 0; i < 4; i++) {
         comps->flags[i] = prev->flags[i] & SWS_COMP_DIRTY;
         /* Only point sampling preserves exactness */
         if (weights->filter_size != 1)
             comps->flags[i] &= ~SWS_COMP_EXACT;
         /* Update min/max assuming extremes */
-        comps->min[i] = av_add_q(av_mul_q(prev->min[i], posw),
-                                 av_mul_q(prev->max[i], negw));
-        comps->max[i] = av_add_q(av_mul_q(prev->min[i], negw),
-                                 av_mul_q(prev->max[i], posw));
+        comps->min[i] = av_add_q64(av_mul_q64(prev->min[i], posw),
+                                   av_mul_q64(prev->max[i], negw));
+        comps->max[i] = av_add_q64(av_mul_q64(prev->min[i], negw),
+                                   av_mul_q64(prev->max[i], posw));
     }
 }
 
@@ -418,7 +418,7 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
             break;
         case SWS_OP_MIN:
         case SWS_OP_MAX: {
-            AVRational *bound = op->op == SWS_OP_MIN ? op->comps.max : op->comps.min;
+            AVRational64 *bound = op->op == SWS_OP_MIN ? op->comps.max : op->comps.min;
             for (int i = 0; i < 4; i++) {
                 op->comps.flags[i] = prev.flags[i];
                 if (op->clamp.limit[i].den)
@@ -437,8 +437,8 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
                     continue;
                 /* Strip zero flag because of the nonzero dithering offset */
                 op->comps.flags[i] &= ~SWS_COMP_ZERO & SWS_COMP_DIRTY;
-                op->comps.min[i] = av_add_q(op->comps.min[i], op->dither.min);
-                op->comps.max[i] = av_add_q(op->comps.max[i], op->dither.max);
+                op->comps.min[i] = av_add_q64(op->comps.min[i], op->dither.min);
+                op->comps.max[i] = av_add_q64(op->comps.max[i], op->dither.max);
             }
             break;
         case SWS_OP_UNPACK:
@@ -493,21 +493,21 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
         case SWS_OP_LINEAR:
             for (int i = 0; i < 4; i++) {
                 SwsCompFlags flags = SWS_COMP_IDENTITY;
-                AVRational min = Q(0), max = Q(0);
+                AVRational64 min = Q(0), max = Q(0);
                 bool first = true;
                 for (int j = 0; j < 4; j++) {
-                    const AVRational k = op->lin.m[i][j];
-                    AVRational mink = av_mul_q(prev.min[j], k);
-                    AVRational maxk = av_mul_q(prev.max[j], k);
+                    const AVRational64 k = op->lin.m[i][j];
+                    AVRational64 mink = av_mul_q64(prev.min[j], k);
+                    AVRational64 maxk = av_mul_q64(prev.max[j], k);
                     if (k.num) {
                         flags = merge_comp_flags(flags, prev.flags[j]);
                         if (k.den != 1) /* fractional coefficient */
                             flags &= ~SWS_COMP_EXACT;
                         if (k.num < 0)
-                            FFSWAP(AVRational, mink, maxk);
-                        min = av_add_q(min, mink);
-                        max = av_add_q(max, maxk);
-                        if (!first || av_cmp_q(k, Q(1)))
+                            FFSWAP(AVRational64, mink, maxk);
+                        min = av_add_q64(min, mink);
+                        max = av_add_q64(max, maxk);
+                        if (!first || av_cmp_q64(k, Q(1)))
                             flags &= SWS_COMP_DIRTY;
                         first = false;
                     }
@@ -516,8 +516,8 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
                     flags &= ~SWS_COMP_ZERO & SWS_COMP_DIRTY;
                     if (op->lin.m[i][4].den != 1) /* fractional offset */
                         flags &= ~SWS_COMP_EXACT;
-                    min = av_add_q(min, op->lin.m[i][4]);
-                    max = av_add_q(max, op->lin.m[i][4]);
+                    min = av_add_q64(min, op->lin.m[i][4]);
+                    max = av_add_q64(max, op->lin.m[i][4]);
                 }
                 op->comps.flags[i] = flags;
                 op->comps.min[i] = min;
@@ -530,7 +530,7 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
                 if (op->scale.factor.den != 1) /* fractional scale */
                     op->comps.flags[i] &= ~SWS_COMP_EXACT;
                 if (op->scale.factor.num < 0)
-                    FFSWAP(AVRational, op->comps.min[i], op->comps.max[i]);
+                    FFSWAP(AVRational64, op->comps.min[i], op->comps.max[i]);
             }
             break;
         case SWS_OP_FILTER_H:
@@ -787,7 +787,7 @@ uint32_t ff_sws_linear_mask(const SwsLinearOp *c)
     uint32_t mask = 0;
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 5; j++) {
-            if (av_cmp_q(c->m[i][j], Q(i == j)))
+            if (av_cmp_q64(c->m[i][j], Q(i == j)))
                 mask |= SWS_MASK(i, j);
         }
     }
@@ -812,20 +812,20 @@ static char describe_comp_flags(SwsCompFlags flags)
         return '.';
 }
 
-static void print_q(AVBPrint *bp, const AVRational q)
+static void print_q(AVBPrint *bp, const AVRational64 q)
 {
     if (!q.den) {
         av_bprintf(bp, "%s", q.num > 0 ? "inf" : q.num < 0 ? "-inf" : "nan");
     } else if (q.den == 1) {
-        av_bprintf(bp, "%d", q.num);
-    } else if (abs(q.num) > 1000 || abs(q.den) > 1000) {
-        av_bprintf(bp, "%f", av_q2d(q));
+        av_bprintf(bp, "%"PRId64, q.num);
+    } else if (q.num > 1000 || q.num < -1000 || q.den > 1000 || q.den < -1000) {
+        av_bprintf(bp, "%f", av_q2d_64(q));
     } else {
-        av_bprintf(bp, "%d/%d", q.num, q.den);
+        av_bprintf(bp, "%"PRId64"/%"PRId64, q.num, q.den);
     }
 }
 
-static void print_q4(AVBPrint *bp, const AVRational q4[4], SwsCompMask mask)
+static void print_q4(AVBPrint *bp, const AVRational64 q4[4], SwsCompMask mask)
 {
     av_bprintf(bp, "{");
     for (int i = 0; i < 4; i++) {
@@ -922,9 +922,9 @@ void ff_sws_op_desc(AVBPrint *bp, const SwsOp *op)
         av_bprintf(bp, "]");
         break;
     case SWS_OP_SCALE:
-        av_bprintf(bp, "%-20s: * %d", name, op->scale.factor.num);
+        av_bprintf(bp, "%-20s: * %"PRId64, name, op->scale.factor.num);
         if (op->scale.factor.den != 1)
-            av_bprintf(bp, "/%d", op->scale.factor.den);
+            av_bprintf(bp, "/%"PRId64, op->scale.factor.den);
         break;
     case SWS_OP_FILTER_H:
     case SWS_OP_FILTER_V: {

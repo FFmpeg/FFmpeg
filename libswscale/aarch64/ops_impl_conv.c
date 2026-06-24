@@ -209,7 +209,7 @@ static int convert_to_aarch64_impl(SwsContext *ctx, const SwsOpList *ops, int n,
                 continue;
             MASK_SET(out->mask, i, 1);
             for (int j = 0; j < 5; j++) {
-                const AVRational k = op->lin.m[i][j];
+                const AVRational64 k = op->lin.m[i][j];
                 int jj = linear_index_from_sws_op(j);
                 if (j < 4 && k.num == k.den)
                     LINEAR_MASK_SET(out->linear.mask, i, jj, LINEAR_MASK_1);
