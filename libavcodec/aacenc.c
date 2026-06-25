@@ -1350,6 +1350,42 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         }
     } while (1);
 
+    /* tool-usage stats over the final per-band decisions of this frame */
+    for (i = 0; i < s->chan_map[0]; i++) {
+        int etag = s->chan_map[i + 1], echans = etag == TYPE_CPE ? 2 : 1;
+        ChannelElement *ce = &s->cpe[i];
+        IndividualChannelStream *ics = &ce->ch[0].ics;
+        for (ch = 0; ch < echans; ch++) {   /* per-channel frame stats */
+            int is_short = ce->ch[ch].ics.window_sequence[0] == EIGHT_SHORT_SEQUENCE;
+            s->stat_chans++;
+            if (is_short)
+                s->stat_short++;
+            if (ce->ch[ch].tns.present) {
+                if (is_short) s->stat_tns_short++;
+                else          s->stat_tns_long++;
+            }
+        }
+        for (w = 0; w < ics->num_windows; w += ics->group_len[w]) {
+            for (int g = 0; g < ics->num_swb; g++) {
+                int idx = w*16 + g, coded = 0;
+                for (ch = 0; ch < echans; ch++) {
+                    SingleChannelElement *sce = &ce->ch[ch];
+                    if (sce->zeroes[idx] && sce->band_type[idx] == 0)
+                        continue;
+                    s->stat_ch_bands++;
+                    if (sce->band_type[idx] == NOISE_BT)
+                        s->stat_pns++;
+                    coded = 1;
+                }
+                if (etag == TYPE_CPE && coded) {
+                    s->stat_cpe_bands++;
+                    if (ce->ms_mask[idx]) s->stat_ms++;
+                    if (ce->is_mask[idx]) s->stat_is++;
+                }
+            }
+        }
+    }
+
     put_bits(&s->pb, 3, TYPE_END);
     flush_put_bits(&s->pb);
 
@@ -1389,7 +1425,15 @@ static av_cold int aac_encode_end(AVCodecContext *avctx)
 {
     AACEncContext *s = avctx->priv_data;
 
-    av_log(avctx, AV_LOG_INFO, "Qavg: %.3f\n", s->lambda_count ? s->lambda_sum / s->lambda_count : NAN);
+    av_log(avctx, AV_LOG_INFO,
+           "Qavg: %.3f  Tr: %.1f%%  TNS(L): %.1f%%  TNS(S): %.1f%%  M/S: %.1f%%  I/S: %.1f%%  PNS: %.1f%%\n",
+           s->lambda_count ? s->lambda_sum / s->lambda_count : NAN,
+           s->stat_chans     ? 100.0 * s->stat_short      / s->stat_chans               : 0.0,
+           s->stat_chans - s->stat_short ? 100.0 * s->stat_tns_long  / (s->stat_chans - s->stat_short) : 0.0,
+           s->stat_short     ? 100.0 * s->stat_tns_short  / s->stat_short               : 0.0,
+           s->stat_cpe_bands ? 100.0 * s->stat_ms         / s->stat_cpe_bands           : 0.0,
+           s->stat_cpe_bands ? 100.0 * s->stat_is         / s->stat_cpe_bands           : 0.0,
+           s->stat_ch_bands  ? 100.0 * s->stat_pns        / s->stat_ch_bands            : 0.0);
 
     av_tx_uninit(&s->mdct1024);
     av_tx_uninit(&s->mdct128);

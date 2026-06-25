@@ -231,6 +231,12 @@ typedef struct AACEncContext {
     int last_frame_pb_count;                     ///< number of bits for the previous frame
     float lambda_sum;                            ///< sum(lambda), for Qvg reporting
     int lambda_count;                            ///< count(lambda), for Qvg reporting
+    /* tool-usage stats, reported at close: per-coded-band for PNS (channel bands),
+     * per-coded-pair-band for M/S and I/S (CPE bands) */
+    uint64_t stat_ch_bands, stat_pns;            ///< coded channel-bands, of which PNS
+    uint64_t stat_cpe_bands, stat_ms, stat_is;   ///< coded CPE pair-bands, of which M/S, I/S
+    uint64_t stat_chans, stat_short;             ///< coded channels, of which short-block (transient)
+    uint64_t stat_tns_long, stat_tns_short;      ///< TNS-active channels among long / short blocks
     enum RawDataBlockType cur_type;              ///< channel group type cur_channel belongs to
 
     AudioFrameQueue afq;
