@@ -22,6 +22,7 @@
 #ifndef AVFORMAT_HTTP_H
 #define AVFORMAT_HTTP_H
 
+#include "libavutil/error.h"
 #include "url.h"
 
 #define HTTP_HEADERS_SIZE 4096
@@ -60,8 +61,24 @@ int ff_http_do_new_request(URLContext *h, const char *uri);
  */
 int ff_http_do_new_request2(URLContext *h, const char *uri, AVDictionary **options);
 
-int ff_http_averror(int status_code, int default_averror);
-
 const char* ff_http_get_new_location(URLContext *h);
+
+static inline int ff_http_averror(int status_code, int default_averror)
+{
+    switch (status_code) {
+        case 400: return AVERROR_HTTP_BAD_REQUEST;
+        case 401: return AVERROR_HTTP_UNAUTHORIZED;
+        case 403: return AVERROR_HTTP_FORBIDDEN;
+        case 404: return AVERROR_HTTP_NOT_FOUND;
+        case 429: return AVERROR_HTTP_TOO_MANY_REQUESTS;
+        default: break;
+    }
+    if (status_code >= 400 && status_code <= 499)
+        return AVERROR_HTTP_OTHER_4XX;
+    else if (status_code >= 500)
+        return AVERROR_HTTP_SERVER_ERROR;
+    else
+        return default_averror;
+}
 
 #endif /* AVFORMAT_HTTP_H */
