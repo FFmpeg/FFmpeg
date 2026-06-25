@@ -85,6 +85,9 @@ typedef struct SwsComps {
     /* Keeps track of the known possible value range, or {0, 0} for undefined
      * or (unknown range) floating point inputs */
     AVRational64 min[4], max[4];
+
+    /* Keeps track of input (forward) and output (reverse) dependencies */
+    SwsCompMask dep_in[4], dep_out[4];
 } SwsComps;
 
 typedef enum SwsReadWriteMode {

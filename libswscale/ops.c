@@ -292,7 +292,8 @@ static void apply_filter_weights(SwsComps *comps, const SwsComps *prev,
     const AVRational64 posw = { weights->sum_positive, SWS_FILTER_SCALE };
     const AVRational64 negw = { weights->sum_negative, SWS_FILTER_SCALE };
     for (int i = 0; i < 4; i++) {
-        comps->flags[i] = prev->flags[i] & SWS_COMP_DIRTY;
+        comps->flags[i]  = prev->flags[i] & SWS_COMP_DIRTY;
+        comps->dep_in[i] = prev->dep_in[i];
         /* Only point sampling preserves exactness */
         if (weights->filter_size != 1)
             comps->flags[i] &= ~SWS_COMP_EXACT;
@@ -331,17 +332,21 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
             break;
         }
 
-        for (int i = 0; i < 4; i++)
-            op->comps.flags[i] = SWS_COMP_IDENTITY;
+        for (int i = 0; i < 4; i++) {
+            op->comps.flags[i]  = SWS_COMP_IDENTITY;
+            op->comps.dep_in[i] = SWS_COMP_NONE;
+        }
 
         #define FORWARD(I, J, EXPR) do {                                        \
             SwsCompFlags flags = prev.flags[J];                                 \
             op->comps.flags[I] = merge_comp_flags(op->comps.flags[I], (EXPR));  \
+            op->comps.dep_in[I] |= prev.dep_in[J];                              \
         } while (0)
 
         #define RESET(I) do {                                                   \
             op->comps.flags[I] = SWS_COMP_GARBAGE;                              \
             op->comps.min[I] = op->comps.max[I] = (AVRational64) {0};           \
+            op->comps.dep_in[I] = SWS_COMP_NONE;                                \
         } while (0)
 
         switch (op->op) {
@@ -360,6 +365,7 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
                 op->comps.flags[i] = ops->comps_src.flags[idx] & SWS_COMP_DIRTY;
                 op->comps.min[i]   = ops->comps_src.min[idx];
                 op->comps.max[i]   = ops->comps_src.max[idx];
+                op->comps.dep_in[i] = SWS_COMP(idx);
 
                 /**
                  * Don't mark packed or fractional reads as a copy, because the
@@ -521,13 +527,15 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
         prev = op->comps;
     }
 
-    /* Backwards pass, solves for component dependencies */
-    bool need_out[4] = { false, false, false, false };
+    /* Backwards pass, solves for output component dependencies */
+    SwsCompMask need_out[4] = {0};
+
     for (int n = ops->num_ops - 1; n >= 0; n--) {
         SwsOp *op = &ops->ops[n];
-        bool need_in[4] = { false, false, false, false };
+        SwsCompMask need_in[4] = {0};
 
         for (int i = 0; i < 4; i++) {
+            op->comps.dep_out[i] = need_out[i];
             if (!need_out[i])
                 RESET(i);
         }
@@ -536,7 +544,7 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
         case SWS_OP_READ:
         case SWS_OP_WRITE:
             for (int i = 0; i < op->rw.elems; i++)
-                need_in[i] = op->op == SWS_OP_WRITE;
+                need_in[i] = (op->op == SWS_OP_WRITE) ? SWS_COMP(i) : 0;
             for (int i = op->rw.elems; i < 4; i++)
                 need_in[i] = need_out[i];
             break;
@@ -789,6 +797,17 @@ static char describe_comp_flags(SwsCompFlags flags)
         return '.';
 }
 
+static void print_deps(AVBPrint *bp, const SwsCompMask *deps)
+{
+    av_bprintf(bp, "{");
+    for (int i = 0; i < 4; i++) {
+        if (i)
+            av_bprintf(bp, " ");
+        av_bprintf(bp, "%s", deps[i] ? ff_sws_comp_mask_str(deps[i]) : "_");
+    }
+    av_bprintf(bp, "}");
+}
+
 static void print_q(AVBPrint *bp, const AVRational64 q)
 {
     if (!q.den) {
@@ -972,6 +991,19 @@ void ff_sws_op_list_print(void *log, int lev, int lev_extra,
             print_q4(&bp, op->comps.min, mask);
             av_bprintf(&bp, ", max: ");
             print_q4(&bp, op->comps.max, mask);
+            av_assert0(av_bprint_is_complete(&bp));
+            av_log(log, lev_extra, "%s\n", bp.str);
+        }
+
+        bool has_deps = false;
+        for (int i = 0; i < 4; i++)
+            has_deps |= op->comps.dep_in[i] || op->comps.dep_out[i];
+        if (has_deps) {
+            av_bprint_clear(&bp);
+            av_bprintf(&bp, "    inputs: ");
+            print_deps(&bp, op->comps.dep_in);
+            av_bprintf(&bp, ", outputs: ");
+            print_deps(&bp, op->comps.dep_out);
             av_assert0(av_bprint_is_complete(&bp));
             av_log(log, lev_extra, "%s\n", bp.str);
         }
