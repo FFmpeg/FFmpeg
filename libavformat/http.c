@@ -1213,14 +1213,14 @@ static int process_line(URLContext *h, char *line, int line_count, int *parsed_h
             while (*p && !av_isspace(*p))
                 p++;
             if (!av_isspace(*p))
-                return ff_http_averror(400, AVERROR(EIO));
+                return AVERROR_HTTP_BAD_REQUEST;
             *(p++) = '\0';
             av_log(h, AV_LOG_TRACE, "Received method: %s\n", method);
             if (s->method) {
                 if (av_strcasecmp(s->method, method)) {
                     av_log(h, AV_LOG_ERROR, "Received and expected HTTP method do not match. (%s expected, %s received)\n",
                            s->method, method);
-                    return ff_http_averror(400, AVERROR(EIO));
+                    return AVERROR_HTTP_BAD_REQUEST;
                 }
             } else {
                 // use autodetected HTTP method to expect
@@ -1228,7 +1228,7 @@ static int process_line(URLContext *h, char *line, int line_count, int *parsed_h
                 if (av_strcasecmp(auto_method, method)) {
                     av_log(h, AV_LOG_ERROR, "Received and autodetected HTTP method did not match "
                            "(%s autodetected %s received)\n", auto_method, method);
-                    return ff_http_averror(400, AVERROR(EIO));
+                    return AVERROR_HTTP_BAD_REQUEST;
                 }
                 if (!(s->method = av_strdup(method)))
                     return AVERROR(ENOMEM);
@@ -1241,7 +1241,7 @@ static int process_line(URLContext *h, char *line, int line_count, int *parsed_h
             while (*p && !av_isspace(*p))
                 p++;
             if (!av_isspace(*p))
-                return ff_http_averror(400, AVERROR(EIO));
+                return AVERROR_HTTP_BAD_REQUEST;
             *(p++) = '\0';
             av_log(h, AV_LOG_TRACE, "Requested resource: %s\n", resource);
             if (!(s->resource = av_strdup(resource)))
@@ -1256,7 +1256,7 @@ static int process_line(URLContext *h, char *line, int line_count, int *parsed_h
             *p = '\0';
             if (av_strncasecmp(version, "HTTP/", 5)) {
                 av_log(h, AV_LOG_ERROR, "Malformed HTTP version string.\n");
-                return ff_http_averror(400, AVERROR(EIO));
+                return AVERROR_HTTP_BAD_REQUEST;
             }
             av_log(h, AV_LOG_TRACE, "HTTP version string: %s\n", version);
         } else {
