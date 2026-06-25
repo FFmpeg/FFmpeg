@@ -37,6 +37,7 @@
 #if HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
+#include <string.h>
 
 #define DTLS_HANDSHAKE_TIMEOUT_US 30000000
 /**
