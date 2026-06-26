@@ -420,7 +420,7 @@ static av_cold int init_processing_chain(AVFilterContext *ctx, int in_width, int
 
         if (s->interp_algo == INTERP_ALGO_NEAREST) {
             s->use_filters = 0;
-        } else if (s->use_filters < 0 && (in_width < out_width || in_height < out_height))
+        } else if (s->use_filters < 0 && (out_width < in_width || out_height < in_height))
             s->use_filters = 1; /* downscaling; needed for anti-aliasing */
     }
 
