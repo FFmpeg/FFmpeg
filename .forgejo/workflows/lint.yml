@@ -3,7 +3,7 @@ name: Lint
 on:
   push:
     branches:
-      - master
+      - release/9.0
   pull_request:
 
 concurrency:
