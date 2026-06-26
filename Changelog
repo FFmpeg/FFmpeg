@@ -2,6 +2,8 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version <next>:
+
+version 9.0:
 - Extend AMF Color Converter (vf_vpp_amf) HDR capabilities
 - LCEVC track muxing support in MP4 muxer
 - Playdate video encoder and muxer

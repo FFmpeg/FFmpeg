@@ -2,55 +2,55 @@ The last version increases of all libraries were on 2026-06-23.
 
 API changes, most recent first:
 
-2026-06-23 - xxxxxxxxxx - lavu 60.34.100 - hwcontext_vulkan.h
+2026-06-23 - 61693f6c35f - lavu 60.34.100 - hwcontext_vulkan.h
   Switch AVVkFrame.access to VkAccessFlagBits2.
 
-2026-06-23 - xxxxxxxxxx - lavc 62.37.100 - packet.h
+2026-06-23 - 191be14fb6d - lavc 62.37.100 - packet.h
   av_packet_pack_dictionary() now accepts const AVDictionary*.
 
-2026-06-xx - xxxxxxxxxx - lavu 60.33.100 - frame.h
+2026-06-10 - 12dc67b6fe0 - lavu 60.33.100 - frame.h
   Add AV_FRAME_DATA_RAW_COLOR_PARAMS.
 
-2026-06-xx - xxxxxxxxxx - lsws 9.8.100 - swscale.h
+2026-06-03 - 972c0cf91f4 - lsws 9.8.100 - swscale.h
   Add enum SwsBackend and SwsContext.backends
 
-2026-06-xx - xxxxxxxxxxx - lavu 60.32.100 - hwcontext_vulkan.h
+2026-06-02 - 9fe5758da5c - lavu 60.32.100 - hwcontext_vulkan.h
   Add AVVulkanDeviceContext.queue_flags.
 
-2026-05-xx - xxxxxxxxxx - lavf 62.19.100 - avformat.h
+2026-05-31 - 1e3883df9f0 - lavf 62.19.100 - avformat.h
   Add AVStreamGroupLayeredVideo
   Add AVStreamGroup.params.layered_video
   Add AV_STREAM_GROUP_PARAMS_DOLBY_VISION
   Deprecate AVStreamGroupLCEVC
   Deprecate AVStreamGroup.params.lcevc
 
-2026-05-xx - xxxxxxxxxx - lavc 62.35.100 - packet.h
+2026-05-30 - 5f6dff5e7db - lavc 62.35.100 - packet.h
   Add AV_PKT_DATA_HEVC_CONF side data type.
 
 2026-05-14 - xxxxxxxxxxx - lavf 62.18.100 - avformat.h
   Add AV_FDEBUG_ID3V2 debug flag, deprecate FF_FDEBUG_TS in favor of
   AV_FDEBUG_TS.
 
-2026-05-17 - xxxxxxxxxxx - lavf 62.17.100 - avformat.h
+2026-05-17 - a5822fca94f - lavf 62.17.100 - avformat.h
   Add AV_STREAM_GROUP_PARAMS_TREF.
   Add AVStreamGroupTREF.
 
-2026-05-16 - xxxxxxxxxxx - lavf 62.16.100 - avformat.h
+2026-05-16 - c0bdc3b62a5 - lavf 62.16.100 - avformat.h
   Add AVFMT_FIXED_FRAMESIZE.
 
-2026-05-16 - xxxxxxxxxxx - lavc 62.33.100 - avcodec.h
+2026-05-16 - b1120b1ed80 - lavc 62.33.100 - avcodec.h
   Add AV_CODEC_FLAG2_FIXED_FRAME_SIZE.
 
-2026-05-12 - xxxxxxxxxx - lavu 60.31.100 - frame.h
+2026-05-12 - 99908c6e05e - lavu 60.31.100 - frame.h
 Add IAMF frame side data types to enum AVFrameSideDataType:
 - AV_FRAME_DATA_IAMF_MIX_GAIN_PARAM
 - AV_FRAME_DATA_IAMF_DEMIXING_INFO_PARAM
 - AV_FRAME_DATA_IAMF_RECON_GAIN_INFO_PARAM
 
-2026-05-05 - xxxxxxxxxxx - lavf 62.15.100 - avformat.h
+2026-05-05 - 5c557dd5d55 - lavf 62.15.100 - avformat.h
   Add av_program_copy().
 
-2026-05-05 - xxxxxxxxxxx - lavf 62.14.100 - avformat.h
+2026-05-05 - 7623379a770 - lavf 62.14.100 - avformat.h
   Add av_program_add_stream_index2().
 
 2026-04-14 - 7faa6ee2aa - lavc 62.30.100 - packet.h
@@ -60,11 +60,11 @@ Add IAMF frame side data types to enum AVFrameSideDataType:
   Add AVDynamicHDRSmpte2094App5 struct and functions.
   Add AV_FRAME_DATA_DYNAMIC_HDR_SMPTE_2094_APP5 side data type.
 
-2026-03-14 - xxxxxxxxxx - lavu 60.29.100 - hwcontext_vulkan.h
+2026-03-14 - c102e89448a - lavu 60.29.100 - hwcontext_vulkan.h
   Deprecate AVVulkanDeviceContext.lock_queue and
   AVVulkanDeviceContext.unlock_queue without replacement.
 
-2026-03-12 - xxxxxxxxxx - lsws 9.7.100 - swscale.h
+2026-03-12 - 3503b19711c - lsws 9.7.100 - swscale.h
   Add enum SwsScaler, and SwsContext.scaler/scaler_sub.
 
 2026-03-11 - 910000fe59d - lavu 60.28.100 - hwcontext_amf.h
