@@ -753,7 +753,6 @@ static int scalecuda_resize(AVFilterContext *ctx, int pass,
 {
     CUDAScaleContext *s = ctx->priv;
     CudaFunctions *cu = s->hwctx->internal->cuda_dl;
-    CUcontext dummy, cuda_ctx = s->hwctx->cuda_ctx;
     int i, ret;
     int mpeg_range = in->color_range != AVCOL_RANGE_JPEG;
 
@@ -768,10 +767,6 @@ static int scalecuda_resize(AVFilterContext *ctx, int pass,
 
     int crop_width = (in->width - in->crop_right) - in->crop_left;
     int crop_height = (in->height - in->crop_bottom) - in->crop_top;
-
-    ret = CHECK_CU(cu->cuCtxPushCurrent(cuda_ctx));
-    if (ret < 0)
-        return ret;
 
     for (i = 0; i < s->in_planes; i++) {
         CUDA_TEXTURE_DESC tex_desc = {
@@ -832,8 +827,6 @@ exit:
     for (i = 0; i < s->in_planes; i++)
         if (tex[i])
             CHECK_CU(cu->cuTexObjectDestroy(tex[i]));
-
-    CHECK_CU(cu->cuCtxPopCurrent(&dummy));
 
     return ret;
 }
