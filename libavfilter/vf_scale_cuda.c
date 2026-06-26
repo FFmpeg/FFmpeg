@@ -835,26 +835,25 @@ static int cudascale_scale(AVFilterContext *ctx, AVFrame *out, AVFrame *in)
 {
     CUDAScaleContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
-    AVFrame *src = in;
-    int ret;
+    int ret = 0;
 
+    AVFrame *src = in;
     if (s->inter_buf) {
         /* Handle first pass separately */
         s->inter_buf->color_range = in->color_range;
         ret = scalecuda_resize(ctx, FILTER_TMP, s->inter_buf, in);
         if (ret < 0)
-            return ret;
+            goto fail;
         src = s->inter_buf;
     }
 
     ret = scalecuda_resize(ctx, FILTER_OUT, s->frame, src);
     if (ret < 0)
-        return ret;
+        goto fail;
 
-    src = s->frame;
-    ret = av_hwframe_get_buffer(src->hw_frames_ctx, s->tmp_frame, 0);
+    ret = av_hwframe_get_buffer(s->frame->hw_frames_ctx, s->tmp_frame, 0);
     if (ret < 0)
-        return ret;
+        goto fail;
 
     av_frame_move_ref(out, s->frame);
     av_frame_move_ref(s->frame, s->tmp_frame);
@@ -864,14 +863,15 @@ static int cudascale_scale(AVFilterContext *ctx, AVFrame *out, AVFrame *in)
 
     ret = av_frame_copy_props(out, in);
     if (ret < 0)
-        return ret;
+        goto fail;
 
     if (out->width != in->width || out->height != in->height) {
         av_frame_side_data_remove_by_props(&out->side_data, &out->nb_side_data,
                                            AV_SIDE_DATA_PROP_SIZE_DEPENDENT);
     }
 
-    return 0;
+fail:
+    return ret;
 }
 
 static int cudascale_filter_frame(AVFilterLink *link, AVFrame *in)
