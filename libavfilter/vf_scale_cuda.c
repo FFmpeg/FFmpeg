@@ -260,20 +260,22 @@ fail:
     return ret;
 }
 
-static av_cold int inter_buf_init(CUDAScaleContext *s, AVBufferRef *device_ctx,
-                                  enum AVPixelFormat format, int width, int height)
+static av_cold int inter_buf_init(CUDAScaleContext *s, AVFilterLink *inlink,
+                                  int width, int height)
 {
     AVBufferRef *ref = NULL;
     AVHWFramesContext *fctx;
     int ret;
 
-    ref = av_hwframe_ctx_alloc(device_ctx);
+    FilterLink *inl = ff_filter_link(inlink);
+    AVHWFramesContext *in_frames_ctx = (AVHWFramesContext*)inl->hw_frames_ctx->data;
+    ref = av_hwframe_ctx_alloc(in_frames_ctx->device_ref);
     if (!ref)
         return AVERROR(ENOMEM);
     fctx = (AVHWFramesContext*)ref->data;
 
     fctx->format    = AV_PIX_FMT_CUDA;
-    fctx->sw_format = format;
+    fctx->sw_format = in_frames_ctx->sw_format;
     fctx->width     = FFALIGN(width,  32);
     fctx->height    = FFALIGN(height, 32);
 
@@ -400,13 +402,6 @@ static av_cold int init_processing_chain(AVFilterContext *ctx, int in_width, int
             s->use_filters = 0;
         } else if (s->use_filters < 0 && (in_width < out_width || in_height < out_height))
             s->use_filters = 1; /* downscaling; needed for anti-aliasing */
-
-        if (s->use_filters) {
-            ret = inter_buf_init(s, in_frames_ctx->device_ref, in_format,
-                                 out_width, in_height);
-            if (ret < 0)
-                return ret;
-        }
     }
 
     outl->hw_frames_ctx = av_buffer_ref(s->frames_ctx);
@@ -646,6 +641,10 @@ static av_cold int cudascale_setup_filters(AVFilterContext *ctx)
                 goto fail;
         }
     }
+
+    ret = inter_buf_init(s, inlink, outlink->w, inlink->h);
+    if (ret < 0)
+        goto fail;
 
     ret = 0;
 
