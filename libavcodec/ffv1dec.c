@@ -583,6 +583,12 @@ static int read_header(FFV1Context *f, RangeCoder *c)
     if (ret < 0)
         return ret;
 
+    if (f->bayer && f->combined_version <= 0x40002) {
+        av_log(f->avctx, AV_LOG_ERROR,
+               "Bayer requires aligned slice coordinates (combined_version > 0x40002)\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     if (f->configured_pix_fmt != f->pix_fmt ||
         f->configured_width != f->width ||
         f->configured_height != f->height ||
