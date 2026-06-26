@@ -597,8 +597,15 @@ concatenate:
             info->num_blocks = num_blocks;
         goto end;
     } else {
+        const AVPacketSideData *sd;
         if ((ret = av_grow_packet(info->pkt, pkt->size)) < 0)
             goto end;
+        sd = av_packet_side_data_get(pkt->side_data, pkt->side_data_elems, AV_PKT_DATA_SKIP_SAMPLES);
+        if (sd && sd->size >= 10) {
+            uint8_t *buf = av_packet_new_side_data(info->pkt, AV_PKT_DATA_SKIP_SAMPLES, sd->size);
+            if (buf)
+                memcpy(buf, sd->data, sd->size);
+        }
         memcpy(info->pkt->data + info->pkt->size - pkt->size, pkt->data, pkt->size);
         info->num_blocks += num_blocks;
         info->pkt->duration += pkt->duration;
