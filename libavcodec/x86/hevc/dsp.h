@@ -167,7 +167,7 @@ void ff_hevc_put_qpel_hv8_8_avx512icl(int16_t *dst, const uint8_t *_src, ptrdiff
 // TRANSFORM_ADD
 ///////////////////////////////////////////////////////////////////////////////
 
-void ff_hevc_add_residual_4_8_mmxext(uint8_t *dst, const int16_t *res, ptrdiff_t stride);
+void ff_hevc_add_residual_4_8_sse2(uint8_t *dst, const int16_t *res, ptrdiff_t stride);
 void ff_hevc_add_residual_8_8_sse2(uint8_t *dst, const int16_t *res, ptrdiff_t stride);
 void ff_hevc_add_residual_16_8_sse2(uint8_t *dst, const int16_t *res, ptrdiff_t stride);
 void ff_hevc_add_residual_32_8_sse2(uint8_t *dst, const int16_t *res, ptrdiff_t stride);

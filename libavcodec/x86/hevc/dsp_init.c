@@ -817,10 +817,9 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
     int cpu_flags = av_get_cpu_flags();
 
     if (bit_depth == 8) {
-        if (EXTERNAL_MMXEXT(cpu_flags)) {
-            c->add_residual[0] = ff_hevc_add_residual_4_8_mmxext;
-        }
         if (EXTERNAL_SSE2(cpu_flags)) {
+            c->add_residual[0] = ff_hevc_add_residual_4_8_sse2;
+
             c->hevc_v_loop_filter_chroma = ff_hevc_v_loop_filter_chroma_8_sse2;
             c->hevc_h_loop_filter_chroma = ff_hevc_h_loop_filter_chroma_8_sse2;
 #if ARCH_X86_64

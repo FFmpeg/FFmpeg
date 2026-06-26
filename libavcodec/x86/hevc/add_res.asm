@@ -27,9 +27,9 @@ cextern pw_1023
 %define max_pixels_10 pw_1023
 
 ; the add_res macros and functions were largely inspired by h264_idct.asm from the x264 project
-%macro ADD_RES_MMX_4_8 1
-    mova              m0, [r1+%1]
-    mova              m2, [r1+%1+8]
+%macro ADD_RES_4_8 1
+    movq              m0, [r1+%1]
+    movq              m2, [r1+%1+8]
 
     movd              m1, [r0]
     movd              m3, [r0+r2]
@@ -45,14 +45,13 @@ cextern pw_1023
     movd         [r0+r2], m2
 %endmacro
 
-
-INIT_MMX mmxext
-; void ff_hevc_add_residual_4_8_mmxext(uint8_t *dst, const int16_t *res, ptrdiff_t stride)
-cglobal hevc_add_residual_4_8, 3, 3, 6
+INIT_XMM sse2
+; void ff_hevc_add_residual_4_8_sse2(uint8_t *dst, const int16_t *res, ptrdiff_t stride)
+cglobal hevc_add_residual_4_8, 3, 3, 5
     pxor              m4, m4
-    ADD_RES_MMX_4_8    0
+    ADD_RES_4_8        0
     lea               r0, [r0+r2*2]
-    ADD_RES_MMX_4_8   16
+    ADD_RES_4_8       16
     RET
 
 %macro ADD_RES_SSE_8_8 1
