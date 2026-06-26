@@ -261,7 +261,7 @@ static int cuda_transfer_data(AVHWFramesContext *ctx, AVFrame *dst,
             .srcPitch      = src->linesize[i],
             .dstPitch      = dst->linesize[i],
             .WidthInBytes  = FFMIN(src->linesize[i], dst->linesize[i]),
-            .Height        = src->height >> ((i == 0 || i == 3) ? 0 : priv->shift_height),
+            .Height        = AV_CEIL_RSHIFT(src->height, ((i == 0 || i == 3) ? 0 : priv->shift_height)),
         };
 
         if (src->hw_frames_ctx) {
