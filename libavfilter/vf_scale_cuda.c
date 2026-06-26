@@ -108,6 +108,7 @@ typedef struct CUDATex {
     CUdeviceptr data[4];
     int         linesize[4];
     int         width, height;
+    int         log2_chroma_w, log2_chroma_h;
     int         crop_left, crop_top, crop_width, crop_height;
     int         color_range;
     int         external_data;
@@ -262,7 +263,7 @@ fail:
     return ret;
 }
 
-static av_cold int inter_buf_init(AVFilterContext *ctx, int width, int height)
+static av_cold int inter_buf_init(AVFilterContext *ctx, int out_width, int in_height)
 {
     CUDAScaleContext *s = ctx->priv;
     CudaFunctions *cu = s->hwctx->internal->cuda_dl;
@@ -270,18 +271,20 @@ static av_cold int inter_buf_init(AVFilterContext *ctx, int width, int height)
 
     cuda_tex_uninit(cu, &s->inter_tex);
     s->inter_tex = (CUDATex) {
-        .width       = width,
-        .height      = height,
-        .crop_width  = width,
-        .crop_height = height,
+        .width          = out_width,
+        .height         = in_height,
+        .crop_width     = out_width,
+        .crop_height    = in_height,
+        .log2_chroma_w  = s->out_desc->log2_chroma_w,
+        .log2_chroma_h  = s->in_desc->log2_chroma_h,
     };
 
     for (int i = 0; i < s->in_planes; i++) {
         const int is_chroma = i == 1 || i == 2;
-        const int sub_x   = is_chroma ? s->in_desc->log2_chroma_w : 0;
-        const int sub_y   = is_chroma ? s->in_desc->log2_chroma_h : 0;
-        const int plane_w = AV_CEIL_RSHIFT(width,  sub_x);
-        const int plane_h = AV_CEIL_RSHIFT(height, sub_y);
+        const int sub_x   = is_chroma ? s->inter_tex.log2_chroma_w : 0;
+        const int sub_y   = is_chroma ? s->inter_tex.log2_chroma_h : 0;
+        const int plane_w = AV_CEIL_RSHIFT(out_width, sub_x);
+        const int plane_h = AV_CEIL_RSHIFT(in_height, sub_y);
         const int sizeof_pixel = (s->in_plane_depths[i] <= 8 ? 1 : 2) *
                                   s->in_plane_channels[i];
 
@@ -609,8 +612,10 @@ static av_cold int cudascale_setup_filters(AVFilterContext *ctx)
     CUcontext dummy;
     int ret;
 
-    const int sub_x = s->in_desc->log2_chroma_w;
-    const int sub_y = s->in_desc->log2_chroma_h;
+    const int in_sub_x  = s->in_desc->log2_chroma_w;
+    const int in_sub_y  = s->in_desc->log2_chroma_h;
+    const int out_sub_x = s->out_desc->log2_chroma_w;
+    const int out_sub_y = s->out_desc->log2_chroma_h;
 
     ret = CHECK_CU(cu->cuCtxPushCurrent(s->hwctx->cuda_ctx));
     if (ret < 0)
@@ -633,11 +638,11 @@ static av_cold int cudascale_setup_filters(AVFilterContext *ctx)
         if (ret < 0)
             goto fail;
         if (s->in_planes > 1) {
-            const int src_size = AV_CEIL_RSHIFT(inlink->w,  sub_x);
-            const int dst_size = AV_CEIL_RSHIFT(outlink->w, sub_x);
-            const double ratio = (double) outlink->w / inlink->w;
+            const int src_size = AV_CEIL_RSHIFT(inlink->w,  in_sub_x);
+            const int dst_size = AV_CEIL_RSHIFT(outlink->w, out_sub_x);
+            const double virtual_size = (double) outlink->w / (1 << out_sub_x);
             ret = cudascale_filter_init(ctx, &s->filters_uv[pass_x],
-                                        src_size, dst_size, src_size * ratio);
+                                        src_size, dst_size, virtual_size);
             if (ret < 0)
                 goto fail;
         }
@@ -649,11 +654,11 @@ static av_cold int cudascale_setup_filters(AVFilterContext *ctx)
         if (ret < 0)
             goto fail;
         if (s->in_planes > 1) {
-            const int src_size = AV_CEIL_RSHIFT(inlink->h,  sub_y);
-            const int dst_size = AV_CEIL_RSHIFT(outlink->h, sub_y);
-            const double ratio = (double) outlink->h / inlink->h;
+            const int src_size = AV_CEIL_RSHIFT(inlink->h,  in_sub_y);
+            const int dst_size = AV_CEIL_RSHIFT(outlink->h, out_sub_y);
+            const double virtual_size = (double) outlink->h / (1 << out_sub_y);
             ret = cudascale_filter_init(ctx, &s->filters_uv[pass_y],
-                                        src_size, dst_size, src_size * ratio);
+                                        src_size, dst_size, virtual_size);
             if (ret < 0)
                 goto fail;
         }
@@ -763,6 +768,8 @@ static int cuda_tex_map_frame(AVFilterContext *ctx, const AVFrame *frame,
         .crop_width  = (frame->width  - frame->crop_right)  - frame->crop_left,
         .crop_height = (frame->height - frame->crop_bottom) - frame->crop_top,
         .color_range = frame->color_range,
+        .log2_chroma_w = desc->log2_chroma_w,
+        .log2_chroma_h = desc->log2_chroma_h,
         .external_data = 1,
     };
 
@@ -853,12 +860,9 @@ static int scalecuda_resize(AVFilterContext *ctx, int pass,
     int mpeg_range = in->color_range != AVCOL_RANGE_JPEG;
     int ret;
 
-    const AVPixFmtDescriptor *out_desc = s->out_desc;
     int out_planes = s->out_planes;
-    if (pass == FILTER_TMP) {
-        out_desc   = s->in_desc;
+    if (pass == FILTER_TMP)
         out_planes = s->in_planes;
-    }
 
     // scale primary plane(s). Usually Y (and A), or single plane of RGB frames.
     ret = call_resize_kernel(ctx, s->cu_func[pass],
@@ -873,13 +877,13 @@ static int scalecuda_resize(AVFilterContext *ctx, int pass,
     if (out_planes > 1) {
         // scale UV plane. Scale function sets both U and V plane, or singular interleaved plane.
         ret = call_resize_kernel(ctx, s->cu_func_uv[pass], in->tex,
-                                 AV_CEIL_RSHIFT(in->crop_left, s->in_desc->log2_chroma_w),
-                                 AV_CEIL_RSHIFT(in->crop_top, s->in_desc->log2_chroma_h),
-                                 AV_CEIL_RSHIFT(in->crop_width, s->in_desc->log2_chroma_w),
-                                 AV_CEIL_RSHIFT(in->crop_height, s->in_desc->log2_chroma_h),
+                                 AV_CEIL_RSHIFT(in->crop_left, in->log2_chroma_w),
+                                 AV_CEIL_RSHIFT(in->crop_top, in->log2_chroma_h),
+                                 AV_CEIL_RSHIFT(in->crop_width, in->log2_chroma_w),
+                                 AV_CEIL_RSHIFT(in->crop_height, in->log2_chroma_h),
                                  out->data,
-                                 AV_CEIL_RSHIFT(out->width, out_desc->log2_chroma_w),
-                                 AV_CEIL_RSHIFT(out->height, out_desc->log2_chroma_h),
+                                 AV_CEIL_RSHIFT(out->width, out->log2_chroma_w),
+                                 AV_CEIL_RSHIFT(out->height, out->log2_chroma_h),
                                  out->linesize[1], mpeg_range,
                                  &s->filters_uv[pass]);
         if (ret < 0)
