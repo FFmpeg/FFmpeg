@@ -1016,6 +1016,11 @@ static av_cold int encode_init_internal(AVCodecContext *avctx)
     if (ret < 0)
         return ret;
 
+    if (s->bayer && (avctx->width & 1 || avctx->height & 1)) {
+        av_log(avctx, AV_LOG_ERROR, "bayer requires even dimensions\n");
+        return AVERROR(EINVAL);
+    }
+
     if (s->bits_per_raw_sample > (s->version > 3 ? 16 : 8) && !s->remap_mode) {
         if (s->ac == AC_GOLOMB_RICE) {
             av_log(avctx, AV_LOG_INFO,
