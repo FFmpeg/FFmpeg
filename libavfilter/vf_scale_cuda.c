@@ -155,6 +155,7 @@ typedef struct CUDAScaleContext {
     CUDAScaleFilter filters[FILTER_NB];
     CUDAScaleFilter filters_uv[FILTER_NB];
     AVFrame *inter_buf; /* intermediate buffer for separated scaling */
+    CUDATex inter_tex;
     int use_filters; /* -1 for auto */
 
     float param;
@@ -204,6 +205,7 @@ static av_cold void cudascale_uninit(AVFilterContext *ctx)
 
         CHECK_CU(cu->cuCtxPushCurrent(s->hwctx->cuda_ctx));
 
+        cuda_tex_uninit(cu, &s->inter_tex);
         for (int i = 0; i < FF_ARRAY_ELEMS(s->filters); i++) {
             filter_uninit(cu, &s->filters[i]);
             filter_uninit(cu, &s->filters_uv[i]);
@@ -260,9 +262,15 @@ fail:
     return ret;
 }
 
-static av_cold int inter_buf_init(CUDAScaleContext *s, AVFilterLink *inlink,
+static int cuda_tex_map_frame(AVFilterContext *ctx, const AVFrame *frame,
+                              const int depths[4], const int channels[4],
+                              CUDATex *tex);
+
+static av_cold int inter_buf_init(AVFilterContext *ctx, AVFilterLink *inlink,
                                   int width, int height)
 {
+    CUDAScaleContext *s = ctx->priv;
+    CudaFunctions *cu = s->hwctx->internal->cuda_dl;
     AVBufferRef *ref = NULL;
     AVHWFramesContext *fctx;
     int ret;
@@ -297,10 +305,16 @@ static av_cold int inter_buf_init(CUDAScaleContext *s, AVFilterLink *inlink,
     s->inter_buf->width  = width;
     s->inter_buf->height = height;
 
+    ret = cuda_tex_map_frame(ctx, s->inter_buf, s->in_plane_depths,
+                             s->in_plane_channels, &s->inter_tex);
+    if (ret < 0)
+        goto fail;
+
     av_buffer_unref(&ref);
     return 0;
 
 fail:
+    cuda_tex_uninit(cu, &s->inter_tex);
     av_frame_free(&s->inter_buf);
     av_buffer_unref(&ref);
     return ret;
@@ -642,7 +656,7 @@ static av_cold int cudascale_setup_filters(AVFilterContext *ctx)
         }
     }
 
-    ret = inter_buf_init(s, inlink, outlink->w, inlink->h);
+    ret = inter_buf_init(ctx, inlink, outlink->w, inlink->h);
     if (ret < 0)
         goto fail;
 
@@ -881,7 +895,7 @@ static int cudascale_scale(AVFilterContext *ctx, AVFrame *out, AVFrame *in)
     AVFilterLink *outlink = ctx->outputs[0];
     int ret = 0;
 
-    CUDATex in_tex = {0}, out_tex = {0}, inter_tex = {0};
+    CUDATex in_tex = {0}, out_tex = {0};
     ret = cuda_tex_map_frame(ctx, in, s->in_plane_depths, s->in_plane_channels, &in_tex);
     if (ret < 0)
         goto fail;
@@ -893,15 +907,11 @@ static int cudascale_scale(AVFilterContext *ctx, AVFrame *out, AVFrame *in)
     const CUDATex *src = &in_tex;
     if (s->inter_buf) {
         /* Handle first pass separately */
-        ret = cuda_tex_map_frame(ctx, s->inter_buf, s->in_plane_depths,
-                                 s->in_plane_channels, &inter_tex);
+        s->inter_tex.color_range = in->color_range;
+        ret = scalecuda_resize(ctx, FILTER_TMP, &s->inter_tex, src);
         if (ret < 0)
             goto fail;
-        inter_tex.color_range = in->color_range;
-        ret = scalecuda_resize(ctx, FILTER_TMP, &inter_tex, src);
-        if (ret < 0)
-            goto fail;
-        src = &inter_tex;
+        src = &s->inter_tex;
     }
 
     ret = scalecuda_resize(ctx, FILTER_OUT, &out_tex, src);
@@ -930,7 +940,6 @@ static int cudascale_scale(AVFilterContext *ctx, AVFrame *out, AVFrame *in)
 fail:
     cuda_tex_uninit(cu, &in_tex);
     cuda_tex_uninit(cu, &out_tex);
-    cuda_tex_uninit(cu, &inter_tex);
     return ret;
 }
 
