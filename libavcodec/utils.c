@@ -315,6 +315,21 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
             h_align = 8;
         }
         break;
+    case AV_PIX_FMT_BAYER_BGGR8:
+    case AV_PIX_FMT_BAYER_RGGB8:
+    case AV_PIX_FMT_BAYER_GBRG8:
+    case AV_PIX_FMT_BAYER_GRBG8:
+    case AV_PIX_FMT_BAYER_BGGR16LE:
+    case AV_PIX_FMT_BAYER_BGGR16BE:
+    case AV_PIX_FMT_BAYER_RGGB16LE:
+    case AV_PIX_FMT_BAYER_RGGB16BE:
+    case AV_PIX_FMT_BAYER_GBRG16LE:
+    case AV_PIX_FMT_BAYER_GBRG16BE:
+    case AV_PIX_FMT_BAYER_GRBG16LE:
+    case AV_PIX_FMT_BAYER_GRBG16BE:
+        w_align = FFMAX(w_align, 2);
+        h_align = FFMAX(h_align, 2);
+        break;
     default:
         break;
     }
