@@ -24,7 +24,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/hwcontext.h"
 #include "libavutil/hwcontext_cuda_internal.h"
@@ -111,6 +110,7 @@ typedef struct CUDATex {
     int         width, height;
     int         crop_left, crop_top, crop_width, crop_height;
     int         color_range;
+    int         external_data;
 } CUDATex;
 
 typedef struct CUDAScaleContext {
@@ -154,7 +154,6 @@ typedef struct CUDAScaleContext {
 
     CUDAScaleFilter filters[FILTER_NB];
     CUDAScaleFilter filters_uv[FILTER_NB];
-    AVFrame *inter_buf; /* intermediate buffer for separated scaling */
     CUDATex inter_tex;
     int use_filters; /* -1 for auto */
 
@@ -190,6 +189,8 @@ static void cuda_tex_uninit(CudaFunctions *cu, CUDATex *t)
     for (int i = 0; i < FF_ARRAY_ELEMS(t->tex); i++) {
         if (t->tex[i])
             cu->cuTexObjectDestroy(t->tex[i]);
+        if (t->data[i] && !t->external_data)
+            cu->cuMemFree(t->data[i]);
     }
 
     memset(t, 0, sizeof(*t));
@@ -222,7 +223,6 @@ static av_cold void cudascale_uninit(AVFilterContext *ctx)
     av_frame_free(&s->frame);
     av_buffer_unref(&s->frames_ctx);
     av_frame_free(&s->tmp_frame);
-    av_frame_free(&s->inter_buf);
 }
 
 static av_cold int init_hwframe_ctx(CUDAScaleContext *s, AVBufferRef *device_ctx, int width, int height)
@@ -262,61 +262,64 @@ fail:
     return ret;
 }
 
-static int cuda_tex_map_frame(AVFilterContext *ctx, const AVFrame *frame,
-                              const int depths[4], const int channels[4],
-                              CUDATex *tex);
-
-static av_cold int inter_buf_init(AVFilterContext *ctx, AVFilterLink *inlink,
-                                  int width, int height)
+static av_cold int inter_buf_init(AVFilterContext *ctx, int width, int height)
 {
     CUDAScaleContext *s = ctx->priv;
     CudaFunctions *cu = s->hwctx->internal->cuda_dl;
-    AVBufferRef *ref = NULL;
-    AVHWFramesContext *fctx;
-    int ret;
+    int ret = 0;
 
-    FilterLink *inl = ff_filter_link(inlink);
-    AVHWFramesContext *in_frames_ctx = (AVHWFramesContext*)inl->hw_frames_ctx->data;
-    ref = av_hwframe_ctx_alloc(in_frames_ctx->device_ref);
-    if (!ref)
-        return AVERROR(ENOMEM);
-    fctx = (AVHWFramesContext*)ref->data;
+    cuda_tex_uninit(cu, &s->inter_tex);
+    s->inter_tex = (CUDATex) {
+        .width       = width,
+        .height      = height,
+        .crop_width  = width,
+        .crop_height = height,
+    };
 
-    fctx->format    = AV_PIX_FMT_CUDA;
-    fctx->sw_format = in_frames_ctx->sw_format;
-    fctx->width     = FFALIGN(width,  32);
-    fctx->height    = FFALIGN(height, 32);
+    for (int i = 0; i < s->in_planes; i++) {
+        const int is_chroma = i == 1 || i == 2;
+        const int sub_x   = is_chroma ? s->in_desc->log2_chroma_w : 0;
+        const int sub_y   = is_chroma ? s->in_desc->log2_chroma_h : 0;
+        const int plane_w = AV_CEIL_RSHIFT(width,  sub_x);
+        const int plane_h = AV_CEIL_RSHIFT(height, sub_y);
+        const int sizeof_pixel = (s->in_plane_depths[i] <= 8 ? 1 : 2) *
+                                  s->in_plane_channels[i];
 
-    ret = av_hwframe_ctx_init(ref);
-    if (ret < 0)
-        goto fail;
+        size_t pitch;
+        ret = CHECK_CU(cu->cuMemAllocPitch(&s->inter_tex.data[i], &pitch,
+                                           (size_t) plane_w * sizeof_pixel,
+                                           plane_h, 16));
+        if (ret < 0)
+            goto fail;
+        s->inter_tex.linesize[i] = pitch;
 
-    av_assert0(!s->inter_buf);
-    s->inter_buf = av_frame_alloc();
-    if (!s->inter_buf) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
+        CUDA_TEXTURE_DESC tex_desc = {
+            /* inter tex is always read as float */
+            .filterMode = CU_TR_FILTER_MODE_POINT,
+        };
+
+        CUDA_RESOURCE_DESC res_desc = {
+            .resType = CU_RESOURCE_TYPE_PITCH2D,
+            .res.pitch2D.format = s->in_plane_depths[i] <= 8 ?
+                                  CU_AD_FORMAT_UNSIGNED_INT8 :
+                                  CU_AD_FORMAT_UNSIGNED_INT16,
+            .res.pitch2D.numChannels  = s->in_plane_channels[i],
+            .res.pitch2D.devPtr       = s->inter_tex.data[i],
+            .res.pitch2D.pitchInBytes = pitch,
+            .res.pitch2D.width        = plane_w,
+            .res.pitch2D.height       = plane_h,
+        };
+
+        ret = CHECK_CU(cu->cuTexObjectCreate(&s->inter_tex.tex[i], &res_desc,
+                                             &tex_desc, NULL));
+        if (ret < 0)
+            goto fail;
     }
 
-    ret = av_hwframe_get_buffer(ref, s->inter_buf, 0);
-    if (ret < 0)
-        goto fail;
-
-    s->inter_buf->width  = width;
-    s->inter_buf->height = height;
-
-    ret = cuda_tex_map_frame(ctx, s->inter_buf, s->in_plane_depths,
-                             s->in_plane_channels, &s->inter_tex);
-    if (ret < 0)
-        goto fail;
-
-    av_buffer_unref(&ref);
     return 0;
 
 fail:
     cuda_tex_uninit(cu, &s->inter_tex);
-    av_frame_free(&s->inter_buf);
-    av_buffer_unref(&ref);
     return ret;
 }
 
@@ -501,7 +504,7 @@ static av_cold int cudascale_load_functions(AVFilterContext *ctx)
         goto fail;
     av_log(ctx, AV_LOG_DEBUG, "Chroma filter: %s (%s -> %s)\n", buf, av_get_pix_fmt_name(s->in_fmt), av_get_pix_fmt_name(s->out_fmt));
 
-    if (s->inter_buf) {
+    if (s->use_filters) {
         /* Intermediate pass is always horizontal */
         snprintf(buf, sizeof(buf), "Subsample_Generic_h_%s_%s", in_fmt_name, in_fmt_name);
         ret = CHECK_CU(cu->cuModuleGetFunction(&s->cu_func[FILTER_TMP], s->cu_module, buf));
@@ -656,7 +659,7 @@ static av_cold int cudascale_setup_filters(AVFilterContext *ctx)
         }
     }
 
-    ret = inter_buf_init(ctx, inlink, outlink->w, inlink->h);
+    ret = inter_buf_init(ctx, outlink->w, inlink->h);
     if (ret < 0)
         goto fail;
 
@@ -760,6 +763,7 @@ static int cuda_tex_map_frame(AVFilterContext *ctx, const AVFrame *frame,
         .crop_width  = (frame->width  - frame->crop_right)  - frame->crop_left,
         .crop_height = (frame->height - frame->crop_bottom) - frame->crop_top,
         .color_range = frame->color_range,
+        .external_data = 1,
     };
 
     for (int i = 0; i < planes; i++) {
@@ -902,7 +906,7 @@ static int cudascale_scale(AVFilterContext *ctx, AVFrame *out, AVFrame *in)
         goto fail;
 
     const CUDATex *src = &in_tex;
-    if (s->inter_buf) {
+    if (s->use_filters) {
         /* Handle first pass separately */
         s->inter_tex.color_range = in->color_range;
         ret = scalecuda_resize(ctx, FILTER_TMP, &s->inter_tex, src);
