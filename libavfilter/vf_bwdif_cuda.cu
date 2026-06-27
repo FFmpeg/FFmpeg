@@ -91,7 +91,7 @@ __inline__ __device__ T filter(T cur_prefs3, T cur_prefs, T cur_mrefs, T cur_mre
         if (abs(c - e) > temporal_diff0) {
             interpol = (((coef_hf[0] * (prev2_0 + next2_0)
                 - coef_hf[1] * (prev2_mrefs2 + next2_mrefs2 + prev2_prefs2 + next2_prefs2)
-                + coef_hf[2] * (prev2_mrefs4 + next2_mrefs4 + prev2_prefs4 + next2_mrefs4)) >> 2)
+                + coef_hf[2] * (prev2_mrefs4 + next2_mrefs4 + prev2_prefs4 + next2_prefs4)) >> 2)
                 + coef_lf[0] * (c + e) - coef_lf[1] * (cur_mrefs3 + cur_prefs3)) >> 13;
         } else {
             interpol = (coef_sp[0] * (c + e) - coef_sp[1] * (cur_mrefs3 + cur_prefs3)) >> 13;
@@ -146,10 +146,10 @@ __inline__ __device__ void bwdif_single(T *dst,
     // Calculate temporal prediction
     int is_second_field = !(parity ^ tff);
 
-    cudaTextureObject_t prev2 = prev;
-    cudaTextureObject_t prev1 = is_second_field ? cur : prev;
-    cudaTextureObject_t next1 = is_second_field ? next : cur;
-    cudaTextureObject_t next2 = next;
+    cudaTextureObject_t prev2 = is_second_field ? cur : prev;
+    cudaTextureObject_t prev1 = prev;
+    cudaTextureObject_t next1 = next;
+    cudaTextureObject_t next2 = is_second_field ? next : cur;
 
     T prev2_prefs4 = tex2D<T>(prev2, xo,  yo + 4);
     T prev2_prefs2 = tex2D<T>(prev2, xo,  yo + 2);
@@ -213,10 +213,10 @@ __inline__ __device__ void bwdif_double(T *dst,
 
     int is_second_field = !(parity ^ tff);
 
-    cudaTextureObject_t prev2 = prev;
-    cudaTextureObject_t prev1 = is_second_field ? cur : prev;
-    cudaTextureObject_t next1 = is_second_field ? next : cur;
-    cudaTextureObject_t next2 = next;
+    cudaTextureObject_t prev2 = is_second_field ? cur : prev;
+    cudaTextureObject_t prev1 = prev;
+    cudaTextureObject_t next1 = next;
+    cudaTextureObject_t next2 = is_second_field ? next : cur;
 
     T prev2_prefs4 = tex2D<T>(prev2, xo,  yo + 4);
     T prev2_prefs2 = tex2D<T>(prev2, xo,  yo + 2);
