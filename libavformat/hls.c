@@ -864,6 +864,12 @@ static int parse_playlist(HLSContext *c, const char *url,
     while (!avio_feof(in)) {
         ff_get_chomp_line(in, line, sizeof(line));
         if (av_strstart(line, "#EXT-X-STREAM-INF:", &ptr)) {
+            if (pls) {
+                av_log(c->ctx, AV_LOG_ERROR,
+                       "Master Playlist tag found in a Media Playlist\n");
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
+            }
             is_variant = 1;
             memset(&variant_info, 0, sizeof(variant_info));
             ff_parse_key_value(ptr, (ff_parse_key_val_cb) handle_variant_args,
@@ -885,6 +891,12 @@ static int parse_playlist(HLSContext *c, const char *url,
             av_strlcpy(key, info.uri, sizeof(key));
         } else if (av_strstart(line, "#EXT-X-MEDIA:", &ptr)) {
             struct rendition_info info = {{0}};
+            if (pls) {
+                av_log(c->ctx, AV_LOG_ERROR,
+                       "Master Playlist tag found in a Media Playlist\n");
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
+            }
             ff_parse_key_value(ptr, (ff_parse_key_val_cb) handle_rendition_args,
                                &info);
             new_rendition(c, &info, url);
