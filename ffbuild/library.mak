@@ -93,13 +93,13 @@ else
 	$(Q)echo $$(filter %.o,$$^) > $$@.objs
 endif
 endif
-	$(SLIB_CREATE_DEF_CMD)
+	$(Q)$(SLIB_CREATE_DEF_CMD)
 ifeq ($(RESPONSE_FILES),yes)
 	$$(call LINK,$$(call $(NAME)LINK_SO_ARGS) $$(LD_O) @$$@.objs $$(call $(NAME)LINK_EXTRA))
 else
 	$$(call LINK,$$(call $(NAME)LINK_SO_ARGS) $$(LD_O) $$(filter %.o,$$^) $$(call $(NAME)LINK_EXTRA))
 endif
-	$(SLIB_EXTRA_CMD)
+	$(Q)$(SLIB_EXTRA_CMD)
 	-$(RM) $$@.objs
 
 ifdef SUBDIR
