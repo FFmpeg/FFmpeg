@@ -1,5 +1,5 @@
-cd36f114d163e2cd93e6e80a68726170 *tests/data/fate/mov-mp4-iamf-stereo.mp4
-15138 tests/data/fate/mov-mp4-iamf-stereo.mp4
+e3da79a8ab08184a51dd0bc2c752b3b3 *tests/data/fate/mov-mp4-iamf-stereo.mp4
+15130 tests/data/fate/mov-mp4-iamf-stereo.mp4
 #extradata 0:       34, 0xa77c0cd6
 #tb 0: 1/44100
 #media_type 0: audio
@@ -16,7 +16,7 @@ cd36f114d163e2cd93e6e80a68726170 *tests/data/fate/mov-mp4-iamf-stereo.mp4
 0,      28672,      28672,     4096,     1313, 0x2e79ffa2
 0,      32768,      32768,     4096,     1323, 0xb9f70fce
 0,      36864,      36864,     4096,     1254, 0xf6f01051
-0,      40960,      40960,     3140,     1235, 0xcf181f77, S=1, Skip Samples,       10, 0x047700bf
+0,      40960,      40960,     4096,     1235, 0xcf181f77, S=1, Skip Samples,       10, 0x047700bf
 [STREAM_GROUP]
 index=0
 id=0x1

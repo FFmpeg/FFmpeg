@@ -1,5 +1,5 @@
-a7107b8604e26720cea8b2b55dd517b9 *tests/data/fate/mov-mp4-iamf-ambisonic_1.mp4
-57619 tests/data/fate/mov-mp4-iamf-ambisonic_1.mp4
+5b419591f207d4a2636ef93a41446244 *tests/data/fate/mov-mp4-iamf-ambisonic_1.mp4
+57611 tests/data/fate/mov-mp4-iamf-ambisonic_1.mp4
 #extradata 0:       34, 0x9f9f0c6b
 #extradata 1:       34, 0x9f9f0c6b
 #extradata 2:       34, 0x9f9f0c6b
@@ -64,10 +64,10 @@ a7107b8604e26720cea8b2b55dd517b9 *tests/data/fate/mov-mp4-iamf-ambisonic_1.mp4
 1,      36864,      36864,     4096,     1251, 0x0b380fcb
 2,      36864,      36864,     4096,     1251, 0x0b380fcb
 3,      36864,      36864,     4096,     1251, 0x0b380fcb
-0,      40960,      40960,     3140,     1231, 0x98611f9f, S=1, Skip Samples,       10, 0x047700bf
-1,      40960,      40960,     3140,     1231, 0x98611f9f, S=1, Skip Samples,       10, 0x047700bf
-2,      40960,      40960,     3140,     1231, 0x98611f9f, S=1, Skip Samples,       10, 0x047700bf
-3,      40960,      40960,     3140,     1231, 0x98611f9f, S=1, Skip Samples,       10, 0x047700bf
+0,      40960,      40960,     4096,     1231, 0x98611f9f, S=1, Skip Samples,       10, 0x047700bf
+1,      40960,      40960,     4096,     1231, 0x98611f9f, S=1, Skip Samples,       10, 0x047700bf
+2,      40960,      40960,     4096,     1231, 0x98611f9f, S=1, Skip Samples,       10, 0x047700bf
+3,      40960,      40960,     4096,     1231, 0x98611f9f, S=1, Skip Samples,       10, 0x047700bf
 [STREAM_GROUP]
 index=0
 id=0x1
