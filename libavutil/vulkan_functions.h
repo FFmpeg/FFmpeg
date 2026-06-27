@@ -171,6 +171,7 @@ typedef uint64_t FFVulkanExtensions;
     /* Image */                                                                          \
     MACRO(1, 1, FF_VK_EXT_DRM_MODIFIER_FLAGS,   GetImageDrmFormatModifierPropertiesEXT)  \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              GetImageMemoryRequirements2)             \
+    MACRO(1, 1, FF_VK_EXT_NO_FLAG,              GetDeviceImageMemoryRequirements)        \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              CreateImage)                             \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              BindImageMemory2)                        \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              GetImageSubresourceLayout)               \
