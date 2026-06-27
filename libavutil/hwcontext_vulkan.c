@@ -3208,8 +3208,6 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
          * layout transition cannot be synchronized against them, not even
          * by the frame lock and timeline semaphore. */
         if (p->vkctx.extensions & FF_VK_EXT_HOST_IMAGE_COPY &&
-            !(p->dprops.driverID == VK_DRIVER_ID_NVIDIA_PROPRIETARY) &&
-            !(p->dprops.driverID == VK_DRIVER_ID_MOLTENVK) &&
             !(hwctx->usage & VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR))
             hwctx->usage |= supported_usage & VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT;
 
@@ -4901,8 +4899,7 @@ static int vulkan_transfer_frame(AVHWFramesContext *hwfc,
     if (swf->width > hwfc->width || swf->height > hwfc->height)
         return AVERROR(EINVAL);
 
-    int host_copy = hwctx->usage & VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT &&
-                    !(p->dprops.driverID == VK_DRIVER_ID_NVIDIA_PROPRIETARY);
+    int host_copy = hwctx->usage & VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT;
 
     /* Host layout transitions may only originate from a host-copyable layout */
     if (!upload && host_copy) {
