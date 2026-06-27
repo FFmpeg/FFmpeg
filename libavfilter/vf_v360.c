@@ -4309,6 +4309,20 @@ static int get_output_dimension(AVFilterContext *ctx, const char *name,
     return 0;
 }
 
+static void projection_min_size(int projection, int *min_w, int *min_h)
+{
+    switch (projection) {
+    case CUBEMAP_3_2:  *min_w = 3; *min_h = 2; break;
+    case CUBEMAP_1_6:  *min_w = 1; *min_h = 6; break;
+    case CUBEMAP_6_1:  *min_w = 6; *min_h = 1; break;
+    case EQUIANGULAR:  *min_w = 5; *min_h = 9; break;
+    case BARREL:       *min_w = 5; *min_h = 2; break;
+    case BARREL_SPLIT: *min_w = 3; *min_h = 4; break;
+    case DUAL_FISHEYE: *min_w = 2; *min_h = 1; break;
+    default:           *min_w = 1; *min_h = 1; break;
+    }
+}
+
 static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
@@ -4486,6 +4500,22 @@ static int config_output(AVFilterLink *outlink)
                "Input dimensions %dx%d are outside the allowed range [1, %d].\n",
                s->in_width, s->in_height, INT16_MAX);
         return AVERROR(EINVAL);
+    }
+
+    {
+        int min_w, min_h;
+        const int pw = s->in_transpose ? AV_CEIL_RSHIFT(h, desc->log2_chroma_h)
+                                       : AV_CEIL_RSHIFT(w, desc->log2_chroma_w);
+        const int ph = s->in_transpose ? AV_CEIL_RSHIFT(w, desc->log2_chroma_w)
+                                       : AV_CEIL_RSHIFT(h, desc->log2_chroma_h);
+
+        projection_min_size(s->in, &min_w, &min_h);
+        if (pw < min_w || ph < min_h) {
+            av_log(ctx, AV_LOG_ERROR,
+                   "Input %dx%d is too small for the input projection "
+                   "(requires at least %dx%d per plane).\n", pw, ph, min_w, min_h);
+            return AVERROR(EINVAL);
+        }
     }
 
     switch (s->in) {
@@ -4874,6 +4904,22 @@ static int config_output(AVFilterLink *outlink)
     }
 
     set_dimensions(s->pr_width, s->pr_height, w, h, desc);
+
+    {
+        int min_w, min_h;
+        const int pw = s->out_transpose ? AV_CEIL_RSHIFT(h, desc->log2_chroma_h)
+                                        : AV_CEIL_RSHIFT(w, desc->log2_chroma_w);
+        const int ph = s->out_transpose ? AV_CEIL_RSHIFT(w, desc->log2_chroma_w)
+                                        : AV_CEIL_RSHIFT(h, desc->log2_chroma_h);
+
+        projection_min_size(s->out, &min_w, &min_h);
+        if (pw < min_w || ph < min_h) {
+            av_log(ctx, AV_LOG_ERROR,
+                   "Output %dx%d is too small for the output projection "
+                   "(requires at least %dx%d per plane).\n", pw, ph, min_w, min_h);
+            return AVERROR(EINVAL);
+        }
+    }
 
     switch (s->out_stereo) {
     case STEREO_2D:
