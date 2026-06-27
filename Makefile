@@ -143,7 +143,9 @@ ifeq ($(STRIPTYPE),direct)
 else
 	$(RM) $@
 	$(CP) $< $@
+ifneq ($(STRIPTYPE),nostrip)
 	$(STRIP) $@
+endif
 endif
 
 %$(PROGSSUF)_g$(EXESUF): $(FF_DEP_LIBS)

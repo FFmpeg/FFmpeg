@@ -8620,8 +8620,8 @@ esc(){
 
 echo "config:$arch:$subarch:$cpu:$target_os:$(esc $cc_ident):$(esc $FFMPEG_CONFIGURATION)" > ffbuild/config.fate
 
-enabled stripping || strip="echo skipping strip"
-enabled stripping || striptype=""
+enabled stripping || striptype="nostrip"
+enabled stripping || ASMSTRIPFLAGS=""
 
 config_files="$TMPH ffbuild/config.mak doc/config.texi"
 
