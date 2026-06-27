@@ -1807,7 +1807,7 @@ to 15, i.e. 32KB blocks. If this does not match the value that was specified
 when an existing cache file was created, the previously specified value will
 be used instead.
 
-@item read_only
+@item cache_read_only
 If true, use the shared cache for reads but don't write any new blocks to it.
 Default is false. Note that even with this option enabled, the cache file will
 be initialized if it does not already exist.
@@ -1849,8 +1849,9 @@ chosen block size. Accepts the usual size suffixes, e.g. @code{10G} for
 limit.
 
 Once this limit is reached, the protocol switches to read-only mode (see
-@option{read_only}). Already cached data is never evicted, so once this limit
-is reached, no new data will ever be cached until the cache file is deleted.
+@option{cache_read_only}). Already cached data is never evicted, so once this
+limit is reached, no new data will ever be cached until the cache file is
+deleted.
 
 Note that this option is best-effort only, and may over-write up to N-1
 blocks, where N is the number of concurrent processes using the same cache
