@@ -120,7 +120,7 @@ install-progs-$(CONFIG_DOC): install-html
 
 install-html: $(HTMLPAGES)
 	$(Q)mkdir -p "$(DOCDIR)"
-	$(INSTALL) -m 644 $(HTMLPAGES) "$(DOCDIR)"
+	$(call INSTALL_FILES,-m 644,$(HTMLPAGES),$(DOCDIR))
 endif
 
 ifdef CONFIG_MANPAGES
@@ -128,9 +128,9 @@ install-progs-$(CONFIG_DOC): install-man
 
 install-man: $(MANPAGES)
 	$(Q)mkdir -p "$(MANDIR)/man1"
-	$(INSTALL) -m 644 $(MANPAGES1) "$(MANDIR)/man1"
+	$(call INSTALL_FILES,-m 644,$(MANPAGES1),$(MANDIR)/man1)
 	$(Q)mkdir -p "$(MANDIR)/man3"
-	$(INSTALL) -m 644 $(MANPAGES3) "$(MANDIR)/man3"
+	$(call INSTALL_FILES,-m 644,$(MANPAGES3),$(MANDIR)/man3)
 endif
 
 uninstall: uninstall-doc

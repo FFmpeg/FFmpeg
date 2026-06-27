@@ -112,27 +112,27 @@ clean::
 
 install-lib$(NAME)-shared: $(SUBDIR)$(SLIBNAME)
 	$(Q)mkdir -p "$(SHLIBDIR)"
-	$$(INSTALL) -m 755 $$< "$(SHLIBDIR)/$(SLIB_INSTALL_NAME)"
+	$$(call INSTALL_FILES,-m 755,$$<,$(SHLIBDIR)/$(SLIB_INSTALL_NAME))
 ifneq ($(STRIPTYPE),nostrip)
 	$$(STRIP) "$(SHLIBDIR)/$(SLIB_INSTALL_NAME)"
 endif
 	$(Q)$(foreach F,$(SLIB_INSTALL_LINKS),(cd "$(SHLIBDIR)" && $(LN_S) $(SLIB_INSTALL_NAME) $(F));)
-	$(if $(SLIB_INSTALL_EXTRA_SHLIB),$$(INSTALL) -m 644 $(SLIB_INSTALL_EXTRA_SHLIB:%=$(SUBDIR)%) "$(SHLIBDIR)")
+	$(if $(SLIB_INSTALL_EXTRA_SHLIB),$$(call INSTALL_FILES,-m 644,$(SLIB_INSTALL_EXTRA_SHLIB:%=$(SUBDIR)%),$(SHLIBDIR)))
 	$(if $(SLIB_INSTALL_EXTRA_LIB),$(Q)mkdir -p "$(LIBDIR)")
-	$(if $(SLIB_INSTALL_EXTRA_LIB),$$(INSTALL) -m 644 $(SLIB_INSTALL_EXTRA_LIB:%=$(SUBDIR)%) "$(LIBDIR)")
+	$(if $(SLIB_INSTALL_EXTRA_LIB),$$(call INSTALL_FILES,-m 644,$(SLIB_INSTALL_EXTRA_LIB:%=$(SUBDIR)%),$(LIBDIR)))
 
 install-lib$(NAME)-static: $(SUBDIR)$(LIBNAME)
 	$(Q)mkdir -p "$(LIBDIR)"
-	$$(INSTALL) -m 644 $$< "$(LIBDIR)"
+	$$(call INSTALL_FILES,-m 644,$$<,$(LIBDIR))
 	$(LIB_INSTALL_EXTRA_CMD)
 
 install-lib$(NAME)-headers: $(addprefix $(SUBDIR),$(HEADERS) $(BUILT_HEADERS))
 	$(Q)mkdir -p "$(INCINSTDIR)"
-	$$(INSTALL) -m 644 $$^ "$(INCINSTDIR)"
+	$$(call INSTALL_FILES,-m 644,$$^,$(INCINSTDIR))
 
 install-lib$(NAME)-pkgconfig: $(SUBDIR)lib$(FULLNAME).pc
 	$(Q)mkdir -p "$(PKGCONFIGDIR)"
-	$$(INSTALL) -m 644 $$^ "$(PKGCONFIGDIR)"
+	$$(call INSTALL_FILES,-m 644,$$^,$(PKGCONFIGDIR))
 
 uninstall-libs::
 	-$(RM) "$(SHLIBDIR)/$(SLIBNAME_WITH_MAJOR)" \

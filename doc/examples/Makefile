@@ -46,8 +46,8 @@ install: install-examples
 
 install-examples: $(EXAMPLES_FILES)
 	$(Q)mkdir -p "$(DATADIR)/examples"
-	$(INSTALL) -m 644 $(EXAMPLES_FILES) "$(DATADIR)/examples"
-	$(INSTALL) -m 644 $(EXAMPLE_MAKEFILE:%=%.example) "$(DATADIR)/examples/Makefile"
+	$(call INSTALL_FILES,-m 644,$(EXAMPLES_FILES),$(DATADIR)/examples)
+	$(call INSTALL_FILES,-m 644,$(EXAMPLE_MAKEFILE:%=%.example),$(DATADIR)/examples/Makefile)
 
 uninstall: uninstall-examples
 

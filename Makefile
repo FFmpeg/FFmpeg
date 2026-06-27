@@ -175,7 +175,7 @@ install-libs: install-libs-yes
 
 install-data: $(DATA_FILES)
 	$(Q)mkdir -p "$(DATADIR)"
-	$(INSTALL) -m 644 $(DATA_FILES) "$(DATADIR)"
+	$(call INSTALL_FILES,-m 644,$(DATA_FILES),$(DATADIR))
 
 uninstall: uninstall-data uninstall-headers uninstall-libs uninstall-pkgconfig
 

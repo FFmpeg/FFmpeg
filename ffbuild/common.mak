@@ -16,6 +16,9 @@ endif
 BIN2CEXE = ffbuild/bin2c$(HOSTEXESUF)
 BIN2C = $(BIN2CEXE)
 
+# $(call INSTALL_FILES, install options, files, destination)
+INSTALL_FILES = $(INSTALL) $(1) $(2) "$(3)"
+
 ifndef V
 Q      = @
 ECHO   = printf "$(1)\t%s\n" $(2)
@@ -27,7 +30,7 @@ M      = @$(call ECHO,$(TAG),$@);
 $(foreach VAR,$(BRIEF), \
     $(eval override $(VAR) = @$$(call ECHO,$(VAR),$$(MSG)); $($(VAR))))
 $(foreach VAR,$(SILENT),$(eval override $(VAR) = @$($(VAR))))
-$(eval INSTALL = @$(call ECHO,INSTALL,$$(^:$(SRC_PATH)/%=%)); $(INSTALL))
+INSTALL_FILES = @$(foreach F,$(2),printf 'INSTALL\t%s -> %s\n' "$(F:$(SRC_PATH)/%=%)" "$(3)"; )$(INSTALL) $(1) $(2) "$(3)"
 endif
 
 # Prepend to a recursively expanded variable without making it simply expanded.
