@@ -1,8 +1,7 @@
 /*
- * Copyright (C) 2012 Mark Himsley
+ * Copyright (C) 2026 Philip Langdale <philipl@overt.org>
  *
- * get_scene_score() Copyright (c) 2011 Stefano Sabatini
- * taken from libavfilter/vf_select.c
+ * Based on vf_framerate - Copyright (C) 2012 Mark Himsley
  *
  * This file is part of FFmpeg.
  *
@@ -23,20 +22,20 @@
 
 /**
  * @file
- * Frame rate up-conversion filter.
+ * Frame rate up-conversion filter that synthesises intermediate frames using
+ * the NVIDIA Vulkan optical flow extension (VK_NV_optical_flow).
  */
 
 #include "libavutil/avassert.h"
 #include "libavutil/eval.h"
-#include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 
-#include "avfilter.h"
-#include "video.h"
+#include "vulkan_filter.h"
 #include "filters.h"
-#include "scene_sad.h"
+#include "video.h"
 
 static const char *const var_names[] = {
     "source_fps",
@@ -48,38 +47,23 @@ enum var_name {
     VARS_NB
 };
 
-#define BLEND_FUNC_PARAMS const uint8_t *src1, ptrdiff_t src1_linesize, \
-                          const uint8_t *src2, ptrdiff_t src2_linesize, \
-                          uint8_t *dst, ptrdiff_t dst_linesize, \
-                          ptrdiff_t width, ptrdiff_t height, \
-                          int factor1, int factor2, int half
-
-#define BLEND_FACTOR_DEPTH(n) (n-1)
-
-typedef void (*blend_func)(BLEND_FUNC_PARAMS);
-
 typedef struct FRUCVulkanContext {
-    const AVClass *class;
+    FFVulkanContext vkctx;
+
+    AVVulkanDeviceQueueFamily *qf;      ///< compute queue family
+
+    FFVkExecPool e;                     ///< compute execution pool
+
+    int width;          ///< luma width
+    int height;         ///< luma height
+
     // parameters
     char       *requested_frame_rate;   ///< output fps as an expression
     AVRational dest_frame_rate;         ///< output frames per second
-    int flags;                          ///< flags affecting frame rate conversion algorithm
-    double scene_score;                 ///< score that denotes a scene change has happened
-    int interp_start;                   ///< start of range to apply linear interpolation
-    int interp_end;                     ///< end of range to apply linear interpolation
-
-    int line_size[4];                   ///< bytes of pixel data per line for each plane
-    int height[4];                      ///< height of each plane
-    int vsub;
 
     AVRational srce_time_base;          ///< timebase of source
     AVRational dest_time_base;          ///< timebase of destination
 
-    ff_scene_sad_fn sad;                ///< Sum of the absolute difference function (scene detect only)
-    double prev_mafd;                   ///< previous MAFD                           (scene detect only)
-
-    int blend_factor_max;
-    int bitdepth;
     AVFrame *work;
 
     AVFrame *f0;                        ///< last frame
@@ -87,131 +71,158 @@ typedef struct FRUCVulkanContext {
     int64_t pts0;                       ///< last frame pts in dest_time_base
     int64_t pts1;                       ///< current frame pts in dest_time_base
     int64_t delta;                      ///< pts1 to pts0 delta
-    double score;                       ///< scene change score (f0 to f1)
     int flush;                          ///< 1 if the filter is being flushed
     int64_t start_pts;                  ///< pts of the first output frame
     int64_t n;                          ///< output frame counter
-
-    blend_func blend;
 } FRUCVulkanContext;
 
 #define OFFSET(x) offsetof(FRUCVulkanContext, x)
-#define V AV_OPT_FLAG_VIDEO_PARAM
-#define F AV_OPT_FLAG_FILTERING_PARAM
-#define FRUC_VULKAN_FLAG_SCD 01
+#define FLAGS (AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_VIDEO_PARAM)
 
 static const AVOption fruc_vulkan_options[] = {
     { "fps", "A string describing the desired output frame rate",
-      OFFSET(requested_frame_rate), AV_OPT_TYPE_STRING, { .str = "60" }, 0, 0, V|F },
-
-    {"interp_start",        "point to start linear interpolation",    OFFSET(interp_start),    AV_OPT_TYPE_INT,      {.i64=15},                 0,       255,     V|F },
-    {"interp_end",          "point to end linear interpolation",      OFFSET(interp_end),      AV_OPT_TYPE_INT,      {.i64=240},                0,       255,     V|F },
-    {"scene",               "scene change level",                     OFFSET(scene_score),     AV_OPT_TYPE_DOUBLE,   {.dbl=8.2},                0,       100., V|F },
-
-    {"flags",               "set flags",                              OFFSET(flags),           AV_OPT_TYPE_FLAGS,    {.i64=1},                  0,       INT_MAX, V|F, .unit = "flags" },
-    {"scene_change_detect", "enable scene change detection",          0,                       AV_OPT_TYPE_CONST,    {.i64=FRUC_VULKAN_FLAG_SCD}, INT_MIN, INT_MAX, V|F, .unit = "flags" },
-    {"scd",                 "enable scene change detection",          0,                       AV_OPT_TYPE_CONST,    {.i64=FRUC_VULKAN_FLAG_SCD}, INT_MIN, INT_MAX, V|F, .unit = "flags" },
-
-    {NULL}
+      OFFSET(requested_frame_rate), AV_OPT_TYPE_STRING, { .str = "60" }, 0, 0, FLAGS },
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(fruc_vulkan);
 
-static double get_scene_score(AVFilterContext *ctx, AVFrame *crnt, AVFrame *next)
+static av_cold int init_filter(AVFilterContext *avctx)
 {
-    FRUCVulkanContext *s = ctx->priv;
-    double ret = 0;
+    int err;
+    FRUCVulkanContext *s = avctx->priv;
+    FFVulkanContext *vkctx = &s->vkctx;
 
-    ff_dlog(ctx, "get_scene_score()\n");
+    s->width  = vkctx->output_width;
+    s->height = vkctx->output_height;
 
-    if (crnt->height == next->height &&
-        crnt->width  == next->width) {
-        uint64_t sad;
-        double mafd, diff;
-
-        ff_dlog(ctx, "get_scene_score() process\n");
-        s->sad(crnt->data[0], crnt->linesize[0], next->data[0], next->linesize[0], crnt->width, crnt->height, &sad);
-        mafd = (double)sad * 100.0 / (crnt->width * crnt->height) / (1 << s->bitdepth);
-        diff = fabs(mafd - s->prev_mafd);
-        ret  = av_clipf(FFMIN(mafd, diff), 0, 100.0);
-        s->prev_mafd = mafd;
+    s->qf = ff_vk_qf_find(vkctx, VK_QUEUE_COMPUTE_BIT, 0);
+    if (!s->qf) {
+        av_log(avctx, AV_LOG_ERROR, "Device has no compute queues\n");
+        return AVERROR(ENOTSUP);
     }
-    ff_dlog(ctx, "get_scene_score() result is:%f\n", ret);
-    return ret;
-}
 
-typedef struct ThreadData {
-    AVFrame *copy_src1, *copy_src2;
-    uint16_t src1_factor, src2_factor;
-} ThreadData;
-
-static int filter_slice(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
-{
-    FRUCVulkanContext *s = ctx->priv;
-    ThreadData *td = arg;
-    AVFrame *work = s->work;
-    AVFrame *src1 = td->copy_src1;
-    AVFrame *src2 = td->copy_src2;
-    uint16_t src1_factor = td->src1_factor;
-    uint16_t src2_factor = td->src2_factor;
-    int plane;
-
-    for (plane = 0; plane < 4 && src1->data[plane] && src2->data[plane]; plane++) {
-        const int start = (s->height[plane] *  job   ) / nb_jobs;
-        const int end   = (s->height[plane] * (job+1)) / nb_jobs;
-        uint8_t *src1_data = src1->data[plane] + start * src1->linesize[plane];
-        uint8_t *src2_data = src2->data[plane] + start * src2->linesize[plane];
-        uint8_t *dst_data  = work->data[plane] + start * work->linesize[plane];
-
-        s->blend(src1_data, src1->linesize[plane], src2_data, src2->linesize[plane],
-                 dst_data,  work->linesize[plane], s->line_size[plane], end - start,
-                 src1_factor, src2_factor, s->blend_factor_max >> 1);
-    }
+    RET(ff_vk_exec_pool_init(vkctx, s->qf, &s->e, FF_VK_DEFAULT_EXEC_CONTEXTS, 0, 0, 0, NULL));
 
     return 0;
+
+fail:
+    return err;
 }
 
-static int blend_frames(AVFilterContext *ctx, int interpolate)
+/* Visible texel extent of a plane: plane 0 (and non-planar / alpha) is full size,
+ * chroma planes are subsampled. Mirrors hwcontext_vulkan's get_plane_wh, which is
+ * how the frames context sizes each plane's image. */
+static void plane_wh(const AVPixFmtDescriptor *desc, int width, int height,
+                     int plane, uint32_t *w, uint32_t *h)
 {
-    FRUCVulkanContext *s = ctx->priv;
+    int sub = plane && plane != 3 && (desc->flags & AV_PIX_FMT_FLAG_PLANAR) &&
+              !(desc->flags & AV_PIX_FMT_FLAG_RGB);
+
+    *w = sub ? AV_CEIL_RSHIFT(width,  desc->log2_chroma_w) : width;
+    *h = sub ? AV_CEIL_RSHIFT(height, desc->log2_chroma_h) : height;
+}
+
+static int copy_frame(AVFilterContext *avctx, AVFrame *out, AVFrame *src)
+{
+    int err;
+    FRUCVulkanContext *s = avctx->priv;
+    FFVulkanContext *vkctx = &s->vkctx;
+    FFVulkanFunctions *vk = &vkctx->vkfn;
+    FFVkExecContext *exec;
+    AVVkFrame *src_vk = (AVVkFrame *)src->data[0];
+    AVVkFrame *out_vk = (AVVkFrame *)out->data[0];
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(vkctx->output_format);
+    const int nb_planes = av_pix_fmt_count_planes(vkctx->output_format);
+    const int src_nb_images = ff_vk_count_images(src_vk);
+    const int out_nb_images = ff_vk_count_images(out_vk);
+    /* src and out each contribute one barrier per VkImage; a multi-image
+     * sw_format such as planar RGB or a separate alpha plane has several. */
+    VkImageMemoryBarrier2 img_bar[2 * AV_NUM_DATA_POINTERS];
+    int nb_img_bar = 0;
+
+    exec = ff_vk_exec_get(vkctx, &s->e);
+    err = ff_vk_exec_start(vkctx, exec);
+    if (err < 0)
+        return err;
+
+    RET(ff_vk_exec_add_dep_frame(vkctx, exec, src,
+                                 VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                                 VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT));
+    RET(ff_vk_exec_add_dep_frame(vkctx, exec, out,
+                                 VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                                 VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT));
+
+    ff_vk_frame_barrier(vkctx, exec, src, img_bar, &nb_img_bar,
+                        VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                        VK_PIPELINE_STAGE_2_COPY_BIT,
+                        VK_ACCESS_2_TRANSFER_READ_BIT,
+                        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                        VK_QUEUE_FAMILY_IGNORED);
+    ff_vk_frame_barrier(vkctx, exec, out, img_bar, &nb_img_bar,
+                        VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                        VK_PIPELINE_STAGE_2_COPY_BIT,
+                        VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                        VK_QUEUE_FAMILY_IGNORED);
+
+    vk->CmdPipelineBarrier2(exec->buf, &(VkDependencyInfo) {
+        .sType                   = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+        .pImageMemoryBarriers    = img_bar,
+        .imageMemoryBarrierCount = nb_img_bar,
+    });
+
+    for (int i = 0; i < nb_planes; i++) {
+        uint32_t w, h;
+        plane_wh(desc, s->width, s->height, i, &w, &h);
+        VkImageCopy region = {
+            .srcSubresource = { .aspectMask = ff_vk_aspect_flag(src, i), .layerCount = 1 },
+            .dstSubresource = { .aspectMask = ff_vk_aspect_flag(out, i), .layerCount = 1 },
+            .extent         = { w, h, 1 },
+        };
+        vk->CmdCopyImage(exec->buf,
+                         src_vk->img[FFMIN(i, src_nb_images - 1)],
+                         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                         out_vk->img[FFMIN(i, out_nb_images - 1)],
+                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                         1, &region);
+    }
+
+    return ff_vk_exec_submit(vkctx, exec);
+
+fail:
+    ff_vk_exec_discard(vkctx, exec);
+    return err;
+}
+
+/* Emit src unchanged. The frame must be copied rather than cloned: a clone keeps
+ * the input's frames context, and the frame has to match the output context the
+ * downstream link is configured for. */
+static int passthrough_frame(AVFilterContext *ctx, AVFrame **work, AVFrame *src)
+{
     AVFilterLink *outlink = ctx->outputs[0];
-    double interpolate_scene_score = 0;
+    int ret;
 
-    if ((s->flags & FRUC_VULKAN_FLAG_SCD)) {
-        if (s->score >= 0.0)
-            interpolate_scene_score = s->score;
-        else
-            interpolate_scene_score = s->score = get_scene_score(ctx, s->f0, s->f1);
-        ff_dlog(ctx, "blend_frames() interpolate scene score:%f\n", interpolate_scene_score);
-    }
-    // decide if the shot-change detection allows us to blend two frames
-    if (interpolate_scene_score < s->scene_score) {
-        ThreadData td;
-        td.copy_src1 = s->f0;
-        td.copy_src2 = s->f1;
-        td.src2_factor = interpolate;
-        td.src1_factor = s->blend_factor_max - td.src2_factor;
-
-        // get work-space for output frame
-        s->work = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-        if (!s->work)
-            return AVERROR(ENOMEM);
-
-        av_frame_copy_props(s->work, s->f0);
-
-        ff_dlog(ctx, "blend_frames() INTERPOLATE to create work frame\n");
-        ff_filter_execute(ctx, filter_slice, &td, NULL,
-                          FFMIN(FFMAX(1, outlink->h >> 2), ff_filter_get_nb_threads(ctx)));
-        return 1;
-    }
+    *work = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+    if (!*work)
+        return AVERROR(ENOMEM);
+    ret = av_frame_copy_props(*work, src);
+    if (ret < 0)
+        goto fail;
+    ret = copy_frame(ctx, *work, src);
+    if (ret < 0)
+        goto fail;
     return 0;
+fail:
+    av_frame_free(work);
+    return ret;
 }
 
 static int process_work_frame(AVFilterContext *ctx)
 {
     FRUCVulkanContext *s = ctx->priv;
     int64_t work_pts;
-    int64_t interpolate, interpolate8;
+    int64_t interpolate8;
     int ret;
 
     if (!s->f1)
@@ -219,131 +230,37 @@ static int process_work_frame(AVFilterContext *ctx)
     if (!s->f0 && !s->flush)
         return 0;
 
-    work_pts = s->start_pts + av_rescale_q(s->n, av_inv_q(s->dest_frame_rate), s->dest_time_base);
+    work_pts = s->start_pts + av_rescale_q(s->n, av_inv_q(s->dest_frame_rate),
+                                           s->dest_time_base);
 
     if (work_pts >= s->pts1 && !s->flush)
         return 0;
 
     if (!s->f0) {
         av_assert1(s->flush);
-        s->work = s->f1;
-        s->f1 = NULL;
+        ret = passthrough_frame(ctx, &s->work, s->f1);
+        if (ret < 0)
+            return ret;
+        /* We are flushing, so f1 is not needed once passed through. Free it so
+         * the flush terminates instead of re-emitting it every activation. */
+        av_frame_free(&s->f1);
     } else {
         if (work_pts >= s->pts1 + s->delta && s->flush)
             return 0;
 
-        interpolate = av_rescale(work_pts - s->pts0, s->blend_factor_max, s->delta);
+        /* No motion compensation yet: emit the temporally nearest source
+         * frame. Genuine interpolation replaces this in a later change. */
         interpolate8 = av_rescale(work_pts - s->pts0, 256, s->delta);
-        ff_dlog(ctx, "process_work_frame() interpolate: %"PRId64"/256\n", interpolate8);
-        if (interpolate >= s->blend_factor_max || interpolate8 > s->interp_end) {
-            s->work = av_frame_clone(s->f1);
-        } else if (interpolate <= 0 || interpolate8 < s->interp_start) {
-            s->work = av_frame_clone(s->f0);
-        } else {
-            ret = blend_frames(ctx, interpolate);
-            if (ret < 0)
-                return ret;
-            if (ret == 0)
-                s->work = av_frame_clone(interpolate > (s->blend_factor_max >> 1) ? s->f1 : s->f0);
-        }
+        ret = passthrough_frame(ctx, &s->work,
+                                interpolate8 >= 128 ? s->f1 : s->f0);
+        if (ret < 0)
+            return ret;
     }
-
-    if (!s->work)
-        return AVERROR(ENOMEM);
 
     s->work->pts = work_pts;
     s->n++;
 
     return 1;
-}
-
-static av_cold int init(AVFilterContext *ctx)
-{
-    FRUCVulkanContext *s = ctx->priv;
-    s->start_pts = AV_NOPTS_VALUE;
-    return 0;
-}
-
-static av_cold void uninit(AVFilterContext *ctx)
-{
-    FRUCVulkanContext *s = ctx->priv;
-    av_frame_free(&s->f0);
-    av_frame_free(&s->f1);
-}
-
-static const enum AVPixelFormat pix_fmts[] = {
-    AV_PIX_FMT_YUV410P,
-    AV_PIX_FMT_YUV411P, AV_PIX_FMT_YUVJ411P,
-    AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUVJ420P,
-    AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUVJ422P,
-    AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUVJ440P,
-    AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVJ444P,
-    AV_PIX_FMT_YUV420P9, AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV420P12,
-    AV_PIX_FMT_YUV422P9, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV422P12,
-    AV_PIX_FMT_YUV444P9, AV_PIX_FMT_YUV444P10, AV_PIX_FMT_YUV444P12,
-    AV_PIX_FMT_NONE
-};
-
-#define BLEND_FRAME_FUNC(nbits)                         \
-static void blend_frames##nbits##_c(BLEND_FUNC_PARAMS)  \
-{                                                       \
-    int line, pixel;                                    \
-    uint##nbits##_t *dstw  = (uint##nbits##_t *)dst;    \
-    uint##nbits##_t *src1w = (uint##nbits##_t *)src1;   \
-    uint##nbits##_t *src2w = (uint##nbits##_t *)src2;   \
-    int bytes = nbits / 8;                              \
-    width /= bytes;                                     \
-    src1_linesize /= bytes;                             \
-    src2_linesize /= bytes;                             \
-    dst_linesize /= bytes;                              \
-    for (line = 0; line < height; line++) {             \
-        for (pixel = 0; pixel < width; pixel++)         \
-            dstw[pixel] = ((src1w[pixel] * factor1) +   \
-                    (src2w[pixel] * factor2) + half)    \
-                    >> BLEND_FACTOR_DEPTH(nbits);       \
-        src1w += src1_linesize;                         \
-        src2w += src2_linesize;                         \
-        dstw  += dst_linesize;                          \
-    }                                                   \
-}
-BLEND_FRAME_FUNC(8)
-BLEND_FRAME_FUNC(16)
-
-static void fruc_vulkan_blend_init(FRUCVulkanContext *s)
-{
-    if (s->bitdepth == 8) {
-        s->blend_factor_max = 1 << BLEND_FACTOR_DEPTH(8);
-        s->blend = blend_frames8_c;
-    } else {
-        s->blend_factor_max = 1 << BLEND_FACTOR_DEPTH(16);
-        s->blend = blend_frames16_c;
-    }
-}
-
-static int config_input(AVFilterLink *inlink)
-{
-    AVFilterContext *ctx = inlink->dst;
-    FRUCVulkanContext *s = ctx->priv;
-    const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(inlink->format);
-    int plane;
-
-    s->vsub = pix_desc->log2_chroma_h;
-    for (plane = 0; plane < 4; plane++) {
-        s->line_size[plane] = av_image_get_linesize(inlink->format, inlink->w, plane);
-        s->height[plane] = inlink->h >> ((plane == 1 || plane == 2) ? s->vsub : 0);
-    }
-
-    s->bitdepth = pix_desc->comp[0].depth;
-
-    s->sad = ff_scene_sad_get_fn(s->bitdepth);
-    if (!s->sad)
-        return AVERROR(EINVAL);
-
-    s->srce_time_base = inlink->time_base;
-
-    fruc_vulkan_blend_init(s);
-
-    return 0;
 }
 
 static int activate(AVFilterContext *ctx)
@@ -394,7 +311,6 @@ retry:
         s->f1 = inpicref;
         s->pts1 = pts;
         s->delta = s->pts1 - s->pts0;
-        s->score = -1.0;
 
         if (s->delta < 0) {
             av_log(ctx, AV_LOG_WARNING, "PTS discontinuity.\n");
@@ -423,12 +339,22 @@ retry:
     return FFERROR_NOT_READY;
 }
 
+static int config_input(AVFilterLink *inlink)
+{
+    AVFilterContext *ctx = inlink->dst;
+    FRUCVulkanContext *s = ctx->priv;
+
+    s->srce_time_base = inlink->time_base;
+
+    return ff_vk_filter_config_input(inlink);
+}
+
 static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = ctx->inputs[0];
     FilterLink *il = ff_filter_link(inlink);
-    FilterLink *l = ff_filter_link(outlink);
+    FilterLink *ol = ff_filter_link(outlink);
     FRUCVulkanContext *s = ctx->priv;
     double var_values[VARS_NB], res;
     int err;
@@ -483,7 +409,11 @@ static int config_output(AVFilterLink *outlink)
         av_log(ctx, AV_LOG_WARNING, "Timebase conversion is not exact\n");
     }
 
-    l->frame_rate = s->dest_frame_rate;
+    err = ff_vk_filter_config_output(outlink);
+    if (err < 0)
+        return err;
+
+    ol->frame_rate = s->dest_frame_rate;
     outlink->time_base = s->dest_time_base;
 
     ff_dlog(ctx,
@@ -492,12 +422,29 @@ static int config_output(AVFilterLink *outlink)
            av_q2d(outlink->time_base),
            outlink->w, outlink->h);
 
+    return init_filter(ctx);
+}
 
-    av_log(ctx, AV_LOG_INFO, "fps -> fps:%u/%u scene score:%f interpolate start:%d end:%d\n",
-            s->dest_frame_rate.num, s->dest_frame_rate.den,
-            s->scene_score, s->interp_start, s->interp_end);
+static av_cold int init(AVFilterContext *avctx)
+{
+    FRUCVulkanContext *s = avctx->priv;
 
-    return 0;
+    s->start_pts = AV_NOPTS_VALUE;
+
+    return ff_vk_filter_init(avctx);
+}
+
+static av_cold void uninit(AVFilterContext *avctx)
+{
+    FRUCVulkanContext *s = avctx->priv;
+    FFVulkanContext *vkctx = &s->vkctx;
+
+    ff_vk_exec_pool_free(vkctx, &s->e);
+
+    ff_vk_uninit(vkctx);
+
+    av_frame_free(&s->f0);
+    av_frame_free(&s->f1);
 }
 
 static const AVFilterPad fruc_vulkan_inputs[] = {
@@ -518,14 +465,15 @@ static const AVFilterPad fruc_vulkan_outputs[] = {
 
 const FFFilter ff_vf_fruc_vulkan = {
     .p.name        = "fruc_vulkan",
-    .p.description = NULL_IF_CONFIG_SMALL("Upsamples or downsamples progressive source between specified frame rates."),
+    .p.description = NULL_IF_CONFIG_SMALL("Frame rate up-conversion using the Vulkan NV optical flow extension"),
     .p.priv_class  = &fruc_vulkan_class,
-    .p.flags       = AVFILTER_FLAG_SLICE_THREADS,
+    .p.flags       = AVFILTER_FLAG_HWDEVICE,
     .priv_size     = sizeof(FRUCVulkanContext),
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(fruc_vulkan_inputs),
     FILTER_OUTPUTS(fruc_vulkan_outputs),
-    FILTER_PIXFMTS_ARRAY(pix_fmts),
+    FILTER_SINGLE_PIXFMT(AV_PIX_FMT_VULKAN),
     .activate      = activate,
+    .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
