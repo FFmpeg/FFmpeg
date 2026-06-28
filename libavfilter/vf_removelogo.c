@@ -311,22 +311,18 @@ static av_cold int init(AVFilterContext *ctx)
        the filter is applied, the mask size is determined on a pixel
        by pixel basis, with pixels nearer the edge of the logo getting
        smaller mask sizes. */
-    mask = (int ***)av_malloc_array(s->max_mask_size + 1, sizeof(int **));
+    mask = av_calloc(s->max_mask_size + 1, sizeof(*mask));
     if (!mask)
         return AVERROR(ENOMEM);
 
     for (a = 0; a <= s->max_mask_size; a++) {
-        mask[a] = (int **)av_malloc_array((a * 2) + 1, sizeof(int *));
-        if (!mask[a]) {
-            av_free(mask);
-            return AVERROR(ENOMEM);
-        }
+        mask[a] = av_calloc((a * 2) + 1, sizeof(*mask[a]));
+        if (!mask[a])
+            goto mask_fail;
         for (b = -a; b <= a; b++) {
-            mask[a][b + a] = (int *)av_malloc_array((a * 2) + 1, sizeof(int));
-            if (!mask[a][b + a]) {
-                av_free(mask);
-                return AVERROR(ENOMEM);
-            }
+            mask[a][b + a] = av_malloc_array((a * 2) + 1, sizeof(*mask[a][b + a]));
+            if (!mask[a][b + a])
+                goto mask_fail;
             for (c = -a; c <= a; c++) {
                 if ((b * b) + (c * c) <= (a * a)) /* Circular 0/1 mask. */
                     mask[a][b + a][c + a] = 1;
@@ -351,6 +347,16 @@ static av_cold int init(AVFilterContext *ctx)
     SHOW_LOGO_INFO(half);
 
     return 0;
+
+mask_fail:
+    for (a = 0; a <= s->max_mask_size; a++) {
+        if (mask[a])
+            for (b = 0; b < (a * 2) + 1; b++)
+                av_free(mask[a][b]);
+        av_free(mask[a]);
+    }
+    av_free(mask);
+    return AVERROR(ENOMEM);
 }
 
 static int config_props_input(AVFilterLink *inlink)
