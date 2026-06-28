@@ -23276,6 +23276,14 @@ Point
 
 @item sr1-1
 Video SR1.1
+This algorithm only supports packed RGB formats and requires a DirectX 11 or
+DirectX 12 device, so it is available on Windows only. Software input in
+another format such as @code{nv12} or @code{p010} is converted to a packed RGB
+format (@code{rgba} or @code{bgra}) automatically; a hardware surface in such a
+format is rejected.
+Note that the VideoSR algorithms (@code{sr1-0} and @code{sr1-1}) do not
+preserve the alpha channel (it is left zeroed); append e.g. @code{format=rgb24}
+downstream if an opaque result is required.
 
 @end table
 
