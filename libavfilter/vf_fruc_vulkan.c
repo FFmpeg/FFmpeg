@@ -464,6 +464,17 @@ static int config_output(AVFilterLink *outlink)
                              (int64_t)s->srce_time_base.den * s->dest_frame_rate.den ),
                       (int64_t)s->srce_time_base.den * s->dest_frame_rate.num, INT_MAX);
 
+    /* The source-timebase-derived reduction above can collapse to a zero time
+     * base (av_reduce() bounds its result, so the numerator can underflow to
+     * zero, leaving 0/1) when the source timebase shares no useful factors with
+     * the requested rate, which would make the output timebase unusable. Fall
+     * back to the plain 1/fps timebase in that case so a valid timebase is
+     * always produced. */
+    if (!s->dest_time_base.num || !s->dest_time_base.den) {
+        exact = av_reduce(&s->dest_time_base.num, &s->dest_time_base.den,
+                          s->dest_frame_rate.den, s->dest_frame_rate.num, INT_MAX);
+    }
+
     av_log(ctx, AV_LOG_INFO,
            "time base:%u/%u -> %u/%u exact:%d\n",
            s->srce_time_base.num, s->srce_time_base.den,
