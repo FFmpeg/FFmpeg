@@ -27,6 +27,7 @@
  */
 
 #include "libavutil/avassert.h"
+#include "libavutil/eval.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
@@ -36,6 +37,16 @@
 #include "video.h"
 #include "filters.h"
 #include "scene_sad.h"
+
+static const char *const var_names[] = {
+    "source_fps",
+    NULL
+};
+
+enum var_name {
+    VAR_SOURCE_FPS,
+    VARS_NB
+};
 
 #define BLEND_FUNC_PARAMS const uint8_t *src1, ptrdiff_t src1_linesize, \
                           const uint8_t *src2, ptrdiff_t src2_linesize, \
@@ -50,6 +61,7 @@ typedef void (*blend_func)(BLEND_FUNC_PARAMS);
 typedef struct FRUCVulkanContext {
     const AVClass *class;
     // parameters
+    char       *requested_frame_rate;   ///< output fps as an expression
     AVRational dest_frame_rate;         ///< output frames per second
     int flags;                          ///< flags affecting frame rate conversion algorithm
     double scene_score;                 ///< score that denotes a scene change has happened
@@ -89,7 +101,8 @@ typedef struct FRUCVulkanContext {
 #define FRUC_VULKAN_FLAG_SCD 01
 
 static const AVOption fruc_vulkan_options[] = {
-    {"fps",                 "required output frames per second rate", OFFSET(dest_frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str="50"},             0,       INT_MAX, V|F },
+    { "fps", "A string describing the desired output frame rate",
+      OFFSET(requested_frame_rate), AV_OPT_TYPE_STRING, { .str = "60" }, 0, 0, V|F },
 
     {"interp_start",        "point to start linear interpolation",    OFFSET(interp_start),    AV_OPT_TYPE_INT,      {.i64=15},                 0,       255,     V|F },
     {"interp_end",          "point to end linear interpolation",      OFFSET(interp_end),      AV_OPT_TYPE_INT,      {.i64=240},                0,       255,     V|F },
@@ -413,8 +426,12 @@ retry:
 static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
+    AVFilterLink *inlink = ctx->inputs[0];
+    FilterLink *il = ff_filter_link(inlink);
     FilterLink *l = ff_filter_link(outlink);
     FRUCVulkanContext *s = ctx->priv;
+    double var_values[VARS_NB], res;
+    int err;
     int exact;
 
     ff_dlog(ctx, "config_output()\n");
@@ -423,6 +440,22 @@ static int config_output(AVFilterLink *outlink)
            "config_output() input time base:%u/%u (%f)\n",
            ctx->inputs[0]->time_base.num,ctx->inputs[0]->time_base.den,
            av_q2d(ctx->inputs[0]->time_base));
+
+    // The fps option is an expression evaluated against the source frame rate
+    var_values[VAR_SOURCE_FPS]    = av_q2d(il->frame_rate);
+    err = av_expr_parse_and_eval(&res, s->requested_frame_rate,
+                                 var_names, var_values,
+                                 NULL, NULL, NULL, NULL, NULL, 0, ctx);
+    if (err < 0)
+        return err;
+
+    s->dest_frame_rate = av_d2q(res, INT_MAX);
+    if (s->dest_frame_rate.num <= 0 || s->dest_frame_rate.den <= 0) {
+        av_log(ctx, AV_LOG_ERROR,
+               "Invalid output frame rate '%s' (must evaluate to a positive value)\n",
+               s->requested_frame_rate);
+        return AVERROR(EINVAL);
+    }
 
     // make sure timebase is small enough to hold the framerate
 
