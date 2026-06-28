@@ -119,6 +119,9 @@ static unsigned int mszh_decomp(const unsigned char * srcptr, int srclen, unsign
         }
     }
 
+    if (destptr < destptr_end)
+        memset(destptr, 0, destptr_end - destptr);
+
     return destptr - destptr_bak;
 }
 
@@ -152,8 +155,11 @@ static int zlib_decomp(AVCodecContext *avctx, const uint8_t *src, int src_len, i
     if (expected != (unsigned int)zstream->total_out) {
         av_log(avctx, AV_LOG_ERROR, "Decoded size differs (%d != %lu)\n",
                expected, zstream->total_out);
-        if (expected > (unsigned int)zstream->total_out)
+        if (expected > (unsigned int)zstream->total_out) {
+            memset(c->decomp_buf + offset + zstream->total_out, 0,
+                   c->decomp_size - offset - zstream->total_out);
             return (unsigned int)zstream->total_out;
+        }
         return AVERROR_UNKNOWN;
     }
     return zstream->total_out;
