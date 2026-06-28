@@ -1009,6 +1009,11 @@ static int mix_presentation_obu(void *s, IAMFContext *c, AVIOContext *pb, int le
     mix_presentation->cmix = mix;
 
     mix_presentation->count_label = ffio_read_leb(pbc);
+    if (mix_presentation->count_label > len - avio_tell(pbc)) {
+        mix_presentation->count_label = 0;
+        ret = AVERROR_INVALIDDATA;
+        goto fail;
+    }
     mix_presentation->language_label = av_calloc(mix_presentation->count_label,
                                                  sizeof(*mix_presentation->language_label));
     if (!mix_presentation->language_label) {
