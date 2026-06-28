@@ -517,7 +517,7 @@ static void readrate_sleep(Demuxer *d)
     for (int i = 0; i < f->nb_streams; i++) {
         InputStream *ist = f->streams[i];
         DemuxStream  *ds = ds_from_ist(ist);
-        int64_t stream_ts_offset, pts, now, wc_elapsed, elapsed, lag, max_pts, limit_pts;
+        int64_t stream_ts_offset, pts, now, wc_elapsed, lag, max_pts, limit_pts;
         if (ds->discard || ds->finished || ds->first_dts == AV_NOPTS_VALUE)
             continue;
 
@@ -541,10 +541,9 @@ static void readrate_sleep(Demuxer *d)
         if (ds->lag && !lag)
             ds->lag = ds->resume_wc = ds->resume_pts = 0;
         if (ds->resume_wc) {
-            elapsed = now - ds->resume_wc;
+            int64_t elapsed = now - ds->resume_wc;
             limit_pts = ds->resume_pts + (int64_t)(elapsed * d->readrate_catchup);
         } else {
-            elapsed = wc_elapsed;
             limit_pts = max_pts;
         }
 
