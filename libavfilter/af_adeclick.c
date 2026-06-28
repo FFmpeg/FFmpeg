@@ -130,8 +130,8 @@ static int config_input(AVFilterLink *inlink)
         return AVERROR(ENOMEM);
 
     {
-        double *tx_in[2], *tx_out[2];
-        AVTXContext *tx, *itx;
+        double *tx_in[2] = { NULL }, *tx_out[2] = { NULL };
+        AVTXContext *tx = NULL, *itx = NULL;
         av_tx_fn tx_fn, itx_fn;
         int ret, tx_size;
         double scale;
@@ -141,19 +141,21 @@ static int config_input(AVFilterLink *inlink)
         scale = 1.0;
         ret = av_tx_init(&tx, &tx_fn, AV_TX_DOUBLE_RDFT, 0, tx_size, &scale, 0);
         if (ret < 0)
-            return ret;
+            goto tx_end;
 
         scale = 1.0 / tx_size;
         ret = av_tx_init(&itx, &itx_fn, AV_TX_DOUBLE_RDFT, 1, tx_size, &scale, 0);
         if (ret < 0)
-            return ret;
+            goto tx_end;
 
         tx_in[0]  = av_calloc(tx_size + 2, sizeof(*tx_in[0]));
         tx_in[1]  = av_calloc(tx_size + 2, sizeof(*tx_in[1]));
         tx_out[0] = av_calloc(tx_size + 2, sizeof(*tx_out[0]));
         tx_out[1] = av_calloc(tx_size + 2, sizeof(*tx_out[1]));
-        if (!tx_in[0] || !tx_in[1] || !tx_out[0] || !tx_out[1])
-            return AVERROR(ENOMEM);
+        if (!tx_in[0] || !tx_in[1] || !tx_out[0] || !tx_out[1]) {
+            ret = AVERROR(ENOMEM);
+            goto tx_end;
+        }
 
         for (int n = 0; n < s->window_size - s->hop_size; n++)
             tx_in[0][n] = 1.0;
@@ -180,6 +182,7 @@ static int config_input(AVFilterLink *inlink)
         for (int n = 0; n < s->window_size; n++)
             s->window_func_lut[n] = tx_out[0][n] * scale;
 
+tx_end:
         av_tx_uninit(&tx);
         av_tx_uninit(&itx);
 
@@ -187,6 +190,9 @@ static int config_input(AVFilterLink *inlink)
         av_freep(&tx_in[1]);
         av_freep(&tx_out[0]);
         av_freep(&tx_out[1]);
+
+        if (ret < 0)
+            return ret;
     }
 
     av_frame_free(&s->in);
