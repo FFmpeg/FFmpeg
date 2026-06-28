@@ -525,6 +525,9 @@ void ff_vk_exec_add_dep_obj(FFVulkanContext *s, FFVkExecContext *e,
 void ff_vk_exec_add_dep_wait_sem(FFVulkanContext *s, FFVkExecContext *e,
                                  VkSemaphore sem, uint64_t val,
                                  VkPipelineStageFlagBits2 stage);
+void ff_vk_exec_add_dep_signal_sem(FFVulkanContext *s, FFVkExecContext *e,
+                                   VkSemaphore sem, uint64_t val,
+                                   VkPipelineStageFlagBits2 stage);
 void ff_vk_exec_add_dep_bool_sem(FFVulkanContext *s, FFVkExecContext *e,
                                  VkSemaphore *sem, int nb,
                                  VkPipelineStageFlagBits2 stage,

@@ -836,6 +836,20 @@ void ff_vk_exec_add_dep_wait_sem(FFVulkanContext *s, FFVkExecContext *e,
     };
 }
 
+void ff_vk_exec_add_dep_signal_sem(FFVulkanContext *s, FFVkExecContext *e,
+                                   VkSemaphore sem, uint64_t val,
+                                   VkPipelineStageFlagBits2 stage)
+{
+    av_assert1(e->sem_sig_cnt < FF_VK_EXEC_MAX_SEM_OPS);
+
+    e->sem_sig[e->sem_sig_cnt++] = (VkSemaphoreSubmitInfo) {
+        .sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
+        .semaphore = sem,
+        .value = val,
+        .stageMask = stage,
+    };
+}
+
 void ff_vk_exec_add_dep_bool_sem(FFVulkanContext *s, FFVkExecContext *e,
                                  VkSemaphore *sem, int nb,
                                  VkPipelineStageFlagBits2 stage,
