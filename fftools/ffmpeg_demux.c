@@ -96,12 +96,6 @@ typedef struct DemuxStream {
     uint64_t                 nb_packets;
     // combined size of all the packets read
     uint64_t                 data_size;
-    // latest wallclock time at which packet reading resumed after a stall - used for readrate
-    int64_t                  resume_wc;
-    // timestamp of first packet sent after the latest stall - used for readrate
-    int64_t                  resume_pts;
-    // measure of how far behind packet reading is against spceified readrate
-    int64_t                  lag;
 } DemuxStream;
 
 typedef struct Demuxer {
@@ -136,6 +130,13 @@ typedef struct Demuxer {
     float                 readrate;
     double                readrate_initial_burst;
     float                 readrate_catchup;
+
+    // latest wallclock time at which packet reading resumed after a stall - used for readrate
+    int64_t               resume_wc;
+    // relative timestamp of first packet sent after the latest stall - used for readrate
+    int64_t               resume_progress;
+    // measure of how far behind packet reading is against spceified readrate
+    int64_t               lag;
 
     Scheduler            *sch;
 
@@ -507,42 +508,55 @@ static void readrate_sleep(Demuxer *d)
     int64_t initial_burst = AV_TIME_BASE * d->readrate_initial_burst;
     int resume_warn = 0;
 
+    DemuxStream *slowest = NULL;
+    int64_t progress = INT64_MAX;
+
     for (int i = 0; i < f->nb_streams; i++) {
         InputStream *ist = f->streams[i];
         DemuxStream  *ds = ds_from_ist(ist);
-        int64_t stream_ts_offset, pts, now, wc_elapsed, lag, max_pts, limit_pts;
+        int64_t stream_ts_offset, pts, pts_diff;
         if (ds->discard || ds->finished || ds->first_dts == AV_NOPTS_VALUE)
             continue;
 
         stream_ts_offset = FFMAX(ds->first_dts, file_start);
         pts = av_rescale(ds->dts, 1000000, AV_TIME_BASE);
-        now = av_gettime_relative();
-        wc_elapsed = now - d->wallclock_start;
-
-        if (pts <= stream_ts_offset + initial_burst) continue;
-
-        max_pts = stream_ts_offset + initial_burst + (int64_t)(wc_elapsed * d->readrate);
-        lag = FFMAX(max_pts - pts, 0);
-        if ( (!ds->lag && lag > 0.3 * AV_TIME_BASE) || ( lag > ds->lag + 0.3 * AV_TIME_BASE) ) {
-            ds->lag = lag;
-            ds->resume_wc = now;
-            ds->resume_pts = pts;
-            av_log_once(ds, AV_LOG_WARNING, AV_LOG_DEBUG, &resume_warn,
-                        "Resumed reading at pts %0.3f with rate %0.3f after a lag of %0.3fs\n",
-                        (float)pts/AV_TIME_BASE, d->readrate_catchup, (float)lag/AV_TIME_BASE);
+        pts_diff = pts - stream_ts_offset;
+        if (pts_diff < progress) {
+            progress = pts_diff;
+            slowest = ds;
         }
-        if (ds->lag && !lag)
-            ds->lag = ds->resume_wc = ds->resume_pts = 0;
-        if (ds->resume_wc) {
-            int64_t elapsed = now - ds->resume_wc;
-            limit_pts = ds->resume_pts + (int64_t)(elapsed * d->readrate_catchup);
-        } else {
-            limit_pts = max_pts;
-        }
-
-        if (pts > limit_pts)
-            av_usleep(pts - limit_pts);
     }
+
+    if (!slowest || progress <= initial_burst)
+        return;
+
+    int64_t now = av_gettime_relative();
+    int64_t wc_elapsed = now - d->wallclock_start;
+    int64_t max_prog = initial_burst + (int64_t)(wc_elapsed * d->readrate);
+    int64_t lag = FFMAX(max_prog - progress, 0);
+    int64_t limit;
+
+    if ( (!d->lag && lag > 0.3 * AV_TIME_BASE) || ( lag > d->lag + 0.3 * AV_TIME_BASE) ) {
+        d->lag = lag;
+        d->resume_wc = now;
+        d->resume_progress = progress;
+
+        int64_t pts = FFMAX(slowest->first_dts, file_start) + progress;
+        av_log_once(slowest, AV_LOG_WARNING, AV_LOG_DEBUG, &resume_warn,
+                    "Resumed reading at pts %0.3f with rate %0.3f after a lag of %0.3fs\n",
+                    (float)pts/AV_TIME_BASE, d->readrate_catchup, (float)lag/AV_TIME_BASE);
+    }
+    if (d->lag && !lag)
+        d->lag = d->resume_wc = d->resume_progress = 0;
+    if (d->resume_wc) {
+        int64_t elapsed = now - d->resume_wc;
+        limit = d->resume_progress + (int64_t)(elapsed * d->readrate_catchup);
+    } else {
+        limit = max_prog;
+    }
+
+    if (progress > limit)
+        av_usleep(progress - limit);
 }
 
 static int do_send(Demuxer *d, DemuxStream *ds, AVPacket *pkt, unsigned flags,
