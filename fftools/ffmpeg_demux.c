@@ -518,10 +518,10 @@ static void readrate_sleep(Demuxer *d)
         InputStream *ist = f->streams[i];
         DemuxStream  *ds = ds_from_ist(ist);
         int64_t stream_ts_offset, pts, now, wc_elapsed, elapsed, lag, max_pts, limit_pts;
+        if (ds->discard || ds->finished || ds->first_dts == AV_NOPTS_VALUE)
+            continue;
 
-        if (ds->discard) continue;
-
-        stream_ts_offset = FFMAX(ds->first_dts != AV_NOPTS_VALUE ? ds->first_dts : 0, file_start);
+        stream_ts_offset = FFMAX(ds->first_dts, file_start);
         pts = av_rescale(ds->dts, 1000000, AV_TIME_BASE);
         now = av_gettime_relative();
         wc_elapsed = now - d->wallclock_start;
