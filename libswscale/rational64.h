@@ -135,12 +135,6 @@ static av_always_inline AVRational64 av_inv_q64(AVRational64 q)
 }
 
 /**
- * Return the best rational so that a and b are multiple of it.
- * If the resulting denominator is larger than max_den, return def.
- */
-AVRational64 av_gcd_q64(AVRational64 a, AVRational64 b, int max_den, AVRational64 def);
-
-/**
  * @}
  */
 
