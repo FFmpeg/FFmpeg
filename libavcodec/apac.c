@@ -140,6 +140,9 @@ static int apac_decode(AVCodecContext *avctx, AVFrame *frame,
     buf_size = pkt->size;
     input_buf_size = buf_size;
 
+    if ((int64_t)s->bitstream_size + buf_size > INT_MAX / (16 * 8))
+        return AVERROR_INVALIDDATA;
+
     if (s->bitstream_index > 0 && s->bitstream_size > 0) {
         memmove(s->bitstream, &s->bitstream[s->bitstream_index], s->bitstream_size);
         s->bitstream_index = 0;
