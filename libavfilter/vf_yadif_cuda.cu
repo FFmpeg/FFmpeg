@@ -23,7 +23,7 @@ __inline__ __device__ T spatial_predictor(T a, T b, T c, T d, T e, T f, T g,
                                           T h, T i, T j, T k, T l, T m, T n)
 {
     int spatial_pred = (d + k)/2;
-    int spatial_score = abs(c - j) + abs(d - k) + abs(e - l);
+    int spatial_score = abs(c - j) + abs(d - k) + abs(e - l) - 1;
 
     int score = abs(b - k) + abs(c - l) + abs(d - m);
     if (score < spatial_score) {
@@ -75,7 +75,7 @@ __inline__ __device__ T temporal_predictor(T A, T B, T C, T D, T E, T F,
     int tdiff1 = (abs(A - F) + abs(B - G)) / 2;
     int tdiff2 = (abs(K - F) + abs(G - L)) / 2;
 
-    int diff = max3(tdiff0, tdiff1, tdiff2);
+    int diff = max3(tdiff0 >> 1, tdiff1, tdiff2);
 
     if (!skip_check) {
       int maxi = max3(p2 - p3, p2 - p1, min(p0 - p1, p4 - p3));
@@ -85,8 +85,7 @@ __inline__ __device__ T temporal_predictor(T A, T B, T C, T D, T E, T F,
 
     if (spatial_pred > p2 + diff) {
       spatial_pred = p2 + diff;
-    }
-    if (spatial_pred < p2 - diff) {
+    } else if (spatial_pred < p2 - diff) {
       spatial_pred = p2 - diff;
     }
 
@@ -139,10 +138,10 @@ __inline__ __device__ void yadif_single(T *dst,
     // Calculate temporal prediction
     int is_second_field = !(parity ^ tff);
 
-    cudaTextureObject_t prev2 = prev;
-    cudaTextureObject_t prev1 = is_second_field ? cur : prev;
-    cudaTextureObject_t next1 = is_second_field ? next : cur;
-    cudaTextureObject_t next2 = next;
+    cudaTextureObject_t prev2 = is_second_field ? cur : prev;
+    cudaTextureObject_t prev1 = prev;
+    cudaTextureObject_t next1 = next;
+    cudaTextureObject_t next2 = is_second_field ? next : cur;
 
     T A = tex2D<T>(prev2, xo,  yo - 1);
     T B = tex2D<T>(prev2, xo,  yo + 1);
@@ -210,10 +209,10 @@ __inline__ __device__ void yadif_double(T *dst,
     // Calculate temporal prediction
     int is_second_field = !(parity ^ tff);
 
-    cudaTextureObject_t prev2 = prev;
-    cudaTextureObject_t prev1 = is_second_field ? cur : prev;
-    cudaTextureObject_t next1 = is_second_field ? next : cur;
-    cudaTextureObject_t next2 = next;
+    cudaTextureObject_t prev2 = is_second_field ? cur : prev;
+    cudaTextureObject_t prev1 = prev;
+    cudaTextureObject_t next1 = next;
+    cudaTextureObject_t next2 = is_second_field ? next : cur;
 
     T A = tex2D<T>(prev2, xo,  yo - 1);
     T B = tex2D<T>(prev2, xo,  yo + 1);
