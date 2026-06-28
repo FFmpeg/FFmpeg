@@ -320,6 +320,11 @@ static int decode_move(AVCodecContext *avctx,
     return 0;
 }
 
+static inline int dlta_room(unsigned cx, unsigned w, unsigned bpp, unsigned need)
+{
+    return cx + need <= w * bpp;
+}
+
 #define NEXT_LINE                        \
     if (cx >= w * s->bpp) {              \
         cx = 0;                          \
@@ -418,6 +423,8 @@ static int decode_dlta(AVCodecContext *avctx,
         case 4:
             fill = bytestream2_get_byte(&dc);
             while (len > 0 && cy > 0) {
+                if (!dlta_room(cx, w, s->bpp, 4))
+                    return AVERROR_INVALIDDATA;
                 AV_WL32(b1 + cx, AV_RL32(b2 + cx));
                 AV_WL32(b2 + cx, fill);
                 cx++;
@@ -427,6 +434,8 @@ static int decode_dlta(AVCodecContext *avctx,
         case 7:
             fill = bytestream2_get_le32(&dc);
             while (len > 0 && cy > 0) {
+                if (!dlta_room(cx, w, s->bpp, 4))
+                    return AVERROR_INVALIDDATA;
                 AV_WL32(b1 + cx, AV_RL32(b2 + cx));
                 AV_WL32(b2 + cx, fill);
                 cx += 4;
@@ -443,6 +452,8 @@ static int decode_dlta(AVCodecContext *avctx,
             while (len > 0 && cy > 0) {
                 unsigned v0, v1;
 
+                if (!dlta_room(cx, w, s->bpp, 4))
+                    return AVERROR_INVALIDDATA;
                 v0 = AV_RL32(b2 + cx);
                 v1 = AV_RL32(b1 + cx);
                 AV_WL32(b2 + cx, v1);
@@ -454,6 +465,8 @@ static int decode_dlta(AVCodecContext *avctx,
         case 13:
             while (len > 0 && cy > 0) {
                 fill = bytestream2_get_le32(&dc);
+                if (!dlta_room(cx, w, s->bpp, 4))
+                    return AVERROR_INVALIDDATA;
                 AV_WL32(b1 + cx, AV_RL32(b2 + cx));
                 AV_WL32(b2 + cx, fill);
                 cx += 4;
