@@ -194,7 +194,7 @@ static const AVOption http_options[] = {
     { "content_type", "set a specific content type for the POST messages", OFFSET(content_type), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, D | E },
     { "user_agent", "override User-Agent header", OFFSET(user_agent), AV_OPT_TYPE_STRING, { .str = DEFAULT_USER_AGENT }, 0, 0, D },
     { "referer", "override referer header", OFFSET(referer), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, D },
-    { "multiple_requests", "use persistent connections", OFFSET(multiple_requests), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, D | E },
+    { "multiple_requests", "use persistent connections", OFFSET(multiple_requests), AV_OPT_TYPE_BOOL, { .i64 = -1 }, -1, 1, D | E },
     { "request_size", "size (in bytes) of requests to make", OFFSET(request_size), AV_OPT_TYPE_INT64, { .i64 = 0 }, 0, INT64_MAX, D },
     { "initial_request_size", "size (in bytes) of initial requests made during probing / header parsing", OFFSET(initial_request_size), AV_OPT_TYPE_INT64, { .i64 = 0 }, 0, INT64_MAX, D },
     { "post_data", "set custom HTTP post data", OFFSET(post_data), AV_OPT_TYPE_BINARY, .flags = D | E },
@@ -1625,6 +1625,7 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     // Note: we send the Range header on purpose, even when we're probing,
     // since it allows us to detect more reliably if a (non-conforming)
     // server supports seeking by analysing the reply headers.
+    int is_partial_request = 0;
     if (!has_header(s->headers, "\r\nRange: ") && !post && (s->off > 0 || s->end_off || s->seekable != 0)) {
         av_bprintf(&request, "Range: bytes=%"PRIu64"-", s->off);
         uint64_t req_size = request_size(h);
@@ -1634,8 +1635,10 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
                 target_off = UINT64_MAX;
             if (s->end_off)
                 target_off = FFMIN(target_off, s->end_off);
-            if (target_off != UINT64_MAX)
+            if (target_off != UINT64_MAX) {
                 av_bprintf(&request, "%"PRId64, target_off - 1);
+                is_partial_request = 1;
+            }
         } else if (s->end_off)
             av_bprintf(&request, "%"PRId64, s->end_off - 1);
         av_bprintf(&request, "\r\n");
@@ -1644,7 +1647,9 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
         av_bprintf(&request, "Expect: 100-continue\r\n");
 
     if (!has_header(s->headers, "\r\nConnection: ")) {
-        keep_alive = s->multiple_requests;
+        keep_alive = s->multiple_requests > 0;
+        if (s->multiple_requests < 0 /* auto */ && is_partial_request)
+            keep_alive = 1;
         av_bprintf(&request, "Connection: %s\r\n", keep_alive ? "keep-alive" : "close");
     }
 

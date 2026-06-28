@@ -453,15 +453,16 @@ string describing the libavformat build. ("Lavf/<version>")
 Set the Referer header. Include 'Referer: URL' header in HTTP request.
 
 @item multiple_requests
-Use persistent connections if set to 1, default is 0.
+Force persistent connections if set to 1, or disable if 0. Default is -1,
+which means auto (implies keep-alive when using -request_size or
+-initial_request_size).
 
 @item request_size
 Limit the size of requests made. This is useful for some pathological servers
 that throttle unbounded range requests, as well as when expecting to seek
 frequently. Disabled (set to 0) by default.
 
-Note that if enabling this option, it's strongly recommended to also enable
-the @option{multiple_requests} option, as well as setting
+Note that if enabling this option, it's strongly recommended to also set
 @option{short_seek_size} to the same value or higher. Doing so allows FFmpeg
 to reuse a single HTTP connection wherever possible.
 
