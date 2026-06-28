@@ -252,7 +252,10 @@ static int mace_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     }
 
     /* get output buffer */
-    frame->nb_samples = 3 * (buf_size << (1 - is_mace3)) / channels;
+    int64_t nb_samples = 3 * ((int64_t)buf_size << (1 - is_mace3)) / channels;
+    if (nb_samples > INT_MAX)
+        return AVERROR_INVALIDDATA;
+    frame->nb_samples = nb_samples;
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
     samples = (int16_t **)frame->extended_data;
