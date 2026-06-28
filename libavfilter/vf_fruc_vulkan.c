@@ -76,11 +76,21 @@ typedef struct FRUCVulkanContext {
     VkSampler      sampler;        ///< linear sampler for the video planes
     VkSampler      flow_sampler;   ///< nearest sampler for the flow vectors
 
-    /* Binary semaphores used to order the cross-queue submissions and, more
-     * importantly, to make each stage's writes visible to the next: the host
-     * fence waits alone do not provide cross-queue memory visibility. */
+    /* Timeline semaphores order the pipelined cross-queue submissions and make
+     * each stage's writes visible to the next. Timeline is required for two
+     * reasons:
+     * * Each optical flow source pair may yield multiple interpolations, and
+     *   each interpolation should wait on the flow. Multi-wait requires timeline
+     *   semaphores
+     * * We don't know how many interpolations will be done from a single optical
+     *   flow pair ahead of time, so we cannot simply signal completion after the
+     *   last one.  Instead we increment a timeline semaphore after each one and
+     *   then the next flow calculation waits on the final timeline value. */
     VkSemaphore    sem_gray;        ///< grayscale (compute) -> optical flow
     VkSemaphore    sem_flow;        ///< optical flow -> interpolation (compute)
+    VkSemaphore    sem_interp;      ///< interpolation reads -> next pair optical flow
+    uint64_t       gen;             ///< source pair generation (sem_gray/sem_flow value)
+    uint64_t       interp_value;    ///< monotonic interpolation counter (sem_interp value)
 
     /* Optical flow session and associated images. */
     VkOpticalFlowSessionNV       session;
@@ -480,7 +490,11 @@ static av_cold int init_filter(AVFilterContext *avctx)
     }
 
     RET(ff_vk_exec_pool_init(vkctx, s->qf, &s->e, FF_VK_DEFAULT_EXEC_CONTEXTS, 0, 0, 0, NULL));
-    RET(ff_vk_exec_pool_init(vkctx, s->qf_of, &s->e_of, 1, 0, 0, 0, NULL));
+    /* Use more than one optical flow context so that the optical flow execution
+     * for the next frame pair can be recorded and submitted without first
+     * host-waiting the previous pair's execution to retire its command buffer. */
+    RET(ff_vk_exec_pool_init(vkctx, s->qf_of, &s->e_of,
+                             2, 0, 0, 0, NULL));
     RET(ff_vk_init_sampler(vkctx, &s->sampler, 0, VK_FILTER_LINEAR));
     /* Flow is sampled through an integer view and its format has no linear
      * filtering support, so use nearest. Requires normalised coords and as we
@@ -488,13 +502,21 @@ static av_cold int init_filter(AVFilterContext *avctx)
     RET(ff_vk_init_sampler(vkctx, &s->flow_sampler, 0, VK_FILTER_NEAREST));
 
     {
+        VkSemaphoreTypeCreateInfo sem_type_info = {
+            .sType         = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
+            .semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE,
+            .initialValue  = 0,
+        };
         VkSemaphoreCreateInfo sem_info = {
             .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+            .pNext = &sem_type_info,
         };
         if (vk->CreateSemaphore(vkctx->hwctx->act_dev, &sem_info,
                                 vkctx->hwctx->alloc, &s->sem_gray) != VK_SUCCESS ||
             vk->CreateSemaphore(vkctx->hwctx->act_dev, &sem_info,
-                                vkctx->hwctx->alloc, &s->sem_flow) != VK_SUCCESS) {
+                                vkctx->hwctx->alloc, &s->sem_flow) != VK_SUCCESS ||
+            vk->CreateSemaphore(vkctx->hwctx->act_dev, &sem_info,
+                                vkctx->hwctx->alloc, &s->sem_interp) != VK_SUCCESS) {
             av_log(avctx, AV_LOG_ERROR, "Failed to create synchronization semaphores\n");
             return AVERROR_EXTERNAL;
         }
@@ -793,6 +815,9 @@ static int compute_flow(AVFilterContext *avctx)
     VkImageMemoryBarrier2 img_bar[2 * AV_NUM_DATA_POINTERS + 2];
     int nb_img_bar;
 
+    /* This pair's generation; sem_gray and sem_flow are signalled with it. */
+    s->gen++;
+
     /* --- Grayscale extraction on the compute queue. --- */
     exec = ff_vk_exec_get(vkctx, &s->e);
     err = ff_vk_exec_start(vkctx, exec);
@@ -805,9 +830,14 @@ static int compute_flow(AVFilterContext *avctx)
     RET(ff_vk_exec_add_dep_frame(vkctx, exec, s->f1,
                                  VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
                                  VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT));
-    /* Signal so the optical flow queue can see the grayscale writes. */
-    ff_vk_exec_add_dep_bool_sem(vkctx, exec, &s->sem_gray, 1,
-                                VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, 0);
+    /* The grayscale images are a single instance reused every pair, and the
+     * previous pair's optical flow reads them. Wait for that read to retire
+     * (sem_flow at the previous generation) before overwriting them. */
+    if (s->gen > 1)
+        ff_vk_exec_add_dep_wait_sem(vkctx, exec, s->sem_flow, s->gen - 1,
+                                    VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT);
+    ff_vk_exec_add_dep_signal_sem(vkctx, exec, s->sem_gray, s->gen,
+                                  VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT);
     RET(ff_vk_create_imageviews(vkctx, exec, f0_views, s->f0, FF_VK_REP_FLOAT));
     RET(ff_vk_create_imageviews(vkctx, exec, f1_views, s->f1, FF_VK_REP_FLOAT));
 
@@ -858,8 +888,9 @@ static int compute_flow(AVFilterContext *avctx)
                     FFALIGN(s->height, s->grayscale.lg_size[1]) / s->grayscale.lg_size[1],
                     1);
 
+    /* sem_gray orders the optical flow submission after this one
+     * and makes the grayscale writes visible across the queue boundary. */
     RET(ff_vk_exec_submit(vkctx, exec));
-    ff_vk_exec_wait(vkctx, exec);
 
     /* --- Optical flow execution on the optical flow queue. --- */
     exec = ff_vk_exec_get(vkctx, &s->e_of);
@@ -868,21 +899,28 @@ static int compute_flow(AVFilterContext *avctx)
         return err;
 
     /* Wait for the grayscale writes, signal once the flow has been written. */
-    ff_vk_exec_add_dep_wait_sem(vkctx, exec, s->sem_gray, 0,
+    ff_vk_exec_add_dep_wait_sem(vkctx, exec, s->sem_gray, s->gen,
                                 VK_PIPELINE_STAGE_2_OPTICAL_FLOW_BIT_NV);
-    ff_vk_exec_add_dep_bool_sem(vkctx, exec, &s->sem_flow, 1,
-                                VK_PIPELINE_STAGE_2_OPTICAL_FLOW_BIT_NV, 0);
+    /* The flow images are a single instance reused every pair. The previous
+     * pair's interpolations sampled them; wait for the last such read to retire
+     * (the highest interpolation value signalled so far, which belongs to the
+     * previous pair since this pair has produced none yet) before overwriting
+     * them. A value of 0 is the initial state and is satisfied immediately. */
+    ff_vk_exec_add_dep_wait_sem(vkctx, exec, s->sem_interp, s->interp_value,
+                                VK_PIPELINE_STAGE_2_OPTICAL_FLOW_BIT_NV);
+    ff_vk_exec_add_dep_signal_sem(vkctx, exec, s->sem_flow, s->gen,
+                                  VK_PIPELINE_STAGE_2_OPTICAL_FLOW_BIT_NV);
 
-    /* All optical flow images permanently reside in VK_IMAGE_LAYOUT_GENERAL and
-     * the cross-queue memory visibility is handled by the semaphores, so no
-     * image barriers are required on the optical flow queue. */
+    /* The flow images stay in VK_IMAGE_LAYOUT_GENERAL and the semaphores handle
+     * cross-queue visibility, so no image barriers are needed here. */
     vk->CmdOpticalFlowExecuteNV(exec->buf, s->session,
         &(VkOpticalFlowExecuteInfoNV) {
             .sType = VK_STRUCTURE_TYPE_OPTICAL_FLOW_EXECUTE_INFO_NV,
         });
 
+    /* sem_flow orders the interpolation after the flow execution
+     * and makes the flow writes visible on the compute queue. */
     RET(ff_vk_exec_submit(vkctx, exec));
-    ff_vk_exec_wait(vkctx, exec);
 
     s->flow_valid = 1;
     return 0;
@@ -921,7 +959,6 @@ static int interpolate_frame(AVFilterContext *avctx, AVFrame *out, float t)
      * plus the two single-image flow fields. */
     VkImageMemoryBarrier2 img_bar[3 * AV_NUM_DATA_POINTERS + 2];
     int nb_img_bar;
-    int computed = 0;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(vkctx->output_format);
     InterpolatePushData pd = {
         .t         = t,
@@ -936,9 +973,12 @@ static int interpolate_frame(AVFilterContext *avctx, AVFrame *out, float t)
         pd.plane_size[i][1] = h;
     }
 
+    /* Not via RET: the fail label discards deps on exec, which is not yet
+     * acquired here, and compute_flow cleans up its own exec on failure. */
     if (!s->flow_valid) {
-        RET(compute_flow(avctx));
-        computed = 1;
+        err = compute_flow(avctx);
+        if (err < 0)
+            return err;
     }
 
     exec = ff_vk_exec_get(vkctx, &s->e);
@@ -946,11 +986,17 @@ static int interpolate_frame(AVFilterContext *avctx, AVFrame *out, float t)
     if (err < 0)
         return err;
 
-    /* Wait on the flow only when it was (re)computed for this submission, to
-     * consume the single signal of the binary semaphore exactly once. */
-    if (computed)
-        ff_vk_exec_add_dep_wait_sem(vkctx, exec, s->sem_flow, 0,
-                                    VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT);
+    /* Every interpolation of this pair waits on the same flow result, keyed by
+     * the pair generation. */
+    ff_vk_exec_add_dep_wait_sem(vkctx, exec, s->sem_flow, s->gen,
+                                VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT);
+    /* Chain sem_interp: wait the previous value, signal the next. Keeps the
+     * signals monotonic and lets the next pair's optical flow fence on the final
+     * value before overwriting the flow images. */
+    ff_vk_exec_add_dep_wait_sem(vkctx, exec, s->sem_interp, s->interp_value,
+                                VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT);
+    ff_vk_exec_add_dep_signal_sem(vkctx, exec, s->sem_interp, ++s->interp_value,
+                                  VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT);
 
     RET(ff_vk_exec_add_dep_frame(vkctx, exec, out,
                                  VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
@@ -1366,7 +1412,7 @@ static av_cold void uninit(AVFilterContext *avctx)
 
     /* Free the execution pools first: this waits for every submitted command
      * buffer to retire (ff_vk_exec_pool_free fences each context). The pooled
-     * submissions wait on and signal the semaphores and reference the
+     * submissions wait on and signal the timeline semaphores and reference the
      * optical flow images below, so those objects must outlive the wait — destroying
      * an in-use semaphore would leave a submission's fence permanently unsignaled
      * and deadlock the wait. */
@@ -1377,6 +1423,8 @@ static av_cold void uninit(AVFilterContext *avctx)
         vk->DestroySemaphore(vkctx->hwctx->act_dev, s->sem_gray, vkctx->hwctx->alloc);
     if (s->sem_flow)
         vk->DestroySemaphore(vkctx->hwctx->act_dev, s->sem_flow, vkctx->hwctx->alloc);
+    if (s->sem_interp)
+        vk->DestroySemaphore(vkctx->hwctx->act_dev, s->sem_interp, vkctx->hwctx->alloc);
     if (s->session)
         vk->DestroyOpticalFlowSessionNV(vkctx->hwctx->act_dev, s->session,
                                         vkctx->hwctx->alloc);
