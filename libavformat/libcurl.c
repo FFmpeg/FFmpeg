@@ -434,6 +434,13 @@ static void on_done(CurlContext *c, CURLcode code)
     aborted  = c->aborted;
     received = c->request_received;
     /* Advance past delivered bytes so a retry or seek resumes at the right offset. */
+    if (received > INT64_MAX - c->request_start) {
+        if (!c->error)
+            c->error = AVERROR(EIO);
+        received = 0;
+        aborted  = 1;
+        pthread_cond_broadcast(&c->cond);
+    }
     c->request_start    += received;
     c->request_received  = 0;
     pthread_mutex_unlock(&c->mutex);
