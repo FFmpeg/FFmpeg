@@ -1,3 +1,5 @@
+ff3e10277c8cb7d8ea202e1e3281ce49 *tests/data/fate/hevc-bsf-mp4toannexb-new-extradata.hevc
+4254 tests/data/fate/hevc-bsf-mp4toannexb-new-extradata.hevc
 #tb 0: 1/25
 #media_type 0: video
 #codec_id 0: rawvideo
