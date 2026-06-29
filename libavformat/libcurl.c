@@ -126,8 +126,8 @@ struct CurlContext {
 
     /* Producer bookkeeping, touched only by the loop thread. */
     int             active;          /* currently added to the multi */
-    uint64_t        request_start;   /* absolute offset the current request began at */
-    uint64_t        request_received;/* bytes delivered in the current request */
+    int64_t         request_start;   /* absolute offset the current request began at */
+    int64_t         request_received;/* bytes delivered in the current request */
     int64_t         request_end;     /* expected end of request, or -1 if unknown */
     int             retry_count;     /* consecutive recoverable failures */
     int             is_initial;      /* using reduced request size */
@@ -362,22 +362,22 @@ static int xferinfo_callback(void *userdata, curl_off_t dltotal, curl_off_t dlno
 static void start_request(CurlContext *c)
 {
     if (!c->probed || c->seekable) {
-        uint64_t start = c->request_start;
+        int64_t start = c->request_start;
         char range[48];
         int64_t request_size = c->request_size;
         if (c->is_initial && c->initial_request_size > 0)
             request_size = c->initial_request_size;
         if (request_size > 0 || c->end_off > 0) {
-            uint64_t end = UINT64_MAX;
+            int64_t end = INT64_MAX;
             if (request_size > 0)
                 end = start + request_size - 1;
             if (c->content_size > 0)
-                end = FFMIN(end, (uint64_t)c->content_size - 1);
+                end = FFMIN(end, c->content_size - 1);
             if (c->end_off > 0)
-                end = FFMIN(end, (uint64_t)c->end_off - 1);
-            snprintf(range, sizeof(range), "%"PRIu64"-%"PRIu64, start, end);
+                end = FFMIN(end, c->end_off - 1);
+            snprintf(range, sizeof(range), "%"PRId64"-%"PRId64, start, end);
         } else {
-            snprintf(range, sizeof(range), "%"PRIu64"-", start);
+            snprintf(range, sizeof(range), "%"PRId64"-", start);
         }
         curl_easy_setopt(c->easy, CURLOPT_RANGE, range);
     } else {
@@ -427,7 +427,7 @@ static void update_statistics(CurlContext *c)
 /* Transfer finished (or failed) */
 static void on_done(CurlContext *c, CURLcode code)
 {
-    uint64_t received;
+    int64_t received;
     int aborted;
 
     pthread_mutex_lock(&c->mutex);
@@ -473,7 +473,7 @@ static void on_done(CurlContext *c, CURLcode code)
         c->retry_count < c->max_retries) {
         c->retry_count++;
         c->loop->num_retries++;
-        av_log(c->h, AV_LOG_WARNING, "%s, retrying (#%d) from %"PRIu64"\n",
+        av_log(c->h, AV_LOG_WARNING, "%s, retrying (#%d) from %"PRId64"\n",
                curl_easy_strerror(code), c->retry_count, c->request_start);
         start_request(c);
         return;
