@@ -1078,11 +1078,15 @@ static int64_t libcurl_seek(URLContext *h, int64_t pos, int whence)
         newpos = pos;
         break;
     case SEEK_CUR:
+        if (pos > INT64_MAX - c->logical_pos)
+            return AVERROR(ERANGE);
         newpos = c->logical_pos + pos;
         break;
     case SEEK_END:
         if (content_size < 0)
             return AVERROR(ENOSYS);
+        if (pos > INT64_MAX - content_size)
+            return AVERROR(ERANGE);
         newpos = content_size + pos;
         break;
     default:
