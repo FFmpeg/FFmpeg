@@ -1145,7 +1145,7 @@ static const AVOption options[] = {
     { "ca_file", "certificate authority bundle file", OFFSET(ca_file), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, D | E },
     { "cert_file", "client certificate file", OFFSET(cert_file), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, D | E },
     { "key_file", "client private key file", OFFSET(key_file), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, D | E },
-    { "connect_timeout", "connection timeout in seconds (0 = libcurl default)", OFFSET(connect_timeout), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, D | E },
+    { "connect_timeout", "connection timeout in seconds (0 = libcurl default)", OFFSET(connect_timeout), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX / 1000, D | E },
     { "max_redirects", "maximum number of redirects to follow", OFFSET(max_redirects), AV_OPT_TYPE_INT, { .i64 = 16 }, 0, INT_MAX, D },
     { "multiple_requests", "reuse the connection across requests (HTTP keep-alive)", OFFSET(multiple_requests), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, D | E },
     { "max_retries", "maximum number of retries after a recoverable error", OFFSET(max_retries), AV_OPT_TYPE_INT, { .i64 = 5 }, 0, INT_MAX, D },
