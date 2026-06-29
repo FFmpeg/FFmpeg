@@ -628,8 +628,7 @@ int ff_nvdec_start_frame_sep_ref(AVCodecContext *avctx, AVFrame *frame, int has_
             cf->ref_idx_ref = av_refstruct_pool_get(ctx->decoder_pool);
             if (!cf->ref_idx_ref) {
                 av_log(avctx, AV_LOG_ERROR, "No decoder surfaces left\n");
-                ret = AVERROR(ENOMEM);
-                goto fail;
+                return AVERROR(ENOMEM);
             }
         }
         cf->ref_idx = *cf->ref_idx_ref;
@@ -639,9 +638,6 @@ int ff_nvdec_start_frame_sep_ref(AVCodecContext *avctx, AVFrame *frame, int has_
     }
 
     return 0;
-fail:
-    nvdec_fdd_priv_free(cf);
-    return ret;
 }
 
 int ff_nvdec_end_frame(AVCodecContext *avctx)
