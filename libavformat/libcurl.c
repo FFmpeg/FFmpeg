@@ -299,6 +299,19 @@ static size_t header_callback(char *ptr, size_t size, size_t nitems, void *userd
 
     pthread_mutex_lock(&c->mutex);
     if (status >= 200 && status < 300) {
+        int64_t content_start = status == 206 ? c->hdr_content_start : 0;
+        if (c->probed && c->seekable && content_start != c->request_start) {
+            av_log(c->h, AV_LOG_ERROR, "Server sent back unexpected reply "
+                   "with offset %"PRId64" (expected %"PRId64")\n",
+                   content_start, c->request_start);
+            c->stream_ok = 0;
+            if (!c->error)
+                c->error = AVERROR(EIO);
+            pthread_cond_broadcast(&c->cond);
+            pthread_mutex_unlock(&c->mutex);
+            return len;
+        }
+
         c->stream_ok = 1;
         /* Capture the post-redirect URL, this is exposed as "location" AVOption
          * for compatibility with http.c. */
