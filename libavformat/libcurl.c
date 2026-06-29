@@ -332,7 +332,7 @@ static size_t header_callback(char *ptr, size_t size, size_t nitems, void *userd
             if (c->hdr_content_end >= 0)
                 c->request_end = c->hdr_content_end;
             else
-                c->request_end = c->content_size - 1;
+                c->request_end = c->content_size > 0 ? c->content_size - 1 : -1;
         }
     } else {
         c->stream_ok = 0;
@@ -453,7 +453,7 @@ static void on_done(CurlContext *c, CURLcode code)
 
     if (code == CURLE_OK && !aborted && c->stream_ok) {
         c->retry_count = 0;
-        int64_t file_end = c->content_size - 1;
+        int64_t file_end = c->content_size > 0 ? c->content_size - 1 : -1;
         if (c->end_off > 0)
             file_end = FFMIN(file_end, c->end_off - 1);
         if (c->seekable && c->request_end >= 0 && c->request_end < file_end) {
