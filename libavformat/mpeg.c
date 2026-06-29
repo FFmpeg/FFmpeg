@@ -841,6 +841,20 @@ static int vobsub_read_header(AVFormatContext *s)
             }
 
             if (!st || st->id != stream_id) {
+                st = NULL;
+                for (i = 0; i < s->nb_streams; i++) {
+                    if (s->streams[i]->id == stream_id) {
+                        st = s->streams[i];
+                        break;
+                    }
+                }
+            }
+            if (!st) {
+                if (s->nb_streams >= FF_ARRAY_ELEMS(vobsub->q)) {
+                    av_log(s, AV_LOG_ERROR, "Maximum number of subtitle streams reached\n");
+                    ret = AVERROR_INVALIDDATA;
+                    goto end;
+                }
                 st = avformat_new_stream(s, NULL);
                 if (!st) {
                     ret = AVERROR(ENOMEM);
@@ -865,14 +879,14 @@ static int vobsub_read_header(AVFormatContext *s)
             timestamp = (hh*3600LL + mm*60LL + ss) * 1000LL + ms + delay;
             timestamp = av_rescale_q(timestamp, av_make_q(1, 1000), st->time_base);
 
-            sub = ff_subtitles_queue_insert(&vobsub->q[s->nb_streams - 1], "", 0, 0);
+            sub = ff_subtitles_queue_insert(&vobsub->q[st->index], "", 0, 0);
             if (!sub) {
                 ret = AVERROR(ENOMEM);
                 goto end;
             }
             sub->pos = pos;
             sub->pts = timestamp;
-            sub->stream_index = s->nb_streams - 1;
+            sub->stream_index = st->index;
 
         } else if (!strncmp(line, "alt:", 4)) {
             const char *p = line + 4;
