@@ -369,7 +369,7 @@ static void start_request(CurlContext *c)
             request_size = c->initial_request_size;
         if (request_size > 0 || c->end_off > 0) {
             int64_t end = INT64_MAX;
-            if (request_size > 0)
+            if (request_size > 0 && start <= INT64_MAX - request_size)
                 end = start + request_size - 1;
             if (c->content_size > 0)
                 end = FFMIN(end, c->content_size - 1);
