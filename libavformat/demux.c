@@ -2587,13 +2587,12 @@ static int parameters_from_context(AVFormatContext *ic, AVCodecParameters *par,
      */
     if (par_tmp->color_range != AVCOL_RANGE_UNSPECIFIED)
         par->color_range = par_tmp->color_range;
-    if (par_tmp->color_primaries != AVCOL_PRI_UNSPECIFIED ||
-        par_tmp->color_trc != AVCOL_TRC_UNSPECIFIED ||
-        par_tmp->color_space != AVCOL_SPC_UNSPECIFIED) {
+    if (par_tmp->color_primaries != AVCOL_PRI_UNSPECIFIED)
         par->color_primaries = par_tmp->color_primaries;
+    if (par_tmp->color_trc != AVCOL_TRC_UNSPECIFIED)
         par->color_trc = par_tmp->color_trc;
+    if (par_tmp->color_space != AVCOL_SPC_UNSPECIFIED)
         par->color_space = par_tmp->color_space;
-    }
     if (par_tmp->chroma_location != AVCHROMA_LOC_UNSPECIFIED)
         par->chroma_location = par_tmp->chroma_location;
 
