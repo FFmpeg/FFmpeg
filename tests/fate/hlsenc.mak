@@ -1,4 +1,3 @@
-tests/data/live_no_endlist.m3u8: TAG = GEN
 tests/data/live_no_endlist.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
         -f lavfi -v verbose -i "aevalsrc=cos(2*PI*t)*sin(2*PI*(440+4*t)*t):d=20" -f hls -hls_time 3 -map 0 \
@@ -12,7 +11,6 @@ fate-hls-live-no-endlist: CMD = md5 -i $(SRC) -af hdcd=process_stereo=false -t 6
 fate-hls-live-no-endlist: CMP = oneline
 fate-hls-live-no-endlist: REF = e038bb8e65d4c1745b9b3ed643e607a3
 
-tests/data/event_no_endlist.m3u8: TAG = GEN
 tests/data/event_no_endlist.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
         -f lavfi -v verbose -i "aevalsrc=cos(2*PI*t)*sin(2*PI*(440+4*t)*t):d=20" -f hls -hls_time 3 -map 0 \
@@ -27,7 +25,6 @@ fate-hls-event-no-endlist: CMD = md5 -ss 3 -i $(SRC) -af hdcd=process_stereo=fal
 fate-hls-event-no-endlist: CMP = oneline
 fate-hls-event-no-endlist: REF = d9cd56b6aaebf67a52a63dd44ec5b085
 
-tests/data/live_last_endlist.m3u8: TAG = GEN
 tests/data/live_last_endlist.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
         -f lavfi -v verbose -i "aevalsrc=cos(2*PI*t)*sin(2*PI*(440+4*t)*t):d=20" -f hls -hls_time 3 -map 0 \
@@ -42,7 +39,6 @@ fate-hls-live-last-endlist: CMP = oneline
 fate-hls-live-last-endlist: REF = 2ca8567092dcf01e37bedd50454d1ab7
 
 
-tests/data/live_endlist.m3u8: TAG = GEN
 tests/data/live_endlist.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
         -f lavfi -i "aevalsrc=cos(2*PI*t)*sin(2*PI*(440+4*t)*t):d=20" -f hls -hls_time 3 -map 0 \
@@ -56,7 +52,6 @@ fate-hls-live-endlist: CMD = md5 -i $(SRC) -af hdcd=process_stereo=false -t 20 -
 fate-hls-live-endlist: CMP = oneline
 fate-hls-live-endlist: REF = e189ce781d9c87882f58e3929455167b
 
-tests/data/hls_segment_size.m3u8: TAG = GEN
 tests/data/hls_segment_size.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
 	-f lavfi -i "aevalsrc=cos(2*PI*t)*sin(2*PI*(440+4*t)*t):d=20" -f hls -hls_segment_size 300000 -map 0 \
@@ -67,7 +62,6 @@ FATE_HLSENC-$(call FILTERDEMDECENCMUX, AEVALSRC ARESAMPLE, HLS MPEGTS, MP2 PCM_F
 fate-hls-segment-size: tests/data/hls_segment_size.m3u8
 fate-hls-segment-size: CMD = framecrc -auto_conversion_filters -flags +bitexact -i $(TARGET_PATH)/tests/data/hls_segment_size.m3u8 -vf setpts=N*23
 
-tests/data/hls_segment_single.m3u8: TAG = GEN
 tests/data/hls_segment_single.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
 	-f lavfi -i "aevalsrc=cos(2*PI*t)*sin(2*PI*(440+4*t)*t):d=20" -f hls -hls_flags single_file -map 0 \
@@ -78,7 +72,6 @@ FATE_HLSENC-$(call FILTERDEMDECENCMUX, AEVALSRC ARESAMPLE, HLS MPEGTS, MP2 PCM_F
 fate-hls-segment-single: tests/data/hls_segment_single.m3u8
 fate-hls-segment-single: CMD = framecrc -auto_conversion_filters -flags +bitexact -i $(TARGET_PATH)/tests/data/hls_segment_single.m3u8 -vf setpts=N*23
 
-tests/data/hls_init_time.m3u8: TAG = GEN
 tests/data/hls_init_time.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
 	-f lavfi -i "aevalsrc=cos(2*PI*t)*sin(2*PI*(440+4*t)*t):d=11" -f hls -hls_init_time 1 -hls_time 3 -map 0 \
@@ -89,7 +82,6 @@ FATE_HLSENC-$(call FILTERDEMDECENCMUX, AEVALSRC ARESAMPLE, HLS MPEGTS, MP2 PCM_F
 fate-hls-init-time: tests/data/hls_init_time.m3u8
 fate-hls-init-time: CMD = framecrc -auto_conversion_filters -flags +bitexact -i $(TARGET_PATH)/tests/data/hls_init_time.m3u8 -vf setpts=N*23
 
-tests/data/hls_list_size.m3u8: TAG = GEN
 tests/data/hls_list_size.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
 	-f lavfi -i "aevalsrc=cos(2*PI*t)*sin(2*PI*(440+4*t)*t):d=20" -f hls -hls_time 4 -map 0 \
@@ -100,7 +92,6 @@ FATE_HLSENC-$(call FILTERDEMDECENCMUX, AEVALSRC ARESAMPLE, HLS MPEGTS, MP2 PCM_F
 fate-hls-list-size: tests/data/hls_list_size.m3u8
 fate-hls-list-size: CMD = framecrc -auto_conversion_filters -flags +bitexact -i $(TARGET_PATH)/tests/data/hls_list_size.m3u8 -vf setpts=N*23
 
-tests/data/hls_fmp4.m3u8: TAG = GEN
 tests/data/hls_fmp4.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
 	-f lavfi -re -i "aevalsrc=cos(2*PI*t)*sin(2*PI*(440+4*t)*t):d=5" -map 0 -codec:a mp2fixed \
@@ -112,7 +103,6 @@ FATE_HLSENC-$(call FILTERDEMDECENCMUX, AEVALSRC ARESAMPLE, HLS MPEGTS, MP2 PCM_F
 fate-hls-fmp4: tests/data/hls_fmp4.m3u8
 fate-hls-fmp4: CMD = framecrc -auto_conversion_filters -flags +bitexact -i $(TARGET_PATH)/tests/data/hls_fmp4.m3u8 -vf setpts=N*23
 
-tests/data/hls_fmp4_ac3.m3u8: TAG = GEN
 tests/data/hls_fmp4_ac3.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
 	-stream_loop 4 -i $(TARGET_SAMPLES)/ac3/monsters_inc_5.1_448_small.ac3 -c copy -map 0 \
@@ -127,7 +117,6 @@ fate-hls-fmp4_ac3: tests/data/hls_fmp4_ac3.m3u8
 fate-hls-fmp4_ac3: CMD = probeaudiostream $(TARGET_PATH)/tests/data/now_ac3.mp4
 
 
-tests/data/hls_cmfa.m3u8: TAG = GEN
 tests/data/hls_cmfa.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
 	-i $(TARGET_SAMPLES)/aac/al06_44.mp4 -c copy -map 0 \
@@ -146,7 +135,6 @@ FATE_SAMPLES_FFMPEG_FFPROBE += $(FATE_HLSENC_PROBE-yes)
 
 # -- Tests below do not require FATE samples (lavfi-generated input only) --
 
-tests/data/hls_playlist_type_vod.m3u8: TAG = GEN
 tests/data/hls_playlist_type_vod.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
 	-f lavfi -i "testsrc2=size=128x72:rate=1:d=3" -f hls -hls_time 1 -map 0:v \
@@ -159,7 +147,6 @@ fate-hls-playlist-type-vod: tests/data/hls_playlist_type_vod.m3u8
 fate-hls-playlist-type-vod: CMD = sed -n -e /^\#EXT-X-PLAYLIST-TYPE:/p -e /^\#EXT-X-ENDLIST/p $(TARGET_PATH)/tests/data/hls_playlist_type_vod.m3u8
 fate-hls-playlist-type-vod: CMP = diff
 
-tests/data/hls_playlist_type_event.m3u8: TAG = GEN
 tests/data/hls_playlist_type_event.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
 	-f lavfi -i "testsrc2=size=128x72:rate=1:d=3" -f hls -hls_time 1 -map 0:v \
@@ -172,7 +159,6 @@ fate-hls-playlist-type-event: tests/data/hls_playlist_type_event.m3u8
 fate-hls-playlist-type-event: CMD = sed -n -e /^\#EXT-X-PLAYLIST-TYPE:/p -e /^\#EXT-X-ENDLIST/p $(TARGET_PATH)/tests/data/hls_playlist_type_event.m3u8
 fate-hls-playlist-type-event: CMP = diff
 
-tests/data/hls_round_durations.m3u8: TAG = GEN
 tests/data/hls_round_durations.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
 	-f lavfi -i "testsrc2=size=128x72:rate=1:d=3" -f hls -hls_time 1 -map 0:v \
@@ -185,7 +171,6 @@ fate-hls-round-durations: tests/data/hls_round_durations.m3u8
 fate-hls-round-durations: CMD = sed -n -e /^\#EXTINF:/p $(TARGET_PATH)/tests/data/hls_round_durations.m3u8
 fate-hls-round-durations: CMP = diff
 
-tests/data/hls_discont_start.m3u8: TAG = GEN
 tests/data/hls_discont_start.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
 	-f lavfi -i "testsrc2=size=128x72:rate=1:d=3" -f hls -hls_time 1 -map 0:v \
@@ -198,7 +183,6 @@ fate-hls-discont-start: tests/data/hls_discont_start.m3u8
 fate-hls-discont-start: CMD = sed -n -e /^\#EXT-X-DISCONTINUITY/p -e /^\#EXTINF:/p -e /^[^\#]/p $(TARGET_PATH)/tests/data/hls_discont_start.m3u8
 fate-hls-discont-start: CMP = diff
 
-tests/data/hls_independent_segments.m3u8: TAG = GEN
 tests/data/hls_independent_segments.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
 	-f lavfi -i "testsrc2=size=128x72:rate=1:d=3" -f hls -hls_time 1 -map 0:v \
@@ -211,7 +195,6 @@ fate-hls-independent-segments: tests/data/hls_independent_segments.m3u8
 fate-hls-independent-segments: CMD = sed -n -e /^\#EXT-X-INDEPENDENT-SEGMENTS/p $(TARGET_PATH)/tests/data/hls_independent_segments.m3u8
 fate-hls-independent-segments: CMP = diff
 
-tests/data/hls_start_number.m3u8: TAG = GEN
 tests/data/hls_start_number.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
 	-f lavfi -i "testsrc2=size=128x72:rate=1:d=3" -f hls -hls_time 1 -map 0:v \
@@ -224,7 +207,6 @@ fate-hls-start-number: tests/data/hls_start_number.m3u8
 fate-hls-start-number: CMD = sed -n -e /^\#EXT-X-MEDIA-SEQUENCE:/p -e /^[^\#]/p $(TARGET_PATH)/tests/data/hls_start_number.m3u8
 fate-hls-start-number: CMP = diff
 
-tests/data/hls_iframes_single_mpegts.m3u8: TAG = GEN
 tests/data/hls_iframes_single_mpegts.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
 	-f lavfi -i "testsrc2=size=128x72:rate=1:d=3" -f hls -hls_time 1 -map 0:v \
@@ -238,7 +220,6 @@ fate-hls-iframes-single-mpegts: tests/data/hls_iframes_single_mpegts.m3u8
 fate-hls-iframes-single-mpegts: CMD = sed -n -e /^\#EXT-X-BYTERANGE:/p $(TARGET_PATH)/tests/data/hls_iframes_single_mpegts.m3u8
 fate-hls-iframes-single-mpegts: CMP = diff
 
-tests/data/hls_iframes_single_fmp4.m3u8: TAG = GEN
 tests/data/hls_iframes_single_fmp4.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
 	-f lavfi -i "testsrc2=size=128x72:rate=1:d=3" -f hls -hls_time 1 -map 0:v \

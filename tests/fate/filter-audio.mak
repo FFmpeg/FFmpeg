@@ -214,7 +214,6 @@ fate-filter-compand: tests/data/filtergraphs/compand
 fate-filter-compand: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
 fate-filter-compand: CMD = framecrc -auto_conversion_filters -i $(SRC) -frames:a 20 -/filter_complex $(TARGET_PATH)/tests/data/filtergraphs/compand
 
-tests/data/hls-list.m3u8: TAG = GEN
 tests/data/hls-list.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
         -f lavfi -i "aevalsrc=cos(2*PI*t)*sin(2*PI*(440+4*t)*t):d=20" -f segment -segment_time 10 -map 0 -flags +bitexact -codec:a mp2fixed \
@@ -224,7 +223,6 @@ FATE_AFILTER-$(call FILTERDEMDECENCMUX, ARESAMPLE AEVALSRC, HLS MPEGTS, MP2 PCM_
 fate-filter-hls: tests/data/hls-list.m3u8
 fate-filter-hls: CMD = framecrc -flags +bitexact -i $(TARGET_PATH)/tests/data/hls-list.m3u8 -af aresample
 
-tests/data/hls-list-append.m3u8: TAG = GEN
 tests/data/hls-list-append.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
         -f lavfi -i "aevalsrc=cos(2*PI*t)*sin(2*PI*(440+4*t)*t):d=20" -f segment -segment_time 10 -map 0 -flags +bitexact -codec:a mp2fixed \
