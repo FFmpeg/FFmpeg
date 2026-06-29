@@ -933,8 +933,10 @@ int ff_rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
         return -1;
     rv = rtp_parse_one_packet(s, pkt, bufptr, len);
     s->prev_ret = rv;
-    while (rv < 0 && has_next_packet(s))
+    while (rv < 0 && has_next_packet(s)) {
         rv = rtp_parse_queued_packet(s, pkt);
+        s->prev_ret = rv;
+    }
     return rv ? rv : has_next_packet(s);
 }
 

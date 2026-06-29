@@ -52,6 +52,10 @@ FATE_LIBAVFORMAT-$(CONFIG_FFRTMPCRYPT_PROTOCOL) += fate-rtmpdh
 fate-rtmpdh: libavformat/tests/rtmpdh$(EXESUF)
 fate-rtmpdh: CMD = run libavformat/tests/rtmpdh$(EXESUF)
 
+FATE_LIBAVFORMAT-$(CONFIG_RTPDEC) += fate-rtpdec
+fate-rtpdec: libavformat/tests/rtpdec$(EXESUF)
+fate-rtpdec: CMD = run libavformat/tests/rtpdec$(EXESUF)
+
 FATE_LIBAVFORMAT-$(CONFIG_SRTP) += fate-srtp
 fate-srtp: libavformat/tests/srtp$(EXESUF)
 fate-srtp: CMD = run libavformat/tests/srtp$(EXESUF)

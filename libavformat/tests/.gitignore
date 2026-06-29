@@ -6,6 +6,7 @@
 /noproxy
 /rename
 /rtmpdh
+/rtpdec
 /seek
 /srtp
 /url
