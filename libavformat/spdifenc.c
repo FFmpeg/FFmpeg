@@ -225,7 +225,7 @@ static int spdif_header_dts4(AVFormatContext *s, AVPacket *pkt, int core_size,
              * (dtshd_fallback == 0) */
             ctx->dtshd_skip = 1;
     }
-    if (ctx->dtshd_skip && core_size) {
+    if (ctx->dtshd_skip && core_size && core_size <= pkt->size) {
         pkt_size = core_size;
         if (ctx->dtshd_fallback >= 0)
             --ctx->dtshd_skip;
