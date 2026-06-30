@@ -525,6 +525,12 @@ static int open_virtual_track(AVFormatContext *s,
     track->index = track_index;
     track->duration = av_make_q(0, 1);
 
+    if (!virtual_track->resource_count) {
+        av_log(s, AV_LOG_ERROR, "Virtual track has no resources\n");
+        ret = AVERROR_INVALIDDATA;
+        goto clean_up;
+    }
+
     for (uint32_t i = 0; i < virtual_track->resource_count; i++) {
         av_log(s,
                AV_LOG_DEBUG,
