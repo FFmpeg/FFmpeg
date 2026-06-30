@@ -25,6 +25,7 @@
  * Ported from MPlayer libmpcodecs/vf_boxblur.c.
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
@@ -65,6 +66,7 @@ static int query_formats(const AVFilterContext *ctx,
     for (fmt = 0; av_pix_fmt_desc_get(fmt); fmt++) {
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
         if (!(desc->flags & (AV_PIX_FMT_FLAG_HWACCEL | AV_PIX_FMT_FLAG_BITSTREAM | AV_PIX_FMT_FLAG_PAL)) &&
+            desc->comp[0].depth <= 16 &&
             (desc->flags & AV_PIX_FMT_FLAG_PLANAR || desc->nb_components == 1) &&
             (!(desc->flags & AV_PIX_FMT_FLAG_BE) == !HAVE_BIGENDIAN || desc->comp[0].depth == 8) &&
             (ret = ff_add_format(&formats, fmt)) < 0)
@@ -163,7 +165,10 @@ static inline void blur(uint8_t *dst, int dst_step, const uint8_t *src, int src_
                         int len, int radius, int pixsize)
 {
     if (pixsize == 1) blur8 (dst, dst_step   , src, src_step   , len, radius);
-    else              blur16((uint16_t*)dst, dst_step>>1, (const uint16_t*)src, src_step>>1, len, radius);
+    else if (pixsize == 2)
+                      blur16((uint16_t*)dst, dst_step>>1, (const uint16_t*)src, src_step>>1, len, radius);
+    else
+        av_assert0(0);
 }
 
 static inline void blur_power(uint8_t *dst, int dst_step, const uint8_t *src, int src_step,
