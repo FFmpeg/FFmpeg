@@ -9270,10 +9270,11 @@ fail:
     return ret;
 }
 
-static int mov_read_iref_cdsc(MOVContext *c, AVIOContext *pb, uint32_t type, int version)
+static int mov_read_iref_cdsc(MOVContext *c, AVIOContext *pb, uint32_t type, int version, uint32_t size)
 {
     HEIFItem *from_item = NULL;
     int entries;
+    int item_id_size = version ? 4 : 2;
     int from_item_id = version ? avio_rb32(pb) : avio_rb16(pb);
     const HEIFItemRef ref = { type, from_item_id };
 
@@ -9284,6 +9285,11 @@ static int mov_read_iref_cdsc(MOVContext *c, AVIOContext *pb, uint32_t type, int
     }
 
     entries = avio_rb16(pb);
+    if ((int64_t)entries * item_id_size > (int64_t)size - item_id_size - 2) {
+        av_log(c->fc, AV_LOG_ERROR, "iref %s entry count %d exceeds the sub-box size\n",
+               av_fourcc2str(type), entries);
+        return AVERROR_INVALIDDATA;
+    }
     /* 'to' item ids */
     for (int i = 0; i < entries; i++) {
         HEIFItem *item = get_heif_item(c, version ? avio_rb32(pb) : avio_rb16(pb));
@@ -9322,13 +9328,13 @@ static int mov_read_iref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     }
 
     while (atom.size) {
-        uint32_t type, size = avio_rb32(pb);
         int64_t next = avio_tell(pb);
+        uint32_t type, size = avio_rb32(pb);
 
-        if (size < 14 || next < 0 || next > INT64_MAX - size)
+        if (size < 14 || size > atom.size || next > INT64_MAX - size)
             return AVERROR_INVALIDDATA;
 
-        next += size - 4;
+        next += size;
         type = avio_rl32(pb);
         switch (type) {
         case MKTAG('d','i','m','g'):
@@ -9338,7 +9344,7 @@ static int mov_read_iref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             break;
         case MKTAG('c','d','s','c'):
         case MKTAG('t','h','m','b'):
-            ret = mov_read_iref_cdsc(c, pb, type, version);
+            ret = mov_read_iref_cdsc(c, pb, type, version, size - 8);
             if (ret < 0)
                 return ret;
             break;
