@@ -551,6 +551,47 @@ bool ff_infer_colors(SwsColor *src, SwsColor *dst)
     return incomplete;
 }
 
+void ff_sws_chroma_pos(const SwsFormat *fmt, bool *incomplete,
+                       int *out_x_pos, int *out_y_pos)
+{
+    enum AVChromaLocation chroma_loc = fmt->loc;
+    const int sub_x = fmt->desc->log2_chroma_w;
+    const int sub_y = fmt->desc->log2_chroma_h;
+    int x_pos, y_pos;
+
+    /* Explicitly default to center siting for compatibility with swscale */
+    if (chroma_loc == AVCHROMA_LOC_UNSPECIFIED) {
+        chroma_loc = AVCHROMA_LOC_CENTER;
+        *incomplete |= sub_x || sub_y;
+    }
+
+    /* av_chroma_location_enum_to_pos() always gives us values in the range from
+     * 0 to 256, but we need to adjust this to the true value range of the
+     * subsampling grid, which may be larger for h/v_sub > 1 */
+    av_chroma_location_enum_to_pos(&x_pos, &y_pos, chroma_loc);
+    x_pos *= (1 << sub_x) - 1;
+    y_pos *= (1 << sub_y) - 1;
+
+    /* Fix vertical chroma position for interlaced frames */
+    if (sub_y && fmt->interlaced) {
+        /* When vertically subsampling, chroma samples are effectively only
+         * placed next to even rows. To access them from the odd field, we need
+         * to account for this shift by offsetting the distance of one luma row.
+         *
+         * For 4x vertical subsampling (v_sub == 2), they are only placed
+         * next to every *other* even row, so we need to shift by three luma
+         * rows to get to the chroma sample. */
+        if (fmt->field == FIELD_BOTTOM)
+            y_pos += (256 << sub_y) - 256;
+
+        /* Luma row distance is doubled for fields, so halve offsets */
+        y_pos >>= 1;
+    }
+
+    *out_x_pos = x_pos;
+    *out_y_pos = y_pos;
+}
+
 /* Variant of sws_test_format() for the ops-based code */
 static int test_format_ops(enum AVPixelFormat format, int output);
 static int test_format_legacy(enum AVPixelFormat format, int output)
@@ -1432,47 +1473,6 @@ linear_mat3(const AVRational m00, const AVRational m01, const AVRational m02,
 
     c.mask = ff_sws_linear_mask(&c);
     return c;
-}
-
-void ff_sws_chroma_pos(const SwsFormat *fmt, bool *incomplete,
-                       int *out_x_pos, int *out_y_pos)
-{
-    enum AVChromaLocation chroma_loc = fmt->loc;
-    const int sub_x = fmt->desc->log2_chroma_w;
-    const int sub_y = fmt->desc->log2_chroma_h;
-    int x_pos, y_pos;
-
-    /* Explicitly default to center siting for compatibility with swscale */
-    if (chroma_loc == AVCHROMA_LOC_UNSPECIFIED) {
-        chroma_loc = AVCHROMA_LOC_CENTER;
-        *incomplete |= sub_x || sub_y;
-    }
-
-    /* av_chroma_location_enum_to_pos() always gives us values in the range from
-     * 0 to 256, but we need to adjust this to the true value range of the
-     * subsampling grid, which may be larger for h/v_sub > 1 */
-    av_chroma_location_enum_to_pos(&x_pos, &y_pos, chroma_loc);
-    x_pos *= (1 << sub_x) - 1;
-    y_pos *= (1 << sub_y) - 1;
-
-    /* Fix vertical chroma position for interlaced frames */
-    if (sub_y && fmt->interlaced) {
-        /* When vertically subsampling, chroma samples are effectively only
-         * placed next to even rows. To access them from the odd field, we need
-         * to account for this shift by offsetting the distance of one luma row.
-         *
-         * For 4x vertical subsampling (v_sub == 2), they are only placed
-         * next to every *other* even row, so we need to shift by three luma
-         * rows to get to the chroma sample. */
-        if (fmt->field == FIELD_BOTTOM)
-            y_pos += (256 << sub_y) - 256;
-
-        /* Luma row distance is doubled for fields, so halve offsets */
-        y_pos >>= 1;
-    }
-
-    *out_x_pos = x_pos;
-    *out_y_pos = y_pos;
 }
 
 int ff_sws_decode_colors(SwsContext *ctx, SwsPixelType type,
