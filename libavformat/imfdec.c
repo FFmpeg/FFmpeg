@@ -255,7 +255,20 @@ static int parse_imf_asset_map_from_xml_dom(AVFormatContext *s,
             return AVERROR_INVALIDDATA;
         }
 
-        uri = xmlNodeGetContent(ff_imf_xml_get_child_element_by_name(node, "Path"));
+        xmlNodePtr path_node = ff_imf_xml_get_child_element_by_name(node, "Path");
+        if (!path_node) {
+            av_log(s, AV_LOG_ERROR, "Unable to parse asset map XML - missing Path element in Chunk\n");
+            ret = AVERROR_INVALIDDATA;
+            break;
+        }
+        uri = xmlNodeGetContent(path_node);
+        if (!uri || !uri[0]) {
+            av_log(s, AV_LOG_ERROR, "Unable to parse asset map XML - empty Path element in Chunk\n");
+            xmlFree(uri);
+            ret = AVERROR_INVALIDDATA;
+            break;
+        }
+
         if (!imf_uri_is_url(uri) && !imf_uri_is_unix_abs_path(uri) && !imf_uri_is_dos_abs_path(uri))
             asset->absolute_uri = av_append_path_component(base_url, uri);
         else
