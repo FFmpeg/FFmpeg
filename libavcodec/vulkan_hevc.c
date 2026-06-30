@@ -875,6 +875,9 @@ static int vk_hevc_end_frame(AVCodecContext *avctx)
                 vksps_p.vcl_hdr, &vksps_p.ptl, &vksps_p.dpbm,
                 &vksps_p.pal, vksps_p.str, &vksps_p.ltr);
 
+        if (sps->vps->vps_num_hrd_parameters > HEVC_MAX_SUB_LAYERS)
+            return AVERROR_INVALIDDATA;
+
         vkvps_p.sls = vkvps_ps;
         set_vps(sps->vps, &vkvps, &vkvps_p.ptl, &vkvps_p.dpbm,
                 vkvps_p.hdr, vkvps_p.sls);
