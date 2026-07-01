@@ -992,6 +992,8 @@ static int iff_read_packet(AVFormatContext *s,
         if (pb->eof_reached)
             return AVERROR_EOF;
 
+        if (!data_size || data_size > INT_MAX)
+            return AVERROR_INVALIDDATA;
         ret = av_get_packet(pb, pkt, data_size);
         if (ret < 0)
             return ret;
