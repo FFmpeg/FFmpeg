@@ -2108,7 +2108,7 @@ static int decode_cblk(const Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *cod
             val &= INT32_MAX;
             /* ROI shift, if necessary */
             if (roi_shift && (((uint32_t)val & ~mask) == 0))
-                val <<= roi_shift;
+                val = (uint32_t)val << roi_shift;
             t1->data[n] = val | sign; /* NOTE: Binary point for reconstruction value is located in 31 - M_b */
         }
     }
