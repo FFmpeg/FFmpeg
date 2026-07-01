@@ -7740,7 +7740,23 @@ The filter has following options:
 The file path of the downloaded whisper.cpp model (mandatory).
 
 @item language
-The language to use for transcription ('auto' for auto-detect).
+The language to use for transcription. Besides a language code, the following
+special values enable auto-detection:
+
+@table @samp
+@item eval
+Re-run language detection on every queued chunk. This costs an extra encoder
+pass per chunk and the detected language may change mid-file.
+
+@item lock
+Detect the language on the first chunk that produces transcribed text, then
+reuse it for the remaining chunks.
+
+@item auto
+Currently an alias for @samp{eval}. This may change in a future version, so use
+@samp{eval} or @samp{lock} if the behavior matters.
+@end table
+
 Default value: @code{"auto"}
 
 @item translate
