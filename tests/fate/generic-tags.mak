@@ -23,9 +23,9 @@ FATE_GENERIC_TAGS-$(call REMUX, MP3, WAV_MUXER WAV_DEMUXER PCM_S16LE_ENCODER PCM
 fate-generic-tags-remux-riff: tests/data/generic-tags.mp3
 fate-generic-tags-remux-riff: CMD = generic_tags mp3 $(TARGET_PATH)/tests/data/generic-tags.mp3 wav pcm_s16le "-t 0 -af aresample"
 
-FATE_GENERIC_TAGS-$(call REMUX, MP3, MOV_MUXER MOV_DEMUXER AC3_FIXED_ENCODER AC3_DECODER ARESAMPLE_FILTER) += fate-generic-tags-remux-mov
+FATE_GENERIC_TAGS-$(call REMUX, MP3, MOV_MUXER MOV_DEMUXER MPEGAUDIO_PARSER) += fate-generic-tags-remux-mov
 fate-generic-tags-remux-mov: tests/data/generic-tags.mp3
-fate-generic-tags-remux-mov: CMD = generic_tags mp3 $(TARGET_PATH)/tests/data/generic-tags.mp3 mp4 ac3_fixed "-af aresample"
+fate-generic-tags-remux-mov: CMD = generic_tags mp3 $(TARGET_PATH)/tests/data/generic-tags.mp3 mp4 copy
 
 FATE_SAMPLES_FFMPEG_FFPROBE += $(FATE_GENERIC_TAGS-yes)
 fate-generic-tags: $(FATE_GENERIC_TAGS-yes)
