@@ -2003,8 +2003,8 @@ static av_always_inline void yuv2rgb_write_full(SwsInternal *c,
     int isrgb8 = target == AV_PIX_FMT_BGR8 || target == AV_PIX_FMT_RGB8;
 
     Y -= c->yuv2rgb_y_offset;
-    Y *= c->yuv2rgb_y_coeff;
-    Y += 1 << 21;
+    Y *= (unsigned)c->yuv2rgb_y_coeff;
+    Y += 1U << 21;
     R = (unsigned)Y + V*(unsigned)c->yuv2rgb_v2r_coeff;
     G = (unsigned)Y + V*(unsigned)c->yuv2rgb_v2g_coeff + U*(unsigned)c->yuv2rgb_u2g_coeff;
     B = (unsigned)Y +                                    U*(unsigned)c->yuv2rgb_u2b_coeff;
