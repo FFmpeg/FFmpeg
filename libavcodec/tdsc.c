@@ -146,14 +146,23 @@ static void tdsc_paint_cursor(AVCodecContext *avctx, uint8_t *dst, int stride)
 {
     TDSCContext *ctx = avctx->priv_data;
     const uint8_t *cursor = ctx->cursor;
-    int x = ctx->cursor_x - ctx->cursor_hot_x;
-    int y = ctx->cursor_y - ctx->cursor_hot_y;
+    int x, y;
     int w = ctx->cursor_w;
     int h = ctx->cursor_h;
     int i, j;
 
     if (!ctx->cursor)
         return;
+
+    /* A cursor position outside the frame is invalid; skip drawing it.
+     * cursor_x/y come straight from the bitstream, so bound them before
+     * the (16 bit) hot spot shift to avoid overflowing the clip math. */
+    if ((unsigned)ctx->cursor_x >= ctx->width ||
+        (unsigned)ctx->cursor_y >= ctx->height)
+        return;
+
+    x = ctx->cursor_x - ctx->cursor_hot_x;
+    y = ctx->cursor_y - ctx->cursor_hot_y;
 
     if (x + w > ctx->width)
         w = ctx->width - x;
@@ -201,12 +210,6 @@ static int tdsc_load_cursor(AVCodecContext *avctx)
     ctx->cursor_stride = FFALIGN(ctx->cursor_w, 32) * 4;
     cursor_fmt = bytestream2_get_le32(&ctx->gbc);
 
-    if (ctx->cursor_x >= avctx->width || ctx->cursor_y >= avctx->height) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Invalid cursor position (%d.%d outside %dx%d).\n",
-               ctx->cursor_x, ctx->cursor_y, avctx->width, avctx->height);
-        return AVERROR_INVALIDDATA;
-    }
     if (ctx->cursor_w < 1 || ctx->cursor_w > 256 ||
         ctx->cursor_h < 1 || ctx->cursor_h > 256) {
         av_log(avctx, AV_LOG_ERROR,
