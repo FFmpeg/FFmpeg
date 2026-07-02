@@ -346,6 +346,8 @@ typedef struct VP8Context {
     uint8_t feature_present_prob[4];
     uint8_t feature_index_prob[4][3];
     uint8_t feature_value[4][4];
+
+    int webm_alpha_warned; ///< warn once about unsupported WebM alpha
 } VP8Context;
 
 int ff_vp8_decode_init(AVCodecContext *avctx);

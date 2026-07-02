@@ -27,6 +27,7 @@
 #include "config_components.h"
 
 #include "libavutil/attributes.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
 #include "libavutil/mem_internal.h"
 
@@ -2850,10 +2851,36 @@ static void vp8_filter_mb_row(AVCodecContext *avctx, void *tdata,
     filter_mb_row(avctx, tdata, jobnr, threadnr, 0);
 }
 
+static void vp8_warn_unsupported_webm_alpha(AVCodecContext *avctx,
+                                            const AVPacket *avpkt)
+{
+    VP8Context *s = avctx->priv_data;
+    const uint8_t *sd;
+    size_t sd_size;
+
+    sd = av_packet_get_side_data(avpkt, AV_PKT_DATA_MATROSKA_BLOCKADDITIONAL,
+                                 &sd_size);
+    if (!sd || sd_size < 8 || AV_RB64(sd) != 1)
+        return;
+
+    av_log_once(avctx, AV_LOG_WARNING, AV_LOG_DEBUG,
+                &s->webm_alpha_warned,
+                "Ignoring unsupported WebM alpha channel side data; use the "
+                "libvpx decoder to decode it.\n");
+}
+
 int ff_vp8_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                         int *got_frame, AVPacket *avpkt)
 {
     return vp78_decode_frame(avctx, frame, got_frame, avpkt, IS_VP8);
+}
+
+static int vp8_decode_frame(AVCodecContext *avctx, AVFrame *frame,
+                            int *got_frame, AVPacket *avpkt)
+{
+    vp8_warn_unsupported_webm_alpha(avctx, avpkt);
+
+    return ff_vp8_decode_frame(avctx, frame, got_frame, avpkt);
 }
 
 av_cold int ff_vp8_decode_init(AVCodecContext *avctx)
@@ -2896,6 +2923,7 @@ static int vp8_decode_update_thread_context(AVCodecContext *dst,
     s->prob[0]      = s_src->prob[!s_src->update_probabilities];
     s->segmentation = s_src->segmentation;
     s->lf_delta     = s_src->lf_delta;
+    s->webm_alpha_warned = s_src->webm_alpha_warned;
     memcpy(s->sign_bias, s_src->sign_bias, sizeof(s->sign_bias));
 
     for (int i = 0; i < FF_ARRAY_ELEMS(s_src->frames); i++)
@@ -2967,7 +2995,7 @@ const FFCodec ff_vp8_decoder = {
     .priv_data_size        = sizeof(VP8Context),
     .init                  = ff_vp8_decode_init,
     .close                 = ff_vp8_decode_free,
-    FF_CODEC_DECODE_CB(ff_vp8_decode_frame),
+    FF_CODEC_DECODE_CB(vp8_decode_frame),
     .p.capabilities        = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS |
                              AV_CODEC_CAP_SLICE_THREADS,
     .caps_internal         = FF_CODEC_CAP_USES_PROGRESSFRAMES,
