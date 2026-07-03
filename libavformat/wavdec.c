@@ -906,7 +906,7 @@ static int w64_read_header(AVFormatContext *s)
         if (avio_read(pb, guid, 16) != 16)
             break;
         size = avio_rl64(pb);
-        if (size <= 24 || INT64_MAX - size < avio_tell(pb)) {
+        if (size <= 24 || INT64_MAX - size - 7 < avio_tell(pb)) {
             if (data_ofs)
                 break;
             return AVERROR_INVALIDDATA;
