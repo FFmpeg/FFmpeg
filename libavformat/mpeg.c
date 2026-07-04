@@ -488,6 +488,7 @@ static int mpegps_read_packet(AVFormatContext *s,
     FFStream *sti;
     int len, startcode, i, es_type, ret;
     int pcm_dvd = 0;
+    int pcm_dvda = 0;
     int request_probe= 0;
     enum AVCodecID codec_id = AV_CODEC_ID_NONE;
     enum AVMediaType type;
@@ -503,19 +504,33 @@ redo:
             goto skip;
 
         if (!m->raw_ac3) {
-            /* audio: skip header */
-            avio_skip(s->pb, 3);
-            len -= 3;
-            if (startcode >= 0xb0 && startcode <= 0xbf) {
-                /* MLP/TrueHD audio has a 4-byte header */
-                avio_r8(s->pb);
-                len--;
-            } else if (startcode >= 0xa0 && startcode <= 0xaf) {
-                ret = ffio_ensure_seekback(s->pb, 3);
+            if (startcode >= 0xa0 && startcode <= 0xaf) {
+                uint8_t header[6];
+
+                /* Classify the LPCM/MLP substream here; its header is
+                 * skipped at "found" below, once the stream codec is known. */
+                if (len < 6)
+                    goto skip;
+                ret = ffio_ensure_seekback(s->pb, 6);
                 if (ret < 0)
                     return ret;
-                pcm_dvd = (avio_rb24(s->pb) & 0xFF) == 0x80;
-                avio_skip(s->pb, -3);
+                if (avio_read(s->pb, header, 6) != 6)
+                    return AVERROR_INVALIDDATA;
+                avio_seek(s->pb, -6, SEEK_CUR);
+                /* DVD-Video LPCM has the dynamic range control byte here, while
+                 * DVD-Audio LPCM and MLP do not. Only substream 0xa0 carries
+                 * LPCM in DVD-Audio AOBs, MLP uses substream 0xa1. */
+                pcm_dvd = header[5] == 0x80;
+                pcm_dvda = startcode == 0xa0 && !pcm_dvd;
+            } else {
+                /* audio: skip header */
+                avio_skip(s->pb, 3);
+                len -= 3;
+                if (startcode >= 0xb0 && startcode <= 0xbf) {
+                    /* MLP/TrueHD audio has a 4-byte header */
+                    avio_r8(s->pb);
+                    len--;
+                }
             }
         }
     }
@@ -602,7 +617,9 @@ redo:
         codec_id = AV_CODEC_ID_DTS;
     } else if (startcode >= 0xa0 && startcode <= 0xaf) {
         type     = AVMEDIA_TYPE_AUDIO;
-        if (!pcm_dvd) {
+        if (pcm_dvda) {
+            codec_id = AV_CODEC_ID_PCM_DVDA;
+        } else if (!pcm_dvd) {
             codec_id = AV_CODEC_ID_MLP;
         } else {
             codec_id = AV_CODEC_ID_PCM_DVD;
@@ -648,13 +665,26 @@ skip:
 found:
     if (st->discard >= AVDISCARD_ALL)
         goto skip;
-    if (startcode >= 0xa0 && startcode <= 0xaf) {
-      if (st->codecpar->codec_id == AV_CODEC_ID_MLP) {
-            if (len < 6)
-                goto skip;
-            avio_skip(s->pb, 6);
-            len -=6;
-      }
+    if (startcode >= 0xa0 && startcode <= 0xaf && !m->raw_ac3) {
+        int header_len = 0;
+        /* Skip the substream headers of codecs whose decoders do not expect
+         * them. AV_CODEC_ID_PCM_DVDA parses the header from the packet. */
+        if (st->codecpar->codec_id == AV_CODEC_ID_MLP) {
+            /* 3-byte substream header + 6-byte MLP header */
+            header_len = 9;
+        } else if (st->codecpar->codec_id == AV_CODEC_ID_PCM_DVD) {
+            header_len = 3;
+        }
+        if (len <= header_len)
+            goto skip;
+        avio_skip(s->pb, header_len);
+        len -= header_len;
+    } else if (startcode >= 0xa0 && startcode <= 0xaf &&
+               st->codecpar->codec_id == AV_CODEC_ID_MLP) {
+        if (len < 6)
+            goto skip;
+        avio_skip(s->pb, 6);
+        len -= 6;
     }
     ret = av_get_packet(s->pb, pkt, len);
 
