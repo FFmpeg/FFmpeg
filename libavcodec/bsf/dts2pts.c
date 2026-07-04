@@ -45,6 +45,7 @@ typedef struct DTS2PTSNode {
     int64_t duration;
     int          poc;
     int          gop;
+    struct DTS2PTSNode *next; // valid only during same-gop re-keying
 } DTS2PTSNode;
 
 typedef struct DTS2PTSFrame {
@@ -414,9 +415,7 @@ static int hevc_init_nb_frame(AVBSFContext *ctx, int poc)
 
 typedef struct DTS2PTSCollect {
     int gop;
-    DTS2PTSNode **out;
-    int count;
-    int max;
+    DTS2PTSNode *head, *tail;
 } DTS2PTSCollect;
 
 static int collect_same_gop(void *opaque, void *elem)
@@ -424,9 +423,12 @@ static int collect_same_gop(void *opaque, void *elem)
     DTS2PTSCollect *c = opaque;
     DTS2PTSNode *node = elem;
     if (node->gop == c->gop) {
-        if (c->count < c->max)
-            c->out[c->count] = node;
-        c->count++;
+        if (c->tail)
+            c->tail->next = node;
+        else
+            c->head = node;
+        c->tail = node;
+        node->next = NULL;
     }
     return 0;
 }
@@ -453,22 +455,26 @@ static int hevc_queue_frame(AVBSFContext *ctx, AVPacket *pkt, int poc, bool *que
 
     if (poc < s->nb_frame && hevc->gop == s->gop) {
         int dec = s->nb_frame - poc;
-        DTS2PTSNode *nodes[HEVC_MAX_DPB_SIZE * 2];
-        DTS2PTSCollect c = { s->gop, nodes, 0, FF_ARRAY_ELEMS(nodes) };
+        DTS2PTSCollect c = { s->gop, NULL, NULL };
 
         s->nb_frame -= dec;
 
+        // Crafted streams can exceed any DPB-based estimate of the node count,
+        // so chain the matching nodes through their next pointers instead of
+        // collecting them into a fixed size array. The chain is in ascending
+        // poc order; processing it in this order keeps the new keys collision
+        // free as any potential collision partner is re-keyed first.
         av_tree_enumerate(s->root, &c, NULL, collect_same_gop);
-        av_assert0(c.count <= c.max);
-        for (int i = 0; i < c.count; i++) {
+        while (c.head) {
             struct AVTreeNode *tnode = NULL;
-            DTS2PTSNode *r;
-            av_tree_insert(&s->root, nodes[i], cmp_insert, &tnode);
-            nodes[i]->poc -= dec;
-            r = av_tree_insert(&s->root, nodes[i], cmp_insert, &tnode);
-            if (r && r != nodes[i]) {
-                *r = *nodes[i];
-                av_refstruct_unref(&nodes[i]);
+            DTS2PTSNode *node = c.head, *r;
+            c.head = node->next;
+            av_tree_insert(&s->root, node, cmp_insert, &tnode);
+            node->poc -= dec;
+            r = av_tree_insert(&s->root, node, cmp_insert, &tnode);
+            if (r && r != node) {
+                *r = *node;
+                av_refstruct_unref(&node);
                 av_free(tnode);
             }
         }
