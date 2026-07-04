@@ -2773,7 +2773,7 @@ the_end:
             }
         }
     }
-    if (s->flipped && !s->rgb) {
+    if (s->flipped && !s->rgb && !s->bayer) {
         ret = av_pix_fmt_get_chroma_sub_sample(avctx->pix_fmt, &hshift, &vshift);
         if (ret)
             return ret;
