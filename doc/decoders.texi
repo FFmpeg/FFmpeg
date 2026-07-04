@@ -383,6 +383,14 @@ configuration. You need to explicitly configure the build with
 An FFmpeg native decoder for Opus exists, so users can decode Opus
 without this library.
 
+@section pcm_dvda
+
+PCM DVD-Audio decoder.
+
+Decodes the LPCM variant stored in DVD-Audio AOB files. Unlike DVD-Video
+LPCM it supports sample rates up to 192 kHz and allows splitting the
+channels into two groups with different quantization.
+
 @c man end AUDIO DECODERS
 
 @chapter Subtitles Decoders

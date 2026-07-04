@@ -8,6 +8,7 @@ version <next>:
 - LCEVC payload merging bitstream filter
 - MVR demuxer
 - latticepal filter
+- DVD-Audio LPCM decoder and demuxing support
 
 
 version 9.0:
