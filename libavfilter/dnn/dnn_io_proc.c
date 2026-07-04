@@ -420,12 +420,60 @@ int ff_frame_to_dnn_classify(AVFrame *frame, DNNData *input, uint32_t bbox_index
     return ret;
 }
 
+/*
+ * Write packed 24bit RGB/BGR samples into the tensor type/layout the model expects.
+ */
+static void detect_write_tensor(DNNData *input, const uint8_t *src,
+                                int src_linesize, int w, int h)
+{
+    const size_t plane_size = (size_t)w * h;
+
+    if (input->dt == DNN_FLOAT) {
+        float *dst = input->data;
+        if (input->layout == DL_NCHW) {
+            /* FLOAT + NCHW: deinterleave into planes while widening uint8 -> float. */
+            for (int c = 0; c < 3; c++)
+                for (int y = 0; y < h; y++) {
+                    const uint8_t *row = src + (ptrdiff_t)y * src_linesize;
+                    for (int x = 0; x < w; x++)
+                        dst[c * plane_size + (size_t)y * w + x] = row[x * 3 + c];
+                }
+        } else {
+            /* FLOAT + NHWC : keep it packed, only widen uint8 -> float byte by byte. */
+            for (int y = 0; y < h; y++) {
+                const uint8_t *row = src + (ptrdiff_t)y * src_linesize;
+                for (int x = 0; x < w * 3; x++)
+                    dst[(size_t)y * w * 3 + x] = row[x];
+            }
+        }
+    } else {
+        /* UINT8 + NCHW: deinterleave into 3 uint8 planes. */
+        uint8_t *dst = input->data;
+        for (int c = 0; c < 3; c++)
+            for (int y = 0; y < h; y++) {
+                const uint8_t *row = src + (ptrdiff_t)y * src_linesize;
+                for (int x = 0; x < w; x++)
+                    dst[c * plane_size + (size_t)y * w + x] = row[x * 3 + c];
+            }
+    }
+}
+
 int ff_frame_to_dnn_detect(AVFrame *frame, DNNData *input, void *log_ctx)
 {
-    struct SwsContext *sws_ctx;
+    struct SwsContext *sws_ctx = NULL;
+    uint8_t *tmp_buf = NULL;
+    const uint8_t *src;
+    int src_linesize;
     int linesizes[4];
-    int ret = 0, width_idx, height_idx;
-    enum AVPixelFormat fmt = get_pixel_format(input);
+    int ret = 0, width_idx, height_idx, channel_idx;
+    int packed_u8, w, h;
+    enum AVPixelFormat fmt;
+
+    switch (input->order) {
+        case DCO_BGR: fmt = AV_PIX_FMT_BGR24; break;
+        case DCO_RGB: fmt = AV_PIX_FMT_RGB24; break;
+        default:      fmt = AV_PIX_FMT_NONE;  break;
+    }
 
     /* (scale != 1 and scale != 0) or mean != 0 */
     if ((fabsf(input->scale - 1) > 1e-6f && fabsf(input->scale) > 1e-6f) ||
@@ -435,37 +483,100 @@ int ff_frame_to_dnn_detect(AVFrame *frame, DNNData *input, void *log_ctx)
         return AVERROR(ENOSYS);
     }
 
-    if (input->layout == DL_NCHW) {
-        av_log(log_ctx, AV_LOG_ERROR, "dnn_detect input data doesn't support layout: NCHW\n");
+    if (fmt == AV_PIX_FMT_NONE) {
+        av_log(log_ctx, AV_LOG_ERROR, "dnn_detect input data doesn't support "
+                                      "color order: %d\n", input->order);
         return AVERROR(ENOSYS);
     }
 
-    width_idx = dnn_get_width_idx_by_layout(input->layout);
-    height_idx = dnn_get_height_idx_by_layout(input->layout);
+    if (input->dt != DNN_UINT8 && input->dt != DNN_FLOAT) {
+        av_log(log_ctx, AV_LOG_ERROR, "dnn_detect input data doesn't support "
+                                      "data type: %d\n", input->dt);
+        return AVERROR(ENOSYS);
+    }
 
-    sws_ctx = sws_getContext(frame->width, frame->height, frame->format,
-                             input->dims[width_idx],
-                             input->dims[height_idx], fmt,
-                             SWS_FAST_BILINEAR, NULL, NULL, NULL);
-    if (!sws_ctx) {
-        av_log(log_ctx, AV_LOG_ERROR, "Impossible to create scale context for the conversion "
-            "fmt:%s s:%dx%d -> fmt:%s s:%dx%d\n",
-            av_get_pix_fmt_name(frame->format), frame->width, frame->height,
-            av_get_pix_fmt_name(fmt), input->dims[width_idx],
-            input->dims[height_idx]);
+    width_idx   = dnn_get_width_idx_by_layout(input->layout);
+    height_idx  = dnn_get_height_idx_by_layout(input->layout);
+    channel_idx = dnn_get_channel_idx_by_layout(input->layout);
+
+    w = input->dims[width_idx];
+    h = input->dims[height_idx];
+    if (w <= 0 || h <= 0) {
+        av_log(log_ctx, AV_LOG_ERROR, "dnn_detect input data has invalid "
+                                      "dimensions: %dx%d\n", w, h);
         return AVERROR(EINVAL);
     }
 
-    ret = av_image_fill_linesizes(linesizes, fmt, input->dims[width_idx]);
+    packed_u8 = (input->dt == DNN_UINT8) && (input->layout != DL_NCHW);
+    if (!packed_u8 && input->dims[channel_idx] != 3) {
+        av_log(log_ctx, AV_LOG_ERROR, "dnn_detect requires a 3-channel input, "
+                                      "but the model has %d channels\n",
+                                      input->dims[channel_idx]);
+        return AVERROR(ENOSYS);
+    }
+
+    ret = av_image_fill_linesizes(linesizes, fmt, w);
     if (ret < 0) {
         av_log(log_ctx, AV_LOG_ERROR, "unable to get linesizes with av_image_fill_linesizes");
-        sws_freeContext(sws_ctx);
         return ret;
     }
 
-    sws_scale(sws_ctx, (const uint8_t *const *)frame->data, frame->linesize, 0, frame->height,
-                       (uint8_t *const [4]){input->data, 0, 0, 0}, linesizes);
+    if (packed_u8) {
+        /* UINT8 + NHWC: sws_scale() writes straight into input->data in one pass. */
+        sws_ctx = sws_getContext(frame->width, frame->height, frame->format,
+                                 w, h, fmt, SWS_FAST_BILINEAR, NULL, NULL, NULL);
+        if (!sws_ctx) {
+            av_log(log_ctx, AV_LOG_ERROR, "Impossible to create scale context for the conversion "
+                "fmt:%s s:%dx%d -> fmt:%s s:%dx%d\n",
+                av_get_pix_fmt_name(frame->format), frame->width, frame->height,
+                av_get_pix_fmt_name(fmt), w, h);
+            return AVERROR(EINVAL);
+        }
 
-    sws_freeContext(sws_ctx);
+        sws_scale(sws_ctx, (const uint8_t *const *)frame->data, frame->linesize, 0, frame->height,
+                           (uint8_t *const [4]){input->data, 0, 0, 0}, linesizes);
+        sws_freeContext(sws_ctx);
+        return 0;
+    }
+
+    if (frame->format == fmt && frame->width == w && frame->height == h) {
+        src = frame->data[0];
+        src_linesize = frame->linesize[0];
+    } else {
+        size_t tmp_size;
+
+        if (av_size_mult((size_t)linesizes[0], (size_t)h, &tmp_size) < 0) {
+            av_log(log_ctx, AV_LOG_ERROR, "dnn_detect temporary buffer size overflows\n");
+            return AVERROR(EINVAL);
+        }
+
+        tmp_buf = av_malloc(tmp_size);
+        if (!tmp_buf)
+            return AVERROR(ENOMEM);
+
+        sws_ctx = sws_getContext(frame->width, frame->height, frame->format,
+                                 w, h, fmt, SWS_FAST_BILINEAR, NULL, NULL, NULL);
+        if (!sws_ctx) {
+            av_log(log_ctx, AV_LOG_ERROR, "Impossible to create scale context for the conversion "
+                "fmt:%s s:%dx%d -> fmt:%s s:%dx%d\n",
+                av_get_pix_fmt_name(frame->format), frame->width, frame->height,
+                av_get_pix_fmt_name(fmt), w, h);
+            ret = AVERROR(EINVAL);
+            goto end;
+        }
+
+        sws_scale(sws_ctx, (const uint8_t *const *)frame->data, frame->linesize, 0, frame->height,
+                           (uint8_t *const [4]){tmp_buf, 0, 0, 0}, linesizes);
+        sws_freeContext(sws_ctx);
+        sws_ctx = NULL;
+
+        src = tmp_buf;
+        src_linesize = linesizes[0];
+    }
+
+    detect_write_tensor(input, src, src_linesize, w, h);
+
+end:
+    av_freep(&tmp_buf);
     return ret;
 }

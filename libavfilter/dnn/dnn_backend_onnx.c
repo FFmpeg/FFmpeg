@@ -25,6 +25,7 @@
 
 #include "libavutil/opt.h"
 #include "libavutil/avassert.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/mem.h"
 #include "libavutil/avstring.h"
 #include "libavutil/thread.h"
@@ -55,9 +56,10 @@ typedef struct ONNXModel {
 } ONNXModel;
 
 typedef struct ONNXInferRequest {
-    OrtValue *input_tensor;
-    OrtValue *output_tensor;
-    void     *input_data;
+    OrtValue  *input_tensor;
+    OrtValue **output_tensors;
+    uint32_t   nb_outputs;
+    void      *input_data;
 } ONNXInferRequest;
 
 typedef struct ONNXRequestItem {
@@ -125,10 +127,16 @@ static void onnx_free_request(ONNXInferRequest *request)
         request->input_tensor = NULL;
     }
     av_freep(&request->input_data);
-    if (request->output_tensor) {
-        g_ort->ReleaseValue(request->output_tensor);
-        request->output_tensor = NULL;
+    if (request->output_tensors) {
+        for (uint32_t i = 0; i < request->nb_outputs; i++) {
+            if (request->output_tensors[i]) {
+                g_ort->ReleaseValue(request->output_tensors[i]);
+                request->output_tensors[i] = NULL;
+            }
+        }
+        av_freep(&request->output_tensors);
     }
+    request->nb_outputs = 0;
 }
 
 static inline void destroy_request_item(ONNXRequestItem **arg)
@@ -286,6 +294,17 @@ static int get_input_onnx(DNNModel *model, DNNData *input, const char *input_nam
         return AVERROR(ENOSYS);
     }
 
+    for (size_t i = 1; i < num_dims; i++) {
+        if (dims[i] > INT_MAX) {
+            av_log(ctx, AV_LOG_ERROR,
+                   "ONNX model input dimension %zu (%"PRId64") is too large to be represented\n",
+                   i, dims[i]);
+            av_free(dims);
+            g_ort->ReleaseTypeInfo(type_info);
+            return AVERROR(ENOSYS);
+        }
+    }
+
     /*
      * The ONNX backend assumes a 4-D NCHW input tensor (the rank check
      * above already rejects anything else).
@@ -351,16 +370,44 @@ static int fill_model_input_onnx(ONNXModel *onnx_model, ONNXRequestItem *request
     height_idx  = dnn_get_height_idx_by_layout(input.layout);
     channel_idx = dnn_get_channel_idx_by_layout(input.layout);
 
-    input.dims[height_idx] = task->in_frame->height;
-    input.dims[width_idx]  = task->in_frame->width;
+    if (input.dims[height_idx] < 0)
+        input.dims[height_idx] = task->in_frame->height;
+    if (input.dims[width_idx] < 0)
+        input.dims[width_idx] = task->in_frame->width;
+
+    if (input.dims[0] <= 0 || input.dims[channel_idx] <= 0 ||
+        input.dims[height_idx] <= 0 || input.dims[width_idx] <= 0) {
+        av_log(ctx, AV_LOG_ERROR, "ONNX input tensor has a non-positive dimension\n");
+        ret = AVERROR(EINVAL);
+        goto err;
+    }
+
+    ret = av_image_check_size((unsigned)input.dims[width_idx],
+                              (unsigned)input.dims[height_idx], 0, ctx);
+    if (ret < 0) {
+        av_log(ctx, AV_LOG_ERROR, "ONNX input image dimensions %dx%d are not supported\n",
+               input.dims[width_idx], input.dims[height_idx]);
+        goto err;
+    }
 
     input_shape[0] = input.dims[0];
     input_shape[1] = input.dims[channel_idx];
     input_shape[2] = input.dims[height_idx];
     input_shape[3] = input.dims[width_idx];
 
-    input_tensor_size = input_shape[0] * input_shape[1] * input_shape[2] * input_shape[3];
-    input_tensor_size *= sizeof(float);
+    /*
+     * Build the byte count with checked size_t multiplications instead of
+     * multiplying four int64_t shape values in one expression.
+     */
+    input_tensor_size = sizeof(float);
+    if (av_size_mult(input_tensor_size, (size_t)input_shape[0], &input_tensor_size) < 0 ||
+        av_size_mult(input_tensor_size, (size_t)input_shape[1], &input_tensor_size) < 0 ||
+        av_size_mult(input_tensor_size, (size_t)input_shape[2], &input_tensor_size) < 0 ||
+        av_size_mult(input_tensor_size, (size_t)input_shape[3], &input_tensor_size) < 0) {
+        av_log(ctx, AV_LOG_ERROR, "ONNX input tensor size overflows\n");
+        ret = AVERROR(EINVAL);
+        goto err;
+    }
 
     input.data = av_malloc(input_tensor_size);
     if (!input.data) {
@@ -374,14 +421,19 @@ static int fill_model_input_onnx(ONNXModel *onnx_model, ONNXRequestItem *request
         input.scale = 255;
         if (task->do_ioproc) {
             if (onnx_model->model.frame_pre_proc != NULL) {
-                onnx_model->model.frame_pre_proc(task->in_frame, &input, onnx_model->model.filter_ctx);
+                ret = onnx_model->model.frame_pre_proc(task->in_frame, &input,
+                                                       onnx_model->model.filter_ctx);
             } else {
-                ff_proc_from_frame_to_dnn(task->in_frame, &input, ctx);
+                ret = ff_proc_from_frame_to_dnn(task->in_frame, &input, ctx);
             }
+            if (ret < 0)
+                goto err;
         }
         break;
     case DFT_ANALYTICS_DETECT:
-        ff_frame_to_dnn_detect(task->in_frame, &input, ctx);
+        ret = ff_frame_to_dnn_detect(task->in_frame, &input, ctx);
+        if (ret < 0)
+            goto err;
         break;
     default:
         avpriv_report_missing_feature(ctx, "model function type %d", onnx_model->model.func_type);
@@ -426,8 +478,8 @@ static int onnx_start_inference(void *args)
     ONNXModel           *onnx_model = NULL;
     DnnContext                 *ctx = NULL;
     OrtStatus *status;
-    const char  *input_names[1];
-    const char *output_names[1];
+    const char *input_names[1];
+    int ret = DNN_GENERIC_ERROR;
 
     if (!request) {
         av_log(NULL, AV_LOG_ERROR, "ONNXRequestItem is NULL\n");
@@ -439,12 +491,6 @@ static int onnx_start_inference(void *args)
     task = lltask->task;
     onnx_model = (ONNXModel *)task->model;
     ctx = onnx_model->ctx;
-
-    if (task->nb_output > 1) {
-        avpriv_report_missing_feature(ctx,
-            "Multiple output tensors (%u) for ONNX backend", task->nb_output);
-        return AVERROR(ENOSYS);
-    }
 
     if (!task->input_name || !task->output_names || !task->output_names[0]) {
         av_log(ctx, AV_LOG_ERROR,
@@ -469,46 +515,63 @@ static int onnx_start_inference(void *args)
             return AVERROR(EINVAL);
         }
 
-        for (size_t i = 0; i < output_count; i++) {
-            char *name = NULL;
-            status = g_ort->SessionGetOutputName(onnx_model->session, i,
-                                                 onnx_model->allocator, &name);
-            if (status != NULL) {
-                g_ort->ReleaseStatus(status);
-                continue;
+        for (uint32_t req = 0; req < task->nb_output; req++) {
+            found_output = 0;
+            for (size_t i = 0; i < output_count; i++) {
+                char *name = NULL;
+                status = g_ort->SessionGetOutputName(onnx_model->session, i,
+                                                     onnx_model->allocator, &name);
+                if (status != NULL) {
+                    g_ort->ReleaseStatus(status);
+                    continue;
+                }
+                if (!strcmp(name, task->output_names[req]))
+                    found_output = 1;
+                onnx_model->allocator->Free(onnx_model->allocator, name);
+                if (found_output)
+                    break;
             }
-            if (!strcmp(name, task->output_names[0]))
-                found_output = 1;
-            onnx_model->allocator->Free(onnx_model->allocator, name);
-            if (found_output)
-                break;
-        }
-
-        if (!found_output) {
-            av_log(ctx, AV_LOG_ERROR,
-                   "Output name '%s' not found in ONNX model\n",
-                   task->output_names[0]);
-            return AVERROR(EINVAL);
+            if (!found_output) {
+                av_log(ctx, AV_LOG_ERROR,
+                       "Output name '%s' not found in ONNX model\n",
+                       task->output_names[req]);
+                return AVERROR(EINVAL);
+            }
         }
 
         onnx_model->output_resolved = 1;
     }
 
-    input_names[0]  = task->input_name;
-    output_names[0] = task->output_names[0];
+    input_names[0] = task->input_name;
+
+    /* ORT writes task->nb_output result handles into this array; it must be
+     * allocated (and NULL-initialised) before Run() so ORT owns each slot. */
+    av_freep(&infer_request->output_tensors);
+    infer_request->output_tensors = av_calloc(task->nb_output,
+                                              sizeof(*infer_request->output_tensors));
+    if (!infer_request->output_tensors) {
+        infer_request->nb_outputs = 0;
+        return AVERROR(ENOMEM);
+    }
+    infer_request->nb_outputs = task->nb_output;
 
     status = g_ort->Run(onnx_model->session, NULL,
-                        input_names, (const OrtValue *const *)&infer_request->input_tensor, 1,
-                        output_names, 1, &infer_request->output_tensor);
+        input_names, (const OrtValue *const *)&infer_request->input_tensor, 1,
+        task->output_names, task->nb_output, infer_request->output_tensors);
 
     if (status != NULL) {
         const char *msg = g_ort->GetErrorMessage(status);
         av_log(ctx, AV_LOG_ERROR, "ONNX inference failed: %s\n", msg);
         g_ort->ReleaseStatus(status);
-        return DNN_GENERIC_ERROR;
+        goto err;
     }
 
     return 0;
+
+err:
+    av_freep(&infer_request->output_tensors);
+    infer_request->nb_outputs = 0;
+    return ret;
 }
 
 static void infer_completion_callback(void *args)
@@ -516,7 +579,7 @@ static void infer_completion_callback(void *args)
     ONNXRequestItem  *request = (ONNXRequestItem *)args;
     LastLevelTaskItem *lltask = request->lltask;
     TaskItem            *task = lltask->task;
-    DNNData           outputs = { 0 };
+    DNNData          *outputs = NULL;
     ONNXInferRequest *infer_request = request->infer_request;
     ONNXModel           *onnx_model = (ONNXModel *)task->model;
     DnnContext                 *ctx = onnx_model->ctx;
@@ -524,93 +587,143 @@ static void infer_completion_callback(void *args)
     ONNXTensorElementDataType tensor_type;
     size_t num_dims;
     int64_t *dims;
-    void *output_data;
     OrtStatus *status;
+    int ret;
 
-    if (!infer_request->output_tensor) {
-        av_log(ctx, AV_LOG_ERROR, "Output tensor is NULL\n");
+    outputs = av_calloc(infer_request->nb_outputs, sizeof(*outputs));
+    if (!outputs) {
+        av_log(ctx, AV_LOG_ERROR, "Failed to allocate output DNNData array\n");
         goto err;
     }
 
-    status = g_ort->GetTensorTypeAndShape(infer_request->output_tensor, &tensor_info);
-    if (status != NULL) {
-        av_log(ctx, AV_LOG_ERROR, "Failed to get output tensor info\n");
-        g_ort->ReleaseStatus(status);
-        goto err;
-    }
+    for (uint32_t i = 0; i < infer_request->nb_outputs; i++) {
+        status = g_ort->GetTensorTypeAndShape(infer_request->output_tensors[i],
+                                              &tensor_info);
+        if (status != NULL) {
+            av_log(ctx, AV_LOG_ERROR, "Failed to get output tensor[%u] type/shape\n", i);
+            g_ort->ReleaseStatus(status);
+            goto err;
+        }
 
-    g_ort->GetDimensionsCount(tensor_info, &num_dims);
-    dims = av_malloc(num_dims * sizeof(int64_t));
-    if (!dims) {
-        av_log(ctx, AV_LOG_ERROR, "Failed to allocate memory for dimensions\n");
-        g_ort->ReleaseTensorTypeAndShapeInfo(tensor_info);
-        goto err;
-    }
-    g_ort->GetDimensions(tensor_info, dims, num_dims);
+        status = g_ort->GetDimensionsCount(tensor_info, &num_dims);
+        if (status != NULL) {
+            av_log(ctx, AV_LOG_ERROR, "Failed to get output tensor[%u] dimension count\n", i);
+            g_ort->ReleaseStatus(status);
+            g_ort->ReleaseTensorTypeAndShapeInfo(tensor_info);
+            goto err;
+        }
 
-    /* Output is interpreted as NCHW, matching the input assumption. */
-    outputs.layout = DL_NCHW;
-    outputs.order = DCO_RGB;
+        dims = av_malloc(num_dims * sizeof(int64_t));
+        if (!dims) {
+            av_log(ctx, AV_LOG_ERROR, "Failed to allocate dims array\n");
+            g_ort->ReleaseTensorTypeAndShapeInfo(tensor_info);
+            goto err;
+        }
 
-    g_ort->GetTensorElementType(tensor_info, &tensor_type);
-    if (tensor_type == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT) {
-        outputs.dt = DNN_FLOAT;
-    } else {
-        av_log(ctx, AV_LOG_ERROR, "Unsupported output tensor data type, only float is supported\n");
+        status = g_ort->GetDimensions(tensor_info, dims, num_dims);
+        if (status != NULL) {
+            av_log(ctx, AV_LOG_ERROR, "Failed to get output tensor[%u] dimensions\n", i);
+            g_ort->ReleaseStatus(status);
+            av_free(dims);
+            g_ort->ReleaseTensorTypeAndShapeInfo(tensor_info);
+            goto err;
+        }
+
+        for (size_t d = 0; d < num_dims; d++) {
+            if (dims[d] < 0 || dims[d] > INT_MAX) {
+                av_log(ctx, AV_LOG_ERROR,
+                       "Output tensor[%u] dimension %zu (%"PRId64") is out of representable range\n",
+                       i, d, dims[d]);
+                av_free(dims);
+                g_ort->ReleaseTensorTypeAndShapeInfo(tensor_info);
+                goto err;
+            }
+        }
+
+        status = g_ort->GetTensorElementType(tensor_info, &tensor_type);
+        if (status != NULL) {
+            av_log(ctx, AV_LOG_ERROR, "Failed to get output tensor[%u] element type\n", i);
+            g_ort->ReleaseStatus(status);
+            av_free(dims);
+            g_ort->ReleaseTensorTypeAndShapeInfo(tensor_info);
+            goto err;
+        }
+        if (tensor_type == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT) {
+            outputs[i].dt = DNN_FLOAT;
+        } else {
+            av_log(ctx, AV_LOG_ERROR,
+                   "Unsupported output tensor[%u] data type, only float supported\n", i);
+            av_free(dims);
+            g_ort->ReleaseTensorTypeAndShapeInfo(tensor_info);
+            goto err;
+        }
+
+        /* Output is interpreted as NCHW, matching the input assumption. */
+        outputs[i].layout = DL_NCHW;
+        outputs[i].order  = DCO_RGB;
+
+        if (num_dims == 4) {
+            outputs[i].dims[0] = dims[0];
+            outputs[i].dims[1] = dims[1];
+            outputs[i].dims[2] = dims[2];
+            outputs[i].dims[3] = dims[3];
+        } else if (num_dims == 3) {
+            /* Some detection models output [1, N, D]; promote it to [1, 1, N, D]. */
+            outputs[i].dims[0] = dims[0];
+            outputs[i].dims[1] = 1;
+            outputs[i].dims[2] = dims[1];
+            outputs[i].dims[3] = dims[2];
+        } else {
+            avpriv_report_missing_feature(ctx,
+                "Support for %zu-dimensional output (tensor[%u])", num_dims, i);
+            av_free(dims);
+            g_ort->ReleaseTensorTypeAndShapeInfo(tensor_info);
+            goto err;
+        }
+
+        status = g_ort->GetTensorMutableData(infer_request->output_tensors[i], &outputs[i].data);
+        if (status != NULL) {
+            av_log(ctx, AV_LOG_ERROR, "Failed to get tensor[%u] data pointer\n", i);
+            g_ort->ReleaseStatus(status);
+            av_free(dims);
+            g_ort->ReleaseTensorTypeAndShapeInfo(tensor_info);
+            goto err;
+        }
+
         av_free(dims);
         g_ort->ReleaseTensorTypeAndShapeInfo(tensor_info);
-        goto err;
     }
-
-    if (num_dims == 4) {
-        outputs.dims[0] = dims[0];
-        outputs.dims[1] = dims[1];
-        outputs.dims[2] = dims[2];
-        outputs.dims[3] = dims[3];
-    } else {
-        avpriv_report_missing_feature(ctx, "Support for %zu dimensional output", num_dims);
-        av_free(dims);
-        g_ort->ReleaseTensorTypeAndShapeInfo(tensor_info);
-        goto err;
-    }
-
-    status = g_ort->GetTensorMutableData(infer_request->output_tensor, &output_data);
-    if (status != NULL) {
-        av_log(ctx, AV_LOG_ERROR, "Failed to get tensor data\n");
-        g_ort->ReleaseStatus(status);
-        av_free(dims);
-        g_ort->ReleaseTensorTypeAndShapeInfo(tensor_info);
-        goto err;
-    }
-
-    outputs.data = output_data;
 
     switch (onnx_model->model.func_type) {
     case DFT_PROCESS_FRAME:
         if (task->do_ioproc) {
-            outputs.scale = 255;
+            outputs[0].scale = 255;
             if (onnx_model->model.frame_post_proc != NULL) {
-                onnx_model->model.frame_post_proc(task->out_frame, &outputs, onnx_model->model.filter_ctx);
+                onnx_model->model.frame_post_proc(task->out_frame, outputs, onnx_model->model.filter_ctx);
             } else {
-                ff_proc_from_dnn_to_frame(task->out_frame, &outputs, ctx);
+                ff_proc_from_dnn_to_frame(task->out_frame, outputs, ctx);
             }
         } else {
-            task->out_frame->width = outputs.dims[dnn_get_width_idx_by_layout(outputs.layout)];
-            task->out_frame->height = outputs.dims[dnn_get_height_idx_by_layout(outputs.layout)];
+            task->out_frame->width  = outputs[0].dims[dnn_get_width_idx_by_layout(outputs[0].layout)];
+            task->out_frame->height = outputs[0].dims[dnn_get_height_idx_by_layout(outputs[0].layout)];
         }
+        break;
+    case DFT_ANALYTICS_DETECT:
+        ret = onnx_model->model.detect_post_proc(task->in_frame, outputs,
+                                                 infer_request->nb_outputs,
+                                                 onnx_model->model.filter_ctx);
+        if (ret < 0)
+            goto err;
         break;
     default:
         avpriv_report_missing_feature(ctx, "model function type %d", onnx_model->model.func_type);
-        av_free(dims);
-        g_ort->ReleaseTensorTypeAndShapeInfo(tensor_info);
         goto err;
     }
 
-    av_free(dims);
-    g_ort->ReleaseTensorTypeAndShapeInfo(tensor_info);
     task->inference_done++;
 
 err:
+    av_freep(&outputs);
     av_freep(&request->lltask);
     onnx_free_request(infer_request);
     if (ff_safe_queue_push_back(onnx_model->request_queue, request) < 0) {
@@ -713,12 +826,9 @@ err:
 
 static ONNXInferRequest *onnx_create_inference_request(void)
 {
-    ONNXInferRequest *request = av_malloc(sizeof(ONNXInferRequest));
+    ONNXInferRequest *request = av_mallocz(sizeof(ONNXInferRequest));
     if (!request)
         return NULL;
-    request->input_tensor  = NULL;
-    request->output_tensor = NULL;
-    request->input_data    = NULL;
     return request;
 }
 

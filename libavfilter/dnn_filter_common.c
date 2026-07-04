@@ -109,16 +109,12 @@ int ff_dnn_init(DnnContext *ctx, DNNFunctionType func_type, AVFilterContext *fil
             return AVERROR(EINVAL);
         }
     } else if (backend == DNN_ONNX) {
-        /* ONNX: input and output tensor names are optional.*/
+        /* ONNX: input and output tensor names are optional.
+         * Multiple output names may be specified separated by '&'. */
         if (ctx->model_outputnames_string) {
             ctx->model_outputnames = separate_output_names(ctx->model_outputnames_string, "&", &ctx->nb_outputs);
             if (!ctx->model_outputnames) {
                 av_log(filter_ctx, AV_LOG_ERROR, "could not parse model output names\n");
-                return AVERROR(EINVAL);
-            }
-            if (ctx->nb_outputs != 1) {
-                av_log(filter_ctx, AV_LOG_ERROR,
-                       "ONNX backend supports a single output name only\n");
                 return AVERROR(EINVAL);
             }
         }

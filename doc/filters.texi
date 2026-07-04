@@ -12176,7 +12176,15 @@ The filter accepts the following options:
 @table @option
 @item dnn_backend
 Specify which DNN backend to use for model loading and execution. This option accepts
-only openvino now, tensorflow backends will be added.
+the following values:
+@table @samp
+@item tensorflow
+TensorFlow backend.
+@item openvino
+OpenVINO backend.
+@item onnx
+ONNX Runtime backend.
+@end table
 
 @item model
 Set path to model file specifying network architecture and its parameters.
@@ -12186,7 +12194,9 @@ Note that different backends use different file formats.
 Set the input name of the dnn network.
 
 @item output
-Set the output name of the dnn network.
+Set the output name of the dnn network. The TensorFlow and ONNX Runtime
+backends accept multiple output names separated by @samp{&}, e.g.
+@option{output=yolo_13&yolo_26}.
 
 @item confidence
 Set the confidence threshold (default: 0.5).
@@ -12198,11 +12208,50 @@ The first line is the name of label id 0 (usually it is 'background'),
 and the second line is the name of label id 1, etc.
 The label id is considered as name if the label file is not provided.
 
+@item model_type
+Set the detection model output format. The following values are accepted:
+
+@table @samp
+@item ssd
+Single-stage detector (default).
+@item yolo
+YOLO v1/v2.
+@item yolov3
+YOLOv3.
+@item yolov4
+YOLOv4.
+@end table
+@item anchors
+Anchor box dimensions, separated by @samp{&}. Required for YOLO-family models.
+The list is consumed in output order, so the anchors of the first output come
+first: with @option{output=yolo_13&yolo_26} the leading pairs belong to
+@code{yolo_13}.
+@item nb_classes
+Number of detection classes. Required for YOLO-family models.
 @item backend_configs
 Set the configs to be passed into backend. To use async execution, set async (default: set).
 Roll back to sync execution if the backend does not support async.
 
 @end table
+
+@subsection Examples
+
+@itemize
+@item
+Run SSD object detection with an ONNX model (single output, DirectML on Windows):
+@example
+ffmpeg -i input.mp4 -vf "scale=300:300,format=rgb24,dnn_detect=dnn_backend=onnx
+       :model=ssd.onnx:model_type=ssd:confidence=0.5:device=dml" -f null -
+@end example
+
+@item
+Run YOLOv3 object detection with an ONNX model (two outputs, CPU):
+@example
+ffmpeg -i input.mp4 -vf "scale=416:416,format=rgb24,dnn_detect=dnn_backend=onnx
+       :model=yolov3.onnx:output=yolo_13&yolo_26:model_type=yolov3:nb_classes=80
+       :anchors=116&90&156&198&373&326&30&61&62&45&59&119" -f null -
+@end example
+@end itemize
 
 @anchor{dnn_processing}
 @section dnn_processing
@@ -12265,7 +12314,10 @@ exactly one input tensor when running the model.
 
 The @option{input} and @option{output} options are optional for the
 ONNX Runtime backend; when they are omitted the backend resolves the
-tensor names from the session.
+tensor names from the session.  Multiple output names may be supplied
+separated by @samp{&} (e.g. @option{output=out_a&out_b}); however for
+@code{dnn_processing} only the first output tensor is used for frame
+post-processing.
 
 The ONNX Runtime backend runs inference synchronously using a single
 inference request. The shared @option{async} and @option{nireq} options
