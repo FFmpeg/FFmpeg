@@ -24,6 +24,11 @@
 
 #include "bytestream.h"
 
+/**
+ * Decompress LZF data into *buf, reallocating it as needed.
+ * On success the output is followed by AV_INPUT_BUFFER_PADDING_SIZE
+ * zeroed bytes.
+ */
 int ff_lzf_uncompress(GetByteContext *gb, uint8_t **buf, size_t *size, unsigned *allocated_size);
 
 #endif /* AVCODEC_LZF_H */
