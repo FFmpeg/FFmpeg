@@ -40,6 +40,9 @@ fate-spdif-mp3-remux: CMD = transcode mp3 $(TARGET_SAMPLES)/audiomatch/square3.m
 FATE_SPDIF-$(call DEMMUX, TRUEHD, SPDIF) += fate-spdif-truehd
 fate-spdif-truehd: CMD = md5 -i $(TARGET_SAMPLES)/truehd/atmos.thd -c copy -f spdif
 
+FATE_SPDIF-$(call DEMMUX, TRUEHD, SPDIF) += fate-spdif-truehd-branch-padding
+fate-spdif-truehd-branch-padding: CMD = md5 -i $(TARGET_SAMPLES)/truehd/spdifenc-branch-padding.thd -c copy -f spdif
+
 # Make the demuxer support all the formats supported by the muxer
 # and switch the md5 tests to remux tests?
 FATE_SPDIF-$(call REMUX, SPDIF) += $(FATE_SPDIF_REMUX-yes)
