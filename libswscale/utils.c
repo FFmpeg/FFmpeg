@@ -2442,3 +2442,26 @@ int ff_range_add(RangeList *rl, unsigned int start, unsigned int len)
 
     return 0;
 }
+
+int ff_sws_thread_exec(void *priv,
+                       int (*func)(void *priv, int jobnr, int threadnr, int nb_jobs, int nb_threads),
+                       int nb_threads, int nb_jobs)
+{
+    AVSliceThread *slicethread;
+    int ret = avpriv_slicethread_create2(&slicethread, priv, func, NULL, nb_threads);
+    if (ret == AVERROR(ENOSYS)) {
+        /* Fallback for build configurations without threading */
+        for (int i = 0; i < nb_jobs; i++) {
+            int ret = func(priv, i, 0, nb_jobs, 1);
+            if (ret)
+                return ret;
+        }
+        return 0;
+    } else if (ret < 0) {
+        return ret;
+    }
+
+    ret = avpriv_slicethread_execute2(slicethread, nb_jobs, 0);
+    avpriv_slicethread_free(&slicethread);
+    return ret;
+}
