@@ -142,7 +142,10 @@ int ff_spdif_probe(const uint8_t *p_buf, int buf_size, enum AVCodecID *codec)
             } else
                 consecutive_codes = 0;
 
-            if (buf + 4 + AV_AAC_ADTS_HEADER_SIZE > p_buf + buf_size)
+            /* spdif_get_offset_and_codec() parses AV_AAC_ADTS_HEADER_SIZE
+             * bytes starting at buf[5] (the payload after the 4 byte sync and
+             * the Pc/Pd burst header), so that many bytes must be available. */
+            if (buf + 5 + AV_AAC_ADTS_HEADER_SIZE > p_buf + buf_size)
                 break;
 
             /* continue probing to find more sync codes */
