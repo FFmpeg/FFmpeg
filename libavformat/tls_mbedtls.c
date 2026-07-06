@@ -468,6 +468,7 @@ static int tls_handshake(URLContext *h)
     TLSContext *tls_ctx = h->priv_data;
     TLSShared *shr = &tls_ctx->tls_shared;
     URLContext *uc = shr->is_dtls ? shr->udp : shr->tcp;
+    uint32_t verify_res_flags;
     int ret;
 
     uc->flags &= ~AVIO_FLAG_NONBLOCK;
@@ -480,6 +481,18 @@ static int tls_handshake(URLContext *h)
         if (ret != MBEDTLS_ERR_SSL_WANT_READ && ret != MBEDTLS_ERR_SSL_WANT_WRITE) {
             handle_handshake_error(h, ret);
             return ret;
+        }
+    }
+
+    if (shr->verify) {
+        // check the result of the certificate verification
+        if ((verify_res_flags = mbedtls_ssl_get_verify_result(&tls_ctx->ssl_context)) != 0) {
+            av_log(h, AV_LOG_ERROR, "mbedtls_ssl_get_verify_result reported problems "\
+                                    "with the certificate verification, returned flags: %"PRIu32"\n",
+                                    verify_res_flags);
+            if (verify_res_flags & MBEDTLS_X509_BADCERT_NOT_TRUSTED)
+                av_log(h, AV_LOG_ERROR, "The certificate is not correctly signed by the trusted CA.\n");
+            return AVERROR(EIO);
         }
     }
 
