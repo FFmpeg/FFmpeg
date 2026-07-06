@@ -444,6 +444,9 @@ typedef struct HEVCLocalContext {
      * of the deblocking filter */
     int boundary_flags;
 
+    /* decoding tiles in parallel: defer tile-boundary BS to a serial pass */
+    int tile_bs_defer;
+
     // an array of these structs is used for per-thread state - pad its size
     // to avoid false sharing
     char padding[128];
@@ -710,6 +713,8 @@ void ff_hevc_set_qPy(HEVCLocalContext *lc,
 void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, const HEVCLayerContext *l,
                                            const HEVCPPS *pps,
                                            int x0, int y0, int log2_trafo_size);
+void ff_hevc_tile_boundary_bs(HEVCLocalContext *lc, const HEVCLayerContext *l,
+                              const HEVCPPS *pps, int x0, int y0);
 int ff_hevc_cu_qp_delta_sign_flag(HEVCLocalContext *lc);
 int ff_hevc_cu_qp_delta_abs(HEVCLocalContext *lc);
 int ff_hevc_cu_chroma_qp_offset_flag(HEVCLocalContext *lc);

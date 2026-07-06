@@ -760,7 +760,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, const HEVCLayer
         ((!s->sh.slice_loop_filter_across_slices_enabled_flag &&
           lc->boundary_flags & BOUNDARY_UPPER_SLICE &&
           (y0 % (1 << sps->log2_ctb_size)) == 0) ||
-         (!pps->loop_filter_across_tiles_enabled_flag &&
+         ((!pps->loop_filter_across_tiles_enabled_flag || lc->tile_bs_defer) &&
           lc->boundary_flags & BOUNDARY_UPPER_TILE &&
           (y0 % (1 << sps->log2_ctb_size)) == 0)))
         boundary_upper = 0;
@@ -798,7 +798,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, const HEVCLayer
         ((!s->sh.slice_loop_filter_across_slices_enabled_flag &&
           lc->boundary_flags & BOUNDARY_LEFT_SLICE &&
           (x0 % (1 << sps->log2_ctb_size)) == 0) ||
-         (!pps->loop_filter_across_tiles_enabled_flag &&
+         ((!pps->loop_filter_across_tiles_enabled_flag || lc->tile_bs_defer) &&
           lc->boundary_flags & BOUNDARY_LEFT_TILE &&
           (x0 % (1 << sps->log2_ctb_size)) == 0)))
         boundary_left = 0;
@@ -861,6 +861,68 @@ void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, const HEVCLayer
                 bs = boundary_strength(s, curr, left, rpl);
                 l->vertical_bs[((x0 + i) + (y0 + j) * l->bs_width) >> 2] = bs;
             }
+        }
+    }
+}
+
+void ff_hevc_tile_boundary_bs(HEVCLocalContext *lc, const HEVCLayerContext *l,
+                              const HEVCPPS *pps, int x0, int y0)
+{
+    const HEVCSPS *const sps = pps->sps;
+    const HEVCContext *s = lc->parent;
+    const MvField *tab_mvf = s->cur_frame->tab_mvf;
+    const int log2_min_pu_size = sps->log2_min_pu_size;
+    const int log2_min_tu_size = sps->log2_min_tb_size;
+    const int min_pu_width     = sps->min_pu_width;
+    const int min_tu_width     = sps->min_tb_width;
+    const int ctb_size         = 1 << sps->log2_ctb_size;
+    int i, bs;
+
+    if ((lc->boundary_flags & BOUNDARY_UPPER_TILE) && y0 > 0) {
+        const RefPicList *rpl_top = (lc->boundary_flags & BOUNDARY_UPPER_SLICE) ?
+                                    ff_hevc_get_ref_list(s->cur_frame, x0, y0 - 1) :
+                                    s->cur_frame->refPicList;
+        int yp_pu = (y0 - 1) >> log2_min_pu_size, yq_pu = y0 >> log2_min_pu_size;
+        int yp_tu = (y0 - 1) >> log2_min_tu_size, yq_tu = y0 >> log2_min_tu_size;
+        int len = FFMIN(ctb_size, sps->width - x0);
+        for (i = 0; i < len; i += 4) {
+            int x_pu = (x0 + i) >> log2_min_pu_size;
+            int x_tu = (x0 + i) >> log2_min_tu_size;
+            const MvField *top  = &tab_mvf[yp_pu * min_pu_width + x_pu];
+            const MvField *curr = &tab_mvf[yq_pu * min_pu_width + x_pu];
+            uint8_t top_cbf  = l->cbf_luma[yp_tu * min_tu_width + x_tu];
+            uint8_t curr_cbf = l->cbf_luma[yq_tu * min_tu_width + x_tu];
+            if (curr->pred_flag == PF_INTRA || top->pred_flag == PF_INTRA)
+                bs = 2;
+            else if (curr_cbf || top_cbf)
+                bs = 1;
+            else
+                bs = boundary_strength(s, curr, top, rpl_top);
+            l->horizontal_bs[((x0 + i) + y0 * l->bs_width) >> 2] = bs;
+        }
+    }
+
+    if ((lc->boundary_flags & BOUNDARY_LEFT_TILE) && x0 > 0) {
+        const RefPicList *rpl_left = (lc->boundary_flags & BOUNDARY_LEFT_SLICE) ?
+                                     ff_hevc_get_ref_list(s->cur_frame, x0 - 1, y0) :
+                                     s->cur_frame->refPicList;
+        int xp_pu = (x0 - 1) >> log2_min_pu_size, xq_pu = x0 >> log2_min_pu_size;
+        int xp_tu = (x0 - 1) >> log2_min_tu_size, xq_tu = x0 >> log2_min_tu_size;
+        int len = FFMIN(ctb_size, sps->height - y0);
+        for (i = 0; i < len; i += 4) {
+            int y_pu = (y0 + i) >> log2_min_pu_size;
+            int y_tu = (y0 + i) >> log2_min_tu_size;
+            const MvField *left = &tab_mvf[y_pu * min_pu_width + xp_pu];
+            const MvField *curr = &tab_mvf[y_pu * min_pu_width + xq_pu];
+            uint8_t left_cbf = l->cbf_luma[y_tu * min_tu_width + xp_tu];
+            uint8_t curr_cbf = l->cbf_luma[y_tu * min_tu_width + xq_tu];
+            if (curr->pred_flag == PF_INTRA || left->pred_flag == PF_INTRA)
+                bs = 2;
+            else if (curr_cbf || left_cbf)
+                bs = 1;
+            else
+                bs = boundary_strength(s, curr, left, rpl_left);
+            l->vertical_bs[(x0 + (y0 + i) * l->bs_width) >> 2] = bs;
         }
     }
 }

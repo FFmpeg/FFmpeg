@@ -2733,7 +2733,9 @@ static void hls_decode_neighbour(HEVCLocalContext *lc,
     int ctb_addr_rs       = pps->ctb_addr_ts_to_rs[ctb_addr_ts];
     int ctb_addr_in_slice = ctb_addr_rs - s->sh.slice_addr;
 
-    l->tab_slice_address[ctb_addr_rs] = s->sh.slice_addr;
+    /* the tile-parallel path pre-fills this serially, workers only read it */
+    if (!lc->tile_bs_defer)
+        l->tab_slice_address[ctb_addr_rs] = s->sh.slice_addr;
 
     if (pps->entropy_coding_sync_enabled_flag) {
         if (x_ctb == 0 && (y_ctb & (ctb_size - 1)) == 0)
@@ -3070,6 +3072,121 @@ static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
     return res;
 }
 
+static int hls_decode_entry_tile(AVCodecContext *avctx, void *hevc_lclist,
+                                 int job, int thread)
+{
+    HEVCLocalContext *lc = &((HEVCLocalContext*)hevc_lclist)[thread];
+    const HEVCContext *const s = lc->parent;
+    const HEVCLayerContext *const l = &s->layers[s->cur_layer];
+    const HEVCPPS   *const pps = s->pps;
+    const HEVCSPS   *const sps = pps->sps;
+    const uint8_t *data      = s->data + s->sh.offset[job];
+    const size_t   data_size = s->sh.size[job];
+    /* the slice covers every tile, so job and tile are the same index */
+    int ctb_addr_ts = pps->ctb_addr_rs_to_ts[pps->row_bd[job / pps->num_tile_columns] * sps->ctb_width +
+                                             pps->col_bd[job % pps->num_tile_columns]];
+    int more_data = 1, ret;
+
+    lc->tile_bs_defer      = 1;
+    lc->tu.cu_qp_offset_cb = 0;
+    lc->tu.cu_qp_offset_cr = 0;
+    /* hls_decode_neighbour() skips this for the first CTB of the picture */
+    lc->end_of_tiles_x     = pps->col_bd[job % pps->num_tile_columns + 1] << sps->log2_ctb_size;
+
+    while (more_data && ctb_addr_ts < sps->ctb_size &&
+           pps->tile_id[ctb_addr_ts] == job) {
+        int ctb_addr_rs = pps->ctb_addr_ts_to_rs[ctb_addr_ts];
+        int x_ctb = (ctb_addr_rs % sps->ctb_width) << sps->log2_ctb_size;
+        int y_ctb = (ctb_addr_rs / sps->ctb_width) << sps->log2_ctb_size;
+
+        hls_decode_neighbour(lc, l, pps, sps, x_ctb, y_ctb, ctb_addr_ts);
+
+        ret = ff_hevc_cabac_init(lc, pps, ctb_addr_ts, data, data_size, 1);
+        if (ret < 0)
+            return ret;
+
+        hls_sao_param(lc, l, pps, sps,
+                      x_ctb >> sps->log2_ctb_size, y_ctb >> sps->log2_ctb_size);
+
+        l->deblock[ctb_addr_rs].beta_offset = s->sh.beta_offset;
+        l->deblock[ctb_addr_rs].tc_offset   = s->sh.tc_offset;
+        l->filter_slice_edges[ctb_addr_rs]  = s->sh.slice_loop_filter_across_slices_enabled_flag;
+
+        more_data = hls_coding_quadtree(lc, l, pps, sps, x_ctb, y_ctb, sps->log2_ctb_size, 0);
+        if (more_data < 0)
+            return more_data;
+        ctb_addr_ts++;
+    }
+    return ctb_addr_ts;
+}
+
+static int hls_slice_data_tiles(HEVCContext *s, const H2645NAL *nal)
+{
+    const HEVCPPS *const pps = s->pps;
+    const HEVCSPS *const sps = pps->sps;
+    const HEVCLayerContext *const l = &s->layers[s->cur_layer];
+    const int ctb_size  = 1 << sps->log2_ctb_size;
+    const int nb_tiles  = s->sh.num_entry_point_offsets + 1;
+    const int start_ts  = pps->ctb_addr_rs_to_ts[s->sh.slice_ctb_addr_rs];
+    int res = 0, ctb_addr_ts, x_ctb = 0, y_ctb = 0;
+    int *ret;
+
+    res = alloc_local_ctxs(s);
+    if (res < 0)
+        return res;
+
+    res = slice_substreams_init(s, nal);
+    if (res < 0)
+        return res;
+
+    for (unsigned i = 1; i < s->nb_local_ctx; i++) {
+        s->local_ctx[i].first_qp_group = 1;
+        s->local_ctx[i].qp_y           = s->local_ctx[0].qp_y;
+    }
+
+    for (ctb_addr_ts = start_ts; ctb_addr_ts < sps->ctb_size; ctb_addr_ts++)
+        l->tab_slice_address[pps->ctb_addr_ts_to_rs[ctb_addr_ts]] = s->sh.slice_addr;
+
+    ret = av_calloc(nb_tiles, sizeof(*ret));
+    if (!ret)
+        return AVERROR(ENOMEM);
+    s->avctx->execute2(s->avctx, hls_decode_entry_tile, s->local_ctx, ret, nb_tiles);
+    for (int i = 0; i < nb_tiles; i++)
+        if (ret[i] < 0)
+            res = ret[i];
+    av_free(ret);
+
+    for (unsigned i = 0; i < s->nb_local_ctx; i++)
+        s->local_ctx[i].tile_bs_defer = 0;
+
+    if (res < 0)
+        return res;
+
+    if (pps->loop_filter_across_tiles_enabled_flag &&
+        !s->sh.disable_deblocking_filter_flag) {
+        for (ctb_addr_ts = start_ts; ctb_addr_ts < sps->ctb_size; ctb_addr_ts++) {
+            int ctb_addr_rs = pps->ctb_addr_ts_to_rs[ctb_addr_ts];
+            x_ctb = (ctb_addr_rs % sps->ctb_width) << sps->log2_ctb_size;
+            y_ctb = (ctb_addr_rs / sps->ctb_width) << sps->log2_ctb_size;
+            hls_decode_neighbour(&s->local_ctx[0], l, pps, sps, x_ctb, y_ctb, ctb_addr_ts);
+            if (s->local_ctx[0].boundary_flags & (BOUNDARY_LEFT_TILE | BOUNDARY_UPPER_TILE))
+                ff_hevc_tile_boundary_bs(&s->local_ctx[0], l, pps, x_ctb, y_ctb);
+        }
+    }
+
+    for (ctb_addr_ts = start_ts; ctb_addr_ts < sps->ctb_size; ctb_addr_ts++) {
+        int ctb_addr_rs = pps->ctb_addr_ts_to_rs[ctb_addr_ts];
+        x_ctb = (ctb_addr_rs % sps->ctb_width) << sps->log2_ctb_size;
+        y_ctb = (ctb_addr_rs / sps->ctb_width) << sps->log2_ctb_size;
+        hls_decode_neighbour(&s->local_ctx[0], l, pps, sps, x_ctb, y_ctb, ctb_addr_ts);
+        ff_hevc_hls_filters(&s->local_ctx[0], l, pps, x_ctb, y_ctb, ctb_size);
+    }
+    if (x_ctb + ctb_size >= sps->width && y_ctb + ctb_size >= sps->height)
+        ff_hevc_hls_filter(&s->local_ctx[0], l, pps, x_ctb, y_ctb, ctb_size);
+
+    return sps->ctb_size;
+}
+
 static int decode_slice_data(HEVCContext *s, const HEVCLayerContext *l,
                              const H2645NAL *nal, GetBitContext *gb)
 {
@@ -3123,6 +3240,14 @@ static int decode_slice_data(HEVCContext *s, const HEVCLayerContext *l,
         s->sh.num_entry_point_offsets > 0                &&
         pps->num_tile_rows == 1 && pps->num_tile_columns == 1)
         return hls_slice_data_wpp(s, nal);
+
+    if (s->avctx->active_thread_type == FF_THREAD_SLICE  &&
+        s->sh.num_entry_point_offsets > 0                &&
+        pps->tiles_enabled_flag                          &&
+        !pps->entropy_coding_sync_enabled_flag           &&
+        s->sh.first_slice_in_pic_flag                    &&
+        s->sh.num_entry_point_offsets + 1 == pps->num_tile_rows * pps->num_tile_columns)
+        return hls_slice_data_tiles(s, nal);
 
     return hls_decode_entry(s, gb);
 }

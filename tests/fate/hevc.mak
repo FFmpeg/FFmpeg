@@ -303,6 +303,15 @@ FATE_HEVC_FFPROBE-$(call DEMDEC, HEVC, HEVC) += fate-hevc-skip-pred-fields
 fate-hevc-skip-pred-pts: CMD = probeframes -show_entries frame=key_frame,pts,pict_type -skip_pred all -skip_idct all $(TARGET_SAMPLES)/mov/elst_ends_betn_b_and_i.mp4
 FATE_HEVC_FFPROBE-$(call DEMDEC, MOV, HEVC) += fate-hevc-skip-pred-pts
 
+# TILES_A conformance picture through the tile-parallel slice path, same output
+fate-hevc-tiles-slice-threads: CMD = thread_type=slice threads=4 framecrc -i $(TARGET_SAMPLES)/hevc-conformance/TILES_A_Cisco_2.bit -pix_fmt yuv420p
+fate-hevc-tiles-slice-threads: REF = $(SRC_PATH)/tests/ref/fate/hevc-conformance-TILES_A_Cisco_2
+FATE_HEVC-$(call FRAMECRC, HEVC, HEVC, HEVC_PARSER) += fate-hevc-tiles-slice-threads
+
+# deblocking disabled + loop_filter_across_tiles: tile edges must stay unfiltered
+fate-hevc-tiles-nodeblock-slice-threads: CMD = thread_type=slice threads=4 framecrc -i $(TARGET_SAMPLES)/hevc/tiles_nodeblock.hevc
+FATE_HEVC-$(call FRAMECRC, HEVC, HEVC, HEVC_PARSER) += fate-hevc-tiles-nodeblock-slice-threads
+
 fate-hevc-cabac-tudepth: CMD = framecrc -i $(TARGET_SAMPLES)/hevc/cbf_cr_cb_TUDepth_4_circle.h265 -pix_fmt yuv444p
 FATE_HEVC-$(call FRAMECRC, HEVC, HEVC) += fate-hevc-cabac-tudepth
 
