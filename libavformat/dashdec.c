@@ -1598,7 +1598,7 @@ static int refresh_manifest(AVFormatContext *s)
     for (i = 0; i < n_videos; i++) {
         struct representation *cur_video = videos[i];
         struct representation *ccur_video = c->videos[i];
-        if (cur_video->timelines) {
+        if (cur_video->timelines && cur_video->fragment_timescale > 0) {
             // calc current time
             int64_t currentTime = get_segment_start_time_based_on_timeline(cur_video, cur_video->cur_seq_no) / cur_video->fragment_timescale;
             // update segments
@@ -1614,7 +1614,7 @@ static int refresh_manifest(AVFormatContext *s)
     for (i = 0; i < n_audios; i++) {
         struct representation *cur_audio = audios[i];
         struct representation *ccur_audio = c->audios[i];
-        if (cur_audio->timelines) {
+        if (cur_audio->timelines && cur_audio->fragment_timescale > 0) {
             // calc current time
             int64_t currentTime = get_segment_start_time_based_on_timeline(cur_audio, cur_audio->cur_seq_no) / cur_audio->fragment_timescale;
             // update segments
