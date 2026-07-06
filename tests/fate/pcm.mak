@@ -4,6 +4,9 @@ fate-iff-pcm: CMD = md5 -i $(TARGET_SAMPLES)/iff/Bells -f s16le -af aresample
 FATE_SAMPLES_PCM-$(call FRAMECRC, MPEGPS, PCM_DVD, ARESAMPLE_FILTER) += fate-pcm_dvd
 fate-pcm_dvd: CMD = framecrc -i $(TARGET_SAMPLES)/pcm-dvd/coolitnow-partial.vob -vn -af aresample
 
+FATE_SAMPLES_PCM-$(call FRAMECRC, MPEGPS, PCM_DVDA, PCM_S24LE_ENCODER) += fate-pcm_dvda
+fate-pcm_dvda: CMD = framecrc -i $(TARGET_SAMPLES)/pcm-dvda/pcm_dvda-96k24bit.aob -c:a pcm_s24le
+
 FATE_SAMPLES_PCM-$(call FRAMECRC, EA, PCM_S16LE_PLANAR, ARESAMPLE_FILTER) += fate-pcm-planar
 fate-pcm-planar: CMD = framecrc -i $(TARGET_SAMPLES)/ea-mad/xeasport.mad -vn -af aresample
 
