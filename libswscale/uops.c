@@ -547,24 +547,6 @@ static int translate_linear_op(SwsContext *ctx, SwsUOpList *ops,
     return ff_sws_uop_list_append(ops, &uop);
 }
 
-static bool is_expand_bit(SwsPixelType type, AVRational64 factor)
-{
-    if (factor.den != 1)
-        return false;
-
-    switch (type) {
-    case SWS_PIXEL_U8:  return factor.num == UINT8_MAX;
-    case SWS_PIXEL_U16: return factor.num == UINT16_MAX;
-    case SWS_PIXEL_U32: return factor.num == UINT32_MAX;
-    case SWS_PIXEL_F32: return false;
-    case SWS_PIXEL_NONE:
-    case SWS_PIXEL_TYPE_NB: break;
-    }
-
-    av_unreachable("Invalid pixel type!");
-    return false;
-}
-
 static int translate_op(SwsContext *ctx, SwsUOpList *uops, SwsUOpFlags flags,
                         const SwsOp *op, const SwsComps *input)
 {
@@ -633,12 +615,8 @@ static int translate_op(SwsContext *ctx, SwsUOpList *uops, SwsUOpFlags flags,
         }
         break;
     case SWS_OP_SCALE:
-        if ((flags & SWS_UOP_FLAG_EXPAND_BIT) && is_expand_bit(op->type, op->scale.factor)) {
-            uop.uop = SWS_UOP_EXPAND_BIT;
-        } else {
-            uop.uop = SWS_UOP_SCALE;
-            uop.data.scalar = Q2PIXEL(op->scale.factor);
-        }
+        uop.uop = SWS_UOP_SCALE;
+        uop.data.scalar = Q2PIXEL(op->scale.factor);
         break;
     case SWS_OP_MIN:
     case SWS_OP_MAX:

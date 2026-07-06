@@ -1011,7 +1011,8 @@ static int solve_shuffle(const SwsUOpList *const uops, SwsUOp *out)
     return AVERROR(EINVAL);
 }
 
-static int is_integer_scale(const SwsUOp *op, int64_t val)
+/* Only checks exact integer scale ops */
+static bool is_scale(const SwsUOp *op, int64_t val)
 {
     if (op->uop != SWS_UOP_SCALE)
         return false;
@@ -1035,7 +1036,7 @@ retry:
 
         switch (op->uop) {
         case SWS_UOP_TO_U16:
-            if (is_integer_scale(next, 0x101)) {
+            if (ff_sws_pixel_type_is_int(op->type) && is_scale(next, 0x101)) {
                 op->uop = SWS_UOP_EXPAND_PAIR;
                 ff_sws_uop_list_remove_at(uops, i + 1, 1);
                 goto retry;
@@ -1043,10 +1044,21 @@ retry:
             break;
 
         case SWS_UOP_TO_U32:
-            if (is_integer_scale(next, 0x1010101)) {
+            if (ff_sws_pixel_type_is_int(op->type) && is_scale(next, 0x1010101)) {
                 op->uop = SWS_UOP_EXPAND_QUAD;
                 ff_sws_uop_list_remove_at(uops, i + 1, 1);
                 goto retry;
+            }
+            break;
+
+        case SWS_UOP_SCALE:
+            if (flags & SWS_UOP_FLAG_EXPAND_BIT) {
+                const int bits = 8 * ff_sws_pixel_type_size(op->type);
+                if (is_scale(op, UINT64_MAX >> (64 - bits))) {
+                    op->uop = SWS_UOP_EXPAND_BIT;
+                    memset(&op->par, 0, sizeof(op->par));
+                    goto retry;
+                }
             }
             break;
         }
