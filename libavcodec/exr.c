@@ -2267,6 +2267,16 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *picture,
     if (bytestream2_get_bytes_left(gb)/8 < nb_blocks)
         return AVERROR_INVALIDDATA;
 
+    if (avctx->max_pixels) {
+        int64_t block_pixels = s->is_tile
+            ? (int64_t)FFMIN(s->tile_attr.xSize, s->xdelta) *
+                      FFMIN(s->tile_attr.ySize, s->ydelta)
+            : (int64_t)s->xdelta *
+                      FFMIN(s->scan_lines_per_block, s->ydelta);
+        if (nb_blocks > avctx->max_pixels / FFMAX(block_pixels, 1))
+            return AVERROR_INVALIDDATA;
+    }
+
     // check offset table and recreate it if need
     if (!s->is_tile && bytestream2_peek_le64(gb) == 0) {
         PutByteContext offset_table_writer;
