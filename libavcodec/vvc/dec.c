@@ -248,14 +248,9 @@ static void pixel_buffer_nz_tl_init(TabList *l, VVCFrameContext *fc)
     for (int c_idx = 0; c_idx < c_end; c_idx++) {
         const int w = width  >> (sps ? sps->hshift[c_idx] : 0);
         const int h = height >> (sps ? sps->vshift[c_idx] : 0);
+        const int border_pixels = c_idx ? ALF_BORDER_CHROMA : ALF_BORDER_LUMA;
         TL_ADD(sao_pixel_buffer_h[c_idx], (w * 2 * ctu_height) << ps);
         TL_ADD(sao_pixel_buffer_v[c_idx], (h * 2 * ctu_width)  << ps);
-    }
-
-    for (int c_idx = 0; c_idx < c_end; c_idx++) {
-        const int w = width  >> (sps ? sps->hshift[c_idx] : 0);
-        const int h = height >> (sps ? sps->vshift[c_idx] : 0);
-        const int border_pixels = c_idx ? ALF_BORDER_CHROMA : ALF_BORDER_LUMA;
         for (int i = 0; i < 2; i++) {
             TL_ADD(alf_pixel_buffer_h[c_idx][i], (w * border_pixels * ctu_height) << ps);
             TL_ADD(alf_pixel_buffer_v[c_idx][i], h * ALF_PADDING_SIZE * ctu_width);
