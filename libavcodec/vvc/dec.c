@@ -86,6 +86,8 @@ static int tl_create(TabList *l)
 
         for (int i = 0; i < l->nb_tabs; i++) {
             Tab *t = l->tabs + i;
+            if (!t->size)
+                continue;
             *t->tab = l->zero ? av_mallocz(t->size) : av_malloc(t->size);
             if (!*t->tab)
                 return AVERROR(ENOMEM);
@@ -245,9 +247,12 @@ static void pixel_buffer_nz_tl_init(TabList *l, VVCFrameContext *fc)
 
     tl_init(l, 0, changed);
 
-    for (int c_idx = 0; c_idx < c_end; c_idx++) {
-        const int w = width  >> (sps ? sps->hshift[c_idx] : 0);
-        const int h = height >> (sps ? sps->vshift[c_idx] : 0);
+    /* Add size 0 tabs for the components beyond c_end, so tl_free() frees
+     * tabs allocated under a previous, larger chroma format. */
+    for (int c_idx = 0; c_idx < VVC_MAX_SAMPLE_ARRAYS; c_idx++) {
+        const int active = c_idx < c_end;
+        const int w = active ? width  >> (sps ? sps->hshift[c_idx] : 0) : 0;
+        const int h = active ? height >> (sps ? sps->vshift[c_idx] : 0) : 0;
         const int border_pixels = c_idx ? ALF_BORDER_CHROMA : ALF_BORDER_LUMA;
         TL_ADD(sao_pixel_buffer_h[c_idx], (w * 2 * ctu_height) << ps);
         TL_ADD(sao_pixel_buffer_v[c_idx], (h * 2 * ctu_width)  << ps);
