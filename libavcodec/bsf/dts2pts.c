@@ -679,10 +679,14 @@ static int dts2pts_filter(AVBSFContext *ctx, AVPacket *out)
         if (!s->eof) {
             // Remove the found entry from the tree
             DTS2PTSFrame dup = (DTS2PTSFrame) { NULL, frame.poc + 1, frame.poc_diff, frame.gop };
+            int64_t dts = out->pts;
             for (; dup.poc_diff > 0; dup.poc++, dup.poc_diff--) {
                 struct AVTreeNode *node = NULL;
-                if (!poc_node || poc_node->dts != out->pts)
+                if (!poc_node || poc_node->dts != dts)
                     continue;
+                // 2nd field nodes were inserted with this offset added
+                if (dts != AV_NOPTS_VALUE)
+                    dts += poc_node->duration / frame.poc_diff;
                 av_tree_insert(&s->root, poc_node, cmp_insert, &node);
                 av_refstruct_unref(&poc_node);
                 av_free(node);
