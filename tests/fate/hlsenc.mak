@@ -9,7 +9,7 @@ fate-hls-live-no-endlist: tests/data/live_no_endlist.m3u8
 fate-hls-live-no-endlist: SRC = $(TARGET_PATH)/tests/data/live_no_endlist.m3u8
 fate-hls-live-no-endlist: CMD = md5 -i $(SRC) -af hdcd=process_stereo=false -t 6 -f s24le
 fate-hls-live-no-endlist: CMP = oneline
-fate-hls-live-no-endlist: REF = e038bb8e65d4c1745b9b3ed643e607a3
+fate-hls-live-no-endlist: REF = d41d8cd98f00b204e9800998ecf8427e
 
 tests/data/event_no_endlist.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \

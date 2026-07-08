@@ -2205,6 +2205,7 @@ static int set_stream_info_from_input_stream(AVStream *st, struct playlist *pls,
 /* add new subdemuxer streams to our context, if any */
 static int update_streams_from_subdemuxer(AVFormatContext *s, struct playlist *pls)
 {
+    HLSContext *c = s->priv_data;
     int err;
 
     while (pls->n_main_streams < pls->ctx->nb_streams) {
@@ -2223,6 +2224,11 @@ static int update_streams_from_subdemuxer(AVFormatContext *s, struct playlist *p
         err = set_stream_info_from_input_stream(st, pls, ist);
         if (err < 0)
             return err;
+
+        /* Match the start_time of streams created before playback began. */
+        if (c->first_timestamp != AV_NOPTS_VALUE)
+            st->start_time = av_rescale_q(c->first_timestamp,
+                                          AV_TIME_BASE_Q, st->time_base);
 
         if (ist->codecpar->codec_id == AV_CODEC_ID_TIMED_ID3) {
             if (pls->timed_id3_stream_index < 0)
@@ -2740,26 +2746,28 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
 
                 if (pls->ts_offset == AV_NOPTS_VALUE &&
                     pls->pkt->dts    != AV_NOPTS_VALUE) {
+                    /* Packet timestamp rebased onto the start of the segment list. */
                     int64_t seg_idx = pls->cur_seq_no - pls->start_seq_no;
-                    int64_t ts = av_rescale_q(pls->pkt->dts,
-                        get_timebase(pls), AV_TIME_BASE_Q);
+                    int64_t ts = av_rescale_q(pls->pkt->pts != AV_NOPTS_VALUE ?
+                                              pls->pkt->pts : pls->pkt->dts,
+                                              get_timebase(pls), AV_TIME_BASE_Q);
 
-                    /* EVENT playlists preserve all segments from the start */
-                    if (pls->type == PLS_TYPE_EVENT)
-                        for (int64_t k = 0; k < seg_idx && k < pls->n_segments; k++)
-                            ts -= pls->segments[k]->duration;
+                    for (int64_t k = 0; k < seg_idx && k < pls->n_segments; k++)
+                        ts -= pls->segments[k]->duration;
 
                     if (c->first_timestamp == AV_NOPTS_VALUE) {
                         c->first_timestamp = ts;
                         c->first_timestamp_pls = pls;
 
-                        if (pls->type == PLS_TYPE_EVENT)
-                            for (unsigned k = 0; k < s->nb_streams; k++) {
-                                AVStream *st = s->streams[k];
-                                if (st->start_time == AV_NOPTS_VALUE)
-                                    st->start_time = av_rescale_q(ts,
-                                        AV_TIME_BASE_Q, st->time_base);
-                            }
+                        /* start_time is the start of the segment list, the
+                         * origin of the timeline used for seeking. */
+                        for (unsigned k = 0; k < s->nb_streams; k++)
+                            s->streams[k]->start_time =
+                                av_rescale_q(ts, AV_TIME_BASE_Q,
+                                             s->streams[k]->time_base);
+                        av_log(s, AV_LOG_DEBUG,
+                               "First timestamp %"PRId64" from playlist %d\n",
+                               ts, pls->index);
                     }
                     pls->ts_offset = ts - c->first_timestamp;
                 }
