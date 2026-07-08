@@ -2909,6 +2909,7 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
     int stream_subdemuxer_index;
     int64_t first_timestamp, seek_timestamp, duration;
     int64_t seq_no, seg_start_ts;
+    int snapped_to_segment = 0;
 
     if ((flags & AVSEEK_FLAG_BYTE) || (c->ctx->ctx_flags & AVFMTCTX_UNSEEKABLE))
         return AVERROR(ENOSYS);
@@ -2952,6 +2953,7 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
         /* Seeking to start of segment ensures we seek to a keyframe located
          * before the given timestamp. */
         seek_timestamp = seg_start_ts;
+        snapped_to_segment = 1;
     }
 
     av_log(s, AV_LOG_DEBUG, "Seek to %"PRId64" mapped to segment %"PRId64
@@ -3004,6 +3006,15 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
         else
             pls->seek_timestamp = seek_timestamp;
         pls->seek_flags = flags;
+
+        if (pls == seek_pls && snapped_to_segment) {
+            /* The first keyframe of the target segment may have a slightly
+             * lower DTS than the EXTINF-derived seg_start_ts. Relax the cutoff
+             * to not discard the keyframe and land one segment late. */
+            int64_t idx = seq_no - pls->start_seq_no;
+            if (idx >= 0 && idx < pls->n_segments)
+                pls->seek_timestamp -= pls->segments[idx]->duration;
+        }
 
         if (pls != seek_pls) {
             /* set closest segment seq_no for playlists not handled above */
