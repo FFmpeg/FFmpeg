@@ -849,6 +849,7 @@ static int parse_playlist(HLSContext *c, const char *url,
     struct segment **prev_segments = NULL;
     int prev_n_segments = 0;
     int64_t prev_start_seq_no = -1;
+    int64_t load_start = av_gettime_relative();
 
     if (is_http && !in && c->http_persistent && c->playlist_pb) {
         in = c->playlist_pb;
@@ -1159,10 +1160,10 @@ static int parse_playlist(HLSContext *c, const char *url,
         free_segment_dynarray(prev_segments, prev_n_segments);
         av_freep(&prev_segments);
     }
-    if (pls)
-        pls->last_load_time = av_gettime_relative();
 
 fail:
+    if (pls)
+        pls->last_load_time = load_start;
     av_free(new_url);
     if (close_in)
         ff_format_io_close(c->ctx, &in);
