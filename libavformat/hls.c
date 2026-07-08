@@ -2779,8 +2779,8 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
                     }
 
                     tb = get_timebase(pls);
-                    ts_diff = av_rescale_rnd(pls->pkt->dts, AV_TIME_BASE,
-                                            tb.den, AV_ROUND_DOWN) -
+                    ts_diff = av_rescale_q_rnd(pls->pkt->dts, tb,
+                                               AV_TIME_BASE_Q, AV_ROUND_DOWN) -
                             pls->seek_timestamp;
                     if (ts_diff >= 0 && (pls->seek_flags  & AVSEEK_FLAG_ANY ||
                                         pls->pkt->flags & AV_PKT_FLAG_KEY)) {
@@ -2903,9 +2903,9 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
     first_timestamp = c->first_timestamp == AV_NOPTS_VALUE ?
                       0 : c->first_timestamp;
 
-    seek_timestamp = av_rescale_rnd(timestamp, AV_TIME_BASE,
-                                    s->streams[stream_index]->time_base.den,
-                                    AV_ROUND_DOWN);
+    seek_timestamp = av_rescale_q_rnd(timestamp,
+                                      s->streams[stream_index]->time_base,
+                                      AV_TIME_BASE_Q, AV_ROUND_DOWN);
 
     duration = s->duration == AV_NOPTS_VALUE ?
                0 : s->duration;
