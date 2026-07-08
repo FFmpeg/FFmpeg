@@ -131,6 +131,7 @@ struct playlist {
     int broken;
     int64_t cur_seq_no;
     int64_t last_seq_no;
+    int64_t first_read_seq_no;
     int m3u8_hold_counters;
     int64_t cur_seg_offset;
     int64_t last_load_time;
@@ -232,6 +233,7 @@ typedef struct HLSContext {
     int first_packet;
     int64_t first_timestamp;
     struct playlist *first_timestamp_pls;
+    int first_timestamp_locked;
     int64_t cur_timestamp;
     AVIOInterruptCB *interrupt_callback;
     AVDictionary *avio_opts;
@@ -355,6 +357,7 @@ static struct playlist *new_playlist(HLSContext *c, const char *url,
     av_strlcpy(pls->url, abs_url, sizeof(pls->url));
     pls->ts_offset = AV_NOPTS_VALUE;
     pls->seek_timestamp = AV_NOPTS_VALUE;
+    pls->first_read_seq_no = -1;
 
     pls->is_id3_timestamped = -1;
     pls->id3_mpegts_timestamp = AV_NOPTS_VALUE;
@@ -1812,6 +1815,8 @@ restart:
         }
         segment_retries = 0;
         just_opened = 1;
+        if (v->first_read_seq_no < 0)
+            v->first_read_seq_no = v->cur_seq_no;
     }
 
     if (c->http_multiple == -1) {
@@ -1901,6 +1906,8 @@ static int read_data_subtitle_segment(void *opaque, uint8_t *buf, int buf_size)
                    v->index);
             return ret;
         }
+        if (v->first_read_seq_no < 0)
+            v->first_read_seq_no = v->cur_seq_no;
     }
 
     return read_from_url(v, seg, buf, buf_size);
@@ -2294,6 +2301,7 @@ static int hls_read_header(AVFormatContext *s)
     c->first_packet = 1;
     c->first_timestamp = AV_NOPTS_VALUE;
     c->first_timestamp_pls = NULL;
+    c->first_timestamp_locked = 0;
     c->cur_timestamp = AV_NOPTS_VALUE;
 
     if ((ret = ffio_copy_url_options(s->pb, &c->avio_opts)) < 0)
@@ -2621,6 +2629,7 @@ static int recheck_discard_flags(AVFormatContext *s, int first)
             pls->needed = 1;
             changed = 1;
             pls->cur_seq_no = select_cur_seq_no(c, pls);
+            pls->first_read_seq_no = -1;
             pls->pb.pub.eof_reached = 0;
             if (c->cur_timestamp != AV_NOPTS_VALUE) {
                 /* catch up */
@@ -2744,10 +2753,14 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
                     fill_timing_for_id3_timestamped_stream(pls);
                 }
 
-                if (pls->ts_offset == AV_NOPTS_VALUE &&
-                    pls->pkt->dts    != AV_NOPTS_VALUE) {
+                if (pls->pkt->dts != AV_NOPTS_VALUE &&
+                    (pls->ts_offset == AV_NOPTS_VALUE ||
+                     (!c->first_timestamp_locked &&
+                      c->first_timestamp_pls == pls &&
+                      pls->cur_seq_no <= pls->first_read_seq_no + 1))) {
+                    int adjusted = 0;
                     /* Packet timestamp rebased onto the start of the segment list. */
-                    int64_t seg_idx = pls->cur_seq_no - pls->start_seq_no;
+                    int64_t seg_idx = pls->first_read_seq_no - pls->start_seq_no;
                     int64_t ts = av_rescale_q(pls->pkt->pts != AV_NOPTS_VALUE ?
                                               pls->pkt->pts : pls->pkt->dts,
                                               get_timebase(pls), AV_TIME_BASE_Q);
@@ -2758,18 +2771,35 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
                     if (c->first_timestamp == AV_NOPTS_VALUE) {
                         c->first_timestamp = ts;
                         c->first_timestamp_pls = pls;
+                        adjusted = 1;
+                    } else if (c->first_timestamp_pls == pls) {
+                        /* first_timestamp came from the first packet in mux
+                         * order, but another stream in the same segment may
+                         * start earlier. Lower the estimate while packets of
+                         * that segment are still arriving. */
+                        int64_t delta = c->first_timestamp - ts;
 
-                        /* start_time is the start of the segment list, the
-                         * origin of the timeline used for seeking. */
+                        if (delta > 0 && delta <= pls->target_duration) {
+                            c->first_timestamp = ts;
+                            for (int k = 0; k < c->n_playlists; k++)
+                                if (c->playlists[k]->ts_offset != AV_NOPTS_VALUE)
+                                    c->playlists[k]->ts_offset += delta;
+                            adjusted = 1;
+                        }
+                    }
+
+                    if (pls->ts_offset == AV_NOPTS_VALUE)
+                        pls->ts_offset = ts - c->first_timestamp;
+
+                    if (adjusted) {
                         for (unsigned k = 0; k < s->nb_streams; k++)
                             s->streams[k]->start_time =
-                                av_rescale_q(ts, AV_TIME_BASE_Q,
+                                av_rescale_q(c->first_timestamp, AV_TIME_BASE_Q,
                                              s->streams[k]->time_base);
                         av_log(s, AV_LOG_DEBUG,
                                "First timestamp %"PRId64" from playlist %d\n",
-                               ts, pls->index);
+                               c->first_timestamp, pls->index);
                     }
-                    pls->ts_offset = ts - c->first_timestamp;
                 }
 
                 seg = current_segment(pls);
@@ -2960,6 +2990,9 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
            " of playlist %d (start %"PRId64")\n",
            seek_timestamp, seq_no, seek_pls->index, seg_start_ts);
 
+    /* Keep timeline start fixed from now on. */
+    c->first_timestamp_locked = 1;
+
     /* set segment now so we do not need to search again below */
     seek_pls->cur_seq_no = seq_no;
     seek_pls->seek_stream_index = stream_subdemuxer_index;
@@ -2975,6 +3008,7 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
         AVIOContext *const pb = &pls->pb.pub;
         ff_format_io_close(pls->parent, &pls->input);
         pls->input_read_done = 0;
+        pls->first_read_seq_no = -1;
         pls->input_reuse = 0;
         ff_format_io_close(pls->parent, &pls->input_next);
         pls->input_next_requested = 0;
