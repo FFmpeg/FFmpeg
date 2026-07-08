@@ -2725,38 +2725,38 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
                     if (!avio_feof(&pls->pb.pub) && ret != AVERROR_EOF)
                         return ret;
                     break;
-                } else {
-                    /* stream_index check prevents matching picture attachments etc. */
-                    if (pls->is_id3_timestamped && pls->pkt->stream_index == 0) {
-                        /* audio elementary streams are id3 timestamped */
-                        fill_timing_for_id3_timestamped_stream(pls);
-                    }
+                }
 
-                    if (pls->ts_offset == AV_NOPTS_VALUE &&
-                        pls->pkt->dts    != AV_NOPTS_VALUE) {
-                        int64_t seg_idx = pls->cur_seq_no - pls->start_seq_no;
-                        int64_t ts = av_rescale_q(pls->pkt->dts,
-                            get_timebase(pls), AV_TIME_BASE_Q);
+                /* stream_index check prevents matching picture attachments etc. */
+                if (pls->is_id3_timestamped && pls->pkt->stream_index == 0) {
+                    /* audio elementary streams are id3 timestamped */
+                    fill_timing_for_id3_timestamped_stream(pls);
+                }
 
-                        /* EVENT playlists preserve all segments from the start */
+                if (pls->ts_offset == AV_NOPTS_VALUE &&
+                    pls->pkt->dts    != AV_NOPTS_VALUE) {
+                    int64_t seg_idx = pls->cur_seq_no - pls->start_seq_no;
+                    int64_t ts = av_rescale_q(pls->pkt->dts,
+                        get_timebase(pls), AV_TIME_BASE_Q);
+
+                    /* EVENT playlists preserve all segments from the start */
+                    if (pls->type == PLS_TYPE_EVENT)
+                        for (int64_t k = 0; k < seg_idx && k < pls->n_segments; k++)
+                            ts -= pls->segments[k]->duration;
+
+                    if (c->first_timestamp == AV_NOPTS_VALUE) {
+                        c->first_timestamp = ts;
+                        c->first_timestamp_pls = pls;
+
                         if (pls->type == PLS_TYPE_EVENT)
-                            for (int64_t k = 0; k < seg_idx && k < pls->n_segments; k++)
-                                ts -= pls->segments[k]->duration;
-
-                        if (c->first_timestamp == AV_NOPTS_VALUE) {
-                            c->first_timestamp = ts;
-                            c->first_timestamp_pls = pls;
-
-                            if (pls->type == PLS_TYPE_EVENT)
-                                for (unsigned k = 0; k < s->nb_streams; k++) {
-                                    AVStream *st = s->streams[k];
-                                    if (st->start_time == AV_NOPTS_VALUE)
-                                        st->start_time = av_rescale_q(ts,
-                                            AV_TIME_BASE_Q, st->time_base);
-                                }
-                        }
-                        pls->ts_offset = ts - c->first_timestamp;
+                            for (unsigned k = 0; k < s->nb_streams; k++) {
+                                AVStream *st = s->streams[k];
+                                if (st->start_time == AV_NOPTS_VALUE)
+                                    st->start_time = av_rescale_q(ts,
+                                        AV_TIME_BASE_Q, st->time_base);
+                            }
                     }
+                    pls->ts_offset = ts - c->first_timestamp;
                 }
 
                 seg = current_segment(pls);
