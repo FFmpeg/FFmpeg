@@ -40,11 +40,17 @@
 #include "hevc/ps.h"
 #include "libavutil/refstruct.h"
 
+// Damaged frames leave their up to 2 timestamp nodes behind unconsumed.
+// This many damaged frames are tolerated before the oldest leftovers are
+// evicted; no timestamp of a valid frame is lost below this.
+#define MAX_DAMAGED_FRAMES 32
+
 typedef struct DTS2PTSNode {
     int64_t      dts;
     int64_t duration;
     int          poc;
     int          gop;
+    int64_t   serial; // insertion order, evicting the stalest node first
     struct DTS2PTSNode *next; // valid only during same-gop re-keying
 } DTS2PTSNode;
 
@@ -89,6 +95,9 @@ typedef struct DTS2PTSContext {
         DTS2PTSHEVCContext hevc;
     } u;
 
+    int nb_nodes;
+    int nb_pending;
+    int64_t serial;
     int nb_frame;
     int gop;
     int eof;
@@ -128,11 +137,21 @@ static int free_node(void *opaque, void *elem)
     return 0;
 }
 
+static int find_stalest(void *opaque, void *elem)
+{
+    DTS2PTSNode **stalest = opaque;
+    DTS2PTSNode *node = elem;
+    if (!*stalest || node->serial < (*stalest)->serial)
+        *stalest = node;
+    return 0;
+}
+
 // Shared functions
 static int alloc_and_insert_node(AVBSFContext *ctx, int64_t ts, int64_t duration,
                                  int poc, int poc_diff, int gop)
 {
     DTS2PTSContext *s = ctx->priv_data;
+
     for (int i = 0; i < poc_diff; i++) {
         struct AVTreeNode *node = av_tree_node_alloc();
         DTS2PTSNode *poc_node, *ret;
@@ -145,13 +164,14 @@ static int alloc_and_insert_node(AVBSFContext *ctx, int64_t ts, int64_t duration
         }
         if (i && ts != AV_NOPTS_VALUE)
             ts += duration / poc_diff;
-        *poc_node = (DTS2PTSNode) { ts, duration, poc++, gop };
+        *poc_node = (DTS2PTSNode) { ts, duration, poc++, gop, s->serial++ };
         ret = av_tree_insert(&s->root, poc_node, cmp_insert, &node);
         if (ret && ret != poc_node) {
             *ret = *poc_node;
             av_refstruct_unref(&poc_node);
             av_free(node);
-        }
+        } else
+            s->nb_nodes++;
     }
     return 0;
 }
@@ -229,6 +249,7 @@ static int h264_queue_frame(AVBSFContext *ctx, AVPacket *pkt, int poc, int *queu
     frame = (DTS2PTSFrame) { pkt, poc, poc_diff, s->gop };
     ret = av_fifo_write(s->fifo, &frame, 1);
     av_assert2(ret >= 0);
+    s->nb_pending += poc_diff;
     *queued = 1;
 
     return 0;
@@ -476,6 +497,7 @@ static int hevc_queue_frame(AVBSFContext *ctx, AVPacket *pkt, int poc, bool *que
                 *r = *node;
                 av_refstruct_unref(&node);
                 av_free(tnode);
+                s->nb_nodes--;
             }
         }
     }
@@ -497,6 +519,7 @@ static int hevc_queue_frame(AVBSFContext *ctx, AVPacket *pkt, int poc, bool *que
     ret = av_fifo_write(s->fifo, &frame, 1);
     if (ret < 0)
         return ret;
+    s->nb_pending += frame.poc_diff;
 
     *queued = true;
 
@@ -664,6 +687,7 @@ static int dts2pts_filter(AVBSFContext *ctx, AVPacket *out)
     // Fetch a packet from the FIFO
     ret = av_fifo_read(s->fifo, &frame, 1);
     av_assert2(ret >= 0);
+    s->nb_pending -= frame.poc_diff;
     av_packet_move_ref(out, frame.pkt);
     av_packet_free(&frame.pkt);
 
@@ -690,6 +714,7 @@ static int dts2pts_filter(AVBSFContext *ctx, AVPacket *out)
                 av_tree_insert(&s->root, poc_node, cmp_insert, &node);
                 av_refstruct_unref(&poc_node);
                 av_free(node);
+                s->nb_nodes--;
                 poc_node = av_tree_find(s->root, &dup, cmp_find, NULL);
             }
         }
@@ -714,6 +739,24 @@ static int dts2pts_filter(AVBSFContext *ctx, AVPacket *out)
             av_log(ctx, AV_LOG_WARNING, "No timestamp for POC %d in tree\n", frame.poc);
     } else
         av_log(ctx, AV_LOG_WARNING, "No timestamp for POC %d in tree\n", frame.poc);
+
+    // The pending packets consume nb_pending nodes; frames whose lookup above
+    // missed leave nodes behind which nothing consumes anymore. Keep the
+    // leftovers of up to MAX_DAMAGED_FRAMES frames, then evict the nodes
+    // unconsumed the longest.
+    // At EOF nodes are deliberately kept to regenerate timestamps from.
+    while (!s->eof && s->nb_nodes > s->nb_pending + 2 * MAX_DAMAGED_FRAMES) {
+        DTS2PTSNode *stale = NULL;
+        struct AVTreeNode *tnode = NULL;
+        av_tree_enumerate(s->root, &stale, NULL, find_stalest);
+        av_log(ctx, AV_LOG_WARNING, "Evicting unconsumed POC %d, GOP %d\n",
+               stale->poc, stale->gop);
+        av_tree_insert(&s->root, stale, cmp_insert, &tnode);
+        av_refstruct_unref(&stale);
+        av_free(tnode);
+        s->nb_nodes--;
+    }
+
     av_log(ctx, AV_LOG_DEBUG, "Returning frame for POC %d, GOP %d, dts %"PRId64", pts %"PRId64"\n",
            frame.poc, frame.gop, out->dts, out->pts);
 
@@ -735,7 +778,9 @@ static void dts2pts_flush(AVBSFContext *ctx)
 
     av_tree_enumerate(s->root, NULL, NULL, free_node);
     av_tree_destroy(s->root);
-    s->root = NULL;
+    s->root       = NULL;
+    s->nb_nodes   = 0;
+    s->nb_pending = 0;
 
     ff_cbs_fragment_reset(&s->au);
     if (s->cbc)
