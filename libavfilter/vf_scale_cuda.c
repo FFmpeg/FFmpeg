@@ -422,6 +422,8 @@ static av_cold int init_processing_chain(AVFilterContext *ctx, int in_width, int
             s->use_filters = 0;
         } else if (s->use_filters < 0 && (out_width < in_width || out_height < in_height))
             s->use_filters = 1; /* downscaling; needed for anti-aliasing */
+        else if (s->use_filters < 0)
+            s->use_filters = 0;
     }
 
     outl->hw_frames_ctx = av_buffer_ref(s->frames_ctx);
