@@ -706,18 +706,21 @@ fail:
 static void print_statistics(CurlLoop *loop)
 {
     AVFormatContext *avfc = loop->avfc;
-    if (!loop->total_bytes)
-        return;
 
-    double time = (double) loop->total_time_us / 1000000.0;
-    double avg  = time ? loop->total_bytes / time : 0;
-    av_log(avfc, AV_LOG_VERBOSE,
-           "libcurl: Overall %"PRId64" bytes received in %.0f ms = %.0f kB/s\n",
-           loop->total_bytes, time * 1e3, avg / 1e3);
+    if (loop->total_bytes) {
+        double time = loop->total_time_us / 1000000.0;
+        double avg  = time ? loop->total_bytes / time : 0;
+        av_log(avfc, AV_LOG_VERBOSE,
+               "libcurl: Overall %"PRId64" bytes received in %.0f ms = %.0f kB/s\n",
+               loop->total_bytes, time * 1e3, avg / 1e3);
+    }
 
-    av_log(avfc, AV_LOG_VERBOSE,
-           "libcurl: %d connections, %d redirects, %d requests, %d errors\n",
-           loop->num_connections, loop->num_redirects, loop->num_requests, loop->num_errors);
+    if (loop->num_connections || loop->num_errors) {
+        av_log(avfc, AV_LOG_VERBOSE,
+               "libcurl: %d connections, %d redirects, %d requests, %d errors\n",
+               loop->num_connections, loop->num_redirects, loop->num_requests,
+               loop->num_errors);
+    }
 }
 
 static void curl_loop_destroy(CurlLoop *loop)
