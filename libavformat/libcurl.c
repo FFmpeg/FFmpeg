@@ -481,7 +481,10 @@ static void on_done(CurlContext *c, CURLcode code)
         return;
     }
 
-    if (code == CURLE_OK && !aborted && c->stream_ok) {
+    if (aborted)
+        return;
+
+    if (code == CURLE_OK && c->stream_ok) {
         c->retry_count = 0;
         int64_t file_end = c->content_size > 0 ? c->content_size - 1 : -1;
         if (c->end_off > 0)
@@ -499,7 +502,7 @@ static void on_done(CurlContext *c, CURLcode code)
     }
 
     /* Resume seekable transfers after a recoverable error. */
-    if (!aborted && c->seekable && is_recoverable(code) &&
+    if (c->seekable && is_recoverable(code) &&
         c->retry_count < c->max_retries) {
         c->retry_count++;
         c->loop->num_retries++;
@@ -509,13 +512,12 @@ static void on_done(CurlContext *c, CURLcode code)
         return;
     }
 
-    if (!aborted) {
-        pthread_mutex_lock(&c->mutex);
-        if (!c->status)
-            c->status = curlcode_to_averror(code);
-        pthread_cond_broadcast(&c->cond);
-        pthread_mutex_unlock(&c->mutex);
-    }
+    /* Unhandled generic curl error */
+    pthread_mutex_lock(&c->mutex);
+    if (!c->status)
+        c->status = curlcode_to_averror(code);
+    pthread_cond_broadcast(&c->cond);
+    pthread_mutex_unlock(&c->mutex);
 }
 
 /* ------------------------------------------------------------------------- */
