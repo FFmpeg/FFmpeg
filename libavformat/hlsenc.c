@@ -1140,20 +1140,31 @@ static int hls_append_segment(struct AVFormatContext *s, HLSContext *hls,
     return 0;
 }
 
-static int extract_segment_number(const char *filename) {
+static int extract_segment_number(const char *filename)
+{
     const char *dot = strrchr(filename, '.');
-    const char *num_start = dot - 1;
+    const char *num_start;
+    char *end;
+    long value;
 
-    while (num_start > filename && *num_start >= '0' && *num_start <= '9') {
+    if (!dot)
+        return -1;
+    if (dot == filename)
+        return -1;
+
+    num_start = dot;
+    while (num_start > filename &&
+           num_start[-1] >= '0' && num_start[-1] <= '9')
         num_start--;
-    }
-
-    num_start++;
-
     if (num_start == dot)
         return -1;
 
-    return atoi(num_start);
+    errno = 0;
+    value = strtol(num_start, &end, 10);
+    if (errno == ERANGE || end != dot || value > INT_MAX)
+        return -1;
+
+    return (int)value;
 }
 
 static int parse_playlist(AVFormatContext *s, const char *url, VariantStream *vs)
