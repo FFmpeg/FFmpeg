@@ -501,13 +501,16 @@ static void on_done(CurlContext *c, CURLcode code)
         return;
     }
 
+    if (c->stream_ok)
+        av_log(c->h, AV_LOG_WARNING, "%s\n", curl_easy_strerror(code));
+
     /* Resume seekable transfers after a recoverable error. */
     if (c->seekable && is_recoverable(code) &&
         c->retry_count < c->max_retries) {
         c->retry_count++;
         c->loop->num_retries++;
-        av_log(c->h, AV_LOG_WARNING, "%s, retrying (#%d) from %"PRId64"\n",
-               curl_easy_strerror(code), c->retry_count, c->request_start);
+        av_log(c->h, AV_LOG_WARNING, "Retrying (#%d) from %"PRId64"\n",
+               c->retry_count, c->request_start);
         start_request(c);
         return;
     }
