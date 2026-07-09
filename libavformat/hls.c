@@ -857,7 +857,7 @@ static int parse_playlist(HLSContext *c, const char *url,
         if (c->http_persistent)
             av_dict_set(&opts, "multiple_requests", "1", 0);
 
-        ret = c->ctx->io_open(c->ctx, &in, url, AVIO_FLAG_READ, &opts);
+        ret = open_url(c->ctx, &in, url, &opts, NULL, NULL);
         av_dict_free(&opts);
         if (ret < 0)
             return ret;
