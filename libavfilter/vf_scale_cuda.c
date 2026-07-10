@@ -372,7 +372,7 @@ fail:
 
 static int inter_buf_init(AVFilterContext *ctx, CUDATex *tex,
                           int out_width, int in_height,
-                          unsigned int planes)
+                          int use_float, unsigned int planes)
 {
     CUDAScaleContext *s = ctx->priv;
     CudaFunctions *cu = s->hwctx->internal->cuda_dl;
@@ -395,7 +395,8 @@ static int inter_buf_init(AVFilterContext *ctx, CUDATex *tex,
         const int sub_y   = is_chroma ? tex->log2_chroma_h : 0;
         const int plane_w = AV_CEIL_RSHIFT(out_width, sub_x);
         const int plane_h = AV_CEIL_RSHIFT(in_height, sub_y);
-        const int sizeof_pixel = (s->in_plane_depths[i] <= 8 ? 1 : 2) *
+        const int sizeof_pixel = (use_float ? sizeof(float) :
+                                  s->in_plane_depths[i] <= 8 ? 1 : 2) *
                                   s->in_plane_channels[i];
 
         if (!(planes & plane))
@@ -416,7 +417,8 @@ static int inter_buf_init(AVFilterContext *ctx, CUDATex *tex,
 
         CUDA_RESOURCE_DESC res_desc = {
             .resType = CU_RESOURCE_TYPE_PITCH2D,
-            .res.pitch2D.format = s->in_plane_depths[i] <= 8 ?
+            .res.pitch2D.format = use_float ? CU_AD_FORMAT_FLOAT :
+                                  s->in_plane_depths[i] <= 8 ?
                                   CU_AD_FORMAT_UNSIGNED_INT8 :
                                   CU_AD_FORMAT_UNSIGNED_INT16,
             .res.pitch2D.numChannels  = s->in_plane_channels[i],
@@ -617,7 +619,8 @@ static av_cold int cudascale_load_functions(AVFilterContext *ctx)
 
     if (s->use_filters) {
         static const char *const infix[] = { "Generic_h", "Generic_v" };
-        const char *tmp_infix = "Generic_h";
+        const char *tmp_infix = s->interp_algo == INTERP_ALGO_LANCZOS ?
+                                "Generic_float_h" : "Generic_h";
 
         s->interp_use_linear = 0;
         s->interp_as_integer = 0;
@@ -862,6 +865,7 @@ static int cudascale_filter_set_init(AVFilterContext *ctx,
     if (pass_x == FILTER_TMP) {
         ret = inter_buf_init(ctx, &set->inter_tex,
                              outlink->w, in_height,
+                             s->interp_algo == INTERP_ALGO_LANCZOS,
                              set->tmp_planes);
         if (ret < 0)
             goto fail;

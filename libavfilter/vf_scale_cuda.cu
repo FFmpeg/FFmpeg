@@ -1232,6 +1232,26 @@ __device__ static inline T Subsample_Generic(cudaTextureObject_t tex,
     );
 }
 
+template<typename T>
+__device__ static inline floatT Subsample_GenericFloat(cudaTextureObject_t tex,
+                                                       int xo, int yo,
+                                                       int src_left, int src_top,
+                                                       const float *weights,
+                                                       const int *offsets,
+                                                       int filter_size)
+{
+    const float *row = &weights[xo * filter_size];
+    const float x = 0.5f + src_left + offsets[xo];
+    const float y = 0.5f + src_top  + yo;
+    floatT sum;
+
+    vec_set_scalar(sum, 0.0f);
+    for (int i = 0; i < filter_size; i++)
+        sum += tex2D<floatT>(tex, x + i, y) * row[i];
+
+    return sum;
+}
+
 /// --- FUNCTION EXPORTS ---
 
 #define KERNEL_ARGS(T) CUDAScaleKernelParams params
@@ -1462,4 +1482,75 @@ GENERIC_KERNELS_RGB(rgb0)
 GENERIC_KERNELS_RGB(bgr0)
 GENERIC_KERNELS_RGB(rgba)
 GENERIC_KERNELS_RGB(bgra)
+
+#define GENERIC_FLOAT_KERNEL_Y(C, T, F)                                \
+    __global__ void Subsample_Generic_float_h_##C##_##C(               \
+        CUDAScaleKernelParams params)                                  \
+    {                                                                  \
+        int xo = blockIdx.x * blockDim.x + threadIdx.x;                \
+        int yo = blockIdx.y * blockDim.y + threadIdx.y;                \
+        if (yo >= params.dst_height || xo >= params.dst_width) return; \
+        F *dst = (F *)((char *)params.dst[0] +                         \
+                       yo * params.dst_pitch);                         \
+        dst[xo] = Subsample_GenericFloat<T>(                           \
+            params.src_tex[0], xo, yo, params.src_left, params.src_top, \
+            (const float *)params.weights, (const int *)params.offsets, \
+            params.filter_size);                                      \
+    }
+
+#define GENERIC_FLOAT_KERNEL_UV_PLANAR(C, T)                           \
+    __global__ void Subsample_Generic_float_h_##C##_##C##_uv(          \
+        CUDAScaleKernelParams params)                                  \
+    {                                                                  \
+        int xo = blockIdx.x * blockDim.x + threadIdx.x;                \
+        int yo = blockIdx.y * blockDim.y + threadIdx.y;                \
+        if (yo >= params.dst_height || xo >= params.dst_width) return; \
+        float *dst_u = (float *)((char *)params.dst[1] +               \
+                                 yo * params.dst_pitch);               \
+        float *dst_v = (float *)((char *)params.dst[2] +               \
+                                 yo * params.dst_pitch);               \
+        const float *weights = (const float *)params.weights;          \
+        const int *offsets = (const int *)params.offsets;              \
+        dst_u[xo] = Subsample_GenericFloat<T>(params.src_tex[1], xo, yo, \
+            params.src_left, params.src_top, weights, offsets,         \
+            params.filter_size);                                      \
+        dst_v[xo] = Subsample_GenericFloat<T>(params.src_tex[2], xo, yo, \
+            params.src_left, params.src_top, weights, offsets,         \
+            params.filter_size);                                      \
+    }
+
+#define GENERIC_FLOAT_KERNEL_UV_SEMI(C, T, F)                          \
+    __global__ void Subsample_Generic_float_h_##C##_##C##_uv(          \
+        CUDAScaleKernelParams params)                                  \
+    {                                                                  \
+        int xo = blockIdx.x * blockDim.x + threadIdx.x;                \
+        int yo = blockIdx.y * blockDim.y + threadIdx.y;                \
+        if (yo >= params.dst_height || xo >= params.dst_width) return; \
+        F *dst = (F *)((char *)params.dst[1] +                         \
+                       yo * params.dst_pitch);                         \
+        dst[xo] = Subsample_GenericFloat<T>(                           \
+            params.src_tex[1], xo, yo, params.src_left, params.src_top, \
+            (const float *)params.weights, (const int *)params.offsets, \
+            params.filter_size);                                      \
+    }
+
+#define GENERIC_FLOAT_KERNEL_PLANAR(C, T) \
+    GENERIC_FLOAT_KERNEL_Y(C, T, float)    \
+    GENERIC_FLOAT_KERNEL_UV_PLANAR(C, T)
+
+#define GENERIC_FLOAT_KERNEL_SEMI(C, T, TUV) \
+    GENERIC_FLOAT_KERNEL_Y(C, T, float)       \
+    GENERIC_FLOAT_KERNEL_UV_SEMI(C, TUV, float2)
+
+GENERIC_FLOAT_KERNEL_PLANAR(planar8,  uchar)
+GENERIC_FLOAT_KERNEL_PLANAR(planar10, ushort)
+GENERIC_FLOAT_KERNEL_PLANAR(planar16, ushort)
+GENERIC_FLOAT_KERNEL_SEMI(semiplanar8,  uchar,  uchar2)
+GENERIC_FLOAT_KERNEL_SEMI(semiplanar10, ushort, ushort2)
+GENERIC_FLOAT_KERNEL_SEMI(semiplanar16, ushort, ushort2)
+GENERIC_FLOAT_KERNEL_Y(rgb0, uchar4, float4)
+GENERIC_FLOAT_KERNEL_Y(bgr0, uchar4, float4)
+GENERIC_FLOAT_KERNEL_Y(rgba, uchar4, float4)
+GENERIC_FLOAT_KERNEL_Y(bgra, uchar4, float4)
+
 }
