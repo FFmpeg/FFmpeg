@@ -27689,7 +27689,8 @@ Bicubic
 This is the default.
 
 @item lanczos
-Lanczos
+High-quality separable Lanczos (windowed sinc). The filter radius can be
+set with @option{param}; the default is 3.
 
 @end table
 
@@ -27711,7 +27712,8 @@ parameters. This is the default behaviour.
 If set to 1, filter with a generic weight LUT instead of using fixed-function
 shader kernels. May be faster or slower depending on the hardware. A value
 of @code{auto} (the default) enables this automatically when required for
-correct anti-aliasing when downscaling.
+correct anti-aliasing when downscaling, and for high-quality Lanczos scaling.
+Set this to 0 to use the legacy fixed 4-tap Lanczos kernel.
 
 @item param
 Algorithm-specific parameter. For @var{bicubic}, this affects the filter

@@ -540,8 +540,12 @@ static av_cold int init_processing_chain(AVFilterContext *ctx, int in_width, int
         } else if (s->use_filters_opt >= 0) {
             s->use_filters = s->use_filters_opt;
         } else {
-            s->use_filters = cudascale_plane_is_downscaled(in_width, out_width,
-                                                            0, 0) ||
+            /* Lanczos needs the generic path for its full windowed-sinc
+             * kernel. Other algorithms need it when downscaling for correct
+             * anti-aliasing. */
+            s->use_filters = s->interp_algo == INTERP_ALGO_LANCZOS ||
+                             cudascale_plane_is_downscaled(in_width, out_width,
+                                                           0, 0) ||
                              cudascale_plane_is_downscaled(in_height, out_height,
                                                            0, 0) ||
                              (s->in_planes > 1 && s->out_planes > 1 &&
