@@ -323,17 +323,25 @@ static int wav_parse_bext_tag(AVFormatContext *s, int64_t size)
 
     if (size > 602) {
         /* CodingHistory present */
-        size -= 602;
+        int64_t coding_history_size = size - 602;
 
-        if (!(coding_history = av_malloc(size + 1)))
+        /* Professional BEXT coding history rarely exceeds a few KB.
+         * Cap to 1MB to prevent excessive allocation from crafted files
+         * while remaining well within ffio_read_size's int range. */
+        if (coding_history_size > 1024 * 1024) {
+            av_log(s, AV_LOG_ERROR, "BEXT coding history too large (%"PRId64")\n", coding_history_size);
+            return AVERROR_INVALIDDATA;
+        }
+
+        if (!(coding_history = av_malloc(coding_history_size + 1)))
             return AVERROR(ENOMEM);
 
-        if ((ret = ffio_read_size(s->pb, coding_history, size)) < 0) {
+        if ((ret = ffio_read_size(s->pb, coding_history, coding_history_size)) < 0) {
             av_free(coding_history);
             return ret;
         }
 
-        coding_history[size] = 0;
+        coding_history[coding_history_size] = 0;
         if ((ret = av_dict_set(&s->metadata, "coding_history", coding_history,
                                AV_DICT_DONT_STRDUP_VAL)) < 0)
             return ret;
