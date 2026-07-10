@@ -710,7 +710,11 @@ static int cudascale_filter_init(AVFilterContext *ctx,
         switch (s->interp_algo) {
         case INTERP_ALGO_NEAREST:  return 0; /* no weights needed */
         case INTERP_ALGO_BILINEAR: params.scaler = SWS_SCALE_BILINEAR; break;
-        case INTERP_ALGO_LANCZOS:  params.scaler = SWS_SCALE_LANCZOS;  break;
+        case INTERP_ALGO_LANCZOS:
+            params.scaler = SWS_SCALE_LANCZOS;
+            if (s->param != SCALE_CUDA_PARAM_DEFAULT)
+                params.scaler_params[0] = s->param;
+            break;
         case INTERP_ALGO_DEFAULT:
         case INTERP_ALGO_BICUBIC:
             params.scaler = SWS_SCALE_BICUBIC;

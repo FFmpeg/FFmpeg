@@ -27714,9 +27714,9 @@ of @code{auto} (the default) enables this automatically when required for
 correct anti-aliasing when downscaling.
 
 @item param
-Algorithm-Specific parameter.
-
-Affects the curves of the bicubic algorithm.
+Algorithm-specific parameter. For @var{bicubic}, this affects the filter
+curve. For @var{lanczos}, this sets the filter radius from 1 to 10 (default 3)
+when using the generic filter path; it has no effect with @option{use_filters=0}.
 
 @item force_original_aspect_ratio
 @item force_divisible_by
