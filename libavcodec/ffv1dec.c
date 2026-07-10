@@ -136,7 +136,7 @@ static int decode_plane(FFV1Context *f, FFV1SliceContext *sc,
                 return ret;
             if (sc->remap)
                 for (x = 0; x < w; x++)
-                    sample[1][x] = sc->fltmap[remap_index][sample[1][x]];
+                    sample[1][x] = sc->fltmap[remap_index][sample[1][x] & mask];
             for (x = 0; x < w; x++)
                 src[x*pixel_stride + stride * y] = sample[1][x];
         } else {
