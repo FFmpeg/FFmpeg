@@ -485,11 +485,15 @@ static int tdsc_parse_tdsf(AVCodecContext *avctx, int number_tiles)
             return ret;
         init_refframe = 1;
     }
-    ctx->refframe->width  = ctx->width  = w;
-    ctx->refframe->height = ctx->height = h;
+    ctx->width  = w;
+    ctx->height = h;
 
     /* Allocate the reference frame if not already done or on size change */
     if (init_refframe) {
+        av_frame_unref(ctx->refframe);
+        ctx->refframe->format = avctx->pix_fmt;
+        ctx->refframe->width  = w;
+        ctx->refframe->height = h;
         ret = av_frame_get_buffer(ctx->refframe, 0);
         if (ret < 0)
             return ret;
