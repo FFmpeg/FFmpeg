@@ -41,5 +41,6 @@ typedef struct AVAES {
 } AVAES;
 
 void ff_init_aes_x86(AVAES *a, int decrypt);
+void ff_init_aes_aarch64(AVAES *a, int decrypt);
 
 #endif /* AVUTIL_AES_INTERNAL_H */

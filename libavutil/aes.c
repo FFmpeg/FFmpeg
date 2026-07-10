@@ -239,6 +239,8 @@ int av_aes_init(AVAES *a, const uint8_t *key, int key_bits, int decrypt)
     a->crypt = decrypt ? aes_decrypt : aes_encrypt;
 #if ARCH_X86 && HAVE_X86ASM && HAVE_AESNI_EXTERNAL
     ff_init_aes_x86(a, decrypt);
+#elif ARCH_AARCH64 && HAVE_ARM_AES
+    ff_init_aes_aarch64(a, decrypt);
 #endif
 
     ff_thread_once(&aes_static_init, aes_init_static);
