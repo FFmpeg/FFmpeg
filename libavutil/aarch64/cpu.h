@@ -26,6 +26,7 @@
 #define have_neon(flags)    CPUEXT(flags, NEON)
 #define have_vfp(flags)     CPUEXT(flags, VFP)
 #define have_arm_crc(flags) CPUEXT(flags, ARM_CRC)
+#define have_arm_aes(flags) CPUEXT(flags, ARM_AES)
 #define have_pmull(flags)   CPUEXT(flags, PMULL)
 #define have_eor3(flags)    CPUEXT(flags, EOR3)
 #define have_dotprod(flags) CPUEXT(flags, DOTPROD)
