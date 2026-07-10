@@ -1129,6 +1129,11 @@ static int call_resize_kernel(AVFilterContext *ctx, CUfunction func,
         .src_height = src_height,
         .param = s->param,
         .mpeg_range = mpeg_range,
+        /* Supported input formats use the same depth and shift for
+         * every component. */
+        .src_depth = s->in_desc->comp[0].depth,
+        .src_storage_max = ((1U << s->in_desc->comp[0].depth) - 1) <<
+                           s->in_desc->comp[0].shift,
     };
 
     if (filter) {
