@@ -577,7 +577,7 @@ static int demux_audio(AVFormatContext *s, TyRecHdr *rec_hdr, AVPacket *pkt)
         if (ty->audio_type == TIVO_AUDIO_AC3 &&
                 ty->tivo_series == TIVO_SERIES2) {
             if (ty->ac3_pkt_size + pkt->size > AC3_PKT_LENGTH) {
-                pkt->size -= 2;
+                pkt->size -= FFMIN(pkt->size, 2);
                 ty->ac3_pkt_size = 0;
             } else {
                 ty->ac3_pkt_size += pkt->size;
