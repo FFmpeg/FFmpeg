@@ -47,6 +47,7 @@ DEFINE_GUID(ff_DXVA2_ModeHEVC_VLD_Main10,0x107af0e0, 0xef1a,0x4d19,0xab,0xa8,0x6
 DEFINE_GUID(ff_DXVA2_ModeVP9_VLD_Profile0,0x463707f8,0xa1d0,0x4585,0x87,0x6d,0x83,0xaa,0x6d,0x60,0xb8,0x9e);
 DEFINE_GUID(ff_DXVA2_ModeVP9_VLD_10bit_Profile2,0xa4c749ef,0x6ecf,0x48aa,0x84,0x48,0x50,0xa7,0xa1,0x16,0x5f,0xf7);
 DEFINE_GUID(ff_DXVA2_ModeAV1_VLD_Profile0,0xb8be4ccb,0xcf53,0x46ba,0x8d,0x59,0xd6,0xb8,0xa6,0xda,0x5d,0x2a);
+DEFINE_GUID(ff_DXVA2_ModeAV1_VLD_Profile1,0x6936ff0f,0x45b1,0x4163,0x9c,0xc1,0x64,0x6e,0xf6,0x94,0x61,0x08);
 DEFINE_GUID(ff_DXVA2_ModeAV1_VLD_Profile2,0x0c5f2aa1,0xe541,0x4089,0xbb,0x7b,0x98,0x11,0x0a,0x19,0xd7,0xc8);
 DEFINE_GUID(ff_DXVA2_ModeAV1_VLD_12bit_Profile2,0x17127009,0xa00f,0x4ce1,0x99,0x4e,0xbf,0x40,0x81,0xf6,0xf3,0xf0);
 DEFINE_GUID(ff_DXVA2_ModeAV1_VLD_12bit_Profile2_420,0x2d80bed6,0x9cac,0x4835,0x9e,0x91,0x32,0x7b,0xbc,0x4f,0x9e,0xe8);
@@ -79,6 +80,8 @@ static const int prof_vp9_profile2[] = {AV_PROFILE_VP9_2,
                                         AV_PROFILE_UNKNOWN};
 static const int prof_av1_profile0[] = {AV_PROFILE_AV1_MAIN,
                                         AV_PROFILE_UNKNOWN};
+static const int prof_av1_profile1[] = {AV_PROFILE_AV1_HIGH,
+                                        AV_PROFILE_UNKNOWN};
 static const int prof_av1_profile2[] = {AV_PROFILE_AV1_PROFESSIONAL,
                                         AV_PROFILE_UNKNOWN};
 
@@ -109,6 +112,7 @@ static const dxva_mode dxva_modes[] = {
 
     /* AV1 */
     { &ff_DXVA2_ModeAV1_VLD_Profile0,            AV_CODEC_ID_AV1, prof_av1_profile0 },
+    { &ff_DXVA2_ModeAV1_VLD_Profile1,            AV_CODEC_ID_AV1, prof_av1_profile1 },
     { &ff_DXVA2_ModeAV1_VLD_12bit_Profile2_420,  AV_CODEC_ID_AV1, prof_av1_profile2 },
     { &ff_DXVA2_ModeAV1_VLD_12bit_Profile2,      AV_CODEC_ID_AV1, prof_av1_profile2 },
     { &ff_DXVA2_ModeAV1_VLD_Profile2,            AV_CODEC_ID_AV1, prof_av1_profile2 },
