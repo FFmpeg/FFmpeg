@@ -644,7 +644,6 @@ static int parse_dat(AVFilterContext *ctx, FILE *f)
     int ret, i, j, k, size, size2;
 
     lut3d->lutsize = size = 33;
-    size2 = size * size;
 
     NEXT_LINE(skip_line(line));
     if (!strncmp(line, "3DLUTSIZE ", 10)) {
@@ -652,6 +651,7 @@ static int parse_dat(AVFilterContext *ctx, FILE *f)
 
         NEXT_LINE(skip_line(line));
     }
+    size2 = size * size;
 
     ret = allocate_3dlut(ctx, size, 0);
     if (ret < 0)
