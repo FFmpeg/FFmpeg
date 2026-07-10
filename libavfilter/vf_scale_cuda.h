@@ -44,6 +44,8 @@ typedef struct {
     int src_height;
     float param;
     int mpeg_range;
+    int src_depth;
+    int src_storage_max;
 
     /* Weights for the generic filter kernel */
     CUdeviceptr weights;

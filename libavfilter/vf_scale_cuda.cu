@@ -28,7 +28,8 @@ using subsample_function_t = T (*)(cudaTextureObject_t tex, int xo, int yo,
                                    int dst_width, int dst_height,
                                    int src_left, int src_top,
                                    int src_width, int src_height,
-                                   int bit_depth, float param,
+                                   int bit_depth, int src_depth, int storage_max,
+                                   float param,
                                    const float *weights, const int *offsets,
                                    int filter_size);
 
@@ -92,7 +93,7 @@ static inline __device__ ushort conv_16to10pl(ushort in)
     __device__ static inline void N(cudaTextureObject_t src_tex[4], T *dst[4], int xo, int yo, \
                                     int dst_width, int dst_height, int dst_pitch,              \
                                     int src_left, int src_top, int src_width, int src_height,  \
-                                    float param, int mpeg_range,                               \
+                                    int src_depth, int storage_max, float param, int mpeg_range, \
                                     const float *weights, const int *offsets, int filter_size)
 
 #define SUB_F(m, plane) \
@@ -100,7 +101,7 @@ static inline __device__ ushort conv_16to10pl(ushort in)
                        dst_width, dst_height,  \
                        src_left, src_top,      \
                        src_width, src_height,  \
-                       in_bit_depth, param,    \
+                       in_bit_depth, src_depth, storage_max, param, \
                        weights, offsets, filter_size)
 
 // FFmpeg passes pitch in bytes, CUDA uses potentially larger types
@@ -1099,7 +1100,8 @@ __device__ static inline T Subsample_Nearest(cudaTextureObject_t tex,
                                              int dst_width, int dst_height,
                                              int src_left, int src_top,
                                              int src_width, int src_height,
-                                             int bit_depth, float param,
+                                             int bit_depth, int src_depth, int storage_max,
+                                             float param,
                                              const float *weights, const int *offsets,
                                              int filter_size)
 {
@@ -1117,7 +1119,8 @@ __device__ static inline T Subsample_Bilinear(cudaTextureObject_t tex,
                                               int dst_width, int dst_height,
                                               int src_left, int src_top,
                                               int src_width, int src_height,
-                                              int bit_depth, float param,
+                                              int bit_depth, int src_depth, int storage_max,
+                                              float param,
                                               const float *weights, const int *offsets,
                                               int filter_size)
 {
@@ -1151,7 +1154,8 @@ __device__ static inline T Subsample_Bicubic(cudaTextureObject_t tex,
                                              int dst_width, int dst_height,
                                              int src_left, int src_top,
                                              int src_width, int src_height,
-                                             int bit_depth, float param,
+                                             int bit_depth, int src_depth, int storage_max,
+                                             float param,
                                              const float *weights, const int *offsets,
                                              int filter_size)
 {
@@ -1197,11 +1201,14 @@ __device__ static inline T Subsample_Generic(cudaTextureObject_t tex,
                                              int dst_width, int dst_height,
                                              int src_left, int src_top,
                                              int src_width, int src_height,
-                                             int bit_depth, float param,
+                                             int bit_depth, int src_depth, int storage_max,
+                                             float param,
                                              const float *weights, const int *offsets,
                                              int filter_size)
 {
     const float factor = bit_depth > 8 ? 0xFFFF : 0xFF;
+    const float code_max = (1U << src_depth) - 1;
+    const float sample_step = storage_max / code_max;
 
     floatT sum;
     vec_set_scalar(sum, 0.0f);
@@ -1220,7 +1227,9 @@ __device__ static inline T Subsample_Generic(cudaTextureObject_t tex,
             sum += tex2D<floatT>(tex, x, y + i) * col[i];
     }
 
-    return from_floatN<T, floatT>(sum * factor);
+    return from_floatN<T, floatT>(
+        saturate_rintf(sum * (factor / storage_max), code_max) * sample_step
+    );
 }
 
 /// --- FUNCTION EXPORTS ---
@@ -1244,6 +1253,7 @@ __device__ static inline T Subsample_Generic(cudaTextureObject_t tex,
         params.dst_width, params.dst_height, params.dst_pitch, \
         params.src_left, params.src_top,                \
         params.src_width, params.src_height,            \
+        params.src_depth, params.src_storage_max,       \
         params.param, params.mpeg_range,                \
         (const float*) params.weights,                  \
         (const int*) params.offsets,                    \
