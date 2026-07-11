@@ -1023,7 +1023,7 @@ static int compute_frame_features(AudioRNNContext *s, DenoiseState *st, AVComple
     float E = 0;
     float *ceps_0, *ceps_1, *ceps_2;
     float spec_variability = 0;
-    LOCAL_ALIGNED_32(float, Ly, [NB_BANDS]);
+    LOCAL_ALIGNED_32(float, Ly, [FFALIGN(NB_BANDS, 4)]);
     LOCAL_ALIGNED_32(float, p, [WINDOW_SIZE]);
     float pitch_buf[PITCH_BUF_SIZE>>1];
     int pitch_index;
@@ -1057,6 +1057,7 @@ static int compute_frame_features(AudioRNNContext *s, DenoiseState *st, AVComple
     for (int i = 0; i < NB_BANDS; i++)
         Exp[i] = Exp[i] / sqrtf(.001f+Ex[i]*Ep[i]);
 
+    memset(Exp + NB_BANDS, 0, (FFALIGN(NB_BANDS, 4) - NB_BANDS) * sizeof(*Exp));
     dct(s, tmp, Exp);
 
     for (int i = 0; i < NB_DELTA_CEPS; i++)
@@ -1082,6 +1083,7 @@ static int compute_frame_features(AudioRNNContext *s, DenoiseState *st, AVComple
         return 1;
     }
 
+    memset(Ly + NB_BANDS, 0, (FFALIGN(NB_BANDS, 4) - NB_BANDS) * sizeof(*Ly));
     dct(s, features, Ly);
     features[0] -= 12;
     features[1] -= 4;
@@ -1364,7 +1366,7 @@ static float rnnoise_channel(AudioRNNContext *s, DenoiseState *st, float *out, c
     AVComplexFloat P[WINDOW_SIZE];
     float x[FRAME_SIZE];
     float Ex[NB_BANDS], Ep[NB_BANDS];
-    LOCAL_ALIGNED_32(float, Exp, [NB_BANDS]);
+    LOCAL_ALIGNED_32(float, Exp, [FFALIGN(NB_BANDS, 4)]);
     float features[NB_FEATURES];
     float g[NB_BANDS];
     float gf[FREQ_SIZE];
