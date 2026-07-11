@@ -198,6 +198,8 @@ static int codec2_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     //try to read desired number of frames, compute n from to actual number of bytes read
+    if (c2->frames_per_packet > INT_MAX / block_align)
+        return AVERROR(EINVAL);
     size = c2->frames_per_packet * block_align;
     ret = av_get_packet(s->pb, pkt, size);
     if (ret < 0) {
@@ -207,7 +209,7 @@ static int codec2_read_packet(AVFormatContext *s, AVPacket *pkt)
     //only set duration - compute_pkt_fields() and ff_pcm_read_seek() takes care of everything else
     //tested by spamming the seek functionality in ffplay
     n = ret / block_align;
-    pkt->duration = n * frame_size;
+    pkt->duration = (int64_t)n * frame_size;
 
     return ret;
 }
