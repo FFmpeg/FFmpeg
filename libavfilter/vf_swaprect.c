@@ -200,6 +200,7 @@ static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     SwapRectContext *s = ctx->priv;
+    int size = 0;
 
     if (!s->w  || !s->h  ||
         !s->x1 || !s->y1 ||
@@ -210,7 +211,16 @@ static int config_input(AVFilterLink *inlink)
     av_image_fill_max_pixsteps(s->pixsteps, NULL, s->desc);
     s->nb_planes = av_pix_fmt_count_planes(inlink->format);
 
-    s->temp = av_malloc_array(inlink->w, s->pixsteps[0]);
+    for (int p = 0; p < s->nb_planes; p++) {
+        int shift = p == 1 || p == 2 ? s->desc->log2_chroma_w : 0;
+        int width = AV_CEIL_RSHIFT(inlink->w, shift);
+
+        if (width > INT_MAX / s->pixsteps[p])
+            return AVERROR(EINVAL);
+        size = FFMAX(size, width * s->pixsteps[p]);
+    }
+
+    s->temp = av_malloc(size);
     if (!s->temp)
         return AVERROR(ENOMEM);
 
