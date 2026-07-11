@@ -41,6 +41,7 @@ typedef struct FloodfillContext {
     int nb_planes;
     int back, front;
     Points *points;
+    unsigned int points_size;
 
     int (*is_same)(const AVFrame *frame, int x, int y,
                    unsigned s0, unsigned s1, unsigned s2, unsigned s3);
@@ -271,9 +272,6 @@ static int config_input(AVFilterLink *inlink)
     }
 
     s->front = s->back = 0;
-    s->points = av_calloc(inlink->w * inlink->h, 4 * sizeof(Points));
-    if (!s->points)
-        return AVERROR(ENOMEM);
 
     return 0;
 }
@@ -292,7 +290,22 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
     int s3 = s->s[3];
     const int w = frame->width;
     const int h = frame->height;
+    size_t nb_points, points_size;
     int i, ret;
+
+    if (w > UINT16_MAX + 1 || h > UINT16_MAX + 1 ||
+        av_size_mult(w, h, &nb_points) < 0 ||
+        av_size_mult(nb_points, 4 * sizeof(*s->points), &points_size) < 0) {
+        av_frame_free(&frame);
+        return AVERROR(EINVAL);
+    }
+
+    av_fast_malloc(&s->points, &s->points_size, points_size);
+    if (!s->points) {
+        av_frame_free(&frame);
+        return AVERROR(ENOMEM);
+    }
+    s->front = s->back = 0;
 
     if (is_inside(s->x, s->y, w, h)) {
         s->pick_pixel(frame, s->x, s->y, &s0, &s1, &s2, &s3);
