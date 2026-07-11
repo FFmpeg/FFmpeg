@@ -150,14 +150,26 @@ AVFoundation supports the following options:
 @table @option
 
 @item -list_devices <TRUE|FALSE>
-If set to true, a list of all available input devices is given showing all
-device names and indices.
+If set to true, a list of all available input devices is given showing their
+index, name, unique ID, and USB serial number (when available).
 
 @item -video_device_index <INDEX>
 Specify the video device by its index. Overrides anything given in the input filename.
 
 @item -audio_device_index <INDEX>
 Specify the audio device by its index. Overrides anything given in the input filename.
+
+@item -video_device_id <ID>
+Specify the video device by a prefixed identifier, as shown by
+@option{-list_devices}: @code{uid:<UID>} selects by AVFoundation unique ID,
+@code{serial:<SERIAL>} by USB serial number. The unique ID of a UVC device
+may not be stable across reboots. Only UVC devices expose a serial number.
+Overrides anything given in the input filename.
+
+@item -audio_device_id <ID>
+Specify the audio device by a prefixed identifier. See
+@option{-video_device_id}; for audio, the serial is only available for
+class-compliant USB devices.
 
 @item -pixel_format <FORMAT>
 Request the video device to use a specific pixel format.
