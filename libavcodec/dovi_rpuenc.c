@@ -685,6 +685,10 @@ int ff_dovi_rpu_generate(DOVIContext *s, const AVDOVIMetadata *metadata,
         dv_md_compression = AV_DOVI_COMPRESSION_NONE;
 
     vdr_rpu_id = mapping->vdr_rpu_id;
+    if (vdr_rpu_id < 0 || vdr_rpu_id > DOVI_MAX_DM_ID) {
+        av_log(s->logctx, AV_LOG_ERROR, "Invalid VDR RPU id %d\n", vdr_rpu_id);
+        return AVERROR_INVALIDDATA;
+    }
     use_prev_vdr_rpu = 0;
 
     if (!s->vdr[vdr_rpu_id]) {
