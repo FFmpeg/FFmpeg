@@ -582,6 +582,8 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
 
         mapping->num_x_partitions = get_ue_golomb_long(gb) + 1;
         mapping->num_y_partitions = get_ue_golomb_long(gb) + 1;
+        VALIDATE(mapping->num_x_partitions, 1, 0xFFFF);
+        VALIDATE(mapping->num_y_partitions, 1, 0xFFFF);
         /* End of rpu_data_header(), start of vdr_rpu_data_payload() */
 
         for (int c = 0; c < 3; c++) {
