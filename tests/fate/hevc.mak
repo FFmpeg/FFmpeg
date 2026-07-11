@@ -207,7 +207,7 @@ $(HEVC_TESTS_444_8BIT): SCALE_OPTS := -pix_fmt yuv444p
 $(HEVC_TESTS_10BIT): SCALE_OPTS := -pix_fmt yuv420p10le -vf scale
 $(HEVC_TESTS_422_10BIT) $(HEVC_TESTS_422_10BIN): SCALE_OPTS := -pix_fmt yuv422p10le -vf scale
 $(HEVC_TESTS_444_12BIT): SCALE_OPTS := -pix_fmt yuv444p12le -vf scale
-fate-hevc-conformance-%: CMD = framecrc -flags output_corrupt -i $(TARGET_SAMPLES)/hevc-conformance/$(subst fate-hevc-conformance-,,$(@)).bit $(SCALE_OPTS)
+fate-hevc-conformance-%: CMD = framecrc -i $(TARGET_SAMPLES)/hevc-conformance/$(subst fate-hevc-conformance-,,$(@)).bit $(SCALE_OPTS)
 $(HEVC_TESTS_422_10BIN): CMD = framecrc -i $(TARGET_SAMPLES)/hevc-conformance/$(subst fate-hevc-conformance-,,$(@)).bin $(SCALE_OPTS)
 $(HEVC_TESTS_MULTIVIEW): CMD = framecrc -i $(TARGET_SAMPLES)/hevc-conformance/$(subst fate-hevc-conformance-,,$(@)).bit \
 	-pix_fmt yuv420p -map "0:view:0" -map "0:view:1" -vf setpts=N:strip_fps=1
