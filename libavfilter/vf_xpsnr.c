@@ -273,7 +273,7 @@ static int get_wsse(AVFilterContext *ctx, int16_t **org, int16_t *org_m1,
     const uint32_t       w = s->plane_width [0]; /* luma image width in pixels */
     const uint32_t       h = s->plane_height[0];/* luma image height in pixels */
     const double         r = (double)(w * h) / (3840.0 * 2160.0); /* UHD ratio */
-    const uint32_t       b = FFMAX(0, 4 * (int32_t) (32.0 * sqrt(r) +
+    const uint32_t       b = FFMAX(1, 4 * (int32_t) (32.0 * sqrt(r) +
                                                      0.5)); /* block size, integer multiple of 4 for SIMD */
     const uint32_t   w_blk = (w + b - 1) / b; /* luma width in units of blocks */
     const double   avg_act = sqrt(16.0 * (double) (1 << (2 * s->depth - 9)) / sqrt(FFMAX(0.00001,
@@ -399,7 +399,7 @@ static int do_xpsnr(FFFrameSync *fs)
     XPSNRContext *const s = ctx->priv;
     const uint32_t      w = s->plane_width [0];  /* luma image width in pixels */
     const uint32_t      h = s->plane_height[0]; /* luma image height in pixels */
-    const uint32_t      b = FFMAX(0, 4 * (int32_t) (32.0 * sqrt((double) (w * h) / (3840.0 * 2160.0)) + 0.5)); /* block size */
+    const uint32_t      b = FFMAX(1, 4 * (int32_t) (32.0 * sqrt((double) (w * h) / (3840.0 * 2160.0)) + 0.5)); /* block size */
     const uint32_t  w_blk = (w + b - 1) / b;  /* luma width in units of blocks */
     const uint32_t  h_blk = (h + b - 1) / b; /* luma height in units of blocks */
     AVFrame *master, *ref = NULL;
