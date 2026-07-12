@@ -136,6 +136,12 @@ static int vk_ffv1_start_frame(AVCodecContext          *avctx,
 
     fp->crc_checked = f->ec && (avctx->err_recognition & AV_EF_CRCCHECK);
 
+    /* The context-less free callback needs these device functions, which
+     * prepare_frame_sdr() used to set. vp->sem is kept for the next
+     * non-keyframe's wait and the free callback's CRC readback. */
+    vp->wait_semaphores          = ctx->s.vkfn.WaitSemaphores;
+    vp->invalidate_memory_ranges = ctx->s.vkfn.InvalidateMappedMemoryRanges;
+
     /* Host map the input slices data if supported */
     if (ctx->s.extensions & FF_VK_EXT_EXTERNAL_HOST_MEMORY)
         ff_vk_host_map_buffer(&ctx->s, &vp->slices_buf, buffer_ref->data,
@@ -154,6 +160,11 @@ static int vk_ffv1_start_frame(AVCodecContext          *avctx,
             return err;
     } else {
         FFv1VulkanDecodePicture *fpl = f->hwaccel_last_picture_private;
+
+        /* The previous frame's setup may have failed partway */
+        if (!fpl || !fpl->slice_state)
+            return AVERROR_INVALIDDATA;
+
         fp->slice_state = av_buffer_ref(fpl->slice_state);
         if (!fp->slice_state)
             return AVERROR(ENOMEM);
@@ -181,12 +192,6 @@ static int vk_ffv1_start_frame(AVCodecContext          *avctx,
         if (err < 0)
             return err;
     }
-
-    /* The context-less free callback needs these device functions, which
-     * prepare_frame_sdr() used to set. vp->sem is kept for the next
-     * non-keyframe's wait and the free callback's CRC readback. */
-    vp->wait_semaphores          = ctx->s.vkfn.WaitSemaphores;
-    vp->invalidate_memory_ranges = ctx->s.vkfn.InvalidateMappedMemoryRanges;
 
     /* Create a temporaty frame for RGB */
     if (is_rgb) {
@@ -303,9 +308,10 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
         FFv1VulkanDecodePicture *fpl = f->hwaccel_last_picture_private;
         FFVulkanDecodePicture *vpl = &fpl->vp;
 
-        /* Wait on the previous frame */
-        RET(ff_vk_exec_add_dep_wait_sem(&ctx->s, exec, vpl->sem, vpl->sem_value,
-                                        VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT));
+        /* Wait on the previous frame, if its decode was ever submitted */
+        if (vpl->sem)
+            RET(ff_vk_exec_add_dep_wait_sem(&ctx->s, exec, vpl->sem, vpl->sem_value,
+                                            VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT));
     }
 
     RET(ff_vk_exec_add_dep_buf(&ctx->s, exec, &fp->slice_state, 1, 1));
@@ -935,39 +941,43 @@ static void vk_ffv1_free_frame_priv(AVRefStructOpaque _hwctx, void *data)
 
     FFv1VulkanDecodePicture *fp = data;
     FFVulkanDecodePicture *vp = &fp->vp;
-    FFVkBuffer *slice_feedback = (FFVkBuffer *)fp->slice_feedback_buf->data;
-    uint8_t *ssp = slice_feedback->mapped_mem + 2*fp->slice_num*sizeof(uint32_t);
 
     ff_vk_decode_free_frame(dev_ctx, vp);
 
-    /* Invalidate slice/output data if needed */
-    if (!(slice_feedback->flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
-        VkMappedMemoryRange invalidate_data = {
-            .sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
-            .memory = slice_feedback->mem,
-            .offset = 0,
-            .size = 2*fp->slice_num*sizeof(uint32_t),
-        };
-        vp->invalidate_memory_ranges(hwctx->act_dev,
-                                     1, &invalidate_data);
-    }
+    /* No feedback to read if setup failed or the decode was never submitted */
+    if (fp->slice_feedback_buf && vp->sem) {
+        FFVkBuffer *slice_feedback = (FFVkBuffer *)fp->slice_feedback_buf->data;
+        uint8_t *ssp = slice_feedback->mapped_mem + 2*fp->slice_num*sizeof(uint32_t);
 
-    int slice_error_cnt = 0;
-    int crc_mismatch_cnt = 0;
-    uint32_t max_overread = 0;
-    for (int i = 0; i < fp->slice_num; i++) {
-        uint32_t crc_res = 0;
-        if (fp->crc_checked)
-            crc_res = AV_RN32(ssp + 2*i*sizeof(uint32_t) + 0);
-        uint32_t overread = AV_RN32(ssp + 2*i*sizeof(uint32_t) + 4);
-        max_overread = FFMAX(overread, max_overread);
-        slice_error_cnt += !!overread;
-        crc_mismatch_cnt += !!crc_res;
+        /* Invalidate slice/output data if needed */
+        if (!(slice_feedback->flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
+            VkMappedMemoryRange invalidate_data = {
+                .sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
+                .memory = slice_feedback->mem,
+                .offset = 0,
+                .size = 2*fp->slice_num*sizeof(uint32_t),
+            };
+            vp->invalidate_memory_ranges(hwctx->act_dev,
+                                         1, &invalidate_data);
+        }
+
+        int slice_error_cnt = 0;
+        int crc_mismatch_cnt = 0;
+        uint32_t max_overread = 0;
+        for (int i = 0; i < fp->slice_num; i++) {
+            uint32_t crc_res = 0;
+            if (fp->crc_checked)
+                crc_res = AV_RN32(ssp + 2*i*sizeof(uint32_t) + 0);
+            uint32_t overread = AV_RN32(ssp + 2*i*sizeof(uint32_t) + 4);
+            max_overread = FFMAX(overread, max_overread);
+            slice_error_cnt += !!overread;
+            crc_mismatch_cnt += !!crc_res;
+        }
+        if (slice_error_cnt || crc_mismatch_cnt)
+            av_log(dev_ctx, AV_LOG_ERROR, "Decode status: %i slices overread (%i bytes max), "
+                                          "%i CRCs mismatched\n",
+                   slice_error_cnt, max_overread, crc_mismatch_cnt);
     }
-    if (slice_error_cnt || crc_mismatch_cnt)
-        av_log(dev_ctx, AV_LOG_ERROR, "Decode status: %i slices overread (%i bytes max), "
-                                      "%i CRCs mismatched\n",
-               slice_error_cnt, max_overread, crc_mismatch_cnt);
 
     av_buffer_unref(&fp->slice_state);
     av_buffer_unref(&fp->slice_feedback_buf);
