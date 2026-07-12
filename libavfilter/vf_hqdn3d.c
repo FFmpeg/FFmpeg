@@ -163,12 +163,8 @@ static int denoise_depth(HQDN3DContext *s,
             case 14: ret = denoise_depth(__VA_ARGS__, 14); break;             \
             case 16: ret = denoise_depth(__VA_ARGS__, 16); break;             \
         }                                                                     \
-        if (ret < 0) {                                                        \
-            av_frame_free(&out);                                              \
-            if (!direct)                                                      \
-                av_frame_free(&in);                                           \
+        if (ret < 0)                                                          \
             return ret;                                                       \
-        }                                                                     \
     } while (0)
 
 static void precalc_coefs(double dist25, int depth, int16_t *ct)
@@ -281,12 +277,15 @@ static int config_input(AVFilterLink *inlink)
     ff_hqdn3d_init_x86(s);
 #endif
 
+    s->format = inlink->format;
+    s->width  = inlink->w;
+    s->height = inlink->h;
+
     return 0;
 }
 
 typedef struct ThreadData {
     AVFrame *in, *out;
-    int direct;
 } ThreadData;
 
 static int do_denoise(AVFilterContext *ctx, void *data, int job_nr, int n_jobs)
@@ -295,7 +294,6 @@ static int do_denoise(AVFilterContext *ctx, void *data, int job_nr, int n_jobs)
     const ThreadData *td = data;
     AVFrame *out = td->out;
     AVFrame *in = td->in;
-    int direct = td->direct;
 
     denoise(s, in->data[job_nr], out->data[job_nr],
                 s->line[job_nr], &s->frame_prev[job_nr],
@@ -312,10 +310,21 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx  = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
+    HQDN3DContext *s = ctx->priv;
 
     AVFrame *out;
     int direct = av_frame_is_writable(in) && !ctx->is_disabled;
     ThreadData td;
+    int ret[3];
+
+    if (in->format != s->format ||
+        in->width  != s->width  ||
+        in->height != s->height) {
+        av_log(ctx, AV_LOG_ERROR,
+               "Frame size or format changed without filter graph reinitialization\n");
+        av_frame_free(&in);
+        return AVERROR(EINVAL);
+    }
 
     if (direct) {
         out = in;
@@ -331,9 +340,16 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     td.in = in;
     td.out = out;
-    td.direct = direct;
     /* one thread per plane */
-    ff_filter_execute(ctx, do_denoise, &td, NULL, 3);
+    ff_filter_execute(ctx, do_denoise, &td, ret, 3);
+    for (int i = 0; i < FF_ARRAY_ELEMS(ret); i++) {
+        if (ret[i] < 0) {
+            av_frame_free(&out);
+            if (!direct)
+                av_frame_free(&in);
+            return ret[i];
+        }
+    }
 
     if (ctx->is_disabled) {
         av_frame_free(&out);
