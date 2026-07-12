@@ -315,21 +315,28 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFrame *out;
     int direct = av_frame_is_writable(in) && !ctx->is_disabled;
     ThreadData td;
-    int ret[3];
+    int err, ret[3];
 
-    if (in->format != s->format ||
-        in->width  != s->width  ||
-        in->height != s->height) {
-        av_log(ctx, AV_LOG_ERROR,
-               "Frame size or format changed without filter graph reinitialization\n");
+    if (in->format != s->format) {
         av_frame_free(&in);
         return AVERROR(EINVAL);
+    }
+
+    if (in->width != s->width || in->height != s->height) {
+        inlink->w = in->width;
+        inlink->h = in->height;
+        if ((err = config_input(inlink)) < 0) {
+            av_frame_free(&in);
+            return err;
+        }
+        outlink->w = in->width;
+        outlink->h = in->height;
     }
 
     if (direct) {
         out = in;
     } else {
-        out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+        out = ff_get_video_buffer(outlink, in->width, in->height);
         if (!out) {
             av_frame_free(&in);
             return AVERROR(ENOMEM);
