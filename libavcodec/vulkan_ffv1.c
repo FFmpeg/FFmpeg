@@ -852,10 +852,11 @@ static int vk_decode_ffv1_init(AVCodecContext *avctx)
         return AVERROR(ENOTSUP);
 
     /* Streams with a low amount of slices will usually be much slower
-     * to decode, so warn the user. */
-    if (f->slice_count < 16)
+     * to decode, so warn the user. Use the slice structure from the
+     * extradata: slice_count is only set during frame decoding. */
+    if (f->num_h_slices * f->num_v_slices < 16)
         av_log(avctx, AV_LOG_WARNING, "Stream has a low number of slices (%i), "
-               "decoding may be very slow\n", f->slice_count);
+               "decoding may be very slow\n", f->num_h_slices * f->num_v_slices);
 
     err = ff_vk_decode_init(avctx);
     if (err < 0)
