@@ -122,6 +122,13 @@ You need a VM, docker container for FFmpeg? contact root at ffmpeg.org
 
 
 
+Forgejo Fairy:
+~~~~~~~~~~~~~~
+LLM based reviewer, issue investigator and general helper. Written and maintained by Michael
+https://code.ffmpeg.org/michaelni/Fairies
+
+
+
 Multimedia Wiki:
 ~~~~~~~~~~~~~~~~
 The Multimedia Wiki http://wiki.multimedia.cx is ran by Mike Melanson.
