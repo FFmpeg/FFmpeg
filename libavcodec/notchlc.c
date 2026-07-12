@@ -298,7 +298,7 @@ static int decode_blocks(AVCodecContext *avctx, AVFrame *p,
             for (int x = 0; x < avctx->width; x += 16) {
                 unsigned m = bytestream2_get_le32(gb);
                 unsigned offset = bytestream2_get_le32(gb);
-                unsigned alpha0, alpha1;
+                int alpha0, alpha1;
                 uint64_t control;
 
                 if (offset >= UINT_MAX / 4)
@@ -308,10 +308,6 @@ static int decode_blocks(AVCodecContext *avctx, AVFrame *p,
                     return AVERROR_INVALIDDATA;
 
                 bytestream2_seek(&dgb, offset, SEEK_SET);
-                control = bytestream2_get_le64(&dgb);
-                alpha0 = control & 0xFF;
-                alpha1 = (control >> 8) & 0xFF;
-                control = control >> 16;
 
                 for (int by = 0; by < 4; by++) {
                     for (int bx = 0; bx < 4; bx++) {
@@ -331,9 +327,16 @@ static int decode_blocks(AVCodecContext *avctx, AVFrame *p,
                             }
                             break;
                         case 2:
+                            control = bytestream2_get_le64(&dgb);
+                            alpha0 = control & 0xFF;
+                            alpha1 = (control >> 8) & 0xFF;
+                            control >>= 16;
                             for (int i = 0; i < 4; i++) {
                                 for (int j = 0; j < 4; j++) {
-                                    dsta[x + (i + by * 4) * alinesize + bx * 4 + j] = (alpha0 + (alpha1 - alpha0) * (control & 7)) << 4;
+                                    const int selector = control & 7;
+
+                                    dsta[x + (i + by * 4) * alinesize + bx * 4 + j] = ((alpha0 * (7 - selector) + alpha1 * selector + 6) / 7) << 4;
+                                    control >>= 3;
                                 }
                             }
                             break;
@@ -341,7 +344,6 @@ static int decode_blocks(AVCodecContext *avctx, AVFrame *p,
                             return AVERROR_INVALIDDATA;
                         }
 
-                        control >>= 3;
                         m >>= 2;
                     }
                 }
