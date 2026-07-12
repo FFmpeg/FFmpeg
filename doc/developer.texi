@@ -759,11 +759,16 @@ Now you'll just need to open the eml file with the email application
 and execute 'Send'.
 
 @subheading Reviews
-Your patch will be reviewed on the mailing list. You will likely be asked
+Your patch or pull request will be reviewed on the mailing list or on
+code.ffmpeg.org. You will likely be asked
 to make some changes and are expected to send in an improved version that
 incorporates the requests from the review. This process may go through
 several iterations. Once your patch is deemed good enough, some developer
 will pick it up and commit it to the official FFmpeg tree.
+If you want an LLM-based review, add
+@url{https://code.ffmpeg.org/Forgejo_Fairy, Forgejo Fairy} as a reviewer
+to your pull request. Issues with Fairy herself can be reported at her
+@url{https://code.ffmpeg.org/michaelni/Fairies, repository}.
 
 Give us a few days to react. But if some time passes without reaction,
 send a reminder by email. Your patch should eventually be dealt with.
