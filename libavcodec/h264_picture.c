@@ -44,9 +44,9 @@ void ff_h264_unref_picture(H264Picture *pic)
     if (!pic->f || !pic->f->buf[0])
         return;
 
+    av_refstruct_unref(&pic->hwaccel_picture_private);
     ff_thread_release_ext_buffer(&pic->tf);
     av_frame_unref(pic->f_grain);
-    av_refstruct_unref(&pic->hwaccel_picture_private);
 
     av_refstruct_unref(&pic->qscale_table_base);
     av_refstruct_unref(&pic->mb_type_base);
