@@ -97,10 +97,10 @@ static void vp9_tile_data_free(VP9TileData *td)
 
 static void vp9_frame_unref(VP9Frame *f)
 {
+    av_refstruct_unref(&f->hwaccel_picture_private);
     ff_progress_frame_unref(&f->tf);
     av_refstruct_unref(&f->header_ref);
     av_refstruct_unref(&f->extradata);
-    av_refstruct_unref(&f->hwaccel_picture_private);
     f->segmentation_map = NULL;
 }
 
