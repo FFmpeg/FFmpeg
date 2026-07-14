@@ -39,6 +39,7 @@ FATE_MOV_FFPROBE-$(call FRAMEMD5, MOV, H264, H264_PARSER) += fate-mov-neg-firstp
                    fate-mov-mp4-with-mov-in24-ver \
                    fate-mov-mime-codecstring \
                    fate-mov-t35-cdsc-track \
+                   fate-mov-t35-rndr-track \
 
 FATE_MOV_FFPROBE-$(call FRAMEMD5, MOV, MPEG4, H264_PARSER) += fate-mov-mp4-extended-atom \
 
@@ -171,6 +172,8 @@ fate-mov-mp4-extended-atom: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_packets 
 fate-mov-mime-codecstring: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream=mime_codec_string -v 0 $(TARGET_SAMPLES)/mov/mov_stream_shorter_than_movie.mov
 
 fate-mov-t35-cdsc-track: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream_group=index,id,nb_streams,type:stream_group_stream=index,id,codec_name,codec_type,codec_tag_string,extradata_size $(TARGET_SAMPLES)/mov/mov-t35-cdsc-track.mp4
+
+fate-mov-t35-rndr-track: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream_group=index,id,nb_streams,type:stream_group_stream=index,id,codec_name,codec_type,codec_tag_string,extradata_size $(TARGET_SAMPLES)/mov/mov-t35-rndr-track.mp4
 
 FATE_MOV_FFMPEG_FFPROBE_SAMPLES-$(call REMUX, MP4 MOV, OGG_DEMUXER VORBIS_DECODER) \
                           += fate-mov-mp4-chapters
