@@ -246,7 +246,7 @@ static int cuda_transfer_data(AVHWFramesContext *ctx, AVFrame *dst,
     CudaFunctions             *cu = hwctx->internal->cuda_dl;
 
     CUcontext dummy;
-    int i, ret;
+    int i, ret, copy_queued = 0;
 
     if ((src->hw_frames_ctx && ((AVHWFramesContext*)src->hw_frames_ctx->data)->format != AV_PIX_FMT_CUDA) ||
         (dst->hw_frames_ctx && ((AVHWFramesContext*)dst->hw_frames_ctx->data)->format != AV_PIX_FMT_CUDA))
@@ -260,7 +260,7 @@ static int cuda_transfer_data(AVHWFramesContext *ctx, AVFrame *dst,
         int bytewidth = av_image_get_linesize(ctx->sw_format, src->width, i);
         if (bytewidth < 0) {
             ret = bytewidth;
-            goto exit;
+            goto fail;
         }
 
         CUDA_MEMCPY2D cpy = {
@@ -288,7 +288,8 @@ static int cuda_transfer_data(AVHWFramesContext *ctx, AVFrame *dst,
 
         ret = CHECK_CU(cu->cuMemcpy2DAsync(&cpy, hwctx->stream));
         if (ret < 0)
-            goto exit;
+            goto fail;
+        copy_queued = 1;
     }
 
     if (!dst->hw_frames_ctx) {
@@ -297,6 +298,9 @@ static int cuda_transfer_data(AVHWFramesContext *ctx, AVFrame *dst,
             goto exit;
     }
 
+fail:
+    if (ret < 0 && copy_queued)
+        CHECK_CU(cu->cuStreamSynchronize(hwctx->stream));
 exit:
     CHECK_CU(cu->cuCtxPopCurrent(&dummy));
 
