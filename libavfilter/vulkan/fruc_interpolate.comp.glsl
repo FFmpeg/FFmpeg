@@ -61,7 +61,7 @@ layout (set = 0, binding = 4) uniform isampler2D flow_bwd;
 layout (push_constant, scalar) uniform pushConstants {
     float t;          /* interpolation position in [0, 1] between f0 and f1 */
     int planes;
-    vec4 luma_weights; /* RGB->Y weights, matching the grayscale pass */
+    vec4 luma_weights[4]; /* per-plane RGB->Y weights, matching the grayscale pass */
     /* Visible extent of each plane. Neither the source textures nor the output
      * storage images need match it: a hardware decoder allocates its frames
      * padded up to its alignment, and the output frames context may be the
@@ -120,8 +120,12 @@ void main()
 
         /* Key staticness off the same weighted luma the grayscale pass feeds the
          * flow engine. */
-        float lz = abs(dot(texture(f0_img[0], f0_uv(base, 0)), luma_weights) -
-                       dot(texture(f1_img[0], f1_uv(base, 0)), luma_weights));
+        float l0 = 0.0, l1 = 0.0;
+        for (int q = 0; q < planes; q++) {
+            l0 += dot(texture(f0_img[q], f0_uv(base, q)), luma_weights[q]);
+            l1 += dot(texture(f1_img[q], f1_uv(base, q)), luma_weights[q]);
+        }
+        float lz = abs(l0 - l1);
         float staticness = exp(-(lz * lz) / (STATIC_LUMA_SIGMA * STATIC_LUMA_SIGMA));
 
         float disp = max(length((s0 - base) * luma_size),

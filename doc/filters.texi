@@ -29684,10 +29684,10 @@ backward optical flow field on the device's optical flow engine, and uses those
 fields to synthesise motion-compensated intermediate frames at the requested
 output frame rate. The frame timing logic mirrors the @code{framerate} filter.
 
-Planar and semi-planar YUV, gray, and packed RGB whose sampled channels are
-already in component order are supported. Packed YUV, planar RGB, formats with
-more than 16 bits integer data per component, such as @code{rgb96} and
-@code{gray32}, and Bayer formats are not.
+The majority of YUV and RGB pixel formats are supported. The exceptions are
+subsampled packed YUV formats such as @code{yuyv422} and @code{uyvy422},
+formats with more than 16 bits integer data per component, such as
+@code{rgb96} and @code{gray32}, and Bayer formats.
 
 @table @option
 @item fps

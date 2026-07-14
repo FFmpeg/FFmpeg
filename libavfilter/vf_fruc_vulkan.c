@@ -53,13 +53,14 @@ enum var_name {
 };
 
 typedef struct GrayscalePushData {
-    float luma_weights[4];
+    float luma_weights[4][4]; ///< per-plane RGB->Y weights (dotted with each plane's texel)
+    int32_t planes;           ///< number of input planes sampled per frame
 } GrayscalePushData;
 
 typedef struct InterpolatePushData {
     float   t;
     int32_t planes;
-    float   luma_weights[4];    ///< RGB->Y weights, matching the grayscale pass
+    float   luma_weights[4][4]; ///< per-plane RGB->Y weights, matching the grayscale pass
     float   plane_size[4][2];   ///< visible texel extent of each plane
 } InterpolatePushData;
 
@@ -131,7 +132,8 @@ typedef struct FRUCVulkanContext {
     int height;         ///< luma height
     int flow_width;
     int flow_height;
-    float luma_weights[4];  ///< RGB->Y weights for the grayscale pass
+    float luma_weights[4][4]; ///< RGB->Y weights for the grayscale pass
+    int   gray_planes;        ///< number of input planes the grayscale pass samples
 
     /* Double-buffered optical flow resources, indexed by (gen % FRUC_NB_SLOTS). */
     FRUCFlowSlot slots[FRUC_NB_SLOTS];
@@ -330,11 +332,43 @@ static int init_image_layouts(FRUCVulkanContext *s)
     return 0;
 }
 
+static int packed_rgb_channel(const AVPixFmtDescriptor *desc, VkFormat vkfmt,
+                              int comp)
+{
+    const AVComponentDescriptor *c = &desc->comp[comp];
+
+    switch (vkfmt) {
+    /* These are all sampled as their logical components, whatever order the
+     * pix fmt uses to lay them out in host memory, so the component index is
+     * already the channel. */
+    case VK_FORMAT_A2R10G10B10_UNORM_PACK32:
+    case VK_FORMAT_A2B10G10R10_UNORM_PACK32:
+    case VK_FORMAT_B8G8R8_UNORM:
+    case VK_FORMAT_B8G8R8A8_UNORM:
+        return comp;
+    default:
+        return c->offset / ((c->depth + 7) / 8);
+    }
+}
+
+static int packed_luma_channel(const AVPixFmtDescriptor *desc, VkFormat vkfmt)
+{
+    const AVComponentDescriptor *c = &desc->comp[0];
+
+    switch (vkfmt) {
+    /* xv30 packs V, Y, U, so luma is the logical G channel. */
+    case VK_FORMAT_A2R10G10B10_UNORM_PACK32:
+        return 1;
+    default:
+        return c->offset / ((c->depth + 7) / 8);
+    }
+}
+
 static av_cold int check_sw_format(AVFilterContext *avctx, enum AVPixelFormat sw_format)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(sw_format);
 
-    if (!desc)
+    if (!desc || !av_vkfmt_from_pixfmt(sw_format))
         return AVERROR(EINVAL);
 
     if (desc->flags & AV_PIX_FMT_FLAG_BAYER) {
@@ -344,15 +378,10 @@ static av_cold int check_sw_format(AVFilterContext *avctx, enum AVPixelFormat sw
     }
 
     if (!(desc->flags & AV_PIX_FMT_FLAG_RGB) && desc->nb_components > 1 &&
-        !(desc->flags & AV_PIX_FMT_FLAG_PLANAR)) {
-        av_log(avctx, AV_LOG_ERROR, "Packed YUV input (%s) is not supported\n",
-               desc->name);
-        return AVERROR(ENOTSUP);
-    }
-
-    if (sw_format == AV_PIX_FMT_BGRA || sw_format == AV_PIX_FMT_BGR0) {
-        av_log(avctx, AV_LOG_ERROR, "Input format %s is not supported\n",
-               desc->name);
+        !(desc->flags & AV_PIX_FMT_FLAG_PLANAR) &&
+        (desc->log2_chroma_w || desc->log2_chroma_h)) {
+        av_log(avctx, AV_LOG_ERROR, "Subsampled packed YUV input (%s) is not "
+               "supported\n", desc->name);
         return AVERROR(ENOTSUP);
     }
 
@@ -401,26 +430,42 @@ static av_cold int init_filter(AVFilterContext *avctx)
     s->width  = vkctx->output_width;
     s->height = vkctx->output_height;
 
-    /* Optical flow tracks luma; plane 0 already is luma for YUV. For RGB, derive
-     * it so the flow follows brightness. The value only feeds the flow engine and
-     * is never written out, so a fixed BT.709 matrix suffices for all RGB inputs. */
+    /* Optical flow tracks luma. YUV carries it directly, RGB has it derived so the
+     * flow follows brightness. The value only feeds the flow engine and is never
+     * written out, so a fixed BT.709 matrix suffices for all RGB inputs. */
     {
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(vkctx->output_format);
-        if (desc && (desc->flags & AV_PIX_FMT_FLAG_RGB)) {
-            if (desc->flags & AV_PIX_FMT_FLAG_PLANAR) {
-                av_log(avctx, AV_LOG_ERROR, "Planar RGB input is not supported; "
-                       "use a packed RGB or a YUV format\n");
-                return AVERROR(ENOTSUP);
+        const VkFormat *vkfmts = av_vkfmt_from_pixfmt(vkctx->output_format);
+        static const float bt709[3] = { 0.2126f, 0.7152f, 0.0722f }; /* R, G, B */
+
+        memset(s->luma_weights, 0, sizeof(s->luma_weights));
+        s->gray_planes = 1;
+
+        if (desc->flags & AV_PIX_FMT_FLAG_PLANAR) {
+            if (desc->flags & AV_PIX_FMT_FLAG_RGB) {
+                /* One component per plane: weight each plane by its component's
+                 * coefficient (comp[c] is R, G, B for c = 0, 1, 2). */
+                s->gray_planes = av_pix_fmt_count_planes(vkctx->output_format);
+                for (int c = 0; c < 3; c++)
+                    s->luma_weights[desc->comp[c].plane][0] = bt709[c];
+            } else {
+                /* Planar and semi-planar YUV: plane 0 is luma already. */
+                s->luma_weights[0][0] = 1.0f;
             }
-            s->luma_weights[0] = 0.2126f;
-            s->luma_weights[1] = 0.7152f;
-            s->luma_weights[2] = 0.0722f;
-            s->luma_weights[3] = 0.0f;
+        } else if (desc->nb_components > 1) {
+            /* Packed: every component shares plane 0's texel, so the weights
+             * select channels rather than planes. */
+            if (desc->flags & AV_PIX_FMT_FLAG_RGB) {
+                for (int c = 0; c < 3; c++)
+                    s->luma_weights[0][packed_rgb_channel(desc, vkfmts[0], c)] = bt709[c];
+            } else {
+                /* Packed 4:4:4 YUV: luma is a single component, but not
+                 * necessarily the first channel. */
+                s->luma_weights[0][packed_luma_channel(desc, vkfmts[0])] = 1.0f;
+            }
         } else {
-            s->luma_weights[0] = 1.0f;
-            s->luma_weights[1] = 0.0f;
-            s->luma_weights[2] = 0.0f;
-            s->luma_weights[3] = 0.0f;
+            /* Gray: the one channel is luma. */
+            s->luma_weights[0][0] = 1.0f;
         }
 
         /* Special handling is required for formats that store fewer than
@@ -433,18 +478,28 @@ static av_cold int init_filter(AVFilterContext *avctx)
          * Adjustment is not done if shift+depth == 16. In this case, the data
          * is MSB aligned, and should be treated as a 16bit value.
          */
-        if (desc) {
-            const VkFormat *vkfmts = av_vkfmt_from_pixfmt(vkctx->output_format);
-            const AVComponentDescriptor *comp = &desc->comp[0];
+        for (int p = 0; p < s->gray_planes; p++) {
+            const AVComponentDescriptor *comp = NULL;
+            float scale;
 
-            if (vkfmts && vkfmts[0] == VK_FORMAT_R16_UNORM &&
-                comp->shift + comp->depth != 16) {
-                float scale = 65535.0f /
-                              (((1U << comp->depth) - 1U) << comp->shift);
+            if (vkfmts[p] != VK_FORMAT_R16_UNORM)
+                continue;
 
-                for (int c = 0; c < 4; c++)
-                    s->luma_weights[c] *= scale;
+            for (int c = 0; c < desc->nb_components; c++) {
+                if (desc->comp[c].plane == p) {
+                    comp = &desc->comp[c];
+                    break;
+                }
             }
+            if (!comp)
+                return AVERROR_BUG;
+
+            if (comp->shift + comp->depth == 16)
+                continue;
+
+            scale = 65535.0f / (((1U << comp->depth) - 1U) << comp->shift);
+            for (int c = 0; c < 4; c++)
+                s->luma_weights[p][c] *= scale;
         }
     }
 
@@ -728,7 +783,14 @@ static av_cold int init_filter(AVFilterContext *avctx)
             {
                 .type       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 .dimensions = 2,
-                .elems      = 2,
+                .elems      = s->gray_planes,
+                .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
+                .samplers   = DUP_SAMPLER(s->sampler),
+            },
+            {
+                .type       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .dimensions = 2,
+                .elems      = s->gray_planes,
                 .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
                 .samplers   = DUP_SAMPLER(s->sampler),
             },
@@ -741,7 +803,7 @@ static av_cold int init_filter(AVFilterContext *avctx)
                 .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
             },
         };
-        ff_vk_shader_add_descriptor_set(vkctx, &s->grayscale, desc, 2, 0);
+        ff_vk_shader_add_descriptor_set(vkctx, &s->grayscale, desc, 3, 0);
     }
     RET(ff_vk_shader_link(vkctx, &s->grayscale,
                           ff_fruc_grayscale_comp_spv_data,
@@ -875,21 +937,28 @@ static int compute_flow(AVFilterContext *avctx)
     RET(ff_vk_create_imageviews(vkctx, exec, f0_views, s->f0, FF_VK_REP_FLOAT));
     RET(ff_vk_create_imageviews(vkctx, exec, f1_views, s->f1, FF_VK_REP_FLOAT));
 
-    ff_vk_shader_update_img(vkctx, exec, &s->grayscale, 0, 0, 0,
-                            f0_views[0], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                            s->sampler);
-    ff_vk_shader_update_img(vkctx, exec, &s->grayscale, 0, 0, 1,
-                            f1_views[0], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                            s->sampler);
-    ff_vk_shader_update_img(vkctx, exec, &s->grayscale, 0, 1, 0,
+    for (int p = 0; p < s->gray_planes; p++) {
+        ff_vk_shader_update_img(vkctx, exec, &s->grayscale, 0, 0, p,
+                                f0_views[p], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                                s->sampler);
+        ff_vk_shader_update_img(vkctx, exec, &s->grayscale, 0, 1, p,
+                                f1_views[p], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                                s->sampler);
+    }
+    ff_vk_shader_update_img(vkctx, exec, &s->grayscale, 0, 2, 0,
                             fs->gray_view[0], VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
-    ff_vk_shader_update_img(vkctx, exec, &s->grayscale, 0, 1, 1,
+    ff_vk_shader_update_img(vkctx, exec, &s->grayscale, 0, 2, 1,
                             fs->gray_view[1], VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
 
     ff_vk_exec_bind_shader(vkctx, exec, &s->grayscale);
-    ff_vk_shader_update_push_const(vkctx, exec, &s->grayscale,
-                                   VK_SHADER_STAGE_COMPUTE_BIT, 0,
-                                   sizeof(GrayscalePushData), &s->luma_weights);
+    {
+        GrayscalePushData pd;
+        memcpy(pd.luma_weights, s->luma_weights, sizeof(pd.luma_weights));
+        pd.planes = s->gray_planes;
+        ff_vk_shader_update_push_const(vkctx, exec, &s->grayscale,
+                                       VK_SHADER_STAGE_COMPUTE_BIT, 0,
+                                       sizeof(GrayscalePushData), &pd);
+    }
 
     nb_img_bar = 0;
     ff_vk_frame_barrier(vkctx, exec, s->f0, img_bar, &nb_img_bar,
