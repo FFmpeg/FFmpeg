@@ -688,8 +688,8 @@ static int get_pixel_format(AVCodecContext *avctx)
 
 static void av1_frame_unref(AV1Frame *f)
 {
-    ff_progress_frame_unref(&f->pf);
     av_refstruct_unref(&f->hwaccel_picture_private);
+    ff_progress_frame_unref(&f->pf);
     av_refstruct_unref(&f->header_ref);
     f->raw_frame_header = NULL;
     f->spatial_id = f->temporal_id = 0;
