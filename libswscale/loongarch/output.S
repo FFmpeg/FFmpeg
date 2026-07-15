@@ -173,91 +173,30 @@ function yuv2plane1_8_lsx
     vinsgr2vr.h  vr1,   t5,    5
     vinsgr2vr.h  vr1,   t6,    6
     vinsgr2vr.h  vr1,   t7,    7
-    vsub.h       vr0,   vr0,   vr0
-    vilvl.h      vr2,   vr0,   vr1
-    vilvh.h      vr3,   vr0,   vr1
-
     andi         t8,    a2,    7
     srli.d       a2,    a2,    3
     beqz         a2,    2f
 1:
-    vld          vr1,   a0,    0
-    addi.d       a0,    a0,    16
-    vshuf4i.d    vr0,   vr1,   8
-    vexth.w.h    vr4,   vr0
-    vexth.w.h    vr5,   vr1
+    vld           vr2,   a0,    0
+    addi.d        a0,    a0,    16
+    vavg.h        vr4,   vr1,   vr2
+    vssrani.bu.h  vr4,   vr4,   6
 
-    vadd.w       vr4,   vr2,   vr4
-    vadd.w       vr5,   vr3,   vr5
-    vsrai.w      vr4,   vr4,   7
-    vsrai.w      vr5,   vr5,   7
-    vclip255.w   vr4,   vr4
-    vclip255.w   vr5,   vr5
-    vpickev.h    vr1,   vr5,   vr4
-    vpickev.b    vr1,   vr1,   vr1
-    fst.d        f1,    a1,    0
-    addi.d       a1,    a1,    8
-    addi.d       a2,    a2,    -1
-    bnez         a2,    1b
+    fst.d         f4,    a1,    0
+    addi.d        a1,    a1,    8
+    addi.d        a2,    a2,    -1
+    blt           zero,  a2,    1b
 2:
     beqz         t8,    4f
+    vld          vr2,   a0,     0
+    vavg.h       vr4,   vr1,    vr2
+    vssrani.bu.h vr4,   vr4,    6
 3:
-    add.w        a4,    a4,    t8
-    addi.w       t1,    a4,    1
-    addi.w       t2,    a4,    2
-    addi.w       t3,    a4,    3
-    addi.w       t4,    a4,    4
-    addi.w       t5,    a4,    5
-    addi.w       t6,    a4,    6
-    addi.w       t7,    a4,    7
-    andi         t0,    a4,    7
-    andi         t1,    t1,    7
-    andi         t2,    t2,    7
-    andi         t3,    t3,    7
-    andi         t4,    t4,    7
-    andi         t5,    t5,    7
-    andi         t6,    t6,    7
-    andi         t7,    t7,    7
-    ldx.bu       t0,    a3,    t0
-    ldx.bu       t1,    a3,    t1
-    ldx.bu       t2,    a3,    t2
-    ldx.bu       t3,    a3,    t3
-    ldx.bu       t4,    a3,    t4
-    ldx.bu       t5,    a3,    t5
-    ldx.bu       t6,    a3,    t6
-    ldx.bu       t7,    a3,    t7
-    vinsgr2vr.h  vr1,   t0,    0
-    vinsgr2vr.h  vr1,   t1,    1
-    vinsgr2vr.h  vr1,   t2,    2
-    vinsgr2vr.h  vr1,   t3,    3
-    vinsgr2vr.h  vr1,   t4,    4
-    vinsgr2vr.h  vr1,   t5,    5
-    vinsgr2vr.h  vr1,   t6,    6
-    vinsgr2vr.h  vr1,   t7,    7
-    vsub.h       vr0,   vr0,   vr0
-    vilvl.h      vr2,   vr0,   vr1
-    vilvh.h      vr3,   vr0,   vr1
-
-    addi.d       a0,    a0,    -16
-    add.d        a0,    a0,    t8
-    add.d        a0,    a0,    t8
-    addi.d       a1,    a1,    -8
-    add.d        a1,    a1,    t8
-
-    vld          vr1,   a0,    0
-    vshuf4i.d    vr0,   vr1,   8
-    vexth.w.h    vr4,   vr0
-    vexth.w.h    vr5,   vr1
-
-    vadd.w       vr4,   vr2,   vr4
-    vadd.w       vr5,   vr3,   vr5
-    vsrai.w      vr4,   vr4,   7
-    vsrai.w      vr5,   vr5,   7
-    vclip255.w   vr4,   vr4
-    vclip255.w   vr5,   vr5
-    vpickev.h    vr1,   vr5,   vr4
-    vpickev.b    vr1,   vr1,   vr1
-    fst.d        f1,    a1,    0
+    vstelm.b     vr4,   a1,     0,  0
+    vbsrl.v      vr4,   vr4,    1
+    addi.d       t8,    t8,     -1
+    addi.d       a1,    a1,     1
+    bne          t8,    zero,   3b
 4:
 endfunc
 
@@ -294,95 +233,42 @@ function yuv2plane1_8_lasx
     vinsgr2vr.h  vr1,   t6,    6
     vinsgr2vr.h  vr1,   t7,    7
     xvpermi.q    xr1,   xr1,   0
-    xvsub.h      xr0,   xr0,   xr0
-    xvilvl.h     xr2,   xr0,   xr1
-    xvilvh.h     xr3,   xr0,   xr1
 
     andi         t8,    a2,    15
     srli.d       a2,    a2,    4
     beqz         a2,    2f
 1:
-    xvld         xr1,   a0,    0
-    addi.d       a0,    a0,    32
-    xvpermi.d    xr0,   xr1,   0xa0
-    xvexth.w.h   xr4,   xr0
-    xvexth.w.h   xr5,   xr1
-
-    xvadd.w      xr4,   xr2,   xr4
-    xvadd.w      xr5,   xr3,   xr5
-    xvsrai.w     xr4,   xr4,   7
-    xvsrai.w     xr5,   xr5,   7
-    xvclip255.w  xr4,   xr4
-    xvclip255.w  xr5,   xr5
-    xvpickev.h   xr1,   xr5,   xr4
-    xvpickev.b   xr0,   xr1,   xr1
-    xvpermi.q    xr1,   xr0,   1
-    fst.d        f0,    a1,    0
-    fst.d        f1,    a1,    8
-    addi.d       a1,    a1,    16
-    addi.d       a2,    a2,    -1
-    bnez         a2,    1b
+    xvld          xr2,   a0,    0
+    addi.d        a0,    a0,    32
+    xvavg.h       xr4,   xr1,   xr2
+    xvssrani.bu.h xr4,   xr4,   6
+    xvstelm.d     xr4,   a1,    0,   0
+    xvstelm.d     xr4,   a1,    8,   2
+    addi.d        a1,    a1,    16
+    addi.d        a2,    a2,    -1
+    bnez          a2,    1b
 2:
-    beqz         t8,    4f
-3:
-    add.w        a4,    a4,    t8
-    addi.w       t1,    a4,    1
-    addi.w       t2,    a4,    2
-    addi.w       t3,    a4,    3
-    addi.w       t4,    a4,    4
-    addi.w       t5,    a4,    5
-    addi.w       t6,    a4,    6
-    addi.w       t7,    a4,    7
-    andi         t0,    a4,    7
-    andi         t1,    t1,    7
-    andi         t2,    t2,    7
-    andi         t3,    t3,    7
-    andi         t4,    t4,    7
-    andi         t5,    t5,    7
-    andi         t6,    t6,    7
-    andi         t7,    t7,    7
-    ldx.bu       t0,    a3,    t0
-    ldx.bu       t1,    a3,    t1
-    ldx.bu       t2,    a3,    t2
-    ldx.bu       t3,    a3,    t3
-    ldx.bu       t4,    a3,    t4
-    ldx.bu       t5,    a3,    t5
-    ldx.bu       t6,    a3,    t6
-    ldx.bu       t7,    a3,    t7
-    vinsgr2vr.h  vr1,   t0,    0
-    vinsgr2vr.h  vr1,   t1,    1
-    vinsgr2vr.h  vr1,   t2,    2
-    vinsgr2vr.h  vr1,   t3,    3
-    vinsgr2vr.h  vr1,   t4,    4
-    vinsgr2vr.h  vr1,   t5,    5
-    vinsgr2vr.h  vr1,   t6,    6
-    vinsgr2vr.h  vr1,   t7,    7
-    xvpermi.q    xr1,   xr1,   0
-    xvsub.h      xr0,   xr0,   xr0
-    xvilvl.h     xr2,   xr0,   xr1
-    xvilvh.h     xr3,   xr0,   xr1
+    beqz          t8,    4f
+    srli.d        t7,    t8,    3
+    beq           t7,    zero,  6f
 
-    addi.d       a0,    a0,    -32
-    add.d        a0,    a0,    t8
-    add.d        a0,    a0,    t8
-    addi.d       a1,    a1,    -16
-    add.d        a1,    a1,    t8
-
-    xvld         xr1,   a0,    0
-    xvpermi.d    xr0,   xr1,   0xa0
-    xvexth.w.h   xr4,   xr0
-    xvexth.w.h   xr5,   xr1
-
-    xvadd.w      xr4,   xr2,   xr4
-    xvadd.w      xr5,   xr3,   xr5
-    xvsrai.w     xr4,   xr4,   7
-    xvsrai.w     xr5,   xr5,   7
-    xvclip255.w  xr4,   xr4
-    xvclip255.w  xr5,   xr5
-    xvpickev.h   xr1,   xr5,   xr4
-    xvpickev.b   xr0,   xr1,   xr1
-    xvpermi.q    xr1,   xr0,   1
-    fst.d        f0,    a1,    0
-    fst.d        f1,    a1,    8
+    vld           vr2,   a0,    0
+    addi.d        a0,    a0,    16
+    vavg.h        vr4,   vr1,   vr2
+    vssrani.bu.h  vr4,   vr4,   6
+    fst.d         f4,    a1,    0
+    addi.d        a1,    a1,    8
+6:
+    andi          t7,    t8,    7
+    beqz          t7,    4f
+    vld           vr2,   a0,    0
+    vavg.h        vr4,   vr1,   vr2
+    vssrani.bu.h  vr4,   vr4,   6
+7:
+    vstelm.b      vr4,   a1,    0,  0
+    vbsrl.v       vr4,   vr4,   1
+    addi.d        t7,    t7,    -1
+    addi.d        a1,    a1,    1
+    bne           t7,    zero,  7b
 4:
 endfunc
