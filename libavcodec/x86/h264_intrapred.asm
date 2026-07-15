@@ -1064,68 +1064,59 @@ cglobal pred8x8l_vertical_8, 4,4,5
 ;                              int has_topright, ptrdiff_t stride)
 ;-----------------------------------------------------------------------------
 
-%macro PRED8x8L_DOWN_LEFT 0
-cglobal pred8x8l_down_left_8, 4,4
+INIT_XMM sse2
+cglobal pred8x8l_down_left_8, 4,4,6
     sub          r0, r3
-    movq        mm0, [r0-8]
-    movq        mm3, [r0]
-    movq        mm1, [r0+8]
-    movq        mm2, mm3
-    movq        mm4, mm3
-    PALIGNR     mm2, mm0, 7, mm0
-    PALIGNR     mm1, mm4, 1, mm4
+    movu       xmm2, [r0-8]
+    movu       xmm1, [r0]
+    mova       xmm3, xmm1
+    psrldq     xmm2, 7
+    psrldq     xmm1, 1
     test        r1d, r1d ; top_left
-    jz .fix_lt_2
-    test        r2d, r2d ; top_right
-    jz .fix_tr_1
-    jmp .do_top
-.fix_lt_2:
-    movq        mm5, mm3
-    pxor        mm5, mm2
-    psllq       mm5, 56
-    psrlq       mm5, 56
-    pxor        mm2, mm5
+    jnz .check_tr
+.fix_lt:
+    pxor       xmm5, xmm3, xmm2
+    psllq      xmm5, 56
+    psrlq      xmm5, 56
+    pxor       xmm2, xmm5
+.check_tr:
     test        r2d, r2d ; top_right
     jnz .do_top
 .fix_tr_1:
-    movq        mm5, mm3
-    pxor        mm5, mm1
-    psrlq       mm5, 56
-    psllq       mm5, 56
-    pxor        mm1, mm5
-    jmp .do_top
-.fix_tr_2:
-    punpckhbw   mm3, mm3
-    pshufw      mm1, mm3, 0xFF
-    jmp .do_topright
+    pxor       xmm5, xmm3, xmm1
+    psrlq      xmm5, 56
+    psllq      xmm5, 56
+    pxor       xmm1, xmm5
 .do_top:
-    PRED4x4_LOWPASS mm4, mm2, mm1, mm3, mm5
-    movq2dq    xmm3, mm4
+    PRED4x4_LOWPASS xmm4, xmm2, xmm1, xmm3, xmm5
+    movq       xmm2, xmm4
     test        r2d, r2d ; top_right
-    jz .fix_tr_2
-    movq        mm1, [r0+8]
-    movq        mm5, mm1
-    movq        mm2, mm1
-    movq        mm4, mm1
-    psrlq       mm5, 56
-    PALIGNR     mm2, mm3, 7, mm3
-    PALIGNR     mm5, mm4, 1, mm4
-    PRED4x4_LOWPASS mm1, mm2, mm5, mm1, mm4
+    jnz .has_top_right
+.fix_tr_2:
+    punpcklbw  xmm3, xmm3
+    pshufhw    xmm1, xmm3, 0xff
+    pshufd     xmm1, xmm1, 0xee
+    jmp .do_topright
+.has_top_right:
+    movq       xmm0, [r0+8]
+    psrlq      xmm5, xmm0, 56
+    punpcklqdq xmm3, xmm0
+    psrldq     xmm3, 7
+    punpcklqdq xmm4, xmm0, xmm5
+    psrldq     xmm4, 1
+    PRED4x4_LOWPASS xmm1, xmm3, xmm4, xmm0, xmm5
 .do_topright:
-    movq2dq    xmm4, mm1
-    psrlq       mm1, 56
-    movq2dq    xmm5, mm1
+    mova      xmm4, xmm1
+    psrlq     xmm1, 56
+    pslldq    xmm1, 15
     lea         r1, [r0+r3*2]
     pslldq    xmm4, 8
-    por       xmm3, xmm4
-    movdqa    xmm2, xmm3
+    por       xmm2, xmm4
+    movdqa    xmm3, xmm2
     psrldq    xmm2, 1
-    pslldq    xmm5, 15
-    por       xmm2, xmm5
+    por       xmm2, xmm1
     lea         r2, [r1+r3*2]
-    movdqa    xmm1, xmm3
-    pslldq    xmm1, 1
-INIT_XMM cpuname
+    pslldq    xmm1, xmm3, 1
     PRED4x4_LOWPASS xmm3, xmm1, xmm2, xmm3, xmm4
     psrldq    xmm3, 1
     movq [r0+r3*1], xmm3
@@ -1145,12 +1136,6 @@ INIT_XMM cpuname
     psrldq    xmm3, 1
     movq [r0+r3*2], xmm3
     RET
-%endmacro
-
-INIT_MMX sse2
-PRED8x8L_DOWN_LEFT
-INIT_MMX ssse3
-PRED8x8L_DOWN_LEFT
 
 ;-----------------------------------------------------------------------------
 ; void ff_pred8x8l_down_right_8(uint8_t *src, int has_topleft,
