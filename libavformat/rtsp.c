@@ -916,10 +916,17 @@ int ff_rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
                                               rtsp_st->dynamic_protocol_context,
                                               rtsp_st->dynamic_handler);
         }
-        if (rtsp_st->crypto_suite[0])
-            ff_rtp_parse_set_crypto(rtsp_st->transport_priv,
-                                    rtsp_st->crypto_suite,
-                                    rtsp_st->crypto_params);
+        if (rtsp_st->crypto_suite[0]) {
+            int ret = ff_rtp_parse_set_crypto(rtsp_st->transport_priv,
+                                              rtsp_st->crypto_suite,
+                                              rtsp_st->crypto_params);
+            if (ret < 0) {
+                av_log(s, AV_LOG_ERROR,
+                       "SRTP setup failed for suite '%s'\n",
+                       rtsp_st->crypto_suite);
+                return ret;
+            }
+        }
     }
 
     return 0;
