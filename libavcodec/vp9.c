@@ -1866,6 +1866,7 @@ static av_cold void vp9_decode_flush(AVCodecContext *avctx)
 
     for (i = 0; i < 8; i++) {
         ff_progress_frame_unref(&s->s.refs[i]);
+        ff_progress_frame_unref(&s->next_refs[i]);
         vp9_frame_unref(&s->s.ref_frames[i]);
     }
 
