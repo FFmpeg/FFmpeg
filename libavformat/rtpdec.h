@@ -45,8 +45,8 @@ RTPDemuxContext *ff_rtp_parse_open(AVFormatContext *s1, AVStream *st,
                                    int payload_type, int queue_size);
 void ff_rtp_parse_set_dynamic_protocol(RTPDemuxContext *s, PayloadContext *ctx,
                                        const RTPDynamicProtocolHandler *handler);
-void ff_rtp_parse_set_crypto(RTPDemuxContext *s, const char *suite,
-                             const char *params);
+int ff_rtp_parse_set_crypto(RTPDemuxContext *s, const char *suite,
+                            const char *params);
 int ff_rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
                         uint8_t **buf, int len);
 void ff_rtp_parse_close(RTPDemuxContext *s);
