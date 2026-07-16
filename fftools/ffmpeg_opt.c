@@ -831,13 +831,13 @@ int assert_file_overwrite(const char *filename)
                 signal(SIGINT, SIG_DFL);
                 if (!read_yesno()) {
                     av_log(NULL, AV_LOG_FATAL, "Not overwriting - exiting\n");
-                    return AVERROR_EXIT;
+                    return AVERROR(EEXIST);
                 }
                 term_init();
             }
             else {
                 av_log(NULL, AV_LOG_FATAL, "File '%s' already exists. Exiting.\n", filename);
-                return AVERROR_EXIT;
+                return AVERROR(EEXIST);
             }
         }
     }

@@ -244,6 +244,10 @@ fate-ffmpeg-error-rate-fail: CMD = ffmpeg -i $(TARGET_SAMPLES)/mkv/h264_tta_unde
 fate-ffmpeg-error-rate-pass: CMD = ffmpeg -i $(TARGET_SAMPLES)/mkv/h264_tta_undecodable.mkv -c:v copy -f null - -max_error_rate 1
 FATE_SAMPLES_FFMPEG-$(call ENCDEC, PCM_S16LE TTA, NULL MATROSKA) += fate-ffmpeg-error-rate-fail fate-ffmpeg-error-rate-pass
 
+fate-ffmpeg-no-overwrite: CMP = null
+fate-ffmpeg-no-overwrite: CMD = out=tests/data/fate/no-overwrite.wav; touch $$out; ffmpeg -f lavfi -i anullsrc -t 0.01 -c:a pcm_u8 -f wav -n $$out; ret=$$?; rm -f $$out; test $$ret -ne 0
+FATE_FFMPEG-$(call ALLYES, LAVFI_INDEV ANULLSRC_FILTER PCM_U8_DECODER PCM_U8_ENCODER WAV_MUXER FILE_PROTOCOL) += fate-ffmpeg-no-overwrite
+
 # test input -bsf
 # use -stream_loop, because it tests flushing bsfs
 fate-ffmpeg-bsf-input: CMD = framecrc -stream_loop 2 -bsf setts=PTS*2 -i $(TARGET_SAMPLES)/hevc/extradata-reload-multi-stsd.mov -c copy
