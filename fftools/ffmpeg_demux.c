@@ -2066,6 +2066,11 @@ int ifile_open(const OptionsContext *o, const char *filename, Scheduler *sch)
         }
     }
 
+    if (recording_time != INT64_MAX && recording_time < 0) {
+        av_log(d, AV_LOG_ERROR, "-t value must be non-negative; aborting.\n");
+        return AVERROR(EINVAL);
+    }
+
     if (o->format) {
         if (!(file_iformat = av_find_input_format(o->format))) {
             av_log(d, AV_LOG_FATAL, "Unknown input format: '%s'\n", o->format);

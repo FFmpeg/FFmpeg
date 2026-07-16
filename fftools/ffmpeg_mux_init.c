@@ -3318,6 +3318,11 @@ int of_open(const OptionsContext *o, const char *filename, Scheduler *sch)
         }
     }
 
+    if (recording_time != INT64_MAX && recording_time < 0) {
+        av_log(mux, AV_LOG_ERROR, "-t value must be non-negative; aborting.\n");
+        return AVERROR(EINVAL);
+    }
+
     of->recording_time = recording_time;
     of->start_time     = o->start_time;
 
