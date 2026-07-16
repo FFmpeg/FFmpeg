@@ -61,6 +61,11 @@ typedef struct D3D12VAEncodePicture {
     // ROI delta QP map (void* to support both INT8 for H.264/HEVC and INT16 for AV1)
     void           *qp_map;
     int             qp_map_size;
+
+    // Hidden-frame (AV1 show_existing_frame) support
+    int             non_independent_frame;
+    char            tail_data[MAX_PARAM_BUFFER_SIZE];
+    size_t          tail_size;
 } D3D12VAEncodePicture;
 
 typedef struct D3D12VAEncodeProfile {

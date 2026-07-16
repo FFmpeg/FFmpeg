@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/opt.h"
 #include "libavutil/common.h"
 #include "libavutil/mem.h"
@@ -104,6 +105,7 @@ typedef struct D3D12VAEncodeAV1Context {
 
     uint8_t q_idx_idr;
     uint8_t   q_idx_p;
+    uint8_t   q_idx_b;
 
     // Writer structures.
     D3D12VAHWBaseEncodeAV1         units;
@@ -123,6 +125,10 @@ typedef struct D3D12VAEncodeAV1Context {
     uint16_t context_update_tile_id;
     uint8_t    width_in_sbs_minus_1[AV1_MAX_TILE_COLS];
     uint8_t   height_in_sbs_minus_1[AV1_MAX_TILE_ROWS];
+
+    // Stash for hidden (non-independent) anchor frame coded bytes
+    uint8_t *stash_data;
+    size_t   stash_size;
 } D3D12VAEncodeAV1Context;
 
 typedef struct D3D12VAEncodeAV1Level {
@@ -316,6 +322,16 @@ static int d3d12va_encode_av1_update_current_frame_picture_header(AVCodecContext
         }
     }
 
+    if (priv->post_encode_values_flag & D3D12_VIDEO_ENCODER_AV1_POST_ENCODE_VALUES_FLAG_COMPOUND_PREDICTION_MODE) {
+        fh->reference_select = post_encode_values->CompoundPredictionType ==
+                                D3D12_VIDEO_ENCODER_AV1_COMP_PREDICTION_TYPE_COMPOUND_REFERENCE;
+    }
+
+    if ((priv->post_encode_values_flag & D3D12_VIDEO_ENCODER_AV1_POST_ENCODE_VALUES_FLAG_PRIMARY_REF_FRAME) &&
+        !(fh->frame_type == AV1_FRAME_KEY || fh->error_resilient_mode)) {
+        fh->primary_ref_frame = post_encode_values->PrimaryRefFrame;
+    }
+
     ID3D12Resource_Unmap(pic->resolved_metadata, 0, NULL);
     return 0;
 }
@@ -325,16 +341,27 @@ static int d3d12va_encode_av1_write_picture_header(AVCodecContext *avctx,
                                                    char *data, size_t *data_len)
 {
     D3D12VAEncodeAV1Context *priv = avctx->priv_data;
+    D3D12VAEncodeContext     *ctx = avctx->priv_data;
+    CodedBitstreamAV1Context *cbctx = priv->cbc->priv_data;
     CodedBitstreamFragment  *obu  = &priv->current_obu;
     AV1RawOBU    *frameheader_obu = av_mallocz(sizeof(AV1RawOBU));
+    int                 show_slot = 0;
     int                       err = 0;
+
+    if (!frameheader_obu)
+        return AVERROR(ENOMEM);
 
     av_fifo_read(priv->picture_header_list, frameheader_obu, 1);
     err = d3d12va_encode_av1_update_current_frame_picture_header(avctx, pic,frameheader_obu);
     if (err < 0) {
         av_log(avctx, AV_LOG_ERROR, "Failed to update current frame picture header: %d.\n", err);
+        av_freep(&frameheader_obu);
         return err;
     }
+
+    // The DPB slot this frame refreshes (single bit for anchor P frames)
+    if (frameheader_obu->obu.frame_header.refresh_frame_flags)
+        show_slot = ff_ctz(frameheader_obu->obu.frame_header.refresh_frame_flags);
 
     // Add the frame header OBU
     frameheader_obu->header.obu_has_size_field = 1;
@@ -343,6 +370,38 @@ static int d3d12va_encode_av1_write_picture_header(AVCodecContext *avctx,
     if (err < 0)
         goto fail;
     err = d3d12va_encode_av1_write_obu(avctx, data, data_len, obu);
+    if (err < 0)
+        goto fail;
+
+    // For hidden anchor frames, build the show_existing_frame tail OBU now
+    pic->tail_size = 0;
+    if (pic->non_independent_frame) {
+        AV1RawOBU rep_obu = { 0 };
+        AV1RawFrameHeader *rep_fh = &rep_obu.obu.frame_header;
+        size_t tail_bit_len = 0;
+
+        ff_cbs_fragment_reset(obu);
+
+        rep_obu.header.obu_type           = AV1_OBU_FRAME_HEADER;
+        rep_obu.header.obu_has_size_field = 1;
+        rep_fh->show_existing_frame       = 1;
+        rep_fh->frame_to_show_map_idx     = show_slot;
+        rep_fh->frame_type                = AV1_FRAME_INTER;
+        rep_fh->frame_width_minus_1       = ctx->resolution.Width - 1;
+        rep_fh->frame_height_minus_1      = ctx->resolution.Height - 1;
+        rep_fh->render_width_minus_1      = rep_fh->frame_width_minus_1;
+        rep_fh->render_height_minus_1     = rep_fh->frame_height_minus_1;
+
+        cbctx->seen_frame_header = 0;
+
+        err = d3d12va_encode_av1_add_obu(avctx, obu, AV1_OBU_FRAME_HEADER, &rep_obu);
+        if (err < 0)
+            goto fail;
+        err = d3d12va_encode_av1_write_obu(avctx, pic->tail_data, &tail_bit_len, obu);
+        if (err < 0)
+            goto fail;
+        pic->tail_size = tail_bit_len / 8;
+    }
 
 fail:
     ff_cbs_fragment_reset(obu);
@@ -460,6 +519,7 @@ static int d3d12va_encode_av1_get_coded_data(AVCodecContext *avctx,
     size_t   obu_size             = 0;
     size_t   tile_payload_size    = 0;
     size_t   total_size           = 0;
+    size_t   prev_stash_sz        = 0;
     uint64_t nb_subregions        = 0;
     int      output_buffer_mapped = 0;
 
@@ -525,10 +585,34 @@ static int d3d12va_encode_av1_get_coded_data(AVCodecContext *avctx,
     obu_size = bit_len / 8;
 
     total_size = pic->header_size + av1_pic_hd_size + obu_size;
-    err = ff_get_encode_buffer(avctx, pkt, total_size, 0);
-    if (err < 0)
-        goto end;
-    ptr = pkt->data;
+
+    /*
+     * Hidden anchor frame: stash its coded bytes so they will be prepended
+     * to the next visible frame's packet. Visible frame: allocate a packet
+     * large enough for any stashed hidden frame bytes followed by this
+     * frame's coded data.
+     */
+    if (pic->non_independent_frame) {
+        uint8_t *new_stash = av_realloc(priv->stash_data,
+                                        priv->stash_size + total_size);
+        if (!new_stash) {
+            err = AVERROR(ENOMEM);
+            goto end;
+        }
+        priv->stash_data = new_stash;
+        ptr = priv->stash_data + priv->stash_size;
+    } else {
+        prev_stash_sz = priv->stash_size;
+        err = ff_get_encode_buffer(avctx, pkt, prev_stash_sz + total_size, 0);
+        if (err < 0)
+            goto end;
+        if (prev_stash_sz) {
+            memcpy(pkt->data, priv->stash_data, prev_stash_sz);
+            av_freep(&priv->stash_data);
+            priv->stash_size = 0;
+        }
+        ptr = pkt->data + prev_stash_sz;
+    }
 
     memcpy(ptr, mapped_data, pic->header_size);
     ptr += pic->header_size;
@@ -537,6 +621,9 @@ static int d3d12va_encode_av1_get_coded_data(AVCodecContext *avctx,
     ptr += av1_pic_hd_size;
 
     memcpy(ptr, obu_buf, obu_size);
+
+    if (pic->non_independent_frame)
+        priv->stash_size += total_size;
 
     av_log(avctx, AV_LOG_DEBUG, "AV1 packet: %"PRIu64" tiles, header %d, "
            "pic header %zu, tile group %zu, total %zu bytes.\n",
@@ -734,8 +821,8 @@ static int d3d12va_encode_av1_init_sequence_params(AVCodecContext *avctx)
 
     seq->max_frame_width_minus_1 = ctx->resolution.Width - 1;
     seq->max_frame_height_minus_1 = ctx->resolution.Height - 1;
-    seq->frame_width_bits_minus_1 = av_log2(ctx->resolution.Width);
-    seq->frame_height_bits_minus_1 = av_log2(ctx->resolution.Height);
+    seq->frame_width_bits_minus_1 = av_log2(ctx->resolution.Width - 1);
+    seq->frame_height_bits_minus_1 = av_log2(ctx->resolution.Height - 1);
 
     seqheader_obu->header.obu_type = AV1_OBU_SEQUENCE_HEADER;
 
@@ -1037,6 +1124,7 @@ static int d3d12va_encode_av1_configure(AVCodecContext *avctx)
 
     if (ctx->rc.Mode == D3D12_VIDEO_ENCODER_RATE_CONTROL_MODE_CQP) {
         D3D12_VIDEO_ENCODER_RATE_CONTROL_CQP *cqp_ctl;
+        int fixed_qp_b;
         fixed_qp_inter = av_clip_uintp2(ctx->rc_quality, 8);
 
         if (avctx->i_quant_factor > 0.0)
@@ -1045,9 +1133,15 @@ static int d3d12va_encode_av1_configure(AVCodecContext *avctx)
         else
             fixed_qp_key = fixed_qp_inter;
 
+        if (avctx->b_quant_factor > 0.0)
+            fixed_qp_b = av_clip_uintp2((avctx->b_quant_factor * fixed_qp_inter +
+                                         avctx->b_quant_offset) + 0.5, 8);
+        else
+            fixed_qp_b = fixed_qp_inter;
+
         av_log(avctx, AV_LOG_DEBUG, "Using fixed QP = "
-               "%d / %d for Key / Inter frames.\n",
-               fixed_qp_key, fixed_qp_inter);
+               "%d / %d / %d for Key / Inter / B frames.\n",
+               fixed_qp_key, fixed_qp_inter, fixed_qp_b);
 
         ctx->rc.ConfigParams.DataSize = sizeof(D3D12_VIDEO_ENCODER_RATE_CONTROL_CQP);
         cqp_ctl = av_mallocz(ctx->rc.ConfigParams.DataSize);
@@ -1056,12 +1150,13 @@ static int d3d12va_encode_av1_configure(AVCodecContext *avctx)
 
         cqp_ctl->ConstantQP_FullIntracodedFrame                  = fixed_qp_key;
         cqp_ctl->ConstantQP_InterPredictedFrame_PrevRefOnly      = fixed_qp_inter;
-        cqp_ctl->ConstantQP_InterPredictedFrame_BiDirectionalRef = fixed_qp_inter;
+        cqp_ctl->ConstantQP_InterPredictedFrame_BiDirectionalRef = fixed_qp_b;
 
         ctx->rc.ConfigParams.pConfiguration_CQP = cqp_ctl;
 
         priv->q_idx_idr = fixed_qp_key;
         priv->q_idx_p   = fixed_qp_inter;
+        priv->q_idx_b   = fixed_qp_b;
 
     }
 
@@ -1148,8 +1243,8 @@ static int d3d12va_encode_av1_init_picture_params(AVCodecContext *avctx,
     AV1RawFrameHeader                       *fh = &frameheader_obu->obu.frame_header;
 
     FFHWBaseEncodePicture *ref;
-    D3D12VAEncodeAV1Picture *href;
-    int i;
+    D3D12VAEncodeAV1Picture *href, *href_l0, *href_l1;
+    int i, j, phys;
 
     static const int8_t default_loop_filter_ref_deltas[AV1_TOTAL_REFS_PER_FRAME] =
         { 1, 0, 0, 0, -1, 0, -1, -1 };
@@ -1163,6 +1258,11 @@ static int d3d12va_encode_av1_init_picture_params(AVCodecContext *avctx,
     if (!d3d12va_pic->pic_ctl.pAV1PicData)
         return AVERROR(ENOMEM);
 
+    for (i = 0; i < AV1_NUM_REF_FRAMES; i++) {
+        d3d12va_pic->pic_ctl.pAV1PicData->ReferenceFramesReconPictureDescriptors[i]
+            .ReconstructedPictureResourceIndex = D3D12_VIDEO_ENCODER_AV1_INVALID_DPB_RESOURCE_INDEX;
+    }
+
     // Initialize frame type and reference frame management
     switch(pic->type) {
         case FF_HW_PICTURE_TYPE_IDR:
@@ -1172,6 +1272,8 @@ static int d3d12va_encode_av1_init_picture_params(AVCodecContext *avctx,
             hpic->slot = 0;
             hpic->last_idr_frame = pic->display_order;
             fh->tx_mode = AV1_TX_MODE_LARGEST;
+            d3d12va_pic->pic_ctl.pAV1PicData->CompoundPredictionType =
+                D3D12_VIDEO_ENCODER_AV1_COMP_PREDICTION_TYPE_SINGLE_REFERENCE;
             break;
 
         case FF_HW_PICTURE_TYPE_P:
@@ -1181,6 +1283,9 @@ static int d3d12va_encode_av1_init_picture_params(AVCodecContext *avctx,
 
             ref = pic->refs[0][pic->nb_refs[0] - 1];
             href = ref->codec_priv;
+
+            d3d12va_pic->pic_ctl.pAV1PicData->CompoundPredictionType =
+                D3D12_VIDEO_ENCODER_AV1_COMP_PREDICTION_TYPE_SINGLE_REFERENCE;
 
             /**
              * The encoder uses a simple alternating reference frame strategy:
@@ -1212,18 +1317,58 @@ static int d3d12va_encode_av1_init_picture_params(AVCodecContext *avctx,
                 fh->ref_frame_idx[3] = href->slot;
                 fh->ref_order_hint[href->slot] = ref->display_order - href->last_idr_frame;
             } else if (base_ctx->ref_l0 == 1) {
+                // Keep the other slot's order hint consistent
+                href = pic->refs[0][0]->codec_priv;
                 fh->ref_order_hint[!href->slot] = cbctx->ref[!href->slot].order_hint;
             }
             break;
 
         case FF_HW_PICTURE_TYPE_B:
-            av_log(avctx, AV_LOG_ERROR, "D3D12 AV1 video encode on this device requires B-frame support, "
-                "but it's not implemented.\n");
-            return AVERROR_PATCHWELCOME;
+            fh->frame_type          = AV1_FRAME_INTER;
+            fh->base_q_idx          = priv->q_idx_b;
+            fh->tx_mode             = AV1_TX_MODE_SELECT;
+            fh->refresh_frame_flags = 0x0;   // B-frames don't refresh any DPB slot
+            fh->reference_select    = 1;     // compound prediction
+
+            d3d12va_pic->pic_ctl.pAV1PicData->CompoundPredictionType =
+                D3D12_VIDEO_ENCODER_AV1_COMP_PREDICTION_TYPE_COMPOUND_REFERENCE;
+
+            av_assert0(pic->nb_refs[0] >= 1 && pic->nb_refs[1] >= 1);
+
+            // L0 reference (LAST = previous anchor)
+            ref     = pic->refs[0][pic->nb_refs[0] - 1];
+            href_l0 = ref->codec_priv;
+            hpic->last_idr_frame              = href_l0->last_idr_frame;
+            fh->primary_ref_frame             = href_l0->slot;
+            fh->ref_order_hint[href_l0->slot] = ref->display_order - href_l0->last_idr_frame;
+
+            // LAST, LAST2, LAST3, GOLDEN → L0 slot
+            for (i = 0; i < AV1_REF_FRAME_GOLDEN; i++)
+                fh->ref_frame_idx[i] = href_l0->slot;
+
+            // L1 reference (BWDREF = future anchor)
+            ref     = pic->refs[1][pic->nb_refs[1] - 1];
+            href_l1 = ref->codec_priv;
+            fh->ref_order_hint[href_l1->slot] = ref->display_order - href_l1->last_idr_frame;
+
+            // BWDREF, ALTREF2, ALTREF → L1 slot
+            for (i = AV1_REF_FRAME_GOLDEN; i < AV1_REFS_PER_FRAME; i++)
+                fh->ref_frame_idx[i] = href_l1->slot;
+            break;
+
         default:
             av_log(avctx, AV_LOG_ERROR, "Unsupported picture type %d.\n", pic->type);
+            return AVERROR(EINVAL);
     }
 
+    // Assign ppTexture2Ds indices in list order (L0 first, then L1).
+    for (phys = 0, i = 0; i < 2; i++) {
+        for (j = 0; j < pic->nb_refs[i]; j++) {
+            D3D12VAEncodeAV1Picture *hr = pic->refs[i][j]->codec_priv;
+            d3d12va_pic->pic_ctl.pAV1PicData->ReferenceFramesReconPictureDescriptors[hr->slot]
+                .ReconstructedPictureResourceIndex = phys++;
+        }
+    }
 
     cbctx->seen_frame_header = 0;
 
@@ -1264,36 +1409,22 @@ static int d3d12va_encode_av1_init_picture_params(AVCodecContext *avctx,
     d3d12va_pic->pic_ctl.pAV1PicData->TemporalLayerIndexPlus1 = hpic->temporal_id + 1;
     d3d12va_pic->pic_ctl.pAV1PicData->SpatialLayerIndexPlus1 = hpic->spatial_id + 1;
     d3d12va_pic->pic_ctl.pAV1PicData->PictureIndex = pic->display_order;
+    d3d12va_pic->pic_ctl.pAV1PicData->OrderHint = fh->order_hint;
     d3d12va_pic->pic_ctl.pAV1PicData->InterpolationFilter = D3D12_VIDEO_ENCODER_AV1_INTERPOLATION_FILTERS_SWITCHABLE;
     d3d12va_pic->pic_ctl.pAV1PicData->PrimaryRefFrame = fh->primary_ref_frame;
     if (fh->error_resilient_mode)
         d3d12va_pic->pic_ctl.pAV1PicData->Flags |= D3D12_VIDEO_ENCODER_AV1_PICTURE_CONTROL_FLAG_ENABLE_ERROR_RESILIENT_MODE;
 
-    if (pic->type == FF_HW_PICTURE_TYPE_IDR)
-    {
-        for (int i = 0; i < AV1_NUM_REF_FRAMES; i++) {
-            d3d12va_pic->pic_ctl.pAV1PicData->ReferenceFramesReconPictureDescriptors[i].ReconstructedPictureResourceIndex =
-            D3D12_VIDEO_ENCODER_AV1_INVALID_DPB_RESOURCE_INDEX;
-        }
-    } else if (pic->type == FF_HW_PICTURE_TYPE_P) {
-        for (i = 0; i < pic->nb_refs[0]; i++) {
-            FFHWBaseEncodePicture *ref_pic = pic->refs[0][i];
-            d3d12va_pic->pic_ctl.pAV1PicData->ReferenceFramesReconPictureDescriptors[i].ReconstructedPictureResourceIndex =
-            ((D3D12VAEncodeAV1Picture*)ref_pic->codec_priv)->slot;
-        }
-    }
-    // Set reference frame management
-    memset(d3d12va_pic->pic_ctl.pAV1PicData->ReferenceIndices, 0, sizeof(UINT) * AV1_REFS_PER_FRAME);
-    if (pic->type == FF_HW_PICTURE_TYPE_P) {
-        for (i = 0; i < AV1_REFS_PER_FRAME; i++)
-            d3d12va_pic->pic_ctl.pAV1PicData->ReferenceIndices[i] = fh->ref_frame_idx[i];
-    }
+    for (i = 0; i < AV1_REFS_PER_FRAME; i++)
+        d3d12va_pic->pic_ctl.pAV1PicData->ReferenceIndices[i] = fh->ref_frame_idx[i];
 
     // Process ROI side data if present and supported
     if (base_ctx->roi_allowed && d3d12va_pic->qp_map && d3d12va_pic->qp_map_size > 0) {
         d3d12va_pic->pic_ctl.pAV1PicData->QPMapValuesCount  = d3d12va_pic->qp_map_size;
         d3d12va_pic->pic_ctl.pAV1PicData->pRateControlQPMap = (INT16 *)d3d12va_pic->qp_map;
     }
+
+    d3d12va_pic->non_independent_frame = (pic->display_order > pic->encode_order);
 
     return av_fifo_write(priv->picture_header_list, &priv->units.raw_frame_header, 1);
 }
@@ -1305,8 +1436,8 @@ static const D3D12VAEncodeType d3d12va_encode_type_av1 = {
     .d3d12_codec            = D3D12_VIDEO_ENCODER_CODEC_AV1,
 
     .flags                  = FF_HW_FLAG_B_PICTURES |
-                              FF_HW_FLAG_B_PICTURE_REFERENCES |
-                              FF_HW_FLAG_NON_IDR_KEY_PICTURES,
+                              FF_HW_FLAG_NON_IDR_KEY_PICTURES |
+                              FF_HW_FLAG_TIMESTAMP_NO_DELAY,
 
     .default_quality        = 25,
 
@@ -1372,6 +1503,7 @@ static int d3d12va_encode_av1_close(AVCodecContext *avctx)
     av_freep(&priv->common.subregions_layout.pTilesPartition_AV1);
 
     av_fifo_freep2(&priv->picture_header_list);
+    av_freep(&priv->stash_data);
 
     return ff_d3d12va_encode_close(avctx);
 }
@@ -1446,7 +1578,7 @@ static const AVOption d3d12va_encode_av1_options[] = {
 
 static const FFCodecDefault d3d12va_encode_av1_defaults[] = {
     { "b",              "0"   },
-    { "bf",             "0"   },
+    { "bf",             "2"   },
     { "g",              "120" },
     { "i_qfactor",      "1"   },
     { "i_qoffset",      "0"   },

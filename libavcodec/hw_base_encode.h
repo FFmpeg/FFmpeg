@@ -56,6 +56,9 @@ enum {
     // Codec supports non-IDR key pictures (that is, key pictures do
     // not necessarily empty the DPB).
     FF_HW_FLAG_NON_IDR_KEY_PICTURES  = 1 << 5,
+    // Output is in display order; set DTS = PTS on every packet
+    // (e.g. AV1 hidden anchor frames with show_existing_frame).
+    FF_HW_FLAG_TIMESTAMP_NO_DELAY    = 1 << 6,
 };
 
 typedef struct FFHWBaseEncodePicture {

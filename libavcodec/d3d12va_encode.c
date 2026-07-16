@@ -911,13 +911,31 @@ static int d3d12va_encode_output(AVCodecContext *avctx,
     if (err < 0)
         return err;
 
+    if (pic->non_independent_frame) {
+        if (pic->tail_size) {
+            if (base_ctx->tail_pkt->size) {
+                err = AVERROR_BUG;
+                goto end;
+            }
+            err = ff_get_encode_buffer(avctx, base_ctx->tail_pkt, pic->tail_size, 0);
+            if (err < 0)
+                goto end;
+            memcpy(base_ctx->tail_pkt->data, pic->tail_data, pic->tail_size);
+            pkt_ptr = base_ctx->tail_pkt;
+        }
+    }
+
     av_log(avctx, AV_LOG_DEBUG, "Output read for pic %"PRId64"/%"PRId64".\n",
            base_pic->display_order, base_pic->encode_order);
 
+    /* FF_HW_FLAG_TIMESTAMP_NO_DELAY: DTS = PTS for codecs whose output is
+     * already in display order (e.g. AV1 with show_existing_frame). */
     ff_hw_base_encode_set_output_property(base_ctx, avctx, (FFHWBaseEncodePicture *)base_pic,
-                                          pkt_ptr, 0);
+                                          pkt_ptr,
+                                          ctx->codec->flags & FF_HW_FLAG_TIMESTAMP_NO_DELAY);
 
-    return 0;
+end:
+    return err;
 }
 
 static int d3d12va_encode_set_profile(AVCodecContext *avctx)
@@ -1318,6 +1336,7 @@ static int d3d12va_encode_init_gop_structure(AVCodecContext *avctx)
 #if CONFIG_AV1_D3D12VA_ENCODER
             case D3D12_VIDEO_ENCODER_CODEC_AV1:
             memset(&codec_support.av1, 0, sizeof(codec_support.av1));
+            codec_support.av1.PredictionMode = D3D12_VIDEO_ENCODER_AV1_COMP_PREDICTION_TYPE_SINGLE_REFERENCE;
             support.PictureSupport.DataSize = sizeof(codec_support.av1);
             support.PictureSupport.pAV1Support = &codec_support.av1;
             break;
@@ -1350,8 +1369,18 @@ static int d3d12va_encode_init_gop_structure(AVCodecContext *avctx)
 #if CONFIG_AV1_D3D12VA_ENCODER
             case D3D12_VIDEO_ENCODER_CODEC_AV1:
                 ref_l0 = support.PictureSupport.pAV1Support->MaxUniqueReferencesPerFrame;
-                // AV1 doesn't use traditional L1 references like H.264/HEVC
-                ref_l1 = 0;
+                memset(&codec_support.av1, 0, sizeof(codec_support.av1));
+                codec_support.av1.PredictionMode = D3D12_VIDEO_ENCODER_AV1_COMP_PREDICTION_TYPE_COMPOUND_REFERENCE;
+                support.PictureSupport.DataSize    = sizeof(codec_support.av1);
+                support.PictureSupport.pAV1Support = &codec_support.av1;
+
+                hr = ID3D12VideoDevice3_CheckFeatureSupport(ctx->video_device3,
+                                                            D3D12_FEATURE_VIDEO_ENCODER_CODEC_PICTURE_CONTROL_SUPPORT,
+                                                            &support, sizeof(support));
+                if (FAILED(hr))
+                    return AVERROR(EINVAL);
+
+                ref_l1 = support.IsSupported ? 1 : 0;
                 break;
 #endif
             default:
