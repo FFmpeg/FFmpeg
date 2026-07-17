@@ -244,7 +244,6 @@ void ff_sws_apply_op_q(const SwsOp *op, AVRational64 x[4])
             x[i] = av_max_q64(x[i], op->clamp.limit[i]);
         return;
     case SWS_OP_LINEAR: {
-        av_assert1(!ff_sws_pixel_type_is_int(op->type));
         const AVRational64 orig[4] = { x[0], x[1], x[2], x[3] };
         for (int i = 0; i < 4; i++) {
             AVRational64 sum = op->lin.m[i][4];

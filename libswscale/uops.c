@@ -538,7 +538,7 @@ static int translate_linear_op(SwsContext *ctx, SwsUOpList *ops,
         }
     }
 
-    if (flags & SWS_UOP_FLAG_FMA) {
+    if ((flags & SWS_UOP_FLAG_FMA) && !ff_sws_pixel_type_is_int(op->type)) {
         /* multiplication by 1 and 0 are always exact by definition */
         uop.uop = SWS_UOP_LINEAR_FMA;
         uop.par.lin.exact = exact | uop.par.lin.zero | uop.par.lin.one;
