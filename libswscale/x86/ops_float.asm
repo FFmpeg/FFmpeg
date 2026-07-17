@@ -534,9 +534,7 @@ IF W,   maxps mw2, m11
 ;---------------------------------------------------------
 ; Linear operations
 
-%define LIN_MASK(I, J) (1 << (5 * (I) + (J)))
-
-%macro linear_muladd 5 ; dst, src, use_coef, coef, use_fma
+%macro linear_muladdps 5 ; dst, src, use_coef, coef, use_fma
     %if INIT ; dst is already initialized
         %if %3 && %5
             fmaddps %1, %4, %2, %1
@@ -570,10 +568,10 @@ IF LOAD(0), vbroadcastss m12, [%2 + 0 * BYTES]
 IF LOAD(1), vbroadcastss m13, [%2 + 1 * BYTES]
 IF LOAD(2), vbroadcastss m14, [%2 + 2 * BYTES]
 IF LOAD(3), vbroadcastss m15, [%2 + 3 * BYTES]
-IF NEED(0), linear_muladd %1, mx%4, LOAD(0), m12, FMA(0)
-IF NEED(1), linear_muladd %1, my%4, LOAD(1), m13, FMA(1)
-IF NEED(2), linear_muladd %1, mz%4, LOAD(2), m14, FMA(2)
-IF NEED(3), linear_muladd %1, mw%4, LOAD(3), m15, FMA(3)
+IF NEED(0), linear_muladdps %1, mx%4, LOAD(0), m12, FMA(0)
+IF NEED(1), linear_muladdps %1, my%4, LOAD(1), m13, FMA(1)
+IF NEED(2), linear_muladdps %1, mz%4, LOAD(2), m14, FMA(2)
+IF NEED(3), linear_muladdps %1, mw%4, LOAD(3), m15, FMA(3)
             assert INIT, SWS_UOP_LINEAR should not contain empty rows
 %endmacro
 

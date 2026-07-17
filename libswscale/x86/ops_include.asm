@@ -146,6 +146,9 @@ endstruc
 %define SWS_COMP_INV(mask)      ((mask) ^ SWS_COMP_ALL)
 %define SWS_COMP_ELEMS(N)       ((1 << (N)) - 1)
 
+%define LIN_MASK(I, J) (1 << (5 * (I) + (J)))
+%define LIN_COL(J) (LIN_MASK(0, J) | LIN_MASK(1, J) | LIN_MASK(2, J) | LIN_MASK(3, J))
+
 ;---------------------------------------------------------
 ; Common macros for declaring operations
 
@@ -326,8 +329,14 @@ endstruc
     %endif
 %endmacro
 
-; Alternate name; for nested usage (to work around NASM limitations)
+; Alternate names; for nested usage (to work around NASM limitations)
 %macro IF1 2+
+    %if %1
+        %2
+    %endif
+%endmacro
+
+%macro IF2 2+
     %if %1
         %2
     %endif

@@ -771,6 +771,113 @@ assert 0, SWS_UOP_DITHER is not implemented for integer types
 %endmacro
 
 ;---------------------------------------------------------
+; Linear operations
+
+%macro linear_muladdw 4 ; dst, src, use_coef, coef
+    %if BITS == 32
+        %xdefine MUL pmulld
+        %xdefine ADD paddd
+    %else
+        %xdefine MUL pmullw
+        %xdefine ADD paddw
+    %endif
+    %if INIT ; dst is already initialized
+        %if %3
+            MUL %4, %2
+            ADD %1, %4
+        %else
+            ADD %1, %2
+        %endif
+    %else
+        %assign INIT 1
+        %if %3
+            MUL %1, %2, %4
+        %else
+            mova %1, %2
+        %endif
+    %endif
+%endmacro
+
+%macro linear_row 3 ; dst, src, row
+%xdefine NEED(J) (!(ZERO_MASK & LIN_MASK(%3, J)))
+%xdefine LOAD(J) (NEED(J) && !(ONE_MASK & LIN_MASK(%3, J)))
+%assign INIT 0 ; track whether `dst` already contains data
+
+    %if !(ZERO_MASK & LIN_MASK(%3, 4)) ; nonzero output offset
+            %assign INIT 1
+            VBROADCASTI128 %1, [%2 + 4 * 16]
+    %endif
+IF LOAD(0), VBROADCASTI128 m12, [%2 + 0 * 16]
+IF LOAD(1), VBROADCASTI128 m13, [%2 + 1 * 16]
+IF LOAD(2), VBROADCASTI128 m14, [%2 + 2 * 16]
+IF LOAD(3), VBROADCASTI128 m15, [%2 + 3 * 16]
+IF NEED(0), linear_muladdw %1, IN0, LOAD(0), m12
+IF NEED(1), linear_muladdw %1, IN1, LOAD(1), m13
+IF NEED(2), linear_muladdw %1, IN2, LOAD(2), m14
+IF NEED(3), linear_muladdw %1, IN3, LOAD(3), m15
+            assert INIT, SWS_UOP_LINEAR should not contain empty rows
+%endmacro
+
+; Swap the high and low bytes of `dst` and `out` and merge back into `dst`
+%macro linear_rot 4 ; have_out, need_in, dst, out
+    %if %1 || %2 ; we also need to rotate pure input registers
+        %if %1
+            psllw %4, 8
+        %else
+            psllw %4, %3, 8
+        %endif
+            psrlw %3, 8
+            por %3, %4
+    %endif
+%endmacro
+
+%macro linear_pass 0-1 ; suffix
+%xdefine USED(J) (!(ZERO_MASK & LIN_COL(J)))
+%xdefine IN0 mx%1
+%xdefine IN1 my%1
+%xdefine IN2 mz%1
+%xdefine IN3 mw%1
+
+IF1 X,  linear_row m8,  tmp0q +  0 * 16, 0
+IF1 Y,  linear_row m9,  tmp0q +  5 * 16, 1
+IF1 Z,  linear_row m10, tmp0q + 10 * 16, 2
+IF1 W,  linear_row m11, tmp0q + 15 * 16, 3
+
+    %if BITS == 8
+        ; swap high/low bits and compute the other half; this discards the
+        ; garbage high byte produced by each sub-pass
+        linear_rot X, USED(0), IN0, m8
+        linear_rot Y, USED(1), IN1, m9
+        linear_rot Z, USED(2), IN2, m10
+        linear_rot W, USED(3), IN3, m11
+IF1 X,  linear_row m8,  tmp0q +  0 * 16, 0
+IF1 Y,  linear_row m9,  tmp0q +  5 * 16, 1
+IF1 Z,  linear_row m10, tmp0q + 10 * 16, 2
+IF1 W,  linear_row m11, tmp0q + 15 * 16, 3
+        linear_rot X, USED(0), IN0, m8
+        linear_rot Y, USED(1), IN1, m9
+        linear_rot Z, USED(2), IN2, m10
+        linear_rot W, USED(3), IN3, m11
+    %else
+IF X,   mova IN0, m8
+IF Y,   mova IN1, m9
+IF Z,   mova IN2, m10
+IF W,   mova IN3, m11
+    %endif
+%endmacro
+
+%macro LINEAR 2
+%assign ONE_MASK   %1
+%assign ZERO_MASK  %2
+
+        mov tmp0q, [implq + SwsOpImpl.priv] ; address of matrix
+        LOAD_CONT tmp1q
+        linear_pass
+IF2 V2, linear_pass 2
+        CONTINUE tmp1q
+%endmacro
+
+;---------------------------------------------------------
 ; Instantiate above macros to generate all uop kernels
 
 %macro decl_ops 1 ; type
@@ -795,6 +902,7 @@ assert 0, SWS_UOP_DITHER is not implemented for integer types
     DECL_%1_RSHIFT          (RSHIFT)
     DECL_%1_LINEAR_FMA      (LINEAR_FMA)
     DECL_%1_DITHER          (DITHER)
+    DECL_%1_LINEAR          (LINEAR)
 %endmacro
 
 %macro decl_type_invariant 0
