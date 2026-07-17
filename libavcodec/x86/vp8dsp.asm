@@ -937,42 +937,40 @@ cglobal vp8_idct_dc_add4y, 3, 3, 6, dst, block, stride
 ; void ff_vp8_idct_dc_add4uv_<opt>(uint8_t *dst, int16_t block[4][16], ptrdiff_t stride);
 ;-----------------------------------------------------------------------------
 
-INIT_MMX mmx
-cglobal vp8_idct_dc_add4uv, 3, 3, 0, dst, block, stride
+INIT_XMM sse2
+cglobal vp8_idct_dc_add4uv, 3, 3, 6, dst, block, stride
     ; load data
     movd      m0, [blockq+32*0] ; A
     movd      m1, [blockq+32*2] ; C
     punpcklwd m0, [blockq+32*1] ; A B
     punpcklwd m1, [blockq+32*3] ; C D
     punpckldq m0, m1        ; A B C D
-    pxor      m6, m6
+    pxor      m1, m1
 
     ; calculate DC
     paddw     m0, [pw_4]
-    movd [blockq+32*0], m6
-    movd [blockq+32*1], m6
-    movd [blockq+32*2], m6
-    movd [blockq+32*3], m6
+    movd [blockq+32*0], m1
+    movd [blockq+32*1], m1
+    movd [blockq+32*2], m1
+    movd [blockq+32*3], m1
     psraw     m0, 3
-    psubw     m6, m0
+    psubw     m1, m0
     packuswb  m0, m0
-    packuswb  m6, m6
-    punpcklbw m0, m0 ; AABBCCDD
-    punpcklbw m6, m6 ; AABBCCDD
-    movq      m1, m0
-    movq      m7, m6
-    punpcklbw m0, m0 ; AAAABBBB
-    punpckhbw m1, m1 ; CCCCDDDD
-    punpcklbw m6, m6 ; AAAABBBB
-    punpckhbw m7, m7 ; CCCCDDDD
+    packuswb  m1, m1
+    punpcklbw m0, m0
+    punpcklbw m1, m1
+    punpcklbw m0, m0
+    punpcklbw m1, m1
 
     ; add DC
     DEFINE_ARGS dst1, dst2, stride
     lea    dst2q, [dst1q+strideq*2]
-    ADD_DC    m0, m6, 0, mova
+    ADD_DC    m0, m1, 0, movh
     lea    dst1q, [dst1q+strideq*4]
     lea    dst2q, [dst2q+strideq*4]
-    ADD_DC    m1, m7, 0, mova
+    psrldq    m0, 8
+    psrldq    m1, 8
+    ADD_DC    m0, m1, 0, movh
     RET
 
 ;-----------------------------------------------------------------------------
