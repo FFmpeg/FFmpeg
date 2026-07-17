@@ -87,7 +87,7 @@ static int aarch64_setup_linear(const SwsAArch64OpImplParams *p,
         for (int j = 0; j < 5; j++) {
             const int jj = (j == 0) ? 4 : (j - 1);
             if (!(p->par.lin.zero & SWS_MASK(i, jj))) {
-                const SwsPixel px = uop->data.mat4[i][jj];
+                const SwsPixel px = uop->data.mat4x5[i][jj];
                 switch (p->type) {
                 case SWS_PIXEL_U8:  ((uint8_t  *) coeffs)[i_coeff++] = px.u8;  break;
                 case SWS_PIXEL_U16: ((uint16_t *) coeffs)[i_coeff++] = px.u16; break;

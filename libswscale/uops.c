@@ -497,7 +497,7 @@ static int translate_linear_op(SwsContext *ctx, SwsUOpList *ops,
         for (int j = 0; j < 5; j++) {
             const AVRational64 k = op->lin.m[i][j];
             const SwsPixel px = Q2PIXEL(k);
-            uop.data.mat4[i][j] = px;
+            uop.data.mat4x5[i][j] = px;
             if (k.num == 0)
                 uop.par.lin.zero |= SWS_MASK(i, j);
             else if (j < 4 && k.num == k.den)

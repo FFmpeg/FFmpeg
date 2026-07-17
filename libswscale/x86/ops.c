@@ -298,7 +298,7 @@ static int setup_linear(const SwsImplParams *params, SwsImplResult *out)
 {
     const SwsUOp *uop = params->uop;
     if (uop->type == SWS_PIXEL_F32) {
-        out->priv.ptr = av_memdup(uop->data.mat4, sizeof(uop->data.mat4));
+        out->priv.ptr = av_memdup(uop->data.mat4x5, sizeof(uop->data.mat4x5));
         out->free = ff_op_priv_free;
         return out->priv.ptr ? 0 : AVERROR(ENOMEM);
     }
@@ -311,7 +311,7 @@ static int setup_linear(const SwsImplParams *params, SwsImplResult *out)
 
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 5; j++) {
-            SwsPixel px = uop->data.mat4[i][j];
+            SwsPixel px = uop->data.mat4x5[i][j];
             SwsPixelType type = uop->type;
             if (type == SWS_PIXEL_U8) {
                 type = SWS_PIXEL_U16; /* for pmullw */

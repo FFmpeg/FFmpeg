@@ -302,7 +302,7 @@ typedef struct SwsUOp {
         SwsPixel *ptr;              /* refstruct */
         SwsPixel scalar;
         SwsPixel vec4[4];
-        SwsPixel mat4[4][5];        /* row major */
+        SwsPixel mat4x5[4][5];      /* row major */
         SwsShuffleMask shuffle;     /* for SWS_UOP_RW_SHUFFLE */
         const SwsLut3D *lut3d;      /* for SWS_UOP_LUT_3D; refstruct */
         void *opaque;               /* reserved for internal use */

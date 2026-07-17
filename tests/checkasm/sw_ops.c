@@ -600,11 +600,11 @@ static void check_linear(const char *name, SwsUOp *uop)
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 5; j++) {
             if (par->zero & SWS_MASK(i, j))
-                uop->data.mat4[i][j] = constpx(uop->type, 0);
+                uop->data.mat4x5[i][j] = constpx(uop->type, 0);
             else if (par->one & SWS_MASK(i, j))
-                uop->data.mat4[i][j] = constpx(uop->type, 1);
+                uop->data.mat4x5[i][j] = constpx(uop->type, 1);
             else
-                uop->data.mat4[i][j] = rndpx(uop->type);
+                uop->data.mat4x5[i][j] = rndpx(uop->type);
         }
     }
 

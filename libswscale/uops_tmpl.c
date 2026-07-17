@@ -811,8 +811,8 @@ DECL_SETUP(setup_linear, params, out)
 
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++)
-            c.m[i][j] = uop->data.mat4[i][j].px;
-        c.k[i] = uop->data.mat4[i][4].px;
+            c.m[i][j] = uop->data.mat4x5[i][j].px;
+        c.k[i] = uop->data.mat4x5[i][4].px;
     }
 
     out->priv.ptr = av_memdup(&c, sizeof(c));
