@@ -1239,6 +1239,8 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
             break;
         }
         case SWS_OP_LINEAR: {
+            if (op->type != SWS_PIXEL_F32)
+                 return AVERROR(ENOTSUP);
             if (sws->flags & SWS_BITEXACT)
                 data = insert_bitexact_linear(op, spi, id, data, nb_linear_ops, nb_const_ids);
             else
