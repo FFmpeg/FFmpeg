@@ -268,8 +268,9 @@ static int convert_to_aarch64_impl(SwsContext *ctx, const SwsOpList *ops, int n,
     case SWS_UOP_LINEAR:
     case SWS_UOP_LINEAR_FMA:
         out->mask = 0;
+        const uint32_t lin_mask = ff_sws_linear_mask(&op->lin);
         for (int i = 0; i < 4; i++) {
-            if (!SWS_OP_NEEDED(op, i) || !(op->lin.mask & SWS_MASK_ROW(i))) {
+            if (!SWS_OP_NEEDED(op, i) || !(lin_mask & SWS_MASK_ROW(i))) {
                 for (int j = 0; j < 5; j++)
                     out->par.lin.zero |= SWS_MASK(i, j);
                 continue;

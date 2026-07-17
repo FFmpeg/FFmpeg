@@ -1283,7 +1283,6 @@ static SwsLinearOp fmt_encode_range(const SwsFormat *fmt, bool *incomplete)
         c.m[0][0] = av_neg_q64(c.m[0][0]);
     }
 
-    c.mask = ff_sws_linear_mask(&c);
     return c;
 }
 
@@ -1302,7 +1301,6 @@ static SwsLinearOp fmt_decode_range(const SwsFormat *fmt, bool *incomplete)
     if (!(fmt->desc->flags & AV_PIX_FMT_FLAG_ALPHA))
         c.m[3][4] = Q(1);
 
-    c.mask = ff_sws_linear_mask(&c);
     return c;
 }
 
@@ -1464,15 +1462,12 @@ linear_mat3(const AVRational m00, const AVRational m01, const AVRational m02,
             const AVRational m10, const AVRational m11, const AVRational m12,
             const AVRational m20, const AVRational m21, const AVRational m22)
 {
-    SwsLinearOp c = {{
+    return (SwsLinearOp) {{
         { Q64(m00), Q64(m01), Q64(m02), Q(0), Q(0) },
         { Q64(m10), Q64(m11), Q64(m12), Q(0), Q(0) },
         { Q64(m20), Q64(m21), Q64(m22), Q(0), Q(0) },
         {     Q(0),     Q(0),     Q(0), Q(1), Q(0) },
     }};
-
-    c.mask = ff_sws_linear_mask(&c);
-    return c;
 }
 
 int ff_sws_decode_colors(SwsContext *ctx, SwsPixelType type,

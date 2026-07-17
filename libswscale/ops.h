@@ -192,17 +192,11 @@ typedef struct SwsLinearOp {
      *   [ Out.y ] = [ F G H I J ] * [ x y z w 1 ]
      *   [ Out.z ] = [ K L M N O ]
      *   [ Out.w ] = [ P Q R S T ]
-     *
-     * The mask keeps track of which components differ from an identity matrix.
-     * There may be more efficient implementations of particular subsets, for
-     * example the common subset of {A, E, G, J, M, O} can be implemented with
-     * just three fused multiply-add operations.
      */
     AVRational64 m[4][5];
-    uint32_t mask; /* m[i][j] <-> 1 << (5 * i + j) */
 } SwsLinearOp;
 
-/* Helper function to compute the correct mask */
+/* m[i][j] <-> 1 << (5 * i + j) */
 uint32_t ff_sws_linear_mask(const SwsLinearOp *c);
 
 typedef struct SwsFilterOp {

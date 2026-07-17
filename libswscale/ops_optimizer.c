@@ -238,7 +238,7 @@ static bool extract_scalar(const SwsLinearOp *c,
     SwsScaleOp scale = {0};
 
     /* There are components not on the main diagonal */
-    if (c->mask & ~SWS_MASK_DIAG4)
+    if (ff_sws_linear_mask(c) & ~SWS_MASK_DIAG4)
         return false;
 
     for (int i = 0; i < 4; i++) {
@@ -260,6 +260,7 @@ static bool extract_scalar(const SwsLinearOp *c,
 static bool extract_constant_rows(SwsLinearOp *c, const SwsComps *prev,
                                   SwsClearOp *out_clear)
 {
+    const uint32_t mask = ff_sws_linear_mask(c);
     SwsClearOp clear = {0};
     bool ret = false;
 
@@ -269,12 +270,11 @@ static bool extract_constant_rows(SwsLinearOp *c, const SwsComps *prev,
             const_row &= c->m[i][j].num == 0 || /* scalar is zero */
                          (prev->flags[j] & SWS_COMP_ZERO); /* input is zero */
         }
-        if (const_row && (c->mask & SWS_MASK_ROW(i))) {
+        if (const_row && (mask & SWS_MASK_ROW(i))) {
             clear.mask |= SWS_COMP(i);
             clear.value[i] = c->m[i][4];
             for (int j = 0; j < 5; j++)
                 c->m[i][j] = Q(i == j);
-            c->mask &= ~SWS_MASK_ROW(i);
             ret = true;
         }
     }
@@ -321,7 +321,6 @@ static bool extract_swizzle(SwsLinearOp *op, const SwsComps *prev,
     if (swiz.mask == SWS_SWIZZLE(0, 1, 2, 3).mask)
         return false; /* no swizzle was identified */
 
-    c.mask = ff_sws_linear_mask(&c);
     *out_swiz = swiz;
     *op = c;
     return true;
@@ -622,12 +621,13 @@ retry:
             break;
 
         case SWS_OP_LINEAR: {
+            const uint32_t mask = ff_sws_linear_mask(&op->lin);
             SwsSwizzleOp swizzle;
             SwsClearOp clear;
             SwsScaleOp scale;
 
             /* No-op (identity) linear operation */
-            if (!op->lin.mask) {
+            if (!mask) {
                 ff_sws_op_list_remove_at(ops, n, 1);
                 goto retry;
             }
@@ -646,7 +646,6 @@ retry:
                         op->lin.m[i][j] = sum;
                     }
                 }
-                op->lin.mask = ff_sws_linear_mask(&op->lin);
                 ff_sws_op_list_remove_at(ops, n + 1, 1);
                 goto retry;
             }
@@ -654,22 +653,20 @@ retry:
             /* Optimize away zero columns */
             for (int j = 0; j < 4; j++) {
                 const uint32_t col = SWS_MASK_COL(j);
-                if (!(prev->comps.flags[j] & SWS_COMP_ZERO) || !(op->lin.mask & col))
+                if (!(prev->comps.flags[j] & SWS_COMP_ZERO) || !(mask & col))
                     continue;
                 for (int i = 0; i < 4; i++)
                     op->lin.m[i][j] = Q(i == j);
-                op->lin.mask &= ~col;
                 goto retry;
             }
 
             /* Optimize away unused rows */
             for (int i = 0; i < 4; i++) {
                 const uint32_t row = SWS_MASK_ROW(i);
-                if (SWS_OP_NEEDED(op, i) || !(op->lin.mask & row))
+                if (SWS_OP_NEEDED(op, i) || !(mask & row))
                     continue;
                 for (int j = 0; j < 5; j++)
                     op->lin.m[i][j] = Q(i == j);
-                op->lin.mask &= ~row;
                 goto retry;
             }
 
