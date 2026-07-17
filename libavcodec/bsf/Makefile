@@ -50,6 +50,7 @@ OBJS-$(CONFIG_SHOWINFO_BSF)               += bsf/showinfo.o
 OBJS-$(CONFIG_SMPTE436M_TO_EIA608_BSF)    += bsf/smpte436m_to_eia608.o
 OBJS-$(CONFIG_TEXT2MOVSUB_BSF)            += bsf/movsub.o
 OBJS-$(CONFIG_TRACE_HEADERS_BSF)          += bsf/trace_headers.o
+OBJS-$(CONFIG_TRIM_BSF)                   += bsf/trim.o
 OBJS-$(CONFIG_TRUEHD_CORE_BSF)            += bsf/truehd_core.o
 OBJS-$(CONFIG_VP9_METADATA_BSF)           += bsf/vp9_metadata.o
 OBJS-$(CONFIG_VP9_RAW_REORDER_BSF)        += bsf/vp9_raw_reorder.o

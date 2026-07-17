@@ -1,0 +1,9 @@
+#extradata 0:        2, 0x0030001c
+#tb 0: 1/16000
+#media_type 0: audio
+#codec_id 0: aac
+#sample_rate 0: 16000
+#channel_layout_name 0: mono
+0,       1024,       1024,     1024,      163, 0xd5f85007, S=1, Skip Samples,       10, 0x02a40044
+0,       2048,       2048,     1024,      127, 0x66484065
+0,       3072,       3072,     1024,       94, 0x55222bd6

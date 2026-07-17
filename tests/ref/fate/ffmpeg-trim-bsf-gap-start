@@ -1,0 +1,6 @@
+#tb 0: 1/28224000
+#media_type 0: audio
+#codec_id 0: aac
+#sample_rate 0: 16000
+#channel_layout_name 0: mono
+0,    1806336,    1806336,  1806336,      170, 0xd84b5314

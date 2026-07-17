@@ -1,0 +1,8 @@
+#extradata 0:       19, 0x38100445
+#tb 0: 1/48000
+#media_type 0: audio
+#codec_id 0: opus
+#sample_rate 0: 48000
+#channel_layout_name 0: stereo
+0,        648,        648,      960,      354, 0xa2a7b0c8
+0,       1608,       1608,      960,      366, 0xf507c0ab
