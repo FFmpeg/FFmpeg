@@ -182,7 +182,8 @@ static int scd_read_track(AVFormatContext *s, SCDTrackHeader *track, int index)
     track->aux_count    = AV_RB32(buf + 28);
 
     /* Sanity checks */
-    if (track->num_channels > 8 || track->sample_rate >= 192000 ||
+    if (!track->num_channels || track->num_channels > 8 ||
+        track->sample_rate >= 192000 ||
         track->loop_start > track->loop_end)
         return AVERROR_INVALIDDATA;
 
