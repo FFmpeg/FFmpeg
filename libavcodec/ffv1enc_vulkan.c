@@ -417,7 +417,6 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
 
     /* Start recording */
     ff_vk_exec_start(&fv->s, exec);
-    fd->idx = exec->idx;
 
     /* For float pixel formats we want the raw bit pattern, not a value
      * already passed through fp16/fp32 conversion (which can flush
@@ -1539,8 +1538,10 @@ static av_cold int vulkan_encode_ffv1_init(AVCodecContext *avctx)
     fv->exec_ctx_info = av_calloc(fv->async_depth, sizeof(*fv->exec_ctx_info));
     if (!fv->exec_ctx_info)
         return AVERROR(ENOMEM);
-    for (int i = 0; i < fv->async_depth; i++)
+    for (int i = 0; i < fv->async_depth; i++) {
         fv->exec_pool.contexts[i].opaque = &fv->exec_ctx_info[i];
+        fv->exec_ctx_info[i].idx = fv->exec_pool.contexts[i].idx;
+    }
 
     fv->buf_regions = av_malloc_array(f->max_slice_count, sizeof(*fv->buf_regions));
     if (!fv->buf_regions)
