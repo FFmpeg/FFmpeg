@@ -21,6 +21,7 @@
 #include "config.h"
 #include "avassert.h"
 #include "mem.h"
+#include "random_seed.h"
 #include "refstruct.h"
 
 #include "vulkan.h"
@@ -368,6 +369,18 @@ void ff_vk_exec_pool_free(FFVulkanContext *s, FFVkExecPool *pool)
     pool->pool_size = 0;
 }
 
+/* Per-family, per-library queue selection phases; each library links its own
+ * copy, and pools which benefit from spreading are created by the same one */
+static atomic_uint exec_pool_phase[FF_ARRAY_ELEMS(((AVVulkanDeviceContext *)NULL)->qf)];
+static AVOnce exec_pool_phase_seeded = AV_ONCE_INIT;
+
+static void exec_pool_phase_seed(void)
+{
+    uint32_t seed = av_get_random_seed();
+    for (int i = 0; i < FF_ARRAY_ELEMS(exec_pool_phase); i++)
+        atomic_store_explicit(&exec_pool_phase[i], seed, memory_order_relaxed);
+}
+
 int ff_vk_exec_pool_init(FFVulkanContext *s, AVVulkanDeviceQueueFamily *qf,
                          FFVkExecPool *pool, int nb_contexts,
                          int nb_queries, VkQueryType query_type, int query_64bit,
@@ -505,6 +518,15 @@ int ff_vk_exec_pool_init(FFVulkanContext *s, AVVulkanDeviceQueueFamily *qf,
     }
 #endif
 
+    /* Video pools are pinned to the phase-picked queue (sessions order their
+     * execution anyway); all other pools rotate starting from it, so pools
+     * advancing in lockstep do not collide. */
+    av_assert1(qf->idx < FF_ARRAY_ELEMS(exec_pool_phase));
+    ff_thread_once(&exec_pool_phase_seeded, exec_pool_phase_seed);
+    uint32_t phase = atomic_fetch_add(&exec_pool_phase[qf->idx], 1);
+    int pin_queue = qf->flags & (VK_QUEUE_VIDEO_DECODE_BIT_KHR |
+                                 VK_QUEUE_VIDEO_ENCODE_BIT_KHR);
+
     /* Init contexts */
     for (int i = 0; i < pool->pool_size; i++) {
         FFVkExecContext *e = &pool->contexts[i];
@@ -533,7 +555,7 @@ int ff_vk_exec_pool_init(FFVulkanContext *s, AVVulkanDeviceQueueFamily *qf,
         e->buf = pool->cmd_bufs[i];
 
         /* Queue index distribution */
-        e->qi = i % qf->num;
+        e->qi = pin_queue ? phase % qf->num : (i + phase) % qf->num;
         e->qf = qf->idx;
         VkDeviceQueueInfo2 qinfo = {
             .sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_INFO_2,
