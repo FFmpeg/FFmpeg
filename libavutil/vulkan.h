@@ -23,6 +23,7 @@
 
 #include <stdatomic.h>
 
+#include "thread.h"
 #include "pixdesc.h"
 #include "hwcontext.h"
 #include "vulkan_functions.h"
@@ -132,6 +133,11 @@ typedef struct FFVkExecContext {
 
     /* Fence for the command buffer */
     VkFence fence;
+
+    /* CPU-side ownership. Held from ff_vk_exec_start() until the end of
+     * submission, and briefly by the eager dependency release in
+     * ff_vk_exec_get(). */
+    pthread_mutex_t lock;
 
     /* Opaque data, untouched, free to use by users */
     void *opaque;

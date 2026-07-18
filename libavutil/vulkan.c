@@ -310,6 +310,7 @@ void ff_vk_exec_pool_free(FFVulkanContext *s, FFVkExecPool *pool)
         }
 
         ff_vk_exec_discard_deps(s, e);
+        pthread_mutex_destroy(&e->lock);
     }
 
     /* Free shader-specific data */
@@ -465,6 +466,9 @@ int ff_vk_exec_pool_init(FFVulkanContext *s, AVVulkanDeviceQueueFamily *qf,
 
     pool->pool_size = nb_contexts;
 
+    for (int i = 0; i < pool->pool_size; i++)
+        pthread_mutex_init(&pool->contexts[i].lock, NULL);
+
 #ifdef VK_KHR_internally_synchronized_queues
     /* Check if the extension and its flag are actually enabled */
     int internal_queue_sync = 0;
@@ -555,14 +559,29 @@ VkResult ff_vk_exec_get_query(FFVulkanContext *s, FFVkExecContext *e,
 
 FFVkExecContext *ff_vk_exec_get(FFVulkanContext *s, FFVkExecPool *pool)
 {
+    FFVulkanFunctions *vk = &s->vkfn;
+
+    /* Release the dependencies of every completed context, rather than leaving them held until reuse */
+    for (int i = 0; i < pool->pool_size; i++) {
+        FFVkExecContext *e = &pool->contexts[i];
+        if (pthread_mutex_trylock(&e->lock))
+            continue; /* In use by a recording or submitting thread */
+        if ((e->nb_buf_deps || e->nb_frame_deps || e->nb_sw_frame_deps) &&
+            vk->GetFenceStatus(s->hwctx->act_dev, e->fence) == VK_SUCCESS)
+            ff_vk_exec_discard_deps(s, e);
+        pthread_mutex_unlock(&e->lock);
+    }
+
     return &pool->contexts[atomic_fetch_add(&pool->idx, 1) % pool->pool_size];
 }
 
 void ff_vk_exec_wait(FFVulkanContext *s, FFVkExecContext *e)
 {
     FFVulkanFunctions *vk = &s->vkfn;
+    pthread_mutex_lock(&e->lock);
     vk->WaitForFences(s->hwctx->act_dev, 1, &e->fence, VK_TRUE, UINT64_MAX);
     ff_vk_exec_discard_deps(s, e);
+    pthread_mutex_unlock(&e->lock);
 }
 
 int ff_vk_exec_start(FFVulkanContext *s, FFVkExecContext *e)
@@ -576,6 +595,9 @@ int ff_vk_exec_start(FFVulkanContext *s, FFVkExecContext *e)
         .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
     };
 
+    /* Take ownership of the context; held until the end of submission */
+    pthread_mutex_lock(&e->lock);
+
     /* Wait for the fence to be signalled. The fence is only reset once a
      * fully recorded submission is handed to the queue, so a recording
      * abandoned after an error leaves the context reusable. */
@@ -588,6 +610,7 @@ int ff_vk_exec_start(FFVulkanContext *s, FFVkExecContext *e)
     if (ret != VK_SUCCESS) {
         av_log(s, AV_LOG_ERROR, "Failed to start command recoding: %s\n",
                ff_vk_ret2str(ret));
+        pthread_mutex_unlock(&e->lock);
         return AVERROR_EXTERNAL;
     }
 
@@ -882,6 +905,7 @@ int ff_vk_exec_submit(FFVulkanContext *s, FFVkExecContext *e)
         av_log(s, AV_LOG_ERROR, "Unable to finish command buffer: %s\n",
                ff_vk_ret2str(ret));
         ff_vk_exec_discard_deps(s, e);
+        pthread_mutex_unlock(&e->lock);
         return AVERROR_EXTERNAL;
     }
 
@@ -907,6 +931,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         av_log(s, AV_LOG_ERROR, "Unable to submit command buffer: %s\n",
                ff_vk_ret2str(ret));
         ff_vk_exec_discard_deps(s, e);
+        pthread_mutex_unlock(&e->lock);
         return AVERROR_EXTERNAL;
     }
 
@@ -935,6 +960,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
 
     e->had_submission = 1;
+
+    pthread_mutex_unlock(&e->lock);
 
     return 0;
 }
