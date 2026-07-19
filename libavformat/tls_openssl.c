@@ -580,8 +580,9 @@ static int url_bio_bwrite(BIO *b, const char *buf, int len)
         return ret;
     BIO_clear_retry_flags(b);
     if (ret == AVERROR_EXIT)
-        return 0;
-    if (ret == AVERROR(EAGAIN))
+        /* Don't return 0: that signals success and silently drops the data. */
+        c->io_err = ret;
+    else if (ret == AVERROR(EAGAIN))
         BIO_set_retry_write(b);
     else
         c->io_err = ret;
