@@ -284,6 +284,7 @@ static const char insn_names[AARCH64_INSN_NB][8] = {
     [AARCH64_INSN_LDRB  ] = "ldrb",
     [AARCH64_INSN_LDRH  ] = "ldrh",
     [AARCH64_INSN_LSR   ] = "lsr",
+    [AARCH64_INSN_MLA   ] = "mla",
     [AARCH64_INSN_MOV   ] = "mov",
     [AARCH64_INSN_MOVI  ] = "movi",
     [AARCH64_INSN_MUL   ] = "mul",

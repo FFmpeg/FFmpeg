@@ -272,6 +272,7 @@ typedef enum AArch64InsnId {
     AARCH64_INSN_LDRB,
     AARCH64_INSN_LDRH,
     AARCH64_INSN_LSR,
+    AARCH64_INSN_MLA,
     AARCH64_INSN_MOV,
     AARCH64_INSN_MOVI,
     AARCH64_INSN_MUL,
@@ -572,6 +573,7 @@ static inline RasmOp a64cond_nv(void) { return a64op_cond(AARCH64_COND_NV); }
 #define i_ldrb(rctx,   op0, op1          ) rasm_add_insn(rctx, AARCH64_INSN_LDRB,   op0, op1, OPN, OPN)
 #define i_ldrh(rctx,   op0, op1          ) rasm_add_insn(rctx, AARCH64_INSN_LDRH,   op0, op1, OPN, OPN)
 #define i_lsr(rctx,    op0, op1, op2     ) rasm_add_insn(rctx, AARCH64_INSN_LSR,    op0, op1, op2, OPN)
+#define i_mla(rctx,    op0, op1, op2     ) rasm_add_insn(rctx, AARCH64_INSN_MLA,    op0, op1, op2, OPN)
 #define i_mov(rctx,    op0, op1          ) rasm_add_insn(rctx, AARCH64_INSN_MOV,    op0, op1, OPN, OPN)
 #define i_movi(rctx,   op0, op1          ) rasm_add_insn(rctx, AARCH64_INSN_MOVI,   op0, op1, OPN, OPN)
 #define i_mul(rctx,    op0, op1, op2     ) rasm_add_insn(rctx, AARCH64_INSN_MUL,    op0, op1, op2, OPN)
