@@ -475,9 +475,10 @@ static ssize_t gnutls_url_push(gnutls_transport_ptr_t transport,
     int ret = ffurl_write(uc, buf, len);
     if (ret >= 0)
         return ret;
-    if (ret == AVERROR_EXIT)
-        return 0;
-    if (ret == AVERROR(EAGAIN)) {
+    if (ret == AVERROR_EXIT) {
+        /* Use EINTR, not 0: returning 0 would cause GnuTLS to busy-spin. */
+        errno = EINTR;
+    } else if (ret == AVERROR(EAGAIN)) {
         errno = EAGAIN;
     } else {
         errno = EIO;
