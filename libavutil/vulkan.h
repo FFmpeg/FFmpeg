@@ -599,6 +599,21 @@ void ff_vk_frame_barrier(FFVulkanContext *s, FFVkExecContext *e,
 /**
  * Memory/buffer/image allocation helpers.
  */
+/**
+ * Create a standalone internal-use image: exclusive sharing, dedicated
+ * memory. Not for interop or mapping.
+ */
+int ff_vk_image_create(FFVulkanContext *s, VkImage *img, VkDeviceMemory *mem,
+                       int width, int height, VkFormat format, int nb_layers,
+                       VkImageTiling tiling, VkImageUsageFlags usage,
+                       VkImageCreateFlags flags, void *create_pnext);
+
+/**
+ * Free an image created by ff_vk_image_create(); all GPU use must have
+ * completed.
+ */
+void ff_vk_image_free(FFVulkanContext *s, VkImage *img, VkDeviceMemory *mem);
+
 int ff_vk_alloc_mem(FFVulkanContext *s, VkMemoryRequirements *req,
                     VkMemoryPropertyFlagBits req_flags, void *alloc_extension,
                     VkMemoryPropertyFlagBits *mem_flags, VkDeviceMemory *mem);

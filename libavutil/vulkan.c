@@ -1088,6 +1088,97 @@ int ff_vk_alloc_mem(FFVulkanContext *s, VkMemoryRequirements *req,
     return 0;
 }
 
+int ff_vk_image_create(FFVulkanContext *s, VkImage *img, VkDeviceMemory *mem,
+                       int width, int height, VkFormat format, int nb_layers,
+                       VkImageTiling tiling, VkImageUsageFlags usage,
+                       VkImageCreateFlags flags, void *create_pnext)
+{
+    int err;
+    VkResult ret;
+    FFVulkanFunctions *vk = &s->vkfn;
+    VkMemoryPropertyFlagBits mem_flags;
+
+    VkImageCreateInfo create_info = {
+        .sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+        .pNext         = create_pnext,
+        .flags         = flags,
+        .imageType     = VK_IMAGE_TYPE_2D,
+        .format        = format,
+        .extent        = { width, height, 1 },
+        .mipLevels     = 1,
+        .arrayLayers   = nb_layers,
+        .tiling        = tiling,
+        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+        .usage         = usage,
+        .samples       = VK_SAMPLE_COUNT_1_BIT,
+        .sharingMode   = VK_SHARING_MODE_EXCLUSIVE,
+    };
+    VkMemoryDedicatedAllocateInfo ded_alloc = {
+        .sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,
+    };
+    VkMemoryRequirements2 req = {
+        .sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,
+    };
+    VkImageMemoryRequirementsInfo2 req_desc = {
+        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2,
+    };
+    VkBindImageMemoryInfo bind_info = {
+        .sType = VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO,
+    };
+
+    *img = VK_NULL_HANDLE;
+    *mem = VK_NULL_HANDLE;
+
+    ret = vk->CreateImage(s->hwctx->act_dev, &create_info,
+                          s->hwctx->alloc, img);
+    if (ret != VK_SUCCESS) {
+        av_log(s, AV_LOG_ERROR, "Image creation failure: %s\n",
+               ff_vk_ret2str(ret));
+        return AVERROR_EXTERNAL;
+    }
+
+    req_desc.image = *img;
+    vk->GetImageMemoryRequirements2(s->hwctx->act_dev, &req_desc, &req);
+
+    /* Never shared with another image, so always dedicated */
+    ded_alloc.image = *img;
+    err = ff_vk_alloc_mem(s, &req.memoryRequirements,
+                          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                          &ded_alloc, &mem_flags, mem);
+    if (err < 0)
+        goto fail;
+
+    bind_info.image  = *img;
+    bind_info.memory = *mem;
+    ret = vk->BindImageMemory2(s->hwctx->act_dev, 1, &bind_info);
+    if (ret != VK_SUCCESS) {
+        av_log(s, AV_LOG_ERROR, "Failed to bind image memory: %s\n",
+               ff_vk_ret2str(ret));
+        err = AVERROR_EXTERNAL;
+        goto fail;
+    }
+
+    return 0;
+
+fail:
+    ff_vk_image_free(s, img, mem);
+    return err;
+}
+
+void ff_vk_image_free(FFVulkanContext *s, VkImage *img, VkDeviceMemory *mem)
+{
+    FFVulkanFunctions *vk = &s->vkfn;
+
+    if (*img) {
+        vk->DestroyImage(s->hwctx->act_dev, *img, s->hwctx->alloc);
+        *img = VK_NULL_HANDLE;
+    }
+    if (*mem) {
+        vk->FreeMemory(s->hwctx->act_dev, *mem, s->hwctx->alloc);
+        *mem = VK_NULL_HANDLE;
+    }
+}
+
 int ff_vk_create_buf(FFVulkanContext *s, FFVkBuffer *buf, size_t size,
                      void *pNext, void *alloc_pNext,
                      VkBufferUsageFlags usage, VkMemoryPropertyFlagBits flags)
