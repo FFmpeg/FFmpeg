@@ -362,6 +362,10 @@ static int64_t audio_callback_time;
 
 #define FF_QUIT_EVENT    (SDL_USEREVENT + 2)
 
+static volatile sig_atomic_t received_sigterm = 0;
+static volatile int received_nb_signals = 0;
+static int exit_status = 0;
+
 static SDL_Window *window;
 static SDL_Renderer *renderer;
 static SDL_RendererInfo renderer_info = {0};
@@ -1368,12 +1372,14 @@ static void do_exit(VideoState *is)
         printf("\n");
     SDL_Quit();
     av_log(NULL, AV_LOG_QUIET, "%s", "");
-    exit(0);
+    exit(exit_status);
 }
 
 static void sigterm_handler(int sig)
 {
-    exit(123);
+    received_sigterm = sig;
+    if (++received_nb_signals > 3)
+        exit(123);
 }
 
 static void set_default_window_size(int width, int height, AVRational sar)
@@ -3404,6 +3410,10 @@ static void refresh_loop_wait_event(VideoState *is, SDL_Event *event) {
     double remaining_time = 0.0;
     SDL_PumpEvents();
     while (!SDL_PeepEvents(event, 1, SDL_GETEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT)) {
+        if (received_sigterm) {
+            exit_status = 123;
+            do_exit(is);
+        }
         if (!cursor_hidden && av_gettime_relative() - cursor_last_shown > CURSOR_HIDE_DELAY) {
             SDL_ShowCursor(0);
             cursor_hidden = 1;
