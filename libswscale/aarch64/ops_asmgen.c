@@ -875,9 +875,14 @@ static void linear_pass(SwsAArch64Context *s, const SwsAArch64OpImplParams *p,
             } else if (first && !is_offset) {
                 if (p->par.lin.one & SWS_MASK(i, src_j)) {
                     i_mov16b(r, dx[i], vsrc);           CMTF("v%c[%u]  = vsrc%c[%u];", cvh, i, cvh, src_j);
-                } else {
+                } else if (p->type == SWS_PIXEL_F32) {
                     i_fmul  (r, dx[i], vsrc, vcoeff);   CMTF("v%c[%u]  = vsrc%c[%u] * coeff[%u][%u];", cvh, i, cvh, src_j, i, src_j);
+                } else {
+                    i_mul   (r, dx[i], vsrc, vcoeff);   CMTF("v%c[%u]  = vsrc%c[%u] * coeff[%u][%u];", cvh, i, cvh, src_j, i, src_j);
                 }
+            } else if (p->type != SWS_PIXEL_F32) {
+                /* Integer multiply-accumulate is always exact. */
+                i_mla (r, dx[i], vsrc, vcoeff);         CMTF("v%c[%u] += vsrc%c[%u] * coeff[%u][%u];", cvh, i, cvh, src_j, i, src_j);
             } else if (p->uop == SWS_UOP_LINEAR_FMA) {
                 /**
                  * Most modern aarch64 cores have a fastpath for sequences

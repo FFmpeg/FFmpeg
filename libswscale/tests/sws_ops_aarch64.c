@@ -219,7 +219,7 @@ static int collect_ops_compile(SwsContext *ctx, const SwsOpList *ops,
         ret = aarch64_collect_op(&params, root);
         if (ret < 0)
             goto end;
-        if (params.uop == SWS_UOP_LINEAR_FMA) {
+        if (params.uop == SWS_UOP_LINEAR_FMA && params.type == SWS_PIXEL_F32) {
             /**
              * Generate both sets of linear op functions that do use
              * and do not use fmla (selected by SWS_BITEXACT).

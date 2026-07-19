@@ -63,6 +63,12 @@ typedef struct SwsAArch64OpImplParams {
 #define LOOP_MASK(p, idx) LOOP(p->mask, idx)
 #define LOOP_MASK_BWD(p, idx) LOOP_BWD(p->mask, idx)
 
+/* Number of elements in each linear coefficient vector register. */
+static inline int linear_vreg_nelems(SwsPixelType type)
+{
+    return 16 / ff_sws_pixel_type_size(type);
+}
+
 /* Compute number of vector registers needed to store all coefficients. */
 static inline int linear_num_vregs(const SwsAArch64OpImplParams *params)
 {
@@ -70,7 +76,8 @@ static inline int linear_num_vregs(const SwsAArch64OpImplParams *params)
     for (int i = 0; i < 4 * 5; i++)
         if (!(params->par.lin.zero & (1ULL << i)))
             count++;
-    return (count + 3) / 4;
+    const int nelems = linear_vreg_nelems(params->type);
+    return (count + nelems - 1) / nelems;
 }
 
 /**
