@@ -47,36 +47,7 @@ static const struct {
 #undef UOP_NAME
 };
 
-static SwsPixel pixel_from_q64(SwsPixelType type, AVRational64 val)
-{
-    av_assert1(val.den != 0);
-    switch (type) {
-    case SWS_PIXEL_U8:  return (SwsPixel) { .u8  = val.num / val.den };
-    case SWS_PIXEL_U16: return (SwsPixel) { .u16 = val.num / val.den };
-    case SWS_PIXEL_U32: return (SwsPixel) { .u32 = val.num / val.den };
-    case SWS_PIXEL_F32: return (SwsPixel) { .f32 = (float) val.num / val.den };
-    case SWS_PIXEL_NONE:
-    case SWS_PIXEL_TYPE_NB: break;
-    }
-
-    av_unreachable("Invalid pixel type!");
-    return (SwsPixel) {0};
-}
-
-#define Q2PIXEL(val) pixel_from_q64(op->type, val)
-
-static bool pixel_is_1s(SwsPixelType type, SwsPixel val)
-{
-    switch (ff_sws_pixel_type_size(type)) {
-    case 1: return val.u8  == UINT8_MAX;
-    case 2: return val.u16 == UINT16_MAX;
-    case 4: return val.u32 == UINT32_MAX;
-    default: break;
-    }
-
-    av_unreachable("Invalid pixel type!");
-    return false;
-}
+#define Q2PIXEL(val) ff_sws_pixel_from_q64(op->type, val)
 
 void ff_sws_uop_name(const SwsUOp *op, char buf[SWS_UOP_NAME_MAX])
 {
@@ -267,8 +238,8 @@ static bool exact_prod(SwsPixelType type, SwsPixel coef,
     else if (!minq.den || !maxq.den)
         return false; /* unknown bounds */
 
-    const SwsPixel min = pixel_from_q64(type, minq);
-    const SwsPixel max = pixel_from_q64(type, maxq);
+    const SwsPixel min = ff_sws_pixel_from_q64(type, minq);
+    const SwsPixel max = ff_sws_pixel_from_q64(type, maxq);
     switch (type) {
     case SWS_PIXEL_F32:
         return exact_product_f32(coef.f32, min.f32) &&
@@ -610,7 +581,7 @@ static int translate_op(SwsContext *ctx, SwsUOpList *uops, SwsUOpFlags flags,
             uop.data.vec4[i] = px;
             if (v.num == 0)
                 uop.par.clear.zero |= SWS_COMP(i);
-            else if (pixel_is_1s(op->type, px))
+            else if (ff_sws_pixel_is_1s(op->type, px))
                 uop.par.clear.one |= SWS_COMP(i);
         }
         break;

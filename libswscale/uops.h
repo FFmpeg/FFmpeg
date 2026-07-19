@@ -30,6 +30,7 @@
  ***************************************************************************/
 
 #include "libavutil/attributes.h"
+#include "rational64.h"
 
 typedef struct SwsContext       SwsContext;
 typedef struct SwsFilterWeights SwsFilterWeights;
@@ -86,6 +87,30 @@ typedef union SwsPixel {
 
 /* Ensures (SwsPixel) {0} is properly initialized to all zeros */
 static_assert(sizeof(SwsPixel) == sizeof(char[4]), "SwsPixel size mismatch");
+
+static inline SwsPixel ff_sws_pixel_from_q64(SwsPixelType type, AVRational64 val)
+{
+    switch (type) {
+    case SWS_PIXEL_U8:  return (SwsPixel) { .u8  = val.num / val.den };
+    case SWS_PIXEL_U16: return (SwsPixel) { .u16 = val.num / val.den };
+    case SWS_PIXEL_U32: return (SwsPixel) { .u32 = val.num / val.den };
+    case SWS_PIXEL_F32: return (SwsPixel) { .f32 = (float) val.num / val.den };
+    case SWS_PIXEL_NONE:
+    case SWS_PIXEL_TYPE_NB: break;
+    }
+    return (SwsPixel) {0};
+}
+
+static inline bool ff_sws_pixel_is_1s(SwsPixelType type, SwsPixel val)
+{
+    switch (ff_sws_pixel_type_size(type)) {
+    case 1: return val.u8  == UINT8_MAX;
+    case 2: return val.u16 == UINT16_MAX;
+    case 4: return val.u32 == UINT32_MAX;
+    default: break;
+    }
+    return false;
+}
 
 /**
  * Bit-mask of components. Exact meaning depends on the usage context.
