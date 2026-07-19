@@ -156,6 +156,9 @@ typedef struct FFHWBaseEncodeContext {
     AVBufferRef    *recon_frames_ref;
     AVHWFramesContext *recon_frames;
 
+    /* Allocates a reconstruction frame; used instead of recon_frames_ref */
+    int          (*get_recon_frame)(AVCodecContext *avctx, AVFrame *frame);
+
     // Current encoding window, in display (input) order.
     FFHWBaseEncodePicture *pic_start, *pic_end;
     // The next picture to use as the previous reference picture in
