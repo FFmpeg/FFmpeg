@@ -357,6 +357,17 @@ typedef struct RTSPState {
      * separately, eg for HTTP tunneling. */
     URLContext *rtsp_hd_out;
 
+    /** Interrupt callback installed on the RTSP control connection(s).  Every
+     * nested URLContext (tls, http, httpproxy, tcp) inherits a copy of it, so
+     * the whole transport stack consults teardown_deadline. */
+    AVIOInterruptCB control_interrupt_cb;
+
+    /** Monotonic deadline (av_gettime_relative() time base) bounding the
+     * close-time TEARDOWN exchange, or 0 while not closing.  While armed, the
+     * control connection ignores the user interrupt callback and
+     * ff_rtsp_read_reply_internal() insists on the expected CSeq. */
+    int64_t teardown_deadline;
+
     /** RTSP transport mode, such as plain or tunneled. */
     enum RTSPControlTransport control_transport;
 

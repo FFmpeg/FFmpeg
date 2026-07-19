@@ -59,12 +59,26 @@ static const struct RTSPStatusMessage {
     { 0,                          "NULL"                             }
 };
 
+/* Upper bound on the whole close-time TEARDOWN exchange. */
+#define RTSP_TEARDOWN_TIMEOUT (500 * 1000)
+
 static int rtsp_read_close(AVFormatContext *s)
 {
     RTSPState *rt = s->priv_data;
 
-    if (!(rt->rtsp_flags & RTSP_FLAG_LISTEN))
-        ff_rtsp_send_cmd_async(s, "TEARDOWN", rt->control_uri, NULL);
+    if (!(rt->rtsp_flags & RTSP_FLAG_LISTEN)) {
+        /* Arm the deadline consulted by the control connection's interrupt
+         * callback, which every nested URLContext (tls, http, httpproxy, tcp)
+         * inherited.  A pending user interrupt (Ctrl-C) is thus ignored on the
+         * whole transport stack until the deadline expires, so TEARDOWN goes
+         * out and its reply can be read.  It stays armed for the connection
+         * shutdown below, which keeps the total close time bounded.  The
+         * command is sent synchronously so the 200 OK is consumed and the
+         * server releases the session. */
+        rt->teardown_deadline = av_gettime_relative() + RTSP_TEARDOWN_TIMEOUT;
+        ff_rtsp_send_cmd(s, "TEARDOWN", rt->control_uri, NULL,
+                         &(RTSPMessageHeader){0}, NULL);
+    }
 
     ff_rtsp_close_streams(s);
     ff_rtsp_close_connections(s);
