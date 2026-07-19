@@ -73,31 +73,30 @@ static void call_kernel(AVFilterContext *ctx,
                         int tff) API_AVAILABLE(macos(10.11), ios(8.0))
 {
     YADIFVTContext *s = ctx->priv;
-    id<MTLCommandBuffer> buffer = s->mtlQueue.commandBuffer;
-    id<MTLComputeCommandEncoder> encoder = buffer.computeCommandEncoder;
-    struct mtlYadifParams *params = (struct mtlYadifParams *)s->mtlParamsBuffer.contents;
-    *params = (struct mtlYadifParams){
-        .channels = channels,
-        .parity = parity,
-        .tff = tff,
-        .is_second_field = !(parity ^ tff),
-        .skip_spatial_check = s->yadif.mode&2,
-        .field_mode = s->yadif.current_field
-    };
+    @autoreleasepool {
+        id<MTLCommandBuffer> buffer = s->mtlQueue.commandBuffer;
+        id<MTLComputeCommandEncoder> encoder = buffer.computeCommandEncoder;
+        struct mtlYadifParams *params = (struct mtlYadifParams *)s->mtlParamsBuffer.contents;
+        *params = (struct mtlYadifParams){
+            .channels = channels,
+            .parity = parity,
+            .tff = tff,
+            .is_second_field = !(parity ^ tff),
+            .skip_spatial_check = s->yadif.mode&2,
+            .field_mode = s->yadif.current_field
+        };
 
-    [encoder setTexture:dst  atIndex:0];
-    [encoder setTexture:prev atIndex:1];
-    [encoder setTexture:cur  atIndex:2];
-    [encoder setTexture:next atIndex:3];
-    [encoder setBuffer:s->mtlParamsBuffer offset:0 atIndex:4];
-    ff_metal_compute_encoder_dispatch(s->mtlDevice, s->mtlPipeline, encoder, dst.width, dst.height);
-    [encoder endEncoding];
+        [encoder setTexture:dst  atIndex:0];
+        [encoder setTexture:prev atIndex:1];
+        [encoder setTexture:cur  atIndex:2];
+        [encoder setTexture:next atIndex:3];
+        [encoder setBuffer:s->mtlParamsBuffer offset:0 atIndex:4];
+        ff_metal_compute_encoder_dispatch(s->mtlDevice, s->mtlPipeline, encoder, dst.width, dst.height);
+        [encoder endEncoding];
 
-    [buffer commit];
-    [buffer waitUntilCompleted];
-
-    ff_objc_release(&encoder);
-    ff_objc_release(&buffer);
+        [buffer commit];
+        [buffer waitUntilCompleted];
+    }
 }
 
 static int filter(AVFilterContext *ctx, AVFrame *dst,
