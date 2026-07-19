@@ -1317,14 +1317,13 @@ int ff_vk_decode_init(AVCodecContext *avctx)
         session_create.flags = VK_VIDEO_SESSION_CREATE_INLINE_SESSION_PARAMETERS_BIT_KHR;
 #endif
 
-    /* Create decode exec context for this specific main thread.
-     * 2 async contexts per thread was experimentally determined to be optimal
-     * for a majority of streams. */
-    async_depth = 2*ctx->qf->num;
-    /* We don't need more than 2 per thread context */
-    async_depth = FFMIN(async_depth, 2*avctx->thread_count);
-    /* Make sure there are enough async contexts for each thread */
-    async_depth = FFMAX(async_depth, avctx->thread_count);
+    /* Create the decode exec context.
+     * A small fixed depth is enough to keep the GPU fed, as submissions are
+     * serialized for hardware decoding; thread-safe hwaccels submit from
+     * every frame thread concurrently, and need a context per thread. */
+    async_depth = FF_VK_DEFAULT_EXEC_CONTEXTS;
+    if (ffhwaccel(avctx->hwaccel)->caps_internal & HWACCEL_CAP_THREAD_SAFE)
+        async_depth = FFMAX(async_depth, avctx->thread_count);
 
     err = ff_vk_exec_pool_init(s, ctx->qf, &ctx->exec_pool,
                                async_depth, 0, 0, 0, profile);

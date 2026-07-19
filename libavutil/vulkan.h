@@ -108,6 +108,9 @@ typedef struct FFVkBuffer {
     AVBufferRef *host_ref;
 } FFVkBuffer;
 
+/* Default number of in-flight execution contexts per pool */
+#define FF_VK_DEFAULT_EXEC_CONTEXTS 4
+
 typedef struct FFVkExecContext {
     uint32_t idx;
     const struct FFVkExecPool *parent;

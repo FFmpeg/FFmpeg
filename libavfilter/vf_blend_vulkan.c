@@ -103,7 +103,7 @@ static av_cold int init_filter(AVFilterContext *avctx)
         goto fail;
     }
 
-    RET(ff_vk_exec_pool_init(vkctx, s->qf, &s->e, s->qf->num*4, 0, 0, 0, NULL));
+    RET(ff_vk_exec_pool_init(vkctx, s->qf, &s->e, FF_VK_DEFAULT_EXEC_CONTEXTS, 0, 0, 0, NULL));
 
     SPEC_LIST_CREATE(sl, 1, 1*sizeof(uint32_t))
     SPEC_LIST_ADD(sl, 0, 32, planes);

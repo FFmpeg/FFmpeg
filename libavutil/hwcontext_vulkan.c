@@ -3103,17 +3103,17 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
         hwctx->unlock_frame = unlock_frame;
 
     err = ff_vk_exec_pool_init(&p->vkctx, p->compute_qf, &fp->compute_exec,
-                               p->compute_qf->num, 0, 0, 0, NULL);
+                               2, 0, 0, 0, NULL);
     if (err)
         return err;
 
     err = ff_vk_exec_pool_init(&p->vkctx, p->transfer_qf, &fp->upload_exec,
-                               p->transfer_qf->num*2, 0, 0, 0, NULL);
+                               FF_VK_DEFAULT_EXEC_CONTEXTS, 0, 0, 0, NULL);
     if (err)
         return err;
 
     err = ff_vk_exec_pool_init(&p->vkctx, p->transfer_qf, &fp->download_exec,
-                               p->transfer_qf->num, 0, 0, 0, NULL);
+                               2, 0, 0, 0, NULL);
     if (err)
         return err;
 

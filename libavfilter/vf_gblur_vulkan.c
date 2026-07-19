@@ -160,7 +160,7 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
         goto fail;
     }
 
-    RET(ff_vk_exec_pool_init(vkctx, s->qf, &s->e, s->qf->num*4, 0, 0, 0, NULL));
+    RET(ff_vk_exec_pool_init(vkctx, s->qf, &s->e, FF_VK_DEFAULT_EXEC_CONTEXTS, 0, 0, 0, NULL));
 
     const FFVulkanDescriptorSetBinding desc[] = {
         { /* input_img */
