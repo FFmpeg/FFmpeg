@@ -26,6 +26,18 @@
 SECTION .text
 
 INIT_XMM sse2
+
+%macro VC1_FPEL_FUNC 2 ; avg vs put, size
+%if CONFIG_VC1DSP
+; void ff_vc1_{avg,put}_mspel_mc00_{8,16}_sse2(uint8_t *dst, const uint8_t *src,
+;                                              ptrdiff_t stride, int rnd)
+; rnd is unused for fpel functions and for all supported ABIs
+; we can just reuse the SIZExSIZE functions.
+cglobal vc1_%1_mspel_mc00_%2
+%endif
+%endmacro
+
+VC1_FPEL_FUNC avg, 8
 ; void ff_avg_pixels8x8_sse2(uint8_t *block, const uint8_t *pixels,
 ;                            ptrdiff_t line_size)
 cglobal avg_pixels8x8, 3,5,6
@@ -67,6 +79,7 @@ avg_pixels8_after_prologue:
 %define LOAD movu
 %define SAVE mova
 %endif
+VC1_FPEL_FUNC %1, %2
 cglobal %1_pixels%2x%2, 3,5+4*%3,4
     mov         r3d, %2
     jmp         %1_pixels%2_after_prologue
