@@ -726,7 +726,7 @@ int ff_dovi_rpu_generate(DOVIContext *s, const AVDOVIMetadata *metadata,
             return AVERROR(ENOMEM);
     }
 
-    vdr_dm_metadata_present = memcmp(color, &ff_dovi_color_default, sizeof(*color));
+    vdr_dm_metadata_present = !!memcmp(color, &ff_dovi_color_default, sizeof(*color));
     if (metadata->num_ext_blocks)
         vdr_dm_metadata_present = 1;
 
