@@ -89,9 +89,10 @@ SECTION .text
     pxor    m5, m5
     movd    m3, r2d
 %if %1 > 4
-    punpcklbw m3, m3
+    SPLATW  m3, m3
+%else
+    pshufw  m3, m3, 0
 %endif
-    punpcklbw m3, m5
     pcmpgtw m3, m4  ; if (a0 < pq)
     pand    m6, m3
 
@@ -217,7 +218,6 @@ SECTION .text
     lea  r3, [4*r1]
     sub  r4, r3
     lea  r3, [r1+2*r1]
-    imul r2, 0x01010101
 %endmacro
 
 %macro START_H_FILTER 1
@@ -225,7 +225,6 @@ SECTION .text
 %if %1 > 4
     lea  r4, [r0+4*r1]
 %endif
-    imul r2, 0x01010101
 %endmacro
 
 INIT_XMM sse2
