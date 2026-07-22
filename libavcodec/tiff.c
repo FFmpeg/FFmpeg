@@ -526,6 +526,7 @@ static int tiff_unpack_zlib(TiffContext *s, AVFrame *p, uint8_t *dst, int stride
     uint8_t *zbuf;
     unsigned long outlen;
     int ret, line;
+    int rows = is_yuv ? (lines + s->subsampling[1] - 1) / s->subsampling[1] : lines;
     outlen = width * lines;
     zbuf   = av_malloc(outlen);
     if (!zbuf)
@@ -544,6 +545,12 @@ static int tiff_unpack_zlib(TiffContext *s, AVFrame *p, uint8_t *dst, int stride
                (unsigned long)width * lines, ret);
         av_free(zbuf);
         return AVERROR_UNKNOWN;
+    }
+    if (outlen < (unsigned long)width * rows) {
+        av_log(s->avctx, AV_LOG_ERROR, "Deflated %lu bytes, but %lu are needed\n",
+               outlen, (unsigned long)width * rows);
+        av_free(zbuf);
+        return AVERROR_INVALIDDATA;
     }
     src = zbuf;
     for (line = 0; line < lines; line++) {
@@ -592,6 +599,7 @@ static int tiff_unpack_lzma(TiffContext *s, AVFrame *p, uint8_t *dst, int stride
 {
     uint64_t outlen = width * (uint64_t)lines;
     int ret, line;
+    int rows = is_yuv ? (lines + s->subsampling[1] - 1) / s->subsampling[1] : lines;
     uint8_t *buf = av_malloc(outlen);
     if (!buf)
         return AVERROR(ENOMEM);
@@ -609,6 +617,12 @@ static int tiff_unpack_lzma(TiffContext *s, AVFrame *p, uint8_t *dst, int stride
                (uint64_t)width * lines, ret);
         av_free(buf);
         return AVERROR_UNKNOWN;
+    }
+    if (outlen < (uint64_t)width * rows) {
+        av_log(s->avctx, AV_LOG_ERROR, "Uncompressed %"PRIu64" bytes, but %"PRIu64" are needed\n",
+               outlen, (uint64_t)width * rows);
+        av_free(buf);
+        return AVERROR_INVALIDDATA;
     }
     src = buf;
     for (line = 0; line < lines; line++) {
