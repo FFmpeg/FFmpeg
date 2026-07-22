@@ -4084,6 +4084,9 @@ static int mov_read_sgpd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     default_group_description_index = version >= 2 ? avio_rb32(pb) : 0;
     entry_count = avio_rb32(pb);
 
+    if (entry_count > atom.size)
+        return AVERROR_INVALIDDATA;
+
     av_freep(&sc->sgpd_sync);
     sc->sgpd_sync_count = entry_count;
     sc->sgpd_sync = av_calloc(entry_count, sizeof(*sc->sgpd_sync));
