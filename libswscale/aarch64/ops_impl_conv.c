@@ -199,8 +199,7 @@ static int convert_to_aarch64_impl(SwsContext *ctx, const SwsOpList *ops, int n,
                  : SWS_UOP_LINEAR_FMA;
         break;
     case SWS_OP_DITHER:     out->uop = SWS_UOP_DITHER;     break;
-    case SWS_OP_FILTER_H:
-    case SWS_OP_FILTER_V:
+    default:
         return AVERROR(ENOTSUP);
     }
 
