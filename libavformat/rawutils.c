@@ -29,14 +29,20 @@ int ff_reshuffle_raw_rgb(AVFormatContext *s, AVPacket **ppkt, AVCodecParameters 
     int ret;
     AVPacket *pkt = *ppkt;
     int64_t bpc = par->bits_per_coded_sample != 15 ? par->bits_per_coded_sample : 16;
-    int min_stride = (par->width * bpc + 7) >> 3;
-    int with_pal_size = min_stride * par->height + 1024;
-    int contains_pal = bpc == 8 && pkt->size == with_pal_size;
-    int size = contains_pal ? min_stride * par->height : pkt->size;
-    int stride = size / par->height;
-    int padding = expected_stride - FFMIN(expected_stride, stride);
-    int y;
+    int64_t min_stride = (par->width * bpc + 7) >> 3;
+    int with_pal_size, contains_pal, size, stride, padding, y;
     AVPacket *new_pkt;
+
+    if (par->height <= 0 || min_stride <= 0 || expected_stride <= 0 ||
+        min_stride      > (INT_MAX - 1024) / par->height ||
+        expected_stride > (INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE) / par->height)
+        return AVERROR(EINVAL);
+
+    with_pal_size = min_stride * par->height + 1024;
+    contains_pal  = bpc == 8 && pkt->size == with_pal_size;
+    size          = contains_pal ? min_stride * par->height : pkt->size;
+    stride        = size / par->height;
+    padding       = expected_stride - FFMIN(expected_stride, stride);
 
     if (pkt->size == expected_stride * par->height)
         return 0;
