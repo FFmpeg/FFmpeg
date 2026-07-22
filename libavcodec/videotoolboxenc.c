@@ -2221,7 +2221,6 @@ static int vtenc_cm_to_avpacket(
     size_t  out_buf_size;
     size_t  sei_nalu_size = 0;
     int64_t dts_delta;
-    int64_t time_base_num;
     int nalu_count;
     CMTime  pts;
     CMTime  dts;
@@ -2328,9 +2327,9 @@ static int vtenc_cm_to_avpacket(
     }
 
     dts_delta = vtctx->dts_delta >= 0 ? vtctx->dts_delta : 0;
-    time_base_num = avctx->time_base.num;
-    pkt->pts = pts.value / time_base_num;
-    pkt->dts = dts.value / time_base_num - dts_delta;
+    pkt->pts = av_rescale_q(pts.value, (AVRational){1, pts.timescale}, avctx->time_base);
+    pkt->dts = av_rescale_q(dts.value, (AVRational){1, dts.timescale}, avctx->time_base)
+               - dts_delta;
 
     return 0;
 }
