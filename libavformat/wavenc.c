@@ -305,6 +305,10 @@ static int wav_write_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     int64_t fmt;
 
+    if (wav->rf64 == RF64_AUTO && !(s->pb->seekable & AVIO_SEEKABLE_NORMAL)) {
+        wav->rf64 = RF64_NEVER;
+    }
+
     if (wav->rf64 == RF64_ALWAYS) {
         ffio_wfourcc(pb, "RF64");
         avio_wl32(pb, -1); /* RF64 chunk size: use size in ds64 */
