@@ -270,7 +270,7 @@ typedef struct H266RawVPS {
     uint8_t  vps_layer_id[VVC_MAX_LAYERS];
     uint8_t  vps_independent_layer_flag[VVC_MAX_LAYERS];
     uint8_t  vps_max_tid_ref_present_flag[VVC_MAX_LAYERS];
-    uint8_t  vps_direct_ref_layer_flag[VVC_MAX_LAYERS][VVC_MAX_LAYERS - 1];
+    uint8_t  vps_direct_ref_layer_flag[VVC_MAX_LAYERS][VVC_MAX_LAYERS];
     uint8_t  vps_max_tid_il_ref_pics_plus1[VVC_MAX_LAYERS][VVC_MAX_LAYERS - 1];
     uint8_t  vps_each_layer_is_an_ols_flag;
     uint8_t  vps_ols_mode_idc;
