@@ -24,6 +24,7 @@
 #include "formats.h"
 #include "libavutil/mem.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/pixdesc.h"
 
 #include "AMF/components/VideoDecoderUVD.h"
 #include "libavutil/hwcontext_amf.h"
@@ -333,8 +334,9 @@ int amf_init_filter_config(AVFilterLink *outlink, enum AVPixelFormat *in_format)
         AMF_RETURN_IF_FALSE(avctx, res == 0, res, "Failed to create  hardware device context (AMF) : %s\n", av_err2str(res));
 
     }
-    if(out_sw_format == AV_PIX_FMT_NONE){
-        if(outlink->format == AV_PIX_FMT_AMF_SURFACE)
+    if (out_sw_format == AV_PIX_FMT_NONE) {
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(outlink->format);
+        if (desc && (desc->flags & AV_PIX_FMT_FLAG_HWACCEL))
             out_sw_format = in_sw_format;
         else
             out_sw_format = outlink->format;
@@ -351,11 +353,10 @@ int amf_init_filter_config(AVFilterLink *outlink, enum AVPixelFormat *in_format)
     hwframes_out->format    = AV_PIX_FMT_AMF_SURFACE;
     hwframes_out->sw_format = out_sw_format;
 
-    if (inlink->format == AV_PIX_FMT_AMF_SURFACE) {
-        *in_format = in_sw_format;
-    } else {
-        *in_format = inlink->format;
-    }
+    // in_sw_format is inlink->format for software input and the underlying
+    // sw_format for any hw frames input (AMF, D3D11, DXVA2); the component
+    // must always be initialized with a software surface format.
+    *in_format = in_sw_format;
     outlink->w = ctx->width;
     outlink->h = ctx->height;
 
