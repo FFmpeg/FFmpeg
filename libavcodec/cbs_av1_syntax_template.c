@@ -2011,10 +2011,12 @@ static int FUNC(metadata_itut_t35)(CodedBitstreamContext *ctx, RWContext *rw,
     // be arbitrarily many trailing zeroes so we need to read through twice.
     current->payload_size = cbs_av1_get_payload_bytes_left(rw);
 
-    current->payload_ref = av_buffer_alloc(current->payload_size);
+    current->payload_ref = av_buffer_alloc(current->payload_size +
+                                           AV_INPUT_BUFFER_PADDING_SIZE);
     if (!current->payload_ref)
         return AVERROR(ENOMEM);
     current->payload = current->payload_ref->data;
+    memset(current->payload + current->payload_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 #endif
 
     for (i = 0; i < current->payload_size; i++)
