@@ -367,6 +367,87 @@ static inline void put_se_coef(PutBitContext *pb, const AVDOVIRpuDataHeader *hdr
     }
 }
 
+static int validate_ue_golomb_value(uint64_t value)
+{
+    return value <= 0xFFFE;
+}
+
+static int validate_se_golomb_value(int64_t value)
+{
+    return value >= -0x7FFF && value <= 0x7FFF;
+}
+
+static int validate_ue_coef(const AVDOVIRpuDataHeader *hdr, uint64_t coef)
+{
+    if (hdr->coef_log2_denom >= 63)
+        return 0;
+    return validate_ue_golomb_value(coef >> hdr->coef_log2_denom);
+}
+
+static int validate_se_coef(const AVDOVIRpuDataHeader *hdr, int64_t coef)
+{
+    if (hdr->coef_log2_denom >= 63)
+        return 0;
+    return validate_se_golomb_value(coef >> hdr->coef_log2_denom);
+}
+
+static int validate_mapping_for_generation(const AVDOVIRpuDataHeader *hdr,
+                                           const AVDOVIDataMapping *mapping)
+{
+    if (!mapping->num_x_partitions || mapping->num_x_partitions > 0xFFFF ||
+        !mapping->num_y_partitions || mapping->num_y_partitions > 0xFFFF)
+        return 0;
+
+    for (int c = 0; c < 3; c++) {
+        const AVDOVIReshapingCurve *curve = &mapping->curves[c];
+
+        if (curve->num_pivots < 2 || curve->num_pivots > AV_DOVI_MAX_PIECES + 1)
+            return 0;
+
+        for (int i = 1; i < curve->num_pivots; i++)
+            if (curve->pivots[i] < curve->pivots[i - 1])
+                return 0;
+
+        for (int i = 0; i < curve->num_pivots - 1; i++) {
+            switch (curve->mapping_idc[i]) {
+            case AV_DOVI_MAPPING_POLYNOMIAL:
+                if (curve->poly_order[i] < 1 || curve->poly_order[i] > 2)
+                    return 0;
+                for (int k = 0; k <= curve->poly_order[i]; k++)
+                    if (!validate_se_coef(hdr, curve->poly_coef[i][k]))
+                        return 0;
+                break;
+            case AV_DOVI_MAPPING_MMR:
+                if (curve->mmr_order[i] < 1 || curve->mmr_order[i] > 3)
+                    return 0;
+                if (!validate_se_coef(hdr, curve->mmr_constant[i]))
+                    return 0;
+                for (int j = 0; j < curve->mmr_order[i]; j++)
+                    for (int k = 0; k < 7; k++)
+                        if (!validate_se_coef(hdr, curve->mmr_coef[i][j][k]))
+                            return 0;
+                break;
+            default:
+                return 0;
+            }
+        }
+    }
+
+    if (mapping->nlq_method_idc != AV_DOVI_NLQ_NONE) {
+        if (mapping->nlq_method_idc != AV_DOVI_NLQ_LINEAR_DZ)
+            return 0;
+        for (int c = 0; c < 3; c++) {
+            const AVDOVINLQParams *nlq = &mapping->nlq[c];
+            if (!validate_ue_coef(hdr, nlq->vdr_in_max) ||
+                !validate_ue_coef(hdr, nlq->linear_deadzone_slope) ||
+                !validate_ue_coef(hdr, nlq->linear_deadzone_threshold))
+                return 0;
+        }
+    }
+
+    return 1;
+}
+
 static int av_q2den(AVRational q, int den)
 {
     if (!q.den || q.den == den)
@@ -592,6 +673,11 @@ int ff_dovi_rpu_generate(DOVIContext *s, const AVDOVIMetadata *metadata,
     if (hdr->rpu_type != 2) {
         av_log(s->logctx, AV_LOG_ERROR, "Unhandled RPU type %"PRIu8"\n",
                hdr->rpu_type);
+        return AVERROR_INVALIDDATA;
+    }
+
+    if (!validate_mapping_for_generation(hdr, mapping)) {
+        av_log(s->logctx, AV_LOG_ERROR, "Coefficient out of range for RPU\n");
         return AVERROR_INVALIDDATA;
     }
 
