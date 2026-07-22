@@ -1224,7 +1224,7 @@ finish:
 
             if (lowpass_height > s->plane[plane].band[4][1].a_height || lowpass_width > s->plane[plane].band[4][1].a_width ||
                 !highpass_stride || s->plane[plane].band[4][1].width > s->plane[plane].band[4][1].a_width ||
-                lowpass_width < 3 || lowpass_height < 3) {
+                lowpass_width < 3 || lowpass_height < 3 || lowpass_width * 2 > s->plane[plane].width) {
                 av_log(avctx, AV_LOG_ERROR, "Invalid plane dimensions\n");
                 ret = AVERROR(EINVAL);
                 goto end;
@@ -1345,7 +1345,7 @@ finish:
 
             if (lowpass_height > s->plane[plane].band[4][1].a_height || lowpass_width > s->plane[plane].band[4][1].a_width ||
                 s->plane[plane].band[4][1].width > s->plane[plane].band[4][1].a_width ||
-                lowpass_width < 3 || lowpass_height < 3) {
+                lowpass_width < 3 || lowpass_height < 3 || lowpass_width * 2 > s->plane[plane].width) {
                 av_log(avctx, AV_LOG_ERROR, "Invalid plane dimensions\n");
                 ret = AVERROR(EINVAL);
                 goto end;
