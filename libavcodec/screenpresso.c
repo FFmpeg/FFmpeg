@@ -137,6 +137,9 @@ static int screenpresso_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         return AVERROR_INVALIDDATA;
     }
 
+    /* Codec has aligned strides */
+    src_linesize = FFALIGN(avctx->width * component_size, 4);
+
     /* Inflate the frame after the 2 byte header */
     ret = uncompress(ctx->inflated_buf, &length,
                      avpkt->data + 2, avpkt->size - 2);
@@ -144,13 +147,15 @@ static int screenpresso_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         av_log(avctx, AV_LOG_ERROR, "Deflate error %d.\n", ret);
         return AVERROR_UNKNOWN;
     }
+    if (length < src_linesize * avctx->height) {
+        av_log(avctx, AV_LOG_ERROR, "Deflated %lu bytes, but %d are needed\n",
+               length, src_linesize * avctx->height);
+        return AVERROR_INVALIDDATA;
+    }
 
     ret = ff_reget_buffer(avctx, ctx->current, 0);
     if (ret < 0)
         return ret;
-
-    /* Codec has aligned strides */
-    src_linesize = FFALIGN(avctx->width * component_size, 4);
 
     /* When a keyframe is found, copy it (flipped) */
     if (keyframe)
