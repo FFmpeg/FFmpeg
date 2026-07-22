@@ -2313,6 +2313,11 @@ static int vtenc_cm_to_avpacket(
     pts = CMSampleBufferGetPresentationTimeStamp(sample_buffer);
     dts = CMSampleBufferGetDecodeTimeStamp      (sample_buffer);
 
+    if (CMTIME_IS_INVALID(pts)) {
+        av_log(avctx, AV_LOG_ERROR, "PTS is invalid.\n");
+        return AVERROR_EXTERNAL;
+    }
+
     if (CMTIME_IS_INVALID(dts)) {
         if (!vtctx->has_b_frames) {
             dts = pts;
