@@ -311,6 +311,12 @@ static int rscc_decode_frame(AVCodecContext *avctx, AVFrame *frame,
             ret = AVERROR_UNKNOWN;
             goto end;
         }
+        if (len < pixel_size) {
+            av_log(avctx, AV_LOG_WARNING, "Deflated %lu bytes, but %d are needed\n",
+                   len, pixel_size);
+            memset(ctx->inflated_buf + len, 0, pixel_size - len);
+            pixel_size = len;
+        }
         pixels = ctx->inflated_buf;
     }
 
