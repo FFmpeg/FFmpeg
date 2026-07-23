@@ -74,56 +74,44 @@ SECTION .text
 ; %1: size
 ; out: m0=p0' m1=q0'
 %macro VC1_FILTER 1
-    PABSW   m4, m7
     PABSW   m3, m6
+    movd    m6, r2d
     PABSW   m2, m5
-    mova    m6, m4
+    PABSW   m4, m7
+    PSHUFLW m6, m6, 0
     pminsw  m3, m2
-    pcmpgtw m6, m3  ; if (a2 < a0 || a1 < a0)
-    psubw   m3, m4
-    pmullw  m3, [pw_5]   ; 5*(a3 - a0)
-    PABSW   m2, m3
-    psraw   m2, 3   ; abs(d/8)
-    pxor    m7, m3  ; d_sign ^= a0_sign
-
-    pxor    m5, m5
-    movd    m3, r2d
+    pcmpgtw m2, m4, m3   ; if (a2 < a0 || a1 < a0)
 %if %1 > 4
-    SPLATW  m3, m3
-%else
-    pshufw  m3, m3, 0
+    punpcklqdq m6, m6
 %endif
-    pcmpgtw m3, m4  ; if (a0 < pq)
-    pand    m6, m3
-
-    mova    m3, m0
-    psubw   m3, m1
-    PABSW   m4, m3
-    psraw   m4, 1
-    pxor    m3, m7  ; d_sign ^ clip_sign
+    pcmpgtw m6, m4       ; if (a0 < pq)
+    psubw   m4, m3
+    psubw   m3, m0, m1   ; clip
+    pmullw  m4, [pw_5]   ; 5*(a0 - a3)
+    PABSW   m5, m3
+    pand    m6, m2       ; if (min(a1,a2) < a0 && a0 < pq)
+    psraw   m5, 1        ; final clip
+    psraw   m4, 3        ; d = (5*(a0 - a3)) >> 3
+    pxor    m2, m2
+    pminsw  m4, m5       ; d = min(d, clip)
     psraw   m3, 15
-    pminsw  m2, m4  ; min(d, clip)
-    pcmpgtw m4, m5
-    pand    m6, m4  ; filt3 (C return value)
+    pcmpgtw m5, m2       ; if (clip)
+    pxor    m7, m3       ; a0_sign ^ clip_sign
+    pand    m6, m5       ; filt3 (C return value)
 
 ; each set of 4 pixels is not filtered if the 3rd is not
-%if mmsize==16
-    pshuflw m4, m6, 0xaa
+    PSHUFLW m5, m6, q2222
+    psraw   m7, 15       ; a0_sign ^ clip_sign as mask
+    pand    m4, m6
 %if %1 > 4
-    pshufhw m4, m4, 0xaa
+    pshufhw m5, m5, q2222
 %endif
-%else
-    pshufw  m4, m6, 0xaa
-%endif
-    pandn   m3, m4
-    pand    m2, m6
-    pand    m3, m2  ; d final
-
-    psraw   m7, 15
-    pxor    m3, m7
-    psubw   m3, m7
-    psubw   m0, m3
-    paddw   m1, m3
+    pxor    m4, m3
+    pand    m5, m7
+    psubw   m4, m3
+    pand    m4, m5
+    psubw   m0, m4
+    paddw   m1, m4
     packuswb m0, m0
     packuswb m1, m1
 %endmacro
