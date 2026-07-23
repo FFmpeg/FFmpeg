@@ -779,6 +779,7 @@ SKIPHEADERS-$(CONFIG_NETWORK)            += network.h rtsp.h
 
 TESTPROGS = id3v2                                                       \
             mkdir                                                       \
+            rename                                                      \
             seek                                                        \
             url                                                         \
             seek_utils

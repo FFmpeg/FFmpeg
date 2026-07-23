@@ -7,6 +7,11 @@ fate-mkdir: libavformat/tests/mkdir$(EXESUF)
 fate-mkdir: CMD = run libavformat/tests/mkdir$(EXESUF)
 fate-mkdir: CMP = null
 
+FATE_LIBAVFORMAT += fate-rename
+fate-rename: libavformat/tests/rename$(EXESUF)
+fate-rename: CMD = run libavformat/tests/rename$(EXESUF)
+fate-rename: CMP = null
+
 FATE_LIBAVFORMAT-$(CONFIG_NETWORK) += fate-noproxy
 fate-noproxy: libavformat/tests/noproxy$(EXESUF)
 fate-noproxy: CMD = run libavformat/tests/noproxy$(EXESUF)
