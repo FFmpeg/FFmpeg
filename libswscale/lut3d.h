@@ -56,7 +56,7 @@ typedef struct SwsLut3D {
     v3u16_t output[OUTPUT_LUT_SIZE_PT][OUTPUT_LUT_SIZE_PT][OUTPUT_LUT_SIZE_I];
 
     /* Split tone mapping LUT (for dynamic tone mapping) */
-    v2u16_t tone_map[TONE_LUT_SIZE]; /* new luma, desaturation */
+    v2u16_t tone_map[TONE_LUT_SIZE + 1]; /* new luma, desaturation */
 } SwsLut3D;
 
 SwsLut3D *ff_sws_lut3d_alloc(void);

@@ -195,10 +195,9 @@ static av_always_inline v3u16_t apply_tone_map(const SwsLut3D *lut3d, v3u16_t ip
     const int shift = 16 - TONE_LUT_BITS;
     const int Ix = ipt.x >> shift;
     const int If = ipt.x & ((1 << shift) - 1);
-    const int In = FFMIN(Ix + 1, TONE_LUT_SIZE - 1);
 
     const v2u16_t w0 = lut3d->tone_map[Ix];
-    const v2u16_t w1 = lut3d->tone_map[In];
+    const v2u16_t w1 = lut3d->tone_map[Ix + 1];
     const v2u16_t w  = lerp2u16(w0, w1, If, shift);
     const int base   = (1 << 15) - w.y;
 
@@ -245,6 +244,7 @@ void ff_sws_lut3d_update(SwsLut3D *lut3d, const SwsColor *new_src)
     lut3d->map.src.frame_avg  = new_src->frame_avg;
 
     ff_sws_tone_map_generate(lut3d->tone_map, TONE_LUT_SIZE, &lut3d->map);
+    lut3d->tone_map[TONE_LUT_SIZE] = lut3d->tone_map[TONE_LUT_SIZE - 1];
 }
 
 void ff_sws_lut3d_apply(const SwsLut3D *lut3d, const uint8_t *in, int in_stride,
