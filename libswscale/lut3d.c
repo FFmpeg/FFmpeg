@@ -221,9 +221,9 @@ int ff_sws_lut3d_generate(SwsLut3D *lut3d, enum AVPixelFormat fmt_in,
 
     if (lut3d->dynamic) {
         ret = ff_sws_color_map_generate_dynamic(&lut3d->input[0][0][0],
-                                             &lut3d->output[0][0][0],
-                                             INPUT_LUT_SIZE, OUTPUT_LUT_SIZE_I,
-                                             OUTPUT_LUT_SIZE_PT, map);
+                                                &lut3d->output[0][0][0],
+                                                INPUT_LUT_SIZE, OUTPUT_LUT_SIZE_I,
+                                                OUTPUT_LUT_SIZE_PT, map);
         if (ret < 0)
             return ret;
 
@@ -232,7 +232,7 @@ int ff_sws_lut3d_generate(SwsLut3D *lut3d, enum AVPixelFormat fmt_in,
         return 0;
     } else {
         return ff_sws_color_map_generate_static(&lut3d->input[0][0][0],
-                                             INPUT_LUT_SIZE, map);
+                                                INPUT_LUT_SIZE, map);
     }
 }
 
