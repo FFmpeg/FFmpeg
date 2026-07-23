@@ -152,6 +152,7 @@ static void dnn_free_model_onnx(DNNModel **model)
 
     onnx_model = (ONNXModel *)(*model);
 
+    ff_dnn_wait_requests(onnx_model->request_queue, onnx_model->ctx->nireq);
     while (ff_safe_queue_size(onnx_model->request_queue) != 0) {
         ONNXRequestItem *item = (ONNXRequestItem *)ff_safe_queue_pop_front(onnx_model->request_queue);
         destroy_request_item(&item);

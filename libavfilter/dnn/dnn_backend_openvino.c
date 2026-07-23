@@ -516,6 +516,7 @@ static void dnn_free_model_ov(DNNModel **model)
         return;
 
     ov_model = (OVModel *)(*model);
+    ff_dnn_wait_requests(ov_model->request_queue, ov_model->ctx->nireq);
     while (ff_safe_queue_size(ov_model->request_queue) != 0) {
         OVRequestItem *item = ff_safe_queue_pop_front(ov_model->request_queue);
         if (item && item->infer_request) {

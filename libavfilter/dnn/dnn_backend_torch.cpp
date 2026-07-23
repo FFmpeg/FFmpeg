@@ -123,6 +123,7 @@ static void dnn_free_model_th(DNNModel **model)
     th_model = (THModel *)(*model);
 
     if (th_model->request_queue) {
+        ff_dnn_wait_requests(th_model->request_queue, th_model->ctx->nireq);
         while (ff_safe_queue_size(th_model->request_queue) != 0) {
             THRequestItem *item = (THRequestItem *)ff_safe_queue_pop_front(th_model->request_queue);
             destroy_request_item(&item);
