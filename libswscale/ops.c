@@ -88,6 +88,7 @@ const char *ff_sws_op_type_name(SwsOpType op)
     case SWS_OP_DITHER:      return "SWS_OP_DITHER";
     case SWS_OP_FILTER_H:    return "SWS_OP_FILTER_H";
     case SWS_OP_FILTER_V:    return "SWS_OP_FILTER_V";
+    case SWS_OP_LUT_3D:      return "SWS_OP_LUT_3D";
     case SWS_OP_INVALID:     return "SWS_OP_INVALID";
     case SWS_OP_TYPE_NB: break;
     }
@@ -266,6 +267,11 @@ void ff_sws_apply_op_q(const SwsOp *op, AVRational64 x[4])
         /* Filters have normalized energy by definition, so they don't
          * conceptually modify individual components */
         return;
+    case SWS_OP_LUT_3D:
+        /* 3D LUTs are treated as a black box, so set those values to NaN */
+        for (int i = 0; i < 3; i++)
+            x[i] = (AVRational64) {0};
+        return;
     }
 
     av_unreachable("Invalid operation type!");
@@ -323,6 +329,7 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
         case SWS_OP_UNPACK:
         case SWS_OP_FILTER_H:
         case SWS_OP_FILTER_V:
+        case SWS_OP_LUT_3D:
             break; /* special cases, handled below */
         default:
             memcpy(op->comps.min, prev.min, sizeof(prev.min));
@@ -518,7 +525,21 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
             apply_filter_weights(&op->comps, &prev, op->filter.kernel);
             break;
         }
-
+        case SWS_OP_LUT_3D:
+            for (int i = 0; i < 3; i++) {
+                /* 3x3 dependency matrix; strip all information except
+                 * SWS_COMP_GARBAGE (for correctness validation) */
+                for (int j = 0; j < 3; j++)
+                    FORWARD(i, j, flags & SWS_COMP_GARBAGE);
+                /* LUT output domain is always scaled to full 16-bit range */
+                op->comps.min[i] = Q(0);
+                op->comps.max[i] = Q(UINT16_MAX);
+            }
+            /* Pass through alpha channel untouched */
+            FORWARD(3, 3, flags);
+            op->comps.min[3] = prev.min[3];
+            op->comps.max[3] = prev.max[3];
+            break;
         case SWS_OP_INVALID:
         case SWS_OP_TYPE_NB:
             av_unreachable("Invalid operation type!");
@@ -587,6 +608,11 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
                 }
             }
             break;
+        case SWS_OP_LUT_3D:
+            for (int i = 0; i < 3; i++)
+                need_in[i] = need_out[0] | need_out[1] | need_out[2];
+            need_in[3] = need_out[3];
+            break;
         }
 
         memcpy(need_out, need_in, sizeof(need_in));
@@ -608,6 +634,9 @@ static void op_uninit(SwsOp *op)
     case SWS_OP_FILTER_H:
     case SWS_OP_FILTER_V:
         av_refstruct_unref(&op->filter.kernel);
+        break;
+    case SWS_OP_LUT_3D:
+        av_refstruct_unref(&op->lut3d.lut);
         break;
     }
 
@@ -671,6 +700,9 @@ SwsOpList *ff_sws_op_list_duplicate(const SwsOpList *ops)
         case SWS_OP_FILTER_H:
         case SWS_OP_FILTER_V:
             av_refstruct_ref(op->filter.kernel);
+            break;
+        case SWS_OP_LUT_3D:
+            av_refstruct_ref_c(op->lut3d.lut);
             break;
         }
     }
@@ -930,6 +962,9 @@ void ff_sws_op_desc(AVBPrint *bp, const SwsOp *op)
                    kernel->name, kernel->filter_size);
         break;
     }
+    case SWS_OP_LUT_3D:
+        av_bprintf(bp, "%-20s: %s", name, op->lut3d.dynamic ? "dynamic" : "static");
+        break;
     case SWS_OP_TYPE_NB:
         break;
     }

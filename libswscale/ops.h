@@ -29,6 +29,7 @@
 
 #include "graph.h"
 #include "filters.h"
+#include "lut3d.h"
 #include "rational64.h"
 #include "uops.h"
 
@@ -61,6 +62,9 @@ typedef enum SwsOpType {
     /* Filtering operations. */
     SWS_OP_FILTER_H,        /* horizontal filtering */
     SWS_OP_FILTER_V,        /* vertical filtering */
+
+    /* Table-based operations. Defined for floating point types only. */
+    SWS_OP_LUT_3D,          /* apply a SwsLut3D */
 
     SWS_OP_TYPE_NB,
 } SwsOpType;
@@ -204,6 +208,32 @@ typedef struct SwsFilterOp {
     SwsPixelType type;        /* pixel type to store result as */
 } SwsFilterOp;
 
+typedef struct SwsLut3dOp {
+    /**
+     * Reference to the external LUT3D to apply. This is managed by the caller,
+     * and must remain valid for the lifetime of the SwsOp and any compiled
+     * functions derived from it.
+     *
+     * *lut is never dereferenced by the SwsOp code itself, only at runtime by
+     * the actual dispatched implementation, and may be freely modified even
+     * after op compilation to place new values for dynamic tone-mapping.
+     *
+     * The reference algorithm for this operation lives in lut3d.c, and
+     * includes a tetrahedral interpolation component for the input LUT, and
+     * then an optional linear tone mapping LUT plus trilinear output LUT
+     * (when lut->dynamic is true).
+     *
+     * All linear interpolations are performed in the pixel value's native
+     * representation, even though the LUTs themselves are stored as unsigned
+     * packed 16-bit integers. The input value range is assumed to be scaled
+     * and clamped to the LUT's domain (i.e. [0, INPUT_LUT_SIZE - 1]), and the
+     * output value range will be [0, 2^16-1], except for the alpha channel,
+     * which is passed through untouched.
+     */
+    const SwsLut3D *lut; /* refstruct */
+    bool dynamic;
+} SwsLut3dOp;
+
 typedef struct SwsOp {
     SwsOpType op;      /* operation to perform */
     SwsPixelType type; /* pixel type to operate on */
@@ -219,6 +249,7 @@ typedef struct SwsOp {
         SwsScaleOp      scale;
         SwsDitherOp     dither;
         SwsFilterOp     filter;
+        SwsLut3dOp      lut3d;
     };
 
     /**

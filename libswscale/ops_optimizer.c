@@ -77,6 +77,7 @@ static bool op_commute_clear(SwsOp *op, SwsOp *next)
     case SWS_OP_PACK:
     case SWS_OP_UNPACK:
     case SWS_OP_CLEAR:
+    case SWS_OP_LUT_3D:
         return false;
     case SWS_OP_TYPE_NB:
         break;
@@ -157,6 +158,7 @@ static bool op_commute_swizzle(SwsOp *op, SwsOp *next)
     case SWS_OP_LINEAR:
     case SWS_OP_PACK:
     case SWS_OP_UNPACK:
+    case SWS_OP_LUT_3D:
         return false;
     case SWS_OP_TYPE_NB:
         break;
@@ -198,6 +200,7 @@ static bool op_commute_filter(SwsOp *op, SwsOp *prev)
     case SWS_OP_MAX:
     case SWS_OP_FILTER_H:
     case SWS_OP_FILTER_V:
+    case SWS_OP_LUT_3D:
         return false;
     case SWS_OP_TYPE_NB:
         break;
@@ -733,6 +736,14 @@ retry:
                 prev->rw.filter.op = op->op;
                 prev->rw.filter.kernel = av_refstruct_ref(op->filter.kernel);
                 prev->rw.filter.type = op->filter.type;
+                ff_sws_op_list_remove_at(ops, n, 1);
+                goto retry;
+            }
+            break;
+
+        case SWS_OP_LUT_3D:
+            /* Eliminate unnecessary 3DLUT */
+            if (!(needed & SWS_COMP_ELEMS(3))) {
                 ff_sws_op_list_remove_at(ops, n, 1);
                 goto retry;
             }
