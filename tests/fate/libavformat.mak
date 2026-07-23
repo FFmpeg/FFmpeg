@@ -2,6 +2,12 @@
 #fate-async: libavformat/tests/async$(EXESUF)
 #fate-async: CMD = run libavformat/tests/async
 
+FATE_LIBAVFORMAT += fate-rename
+fate-rename: libavformat/tests/rename$(EXESUF)
+fate-rename: CMD = run libavformat/tests/rename$(EXESUF)
+fate-rename: CMP = null
+
+
 FATE_LIBAVFORMAT-$(CONFIG_NETWORK) += fate-noproxy
 fate-noproxy: libavformat/tests/noproxy$(EXESUF)
 fate-noproxy: CMD = run libavformat/tests/noproxy$(EXESUF)

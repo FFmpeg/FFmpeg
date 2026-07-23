@@ -770,7 +770,8 @@ SKIPHEADERS-$(CONFIG_IMF_DEMUXER)        += imf.h
 SKIPHEADERS-$(CONFIG_FFRTMPCRYPT_PROTOCOL) += rtmpdh.h
 SKIPHEADERS-$(CONFIG_NETWORK)            += network.h rtsp.h
 
-TESTPROGS = seek                                                        \
+TESTPROGS = rename                                                      \
+            seek                                                        \
             url                                                         \
             seek_utils
 #           async                                                       \
