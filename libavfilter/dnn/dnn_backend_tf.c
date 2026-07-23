@@ -486,6 +486,7 @@ static void dnn_free_model_tf(DNNModel **model)
         return;
 
     tf_model = (TFModel *)(*model);
+    ff_dnn_wait_requests(tf_model->request_queue, tf_model->ctx->nireq);
     while (ff_safe_queue_size(tf_model->request_queue) != 0) {
         TFRequestItem *item = ff_safe_queue_pop_front(tf_model->request_queue);
         destroy_request_item(&item);
