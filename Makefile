@@ -47,6 +47,19 @@ SKIPHEADERS = compat/w32pthreads.h
 # first so "all" becomes default target
 all: all-yes
 
+# cl.exe cannot write make dependency files directly, the mscl helper
+# converts its -showIncludes output into .d files.
+MSCL := $(if $(filter -showIncludes,$(CC_DEPFLAGS) $(CXX_DEPFLAGS) $(OBJCC_DEPFLAGS) $(AS_DEPFLAGS) $(HOSTCC_DEPFLAGS)),ffbuild/mscl$(HOSTEXESUF))
+ifneq ($(MSCL),)
+MSCLCC := $(HOSTCC)
+$(foreach V,CC CXX OBJCC HOSTCC AS,\
+    $(if $(filter -showIncludes,$($(V)_DEPFLAGS)),$(eval $(V) := $(MSCL) $($(V)))))
+HOSTPROGS += ffbuild/mscl
+
+ffbuild/mscl.o: $(SRC_PATH)/compat/windows/mscl.c
+	$(MSCLCC) $(HOSTCCFLAGS) $(HOSTCC_C) $(HOSTCC_O) $<
+endif
+
 include $(SRC_PATH)/tools/Makefile
 include $(SRC_PATH)/ffbuild/common.mak
 

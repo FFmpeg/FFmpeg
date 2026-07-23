@@ -22,7 +22,7 @@ INSTALL_FILES = $(INSTALL) $(1) $(2) "$(3)"
 ifndef V
 Q      = @
 ECHO   = printf "$(1)\t%s\n" $(2)
-BRIEF  = CC CXX OBJCC HOSTCC HOSTLD AS X86ASM AR LD LDXX STRIP CP WINDRES GLSLC NVCC BIN2C METALCC METALLIB
+BRIEF  = CC CXX OBJCC HOSTCC HOSTLD AS X86ASM AR LD LDXX STRIP CP WINDRES GLSLC NVCC BIN2C METALCC METALLIB MSCLCC
 SILENT = DEPCC DEPCXX DEPHOSTCC DEPAS DEPX86ASM RANLIB RM
 
 MSG    = $@
@@ -82,22 +82,22 @@ COMPILE_LASX = $(call COMPILE,CC,LASXFLAGS)
 %_lasx.o: %_lasx.c
 	$(COMPILE_LASX)
 
-%.o: %.c
+%.o: %.c | $(MSCL)
 	$(COMPILE_C)
 
-%.o: %.cpp
+%.o: %.cpp | $(MSCL)
 	$(COMPILE_CXX)
 
-%.o: %.m
+%.o: %.m | $(MSCL)
 	$(COMPILE_M)
 
-%.s: %.c
+%.s: %.c | $(MSCL)
 	$(CC) $(CCFLAGS) -S -o $@ $<
 
-%.o: %.S
+%.o: %.S | $(MSCL)
 	$(COMPILE_S)
 
-%_host.o: %.c
+%_host.o: %.c | $(MSCL)
 	$(COMPILE_HOSTC)
 
 %.o: %.asm
@@ -107,7 +107,7 @@ COMPILE_LASX = $(call COMPILE,CC,LASXFLAGS)
 %.o: %.rc
 	$(WINDRES) $(IFLAGS) $(foreach ARG,$(CC_DEPFLAGS),--preprocessor-arg "$(ARG)") -o $@ $<
 
-%.i: %.c
+%.i: %.c | $(MSCL)
 	$(CC) $(CCFLAGS) $(CC_E) $<
 
 %.h.c:
@@ -243,7 +243,8 @@ checkheaders: $(HOBJS)
 .SECONDARY:   $(HOBJS:.o=.c) $(SPVOBJS:.o=.c) $(SPVOBJS:.o=.gz) $(SPVOBJS:.o=) $(PTXOBJS:.o=.c) $(PTXOBJS:.o=.gz) $(PTXOBJS:.o=)
 alltools: $(TOOLS)
 
-$(HOSTOBJS): %.o: %.c
+# ffbuild/mscl.o is excluded as it has its own bootstrap rule in Makefile
+$(filter-out ffbuild/mscl.o,$(HOSTOBJS)): %.o: %.c | $(MSCL)
 	$(COMPILE_HOSTC)
 
 $(HOSTPROGS): %$(HOSTEXESUF): %.o
