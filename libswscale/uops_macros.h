@@ -343,6 +343,8 @@
 #define SWS_FOR_STRUCT_U8_LINEAR_FMA(MACRO, ...)
 #define SWS_FOR_U8_DITHER(MACRO, ...)
 #define SWS_FOR_STRUCT_U8_DITHER(MACRO, ...)
+#define SWS_FOR_U8_LUT_3D(MACRO, ...)
+#define SWS_FOR_STRUCT_U8_LUT_3D(MACRO, ...)
 #define SWS_FOR_U16_READ_PLANAR(MACRO, ...) \
     MACRO(__VA_ARGS__, u16_read_planar_x                       , SWS_PIXEL_U16, SWS_UOP_READ_PLANAR     , 0x1) \
     MACRO(__VA_ARGS__, u16_read_planar_xy                      , SWS_PIXEL_U16, SWS_UOP_READ_PLANAR     , 0x3) \
@@ -625,6 +627,8 @@
 #define SWS_FOR_STRUCT_U16_LINEAR_FMA(MACRO, ...)
 #define SWS_FOR_U16_DITHER(MACRO, ...)
 #define SWS_FOR_STRUCT_U16_DITHER(MACRO, ...)
+#define SWS_FOR_U16_LUT_3D(MACRO, ...)
+#define SWS_FOR_STRUCT_U16_LUT_3D(MACRO, ...)
 #define SWS_FOR_U32_READ_PLANAR(MACRO, ...) \
     MACRO(__VA_ARGS__, u32_read_planar_x                       , SWS_PIXEL_U32, SWS_UOP_READ_PLANAR     , 0x1) \
     MACRO(__VA_ARGS__, u32_read_planar_xyz                     , SWS_PIXEL_U32, SWS_UOP_READ_PLANAR     , 0x7) \
@@ -845,6 +849,8 @@
 #define SWS_FOR_STRUCT_U32_LINEAR_FMA(MACRO, ...)
 #define SWS_FOR_U32_DITHER(MACRO, ...)
 #define SWS_FOR_STRUCT_U32_DITHER(MACRO, ...)
+#define SWS_FOR_U32_LUT_3D(MACRO, ...)
+#define SWS_FOR_STRUCT_U32_LUT_3D(MACRO, ...)
 #define SWS_FOR_F32_READ_PLANAR(MACRO, ...)
 #define SWS_FOR_STRUCT_F32_READ_PLANAR(MACRO, ...)
 #define SWS_FOR_F32_READ_PLANAR_FH(MACRO, ...) \
@@ -1157,5 +1163,7 @@
     MACRO(__VA_ARGS__, f32_dither_xyzw_3_2_0_5_16x16           , .type = SWS_PIXEL_F32, .uop = SWS_UOP_DITHER          , .mask = 0xf, .par.dither = { .y_offset = {3, 2, 0, 5}, .size_log2 = 4 }) \
     MACRO(__VA_ARGS__, f32_dither_xyzw_5_0_3_2_16x16           , .type = SWS_PIXEL_F32, .uop = SWS_UOP_DITHER          , .mask = 0xf, .par.dither = { .y_offset = {5, 0, 3, 2}, .size_log2 = 4 }) \
     MACRO(__VA_ARGS__, f32_dither_xyzw_5_2_3_0_16x16           , .type = SWS_PIXEL_F32, .uop = SWS_UOP_DITHER          , .mask = 0xf, .par.dither = { .y_offset = {5, 2, 3, 0}, .size_log2 = 4 })
+#define SWS_FOR_F32_LUT_3D(MACRO, ...)
+#define SWS_FOR_STRUCT_F32_LUT_3D(MACRO, ...)
 
 #endif /* SWSCALE_UOPS_MACROS_H */

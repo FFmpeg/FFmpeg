@@ -33,6 +33,7 @@
 
 typedef struct SwsContext       SwsContext;
 typedef struct SwsFilterWeights SwsFilterWeights;
+typedef struct SwsLut3D         SwsLut3D;
 typedef struct SwsOpList        SwsOpList;
 
 typedef enum SwsPixelType {
@@ -175,6 +176,7 @@ typedef enum SwsUOpType {
     SWS_UOP_LINEAR,          /* mask = non-trivial output rows */
     SWS_UOP_LINEAR_FMA,      /* with SWS_UOP_FLAG_FMA */
     SWS_UOP_DITHER,          /* mask = components to dither */
+    SWS_UOP_LUT_3D,          /* mask = needed output components */
 
     /* Platform-specific uops would go here */
     SWS_UOP_TYPE_NB,
@@ -237,6 +239,10 @@ typedef struct SwsDitherUOp {
     uint8_t size_log2;
 } SwsDitherUOp;
 
+typedef struct SwsLut3DUOp {
+    int dynamic;
+} SwsLut3DUOp;
+
 /**
  * Computes (1 << size_log2) + MAX(y_offset). The dither matrix attached to
  * the SwsUOp is always pre-padded to this number of lines.
@@ -252,6 +258,7 @@ typedef union SwsUOpParams {
     SwsClearUOp     clear;
     SwsLinearUOp    lin;
     SwsDitherUOp    dither;
+    SwsLut3DUOp     lut3d;
 } SwsUOpParams;
 
 typedef struct SwsUOp {
@@ -269,6 +276,7 @@ typedef struct SwsUOp {
         SwsPixel vec4[4];
         SwsPixel mat4[4][5];        /* row major */
         SwsShuffleMask shuffle;     /* for SWS_UOP_RW_SHUFFLE */
+        const SwsLut3D *lut3d;      /* for SWS_UOP_LUT_3D; refstruct */
         void *opaque;               /* reserved for internal use */
     } data;
 } SwsUOp;

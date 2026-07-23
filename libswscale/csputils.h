@@ -73,6 +73,10 @@ typedef struct v3u16_t {
     uint16_t x, y, z;
 } v3u16_t;
 
+typedef struct v3f32_t {
+    float x, y, z;
+} v3f32_t;
+
 /* Fast perceptual quantizer */
 static const float PQ_M1 = 2610./4096 * 1./4,
                    PQ_M2 = 2523./4096 * 128,

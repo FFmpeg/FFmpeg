@@ -57,5 +57,6 @@
     ENTRY(SWS_UOP_RSHIFT,               "rshift")                    \
     ENTRY(SWS_UOP_CLEAR,                "clear")                     \
     ENTRY(SWS_UOP_DITHER,               "dither")                    \
+    ENTRY(SWS_UOP_LUT_3D,               "lut_3d")                    \
 
 #endif /* SWSCALE_UOPS_LIST_H */

@@ -92,6 +92,7 @@
     SWS_FOR(TYPE, CLEAR,          REF_ENTRY)                \
     SWS_FOR(TYPE, LINEAR,         REF_ENTRY)                \
     SWS_FOR(TYPE, DITHER,         REF_ENTRY)                \
+    SWS_FOR(TYPE, LUT_3D,         REF_ENTRY)                \
     /* end of macro */
 
 static const SwsUOpTable uop_table = {
