@@ -65,24 +65,13 @@ typedef struct SwsLut3D {
 SwsLut3D *ff_sws_lut3d_alloc(void);
 
 /**
- * Test to see if a given format is supported by the 3DLUT input/output code.
- */
-bool ff_sws_lut3d_test_fmt(enum AVPixelFormat fmt, int output);
-
-/**
- * Pick the best compatible pixfmt for a given SwsFormat.
- */
-enum AVPixelFormat ff_sws_lut3d_pick_pixfmt(const SwsFormat *fmt, int output);
-
-/**
  * Recalculate the (static) 3DLUT state with new settings. This will recompute
  * everything. To only update per-frame tone mapping state, instead call
  * ff_sws_lut3d_update().
  *
  * Returns 0 or a negative error code.
  */
-int ff_sws_lut3d_generate(SwsLut3D *lut3d, enum AVPixelFormat fmt_in,
-                          enum AVPixelFormat fmt_out, const SwsColorMap *map);
+int ff_sws_lut3d_generate(SwsLut3D *lut3d, const SwsColorMap *map);
 
 /**
  * Update the tone mapping state. This will only use per-frame metadata. The
@@ -91,10 +80,10 @@ int ff_sws_lut3d_generate(SwsLut3D *lut3d, enum AVPixelFormat fmt_in,
 void ff_sws_lut3d_update(SwsLut3D *lut3d, const SwsColor *new_src);
 
 /**
- * Applies a color transformation to a plane. The format must match the format
- * provided during ff_sws_lut3d_update().
+ * Applies a color transformation to a plane in RGBA64 format.
  */
-void ff_sws_lut3d_apply(const SwsLut3D *lut3d, const uint8_t *in, int in_stride,
-                        uint8_t *out, int out_stride, int w, int h);
+void ff_sws_lut3d_apply_rgba64(const SwsLut3D *lut3d, const uint8_t *in,
+                               int in_stride, uint8_t *out, int out_stride,
+                               int w, int h);
 
 #endif /* SWSCALE_LUT3D_H */

@@ -42,16 +42,6 @@ SwsLut3D *ff_sws_lut3d_alloc(void)
     return lut3d;
 }
 
-bool ff_sws_lut3d_test_fmt(enum AVPixelFormat fmt, int output)
-{
-    return fmt == AV_PIX_FMT_RGBA64;
-}
-
-enum AVPixelFormat ff_sws_lut3d_pick_pixfmt(const SwsFormat *fmt, int output)
-{
-    return AV_PIX_FMT_RGBA64;
-}
-
 /**
  * v0 and v1 are 'black' and 'white'
  * v2 and v3 are closest RGB/CMY vertices
@@ -205,13 +195,9 @@ static av_always_inline v3u16_t apply_tone_map(const SwsLut3D *lut3d, v3u16_t ip
     return ipt;
 }
 
-int ff_sws_lut3d_generate(SwsLut3D *lut3d, enum AVPixelFormat fmt_in,
-                          enum AVPixelFormat fmt_out, const SwsColorMap *map)
+int ff_sws_lut3d_generate(SwsLut3D *lut3d, const SwsColorMap *map)
 {
     int ret;
-
-    if (!ff_sws_lut3d_test_fmt(fmt_in, 0) || !ff_sws_lut3d_test_fmt(fmt_out, 1))
-        return AVERROR(EINVAL);
 
     lut3d->dynamic = map->src.frame_peak.num > 0;
     lut3d->map = *map;
@@ -245,8 +231,9 @@ void ff_sws_lut3d_update(SwsLut3D *lut3d, const SwsColor *new_src)
     lut3d->tone_map[TONE_LUT_SIZE] = lut3d->tone_map[TONE_LUT_SIZE - 1];
 }
 
-void ff_sws_lut3d_apply(const SwsLut3D *lut3d, const uint8_t *in, int in_stride,
-                        uint8_t *out, int out_stride, int w, int h)
+void ff_sws_lut3d_apply_rgba64(const SwsLut3D *lut3d, const uint8_t *in,
+                               int in_stride, uint8_t *out, int out_stride,
+                               int w, int h)
 {
     while (h--) {
         const uint16_t *in16 = (const uint16_t *) in;

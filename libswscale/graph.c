@@ -702,8 +702,8 @@ static void run_lut3d(const SwsFrame *out, const SwsFrame *in, int y, int h,
     frame_shift(in,  y, in_data);
     frame_shift(out, y, out_data);
 
-    ff_sws_lut3d_apply(lut, in_data[0], in->linesize[0], out_data[0],
-                       out->linesize[0], out->width, h);
+    ff_sws_lut3d_apply_rgba64(lut, in_data[0], in->linesize[0], out_data[0],
+                              out->linesize[0], out->width, h);
 }
 
 static int adapt_colors(SwsGraph *graph, const SwsFormat *src_fmt,
@@ -712,7 +712,6 @@ static int adapt_colors(SwsGraph *graph, const SwsFormat *src_fmt,
 {
     SwsFormat src = *src_fmt;
     SwsFormat dst = *dst_fmt;
-    enum AVPixelFormat fmt_in, fmt_out;
     SwsColorMap map = {0};
     SwsLut3D *lut;
     int ret;
@@ -746,11 +745,16 @@ static int adapt_colors(SwsGraph *graph, const SwsFormat *src_fmt,
     if (!lut)
         return AVERROR(ENOMEM);
 
-    fmt_in  = ff_sws_lut3d_pick_pixfmt(&src, 0);
-    fmt_out = ff_sws_lut3d_pick_pixfmt(&dst, 1);
-    if (fmt_in != src.format) {
+    ret = ff_sws_lut3d_generate(lut, &map);
+    if (ret < 0) {
+        av_refstruct_unref(&lut);
+        return ret;
+    }
+
+    const enum AVPixelFormat fmt = AV_PIX_FMT_RGBA64;
+    if (src.format != fmt) {
         SwsFormat tmp = src;
-        tmp.format = fmt_in;
+        tmp.format = fmt;
         ret = add_convert_pass(graph, &src, &tmp, input, &input);
         if (ret < 0) {
             av_refstruct_unref(&lut);
@@ -758,13 +762,7 @@ static int adapt_colors(SwsGraph *graph, const SwsFormat *src_fmt,
         }
     }
 
-    ret = ff_sws_lut3d_generate(lut, fmt_in, fmt_out, &map);
-    if (ret < 0) {
-        av_refstruct_unref(&lut);
-        return ret;
-    }
-
-    return ff_sws_graph_add_pass(graph, fmt_out, src.width, src.height,
+    return ff_sws_graph_add_pass(graph, fmt, src.width, src.height,
                                  input, 0, 1, run_lut3d, setup_lut3d, lut,
                                  free_lut3d, output);
 }
