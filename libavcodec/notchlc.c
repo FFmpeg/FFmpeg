@@ -330,12 +330,14 @@ static int decode_blocks(AVCodecContext *avctx, AVFrame *p,
                             control = bytestream2_get_le64(&dgb);
                             alpha0 = control & 0xFF;
                             alpha1 = (control >> 8) & 0xFF;
+                            alpha0 = (alpha0 << 4) | (alpha0 >> 4);
+                            alpha1 = (alpha1 << 4) | (alpha1 >> 4);
                             control >>= 16;
                             for (int i = 0; i < 4; i++) {
                                 for (int j = 0; j < 4; j++) {
                                     const int selector = control & 7;
 
-                                    dsta[x + (i + by * 4) * alinesize + bx * 4 + j] = ((alpha0 * (7 - selector) + alpha1 * selector + 6) / 7) << 4;
+                                    dsta[x + (i + by * 4) * alinesize + bx * 4 + j] = (alpha0 * (7 - selector) + alpha1 * selector + 6) / 7;
                                     control >>= 3;
                                 }
                             }
