@@ -2124,7 +2124,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .id        = AV_CODEC_ID_PCM_DVD,
         .type      = AVMEDIA_TYPE_AUDIO,
         .name      = "pcm_dvd",
-        .long_name = NULL_IF_CONFIG_SMALL("PCM signed 20|24-bit big-endian"),
+        .long_name = NULL_IF_CONFIG_SMALL("PCM signed 16|20|24-bit big-endian for DVD-Video media"),
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
