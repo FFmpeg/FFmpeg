@@ -679,25 +679,10 @@ static int add_convert_pass(SwsGraph *graph, const SwsFormat *src,
  * Gamut and tone mapping *
  **************************/
 
-static void free_lut3d(void *priv)
-{
-    SwsLut3D *lut = priv;
-    av_refstruct_unref(&lut);
-}
-
-static int setup_lut3d(const SwsFrame *out, const SwsFrame *in, const SwsPass *pass)
-{
-    SwsLut3D *lut = pass->priv;
-
-    /* Update dynamic frame metadata from the original source frame */
-    ff_sws_lut3d_update(lut, &pass->graph->src.color);
-    return 0;
-}
-
 static void run_lut3d(const SwsFrame *out, const SwsFrame *in, int y, int h,
                       const SwsPass *pass)
 {
-    SwsLut3D *lut = pass->priv;
+    const SwsLut3D *lut = pass->graph->lut3d;
     uint8_t *in_data[4], *out_data[4];
     frame_shift(in,  y, in_data);
     frame_shift(out, y, out_data);
@@ -713,7 +698,6 @@ static int adapt_colors(SwsGraph *graph, const SwsFormat *src_fmt,
     SwsFormat src = *src_fmt;
     SwsFormat dst = *dst_fmt;
     SwsColorMap map = {0};
-    SwsLut3D *lut;
     int ret;
 
     /**
@@ -741,30 +725,25 @@ static int adapt_colors(SwsGraph *graph, const SwsFormat *src_fmt,
     if (src.hw_format != AV_PIX_FMT_NONE || dst.hw_format != AV_PIX_FMT_NONE)
         return AVERROR(ENOTSUP);
 
-    lut = ff_sws_lut3d_alloc();
-    if (!lut)
+    graph->lut3d = ff_sws_lut3d_alloc();
+    if (!graph->lut3d)
         return AVERROR(ENOMEM);
 
-    ret = ff_sws_lut3d_generate(lut, &map);
-    if (ret < 0) {
-        av_refstruct_unref(&lut);
+    ret = ff_sws_lut3d_generate(graph->lut3d, &map);
+    if (ret < 0)
         return ret;
-    }
 
     const enum AVPixelFormat fmt = AV_PIX_FMT_RGBA64;
     if (src.format != fmt) {
         SwsFormat tmp = src;
         tmp.format = fmt;
         ret = add_convert_pass(graph, &src, &tmp, input, &input);
-        if (ret < 0) {
-            av_refstruct_unref(&lut);
+        if (ret < 0)
             return ret;
-        }
     }
 
     return ff_sws_graph_add_pass(graph, fmt, src.width, src.height,
-                                 input, 0, 1, run_lut3d, setup_lut3d, lut,
-                                 free_lut3d, output);
+                                 input, 0, 1, run_lut3d, NULL, NULL, NULL, output);
 }
 
 /***************************************
@@ -824,6 +803,8 @@ static void graph_uninit(SwsGraph *graph)
     for (int i = 0; i < graph->num_passes; i++)
         pass_free(graph->passes[i]);
     av_free(graph->passes);
+
+    av_refstruct_unref(&graph->lut3d);
 
     memset(graph, 0, sizeof(*graph));
 }
@@ -936,6 +917,9 @@ void ff_sws_graph_update_metadata(SwsGraph *graph, const SwsColor *color)
         return;
 
     ff_color_update_dynamic(&graph->src.color, color);
+
+    if (graph->lut3d)
+        ff_sws_lut3d_update(graph->lut3d, &graph->src.color);
 }
 
 static void get_field(SwsGraph *graph, const SwsFormat *fmt,

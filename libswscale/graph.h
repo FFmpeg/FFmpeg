@@ -28,6 +28,7 @@
 
 #include "swscale.h"
 #include "format.h"
+#include "lut3d.h"
 
 static av_always_inline av_const int ff_fmt_vshift(enum AVPixelFormat fmt, int plane)
 {
@@ -143,6 +144,11 @@ typedef struct SwsGraph {
      * Currently active format and processing parameters.
      */
     SwsFormat src, dst;
+
+    /**
+     * 3DLUT state used for gamut/tone mapping. (Optional)
+     */
+    SwsLut3D *lut3d; /* refstruct */
 
     /**
      * Temporary execution state inside ff_sws_graph_run(); used to pass
