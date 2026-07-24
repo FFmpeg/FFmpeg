@@ -2380,7 +2380,7 @@ static int dash_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (!cur) {
-        return AVERROR_INVALIDDATA;
+        return AVERROR_EOF;
     }
     while (!ff_check_interrupt(c->interrupt_callback) && !ret) {
         ret = av_read_frame(cur->ctx, pkt);
@@ -2396,9 +2396,17 @@ static int dash_read_packet(AVFormatContext *s, AVPacket *pkt)
             cur->is_restart_needed = 0;
             ff_format_io_close(cur->parent, &cur->input);
             ret = reopen_demux_for_component(s, cur);
+        } else if (ret == AVERROR_EOF) {
+            close_demux_for_component(cur);
+            ff_format_io_close(cur->parent, &cur->input);
+            av_log(s, AV_LOG_DEBUG, "EOF on stream_index %d\n", cur->stream_index);
+            // prevent recheck_discard_flags() from re-enabling the component
+            for (int i = 0; i < cur->nb_assoc_stream; i++)
+                cur->assoc_stream[i]->discard = AVDISCARD_ALL;
+            return FFERROR_REDO;
         }
     }
-    return AVERROR_EOF;
+    return ret;
 }
 
 static int dash_close(AVFormatContext *s)
