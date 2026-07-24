@@ -364,7 +364,7 @@ static int decode_blocks(AVCodecContext *avctx, AVFrame *p,
         for (int x = 0; x < avctx->width; x += 16) {
             unsigned offset = bytestream2_get_le32(&rgb) * 4;
             int u[16][16] = { 0 }, v[16][16] = { 0 };
-            int u0, v0, u1, v1, udif, vdif;
+            int u0, v0, u1, v1;
             unsigned escape, is8x8, loc;
 
             bytestream2_seek(&dgb, s->uv_data_offset + offset, SEEK_SET);
@@ -382,15 +382,15 @@ static int decode_blocks(AVCodecContext *avctx, AVFrame *p,
                 v0 = (v0 << 4) | (v0 & 0xF);
                 u1 = (u1 << 4) | (u1 & 0xF);
                 v1 = (v1 << 4) | (v1 & 0xF);
-                udif = u1 - u0;
-                vdif = v1 - v0;
 
                 for (int i = 0; i < 16; i += 4) {
                     for (int j = 0; j < 16; j += 4) {
+                        const int selector = loc & 3;
+
                         for (int ii = 0; ii < 4; ii++) {
                             for (int jj = 0; jj < 4; jj++) {
-                                u[i + ii][j + jj] = u0 + ((udif * (int)(loc & 3) + 2) / 3);
-                                v[i + ii][j + jj] = v0 + ((vdif * (int)(loc & 3) + 2) / 3);
+                                u[i + ii][j + jj] = (u0 * (3 - selector) + u1 * selector + 2) / 3;
+                                v[i + ii][j + jj] = (v0 * (3 - selector) + v1 * selector + 2) / 3;
                             }
                         }
 
@@ -410,15 +410,15 @@ static int decode_blocks(AVCodecContext *avctx, AVFrame *p,
                             v0 = (v0 << 4) | (v0 & 0xF);
                             u1 = (u1 << 4) | (u1 & 0xF);
                             v1 = (v1 << 4) | (v1 & 0xF);
-                            udif = u1 - u0;
-                            vdif = v1 - v0;
 
                             for (int ii = 0; ii < 8; ii += 2) {
                                 for (int jj = 0; jj < 8; jj += 2) {
+                                    const int selector = loc & 3;
+
                                     for (int iii = 0; iii < 2; iii++) {
                                         for (int jjj = 0; jjj < 2; jjj++) {
-                                            u[i + ii + iii][j + jj + jjj] = u0 + ((udif * (int)(loc & 3) + 2) / 3);
-                                            v[i + ii + iii][j + jj + jjj] = v0 + ((vdif * (int)(loc & 3) + 2) / 3);
+                                            u[i + ii + iii][j + jj + jjj] = (u0 * (3 - selector) + u1 * selector + 2) / 3;
+                                            v[i + ii + iii][j + jj + jjj] = (v0 * (3 - selector) + v1 * selector + 2) / 3;
                                         }
                                     }
 
@@ -437,13 +437,13 @@ static int decode_blocks(AVCodecContext *avctx, AVFrame *p,
                                     v0 = (v0 << 4) | (v0 & 0xF);
                                     u1 = (u1 << 4) | (u1 & 0xF);
                                     v1 = (v1 << 4) | (v1 & 0xF);
-                                    udif = u1 - u0;
-                                    vdif = v1 - v0;
 
                                     for (int iii = 0; iii < 4; iii++) {
                                         for (int jjj = 0; jjj < 4; jjj++) {
-                                            u[i + ii + iii][j + jj + jjj] = u0 + ((udif * (int)(loc & 3) + 2) / 3);
-                                            v[i + ii + iii][j + jj + jjj] = v0 + ((vdif * (int)(loc & 3) + 2) / 3);
+                                            const int selector = loc & 3;
+
+                                            u[i + ii + iii][j + jj + jjj] = (u0 * (3 - selector) + u1 * selector + 2) / 3;
+                                            v[i + ii + iii][j + jj + jjj] = (v0 * (3 - selector) + v1 * selector + 2) / 3;
 
                                             loc >>= 2;
                                         }
