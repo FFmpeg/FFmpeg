@@ -297,7 +297,7 @@ static int pcm_dvd_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
 const FFCodec ff_pcm_dvd_decoder = {
     .p.name         = "pcm_dvd",
-    CODEC_LONG_NAME("PCM signed 16|20|24-bit big-endian for DVD media"),
+    CODEC_LONG_NAME("PCM signed 16|20|24-bit big-endian for DVD-Video media"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_PCM_DVD,
     .priv_data_size = sizeof(PCMDVDContext),
