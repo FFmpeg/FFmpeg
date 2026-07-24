@@ -173,7 +173,7 @@ bad_option:
 
     av_log_set_callback(log_stdout);
 
-    ret = ff_sws_enum_op_lists(ctx, graph, src_fmt, dst_fmt, print_passes);
+    ret = ff_sws_enum_op_lists(ctx, graph, NULL, src_fmt, dst_fmt, print_passes);
     if (ret < 0)
         goto fail;
 

@@ -1163,7 +1163,15 @@
     MACRO(__VA_ARGS__, f32_dither_xyzw_3_2_0_5_16x16           , .type = SWS_PIXEL_F32, .uop = SWS_UOP_DITHER          , .mask = 0xf, .par.dither = { .y_offset = {3, 2, 0, 5}, .size_log2 = 4 }) \
     MACRO(__VA_ARGS__, f32_dither_xyzw_5_0_3_2_16x16           , .type = SWS_PIXEL_F32, .uop = SWS_UOP_DITHER          , .mask = 0xf, .par.dither = { .y_offset = {5, 0, 3, 2}, .size_log2 = 4 }) \
     MACRO(__VA_ARGS__, f32_dither_xyzw_5_2_3_0_16x16           , .type = SWS_PIXEL_F32, .uop = SWS_UOP_DITHER          , .mask = 0xf, .par.dither = { .y_offset = {5, 2, 3, 0}, .size_log2 = 4 })
-#define SWS_FOR_F32_LUT_3D(MACRO, ...)
-#define SWS_FOR_STRUCT_F32_LUT_3D(MACRO, ...)
+#define SWS_FOR_F32_LUT_3D(MACRO, ...) \
+    MACRO(__VA_ARGS__, f32_lut_3d_xyz_static                   , SWS_PIXEL_F32, SWS_UOP_LUT_3D          , 0x7, 0) \
+    MACRO(__VA_ARGS__, f32_lut_3d_xyz_dynamic                  , SWS_PIXEL_F32, SWS_UOP_LUT_3D          , 0x7, 1) \
+    MACRO(__VA_ARGS__, f32_lut_3d_xyzw_static                  , SWS_PIXEL_F32, SWS_UOP_LUT_3D          , 0xf, 0) \
+    MACRO(__VA_ARGS__, f32_lut_3d_xyzw_dynamic                 , SWS_PIXEL_F32, SWS_UOP_LUT_3D          , 0xf, 1)
+#define SWS_FOR_STRUCT_F32_LUT_3D(MACRO, ...) \
+    MACRO(__VA_ARGS__, f32_lut_3d_xyz_static                   , .type = SWS_PIXEL_F32, .uop = SWS_UOP_LUT_3D          , .mask = 0x7, .par.lut3d.dynamic = 0) \
+    MACRO(__VA_ARGS__, f32_lut_3d_xyz_dynamic                  , .type = SWS_PIXEL_F32, .uop = SWS_UOP_LUT_3D          , .mask = 0x7, .par.lut3d.dynamic = 1) \
+    MACRO(__VA_ARGS__, f32_lut_3d_xyzw_static                  , .type = SWS_PIXEL_F32, .uop = SWS_UOP_LUT_3D          , .mask = 0xf, .par.lut3d.dynamic = 0) \
+    MACRO(__VA_ARGS__, f32_lut_3d_xyzw_dynamic                 , .type = SWS_PIXEL_F32, .uop = SWS_UOP_LUT_3D          , .mask = 0xf, .par.lut3d.dynamic = 1)
 
 #endif /* SWSCALE_UOPS_MACROS_H */

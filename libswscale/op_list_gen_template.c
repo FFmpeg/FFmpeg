@@ -29,7 +29,7 @@
 
 #define DUMMY_SIZE 16
 
-static int enum_ops_fmt(SwsContext *ctx, void *opaque,
+static int enum_ops_fmt(SwsContext *ctx, void *opaque, const SwsLut3D *lut3d,
                         enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
                         int (*cb)(SwsContext *ctx, void *opaque, SwsOpList *ops))
 {
@@ -52,7 +52,7 @@ static int enum_ops_fmt(SwsContext *ctx, void *opaque,
         dst.width  = dst_sizes[i][0];
         dst.height = dst_sizes[i][1];
 
-        ret = ff_sws_op_list_generate(ctx, &src, &dst, NULL, &ops, &incomplete);
+        ret = ff_sws_op_list_generate(ctx, &src, &dst, lut3d, &ops, &incomplete);
         if (ret == AVERROR(ENOTSUP))
             return 0; /* silently skip unsupported formats */
         else if (ret < 0)
@@ -86,7 +86,7 @@ fail:
  * @note `ops` belongs to sws_enum_op_lists(), but may be mutated by `cb`.
  */
 static inline
-int ff_sws_enum_op_lists(SwsContext *ctx, void *opaque,
+int ff_sws_enum_op_lists(SwsContext *ctx, void *opaque, const SwsLut3D *lut3d,
                          enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
                          int (*cb)(SwsContext *ctx, void *opaque, SwsOpList *ops))
 {
@@ -102,7 +102,7 @@ int ff_sws_enum_op_lists(SwsContext *ctx, void *opaque,
         const enum AVPixelFormat src_f = av_pix_fmt_desc_get_id(src);
         for (dst = dst_start; dst; dst = av_pix_fmt_desc_next(dst)) {
             const enum AVPixelFormat dst_f = av_pix_fmt_desc_get_id(dst);
-            int ret = enum_ops_fmt(ctx, opaque, src_f, dst_f, cb);
+            int ret = enum_ops_fmt(ctx, opaque, lut3d, src_f, dst_f, cb);
             if (ret < 0)
                 return ret;
             if (dst_fmt != AV_PIX_FMT_NONE)

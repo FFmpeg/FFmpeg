@@ -460,7 +460,7 @@ int main(int argc, char *argv[])
     graph->ctx = ctx;
     ctx->opaque = &root;
 
-    ret = ff_sws_enum_op_lists(ctx, graph, AV_PIX_FMT_NONE, AV_PIX_FMT_NONE,
+    ret = ff_sws_enum_op_lists(ctx, graph, NULL, AV_PIX_FMT_NONE, AV_PIX_FMT_NONE,
                                register_op);
 
     /**
