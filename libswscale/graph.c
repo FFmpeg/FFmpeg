@@ -391,6 +391,18 @@ static void run_legacy_swscale(const SwsFrame *out, const SwsFrame *in,
                sws->src_h, out_data, out->linesize, y, h);
 }
 
+static void run_legacy_lut3d(const SwsFrame *out, const SwsFrame *in,
+                             int y, int h, const SwsPass *pass)
+{
+    const SwsLut3D *lut = pass->graph->lut3d;
+    uint8_t *in_data[4], *out_data[4];
+    frame_shift(in,  y, in_data);
+    frame_shift(out, y, out_data);
+
+    ff_sws_lut3d_apply_rgba64(lut, in_data[0], in->linesize[0], out_data[0],
+                              out->linesize[0], out->width, h);
+}
+
 static void legacy_chr_pos(SwsGraph *graph, int *chr_pos, int override, int *warned)
 {
     if (override == -513 || override == *chr_pos)
@@ -609,6 +621,37 @@ static int add_legacy_sws_pass(SwsGraph *graph, const SwsFormat *src,
     return init_legacy_subpass(graph, sws, input, output);
 }
 
+static int add_convert_pass(SwsGraph *graph, const SwsFormat *src,
+                            const SwsFormat *dst, const SwsLut3D *lut3d,
+                            SwsPass *input, SwsPass **output);
+
+static int add_legacy_3dlut_pass(SwsGraph *graph, const SwsFormat *src,
+                                 SwsPass *input, SwsPass **output)
+{
+    int ret;
+
+    const SwsLut3D *lut3d = graph->lut3d;
+    if (!lut3d)
+        return 0;
+
+    const enum AVPixelFormat fmt = AV_PIX_FMT_RGBA64;
+    if (src->format != fmt) {
+        SwsFormat tmp = *src;
+        tmp.format = fmt;
+        ret = add_convert_pass(graph, src, &tmp, NULL, input, &input);
+        if (ret < 0)
+            return ret;
+    }
+
+    ret = ff_sws_graph_add_pass(graph, fmt, src->width, src->height,
+                                input, 0, 1, run_legacy_lut3d, NULL, NULL, NULL,
+                                output);
+    if (ret < 0)
+        return ret;
+
+    return 0;
+}
+
 /*********************************
  * Format conversion and scaling *
  *********************************/
@@ -656,11 +699,23 @@ static bool prefer_ops_backend(SwsContext *ctx, const SwsFormat *src, const SwsF
 }
 
 static int add_convert_pass(SwsGraph *graph, const SwsFormat *src,
-                            const SwsFormat *dst, SwsPass *input,
-                            SwsPass **output)
+                            const SwsFormat *dst, const SwsLut3D *lut3d,
+                            SwsPass *input, SwsPass **output)
 {
     SwsContext *ctx = graph->ctx;
     int ret;
+
+    /* If we need to apply a 3D LUT, add it as an explicit input prepass */
+    if (lut3d) {
+        ret = add_legacy_3dlut_pass(graph, src, input, &input);
+        if (ret < 0)
+            return ret;
+
+        SwsFormat tmp = *src;
+        tmp.format = input->format;
+        tmp.color  = lut3d->map.dst;
+        return add_convert_pass(graph, &tmp, dst, NULL, input, output);
+    }
 
     if (prefer_ops_backend(ctx, src, dst)) {
         ret = add_ops_convert_pass(graph, src, dst, input, output);
@@ -679,26 +734,9 @@ static int add_convert_pass(SwsGraph *graph, const SwsFormat *src,
  * Gamut and tone mapping *
  **************************/
 
-static void run_lut3d(const SwsFrame *out, const SwsFrame *in, int y, int h,
-                      const SwsPass *pass)
+static int generate_3dlut(SwsGraph *graph, SwsFormat *src, SwsFormat *dst)
 {
-    const SwsLut3D *lut = pass->graph->lut3d;
-    uint8_t *in_data[4], *out_data[4];
-    frame_shift(in,  y, in_data);
-    frame_shift(out, y, out_data);
-
-    ff_sws_lut3d_apply_rgba64(lut, in_data[0], in->linesize[0], out_data[0],
-                              out->linesize[0], out->width, h);
-}
-
-static int adapt_colors(SwsGraph *graph, const SwsFormat *src_fmt,
-                        const SwsFormat *dst_fmt, SwsPass *input,
-                        SwsPass **output)
-{
-    SwsFormat src = *src_fmt;
-    SwsFormat dst = *dst_fmt;
     SwsColorMap map = {0};
-    int ret;
 
     /**
      * Grayspace does not really have primaries, so just force the use of
@@ -706,44 +744,30 @@ static int adapt_colors(SwsGraph *graph, const SwsFormat *src_fmt,
      * this does affect the weights used for the Grayscale conversion, but
      * in practise, that should give the expected results more often than not.
      */
-    if (isGray(dst.format)) {
-        dst.color = src.color;
-    } else if (isGray(src.format)) {
-        src.color = dst.color;
+    if (isGray(dst->format)) {
+        dst->color = src->color;
+    } else if (isGray(src->format)) {
+        src->color = dst->color;
     }
 
     /* Fully infer color spaces before color mapping logic */
-    graph->incomplete |= ff_infer_colors(&src.color, &dst.color);
+    graph->incomplete |= ff_infer_colors(&src->color, &dst->color);
 
     map.intent = graph->ctx->intent;
-    map.src    = src.color;
-    map.dst    = dst.color;
+    map.src    = src->color;
+    map.dst    = dst->color;
 
     if (ff_sws_color_map_noop(&map))
         return 0;
 
-    if (src.hw_format != AV_PIX_FMT_NONE || dst.hw_format != AV_PIX_FMT_NONE)
+    if (src->hw_format != AV_PIX_FMT_NONE || dst->hw_format != AV_PIX_FMT_NONE)
         return AVERROR(ENOTSUP);
 
     graph->lut3d = ff_sws_lut3d_alloc();
     if (!graph->lut3d)
         return AVERROR(ENOMEM);
 
-    ret = ff_sws_lut3d_generate(graph->lut3d, &map);
-    if (ret < 0)
-        return ret;
-
-    const enum AVPixelFormat fmt = AV_PIX_FMT_RGBA64;
-    if (src.format != fmt) {
-        SwsFormat tmp = src;
-        tmp.format = fmt;
-        ret = add_convert_pass(graph, &src, &tmp, input, &input);
-        if (ret < 0)
-            return ret;
-    }
-
-    return ff_sws_graph_add_pass(graph, fmt, src.width, src.height,
-                                 input, 0, 1, run_lut3d, NULL, NULL, NULL, output);
+    return ff_sws_lut3d_generate(graph->lut3d, &map);
 }
 
 /***************************************
@@ -757,14 +781,12 @@ static int init_passes(SwsGraph *graph)
     SwsPass *pass = NULL; /* read from main input image */
     int ret;
 
-    ret = adapt_colors(graph, &src, &dst, pass, &pass);
+    ret = generate_3dlut(graph, &src, &dst);
     if (ret < 0)
         return ret;
-    src.format = pass ? pass->format : src.format;
-    src.color  = dst.color;
 
-    if (!ff_fmt_equal(&src, &dst)) {
-        ret = add_convert_pass(graph, &src, &dst, pass, &pass);
+    if (!ff_fmt_equal(&src, &dst) || graph->lut3d) {
+        ret = add_convert_pass(graph, &src, &dst, graph->lut3d, pass, &pass);
         if (ret < 0)
             return ret;
     }
