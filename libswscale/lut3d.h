@@ -59,8 +59,10 @@ typedef struct SwsLut3D {
     v2u16_t tone_map[TONE_LUT_SIZE + 1]; /* new luma, desaturation */
 } SwsLut3D;
 
+/**
+ * Allocates a refstruct. Note that the LUT contents are not initialized.
+ */
 SwsLut3D *ff_sws_lut3d_alloc(void);
-void ff_sws_lut3d_free(SwsLut3D **lut3d);
 
 /**
  * Test to see if a given format is supported by the 3DLUT input/output code.

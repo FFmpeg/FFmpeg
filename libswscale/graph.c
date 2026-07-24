@@ -682,7 +682,7 @@ static int add_convert_pass(SwsGraph *graph, const SwsFormat *src,
 static void free_lut3d(void *priv)
 {
     SwsLut3D *lut = priv;
-    ff_sws_lut3d_free(&lut);
+    av_refstruct_unref(&lut);
 }
 
 static int setup_lut3d(const SwsFrame *out, const SwsFrame *in, const SwsPass *pass)
@@ -753,14 +753,14 @@ static int adapt_colors(SwsGraph *graph, const SwsFormat *src_fmt,
         tmp.format = fmt_in;
         ret = add_convert_pass(graph, &src, &tmp, input, &input);
         if (ret < 0) {
-            ff_sws_lut3d_free(&lut);
+            av_refstruct_unref(&lut);
             return ret;
         }
     }
 
     ret = ff_sws_lut3d_generate(lut, fmt_in, fmt_out, &map);
     if (ret < 0) {
-        ff_sws_lut3d_free(&lut);
+        av_refstruct_unref(&lut);
         return ret;
     }
 

@@ -24,6 +24,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/mem.h"
+#include "libavutil/refstruct.h"
 
 #include "cms.h"
 #include "csputils.h"
@@ -31,17 +32,14 @@
 
 SwsLut3D *ff_sws_lut3d_alloc(void)
 {
-    SwsLut3D *lut3d = av_malloc(sizeof(*lut3d));
+    const int flags = AV_REFSTRUCT_FLAG_NO_ZEROING;
+    SwsLut3D *lut3d = av_refstruct_alloc_ext(sizeof(*lut3d), flags, NULL, NULL);
     if (!lut3d)
         return NULL;
 
+    lut3d->map = (SwsColorMap) {0};
     lut3d->dynamic = false;
     return lut3d;
-}
-
-void ff_sws_lut3d_free(SwsLut3D **plut3d)
-{
-    av_freep(plut3d);
 }
 
 bool ff_sws_lut3d_test_fmt(enum AVPixelFormat fmt, int output)
