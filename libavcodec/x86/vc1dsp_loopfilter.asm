@@ -94,21 +94,40 @@ SECTION .text
     psraw   m4, 3        ; d = (5*(a0 - a3)) >> 3
     pxor    m2, m2
     pminsw  m4, m5       ; d = min(d, clip)
+%if cpuflag(ssse3)
+    ; m3 and m7 are in the -255..255 range, so that every bit in each word's
+    ; upper half coincides with the sign bit. When subtracting as bytes
+    ; the upper byte of every word is 0 if m3 and m7 have the same sign,
+    ; 1 if m7 (a0_sign) is negative/set but m3 is not and -1 else.
+    ; After the right shift by eight bits below, the value of the word
+    ; coincides with the current value of the upper byte.
+    psubb   m3, m7
+    pcmpgtw m5, m2       ; if (clip)
+%else
     psraw   m3, 15
     pcmpgtw m5, m2       ; if (clip)
     pxor    m7, m3       ; a0_sign ^ clip_sign
+%endif
     pand    m6, m5       ; filt3 (C return value)
 
 ; each set of 4 pixels is not filtered if the 3rd is not
     PSHUFLW m5, m6, q2222
+%if cpuflag(ssse3)
+    psraw   m3, 8
+%else
     psraw   m7, 15       ; a0_sign ^ clip_sign as mask
+%endif
     pand    m4, m6
 %if %1 > 4
     pshufhw m5, m5, q2222
 %endif
+%if cpuflag(ssse3)
+    psignw  m4, m3
+%else
     pxor    m4, m3
     pand    m5, m7
     psubw   m4, m3
+%endif
     pand    m4, m5
     psubw   m0, m4
     paddw   m1, m4
