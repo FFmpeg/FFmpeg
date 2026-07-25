@@ -42,11 +42,7 @@ SECTION .text
     pextrw %4, %5, %6+3
 %else
     movd  %6d, %5
-%if mmsize==16
     psrldq %5, 4
-%else
-    psrlq  %5, 32
-%endif
     mov    %1, %6w
     shr    %6, 16
     mov    %2, %6w
@@ -71,12 +67,16 @@ SECTION .text
 
 ; in: p0 q0 a0 a1 a2
 ;     m0 m1 m7 m6 m5
-; %1: size
+; %1: size, %2: if set, m6 contains a1, a2
 ; out: m0=p0' m1=q0'
-%macro VC1_FILTER 1
+%macro VC1_FILTER 2
     PABSW   m3, m6
     movd    m6, r2d
+%if %2
+    movhlps m2, m3
+%else
     PABSW   m2, m5
+%endif
     PABSW   m4, m7
     PSHUFLW m6, m6, 0
     pminsw  m3, m2
@@ -162,7 +162,7 @@ SECTION .text
     mova      m5, m1
     VC1_LOOP_FILTER_A0 m5, m2, m3, m4
 
-    VC1_FILTER %1
+    VC1_FILTER %1, 0
     mov%2 [r4+r3], m0
     mov%2 [r0],    m1
 %endmacro
@@ -171,13 +171,6 @@ SECTION .text
 ;     NOTE: UNPACK_8TO16 this number of 8 bit numbers are in half a register
 ; 2nd (optional) param: temp register to use for storing words
 %macro VC1_H_LOOP_FILTER 1-2
-%if %1 == 4
-    movq      m0, [r0     -4]
-    movq      m1, [r0+  r1-4]
-    movq      m2, [r0+2*r1-4]
-    movq      m3, [r0+  r3-4]
-    TRANSPOSE4x4B 0, 1, 2, 3, 4
-%else
     movq      m0, [r0     -4]
     movq      m4, [r0+  r1-4]
     movq      m1, [r0+2*r1-4]
@@ -191,11 +184,11 @@ SECTION .text
     punpcklbw m2, m6
     punpcklbw m3, m7
     TRANSPOSE4x4W 0, 1, 2, 3, 4
-%endif
-    pxor      m5, m5
 
+    pxor      m5, m5
     UNPACK_8TO16 bw, 6, 0, 5
     UNPACK_8TO16 bw, 7, 1, 5
+
     VC1_LOOP_FILTER_A0 m6, m0, m7, m1
     UNPACK_8TO16 bw, 4, 2, 5
     mova    m0, m1                      ; m0 = p0
@@ -205,14 +198,12 @@ SECTION .text
     VC1_LOOP_FILTER_A0 m5, m2, m1, m3
     SWAP 1, 4                           ; m1 = q0
 
-    VC1_FILTER %1
+    VC1_FILTER %1, 0
     punpcklbw m0, m1
 %if %0 > 1
     STORE_4_WORDS [r0-1], [r0+r1-1], [r0+2*r1-1], [r0+r3-1], m0, %2
-%if %1 > 4
     psrldq m0, 4
     STORE_4_WORDS [r4-1], [r4+r1-1], [r4+2*r1-1], [r4+r3-1], m0, %2
-%endif
 %else
     STORE_4_WORDS [r0-1], [r0+r1-1], [r0+2*r1-1], [r0+r3-1], m0, 0
     STORE_4_WORDS [r4-1], [r4+r1-1], [r4+2*r1-1], [r4+r3-1], m0, 4
@@ -254,13 +245,36 @@ cglobal vc1_v_loop_filter4, 3,5,0
     VC1_V_LOOP_FILTER 4, d
     RET
 
+INIT_XMM ssse3
 ; void ff_vc1_h_loop_filter4_ssse3(uint8_t *src, ptrdiff_t stride, int pq)
-cglobal vc1_h_loop_filter4, 3,4,0
+cglobal vc1_h_loop_filter4, 3,4,8
     START_H_FILTER 4
-    VC1_H_LOOP_FILTER 4, r2
+    movq           m0, [r0     -4]
+    movq           m1, [r0+  r1-4]
+    movq           m2, [r0+2*r1-4]
+    movq           m3, [r0+  r3-4]
+    punpcklbw      m0, m1
+    punpcklbw      m2, m3
+    SBUTTERFLY     wd, 0, 2, 1
+    ; m0 now contains lines -4..-1, m2 0..4 as dwords
+    pxor           m5, m5
+    SBUTTERFLY     dq, 0, 2, 1
+    ; m0 now contains lines -4 0 -3 1, m2 -2 2 -1 3
+    UNPACK_8TO16   bw, 6, 0, 5
+    UNPACK_8TO16   bw, 7, 2, 5
+    ; m0, m2, m6, m7 contain two unpacked lines each, namely:
+    ; m6: -4, 0; m0: -3, 1; m7: -2, 2; m2: -1, 3
+    movhlps        m5, m0                        ; 1
+    movhlps        m1, m6                        ; 0
+    VC1_LOOP_FILTER_A0 m6, m0, m7, m2            ; m6: a1, a2
+    mova           m0, m2
+    VC1_LOOP_FILTER_A0 m7, m2, m1, m5
+
+    VC1_FILTER      4, 1
+    punpcklbw      m0, m1
+    STORE_4_WORDS [r0-1], [r0+r1-1], [r0+2*r1-1], [r0+r3-1], m0, r2
     RET
 
-INIT_XMM ssse3
 ; void ff_vc1_v_loop_filter8_ssse3(uint8_t *src, ptrdiff_t stride, int pq)
 cglobal vc1_v_loop_filter8, 3,5,8
     START_V_FILTER
