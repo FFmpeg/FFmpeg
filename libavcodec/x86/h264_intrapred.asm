@@ -259,9 +259,9 @@ cglobal pred16x16_plane_%1_8, 2,9,5
 %endif
     movhlps      m1, m0
     paddw        m0, m1
-    PSHUFLW      m1, m0, 0xE
+    PSHUFLW      m1, m0, q0032
     paddw        m0, m1
-    PSHUFLW      m1, m0, 0x1
+    PSHUFLW      m1, m0, q0001
     paddw        m0, m1           ; sum of H coefficients
 
     lea          r4, [r0+r2*8-1]
@@ -467,11 +467,11 @@ cglobal pred8x8_plane_8, 2,9,5
     paddw        m0, m1
 
 %if notcpuflag(ssse3)
-    PSHUFLW      m1, m0, 0xE
+    PSHUFLW      m1, m0, q0032
     paddw        m0, m1
 %endif ; !ssse3
 
-    PSHUFLW      m1, m0, 0x1
+    PSHUFLW      m1, m0, q0001
     paddw        m0, m1           ; sum of H coefficients
 
     lea          r4, [r0+r2*4-1]
@@ -684,9 +684,9 @@ cglobal pred8x8_dc_8, 2,5,5
     mov       r0, r4
     punpcklwd m2, m3
     punpckldq m0, m2            ; s0, s1, s2, s3
-    pshuflw   m3, m0, 11110110b ; s2, s1, s3, s3
+    pshuflw   m3, m0, q3312     ; s2, s1, s3, s3
     lea       r2, [r0+r1*2]
-    pshuflw   m0, m0, 01110100b ; s0, s1, s3, s1
+    pshuflw   m0, m0, q1310     ; s0, s1, s3, s1
     paddw     m0, m3
     lea       r3, [r2+r1*2]
     psrlw     m0, 2
@@ -885,8 +885,8 @@ cglobal pred8x8l_dc_8, 4,5,6
     movd         m4, [r0+r3*0-4]
     punpcklbw    m3, m4
     punpcklwd    m3, m2
-    shufps       m3, m1, 0xed
-    pshufd       m3, m3, 0x0d
+    shufps       m3, m1, q3231
+    pshufd       m3, m3, q0031
     lea          r0, [r0+r3*2]
     movq         m0, [r0+r3*0-8]
     movq         m1, [r4]
@@ -982,7 +982,7 @@ cglobal pred8x8l_horizontal_8, 4,4,6
     punpcklbw    m3, m4
     punpcklwd    m3, m2
     punpckhdq    m3, m1
-    pshufd       m3, m3, 0xee
+    pshufd       m3, m3, q3232
     lea          r0, [r0+r3*2]
     movq         m0, [r0+r3*0-8]
     movq         m1, [r1+r3*0-8]
@@ -1001,19 +1001,19 @@ cglobal pred8x8l_horizontal_8, 4,4,6
     psrldq      m2, 7
     lea         r1, [r0+r3*2]
     punpcklbw   m2, m2
-    pshufhw     m0, m2, 0xff
-    pshufhw     m1, m2, 0xaa
+    pshufhw     m0, m2, q3333
+    pshufhw     m1, m2, q2222
     lea         r2, [r1+r3*2]
-    pshufhw     m3, m2, 0x55
-    pshufhw     m4, m2, 0x00
+    pshufhw     m3, m2, q1111
+    pshufhw     m4, m2, q0000
     movhps   [r0+r3*1], m0
     movhps   [r0+r3*2], m1
     movhps   [r1+r3*1], m3
     movhps   [r1+r3*2], m4
-    pshuflw     m0, m2, 0xff
-    pshuflw     m1, m2, 0xaa
-    pshuflw     m3, m2, 0x55
-    pshuflw     m4, m2, 0x00
+    pshuflw     m0, m2, q3333
+    pshuflw     m1, m2, q2222
+    pshuflw     m3, m2, q1111
+    pshuflw     m4, m2, q0000
     movq [r2+r3*1], m0
     movq [r2+r3*2], m1
     lea         r0, [r2+r3*2]
@@ -1093,8 +1093,8 @@ cglobal pred8x8l_down_left_8, 4,4,6
     jnz .has_top_right
 .fix_tr_2:
     punpcklbw    m3, m3
-    pshufhw      m1, m3, 0xff
-    pshufd       m1, m1, 0xee
+    pshufhw      m1, m3, q3333
+    pshufd       m1, m1, q3232
     jmp .do_topright
 .has_top_right:
     movq         m0, [r0+8]
@@ -1163,7 +1163,7 @@ cglobal pred8x8l_down_right_8, 4,5,7
     punpcklbw    m3, m4
     punpcklwd    m3, m2
     punpckhdq    m3, m1
-    pshufd       m3, m3, 0xee
+    pshufd       m3, m3, q3232
     lea          r0, [r0+r3*2]
     movq         m0, [r0+r3*0-8]
     movq         m1, [r4]
@@ -1269,7 +1269,7 @@ cglobal pred8x8l_vertical_right_8, 4,5,6
     punpcklbw    m3, m5
     punpcklwd    m3, m2
     punpckhdq    m3, m1
-    pshufd       m3, m3, 0xee
+    pshufd       m3, m3, q3232
     lea          r0, [r0+r3*2]
     movq         m0, [r0+r3*0-8]
     movq         m1, [r4]
@@ -1382,8 +1382,8 @@ cglobal pred8x8l_vertical_left_8, 4,4,7
     jnz .normal_top
 .fix_tr_2:
     punpcklbw    m3, m3
-    pshufd       m3, m3, 0xEE
-    pshuflw      m1, m3, 0xFF
+    pshufd       m3, m3, q3232
+    pshuflw      m1, m3, q3333
     jmp .do_topright
 .normal_top:
     movq         m0, [r0+8]
@@ -1450,7 +1450,7 @@ cglobal pred8x8l_horizontal_up_8, 4,4,6
     punpcklbw    m3, m4
     punpcklwd    m3, m2
     punpckhdq    m3, m1
-    pshufd       m3, m3, 0xee
+    pshufd       m3, m3, q3232
     lea          r0, [r0+r3*2]
     movq         m0, [r0+r3*0-8]
     movq         m1, [r1+r3*0-8]
@@ -1468,7 +1468,7 @@ cglobal pred8x8l_horizontal_up_8, 4,4,6
     punpcklqdq  m2, m1
     psrldq      m2, 7
     lea         r1, [r0+r3*2]
-    pshuflw     m1, m2, 00011011b
+    pshuflw     m1, m2, q0123
     psllq       m2, 56
     psllw       m0, m1, 8
     psrlw       m1, 8
@@ -1482,11 +1482,11 @@ cglobal pred8x8l_horizontal_up_8, 4,4,6
     pavgb       m4, m1
     psrlq       m3, 16
     punpcklbw   m2, m2
-    pshufd      m2, m2, 0xee
+    pshufd      m2, m2, q3232
     por         m3, m2
     PRED4x4_LOWPASS m2, m3, m5, m1, m0
     punpcklbw   m4, m2
-    pshufd      m0, m4, 0xee
+    pshufd      m0, m4, q3232
     psrldq      m5, m4, 2
     psrldq      m2, m4, 4
     psrldq      m3, m4, 6
@@ -1495,9 +1495,9 @@ cglobal pred8x8l_horizontal_up_8, 4,4,6
     lea         r0, [r2+r3*2]
     movq [r1+r3*1], m2
     movq [r1+r3*2], m3
-    pshuflw     m1, m0, 11111001b
-    pshuflw     m2, m0, 11111110b
-    pshuflw     m3, m0, 11111111b
+    pshuflw     m1, m0, q3321
+    pshuflw     m2, m0, q3332
+    pshuflw     m3, m0, q3333
     movq [r2+r3*1], m0
     movq [r2+r3*2], m1
     movq [r0+r3*1], m2
@@ -1531,7 +1531,7 @@ cglobal pred8x8l_horizontal_down_8, 4,5,8
     punpcklbw    m3, m4
     punpcklwd    m3, m2
     punpckhdq    m3, m1
-    pshufd       m3, m3, 0xee
+    pshufd       m3, m3, q3232
     lea          r0, [r0+r3*2]
     movq         m0, [r0+r3*0-8]
     movq         m1, [r4]
@@ -1623,8 +1623,8 @@ cglobal pred8x8l_horizontal_down_8, 4,5,8
     RET
 .fix_tr_2:
     punpcklbw   m3, m3
-    pshufd      m3, m3, 0xEE
-    pshuflw     m1, m3, 0xFF
+    pshufd      m3, m3, q3232
+    pshuflw     m1, m3, q3333
     jmp .do_topright
 %endmacro
 
@@ -1823,10 +1823,10 @@ cglobal pred4x4_horizontal_up_8, 3,3,7
     movd      m2, [r1+r2*2-4]
     punpcklbw m1, m2
     punpcklwd m0, m1
-    pshufd    m0, m0, 0xFF
+    pshufd    m0, m0, q3333
     mova      m1, m0
     punpcklbw m1, m1
-    pshuflw   m1, m1, 0xFF
+    pshuflw   m1, m1, q3333
     punpckldq m0, m1
     mova      m2, m0
     mova      m3, m0
@@ -1865,7 +1865,7 @@ cglobal pred4x4_horizontal_down_8, 3,3,6
     punpcklbw m2, m3          ; l0 l1
     punpcklwd m1, m2          ; l0 l1 l2 l3
     punpckhdq m1, m0          ; t2 t1 t0 lt l0 l1 l2 l3
-    pshufd    m1, m1, 0xEE
+    pshufd    m1, m1, q3232
     psrlq     m0, m1, 16      ; .. .. t2 t1 t0 lt l0 l1
     psrlq     m2, m1, 8       ; .. t2 t1 t0 lt l0 l1 l2
     pavgb     m5, m1, m2
@@ -1938,7 +1938,7 @@ cglobal pred4x4_down_right_8, 3,3,5
     punpcklbw m2, m3
     movd      m3, [r0]
     punpcklwd m1, m2
-    pshufd    m1, m1, 0xEE
+    pshufd    m1, m1, q3232
     punpcklqdq m1, m3
     psrldq     m1, 5
     movq       m3, [r1+r2*1-8]
