@@ -1035,6 +1035,12 @@ static int mix_presentation_obu(void *s, IAMFContext *c, AVIOContext *pb, int le
     }
 
     nb_submixes = ffio_read_leb(pbc);
+    if (!nb_submixes) {
+        av_log(s, AV_LOG_ERROR, "Mix presentation %u has no submixes\n", mix_presentation_id);
+        ret = AVERROR_INVALIDDATA;
+        goto fail;
+    }
+
     for (int i = 0; i < nb_submixes; i++) {
         AVIAMFSubmix *sub_mix;
         unsigned nb_elements, nb_layouts;
@@ -1046,6 +1052,13 @@ static int mix_presentation_obu(void *s, IAMFContext *c, AVIOContext *pb, int le
         }
 
         nb_elements = ffio_read_leb(pbc);
+        if (!nb_elements) {
+            av_log(s, AV_LOG_ERROR, "Submix %d from Mix presentation %u has no audio elements\n",
+                   i, mix_presentation_id);
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
+        }
+
         for (int j = 0; j < nb_elements; j++) {
             AVIAMFSubmixElement *submix_element;
             IAMFAudioElement *audio_element = NULL;
