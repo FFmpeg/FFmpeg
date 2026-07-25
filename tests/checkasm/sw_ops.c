@@ -634,6 +634,32 @@ static void check_dither(const char *name, SwsUOp *uop)
     av_refstruct_unref(&matrix);
 }
 
+static void check_lut_3d(const char *name, SwsUOp *uop)
+{
+    SwsLut3D *lut3d = ff_sws_lut3d_alloc();
+    if (!lut3d) {
+        fail();
+        return;
+    }
+
+    checkasm_init(&lut3d->input, sizeof(lut3d->input));
+
+    if (uop->par.lut3d.dynamic) {
+        checkasm_init(&lut3d->tone_map, sizeof(lut3d->tone_map));
+        checkasm_init(&lut3d->output,   sizeof(lut3d->output));
+        lut3d->dynamic = true;
+
+        /* Prevent out-of-bounds read from IPT values with abs(PT) > 0.5 */
+        for (int i = 0; i < FF_ARRAY_ELEMS(lut3d->tone_map); i++)
+            lut3d->tone_map[i].y = FFMIN(lut3d->tone_map[i].y, 1 << 15);
+    }
+
+    uop->data.lut3d = lut3d;
+    check_range(name, uop, MK_RANGES(INPUT_LUT_SIZE - 1));
+
+    av_refstruct_unref(&lut3d);
+}
+
 #define CHECK_FUNCTION(CHECK, NAME, ...) \
     CHECK(#NAME, &(SwsUOp) { __VA_ARGS__ });
 
@@ -678,4 +704,5 @@ void checkasm_check_sw_ops(void)
     CHECK_FOR(CLEAR,            check_vec4);
     CHECK_FOR(LINEAR,           check_linear);
     CHECK_FOR(DITHER,           check_dither);
+    CHECK_FOR(LUT_3D,           check_lut_3d);
 }
