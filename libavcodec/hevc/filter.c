@@ -540,14 +540,13 @@ static void deblocking_filter_CTB(const HEVCContext *s, const HEVCLayerContext *
     if (y_end > sps->height)
         y_end = sps->height;
 
-    tc_offset   = cur_tc_offset;
-    beta_offset = cur_beta_offset;
-
     x_end2 = x_end;
     if (x_end2 != sps->width)
         x_end2 -= 8;
     for (y = y0; y < y_end; y += 8) {
         // vertical filtering luma
+        tc_offset   = cur_tc_offset;
+        beta_offset = cur_beta_offset;
         for (x = x0 ? x0 : 8; x < x_end; x += 8) {
             const int bs0 = l->vertical_bs[(x +  y      * l->bs_width) >> 2];
             const int bs1 = l->vertical_bs[(x + (y + 4) * l->bs_width) >> 2];
@@ -622,8 +621,8 @@ static void deblocking_filter_CTB(const HEVCContext *s, const HEVCLayerContext *
                         const int qp1 = (get_qPy(sps, l->qp_y_tab, x - 1, y + (4 * v)) +
                                          get_qPy(sps, l->qp_y_tab, x,     y + (4 * v)) + 1) >> 1;
 
-                        c_tc[0] = (bs0 == 2) ? chroma_tc(pps, sps, qp0, chroma, tc_offset) : 0;
-                        c_tc[1] = (bs1 == 2) ? chroma_tc(pps, sps, qp1, chroma, tc_offset) : 0;
+                        c_tc[0] = (bs0 == 2) ? chroma_tc(pps, sps, qp0, chroma, cur_tc_offset) : 0;
+                        c_tc[1] = (bs1 == 2) ? chroma_tc(pps, sps, qp1, chroma, cur_tc_offset) : 0;
                         src       = &data[chroma][(y >> sps->vshift[chroma]) * linesize[chroma] + ((x >> sps->hshift[chroma]) << sps->pixel_shift)];
                         if (pcmf) {
                             no_p[0] = get_pcm(sps, l->is_pcm, x - 1, y);
@@ -642,7 +641,6 @@ static void deblocking_filter_CTB(const HEVCContext *s, const HEVCLayerContext *
                     continue;
 
                 // horizontal filtering chroma
-                tc_offset = x0 ? left_tc_offset : cur_tc_offset;
                 x_end2 = x_end;
                 if (x_end != sps->width)
                     x_end2 = x_end - 8 * h;
@@ -650,13 +648,14 @@ static void deblocking_filter_CTB(const HEVCContext *s, const HEVCLayerContext *
                     const int bs0 = l->horizontal_bs[( x          + y * l->bs_width) >> 2];
                     const int bs1 = l->horizontal_bs[((x + 4 * h) + y * l->bs_width) >> 2];
                     if ((bs0 == 2) || (bs1 == 2)) {
+                        const int off = x >= x0 ? cur_tc_offset : left_tc_offset;
                         const int qp0 = bs0 == 2 ? (get_qPy(sps, l->qp_y_tab, x,           y - 1) +
                                                     get_qPy(sps, l->qp_y_tab, x,           y)     + 1) >> 1 : 0;
                         const int qp1 = bs1 == 2 ? (get_qPy(sps, l->qp_y_tab, x + (4 * h), y - 1) +
                                                     get_qPy(sps, l->qp_y_tab, x + (4 * h), y)     + 1) >> 1 : 0;
 
-                        c_tc[0]   = bs0 == 2 ? chroma_tc(pps, sps, qp0, chroma, tc_offset)     : 0;
-                        c_tc[1]   = bs1 == 2 ? chroma_tc(pps, sps, qp1, chroma, cur_tc_offset) : 0;
+                        c_tc[0]   = bs0 == 2 ? chroma_tc(pps, sps, qp0, chroma, off) : 0;
+                        c_tc[1]   = bs1 == 2 ? chroma_tc(pps, sps, qp1, chroma, off) : 0;
                         src       = &data[chroma][(y >> sps->vshift[1]) * linesize[chroma] + ((x >> sps->hshift[1]) << sps->pixel_shift)];
                         if (pcmf) {
                             no_p[0] = get_pcm(sps, l->is_pcm, x,           y - 1);
