@@ -74,7 +74,7 @@ typedef struct CurlLoop {
 
     pthread_t       thread;
     CURLM          *multi;
-    CURLSH         *share;   /* shared cookies/DNS/TLS sessions/HSTS */
+    CURLSH         *share;   /* shared cookies/HSTS */
 
     pthread_mutex_t mutex;   /* guards the command queue, exit and cmd->done */
     pthread_cond_t  cond;    /* signaled when a sync command completes */
@@ -332,7 +332,7 @@ static size_t header_callback(char *ptr, size_t size, size_t nitems, void *userd
         }
         /* A compressed body is addressed in encoded form, so byte offsets are
          * meaningless: not seekable. Note that we prefer compression over
-         * seekability, servers doesn't offer media in compressed form, so it
+         * seekability, servers don't offer media in compressed form, so it
          * gives us free compression for other payloads like text playlist. */
         c->seekable = !c->hdr_compressed &&
                       (status == 206 || c->hdr_accept_ranges);
