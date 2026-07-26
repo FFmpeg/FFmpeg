@@ -39,18 +39,6 @@
 
 /* tag tree routines */
 
-static int32_t tag_tree_size(int w, int h)
-{
-    int64_t res = 0;
-    while (w > 1 || h > 1) {
-        res += w * (int64_t)h;
-        av_assert0(res + 1 < INT32_MAX);
-        w = (w + 1) >> 1;
-        h = (h + 1) >> 1;
-    }
-    return (int32_t)(res + 1);
-}
-
 /* allocate the memory for tag tree */
 static Jpeg2000TgtNode *ff_jpeg2000_tag_tree_init(int w, int h)
 {
@@ -58,7 +46,7 @@ static Jpeg2000TgtNode *ff_jpeg2000_tag_tree_init(int w, int h)
     Jpeg2000TgtNode *res, *t, *t2;
     int32_t tt_size;
 
-    tt_size = tag_tree_size(w, h);
+    tt_size = ff_jpeg2000_tag_tree_size(w, h);
 
     t = res = av_calloc(tt_size, sizeof(*t));
     if (!res)
@@ -85,7 +73,7 @@ static Jpeg2000TgtNode *ff_jpeg2000_tag_tree_init(int w, int h)
 
 void ff_tag_tree_zero(Jpeg2000TgtNode *t, int w, int h, int val)
 {
-    int i, siz = tag_tree_size(w, h);
+    int i, siz = ff_jpeg2000_tag_tree_size(w, h);
 
     for (i = 0; i < siz; i++) {
         t[i].val = val;
@@ -199,33 +187,22 @@ void ff_jpeg2000_set_significance(Jpeg2000T1Context *t1, int x, int y,
     t1->flags[(y - 1) * t1->stride + x - 1] |= JPEG2000_T1_SIG_SE;
 }
 
+/* TODO: Implementation of quantization step not finished, see
+ * ISO/IEC 15444-1:2002 E.1 and A.6.4. */
 // static const uint8_t lut_gain[2][4] = { { 0, 0, 0, 0 }, { 0, 1, 1, 2 } }; (unused)
-
-/**
- * 2^(x) for integer x in the range -126..128.
- * @return correctly rounded float
- */
-static av_always_inline float exp2fi(int x)
+float ff_jpeg2000_band_stepsize(AVCodecContext *avctx,
+                                              Jpeg2000CodingStyle *codsty,
+                                              Jpeg2000QuantStyle *qntsty,
+                                              int bandno, int gbandno,
+                                              int reslevelno, int cbps)
 {
-    av_assert2(-126 <= x && x <= 128);
-    /* Normal range */
-    return av_int2float((x+127) << 23);
-}
+    float fss;
 
-static void init_band_stepsize(AVCodecContext *avctx,
-                               Jpeg2000Band *band,
-                               Jpeg2000CodingStyle *codsty,
-                               Jpeg2000QuantStyle *qntsty,
-                               int bandno, int gbandno, int reslevelno,
-                               int cbps)
-{
-    /* TODO: Implementation of quantization step not finished,
-     * see ISO/IEC 15444-1:2002 E.1 and A.6.4. */
     switch (qntsty->quantsty) {
         uint8_t gain;
     case JPEG2000_QSTY_NONE:
         /* TODO: to verify. No quantization in this case */
-        band->f_stepsize = 1;
+        fss = 1;
         break;
     case JPEG2000_QSTY_SI:
         /*TODO: Compute formula to implement. */
@@ -240,35 +217,47 @@ static void init_band_stepsize(AVCodecContext *avctx,
          * delta_b = 2 ^ (R_b - expn_b) * (1 + (mant_b / 2 ^ 11))
          * R_b = R_I + log2 (gain_b )
          * see ISO/IEC 15444-1:2002 E.1.1 eqn. E-3 and E-4 */
-        gain            = cbps;
-        band->f_stepsize  = exp2fi(gain - qntsty->expn[gbandno]);
-        band->f_stepsize *= qntsty->mant[gbandno] / 2048.0 + 1.0;
+        gain = cbps;
+        fss  = ff_jpeg2000_exp2fi(gain - qntsty->expn[gbandno]);
+        fss *= qntsty->mant[gbandno] / 2048.0 + 1.0;
         break;
     default:
-        band->f_stepsize = 0;
         av_log(avctx, AV_LOG_ERROR, "Unknown quantization format\n");
-        break;
+        return 0;
     }
     if (codsty->transform != FF_DWT53) {
         int lband = 0;
         switch (bandno + (reslevelno > 0)) {
-            case 1:
-            case 2:
-                band->f_stepsize *= F_LFTG_X * 2;
-                lband = 1;
-                break;
-            case 3:
-                band->f_stepsize *= F_LFTG_X * F_LFTG_X * 4;
-                break;
+        case 1:
+        case 2:
+            fss *= F_LFTG_X * 2;
+            lband = 1;
+            break;
+        case 3:
+            fss *= F_LFTG_X * F_LFTG_X * 4;
+            break;
         }
-        band->f_stepsize *= pow(F_LFTG_K, 2*(codsty->nreslevels2decode - reslevelno) + lband - 2);
+        fss *= pow(F_LFTG_K, 2 * (codsty->nreslevels2decode - reslevelno) +
+                             lband - 2);
     }
 
-    if (band->f_stepsize > (INT_MAX >> 15)) {
-        band->f_stepsize = 0;
+    if (fss > (INT_MAX >> 15)) {
         av_log(avctx, AV_LOG_ERROR, "stepsize out of range\n");
+        return 0;
     }
+    return fss;
+}
 
+static void init_band_stepsize(AVCodecContext *avctx,
+                               Jpeg2000Band *band,
+                               Jpeg2000CodingStyle *codsty,
+                               Jpeg2000QuantStyle *qntsty,
+                               int bandno, int gbandno, int reslevelno,
+                               int cbps)
+{
+    band->f_stepsize = ff_jpeg2000_band_stepsize(avctx, codsty, qntsty,
+                                                 bandno, gbandno, reslevelno,
+                                                 cbps);
     band->i_stepsize = (int)floorf(band->f_stepsize * (1 << 15));
 }
 

@@ -31,6 +31,9 @@
 
 #include <stdint.h>
 
+#include "libavutil/avassert.h"
+#include "libavutil/intfloat.h"
+
 #include "avcodec.h"
 #include "mqc.h"
 #include "jpeg2000dwt.h"
@@ -288,6 +291,39 @@ static inline int ff_jpeg2000_getsgnctxno(int flag, int *xorbit)
     *xorbit = ff_jpeg2000_xorbit_lut[flag & 15][(flag >> 8) & 15];
     return ff_jpeg2000_sgnctxno_lut[flag & 15][(flag >> 8) & 15];
 }
+
+/* Node count of the tag-tree pyramid over a (w, h) leaf grid. */
+static inline int32_t ff_jpeg2000_tag_tree_size(int w, int h)
+{
+    int64_t res = 0;
+    while (w > 1 || h > 1) {
+        res += w * (int64_t)h;
+        av_assert0(res + 1 < INT32_MAX);
+        w = (w + 1) >> 1;
+        h = (h + 1) >> 1;
+    }
+    return (int32_t)(res + 1);
+}
+
+/**
+ * 2^(x) for integer x in the range -126..128.
+ * @return correctly rounded float
+ */
+static av_always_inline float ff_jpeg2000_exp2fi(int x)
+{
+    av_assert2(-126 <= x && x <= 128);
+    /* Normal range */
+    return av_int2float((x + 127) << 23);
+}
+
+/* Band dequantization step size (ISO/IEC 15444-1:2002 E.1), shared between
+ * the software decoder's band setup and the Vulkan hwaccel's inline
+ * geometry. */
+float ff_jpeg2000_band_stepsize(AVCodecContext *avctx,
+                                Jpeg2000CodingStyle *codsty,
+                                Jpeg2000QuantStyle *qntsty,
+                                int bandno, int gbandno,
+                                int reslevelno, int cbps);
 
 int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                                Jpeg2000CodingStyle *codsty,
