@@ -281,3 +281,5 @@ Testing pixel format descriptors
   pix fmt gbrp12msble avg_bpp:48 planes:3
   pix fmt ohcodec avg_bpp:0 planes:0
   pix fmt cuarray avg_bpp:0 planes:0
+  pix fmt xyzp12le avg_bpp:48 planes:3
+  pix fmt xyzp12be avg_bpp:48 planes:3

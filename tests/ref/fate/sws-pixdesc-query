@@ -105,6 +105,8 @@ isNBPS:
   xv36le
   xyz12be
   xyz12le
+  xyzp12be
+  xyzp12le
   y210be
   y210le
   y212be
@@ -221,6 +223,7 @@ isBE:
   xv36be
   xv48be
   xyz12be
+  xyzp12be
   y210be
   y212be
   y216be
@@ -303,6 +306,8 @@ isYUV:
   xv48le
   xyz12be
   xyz12le
+  xyzp12be
+  xyzp12le
   y210be
   y210le
   y212be
@@ -419,6 +424,8 @@ isPlanarYUV:
   p412le
   p416be
   p416le
+  xyzp12be
+  xyzp12le
   yuv410p
   yuv411p
   yuv420p
@@ -1035,6 +1042,8 @@ Planar:
   p412le
   p416be
   p416le
+  xyzp12be
+  xyzp12le
   yuv410p
   yuv411p
   yuv420p
@@ -1241,6 +1250,8 @@ DataInHighBits:
   xv36le
   xyz12be
   xyz12le
+  xyzp12be
+  xyzp12le
   y210be
   y210le
   y212be

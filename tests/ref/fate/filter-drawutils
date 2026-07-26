@@ -266,5 +266,7 @@ Testing gbrp12msbbe...     no: unsupported
 Testing gbrp12msble...     ok
 Testing ohcodec...         no: unsupported
 Testing cuarray...         no: unsupported
+Testing xyzp12le...        no: unsupported
+Testing xyzp12be...        no: unsupported
 half transparent red over transparent rgba by mask: 128 0 0 128
 half transparent red over transparent rgba by rectangle: 128 0 0 128
