@@ -184,6 +184,9 @@ int avpriv_codec_get_cap_skip_frame_fill_param(const AVCodec *codec);
 int ff_alloc_timecode_sei(const AVFrame *frame, AVRational rate, size_t prefix_len,
                      void **data, size_t *sei_size);
 
+int ff_alloc_timecode_metadata_av1(const AVFrame *frame, AVRational rate,
+                                   void **data, size_t *size);
+
 /**
  * Get an estimated video bitrate based on frame size, frame rate and coded
  * bits per pixel.

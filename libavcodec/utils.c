@@ -1041,6 +1041,37 @@ int ff_alloc_timecode_sei(const AVFrame *frame, AVRational rate, size_t prefix_l
     return 0;
 }
 
+int ff_alloc_timecode_metadata_av1(const AVFrame *frame, AVRational rate,
+                                   void **data, size_t *size)
+{
+    AVFrameSideData *sd = NULL;
+    PutBitContext pb;
+    uint32_t *tc;
+
+    if (frame)
+        sd = av_frame_get_side_data(frame, AV_FRAME_DATA_S12M_TIMECODE);
+
+    *data = NULL;
+    if (!sd)
+        return 0;
+    tc = (uint32_t*)sd->data;
+    if (!(tc[0] & 3)) // num_clock_ts
+        return 0;
+
+    *size = 5;
+    *data = av_mallocz(*size);
+    if (!*data)
+        return AVERROR(ENOMEM);
+
+    init_put_bits(&pb, *data, *size);
+    put_timecode_fields(&pb, rate, tc[1]);
+    put_bits(&pb, 5, 1); // time_offset_length
+    put_bits(&pb, 1, 0); // time_offset_value
+    flush_put_bits(&pb);
+
+    return 0;
+}
+
 int64_t ff_guess_coded_bitrate(AVCodecContext *avctx)
 {
     AVRational framerate = avctx->framerate;
