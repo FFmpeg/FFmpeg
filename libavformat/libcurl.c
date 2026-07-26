@@ -300,7 +300,11 @@ static size_t header_callback(char *ptr, size_t size, size_t nitems, void *userd
     pthread_mutex_lock(&c->mutex);
     if (status >= 200 && status < 300) {
         int64_t content_start = status == 206 ? c->hdr_content_start : 0;
-        if (c->probed && c->seekable && content_start != c->request_start) {
+        /* The reply must start at the offset we requested: for follow-up
+         * requests always, for the initial one when an explicit nonzero
+         * offset was requested. */
+        if ((c->probed ? c->seekable : c->off > 0) &&
+            content_start != c->request_start) {
             av_log(c->h, AV_LOG_ERROR, "Server sent back unexpected reply "
                    "with offset %"PRId64" (expected %"PRId64")\n",
                    content_start, c->request_start);
