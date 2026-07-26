@@ -986,6 +986,22 @@ AVCPBProperties *av_cpb_properties_alloc(size_t *size)
     return props;
 }
 
+static void put_timecode_fields(PutBitContext *pb, AVRational rate, uint32_t tc)
+{
+    unsigned hours, minutes, seconds, frames, drop;
+
+    ff_timecode_set_smpte(&drop, &hours, &minutes, &seconds, &frames, rate, tc, 0, 0);
+
+    put_bits(pb, 5, 0);      // counting_type
+    put_bits(pb, 1, 1);      // full_timestamp_flag
+    put_bits(pb, 1, 0);      // discontinuity_flag
+    put_bits(pb, 1, drop);   // cnt_dropped_flag
+    put_bits(pb, 9, frames);
+    put_bits(pb, 6, seconds);
+    put_bits(pb, 6, minutes);
+    put_bits(pb, 5, hours);
+}
+
 int ff_alloc_timecode_sei(const AVFrame *frame, AVRational rate, size_t prefix_len,
                      void **data, size_t *sei_size)
 {
@@ -1015,20 +1031,10 @@ int ff_alloc_timecode_sei(const AVFrame *frame, AVRational rate, size_t prefix_l
     put_bits(&pb, 2, m); // num_clock_ts
 
     for (int j = 1; j <= m; j++) {
-        unsigned hh, mm, ss, ff, drop;
-        ff_timecode_set_smpte(&drop, &hh, &mm, &ss, &ff, rate, tc[j], 0, 0);
-
         put_bits(&pb, 1, 1); // clock_timestamp_flag
         put_bits(&pb, 1, 1); // units_field_based_flag
-        put_bits(&pb, 5, 0); // counting_type
-        put_bits(&pb, 1, 1); // full_timestamp_flag
-        put_bits(&pb, 1, 0); // discontinuity_flag
-        put_bits(&pb, 1, drop);
-        put_bits(&pb, 9, ff);
-        put_bits(&pb, 6, ss);
-        put_bits(&pb, 6, mm);
-        put_bits(&pb, 5, hh);
-        put_bits(&pb, 5, 0);
+        put_timecode_fields(&pb, rate, tc[j]);
+        put_bits(&pb, 5, 0); // time_offset_length
     }
     flush_put_bits(&pb);
 
