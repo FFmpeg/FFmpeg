@@ -79,22 +79,22 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
             if (yadif->current_field == YADIF_FIELD_END) {
                 if ((y < 3) || ((y + 3) >= td->h)) {
                     s->dsp.filter_edge(dst, prev, cur, next, td->w,
-                                   (y + df) < td->h ? refs : -refs,
-                                   y > (df - 1) ? -refs : refs,
+                                   (y + 1) < td->h ? refs : -refs,
+                                   y > 0 ? -refs : refs,
                                    refs << 1, -(refs << 1),
                                    td->parity ^ td->tff, clip_max,
                                    (y < 2) || ((y + 3) > td->h) ? 0 : 1);
                 } else {
-                    s->dsp.filter_intra(dst, cur, td->w, (y + df) < td->h ? refs : -refs,
-                                    y > (df - 1) ? -refs : refs,
-                                    (y + 3*df) < td->h ? 3 * refs : -refs,
-                                    y > (3*df - 1) ? -3 * refs : refs,
+                    s->dsp.filter_intra(dst, cur, td->w, (y + 1) < td->h ? refs : -refs,
+                                    y > 0 ? -refs : refs,
+                                    (y + 3) < td->h ? 3 * refs : -refs,
+                                    y > 2 ? -3 * refs : refs,
                                     td->parity ^ td->tff, clip_max);
                 }
             } else if ((y < 4) || ((y + 5) > td->h)) {
                 s->dsp.filter_edge(dst, prev, cur, next, td->w,
-                               (y + df) < td->h ? refs : -refs,
-                               y > (df - 1) ? -refs : refs,
+                               (y + 1) < td->h ? refs : -refs,
+                               y > 0 ? -refs : refs,
                                refs << 1, -(refs << 1),
                                td->parity ^ td->tff, clip_max,
                                (y < 2) || ((y + 3) > td->h) ? 0 : 1);
