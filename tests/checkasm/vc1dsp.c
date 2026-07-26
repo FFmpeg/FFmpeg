@@ -354,7 +354,7 @@ static void check_loop_filter(void)
 
     for (size_t k = 0; k < FF_ARRAY_ELEMS(tests); ++k) {
         void (*func)(uint8_t *, ptrdiff_t, int) = *(void **)((intptr_t) &h + tests[k].offset);
-        declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *, ptrdiff_t, int);
+        declare_func(void, uint8_t *, ptrdiff_t, int);
         if (check_func(func, "vc1dsp.%s", tests[k].name)) {
             for (int count = 1000; count > 0; --count) {
                 int pq = rnd() % 31 + 1;

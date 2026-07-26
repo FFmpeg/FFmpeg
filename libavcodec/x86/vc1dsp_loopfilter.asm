@@ -78,7 +78,7 @@ SECTION .text
     PABSW   m2, m5
 %endif
     PABSW   m4, m7
-    PSHUFLW m6, m6, 0
+    pshuflw m6, m6, 0
     pminsw  m3, m2
     pcmpgtw m2, m4, m3   ; if (a2 < a0 || a1 < a0)
 %if %1 > 4
@@ -111,7 +111,7 @@ SECTION .text
     pand    m6, m5       ; filt3 (C return value)
 
 ; each set of 4 pixels is not filtered if the 3rd is not
-    PSHUFLW m5, m6, q2222
+    pshuflw m5, m6, q2222
 %if cpuflag(ssse3)
     psraw   m3, 8
 %else
@@ -238,14 +238,13 @@ cglobal vc1_h_loop_filter8, 3,5,8
     VC1_H_LOOP_FILTER 8, r2
     RET
 
-INIT_MMX ssse3
+INIT_XMM ssse3
 ; void ff_vc1_v_loop_filter4_ssse3(uint8_t *src, ptrdiff_t stride, int pq)
-cglobal vc1_v_loop_filter4, 3,5,0
+cglobal vc1_v_loop_filter4, 3,5,8
     START_V_FILTER
     VC1_V_LOOP_FILTER 4, d
     RET
 
-INIT_XMM ssse3
 ; void ff_vc1_h_loop_filter4_ssse3(uint8_t *src, ptrdiff_t stride, int pq)
 cglobal vc1_h_loop_filter4, 3,4,8
     START_H_FILTER 4
