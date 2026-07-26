@@ -336,7 +336,7 @@ static size_t header_callback(char *ptr, size_t size, size_t nitems, void *userd
          * gives us free compression for other payloads like text playlist. */
         c->seekable = !c->hdr_compressed &&
                       (status == 206 || c->hdr_accept_ranges);
-        if (c->seekable) {
+        if (!c->hdr_compressed) {
             int64_t total = c->hdr_content_total;
             if (total < 0 && status != 206) {
                 curl_off_t cl = -1;
@@ -344,8 +344,11 @@ static size_t header_callback(char *ptr, size_t size, size_t nitems, void *userd
                                       &cl) == CURLE_OK && cl >= 0)
                     total = cl;
             }
-            c->content_size = total;
-
+            /* Don't unlearn a known size when a reply omits it. */
+            if (total >= 0)
+                c->content_size = total;
+        }
+        if (c->seekable) {
             if (c->hdr_content_end >= 0)
                 c->request_end = c->hdr_content_end;
             else
