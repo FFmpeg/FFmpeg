@@ -4526,7 +4526,7 @@ static int host_map_frame(AVHWFramesContext *hwfc, AVBufferRef **dst, int *nb_bu
     /* Single buffer contains all planes */
     if (nb_src_bufs == 1) {
         err = ff_vk_host_map_buffer(&p->vkctx, &dst[0],
-                                    swf->data[0], swf->buf[0],
+                                    swf->data[0], VK_WHOLE_SIZE, swf->buf[0],
                                     buf_usage);
         if (err < 0)
             return err;
@@ -4538,8 +4538,8 @@ static int host_map_frame(AVHWFramesContext *hwfc, AVBufferRef **dst, int *nb_bu
     } else if (nb_src_bufs == planes) { /* One buffer per plane */
         for (int i = 0; i < planes; i++) {
             err = ff_vk_host_map_buffer(&p->vkctx, &dst[i],
-                                        swf->data[i], swf->buf[i],
-                                        buf_usage);
+                                        swf->data[i], VK_WHOLE_SIZE,
+                                        swf->buf[i], buf_usage);
             if (err < 0)
                 goto fail;
             (*nb_bufs)++;

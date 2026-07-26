@@ -1409,7 +1409,8 @@ static void destroy_avvkbuf(void *opaque, uint8_t *data)
 }
 
 int ff_vk_host_map_buffer(FFVulkanContext *s, AVBufferRef **dst,
-                          uint8_t *src_data, const AVBufferRef *src_buf,
+                          uint8_t *src_data, VkDeviceSize size,
+                          const AVBufferRef *src_buf,
                           VkBufferUsageFlags usage)
 {
     int err;
@@ -1457,9 +1458,9 @@ int ff_vk_host_map_buffer(FFVulkanContext *s, AVBufferRef **dst,
     if (!ref)
         return AVERROR(ENOMEM);
 
-    /* Add the offset at the start, which gets ignored */
-    const ptrdiff_t src_offset = src_data - src_buf->data;
-    buffer_size = offs + (src_buf->size - src_offset);
+    /* Add the offset at the start, which gets ignored. */
+    const VkDeviceSize src_avail = src_buf->size - (src_data - src_buf->data);
+    buffer_size = offs + FFMIN(size, src_avail);
     buffer_size = FFALIGN(buffer_size, s->props.properties.limits.minMemoryMapAlignment);
     buffer_size = FFALIGN(buffer_size, s->hprops.minImportedHostPointerAlignment);
 

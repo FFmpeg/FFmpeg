@@ -57,8 +57,8 @@ typedef struct DecodePushData {
 
 static int vk_dpx_start_frame(AVCodecContext          *avctx,
                               const AVBufferRef       *buffer_ref,
-                              av_unused const uint8_t *buffer,
-                              av_unused uint32_t       size)
+                              const uint8_t *buffer,
+                              uint32_t       size)
 {
     FFVulkanDecodeContext *dec = avctx->internal->hwaccel_priv_data;
     FFVulkanDecodeShared *ctx = dec->shared_ctx;
@@ -71,7 +71,7 @@ static int vk_dpx_start_frame(AVCodecContext          *avctx,
     if (!vp->slices_buf &&
         ctx->s.extensions & FF_VK_EXT_EXTERNAL_HOST_MEMORY)
         ff_vk_host_map_buffer(&ctx->s, &vp->slices_buf, (uint8_t *)buffer,
-                              buffer_ref,
+                              size, buffer_ref,
                               VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 
     return 0;

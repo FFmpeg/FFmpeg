@@ -80,7 +80,7 @@ static int vk_apv_start_frame(AVCodecContext          *avctx,
     /* Host map the input tile data if supported */
     if (ctx->s.extensions & FF_VK_EXT_EXTERNAL_HOST_MEMORY)
         ff_vk_host_map_buffer(&ctx->s, &vp->slices_buf, buffer_ref->data,
-                              buffer_ref,
+                              VK_WHOLE_SIZE, buffer_ref,
                               VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                               VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
 

@@ -674,8 +674,8 @@ static int get_packet(AVCodecContext *avctx, FFVkExecContext *exec, AVPacket *pk
 
     /* Roll transfer execution context */
     if (transfer_slices) {
-        RET(ff_vk_host_map_buffer(vkctx, &mapped_ref, pkt->data, pkt->buf,
-                                  VK_BUFFER_USAGE_TRANSFER_DST_BIT));
+        RET(ff_vk_host_map_buffer(vkctx, &mapped_ref, pkt->data, pkt->size,
+                                  pkt->buf, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
         mapped_buf = (FFVkBuffer *)mapped_ref->data;
         transfer_exec = ff_vk_exec_get(vkctx, &pv->transfer_exec_pool);
         ff_vk_exec_start(vkctx, transfer_exec);

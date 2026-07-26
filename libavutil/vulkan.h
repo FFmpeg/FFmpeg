@@ -587,10 +587,12 @@ int ff_vk_get_pooled_buffer(FFVulkanContext *ctx, AVBufferPool **buf_pool,
                             VkMemoryPropertyFlagBits mem_props);
 
 /** Maps a system RAM buffer into a Vulkan buffer.
- * References the source buffer.
- */
+ * References the source buffer. Imports size bytes starting at src_data,
+ * rounded up to the host-pointer import alignment and clamped to the end
+ * of src_buf. */
 int ff_vk_host_map_buffer(FFVulkanContext *s, AVBufferRef **dst,
-                          uint8_t *src_data, const AVBufferRef *src_buf,
+                          uint8_t *src_data, VkDeviceSize size,
+                          const AVBufferRef *src_buf,
                           VkBufferUsageFlags usage);
 
 /**
