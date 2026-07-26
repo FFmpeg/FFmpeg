@@ -884,7 +884,8 @@ static void setup_curl(CurlContext *c)
     curl_easy_setopt(e, CURLOPT_TCP_KEEPALIVE, c->multiple_requests ? 1L : 0L);
     curl_easy_setopt(e, CURLOPT_FORBID_REUSE,  c->multiple_requests ? 0L : 1L);
     curl_easy_setopt(e, CURLOPT_HSTS_CTRL, (long)CURLHSTS_ENABLE);
-    curl_easy_setopt(e, CURLOPT_ACCEPT_ENCODING, "");
+    curl_easy_setopt(e, CURLOPT_ACCEPT_ENCODING,
+                     c->off > 0 || c->end_off > 0 ? "identity" : "");
     if (c->connect_timeout > 0)
         curl_easy_setopt(e, CURLOPT_CONNECTTIMEOUT_MS,
                          (long)c->connect_timeout * 1000);
