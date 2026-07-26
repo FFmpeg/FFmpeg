@@ -49,6 +49,9 @@ typedef struct FFv1ShaderParams {
     int pic_mode;
     uint32_t slice_size_max;
     uint32_t max_pixels_per_slice;
+
+    /* Decoder-only */
+    uint32_t remap_allowed;
 } FFv1ShaderParams;
 
 #endif /* AVCODEC_FFV1_VULKAN_H */

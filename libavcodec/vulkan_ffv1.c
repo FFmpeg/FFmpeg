@@ -347,13 +347,14 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
                                     2*f->slice_count*sizeof(uint32_t),
                                     VK_WHOLE_SIZE,
                                     VK_FORMAT_UNDEFINED);
-    if (fltmap_buf)
-        ff_vk_shader_update_desc_buffer(&ctx->s, exec, &fv->setup,
-                                        1, 3, 0,
-                                        fltmap_buf,
-                                        0,
-                                        VK_WHOLE_SIZE,
-                                        VK_FORMAT_UNDEFINED);
+    /* The binding is statically used by the shader, so it must always hold
+     * a valid buffer. */
+    ff_vk_shader_update_desc_buffer(&ctx->s, exec, &fv->setup,
+                                    1, 3, 0,
+                                    fltmap_buf ? fltmap_buf : slice_feedback,
+                                    0,
+                                    VK_WHOLE_SIZE,
+                                    VK_FORMAT_UNDEFINED);
 
     ff_vk_exec_bind_shader(&ctx->s, exec, &fv->setup);
 
@@ -367,6 +368,7 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
         .key_frame = f->picture.f->flags & AV_FRAME_FLAG_KEY,
         .crcref = f->crcref,
         .micro_version = f->micro_version,
+        .remap_allowed = !!fltmap_buf,
     };
 
     for (int i = 0; i < f->quant_table_count; i++) {

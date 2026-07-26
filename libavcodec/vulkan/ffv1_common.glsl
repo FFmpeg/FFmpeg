@@ -76,6 +76,9 @@ layout (push_constant, scalar) uniform pushConstants {
     int pic_mode;
     uint slice_size_max;
     uint max_pixels_per_slice;
+
+    /* Decoder-only */
+    bool remap_allowed;
 };
 
 #include "rangecoder.glsl"

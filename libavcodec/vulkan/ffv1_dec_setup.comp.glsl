@@ -202,8 +202,15 @@ bool decode_slice_header(uint slice_idx, inout SliceContext sc)
 
         if (micro_version >= 4) {
             sc.remap = get_usymbol(0);
-            if (sc.remap != 0 && decode_remap(slice_idx, sc))
-                return true;
+            if (sc.remap != 0) {
+                /* No fltmap buffer is bound unless the format can remap */
+                if (!remap_allowed) {
+                    sc.remap = 0;
+                    return true;
+                }
+                if (decode_remap(slice_idx, sc))
+                    return true;
+            }
         }
     }
 
