@@ -612,8 +612,8 @@ void ff_vk_free_buf(FFVulkanContext *s, FFVkBuffer *buf);
  * Threadsafe to use. Buffers are automatically mapped on creation if
  * VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT is set in mem_props. Users should
  * synchronize access themselvesd. Mainly meant for device-local buffers. */
-int ff_vk_get_pooled_buffer(FFVulkanContext *ctx, AVBufferPool **buf_pool,
-                            AVBufferRef **buf, VkBufferUsageFlags usage,
+int ff_vk_get_pooled_buffer(FFVulkanContext *ctx, AVRefStructPool **buf_pool,
+                            FFVkBuffer **buf, VkBufferUsageFlags usage,
                             void *create_pNext, size_t size,
                             VkMemoryPropertyFlagBits mem_props);
 
@@ -621,7 +621,7 @@ int ff_vk_get_pooled_buffer(FFVulkanContext *ctx, AVBufferPool **buf_pool,
  * References the source buffer. Imports size bytes starting at src_data,
  * rounded up to the host-pointer import alignment and clamped to the end
  * of src_buf. */
-int ff_vk_host_map_buffer(FFVulkanContext *s, AVBufferRef **dst,
+int ff_vk_host_map_buffer(FFVulkanContext *s, FFVkBuffer **dst,
                           uint8_t *src_data, VkDeviceSize size,
                           const AVBufferRef *src_buf,
                           VkBufferUsageFlags usage);

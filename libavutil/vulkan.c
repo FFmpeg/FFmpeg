@@ -1258,50 +1258,30 @@ void ff_vk_free_buf(FFVulkanContext *s, FFVkBuffer *buf)
     buf->mapped_mem = NULL;
 }
 
-static void free_data_buf(void *opaque, uint8_t *data)
+static void pooled_buf_free(AVRefStructOpaque opaque, void *obj)
 {
-    FFVulkanContext *ctx = opaque;
-    FFVkBuffer *buf = (FFVkBuffer *)data;
-    ff_vk_free_buf(ctx, buf);
-    av_free(data);
+    ff_vk_free_buf(opaque.nc, obj);
 }
 
-static AVBufferRef *alloc_data_buf(void *opaque, size_t size)
-{
-    AVBufferRef *ref;
-    uint8_t *buf = av_mallocz(size);
-    if (!buf)
-        return NULL;
-
-    ref = av_buffer_create(buf, size, free_data_buf, opaque, 0);
-    if (!ref)
-        av_free(buf);
-    return ref;
-}
-
-int ff_vk_get_pooled_buffer(FFVulkanContext *ctx, AVBufferPool **buf_pool,
-                            AVBufferRef **buf, VkBufferUsageFlags usage,
+int ff_vk_get_pooled_buffer(FFVulkanContext *ctx, AVRefStructPool **buf_pool,
+                            FFVkBuffer **buf, VkBufferUsageFlags usage,
                             void *create_pNext, size_t size,
                             VkMemoryPropertyFlagBits mem_props)
 {
     int err;
-    AVBufferRef *ref;
     FFVkBuffer *data;
 
-    *buf = NULL;
-
     if (!(*buf_pool)) {
-        *buf_pool = av_buffer_pool_init2(sizeof(FFVkBuffer), ctx,
-                                         alloc_data_buf, NULL);
+        *buf_pool = av_refstruct_pool_alloc_ext(sizeof(FFVkBuffer), 0, ctx,
+                                                NULL, NULL, pooled_buf_free,
+                                                NULL);
         if (!(*buf_pool))
             return AVERROR(ENOMEM);
     }
 
-    *buf = ref = av_buffer_pool_get(*buf_pool);
-    if (!ref)
+    *buf = data = av_refstruct_pool_get(*buf_pool);
+    if (!data)
         return AVERROR(ENOMEM);
-
-    data = (FFVkBuffer *)ref->data;
 
     if (data->size >= size)
         return 0;
@@ -1313,16 +1293,14 @@ int ff_vk_get_pooled_buffer(FFVulkanContext *ctx, AVBufferPool **buf_pool,
                            create_pNext, NULL, usage,
                            mem_props);
     if (err < 0) {
-        av_buffer_unref(&ref);
-        *buf = NULL;
+        av_refstruct_unref(buf);
         return err;
     }
 
     if (mem_props & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) {
         err = ff_vk_map_buffer(ctx, data, &data->mapped_mem, 0);
         if (err < 0) {
-            av_buffer_unref(&ref);
-            *buf = NULL;
+            av_refstruct_unref(buf);
             return err;
         }
     }
@@ -1376,15 +1354,12 @@ static int create_mapped_buffer(FFVulkanContext *s,
     return 0;
 }
 
-static void destroy_avvkbuf(void *opaque, uint8_t *data)
+static void host_map_free(AVRefStructOpaque opaque, void *obj)
 {
-    FFVulkanContext *s = opaque;
-    FFVkBuffer *buf = (FFVkBuffer *)data;
-    ff_vk_free_buf(s, buf);
-    av_free(buf);
+    ff_vk_free_buf(opaque.nc, obj);
 }
 
-int ff_vk_host_map_buffer(FFVulkanContext *s, AVBufferRef **dst,
+int ff_vk_host_map_buffer(FFVulkanContext *s, FFVkBuffer **dst,
                           uint8_t *src_data, VkDeviceSize size,
                           const AVBufferRef *src_buf,
                           VkBufferUsageFlags usage)
@@ -1441,7 +1416,7 @@ int ff_vk_host_map_buffer(FFVulkanContext *s, AVBufferRef **dst,
     buffer_size = FFALIGN(buffer_size, s->hprops.minImportedHostPointerAlignment);
 
     /* Create a buffer struct */
-    vkb = av_mallocz(sizeof(*vkb));
+    vkb = av_refstruct_alloc_ext(sizeof(*vkb), 0, s, host_map_free);
     if (!vkb) {
         av_buffer_unref(&ref);
         return AVERROR(ENOMEM);
@@ -1452,7 +1427,7 @@ int ff_vk_host_map_buffer(FFVulkanContext *s, AVBufferRef **dst,
                                props);
     if (err < 0) {
         av_buffer_unref(&ref);
-        av_free(vkb);
+        av_refstruct_unref(&vkb);
         return err;
     }
 
@@ -1471,14 +1446,7 @@ int ff_vk_host_map_buffer(FFVulkanContext *s, AVBufferRef **dst,
     vkb->size           = buffer_size - offs;
     vkb->flags         |= VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
-    /* Create a ref */
-    *dst = av_buffer_create((uint8_t *)vkb, sizeof(*vkb),
-                            destroy_avvkbuf, s, 0);
-    if (!(*dst)) {
-        destroy_avvkbuf(s, (uint8_t *)vkb);
-        *dst = NULL;
-        return AVERROR(ENOMEM);
-    }
+    *dst = vkb;
 
     return 0;
 }

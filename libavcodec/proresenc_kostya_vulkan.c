@@ -77,10 +77,10 @@ typedef struct SliceScore {
 
 typedef struct VulkanEncodeProresFrameData {
     /* Intermediate buffers */
-    AVBufferRef *out_data_ref[2];
-    AVBufferRef *slice_data_ref[2];
-    AVBufferRef *slice_score_ref[2];
-    AVBufferRef *frame_size_ref[2];
+    FFVkBuffer *out_data_ref[2];
+    FFVkBuffer *slice_data_ref[2];
+    FFVkBuffer *slice_score_ref[2];
+    FFVkBuffer *frame_size_ref[2];
 
     /* Copied from the source */
     int64_t pts;
@@ -103,10 +103,10 @@ typedef struct ProresVulkanContext {
     FFVkExecPool e;
     AVVulkanDeviceQueueFamily *transfer_qf;
     FFVkExecPool transfer_exec_pool;
-    AVBufferPool *pkt_buf_pool;
-    AVBufferPool *slice_data_buf_pool;
-    AVBufferPool *slice_score_buf_pool;
-    AVBufferPool *frame_size_buf_pool;
+    AVRefStructPool *pkt_buf_pool;
+    AVRefStructPool *slice_data_buf_pool;
+    AVRefStructPool *slice_score_buf_pool;
+    AVRefStructPool *frame_size_buf_pool;
 
     FFVulkanShader alpha_data_shd;
     FFVulkanShader slice_data_shd[2];
@@ -399,8 +399,8 @@ static int vulkan_encode_prores_submit_frame(AVCodecContext *avctx, FFVkExecCont
                                                 : (VK_MEMORY_PROPERTY_HOST_CACHED_BIT |
                                                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                                    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)));
-    pkt_vk_buf = (FFVkBuffer*)pd->out_data_ref[picture_idx]->data;
-    ff_vk_exec_add_dep_buf(vkctx, exec, &pd->out_data_ref[picture_idx], 1, 1);
+    pkt_vk_buf = pd->out_data_ref[picture_idx];
+    ff_vk_exec_add_dep_refstruct(vkctx, exec, pd->out_data_ref[picture_idx]);
 
     /* Allocate buffer for writing slice data */
     RET(ff_vk_get_pooled_buffer(vkctx, &pv->slice_data_buf_pool, &pd->slice_data_ref[picture_idx],
@@ -408,8 +408,8 @@ static int vulkan_encode_prores_submit_frame(AVCodecContext *avctx, FFVkExecCont
                                 VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, NULL,
                                 ctx->slices_per_picture * sizeof(SliceData),
                                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
-    slice_data_buf = (FFVkBuffer*)pd->slice_data_ref[picture_idx]->data;
-    ff_vk_exec_add_dep_buf(vkctx, exec, &pd->slice_data_ref[picture_idx], 1, 1);
+    slice_data_buf = pd->slice_data_ref[picture_idx];
+    ff_vk_exec_add_dep_refstruct(vkctx, exec, pd->slice_data_ref[picture_idx]);
 
     /* Allocate buffer for writing slice scores */
     RET(ff_vk_get_pooled_buffer(vkctx, &pv->slice_score_buf_pool, &pd->slice_score_ref[picture_idx],
@@ -417,8 +417,8 @@ static int vulkan_encode_prores_submit_frame(AVCodecContext *avctx, FFVkExecCont
                                 VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, NULL,
                                 ctx->slices_per_picture * sizeof(SliceScore),
                                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
-    slice_score_buf = (FFVkBuffer*)pd->slice_score_ref[picture_idx]->data;
-    ff_vk_exec_add_dep_buf(vkctx, exec, &pd->slice_score_ref[picture_idx], 1, 1);
+    slice_score_buf = pd->slice_score_ref[picture_idx];
+    ff_vk_exec_add_dep_refstruct(vkctx, exec, pd->slice_score_ref[picture_idx]);
 
     /* Allocate buffer for writing frame size */
     RET(ff_vk_get_pooled_buffer(vkctx, &pv->frame_size_buf_pool, &pd->frame_size_ref[picture_idx],
@@ -428,8 +428,8 @@ static int vulkan_encode_prores_submit_frame(AVCodecContext *avctx, FFVkExecCont
                                 VK_MEMORY_PROPERTY_HOST_CACHED_BIT |
                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                 VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
-    frame_size_buf = (FFVkBuffer*)pd->frame_size_ref[picture_idx]->data;
-    ff_vk_exec_add_dep_buf(vkctx, exec, &pd->frame_size_ref[picture_idx], 1, 1);
+    frame_size_buf = pd->frame_size_ref[picture_idx];
+    ff_vk_exec_add_dep_refstruct(vkctx, exec, pd->frame_size_ref[picture_idx]);
 
     /* Generate barriers and image views for frame images. */
     RET(ff_vk_exec_add_dep_frame(vkctx, exec, frame,
@@ -645,8 +645,7 @@ static int get_packet(AVCodecContext *avctx, FFVkExecContext *exec, AVPacket *pk
     int transfer_slices = vkctx->extensions & FF_VK_EXT_EXTERNAL_HOST_MEMORY;
     FFVkBuffer *out_data_buf, *frame_size_buf;
     VkMappedMemoryRange invalidate_data;
-    AVBufferRef *mapped_ref;
-    FFVkBuffer *mapped_buf;
+    FFVkBuffer *mapped_buf = NULL;
 
     /* Allocate packet */
     RET(ff_get_encode_buffer(avctx, pkt, pkt_size + FF_INPUT_BUFFER_MIN_SIZE, 0));
@@ -674,17 +673,16 @@ static int get_packet(AVCodecContext *avctx, FFVkExecContext *exec, AVPacket *pk
 
     /* Roll transfer execution context */
     if (transfer_slices) {
-        RET(ff_vk_host_map_buffer(vkctx, &mapped_ref, pkt->data, pkt->size,
+        RET(ff_vk_host_map_buffer(vkctx, &mapped_buf, pkt->data, pkt->size,
                                   pkt->buf, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
-        mapped_buf = (FFVkBuffer *)mapped_ref->data;
         transfer_exec = ff_vk_exec_get(vkctx, &pv->transfer_exec_pool);
         ff_vk_exec_start(vkctx, transfer_exec);
     }
 
     for (picture_idx = 0; picture_idx < ctx->pictures_per_frame; picture_idx++) {
         /* Fetch buffers for the current picture. */
-        out_data_buf = (FFVkBuffer *)pd->out_data_ref[picture_idx]->data;
-        frame_size_buf = (FFVkBuffer *)pd->frame_size_ref[picture_idx]->data;
+        out_data_buf = pd->out_data_ref[picture_idx];
+        frame_size_buf = pd->frame_size_ref[picture_idx];
 
         /* Invalidate slice/output data if needed */
         invalidate_data = (VkMappedMemoryRange) {
@@ -713,8 +711,7 @@ static int get_packet(AVCodecContext *avctx, FFVkExecContext *exec, AVPacket *pk
 
         if (transfer_slices) {
             /* Perform host mapped transfer of slice data */
-            ff_vk_exec_add_dep_buf(vkctx, transfer_exec, &pd->out_data_ref[picture_idx], 1, 0);
-            ff_vk_exec_add_dep_buf(vkctx, transfer_exec, &mapped_ref, 1, 0);
+            ff_vk_exec_move_dep_refstruct(vkctx, transfer_exec, &pd->out_data_ref[picture_idx]);
             vk->CmdCopyBuffer(transfer_exec->buf, out_data_buf->buf, mapped_buf->buf, 1, & (VkBufferCopy) {
                 .srcOffset = 0,
                 .dstOffset = mapped_buf->virtual_offset + slice_sizes - pkt->data,
@@ -727,7 +724,7 @@ static int get_packet(AVCodecContext *avctx, FFVkExecContext *exec, AVPacket *pk
                 vk->InvalidateMappedMemoryRanges(vkctx->hwctx->act_dev, 1, &invalidate_data);
             }
             memcpy(slice_sizes, out_data_buf->mapped_mem, buf - slice_sizes);
-            av_buffer_unref(&pd->out_data_ref[picture_idx]);
+            av_refstruct_unref(&pd->out_data_ref[picture_idx]);
         }
 
         /* Write picture size with header */
@@ -735,9 +732,9 @@ static int get_packet(AVCodecContext *avctx, FFVkExecContext *exec, AVPacket *pk
         bytestream_put_be32(&picture_size_pos, picture_size);
 
         /* Slice output buffers no longer needed */
-        av_buffer_unref(&pd->slice_data_ref[picture_idx]);
-        av_buffer_unref(&pd->slice_score_ref[picture_idx]);
-        av_buffer_unref(&pd->frame_size_ref[picture_idx]);
+        av_refstruct_unref(&pd->slice_data_ref[picture_idx]);
+        av_refstruct_unref(&pd->slice_score_ref[picture_idx]);
+        av_refstruct_unref(&pd->frame_size_ref[picture_idx]);
     }
 
     /* Write frame size in header */
@@ -750,11 +747,13 @@ static int get_packet(AVCodecContext *avctx, FFVkExecContext *exec, AVPacket *pk
 
     /* Wait for slice transfer */
     if (transfer_slices) {
+        ff_vk_exec_move_dep_refstruct(vkctx, transfer_exec, &mapped_buf);
         RET(ff_vk_exec_submit(vkctx, transfer_exec));
         ff_vk_exec_wait(vkctx, transfer_exec);
     }
 
 fail:
+    av_refstruct_unref(&mapped_buf);
     return err;
 }
 
@@ -841,10 +840,10 @@ static av_cold int encode_close(AVCodecContext *avctx)
 
     ff_vk_free_buf(vkctx, &pv->prores_data_tables_buf);
 
-    av_buffer_pool_uninit(&pv->pkt_buf_pool);
-    av_buffer_pool_uninit(&pv->slice_data_buf_pool);
-    av_buffer_pool_uninit(&pv->slice_score_buf_pool);
-    av_buffer_pool_uninit(&pv->frame_size_buf_pool);
+    av_refstruct_pool_uninit(&pv->pkt_buf_pool);
+    av_refstruct_pool_uninit(&pv->slice_data_buf_pool);
+    av_refstruct_pool_uninit(&pv->slice_score_buf_pool);
+    av_refstruct_pool_uninit(&pv->frame_size_buf_pool);
 
     ff_vk_uninit(vkctx);
 

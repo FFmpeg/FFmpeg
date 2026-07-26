@@ -35,7 +35,7 @@ typedef struct SceneDetectVulkanContext {
     FFVkExecPool e;
     AVVulkanDeviceQueueFamily *qf;
     FFVulkanShader shd;
-    AVBufferPool *det_buf_pool;
+    AVRefStructPool *det_buf_pool;
 
     double threshold;
     int sc_pass;
@@ -144,8 +144,7 @@ static int scdet_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
     FFVulkanContext *vkctx = &s->vkctx;
     FFVulkanFunctions *vk = &vkctx->vkfn;
     FFVkExecContext *exec = NULL;
-    AVBufferRef *buf = NULL;
-    FFVkBuffer *buf_vk;
+    FFVkBuffer *buf_vk = NULL;
 
     SceneDetectBuf *sad;
     double score = 0.0;
@@ -160,7 +159,7 @@ static int scdet_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
     if (!s->prev)
         goto done;
 
-    RET(ff_vk_get_pooled_buffer(vkctx, &s->det_buf_pool, &buf,
+    RET(ff_vk_get_pooled_buffer(vkctx, &s->det_buf_pool, &buf_vk,
                                 VK_BUFFER_USAGE_TRANSFER_DST_BIT |
                                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                                 NULL,
@@ -168,7 +167,6 @@ static int scdet_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
                                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                 VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
-    buf_vk = (FFVkBuffer *)buf->data;
     sad = (SceneDetectBuf *) buf_vk->mapped_mem;
 
     exec = ff_vk_exec_get(vkctx, &s->e);
@@ -289,7 +287,7 @@ done:
                score, pts);
     }
 
-    av_buffer_unref(&buf);
+    av_refstruct_unref(&buf_vk);
     if (!s->sc_pass || score >= s->threshold)
         return ff_filter_frame(outlink, in);
     else {
@@ -301,7 +299,7 @@ fail:
     if (exec)
         ff_vk_exec_discard_deps(&s->vkctx, exec);
     av_frame_free(&in);
-    av_buffer_unref(&buf);
+    av_refstruct_unref(&buf_vk);
     return err;
 }
 
@@ -316,7 +314,7 @@ static void scdet_vulkan_uninit(AVFilterContext *avctx)
     ff_vk_exec_pool_free(vkctx, &s->e);
     ff_vk_shader_free(vkctx, &s->shd);
 
-    av_buffer_pool_uninit(&s->det_buf_pool);
+    av_refstruct_pool_uninit(&s->det_buf_pool);
 
     ff_vk_uninit(&s->vkctx);
 

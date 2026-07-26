@@ -68,7 +68,7 @@ av_cold void ff_vulkan_encode_uninit(FFVulkanEncodeContext *ctx)
     for (FFHWBaseEncodePicture *pic = ctx->base.pic_start; pic; pic = pic->next)
         vulkan_encode_free_pic(ctx, pic);
 
-    av_buffer_pool_uninit(&ctx->buf_pool);
+    av_refstruct_pool_uninit(&ctx->buf_pool);
 
     ff_hw_base_encode_close(&ctx->base);
 
@@ -201,7 +201,7 @@ static int vulkan_encode_issue(AVCodecContext *avctx,
     if (err < 0)
         return err;
 
-    sd_buf = (FFVkBuffer *)vp->pkt_buf->data;
+    sd_buf = vp->pkt_buf;
 
     /* Setup rate control */
     err = init_pic_rc(avctx, base_pic, &rc_info, &rc_layer);
@@ -358,9 +358,7 @@ static int vulkan_encode_issue(AVCodecContext *avctx,
     cmd_buf = exec->buf;
 
     /* Output packet buffer */
-    err = ff_vk_exec_add_dep_buf(&ctx->s, exec, &vp->pkt_buf, 1, 1);
-    if (err < 0)
-        goto fail;
+    ff_vk_exec_add_dep_refstruct(&ctx->s, exec, vp->pkt_buf);
 
     /* Source image */
     err = ff_vk_exec_add_dep_frame(&ctx->s, exec, src,
@@ -458,6 +456,11 @@ fail:
     return err;
 }
 
+static void pkt_buf_free(void *opaque, uint8_t *data)
+{
+    av_refstruct_unref(&opaque);
+}
+
 static void vulkan_encode_wait(AVCodecContext *avctx,
                                FFHWBaseEncodePicture *base_pic)
 {
@@ -482,7 +485,7 @@ static int vulkan_encode_output(AVCodecContext *avctx,
     FFHWBaseEncodeContext *base_ctx = &ctx->base;
     AVPacket *pkt_ptr = pkt;
 
-    FFVkBuffer *sd_buf = (FFVkBuffer *)vp->pkt_buf->data;
+    FFVkBuffer *sd_buf = vp->pkt_buf;
     uint32_t *query_data;
 
     vulkan_encode_wait(avctx, base_pic);
@@ -551,7 +554,7 @@ static int vulkan_encode_output(AVCodecContext *avctx,
         }
     } else {
         if (ctx->prev_buf_ref) {
-            FFVkBuffer *prev_sd_buf = (FFVkBuffer *)ctx->prev_buf_ref->data;
+            FFVkBuffer *prev_sd_buf = ctx->prev_buf_ref;
             size_t prev_size = ctx->prev_buf_size;
             size_t size = (vp->slices_offset + query_data[0] + query_data[1]);
 
@@ -562,17 +565,20 @@ static int vulkan_encode_output(AVCodecContext *avctx,
             memcpy(pkt->data, prev_sd_buf->mapped_mem, prev_size);
             memcpy(pkt->data + prev_size, sd_buf->mapped_mem, size);
 
-            av_buffer_unref(&ctx->prev_buf_ref);
-            av_buffer_unref(&vp->pkt_buf);
+            av_refstruct_unref(&ctx->prev_buf_ref);
+            av_refstruct_unref(&vp->pkt_buf);
         } else {
             pkt->data = sd_buf->mapped_mem;
             pkt->size = vp->slices_offset + /* base offset */
                         query_data[0]       /* secondary offset */ +
                         query_data[1]       /* size */;
 
-            /* Move reference */
-            pkt->buf = vp->pkt_buf;
-            vp->pkt_buf = NULL;
+            /* Hand the pooled buffer to the packet with no copy */
+            pkt->buf = av_buffer_create(sd_buf->mapped_mem, pkt->size,
+                                        pkt_buf_free, vp->pkt_buf, 0);
+            if (!pkt->buf)
+                return AVERROR(ENOMEM);
+            vp->pkt_buf = NULL; /* ownership passed to pkt->buf */
         }
     }
 

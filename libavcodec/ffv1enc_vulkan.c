@@ -41,8 +41,8 @@
 
 typedef struct VulkanEncodeFFv1FrameData {
     /* Output data */
-    AVBufferRef *out_data_ref;
-    AVBufferRef *compacted_data_ref;
+    FFVkBuffer *out_data_ref;
+    FFVkBuffer *compacted_data_ref;
 
     /* Copied from the source */
     int64_t pts;
@@ -81,20 +81,20 @@ typedef struct VulkanEncodeFFv1Context {
     FFVkBuffer results_buf;
 
     /* Slice data buffer pool */
-    AVBufferPool *slice_data_pool;
-    AVBufferRef *keyframe_slice_data_ref;
+    AVRefStructPool *slice_data_pool;
+    FFVkBuffer *keyframe_slice_data_ref;
 
     /* Remap data pool */
-    AVBufferPool *remap_data_pool;
+    AVRefStructPool *remap_data_pool;
 
     /* Output data buffer */
-    AVBufferPool *out_data_pool;
+    AVRefStructPool *out_data_pool;
 
     /* Gathered (contiguous) device-local buffer pool */
-    AVBufferPool *gathered_data_pool;
+    AVRefStructPool *gathered_data_pool;
 
     /* Host-visible readback buffer pool */
-    AVBufferPool *compacted_data_pool;
+    AVRefStructPool *compacted_data_pool;
 
     /* Intermediate frame pool */
     AVBufferRef *intermediate_frames_ref;
@@ -289,22 +289,19 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
     VulkanEncodeFFv1FrameData *fd = exec->opaque;
 
     /* Slice data */
-    AVBufferRef *slice_data_ref;
     FFVkBuffer *slice_data_buf;
     uint32_t plane_state_size;
     uint32_t slice_state_size;
     uint32_t slice_data_size;
 
     /* Remap data */
-    AVBufferRef *remap_data_ref = NULL;
     FFVkBuffer *remap_data_buf = NULL;
     uint32_t remap_data_size = 0;
 
     /* Output data */
     size_t maxsize;
     FFVkBuffer *out_data_buf;
-    AVBufferRef *gathered_ref = NULL;
-    FFVkBuffer *gathered_buf;
+    FFVkBuffer *gathered_buf = NULL;
     FFVkBuffer *compacted_buf;
 
     int has_inter = avctx->gop_size > 1;
@@ -318,7 +315,7 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
     /* Frame state */
     f->cur_enc_frame = pict;
     if (avctx->gop_size == 0 || f->picture_number % avctx->gop_size == 0) {
-        av_buffer_unref(&fv->keyframe_slice_data_ref);
+        av_refstruct_unref(&fv->keyframe_slice_data_ref);
         f->key_frame = fd->key_frame = 1;
         f->gob_count++;
     } else {
@@ -341,19 +338,19 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
     slice_state_size = FFALIGN(slice_state_size, 8);
 
     /* Allocate slice data buffer */
-    slice_data_ref = fv->keyframe_slice_data_ref;
-    if (!slice_data_ref) {
+    slice_data_buf = fv->keyframe_slice_data_ref ?
+                     av_refstruct_ref(fv->keyframe_slice_data_ref) : NULL;
+    if (!slice_data_buf) {
         RET(ff_vk_get_pooled_buffer(&fv->s, &fv->slice_data_pool,
-                                    &slice_data_ref,
+                                    &slice_data_buf,
                                     VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                                     NULL, slice_state_size*f->slice_count,
                                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
 
         /* Only save it if we're going to use it again */
         if (has_inter)
-            fv->keyframe_slice_data_ref = slice_data_ref;
+            fv->keyframe_slice_data_ref = av_refstruct_ref(slice_data_buf);
     }
-    slice_data_buf = (FFVkBuffer *)slice_data_ref->data;
 
     if (f->remap_mode) {
         if (fv->is_float32) {
@@ -365,11 +362,10 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
         }
 
         RET(ff_vk_get_pooled_buffer(&fv->s, &fv->remap_data_pool,
-                                    &remap_data_ref,
+                                    &remap_data_buf,
                                     VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                                     NULL, remap_data_size*f->slice_count,
                                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
-        remap_data_buf = (FFVkBuffer *)remap_data_ref->data;
     }
 
     /* Output buffer size */
@@ -383,17 +379,16 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
                                 VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                                 NULL, maxsize,
                                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
-    out_data_buf = (FFVkBuffer *)fd->out_data_ref->data;
+    out_data_buf = fd->out_data_ref;
 
     /* Device-local gather destination */
     RET(ff_vk_get_pooled_buffer(&fv->s, &fv->gathered_data_pool,
-                                &gathered_ref,
+                                &gathered_buf,
                                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
                                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                                 VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                                 NULL, maxsize,
                                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
-    gathered_buf = (FFVkBuffer *)gathered_ref->data;
 
     /* Contiguous output, read back by the CPU. */
     RET(ff_vk_get_pooled_buffer(&fv->s, &fv->compacted_data_pool,
@@ -402,7 +397,7 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
                                 NULL, maxsize,
                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                 fv->s.host_cached_flag));
-    compacted_buf = (FFVkBuffer *)fd->compacted_data_ref->data;
+    compacted_buf = fd->compacted_data_ref;
 
     /* Image views */
     AVFrame *src = (AVFrame *)pict;
@@ -467,15 +462,8 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
                                 f->remap_mode ? FF_VK_REP_UINT
                                               : FF_VK_REP_NATIVE));
 
-    ff_vk_exec_add_dep_buf(&fv->s, exec, &slice_data_ref, 1, has_inter);
-    ff_vk_exec_add_dep_buf(&fv->s, exec, &fd->out_data_ref, 1, 1);
-    ff_vk_exec_add_dep_buf(&fv->s, exec, &gathered_ref, 1, 0);
-    gathered_ref = NULL; /* Ownership passed */
-    ff_vk_exec_add_dep_buf(&fv->s, exec, &fd->compacted_data_ref, 1, 1);
-    if (f->remap_mode) {
-        ff_vk_exec_add_dep_buf(&fv->s, exec, &remap_data_ref, 1, 0);
-        remap_data_ref = NULL;
-    }
+    ff_vk_exec_add_dep_refstruct(&fv->s, exec, fd->out_data_ref);
+    ff_vk_exec_add_dep_refstruct(&fv->s, exec, fd->compacted_data_ref);
 
     RET(ff_vk_exec_add_dep_frame(&fv->s, exec, src,
                                  VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
@@ -758,20 +746,24 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
                       1, &(VkBufferCopy) { .size = maxsize });
 
     /* Submit */
+    ff_vk_exec_move_dep_refstruct(&fv->s, exec, &slice_data_buf);
+    ff_vk_exec_move_dep_refstruct(&fv->s, exec, &gathered_buf);
+    if (remap_data_buf)
+        ff_vk_exec_move_dep_refstruct(&fv->s, exec, &remap_data_buf);
     err = ff_vk_exec_submit(&fv->s, exec);
     if (err < 0)
-        return err;
+        goto fail;
 
     f->picture_number++;
 
-    /* This, if needed, was referenced by the execution context
-     * as it was declared as a dependency. */
     av_frame_free(&tmp);
     return 0;
 
 fail:
     av_frame_free(&tmp);
-    av_buffer_unref(&gathered_ref);
+    av_refstruct_unref(&slice_data_buf);
+    av_refstruct_unref(&remap_data_buf);
+    av_refstruct_unref(&gathered_buf);
     ff_vk_exec_discard_deps(&fv->s, exec);
 
     return err;
@@ -780,8 +772,7 @@ fail:
 /* Return the gathered-output buffer to its pool when the packet is freed. */
 static void ffv1_vk_packet_free(void *opaque, uint8_t *data)
 {
-    AVBufferRef *buf_ref = opaque;
-    av_buffer_unref(&buf_ref);
+    av_refstruct_unref(&opaque);
 }
 
 static int get_packet(AVCodecContext *avctx, FFVkExecContext *exec,
@@ -792,7 +783,7 @@ static int get_packet(AVCodecContext *avctx, FFVkExecContext *exec,
     FFVulkanFunctions *vk = &fv->s.vkfn;
     VulkanEncodeFFv1FrameData *fd = exec->opaque;
 
-    FFVkBuffer *compacted_buf = (FFVkBuffer *)fd->compacted_data_ref->data;
+    FFVkBuffer *compacted_buf = fd->compacted_data_ref;
 
     /* Make sure the encode + gather submission is done */
     ff_vk_exec_wait(&fv->s, exec);
@@ -837,8 +828,8 @@ static int get_packet(AVCodecContext *avctx, FFVkExecContext *exec,
     pkt->buf = av_buffer_create(compacted_buf->mapped_mem, compacted_buf->size,
                                 ffv1_vk_packet_free, fd->compacted_data_ref, 0);
     if (!pkt->buf) {
-        av_buffer_unref(&fd->out_data_ref);
-        av_buffer_unref(&fd->compacted_data_ref);
+        av_refstruct_unref(&fd->out_data_ref);
+        av_refstruct_unref(&fd->compacted_data_ref);
         return AVERROR(ENOMEM);
     }
     fd->compacted_data_ref = NULL; /* ownership passed to pkt->buf */
@@ -855,7 +846,7 @@ static int get_packet(AVCodecContext *avctx, FFVkExecContext *exec,
         fd->frame_opaque_ref = NULL;
     }
 
-    av_buffer_unref(&fd->out_data_ref);
+    av_refstruct_unref(&fd->out_data_ref);
 
     return 0;
 }
@@ -1592,8 +1583,8 @@ static av_cold int vulkan_encode_ffv1_close(AVCodecContext *avctx)
     if (fv->exec_ctx_info) {
         for (int i = 0; i < fv->async_depth; i++) {
             VulkanEncodeFFv1FrameData *fd = &fv->exec_ctx_info[i];
-            av_buffer_unref(&fd->out_data_ref);
-            av_buffer_unref(&fd->compacted_data_ref);
+            av_refstruct_unref(&fd->out_data_ref);
+            av_refstruct_unref(&fd->compacted_data_ref);
             av_buffer_unref(&fd->frame_opaque_ref);
         }
     }
@@ -1601,13 +1592,13 @@ static av_cold int vulkan_encode_ffv1_close(AVCodecContext *avctx)
 
     av_buffer_unref(&fv->intermediate_frames_ref);
 
-    av_buffer_pool_uninit(&fv->out_data_pool);
-    av_buffer_pool_uninit(&fv->gathered_data_pool);
-    av_buffer_pool_uninit(&fv->compacted_data_pool);
+    av_refstruct_pool_uninit(&fv->out_data_pool);
+    av_refstruct_pool_uninit(&fv->gathered_data_pool);
+    av_refstruct_pool_uninit(&fv->compacted_data_pool);
 
-    av_buffer_unref(&fv->keyframe_slice_data_ref);
-    av_buffer_pool_uninit(&fv->slice_data_pool);
-    av_buffer_pool_uninit(&fv->remap_data_pool);
+    av_refstruct_unref(&fv->keyframe_slice_data_ref);
+    av_refstruct_pool_uninit(&fv->slice_data_pool);
+    av_refstruct_pool_uninit(&fv->remap_data_pool);
 
     ff_vk_free_buf(&fv->s, &fv->results_buf);
 

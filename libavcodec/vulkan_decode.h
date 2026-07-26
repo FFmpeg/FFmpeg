@@ -41,7 +41,7 @@ typedef struct FFVulkanDecodeShared {
     AVVulkanDeviceQueueFamily *qf;
     FFVkExecPool exec_pool;
 
-    AVBufferPool *buf_pool;
+    AVRefStructPool *buf_pool;
 
     VkVideoCapabilitiesKHR caps;
     VkVideoDecodeCapabilitiesKHR dec_caps;
@@ -96,7 +96,7 @@ typedef struct FFVulkanDecodePicture {
     VkVideoDecodeInfoKHR            decode_info;
 
     /* Slice data */
-    AVBufferRef                    *slices_buf;
+    FFVkBuffer                     *slices_buf;
     size_t                          slices_size;
 
     /* Vulkan functions needed for destruction, as no other context is guaranteed to exist */
@@ -154,12 +154,6 @@ int ff_vk_decode_frame(AVCodecContext *avctx,
  * Free a frame and its state.
  */
 void ff_vk_decode_free_frame(AVHWDeviceContext *dev_ctx, FFVulkanDecodePicture *vp);
-
-/**
- * Get an FFVkBuffer suitable for decoding from.
- */
-int ff_vk_get_decode_buffer(FFVulkanDecodeContext *ctx, AVBufferRef **buf,
-                            void *create_pNext, size_t size);
 
 /**
  * Create VkVideoSessionParametersKHR wrapped in an AVBufferRef.

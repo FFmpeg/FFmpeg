@@ -46,8 +46,8 @@ typedef struct NLMeansVulkanContext {
     FFVkExecPool e;
     AVVulkanDeviceQueueFamily *qf;
 
-    AVBufferPool *integral_buf_pool;
-    AVBufferPool *ws_buf_pool;
+    AVRefStructPool *integral_buf_pool;
+    AVRefStructPool *ws_buf_pool;
 
     FFVkBuffer xyoffsets_buf;
 
@@ -442,14 +442,12 @@ static int nlmeans_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
     int offsets_dispatched = 0;
 
     /* Integral */
-    AVBufferRef *integral_buf = NULL;
-    FFVkBuffer *integral_vk;
+    FFVkBuffer *integral_vk = NULL;
     size_t int_stride;
     size_t int_size;
 
     /* Weights/sums */
-    AVBufferRef *ws_buf = NULL;
-    FFVkBuffer *ws_vk;
+    FFVkBuffer *ws_vk = NULL;
     uint32_t ws_count = 0;
     uint32_t ws_offset[4];
     uint32_t ws_stride[4];
@@ -492,7 +490,7 @@ static int nlmeans_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
     ws_size = ws_count * sizeof(float);
 
     /* Buffers */
-    err = ff_vk_get_pooled_buffer(&s->vkctx, &s->integral_buf_pool, &integral_buf,
+    err = ff_vk_get_pooled_buffer(&s->vkctx, &s->integral_buf_pool, &integral_vk,
                                   VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                                   VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                                   NULL,
@@ -500,9 +498,7 @@ static int nlmeans_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
                                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     if (err < 0)
         return err;
-    integral_vk = (FFVkBuffer *)integral_buf->data;
-
-    err = ff_vk_get_pooled_buffer(&s->vkctx, &s->ws_buf_pool, &ws_buf,
+    err = ff_vk_get_pooled_buffer(&s->vkctx, &s->ws_buf_pool, &ws_vk,
                                   VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                                   VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                                   NULL,
@@ -510,8 +506,6 @@ static int nlmeans_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
                                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     if (err < 0)
         return err;
-    ws_vk = (FFVkBuffer *)ws_buf->data;
-
     /* Output frame */
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
@@ -530,12 +524,6 @@ static int nlmeans_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
     RET(ff_vk_exec_add_dep_frame(vkctx, exec, out,
                                  VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
                                  VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT));
-
-    RET(ff_vk_exec_add_dep_buf(vkctx, exec, &integral_buf, 1, 0));
-    integral_buf = NULL;
-
-    RET(ff_vk_exec_add_dep_buf(vkctx, exec, &ws_buf,       1, 0));
-    ws_buf = NULL;
 
     /* Input frame prep */
     RET(ff_vk_create_imageviews(vkctx, exec, in_views, in, FF_VK_REP_FLOAT));
@@ -724,9 +712,11 @@ static int nlmeans_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
     RET(denoise_pass(s, exec, ws_vk, comp_offs, comp_planes, ws_offset, ws_stride,
                      ws_count, s->opts.t, desc->nb_components));
 
+    ff_vk_exec_move_dep_refstruct(vkctx, exec, &integral_vk);
+    ff_vk_exec_move_dep_refstruct(vkctx, exec, &ws_vk);
     err = ff_vk_exec_submit(vkctx, exec);
     if (err < 0)
-        return err;
+        goto fail;
 
     err = av_frame_copy_props(out, in);
     if (err < 0)
@@ -737,8 +727,8 @@ static int nlmeans_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
     return ff_filter_frame(outlink, out);
 
 fail:
-    av_buffer_unref(&integral_buf);
-    av_buffer_unref(&ws_buf);
+    av_refstruct_unref(&integral_vk);
+    av_refstruct_unref(&ws_vk);
     av_frame_free(&in);
     av_frame_free(&out);
     return err;
@@ -755,8 +745,8 @@ static void nlmeans_vulkan_uninit(AVFilterContext *avctx)
     ff_vk_shader_free(vkctx, &s->shd_weights);
     ff_vk_shader_free(vkctx, &s->shd_denoise);
 
-    av_buffer_pool_uninit(&s->integral_buf_pool);
-    av_buffer_pool_uninit(&s->ws_buf_pool);
+    av_refstruct_pool_uninit(&s->integral_buf_pool);
+    av_refstruct_pool_uninit(&s->ws_buf_pool);
 
     ff_vk_uninit(&s->vkctx);
 

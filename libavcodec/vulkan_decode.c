@@ -284,10 +284,9 @@ int ff_vk_decode_add_slice(AVCodecContext *avctx, FFVulkanDecodePicture *vp,
         slice_off[nb] = vp->slices_size;
     }
 
-    vkbuf = vp->slices_buf ? (FFVkBuffer *)vp->slices_buf->data : NULL;
+    vkbuf = vp->slices_buf;
     if (!vkbuf || vkbuf->size < new_size) {
         int err;
-        AVBufferRef *new_ref;
         FFVkBuffer *new_buf;
 
         /* No point in requesting anything smaller. */
@@ -306,7 +305,7 @@ int ff_vk_decode_add_slice(AVCodecContext *avctx, FFVulkanDecodePicture *vp,
             buf_pnext = (void *)ff_vk_find_struct(ctx->s.hwfc->create_pnext,
                                                   VK_STRUCTURE_TYPE_VIDEO_PROFILE_LIST_INFO_KHR);
 
-        err = ff_vk_get_pooled_buffer(&ctx->s, &ctx->buf_pool, &new_ref,
+        err = ff_vk_get_pooled_buffer(&ctx->s, &ctx->buf_pool, &new_buf,
                                       DECODER_IS_SDR(avctx->codec_id) ?
                                       (VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                                        VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) :
@@ -318,15 +317,13 @@ int ff_vk_decode_add_slice(AVCodecContext *avctx, FFVulkanDecodePicture *vp,
         if (err < 0)
             return err;
 
-        new_buf = (FFVkBuffer *)new_ref->data;
-
         /* Copy data from the old buffer */
         if (vkbuf) {
             memcpy(new_buf->mapped_mem, vkbuf->mapped_mem, vp->slices_size);
-            av_buffer_unref(&vp->slices_buf);
+            av_refstruct_unref(&vp->slices_buf);
         }
 
-        vp->slices_buf = new_ref;
+        vp->slices_buf = new_buf;
         vkbuf = new_buf;
     }
     slices = vkbuf->mapped_mem;
@@ -484,7 +481,7 @@ int ff_vk_decode_frame(AVCodecContext *avctx,
     cur_vk_ref[0].slotIndex = -1;
     decode_start.referenceSlotCount++;
 
-    sd_buf = (FFVkBuffer *)vp->slices_buf->data;
+    sd_buf = vp->slices_buf;
 
     /* Flush if needed */
     if (!(sd_buf->flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
@@ -514,11 +511,8 @@ int ff_vk_decode_frame(AVCodecContext *avctx,
         return err;
     cmd_buf = exec->buf;
 
-    /* Slices */
-    err = ff_vk_exec_add_dep_buf(&ctx->s, exec, &vp->slices_buf, 1, 0);
-    if (err < 0)
-        return err;
-    vp->slices_buf = NULL; /* Owned by the exec buffer from now on */
+    /* Slices; owned by the execution from now on */
+    ff_vk_exec_move_dep_refstruct(&ctx->s, exec, &vp->slices_buf);
 
     /* Parameters */
     err = ff_vk_exec_add_dep_buf(&ctx->s, exec, &dec->session_params, 1, 1);
@@ -662,7 +656,7 @@ void ff_vk_decode_free_frame(AVHWDeviceContext *dev_ctx, FFVulkanDecodePicture *
         vp->wait_semaphores(hwctx->act_dev, &sem_wait, UINT64_MAX);
 
     /* Free slices data */
-    av_buffer_unref(&vp->slices_buf);
+    av_refstruct_unref(&vp->slices_buf);
 
     /* Destroy image view (out) */
     for (int i = 0; i < AV_NUM_DATA_POINTERS; i++) {
@@ -688,7 +682,7 @@ static void free_common(AVRefStructOpaque unused, void *obj)
     /* This also frees all references from this pool */
     av_frame_free(&ctx->common.layered_frame);
 
-    av_buffer_pool_uninit(&ctx->buf_pool);
+    av_refstruct_pool_uninit(&ctx->buf_pool);
 
     ff_vk_video_common_uninit(s, &ctx->common);
 

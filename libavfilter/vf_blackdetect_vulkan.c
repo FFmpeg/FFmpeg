@@ -35,7 +35,7 @@ typedef struct BlackDetectVulkanContext {
     FFVkExecPool e;
     AVVulkanDeviceQueueFamily *qf;
     FFVulkanShader shd;
-    AVBufferPool *sum_buf_pool;
+    AVRefStructPool *sum_buf_pool;
 
     double picture_black_ratio_th;
     double pixel_black_th;
@@ -182,8 +182,7 @@ static int blackdetect_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
     FFVulkanContext *vkctx = &s->vkctx;
     FFVulkanFunctions *vk = &vkctx->vkfn;
     FFVkExecContext *exec = NULL;
-    AVBufferRef *sum_buf = NULL;
-    FFVkBuffer *sum_vk;
+    FFVkBuffer *sum_vk = NULL;
 
     BlackDetectBuf *sum;
     BlackDetectPushData push_data;
@@ -202,7 +201,7 @@ static int blackdetect_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
     if (!s->initialized)
         RET(init_filter(ctx));
 
-    err = ff_vk_get_pooled_buffer(vkctx, &s->sum_buf_pool, &sum_buf,
+    err = ff_vk_get_pooled_buffer(vkctx, &s->sum_buf_pool, &sum_vk,
                                   VK_BUFFER_USAGE_TRANSFER_DST_BIT |
                                   VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                                   NULL,
@@ -212,7 +211,6 @@ static int blackdetect_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
                                   VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     if (err < 0)
         return err;
-    sum_vk = (FFVkBuffer *)sum_buf->data;
     sum = (BlackDetectBuf *) sum_vk->mapped_mem;
 
     exec = ff_vk_exec_get(vkctx, &s->e);
@@ -308,14 +306,14 @@ static int blackdetect_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
     evaluate(link, in, sum);
     s->last_pts = in->pts;
 
-    av_buffer_unref(&sum_buf);
+    av_refstruct_unref(&sum_vk);
     return ff_filter_frame(outlink, in);
 
 fail:
     if (exec)
         ff_vk_exec_discard_deps(&s->vkctx, exec);
     av_frame_free(&in);
-    av_buffer_unref(&sum_buf);
+    av_refstruct_unref(&sum_vk);
     return err;
 }
 
@@ -332,7 +330,7 @@ static void blackdetect_vulkan_uninit(AVFilterContext *avctx)
     ff_vk_exec_pool_free(vkctx, &s->e);
     ff_vk_shader_free(vkctx, &s->shd);
 
-    av_buffer_pool_uninit(&s->sum_buf_pool);
+    av_refstruct_pool_uninit(&s->sum_buf_pool);
 
     ff_vk_uninit(&s->vkctx);
 
