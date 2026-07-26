@@ -82,6 +82,17 @@ size_t ff_safe_queue_size(SafeQueue *sq)
     return sq ? ff_queue_size(sq->q) : 0;
 }
 
+void ff_safe_queue_wait_for_size(SafeQueue *sq, size_t min_size)
+{
+    if (!sq)
+        return;
+
+    ff_mutex_lock(&sq->mutex);
+    while (ff_queue_size(sq->q) < min_size)
+        dnn_cond_wait(&sq->cond, &sq->mutex);
+    ff_mutex_unlock(&sq->mutex);
+}
+
 int ff_safe_queue_push_front(SafeQueue *sq, void *v)
 {
     int ret;
