@@ -145,6 +145,8 @@ static void load_enabled_qfs(FFVulkanContext *s)
     }
 }
 
+static void reset_imageviews(AVRefStructOpaque unused, void *obj);
+
 int ff_vk_load_props(FFVulkanContext *s)
 {
     FFVulkanFunctions *vk = &s->vkfn;
@@ -184,6 +186,14 @@ int ff_vk_load_props(FFVulkanContext *s)
                      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES);
     FF_VK_STRUCT_EXT(s, &s->feats, &s->atomic_float_feats, FF_VK_EXT_ATOMIC_FLOAT,
                      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT);
+
+    if (!s->imageviews_pool) {
+        s->imageviews_pool = av_refstruct_pool_alloc_ext(sizeof(FFVkImageViews), 0,
+                                                         NULL, NULL, reset_imageviews,
+                                                         NULL, NULL);
+        if (!s->imageviews_pool)
+            return AVERROR(ENOMEM);
+    }
 
     /* Try allocating 1024 layouts */
     s->host_image_copy_layouts = av_malloc(sizeof(*s->host_image_copy_layouts)*1024);
@@ -1785,6 +1795,37 @@ const char *ff_vk_shader_rep_fmt(enum AVPixelFormat pix_fmt,
     }
 }
 
+static void reset_imageviews(AVRefStructOpaque unused, void *obj)
+{
+    FFVkImageViews *iv = obj;
+
+    for (int i = 0; i < iv->nb_views; i++) {
+        if (iv->views[i])
+            iv->destroy_image_view(iv->dev, iv->views[i], iv->alloc);
+    }
+
+    memset(iv->views, 0, sizeof(iv->views));
+}
+
+FFVkImageViews *ff_vk_imageviews_alloc(FFVulkanContext *s, int nb_views)
+{
+    FFVulkanFunctions *vk = &s->vkfn;
+    FFVkImageViews *iv;
+
+    av_assert1(nb_views <= AV_NUM_DATA_POINTERS);
+
+    iv = av_refstruct_pool_get(s->imageviews_pool);
+    if (!iv)
+        return NULL;
+
+    iv->nb_views           = nb_views;
+    iv->dev                = s->hwctx->act_dev;
+    iv->alloc              = s->hwctx->alloc;
+    iv->destroy_image_view = vk->DestroyImageView;
+
+    return iv;
+}
+
 static VkFormat map_fmt_to_rep(VkFormat fmt, enum FFVkShaderRepFormat rep_fmt)
 {
 #define REPS_FMT(fmt) \
@@ -1939,9 +1980,8 @@ int ff_vk_create_imageviews(FFVulkanContext *s, FFVkExecContext *e,
                             VkImageView views[AV_NUM_DATA_POINTERS],
                             AVFrame *f, enum FFVkShaderRepFormat rep_fmt)
 {
-    int err;
+    int err = 0;
     VkResult ret;
-    AVBufferRef *buf;
     FFVulkanFunctions *vk = &s->vkfn;
     AVHWFramesContext *hwfc = (AVHWFramesContext *)f->hw_frames_ctx->data;
     AVVulkanFramesContext *vkfc = hwfc->hwctx;
@@ -1998,13 +2038,10 @@ int ff_vk_create_imageviews(FFVulkanContext *s, FFVkExecContext *e,
 
     return 0;
 
-    return err;
-
 fail:
-    for (int i = 0; i < nb_planes; i++) {
+    for (int i = 0; i < nb_planes; i++)
         if (tmp_views[i])
             vk->DestroyImageView(s->hwctx->act_dev, tmp_views[i], s->hwctx->alloc);
-    }
     return err;
 }
 
@@ -2626,6 +2663,7 @@ void ff_vk_uninit(FFVulkanContext *s)
     av_freep(&s->video_props);
     av_freep(&s->coop_mat_props);
     av_freep(&s->host_image_copy_layouts);
+    av_refstruct_pool_uninit(&s->imageviews_pool);
 
     av_buffer_unref(&s->device_ref);
     av_buffer_unref(&s->frames_ref);

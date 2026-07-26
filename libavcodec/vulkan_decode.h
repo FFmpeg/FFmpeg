@@ -74,11 +74,10 @@ typedef struct FFVulkanDecodePicture {
     AVFrame                        *dpb_frame;      /* Only used for out-of-place decoding. */
 
     struct {
-        VkImageView                     ref[AV_NUM_DATA_POINTERS];        /* Image representation view (reference) */
-        VkImageView                     out[AV_NUM_DATA_POINTERS];        /* Image representation view (output-only) */
-        VkImageView                     dst[AV_NUM_DATA_POINTERS];        /* Set to img_view_out if no layered refs are used */
-        VkImageAspectFlags              aspect[AV_NUM_DATA_POINTERS];     /* Image plane mask bits */
-        VkImageAspectFlags              aspect_ref[AV_NUM_DATA_POINTERS]; /* Only used for out-of-place decoding */
+        VkImageView                     ref;        /* Image representation view (reference) */
+        VkImageView                     out;        /* Image representation view (output-only) */
+        VkImageAspectFlags              aspect;     /* Image plane mask bits */
+        VkImageAspectFlags              aspect_ref; /* Only used for out-of-place decoding */
     } view;
 
     VkSemaphore                     sem;
@@ -95,13 +94,14 @@ typedef struct FFVulkanDecodePicture {
     /* Main decoding struct */
     VkVideoDecodeInfoKHR            decode_info;
 
+    /* Owner of the output image views aliased by view.out/ref */
+    FFVkImageViews                 *out_views;
+
     /* Slice data */
     FFVkBuffer                     *slices_buf;
     size_t                          slices_size;
 
     /* Vulkan functions needed for destruction, as no other context is guaranteed to exist */
-    PFN_vkWaitSemaphores            wait_semaphores;
-    PFN_vkDestroyImageView          destroy_image_view;
     PFN_vkInvalidateMappedMemoryRanges invalidate_memory_ranges;
 } FFVulkanDecodePicture;
 

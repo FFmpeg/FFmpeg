@@ -184,14 +184,10 @@ static void init_frame(FFVulkanDecodeContext *dec, FFVulkanDecodePicture *vkpic)
     FFVulkanFunctions *vk = &ctx->s.vkfn;
 
     vkpic->dpb_frame     = NULL;
-    for (int i = 0; i < AV_NUM_DATA_POINTERS; i++) {
-        vkpic->view.ref[i]  = VK_NULL_HANDLE;
-        vkpic->view.out[i]  = VK_NULL_HANDLE;
-        vkpic->view.dst[i]  = VK_NULL_HANDLE;
-    }
+    vkpic->out_views     = NULL;
+    vkpic->view.ref      = VK_NULL_HANDLE;
+    vkpic->view.out      = VK_NULL_HANDLE;
 
-    vkpic->destroy_image_view = vk->DestroyImageView;
-    vkpic->wait_semaphores = vk->WaitSemaphores;
     vkpic->invalidate_memory_ranges = vk->InvalidateMappedMemoryRanges;
 }
 
@@ -206,14 +202,20 @@ int ff_vk_decode_prepare_frame(FFVulkanDecodeContext *dec, AVFrame *pic,
 
     /* If the decoder made a blank frame to make up for a missing ref, or the
      * frame is the current frame so it's missing one, create a re-representation */
-    if (vkpic->view.ref[0])
+    if (vkpic->view.ref)
         return 0;
 
     init_frame(dec, vkpic);
 
+    /* Slot 0 holds the output view, slot 1 the DISTINCT-mode reference
+     * view; refcounted, so executions keep them alive past the picture */
+    vkpic->out_views = ff_vk_imageviews_alloc(&ctx->s, 2);
+    if (!vkpic->out_views)
+        return AVERROR(ENOMEM);
+
     if (ctx->common.layered_dpb && alloc_dpb) {
-        vkpic->view.ref[0] = ctx->common.layered_view;
-        vkpic->view.aspect_ref[0] = ctx->common.layered_aspect;
+        vkpic->view.ref = ctx->common.layered_view;
+        vkpic->view.aspect_ref = ctx->common.layered_aspect;
     } else if (alloc_dpb) {
         AVHWFramesContext *dpb_frames = (AVHWFramesContext *)ctx->common.dpb_hwfc_ref->data;
         AVVulkanFramesContext *dpb_hwfc = dpb_frames->hwctx;
@@ -223,13 +225,13 @@ int ff_vk_decode_prepare_frame(FFVulkanDecodeContext *dec, AVFrame *pic,
             return AVERROR(ENOMEM);
 
         err = ff_vk_create_view(&ctx->s, &ctx->common,
-                                &vkpic->view.ref[0], &vkpic->view.aspect_ref[0],
+                                &vkpic->out_views->views[1], &vkpic->view.aspect_ref,
                                 (AVVkFrame *)vkpic->dpb_frame->data[0],
                                 dpb_hwfc->format[0], VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR);
         if (err < 0)
             return err;
 
-        vkpic->view.dst[0] = vkpic->view.ref[0];
+        vkpic->view.ref = vkpic->out_views->views[1];
     }
 
     if (!alloc_dpb || is_current) {
@@ -237,7 +239,7 @@ int ff_vk_decode_prepare_frame(FFVulkanDecodeContext *dec, AVFrame *pic,
         AVVulkanFramesContext *hwfc = frames->hwctx;
 
         err = ff_vk_create_view(&ctx->s, &ctx->common,
-                                &vkpic->view.out[0], &vkpic->view.aspect[0],
+                                &vkpic->out_views->views[0], &vkpic->view.aspect,
                                 (AVVkFrame *)pic->data[0],
                                 hwfc->format[0],
                                 VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR |
@@ -245,10 +247,11 @@ int ff_vk_decode_prepare_frame(FFVulkanDecodeContext *dec, AVFrame *pic,
                                 // the above fixes VUID-VkVideoBeginCodingInfoKHR-slotIndex-07245
         if (err < 0)
             return err;
+        vkpic->view.out = vkpic->out_views->views[0];
 
         if (!alloc_dpb) {
-            vkpic->view.ref[0] = vkpic->view.out[0];
-            vkpic->view.aspect_ref[0] = vkpic->view.aspect[0];
+            vkpic->view.ref = vkpic->view.out;
+            vkpic->view.aspect_ref = vkpic->view.aspect;
         }
     }
 
@@ -525,10 +528,9 @@ int ff_vk_decode_frame(AVCodecContext *avctx,
     if (err < 0)
         return err;
 
-    err = ff_vk_exec_mirror_sem_value(&ctx->s, exec, &vp->sem, &vp->sem_value,
-                                      pic);
-    if (err < 0)
-        return err;
+    /* The output view is kept alive by the execution context; freeing the
+     * picture then needs no host wait. */
+    ff_vk_exec_add_dep_refstruct(&ctx->s, exec, vp->out_views);
 
     /* Output image - change layout, as it comes from a pool */
     img_bar[nb_img_bar] = (VkImageMemoryBarrier2) {
@@ -546,7 +548,7 @@ int ff_vk_decode_frame(AVCodecContext *avctx,
         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .image = vkf->img[0],
         .subresourceRange = (VkImageSubresourceRange) {
-            .aspectMask = vp->view.aspect[0],
+            .aspectMask = vp->view.aspect,
             .layerCount = 1,
             .levelCount = 1,
         },
@@ -577,13 +579,10 @@ int ff_vk_decode_frame(AVCodecContext *avctx,
             if (err < 0)
                 return err;
 
-            if (err == 0) {
-                err = ff_vk_exec_mirror_sem_value(&ctx->s, exec,
-                                                  &rvp->sem, &rvp->sem_value,
-                                                  ref);
-                if (err < 0)
-                    return err;
-            }
+            /* The reference's image views are kept alive by the execution,
+             * so freeing the picture needs no host wait. */
+            if (err == 0 && rvp->out_views)
+                ff_vk_exec_add_dep_refstruct(&ctx->s, exec, rvp->out_views);
 
             if (!rvp->dpb_frame) {
                 AVVkFrame *rvkf = (AVVkFrame *)ref->data[0];
@@ -602,7 +601,7 @@ int ff_vk_decode_frame(AVCodecContext *avctx,
                     .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                     .image = rvkf->img[0],
                     .subresourceRange = (VkImageSubresourceRange) {
-                        .aspectMask = rvp->view.aspect_ref[0],
+                        .aspectMask = rvp->view.aspect_ref,
                         .layerCount = 1,
                         .levelCount = 1,
                     },
@@ -612,7 +611,7 @@ int ff_vk_decode_frame(AVCodecContext *avctx,
             }
         }
     } else if (vp->decode_info.referenceSlotCount ||
-               vp->view.out[0] != vp->view.ref[0]) {
+               vp->view.out != vp->view.ref) {
         /* Single barrier for a single layered ref */
         err = ff_vk_exec_add_dep_frame(&ctx->s, exec, ctx->common.layered_frame,
                                        VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR,
@@ -640,33 +639,12 @@ int ff_vk_decode_frame(AVCodecContext *avctx,
 
 void ff_vk_decode_free_frame(AVHWDeviceContext *dev_ctx, FFVulkanDecodePicture *vp)
 {
-    AVVulkanDeviceContext *hwctx = dev_ctx->hwctx;
-
-    VkSemaphoreWaitInfo sem_wait = (VkSemaphoreWaitInfo) {
-        .sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,
-        .pSemaphores = &vp->sem,
-        .pValues = &vp->sem_value,
-        .semaphoreCount = 1,
-    };
-
-    /* We do not have to lock the frame here because we're not interested
-     * in the actual current semaphore value, but only that it's later than
-     * the time we submitted the image for decoding. */
-    if (vp->sem)
-        vp->wait_semaphores(hwctx->act_dev, &sem_wait, UINT64_MAX);
-
     /* Free slices data */
     av_refstruct_unref(&vp->slices_buf);
 
-    /* Destroy image view (out) */
-    for (int i = 0; i < AV_NUM_DATA_POINTERS; i++) {
-        if (vp->view.out[i] && vp->view.out[i] != vp->view.dst[i])
-            vp->destroy_image_view(hwctx->act_dev, vp->view.out[i], hwctx->alloc);
-
-        /* Destroy image view (ref, unlayered) */
-        if (vp->view.dst[i])
-            vp->destroy_image_view(hwctx->act_dev, vp->view.dst[i], hwctx->alloc);
-    }
+    /* The views are kept alive by every execution referencing them, so no
+     * host wait is needed. */
+    av_refstruct_unref(&vp->out_views);
 
     av_frame_free(&vp->dpb_frame);
 }

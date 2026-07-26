@@ -78,6 +78,10 @@ typedef struct FFv1VulkanDecodePicture {
     uint32_t    *slice_offset;
     int          slice_num;
     int          crc_checked;
+
+    /* The context-less free callback waits for the decode before reading
+     * back the slice feedback */
+    PFN_vkWaitSemaphores wait_semaphores;
 } FFv1VulkanDecodePicture;
 
 typedef struct FFv1VulkanDecodeContext {
@@ -139,7 +143,7 @@ static int vk_ffv1_start_frame(AVCodecContext          *avctx,
     /* The context-less free callback needs these device functions, which
      * prepare_frame_sdr() used to set. vp->sem is kept for the next
      * non-keyframe's wait and the free callback's CRC readback. */
-    vp->wait_semaphores          = ctx->s.vkfn.WaitSemaphores;
+    fp->wait_semaphores          = ctx->s.vkfn.WaitSemaphores;
     vp->invalidate_memory_ranges = ctx->s.vkfn.InvalidateMappedMemoryRanges;
 
     /* Host map the input slices data if supported */
@@ -939,6 +943,18 @@ static void vk_ffv1_free_frame_priv(AVRefStructOpaque _hwctx, void *data)
 
     FFv1VulkanDecodePicture *fp = data;
     FFVulkanDecodePicture *vp = &fp->vp;
+
+    /* The feedback below is read back on the host: wait for the decode.
+     * The generic free path no longer waits for anything. */
+    if (vp->sem) {
+        VkSemaphoreWaitInfo sem_wait = {
+            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,
+            .pSemaphores = &vp->sem,
+            .pValues = &vp->sem_value,
+            .semaphoreCount = 1,
+        };
+        fp->wait_semaphores(hwctx->act_dev, &sem_wait, UINT64_MAX);
+    }
 
     ff_vk_decode_free_frame(dev_ctx, vp);
 

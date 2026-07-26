@@ -317,6 +317,8 @@ typedef struct FFVulkanContext {
     uint32_t coop_mat_props_nb;
 
     VkPhysicalDeviceShaderAtomicFloatFeaturesEXT atomic_float_feats;
+    AVRefStructPool *imageviews_pool;
+
     VkPhysicalDeviceVulkan12Features feats_12;
     VkPhysicalDeviceFeatures2 feats;
 
@@ -534,6 +536,23 @@ void ff_vk_exec_discard_deps(FFVulkanContext *s, FFVkExecContext *e);
 int ff_vk_create_imageview(FFVulkanContext *s,
                            VkImageView *img_view, VkImageAspectFlags *aspect,
                            AVFrame *f, int plane, enum FFVkShaderRepFormat rep_fmt);
+
+/* Refcounted set of image views; stashes destruction handles to be context-free */
+typedef struct FFVkImageViews {
+    int nb_views;
+
+    VkDevice dev;
+    const VkAllocationCallbacks *alloc;
+    PFN_vkDestroyImageView destroy_image_view;
+
+    VkImageView views[AV_NUM_DATA_POINTERS];
+} FFVkImageViews;
+
+/**
+ * Allocate a reference-counted set of image views, zero-initialized for the
+ * caller to create.
+ */
+FFVkImageViews *ff_vk_imageviews_alloc(FFVulkanContext *s, int nb_views);
 
 /**
  * Create an imageview and add it as a dependency to an execution.
