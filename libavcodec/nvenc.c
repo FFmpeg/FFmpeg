@@ -2766,8 +2766,10 @@ static int prepare_sei_data_array(AVCodecContext *avctx, const AVFrame *frame)
         void *tc_data = NULL;
         size_t tc_size = 0;
 
-        if (ff_alloc_timecode_sei(frame, avctx->framerate, 0, &tc_data, &tc_size) < 0) {
-            av_log(ctx, AV_LOG_ERROR, "Not enough memory for timecode sei, skipping\n");
+        if ((avctx->codec->id == AV_CODEC_ID_AV1 ?
+             ff_alloc_timecode_metadata_av1(frame, avctx->framerate, &tc_data, &tc_size) :
+             ff_alloc_timecode_sei(frame, avctx->framerate, 0, &tc_data, &tc_size)) < 0) {
+            av_log(ctx, AV_LOG_ERROR, "Not enough memory for timecode, skipping\n");
         }
 
         if (tc_data) {
