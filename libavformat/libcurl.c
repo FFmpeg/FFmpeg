@@ -846,11 +846,14 @@ static int setup_protocols(CurlContext *c)
         av_bprintf(&bp, "%s", proto);
     }
 
-    if (!av_bprint_is_complete(&bp))
+    if (!av_bprint_is_complete(&bp)) {
+        av_bprint_finalize(&bp, NULL);
         return AVERROR(ENOMEM);
+    }
 
     if (!bp.len) {
         av_log(c->h, AV_LOG_ERROR, "Set of allowed protocols is empty.\n");
+        av_bprint_finalize(&bp, NULL);
         return AVERROR(EINVAL);
     }
 
