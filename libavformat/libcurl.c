@@ -354,6 +354,10 @@ static size_t header_callback(char *ptr, size_t size, size_t nitems, void *userd
             else
                 c->request_end = c->content_size > 0 ? c->content_size - 1 : -1;
         }
+        /* Apply the user override on every reply so re-evaluation of a
+         * follow-up reply doesn't clobber it. */
+        if (c->seekable_opt >= 0)
+            c->seekable = c->seekable_opt;
     } else {
         c->stream_ok = 0;
         if (!c->error)
@@ -1029,11 +1033,9 @@ static int libcurl_open(URLContext *h, const char *url, int flags,
     if (ret < 0)
         goto fail;
 
-    if (c->seekable_opt == 0)
-        c->seekable = 0;
-    else if (c->seekable_opt == 1)
-        c->seekable = 1;
+    pthread_mutex_lock(&c->mutex);
     h->is_streamed = !c->seekable;
+    pthread_mutex_unlock(&c->mutex);
 
     return 0;
 
