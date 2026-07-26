@@ -539,6 +539,9 @@ static void execute_command(CurlLoop *loop, CurlCmd *cmd)
         }
         break;
     case CMD_UNPAUSE:
+        pthread_mutex_lock(&c->mutex);
+        c->paused = 0;
+        pthread_mutex_unlock(&c->mutex);
         curl_easy_pause(c->easy, CURLPAUSE_CONT);
         break;
     case CMD_SEEK:
