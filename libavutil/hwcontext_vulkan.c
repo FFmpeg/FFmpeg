@@ -4590,10 +4590,12 @@ static int vulkan_transfer_host(AVHWFramesContext *hwfc, AVFrame *hwf,
         if (compat)
             continue;
 
+        /* This should only ever happen on uploads, so using UNDEFINED is safe */
+        av_assert1(upload);
         layout_ch_info[nb_layout_ch] = (VkHostImageLayoutTransitionInfoEXT) {
             .sType = VK_STRUCTURE_TYPE_HOST_IMAGE_LAYOUT_TRANSITION_INFO_EXT,
             .image = hwf_vk->img[i],
-            .oldLayout = hwf_vk->layout[i],
+            .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
             .newLayout = VK_IMAGE_LAYOUT_GENERAL,
             .subresourceRange = {
                 .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
@@ -4715,8 +4717,27 @@ static int vulkan_transfer_frame(AVHWFramesContext *hwfc,
     if (swf->width > hwfc->width || swf->height > hwfc->height)
         return AVERROR(EINVAL);
 
-    if (hwctx->usage & VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT &&
-        !(p->dprops.driverID == VK_DRIVER_ID_NVIDIA_PROPRIETARY))
+    int host_copy = hwctx->usage & VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT &&
+                    !(p->dprops.driverID == VK_DRIVER_ID_NVIDIA_PROPRIETARY);
+
+    /* Host layout transitions may only originate from a host-copyable layout */
+    if (!upload && host_copy) {
+        for (int i = 0; i < nb_images; i++) {
+            int compat = 0;
+            for (int j = 0; j < p->vkctx.host_image_props.copySrcLayoutCount; j++) {
+                if (hwf_vk->layout[i] == p->vkctx.host_image_props.pCopySrcLayouts[j]) {
+                    compat = 1;
+                    break;
+                }
+            }
+            if (!compat) {
+                host_copy = 0;
+                break;
+            }
+        }
+    }
+
+    if (host_copy)
         return vulkan_transfer_host(hwfc, hwf, swf, upload);
 
     for (int i = 0; i < av_pix_fmt_count_planes(swf->format); i++) {
