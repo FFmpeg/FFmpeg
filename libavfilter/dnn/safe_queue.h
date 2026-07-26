@@ -48,6 +48,14 @@ void ff_safe_queue_destroy(SafeQueue *sq);
 size_t ff_safe_queue_size(SafeQueue *sq);
 
 /**
+ * @brief Wait until queue length reaches at least min_size.
+ *
+ * @param sq pointer to the SafeQueue
+ * @param min_size target queue length
+ */
+void ff_safe_queue_wait_for_size(SafeQueue *sq, size_t min_size);
+
+/**
  * @brief Add data to the head of queue in the
  * SafeQueue after locking mutex. After adding
  * the data, it signals the condition variable

@@ -22,7 +22,6 @@
  */
 
 #include "libavutil/mem.h"
-#include "libavutil/time.h"
 #include "dnn_backend_common.h"
 
 #define DNN_ASYNC_SUCCESS (void *)0
@@ -107,8 +106,8 @@ void ff_dnn_wait_requests(SafeQueue *request_queue, int nireq)
 {
     if (!request_queue)
         return;
-    while (ff_safe_queue_size(request_queue) < nireq)
-        av_usleep(10000);
+
+    ff_safe_queue_wait_for_size(request_queue, nireq);
 }
 
 int ff_dnn_start_inference_async(void *ctx, DNNAsyncExecModule *async_module)
