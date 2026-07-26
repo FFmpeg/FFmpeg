@@ -21,6 +21,7 @@
 #include "config.h"
 #include "avassert.h"
 #include "mem.h"
+#include "refstruct.h"
 
 #include "vulkan.h"
 #include "libavutil/vulkan_loader.h"
@@ -566,7 +567,8 @@ FFVkExecContext *ff_vk_exec_get(FFVulkanContext *s, FFVkExecPool *pool)
         FFVkExecContext *e = &pool->contexts[i];
         if (pthread_mutex_trylock(&e->lock))
             continue; /* In use by a recording or submitting thread */
-        if ((e->nb_buf_deps || e->nb_frame_deps || e->nb_sw_frame_deps) &&
+        if ((e->nb_buf_deps || e->nb_refstruct_deps ||
+             e->nb_frame_deps || e->nb_sw_frame_deps) &&
             vk->GetFenceStatus(s->hwctx->act_dev, e->fence) == VK_SUCCESS)
             ff_vk_exec_discard_deps(s, e);
         pthread_mutex_unlock(&e->lock);
@@ -627,6 +629,10 @@ void ff_vk_exec_discard_deps(FFVulkanContext *s, FFVkExecContext *e)
         av_buffer_unref(&e->buf_deps[j]);
     e->nb_buf_deps = 0;
 
+    for (int j = 0; j < e->nb_refstruct_deps; j++)
+        av_refstruct_unref(&e->refstruct_deps[j]);
+    e->nb_refstruct_deps = 0;
+
     for (int j = 0; j < e->nb_sw_frame_deps; j++)
         av_frame_free(&e->sw_frame_deps[j]);
     e->nb_sw_frame_deps = 0;
@@ -667,6 +673,31 @@ int ff_vk_exec_add_dep_buf(FFVulkanContext *s, FFVkExecContext *e,
     }
 
     return 0;
+}
+
+void ff_vk_exec_add_dep_refstruct(FFVulkanContext *s, FFVkExecContext *e,
+                                  void *obj)
+{
+    av_assert1(e->nb_refstruct_deps < FF_VK_EXEC_MAX_BUF_DEPS);
+    e->refstruct_deps[e->nb_refstruct_deps++] = av_refstruct_ref(obj);
+}
+
+void ff_vk_exec_move_dep_refstruct(FFVulkanContext *s, FFVkExecContext *e,
+                                   void *obj)
+{
+    void **ptr = obj;
+
+    av_assert1(e->nb_refstruct_deps < FF_VK_EXEC_MAX_BUF_DEPS);
+
+    for (int i = 0; i < e->nb_refstruct_deps; i++) {
+        if (e->refstruct_deps[i] == *ptr) {
+            av_refstruct_unref(obj);
+            return;
+        }
+    }
+
+    e->refstruct_deps[e->nb_refstruct_deps++] = *ptr;
+    *ptr = NULL;
 }
 
 int ff_vk_exec_add_dep_sw_frame(FFVulkanContext *s, FFVkExecContext *e,

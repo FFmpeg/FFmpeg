@@ -23,6 +23,8 @@
 
 #include <stdatomic.h>
 
+#include "refstruct.h"
+
 #include "thread.h"
 #include "pixdesc.h"
 #include "hwcontext.h"
@@ -148,6 +150,10 @@ typedef struct FFVkExecContext {
     /* Buffer dependencies */
     AVBufferRef *buf_deps[FF_VK_EXEC_MAX_BUF_DEPS];
     int nb_buf_deps;
+
+    /* AVRefStruct object dependencies */
+    void *refstruct_deps[FF_VK_EXEC_MAX_BUF_DEPS];
+    int nb_refstruct_deps;
 
     /* Frame dependencies */
     AVFrame *frame_deps[FF_VK_EXEC_MAX_FRAME_DEPS];
@@ -478,6 +484,17 @@ void ff_vk_exec_wait(FFVulkanContext *s, FFVkExecContext *e);
  */
 int ff_vk_exec_add_dep_buf(FFVulkanContext *s, FFVkExecContext *e,
                            AVBufferRef **deps, int nb_deps, int ref);
+
+/* Takes a new reference to an AVRefStruct-managed object, held until the
+ * execution's dependencies are released. */
+void ff_vk_exec_add_dep_refstruct(FFVulkanContext *s, FFVkExecContext *e,
+                                  void *obj);
+
+/* Moves the caller's reference into the execution's dependencies, given a
+ * pointer to it; a duplicate of an already-tracked object is released. */
+void ff_vk_exec_move_dep_refstruct(FFVulkanContext *s, FFVkExecContext *e,
+                                   void *obj);
+
 void ff_vk_exec_add_dep_wait_sem(FFVulkanContext *s, FFVkExecContext *e,
                                  VkSemaphore sem, uint64_t val,
                                  VkPipelineStageFlagBits2 stage);
