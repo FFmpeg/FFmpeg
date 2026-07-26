@@ -60,12 +60,12 @@ SECTION .text
 ; in:  p1 p0 q0 q1, clobbers p0
 ; out: p1 = (2*(p1 - q1) - 5*(p0 - q0) + 4) >> 3
 %macro VC1_LOOP_FILTER_A0 4
-    psubw  %1, %4
     psubw  %2, %3
-    paddw  %1, %1
+    psubw  %1, %4
     pmullw %2, [pw_5]
-    psubw  %1, %2
+    paddw  %1, %1
     paddw  %1, [pw_4]
+    psubw  %1, %2
     psraw  %1, 3
 %endmacro
 
