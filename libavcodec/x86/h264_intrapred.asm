@@ -240,7 +240,7 @@ cglobal pred16x16_tm_vp8_8, 2, 4, 5, dst, stride, stride3, iteration
 ;-----------------------------------------------------------------------------
 
 %macro H264_PRED16x16_PLANE 1
-cglobal pred16x16_plane_%1_8, 2,9,7
+cglobal pred16x16_plane_%1_8, 2,9,5
     mov          r2, r1           ; +stride
     neg          r1               ; -stride
 
@@ -448,7 +448,7 @@ H264_PRED16x16_PLANE svq3
 ;-----------------------------------------------------------------------------
 
 %macro H264_PRED8x8_PLANE 0
-cglobal pred8x8_plane_8, 2,9,7
+cglobal pred8x8_plane_8, 2,9,5
     mov          r2, r1           ; +stride
     neg          r1               ; -stride
 
