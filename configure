@@ -2267,6 +2267,7 @@ THREADS_LIST="
 
 ATOMICS_LIST="
     atomics_win32
+    atomics_os2
 "
 
 AUTODETECT_LIBS="
@@ -3036,8 +3037,10 @@ valgrind_backtrace_deps="valgrind_valgrind_h"
 
 # threading support
 atomics_win32_if="MemoryBarrier"
+atomics_os2_if="stdatomic"
 atomics_native_if_any="$ATOMICS_LIST"
 w32threads_deps="atomics_native"
+os2threads_deps="atomics_native"
 threads_if_any="$THREADS_LIST"
 
 # subsystems
