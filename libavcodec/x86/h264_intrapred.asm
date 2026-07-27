@@ -1699,24 +1699,24 @@ cglobal pred4x4_tm_vp8_8, 3,6,4
     RET
 
 INIT_XMM ssse3
-cglobal pred4x4_tm_vp8_8, 3,3,8
+cglobal pred4x4_tm_vp8_8, 3,3,6
     sub         r0, r2
-    movq        m6, [tm_shuf]
-    pxor        m1, m1
+    movq        m1, [tm_shuf]
     movd        m0, [r0]
-    punpcklbw   m0, m1
-    movd        m7, [r0-4]
-    pshufb      m7, m6
+    movd        m5, [r0-4]
     lea         r1, [r0+r2*2]
+    pxor        m4, m4
+    punpcklbw   m0, m4
+    pshufb      m5, m1
     movd        m2, [r0+r2*1-4]
     movd        m3, [r0+r2*2-4]
     movd        m4, [r1+r2*1-4]
+    psubw       m0, m5
     movd        m5, [r1+r2*2-4]
-    pshufb      m2, m6
-    pshufb      m3, m6
-    pshufb      m4, m6
-    pshufb      m5, m6
-    psubw       m0, m7
+    pshufb      m2, m1
+    pshufb      m3, m1
+    pshufb      m4, m1
+    pshufb      m5, m1
     paddw       m2, m0
     paddw       m3, m0
     paddw       m4, m0
