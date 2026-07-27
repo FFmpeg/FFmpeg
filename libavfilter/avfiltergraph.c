@@ -701,10 +701,11 @@ retry:
                 }
             }
 
-            /* if there is more than one auto filter, we may need another round
-             * to fully settle formats due to possible cross-incompatibilities
-             * between the auto filters themselves */
-            if (num_conv > 1)
+            /* if there is an auto filter, we may need another round to fully
+             * settle formats due to possible cross-incompatibilities between
+             * the auto filters themselves, or between the auto filters and
+             * a different attribute of the filter they are modifying */
+            if (num_conv)
                 goto retry;
         }
     }
