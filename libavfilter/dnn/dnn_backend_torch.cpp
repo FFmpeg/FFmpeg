@@ -272,7 +272,8 @@ static int th_start_inference(void *args)
         return DNN_GENERIC_ERROR;
     }
     // Transfer tensor to the same device as model
-    c10::Device device = (*th_model->jit_model->parameters().begin()).device();
+    const char *device_name = ctx->device ? ctx->device : "cpu";
+    c10::Device device(device_name);
     if (infer_request->input_tensor->device() != device)
         *infer_request->input_tensor = infer_request->input_tensor->to(device);
     inputs.push_back(*infer_request->input_tensor);
