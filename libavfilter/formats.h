@@ -145,12 +145,6 @@ av_warn_unused_result
 AVFilterFormats *ff_all_color_ranges(void);
 
 /**
- * Construct an AVFilterFormats with only premultiplied alpha.
- */
-av_warn_unused_result
-AVFilterFormats *ff_alpha_mode_straight(void);
-
-/**
  * Construct an AVFilterFormats representing all possible alpha modes.
  */
 av_warn_unused_result
@@ -232,12 +226,6 @@ int ff_set_common_alpha_modes(AVFilterContext *ctx,
 av_warn_unused_result
 int ff_set_common_alpha_modes_from_list(AVFilterContext *ctx,
                                         const int *alpha_modes);
-
-/**
- * Equivalent to ff_set_common_alpha_modes(ctx, ff_alpha_mode_straight())
- */
-av_warn_unused_result
-int ff_set_common_alpha_mode_straight(AVFilterContext *ctx);
 
 /**
  * Equivalent to ff_set_common_alpha_modes(ctx, ff_all_alpha_modes())
