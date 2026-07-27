@@ -307,7 +307,7 @@ static const CheckasmTest tests[] = {
 #if CONFIG_PIXELUTILS
         { "pixelutils",checkasm_check_pixelutils },
 #endif
-        { "av_tx",     checkasm_check_av_tx },
+        { "av_tx",     checkasm_check_av_tx, .uninit = checkasm_uninit_tx },
 #endif
     { NULL }
     /* NOTE: When adding a new test to this list here, it also needs to be

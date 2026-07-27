@@ -128,6 +128,8 @@ void checkasm_check_vvc_alf(void);
 void checkasm_check_vvc_mc(void);
 void checkasm_check_vvc_sao(void);
 
+void checkasm_uninit_tx(void);
+
 #define rnd checkasm_rand_uint32
 #define declare_func_float declare_func
 #define bench(...) checkasm_bench(__VA_ARGS__)
