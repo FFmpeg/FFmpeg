@@ -848,8 +848,8 @@ cglobal pred8x8l_top_dc_8, 4,4,6
     psadbw   m4, m3
     paddw    m4, [pw_4]
     psrlw    m4, 3
-    SPLATW   m4, m4, 0
-    packuswb m4, m4
+    punpcklbw m4, m4
+    pshuflw  m4, m4, 0
 %rep 3
     movq [r0+r3*1], m4
     movq [r0+r3*2], m4
@@ -940,9 +940,8 @@ cglobal pred8x8l_dc_8, 4,5,6
     paddw        m3, m2
     lea          r4, [r2+r3*2]
     psrlw        m3, 4
+    punpcklbw    m3, m3
     pshuflw      m3, m3, 0
-    punpcklqdq   m3, m3
-    packuswb     m3, m3
     movq  [r0+r3*1], m3
     movq  [r0+r3*2], m3
     movq  [r1+r3*1], m3
