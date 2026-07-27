@@ -37,6 +37,9 @@
 
 static void check_add_int16(HuffYUVDSPContext *c, unsigned mask, int width, const char * name)
 {
+    if (!check_func(c->add_int16, "%s", name))
+        return;
+
     uint16_t *src0 = av_mallocz(width * sizeof(uint16_t));
     uint16_t *src1 = av_mallocz(width * sizeof(uint16_t));
     uint16_t *dst0 = av_mallocz(width * sizeof(uint16_t));
@@ -50,13 +53,11 @@ static void check_add_int16(HuffYUVDSPContext *c, unsigned mask, int width, cons
     randomize_buffers(src0, width);
     memcpy(src1, src0, width * sizeof(uint16_t));
 
-    if (check_func(c->add_int16, "%s", name)) {
-        call_ref(dst0, src0, mask, width);
-        call_new(dst1, src1, mask, width);
-        if (memcmp(dst0, dst1, width * sizeof(uint16_t)))
-            fail();
-        bench_new(dst1, src1, mask, width);
-    }
+    call_ref(dst0, src0, mask, width);
+    call_new(dst1, src1, mask, width);
+    if (memcmp(dst0, dst1, width * sizeof(uint16_t)))
+        fail();
+    bench_new(dst1, src1, mask, width);
 
     av_free(src0);
     av_free(src1);
@@ -72,24 +73,23 @@ static void check_add_hfyu_left_pred_bgr32(HuffYUVDSPContext *c)
 
     declare_func(void, uint8_t *d, const uint8_t *s, intptr_t w, uint8_t *l);
 
+    if (!check_func(c->add_hfyu_left_pred_bgr32, "add_hfyu_left_pred_bgr32"))
+        return;
+
     randomize_buffers(src, sizeof (src));
     randomize_buffers(left, sizeof (left));
     memcpy(left0, left, sizeof (left));
     memcpy(left1, left, sizeof (left));
 
-    if (check_func(c->add_hfyu_left_pred_bgr32, "add_hfyu_left_pred_bgr32")) {
-        call_ref(dst0, src, BUF_SIZE, left0);
-        call_new(dst1, src, BUF_SIZE, left1);
+    call_ref(dst0, src, BUF_SIZE, left0);
+    call_new(dst1, src, BUF_SIZE, left1);
 
-        if (memcmp(dst0, dst1, sizeof (dst0)) != 0 ||
-            memcmp(left0, left1, sizeof (left0)) != 0) {
-            fail();
-        }
-
-        bench_new(dst1, src, BUF_SIZE, left);
+    if (memcmp(dst0, dst1, sizeof (dst0)) != 0 ||
+        memcmp(left0, left1, sizeof (left0)) != 0) {
+        fail();
     }
 
-    report("add_hfyu_left_pred_bgr32");
+    bench_new(dst1, src, BUF_SIZE, left);
 }
 
 void checkasm_check_huffyuvdsp(void)
@@ -108,4 +108,5 @@ void checkasm_check_huffyuvdsp(void)
     report("add_int16_128");
 
     check_add_hfyu_left_pred_bgr32(&c);
+    report("add_hfyu_left_pred_bgr32");
 }
