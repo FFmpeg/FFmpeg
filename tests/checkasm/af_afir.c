@@ -20,6 +20,8 @@
 
 #include <float.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <string.h>
 
 #include "libavfilter/af_afirdsp.h"
 #include "libavutil/internal.h"

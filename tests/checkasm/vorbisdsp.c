@@ -17,6 +17,8 @@
  */
 
 #include <float.h>
+#include <stdio.h>
+#include <string.h>
 
 #include "libavutil/mem_internal.h"
 

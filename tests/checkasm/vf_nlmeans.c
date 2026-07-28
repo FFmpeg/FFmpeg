@@ -19,6 +19,8 @@
  */
 
 #include <math.h>
+#include <string.h>
+
 #include "checkasm.h"
 #include "libavfilter/vf_nlmeans_init.h"
 #include "libavutil/avassert.h"

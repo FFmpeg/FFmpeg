@@ -17,10 +17,10 @@
  */
 
 #include <stdint.h>
+#include <string.h>
 
 #include "checkasm.h"
 
-#include "libavutil/attributes.h"
 #include "libavutil/mem_internal.h"
 #include "libavcodec/apv_dsp.h"
 

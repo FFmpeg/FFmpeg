@@ -27,13 +27,8 @@
 #include <checkasm/test.h>
 #include <checkasm/utils.h>
 
-#include "config.h"
-#include "libavutil/avstring.h"
 #include "libavutil/cpu.h"
-#include "libavutil/emms.h"
 #include "libavutil/internal.h"
-#include "libavutil/lfg.h"
-#include "libavutil/timer.h"
 
 void checkasm_check_aacencdsp(void);
 void checkasm_check_aacpsdsp(void);

@@ -18,6 +18,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "checkasm.h"
 #include "libavcodec/sbcdsp.h"

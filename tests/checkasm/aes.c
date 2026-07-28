@@ -18,6 +18,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <string.h>
+
 #include "checkasm.h"
 #include "libavutil/aes.h"
 #include "libavutil/aes_internal.h"

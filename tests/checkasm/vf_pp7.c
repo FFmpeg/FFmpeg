@@ -19,6 +19,7 @@
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "checkasm.h"
 #include "libavfilter/vf_pp7dsp.h"

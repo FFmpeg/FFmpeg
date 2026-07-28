@@ -17,6 +17,7 @@
  */
 
 #include <assert.h>
+#include <string.h>
 
 #include "checkasm.h"
 #include "libavcodec/mpeg4videodsp.h"
