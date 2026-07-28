@@ -20,13 +20,16 @@
 
 #include <string.h>
 
-#include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
 
 #include "libavcodec/huffyuvdsp.h"
 
 #include "checkasm.h"
+
+enum {
+    MAX_WIDTH = 16*128,   ///< arbitrary limit used for the tests
+};
 
 #define randomize_buffers(buf, size)     \
     do {                                 \
@@ -104,19 +107,19 @@ static void check_add_hfyu_left_pred_bgr32(HuffYUVDSPContext *c)
 void checkasm_check_huffyuvdsp(void)
 {
     HuffYUVDSPContext c;
-    int width = 16 * av_clip(rnd(), 16, 128);
 
     ff_huffyuvdsp_init(&c, AV_PIX_FMT_YUV422P);
 
     unsigned bps  = 9 + rnd() % 8;
     unsigned mask = (1 << bps) - 1;
+    int width = 1 + rnd() % MAX_WIDTH;
 
     /*! test width not multiple of mmsize */
     check_add_int16(&c, mask, width, "add_int16_rnd_width");
     report("add_int16_rnd_width");
 
     /*! test always with the same size (for perf test) */
-    check_add_int16(&c, mask, 16*128, "add_int16_128");
+    check_add_int16(&c, mask, MAX_WIDTH, "add_int16_128");
     report("add_int16_128");
 
     check_add_hfyu_left_pred_bgr32(&c);
