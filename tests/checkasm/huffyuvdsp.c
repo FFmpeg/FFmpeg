@@ -35,6 +35,15 @@
             buf[j] = rnd() & 0xFFFF;       \
     } while (0)
 
+#define randomize_buffer_mask(buf, width, mask)        \
+    do {                                               \
+        unsigned mask2 = mask | (mask << 16);          \
+        for (size_t i = 0; i < (width & ~1); i += 2)   \
+            AV_WN32A((buf) + i, rnd() & mask2);        \
+        if (width & 1)                                 \
+            buf[width - 1] = rnd() & mask;             \
+    } while (0)
+
 static void check_add_int16(HuffYUVDSPContext *c, unsigned mask, int width, const char * name)
 {
     if (!check_func(c->add_int16, "%s", name))
@@ -99,12 +108,15 @@ void checkasm_check_huffyuvdsp(void)
 
     ff_huffyuvdsp_init(&c, AV_PIX_FMT_YUV422P);
 
+    unsigned bps  = 9 + rnd() % 8;
+    unsigned mask = (1 << bps) - 1;
+
     /*! test width not multiple of mmsize */
-    check_add_int16(&c, 65535, width, "add_int16_rnd_width");
+    check_add_int16(&c, mask, width, "add_int16_rnd_width");
     report("add_int16_rnd_width");
 
     /*! test always with the same size (for perf test) */
-    check_add_int16(&c, 65535, 16*128, "add_int16_128");
+    check_add_int16(&c, mask, 16*128, "add_int16_128");
     report("add_int16_128");
 
     check_add_hfyu_left_pred_bgr32(&c);
