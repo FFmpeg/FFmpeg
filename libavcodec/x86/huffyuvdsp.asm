@@ -32,13 +32,7 @@ SECTION .text
 
 %macro ADD_INT16 0
 cglobal add_int16, 4,4,5, dst, src, mask, w, tmp
-    test srcq, mmsize-1
-    jnz .unaligned
-    test dstq, mmsize-1
-    jnz .unaligned
     INT16_LOOP a, add
-.unaligned:
-    INT16_LOOP u, add
 %endmacro
 
 INIT_XMM sse2

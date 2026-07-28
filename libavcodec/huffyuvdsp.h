@@ -23,7 +23,7 @@
 #include "libavutil/pixfmt.h"
 
 typedef struct HuffYUVDSPContext {
-    void (*add_int16)(uint16_t *dst/*align 16*/, const uint16_t *src/*align 16*/,
+    void (*add_int16)(uint16_t *dst/*stride align*/, const uint16_t *src/*stride align*/,
                       unsigned mask, int w);
 
     void (*add_hfyu_median_pred_int16)(uint16_t *dst, const uint16_t *top,
