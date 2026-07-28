@@ -48,10 +48,17 @@ struct AVSliceThread {
     pthread_cond_t  done_cond;
     int             done;
     int             finished;
+    atomic_int      error;
 
     void            *priv;
-    void            (*worker_func)(void *priv, int jobnr, int threadnr, int nb_jobs, int nb_threads);
-    void            (*main_func)(void *priv);
+    int            (*worker_func)(void *priv, int jobnr, int threadnr, int nb_jobs, int nb_threads);
+    int            (*main_func)(void *priv);
+
+#if LIBAVUTIL_VERSION_MAJOR < 62
+    void           (*worker_func_v1)(void *priv, int jobnr, int threadnr, int nb_jobs, int nb_threads);
+    void           (*main_func_v1)(void *priv);
+    void            *priv_v1;
+#endif
 };
 
 static int run_jobs(AVSliceThread *ctx)
@@ -62,7 +69,16 @@ static int run_jobs(AVSliceThread *ctx)
     unsigned current_job  = first_job;
 
     do {
-        ctx->worker_func(ctx->priv, current_job, first_job, nb_jobs, nb_active_threads);
+        int ret = atomic_load_explicit(&ctx->error, memory_order_relaxed);
+        if (ret)
+            continue;
+        ret = ctx->worker_func(ctx->priv, current_job, first_job, nb_jobs, nb_active_threads);
+        if (ret) {
+            int prev = 0;
+            atomic_compare_exchange_strong_explicit(&ctx->error, &prev, ret,
+                                                    memory_order_relaxed,
+                                                    memory_order_relaxed);
+        }
     } while ((current_job = atomic_fetch_add_explicit(&ctx->current_job, 1, memory_order_acq_rel)) < nb_jobs);
 
     return current_job == nb_jobs + nb_active_threads - 1;
@@ -96,10 +112,10 @@ static void *attribute_align_arg thread_worker(void *v)
 }
 
 av_cold
-int avpriv_slicethread_create(AVSliceThread **pctx, void *priv,
-                              void (*worker_func)(void *priv, int jobnr, int threadnr, int nb_jobs, int nb_threads),
-                              void (*main_func)(void *priv),
-                              int nb_threads)
+int avpriv_slicethread_create2(AVSliceThread **pctx, void *priv,
+                               int (*worker_func)(void *priv, int jobnr, int threadnr, int nb_jobs, int nb_threads),
+                               int (*main_func)(void *priv),
+                               int nb_threads)
 {
     AVSliceThread *ctx;
     int nb_workers, i;
@@ -187,13 +203,14 @@ int avpriv_slicethread_create(AVSliceThread **pctx, void *priv,
     return nb_threads;
 }
 
-void avpriv_slicethread_execute(AVSliceThread *ctx, int nb_jobs, int execute_main)
+int avpriv_slicethread_execute2(AVSliceThread *ctx, int nb_jobs, int execute_main)
 {
-    int nb_workers, i, is_last = 0;
+    int nb_workers, i, is_last = 0, ret = 0;
 
     av_assert0(nb_jobs > 0);
     ctx->nb_jobs           = nb_jobs;
     ctx->nb_active_threads = FFMIN(nb_jobs, ctx->nb_threads);
+    atomic_store_explicit(&ctx->error, 0, memory_order_relaxed);
     atomic_store_explicit(&ctx->first_job, 0, memory_order_relaxed);
     atomic_store_explicit(&ctx->current_job, ctx->nb_active_threads, memory_order_relaxed);
     nb_workers             = ctx->nb_active_threads;
@@ -208,9 +225,9 @@ void avpriv_slicethread_execute(AVSliceThread *ctx, int nb_jobs, int execute_mai
         pthread_mutex_unlock(&w->mutex);
     }
 
-    if (ctx->main_func && execute_main)
-        ctx->main_func(ctx->priv);
-    else
+    if (ctx->main_func && execute_main) {
+        ret = ctx->main_func(ctx->priv);
+    } else
         is_last = run_jobs(ctx);
 
     if (!is_last) {
@@ -220,6 +237,11 @@ void avpriv_slicethread_execute(AVSliceThread *ctx, int nb_jobs, int execute_mai
         ctx->done = 0;
         pthread_mutex_unlock(&ctx->done_mutex);
     }
+
+    if (!ret)
+        ret = atomic_load_explicit(&ctx->error, memory_order_relaxed);
+
+    return ret;
 }
 
 av_cold void avpriv_slicethread_free(AVSliceThread **pctx)
@@ -258,16 +280,16 @@ av_cold void avpriv_slicethread_free(AVSliceThread **pctx)
 
 #else /* HAVE_PTHREADS || HAVE_W32THREADS || HAVE_OS32THREADS */
 
-int avpriv_slicethread_create(AVSliceThread **pctx, void *priv,
-                              void (*worker_func)(void *priv, int jobnr, int threadnr, int nb_jobs, int nb_threads),
-                              void (*main_func)(void *priv),
-                              int nb_threads)
+int avpriv_slicethread_create2(AVSliceThread **pctx, void *priv,
+                               int (*worker_func)(void *priv, int jobnr, int threadnr, int nb_jobs, int nb_threads),
+                               int (*main_func)(void *priv),
+                               int nb_threads)
 {
     *pctx = NULL;
     return AVERROR(ENOSYS);
 }
 
-void avpriv_slicethread_execute(AVSliceThread *ctx, int nb_jobs, int execute_main)
+int avpriv_slicethread_execute2(AVSliceThread *ctx, int nb_jobs, int execute_main)
 {
     av_assert0(0);
 }
@@ -278,3 +300,48 @@ void avpriv_slicethread_free(AVSliceThread **pctx)
 }
 
 #endif /* HAVE_PTHREADS || HAVE_W32THREADS || HAVE_OS32THREADS */
+
+/**
+ * Backwards compatibility wrapper for the deprecated avpriv_ slicethread API.
+ */
+
+#if LIBAVUTIL_VERSION_MAJOR < 62
+
+static int wrapper_worker(void *priv, int jobnr, int threadnr, int nb_jobs, int nb_threads)
+{
+    AVSliceThread *ctx = priv;
+    ctx->worker_func_v1(ctx->priv_v1, jobnr, threadnr, nb_jobs, nb_threads);
+    return 0;
+}
+
+static int wrapper_main(void *priv)
+{
+    AVSliceThread *ctx = priv;
+    ctx->main_func_v1(ctx->priv_v1);
+    return 0;
+}
+
+int avpriv_slicethread_create(AVSliceThread **pctx, void *priv,
+                              void (*worker_func)(void *priv, int jobnr, int threadnr, int nb_jobs, int nb_threads),
+                              void (*main_func)(void *priv),
+                              int nb_threads)
+{
+    int ret = avpriv_slicethread_create2(pctx, NULL, wrapper_worker,
+                                         main_func ? wrapper_main : NULL,
+                                         nb_threads);
+    if (ret < 0)
+        return ret;
+
+    (*pctx)->priv           = *pctx;
+    (*pctx)->priv_v1        = priv;
+    (*pctx)->worker_func_v1 = worker_func;
+    (*pctx)->main_func_v1   = main_func;
+    return ret;
+}
+
+void avpriv_slicethread_execute(AVSliceThread *ctx, int nb_jobs, int execute_main)
+{
+    avpriv_slicethread_execute2(ctx, nb_jobs, execute_main);
+}
+
+#endif /* LIBAVUTIL_VERSION_MAJOR < 62 */

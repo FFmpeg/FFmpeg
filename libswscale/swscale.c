@@ -1391,7 +1391,7 @@ int sws_receive_slice(SwsContext *sws, unsigned int slice_start,
         c->dst_slice_start  = slice_start;
         c->dst_slice_height = slice_height;
 
-        avpriv_slicethread_execute(c->slicethread, nb_jobs, 0);
+        avpriv_slicethread_execute2(c->slicethread, nb_jobs, 0);
 
         for (int i = 0; i < c->nb_slice_ctx; i++) {
             if (c->slice_err[i] < 0) {
@@ -1655,8 +1655,8 @@ int attribute_align_arg sws_scale(SwsContext *sws,
                           dst, dstStride, 0, sws->dst_h);
 }
 
-void ff_sws_slice_worker(void *priv, int jobnr, int threadnr,
-                         int nb_jobs, int nb_threads)
+int ff_sws_slice_worker(void *priv, int jobnr, int threadnr,
+                        int nb_jobs, int nb_threads)
 {
     SwsInternal *parent = priv;
     SwsContext     *sws = parent->slice_ctx[threadnr];
@@ -1686,4 +1686,5 @@ void ff_sws_slice_worker(void *priv, int jobnr, int threadnr,
     }
 
     parent->slice_err[threadnr] = err;
+    return 0;
 }

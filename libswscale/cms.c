@@ -589,8 +589,8 @@ static av_always_inline void update_hue_peaks(CmsCtx *ctx, float P, float T)
     }
 }
 
-static void generate_slice(void *priv, int jobnr, int threadnr, int nb_jobs,
-                           int nb_threads)
+static int generate_slice(void *priv, int jobnr, int threadnr, int nb_jobs,
+                          int nb_threads)
 {
     CmsCtx ctx = *(const CmsCtx *) priv;
 
@@ -655,7 +655,7 @@ static void generate_slice(void *priv, int jobnr, int threadnr, int nb_jobs,
     }
 
     if (!output)
-        return;
+        return 0;
 
     /* Generate split gamut mapping LUT */
     for (int Tx = output_start; Tx < output_end; Tx++) {
@@ -678,6 +678,8 @@ static void generate_slice(void *priv, int jobnr, int threadnr, int nb_jobs,
             }
         }
     }
+
+    return 0;
 }
 
 int ff_sws_color_map_generate_static(v3u16_t *lut, int size, const SwsColorMap *map)
@@ -733,13 +735,13 @@ int ff_sws_color_map_generate_dynamic(v3u16_t *input, v3u16_t *output,
                                                ctx.dst.wp, ctx.src.wp);
     }
 
-    ret = avpriv_slicethread_create(&slicethread, &ctx, generate_slice, NULL, 0);
+    ret = avpriv_slicethread_create2(&slicethread, &ctx, generate_slice, NULL, 0);
     if (ret < 0)
         return ret;
 
     ctx.slice_size = (ctx.size_input + ret - 1) / ret;
     num_slices = (ctx.size_input + ctx.slice_size - 1) / ctx.slice_size;
-    avpriv_slicethread_execute(slicethread, num_slices, 0);
+    avpriv_slicethread_execute2(slicethread, num_slices, 0);
     avpriv_slicethread_free(&slicethread);
     return 0;
 }

@@ -42,12 +42,13 @@ typedef struct ThreadContext {
     int   *rets;
 } ThreadContext;
 
-static void worker_func(void *priv, int jobnr, int threadnr, int nb_jobs, int nb_threads)
+static int worker_func(void *priv, int jobnr, int threadnr, int nb_jobs, int nb_threads)
 {
     ThreadContext *c = priv;
     int ret = c->func(c->ctx, c->arg, jobnr, nb_jobs);
     if (c->rets)
         c->rets[jobnr] = ret;
+    return 0;
 }
 
 static void slice_thread_uninit(ThreadContext *c)
@@ -67,13 +68,13 @@ static int thread_execute(AVFilterContext *ctx, avfilter_action_func *func,
     c->func        = func;
     c->rets        = ret;
 
-    avpriv_slicethread_execute(c->thread, nb_jobs, 0);
+    avpriv_slicethread_execute2(c->thread, nb_jobs, 0);
     return 0;
 }
 
 static int thread_init_internal(ThreadContext *c, int nb_threads)
 {
-    nb_threads = avpriv_slicethread_create(&c->thread, c, worker_func, NULL, nb_threads);
+    nb_threads = avpriv_slicethread_create2(&c->thread, c, worker_func, NULL, nb_threads);
     if (nb_threads <= 1)
         avpriv_slicethread_free(&c->thread);
     return FFMAX(nb_threads, 1);

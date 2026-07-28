@@ -1189,8 +1189,8 @@ void ff_init_vscale_pfn(SwsInternal *c, yuv2planar1_fn yuv2plane1, yuv2planarX_f
     yuv2interleavedX_fn yuv2nv12cX, yuv2packed1_fn yuv2packed1, yuv2packed2_fn yuv2packed2,
     yuv2packedX_fn yuv2packedX, yuv2anyX_fn yuv2anyX, int use_mmx);
 
-void ff_sws_slice_worker(void *priv, int jobnr, int threadnr,
-                         int nb_jobs, int nb_threads);
+int ff_sws_slice_worker(void *priv, int jobnr, int threadnr,
+                        int nb_jobs, int nb_threads);
 
 int ff_swscale(SwsInternal *c, const uint8_t *const src[], const int srcStride[],
                int srcSliceY, int srcSliceH, uint8_t *const dst[],

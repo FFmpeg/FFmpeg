@@ -48,13 +48,14 @@ typedef struct SliceThreadContext {
     int job_size;
 } SliceThreadContext;
 
-static void main_function(void *priv) {
+static int main_function(void *priv) {
     AVCodecContext *avctx = priv;
     SliceThreadContext *c = avctx->internal->thread_ctx;
     c->mainfunc(avctx);
+    return 0;
 }
 
-static void worker_func(void *priv, int jobnr, int threadnr, int nb_jobs, int nb_threads)
+static int worker_func(void *priv, int jobnr, int threadnr, int nb_jobs, int nb_threads)
 {
     AVCodecContext *avctx = priv;
     SliceThreadContext *c = avctx->internal->thread_ctx;
@@ -64,6 +65,8 @@ static void worker_func(void *priv, int jobnr, int threadnr, int nb_jobs, int nb
                   : c->func2(avctx, c->args, jobnr, threadnr);
     if (c->rets)
         c->rets[jobnr] = ret;
+
+    return 0;
 }
 
 av_cold void ff_slice_thread_free(AVCodecContext *avctx)
@@ -90,7 +93,7 @@ static int thread_execute(AVCodecContext *avctx, action_func* func, void *arg, i
     c->func = func;
     c->rets = ret;
 
-    avpriv_slicethread_execute(c->thread, job_count, !!c->mainfunc  );
+    avpriv_slicethread_execute2(c->thread, job_count, !!c->mainfunc  );
     return 0;
 }
 
@@ -113,7 +116,7 @@ av_cold int ff_slice_thread_init(AVCodecContext *avctx)
 {
     SliceThreadContext *c;
     int thread_count = avctx->thread_count;
-    void (*mainfunc)(void *);
+    int (*mainfunc)(void *);
 
     if (!thread_count) {
         int nb_cpus = av_cpu_count();
@@ -135,8 +138,8 @@ av_cold int ff_slice_thread_init(AVCodecContext *avctx)
     if (!c)
         return AVERROR(ENOMEM);
     mainfunc = ffcodec(avctx->codec)->caps_internal & FF_CODEC_CAP_SLICE_THREAD_HAS_MF ? &main_function : NULL;
-    thread_count = avpriv_slicethread_create(&c->thread, avctx, worker_func,
-                                             mainfunc, thread_count);
+    thread_count = avpriv_slicethread_create2(&c->thread, avctx, worker_func,
+                                              mainfunc, thread_count);
     if (thread_count <= 1) {
         ff_slice_thread_free(avctx);
         avctx->thread_count = 1;

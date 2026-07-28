@@ -851,8 +851,8 @@ static int init_passes(SwsGraph *graph)
     return 0;
 }
 
-static void sws_graph_worker(void *priv, int jobnr, int threadnr, int nb_jobs,
-                             int nb_threads)
+static int sws_graph_worker(void *priv, int jobnr, int threadnr, int nb_jobs,
+                            int nb_threads)
 {
     SwsGraph *graph = priv;
     const SwsPass *pass = graph->exec.pass;
@@ -860,6 +860,7 @@ static void sws_graph_worker(void *priv, int jobnr, int threadnr, int nb_jobs,
     const int slice_h = FFMIN(pass->slice_h, pass->lines - slice_y);
 
     pass->run(graph->exec.output, graph->exec.input, slice_y, slice_h, pass);
+    return 0;
 }
 
 SwsGraph *ff_sws_graph_alloc(void)
@@ -900,8 +901,8 @@ int ff_sws_graph_init(SwsGraph *graph, SwsContext *ctx, const SwsFormat *dst,
     if (ctx->threads == 1) {
         graph->num_threads = 1;
     } else {
-        ret = avpriv_slicethread_create(&graph->slicethread, (void *) graph,
-                                        sws_graph_worker, NULL, ctx->threads);
+        ret = avpriv_slicethread_create2(&graph->slicethread, (void *) graph,
+                                         sws_graph_worker, NULL, ctx->threads);
         if (ret == AVERROR(ENOSYS)) {
             /* Fall back to single threaded operation */
             graph->num_threads = 1;
@@ -1045,7 +1046,7 @@ int ff_sws_graph_run(SwsGraph *graph, const AVFrame *dst, const AVFrame *src)
         if (pass->num_slices == 1) {
             pass->run(graph->exec.output, graph->exec.input, 0, pass->lines, pass);
         } else {
-            avpriv_slicethread_execute(graph->slicethread, pass->num_slices, 0);
+            avpriv_slicethread_execute2(graph->slicethread, pass->num_slices, 0);
         }
     }
 

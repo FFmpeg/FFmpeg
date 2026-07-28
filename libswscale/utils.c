@@ -1840,8 +1840,8 @@ static int context_init_threaded(SwsContext *sws,
     SwsInternal *c = sws_internal(sws);
     int ret;
 
-    ret = avpriv_slicethread_create(&c->slicethread, (void*) sws,
-                                    ff_sws_slice_worker, NULL, sws->threads);
+    ret = avpriv_slicethread_create2(&c->slicethread, (void*) sws,
+                                     ff_sws_slice_worker, NULL, sws->threads);
     if (ret == AVERROR(ENOSYS)) {
         sws->threads = 1;
         return 0;
