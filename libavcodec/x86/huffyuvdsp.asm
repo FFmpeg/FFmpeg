@@ -51,16 +51,16 @@ cglobal add_hfyu_left_pred_bgr32, 4,4,3, dst, src, w, left
     movd          m0, [leftq]
     lea         dstq, [dstq + wq]
     lea         srcq, [srcq + wq]
-    LSHIFT        m0, mmsize-4
+    pslldq        m0, mmsize-4
     neg           wq
 .loop:
     movu          m1, [srcq+wq]
     mova          m2, m1
-    LSHIFT        m1, 4
+    pslldq        m1, 4
     paddb         m1, m2
     pshufd        m0, m0, q3333
     mova          m2, m1
-    LSHIFT        m1, 8
+    pslldq        m1, 8
     paddb         m1, m2
     paddb         m0, m1
     movu   [dstq+wq], m0
