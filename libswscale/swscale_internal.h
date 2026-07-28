@@ -343,7 +343,6 @@ struct SwsInternal {
 
     AVSliceThread      *slicethread;
     SwsContext        **slice_ctx;
-    int                *slice_err;
     int              nb_slice_ctx;
 
     /* Scaling graph, reinitialized dynamically as needed. */

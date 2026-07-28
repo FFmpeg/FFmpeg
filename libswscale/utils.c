@@ -1851,8 +1851,7 @@ static int context_init_threaded(SwsContext *sws,
     sws->threads = ret;
 
     c->slice_ctx = av_calloc(sws->threads, sizeof(*c->slice_ctx));
-    c->slice_err = av_calloc(sws->threads, sizeof(*c->slice_err));
-    if (!c->slice_ctx || !c->slice_err)
+    if (!c->slice_ctx)
         return AVERROR(ENOMEM);
 
     for (int i = 0; i < sws->threads; i++) {
@@ -2264,7 +2263,6 @@ void sws_freeContext(SwsContext *sws)
     for (i = 0; i < c->nb_slice_ctx; i++)
         sws_freeContext(c->slice_ctx[i]);
     av_freep(&c->slice_ctx);
-    av_freep(&c->slice_err);
 
     avpriv_slicethread_free(&c->slicethread);
 
