@@ -22,6 +22,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
+#include "libavutil/mem_internal.h"
 
 #include "libavcodec/huffyuvdsp.h"
 
@@ -77,6 +78,35 @@ static void check_add_int16(HuffYUVDSPContext *c, unsigned mask, int width, cons
     av_free(dst1);
 }
 
+static void check_add_hfyu_median_pred_int16(const HuffYUVDSPContext *c, unsigned mask, int width)
+{
+    declare_func_emms(AV_CPU_FLAG_MMXEXT, void, uint16_t *dst, const uint16_t *top,
+                       const uint16_t *diff, unsigned mask,
+                       int w, int *left, int *left_top);
+
+    if (!check_func(c->add_hfyu_median_pred_int16, "add_hfyu_median_pred_int16"))
+        return;
+
+    DECLARE_ALIGNED(16, uint16_t, top)[MAX_WIDTH];
+    DECLARE_ALIGNED(16, uint16_t, diff)[MAX_WIDTH];
+    DECLARE_ALIGNED(16, uint16_t, dst_new)[MAX_WIDTH];
+    DECLARE_ALIGNED(16, uint16_t, dst_ref)[MAX_WIDTH];
+    int left_new = rnd() & mask, left_ref = left_new;
+    int lt_new   = rnd() & mask, lt_ref   = lt_new;
+
+    randomize_buffer_mask(top,  MAX_WIDTH, mask);
+    randomize_buffer_mask(diff, MAX_WIDTH, mask);
+
+    call_ref(dst_ref, top, diff, mask, width, &left_ref, &lt_ref);
+    call_new(dst_new, top, diff, mask, width, &left_new, &lt_new);
+
+    if (left_ref != left_new || lt_ref != lt_new ||
+        memcmp(dst_ref, dst_new, width * sizeof(dst_ref[0])))
+        fail();
+
+    bench_new(dst_new, top, diff, mask, width, &left_new, &lt_new);
+}
+
 static void check_add_hfyu_left_pred_bgr32(HuffYUVDSPContext *c)
 {
 #define BUF_SIZE 1080
@@ -108,9 +138,9 @@ void checkasm_check_huffyuvdsp(void)
 {
     HuffYUVDSPContext c;
 
-    ff_huffyuvdsp_init(&c, AV_PIX_FMT_YUV422P);
+    ff_huffyuvdsp_init(&c, AV_PIX_FMT_YUV422P14);
 
-    unsigned bps  = 9 + rnd() % 8;
+    unsigned bps  = 9 + rnd() % 6;
     unsigned mask = (1 << bps) - 1;
     int width = 1 + rnd() % MAX_WIDTH;
 
@@ -121,6 +151,9 @@ void checkasm_check_huffyuvdsp(void)
     /*! test always with the same size (for perf test) */
     check_add_int16(&c, mask, MAX_WIDTH, "add_int16_128");
     report("add_int16_128");
+
+    check_add_hfyu_median_pred_int16(&c, mask, width);
+    report("add_hfyu_median_pred_int16");
 
     check_add_hfyu_left_pred_bgr32(&c);
     report("add_hfyu_left_pred_bgr32");
