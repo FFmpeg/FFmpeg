@@ -44,6 +44,8 @@ FATE_MOV_FFPROBE-$(call FRAMEMD5, MOV, MPEG4, H264_PARSER) += fate-mov-mp4-exten
 
 FATE_MOV_FFPROBE-$(call DEMDEC, MOV, HEVC) += fate-mov-dovi-hvce-mp4-read
 
+FATE_MOV_FFPROBE-$(call DEMDEC, MOV, H264) += fate-mov-vfr-bframes-duration
+
 FATE_MOV_FASTSTART = fate-mov-faststart-4gb-overflow \
 
 FATE_SAMPLES_FFMPEG += $(FATE_MOV-yes) $(FATE_MOV_REMUX-yes)
@@ -147,6 +149,8 @@ fate-mov-read-amve: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream_s
 fate-mov-spherical-mono: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream_side_data_list -select_streams v -v 0 $(TARGET_SAMPLES)/mov/spherical.mov
 
 fate-mov-dovi-hvce-mp4-read: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream_side_data_list -select_streams v -v 0 $(TARGET_SAMPLES)/mov/dovi-p7-hvce.mp4
+
+fate-mov-vfr-bframes-duration: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_packets -show_entries packet=pts,dts,duration -print_format compact -select_streams v -v 0 $(TARGET_SAMPLES)/mov/vfr-7-12-1-sequence.mp4
 
 fate-mov-gpmf-remux: CMD = md5 -i $(TARGET_SAMPLES)/mov/fake-gp-media-with-real-gpmf.mp4 -map 0 -c copy -fflags +bitexact -f mp4
 fate-mov-gpmf-remux: CMP = oneline
@@ -301,6 +305,23 @@ FATE_MOV_FFMPEG-$(call TRANSCODE, RAWVIDEO, MOV, TESTSRC_FILTER SETPTS_FILTER) +
 fate-mov-vfr: CMD = md5 -filter_complex testsrc=size=2x2:duration=1,setpts=N*N:strip_fps=1 -c rawvideo -fflags +bitexact -f mov
 fate-mov-vfr: CMP = oneline
 fate-mov-vfr: REF = 1558b4a9398d8635783c93f84eb5a60d
+
+FATE_MOV_FFMPEG_FFPROBE-$(call ALLYES, COLOR_FILTER SETPTS_FILTER MPEG4_ENCODER \
+                                      MOV_MUXER MOV_DEMUXER FILE_PROTOCOL)      \
+                                      += fate-mov-vfr-bframes-derived-duration
+
+# Create VFR B-frames whose presentation durations are not a permutation of
+# the STTS sample deltas.
+tests/data/mov-vfr-bframes-derived-duration.mov: TAG = GEN
+tests/data/mov-vfr-bframes-derived-duration.mov: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
+	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin -v error \
+	    -filter_complex "color=c=black:s=2x2:r=1,setpts=N+N*N" \
+	    -frames:v 3 -fps_mode vfr -c:v mpeg4 -bf 2 -q:v 2 -threads 1 \
+	    -flags +bitexact -fflags +bitexact \
+	    -f mov $(TARGET_PATH)/$@ -y
+
+fate-mov-vfr-bframes-derived-duration: tests/data/mov-vfr-bframes-derived-duration.mov
+fate-mov-vfr-bframes-derived-duration: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_packets -show_entries packet=pts,dts,duration -print_format compact -select_streams v -v 0 $(TARGET_PATH)/tests/data/mov-vfr-bframes-derived-duration.mov
 
 FATE_MOV_FFMPEG_FFPROBE-$(call TRANSCODE, FLAC, MP4 MOV, WAV_DEMUXER PCM_S16LE_DECODER) += fate-mov-mp4-iamf-stereo
 fate-mov-mp4-iamf-stereo: tests/data/asynth-44100-2.wav tests/data/streamgroups/audio_element-stereo tests/data/streamgroups/mix_presentation-stereo

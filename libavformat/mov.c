@@ -28,6 +28,7 @@
 #include <inttypes.h>
 #include <limits.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #include "libavutil/attributes.h"
 #include "libavutil/bprint.h"
@@ -5269,6 +5270,109 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
     mov_estimate_video_delay(mov, st);
 }
 
+typedef struct MOVPresentationSample {
+    int index;
+    int64_t pts;
+} MOVPresentationSample;
+
+static int mov_compare_presentation_samples(const void *a, const void *b)
+{
+    const MOVPresentationSample *sa = a;
+    const MOVPresentationSample *sb = b;
+
+    if (sa->pts != sb->pts)
+        return (sa->pts > sb->pts) - (sa->pts < sb->pts);
+    return (sa->index > sb->index) - (sa->index < sb->index);
+}
+
+/*
+ * Set sample durations from adjacent presentation timestamps.
+ */
+static void mov_update_sample_durations(MOVContext *mov, AVStream *st)
+{
+    MOVStreamContext *sc = st->priv_data;
+    FFStream *const sti = ffstream(st);
+    MOVPresentationSample *samples = NULL;
+    MOVTimeToSample *tts_data = NULL;
+    unsigned int tts_index = 0, tts_sample = 0;
+    int count = sti->nb_index_entries;
+
+    /* A single STTS entry describes a fixed sample delta. */
+    if (st->codecpar->codec_type != AVMEDIA_TYPE_VIDEO ||
+        !sc->ctts_count || sc->stts_count < 2 ||
+        !sc->tts_data || count < 2 ||
+        count >= UINT_MAX / sizeof(*tts_data))
+        return;
+
+    samples   = av_malloc_array(count, sizeof(*samples));
+    tts_data  = av_malloc_array(count, sizeof(*tts_data));
+    if (!samples || !tts_data)
+        goto fail;
+
+    for (int i = 0; i < count; i++) {
+        int64_t dts, offset;
+
+        if (tts_index >= sc->tts_count || !sc->tts_data[tts_index].count)
+            goto fail;
+
+        tts_data[i] = sc->tts_data[tts_index];
+        tts_data[i].count = 1;
+
+        dts = sti->index_entries[i].timestamp;
+        offset = (int64_t)sc->dts_shift + tts_data[i].offset;
+        if (dts == AV_NOPTS_VALUE ||
+            (offset > 0 && dts > INT64_MAX - offset) ||
+            (offset < 0 && dts < INT64_MIN - offset))
+            goto fail;
+
+        samples[i].index = i;
+        samples[i].pts = dts + offset;
+
+        if (++tts_sample == sc->tts_data[tts_index].count) {
+            tts_index++;
+            tts_sample = 0;
+        }
+    }
+    if (tts_index != sc->tts_count || tts_sample)
+        goto fail;
+
+    qsort(samples, count, sizeof(*samples), mov_compare_presentation_samples);
+
+    for (int i = 0; i + 1 < count; i++) {
+        uint64_t duration;
+
+        if (samples[i].pts >= samples[i + 1].pts)
+            goto fail;
+
+        /*
+         * In VFR streams with reordered frames, STTS deltas follow decode
+         * order while AVPacket.duration follows presentation order. CTTS
+         * may produce presentation intervals that cannot be obtained by
+         * merely permuting the STTS deltas, so derive each known duration
+         * from adjacent PTS.
+         */
+        duration = (uint64_t)samples[i + 1].pts - samples[i].pts;
+        if (!duration || duration > UINT_MAX)
+            goto fail;
+
+        tts_data[samples[i].index].duration = (unsigned int)duration;
+    }
+
+    av_log(mov->fc, AV_LOG_DEBUG,
+           "Updated sample durations in presentation order for stream %d\n",
+           st->index);
+
+    av_freep(&sc->tts_data);
+    sc->tts_data = tts_data;
+    sc->tts_count = count;
+    sc->tts_allocated_size = count * sizeof(*tts_data);
+    tts_data = NULL;
+
+fail:
+    av_free(samples);
+    av_free(tts_data);
+}
+
 static int test_same_origin(const char *src, const char *ref) {
     char src_proto[64];
     char ref_proto[64];
@@ -5497,6 +5601,11 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     }
 
     mov_build_index(c, st);
+    /*
+     * Fragment samples are appended later by mov_read_trun() and are not
+     * covered by this non-fragmented track update.
+     */
+    mov_update_sample_durations(c, st);
 
 #if CONFIG_IAMFDEC
     if (sc->iamf) {

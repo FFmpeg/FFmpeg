@@ -1,0 +1,12 @@
+packet|pts=0|dts=-1710000|duration=630000
+packet|pts=3510000|dts=-1080000|duration=90000
+packet|pts=1710000|dts=0|duration=90000
+packet|pts=630000|dts=630000|duration=1080000
+packet|pts=1800000|dts=1710000|duration=630000
+packet|pts=2430000|dts=1800000|duration=1080000
+packet|pts=5400000|dts=2430000|duration=630000
+packet|pts=4230000|dts=3510000|duration=1080000
+packet|pts=3600000|dts=3600000|duration=630000
+packet|pts=5310000|dts=4230000|duration=90000
+packet|pts=6030000|dts=5310000|duration=1080000
+packet|pts=7110000|dts=5400000|duration=90000
