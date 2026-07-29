@@ -2154,10 +2154,9 @@ static int qsv_fixed_pool_map_to(AVHWFramesContext *dst_ctx,
         case AV_PIX_FMT_VAAPI:
         {
             mfxHDLPair *pair = (mfxHDLPair*)hwctx->surfaces[i].Data.MemId;
-            if (*(VASurfaceID*)pair->first == (VASurfaceID)(uintptr_t)src->data[3]) {
+            if (*(VASurfaceID*)pair->first == (VASurfaceID)(uintptr_t)src->data[3])
                 index = i;
-                break;
-            }
+            break;
         }
 #endif
 #if CONFIG_D3D11VA
@@ -2166,20 +2165,18 @@ static int qsv_fixed_pool_map_to(AVHWFramesContext *dst_ctx,
             mfxHDLPair *pair = (mfxHDLPair*)hwctx->surfaces[i].Data.MemId;
             if (pair->first == src->data[0]
                 && (pair->second == src->data[1]
-                    || (pair->second == (mfxMemId)MFX_INFINITE && src->data[1] == (uint8_t *)0))) {
+                    || (pair->second == (mfxMemId)MFX_INFINITE && src->data[1] == (uint8_t *)0)))
                 index = i;
-                break;
-            }
+            break;
         }
 #endif
 #if CONFIG_DXVA2
         case AV_PIX_FMT_DXVA2_VLD:
         {
             mfxHDLPair *pair = (mfxHDLPair*)hwctx->surfaces[i].Data.MemId;
-            if (pair->first == src->data[3]) {
+            if (pair->first == src->data[3])
                 index = i;
-                break;
-            }
+            break;
         }
 #endif
         }
