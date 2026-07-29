@@ -488,8 +488,10 @@ static int decode_slice(AVCodecContext *c, void *arg)
 
     if (sc->remap) {
         ret = decode_remap(f, sc);
-        if (ret < 0)
+        if (ret < 0) {
+            slice_set_damaged(f, sc);
             return ret;
+        }
     }
 
     if (ac == AC_GOLOMB_RICE) {
