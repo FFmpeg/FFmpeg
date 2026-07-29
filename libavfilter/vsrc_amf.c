@@ -76,8 +76,8 @@ AVFILTER_DEFINE_CLASS(amf_capture);
 
 #include <timeapi.h>
 
-typedef WINMMAPI MMRESULT (WINAPI *timeBeginPeriod_fn)( UINT uPeriod);
-typedef WINMMAPI MMRESULT (WINAPI *timeEndPeriod_fn)(UINT uPeriod);
+typedef MMRESULT (WINAPI *timeBeginPeriod_fn)(UINT uPeriod);
+typedef MMRESULT (WINAPI *timeEndPeriod_fn)(UINT uPeriod);
 
 static void amf_increase_timer_precision(AMFGrabContext *ctx)
 {
