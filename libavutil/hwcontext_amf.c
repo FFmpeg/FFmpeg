@@ -801,6 +801,7 @@ static int amf_init_from_d3d11_device(AVAMFDeviceContext* amf_ctx, AVHWDeviceCon
         return AVERROR(ENODEV);
     }
     av_log(child_device_ctx, AV_LOG_INFO, "AMF via D3D11.\n");
+    hwctx->BindFlags |= D3D11_BIND_SHADER_RESOURCE;
     return 0;
 }
 #endif
