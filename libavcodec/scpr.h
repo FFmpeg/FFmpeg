@@ -72,10 +72,10 @@ typedef struct SCPRContext {
     int           (*decode)(GetByteContext *gb, RangeCoder *rc, uint32_t cumFreq, uint32_t freq, uint32_t total_freq);
 } SCPRContext;
 
-static int decode_run_i(AVCodecContext *avctx, uint32_t ptype, int run,
-                        int *px, int *py, uint32_t clr, uint32_t *dst,
-                        int linesize, uint32_t *plx, uint32_t *ply,
-                        uint32_t backstep, int off, int *cx, int *cx1)
+av_unused static int decode_run_i(AVCodecContext *avctx, uint32_t ptype, int run,
+                                  int *px, int *py, uint32_t clr, uint32_t *dst,
+                                  int linesize, uint32_t *plx, uint32_t *ply,
+                                  uint32_t backstep, int off, int *cx, int *cx1)
 {
     uint32_t r, g, b;
     int z;
@@ -214,13 +214,13 @@ static int decode_run_i(AVCodecContext *avctx, uint32_t ptype, int run,
     return 0;
 }
 
-static int decode_run_p(AVCodecContext *avctx, uint32_t ptype, int run,
-                        int x, int y, uint32_t clr,
-                        uint32_t *dst, uint32_t *prev,
-                        int linesize, int plinesize,
-                        uint32_t *bx, uint32_t *by,
-                        uint32_t backstep, int sx1, int sx2,
-                        int *cx, int *cx1)
+av_unused static int decode_run_p(AVCodecContext *avctx, uint32_t ptype, int run,
+                                  int x, int y, uint32_t clr,
+                                  uint32_t *dst, uint32_t *prev,
+                                  int linesize, int plinesize,
+                                  uint32_t *bx, uint32_t *by,
+                                  uint32_t backstep, int sx1, int sx2,
+                                  int *cx, int *cx1)
 {
     uint32_t r, g, b;
     int z;
