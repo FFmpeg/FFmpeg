@@ -219,7 +219,8 @@ void main(void)
     if (slice_idx == (gl_NumWorkGroups.x*gl_NumWorkGroups.y - 1))
         get_rac_equi();
 
-    decode_slice_header(slice_idx, slice_ctx[slice_idx]);
+    if (decode_slice_header(slice_idx, slice_ctx[slice_idx]))
+        slice_ctx[slice_idx].slice_dim = ivec2(0);
 
     slice_ctx[slice_idx].c = rc;
 
