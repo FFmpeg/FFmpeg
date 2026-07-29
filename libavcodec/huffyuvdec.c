@@ -350,7 +350,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     s->flags = avctx->flags;
 
     ff_bswapdsp_init(&s->bdsp);
-    ff_huffyuvdsp_init(&s->hdsp, avctx->pix_fmt);
+    ff_huffyuvdsp_init(&s->hdsp);
     ff_llviddsp_init(&s->llviddsp);
 
     s->interlaced = avctx->height > 288;

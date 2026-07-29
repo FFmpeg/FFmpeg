@@ -138,9 +138,9 @@ void checkasm_check_huffyuvdsp(void)
 {
     HuffYUVDSPContext c;
 
-    ff_huffyuvdsp_init(&c, AV_PIX_FMT_YUV422P14);
+    ff_huffyuvdsp_init(&c);
 
-    unsigned bps  = 9 + rnd() % 6;
+    unsigned bps  = 9 + rnd() % 8;
     unsigned mask = (1 << bps) - 1;
     int width = 1 + rnd() % MAX_WIDTH;
 

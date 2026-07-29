@@ -25,7 +25,7 @@
 
 void ff_add_int16_neon(uint16_t *dst, const uint16_t *src, unsigned mask, int w);
 
-av_cold void ff_huffyuvdsp_init_aarch64(HuffYUVDSPContext *c, enum AVPixelFormat pix_fmt)
+av_cold void ff_huffyuvdsp_init_aarch64(HuffYUVDSPContext *c)
 {
     int cpu_flags = av_get_cpu_flags();
 

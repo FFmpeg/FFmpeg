@@ -32,7 +32,7 @@ void ff_add_hfyu_left_pred_bgr32_sse2(uint8_t *dst, const uint8_t *src,
 void ff_add_hfyu_median_pred_int16_sse4(uint16_t *dst, const uint16_t *top, const uint16_t *diff,
                                         unsigned mask, int w, int *left, int *left_top);
 
-av_cold void ff_huffyuvdsp_init_x86(HuffYUVDSPContext *c, enum AVPixelFormat pix_fmt)
+av_cold void ff_huffyuvdsp_init_x86(HuffYUVDSPContext *c)
 {
     int cpu_flags = av_get_cpu_flags();
 
