@@ -22,6 +22,7 @@
 #include "config.h"
 
 #include "libavutil/log.h"
+#include "libavutil/pixfmt.h"
 
 #include <stdint.h>
 #if CONFIG_LIBLCEVC_DEC
