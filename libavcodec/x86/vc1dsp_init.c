@@ -66,14 +66,14 @@ void ff_put_vc1_chroma_mc8_nornd_ssse3(uint8_t *dst, const uint8_t *src,
                                        ptrdiff_t stride, int h, int x, int y);
 void ff_avg_vc1_chroma_mc8_nornd_ssse3(uint8_t *dst, const uint8_t *src,
                                        ptrdiff_t stride, int h, int x, int y);
-void ff_vc1_inv_trans_4x4_dc_mmxext(uint8_t *dest, ptrdiff_t linesize,
-                                    int16_t *block);
-void ff_vc1_inv_trans_4x8_dc_mmxext(uint8_t *dest, ptrdiff_t linesize,
-                                    int16_t *block);
-void ff_vc1_inv_trans_8x4_dc_mmxext(uint8_t *dest, ptrdiff_t linesize,
-                                    int16_t *block);
-void ff_vc1_inv_trans_8x8_dc_mmxext(uint8_t *dest, ptrdiff_t linesize,
-                                    int16_t *block);
+void ff_vc1_inv_trans_4x4_dc_sse2(uint8_t *dest, ptrdiff_t linesize,
+                                  int16_t *block);
+void ff_vc1_inv_trans_4x8_dc_sse2(uint8_t *dest, ptrdiff_t linesize,
+                                  int16_t *block);
+void ff_vc1_inv_trans_8x4_dc_sse2(uint8_t *dest, ptrdiff_t linesize,
+                                  int16_t *block);
+void ff_vc1_inv_trans_8x8_dc_sse2(uint8_t *dest, ptrdiff_t linesize,
+                                  int16_t *block);
 
 #define MSPEL_FUNC(OP, X, Y, SIZE, XMM)                                     \
     void ff_vc1_ ## OP ## _mspel_mc ## X ## Y ## _ ## SIZE ##_ ## XMM       \
@@ -110,13 +110,12 @@ av_cold void ff_vc1dsp_init_x86(VC1DSPContext *dsp)
         dsp->vc1_v_loop_filter16 = vc1_v_loop_filter16_ ## EXT; \
         dsp->vc1_h_loop_filter16 = vc1_h_loop_filter16_ ## EXT
 
-    if (EXTERNAL_MMXEXT(cpu_flags)) {
-        dsp->vc1_inv_trans_8x8_dc                = ff_vc1_inv_trans_8x8_dc_mmxext;
-        dsp->vc1_inv_trans_4x8_dc                = ff_vc1_inv_trans_4x8_dc_mmxext;
-        dsp->vc1_inv_trans_8x4_dc                = ff_vc1_inv_trans_8x4_dc_mmxext;
-        dsp->vc1_inv_trans_4x4_dc                = ff_vc1_inv_trans_4x4_dc_mmxext;
-    }
     if (EXTERNAL_SSE2(cpu_flags)) {
+        dsp->vc1_inv_trans_8x8_dc                = ff_vc1_inv_trans_8x8_dc_sse2;
+        dsp->vc1_inv_trans_4x8_dc                = ff_vc1_inv_trans_4x8_dc_sse2;
+        dsp->vc1_inv_trans_8x4_dc                = ff_vc1_inv_trans_8x4_dc_sse2;
+        dsp->vc1_inv_trans_4x4_dc                = ff_vc1_inv_trans_4x4_dc_sse2;
+
         ASSIGN_LF816(sse2);
 
         MSPEL_FUNCS(0, 0, sse2);
