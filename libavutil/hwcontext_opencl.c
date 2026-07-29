@@ -2937,32 +2937,38 @@ static int opencl_map_to(AVHWFramesContext *hwfc, AVFrame *dst,
     case AV_PIX_FMT_DRM_PRIME:
         if (priv->beignet_drm_mapping_usable)
             return opencl_map_from_drm_beignet(hwfc, dst, src, flags);
+        break;
 #endif
 #if HAVE_OPENCL_VAAPI_BEIGNET
     case AV_PIX_FMT_VAAPI:
         if (priv->beignet_drm_mapping_usable)
             return opencl_map_from_vaapi(hwfc, dst, src, flags);
+        break;
 #endif
 #if HAVE_OPENCL_VAAPI_INTEL_MEDIA
     case AV_PIX_FMT_QSV:
     case AV_PIX_FMT_VAAPI:
         if (priv->qsv_mapping_usable)
             return opencl_map_from_qsv(hwfc, dst, src, flags);
+        break;
 #endif
 #if HAVE_OPENCL_DXVA2
     case AV_PIX_FMT_DXVA2_VLD:
         if (priv->dxva2_mapping_usable)
             return opencl_map_from_dxva2(hwfc, dst, src, flags);
+        break;
 #endif
 #if HAVE_OPENCL_D3D11
     case AV_PIX_FMT_D3D11:
         if (priv->d3d11_mapping_usable)
             return opencl_map_from_d3d11(hwfc, dst, src, flags);
+        break;
 #endif
 #if HAVE_OPENCL_DRM_ARM
     case AV_PIX_FMT_DRM_PRIME:
         if (priv->drm_arm_mapping_usable)
             return opencl_map_from_drm_arm(hwfc, dst, src, flags);
+        break;
 #endif
 #if HAVE_OPENCL_VIDEOTOOLBOX
     case AV_PIX_FMT_VIDEOTOOLBOX:
