@@ -30,6 +30,7 @@
 #include <signal.h>
 #include <stdint.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/mathematics.h"
@@ -3576,6 +3577,7 @@ static void event_loop(VideoState *cur_stream)
                     last_mouse_left_click = av_gettime_relative();
                 }
             }
+            av_fallthrough;
         case SDL_MOUSEMOTION:
             if (cursor_hidden) {
                 SDL_ShowCursor(1);
@@ -3627,6 +3629,7 @@ static void event_loop(VideoState *cur_stream)
                     }
                     if (vk_renderer)
                         vk_renderer_resize(vk_renderer, screen_width, screen_height);
+                    av_fallthrough;
                 case SDL_WINDOWEVENT_EXPOSED:
                     cur_stream->force_refresh = 1;
             }
