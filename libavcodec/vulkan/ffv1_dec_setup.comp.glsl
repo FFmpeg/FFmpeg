@@ -106,7 +106,7 @@ bool decode_remap(uint slice_idx, inout SliceContext sc)
             rc_state[k] = uint8_t(128);
 
         int mul_count = int(get_usymbol(0));
-        if (mul_count > 4096)
+        if (uint(mul_count) > 4096u)
             return true;
         for (int mi = 0; mi < mul_count; mi++)
             mul[mi] = -1;
