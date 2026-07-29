@@ -80,7 +80,7 @@ static void check_add_int16(HuffYUVDSPContext *c, unsigned mask, int width, cons
 
 static void check_add_hfyu_median_pred_int16(const HuffYUVDSPContext *c, unsigned mask, int width)
 {
-    declare_func_emms(AV_CPU_FLAG_MMXEXT, void, uint16_t *dst, const uint16_t *top,
+    declare_func(void, uint16_t *dst, const uint16_t *top,
                        const uint16_t *diff, unsigned mask,
                        int w, int *left, int *left_top);
 
