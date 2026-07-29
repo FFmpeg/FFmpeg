@@ -668,7 +668,7 @@ static int param_parse(void *s, IAMFContext *c, AVIOContext *pb,
 
         if (constant_subblock_duration == 0) {
             subblock_duration = ffio_read_leb(pb);
-            if (duration - total_duration > subblock_duration) {
+            if (subblock_duration > duration - total_duration) {
                 av_log(s, AV_LOG_ERROR, "Invalid subblock durations in parameter_id %u\n", parameter_id);
                 av_free(param);
                 return AVERROR_INVALIDDATA;
