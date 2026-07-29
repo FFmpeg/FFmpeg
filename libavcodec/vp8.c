@@ -1848,7 +1848,7 @@ void vp8_mc_luma(VP8Context *s, VP8ThreadData *td, uint8_t *dst,
         y_off += mv->y >> 2;
 
         // edge emulation
-        ff_progress_frame_await(ref, (3 + y_off + block_h + subpel_idx[2][my]) >> 4);
+        ff_progress_frame_await(ref, FFMAX((3 + y_off + block_h + subpel_idx[2][my]) >> 4, 0));
         src += y_off * linesize + x_off;
         if (x_off < mx_idx || x_off >= width  - block_w - subpel_idx[2][mx] ||
             y_off < my_idx || y_off >= height - block_h - subpel_idx[2][my]) {
@@ -1906,7 +1906,7 @@ void vp8_mc_chroma(VP8Context *s, VP8ThreadData *td, uint8_t *dst1,
         // edge emulation
         src1 += y_off * linesize + x_off;
         src2 += y_off * linesize + x_off;
-        ff_progress_frame_await(ref, (3 + y_off + block_h + subpel_idx[2][my]) >> 3);
+        ff_progress_frame_await(ref, FFMAX((3 + y_off + block_h + subpel_idx[2][my]) >> 3, 0));
         if (x_off < mx_idx || x_off >= width  - block_w - subpel_idx[2][mx] ||
             y_off < my_idx || y_off >= height - block_h - subpel_idx[2][my]) {
             s->vdsp.emulated_edge_mc(td->edge_emu_buffer,
