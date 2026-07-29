@@ -135,6 +135,8 @@ bool decode_remap(uint slice_idx, inout SliceContext sc)
                 }
                 if (i - 1 >= int64_t(end))
                     break;
+                if (j >= fltmap[slice_idx][p].length())
+                    return true;
                 uint iv = uint(i);
                 fltmap[slice_idx][p][j++] = iv ^ (((iv & flip_mask) != 0u) ? 0u : flip);
                 i++;
