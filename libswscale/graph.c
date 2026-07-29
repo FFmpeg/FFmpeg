@@ -530,9 +530,12 @@ static int init_legacy_subpass(SwsGraph *graph, SwsContext *sws,
     return 0;
 }
 
+static int add_legacy_3dlut_pass(SwsGraph *graph, const SwsFormat *src,
+                                 SwsPass *input, SwsPass **output);
+
 static int add_legacy_sws_pass(SwsGraph *graph, const SwsFormat *src,
-                               const SwsFormat *dst, SwsPass *input,
-                               SwsPass **output)
+                               const SwsFormat *dst, const SwsLut3D *lut3d,
+                               SwsPass *input, SwsPass **output)
 {
     int ret, warned = 0;
     SwsContext *const ctx = graph->ctx;
@@ -546,6 +549,18 @@ static int add_legacy_sws_pass(SwsGraph *graph, const SwsFormat *src,
      * testing against multiple backends */
     if (!sws_isSupportedInput(src->format) || !sws_isSupportedOutput(dst->format))
         return AVERROR(ENOTSUP);
+
+    /* If we need to apply a 3D LUT, add it as an explicit input prepass */
+    if (lut3d) {
+        ret = add_legacy_3dlut_pass(graph, src, input, &input);
+        if (ret < 0)
+            return ret;
+
+        SwsFormat tmp = *src;
+        tmp.format = input->format;
+        tmp.color  = lut3d->map.dst;
+        return add_legacy_sws_pass(graph, &tmp, dst, NULL, input, output);
+    }
 
     SwsContext *sws = sws_alloc_context();
     if (!sws)
@@ -621,10 +636,6 @@ static int add_legacy_sws_pass(SwsGraph *graph, const SwsFormat *src,
     return init_legacy_subpass(graph, sws, input, output);
 }
 
-static int add_convert_pass(SwsGraph *graph, const SwsFormat *src,
-                            const SwsFormat *dst, const SwsLut3D *lut3d,
-                            SwsPass *input, SwsPass **output);
-
 static int add_legacy_3dlut_pass(SwsGraph *graph, const SwsFormat *src,
                                  SwsPass *input, SwsPass **output)
 {
@@ -638,7 +649,7 @@ static int add_legacy_3dlut_pass(SwsGraph *graph, const SwsFormat *src,
     if (src->format != fmt) {
         SwsFormat tmp = *src;
         tmp.format = fmt;
-        ret = add_convert_pass(graph, src, &tmp, NULL, input, &input);
+        ret = add_legacy_sws_pass(graph, src, &tmp, NULL, input, &input);
         if (ret < 0)
             return ret;
     }
@@ -657,8 +668,8 @@ static int add_legacy_3dlut_pass(SwsGraph *graph, const SwsFormat *src,
  *********************************/
 
 static int add_ops_convert_pass(SwsGraph *graph, const SwsFormat *src,
-                                const SwsFormat *dst, SwsPass *input,
-                                SwsPass **output)
+                                const SwsFormat *dst, const SwsLut3D *lut3d,
+                                SwsPass *input, SwsPass **output)
 {
 #if CONFIG_UNSTABLE
     SwsContext *ctx = graph->ctx;
@@ -672,7 +683,7 @@ static int add_ops_convert_pass(SwsGraph *graph, const SwsFormat *src,
         return AVERROR(ENOTSUP);
 
     SwsOpList *ops;
-    int ret = ff_sws_op_list_generate(ctx, src, dst, &ops, &graph->incomplete);
+    int ret = ff_sws_op_list_generate(ctx, src, dst, lut3d, &ops, &graph->incomplete);
     if (ret < 0)
         return ret;
 
@@ -705,26 +716,14 @@ static int add_convert_pass(SwsGraph *graph, const SwsFormat *src,
     SwsContext *ctx = graph->ctx;
     int ret;
 
-    /* If we need to apply a 3D LUT, add it as an explicit input prepass */
-    if (lut3d) {
-        ret = add_legacy_3dlut_pass(graph, src, input, &input);
-        if (ret < 0)
-            return ret;
-
-        SwsFormat tmp = *src;
-        tmp.format = input->format;
-        tmp.color  = lut3d->map.dst;
-        return add_convert_pass(graph, &tmp, dst, NULL, input, output);
-    }
-
     if (prefer_ops_backend(ctx, src, dst)) {
-        ret = add_ops_convert_pass(graph, src, dst, input, output);
+        ret = add_ops_convert_pass(graph, src, dst, lut3d, input, output);
         if (ret == AVERROR(ENOTSUP))
-            ret = add_legacy_sws_pass(graph, src, dst, input, output);
+            ret = add_legacy_sws_pass(graph, src, dst, lut3d, input, output);
     } else {
-        ret = add_legacy_sws_pass(graph, src, dst, input, output);
+        ret = add_legacy_sws_pass(graph, src, dst, lut3d, input, output);
         if (ret == AVERROR(ENOTSUP))
-            ret = add_ops_convert_pass(graph, src, dst, input, output);
+            ret = add_ops_convert_pass(graph, src, dst, lut3d, input, output);
     }
 
     return ret;

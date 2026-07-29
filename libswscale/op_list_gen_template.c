@@ -52,7 +52,7 @@ static int enum_ops_fmt(SwsContext *ctx, void *opaque,
         dst.width  = dst_sizes[i][0];
         dst.height = dst_sizes[i][1];
 
-        ret = ff_sws_op_list_generate(ctx, &src, &dst, &ops, &incomplete);
+        ret = ff_sws_op_list_generate(ctx, &src, &dst, NULL, &ops, &incomplete);
         if (ret == AVERROR(ENOTSUP))
             return 0; /* silently skip unsupported formats */
         else if (ret < 0)

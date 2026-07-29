@@ -201,13 +201,25 @@ int ff_sws_add_filters(SwsContext *ctx, SwsPixelType type, SwsOpList *ops,
                        const SwsFormat *src, const SwsFormat *dst);
 
 /**
- * Generate an SwsOpList defining a conversion from `src` to `dst`.
+ * Append a set of operations for applying a gamut/tone mapping 3D LUT to
+ * the pixels. The input and output domain are assumed to be normalized
+ * floating point RGBA in the range [0, 1].
+ *
+ * Returns 0 on success, or a negative error code on failure.
+ */
+typedef struct SwsLut3D SwsLut3D;
+int ff_sws_apply_lut3d(SwsContext *ctx, SwsPixelType type, SwsOpList *ops,
+                       const SwsLut3D *lut3d);
+
+/**
+ * Generate an SwsOpList defining a conversion from `src` to `dst`, with an
+ * optional 3DLUT for converting between gamuts.
  *
  * Returns 0 on success, or a negative error code on failure.
  */
 int ff_sws_op_list_generate(SwsContext *ctx, const SwsFormat *src,
-                            const SwsFormat *dst, SwsOpList **out_ops,
-                            bool *incomplete);
+                            const SwsFormat *dst, const SwsLut3D *lut3d,
+                            SwsOpList **out_ops, bool *incomplete);
 
 /**
  * Represents a view into a single field of frame data.

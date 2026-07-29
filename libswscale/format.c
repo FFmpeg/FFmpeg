@@ -1745,9 +1745,62 @@ int ff_sws_add_filters(SwsContext *ctx, SwsPixelType type, SwsOpList *ops,
     return add_filter(ctx, type, ops, SWS_OP_FILTER_V, src->height, dst->height);
 }
 
+int ff_sws_apply_lut3d(SwsContext *ctx, SwsPixelType type, SwsOpList *ops,
+                       const SwsLut3D *lut3d)
+{
+    /* Unnormalize to LUT input domain and clamp */
+    const AVRational64 domain = Q(INPUT_LUT_SIZE - 1);
+
+    RET(ff_sws_op_list_append(ops, &(SwsOp) {
+        .type   = type,
+        .op     = SWS_OP_LINEAR,
+        .lin    = {{
+            { domain,   Q(0),   Q(0), Q(0), Q(0) },
+            {   Q(0), domain,   Q(0), Q(0), Q(0) },
+            {   Q(0),   Q(0), domain, Q(0), Q(0) },
+            {   Q(0),   Q(0),   Q(0), Q(1), Q(0) },
+        }},
+    }));
+
+    RET(ff_sws_op_list_append(ops, &(SwsOp) {
+        .op     = SWS_OP_MAX,
+        .type   = type,
+        .clamp  = {{ Q(0), Q(0), Q(0) }},
+    }));
+
+    RET(ff_sws_op_list_append(ops, &(SwsOp) {
+        .op     = SWS_OP_MIN,
+        .type   = type,
+        .clamp  = {{ domain, domain, domain }},
+    }));
+
+    /* Apply the 3DLUT itself */
+    RET(ff_sws_op_list_append(ops, &(SwsOp) {
+        .op     = SWS_OP_LUT_3D,
+        .type   = type,
+        .lut3d.lut     = av_refstruct_ref_c(lut3d),
+        .lut3d.dynamic = lut3d->dynamic,
+    }));
+
+    /* Normalize back to [0, 1] */
+    const AVRational64 inv = av_inv_q64(Q(UINT16_MAX));
+    RET(ff_sws_op_list_append(ops, &(SwsOp) {
+        .type   = type,
+        .op     = SWS_OP_LINEAR,
+        .lin    = {{
+            {  inv, Q(0), Q(0), Q(0), Q(0) },
+            { Q(0),  inv, Q(0), Q(0), Q(0) },
+            { Q(0), Q(0),  inv, Q(0), Q(0) },
+            { Q(0), Q(0), Q(0), Q(1), Q(0) },
+        }},
+    }));
+
+    return 0;
+}
+
 int ff_sws_op_list_generate(SwsContext *ctx, const SwsFormat *src,
-                            const SwsFormat *dst, SwsOpList **out_ops,
-                            bool *incomplete)
+                            const SwsFormat *dst, const SwsLut3D *lut3d,
+                            SwsOpList **out_ops, bool *incomplete)
 {
     /* The new code does not yet support alpha blending */
     if (src->desc->flags & AV_PIX_FMT_FLAG_ALPHA &&
@@ -1770,6 +1823,11 @@ int ff_sws_op_list_generate(SwsContext *ctx, const SwsFormat *src,
     ret = ff_sws_add_filters(ctx, type, ops, src, dst);
     if (ret < 0)
         goto fail;
+    if (lut3d) {
+        ret = ff_sws_apply_lut3d(ctx, type, ops, lut3d);
+        if (ret < 0)
+            goto fail;
+    }
     ret = ff_sws_encode_colors(ctx, type, ops, src, dst, incomplete);
     if (ret < 0)
         goto fail;
