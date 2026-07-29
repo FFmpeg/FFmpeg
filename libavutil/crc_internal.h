@@ -20,6 +20,7 @@
 #define AVUTIL_CRC_INTERNAL_H
 
 #include <stdint.h>
+#include "libavutil/attributes.h"
 #include "libavutil/reverse.h"
 
 static uint64_t reverse(uint64_t p, unsigned int deg)
@@ -35,7 +36,8 @@ static uint64_t reverse(uint64_t p, unsigned int deg)
     return ret;
 }
 
-static uint64_t xnmodp(unsigned n, uint64_t poly, unsigned deg, uint64_t *div, int bitreverse)
+av_unused static uint64_t xnmodp(unsigned n, uint64_t poly, unsigned deg,
+                                 uint64_t *div, int bitreverse)
 {
     uint64_t mod, mask, high;
 
