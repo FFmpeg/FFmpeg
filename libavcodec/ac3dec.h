@@ -266,20 +266,20 @@ struct AC3HeaderInfo;
  * Parse the E-AC-3 frame header.
  * This parses both the bit stream info and audio frame header.
  */
-static int ff_eac3_parse_header(AC3DecodeContext *s, const struct AC3HeaderInfo *hdr);
+av_unused static int ff_eac3_parse_header(AC3DecodeContext *s, const struct AC3HeaderInfo *hdr);
 
 /**
  * Decode mantissas in a single channel for the entire frame.
  * This is used when AHT mode is enabled.
  */
-static void ff_eac3_decode_transform_coeffs_aht_ch(AC3DecodeContext *s, int ch);
+av_unused static void ff_eac3_decode_transform_coeffs_aht_ch(AC3DecodeContext *s, int ch);
 
 /**
  * Apply spectral extension to each channel by copying lower frequency
  * coefficients to higher frequency bins and applying side information to
  * approximate the original high frequency signal.
  */
-static void ff_eac3_apply_spectral_extension(AC3DecodeContext *s);
+av_unused static void ff_eac3_apply_spectral_extension(AC3DecodeContext *s);
 
 #if (!USE_FIXED)
 extern float ff_ac3_heavy_dynamic_range_tab[256];
