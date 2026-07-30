@@ -280,10 +280,10 @@ cglobal add_gradient_pred, 3,3,4, src, stride, width
     mova         xm0, [pb_15]
 
 ;load src - 1 in xm1
-    movd         xm1, [srcq-1]
 %if cpuflag(avx2)
-    vpbroadcastb xm1, xm1
+    vpbroadcastb xm1, [srcq-1]
 %else
+    movd         xm1, [srcq-1]
     pxor         xm2, xm2
     pshufb       xm1, xm2
 %endif
