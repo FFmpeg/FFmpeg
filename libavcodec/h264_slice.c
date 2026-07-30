@@ -1627,6 +1627,10 @@ static int h264_field_start(H264Context *h, const H264SliceContext *sl,
         int field = h->picture_structure == PICT_BOTTOM_FIELD;
         release_unused_pictures(h, 0);
         h->cur_pic_ptr->tf.owner[field] = h->avctx;
+        /* h264_frame_start(), which clears this for every other picture, is
+         * not called for a second field. */
+        if (CONFIG_ERROR_RESILIENCE)
+            ff_h264_set_erpic(&h->er.cur_pic, NULL);
     }
     /* Some macroblocks can be accessed before they're available in case
     * of lost slices, MBAFF or threading. */
