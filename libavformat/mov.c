@@ -6253,6 +6253,31 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (flags & MOV_TRUN_DATA_OFFSET)        data_offset        = avio_rb32(pb);
     if (flags & MOV_TRUN_FIRST_SAMPLE_FLAGS) first_sample_flags = avio_rb32(pb);
 
+    int entry_size =  !!(flags & MOV_TRUN_SAMPLE_DURATION) * 4
+                    + !!(flags & MOV_TRUN_SAMPLE_SIZE)     * 4
+                    + !!(flags & MOV_TRUN_SAMPLE_FLAGS)    * 4
+                    + !!(flags & MOV_TRUN_SAMPLE_CTS)      * 4;
+    int64_t sample_data_size = avio_size(sc->pb);
+    int64_t max_entries = INT64_MAX;
+
+    if (sample_data_size > 0)
+        max_entries = sample_data_size - sti->nb_index_entries;
+    if (entry_size) {
+        int64_t size = sc->pb == pb ? sample_data_size : avio_size(pb);
+        int64_t pos  = avio_tell(pb);
+        int64_t left = atom.size - 8 - !!(flags & MOV_TRUN_DATA_OFFSET)        * 4
+                                     - !!(flags & MOV_TRUN_FIRST_SAMPLE_FLAGS) * 4;
+
+        if (pos >= 0 && size >= pos)
+            left = FFMIN(left, size - pos);
+        max_entries = FFMIN(max_entries, left / entry_size);
+    }
+    if (entries > max_entries) {
+        av_log(c->fc, AV_LOG_ERROR, "trun sample count %u exceeds the %"PRId64" "
+               "samples the input can hold\n", entries, max_entries);
+        return AVERROR_INVALIDDATA;
+    }
+
     frag_stream_info = get_current_frag_stream_info(&c->frag_index);
     if (frag_stream_info) {
         if (frag_stream_info->next_trun_dts != AV_NOPTS_VALUE) {
