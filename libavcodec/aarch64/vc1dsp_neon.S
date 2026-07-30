@@ -696,7 +696,7 @@ function ff_vc1_inv_trans_4x4_dc_neon, export=1
         ret
 endfunc
 
-.align  5
+.align  4
 .Lcoeffs_it8:
 .quad   0x000F00090003
 .Lcoeffs_it4:
