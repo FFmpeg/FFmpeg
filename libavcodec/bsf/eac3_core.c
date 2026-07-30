@@ -23,6 +23,13 @@
 #include "libavcodec/get_bits.h"
 #include "libavcodec/ac3_parser_internal.h"
 
+static int eac3_core_init(AVBSFContext *ctx)
+{
+    ctx->par_out->profile = AV_PROFILE_UNKNOWN;
+
+    return 0;
+}
+
 static int eac3_core_filter(AVBSFContext *ctx, AVPacket *pkt)
 {
     AC3HeaderInfo hdr;
@@ -82,5 +89,6 @@ static const enum AVCodecID codec_ids[] = {
 const FFBitStreamFilter ff_eac3_core_bsf = {
     .p.name      = "eac3_core",
     .p.codec_ids = codec_ids,
+    .init        = eac3_core_init,
     .filter      = eac3_core_filter,
 };
