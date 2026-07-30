@@ -3315,19 +3315,22 @@ static int compare_int64(const void *a, const void *b)
 static int parse_forced_key_frames(void *log, KeyframeForceCtx *kf,
                                    const Muxer *mux, const char *spec)
 {
-    const char *p;
     int n = 1, i, ret, size, index = 0;
     int64_t t, *pts;
 
-    for (p = spec; *p; p++)
+    for (const char *p = spec; *p; p++)
         if (*p == ',')
             n++;
     size = n;
-    pts = av_malloc_array(size, sizeof(*pts));
-    if (!pts)
-        return AVERROR(ENOMEM);
 
-    p = spec;
+    char *spec_dup = av_strdup(spec);
+    pts = av_malloc_array(size, sizeof(*pts));
+    if (!spec_dup || !pts) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    char *p = spec_dup;
     for (i = 0; i < n; i++) {
         char *next = strchr(p, ',');
 
@@ -3345,8 +3348,10 @@ static int parse_forced_key_frames(void *log, KeyframeForceCtx *kf,
             }
             size += nb_ch - 1;
             pts = av_realloc_f(pts, size, sizeof(*pts));
-            if (!pts)
-                return AVERROR(ENOMEM);
+            if (!pts) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
 
             if (p[8]) {
                 ret = av_parse_time(&t, p + 8, 1);
@@ -3384,8 +3389,11 @@ static int parse_forced_key_frames(void *log, KeyframeForceCtx *kf,
     kf->nb_pts = size;
     kf->pts    = pts;
 
+    av_freep(&spec_dup);
+
     return 0;
 fail:
+    av_freep(&spec_dup);
     av_freep(&pts);
     return ret;
 }
