@@ -27,6 +27,7 @@
 #include "codec_internal.h"
 #include "decode.h"
 #include "msrledec.h"
+#include "libavutil/intreadwrite.h"
 
 static int bmp_decode_frame(AVCodecContext *avctx, AVFrame *p,
                             int *got_frame, AVPacket *avpkt)
@@ -326,11 +327,13 @@ static int bmp_decode_frame(AVCodecContext *avctx, AVFrame *p,
             break;
         case 16:
             for (i = 0; i < avctx->height; i++) {
-                const uint16_t *src = (const uint16_t *) buf;
+                const uint8_t *src  = buf;
                 uint16_t *dst       = (uint16_t *) ptr;
 
-                for (j = 0; j < avctx->width; j++)
-                    *dst++ = av_le2ne16(*src++);
+                for (j = 0; j < avctx->width; j++) {
+                    *dst++ = AV_RL16(src);
+                    src += 2;
+                }
 
                 buf += n;
                 ptr += linesize;
