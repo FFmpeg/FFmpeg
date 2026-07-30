@@ -276,7 +276,7 @@ cglobal add_left_pred_int16_unaligned, 4,4,7, dst, src, mask, w, left
 ; void add_gradient_pred(uint8_t *src, const ptrdiff_t stride, const ptrdiff_t width)
 ;---------------------------------------------------------------------------------------------
 %macro ADD_GRADIENT_PRED 0
-cglobal add_gradient_pred, 3,4,4, src, stride, width, tmp
+cglobal add_gradient_pred, 3,3,4, src, stride, width
     mova         xm0, [pb_15]
 
 ;load src - 1 in xm1
@@ -291,12 +291,13 @@ cglobal add_gradient_pred, 3,4,4, src, stride, width, tmp
     add    srcq, widthq
     neg  widthq
     neg strideq
+    add strideq, srcq
+    DEFINE_ARGS src, top, width
 
 .loop:
-    lea    tmpq, [srcq + strideq]
     mova     m2, [srcq + widthq]     ; current val (src[x])
-    paddb    m2, [tmpq + widthq]     ; add A = src[x-stride]
-    movu     m3, [tmpq + widthq - 1] ; B = src[x - (stride + 1)]
+    paddb    m2, [topq + widthq]     ; add A = src[x-stride]
+    movu     m3, [topq + widthq - 1] ; B = src[x - (stride + 1)]
 
     psubb    m2, m3                  ; cur + A - B
 
