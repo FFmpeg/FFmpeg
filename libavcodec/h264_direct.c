@@ -190,14 +190,19 @@ static void await_reference_mb_row(const H264Context *const h, H264Ref *ref,
     int ref_field         = ref->reference - 1;
     int ref_field_picture = ref->parent->field_picture;
     int ref_height        = 16 * h->mb_height >> ref_field_picture;
+    int row               = FFMIN(16 * mb_y >> ref_field_picture, ref_height - 1);
 
     /* FIXME: It can be safe to access mb stuff
      * even if pixels aren't deblocked yet. */
 
-    ff_thread_await_progress(&ref->parent->tf,
-                             FFMIN(16 * mb_y >> ref_field_picture,
-                                   ref_height - 1),
+    ff_thread_await_progress(&ref->parent->tf, row,
                              ref_field_picture && ref_field);
+
+    /* A frame references a field pair as a whole, so the wait above covers
+     * its bottom field only, while the colocated data is read from the field
+     * selected by col_parity. The two are decoded by different threads. */
+    if (ref_field_picture && !FIELD_PICTURE(h))
+        ff_thread_await_progress(&ref->parent->tf, row, 0);
 }
 
 static void pred_spatial_direct_motion(const H264Context *const h, H264SliceContext *sl,
