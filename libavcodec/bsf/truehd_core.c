@@ -34,6 +34,13 @@ typedef struct TrueHDCoreContext {
     MLPHeaderInfo hdr;
 } TrueHDCoreContext;
 
+static int truehd_core_init(AVBSFContext *ctx)
+{
+    ctx->par_out->profile = AV_PROFILE_UNKNOWN;
+
+    return 0;
+}
+
 static int truehd_core_filter(AVBSFContext *ctx, AVPacket *pkt)
 {
     TrueHDCoreContext *s = ctx->priv_data;
@@ -177,6 +184,7 @@ const FFBitStreamFilter ff_truehd_core_bsf = {
     .p.name         = "truehd_core",
     .p.codec_ids    = codec_ids,
     .priv_data_size = sizeof(TrueHDCoreContext),
+    .init           = truehd_core_init,
     .filter         = truehd_core_filter,
     .flush          = truehd_core_flush,
 };
