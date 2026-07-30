@@ -40,7 +40,15 @@
 #define AVUTIL_LOG_H
 #define AVUTIL_MACROS_H
 #define AVUTIL_MEM_H
-#define av_assert0(cond) assert(cond)
+#define AV_STRINGIFY(s)         AV_TOSTRING(s)
+#define AV_TOSTRING(s) #s
+#define av_assert0(cond) do {                                           \
+    if (!(cond)) {                                                      \
+        fprintf(stderr, "Assertion %s failed at %s:%d\n",               \
+               AV_STRINGIFY(cond), __FILE__, __LINE__);                 \
+        abort();                                                        \
+    }                                                                   \
+} while (0)
 #define av_malloc(s)     malloc(s)
 #define av_mallocz(s)    calloc(1, s)
 #define av_realloc(p, s) realloc(p, s)
