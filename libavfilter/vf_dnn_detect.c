@@ -794,7 +794,7 @@ static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *context     = inlink->dst;
     DnnDetectContext *ctx = context->priv;
-    DNNData model_input;
+    DNNData model_input = { 0 };
     int ret, width_idx, height_idx;
 
     ret = ff_dnn_get_input(&ctx->dnnctx, &model_input);

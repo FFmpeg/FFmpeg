@@ -145,7 +145,7 @@ static int config_input(AVFilterLink *inlink)
     AVFilterContext *context     = inlink->dst;
     DnnProcessingContext *ctx = context->priv;
     int result;
-    DNNData model_input;
+    DNNData model_input = { 0 };
     int check;
 
     result = ff_dnn_get_input(&ctx->dnnctx, &model_input);
