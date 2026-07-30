@@ -49,8 +49,10 @@ struct SliceScore {
 };
 
 layout(push_constant, scalar) uniform EncodeSliceInfo {
-    u8buf bytestream;
-    u8vec2buf seek_table;
+    u8buf bytestream;     /* one fixed-stride slot per slice */
+    u32buf slice_sizes;   /* per-slice byte sizes, for the gather pass and
+                           * the CPU-written seek table */
+    uint slot_size;
 };
 
 layout (set = 0, binding = 0, scalar) readonly buffer SliceBuffer {
@@ -244,8 +246,7 @@ void main()
     ivec4 bits = scores[slice].bits[q_idx];
     int slice_hdr_size = 2 * num_planes;
     int slice_size = slice_hdr_size + ((bits.x + bits.y + bits.z + bits.w) / 8);
-    int buf_start = scores[slice].buf_start;
-    u8buf buf = OFFBUF(u8buf, bytestream, buf_start);
+    u8buf buf = OFFBUF(u8buf, bytestream, slice * slot_size);
 
     /* Write slice header */
     if (plane == 0) {
@@ -255,7 +256,7 @@ void main()
         for (int i = 0; i < num_planes - 1; i++) {
             slice_hdr[i].v = byteswap16(bits[i] / 8);
         }
-        seek_table[slice].v = byteswap16(slice_size);
+        slice_sizes[slice].v = uint32_t(slice_size);
     }
 
     int plane_offset = 0;

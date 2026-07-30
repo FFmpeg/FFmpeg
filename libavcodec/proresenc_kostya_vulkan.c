@@ -21,6 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/buffer.h"
 #include "libavutil/macros.h"
 #include "libavutil/mem.h"
@@ -57,8 +58,15 @@ typedef struct SliceDataInfo {
 
 typedef struct EncodeSliceInfo {
     VkDeviceAddress bytestream;
-    VkDeviceAddress seek_table;
+    VkDeviceAddress slice_sizes;
+    uint32_t        slot_size;
 } EncodeSliceInfo;
+
+typedef struct SegGatherPushData {
+    VkDeviceAddress sparse;
+    VkDeviceAddress compacted;
+    uint32_t        slot_size;
+} SegGatherPushData;
 
 typedef struct SliceData {
     uint32_t mbs_per_slice;
@@ -78,6 +86,8 @@ typedef struct SliceScore {
 typedef struct VulkanEncodeProresFrameData {
     /* Intermediate buffers */
     FFVkBuffer *out_data_ref[2];
+    FFVkBuffer *slice_sizes_ref[2];
+    FFVkBuffer *gathered_ref[2];
     FFVkBuffer *slice_data_ref[2];
     FFVkBuffer *slice_score_ref[2];
     FFVkBuffer *frame_size_ref[2];
@@ -101,18 +111,22 @@ typedef struct ProresVulkanContext {
     FFVulkanContext vkctx;
     AVVulkanDeviceQueueFamily *qf;
     FFVkExecPool e;
-    AVVulkanDeviceQueueFamily *transfer_qf;
-    FFVkExecPool transfer_exec_pool;
     AVRefStructPool *pkt_buf_pool;
+    AVRefStructPool *slice_sizes_buf_pool;
+    AVRefStructPool *gathered_buf_pool;
     AVRefStructPool *slice_data_buf_pool;
     AVRefStructPool *slice_score_buf_pool;
     AVRefStructPool *frame_size_buf_pool;
+
+    size_t slice_slot_size;
+    int payload_off;
 
     FFVulkanShader alpha_data_shd;
     FFVulkanShader slice_data_shd[2];
     FFVulkanShader estimate_slice_shd;
     FFVulkanShader encode_slice_shd;
     FFVulkanShader trellis_node_shd;
+    FFVulkanShader gather_shd;
     FFVkBuffer prores_data_tables_buf;
 
     int *slice_quants;
@@ -127,6 +141,9 @@ typedef struct ProresVulkanContext {
 
 extern const unsigned char ff_prores_ks_alpha_data_comp_spv_data[];
 extern const unsigned int ff_prores_ks_alpha_data_comp_spv_len;
+
+extern const unsigned char ff_seg_gather_comp_spv_data[];
+extern const unsigned int ff_seg_gather_comp_spv_len;
 
 extern const unsigned char ff_prores_ks_slice_data_comp_spv_data[];
 extern const unsigned int ff_prores_ks_slice_data_comp_spv_len;
@@ -364,6 +381,37 @@ fail:
     return err;
 }
 
+static int init_gather_pipeline(ProresVulkanContext *pv, FFVulkanShader *shd)
+{
+    int err = 0;
+    FFVulkanContext *vkctx = &pv->vkctx;
+    FFVulkanDescriptorSetBinding *desc;
+
+    ff_vk_shader_load(shd, VK_SHADER_STAGE_COMPUTE_BIT, NULL,
+                      (uint32_t []) { 256, 1, 1 }, 0);
+
+    desc = (FFVulkanDescriptorSetBinding []) {
+        {
+            .name        = "sizes_buf",
+            .type        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
+        },
+    };
+    ff_vk_shader_add_descriptor_set(vkctx, shd, desc, 1, 0);
+
+    ff_vk_shader_add_push_const(shd, 0, sizeof(SegGatherPushData),
+                                VK_SHADER_STAGE_COMPUTE_BIT);
+
+    RET(ff_vk_shader_link(vkctx, shd,
+                          ff_seg_gather_comp_spv_data,
+                          ff_seg_gather_comp_spv_len, "main"));
+
+    RET(ff_vk_shader_register_exec(vkctx, &pv->e, shd));
+
+fail:
+    return err;
+}
+
 static int vulkan_encode_prores_submit_frame(AVCodecContext *avctx, FFVkExecContext *exec,
                                              AVFrame *frame, int picture_idx)
 {
@@ -377,7 +425,6 @@ static int vulkan_encode_prores_submit_frame(AVCodecContext *avctx, FFVkExecCont
     int max_quant = ctx->profile_info->max_quant;
     int subgroup_size = vkctx->subgroup_props.maxSubgroupSize;
     int estimate_dim_x = ctx->alpha_bits ? subgroup_size : (subgroup_size / 3) * 3;
-    int transfer_slices = vkctx->extensions & FF_VK_EXT_EXTERNAL_HOST_MEMORY;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(vkctx->frames->sw_format);
     VkImageView views[AV_NUM_DATA_POINTERS];
     VkImageMemoryBarrier2 img_bar[AV_NUM_DATA_POINTERS];
@@ -389,18 +436,37 @@ static int vulkan_encode_prores_submit_frame(AVCodecContext *avctx, FFVkExecCont
     /* Start recording */
     ff_vk_exec_start(vkctx, exec);
 
-    /* Get a pooled buffer for writing output data */
+    /* Sparse slice output: one fixed-stride, device-local slot per slice */
     RET(ff_vk_get_pooled_buffer(vkctx, &pv->pkt_buf_pool, &pd->out_data_ref[picture_idx],
                                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                                VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
-                                VK_BUFFER_USAGE_TRANSFER_SRC_BIT, NULL,
-                                ctx->frame_size_upper_bound + FF_INPUT_BUFFER_MIN_SIZE,
-                                transfer_slices ? VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-                                                : (VK_MEMORY_PROPERTY_HOST_CACHED_BIT |
-                                                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                                   VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)));
+                                VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, NULL,
+                                ctx->slices_per_picture * pv->slice_slot_size,
+                                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
     pkt_vk_buf = pd->out_data_ref[picture_idx];
     ff_vk_exec_add_dep_refstruct(vkctx, exec, pd->out_data_ref[picture_idx]);
+
+    /* Per-slice sizes: read by the gather pass, and by the CPU to write the
+     * seek table. */
+    RET(ff_vk_get_pooled_buffer(vkctx, &pv->slice_sizes_buf_pool, &pd->slice_sizes_ref[picture_idx],
+                                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                                VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, NULL,
+                                ctx->slices_per_picture * sizeof(uint32_t),
+                                VK_MEMORY_PROPERTY_HOST_CACHED_BIT |
+                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
+    ff_vk_exec_add_dep_refstruct(vkctx, exec, pd->slice_sizes_ref[picture_idx]);
+
+    /* Picture 0 is gathered directly into the packet buffer at its static
+     * offset; picture 1's offset depends on picture 0's encoded size, so it
+     * is gathered to a scratch buffer and moved into place by the CPU. */
+    RET(ff_vk_get_pooled_buffer(vkctx, &pv->gathered_buf_pool, &pd->gathered_ref[picture_idx],
+                                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                                VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, NULL,
+                                picture_idx == 0 ? ctx->frame_size_upper_bound + FF_INPUT_BUFFER_MIN_SIZE
+                                                 : ctx->slices_per_picture * pv->slice_slot_size,
+                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                vkctx->host_cached_flag));
+    ff_vk_exec_add_dep_refstruct(vkctx, exec, pd->gathered_ref[picture_idx]);
 
     /* Allocate buffer for writing slice data */
     RET(ff_vk_get_pooled_buffer(vkctx, &pv->slice_data_buf_pool, &pd->slice_data_ref[picture_idx],
@@ -563,8 +629,9 @@ static int vulkan_encode_prores_submit_frame(AVCodecContext *avctx, FFVkExecCont
 
     /* Encode slices. */
     encode_info = (EncodeSliceInfo) {
-        .seek_table = pkt_vk_buf->address,
-        .bytestream = pkt_vk_buf->address + ctx->slices_per_picture * 2,
+        .bytestream  = pkt_vk_buf->address,
+        .slice_sizes = pd->slice_sizes_ref[picture_idx]->address,
+        .slot_size   = pv->slice_slot_size,
     };
     ff_vk_shader_update_desc_buffer(vkctx, exec, &pv->encode_slice_shd, 0, 0, 0,
                                     slice_data_buf, 0, slice_data_buf->size,
@@ -580,6 +647,55 @@ static int vulkan_encode_prores_submit_frame(AVCodecContext *avctx, FFVkExecCont
                                    VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(encode_info), &encode_info);
     vk->CmdDispatch(exec->buf, FFALIGN(ctx->slices_per_picture, 64) / 64,
                                ctx->num_planes, 1);
+
+    /* Gather the sparse slots into the contiguous bitstream, in the same
+     * submission. */
+    VkBufferMemoryBarrier2 gather_bar[2] = {
+        {
+            .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2,
+            .srcStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+            .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT,
+            .dstStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+            .dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .buffer = pkt_vk_buf->buf,
+            .offset = 0,
+            .size = pkt_vk_buf->size,
+        }, {
+            .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2,
+            .srcStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+            .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT,
+            .dstStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+            .dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .buffer = pd->slice_sizes_ref[picture_idx]->buf,
+            .offset = 0,
+            .size = pd->slice_sizes_ref[picture_idx]->size,
+        },
+    };
+    vk->CmdPipelineBarrier2(exec->buf, &(VkDependencyInfo) {
+        .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+        .pBufferMemoryBarriers = gather_bar,
+        .bufferMemoryBarrierCount = 2,
+    });
+
+    SegGatherPushData gather_pd = {
+        .sparse    = pkt_vk_buf->address,
+        .compacted = pd->gathered_ref[picture_idx]->address +
+                     (picture_idx == 0 ? pv->payload_off : 0),
+        .slot_size = pv->slice_slot_size,
+    };
+    ff_vk_shader_update_desc_buffer(vkctx, exec, &pv->gather_shd, 0, 0, 0,
+                                    pd->slice_sizes_ref[picture_idx],
+                                    0, ctx->slices_per_picture * sizeof(uint32_t),
+                                    VK_FORMAT_UNDEFINED);
+    ff_vk_exec_bind_shader(vkctx, exec, &pv->gather_shd);
+    ff_vk_shader_update_push_const(vkctx, exec, &pv->gather_shd,
+                                   VK_SHADER_STAGE_COMPUTE_BIT,
+                                   0, sizeof(gather_pd), &gather_pd);
+    vk->CmdDispatch(exec->buf, ctx->slices_per_picture, 1, 1);
 
 fail:
     return err;
@@ -629,6 +745,12 @@ static uint8_t *write_frame_header(AVCodecContext *avctx, ProresContext *ctx,
     return buf;
 }
 
+/* Return the assembled-frame buffer to its pool when the packet is freed. */
+static void prores_vk_packet_free(void *opaque, uint8_t *data)
+{
+    av_refstruct_unref(&opaque);
+}
+
 static int get_packet(AVCodecContext *avctx, FFVkExecContext *exec, AVPacket *pkt)
 {
     ProresVulkanContext *pv = avctx->priv_data;
@@ -636,21 +758,113 @@ static int get_packet(AVCodecContext *avctx, FFVkExecContext *exec, AVPacket *pk
     VulkanEncodeProresFrameData *pd = exec->opaque;
     FFVulkanContext *vkctx = &pv->vkctx;
     FFVulkanFunctions *vk = &vkctx->vkfn;
-    FFVkExecContext *transfer_exec;
+    FFVkBuffer *wrap_buf = pd->gathered_ref[0];
     uint8_t *orig_buf, *buf, *slice_sizes;
     uint8_t *picture_size_pos;
-    int picture_idx, err = 0;
+    int picture_idx;
     int frame_size, picture_size;
-    int pkt_size = ctx->frame_size_upper_bound;
-    int transfer_slices = vkctx->extensions & FF_VK_EXT_EXTERNAL_HOST_MEMORY;
-    FFVkBuffer *out_data_buf, *frame_size_buf;
+    FFVkBuffer *frame_size_buf;
     VkMappedMemoryRange invalidate_data;
-    FFVkBuffer *mapped_buf = NULL;
 
-    /* Allocate packet */
-    RET(ff_get_encode_buffer(avctx, pkt, pkt_size + FF_INPUT_BUFFER_MIN_SIZE, 0));
+    /* Make sure encoding's done */
+    ff_vk_exec_wait(vkctx, exec);
 
-    /* Initialize packet. */
+    /* Invalidate the gathered bitstream if needed */
+    invalidate_data = (VkMappedMemoryRange) {
+        .sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
+        .offset = 0,
+        .size = VK_WHOLE_SIZE,
+    };
+    if (!(wrap_buf->flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
+        invalidate_data.memory = wrap_buf->mem;
+        vk->InvalidateMappedMemoryRanges(vkctx->hwctx->act_dev, 1, &invalidate_data);
+    }
+
+    /* Write frame atom */
+    orig_buf = wrap_buf->mapped_mem;
+    buf = write_frame_header(avctx,  ctx, &orig_buf, pd->flags,
+                             pd->color_primaries, pd->color_trc,
+                             pd->colorspace);
+
+    for (picture_idx = 0; picture_idx < ctx->pictures_per_frame; picture_idx++) {
+        FFVkBuffer *slice_sizes_buf = pd->slice_sizes_ref[picture_idx];
+        const uint32_t *sizes;
+
+        frame_size_buf = pd->frame_size_ref[picture_idx];
+
+        /* Invalidate slice sizes if needed */
+        if (!(frame_size_buf->flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
+            invalidate_data.memory = frame_size_buf->mem;
+            vk->InvalidateMappedMemoryRanges(vkctx->hwctx->act_dev, 1, &invalidate_data);
+        }
+        if (!(slice_sizes_buf->flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
+            invalidate_data.memory = slice_sizes_buf->mem;
+            vk->InvalidateMappedMemoryRanges(vkctx->hwctx->act_dev, 1, &invalidate_data);
+        }
+
+        /* Write picture header */
+        picture_size_pos = buf + 1;
+        bytestream_put_byte(&buf, 0x40);          // picture header size (in bits)
+        buf += 4;                                 // picture data size will be stored here
+        bytestream_put_be16(&buf, ctx->slices_per_picture);
+        bytestream_put_byte(&buf, av_log2(ctx->mbs_per_slice) << 4); // slice width and height in MBs
+
+        /* Write the seek table from the per-slice sizes; the payload itself
+         * was already packed to match by the gather pass. */
+        slice_sizes = buf;
+        sizes = (const uint32_t *)slice_sizes_buf->mapped_mem;
+        for (int i = 0; i < ctx->slices_per_picture; i++)
+            bytestream_put_be16(&buf, sizes[i]);
+
+        /* Calculate final size */
+        buf += *(int*)frame_size_buf->mapped_mem;
+
+        if (picture_idx == 0) {
+            av_assert1(((slice_sizes + ctx->slices_per_picture * 2) -
+                        wrap_buf->mapped_mem) == pv->payload_off);
+        } else {
+            /* Relocate the second picture's payload from its scratch buffer */
+            FFVkBuffer *scratch = pd->gathered_ref[1];
+            if (!(scratch->flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
+                invalidate_data.memory = scratch->mem;
+                vk->InvalidateMappedMemoryRanges(vkctx->hwctx->act_dev, 1, &invalidate_data);
+            }
+            memcpy(slice_sizes + ctx->slices_per_picture * 2, scratch->mapped_mem,
+                   buf - (slice_sizes + ctx->slices_per_picture * 2));
+            av_refstruct_unref(&pd->gathered_ref[1]);
+        }
+
+        /* Write picture size with header */
+        picture_size = buf - (picture_size_pos - 1);
+        bytestream_put_be32(&picture_size_pos, picture_size);
+
+        /* Slice output buffers no longer needed */
+        av_refstruct_unref(&pd->out_data_ref[picture_idx]);
+        av_refstruct_unref(&pd->slice_sizes_ref[picture_idx]);
+        av_refstruct_unref(&pd->slice_data_ref[picture_idx]);
+        av_refstruct_unref(&pd->slice_score_ref[picture_idx]);
+        av_refstruct_unref(&pd->frame_size_ref[picture_idx]);
+    }
+
+    /* Write frame size in header */
+    orig_buf -= 8;
+    frame_size = buf - orig_buf;
+    bytestream_put_be32(&orig_buf, frame_size);
+
+    memset(buf, 0, AV_INPUT_BUFFER_PADDING_SIZE);
+
+    /* Hand the buffer to the packet with no copy: pkt->buf references the
+     * pooled Vulkan buffer, returned to its pool when the packet is freed. */
+    pkt->buf = av_buffer_create(wrap_buf->mapped_mem, wrap_buf->size,
+                                prores_vk_packet_free, pd->gathered_ref[0], 0);
+    if (!pkt->buf) {
+        av_refstruct_unref(&pd->gathered_ref[0]);
+        return AVERROR(ENOMEM);
+    }
+    pd->gathered_ref[0] = NULL; /* ownership passed to pkt->buf */
+    pkt->data = wrap_buf->mapped_mem;
+    pkt->size = frame_size;
+
     pkt->pts      = pd->pts;
     pkt->dts      = pd->pts;
     pkt->duration = pd->duration;
@@ -662,99 +876,9 @@ static int get_packet(AVCodecContext *avctx, FFVkExecContext *exec, AVPacket *pk
         pd->frame_opaque_ref = NULL;
     }
 
-    /* Write frame atom */
-    orig_buf = pkt->data;
-    buf = write_frame_header(avctx,  ctx, &orig_buf, pd->flags,
-                             pd->color_primaries, pd->color_trc,
-                             pd->colorspace);
-
-    /* Make sure encoding's done */
-    ff_vk_exec_wait(vkctx, exec);
-
-    /* Roll transfer execution context */
-    if (transfer_slices) {
-        RET(ff_vk_host_map_buffer(vkctx, &mapped_buf, pkt->data, pkt->size,
-                                  pkt->buf, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
-        transfer_exec = ff_vk_exec_get(vkctx, &pv->transfer_exec_pool);
-        ff_vk_exec_start(vkctx, transfer_exec);
-    }
-
-    for (picture_idx = 0; picture_idx < ctx->pictures_per_frame; picture_idx++) {
-        /* Fetch buffers for the current picture. */
-        out_data_buf = pd->out_data_ref[picture_idx];
-        frame_size_buf = pd->frame_size_ref[picture_idx];
-
-        /* Invalidate slice/output data if needed */
-        invalidate_data = (VkMappedMemoryRange) {
-            .sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
-            .offset = 0,
-            .size = VK_WHOLE_SIZE,
-        };
-        if (!(frame_size_buf->flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
-            invalidate_data.memory = frame_size_buf->mem;
-            vk->InvalidateMappedMemoryRanges(vkctx->hwctx->act_dev, 1, &invalidate_data);
-        }
-
-        /* Write picture header */
-        picture_size_pos = buf + 1;
-        bytestream_put_byte(&buf, 0x40);          // picture header size (in bits)
-        buf += 4;                                 // picture data size will be stored here
-        bytestream_put_be16(&buf, ctx->slices_per_picture);
-        bytestream_put_byte(&buf, av_log2(ctx->mbs_per_slice) << 4); // slice width and height in MBs
-
-        /* Skip over seek table */
-        slice_sizes = buf;
-        buf += ctx->slices_per_picture * 2;
-
-        /* Calculate final size */
-        buf += *(int*)frame_size_buf->mapped_mem;
-
-        if (transfer_slices) {
-            /* Perform host mapped transfer of slice data */
-            ff_vk_exec_move_dep_refstruct(vkctx, transfer_exec, &pd->out_data_ref[picture_idx]);
-            vk->CmdCopyBuffer(transfer_exec->buf, out_data_buf->buf, mapped_buf->buf, 1, & (VkBufferCopy) {
-                .srcOffset = 0,
-                .dstOffset = mapped_buf->virtual_offset + slice_sizes - pkt->data,
-                .size = buf - slice_sizes,
-            });
-        } else {
-            /* Fallback to regular memcpy if transfer is not available */
-            if (!(out_data_buf->flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
-                invalidate_data.memory = out_data_buf->mem;
-                vk->InvalidateMappedMemoryRanges(vkctx->hwctx->act_dev, 1, &invalidate_data);
-            }
-            memcpy(slice_sizes, out_data_buf->mapped_mem, buf - slice_sizes);
-            av_refstruct_unref(&pd->out_data_ref[picture_idx]);
-        }
-
-        /* Write picture size with header */
-        picture_size = buf - (picture_size_pos - 1);
-        bytestream_put_be32(&picture_size_pos, picture_size);
-
-        /* Slice output buffers no longer needed */
-        av_refstruct_unref(&pd->slice_data_ref[picture_idx]);
-        av_refstruct_unref(&pd->slice_score_ref[picture_idx]);
-        av_refstruct_unref(&pd->frame_size_ref[picture_idx]);
-    }
-
-    /* Write frame size in header */
-    orig_buf -= 8;
-    frame_size = buf - orig_buf;
-    bytestream_put_be32(&orig_buf, frame_size);
-
-    av_shrink_packet(pkt, frame_size);
     av_log(avctx, AV_LOG_VERBOSE, "Encoded data: %iMiB\n", pkt->size / (1024*1024));
 
-    /* Wait for slice transfer */
-    if (transfer_slices) {
-        ff_vk_exec_move_dep_refstruct(vkctx, transfer_exec, &mapped_buf);
-        RET(ff_vk_exec_submit(vkctx, transfer_exec));
-        ff_vk_exec_wait(vkctx, transfer_exec);
-    }
-
-fail:
-    av_refstruct_unref(&mapped_buf);
-    return err;
+    return 0;
 }
 
 static int vulkan_encode_prores_receive_packet(AVCodecContext *avctx, AVPacket *pkt)
@@ -827,7 +951,6 @@ static av_cold int encode_close(AVCodecContext *avctx)
     FFVulkanContext *vkctx = &pv->vkctx;
 
     ff_vk_exec_pool_free(vkctx, &pv->e);
-    ff_vk_exec_pool_free(vkctx, &pv->transfer_exec_pool);
 
     if (ctx->alpha_bits)
         ff_vk_shader_free(vkctx, &pv->alpha_data_shd);
@@ -837,10 +960,13 @@ static av_cold int encode_close(AVCodecContext *avctx)
     ff_vk_shader_free(vkctx, &pv->estimate_slice_shd);
     ff_vk_shader_free(vkctx, &pv->encode_slice_shd);
     ff_vk_shader_free(vkctx, &pv->trellis_node_shd);
+    ff_vk_shader_free(vkctx, &pv->gather_shd);
 
     ff_vk_free_buf(vkctx, &pv->prores_data_tables_buf);
 
     av_refstruct_pool_uninit(&pv->pkt_buf_pool);
+    av_refstruct_pool_uninit(&pv->slice_sizes_buf_pool);
+    av_refstruct_pool_uninit(&pv->gathered_buf_pool);
     av_refstruct_pool_uninit(&pv->slice_data_buf_pool);
     av_refstruct_pool_uninit(&pv->slice_score_buf_pool);
     av_refstruct_pool_uninit(&pv->frame_size_buf_pool);
@@ -868,15 +994,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     RET(ff_vk_exec_pool_init(vkctx, pv->qf, &pv->e, 1, 0, 0, 0, NULL));
 
-    pv->transfer_qf = ff_vk_qf_find(vkctx, VK_QUEUE_TRANSFER_BIT, 0);
-    if (!pv->transfer_qf) {
-        av_log(avctx, AV_LOG_ERROR, "Device has no transfer queues!\n");
-        return err;
-    }
-
-    RET(ff_vk_exec_pool_init(vkctx, pv->transfer_qf, &pv->transfer_exec_pool,
-                             pv->async_depth, 0, 0, 0, NULL));
-
     /* Init common prores structures */
     err = ff_prores_kostya_encode_init(avctx, ctx, vkctx->frames->sw_format);
     if (err < 0)
@@ -901,6 +1018,29 @@ static av_cold int encode_init(AVCodecContext *avctx)
     init_estimate_slice_pipeline(pv, &pv->estimate_slice_shd);
     init_trellis_node_pipeline(pv, &pv->trellis_node_shd);
     init_encode_slice_pipeline(pv, &pv->encode_slice_shd);
+    init_gather_pipeline(pv, &pv->gather_shd);
+
+    /* Size slots for the entropy coder's worst case; bits_per_mb is only a rate-control average */
+    {
+        size_t samples = ctx->mbs_per_slice *
+                         (256 + (ctx->chroma_factor == CFACTOR_Y444 ? 512 : 256));
+        pv->slice_slot_size = 2 + 2 * ctx->num_planes + samples * 8;
+        if (ctx->alpha_bits)
+            pv->slice_slot_size += (ctx->mbs_per_slice * 256 *
+                                    (1 + ctx->alpha_bits + 1) + 7) >> 3;
+        pv->slice_slot_size = FFMIN(pv->slice_slot_size,
+                                    UINT16_MAX + 2 + 2 * ctx->num_planes);
+        pv->slice_slot_size = FFALIGN(pv->slice_slot_size, 16);
+    }
+
+    /* First picture's payload offset: everything before it in the stream has
+     * a static size, so the gather pass writes the payload directly in place */
+    {
+        uint8_t tmp[256];
+        uint8_t *start = tmp;
+        uint8_t *end = write_frame_header(avctx, ctx, &start, 0, 0, 0, 0);
+        pv->payload_off = (end - tmp) + 8 + ctx->slices_per_picture * 2;
+    }
 
     if (ctx->alpha_bits)
         init_alpha_data_pipeline(pv, &pv->alpha_data_shd);
