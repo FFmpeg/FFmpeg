@@ -99,6 +99,10 @@ typedef struct VulkanDeviceFeatures {
     VkPhysicalDeviceShaderExpectAssumeFeaturesKHR expect_assume;
 #endif
 
+#ifdef VK_KHR_shader_maximal_reconvergence
+    VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR maximal_reconvergence;
+#endif
+
     VkPhysicalDeviceVideoMaintenance1FeaturesKHR video_maintenance_1;
 #ifdef VK_KHR_video_maintenance2
     VkPhysicalDeviceVideoMaintenance2FeaturesKHR video_maintenance_2;
@@ -265,6 +269,11 @@ static void device_features_init(AVHWDeviceContext *ctx, VulkanDeviceFeatures *f
                      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_EXPECT_ASSUME_FEATURES_KHR);
 #endif
 
+#ifdef VK_KHR_shader_maximal_reconvergence
+    FF_VK_STRUCT_EXT(s, &feats->device, &feats->maximal_reconvergence, FF_VK_EXT_MAXIMAL_RECONVERGENCE,
+                     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MAXIMAL_RECONVERGENCE_FEATURES_KHR);
+#endif
+
     FF_VK_STRUCT_EXT(s, &feats->device, &feats->video_maintenance_1, FF_VK_EXT_VIDEO_MAINTENANCE_1,
                      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_MAINTENANCE_1_FEATURES_KHR);
 #ifdef VK_KHR_video_maintenance2
@@ -401,6 +410,10 @@ static void device_features_copy_needed(VulkanDeviceFeatures *dst, VulkanDeviceF
 
 #ifdef VK_KHR_shader_expect_assume
     COPY_VAL(expect_assume.shaderExpectAssume);
+#endif
+
+#ifdef VK_KHR_shader_maximal_reconvergence
+    COPY_VAL(maximal_reconvergence.shaderMaximalReconvergence);
 #endif
 
 #ifdef VK_KHR_internally_synchronized_queues
@@ -722,6 +735,9 @@ static const VulkanOptExtension optional_device_exts[] = {
 #endif
 #ifdef VK_KHR_shader_expect_assume
     { VK_KHR_SHADER_EXPECT_ASSUME_EXTENSION_NAME,             FF_VK_EXT_EXPECT_ASSUME          },
+#endif
+#ifdef VK_KHR_shader_maximal_reconvergence
+    { VK_KHR_SHADER_MAXIMAL_RECONVERGENCE_EXTENSION_NAME,     FF_VK_EXT_MAXIMAL_RECONVERGENCE  },
 #endif
     { VK_KHR_VIDEO_MAINTENANCE_1_EXTENSION_NAME,              FF_VK_EXT_VIDEO_MAINTENANCE_1    },
 #ifdef VK_KHR_video_maintenance2

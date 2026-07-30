@@ -54,6 +54,7 @@ typedef uint64_t FFVulkanExtensions;
 #define FF_VK_EXT_REPLICATED_COMPOSITES  (1ULL << 21) /* VK_EXT_shader_replicated_composites */
 #define FF_VK_EXT_LONG_VECTOR            (1ULL << 22) /* VK_EXT_shader_long_vector */
 #define FF_VK_EXT_INTERNAL_QUEUE_SYNC    (1ULL << 23) /* VK_KHR_internally_synchronized_queues */
+#define FF_VK_EXT_MAXIMAL_RECONVERGENCE  (1ULL << 24) /* VK_KHR_shader_maximal_reconvergence */
 
 /* Video extensions */
 #define FF_VK_EXT_VIDEO_QUEUE            (1ULL << 36) /* VK_KHR_video_queue */
