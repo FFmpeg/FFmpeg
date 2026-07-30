@@ -23,6 +23,7 @@
 #extension GL_EXT_shader_explicit_arithmetic_types : require
 #extension GL_KHR_shader_subgroup_clustered : require
 #extension GL_KHR_shader_subgroup_shuffle : require
+#extension GL_EXT_maximal_reconvergence : require
 #extension GL_GOOGLE_include_directive : require
 
 #include "common.glsl"
@@ -233,7 +234,7 @@ int sum_of_planes(int value)
         return subgroupClusteredAdd(value, 4);
 }
 
-void main()
+void main() [[maximally_reconverges]]
 {
     uint slice = gl_GlobalInvocationID.x / num_planes;
     uint plane = gl_LocalInvocationID.x % num_planes;

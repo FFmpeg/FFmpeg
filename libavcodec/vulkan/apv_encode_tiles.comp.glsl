@@ -24,6 +24,7 @@
 #extension GL_KHR_shader_subgroup_basic : require
 #extension GL_KHR_shader_subgroup_arithmetic : require
 #extension GL_KHR_shader_subgroup_rotate : require
+#extension GL_EXT_maximal_reconvergence : require
 
 #define PB_UNALIGNED
 #include "common.glsl"
@@ -278,7 +279,7 @@ void dc_context(uint coeff_base, uint idx, out int prev_dc, out int prev_k_dc)
     prev_k_dc = min(abs(dc_m1 - dc_m2) >> 1, 5);
 }
 
-void main(void)
+void main(void) [[maximally_reconverges]]
 {
     const uint b         = gl_LocalInvocationID.x;
     const uint comp      = comp_base + gl_WorkGroupID.z;

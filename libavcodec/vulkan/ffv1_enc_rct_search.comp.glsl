@@ -23,6 +23,7 @@
 #pragma shader_stage(compute)
 #extension GL_GOOGLE_include_directive : require
 #extension GL_KHR_shader_subgroup_arithmetic : require
+#extension GL_EXT_maximal_reconvergence : require
 
 #define ENCODE
 #define SB_QUALI
@@ -165,7 +166,7 @@ void coeff_search(uint slice_idx)
     }
 }
 
-void main(void)
+void main(void) [[maximally_reconverges]]
 {
     if (force_pcm)
         return;

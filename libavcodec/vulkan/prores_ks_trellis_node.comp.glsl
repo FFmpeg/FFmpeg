@@ -23,6 +23,7 @@
 #extension GL_EXT_scalar_block_layout : require
 #extension GL_EXT_shader_explicit_arithmetic_types : require
 #extension GL_KHR_shader_subgroup_arithmetic : require
+#extension GL_EXT_maximal_reconvergence : require
 
 layout (local_size_x_id = 253, local_size_y_id = 254, local_size_z_id = 255) in;
 
@@ -162,7 +163,7 @@ int force_slice_row_quants()
     return slice_row_size;
 }
 
-void main()
+void main() [[maximally_reconverges]]
 {
     int slice_row_size;
     if (force_quant == 0)
