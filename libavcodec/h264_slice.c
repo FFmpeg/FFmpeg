@@ -1575,7 +1575,18 @@ static int h264_field_start(H264Context *h, const H264SliceContext *sl,
                 if (ret < 0)
                     return ret;
                 h->short_ref[0]->poc = prev->poc + 2U;
+                /* The frame POC is all hwaccels see; leaving the field POCs
+                 * at their INT_MAX init value breaks their reference
+                 * ordering. */
+                h->short_ref[0]->field_poc[0] = h->short_ref[0]->poc;
+                h->short_ref[0]->field_poc[1] = h->short_ref[0]->poc;
                 h->short_ref[0]->gray = prev->gray;
+                /* Hardware decoders keep DPB state (e.g. separate reference
+                 * images) in hwaccel_picture_private; carry the duplicated
+                 * picture's over so references to the dummy read its pixels,
+                 * even after the duplicated picture leaves the DPB. */
+                av_refstruct_replace(&h->short_ref[0]->hwaccel_picture_private,
+                                     prev->hwaccel_picture_private);
                 ff_thread_report_progress(&h->short_ref[0]->tf, INT_MAX, 0);
                 if (h->short_ref[0]->field_picture)
                     ff_thread_report_progress(&h->short_ref[0]->tf, INT_MAX, 1);
