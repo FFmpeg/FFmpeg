@@ -72,14 +72,8 @@ static void check_sub_hfyu_median_pred_int16(const char *aligned, unsigned width
 
 void checkasm_check_huffyuvencdsp(void)
 {
-    static unsigned width = 0;
-
-    if (!width) {
-        width = rnd() % MAX_WIDTH;
-        width = width ? width : 1;
-    }
-
     const size_t align = av_cpu_max_align();
+    unsigned width = 1 + rnd() % MAX_WIDTH;
 
     check_sub_hfyu_median_pred_int16("_aligned", FFALIGN(width, align / sizeof(uint16_t)));
     report("sub_hfyu_median_pred_int16_aligned");
