@@ -132,6 +132,10 @@ typedef struct MpegTSWrite {
     uint8_t provider_name[256];
 
     int omit_video_pes_length;
+
+    int pcr_pid;            ///< user-specified separate PCR PID (-1 = use video PID)
+    int64_t pcr_stream_pcr_period; ///< PCR period for the dedicated stream
+    int64_t pcr_stream_last_pcr;   ///< last PCR sent on the dedicated PID
 } MpegTSWrite;
 
 /* a PES packet header is generated every DEFAULT_PES_HEADER_FREQ packets */
@@ -1088,7 +1092,14 @@ static void select_pcr_streams(AVFormatContext *s)
             }
         }
 
-        if (pcr_st) {
+        if (ts->pcr_pid >= FIRST_OTHER_PID) {
+            int pcr_period_ms = ts->pcr_period_ms == -1 ? PCR_RETRANS_TIME : ts->pcr_period_ms;
+            service->pcr_pid = ts->pcr_pid;
+            ts->pcr_stream_pcr_period = av_rescale(pcr_period_ms, PCR_TIME_BASE, 1000);
+            ts->pcr_stream_last_pcr = ts->first_pcr - ts->pcr_stream_pcr_period;
+            av_log(s, AV_LOG_VERBOSE, "service %i using separate PCR pid=%d, pcr_period=%"PRId64"ms\n",
+                service->sid, ts->pcr_pid, (int64_t)pcr_period_ms);
+        } else if (pcr_st) {
             MpegTSWriteStream *ts_st = pcr_st->priv_data;
             service->pcr_pid = ts_st->pid;
             enable_pcr_generation_for_stream(s, pcr_st);
@@ -1129,6 +1140,12 @@ static int mpegts_init(AVFormatContext *s)
 
     if (s->max_delay < 0) /* Not set by the caller */
         s->max_delay = 0;
+
+    if (ts->pcr_pid != -1 && ts->pcr_pid < FIRST_OTHER_PID) {
+        av_log(s, AV_LOG_ERROR, "Invalid PCR PID %d, must be in range [%d, %d]\n",
+               ts->pcr_pid, FIRST_OTHER_PID, LAST_OTHER_PID);
+        return AVERROR(EINVAL);
+    }
 
     // round up to a whole number of TS packets
     ts->pes_payload_size = (ts->pes_payload_size + 14 + 183) / 184 * 184 - 14;
@@ -1378,25 +1395,23 @@ static void mpegts_insert_null_packet(AVFormatContext *s)
 }
 
 /* Write a single transport stream packet with a PCR and no payload */
-static void mpegts_insert_pcr_only(AVFormatContext *s, AVStream *st)
+static void mpegts_insert_pcr_only_pid(AVFormatContext *s, int pid, int cc,
+                                       int discontinuity)
 {
     MpegTSWrite *ts = s->priv_data;
-    MpegTSWriteStream *ts_st = st->priv_data;
     uint8_t *q;
     uint8_t buf[TS_PACKET_SIZE];
 
     q    = buf;
     *q++ = SYNC_BYTE;
-    *q++ = ts_st->pid >> 8;
-    *q++ = ts_st->pid;
-    *q++ = 0x20 | ts_st->cc;   /* Adaptation only */
+    *q++ = (pid >> 8) & 0x1f;
+    *q++ = pid & 0xff;
+    *q++ = 0x20 | (cc & 0xf);   /* Adaptation only */
     /* Continuity Count field does not increment (see 13818-1 section 2.4.3.3) */
     *q++ = TS_PACKET_SIZE - 5; /* Adaptation Field Length */
     *q++ = 0x10;               /* Adaptation flags: PCR present */
-    if (ts_st->discontinuity) {
+    if (discontinuity)
         q[-1] |= 0x80;
-        ts_st->discontinuity = 0;
-    }
 
     /* PCR coded into 6 bytes */
     q += write_pcr_bits(q, get_pcr(ts));
@@ -1404,6 +1419,13 @@ static void mpegts_insert_pcr_only(AVFormatContext *s, AVStream *st)
     /* stuffing bytes */
     memset(q, STUFFING_BYTE, TS_PACKET_SIZE - (q - buf));
     write_packet(s, buf);
+}
+
+static void mpegts_insert_pcr_only(AVFormatContext *s, AVStream *st)
+{
+    MpegTSWriteStream *ts_st = st->priv_data;
+    mpegts_insert_pcr_only_pid(s, ts_st->pid, ts_st->cc, ts_st->discontinuity);
+    ts_st->discontinuity = 0;
 }
 
 static void write_pts(uint8_t *q, int fourbits, int64_t pts)
@@ -1534,7 +1556,15 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
         if (ts->mux_rate > 1) {
             /* Send PCR packets for all PCR streams if needed */
             pcr = get_pcr(ts);
-            if (pcr >= ts->next_pcr) {
+            if (ts->pcr_pid >= FIRST_OTHER_PID) {
+                /* Dedicated PCR PID: send adaptation-only packets on that PID */
+                if (pcr - ts->pcr_stream_last_pcr >= ts->pcr_stream_pcr_period) {
+                    ts->pcr_stream_last_pcr = FFMAX(pcr - ts->pcr_stream_pcr_period, ts->pcr_stream_last_pcr + ts->pcr_stream_pcr_period);
+                    mpegts_insert_pcr_only_pid(s, ts->pcr_pid, 0, 0);
+                    pcr = get_pcr(ts);
+                }
+                ts->next_pcr = ts->pcr_stream_last_pcr + ts->pcr_stream_pcr_period;
+            } else if (pcr >= ts->next_pcr) {
                 int64_t next_pcr = INT64_MAX;
                 for (int i = 0; i < s->nb_streams; i++) {
                     /* Make the current stream the last, because for that we
@@ -1559,12 +1589,27 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
             }
             if (dts != AV_NOPTS_VALUE && (dts - pcr / SYSTEM_CLOCK_FREQUENCY_DIVISOR) > delay) {
                 /* pcr insert gets priority over null packet insert */
-                if (write_pcr)
+                if (ts->pcr_pid >= FIRST_OTHER_PID) {
+                    int64_t cur_pcr = get_pcr(ts);
+                    if (cur_pcr - ts->pcr_stream_last_pcr >= ts->pcr_stream_pcr_period) {
+                        ts->pcr_stream_last_pcr = FFMAX(cur_pcr - ts->pcr_stream_pcr_period, ts->pcr_stream_last_pcr + ts->pcr_stream_pcr_period);
+                        mpegts_insert_pcr_only_pid(s, ts->pcr_pid, 0, 0);
+                    } else {
+                        mpegts_insert_null_packet(s);
+                    }
+                } else if (write_pcr) {
                     mpegts_insert_pcr_only(s, st);
-                else
+                } else {
                     mpegts_insert_null_packet(s);
+                }
                 /* recalculate write_pcr and possibly retransmit si_info */
                 continue;
+            }
+        } else if (ts->pcr_pid >= FIRST_OTHER_PID && pcr != AV_NOPTS_VALUE) {
+            /* VBR mode with dedicated PCR PID */
+            if (pcr - ts->pcr_stream_last_pcr >= ts->pcr_stream_pcr_period && is_start) {
+                ts->pcr_stream_last_pcr = FFMAX(pcr - ts->pcr_stream_pcr_period, ts->pcr_stream_last_pcr + ts->pcr_stream_pcr_period);
+                mpegts_insert_pcr_only_pid(s, ts->pcr_pid, 0, 0);
             }
         } else if (ts_st->pcr_period && pcr != AV_NOPTS_VALUE) {
             if (pcr - ts_st->last_pcr >= ts_st->pcr_period && is_start) {
@@ -1594,7 +1639,7 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
             key && is_start && pts != AV_NOPTS_VALUE &&
             !is_dvb_teletext /* adaptation+payload forbidden for teletext (ETSI EN 300 472 V1.3.1 4.1) */) {
             // set Random Access for key frames
-            if (ts_st->pcr_period)
+            if (ts_st->pcr_period && ts->pcr_pid < FIRST_OTHER_PID)
                 write_pcr = 1;
             set_af_flag(buf, 0x40);
             q = get_ts_payload_start(buf);
@@ -2389,6 +2434,8 @@ static const AVOption options[] = {
       OFFSET(omit_video_pes_length), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, ENC },
     { "pcr_period", "PCR retransmission time in milliseconds",
       OFFSET(pcr_period_ms), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, INT_MAX, ENC },
+    { "mpegts_pcr_pid", "Set a separate PCR PID (-1 means PCR on video PID)",
+      OFFSET(pcr_pid), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, LAST_OTHER_PID, ENC },
     { "pat_period", "PAT/PMT retransmission time limit in seconds",
       OFFSET(pat_period_us), AV_OPT_TYPE_DURATION, { .i64 = PAT_RETRANS_TIME * 1000LL }, 0, INT64_MAX, ENC },
     { "sdt_period", "SDT retransmission time limit in seconds",
