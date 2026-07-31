@@ -609,6 +609,7 @@ static int ambisonics_config(void *s, AVIOContext *pb,
 static int param_parse(void *s, IAMFContext *c, AVIOContext *pb,
                        unsigned int type,
                        const IAMFAudioElement *audio_element,
+                       const IAMFCodecConfig *codec_config,
                        AVIAMFParamDefinition **out_param_definition)
 {
     IAMFParamDefinition *param_definition = NULL;
@@ -631,14 +632,10 @@ static int param_parse(void *s, IAMFContext *c, AVIOContext *pb,
 
     if (mode == 0) {
         duration = ffio_read_leb(pb);
-        if (!duration)
+        if (!duration || duration > av_rescale(codec_config->nb_samples,
+                                               codec_config->sample_rate, parameter_rate)) {
+            av_log(s, AV_LOG_ERROR, "Invalid block duration in parameter_id %u\n", parameter_id);
             return AVERROR_INVALIDDATA;
-        if (audio_element) {
-            const IAMFCodecConfig *codec_config = ff_iamf_get_codec_config(c, audio_element->codec_config_id);
-            if (duration > av_rescale(codec_config->nb_samples, codec_config->sample_rate, parameter_rate)) {
-                av_log(s, AV_LOG_ERROR, "Invalid block duration in parameter_id %u\n", parameter_id);
-                return AVERROR_INVALIDDATA;
-            }
         }
         constant_subblock_duration = ffio_read_leb(pb);
         if (constant_subblock_duration == 0)
@@ -899,13 +896,17 @@ static int audio_element_obu(void *s, IAMFContext *c, AVIOContext *pb, int len)
                 ret = AVERROR_INVALIDDATA;
                 goto fail;
             }
-            ret = param_parse(s, c, pbc, type, audio_element, &element->demixing_info);
+            ret = param_parse(s, c, pbc, type,
+                              audio_element, codec_config,
+                              &element->demixing_info);
         } else if (type == AV_IAMF_PARAMETER_DEFINITION_RECON_GAIN) {
             if (element->recon_gain_info) {
                 ret = AVERROR_INVALIDDATA;
                 goto fail;
             }
-            ret = param_parse(s, c, pbc, type, audio_element, &element->recon_gain_info);
+            ret = param_parse(s, c, pbc, type,
+                              audio_element, codec_config,
+                              &element->recon_gain_info);
         } else {
             unsigned param_definition_size = ffio_read_leb(pbc);
             avio_skip(pbc, param_definition_size);
@@ -960,6 +961,7 @@ static int label_string(AVIOContext *pb, char **label)
 static int mix_presentation_obu(void *s, IAMFContext *c, AVIOContext *pb, int len)
 {
     AVIAMFMixPresentation *mix;
+    const IAMFCodecConfig *codec_config = NULL;
     IAMFMixPresentation **tmp, *mix_presentation = NULL;
     FFIOContext b;
     AVIOContext *pbc;
@@ -1062,6 +1064,7 @@ static int mix_presentation_obu(void *s, IAMFContext *c, AVIOContext *pb, int le
         for (int j = 0; j < nb_elements; j++) {
             AVIAMFSubmixElement *submix_element;
             IAMFAudioElement *audio_element = NULL;
+            const IAMFCodecConfig *config = NULL;
             unsigned int rendering_config_extension_size;
 
             submix_element = av_iamf_submix_add_element(sub_mix);
@@ -1084,6 +1087,7 @@ static int mix_presentation_obu(void *s, IAMFContext *c, AVIOContext *pb, int le
                 ret = AVERROR_INVALIDDATA;
                 goto fail;
             }
+            config = ff_iamf_get_codec_config(c, audio_element->codec_config_id);
 
             for (int k = 0; k < mix_presentation->count_label; k++) {
                 char *annotation = NULL;
@@ -1102,14 +1106,22 @@ static int mix_presentation_obu(void *s, IAMFContext *c, AVIOContext *pb, int le
             avio_skip(pbc, rendering_config_extension_size);
 
             ret = param_parse(s, c, pbc, AV_IAMF_PARAMETER_DEFINITION_MIX_GAIN,
-                              audio_element,
+                              audio_element, config,
                               &submix_element->element_mix_config);
             if (ret < 0)
                 goto fail;
             submix_element->default_mix_gain = av_make_q(sign_extend(avio_rb16(pbc), 16), 1 << 8);
+
+            if (!codec_config || (config->nb_samples >
+                                  av_rescale(codec_config->nb_samples,
+                                             codec_config->sample_rate,
+                                             config->sample_rate)))
+                codec_config = config;
         }
 
-        ret = param_parse(s, c, pbc, AV_IAMF_PARAMETER_DEFINITION_MIX_GAIN, NULL, &sub_mix->output_mix_config);
+        ret = param_parse(s, c, pbc, AV_IAMF_PARAMETER_DEFINITION_MIX_GAIN,
+                          NULL, codec_config,
+                          &sub_mix->output_mix_config);
         if (ret < 0)
             goto fail;
         sub_mix->default_mix_gain = av_make_q(sign_extend(avio_rb16(pbc), 16), 1 << 8);
