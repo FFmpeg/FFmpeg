@@ -86,6 +86,8 @@ static int amf_filter_query_formats(AVFilterContext *avctx)
     static const enum AVPixelFormat pix_fmts_packed_rgb[] = {
         AV_PIX_FMT_RGBA,
         AV_PIX_FMT_BGRA,
+        AV_PIX_FMT_X2BGR10,
+        AV_PIX_FMT_RGBAF16,
         AV_PIX_FMT_AMF_SURFACE,
         AV_PIX_FMT_NONE,
     };

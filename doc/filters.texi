@@ -23275,16 +23275,16 @@ This is a default value
 Point
 AMF returns an unwritten surface for this algorithm when the format is
 @code{nv12} or @code{p010}, so software input in those formats is converted to
-a packed RGB format (@code{rgba} or @code{bgra}) automatically and a hardware
-surface in them is rejected.
+a packed RGB format (@code{rgba}, @code{bgra}, @code{x2bgr10le} or
+@code{rgbaf16le}) automatically and a hardware surface in them is rejected.
 
 @item sr1-1
 Video SR1.1
 This algorithm only supports packed RGB formats and requires a DirectX 11 or
 DirectX 12 device, so it is available on Windows only. Software input in
 another format such as @code{nv12} or @code{p010} is converted to a packed RGB
-format (@code{rgba} or @code{bgra}) automatically; a hardware surface in such a
-format is rejected.
+format (@code{rgba}, @code{bgra}, @code{x2bgr10le} or @code{rgbaf16le})
+automatically; a hardware surface in such a format is rejected.
 Note that the VideoSR algorithms (@code{sr1-0} and @code{sr1-1}) do not
 preserve the alpha channel (it is left zeroed); append e.g. @code{format=rgb24}
 downstream if an opaque result is required.
