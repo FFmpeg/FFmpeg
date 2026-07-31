@@ -23273,6 +23273,10 @@ This is a default value
 
 @item point
 Point
+AMF returns an unwritten surface for this algorithm when the format is
+@code{nv12} or @code{p010}, so software input in those formats is converted to
+a packed RGB format (@code{rgba} or @code{bgra}) automatically and a hardware
+surface in them is rejected.
 
 @item sr1-1
 Video SR1.1

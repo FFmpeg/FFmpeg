@@ -52,6 +52,12 @@
 #endif
 
 
+static int amf_hq_scaler_needs_packed_rgb(int algorithm)
+{
+    return algorithm == AMF_HQ_SCALER_ALGORITHM_VIDEOSR1_1 ||
+           algorithm == AMF_HQ_SCALER_ALGORITHM_POINT;
+}
+
 static int amf_filter_query_formats(AVFilterContext *avctx)
 {
     AMFFilterContext *ctx = avctx->priv;
@@ -76,17 +82,17 @@ static int amf_filter_query_formats(AVFilterContext *avctx)
         AV_PIX_FMT_RGBAF16,
         AV_PIX_FMT_NONE,
     };
-    // VideoSR1.1 needs packed RGB on DX11/DX12
-    static const enum AVPixelFormat pix_fmts_sr1_1[] = {
+    // sr1-1 and point produce a blank surface on YUV input
+    static const enum AVPixelFormat pix_fmts_packed_rgb[] = {
         AV_PIX_FMT_RGBA,
         AV_PIX_FMT_BGRA,
         AV_PIX_FMT_AMF_SURFACE,
         AV_PIX_FMT_NONE,
     };
 
-    if (ctx->algorithm == AMF_HQ_SCALER_ALGORITHM_VIDEOSR1_1) {
-        input_pix_fmts  = pix_fmts_sr1_1;
-        output_pix_fmts = pix_fmts_sr1_1;
+    if (amf_hq_scaler_needs_packed_rgb(ctx->algorithm)) {
+        input_pix_fmts  = pix_fmts_packed_rgb;
+        output_pix_fmts = pix_fmts_packed_rgb;
     } else {
         input_pix_fmts  = input_pix_fmts_default;
         output_pix_fmts = output_pix_fmts_default;
@@ -110,12 +116,14 @@ static int amf_filter_config_output(AVFilterLink *outlink)
     if (err < 0)
         return err;
 
-    if (ctx->algorithm == AMF_HQ_SCALER_ALGORITHM_VIDEOSR1_1 &&
+    if (amf_hq_scaler_needs_packed_rgb(ctx->algorithm) &&
         (in_format == AV_PIX_FMT_NV12 || in_format == AV_PIX_FMT_P010)) {
         av_log(avctx, AV_LOG_ERROR,
-               "sr1-1 (VideoSR1.1) requires a packed RGB format (rgba); "
-               "%s is not supported. Convert the input first (e.g. format=rgba) or "
-               "select another algorithm.\n",
+               "%s requires a packed RGB format (rgba); %s is not supported. "
+               "Convert the input first (e.g. format=rgba) or select another "
+               "algorithm.\n",
+               ctx->algorithm == AMF_HQ_SCALER_ALGORITHM_POINT ? "point"
+                                                               : "sr1-1 (VideoSR1.1)",
                av_get_pix_fmt_name(in_format));
         return AVERROR(EINVAL);
     }
