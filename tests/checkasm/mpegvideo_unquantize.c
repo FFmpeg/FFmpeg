@@ -48,26 +48,24 @@ enum TestType {
     MPEG2,
 };
 
-static void init_idct_scantable(MPVContext *const s, int intra_scantable)
-{
-    static const enum idct_permutation_type permutation_types[] = {
-        FF_IDCT_PERM_NONE,
-        FF_IDCT_PERM_LIBMPEG2,
+static const enum idct_permutation_type permutation_types[] = {
+    FF_IDCT_PERM_NONE,
+    FF_IDCT_PERM_LIBMPEG2,
 #if ARCH_X86_32 && HAVE_X86ASM
-        FF_IDCT_PERM_SIMPLE,
+    FF_IDCT_PERM_SIMPLE,
 #endif
 #if ARCH_PPC || ARCH_X86
-        FF_IDCT_PERM_TRANSPOSE,
+    FF_IDCT_PERM_TRANSPOSE,
 #endif
 #if ARCH_ARM || ARCH_AARCH64
-        FF_IDCT_PERM_PARTTRANS,
+    FF_IDCT_PERM_PARTTRANS,
 #endif
 #if ARCH_X86 && HAVE_X86ASM
-        FF_IDCT_PERM_SSE2,
+    FF_IDCT_PERM_SSE2,
 #endif
-    };
-    // Copied here to avoid #ifs.
-    static const uint8_t ff_wmv1_scantable[][64] = {
+};
+// Copied here to avoid #ifs.
+static const uint8_t ff_wmv1_scantable[][64] = {
     { 0x00, 0x08, 0x01, 0x02, 0x09, 0x10, 0x18, 0x11,
       0x0A, 0x03, 0x04, 0x0B, 0x12, 0x19, 0x20, 0x28,
       0x30, 0x38, 0x29, 0x21, 0x1A, 0x13, 0x0C, 0x05,
@@ -100,24 +98,21 @@ static void init_idct_scantable(MPVContext *const s, int intra_scantable)
       0x2B, 0x33, 0x3A, 0x3B, 0x34, 0x2C, 0x25, 0x1E,
       0x16, 0x0F, 0x17, 0x1F, 0x26, 0x2D, 0x3C, 0x35,
       0x2E, 0x27, 0x2F, 0x36, 0x3D, 0x3E, 0x37, 0x3F, }
-    };
+};
 
-    static const uint8_t *const scantables[] = {
-        ff_alternate_vertical_scan,
-        ff_alternate_horizontal_scan,
-        ff_zigzag_direct,
-        ff_wmv1_scantable[0],
-        ff_wmv1_scantable[1],
-        ff_wmv1_scantable[2],
-        ff_wmv1_scantable[3],
-    };
-    static const uint8_t *scantable = NULL;
-    static enum idct_permutation_type idct_permutation;
+static const uint8_t *const scantables[] = {
+    ff_alternate_vertical_scan,
+    ff_alternate_horizontal_scan,
+    ff_zigzag_direct,
+    ff_wmv1_scantable[0],
+    ff_wmv1_scantable[1],
+    ff_wmv1_scantable[2],
+    ff_wmv1_scantable[3],
+};
 
-    if (!scantable) {
-        scantable        = scantables[rnd() % FF_ARRAY_ELEMS(scantables)];
-        idct_permutation = permutation_types[rnd() % FF_ARRAY_ELEMS(permutation_types)];
-    }
+static void init_idct_scantable(MPVContext *const s, const uint8_t *scantable,
+                                enum idct_permutation_type idct_permutation, int intra_scantable)
+{
     ff_init_scantable_permutation(s->idsp.idct_permutation, idct_permutation);
     ff_init_scantable(s->idsp.idct_permutation,
                       intra_scantable ? &s->intra_scantable : &s->inter_scantable,
@@ -125,17 +120,13 @@ static void init_idct_scantable(MPVContext *const s, int intra_scantable)
 }
 
 static void init_h263_test(MPVContext *const s, int16_t block[64],
-                           int last_nonzero_coeff, int qscale, int intra)
+                           int last_nonzero_coeff, int qscale,
+                           int h263_aic, int ac_pred, int intra)
 {
     const uint8_t *permutation = s->inter_scantable.permutated;
     if (intra) {
         permutation = s->intra_scantable.permutated;
         block[0]    = rnd() & 511;
-        static int h263_aic = -1, ac_pred;
-        if (h263_aic < 0) {
-            h263_aic = rnd() & 1;
-            ac_pred  = rnd() & 1;
-        }
         s->h263_aic = h263_aic;
         s->ac_pred  = ac_pred;
         if (s->ac_pred)
@@ -212,7 +203,16 @@ void checkasm_check_mpegvideo_unquantize(void)
         TEST(dct_unquantize_h263_inter,  0, 0, H263),
     };
     MPVUnquantDSPContext unquant_dsp_ctx;
+    // Initialize the following parameters before any test to ensure
+    // that they are the same for all instruction sets to make benchmarks
+    // between different instruction sets meaningful.
     int q_scale_type = rnd() & 1;
+    int block_last_index = rnd() % 64;
+    int qscale = 1 + rnd() % 31;
+    int h263_aic = rnd() & 1;
+    int ac_pred  = rnd() & 1;
+    const uint8_t *scantable = scantables[rnd() % FF_ARRAY_ELEMS(scantables)];
+    enum idct_permutation_type idct_permutation = permutation_types[rnd() % FF_ARRAY_ELEMS(permutation_types)];
 
     ff_mpv_unquantize_init(&unquant_dsp_ctx, 1 /* bitexact */, q_scale_type);
     declare_func(void, const MPVContext *s, int16_t *block, int n, int qscale);
@@ -224,16 +224,12 @@ void checkasm_check_mpegvideo_unquantize(void)
             MPVContext new, ref;
             DECLARE_ALIGNED(16, int16_t, block_new)[64];
             DECLARE_ALIGNED(16, int16_t, block_ref)[64];
-            static int block_last_index = -1;
 
             randomize_struct(MPVContext, &ref);
 
             ref.q_scale_type = q_scale_type;
 
-            init_idct_scantable(&ref, tests[i].intra_scantable);
-
-            if (block_last_index < 0)
-                block_last_index = rnd() % 64;
+            init_idct_scantable(&ref, scantable, idct_permutation, tests[i].intra_scantable);
 
             memset(block_ref, 0, sizeof(block_ref));
 
@@ -243,14 +239,9 @@ void checkasm_check_mpegvideo_unquantize(void)
                 ref.c_dc_scale = 1 + rnd() % 64;
             }
 
-            static int qscale = 0;
-
-            if (qscale == 0)
-                qscale = 1 + rnd() % 31;
-
             if (tests[i].type == H263)
                 init_h263_test(&ref, block_ref, block_last_index, qscale,
-                               tests[i].intra);
+                               h263_aic, ac_pred, tests[i].intra);
             else
                 init_mpeg12_test(&ref, block_ref, block_last_index, qscale,
                                  tests[i].intra, tests[i].type);
