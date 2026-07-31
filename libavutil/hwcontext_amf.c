@@ -317,6 +317,8 @@ static const enum AVPixelFormat supported_formats[] = {
     AV_PIX_FMT_RGBA,
     AV_PIX_FMT_BGR0,
     AV_PIX_FMT_P010,
+    AV_PIX_FMT_X2BGR10,
+    AV_PIX_FMT_RGBAF16,
 #if CONFIG_D3D11VA
     AV_PIX_FMT_D3D11,
 #endif
@@ -334,6 +336,8 @@ static const enum AVPixelFormat supported_transfer_formats[] = {
     AV_PIX_FMT_BGRA,
     AV_PIX_FMT_RGBA,
     AV_PIX_FMT_P010,
+    AV_PIX_FMT_X2BGR10,
+    AV_PIX_FMT_RGBAF16,
     AV_PIX_FMT_NONE,
 };
 
