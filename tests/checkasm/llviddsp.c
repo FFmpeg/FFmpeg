@@ -18,10 +18,11 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <stddef.h>
 #include <string.h>
 
-#include "libavutil/common.h"
-#include "libavutil/intreadwrite.h"
+#include "libavutil/cpu.h"
+#include "libavutil/macros.h"
 #include "libavutil/mem.h"
 
 #include "libavcodec/lossless_videodsp.h"
@@ -42,12 +43,12 @@
     randomize_buffers(a0, width * sizeof(type));\
     memcpy(a1, a0, width*sizeof(type));\
 
-static void check_add_bytes(LLVidDSPContext *c, int width)
+static void check_add_bytes(LLVidDSPContext *c, int width, size_t aligned_width)
 {
-    uint8_t *dst0 = av_mallocz(width);
-    uint8_t *dst1 = av_mallocz(width);
-    uint8_t *src0 = av_calloc(width, sizeof(*src0));
-    uint8_t *src1 = av_calloc(width, sizeof(*src1));
+    uint8_t *dst0 = av_mallocz(aligned_width);
+    uint8_t *dst1 = av_mallocz(aligned_width);
+    uint8_t *src0 = av_malloc(aligned_width);
+    uint8_t *src1 = av_malloc(aligned_width);
     declare_func(void, uint8_t *dst, uint8_t *src, ptrdiff_t w);
 
     init_buffer(src0, src1, uint8_t, width);
@@ -68,14 +69,15 @@ static void check_add_bytes(LLVidDSPContext *c, int width)
     av_free(dst1);
 }
 
-static void check_add_median_pred(LLVidDSPContext *c, int width) {
+static void check_add_median_pred(LLVidDSPContext *c, int width, size_t aligned_width)
+{
     int a0, a1, b0, b1;
-    uint8_t *dst0 = av_mallocz(width);
-    uint8_t *dst1 = av_mallocz(width);
-    uint8_t *src0  = av_calloc(width, sizeof(*src0));
-    uint8_t *src1  = av_calloc(width, sizeof(*src1));
-    uint8_t *diff0 = av_calloc(width, sizeof(*diff0));
-    uint8_t *diff1 = av_calloc(width, sizeof(*diff1));
+    uint8_t *dst0  = av_mallocz(aligned_width);
+    uint8_t *dst1  = av_mallocz(aligned_width);
+    uint8_t *src0  = av_malloc(aligned_width);
+    uint8_t *src1  = av_malloc(aligned_width);
+    uint8_t *diff0 = av_malloc(aligned_width);
+    uint8_t *diff1 = av_malloc(aligned_width);
     declare_func(void, uint8_t *dst, const uint8_t *src1,
                  const uint8_t *diff, ptrdiff_t w,
                  int *left, int *left_top);
@@ -103,14 +105,14 @@ static void check_add_median_pred(LLVidDSPContext *c, int width) {
     av_free(dst1);
 }
 
-static void check_add_left_pred(LLVidDSPContext *c, int width, int acc)
+static void check_add_left_pred(LLVidDSPContext *c, int width, size_t aligned_width, int acc)
 {
     int res0, res1;
-    uint8_t *dst0 = av_mallocz(width);
-    uint8_t *dst1 = av_mallocz(width);
-    uint8_t *src0 = av_calloc(width, sizeof(*src0));
-    uint8_t *src1 = av_calloc(width, sizeof(*src1));
     declare_func(int, uint8_t *dst, const uint8_t *src, ptrdiff_t w, int acc);
+    uint8_t *dst0 = av_mallocz(aligned_width);
+    uint8_t *dst1 = av_mallocz(aligned_width);
+    uint8_t *src0 = av_malloc(aligned_width);
+    uint8_t *src1 = av_malloc(aligned_width);
 
     init_buffer(src0, src1, uint8_t, width);
 
@@ -129,14 +131,18 @@ static void check_add_left_pred(LLVidDSPContext *c, int width, int acc)
     av_free(dst1);
 }
 
-static void check_add_left_pred_16(LLVidDSPContext *c, unsigned mask, int width, unsigned acc)
+static void check_add_left_pred_16(LLVidDSPContext *c, unsigned mask, int width,
+                                   size_t align, unsigned acc)
 {
     int res0, res1;
-    uint16_t *dst0 = av_calloc(width, sizeof(*dst0));
-    uint16_t *dst1 = av_calloc(width, sizeof(*dst1));
-    uint16_t *src0 = av_calloc(width, sizeof(*src0));
-    uint16_t *src1 = av_calloc(width, sizeof(*src1));
+    uint16_t *dst0, *dst1, *src0, *src1;
+    size_t aligned_width = FFALIGN(width * sizeof(*dst0), align);
     declare_func(int, uint16_t *dst, const uint16_t *src, unsigned mask, ptrdiff_t w, unsigned acc);
+
+    dst0 = av_mallocz(aligned_width);
+    dst1 = av_mallocz(aligned_width);
+    src0 = av_malloc(aligned_width);
+    src1 = av_malloc(aligned_width);
 
     init_buffer(src0, src1, uint16_t, width);
 
@@ -155,13 +161,14 @@ static void check_add_left_pred_16(LLVidDSPContext *c, unsigned mask, int width,
     av_free(dst1);
 }
 
-static void check_add_gradient_pred(LLVidDSPContext *c, int w) {
+static void check_add_gradient_pred(LLVidDSPContext *c, int w, size_t align)
+{
     int src_size, stride;
     uint8_t *src0, *src1;
     declare_func(void, uint8_t *src, const ptrdiff_t stride,
                  const ptrdiff_t width);
 
-    stride = w + 32;
+    stride = FFALIGN(w + 32, align);
     src_size = (stride + 32) * 2; /* dsp need previous line, and ignore the start of the line */
     src0 = av_mallocz(src_size);
     src1 = av_mallocz(src_size);
@@ -183,36 +190,35 @@ static void check_add_gradient_pred(LLVidDSPContext *c, int w) {
 void checkasm_check_llviddsp(void)
 {
     LLVidDSPContext c;
-    static int saved_width = 0;
-    int width = saved_width;
     int accRnd = rnd() & 0xFF;
 
-    if (!width)
-        saved_width = width = 16 * av_clip(rnd(), 16, 128);
+    size_t align = av_cpu_max_align();
+    int width  = 1 + rnd() % 16*128;
+    size_t aligned_width = FFALIGN(width, align);
 
     ff_llviddsp_init(&c);
 
     if (check_func(c.add_bytes, "add_bytes"))
-        check_add_bytes(&c, width);
+        check_add_bytes(&c, width, aligned_width);
     report("add_bytes");
 
     if (check_func(c.add_median_pred, "add_median_pred"))
-        check_add_median_pred(&c, width);
+        check_add_median_pred(&c, width, aligned_width);
     report("add_median_pred");
 
     if (check_func(c.add_left_pred, "add_left_pred_zero"))
-        check_add_left_pred(&c, width, 0);
+        check_add_left_pred(&c, width, aligned_width, 0);
     report("add_left_pred_zero");
 
     if (check_func(c.add_left_pred, "add_left_pred_rnd_acc"))
-        check_add_left_pred(&c, width, accRnd);
+        check_add_left_pred(&c, width, aligned_width, accRnd);
     report("add_left_pred_rnd_acc");
 
     if (check_func(c.add_left_pred_int16, "add_left_pred_int16"))
-        check_add_left_pred_16(&c, 255, width, accRnd);
+        check_add_left_pred_16(&c, 255, width, align, accRnd);
     report("add_left_pred_int16");
 
     if (check_func(c.add_gradient_pred, "add_gradient_pred"))
-        check_add_gradient_pred(&c, width);
+        check_add_gradient_pred(&c, width, align);
     report("add_gradient_pred");
 }
