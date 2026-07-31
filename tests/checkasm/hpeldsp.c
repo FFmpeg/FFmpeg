@@ -73,12 +73,27 @@ void checkasm_check_hpeldsp(void)
 
     ff_hpeldsp_init(&hdsp, AV_CODEC_FLAG_BITEXACT);
 
+    int heights[FF_ARRAY_ELEMS(tests)][4][4];
+
+    // Always use the same height for each test, so that comparisons of benchmarks
+    // from different instruction sets are meaningful. To do so, initialize
+    // the heights before any function is checked. This works because the seed
+    // for the sequence of rnd() outputs is always the same at the start of
+    // each test.
+    for (size_t i = 0; i < FF_ARRAY_ELEMS(heights); ++i)
+        for (size_t j = 0; j < FF_ARRAY_ELEMS(heights[0]); ++j) {
+            const unsigned blocksize = MAX_BLOCK_SIZE >> j;
+            // h must always be a multiple of four, except when width is two or four.
+            const unsigned h_mult = blocksize <= 4 ? 2 : 4;
+            for (size_t k = 0; k < FF_ARRAY_ELEMS(heights[0][0]); ++k)
+                heights[i][j][k] = (rnd() % (MAX_HEIGHT / h_mult) + 1) * h_mult;
+        }
+
+
     for (size_t i = 0; i < FF_ARRAY_ELEMS(tests); ++i) {
         op_pixels_func (*func_tab)[4] = (op_pixels_func (*)[4])((char*)&hdsp + tests[i].offset);
         for (unsigned j = 0; j < tests[i].nb_blocksizes; ++j) {
             const unsigned blocksize = MAX_BLOCK_SIZE >> j;
-            // h must always be a multiple of four, except when width is two or four.
-            const unsigned h_mult = blocksize <= 4 ? 2 : 4;
 
             for (unsigned dxy = 0; dxy < 4; ++dxy) {
                 if (check_func(func_tab[j][dxy], "%s[%u][%u]", tests[i].name, j, dxy)) {
@@ -89,12 +104,7 @@ void checkasm_check_hpeldsp(void)
                     const uint8_t *src0 = srcbuf0 + src_offset, *src1 = srcbuf1 + src_offset;
                     uint8_t *dst0 = dstbuf0 + dst_offset, *dst1 = dstbuf1 + dst_offset;
 
-                    // Always use the same height for each test, so that comparisons of benchmarks
-                    // from different instruction sets are meaningful.
-                    static int saved_heights[FF_ARRAY_ELEMS(tests)][4][4];
-                    int h = saved_heights[i][j][dxy];
-                    if (!h)
-                        saved_heights[i][j][dxy] = h = (rnd() % (MAX_HEIGHT / h_mult) + 1) * h_mult;
+                    int h = heights[i][j][dxy];
 
                     if (rnd() & 1) {
                         // Flip stride.
