@@ -58,6 +58,7 @@ typedef struct AMFFilterContext {
     int reset_sar;
 
     AMFComponent        *component;
+    AMFComponent        *pre_converter;
     AVBufferRef         *amf_device_ref;
 
     AVBufferRef         *hwframes_in_ref;

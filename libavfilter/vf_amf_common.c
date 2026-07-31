@@ -25,6 +25,7 @@
 #include "libavutil/mem.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/time.h"
 
 #include "AMF/components/VideoDecoderUVD.h"
 #include "libavutil/hwcontext_amf.h"
@@ -66,6 +67,12 @@ void amf_filter_uninit(AVFilterContext *avctx)
         ctx->component = NULL;
     }
 
+    if (ctx->pre_converter) {
+        ctx->pre_converter->pVtbl->Terminate(ctx->pre_converter);
+        ctx->pre_converter->pVtbl->Release(ctx->pre_converter);
+        ctx->pre_converter = NULL;
+    }
+
     if (ctx->master_display)
         av_freep(&ctx->master_display);
 
@@ -99,6 +106,32 @@ int amf_filter_filter_frame(AVFilterLink *inlink, AVFrame *in)
     ret = amf_avframe_to_amfsurface(avctx, in, &surface_in);
     if (ret < 0)
         goto fail;
+
+    if (ctx->pre_converter) {
+        AMFGuid guid = IID_AMFSurface();
+        AMFData *data_conv = NULL;
+        AMFSurface *surface_conv = NULL;
+
+        do {
+            res = ctx->pre_converter->pVtbl->SubmitInput(ctx->pre_converter, (AMFData*)surface_in);
+            if (res == AMF_INPUT_FULL)
+                av_usleep(100);
+        } while (res == AMF_INPUT_FULL);
+        surface_in->pVtbl->Release(surface_in);
+        AMF_GOTO_FAIL_IF_FALSE(avctx, res == AMF_OK, AVERROR_UNKNOWN, "Converter SubmitInput() failed with error %d\n", res);
+
+        do {
+            res = ctx->pre_converter->pVtbl->QueryOutput(ctx->pre_converter, &data_conv);
+            if (res == AMF_REPEAT && !data_conv)
+                av_usleep(100);
+        } while (res == AMF_REPEAT && !data_conv);
+        AMF_GOTO_FAIL_IF_FALSE(avctx, res == AMF_OK && data_conv, AVERROR_UNKNOWN, "Converter QueryOutput() failed with error %d\n", res);
+
+        res = data_conv->pVtbl->QueryInterface(data_conv, &guid, (void**)&surface_conv);
+        data_conv->pVtbl->Release(data_conv);
+        AMF_GOTO_FAIL_IF_FALSE(avctx, res == AMF_OK, AVERROR_UNKNOWN, "Converter QueryInterface(IID_AMFSurface) failed with error %d\n", res);
+        surface_in = surface_conv;
+    }
 
     res = ctx->component->pVtbl->SubmitInput(ctx->component, (AMFData*)surface_in);
     surface_in->pVtbl->Release(surface_in); // release surface after use
@@ -158,6 +191,8 @@ int amf_filter_filter_frame(AVFilterLink *inlink, AVFrame *in)
     if (ctx->out_trc != AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED)
         out->color_trc = ctx->out_trc;
 
+    if (ctx->pre_converter)
+        out->colorspace = AVCOL_SPC_RGB;
 
     if (ret < 0)
         goto fail;

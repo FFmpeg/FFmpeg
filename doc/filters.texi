@@ -23274,17 +23274,17 @@ This is a default value
 @item point
 Point
 AMF returns an unwritten surface for this algorithm when the format is
-@code{nv12} or @code{p010}, so software input in those formats is converted to
-a packed RGB format (@code{rgba}, @code{bgra}, @code{x2bgr10le} or
-@code{rgbaf16le}) automatically and a hardware surface in them is rejected.
+@code{nv12} or @code{p010}, so inputs in those formats are converted to a packed
+RGB format automatically. This is a driver bug rather than a documented
+restriction; the conversion can be dropped once a driver that scales
+@code{nv12} and @code{p010} correctly with @code{point} is in wide use.
 
 @item sr1-1
 Video SR1.1
 This algorithm only supports packed RGB formats and requires a DirectX 11 or
-DirectX 12 device, so it is available on Windows only. Software input in
-another format such as @code{nv12} or @code{p010} is converted to a packed RGB
-format (@code{rgba}, @code{bgra}, @code{x2bgr10le} or @code{rgbaf16le})
-automatically; a hardware surface in such a format is rejected.
+DirectX 12 device, so it is available on Windows only. Inputs in other formats
+such as @code{nv12} or @code{p010} are converted to a packed RGB format
+automatically.
 Note that the VideoSR algorithms (@code{sr1-0} and @code{sr1-1}) do not
 preserve the alpha channel (it is left zeroed); append e.g. @code{format=rgb24}
 downstream if an opaque result is required.
@@ -23297,6 +23297,12 @@ Control hq scaler sharpening. The value is a float in the range of [0.0, 2.0]
 @item format
 Controls the output pixel format. By default, or if none is specified, the input
 pixel format is used.
+
+The @code{point} and @code{sr1-1} algorithms emit the packed RGB format the
+scaler receives, so for them this option must name one of @code{rgba},
+@code{bgra}, @code{x2bgr10le} or @code{rgbaf16le}. When the input is converted
+automatically, @code{x2bgr10le} is selected for @code{p010} input and
+@code{rgba} otherwise, and the result is tagged as full range RGB.
 
 @item keep-ratio
 Force the scaler to keep the aspect ratio of the input image when the output size has a different aspect ratio.

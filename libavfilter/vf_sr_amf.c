@@ -35,6 +35,7 @@
 #include "libavutil/hwcontext_amf_internal.h"
 
 #include "AMF/components/HQScaler.h"
+#include "AMF/components/VideoConverter.h"
 #include "AMF/components/ColorSpace.h"
 #include "vf_amf_common.h"
 
@@ -52,10 +53,25 @@
 #endif
 
 
+static enum AVPixelFormat amf_inlink_sw_format(AVFilterLink *inlink)
+{
+    FilterLink *inl = ff_filter_link(inlink);
+
+    if (inl->hw_frames_ctx)
+        return ((AVHWFramesContext*)inl->hw_frames_ctx->data)->sw_format;
+    return inlink->format;
+}
+
 static int amf_hq_scaler_needs_packed_rgb(int algorithm)
 {
     return algorithm == AMF_HQ_SCALER_ALGORITHM_VIDEOSR1_1 ||
            algorithm == AMF_HQ_SCALER_ALGORITHM_POINT;
+}
+
+static int amf_is_packed_rgb(enum AVPixelFormat format)
+{
+    return format == AV_PIX_FMT_RGBA || format == AV_PIX_FMT_BGRA ||
+           format == AV_PIX_FMT_X2BGR10 || format == AV_PIX_FMT_RGBAF16;
 }
 
 static int amf_filter_query_formats(AVFilterContext *avctx)
@@ -82,7 +98,7 @@ static int amf_filter_query_formats(AVFilterContext *avctx)
         AV_PIX_FMT_RGBAF16,
         AV_PIX_FMT_NONE,
     };
-    // sr1-1 and point produce a blank surface on YUV input
+    // sr1-1 and point need packed RGB; YUV is converted on the GPU
     static const enum AVPixelFormat pix_fmts_packed_rgb[] = {
         AV_PIX_FMT_RGBA,
         AV_PIX_FMT_BGRA,
@@ -113,21 +129,54 @@ static int amf_filter_config_output(AVFilterLink *outlink)
     AMF_RESULT res;
     enum AVPixelFormat in_format;
     enum AMF_MEMORY_TYPE mem_type = AMF_MEMORY_UNKNOWN;
+    enum AVPixelFormat in_sw_format;
+    int needs_conversion;
+
+    in_sw_format = amf_inlink_sw_format(inlink);
+    needs_conversion = amf_hq_scaler_needs_packed_rgb(ctx->algorithm) &&
+                       (in_sw_format == AV_PIX_FMT_NV12 || in_sw_format == AV_PIX_FMT_P010);
+
+    if (amf_hq_scaler_needs_packed_rgb(ctx->algorithm)) {
+        if (!needs_conversion) {
+            if (ctx->format != AV_PIX_FMT_NONE && ctx->format != in_sw_format) {
+                av_log(avctx, AV_LOG_ERROR, "The HQ scaler does not convert formats, format must be same or %s.\n",
+                       av_get_pix_fmt_name(in_sw_format));
+                return AVERROR(EINVAL);
+            }
+            ctx->format = in_sw_format;
+        } else if (ctx->format == AV_PIX_FMT_NONE) {
+            ctx->format = in_sw_format == AV_PIX_FMT_P010 ? AV_PIX_FMT_X2BGR10 : AV_PIX_FMT_RGBA;
+        } else if (!amf_is_packed_rgb(ctx->format)) {
+            av_log(avctx, AV_LOG_ERROR, "This algorithm only outputs packed RGB, format=%s is not supported.\n",
+                   av_get_pix_fmt_name(ctx->format));
+            return AVERROR(EINVAL);
+        }
+    }
 
     err = amf_init_filter_config(outlink, &in_format);
     if (err < 0)
         return err;
 
-    if (amf_hq_scaler_needs_packed_rgb(ctx->algorithm) &&
-        (in_format == AV_PIX_FMT_NV12 || in_format == AV_PIX_FMT_P010)) {
-        av_log(avctx, AV_LOG_ERROR,
-               "%s requires a packed RGB format (rgba); %s is not supported. "
-               "Convert the input first (e.g. format=rgba) or select another "
-               "algorithm.\n",
-               ctx->algorithm == AMF_HQ_SCALER_ALGORITHM_POINT ? "point"
-                                                               : "sr1-1 (VideoSR1.1)",
-               av_get_pix_fmt_name(in_format));
-        return AVERROR(EINVAL);
+    if (needs_conversion) {
+        AMFSize in_size = { inlink->w, inlink->h };
+
+        res = ctx->amf_device_ctx->factory->pVtbl->CreateComponent(ctx->amf_device_ctx->factory, ctx->amf_device_ctx->context, AMFVideoConverter, &ctx->pre_converter);
+        AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_FILTER_NOT_FOUND, "CreateComponent(%ls) failed with error %d\n", AMFVideoConverter, res);
+
+        AMF_ASSIGN_PROPERTY_INT64(res, ctx->pre_converter, AMF_VIDEO_CONVERTER_OUTPUT_FORMAT, (amf_int32)av_av_to_amf_format(ctx->format));
+        AMF_RETURN_IF_FALSE(avctx, res == AMF_OK, AVERROR_UNKNOWN, "AMFConverter-SetProperty() failed with error %d\n", res);
+        AMF_ASSIGN_PROPERTY_SIZE(res, ctx->pre_converter, AMF_VIDEO_CONVERTER_OUTPUT_SIZE, in_size);
+        AMF_RETURN_IF_FALSE(avctx, res == AMF_OK, AVERROR_UNKNOWN, "AMFConverter-SetProperty() failed with error %d\n", res);
+        AMF_ASSIGN_PROPERTY_INT64(res, ctx->pre_converter, AMF_VIDEO_CONVERTER_OUTPUT_COLOR_RANGE, AMF_COLOR_RANGE_FULL);
+        AMF_RETURN_IF_FALSE(avctx, res == AMF_OK, AVERROR_UNKNOWN, "AMFConverter-SetProperty() failed with error %d\n", res);
+
+        res = ctx->pre_converter->pVtbl->Init(ctx->pre_converter, av_av_to_amf_format(in_format), inlink->w, inlink->h);
+        AMF_RETURN_IF_FALSE(avctx, res == AMF_OK, AVERROR_UNKNOWN,
+                            "AMFConverter-Init() failed with error %d, %s to %s is not supported by this device%s\n",
+                            res, av_get_pix_fmt_name(in_format), av_get_pix_fmt_name(ctx->format),
+                            ctx->format == AV_PIX_FMT_X2BGR10 ? ", try format=rgba" : "");
+
+        in_format = ctx->format;
     }
 
     // HQ scaler should be used for upscaling only
@@ -161,7 +210,7 @@ static int amf_filter_config_output(AVFilterLink *outlink)
     ctx->in_primaries = AMF_COLOR_PRIMARIES_UNDEFINED;
     ctx->in_trc = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED;
     ctx->color_profile = AMF_VIDEO_CONVERTER_COLOR_PROFILE_UNKNOWN;
-    ctx->out_color_range = AMF_COLOR_RANGE_UNDEFINED;
+    ctx->out_color_range = needs_conversion ? AMF_COLOR_RANGE_FULL : AMF_COLOR_RANGE_UNDEFINED;
     ctx->out_primaries = AMF_COLOR_PRIMARIES_UNDEFINED;
     ctx->out_trc = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED;
 
