@@ -27,11 +27,18 @@
 #include <torch/script.h>
 
 extern "C" {
+#include "config.h"
 #include "dnn_io_proc.h"
 #include "dnn_backend_common.h"
 #include "libavutil/opt.h"
 #include "libavutil/mem.h"
 #include "libavutil/cpu.h"
+#if CONFIG_CUDA
+#include "libavutil/hwcontext.h"
+#include "libavutil/hwcontext_cuda.h"
+#include "libavutil/hwcontext_cuda_internal.h"
+#include "libavutil/pixfmt.h"
+#endif
 #include "queue.h"
 #include "safe_queue.h"
 }
@@ -159,6 +166,125 @@ static void deleter(void *arg)
 {
     av_freep(&arg);
 }
+
+#if CONFIG_CUDA
+static void cuda_tensor_deleter(void *arg)
+{
+    /* No-op: GPU memory is owned by FFmpeg AVBuffer ref-counting.
+     * LibTorch must not free it. */
+    (void)arg;
+}
+
+/**
+ * Map a CUDA frame's GPU pointer directly into a LibTorch tensor,
+ * bypassing any host-device memory copy.
+ *
+ * The resulting tensor is a zero-copy view over the frame's VRAM
+ * buffer; the AVBuffer reference keeps the memory alive.
+ */
+static int fill_model_input_th_cuda(THModel *th_model, THRequestItem *request)
+{
+    THInferRequest *infer_request = request->infer_request;
+    LastLevelTaskItem *lltask = request->lltasks[0];
+    TaskItem *task = lltask->task;
+    AVFrame *frame = task->in_frame;
+
+
+    int height = frame->height;
+    int width  = frame->width;
+    /* linesize[0] is in bytes; for packed RGB/BGR it equals width * channels
+     * plus alignment padding. Use it as the stride so PyTorch respects the
+     * actual memory layout. */
+    int stride_bytes = frame->linesize[0];
+    int channels     = stride_bytes / width;   /* 3 for RGB24, 4 for RGB0/BGR0 */
+
+    /* Wrap the GPU device pointer in a LibTorch tensor (no copy). */
+    torch::Tensor byte_tensor = torch::from_blob(
+        frame->data[0],
+        {1, height, width, channels},
+        {(long)(height * stride_bytes), (long)stride_bytes,
+         (long)channels, 1L},
+        cuda_tensor_deleter,
+        torch::TensorOptions().dtype(torch::kUInt8).device(torch::kCUDA));
+
+    /* Convert NHWC uint8 → NCHW float32 in [0, 1] and keep on GPU. */
+    *infer_request->input_tensor =
+        byte_tensor.to(torch::kFloat32).div(255.0f)
+                   .permute({0, 3, 1, 2})   /* NHWC → NCHW */
+                   .slice(1, 0, 3)          /* drop alpha if present */
+                   .contiguous();
+
+    return 0;
+}
+
+static void fill_model_output_th_cuda(THModel *th_model, TaskItem *task, torch::Tensor &out_slice)
+{
+    AVHWFramesContext *hw_frames_ctx =
+        (AVHWFramesContext *)task->out_frame->hw_frames_ctx->data;
+
+    /* Determine channel layout from sw_format. */
+    int hw_channels = 3;
+    int rgb_start   = 0;
+    bool needs_flip = false;
+    switch (hw_frames_ctx->sw_format) {
+    case AV_PIX_FMT_RGB24:
+        hw_channels = 3; rgb_start = 0; needs_flip = false;
+        break;
+    case AV_PIX_FMT_BGR24:
+        hw_channels = 3; rgb_start = 0; needs_flip = true;
+        break;
+    case AV_PIX_FMT_RGB0:
+        hw_channels = 4; rgb_start = 0; needs_flip = false;
+        break;
+    case AV_PIX_FMT_BGR0:
+        hw_channels = 4; rgb_start = 0; needs_flip = true;
+        break;
+    case AV_PIX_FMT_0RGB:
+        hw_channels = 4; rgb_start = 1; needs_flip = false;
+        break;
+    case AV_PIX_FMT_0BGR:
+        hw_channels = 4; rgb_start = 1; needs_flip = true;
+        break;
+    default:
+        av_log(th_model->ctx, AV_LOG_ERROR,
+               "Unsupported sw_format for CUDA zero-copy output\n");
+        hw_channels = 3;
+        break;
+    }
+
+    /* Convert model output: NCHW float [0,1] → NHWC uint8 [0,255]. */
+    torch::Tensor out_u8 =
+        out_slice.mul(255.0f)
+                 .permute({0, 2, 3, 1})
+                 .to(torch::kUInt8)
+                 .contiguous();
+    if (needs_flip)
+        out_u8 = out_u8.flip({3});
+
+    int out_h = (int)out_u8.size(1);
+    int out_w = (int)out_u8.size(2);
+
+    /* Map the output frame's VRAM into a tensor with correct
+     * stride (linesize includes alignment padding). */
+    torch::Tensor out_frame_tensor = torch::from_blob(
+        task->out_frame->data[0],
+        {1, out_h, out_w, hw_channels},
+        {(long)(out_h * task->out_frame->linesize[0]),
+         (long)task->out_frame->linesize[0],
+         (long)hw_channels, 1L},
+        cuda_tensor_deleter,
+        torch::TensorOptions()
+            .dtype(torch::kUInt8)
+            .device(torch::kCUDA));
+
+    /* Device-to-Device copy into the correct channel slice. */
+    out_frame_tensor.slice(3, rgb_start, rgb_start + 3)
+                    .copy_(out_u8);
+
+    /* Flush the CUDA stream before the encoder reads the frame. */
+    torch::cuda::synchronize();
+}
+#endif /* CONFIG_CUDA */
 
 static int fill_model_input_th(THModel *th_model, THRequestItem *request)
 {
@@ -317,16 +443,25 @@ static void infer_completion_callback(void *args) {
         switch (th_model->model.func_type) {
         case DFT_PROCESS_FRAME:
             if (task->do_ioproc) {
-                // Post process can only deal with CPU memory.
-                if (out_slice.device() != torch::kCPU)
-                    out_slice = out_slice.to(torch::kCPU);
-                outputs.scale = 255;
-                outputs.data = out_slice.data_ptr();
-                if (th_model->model.frame_post_proc != NULL) {
-                    th_model->model.frame_post_proc(task->out_frame, &outputs, th_model->model.filter_ctx);
+#if CONFIG_CUDA
+                if (task->out_frame->format == AV_PIX_FMT_CUDA) {
+                    fill_model_output_th_cuda(th_model, task, out_slice);
                 } else {
-                    ff_proc_from_dnn_to_frame(task->out_frame, &outputs, th_model->ctx);
+#endif
+                    if (out_slice.device() != torch::kCPU)
+                        out_slice = out_slice.to(torch::kCPU);
+                    outputs.scale = 255;
+                    outputs.data = out_slice.data_ptr();
+                    if (th_model->model.frame_post_proc != NULL) {
+                        th_model->model.frame_post_proc(task->out_frame, &outputs,
+                                                        th_model->model.filter_ctx);
+                    } else {
+                        ff_proc_from_dnn_to_frame(task->out_frame, &outputs,
+                                                  th_model->ctx);
+                    }
+#if CONFIG_CUDA
                 }
+#endif
             } else {
                 task->out_frame->width = outputs.dims[dnn_get_width_idx_by_layout(outputs.layout)];
                 task->out_frame->height = outputs.dims[dnn_get_height_idx_by_layout(outputs.layout)];
@@ -374,7 +509,15 @@ static int execute_model_th(THRequestItem *request, Queue *lltask_queue)
     task = lltask->task;
     th_model = (THModel *)task->model;
 
+#if CONFIG_CUDA
+    if (task->in_frame->format == AV_PIX_FMT_CUDA) {
+        ret = fill_model_input_th_cuda(th_model, request);
+    } else {
+        ret = fill_model_input_th(th_model, request);
+    }
+#else
     ret = fill_model_input_th(th_model, request);
+#endif
     if (ret != 0) {
         goto err;
     }

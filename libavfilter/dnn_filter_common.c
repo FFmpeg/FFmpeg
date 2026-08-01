@@ -16,10 +16,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
 #include "dnn_filter_common.h"
 #include "libavutil/avstring.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
+#include "libavutil/hwcontext.h"
 
 #define MAX_SUPPORTED_OUTPUTS_NB 4
 
@@ -240,3 +242,44 @@ void ff_dnn_uninit(DnnContext *ctx)
         av_freep(&ctx->model_outputnames);
     }
 }
+
+#if CONFIG_CUDA
+int ff_dnn_zero_copy_supported_cuda(DnnContext *ctx, const AVFilterLink *inlink)
+{
+    AVBufferRef *hw_frames_ref = avfilter_link_get_hw_frames_ctx((AVFilterLink *)inlink);
+    AVHWFramesContext *hw_frames_ctx;
+
+    if (!hw_frames_ref)
+        return 0;
+
+    hw_frames_ctx = (AVHWFramesContext *)hw_frames_ref->data;
+
+    if (inlink->format == AV_PIX_FMT_CUDA) {
+        if (ctx->batch_size > 1) {
+            av_log(inlink->dst, AV_LOG_ERROR, "CUDA zero-copy currently does not support batching.\n");
+            av_buffer_unref(&hw_frames_ref);
+            return AVERROR(EINVAL);
+        }
+
+        if (ctx->backend_type == DNN_TH) {
+            switch (hw_frames_ctx->sw_format) {
+            case AV_PIX_FMT_RGB24:
+            case AV_PIX_FMT_BGR24:
+            case AV_PIX_FMT_RGB0:
+            case AV_PIX_FMT_0RGB:
+            case AV_PIX_FMT_BGR0:
+            case AV_PIX_FMT_0BGR:
+                break;
+            default:
+                av_log(inlink->dst, AV_LOG_ERROR,
+                       "Zero-copy CUDA path currently only supports RGB24/BGR24 or RGB0/BGR0 variants.\n");
+                av_buffer_unref(&hw_frames_ref);
+                return AVERROR(EINVAL);
+            }
+        }
+    }
+
+    av_buffer_unref(&hw_frames_ref);
+    return 0;
+}
+#endif

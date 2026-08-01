@@ -62,5 +62,8 @@ int ff_dnn_execute_model_classification(DnnContext *ctx, AVFrame *in_frame, AVFr
 DNNAsyncStatusType ff_dnn_get_result(DnnContext *ctx, AVFrame **in_frame, AVFrame **out_frame);
 int ff_dnn_flush(DnnContext *ctx);
 void ff_dnn_uninit(DnnContext *ctx);
+#if CONFIG_CUDA
+int ff_dnn_zero_copy_supported_cuda(DnnContext *ctx, const AVFilterLink *inlink);
+#endif
 
 #endif
