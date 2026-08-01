@@ -32,7 +32,7 @@ void ff_pred4x4_ ## TYPE ## _ ## DEPTH ## _ ## OPT (uint8_t *src, \
                                                     const uint8_t *topright, \
                                                     ptrdiff_t stride);
 
-PRED4x4(dc, 10, mmxext)
+PRED4x4(dc, 10, sse2)
 PRED4x4(down_left, 10, sse2)
 PRED4x4(down_left, 10, avx)
 PRED4x4(down_right, 10, sse2)
@@ -43,7 +43,7 @@ PRED4x4(vertical_left, 10, avx)
 PRED4x4(vertical_right, 10, sse2)
 PRED4x4(vertical_right, 10, ssse3)
 PRED4x4(vertical_right, 10, avx)
-PRED4x4(horizontal_up, 10, mmxext)
+PRED4x4(horizontal_up, 10, sse2)
 PRED4x4(horizontal_down, 10, sse2)
 PRED4x4(horizontal_down, 10, ssse3)
 PRED4x4(horizontal_down, 10, avx)
@@ -245,15 +245,13 @@ av_cold void ff_h264_pred_init_x86(H264PredContext *h, int codec_id,
             }
         }
     } else if (bit_depth == 10) {
-        if (EXTERNAL_MMXEXT(cpu_flags)) {
-            h->pred4x4[DC_PRED             ] = ff_pred4x4_dc_10_mmxext;
-            h->pred4x4[HOR_UP_PRED         ] = ff_pred4x4_horizontal_up_10_mmxext;
-        }
         if (EXTERNAL_SSE2(cpu_flags)) {
+            h->pred4x4[DC_PRED             ] = ff_pred4x4_dc_10_sse2;
             h->pred4x4[DIAG_DOWN_LEFT_PRED ] = ff_pred4x4_down_left_10_sse2;
             h->pred4x4[DIAG_DOWN_RIGHT_PRED] = ff_pred4x4_down_right_10_sse2;
             h->pred4x4[VERT_LEFT_PRED      ] = ff_pred4x4_vertical_left_10_sse2;
             h->pred4x4[VERT_RIGHT_PRED     ] = ff_pred4x4_vertical_right_10_sse2;
+            h->pred4x4[HOR_UP_PRED         ] = ff_pred4x4_horizontal_up_10_sse2;
             h->pred4x4[HOR_DOWN_PRED       ] = ff_pred4x4_horizontal_down_10_sse2;
 
             if (chroma_format_idc <= 1) {
