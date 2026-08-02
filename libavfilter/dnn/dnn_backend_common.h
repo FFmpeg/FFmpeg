@@ -83,6 +83,7 @@ typedef struct DNNAsyncExecModule {
      */
     void *args;
     pthread_t thread_id;
+    int thread_started;
 } DNNAsyncExecModule;
 
 int ff_check_exec_params(void *ctx, DNNBackendType backend, DNNFunctionType func_type, DNNExecBaseParams *exec_params);
