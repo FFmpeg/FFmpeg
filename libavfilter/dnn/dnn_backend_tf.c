@@ -541,13 +541,6 @@ static DNNModel *dnn_load_model_tf(DnnContext *ctx, DNNFunctionType func_type, A
         ctx->nireq = av_cpu_count() / 2 + 1;
     }
 
-#if !HAVE_PTHREAD_CANCEL
-    if (ctx->async) {
-        ctx->async = 0;
-        av_log(filter_ctx, AV_LOG_WARNING, "pthread is not supported, roll back to sync.\n");
-    }
-#endif
-
     tf_model->request_queue = ff_safe_queue_create();
     if (!tf_model->request_queue) {
         goto err;
