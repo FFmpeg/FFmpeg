@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <string.h>
+
 #include "libavutil/opt.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/dict.h"
@@ -264,10 +266,6 @@ static void mp3_parse_info_tag(AVFormatContext *s, AVStream *st,
             sti->first_discard_sample = -mp3->end_pad + 528 + 1 + mp3->frames * (int64_t)spf;
             sti->last_discard_sample = mp3->frames * (int64_t)spf;
         }
-        if (!st->start_time)
-            st->start_time = av_rescale_q(sti->start_skip_samples,
-                                            (AVRational){1, c->sample_rate},
-                                            st->time_base);
         av_log(s, AV_LOG_DEBUG, "pad %d %d\n", mp3->start_pad, mp3->  end_pad);
     }
 
@@ -316,6 +314,70 @@ static void mp3_parse_vbri_tag(AVFormatContext *s, AVStream *st, int64_t base)
 }
 
 /**
+ * Look the iTunSMPB tag up under every key it can land on. A COMM frame keeps
+ * its language in the key, and while Apple writes eng, anything that retags
+ * the file is free to write its own, valid or not.
+ *
+ * The bare key is for files remuxed by versions that exposed a COMM descriptor
+ * as a metadata key of its own: those wrote the tag back out as a TXXX frame,
+ * which carries no language and is keyed by its description alone.
+ */
+static const AVDictionaryEntry *find_itunes_smpb(const AVDictionary *metadata)
+{
+    static const char comment[] = "comment-iTunSMPB";
+    const AVDictionaryEntry *de = NULL;
+
+    while ((de = av_dict_get(metadata, comment, de, AV_DICT_IGNORE_SUFFIX))) {
+        const char *lang = de->key + sizeof(comment) - 1;
+
+        /* und and xxx come without a suffix, the rest as a three letter one. */
+        if (!*lang || (*lang == '-' && strlen(lang + 1) == 3))
+            return de;
+    }
+
+    return av_dict_get(metadata, "iTunSMPB", NULL, 0);
+}
+
+/**
+ * Parse the gapless playback information Apple encoders store in an iTunSMPB
+ * comment instead of in the LAME extension of the Xing tag.
+ */
+static void mp3_parse_itunes_smpb(AVFormatContext *s, AVStream *st,
+                                  const MPADecodeHeader *c, uint32_t spf)
+{
+    FFStream *const sti = ffstream(st);
+    MP3DecContext *mp3 = s->priv_data;
+    const AVDictionaryEntry *de;
+    int64_t priming, remainder, samples;
+
+    /* A LAME tag, if any, already described the padding. */
+    if (sti->start_skip_samples)
+        return;
+
+    if (!(de = find_itunes_smpb(s->metadata)))
+        return;
+
+    if (ff_itunes_parse_smpb(de->value, &priming, &remainder, &samples) < 0)
+        return;
+
+    if (priming > 16384 || !samples)
+        return;
+
+    /* The three counts must add up to what the frames actually decode to. */
+    if (mp3->frames &&
+        priming + samples + remainder != mp3->frames * (int64_t)spf)
+        return;
+
+    /* Contrary to the LAME tag, the priming count covers the decoder delay. */
+    sti->start_skip_samples   = priming;
+    sti->first_discard_sample = priming + samples;
+    sti->last_discard_sample  = priming + samples + remainder;
+
+    st->duration = av_rescale_q(samples, (AVRational){ 1, c->sample_rate },
+                                st->time_base);
+}
+
+/**
  * Try to find Xing/Info/VBRI tags and compute duration from info therein
  */
 static int mp3_parse_vbr_tags(AVFormatContext *s, AVStream *st, int64_t base)
@@ -346,6 +408,13 @@ static int mp3_parse_vbr_tags(AVFormatContext *s, AVStream *st, int64_t base)
 
     mp3_parse_info_tag(s, st, &c, spf);
     mp3_parse_vbri_tag(s, st, base);
+    mp3_parse_itunes_smpb(s, st, &c, spf);
+
+    /* Packets keep the skipped samples, so shift the timeline instead. */
+    if (ffstream(st)->start_skip_samples)
+        st->start_time = av_rescale_q(ffstream(st)->start_skip_samples,
+                                      (AVRational){1, c.sample_rate},
+                                      st->time_base);
 
     if (!mp3->frames && !mp3->header_filesize)
         return -1;
@@ -357,9 +426,10 @@ static int mp3_parse_vbr_tags(AVFormatContext *s, AVStream *st, int64_t base)
         int64_t full_duration_samples;
 
         full_duration_samples = mp3->frames * (int64_t)spf;
-        st->duration = av_rescale_q(full_duration_samples - mp3->start_pad - mp3->end_pad,
-                                    (AVRational){1, c.sample_rate},
-                                    st->time_base);
+        if (st->duration == AV_NOPTS_VALUE)
+            st->duration = av_rescale_q(full_duration_samples - mp3->start_pad - mp3->end_pad,
+                                        (AVRational){1, c.sample_rate},
+                                        st->time_base);
 
         if (mp3->header_filesize && !mp3->is_cbr)
             st->codecpar->bit_rate = av_rescale(mp3->header_filesize, 8 * c.sample_rate,
