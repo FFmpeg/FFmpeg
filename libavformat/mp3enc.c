@@ -367,9 +367,9 @@ static int mp3_write_audio_packet(AVFormatContext *s, AVPacket *pkt)
                                                 AV_PKT_DATA_SKIP_SAMPLES,
                                                 &side_data_size);
             if (side_data && side_data_size >= 10) {
-                mp3->padding = FFMAX(AV_RL32(side_data + 4) + 528 + 1, 0);
+                mp3->padding = FFMAX((int64_t)AV_RL32(side_data + 4) + 528 + 1, 0);
                 if (!mp3->delay)
-                    mp3->delay =  FFMAX(AV_RL32(side_data) - 528 - 1, 0);
+                    mp3->delay =  FFMAX((int64_t)AV_RL32(side_data) - 528 - 1, 0);
             } else {
                 mp3->padding = 0;
             }
