@@ -1051,7 +1051,7 @@ static int timed_id3_update_metadata(AVStream *s, AVPacket *pkt)
     int ret = 0;
 
     ffio_init_read_context(&id3_buf, pkt->data, pkt->size);
-    ff_id3v2_read_dict(&id3_buf.pub, &metadata, ID3v2_DEFAULT_MAGIC, &extra_meta);
+    ff_id3v2_read_dict(NULL, &id3_buf.pub, &metadata, ID3v2_DEFAULT_MAGIC, &extra_meta);
     ret = ff_id3v2_parse_priv_dict(&metadata, extra_meta);
     ff_id3v2_free_extra_meta(&extra_meta);
 

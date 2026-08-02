@@ -1,4 +1,2 @@
 ID3v2 frame COMM (14 bytes):|.engsort.test.|
-Deprecated: COMM descriptor 'sort' used as metadata key. This will change in a future version.
-sort=test
 comment-sort-eng=test

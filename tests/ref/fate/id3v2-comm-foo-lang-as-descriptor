@@ -1,4 +1,2 @@
 ID3v2 frame COMM (17 bytes):|.undfoo-eng.test.|
-Deprecated: COMM descriptor 'foo-eng' used as metadata key. This will change in a future version.
-foo-eng=test
 comment-foo-eng-und=test

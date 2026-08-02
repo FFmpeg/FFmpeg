@@ -2,14 +2,18 @@ The last version increases of all libraries were on 2026-06-23.
 
 API changes, most recent first:
 
+2026-08-xx - xxxxxxxxxx - lavf 63.6.100 - avformat.h
+  Add AVFMT_FLAG_LEGACY_ID3V2_COMM_KEYS. The deprecated export of id3v2 COMM
+  descriptors as bare metadata tag names is now opt-in through this flag,
+  only the <tag>-<description>-<lang> tag is exported by default.
+
 2026-07-04 - xxxxxxxxxx - lavc 63.7.100 - codec_id.h
   Add AV_CODEC_ID_PCM_DVDA.
 
 2026-07-xx - xxxxxxxxxx - lavf 63.5.101 - version_major.h
   Deprecate using descriptor for metadata tag name in id3v2 COMM tags.
-  COMM Tags are duplicated, exporting deprecated named tag along with
-  new <tag>-<description>-<lang> tag until the next libavformat major
-  version bumped.
+  COMM tags are exported under the new <tag>-<description>-<lang> name,
+  initially along with the deprecated named tag.
 
 2026-07-14 - xxxxxxxxxx - lavu 61.5.100 - hwcontext_cuda.h
   Add AVCUDAFramesContext and AVCUDAArrayFrameDescriptor.

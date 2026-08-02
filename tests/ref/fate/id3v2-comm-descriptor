@@ -1,4 +1,2 @@
 ID3v2 frame COMM (24 bytes):|.engMusicMatch_Bio.test.|
-Deprecated: COMM descriptor 'MusicMatch_Bio' used as metadata key. This will change in a future version.
-MusicMatch_Bio=test
 comment-MusicMatch_Bio-eng=test

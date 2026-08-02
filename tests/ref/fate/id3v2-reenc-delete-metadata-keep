@@ -1,6 +1,6 @@
-db828221356fb78b3fe2990c717672b8 *tests/data/fate/id3v2-reenc-delete-metadata-keep.nut
-1697 tests/data/fate/id3v2-reenc-delete-metadata-keep.nut
+079ae9bb4ea16f93ac992cd988da0fbc *tests/data/fate/id3v2-reenc-delete-metadata-keep.nut
+1709 tests/data/fate/id3v2-reenc-delete-metadata-keep.nut
 [FORMAT]
 TAG:title=7rk
-TAG:iTunSMPB= 00000000 00000210 0000086A 0000000000066486 00000000 0002DA9D 00000000 00000000 00000000 00000000 00000000 00000000
+TAG:comment-iTunSMPB-eng= 00000000 00000210 0000086A 0000000000066486 00000000 0002DA9D 00000000 00000000 00000000 00000000 00000000 00000000
 [/FORMAT]

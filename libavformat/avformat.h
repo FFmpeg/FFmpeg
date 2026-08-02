@@ -1505,6 +1505,21 @@ typedef struct AVFormatContext {
 #define AVFMT_FLAG_FAST_SEEK   0x80000 ///< Enable fast, but inaccurate seeks for some formats
 #define AVFMT_FLAG_AUTO_BSF   0x200000 ///< Add bitstream filters as requested by the muxer
 
+#if FF_API_OLD_ID3V2_COMMENT
+/**
+ * Also export ID3v2 COMM frames with a non-empty descriptor under the
+ * descriptor as metadata key, next to the "comment-<descriptor>-<lang>" key.
+ *
+ * Only applies to the ID3v2 tag read as container metadata, not to in-band
+ * or timed ID3 tags.
+ *
+ * @deprecated the bare descriptor key is ambiguous: a descriptor matching a
+ * known tag name (e.g. "album") is written back as that tag. Use the
+ * "comment-<descriptor>-<lang>" key instead.
+ */
+#define AVFMT_FLAG_LEGACY_ID3V2_COMM_KEYS 0x400000
+#endif
+
     /**
      * Maximum number of bytes read from input in order to determine stream
      * properties. Used when reading the global header and in

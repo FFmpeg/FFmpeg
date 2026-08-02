@@ -48,7 +48,7 @@ FATE_ID3V2_FFMPEG_FFPROBE-$(call ENCDEC, AAC MP3, NUT) += fate-id3v2-reenc-delet
 fate-id3v2-reenc-delete-metadata: CMD = transcode mp3 $(TARGET_SAMPLES)/gapless/gapless-itunes.mp3 nut "-c:a aac -bitexact -t 0.1" "-c copy -t 0.1" "-show_entries format_tags" "" "" "" null
 
 FATE_ID3V2_FFMPEG_FFPROBE-$(call ENCDEC, AAC MP3, NUT) += fate-id3v2-reenc-delete-metadata-keep
-fate-id3v2-reenc-delete-metadata-keep: CMD = transcode mp3 $(TARGET_SAMPLES)/gapless/gapless-itunes.mp3 nut "-c:a aac -bitexact -keep_metadata iTunSMPB -t 0.1" "-c copy -t 0.1" "-show_entries format_tags" "" "" "" null
+fate-id3v2-reenc-delete-metadata-keep: CMD = transcode mp3 $(TARGET_SAMPLES)/gapless/gapless-itunes.mp3 nut "-c:a aac -bitexact -keep_metadata comment-iTunSMPB-eng -t 0.1" "-c copy -t 0.1" "-show_entries format_tags" "" "" "" null
 
 # -map_metadata must not bypass stale metadata pruning
 FATE_ID3V2_FFMPEG_FFPROBE-$(call ENCDEC, AAC MP3, NUT) += fate-id3v2-reenc-delete-metadata-map-metadata
@@ -56,11 +56,11 @@ fate-id3v2-reenc-delete-metadata-map-metadata: CMD = transcode mp3 $(TARGET_SAMP
 
 # :g specifier targets format metadata — iTunSMPB lives there, so it should be kept
 FATE_ID3V2_FFMPEG_FFPROBE-$(call ENCDEC, AAC MP3, NUT) += fate-id3v2-reenc-delete-metadata-keep-format
-fate-id3v2-reenc-delete-metadata-keep-format: CMD = transcode mp3 $(TARGET_SAMPLES)/gapless/gapless-itunes.mp3 nut "-c:a aac -bitexact -keep_metadata:g iTunSMPB -t 0.1" "-c copy -t 0.1" "-show_entries format_tags" "" "" "" null
+fate-id3v2-reenc-delete-metadata-keep-format: CMD = transcode mp3 $(TARGET_SAMPLES)/gapless/gapless-itunes.mp3 nut "-c:a aac -bitexact -keep_metadata:g comment-iTunSMPB-eng -t 0.1" "-c copy -t 0.1" "-show_entries format_tags" "" "" "" null
 
 # :s:a specifier targets stream metadata — iTunSMPB is format-level, so it should still be deleted
 FATE_ID3V2_FFMPEG_FFPROBE-$(call ENCDEC, AAC MP3, NUT) += fate-id3v2-reenc-delete-metadata-keep-stream
-fate-id3v2-reenc-delete-metadata-keep-stream: CMD = transcode mp3 $(TARGET_SAMPLES)/gapless/gapless-itunes.mp3 nut "-c:a aac -bitexact -keep_metadata:s:a iTunSMPB -t 0.1" "-c copy -t 0.1" "-show_entries format_tags" "" "" "" null
+fate-id3v2-reenc-delete-metadata-keep-stream: CMD = transcode mp3 $(TARGET_SAMPLES)/gapless/gapless-itunes.mp3 nut "-c:a aac -bitexact -keep_metadata:s:a comment-iTunSMPB-eng -t 0.1" "-c copy -t 0.1" "-show_entries format_tags" "" "" "" null
 
 FATE_ID3V2_FFMPEG_FFPROBE-$(call REMUX, MP3) += fate-id3v2-reenc-remux-keep
 fate-id3v2-reenc-remux-keep: CMD = transcode mp3 $(TARGET_SAMPLES)/gapless/gapless-itunes.mp3 mp3 "-c copy" "-c copy -t 0.1" "-show_entries format_tags" "" "" "" null
@@ -73,15 +73,17 @@ fate-id3v2-chapters: CMD = transcode wav $(TARGET_SAMPLES)/wav/200828-005.wav ai
 FATE_ID3V2_FFMPEG_FFPROBE-$(call REMUX, AIFF, WAV_DEMUXER FLAC_DEMUXER PCM_S16LE_DECODER MJPEG_DECODER ARESAMPLE_FILTER CHANNELMAP_FILTER PCM_S24BE_ENCODER) += fate-id3v2-utf16-bom
 fate-id3v2-utf16-bom: CMD = transcode wav $(TARGET_SAMPLES)/audio-reference/yo.raw-short.wav aiff "-map 0:a -map 1:v -af aresample,channelmap=channel_layout=hexagonal,aresample -c:a pcm_s24be -c:v copy -write_id3v2 1 -id3v2_version 3 -map_metadata:g:0 1:g -map_metadata:s:v 1:g" "-c copy -t 0.05" "-show_entries stream=channel_layout:stream_tags:format_tags" "-i $(TARGET_SAMPLES)/cover_art/cover_art.flac"
 
-# Test legacy COMM descriptor behavior: non-empty descriptor becomes the key.
-# MusicMatch tools embed artist bio etc. this way.
+# MusicMatch tools embed artist bio etc. as COMM frames with a descriptor.
 FATE_ID3V2_FFPROBE-$(CONFIG_ASF_DEMUXER) += fate-id3v2-wma-comm
 fate-id3v2-wma-comm: CMD = probetags $(TARGET_SAMPLES)/cover_art/wma_with_ID3_APIC_trimmed.wma
 
 FATE_ID3V2_FFPROBE-$(CONFIG_ASF_O_DEMUXER) += fate-id3v2-wma-comm-asf_o
 fate-id3v2-wma-comm-asf_o: CMD = probetags -f asf_o $(TARGET_SAMPLES)/cover_art/wma_with_ID3_APIC_trimmed.wma
 
-# Round-trip: write COMM with descriptor, read back (legacy: descriptor as key).
+# Same file with the deprecated descriptor-as-key export enabled.
+FATE_ID3V2_FFPROBE-$(CONFIG_ASF_DEMUXER) += fate-id3v2-wma-comm-legacy-keys
+fate-id3v2-wma-comm-legacy-keys: CMD = probetags -fflags +legacy_id3v2_comm_keys $(TARGET_SAMPLES)/cover_art/wma_with_ID3_APIC_trimmed.wma
+
 FATE_ID3V2_RAW-$(call REMUX, MP3) += fate-id3v2-comm-descriptor
 fate-id3v2-comm-descriptor: $(ID3V2_TESTBIN)
 fate-id3v2-comm-descriptor: CMD = run_with_temp "$(FFMPEG) -nostdin -hide_banner -loglevel error -i $(TARGET_SAMPLES)/id3v2/id3v2_priv.mp3 -map_metadata -1 -c copy -fflags +bitexact -metadata comment-MusicMatch_Bio-eng=test -f mp3 -y" "$(ID3V2_TESTBIN)" mp3

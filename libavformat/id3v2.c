@@ -426,10 +426,11 @@ static void read_lang_descr_tag(AVFormatContext *s, AVIOContext *pb,
 
     if (descriptor && *descriptor) {
 #if FF_API_OLD_ID3V2_COMMENT
-        if (!strcmp(key, "comment")) {
+        if (s && (s->flags & AVFMT_FLAG_LEGACY_ID3V2_COMM_KEYS) &&
+            !strcmp(key, "comment")) {
             av_log(s, AV_LOG_WARNING,
-                   "Deprecated: COMM descriptor '%s' used as metadata key. "
-                   "This will change in a future version.\n", descriptor);
+                   "Deprecated: COMM descriptor '%s' exported as metadata key. "
+                   "This will be removed in a future version.\n", descriptor);
             av_dict_set(metadata, (const char *)descriptor, (const char *)dst,
                         AV_DICT_DONT_OVERWRITE);
         }
@@ -1170,10 +1171,10 @@ static void id3v2_read_internal(AVIOContext *pb, AVDictionary **metadata,
         *extra_metap = extra_meta.head;
 }
 
-void ff_id3v2_read_dict(AVIOContext *pb, AVDictionary **metadata,
+void ff_id3v2_read_dict(AVFormatContext *s, AVIOContext *pb, AVDictionary **metadata,
                         const char *magic, ID3v2ExtraMeta **extra_meta)
 {
-    id3v2_read_internal(pb, metadata, NULL, magic, extra_meta, 0);
+    id3v2_read_internal(pb, metadata, s, magic, extra_meta, 0);
 }
 
 void ff_id3v2_read(AVFormatContext *s, const char *magic,

@@ -1,4 +1,2 @@
 ID3v2 frame COMM (13 bytes):|.undxyz.test.|
-Deprecated: COMM descriptor 'xyz' used as metadata key. This will change in a future version.
-xyz=test
 comment-xyz=test
