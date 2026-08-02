@@ -515,7 +515,10 @@ static int FUNC(process_block)(CodedBitstreamContext *ctx, RWContext *rw,
             if (trailing_bits == 0) {
                 // The trailing bits must contain a payload_bit_equal_to_one, so
                 // they can't all be zero.
-                return AVERROR_INVALIDDATA;
+                // Don't error out as encodings following a faulty specification
+                // syntax trigger this.
+                av_log(ctx->log_ctx, AV_LOG_DEBUG, "Missing alignment bits in Process Block\n");
+                return 0;
             }
             trailing_zero_bits = ff_ctz(trailing_bits);
             current->extension_bit_length =
