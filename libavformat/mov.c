@@ -5819,8 +5819,8 @@ static int mov_read_custom(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     if (mean && key && val) {
         if (strcmp(key, "iTunSMPB") == 0) {
-            int priming, remainder, samples;
-            if(sscanf(val, "%*X %X %X %X", &priming, &remainder, &samples) == 3){
+            int64_t priming, remainder, samples;
+            if (ff_itunes_parse_smpb(val, &priming, &remainder, &samples) >= 0) {
                 if(priming>0 && priming<16384)
                     st->codecpar->initial_padding = priming = av_rescale_q(priming, st->time_base,
                                                                            (AVRational){ 1, st->codecpar->sample_rate });
@@ -5836,7 +5836,8 @@ static int mov_read_custom(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                         ffstream(st)->last_discard_sample = duration;
                     }
                 }
-                av_log(c->fc, AV_LOG_DEBUG, "Parsed iTunSMPB: priming %d, remainder %d samples %d\n",
+                av_log(c->fc, AV_LOG_DEBUG, "Parsed iTunSMPB: priming %"PRId64", "
+                       "remainder %"PRId64" samples %"PRId64"\n",
                        priming, remainder, samples);
             }
         }

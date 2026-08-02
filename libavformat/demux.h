@@ -384,6 +384,28 @@ int ff_get_extradata(void *logctx, AVCodecParameters *par, AVIOContext *pb, int 
  */
 int ff_find_stream_index(const AVFormatContext *s, int id);
 
+/**
+ * Parse the gapless playback information Apple encoders store in an iTunSMPB
+ * tag. The tag is a list of hexadecimal fields; the ones of interest are
+ *
+ *   <reserved> <priming> <remainder> <valid samples>
+ *
+ * The decoded stream holds the three sample counts back to back, the priming
+ * and remainder samples being encoder artifacts.
+ *
+ * The counts are returned small enough to be added and rescaled without
+ * overflowing.
+ *
+ * @param value     tag contents
+ * @param priming   number of samples to discard at the start of the stream
+ * @param remainder number of samples to discard at the end of the stream
+ * @param samples   number of valid samples between the two
+ * @return >= 0 if OK, AVERROR_INVALIDDATA if the tag could not be parsed or
+ *         holds counts too large to be sample counts
+ */
+int ff_itunes_parse_smpb(const char *value, int64_t *priming,
+                         int64_t *remainder, int64_t *samples);
+
 int ff_buffer_packet(AVFormatContext *s, AVPacket *pkt);
 
 #endif /* AVFORMAT_DEMUX_H */
