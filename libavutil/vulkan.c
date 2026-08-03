@@ -684,26 +684,6 @@ void ff_vk_exec_discard_deps(FFVulkanContext *s, FFVkExecContext *e)
     e->sem_sig_val_dst_cnt = 0;
 }
 
-int ff_vk_exec_add_dep_buf(FFVulkanContext *s, FFVkExecContext *e,
-                           AVBufferRef **deps, int nb_deps, int ref)
-{
-    av_assert1((e->nb_buf_deps + nb_deps) <= FF_VK_EXEC_MAX_BUF_DEPS);
-
-    for (int i = 0; i < nb_deps; i++) {
-        if (!deps[i])
-            continue;
-
-        e->buf_deps[e->nb_buf_deps] = ref ? av_buffer_ref(deps[i]) : deps[i];
-        if (!e->buf_deps[e->nb_buf_deps]) {
-            ff_vk_exec_discard_deps(s, e);
-            return AVERROR(ENOMEM);
-        }
-        e->nb_buf_deps++;
-    }
-
-    return 0;
-}
-
 void ff_vk_exec_add_dep_refstruct(FFVulkanContext *s, FFVkExecContext *e,
                                   void *obj)
 {

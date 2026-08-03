@@ -493,8 +493,6 @@ void ff_vk_exec_wait(FFVulkanContext *s, FFVkExecContext *e);
  * update_frame will update the frame's properties before it is unlocked,
  * only if submission was successful.
  */
-int ff_vk_exec_add_dep_buf(FFVulkanContext *s, FFVkExecContext *e,
-                           AVBufferRef **deps, int nb_deps, int ref);
 
 /* Takes a new reference to an AVRefStruct-managed object, held until the
  * execution's dependencies are released. */
