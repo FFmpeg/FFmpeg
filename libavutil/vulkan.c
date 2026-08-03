@@ -310,18 +310,6 @@ void ff_vk_exec_pool_free(FFVulkanContext *s, FFVkExecPool *pool)
         }
 
         ff_vk_exec_discard_deps(s, e);
-
-        av_free(e->frame_deps);
-        av_free(e->sw_frame_deps);
-        av_free(e->buf_deps);
-        av_free(e->queue_family_dst);
-        av_free(e->layout_dst);
-        av_free(e->access_dst);
-        av_free(e->frame_update);
-        av_free(e->frame_locked);
-        av_free(e->sem_sig);
-        av_free(e->sem_sig_val_dst);
-        av_free(e->sem_wait);
     }
 
     /* Free shader-specific data */
@@ -641,14 +629,7 @@ void ff_vk_exec_discard_deps(FFVulkanContext *s, FFVkExecContext *e)
 int ff_vk_exec_add_dep_buf(FFVulkanContext *s, FFVkExecContext *e,
                            AVBufferRef **deps, int nb_deps, int ref)
 {
-    AVBufferRef **dst = av_fast_realloc(e->buf_deps, &e->buf_deps_alloc_size,
-                                        (e->nb_buf_deps + nb_deps) * sizeof(*dst));
-    if (!dst) {
-        ff_vk_exec_discard_deps(s, e);
-        return AVERROR(ENOMEM);
-    }
-
-    e->buf_deps = dst;
+    av_assert1((e->nb_buf_deps + nb_deps) <= FF_VK_EXEC_MAX_BUF_DEPS);
 
     for (int i = 0; i < nb_deps; i++) {
         if (!deps[i])
@@ -668,14 +649,7 @@ int ff_vk_exec_add_dep_buf(FFVulkanContext *s, FFVkExecContext *e,
 int ff_vk_exec_add_dep_sw_frame(FFVulkanContext *s, FFVkExecContext *e,
                                 AVFrame *f)
 {
-    AVFrame **dst = av_fast_realloc(e->sw_frame_deps, &e->sw_frame_deps_alloc_size,
-                                    (e->nb_sw_frame_deps + 1) * sizeof(*dst));
-    if (!dst) {
-        ff_vk_exec_discard_deps(s, e);
-        return AVERROR(ENOMEM);
-    }
-
-    e->sw_frame_deps = dst;
+    av_assert1(e->nb_sw_frame_deps < FF_VK_EXEC_MAX_SW_FRAME_DEPS);
 
     e->sw_frame_deps[e->nb_sw_frame_deps] = av_frame_clone(f);
     if (!e->sw_frame_deps[e->nb_sw_frame_deps]) {
@@ -687,16 +661,6 @@ int ff_vk_exec_add_dep_sw_frame(FFVulkanContext *s, FFVkExecContext *e,
 
     return 0;
 }
-
-#define ARR_REALLOC(str, arr, alloc_s, cnt)                               \
-    do {                                                                  \
-        arr = av_fast_realloc(str->arr, alloc_s, (cnt + 1)*sizeof(*arr)); \
-        if (!arr) {                                                       \
-            ff_vk_exec_discard_deps(s, e);                                \
-            return AVERROR(ENOMEM);                                       \
-        }                                                                 \
-        str->arr = arr;                                                   \
-    } while (0)
 
 typedef struct TempSyncCtx {
     int nb_sem;
@@ -715,12 +679,11 @@ static void destroy_tmp_semaphores(void *opaque, uint8_t *data)
     av_free(ts);
 }
 
-int ff_vk_exec_add_dep_wait_sem(FFVulkanContext *s, FFVkExecContext *e,
-                                VkSemaphore sem, uint64_t val,
-                                VkPipelineStageFlagBits2 stage)
+void ff_vk_exec_add_dep_wait_sem(FFVulkanContext *s, FFVkExecContext *e,
+                                 VkSemaphore sem, uint64_t val,
+                                 VkPipelineStageFlagBits2 stage)
 {
-    VkSemaphoreSubmitInfo *sem_wait;
-    ARR_REALLOC(e, sem_wait, &e->sem_wait_alloc, e->sem_wait_cnt);
+    av_assert1(e->sem_wait_cnt < FF_VK_EXEC_MAX_SEM_OPS);
 
     e->sem_wait[e->sem_wait_cnt++] = (VkSemaphoreSubmitInfo) {
         .sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
@@ -728,8 +691,6 @@ int ff_vk_exec_add_dep_wait_sem(FFVulkanContext *s, FFVkExecContext *e,
         .value = val,
         .stageMask = stage,
     };
-
-    return 0;
 }
 
 int ff_vk_exec_add_dep_bool_sem(FFVulkanContext *s, FFVkExecContext *e,
@@ -746,10 +707,8 @@ int ff_vk_exec_add_dep_bool_sem(FFVulkanContext *s, FFVkExecContext *e,
     /* Do not transfer ownership if we're signalling a binary semaphore,
      * since we're probably exporting it. */
     if (!wait) {
+        av_assert1((e->sem_sig_cnt + nb) <= FF_VK_EXEC_MAX_SEM_OPS);
         for (int i = 0; i < nb; i++) {
-            VkSemaphoreSubmitInfo *sem_sig;
-            ARR_REALLOC(e, sem_sig, &e->sem_sig_alloc, e->sem_sig_cnt);
-
             e->sem_sig[e->sem_sig_cnt++] = (VkSemaphoreSubmitInfo) {
                 .sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
                 .semaphore = sem[i],
@@ -784,9 +743,7 @@ int ff_vk_exec_add_dep_bool_sem(FFVulkanContext *s, FFVkExecContext *e,
     }
 
     for (int i = 0; i < nb; i++) {
-        err = ff_vk_exec_add_dep_wait_sem(s, e, sem[i], 0, stage);
-        if (err < 0)
-            return err;
+        ff_vk_exec_add_dep_wait_sem(s, e, sem[i], 0, stage);
     }
 
     return 0;
@@ -802,14 +759,6 @@ int ff_vk_exec_add_dep_frame(FFVulkanContext *s, FFVkExecContext *e, AVFrame *f,
                              VkPipelineStageFlagBits2 wait_stage,
                              VkPipelineStageFlagBits2 signal_stage)
 {
-    uint8_t *frame_locked;
-    uint8_t *frame_update;
-    AVFrame **frame_deps;
-    AVBufferRef **buf_deps;
-    VkImageLayout *layout_dst;
-    uint32_t *queue_family_dst;
-    VkAccessFlagBits *access_dst;
-
     AVHWFramesContext *hwfc = (AVHWFramesContext *)f->hw_frames_ctx->data;
     AVVulkanFramesContext *vkfc = hwfc->hwctx;
     AVVkFrame *vkf = (AVVkFrame *)f->data[0];
@@ -820,19 +769,15 @@ int ff_vk_exec_add_dep_frame(FFVulkanContext *s, FFVkExecContext *e, AVFrame *f,
         if (e->frame_deps[i]->data[0] == f->data[0])
             return 1;
 
-    ARR_REALLOC(e, layout_dst,       &e->layout_dst_alloc,       e->nb_frame_deps);
-    ARR_REALLOC(e, queue_family_dst, &e->queue_family_dst_alloc, e->nb_frame_deps);
-    ARR_REALLOC(e, access_dst,       &e->access_dst_alloc,       e->nb_frame_deps);
-
-    ARR_REALLOC(e, frame_locked, &e->frame_locked_alloc_size, e->nb_frame_deps);
-    ARR_REALLOC(e, frame_update, &e->frame_update_alloc_size, e->nb_frame_deps);
-    ARR_REALLOC(e, frame_deps,   &e->frame_deps_alloc_size,   e->nb_frame_deps);
+    av_assert1(e->nb_frame_deps < FF_VK_EXEC_MAX_FRAME_DEPS);
+    av_assert1((e->sem_wait_cnt + nb_images) <= FF_VK_EXEC_MAX_SEM_OPS);
+    av_assert1((e->sem_sig_cnt + nb_images) <= FF_VK_EXEC_MAX_SEM_OPS);
 
     /* prepare_frame in hwcontext_vulkan.c uses the regular frame management
      * code but has no frame yet, and it doesn't need to actually store a ref
      * to the frame. */
     if (f->buf[0]) {
-        ARR_REALLOC(e, buf_deps, &e->buf_deps_alloc_size, e->nb_buf_deps);
+        av_assert1(e->nb_buf_deps < FF_VK_EXEC_MAX_BUF_DEPS);
         e->buf_deps[e->nb_buf_deps] = av_buffer_ref(f->buf[0]);
         if (!e->buf_deps[e->nb_buf_deps]) {
             ff_vk_exec_discard_deps(s, e);
@@ -849,14 +794,6 @@ int ff_vk_exec_add_dep_frame(FFVulkanContext *s, FFVkExecContext *e, AVFrame *f,
     e->nb_frame_deps++;
 
     for (int i = 0; i < nb_images; i++) {
-        VkSemaphoreSubmitInfo *sem_wait;
-        VkSemaphoreSubmitInfo *sem_sig;
-        uint64_t **sem_sig_val_dst;
-
-        ARR_REALLOC(e, sem_wait, &e->sem_wait_alloc, e->sem_wait_cnt);
-        ARR_REALLOC(e, sem_sig, &e->sem_sig_alloc, e->sem_sig_cnt);
-        ARR_REALLOC(e, sem_sig_val_dst, &e->sem_sig_val_dst_alloc, e->sem_sig_val_dst_cnt);
-
         e->sem_wait[e->sem_wait_cnt++] = (VkSemaphoreSubmitInfo) {
             .sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
             .semaphore = vkf->sem[i],
@@ -901,7 +838,6 @@ int ff_vk_exec_mirror_sem_value(FFVulkanContext *s, FFVkExecContext *e,
                                 VkSemaphore *dst, uint64_t *dst_val,
                                 AVFrame *f)
 {
-    uint64_t **sem_sig_val_dst;
     AVVkFrame *vkf = (AVVkFrame *)f->data[0];
 
     /* Reject unknown frames */
@@ -912,7 +848,7 @@ int ff_vk_exec_mirror_sem_value(FFVulkanContext *s, FFVkExecContext *e,
     if (i == e->nb_frame_deps)
         return AVERROR(EINVAL);
 
-    ARR_REALLOC(e, sem_sig_val_dst, &e->sem_sig_val_dst_alloc, e->sem_sig_val_dst_cnt);
+    av_assert1(e->sem_sig_val_dst_cnt < FF_VK_EXEC_MAX_SEM_OPS);
 
     *dst     = vkf->sem[0];
     *dst_val = vkf->sem_value[0];

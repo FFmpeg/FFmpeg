@@ -108,6 +108,12 @@ typedef struct FFVkBuffer {
     AVBufferRef *host_ref;
 } FFVkBuffer;
 
+/* Fixed dependency limits per exec context (with room to spare) */
+#define FF_VK_EXEC_MAX_FRAME_DEPS 64
+#define FF_VK_EXEC_MAX_BUF_DEPS 256
+#define FF_VK_EXEC_MAX_SW_FRAME_DEPS 16
+#define FF_VK_EXEC_MAX_SEM_OPS (FF_VK_EXEC_MAX_FRAME_DEPS*AV_NUM_DATA_POINTERS)
+
 /* Default number of in-flight execution contexts per pool */
 #define FF_VK_DEFAULT_EXEC_CONTEXTS 4
 
@@ -134,46 +140,31 @@ typedef struct FFVkExecContext {
     int query_idx;
 
     /* Buffer dependencies */
-    AVBufferRef **buf_deps;
+    AVBufferRef *buf_deps[FF_VK_EXEC_MAX_BUF_DEPS];
     int nb_buf_deps;
-    unsigned int buf_deps_alloc_size;
 
     /* Frame dependencies */
-    AVFrame **frame_deps;
-    unsigned int frame_deps_alloc_size;
+    AVFrame *frame_deps[FF_VK_EXEC_MAX_FRAME_DEPS];
     int nb_frame_deps;
 
     /* Software frame dependencies */
-    AVFrame **sw_frame_deps;
-    unsigned int sw_frame_deps_alloc_size;
+    AVFrame *sw_frame_deps[FF_VK_EXEC_MAX_SW_FRAME_DEPS];
     int nb_sw_frame_deps;
 
-    VkSemaphoreSubmitInfo *sem_wait;
-    unsigned int sem_wait_alloc;
+    VkSemaphoreSubmitInfo sem_wait[FF_VK_EXEC_MAX_SEM_OPS];
     int sem_wait_cnt;
 
-    VkSemaphoreSubmitInfo *sem_sig;
-    unsigned int sem_sig_alloc;
+    VkSemaphoreSubmitInfo sem_sig[FF_VK_EXEC_MAX_SEM_OPS];
     int sem_sig_cnt;
 
-    uint64_t **sem_sig_val_dst;
-    unsigned int sem_sig_val_dst_alloc;
+    uint64_t *sem_sig_val_dst[FF_VK_EXEC_MAX_SEM_OPS];
     int sem_sig_val_dst_cnt;
 
-    uint8_t *frame_locked;
-    unsigned int frame_locked_alloc_size;
-
-    VkAccessFlagBits *access_dst;
-    unsigned int access_dst_alloc;
-
-    VkImageLayout *layout_dst;
-    unsigned int layout_dst_alloc;
-
-    uint32_t *queue_family_dst;
-    unsigned int queue_family_dst_alloc;
-
-    uint8_t *frame_update;
-    unsigned int frame_update_alloc_size;
+    uint8_t frame_locked[FF_VK_EXEC_MAX_FRAME_DEPS];
+    VkAccessFlagBits access_dst[FF_VK_EXEC_MAX_FRAME_DEPS];
+    VkImageLayout layout_dst[FF_VK_EXEC_MAX_FRAME_DEPS];
+    uint32_t queue_family_dst[FF_VK_EXEC_MAX_FRAME_DEPS];
+    uint8_t frame_update[FF_VK_EXEC_MAX_FRAME_DEPS];
 } FFVkExecContext;
 
 typedef struct FFVulkanDescriptorSet {
@@ -481,9 +472,9 @@ void ff_vk_exec_wait(FFVulkanContext *s, FFVkExecContext *e);
  */
 int ff_vk_exec_add_dep_buf(FFVulkanContext *s, FFVkExecContext *e,
                            AVBufferRef **deps, int nb_deps, int ref);
-int ff_vk_exec_add_dep_wait_sem(FFVulkanContext *s, FFVkExecContext *e,
-                                VkSemaphore sem, uint64_t val,
-                                VkPipelineStageFlagBits2 stage);
+void ff_vk_exec_add_dep_wait_sem(FFVulkanContext *s, FFVkExecContext *e,
+                                 VkSemaphore sem, uint64_t val,
+                                 VkPipelineStageFlagBits2 stage);
 int ff_vk_exec_add_dep_bool_sem(FFVulkanContext *s, FFVkExecContext *e,
                                 VkSemaphore *sem, int nb,
                                 VkPipelineStageFlagBits2 stage,

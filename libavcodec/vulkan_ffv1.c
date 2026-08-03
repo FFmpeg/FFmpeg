@@ -310,8 +310,8 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
 
         /* Wait on the previous frame, if its decode was ever submitted */
         if (vpl->sem)
-            RET(ff_vk_exec_add_dep_wait_sem(&ctx->s, exec, vpl->sem, vpl->sem_value,
-                                            VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT));
+            ff_vk_exec_add_dep_wait_sem(&ctx->s, exec, vpl->sem, vpl->sem_value,
+                                        VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT);
     }
 
     RET(ff_vk_exec_add_dep_buf(&ctx->s, exec, &fp->slice_state, 1, 1));
