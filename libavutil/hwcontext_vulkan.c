@@ -3638,11 +3638,9 @@ static int vulkan_map_from_drm_frame_sync(AVHWFramesContext *hwfc, AVFrame *dst,
         ff_vk_exec_start(&p->vkctx, exec);
 
         /* Ownership of semaphores is passed */
-        err = ff_vk_exec_add_dep_bool_sem(&p->vkctx, exec,
-                                          drm_sync_sem, desc->nb_objects,
-                                          VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT, 1);
-        if (err < 0)
-            return err;
+        ff_vk_exec_add_dep_bool_sem(&p->vkctx, exec,
+                                    drm_sync_sem, desc->nb_objects,
+                                    VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT, 1);
 
         err = ff_vk_exec_add_dep_frame(&p->vkctx, exec, dst,
                                        VK_PIPELINE_STAGE_2_NONE,

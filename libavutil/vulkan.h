@@ -120,6 +120,11 @@ typedef struct FFVkBuffer {
 /* Default number of in-flight execution contexts per pool */
 #define FF_VK_DEFAULT_EXEC_CONTEXTS 4
 
+typedef struct FFVkExecObjDep {
+    uint64_t obj;
+    VkObjectType type;
+} FFVkExecObjDep;
+
 typedef struct FFVkExecContext {
     uint32_t idx;
     const struct FFVkExecPool *parent;
@@ -154,6 +159,10 @@ typedef struct FFVkExecContext {
     /* AVRefStruct object dependencies */
     void *refstruct_deps[FF_VK_EXEC_MAX_BUF_DEPS];
     int nb_refstruct_deps;
+
+    /* Raw Vulkan object dependencies, destroyed on release */
+    FFVkExecObjDep obj_deps[FF_VK_EXEC_MAX_BUF_DEPS];
+    int nb_obj_deps;
 
     /* Frame dependencies */
     AVFrame *frame_deps[FF_VK_EXEC_MAX_FRAME_DEPS];
@@ -495,13 +504,18 @@ void ff_vk_exec_add_dep_refstruct(FFVulkanContext *s, FFVkExecContext *e,
 void ff_vk_exec_move_dep_refstruct(FFVulkanContext *s, FFVkExecContext *e,
                                    void *obj);
 
+/* Takes ownership of a raw Vulkan object, destroyed when the execution's
+ * dependencies are released. */
+void ff_vk_exec_add_dep_obj(FFVulkanContext *s, FFVkExecContext *e,
+                            VkObjectType type, uint64_t obj);
+
 void ff_vk_exec_add_dep_wait_sem(FFVulkanContext *s, FFVkExecContext *e,
                                  VkSemaphore sem, uint64_t val,
                                  VkPipelineStageFlagBits2 stage);
-int ff_vk_exec_add_dep_bool_sem(FFVulkanContext *s, FFVkExecContext *e,
-                                VkSemaphore *sem, int nb,
-                                VkPipelineStageFlagBits2 stage,
-                                int wait); /* Ownership transferred if !wait */
+void ff_vk_exec_add_dep_bool_sem(FFVulkanContext *s, FFVkExecContext *e,
+                                 VkSemaphore *sem, int nb,
+                                 VkPipelineStageFlagBits2 stage,
+                                 int wait); /* Ownership transferred if !wait */
 int ff_vk_exec_add_dep_frame(FFVulkanContext *s, FFVkExecContext *e, AVFrame *f,
                              VkPipelineStageFlagBits2 wait_stage,
                              VkPipelineStageFlagBits2 signal_stage);

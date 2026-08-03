@@ -567,7 +567,7 @@ FFVkExecContext *ff_vk_exec_get(FFVulkanContext *s, FFVkExecPool *pool)
         FFVkExecContext *e = &pool->contexts[i];
         if (pthread_mutex_trylock(&e->lock))
             continue; /* In use by a recording or submitting thread */
-        if ((e->nb_buf_deps || e->nb_refstruct_deps ||
+        if ((e->nb_buf_deps || e->nb_refstruct_deps || e->nb_obj_deps ||
              e->nb_frame_deps || e->nb_sw_frame_deps) &&
             vk->GetFenceStatus(s->hwctx->act_dev, e->fence) == VK_SUCCESS)
             ff_vk_exec_discard_deps(s, e);
@@ -625,6 +625,8 @@ int ff_vk_exec_start(FFVulkanContext *s, FFVkExecContext *e)
 
 void ff_vk_exec_discard_deps(FFVulkanContext *s, FFVkExecContext *e)
 {
+    FFVulkanFunctions *vk = &s->vkfn;
+
     for (int j = 0; j < e->nb_buf_deps; j++)
         av_buffer_unref(&e->buf_deps[j]);
     e->nb_buf_deps = 0;
@@ -632,6 +634,23 @@ void ff_vk_exec_discard_deps(FFVulkanContext *s, FFVkExecContext *e)
     for (int j = 0; j < e->nb_refstruct_deps; j++)
         av_refstruct_unref(&e->refstruct_deps[j]);
     e->nb_refstruct_deps = 0;
+
+    for (int j = 0; j < e->nb_obj_deps; j++) {
+        FFVkExecObjDep *od = &e->obj_deps[j];
+        switch (od->type) {
+        case VK_OBJECT_TYPE_IMAGE_VIEW:
+            vk->DestroyImageView(s->hwctx->act_dev,
+                                 (VkImageView)od->obj, s->hwctx->alloc);
+            break;
+        case VK_OBJECT_TYPE_SEMAPHORE:
+            vk->DestroySemaphore(s->hwctx->act_dev,
+                                 (VkSemaphore)od->obj, s->hwctx->alloc);
+            break;
+        default:
+            av_assert1(0);
+        }
+    }
+    e->nb_obj_deps = 0;
 
     for (int j = 0; j < e->nb_sw_frame_deps; j++)
         av_frame_free(&e->sw_frame_deps[j]);
@@ -700,6 +719,13 @@ void ff_vk_exec_move_dep_refstruct(FFVulkanContext *s, FFVkExecContext *e,
     *ptr = NULL;
 }
 
+void ff_vk_exec_add_dep_obj(FFVulkanContext *s, FFVkExecContext *e,
+                            VkObjectType type, uint64_t obj)
+{
+    av_assert1(e->nb_obj_deps < FF_VK_EXEC_MAX_BUF_DEPS);
+    e->obj_deps[e->nb_obj_deps++] = (FFVkExecObjDep) { obj, type };
+}
+
 int ff_vk_exec_add_dep_sw_frame(FFVulkanContext *s, FFVkExecContext *e,
                                 AVFrame *f)
 {
@@ -716,23 +742,6 @@ int ff_vk_exec_add_dep_sw_frame(FFVulkanContext *s, FFVkExecContext *e,
     return 0;
 }
 
-typedef struct TempSyncCtx {
-    int nb_sem;
-    VkSemaphore sem[];
-} TempSyncCtx;
-
-static void destroy_tmp_semaphores(void *opaque, uint8_t *data)
-{
-    FFVulkanContext *s = opaque;
-    FFVulkanFunctions *vk = &s->vkfn;
-    TempSyncCtx *ts = (TempSyncCtx *)data;
-
-    for (int i = 0; i < ts->nb_sem; i++)
-        vk->DestroySemaphore(s->hwctx->act_dev, ts->sem[i], s->hwctx->alloc);
-
-    av_free(ts);
-}
-
 void ff_vk_exec_add_dep_wait_sem(FFVulkanContext *s, FFVkExecContext *e,
                                  VkSemaphore sem, uint64_t val,
                                  VkPipelineStageFlagBits2 stage)
@@ -747,17 +756,11 @@ void ff_vk_exec_add_dep_wait_sem(FFVulkanContext *s, FFVkExecContext *e,
     };
 }
 
-int ff_vk_exec_add_dep_bool_sem(FFVulkanContext *s, FFVkExecContext *e,
-                                VkSemaphore *sem, int nb,
-                                VkPipelineStageFlagBits2 stage,
-                                int wait)
+void ff_vk_exec_add_dep_bool_sem(FFVulkanContext *s, FFVkExecContext *e,
+                                 VkSemaphore *sem, int nb,
+                                 VkPipelineStageFlagBits2 stage,
+                                 int wait)
 {
-    int err;
-    size_t buf_size;
-    AVBufferRef *buf;
-    TempSyncCtx *ts;
-    FFVulkanFunctions *vk = &s->vkfn;
-
     /* Do not transfer ownership if we're signalling a binary semaphore,
      * since we're probably exporting it. */
     if (!wait) {
@@ -770,43 +773,15 @@ int ff_vk_exec_add_dep_bool_sem(FFVulkanContext *s, FFVkExecContext *e,
             };
         }
 
-        return 0;
+        return;
     }
 
-    buf_size = sizeof(*ts) + sizeof(VkSemaphore)*nb;
-    ts = av_mallocz(buf_size);
-    if (!ts) {
-        err = AVERROR(ENOMEM);
-        goto fail;
-    }
-
-    memcpy(ts->sem, sem, nb*sizeof(*sem));
-    ts->nb_sem = nb;
-
-    buf = av_buffer_create((uint8_t *)ts, buf_size, destroy_tmp_semaphores, s, 0);
-    if (!buf) {
-        av_free(ts);
-        err = AVERROR(ENOMEM);
-        goto fail;
-    }
-
-    err = ff_vk_exec_add_dep_buf(s, e, &buf, 1, 0);
-    if (err < 0) {
-        av_buffer_unref(&buf);
-        return err;
-    }
-
+    /* Ownership of each semaphore passes to the execution */
     for (int i = 0; i < nb; i++) {
+        ff_vk_exec_add_dep_obj(s, e, VK_OBJECT_TYPE_SEMAPHORE,
+                               (uint64_t)sem[i]);
         ff_vk_exec_add_dep_wait_sem(s, e, sem[i], 0, stage);
     }
-
-    return 0;
-
-fail:
-    for (int i = 0; i < nb; i++)
-        vk->DestroySemaphore(s->hwctx->act_dev, sem[i], s->hwctx->alloc);
-
-    return err;
 }
 
 int ff_vk_exec_add_dep_frame(FFVulkanContext *s, FFVkExecContext *e, AVFrame *f,
@@ -1842,23 +1817,6 @@ const char *ff_vk_shader_rep_fmt(enum AVPixelFormat pix_fmt,
     }
 }
 
-typedef struct ImageViewCtx {
-    int nb_views;
-    VkImageView views[];
-} ImageViewCtx;
-
-static void destroy_imageviews(void *opaque, uint8_t *data)
-{
-    FFVulkanContext *s = opaque;
-    FFVulkanFunctions *vk = &s->vkfn;
-    ImageViewCtx *iv = (ImageViewCtx *)data;
-
-    for (int i = 0; i < iv->nb_views; i++)
-        vk->DestroyImageView(s->hwctx->act_dev, iv->views[i], s->hwctx->alloc);
-
-    av_free(iv);
-}
-
 static VkFormat map_fmt_to_rep(VkFormat fmt, enum FFVkShaderRepFormat rep_fmt)
 {
 #define REPS_FMT(fmt) \
@@ -2023,12 +1981,7 @@ int ff_vk_create_imageviews(FFVulkanContext *s, FFVkExecContext *e,
     AVVkFrame *vkf = (AVVkFrame *)f->data[0];
     const int nb_images = ff_vk_count_images(vkf);
     const int nb_planes = av_pix_fmt_count_planes(hwfc->sw_format);
-
-    ImageViewCtx *iv;
-    const size_t buf_size = sizeof(*iv) + nb_planes*sizeof(VkImageView);
-    iv = av_mallocz(buf_size);
-    if (!iv)
-        return AVERROR(ENOMEM);
+    VkImageView tmp_views[AV_NUM_DATA_POINTERS] = { 0 };
 
     for (int i = 0; i < nb_planes; i++) {
         VkImageViewUsageCreateInfo view_usage_info = {
@@ -2059,36 +2012,31 @@ int ff_vk_create_imageviews(FFVulkanContext *s, FFVkExecContext *e,
         }
 
         ret = vk->CreateImageView(s->hwctx->act_dev, &view_create_info,
-                                  s->hwctx->alloc, &iv->views[i]);
+                                  s->hwctx->alloc, &tmp_views[i]);
         if (ret != VK_SUCCESS) {
             av_log(s, AV_LOG_ERROR, "Failed to create imageview: %s\n",
                    ff_vk_ret2str(ret));
             err = AVERROR_EXTERNAL;
             goto fail;
         }
-
-        iv->nb_views++;
     }
 
-    buf = av_buffer_create((uint8_t *)iv, buf_size, destroy_imageviews, s, 0);
-    if (!buf) {
-        err = AVERROR(ENOMEM);
-        goto fail;
-    }
+    /* The execution context owns the views, destroying them on completion */
+    for (int i = 0; i < nb_planes; i++)
+        ff_vk_exec_add_dep_obj(s, e, VK_OBJECT_TYPE_IMAGE_VIEW,
+                               (uint64_t)tmp_views[i]);
 
-    /* Add to queue dependencies */
-    err = ff_vk_exec_add_dep_buf(s, e, &buf, 1, 0);
-    if (err < 0)
-        av_buffer_unref(&buf);
+    memcpy(views, tmp_views, nb_planes*sizeof(*views));
 
-    memcpy(views, iv->views, nb_planes*sizeof(*views));
+    return 0;
 
     return err;
 
 fail:
-    for (int i = 0; i < iv->nb_views; i++)
-        vk->DestroyImageView(s->hwctx->act_dev, iv->views[i], s->hwctx->alloc);
-    av_free(iv);
+    for (int i = 0; i < nb_planes; i++) {
+        if (tmp_views[i])
+            vk->DestroyImageView(s->hwctx->act_dev, tmp_views[i], s->hwctx->alloc);
+    }
     return err;
 }
 
