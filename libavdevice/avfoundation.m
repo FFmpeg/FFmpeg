@@ -394,6 +394,7 @@ static int configure_video_device(AVFormatContext *s, AVCaptureDevice *video_dev
     double framerate = av_q2d(ctx->framerate);
     NSObject *range = nil;
     NSObject *format = nil;
+    NSObject *matching_size_format = nil;
     NSObject *selected_range = nil;
     NSObject *selected_format = nil;
 
@@ -411,13 +412,14 @@ static int configure_video_device(AVFormatContext *s, AVCaptureDevice *video_dev
             if ((ctx->width == 0 && ctx->height == 0) ||
                 (dimensions.width == ctx->width && dimensions.height == ctx->height)) {
 
-                selected_format = format;
+                matching_size_format = format;
 
                 for (range in [format valueForKey:@"videoSupportedFrameRateRanges"]) {
                     double max_framerate;
 
                     [[range valueForKey:@"maxFrameRate"] getValue:&max_framerate];
                     if (fabs (framerate - max_framerate) < 0.01) {
+                        selected_format = format;
                         selected_range = range;
                         break;
                     }
@@ -425,7 +427,7 @@ static int configure_video_device(AVFormatContext *s, AVCaptureDevice *video_dev
             }
         }
 
-        if (!selected_format) {
+        if (!matching_size_format) {
             av_log(s, AV_LOG_ERROR, "Selected video size (%dx%d) is not supported by the device.\n",
                 ctx->width, ctx->height);
             goto unsupported_format;
@@ -435,6 +437,7 @@ static int configure_video_device(AVFormatContext *s, AVCaptureDevice *video_dev
             av_log(s, AV_LOG_ERROR, "Selected framerate (%f) is not supported by the device.\n",
                 framerate);
             if (ctx->video_is_muxed) {
+                selected_format = matching_size_format;
                 av_log(s, AV_LOG_ERROR, "Falling back to default.\n");
             } else {
                 goto unsupported_format;
