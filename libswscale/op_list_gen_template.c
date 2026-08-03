@@ -21,6 +21,7 @@
 #include "libswscale/format.h"
 #include "libswscale/ops.h"
 #include "libswscale/swscale.h"
+#include "libswscale/swscale_internal.h"
 
 #include "libavutil/error.h"
 #include "libavutil/macros.h"
@@ -29,9 +30,20 @@
 
 #define DUMMY_SIZE 16
 
-static int enum_ops_fmt(SwsContext *ctx, void *opaque, const SwsLut3D *lut3d,
-                        enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
-                        int (*cb)(SwsContext *ctx, void *opaque, SwsOpList *ops))
+struct EnumFmtPriv {
+    SwsContext *ctx;
+    const SwsLut3D *lut3d;
+    int (*cb)(SwsContext *ctx, void *opaque, SwsOpList *ops);
+    void *opaque;
+
+    /* for slice threading */
+    enum AVPixelFormat src_start, src_end;
+    enum AVPixelFormat dst_start, dst_end;
+};
+
+static int enum_ops_fmt(const struct EnumFmtPriv *s,
+                        enum AVPixelFormat src_fmt,
+                        enum AVPixelFormat dst_fmt)
 {
     int ret = 0;
     SwsOpList *ops = NULL;
@@ -52,7 +64,7 @@ static int enum_ops_fmt(SwsContext *ctx, void *opaque, const SwsLut3D *lut3d,
         dst.width  = dst_sizes[i][0];
         dst.height = dst_sizes[i][1];
 
-        ret = ff_sws_op_list_generate(ctx, &src, &dst, lut3d, &ops, &incomplete);
+        ret = ff_sws_op_list_generate(s->ctx, &src, &dst, s->lut3d, &ops, &incomplete);
         if (ret == AVERROR(ENOTSUP))
             return 0; /* silently skip unsupported formats */
         else if (ret < 0)
@@ -62,7 +74,7 @@ static int enum_ops_fmt(SwsContext *ctx, void *opaque, const SwsLut3D *lut3d,
         if (ret < 0)
             goto fail;
 
-        ret = cb(ctx, opaque, ops);
+        ret = s->cb(s->ctx, s->opaque, ops);
         if (ret < 0)
             goto fail;
 
@@ -74,6 +86,39 @@ fail:
     return ret;
 }
 
+static int enum_fmt_slice(void *priv, int jobnr, int threadnr, int nb_jobs,
+                          int nb_threads)
+{
+    const struct EnumFmtPriv *s = priv;
+    const enum AVPixelFormat src = s->src_start + jobnr;
+    int ret = 0;
+
+    for (enum AVPixelFormat dst = s->dst_start; dst <= s->dst_end; dst++) {
+        ret = enum_ops_fmt(s, src, dst);
+        if (ret < 0)
+            break;
+    }
+
+    return ret;
+}
+
+static enum AVPixelFormat first_pix_fmt(void)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_next(NULL);
+    return av_pix_fmt_desc_get_id(desc);
+}
+
+static enum AVPixelFormat last_pix_fmt(void)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_next(NULL);
+    while (1) {
+        const AVPixFmtDescriptor *next = av_pix_fmt_desc_next(desc);
+        if (!next)
+            return av_pix_fmt_desc_get_id(desc);
+        desc = next;
+    }
+}
+
 /**
  * Helper function to enumerate over all possible (optimized) operation lists,
  * under the current set of options in `ctx`, and run the given callback on
@@ -81,6 +126,8 @@ fail:
  *
  * @param src_fmt If set (not AV_PIX_FMT_NONE), constrain the source format
  * @param dst_fmt If set (not AV_PIX_FMT_NONE), constrain the destination format
+ * @param cb Callback to run on each op list. If ctx->threads != 1, this may be
+ *           called from multiple threads.
  * @return 0 on success, the return value if cb() < 0, or a negative error code
  *
  * @note `ops` belongs to sws_enum_op_lists(), but may be mutated by `cb`.
@@ -90,27 +137,20 @@ int ff_sws_enum_op_lists(SwsContext *ctx, void *opaque, const SwsLut3D *lut3d,
                          enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
                          int (*cb)(SwsContext *ctx, void *opaque, SwsOpList *ops))
 {
-    const AVPixFmtDescriptor *src_start = av_pix_fmt_desc_next(NULL);
-    const AVPixFmtDescriptor *dst_start = src_start;
+    struct EnumFmtPriv s = {
+        .ctx    = ctx,
+        .cb     = cb,
+        .opaque = opaque,
+        .lut3d  = lut3d,
+    };
+
+    s.src_start = s.dst_start = first_pix_fmt();
+    s.src_end   = s.dst_end   = last_pix_fmt();
     if (src_fmt != AV_PIX_FMT_NONE)
-        src_start = av_pix_fmt_desc_get(src_fmt);
+        s.src_start = s.src_end = src_fmt;
     if (dst_fmt != AV_PIX_FMT_NONE)
-        dst_start = av_pix_fmt_desc_get(dst_fmt);
+        s.dst_start = s.dst_end = dst_fmt;
 
-    const AVPixFmtDescriptor *src, *dst;
-    for (src = src_start; src; src = av_pix_fmt_desc_next(src)) {
-        const enum AVPixelFormat src_f = av_pix_fmt_desc_get_id(src);
-        for (dst = dst_start; dst; dst = av_pix_fmt_desc_next(dst)) {
-            const enum AVPixelFormat dst_f = av_pix_fmt_desc_get_id(dst);
-            int ret = enum_ops_fmt(ctx, opaque, lut3d, src_f, dst_f, cb);
-            if (ret < 0)
-                return ret;
-            if (dst_fmt != AV_PIX_FMT_NONE)
-                break;
-        }
-        if (src_fmt != AV_PIX_FMT_NONE)
-            break;
-    }
-
-    return 0;
+    const int nb_fmts = s.src_end - s.src_start + 1;
+    return ff_sws_thread_exec(&s, enum_fmt_slice, ctx->threads, nb_fmts);
 }
