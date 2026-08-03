@@ -588,9 +588,10 @@ int ff_vk_exec_start(FFVulkanContext *s, FFVkExecContext *e)
         .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
     };
 
-    /* Wait for the fence to be signalled */
+    /* Wait for the fence to be signalled. The fence is only reset once a
+     * fully recorded submission is handed to the queue, so a recording
+     * abandoned after an error leaves the context reusable. */
     vk->WaitForFences(s->hwctx->act_dev, 1, &e->fence, VK_TRUE, UINT64_MAX);
-    vk->ResetFences(s->hwctx->act_dev, 1, &e->fence);
 
     /* Discard queue dependencies */
     ff_vk_exec_discard_deps(s, e);
@@ -948,12 +949,18 @@ int ff_vk_exec_submit(FFVulkanContext *s, FFVkExecContext *e)
         return AVERROR_EXTERNAL;
     }
 
+    vk->ResetFences(s->hwctx->act_dev, 1, &e->fence);
+
 #if FF_API_VULKAN_SYNC_QUEUES
 FF_DISABLE_DEPRECATION_WARNINGS
     s->hwctx->lock_queue(s->device, e->qf, e->qi);
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
     ret = vk->QueueSubmit2(e->queue, 1, &submit_info, e->fence);
+    if (ret != VK_SUCCESS) {
+        /* Keep the context usable, signal with an empty submission */
+        vk->QueueSubmit2(e->queue, 0, NULL, e->fence);
+    }
 #if FF_API_VULKAN_SYNC_QUEUES
 FF_DISABLE_DEPRECATION_WARNINGS
     s->hwctx->unlock_queue(s->device, e->qf, e->qi);
