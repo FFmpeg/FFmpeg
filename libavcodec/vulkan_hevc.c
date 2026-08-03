@@ -620,7 +620,7 @@ static void set_vps(const HEVCVPS *vps,
     };
 }
 
-static int vk_hevc_create_params(AVCodecContext *avctx, AVBufferRef **buf)
+static int vk_hevc_create_params(AVCodecContext *avctx, VkVideoSessionParametersKHR **buf)
 {
     int err;
     const HEVCContext *h = avctx->priv_data;

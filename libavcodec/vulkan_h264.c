@@ -290,7 +290,7 @@ static void set_pps(const PPS *pps, const SPS *sps,
     };
 }
 
-static int vk_h264_create_params(AVCodecContext *avctx, AVBufferRef **buf)
+static int vk_h264_create_params(AVCodecContext *avctx, VkVideoSessionParametersKHR **buf)
 {
     int err;
     FFVulkanDecodeContext *dec = avctx->internal->hwaccel_priv_data;

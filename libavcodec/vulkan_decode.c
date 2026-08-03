@@ -141,15 +141,12 @@ static const VkVideoProfileInfoKHR *get_video_profile(FFVulkanDecodeShared *ctx,
 
 int ff_vk_update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
 {
-    int err;
     FFVulkanDecodeContext *src_ctx = src->internal->hwaccel_priv_data;
     FFVulkanDecodeContext *dst_ctx = dst->internal->hwaccel_priv_data;
 
     av_refstruct_replace(&dst_ctx->shared_ctx, src_ctx->shared_ctx);
 
-    err = av_buffer_replace(&dst_ctx->session_params, src_ctx->session_params);
-    if (err < 0)
-        return err;
+    av_refstruct_replace(&dst_ctx->session_params, src_ctx->session_params);
 
     dst_ctx->dedicated_dpb = src_ctx->dedicated_dpb;
     dst_ctx->external_fg = src_ctx->external_fg;
@@ -160,7 +157,7 @@ int ff_vk_update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
 int ff_vk_params_invalidate(AVCodecContext *avctx, int t, const uint8_t *b, uint32_t s)
 {
     FFVulkanDecodeContext *dec = avctx->internal->hwaccel_priv_data;
-    av_buffer_unref(&dec->session_params);
+    av_refstruct_unref(&dec->session_params);
     return 0;
 }
 
@@ -461,8 +458,7 @@ int ff_vk_decode_frame(AVCodecContext *avctx,
         .sType = VK_STRUCTURE_TYPE_VIDEO_BEGIN_CODING_INFO_KHR,
         .videoSession = ctx->common.session,
         .videoSessionParameters = dec->session_params ?
-                                  *((VkVideoSessionParametersKHR *)dec->session_params->data) :
-                                  VK_NULL_HANDLE,
+                                  *dec->session_params : VK_NULL_HANDLE,
         .referenceSlotCount = vp->decode_info.referenceSlotCount,
         .pReferenceSlots = vp->decode_info.pReferenceSlots,
     };
@@ -517,10 +513,9 @@ int ff_vk_decode_frame(AVCodecContext *avctx,
     /* Slices; owned by the execution from now on */
     ff_vk_exec_move_dep_refstruct(&ctx->s, exec, &vp->slices_buf);
 
-    /* Parameters */
-    err = ff_vk_exec_add_dep_buf(&ctx->s, exec, &dec->session_params, 1, 1);
-    if (err < 0)
-        return err;
+    /* Parameters; unset when inline session parameters are used */
+    if (dec->session_params)
+        ff_vk_exec_add_dep_refstruct(&ctx->s, exec, dec->session_params);
 
     err = ff_vk_exec_add_dep_frame(&ctx->s, exec, pic,
                                    VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR,
@@ -1183,23 +1178,23 @@ int ff_vk_frame_params(AVCodecContext *avctx, AVBufferRef *hw_frames_ctx)
     return err;
 }
 
-static void vk_decode_free_params(void *opaque, uint8_t *data)
+static void vk_decode_free_params(AVRefStructOpaque opaque, void *obj)
 {
-    FFVulkanDecodeShared *ctx = opaque;
+    FFVulkanDecodeShared *ctx = opaque.nc;
     FFVulkanFunctions *vk = &ctx->s.vkfn;
-    VkVideoSessionParametersKHR *par = (VkVideoSessionParametersKHR *)data;
+    VkVideoSessionParametersKHR *par = obj;
     vk->DestroyVideoSessionParametersKHR(ctx->s.hwctx->act_dev, *par,
                                          ctx->s.hwctx->alloc);
-    av_free(par);
 }
 
-int ff_vk_decode_create_params(AVBufferRef **par_ref, void *logctx, FFVulkanDecodeShared *ctx,
+int ff_vk_decode_create_params(VkVideoSessionParametersKHR **par_ref, void *logctx, FFVulkanDecodeShared *ctx,
                                const VkVideoSessionParametersCreateInfoKHR *session_params_create)
 {
-    VkVideoSessionParametersKHR *par = av_malloc(sizeof(*par));
+    VkVideoSessionParametersKHR *par;
     const FFVulkanFunctions *vk = &ctx->s.vkfn;
     VkResult ret;
 
+    par = av_refstruct_alloc_ext(sizeof(*par), 0, ctx, vk_decode_free_params);
     if (!par)
         return AVERROR(ENOMEM);
 
@@ -1209,15 +1204,11 @@ int ff_vk_decode_create_params(AVBufferRef **par_ref, void *logctx, FFVulkanDeco
     if (ret != VK_SUCCESS) {
         av_log(logctx, AV_LOG_ERROR, "Unable to create Vulkan video session parameters: %s!\n",
                ff_vk_ret2str(ret));
-        av_free(par);
+        *par = VK_NULL_HANDLE;
+        av_refstruct_unref(&par);
         return AVERROR_EXTERNAL;
     }
-    *par_ref = av_buffer_create((uint8_t *)par, sizeof(*par),
-                                vk_decode_free_params, ctx, 0);
-    if (!*par_ref) {
-        vk_decode_free_params(ctx, (uint8_t *)par);
-        return AVERROR(ENOMEM);
-    }
+    *par_ref = par;
 
     return 0;
 }
@@ -1227,7 +1218,7 @@ int ff_vk_decode_uninit(AVCodecContext *avctx)
     FFVulkanDecodeContext *dec = avctx->internal->hwaccel_priv_data;
 
     av_freep(&dec->hevc_headers);
-    av_buffer_unref(&dec->session_params);
+    av_refstruct_unref(&dec->session_params);
     av_refstruct_unref(&dec->shared_ctx);
     av_freep(&dec->slice_off);
     return 0;

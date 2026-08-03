@@ -208,7 +208,7 @@ static void vk_av1_params_fill(AVCodecContext *avctx,
     };
 }
 
-static int vk_av1_create_params(AVCodecContext *avctx, AVBufferRef **buf,
+static int vk_av1_create_params(AVCodecContext *avctx, VkVideoSessionParametersKHR **buf,
                                 AV1VulkanDecodePicture *ap)
 {
     int err;

@@ -53,7 +53,7 @@ typedef struct FFVulkanDecodeShared {
 
 typedef struct FFVulkanDecodeContext {
     FFVulkanDecodeShared *shared_ctx;
-    AVBufferRef *session_params;
+    VkVideoSessionParametersKHR *session_params;
 
     int dedicated_dpb; /* Oddity  #1 - separate DPB images */
     int external_fg;   /* Oddity  #2 - hardware can't apply film grain */
@@ -158,7 +158,7 @@ void ff_vk_decode_free_frame(AVHWDeviceContext *dev_ctx, FFVulkanDecodePicture *
 /**
  * Create VkVideoSessionParametersKHR wrapped in an AVBufferRef.
  */
-int ff_vk_decode_create_params(AVBufferRef **par_ref, void *logctx, FFVulkanDecodeShared *ctx,
+int ff_vk_decode_create_params(VkVideoSessionParametersKHR **par_ref, void *logctx, FFVulkanDecodeShared *ctx,
                                const VkVideoSessionParametersCreateInfoKHR *session_params_create);
 
 /**
