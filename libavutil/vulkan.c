@@ -1161,7 +1161,7 @@ int ff_vk_flush_buffer(FFVulkanContext *s, FFVkBuffer *buf,
     VkResult ret;
     FFVulkanFunctions *vk = &s->vkfn;
 
-    if (buf->host_ref || buf->flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
+    if (buf->flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
         return 0;
 
     const VkMappedMemoryRange flush_data = {
@@ -1434,7 +1434,6 @@ int ff_vk_host_map_buffer(FFVulkanContext *s, FFVkBuffer **dst,
     vkb->address       += offs;
     vkb->mapped_mem     = src_data;
     vkb->size           = buffer_size - offs;
-    vkb->flags         |= VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
     *dst = vkb;
 
