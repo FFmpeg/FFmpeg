@@ -138,12 +138,14 @@ void ff_id3v2_start(ID3v2EncContext *id3, AVIOContext *pb, int id3v2_version,
 /**
  * Convert and write all global metadata from s into an ID3v2 tag.
  */
-int ff_id3v2_write_metadata(AVFormatContext *s, ID3v2EncContext *id3);
+int ff_id3v2_write_metadata(AVFormatContext *s, AVIOContext *pb,
+                            ID3v2EncContext *id3);
 
 /**
  * Write an attached picture from pkt into an ID3v2 tag.
  */
-int ff_id3v2_write_apic(AVFormatContext *s, ID3v2EncContext *id3, AVPacket *pkt);
+int ff_id3v2_write_apic(AVFormatContext *s, AVIOContext *pb,
+                        ID3v2EncContext *id3, AVPacket *pkt);
 
 /**
  * Finalize an opened ID3v2 tag.

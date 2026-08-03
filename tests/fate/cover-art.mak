@@ -46,6 +46,12 @@ FATE_COVER_ART_REMUX-$(call ALLYES, MP3_DEMUXER MJPEG_DECODER \
                        += fate-cover-art-mp3-id3v2-remux
 fate-cover-art-mp3-id3v2-remux: CMD = transcode mp3 $(TARGET_SAMPLES)/exif/embedded_small.mp3 mp3 "-map 0 -map 0:v -map 0:v -c:a copy -filter:v:0 scale -filter:v:2 scale -c:v:0 bmp -c:v:1 copy -c:v:2 png -metadata:s:v:0 comment=Band/Orchestra" "-map 0 -c copy -t 0.1" "-show_entries stream_tags:stream_disposition=attached_pic:stream=index,codec_name"
 
+FATE_COVER_ART_REMUX-$(call ALLYES, MP3_DEMUXER MP3_MUXER MD5_PROTOCOL) \
+                       += fate-cover-art-mp3-id3v2-nonseekable
+fate-cover-art-mp3-id3v2-nonseekable: CMD = md5pipe -i $(TARGET_SAMPLES)/exif/embedded_small.mp3 -map 0 -c copy -fflags +bitexact -write_xing 0 -f mp3
+fate-cover-art-mp3-id3v2-nonseekable: CMP = oneline
+fate-cover-art-mp3-id3v2-nonseekable: REF = 7d7fc4c0a5fe89a418bab6c74b6cda08
+
 # Also covers muxing and demuxing of nonstandard channel layouts into FLAC
 # as well as the unorthodox multi_dim_quant option of the FLAC encoder.
 FATE_COVER_ART_REMUX-$(call ALLYES, MOV_DEMUXER OGG_DEMUXER   \

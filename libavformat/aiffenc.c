@@ -59,9 +59,9 @@ static int put_id3v2_tags(AVFormatContext *s, AIFFOutputContext *aiff)
     pos = avio_tell(pb);
 
     ff_id3v2_start(&id3v2, pb, aiff->id3v2_version, ID3v2_DEFAULT_MAGIC);
-    ff_id3v2_write_metadata(s, &id3v2);
+    ff_id3v2_write_metadata(s, pb, &id3v2);
     while (list_entry) {
-        if ((ret = ff_id3v2_write_apic(s, &id3v2, &list_entry->pkt)) < 0)
+        if ((ret = ff_id3v2_write_apic(s, pb, &id3v2, &list_entry->pkt)) < 0)
             return ret;
         list_entry = list_entry->next;
     }
