@@ -54,8 +54,9 @@ int ff_sws_pass_aligned_width(const SwsPass *pass, int width)
     return aligned_w <= INT_MAX ? aligned_w : width;
 }
 
-/* Allocates one buffer per plane */
-static int frame_alloc_planes(AVFrame *dst)
+/* Allocates (or refs) one buffer per plane */
+static int frame_alloc_planes_ref(AVFrame *dst, const AVFrame *src,
+                                  const int plane_copy[4])
 {
     int ret = av_image_check_size2(dst->width, dst->height, INT64_MAX,
                                    dst->format, 0, NULL);
@@ -80,6 +81,17 @@ static int frame_alloc_planes(AVFrame *dst)
     for (int i = 0; i < 4; i++) {
         if (!sizes[i])
             break;
+        int src_idx = plane_copy[i];
+        if (src_idx >= 0 && src) {
+            /* Ref the source plane instead of allocating a new buffer */
+            dst->buf[i] = av_buffer_ref(src->buf[src_idx]);
+            if (!dst->buf[i])
+                return AVERROR(ENOMEM);
+            dst->data[i]     = src->data[src_idx];
+            dst->linesize[i] = src->linesize[src_idx];
+            continue;
+        }
+
         AVBufferRef *buf = av_buffer_alloc(sizes[i]);
         if (!buf)
             return AVERROR(ENOMEM);
@@ -143,8 +155,12 @@ static int pass_alloc_output(SwsPass *pass)
     }
 #endif
 
+    const AVFrame *src = NULL;
+    if (pass->input)
+        src = pass->input->output->avframe;
+
     avframe->format = pass->format;
-    ret = frame_alloc_planes(avframe);
+    ret = frame_alloc_planes_ref(avframe, src, buffer->plane_copy);
     if (ret < 0) {
         av_frame_free(&avframe);
         return ret;
