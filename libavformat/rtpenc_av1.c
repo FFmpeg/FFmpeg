@@ -116,8 +116,15 @@ void ff_rtp_send_av1(AVFormatContext *ctx, const uint8_t *frame_buf, int frame_s
             if (!num_lebs) {
                 break;
             }
-            buf_ptr += num_lebs + obu_size;
-            rem_size -= num_lebs + obu_size;
+            buf_ptr += num_lebs;
+            rem_size -= num_lebs;
+            // bound OBU payload against remaining data to avoid pointer/size
+            // wraparound (mirrors the check in the packetization loop below)
+            if (obu_size > (uint32_t) rem_size) {
+                break;
+            }
+            buf_ptr += obu_size;
+            rem_size -= obu_size;
         }
 #else // RTPENC_AV1_SEARCH_SEQ_HEADER
         av_log(ctx, AV_LOG_DEBUG, "Marking FIRST packet\n");
