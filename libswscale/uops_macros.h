@@ -987,15 +987,23 @@
     MACRO(__VA_ARGS__, f32_add_xyzw                            , .type = SWS_PIXEL_F32, .uop = SWS_UOP_ADD             , .mask = 0xf)
 #define SWS_FOR_F32_MIN(MACRO, ...) \
     MACRO(__VA_ARGS__, f32_min_x                               , SWS_PIXEL_F32, SWS_UOP_MIN             , 0x1) \
+    MACRO(__VA_ARGS__, f32_min_y                               , SWS_PIXEL_F32, SWS_UOP_MIN             , 0x2) \
     MACRO(__VA_ARGS__, f32_min_xy                              , SWS_PIXEL_F32, SWS_UOP_MIN             , 0x3) \
+    MACRO(__VA_ARGS__, f32_min_z                               , SWS_PIXEL_F32, SWS_UOP_MIN             , 0x4) \
+    MACRO(__VA_ARGS__, f32_min_xz                              , SWS_PIXEL_F32, SWS_UOP_MIN             , 0x5) \
     MACRO(__VA_ARGS__, f32_min_xyz                             , SWS_PIXEL_F32, SWS_UOP_MIN             , 0x7) \
+    MACRO(__VA_ARGS__, f32_min_w                               , SWS_PIXEL_F32, SWS_UOP_MIN             , 0x8) \
     MACRO(__VA_ARGS__, f32_min_xw                              , SWS_PIXEL_F32, SWS_UOP_MIN             , 0x9) \
     MACRO(__VA_ARGS__, f32_min_yzw                             , SWS_PIXEL_F32, SWS_UOP_MIN             , 0xe) \
     MACRO(__VA_ARGS__, f32_min_xyzw                            , SWS_PIXEL_F32, SWS_UOP_MIN             , 0xf)
 #define SWS_FOR_STRUCT_F32_MIN(MACRO, ...) \
     MACRO(__VA_ARGS__, f32_min_x                               , .type = SWS_PIXEL_F32, .uop = SWS_UOP_MIN             , .mask = 0x1) \
+    MACRO(__VA_ARGS__, f32_min_y                               , .type = SWS_PIXEL_F32, .uop = SWS_UOP_MIN             , .mask = 0x2) \
     MACRO(__VA_ARGS__, f32_min_xy                              , .type = SWS_PIXEL_F32, .uop = SWS_UOP_MIN             , .mask = 0x3) \
+    MACRO(__VA_ARGS__, f32_min_z                               , .type = SWS_PIXEL_F32, .uop = SWS_UOP_MIN             , .mask = 0x4) \
+    MACRO(__VA_ARGS__, f32_min_xz                              , .type = SWS_PIXEL_F32, .uop = SWS_UOP_MIN             , .mask = 0x5) \
     MACRO(__VA_ARGS__, f32_min_xyz                             , .type = SWS_PIXEL_F32, .uop = SWS_UOP_MIN             , .mask = 0x7) \
+    MACRO(__VA_ARGS__, f32_min_w                               , .type = SWS_PIXEL_F32, .uop = SWS_UOP_MIN             , .mask = 0x8) \
     MACRO(__VA_ARGS__, f32_min_xw                              , .type = SWS_PIXEL_F32, .uop = SWS_UOP_MIN             , .mask = 0x9) \
     MACRO(__VA_ARGS__, f32_min_yzw                             , .type = SWS_PIXEL_F32, .uop = SWS_UOP_MIN             , .mask = 0xe) \
     MACRO(__VA_ARGS__, f32_min_xyzw                            , .type = SWS_PIXEL_F32, .uop = SWS_UOP_MIN             , .mask = 0xf)
@@ -1003,12 +1011,14 @@
     MACRO(__VA_ARGS__, f32_max_x                               , SWS_PIXEL_F32, SWS_UOP_MAX             , 0x1) \
     MACRO(__VA_ARGS__, f32_max_xy                              , SWS_PIXEL_F32, SWS_UOP_MAX             , 0x3) \
     MACRO(__VA_ARGS__, f32_max_xyz                             , SWS_PIXEL_F32, SWS_UOP_MAX             , 0x7) \
+    MACRO(__VA_ARGS__, f32_max_w                               , SWS_PIXEL_F32, SWS_UOP_MAX             , 0x8) \
     MACRO(__VA_ARGS__, f32_max_xw                              , SWS_PIXEL_F32, SWS_UOP_MAX             , 0x9) \
     MACRO(__VA_ARGS__, f32_max_xyzw                            , SWS_PIXEL_F32, SWS_UOP_MAX             , 0xf)
 #define SWS_FOR_STRUCT_F32_MAX(MACRO, ...) \
     MACRO(__VA_ARGS__, f32_max_x                               , .type = SWS_PIXEL_F32, .uop = SWS_UOP_MAX             , .mask = 0x1) \
     MACRO(__VA_ARGS__, f32_max_xy                              , .type = SWS_PIXEL_F32, .uop = SWS_UOP_MAX             , .mask = 0x3) \
     MACRO(__VA_ARGS__, f32_max_xyz                             , .type = SWS_PIXEL_F32, .uop = SWS_UOP_MAX             , .mask = 0x7) \
+    MACRO(__VA_ARGS__, f32_max_w                               , .type = SWS_PIXEL_F32, .uop = SWS_UOP_MAX             , .mask = 0x8) \
     MACRO(__VA_ARGS__, f32_max_xw                              , .type = SWS_PIXEL_F32, .uop = SWS_UOP_MAX             , .mask = 0x9) \
     MACRO(__VA_ARGS__, f32_max_xyzw                            , .type = SWS_PIXEL_F32, .uop = SWS_UOP_MAX             , .mask = 0xf)
 #define SWS_FOR_F32_UNPACK(MACRO, ...)

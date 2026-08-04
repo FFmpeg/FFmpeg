@@ -581,7 +581,9 @@ retry:
             for (int i = 0; i < 4; i++) {
                 if (!SWS_OP_NEEDED(op, i) || !op->clamp.limit[i].den)
                     continue;
-                if (av_cmp_q64(op->clamp.limit[i], prev->comps.max[i]) < 0)
+                if (av_cmp_q64(op->clamp.limit[i], prev->comps.max[i]) >= 0)
+                    op->clamp.limit[i] = (AVRational64) {0}; /* no-op */
+                else
                     noop = false;
             }
 
@@ -595,7 +597,9 @@ retry:
             for (int i = 0; i < 4; i++) {
                 if (!SWS_OP_NEEDED(op, i) || !op->clamp.limit[i].den)
                     continue;
-                if (av_cmp_q64(prev->comps.min[i], op->clamp.limit[i]) < 0)
+                if (av_cmp_q64(prev->comps.min[i], op->clamp.limit[i]) >= 0)
+                    op->clamp.limit[i] = (AVRational64) {0};
+                else
                     noop = false;
             }
 
