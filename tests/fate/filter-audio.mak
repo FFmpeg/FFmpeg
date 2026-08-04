@@ -191,6 +191,11 @@ fate-filter-pan-downmix2: tests/data/asynth-44100-11.wav
 fate-filter-pan-downmix2: SRC = $(TARGET_PATH)/tests/data/asynth-44100-11.wav
 fate-filter-pan-downmix2: CMD = framecrc -ss 3.14 -i $(SRC) -frames:a 20 -filter:a "pan=5C|c0=0.7*c0+0.7*c10|c1=c9|c2=c8|c3=c7|c4=c6"
 
+FATE_AFILTER-$(call ALLYES, LAVFI_INDEV ANULLSRC_FILTER PAN_FILTER PCM_S16LE_ENCODER NULL_MUXER) += fate-filter-pan-channel-id-limit
+fate-filter-pan-channel-id-limit: CMD = run $(FFMPEG) -nostdin -hide_banner -f lavfi -i "anullsrc=cl=stereo:r=44100:d=0.1" -af "pan=stereo|FL=UNK" -f null - ; true
+fate-filter-pan-channel-id-limit: CMP = grep
+fate-filter-pan-channel-id-limit: REF = Input channel id 768
+
 FATE_AFILTER-$(call ALLYES, LAVFI_INDEV AEVALSRC_FILTER SILENCEREMOVE_FILTER ARESAMPLE_FILTER) += fate-filter-silenceremove
 fate-filter-silenceremove: CMD = framecrc -auto_conversion_filters -f lavfi -i "aevalsrc=between(t\,1\,2)+between(t\,4\,5)+between(t\,7\,9):d=10:n=8192,silenceremove=start_periods=0:start_duration=0:start_threshold=0:stop_periods=-1:stop_duration=0:stop_threshold=-90dB:window=0:detection=avg"
 
