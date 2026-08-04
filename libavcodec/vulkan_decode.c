@@ -305,15 +305,19 @@ int ff_vk_decode_add_slice(AVCodecContext *avctx, FFVulkanDecodePicture *vp,
             buf_pnext = (void *)ff_vk_find_struct(ctx->s.hwfc->create_pnext,
                                                   VK_STRUCTURE_TYPE_VIDEO_PROFILE_LIST_INFO_KHR);
 
+        VkBufferUsageFlags buf_usage = DECODER_IS_SDR(avctx->codec_id) ?
+                                       (VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                                        VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) :
+                                       VK_BUFFER_USAGE_VIDEO_DECODE_SRC_BIT_KHR;
+
         err = ff_vk_get_pooled_buffer(&ctx->s, &ctx->buf_pool, &new_buf,
-                                      DECODER_IS_SDR(avctx->codec_id) ?
-                                      (VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                                       VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) :
-                                      VK_BUFFER_USAGE_VIDEO_DECODE_SRC_BIT_KHR,
-                                      buf_pnext, buf_size,
+                                      buf_usage, buf_pnext, buf_size,
                                       VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                      (DECODER_IS_SDR(avctx->codec_id) ?
-                                       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT : 0x0));
+                                      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        if (err < 0)
+            err = ff_vk_get_pooled_buffer(&ctx->s, &ctx->buf_pool, &new_buf,
+                                          buf_usage, buf_pnext, buf_size,
+                                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
         if (err < 0)
             return err;
 
