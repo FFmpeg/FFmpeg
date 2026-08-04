@@ -58,7 +58,7 @@ cglobal atadenoise_filter_row8, 6,10,13, src, dst, srcf, w, mid, size, i, j, src
         mov         jq, midq
         pxor        m3, m3
         pxor       m11, m11
-        movu        m0, [srcq + xq]
+        movq        m0, [srcq + xq]
         mova       m12, m10
         punpcklbw   m0, m2
         mova        m7, m0
@@ -71,7 +71,7 @@ cglobal atadenoise_filter_row8, 6,10,13, src, dst, srcf, w, mid, size, i, j, src
             mov          srcfxq, [srcfq + jq * 8]
             add          srcfxq, wq
 
-            movu             m1, [srcfxq + xq]
+            movq             m1, [srcfxq + xq]
             punpcklbw        m1, m2
             mova             m9, m1
             psubw            m1, m0
@@ -92,7 +92,7 @@ cglobal atadenoise_filter_row8, 6,10,13, src, dst, srcf, w, mid, size, i, j, src
             mov          srcfxq, [srcfq + iq * 8]
             add          srcfxq, wq
 
-            movu             m1, [srcfxq + xq]
+            movq             m1, [srcfxq + xq]
             punpcklbw        m1, m2
             mova             m9, m1
             psubw            m1, m0
@@ -172,7 +172,7 @@ cglobal atadenoise_filter_row8_serial, 6,10,12, src, dst, srcf, w, mid, size, i,
         mov         jq, midq
         pxor        m3, m3
         pxor       m11, m11
-        movu        m0, [srcq + xq]
+        movq        m0, [srcq + xq]
         punpcklbw   m0, m2
         mova        m7, m0
         mova        m8, [pw_one]
@@ -184,7 +184,7 @@ cglobal atadenoise_filter_row8_serial, 6,10,12, src, dst, srcf, w, mid, size, i,
             mov          srcfxq, [srcfq + jq * 8]
             add          srcfxq, wq
 
-            movu             m1, [srcfxq + xq]
+            movq             m1, [srcfxq + xq]
             punpcklbw        m1, m2
             mova             m9, m1
             psubw            m1, m0
@@ -217,7 +217,7 @@ cglobal atadenoise_filter_row8_serial, 6,10,12, src, dst, srcf, w, mid, size, i,
             mov          srcfxq, [srcfq + iq * 8]
             add          srcfxq, wq
 
-            movu             m1, [srcfxq + xq]
+            movq             m1, [srcfxq + xq]
             punpcklbw        m1, m2
             mova             m9, m1
             psubw            m1, m0
