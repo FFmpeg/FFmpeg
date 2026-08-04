@@ -372,7 +372,7 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
                 op->comps.flags[i] = ops->comps_src.flags[idx] & SWS_COMP_DIRTY;
                 op->comps.min[i]   = ops->comps_src.min[idx];
                 op->comps.max[i]   = ops->comps_src.max[idx];
-                op->comps.dep_in[i] = SWS_COMP(idx);
+                op->comps.dep_in[i] = SWS_COMP(i);
 
                 /**
                  * Don't mark packed or fractional reads as a copy, because the
