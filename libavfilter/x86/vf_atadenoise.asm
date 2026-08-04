@@ -101,12 +101,12 @@ cglobal atadenoise_filter_row8, 6,10,13, src, dst, srcf, w, mid, size, i, j, src
             pcmpgtw          m6, m5
             por              m6, m1
             pandn            m6, m12
+            ptest            m6, m6
             mova            m12, m6
             pand             m9, m6
             paddw            m7, m9
             psubw            m8, m6
 
-            ptest           m12, m12
             jz .finish
 
             cmp              iq, sizeq
@@ -185,12 +185,12 @@ cglobal atadenoise_filter_row8_serial, 6,10,12, src, dst, srcf, w, mid, size, i,
             pcmpgtw          m6, m3, m5
             por              m6, m1
             pandn            m6, m11
+            ptest            m6, m6
             mova            m11, m6
             pand             m9, m6
             paddw            m7, m9
             psubw            m8, m6
 
-            ptest           m11, m11
             jz .end_loop0
 
             cmp              jq, 0
@@ -217,12 +217,12 @@ cglobal atadenoise_filter_row8_serial, 6,10,12, src, dst, srcf, w, mid, size, i,
             pcmpgtw          m6, m5
             por              m6, m1
             pandn            m6, m11
+            ptest            m6, m6
             mova            m11, m6
             pand             m9, m6
             paddw            m7, m9
             psubw            m8, m6
 
-            ptest           m11, m11
             jz .finish
 
             cmp              iq, sizeq
