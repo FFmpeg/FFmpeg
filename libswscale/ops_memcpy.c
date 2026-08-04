@@ -57,6 +57,9 @@ static void process(const SwsOpExec *exec, const void *priv,
                 memset(out, p->clear_value[i], bytes);
                 out += exec->out_stride[i];
             }
+        } else if (out == exec->in[idx]) {
+            av_assert1(exec->out_stride[i] == exec->in_stride[idx]);
+            continue; /* plane was already ref'd */
         } else if (exec->out_stride[i] == exec->in_stride[idx] && !use_loop) {
             memcpy(out, exec->in[idx], exec->out_stride[i] * lines);
         } else {
