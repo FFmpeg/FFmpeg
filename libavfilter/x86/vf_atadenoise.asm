@@ -81,11 +81,10 @@ cglobal atadenoise_filter_row8, 6,10,13, src, dst, srcf, w, mid, size, i, j, src
             mova             m6, m11
             pcmpgtw          m6, m5
             por              m6, m1
-            pxor             m6, m10
-            pand            m12, m6
-            pand             m9, m12
+            pandn            m6, m12
+            mova            m12, m6
+            pand             m9, m6
             paddw            m7, m9
-            mova             m6, m12
             psrlw            m6, 15
             paddw            m8, m6
 
@@ -102,11 +101,10 @@ cglobal atadenoise_filter_row8, 6,10,13, src, dst, srcf, w, mid, size, i, j, src
             mova             m6, m3
             pcmpgtw          m6, m5
             por              m6, m1
-            pxor             m6, m10
-            pand            m12, m6
-            pand             m9, m12
+            pandn            m6, m12
+            mova            m12, m6
+            pand             m9, m6
             paddw            m7, m9
-            mova             m6, m12
             psrlw            m6, 15
             paddw            m8, m6
 
@@ -188,11 +186,10 @@ cglobal atadenoise_filter_row8_serial, 6,10,12, src, dst, srcf, w, mid, size, i,
             pcmpgtw          m1, m4
             pcmpgtw          m6, m3, m5
             por              m6, m1
-            pxor             m6, m10
-            pand            m11, m6
-            pand             m9, m11
+            pandn            m6, m11
+            mova            m11, m6
+            pand             m9, m6
             paddw            m7, m9
-            mova             m6, m11
             psrlw            m6, 15
             paddw            m8, m6
 
@@ -222,11 +219,10 @@ cglobal atadenoise_filter_row8_serial, 6,10,12, src, dst, srcf, w, mid, size, i,
             mova             m6, m3
             pcmpgtw          m6, m5
             por              m6, m1
-            pxor             m6, m10
-            pand            m11, m6
-            pand             m9, m11
+            pandn            m6, m11
+            mova            m11, m6
+            pand             m9, m6
             paddw            m7, m9
-            mova             m6, m11
             psrlw            m6, 15
             paddw            m8, m6
 
