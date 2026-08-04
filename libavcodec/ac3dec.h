@@ -61,7 +61,6 @@
 #include "avcodec.h"
 #include "bswapdsp.h"
 #include "get_bits.h"
-#include "fmtconvert.h"
 
 #define AC3_OUTPUT_LFEON  8
 
@@ -83,7 +82,6 @@ typedef struct AC3DecodeContext {
     AVFloatDSPContext *fdsp;
 #endif
     AC3DSPContext ac3dsp;
-    FmtConvertContext fmt_conv;             ///< optimized conversion functions
 ///@}
 
     AVTXContext *tx_128, *tx_256;
@@ -249,7 +247,7 @@ typedef struct AC3DecodeContext {
     SHORTFLOAT *outptr[AC3_MAX_CHANNELS];
 
 ///@name Aligned arrays
-    DECLARE_ALIGNED(16, int,   fixed_coeffs)[AC3_MAX_CHANNELS][AC3_MAX_COEFS];       ///< fixed-point transform coefficients
+    DECLARE_ALIGNED(32, INTFLOAT, coeffs)[AC3_MAX_CHANNELS][AC3_MAX_COEFS];          ///< decoded transform coefficients
     DECLARE_ALIGNED(32, INTFLOAT, transform_coeffs)[AC3_MAX_CHANNELS][AC3_MAX_COEFS];   ///< transform coefficients
     DECLARE_ALIGNED(32, INTFLOAT, delay)[EAC3_MAX_CHANNELS][AC3_BLOCK_SIZE];         ///< delay - added to the next block
 #if USE_FIXED
