@@ -1226,24 +1226,79 @@ void sws_frame_end(SwsContext *sws)
     c->src_ranges.nb_ranges = 0;
 }
 
+static int ptr_in_buf(const uint8_t *ptr, const AVBufferRef *buf)
+{
+    uintptr_t ptr_val = (uintptr_t) ptr;
+    uintptr_t buf_start = (uintptr_t) buf->data;
+    return ptr_val >= buf_start && ptr_val < buf_start + buf->size;
+}
+
+/* Similar to av_frame_ref() but only references planes in the given map */
+static int frame_ref(AVFrame *dst, const AVFrame *src, const int plane_copy[4])
+{
+    int copied[AV_NUM_DATA_POINTERS] = {0};
+    int nb_copied = 0;
+
+    for (int i = 0; i < 4; i++) {
+        const int idx = plane_copy[i];
+        if (idx < 0)
+            continue;
+        /* Find corresponding source buffer */
+        uint8_t *src_data = src->data[idx];
+        if (!src_data)
+            return AVERROR(EINVAL);
+        for (int j = 0; j < FF_ARRAY_ELEMS(src->buf); j++) {
+            AVBufferRef *buf = src->buf[j];
+            if (!buf)
+                break;
+            if (!ptr_in_buf(src_data, buf))
+                continue;
+            if (!copied[j]) {
+                AVBufferRef *ref = av_buffer_ref(buf);
+                if (!ref)
+                    return AVERROR(ENOMEM);
+                dst->buf[nb_copied++] = ref;
+                copied[j] = 1;
+            }
+            dst->data[i]     = src_data;
+            dst->linesize[i] = src->linesize[idx];
+            break;
+        }
+    }
+
+    return 0;
+}
+
+/* Returns the number of buffers allocated */
 static int frame_alloc_buffers(SwsContext *sws, AVFrame *frame)
 {
     SwsInternal *c = sws_internal(sws);
     FFFramePool *pool = &c->frame_pool;
-
     av_assert0(!frame->hw_frames_ctx);
+
+    /* Find first free buffer slot */
+    int buf_start = 0;
+    while (frame->buf[buf_start])
+        buf_start++;
+    int nb_bufs = 0;
+
     const int nb_planes = av_pix_fmt_count_planes(frame->format);
     for (int i = 0; i < nb_planes; i++) {
-        frame->linesize[i] = pool->linesize[i];
-        frame->buf[i] = av_buffer_pool_get(pool->pools[i]);
-        if (!frame->buf[i]) {
+        if (frame->data[i])
+            continue; /* already ref'd by frame_ref */
+
+        const int idx = buf_start + nb_bufs++;
+        av_assert1(idx < FF_ARRAY_ELEMS(frame->buf));
+        frame->buf[idx] = av_buffer_pool_get(pool->pools[i]);
+        if (!frame->buf[idx]) {
             av_frame_unref(frame);
             return AVERROR(ENOMEM);
         }
-        frame->data[i] = frame->buf[i]->data;
+        frame->data[i] = frame->buf[idx]->data;
+        frame->linesize[i] = pool->linesize[i];
     }
 
-    return 0;
+    return nb_bufs;
 }
 
 int sws_frame_start(SwsContext *sws, AVFrame *dst, const AVFrame *src)
@@ -1360,23 +1415,6 @@ int sws_receive_slice(SwsContext *sws, unsigned int slice_start,
                           dst, c->frame_dst->linesize, slice_start, slice_height);
 }
 
-/* Subset of av_frame_ref() that only references (video) data buffers */
-static int frame_ref(AVFrame *dst, const AVFrame *src)
-{
-    /* ref the buffers */
-    for (int i = 0; i < FF_ARRAY_ELEMS(src->buf); i++) {
-        if (!src->buf[i])
-            break;
-        dst->buf[i] = av_buffer_ref(src->buf[i]);
-        if (!dst->buf[i])
-            return AVERROR(ENOMEM);
-    }
-
-    memcpy(dst->data,     src->data,     sizeof(src->data));
-    memcpy(dst->linesize, src->linesize, sizeof(src->linesize));
-    return 0;
-}
-
 int sws_scale_frame(SwsContext *sws, AVFrame *dst, const AVFrame *src)
 {
     int ret, allocated = 0;
@@ -1418,13 +1456,28 @@ int sws_scale_frame(SwsContext *sws, AVFrame *dst, const AVFrame *src)
     memset(dst->linesize, 0, sizeof(dst->linesize));
     dst->extended_data = dst->data;
 
-    if (src->buf[0] && top->noop && (!bot || bot->noop))
-        return frame_ref(dst, src);
+    if (src->buf[0]) {
+        /* Determine end-to-end plane copy map */
+        int plane_copy[FF_ARRAY_ELEMS(top->plane_copy)];
+        memcpy(plane_copy, top->plane_copy, sizeof(plane_copy));
+        for (int i = 0; bot && i < FF_ARRAY_ELEMS(plane_copy); i++) {
+            if (bot->plane_copy[i] != plane_copy[i])
+                plane_copy[i] = -1;
+        }
 
+        ret = frame_ref(dst, src, plane_copy);
+        if (ret < 0)
+            return ret;
+    }
+
+    /* Allocate any missing buffers not yet ref'd */
     ret = frame_alloc_buffers(sws, dst);
     if (ret < 0)
         return ret;
-    allocated = 1;
+    else if (!ret)
+        return 0; /* no buffers allocated, no-op (all ref'd) */
+    else
+        allocated = 1;
 
 process_frame:
     for (int field = 0; field < (bot ? 2 : 1); field++) {
