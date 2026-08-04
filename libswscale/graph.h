@@ -66,6 +66,15 @@ typedef struct SwsPassBuffer {
     /* Optional allocation hints for optimal performance */
     int width_align;   /* Align width to multiple of this */
     int width_pad;     /* Extra padding pixels */
+
+    /**
+     * Map of planes which are directly copied from the pass input. These
+     * may be promoted from a memcpy to a refcopy.
+     *
+     * Each entry maps the output index to the corresponding input plane
+     * index, or -1 for no copythrough.
+     */
+    int plane_copy[4];
 } SwsPassBuffer;
 
 /**
@@ -129,6 +138,16 @@ typedef struct SwsGraph {
     SwsBackend backend; /* backends this graph is using, set during init() */
 
     AVBufferRef *hw_frames_ref;
+
+    /**
+     * Map of planes which directly copied from the input. These may be
+     * promoted from a memcpy to a refcopy. This requires special handling
+     * by the caller.
+     *
+     * Each entry maps the output index to the corresponding input plane
+     * index, or -1 for no copythrough.
+     */
+    int plane_copy[4];
 
     /** Sorted sequence of filter passes to apply */
     SwsPass **passes;
