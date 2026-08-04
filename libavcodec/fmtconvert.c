@@ -32,19 +32,9 @@ static void int32_to_float_fmul_scalar_c(float *dst, const int32_t *src,
         dst[i] = src[i] * mul;
 }
 
-static void int32_to_float_fmul_array8_c(FmtConvertContext *c, float *dst,
-                                         const int32_t *src, const float *mul,
-                                         int len)
-{
-    int i;
-    for (i = 0; i < len; i += 8)
-        c->int32_to_float_fmul_scalar(&dst[i], &src[i], *mul++, 8);
-}
-
 av_cold void ff_fmt_convert_init(FmtConvertContext *c)
 {
     c->int32_to_float_fmul_scalar = int32_to_float_fmul_scalar_c;
-    c->int32_to_float_fmul_array8 = int32_to_float_fmul_array8_c;
 
 #if ARCH_AARCH64
     ff_fmt_convert_init_aarch64(c);

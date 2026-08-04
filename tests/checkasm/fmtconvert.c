@@ -81,27 +81,5 @@ void checkasm_check_fmtconvert(void)
             }
         }
     }
-    if (check_func(c.int32_to_float_fmul_array8, "int32_to_float_fmul_array8")) {
-        declare_func(void, FmtConvertContext *, float *, const int32_t *,
-                     const float *, int);
-
-        for (i = 0; i < 4; i++) {
-            for (j = 0; j < FF_ARRAY_ELEMS(length); j++) {
-
-                randomize_input(length[j]);
-
-                call_ref(&c, dst0, in, scale_arr, length[j]);
-                call_new(&c, dst1, in, scale_arr, length[j]);
-
-                if (!float_near_ulp_array(dst0, dst1, 3, length[j])) {
-                    fail();
-                    fprintf(stderr, "int32_to_float_fmul_array8: len: %d\n", length[j]);
-                    break;
-                }
-
-                bench_new(&c, dst1, in, scale_arr, length[j]);
-            }
-        }
-    }
     report("fmtconvert");
 }

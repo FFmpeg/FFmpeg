@@ -57,31 +57,3 @@ cglobal int32_to_float_fmul_scalar, 4, 4, %1, dst, src, mul, len
 
 INIT_XMM sse2
 INT32_TO_FLOAT_FMUL_SCALAR 3
-
-;------------------------------------------------------------------------------
-; void ff_int32_to_float_fmul_array8(FmtConvertContext *c, float *dst, const int32_t *src,
-;                                    const float *mul, int len);
-;------------------------------------------------------------------------------
-%macro INT32_TO_FLOAT_FMUL_ARRAY8 0
-cglobal int32_to_float_fmul_array8, 5, 5, 5, c, dst, src, mul, len
-    shl     lend, 2
-    add     srcq, lenq
-    add     dstq, lenq
-    neg     lenq
-.loop:
-    movss     m0, [mulq]
-    SPLATD    m0
-    cvtdq2ps  m1, [srcq+lenq   ]
-    cvtdq2ps  m2, [srcq+lenq+16]
-    mulps     m1, m0
-    mulps     m2, m0
-    mova  [dstq+lenq   ], m1
-    mova  [dstq+lenq+16], m2
-    add     mulq, 4
-    add     lenq, 32
-    jl .loop
-    RET
-%endmacro
-
-INIT_XMM sse2
-INT32_TO_FLOAT_FMUL_ARRAY8
