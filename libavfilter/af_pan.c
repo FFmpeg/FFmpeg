@@ -211,6 +211,12 @@ static av_cold int init(AVFilterContext *ctx)
                 ret = AVERROR(EINVAL);
                 goto fail;
             }
+            if (in_ch_id < 0 || in_ch_id >= MAX_CHANNELS) {
+                av_log(ctx, AV_LOG_ERROR,
+                       "Input channel id %d is not supported\n", in_ch_id);
+                ret = AVERROR_PATCHWELCOME;
+                goto fail;
+            }
             if (used_in_ch[in_ch_id]) {
                 av_log(ctx, AV_LOG_ERROR,
                        "Can not reference in channel %d twice\n", in_ch_id);
