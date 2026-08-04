@@ -844,6 +844,9 @@ static int hvcc_array_add_nal_unit(const uint8_t *nal_buf, uint32_t nal_size,
     int ret;
     uint16_t numNalus = array->numNalus;
 
+    if (numNalus >= UINT16_MAX)
+        return AVERROR_INVALIDDATA;
+
     ret = av_reallocp_array(&array->nal, numNalus + 1, sizeof(*array->nal));
     if (ret < 0)
         return ret;
