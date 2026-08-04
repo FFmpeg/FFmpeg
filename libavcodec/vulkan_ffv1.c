@@ -191,6 +191,13 @@ static int vk_ffv1_start_frame(AVCodecContext          *avctx,
                                       NULL, 65536*4*f->slice_count*sizeof(uint32_t),
                                       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
                                       VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+        /* A megabyte per slice; fall back if there is no BAR space left */
+        if (err < 0)
+            err = ff_vk_get_pooled_buffer(&ctx->s, &fv->slice_fltmap_pool,
+                                          &fp->slice_fltmap_buf,
+                                          VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                                          NULL, 65536*4*f->slice_count*sizeof(uint32_t),
+                                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
         if (err < 0)
             return err;
     }
