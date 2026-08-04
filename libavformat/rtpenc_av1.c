@@ -177,7 +177,7 @@ void ff_rtp_send_av1(AVFormatContext *ctx, const uint8_t *frame_buf, int frame_s
             return;
         }
 
-        if ((long) obu_size > frame_size) {
+        if (obu_size > (unsigned) frame_size) {
             av_log(ctx, AV_LOG_ERROR, "AV1 OBU size %d larger than remaining frame size %d\n", obu_size, frame_size);
             return;
         }
