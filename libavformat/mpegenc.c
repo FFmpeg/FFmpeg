@@ -473,6 +473,16 @@ static av_cold int mpeg_mux_init(AVFormatContext *ctx)
         if (!stream->fifo)
             return AVERROR(ENOMEM);
     }
+
+    /* The system header is emitted, right after the pack header (which is at
+     * most 14 bytes), into the fixed 128-byte buffer used by flush_packet().
+     * Reject configurations whose system header would not fit. */
+    if (get_system_header_size(ctx) > 128 - 14) {
+        av_log(ctx, AV_LOG_ERROR,
+               "Too many streams to fit the MPEG program stream system header\n");
+        return AVERROR(EINVAL);
+    }
+
     bitrate       = 0;
     audio_bitrate = 0;
     video_bitrate = 0;
