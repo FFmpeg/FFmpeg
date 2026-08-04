@@ -126,25 +126,20 @@ cglobal atadenoise_filter_row8, 6,10,13, src, dst, srcf, w, mid, size, i, j, src
 
         punpcklwd            m7, m2
         punpcklwd            m8, m2
-        cvtdq2ps             m7, m7
-        cvtdq2ps             m8, m8
-        divps                m7, m8
-        cvttps2dq            m7, m7
-        packssdw             m7, m7
-        packuswb             m7, m7
-
-        movd        [dstq + xq], m7
-
         punpckhwd            m1, m2
         punpckhwd            m6, m2
+        cvtdq2ps             m7, m7
+        cvtdq2ps             m8, m8
         cvtdq2ps             m1, m1
         cvtdq2ps             m6, m6
+        divps                m7, m8
         divps                m1, m6
+        cvttps2dq            m7, m7
         cvttps2dq            m1, m1
-        packssdw             m1, m1
-        packuswb             m1, m1
+        packssdw             m7, m1
+        packuswb             m7, m7
 
-        movd    [dstq + xq + 4], m1
+        movq        [dstq + xq], m7
 
         add                  xq, mmsize/2
     jl .loop
@@ -251,25 +246,20 @@ cglobal atadenoise_filter_row8_serial, 6,10,12, src, dst, srcf, w, mid, size, i,
 
         punpcklwd            m7, m2
         punpcklwd            m8, m2
-        cvtdq2ps             m7, m7
-        cvtdq2ps             m8, m8
-        divps                m7, m8
-        cvttps2dq            m7, m7
-        packssdw             m7, m7
-        packuswb             m7, m7
-
-        movd        [dstq + xq], m7
-
         punpckhwd            m1, m2
         punpckhwd            m6, m2
+        cvtdq2ps             m7, m7
+        cvtdq2ps             m8, m8
         cvtdq2ps             m1, m1
         cvtdq2ps             m6, m6
+        divps                m7, m8
         divps                m1, m6
+        cvttps2dq            m7, m7
         cvttps2dq            m1, m1
-        packssdw             m1, m1
-        packuswb             m1, m1
+        packssdw             m7, m1
+        packuswb             m7, m7
 
-        movd    [dstq + xq + 4], m1
+        movq        [dstq + xq], m7
 
         add                  xq, mmsize/2
     jl .loop
