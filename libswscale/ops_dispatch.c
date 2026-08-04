@@ -475,6 +475,34 @@ static void op_pass_run(const SwsFrame *out, const SwsFrame *in, const int y,
     }
 }
 
+/* Updates the plane copy (no-op) map for this operation list */
+static void op_list_get_plane_copy(const SwsOpList *ops, SwsPass *pass)
+{
+    const SwsOp *write = ff_sws_op_list_output(ops);
+    const SwsOp *read  = ff_sws_op_list_input(ops);
+    if (!write || write->rw.mode != SWS_RW_PLANAR ||
+        !read  || read->rw.mode  != SWS_RW_PLANAR ||
+        read->type    != write->type ||
+        read->rw.frac != write->rw.frac)
+        return; /* only regular planes can be directly ref'd */
+
+    const SwsOp *prev = &ops->ops[ops->num_ops - 2];
+    int *plane_copy = pass->output->plane_copy;
+    for (int i = 0; i < write->rw.elems; i++) {
+        SwsCompFlags flags = prev->comps.flags[i];
+        if (!(flags & SWS_COMP_COPY))
+            continue;
+
+        const int out_idx = ops->plane_dst[i];
+        switch (prev->comps.dep_in[i]) {
+        case SWS_COMP(0): plane_copy[out_idx] = ops->plane_src[0]; break;
+        case SWS_COMP(1): plane_copy[out_idx] = ops->plane_src[1]; break;
+        case SWS_COMP(2): plane_copy[out_idx] = ops->plane_src[2]; break;
+        case SWS_COMP(3): plane_copy[out_idx] = ops->plane_src[3]; break;
+        }
+    }
+}
+
 static int rw_data_planes(const SwsOp *op)
 {
     /* Exclude the palette plane from the plane count, since it does not need
@@ -551,6 +579,7 @@ static int compile_single(const CompileArgs *args, const SwsOpList *ops,
                                     NULL, c.priv, c.free, output);
         if (ret >= 0) {
             (*output)->backend = c.backend->flags;
+            op_list_get_plane_copy(ops, *output);
             ff_sws_pass_link_output(*output, link);
         }
         return ret;
@@ -662,6 +691,7 @@ static int compile_single(const CompileArgs *args, const SwsOpList *ops,
         return ret;
 
     (*output)->backend = comp->backend->flags;
+    op_list_get_plane_copy(ops, *output);
     ff_sws_pass_link_output(*output, link);
     align_pass(*output, comp->block_size, comp->over_write, p->pixel_bits_out);
     if (read)
