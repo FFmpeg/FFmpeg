@@ -226,7 +226,7 @@ static int librist_read(URLContext *h, uint8_t *buf, int size)
         }
     }
 
-    size = data_block->payload_len;
+    size = FFMIN(data_block->payload_len, size);
     memcpy(buf, data_block->payload, size);
 out_free:
     rist_receiver_data_block_free2(&data_block);
