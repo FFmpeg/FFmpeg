@@ -248,7 +248,11 @@ typedef struct AVDynamicHDRPlus {
 
     /**
      * Application version in the application defining document in ST-2094
-     * suite. The value shall be set to 0.
+     * suite. CTA-861-H sets this to 1 for the HDR10+ payload carried in a
+     * Rec. ITU-T T.35 message.
+     *
+     * av_dynamic_hdr_plus_from_t35() sets this field from the parsed payload.
+     * av_dynamic_hdr_plus_to_t35() ignores it and always writes 1.
      */
     uint8_t application_version;
 

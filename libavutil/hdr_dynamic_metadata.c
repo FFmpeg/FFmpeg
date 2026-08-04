@@ -64,7 +64,7 @@ int av_dynamic_hdr_plus_from_t35(AVDynamicHDRPlus *s, const uint8_t *data,
     int ret;
 
     if (!s)
-        return AVERROR(ENOMEM);
+        return AVERROR(EINVAL);
 
     if (size > AV_HDR_PLUS_MAX_PAYLOAD_SIZE)
         return AVERROR(EINVAL);
