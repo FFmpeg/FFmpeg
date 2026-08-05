@@ -190,8 +190,11 @@ static int convert_to_aarch64_impl(SwsContext *ctx, const SwsOpList *ops, int n,
             }
         }
         break;
-    case SWS_OP_MIN:        out->uop = SWS_UOP_MIN;        break;
-    case SWS_OP_MAX:        out->uop = SWS_UOP_MAX;        break;
+    case SWS_OP_MIN:
+    case SWS_OP_MAX:
+        out->uop = (op->op == SWS_OP_MIN) ? SWS_UOP_MIN : SWS_UOP_MAX;
+        out->mask &= ff_sws_comp_mask_q4(op->clamp.limit);
+        break;
     case SWS_OP_SCALE:      out->uop = SWS_UOP_SCALE;      break;
     case SWS_OP_LINEAR:
         out->uop = (ctx->flags & SWS_BITEXACT)
