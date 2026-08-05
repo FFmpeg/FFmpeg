@@ -1,0 +1,4 @@
+pts=0|tag:lavfi.r128.M=-120.691|tag:lavfi.r128.S=-120.691|tag:lavfi.r128.I=-70.000|tag:lavfi.r128.LRA=0.000|tag:lavfi.r128.LRA.low=0.000|tag:lavfi.r128.LRA.high=0.000
+pts=4800|tag:lavfi.r128.M=-120.691|tag:lavfi.r128.S=-120.691|tag:lavfi.r128.I=-70.000|tag:lavfi.r128.LRA=0.000|tag:lavfi.r128.LRA.low=0.000|tag:lavfi.r128.LRA.high=0.000
+pts=9600|tag:lavfi.r128.M=-120.691|tag:lavfi.r128.S=-120.691|tag:lavfi.r128.I=-70.000|tag:lavfi.r128.LRA=0.000|tag:lavfi.r128.LRA.low=0.000|tag:lavfi.r128.LRA.high=0.000
+pts=14400|tag:lavfi.r128.M=-21.010|tag:lavfi.r128.S=-120.691|tag:lavfi.r128.I=-21.010|tag:lavfi.r128.LRA=0.000|tag:lavfi.r128.LRA.low=0.000|tag:lavfi.r128.LRA.high=0.000
