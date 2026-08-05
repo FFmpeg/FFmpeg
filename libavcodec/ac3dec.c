@@ -390,6 +390,26 @@ typedef struct mant_groups {
     int b4;
 } mant_groups;
 
+static av_always_inline int dequantize_coeff(int mantissa, int exponent,
+                                             int coeff_bits)
+{
+#if USE_FIXED
+    return (mantissa * (1 << coeff_bits)) >> exponent;
+#else
+    return mantissa >> exponent;
+#endif
+}
+
+#if USE_FIXED
+static av_always_inline int dequantize_dexp24_dither(int mantissa)
+{
+    int scaled = mantissa * (1 << AC3_FIXED_COEFF_BITS);
+    int round  = 1 << (AC3_FIXED_EXPONENT_MAX - 1);
+
+    return (scaled + round - (scaled < 0)) >> AC3_FIXED_EXPONENT_MAX;
+}
+#endif
+
 /**
  * Decode the transform coefficients for a particular channel
  * reference: Section 7.3 Quantization and Decoding of Mantissas
@@ -402,6 +422,11 @@ static void ac3_decode_transform_coeffs_ch(AC3DecodeContext *s, int ch_index, ma
     int8_t *exps   = s->dexps[ch_index];
     int32_t *coeffs = s->fixed_coeffs[ch_index];
     int dither     = (ch_index == CPL_CH) || s->dither_flag[ch_index];
+#if USE_FIXED
+    int coeff_bits = fixed_coeff_bits(s);
+#else
+    int coeff_bits = 0;
+#endif
     GetBitContext *gbc = &s->gbc;
     int freq;
 
@@ -411,10 +436,19 @@ static void ac3_decode_transform_coeffs_ch(AC3DecodeContext *s, int ch_index, ma
         switch (bap) {
         case 0:
             /* random noise with approximate range of -0.707 to 0.707 */
-            if (dither)
+            if (dither) {
                 mantissa = (((av_lfg_get(&s->dith_state)>>8)*181)>>8) - 5931008;
-            else
+#if USE_FIXED
+                /* At dexp 24 the dither is below half a Q0 step. Keep two
+                 * fractional bits so it is not truncated to -1 or 0. */
+                if (coeff_bits && exps[freq] == AC3_FIXED_EXPONENT_MAX) {
+                    coeffs[freq] = dequantize_dexp24_dither(mantissa);
+                    continue;
+                }
+#endif
+            } else {
                 mantissa = 0;
+            }
             break;
         case 1:
             if (m->b1) {
@@ -466,7 +500,7 @@ static void ac3_decode_transform_coeffs_ch(AC3DecodeContext *s, int ch_index, ma
             mantissa = (unsigned)get_sbits(gbc, ff_ac3_quantization_tab[bap]) << (24 - ff_ac3_quantization_tab[bap]);
             break;
         }
-        coeffs[freq] = mantissa >> exps[freq];
+        coeffs[freq] = dequantize_coeff(mantissa, exps[freq], coeff_bits);
     }
 }
 
@@ -500,7 +534,8 @@ static inline void decode_transform_coeffs_ch(AC3DecodeContext *s, int blk,
         if (CONFIG_EAC3_DECODER && !blk)
             ff_eac3_decode_transform_coeffs_aht_ch(s, ch);
         for (bin = s->start_freq[ch]; bin < s->end_freq[ch]; bin++) {
-            s->fixed_coeffs[ch][bin] = s->pre_mantissa[ch][bin][blk] >> s->dexps[ch][bin];
+            s->fixed_coeffs[ch][bin] = dequantize_coeff(
+                s->pre_mantissa[ch][bin][blk], s->dexps[ch][bin], 0);
         }
     }
 }
@@ -571,6 +606,9 @@ static void do_rematrixing(AC3DecodeContext *s)
 static inline void do_imdct(AC3DecodeContext *s, int channels, int offset)
 {
     int ch;
+#if USE_FIXED
+    int window_bits = 8 + fixed_coeff_bits(s);
+#endif
 
     for (ch = 1; ch <= channels; ch++) {
         if (s->block_switch[ch]) {
@@ -581,7 +619,7 @@ static inline void do_imdct(AC3DecodeContext *s, int channels, int offset)
             s->tx_fn_128(s->tx_128, s->tmp_output, x, sizeof(INTFLOAT));
 #if USE_FIXED
             s->fdsp->vector_fmul_window_scaled(s->outptr[ch - 1], s->delay[ch - 1 + offset],
-                                       s->tmp_output, s->window, 128, 8);
+                                       s->tmp_output, s->window, 128, window_bits);
 #else
             s->fdsp->vector_fmul_window(s->outptr[ch - 1], s->delay[ch - 1 + offset],
                                        s->tmp_output, s->window, 128);
@@ -593,7 +631,7 @@ static inline void do_imdct(AC3DecodeContext *s, int channels, int offset)
             s->tx_fn_256(s->tx_256, s->tmp_output, s->transform_coeffs[ch], sizeof(INTFLOAT));
 #if USE_FIXED
             s->fdsp->vector_fmul_window_scaled(s->outptr[ch - 1], s->delay[ch - 1 + offset],
-                                       s->tmp_output, s->window, 128, 8);
+                                       s->tmp_output, s->window, 128, window_bits);
 #else
             s->fdsp->vector_fmul_window(s->outptr[ch - 1], s->delay[ch - 1 + offset],
                                        s->tmp_output, s->window, 128);
@@ -1287,7 +1325,11 @@ static int decode_audio_block(AC3DecodeContext *s, int blk, int offset)
             gain = s->dynamic_range[audio_channel];
 
 #if USE_FIXED
-        scale_coefs(s->transform_coeffs[ch], s->fixed_coeffs[ch], gain, 256);
+        if (fixed_coeff_bits(s))
+            scale_coefs_q2(s->transform_coeffs[ch], s->fixed_coeffs[ch], gain,
+                           256);
+        else
+            scale_coefs(s->transform_coeffs[ch], s->fixed_coeffs[ch], gain, 256);
 #else
         if (s->target_level != 0)
           gain = gain * s->level_gain[audio_channel];
@@ -1356,6 +1398,9 @@ static int ac3_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     AC3DecodeContext *s = avctx->priv_data;
     int blk, ch, err, offset, ret;
     int i;
+#if USE_FIXED
+    int previous_coeff_bits;
+#endif
     int skip = 0, got_independent_frame = 0;
     const uint8_t *channel_map;
     uint8_t extended_channel_map[EAC3_MAX_CHANNELS];
@@ -1390,12 +1435,22 @@ static int ac3_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
     buf = s->input_buffer;
 dependent_frame:
+#if USE_FIXED
+    previous_coeff_bits = fixed_coeff_bits(s);
+#endif
     /* initialize the GetBitContext with the start of valid AC-3 Frame */
     if ((ret = init_get_bits8(&s->gbc, buf, buf_size)) < 0)
         return ret;
 
     /* parse the syncinfo */
     err = parse_frame_header(s);
+
+#if USE_FIXED
+    /* Do not mix Q0 and Q2 overlap samples if a malformed or explicitly
+     * forced stream switches between E-AC-3 and AC-3. */
+    if (!err && previous_coeff_bits != fixed_coeff_bits(s))
+        memset(s->delay, 0, sizeof(s->delay));
+#endif
 
     if (err) {
         switch (err) {

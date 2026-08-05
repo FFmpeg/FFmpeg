@@ -55,6 +55,17 @@
 
 #include "ac3dec.h"
 
+/* Keep two fractional bits in fixed-point transform coefficients. */
+#define AC3_FIXED_COEFF_BITS 2
+#define AC3_FIXED_EXPONENT_MAX 24
+
+static av_always_inline int fixed_coeff_bits(const AC3DecodeContext *s)
+{
+    /* ac3_fixed normally decodes AC-3. Keep Q0 when it is explicitly forced
+     * to decode E-AC-3, whose AHT coefficient bounds are different. */
+    return s->eac3 ? 0 : AC3_FIXED_COEFF_BITS;
+}
+
 static const int end_freq_inv_tab[8] =
 {
     50529027, 44278013, 39403370, 32292987, 27356480, 23729101, 20951060, 18755316
@@ -121,6 +132,49 @@ static void scale_coefs (
           dst[i+6] = src[i+6] * mul;
           dst[i+7] = src[i+7] * mul;
       }
+    }
+}
+
+static void scale_coefs_q2(int32_t *dst, const int32_t *src, int dynrng,
+                           int len)
+{
+    int i, shift;
+    int mul;
+
+    mul = (dynrng & 0x1f) + 0x20;
+    shift = 4 - (sign_extend(dynrng, 9) >> 5);
+
+    /* AC-3 mantissas have magnitude at most 2^23, hence Q2 coefficients
+     * have magnitude at most 2^25. Coupling uses MULH(coeff * 2^4, coord)
+     * with coord < 2^31, so coupled coefficients are below 2^28.
+     * Rematrixing can at most double them, keeping src below 2^29. */
+    if (dynrng == 32) {
+        for (i = 0; i < len; i++)
+            dst[i] = src[i] * 4;
+        return;
+    }
+
+    if (shift >= 4) {
+        const int round = 1 << (shift - 1);
+        const int unit  = 1 << shift;
+
+        /* With shift >= 4, quotient * mul is below 2^25 * 63. Splitting
+         * quotient and remainder therefore keeps both products in int32_t. */
+        for (i = 0; i < len; i++) {
+            int quotient  = src[i] >> shift;
+            int remainder = src[i] - quotient * unit;
+
+            dst[i] = quotient * mul + ((remainder * mul + round) >> shift);
+        }
+    } else if (shift > 0) {
+        const int round = 1 << (shift - 1);
+
+        for (i = 0; i < len; i++)
+            dst[i] = av_clipl_int32(((int64_t)src[i] * mul + round) >> shift);
+    } else {
+        mul <<= -shift;
+        for (i = 0; i < len; i++)
+            dst[i] = av_clipl_int32((int64_t)src[i] * mul);
     }
 }
 

@@ -102,11 +102,34 @@ fate-ac3-fixed-encode-3: tests/data/asynth-44100-6.wav
 fate-ac3-fixed-encode-3: SRC = $(TARGET_PATH)/tests/data/asynth-44100-6.wav
 fate-ac3-fixed-encode-3: CMD = framecrc -i $(SRC) -c:a ac3_fixed -flags2 +fixed_frame_size -ab 256k -af aresample,atrim=start_sample=0:end_sample=12096
 
+# With coupling and rematrixing disabled, this produces bap=0, dexp=24 bins
+# whose dither affects the decoded output.
+tests/data/fate/ac3-fixed-dexp24.ac3: TAG = GEN
+tests/data/fate/ac3-fixed-dexp24.ac3: tests/data/asynth-44100-2.wav
+tests/data/fate/ac3-fixed-dexp24.ac3: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data/fate
+	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< \
+	-hide_banner -loglevel error -nostdin \
+	-i $(TARGET_PATH)/tests/data/asynth-44100-2.wav \
+	-c:a ac3_fixed -b:a 192k \
+	-channel_coupling 0 -stereo_rematrixing 0 -flags +bitexact \
+	-frames:a 173 -f ac3 -y $(TARGET_PATH)/$@
+
+FATE_AC3_FIXED_DEXP24-$(call ALLYES, FFMPEG WAV_DEMUXER ARESAMPLE_FILTER ATRIM_FILTER \
+                                    AC3_FIXED_ENCODER FRAMECRC_MUXER \
+                                    AC3_MUXER AC3_DEMUXER AC3_FIXED_DECODER \
+                                    PCM_S16LE_DECODER PCM_S16LE_ENCODER \
+                                    FILE_PROTOCOL) += fate-ac3-fixed-dexp24
+fate-ac3-fixed-dexp24: tests/data/fate/ac3-fixed-dexp24.ac3
+fate-ac3-fixed-dexp24: CMD = framecrc -auto_conversion_filters -c ac3_fixed \
+                                   -i $(TARGET_PATH)/tests/data/fate/ac3-fixed-dexp24.ac3 \
+                                   -af atrim=start_sample=264192
+
 FATE_EAC3-$(call ALLYES, EAC3_DEMUXER EAC3_MUXER EAC3_CORE_BSF) += fate-eac3-core-bsf
 fate-eac3-core-bsf: CMD = md5pipe -i $(TARGET_SAMPLES)/eac3/the_great_wall_7.1.eac3 -c:a copy -bsf:a eac3_core -fflags +bitexact -f eac3
 fate-eac3-core-bsf: CMP = oneline
 fate-eac3-core-bsf: REF = b704bf851e99b7442e9bed368b60e6ca
 
 FATE_SAMPLES_AVCONV += $(FATE_AC3-yes) $(FATE_EAC3-yes)
+FATE_FFMPEG += $(FATE_AC3_FIXED_DEXP24-yes)
 
-fate-ac3: $(FATE_AC3-yes) $(FATE_EAC3-yes)
+fate-ac3: $(FATE_AC3-yes) $(FATE_EAC3-yes) $(FATE_AC3_FIXED_DEXP24-yes)
