@@ -32,5 +32,5 @@ $(SUBDIR)x86/ops_int.o: $(SUBDIR)x86/uops_macros.gen.asm
 $(SUBDIR)x86/ops_float.o: $(SUBDIR)x86/uops_macros.gen.asm
 $(SUBDIR)x86/uops_macros.gen.asm: $(SRC_PATH)/libswscale/x86/uops_macros.asm.h \
                                   $(SRC_PATH)/libswscale/uops_macros.h
-	$(HOSTCC) $(HOSTCC_E) $(CPPFLAGS) $<
+	$(HOSTCC) $(HOSTCC_E) $(HOSTCPPFLAGS) $<
 endif
