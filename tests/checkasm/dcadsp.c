@@ -86,6 +86,26 @@ static void test_lfe_fir_fixed(void)
     bench_new(dst1, lfe + LFE_HISTORY, coeffs, N);
 }
 
+static void test_lfe_x96_fixed(const DCADSPContext *dca)
+{
+    LOCAL_ALIGNED_16(int32_t, dst0, [2 * BUF_SIZE]);
+    LOCAL_ALIGNED_16(int32_t, dst1, [2 * BUF_SIZE]);
+    LOCAL_ALIGNED_16(int32_t, src,  [BUF_SIZE]);
+    int32_t hist0, hist1;
+
+    declare_func(void, int32_t *dst, const int32_t *src, int32_t *hist, ptrdiff_t len);
+
+    if (check_func(dca->lfe_x96_fixed, "lfe_x96_fixed")) {
+        randomize(src, BUF_SIZE);
+        hist0 = hist1 = (int16_t)rnd();
+        call_ref(dst0, src, &hist0, BUF_SIZE);
+        call_new(dst1, src, &hist1, BUF_SIZE);
+        if (memcmp(dst0, dst1, 2 * BUF_SIZE * sizeof(int32_t)))
+            fail();
+        bench_new(dst1, src, &hist1, BUF_SIZE);
+    }
+}
+
 void checkasm_check_dcadsp(void)
 {
     DCADSPContext dca;
@@ -98,4 +118,7 @@ void checkasm_check_dcadsp(void)
     if (check_func(dca.lfe_fir_fixed, "lfe_fir_fixed"))
         test_lfe_fir_fixed();
     report("lfe_fir_fixed");
+
+    test_lfe_x96_fixed(&dca);
+    report("lfe_x96_fixed");
 }
