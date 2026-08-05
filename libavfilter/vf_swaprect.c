@@ -18,6 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <math.h>
+
 #include "libavutil/avassert.h"
 #include "libavutil/eval.h"
 #include "libavutil/imgutils.h"
@@ -70,6 +72,19 @@ static int query_formats(const AVFilterContext *ctx,
 
 static const char *const var_names[] = {   "w",   "h",   "a",   "n",   "t",   "sar",   "dar",        NULL };
 enum                                   { VAR_W, VAR_H, VAR_A, VAR_N, VAR_T, VAR_SAR, VAR_DAR, VAR_VARS_NB };
+
+static int trunc_double_to_int(int *dst, double value)
+{
+    if (!isfinite(value))
+        return AVERROR(EINVAL);
+
+    value = trunc(value);
+    if (value < INT_MIN || value > INT_MAX)
+        return AVERROR(EINVAL);
+
+    *dst = value;
+    return 0;
+}
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
@@ -138,7 +153,23 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     if (ret < 0)
         goto fail;
 
-    w = dw; h = dh; x1[0] = dx1; y1[0] = dy1; x2[0] = dx2; y2[0] = dy2;
+    if (trunc_double_to_int(&w, dw)       < 0 ||
+        trunc_double_to_int(&h, dh)       < 0 ||
+        trunc_double_to_int(&x1[0], dx1)  < 0 ||
+        trunc_double_to_int(&y1[0], dy1)  < 0 ||
+        trunc_double_to_int(&x2[0], dx2)  < 0 ||
+        trunc_double_to_int(&y2[0], dy2)  < 0) {
+        av_log(ctx, AV_LOG_ERROR,
+               "Rectangle expression result is not representable as an integer.\n");
+        ret = AVERROR(EINVAL);
+        goto fail;
+    }
+
+    if (w <= 0 || h <= 0) {
+        av_log(ctx, AV_LOG_ERROR, "Rectangle dimensions must be positive.\n");
+        ret = AVERROR(EINVAL);
+        goto fail;
+    }
 
     x1[0] = av_clip(x1[0], 0, inlink->w - 1);
     y1[0] = av_clip(y1[0], 0, inlink->h - 1);
