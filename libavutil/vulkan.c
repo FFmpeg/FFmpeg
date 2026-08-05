@@ -2355,7 +2355,7 @@ int ff_vk_shader_link(FFVulkanContext *s, FFVulkanShader *shd,
         av_log(s, AV_LOG_VERBOSE, " %zu compressed,", input_size);
     av_log(s, AV_LOG_VERBOSE, " %zu SPIR-V", spirv_len);
     if (binary_size != spirv_len)
-        av_log(s, AV_LOG_VERBOSE, ", %zu binary", spirv_len);
+        av_log(s, AV_LOG_VERBOSE, ", %zu binary", binary_size);
     av_log(s, AV_LOG_VERBOSE, "\n");
 
 end:
