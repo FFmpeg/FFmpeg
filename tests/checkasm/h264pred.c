@@ -146,7 +146,7 @@ static void check_pred4x4(H264PredContext *h, uint8_t *buf0, uint8_t *buf1,
     if (chroma_format == 1) {
         uint8_t *topright = buf0 + 2*16;
         int pred_mode;
-        declare_func_emms(AV_CPU_FLAG_MMX | AV_CPU_FLAG_MMXEXT, void, uint8_t *src, const uint8_t *topright, ptrdiff_t stride);
+        declare_func(void, uint8_t *src, const uint8_t *topright, ptrdiff_t stride);
 
         for (pred_mode = 0; pred_mode < 15; pred_mode++) {
             if (check_pred_func(h->pred4x4[pred_mode], "4x4", pred4x4_modes[codec][pred_mode])) {
