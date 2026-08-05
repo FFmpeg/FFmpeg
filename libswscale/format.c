@@ -1829,6 +1829,20 @@ int ff_sws_apply_lut3d(SwsContext *ctx, SwsPixelType type, SwsOpList *ops,
     return 0;
 }
 
+static int fmt_convert(SwsContext *ctx, const SwsFormat *src, const SwsFormat *dst,
+                       const SwsLut3D *lut3d, SwsOpList *ops, bool *incomplete)
+{
+    const SwsPixelType type = SWS_PIXEL_F32;
+    RET(ff_sws_decode_pixfmt(ops, src));
+    RET(ff_sws_decode_colors(ctx, type, ops, src, incomplete));
+    RET(ff_sws_add_filters(ctx, type, ops, src, dst));
+    if (lut3d)
+        RET(ff_sws_apply_lut3d(ctx, type, ops, lut3d));
+    RET(ff_sws_encode_colors(ctx, type, ops, src, dst, incomplete));
+    RET(ff_sws_encode_pixfmt(ops, dst));
+    return 0;
+}
+
 int ff_sws_op_list_generate(SwsContext *ctx, const SwsFormat *src,
                             const SwsFormat *dst, const SwsLut3D *lut3d,
                             SwsOpList **out_ops, bool *incomplete)
@@ -1849,25 +1863,7 @@ int ff_sws_op_list_generate(SwsContext *ctx, const SwsFormat *src,
     ops->src = *src;
     ops->dst = *dst;
 
-    const SwsPixelType type = SWS_PIXEL_F32;
-    int ret = ff_sws_decode_pixfmt(ops, src);
-    if (ret < 0)
-        goto fail;
-    ret = ff_sws_decode_colors(ctx, type, ops, src, incomplete);
-    if (ret < 0)
-        goto fail;
-    ret = ff_sws_add_filters(ctx, type, ops, src, dst);
-    if (ret < 0)
-        goto fail;
-    if (lut3d) {
-        ret = ff_sws_apply_lut3d(ctx, type, ops, lut3d);
-        if (ret < 0)
-            goto fail;
-    }
-    ret = ff_sws_encode_colors(ctx, type, ops, src, dst, incomplete);
-    if (ret < 0)
-        goto fail;
-    ret = ff_sws_encode_pixfmt(ops, dst);
+    int ret = fmt_convert(ctx, src, dst, lut3d, ops, incomplete);
     if (ret < 0)
         goto fail;
 
