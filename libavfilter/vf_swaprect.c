@@ -101,42 +101,42 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                                  NULL, NULL, NULL, NULL,
                                  0, 0, ctx);
     if (ret < 0)
-        return ret;
+        goto fail;
 
     ret = av_expr_parse_and_eval(&dh, s->h,
                                  var_names, &var_values[0],
                                  NULL, NULL, NULL, NULL,
                                  0, 0, ctx);
     if (ret < 0)
-        return ret;
+        goto fail;
 
     ret = av_expr_parse_and_eval(&dx1, s->x1,
                                  var_names, &var_values[0],
                                  NULL, NULL, NULL, NULL,
                                  0, 0, ctx);
     if (ret < 0)
-        return ret;
+        goto fail;
 
     ret = av_expr_parse_and_eval(&dy1, s->y1,
                                  var_names, &var_values[0],
                                  NULL, NULL, NULL, NULL,
                                  0, 0, ctx);
     if (ret < 0)
-        return ret;
+        goto fail;
 
     ret = av_expr_parse_and_eval(&dx2, s->x2,
                                  var_names, &var_values[0],
                                  NULL, NULL, NULL, NULL,
                                  0, 0, ctx);
     if (ret < 0)
-        return ret;
+        goto fail;
 
     ret = av_expr_parse_and_eval(&dy2, s->y2,
                                  var_names, &var_values[0],
                                  NULL, NULL, NULL, NULL,
                                  0, 0, ctx);
     if (ret < 0)
-        return ret;
+        goto fail;
 
     w = dw; h = dh; x1[0] = dx1; y1[0] = dy1; x2[0] = dx2; y2[0] = dy2;
 
@@ -194,6 +194,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
 
     return ff_filter_frame(outlink, in);
+
+fail:
+    av_frame_free(&in);
+    return ret;
 }
 
 static int config_input(AVFilterLink *inlink)
