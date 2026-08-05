@@ -175,47 +175,7 @@ void ff_sws_chroma_pos(const SwsFormat *fmt, bool *incomplete,
                        int *out_xpos, int *out_ypos);
 
 typedef struct SwsOpList SwsOpList;
-typedef enum SwsPixelType SwsPixelType;
-
-/**
- * Append a set of operations for decoding/encoding raw pixels. This will
- * handle input read/write, swizzling, shifting and byte swapping.
- *
- * Returns 0 on success, or a negative error code on failure.
- */
-int ff_sws_decode_pixfmt(SwsOpList *ops, const SwsFormat *fmt);
-int ff_sws_encode_pixfmt(SwsOpList *ops, const SwsFormat *fmt);
-
-/**
- * Append a set of operations for transforming decoded pixel values to/from
- * normalized RGB in the specified gamut and pixel type.
- *
- * Returns 0 on success, or a negative error code on failure.
- */
-int ff_sws_decode_colors(SwsContext *ctx, SwsPixelType type, SwsOpList *ops,
-                         const SwsFormat *fmt, bool *incomplete);
-int ff_sws_encode_colors(SwsContext *ctx, SwsPixelType type, SwsOpList *ops,
-                         const SwsFormat *src, const SwsFormat *dst,
-                         bool *incomplete);
-
-/**
- * Append a set of operations for scaling pixels to a different resolution.
- *
- * Returns 0 on success, or a negative error code on failure.
- */
-int ff_sws_add_filters(SwsContext *ctx, SwsPixelType type, SwsOpList *ops,
-                       const SwsFormat *src, const SwsFormat *dst);
-
-/**
- * Append a set of operations for applying a gamut/tone mapping 3D LUT to
- * the pixels. The input and output domain are assumed to be normalized
- * floating point RGBA in the range [0, 1].
- *
- * Returns 0 on success, or a negative error code on failure.
- */
 typedef struct SwsLut3D SwsLut3D;
-int ff_sws_apply_lut3d(SwsContext *ctx, SwsPixelType type, SwsOpList *ops,
-                       const SwsLut3D *lut3d);
 
 /**
  * Generate an SwsOpList defining a conversion from `src` to `dst`, with an

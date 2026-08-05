@@ -1085,7 +1085,8 @@ static inline AVRational64 intmax_q64(int bits)
     return Q(UINT64_MAX >> (64 - bits));
 }
 
-int ff_sws_decode_pixfmt(SwsOpList *ops, const SwsFormat *fmt)
+/* Decode raw pixel values (read, swap, unpack, swizzle, shift, clear) */
+static int decode_pixfmt(SwsOpList *ops, const SwsFormat *fmt)
 {
     const AVPixFmtDescriptor *desc = fmt_desc_decoded(fmt->format);
     SwsPixelType pixel_type, raw_type;
@@ -1173,7 +1174,8 @@ int ff_sws_decode_pixfmt(SwsOpList *ops, const SwsFormat *fmt)
     return 0;
 }
 
-int ff_sws_encode_pixfmt(SwsOpList *ops, const SwsFormat *fmt)
+/* Encode raw pixel values (shift, swizzle, pack, swap, write) */
+static int encode_pixfmt(SwsOpList *ops, const SwsFormat *fmt)
 {
     const AVPixFmtDescriptor *desc = fmt_desc_decoded(fmt->format);
     SwsPixelType pixel_type, raw_type;
@@ -1497,8 +1499,9 @@ linear_mat3(const AVRational m00, const AVRational m01, const AVRational m02,
     }};
 }
 
-int ff_sws_decode_colors(SwsContext *ctx, SwsPixelType type,
-                         SwsOpList *ops, const SwsFormat *fmt, bool *incomplete)
+/* Transform decoded pixel values to normalized RGB */
+static int decode_colors(SwsContext *ctx, SwsPixelType type, SwsOpList *ops,
+                         const SwsFormat *fmt, bool *incomplete)
 {
     const AVLumaCoefficients *c = av_csp_luma_coeffs_from_avcsp(fmt->csp);
     const SwsPixelType pixel_type = fmt_pixel_type(fmt->format);
@@ -1589,9 +1592,10 @@ int ff_sws_decode_colors(SwsContext *ctx, SwsPixelType type,
     return AVERROR(EINVAL);
 }
 
-int ff_sws_encode_colors(SwsContext *ctx, SwsPixelType type,
-                         SwsOpList *ops, const SwsFormat *src,
-                         const SwsFormat *dst, bool *incomplete)
+/* Transform decoded pixel values from normalized RGB */
+static int encode_colors(SwsContext *ctx, SwsPixelType type, SwsOpList *ops,
+                         const SwsFormat *src, const SwsFormat *dst,
+                         bool *incomplete)
 {
     const AVLumaCoefficients *c = av_csp_luma_coeffs_from_avcsp(dst->csp);
     const SwsPixelType pixel_type = fmt_pixel_type(dst->format);
@@ -1761,7 +1765,7 @@ static int add_filter(SwsContext *ctx, SwsPixelType type, SwsOpList *ops,
     });
 }
 
-int ff_sws_add_filters(SwsContext *ctx, SwsPixelType type, SwsOpList *ops,
+static int add_filters(SwsContext *ctx, SwsPixelType type, SwsOpList *ops,
                        const SwsFormat *src, const SwsFormat *dst)
 {
     /**
@@ -1776,7 +1780,8 @@ int ff_sws_add_filters(SwsContext *ctx, SwsPixelType type, SwsOpList *ops,
     return add_filter(ctx, type, ops, SWS_OP_FILTER_V, src->height, dst->height);
 }
 
-int ff_sws_apply_lut3d(SwsContext *ctx, SwsPixelType type, SwsOpList *ops,
+/* The input and output domain are assumed to be normalized [0, 1] RGBA */
+static int apply_lut3d(SwsContext *ctx, SwsPixelType type, SwsOpList *ops,
                        const SwsLut3D *lut3d)
 {
     /* Unnormalize to LUT input domain and clamp */
@@ -1833,13 +1838,13 @@ static int fmt_convert(SwsContext *ctx, const SwsFormat *src, const SwsFormat *d
                        const SwsLut3D *lut3d, SwsOpList *ops, bool *incomplete)
 {
     const SwsPixelType type = SWS_PIXEL_F32;
-    RET(ff_sws_decode_pixfmt(ops, src));
-    RET(ff_sws_decode_colors(ctx, type, ops, src, incomplete));
-    RET(ff_sws_add_filters(ctx, type, ops, src, dst));
+    RET(decode_pixfmt(ops, src));
+    RET(decode_colors(ctx, type, ops, src, incomplete));
+    RET(add_filters(ctx, type, ops, src, dst));
     if (lut3d)
-        RET(ff_sws_apply_lut3d(ctx, type, ops, lut3d));
-    RET(ff_sws_encode_colors(ctx, type, ops, src, dst, incomplete));
-    RET(ff_sws_encode_pixfmt(ops, dst));
+        RET(apply_lut3d(ctx, type, ops, lut3d));
+    RET(encode_colors(ctx, type, ops, src, dst, incomplete));
+    RET(encode_pixfmt(ops, dst));
     return 0;
 }
 
