@@ -111,3 +111,41 @@ function ff_lfe_fir1_float_neon, export=1
         b.gt            .Louter1
         ret
 endfunc
+
+function ff_lfe_x96_fixed_neon, export=1
+        ldr             w4, [x2]
+        dup             v2.4s, w4
+        mov             w4, #0x013F
+        movk            w4, #0x0020, lsl #16
+        dup             v3.4s, w4
+        mov             w4, #0xFEC1
+        movk            w4, #0x005F, lsl #16
+        dup             v4.4s, w4
+.Lx96d_loop:
+        ld1             {v0.4s}, [x1], #16
+        subs            x3, x3, #4
+        ext             v1.16b, v2.16b, v0.16b, #12
+        smull           v5.2d, v0.2s, v3.2s
+        smull2          v6.2d, v0.4s, v3.4s
+        smlal           v5.2d, v1.2s, v4.2s
+        smlal2          v6.2d, v1.4s, v4.4s
+        smull           v7.2d,  v0.2s, v4.2s
+        smull2          v16.2d, v0.4s, v4.4s
+        smlal           v7.2d,  v1.2s, v3.2s
+        smlal2          v16.2d, v1.4s, v3.4s
+        mov             v2.16b, v0.16b
+        sqrshrn         v17.2s, v5.2d, #23
+        sqrshrn2        v17.4s, v6.2d, #23
+        sqrshrn         v18.2s, v7.2d, #23
+        sqrshrn2        v18.4s, v16.2d, #23
+        sqshl           v17.4s, v17.4s, #8
+        sqshl           v18.4s, v18.4s, #8
+        sshr            v17.4s, v17.4s, #8
+        sshr            v18.4s, v18.4s, #8
+        zip1            v19.4s, v17.4s, v18.4s
+        zip2            v20.4s, v17.4s, v18.4s
+        st1             {v19.4s, v20.4s}, [x0], #32
+        b.gt            .Lx96d_loop
+        st1             {v2.s}[3], [x2]
+        ret
+endfunc

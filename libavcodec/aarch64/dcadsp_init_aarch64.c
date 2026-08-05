@@ -30,6 +30,8 @@ void ff_lfe_fir0_float_neon(float *pcm_samples, const int32_t *lfe_samples,
                             const float *filter_coeff, ptrdiff_t npcmblocks);
 void ff_lfe_fir1_float_neon(float *pcm_samples, const int32_t *lfe_samples,
                             const float *filter_coeff, ptrdiff_t npcmblocks);
+void ff_lfe_x96_fixed_neon(int32_t *dst, const int32_t *src,
+                           int32_t *hist, ptrdiff_t len);
 
 av_cold void ff_dcadsp_init_aarch64(DCADSPContext *s)
 {
@@ -38,5 +40,6 @@ av_cold void ff_dcadsp_init_aarch64(DCADSPContext *s)
     if (have_neon(cpu_flags)) {
         s->lfe_fir_float[0] = ff_lfe_fir0_float_neon;
         s->lfe_fir_float[1] = ff_lfe_fir1_float_neon;
+        s->lfe_x96_fixed    = ff_lfe_x96_fixed_neon;
     }
 }
