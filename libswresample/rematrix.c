@@ -287,13 +287,9 @@ static void build_matrix(const AVChannelLayout *in_ch_layout, const AVChannelLay
             if (av_channel_layout_index_from_channel(in_ch_layout, AV_CHAN_TOP_FRONT_CENTER) >= 0)
                 matrix[TOP_FRONT_CENTER][TOP_FRONT_CENTER] = center_mix_level * sqrt(2);
         } else if (av_channel_layout_index_from_channel(out_ch_layout, AV_CHAN_FRONT_LEFT) >= 0) {
-            if (av_channel_layout_index_from_channel(in_ch_layout, AV_CHAN_FRONT_LEFT) >= 0) {
-                matrix[FRONT_LEFT ][TOP_FRONT_LEFT ] += M_SQRT1_2;
-                matrix[FRONT_RIGHT][TOP_FRONT_RIGHT] += M_SQRT1_2;
-            } else {
-                matrix[FRONT_LEFT ][TOP_FRONT_LEFT ] += 1.0;
-                matrix[FRONT_RIGHT][TOP_FRONT_RIGHT] += 1.0;
-            }
+            /* U+030 -> M+030 in ITU-R BS.2127-1, Table 16. */
+            matrix[FRONT_LEFT ][TOP_FRONT_LEFT ] += 1.0;
+            matrix[FRONT_RIGHT][TOP_FRONT_RIGHT] += 1.0;
         } else if (av_channel_layout_index_from_channel(out_ch_layout, AV_CHAN_FRONT_CENTER) >= 0) {
             matrix[FRONT_CENTER][TOP_FRONT_LEFT ] += M_SQRT1_2;
             matrix[FRONT_CENTER][TOP_FRONT_RIGHT] += M_SQRT1_2;
