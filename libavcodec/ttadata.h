@@ -23,7 +23,7 @@
 
 #include <stdint.h>
 
-#define MAX_ORDER 16
+#define MAX_ORDER 8
 typedef struct TTAFilter {
     int32_t shift, round, error;
     int32_t qm[MAX_ORDER];
