@@ -20,6 +20,8 @@
 ;* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ;******************************************************************************
 
+%include "config_components.asm"
+
 %include "libavutil/x86/x86util.asm"
 
 SECTION_RODATA
@@ -29,9 +31,9 @@ pd_1224:  dd 1, 2, 2, 4
 
 SECTION .text
 
-%macro TTA_FILTER 2
+%macro TTA_FILTER 2-3
 INIT_XMM %1
-cglobal tta_filter_process, 5,5,%2, qm, dx, dl, error, in, shift, round
+cglobal tta%3_filter_process, 5,5,%2, qm, dx, dl, error, in, shift, round
     mova       m2, [qmq       ]
     mova       m3, [qmq + 0x10]
     mova       m4, [dxq       ]
@@ -94,6 +96,15 @@ cglobal tta_filter_process, 5,5,%2, qm, dx, dl, error, in, shift, round
     mova       [dlq       ], m2
     mova       [dxq       ], m5
     mova       [dxq + 0x10], m4
+
+%ifidn %3,enc
+    movd       m2, shiftm           ;
+    movd       m0, [inq]            ;
+    psrad      m6, m2               ;
+    psubd      m3, m0, m6           ;
+    movd       [inq], m3            ; *in -= (sum >> filter->shift);
+    movd       [errorq], m3         ; filter->error = *in;
+%else
     movd       m0, [inq]            ; filter->error = *in;
     movd       [errorq], m0         ;
 
@@ -101,6 +112,7 @@ cglobal tta_filter_process, 5,5,%2, qm, dx, dl, error, in, shift, round
     psrad      m6, m2               ;
     paddd      m0, m6               ;
     movd       [inq], m0            ;
+%endif
 
     psrldq     m1, 4                ;
     pslldq     m0, 12               ; filter->dl[4] = -filter->dl[5];
@@ -115,5 +127,12 @@ cglobal tta_filter_process, 5,5,%2, qm, dx, dl, error, in, shift, round
     RET
 %endmacro
 
+%if CONFIG_TTA_DECODER
 TTA_FILTER ssse3, 8
 TTA_FILTER sse4,  7
+%endif
+
+%if CONFIG_TTA_ENCODER
+TTA_FILTER ssse3, 8, enc
+TTA_FILTER sse4,  7, enc
+%endif
