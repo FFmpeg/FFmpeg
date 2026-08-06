@@ -34,6 +34,22 @@
 #include "libavutil/mem.h"
 #include "libavutil/mem_internal.h"
 
+typedef struct CustomTest {
+    struct CustomTest *prev;
+    AVCRC ctx[1024];
+} CustomTest;
+
+static CustomTest *ctx_list = NULL;
+
+void checkasm_uninit_crc(void)
+{
+    for (CustomTest *cur = ctx_list; cur;) {
+        CustomTest *prev = cur->prev;
+        av_free(cur);
+        cur = prev;
+    }
+    ctx_list = NULL;
+}
 
 static void check_crc(const AVCRC *table_new, const char *name, unsigned idx)
 {
@@ -84,10 +100,6 @@ void checkasm_check_crc(void)
     for (unsigned i = 0; i < AV_CRC_MAX; ++i)
         check_crc(av_crc_get_table(i), tests[i], i);
 
-    static struct CustomTest {
-        struct CustomTest *prev;
-        AVCRC ctx[1024];
-    } *ctx = NULL;
     struct CustomTest *new = av_mallocz(sizeof(*new));
     static int le, bits;
     static uint32_t poly;
@@ -95,19 +107,19 @@ void checkasm_check_crc(void)
     if (!new)
         fail();
 
-    if (!ctx) {
+    if (!ctx_list) {
         le   = rnd() & 1;
         bits = 8 + rnd() % 25; // av_crc_init() accepts between 8 and 32 bits
         poly = rnd() >> (32 - bits);
     }
     av_assert0(av_crc_init(new->ctx, le, bits, poly, sizeof(new->ctx)) >= 0);
-    if (ctx && !memcmp(ctx->ctx, new->ctx, sizeof(new->ctx))) {
+    if (ctx_list && !memcmp(ctx_list->ctx, new->ctx, sizeof(new->ctx))) {
         av_free(new);
     } else {
-        new->prev = ctx;
-        ctx = new;
+        new->prev = ctx_list;
+        ctx_list = new;
     }
 
-    check_crc(ctx->ctx, "custom_polynomial", AV_CRC_MAX);
+    check_crc(ctx_list->ctx, "custom_polynomial", AV_CRC_MAX);
     report("crc");
 }
