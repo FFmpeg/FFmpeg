@@ -20,9 +20,12 @@
 #include "ttaencdsp.h"
 #include "config.h"
 
-static void ttaenc_filter_process_c(int32_t *qm, int32_t *dx, int32_t *dl,
+static void ttaenc_filter_process_c(int32_t *qmi, int32_t *dx, int32_t *dl,
                                     int32_t *error, int32_t *in, int32_t shift,
-                                    int32_t round) {
+                                    int32_t round)
+{
+    uint32_t *qm = qmi;
+
     if (*error < 0) {
         qm[0] -= dx[0]; qm[1] -= dx[1]; qm[2] -= dx[2]; qm[3] -= dx[3];
         qm[4] -= dx[4]; qm[5] -= dx[5]; qm[6] -= dx[6]; qm[7] -= dx[7];
@@ -42,9 +45,9 @@ static void ttaenc_filter_process_c(int32_t *qm, int32_t *dx, int32_t *dl,
     dx[6] = ((dl[6] >> 30) | 2) & ~1;
     dx[7] = ((dl[7] >> 30) | 4) & ~3;
 
-    dl[4] = -dl[5]; dl[5] = -dl[6];
-    dl[6] = *in - dl[7]; dl[7] = *in;
-    dl[5] += dl[6]; dl[4] += dl[5];
+    dl[4]  = -(unsigned)dl[5];     dl[5] = -(unsigned)dl[6];
+    dl[6]  = *in -(unsigned)dl[7]; dl[7] = *in;
+    dl[5] += (unsigned)dl[6];      dl[4] += (unsigned)dl[5];
 
     *in -= (round >> shift);
     *error = *in;
