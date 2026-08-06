@@ -108,7 +108,7 @@ static void check_sbc_calc_scalefactors(const SBCDSPContext *const sbcdsp, int b
 
 void checkasm_check_sbcdsp(void)
 {
-    SBCDSPContext sbcdsp;
+    SBCDSPContext sbcdsp = { 0 };
     int blocks = ((const int[]){4, 8, 12, 15, 16})[rnd() % 5];
 
     ff_sbcdsp_init(&sbcdsp);
