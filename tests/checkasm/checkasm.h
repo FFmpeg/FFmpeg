@@ -106,6 +106,7 @@ void checkasm_check_sw_yuv2rgb(void);
 void checkasm_check_sw_yuv2yuv(void);
 void checkasm_check_sw_ops(void);
 void checkasm_check_takdsp(void);
+void checkasm_check_ttadsp(void);
 void checkasm_check_utvideodsp(void);
 void checkasm_check_v210dec(void);
 void checkasm_check_v210enc(void);
