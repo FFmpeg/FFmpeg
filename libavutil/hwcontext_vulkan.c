@@ -2824,7 +2824,7 @@ static void try_export_flags(AVHWFramesContext *hwfc,
         .tiling = hwctx->tiling,
         .usage  = hwctx->usage,
         .flags  = (hwctx->tiling == VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT && has_mods) ?
-                  (hwctx->img_flags) : (VkImageCreateFlags)(VK_IMAGE_CREATE_ALIAS_BIT),
+                  (hwctx->img_flags) : hwctx->img_flags ? hwctx->img_flags : (VkImageCreateFlags)(VK_IMAGE_CREATE_ALIAS_BIT),
     };
 
     nb_mods = has_mods ? drm_mod_info->drmFormatModifierCount : 1;
