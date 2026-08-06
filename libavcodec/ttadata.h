@@ -23,12 +23,14 @@
 
 #include <stdint.h>
 
+#include "libavutil/mem_internal.h"
+
 #define MAX_ORDER 8
 typedef struct TTAFilter {
-    int32_t shift, round, error;
     int32_t qm[MAX_ORDER];
     int32_t dx[MAX_ORDER];
     int32_t dl[MAX_ORDER];
+    int32_t shift, round, error;
 } TTAFilter;
 
 typedef struct TTARice {
@@ -36,8 +38,8 @@ typedef struct TTARice {
 } TTARice;
 
 typedef struct TTAChannel {
+    DECLARE_ALIGNED_16(TTAFilter, filter);
     int32_t predictor;
-    TTAFilter filter;
     TTARice rice;
 } TTAChannel;
 
