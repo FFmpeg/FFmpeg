@@ -18,10 +18,13 @@
 
 #include <string.h>
 
+#include "config_components.h"
+
 #include "checkasm.h"
 
 #include "libavcodec/ttadata.h"
 #include "libavcodec/ttadsp.h"
+#include "libavcodec/ttaencdsp.h"
 #include "libavutil/mem_internal.h"
 
 #define randomize_buffer(NAME)                                \
@@ -62,6 +65,7 @@ static void check_filter_process(void)
     bench_new(alt(qm), alt(dx), alt(dl), alt(&error), alt(&in), shift, round);
 }
 
+#if CONFIG_TTA_DECODER
 void checkasm_check_ttadsp(void)
 {
     TTADSPContext ttadsp;
@@ -72,3 +76,17 @@ void checkasm_check_ttadsp(void)
         check_filter_process();
     report("filter_process");
 }
+#endif
+
+#if CONFIG_TTA_ENCODER
+void checkasm_check_ttaencdsp(void)
+{
+    TTAEncDSPContext ttaencdsp;
+
+    ff_ttaencdsp_init(&ttaencdsp);
+
+    if (check_func(ttaencdsp.filter_process, "filter_process"))
+        check_filter_process();
+    report("filter_process");
+}
+#endif
