@@ -30,8 +30,9 @@
 #import <AVFoundation/AVFoundation.h>
 #if HAVE_IOKIT
 #   import <IOKit/IOKitLib.h>
-    /* kIOMainPortDefault replaced kIOMasterPortDefault in the macOS 12 SDK. */
-#   if defined(__MAC_OS_X_VERSION_MAX_ALLOWED) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 120000
+    /* kIOMainPortDefault is only available since macOS 12; fall back to the
+     * equivalent kIOMasterPortDefault when targeting older releases. */
+#   if defined(__MAC_OS_X_VERSION_MIN_REQUIRED) && __MAC_OS_X_VERSION_MIN_REQUIRED >= 120000
 #       define AVF_IO_MAIN_PORT_DEFAULT kIOMainPortDefault
 #   else
 #       define AVF_IO_MAIN_PORT_DEFAULT kIOMasterPortDefault
