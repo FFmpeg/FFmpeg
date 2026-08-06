@@ -176,7 +176,7 @@ static int get_ilbc_mode(AVCodecContext *avctx)
 
 static av_cold int get_channel_label(int channel)
 {
-    uint64_t map = 1 << channel;
+    uint64_t map = 1ULL << channel;
     if (map <= AV_CH_LOW_FREQUENCY)
         return channel + 1;
     else if (map <= AV_CH_BACK_RIGHT)

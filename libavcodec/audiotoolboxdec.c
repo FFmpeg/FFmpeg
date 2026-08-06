@@ -201,9 +201,9 @@ static int ffat_update_ctx(AVCodecContext *avctx)
             int id = ffat_get_channel_id(layout->mChannelDescriptions[i].mChannelLabel);
             if (id < 0)
                 goto done;
-            if (layout_mask & (1 << id))
+            if (layout_mask & (1ULL << id))
                 goto done;
-            layout_mask |= 1 << id;
+            layout_mask |= 1ULL << id;
             layout->mChannelDescriptions[i].mChannelFlags = i; // Abusing flags as index
         }
         av_channel_layout_uninit(&avctx->ch_layout);
