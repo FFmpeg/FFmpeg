@@ -36,6 +36,8 @@
 #include "amfenc.h"
 #include "encode.h"
 
+#include <AMF/components/PreAnalysis.h>
+
 #define AMF_AV_FRAME_REF    L"av_frame_ref"
 #define PTS_PROP            L"PtsProp"
 
@@ -164,6 +166,77 @@ int av_cold ff_amf_encode_close(AVCodecContext *avctx)
     av_freep(&ctx->av_frame_property_name);
 
     return 0;
+}
+
+int ff_amf_get_lookahead_depth_max(AVCodecContext *avctx, AMFComponent *encoder, amf_uint64 runtime_version, amf_int64 *out_max)
+{
+    if (!encoder || !out_max)
+        return AVERROR(EINVAL);
+
+    *out_max = MAX_LOOKAHEAD_DEPTH;
+#if AMF_VERSION_ATLEAST(1, 5, 3)
+    const AMFPropertyInfo *prop_info = NULL;
+    AMF_RESULT res;
+
+    if (runtime_version >= AMF_MAKE_FULL_VERSION(1, 5, 3, 0)) {
+        res = encoder->pVtbl->GetPropertyInfo(encoder, AMF_PA_LOOKAHEAD_BUFFER_DEPTH, &prop_info);
+        if (res == AMF_OK && prop_info && prop_info->type == AMF_VARIANT_INT64) {
+            *out_max = prop_info->maxValue.int64Value;
+        } else {
+            av_log(avctx, AV_LOG_DEBUG, "Failed to query maximum lookahead depth, using %d\n", MAX_LOOKAHEAD_DEPTH);
+        }
+    }
+#endif
+    return 0;
+}
+
+void ff_amf_clamp_lookahead_depth(AVCodecContext *avctx, AMFEncoderContext *ctx)
+{
+    AVHWDeviceContext *device_ctx = (AVHWDeviceContext *)ctx->device_ctx_ref->data;
+    AVAMFDeviceContext *amf_ctx = device_ctx->hwctx;
+    amf_int64 hw_max;
+    AMF_RESULT res;
+
+    if (ff_amf_get_lookahead_depth_max(avctx, ctx->encoder, amf_ctx->version, &hw_max) == 0 &&
+        ctx->pa_lookahead_buffer_depth > hw_max) {
+        av_log(avctx, AV_LOG_WARNING,
+            "pa_lookahead_buffer_depth %d exceeds supported maximum %lld, clamping\n",
+            ctx->pa_lookahead_buffer_depth, (long long)hw_max);
+        ctx->pa_lookahead_buffer_depth = (int)hw_max;
+    }
+
+    AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_PA_LOOKAHEAD_BUFFER_DEPTH, ctx->pa_lookahead_buffer_depth);
+    if (res != AMF_OK)
+        av_log(avctx, AV_LOG_WARNING, "Setting lookahead buffer depth failed with error %d\n", res);
+}
+
+void ff_amf_fit_async_depth(AVCodecContext *avctx, AMFEncoderContext *ctx)
+{
+    AVHWDeviceContext *device_ctx = (AVHWDeviceContext *)ctx->device_ctx_ref->data;
+    AVAMFDeviceContext *amf_ctx = device_ctx->hwctx;
+    // Size async_depth to the lookahead window in two independent steps:
+    //   - bump: widen async_depth to fit the lookahead depth read back from the
+    //     encoder (the applied value; only present when preanalysis is enabled).
+    //   - cap: limit async_depth to the reported maximum + 1 when it can be queried.
+    amf_int64 hw_max;
+    AMFVariantStruct var = { 0 };
+    AMF_RESULT res;
+
+    res = ctx->encoder->pVtbl->GetProperty(ctx->encoder, AMF_PA_LOOKAHEAD_BUFFER_DEPTH, &var);
+    if (res == AMF_OK && var.int64Value >= ctx->hwsurfaces_in_queue_max) {
+        av_log(avctx, AV_LOG_WARNING,
+            "async_depth (%d) too small for lookahead (%lld), increasing to (%lld)\n",
+            ctx->hwsurfaces_in_queue_max, (long long)var.int64Value, (long long)(var.int64Value + 1));
+        ctx->hwsurfaces_in_queue_max = (int)(var.int64Value + 1);
+    }
+
+    if (ff_amf_get_lookahead_depth_max(avctx, ctx->encoder, amf_ctx->version, &hw_max) == 0 &&
+        ctx->hwsurfaces_in_queue_max > hw_max + 1) {
+        av_log(avctx, AV_LOG_WARNING,
+            "async_depth %d exceeds supported range, clamping to %lld\n",
+            ctx->hwsurfaces_in_queue_max, (long long)(hw_max + 1));
+        ctx->hwsurfaces_in_queue_max = (int)(hw_max + 1);
+    }
 }
 
 static int amf_copy_surface(AVCodecContext *avctx, const AVFrame *frame,
@@ -324,15 +397,6 @@ int ff_amf_encode_init(AVCodecContext *avctx)
     else {
         ret = av_hwdevice_ctx_create(&ctx->device_ctx_ref, AV_HWDEVICE_TYPE_AMF, NULL, NULL, 0);
         AMF_RETURN_IF_FALSE(ctx, ret == 0, ret, "Failed to create  hardware device context (AMF) : %s\n", av_err2str(ret));
-    }
-
-    if (ctx->pa_lookahead_buffer_depth >= ctx->hwsurfaces_in_queue_max) {
-        av_log(avctx, AV_LOG_WARNING,
-               "async_depth (%d) too small for lookahead (%d), increasing to (%d)\n",
-                ctx->hwsurfaces_in_queue_max,
-                ctx->pa_lookahead_buffer_depth,
-                ctx->pa_lookahead_buffer_depth + 1);
-        ctx->hwsurfaces_in_queue_max = ctx->pa_lookahead_buffer_depth + 1;
     }
 
     if ((ret = amf_init_encoder(avctx)) == 0) {

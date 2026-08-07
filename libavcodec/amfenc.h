@@ -31,7 +31,10 @@
 #include "avcodec.h"
 #include "hwconfig.h"
 
-#define  MAX_LOOKAHEAD_DEPTH 41
+#define AMF_VERSION_ATLEAST(major, minor, release) \
+    (AMF_VERSION_MAJOR > (major) || (AMF_VERSION_MAJOR == (major) && AMF_VERSION_MINOR > (minor)) || (AMF_VERSION_MAJOR == (major) && AMF_VERSION_MINOR == (minor) && AMF_VERSION_RELEASE >= (release)))
+
+#define MAX_LOOKAHEAD_DEPTH 41
 
 /**
 * AMF encoder context
@@ -158,6 +161,28 @@ int ff_amf_encode_close(AVCodecContext *avctx);
 * Ecoding one frame - common function for all AMF encoders
 */
 int ff_amf_receive_packet(AVCodecContext *avctx, AVPacket *avpkt);
+
+/**
+* Query the maximum PA lookahead buffer depth (AMF_PA_LOOKAHEAD_BUFFER_DEPTH).
+* Falls back to MAX_LOOKAHEAD_DEPTH for older headers/runtimes or query failure.
+* @return 0 and sets *out_max on success; a negative AVERROR on failure.
+*/
+int ff_amf_get_lookahead_depth_max(AVCodecContext *avctx, AMFComponent *encoder, amf_uint64 runtime_version, amf_int64 *out_max);
+
+/**
+* Clamp pa_lookahead_buffer_depth to the AMF-reported maximum and assign it to
+* the encoder. Call from within the preanalysis configuration block, before
+* encoder Init().
+*/
+void ff_amf_clamp_lookahead_depth(AVCodecContext *avctx, AMFEncoderContext *ctx);
+
+/**
+* Size async_depth (hwsurfaces_in_queue_max) around the lookahead window: widen
+* it to hold the lookahead depth read back from the encoder, then cap it at the
+* AMF-reported lookahead maximum + 1. Call before encoder Init(), after all
+* lookahead/B-frame properties have been set.
+*/
+void ff_amf_fit_async_depth(AVCodecContext *avctx, AMFEncoderContext *ctx);
 
 /**
 * Supported formats

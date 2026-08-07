@@ -91,7 +91,7 @@ static const AVOption options[] = {
     { "gop",            "", 0, AV_OPT_TYPE_CONST, { .i64 = AMF_VIDEO_ENCODER_HEVC_HEADER_INSERTION_MODE_GOP_ALIGNED }, 0, 0, VE, .unit = "hdrmode" },
     { "idr",            "", 0, AV_OPT_TYPE_CONST, { .i64 = AMF_VIDEO_ENCODER_HEVC_HEADER_INSERTION_MODE_IDR_ALIGNED }, 0, 0, VE, .unit = "hdrmode" },
 
-    { "async_depth",    "Set maximum encoding parallelism. Higher values increase output latency.",             OFFSET(hwsurfaces_in_queue_max), AV_OPT_TYPE_INT, {.i64 = 16 }, 1, MAX_LOOKAHEAD_DEPTH + 1, VE },
+    { "async_depth",    "Set maximum encoding parallelism. Higher values increase output latency.",             OFFSET(hwsurfaces_in_queue_max), AV_OPT_TYPE_INT, {.i64 = 16 }, 1, INT_MAX, VE },
 
     { "high_motion_quality_boost_enable",   "Enable High motion quality boost mode",  OFFSET(hw_high_motion_quality_boost), AV_OPT_TYPE_BOOL,   {.i64 = -1 }, -1, 1, VE },
     { "gops_per_idr",   "GOPs per IDR 0-no IDR will be inserted",   OFFSET(gops_per_idr),  AV_OPT_TYPE_INT,  { .i64 = 1  },  0, INT_MAX, VE },
@@ -147,7 +147,7 @@ static const AVOption options[] = {
 
     { "pa_frame_sad_enable",                    "Enable Frame SAD algorithm",                                   OFFSET(pa_frame_sad),                           AV_OPT_TYPE_BOOL,   {.i64 = -1 }, -1, 1, VE },
     { "pa_ltr_enable",                          "Enable long term reference frame management",                  OFFSET(pa_ltr),                                 AV_OPT_TYPE_BOOL,   {.i64 = -1 }, -1, 1, VE },
-    { "pa_lookahead_buffer_depth",              "Sets the PA lookahead buffer size",                            OFFSET(pa_lookahead_buffer_depth),              AV_OPT_TYPE_INT,    {.i64 = -1 }, -1, MAX_LOOKAHEAD_DEPTH, VE },
+    { "pa_lookahead_buffer_depth",              "Sets the PA lookahead buffer size",                            OFFSET(pa_lookahead_buffer_depth),              AV_OPT_TYPE_INT,    {.i64 = -1 }, -1, INT_MAX, VE },
 
     { "pa_paq_mode",                            "Sets the perceptual adaptive quantization mode",               OFFSET(pa_paq_mode),                            AV_OPT_TYPE_INT,    {.i64 = -1 }, -1, AMF_PA_PAQ_MODE_CAQ, VE , .unit = "paq_mode" },
     { "none",                                   "no perceptual adaptive quantization",  0, AV_OPT_TYPE_CONST, {.i64 = AMF_PA_PAQ_MODE_NONE }, 0, 0, VE, .unit = "paq_mode" },
@@ -471,9 +471,8 @@ static av_cold int amf_encode_init_hevc(AVCodecContext *avctx)
         if (ctx->pa_ltr != -1) {
             AMF_ASSIGN_PROPERTY_BOOL(res, ctx->encoder, AMF_PA_LTR_ENABLE, ((ctx->pa_ltr == 0) ? false : true));
         }
-        if (ctx->pa_lookahead_buffer_depth != -1) {
-            AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_PA_LOOKAHEAD_BUFFER_DEPTH, ctx->pa_lookahead_buffer_depth);
-        }
+        if (ctx->pa_lookahead_buffer_depth != -1)
+            ff_amf_clamp_lookahead_depth(avctx, ctx);
         if (ctx->pa_high_motion_quality_boost_mode != -1) {
             AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_PA_HIGH_MOTION_QUALITY_BOOST_MODE, ctx->pa_high_motion_quality_boost_mode);
         }
@@ -483,6 +482,8 @@ static av_cold int amf_encode_init_hevc(AVCodecContext *avctx)
     AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_HEVC_QUERY_TIMEOUT, 1);
     res = ctx->encoder->pVtbl->GetProperty(ctx->encoder, AMF_VIDEO_ENCODER_HEVC_QUERY_TIMEOUT, &var);
     ctx->query_timeout_supported = res == AMF_OK && var.int64Value;
+
+    ff_amf_fit_async_depth(avctx, ctx);
 
     // init encoder
     res = ctx->encoder->pVtbl->Init(ctx->encoder, ctx->format, avctx->width, avctx->height);
