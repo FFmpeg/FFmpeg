@@ -107,6 +107,7 @@ cglobal tta%3_filter_process, 5,5,%2, qm, dx, dl, error, in, shift, round
     movd       m2, shiftm           ;
     movd       m0, [inq]            ;
     psrad      m4, m2               ;
+    psrldq     m1, 4                ; dl5,                 dl6,     dl7,   0
     psubd      m3, m0, m4           ;
     movd       [inq], m3            ; *in -= (sum >> filter->shift);
     movd       [errorq], m3         ; filter->error = *in;
@@ -116,19 +117,17 @@ cglobal tta%3_filter_process, 5,5,%2, qm, dx, dl, error, in, shift, round
 
     movd       m2, shiftm           ; *in += (sum >> filter->shift);
     psrad      m4, m2               ;
+    psrldq     m1, 4                ; dl5,                 dl6,     dl7,   0
     paddd      m0, m4               ;
     movd       [inq], m0            ;
 %endif
 
-    psrldq     m1, 4                ;
-    pslldq     m0, 12               ; filter->dl[4] = -filter->dl[5];
-    pshufd     m0, m0, 0xf0         ; filter->dl[5] = -filter->dl[6];
-    psubd      m0, m1               ; filter->dl[6] = *in - filter->dl[7];
-    psrldq     m1, m0, 4            ; filter->dl[7] = *in;
-    pshufd     m1, m1, 0xf4         ; filter->dl[5] += filter->dl[6];
-    paddd      m0, m1               ; filter->dl[4] += filter->dl[5];
-    psrldq     m1, 4                ;
-    paddd      m0, m1               ;
+    pshufd     m2, m1, q3321        ; dl6,                 dl7,       0,   0
+    pshufd     m0, m0, 0
+    paddd      m1, m2               ; dl5+dl6,         dl6+dl7,     dl7,   0
+    psrldq     m2, 4                ; dl7
+    paddd      m1, m2               ; dl5+dl6+dl7, dl5+dl6+dl7, dl6+dl7, dl7
+    psubd      m0, m1
     mova       [dlq + 0x10], m0     ;
     RET
 %endmacro
