@@ -43,26 +43,25 @@ static void check_filter_process(void)
     DECLARE_ALIGNED_16(int32_t, dl_new)[MAX_ORDER];
     int bps = 1 + rnd() % 3;
     int32_t shift = ff_tta_filter_configs[bps - 1], round = ff_tta_shift_1[shift - 1];
-    int32_t in_ref = rnd(), in_new = in_ref;
-    int32_t error_ref = rnd(), error_new = error_ref;
+    int32_t in = rnd(), error_ref = rnd(), error_new = error_ref;
 
-    declare_func(void, int32_t *qm, int32_t *dx, int32_t *dl, int32_t *error,
-                       int32_t *in, int32_t shift, int32_t round);
+    declare_func(int32_t, int32_t *qm, int32_t *dx, int32_t *dl, int32_t *error,
+                          int32_t in,  int32_t shift, int32_t round);
 
     randomize_buffer(qm);
     randomize_buffer(dx);
     randomize_buffer(dl);
 
-    call_ref(qm_ref, dx_ref, dl_ref, &error_ref, &in_ref, shift, round);
-    call_new(qm_new, dx_new, dl_new, &error_new, &in_new, shift, round);
+    int32_t out_ref = call_ref(qm_ref, dx_ref, dl_ref, &error_ref, in, shift, round);
+    int32_t out_new = call_new(qm_new, dx_new, dl_new, &error_new, in, shift, round);
 
-    if (in_ref != in_new || error_ref != error_new ||
-        memcmp(qm_ref, qm_new, sizeof(qm_ref))     ||
-        memcmp(dx_ref, dx_new, sizeof(dx_ref))     ||
+    if (out_ref != out_new || error_ref != error_new ||
+        memcmp(qm_ref, qm_new, sizeof(qm_ref))       ||
+        memcmp(dx_ref, dx_new, sizeof(dx_ref))       ||
         memcmp(dl_ref, dl_new, sizeof(dl_ref)))
         fail();
 #define alt(var) checkasm_alternate(var ## _ref, var ## _new)
-    bench_new(alt(qm), alt(dx), alt(dl), alt(&error), alt(&in), shift, round);
+    bench_new(alt(qm), alt(dx), alt(dl), alt(&error), in, shift, round);
 }
 
 #if CONFIG_TTA_DECODER

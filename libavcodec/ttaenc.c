@@ -130,8 +130,8 @@ pkt_alloc:
         }
         c->predictor = temp;
 
-        s->dsp.filter_process(filter->qm, filter->dx, filter->dl, &filter->error, &value,
-                              filter->shift, filter->round);
+        value = s->dsp.filter_process(filter->qm, filter->dx, filter->dl, &filter->error, value,
+                                      filter->shift, filter->round);
         outval = (value > 0) ? (value << 1) - 1: -value << 1;
 
         k = rice->k0;

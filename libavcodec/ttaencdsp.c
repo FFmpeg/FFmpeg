@@ -20,9 +20,9 @@
 #include "ttaencdsp.h"
 #include "config.h"
 
-static void ttaenc_filter_process_c(int32_t *qmi, int32_t *dx, int32_t *dl,
-                                    int32_t *error, int32_t *in, int32_t shift,
-                                    int32_t round)
+static int32_t ttaenc_filter_process_c(int32_t *qmi, int32_t *dx, int32_t *dl,
+                                       int32_t *error, int32_t in, int32_t shift,
+                                       int32_t round)
 {
     uint32_t *qm = qmi;
 
@@ -46,11 +46,13 @@ static void ttaenc_filter_process_c(int32_t *qmi, int32_t *dx, int32_t *dl,
     dx[7] = ((dl[7] >> 30) | 4) & ~3;
 
     dl[4]  = -(unsigned)dl[5];     dl[5] = -(unsigned)dl[6];
-    dl[6]  = *in -(unsigned)dl[7]; dl[7] = *in;
+    dl[6]  = in -(unsigned)dl[7];  dl[7] = in;
     dl[5] += (unsigned)dl[6];      dl[4] += (unsigned)dl[5];
 
-    *in -= (round >> shift);
-    *error = *in;
+    in -= (round >> shift);
+    *error = in;
+
+    return in;
 }
 
 av_cold void ff_ttaencdsp_init(TTAEncDSPContext *c)

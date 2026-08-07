@@ -96,6 +96,7 @@ cglobal tta%3_filter_process, 5,5,%2, qm, dx, dl, error, in, shift, round
 
     psrad      m3, m1, 30           ; filter->dx[4] = ((filter->dl[4] >> 30) | 1);
     por        m3, [pd_1224 ]       ; filter->dx[5] = ((filter->dl[5] >> 30) | 2) & ~1;
+    movd       m0, inm              ;
     pand       m3, [pd_n0113]       ; filter->dx[6] = ((filter->dl[6] >> 30) | 2) & ~1;
                                     ; filter->dx[7] = ((filter->dl[7] >> 30) | 4) & ~3;
 
@@ -103,23 +104,23 @@ cglobal tta%3_filter_process, 5,5,%2, qm, dx, dl, error, in, shift, round
     mova       [dxq       ], m5
     mova       [dxq + 0x10], m3
 
+    ; notice that eax is r6 (round) on x64 and r0 (qm) otherwise;
+    ; round and qm are no longer needed.
 %ifidn %3,enc
     movd       m2, shiftm           ;
-    movd       m0, [inq]            ;
     psrad      m4, m2               ;
     psrldq     m1, 4                ; dl5,                 dl6,     dl7,   0
-    psubd      m3, m0, m4           ;
-    movd       [inq], m3            ; *in -= (sum >> filter->shift);
+    psubd      m3, m0, m4           ; *in -= (sum >> filter->shift);
+    movd      eax, m3               ;
     movd       [errorq], m3         ; filter->error = *in;
 %else
-    movd       m0, [inq]            ; filter->error = *in;
-    movd       [errorq], m0         ;
+    movd [errorq], m0               ; filter->error = *in;
 
     movd       m2, shiftm           ; *in += (sum >> filter->shift);
     psrad      m4, m2               ;
     psrldq     m1, 4                ; dl5,                 dl6,     dl7,   0
     paddd      m0, m4               ;
-    movd       [inq], m0            ;
+    movd      eax, m0               ;
 %endif
 
     pshufd     m2, m1, q3321        ; dl6,                 dl7,       0,   0
