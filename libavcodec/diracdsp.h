@@ -24,11 +24,13 @@
 #include <stdint.h>
 #include <stddef.h>
 
-typedef void (*dirac_weight_func)(uint8_t *block, int stride, int log2_denom, int weight, int h);
-typedef void (*dirac_biweight_func)(uint8_t *dst, const uint8_t *src, int stride, int log2_denom, int weightd, int weights, int h);
+typedef void (*dirac_weight_func)(uint8_t *block, ptrdiff_t stride, int log2_denom, int weight, int h);
+typedef void (*dirac_biweight_func)(uint8_t *dst, const uint8_t *src, ptrdiff_t stride,
+                                    int log2_denom, int weightd, int weights, int h);
 
 typedef struct {
-    void (*dirac_hpel_filter)(uint8_t *dsth, uint8_t *dstv, uint8_t *dstc, const uint8_t *src, int stride, int width, int height);
+    void (*dirac_hpel_filter)(uint8_t *dsth, uint8_t *dstv, uint8_t *dstc,
+                              const uint8_t *src, ptrdiff_t stride, int width, int height);
     /**
      * dirac_pixels_tab[width][subpel]
      * width is 2 for 32, 1 for 16, 0 for 8
@@ -39,13 +41,20 @@ typedef struct {
      * src[0-3] is each of the hpel planes
      * src[4] is the 1/8 pel weights if needed
      */
-    void (*put_dirac_pixels_tab[3][4])(uint8_t *dst, const uint8_t *src[5], int stride, int h);
-    void (*avg_dirac_pixels_tab[3][4])(uint8_t *dst, const uint8_t *src[5], int stride, int h);
+    void (*put_dirac_pixels_tab[3][4])(uint8_t *dst, const uint8_t *src[5], ptrdiff_t stride, int h);
+    void (*avg_dirac_pixels_tab[3][4])(uint8_t *dst, const uint8_t *src[5], ptrdiff_t stride, int h);
 
-    void (*put_signed_rect_clamped[3])(uint8_t *dst/*align 16*/, int dst_stride, const uint8_t *src/*align 16*/, int src_stride, int width, int height/*mod 2*/);
-    void (*put_rect_clamped)(uint8_t *dst/*align 16*/, int dst_stride, const uint8_t *src/*align 16*/, int src_stride, int width, int height/*mod 2*/);
-    void (*add_rect_clamped)(uint8_t *dst/*align 16*/, const uint16_t *src/*align 16*/, int stride, const int16_t *idwt/*align 16*/, int idwt_stride, int width, int height/*mod 2*/);
-    void (*add_dirac_obmc[3])(uint16_t *dst, const uint8_t *src, int stride, const uint8_t *obmc_weight, int yblen);
+    void (*put_signed_rect_clamped[3])(uint8_t *dst/*align 16*/, ptrdiff_t dst_stride,
+                                       const uint8_t *src/*align 16*/, ptrdiff_t src_stride,
+                                       int width, int height/*mod 2*/);
+    void (*put_rect_clamped)(uint8_t *dst/*align 16*/, ptrdiff_t dst_stride,
+                             const uint8_t *src/*align 16*/, ptrdiff_t src_stride,
+                             int width, int height/*mod 2*/);
+    void (*add_rect_clamped)(uint8_t *dst/*align 16*/, const uint16_t *src/*align 16*/,
+                             ptrdiff_t stride, const int16_t *idwt/*align 16*/,
+                             ptrdiff_t idwt_stride, int width, int height/*mod 2*/);
+    void (*add_dirac_obmc[3])(uint16_t *dst, const uint8_t *src, ptrdiff_t stride,
+                              const uint8_t *obmc_weight, int yblen);
 
     /* 0-1: int16_t and int32_t asm/c, 2-3: int16 and int32_t, C only */
     void (*dequant_subband[4])(uint8_t *src, uint8_t *dst, ptrdiff_t stride, const int qf, const int qs, int tot_v, int tot_h);
@@ -55,9 +64,9 @@ typedef struct {
 } DiracDSPContext;
 
 #define DECL_DIRAC_PIXOP(PFX, EXT)                                      \
-    void ff_ ## PFX ## _dirac_pixels8_ ## EXT(uint8_t *dst, const uint8_t *src[5], int stride, int h); \
-    void ff_ ## PFX ## _dirac_pixels16_ ## EXT(uint8_t *dst, const uint8_t *src[5], int stride, int h); \
-    void ff_ ## PFX ## _dirac_pixels32_ ## EXT(uint8_t *dst, const uint8_t *src[5], int stride, int h)
+    void ff_ ## PFX ## _dirac_pixels8_ ## EXT(uint8_t *dst, const uint8_t *src[5], ptrdiff_t stride, int h); \
+    void ff_ ## PFX ## _dirac_pixels16_ ## EXT(uint8_t *dst, const uint8_t *src[5], ptrdiff_t stride, int h); \
+    void ff_ ## PFX ## _dirac_pixels32_ ## EXT(uint8_t *dst, const uint8_t *src[5], ptrdiff_t stride, int h)
 
 DECL_DIRAC_PIXOP(put, c);
 DECL_DIRAC_PIXOP(avg, c);

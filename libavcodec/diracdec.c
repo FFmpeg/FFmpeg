@@ -227,9 +227,9 @@ typedef struct DiracContext {
 
     DECLARE_ALIGNED(16, uint8_t, obmc_weight)[3][MAX_BLOCKSIZE*MAX_BLOCKSIZE];
 
-    void (*put_pixels_tab[4])(uint8_t *dst, const uint8_t *src[5], int stride, int h);
-    void (*avg_pixels_tab[4])(uint8_t *dst, const uint8_t *src[5], int stride, int h);
-    void (*add_obmc)(uint16_t *dst, const uint8_t *src, int stride, const uint8_t *obmc_weight, int yblen);
+    void (*put_pixels_tab[4])(uint8_t *dst, const uint8_t *src[5], ptrdiff_t stride, int h);
+    void (*avg_pixels_tab[4])(uint8_t *dst, const uint8_t *src[5], ptrdiff_t stride, int h);
+    void (*add_obmc)(uint16_t *dst, const uint8_t *src, ptrdiff_t stride, const uint8_t *obmc_weight, int yblen);
     dirac_weight_func weight_func;
     dirac_biweight_func biweight_func;
 

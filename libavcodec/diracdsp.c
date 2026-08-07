@@ -29,8 +29,8 @@
       +3*((src)[-2*stride] + (src)[3*stride])                   \
       -1*((src)[-3*stride] + (src)[4*stride]) + 16) >> 5)
 
-static void dirac_hpel_filter(uint8_t *dsth, uint8_t *dstv, uint8_t *dstc, const uint8_t *src,
-                              int stride, int width, int height)
+static void dirac_hpel_filter(uint8_t *dsth, uint8_t *dstv, uint8_t *dstc,
+                              const uint8_t *src, ptrdiff_t stride, int width, int height)
 {
     int x, y;
 
@@ -52,7 +52,7 @@ static void dirac_hpel_filter(uint8_t *dsth, uint8_t *dstv, uint8_t *dstc, const
 }
 
 #define PIXOP_BILINEAR(PFX, OP, WIDTH)                                  \
-    static void ff_ ## PFX ## _dirac_pixels ## WIDTH ## _bilinear_c(uint8_t *dst, const uint8_t *src[5], int stride, int h) \
+    static void ff_ ## PFX ## _dirac_pixels ## WIDTH ## _bilinear_c(uint8_t *dst, const uint8_t *src[5], ptrdiff_t stride, int h) \
     {                                                                   \
         int x;                                                          \
         const uint8_t *s0 = src[0];                                     \
@@ -88,8 +88,9 @@ PIXOP_BILINEAR(avg, OP_AVG, 32)
 #define op_scale2(x)  dst[x] = av_clip_uint8( (src[x]*weights + dst[x]*weightd + (1<<(log2_denom-1))) >> log2_denom)
 
 #define DIRAC_WEIGHT(W)                                                 \
-    static void weight_dirac_pixels ## W ## _c(uint8_t *block, int stride, int log2_denom, \
-                                               int weight, int h) {     \
+    static void weight_dirac_pixels ## W ## _c(uint8_t *block, ptrdiff_t stride,  \
+                                               int log2_denom, int weight, int h) \
+    {                                                                   \
         int x;                                                          \
         while (h--) {                                                   \
             for (x = 0; x < W; x++) {                                   \
@@ -99,7 +100,8 @@ PIXOP_BILINEAR(avg, OP_AVG, 32)
             block += stride;                                            \
         }                                                               \
     }                                                                   \
-    static void biweight_dirac_pixels ## W ## _c(uint8_t *dst, const uint8_t *src, int stride, int log2_denom, \
+    static void biweight_dirac_pixels ## W ## _c(uint8_t *dst, const uint8_t *src,  \
+                                                 ptrdiff_t stride, int log2_denom,  \
                                                  int weightd, int weights, int h) { \
         int x;                                                          \
         while (h--) {                                                   \
@@ -117,7 +119,7 @@ DIRAC_WEIGHT(16)
 DIRAC_WEIGHT(32)
 
 #define ADD_OBMC(xblen)                                                 \
-    static void add_obmc ## xblen ## _c(uint16_t *dst, const uint8_t *src, int stride, \
+    static void add_obmc ## xblen ## _c(uint16_t *dst, const uint8_t *src, ptrdiff_t stride, \
                                         const uint8_t *obmc_weight, int yblen) \
     {                                                                   \
         int x;                                                          \
@@ -136,7 +138,9 @@ ADD_OBMC(8)
 ADD_OBMC(16)
 ADD_OBMC(32)
 
-static void put_signed_rect_clamped_8bit_c(uint8_t *dst, int dst_stride, const uint8_t *_src, int src_stride, int width, int height)
+static void put_signed_rect_clamped_8bit_c(uint8_t *dst, ptrdiff_t dst_stride,
+                                           const uint8_t *_src, ptrdiff_t src_stride,
+                                           int width, int height)
 {
     int x, y;
     const int16_t *src = (const int16_t *)_src;
@@ -153,8 +157,9 @@ static void put_signed_rect_clamped_8bit_c(uint8_t *dst, int dst_stride, const u
 }
 
 #define PUT_SIGNED_RECT_CLAMPED(PX)                                                                     \
-static void put_signed_rect_clamped_ ## PX ## bit_c(uint8_t *_dst, int dst_stride, const uint8_t *_src, \
-                                                  int src_stride, int width, int height)                \
+static void put_signed_rect_clamped_ ## PX ## bit_c(uint8_t *_dst, ptrdiff_t dst_stride,                \
+                                                    const uint8_t *_src, ptrdiff_t src_stride,          \
+                                                    int width, int height)                              \
 {                                                                                                       \
     int x, y;                                                                                           \
     uint16_t *dst = (uint16_t *)_dst;                                                                   \
@@ -174,8 +179,8 @@ static void put_signed_rect_clamped_ ## PX ## bit_c(uint8_t *_dst, int dst_strid
 PUT_SIGNED_RECT_CLAMPED(10)
 PUT_SIGNED_RECT_CLAMPED(12)
 
-static void add_rect_clamped_c(uint8_t *dst, const uint16_t *src, int stride,
-                               const int16_t *idwt, int idwt_stride,
+static void add_rect_clamped_c(uint8_t *dst, const uint16_t *src, ptrdiff_t stride,
+                               const int16_t *idwt, ptrdiff_t idwt_stride,
                                int width, int height)
 {
     int x, y;
