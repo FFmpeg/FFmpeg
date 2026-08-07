@@ -60,10 +60,3 @@ const uint8_t ff_cavs_chroma_qp[64] = {
   32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 42, 43, 43, 44, 44,
   45, 45, 46, 46, 47, 47, 48, 48, 48, 49, 49, 49, 50, 50, 50, 51
 };
-
-/** mark block as "no prediction from this direction"
-    e.g. forward motion vector in BWD partition */
-const cavs_vector ff_cavs_dir_mv   = {0,0,1,REF_DIR};
-
-/** mark block as using intra prediction */
-const cavs_vector ff_cavs_intra_mv = {0,0,1,REF_INTRA};

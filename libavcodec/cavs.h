@@ -250,8 +250,12 @@ typedef struct AVSContext {
 
 extern const uint8_t     ff_cavs_chroma_qp[64];
 extern const uint8_t     ff_cavs_partition_flags[30];
-extern const cavs_vector ff_cavs_intra_mv;
-extern const cavs_vector ff_cavs_dir_mv;
+
+/** mark block as using intra prediction */
+#define CAVS_DIR_MV   (cavs_vector){ 0, 0, 1, REF_DIR }
+/** mark block as "no prediction from this direction"
+    e.g. forward motion vector in BWD partition */
+#define CAVS_INTRA_MV (cavs_vector){ 0, 0, 1, REF_INTRA }
 
 static inline void set_mvs(cavs_vector *mv, enum cavs_block size) {
     switch(size) {

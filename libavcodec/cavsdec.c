@@ -645,9 +645,9 @@ static inline int decode_residual_inter(AVSContext *h)
 
 static inline void set_mv_intra(AVSContext *h)
 {
-    h->mv[MV_FWD_X0] = ff_cavs_intra_mv;
+    h->mv[MV_FWD_X0] = CAVS_INTRA_MV;
     set_mvs(&h->mv[MV_FWD_X0], BLK_16X16);
-    h->mv[MV_BWD_X0] = ff_cavs_intra_mv;
+    h->mv[MV_BWD_X0] = CAVS_INTRA_MV;
     set_mvs(&h->mv[MV_BWD_X0], BLK_16X16);
     if (h->cur.f->pict_type != AV_PICTURE_TYPE_B)
         h->col_type_base[h->mbidx] = I_8X8;
@@ -792,9 +792,9 @@ static int decode_mb_b(AVSContext *h, enum cavs_mb mb_type)
     ff_cavs_init_mb(h);
 
     /* reset all MVs */
-    h->mv[MV_FWD_X0] = ff_cavs_dir_mv;
+    h->mv[MV_FWD_X0] = CAVS_DIR_MV;
     set_mvs(&h->mv[MV_FWD_X0], BLK_16X16);
-    h->mv[MV_BWD_X0] = ff_cavs_dir_mv;
+    h->mv[MV_BWD_X0] = CAVS_DIR_MV;
     set_mvs(&h->mv[MV_BWD_X0], BLK_16X16);
     switch (mb_type) {
     case B_SKIP:
