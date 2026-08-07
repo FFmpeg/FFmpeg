@@ -414,7 +414,9 @@ static int decode_reset(AVCodecContext *avctx, FFVulkanDecodeShared *ctx)
     };
 
     FFVkExecContext *exec = ff_vk_exec_get(&ctx->s, &ctx->exec_pool);
-    ff_vk_exec_start(&ctx->s, exec);
+    err = ff_vk_exec_start(&ctx->s, exec);
+    if (err < 0)
+        return err;
 
     vk->CmdBeginVideoCodingKHR(exec->buf, &decode_start);
     vk->CmdControlVideoCodingKHR(exec->buf, &decode_ctrl);
@@ -524,8 +526,10 @@ int ff_vk_decode_frame(AVCodecContext *avctx,
     err = ff_vk_exec_add_dep_frame(&ctx->s, exec, pic,
                                    VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR,
                                    VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR);
-    if (err < 0)
+    if (err < 0) {
+        ff_vk_exec_discard(&ctx->s, exec);
         return err;
+    }
 
     /* The output view is kept alive by the execution context; freeing the
      * picture then needs no host wait. */
@@ -575,8 +579,10 @@ int ff_vk_decode_frame(AVCodecContext *avctx,
             err = ff_vk_exec_add_dep_frame(&ctx->s, exec, ref,
                                            VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR,
                                            VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR);
-            if (err < 0)
+            if (err < 0) {
+                ff_vk_exec_discard(&ctx->s, exec);
                 return err;
+            }
 
             /* The reference's image views are kept alive by the execution,
              * so freeing the picture needs no host wait. */

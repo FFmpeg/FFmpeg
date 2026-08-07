@@ -461,12 +461,27 @@ static int nlmeans_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
     VkBufferMemoryBarrier2 buf_bar[2];
     int nb_buf_bar = 0;
 
-    if (!s->initialized)
-        RET(init_filter(ctx));
+    if (!s->initialized) {
+        err = init_filter(ctx);
+        if (err < 0) {
+            av_frame_free(&in);
+            return err;
+        }
+    }
+
+    /* Execution context */
+    exec = ff_vk_exec_get(&s->vkctx, &s->e);
+    err = ff_vk_exec_start(vkctx, exec);
+    if (err < 0) {
+        av_frame_free(&in);
+        return err;
+    }
 
     desc = av_pix_fmt_desc_get(vkctx->output_format);
-    if (!desc)
-        return AVERROR(EINVAL);
+    if (!desc) {
+        err = AVERROR(EINVAL);
+        goto fail;
+    }
 
     /* Integral image */
     int_stride = FFALIGN(vkctx->output_width, s->shd_vertical.lg_size[0]) * TYPE_SIZE;
@@ -490,32 +505,25 @@ static int nlmeans_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
     ws_size = ws_count * sizeof(float);
 
     /* Buffers */
-    err = ff_vk_get_pooled_buffer(&s->vkctx, &s->integral_buf_pool, &integral_vk,
-                                  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                                  VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-                                  NULL,
-                                  int_size * s->opts.t * desc->nb_components,
-                                  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    if (err < 0)
-        return err;
-    err = ff_vk_get_pooled_buffer(&s->vkctx, &s->ws_buf_pool, &ws_vk,
-                                  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                                  VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                                  NULL,
-                                  ws_size * s-> opts.t * 2,
-                                  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    if (err < 0)
-        return err;
+    RET(ff_vk_get_pooled_buffer(&s->vkctx, &s->integral_buf_pool, &integral_vk,
+                                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                                VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                                NULL,
+                                int_size * s->opts.t * desc->nb_components,
+                                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+    RET(ff_vk_get_pooled_buffer(&s->vkctx, &s->ws_buf_pool, &ws_vk,
+                                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                                VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                NULL,
+                                ws_size * s-> opts.t * 2,
+                                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+
     /* Output frame */
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
         err = AVERROR(ENOMEM);
         goto fail;
     }
-
-    /* Execution context */
-    exec = ff_vk_exec_get(&s->vkctx, &s->e);
-    ff_vk_exec_start(vkctx, exec);
 
     /* Dependencies */
     RET(ff_vk_exec_add_dep_frame(vkctx, exec, in,
@@ -714,19 +722,24 @@ static int nlmeans_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
 
     ff_vk_exec_move_dep_refstruct(vkctx, exec, &integral_vk);
     ff_vk_exec_move_dep_refstruct(vkctx, exec, &ws_vk);
-    err = ff_vk_exec_submit(vkctx, exec);
-    if (err < 0)
-        goto fail;
 
     err = av_frame_copy_props(out, in);
     if (err < 0)
         goto fail;
+
+    err = ff_vk_exec_submit(vkctx, exec);
+    if (err < 0) {
+        av_frame_free(&in);
+        av_frame_free(&out);
+        return err;
+    }
 
     av_frame_free(&in);
 
     return ff_filter_frame(outlink, out);
 
 fail:
+    ff_vk_exec_discard(vkctx, exec);
     av_refstruct_unref(&integral_vk);
     av_refstruct_unref(&ws_vk);
     av_frame_free(&in);

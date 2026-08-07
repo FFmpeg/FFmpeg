@@ -170,7 +170,12 @@ static int scdet_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
     sad = (SceneDetectBuf *) buf_vk->mapped_mem;
 
     exec = ff_vk_exec_get(vkctx, &s->e);
-    ff_vk_exec_start(vkctx, exec);
+    err = ff_vk_exec_start(vkctx, exec);
+    if (err < 0) {
+        av_frame_free(&in);
+        av_refstruct_unref(&buf_vk);
+        return err;
+    }
 
     RET(ff_vk_exec_add_dep_frame(vkctx, exec, s->prev,
                                  VK_PIPELINE_STAGE_2_NONE,
@@ -270,7 +275,12 @@ static int scdet_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
             .bufferMemoryBarrierCount = 1,
         });
 
-    RET(ff_vk_exec_submit(vkctx, exec));
+    err = ff_vk_exec_submit(vkctx, exec);
+    if (err < 0) {
+        av_frame_free(&in);
+        av_refstruct_unref(&buf_vk);
+        return err;
+    }
     ff_vk_exec_wait(vkctx, exec);
     score = evaluate(ctx, sad);
 
@@ -297,7 +307,7 @@ done:
 
 fail:
     if (exec)
-        ff_vk_exec_discard_deps(&s->vkctx, exec);
+        ff_vk_exec_discard(&s->vkctx, exec);
     av_frame_free(&in);
     av_refstruct_unref(&buf_vk);
     return err;

@@ -2578,7 +2578,9 @@ static int switch_layout(AVHWFramesContext *hwfc, FFVkExecPool *ectx,
     VkCommandBuffer cmd_buf;
     FFVkExecContext *exec = ff_vk_exec_get(&p->vkctx, ectx);
     cmd_buf = exec->buf;
-    ff_vk_exec_start(&p->vkctx, exec);
+    err = ff_vk_exec_start(&p->vkctx, exec);
+    if (err < 0)
+        return err;
 
     err = ff_vk_exec_add_dep_frame(&p->vkctx, exec, &tmp_frame,
                                    VK_PIPELINE_STAGE_2_NONE,
@@ -2601,8 +2603,8 @@ static int switch_layout(AVHWFramesContext *hwfc, FFVkExecPool *ectx,
     if (err < 0)
         return err;
 
-    /* We can do this because there are no real dependencies */
-    ff_vk_exec_discard_deps(&p->vkctx, exec);
+    /* Drops the stack-based frame above from the dependency list */
+    ff_vk_exec_wait(&p->vkctx, exec);
 
     return 0;
 }
@@ -3651,7 +3653,12 @@ static int vulkan_map_from_drm_frame_sync(AVHWFramesContext *hwfc, AVFrame *dst,
         exec = ff_vk_exec_get(&p->vkctx, &fp->compute_exec);
         cmd_buf = exec->buf;
 
-        ff_vk_exec_start(&p->vkctx, exec);
+        err = ff_vk_exec_start(&p->vkctx, exec);
+        if (err < 0) {
+            for (int i = 0; i < desc->nb_objects; i++)
+                vk->DestroySemaphore(hwctx->act_dev, drm_sync_sem[i], hwctx->alloc);
+            return err;
+        }
 
         /* Ownership of semaphores is passed */
         ff_vk_exec_add_dep_bool_sem(&p->vkctx, exec,
@@ -3661,8 +3668,10 @@ static int vulkan_map_from_drm_frame_sync(AVHWFramesContext *hwfc, AVFrame *dst,
         err = ff_vk_exec_add_dep_frame(&p->vkctx, exec, dst,
                                        VK_PIPELINE_STAGE_2_NONE,
                                        VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT);
-        if (err < 0)
+        if (err < 0) {
+            ff_vk_exec_discard(&p->vkctx, exec);
             return err;
+        }
 
         ff_vk_frame_barrier(&p->vkctx, exec, dst, img_bar, &nb_img_bar,
                             VK_PIPELINE_STAGE_2_NONE,
@@ -4223,8 +4232,6 @@ static int vulkan_drm_export_sync_fd(AVHWFramesContext *hwfc, AVVkFrame *f,
                        ff_vk_ret2str(ret));
                 sync_fd = -1;
             }
-        } else {
-            ff_vk_exec_discard_deps(&p->vkctx, exec);
         }
     }
 
@@ -4807,14 +4814,18 @@ static int vulkan_transfer_frame(AVHWFramesContext *hwfc,
     exec = ff_vk_exec_get(&p->vkctx, &fp->upload_exec);
     cmd_buf = exec->buf;
 
-    ff_vk_exec_start(&p->vkctx, exec);
+    err = ff_vk_exec_start(&p->vkctx, exec);
+    if (err < 0)
+        goto end;
 
     /* Prep destination Vulkan frame */
     err = ff_vk_exec_add_dep_frame(&p->vkctx, exec, hwf,
                                    VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
                                    VK_PIPELINE_STAGE_2_TRANSFER_BIT);
-    if (err < 0)
+    if (err < 0) {
+        ff_vk_exec_discard(&p->vkctx, exec);
         goto end;
+    }
 
     /* No need to declare buf deps for synchronous transfers (downloads) */
     if (upload) {
@@ -4822,7 +4833,7 @@ static int vulkan_transfer_frame(AVHWFramesContext *hwfc,
         if (host_mapped) {
             err = ff_vk_exec_add_dep_sw_frame(&p->vkctx, exec, swf);
             if (err < 0) {
-                ff_vk_exec_discard_deps(&p->vkctx, exec);
+                ff_vk_exec_discard(&p->vkctx, exec);
                 goto end;
             }
         }
@@ -4871,9 +4882,7 @@ static int vulkan_transfer_frame(AVHWFramesContext *hwfc,
     }
 
     err = ff_vk_exec_submit(&p->vkctx, exec);
-    if (err < 0) {
-        ff_vk_exec_discard_deps(&p->vkctx, exec);
-    } else if (!upload) {
+    if (err >= 0 && !upload) {
         ff_vk_exec_wait(&p->vkctx, exec);
         if (!host_mapped)
             err = copy_buffer_data(hwfc, bufs[0], swf, region, planes, 0);

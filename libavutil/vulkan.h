@@ -128,6 +128,9 @@ typedef struct FFVkExecObjDep {
 typedef struct FFVkExecContext {
     uint32_t idx;
     const struct FFVkExecPool *parent;
+
+    /* Set on submission; pool-rolling users check and clear it to tell
+     * contexts with uncollected results apart from fresh ones */
     int had_submission;
 
     /* Queue for the execution context */
@@ -138,12 +141,13 @@ typedef struct FFVkExecContext {
     /* Command buffer for the context */
     VkCommandBuffer buf;
 
-    /* Fence for the command buffer */
-    VkFence fence;
+    /* Busy (claimed or executing) while the counter is below sem_value;
+     * signalled by the submission, or by ff_vk_exec_discard() */
+    VkSemaphore sem;
+    uint64_t sem_value;
 
-    /* CPU-side ownership. Held from ff_vk_exec_start() until the end of
-     * submission, and briefly by the eager dependency release in
-     * ff_vk_exec_get(). */
+    /* Briefly guards the dependency lists; the busy state is carried by the
+     * semaphore above */
     pthread_mutex_t lock;
 
     /* Opaque data, untouched, free to use by users */
@@ -495,6 +499,9 @@ void ff_vk_exec_wait(FFVulkanContext *s, FFVkExecContext *e);
  * are discarded, the execution is submitted, or a failure happens.
  * update_frame will update the frame's properties before it is unlocked,
  * only if submission was successful.
+ * ff_vk_exec_discard() abandons a started, unsubmitted recording: call it
+ * exactly once, from the claiming thread. ff_vk_exec_submit() cleans up
+ * after its own failures.
  */
 
 /* Takes a new reference to an AVRefStruct-managed object, held until the
@@ -529,7 +536,7 @@ void ff_vk_exec_update_frame(FFVulkanContext *s, FFVkExecContext *e, AVFrame *f,
 int ff_vk_exec_mirror_sem_value(FFVulkanContext *s, FFVkExecContext *e,
                                 VkSemaphore *dst, uint64_t *dst_val,
                                 AVFrame *f);
-void ff_vk_exec_discard_deps(FFVulkanContext *s, FFVkExecContext *e);
+void ff_vk_exec_discard(FFVulkanContext *s, FFVkExecContext *e);
 
 /**
  * Create a single imageview for a given plane.

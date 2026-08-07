@@ -256,7 +256,9 @@ int ff_vk_filter_process_simple(FFVulkanContext *vkctx, FFVkExecPool *e,
 
     /* Update descriptors and init the exec context */
     FFVkExecContext *exec = ff_vk_exec_get(vkctx, e);
-    ff_vk_exec_start(vkctx, exec);
+    err = ff_vk_exec_start(vkctx, exec);
+    if (err < 0)
+        return err;
 
     RET(ff_vk_exec_add_dep_frame(vkctx, exec, out_f,
                                  VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
@@ -309,7 +311,7 @@ int ff_vk_filter_process_simple(FFVulkanContext *vkctx, FFVkExecPool *e,
 
     return ff_vk_exec_submit(vkctx, exec);
 fail:
-    ff_vk_exec_discard_deps(vkctx, exec);
+    ff_vk_exec_discard(vkctx, exec);
     return err;
 }
 
@@ -332,7 +334,9 @@ int ff_vk_filter_process_2pass(FFVulkanContext *vkctx, FFVkExecPool *e,
 
     /* Update descriptors and init the exec context */
     FFVkExecContext *exec = ff_vk_exec_get(vkctx, e);
-    ff_vk_exec_start(vkctx, exec);
+    err = ff_vk_exec_start(vkctx, exec);
+    if (err < 0)
+        return err;
 
     RET(ff_vk_exec_add_dep_frame(vkctx, exec, in,
                                  VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
@@ -402,7 +406,7 @@ int ff_vk_filter_process_2pass(FFVulkanContext *vkctx, FFVkExecPool *e,
 
     return ff_vk_exec_submit(vkctx, exec);
 fail:
-    ff_vk_exec_discard_deps(vkctx, exec);
+    ff_vk_exec_discard(vkctx, exec);
     return err;
 }
 
@@ -424,7 +428,9 @@ int ff_vk_filter_process_Nin(FFVulkanContext *vkctx, FFVkExecPool *e,
 
     /* Update descriptors and init the exec context */
     FFVkExecContext *exec = ff_vk_exec_get(vkctx, e);
-    ff_vk_exec_start(vkctx, exec);
+    err = ff_vk_exec_start(vkctx, exec);
+    if (err < 0)
+        return err;
 
     /* Add deps and create temporary imageviews */
     RET(ff_vk_exec_add_dep_frame(vkctx, exec, out,
@@ -481,6 +487,6 @@ int ff_vk_filter_process_Nin(FFVulkanContext *vkctx, FFVkExecPool *e,
 
     return ff_vk_exec_submit(vkctx, exec);
 fail:
-    ff_vk_exec_discard_deps(vkctx, exec);
+    ff_vk_exec_discard(vkctx, exec);
     return err;
 }

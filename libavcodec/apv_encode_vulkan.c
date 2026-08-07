@@ -409,6 +409,11 @@ static int submit_frame(AVCodecContext *avctx, FFVkExecContext *exec,
     FFVkBuffer *compacted_buf;
     FFVkBuffer *sizes_buf;
 
+    /* Start recording */
+    err = ff_vk_exec_start(&ev->s, exec);
+    if (err < 0)
+        return err;
+
     /* Allocate per-frame buffers */
     RET(ff_vk_get_pooled_buffer(&ev->s, &ev->coeffs_pool, &fd->coeffs_ref,
                                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
@@ -457,8 +462,6 @@ static int submit_frame(AVCodecContext *avctx, FFVkExecContext *exec,
                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                 VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
     sizes_buf = fd->sizes_ref;
-
-    ff_vk_exec_start(&ev->s, exec);
 
     ff_vk_exec_add_dep_refstruct(&ev->s, exec, fd->coeffs_ref);
     ff_vk_exec_add_dep_refstruct(&ev->s, exec, fd->bytestream_ref);
@@ -620,13 +623,13 @@ static int submit_frame(AVCodecContext *avctx, FFVkExecContext *exec,
     ff_vk_exec_move_dep_refstruct(&ev->s, exec, &gathered_buf);
     err = ff_vk_exec_submit(&ev->s, exec);
     if (err < 0)
-        goto fail;
+        return err;
 
     return 0;
 
 fail:
     av_refstruct_unref(&gathered_buf);
-    ff_vk_exec_discard_deps(&ev->s, exec);
+    ff_vk_exec_discard(&ev->s, exec);
     return err;
 }
 

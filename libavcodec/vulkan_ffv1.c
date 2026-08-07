@@ -288,7 +288,9 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
     int nb_buf_bar = 0;
 
     FFVkExecContext *exec = ff_vk_exec_get(&ctx->s, &ctx->exec_pool);
-    ff_vk_exec_start(&ctx->s, exec);
+    err = ff_vk_exec_start(&ctx->s, exec);
+    if (err < 0)
+        return err;
 
     /* Prepare deps */
     RET(ff_vk_exec_add_dep_frame(&ctx->s, exec, f->picture.f,
@@ -571,7 +573,10 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
     /* We don't need the temporary frame after decoding */
     av_frame_free(&vp->dpb_frame);
 
+    return 0;
+
 fail:
+    ff_vk_exec_discard(&ctx->s, exec);
     return 0;
 }
 

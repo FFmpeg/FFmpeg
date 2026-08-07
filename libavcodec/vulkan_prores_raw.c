@@ -149,7 +149,9 @@ static int vk_prores_raw_end_frame(AVCodecContext *avctx)
     int nb_img_bar = 0;
 
     FFVkExecContext *exec = ff_vk_exec_get(&ctx->s, &ctx->exec_pool);
-    ff_vk_exec_start(&ctx->s, exec);
+    err = ff_vk_exec_start(&ctx->s, exec);
+    if (err < 0)
+        return err;
 
     /* Prepare deps */
     RET(ff_vk_exec_add_dep_frame(&ctx->s, exec, prr->frame,
@@ -269,7 +271,10 @@ static int vk_prores_raw_end_frame(AVCodecContext *avctx)
     if (err < 0)
         return err;
 
+    return 0;
+
 fail:
+    ff_vk_exec_discard(&ctx->s, exec);
     return 0;
 }
 

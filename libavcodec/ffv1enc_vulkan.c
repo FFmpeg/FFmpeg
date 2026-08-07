@@ -312,6 +312,11 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
     VkBufferMemoryBarrier2 buf_bar[8];
     int nb_buf_bar = 0;
 
+    /* Start recording */
+    err = ff_vk_exec_start(&fv->s, exec);
+    if (err < 0)
+        return err;
+
     /* Frame state */
     f->cur_enc_frame = pict;
     if (avctx->gop_size == 0 || f->picture_number % avctx->gop_size == 0) {
@@ -408,8 +413,10 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
     if (fv->is_rgb) {
         /* Create a temporaty frame */
         tmp = av_frame_alloc();
-        if (!(tmp))
-            return AVERROR(ENOMEM);
+        if (!(tmp)) {
+            err = AVERROR(ENOMEM);
+            goto fail;
+        }
 
         RET(av_hwframe_get_buffer(fv->intermediate_frames_ref,
                                   tmp, 0));
@@ -450,9 +457,6 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
         memcpy(pd.fmt_lut, (int [4]) { 2, 1, 0, 3 }, 4*sizeof(int));
     else
         ff_vk_set_perm(avctx->sw_pix_fmt, pd.fmt_lut, 1);
-
-    /* Start recording */
-    ff_vk_exec_start(&fv->s, exec);
 
     /* For float pixel formats we want the raw bit pattern, not a value
      * already passed through fp16/fp32 conversion (which can flush
@@ -750,8 +754,10 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
     if (remap_data_buf)
         ff_vk_exec_move_dep_refstruct(&fv->s, exec, &remap_data_buf);
     err = ff_vk_exec_submit(&fv->s, exec);
-    if (err < 0)
-        goto fail;
+    if (err < 0) {
+        av_frame_free(&tmp);
+        return err;
+    }
 
     f->picture_number++;
 
@@ -759,11 +765,11 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
     return 0;
 
 fail:
+    ff_vk_exec_discard(&fv->s, exec);
     av_frame_free(&tmp);
     av_refstruct_unref(&slice_data_buf);
     av_refstruct_unref(&remap_data_buf);
     av_refstruct_unref(&gathered_buf);
-    ff_vk_exec_discard_deps(&fv->s, exec);
 
     return err;
 }

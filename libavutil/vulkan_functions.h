@@ -118,6 +118,7 @@ typedef uint64_t FFVulkanExtensions;
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              AllocateCommandBuffers)                  \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              BeginCommandBuffer)                      \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              EndCommandBuffer)                        \
+    MACRO(1, 1, FF_VK_EXT_NO_FLAG,              ResetCommandBuffer)                      \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              FreeCommandBuffers)                      \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              CmdDispatch)                             \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              CmdDispatchBase)                                       \
@@ -127,18 +128,13 @@ typedef uint64_t FFVulkanExtensions;
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              QueueSubmit)                             \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              QueueSubmit2)                              \
                                                                                          \
-    /* Fences */                                                                         \
-    MACRO(1, 1, FF_VK_EXT_NO_FLAG,              CreateFence)                             \
-    MACRO(1, 1, FF_VK_EXT_NO_FLAG,              WaitForFences)                           \
-    MACRO(1, 1, FF_VK_EXT_NO_FLAG,              GetFenceStatus)                                        \
-    MACRO(1, 1, FF_VK_EXT_NO_FLAG,              ResetFences)                             \
-    MACRO(1, 1, FF_VK_EXT_NO_FLAG,              DestroyFence)                            \
-                                                                                         \
     /* Semaphores */                                                                     \
     MACRO(1, 1, FF_VK_EXT_EXTERNAL_FD_SEM,      GetSemaphoreFdKHR)                       \
     MACRO(1, 1, FF_VK_EXT_EXTERNAL_FD_SEM,      ImportSemaphoreFdKHR)                                  \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              CreateSemaphore)                         \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              WaitSemaphores)                          \
+    MACRO(1, 1, FF_VK_EXT_NO_FLAG,              SignalSemaphore)                         \
+    MACRO(1, 1, FF_VK_EXT_NO_FLAG,              GetSemaphoreCounterValue)                \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              DestroySemaphore)                        \
                                                                                          \
     /* Memory */                                                                         \

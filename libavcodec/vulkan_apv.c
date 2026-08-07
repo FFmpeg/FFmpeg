@@ -188,7 +188,9 @@ static int vk_apv_end_frame(AVCodecContext *avctx)
     int nb_buf_bar = 0;
 
     FFVkExecContext *exec = ff_vk_exec_get(&ctx->s, &ctx->exec_pool);
-    ff_vk_exec_start(&ctx->s, exec);
+    err = ff_vk_exec_start(&ctx->s, exec);
+    if (err < 0)
+        return err;
 
     /* Make sure the buffer is flushed */
     RET(ff_vk_flush_buffer(&ctx->s, frame_data_buf, 0, frame_data_buf->size, 1));
@@ -368,10 +370,15 @@ static int vk_apv_end_frame(AVCodecContext *avctx)
 
     ff_vk_exec_move_dep_refstruct(&ctx->s, exec, &coeff_buf);
     err = ff_vk_exec_submit(&ctx->s, exec);
+    if (err < 0)
+        return err;
+
+    return 0;
 
 fail:
+    ff_vk_exec_discard(&ctx->s, exec);
     av_refstruct_unref(&coeff_buf);
-    return err < 0 ? err : 0;
+    return err;
 }
 
 static int init_decode_shader(AVCodecContext *avctx, FFVulkanContext *s,

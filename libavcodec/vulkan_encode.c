@@ -354,7 +354,9 @@ static int vulkan_encode_issue(AVCodecContext *avctx,
 
     /* Start command buffer recording */
     exec = vp->exec = ff_vk_exec_get(&ctx->s, &ctx->enc_pool);
-    ff_vk_exec_start(&ctx->s, exec);
+    err = ff_vk_exec_start(&ctx->s, exec);
+    if (err < 0)
+        goto fail;
     cmd_buf = exec->buf;
 
     /* Output packet buffer */
@@ -364,8 +366,10 @@ static int vulkan_encode_issue(AVCodecContext *avctx,
     err = ff_vk_exec_add_dep_frame(&ctx->s, exec, src,
                                    VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
                                    VK_PIPELINE_STAGE_2_VIDEO_ENCODE_BIT_KHR);
-    if (err < 0)
+    if (err < 0) {
+        ff_vk_exec_discard(&ctx->s, exec);
         goto fail;
+    }
 
     /* Source image layout conversion. Writes to it happened on other
      * queues, and were made available by the semaphore wait: their access
