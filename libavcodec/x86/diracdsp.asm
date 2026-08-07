@@ -327,7 +327,6 @@ cglobal put_signed_rect_clamped_10, 5, 7, 5, dst, dst_stride, src, src_stride, w
     neg      wq
     mov     t2q, dstq
     mov     t1q, wq
-    pxor     m2, m2
     mova     m3, [clip_10bit]
     mova     m4, [convert_to_unsigned_10bit]
 
@@ -342,7 +341,7 @@ cglobal put_signed_rect_clamped_10, 5, 7, 5, dst, dst_stride, src, src_stride, w
     paddd    m0, m4
     paddd    m1, m4
     packusdw m0, m0, m1
-    CLIPW    m0, m2, m3 ; packusdw saturates so it's fine
+    pminuw   m0, m3
 
     movu     [dstq], m0
 
