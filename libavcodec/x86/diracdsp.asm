@@ -131,8 +131,9 @@ cglobal dirac_hpel_filter_h, 3,3,7, dst, src, width
     RET
 
 ; void ff_put_signed_rect_clamped_sse2(uint8_t *dst, ptrdiff_t dst_stride,
-;                                      const int16_t *src, ptrdiff_t src_stride,
+;                                      const uint8_t *src, ptrdiff_t src_stride,
 ;                                      int width, int height)
+; note: src actually points to int16_t
 cglobal put_signed_rect_clamped, 5,9,3, dst, dst_stride, src, src_stride, w, dst2, src2
     mova    m0, [pb_80]
     add     wd, (mmsize-1)

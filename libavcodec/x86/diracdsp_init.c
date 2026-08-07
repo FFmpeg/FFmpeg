@@ -35,7 +35,7 @@ void ff_add_dirac_obmc32_sse2(uint16_t *dst, const uint8_t *src, ptrdiff_t strid
 
 void ff_put_rect_clamped_sse2(uint8_t *dst, ptrdiff_t dst_stride, const int16_t *src,
                               ptrdiff_t src_stride, int width, int height);
-void ff_put_signed_rect_clamped_sse2(uint8_t *dst, ptrdiff_t dst_stride, const int16_t *src,
+void ff_put_signed_rect_clamped_sse2(uint8_t *dst, ptrdiff_t dst_stride, const uint8_t *src,
                                      ptrdiff_t src_stride, int width, int height);
 void ff_put_signed_rect_clamped_10_sse4(uint8_t *dst, ptrdiff_t dst_stride, const uint8_t *src,
                                         ptrdiff_t src_stride, int width, int height);
@@ -95,7 +95,7 @@ void ff_diracdsp_init_x86(DiracDSPContext* c)
     if (EXTERNAL_SSE2(mm_flags)) {
         c->dirac_hpel_filter = dirac_hpel_filter_sse2;
         c->add_rect_clamped = ff_add_rect_clamped_sse2;
-        c->put_signed_rect_clamped[0] = (void *)ff_put_signed_rect_clamped_sse2;
+        c->put_signed_rect_clamped[0] = ff_put_signed_rect_clamped_sse2;
 
         c->add_dirac_obmc[0] = ff_add_dirac_obmc8_sse2;
         c->add_dirac_obmc[1] = ff_add_dirac_obmc16_sse2;
