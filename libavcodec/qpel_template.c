@@ -29,9 +29,9 @@
 static inline void OPNAME ## _no_rnd_pixels8_l2_8(uint8_t *dst,         \
                                                   const uint8_t *src1,  \
                                                   const uint8_t *src2,  \
-                                                  int dst_stride,       \
-                                                  int src_stride1,      \
-                                                  int src_stride2,      \
+                                                  ptrdiff_t dst_stride, \
+                                                  ptrdiff_t src_stride1,\
+                                                  ptrdiff_t src_stride2,\
                                                   int h)                \
 {                                                                       \
     int i;                                                              \
@@ -52,9 +52,9 @@ static inline void OPNAME ## _no_rnd_pixels8_l2_8(uint8_t *dst,         \
 static inline void OPNAME ## _no_rnd_pixels16_l2_8(uint8_t *dst,        \
                                                    const uint8_t *src1, \
                                                    const uint8_t *src2, \
-                                                   int dst_stride,      \
-                                                   int src_stride1,     \
-                                                   int src_stride2,     \
+                                                   ptrdiff_t dst_stride,\
+                                                   ptrdiff_t src_stride1,\
+                                                   ptrdiff_t src_stride2,\
                                                    int h)               \
 {                                                                       \
     OPNAME ## _no_rnd_pixels8_l2_8(dst, src1, src2, dst_stride,         \
@@ -71,11 +71,11 @@ static inline void OPNAME ## _pixels8_l4_8(uint8_t *dst,                \
                                            const uint8_t *src2,         \
                                            const uint8_t *src3,         \
                                            const uint8_t *src4,         \
-                                           int dst_stride,              \
-                                           int src_stride1,             \
-                                           int src_stride2,             \
-                                           int src_stride3,             \
-                                           int src_stride4,             \
+                                           ptrdiff_t dst_stride,        \
+                                           ptrdiff_t src_stride1,       \
+                                           ptrdiff_t src_stride2,       \
+                                           ptrdiff_t src_stride3,       \
+                                           ptrdiff_t src_stride4,       \
                                            int h)                       \
 {                                                                       \
     /* FIXME HIGH BIT DEPTH */                                          \
@@ -121,11 +121,11 @@ static inline void OPNAME ## _no_rnd_pixels8_l4_8(uint8_t *dst,         \
                                                   const uint8_t *src2,  \
                                                   const uint8_t *src3,  \
                                                   const uint8_t *src4,  \
-                                                  int dst_stride,       \
-                                                  int src_stride1,      \
-                                                  int src_stride2,      \
-                                                  int src_stride3,      \
-                                                  int src_stride4,      \
+                                                  ptrdiff_t dst_stride, \
+                                                  ptrdiff_t src_stride1,\
+                                                  ptrdiff_t src_stride2,\
+                                                  ptrdiff_t src_stride3,\
+                                                  ptrdiff_t src_stride4,\
                                                   int h)                \
 {                                                                       \
     /* FIXME HIGH BIT DEPTH */                                          \
@@ -171,11 +171,11 @@ static inline void OPNAME ## _pixels16_l4_8(uint8_t *dst,               \
                                             const uint8_t *src2,        \
                                             const uint8_t *src3,        \
                                             const uint8_t *src4,        \
-                                            int dst_stride,             \
-                                            int src_stride1,            \
-                                            int src_stride2,            \
-                                            int src_stride3,            \
-                                            int src_stride4,            \
+                                            ptrdiff_t dst_stride,       \
+                                            ptrdiff_t src_stride1,      \
+                                            ptrdiff_t src_stride2,      \
+                                            ptrdiff_t src_stride3,      \
+                                            ptrdiff_t src_stride4,      \
                                             int h)                      \
 {                                                                       \
     OPNAME ## _pixels8_l4_8(dst, src1, src2, src3, src4, dst_stride,    \
@@ -193,11 +193,11 @@ static inline void OPNAME ## _no_rnd_pixels16_l4_8(uint8_t *dst,        \
                                                    const uint8_t *src2, \
                                                    const uint8_t *src3, \
                                                    const uint8_t *src4, \
-                                                   int dst_stride,      \
-                                                   int src_stride1,     \
-                                                   int src_stride2,     \
-                                                   int src_stride3,     \
-                                                   int src_stride4,     \
+                                                   ptrdiff_t dst_stride,\
+                                                   ptrdiff_t src_stride1,\
+                                                   ptrdiff_t src_stride2,\
+                                                   ptrdiff_t src_stride3,\
+                                                   ptrdiff_t src_stride4,\
                                                    int h)               \
 {                                                                       \
     OPNAME ## _no_rnd_pixels8_l4_8(dst, src1, src2, src3, src4,         \

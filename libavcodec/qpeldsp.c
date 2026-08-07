@@ -42,8 +42,8 @@
 
 #define QPEL_MC(r, OPNAME, RND, OP)                                           \
 static void OPNAME ## mpeg4_qpel8_h_lowpass(uint8_t *dst, const uint8_t *src, \
-                                            int dstStride, int srcStride,     \
-                                            int h)                            \
+                                            ptrdiff_t dstStride,              \
+                                            ptrdiff_t srcStride, int h)       \
 {                                                                             \
     const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP;                           \
     int i;                                                                    \
@@ -63,7 +63,8 @@ static void OPNAME ## mpeg4_qpel8_h_lowpass(uint8_t *dst, const uint8_t *src, \
 }                                                                             \
                                                                               \
 static void OPNAME ## mpeg4_qpel8_v_lowpass(uint8_t *dst, const uint8_t *src, \
-                                            int dstStride, int srcStride)     \
+                                            ptrdiff_t dstStride,              \
+                                            ptrdiff_t srcStride)              \
 {                                                                             \
     const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP;                           \
     const int w = 8;                                                          \
@@ -92,10 +93,9 @@ static void OPNAME ## mpeg4_qpel8_v_lowpass(uint8_t *dst, const uint8_t *src, \
     }                                                                         \
 }                                                                             \
                                                                               \
-static void OPNAME ## mpeg4_qpel16_h_lowpass(uint8_t *dst,                    \
-                                             const uint8_t *src,              \
-                                             int dstStride, int srcStride,    \
-                                             int h)                           \
+static void OPNAME ## mpeg4_qpel16_h_lowpass(uint8_t *dst, const uint8_t *src,\
+                                             ptrdiff_t dstStride,             \
+                                             ptrdiff_t srcStride, int h)      \
 {                                                                             \
     const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP;                           \
     int i;                                                                    \
@@ -122,9 +122,9 @@ static void OPNAME ## mpeg4_qpel16_h_lowpass(uint8_t *dst,                    \
     }                                                                         \
 }                                                                             \
                                                                               \
-static void OPNAME ## mpeg4_qpel16_v_lowpass(uint8_t *dst,                    \
-                                             const uint8_t *src,              \
-                                             int dstStride, int srcStride)    \
+static void OPNAME ## mpeg4_qpel16_v_lowpass(uint8_t *dst, const uint8_t *src,\
+                                             ptrdiff_t dstStride,             \
+                                             ptrdiff_t srcStride)             \
 {                                                                             \
     const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP;                           \
     const int w = 16;                                                         \
