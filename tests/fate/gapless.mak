@@ -1,7 +1,7 @@
-FATE_GAPLESS-$(call FRAMECRC, MP3, MP3, ARESAMPLE_FILTER) += fate-gapless-mp3
+FATE_GAPLESS-$(call FRAMECRC, MP3, MP3, ARESAMPLE_FILTER WAV_MUXER MD5_PROTOCOL) += fate-gapless-mp3
 fate-gapless-mp3: CMD = gapless $(TARGET_SAMPLES)/gapless/gapless.mp3 "-c:a mp3"
 
-FATE_GAPLESSINFO_PROBE-$(CONFIG_MP3_DEMUXER) += fate-gapless-mp3-side-data
+FATE_GAPLESSINFO_PROBE-$(call ALLYES, MP3_DEMUXER MP3FLOAT_DECODER FILE_PROTOCOL) += fate-gapless-mp3-side-data
 fate-gapless-mp3-side-data: CMD = ffprobe_demux $(TARGET_SAMPLES)/gapless/gapless.mp3
 
 # The trailing padding of this sample spans two packets. The duration of the
