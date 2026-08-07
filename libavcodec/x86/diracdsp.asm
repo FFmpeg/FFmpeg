@@ -37,21 +37,21 @@ SECTION .text
     mov%6   m5, %4
     mova    m4, %1
     mova    %2, m5
-    punpcklbw %1, m7
-    punpcklbw m5, m7
-    punpckhbw m4, m7
-    punpckhbw %2, m7
+    punpcklbw %1, m6
+    punpcklbw m5, m6
+    punpckhbw m4, m6
+    punpckhbw %2, m6
     paddw   %1, m5
     paddw   %2, m4
 %endmacro
 
 INIT_XMM sse2
 ; ff_dirac_hpel_filter_v_sse2(uint8_t *dst, const uint8_t *src, ptrdiff_t stride, int width);
-cglobal dirac_hpel_filter_v, 4,6,8, dst, src, stride, width, src0, stridex3
+cglobal dirac_hpel_filter_v, 4,6,7, dst, src, stride, width, src0, stridex3
     mov     src0q, srcq
     lea     stridex3q, [3*strideq]
     sub     src0q, stridex3q
-    pxor    m7, m7
+    pxor    m6, m6
 .loop:
     ; 7*(src[0] + src[1])
     UNPACK_ADD m0, m1, [srcq], [srcq + strideq], a,a
@@ -91,9 +91,9 @@ cglobal dirac_hpel_filter_v, 4,6,8, dst, src, stride, width, src0, stridex3
     RET
 
 ; ff_dirac_hpel_filter_h_sse2(uint8_t *dst, const uint8_t *src, int width);
-cglobal dirac_hpel_filter_h, 3,3,8, dst, src, width
+cglobal dirac_hpel_filter_h, 3,3,7, dst, src, width
     dec     widthd
-    pxor    m7, m7
+    pxor    m6, m6
     and     widthd, ~(mmsize-1)
 .loop:
     ; 7*(src[0] + src[1])
