@@ -85,4 +85,7 @@ void ff_hevc_pred_init(HEVCPredContext *hpc, int bit_depth)
 #if ARCH_MIPS
     ff_hevc_pred_init_mips(hpc, bit_depth);
 #endif
+#if ARCH_X86 && HAVE_X86ASM
+    ff_hevc_pred_init_x86(hpc, bit_depth);
+#endif
 }

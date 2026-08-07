@@ -51,6 +51,7 @@ typedef struct HEVCPredContext {
 void ff_hevc_pred_init(HEVCPredContext *hpc, int bit_depth);
 void ff_hevc_pred_init_mips(HEVCPredContext *hpc, int bit_depth);
 void ff_hevc_pred_init_aarch64(HEVCPredContext *hpc, int bit_depth);
+void ff_hevc_pred_init_x86(HEVCPredContext *hpc, int bit_depth);
 
 /* C angular prediction fallbacks (non-static for arch-specific partial override) */
 #define HEVC_PRED_ANGULAR_DECL(depth)                                         \
