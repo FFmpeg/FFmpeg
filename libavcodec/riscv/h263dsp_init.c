@@ -25,8 +25,8 @@
 #include "libavutil/riscv/cpu.h"
 #include "libavcodec/h263dsp.h"
 
-void ff_h263_h_loop_filter_rvv(uint8_t *src, int stride, int q);
-void ff_h263_v_loop_filter_rvv(uint8_t *src, int stride, int q);
+void ff_h263_h_loop_filter_rvv(uint8_t *src, ptrdiff_t stride, int q);
+void ff_h263_v_loop_filter_rvv(uint8_t *src, ptrdiff_t stride, int q);
 
 av_cold void ff_h263dsp_init_riscv(H263DSPContext *c)
 {

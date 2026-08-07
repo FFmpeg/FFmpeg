@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stddef.h>
 #include <stdint.h>
 
 #include "libavutil/attributes.h"
@@ -25,8 +26,8 @@
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/h263dsp.h"
 
-void ff_h263_h_loop_filter_sse2(uint8_t *src, int stride, int qscale);
-void ff_h263_v_loop_filter_sse2(uint8_t *src, int stride, int qscale);
+void ff_h263_h_loop_filter_sse2(uint8_t *src, ptrdiff_t stride, int qscale);
+void ff_h263_v_loop_filter_sse2(uint8_t *src, ptrdiff_t stride, int qscale);
 
 av_cold void ff_h263dsp_init_x86(H263DSPContext *c)
 {

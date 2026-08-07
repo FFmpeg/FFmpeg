@@ -19,13 +19,14 @@
 #ifndef AVCODEC_H263DSP_H
 #define AVCODEC_H263DSP_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 extern const uint8_t ff_h263_loop_filter_strength[32];
 
 typedef struct H263DSPContext {
-    void (*h263_h_loop_filter)(uint8_t *src, int stride, int qscale);
-    void (*h263_v_loop_filter)(uint8_t *src, int stride, int qscale);
+    void (*h263_h_loop_filter)(uint8_t *src, ptrdiff_t stride, int qscale);
+    void (*h263_v_loop_filter)(uint8_t *src, ptrdiff_t stride, int qscale);
 } H263DSPContext;
 
 void ff_h263dsp_init(H263DSPContext *ctx);

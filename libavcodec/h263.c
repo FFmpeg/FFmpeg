@@ -96,8 +96,8 @@ void ff_h263_update_motion_val(MpegEncContext * s){
 
 void ff_h263_loop_filter(MpegEncContext * s){
     int qp_c;
-    const int linesize  = s->linesize;
-    const int uvlinesize= s->uvlinesize;
+    const ptrdiff_t   linesize = s->linesize;
+    const ptrdiff_t uvlinesize = s->uvlinesize;
     const int xy = s->mb_y * s->mb_stride + s->mb_x;
     uint8_t *dest_y = s->dest[0];
     uint8_t *dest_cb= s->dest[1];

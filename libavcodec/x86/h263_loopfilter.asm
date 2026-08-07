@@ -86,9 +86,8 @@ SECTION .text
 %endmacro
 
 INIT_XMM sse2
-; void ff_h263_v_loop_filter_sse2(uint8_t *src, int stride, int qscale)
+; void ff_h263_v_loop_filter_sse2(uint8_t *src, ptrdiff_t stride, int qscale)
 cglobal h263_v_loop_filter, 3,5,8
-    movsxdifnidn r1, r1d
     movsxdifnidn r2, r2d
 
     lea          r3, [h263_loop_filter_strength]
@@ -118,10 +117,9 @@ cglobal h263_v_loop_filter, 3,5,8
 %endmacro
 
 
-; void ff_h263_h_loop_filter_sse2(uint8_t *src, int stride, int qscale)
+; void ff_h263_h_loop_filter_sse2(uint8_t *src, ptrdiff_t stride, int qscale)
 INIT_XMM sse2
 cglobal h263_h_loop_filter, 3,5,8,32
-    movsxdifnidn r1, r1d
     movsxdifnidn r2, r2d
 
     lea          r4, [h263_loop_filter_strength]

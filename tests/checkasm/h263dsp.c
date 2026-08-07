@@ -26,7 +26,7 @@
 #include "libavutil/mem.h"
 #include "libavutil/mem_internal.h"
 
-typedef void (*filter)(uint8_t *src, int stride, int qscale);
+typedef void (*filter)(uint8_t *src, ptrdiff_t stride, int qscale);
 
 static void check_loop_filter(char dim, filter func)
 {
@@ -34,7 +34,7 @@ static void check_loop_filter(char dim, filter func)
     LOCAL_ALIGNED_16(uint8_t, buf1, [32 * 32]);
     int qscale = rnd() % 32;
 
-    declare_func(void, uint8_t *, int, int);
+    declare_func(void, uint8_t *, ptrdiff_t, int);
 
     for (size_t y = 0; y < 32; y++)
         for (size_t x = 0; x < 32; x++)
