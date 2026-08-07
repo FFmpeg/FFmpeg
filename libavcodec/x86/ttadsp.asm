@@ -39,10 +39,15 @@ cglobal tta%3_filter_process, 5,5,%2, qm, dx, dl, error, in, shift, round
     mova       m4, [dxq       ]
     mova       m5, [dxq + 0x10]
 
-    movd       m6, [errorq]         ; if (filter->error < 0) {
-    SPLATD     m6                   ;     for (int i = 0; i < 8; i++)
-    psignd     m0, m4, m6           ;         filter->qm[i] -= filter->dx[i];
+    movd       m1, [errorq]         ; if (filter->error < 0) {
+    SPLATD     m1                   ;     for (int i = 0; i < 8; i++)
+    psignd     m0, m4, m1           ;         filter->qm[i] -= filter->dx[i];
+%if avx_enabled
+    psignd     m1, m5, m1           ; } else if (filter->error > 0) {
+%else
+    SWAP        1, 6
     psignd     m1, m5, m6           ; } else if (filter->error > 0) {
+%endif
     paddd      m2, m0               ;     for (int i = 0; i < 8; i++)
     paddd      m3, m1               ;         filter->qm[i] += filter->dx[i];
     mova       [qmq       ], m2     ; }
@@ -54,54 +59,55 @@ cglobal tta%3_filter_process, 5,5,%2, qm, dx, dl, error, in, shift, round
 %if cpuflag(sse4)
     pmulld     m2, m0
     pmulld     m3, m1
+    palignr    m5, m4, 4            ; filter->dx[0] = filter->dx[1]; filter->dx[1] = filter->dx[2];
+                                    ; filter->dx[2] = filter->dx[3]; filter->dx[3] = filter->dx[4];
 %else
     pshufd     m6, m0, 0xb1
-    pshufd     m7, m2, 0xb1
-    pmuludq    m6, m7
+    palignr    m5, m4, 4            ; filter->dx[0] = filter->dx[1]; filter->dx[1] = filter->dx[2];
+                                    ; filter->dx[2] = filter->dx[3]; filter->dx[3] = filter->dx[4];
+    pshufd     m4, m2, 0xb1
+    pmuludq    m6, m4
     pshufd     m6, m6, 0xd8
     pmuludq    m2, m0
     pshufd     m2, m2, 0xd8
     punpckldq  m2, m6
 
     pshufd     m6, m1, 0xb1
-    pshufd     m7, m3, 0xb1
-    pmuludq    m6, m7
+    pshufd     m4, m3, 0xb1
+    pmuludq    m6, m4
     pshufd     m6, m6, 0xd8
     pmuludq    m3, m1
     pshufd     m3, m3, 0xd8
     punpckldq  m3, m6
 %endif
+    movd       m4, roundm           ; int sum = filter->round +
     ; Using horizontal add (phaddd) seems to be slower than shuffling stuff around
-    paddd      m2, m3               ; int sum = filter->round +
-                                    ;           filter->dl[0] * filter->qm[0] +
+    paddd      m2, m3               ;           filter->dl[0] * filter->qm[0] +
     pshufd     m3, m2, 0xe          ;           filter->dl[1] * filter->qm[1] +
     paddd      m2, m3               ;           filter->dl[2] * filter->qm[2] +
                                     ;           filter->dl[3] * filter->qm[3] +
-    movd       m6, roundm           ;           filter->dl[4] * filter->qm[4] +
-    paddd      m6, m2               ;           filter->dl[5] * filter->qm[5] +
+                                    ;           filter->dl[4] * filter->qm[4] +
+    paddd      m4, m2               ;           filter->dl[5] * filter->qm[5] +
     pshufd     m2, m2, 0x1          ;           filter->dl[6] * filter->qm[6] +
-    paddd      m6, m2               ;           filter->dl[7] * filter->qm[7];
-
-    palignr    m5, m4, 4            ; filter->dx[0] = filter->dx[1]; filter->dx[1] = filter->dx[2];
-                                    ; filter->dx[2] = filter->dx[3]; filter->dx[3] = filter->dx[4];
+    paddd      m4, m2               ;           filter->dl[7] * filter->qm[7];
 
     palignr    m2, m1, m0, 4        ; filter->dl[0] = filter->dl[1]; filter->dl[1] = filter->dl[2];
                                     ; filter->dl[2] = filter->dl[3]; filter->dl[3] = filter->dl[4];
 
-    psrad      m4, m1, 30           ; filter->dx[4] = ((filter->dl[4] >> 30) | 1);
-    por        m4, [pd_1224 ]       ; filter->dx[5] = ((filter->dl[5] >> 30) | 2) & ~1;
-    pand       m4, [pd_n0113]       ; filter->dx[6] = ((filter->dl[6] >> 30) | 2) & ~1;
+    psrad      m3, m1, 30           ; filter->dx[4] = ((filter->dl[4] >> 30) | 1);
+    por        m3, [pd_1224 ]       ; filter->dx[5] = ((filter->dl[5] >> 30) | 2) & ~1;
+    pand       m3, [pd_n0113]       ; filter->dx[6] = ((filter->dl[6] >> 30) | 2) & ~1;
                                     ; filter->dx[7] = ((filter->dl[7] >> 30) | 4) & ~3;
 
     mova       [dlq       ], m2
     mova       [dxq       ], m5
-    mova       [dxq + 0x10], m4
+    mova       [dxq + 0x10], m3
 
 %ifidn %3,enc
     movd       m2, shiftm           ;
     movd       m0, [inq]            ;
-    psrad      m6, m2               ;
-    psubd      m3, m0, m6           ;
+    psrad      m4, m2               ;
+    psubd      m3, m0, m4           ;
     movd       [inq], m3            ; *in -= (sum >> filter->shift);
     movd       [errorq], m3         ; filter->error = *in;
 %else
@@ -109,8 +115,8 @@ cglobal tta%3_filter_process, 5,5,%2, qm, dx, dl, error, in, shift, round
     movd       [errorq], m0         ;
 
     movd       m2, shiftm           ; *in += (sum >> filter->shift);
-    psrad      m6, m2               ;
-    paddd      m0, m6               ;
+    psrad      m4, m2               ;
+    paddd      m0, m4               ;
     movd       [inq], m0            ;
 %endif
 
@@ -128,11 +134,11 @@ cglobal tta%3_filter_process, 5,5,%2, qm, dx, dl, error, in, shift, round
 %endmacro
 
 %if CONFIG_TTA_DECODER
-TTA_FILTER ssse3, 8
-TTA_FILTER sse4,  7
+TTA_FILTER ssse3, 7
+TTA_FILTER sse4,  7-avx_enabled
 %endif
 
 %if CONFIG_TTA_ENCODER
-TTA_FILTER ssse3, 8, enc
-TTA_FILTER sse4,  7, enc
+TTA_FILTER ssse3, 7, enc
+TTA_FILTER sse4,  7-avx_enabled, enc
 %endif
