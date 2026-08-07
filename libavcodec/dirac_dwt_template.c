@@ -336,7 +336,7 @@ static void RENAME(vertical_compose_daub97iL1)(uint8_t *_b0, uint8_t *_b1, uint8
     }
 }
 
-static void RENAME(spatial_compose_dd97i_dy)(DWTContext *d, int level, int width, int height, int stride)
+static void RENAME(spatial_compose_dd97i_dy)(DWTContext *d, int level, int width, int height, ptrdiff_t stride)
 {
     vertical_compose_3tap vertical_compose_l0 = d->vertical_compose_l0.tap3;
     vertical_compose_5tap vertical_compose_h0 = d->vertical_compose_h0.tap5;
@@ -360,7 +360,7 @@ static void RENAME(spatial_compose_dd97i_dy)(DWTContext *d, int level, int width
     cs->y += 2;
 }
 
-static void RENAME(spatial_compose_dirac53i_dy)(DWTContext *d, int level, int width, int height, int stride)
+static void RENAME(spatial_compose_dirac53i_dy)(DWTContext *d, int level, int width, int height, ptrdiff_t stride)
 {
     vertical_compose_3tap vertical_compose_l0 = d->vertical_compose_l0.tap3;
     vertical_compose_3tap vertical_compose_h0 = d->vertical_compose_h0.tap3;
@@ -382,7 +382,7 @@ static void RENAME(spatial_compose_dirac53i_dy)(DWTContext *d, int level, int wi
     cs->y += 2;
 }
 
-static void RENAME(spatial_compose_dd137i_dy)(DWTContext *d, int level, int width, int height, int stride)
+static void RENAME(spatial_compose_dd137i_dy)(DWTContext *d, int level, int width, int height, ptrdiff_t stride)
 {
     vertical_compose_5tap vertical_compose_l0 = d->vertical_compose_l0.tap5;
     vertical_compose_5tap vertical_compose_h0 = d->vertical_compose_h0.tap5;
@@ -407,7 +407,7 @@ static void RENAME(spatial_compose_dd137i_dy)(DWTContext *d, int level, int widt
 }
 
 // haar makes the assumption that height is even (always true for dirac)
-static void RENAME(spatial_compose_haari_dy)(DWTContext *d, int level, int width, int height, int stride)
+static void RENAME(spatial_compose_haari_dy)(DWTContext *d, int level, int width, int height, ptrdiff_t stride)
 {
     vertical_compose_2tap vertical_compose = d->vertical_compose;
     int y = d->cs[level].y;
@@ -423,7 +423,7 @@ static void RENAME(spatial_compose_haari_dy)(DWTContext *d, int level, int width
 
 // Don't do sliced idwt for fidelity; the 9 tap filter makes it a bit annoying
 // Fortunately, this filter isn't used in practice.
-static void RENAME(spatial_compose_fidelity)(DWTContext *d, int level, int width, int height, int stride)
+static void RENAME(spatial_compose_fidelity)(DWTContext *d, int level, int width, int height, ptrdiff_t stride)
 {
     vertical_compose_9tap vertical_compose_l0 = d->vertical_compose_l0.tap9;
     vertical_compose_9tap vertical_compose_h0 = d->vertical_compose_h0.tap9;
@@ -448,7 +448,7 @@ static void RENAME(spatial_compose_fidelity)(DWTContext *d, int level, int width
     d->cs[level].y = height+1;
 }
 
-static void RENAME(spatial_compose_daub97i_dy)(DWTContext *d, int level, int width, int height, int stride)
+static void RENAME(spatial_compose_daub97i_dy)(DWTContext *d, int level, int width, int height, ptrdiff_t stride)
 {
     vertical_compose_3tap vertical_compose_l0 = d->vertical_compose_l0.tap3;
     vertical_compose_3tap vertical_compose_h0 = d->vertical_compose_h0.tap3;
@@ -476,7 +476,7 @@ static void RENAME(spatial_compose_daub97i_dy)(DWTContext *d, int level, int wid
     cs->y += 2;
 }
 
-static void RENAME(spatial_compose97i_init)(DWTCompose *cs, uint8_t *buffer, int height, int stride)
+static void RENAME(spatial_compose97i_init)(DWTCompose *cs, uint8_t *buffer, int height, ptrdiff_t stride)
 {
     cs->b[0] = buffer + avpriv_mirror(-3-1, height-1)*stride;
     cs->b[1] = buffer + avpriv_mirror(-3  , height-1)*stride;
@@ -485,14 +485,14 @@ static void RENAME(spatial_compose97i_init)(DWTCompose *cs, uint8_t *buffer, int
     cs->y = -3;
 }
 
-static void RENAME(spatial_compose53i_init)(DWTCompose *cs, uint8_t *buffer, int height, int stride)
+static void RENAME(spatial_compose53i_init)(DWTCompose *cs, uint8_t *buffer, int height, ptrdiff_t stride)
 {
     cs->b[0] = buffer + avpriv_mirror(-1-1, height-1)*stride;
     cs->b[1] = buffer + avpriv_mirror(-1  , height-1)*stride;
     cs->y = -1;
 }
 
-static void RENAME(spatial_compose_dd97i_init)(DWTCompose *cs, uint8_t *buffer, int height, int stride)
+static void RENAME(spatial_compose_dd97i_init)(DWTCompose *cs, uint8_t *buffer, int height, ptrdiff_t stride)
 {
     cs->b[0] = buffer + av_clip(-5-1, 0, height-2)*stride;
     cs->b[1] = buffer + av_clip(-5  , 1, height-1)*stride;
@@ -503,7 +503,7 @@ static void RENAME(spatial_compose_dd97i_init)(DWTCompose *cs, uint8_t *buffer, 
     cs->y = -5;
 }
 
-static void RENAME(spatial_compose_dd137i_init)(DWTCompose *cs, uint8_t *buffer, int height, int stride)
+static void RENAME(spatial_compose_dd137i_init)(DWTCompose *cs, uint8_t *buffer, int height, ptrdiff_t stride)
 {
     cs->b[0] = buffer + av_clip(-5-1, 0, height-2)*stride;
     cs->b[1] = buffer + av_clip(-5  , 1, height-1)*stride;
@@ -524,7 +524,7 @@ static int RENAME(spatial_idwt_init)(DWTContext *d, enum dwt_type type)
 
     for (level = d->decomposition_count - 1; level >= 0; level--){
         int hl = d->height >> level;
-        int stride_l = d->stride << level;
+        ptrdiff_t stride_l = d->stride << level;
 
         switch(type){
             case DWT_DIRAC_DD9_7:

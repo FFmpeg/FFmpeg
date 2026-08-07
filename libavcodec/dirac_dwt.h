@@ -21,6 +21,7 @@
 #ifndef AVCODEC_DIRAC_DWT_H
 #define AVCODEC_DIRAC_DWT_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 typedef int DWTELEM;
@@ -37,7 +38,7 @@ typedef struct DWTCompose {
 typedef struct DWTPlane {
     int width;
     int height;
-    int stride;
+    ptrdiff_t stride;
     uint8_t *buf;
     uint8_t *buf_base;
     uint8_t *tmp;
@@ -56,11 +57,11 @@ typedef struct DWTContext {
     uint8_t *temp;
     int width;
     int height;
-    int stride;
+    ptrdiff_t stride;
     int decomposition_count;
     int support;
 
-    void (*spatial_compose)(struct DWTContext *cs, int level, int width, int height, int stride);
+    void (*spatial_compose)(struct DWTContext *cs, int level, int width, int height, ptrdiff_t stride);
     union {
         vertical_compose_3tap tap3;
         vertical_compose_5tap tap5;
