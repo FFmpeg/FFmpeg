@@ -45,7 +45,7 @@ void ff_dequant_subband_32_sse4(uint8_t *src, uint8_t *dst, ptrdiff_t stride, co
 #define HPEL_FILTER(MMSIZE, EXT)                                                             \
     void ff_dirac_hpel_filter_v_ ## EXT(uint8_t *dst, const uint8_t *src,                    \
                                         ptrdiff_t stride, int width);                        \
-    void ff_dirac_hpel_filter_h_ ## EXT(uint8_t *, const uint8_t *, int);                    \
+    void ff_dirac_hpel_filter_h_ ## EXT(uint8_t *dst, const uint8_t *src, int width);        \
                                                                                              \
     static void dirac_hpel_filter_ ## EXT(uint8_t *dsth, uint8_t *dstv, uint8_t *dstc,       \
                                           const uint8_t *src, ptrdiff_t stride, int width, int height)   \

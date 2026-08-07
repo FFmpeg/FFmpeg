@@ -90,7 +90,7 @@ cglobal dirac_hpel_filter_v, 4,6,8, dst, src, stride, width, src0, stridex3
     jg      .loop
     RET
 
-; dirac_hpel_filter_h_sse2(uint8_t *dst, uint8_t *src, int width);
+; ff_dirac_hpel_filter_h_sse2(uint8_t *dst, const uint8_t *src, int width);
 cglobal dirac_hpel_filter_h, 3,3,8, dst, src, width
     dec     widthd
     pxor    m7, m7
