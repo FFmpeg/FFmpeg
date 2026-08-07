@@ -45,18 +45,17 @@ SECTION .text
     punpcklbw    m1, m7
     psubw        m1, m2
     psllw        m1, 2
+    movd         m2, %5
     paddw        m1, m0
     pxor         m6, m6
     pcmpgtw      m6, m1
+    punpcklbw    m2, m2
     pxor         m1, m6
     psubw        m1, m6
     psrlw        m1, 3
     packuswb     m1, m7
+    pshuflw      m2, m2, 0
     packsswb     m6, m7
-    movd         m2, %5
-    punpcklbw    m2, m2
-    punpcklbw    m2, m2
-    punpcklbw    m2, m2
     psubusb      m2, m1
     mova         m7, m2
     psubusb      m7, m1
