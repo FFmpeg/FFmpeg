@@ -27,6 +27,8 @@
 
 #define SWR_CH_MAX 64
 
+#define SQRT1_3      0.57735026918962576451  /* sqrt(1/3) */
+#define SQRT2_3      0.81649658092772603273  /* sqrt(2/3) */
 #define SQRT3_2      1.22474487139158904909  /* sqrt(3/2) */
 
 #define NS_TAPS 20

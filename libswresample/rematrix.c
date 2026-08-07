@@ -60,7 +60,13 @@
 #define TOP_BACK_LEFT          15
 #define TOP_BACK_CENTER        16
 #define TOP_BACK_RIGHT         17
-#define NUM_NAMED_CHANNELS     18
+#define LOW_FREQUENCY_2        35
+#define TOP_SIDE_LEFT          36
+#define TOP_SIDE_RIGHT         37
+#define BOTTOM_FRONT_CENTER    38
+#define BOTTOM_FRONT_LEFT      39
+#define BOTTOM_FRONT_RIGHT     40
+#define NUM_NAMED_CHANNELS     41
 
 int swr_set_matrix(struct SwrContext *s, const double *matrix, int stride)
 {
@@ -128,6 +134,10 @@ static int sane_layout(AVChannelLayout *ch_layout) {
     if(!even(av_channel_layout_subset(ch_layout, (AV_CH_TOP_FRONT_LEFT | AV_CH_TOP_FRONT_RIGHT))))
         return 0;
     if(!even(av_channel_layout_subset(ch_layout, (AV_CH_TOP_BACK_LEFT | AV_CH_TOP_BACK_RIGHT))))
+        return 0;
+    if(!even(av_channel_layout_subset(ch_layout, (AV_CH_TOP_SIDE_LEFT | AV_CH_TOP_SIDE_RIGHT))))
+        return 0;
+    if(!even(av_channel_layout_subset(ch_layout, (AV_CH_BOTTOM_FRONT_LEFT | AV_CH_BOTTOM_FRONT_RIGHT))))
         return 0;
 
     return 1;
@@ -299,6 +309,22 @@ static void build_matrix(const AVChannelLayout *in_ch_layout, const AVChannelLay
             av_assert0(0);
     }
 
+    if (unaccounted & AV_CH_TOP_FRONT_CENTER) {
+        if (av_channel_layout_index_from_channel(out_ch_layout, AV_CHAN_TOP_FRONT_LEFT) >= 0) {
+            /* U+030 = U-030 = sqrt(1/2) */
+            matrix[TOP_FRONT_LEFT ][TOP_FRONT_CENTER]+= M_SQRT1_2;
+            matrix[TOP_FRONT_RIGHT][TOP_FRONT_CENTER]+= M_SQRT1_2;
+        } else if (av_channel_layout_index_from_channel(out_ch_layout, AV_CHAN_FRONT_CENTER) >= 0) {
+            /* M+000 = 1 */
+            matrix[FRONT_CENTER][TOP_FRONT_CENTER] += 1.0;
+        } else if (av_channel_layout_index_from_channel(out_ch_layout, AV_CHAN_FRONT_LEFT) >= 0) {
+            /* M+030 = M-030 = sqrt(1/2) */
+            matrix[FRONT_LEFT ][TOP_FRONT_CENTER] += center_mix_level;
+            matrix[FRONT_RIGHT][TOP_FRONT_CENTER] += center_mix_level;
+        } else
+            av_assert0(0);
+    }
+
     if (unaccounted & AV_CH_TOP_BACK_LEFT) {
         if (av_channel_layout_index_from_channel(out_ch_layout, AV_CHAN_TOP_BACK_CENTER) >= 0) {
             matrix[TOP_BACK_CENTER][TOP_BACK_LEFT ] += M_SQRT1_2;
@@ -317,8 +343,8 @@ static void build_matrix(const AVChannelLayout *in_ch_layout, const AVChannelLay
             matrix[FRONT_LEFT ][TOP_BACK_LEFT ] += surround_mix_level;
             matrix[FRONT_RIGHT][TOP_BACK_RIGHT] += surround_mix_level;
         } else if (av_channel_layout_index_from_channel(out_ch_layout, AV_CHAN_FRONT_CENTER) >= 0) {
-            matrix[FRONT_CENTER][TOP_BACK_LEFT ] += M_SQRT1_2;
-            matrix[FRONT_CENTER][TOP_BACK_RIGHT] += M_SQRT1_2;
+            matrix[FRONT_CENTER][TOP_BACK_LEFT ] += surround_mix_level*M_SQRT1_2;
+            matrix[FRONT_CENTER][TOP_BACK_RIGHT] += surround_mix_level*M_SQRT1_2;
         } else
             av_assert0(0);
     }
@@ -343,6 +369,125 @@ static void build_matrix(const AVChannelLayout *in_ch_layout, const AVChannelLay
             av_assert0(0);
     }
 
+
+    if (unaccounted & AV_CH_TOP_SIDE_LEFT) {
+        if (av_channel_layout_subset(out_ch_layout, (AV_CH_TOP_FRONT_LEFT|AV_CH_TOP_BACK_CENTER)) ==
+                                                    (AV_CH_TOP_FRONT_LEFT|AV_CH_TOP_BACK_CENTER)) {
+            /* UH+180 = sqrt(1/3); U±045 = sqrt(2/3)*/
+            matrix[TOP_FRONT_LEFT ][TOP_SIDE_LEFT ] += SQRT2_3;
+            matrix[TOP_FRONT_RIGHT][TOP_SIDE_RIGHT] += SQRT2_3;
+            matrix[TOP_BACK_CENTER][TOP_SIDE_LEFT ] += SQRT1_3;
+            matrix[TOP_BACK_CENTER][TOP_SIDE_RIGHT] += SQRT1_3;
+        } else if (av_channel_layout_subset(out_ch_layout, (AV_CH_TOP_FRONT_LEFT|AV_CH_TOP_BACK_LEFT)) ==
+                                                           (AV_CH_TOP_FRONT_LEFT|AV_CH_TOP_BACK_LEFT)) {
+            /* U±030 = U±110 = sqrt(1/2) */
+            matrix[TOP_FRONT_LEFT ][TOP_SIDE_LEFT ] += M_SQRT1_2;
+            matrix[TOP_FRONT_RIGHT][TOP_SIDE_RIGHT] += M_SQRT1_2;
+            matrix[TOP_BACK_LEFT ][TOP_SIDE_LEFT ] += M_SQRT1_2;
+            matrix[TOP_BACK_RIGHT][TOP_SIDE_RIGHT] += M_SQRT1_2;
+        } else if (av_channel_layout_index_from_channel(out_ch_layout, AV_CHAN_TOP_FRONT_LEFT) >= 0 &&
+                   av_channel_layout_subset(out_ch_layout, (AV_CH_BACK_LEFT|AV_CH_SIDE_LEFT))) {
+            /* U±030 = M±110 = sqrt(1/2) */
+            matrix[TOP_FRONT_LEFT ][TOP_SIDE_LEFT] += M_SQRT1_2;
+            matrix[TOP_FRONT_RIGHT][TOP_SIDE_RIGHT] += M_SQRT1_2;
+            if (av_channel_layout_index_from_channel(out_ch_layout, AV_CHAN_BACK_LEFT) >= 0) {
+                matrix[BACK_LEFT ][TOP_SIDE_LEFT] += M_SQRT1_2;
+                matrix[BACK_RIGHT][TOP_SIDE_RIGHT] += M_SQRT1_2;
+            } else if (av_channel_layout_index_from_channel(out_ch_layout, AV_CHAN_SIDE_LEFT) >= 0) {
+                matrix[SIDE_LEFT ][TOP_SIDE_LEFT] += M_SQRT1_2;
+                matrix[SIDE_RIGHT][TOP_SIDE_RIGHT] += M_SQRT1_2;
+            }
+        } else if (av_channel_layout_index_from_channel(out_ch_layout, AV_CHAN_SIDE_LEFT) >= 0) {
+            /* M±090 = 1 */
+            matrix[SIDE_LEFT ][TOP_SIDE_LEFT ] += 1.0;
+            matrix[SIDE_RIGHT][TOP_SIDE_RIGHT] += 1.0;
+        } else if (av_channel_layout_index_from_channel(out_ch_layout, AV_CHAN_FRONT_LEFT) >= 0) {
+            /* M±030 = M±110 = sqrt(1/2) */
+            matrix[FRONT_LEFT ][TOP_SIDE_LEFT ] += surround_mix_level;
+            matrix[FRONT_RIGHT][TOP_SIDE_RIGHT] += surround_mix_level;
+            if (av_channel_layout_index_from_channel(out_ch_layout, AV_CHAN_BACK_LEFT) >= 0) {
+                matrix[BACK_LEFT ][TOP_SIDE_LEFT ] += M_SQRT1_2;
+                matrix[BACK_RIGHT][TOP_SIDE_RIGHT] += M_SQRT1_2;
+            }
+        } else if (av_channel_layout_index_from_channel(out_ch_layout, AV_CHAN_FRONT_CENTER) >= 0) {
+            matrix[FRONT_CENTER][TOP_SIDE_LEFT ] += surround_mix_level*M_SQRT1_2;
+            matrix[FRONT_CENTER][TOP_SIDE_RIGHT] += surround_mix_level*M_SQRT1_2;
+        } else
+            av_assert0(0);
+    }
+
+    if (unaccounted & AV_CH_TOP_CENTER) {
+        if (av_channel_layout_subset(out_ch_layout, (AV_CH_TOP_FRONT_LEFT|AV_CH_TOP_BACK_LEFT)) ==
+                                                    (AV_CH_TOP_FRONT_LEFT|AV_CH_TOP_BACK_LEFT)) {
+            /* U+045 = U-045 = U+135 = U-135 = sqrt(1/4) */
+            matrix[TOP_FRONT_LEFT ][TOP_CENTER] += 0.5;
+            matrix[TOP_FRONT_RIGHT][TOP_CENTER] += 0.5;
+            matrix[TOP_BACK_LEFT ][TOP_CENTER] += 0.5;
+            matrix[TOP_BACK_RIGHT][TOP_CENTER] += 0.5;
+        } else if (av_channel_layout_subset(out_ch_layout, (AV_CH_TOP_FRONT_LEFT|AV_CH_TOP_BACK_CENTER)) ==
+                                                           (AV_CH_TOP_FRONT_LEFT|AV_CH_TOP_BACK_CENTER)) {
+            /* U+045 = U-045 = UH+180 = sqrt(1/3) */
+            matrix[TOP_FRONT_LEFT ][TOP_CENTER] += SQRT1_3;
+            matrix[TOP_FRONT_RIGHT][TOP_CENTER] += SQRT1_3;
+            matrix[TOP_BACK_CENTER][TOP_CENTER] += SQRT1_3;
+        } else if (av_channel_layout_index_from_channel(out_ch_layout, AV_CHAN_TOP_FRONT_LEFT) >= 0 &&
+                   av_channel_layout_subset(out_ch_layout, (AV_CH_BACK_LEFT|AV_CH_SIDE_LEFT))) {
+            /* U+045 = U-045 = M+135 = M-135 = sqrt(1/4) *
+             * U+030 = U-030 = M+110 = M-110 = sqrt(1/4) */
+            matrix[TOP_FRONT_LEFT ][TOP_CENTER] += 0.5;
+            matrix[TOP_FRONT_RIGHT][TOP_CENTER] += 0.5;
+            if (av_channel_layout_index_from_channel(out_ch_layout, AV_CH_BACK_LEFT) >= 0) {
+                matrix[BACK_LEFT ][TOP_CENTER] += 0.5;
+                matrix[BACK_RIGHT][TOP_CENTER] += 0.5;
+            } else if (av_channel_layout_index_from_channel(out_ch_layout, AV_CHAN_SIDE_LEFT) >= 0) {
+                matrix[SIDE_LEFT ][TOP_CENTER] += 0.5;
+                matrix[SIDE_RIGHT][TOP_CENTER] += 0.5;
+            }
+        } else if (av_channel_layout_index_from_channel(out_ch_layout, AV_CHAN_FRONT_LEFT) >= 0) {
+            /* M+030 = M-030 = M+135 = M-135 = sqrt(1/4) */
+            /* M+030 = M-030 = sqrt(1/4) */
+            matrix[FRONT_LEFT ][TOP_CENTER] += 0.5;
+            matrix[FRONT_RIGHT][TOP_CENTER] += 0.5;
+            if (av_channel_layout_index_from_channel(out_ch_layout, AV_CHAN_BACK_LEFT) >= 0) {
+                matrix[BACK_LEFT ][TOP_CENTER] += 0.5;
+                matrix[BACK_RIGHT][TOP_CENTER] += 0.5;
+            } else if (av_channel_layout_index_from_channel(out_ch_layout, AV_CHAN_SIDE_LEFT) >= 0) {
+                matrix[SIDE_LEFT ][TOP_CENTER] += 0.5;
+                matrix[SIDE_RIGHT][TOP_CENTER] += 0.5;
+            }
+        } else if (av_channel_layout_index_from_channel(out_ch_layout, AV_CHAN_FRONT_CENTER) >= 0) {
+            matrix[FRONT_CENTER][TOP_CENTER] += 0.5;
+        } else
+            av_assert0(0);
+    }
+
+    if (unaccounted & AV_CH_BOTTOM_FRONT_CENTER) {
+        if (av_channel_layout_index_from_channel(out_ch_layout, AV_CHAN_FRONT_CENTER) >= 0) {
+            matrix[FRONT_CENTER][BOTTOM_FRONT_CENTER] += 1.0;
+        } else if (av_channel_layout_index_from_channel(out_ch_layout, AV_CHAN_FRONT_LEFT) >= 0) {
+            matrix[FRONT_LEFT ][BOTTOM_FRONT_CENTER] += center_mix_level;
+            matrix[FRONT_RIGHT][BOTTOM_FRONT_CENTER] += center_mix_level;
+        } else
+            av_assert0(0);
+    }
+
+    if (unaccounted & AV_CH_BOTTOM_FRONT_LEFT) {
+        if (av_channel_layout_index_from_channel(out_ch_layout, AV_CHAN_BOTTOM_FRONT_CENTER) >= 0) {
+                matrix[BOTTOM_FRONT_CENTER][BOTTOM_FRONT_LEFT ] += M_SQRT1_2;
+                matrix[BOTTOM_FRONT_CENTER][BOTTOM_FRONT_RIGHT] += M_SQRT1_2;
+                if (av_channel_layout_index_from_channel(in_ch_layout, AV_CHAN_BOTTOM_FRONT_CENTER) >= 0)
+                    matrix[BOTTOM_FRONT_CENTER][BOTTOM_FRONT_CENTER] = center_mix_level * sqrt(2);
+        } else if (av_channel_layout_index_from_channel(out_ch_layout, AV_CHAN_FRONT_LEFT) >= 0) {
+            /* M±030 = 1 */
+            matrix[FRONT_LEFT ][BOTTOM_FRONT_LEFT ] += 1.0;
+            matrix[FRONT_RIGHT][BOTTOM_FRONT_RIGHT] += 1.0;
+        } else if (av_channel_layout_index_from_channel(out_ch_layout, AV_CHAN_FRONT_CENTER) >= 0) {
+            matrix[FRONT_CENTER][BOTTOM_FRONT_LEFT ] += M_SQRT1_2;
+            matrix[FRONT_CENTER][BOTTOM_FRONT_RIGHT] += M_SQRT1_2;
+        } else
+            av_assert0(0);
+    }
+
     /* mix LFE into front left/right or center */
     if (unaccounted & AV_CH_LOW_FREQUENCY) {
         if (av_channel_layout_index_from_channel(out_ch_layout, AV_CHAN_FRONT_CENTER) >= 0) {
@@ -350,6 +495,19 @@ static void build_matrix(const AVChannelLayout *in_ch_layout, const AVChannelLay
         } else if (av_channel_layout_index_from_channel(out_ch_layout, AV_CHAN_FRONT_LEFT) >= 0) {
             matrix[FRONT_LEFT ][LOW_FREQUENCY] += lfe_mix_level * M_SQRT1_2;
             matrix[FRONT_RIGHT][LOW_FREQUENCY] += lfe_mix_level * M_SQRT1_2;
+        } else
+            av_assert0(0);
+    }
+
+    /* mix LFE2 into LFE, front left/right or center */
+    if (unaccounted & AV_CH_LOW_FREQUENCY_2) {
+        if (av_channel_layout_index_from_channel(out_ch_layout, AV_CHAN_LOW_FREQUENCY) >= 0) {
+            matrix[LOW_FREQUENCY][LOW_FREQUENCY_2] += M_SQRT1_2;
+        } else if (av_channel_layout_index_from_channel(out_ch_layout, AV_CHAN_FRONT_CENTER) >= 0) {
+            matrix[FRONT_CENTER][LOW_FREQUENCY_2] += lfe_mix_level;
+        } else if (av_channel_layout_index_from_channel(out_ch_layout, AV_CHAN_FRONT_LEFT) >= 0) {
+            matrix[FRONT_LEFT ][LOW_FREQUENCY_2] += lfe_mix_level * M_SQRT1_2;
+            matrix[FRONT_RIGHT][LOW_FREQUENCY_2] += lfe_mix_level * M_SQRT1_2;
         } else
             av_assert0(0);
     }
@@ -412,15 +570,6 @@ av_cold int swr_build_matrix2(const AVChannelLayout *in_layout, const AVChannelL
     ) {
         av_channel_layout_uninit(&in_ch_layout);
         in_ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
-    }
-    if (!av_channel_layout_compare(&in_ch_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_22POINT2) &&
-        av_channel_layout_compare(&out_ch_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_22POINT2)) {
-        av_channel_layout_from_mask(&in_ch_layout, (AV_CH_LAYOUT_7POINT1_WIDE_BACK|AV_CH_BACK_CENTER));
-        av_channel_layout_describe(&in_ch_layout, buf, sizeof(buf));
-        av_log(log_context, AV_LOG_WARNING,
-               "Full-on remixing from 22.2 has not yet been implemented! "
-               "Processing the input as '%s'\n",
-               buf);
     }
 
     if(!av_channel_layout_check(&in_ch_layout)) {

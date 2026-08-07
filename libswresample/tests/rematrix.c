@@ -97,12 +97,19 @@ int main(void)
     const AVChannelLayout surround_2    = AV_CHANNEL_LAYOUT_5POINT1POINT2;
     const AVChannelLayout surround_4    = AV_CHANNEL_LAYOUT_5POINT1POINT4_BACK;
     const AVChannelLayout surround_tbc  = AV_CHANNEL_LAYOUT_7POINT2POINT3;
+    const AVChannelLayout surround_22_2 = AV_CHANNEL_LAYOUT_22POINT2;
     int ret = 0;
 
     ret |= check_coefficient(&surround_2, &stereo,
                              AV_CHAN_TOP_FRONT_LEFT, AV_CHAN_FRONT_LEFT, 1.0);
     ret |= check_coefficient(&surround_2, &stereo,
                              AV_CHAN_TOP_FRONT_RIGHT, AV_CHAN_FRONT_RIGHT, 1.0);
+    ret |= check_coefficient(&surround_22_2, &surround_2,
+                             AV_CHAN_TOP_FRONT_CENTER, AV_CHAN_TOP_FRONT_LEFT,
+                             M_SQRT1_2);
+    ret |= check_coefficient(&surround_22_2, &surround_2,
+                             AV_CHAN_TOP_FRONT_CENTER, AV_CHAN_TOP_FRONT_RIGHT,
+                             M_SQRT1_2);
     ret |= check_coefficient(&surround_4, &surround_2,
                              AV_CHAN_TOP_BACK_LEFT, AV_CHAN_TOP_FRONT_LEFT,
                              M_SQRT1_2);
@@ -137,10 +144,16 @@ int main(void)
                                        AV_CHAN_FRONT_RIGHT, 0.5, 0.5);
     ret |= check_coefficient(&surround_4, &mono,
                              AV_CHAN_TOP_BACK_LEFT, AV_CHAN_FRONT_CENTER,
-                             M_SQRT1_2);
+                             0.5);
     ret |= check_coefficient(&surround_4, &mono,
                              AV_CHAN_TOP_BACK_RIGHT, AV_CHAN_FRONT_CENTER,
-                             M_SQRT1_2);
+                             0.5);
+    ret |= check_coefficient_with_slev(&surround_4, &mono,
+                                       AV_CHAN_TOP_BACK_LEFT,
+                                       AV_CHAN_FRONT_CENTER, 1.0, M_SQRT1_2);
+    ret |= check_coefficient_with_slev(&surround_4, &mono,
+                                       AV_CHAN_TOP_BACK_RIGHT,
+                                       AV_CHAN_FRONT_CENTER, 1.0, M_SQRT1_2);
     ret |= check_coefficient(&surround_tbc, &surround,
                              AV_CHAN_TOP_BACK_CENTER, AV_CHAN_SIDE_LEFT,
                              M_SQRT1_2);
@@ -165,6 +178,73 @@ int main(void)
                              AV_CHAN_TOP_BACK_CENTER, AV_CHAN_FRONT_RIGHT, 0.5);
     ret |= check_coefficient(&surround_tbc, &mono,
                              AV_CHAN_TOP_BACK_CENTER, AV_CHAN_FRONT_CENTER, 0.5);
+    ret |= check_coefficient(&surround_22_2, &surround_2,
+                             AV_CHAN_TOP_SIDE_LEFT, AV_CHAN_TOP_FRONT_LEFT,
+                             M_SQRT1_2);
+    ret |= check_coefficient(&surround_22_2, &surround_2,
+                             AV_CHAN_TOP_SIDE_RIGHT, AV_CHAN_TOP_FRONT_RIGHT,
+                             M_SQRT1_2);
+    ret |= check_coefficient(&surround_22_2, &surround_tbc,
+                             AV_CHAN_TOP_SIDE_LEFT, AV_CHAN_TOP_FRONT_LEFT,
+                             2.0/sqrt(6));
+    ret |= check_coefficient(&surround_22_2, &surround_tbc,
+                             AV_CHAN_TOP_SIDE_RIGHT, AV_CHAN_TOP_FRONT_RIGHT,
+                             2.0/sqrt(6));
+    ret |= check_coefficient(&surround_22_2, &surround_tbc,
+                             AV_CHAN_TOP_SIDE_LEFT, AV_CHAN_TOP_BACK_CENTER,
+                             1.0/sqrt(3));
+    ret |= check_coefficient(&surround_22_2, &surround_tbc,
+                             AV_CHAN_TOP_SIDE_RIGHT, AV_CHAN_TOP_BACK_CENTER,
+                             1.0/sqrt(3));
+    ret |= check_coefficient(&surround_22_2, &stereo,
+                             AV_CHAN_TOP_SIDE_LEFT, AV_CHAN_FRONT_LEFT,
+                             M_SQRT1_2);
+    ret |= check_coefficient(&surround_22_2, &stereo,
+                             AV_CHAN_TOP_SIDE_RIGHT, AV_CHAN_FRONT_RIGHT,
+                             M_SQRT1_2);
+    ret |= check_coefficient_with_slev(&surround_22_2, &stereo,
+                                       AV_CHAN_TOP_SIDE_LEFT,
+                                       AV_CHAN_FRONT_LEFT, 0.5, 0.5);
+    ret |= check_coefficient_with_slev(&surround_22_2, &stereo,
+                                       AV_CHAN_TOP_SIDE_RIGHT,
+                                       AV_CHAN_FRONT_RIGHT, 0.5, 0.5);
+    ret |= check_coefficient(&surround_22_2, &mono,
+                             AV_CHAN_TOP_SIDE_LEFT, AV_CHAN_FRONT_CENTER,
+                             0.5);
+    ret |= check_coefficient(&surround_22_2, &mono,
+                             AV_CHAN_TOP_SIDE_RIGHT, AV_CHAN_FRONT_CENTER,
+                             0.5);
+    ret |= check_coefficient_with_slev(&surround_22_2, &mono,
+                                       AV_CHAN_TOP_SIDE_LEFT,
+                                       AV_CHAN_FRONT_CENTER, 1.0, M_SQRT1_2);
+    ret |= check_coefficient_with_slev(&surround_22_2, &mono,
+                                       AV_CHAN_TOP_SIDE_RIGHT,
+                                       AV_CHAN_FRONT_CENTER, 1.0, M_SQRT1_2);
+    ret |= check_coefficient(&surround_22_2, &surround_4,
+                             AV_CHAN_TOP_CENTER, AV_CHAN_TOP_FRONT_LEFT,
+                             0.5);
+    ret |= check_coefficient(&surround_22_2, &surround_4,
+                             AV_CHAN_TOP_CENTER, AV_CHAN_TOP_FRONT_RIGHT,
+                             0.5);
+    ret |= check_coefficient(&surround_22_2, &surround_4,
+                             AV_CHAN_TOP_CENTER, AV_CHAN_TOP_BACK_LEFT,
+                             0.5);
+    ret |= check_coefficient(&surround_22_2, &surround_4,
+                             AV_CHAN_TOP_CENTER, AV_CHAN_TOP_BACK_RIGHT,
+                             0.5);
+    ret |= check_coefficient(&surround_22_2, &surround_tbc,
+                             AV_CHAN_TOP_CENTER, AV_CHAN_TOP_FRONT_LEFT,
+                             1.0/sqrt(3));
+    ret |= check_coefficient(&surround_22_2, &surround_tbc,
+                             AV_CHAN_TOP_CENTER, AV_CHAN_TOP_FRONT_RIGHT,
+                             1.0/sqrt(3));
+    ret |= check_coefficient(&surround_22_2, &surround_tbc,
+                             AV_CHAN_TOP_CENTER, AV_CHAN_TOP_BACK_CENTER,
+                             1.0/sqrt(3));
+    ret |= check_coefficient(&surround_22_2, &stereo,
+                             AV_CHAN_BOTTOM_FRONT_LEFT, AV_CHAN_FRONT_LEFT, 1.0);
+    ret |= check_coefficient(&surround_22_2, &stereo,
+                             AV_CHAN_BOTTOM_FRONT_RIGHT, AV_CHAN_FRONT_RIGHT, 1.0);
 
     return ret;
 }
