@@ -45,9 +45,9 @@ SECTION .text
     paddw   %2, m4
 %endmacro
 
-%macro HPEL_FILTER 1
+INIT_XMM sse2
 ; ff_dirac_hpel_filter_v_sse2(uint8_t *dst, const uint8_t *src, ptrdiff_t stride, int width);
-cglobal dirac_hpel_filter_v_%1, 4,6,8, dst, src, stride, width, src0, stridex3
+cglobal dirac_hpel_filter_v, 4,6,8, dst, src, stride, width, src0, stridex3
     mov     src0q, srcq
     lea     stridex3q, [3*strideq]
     sub     src0q, stridex3q
@@ -91,7 +91,7 @@ cglobal dirac_hpel_filter_v_%1, 4,6,8, dst, src, stride, width, src0, stridex3
     RET
 
 ; dirac_hpel_filter_h_sse2(uint8_t *dst, uint8_t *src, int width);
-cglobal dirac_hpel_filter_h_%1, 3,3,8, dst, src, width
+cglobal dirac_hpel_filter_h, 3,3,8, dst, src, width
     dec     widthd
     pxor    m7, m7
     and     widthd, ~(mmsize-1)
@@ -129,13 +129,11 @@ cglobal dirac_hpel_filter_h_%1, 3,3,8, dst, src, width
     sub     widthd, mmsize
     jge     .loop
     RET
-%endmacro
 
-%macro PUT_RECT 1
 ; void ff_put_signed_rect_clamped_sse2(uint8_t *dst, ptrdiff_t dst_stride,
 ;                                      const int16_t *src, ptrdiff_t src_stride,
 ;                                      int width, int height)
-cglobal put_signed_rect_clamped_%1, 5,9,3, dst, dst_stride, src, src_stride, w, dst2, src2
+cglobal put_signed_rect_clamped, 5,9,3, dst, dst_stride, src, src_stride, w, dst2, src2
     mova    m0, [pb_80]
     add     wd, (mmsize-1)
     and     wd, ~(mmsize-1)
@@ -172,13 +170,11 @@ cglobal put_signed_rect_clamped_%1, 5,9,3, dst, dst_stride, src, src_stride, w, 
     mov     wd, wspill
     jg      .loopy
     RET
-%endm
 
-%macro ADD_RECT 1
 ; void ff_add_rect_clamped_sse2(uint8_t *dst, const uint16_t *src, ptrdiff_t stride,
 ;                               const int16_t *idwt, ptrdiff_t idwt_stride,
 ;                               int width, int height)
-cglobal add_rect_clamped_%1, 7,9,3, dst, src, stride, idwt, idwt_stride, w, h
+cglobal add_rect_clamped, 7,9,3, dst, src, stride, idwt, idwt_stride, w, h
     mova    m0, [pw_32]
     add     wd, (mmsize-1)
     and     wd, ~(mmsize-1)
@@ -212,12 +208,11 @@ cglobal add_rect_clamped_%1, 7,9,3, dst, src, stride, idwt, idwt_stride, w, h
     mov     wd, wspill
     jg      .loop
     RET
-%endm
 
-%macro ADD_OBMC 2
+%macro ADD_OBMC 1
 ; void ff_add_dirac_obmc16/32_sse2(uint16_t *dst, const uint8_t *src,
 ;                                  ptrdiff_t stride, const uint8_t *obmc_weight, int yblen)
-cglobal add_dirac_obmc%1_%2, 5,5,5, dst, src, stride, obmc, yblen
+cglobal add_dirac_obmc%1, 5,5,5, dst, src, stride, obmc, yblen
     pxor        m4, m4
 .loop:
 %assign i 0
@@ -248,15 +243,10 @@ cglobal add_dirac_obmc%1_%2, 5,5,5, dst, src, stride, obmc, yblen
     RET
 %endm
 
-INIT_XMM
-PUT_RECT sse2
-ADD_RECT sse2
+ADD_OBMC 32
+ADD_OBMC 16
 
-HPEL_FILTER sse2
-ADD_OBMC 32, sse2
-ADD_OBMC 16, sse2
-
-cglobal add_dirac_obmc8_sse2, 5,5,4, dst, src, stride, obmc, yblen
+cglobal add_dirac_obmc8, 5,5,4, dst, src, stride, obmc, yblen
     pxor        m3, m3
 .loop:
     movh        m0, [srcq]
