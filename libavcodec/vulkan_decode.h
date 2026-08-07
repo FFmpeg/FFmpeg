@@ -71,7 +71,8 @@ typedef struct FFVulkanDecodeContext {
 } FFVulkanDecodeContext;
 
 typedef struct FFVulkanDecodePicture {
-    AVFrame                        *dpb_frame;      /* Only used for out-of-place decoding. */
+    AVFrame                        *dpb_frame;      /* Software-defined decoders only. */
+    FFVkVideoDPBImage              *dpb_img;        /* DISTINCT-mode reference image */
 
     struct {
         VkImageView                     ref;        /* Image representation view (reference) */

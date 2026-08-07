@@ -289,15 +289,13 @@ StdVideoAV1Profile ff_vk_av1_profile_to_vk(int profile)
     }
 }
 
-int ff_vk_create_view(FFVulkanContext *s, FFVkVideoCommon *common,
-                      VkImageView *view, VkImageAspectFlags *aspect,
-                      AVVkFrame *src, VkFormat vkf, VkImageUsageFlags usage)
+int ff_vk_create_view(FFVulkanContext *s, VkImageView *view,
+                      VkImageAspectFlags *aspect, VkImage img,
+                      VkFormat vkf, VkImageUsageFlags usage, int layered)
 {
     VkResult ret;
     FFVulkanFunctions *vk = &s->vkfn;
     VkImageAspectFlags aspect_mask = ff_vk_aspect_bits_from_vkfmt(vkf);
-    int is_video_dpb = usage & (VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR |
-                                VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR);
 
     VkImageViewUsageCreateInfo usage_create_info = {
         .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO,
@@ -306,10 +304,10 @@ int ff_vk_create_view(FFVulkanContext *s, FFVkVideoCommon *common,
     VkImageViewCreateInfo img_view_create_info = {
         .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
         .pNext = &usage_create_info,
-        .viewType = common->layered_dpb && is_video_dpb ?
-                    VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D,
+        .viewType = layered ? VK_IMAGE_VIEW_TYPE_2D_ARRAY :
+                              VK_IMAGE_VIEW_TYPE_2D,
         .format = vkf,
-        .image = src->img[0],
+        .image = img,
         .components = (VkComponentMapping) {
             .r = VK_COMPONENT_SWIZZLE_IDENTITY,
             .g = VK_COMPONENT_SWIZZLE_IDENTITY,
@@ -319,8 +317,7 @@ int ff_vk_create_view(FFVulkanContext *s, FFVkVideoCommon *common,
         .subresourceRange = (VkImageSubresourceRange) {
             .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
             .baseArrayLayer = 0,
-            .layerCount     = common->layered_dpb && is_video_dpb ?
-                              VK_REMAINING_ARRAY_LAYERS : 1,
+            .layerCount     = layered ? VK_REMAINING_ARRAY_LAYERS : 1,
             .levelCount     = 1,
         },
     };
@@ -334,6 +331,88 @@ int ff_vk_create_view(FFVulkanContext *s, FFVkVideoCommon *common,
 
     return 0;
 }
+
+static void dpb_image_free(AVRefStructOpaque opaque, void *obj)
+{
+    FFVkVideoDPB *dpb = opaque.nc;
+    FFVkVideoDPBImage *di = obj;
+
+    if (di->view)
+        dpb->destroy_image_view(dpb->dev, di->view, dpb->alloc);
+    if (di->img)
+        dpb->destroy_image(dpb->dev, di->img, dpb->alloc);
+    if (di->mem)
+        dpb->free_memory(dpb->dev, di->mem, dpb->alloc);
+}
+
+static int dpb_image_init(AVRefStructOpaque opaque, void *obj)
+{
+    int err;
+    FFVkVideoDPB *dpb = opaque.nc;
+    FFVkVideoDPBImage *di = obj;
+
+    err = ff_vk_image_create(dpb->s, &di->img, &di->mem,
+                             dpb->width, dpb->height, dpb->format,
+                             dpb->nb_layers, dpb->tiling, dpb->usage,
+                             0x0, dpb->create_pnext);
+    if (err < 0)
+        return err;
+
+    err = ff_vk_create_view(dpb->s, &di->view, &di->aspect, di->img,
+                            dpb->format, dpb->usage, dpb->nb_layers > 1);
+    if (err < 0) {
+        ff_vk_image_free(dpb->s, &di->img, &di->mem);
+        return err;
+    }
+
+    di->layout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+    return 0;
+}
+
+static void dpb_pool_free(AVRefStructOpaque opaque)
+{
+    av_free(opaque.nc);
+}
+
+av_cold int ff_vk_video_dpb_init(FFVulkanContext *s, FFVkVideoCommon *common,
+                                 VkFormat format, VkImageUsageFlags usage,
+                                 VkImageTiling tiling, void *create_pnext,
+                                 int width, int height, int nb_layers)
+{
+    FFVulkanFunctions *vk = &s->vkfn;
+    FFVkVideoDPB *dpb = av_mallocz(sizeof(*dpb));
+    if (!dpb)
+        return AVERROR(ENOMEM);
+
+    dpb->s            = s;
+    dpb->format       = format;
+    dpb->usage        = usage;
+    dpb->tiling       = tiling;
+    dpb->create_pnext = create_pnext;
+    dpb->width        = width;
+    dpb->height       = height;
+    dpb->nb_layers    = nb_layers;
+
+    dpb->dev                = s->hwctx->act_dev;
+    dpb->alloc              = s->hwctx->alloc;
+    dpb->destroy_image_view = vk->DestroyImageView;
+    dpb->destroy_image      = vk->DestroyImage;
+    dpb->free_memory        = vk->FreeMemory;
+
+    dpb->img_pool = av_refstruct_pool_alloc_ext(sizeof(FFVkVideoDPBImage), 0,
+                                                dpb, dpb_image_init, NULL,
+                                                dpb_image_free, dpb_pool_free);
+    if (!dpb->img_pool) {
+        av_free(dpb);
+        return AVERROR(ENOMEM);
+    }
+
+    common->dpb = dpb;
+
+    return 0;
+}
+
 
 av_cold void ff_vk_video_common_uninit(FFVulkanContext *s,
                                        FFVkVideoCommon *common)
@@ -352,15 +431,15 @@ av_cold void ff_vk_video_common_uninit(FFVulkanContext *s,
 
     av_freep(&common->mem);
 
-    if (common->layered_view) {
-        vk->DestroyImageView(s->hwctx->act_dev, common->layered_view,
-                             s->hwctx->alloc);
-        common->layered_view = VK_NULL_HANDLE;
+    /* The layered view is owned by the pool entry */
+    common->layered_view = VK_NULL_HANDLE;
+    av_refstruct_unref(&common->layered_img);
+
+    if (common->dpb) {
+        /* The pool frees the FFVkVideoDPB once its last entry returns */
+        av_refstruct_pool_uninit(&common->dpb->img_pool);
+        common->dpb = NULL;
     }
-
-    av_frame_free(&common->layered_frame);
-
-    av_buffer_unref(&common->dpb_hwfc_ref);
 }
 
 av_cold int ff_vk_video_common_init(AVCodecContext *avctx, FFVulkanContext *s,

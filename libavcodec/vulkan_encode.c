@@ -39,12 +39,7 @@ static void vulkan_encode_free_pic(FFVulkanEncodeContext *ctx,
         vk->DestroyImageView(ctx->s.hwctx->act_dev, vp->in.view,
                              ctx->s.hwctx->alloc);
 
-    if (!ctx->common.layered_dpb && vp->dpb.view)
-        vk->DestroyImageView(ctx->s.hwctx->act_dev, vp->dpb.view,
-                             ctx->s.hwctx->alloc);
-
     vp->in.view = VK_NULL_HANDLE;
-    vp->dpb.view = VK_NULL_HANDLE;
 
     ctx->slots[vp->dpb_slot.slotIndex] = NULL;
 }
@@ -95,21 +90,18 @@ static int vulkan_encode_init(AVCodecContext *avctx, FFHWBaseEncodePicture *pic)
     }
 
     /* Input image view */
-    err = ff_vk_create_view(&ctx->s, &ctx->common,
+    err = ff_vk_create_view(&ctx->s,
                             &vp->in.view, &vp->in.aspect,
-                            vkf, vkfc->format[0], VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR);
+                            vkf->img[0], vkfc->format[0],
+                            VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR, 0);
     if (err < 0)
         return err;
 
-    /* Reference view */
+    /* Reference view: owned by the DPB pool entry */
     if (!ctx->common.layered_dpb) {
-        AVFrame *rf = pic->recon_image;
-        AVVkFrame *rvkf = (AVVkFrame *)rf->data[0];
-        err = ff_vk_create_view(&ctx->s, &ctx->common,
-                                &vp->dpb.view, &vp->dpb.aspect,
-                                rvkf, ctx->pic_format, VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR);
-        if (err < 0)
-            return err;
+        FFVkVideoDPBImage *di = (FFVkVideoDPBImage *)pic->recon_image->data[0];
+        vp->dpb.view   = di->view;
+        vp->dpb.aspect = di->aspect;
     } else {
         vp->dpb.view = ctx->common.layered_view;
         vp->dpb.aspect = ctx->common.layered_aspect;
@@ -396,38 +388,51 @@ static int vulkan_encode_issue(AVCodecContext *avctx,
     ff_vk_exec_update_frame(&ctx->s, exec, src,
                             &img_bar[nb_img_bar], &nb_img_bar);
 
+    /* DPB image barriers are only needed for initial transitions: the
+     * layered image at creation, per-picture recon images here */
     if (!ctx->common.layered_dpb) {
-        /* Source image's ref slot.
-         * No need to do a layout conversion, since the frames which are allocated
-         * with a DPB usage are automatically converted. */
-        err = ff_vk_exec_add_dep_frame(&ctx->s, exec, base_pic->recon_image,
-                                       VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
-                                       VK_PIPELINE_STAGE_2_VIDEO_ENCODE_BIT_KHR);
-        if (err < 0)
-            return err;
+        FFVkVideoDPBImage *di = (FFVkVideoDPBImage *)base_pic->recon_image->data[0];
 
-        /* All references */
-        for (int i = 0; i < MAX_REFERENCE_LIST_NUM; i++) {
-            for (int j = 0; j < base_pic->nb_refs[i]; j++) {
-                FFHWBaseEncodePicture *ref = base_pic->refs[i][j];
-                err = ff_vk_exec_add_dep_frame(&ctx->s, exec, ref->recon_image,
-                                               VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
-                                               VK_PIPELINE_STAGE_2_VIDEO_ENCODE_BIT_KHR);
-                if (err < 0)
-                    return err;
-            }
+        if (di->layout != VK_IMAGE_LAYOUT_VIDEO_ENCODE_DPB_KHR) {
+            img_bar[nb_img_bar] = (VkImageMemoryBarrier2) {
+                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+                .srcStageMask = VK_PIPELINE_STAGE_2_NONE,
+                .srcAccessMask = VK_ACCESS_2_NONE,
+                .dstStageMask = VK_PIPELINE_STAGE_2_VIDEO_ENCODE_BIT_KHR,
+                .dstAccessMask = VK_ACCESS_2_VIDEO_ENCODE_READ_BIT_KHR |
+                                 VK_ACCESS_2_VIDEO_ENCODE_WRITE_BIT_KHR,
+                .oldLayout = di->layout,
+                .newLayout = VK_IMAGE_LAYOUT_VIDEO_ENCODE_DPB_KHR,
+                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .image = di->img,
+                .subresourceRange = (VkImageSubresourceRange) {
+                    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                    .layerCount = 1,
+                    .levelCount = 1,
+                },
+            };
+            nb_img_bar++;
+            di->layout = VK_IMAGE_LAYOUT_VIDEO_ENCODE_DPB_KHR;
         }
-    } else {
-        err = ff_vk_exec_add_dep_frame(&ctx->s, exec, ctx->common.layered_frame,
-                                       VK_PIPELINE_STAGE_2_VIDEO_ENCODE_BIT_KHR,
-                                       VK_PIPELINE_STAGE_2_VIDEO_ENCODE_BIT_KHR);
-        if (err < 0)
-            return err;
     }
 
-    /* Change image layout */
+    /* One encode-stage memory barrier per submission orders all prior
+     * encode work, references included */
+    VkMemoryBarrier2 mem_bar = {
+        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
+        .srcStageMask = VK_PIPELINE_STAGE_2_VIDEO_ENCODE_BIT_KHR,
+        .srcAccessMask = VK_ACCESS_2_VIDEO_ENCODE_WRITE_BIT_KHR,
+        .dstStageMask = VK_PIPELINE_STAGE_2_VIDEO_ENCODE_BIT_KHR,
+        .dstAccessMask = VK_ACCESS_2_VIDEO_ENCODE_READ_BIT_KHR |
+                         VK_ACCESS_2_VIDEO_ENCODE_WRITE_BIT_KHR,
+    };
+
+    /* Change image layouts, and synchronize the DPB */
     vk->CmdPipelineBarrier2(cmd_buf, &(VkDependencyInfo) {
             .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+            .pMemoryBarriers = &mem_bar,
+            .memoryBarrierCount = 1,
             .pImageMemoryBarriers = img_bar,
             .imageMemoryBarrierCount = nb_img_bar,
         });
@@ -611,63 +616,101 @@ int ff_vulkan_encode_receive_packet(AVCodecContext *avctx, AVPacket *pkt)
     return ff_hw_base_encode_receive_packet(&ctx->base, avctx, pkt);
 }
 
+static void vulkan_encode_recon_free(void *opaque, uint8_t *data)
+{
+    FFVkVideoDPBImage *di = (FFVkVideoDPBImage *)data;
+    /* No wait: pool reuse is ordered by the DPB barrier */
+    av_refstruct_unref(&di);
+}
+
+static int vulkan_encode_get_recon_frame(AVCodecContext *avctx, AVFrame *frame)
+{
+    FFVulkanEncodeContext *ctx = avctx->priv_data;
+    FFVkVideoDPBImage *di;
+
+    di = av_refstruct_pool_get(ctx->common.dpb->img_pool);
+    if (!di)
+        return AVERROR(ENOMEM);
+
+    /* The frame only carries the pool entry through the base layer */
+    frame->buf[0] = av_buffer_create((uint8_t *)di, sizeof(*di),
+                                     vulkan_encode_recon_free, NULL, 0);
+    if (!frame->buf[0]) {
+        av_refstruct_unref(&di);
+        return AVERROR(ENOMEM);
+    }
+    frame->data[0] = (uint8_t *)di;
+
+    return 0;
+}
+
 static int vulkan_encode_create_dpb(AVCodecContext *avctx, FFVulkanEncodeContext *ctx)
 {
     int err;
     FFHWBaseEncodeContext *base_ctx = &ctx->base;
-    AVVulkanFramesContext *hwfc;
 
-    enum AVPixelFormat dpb_format;
-    err = ff_hw_base_get_recon_format(base_ctx, NULL, &dpb_format);
-    if (err < 0)
-        return err;
-
-    base_ctx->recon_frames_ref = av_hwframe_ctx_alloc(base_ctx->device_ref);
-    if (!base_ctx->recon_frames_ref)
-        return AVERROR(ENOMEM);
-
-    base_ctx->recon_frames = (AVHWFramesContext *)base_ctx->recon_frames_ref->data;
-    hwfc = (AVVulkanFramesContext *)base_ctx->recon_frames->hwctx;
-
-    base_ctx->recon_frames->format    = AV_PIX_FMT_VULKAN;
-    base_ctx->recon_frames->sw_format = dpb_format;
-    base_ctx->recon_frames->width     = avctx->width;
-    base_ctx->recon_frames->height    = avctx->height;
-
-    hwfc->format[0]    = ctx->pic_format;
-    hwfc->create_pnext = &ctx->profile_list;
-    hwfc->tiling       = VK_IMAGE_TILING_OPTIMAL;
-    hwfc->usage        = VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR;
-
-    if (ctx->common.layered_dpb)
-        hwfc->nb_layers = ctx->caps.maxDpbSlots;
-
-    err = av_hwframe_ctx_init(base_ctx->recon_frames_ref);
+    /* Reconstruction images are queue-exclusive; allocate them internally */
+    err = ff_vk_video_dpb_init(&ctx->s, &ctx->common, ctx->pic_format,
+                               VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR,
+                               VK_IMAGE_TILING_OPTIMAL, &ctx->profile_list,
+                               avctx->width, avctx->height,
+                               ctx->common.layered_dpb ?
+                               ctx->caps.maxDpbSlots : 1);
     if (err < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to initialise DPB frame context: %s\n",
+        av_log(avctx, AV_LOG_ERROR, "Failed to initialise DPB image pool: %s\n",
                av_err2str(err));
         return err;
     }
 
     if (ctx->common.layered_dpb) {
-        ctx->common.layered_frame = av_frame_alloc();
-        if (!ctx->common.layered_frame)
+        FFVulkanFunctions *vk = &ctx->s.vkfn;
+        FFVkExecContext *exec;
+        VkImageMemoryBarrier2 img_bar;
+
+        ctx->common.layered_img = av_refstruct_pool_get(ctx->common.dpb->img_pool);
+        if (!ctx->common.layered_img)
             return AVERROR(ENOMEM);
 
-        err = av_hwframe_get_buffer(base_ctx->recon_frames_ref,
-                                    ctx->common.layered_frame, 0);
-        if (err < 0)
-            return AVERROR(ENOMEM);
+        ctx->common.layered_view   = ctx->common.layered_img->view;
+        ctx->common.layered_aspect = ctx->common.layered_img->aspect;
 
-        err = ff_vk_create_view(&ctx->s, &ctx->common,
-                                &ctx->common.layered_view,
-                                &ctx->common.layered_aspect,
-                                (AVVkFrame *)ctx->common.layered_frame->data[0],
-                                hwfc->format[0], VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR);
+        /* Created eagerly, so transitioned eagerly, matching the decoder */
+        exec = ff_vk_exec_get(&ctx->s, &ctx->enc_pool);
+        err = ff_vk_exec_start(&ctx->s, exec);
         if (err < 0)
             return err;
 
-        av_buffer_unref(&base_ctx->recon_frames_ref);
+        img_bar = (VkImageMemoryBarrier2) {
+            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+            .srcStageMask = VK_PIPELINE_STAGE_2_NONE,
+            .srcAccessMask = VK_ACCESS_2_NONE,
+            .dstStageMask = VK_PIPELINE_STAGE_2_VIDEO_ENCODE_BIT_KHR,
+            .dstAccessMask = VK_ACCESS_2_VIDEO_ENCODE_READ_BIT_KHR |
+                             VK_ACCESS_2_VIDEO_ENCODE_WRITE_BIT_KHR,
+            .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .newLayout = VK_IMAGE_LAYOUT_VIDEO_ENCODE_DPB_KHR,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image = ctx->common.layered_img->img,
+            .subresourceRange = (VkImageSubresourceRange) {
+                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                .layerCount = VK_REMAINING_ARRAY_LAYERS,
+                .levelCount = 1,
+            },
+        };
+        vk->CmdPipelineBarrier2(exec->buf, &(VkDependencyInfo) {
+                .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+                .pImageMemoryBarriers = &img_bar,
+                .imageMemoryBarrierCount = 1,
+            });
+
+        err = ff_vk_exec_submit(&ctx->s, exec);
+        if (err < 0)
+            return err;
+
+        ctx->common.layered_img->layout = VK_IMAGE_LAYOUT_VIDEO_ENCODE_DPB_KHR;
+    } else {
+        base_ctx->get_recon_frame = vulkan_encode_get_recon_frame;
     }
 
     return 0;

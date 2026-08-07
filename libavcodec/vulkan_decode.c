@@ -161,26 +161,13 @@ int ff_vk_params_invalidate(AVCodecContext *avctx, int t, const uint8_t *b, uint
     return 0;
 }
 
-static AVFrame *vk_get_dpb_pool(FFVulkanDecodeShared *ctx)
-{
-    int err;
-    AVFrame *avf = av_frame_alloc();
-    if (!avf)
-        return NULL;
-
-    err = av_hwframe_get_buffer(ctx->common.dpb_hwfc_ref, avf, 0x0);
-    if (err < 0)
-        av_frame_free(&avf);
-
-    return avf;
-}
-
 static void init_frame(FFVulkanDecodeContext *dec, FFVulkanDecodePicture *vkpic)
 {
     FFVulkanDecodeShared *ctx = dec->shared_ctx;
     FFVulkanFunctions *vk = &ctx->s.vkfn;
 
     vkpic->dpb_frame     = NULL;
+    vkpic->dpb_img       = NULL;
     vkpic->out_views     = NULL;
     vkpic->view.ref      = VK_NULL_HANDLE;
     vkpic->view.out      = VK_NULL_HANDLE;
@@ -204,9 +191,8 @@ int ff_vk_decode_prepare_frame(FFVulkanDecodeContext *dec, AVFrame *pic,
 
     init_frame(dec, vkpic);
 
-    /* Slot 0 holds the output view, slot 1 the DISTINCT-mode reference
-     * view; refcounted, so executions keep them alive past the picture */
-    vkpic->out_views = ff_vk_imageviews_alloc(&ctx->s, 2);
+    /* Refcounted, so executions keep it alive past the picture */
+    vkpic->out_views = ff_vk_imageviews_alloc(&ctx->s, 1);
     if (!vkpic->out_views)
         return AVERROR(ENOMEM);
 
@@ -214,33 +200,26 @@ int ff_vk_decode_prepare_frame(FFVulkanDecodeContext *dec, AVFrame *pic,
         vkpic->view.ref = ctx->common.layered_view;
         vkpic->view.aspect_ref = ctx->common.layered_aspect;
     } else if (alloc_dpb) {
-        AVHWFramesContext *dpb_frames = (AVHWFramesContext *)ctx->common.dpb_hwfc_ref->data;
-        AVVulkanFramesContext *dpb_hwfc = dpb_frames->hwctx;
-
-        vkpic->dpb_frame = vk_get_dpb_pool(ctx);
-        if (!vkpic->dpb_frame)
+        vkpic->dpb_img = av_refstruct_pool_get(ctx->common.dpb->img_pool);
+        if (!vkpic->dpb_img)
             return AVERROR(ENOMEM);
 
-        err = ff_vk_create_view(&ctx->s, &ctx->common,
-                                &vkpic->out_views->views[1], &vkpic->view.aspect_ref,
-                                (AVVkFrame *)vkpic->dpb_frame->data[0],
-                                dpb_hwfc->format[0], VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR);
-        if (err < 0)
-            return err;
-
-        vkpic->view.ref = vkpic->out_views->views[1];
+        /* The view is owned by the pool entry */
+        vkpic->view.ref        = vkpic->dpb_img->view;
+        vkpic->view.aspect_ref = vkpic->dpb_img->aspect;
     }
 
     if (!alloc_dpb || is_current) {
         AVHWFramesContext *frames = (AVHWFramesContext *)pic->hw_frames_ctx->data;
         AVVulkanFramesContext *hwfc = frames->hwctx;
 
-        err = ff_vk_create_view(&ctx->s, &ctx->common,
+        err = ff_vk_create_view(&ctx->s,
                                 &vkpic->out_views->views[0], &vkpic->view.aspect,
-                                (AVVkFrame *)pic->data[0],
+                                ((AVVkFrame *)pic->data[0])->img[0],
                                 hwfc->format[0],
                                 VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR |
-                                (hwfc->usage & VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR));
+                                (hwfc->usage & VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR),
+                                0);
                                 // the above fixes VUID-VkVideoBeginCodingInfoKHR-slotIndex-07245
         if (err < 0)
             return err;
@@ -472,8 +451,9 @@ int ff_vk_decode_frame(AVCodecContext *avctx,
         .sType = VK_STRUCTURE_TYPE_VIDEO_END_CODING_INFO_KHR,
     };
 
-    VkImageMemoryBarrier2 img_bar[37];
+    VkImageMemoryBarrier2 img_bar[38];
     int nb_img_bar = 0;
+
     size_t data_size = FFALIGN(vp->slices_size,
                                ctx->caps.minBitstreamBufferSizeAlignment);
 
@@ -544,7 +524,7 @@ int ff_vk_decode_frame(AVCodecContext *avctx,
         .srcAccessMask = VK_ACCESS_2_NONE,
         .dstAccessMask = VK_ACCESS_2_VIDEO_DECODE_WRITE_BIT_KHR,
         .oldLayout = vkf->layout[0],
-        .newLayout = (layered_dpb || vp->dpb_frame) ?
+        .newLayout = (layered_dpb || vp->dpb_img) ?
                      VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR :
                      VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR, /* Spec, 07252 utter madness */
         .srcQueueFamilyIndex = vkf->queue_family[0],
@@ -559,24 +539,42 @@ int ff_vk_decode_frame(AVCodecContext *avctx,
     ff_vk_exec_update_frame(&ctx->s, exec, pic,
                             &img_bar[nb_img_bar], &nb_img_bar);
 
-    /* Reference for the current image, if existing and not layered */
-    if (vp->dpb_frame) {
-        err = ff_vk_exec_add_dep_frame(&ctx->s, exec, vp->dpb_frame,
-                                       VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR,
-                                       VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR);
-        if (err < 0)
-            return err;
+    /* Current picture's DISTINCT-mode DPB image: transition on first use */
+    if (vp->dpb_img) {
+        FFVkVideoDPBImage *di = vp->dpb_img;
+
+        if (di->layout != VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR) {
+            img_bar[nb_img_bar] = (VkImageMemoryBarrier2) {
+                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+                .srcStageMask = VK_PIPELINE_STAGE_2_NONE,
+                .dstStageMask = VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR,
+                .srcAccessMask = VK_ACCESS_2_NONE,
+                .dstAccessMask = VK_ACCESS_2_VIDEO_DECODE_READ_BIT_KHR |
+                                 VK_ACCESS_2_VIDEO_DECODE_WRITE_BIT_KHR,
+                .oldLayout = di->layout,
+                .newLayout = VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR,
+                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .image = di->img,
+                .subresourceRange = (VkImageSubresourceRange) {
+                    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                    .layerCount = 1,
+                    .levelCount = 1,
+                },
+            };
+            nb_img_bar++;
+            di->layout = VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR;
+        }
     }
 
-    if (!layered_dpb) {
-        /* All references (apart from the current) for non-layered refs */
-
+    /* COINCIDE-mode references only: DISTINCT-mode references are covered
+     * by the memory barrier, with pool-owned views */
+    if (!dec->dedicated_dpb) {
         for (int i = 0; i < vp->decode_info.referenceSlotCount; i++) {
             AVFrame *ref_frame = rpic[i];
             FFVulkanDecodePicture *rvp = rvkp[i];
-            AVFrame *ref = rvp->dpb_frame ? rvp->dpb_frame : ref_frame;
 
-            err = ff_vk_exec_add_dep_frame(&ctx->s, exec, ref,
+            err = ff_vk_exec_add_dep_frame(&ctx->s, exec, ref_frame,
                                            VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR,
                                            VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR);
             if (err < 0) {
@@ -589,8 +587,8 @@ int ff_vk_decode_frame(AVCodecContext *avctx,
             if (err == 0 && rvp->out_views)
                 ff_vk_exec_add_dep_refstruct(&ctx->s, exec, rvp->out_views);
 
-            if (!rvp->dpb_frame) {
-                AVVkFrame *rvkf = (AVVkFrame *)ref->data[0];
+            {
+                AVVkFrame *rvkf = (AVVkFrame *)ref_frame->data[0];
 
                 img_bar[nb_img_bar] = (VkImageMemoryBarrier2) {
                     .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
@@ -611,24 +609,31 @@ int ff_vk_decode_frame(AVCodecContext *avctx,
                         .levelCount = 1,
                     },
                 };
-                ff_vk_exec_update_frame(&ctx->s, exec, ref,
+                ff_vk_exec_update_frame(&ctx->s, exec, ref_frame,
                                         &img_bar[nb_img_bar], &nb_img_bar);
             }
         }
-    } else if (vp->decode_info.referenceSlotCount ||
-               vp->view.out != vp->view.ref) {
-        /* Single barrier for a single layered ref */
-        err = ff_vk_exec_add_dep_frame(&ctx->s, exec, ctx->common.layered_frame,
-                                       VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR,
-                                       VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR);
-        if (err < 0)
-            return err;
     }
 
-    /* Change image layout */
+    /* Internal DPB images are queue-exclusive: one decode-stage memory
+     * barrier per submission orders all prior work, references included, so
+     * they need no semaphores or dependencies, and image barriers only for
+     * initial layout transitions. */
+    VkMemoryBarrier2 mem_bar = {
+        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
+        .srcStageMask = VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR,
+        .srcAccessMask = VK_ACCESS_2_VIDEO_DECODE_WRITE_BIT_KHR,
+        .dstStageMask = VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR,
+        .dstAccessMask = VK_ACCESS_2_VIDEO_DECODE_READ_BIT_KHR |
+                         VK_ACCESS_2_VIDEO_DECODE_WRITE_BIT_KHR,
+    };
+
+    /* Change image layouts, and synchronize the internal DPB if in use */
     vk->CmdPipelineBarrier2(cmd_buf, &(VkDependencyInfo) {
             .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
             .dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT,
+            .pMemoryBarriers = &mem_bar,
+            .memoryBarrierCount = ctx->common.dpb ? 1 : 0,
             .pImageMemoryBarriers = img_bar,
             .imageMemoryBarrierCount = nb_img_bar,
         });
@@ -652,6 +657,8 @@ void ff_vk_decode_free_frame(AVHWDeviceContext *dev_ctx, FFVulkanDecodePicture *
     av_refstruct_unref(&vp->out_views);
 
     av_frame_free(&vp->dpb_frame);
+    /* No wait: pool reuse is ordered by the DPB barrier */
+    av_refstruct_unref(&vp->dpb_img);
 }
 
 static void free_common(AVRefStructOpaque unused, void *obj)
@@ -661,9 +668,6 @@ static void free_common(AVRefStructOpaque unused, void *obj)
 
     /* Wait on and free execution pool */
     ff_vk_exec_pool_free(&ctx->s, &ctx->exec_pool);
-
-    /* This also frees all references from this pool */
-    av_frame_free(&ctx->common.layered_frame);
 
     av_refstruct_pool_uninit(&ctx->buf_pool);
 
@@ -1309,25 +1313,10 @@ int ff_vk_decode_init(AVCodecContext *avctx)
             goto fail;
     }
 
-    /* If doing an out-of-place decoding, create a DPB pool */
+    /* Out-of-place decoding: create the internal, queue-exclusive DPB pool */
     if (dec->dedicated_dpb || avctx->codec_id == AV_CODEC_ID_AV1) {
-        AVHWFramesContext *dpb_frames;
-        AVVulkanFramesContext *dpb_hwfc;
-
-        ctx->common.dpb_hwfc_ref = av_hwframe_ctx_alloc(s->frames->device_ref);
-        if (!ctx->common.dpb_hwfc_ref) {
-            err = AVERROR(ENOMEM);
-            goto fail;
-        }
-
-        dpb_frames = (AVHWFramesContext *)ctx->common.dpb_hwfc_ref->data;
-        dpb_frames->format    = s->frames->format;
-        dpb_frames->sw_format = s->frames->sw_format;
-        dpb_frames->width     = s->frames->width;
-        dpb_frames->height    = s->frames->height;
-
-        dpb_hwfc = dpb_frames->hwctx;
-        void *profile_list = (void *)ff_vk_find_struct(ctx->s.hwfc->create_pnext,
+        VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL;
+        void *create_pnext = (void *)ff_vk_find_struct(ctx->s.hwfc->create_pnext,
                                                        VK_STRUCTURE_TYPE_VIDEO_PROFILE_LIST_INFO_KHR);
         /* Reference (DPB) images use the same tiling and pNext chain as output.
          * If VK_VIDEO_DECODE_CAPABILITY_DPB_AND_OUTPUT_DISTINCT_BIT_KHR is 0, the
@@ -1335,37 +1324,70 @@ int ff_vk_decode_init(AVCodecContext *avctx)
         void *drm_create_pnext = (void *)ff_vk_find_struct(ctx->s.hwfc->create_pnext,
                                                            VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_LIST_CREATE_INFO_EXT);
         if (drm_create_pnext) {
-            dpb_hwfc->create_pnext = drm_create_pnext;
-            dpb_hwfc->tiling       = VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT;
+            create_pnext = drm_create_pnext;
+            tiling       = VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT;
             av_assert2(ff_vk_find_struct(drm_create_pnext, VK_STRUCTURE_TYPE_VIDEO_PROFILE_LIST_INFO_KHR));
-        } else {
-            dpb_hwfc->create_pnext = profile_list;
-            dpb_hwfc->tiling       = VK_IMAGE_TILING_OPTIMAL;
         }
-        dpb_hwfc->format[0]    = s->hwfc->format[0];
-        dpb_hwfc->usage        = VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR;
 
-        if (ctx->common.layered_dpb)
-            dpb_hwfc->nb_layers = ctx->caps.maxDpbSlots;
-
-        err = av_hwframe_ctx_init(ctx->common.dpb_hwfc_ref);
+        err = ff_vk_video_dpb_init(s, &ctx->common, s->hwfc->format[0],
+                                   VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR,
+                                   tiling, create_pnext,
+                                   s->frames->width, s->frames->height,
+                                   ctx->common.layered_dpb ?
+                                   ctx->caps.maxDpbSlots : 1);
         if (err < 0)
             goto fail;
 
         if (ctx->common.layered_dpb) {
-            ctx->common.layered_frame = vk_get_dpb_pool(ctx);
-            if (!ctx->common.layered_frame) {
+            FFVulkanFunctions *vk = &ctx->s.vkfn;
+            FFVkExecContext *exec;
+            VkImageMemoryBarrier2 img_bar;
+
+            ctx->common.layered_img = av_refstruct_pool_get(ctx->common.dpb->img_pool);
+            if (!ctx->common.layered_img) {
                 err = AVERROR(ENOMEM);
                 goto fail;
             }
 
-            err = ff_vk_create_view(&ctx->s, &ctx->common,
-                                    &ctx->common.layered_view,
-                                    &ctx->common.layered_aspect,
-                                    (AVVkFrame *)ctx->common.layered_frame->data[0],
-                                    s->hwfc->format[0], VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR);
+            ctx->common.layered_view   = ctx->common.layered_img->view;
+            ctx->common.layered_aspect = ctx->common.layered_img->aspect;
+
+            /* Created eagerly, so transitioned eagerly; per-picture images
+             * transition on first use instead */
+            exec = ff_vk_exec_get(&ctx->s, &ctx->exec_pool);
+            err = ff_vk_exec_start(&ctx->s, exec);
             if (err < 0)
                 goto fail;
+
+            img_bar = (VkImageMemoryBarrier2) {
+                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+                .srcStageMask = VK_PIPELINE_STAGE_2_NONE,
+                .dstStageMask = VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR,
+                .srcAccessMask = VK_ACCESS_2_NONE,
+                .dstAccessMask = VK_ACCESS_2_VIDEO_DECODE_READ_BIT_KHR |
+                                 VK_ACCESS_2_VIDEO_DECODE_WRITE_BIT_KHR,
+                .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+                .newLayout = VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR,
+                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .image = ctx->common.layered_img->img,
+                .subresourceRange = (VkImageSubresourceRange) {
+                    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                    .layerCount = VK_REMAINING_ARRAY_LAYERS,
+                    .levelCount = 1,
+                },
+            };
+            vk->CmdPipelineBarrier2(exec->buf, &(VkDependencyInfo) {
+                    .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+                    .pImageMemoryBarriers = &img_bar,
+                    .imageMemoryBarrierCount = 1,
+                });
+
+            err = ff_vk_exec_submit(&ctx->s, exec);
+            if (err < 0)
+                goto fail;
+
+            ctx->common.layered_img->layout = VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR;
         }
     }
 
