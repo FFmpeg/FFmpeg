@@ -1924,7 +1924,7 @@ static int dirac_decode_frame_internal(DiracContext *s)
             select_dsp_funcs(s, p->width, p->height, p->xblen, p->yblen);
 
             for (i = 0; i < s->num_refs; i++) {
-                int ret = interpolate_refplane(s, s->ref_pics[i], comp, p->width, p->height);
+                ret = interpolate_refplane(s, s->ref_pics[i], comp, p->width, p->height);
                 if (ret < 0)
                     return ret;
             }
