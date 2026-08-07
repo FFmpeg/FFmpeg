@@ -1106,12 +1106,40 @@ fate-swr-custom-rematrix: REF = 2a14a44deb4ae26e3b474ddbfbc048f8
 
 FATE_SWR += $(FATE_SWR_CUSTOM_REMATRIX-yes)
 
-FATE_SWR_REMATRIX-$(CONFIG_SWRESAMPLE) += fate-swr-rematrix
-fate-swr-rematrix: libswresample/tests/rematrix$(EXESUF)
-fate-swr-rematrix: CMD = run libswresample/tests/rematrix$(EXESUF)
-fate-swr-rematrix: CMP = null
+FATE_SWR_22_2_LAYOUTS   = 9.1.6 9.1.4 7.2.3 7.1.4 7.1.2 5.1.4 5.1.2 7.1 5.1 stereo mono
+FATE_SWR_9_1_6_LAYOUTS  = 9.1.4 7.2.3 7.1.4 7.1.2 5.1.4 5.1.2 7.1 5.1 stereo mono
+FATE_SWR_9_1_4_LAYOUTS  = 7.2.3 7.1.4 7.1.2 5.1.4 5.1.2 7.1 5.1 stereo mono
+FATE_SWR_7_2_3_LAYOUTS  = 7.1.4 7.1.2 5.1.4 5.1.2 7.1 5.1 stereo mono
+FATE_SWR_7_1_4_LAYOUTS  = 7.1.2 5.1.4 5.1.2 7.1 5.1 stereo mono
+FATE_SWR_7_1_2_LAYOUTS  = 5.1.4 5.1.2 7.1 5.1 stereo mono
+FATE_SWR_5_1_4_LAYOUTS  = 5.1.2 7.1 5.1 stereo mono
+FATE_SWR_5_1_2_LAYOUTS  = 7.1 5.1 stereo mono
+FATE_SWR_7_1_LAYOUTS    = 5.1 stereo mono
+FATE_SWR_5_1_LAYOUTS    = stereo mono
+FATE_SWR_STEREO_LAYOUTS = mono
+
+define FATE_SWR_REMATRIX_TEST
+FATE_SWR_REMATRIX-$(CONFIG_SWRESAMPLE) += fate-swr-rematrix-$(1)-$(2)
+fate-swr-rematrix-$(1)-$(2): libswresample/tests/rematrix$(EXESUF)
+fate-swr-rematrix-$(1)-$(2): CMD = run libswresample/tests/rematrix$(EXESUF) $(1) $(2)
+endef
+
+SWR_REMATRIX_TEST = $(foreach OUT,$(1),$(eval $(call FATE_SWR_REMATRIX_TEST,$(2),$(OUT))))
+
+$(call SWR_REMATRIX_TEST,$(FATE_SWR_22_2_LAYOUTS),22.2)
+$(call SWR_REMATRIX_TEST,$(FATE_SWR_9_1_6_LAYOUTS),9.1.6)
+$(call SWR_REMATRIX_TEST,$(FATE_SWR_9_1_4_LAYOUTS),9.1.4)
+$(call SWR_REMATRIX_TEST,$(FATE_SWR_7_2_3_LAYOUTS),7.2.3)
+$(call SWR_REMATRIX_TEST,$(FATE_SWR_7_1_4_LAYOUTS),7.1.4)
+$(call SWR_REMATRIX_TEST,$(FATE_SWR_7_1_2_LAYOUTS),7.1.2)
+$(call SWR_REMATRIX_TEST,$(FATE_SWR_5_1_4_LAYOUTS),5.1.4)
+$(call SWR_REMATRIX_TEST,$(FATE_SWR_5_1_2_LAYOUTS),5.1.2)
+$(call SWR_REMATRIX_TEST,$(FATE_SWR_7_1_LAYOUTS),7.1)
+$(call SWR_REMATRIX_TEST,$(FATE_SWR_5_1_LAYOUTS),5.1)
+$(call SWR_REMATRIX_TEST,$(FATE_SWR_STEREO_LAYOUTS),stereo)
 
 FATE_SWR += $(FATE_SWR_REMATRIX-yes)
+fate-swr-rematrix: $(FATE_SWR_REMATRIX-yes)
 
 FATE_SWR_REALLOC-$(CONFIG_SWRESAMPLE) += fate-swr-resample-realloc
 fate-swr-resample-realloc: libswresample/tests/swresample_resample_realloc$(EXESUF)

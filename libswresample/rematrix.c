@@ -473,10 +473,10 @@ static void build_matrix(const AVChannelLayout *in_ch_layout, const AVChannelLay
 
     if (unaccounted & AV_CH_BOTTOM_FRONT_LEFT) {
         if (av_channel_layout_index_from_channel(out_ch_layout, AV_CHAN_BOTTOM_FRONT_CENTER) >= 0) {
-                matrix[BOTTOM_FRONT_CENTER][BOTTOM_FRONT_LEFT ] += M_SQRT1_2;
-                matrix[BOTTOM_FRONT_CENTER][BOTTOM_FRONT_RIGHT] += M_SQRT1_2;
-                if (av_channel_layout_index_from_channel(in_ch_layout, AV_CHAN_BOTTOM_FRONT_CENTER) >= 0)
-                    matrix[BOTTOM_FRONT_CENTER][BOTTOM_FRONT_CENTER] = center_mix_level * sqrt(2);
+            matrix[BOTTOM_FRONT_CENTER][BOTTOM_FRONT_LEFT ] += M_SQRT1_2;
+            matrix[BOTTOM_FRONT_CENTER][BOTTOM_FRONT_RIGHT] += M_SQRT1_2;
+            if (av_channel_layout_index_from_channel(in_ch_layout, AV_CHAN_BOTTOM_FRONT_CENTER) >= 0)
+                matrix[BOTTOM_FRONT_CENTER][BOTTOM_FRONT_CENTER] = center_mix_level * sqrt(2);
         } else if (av_channel_layout_index_from_channel(out_ch_layout, AV_CHAN_FRONT_LEFT) >= 0) {
             /* M±030 = 1 */
             matrix[FRONT_LEFT ][BOTTOM_FRONT_LEFT ] += 1.0;
