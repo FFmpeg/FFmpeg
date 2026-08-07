@@ -46,7 +46,7 @@ SECTION .text
 %endmacro
 
 %macro HPEL_FILTER 1
-; dirac_hpel_filter_v_sse2(uint8_t *dst, uint8_t *src, int stride, int width);
+; ff_dirac_hpel_filter_v_sse2(uint8_t *dst, const uint8_t *src, ptrdiff_t stride, int width);
 cglobal dirac_hpel_filter_v_%1, 4,6,8, dst, src, stride, width, src0, stridex3
     mov     src0q, srcq
     lea     stridex3q, [3*strideq]
@@ -317,6 +317,8 @@ INIT_XMM sse4
 ; void put_signed_rect_clamped_10(uint8_t *dst, int dst_stride, const uint8_t *src, int src_stride, int width, int height)
 %if ARCH_X86_64
 cglobal put_signed_rect_clamped_10, 6, 8, 5, dst, dst_stride, src, src_stride, w, h, t1, t2
+    movsxd   dst_strideq, dst_strided
+    movsxd   src_strideq, src_strided
 %else
 cglobal put_signed_rect_clamped_10, 5, 7, 5, dst, dst_stride, src, src_stride, w, t1, t2
     %define  hd  r5mp
