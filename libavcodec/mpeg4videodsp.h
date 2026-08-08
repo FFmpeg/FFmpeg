@@ -19,9 +19,10 @@
 #ifndef AVCODEC_MPEG4VIDEODSP_H
 #define AVCODEC_MPEG4VIDEODSP_H
 
+#include <stddef.h>
 #include <stdint.h>
 
-void ff_gmc_c(uint8_t *dst, const uint8_t *src, int stride, int h, int ox, int oy,
+void ff_gmc_c(uint8_t *dst, const uint8_t *src, ptrdiff_t stride, int h, int ox, int oy,
               int dxx, int dxy, int dyx, int dyy, int shift, int r,
               int width, int height);
 
@@ -30,12 +31,12 @@ typedef struct Mpeg4VideoDSPContext {
      * translational global motion compensation.
      */
     void (*gmc1)(uint8_t *dst /* align 8 */, const uint8_t *src /* align 1 */,
-                 int srcStride, int h, int x16, int y16, int rounder);
+                 ptrdiff_t srcStride, int h, int x16, int y16, int rounder);
     /**
      * global motion compensation.
      */
     void (*gmc)(uint8_t *dst /* align 8 */, const uint8_t *src /* align 1 */,
-                int stride, int h, int ox, int oy,
+                ptrdiff_t stride, int h, int ox, int oy,
                 int dxx, int dxy, int dyx, int dyy,
                 int shift, int r, int width, int height);
 } Mpeg4VideoDSPContext;

@@ -81,7 +81,7 @@ static void checkasm_check_gmc(const Mpeg4VideoDSPContext *const mdsp)
     DECLARE_ALIGNED_4(uint8_t, srcbuf)[MAX_STRIDE * MAX_HEIGHT];
 
     declare_func(void, uint8_t *dst, const uint8_t *src,
-                 int stride, int h, int ox, int oy,
+                 ptrdiff_t stride, int h, int ox, int oy,
                  int dxx, int dxy, int dyx, int dyy,
                  int shift, int r, int width, int height);
 

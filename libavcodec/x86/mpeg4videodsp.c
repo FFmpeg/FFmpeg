@@ -37,7 +37,7 @@ typedef struct {
 DECLARE_ASM_CONST(16, xmm_u16, pw_0to7) = { { 0, 1, 2, 3, 4, 5, 6, 7 } };
 
 static void gmc_ssse3(uint8_t *dst, const uint8_t *src,
-                      int stride, int h, int ox, int oy,
+                      ptrdiff_t stride, int h, int ox, int oy,
                       int dxx, int dxy, int dyx, int dyy,
                       int shift, int r, int width, int height)
 {
