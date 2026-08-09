@@ -31,6 +31,7 @@ OBJS = \
 	src/utils.o \
 	tests/selftest.o \
 	tests/generic.o \
+	tests/utils.o \
 	tests/arm/32/tests.o \
 	tests/arm/32/tests_asm.o \
 	tests/arm/64/tests.o \

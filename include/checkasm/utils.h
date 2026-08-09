@@ -51,6 +51,12 @@
  *
  * These functions use the seed specified in CheckasmConfig (or a time-based
  * seed if not specified) to generate deterministic, reproducible random values.
+ *
+ * @note The PRNG state is automatically re-seeded at the start of each test
+ * case (i.e. before each call to CheckasmTest.func), so that different CPU
+ * flags see the same sequence of random numbers, at least until control flow
+ * inside the test function diverges.
+ *
  * @{
  */
 
@@ -67,16 +73,68 @@ CHECKASM_API int checkasm_rand(void);
 CHECKASM_API double checkasm_randf(void);
 
 /**
+ * @brief Generate a random 8-bit unsigned integer
+ * @return Random value in range [0, UINT8_MAX]
+ */
+CHECKASM_API uint8_t checkasm_rand_uint8(void);
+
+/**
+ * @brief Generate a random 16-bit unsigned integer
+ * @return Random value in range [0, UINT16_MAX]
+ */
+CHECKASM_API uint16_t checkasm_rand_uint16(void);
+
+/**
  * @brief Generate a random 32-bit unsigned integer
  * @return Random value in range [0, UINT32_MAX]
  */
 CHECKASM_API uint32_t checkasm_rand_uint32(void);
 
 /**
+ * @brief Generate a random 64-bit unsigned integer
+ * @return Random value in range [0, UINT64_MAX]
+ */
+CHECKASM_API uint64_t checkasm_rand_uint64(void);
+
+/**
+ * @brief Generate a random 8-bit signed integer
+ * @return Random value in range [INT8_MIN, INT8_MAX]
+ */
+CHECKASM_API int8_t checkasm_rand_int8(void);
+
+/**
+ * @brief Generate a random 16-bit signed integer
+ * @return Random value in range [INT16_MIN, INT16_MAX]
+ */
+CHECKASM_API int16_t checkasm_rand_int16(void);
+
+/**
  * @brief Generate a random 32-bit signed integer
  * @return Random value in range [INT32_MIN, INT32_MAX]
  */
 CHECKASM_API int32_t checkasm_rand_int32(void);
+
+/**
+ * @brief Generate a random 64-bit signed integer
+ * @return Random value in range [INT64_MIN, INT64_MAX]
+ */
+CHECKASM_API int64_t checkasm_rand_int64(void);
+
+/**
+ * @brief Generate a truly random 32-bit float.
+ * @return Random float value, drawn from the space of all possible float
+ *         representations, including every possible NaN, Infinity etc.
+ * @see checkasm_randf(), checkasm_rand_norm(), checkasm_rand_dist()
+ */
+CHECKASM_API float checkasm_rand_float32(void);
+
+/**
+ * @brief Generate a truly random 64-bit float.
+ * @return Random float value, drawn from the space of all possible float
+ *         representations, including every possible NaN, Infinity etc.
+ * @see checkasm_randf(), checkasm_rand_norm(), checkasm_rand_dist()
+ */
+CHECKASM_API double checkasm_rand_float64(void);
 
 /** @} */ /* rng */
 
@@ -159,6 +217,26 @@ CHECKASM_API void checkasm_randomize_range(double *buf, int width, double range)
  * @param[in] range Exclusive upper bound on value (range is [0, range))
  */
 CHECKASM_API void checkasm_randomize_rangef(float *buf, int width, float range);
+
+/**
+ * @brief Fill a double buffer with random values chosen uniformly from an interval
+ * @param[out] buf Buffer to fill
+ * @param[in] width Number of elements to randomize
+ * @param[in] low Inclusive lower bound on value
+ * @param[in] high Inclusive upper bound on value
+ */
+CHECKASM_API void checkasm_randomize_interval(double *buf, int width, double low,
+                                              double high);
+
+/**
+ * @brief Fill a float buffer with random values chosen uniformly from an interval
+ * @param[out] buf Buffer to fill
+ * @param[in] width Number of elements to randomize
+ * @param[in] low Inclusive lower bound on value
+ * @param[in] high Inclusive upper bound on value
+ */
+CHECKASM_API void checkasm_randomize_intervalf(float *buf, int width, float low,
+                                               float high);
 
 /**
  * @brief Fill a double buffer with normally distributed random values

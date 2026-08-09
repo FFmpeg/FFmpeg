@@ -37,23 +37,26 @@
 #include <checkasm/utils.h>
 
 enum {
-    SELFTEST_CPU_FLAG_BAD_C = 1 << 0, // dummy flag for "bad" C implementations
+    SELFTEST_CPU_FLAG_BAD_C  = 1 << 0, // dummy flag for "bad" C implementations
+    SELFTEST_CPU_FLAG_A      = 1 << 1, // dummy flag for testing flag masking
+    SELFTEST_CPU_FLAG_B      = 1 << 2,
+    SELFTEST_CPU_FLAG_AB     = SELFTEST_CPU_FLAG_A | SELFTEST_CPU_FLAG_B,
 #if ARCH_X86
-    SELFTEST_CPU_FLAG_X86    = 1 << 1,
-    SELFTEST_CPU_FLAG_MMX    = 1 << 2,
-    SELFTEST_CPU_FLAG_SSE2   = 1 << 3,
-    SELFTEST_CPU_FLAG_AVX2   = 1 << 4,
-    SELFTEST_CPU_FLAG_AVX512 = 1 << 5,
+    SELFTEST_CPU_FLAG_X86    = 1 << 10,
+    SELFTEST_CPU_FLAG_MMX    = 1 << 11,
+    SELFTEST_CPU_FLAG_SSE    = 1 << 12,
+    SELFTEST_CPU_FLAG_AVX    = 1 << 13,
+    SELFTEST_CPU_FLAG_AVX512 = 1 << 14,
 #elif ARCH_RISCV
-    SELFTEST_CPU_FLAG_RVI    = 1 << 1,
-    SELFTEST_CPU_FLAG_RVF    = 1 << 2,
-    SELFTEST_CPU_FLAG_RVV    = 1 << 3,
+    SELFTEST_CPU_FLAG_RVI    = 1 << 10,
+    SELFTEST_CPU_FLAG_RVF    = 1 << 11,
+    SELFTEST_CPU_FLAG_RVV    = 1 << 12,
 #elif ARCH_AARCH64
-    SELFTEST_CPU_FLAG_AARCH64 = 1 << 1,
+    SELFTEST_CPU_FLAG_AARCH64 = 1 << 10,
 #elif ARCH_ARM
-    SELFTEST_CPU_FLAG_ARM    = 1 << 1,
-    SELFTEST_CPU_FLAG_VFP    = 1 << 2,
-    SELFTEST_CPU_FLAG_VFPD32 = 1 << 3,
+    SELFTEST_CPU_FLAG_ARM    = 1 << 10,
+    SELFTEST_CPU_FLAG_VFP    = 1 << 11,
+    SELFTEST_CPU_FLAG_VFPD32 = 1 << 12,
 #endif
 };
 
@@ -106,6 +109,7 @@ void selftest_test_float(float_func *func, const char *name, float input);
 
 /* Platform-specific tests */
 void selftest_check_generic(void);
+void selftest_check_utils(void);
 void selftest_check_x86(void);
 void selftest_check_riscv(void);
 void selftest_check_aarch64(void);

@@ -42,6 +42,7 @@ checkasm_asm_sources = []
 checkasm_test_sources = files(
   'selftest.c',
   'generic.c',
+  'utils.c',
   'arm/32/tests.c',
   'arm/64/tests.c',
   'riscv/tests.c',

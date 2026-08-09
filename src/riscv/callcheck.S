@@ -312,7 +312,7 @@ function checked_call_ifv, export=1, ext=zve32x
 .Lclobber_v:
         # Clobber the vector registers
         vsetvli t1, zero, e32, m8, ta, ma
-        li      t1, -0xdeadbeef
+        li      t1, 0x0badf00d
         vmv.v.x v0, t1
         vmv.v.x v8, t1
         vmv.v.x v16, t1

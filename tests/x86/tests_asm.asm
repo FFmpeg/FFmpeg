@@ -99,15 +99,15 @@ copy_mm _noemms
 cglobal noemms, 3, 3, 0, dst, src, size
     RET
 
-; SSE2 functions
-INIT_XMM sse2
+; SSE functions
+INIT_XMM sse
 copy_mm
 
-; AVX2 functions
-INIT_YMM avx2
+; AVX functions
+INIT_YMM avx
 copy_mm
 copy_mm _novzeroupper
 
 ; AVX512 functions
-INIT_YMM avx512
+INIT_ZMM avx512
 copy_mm

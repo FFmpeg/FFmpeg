@@ -167,7 +167,7 @@ static COLD checkasm_simd_warmup_func get_simd_warmup(void)
         return simd_warmup;
 
     checkasm_cpu_cpuid(&r, 7, 0);
-    if (r.ebx & 0x00000020) /* AVX512F */
+    if (r.ebx & 0x00010000) /* AVX512F */
         simd_warmup = checkasm_warmup_avx512;
 
     return simd_warmup;
