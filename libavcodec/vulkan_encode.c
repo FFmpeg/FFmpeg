@@ -367,12 +367,15 @@ static int vulkan_encode_issue(AVCodecContext *avctx,
     if (err < 0)
         goto fail;
 
-    /* Source image layout conversion */
+    /* Source image layout conversion. Writes to it happened on other
+     * queues, and were made available by the semaphore wait: their access
+     * flags are not to be carried over, and may not even be valid on this
+     * queue. */
     img_bar[nb_img_bar] = (VkImageMemoryBarrier2) {
         .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
         .pNext = NULL,
         .srcStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
-        .srcAccessMask = vkf->access[0],
+        .srcAccessMask = VK_ACCESS_2_NONE,
         .dstStageMask = VK_PIPELINE_STAGE_2_VIDEO_ENCODE_BIT_KHR,
         .dstAccessMask = VK_ACCESS_2_VIDEO_ENCODE_READ_BIT_KHR,
         .oldLayout = vkf->layout[0],
