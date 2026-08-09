@@ -251,6 +251,7 @@ CHECKASM_API void checkasm_report(const char *name, ...) CHECKASM_PRINTF(1, 2);
  */
 #define checkasm_call(func, ...)                                                         \
     (checkasm_set_signal_handler_state(1), (func) (__VA_ARGS__));                        \
+    checkasm_clear_cpu_state();                                                          \
     checkasm_set_signal_handler_state(0)
 
 /**

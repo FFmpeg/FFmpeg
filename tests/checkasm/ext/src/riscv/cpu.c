@@ -44,6 +44,7 @@
     #include <sys/hwprobe.h>
   #elif HAVE_ASM_HWPROBE_H
     #include <asm/hwprobe.h>
+    #include <asm/unistd.h>
     #include <sys/syscall.h>
     #include <unistd.h>
 

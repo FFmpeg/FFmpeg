@@ -119,41 +119,130 @@ unsigned checkasm_seed(void)
     return (unsigned) gettime_nsec(1);
 }
 
-// xor128 from Marsaglia, George (July 2003). "Xorshift RNGs".
-//             Journal of Statistical Software. 8 (14).
-//             doi:10.18637/jss.v008.i14.
-static uint32_t xs_state[4];
+// (parallel) xoshiro128++ from https://prng.di.unimi.it/
+typedef struct CheckasmRand {
+#define CHECKASM_PRNG_NUM 4
+    uint32_t s0[CHECKASM_PRNG_NUM];
+    uint32_t s1[CHECKASM_PRNG_NUM];
+    uint32_t s2[CHECKASM_PRNG_NUM];
+    uint32_t s3[CHECKASM_PRNG_NUM];
+} CheckasmRand;
+
+static CheckasmRand checkasm_prng;
+
+static ALWAYS_INLINE uint32_t rotl(const uint32_t x, int k)
+{
+    return (x << k) | (x >> (32 - k));
+}
+
+/* Single round of a parallel xoshiro128++, generates a full block */
+static ALWAYS_INLINE void xoshiro128pp(CheckasmRand *restrict xs, uint32_t *restrict buf)
+{
+    for (int i = 0; i < CHECKASM_PRNG_NUM; i++) {
+        buf[i] = rotl(xs->s0[i] + xs->s3[i], 7) + xs->s0[i];
+
+        const uint32_t t = xs->s1[i] << 9;
+        xs->s2[i] ^= xs->s0[i];
+        xs->s3[i] ^= xs->s1[i];
+        xs->s1[i] ^= xs->s2[i];
+        xs->s0[i] ^= xs->s3[i];
+        xs->s2[i] ^= t;
+        xs->s3[i] = rotl(xs->s3[i], 11);
+    }
+}
+
+static void prng(CheckasmRand *restrict xs, uint8_t *restrict buf, size_t size)
+{
+    uint32_t     tmp[CHECKASM_PRNG_NUM];
+    const size_t block_size = sizeof(tmp);
+    CheckasmRand xs_copy    = *xs;
+
+    while (size >= block_size) {
+        xoshiro128pp(&xs_copy, tmp);
+        memcpy(buf, tmp, block_size);
+        buf += block_size;
+        size -= block_size;
+    }
+
+    if (size) {
+        xoshiro128pp(&xs_copy, tmp);
+        memcpy(buf, tmp, size);
+    }
+
+    *xs = xs_copy;
+}
+
+/* Efficient wrapper for generating individual random integers, by caching
+ * the result of a single call to the underlying generator() */
+static struct {
+    #define PRNG_CACHE_SIZE 64
+    uint8_t  buf8 [PRNG_CACHE_SIZE];
+    uint16_t buf16[PRNG_CACHE_SIZE >> 1];
+    uint32_t buf32[PRNG_CACHE_SIZE >> 2];
+    uint64_t buf64[PRNG_CACHE_SIZE >> 3];
+    int num8;
+    int num16;
+    int num32;
+    int num64;
+} prng_cache;
+
+static_assert(PRNG_CACHE_SIZE % sizeof(uint32_t[CHECKASM_PRNG_NUM]) == 0,
+              "PRNG_CACHE_SIZE should be a multiple of uint32_t[CHECKASM_PRNG_NUM]");
+
+#define DEF_CHECKASM_RAND(BITS, TYPE, NAME)                                              \
+    TYPE checkasm_rand_##NAME(void)                                                      \
+    {                                                                                    \
+        if (!prng_cache.num##BITS) {                                                     \
+            prng(&checkasm_prng, (uint8_t *) prng_cache.buf##BITS,                       \
+                 sizeof(prng_cache.buf##BITS));                                          \
+            prng_cache.num##BITS = ARRAY_SIZE(prng_cache.buf##BITS);                     \
+        }                                                                                \
+                                                                                         \
+        union {                                                                          \
+            TYPE           type;                                                         \
+            uint##BITS##_t raw;                                                          \
+        } val;                                                                           \
+        val.raw = prng_cache.buf##BITS[--prng_cache.num##BITS];                          \
+        return val.type;                                                                 \
+    }
+
+DEF_CHECKASM_RAND(8,  int8_t,   int8)
+DEF_CHECKASM_RAND(8,  uint8_t,  uint8)
+DEF_CHECKASM_RAND(16, int16_t,  int16)
+DEF_CHECKASM_RAND(16, uint16_t, uint16)
+DEF_CHECKASM_RAND(32, int32_t,  int32)
+DEF_CHECKASM_RAND(32, uint32_t, uint32)
+DEF_CHECKASM_RAND(32, float,    float32)
+DEF_CHECKASM_RAND(64, int64_t,  int64)
+DEF_CHECKASM_RAND(64, uint64_t, uint64)
+DEF_CHECKASM_RAND(64, double,   float64)
+
+static inline uint64_t splitmix64(uint64_t *state)
+{
+    uint64_t z = (*state += 0x9e3779b97f4a7c15);
+
+    z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9;
+    z = (z ^ (z >> 27)) * 0x94d049bb133111eb;
+    return z ^ (z >> 31);
+}
 
 void checkasm_srand(unsigned seed)
 {
-    xs_state[0] = seed;
-    xs_state[1] = (seed & 0xffff0000) | (~seed & 0x0000ffff);
-    xs_state[2] = (~seed & 0xffff0000) | (seed & 0x0000ffff);
-    xs_state[3] = ~seed;
-}
+    /* Seed using splitmix64() as recommended by xoroshiro128 authors */
+    uint64_t s = seed;
 
-uint32_t checkasm_rand_uint32(void)
-{
-    const uint32_t x = xs_state[0];
-    const uint32_t t = x ^ (x << 11);
+    for (int i = 0; i < CHECKASM_PRNG_NUM; i++) {
+        const uint64_t a = splitmix64(&s);
+        const uint64_t b = splitmix64(&s);
 
-    xs_state[0] = xs_state[1];
-    xs_state[1] = xs_state[2];
-    xs_state[2] = xs_state[3];
-    uint32_t w  = xs_state[3];
+        checkasm_prng.s0[i] = (uint32_t) a;
+        checkasm_prng.s1[i] = (uint32_t) b;
+        checkasm_prng.s2[i] = a >> 32;
+        checkasm_prng.s3[i] = b >> 32;
+    }
 
-    return xs_state[3] = (w ^ (w >> 19)) ^ (t ^ (t >> 8));
-}
-
-int32_t checkasm_rand_int32(void)
-{
-    union {
-        uint32_t u;
-        int32_t  i;
-    } res;
-
-    res.u = checkasm_rand_uint32();
-    return res.i;
+    /* discard cached random bytes */
+    prng_cache.num8 = prng_cache.num16 = prng_cache.num32 = prng_cache.num64 = 0;
 }
 
 int checkasm_rand(void)
@@ -164,7 +253,7 @@ int checkasm_rand(void)
 
 double checkasm_randf(void)
 {
-    return checkasm_rand_uint32() / (double) UINT32_MAX;
+    return checkasm_rand_uint32() / (UINT32_MAX + 1.0);
 }
 
 /* Marsaglia polar method */
@@ -198,35 +287,51 @@ double checkasm_rand_dist(CheckasmDist dist)
     return dist.mean + dist.stddev * checkasm_rand_norm();
 }
 
-void checkasm_randomize(void *bufp, size_t bytes)
+void checkasm_randomize(void *buf, size_t bytes)
 {
-    uint8_t *buf = bufp;
-    while (bytes--)
-        *buf++ = checkasm_rand_uint32() & 0xFF;
+    prng(&checkasm_prng, buf, bytes);
 }
 
 void checkasm_randomize_mask8(uint8_t *buf, int width, uint8_t mask)
 {
-    while (width--)
-        *buf++ = checkasm_rand_uint32() & mask;
+    prng(&checkasm_prng, (uint8_t *) buf, width * sizeof(*buf));
+    for (int i = 0; i < width; i++)
+        buf[i] &= mask;
 }
 
 void checkasm_randomize_mask16(uint16_t *buf, int width, uint16_t mask)
 {
-    while (width--)
-        *buf++ = checkasm_rand_uint32() & mask;
+    prng(&checkasm_prng, (uint8_t *) buf, width * sizeof(*buf));
+    for (int i = 0; i < width; i++)
+        buf[i] &= mask;
 }
 
 void checkasm_randomize_range(double *buf, int width, double range)
 {
+    const double scale = range / (UINT32_MAX + 1.0);
     while (width--)
-        *buf++ = checkasm_randf() * range;
+        *buf++ = scale * checkasm_rand_uint32();
 }
 
 void checkasm_randomize_rangef(float *buf, int width, float range)
 {
+    const float scale = (float) (range / (UINT32_MAX + 1.0));
     while (width--)
-        *buf++ = (float) (checkasm_randf() * range);
+        *buf++ = scale * checkasm_rand_uint32();
+}
+
+void checkasm_randomize_interval(double *buf, int width, double low, double high)
+{
+    const double scale = (high - low) / (double) UINT32_MAX;
+    while (width--)
+        *buf++ = scale * checkasm_rand_uint32() + low;
+}
+
+void checkasm_randomize_intervalf(float *buf, int width, float low, float high)
+{
+    const float scale = (high - low) / (float) UINT32_MAX;
+    while (width--)
+        *buf++ = scale * checkasm_rand_uint32() + low;
 }
 
 #define RANDOMIZE_DIST(buf, ftype, width, mean, stddev)                                  \
@@ -338,21 +443,21 @@ void checkasm_init(void *buf, size_t bytes)
         for (int i = 0; i < width; i++, step--) {                                        \
             if (!step) {                                                                 \
                 step = imax(shift_rand(width), 1);                                       \
-                mode = checkasm_rand() & 7;                                              \
+                mode = checkasm_rand_uint8() & 7;                                        \
                 mask = shift_rand(mask_pixel);                                           \
             }                                                                            \
                                                                                          \
-            const PIXEL low  = checkasm_rand_uint32() & mask;                            \
+            const PIXEL low  = checkasm_rand_uint##BITS() & mask;                        \
             const PIXEL high = mask_pixel - low;                                         \
             switch (mode) {                                                              \
             case PAT_ZERO:  buf[i] = 0; break;                                           \
             case PAT_ONE:   buf[i] = mask_pixel; break;                                  \
-            case PAT_RAND:  buf[i] = checkasm_rand_uint32() & mask_pixel; break;         \
+            case PAT_RAND:  buf[i] = checkasm_rand_uint##BITS() & mask_pixel; break;     \
             case PAT_LOW:   buf[i] = low; break;                                         \
             case PAT_HIGH:  buf[i] = high; break;                                        \
             case PAT_ALTLO: buf[i] = (i & 1) ? high : low; break;                        \
             case PAT_ALTHI: buf[i] = (i & 1) ? low : high; break;                        \
-            case PAT_MIX:   buf[i] = (checkasm_rand() & 1) ? low : high; break;            \
+            case PAT_MIX:   buf[i] = (checkasm_rand_uint8() & 1) ? low : high; break;    \
             }                                                                            \
         }                                                                                \
     }
@@ -361,22 +466,57 @@ DEF_CHECKASM_INIT_MASK(8, uint8_t)
 DEF_CHECKASM_INIT_MASK(16, uint16_t)
 
 static int use_printf_color[2];
+static char statusline[256];
+static int statusline_visible;
 
 /* Print colored text to stderr if the terminal supports it */
-void checkasm_fprintf(FILE *const f, const int color, const char *const fmt, ...)
+int checkasm_vfprintf(FILE *const f, const int color, const char *const fmt, va_list arg)
 {
-    va_list arg;
-    int     use_color = use_printf_color[f == stderr];
+    size_t fmt_len = strlen(fmt);
+    int use_color = use_printf_color[f == stderr];
+    if (!use_color || !fmt_len)
+        return vfprintf(f, fmt, arg);
 
-    if (color >= 0 && use_color)
+    if (f == stderr && statusline_visible) {
+        fprintf(f, "\r\033[K"); /* clear line */
+        statusline_visible = 0;
+    }
+
+    if (color >= 0)
         fprintf(f, "\x1b[0;%dm", color);
 
-    va_start(arg, fmt);
-    vfprintf(f, fmt, arg);
-    va_end(arg);
+    int ret = vfprintf(f, fmt, arg);
 
-    if (color >= 0 && use_color)
+    if (color >= 0)
         fprintf(f, "\x1b[0m");
+
+    if (f == stderr && statusline[0] && fmt[fmt_len - 1] == '\n') {
+        fprintf(f, "%s", statusline);
+        statusline_visible = 1;
+    }
+
+    return ret;
+}
+
+void checkasm_statusline(const char *status)
+{
+    if (!status)
+        status = "";
+
+    if (!use_printf_color[1] || !strcmp(statusline, status))
+        return; /* don't re-paint unchanged status */
+
+    snprintf(statusline, sizeof(statusline), "%s", status);
+
+    if (statusline_visible) {
+        fprintf(stderr, "\r\033[K");
+        statusline_visible = 0;
+    }
+
+    if (statusline[0]) {
+        fprintf(stderr, "%s", statusline);
+        statusline_visible = 1;
+    }
 }
 
 static COLD int should_use_color(FILE *const f)

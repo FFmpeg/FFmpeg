@@ -109,8 +109,25 @@ NORETURN void checkasm_fail_abort(const char *msg, ...) CHECKASM_PRINTF(1, 2);
 
 /* Colored variant of fprintf for terminals that support it */
 void checkasm_setup_fprintf(void);
-void checkasm_fprintf(FILE *const f, const int color, const char *const fmt, ...)
-    CHECKASM_PRINTF(3, 4);
+int checkasm_vfprintf(FILE *const f, int color, const char *fmt, va_list arg)
+    CHECKASM_PRINTF(3, 0);
+
+CHECKASM_PRINTF(3, 4)
+static inline int checkasm_fprintf(FILE *const f, int color, const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    int ret = checkasm_vfprintf(f, color, fmt, ap);
+    va_end(ap);
+    return ret;
+}
+
+#define LOG_COLOR(...) checkasm_fprintf(stderr, __VA_ARGS__)
+#define LOG(...)       LOG_COLOR(COLOR_DEFAULT, __VA_ARGS__)
+
+/* Update the statusline, reprinted automatically as needed. Pass NULL or an
+ * empty string ("") to clear it entirely. Maximum 256 characters */
+void checkasm_statusline(const char *status);
 
 /* Light-weight helper for printing nested JSON objects */
 typedef struct CheckasmJson {
