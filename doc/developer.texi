@@ -411,9 +411,15 @@ The code must behave correctly under such conditions.
 
 @subheading Robustness
 The code must treat as untrusted any bytestream received from a caller or read
-from a file, network, etc. It must not misbehave when arbitrary data is sent to
-it - typically it should print an error message and return
-@code{AVERROR_INVALIDDATA} on encountering invalid input data.
+from a file, network, etc. Arbitrary input must never cause unsafe
+behavior or a security issue.
+
+Common real-world errors of common formats and codecs should be detected where practical,
+reported where appropriate, and handled to produce the best output possible,
+for example through error concealment.
+
+All errors must still be handled safely, but if they are detected,
+reporting or how they are handled is left to the implementation.
 
 @subheading Memory allocation
 The code must use the @code{av_malloc()} family of functions from
