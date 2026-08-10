@@ -732,15 +732,15 @@ SECTION .text
     unpcklpd m4, m4, m6
     unpcklpd m5, m5, m7
 
-    vextractf128 [outq +      (0 + 0 + %1)*mmsize + %6 +  0], m0,  0
-    vextractf128 [outq +      (0 + 0 + %1)*mmsize + %6 + 16], m10, 0
-    vextractf128 [outq + %3 + (0 + 0 + %1)*mmsize + %6 +  0], m1,  0
-    vextractf128 [outq + %3 + (0 + 0 + %1)*mmsize + %6 + 16], m11, 0
+    movaps [outq +      (0 + 0 + %1)*mmsize + %6 +  0], xm0
+    movaps [outq +      (0 + 0 + %1)*mmsize + %6 + 16], xm10
+    movaps [outq + %3 + (0 + 0 + %1)*mmsize + %6 +  0], xm1
+    movaps [outq + %3 + (0 + 0 + %1)*mmsize + %6 + 16], xm11
 
-    vextractf128 [outq + %4 + (0 + 0 + %1)*mmsize + %6 +  0], m4,  0
-    vextractf128 [outq + %4 + (0 + 0 + %1)*mmsize + %6 + 16], m12, 0
-    vextractf128 [outq + %5 + (0 + 0 + %1)*mmsize + %6 +  0], m5,  0
-    vextractf128 [outq + %5 + (0 + 0 + %1)*mmsize + %6 + 16], m13, 0
+    movaps [outq + %4 + (0 + 0 + %1)*mmsize + %6 +  0], xm4
+    movaps [outq + %4 + (0 + 0 + %1)*mmsize + %6 + 16], xm12
+    movaps [outq + %5 + (0 + 0 + %1)*mmsize + %6 +  0], xm5
+    movaps [outq + %5 + (0 + 0 + %1)*mmsize + %6 + 16], xm13
 
     vperm2f128 m10, m10, m0, 0x13
     vperm2f128 m11, m11, m1, 0x13
@@ -780,23 +780,23 @@ SECTION .text
     unpckhpd m4, m4, m6
     unpckhpd m5, m5, m7
 
-    vextractf128 [outq +      (2 + 0 + %1)*mmsize + %6 +  0], m8,  0
-    vextractf128 [outq +      (2 + 0 + %1)*mmsize + %6 + 16], m0,  0
+    movaps       [outq +      (2 + 0 + %1)*mmsize + %6 +  0], xm8
+    movaps       [outq +      (2 + 0 + %1)*mmsize + %6 + 16], xm0
     vextractf128 [outq +      (2 + 1 + %1)*mmsize + %6 +  0], m8,  1
     vextractf128 [outq +      (2 + 1 + %1)*mmsize + %6 + 16], m0,  1
 
-    vextractf128 [outq + %3 + (2 + 0 + %1)*mmsize + %6 +  0], m9,  0
-    vextractf128 [outq + %3 + (2 + 0 + %1)*mmsize + %6 + 16], m1,  0
+    movaps       [outq + %3 + (2 + 0 + %1)*mmsize + %6 +  0], xm9
+    movaps       [outq + %3 + (2 + 0 + %1)*mmsize + %6 + 16], xm1
     vextractf128 [outq + %3 + (2 + 1 + %1)*mmsize + %6 +  0], m9,  1
     vextractf128 [outq + %3 + (2 + 1 + %1)*mmsize + %6 + 16], m1,  1
 
-    vextractf128 [outq + %4 + (2 + 0 + %1)*mmsize + %6 +  0], m10, 0
-    vextractf128 [outq + %4 + (2 + 0 + %1)*mmsize + %6 + 16], m4,  0
+    movaps       [outq + %4 + (2 + 0 + %1)*mmsize + %6 +  0], xm10
+    movaps       [outq + %4 + (2 + 0 + %1)*mmsize + %6 + 16], xm4
     vextractf128 [outq + %4 + (2 + 1 + %1)*mmsize + %6 +  0], m10, 1
     vextractf128 [outq + %4 + (2 + 1 + %1)*mmsize + %6 + 16], m4,  1
 
-    vextractf128 [outq + %5 + (2 + 0 + %1)*mmsize + %6 +  0], m11, 0
-    vextractf128 [outq + %5 + (2 + 0 + %1)*mmsize + %6 + 16], m5,  0
+    movaps       [outq + %5 + (2 + 0 + %1)*mmsize + %6 +  0], xm11
+    movaps       [outq + %5 + (2 + 0 + %1)*mmsize + %6 + 16], xm5
     vextractf128 [outq + %5 + (2 + 1 + %1)*mmsize + %6 +  0], m11, 1
     vextractf128 [outq + %5 + (2 + 1 + %1)*mmsize + %6 + 16], m5,  1
 %endmacro
@@ -924,8 +924,8 @@ cglobal fft8_float, 4, 4, 4, ctx, out, in, tmp
     unpckhpd m0, m0, m1
 
     ; Around 2% faster than 2x vperm2f128 + 2x movapd
-    vextractf128 [outq + 16*0], m2, 0
-    vextractf128 [outq + 16*1], m0, 0
+    movaps       [outq + 16*0], xm2
+    movaps       [outq + 16*1], xm0
     vextractf128 [outq + 16*2], m2, 1
     vextractf128 [outq + 16*3], m0, 1
 
@@ -969,12 +969,12 @@ cglobal fft16_float, 4, 4, 8, ctx, out, in, tmp
     unpckhpd m1, m1, m3
     unpckhpd m0, m0, m2
 
-    vextractf128 [outq + 16*0], m4, 0
-    vextractf128 [outq + 16*1], m0, 0
+    movaps       [outq + 16*0], xm4
+    movaps       [outq + 16*1], xm0
     vextractf128 [outq + 16*2], m4, 1
     vextractf128 [outq + 16*3], m0, 1
-    vextractf128 [outq + 16*4], m5, 0
-    vextractf128 [outq + 16*5], m1, 0
+    movaps       [outq + 16*4], xm5
+    movaps       [outq + 16*5], xm1
     vextractf128 [outq + 16*6], m5, 1
     vextractf128 [outq + 16*7], m1, 1
 
@@ -1044,21 +1044,21 @@ cglobal fft32_float, 4, 4, 16, ctx, out, in, tmp
     unpckhpd  m0, m0, m2
     unpckhpd  m4, m4, m6
 
-    vextractf128 [outq + 16* 0],  m8, 0
-    vextractf128 [outq + 16* 1],  m0, 0
+    movaps       [outq + 16* 0],  xm8
+    movaps       [outq + 16* 1],  xm0
     vextractf128 [outq + 16* 2],  m8, 1
     vextractf128 [outq + 16* 3],  m0, 1
-    vextractf128 [outq + 16* 4],  m9, 0
-    vextractf128 [outq + 16* 5],  m1, 0
+    movaps       [outq + 16* 4],  xm9
+    movaps       [outq + 16* 5],  xm1
     vextractf128 [outq + 16* 6],  m9, 1
     vextractf128 [outq + 16* 7],  m1, 1
 
-    vextractf128 [outq + 16* 8], m11, 0
-    vextractf128 [outq + 16* 9],  m4, 0
+    movaps       [outq + 16* 8], xm11
+    movaps       [outq + 16* 9],  xm4
     vextractf128 [outq + 16*10], m11, 1
     vextractf128 [outq + 16*11],  m4, 1
-    vextractf128 [outq + 16*12], m10, 0
-    vextractf128 [outq + 16*13],  m5, 0
+    movaps       [outq + 16*12], xm10
+    movaps       [outq + 16*13],  xm5
     vextractf128 [outq + 16*14], m10, 1
     vextractf128 [outq + 16*15],  m5, 1
 
@@ -1430,21 +1430,21 @@ FFT_SPLIT_RADIX_DEF 131072
     unpckhpd tx1_e0, tx1_e0, tx1_o0
     unpckhpd tx2_e0, tx2_e0, tx2_o0
 
-    vextractf128 [outq +  0*mmsize +  0], tmp1,   0
-    vextractf128 [outq +  0*mmsize + 16], m0,     0
-    vextractf128 [outq +  4*mmsize +  0], tmp2,   0
-    vextractf128 [outq +  4*mmsize + 16], m1,     0
+    movaps       [outq +  0*mmsize +  0], xmm %+ tmp1
+    movaps       [outq +  0*mmsize + 16], xm0
+    movaps       [outq +  4*mmsize +  0], xmm %+ tmp2
+    movaps       [outq +  4*mmsize + 16], xm1
 
-    vextractf128 [outq +  8*mmsize +  0], tw_o,   0
-    vextractf128 [outq +  8*mmsize + 16], tx1_e0, 0
+    movaps       [outq +  8*mmsize +  0], xmm %+ tw_o
+    movaps       [outq +  8*mmsize + 16], xmm %+ tx1_e0
     vextractf128 [outq +  9*mmsize +  0], tw_o,   1
     vextractf128 [outq +  9*mmsize + 16], tx1_e0, 1
 
     vperm2f128 tmp1, tmp1, m0, 0x31
     vperm2f128 tmp2, tmp2, m1, 0x31
 
-    vextractf128 [outq + 12*mmsize +  0], tw_e,   0
-    vextractf128 [outq + 12*mmsize + 16], tx2_e0, 0
+    movaps       [outq + 12*mmsize +  0], xmm %+ tw_e
+    movaps       [outq + 12*mmsize + 16], xmm %+ tx2_e0
     vextractf128 [outq + 13*mmsize +  0], tw_e,   1
     vextractf128 [outq + 13*mmsize + 16], tx2_e0, 1
 
@@ -1471,23 +1471,23 @@ FFT_SPLIT_RADIX_DEF 131072
     unpckhpd tx1_e1, tx1_e1, tx1_o1
     unpckhpd tx2_e1, tx2_e1, tx2_o1
 
-    vextractf128 [outq +  2*mmsize +  0], tmp1,   0
-    vextractf128 [outq +  2*mmsize + 16], m0,     0
+    movaps       [outq +  2*mmsize +  0], xmm %+ tmp1
+    movaps       [outq +  2*mmsize + 16], xm0
     vextractf128 [outq +  3*mmsize +  0], tmp1,   1
     vextractf128 [outq +  3*mmsize + 16], m0,     1
 
-    vextractf128 [outq +  6*mmsize +  0], tmp2,   0
-    vextractf128 [outq +  6*mmsize + 16], m2,     0
+    movaps       [outq +  6*mmsize +  0], xmm %+ tmp2
+    movaps       [outq +  6*mmsize + 16], xm2
     vextractf128 [outq +  7*mmsize +  0], tmp2,   1
     vextractf128 [outq +  7*mmsize + 16], m2,     1
 
-    vextractf128 [outq + 10*mmsize +  0], tw_e,   0
-    vextractf128 [outq + 10*mmsize + 16], tx1_e1, 0
+    movaps       [outq + 10*mmsize +  0], xmm %+ tw_e
+    movaps       [outq + 10*mmsize + 16], xmm %+ tx1_e1
     vextractf128 [outq + 11*mmsize +  0], tw_e,   1
     vextractf128 [outq + 11*mmsize + 16], tx1_e1, 1
 
-    vextractf128 [outq + 14*mmsize +  0], tw_o,   0
-    vextractf128 [outq + 14*mmsize + 16], tx2_e1, 0
+    movaps       [outq + 14*mmsize +  0], xmm %+ tw_o
+    movaps       [outq + 14*mmsize + 16], xmm %+ tx2_e1
     vextractf128 [outq + 15*mmsize +  0], tw_o,   1
     vextractf128 [outq + 15*mmsize + 16], tx2_e1, 1
 
