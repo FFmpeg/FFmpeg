@@ -1480,6 +1480,12 @@ static av_cold int vulkan_encode_h264_init(AVCodecContext *avctx)
         return err;
 
     flags = ctx->codec->flags;
+
+    /* Baseline profiles have no B-slices */
+    if (avctx->profile == AV_PROFILE_H264_BASELINE ||
+        avctx->profile == AV_PROFILE_H264_CONSTRAINED_BASELINE)
+        flags &= ~(FF_HW_FLAG_B_PICTURES | FF_HW_FLAG_B_PICTURE_REFERENCES);
+
     if (!enc->caps.maxPPictureL0ReferenceCount &&
         !enc->caps.maxBPictureL0ReferenceCount &&
         !enc->caps.maxL1ReferenceCount) {
