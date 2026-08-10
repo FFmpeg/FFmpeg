@@ -834,12 +834,16 @@ static av_cold int init_sequence_headers(AVCodecContext *avctx)
     if (err < 0)
         return err;
 
-    units->raw_sps.seq_scaling_matrix_present_flag =
-        !!(enc->caps.stdSyntaxFlags & VK_VIDEO_ENCODE_H264_STD_SCALING_MATRIX_PRESENT_FLAG_SET_BIT_KHR);
-    units->raw_pps.pic_scaling_matrix_present_flag =
-        !!(enc->caps.stdSyntaxFlags & VK_VIDEO_ENCODE_H264_STD_SCALING_MATRIX_PRESENT_FLAG_SET_BIT_KHR);
-    units->raw_pps.transform_8x8_mode_flag =
-        !!(enc->caps.stdSyntaxFlags & VK_VIDEO_ENCODE_H264_STD_TRANSFORM_8X8_MODE_FLAG_SET_BIT_KHR);
+    /* High profile syntax: the capabilities only signal implementation
+     * support, lesser profiles prohibit these outright */
+    if (units->raw_pps.more_rbsp_data) {
+        units->raw_sps.seq_scaling_matrix_present_flag =
+            !!(enc->caps.stdSyntaxFlags & VK_VIDEO_ENCODE_H264_STD_SCALING_MATRIX_PRESENT_FLAG_SET_BIT_KHR);
+        units->raw_pps.pic_scaling_matrix_present_flag =
+            !!(enc->caps.stdSyntaxFlags & VK_VIDEO_ENCODE_H264_STD_SCALING_MATRIX_PRESENT_FLAG_SET_BIT_KHR);
+        units->raw_pps.transform_8x8_mode_flag =
+            !!(enc->caps.stdSyntaxFlags & VK_VIDEO_ENCODE_H264_STD_TRANSFORM_8X8_MODE_FLAG_SET_BIT_KHR);
+    }
 
     return 0;
 }
