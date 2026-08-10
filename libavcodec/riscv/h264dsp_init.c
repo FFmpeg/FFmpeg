@@ -62,24 +62,24 @@ void ff_h264_h_loop_filter_chroma_mbaff_intra_8_rvv(uint8_t *pix,
                                                     int alpha, int beta);
 
 #define IDCT_DEPTH(depth) \
-void ff_h264_idct_add_##depth##_rvv(uint8_t *d, int16_t *s, int stride); \
-void ff_h264_idct8_add_##depth##_rvv(uint8_t *d, int16_t *s, int stride); \
-void ff_h264_idct4_dc_add_##depth##_rvv(uint8_t *, int16_t *, int); \
-void ff_h264_idct8_dc_add_##depth##_rvv(uint8_t *, int16_t *, int); \
+void ff_h264_idct_add_##depth##_rvv(uint8_t *d, int16_t *s, ptrdiff_t stride); \
+void ff_h264_idct8_add_##depth##_rvv(uint8_t *d, int16_t *s, ptrdiff_t stride); \
+void ff_h264_idct4_dc_add_##depth##_rvv(uint8_t *, int16_t *, ptrdiff_t); \
+void ff_h264_idct8_dc_add_##depth##_rvv(uint8_t *, int16_t *, ptrdiff_t); \
 void ff_h264_idct_add16_##depth##_rvv(uint8_t *d, const int *soffset, \
-                                      int16_t *s, int stride, \
+                                      int16_t *s, ptrdiff_t stride, \
                                       const uint8_t nnzc[5 * 8]); \
 void ff_h264_idct_add16intra_##depth##_rvv(uint8_t *d, const int *soffset, \
-                                   int16_t *s, int stride, \
+                                   int16_t *s, ptrdiff_t stride, \
                                    const uint8_t nnzc[5 * 8]); \
 void ff_h264_idct8_add4_##depth##_rvv(uint8_t *d, const int *soffset, \
-                                      int16_t *s, int stride, \
+                                      int16_t *s, ptrdiff_t stride, \
                                       const uint8_t nnzc[5 * 8]); \
 void ff_h264_idct4_add8_##depth##_rvv(uint8_t **d, const int *soffset, \
-                                      int16_t *s, int stride, \
+                                      int16_t *s, ptrdiff_t stride, \
                                       const uint8_t nnzc[5 * 8]); \
 void ff_h264_idct4_add8_422_##depth##_rvv(uint8_t **d, const int *soffset, \
-                                          int16_t *s, int stride, \
+                                          int16_t *s, ptrdiff_t stride, \
                                           const uint8_t nnzc[5 * 8]); \
 void ff_h264_luma_dc_dequant_idct_##depth##_rvv(int16_t *d, int16_t *s, int q);
 
@@ -90,10 +90,10 @@ IDCT_DEPTH(12)
 IDCT_DEPTH(14)
 #undef IDCT_DEPTH
 
-void ff_h264_add_pixels8_8_rvv(uint8_t *dst, int16_t *block, int stride);
-void ff_h264_add_pixels4_8_rvv(uint8_t *dst, int16_t *block, int stride);
-void ff_h264_add_pixels8_16_rvv(uint8_t *dst, int16_t *block, int stride);
-void ff_h264_add_pixels4_16_rvv(uint8_t *dst, int16_t *block, int stride);
+void ff_h264_add_pixels8_8_rvv(uint8_t *dst, int16_t *block, ptrdiff_t stride);
+void ff_h264_add_pixels4_8_rvv(uint8_t *dst, int16_t *block, ptrdiff_t stride);
+void ff_h264_add_pixels8_16_rvv(uint8_t *dst, int16_t *block, ptrdiff_t stride);
+void ff_h264_add_pixels4_16_rvv(uint8_t *dst, int16_t *block, ptrdiff_t stride);
 
 extern int ff_startcode_find_candidate_rvb(const uint8_t *, int);
 extern int ff_startcode_find_candidate_rvv(const uint8_t *, int);

@@ -27,7 +27,7 @@
 
 #include "bit_depth_template.c"
 
-static void FUNCC(ff_h264_add_pixels4)(uint8_t *_dst, int16_t *_src, int stride)
+static void FUNCC(ff_h264_add_pixels4)(uint8_t *_dst, int16_t *_src, ptrdiff_t stride)
 {
     int i;
     pixel *dst = (pixel *) _dst;
@@ -47,7 +47,7 @@ static void FUNCC(ff_h264_add_pixels4)(uint8_t *_dst, int16_t *_src, int stride)
     memset(_src, 0, sizeof(dctcoef) * 16);
 }
 
-static void FUNCC(ff_h264_add_pixels8)(uint8_t *_dst, int16_t *_src, int stride)
+static void FUNCC(ff_h264_add_pixels8)(uint8_t *_dst, int16_t *_src, ptrdiff_t stride)
 {
     int i;
     pixel *dst = (pixel *) _dst;

@@ -49,7 +49,7 @@ static av_noinline void FUNC(hl_decode_mb)(const H264Context *h, H264SliceContex
     int i, j;
     const int *block_offset = &h->block_offset[0];
     const int transform_bypass = !SIMPLE && (sl->qscale == 0 && h->ps.sps->transform_bypass);
-    void (*idct_add)(uint8_t *dst, int16_t *block, int stride);
+    void (*idct_add)(uint8_t *dst, int16_t *block, ptrdiff_t stride);
     const int block_h   = 16 >> h->chroma_y_shift;
     const int chroma422 = CHROMA422(h);
 

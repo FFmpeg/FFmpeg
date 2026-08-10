@@ -620,8 +620,8 @@ static av_always_inline void hl_decode_mb_predict_luma(const H264Context *h,
                                                        int linesize,
                                                        uint8_t *dest_y, int p)
 {
-    void (*idct_add)(uint8_t *dst, int16_t *block, int stride);
-    void (*idct_dc_add)(uint8_t *dst, int16_t *block, int stride);
+    void (*idct_add)(uint8_t *dst, int16_t *block, ptrdiff_t stride);
+    void (*idct_dc_add)(uint8_t *dst, int16_t *block, ptrdiff_t stride);
     int i;
     int qscale = p == 0 ? sl->qscale : sl->chroma_qp[p - 1];
     block_offset += 16 * p;
@@ -733,7 +733,7 @@ static av_always_inline void hl_decode_mb_idct_luma(const H264Context *h, H264Sl
                                                     int linesize,
                                                     uint8_t *dest_y, int p)
 {
-    void (*idct_add)(uint8_t *dst, int16_t *block, int stride);
+    void (*idct_add)(uint8_t *dst, int16_t *block, ptrdiff_t stride);
     int i;
     block_offset += 16 * p;
     if (!IS_INTRA4x4(mb_type)) {

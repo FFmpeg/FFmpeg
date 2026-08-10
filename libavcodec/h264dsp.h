@@ -79,33 +79,33 @@ typedef struct H264DSPContext {
 
     /* IDCT */
     void (*idct_add)(uint8_t *dst /*align 4*/,
-                     int16_t *block /*align 16*/, int stride);
+                     int16_t *block /*align 16*/, ptrdiff_t stride);
     void (*idct8_add)(uint8_t *dst /*align 8*/,
-                      int16_t *block /*align 16*/, int stride);
+                      int16_t *block /*align 16*/, ptrdiff_t stride);
     void (*idct_dc_add)(uint8_t *dst /*align 4*/,
-                        int16_t *block /*align 16*/, int stride);
+                        int16_t *block /*align 16*/, ptrdiff_t stride);
     void (*idct8_dc_add)(uint8_t *dst /*align 8*/,
-                         int16_t *block /*align 16*/, int stride);
+                         int16_t *block /*align 16*/, ptrdiff_t stride);
 
     void (*idct_add16)(uint8_t *dst /*align 16*/, const int *blockoffset,
-                       int16_t *block /*align 16*/, int stride,
+                       int16_t *block /*align 16*/, ptrdiff_t stride,
                        const uint8_t nnzc[5 * 8]);
     void (*idct8_add4)(uint8_t *dst /*align 16*/, const int *blockoffset,
-                       int16_t *block /*align 16*/, int stride,
+                       int16_t *block /*align 16*/, ptrdiff_t stride,
                        const uint8_t nnzc[5 * 8]);
     void (*idct_add8)(uint8_t **dst /*align 16*/, const int *blockoffset,
-                      int16_t *block /*align 16*/, int stride,
+                      int16_t *block /*align 16*/, ptrdiff_t stride,
                       const uint8_t nnzc[15 * 8]);
     void (*idct_add16intra)(uint8_t *dst /*align 16*/, const int *blockoffset,
                             int16_t *block /*align 16*/,
-                            int stride, const uint8_t nnzc[5 * 8]);
+                            ptrdiff_t stride, const uint8_t nnzc[5 * 8]);
     void (*luma_dc_dequant_idct)(int16_t *output,
                                  int16_t *input /*align 16*/, int qmul);
     void (*chroma_dc_dequant_idct)(int16_t *block, int qmul);
 
     /* bypass-transform */
-    void (*add_pixels8_clear)(uint8_t *dst, int16_t *block, int stride);
-    void (*add_pixels4_clear)(uint8_t *dst, int16_t *block, int stride);
+    void (*add_pixels8_clear)(uint8_t *dst, int16_t *block, ptrdiff_t stride);
+    void (*add_pixels4_clear)(uint8_t *dst, int16_t *block, ptrdiff_t stride);
 
     /**
      * Search buf from the start for up to size bytes. Return the index

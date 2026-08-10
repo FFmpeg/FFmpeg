@@ -108,7 +108,7 @@ static void avc_deq_idct_luma_dc_msa(int16_t *dst, int16_t *src,
 #undef DC_DEST_STRIDE
 }
 
-static void avc_idct8_addblk_msa(uint8_t *dst, int16_t *src, int32_t dst_stride)
+static void avc_idct8_addblk_msa(uint8_t *dst, int16_t *src, ptrdiff_t dst_stride)
 {
     v8i16 src0, src1, src2, src3, src4, src5, src6, src7;
     v8i16 vec0, vec1, vec2, vec3;
@@ -240,7 +240,7 @@ static void avc_idct8_addblk_msa(uint8_t *dst, int16_t *src, int32_t dst_stride)
 }
 
 static void avc_idct8_dc_addblk_msa(uint8_t *dst, int16_t *src,
-                                    int32_t dst_stride)
+                                    ptrdiff_t dst_stride)
 {
     int32_t dc_val;
     v16i8 dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7;
@@ -269,7 +269,7 @@ static void avc_idct8_dc_addblk_msa(uint8_t *dst, int16_t *src,
     ST_D8(dst0, dst1, dst2, dst3, 0, 1, 0, 1, 0, 1, 0, 1, dst, dst_stride)
 }
 
-void ff_h264_idct_add_msa(uint8_t *dst, int16_t *src, int32_t dst_stride)
+void ff_h264_idct_add_msa(uint8_t *dst, int16_t *src, ptrdiff_t dst_stride)
 {
     uint32_t src0_m, src1_m, src2_m, src3_m, out0_m, out1_m, out2_m, out3_m;
     v16i8 dst0_m = { 0 };
@@ -311,13 +311,13 @@ void ff_h264_idct_add_msa(uint8_t *dst, int16_t *src, int32_t dst_stride)
 }
 
 void ff_h264_idct8_addblk_msa(uint8_t *dst, int16_t *src,
-                              int32_t dst_stride)
+                              ptrdiff_t dst_stride)
 {
     avc_idct8_addblk_msa(dst, src, dst_stride);
 }
 
 void ff_h264_idct4x4_addblk_dc_msa(uint8_t *dst, int16_t *src,
-                                   int32_t dst_stride)
+                                   ptrdiff_t dst_stride)
 {
     v16u8 pred = { 0 };
     v16i8 out;
@@ -339,14 +339,14 @@ void ff_h264_idct4x4_addblk_dc_msa(uint8_t *dst, int16_t *src,
 }
 
 void ff_h264_idct8_dc_addblk_msa(uint8_t *dst, int16_t *src,
-                                 int32_t dst_stride)
+                                 ptrdiff_t dst_stride)
 {
     avc_idct8_dc_addblk_msa(dst, src, dst_stride);
 }
 
 void ff_h264_idct_add16_msa(uint8_t *dst,
                             const int32_t *blk_offset,
-                            int16_t *block, int32_t dst_stride,
+                            int16_t *block, ptrdiff_t dst_stride,
                             const uint8_t nzc[5 * 8])
 {
     int32_t i;
@@ -368,7 +368,7 @@ void ff_h264_idct_add16_msa(uint8_t *dst,
 }
 
 void ff_h264_idct8_add4_msa(uint8_t *dst, const int32_t *blk_offset,
-                            int16_t *block, int32_t dst_stride,
+                            int16_t *block, ptrdiff_t dst_stride,
                             const uint8_t nzc[5 * 8])
 {
     int32_t cnt;
@@ -391,7 +391,7 @@ void ff_h264_idct8_add4_msa(uint8_t *dst, const int32_t *blk_offset,
 
 void ff_h264_idct_add8_msa(uint8_t **dst,
                            const int32_t *blk_offset,
-                           int16_t *block, int32_t dst_stride,
+                           int16_t *block, ptrdiff_t dst_stride,
                            const uint8_t nzc[15 * 8])
 {
     int32_t i, j;
@@ -412,7 +412,7 @@ void ff_h264_idct_add8_msa(uint8_t **dst,
 
 void ff_h264_idct_add8_422_msa(uint8_t **dst,
                                const int32_t *blk_offset,
-                               int16_t *block, int32_t dst_stride,
+                               int16_t *block, ptrdiff_t dst_stride,
                                const uint8_t nzc[15 * 8])
 {
     int32_t i, j;
@@ -447,7 +447,7 @@ void ff_h264_idct_add8_422_msa(uint8_t **dst,
 void ff_h264_idct_add16_intra_msa(uint8_t *dst,
                                   const int32_t *blk_offset,
                                   int16_t *block,
-                                  int32_t dst_stride,
+                                  ptrdiff_t dst_stride,
                                   const uint8_t nzc[5 * 8])
 {
     int32_t i;

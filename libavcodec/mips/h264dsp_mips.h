@@ -43,28 +43,28 @@ void ff_h264_h_loop_filter_luma_mbaff_msa(uint8_t *src, ptrdiff_t stride,
                                           int32_t alpha, int32_t beta,
                                           int8_t *tc0);
 
-void ff_h264_idct_add_msa(uint8_t *dst, int16_t *src, int32_t dst_stride);
+void ff_h264_idct_add_msa(uint8_t *dst, int16_t *src, ptrdiff_t dst_stride);
 void ff_h264_idct4x4_addblk_dc_msa(uint8_t *dst, int16_t *src,
-                                   int32_t dst_stride);
+                                   ptrdiff_t dst_stride);
 void ff_h264_deq_idct_luma_dc_msa(int16_t *dst, int16_t *src,
                                   int32_t de_q_val);
 void ff_h264_idct_add16_msa(uint8_t *dst, const int32_t *blk_offset,
-                            int16_t *block, int32_t stride,
+                            int16_t *block, ptrdiff_t stride,
                             const uint8_t nnzc[5 * 8]);
 void ff_h264_idct_add16_intra_msa(uint8_t *dst, const int32_t *blk_offset,
-                                  int16_t *block, int32_t dst_stride,
+                                  int16_t *block, ptrdiff_t dst_stride,
                                   const uint8_t nnzc[5 * 8]);
 void ff_h264_idct_add8_msa(uint8_t **dst, const int32_t *blk_offset,
-                           int16_t *block, int32_t dst_stride,
+                           int16_t *block, ptrdiff_t dst_stride,
                            const uint8_t nnzc[15 * 8]);
 void ff_h264_idct_add8_422_msa(uint8_t **dst, const int32_t *blk_offset,
-                               int16_t *block, int32_t dst_stride,
+                               int16_t *block, ptrdiff_t dst_stride,
                                const uint8_t nnzc[15 * 8]);
-void ff_h264_idct8_addblk_msa(uint8_t *dst, int16_t *src, int32_t dst_stride);
+void ff_h264_idct8_addblk_msa(uint8_t *dst, int16_t *src, ptrdiff_t dst_stride);
 void ff_h264_idct8_dc_addblk_msa(uint8_t *dst, int16_t *src,
-                                 int32_t dst_stride);
+                                 ptrdiff_t dst_stride);
 void ff_h264_idct8_add4_msa(uint8_t *dst, const int *blk_offset,
-                            int16_t *blk, int dst_stride,
+                            int16_t *blk, ptrdiff_t dst_stride,
                             const uint8_t nnzc[5 * 8]);
 
 void ff_h264_h_lpf_luma_intra_msa(uint8_t *src, ptrdiff_t stride,
@@ -323,21 +323,21 @@ void ff_h264_loop_filter_strength_msa(int16_t bS[2][4][4], uint8_t nnz[40],
         int8_t ref[2][40], int16_t mv[2][40][2], int bidir, int edges,
         int step, int mask_mv0, int mask_mv1, int field);
 
-void ff_h264_add_pixels4_8_mmi(uint8_t *_dst, int16_t *_src, int stride);
-void ff_h264_idct_add_8_mmi(uint8_t *dst, int16_t *block, int stride);
-void ff_h264_idct8_add_8_mmi(uint8_t *dst, int16_t *block, int stride);
-void ff_h264_idct_dc_add_8_mmi(uint8_t *dst, int16_t *block, int stride);
-void ff_h264_idct8_dc_add_8_mmi(uint8_t *dst, int16_t *block, int stride);
+void ff_h264_add_pixels4_8_mmi(uint8_t *_dst, int16_t *_src, ptrdiff_t stride);
+void ff_h264_idct_add_8_mmi(uint8_t *dst, int16_t *block, ptrdiff_t stride);
+void ff_h264_idct8_add_8_mmi(uint8_t *dst, int16_t *block, ptrdiff_t stride);
+void ff_h264_idct_dc_add_8_mmi(uint8_t *dst, int16_t *block, ptrdiff_t stride);
+void ff_h264_idct8_dc_add_8_mmi(uint8_t *dst, int16_t *block, ptrdiff_t stride);
 void ff_h264_idct_add16_8_mmi(uint8_t *dst, const int *block_offset,
-        int16_t *block, int stride, const uint8_t nnzc[5 * 8]);
+        int16_t *block, ptrdiff_t stride, const uint8_t nnzc[5 * 8]);
 void ff_h264_idct_add16intra_8_mmi(uint8_t *dst, const int *block_offset,
-        int16_t *block, int stride, const uint8_t nnzc[5 * 8]);
+        int16_t *block, ptrdiff_t stride, const uint8_t nnzc[5 * 8]);
 void ff_h264_idct8_add4_8_mmi(uint8_t *dst, const int *block_offset,
-        int16_t *block, int stride, const uint8_t nnzc[5 * 8]);
+        int16_t *block, ptrdiff_t stride, const uint8_t nnzc[5 * 8]);
 void ff_h264_idct_add8_8_mmi(uint8_t **dest, const int *block_offset,
-        int16_t *block, int stride, const uint8_t nnzc[15*8]);
+        int16_t *block, ptrdiff_t stride, const uint8_t nnzc[15*8]);
 void ff_h264_idct_add8_422_8_mmi(uint8_t **dest, const int *block_offset,
-        int16_t *block, int stride, const uint8_t nnzc[15*8]);
+        int16_t *block, ptrdiff_t stride, const uint8_t nnzc[15*8]);
 void ff_h264_luma_dc_dequant_idct_8_mmi(int16_t *output, int16_t *input,
         int qmul);
 

@@ -699,7 +699,7 @@ void ff_h264_v_lpf_luma_intra_8_lasx(uint8_t *data, ptrdiff_t img_width,
     }
 }
 
-void ff_h264_add_pixels4_8_lasx(uint8_t *_dst, int16_t *_src, int stride)
+void ff_h264_add_pixels4_8_lasx(uint8_t *_dst, int16_t *_src, ptrdiff_t stride)
 {
     __m256i src0, dst0, dst1, dst2, dst3, zero;
     __m256i tmp0, tmp1;
@@ -726,7 +726,7 @@ void ff_h264_add_pixels4_8_lasx(uint8_t *_dst, int16_t *_src, int stride)
     __lasx_xvst(zero, _src, 0);
 }
 
-void ff_h264_add_pixels8_8_lasx(uint8_t *_dst, int16_t *_src, int stride)
+void ff_h264_add_pixels8_8_lasx(uint8_t *_dst, int16_t *_src, ptrdiff_t stride)
 {
     __m256i src0, src1, src2, src3;
     __m256i dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7;

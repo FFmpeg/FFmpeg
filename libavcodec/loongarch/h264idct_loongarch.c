@@ -26,7 +26,7 @@
 #include "libavcodec/bit_depth_template.c"
 
 void ff_h264_idct_add16_8_lsx(uint8_t *dst, const int32_t *blk_offset,
-                              int16_t *block, int32_t dst_stride,
+                              int16_t *block, ptrdiff_t dst_stride,
                               const uint8_t nzc[15 * 8])
 {
     int32_t i;
@@ -47,7 +47,7 @@ void ff_h264_idct_add16_8_lsx(uint8_t *dst, const int32_t *blk_offset,
 }
 
 void ff_h264_idct8_add4_8_lsx(uint8_t *dst, const int32_t *blk_offset,
-                              int16_t *block, int32_t dst_stride,
+                              int16_t *block, ptrdiff_t dst_stride,
                               const uint8_t nzc[15 * 8])
 {
     int32_t cnt;
@@ -69,7 +69,7 @@ void ff_h264_idct8_add4_8_lsx(uint8_t *dst, const int32_t *blk_offset,
 
 #if HAVE_LASX
 void ff_h264_idct8_add4_8_lasx(uint8_t *dst, const int32_t *blk_offset,
-                               int16_t *block, int32_t dst_stride,
+                               int16_t *block, ptrdiff_t dst_stride,
                                const uint8_t nzc[15 * 8])
 {
     int32_t cnt;
@@ -91,7 +91,7 @@ void ff_h264_idct8_add4_8_lasx(uint8_t *dst, const int32_t *blk_offset,
 #endif // #if HAVE_LASX
 
 void ff_h264_idct_add8_8_lsx(uint8_t **dst, const int32_t *blk_offset,
-                             int16_t *block, int32_t dst_stride,
+                             int16_t *block, ptrdiff_t dst_stride,
                              const uint8_t nzc[15 * 8])
 {
     int32_t i;
@@ -119,7 +119,7 @@ void ff_h264_idct_add8_8_lsx(uint8_t **dst, const int32_t *blk_offset,
 }
 
 void ff_h264_idct_add8_422_8_lsx(uint8_t **dst, const int32_t *blk_offset,
-                                 int16_t *block, int32_t dst_stride,
+                                 int16_t *block, ptrdiff_t dst_stride,
                                  const uint8_t nzc[15 * 8])
 {
     int32_t i;
@@ -167,7 +167,7 @@ void ff_h264_idct_add8_422_8_lsx(uint8_t **dst, const int32_t *blk_offset,
 }
 
 void ff_h264_idct_add16_intra_8_lsx(uint8_t *dst, const int32_t *blk_offset,
-                                    int16_t *block, int32_t dst_stride,
+                                    int16_t *block, ptrdiff_t dst_stride,
                                     const uint8_t nzc[15 * 8])
 {
     int32_t i;

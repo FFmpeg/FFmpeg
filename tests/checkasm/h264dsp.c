@@ -184,7 +184,7 @@ static void check_idct(void)
     LOCAL_ALIGNED_16(int16_t, subcoef1, [8 * 8 * 2]);
     H264DSPContext h;
     int bit_depth, sz, align, dc, i;
-    declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *dst, int16_t *block, int stride);
+    declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *dst, int16_t *block, ptrdiff_t stride);
 
     for (i = 0; i < FF_ARRAY_ELEMS(depths); i++) {
         bit_depth = depths[i];
@@ -192,7 +192,7 @@ static void check_idct(void)
 
         for (dc = 0; dc <= 2; dc++) {
             for (sz = 4; sz <= 8; sz += 4) {
-                void (*idct)(uint8_t *, int16_t *, int) = NULL;
+                void (*idct)(uint8_t *, int16_t *, ptrdiff_t) = NULL;
                 const char fmts[3][28] = {
                     "idct%d_add_%dbpp", "idct%d_dc_add_%dbpp",
                     "add_pixels%d_%dbpp",
@@ -250,12 +250,12 @@ static void check_idct_multiple(void)
     LOCAL_ALIGNED_16(uint8_t, nnzc,  [15 * 8]);
     H264DSPContext h;
     int bit_depth, i, y, func;
-    declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *dst, const int *block_offset, int16_t *block, int stride, const uint8_t nnzc[15*8]);
+    declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *dst, const int *block_offset, int16_t *block, ptrdiff_t stride, const uint8_t nnzc[15*8]);
 
     for (bit_depth = 8; bit_depth <= 10; bit_depth++) {
         ff_h264dsp_init(&h, bit_depth, 1);
         for (func = 0; func < 3; func++) {
-            void (*idct)(uint8_t *, const int *, int16_t *, int, const uint8_t[]) = NULL;
+            void (*idct)(uint8_t *, const int *, int16_t *, ptrdiff_t, const uint8_t[]) = NULL;
             const char *name;
             int sz = 4, intra = 0;
             int block_offset[16] = { 0 };

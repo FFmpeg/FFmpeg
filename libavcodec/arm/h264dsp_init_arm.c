@@ -36,39 +36,39 @@ void ff_h264_h_loop_filter_chroma_neon(uint8_t *pix, ptrdiff_t stride, int alpha
 void ff_h264_h_loop_filter_chroma422_neon(uint8_t *pix, ptrdiff_t stride, int alpha,
                                           int beta, int8_t *tc0);
 
-void ff_weight_h264_pixels_16_neon(uint8_t *dst, int stride, int height,
+void ff_weight_h264_pixels_16_neon(uint8_t *dst, ptrdiff_t stride, int height,
                                    int log2_den, int weight, int offset);
-void ff_weight_h264_pixels_8_neon(uint8_t *dst, int stride, int height,
+void ff_weight_h264_pixels_8_neon(uint8_t *dst, ptrdiff_t stride, int height,
                                   int log2_den, int weight, int offset);
-void ff_weight_h264_pixels_4_neon(uint8_t *dst, int stride, int height,
+void ff_weight_h264_pixels_4_neon(uint8_t *dst, ptrdiff_t stride, int height,
                                   int log2_den, int weight, int offset);
 
-void ff_biweight_h264_pixels_16_neon(uint8_t *dst, uint8_t *src, int stride,
+void ff_biweight_h264_pixels_16_neon(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
                                      int height, int log2_den, int weightd,
                                      int weights, int offset);
-void ff_biweight_h264_pixels_8_neon(uint8_t *dst, uint8_t *src, int stride,
+void ff_biweight_h264_pixels_8_neon(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
                                     int height, int log2_den, int weightd,
                                     int weights, int offset);
-void ff_biweight_h264_pixels_4_neon(uint8_t *dst, uint8_t *src, int stride,
+void ff_biweight_h264_pixels_4_neon(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
                                     int height, int log2_den, int weightd,
                                     int weights, int offset);
 
-void ff_h264_idct_add_neon(uint8_t *dst, int16_t *block, int stride);
-void ff_h264_idct_dc_add_neon(uint8_t *dst, int16_t *block, int stride);
+void ff_h264_idct_add_neon(uint8_t *dst, int16_t *block, ptrdiff_t stride);
+void ff_h264_idct_dc_add_neon(uint8_t *dst, int16_t *block, ptrdiff_t stride);
 void ff_h264_idct_add16_neon(uint8_t *dst, const int *block_offset,
-                             int16_t *block, int stride,
+                             int16_t *block, ptrdiff_t stride,
                              const uint8_t nnzc[5 * 8]);
 void ff_h264_idct_add16intra_neon(uint8_t *dst, const int *block_offset,
-                                  int16_t *block, int stride,
+                                  int16_t *block, ptrdiff_t stride,
                                   const uint8_t nnzc[5 * 8]);
 void ff_h264_idct_add8_neon(uint8_t **dest, const int *block_offset,
-                            int16_t *block, int stride,
+                            int16_t *block, ptrdiff_t stride,
                             const uint8_t nnzc[15 * 8]);
 
-void ff_h264_idct8_add_neon(uint8_t *dst, int16_t *block, int stride);
-void ff_h264_idct8_dc_add_neon(uint8_t *dst, int16_t *block, int stride);
+void ff_h264_idct8_add_neon(uint8_t *dst, int16_t *block, ptrdiff_t stride);
+void ff_h264_idct8_dc_add_neon(uint8_t *dst, int16_t *block, ptrdiff_t stride);
 void ff_h264_idct8_add4_neon(uint8_t *dst, const int *block_offset,
-                             int16_t *block, int stride,
+                             int16_t *block, ptrdiff_t stride,
                              const uint8_t nnzc[5 * 8]);
 
 static av_cold void h264dsp_init_neon(H264DSPContext *c, const int bit_depth,
