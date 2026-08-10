@@ -194,15 +194,15 @@ SECTION .text
 ; void ff_dct32_float_avx(FFTSample *out, const FFTSample *in)
 cglobal dct32_float, 2,3,8, out, in, tmp
     ; pass 1
+    vmovaps    xm5, [inq+112]
     vmovaps     m4, [inq+0]
     vinsertf128 m5, m5, [inq+96], 1
-    vinsertf128 m5, m5, [inq+112], 0
     vshufps     m5, m5, m5, 0x1b
     BUTTERFLY   m4, m5, [ps_cos_vec], m6
 
+    vmovaps    xm6, [inq+48]
     vmovaps     m2, [inq+64]
     vinsertf128 m6, m6, [inq+32], 1
-    vinsertf128 m6, m6, [inq+48], 0
     vshufps     m6, m6, m6, 0x1b
     BUTTERFLY   m2, m6, [ps_cos_vec+32], m0
 
@@ -249,10 +249,10 @@ cglobal dct32_float, 2,3,8, out, in, tmp
     vmovaps [outq], m3
 
     vextractf128  [outq+64], m5, 1
-    vextractf128  [outq+32], m5, 0
+    vmovaps       [outq+32], xm5
 
     vextractf128  [outq+80], m4, 1
-    vextractf128  [outq+48], m4, 0
+    vmovaps       [outq+48], xm4
 
     vperm2f128  m0, m1, m1, 0x31
     vmovaps [outq+96], m1
