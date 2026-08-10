@@ -702,7 +702,7 @@ static int init_profile(AVCodecContext *avctx,
         AV_PROFILE_H264_CONSTRAINED_BASELINE,
         AV_PROFILE_H264_MAIN,
         AV_PROFILE_H264_HIGH,
-        AV_PROFILE_H264_HIGH_10,
+        AV_PROFILE_H264_HIGH_444_PREDICTIVE,
     };
     int nb_profiles = FF_ARRAY_ELEMS(known_profiles);
 
@@ -1599,7 +1599,7 @@ static const AVOption vulkan_encode_h264_options[] = {
     { PROFILE("constrained_baseline", AV_PROFILE_H264_CONSTRAINED_BASELINE) },
     { PROFILE("main",                 AV_PROFILE_H264_MAIN) },
     { PROFILE("high",                 AV_PROFILE_H264_HIGH) },
-    { PROFILE("high444p",             AV_PROFILE_H264_HIGH_10) },
+    { PROFILE("high444p",             AV_PROFILE_H264_HIGH_444_PREDICTIVE) },
 #undef PROFILE
 
     { "level", "Set level (level_idc)",
