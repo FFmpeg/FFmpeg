@@ -1002,9 +1002,6 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
         }
 #endif
     } else if (bit_depth == 10) {
-        if (EXTERNAL_MMXEXT(cpu_flags)) {
-            c->add_residual[0] = ff_hevc_add_residual_4_10_mmxext;
-        }
         if (EXTERNAL_SSE2(cpu_flags)) {
             c->hevc_v_loop_filter_chroma = ff_hevc_v_loop_filter_chroma_10_sse2;
             c->hevc_h_loop_filter_chroma = ff_hevc_h_loop_filter_chroma_10_sse2;
@@ -1027,6 +1024,7 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->idct[1]    = ff_hevc_idct_8x8_10_sse2;
             c->transform_4x4_luma = ff_hevc_transform_4x4_luma_10_sse2;
 
+            c->add_residual[0] = ff_hevc_add_residual_4_10_sse2;
             c->add_residual[1] = ff_hevc_add_residual_8_10_sse2;
             c->add_residual[2] = ff_hevc_add_residual_16_10_sse2;
             c->add_residual[3] = ff_hevc_add_residual_32_10_sse2;

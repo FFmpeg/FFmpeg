@@ -174,7 +174,7 @@ void ff_hevc_add_residual_32_8_sse2(uint8_t *dst, const int16_t *res, ptrdiff_t 
 
 void ff_hevc_add_residual_32_8_avx2(uint8_t *dst, const int16_t *res, ptrdiff_t stride);
 
-void ff_hevc_add_residual_4_10_mmxext(uint8_t *dst, const int16_t *res, ptrdiff_t stride);
+void ff_hevc_add_residual_4_10_sse2(uint8_t *dst, const int16_t *res, ptrdiff_t stride);
 void ff_hevc_add_residual_8_10_sse2(uint8_t *dst, const int16_t *res, ptrdiff_t stride);
 void ff_hevc_add_residual_16_10_sse2(uint8_t *dst, const int16_t *res, ptrdiff_t stride);
 void ff_hevc_add_residual_32_10_sse2(uint8_t *dst, const int16_t *res, ptrdiff_t stride);

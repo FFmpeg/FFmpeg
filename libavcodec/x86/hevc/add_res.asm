@@ -191,15 +191,17 @@ cglobal hevc_add_residual_32_8, 3, 5, 7
     mova         [%1+%3], m3
 %endmacro
 
-%macro ADD_RES_MMX_4_10 3
-    mova              m0, [%1+0]
-    mova              m1, [%1+%2]
-    paddw             m0, [%3]
-    paddw             m1, [%3+8]
+%macro ADD_RES_SSE_4_10 3
+    movq              m0, [%1+0]
+    movq              m4, [%3]
+    paddw             m0, m4
+    movq              m1, [%1+%2]
+    movq              m4, [%3+8]
+    paddw             m1, m4
     CLIPW             m0, m2, m3
     CLIPW             m1, m2, m3
-    mova          [%1+0], m0
-    mova         [%1+%2], m1
+    movq          [%1+0], m0
+    movq         [%1+%2], m1
 %endmacro
 
 %macro ADD_RES_SSE_16_10 3
@@ -284,13 +286,13 @@ cglobal hevc_add_residual_32_8, 3, 5, 7
 %endmacro
 
 ; void ff_hevc_add_residual_<4|8|16|32>_10(pixel *dst, const int16_t *block, ptrdiff_t stride)
-INIT_MMX mmxext
+INIT_XMM sse2
 cglobal hevc_add_residual_4_10, 3, 3, 6
     pxor              m2, m2
-    mova              m3, [max_pixels_10]
-    ADD_RES_MMX_4_10  r0, r2, r1
+    movq              m3, [max_pixels_10]
+    ADD_RES_SSE_4_10  r0, r2, r1
     lea               r0, [r0+2*r2]
-    ADD_RES_MMX_4_10  r0, r2, r1+16
+    ADD_RES_SSE_4_10  r0, r2, r1+16
     RET
 
 INIT_XMM sse2
