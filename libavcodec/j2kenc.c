@@ -176,6 +176,8 @@ static void j2k_flush(Jpeg2000EncoderContext *s)
 {
     if (s->bit_index){
         s->bit_index = 0;
+        if (*s->buf == 0xff)
+            *(++s->buf) = 0;
         s->buf++;
     }
 }
