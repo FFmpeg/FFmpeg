@@ -260,7 +260,7 @@ cglobal dct32_float, 2,3,8, out, in, tmp
     vzeroupper
 
     ;    pass 6, no SIMD...
-INIT_XMM
+INIT_XMM avx
     PASS6_AND_PERMUTE
     RET
 %endif
