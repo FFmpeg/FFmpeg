@@ -63,6 +63,11 @@ static int gopher_connect(URLContext *h, const char *path)
             return AVERROR(EINVAL);
     }
 
+    if (strpbrk(path, "\r\n")) {
+        av_log(h, AV_LOG_ERROR, "Gopher path contains CRLF characters\n");
+        return AVERROR(EINVAL);
+    }
+
     /* send gopher sector */
     snprintf(buffer, sizeof(buffer), "%s\r\n", path);
 
