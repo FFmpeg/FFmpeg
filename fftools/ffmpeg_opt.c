@@ -234,10 +234,10 @@ void opt_match_per_stream_ ## name(void *logctx, const SpecifierOptList *sol,   
         *out = sol->opt[ret - 1].u.m;                                                   \
 }
 
-OPT_MATCH_PER_STREAM(str,   const char *, OPT_TYPE_STRING, str);
-OPT_MATCH_PER_STREAM(int,   int,          OPT_TYPE_INT,    i);
-OPT_MATCH_PER_STREAM(int64, int64_t,      OPT_TYPE_INT64,  i64);
-OPT_MATCH_PER_STREAM(dbl,   double,       OPT_TYPE_DOUBLE, dbl);
+OPT_MATCH_PER_STREAM(str,   const char *, OPT_TYPE_STRING, str)
+OPT_MATCH_PER_STREAM(int,   int,          OPT_TYPE_INT,    i)
+OPT_MATCH_PER_STREAM(int64, int64_t,      OPT_TYPE_INT64,  i64)
+OPT_MATCH_PER_STREAM(dbl,   double,       OPT_TYPE_DOUBLE, dbl)
 
 static unsigned opt_match_per_stream_group(void *logctx, enum OptionType type,
                                            const SpecifierOptList *sol,
@@ -298,10 +298,10 @@ void opt_match_per_stream_group_ ## name(void *logctx, const SpecifierOptList *s
         *out = sol->opt[ret - 1].u.m;                                                        \
 }
 
-OPT_MATCH_PER_STREAM_GROUP(str,   const char *, OPT_TYPE_STRING, str);
-OPT_MATCH_PER_STREAM_GROUP(int,   int,          OPT_TYPE_INT,    i);
-OPT_MATCH_PER_STREAM_GROUP(int64, int64_t,      OPT_TYPE_INT64,  i64);
-OPT_MATCH_PER_STREAM_GROUP(dbl,   double,       OPT_TYPE_DOUBLE, dbl);
+OPT_MATCH_PER_STREAM_GROUP(str,   const char *, OPT_TYPE_STRING, str)
+OPT_MATCH_PER_STREAM_GROUP(int,   int,          OPT_TYPE_INT,    i)
+OPT_MATCH_PER_STREAM_GROUP(int64, int64_t,      OPT_TYPE_INT64,  i64)
+OPT_MATCH_PER_STREAM_GROUP(dbl,   double,       OPT_TYPE_DOUBLE, dbl)
 
 int view_specifier_parse(const char **pspec, ViewSpecifier *vs)
 {

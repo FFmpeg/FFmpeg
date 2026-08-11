@@ -105,11 +105,11 @@ static void run_lavu_ ## suffix(uint8_t *output,                             \
     av_ ## namespace ## _final(h, output);                                   \
 }
 
-DEFINE_LAVU_MD(sha1,      AVSHA,    sha, 160);
-DEFINE_LAVU_MD(sha256,    AVSHA,    sha, 256);
-DEFINE_LAVU_MD(sha512,    AVSHA512, sha512, 512);
-DEFINE_LAVU_MD(ripemd128, AVRIPEMD, ripemd, 128);
-DEFINE_LAVU_MD(ripemd160, AVRIPEMD, ripemd, 160);
+DEFINE_LAVU_MD(sha1,      AVSHA,    sha, 160)
+DEFINE_LAVU_MD(sha256,    AVSHA,    sha, 256)
+DEFINE_LAVU_MD(sha512,    AVSHA512, sha512, 512)
+DEFINE_LAVU_MD(ripemd128, AVRIPEMD, ripemd, 128)
+DEFINE_LAVU_MD(ripemd160, AVRIPEMD, ripemd, 160)
 
 static void run_lavu_aes128(uint8_t *output,
                             const uint8_t *input, unsigned size)

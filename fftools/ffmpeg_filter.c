@@ -415,13 +415,13 @@ DEF_CHOOSE_FORMAT(sample_rates, int, sample_rate, sample_rates, 0,
                   "%d", )
 
 DEF_CHOOSE_FORMAT(color_spaces, enum AVColorSpace, color_space, color_spaces,
-                  AVCOL_SPC_UNSPECIFIED, "%s", av_color_space_name);
+                  AVCOL_SPC_UNSPECIFIED, "%s", av_color_space_name)
 
 DEF_CHOOSE_FORMAT(color_ranges, enum AVColorRange, color_range, color_ranges,
-                  AVCOL_RANGE_UNSPECIFIED, "%s", av_color_range_name);
+                  AVCOL_RANGE_UNSPECIFIED, "%s", av_color_range_name)
 
 DEF_CHOOSE_FORMAT(alpha_modes, enum AVAlphaMode, alpha_mode, alpha_modes,
-                  AVALPHA_MODE_UNSPECIFIED, "%s", av_alpha_mode_name);
+                  AVALPHA_MODE_UNSPECIFIED, "%s", av_alpha_mode_name)
 
 static void choose_channel_layouts(OutputFilterPriv *ofp, AVBPrint *bprint)
 {
