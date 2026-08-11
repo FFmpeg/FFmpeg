@@ -130,7 +130,12 @@ static int parse_playlist(URLContext *h, const char *url)
                                &info);
             bandwidth = atoi(info.bandwidth);
         } else if (av_strstart(line, "#EXT-X-TARGETDURATION:", &ptr)) {
-            s->target_duration = atoi(ptr) * AV_TIME_BASE;
+            int64_t t = strtoll(ptr, NULL, 10);
+            if (t < 0 || t >= INT64_MAX / AV_TIME_BASE) {
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
+            }
+            s->target_duration = t * AV_TIME_BASE;
             s->target_duration = FFMAX(s->target_duration, 0.001 * AV_TIME_BASE);
         } else if (av_strstart(line, "#EXT-X-MEDIA-SEQUENCE:", &ptr)) {
             s->start_seq_no = atoi(ptr);
