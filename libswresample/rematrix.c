@@ -436,7 +436,7 @@ static void build_matrix(const AVChannelLayout *in_ch_layout, const AVChannelLay
              * U+030 = U-030 = M+110 = M-110 = sqrt(1/4) */
             matrix[TOP_FRONT_LEFT ][TOP_CENTER] += 0.5;
             matrix[TOP_FRONT_RIGHT][TOP_CENTER] += 0.5;
-            if (av_channel_layout_index_from_channel(out_ch_layout, AV_CH_BACK_LEFT) >= 0) {
+            if (av_channel_layout_index_from_channel(out_ch_layout, AV_CHAN_BACK_LEFT) >= 0) {
                 matrix[BACK_LEFT ][TOP_CENTER] += 0.5;
                 matrix[BACK_RIGHT][TOP_CENTER] += 0.5;
             } else if (av_channel_layout_index_from_channel(out_ch_layout, AV_CHAN_SIDE_LEFT) >= 0) {
