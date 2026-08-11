@@ -452,12 +452,12 @@ static void check_range(const char *name, const SwsUOp *uop,
                         const unsigned ranges[NB_PLANES])
 {
     /* Test all planes to ensure data remains untouched */
-    return check_uop(name, uop, SWS_COMP_ALL, SWS_COMP_ALL, ranges);
+    check_uop(name, uop, SWS_COMP_ALL, SWS_COMP_ALL, ranges);
 }
 
 static void check_simple(const char *name, const SwsUOp *uop)
 {
-    return check_range(name, uop, NULL);
+    check_range(name, uop, NULL);
 }
 
 static void check_scalar(const char *name, SwsUOp *uop)
@@ -471,7 +471,7 @@ static void check_vec4(const char *name, SwsUOp *uop)
     for (int i = 0; i < 4; i++)
         uop->data.vec4[i] = rndpx(uop->type);
 
-    return check_simple(name, uop);
+    check_simple(name, uop);
 }
 
 #define MK_RANGES(R) ((const unsigned[]) { R, R, R, R })
@@ -608,7 +608,7 @@ static void check_linear(const char *name, SwsUOp *uop)
         }
     }
 
-    return check_simple(name, uop);
+    check_simple(name, uop);
 }
 
 static void check_dither(const char *name, SwsUOp *uop)
