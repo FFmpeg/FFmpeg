@@ -128,14 +128,14 @@ static int put_pack_header(AVFormatContext *ctx, uint8_t *buf,
     return put_bytes_output(&pb);
 }
 
-static int put_system_header(AVFormatContext *ctx, uint8_t *buf,
+static int put_system_header(AVFormatContext *ctx, uint8_t *buf, int buf_size,
                              int only_for_stream_id)
 {
     MpegMuxContext *s = ctx->priv_data;
     int size, i, private_stream_coded, id;
     PutBitContext pb;
 
-    init_put_bits(&pb, buf, 128);
+    init_put_bits(&pb, buf, buf_size);
 
     put_bits32(&pb, SYSTEM_HEADER_START_CODE);
     put_bits(&pb, 16, 0);
@@ -657,6 +657,7 @@ static int flush_packet(AVFormatContext *ctx, int stream_index,
     int size, payload_size, startcode, id, stuffing_size, header_len;
     int packet_size;
     uint8_t buffer[128];
+    uint8_t *buf_end = buffer + sizeof(buffer);
     int zero_trail_bytes = 0;
     int pad_packet_bytes = 0;
     int pes_flags;
@@ -682,7 +683,7 @@ static int flush_packet(AVFormatContext *ctx, int stream_index,
              * audio packet (see VCD standard p. IV-7 and IV-8). */
 
             if (stream->packet_number == 0) {
-                size     = put_system_header(ctx, buf_ptr, id);
+                size     = put_system_header(ctx, buf_ptr, buf_end - buf_ptr, id);
                 buf_ptr += size;
             }
         } else if (s->is_dvd) {
@@ -697,7 +698,7 @@ static int flush_packet(AVFormatContext *ctx, int stream_index,
                 }
 
                 if (stream->bytes_to_iframe == 0 || s->packet_number == 0) {
-                    size     = put_system_header(ctx, buf_ptr, 0);
+                    size     = put_system_header(ctx, buf_ptr, buf_end - buf_ptr, 0);
                     buf_ptr += size;
                     size     = buf_ptr - buffer;
                     avio_write(ctx->pb, buffer, size);
@@ -730,7 +731,7 @@ static int flush_packet(AVFormatContext *ctx, int stream_index,
             }
         } else {
             if ((s->packet_number % s->system_header_freq) == 0) {
-                size     = put_system_header(ctx, buf_ptr, 0);
+                size     = put_system_header(ctx, buf_ptr, buf_end - buf_ptr, 0);
                 buf_ptr += size;
             }
         }
