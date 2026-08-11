@@ -102,7 +102,6 @@ void ff_vvc_dsp_init_riscv(VVCDSPContext *const c, const int bd)
                 break;
             case 10:
                 c->inter.sad      = ff_vvc_sad_rvv_256;
-            default:
                 break;
         }
     } else if (vlenb >= 16) {
@@ -118,7 +117,6 @@ void ff_vvc_dsp_init_riscv(VVCDSPContext *const c, const int bd)
                 break;
             case 10:
                 c->inter.sad      = ff_vvc_sad_rvv_128;
-            default:
                 break;
         }
     }
