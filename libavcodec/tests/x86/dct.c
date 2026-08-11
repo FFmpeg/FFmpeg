@@ -27,8 +27,8 @@
 #include "libavcodec/x86/simple_idct.h"
 
 #if CONFIG_PRORES_DECODER && ARCH_X86_64 && HAVE_X86ASM
-void ff_prores_idct_put_10_sse2(uint16_t *dst, int linesize,
-                                int16_t *block, int16_t *qmat);
+void ff_prores_idct_put_10_sse2(uint16_t *dst, ptrdiff_t linesize,
+                                int16_t *block, const int16_t *qmat);
 
 #define PR_WRAP(INSN) \
 static void ff_prores_idct_put_10_##INSN##_wrap(int16_t *dst){ \
@@ -50,8 +50,8 @@ static void ff_prores_idct_put_10_##INSN##_wrap(int16_t *dst){ \
 PR_WRAP(sse2)
 
 # if HAVE_AVX_EXTERNAL
-void ff_prores_idct_put_10_avx(uint16_t *dst, int linesize,
-                               int16_t *block, int16_t *qmat);
+void ff_prores_idct_put_10_avx(uint16_t *dst, ptrdiff_t linesize,
+                               int16_t *block, const int16_t *qmat);
 PR_WRAP(avx)
 # endif
 
