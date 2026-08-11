@@ -1460,8 +1460,14 @@ skip:
         case MPEGTS_PAYLOAD:
             do {
                 int max_packet_size = ts->max_packet_size;
-                if (pes->PES_packet_length && pes->PES_packet_length + PES_START_SIZE > pes->pes_header_size)
-                    max_packet_size = pes->PES_packet_length + PES_START_SIZE - pes->pes_header_size;
+                if (pes->PES_packet_length && pes->PES_packet_length + PES_START_SIZE > pes->pes_header_size) {
+                    const int pes_payload_size = pes->PES_packet_length + PES_START_SIZE - pes->pes_header_size;
+
+                    if (pes_payload_size > ts->max_packet_size)
+                        pes->PES_packet_length = 0;
+                    else
+                        max_packet_size = pes_payload_size;
+                }
 
                 if (pes->data_index > 0 &&
                     pes->data_index + buf_size > max_packet_size) {
