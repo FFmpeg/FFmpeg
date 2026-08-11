@@ -167,7 +167,7 @@ void ff_rtp_send_av1(AVFormatContext *ctx, const uint8_t *frame_buf, int frame_s
             obu_hdr &= ~AV1F_OBU_HAS_SIZE_FIELD; // remove size field
             // read out explicit OBU size
             num_lebs = parse_leb(ctx, obu_ptr, frame_size, &obu_size);
-            if (!num_lebs) {
+            if (num_lebs <= 0) {
                 return;
             }
             obu_ptr += num_lebs;
