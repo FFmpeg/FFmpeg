@@ -119,7 +119,7 @@ static int handle_file(struct Tracks *tracks, const char *file)
 {
     AVFormatContext *ctx = NULL;
     int err = 0, i, orig_tracks = tracks->nb_tracks;
-    char *ptr;
+    const char *ptr;
     struct Track *track;
 
     err = avformat_open_input(&ctx, file, NULL, NULL);
