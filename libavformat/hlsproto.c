@@ -142,9 +142,13 @@ static int parse_playlist(URLContext *h, const char *url)
         } else if (av_strstart(line, "#EXT-X-ENDLIST", &ptr)) {
             s->finished = 1;
         } else if (av_strstart(line, "#EXTINF:", &ptr)) {
+            double d = atof(ptr) * AV_TIME_BASE;
+            if (!(d >= 0 && d < INT64_MAX)) {
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
+            }
             is_segment = 1;
-            duration = atof(ptr) * AV_TIME_BASE;
-            duration = FFMAX(duration, 0.001 * AV_TIME_BASE);
+            duration = FFMAX(d, 0.001 * AV_TIME_BASE);
         } else if (av_strstart(line, "#", NULL)) {
             continue;
         } else if (line[0]) {
