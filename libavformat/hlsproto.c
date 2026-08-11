@@ -245,6 +245,10 @@ static int hls_open(URLContext *h, const char *uri, int flags)
         ret = AVERROR(EIO);
         goto fail;
     }
+    if (!s->target_duration) {
+        av_log(h, AV_LOG_WARNING, "Missing #EXT-X-TARGETDURATION\n");
+        s->target_duration = s->segments[s->n_segments - 1]->duration;
+    }
     s->cur_seq_no = s->start_seq_no;
     if (!s->finished && s->n_segments >= 3)
         s->cur_seq_no = s->start_seq_no + s->n_segments - 3;
