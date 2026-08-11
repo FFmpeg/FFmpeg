@@ -415,7 +415,8 @@ FATE_PNG += fate-png-int-rgb24
 fate-png-int-rgb24: CMD = framecrc -i $(TARGET_SAMPLES)/png1/lena-int_rgb24.png -sws_flags +accurate_rnd+bitexact
 
 FATE_PNG_PROBE += fate-png-frame-metadata
-fate-png-frame-metadata: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries frame_tags \
+fate-png-frame-metadata: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -f image2 \
+    -export_path_metadata 1 -show_entries frame_tags=gamma,Software,lavf.image2dec.source_basename \
     -i $(TARGET_SAMPLES)/filter/pixelart0.png
 
 FATE_PNG_PROBE += fate-png-side-data

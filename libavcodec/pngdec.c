@@ -1865,7 +1865,11 @@ static int output_frame(PNGDecContext *s, AVFrame *f)
         stereo3d->flags = s->stereo_mode ? 0 : AV_STEREO3D_FLAG_INVERT;
     }
 
-    FFSWAP(AVDictionary*, f->metadata, s->frame_metadata);
+    ret = av_dict_copy(&f->metadata, s->frame_metadata, 0);
+    if (ret < 0)
+        goto fail;
+
+    av_dict_free(&s->frame_metadata);
 
     return 0;
 fail:

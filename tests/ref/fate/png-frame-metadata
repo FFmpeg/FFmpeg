@@ -1,4 +1,5 @@
 [FRAME]
+TAG:lavf.image2dec.source_basename=pixelart0.png
 TAG:gamma=45455/100000
 TAG:Software=GLDPNG ver 3.4
 [/FRAME]
