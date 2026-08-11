@@ -782,7 +782,7 @@ const char **av_vk_get_optional_instance_extensions(int *count)
     if (!exts)
         return NULL;
 
-    for (int i = 0; i < FF_ARRAY_ELEMS(optional_instance_exts) - 1; i++)
+    for (int i = 0; i < (int)FF_ARRAY_ELEMS(optional_instance_exts) - 1; i++)
         exts[i] = optional_instance_exts[i].name;
 
     *count = FF_ARRAY_ELEMS(optional_instance_exts) - 1;
