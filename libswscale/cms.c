@@ -57,7 +57,7 @@ bool ff_sws_color_map_noop(const SwsColorMap *map)
 }
 
 /* Approximation of gamut hull at a given intensity level */
-static const float hull(float I)
+static float hull(float I)
 {
     return ((I - 6.0f) * I + 9.0f) * I;
 }
