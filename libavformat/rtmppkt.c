@@ -640,8 +640,10 @@ static void amf_tag_contents(void *ctx, const uint8_t *data,
         return;
     case AMF_DATA_TYPE_ARRAY:
         parse_key = 0;
+        av_fallthrough;
     case AMF_DATA_TYPE_MIXEDARRAY:
         nb = bytestream_get_be32(&data);
+        av_fallthrough;
     case AMF_DATA_TYPE_OBJECT:
         av_log(ctx, AV_LOG_DEBUG, " {\n");
         while (nb-- > 0 || type != AMF_DATA_TYPE_ARRAY) {
