@@ -67,7 +67,7 @@ typedef enum {
 
 typedef struct WavpackFrameContext {
     AVCodecContext *avctx;
-    int frame_flags;
+    uint32_t frame_flags;
     int stereo, stereo_in;
     int joint;
     uint32_t CRC;
