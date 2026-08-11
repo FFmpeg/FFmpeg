@@ -62,7 +62,7 @@ static atomic_int av_log_flags = 0;
 #define NB_LEVELS 8
 #if defined(_WIN32) && HAVE_SETCONSOLETEXTATTRIBUTE && HAVE_GETSTDHANDLE
 #include <windows.h>
-static const uint8_t color[16 + AV_CLASS_CATEGORY_NB] = {
+static const uint8_t win_color[16 + AV_CLASS_CATEGORY_NB] = {
     [AV_LOG_PANIC  /8] = 12,
     [AV_LOG_FATAL  /8] = 12,
     [AV_LOG_ERROR  /8] = 12,
@@ -93,7 +93,7 @@ static const uint8_t color[16 + AV_CLASS_CATEGORY_NB] = {
 
 static int16_t background, attr_orig;
 static HANDLE con;
-#else
+#endif
 
 static const uint32_t color[16 + AV_CLASS_CATEGORY_NB] = {
     [AV_LOG_PANIC  /8] =  52 << 16 | 196 << 8 | 0x41,
@@ -124,7 +124,6 @@ static const uint32_t color[16 + AV_CLASS_CATEGORY_NB] = {
     [16+AV_CLASS_CATEGORY_DEVICE_INPUT        ] = 207 << 8 | 0x05,
 };
 
-#endif
 static int use_color = -1;
 
 #if defined(_WIN32) && HAVE_SETCONSOLETEXTATTRIBUTE && HAVE_GETSTDHANDLE
@@ -226,7 +225,7 @@ static void colored_fputs(int level, int tint, const char *str)
 #if defined(_WIN32) && HAVE_SETCONSOLETEXTATTRIBUTE && HAVE_GETSTDHANDLE
     if (con != INVALID_HANDLE_VALUE) {
         if (local_use_color)
-            SetConsoleTextAttribute(con, background | color[level]);
+            SetConsoleTextAttribute(con, background | win_color[level]);
         win_console_puts(str);
         if (local_use_color)
             SetConsoleTextAttribute(con, attr_orig);
