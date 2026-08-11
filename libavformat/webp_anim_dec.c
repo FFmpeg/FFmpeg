@@ -170,9 +170,11 @@ static int webp_anim_read_header(AVFormatContext *s)
                                                                AV_PKT_DATA_ICC_PROFILE, size, 0);
                 if (!sd)
                     return AVERROR(ENOMEM);
-                ret = avio_read(pb, sd->data, size);
-                if (ret < 0)
+                ret = ffio_read_size(pb, sd->data, size);
+                if (ret < 0) {
+                    av_packet_side_data_remove(st->codecpar->coded_side_data, &st->codecpar->nb_coded_side_data, AV_PKT_DATA_ICC_PROFILE);
                     return ret;
+                }
                 ctx->has_iccp = 1;
             }
             break;
@@ -299,9 +301,11 @@ static int webp_anim_read_packet(AVFormatContext *s, AVPacket *pkt)
                                                                AV_PKT_DATA_EXIF, size, 0);
                 if (!sd)
                     return AVERROR(ENOMEM);
-                ret = avio_read(pb, sd->data, size);
-                if (ret < 0)
+                ret = ffio_read_size(pb, sd->data, size);
+                if (ret < 0) {
+                    av_packet_side_data_remove(st->codecpar->coded_side_data, &st->codecpar->nb_coded_side_data, AV_PKT_DATA_EXIF);
                     return ret;
+                }
                 ctx->has_exif = 1;
             }
             break;
