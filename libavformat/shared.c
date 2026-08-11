@@ -475,7 +475,7 @@ static int spacemap_grow(URLContext *h, int64_t block)
     if (s->map_size > old_size) {
         num_blocks = (s->map_size - sizeof(Spacemap)) / sizeof(Block);
         av_log(h, AV_LOG_DEBUG,
-               "%s %zu bytes, capacity: %"PRId64" blocks = %zu MB\n",
+               "%s %zu bytes, capacity: %"PRId64" blocks = %"PRId64" MB\n",
                ret ? "Resized spacemap to" : "Mapped spacemap with",
                (size_t) s->map_size, num_blocks,
                (num_blocks * (int64_t) s->block_size) >> 20);
