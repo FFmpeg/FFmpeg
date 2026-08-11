@@ -140,7 +140,8 @@
 
 #define STOP_TIMER(id)                                                      \
     ioctl(linux_perf_fd, PERF_EVENT_IOC_DISABLE, 0);                        \
-    read(linux_perf_fd, &tperf, sizeof(tperf));                             \
+    if (read(linux_perf_fd, &tperf, sizeof(tperf)) != sizeof(tperf))        \
+        tperf = 0;                                                          \
     TIMER_REPORT(id, tperf)
 
 #elif CONFIG_MACOS_KPERF
