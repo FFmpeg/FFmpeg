@@ -781,6 +781,9 @@ static int encode_packet(Jpeg2000EncoderContext *s, Jpeg2000ResLevel *rlevel, in
         }
     }
 
+    if (s->buf_end - s->buf < 3)
+        return -1;
+
     put_bits(s, !empty, 1);
     if (empty){
         j2k_flush(s);
@@ -842,6 +845,10 @@ static int encode_packet(Jpeg2000EncoderContext *s, Jpeg2000ResLevel *rlevel, in
             }
         }
     }
+
+    if (s->buf_end - s->buf < 2 + 2 * s->eph)
+        return -1;
+
     j2k_flush(s);
     if (s->eph) {
         bytestream_put_be16(&s->buf, JPEG2000_EPH);
