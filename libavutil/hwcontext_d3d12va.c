@@ -648,9 +648,11 @@ static int d3d12va_load_functions(AVHWDeviceContext *hwdev)
 #endif
     return 0;
 
+#if !HAVE_UWP
 fail:
     av_log(hwdev, AV_LOG_ERROR, "Failed to load D3D12 library or its functions\n");
     return AVERROR_UNKNOWN;
+#endif
 }
 
 static void d3d12va_device_free(AVHWDeviceContext *hwdev)
