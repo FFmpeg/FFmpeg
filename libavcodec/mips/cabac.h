@@ -101,7 +101,14 @@ static av_always_inline int get_cabac_inline_mips(CABACContext *c,
 #else
         "slt          %[tmp0],         %[c_bytestream],     %[c_bytestream_end]  \n\t"
         PTR_ADDIU    "%[tmp2],         %[c_bytestream],     0x02                 \n\t"
+#if HAVE_MIPS32R2 || HAVE_MIPS64R2
         "movn         %[c_bytestream], %[tmp2],             %[tmp0]              \n\t"
+#else
+        "beqz         %[tmp0],         2f                                      \n\t"
+        " nop                                                               \n\t"
+        "move         %[c_bytestream], %[tmp2]                               \n\t"
+        "2:                                                                 \n\t"
+#endif
 #endif
         "1:                                                        \n\t"
     : [bit]"=&r"(bit), [tmp0]"=&r"(tmp0), [tmp1]"=&r"(tmp1), [tmp2]"=&r"(tmp2),
@@ -152,14 +159,29 @@ static av_always_inline int get_cabac_bypass_mips(CABACContext *c)
 #else
         "slt        %[tmp0],         %[c_bytestream], %[c_bytestream_end] \n\t"
         PTR_ADDIU  "%[tmp1],         %[c_bytestream], 0x02                \n\t"
+#if HAVE_MIPS32R2 || HAVE_MIPS64R2
         "movn       %[c_bytestream], %[tmp1],         %[tmp0]             \n\t"
+#else
+        "beqz       %[tmp0],         2f                                  \n\t"
+        " nop                                                            \n\t"
+        "move       %[c_bytestream], %[tmp1]                              \n\t"
+        "2:                                                              \n\t"
+#endif
 #endif
         "1:                                                               \n\t"
         PTR_SLL    "%[tmp1],         %[c_range],      0x11                \n\t"
         "slt        %[tmp0],         %[c_low],        %[tmp1]             \n\t"
         PTR_SUBU   "%[tmp1],         %[c_low],        %[tmp1]             \n\t"
+#if HAVE_MIPS32R2 || HAVE_MIPS64R2
         "movz       %[res],          %[one],          %[tmp0]             \n\t"
         "movz       %[c_low],        %[tmp1],         %[tmp0]             \n\t"
+#else
+        "bnez       %[tmp0],         2f                                \n\t"
+        " nop                                                      \n\t"
+        "move       %[res],          %[one]                          \n\t"
+        "move       %[c_low],        %[tmp1]                         \n\t"
+        "2:                                                       \n\t"
+#endif
         : [tmp0]"=&r"(tmp0), [tmp1]"=&r"(tmp1), [res]"+&r"(res),
           [c_range]"+&r"(c->range), [c_low]"+&r"(c->low),
           [c_bytestream]"+&r"(c->bytestream)
@@ -204,15 +226,36 @@ static av_always_inline int get_cabac_bypass_sign_mips(CABACContext *c, int val)
 #else
         "slt        %[tmp0],         %[c_bytestream], %[c_bytestream_end] \n\t"
         PTR_ADDIU  "%[tmp1],         %[c_bytestream], 0x02                \n\t"
+#if HAVE_MIPS32R2 || HAVE_MIPS64R2
         "movn       %[c_bytestream], %[tmp1],         %[tmp0]             \n\t"
+#else
+        "beqz       %[tmp0],         2f                                  \n\t"
+        " nop                                                            \n\t"
+        "move       %[c_bytestream], %[tmp1]                              \n\t"
+        "2:                                                              \n\t"
+#endif
 #endif
         "1:                                                               \n\t"
         PTR_SLL    "%[tmp1],         %[c_range],      0x11                \n\t"
         "slt        %[tmp0],         %[c_low],        %[tmp1]             \n\t"
         PTR_SUBU   "%[tmp1],         %[c_low],        %[tmp1]             \n\t"
+#if HAVE_MIPS32R2 || HAVE_MIPS64R2
         "movz       %[c_low],        %[tmp1],         %[tmp0]             \n\t"
+#else
+        "bnez       %[tmp0],         2f                                  \n\t"
+        " nop                                                            \n\t"
+        "move       %[c_low],        %[tmp1]                              \n\t"
+        "2:                                                              \n\t"
+#endif
         PTR_SUBU   "%[tmp1],         %[zero],         %[res]              \n\t"
+#if HAVE_MIPS32R2 || HAVE_MIPS64R2
         "movn       %[res],          %[tmp1],         %[tmp0]             \n\t"
+#else
+        "beqz       %[tmp0],         3f                                  \n\t"
+        " nop                                                            \n\t"
+        "move       %[res],          %[tmp1]                              \n\t"
+        "3:                                                              \n\t"
+#endif
         : [tmp0]"=&r"(tmp0), [tmp1]"=&r"(tmp1), [res]"+&r"(res),
           [c_range]"+&r"(c->range), [c_low]"+&r"(c->low),
           [c_bytestream]"+&r"(c->bytestream)
