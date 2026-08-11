@@ -54,9 +54,9 @@ static void check_sbc_analyze(SBCDSPContext *sbcdsp)
             // for sbc_analyze_4 it can be 0 or 8 mod 16.
             const int16_t *const inp = i || rnd() & 1 ? in : in + 4;
             // Use the proper const tables as random ones can cause overflow
-            #define CONST(SIZE, ODDEVEN) sbcdsp_analysis_consts_fixed ## SIZE ## _simd_ ## ODDEVEN
-            const int16_t *const consts = rnd() & 1 ? (i ? CONST(8, odd)  : CONST(4, odd))
-                                                    : (i ? CONST(8, even) : CONST(4, even));
+            #define A_CONST(SIZE, ODDEVEN) sbcdsp_analysis_consts_fixed ## SIZE ## _simd_ ## ODDEVEN
+            const int16_t *const consts = rnd() & 1 ? (i ? A_CONST(8, odd)  : A_CONST(4, odd))
+                                                    : (i ? A_CONST(8, even) : A_CONST(4, even));
 
             call_ref(inp, out_ref, consts);
             call_new(inp, out_new, consts);
