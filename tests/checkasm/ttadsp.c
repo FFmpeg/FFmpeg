@@ -84,7 +84,7 @@ void checkasm_check_ttaencdsp(void)
 
     ff_ttaencdsp_init(&ttaencdsp);
 
-    if (check_func(ttaencdsp.filter_process, "filter_process"))
+    if (check_func(ttaencdsp.filter_process, "enc_filter_process"))
         check_filter_process();
     report("filter_process");
 }
