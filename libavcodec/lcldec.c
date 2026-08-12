@@ -292,6 +292,8 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
             ret = zlib_decomp(avctx, buf + 8 + mthread_inlen, len - 8 - mthread_inlen,
                               mthread_outlen, mthread_outlen);
             if (ret < 0) return ret;
+            memset(c->decomp_buf + mthread_outlen + ret, 0,
+                   c->decomp_size - mthread_outlen - ret);
             len = c->decomp_size;
         } else {
             int ret = zlib_decomp(avctx, buf, len, 0, c->decomp_size);
