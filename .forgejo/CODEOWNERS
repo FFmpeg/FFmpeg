@@ -144,6 +144,7 @@ libavformat/frm.* @pross
 libavformat/hls.* @kasper93
 libavformat/hxvs.* @quink
 libavformat/iamf.* @jamrial
+libavformat/id3v2* @toots
 libavformat/icecast.c @ePirat
 libavformat/ico.* @pross
 libavformat/iff.* @pross

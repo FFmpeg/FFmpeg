@@ -417,6 +417,7 @@ Muxers/Demuxers:
   hlsenc.c                              Christian Suloway, Steven Liu
   hxvs.c                                Zhao Zhili
   iamf*                             [2] James Almer
+  id3v2*                                Romain Beauxis
   idcin.c                               Mike Melanson
   idroqdec.c                            Mike Melanson
   iff.c                                 Jaikrishnan Menon
