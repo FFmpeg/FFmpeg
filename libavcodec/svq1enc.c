@@ -48,12 +48,6 @@
 #include "libavutil/frame.h"
 #include "libavutil/mem_internal.h"
 
-// Workaround for GCC bug 102513
-#if AV_GCC_VERSION_AT_LEAST(10, 0) && AV_GCC_VERSION_AT_MOST(12, 0) \
-    && !defined(__clang__) && !defined(__INTEL_COMPILER)
-#pragma GCC optimize ("no-ipa-cp-clone")
-#endif
-
 typedef struct SVQ1EncContext {
     /* FIXME: Needed for motion estimation, should not be used for anything
      * else, the idea is to make the motion estimation eventually independent
@@ -134,6 +128,8 @@ static int encode_block(SVQ1EncContext *s, uint8_t *src, uint8_t *ref,
                         uint8_t *decoded, int stride, unsigned level,
                         int threshold, int lambda, int intra)
 {
+    av_assume(level <= 5U); // Workaround for GCC bug 102513
+
     int count, y, x, i, j, split, best_mean, best_score, best_count;
     int best_vector[6];
     int block_sum[7] = { 0, 0, 0, 0, 0, 0 };
