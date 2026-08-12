@@ -2,6 +2,15 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 9.0.1:
+ Bump for 9.0.1
+ avcodec/lcldec: clear what the multithread chunks leave undecoded
+ avformat/mlv: end the LJ92 packet where its data ends
+ avformat/mpegts: reject a max_packet_size below one TS payload
+ avformat/mpegts: keep the PES payload within max_packet_size
+ avfilter/spectrumsynth: negotiate one pixel format for both inputs
+ avfilter/afir: bound the crossfades by the samples of the input frame
+ Update for 9.0.1
+ avformat/webp_anim_dec: use ffio_read_size for ICCP and EXIF chunk
  avformat/webp_anim_dec: use ffio_read_size for ICCP and EXIF chunks
  avformat/rtpenc_av1: do not narrow the OBU size to (long)
  avformat/rtpenc_av1: Check num_lebs
