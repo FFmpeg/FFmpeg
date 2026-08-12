@@ -51,7 +51,7 @@ void ff_dct_unquantize_h263_intra_mmi(const MPVContext *s, int16_t *block,
     if(s->ac_pred)
         nCoeffs = 63;
     else
-        nCoeffs = s->inter_scantable.raster_end[s->block_last_index[n]];
+        nCoeffs = s->intra_scantable.raster_end[s->block_last_index[n]];
 
     __asm__ volatile (
         "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"

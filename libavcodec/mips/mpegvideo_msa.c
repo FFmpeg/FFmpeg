@@ -214,7 +214,7 @@ void ff_dct_unquantize_h263_intra_msa(const MPVContext *s,
     if (s->ac_pred)
         nCoeffs = 63;
     else
-        nCoeffs = s->inter_scantable.raster_end[s->block_last_index[index]];
+        nCoeffs = s->intra_scantable.raster_end[s->block_last_index[index]];
 
     h263_dct_unquantize_msa(block, qmul, qadd, nCoeffs, 1);
 }
