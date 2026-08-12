@@ -18,7 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavcodec/hevc/dec.h"
+#include "libavcodec/hevc/hevcdec.h"
 #include "libavutil/mips/generic_macros_msa.h"
 #include "hevcpred_mips.h"
 
@@ -1924,8 +1924,8 @@ void ff_intra_pred_8_16x16_msa(HEVCLocalContext *lc, const HEVCPPS *pps,
     int cur_tb_addr =
         pps->min_tb_addr_zs[(y_tb) * (sps->tb_mask + 2) + (x_tb)];
 
-    ptrdiff_t stride = s->frame->linesize[c_idx] / sizeof(uint8_t);
-    uint8_t *src = (uint8_t *) s->frame->data[c_idx] + x + y * stride;
+    ptrdiff_t stride = s->cur_frame->f->linesize[c_idx] / sizeof(uint8_t);
+    uint8_t *src = (uint8_t *) s->cur_frame->f->data[c_idx] + x + y * stride;
 
     int min_pu_width = sps->min_pu_width;
 
@@ -2416,7 +2416,8 @@ void ff_intra_pred_8_16x16_msa(HEVCLocalContext *lc, const HEVCPPS *pps,
     }
 }
 
-void ff_intra_pred_8_32x32_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
+void ff_intra_pred_8_32x32_msa(HEVCLocalContext *lc, const HEVCPPS *pps,
+                               int x0, int y0, int c_idx)
 {
     v16u8 vec0, vec1;
     v8i16 tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
@@ -2440,8 +2441,8 @@ void ff_intra_pred_8_32x32_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
     int cur_tb_addr =
         pps->min_tb_addr_zs[(y_tb) * (sps->tb_mask + 2) + (x_tb)];
 
-    ptrdiff_t stride = s->frame->linesize[c_idx] / sizeof(uint8_t);
-    uint8_t *src = (uint8_t *) s->frame->data[c_idx] + x + y * stride;
+    ptrdiff_t stride = s->cur_frame->f->linesize[c_idx] / sizeof(uint8_t);
+    uint8_t *src = (uint8_t *) s->cur_frame->f->data[c_idx] + x + y * stride;
 
     int min_pu_width = sps->min_pu_width;
 
