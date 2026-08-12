@@ -408,7 +408,7 @@ static void put_vc1_mspel_mc_h_v_msa(uint8_t *dst, const uint8_t *src,
     cnst_para1 = __msa_fill_h(para_value[hmode - 1][1]);
     cnst_para2 = __msa_fill_h(para_value[hmode - 1][2]);
     cnst_para3 = __msa_fill_h(para_value[hmode - 1][3]);
-    r = 64 - rnd;
+    r = 64 - rnd - /* bias */ 128 * 128;
     cnst_r = __msa_fill_h(r);
     // col 0 ~ 7
     t0 = cnst_para1 * t1 + cnst_para2 * t2 - cnst_para0 * t0 - cnst_para3 * t3;
@@ -425,7 +425,15 @@ static void put_vc1_mspel_mc_h_v_msa(uint8_t *dst, const uint8_t *src,
     t4 >>= 7, t5 >>= 7, t6 >>= 7, t7 >>= 7;
     TRANSPOSE8x8_SH_SH(t0, t1, t2, t3, t4, t5, t6, t7,
                        t0, t1, t2, t3, t4, t5, t6, t7);
-    CLIP_SH8_0_255(t0, t1, t2, t3, t4, t5, t6, t7);
+    cnst_r = __msa_fill_h(128); // undo bias
+    t0 = __msa_sat_s_h(t0, 7) + cnst_r;
+    t1 = __msa_sat_s_h(t1, 7) + cnst_r;
+    t2 = __msa_sat_s_h(t2, 7) + cnst_r;
+    t3 = __msa_sat_s_h(t3, 7) + cnst_r;
+    t4 = __msa_sat_s_h(t4, 7) + cnst_r;
+    t5 = __msa_sat_s_h(t5, 7) + cnst_r;
+    t6 = __msa_sat_s_h(t6, 7) + cnst_r;
+    t7 = __msa_sat_s_h(t7, 7) + cnst_r;
     PCKEV_B4_SH(t1, t0, t3, t2, t5, t4, t7, t6, t0, t1, t2, t3);
     ST_D8(t0, t1, t2, t3, 0, 1, 0, 1, 0, 1, 0, 1, dst, stride);
 }
