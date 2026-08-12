@@ -26,37 +26,31 @@
 
 av_cold void ff_sws_init_range_convert_loongarch(SwsInternal *c)
 {
-    /* This code is currently disabled because of changes in the base
-     * implementation of these functions. This code should be enabled
-     * again once those changes are ported to this architecture. */
-#if 0
     int cpu_flags = av_get_cpu_flags();
 
+    if (c->dstBpc > 14)
+        return;
+
     if (have_lsx(cpu_flags)) {
-        if (c->dstBpc <= 14) {
-            if (c->opts.src_range) {
-                c->lumConvertRange = lumRangeFromJpeg_lsx;
-                c->chrConvertRange = chrRangeFromJpeg_lsx;
-            } else {
-                c->lumConvertRange = lumRangeToJpeg_lsx;
-                c->chrConvertRange = chrRangeToJpeg_lsx;
-            }
+        if (c->opts.src_range) {
+            c->lumConvertRange = lumRangeFromJpeg_lsx;
+            c->chrConvertRange = chrRangeFromJpeg_lsx;
+        } else {
+            c->lumConvertRange = lumRangeToJpeg_lsx;
+            c->chrConvertRange = chrRangeToJpeg_lsx;
         }
     }
 #if HAVE_LASX
     if (have_lasx(cpu_flags)) {
-        if (c->dstBpc <= 14) {
-            if (c->opts.src_range) {
-                c->lumConvertRange = lumRangeFromJpeg_lasx;
-                c->chrConvertRange = chrRangeFromJpeg_lasx;
-            } else {
-                c->lumConvertRange = lumRangeToJpeg_lasx;
-                c->chrConvertRange = chrRangeToJpeg_lasx;
-            }
+        if (c->opts.src_range) {
+            c->lumConvertRange = lumRangeFromJpeg_lasx;
+            c->chrConvertRange = chrRangeFromJpeg_lasx;
+        } else {
+            c->lumConvertRange = lumRangeToJpeg_lasx;
+            c->chrConvertRange = chrRangeToJpeg_lasx;
         }
     }
 #endif // #if HAVE_LASX
-#endif
 }
 
 av_cold void ff_sws_init_swscale_loongarch(SwsInternal *c)

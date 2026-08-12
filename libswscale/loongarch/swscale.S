@@ -1868,16 +1868,15 @@ function ff_hscale_16_to_19_sub_lsx
 endfunc
 
 function lumRangeFromJpeg_lsx
-    li.w          t0,    14071
-    li.w          t1,    33561947
-    vreplgr2vr.h  vr0,   t0
-    srli.w        t2,    a1,    3
-    andi          t3,    a1,    7
-    beqz          t2,    2f
+    vreplgr2vr.h  vr0,   a2
+    vreplgr2vr.w  vr4,   a3
+    srli.w        t0,    a1,    3
+    andi          t1,    a1,    7
+    beqz          t0,    2f
 1:
     vld           vr1,   a0,    0
-    vreplgr2vr.w  vr2,   t1
-    vreplgr2vr.w  vr3,   t1
+    vor.v         vr2,   vr4,   vr4
+    vor.v         vr3,   vr4,   vr4
     vmaddwev.w.h  vr2,   vr0,   vr1
     vmaddwod.w.h  vr3,   vr0,   vr1
     vsrai.w       vr2,   vr2,   14
@@ -1885,33 +1884,32 @@ function lumRangeFromJpeg_lsx
     vpackev.h     vr1,   vr3,   vr2
     vst           vr1,   a0,    0
     addi.d        a0,    a0,    16
-    addi.d        t2,    t2,    -1
-    bnez          t2,    1b
+    addi.d        t0,    t0,    -1
+    bnez          t0,    1b
 2:
-    beqz          t3,    4f
+    beqz          t1,    4f
 3:
-    ld.h          t4,    a0,    0
-    mul.w         t4,    t4,    t0
-    add.w         t4,    t4,    t1
-    srai.w        t4,    t4,    14
-    st.h          t4,    a0,    0
+    ld.h          t2,    a0,    0
+    mul.w         t2,    t2,    a2
+    add.w         t2,    t2,    a3
+    srai.w        t2,    t2,    14
+    st.h          t2,    a0,    0
     addi.d        a0,    a0,    2
-    addi.d        t3,    t3,    -1
-    bnez          t3,    3b
+    addi.d        t1,    t1,    -1
+    bnez          t1,    3b
 4:
 endfunc
 
 function lumRangeFromJpeg_lasx
-    li.w           t0,    14071
-    li.w           t1,    33561947
-    xvreplgr2vr.h  xr0,   t0
-    srli.w         t2,    a1,    4
-    andi           t3,    a1,    15
-    beqz           t2,    2f
+    xvreplgr2vr.h  xr0,   a2
+    xvreplgr2vr.w  xr4,   a3
+    srli.w         t0,    a1,    4
+    andi           t1,    a1,    15
+    beqz           t0,    2f
 1:
     xvld           xr1,   a0,    0
-    xvreplgr2vr.w  xr2,   t1
-    xvreplgr2vr.w  xr3,   t1
+    xvor.v         xr2,   xr4,   xr4
+    xvor.v         xr3,   xr4,   xr4
     xvmaddwev.w.h  xr2,   xr0,   xr1
     xvmaddwod.w.h  xr3,   xr0,   xr1
     xvsrai.w       xr2,   xr2,   14
@@ -1919,318 +1917,330 @@ function lumRangeFromJpeg_lasx
     xvpackev.h     xr1,   xr3,   xr2
     xvst           xr1,   a0,    0
     addi.d         a0,    a0,    32
-    addi.d         t2,    t2,    -1
-    bnez           t2,    1b
+    addi.d         t0,    t0,    -1
+    bnez           t0,    1b
 2:
-    beqz          t3,    4f
+    beqz           t1,    4f
 3:
-    ld.h          t4,    a0,    0
-    mul.w         t4,    t4,    t0
-    add.w         t4,    t4,    t1
-    srai.w        t4,    t4,    14
-    st.h          t4,    a0,    0
-    addi.d        a0,    a0,    2
-    addi.d        t3,    t3,    -1
-    bnez          t3,    3b
+    ld.h           t2,    a0,    0
+    mul.w          t2,    t2,    a2
+    add.w          t2,    t2,    a3
+    srai.w         t2,    t2,    14
+    st.h           t2,    a0,    0
+    addi.d         a0,    a0,    2
+    addi.d         t1,    t1,    -1
+    bnez           t1,    3b
 4:
 endfunc
 
 function lumRangeToJpeg_lsx
-    li.w          t0,    19077
-    li.w          t1,    -39057361
-    li.w          t2,    30189
-    vreplgr2vr.h  vr0,   t0
-    vreplgr2vr.h  vr4,   t2
-    srli.w        t2,    a1,    3
-    andi          t3,    a1,    7
-    beqz          t2,    2f
+    vreplgr2vr.h  vr0,   a2
+    vreplgr2vr.w  vr4,   a3
+    lu12i.w       t4,    0x8
+    addi.w        t4,    t4,    -1
+    srli.w        t0,    a1,    3
+    andi          t1,    a1,    7
+    beqz          t0,    2f
 1:
     vld           vr1,   a0,    0
-    vreplgr2vr.w  vr2,   t1
-    vreplgr2vr.w  vr3,   t1
-    vmin.h        vr1,   vr1,   vr4
+    vor.v         vr2,   vr4,   vr4
+    vor.v         vr3,   vr4,   vr4
     vmaddwev.w.h  vr2,   vr0,   vr1
     vmaddwod.w.h  vr3,   vr0,   vr1
     vsrai.w       vr2,   vr2,   14
     vsrai.w       vr3,   vr3,   14
-    vpackev.h     vr1,   vr3,   vr2
-    vst           vr1,   a0,    0
+    vilvl.w       vr1,   vr3,   vr2
+    vilvh.w       vr2,   vr3,   vr2
+    vssrani.h.w   vr2,   vr1,   0
+    vst           vr2,   a0,    0
     addi.d        a0,    a0,    16
-    addi.d        t2,    t2,    -1
-    bnez          t2,    1b
+    addi.d        t0,    t0,    -1
+    bnez          t0,    1b
 2:
-    beqz          t3,    4f
+    beqz          t1,    4f
 3:
-    ld.h          t4,    a0,    0
-    vreplgr2vr.h  vr1,   t4
-    vmin.h        vr1,   vr1,   vr4
-    vpickve2gr.h  t4,    vr1,   0
-    mul.w         t4,    t4,    t0
-    add.w         t4,    t4,    t1
-    srai.w        t4,    t4,    14
+    ld.h          t2,    a0,    0
+    mul.w         t2,    t2,    a2
+    add.w         t2,    t2,    a3
+    srai.w        t2,    t2,    14
+    blt           t4,    t2,    5f
+    st.h          t2,    a0,    0
+    b             6f
+5:
     st.h          t4,    a0,    0
+6:
     addi.d        a0,    a0,    2
-    addi.d        t3,    t3,    -1
-    bnez          t3,    3b
+    addi.d        t1,    t1,    -1
+    bnez          t1,    3b
 4:
 endfunc
 
 function lumRangeToJpeg_lasx
-    li.w           t0,    19077
-    li.w           t1,    -39057361
-    li.w           t2,    30189
-    xvreplgr2vr.h  xr0,   t0
-    xvreplgr2vr.h  xr4,   t2
-    srli.w         t2,    a1,    4
-    andi           t3,    a1,    15
-    beqz           t2,    2f
+    xvreplgr2vr.h  xr0,   a2
+    xvreplgr2vr.w  xr4,   a3
+    lu12i.w        t4,    0x8
+    addi.w         t4,    t4,    -1
+    srli.w         t0,    a1,    4
+    andi           t1,    a1,    15
+    beqz           t0,    2f
 1:
     xvld           xr1,   a0,    0
-    xvreplgr2vr.w  xr2,   t1
-    xvreplgr2vr.w  xr3,   t1
-    xvmin.h        xr1,   xr1,   xr4
+    xvor.v         xr2,   xr4,   xr4
+    xvor.v         xr3,   xr4,   xr4
     xvmaddwev.w.h  xr2,   xr0,   xr1
     xvmaddwod.w.h  xr3,   xr0,   xr1
     xvsrai.w       xr2,   xr2,   14
     xvsrai.w       xr3,   xr3,   14
-    xvpackev.h     xr1,   xr3,   xr2
-    xvst           xr1,   a0,    0
+    xvilvl.w       xr1,   xr3,   xr2
+    xvilvh.w       xr2,   xr3,   xr2
+    xvssrani.h.w   xr2,   xr1,   0
+    xvst           xr2,   a0,    0
     addi.d         a0,    a0,    32
-    addi.d         t2,    t2,    -1
-    bnez           t2,    1b
+    addi.d         t0,    t0,    -1
+    bnez           t0,    1b
 2:
-    beqz           t3,    4f
+    beqz           t1,    4f
 3:
-    ld.h           t4,    a0,    0
-    vreplgr2vr.h   vr1,   t4
-    vmin.h         vr1,   vr1,   vr4
-    vpickve2gr.h   t4,    vr1,   0
-    mul.w          t4,    t4,    t0
-    add.w          t4,    t4,    t1
-    srai.w         t4,    t4,    14
+    ld.h           t2,    a0,    0
+    mul.w          t2,    t2,    a2
+    add.w          t2,    t2,    a3
+    srai.w         t2,    t2,    14
+    blt            t4,    t2,    5f
+    st.h           t2,    a0,    0
+    b              6f
+5:
     st.h           t4,    a0,    0
+6:
     addi.d         a0,    a0,    2
-    addi.d         t3,    t3,    -1
-    bnez           t3,    3b
+    addi.d         t1,    t1,    -1
+    bnez           t1,    3b
 4:
 endfunc
 
 function chrRangeFromJpeg_lsx
-    li.w          t0,    1799
-    li.w          t1,    4081085
-    vreplgr2vr.h  vr0,   t0
-    srli.w        t2,    a2,    3
-    andi          t3,    a2,    7
-    beqz          t2,    2f
+    vreplgr2vr.h  vr0,   a3
+    vreplgr2vr.w  vr7,   a4
+    srli.w        t0,    a2,    3
+    andi          t1,    a2,    7
+    beqz          t0,    2f
 1:
     vld           vr1,   a0,    0
     vld           vr2,   a1,    0
-    vreplgr2vr.w  vr3,   t1
-    vreplgr2vr.w  vr4,   t1
-    vreplgr2vr.w  vr5,   t1
-    vreplgr2vr.w  vr6,   t1
+    vor.v         vr3,   vr7,   vr7
+    vor.v         vr4,   vr7,   vr7
+    vor.v         vr5,   vr7,   vr7
+    vor.v         vr6,   vr7,   vr7
     vmaddwev.w.h  vr3,   vr0,   vr1
     vmaddwod.w.h  vr4,   vr0,   vr1
     vmaddwev.w.h  vr5,   vr0,   vr2
     vmaddwod.w.h  vr6,   vr0,   vr2
-    vsrai.w       vr3,   vr3,   11
-    vsrai.w       vr4,   vr4,   11
-    vsrai.w       vr5,   vr5,   11
-    vsrai.w       vr6,   vr6,   11
+    vsrai.w       vr3,   vr3,   14
+    vsrai.w       vr4,   vr4,   14
+    vsrai.w       vr5,   vr5,   14
+    vsrai.w       vr6,   vr6,   14
     vpackev.h     vr1,   vr4,   vr3
     vpackev.h     vr2,   vr6,   vr5
     vst           vr1,   a0,    0
     vst           vr2,   a1,    0
     addi.d        a0,    a0,    16
     addi.d        a1,    a1,    16
-    addi.d        t2,    t2,    -1
-    bnez          t2,    1b
+    addi.d        t0,    t0,    -1
+    bnez          t0,    1b
 2:
-    beqz          t3,    4f
+    beqz          t1,    4f
 3:
-    ld.h          t4,    a0,    0
-    ld.h          t5,    a1,    0
-    mul.w         t4,    t4,    t0
-    mul.w         t5,    t5,    t0
-    add.w         t4,    t4,    t1
-    add.w         t5,    t5,    t1
-    srai.w        t4,    t4,    11
-    srai.w        t5,    t5,    11
-    st.h          t4,    a0,    0
-    st.h          t5,    a1,    0
+    ld.h          t2,    a0,    0
+    ld.h          t3,    a1,    0
+    mul.w         t2,    t2,    a3
+    mul.w         t3,    t3,    a3
+    add.w         t2,    t2,    a4
+    add.w         t3,    t3,    a4
+    srai.w        t2,    t2,    14
+    srai.w        t3,    t3,    14
+    st.h          t2,    a0,    0
+    st.h          t3,    a1,    0
     addi.d        a0,    a0,    2
     addi.d        a1,    a1,    2
-    addi.d        t3,    t3,    -1
-    bnez          t3,    3b
+    addi.d        t1,    t1,    -1
+    bnez          t1,    3b
 4:
 endfunc
 
 function chrRangeFromJpeg_lasx
-    li.w           t0,    1799
-    li.w           t1,    4081085
-    xvreplgr2vr.h  xr0,   t0
-    srli.w         t2,    a2,    4
-    andi           t3,    a2,    15
-    beqz           t2,    2f
+    xvreplgr2vr.h  xr0,   a3
+    xvreplgr2vr.w  xr7,   a4
+    srli.w         t0,    a2,    4
+    andi           t1,    a2,    15
+    beqz           t0,    2f
 1:
     xvld           xr1,   a0,    0
     xvld           xr2,   a1,    0
-    xvreplgr2vr.w  xr3,   t1
-    xvreplgr2vr.w  xr4,   t1
-    xvreplgr2vr.w  xr5,   t1
-    xvreplgr2vr.w  xr6,   t1
+    xvor.v         xr3,   xr7,   xr7
+    xvor.v         xr4,   xr7,   xr7
+    xvor.v         xr5,   xr7,   xr7
+    xvor.v         xr6,   xr7,   xr7
     xvmaddwev.w.h  xr3,   xr0,   xr1
     xvmaddwod.w.h  xr4,   xr0,   xr1
     xvmaddwev.w.h  xr5,   xr0,   xr2
     xvmaddwod.w.h  xr6,   xr0,   xr2
-    xvsrai.w       xr3,   xr3,   11
-    xvsrai.w       xr4,   xr4,   11
-    xvsrai.w       xr5,   xr5,   11
-    xvsrai.w       xr6,   xr6,   11
+    xvsrai.w       xr3,   xr3,   14
+    xvsrai.w       xr4,   xr4,   14
+    xvsrai.w       xr5,   xr5,   14
+    xvsrai.w       xr6,   xr6,   14
     xvpackev.h     xr1,   xr4,   xr3
     xvpackev.h     xr2,   xr6,   xr5
     xvst           xr1,   a0,    0
     xvst           xr2,   a1,    0
     addi.d         a0,    a0,    32
     addi.d         a1,    a1,    32
-    addi.d         t2,    t2,    -1
-    bnez           t2,    1b
+    addi.d         t0,    t0,    -1
+    bnez           t0,    1b
 2:
-    beqz          t3,    4f
+    beqz           t1,    4f
 3:
-    ld.h          t4,    a0,    0
-    ld.h          t5,    a1,    0
-    mul.w         t4,    t4,    t0
-    mul.w         t5,    t5,    t0
-    add.w         t4,    t4,    t1
-    add.w         t5,    t5,    t1
-    srai.w        t4,    t4,    11
-    srai.w        t5,    t5,    11
-    st.h          t4,    a0,    0
-    st.h          t5,    a1,    0
-    addi.d        a0,    a0,    2
-    addi.d        a1,    a1,    2
-    addi.d        t3,    t3,    -1
-    bnez          t3,    3b
+    ld.h           t2,    a0,    0
+    ld.h           t3,    a1,    0
+    mul.w          t2,    t2,    a3
+    mul.w          t3,    t3,    a3
+    add.w          t2,    t2,    a4
+    add.w          t3,    t3,    a4
+    srai.w         t2,    t2,    14
+    srai.w         t3,    t3,    14
+    st.h           t2,    a0,    0
+    st.h           t3,    a1,    0
+    addi.d         a0,    a0,    2
+    addi.d         a1,    a1,    2
+    addi.d         t1,    t1,    -1
+    bnez           t1,    3b
 4:
 endfunc
 
 function chrRangeToJpeg_lsx
-    li.w          t0,    4663
-    li.w          t1,    -9289992
-    li.w          t2,    30775
-    vreplgr2vr.h  vr0,   t0
-    vreplgr2vr.h  vr7,   t2
-    srli.w        t2,    a2,    3
-    andi          t3,    a2,    7
-    beqz          t2,    2f
+    vreplgr2vr.h  vr0,   a3
+    vreplgr2vr.w  vr7,   a4
+    lu12i.w       t4,    0x8
+    addi.w        t4,    t4,    -1
+    srli.w        t0,    a2,    3
+    andi          t1,    a2,    7
+    beqz          t0,    2f
 1:
     vld           vr1,   a0,    0
     vld           vr2,   a1,    0
-    vreplgr2vr.w  vr3,   t1
-    vreplgr2vr.w  vr4,   t1
-    vreplgr2vr.w  vr5,   t1
-    vreplgr2vr.w  vr6,   t1
-    vmin.h        vr1,   vr1,   vr7
-    vmin.h        vr2,   vr2,   vr7
+    vor.v         vr3,   vr7,   vr7
+    vor.v         vr4,   vr7,   vr7
+    vor.v         vr5,   vr7,   vr7
+    vor.v         vr6,   vr7,   vr7
     vmaddwev.w.h  vr3,   vr0,   vr1
     vmaddwod.w.h  vr4,   vr0,   vr1
     vmaddwev.w.h  vr5,   vr0,   vr2
     vmaddwod.w.h  vr6,   vr0,   vr2
-    vsrai.w       vr3,   vr3,   12
-    vsrai.w       vr4,   vr4,   12
-    vsrai.w       vr5,   vr5,   12
-    vsrai.w       vr6,   vr6,   12
-    vpackev.h     vr1,   vr4,   vr3
-    vpackev.h     vr2,   vr6,   vr5
-    vst           vr1,   a0,    0
-    vst           vr2,   a1,    0
+    vsrai.w       vr3,   vr3,   14
+    vsrai.w       vr4,   vr4,   14
+    vsrai.w       vr5,   vr5,   14
+    vsrai.w       vr6,   vr6,   14
+    vilvl.w       vr1,   vr4,   vr3
+    vilvh.w       vr3,   vr4,   vr3
+    vssrani.h.w   vr3,   vr1,   0
+    vilvl.w       vr2,   vr6,   vr5
+    vilvh.w       vr5,   vr6,   vr5
+    vssrani.h.w   vr5,   vr2,   0
+    vst           vr3,   a0,    0
+    vst           vr5,   a1,    0
     addi.d        a0,    a0,    16
     addi.d        a1,    a1,    16
-    addi.d        t2,    t2,    -1
-    bnez          t2,    1b
+    addi.d        t0,    t0,    -1
+    bnez          t0,    1b
 2:
-    beqz          t3,    4f
+    beqz          t1,    4f
 3:
-    ld.h          t4,    a0,    0
-    ld.h          t5,    a1,    0
-    vreplgr2vr.h  vr1,   t4
-    vreplgr2vr.h  vr2,   t5
-    vmin.h        vr1,   vr1,   vr7
-    vmin.h        vr2,   vr2,   vr7
-    vpickve2gr.h  t4,    vr1,   0
-    vpickve2gr.h  t5,    vr2,   0
-    mul.w         t4,    t4,    t0
-    mul.w         t5,    t5,    t0
-    add.w         t4,    t4,    t1
-    add.w         t5,    t5,    t1
-    srai.w        t4,    t4,    12
-    srai.w        t5,    t5,    12
+    ld.h          t2,    a0,    0
+    ld.h          t3,    a1,    0
+    mul.w         t2,    t2,    a3
+    mul.w         t3,    t3,    a3
+    add.w         t2,    t2,    a4
+    add.w         t3,    t3,    a4
+    srai.w        t2,    t2,    14
+    srai.w        t3,    t3,    14
+    blt           t4,    t2,    5f
+    st.h          t2,    a0,    0
+    b             6f
+5:
     st.h          t4,    a0,    0
-    st.h          t5,    a1,    0
+6:
+    blt           t4,    t3,    7f
+    st.h          t3,    a1,    0
+    b             8f
+7:
+    st.h          t4,    a1,    0
+8:
     addi.d        a0,    a0,    2
     addi.d        a1,    a1,    2
-    addi.d        t3,    t3,    -1
-    bnez          t3,    3b
+    addi.d        t1,    t1,    -1
+    bnez          t1,    3b
 4:
 endfunc
 
 function chrRangeToJpeg_lasx
-    li.w           t0,    4663
-    li.w           t1,    -9289992
-    li.w           t2,    30775
-    xvreplgr2vr.h  xr0,   t0
-    xvreplgr2vr.h  xr7,   t2
-    srli.w         t2,    a2,    4
-    andi           t3,    a2,    15
-    beqz           t2,    2f
+    xvreplgr2vr.h  xr0,   a3
+    xvreplgr2vr.w  xr7,   a4
+    lu12i.w        t4,    0x8
+    addi.w         t4,    t4,    -1
+    srli.w         t0,    a2,    4
+    andi           t1,    a2,    15
+    beqz           t0,    2f
 1:
     xvld           xr1,   a0,    0
     xvld           xr2,   a1,    0
-    xvreplgr2vr.w  xr3,   t1
-    xvreplgr2vr.w  xr4,   t1
-    xvreplgr2vr.w  xr5,   t1
-    xvreplgr2vr.w  xr6,   t1
-    xvmin.h        xr1,   xr1,   xr7
-    xvmin.h        xr2,   xr2,   xr7
+    xvor.v         xr3,   xr7,   xr7
+    xvor.v         xr4,   xr7,   xr7
+    xvor.v         xr5,   xr7,   xr7
+    xvor.v         xr6,   xr7,   xr7
     xvmaddwev.w.h  xr3,   xr0,   xr1
     xvmaddwod.w.h  xr4,   xr0,   xr1
     xvmaddwev.w.h  xr5,   xr0,   xr2
     xvmaddwod.w.h  xr6,   xr0,   xr2
-    xvsrai.w       xr3,   xr3,   12
-    xvsrai.w       xr4,   xr4,   12
-    xvsrai.w       xr5,   xr5,   12
-    xvsrai.w       xr6,   xr6,   12
-    xvpackev.h     xr1,   xr4,   xr3
-    xvpackev.h     xr2,   xr6,   xr5
-    xvst           xr1,   a0,    0
-    xvst           xr2,   a1,    0
+    xvsrai.w       xr3,   xr3,   14
+    xvsrai.w       xr4,   xr4,   14
+    xvsrai.w       xr5,   xr5,   14
+    xvsrai.w       xr6,   xr6,   14
+    xvilvl.w       xr1,   xr4,   xr3
+    xvilvh.w       xr3,   xr4,   xr3
+    xvssrani.h.w   xr3,   xr1,   0
+    xvilvl.w       xr2,   xr6,   xr5
+    xvilvh.w       xr5,   xr6,   xr5
+    xvssrani.h.w   xr5,   xr2,   0
+    xvst           xr3,   a0,    0
+    xvst           xr5,   a1,    0
     addi.d         a0,    a0,    32
     addi.d         a1,    a1,    32
-    addi.d         t2,    t2,    -1
-    bnez           t2,    1b
+    addi.d         t0,    t0,    -1
+    bnez           t0,    1b
 2:
-    beqz          t3,    4f
+    beqz           t1,    4f
 3:
-    ld.h          t4,    a0,    0
-    ld.h          t5,    a1,    0
-    vreplgr2vr.h  vr1,   t4
-    vreplgr2vr.h  vr2,   t5
-    vmin.h        vr1,   vr1,   vr7
-    vmin.h        vr2,   vr2,   vr7
-    vpickve2gr.h  t4,    vr1,   0
-    vpickve2gr.h  t5,    vr2,   0
-    mul.w         t4,    t4,    t0
-    mul.w         t5,    t5,    t0
-    add.w         t4,    t4,    t1
-    add.w         t5,    t5,    t1
-    srai.w        t4,    t4,    12
-    srai.w        t5,    t5,    12
-    st.h          t4,    a0,    0
-    st.h          t5,    a1,    0
-    addi.d        a0,    a0,    2
-    addi.d        a1,    a1,    2
-    addi.d        t3,    t3,    -1
-    bnez          t3,    3b
+    ld.h           t2,    a0,    0
+    ld.h           t3,    a1,    0
+    mul.w          t2,    t2,    a3
+    mul.w          t3,    t3,    a3
+    add.w          t2,    t2,    a4
+    add.w          t3,    t3,    a4
+    srai.w         t2,    t2,    14
+    srai.w         t3,    t3,    14
+    blt            t4,    t2,    5f
+    st.h           t2,    a0,    0
+    b              6f
+5:
+    st.h           t4,    a0,    0
+6:
+    blt            t4,    t3,    7f
+    st.h           t3,    a1,    0
+    b              8f
+7:
+    st.h           t4,    a1,    0
+8:
+    addi.d         a0,    a0,    2
+    addi.d         a1,    a1,    2
+    addi.d         t1,    t1,    -1
+    bnez           t1,    3b
 4:
 endfunc

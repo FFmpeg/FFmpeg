@@ -50,10 +50,10 @@ void ff_hscale_16_to_19_sub_lsx(SwsInternal *c, int16_t *_dst, int dstW,
                                 const uint8_t *_src, const int16_t *filter,
                                 const int32_t *filterPos, int filterSize, int sh);
 
-void lumRangeFromJpeg_lsx(int16_t *dst, int width);
-void chrRangeFromJpeg_lsx(int16_t *dstU, int16_t *dstV, int width);
-void lumRangeToJpeg_lsx(int16_t *dst, int width);
-void chrRangeToJpeg_lsx(int16_t *dstU, int16_t *dstV, int width);
+void lumRangeFromJpeg_lsx(int16_t *dst, int width, uint32_t coeff, int64_t offset);
+void chrRangeFromJpeg_lsx(int16_t *dstU, int16_t *dstV, int width, uint32_t coeff, int64_t offset);
+void lumRangeToJpeg_lsx(int16_t *dst, int width, uint32_t coeff, int64_t offset);
+void chrRangeToJpeg_lsx(int16_t *dstU, int16_t *dstV, int width, uint32_t coeff, int64_t offset);
 
 void planar_rgb_to_uv_lsx(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *src[4],
                           int width, int32_t *rgb2yuv, void *opq);
@@ -135,10 +135,10 @@ void ff_hscale_16_to_15_lasx(SwsInternal *c, int16_t *dst, int dstW,
                              const uint8_t *_src, const int16_t *filter,
                              const int32_t *filterPos, int filterSize);
 
-void lumRangeFromJpeg_lasx(int16_t *dst, int width);
-void chrRangeFromJpeg_lasx(int16_t *dstU, int16_t *dstV, int width);
-void lumRangeToJpeg_lasx(int16_t *dst, int width);
-void chrRangeToJpeg_lasx(int16_t *dstU, int16_t *dstV, int width);
+void lumRangeFromJpeg_lasx(int16_t *dst, int width, uint32_t coeff, int64_t offset);
+void chrRangeFromJpeg_lasx(int16_t *dstU, int16_t *dstV, int width, uint32_t coeff, int64_t offset);
+void lumRangeToJpeg_lasx(int16_t *dst, int width, uint32_t coeff, int64_t offset);
+void chrRangeToJpeg_lasx(int16_t *dstU, int16_t *dstV, int width, uint32_t coeff, int64_t offset);
 
 void planar_rgb_to_uv_lasx(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *src[4],
                            int width, int32_t *rgb2yuv, void *opq);
