@@ -136,7 +136,7 @@ void put_vp8_epel_h_altivec_core(uint8_t *dst, ptrdiff_t dst_stride,
         if (w == 16) {
             FILTER_H(f16l, 8);
             filt = vec_packsu(f16h, f16l);
-            vec_st(filt, 0, dst);
+            unaligned_store(filt, dst);
         } else {
             filt = vec_packsu(f16h, f16h);
             vec_ste((vec_u32)filt, 0, (uint32_t*)dst);
@@ -235,7 +235,7 @@ void put_vp8_epel_v_altivec_core(uint8_t *dst, ptrdiff_t dst_stride,
         if (w == 16) {
             FILTER_V(f16l, vec_mulo);
             filt = vec_packsu(f16h, f16l);
-            vec_st(filt, 0, dst);
+            unaligned_store(filt, dst);
         } else {
             filt = vec_packsu(f16h, f16h);
             if (w == 4)
@@ -317,10 +317,10 @@ static void put_vp8_pixels16_altivec(uint8_t *dst, ptrdiff_t dstride, const uint
 // -funroll-loops w/ this is bad - 74 cycles again.
 // all this is on a 7450, tuning for the 7450
     for (i = 0; i < h; i += 4) {
-        vec_st(load_with_perm_vec(0, src, perm), 0, dst);
-        vec_st(load_with_perm_vec(sstride, src, perm), dstride, dst);
-        vec_st(load_with_perm_vec(sstride2, src, perm), dstride2, dst);
-        vec_st(load_with_perm_vec(sstride3, src, perm), dstride3, dst);
+        unaligned_store(load_with_perm_vec(0, src, perm), dst);
+        unaligned_store(load_with_perm_vec(sstride, src, perm), dst + dstride);
+        unaligned_store(load_with_perm_vec(sstride2, src, perm), dst + dstride2);
+        unaligned_store(load_with_perm_vec(sstride3, src, perm), dst + dstride3);
         src += sstride4;
         dst += dstride4;
     }
