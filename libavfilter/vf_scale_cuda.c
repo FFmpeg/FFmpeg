@@ -139,6 +139,8 @@ typedef struct CUDAScaleFilterSet {
     CUDATex inter_tex;
     CUDAScalePassPlan pass_plan;
     unsigned int tmp_planes;
+    int in_width, in_height;
+    int normalize_crop;
 } CUDAScaleFilterSet;
 
 typedef struct CUDAScaleContext {
@@ -296,8 +298,7 @@ static void cuda_tex_uninit(CudaFunctions *cu, CUDATex *t)
     memset(t, 0, sizeof(*t));
 }
 
-static av_cold void filter_set_uninit(CudaFunctions *cu,
-                                      CUDAScaleFilterSet *set)
+static void filter_set_uninit(CudaFunctions *cu, CUDAScaleFilterSet *set)
 {
     cuda_tex_uninit(cu, &set->inter_tex);
     for (int i = 0; i < FF_ARRAY_ELEMS(set->filters); i++) {
@@ -369,9 +370,9 @@ fail:
     return ret;
 }
 
-static av_cold int inter_buf_init(AVFilterContext *ctx, CUDATex *tex,
-                                  int out_width, int in_height,
-                                  unsigned int planes)
+static int inter_buf_init(AVFilterContext *ctx, CUDATex *tex,
+                          int out_width, int in_height,
+                          unsigned int planes)
 {
     CUDAScaleContext *s = ctx->priv;
     CudaFunctions *cu = s->hwctx->internal->cuda_dl;
@@ -684,10 +685,10 @@ fail:
     return ret;
 }
 
-static av_cold int cudascale_filter_init(AVFilterContext *ctx,
-                                         CUDAScaleFilter *f,
-                                         int src_size, int dst_size,
-                                         double virtual_size, int needs_scale)
+static int cudascale_filter_init(AVFilterContext *ctx,
+                                 CUDAScaleFilter *f,
+                                 int src_size, int dst_size,
+                                 double virtual_size, int needs_scale)
 {
     CUDAScaleContext *s = ctx->priv;
     CudaFunctions *cu = s->hwctx->internal->cuda_dl;
@@ -766,9 +767,10 @@ fail:
     return ret;
 }
 
-static av_cold int cudascale_filter_set_init(AVFilterContext *ctx,
-                                             CUDAScaleFilterSet *set,
-                                             int in_width, int in_height)
+static int cudascale_filter_set_init(AVFilterContext *ctx,
+                                     CUDAScaleFilterSet *set,
+                                     int in_width, int in_height,
+                                     int normalize_crop)
 {
     CUDAScaleContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
@@ -783,6 +785,10 @@ static av_cold int cudascale_filter_set_init(AVFilterContext *ctx,
     const unsigned int all_planes = CUDA_SCALE_PLANE_PRIMARY |
                                     (has_chroma ? CUDA_SCALE_PLANE_CHROMA : 0);
     int pass_x, pass_y;
+
+    set->in_width       = in_width;
+    set->in_height      = in_height;
+    set->normalize_crop = normalize_crop;
 
     cudascale_plan_passes(&set->pass_plan,
                           in_width, in_height, outlink->w, outlink->h,
@@ -803,7 +809,8 @@ static av_cold int cudascale_filter_set_init(AVFilterContext *ctx,
 
     if (pass_x >= 0) {
         const unsigned int planes = pass_x == FILTER_TMP ?
-                                    set->pass_plan.x_planes :
+                                    (normalize_crop ? all_planes :
+                                                      set->pass_plan.x_planes) :
                                     all_planes;
 
         if (pass_x == FILTER_TMP)
@@ -866,6 +873,48 @@ fail:
     return ret;
 }
 
+static int cudascale_prepare_filter_set(AVFilterContext *ctx,
+                                        int in_width, int in_height,
+                                        int normalize_crop)
+{
+    CUDAScaleContext *s = ctx->priv;
+    CudaFunctions *cu = s->hwctx->internal->cuda_dl;
+    CUDAScaleFilterSet next = { 0 };
+    CUDAScaleFilterSet old;
+    int ret;
+
+    if (s->filter_set.in_width == in_width &&
+        s->filter_set.in_height == in_height &&
+        s->filter_set.normalize_crop == normalize_crop)
+        return 0;
+
+    ret = cudascale_filter_set_init(ctx, &next, in_width, in_height,
+                                    normalize_crop);
+    if (ret < 0)
+        goto fail;
+
+    if (s->filter_set.in_width) {
+        /* Queued kernels may still reference the active LUTs and texture. */
+        ret = CHECK_CU(cu->cuStreamSynchronize(s->cu_stream));
+        if (ret < 0)
+            goto fail;
+    }
+
+    old = s->filter_set;
+    s->filter_set = next;
+    memset(&next, 0, sizeof(next));
+    filter_set_uninit(cu, &old);
+
+    av_log(ctx, AV_LOG_VERBOSE,
+           "Prepared generic filters for visible input %dx%d%s\n",
+           in_width, in_height, normalize_crop ? " (cropped)" : "");
+    return 0;
+
+fail:
+    filter_set_uninit(cu, &next);
+    return ret;
+}
+
 static av_cold int cudascale_setup_filters(AVFilterContext *ctx,
                                            int in_width, int in_height)
 {
@@ -878,8 +927,7 @@ static av_cold int cudascale_setup_filters(AVFilterContext *ctx,
     if (ret < 0)
         return ret;
 
-    ret = cudascale_filter_set_init(ctx, &s->filter_set,
-                                    in_width, in_height);
+    ret = cudascale_prepare_filter_set(ctx, in_width, in_height, 0);
 
     CHECK_CU(cu->cuCtxPopCurrent(&dummy));
     return ret;
@@ -959,6 +1007,36 @@ static av_cold int cudascale_config_props(AVFilterLink *outlink)
 
 fail:
     return ret;
+}
+
+static int cudascale_frame_geometry(AVFilterContext *ctx, const AVFrame *frame,
+                                    int *width, int *height,
+                                    int *normalize_crop)
+{
+    AVFilterLink *inlink = ctx->inputs[0];
+    size_t frame_width, frame_height;
+
+    if (frame->width <= 0 || frame->height <= 0) {
+        av_log(ctx, AV_LOG_ERROR, "Invalid crop rectangle\n");
+        return AVERROR(EINVAL);
+    }
+
+    frame_width  = frame->width;
+    frame_height = frame->height;
+    if (frame->crop_left >= frame_width ||
+        frame->crop_right >= frame_width - frame->crop_left ||
+        frame->crop_top >= frame_height ||
+        frame->crop_bottom >= frame_height - frame->crop_top) {
+        av_log(ctx, AV_LOG_ERROR, "Invalid crop rectangle\n");
+        return AVERROR(EINVAL);
+    }
+
+    *width  = (int)(frame_width  - frame->crop_left - frame->crop_right);
+    *height = (int)(frame_height - frame->crop_top  - frame->crop_bottom);
+    *normalize_crop = frame->crop_left || frame->crop_top ||
+                      *width != inlink->w || *height != inlink->h;
+
+    return 0;
 }
 
 /* if depths/channels are NULL, only maps pointers without creating textures */
@@ -1114,9 +1192,11 @@ static int scalecuda_resize(AVFilterContext *ctx,
         (pass != FILTER_TMP ||
          (set->tmp_planes & CUDA_SCALE_PLANE_CHROMA))) {
         // scale UV plane. Scale function sets both U and V plane, or singular interleaved plane.
+        /* Match av_frame_apply_cropping(): subsampled plane origins round
+         * down, while visible plane extents round up. */
         ret = call_resize_kernel(ctx, func_uv, in->tex,
-                                 AV_CEIL_RSHIFT(in->crop_left, in->log2_chroma_w),
-                                 AV_CEIL_RSHIFT(in->crop_top, in->log2_chroma_h),
+                                 in->crop_left >> in->log2_chroma_w,
+                                 in->crop_top  >> in->log2_chroma_h,
                                  AV_CEIL_RSHIFT(in->crop_width, in->log2_chroma_w),
                                  AV_CEIL_RSHIFT(in->crop_height, in->log2_chroma_h),
                                  out->data,
@@ -1130,12 +1210,20 @@ static int scalecuda_resize(AVFilterContext *ctx,
     return 0;
 }
 
-static int cudascale_scale(AVFilterContext *ctx, AVFrame *out, AVFrame *in)
+static int cudascale_scale(AVFilterContext *ctx, AVFrame *out, AVFrame *in,
+                           int in_width, int in_height, int normalize_crop)
 {
     CUDAScaleContext *s = ctx->priv;
     CudaFunctions *cu = s->hwctx->internal->cuda_dl;
     AVFilterLink *outlink = ctx->outputs[0];
     int ret = 0;
+
+    if (s->use_filters) {
+        ret = cudascale_prepare_filter_set(ctx, in_width, in_height,
+                                           normalize_crop);
+        if (ret < 0)
+            return ret;
+    }
 
     CUDATex in_tex = {0}, out_tex = {0};
     ret = cuda_tex_map_frame(ctx, in, s->in_plane_depths,
@@ -1185,7 +1273,14 @@ static int cudascale_scale(AVFilterContext *ctx, AVFrame *out, AVFrame *in)
     if (ret < 0)
         goto fail;
 
-    if (out->width != in->width || out->height != in->height) {
+    out->crop_top    = 0;
+    out->crop_bottom = 0;
+    out->crop_left   = 0;
+    out->crop_right  = 0;
+
+    if (in->crop_left || in->crop_right ||
+        in->crop_top  || in->crop_bottom ||
+        out->width != in_width || out->height != in_height) {
         av_frame_side_data_remove_by_props(&out->side_data, &out->nb_side_data,
                                            AV_SIDE_DATA_PROP_SIZE_DEPENDENT);
     }
@@ -1205,10 +1300,16 @@ static int cudascale_filter_frame(AVFilterLink *link, AVFrame *in)
 
     AVFrame *out = NULL;
     CUcontext dummy;
+    int in_width, in_height, normalize_crop;
     int ret = 0;
 
     if (s->passthrough)
         return ff_filter_frame(outlink, in);
+
+    ret = cudascale_frame_geometry(ctx, in, &in_width, &in_height,
+                                   &normalize_crop);
+    if (ret < 0)
+        goto fail;
 
     out = av_frame_alloc();
     if (!out) {
@@ -1220,7 +1321,8 @@ static int cudascale_filter_frame(AVFilterLink *link, AVFrame *in)
     if (ret < 0)
         goto fail;
 
-    ret = cudascale_scale(ctx, out, in);
+    ret = cudascale_scale(ctx, out, in, in_width, in_height,
+                          normalize_crop);
 
     CHECK_CU(cu->cuCtxPopCurrent(&dummy));
     if (ret < 0)
@@ -1230,8 +1332,8 @@ static int cudascale_filter_frame(AVFilterLink *link, AVFrame *in)
         out->sample_aspect_ratio = (AVRational){1, 1};
     } else {
         av_reduce(&out->sample_aspect_ratio.num, &out->sample_aspect_ratio.den,
-                  (int64_t)in->sample_aspect_ratio.num * outlink->h * link->w,
-                  (int64_t)in->sample_aspect_ratio.den * outlink->w * link->h,
+                  (int64_t)in->sample_aspect_ratio.num * outlink->h * in_width,
+                  (int64_t)in->sample_aspect_ratio.den * outlink->w * in_height,
                   INT_MAX);
     }
 
