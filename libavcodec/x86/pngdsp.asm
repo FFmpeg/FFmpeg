@@ -76,13 +76,13 @@ cglobal add_bytes_l2, 4, 6, 2, dst, src1, src2, wa, w, i
     jl .loop_s
     RET
 
-INIT_MMX ssse3
-cglobal png_add_paeth_prediction, 5, 7, 0, dst, src, top, w, bpp, end, cntr
+INIT_XMM ssse3
+cglobal png_add_paeth_prediction, 5, 7, 8, dst, src, top, w, bpp, end, cntr
 %if ARCH_X86_64
     movsxd            bppq, bppd
     movsxd              wq, wd
 %endif
-    lea               endq, [dstq+wq-(mmsize/2-1)]
+    lea               endq, [dstq+wq-(mmsize/4-1)]
     sub               topq, dstq
     sub               srcq, dstq
     sub               dstq, bppq
@@ -90,17 +90,17 @@ cglobal png_add_paeth_prediction, 5, 7, 0, dst, src, top, w, bpp, end, cntr
 
     PUSH              dstq
     lea              cntrq, [bppq-1]
-    shr              cntrq, 2 + mmsize/16
+    shr              cntrq, 2 + mmsize/32
 .bpp_loop:
-    lea               dstq, [dstq+cntrq*(mmsize/2)]
-    movh                m0, [dstq]
-    movh                m1, [topq+dstq]
+    lea               dstq, [dstq+cntrq*(mmsize/4)]
+    movd                m0, [dstq]
+    movd                m1, [topq+dstq]
     punpcklbw           m0, m7
     punpcklbw           m1, m7
     add               dstq, bppq
 .loop:
     mova                m2, m1
-    movh                m1, [topq+dstq]
+    movd                m1, [topq+dstq]
     mova                m3, m2
     punpcklbw           m1, m7
     mova                m4, m2
@@ -119,7 +119,7 @@ cglobal png_add_paeth_prediction, 5, 7, 0, dst, src, top, w, bpp, end, cntr
     pand                m4, m3
     pandn               m6, m3
     pandn               m3, m0
-    movh                m0, [srcq+dstq]
+    movd                m0, [srcq+dstq]
     pand                m6, m1
     pand                m2, m4
     punpcklbw           m0, m7
@@ -129,7 +129,7 @@ cglobal png_add_paeth_prediction, 5, 7, 0, dst, src, top, w, bpp, end, cntr
     pand                m0, [pw_255]
     mova                m3, m0
     packuswb            m3, m3
-    movh            [dstq], m3
+    movd            [dstq], m3
     add               dstq, bppq
     cmp               dstq, endq
     jl .loop
@@ -138,5 +138,4 @@ cglobal png_add_paeth_prediction, 5, 7, 0, dst, src, top, w, bpp, end, cntr
     dec              cntrq
     jge .bpp_loop
     POP               dstq
-    emms
     RET
