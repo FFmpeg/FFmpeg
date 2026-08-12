@@ -22,6 +22,10 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 
+#if CONFIG_D3D11VA
+#include "libavutil/hwcontext_d3d11va.h"
+#endif
+
 #include "avfilter.h"
 #include "filters.h"
 #include "formats.h"
@@ -151,6 +155,12 @@ static int hwmap_config_output(AVFilterLink *outlink)
             if (avctx->extra_hw_frames >= 0)
                 frames->initial_pool_size = 2 + avctx->extra_hw_frames;
 
+#if CONFIG_D3D11VA
+            if (frames->format == AV_PIX_FMT_D3D11) {
+                AVD3D11VAFramesContext *frames_d3d11 = frames->hwctx;
+                frames_d3d11->BindFlags = D3D11_BIND_DECODER | D3D11_BIND_SHADER_RESOURCE;
+            }
+#endif
             err = av_hwframe_ctx_init(ctx->hwframes_ref);
             if (err < 0) {
                 av_log(avctx, AV_LOG_ERROR, "Failed to initialise "
