@@ -93,7 +93,7 @@ static void hevc_biwgt_copy_4w_msa(const uint8_t *src0_ptr,
 {
     uint32_t loop_cnt, tp0, tp1, tp2, tp3;
     uint64_t tpd0, tpd1, tpd2, tpd3;
-    int32_t offset, weight;
+    int32_t weight;
     v16u8 out0, out1;
     v16i8 zero = { 0 };
     v16i8 src0 = { 0 }, src1 = { 0 };
@@ -181,7 +181,7 @@ static void hevc_biwgt_copy_6w_msa(const uint8_t *src0_ptr,
 {
     uint32_t loop_cnt;
     int32_t res = height & 0x03;
-    int32_t offset, weight;
+    int32_t weight;
     uint64_t tp0, tp1, tp2, tp3;
     v16u8 out0, out1;
     v16i8 zero = { 0 };
@@ -255,7 +255,7 @@ static void hevc_biwgt_copy_8w_msa(const uint8_t *src0_ptr,
                                    int32_t rnd_val)
 {
     uint64_t tp0, tp1, tp2, tp3;
-    int32_t offset, weight;
+    int32_t weight;
     v16u8 out0, out1, out2;
     v16i8 zero = { 0 };
     v16i8 src0 = { 0 }, src1 = { 0 }, src2 = { 0 };
@@ -342,7 +342,7 @@ static void hevc_biwgt_copy_12w_msa(const uint8_t *src0_ptr,
                                     int32_t rnd_val)
 {
     uint32_t loop_cnt;
-    int32_t offset, weight;
+    int32_t weight;
     v16i8 zero = { 0 };
     v16u8 out0, out1, out2;
     v16i8 src0, src1, src2, src3;
@@ -400,7 +400,7 @@ static void hevc_biwgt_copy_16w_msa(const uint8_t *src0_ptr,
                                     int32_t rnd_val)
 {
     uint32_t loop_cnt;
-    int32_t offset, weight;
+    int32_t weight;
     v16u8 out0, out1, out2, out3;
     v16i8 zero = { 0 };
     v16i8 src0, src1, src2, src3;
@@ -454,7 +454,7 @@ static void hevc_biwgt_copy_24w_msa(const uint8_t *src0_ptr,
                                     int32_t rnd_val)
 {
     uint32_t loop_cnt;
-    int32_t offset, weight;
+    int32_t weight;
     v16u8 out0, out1, out2, out3, out4, out5;
     v16i8 src0, src1, src2, src3, src4, src5, src6, src7, zero = { 0 };
     v8i16 dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7, dst8, dst9, dst10;
@@ -517,7 +517,7 @@ static void hevc_biwgt_copy_32w_msa(const uint8_t *src0_ptr,
                                     int32_t rnd_val)
 {
     uint32_t loop_cnt;
-    int32_t offset, weight;
+    int32_t weight;
     v16u8 out0, out1, out2, out3;
     v16i8 zero = { 0 };
     v16i8 src0, src1, src2, src3;
@@ -577,7 +577,7 @@ static void hevc_biwgt_copy_48w_msa(const uint8_t *src0_ptr,
                                     int32_t rnd_val)
 {
     uint32_t loop_cnt;
-    int32_t offset, weight;
+    int32_t weight;
     v16u8 out0, out1, out2;
     v16i8 src0, src1, src2;
     v16i8 zero = { 0 };
@@ -628,7 +628,7 @@ static void hevc_biwgt_copy_64w_msa(const uint8_t *src0_ptr,
                                     int32_t rnd_val)
 {
     uint32_t loop_cnt;
-    int32_t offset, weight;
+    int32_t weight;
     v16u8 out0, out1, out2, out3;
     v16i8 zero = { 0 };
     v16i8 src0, src1, src2, src3;
@@ -683,7 +683,7 @@ static void hevc_hz_biwgt_8t_4w_msa(const uint8_t *src0_ptr,
                                     int32_t rnd_val)
 {
     uint32_t loop_cnt;
-    int32_t offset, weight, constant;
+    int32_t weight, constant;
     v8i16 filt0, filt1, filt2, filt3;
     v16i8 src0, src1, src2, src3;
     v16i8 mask1, mask2, mask3;
@@ -754,7 +754,7 @@ static void hevc_hz_biwgt_8t_8w_msa(const uint8_t *src0_ptr,
                                     int32_t rnd_val)
 {
     uint32_t loop_cnt;
-    int32_t offset, weight, constant;
+    int32_t weight, constant;
     v8i16 filt0, filt1, filt2, filt3;
     v16i8 src0, src1, src2, src3;
     v16i8 mask1, mask2, mask3;
@@ -833,7 +833,7 @@ static void hevc_hz_biwgt_8t_12w_msa(const uint8_t *src0_ptr,
                                      int32_t rnd_val)
 {
     uint32_t loop_cnt;
-    int32_t offset, weight, constant;
+    int32_t weight, constant;
     v16i8 src0, src1, src2, src3, vec0, vec1, vec2, vec3;
     v16i8 mask0, mask1, mask2, mask3, mask4, mask5, mask6, mask7;
     v8i16 filt0, filt1, filt2, filt3, out0, out1, out2, out3;
@@ -927,7 +927,7 @@ static void hevc_hz_biwgt_8t_16w_msa(const uint8_t *src0_ptr,
                                      int32_t rnd_val)
 {
     uint32_t loop_cnt;
-    int32_t offset, weight, constant;
+    int32_t weight, constant;
     v16i8 src0, src1, src2, src3;
     v8i16 in0, in1, in2, in3;
     v8i16 filt0, filt1, filt2, filt3;
@@ -1011,7 +1011,7 @@ static void hevc_hz_biwgt_8t_24w_msa(const uint8_t *src0_ptr,
 {
     uint32_t loop_cnt;
     uint64_t dst_val0;
-    int32_t offset, weight, constant;
+    int32_t weight, constant;
     v16i8 src0, src1;
     v8i16 in0, in1, in2;
     v8i16 filt0, filt1, filt2, filt3;
@@ -1131,7 +1131,7 @@ static void hevc_hz_biwgt_8t_32w_msa(const uint8_t *src0_ptr,
                                      int32_t rnd_val)
 {
     uint32_t loop_cnt;
-    int32_t offset, weight, constant;
+    int32_t weight, constant;
     v16i8 src0, src1, src2;
     v8i16 in0, in1, in2, in3;
     v8i16 filt0, filt1, filt2, filt3;
@@ -1216,7 +1216,7 @@ static void hevc_hz_biwgt_8t_48w_msa(const uint8_t *src0_ptr,
                                      int32_t rnd_val)
 {
     uint32_t loop_cnt;
-    int32_t offset, weight, constant;
+    int32_t weight, constant;
     v16i8 src0, src1, src2, src3, src4;
     v8i16 in0, in1, in2, in3;
     v8i16 filt0, filt1, filt2, filt3;
@@ -1322,7 +1322,7 @@ static void hevc_hz_biwgt_8t_64w_msa(const uint8_t *src0_ptr,
     uint8_t *dst_tmp;
     const int16_t *src1_ptr_tmp;
     uint32_t loop_cnt, cnt;
-    int32_t offset, weight, constant;
+    int32_t weight, constant;
     v16i8 src0, src1, src2;
     v8i16 in0, in1, in2, in3;
     v8i16 filt0, filt1, filt2, filt3;
@@ -1418,7 +1418,7 @@ static void hevc_vt_biwgt_8t_4w_msa(const uint8_t *src0_ptr,
 {
     uint32_t loop_cnt;
     int32_t res = height & 0x07;
-    int32_t offset, weight;
+    int32_t weight;
     v16i8 src0, src1, src2, src3, src4, src5, src6, src7, src8, src9, src10;
     v16i8 src11, src12, src13, src14;
     v8i16 in0, in1, in2, in3, in4, in5, in6, in7;
@@ -1555,7 +1555,7 @@ static void hevc_vt_biwgt_8t_8w_msa(const uint8_t *src0_ptr,
                                     int32_t rnd_val)
 {
     uint32_t loop_cnt;
-    int32_t offset, weight;
+    int32_t weight;
     v16i8 src0, src1, src2, src3, src4, src5;
     v16i8 src6, src7, src8, src9, src10;
     v8i16 in0, in1, in2, in3;
@@ -1642,7 +1642,7 @@ static void hevc_vt_biwgt_8t_12w_msa(const uint8_t *src0_ptr,
                                      int32_t rnd_val)
 {
     uint32_t loop_cnt;
-    int32_t offset, weight;
+    int32_t weight;
     v16i8 src0, src1, src2, src3, src4, src5, src6, src7, src8;
     v8i16 in0, in1, in2, in3;
     v16i8 src10_r, src32_r, src54_r, src76_r;
@@ -1755,7 +1755,7 @@ static void hevc_vt_biwgt_8t_16multx2mult_msa(const uint8_t *src0_ptr,
     const int16_t *src1_ptr_tmp;
     uint8_t *dst_tmp;
     uint32_t loop_cnt, cnt;
-    int32_t offset, weight;
+    int32_t weight;
     v16i8 src0, src1, src2, src3, src4, src5, src6, src7, src8;
     v8i16 in0, in1, in2, in3;
     v16i8 src10_r, src32_r, src54_r, src76_r;
@@ -1972,7 +1972,7 @@ static void hevc_hv_biwgt_8t_4w_msa(const uint8_t *src0_ptr,
 {
     uint32_t loop_cnt;
     uint64_t tp0, tp1;
-    int32_t offset, weight;
+    int32_t weight;
     v16u8 out;
     v16i8 src0, src1, src2, src3, src4, src5, src6, src7, src8, src9, src10;
     v8i16 in0 = { 0 }, in1 = { 0 };
@@ -2116,7 +2116,7 @@ static void hevc_hv_biwgt_8t_8multx2mult_msa(const uint8_t *src0_ptr,
                                              int32_t width8mult)
 {
     uint32_t loop_cnt, cnt;
-    int32_t offset, weight;
+    int32_t weight;
     const uint8_t *src0_ptr_tmp;
     const int16_t *src1_ptr_tmp;
     uint8_t *dst_tmp;
@@ -2321,7 +2321,7 @@ static void hevc_hv_biwgt_8t_12w_msa(const uint8_t *src0_ptr,
     const uint8_t *src0_ptr_tmp;
     uint8_t *dst_tmp;
     const int16_t *src1_ptr_tmp;
-    int32_t offset, weight;
+    int32_t weight;
     uint64_t tp0, tp1;
     v16u8 out;
     v16i8 src0, src1, src2, src3, src4, src5, src6, src7, src8, src9, src10;
@@ -2670,7 +2670,7 @@ static void hevc_hz_biwgt_4t_4x2_msa(const uint8_t *src0_ptr,
                                      int32_t offset,
                                      int32_t rnd_val)
 {
-    int32_t offset, weight, constant;
+    int32_t weight, constant;
     v8i16 filt0, filt1;
     v16i8 src0, src1;
     v8i16 in0, in1;
@@ -2729,7 +2729,7 @@ static void hevc_hz_biwgt_4t_4x4_msa(const uint8_t *src0_ptr,
                                      int32_t offset,
                                      int32_t rnd_val)
 {
-    int32_t offset, weight, constant;
+    int32_t weight, constant;
     v8i16 filt0, filt1;
     v16i8 src0, src1, src2, src3;
     v16i8 mask0 = LD_SB(&ff_hevc_mask_arr[16]);
@@ -2790,7 +2790,7 @@ static void hevc_hz_biwgt_4t_4x8multiple_msa(const uint8_t *src0_ptr,
                                              int32_t rnd_val)
 {
     uint32_t loop_cnt;
-    int32_t weight, offset, constant;
+    int32_t weight, constant;
     v8i16 filt0, filt1;
     v16i8 src0, src1, src2, src3, src4, src5, src6, src7;
     v16i8 mask0 = LD_SB(&ff_hevc_mask_arr[16]);
@@ -2894,7 +2894,7 @@ static void hevc_hz_biwgt_4t_6w_msa(const uint8_t *src0_ptr,
                                     int32_t rnd_val)
 {
     uint32_t loop_cnt;
-    int32_t offset, weight, constant;
+    int32_t weight, constant;
     v8i16 filt0, filt1;
     v16i8 src0, src1, src2, src3;
     v16i8 mask0 = LD_SB(&ff_hevc_mask_arr[0]);
@@ -2965,7 +2965,7 @@ static void hevc_hz_biwgt_4t_8x2_msa(const uint8_t *src0_ptr,
                                      int32_t offset,
                                      int32_t rnd_val)
 {
-    int32_t offset, weight, constant;
+    int32_t weight, constant;
     v8i16 filt0, filt1;
     v16i8 src0, src1;
     v8i16 in0, in1;
@@ -3020,7 +3020,7 @@ static void hevc_hz_biwgt_4t_8x6_msa(const uint8_t *src0_ptr,
                                      int32_t offset,
                                      int32_t rnd_val)
 {
-    int32_t weight, offset, constant;
+    int32_t weight, constant;
     v8i16 filt0, filt1;
     v16i8 src0, src1, src2, src3, src4, src5;
     v8i16 in0, in1, in2, in3, in4, in5;
@@ -3095,7 +3095,7 @@ static void hevc_hz_biwgt_4t_8x4multiple_msa(const uint8_t *src0_ptr,
                                              int32_t rnd_val)
 {
     uint32_t loop_cnt;
-    int32_t offset, weight, constant;
+    int32_t weight, constant;
     v8i16 filt0, filt1;
     v16i8 src0, src1, src2, src3;
     v16i8 mask0 = LD_SB(ff_hevc_mask_arr);
@@ -3194,7 +3194,7 @@ static void hevc_hz_biwgt_4t_12w_msa(const uint8_t *src0_ptr,
                                      int32_t rnd_val)
 {
     uint32_t loop_cnt;
-    int32_t offset, weight, constant;
+    int32_t weight, constant;
     v8i16 filt0, filt1;
     v16i8 src0, src1, src2, src3;
     v8i16 in0, in1, in2, in3, in4, in5, in6, in7;
@@ -3279,7 +3279,7 @@ static void hevc_hz_biwgt_4t_16w_msa(const uint8_t *src0_ptr,
                                      int32_t rnd_val)
 {
     uint32_t loop_cnt;
-    int32_t offset, weight, constant;
+    int32_t weight, constant;
     v16i8 src0, src1, src2, src3, src4, src5, src6, src7;
     v8i16 in0, in1, in2, in3, in4, in5, in6, in7;
     v8i16 filt0, filt1;
@@ -3367,7 +3367,7 @@ static void hevc_hz_biwgt_4t_24w_msa(const uint8_t *src0_ptr,
                                      int32_t rnd_val)
 {
     uint32_t loop_cnt;
-    int32_t offset, weight, constant;
+    int32_t weight, constant;
     v16i8 src0, src1, src2, src3;
     v8i16 filt0, filt1;
     v16i8 mask0 = LD_SB(&ff_hevc_mask_arr[0]);
@@ -3453,7 +3453,7 @@ static void hevc_hz_biwgt_4t_32w_msa(const uint8_t *src0_ptr,
                                      int32_t rnd_val)
 {
     uint32_t loop_cnt;
-    int32_t offset, weight, constant;
+    int32_t weight, constant;
     v16i8 src0, src1, src2;
     v8i16 filt0, filt1;
     v16i8 mask0 = LD_SB(&ff_hevc_mask_arr[0]);
@@ -3523,7 +3523,7 @@ static void hevc_vt_biwgt_4t_4x2_msa(const uint8_t *src0_ptr,
                                      int32_t offset,
                                      int32_t rnd_val)
 {
-    int32_t weight, offset, constant;
+    int32_t weight, constant;
     v16i8 src0, src1, src2, src3, src4;
     v8i16 in0, in1, dst10;
     v16i8 src10_r, src32_r, src21_r, src43_r, src2110, src4332;
@@ -3587,7 +3587,7 @@ static void hevc_vt_biwgt_4t_4x4_msa(const uint8_t *src0_ptr,
                                      int32_t offset,
                                      int32_t rnd_val)
 {
-    int32_t weight, offset, constant;
+    int32_t weight, constant;
     v16i8 src0, src1, src2, src3, src4, src5, src6;
     v8i16 in0, in1, in2, in3;
     v16i8 src10_r, src32_r, src54_r, src21_r, src43_r, src65_r;
@@ -3655,7 +3655,7 @@ static void hevc_vt_biwgt_4t_4x8multiple_msa(const uint8_t *src0_ptr,
                                              int32_t rnd_val)
 {
     uint32_t loop_cnt;
-    int32_t weight, offset, constant;
+    int32_t weight, constant;
     v16i8 src0, src1, src2, src3, src4, src5, src6, src7, src8, src9;
     v8i16 in0, in1, in2, in3, in4, in5, in6, in7;
     v16i8 src10_r, src32_r, src54_r, src76_r, src98_r;
@@ -3771,7 +3771,7 @@ static void hevc_vt_biwgt_4t_6w_msa(const uint8_t *src0_ptr,
 {
     uint32_t loop_cnt;
     int32_t res = height & 0x03;
-    int32_t offset, weight, constant;
+    int32_t weight, constant;
     v16i8 src0, src1, src2, src3, src4;
     v8i16 in0, in1, in2, in3;
     v16i8 src10_r, src32_r, src21_r, src43_r;
@@ -3874,7 +3874,7 @@ static void hevc_vt_biwgt_4t_8x2_msa(const uint8_t *src0_ptr,
                                      int32_t offset,
                                      int32_t rnd_val)
 {
-    int32_t offset, weight, constant;
+    int32_t weight, constant;
     v16i8 src0, src1, src2, src3, src4;
     v8i16 in0, in1, tmp0, tmp1;
     v16i8 src10_r, src32_r, src21_r, src43_r;
@@ -3930,7 +3930,7 @@ static void hevc_vt_biwgt_4t_8x6_msa(const uint8_t *src0_ptr,
                                      int32_t offset,
                                      int32_t rnd_val)
 {
-    int32_t offset, weight, constant;
+    int32_t weight, constant;
     v16i8 src0, src1, src2, src3, src4, src5, src6, src7, src8;
     v8i16 in0, in1, in2, in3, in4, in5;
     v16i8 src10_r, src32_r, src54_r, src76_r;
@@ -4002,7 +4002,7 @@ static void hevc_vt_biwgt_4t_8x4multiple_msa(const uint8_t *src0_ptr,
                                              int32_t rnd_val)
 {
     uint32_t loop_cnt;
-    int32_t offset, weight, constant;
+    int32_t weight, constant;
     v16i8 src0, src1, src2, src3, src4;
     v8i16 in0, in1, in2, in3;
     v16i8 src10_r, src32_r, src21_r, src43_r;
@@ -4105,7 +4105,7 @@ static void hevc_vt_biwgt_4t_12w_msa(const uint8_t *src0_ptr,
                                      int32_t rnd_val)
 {
     uint32_t loop_cnt;
-    int32_t offset, weight, constant;
+    int32_t weight, constant;
     v16i8 src0, src1, src2, src3, src4, src5;
     v8i16 in0, in1, in2, in3, in4, in5, in6, in7;
     v16i8 src10_r, src32_r, src21_r, src43_r;
@@ -4196,7 +4196,7 @@ static void hevc_vt_biwgt_4t_16w_msa(const uint8_t *src0_ptr,
                                      int32_t rnd_val)
 {
     uint32_t loop_cnt;
-    int32_t offset, weight, constant;
+    int32_t weight, constant;
     v16i8 src0, src1, src2, src3, src4, src5;
     v8i16 in0, in1, in2, in3;
     v16i8 src10_r, src32_r, src21_r, src43_r;
@@ -4289,7 +4289,7 @@ static void hevc_vt_biwgt_4t_24w_msa(const uint8_t *src0_ptr,
                                      int32_t rnd_val)
 {
     uint32_t loop_cnt;
-    int32_t offset, weight, constant;
+    int32_t weight, constant;
     v16i8 src0, src1, src2, src3, src4, src5;
     v16i8 src6, src7, src8, src9, src10, src11;
     v8i16 in0, in1, in2, in3, in4, in5;
@@ -4426,7 +4426,7 @@ static void hevc_vt_biwgt_4t_32w_msa(const uint8_t *src0_ptr,
 {
     uint32_t loop_cnt;
     uint8_t *dst_tmp = dst + 16;
-    int32_t offset, weight, constant;
+    int32_t weight, constant;
     v16i8 src0, src1, src2, src3, src4, src6, src7, src8, src9, src10;
     v8i16 in0, in1, in2, in3, in4, in5, in6, in7;
     v16i8 src10_r, src32_r, src76_r, src98_r;
@@ -4543,7 +4543,7 @@ static void hevc_hv_biwgt_4t_4x2_msa(const uint8_t *src0_ptr,
                                      int32_t rnd_val)
 {
     uint64_t tp0, tp1;
-    int32_t offset, weight;
+    int32_t weight;
     v8i16 in0 = { 0 };
     v16u8 out;
     v16i8 src0, src1, src2, src3, src4;
@@ -4626,7 +4626,7 @@ static void hevc_hv_biwgt_4t_4x4_msa(const uint8_t *src0_ptr,
                                      int32_t rnd_val)
 {
     uint64_t tp0, tp1;
-    int32_t offset, weight;
+    int32_t weight;
     v16u8 out;
     v8i16 in0 = { 0 }, in1 = { 0 };
     v16i8 src0, src1, src2, src3, src4, src5, src6;
@@ -4724,7 +4724,7 @@ static void hevc_hv_biwgt_4t_4multx8mult_msa(const uint8_t *src0_ptr,
 {
     uint32_t loop_cnt;
     uint64_t tp0, tp1;
-    int32_t offset, weight;
+    int32_t weight;
     v16u8 out0, out1;
     v8i16 in0 = { 0 }, in1 = { 0 }, in2 = { 0 }, in3 = { 0 };
     v16i8 src0, src1, src2, src3, src4, src5, src6, src7, src8, src9, src10;
@@ -4899,7 +4899,7 @@ static void hevc_hv_biwgt_4t_6w_msa(const uint8_t *src0_ptr,
 {
     uint32_t tpw0, tpw1, tpw2, tpw3;
     uint64_t tp0, tp1;
-    int32_t offset, weight;
+    int32_t weight;
     v16u8 out0, out1, out2;
     v16i8 src0, src1, src2, src3, src4, src5, src6, src7, src8, src9, src10;
     v8i16 in0 = { 0 }, in1 = { 0 }, in2 = { 0 }, in3 = { 0 };
@@ -5078,7 +5078,7 @@ static void hevc_hv_biwgt_4t_8x2_msa(const uint8_t *src0_ptr,
                                      int32_t offset,
                                      int32_t rnd_val)
 {
-    int32_t weight, offset;
+    int32_t weight;
     v16u8 out;
     v16i8 src0, src1, src2, src3, src4;
     v8i16 filt0, filt1;
@@ -5174,7 +5174,7 @@ static void hevc_hv_biwgt_4t_8multx4_msa(const uint8_t *src0_ptr,
                                          int32_t rnd_val,
                                          int32_t width8mult)
 {
-    int32_t weight, offset;
+    int32_t weight;
     uint32_t cnt;
     v16u8 out0, out1;
     v16i8 src0, src1, src2, src3, src4, src5, src6, mask0, mask1;
@@ -5297,7 +5297,7 @@ static void hevc_hv_biwgt_4t_8x6_msa(const uint8_t *src0_ptr,
                                      int32_t offset,
                                      int32_t rnd_val)
 {
-    uint32_t offset, weight;
+    uint32_t weight;
     v16u8 out0, out1, out2;
     v16i8 src0, src1, src2, src3, src4, src5, src6, src7, src8;
     v8i16 filt0, filt1;
@@ -5451,7 +5451,7 @@ static void hevc_hv_biwgt_4t_8multx4mult_msa(const uint8_t *src0_ptr,
 {
     uint32_t loop_cnt;
     uint32_t cnt;
-    int32_t offset, weight;
+    int32_t weight;
     const uint8_t *src0_ptr_tmp;
     const int16_t *src1_ptr_tmp;
     uint8_t *dst_tmp;
@@ -5636,7 +5636,7 @@ static void hevc_hv_biwgt_4t_12w_msa(const uint8_t *src0_ptr,
 {
     uint32_t loop_cnt;
     uint64_t tp0, tp1;
-    int32_t offset, weight;
+    int32_t weight;
     const uint8_t *src0_ptr_tmp;
     const int16_t *src1_ptr_tmp;
     uint8_t *dst_tmp;
