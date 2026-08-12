@@ -1108,7 +1108,7 @@ av_cold int ff_vulkan_encode_init(AVCodecContext *avctx, FFVulkanEncodeContext *
 
     /* Create session */
     session_create.pVideoProfile = &ctx->profile;
-    session_create.flags = 0x0;
+    session_create.flags = VK_VIDEO_SESSION_CREATE_ALLOW_ENCODE_PARAMETER_OPTIMIZATIONS_BIT_KHR;
     session_create.queueFamilyIndex = ctx->qf_enc->idx;
     session_create.maxCodedExtent = ctx->caps.maxCodedExtent;
     session_create.maxDpbSlots = ctx->caps.maxDpbSlots;

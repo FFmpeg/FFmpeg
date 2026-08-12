@@ -793,14 +793,21 @@ static av_cold int init_sequence_headers(AVCodecContext *avctx)
     else if (enc->caps.transformBlockSizes & VK_VIDEO_ENCODE_H265_TRANSFORM_BLOCK_SIZE_4_BIT_KHR)
         max_tb_size = 4;
 
-    units->raw_sps.log2_min_luma_coding_block_size_minus3 = 0;
-    units->raw_sps.log2_diff_max_min_luma_coding_block_size = av_log2(max_ctb_size) - 3;
+    /* Prefer 16x16 min CU when the CTB is at least 32; 8x8 min CU is much
+     * more expensive on some implementations for the common quality levels. */
+    if (max_ctb_size >= 32) {
+        units->raw_sps.log2_min_luma_coding_block_size_minus3 = 1;
+        units->raw_sps.log2_diff_max_min_luma_coding_block_size = av_log2(max_ctb_size) - 4;
+    } else {
+        units->raw_sps.log2_min_luma_coding_block_size_minus3 = 0;
+        units->raw_sps.log2_diff_max_min_luma_coding_block_size = av_log2(max_ctb_size) - 3;
+    }
     units->raw_sps.log2_min_luma_transform_block_size_minus2 = av_log2(min_tb_size) - 2;
     units->raw_sps.log2_diff_max_min_luma_transform_block_size = av_log2(max_tb_size) - av_log2(min_tb_size);
 
     max_transform_hierarchy = av_log2(max_ctb_size) - av_log2(min_tb_size);
     units->raw_sps.max_transform_hierarchy_depth_intra = max_transform_hierarchy;
-    units->raw_sps.max_transform_hierarchy_depth_intra = max_transform_hierarchy;
+    units->raw_sps.max_transform_hierarchy_depth_inter = max_transform_hierarchy;
 
     units->raw_sps.vui.bitstream_restriction_flag = 0;
     units->raw_sps.vui.max_bytes_per_pic_denom = 2;
@@ -1227,7 +1234,19 @@ static int parse_feedback_units(AVCodecContext *avctx,
                 H265RawSPS *sps = au.units[i].content;
                 enc->units.raw_sps.pic_width_in_luma_samples = sps->pic_width_in_luma_samples;
                 enc->units.raw_sps.pic_height_in_luma_samples = sps->pic_height_in_luma_samples;
-                enc->units.raw_sps.log2_diff_max_min_luma_coding_block_size = sps->log2_diff_max_min_luma_coding_block_size;
+                enc->units.raw_sps.conformance_window_flag = sps->conformance_window_flag;
+                enc->units.raw_sps.conf_win_left_offset = sps->conf_win_left_offset;
+                enc->units.raw_sps.conf_win_right_offset = sps->conf_win_right_offset;
+                enc->units.raw_sps.conf_win_top_offset = sps->conf_win_top_offset;
+                enc->units.raw_sps.conf_win_bottom_offset = sps->conf_win_bottom_offset;
+                enc->units.raw_sps.log2_min_luma_coding_block_size_minus3 =
+                    sps->log2_min_luma_coding_block_size_minus3;
+                enc->units.raw_sps.log2_diff_max_min_luma_coding_block_size =
+                    sps->log2_diff_max_min_luma_coding_block_size;
+                enc->units.raw_sps.log2_min_luma_transform_block_size_minus2 =
+                    sps->log2_min_luma_transform_block_size_minus2;
+                enc->units.raw_sps.log2_diff_max_min_luma_transform_block_size =
+                    sps->log2_diff_max_min_luma_transform_block_size;
                 enc->units.raw_sps.max_transform_hierarchy_depth_inter = sps->max_transform_hierarchy_depth_inter;
                 enc->units.raw_sps.max_transform_hierarchy_depth_intra = sps->max_transform_hierarchy_depth_intra;
             }
