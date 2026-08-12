@@ -411,7 +411,7 @@ fate-mov-reenc-delete-format-metadata: CMD = transcode mov $(TARGET_SAMPLES)/cov
 
 # audio-only format tags (gapless_playback, iTunSMPB, iTunNORM) must survive when
 # only the cover-art video stream is re-encoded and the audio is stream-copied
-FATE_MOV_FFMPEG_FFPROBE-$(call ENCDEC, PNG, NUT MOV) += fate-mov-cover-reenc-keeps-audio-format-tags
+FATE_MOV_FFMPEG_FFPROBE-$(call ENCDEC, PNG MJPEG, NUT MOV, SCALE_FILTER) += fate-mov-cover-reenc-keeps-audio-format-tags
 fate-mov-cover-reenc-keeps-audio-format-tags: CMD = transcode mov $(TARGET_SAMPLES)/cover_art/Owner-iTunes_9.0.3.15.m4a nut "-map 0:a:0 -c:a copy -map 0:v:0 -filter:v scale -c:v png -bitexact -t 0.1" "-c copy -t 0.1" "-show_entries format_tags" "" "" "" null
 
 # stream-level branding: vendor_id should be deleted on re-encode
