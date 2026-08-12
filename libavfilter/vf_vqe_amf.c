@@ -94,6 +94,7 @@ static int amf_vqe_filter_config_output(AVFilterLink *outlink)
     AMFVQEFilterContext *vqe_ctx = avctx->priv;
     AMFFilterContext    *amf_ctx = &vqe_ctx->common;
     AVAMFDeviceContext  *device_ctx = NULL;
+    enum AMF_MEMORY_TYPE mem_type = AMF_MEMORY_UNKNOWN;
 
     int err;
     AMF_RESULT res;
@@ -110,8 +111,11 @@ static int amf_vqe_filter_config_output(AVFilterLink *outlink)
 
     amf_filter = amf_ctx->component;
 
-    if (vqe_ctx->engine_type != -1)
+    mem_type = av_amf_get_memory_type(device_ctx);
+    if (vqe_ctx->engine_type != -1) {
         AMF_ASSIGN_PROPERTY_INT64(res, amf_filter, AMF_VIDEO_ENHANCER_ENGINE_TYPE, vqe_ctx->engine_type);
+    } else if (mem_type != AMF_MEMORY_UNKNOWN)
+        AMF_ASSIGN_PROPERTY_INT64(res, amf_filter, AMF_VIDEO_ENHANCER_ENGINE_TYPE, mem_type);
 
     AMF_ASSIGN_PROPERTY_DOUBLE(res, amf_filter, AMF_VE_FCR_ATTENUATION, vqe_ctx->attenuation);
     AMF_RETURN_IF_FALSE(avctx, res == AMF_OK, AVERROR_UNKNOWN, "Failed to set VQ enhancer attenuation: %d\n", res);

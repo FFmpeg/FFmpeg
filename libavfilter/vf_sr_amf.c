@@ -89,6 +89,7 @@ static int amf_filter_config_output(AVFilterLink *outlink)
     int err;
     AMF_RESULT res;
     enum AVPixelFormat in_format;
+    enum AMF_MEMORY_TYPE mem_type = AMF_MEMORY_UNKNOWN;
 
     err = amf_init_filter_config(outlink, &in_format);
     if (err < 0)
@@ -102,6 +103,10 @@ static int amf_filter_config_output(AVFilterLink *outlink)
     // FIXME: add checks whether we have HW context
     res = ctx->amf_device_ctx->factory->pVtbl->CreateComponent(ctx->amf_device_ctx->factory, ctx->amf_device_ctx->context, AMFHQScaler, &ctx->component);
     AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_FILTER_NOT_FOUND, "CreateComponent(%ls) failed with error %d\n", AMFHQScaler, res);
+
+    mem_type = av_amf_get_memory_type(ctx->amf_device_ctx);
+    if (mem_type != AMF_MEMORY_UNKNOWN)
+        AMF_ASSIGN_PROPERTY_INT64(res, ctx->component, AMF_HQ_SCALER_ENGINE_TYPE, mem_type);
 
     out_size.width = outlink->w;
     out_size.height = outlink->h;

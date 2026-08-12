@@ -90,6 +90,7 @@ static int amf_filter_config_output(AVFilterLink *outlink)
     const AVFrameSideData *sd;
     enum AMF_VIDEO_CONVERTER_COLOR_PROFILE_ENUM amf_color_profile;
     enum AVPixelFormat in_format;
+    enum AMF_MEMORY_TYPE mem_type = AMF_MEMORY_UNKNOWN;
 
     ret = amf_init_filter_config(outlink, &in_format);
     if (ret < 0)
@@ -98,7 +99,11 @@ static int amf_filter_config_output(AVFilterLink *outlink)
     hwframes_out = (AVHWFramesContext*)ctx->hwframes_out_ref->data;
     res = ctx->amf_device_ctx->factory->pVtbl->CreateComponent(ctx->amf_device_ctx->factory, ctx->amf_device_ctx->context, AMFVideoConverter, &ctx->component);
     AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_FILTER_NOT_FOUND, "CreateComponent(%ls) failed with error %d\n", AMFVideoConverter, res);
-    // FIXME: add checks whether we have HW context
+
+    mem_type = av_amf_get_memory_type(ctx->amf_device_ctx);
+    if (mem_type != AMF_MEMORY_UNKNOWN)
+        AMF_ASSIGN_PROPERTY_INT64(res, ctx->component, AMF_VIDEO_CONVERTER_MEMORY_TYPE, mem_type);
+
     AMF_ASSIGN_PROPERTY_INT64(res, ctx->component, AMF_VIDEO_CONVERTER_OUTPUT_FORMAT, (amf_int32)av_av_to_amf_format(hwframes_out->sw_format));
     AMF_RETURN_IF_FALSE(avctx, res == AMF_OK, AVERROR_UNKNOWN, "AMFConverter-SetProperty() failed with error %d\n", res);
 

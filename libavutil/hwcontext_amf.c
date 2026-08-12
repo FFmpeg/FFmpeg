@@ -564,6 +564,9 @@ enum AMF_MEMORY_TYPE av_amf_get_memory_type(AVAMFDeviceContext *amf_ctx)
     AMFContext1 *context1 = NULL;
     AMFGuid guid1 = IID_AMFContext1();
 
+    if (!amf_ctx)
+        return AMF_MEMORY_UNKNOWN;
+
 #ifdef _WIN32
     if (AMF_IFACE_CALL(context, GetDX11Device, AMF_DX11_1))
         return AMF_MEMORY_DX11;
