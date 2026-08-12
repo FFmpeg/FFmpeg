@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/hwcontext.h"
 #include "libavutil/hwcontext_cuda_internal.h"
@@ -132,6 +133,14 @@ typedef struct CUDATex {
     int         external_data;
 } CUDATex;
 
+typedef struct CUDAScaleFilterSet {
+    CUDAScaleFilter filters[FILTER_NB];
+    CUDAScaleFilter filters_uv[FILTER_NB];
+    CUDATex inter_tex;
+    CUDAScalePassPlan pass_plan;
+    unsigned int tmp_planes;
+} CUDAScaleFilterSet;
+
 typedef struct CUDAScaleContext {
     const AVClass *class;
 
@@ -163,19 +172,21 @@ typedef struct CUDAScaleContext {
 
     CUcontext   cu_ctx;
     CUmodule    cu_module;
-    CUfunction  cu_func[FILTER_NB];
-    CUfunction  cu_func_uv[FILTER_NB];
+    CUfunction  cu_func_fixed;
+    CUfunction  cu_func_fixed_uv;
+    CUfunction  cu_func_out[2];
+    CUfunction  cu_func_out_uv[2];
+    CUfunction  cu_func_tmp;
+    CUfunction  cu_func_tmp_uv;
     CUstream    cu_stream;
 
     int interp_algo;
     int interp_use_linear;
     int interp_as_integer;
 
-    CUDAScaleFilter filters[FILTER_NB];
-    CUDAScaleFilter filters_uv[FILTER_NB];
-    CUDATex inter_tex;
-    CUDAScalePassPlan pass_plan;
-    int use_filters; /* -1 for auto */
+    CUDAScaleFilterSet filter_set;
+    int use_filters;
+    int use_filters_opt; /* -1 for auto */
 
     float param;
 } CUDAScaleContext;
@@ -285,6 +296,17 @@ static void cuda_tex_uninit(CudaFunctions *cu, CUDATex *t)
     memset(t, 0, sizeof(*t));
 }
 
+static av_cold void filter_set_uninit(CudaFunctions *cu,
+                                      CUDAScaleFilterSet *set)
+{
+    cuda_tex_uninit(cu, &set->inter_tex);
+    for (int i = 0; i < FF_ARRAY_ELEMS(set->filters); i++) {
+        filter_uninit(cu, &set->filters[i]);
+        filter_uninit(cu, &set->filters_uv[i]);
+    }
+    memset(set, 0, sizeof(*set));
+}
+
 static av_cold void cudascale_uninit(AVFilterContext *ctx)
 {
     CUDAScaleContext *s = ctx->priv;
@@ -295,11 +317,7 @@ static av_cold void cudascale_uninit(AVFilterContext *ctx)
 
         CHECK_CU(cu->cuCtxPushCurrent(s->hwctx->cuda_ctx));
 
-        cuda_tex_uninit(cu, &s->inter_tex);
-        for (int i = 0; i < FF_ARRAY_ELEMS(s->filters); i++) {
-            filter_uninit(cu, &s->filters[i]);
-            filter_uninit(cu, &s->filters_uv[i]);
-        }
+        filter_set_uninit(cu, &s->filter_set);
 
         if (s->cu_module) {
             CHECK_CU(cu->cuModuleUnload(s->cu_module));
@@ -351,15 +369,15 @@ fail:
     return ret;
 }
 
-static av_cold int inter_buf_init(AVFilterContext *ctx, int out_width, int in_height,
+static av_cold int inter_buf_init(AVFilterContext *ctx, CUDATex *tex,
+                                  int out_width, int in_height,
                                   unsigned int planes)
 {
     CUDAScaleContext *s = ctx->priv;
     CudaFunctions *cu = s->hwctx->internal->cuda_dl;
     int ret = 0;
 
-    cuda_tex_uninit(cu, &s->inter_tex);
-    s->inter_tex = (CUDATex) {
+    *tex = (CUDATex) {
         .width          = out_width,
         .height         = in_height,
         .crop_width     = out_width,
@@ -372,8 +390,8 @@ static av_cold int inter_buf_init(AVFilterContext *ctx, int out_width, int in_he
         const int is_chroma = i == 1 || i == 2;
         const unsigned int plane = is_chroma ? CUDA_SCALE_PLANE_CHROMA :
                                                CUDA_SCALE_PLANE_PRIMARY;
-        const int sub_x   = is_chroma ? s->inter_tex.log2_chroma_w : 0;
-        const int sub_y   = is_chroma ? s->inter_tex.log2_chroma_h : 0;
+        const int sub_x   = is_chroma ? tex->log2_chroma_w : 0;
+        const int sub_y   = is_chroma ? tex->log2_chroma_h : 0;
         const int plane_w = AV_CEIL_RSHIFT(out_width, sub_x);
         const int plane_h = AV_CEIL_RSHIFT(in_height, sub_y);
         const int sizeof_pixel = (s->in_plane_depths[i] <= 8 ? 1 : 2) *
@@ -383,12 +401,12 @@ static av_cold int inter_buf_init(AVFilterContext *ctx, int out_width, int in_he
             continue;
 
         size_t pitch;
-        ret = CHECK_CU(cu->cuMemAllocPitch(&s->inter_tex.data[i], &pitch,
+        ret = CHECK_CU(cu->cuMemAllocPitch(&tex->data[i], &pitch,
                                            (size_t) plane_w * sizeof_pixel,
                                            plane_h, 16));
         if (ret < 0)
             goto fail;
-        s->inter_tex.linesize[i] = pitch;
+        tex->linesize[i] = pitch;
 
         CUDA_TEXTURE_DESC tex_desc = {
             /* inter tex is always read as float */
@@ -401,13 +419,13 @@ static av_cold int inter_buf_init(AVFilterContext *ctx, int out_width, int in_he
                                   CU_AD_FORMAT_UNSIGNED_INT8 :
                                   CU_AD_FORMAT_UNSIGNED_INT16,
             .res.pitch2D.numChannels  = s->in_plane_channels[i],
-            .res.pitch2D.devPtr       = s->inter_tex.data[i],
+            .res.pitch2D.devPtr       = tex->data[i],
             .res.pitch2D.pitchInBytes = pitch,
             .res.pitch2D.width        = plane_w,
             .res.pitch2D.height       = plane_h,
         };
 
-        ret = CHECK_CU(cu->cuTexObjectCreate(&s->inter_tex.tex[i], &res_desc,
+        ret = CHECK_CU(cu->cuTexObjectCreate(&tex->tex[i], &res_desc,
                                              &tex_desc, NULL));
         if (ret < 0)
             goto fail;
@@ -416,7 +434,7 @@ static av_cold int inter_buf_init(AVFilterContext *ctx, int out_width, int in_he
     return 0;
 
 fail:
-    cuda_tex_uninit(cu, &s->inter_tex);
+    cuda_tex_uninit(cu, tex);
     return ret;
 }
 
@@ -496,14 +514,6 @@ static av_cold int init_processing_chain(AVFilterContext *ctx, int in_width, int
     }
 
     set_format_info(ctx, in_format, out_format);
-    cudascale_plan_passes(&s->pass_plan,
-                          in_width, in_height, out_width, out_height,
-                          s->in_desc->log2_chroma_w,
-                          s->in_desc->log2_chroma_h,
-                          s->out_desc->log2_chroma_w,
-                          s->out_desc->log2_chroma_h,
-                          s->in_planes > 1 && s->out_planes > 1);
-
     if (s->passthrough && in_width == out_width && in_height == out_height && in_format == out_format) {
         s->frames_ctx = av_buffer_ref(inl->hw_frames_ctx);
         if (!s->frames_ctx)
@@ -518,14 +528,15 @@ static av_cold int init_processing_chain(AVFilterContext *ctx, int in_width, int
             return ret;
 
         if (in_width == out_width && in_height == out_height &&
-            in_format == out_format && s->interp_algo == INTERP_ALGO_DEFAULT)
+            in_format == out_format && s->interp_algo == INTERP_ALGO_DEFAULT &&
+            s->use_filters_opt != 1)
             s->interp_algo = INTERP_ALGO_NEAREST;
 
-        if (!s->pass_plan.x_planes && !s->pass_plan.y_planes) {
+        if (s->interp_algo == INTERP_ALGO_NEAREST) {
             s->use_filters = 0;
-        } else if (s->interp_algo == INTERP_ALGO_NEAREST) {
-            s->use_filters = 0;
-        } else if (s->use_filters < 0) {
+        } else if (s->use_filters_opt >= 0) {
+            s->use_filters = s->use_filters_opt;
+        } else {
             s->use_filters = cudascale_plane_is_downscaled(in_width, out_width,
                                                             0, 0) ||
                              cudascale_plane_is_downscaled(in_height, out_height,
@@ -560,7 +571,6 @@ static av_cold int cudascale_load_functions(AVFilterContext *ctx)
     const char *in_fmt_name = get_format_name(s->in_fmt);
     const char *out_fmt_name = get_format_name(s->out_fmt);
 
-    const char *function_infix = "";
     const char *fixed_infix;
     int fixed_use_linear;
     int fixed_as_integer;
@@ -595,17 +605,6 @@ static av_cold int cudascale_load_functions(AVFilterContext *ctx)
         return AVERROR_BUG;
     }
 
-    if (s->use_filters) {
-        function_infix = s->pass_plan.dir[FILTER_OUT] == CUDA_SCALE_DIR_X ?
-                         "Generic_h" : "Generic_v";
-        s->interp_use_linear = 0;
-        s->interp_as_integer = 0;
-    } else {
-        function_infix = fixed_infix;
-        s->interp_use_linear = fixed_use_linear;
-        s->interp_as_integer = fixed_as_integer;
-    }
-
     ret = CHECK_CU(cu->cuCtxPushCurrent(cuda_ctx));
     if (ret < 0)
         return ret;
@@ -615,41 +614,69 @@ static av_cold int cudascale_load_functions(AVFilterContext *ctx)
     if (ret < 0)
         goto fail;
 
-    snprintf(buf, sizeof(buf), "Subsample_%s_%s_%s", function_infix, in_fmt_name, out_fmt_name);
-    ret = CHECK_CU(cu->cuModuleGetFunction(&s->cu_func[FILTER_OUT], s->cu_module, buf));
-    if (ret < 0) {
-        av_log(ctx, AV_LOG_FATAL, "Unsupported conversion: %s -> %s\n", in_fmt_name, out_fmt_name);
-        ret = AVERROR(ENOSYS);
-        goto fail;
-    }
-    av_log(ctx, AV_LOG_DEBUG, "Luma filter: %s (%s -> %s)\n", buf, av_get_pix_fmt_name(s->in_fmt), av_get_pix_fmt_name(s->out_fmt));
-
-    snprintf(buf, sizeof(buf), "Subsample_%s_%s_%s_uv", function_infix, in_fmt_name, out_fmt_name);
-    ret = CHECK_CU(cu->cuModuleGetFunction(&s->cu_func_uv[FILTER_OUT], s->cu_module, buf));
-    if (ret < 0)
-        goto fail;
-    av_log(ctx, AV_LOG_DEBUG, "Chroma filter: %s (%s -> %s)\n", buf, av_get_pix_fmt_name(s->in_fmt), av_get_pix_fmt_name(s->out_fmt));
-
     if (s->use_filters) {
-        /* Intermediate pass is always horizontal */
-        if (s->filters[FILTER_TMP].weights) {
-            snprintf(buf, sizeof(buf), "Subsample_Generic_h_%s_%s",
-                     in_fmt_name, in_fmt_name);
-            ret = CHECK_CU(cu->cuModuleGetFunction(&s->cu_func[FILTER_TMP],
+        static const char *const infix[] = { "Generic_h", "Generic_v" };
+        const char *tmp_infix = "Generic_h";
+
+        s->interp_use_linear = 0;
+        s->interp_as_integer = 0;
+
+        for (int dir = CUDA_SCALE_DIR_X; dir <= CUDA_SCALE_DIR_Y; dir++) {
+            snprintf(buf, sizeof(buf), "Subsample_%s_%s_%s",
+                     infix[dir], in_fmt_name, out_fmt_name);
+            ret = CHECK_CU(cu->cuModuleGetFunction(&s->cu_func_out[dir],
                                                    s->cu_module, buf));
             if (ret < 0)
-                goto fail;
+                goto unsupported;
+
+            snprintf(buf, sizeof(buf), "Subsample_%s_%s_%s_uv",
+                     infix[dir], in_fmt_name, out_fmt_name);
+            ret = CHECK_CU(cu->cuModuleGetFunction(&s->cu_func_out_uv[dir],
+                                                   s->cu_module, buf));
+            if (ret < 0)
+                goto unsupported;
         }
 
-        if (s->filters_uv[FILTER_TMP].weights) {
-            snprintf(buf, sizeof(buf), "Subsample_Generic_h_%s_%s_uv",
+        snprintf(buf, sizeof(buf), "Subsample_%s_%s_%s", tmp_infix,
+                 in_fmt_name, in_fmt_name);
+        ret = CHECK_CU(cu->cuModuleGetFunction(&s->cu_func_tmp,
+                                               s->cu_module, buf));
+        if (ret < 0)
+            goto unsupported;
+
+        if (s->in_planes > 1) {
+            snprintf(buf, sizeof(buf), "Subsample_%s_%s_%s_uv", tmp_infix,
                      in_fmt_name, in_fmt_name);
-            ret = CHECK_CU(cu->cuModuleGetFunction(&s->cu_func_uv[FILTER_TMP],
+            ret = CHECK_CU(cu->cuModuleGetFunction(&s->cu_func_tmp_uv,
                                                    s->cu_module, buf));
             if (ret < 0)
-                goto fail;
+                goto unsupported;
         }
+    } else {
+        s->interp_use_linear = fixed_use_linear;
+        s->interp_as_integer = fixed_as_integer;
+
+        snprintf(buf, sizeof(buf), "Subsample_%s_%s_%s", fixed_infix,
+                 in_fmt_name, out_fmt_name);
+        ret = CHECK_CU(cu->cuModuleGetFunction(&s->cu_func_fixed,
+                                               s->cu_module, buf));
+        if (ret < 0)
+            goto unsupported;
+
+        snprintf(buf, sizeof(buf), "Subsample_%s_%s_%s_uv", fixed_infix,
+                 in_fmt_name, out_fmt_name);
+        ret = CHECK_CU(cu->cuModuleGetFunction(&s->cu_func_fixed_uv,
+                                               s->cu_module, buf));
+        if (ret < 0)
+            goto unsupported;
     }
+
+    goto fail;
+
+unsupported:
+    av_log(ctx, AV_LOG_FATAL, "Unsupported conversion: %s -> %s\n",
+           in_fmt_name, out_fmt_name);
+    ret = AVERROR(ENOSYS);
 
 fail:
     CHECK_CU(cu->cuCtxPopCurrent(&dummy));
@@ -739,13 +766,12 @@ fail:
     return ret;
 }
 
-static av_cold int cudascale_setup_filters(AVFilterContext *ctx)
+static av_cold int cudascale_filter_set_init(AVFilterContext *ctx,
+                                             CUDAScaleFilterSet *set,
+                                             int in_width, int in_height)
 {
     CUDAScaleContext *s = ctx->priv;
-    AVFilterLink  *inlink = ctx->inputs[0];
     AVFilterLink *outlink = ctx->outputs[0];
-    CudaFunctions *cu = s->hwctx->internal->cuda_dl;
-    CUcontext dummy;
     int ret;
 
     const int in_sub_x  = s->in_desc->log2_chroma_w;
@@ -753,40 +779,52 @@ static av_cold int cudascale_setup_filters(AVFilterContext *ctx)
     const int out_sub_x = s->out_desc->log2_chroma_w;
     const int out_sub_y = s->out_desc->log2_chroma_h;
 
-    ret = CHECK_CU(cu->cuCtxPushCurrent(s->hwctx->cuda_ctx));
-    if (ret < 0)
-        return ret;
-
     const int has_chroma = s->in_planes > 1 && s->out_planes > 1;
     const unsigned int all_planes = CUDA_SCALE_PLANE_PRIMARY |
                                     (has_chroma ? CUDA_SCALE_PLANE_CHROMA : 0);
-    const int pass_x = s->pass_plan.dir[FILTER_TMP] == CUDA_SCALE_DIR_X ?
-                       FILTER_TMP :
-                       s->pass_plan.dir[FILTER_OUT] == CUDA_SCALE_DIR_X ?
-                       FILTER_OUT : -1;
-    const int pass_y = s->pass_plan.dir[FILTER_OUT] == CUDA_SCALE_DIR_Y ?
-                       FILTER_OUT : -1;
+    int pass_x, pass_y;
+
+    cudascale_plan_passes(&set->pass_plan,
+                          in_width, in_height, outlink->w, outlink->h,
+                          in_sub_x, in_sub_y, out_sub_x, out_sub_y,
+                          has_chroma);
+
+    /* The generic path also handles non-scaling copies and format
+     * conversions with a one-tap horizontal filter. */
+    if (set->pass_plan.dir[FILTER_OUT] == CUDA_SCALE_DIR_NONE)
+        set->pass_plan.dir[FILTER_OUT] = CUDA_SCALE_DIR_X;
+
+    pass_x = set->pass_plan.dir[FILTER_TMP] == CUDA_SCALE_DIR_X ?
+             FILTER_TMP :
+             set->pass_plan.dir[FILTER_OUT] == CUDA_SCALE_DIR_X ?
+             FILTER_OUT : -1;
+    pass_y = set->pass_plan.dir[FILTER_OUT] == CUDA_SCALE_DIR_Y ?
+             FILTER_OUT : -1;
 
     if (pass_x >= 0) {
         const unsigned int planes = pass_x == FILTER_TMP ?
-                                    s->pass_plan.x_planes : all_planes;
+                                    set->pass_plan.x_planes :
+                                    all_planes;
+
+        if (pass_x == FILTER_TMP)
+            set->tmp_planes = planes;
 
         if (planes & CUDA_SCALE_PLANE_PRIMARY) {
-            ret = cudascale_filter_init(ctx, &s->filters[pass_x],
-                                        inlink->w, outlink->w, 0.0,
-                                        !!(s->pass_plan.x_planes &
+            ret = cudascale_filter_init(ctx, &set->filters[pass_x],
+                                        in_width, outlink->w, 0.0,
+                                        !!(set->pass_plan.x_planes &
                                            CUDA_SCALE_PLANE_PRIMARY));
             if (ret < 0)
                 goto fail;
         }
         if (planes & CUDA_SCALE_PLANE_CHROMA) {
-            const int src_size = AV_CEIL_RSHIFT(inlink->w,  in_sub_x);
+            const int src_size = AV_CEIL_RSHIFT(in_width,  in_sub_x);
             const int dst_size = AV_CEIL_RSHIFT(outlink->w, out_sub_x);
             const double virtual_size = cudascale_plane_virtual_size(
-                src_size, inlink->w, outlink->w, in_sub_x, out_sub_x);
-            ret = cudascale_filter_init(ctx, &s->filters_uv[pass_x],
+                src_size, in_width, outlink->w, in_sub_x, out_sub_x);
+            ret = cudascale_filter_init(ctx, &set->filters_uv[pass_x],
                                         src_size, dst_size, virtual_size,
-                                        !!(s->pass_plan.x_planes &
+                                        !!(set->pass_plan.x_planes &
                                            CUDA_SCALE_PLANE_CHROMA));
             if (ret < 0)
                 goto fail;
@@ -794,20 +832,20 @@ static av_cold int cudascale_setup_filters(AVFilterContext *ctx)
     }
 
     if (pass_y >= 0) {
-        ret = cudascale_filter_init(ctx, &s->filters[pass_y],
-                                    inlink->h, outlink->h, 0.0,
-                                    !!(s->pass_plan.y_planes &
+        ret = cudascale_filter_init(ctx, &set->filters[pass_y],
+                                    in_height, outlink->h, 0.0,
+                                    !!(set->pass_plan.y_planes &
                                        CUDA_SCALE_PLANE_PRIMARY));
         if (ret < 0)
             goto fail;
         if (all_planes & CUDA_SCALE_PLANE_CHROMA) {
-            const int src_size = AV_CEIL_RSHIFT(inlink->h,  in_sub_y);
+            const int src_size = AV_CEIL_RSHIFT(in_height,  in_sub_y);
             const int dst_size = AV_CEIL_RSHIFT(outlink->h, out_sub_y);
             const double virtual_size = cudascale_plane_virtual_size(
-                src_size, inlink->h, outlink->h, in_sub_y, out_sub_y);
-            ret = cudascale_filter_init(ctx, &s->filters_uv[pass_y],
+                src_size, in_height, outlink->h, in_sub_y, out_sub_y);
+            ret = cudascale_filter_init(ctx, &set->filters_uv[pass_y],
                                         src_size, dst_size, virtual_size,
-                                        !!(s->pass_plan.y_planes &
+                                        !!(set->pass_plan.y_planes &
                                            CUDA_SCALE_PLANE_CHROMA));
             if (ret < 0)
                 goto fail;
@@ -815,8 +853,9 @@ static av_cold int cudascale_setup_filters(AVFilterContext *ctx)
     }
 
     if (pass_x == FILTER_TMP) {
-        ret = inter_buf_init(ctx, outlink->w, inlink->h,
-                             s->pass_plan.x_planes);
+        ret = inter_buf_init(ctx, &set->inter_tex,
+                             outlink->w, in_height,
+                             set->tmp_planes);
         if (ret < 0)
             goto fail;
     }
@@ -824,6 +863,24 @@ static av_cold int cudascale_setup_filters(AVFilterContext *ctx)
     ret = 0;
 
 fail:
+    return ret;
+}
+
+static av_cold int cudascale_setup_filters(AVFilterContext *ctx,
+                                           int in_width, int in_height)
+{
+    CUDAScaleContext *s = ctx->priv;
+    CudaFunctions *cu = s->hwctx->internal->cuda_dl;
+    CUcontext dummy;
+    int ret;
+
+    ret = CHECK_CU(cu->cuCtxPushCurrent(s->hwctx->cuda_ctx));
+    if (ret < 0)
+        return ret;
+
+    ret = cudascale_filter_set_init(ctx, &s->filter_set,
+                                    in_width, in_height);
+
     CHECK_CU(cu->cuCtxPopCurrent(&dummy));
     return ret;
 }
@@ -889,7 +946,7 @@ static av_cold int cudascale_config_props(AVFilterLink *outlink)
            s->passthrough ? " (passthrough)" : "");
 
     if (s->use_filters) {
-        ret = cudascale_setup_filters(ctx);
+        ret = cudascale_setup_filters(ctx, inlink->w, inlink->h);
         if (ret < 0)
             return ret;
     }
@@ -1009,33 +1066,55 @@ static int call_resize_kernel(AVFilterContext *ctx, CUfunction func,
                                        BLOCKX, BLOCKY, 1, 0, s->cu_stream, args, NULL));
 }
 
-static int scalecuda_resize(AVFilterContext *ctx, int pass,
+static int scalecuda_resize(AVFilterContext *ctx,
+                            const CUDAScaleFilterSet *set, int pass,
                             const CUDATex *out, const CUDATex *in)
 {
     CUDAScaleContext *s = ctx->priv;
+    const CUDAScaleFilter *filter = NULL;
+    const CUDAScaleFilter *filter_uv = NULL;
+    CUfunction func, func_uv;
     int mpeg_range = in->color_range != AVCOL_RANGE_JPEG;
     int ret;
 
     int out_planes = s->out_planes;
-    if (pass == FILTER_TMP)
+    if (pass == FILTER_TMP) {
         out_planes = s->in_planes;
+        func    = s->cu_func_tmp;
+        func_uv = s->cu_func_tmp_uv;
+    } else if (s->use_filters) {
+        const int dir = set->pass_plan.dir[FILTER_OUT];
 
-    if (pass != FILTER_TMP || s->filters[pass].weights) {
+        av_assert0(dir == CUDA_SCALE_DIR_X || dir == CUDA_SCALE_DIR_Y);
+        func    = s->cu_func_out[dir];
+        func_uv = s->cu_func_out_uv[dir];
+    } else {
+        func    = s->cu_func_fixed;
+        func_uv = s->cu_func_fixed_uv;
+    }
+
+    if (s->use_filters) {
+        filter    = &set->filters[pass];
+        filter_uv = &set->filters_uv[pass];
+    }
+
+    if (pass != FILTER_TMP ||
+        (set->tmp_planes & CUDA_SCALE_PLANE_PRIMARY)) {
         // scale primary plane(s). Usually Y (and A), or single plane of RGB frames.
-        ret = call_resize_kernel(ctx, s->cu_func[pass],
+        ret = call_resize_kernel(ctx, func,
                                  in->tex, in->crop_left, in->crop_top,
                                  in->crop_width, in->crop_height,
                                  out->data, out->width, out->height,
-                                 out->linesize[0], mpeg_range,
-                                 &s->filters[pass]);
+                                 out->linesize[0], mpeg_range, filter);
         if (ret < 0)
             return ret;
     }
 
     if (out_planes > 1 &&
-        (pass != FILTER_TMP || s->filters_uv[pass].weights)) {
+        (pass != FILTER_TMP ||
+         (set->tmp_planes & CUDA_SCALE_PLANE_CHROMA))) {
         // scale UV plane. Scale function sets both U and V plane, or singular interleaved plane.
-        ret = call_resize_kernel(ctx, s->cu_func_uv[pass], in->tex,
+        ret = call_resize_kernel(ctx, func_uv, in->tex,
                                  AV_CEIL_RSHIFT(in->crop_left, in->log2_chroma_w),
                                  AV_CEIL_RSHIFT(in->crop_top, in->log2_chroma_h),
                                  AV_CEIL_RSHIFT(in->crop_width, in->log2_chroma_w),
@@ -1043,8 +1122,7 @@ static int scalecuda_resize(AVFilterContext *ctx, int pass,
                                  out->data,
                                  AV_CEIL_RSHIFT(out->width, out->log2_chroma_w),
                                  AV_CEIL_RSHIFT(out->height, out->log2_chroma_h),
-                                 out->linesize[1], mpeg_range,
-                                 &s->filters_uv[pass]);
+                                 out->linesize[1], mpeg_range, filter_uv);
         if (ret < 0)
             return ret;
     }
@@ -1073,22 +1151,23 @@ static int cudascale_scale(AVFilterContext *ctx, AVFrame *out, AVFrame *in)
     const CUDATex *src = &in_tex;
     CUDATex inter_tex;
     if (s->use_filters &&
-        s->pass_plan.dir[FILTER_TMP] != CUDA_SCALE_DIR_NONE) {
+        s->filter_set.pass_plan.dir[FILTER_TMP] != CUDA_SCALE_DIR_NONE) {
         /* Handle first pass separately */
-        s->inter_tex.color_range = in->color_range;
-        inter_tex = s->inter_tex;
+        s->filter_set.inter_tex.color_range = in->color_range;
+        inter_tex = s->filter_set.inter_tex;
         /* Reuse input textures for plane groups not touched by this pass. */
         for (int i = 0; i < s->in_planes; i++) {
             if (!inter_tex.tex[i])
                 inter_tex.tex[i] = in_tex.tex[i];
         }
-        ret = scalecuda_resize(ctx, FILTER_TMP, &s->inter_tex, src);
+        ret = scalecuda_resize(ctx, &s->filter_set, FILTER_TMP,
+                               &s->filter_set.inter_tex, src);
         if (ret < 0)
             goto fail;
         src = &inter_tex;
     }
 
-    ret = scalecuda_resize(ctx, FILTER_OUT, &out_tex, src);
+    ret = scalecuda_resize(ctx, &s->filter_set, FILTER_OUT, &out_tex, src);
     if (ret < 0)
         goto fail;
 
@@ -1185,7 +1264,7 @@ static const AVOption options[] = {
         { "lanczos",  "lanczos",  0, AV_OPT_TYPE_CONST, { .i64 = INTERP_ALGO_LANCZOS  }, 0, 0, FLAGS, .unit = "interp_algo" },
     { "format", "Output video pixel format", OFFSET(format), AV_OPT_TYPE_PIXEL_FMT, { .i64 = AV_PIX_FMT_NONE }, INT_MIN, INT_MAX, .flags=FLAGS },
     { "passthrough", "Do not process frames at all if parameters match", OFFSET(passthrough), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, FLAGS },
-    { "use_filters", "Use generic filters instead of fixed function kernels", OFFSET(use_filters), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 1, FLAGS, .unit = "use_filters" },
+    { "use_filters", "Use generic filters instead of fixed function kernels", OFFSET(use_filters_opt), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 1, FLAGS, .unit = "use_filters" },
         { "auto",    NULL,  0, AV_OPT_TYPE_CONST, {.i64 = -1}, 0, 0, FLAGS, .unit = "use_filters" },
     { "param", "Algorithm-Specific parameter", OFFSET(param), AV_OPT_TYPE_FLOAT, { .dbl = SCALE_CUDA_PARAM_DEFAULT }, -FLT_MAX, FLT_MAX, FLAGS },
     { "force_original_aspect_ratio", "decrease or increase w/h if necessary to keep the original AR", OFFSET(force_original_aspect_ratio), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, SCALE_FORCE_OAR_NB-1, FLAGS, .unit = "force_oar" },
