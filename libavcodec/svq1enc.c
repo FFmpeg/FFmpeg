@@ -645,14 +645,14 @@ static int svq1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     init_put_bits(&pb, pkt->data, pkt->size);
     svq1_write_header(s, &pb, s->pict_type);
     for (i = 0; i < 3; i++) {
-        int ret = svq1_encode_plane(s, i, &pb,
-                              pict->data[i],
-                              s->last_picture->data[i],
-                              s->current_picture->data[i],
-                              s->frame_width  / (i ? 4 : 1),
-                              s->frame_height / (i ? 4 : 1),
-                              pict->linesize[i],
-                              s->current_picture->linesize[i]);
+        ret = svq1_encode_plane(s, i, &pb,
+                                pict->data[i],
+                                s->last_picture->data[i],
+                                s->current_picture->data[i],
+                                s->frame_width  / (i ? 4 : 1),
+                                s->frame_height / (i ? 4 : 1),
+                                pict->linesize[i],
+                                s->current_picture->linesize[i]);
         emms_c();
         if (ret < 0)
             return ret;
