@@ -46,6 +46,7 @@ av_cold void ff_sws_init_input_lsx(SwsInternal *c)
         break;
     case AV_PIX_FMT_GBRAP:
     case AV_PIX_FMT_GBRP:
+        c->readLumPlanar = planar_rgb_to_y_lsx;
         c->readChrPlanar = planar_rgb_to_uv_lsx;
         break;
     }
