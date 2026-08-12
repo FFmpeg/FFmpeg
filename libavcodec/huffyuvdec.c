@@ -985,7 +985,7 @@ static int decode_slice(AVCodecContext *avctx, AVFrame *p, int height,
                         break;
                 }
 
-                lefttop = p->data[plane][0];
+                lefttop = READ_LOWBYTE(p->data[plane], s->bps);
                 decode_plane_bitstream(s, w, plane);
                 add_median_prediction(s, p->data[plane] + fake_stride, p->data[plane], s->temp[0], w, &left, &lefttop);
                 y++;

@@ -55,6 +55,8 @@ typedef enum Predictor {
     MEDIAN,
 } Predictor;
 
+#define READ_LOWBYTE(plane, bps) ((bps) <= 8 ? (plane)[0] : *(const uint16_t *)(plane) & 0xFF)
+
 int ff_huffyuv_generate_bits_table(uint32_t *dst, const uint8_t *len_table, int n);
 
 #endif /* AVCODEC_HUFFYUV_H */

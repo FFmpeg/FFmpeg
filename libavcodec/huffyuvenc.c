@@ -911,7 +911,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                     y++;
                 }
 
-                lefttop = p->data[plane][0];
+                lefttop = READ_LOWBYTE(p->data[plane], s->bps);
 
                 for (; y < h; y++) {
                     const uint8_t *dst = p->data[plane] + p->linesize[plane] * y;
