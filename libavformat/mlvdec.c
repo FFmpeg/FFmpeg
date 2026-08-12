@@ -528,6 +528,7 @@ static int get_packet_lj92(AVFormatContext *avctx, AVStream *st, AVIOContext *pb
     ret = avio_read(pbio, pkt->data + header_size, size);
     if (ret < 0)
         return ret;
+    av_shrink_packet(pkt, header_size + ret);
 
     return 0;
 }
