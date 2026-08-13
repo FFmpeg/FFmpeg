@@ -361,30 +361,6 @@
 %endif
 %endmacro
 
-%macro ABSB 2 ; source mmreg, temp mmreg (unused for SSSE3)
-%if cpuflag(ssse3)
-    pabsb   %1, %1
-%else
-    pxor    %2, %2
-    psubb   %2, %1
-    pminub  %1, %2
-%endif
-%endmacro
-
-%macro ABSB2 4 ; src1, src2, tmp1, tmp2 (tmp1/2 unused for SSSE3)
-%if cpuflag(ssse3)
-    pabsb   %1, %1
-    pabsb   %2, %2
-%else
-    pxor    %3, %3
-    pxor    %4, %4
-    psubb   %3, %1
-    psubb   %4, %2
-    pminub  %1, %3
-    pminub  %2, %4
-%endif
-%endmacro
-
 %macro ABSD2 4
     pxor    %3, %3
     pxor    %4, %4
