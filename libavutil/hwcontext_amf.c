@@ -558,10 +558,37 @@ static void amf_device_uninit(AVHWDeviceContext *device_ctx)
     amf_ctx->version = 0;
 }
 
+enum AMF_MEMORY_TYPE av_amf_get_memory_type(AVAMFDeviceContext *amf_ctx)
+{
+    AMFContext  *context = amf_ctx->context;
+    AMFContext1 *context1 = NULL;
+    AMFGuid guid1 = IID_AMFContext1();
+
+#ifdef _WIN32
+    if (AMF_IFACE_CALL(context, GetDX11Device, AMF_DX11_1))
+        return AMF_MEMORY_DX11;
+
+    if (AMF_IFACE_CALL(context, GetDX9Device, AMF_DX9))
+        return AMF_MEMORY_DX9;
+#endif
+
+    if (AMF_IFACE_CALL(context, QueryInterface, &guid1, (void**)&context1) != AMF_OK)
+        return AMF_MEMORY_UNKNOWN;
+
+    if (AMF_IFACE_CALL(context1, GetVulkanDevice)) {
+        context1->pVtbl->Release(context1);
+        return AMF_MEMORY_VULKAN;
+    }
+
+    return AMF_MEMORY_UNKNOWN;
+}
+
 static int amf_device_init(AVHWDeviceContext *ctx)
 {
     AVAMFDeviceContext *amf_ctx = ctx->hwctx;
+    AMFContext *context = amf_ctx->context;
     AMFContext1 *context1 = NULL;
+    AMFGuid guid1 = IID_AMFContext1();
     AMF_RESULT res;
 
     if (!amf_ctx->lock) {
@@ -574,34 +601,43 @@ static int amf_device_init(AVHWDeviceContext *ctx)
         amf_ctx->unlock = amf_unlock_default;
     }
 
-#ifdef _WIN32
-    res = amf_ctx->context->pVtbl->InitDX11(amf_ctx->context, NULL, AMF_DX11_1);
-    if (res == AMF_OK || res == AMF_ALREADY_INITIALIZED) {
-        av_log(ctx, AV_LOG_VERBOSE, "AMF initialisation succeeded via D3D11.\n");
-    } else {
-        res = amf_ctx->context->pVtbl->InitDX9(amf_ctx->context, NULL);
-        if (res == AMF_OK) {
-            av_log(ctx, AV_LOG_VERBOSE, "AMF initialisation succeeded via D3D9.\n");
-        } else {
-#endif
-            AMFGuid guid = IID_AMFContext1();
-            res = amf_ctx->context->pVtbl->QueryInterface(amf_ctx->context, &guid, (void**)&context1);
-            AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_UNKNOWN, "CreateContext1() failed with error %d\n", res);
+    if (av_amf_get_memory_type(amf_ctx) != AMF_MEMORY_UNKNOWN) {
+        av_log(ctx, AV_LOG_VERBOSE, "AMF is already initialized, skipping init.\n");
+        return 0;
+    }
 
-            res = context1->pVtbl->InitVulkan(context1, NULL);
-            context1->pVtbl->Release(context1);
-            if (res != AMF_OK && res != AMF_ALREADY_INITIALIZED) {
-                if (res == AMF_NOT_SUPPORTED)
-                    av_log(ctx, AV_LOG_ERROR, "AMF via Vulkan is not supported on the given device.\n");
-                else
-                    av_log(ctx, AV_LOG_ERROR, "AMF failed to initialise on the given Vulkan device: %d.\n", res);
-                 return AVERROR(ENOSYS);
-            }
-            av_log(ctx, AV_LOG_VERBOSE, "AMF initialisation succeeded via Vulkan.\n");
 #ifdef _WIN32
-        }
-     }
+    res = AMF_IFACE_CALL(context, InitDX11, NULL, AMF_DX11_1);
+    if (res == AMF_OK) {
+        av_log(ctx, AV_LOG_VERBOSE, "Successfully initialized AMF via D3D11.\n");
+        return 0;
+    }
+
+    res = AMF_IFACE_CALL(context, InitDX9, NULL);
+    if (res == AMF_OK) {
+        av_log(ctx, AV_LOG_VERBOSE, "Successfully initialized AMF via D3D9.\n");
+        return 0;
+    }
+
+    av_log(ctx, AV_LOG_WARNING, "AMF failed to initialize with any of supported versions of DirectX, trying Vulkan instead...\n");
 #endif
+
+    res = AMF_IFACE_CALL(context, QueryInterface, &guid1, (void**)&context1);
+    AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_UNKNOWN, "CreateContext1() failed with error %d\n", res);
+
+    res = AMF_IFACE_CALL(context1, InitVulkan, NULL);
+    AMF_IFACE_CALL(context1, Release);
+
+    if (res == AMF_OK)
+        av_log(ctx, AV_LOG_VERBOSE, "Successfully initialized AMF via Vulkan.\n");
+    else {
+        if (res == AMF_NOT_SUPPORTED)
+            av_log(ctx, AV_LOG_ERROR, "AMF via Vulkan is not supported on the given device.\n");
+        else
+            av_log(ctx, AV_LOG_ERROR, "Failed to initialize AMF via Vulkan, error %d\n", res);
+
+        return AVERROR(ENOSYS);
+    }
 
     return 0;
 }

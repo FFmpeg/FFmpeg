@@ -46,6 +46,8 @@ typedef struct AVAMFDeviceContext {
     void *lock_ctx;
 } AVAMFDeviceContext;
 
+enum AMF_MEMORY_TYPE av_amf_get_memory_type(AVAMFDeviceContext *amf_ctx);
+
 enum AMF_SURFACE_FORMAT av_av_to_amf_format(enum AVPixelFormat fmt);
 enum AVPixelFormat av_amf_to_av_format(enum AMF_SURFACE_FORMAT fmt);
 
