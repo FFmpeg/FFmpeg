@@ -97,7 +97,7 @@ SECTION .text
 %endif
     packuswb  %1, %1
 %ifidn %3, avg
-    PAVGB     %1, %2
+    pavgb     %1, %2
 %endif
     movh  [dstq], %1
 %endmacro

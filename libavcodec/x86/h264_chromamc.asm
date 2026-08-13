@@ -117,11 +117,11 @@ cglobal %1_%2_chroma_mc2, 6, 7, 0
 %macro NOTHING 2-3
 %endmacro
 %macro DIRECT_AVG 2
-    PAVGB         %1, %2
+    pavgb         %1, %2
 %endmacro
 %macro COPY_AVG 3
     movd          %2, %3
-    PAVGB         %1, %2
+    pavgb         %1, %2
 %endmacro
 
 
