@@ -129,7 +129,7 @@ static const AVOption blend_options[] = {
 
 FRAMESYNC_DEFINE_CLASS(blend, BlendContext, fs);
 
-#define DEFINE_BLEND_EXPR(type, name, div)                                     \
+#define DEFINE_BLEND_EXPR(type, name, div, clip)                               \
 static void blend_expr_## name(const uint8_t *_top, ptrdiff_t top_linesize,          \
                                const uint8_t *_bottom, ptrdiff_t bottom_linesize,    \
                                uint8_t *_dst, ptrdiff_t dst_linesize,                \
@@ -153,7 +153,8 @@ static void blend_expr_## name(const uint8_t *_top, ptrdiff_t top_linesize,     
             values[VAR_X]      = x;                                            \
             values[VAR_TOP]    = values[VAR_A] = top[x];                       \
             values[VAR_BOTTOM] = values[VAR_B] = bottom[x];                    \
-            dst[x] = av_expr_eval(e, values, NULL);                            \
+            double value = av_expr_eval(e, values, NULL);                     \
+            dst[x] = clip ? av_clipd(value, 0, param->max_value) : value;      \
         }                                                                      \
         dst    += dst_linesize;                                                \
         top    += top_linesize;                                                \
@@ -161,9 +162,9 @@ static void blend_expr_## name(const uint8_t *_top, ptrdiff_t top_linesize,     
     }                                                                          \
 }
 
-DEFINE_BLEND_EXPR(uint8_t, 8bit, 1)
-DEFINE_BLEND_EXPR(uint16_t, 16bit, 2)
-DEFINE_BLEND_EXPR(float, 32bit, 4)
+DEFINE_BLEND_EXPR(uint8_t, 8bit, 1, 1)
+DEFINE_BLEND_EXPR(uint16_t, 16bit, 2, 1)
+DEFINE_BLEND_EXPR(float, 32bit, 4, 0)
 
 static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
@@ -305,6 +306,8 @@ static int config_params(AVFilterContext *ctx)
 
     for (int plane = 0; plane < FF_ARRAY_ELEMS(s->params); plane++) {
         FilterParams *param = &s->params[plane];
+
+        param->max_value = UINT32_MAX >> (32 - s->depth);
 
         if (s->all_mode >= 0)
             param->mode = s->all_mode;

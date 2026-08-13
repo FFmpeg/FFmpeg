@@ -382,6 +382,9 @@ FATE_FILTER_VSYNTH_PGMYUV-$(CONFIG_SWAPRECT_FILTER) += $(FATE_SWAPRECT)
 FATE_FILTER_VSYNTH_PGMYUV-$(CONFIG_TBLEND_FILTER) += fate-filter-tblend
 fate-filter-tblend: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf tblend=all_mode=difference128
 
+FATE_FILTER-$(call FILTERFRAMECRC, BLEND FORMAT NULLSRC SCALE SPLIT) += fate-filter-blend-expr-clipping
+fate-filter-blend-expr-clipping: CMD = framecrc -lavfi "nullsrc=s=1x1:d=1:r=1,format=gray10,split[a][b];[a][b]blend=c0_expr=1024,scale" -pix_fmt gray10le
+
 FATE_FILTER_VSYNTH_PGMYUV-$(CONFIG_TELECINE_FILTER) += fate-filter-telecine
 fate-filter-telecine: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf telecine
 
