@@ -377,6 +377,9 @@ int swr_set_channel_mapping(struct SwrContext *s, const int *channel_map);
  * default mixing matrix. It is made public just as a utility function for
  * building custom matrices.
  *
+ * AV_CHAN_UNUSED entries in custom layouts are ignored: their input columns or
+ * output rows are set to zero.
+ *
  * @param in_layout           input channel layout
  * @param out_layout          output channel layout
  * @param center_mix_level    mix level for the center channel

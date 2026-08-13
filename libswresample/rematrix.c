@@ -111,12 +111,16 @@ static int clean_layout(AVChannelLayout *out, const AVChannelLayout *in, void *s
     return ret;
 }
 
-static int sane_layout(AVChannelLayout *ch_layout) {
+static int sane_layout(const AVChannelLayout *ch_layout) {
     if(ch_layout->nb_channels >= SWR_CH_MAX)
         return 0;
     if(ch_layout->order == AV_CHANNEL_ORDER_CUSTOM)
         for (int i = 0; i < ch_layout->nb_channels; i++) {
-            if (ch_layout->u.map[i].id >= 64)
+            enum AVChannel id = ch_layout->u.map[i].id;
+
+            if (id == AV_CHAN_UNUSED)
+                continue;
+            if (id >= 64)
                 return 0;
         }
     else if (ch_layout->order != AV_CHANNEL_ORDER_NATIVE)
@@ -155,6 +159,28 @@ static void build_matrix(const AVChannelLayout *in_ch_layout, const AVChannelLay
     uint64_t unaccounted =  in_mask & ~out_mask;
     double maxcoef=0;
     int i, j;
+
+    if (in_ch_layout->order == AV_CHANNEL_ORDER_CUSTOM) {
+        for (j = 0; j < in_ch_layout->nb_channels; j++) {
+            if (in_ch_layout->u.map[j].id == AV_CHAN_UNUSED) {
+                /* the named-channel loop below cannot visit AV_CHAN_UNUSED.
+                 * explicitly clear its column so callers may reuse a matrix. */
+                for (i = 0; i < out_ch_layout->nb_channels; i++)
+                    matrix_param[stride * i + j] = 0.0;
+            }
+        }
+    }
+
+    if (out_ch_layout->order == AV_CHANNEL_ORDER_CUSTOM) {
+        for (i = 0; i < out_ch_layout->nb_channels; i++) {
+            if (out_ch_layout->u.map[i].id == AV_CHAN_UNUSED) {
+                /* the named-channel loop below cannot visit AV_CHAN_UNUSED.
+                 * explicitly clear its row so callers may reuse a matrix. */
+                for (j = 0; j < in_ch_layout->nb_channels; j++)
+                    matrix_param[stride * i + j] = 0.0;
+            }
+        }
+    }
 
     for(i=0; i<FF_ARRAY_ELEMS(matrix); i++){
         if (in_mask & out_mask & (1ULL << i))
