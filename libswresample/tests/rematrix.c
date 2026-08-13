@@ -82,23 +82,30 @@ int main(int argc, char **argv)
     if (ret < 0) {
         if (ret == AVERROR(EINVAL))
             fprintf(stderr, "Invalid input layout %s\n", in);
-        return 1;
+        ret = 1;
+        goto end;
     }
 
     ret = av_channel_layout_from_string(&out_layout, out);
     if (ret < 0) {
         if (ret == AVERROR(EINVAL))
             fprintf(stderr, "Invalid output layout %s\n", out);
-        return 1;
+        ret = 1;
+        goto end;
     }
 
     if (in_layout.nb_channels > MATRIX_STRIDE ||
         out_layout.nb_channels > MATRIX_STRIDE) {
         fprintf(stderr, "channel layout exceeds matrix capacity\n");
-        return 1;
+        ret = 1;
+        goto end;
     }
 
     ret = print_matrix(&in_layout, &out_layout);
+
+end:
+    av_channel_layout_uninit(&in_layout);
+    av_channel_layout_uninit(&out_layout);
 
     return ret;
 }
