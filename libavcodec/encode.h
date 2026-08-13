@@ -21,7 +21,6 @@
 #ifndef AVCODEC_ENCODE_H
 #define AVCODEC_ENCODE_H
 
-#include "libavutil/opt.h"
 #include "libavutil/dict.h"
 #include "libavutil/frame.h"
 
