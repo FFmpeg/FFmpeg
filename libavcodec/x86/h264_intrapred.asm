@@ -259,9 +259,9 @@ cglobal pred16x16_plane_%1_8, 2,9,5
 %endif
     movhlps      m1, m0
     paddw        m0, m1
-    PSHUFLW      m1, m0, q0032
+    pshuflw      m1, m0, q0032
     paddw        m0, m1
-    PSHUFLW      m1, m0, q0001
+    pshuflw      m1, m0, q0001
     paddw        m0, m1           ; sum of H coefficients
 
     lea          r4, [r0+r2*8-1]
@@ -467,11 +467,11 @@ cglobal pred8x8_plane_8, 2,9,5
     paddw        m0, m1
 
 %if notcpuflag(ssse3)
-    PSHUFLW      m1, m0, q0032
+    pshuflw      m1, m0, q0032
     paddw        m0, m1
 %endif ; !ssse3
 
-    PSHUFLW      m1, m0, q0001
+    pshuflw      m1, m0, q0001
     paddw        m0, m1           ; sum of H coefficients
 
     lea          r4, [r0+r2*4-1]

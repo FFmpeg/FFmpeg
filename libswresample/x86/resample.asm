@@ -461,8 +461,8 @@ cglobal resample_linear_%1, 1, 7, 5, ctx, min_filter_length_x4, filter2, \
     paddd                         m0, m1
 %endif
 %if notcpuflag(xop)
-    PSHUFLW                       m3, m2, q0032
-    PSHUFLW                       m1, m0, q0032
+    pshuflw                       m3, m2, q0032
+    pshuflw                       m1, m0, q0032
     paddd                         m2, m3
     paddd                         m0, m1
 %endif
