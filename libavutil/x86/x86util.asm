@@ -314,15 +314,6 @@
 %endif
 %endmacro
 
-%macro PSIGNW 2
-%if cpuflag(ssse3)
-    psignw     %1, %2
-%else
-    pxor       %1, %2
-    psubw      %1, %2
-%endif
-%endmacro
-
 %macro ABS1 2
 %if cpuflag(ssse3)
     pabsw   %1, %1
