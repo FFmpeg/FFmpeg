@@ -822,7 +822,7 @@ cglobal vp9_%1_%3_8x8_add, 3, 3, %6, dst, stride, block, eob
     mova               m15, [pw_11585x2]    ; often used
 %endif
     mova               m13, [pd_8192]       ; rounding
-    mova               m14, [pw_m1]
+    pcmpeqw            m14, m14             ; pw_m1
 %define W_11585x2_REG m15
 %define D_8192_REG m13
 %define W_M1_REG m14
