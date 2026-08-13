@@ -42,7 +42,7 @@ SECTION .text
 ;-----------------------------------------------------------------------------
 
 %macro AC3_EXPONENT_MIN 0
-cglobal ac3_exponent_min, 3, 4, 2, exp, reuse_blks, expn, offset
+cglobal ac3_exponent_min, 3, 4, 1, exp, reuse_blks, expn, offset
     shl  reuse_blksd, 8
     jz .end
     LOOP_ALIGN
@@ -52,7 +52,7 @@ cglobal ac3_exponent_min, 3, 4, 2, exp, reuse_blks, expn, offset
     sub      offsetq, 256
     LOOP_ALIGN
 .nextblk:
-    PMINUB        m0, [expq+offsetq], m1
+    pminub        m0, [expq+offsetq]
     sub      offsetq, 256
     jae .nextblk
     mova      [expq], m0
