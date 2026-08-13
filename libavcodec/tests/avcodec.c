@@ -174,6 +174,8 @@ int main(void){
                 ERR("Encoder %s is both subtitle encoder and not subtitle encoder.");
             if (codec2->update_thread_context || codec2->update_thread_context_for_user || codec2->bsfs)
                 ERR("Encoder %s has decoder-only thread functions or bsf.\n");
+            if (codec2->reconf && !(codec->capabilities & AV_CODEC_CAP_ENCODER_RECONF))
+                ERR("Encoder %s has reconf callback without supporting recondiguration.\n");
             if (codec->type == AVMEDIA_TYPE_AUDIO) {
                 if (!codec2->sample_fmts) {
                     av_log(NULL, AV_LOG_FATAL, "Encoder %s is missing the sample_fmts field\n", codec->name);
@@ -216,7 +218,9 @@ int main(void){
             if (codec->capabilities & (AV_CODEC_CAP_SMALL_LAST_FRAME    |
                                        AV_CODEC_CAP_VARIABLE_FRAME_SIZE |
                                        AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE |
-                                       AV_CODEC_CAP_ENCODER_FLUSH))
+                                       AV_CODEC_CAP_ENCODER_FLUSH            |
+                                       AV_CODEC_CAP_ENCODER_RECONF           |
+                                       AV_CODEC_CAP_ENCODER_RECON_FRAME))
                 ERR("Decoder %s has encoder-only capabilities\n");
             if (codec2->cb_type != FF_CODEC_CB_TYPE_DECODE &&
                 codec2->caps_internal & FF_CODEC_CAP_SETS_PKT_DTS)
