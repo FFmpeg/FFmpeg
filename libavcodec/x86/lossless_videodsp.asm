@@ -46,7 +46,7 @@ cglobal add_median_pred, 6,6,8, dst, top, diff, w, left, left_top
     movu    m0, [topq]
     mova    m2, m0
     movd    m4, [left_topq]
-    LSHIFT  m2, 1
+    pslldq  m2, 1
     mova    m1, m0
     por     m4, m2
     movd    m3, [leftq]
@@ -59,7 +59,7 @@ cglobal add_median_pred, 6,6,8, dst, top, diff, w, left, left_top
 .loop:
     movu    m4, [topq+wq]
     mova    m0, m4
-    LSHIFT  m4, 1
+    pslldq  m4, 1
     por     m4, m1
     mova    m1, m0 ; t
     psubb   m0, m4 ; t-tl
@@ -77,17 +77,17 @@ cglobal add_median_pred, 6,6,8, dst, top, diff, w, left, left_top
     paddb   m3, m2 ; +residual
 %if i==0
     mova    m7, m3
-    LSHIFT  m7, mmsize-1
+    pslldq  m7, mmsize-1
 %else
     mova    m6, m3
-    RSHIFT  m7, 1
-    LSHIFT  m6, mmsize-1
+    psrldq  m7, 1
+    pslldq  m6, mmsize-1
     por     m7, m6
 %endif
 %if i<mmsize-1
-    RSHIFT  m0, 1
-    RSHIFT  m1, 1
-    RSHIFT  m2, 1
+    psrldq  m0, 1
+    psrldq  m1, 1
+    psrldq  m2, 1
 %endif
 %assign i i+1
 %endrep

@@ -72,7 +72,7 @@ SECTION .text
     pavgw     m5, m3
     pand      m4, [pw_1]
     psubusw   m5, m4
-    RSHIFT    m5, 2
+    psrldq    m5, 2
     punpcklwd m5, m7
     mova      m4, m2
     psubusw   m2, m3
@@ -80,8 +80,8 @@ SECTION .text
     PMAXUW    m2, m3
     mova      m3, m2
     mova      m4, m2
-    RSHIFT    m3, 2
-    RSHIFT    m4, 4
+    psrldq    m3, 2
+    psrldq    m4, 4
     punpcklwd m2, m7
     punpcklwd m3, m7
     punpcklwd m4, m7
@@ -186,7 +186,7 @@ SECTION .text
     psubusw      m3, m4
     PMAXUW       m2, m3
     mova         m3, m2
-    RSHIFT       m3, 4
+    psrldq       m3, 4
     punpcklwd    m2, m7
     punpcklwd    m3, m7
     paddd        m0, m2
