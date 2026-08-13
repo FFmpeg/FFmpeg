@@ -423,6 +423,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
 
             if (sps->frame_mbs_only_flag) {
                 p->picture_structure = PICT_FRAME;
+                s->field_order = AV_FIELD_PROGRESSIVE;
             } else {
                 if (get_bits1(&nal.gb)) { // field_pic_flag
                     p->picture_structure = PICT_TOP_FIELD + get_bits1(&nal.gb); // bottom_field_flag
@@ -541,8 +542,11 @@ static inline int parse_nal_units(AVCodecParserContext *s,
                         s->field_order = AV_FIELD_TT;
                     else if (field_poc[0] > field_poc[1])
                         s->field_order = AV_FIELD_BB;
-                    else
-                        s->field_order = AV_FIELD_PROGRESSIVE;
+                    else if (sps->mb_aff) {
+                        /* Default to top field first
+                         * This is the same as what the decoder does */
+                        s->field_order = AV_FIELD_TT;
+                    }
                 }
             } else {
                 if (p->picture_structure == PICT_TOP_FIELD)
