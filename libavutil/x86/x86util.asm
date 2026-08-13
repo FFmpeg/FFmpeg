@@ -501,22 +501,6 @@
 %endif
 %endmacro
 
-%macro PAVGB 2-4
-%if cpuflag(mmxext)
-    pavgb   %1, %2
-%elif cpuflag(3dnow)
-    pavgusb %1, %2
-%elif cpuflag(mmx)
-    movu   %3, %2
-    por    %3, %1
-    pxor   %1, %2
-    pand   %1, %4
-    psrlq  %1, 1
-    psubb  %3, %1
-    SWAP   %1, %3
-%endif
-%endmacro
-
 %macro PSHUFLW 1+
     %if mmsize == 8
         pshufw %1
