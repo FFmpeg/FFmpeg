@@ -361,17 +361,6 @@
 %endif
 %endmacro
 
-%macro ABSD2 4
-    pxor    %3, %3
-    pxor    %4, %4
-    pcmpgtd %3, %1
-    pcmpgtd %4, %2
-    pxor    %1, %3
-    pxor    %2, %4
-    psubd   %1, %3
-    psubd   %2, %4
-%endmacro
-
 %macro ABS4 6
     ABS2 %1, %2, %5, %6
     ABS2 %3, %4, %5, %6
