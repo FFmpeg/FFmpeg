@@ -256,17 +256,19 @@ typedef struct FFCodec {
      */
     void (*flush)(struct AVCodecContext *);
 
-    /**
-     * Reconfigure the encoder
-     * Called by avcodec_encode_reconfigure()
-     */
-    int (*reconf)(struct AVCodecContext *avctx, struct AVDictionary **dict);
+    union {
+        /**
+        * Encoding only. Reconfigure the encoder
+        * Called by avcodec_encode_reconfigure()
+        */
+        int (*reconf)(struct AVCodecContext *avctx, struct AVDictionary **dict);
 
-    /**
-     * Decoding only, a comma-separated list of bitstream filters to apply to
-     * packets before decoding.
-     */
-    const char *bsfs;
+        /**
+        * Decoding only, a comma-separated list of bitstream filters to apply to
+        * packets before decoding.
+        */
+        const char *bsfs;
+    };
 
     /**
      * Array of pointers to hardware configurations supported by the codec,

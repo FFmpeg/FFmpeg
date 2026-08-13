@@ -172,7 +172,7 @@ int main(void){
         if (is_encoder) {
             if ((codec->type == AVMEDIA_TYPE_SUBTITLE) != (codec2->cb_type == FF_CODEC_CB_TYPE_ENCODE_SUB))
                 ERR("Encoder %s is both subtitle encoder and not subtitle encoder.");
-            if (codec2->update_thread_context || codec2->update_thread_context_for_user || codec2->bsfs)
+            if (codec2->update_thread_context || codec2->update_thread_context_for_user)
                 ERR("Encoder %s has decoder-only thread functions or bsf.\n");
             if (codec2->reconf && !(codec->capabilities & AV_CODEC_CAP_ENCODER_RECONF))
                 ERR("Encoder %s has reconf callback without supporting recondiguration.\n");
