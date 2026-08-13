@@ -403,12 +403,7 @@
     paddd   %1, %2
 %endif
 %if notcpuflag(xop) || sizeof%1 != 16
-%if cpuflag(mmxext)
-    PSHUFLW %2, %1, q0032
-%else ; mmx
-    mova    %2, %1
-    psrlq   %2, 32
-%endif
+    pshuflw %2, %1, q0032
     paddd   %1, %2
 %endif
 %undef %1
@@ -464,14 +459,6 @@
 %endif
     por     %%dst, %4
 %endif
-%endmacro
-
-%macro PSHUFLW 1+
-    %if mmsize == 8
-        pshufw %1
-    %else
-        pshuflw %1
-    %endif
 %endmacro
 
 %macro DEINTB 5 ; mask, reg1, mask, reg2, optional src to fill masks from
