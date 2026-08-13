@@ -90,7 +90,7 @@ static void put_snow_qpel2_hv_lowpass_8(uint8_t *dst, pixeltmp *tmp, const uint8
     }
 }
 
-H264_MC(put_, snow, 2)
+H264_QPEL(put_, snow, 2)
 
 static av_cold void init_qpel(SnowContext *const s)
 {

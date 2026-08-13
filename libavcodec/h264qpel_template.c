@@ -304,12 +304,13 @@ static void FUNC(OPNAME ## h264_qpel16_hv_lowpass)(uint8_t *dst, pixeltmp *tmp, 
     FUNC(OPNAME ## h264_qpel8_hv_lowpass)(dst+8*sizeof(pixel), tmp+8, src+8*sizeof(pixel), dstStride, tmpStride, srcStride);\
 }\
 
-#define H264_MC(OPNAME, NAME, SIZE) \
-static void FUNCC(OPNAME ## NAME ## _qpel ## SIZE ## _mc00)(uint8_t *dst, const uint8_t *restrict src, ptrdiff_t stride)\
+#define H264_FPEL(OPNAME, NAME, SIZE) \
+static void FUNCC2(OPNAME ## NAME ## _qpel ## SIZE ## _mc00)(uint8_t *dst, const uint8_t *restrict src, ptrdiff_t stride)\
 {\
     FUNCC(OPNAME ## pixels ## SIZE)(dst, src, stride, SIZE);\
-}\
-\
+}
+
+#define H264_MC(OPNAME, NAME, SIZE) \
 static void FUNCC(OPNAME ## NAME ## _qpel ## SIZE ## _mc10)(uint8_t *dst, const uint8_t *restrict src, ptrdiff_t stride)\
 {\
     uint8_t half[SIZE*SIZE*sizeof(pixel)];\
@@ -463,15 +464,24 @@ static void FUNCC(OPNAME ## NAME ## _qpel ## SIZE ## _mc32)(uint8_t *dst, const 
 #define op2_avg(a, b)  a = (((a)+CLIP(((b) + 512)>>10)+1)>>1)
 #define op2_put(a, b)  a = CLIP(((b) + 512)>>10)
 
+#undef H264_QPEL
+#if BIT_DEPTH == 8 || BIT_DEPTH == 9
+#define H264_QPEL(OPNAME, NAME, SIZE) \
+    H264_MC(OPNAME, NAME, SIZE)       \
+    H264_FPEL(OPNAME, NAME, SIZE)
+#else
+#define H264_QPEL(OPNAME, NAME, SIZE) H264_MC(OPNAME, NAME, SIZE)
+#endif
+
 #ifndef SNOW
 H264_LOWPASS(put_       , op_put, op2_put)
 H264_LOWPASS(avg_       , op_avg, op2_avg)
-H264_MC(put_, h264, 4)
-H264_MC(put_, h264, 8)
-H264_MC(put_, h264, 16)
-H264_MC(avg_, h264, 4)
-H264_MC(avg_, h264, 8)
-H264_MC(avg_, h264, 16)
+H264_QPEL(put_, h264, 4)
+H264_QPEL(put_, h264, 8)
+H264_QPEL(put_, h264, 16)
+H264_QPEL(avg_, h264, 4)
+H264_QPEL(avg_, h264, 8)
+H264_QPEL(avg_, h264, 16)
 #endif
 
 #undef op_avg
