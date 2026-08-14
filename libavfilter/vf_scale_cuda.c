@@ -379,11 +379,16 @@ static av_cold void cudascale_setup_passes(AVFilterContext *ctx)
     if (!s->use_filters)
         return;
 
-    if (inlink->w != outlink->w && inlink->h != outlink->h) {
+    const int scale_x = inlink->w != outlink->w ||
+                        s->in_desc->log2_chroma_w != s->out_desc->log2_chroma_w;
+    const int scale_y = inlink->h != outlink->h ||
+                        s->in_desc->log2_chroma_h != s->out_desc->log2_chroma_h;
+
+    if (scale_x && scale_y) {
         /* Always perform the horizontal scaling pass first */
         s->pass_x = FILTER_TMP;
         s->pass_y = FILTER_OUT;
-    } else if (inlink->w != outlink->w) {
+    } else if (scale_x) {
         s->pass_x = FILTER_OUT;
     } else {
         s->pass_y = FILTER_OUT;
@@ -444,7 +449,11 @@ static av_cold int init_processing_chain(AVFilterContext *ctx, int in_width, int
 
         if (s->interp_algo == INTERP_ALGO_NEAREST) {
             s->use_filters = 0;
-        } else if (s->use_filters < 0 && (out_width < in_width || out_height < in_height))
+        } else if (s->use_filters < 0 && (
+                       out_width < in_width || out_height < in_height ||
+                       AV_CEIL_RSHIFT(out_width, s->out_desc->log2_chroma_w) < AV_CEIL_RSHIFT(in_width, s->in_desc->log2_chroma_w) ||
+                       AV_CEIL_RSHIFT(out_height, s->out_desc->log2_chroma_h) < AV_CEIL_RSHIFT(in_height, s->in_desc->log2_chroma_h)
+                   ))
             s->use_filters = 1; /* downscaling; needed for anti-aliasing */
         else if (s->use_filters < 0)
             s->use_filters = 0;
