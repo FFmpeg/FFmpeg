@@ -791,7 +791,7 @@ static int exchange_sdp(AVFormatContext *s)
         goto end;
     }
 
-    if (!whip->sdp_offer || !strlen(whip->sdp_offer)) {
+    if (!whip->sdp_offer || !*whip->sdp_offer) {
         av_log(whip, AV_LOG_ERROR, "No offer to exchange\n");
         ret = AVERROR(EINVAL);
         goto end;
@@ -812,12 +812,13 @@ static int exchange_sdp(AVFormatContext *s)
     if (whip->timeout >= 0)
         av_dict_set_int(&opts, "timeout", whip->timeout, 0);
 
-    hex_data = av_mallocz(2 * strlen(whip->sdp_offer) + 1);
+    const size_t sdp_offer_len = strlen(whip->sdp_offer);
+    hex_data = av_malloc(2 * sdp_offer_len + 1);
     if (!hex_data) {
         ret = AVERROR(ENOMEM);
         goto end;
     }
-    ff_data_to_hex(hex_data, whip->sdp_offer, strlen(whip->sdp_offer), 0);
+    ff_data_to_hex(hex_data, whip->sdp_offer, sdp_offer_len, 0);
     av_dict_set(&opts, "post_data", hex_data, 0);
 
     ret = ffurl_open_whitelist(&whip_uc, s->url, AVIO_FLAG_READ_WRITE, &s->interrupt_callback,
