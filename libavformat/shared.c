@@ -292,7 +292,7 @@ static int shared_open(URLContext *h, const char *arg, int flags, AVDictionary *
            s->cache_path, s->inner->filename);
 
     s->fd    = avpriv_open(s->cache_path, O_RDWR | O_CREAT, 0660);
-    s->mapfd = avpriv_open(s->map_path,   O_RDWR | O_CREAT, 0660);
+    s->mapfd = s->fd >= 0 ? avpriv_open(s->map_path,   O_RDWR | O_CREAT, 0660) : -1;
     if (s->fd < 0 || s->mapfd < 0) {
         ret = AVERROR(errno);
         av_log(h, AV_LOG_ERROR, "Failed to open '%s': %s\n",
