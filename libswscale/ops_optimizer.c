@@ -563,18 +563,6 @@ retry:
                 ff_sws_op_list_remove_at(ops, n + 1, 1);
                 goto retry;
             }
-
-            /* Conversion followed by integer expansion */
-            if (next->op == SWS_OP_SCALE && !op->convert.expand &&
-                ff_sws_pixel_type_is_int(op->type) &&
-                ff_sws_pixel_type_is_int(op->convert.to) &&
-                !ff_cmp_q64(next->scale.factor,
-                            ff_sws_pixel_expand(op->type, op->convert.to)))
-            {
-                op->convert.expand = true;
-                ff_sws_op_list_remove_at(ops, n + 1, 1);
-                goto retry;
-            }
             break;
 
         case SWS_OP_MIN:
@@ -1025,8 +1013,47 @@ static int solve_shuffle(const SwsUOpList *const uops, SwsUOp *out)
     return AVERROR(EINVAL);
 }
 
+static int is_integer_scale(const SwsUOp *op, int64_t val)
+{
+    if (op->uop != SWS_UOP_SCALE)
+        return false;
+
+    switch (op->type) {
+    case SWS_PIXEL_U8:  return op->data.scalar.u8  == val;
+    case SWS_PIXEL_U16: return op->data.scalar.u16 == val;
+    case SWS_PIXEL_U32: return op->data.scalar.u32 == val;
+    default: return false;
+    }
+}
+
 int ff_sws_uop_list_optimize(SwsContext *ctx, SwsUOpFlags flags, SwsUOpList *uops)
 {
+    static const SwsUOp dummy = {0};
+
+retry:
+    for (int i = 0; i < uops->num_ops; i++) {
+        const SwsUOp *next = i < uops->num_ops - 1 ? &uops->ops[i + 1] : &dummy;
+        SwsUOp *op = &uops->ops[i];
+
+        switch (op->uop) {
+        case SWS_UOP_TO_U16:
+            if (is_integer_scale(next, 0x101)) {
+                op->uop = SWS_UOP_EXPAND_PAIR;
+                ff_sws_uop_list_remove_at(uops, i + 1, 1);
+                goto retry;
+            }
+            break;
+
+        case SWS_UOP_TO_U32:
+            if (is_integer_scale(next, 0x1010101)) {
+                op->uop = SWS_UOP_EXPAND_QUAD;
+                ff_sws_uop_list_remove_at(uops, i + 1, 1);
+                goto retry;
+            }
+            break;
+        }
+    }
+
     /* Try promoting the entire uop list to a packed shuffle operation */
     if (flags & SWS_UOP_FLAG_PSHUFB) {
         SwsUOp shuffle;
@@ -1038,20 +1065,6 @@ int ff_sws_uop_list_optimize(SwsContext *ctx, SwsUOpFlags flags, SwsUOpList *uop
             return ret;
         }
     }
-
-#if 0
-    static const SwsUOp dummy = {0};
-
-retry:
-    for (int i = 0; i < uops->num_ops; i++) {
-        const SwsUOp *next = i < uops->num_ops - 1 ? &uops->ops[i + 1] : &dummy;
-        SwsUOp *op = &uops->ops[i];
-
-        switch (op->uop) {
-            /* placeholder */
-        }
-    }
-#endif
 
     return 0;
 }
