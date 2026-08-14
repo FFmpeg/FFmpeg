@@ -110,26 +110,26 @@ AVUTILOBJS-$(CONFIG_PIXELUTILS)         += pixelutils.o
 
 CHECKASMOBJS-$(CONFIG_AVUTIL)  += $(AVUTILOBJS) $(AVUTILOBJS-yes)
 
-EXT_CHECKASMOBJS-$(ARCH_AARCH64)            += ext/src/arm/checkasm_64.o
-EXT_CHECKASMOBJS-$(ARCH_ARM)                += ext/src/arm/checkasm_32.o
+EXT_CHECKASMOBJS-$(ARCH_AARCH64)            += ext/src/arm/checkasm_64.o \
+                                               ext/src/arm/cpu.o ext/src/perf/arm.o
+EXT_CHECKASMOBJS-$(ARCH_ARM)                += ext/src/arm/checkasm_32.o \
+                                               ext/src/arm/cpu.o ext/src/perf/arm.o
 EXT_CHECKASMOBJS-$(ARCH_LOONGARCH)          += ext/src/loongarch/checkasm.o
+EXT_CHECKASMOBJS-$(CONFIG_LINUX_PERF)       += ext/src/perf/linux.o
+EXT_CHECKASMOBJS-$(CONFIG_MACOS_KPERF)      += ext/src/perf/macos_kperf.o
 EXT_CHECKASMOBJS-$(HAVE_RV)                 += ext/src/riscv/callcheck.o
+EXT_CHECKASMOBJS-$(ARCH_RISCV)              += ext/src/riscv/cpu.o
 EXT_CHECKASMOBJS-$(HAVE_X86ASM)             += ext/src/x86/checkasm.o
+EXT_CHECKASMOBJS-$(ARCH_X86)                += ext/src/x86/cpu.o
 
-EXT_CHECKASMOBJS += ext/src/arm/cpu.o                  \
-                    ext/src/checkasm.o                 \
+EXT_CHECKASMOBJS += ext/src/checkasm.o                 \
                     ext/src/cpu.o                      \
                     ext/src/function.o                 \
                     ext/src/perf.o                     \
-                    ext/src/perf/arm.o                 \
-                    ext/src/perf/linux.o               \
-                    ext/src/perf/macos_kperf.o         \
-                    ext/src/riscv/cpu.o                \
                     ext/src/signal.o                   \
                     ext/src/stackguard.o               \
                     ext/src/stats.o                    \
                     ext/src/utils.o                    \
-                    ext/src/x86/cpu.o                  \
 
 EXT_CHECKASMOBJS += $(EXT_CHECKASMOBJS-yes)
 $(EXT_CHECKASMOBJS:%=tests/checkasm/%): CFLAGS      += -I$(SRC_PATH)/tests/checkasm/ext/src
