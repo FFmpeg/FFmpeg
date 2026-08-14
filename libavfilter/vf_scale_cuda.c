@@ -667,9 +667,11 @@ static av_cold int cudascale_setup_filters(AVFilterContext *ctx)
         }
     }
 
-    ret = inter_buf_init(ctx, outlink->w, inlink->h);
-    if (ret < 0)
-        goto fail;
+    if (s->pass_x == FILTER_TMP) {
+        ret = inter_buf_init(ctx, outlink->w, inlink->h);
+        if (ret < 0)
+            goto fail;
+    }
 
     ret = 0;
 
