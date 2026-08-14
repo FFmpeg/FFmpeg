@@ -604,7 +604,7 @@ av_cold int ff_encode_reconf_parse_dict(AVCodecContext *avctx, AVDictionary **di
     AVDictionary *copy = NULL;
     int ret;
 
-    av_assert0(av_codec_is_encoder(codec) && (codec->capabilities & AV_CODEC_CAP_RECONF));
+    av_assert0(av_codec_is_encoder(codec) && (codec->capabilities & AV_CODEC_CAP_ENCODER_RECONF));
 
     ret = av_dict_copy(&copy, *dict, 0);
     if (ret < 0)
@@ -678,7 +678,7 @@ av_cold int avcodec_encode_reconfigure(AVCodecContext *avctx, AVDictionary **dic
     if (!dict || !*dict || !avcodec_is_open(avctx) || !av_codec_is_encoder(avctx->codec))
         return AVERROR(EINVAL);
 
-    if (!(avctx->codec->capabilities & AV_CODEC_CAP_RECONF)) {
+    if (!(avctx->codec->capabilities & AV_CODEC_CAP_ENCODER_RECONF)) {
         av_log(avctx, AV_LOG_ERROR, "This encoder does not support reconfiguration\n");
         return AVERROR(ENOSYS);
     }

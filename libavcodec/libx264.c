@@ -1643,7 +1643,7 @@ const FFCodec ff_libx264_encoder = {
                         AV_CODEC_CAP_OTHER_THREADS |
                         AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE |
                         AV_CODEC_CAP_ENCODER_FLUSH |
-                        AV_CODEC_CAP_RECONF |
+                        AV_CODEC_CAP_ENCODER_RECONF |
                         AV_CODEC_CAP_ENCODER_RECON_FRAME,
     .p.priv_class     = &x264_class,
     .p.wrapper_name   = "libx264",

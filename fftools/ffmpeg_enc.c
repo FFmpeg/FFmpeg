@@ -973,7 +973,7 @@ static int reinit_encoder(OutputStream *ost, EncoderThread *et)
     if (force_reinit)
         av_dict_set(&copy, "force_reinit", NULL, 0);
     // Lets try a graceful reconfiguration first
-    else if (e->enc_ctx->codec->capabilities & AV_CODEC_CAP_RECONF) {
+    else if (e->enc_ctx->codec->capabilities & AV_CODEC_CAP_ENCODER_RECONF) {
         ret = avcodec_encode_reconfigure(e->enc_ctx, &copy);
         if (!ret)
             goto end;

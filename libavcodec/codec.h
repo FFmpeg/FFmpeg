@@ -51,7 +51,7 @@
 /**
  * Encoder can be reconfigured by passing new initialization parameters.
  */
-#define AV_CODEC_CAP_RECONF              (1 <<  2)
+#define AV_CODEC_CAP_ENCODER_RECONF      (1 <<  2)
 
 /**
  * Encoder or decoder requires flushing with NULL input at the end in order to

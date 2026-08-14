@@ -1687,7 +1687,7 @@ const FFCodec ff_libaom_av1_encoder = {
     .p.id           = AV_CODEC_ID_AV1,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
                       AV_CODEC_CAP_ENCODER_RECON_FRAME |
-                      AV_CODEC_CAP_RECONF |
+                      AV_CODEC_CAP_ENCODER_RECONF |
                       AV_CODEC_CAP_OTHER_THREADS,
     .color_ranges   = AVCOL_RANGE_MPEG | AVCOL_RANGE_JPEG,
     .p.profiles     = NULL_IF_CONFIG_SMALL(ff_av1_profiles),

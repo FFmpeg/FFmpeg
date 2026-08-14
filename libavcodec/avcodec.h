@@ -2235,7 +2235,7 @@ int avcodec_open2(AVCodecContext *avctx, const AVCodec *codec, AVDictionary **op
 
 /**
  * Try to reconfigure the encoder with the provided dictionary. May only be used
- * if a codec with AV_CODEC_CAP_RECONF has been opened.
+ * if a codec with AV_CODEC_CAP_ENCODER_RECONF has been opened.
  *
  * Not all options can be changed, and it depends on the encoder. If any of the
  * options can't be applied (Either because the option can't be changed, because
