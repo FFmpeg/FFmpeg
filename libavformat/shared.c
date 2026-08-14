@@ -169,6 +169,7 @@ typedef struct SharedContext {
     int block_size;
     int write_err; ///< write error occurred
     int num_corrupt;
+    int64_t filesize; ///< once known
 
     /* cache file */
     uint8_t *cache_data; ///< optional mmap of the cache file
@@ -216,7 +217,15 @@ static int spacemap_grow(URLContext *h, int64_t block);
 static int64_t get_filesize(URLContext *h)
 {
     SharedContext *s = h->priv_data;
-    return atomic_load_explicit(&s->spacemap->filesize, memory_order_relaxed);
+    if (!s->filesize) {
+        uint64_t size = atomic_load_explicit(&s->spacemap->filesize, memory_order_relaxed);
+        if (size > INT64_MAX)
+            return AVERROR(EINVAL);
+        else if (size)
+            s->filesize = size;
+    }
+
+    return s->filesize;
 }
 
 static int set_filesize(URLContext *h, int64_t new_size)
@@ -299,7 +308,10 @@ static int shared_open(URLContext *h, const char *arg, int flags, AVDictionary *
     s->block_size = 1 << s->block_shift;
 
     int64_t filesize = get_filesize(h);
-    if (!filesize) {
+    if (filesize < 0) {
+        ret = (int) filesize;
+        goto fail;
+    } else if (!filesize) {
         /* Filesize is not yet known, try to get it from the underlying URL */
         filesize = ffurl_size(s->inner);
         if (filesize < 0 && filesize != AVERROR(ENOSYS)) {
@@ -459,7 +471,10 @@ static int spacemap_grow(URLContext *h, int64_t block)
 
     /* When streaming files without known size, round up the number of blocks
      * to the nearest multiple of the block size to reduce the rate of resizes */
-    if (!get_filesize(h)) {
+    int64_t filesize = get_filesize(h);
+    if (filesize < 0)
+        return (int) filesize;
+    else if (!filesize) {
         av_assert0(s->block_size > 0);
         map_bytes = FFALIGN(map_bytes, (int64_t) s->block_size);
     }
@@ -579,9 +594,8 @@ static int write_cache(SharedContext *s, const uint8_t *buf, size_t size, off_t 
     return 0;
 }
 
-static size_t clamp_size(URLContext *h, size_t size, int64_t pos)
+static int clamp_size(URLContext *h, int size, int64_t pos, int64_t filesize)
 {
-    const int64_t filesize = get_filesize(h);
     if (!filesize)
         return size;
     else if (pos > filesize)
@@ -601,14 +615,18 @@ static int shared_read(URLContext *h, unsigned char *buf, int size)
     if (size <= 0)
         return 0;
 
-    size = clamp_size(h, size, s->pos);
+    int64_t filesize = get_filesize(h);
+    if (filesize < 0)
+        return (int) filesize;
+
+    size = clamp_size(h, size, s->pos, filesize);
     if (size <= 0)
         return AVERROR_EOF;
 
     const int64_t block_id = s->pos >> s->block_shift;
     const int64_t offset = s->pos & (s->block_size - 1);
     const int64_t block_pos = block_id * s->block_size;
-    int block_size = clamp_size(h, s->block_size, block_pos);
+    int block_size = clamp_size(h, s->block_size, block_pos, filesize);
     ret = spacemap_grow(h, block_id);
     if (ret < 0)
         return ret;
@@ -624,8 +642,13 @@ retry:
         if (s->num_corrupt >= MAX_CORRUPT_BLOCKS)
             goto read_block; /* assume broken cache file */
 
+        /* filesize may have become known in the meantime */
+        filesize = get_filesize(h);
+        if (filesize < 0)
+            return (int) filesize;
+
         /* We always need to read the entire block to verify integrity */
-        block_size = clamp_size(h, block_size, block_pos); /* filesize may have changed */
+        block_size = clamp_size(h, block_size, block_pos, filesize);
         if (s->cache_data) {
             av_assert1(block_pos + block_size <= s->cache_size);
             tmp = s->cache_data + block_pos;
@@ -865,6 +888,9 @@ static int64_t shared_seek(URLContext *h, int64_t pos, int whence)
         return AVERROR(EIO);
 
     const int64_t filesize = get_filesize(h);
+    if (filesize < 0)
+        return filesize;
+
     switch (whence) {
     case AVSEEK_SIZE:
         if (filesize)
