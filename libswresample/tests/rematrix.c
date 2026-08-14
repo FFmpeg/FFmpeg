@@ -41,16 +41,15 @@ static void print_matrix_row(const double *matrix,
 
     printf("[%s] = { ", out_name);
     for (int i = 0; i < 64; i++) {
-        int in = av_channel_layout_index_from_channel(in_layout, i);
-        if (in < 0)
+        enum AVChannel in_ch = av_channel_layout_channel_from_index(in_layout, i);
+        if (in_ch == AV_CHAN_NONE)
             continue;
-        av_channel_name(in_name, sizeof(in_name), i);
-        printf(".%s = %f, ", in_name, matrix[out * MATRIX_STRIDE + in]);
-    }
-    for (int in = 0; in < in_layout->nb_channels; in++) {
-        if (channel_is_unused(in_layout, in))
-            printf(".UNSD%d = %f, ", in,
-                   matrix[out * MATRIX_STRIDE + in]);
+        av_channel_name(in_name, sizeof(in_name), in_ch);
+        if (in_ch == AV_CHAN_UNUSED)
+            printf(".UNSD%d = %f, ", i,
+                   matrix[out * MATRIX_STRIDE + i]);
+        else
+            printf(".%s = %f, ", in_name, matrix[out * MATRIX_STRIDE + i]);
     }
     printf("},\n");
 }
@@ -91,18 +90,15 @@ static int print_matrix(const AVChannelLayout *in_layout,
         }
     }
 
-    for (int i = 0; i < 64; i++) {
-        int out_i = av_channel_layout_index_from_channel(out_layout, i);
-        if (out_i < 0)
+    for (int i = 0; i < out_layout->nb_channels; i++) {
+        enum AVChannel out_ch = av_channel_layout_channel_from_index(out_layout, i);
+        if (out_ch == AV_CHAN_NONE)
             continue;
-        av_channel_name(out_name, sizeof(out_name), i);
-        print_matrix_row(matrix, in_layout, out_i, out_name);
-    }
-    for (int out = 0; out < out_layout->nb_channels; out++) {
-        if (channel_is_unused(out_layout, out)) {
-            snprintf(out_name, sizeof(out_name), "UNSD%d", out);
-            print_matrix_row(matrix, in_layout, out, out_name);
-        }
+        if (out_ch == AV_CHAN_UNUSED)
+            snprintf(out_name, sizeof(out_name), "UNSD%d", i);
+        else
+            av_channel_name(out_name, sizeof(out_name), out_ch);
+        print_matrix_row(matrix, in_layout, i, out_name);
     }
 
     return 0;
