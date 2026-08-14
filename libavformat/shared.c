@@ -156,7 +156,7 @@ typedef struct SharedContext {
 
     /* options */
     char *cache_dir;
-    int block_shift; ///< requested shift; may disagree with actual
+    int block_shift; ///< requested shift; updated on init if it disagrees
     int read_only;
     int64_t timeout;
     int retry_errors;
@@ -295,7 +295,8 @@ static int shared_open(URLContext *h, const char *arg, int flags, AVDictionary *
     if (ret < 0)
         goto fail;
 
-    s->block_size = 1 << atomic_load(&s->spacemap->block_shift);
+    /* s->block_shift is fully settled after spacemap_init() */
+    s->block_size = 1 << s->block_shift;
 
     int64_t filesize = get_filesize(h);
     if (!filesize) {
@@ -313,7 +314,7 @@ static int shared_open(URLContext *h, const char *arg, int flags, AVDictionary *
 
     if (filesize > 0) {
         int64_t last_pos = filesize - 1;
-        int64_t last_block = last_pos >> atomic_load(&s->spacemap->block_shift);
+        int64_t last_block = last_pos >> s->block_shift;
         ret = spacemap_grow(h, last_block);
         if (ret < 0)
             goto fail;
@@ -513,6 +514,7 @@ static int spacemap_init(URLContext *h, const uint8_t hash[HASH_SIZE])
             av_log(h, AV_LOG_ERROR, "Invalid block shift %d in cache file!\n", shift);
             return AVERROR(EINVAL);
         }
+        s->block_shift = shift;
     }
 
     for (int i = 0; i < HASH_SIZE; i++) {
@@ -603,8 +605,7 @@ static int shared_read(URLContext *h, unsigned char *buf, int size)
     if (size <= 0)
         return AVERROR_EOF;
 
-    const int shift = atomic_load_explicit(&s->spacemap->block_shift, memory_order_relaxed);
-    const int64_t block_id = s->pos >> shift;
+    const int64_t block_id = s->pos >> s->block_shift;
     const int64_t offset = s->pos & (s->block_size - 1);
     const int64_t block_pos = block_id * s->block_size;
     int block_size = clamp_size(h, s->block_size, block_pos);
