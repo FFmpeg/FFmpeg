@@ -157,6 +157,7 @@ typedef struct CUDAScaleContext {
     CUDAScaleFilter filters_uv[FILTER_NB];
     CUDATex inter_tex;
     int use_filters; /* -1 for auto */
+    int pass_x, pass_y;
 
     float param;
 } CUDAScaleContext;
@@ -407,6 +408,8 @@ static av_cold int init_processing_chain(AVFilterContext *ctx, int in_width, int
         s->frames_ctx = av_buffer_ref(inl->hw_frames_ctx);
         if (!s->frames_ctx)
             return AVERROR(ENOMEM);
+
+        s->use_filters = 0;
     } else {
         s->passthrough = 0;
 
@@ -451,9 +454,7 @@ static av_cold int cudascale_load_functions(AVFilterContext *ctx)
 
     if (s->use_filters) {
         /* Final pass is always vertical unless not vertically scaling */
-        AVFilterLink  *inlink = ctx->inputs[0];
-        AVFilterLink *outlink = ctx->outputs[0];
-        function_infix = inlink->h == outlink->h ? "Generic_h" : "Generic_v";
+        function_infix = s->pass_y == FILTER_OUT ? "Generic_v" : "Generic_h";
         s->interp_use_linear = 0;
         s->interp_as_integer = 0;
     } else {
@@ -623,19 +624,19 @@ static av_cold int cudascale_setup_filters(AVFilterContext *ctx)
     if (ret < 0)
         return ret;
 
-    int pass_x = -1, pass_y = -1;
+    s->pass_x = s->pass_y = -1;
     if (inlink->w != outlink->w && inlink->h != outlink->h) {
         /* Always perform the horizontal scaling pass first */
-        pass_x = FILTER_TMP;
-        pass_y = FILTER_OUT;
+        s->pass_x = FILTER_TMP;
+        s->pass_y = FILTER_OUT;
     } else if (inlink->w != outlink->w) {
-        pass_x = FILTER_OUT;
+        s->pass_x = FILTER_OUT;
     } else if (inlink->h != outlink->h) {
-        pass_y = FILTER_OUT;
+        s->pass_y = FILTER_OUT;
     }
 
-    if (pass_x >= 0) {
-        ret = cudascale_filter_init(ctx, &s->filters[pass_x],
+    if (s->pass_x >= 0) {
+        ret = cudascale_filter_init(ctx, &s->filters[s->pass_x],
                                     inlink->w, outlink->w, 0.0);
         if (ret < 0)
             goto fail;
@@ -643,15 +644,15 @@ static av_cold int cudascale_setup_filters(AVFilterContext *ctx)
             const int src_size = AV_CEIL_RSHIFT(inlink->w,  in_sub_x);
             const int dst_size = AV_CEIL_RSHIFT(outlink->w, out_sub_x);
             const double virtual_size = (double) outlink->w / (1 << out_sub_x);
-            ret = cudascale_filter_init(ctx, &s->filters_uv[pass_x],
+            ret = cudascale_filter_init(ctx, &s->filters_uv[s->pass_x],
                                         src_size, dst_size, virtual_size);
             if (ret < 0)
                 goto fail;
         }
     }
 
-    if (pass_y >= 0) {
-        ret = cudascale_filter_init(ctx, &s->filters[pass_y],
+    if (s->pass_y >= 0) {
+        ret = cudascale_filter_init(ctx, &s->filters[s->pass_y],
                                     inlink->h, outlink->h, 0.0);
         if (ret < 0)
             goto fail;
@@ -659,7 +660,7 @@ static av_cold int cudascale_setup_filters(AVFilterContext *ctx)
             const int src_size = AV_CEIL_RSHIFT(inlink->h,  in_sub_y);
             const int dst_size = AV_CEIL_RSHIFT(outlink->h, out_sub_y);
             const double virtual_size = (double) outlink->h / (1 << out_sub_y);
-            ret = cudascale_filter_init(ctx, &s->filters_uv[pass_y],
+            ret = cudascale_filter_init(ctx, &s->filters_uv[s->pass_y],
                                         src_size, dst_size, virtual_size);
             if (ret < 0)
                 goto fail;
@@ -915,7 +916,7 @@ static int cudascale_scale(AVFilterContext *ctx, AVFrame *out, AVFrame *in)
         goto fail;
 
     const CUDATex *src = &in_tex;
-    if (s->use_filters) {
+    if (s->pass_x == FILTER_TMP) {
         /* Handle first pass separately */
         s->inter_tex.color_range = in->color_range;
         ret = scalecuda_resize(ctx, FILTER_TMP, &s->inter_tex, src);
