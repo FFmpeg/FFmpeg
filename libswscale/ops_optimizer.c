@@ -802,6 +802,18 @@ retry:
                 goto retry;
             }
             break;
+
+        case SWS_OP_LINEAR:
+            /* Exact integer linear transformation */
+            if (next->op == SWS_OP_CONVERT &&
+                ff_sws_pixel_type_is_int(next->convert.to) &&
+                op_result_is_exact(op))
+            {
+                op->type = next->convert.to;
+                FFSWAP(SwsOp, *op, *next);
+                goto retry;
+            }
+            break;
         }
     }
 
