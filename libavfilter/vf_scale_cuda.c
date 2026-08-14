@@ -369,6 +369,27 @@ static av_cold void set_format_info(AVFilterContext *ctx, enum AVPixelFormat in_
     }
 }
 
+static av_cold void cudascale_setup_passes(AVFilterContext *ctx)
+{
+    CUDAScaleContext *s = ctx->priv;
+    AVFilterLink  *inlink = ctx->inputs[0];
+    AVFilterLink *outlink = ctx->outputs[0];
+
+    s->pass_x = s->pass_y = -1;
+    if (!s->use_filters)
+        return;
+
+    if (inlink->w != outlink->w && inlink->h != outlink->h) {
+        /* Always perform the horizontal scaling pass first */
+        s->pass_x = FILTER_TMP;
+        s->pass_y = FILTER_OUT;
+    } else if (inlink->w != outlink->w) {
+        s->pass_x = FILTER_OUT;
+    } else if (inlink->h != outlink->h) {
+        s->pass_y = FILTER_OUT;
+    }
+}
+
 static av_cold int init_processing_chain(AVFilterContext *ctx, int in_width, int in_height,
                                          int out_width, int out_height)
 {
@@ -432,6 +453,8 @@ static av_cold int init_processing_chain(AVFilterContext *ctx, int in_width, int
     outl->hw_frames_ctx = av_buffer_ref(s->frames_ctx);
     if (!outl->hw_frames_ctx)
         return AVERROR(ENOMEM);
+
+    cudascale_setup_passes(ctx);
 
     return 0;
 }
@@ -623,17 +646,6 @@ static av_cold int cudascale_setup_filters(AVFilterContext *ctx)
     ret = CHECK_CU(cu->cuCtxPushCurrent(s->hwctx->cuda_ctx));
     if (ret < 0)
         return ret;
-
-    s->pass_x = s->pass_y = -1;
-    if (inlink->w != outlink->w && inlink->h != outlink->h) {
-        /* Always perform the horizontal scaling pass first */
-        s->pass_x = FILTER_TMP;
-        s->pass_y = FILTER_OUT;
-    } else if (inlink->w != outlink->w) {
-        s->pass_x = FILTER_OUT;
-    } else if (inlink->h != outlink->h) {
-        s->pass_y = FILTER_OUT;
-    }
 
     if (s->pass_x >= 0) {
         ret = cudascale_filter_init(ctx, &s->filters[s->pass_x],
