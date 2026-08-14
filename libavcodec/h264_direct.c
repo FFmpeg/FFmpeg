@@ -292,7 +292,8 @@ static void pred_spatial_direct_motion(const H264Context *const h, H264SliceCont
         return;
     }
 
-    if (IS_INTERLACED(sl->ref_list[1][0].parent->mb_type[mb_xy])) { // AFL/AFR/FR/FL -> AFL/FL
+    if (sl->ref_list[1][0].parent->field_picture ||
+        IS_INTERLACED(sl->ref_list[1][0].parent->mb_type[mb_xy])) { // AFL/AFR/FR/FL -> AFL/FL
         if (!IS_INTERLACED(*mb_type)) {                    //     AFR/FR    -> AFL/FL
             mb_y  = (sl->mb_y & ~1) + sl->col_parity;
             mb_xy = sl->mb_x +
@@ -510,7 +511,8 @@ static void pred_temp_direct_motion(const H264Context *const h, H264SliceContext
     await_reference_mb_row(h, &sl->ref_list[1][0],
                            sl->mb_y + !!IS_INTERLACED(*mb_type));
 
-    if (IS_INTERLACED(sl->ref_list[1][0].parent->mb_type[mb_xy])) { // AFL/AFR/FR/FL -> AFL/FL
+    if (sl->ref_list[1][0].parent->field_picture ||
+        IS_INTERLACED(sl->ref_list[1][0].parent->mb_type[mb_xy])) { // AFL/AFR/FR/FL -> AFL/FL
         if (!IS_INTERLACED(*mb_type)) {                    //     AFR/FR    -> AFL/FL
             mb_y  = (sl->mb_y & ~1) + sl->col_parity;
             mb_xy = sl->mb_x +
