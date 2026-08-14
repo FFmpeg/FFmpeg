@@ -167,6 +167,7 @@ typedef struct SharedContext {
     int retry_errors;
     int retry_corrupt;
     int verify;
+    int64_t cache_size_max;
 
     /* misc state */
     int64_t pos; ///< current logical position
@@ -175,6 +176,7 @@ typedef struct SharedContext {
     int write_err; ///< write error occurred
     int num_corrupt;
     int64_t filesize; ///< once known
+    int64_t blocks_max; ///< maximum number of blocks to cache
 
     /* cache file */
     uint8_t *cache_data; ///< optional mmap of the cache file
@@ -329,6 +331,7 @@ static int shared_open(URLContext *h, const char *arg, int flags, AVDictionary *
 
     /* s->block_shift is fully settled after spacemap_init() */
     s->block_size = 1 << s->block_shift;
+    s->blocks_max = s->cache_size_max >> s->block_shift;
 
     int64_t filesize = get_filesize(h);
     if (filesize < 0) {
@@ -731,6 +734,18 @@ read_block:
     case BLOCK_NONE:
         if (s->read_only || s->write_err || !s->inner)
             break; /* don't mark block as pending */
+        else if (s->cache_size_max) {
+            int64_t cached = atomic_load_explicit(&s->spacemap->blocks_cached,
+                                                  memory_order_relaxed);
+            if (cached >= s->blocks_max) {
+                av_log(h, AV_LOG_WARNING, "Cache size limit reached (%"PRId64" "
+                       "blocks = %"PRId64" bytes), switching to read-only mode.\n",
+                       s->blocks_max, s->blocks_max << s->block_shift);
+                s->read_only = 1;
+                break;
+            }
+        }
+
         if (atomic_compare_exchange_strong_explicit(&block->state, &state,
                                                     BLOCK_PENDING,
                                                     memory_order_acquire,
@@ -999,6 +1014,7 @@ static const AVOption options[] = {
     { "ignore_errors",  "Continue even if the inner URL failed",            OFFSET(ignore_errors),  AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, .flags = D },
     { "retry_errors",   "Re-request blocks even if they previously failed", OFFSET(retry_errors),   AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, .flags = D },
     { "retry_corrupt",  "Re-request blocks that fail the CRC check",        OFFSET(retry_corrupt),  AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, .flags = D },
+    { "cache_size_max", "Limit the maximum amount of data cached",          OFFSET(cache_size_max), AV_OPT_TYPE_INT64, {.i64 = 0}, 0, INT64_MAX, .flags = D },
     {0},
 };
 
