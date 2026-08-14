@@ -171,7 +171,6 @@ typedef struct SwsClearOp {
 
 typedef struct SwsConvertOp {
     SwsPixelType to; /* type of pixel to convert to */
-    bool expand; /* if true, integers are expanded to the full range */
 } SwsConvertOp;
 
 typedef struct SwsClampOp {

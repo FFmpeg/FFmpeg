@@ -361,7 +361,7 @@ retry:
             }
 
             /* Merge filter with prior conversion */
-            if (prev->op == SWS_OP_CONVERT && !prev->convert.expand) {
+            if (prev->op == SWS_OP_CONVERT) {
                 int size_from = ff_sws_pixel_type_size(prev->type);
                 int size_to   = ff_sws_pixel_type_size(op->type);
                 av_assert1(prev->convert.to == op->type);
@@ -555,9 +555,7 @@ retry:
             }
 
             /* Transitive conversion */
-            if (next->op == SWS_OP_CONVERT &&
-                op->convert.expand == next->convert.expand)
-            {
+            if (next->op == SWS_OP_CONVERT) {
                 av_assert1(op->convert.to == next->type);
                 op->convert.to = next->convert.to;
                 ff_sws_op_list_remove_at(ops, n + 1, 1);

@@ -594,19 +594,11 @@ static int translate_op(SwsContext *ctx, SwsUOpList *uops, SwsUOpFlags flags,
 
     switch (op->op) {
     case SWS_OP_CONVERT:
-        if (op->convert.expand) {
-            av_assert0(op->type == SWS_PIXEL_U8);
-            switch (op->convert.to) {
-            case SWS_PIXEL_U16: uop.uop = SWS_UOP_EXPAND_PAIR; break;
-            case SWS_PIXEL_U32: uop.uop = SWS_UOP_EXPAND_QUAD; break;
-            }
-        } else {
-            switch (op->convert.to) {
-            case SWS_PIXEL_U8:  uop.uop = SWS_UOP_TO_U8;  break;
-            case SWS_PIXEL_U16: uop.uop = SWS_UOP_TO_U16; break;
-            case SWS_PIXEL_U32: uop.uop = SWS_UOP_TO_U32; break;
-            case SWS_PIXEL_F32: uop.uop = SWS_UOP_TO_F32; break;
-            }
+        switch (op->convert.to) {
+        case SWS_PIXEL_U8:  uop.uop = SWS_UOP_TO_U8;  break;
+        case SWS_PIXEL_U16: uop.uop = SWS_UOP_TO_U16; break;
+        case SWS_PIXEL_U32: uop.uop = SWS_UOP_TO_U32; break;
+        case SWS_PIXEL_F32: uop.uop = SWS_UOP_TO_F32; break;
         }
         break;
     case SWS_OP_UNPACK:

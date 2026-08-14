@@ -224,12 +224,8 @@ void ff_sws_apply_op_q(const SwsOp *op, AVRational64 x[4])
     }
     case SWS_OP_CONVERT:
         if (ff_sws_pixel_type_is_int(op->convert.to)) {
-            const AVRational64 scale = ff_sws_pixel_expand(op->type, op->convert.to);
-            for (int i = 0; i < 4; i++) {
+            for (int i = 0; i < 4; i++)
                 x[i] = x[i].den ? Q(x[i].num / x[i].den) : x[i];
-                if (op->convert.expand)
-                    x[i] = ff_mul_q64(x[i], scale);
-            }
         }
         return;
     case SWS_OP_DITHER:
@@ -473,7 +469,7 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
         case SWS_OP_CONVERT:
             for (int i = 0; i < 4; i++) {
                 FORWARD(i, i, flags);
-                if (!(prev.flags[i] & SWS_COMP_EXACT) || op->convert.expand)
+                if (!(prev.flags[i] & SWS_COMP_EXACT))
                     op->comps.flags[i] &= SWS_COMP_DIRTY;
                 if (ff_sws_pixel_type_is_int(op->convert.to))
                     op->comps.flags[i] |= SWS_COMP_EXACT;
@@ -917,10 +913,9 @@ void ff_sws_op_desc(AVBPrint *bp, const SwsOp *op)
                    op->swizzle.x, op->swizzle.y, op->swizzle.z, op->swizzle.w);
         break;
     case SWS_OP_CONVERT:
-        av_bprintf(bp, "%-20s: %s -> %s%s", name,
+        av_bprintf(bp, "%-20s: %s -> %s", name,
                    ff_sws_pixel_type_name(op->type),
-                   ff_sws_pixel_type_name(op->convert.to),
-                   op->convert.expand ? " (expand)" : "");
+                   ff_sws_pixel_type_name(op->convert.to));
         break;
     case SWS_OP_DITHER:
         av_bprintf(bp, "%-20s: %dx%d matrix + {%d %d %d %d}", name,

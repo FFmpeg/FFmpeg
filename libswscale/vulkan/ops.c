@@ -519,15 +519,6 @@ static void define_shader_consts(SwsContext *sws, const SwsOpList *ops,
         av_assert0((id->nb_const_ids + 31) <= FF_ARRAY_ELEMS(id->const_ids));
         const SwsOp *op = &ops->ops[n];
         switch (op->op) {
-        case SWS_OP_CONVERT:
-            if (ff_sws_pixel_type_is_int(op->convert.to) && op->convert.expand) {
-                AVRational64 m = ff_sws_pixel_expand(op->type, op->convert.to);
-                int tmp = spi_OpConstantUInt(spi, id->u32_type, m.num);
-                tmp = spi_OpConstantComposite(spi, id->u32vec4_type,
-                                              tmp, tmp, tmp, tmp);
-                id->const_ids[id->nb_const_ids++] = tmp;
-            }
-            break;
         case SWS_OP_CLEAR:
             for (int i = 0; i < 4; i++) {
                 if (!SWS_COMP_TEST(op->clear.mask, i))
@@ -1184,9 +1175,7 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
                                        op->swizzle.in[3]);
             break;
         case SWS_OP_CONVERT:
-            if (ff_sws_pixel_type_is_int(cur_type) && op->convert.expand)
-                data = spi_OpIMul(spi, type_v, data, id->const_ids[nb_const_ids++]);
-            else if (op->type == SWS_PIXEL_F32 && type_s == id->u32_type)
+            if (op->type == SWS_PIXEL_F32 && type_s == id->u32_type)
                 data = spi_OpConvertFToU(spi, type_v, data);
             else if (op->type != SWS_PIXEL_F32 && type_s == id->f32_type)
                 data = spi_OpConvertUToF(spi, type_v, data);
