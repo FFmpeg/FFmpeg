@@ -385,7 +385,7 @@ static av_cold void cudascale_setup_passes(AVFilterContext *ctx)
         s->pass_y = FILTER_OUT;
     } else if (inlink->w != outlink->w) {
         s->pass_x = FILTER_OUT;
-    } else if (inlink->h != outlink->h) {
+    } else {
         s->pass_y = FILTER_OUT;
     }
 }
