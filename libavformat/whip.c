@@ -819,7 +819,7 @@ static int exchange_sdp(AVFormatContext *s)
         goto end;
     }
     ff_data_to_hex(hex_data, whip->sdp_offer, sdp_offer_len, 0);
-    av_dict_set(&opts, "post_data", hex_data, 0);
+    av_dict_set(&opts, "post_data", hex_data, AV_DICT_DONT_STRDUP_VAL);
 
     ret = ffurl_open_whitelist(&whip_uc, s->url, AVIO_FLAG_READ_WRITE, &s->interrupt_callback,
         &opts, s->protocol_whitelist, s->protocol_blacklist, NULL);
@@ -877,7 +877,6 @@ end:
     ffurl_closep(&whip_uc);
     av_bprint_finalize(&bp, NULL);
     av_dict_free(&opts);
-    av_freep(&hex_data);
     return ret;
 }
 
