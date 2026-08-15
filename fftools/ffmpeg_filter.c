@@ -3094,16 +3094,17 @@ static int sub2video_frame(InputFilter *ifilter, AVFrame *frame, int buffer)
     int ret;
 
     if (buffer) {
-        AVFrame *tmp;
+        // queue a NULL entry for EOF, so it is not lost when
+        // the queue is replayed after configuring the graph
+        AVFrame *tmp = NULL;
 
-        if (!frame)
-            return 0;
+        if (frame) {
+            tmp = av_frame_alloc();
+            if (!tmp)
+                return AVERROR(ENOMEM);
 
-        tmp = av_frame_alloc();
-        if (!tmp)
-            return AVERROR(ENOMEM);
-
-        av_frame_move_ref(tmp, frame);
+            av_frame_move_ref(tmp, frame);
+        }
 
         ret = av_fifo_write(ifp->frame_queue, &tmp, 1);
         if (ret < 0) {
