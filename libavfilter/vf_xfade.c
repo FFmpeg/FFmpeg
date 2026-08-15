@@ -296,6 +296,11 @@ static inline float smoothstep(float edge0, float edge1, float x)
     return t * t * (3.f - 2.f * t);
 }
 
+static inline int wrap_once(int index, int size)
+{
+    return index < 0 ? index + size : index >= size ? index - size : index;
+}
+
 #define FADE_TRANSITION(name, type, div)                                             \
 static void fade##name##_transition(AVFilterContext *ctx,                            \
                             const AVFrame *a, const AVFrame *b, AVFrame *out,        \
@@ -1631,7 +1636,8 @@ static void squeezeh##name##_transition(AVFilterContext *ctx,                   
         type *dst = (type *)(out->data[p] + slice_start * out->linesize[p]);         \
                                                                                      \
         for (int y = 0; y < height; y++) {                                           \
-            const float z = .5f + ((slice_start + y) / h - .5f) / progress;          \
+            const float z = progress > 0.f ?                                         \
+                            .5f + ((slice_start + y) / h - .5f) / progress : -1.f;   \
                                                                                      \
             if (z < 0.f || z > 1.f) {                                                \
                 for (int x = 0; x < width; x++)                                      \
@@ -1671,7 +1677,8 @@ static void squeezev##name##_transition(AVFilterContext *ctx,                   
                                                                                      \
         for (int y = 0; y < height; y++) {                                           \
             for (int x = 0; x < width; x++) {                                        \
-                const float z = .5f + (x / w - .5f) / progress;                      \
+                const float z = progress > 0.f ?                                     \
+                                .5f + (x / w - .5f) / progress : -1.f;               \
                                                                                      \
                 if (z < 0.f || z > 1.f) {                                            \
                     dst[x] = xf1[x];                                                 \
@@ -1884,7 +1891,7 @@ static void cover##dir##name##_transition(AVFilterContext *ctx,                 
         for (int y = 0; y < height; y++) {                                           \
             for (int x = 0; x < width; x++) {                                        \
                 const int zx = z + x;                                                \
-                const int zz = zx % width + width * (zx < 0);                        \
+                const int zz = wrap_once(zx, width);                                 \
                 dst[x] = (zx >= 0) && (zx < width) ? xf1[zz] : xf0[x];               \
             }                                                                        \
                                                                                      \
@@ -1916,7 +1923,7 @@ static void cover##dir##name##_transition(AVFilterContext *ctx,                 
                                                                                     \
         for (int y = slice_start; y < slice_end; y++) {                             \
             const int zy = z + y;                                                   \
-            const int zz = zy % height + height * (zy < 0);                         \
+            const int zz = wrap_once(zy, height);                                   \
             const type *xf0 = (const type *)(a->data[p] +  y * a->linesize[p]);     \
             const type *xf1 = (const type *)(b->data[p] + zz * b->linesize[p]);     \
                                                                                     \
@@ -1952,7 +1959,7 @@ static void reveal##dir##name##_transition(AVFilterContext *ctx,                
         for (int y = 0; y < height; y++) {                                           \
             for (int x = 0; x < width; x++) {                                        \
                 const int zx = z + x;                                                \
-                const int zz = zx % width + width * (zx < 0);                        \
+                const int zz = wrap_once(zx, width);                                 \
                 dst[x] = (zx >= 0) && (zx < width) ? xf1[x] : xf0[zz];               \
             }                                                                        \
                                                                                      \
@@ -1984,7 +1991,7 @@ static void reveal##dir##name##_transition(AVFilterContext *ctx,                
                                                                                     \
         for (int y = slice_start; y < slice_end; y++) {                             \
             const int zy = z + y;                                                   \
-            const int zz = zy % height + height * (zy < 0);                         \
+            const int zz = wrap_once(zy, height);                                   \
             const type *xf0 = (const type *)(a->data[p] + zz * a->linesize[p]);     \
             const type *xf1 = (const type *)(b->data[p] +  y * b->linesize[p]);     \
                                                                                     \
