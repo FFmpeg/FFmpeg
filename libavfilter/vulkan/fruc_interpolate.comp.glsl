@@ -88,6 +88,15 @@ void main()
 {
     ivec2 pos = ivec2(gl_GlobalInvocationID.xy);
 
+    /* The warp positions and the guard weight only depend on plane size. So
+     * we cache these values and re-use them if the next plane is the same
+     * size. In practice, we won't see plane sizes change and then change back
+     * to some previous dimension, so a single cached value is optimal. */
+    vec2  cached_size = vec2(0.0);
+    vec2  s0 = vec2(0.0);
+    vec2  s1 = vec2(0.0);
+    float guard = 0.0;
+
     for (int i = 0; i < planes; i++) {
         /* Bound the pass by the visible extent, not by either image's allocation:
          * a padded source would let invocations run past the end of a visible
@@ -99,13 +108,35 @@ void main()
 
         vec2 base = (vec2(pos) + 0.5) / size;
 
-        /* The flow is anchored on the f0/f1 grids, not the intermediate frame.
-         * Recover the source position on each grid by Picard iteration. */
-        vec2 s0 = base;
-        vec2 s1 = base;
-        for (int k = 0; k < PICARD_ITERS; k++) {
-            s0 = mix(s0, base - t * flow_at_fwd(s0), PICARD_OMEGA);
-            s1 = mix(s1, base - (1.0 - t) * flow_at_bwd(s1), PICARD_OMEGA);
+        if (size != cached_size) {
+            cached_size = size;
+
+            /* The flow is anchored on the f0/f1 grids, not the intermediate frame.
+             * Recover the source position on each grid by Picard iteration. */
+            s0 = base;
+            s1 = base;
+            for (int k = 0; k < PICARD_ITERS; k++) {
+                s0 = mix(s0, base - t * flow_at_fwd(s0), PICARD_OMEGA);
+                s1 = mix(s1, base - (1.0 - t) * flow_at_bwd(s1), PICARD_OMEGA);
+            }
+
+            /* Key staticness off the same weighted luma the grayscale pass feeds the
+             * flow engine. */
+            float l0 = 0.0, l1 = 0.0;
+            for (int q = 0; q < planes; q++) {
+                l0 += dot(texture(f0_img[q], f0_uv(base, q)), luma_weights[q]);
+                l1 += dot(texture(f1_img[q], f1_uv(base, q)), luma_weights[q]);
+            }
+            float lz = abs(l0 - l1);
+            float staticness = exp(-(lz * lz) / (STATIC_LUMA_SIGMA * STATIC_LUMA_SIGMA));
+
+            float disp = max(length((s0 - base) * luma_size),
+                             length((s1 - base) * luma_size));
+            /* smoothstep is used to transition between the two thresholds and avoid
+             * abrupt changes at the boundary. */
+            float reach = smoothstep(WARP_NEAR_PX, WARP_FAR_PX, disp * WARP_REACH_SCALE);
+
+            guard = staticness * reach;
         }
 
         vec4 c0 = texture(f0_img[i], f0_uv(s0, i));
@@ -118,23 +149,7 @@ void main()
         vec4 z1 = texture(f1_img[i], f1_uv(base, i));
         vec4 stat = mix(z0, z1, t);
 
-        /* Key staticness off the same weighted luma the grayscale pass feeds the
-         * flow engine. */
-        float l0 = 0.0, l1 = 0.0;
-        for (int q = 0; q < planes; q++) {
-            l0 += dot(texture(f0_img[q], f0_uv(base, q)), luma_weights[q]);
-            l1 += dot(texture(f1_img[q], f1_uv(base, q)), luma_weights[q]);
-        }
-        float lz = abs(l0 - l1);
-        float staticness = exp(-(lz * lz) / (STATIC_LUMA_SIGMA * STATIC_LUMA_SIGMA));
-
-        float disp = max(length((s0 - base) * luma_size),
-                         length((s1 - base) * luma_size));
-        /* smoothstep is used to transition between the two thresholds and avoid
-         * abrupt changes at the boundary. */
-        float reach = smoothstep(WARP_NEAR_PX, WARP_FAR_PX, disp * WARP_REACH_SCALE);
-
-        vec4 result = mix(warped, stat, staticness * reach);
+        vec4 result = mix(warped, stat, guard);
 
         imageStore(out_img[i], pos, result);
     }
