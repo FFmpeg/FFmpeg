@@ -859,34 +859,34 @@ static int vk_hevc_end_frame(AVCodecContext *avctx)
     const HEVCSPS *sps = pps->sps;
 
 #ifdef VK_KHR_video_maintenance2
-    HEVCHeaderPPS vkpps_p;
-    StdVideoH265PictureParameterSet vkpps;
-    HEVCHeaderSPS vksps_p;
-    StdVideoH265SequenceParameterSet vksps;
-    HEVCHeaderVPSSet vkvps_ps[HEVC_MAX_SUB_LAYERS];
-    HEVCHeaderVPS vkvps_p;
-    StdVideoH265VideoParameterSet vkvps;
     VkVideoDecodeH265InlineSessionParametersInfoKHR h265_params;
 
     if (ctx->s.extensions & FF_VK_EXT_VIDEO_MAINTENANCE_2) {
-        set_pps(pps, sps, &vkpps_p.scaling, &vkpps, &vkpps_p.pal);
-        set_sps(sps, pps->sps_id, &vksps_p.scaling, &vksps_p.vui_header,
-                &vksps_p.vui, &vksps, vksps_p.nal_hdr,
-                vksps_p.vcl_hdr, &vksps_p.ptl, &vksps_p.dpbm,
-                &vksps_p.pal, vksps_p.str, &vksps_p.ltr);
+        /* Far too large for the stack; reuse the persistent header buffer,
+         * which the non-inline path never uses at the same time */
+        HEVCHeaderSet *hdr;
+        const HEVCVPS *vps_list[HEVC_MAX_VPS_COUNT] = { sps->vps };
+        int vps_list_idx[HEVC_MAX_VPS_COUNT] = { 0 };
 
-        if (sps->vps->vps_num_hrd_parameters > HEVC_MAX_SUB_LAYERS)
-            return AVERROR_INVALIDDATA;
+        err = alloc_hevc_header_structs(dec, 1, vps_list_idx, vps_list);
+        if (err < 0)
+            return err;
+        hdr = dec->hevc_headers;
 
-        vkvps_p.sls = vkvps_ps;
-        set_vps(sps->vps, &vkvps, &vkvps_p.ptl, &vkvps_p.dpbm,
-                vkvps_p.hdr, vkvps_p.sls);
+        set_pps(pps, sps, &hdr->hpps[0].scaling, &hdr->pps[0], &hdr->hpps[0].pal);
+        set_sps(sps, pps->sps_id, &hdr->hsps[0].scaling, &hdr->hsps[0].vui_header,
+                &hdr->hsps[0].vui, &hdr->sps[0], hdr->hsps[0].nal_hdr,
+                hdr->hsps[0].vcl_hdr, &hdr->hsps[0].ptl, &hdr->hsps[0].dpbm,
+                &hdr->hsps[0].pal, hdr->hsps[0].str, &hdr->hsps[0].ltr);
+
+        set_vps(sps->vps, &hdr->vps[0], &hdr->hvps[0].ptl, &hdr->hvps[0].dpbm,
+                hdr->hvps[0].hdr, hdr->hvps[0].sls);
 
         h265_params = (VkVideoDecodeH265InlineSessionParametersInfoKHR) {
             .sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_INLINE_SESSION_PARAMETERS_INFO_KHR,
-            .pStdSPS = &vksps,
-            .pStdPPS = &vkpps,
-            .pStdVPS = &vkvps,
+            .pStdSPS = &hdr->sps[0],
+            .pStdPPS = &hdr->pps[0],
+            .pStdVPS = &hdr->vps[0],
         };
         hp->h265_pic_info.pNext = &h265_params;
     }
