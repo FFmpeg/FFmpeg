@@ -203,7 +203,7 @@ static void check_luma_dc_wht(VP8DSPContext *d, bool is_vp7)
     LOCAL_ALIGNED_16(int16_t, block1, [4], [4][16]);
     int dc_only;
     int blockx, blocky;
-    declare_func_emms(AV_CPU_FLAG_MMX, void, int16_t block[4][4][16], int16_t dc[16]);
+    declare_func(void, int16_t block[4][4][16], int16_t dc[16]);
 
     for (blocky = 0; blocky < 4; blocky++) {
         for (blockx = 0; blockx < 4; blockx++) {

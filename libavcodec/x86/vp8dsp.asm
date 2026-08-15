@@ -150,8 +150,8 @@ filter_h2_shuf:  db 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5,  6, 6,  7, 7,  8
 
 pw_20091: times 4 dw 20091
 pw_17734: times 4 dw 17734
+pw_3_3_0_0: times 2 dw 3, 3, 0, 0
 
-cextern pw_3
 cextern pw_4
 cextern pw_64
 cextern pw_256
@@ -1041,50 +1041,96 @@ cglobal vp8_idct_add, 3, 3, 0, dst, block, stride
 ; void ff_vp8_luma_dc_wht(int16_t block[4][4][16], int16_t dc[16])
 ;-----------------------------------------------------------------------------
 
-%macro SCATTER_WHT 3
-    movd dc1d, m%1
-    movd dc2d, m%2
-    mov [blockq+2*16*(0+%3)], dc1w
-    mov [blockq+2*16*(1+%3)], dc2w
-    shr  dc1d, 16
-    shr  dc2d, 16
-    psrlq m%1, 32
-    psrlq m%2, 32
-    mov [blockq+2*16*(4+%3)], dc1w
-    mov [blockq+2*16*(5+%3)], dc2w
-    movd dc1d, m%1
-    movd dc2d, m%2
-    mov [blockq+2*16*(8+%3)], dc1w
-    mov [blockq+2*16*(9+%3)], dc2w
-    shr  dc1d, 16
-    shr  dc2d, 16
-    mov [blockq+2*16*(12+%3)], dc1w
-    mov [blockq+2*16*(13+%3)], dc2w
-%endmacro
-
-%macro HADAMARD4_1D 4
-    SUMSUB_BADC w, %2, %1, %4, %3
-    SUMSUB_BADC w, %4, %2, %3, %1
-    SWAP %1, %4, %3
-%endmacro
-
-INIT_MMX sse
-cglobal vp8_luma_dc_wht, 2, 3, 0, block, dc1, dc2
+INIT_XMM sse2
+cglobal vp8_luma_dc_wht, 2, 3+2*ARCH_X86_64, 5, block, dc1, dc2, dc3, dc4
     movq          m0, [dc1q]
     movq          m1, [dc1q+8]
     movq          m2, [dc1q+16]
     movq          m3, [dc1q+24]
-    xorps      xmm0, xmm0
-    movaps [dc1q+ 0], xmm0
-    movaps [dc1q+16], xmm0
-    HADAMARD4_1D  0, 1, 2, 3
-    TRANSPOSE4x4W 0, 1, 2, 3, 4
-    paddw         m0, [pw_3]
-    HADAMARD4_1D  0, 1, 2, 3
-    psraw         m0, 3
-    psraw         m1, 3
+    xorps         m4, m4
+
+    movaps [dc1q+ 0], m4
+    movaps [dc1q+16], m4
+
+    SUMSUB_BADC    w, 3, 0, 2, 1, 4
+    ; t0 = m3, t1 = m2, t2 = m1, t3 = m0
+
+    punpcklwd     m3, m0
+    punpcklwd     m2, m1
+
+    SUMSUB_BA      w, 2, 3, 4
+
+    punpcklqdq    m0, m2, m3
+    shufps        m2, m3, q2323
+    ; Let i,j be dc[i*4+j]. Then
+    ; m0: 0,0;  1,0;  0,1;  1,1;  2,0;  3,0;  2,1;  3,1
+    ; m2: 0,3;  1,3;  0,2;  1,2;  2,3;  3,3;  2,2;  3,2
+    paddw         m0, [pw_3_3_0_0]
+    SUMSUB_BA      w, 2, 0, 3
+    ; m2: t0[0] t0[1] t1[0] t1[1] t0[2] t0[3] t1[2] t1[3]
+    ; m0: t3[0] t3[1] t2[0] t2[1] t3[2] t3[3] t2[2] t2[3]
+    shufps        m1, m2, m0, q2020
+    shufps        m2, m0, q3131
+    ; m1: t0[0] t0[1] t0[2] t0[3] t3[0] t3[1] t3[2] t3[3]
+    ; m2: t1[0] t1[1] t1[2] t1[3] t2[0] t2[1] t2[2] t2[3]
+    SUMSUB_BA      w, 2, 1, 4
     psraw         m2, 3
-    psraw         m3, 3
-    SCATTER_WHT   0, 1, 0
-    SCATTER_WHT   2, 3, 2
+    psraw         m1, 3
+%if ARCH_X86_64
+    movq        dc1q, m2
+    punpckhqdq    m2, m2
+    mov     [blockq], dc1w
+    movq        dc2q, m2
+    movq        dc3q, m1
+    shr         dc1q, 16
+    mov  [blockq+32], dc2w
+    punpckhqdq    m1, m1
+    movq        dc4q, m1
+    mov  [blockq+64], dc3w
+    shr         dc2q, 16
+    mov  [blockq+96], dc4w
+    shr         dc3q, 16
+    shr         dc4q, 16
+    %assign i 1
+    %rep 3
+    %if i == 1
+        %define SHR(dc) shr dc %+ q, 16
+    %elif i == 2
+        %define SHR(dc) shr dc %+ d, 16
+    %else
+        %define SHR(dc)
+    %endif
+    mov [blockq+32*(4*i+0)], dc1w
+    SHR(dc1)
+    mov [blockq+32*(4*i+1)], dc2w
+    SHR(dc2)
+    mov [blockq+32*(4*i+2)], dc3w
+    SHR(dc3)
+    mov [blockq+32*(4*i+3)], dc4w
+    SHR(dc4)
+    %assign i i+1
+    %endrep
+%else
+    %assign        i 0
+    %assign   offset 0
+    %rep 4
+    %if i == 2
+    %assign   offset 1
+    %endif
+    movd        dc1d, m2
+    movd        dc2d, m1
+    mov [blockq+2*16* offset   ], dc1w
+    mov [blockq+2*16*(offset+2)], dc2w
+    shr         dc1d, 16
+    shr         dc2d, 16
+    %if i != 3
+    psrldq        m2, 4
+    psrldq        m1, 4
+    %endif
+    mov [blockq+2*16*(offset+4)], dc1w
+    mov [blockq+2*16*(offset+6)], dc2w
+    %assign        i i+1
+    %assign   offset offset+8
+    %endrep
+%endif
     RET
