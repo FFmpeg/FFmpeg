@@ -369,8 +369,8 @@ static int set_string_binary(void *obj, const AVOption *o, const char *val, uint
 
     if (dst) {
         lendst = (int *)(dst + 1);
-    av_freep(dst);
-    *lendst = 0;
+        av_freep(dst);
+        *lendst = 0;
     }
 
     if (!val || !(len = strlen(val)))
@@ -392,11 +392,13 @@ static int set_string_binary(void *obj, const AVOption *o, const char *val, uint
         }
         *ptr++ = (a << 4) | b;
     }
+
     if (dst) {
-    *dst    = bin;
-    *lendst = len;
-    } else
+        *dst    = bin;
+        *lendst = len;
+    } else {
         av_free(bin);
+    }
 
     return 0;
 }
