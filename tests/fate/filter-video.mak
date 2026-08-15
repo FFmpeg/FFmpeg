@@ -836,7 +836,7 @@ FATE_METADATA_FILTER-$(call ALLYES, $(EBUR128_METADATA_DEPS)) += fate-filter-met
 fate-filter-metadata-ebur128: SRC = $(TARGET_SAMPLES)/filter/seq-3341-7_seq-3342-5-24bit.flac
 fate-filter-metadata-ebur128: CMD = run $(FILTER_METADATA_COMMAND) "amovie='$(SRC)',ebur128=metadata=1"
 
-EBUR128_HEIGHT_DEPS = FFPROBE LAVFI_INDEV AEVALSRC_FILTER EBUR128_FILTER
+EBUR128_HEIGHT_DEPS = FFPROBE LAVFI_INDEV AEVALSRC_FILTER ARESAMPLE_FILTER EBUR128_FILTER
 FATE_FILTER_FFPROBE-$(call ALLYES, $(EBUR128_HEIGHT_DEPS)) += fate-filter-metadata-ebur128-height
 fate-filter-metadata-ebur128-height: CMD = run $(FILTER_METADATA_COMMAND) "aevalsrc=0.12589*sin(2*PI*997*t):channel_layout=TBL:sample_rate=48000:duration=0.4,ebur128=metadata=1"
 
