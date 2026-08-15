@@ -16,6 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/mem.h"
+
 #include "h264dec.h"
 #include "h264_ps.h"
 
@@ -290,13 +292,8 @@ static void set_pps(const PPS *pps, const SPS *sps,
     };
 }
 
-static int vk_h264_create_params(AVCodecContext *avctx, VkVideoSessionParametersKHR **buf)
-{
-    int err;
-    FFVulkanDecodeContext *dec = avctx->internal->hwaccel_priv_data;
-    FFVulkanDecodeShared *ctx = dec->shared_ctx;
-    const H264Context *h = avctx->priv_data;
-
+/* Too large to put on the stack: musl's default thread stack is 128KiB */
+typedef struct VulkanH264Params {
     /* SPS */
     StdVideoH264ScalingLists vksps_scaling[MAX_SPS_COUNT];
     StdVideoH264HrdParameters vksps_vui_header[MAX_SPS_COUNT];
@@ -306,12 +303,24 @@ static int vk_h264_create_params(AVCodecContext *avctx, VkVideoSessionParameters
     /* PPS */
     StdVideoH264ScalingLists vkpps_scaling[MAX_PPS_COUNT];
     StdVideoH264PictureParameterSet vkpps[MAX_PPS_COUNT];
+} VulkanH264Params;
+
+static int vk_h264_create_params(AVCodecContext *avctx, VkVideoSessionParametersKHR **buf)
+{
+    int err;
+    FFVulkanDecodeContext *dec = avctx->internal->hwaccel_priv_data;
+    FFVulkanDecodeShared *ctx = dec->shared_ctx;
+    const H264Context *h = avctx->priv_data;
+
+    VulkanH264Params *par = av_malloc(sizeof(*par));
+    if (!par)
+        return AVERROR(ENOMEM);
 
     VkVideoDecodeH264SessionParametersAddInfoKHR h264_params_info = {
         .sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_SESSION_PARAMETERS_ADD_INFO_KHR,
-        .pStdSPSs = vksps,
+        .pStdSPSs = par->vksps,
         .stdSPSCount = 0,
-        .pStdPPSs = vkpps,
+        .pStdPPSs = par->vkpps,
         .stdPPSCount = 0,
     };
     VkVideoDecodeH264SessionParametersCreateInfoKHR h264_params = {
@@ -330,7 +339,8 @@ static int vk_h264_create_params(AVCodecContext *avctx, VkVideoSessionParameters
         if (h->ps.sps_list[i]) {
             const SPS *sps_l = h->ps.sps_list[i];
             int idx = h264_params_info.stdSPSCount;
-            set_sps(sps_l, &vksps_scaling[idx], &vksps_vui_header[idx], &vksps_vui[idx], &vksps[idx]);
+            set_sps(sps_l, &par->vksps_scaling[idx], &par->vksps_vui_header[idx],
+                    &par->vksps_vui[idx], &par->vksps[idx]);
             h264_params_info.stdSPSCount++;
         }
     }
@@ -340,7 +350,7 @@ static int vk_h264_create_params(AVCodecContext *avctx, VkVideoSessionParameters
         if (h->ps.pps_list[i]) {
             const PPS *pps_l = h->ps.pps_list[i];
             int idx = h264_params_info.stdPPSCount;
-            set_pps(pps_l, pps_l->sps, &vkpps_scaling[idx], &vkpps[idx]);
+            set_pps(pps_l, pps_l->sps, &par->vkpps_scaling[idx], &par->vkpps[idx]);
             h264_params_info.stdPPSCount++;
         }
     }
@@ -349,6 +359,7 @@ static int vk_h264_create_params(AVCodecContext *avctx, VkVideoSessionParameters
     h264_params.maxStdPPSCount = h264_params_info.stdPPSCount;
 
     err = ff_vk_decode_create_params(buf, avctx, ctx, &session_params_create);
+    av_free(par);
     if (err < 0)
         return err;
 
