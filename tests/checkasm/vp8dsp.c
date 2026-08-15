@@ -163,7 +163,7 @@ static void check_idct_dc4(VP8DSPContext *d, bool is_vp7)
     LOCAL_ALIGNED_16(int16_t, subcoef0, [4], [4 * 4]);
     LOCAL_ALIGNED_16(int16_t, subcoef1, [4], [4 * 4]);
     int i, chroma;
-    declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *dst, int16_t block[4][16], ptrdiff_t stride);
+    declare_func(void, uint8_t *dst, int16_t block[4][16], ptrdiff_t stride);
 
     for (chroma = 0; chroma <= 1; chroma++) {
         void (*idct4dc)(uint8_t *, int16_t[4][16], ptrdiff_t) = chroma ? d->vp8_idct_dc_add4uv : d->vp8_idct_dc_add4y;
