@@ -2309,7 +2309,7 @@ static int configure_filtergraph(FilterGraph *fg, FilterGraphThread *fgt)
         AVFrame *tmp;
         while (av_fifo_read(ifp->frame_queue, &tmp, 1) >= 0) {
             if (ifp->type_src == AVMEDIA_TYPE_SUBTITLE) {
-                sub2video_frame(&ifp->ifilter, tmp, !fgt->graph);
+                ret = sub2video_frame(&ifp->ifilter, tmp, !fgt->graph);
             } else {
                 if (ifp->type_src == AVMEDIA_TYPE_VIDEO) {
                     if (ifp->displaymatrix_applied)
