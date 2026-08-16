@@ -138,6 +138,15 @@ static av_cold int compact_init(AVTextFormatContext *wctx)
     return 0;
 }
 
+static int array_has_inline_elems(const AVTextFormatContext *wctx,
+                                  const AVTextFormatSection *section)
+{
+    for (int i = 0; section->children_ids[i] != -1; i++)
+        if (wctx->sections[section->children_ids[i]].flags & AV_TEXTFORMAT_SECTION_FLAG_HAS_TYPE)
+            return 1;
+    return 0;
+}
+
 static void compact_print_section_header(AVTextFormatContext *wctx, const void *data)
 {
     CompactContext *compact = wctx->priv;
@@ -184,9 +193,12 @@ static void compact_print_section_header(AVTextFormatContext *wctx, const void *
 
         wctx->nb_item[wctx->level] = wctx->nb_item[wctx->level - 1];
     } else {
-        if (parent_section && !(parent_section->flags & (AV_TEXTFORMAT_SECTION_FLAG_IS_WRAPPER | AV_TEXTFORMAT_SECTION_FLAG_IS_ARRAY)) &&
-            wctx->level && wctx->nb_item[wctx->level - 1])
-            writer_w8(wctx, compact->item_sep);
+        if (parent_section && !(parent_section->flags & (AV_TEXTFORMAT_SECTION_FLAG_IS_WRAPPER | AV_TEXTFORMAT_SECTION_FLAG_IS_ARRAY))) {
+            if (section->flags & AV_TEXTFORMAT_SECTION_FLAG_IS_ARRAY && !array_has_inline_elems(wctx, section))
+                writer_w8(wctx, '\n');
+            else if (wctx->level && wctx->nb_item[wctx->level - 1])
+                writer_w8(wctx, compact->item_sep);
+        }
         if (compact->print_section &&
             !(section->flags & (AV_TEXTFORMAT_SECTION_FLAG_IS_WRAPPER | AV_TEXTFORMAT_SECTION_FLAG_IS_ARRAY)))
             writer_printf(wctx, "%s%c", section->name, compact->item_sep);
