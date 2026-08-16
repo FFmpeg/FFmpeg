@@ -308,6 +308,9 @@ typedef struct FFVulkanContext {
 #endif
     VkQueueFamilyQueryResultStatusPropertiesKHR *query_props;
     VkQueueFamilyVideoPropertiesKHR *video_props;
+#ifdef VK_KHR_maintenance9
+    VkQueueFamilyOwnershipTransferPropertiesKHR *ownership_props;
+#endif
     VkQueueFamilyProperties2 *qf_props;
     int tot_nb_qfs;
     VkPhysicalDeviceHostImageCopyPropertiesEXT host_image_props;

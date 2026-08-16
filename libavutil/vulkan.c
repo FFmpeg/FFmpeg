@@ -259,6 +259,16 @@ int ff_vk_load_props(FFVulkanContext *s)
         return AVERROR(ENOMEM);
     }
 
+#ifdef VK_KHR_maintenance9
+    s->ownership_props = av_calloc(s->tot_nb_qfs, sizeof(*s->ownership_props));
+    if (!s->ownership_props) {
+        av_freep(&s->qf_props);
+        av_freep(&s->query_props);
+        av_freep(&s->video_props);
+        return AVERROR(ENOMEM);
+    }
+#endif
+
     for (uint32_t i = 0; i < s->tot_nb_qfs; i++) {
         s->qf_props[i] = (VkQueueFamilyProperties2) {
             .sType = VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2,
@@ -268,6 +278,10 @@ int ff_vk_load_props(FFVulkanContext *s)
                          VK_STRUCTURE_TYPE_QUEUE_FAMILY_QUERY_RESULT_STATUS_PROPERTIES_KHR);
         FF_VK_STRUCT_EXT(s, &s->qf_props[i], &s->video_props[i], FF_VK_EXT_VIDEO_QUEUE,
                          VK_STRUCTURE_TYPE_QUEUE_FAMILY_VIDEO_PROPERTIES_KHR);
+#ifdef VK_KHR_maintenance9
+        FF_VK_STRUCT_EXT(s, &s->qf_props[i], &s->ownership_props[i], FF_VK_EXT_MAINTENANCE_9,
+                         VK_STRUCTURE_TYPE_QUEUE_FAMILY_OWNERSHIP_TRANSFER_PROPERTIES_KHR);
+#endif
     }
 
     vk->GetPhysicalDeviceQueueFamilyProperties2(s->hwctx->phys_dev, &s->tot_nb_qfs, s->qf_props);
@@ -2640,6 +2654,9 @@ void ff_vk_uninit(FFVulkanContext *s)
     av_freep(&s->query_props);
     av_freep(&s->qf_props);
     av_freep(&s->video_props);
+#ifdef VK_KHR_maintenance9
+    av_freep(&s->ownership_props);
+#endif
     av_freep(&s->coop_mat_props);
     av_freep(&s->host_image_copy_layouts);
     av_refstruct_pool_uninit(&s->imageviews_pool);
