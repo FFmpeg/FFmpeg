@@ -220,4 +220,13 @@ const AVProfile ff_apv_profiles[] = {
     { AV_PROFILE_UNKNOWN },
 };
 
+const AVProfile ff_astc_profiles[] = {
+    { AV_PROFILE_ASTC_LDR_SRGB,      "sRGB LDR"           },
+    { AV_PROFILE_ASTC_LDR,           "Linear LDR"         },
+    { AV_PROFILE_ASTC_HDR_RGB_LDR_A, "HDR RGB, LDR alpha" },
+    { AV_PROFILE_ASTC_HDR,           "HDR"                },
+    { AV_PROFILE_ASTC_LINEAR_ANY,    "Linear (any)"       },
+    { AV_PROFILE_UNKNOWN },
+};
+
 #endif /* !CONFIG_SMALL */

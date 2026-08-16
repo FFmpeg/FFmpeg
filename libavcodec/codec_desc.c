@@ -1992,6 +1992,15 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_LOSSLESS,
         .mime_types= MT("image/webp"),
     },
+    {
+        .id        = AV_CODEC_ID_ASTC,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "astc",
+        .long_name = NULL_IF_CONFIG_SMALL("ASTC (Adaptive Scalable Texture Compression)"),
+        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .profiles  = NULL_IF_CONFIG_SMALL(ff_astc_profiles),
+        .mime_types= MT("image/astc"),
+    },
 
     /* various PCM "codecs" */
     {
