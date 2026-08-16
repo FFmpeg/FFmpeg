@@ -99,6 +99,9 @@ static inline uint64_t ff_vk_extensions_to_mask(const char * const *extensions,
 #ifdef VK_KHR_maintenance9
         { VK_KHR_MAINTENANCE_9_EXTENSION_NAME,             FF_VK_EXT_MAINTENANCE_9          },
 #endif
+#ifdef VK_KHR_unified_image_layouts
+        { VK_KHR_UNIFIED_IMAGE_LAYOUTS_EXTENSION_NAME,     FF_VK_EXT_UNIFIED_IMAGE_LAYOUTS  },
+#endif
 #ifdef VK_KHR_video_encode_av1
         { VK_KHR_VIDEO_ENCODE_AV1_EXTENSION_NAME,          FF_VK_EXT_VIDEO_ENCODE_AV1       },
 #endif

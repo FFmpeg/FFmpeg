@@ -327,6 +327,9 @@ typedef struct FFVulkanContext {
     AVRefStructPool *imageviews_pool;
 
     VkPhysicalDeviceVulkan12Features feats_12;
+#ifdef VK_KHR_unified_image_layouts
+    VkPhysicalDeviceUnifiedImageLayoutsFeaturesKHR unified_layout_feats;
+#endif
     VkPhysicalDeviceFeatures2 feats;
 
     VkMemoryPropertyFlagBits host_cached_flag;
