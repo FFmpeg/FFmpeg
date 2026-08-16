@@ -994,7 +994,7 @@ static int vulkan_decode_get_profile(AVCodecContext *avctx, AVBufferRef *frames_
         return AVERROR_EXTERNAL;
     }
 
-    dec->dedicated_dpb = !(dec_caps->flags & VK_VIDEO_DECODE_CAPABILITY_DPB_AND_OUTPUT_COINCIDE_BIT_KHR);
+    dec->dedicated_dpb = !!(dec_caps->flags & VK_VIDEO_DECODE_CAPABILITY_DPB_AND_OUTPUT_DISTINCT_BIT_KHR);
     ctx->common.layered_dpb = !dec->dedicated_dpb ? 0 :
                               !(caps->flags & VK_VIDEO_CAPABILITY_SEPARATE_REFERENCE_IMAGES_BIT_KHR);
 
