@@ -456,28 +456,32 @@ yuv2NBPSX(16, LE, 0, 16, int32_t)
         bd = vec_packsu(bd16, zero16); \
 \
         switch(target) { \
-        case AV_PIX_FMT_RGB24: \
+        case AV_PIX_FMT_RGB24: { \
+            DECLARE_ALIGNED(16, uint8_t, tmp_out)[16]; \
             out0 = vec_perm(rd, gd, perm3rg0); \
             out0 = vec_perm(out0, bd, perm3tb0); \
             out1 = vec_perm(rd, gd, perm3rg1); \
             out1 = vec_perm(out1, bd, perm3tb1); \
 \
             vec_vsx_st(out0, 0, dest); \
-            vec_vsx_st(out1, 16, dest); \
+            vec_vsx_st(out1, 0, tmp_out); \
+            memcpy(dest + 16, tmp_out, 8); \
 \
             dest += 24; \
-        break; \
-        case AV_PIX_FMT_BGR24: \
+        break; } \
+        case AV_PIX_FMT_BGR24: { \
+            DECLARE_ALIGNED(16, uint8_t, tmp_out)[16]; \
             out0 = vec_perm(bd, gd, perm3rg0); \
             out0 = vec_perm(out0, rd, perm3tb0); \
             out1 = vec_perm(bd, gd, perm3rg1); \
             out1 = vec_perm(out1, rd, perm3tb1); \
 \
             vec_vsx_st(out0, 0, dest); \
-            vec_vsx_st(out1, 16, dest); \
+            vec_vsx_st(out1, 0, tmp_out); \
+            memcpy(dest + 16, tmp_out, 8); \
 \
             dest += 24; \
-        break; \
+        break; } \
         case AV_PIX_FMT_BGRA: \
             out0 = vec_mergeh(bd, gd); \
             out1 = vec_mergeh(rd, ad); \
