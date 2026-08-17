@@ -9435,6 +9435,9 @@ static int mov_read_iloc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     }
     item_count = (version < 2) ? avio_rb16(pb) : avio_rb32(pb);
 
+    if (item_count > atom.size)
+        return AVERROR_INVALIDDATA;
+
     heif_item = av_realloc_array(c->heif_item, FFMAX(item_count, c->nb_heif_item), sizeof(*c->heif_item));
     if (!heif_item)
         return AVERROR(ENOMEM);
@@ -9592,6 +9595,9 @@ static int mov_read_iinf(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     version = avio_r8(pb);
     avio_rb24(pb);  // flags.
     entry_count = version ? avio_rb32(pb) : avio_rb16(pb);
+
+    if (entry_count > atom.size)
+        return AVERROR_INVALIDDATA;
 
     heif_item = av_realloc_array(c->heif_item, FFMAX(entry_count, c->nb_heif_item), sizeof(*c->heif_item));
     if (!heif_item)
