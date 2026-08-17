@@ -78,7 +78,7 @@ static const AVOption colordetect_options[] = {
         { "all",         "Detect all supported properties", 0, AV_OPT_TYPE_CONST, {.i64 = -1}, 0, 0, FLAGS, .unit = "mode" },
 
     /* Note: threshold should not be increased past ~0.4 as it overflows 8-bit SIMD otherwise */
-    { "threshold", "Detection threshold, as a fraction of the full range", OFFSET(threshold), AV_OPT_TYPE_FLOAT, {.dbl = 0.0}, 0.0, 0.05, FLAGS },
+    { "threshold", "Detection threshold, as a fraction of the full range", OFFSET(threshold), AV_OPT_TYPE_FLOAT, {.dbl = 0.001}, 0.0, 0.05, FLAGS },
     { NULL }
 };
 

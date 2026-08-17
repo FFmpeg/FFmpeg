@@ -9960,7 +9960,7 @@ Enable detection of all of the above properties. This is the default.
 @item threshold
 Allow pixels to exceed the expected bounds by this fraction of the full scale
 value range before treating it as evidence of (respectively) full range or
-straight alpha. Value range is from 0 to 0.05. Defaults to 0.0.
+straight alpha. Value range is from 0 to 0.05. Defaults to 0.001 (=0.1%).
 @end table
 
 @section colorize
