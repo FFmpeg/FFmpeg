@@ -26,13 +26,13 @@
 #include "libavcodec/vp9dsp.h"
 #include "libavcodec/x86/vp9dsp_init.h"
 
-decl_fpel_func(put,  4,   , mmx);
-decl_fpel_func(put,  8,   , mmx);
+decl_fpel_func(put,  4,   , sse2);
+decl_fpel_func(put,  8,   , sse2);
 decl_fpel_func(put, 16,   , sse);
 decl_fpel_func(put, 32,   , sse);
 decl_fpel_func(put, 64,   , sse);
-decl_fpel_func(avg,  4, _8, mmxext);
-decl_fpel_func(avg,  8, _8, mmxext);
+decl_fpel_func(avg,  4, _8, sse2);
+decl_fpel_func(avg,  8, _8, sse2);
 decl_fpel_func(avg, 16, _8, sse2);
 decl_fpel_func(avg, 32, _8, sse2);
 decl_fpel_func(avg, 64, _8, sse2);
@@ -265,8 +265,6 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp, int bpp, int bitexact)
 } while (0)
 
     if (EXTERNAL_MMX(cpu_flags)) {
-        init_fpel_func(4, 0,  4, put, , mmx);
-        init_fpel_func(3, 0,  8, put, , mmx);
         if (!bitexact) {
             dsp->itxfm_add[4 /* lossless */][DCT_DCT] =
             dsp->itxfm_add[4 /* lossless */][ADST_DCT] =
@@ -281,8 +279,6 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp, int bpp, int bitexact)
         dsp->loop_filter_8[0][1] = ff_vp9_loop_filter_v_4_8_mmxext;
         dsp->loop_filter_8[1][0] = ff_vp9_loop_filter_h_8_8_mmxext;
         dsp->loop_filter_8[1][1] = ff_vp9_loop_filter_v_8_8_mmxext;
-        init_fpel_func(4, 1,  4, avg, _8, mmxext);
-        init_fpel_func(3, 1,  8, avg, _8, mmxext);
         dsp->intra_pred[TX_4X4][HOR_DOWN_PRED] = ff_vp9_ipred_hd_4x4_mmxext;
         dsp->intra_pred[TX_4X4][VERT_LEFT_PRED] = ff_vp9_ipred_vl_4x4_mmxext;
     }
@@ -298,6 +294,10 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp, int bpp, int bitexact)
     if (EXTERNAL_SSE2(cpu_flags)) {
         init_subpel3_8to64(0, put, 8, sse2);
         init_subpel3_8to64(1, avg, 8, sse2);
+        init_fpel_func(4, 0,  4, put, , sse2);
+        init_fpel_func(3, 0,  8, put, , sse2);
+        init_fpel_func(4, 1,  4, avg, _8, sse2);
+        init_fpel_func(3, 1,  8, avg, _8, sse2);
         init_fpel_func(2, 1, 16, avg,  _8, sse2);
         init_fpel_func(1, 1, 32, avg,  _8, sse2);
         init_fpel_func(0, 1, 64, avg,  _8, sse2);

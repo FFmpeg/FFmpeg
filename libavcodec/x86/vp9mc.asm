@@ -722,6 +722,9 @@ filter_vx2_fn avg
 
 %macro fpel_fn 6-8 0, 4
 %if %2 == 4
+%define %%srcfn movd
+%define %%dstfn movd
+%elif mmsize/%2 == 2
 %define %%srcfn movh
 %define %%dstfn movh
 %else
@@ -759,13 +762,19 @@ cglobal vp9_%1%2 %+ %%szsuf, 5, 5, %8, dst, dstride, src, sstride, h
 %endif
     lea       srcq, [srcq+sstrideq*%6]
 %ifidn %1, avg
-    %%pavg      m0, [dstq]
-    %%pavg      m1, [dstq+d%3]
-    %%pavg      m2, [dstq+d%4]
-%if %2 == 4
+%if %2 < mmsize
+    %%srcfn     m4, [dstq]
+    %%pavg      m0, m4
+    %%srcfn     m4, [dstq+d%3]
+    %%pavg      m1, m4
+    %%srcfn     m4, [dstq+d%4]
+    %%pavg      m2, m4
     %%srcfn     m4, [dstq+d%5]
     %%pavg      m3, m4
 %else
+    %%pavg      m0, [dstq]
+    %%pavg      m1, [dstq+d%3]
+    %%pavg      m2, [dstq+d%4]
     %%pavg      m3, [dstq+d%5]
 %endif
 %if %2/mmsize == 8
@@ -795,10 +804,9 @@ cglobal vp9_%1%2 %+ %%szsuf, 5, 5, %8, dst, dstride, src, sstride, h
 %define s16 16
 %define d32 32
 %define s32 32
-INIT_MMX mmx
+INIT_XMM sse2
 fpel_fn put, 4,  strideq, strideq*2, stride3q, 4
 fpel_fn put, 8,  strideq, strideq*2, stride3q, 4
-INIT_MMX mmxext
 fpel_fn avg, 4,  strideq, strideq*2, stride3q, 4, 8
 fpel_fn avg, 8,  strideq, strideq*2, stride3q, 4, 8
 INIT_XMM sse
@@ -819,9 +827,8 @@ INIT_YMM avx2
 fpel_fn avg, 32, strideq, strideq*2, stride3q, 4, 8
 fpel_fn avg, 64, mmsize,  strideq,   strideq+mmsize, 2, 8
 %endif
-INIT_MMX mmxext
-fpel_fn avg,  8,  strideq, strideq*2, stride3q, 4, 16
 INIT_XMM sse2
+fpel_fn avg,  8,  strideq, strideq*2, stride3q, 4, 16
 fpel_fn avg,  16, strideq, strideq*2, stride3q, 4, 16
 fpel_fn avg,  32, mmsize,  strideq,   strideq+mmsize, 2, 16
 fpel_fn avg,  64, mmsize,  mmsize*2,  mmsize*3, 1, 16

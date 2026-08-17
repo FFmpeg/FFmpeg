@@ -563,7 +563,7 @@ static void check_mc(void)
     LOCAL_ALIGNED_64(uint8_t, dst1, [64 * 64 * 2]);
     VP9DSPContext dsp;
     int op, hsize, bit_depth, filter, dx, dy;
-    declare_func_emms(AV_CPU_FLAG_MMX | AV_CPU_FLAG_MMXEXT, void, uint8_t *dst, ptrdiff_t dst_stride,
+    declare_func(void, uint8_t *dst, ptrdiff_t dst_stride,
                       const uint8_t *ref, ptrdiff_t ref_stride,
                  int h, int mx, int my);
     static const char *const filter_names[4] = {

@@ -26,8 +26,8 @@
 #include "libavcodec/vp9dsp.h"
 #include "libavcodec/x86/vp9dsp_init.h"
 
-decl_fpel_func(put,   8,    , mmx);
-decl_fpel_func(avg,   8, _16, mmxext);
+decl_fpel_func(put,   8,    , sse2);
+decl_fpel_func(avg,   8, _16, sse2);
 decl_fpel_func(put,  16,    , sse);
 decl_fpel_func(put,  32,    , sse);
 decl_fpel_func(put,  64,    , sse);
@@ -72,12 +72,10 @@ av_cold void ff_vp9dsp_init_16bpp_x86(VP9DSPContext *dsp)
     int cpu_flags = av_get_cpu_flags();
 
     if (EXTERNAL_MMX(cpu_flags)) {
-        init_fpel_func(4, 0,   8, put, , mmx);
         init_ipred_func(v, VERT, 4, 16, mmx);
     }
 
     if (EXTERNAL_MMXEXT(cpu_flags)) {
-        init_fpel_func(4, 1,   8, avg, _16, mmxext);
         init_ipred_func(h, HOR, 4, 16, mmxext);
         init_ipred_func(dc, DC, 4, 16, mmxext);
         init_ipred_func(dc_top,  TOP_DC,  4, 16, mmxext);
@@ -93,6 +91,8 @@ av_cold void ff_vp9dsp_init_16bpp_x86(VP9DSPContext *dsp)
     }
 
     if (EXTERNAL_SSE2(cpu_flags)) {
+        init_fpel_func(4, 0,   8, put, , sse2);
+        init_fpel_func(4, 1,   8, avg, _16, sse2);
         init_fpel_func(3, 1,  16, avg, _16, sse2);
         init_fpel_func(2, 1,  32, avg, _16, sse2);
         init_fpel_func(1, 1,  64, avg, _16, sse2);
