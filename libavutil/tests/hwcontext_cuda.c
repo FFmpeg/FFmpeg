@@ -80,12 +80,6 @@ static int test_format(AVBufferRef *device_ref, enum AVPixelFormat fmt)
         }
     }
 
-    hw_frame->hw_frames_ctx = av_buffer_ref(frames_ref);
-    if (!hw_frame->hw_frames_ctx) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
-
     ret = av_hwframe_get_buffer(frames_ref, hw_frame, 0);
     if (ret < 0)
         goto fail;
