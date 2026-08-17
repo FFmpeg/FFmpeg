@@ -1377,7 +1377,6 @@ TESTPROGS = avcodec                                                     \
             bitstream_be                                                \
             bitstream_le                                                \
             codec_desc                                                  \
-            encinfo                                                     \
             htmlsubtitles                                               \
             jpeg2000dwt                                                 \
             mathops                                                    \

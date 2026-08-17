@@ -5,6 +5,7 @@ APITESTPROGS-$(CONFIG_MOV_MUXER)        += api-movenc
 APITESTPROGS-yes += api-seek api-dump-stream-meta
 APITESTPROGS-$(call DEMDEC, H263, H263) += api-band
 APITESTPROGS-$(HAVE_THREADS) += api-threadmessage
+APITESTPROGS-$(CONFIG_AVCODEC) += api-enc-info
 APITESTPROGS-$(call ALLYES, H261_ENCODER H261_PARSER) += api-enc-parser
 APITESTPROGS += $(APITESTPROGS-yes)
 

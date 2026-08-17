@@ -1,10 +1,10 @@
 FATE_WAV_ENCINFO-$(CONFIG_ADPCM_MS_ENCODER) += fate-wav-enc-adpcm-ms-encinfo
-fate-wav-enc-adpcm-ms-encinfo: libavcodec/tests/encinfo$(EXESUF)
-fate-wav-enc-adpcm-ms-encinfo: CMD = run libavcodec/tests/encinfo$(EXESUF) adpcm_ms
+fate-wav-enc-adpcm-ms-encinfo: tests/api/api-enc-info-test$(EXESUF)
+fate-wav-enc-adpcm-ms-encinfo: CMD = run tests/api/api-enc-info-test$(EXESUF) adpcm_ms
 
 FATE_WAV_ENCINFO-$(CONFIG_ADPCM_IMA_WAV_ENCODER) += fate-wav-enc-adpcm-ima-wav-encinfo
-fate-wav-enc-adpcm-ima-wav-encinfo: libavcodec/tests/encinfo$(EXESUF)
-fate-wav-enc-adpcm-ima-wav-encinfo: CMD = run libavcodec/tests/encinfo$(EXESUF) adpcm_ima_wav
+fate-wav-enc-adpcm-ima-wav-encinfo: tests/api/api-enc-info-test$(EXESUF)
+fate-wav-enc-adpcm-ima-wav-encinfo: CMD = run tests/api/api-enc-info-test$(EXESUF) adpcm_ima_wav
 
 FATE_WAV_BITRATE-$(call ALLYES, ADPCM_MS_ENCODER PCM_S16LE_DECODER WAV_MUXER WAV_DEMUXER FILE_PROTOCOL) += fate-wav-enc-adpcm-ms-bitrate
 fate-wav-enc-adpcm-ms-bitrate: tests/data/asynth-44100-2.wav
