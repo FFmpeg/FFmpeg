@@ -1061,8 +1061,10 @@ static int parse_cookie(HTTPContext *s, const char *p, AVDictionary **cookies)
     char *name;
 
     // ensure the cookie is parsable
-    if (parse_set_cookie(p, &new_params))
+    if (parse_set_cookie(p, &new_params)) {
+        av_dict_free(&new_params);
         return -1;
+    }
 
     // if there is no cookie value there is nothing to parse
     cookie_entry = av_dict_iterate(new_params, NULL);
