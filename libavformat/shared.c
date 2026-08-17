@@ -32,6 +32,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/time.h"
 
+#include "internal.h"
 #include "url.h"
 
 #include <errno.h>
@@ -519,13 +520,14 @@ static int spacemap_init(URLContext *h, const uint8_t hash[HASH_SIZE])
         ret = set_once_uchar(&s->spacemap->hash[i], hash[i]);
         if (ret < 0) {
             av_log(h, AV_LOG_ERROR, "Shared cache spacemap hash mismatch!\n");
-            av_log(h, AV_LOG_ERROR, "  Expected hash: ");
-            for (int j = 0; j < 32; j++)
-                av_log(h, AV_LOG_ERROR, "%02X", hash[j]);
-            av_log(h, AV_LOG_ERROR, "\n  Got      hash: ");
-            for (int j = 0; j < 32; j++)
-                av_log(h, AV_LOG_ERROR, "%02X", atomic_load(&s->spacemap->hash[j]));
-            av_log(h, AV_LOG_ERROR, "\n");
+            char hash_hex[2 * HASH_SIZE + 1];
+            ff_data_to_hex(hash_hex, hash, HASH_SIZE, 0);
+            av_log(h, AV_LOG_ERROR, "  Expected hash: %s\n", hash_hex);
+            uint8_t hash2[HASH_SIZE];
+            for (int j = 0; j < HASH_SIZE; ++j)
+                hash2[j] = atomic_load_explicit(&s->spacemap->hash[j], memory_order_relaxed);
+            ff_data_to_hex(hash_hex, hash2, HASH_SIZE, 0);
+            av_log(h, AV_LOG_ERROR, "  Got      hash: %s\n", hash_hex);
             return ret;
         }
     }
