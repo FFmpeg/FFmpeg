@@ -142,7 +142,7 @@ static void get_private_data(OutputStream *os)
     AVCodecParameters *par = os->ctx->streams[0]->codecpar;
     uint8_t *ptr = par->extradata;
     int size = par->extradata_size;
-    int i;
+
     if (par->codec_id == AV_CODEC_ID_H264) {
         ff_avc_write_annexb_extradata(ptr, &ptr, &size);
         if (!ptr)
@@ -150,11 +150,10 @@ static void get_private_data(OutputStream *os)
     }
     if (!ptr)
         return;
-    os->private_str = av_mallocz(2*size + 1);
+    os->private_str = av_malloc(2U*size + 1);
     if (!os->private_str)
         goto fail;
-    for (i = 0; i < size; i++)
-        snprintf(&os->private_str[2*i], 3, "%02x", ptr[i]);
+    ff_data_to_hex(os->private_str, ptr, size, 1);
 fail:
     if (ptr != par->extradata)
         av_free(ptr);
