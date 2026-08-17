@@ -271,8 +271,7 @@ static int shared_open(URLContext *h, const char *arg, int flags, AVDictionary *
     /* 128 bits is enough for collision resistance; we already store the full
      * hash inside the header for verification */
     char filename[2 * 16 + 1];
-    for (int i = 0; i < FF_ARRAY_ELEMS(filename) / 2; i++)
-        sprintf(&filename[i * 2], "%02X", hash[i]);
+    ff_data_to_hex(filename, hash, sizeof(filename)/2, 0);
     s->cache_path = av_asprintf("%s/%s.cache",    s->cache_dir, filename);
     s->map_path   = av_asprintf("%s/%s.spacemap", s->cache_dir, filename);
     if (!s->cache_path || !s->map_path) {
