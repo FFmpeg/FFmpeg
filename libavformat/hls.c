@@ -2176,10 +2176,10 @@ static void add_stream_to_programs(AVFormatContext *s, struct playlist *pls, AVS
 
             av_program_add_stream_index(s, i, stream->index);
 
-            if (bandwidth < 0)
+            if (bandwidth == -1)
                 bandwidth = v->bandwidth;
             else if (bandwidth != v->bandwidth)
-                bandwidth = -1; /* stream in multiple variants with different bandwidths */
+                bandwidth = -2; /* stream in multiple variants with different bandwidths */
         }
     }
 
