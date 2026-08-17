@@ -107,10 +107,9 @@ static void ape_dumpinfo(AVFormatContext * s, APEContext * ape_ctx)
     av_log(s, AV_LOG_DEBUG, "audiodatalength      = %"PRIu32"\n", ape_ctx->audiodatalength);
     av_log(s, AV_LOG_DEBUG, "audiodatalength_high = %"PRIu32"\n", ape_ctx->audiodatalength_high);
     av_log(s, AV_LOG_DEBUG, "wavtaillength        = %"PRIu32"\n", ape_ctx->wavtaillength);
-    av_log(s, AV_LOG_DEBUG, "md5                  = ");
-    for (i = 0; i < 16; i++)
-         av_log(s, AV_LOG_DEBUG, "%02x", ape_ctx->md5[i]);
-    av_log(s, AV_LOG_DEBUG, "\n");
+    char md5_hex[sizeof(ape_ctx->md5) * 2 + 1];
+    ff_data_to_hex(md5_hex, ape_ctx->md5, sizeof(ape_ctx->md5), 1);
+    av_log(s, AV_LOG_DEBUG, "md5                  = %s\n", md5_hex);
 
     av_log(s, AV_LOG_DEBUG, "\nHeader Block:\n\n");
 
