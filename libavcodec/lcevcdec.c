@@ -144,51 +144,62 @@ static int lcevc_send_frame(FFLCEVCFrame *frame_ctx, const AVFrame *in)
     AVFrame *opaque;
     LCEVC_PictureHandle picture;
     LCEVC_ReturnCode res;
-    int ret = 0;
+    int ret;
 
     if (!sd || fmt == LCEVC_ColorFormat_Unknown)
         return 1;
 
-    res = LCEVC_SendDecoderEnhancementData(lcevc->decoder, in->pts, sd->data, sd->size);
-    if (res != LCEVC_Success)
-        return AVERROR_EXTERNAL;
+    res = LCEVC_SendDecoderEnhancementData(lcevc->decoder, lcevc->last_pts,
+                                           sd->data, sd->size);
+    if (res != LCEVC_Success) {
+        ret = AVERROR_EXTERNAL;
+        goto end;
+    }
 
     ret = alloc_base_frame(lcevc, in, &picture);
     if (ret < 0)
-        return ret;
+        goto end;
 
     opaque = av_frame_clone(in);
     if (!opaque) {
         LCEVC_FreePicture(lcevc->decoder, picture);
-        return AVERROR(ENOMEM);
+        ret = AVERROR(ENOMEM);
+        goto end;
     }
 
     res = LCEVC_SetPictureUserData(lcevc->decoder, picture, opaque);
     if (res != LCEVC_Success) {
         LCEVC_FreePicture(lcevc->decoder, picture);
         av_frame_free(&opaque);
-        return AVERROR_EXTERNAL;
+        ret = AVERROR_EXTERNAL;
+        goto end;
     }
 
-    res = LCEVC_SendDecoderBase(lcevc->decoder, in->pts, picture, -1, opaque);
+    res = LCEVC_SendDecoderBase(lcevc->decoder, lcevc->last_pts, picture, -1, opaque);
     if (res != LCEVC_Success) {
         LCEVC_FreePicture(lcevc->decoder, picture);
         av_frame_free(&opaque);
-        return AVERROR_EXTERNAL;
+        ret = AVERROR_EXTERNAL;
+        goto end;
     }
 
     memset(&picture, 0, sizeof(picture));
     ret = alloc_enhanced_frame(frame_ctx, &picture);
     if (ret < 0)
-        return ret;
+        goto end;
 
     res = LCEVC_SendDecoderPicture(lcevc->decoder, picture);
     if (res != LCEVC_Success) {
         LCEVC_FreePicture(lcevc->decoder, picture);
-        return AVERROR_EXTERNAL;
+        ret = AVERROR_EXTERNAL;
+        goto end;
     }
 
-    return 0;
+    ret = 0;
+end:
+    lcevc->last_pts++;
+
+    return ret;
 }
 
 static int generate_output(FFLCEVCFrame *frame_ctx, AVFrame *out)
