@@ -806,7 +806,7 @@ static int vaapi_encode_output(AVCodecContext *avctx,
            base_pic->display_order, base_pic->encode_order);
 
     ff_hw_base_encode_set_output_property(base_ctx, avctx, (FFHWBaseEncodePicture*)base_pic, pkt_ptr,
-                                          ctx->codec->flags & FLAG_TIMESTAMP_NO_DELAY);
+                                          ctx->codec->flags & FF_HW_FLAG_TIMESTAMP_NO_DELAY);
 
 end:
     av_refstruct_unref(&pic->output_buffer_ref);

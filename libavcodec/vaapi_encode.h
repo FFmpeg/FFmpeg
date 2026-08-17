@@ -37,10 +37,6 @@
 struct VAAPIEncodeType;
 struct VAAPIEncodePicture;
 
-// Codec output packet without timestamp delay, which means the
-// output packet has same PTS and DTS.
-#define FLAG_TIMESTAMP_NO_DELAY 1 << 6
-
 enum {
     MAX_CONFIG_ATTRIBUTES  = 4,
     MAX_GLOBAL_PARAMS      = 4,
