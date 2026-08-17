@@ -553,7 +553,7 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
 
     res = ff_attach_decode_data(c, frame);
     if (res < 0)
-        return res;
+        goto fail;
 
     res = 0;
 fail:
