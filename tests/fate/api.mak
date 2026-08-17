@@ -29,6 +29,10 @@ fate-lavf-flv: CMP =
 fate-api-seek: CMD = run $(APITESTSDIR)/api-seek-test$(EXESUF) $(TARGET_PATH)/tests/data/lavf/lavf.flv 0 720
 fate-api-seek: CMP = null
 
+FATE_API_LIBAVFORMAT-$(call ALLYES, MP4_MUXER ISMV_MUXER) += fate-api-movenc
+fate-api-movenc: $(APITESTSDIR)/api-movenc-test$(EXESUF)
+fate-api-movenc: CMD = run $(APITESTSDIR)/api-movenc-test$(EXESUF)
+
 FATE_API-$(HAVE_THREADS) += fate-api-threadmessage
 fate-api-threadmessage: $(APITESTSDIR)/api-threadmessage-test$(EXESUF)
 fate-api-threadmessage: CMD = run $(APITESTSDIR)/api-threadmessage-test$(EXESUF) 3 10 30 50 2 20 40
