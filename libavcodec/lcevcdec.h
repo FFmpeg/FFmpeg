@@ -35,6 +35,7 @@ typedef struct FFLCEVCContext {
     LCEVC_DecoderHandle decoder;
     struct CodedBitstreamContext *cbc;
     struct CodedBitstreamFragment *frag;
+    int64_t last_pts;
     int initialized;
 } FFLCEVCContext;
 
