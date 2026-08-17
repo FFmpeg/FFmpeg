@@ -177,13 +177,17 @@ endfunc
  * x4: ptrdiff_t width,
  * x5: ptrdiff_t height,
  * w6: int alpha_max,
+ * w7: int mpeg_range (unused)
+ * [sp]: int offset
  */
 function ff_detect_alpha_full_neon, export=1
+        ldr             w13, [sp]
         ands            x7, x4, #15             // width % 16
         bic             x8, x4, #15             // width / 16 * 16
         movi            v0.16b, #0
         movi            v1.16b, #255
         dup             v2.16b, w6              // alpha_max
+        dup             v18.16b, w13            // offset
         sub             x1, x1, x8              // color_stride - aligned_width
         sub             x3, x3, x8              // alpha_stride - aligned_width
         b.eq            1f
@@ -197,6 +201,7 @@ function ff_detect_alpha_full_neon, export=1
         ldr             q5, [x0], #16
         ldr             q6, [x2], #16
         subs            x12, x12, #16
+        uqsub           v5.16b, v5.16b, v18.16b // color - offset
         cmhi            v7.16b, v5.16b, v6.16b
         cmeq            v16.16b, v6.16b, v2.16b
         orr             v0.16b, v0.16b, v7.16b
@@ -207,6 +212,7 @@ function ff_detect_alpha_full_neon, export=1
         // handle loop tail
         ldr             q5, [x0]
         ldr             q6, [x2]
+        uqsub           v5.16b, v5.16b, v18.16b // color - offset
         cmhi            v7.16b, v5.16b, v6.16b
         cmeq            v16.16b, v6.16b, v2.16b
         and             v7.16b, v7.16b, v3.16b
@@ -242,13 +248,17 @@ endfunc
  * x4: ptrdiff_t width,
  * x5: ptrdiff_t height,
  * w6: int alpha_max,
+ * w7: int mpeg_range (unused)
+ * [sp]: int offset
  */
 function ff_detect_alpha16_full_neon, export=1
+        ldr             w13, [sp]
         ands            x7, x4, #7              // width % 8
         bic             x8, x4, #7              // width / 8 * 8
         movi            v0.8h, #0
         movi            v1.16b, #255
         dup             v2.8h, w6               // alpha_max
+        dup             v18.8h, w13             // offset
         sub             x1, x1, x8, lsl #1      // color_stride - (aligned_width * 2)
         sub             x3, x3, x8, lsl #1      // alpha_stride - (aligned_width * 2)
         b.eq            1f
@@ -262,6 +272,7 @@ function ff_detect_alpha16_full_neon, export=1
         ldr             q5, [x0], #16
         ldr             q6, [x2], #16
         subs            x12, x12, #8
+        uqsub           v5.8h, v5.8h, v18.8h    // color - offset
         cmhi            v7.8h, v5.8h, v6.8h
         cmeq            v16.8h, v6.8h, v2.8h
         orr             v0.16b, v0.16b, v7.16b
@@ -272,6 +283,7 @@ function ff_detect_alpha16_full_neon, export=1
         // handle loop tail
         ldr             q5, [x0]
         ldr             q6, [x2]
+        uqsub           v5.8h, v5.8h, v18.8h    // color - offset
         cmhi            v7.8h, v5.8h, v6.8h
         cmeq            v16.8h, v6.8h, v2.8h
         and             v7.16b, v7.16b, v3.16b

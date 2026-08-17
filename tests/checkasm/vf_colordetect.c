@@ -75,8 +75,15 @@ static void check_alpha_detect(int depth, enum AVColorRange range)
     const int mpeg_max = 235 << (depth - 8);
     const int alpha_max = (1 << depth) - 1;
     const int mpeg_range = mpeg_max - mpeg_min;
-    const int offset = alpha_max * mpeg_min + (1 << (depth - 1));
     int res_ref, res_new;
+
+    int offset;
+    int threshold = checkasm_rand() % FFMIN(HEIGHT, mpeg_min);
+    if (range == AVCOL_RANGE_JPEG) {
+        offset = threshold;
+    } else {
+        offset = alpha_max * (mpeg_min + threshold) + (1 << (depth - 1));
+    }
 
     FFColorDetectDSPContext dsp = {0};
     ff_color_detect_dsp_init(&dsp, depth, range);
@@ -89,13 +96,19 @@ static void check_alpha_detect(int depth, enum AVColorRange range)
     memset(luma,  0x80, HEIGHT * STRIDE);
     memset(alpha, 0xF0, HEIGHT * STRIDE);
 
-    /* Try and force overflow */
+    /* Try and force overflow and edge cases */
     if (depth > 8 && range == AVCOL_RANGE_MPEG) {
-        ((uint16_t *) luma)[0] = 235 << (depth - 8);
-        ((uint16_t *) luma)[1] =  16 << (depth - 8);
+        for (int i = 0; i < threshold; i++) {
+            uint16_t *line = (uint16_t *) (luma + i * STRIDE);
+            line[0] = (235 << (depth - 8)) + i;
+            line[1] = ( 16 << (depth - 8)) - i;
+        }
     } else {
-        luma[0] = 235;
-        luma[1] = 16;
+        for (int i = 0; i < threshold; i++) {
+            uint8_t *line = luma + i * STRIDE;
+            line[0] = 235 + i;
+            line[1] = 16 - i;
+        }
     }
 
     /* Place an out-of-range value in a random position near the center */

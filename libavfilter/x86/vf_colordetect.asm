@@ -92,6 +92,7 @@ cglobal detect_alpha%1_%3, 1, 6, 7, color, ret, alpha, x, width, height
     vpbroadcast%2 m5, r8m ; offset
 %else
     vpbroadcast%1 m3, r6m ; alpha_max
+    vpbroadcast%1 m4, r8m ; offset
 %endif
     mova m6, m3
     xor retd, retd
@@ -102,6 +103,7 @@ cglobal detect_alpha%1_%3, 1, 6, 7, color, ret, alpha, x, width, height
         movu m1, [colorq + xq]
         movu m2, [alphaq + xq]
         pand m6, m2
+        psubus%1 m1, m4
         pmaxu%1 m1, m2
     %else
         pmovzx%1%2 m1, [colorq + xq]
