@@ -473,11 +473,12 @@ char *ff_data_to_hex(char *buff, const uint8_t *src, int s, int lowercase)
                                            'c', 'd', 'e', 'f' };
     const char *hex_table = lowercase ? hex_table_lc : hex_table_uc;
 
-    for (int i = 0; i < s; i++) {
+    av_assume(s >= 0);
+    for (unsigned i = 0; i < s; i++) {
         buff[i * 2]     = hex_table[src[i] >> 4];
         buff[i * 2 + 1] = hex_table[src[i] & 0xF];
     }
-    buff[2 * s] = '\0';
+    buff[2U * s] = '\0';
 
     return buff;
 }
