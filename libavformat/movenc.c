@@ -6592,11 +6592,13 @@ static int mov_flush_fragment(AVFormatContext *s, int force)
             return 0;
         }
 
-        buf_size = avio_get_dyn_buf(mov->mdat_buf, &buf);
-        avio_wb32(s->pb, buf_size + 8);
-        ffio_wfourcc(s->pb, "mdat");
-        avio_write(s->pb, buf, buf_size);
-        ffio_reset_dyn_buf(mov->mdat_buf);
+        if (mov->mdat_buf) {
+            buf_size = avio_get_dyn_buf(mov->mdat_buf, &buf);
+            avio_wb32(s->pb, buf_size + 8);
+            ffio_wfourcc(s->pb, "mdat");
+            avio_write(s->pb, buf, buf_size);
+            ffio_reset_dyn_buf(mov->mdat_buf);
+        }
 
         if (mov->flags & FF_MOV_FLAG_GLOBAL_SIDX)
             mov->reserved_header_pos = avio_tell(s->pb);
