@@ -1463,8 +1463,10 @@ static int dash_init(AVFormatContext *s)
         snprintf(filename, sizeof(filename), "%s%s", c->dirname, os->initfile);
         set_http_options(&opts, c);
         if (!c->single_file) {
-            if ((ret = avio_open_dyn_buf(&ctx->pb)) < 0)
+            if ((ret = avio_open_dyn_buf(&ctx->pb)) < 0) {
+                av_dict_free(&opts);
                 return ret;
+            }
             ret = s->io_open(s, &os->out, filename, AVIO_FLAG_WRITE, &opts);
         } else {
             ctx->url = av_strdup(filename);
