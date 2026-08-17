@@ -71,6 +71,7 @@ static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14,  AV_PIX_FMT_GBRP16,
         AV_PIX_FMT_GBRAP,  AV_PIX_FMT_GBRAP10, AV_PIX_FMT_GBRAP12,
         AV_PIX_FMT_GBRAP14, AV_PIX_FMT_GBRAP16,
+        AV_PIX_FMT_GBRP10MSB, AV_PIX_FMT_GBRP12MSB,
 
         AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9, AV_PIX_FMT_GRAY10,
         AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY14, AV_PIX_FMT_GRAY16,
@@ -95,8 +96,12 @@ static const enum AVPixelFormat pix_fmts[] = {
                                AV_PIX_FMT_YUVA422P12, AV_PIX_FMT_YUVA444P12,
         AV_PIX_FMT_YUVA420P16, AV_PIX_FMT_YUVA422P16, AV_PIX_FMT_YUVA444P16,
 
+        AV_PIX_FMT_YUV444P10MSB, AV_PIX_FMT_YUV444P12MSB,
+
         AV_PIX_FMT_NV12, AV_PIX_FMT_NV21, AV_PIX_FMT_NV16,
         AV_PIX_FMT_NV24, AV_PIX_FMT_NV42, AV_PIX_FMT_NV20,
+        AV_PIX_FMT_P010, AV_PIX_FMT_P210, AV_PIX_FMT_P410,
+        AV_PIX_FMT_P012, AV_PIX_FMT_P212, AV_PIX_FMT_P412,
         AV_PIX_FMT_P016, AV_PIX_FMT_P216, AV_PIX_FMT_P416,
 
         AV_PIX_FMT_NONE
@@ -111,7 +116,9 @@ static int config_input(AVFilterLink *inlink)
         (desc->flags & AV_PIX_FMT_FLAG_PLANAR) &&
         desc->nb_components >= 3;
 
-    s->bitdepth = desc->comp[0].depth;
+    /* SAD scores are normalize by the bit-depth, so MSB-aligned formats are
+     * equivalent to their corresponding full depth representation */
+    s->bitdepth = desc->comp[0].depth + desc->comp[0].shift;
     s->nb_planes = is_yuv ? 1 : av_pix_fmt_count_planes(inlink->format);
 
     for (int plane = 0; plane < 4; plane++) {
