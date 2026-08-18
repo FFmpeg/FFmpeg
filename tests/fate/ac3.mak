@@ -63,10 +63,17 @@ FATE_EAC3 += fate-eac3-5
 fate-eac3-5: CMD = pcm -i $(TARGET_SAMPLES)/eac3/the_great_wall_7.1.eac3
 fate-eac3-5: REF = $(SAMPLES)/eac3/the_great_wall_7.1.pcm
 
-$(FATE_AC3) $(FATE_EAC3): CMP = oneoff
+# the fixed decoder has to keep the overlap of the independent substream when
+# the dependent substream uses a different coefficient format
+FATE_EAC3_FIXED += fate-eac3-fixed-dependent-substream
+fate-eac3-fixed-dependent-substream: CMD = pcm -c ac3_fixed -i $(TARGET_SAMPLES)/eac3/the_great_wall_7.1.eac3
+fate-eac3-fixed-dependent-substream: REF = $(SAMPLES)/eac3/the_great_wall_7.1.pcm
+
+$(FATE_AC3) $(FATE_EAC3) $(FATE_EAC3_FIXED): CMP = oneoff
 
 FATE_AC3-$(call  PCM, AC3,  AC3 AC3_FIXED, PCM_S16LE_MUXER ARESAMPLE_FILTER)  += $(FATE_AC3)
 FATE_EAC3-$(call PCM, EAC3, EAC3,          PCM_S16LE_MUXER ARESAMPLE_FILTER) += $(FATE_EAC3)
+FATE_EAC3-$(call PCM, EAC3, EAC3 AC3_FIXED, PCM_S16LE_MUXER ARESAMPLE_FILTER) += $(FATE_EAC3_FIXED)
 
 FATE_AC3-$(call ENCDEC, AC3, MP4 MOV, WAV_MUXER WAV_DEMUXER ARESAMPLE_FILTER PCM_S16LE_ENCODER PIPE_PROTOCOL) += fate-ac3-encode
 fate-ac3-encode: CMD = enc_dec_pcm mp4 wav s16le $(subst $(SAMPLES),$(TARGET_SAMPLES),$(REF)) -c:a ac3 -b:a 128k

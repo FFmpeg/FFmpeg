@@ -252,6 +252,9 @@ typedef struct AC3DecodeContext {
     DECLARE_ALIGNED(16, int,   fixed_coeffs)[AC3_MAX_CHANNELS][AC3_MAX_COEFS];       ///< fixed-point transform coefficients
     DECLARE_ALIGNED(32, INTFLOAT, transform_coeffs)[AC3_MAX_CHANNELS][AC3_MAX_COEFS];   ///< transform coefficients
     DECLARE_ALIGNED(32, INTFLOAT, delay)[EAC3_MAX_CHANNELS][AC3_BLOCK_SIZE];         ///< delay - added to the next block
+#if USE_FIXED
+    int delay_coeff_bits[2];            ///< coefficient format of delay[], per substream
+#endif
     DECLARE_ALIGNED(32, INTFLOAT, window)[AC3_BLOCK_SIZE];                              ///< window coefficients
     DECLARE_ALIGNED(32, INTFLOAT, tmp_output)[AC3_BLOCK_SIZE];                          ///< temporary storage for output before windowing
     DECLARE_ALIGNED(32, SHORTFLOAT, output)[EAC3_MAX_CHANNELS][AC3_BLOCK_SIZE];            ///< output after imdct transform and windowing

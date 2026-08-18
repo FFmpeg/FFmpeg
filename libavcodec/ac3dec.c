@@ -1398,9 +1398,6 @@ static int ac3_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     AC3DecodeContext *s = avctx->priv_data;
     int blk, ch, err, offset, ret;
     int i;
-#if USE_FIXED
-    int previous_coeff_bits;
-#endif
     int skip = 0, got_independent_frame = 0;
     const uint8_t *channel_map;
     uint8_t extended_channel_map[EAC3_MAX_CHANNELS];
@@ -1435,22 +1432,12 @@ static int ac3_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
     buf = s->input_buffer;
 dependent_frame:
-#if USE_FIXED
-    previous_coeff_bits = fixed_coeff_bits(s);
-#endif
     /* initialize the GetBitContext with the start of valid AC-3 Frame */
     if ((ret = init_get_bits8(&s->gbc, buf, buf_size)) < 0)
         return ret;
 
     /* parse the syncinfo */
     err = parse_frame_header(s);
-
-#if USE_FIXED
-    /* Do not mix Q0 and Q2 overlap samples if a malformed or explicitly
-     * forced stream switches between E-AC-3 and AC-3. */
-    if (!err && previous_coeff_bits != fixed_coeff_bits(s))
-        memset(s->delay, 0, sizeof(s->delay));
-#endif
 
     if (err) {
         switch (err) {
@@ -1573,6 +1560,23 @@ dependent_frame:
     /* decode the audio blocks */
     channel_map = ff_ac3_dec_channel_map[s->output_mode & ~AC3_OUTPUT_LFEON][s->lfe_on];
     offset = s->frame_type == EAC3_FRAME_TYPE_DEPENDENT ? AC3_MAX_CHANNELS : 0;
+#if USE_FIXED
+    /* delay[] holds overlap samples scaled by the coefficient format that was
+     * in use when they were produced. The independent and the dependent
+     * substream own disjoint delay slots and may legitimately use different
+     * formats, so only drop the overlap of the substream whose format really
+     * changed, as happens when a malformed or explicitly forced stream
+     * switches between E-AC-3 and AC-3. */
+    if (!err) {
+        const int coeff_bits = fixed_coeff_bits(s);
+        const int slot       = offset ? 1 : 0;
+
+        if (s->delay_coeff_bits[slot] != coeff_bits) {
+            memset(s->delay[offset], 0, AC3_MAX_CHANNELS * sizeof(s->delay[0]));
+            s->delay_coeff_bits[slot] = coeff_bits;
+        }
+    }
+#endif
     for (ch = 0; ch < AC3_MAX_CHANNELS; ch++) {
         output[ch] = s->output[ch + offset];
         s->outptr[ch] = s->output[ch + offset];
