@@ -29,6 +29,7 @@
 
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
+#include "libavutil/dict.h"
 #include "libavutil/error.h"
 #include "libavutil/fifo.h"
 #include "libavutil/log.h"
@@ -50,6 +51,12 @@
 /* Blocking waits wake up this often so url_read()/open can poll the interrupt
  * callback. */
 #define CURL_WAIT_US 100000
+
+/* Cap on the accumulated "Icy-*" reply headers exported to the caller. */
+#define ICY_MAX_HEADERS 65536
+
+/* Largest in-band metadata block: the length byte counts 16 byte units. */
+#define ICY_MAX_BLOCK (255 * 16)
 
 typedef struct CurlContext CurlContext;
 
@@ -122,8 +129,16 @@ struct CurlContext {
     int64_t         initial_request_size;
     int64_t         short_seek_size;
     int             max_retries;
+    int             icy;
+    char           *icy_metadata_headers; /* "Icy-*" reply headers (output) */
+    char           *icy_metadata_packet;  /* last in-band block (output) */
+    AVDictionary   *metadata;             /* ICY metadata (output) */
 
     int64_t         logical_pos; /* next byte url_read() will return, caller side */
+    int64_t         icy_data_read;    /* payload bytes since the last block, caller side */
+    int             icy_block_len;    /* -1 while the length byte is pending */
+    int             icy_block_filled;
+    uint8_t         icy_block[ICY_MAX_BLOCK + 1];
 
     /* Producer bookkeeping, touched only by the loop thread. */
     int             active;          /* currently added to the multi */
@@ -140,6 +155,8 @@ struct CurlContext {
     int64_t         hdr_content_start; /* inclusive start, or -1 */
     int64_t         hdr_content_end;   /* inclusive end,   or -1 */
     int64_t         hdr_content_total; /* if known, or -1 */
+    AVDictionary   *hdr_icy;           /* "Icy-*" headers of this block */
+    int64_t         hdr_icy_metaint;   /* in-band metadata interval, or -1 */
 
     /* Probe result. Set by the loop thread, read by url_open() once probed. */
     int             probed;
@@ -154,6 +171,7 @@ struct CurlContext {
     int             paused;      /* write callback paused, FIFO was full */
     int             status;      /* current stream status (AVERROR code) */
     int             aborted;     /* transfer should stop (open was interrupted) */
+    int64_t         icy_metaint; /* in-band metadata interval, 0 if none */
 };
 
 /* Guards lazy creation of a format context's shared loop. */
@@ -262,6 +280,82 @@ static void parse_content_range(CurlContext *c, const char *v)
         c->hdr_content_total = parse_offset(slash + 1);
 }
 
+/* Parse a decimal header value, bounded by len since curl does not promise a
+ * NUL terminated header buffer. Returns -1 if absent, malformed or too large. */
+static int64_t parse_metaint(const char *p, size_t len)
+{
+    int64_t v = 0;
+    size_t i = 0;
+
+    while (i < len && av_isspace(p[i]))
+        i++;
+    if (i == len || !av_isdigit(p[i]))
+        return -1;
+
+    for (; i < len && av_isdigit(p[i]); i++) {
+        if (v > (INT_MAX - (p[i] - '0')) / 10)
+            return -1;
+        v = v * 10 + (p[i] - '0');
+    }
+
+    // Reject 4junk
+    while (i < len && av_isspace(p[i]))
+        i++;
+    if (i != len)
+        return -1;
+
+    return v;
+}
+
+/* Store one "Tag: value" reply header, tolerating a missing space after the
+ * colon and the CRLF curl leaves on the line. */
+static void store_icy_header(AVDictionary **dict, const char *ptr, size_t len)
+{
+    const char *colon = memchr(ptr, ':', len);
+    const char *val, *end = ptr + len;
+    char *key, *value;
+
+    if (!colon)
+        return;
+
+    val = colon + 1;
+    while (val < end && av_isspace(*val))
+        val++;
+    while (end > val && (end[-1] == '\r' || end[-1] == '\n'))
+        end--;
+
+    key   = av_strndup(ptr, colon - ptr);
+    value = av_strndup(val, end - val);
+    /* Multikey keeps repeated headers in arrival order, as http.c reports them. */
+    if (key && value)
+        av_dict_set(dict, key, value, AV_DICT_DONT_STRDUP_KEY |
+                                      AV_DICT_DONT_STRDUP_VAL | AV_DICT_MULTIKEY);
+    else {
+        av_free(key);
+        av_free(value);
+    }
+}
+
+/* Export the reply's "Icy-*" headers. Called once, before probed is set, so
+ * that from then on only the caller thread touches the exported metadata. */
+static void commit_icy_headers(CurlContext *c)
+{
+    const AVDictionaryEntry *e = NULL;
+    AVBPrint bp;
+
+    if (!c->hdr_icy)
+        return;
+
+    av_bprint_init(&bp, 0, ICY_MAX_HEADERS);
+    while ((e = av_dict_iterate(c->hdr_icy, e)))
+        av_bprintf(&bp, "%s: %s\n", e->key, e->value);
+
+    av_freep(&c->icy_metadata_headers);
+    if (av_bprint_finalize(&bp, &c->icy_metadata_headers) < 0)
+        c->icy_metadata_headers = NULL;
+    av_dict_copy(&c->metadata, c->hdr_icy, 0);
+}
+
 static size_t header_callback(char *ptr, size_t size, size_t nitems, void *userdata)
 {
     CurlContext *c = userdata;
@@ -275,6 +369,8 @@ static size_t header_callback(char *ptr, size_t size, size_t nitems, void *userd
         c->hdr_content_start = -1;
         c->hdr_content_end   = -1;
         c->hdr_content_total = -1;
+        c->hdr_icy_metaint   = -1;
+        av_dict_free(&c->hdr_icy);
         return len;
     }
     if (av_strncasecmp(ptr, "Accept-Ranges:", 14) == 0) {
@@ -287,6 +383,16 @@ static size_t header_callback(char *ptr, size_t size, size_t nitems, void *userd
     }
     if (av_strncasecmp(ptr, "Content-Range:", 14) == 0) {
         parse_content_range(c, ptr + 14);
+        return len;
+    }
+    if (av_strncasecmp(ptr, "icy-metaint:", 12) == 0) {
+        c->hdr_icy_metaint = parse_metaint(ptr + 12, len - 12);
+        return len;
+    }
+    /* Collected per block so that headers from a redirect hop, which the
+     * interim early return below discards, do not reach the caller. */
+    if (av_strncasecmp(ptr, "icy-", 4) == 0) {
+        store_icy_header(&c->hdr_icy, ptr, len);
         return len;
     }
 
@@ -336,6 +442,7 @@ static size_t header_callback(char *ptr, size_t size, size_t nitems, void *userd
                     c->location = dup;
                 }
             }
+            commit_icy_headers(c);
         }
         /* A compressed body is addressed in encoded form, so byte offsets are
          * meaningless: not seekable. Note that we prefer compression over
@@ -365,6 +472,20 @@ static size_t header_callback(char *ptr, size_t size, size_t nitems, void *userd
          * follow-up reply doesn't clobber it. */
         if (c->seekable_opt >= 0)
             c->seekable = c->seekable_opt;
+
+        c->icy_metaint = 0;
+        if (c->hdr_icy_metaint > 0) {
+            c->icy_metaint = c->hdr_icy_metaint;
+            if (c->seekable_opt > 0)
+                av_log(c->h, AV_LOG_WARNING, "Ignoring seekable=1, the "
+                       "reply carries in-band ICY metadata\n");
+            /* In-band metadata makes byte offsets meaningless. Staying
+             * non-seekable also keeps on_done() from restarting a request
+             * without draining the FIFO, which would desync the
+             * interleave. */
+            c->seekable     = 0;
+            c->content_size = -1;
+        }
     } else {
         c->loop->num_errors++;
         c->stream_ok = 0;
@@ -845,6 +966,7 @@ static int debug_callback(CURL *easy, curl_infotype type, char *data,
 static struct curl_slist *build_headers(CurlContext *c)
 {
     struct curl_slist *list = NULL;
+    int user_set_icy = 0;
 
     if (c->referer && c->referer[0]) {
         char *h = av_asprintf("Referer: %s", c->referer);
@@ -858,11 +980,18 @@ static struct curl_slist *build_headers(CurlContext *c)
         char *line, *saveptr = NULL;
         if (copy) {
             for (line = av_strtok(copy, "\r\n", &saveptr); line;
-                 line = av_strtok(NULL, "\r\n", &saveptr))
+                 line = av_strtok(NULL, "\r\n", &saveptr)) {
+                if (!av_strncasecmp(line, "Icy-MetaData:", 13))
+                    user_set_icy = 1;
                 list = curl_slist_append(list, line);
+            }
             av_free(copy);
         }
     }
+    /* libcurl does not deduplicate the list, so only add ours if the user
+     * did not already ask for one. */
+    if (c->icy && !user_set_icy)
+        list = curl_slist_append(list, "Icy-MetaData: 1");
     return list;
 }
 
@@ -1038,6 +1167,7 @@ static int libcurl_open(URLContext *h, const char *url, int flags,
     c->request_end   = -1;
     c->logical_pos   = c->off;
     c->is_initial    = 1;
+    c->icy_block_len = -1;
 
     /* Report the request URL until header_callback replaces it post-redirect. */
     av_strstart(eff_url, "libcurl:", &eff_url);
@@ -1094,6 +1224,55 @@ fail:
     return ret;
 }
 
+/* Export the metadata block, which the packet parser splits in place. */
+static int update_icy_metadata(CurlContext *c)
+{
+    av_freep(&c->icy_metadata_packet);
+    c->icy_metadata_packet = av_strdup((char *)c->icy_block);
+    if (!c->icy_metadata_packet)
+        return AVERROR(ENOMEM);
+
+    ff_http_parse_icy_packet(c->h, &c->metadata, (char *)c->icy_block);
+    return 0;
+}
+
+/* Consume the metadata block at the current interleave boundary, with the
+ * mutex held. Returns 1 once a block is complete and ready to export. */
+static int drain_icy_block(CurlContext *c)
+{
+    size_t avail;
+
+    while ((avail = av_fifo_can_read(c->fifo))) {
+        int n;
+
+        if (c->icy_block_len < 0) {
+            uint8_t units;
+            av_fifo_read(c->fifo, &units, 1);
+            c->icy_block_len    = units * 16;
+            c->icy_block_filled = 0;
+            /* A zero length byte means the metadata did not change. */
+            if (!c->icy_block_len) {
+                c->icy_block_len = -1;
+                c->icy_data_read = 0;
+                return 0;
+            }
+            continue;
+        }
+
+        n = FFMIN(avail, (size_t)(c->icy_block_len - c->icy_block_filled));
+        av_fifo_read(c->fifo, c->icy_block + c->icy_block_filled, n);
+        c->icy_block_filled += n;
+        if (c->icy_block_filled < c->icy_block_len)
+            return 0;
+
+        c->icy_block[c->icy_block_len] = 0;
+        c->icy_block_len = -1;
+        c->icy_data_read = 0;
+        return 1;
+    }
+    return 0;
+}
+
 static int libcurl_read(URLContext *h, unsigned char *buf, int size)
 {
     CurlContext *c = h->priv_data;
@@ -1102,15 +1281,29 @@ static int libcurl_read(URLContext *h, unsigned char *buf, int size)
 
     pthread_mutex_lock(&c->mutex);
     while (1) {
-        size_t avail = av_fifo_can_read(c->fifo);
+        size_t avail;
+
+        /* A failed export loses one metadata update but leaves the interleave
+         * in sync, since the block is fully consumed either way. */
+        if (c->icy_metaint > 0 && c->icy_data_read == c->icy_metaint &&
+            drain_icy_block(c) && (ret = update_icy_metadata(c)) < 0)
+            break;
+
+        avail = av_fifo_can_read(c->fifo);
+        if (c->icy_metaint > 0)
+            avail = FFMIN(avail, (size_t)(c->icy_metaint - c->icy_data_read));
 
         if (avail) {
             ret = FFMIN(avail, (size_t)size);
             av_fifo_read(c->fifo, buf, ret);
-            c->logical_pos += ret;
+            c->icy_data_read += ret;
+            c->logical_pos   += ret;
             break;
         }
         if (c->status) {
+            if (c->status == AVERROR_EOF && c->icy_block_len >= 0)
+                av_log(h, AV_LOG_WARNING,
+                       "Stream ended inside an ICY metadata block\n");
             ret = c->status;
             break;
         }
@@ -1123,7 +1316,7 @@ static int libcurl_read(URLContext *h, unsigned char *buf, int size)
         nonblock = 1;
     }
     /* Resume a paused transfer once the FIFO is at least half empty, on every
-     * exit path since a read is not guaranteed to drain anything. */
+     * exit path because ICY framing can be drained without returning media. */
     unpause = c->paused && av_fifo_can_write(c->fifo) * 2 >= c->buffer_size;
     pthread_mutex_unlock(&c->mutex);
 
@@ -1201,6 +1394,7 @@ static int libcurl_close(URLContext *h)
 
     if (c->header_list)
         curl_slist_free_all(c->header_list);
+    av_dict_free(&c->hdr_icy);
     av_fifo_freep2(&c->fifo);
     pthread_cond_destroy(&c->cond);
     pthread_mutex_destroy(&c->mutex);
@@ -1237,6 +1431,10 @@ static const AVOption options[] = {
     { "max_redirects", "maximum number of redirects to follow", OFFSET(max_redirects), AV_OPT_TYPE_INT, { .i64 = 16 }, 0, INT_MAX, D },
     { "multiple_requests", "reuse the connection across requests (HTTP keep-alive)", OFFSET(multiple_requests), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, D | E },
     { "max_retries", "maximum number of retries after a recoverable error", OFFSET(max_retries), AV_OPT_TYPE_INT, { .i64 = 5 }, 0, INT_MAX, D },
+    { "icy", "request ICY metadata", OFFSET(icy), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, D },
+    { "icy_metadata_headers", "return ICY metadata headers", OFFSET(icy_metadata_headers), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, AV_OPT_FLAG_EXPORT },
+    { "icy_metadata_packet", "return current ICY metadata packet", OFFSET(icy_metadata_packet), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, AV_OPT_FLAG_EXPORT },
+    { "metadata", "metadata read from the bitstream", OFFSET(metadata), AV_OPT_TYPE_DICT, {0}, 0, 0, AV_OPT_FLAG_EXPORT },
     { "buffer_size", "receive buffer size in bytes", OFFSET(buffer_size), AV_OPT_TYPE_INT64, { .i64 = CURL_DEFAULT_BUFFER_SIZE }, CURL_MAX_WRITE_SIZE, INT_MAX, D },
     { "request_size", "split a transfer into ranged requests of at most this many bytes (0 = unlimited)", OFFSET(request_size), AV_OPT_TYPE_INT64, { .i64 = 0 }, 0, INT64_MAX, D },
     { "initial_request_size", "size (in bytes) of initial requests made during probing / header parsing", OFFSET(initial_request_size), AV_OPT_TYPE_INT64, { .i64 = 0 }, 0, INT64_MAX, D },
