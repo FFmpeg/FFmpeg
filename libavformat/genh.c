@@ -22,6 +22,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "demux.h"
 #include "internal.h"
 
@@ -132,14 +133,18 @@ static int genh_read_header(AVFormatContext *s)
             return AVERROR_PATCHWELCOME;
         }
 
-        ff_alloc_extradata(st->codecpar, 32 * st->codecpar->ch_layout.nb_channels);
+        ret = ff_alloc_extradata(st->codecpar, 32 * st->codecpar->ch_layout.nb_channels);
+        if (ret < 0)
+            return ret;
         for (ch = 0; ch < st->codecpar->ch_layout.nb_channels; ch++) {
             if (coef_type & 1) {
                 avpriv_request_sample(s, "coef_type & 1");
                 return AVERROR_PATCHWELCOME;
             } else {
                 avio_seek(s->pb, coef[ch], SEEK_SET);
-                avio_read(s->pb, st->codecpar->extradata + 32 * ch, 32);
+                ret = ffio_read_size(s->pb, st->codecpar->extradata + 32 * ch, 32);
+                if (ret < 0)
+                    return ret;
             }
         }
 
