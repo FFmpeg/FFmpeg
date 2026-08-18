@@ -34366,6 +34366,7 @@ Possible values are:
 @item DYNAMIC_HDR_VIVID
 @item AMBIENT_VIEWING_ENVIRONMENT
 @item VIDEO_HINT
+@item GAIN_MAP_PARAMS
 @end table
 
 @end table

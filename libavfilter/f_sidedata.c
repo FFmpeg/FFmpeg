@@ -80,6 +80,7 @@ static const AVOption filt_name##_options[] = { \
     {   "DYNAMIC_HDR_VIVID",          "", 0,             AV_OPT_TYPE_CONST,  {.i64 = AV_FRAME_DATA_DYNAMIC_HDR_VIVID          }, 0, 0, FLAGS, .unit = "type" }, \
     {   "AMBIENT_VIEWING_ENVIRONMENT","", 0,             AV_OPT_TYPE_CONST,  {.i64 = AV_FRAME_DATA_AMBIENT_VIEWING_ENVIRONMENT}, 0, 0, FLAGS, .unit = "type" }, \
     {   "VIDEO_HINT",                 "", 0,             AV_OPT_TYPE_CONST,  {.i64 = AV_FRAME_DATA_VIDEO_HINT                 }, 0, 0, FLAGS, .unit = "type" }, \
+    {   "GAIN_MAP_PARAMS",            "", 0,             AV_OPT_TYPE_CONST,  {.i64 = AV_FRAME_DATA_GAIN_MAP_PARAMS            }, 0, 0, FLAGS, .unit = "type" }, \
     { NULL } \
 }
 

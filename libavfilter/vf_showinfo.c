@@ -32,6 +32,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/film_grain_params.h"
+#include "libavutil/gain_map.h"
 #include "libavutil/hdr_dynamic_metadata.h"
 #include "libavutil/hdr_dynamic_vivid_metadata.h"
 #include "libavutil/opt.h"
@@ -655,6 +656,32 @@ static void dump_dovi_metadata(AVFilterContext *ctx, const AVFrameSideData *sd)
     av_log(ctx, AV_LOG_INFO, "source_diagonal=%"PRIu16"; ", color->source_diagonal);
 }
 
+static void dump_gain_map_params(AVFilterContext *ctx, const AVFrameSideData *sd)
+{
+    const AVGainMapParams *p = (const AVGainMapParams *) sd->data;
+    av_log(ctx, AV_LOG_INFO, "version=%d, nb_channels=%d, use_base_color_space=%d, "
+           "base_hdr_headroom=%f, alternate_hdr_headroom=%f, channels={ ",
+           p->version, p->nb_channels, p->use_base_color_space,
+           av_q2d(p->base_hdr_headroom), av_q2d(p->alternate_hdr_headroom));
+
+    if (!(p->nb_channels == 1 || p->nb_channels == 3)) {
+        av_log(ctx, AV_LOG_ERROR, "invalid data }");
+        return;
+    }
+
+    for (int c = 0; c < p->nb_channels; c++) {
+        const struct AVGainMapChannel *ch = &p->channels[c];
+        av_log(ctx, AV_LOG_INFO,
+               "{ gain_map_min=%f, gain_map_max=%f, gamma=%f, "
+               "base_offset=%f, alternate_offset=%f } ",
+               av_q2d(ch->gain_map_min), av_q2d(ch->gain_map_max),
+               av_q2d(ch->gamma), av_q2d(ch->base_offset),
+               av_q2d(ch->alternate_offset));
+    }
+
+    av_log(ctx, AV_LOG_INFO, "}");
+}
+
 static void dump_ambient_viewing_environment(AVFilterContext *ctx, const AVFrameSideData *sd)
 {
     const AVAmbientViewingEnvironment *ambient_viewing_environment =
@@ -864,6 +891,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             break;
         case AV_FRAME_DATA_AMBIENT_VIEWING_ENVIRONMENT:
             dump_ambient_viewing_environment(ctx, sd);
+            break;
+        case AV_FRAME_DATA_GAIN_MAP_PARAMS:
+            dump_gain_map_params(ctx, sd);
             break;
         case AV_FRAME_DATA_VIEW_ID:
             av_log(ctx, AV_LOG_INFO, "view id: %d\n", *(int*)sd->data);
