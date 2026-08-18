@@ -2246,6 +2246,11 @@ int ff_vk_shader_load(FFVulkanShader *shd,
     shd->specialization_info = spec;
     memcpy(shd->lg_size, wg_size, 3*sizeof(uint32_t));
 
+    shd->subgroup_info = (VkPipelineShaderStageRequiredSubgroupSizeCreateInfo) {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO,
+        .requiredSubgroupSize = required_subgroup_size,
+    };
+
     switch (shd->stage) {
     case VK_SHADER_STAGE_ANY_HIT_BIT_KHR:
     case VK_SHADER_STAGE_CALLABLE_BIT_KHR:
@@ -2362,6 +2367,8 @@ static int create_shader_object(FFVulkanContext *s, FFVulkanShader *shd,
 
     VkShaderCreateInfoEXT shader_obj_create = {
         .sType = VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT,
+        .pNext = shd->subgroup_info.requiredSubgroupSize ?
+                 &shd->subgroup_info : NULL,
         .flags = shd->subgroup_info.requiredSubgroupSize ?
                  VK_SHADER_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT : 0x0,
         .stage = shd->stage,
