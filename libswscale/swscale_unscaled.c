@@ -2291,13 +2291,13 @@ static int planarCopyWrapper(SwsInternal *c, const uint8_t *const src[],
                            shiftonly) {
 #if HAVE_FAST_64BIT
                             for (; j < length - 3; j += 4) {
-                                uint64_t v = AV_RN64A(srcPtr2 + j) >> src_shift;
-                                AV_WN64A(dstPtr2 + j, (v << shift) << dst_shift);
+                                uint64_t v = AV_RN64(srcPtr2 + j) >> src_shift;
+                                AV_WN64(dstPtr2 + j, (v << shift) << dst_shift);
                             }
 #else
                             for (; j < length - 1; j += 2) {
-                                uint32_t v = AV_RN32A(srcPtr2 + j) >> src_shift;
-                                AV_WN32A(dstPtr2 + j, (v << shift) << dst_shift);
+                                uint32_t v = AV_RN32(srcPtr2 + j) >> src_shift;
+                                AV_WN32(dstPtr2 + j, (v << shift) << dst_shift);
                             }
 #endif
                         }
