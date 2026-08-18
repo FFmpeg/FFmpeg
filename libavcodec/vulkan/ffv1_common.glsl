@@ -146,7 +146,16 @@ uint slice_coord(uint width, uint sx, uint num_h_slices, uint chroma_shift)
 u16vec4 get_slice_bits(in SliceContext sc)
 {
 #ifndef FLOAT
-    return u16vec4(c_bits, c_bits, c_bits, c_bits);
+    u16vec4 bits = u16vec4(c_bits, c_bits, c_bits, c_bits);
+#ifdef RGB
+    /* 4.8 stopped coding the extra bit on the primary and alpha planes */
+    if (sc.slice_coding_mode == 0 &&
+        (version > 4 || (version == 4 && micro_version >= 8))) {
+        bits[0] = uint16_t(c_bits - 1);
+        bits[3] = uint16_t(c_bits - 1);
+    }
+#endif
+    return bits;
 #else
     u32vec4 cnt = sc.remap_count;
 #if defined(ENCODE)
