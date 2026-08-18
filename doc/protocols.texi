@@ -1178,7 +1178,38 @@ Default is @code{5}.
 Set the threshold, in bytes, for when a readahead should be preferred over a seek and
 new HTTP request. This is useful, for example, to make sure the same connection
 is used for reading large video packets with small audio packets in between.
+
+@item icy
+If set to 1 request ICY (SHOUTcast) metadata from the server. If the server
+supports this, the metadata has to be retrieved by the application by reading
+the @option{icy_metadata_headers} and @option{icy_metadata_packet} options.
+The default is 1.
+
+@item icy_status
+If set to 1 accept the legacy Shoutcast v1 @code{ICY 200 OK} status line in
+place of an HTTP one. Any reply whose status line starts with @code{ICY 200}
+is then treated as a successful HTTP 200.
+The default is 1.
+
+@item icy_metadata_headers
+If the server supports ICY metadata, this contains the ICY-specific HTTP reply
+headers, separated by newline characters.
+
+@item icy_metadata_packet
+If the server supports ICY metadata, and @option{icy} was set to 1, this
+contains the last non-empty metadata packet sent by the server. It should be
+polled in regular intervals by applications interested in mid-stream metadata
+updates.
+
+@item metadata
+Set an exported dictionary containing Icecast metadata from the bitstream, if present.
+Only useful with the C API.
 @end table
+
+A stream carrying in-band ICY metadata is always treated as non-seekable, since
+its byte offsets do not address the payload. @option{seekable},
+@option{request_size} and @option{max_retries} therefore have no effect on such
+a stream.
 
 For more information see: @url{https://curl.se/libcurl/}.
 
