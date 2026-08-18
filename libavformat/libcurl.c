@@ -1098,23 +1098,17 @@ static int libcurl_read(URLContext *h, unsigned char *buf, int size)
 {
     CurlContext *c = h->priv_data;
     int nonblock = h->flags & AVIO_FLAG_NONBLOCK;
-    int ret;
+    int unpause, ret;
 
     pthread_mutex_lock(&c->mutex);
     while (1) {
         size_t avail = av_fifo_can_read(c->fifo);
 
         if (avail) {
-            int n = FFMIN(avail, (size_t)size);
-            int unpause;
-            av_fifo_read(c->fifo, buf, n);
-            /* Resume a paused transfer once the FIFO is at least half empty. */
-            unpause = c->paused && av_fifo_can_write(c->fifo) * 2 >= c->buffer_size;
-            c->logical_pos += n;
-            pthread_mutex_unlock(&c->mutex);
-            if (unpause)
-                curl_dispatch(c->loop, CMD_UNPAUSE, c, 0, 0);
-            return n;
+            ret = FFMIN(avail, (size_t)size);
+            av_fifo_read(c->fifo, buf, ret);
+            c->logical_pos += ret;
+            break;
         }
         if (c->status) {
             ret = c->status;
@@ -1128,7 +1122,13 @@ static int libcurl_read(URLContext *h, unsigned char *buf, int size)
         /* Return to the avio layer so it can poll the interrupt callback. */
         nonblock = 1;
     }
+    /* Resume a paused transfer once the FIFO is at least half empty, on every
+     * exit path since a read is not guaranteed to drain anything. */
+    unpause = c->paused && av_fifo_can_write(c->fifo) * 2 >= c->buffer_size;
     pthread_mutex_unlock(&c->mutex);
+
+    if (unpause)
+        curl_dispatch(c->loop, CMD_UNPAUSE, c, 0, 0);
 
     return ret;
 }
