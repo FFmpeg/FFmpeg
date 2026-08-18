@@ -123,6 +123,12 @@ static av_always_inline int pthread_mutex_lock(pthread_mutex_t *mutex)
     return 0;
 }
 
+static av_always_inline int pthread_mutex_trylock(pthread_mutex_t *mutex)
+{
+    return _fmutex_request(mutex, _FMR_NOWAIT) == ERROR_MUTEX_OWNED ?
+                EBUSY : 0;
+}
+
 static av_always_inline int pthread_mutex_unlock(pthread_mutex_t *mutex)
 {
     _fmutex_release(mutex);
