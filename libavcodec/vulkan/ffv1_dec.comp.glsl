@@ -363,10 +363,13 @@ void decode_slice(in SliceContext sc, uint slice_idx)
     sp.x >>= 1;
     sp.y = int(gl_WorkGroupID.y)*rgb_linecache;
     /* c_bits = bps + 1 (the +1 is for is_rgb). For PCM mode, all planes use
-     * raw bps. For non-PCM, gm uses bps; gd/b-gm/r-gm use bps+1. */
-    if (sc.slice_coding_mode == 0)
+     * raw bps. For non-PCM, gm uses bps (bps+1 before 4.8, which coded an
+     * extra bit); gd/b-gm/r-gm use bps+1. */
+    if (sc.slice_coding_mode == 0) {
         bits = u16vec4(c_bits - 1, c_bits, c_bits, c_bits);
-    else
+        if (version == 4 && micro_version < 8)
+            bits[0] = uint16_t(c_bits);
+    } else
         bits = u16vec4(c_bits - 1, c_bits - 1, c_bits - 1, c_bits - 1);
 #elif defined(RGB)
     sp.y = int(gl_WorkGroupID.y)*rgb_linecache;
