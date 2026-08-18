@@ -705,7 +705,7 @@ static av_always_inline void yuv2packedX_altivec(SwsInternal *c,
 
     out = (vector unsigned char *) dest;
 
-    for (i = 0; i < dstW; i += 16) {
+    for (i = 0; i < dstW - 15; i += 16) {
         Y0 = RND;
         Y1 = RND;
         /* extract 16 coeffs from lumSrc */
@@ -795,8 +795,6 @@ static av_always_inline void yuv2packedX_altivec(SwsInternal *c,
     }
 
     if (i < dstW) {
-        i -= 16;
-
         Y0 = RND;
         Y1 = RND;
         /* extract 16 coeffs from lumSrc */
@@ -878,7 +876,8 @@ static av_always_inline void yuv2packedX_altivec(SwsInternal *c,
             return;
         }
 
-        memcpy(&((uint32_t *) dest)[i], scratch, (dstW - i) / 4);
+        int pixel_stride = av_pix_fmt_desc_get(target)->comp[0].step;
+        memcpy(&dest[i * pixel_stride], scratch, (dstW - i) * pixel_stride);
     }
 }
 
