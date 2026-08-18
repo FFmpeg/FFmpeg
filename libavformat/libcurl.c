@@ -105,6 +105,7 @@ struct CurlContext {
     int             private_loop;  /* loop is owned by this context (not shared) */
     CURL           *easy;
     struct curl_slist *header_list;
+    struct curl_slist *alias_list;
 
     /* AVOptions. */
     char           *user_agent;
@@ -130,6 +131,7 @@ struct CurlContext {
     int64_t         short_seek_size;
     int             max_retries;
     int             icy;
+    int             icy_status;
     char           *icy_metadata_headers; /* "Icy-*" reply headers (output) */
     char           *icy_metadata_packet;  /* last in-band block (output) */
     AVDictionary   *metadata;             /* ICY metadata (output) */
@@ -1114,6 +1116,14 @@ static void setup_curl(CurlContext *c)
     c->header_list = build_headers(c);
     if (c->header_list)
         curl_easy_setopt(e, CURLOPT_HTTPHEADER, c->header_list);
+
+    /* Shoutcast v1 answers "ICY 200 OK", which curl would otherwise reject as
+     * HTTP/0.9 before any header reaches header_callback(). */
+    if (c->icy_status) {
+        c->alias_list = curl_slist_append(NULL, "ICY 200");
+        if (c->alias_list)
+            curl_easy_setopt(e, CURLOPT_HTTP200ALIASES, c->alias_list);
+    }
 }
 
 static void curl_cond_wait(CurlContext *c)
@@ -1397,6 +1407,8 @@ static int libcurl_close(URLContext *h)
 
     if (c->header_list)
         curl_slist_free_all(c->header_list);
+    if (c->alias_list)
+        curl_slist_free_all(c->alias_list);
     av_dict_free(&c->hdr_icy);
     av_fifo_freep2(&c->fifo);
     pthread_cond_destroy(&c->cond);
@@ -1435,6 +1447,7 @@ static const AVOption options[] = {
     { "multiple_requests", "reuse the connection across requests (HTTP keep-alive)", OFFSET(multiple_requests), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, D | E },
     { "max_retries", "maximum number of retries after a recoverable error", OFFSET(max_retries), AV_OPT_TYPE_INT, { .i64 = 5 }, 0, INT_MAX, D },
     { "icy", "request ICY metadata", OFFSET(icy), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, D },
+    { "icy_status", "accept legacy Shoutcast \"ICY 200 OK\" status lines", OFFSET(icy_status), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, D },
     { "icy_metadata_headers", "return ICY metadata headers", OFFSET(icy_metadata_headers), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, AV_OPT_FLAG_EXPORT },
     { "icy_metadata_packet", "return current ICY metadata packet", OFFSET(icy_metadata_packet), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, AV_OPT_FLAG_EXPORT },
     { "metadata", "metadata read from the bitstream", OFFSET(metadata), AV_OPT_TYPE_DICT, {0}, 0, 0, AV_OPT_FLAG_EXPORT },
