@@ -363,7 +363,10 @@ static size_t header_callback(char *ptr, size_t size, size_t nitems, void *userd
     size_t n = len;
     long status = 0;
 
-    if (av_strncasecmp(ptr, "HTTP/", 5) == 0) {
+    /* Only "ICY 200" is aliased, so these two prefixes cover every status line
+     * curl lets through. */
+    if (av_strncasecmp(ptr, "HTTP/", 5) == 0 ||
+        av_strncasecmp(ptr, "ICY ", 4) == 0) {
         c->hdr_accept_ranges = 0;
         c->hdr_compressed    = 0;
         c->hdr_content_start = -1;
