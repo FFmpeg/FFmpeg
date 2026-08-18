@@ -24,6 +24,9 @@
 #extension GL_GOOGLE_include_directive : require
 
 #define ENCODE
+/* Golomb slices start writing at rac_terminate()'s byte count, with no
+ * alignment guarantee */
+#define PB_UNALIGNED
 #include "common.glsl"
 #include "ffv1_common.glsl"
 
