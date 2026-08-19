@@ -307,6 +307,7 @@ extern const FFFilter ff_vf_frei0r;
 extern const FFFilter ff_vf_fruc_vulkan;
 extern const FFFilter ff_vf_fspp;
 extern const FFFilter ff_vf_fsync;
+extern const FFFilter ff_vf_gainmap;
 extern const FFFilter ff_vf_gblur;
 extern const FFFilter ff_vf_gblur_vulkan;
 extern const FFFilter ff_vf_geq;

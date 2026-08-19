@@ -15230,6 +15230,80 @@ sort -n MAP_FILE
 ffmpeg -i INPUT -i OUTPUT -filter_complex '[0:v]fsync=file=MAP_FILE[ref];[1:v][ref]ssim' -f null -
 @end example
 
+@section gainmap
+
+Compute an HDR gain map from two renditions of the same image, as defined by
+ISO 21496-1.
+
+The first input is the base rendition (typically SDR), and the second input
+is the alternate rendition (typically HDR). Both must have the same
+dimensions. Outputs a gain map, as either @samp{gbrpf32} or @samp{grayf32}
+depending on the chosen @option{mode}.
+
+@table @option
+@item mode
+Controls what quantity the gain map is computed against.
+
+The accepted values are:
+@table @samp
+@item rgb
+One gain map channel per component.
+
+@item luma
+A single gain map channel, computed from the luma.
+
+@item maxrgb
+A single gain map channel, computed from @samp{max(R, G, B)}.
+@end table
+
+Default is @samp{rgb}.
+
+@item colorspace
+Chooses which colorspace to compute the gain map in.
+
+The accepted values are:
+@table @samp
+@item base
+The base rendition's colorspace.
+
+@item alternate
+The alternate rendition's colorspace.
+@end table
+
+Default is @samp{base}.
+
+@item min
+@item max
+Bounds on the encoded gain (log2). If unspecified, these will be
+measured from the frame.
+
+@item gamma
+Encoding gamma of the resulting gain map. If unspecified, this will be
+optimized for the frame in question. Setting this to @code{1.0} will produce
+a linear gain map, which may be more efficient in some applications.
+
+@item base_offset
+@item alt_offset
+Offset to prevent numerical instability near zero. Both default to @code{1/64}.
+
+@item base_nits
+@item alt_nits
+Override the reference luminance of the input, in nits. If unspecified, uses
+the values from the input metadata.
+@end table
+
+The @code{gainmap} filter also supports the @ref{framesync} options.
+
+@subsection Examples
+
+@itemize
+@item
+Compute a gain map between an SDR and an HDR version of the same image:
+@example
+ffmpeg -i $sdr -i $hdr -filter_complex "[0:v][1:v]gainmap" $out
+@end example
+@end itemize
+
 @section gblur
 
 Apply Gaussian blur filter.
