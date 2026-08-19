@@ -12,7 +12,6 @@ X86ASM-OBJS-$(CONFIG_BSWAPDSP)         += x86/bswapdsp_init.o
 X86ASM-OBJS-$(CONFIG_DIRAC_DECODER)    += x86/diracdsp_init.o           \
                                           x86/dirac_dwt_init.o
 OBJS-$(CONFIG_FDCTDSP)                 += x86/fdctdsp_init.o x86/fdct.o
-X86ASM-OBJS-$(CONFIG_FMTCONVERT)       += x86/fmtconvert_init.o
 X86ASM-OBJS-$(CONFIG_H263DSP)          += x86/h263dsp_init.o
 X86ASM-OBJS-$(CONFIG_H264CHROMA)       += x86/h264chroma_init.o
 X86ASM-OBJS-$(CONFIG_H264DSP)          += x86/h264dsp_init.o
@@ -95,7 +94,6 @@ X86ASM-OBJS-$(CONFIG_AC3DSP)           += x86/ac3dsp.o                  \
 X86ASM-OBJS-$(CONFIG_AUDIODSP)         += x86/audiodsp.o
 X86ASM-OBJS-$(CONFIG_BLOCKDSP)         += x86/blockdsp.o
 X86ASM-OBJS-$(CONFIG_BSWAPDSP)         += x86/bswapdsp.o
-X86ASM-OBJS-$(CONFIG_FMTCONVERT)       += x86/fmtconvert.o
 X86ASM-OBJS-$(CONFIG_H263DSP)          += x86/h263_loopfilter.o
 X86ASM-OBJS-$(CONFIG_H264CHROMA)       += x86/h264_chromamc.o           \
                                           x86/h264_chromamc_10bit.o

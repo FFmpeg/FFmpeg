@@ -54,7 +54,6 @@ void checkasm_check_fdctdsp(void);
 void checkasm_check_fixed_dsp(void);
 void checkasm_check_flacdsp(void);
 void checkasm_check_float_dsp(void);
-void checkasm_check_fmtconvert(void);
 void checkasm_check_g722dsp(void);
 void checkasm_check_h263dsp(void);
 void checkasm_check_h264chroma(void);

@@ -7,7 +7,6 @@ AVCODECOBJS-$(CONFIG_AUDIODSP)          += audiodsp.o
 AVCODECOBJS-$(CONFIG_BLOCKDSP)          += blockdsp.o
 AVCODECOBJS-$(CONFIG_BSWAPDSP)          += bswapdsp.o
 AVCODECOBJS-$(CONFIG_FDCTDSP)           += fdctdsp.o
-AVCODECOBJS-$(CONFIG_FMTCONVERT)        += fmtconvert.o
 AVCODECOBJS-$(CONFIG_G722DSP)           += g722dsp.o
 AVCODECOBJS-$(CONFIG_H263DSP)           += h263dsp.o
 AVCODECOBJS-$(CONFIG_H264CHROMA)        += h264chroma.o
