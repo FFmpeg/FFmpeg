@@ -63,11 +63,27 @@ FATE_EAC3 += fate-eac3-5
 fate-eac3-5: CMD = pcm -i $(TARGET_SAMPLES)/eac3/the_great_wall_7.1.eac3
 fate-eac3-5: REF = $(SAMPLES)/eac3/the_great_wall_7.1.pcm
 
+FATE_EAC3_FIXED += fate-eac3-fixed-1
+fate-eac3-fixed-1: CMD = pcm -c:a ac3_fixed -i $(TARGET_SAMPLES)/eac3/csi_miami_5.1_256_spx_small.eac3
+fate-eac3-fixed-1: REF = $(SAMPLES)/eac3/csi_miami_5.1_256_spx_small_v2.pcm
+
+FATE_EAC3_FIXED += fate-eac3-fixed-2
+fate-eac3-fixed-2: CMD = pcm -c:a ac3_fixed -i $(TARGET_SAMPLES)/eac3/csi_miami_stereo_128_spx_small.eac3
+fate-eac3-fixed-2: REF = $(SAMPLES)/eac3/csi_miami_stereo_128_spx_small_v2.pcm
+
+FATE_EAC3_FIXED += fate-eac3-fixed-3
+fate-eac3-fixed-3: CMD = pcm -c:a ac3_fixed -i $(TARGET_SAMPLES)/eac3/matrix2_commentary1_stereo_192_small.eac3
+fate-eac3-fixed-3: REF = $(SAMPLES)/eac3/matrix2_commentary1_stereo_192_small_v2.pcm
+
+FATE_EAC3_FIXED += fate-eac3-fixed-4
+fate-eac3-fixed-4: CMD = pcm -c:a ac3_fixed -i $(TARGET_SAMPLES)/eac3/serenity_english_5.1_1536_small.eac3
+fate-eac3-fixed-4: REF = $(SAMPLES)/eac3/serenity_english_5.1_1536_small_v2.pcm
+
 # the fixed decoder has to keep the overlap of the independent substream when
 # the dependent substream uses a different coefficient format
-FATE_EAC3_FIXED += fate-eac3-fixed-dependent-substream
-fate-eac3-fixed-dependent-substream: CMD = pcm -c ac3_fixed -i $(TARGET_SAMPLES)/eac3/the_great_wall_7.1.eac3
-fate-eac3-fixed-dependent-substream: REF = $(SAMPLES)/eac3/the_great_wall_7.1.pcm
+FATE_EAC3_FIXED += fate-eac3-fixed-5
+fate-eac3-fixed-5: CMD = pcm -c:a ac3_fixed -i $(TARGET_SAMPLES)/eac3/the_great_wall_7.1.eac3
+fate-eac3-fixed-5: REF = $(SAMPLES)/eac3/the_great_wall_7.1.pcm
 
 $(FATE_AC3) $(FATE_EAC3) $(FATE_EAC3_FIXED): CMP = oneoff
 
