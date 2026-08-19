@@ -144,8 +144,17 @@ av_cold void ff_vc1dsp_init_x86(VC1DSPContext *dsp)
         MSPEL_FUNCS(0, 2, ssse3);
         MSPEL_FUNCS(0, 3, ssse3);
         MSPEL_FUNCS(1, 0, ssse3);
+        MSPEL_FUNCS_SIZE(1, 1, 8, ssse3);
+        MSPEL_FUNCS_SIZE(1, 2, 8, ssse3);
+        MSPEL_FUNCS_SIZE(1, 3, 8, ssse3);
         MSPEL_FUNCS(2, 0, ssse3);
+        MSPEL_FUNCS_SIZE(2, 1, 8, ssse3);
+        MSPEL_FUNCS_SIZE(2, 2, 8, ssse3);
+        MSPEL_FUNCS_SIZE(2, 3, 8, ssse3);
         MSPEL_FUNCS(3, 0, ssse3);
+        MSPEL_FUNCS_SIZE(3, 1, 8, ssse3);
+        MSPEL_FUNCS_SIZE(3, 2, 8, ssse3);
+        MSPEL_FUNCS_SIZE(3, 3, 8, ssse3);
     }
     if (EXTERNAL_SSE4(cpu_flags)) {
         dsp->vc1_h_loop_filter8  = ff_vc1_h_loop_filter8_sse4;

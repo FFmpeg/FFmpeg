@@ -32,7 +32,10 @@ pb_36_m4: times 8 db 36, -4
 pb_m4_53: times 8 db -4, 53
 pb_m3_18: times 8 db -3, 18
 
+pw_53: times 8 dw 53
+
 cextern pw_9
+cextern pw_18
 cextern pw_128
 
 SECTION .text
@@ -414,3 +417,260 @@ VER_8B avg, 8
 
 VER_8B put, 16
 VER_8B avg, 16
+
+%if ARCH_X86_64
+%define BIAS_REG m8
+%define COEFF0   m9
+%define COEFF1  m10
+%else
+%define BIAS_REG m7
+%endif
+
+%macro FUNC_HEADER 6; put vs avg, size, shift_ver, shift_hor, coeff1, coeff2
+%assign stack_size (2*%2+16)*%2
+%if ARCH_X86_64
+cglobal vc1_%1_mspel_mc%4%3_%2, 4, 7, 13, stack_size, dst, src, stride, rnd, rnd1, unused, tmp
+%define COEFF0    m9
+%define COEFF1   m10
+    mova          COEFF0, [%5]
+    mova          COEFF1, [%6]
+%else
+cglobal vc1_%1_mspel_mc%4%3_%2, 0, 5, 8, stack_size, coeffs, src, stride, rnd
+    mov             srcd, r1m
+    mov          strided, r2m
+    mov             rndd, r3m
+    %define        rnd1d rndd
+    lea          coeffsq, [%5]
+%define COEFF0 [coeffsd]
+%define COEFF1 [coeffsd+(%6-%5)]
+%endif
+    ASSERT (%6-%5 == 16)
+; The values from the vertical filter are scaled down (shifted) before
+; the horizontal filter so that the calculations can be done in 16 bits.
+; The coefficients of the 1/4 and 3/4 filter sum to 64, while the ones
+; for the 1/2 filter sum to 16. Therefore two is added to the shift factor
+; for each stage using 1/4 or 3/4 filter.
+; Like in the purely horizontal and purely vertical filters, the 1/2 filter
+; coefficients can of course be scaled by four if one also scales the rounding
+; value and increases the downshift factor by two. We do this because then
+; the intermediate shift only depends on the value of the horizontal shift.
+;
+; The coefficients used here contain negative values. The sum of the positive
+; scaled 1/2 shift coefficients is 72 vs 71 for 1/4 and 3/4 shifts, so that
+; the range of intermediate values from the first stage is most encompassing
+; when the first stage uses a 1/2 shift. In this case the range is -8*255..72*255
+; (apart from rounding).
+; When the second stage uses 1/2 shifts, this range is shifted down by three
+; and the range in the second stage does not fit into a signed 16bit value:
+; The maximum is about 18*(72*255/8)-2*(-8*255/8)=41820. It fits into a signed
+; word after adding a -128*128 bias. Using this bias implies that we can use
+; packsswb and undo the bias on bytes.
+; The same issue can happen when the second stage uses 1/4 or 3/4 shifts;
+; but this can be addressed by combining the summands involving 53*coef and
+; 18*coef with saturated addition.
+;
+; The bias is applied at the first stage by combining it with the first stage
+; rnd value; we also apply the second-stage rnd-offset of 64 here
+; (by adding 32).
+
+%define IS_TWO(x) (1-((x-2)&1))       ; x == 2 for x in 1..3
+%define SHIFT_FACTOR(x) 5-4*IS_TWO(x) ; x == 2 ? 1 : 5
+%assign COMBINED_SHIFT (SHIFT_FACTOR(%3)+SHIFT_FACTOR(%4))/2
+%assign ACTUAL_SHIFT (5+SHIFT_FACTOR(%4))/2
+%assign BIAS -128*64*IS_TWO(%4)+32
+%if %3 == 2
+; The coefficients used for the 1/2 vertical shift are scaled by four
+; (to reuse the purely vertical constants), so we need to scale rnd here.
+    lea            rnd1d, [4*rndq+4*((1<<(COMBINED_SHIFT-1))-1)+BIAS]
+%else
+%if ARCH_X86_64
+    lea            rnd1d, [rndq+(1<<(COMBINED_SHIFT-1))-1+BIAS]
+%else
+    add            rnd1d, (1<<(COMBINED_SHIFT-1))-1+BIAS
+%endif
+%endif
+    call           put_mspel_ver_ %+ ACTUAL_SHIFT %+ _%2_ %+ cpuname
+%endmacro
+
+%macro FUNC_TRIPLE  3; put vs avg, size, shift2
+    FUNC_HEADER %1, %2, 1, %3, pb_m4_18, pb_53_m3
+    jmp %1_mspel_hor_16b_shift%3_%2_ %+ cpuname
+
+    FUNC_HEADER %1, %2, 3, %3, pb_m3_53, pb_18_m4
+    jmp %1_mspel_hor_16b_shift%3_%2_ %+ cpuname
+
+    FUNC_HEADER %1, %2, 2, %3, pb_m4_36, pb_36_m4
+%1_mspel_hor_16b_shift%3_%2_ %+ cpuname:
+%define hd rnd1d
+%if %3 != 2
+    mova              m6, [pw_53]
+    mova              m7, [pw_18]
+%else
+    mova              m6, [pw_9]
+%endif
+%if ARCH_X86_32
+    DEFINE_ARGS dst, src, stride, rnd1
+    mov             dstq, r0m
+%endif
+    mov             srcq, rsp
+
+.loop:
+    movu              m2, [srcq + 2 * 1]
+    movu              m3, [srcq + 2 * 2]
+%if %3 == 2
+    movu              m1, [srcq + 2 * 3]
+    paddw             m2, m3
+    paddw             m1, [srcq]
+    pmullw            m2, m6
+%ifidn %1,avg
+    movq              m5, [dstq]
+%endif
+    paddw             m1, m0       ; 1,0,0,1+rnd
+    add             srcq, 2*%2+16
+    psubw             m2, m1       ; -1,9,9,-1-rnd
+%else
+    mova              m1, [srcq]
+    movu              m4, [srcq + 2 * 3]
+%if %3 == 3
+    SWAP               1, 4
+    SWAP               2, 3
+%endif
+    pmullw            m2, m6       ; 0,53,0,0
+    pmullw            m3, m7       ; 0,0,18,0
+%ifidn %1,avg
+    movq              m5, [dstq]
+%endif
+    paddw             m1, m4       ; 1,0,0,1
+    psubw             m4, m0       ; 0,0,0,1-rnd
+    psllw             m1, 2        ; 4,0,0,4
+    add             srcq, 2*%2+16
+    paddw             m2, m4       ; 0,53,0,1-rnd
+    psubw             m3, m1       ; -4,0,18,-4
+    paddsw            m2, m3       ; -4,53,18,-3-rnd
+%endif
+    psraw             m2, 7
+%if %3 == 2
+    packsswb          m2, m2
+    pxor              m2, BIAS_REG ; undo -128 bias
+%else
+    packuswb          m2, m2
+%endif
+%ifidn %1,avg
+    pavgb             m2, m5
+%endif
+    movq          [dstq], m2
+    add             dstq, strideq
+    dec               hd
+    jnz            .loop
+    RET
+%endmacro
+
+%macro VER_16B 2 ; size, shift
+put_mspel_ver_%2_%1_ssse3:
+%if ARCH_X86_32
+    DEFINE_ARGS coeffs, src, stride, rnd1, tmp
+%endif
+%define RND BIAS_REG
+%define hd     rnd1d
+; Necessary to ensure that reading memory args works.
+%assign stack_offset stack_offset+gprsize
+    neg          strideq
+    dec             srcq
+    movd              m0, rnd1d
+    MOV%1             m2, [srcq+strideq]
+    movd              m3, [srcq+strideq+%1]
+    neg          strideq
+    SPLATW           RND, m0
+%if ARCH_X86_64
+    MOV%1             m4, [srcq]
+    movd              m5, [srcq+%1]
+%endif
+    mov               hd, %1/4
+    MOV%1             m6, [srcq+strideq]
+%if ARCH_X86_64
+    movd              m7, [srcq+strideq+%1]
+    lea             srcq, [srcq+2*strideq]
+%else
+    movd              m4, [srcq+strideq+%1]
+%endif
+    lea             tmpq, [rsp+gprsize]
+    punpcklbw         m2, m6
+%if ARCH_X86_64
+    punpcklbw         m3, m7
+%else
+    punpcklbw         m3, m4
+%endif
+.loop:
+%assign         %%offset 0
+%rep 4
+%if ARCH_X86_64
+    MOV%1            m11, [srcq]
+    movd             m12, [srcq+%1]
+    pmaddubsw         m2, COEFF0
+    pmaddubsw         m3, COEFF0
+    punpcklbw         m4, m11
+    punpcklbw         m5, m12
+%else
+    MOV%1             m4, [srcq]
+    movd              m5, [srcq+%1]
+    pmaddubsw         m2, COEFF0
+    pmaddubsw         m3, COEFF0
+    MOV%1             m0, [srcq+2*strideq]
+    movd              m1, [srcq+2*strideq+%1]
+    punpcklbw         m4, m0
+    punpcklbw         m5, m1
+%endif
+    pmaddubsw         m0, m4, COEFF1
+    paddw             m2, RND
+    pmaddubsw         m1, m5, COEFF1
+    paddw             m3, RND
+    add             srcq, strideq
+    paddw             m0, m2
+    paddw             m1, m3
+    psraw             m0, %2
+    psraw             m1, %2
+    mova  [tmpq+%%offset], m0
+    movq [tmpq+%%offset+16], m1
+    %assign     %%offset %%offset+2*%1+16
+%if ARCH_X86_64
+    SWAP 2, 4, 6, 11
+    SWAP 3, 5, 7, 12
+%else
+    SWAP 2, 4
+    SWAP 3, 5
+%endif
+%endrep
+    add             tmpq, 4*(2*%1+16)
+    dec               hd
+    jnz            .loop
+
+%if ARCH_X86_64
+    movd              m0, rndd
+%else
+    movd              m0, r3m
+%endif
+%if %2 == 3
+    packsswb    BIAS_REG, BIAS_REG              ; -128 aka pb_80
+%endif
+    mov               hd, %1
+    SPLATW            m0, m0
+%assign stack_offset stack_offset-gprsize
+    ret
+%endmacro
+
+%macro SHIFT13_FUNCS 1 ; size
+    FUNC_TRIPLE put, %1, 1
+    FUNC_TRIPLE put, %1, 3
+    VER_16B %1, 3
+    FUNC_TRIPLE avg, %1, 1
+    FUNC_TRIPLE avg, %1, 3
+%endmacro
+
+%macro SHIFT2_FUNCS 1; size
+    FUNC_TRIPLE put, %1, 2
+    VER_16B %1, 5
+    FUNC_TRIPLE avg, %1, 2
+%endmacro
+
+SHIFT13_FUNCS 8
+SHIFT2_FUNCS  8
