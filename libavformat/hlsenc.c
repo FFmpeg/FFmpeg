@@ -53,6 +53,9 @@
 #include "hlsplaylist.h"
 #include "internal.h"
 #include "mux.h"
+#if CONFIG_MP4_MUXER
+#include "movenc.h"
+#endif
 #include "os_support.h"
 #include "url.h"
 
@@ -2520,6 +2523,11 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
         int byterange_mode = (hls->flags & HLS_SINGLE_FILE) || (hls->max_seg_size > 0);
         double cur_duration;
 
+#if CONFIG_MP4_MUXER
+        if (hls->segment_type == SEGMENT_TYPE_FMP4 && is_ref_pkt &&
+            pkt->dts != AV_NOPTS_VALUE)
+            ff_mov_set_fragment_end_hint(oc, stream_index, pkt, st->time_base);
+#endif
         av_write_frame(oc, NULL); /* Flush any buffered data */
         new_start_pos = avio_tell(oc->pb);
         vs->size = new_start_pos - vs->start_pos;

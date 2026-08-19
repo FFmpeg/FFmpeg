@@ -6948,6 +6948,48 @@ static int check_pkt(AVFormatContext *s, MOVTrack *trk, AVPacket *pkt)
     return 0;
 }
 
+int ff_mov_set_fragment_end_hint(AVFormatContext *s, int stream_index,
+                                 const AVPacket *pkt, AVRational src_time_base)
+{
+    MOVMuxContext *mov = s->priv_data;
+    AVStream *st;
+    MOVTrack *track;
+    int64_t offset, dts, pts, candidate_duration;
+
+    if (!(mov->flags & FF_MOV_FLAG_FRAGMENT) ||
+        stream_index < 0 || stream_index >= s->nb_streams ||
+        pkt->dts == AV_NOPTS_VALUE)
+        return 0;
+
+    st = s->streams[stream_index];
+    track = st->priv_data;
+    if (!track->entry || track->start_dts == AV_NOPTS_VALUE)
+        return 0;
+
+    if (ff_get_muxer_ts_offset(s, stream_index, &offset) < 0)
+        return 0;
+
+    dts = av_rescale_q(pkt->dts, src_time_base, st->time_base) + offset;
+    pts = pkt->pts == AV_NOPTS_VALUE
+        ? AV_NOPTS_VALUE
+        : av_rescale_q(pkt->pts, src_time_base, st->time_base) + offset;
+    if (track->dts_shift != AV_NOPTS_VALUE)
+        dts += track->dts_shift;
+
+    candidate_duration = dts - track->start_dts;
+    if (dts <= track->cluster[track->entry - 1].dts ||
+        candidate_duration < 0 || candidate_duration >= track->track_duration)
+        return 0;
+
+    track->track_duration = candidate_duration;
+    track->end_pts = pts != AV_NOPTS_VALUE ? pts : dts;
+    if (!(pkt->flags & AV_PKT_FLAG_DISCARD))
+        track->elst_end_pts = track->end_pts;
+    track->end_reliable = 1;
+
+    return 1;
+}
+
 int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MOVMuxContext *mov = s->priv_data;
