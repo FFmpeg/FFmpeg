@@ -2949,47 +2949,40 @@ static int wpp_progress_init(HEVCContext *s, unsigned count)
     return 0;
 }
 
-static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
+static int alloc_local_ctxs(HEVCContext *s)
 {
-    const HEVCPPS *const pps = s->pps;
-    const HEVCSPS *const sps = pps->sps;
-    const uint8_t *data = nal->data;
-    int length          = nal->size;
-    int *ret;
-    int64_t offset;
-    int64_t startheader, cmpt = 0;
-    int j, res = 0;
+    HEVCLocalContext *tmp;
 
-    if (s->sh.slice_ctb_addr_rs + s->sh.num_entry_point_offsets * (int64_t)sps->ctb_width >= sps->ctb_width * (int64_t)sps->ctb_height) {
-        av_log(s->avctx, AV_LOG_ERROR, "WPP ctb addresses are wrong (%d %d %d %d)\n",
-            s->sh.slice_ctb_addr_rs, s->sh.num_entry_point_offsets,
-            sps->ctb_width, sps->ctb_height
-        );
-        return AVERROR_INVALIDDATA;
+    if (s->avctx->thread_count <= s->nb_local_ctx)
+        return 0;
+
+    tmp = av_malloc_array(s->avctx->thread_count, sizeof(*s->local_ctx));
+    if (!tmp)
+        return AVERROR(ENOMEM);
+
+    memcpy(tmp, s->local_ctx, sizeof(*s->local_ctx) * s->nb_local_ctx);
+    av_free(s->local_ctx);
+    s->local_ctx = tmp;
+
+    for (unsigned i = s->nb_local_ctx; i < s->avctx->thread_count; i++) {
+        tmp = &s->local_ctx[i];
+
+        memset(tmp, 0, sizeof(*tmp));
+
+        tmp->logctx             = s->avctx;
+        tmp->parent             = s;
+        tmp->common_cabac_state = &s->cabac;
     }
 
-    if (s->avctx->thread_count > s->nb_local_ctx) {
-        HEVCLocalContext *tmp = av_malloc_array(s->avctx->thread_count, sizeof(*s->local_ctx));
+    s->nb_local_ctx = s->avctx->thread_count;
 
-        if (!tmp)
-            return AVERROR(ENOMEM);
+    return 0;
+}
 
-        memcpy(tmp, s->local_ctx, sizeof(*s->local_ctx) * s->nb_local_ctx);
-        av_free(s->local_ctx);
-        s->local_ctx = tmp;
-
-        for (unsigned i = s->nb_local_ctx; i < s->avctx->thread_count; i++) {
-            tmp = &s->local_ctx[i];
-
-            memset(tmp, 0, sizeof(*tmp));
-
-            tmp->logctx             = s->avctx;
-            tmp->parent             = s;
-            tmp->common_cabac_state = &s->cabac;
-        }
-
-        s->nb_local_ctx = s->avctx->thread_count;
-    }
+static int slice_substreams_init(HEVCContext *s, const H2645NAL *nal)
+{
+    int64_t offset, startheader, cmpt = 0;
+    int j;
 
     offset = s->sh.data_offset;
 
@@ -3015,17 +3008,43 @@ static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
     }
 
     offset += s->sh.entry_point_offset[s->sh.num_entry_point_offsets - 1] - cmpt;
-    if (length < offset) {
+    if (nal->size < offset) {
         av_log(s->avctx, AV_LOG_ERROR, "entry_point_offset table is corrupted\n");
         return AVERROR_INVALIDDATA;
     }
-    s->sh.size  [s->sh.num_entry_point_offsets] = length - offset;
+    s->sh.size  [s->sh.num_entry_point_offsets] = nal->size - offset;
     s->sh.offset[s->sh.num_entry_point_offsets] = offset;
 
     s->sh.offset[0] = s->sh.data_offset;
     s->sh.size[0]   = s->sh.offset[1] - s->sh.offset[0];
 
-    s->data = data;
+    s->data = nal->data;
+
+    return 0;
+}
+
+static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
+{
+    const HEVCPPS *const pps = s->pps;
+    const HEVCSPS *const sps = pps->sps;
+    int *ret;
+    int res = 0;
+
+    if (s->sh.slice_ctb_addr_rs + s->sh.num_entry_point_offsets * (int64_t)sps->ctb_width >= sps->ctb_width * (int64_t)sps->ctb_height) {
+        av_log(s->avctx, AV_LOG_ERROR, "WPP ctb addresses are wrong (%d %d %d %d)\n",
+            s->sh.slice_ctb_addr_rs, s->sh.num_entry_point_offsets,
+            sps->ctb_width, sps->ctb_height
+        );
+        return AVERROR_INVALIDDATA;
+    }
+
+    res = alloc_local_ctxs(s);
+    if (res < 0)
+        return res;
+
+    res = slice_substreams_init(s, nal);
+    if (res < 0)
+        return res;
 
     for (unsigned i = 1; i < s->nb_local_ctx; i++) {
         s->local_ctx[i].first_qp_group = 1;
