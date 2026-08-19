@@ -92,6 +92,12 @@ fate-filter-anequalizer: tests/data/filtergraphs/anequalizer
 fate-filter-anequalizer: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
 fate-filter-anequalizer: CMD = framecrc -auto_conversion_filters -i $(SRC) -/filter_complex $(TARGET_PATH)/tests/data/filtergraphs/anequalizer
 
+FATE_AFILTER-$(call FILTERDEMDECENCMUX, AFIR ARESAMPLE ATRIM, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-afir-selir
+fate-filter-afir-selir: tests/data/asynth-44100-2.wav
+fate-filter-afir-selir: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
+fate-filter-afir-selir: CMD = framecrc -auto_conversion_filters -i $(SRC) -i $(SRC) -filter_complex "[1:a]atrim=end=0.05[ir];[0:a][ir]afir=ir=1[aout]" -map "[aout]" -frames:a 1
+fate-filter-afir-selir: CMP = null
+
 FATE_AFILTER-$(call FILTERDEMDECENCMUX, ASETNSAMPLES, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-asetnsamples-pad
 fate-filter-asetnsamples-pad: tests/data/asynth-44100-2.wav
 fate-filter-asetnsamples-pad: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
