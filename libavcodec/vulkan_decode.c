@@ -24,6 +24,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/mem.h"
 #include "libavutil/vulkan_loader.h"
+#include "h264dec.h"
 
 #define DECODER_IS_SDR(codec_id) \
     (((codec_id) == AV_CODEC_ID_FFV1) || \
@@ -760,10 +761,12 @@ static VkResult vulkan_setup_profile(AVCodecContext *avctx,
         h264_profile->stdProfileIdc = cur_profile & ~(AV_PROFILE_H264_CONSTRAINED |
                                                       AV_PROFILE_H264_INTRA);
 
-        h264_profile->pictureLayout = avctx->field_order == AV_FIELD_UNKNOWN ||
-                                      avctx->field_order == AV_FIELD_PROGRESSIVE ?
-                                      VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_PROGRESSIVE_KHR :
-                                      VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_INTERLACED_INTERLEAVED_LINES_BIT_KHR;
+        h264_profile->pictureLayout =
+            VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_PROGRESSIVE_KHR;
+        const H264Context *h = avctx->priv_data;
+        if (h && h->ps.sps && !h->ps.sps->frame_mbs_only_flag)
+            h264_profile->pictureLayout =
+                VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_INTERLACED_INTERLEAVED_LINES_BIT_KHR;
     } else if (avctx->codec_id == AV_CODEC_ID_H265) {
         dec_caps->pNext = h265_caps;
         usage->pNext = h265_profile;
@@ -903,6 +906,15 @@ static int vulkan_decode_get_profile(AVCodecContext *avctx, AVBufferRef *frames_
                "%s profile \"%s\" not supported!\n",
                avcodec_get_name(avctx->codec_id),
                avcodec_profile_name(avctx->codec_id, cur_profile));
+        return AVERROR(EINVAL);
+    } else if (ret == VK_ERROR_VIDEO_PICTURE_LAYOUT_NOT_SUPPORTED_KHR) {
+        if (avctx->codec_id == AV_CODEC_ID_H264)
+            av_log(avctx, AV_LOG_VERBOSE, "Unable to initialize video session: "
+                   "pictureLayout %#x not supported!\n",
+                   (unsigned)prof->h264_profile.pictureLayout);
+        else
+            av_log(avctx, AV_LOG_VERBOSE, "Unable to initialize video session: "
+                   "pictureLayout not supported!\n");
         return AVERROR(EINVAL);
     } else if (ret == VK_ERROR_VIDEO_PROFILE_FORMAT_NOT_SUPPORTED_KHR) {
         av_log(avctx, AV_LOG_VERBOSE, "Unable to initialize video session: "
