@@ -6463,13 +6463,6 @@ probe_libc(){
         add_${pfx}cppflags -D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS
         test_${pfx}cpp_condition windows.h "!defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0601" &&
             add_${pfx}cppflags -D_WIN32_WINNT=0x0601
-#ifdef WINAPI_FAMILY
-#include <winapifamily.h>
-#if !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
-#error not desktop
-#endif
-#endif
-EOF
         if [ "$pfx" = "" ]; then
             check_func strtoll || add_allcflags -Dstrtoll=_strtoi64
             check_func strtoull || add_allcflags -Dstrtoull=_strtoui64
