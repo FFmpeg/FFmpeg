@@ -96,43 +96,6 @@ cextern pb_3
     RESET_MM_PERMUTATION
 %endmacro
 
-; in: 8 rows of 8 in %1..%8
-; out: 8 rows of 8 in %9..%16
-%macro TRANSPOSE8x8_MEM 16
-    RESET_MM_PERMUTATION
-    movq  m0, %1
-    movq  m1, %2
-    movq  m2, %3
-    movq  m3, %4
-    movq  m4, %5
-    movq  m5, %6
-    movq  m6, %7
-    SBUTTERFLY bw, 0, 1, 7
-    SBUTTERFLY bw, 2, 3, 7
-    SBUTTERFLY bw, 4, 5, 7
-    SBUTTERFLY3 bw, m6, %8, m7
-    movq  %9,  m5
-    SBUTTERFLY wd, 0, 2, 5
-    SBUTTERFLY wd, 4, 6, 5
-    SBUTTERFLY wd, 1, 3, 5
-    movq  %11, m6
-    movq  m6,  %9
-    SBUTTERFLY wd, 6, 7, 5
-    SBUTTERFLY dq, 0, 4, 5
-    SBUTTERFLY dq, 1, 6, 5
-    movq  %9,  m0
-    movq  %10, m4
-    movq  %13, m1
-    movq  %14, m6
-    SBUTTERFLY3 dq, m2, %11, m0
-    SBUTTERFLY dq, 3, 7, 4
-    movq  %11, m2
-    movq  %12, m0
-    movq  %15, m3
-    movq  %16, m7
-    RESET_MM_PERMUTATION
-%endmacro
-
 ; out: %4 = |%1-%2|>%3
 ; clobbers: %5
 %macro DIFF_GT 5
@@ -846,12 +809,57 @@ cglobal deblock_h_luma_intra_8, 2,4,8,0x80, pix, stride, pix3, stride3
     sub             pixd,  4
     lea            pix3d,  [pixd+stride3d]
 %endif
-INIT_MMX cpuname
-    ; transpose 16x6 -> original space (but we can't write only 6 pixels, so really 16x8)
-    TRANSPOSE8x8_MEM  PASS8ROWS(pix_tmp,   pix_tmp+0x30, 0x10, 0x30), PASS8ROWS(pixq, pix3q, strideq, stride3q)
-    lea             pixq, [pixq +8*strideq]
+    RESET_MM_PERMUTATION
+    mova              m0, [pix_tmp]
+    mova              m1, [pix_tmp+16]
+    mova              m2, [pix_tmp+32]
+    mova              m3, [pix_tmp+48]
+    SBUTTERFLY        bw, 0, 1, 7
+    mova              m4, [pix_tmp+64]
+    mova              m5, [pix_tmp+80]
+    SBUTTERFLY        bw, 2, 3, 7
+    mova              m6, [pix_tmp+96]
+    SBUTTERFLY        wd, 0, 2, 7
+%if ARCH_X86_64
+    mova              m8, [pix_tmp+112]
+%endif
+    SBUTTERFLY        wd, 1, 3, 7
+    SBUTTERFLY        bw, 4, 5, 7
+%if ARCH_X86_64
+    SBUTTERFLY        bw, 6, 8, 7
+%else
+    punpcklbw         m6, [pix_tmp+112]
+%endif
+    SBUTTERFLY        wd, 4, 6, 7
+    SBUTTERFLY        dq, 0, 4, 7
+    movq          [pixq], m0
+    movhps [pixq+strideq], m0
+%if ARCH_X86_64
+    SWAP               0, 8
+%else
+    mova              m0, [pix_tmp+96]
+    punpckhbw         m0, [pix_tmp+112]
+%endif
+    SBUTTERFLY        dq, 2, 6, 7
+    movq [pixq+2*strideq], m4
+    movhps       [pix3q], m4
+    SBUTTERFLY        wd, 5, 0, 7
+    movq [pix3q+strideq], m2
+    movhps [pix3q+2*strideq], m2
+    lea             pixq, [pixq+8*strideq]
+    SBUTTERFLY        dq, 1, 5, 7
+    movq [pix3q+stride3q], m6
+    movhps [pix3q+4*strideq], m6
     lea            pix3q, [pix3q+8*strideq]
-    TRANSPOSE8x8_MEM  PASS8ROWS(pix_tmp+8, pix_tmp+0x38, 0x10, 0x30), PASS8ROWS(pixq, pix3q, strideq, stride3q)
+    SBUTTERFLY        dq, 3, 0, 7
+    movq          [pixq], m1
+    movhps [pixq+strideq], m1
+    movq [pixq+2*strideq], m5
+    movhps       [pix3q], m5
+    movq [pix3q+strideq], m3
+    movhps [pix3q+2*strideq], m3
+    movq [pix3q+stride3q], m0
+    movhps [pix3q+4*strideq], m0
     RET
 %endmacro ; DEBLOCK_LUMA_INTRA
 

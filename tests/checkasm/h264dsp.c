@@ -451,8 +451,8 @@ static void check_loop_filter_intra(void)
     int bit_depth;
     int alphas[N], betas[N];
 
-    declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *pix, ptrdiff_t stride,
-                      int alpha, int beta);
+    declare_func(void, uint8_t *pix, ptrdiff_t stride,
+                       int alpha, int beta);
 
     for (bit_depth = 8; bit_depth <= 10; bit_depth++) {
         uint32_t mask = pixel_mask_lf[bit_depth - 8];
