@@ -758,9 +758,9 @@ cglobal deblock_h_luma_intra_8, 4,9,0,0x80
 
     ; transpose 8x16 -> tmp space
     TRANSPOSE8x8_MEM  PASS8ROWS(r6, r5, r1, r8), PASS8ROWS(pix_tmp, pix_tmp+0x30, 0x10, 0x30)
-    lea    r6, [r6+r1*8]
+    lea    r0, [r6+r1*8]
     lea    r5, [r5+r1*8]
-    TRANSPOSE8x8_MEM  PASS8ROWS(r6, r5, r1, r8), PASS8ROWS(pix_tmp+8, pix_tmp+0x38, 0x10, 0x30)
+    TRANSPOSE8x8_MEM  PASS8ROWS(r0, r5, r1, r8), PASS8ROWS(pix_tmp+8, pix_tmp+0x38, 0x10, 0x30)
 
     lea    r0,  [pix_tmp+0x40]
     mov    r1,  0x10
@@ -768,12 +768,10 @@ cglobal deblock_h_luma_intra_8, 4,9,0,0x80
 
     ; transpose 16x6 -> original space (but we can't write only 6 pixels, so really 16x8)
     lea    r5, [r6+r8]
-    TRANSPOSE8x8_MEM  PASS8ROWS(pix_tmp+8, pix_tmp+0x38, 0x10, 0x30), PASS8ROWS(r6, r5, r7, r8)
-    shl    r7,  3
-    sub    r6,  r7
-    sub    r5,  r7
-    shr    r7,  3
     TRANSPOSE8x8_MEM  PASS8ROWS(pix_tmp, pix_tmp+0x30, 0x10, 0x30), PASS8ROWS(r6, r5, r7, r8)
+    lea    r6, [r6+8*r7]
+    lea    r5, [r5+8*r7]
+    TRANSPOSE8x8_MEM  PASS8ROWS(pix_tmp+8, pix_tmp+0x38, 0x10, 0x30), PASS8ROWS(r6, r5, r7, r8)
     RET
 %else
 cglobal deblock_h_luma_intra_8, 2,4,8,0x80
