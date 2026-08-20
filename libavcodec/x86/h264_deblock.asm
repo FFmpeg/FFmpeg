@@ -741,15 +741,23 @@ cglobal deblock_v_luma_intra_8, 4,6,16,ARCH_X86_64*0x50-0x50
     RET
 
 INIT_MMX cpuname
-%if ARCH_X86_64
 ;-----------------------------------------------------------------------------
 ; void ff_deblock_h_luma_intra(uint8_t *pix, ptrdiff_t stride, int alpha, int beta)
 ;-----------------------------------------------------------------------------
-cglobal deblock_h_luma_intra_8, 4,9,0,0x80
-    lea    r8,  [r1*3]
-    lea    r6,  [r0-4]
-    lea    r5,  [r0-4+r8]
-    mov    r7,  r1
+%if ARCH_X86_64
+cglobal deblock_h_luma_intra_8, 4,9,0,0x80, pix0, stride0, alpha, beta, unused, pix3, pix, stride, stride3
+    lea         stride3q,  [stride0q*3]
+    lea             pixq,  [pix0q-4]
+    mov          strideq,  stride0q
+    lea            pix3q,  [pix0q-4+stride3q]
+%else
+cglobal deblock_h_luma_intra_8, 2,4,8,0x80, pix, stride, pix3, stride3
+%define stride0q strideq
+%define pix0q pixq
+    lea         stride3q,  [strideq*3]
+    sub             pixq,  4
+    lea            pix3q,  [pixq+stride3q]
+%endif
 %if WIN64
     %define pix_tmp rsp+0x20 ; shadow space
 %else
@@ -757,55 +765,39 @@ cglobal deblock_h_luma_intra_8, 4,9,0,0x80
 %endif
 
     ; transpose 8x16 -> tmp space
-    TRANSPOSE8x8_MEM  PASS8ROWS(r6, r5, r1, r8), PASS8ROWS(pix_tmp, pix_tmp+0x30, 0x10, 0x30)
-    lea    r0, [r6+r1*8]
-    lea    r5, [r5+r1*8]
-    TRANSPOSE8x8_MEM  PASS8ROWS(r0, r5, r1, r8), PASS8ROWS(pix_tmp+8, pix_tmp+0x38, 0x10, 0x30)
+    TRANSPOSE8x8_MEM  PASS8ROWS(pixq, pix3q, stride0q, stride3q), PASS8ROWS(pix_tmp, pix_tmp+0x30, 0x10, 0x30)
+    lea            pix0q, [pixq +stride0q*8]
+    lea            pix3q, [pix3q+stride0q*8]
+    TRANSPOSE8x8_MEM  PASS8ROWS(pix0q, pix3q, stride0q, stride3q), PASS8ROWS(pix_tmp+8, pix_tmp+0x38, 0x10, 0x30)
 
-    lea    r0,  [pix_tmp+0x40]
-    mov    r1,  0x10
-    call   deblock_v_luma_intra_8
-
-    ; transpose 16x6 -> original space (but we can't write only 6 pixels, so really 16x8)
-    lea    r5, [r6+r8]
-    TRANSPOSE8x8_MEM  PASS8ROWS(pix_tmp, pix_tmp+0x30, 0x10, 0x30), PASS8ROWS(r6, r5, r7, r8)
-    lea    r6, [r6+8*r7]
-    lea    r5, [r5+8*r7]
-    TRANSPOSE8x8_MEM  PASS8ROWS(pix_tmp+8, pix_tmp+0x38, 0x10, 0x30), PASS8ROWS(r6, r5, r7, r8)
-    RET
+    lea            pix0q,  [pix_tmp+0x40]
+%if ARCH_X86_64
+    mov         stride0d,  0x10
 %else
-cglobal deblock_h_luma_intra_8, 2,4,8,0x80
-    lea    r3,  [r1*3]
-    sub    r0,  4
-    lea    r2,  [r0+r3]
-    %define pix_tmp rsp
-
-    ; transpose 8x16 -> tmp space
-    TRANSPOSE8x8_MEM  PASS8ROWS(r0, r2, r1, r3), PASS8ROWS(pix_tmp, pix_tmp+0x30, 0x10, 0x30)
-    lea    r0,  [r0+r1*8]
-    lea    r2,  [r2+r1*8]
-    TRANSPOSE8x8_MEM  PASS8ROWS(r0, r2, r1, r3), PASS8ROWS(pix_tmp+8, pix_tmp+0x38, 0x10, 0x30)
-
-    lea    r0,  [pix_tmp+0x40]
-    PUSH   dword r3m
-    PUSH   dword r2m
-    PUSH   dword 16
-    PUSH   r0
+    PUSH       dword r3m
+    PUSH       dword r2m
+    PUSH       dword 16
+    PUSH       pixd
+%endif
     call   deblock_v_luma_intra_8
-    ADD    esp, 16
+%if ARCH_X86_64
+    lea            pix3q, [pixq+stride3q]
+%else
+    mov          strided,  stridem
+    mov             pixd,  pixm
 
-    mov    r1,  r1m
-    mov    r0,  r0mp
-    lea    r3,  [r1*3]
-    sub    r0,  4
-    lea    r2,  [r0+r3]
+    ADD              esp, 16
+    lea         stride3d,  [strided*3]
+    sub             pixd,  4
+    lea            pix3d,  [pixd+stride3d]
+%endif
+
     ; transpose 16x6 -> original space (but we can't write only 6 pixels, so really 16x8)
-    TRANSPOSE8x8_MEM  PASS8ROWS(pix_tmp, pix_tmp+0x30, 0x10, 0x30), PASS8ROWS(r0, r2, r1, r3)
-    lea    r0,  [r0+r1*8]
-    lea    r2,  [r2+r1*8]
-    TRANSPOSE8x8_MEM  PASS8ROWS(pix_tmp+8, pix_tmp+0x38, 0x10, 0x30), PASS8ROWS(r0, r2, r1, r3)
+    TRANSPOSE8x8_MEM  PASS8ROWS(pix_tmp,   pix_tmp+0x30, 0x10, 0x30), PASS8ROWS(pixq, pix3q, strideq, stride3q)
+    lea             pixq, [pixq +8*strideq]
+    lea            pix3q, [pix3q+8*strideq]
+    TRANSPOSE8x8_MEM  PASS8ROWS(pix_tmp+8, pix_tmp+0x38, 0x10, 0x30), PASS8ROWS(pixq, pix3q, strideq, stride3q)
     RET
-%endif ; ARCH_X86_64
 %endmacro ; DEBLOCK_LUMA_INTRA
 
 INIT_XMM sse2
