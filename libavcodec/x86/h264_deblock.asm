@@ -649,7 +649,7 @@ DEBLOCK_LUMA 16
     %define mask1p mask1q
 %endmacro
 
-%macro DEBLOCK_LUMA_INTRA 1
+%macro DEBLOCK_LUMA_INTRA 0
     %define p1 m0
     %define p0 m1
     %define q0 m2
@@ -856,10 +856,10 @@ INIT_MMX cpuname
 %endmacro ; DEBLOCK_LUMA_INTRA
 
 INIT_XMM sse2
-DEBLOCK_LUMA_INTRA v
+DEBLOCK_LUMA_INTRA
 %if HAVE_AVX_EXTERNAL
 INIT_XMM avx
-DEBLOCK_LUMA_INTRA v
+DEBLOCK_LUMA_INTRA
 %endif
 
 %macro LOAD_8_ROWS 8
