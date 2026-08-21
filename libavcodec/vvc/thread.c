@@ -646,11 +646,7 @@ static void task_run_stage(VVCTask *t, VVCContext *s, VVCLocalContext *lc)
 
     if (!atomic_load(&ft->ret)) {
         if ((ret = run[stage](s, lc, t)) < 0) {
-#ifdef COMPAT_ATOMICS_WIN32_STDATOMIC_H
-            intptr_t zero = 0;
-#else
             int zero = 0;
-#endif
             atomic_compare_exchange_strong(&ft->ret, &zero, ret);
             av_log(s->avctx, AV_LOG_ERROR,
                 "frame %5d, %s(%3d, %3d) failed with %d\r\n",
