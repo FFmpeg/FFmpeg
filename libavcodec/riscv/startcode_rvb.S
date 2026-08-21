@@ -26,16 +26,6 @@
 
 #include "libavutil/riscv/asm.S"
 
-        .macro  lx rd, addr
-#if (__riscv_xlen == 32)
-        lw      \rd, \addr
-#elif (__riscv_xlen == 64)
-        ld      \rd, \addr
-#else
-        lq      \rd, \addr
-#endif
-        .endm
-
 func ff_startcode_find_candidate_rvb, zbb
         lpad    0
         add     a1, a0, a1

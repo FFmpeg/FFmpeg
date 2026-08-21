@@ -29,16 +29,6 @@
 
 #include "libavutil/riscv/asm.S"
 
-        .macro  sx rd, addr
-#if (__riscv_xlen == 32)
-        sw      \rd, \addr
-#elif (__riscv_xlen == 64)
-        sd      \rd, \addr
-#else
-        sq      \rd, \addr
-#endif
-        .endm
-
         .variant_cc ff_h264_idct4_rvv
 func ff_h264_idct4_rvv, zve32x
         vsra.vi v5, v1, 1

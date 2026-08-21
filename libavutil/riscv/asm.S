@@ -237,3 +237,21 @@
         .macro  vntypei rd, rs, n=1
         vwtypei \rd, \rs, -(\n)
         .endm
+
+#if (__riscv_xlen == 32)
+        .macro  lx      rd, addr
+                lw      \rd, \addr
+        .endm
+
+        .macro  sx      rs, addr
+                sw      \rs, \addr
+        .endm
+#elif (__riscv_xlen == 64)
+        .macro  lx      rd, addr
+                ld      \rd, \addr
+        .endm
+
+        .macro  sx      rs, addr
+                sd      \rs, \addr
+        .endm
+#endif

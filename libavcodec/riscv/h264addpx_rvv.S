@@ -26,16 +26,6 @@
 
 #include "libavutil/riscv/asm.S"
 
-        .macro  sx rd, addr
-#if (__riscv_xlen == 32)
-        sw      \rd, \addr
-#elif (__riscv_xlen == 64)
-        sd      \rd, \addr
-#else
-        sq      \rd, \addr
-#endif
-        .endm
-
 func ff_h264_add_pixels4_8_rvv, zve32x
         lpad    0
         vsetivli        zero, 4, e8, mf4, ta, ma
