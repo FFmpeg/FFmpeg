@@ -30,6 +30,8 @@ struct MJpegContext;
 
 int ff_mjpeg_add_icc_profile_size(AVCodecContext *avctx, const AVFrame *frame,
                                   size_t *max_pkt_size);
+int ff_mjpeg_add_gain_map_size(AVCodecContext *avctx, const AVFrame *frame,
+                               size_t *max_pkt_size);
 void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
                                     const AVFrame *frame, const struct MJpegContext *m,
                                     const uint8_t intra_matrix_permutation[64],

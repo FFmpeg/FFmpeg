@@ -31,6 +31,7 @@
 #include "jpegtables.h"
 #include "put_bits.h"
 #include "mjpegenc.h"
+#include "gain_map.h"
 #include "mjpegenc_common.h"
 #include "mjpeg.h"
 #include "version.h"
@@ -159,6 +160,30 @@ int ff_mjpeg_add_icc_profile_size(AVCodecContext *avctx, const AVFrame *frame,
     return 0;
 }
 
+int ff_mjpeg_add_gain_map_size(AVCodecContext *avctx, const AVFrame *frame,
+                               size_t *max_pkt_size)
+{
+    if (avctx->codec_id != AV_CODEC_ID_MJPEG)
+        return 0;
+
+    AVFrameSideData *sd;
+    sd = av_frame_get_side_data(frame, AV_FRAME_DATA_GAIN_MAP_PARAMS);
+    if (!sd || sd->size < sizeof(AVGainMapParams))
+        return 0;
+
+    const AVGainMapParams *params = (const AVGainMapParams *) sd->data;
+    int ret = av_gain_map_params_validate(params);
+    if (ret < 0)
+        return ret;
+
+    size_t app2_size = 4 + sizeof(AV_ISO21496_IDENTIFIER) + FF_GAIN_MAP_MAX_PAYLOAD_SIZE;
+    size_t new_pkt_size = *max_pkt_size + app2_size;
+    if (new_pkt_size < *max_pkt_size) /* overflow */
+        return AVERROR_INVALIDDATA;
+    *max_pkt_size = new_pkt_size;
+    return 0;
+}
+
 static void jpeg_put_comments(AVCodecContext *avctx, PutBitContext *p,
                               const AVFrame *frame)
 {
@@ -219,6 +244,25 @@ static void jpeg_put_comments(AVCodecContext *avctx, PutBitContext *p,
             data += size;
         }
         av_assert1(!remaining);
+    }
+
+    /* ISO 21496-1 gain map metadata */
+    sd = avctx->codec_id == AV_CODEC_ID_MJPEG ?
+         av_frame_get_side_data(frame, AV_FRAME_DATA_GAIN_MAP_PARAMS) : NULL;
+    if (sd && sd->size >= sizeof(AVGainMapParams)) {
+        put_marker(p, APP2);
+        flush_put_bits(p);
+        ptr = put_bits_ptr(p);
+        put_bits(p, 16, 0); /* patched later */
+        ff_put_string(p, AV_ISO21496_IDENTIFIER, 1);
+        flush_put_bits(p);
+
+        /* pre-validated by ff_mjpeg_add_gain_map_size() */
+        const AVGainMapParams *params = (const AVGainMapParams *) sd->data;
+        size = ff_gain_map_params_to_iso21496(params, put_bits_ptr(p));
+        av_assert0(size >= 0);
+        skip_put_bytes(p, size);
+        AV_WB16(ptr, 2 + sizeof(AV_ISO21496_IDENTIFIER) + size);
     }
 
     /* comment */
