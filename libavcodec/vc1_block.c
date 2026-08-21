@@ -2788,7 +2788,7 @@ static void vc1_decode_p_blocks(VC1Context *v)
             update_block_index(s);
 
             if (v->fcm == ILACE_FIELD || (v->fcm == PROGRESSIVE && v->mv_type_is_raw) || v->skip_is_raw)
-                if (get_bits_left(&v->gb) <= 1) {
+                if (get_bits_left(&v->gb) < 1) {
                     ff_er_add_slice(&s->er, 0, s->start_mb_y, s->mb_x, s->mb_y, ER_MB_ERROR);
                     return;
                 }
@@ -2873,7 +2873,7 @@ static void vc1_decode_b_blocks(VC1Context *v)
             update_block_index(s);
 
             if (v->fcm == ILACE_FIELD || v->skip_is_raw || v->dmb_is_raw)
-                if (get_bits_left(&v->gb) <= 1) {
+                if (get_bits_left(&v->gb) < 1) {
                     ff_er_add_slice(&s->er, 0, s->start_mb_y, s->mb_x, s->mb_y, ER_MB_ERROR);
                     return;
                 }
