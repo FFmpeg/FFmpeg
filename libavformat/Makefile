@@ -347,6 +347,7 @@ OBJS-$(CONFIG_IVF_MUXER)                 += ivfenc.o
 OBJS-$(CONFIG_IVR_DEMUXER)               += rmdec.o rm.o rmsipr.o
 OBJS-$(CONFIG_JACOSUB_DEMUXER)           += jacosubdec.o subtitles.o
 OBJS-$(CONFIG_JACOSUB_MUXER)             += jacosubenc.o rawenc.o
+OBJS-$(CONFIG_JPEG_MPF_MUXER)            += jpegmpfenc.o
 OBJS-$(CONFIG_JPEGXL_ANIM_DEMUXER)       += jpegxl_anim_dec.o
 OBJS-$(CONFIG_JV_DEMUXER)                += jvdec.o
 OBJS-$(CONFIG_KTX_MUXER)                 += ktxenc.o
