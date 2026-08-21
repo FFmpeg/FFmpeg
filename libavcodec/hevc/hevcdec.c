@@ -3245,6 +3245,221 @@ static int hls_decode_entry_tiles(HEVCContext *s, const H2645NAL *nal)
     return sps->ctb_size;
 }
 
+/* A size going negative on damaged input is caught here. */
+static int tile_slice_payload(const HEVCTileSlice *sl,
+                              const uint8_t **data, size_t *size)
+{
+    if (sl->size <= 0 || sl->sh.data_offset >= (unsigned)sl->size)
+        return AVERROR_INVALIDDATA;
+
+    *data = sl->data + sl->sh.data_offset;
+    *size = sl->size - sl->sh.data_offset;
+
+    return 0;
+}
+
+/* Only an independent slice covering exactly one tile may be deferred. */
+static int slice_is_deferrable(const HEVCContext *s)
+{
+    const HEVCPPS *const pps = s->pps;
+    int start_ts;
+
+    if (!tile_interleave_wanted(s, pps)         ||
+        s->sh.num_entry_point_offsets != 0      ||
+        s->sh.dependent_slice_segment_flag      ||
+        s->cur_layer != 0                       ||
+        !s->cur_frame)
+        return 0;
+
+    /* Never mix in slices collected for another frame */
+    if (s->nb_tile_slices && s->cur_frame != s->tile_slices_frame)
+        return 0;
+
+    start_ts = pps->ctb_addr_rs_to_ts[s->sh.slice_ctb_addr_rs];
+
+    if (start_ts < 0 || start_ts >= pps->sps->ctb_size ||
+        (start_ts > 0 && pps->tile_id[start_ts - 1] == pps->tile_id[start_ts]))
+        return 0;
+
+    return 1;
+}
+
+/* Returns 1 if deferred, 0 if not eligible, <0 on error. Decoding it right
+ * away instead would put it ahead of the slices already collected. */
+static int defer_tile_slice(HEVCContext *s, const H2645NAL *nal)
+{
+    const HEVCPPS *const pps = s->pps;
+    HEVCTileSlice *sl;
+    int start_ts;
+
+    if (!slice_is_deferrable(s))
+        return 0;
+
+    start_ts = pps->ctb_addr_rs_to_ts[s->sh.slice_ctb_addr_rs];
+
+    if (s->nb_tile_slices >= s->tile_slices_alloc) {
+        unsigned n = s->tile_slices_alloc ? s->tile_slices_alloc * 2 : 8;
+        void *tmp = av_realloc_array(s->tile_slices, n, sizeof(*s->tile_slices));
+
+        if (!tmp)
+            return AVERROR(ENOMEM);
+
+        s->tile_slices       = tmp;
+        s->tile_slices_alloc = n;
+    }
+
+    if (!s->nb_tile_slices) {
+        s->tile_slices_frame = s->cur_frame;
+        s->tile_slices_layer = s->cur_layer;
+    }
+
+    sl = &s->tile_slices[s->nb_tile_slices++];
+
+    sl->sh        = s->sh;
+    sl->data      = nal->data;
+    sl->size      = nal->size;
+    sl->start_ts  = start_ts;
+    sl->qp_y_seed = s->local_ctx[0].sub.qp_y;
+
+    /* By decode time HEVCContext holds the state of the last slice */
+    sl->rpl            = s->cur_frame->refPicList;
+    sl->collocated_ref = s->collocated_ref;
+
+    /* The heap arrays are reused by the next slice header. They are unused
+     * here (no entry points), so clear them rather than alias. */
+    sl->sh.entry_point_offset = NULL;
+    sl->sh.offset             = NULL;
+    sl->sh.size               = NULL;
+
+    return 1;
+}
+
+/* Fill the tile table and return 1 if the deferred slices map one to one
+ * onto the tiles, 0 to decode them in their original order. */
+static int build_tile_streams(HEVCContext *s, unsigned nb)
+{
+    const HEVCPPS *const pps = s->pps;
+    const HEVCSPS *const sps = pps->sps;
+    const unsigned nb_tiles = pps->num_tile_columns * pps->num_tile_rows;
+    int ret;
+
+    if (nb != nb_tiles)
+        return 0;
+
+    ret = alloc_tile_streams(s, nb_tiles);
+    if (ret < 0)
+        return ret;
+
+    for (unsigned i = 0; i < nb; i++) {
+        const HEVCTileSlice *const sl = &s->tile_slices[i];
+        HEVCTileStream *t;
+        const uint8_t *data;
+        size_t size;
+        int tile;
+
+        if (sl->start_ts < 0 || sl->start_ts >= sps->ctb_size)
+            return 0;
+
+        tile = pps->tile_id[sl->start_ts];
+
+        if (tile < 0 || tile >= (int)nb_tiles)
+            return 0;
+
+        /* Every slice has to start at a tile, one slice per tile */
+        if (pps->ctb_addr_rs_to_ts[pps->tile_pos_rs[tile]] != sl->start_ts)
+            return 0;
+
+        t = &s->tile_streams[tile];
+        if (t->sh)
+            return 0;
+
+        if (tile_slice_payload(sl, &data, &size) < 0)
+            return 0;
+
+        t->sh        = &sl->sh;
+        t->rpl       = sl->rpl;
+        t->collocated_ref = sl->collocated_ref;
+        t->data      = data;
+        t->size      = size;
+        t->start_ts  = sl->start_ts;
+        t->qp_y_seed = sl->qp_y_seed;
+    }
+
+    for (unsigned i = 0; i < nb_tiles; i++)
+        if (!s->tile_streams[i].sh)
+            return 0;
+
+    return 1;
+}
+
+/* If picture_complete, the slices cover the picture and are decoded in row
+ * major order. Otherwise more slices follow, so decode them in their
+ * original order. */
+static int decode_deferred_tile_slices(HEVCContext *s, int picture_complete)
+{
+    const HEVCPPS   *const pps = s->pps;
+    const HEVCSPS   *const sps = pps ? pps->sps : NULL;
+    const HEVCLayerContext *const l = &s->layers[s->tile_slices_layer];
+    const unsigned nb = s->nb_tile_slices;
+    int interleave = 0, ret;
+
+    s->nb_tile_slices = 0;
+
+    if (!nb)
+        return 0;
+
+    /* Drop slices of another frame rather than decode them into this one */
+    if (!pps || !sps || !s->cur_frame || s->cur_frame != s->tile_slices_frame) {
+        av_log(s->avctx, AV_LOG_WARNING,
+               "Dropping %u deferred tile slice(s) of a stale picture\n", nb);
+        return 0;
+    }
+
+    if (picture_complete) {
+        interleave = build_tile_streams(s, nb);
+        if (interleave < 0)
+            return interleave;
+    }
+
+    if (interleave) {
+        ret = alloc_substreams(s, pps->num_tile_columns);
+        if (ret < 0)
+            return ret;
+
+        return decode_tiles_row_major(s, l, s->tile_streams);
+    }
+
+    for (unsigned i = 0; i < nb; i++) {
+        const HEVCTileSlice *const sl = &s->tile_slices[i];
+        HEVCLocalContext *const lc = &s->local_ctx[0];
+        const uint8_t *data;
+        size_t size;
+        int more_data = 1;
+        int x_ctb = 0, y_ctb = 0;
+
+        if (tile_slice_payload(sl, &data, &size) < 0)
+            continue;
+
+        bind_slice_ctx(lc, &sl->sh, sl->rpl, sl->collocated_ref);
+        substream_load(&lc->sub, data, size, sl->qp_y_seed);
+
+        for (int ts = sl->start_ts; more_data > 0 && ts < sps->ctb_size; ts++) {
+            int rs = pps->ctb_addr_ts_to_rs[ts];
+
+            x_ctb = (rs % sps->ctb_width) << sps->log2_ctb_size;
+            y_ctb = (rs / sps->ctb_width) << sps->log2_ctb_size;
+
+            more_data = decode_ctb(s, l, lc, rs);
+            if (more_data < 0)
+                return more_data;
+        }
+
+        finish_last_ctb_filter(s, l, lc, x_ctb, y_ctb);
+    }
+
+    return 0;
+}
+
 static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
 {
     const HEVCPPS *const pps = s->pps;
@@ -3418,6 +3633,14 @@ static int decode_slice_data(HEVCContext *s, const HEVCLayerContext *l,
     const HEVCPPS *pps = s->pps;
     int ret;
 
+    /* Not deferrable: flush what was collected first, ahead of the dependent
+     * slice check and the QP initialization below. */
+    if (s->nb_tile_slices && !slice_is_deferrable(s)) {
+        ret = decode_deferred_tile_slices(s, 0);
+        if (ret < 0)
+            return ret;
+    }
+
     if (!s->sh.first_slice_in_pic_flag)
         s->slice_idx += !s->sh.dependent_slice_segment_flag;
 
@@ -3476,6 +3699,10 @@ static int decode_slice_data(HEVCContext *s, const HEVCLayerContext *l,
         s->sh.first_slice_in_pic_flag                    &&
         s->sh.num_entry_point_offsets + 1 == pps->num_tile_rows * pps->num_tile_columns)
         return hls_slice_data_tiles(s, nal);
+
+    ret = defer_tile_slice(s, nal);
+    if (ret)
+        return ret < 0 ? ret : 0;
 
     if (tile_interleave_wanted(s, pps)                   &&
         s->sh.first_slice_in_pic_flag                    &&
@@ -4000,6 +4227,15 @@ static int decode_slice(HEVCContext *s, unsigned nal_idx, GetBitContext *gb)
     if (s->sh.first_slice_in_pic_flag)
         s->skipping_frame = 0;
 
+    /* Flush deferred slices of the previous picture before hevc_frame_start()
+     * replaces s->pps/poc/cur_frame and before the layer switch below marks
+     * that frame as done. */
+    if (s->nb_tile_slices && s->sh.first_slice_in_pic_flag) {
+        ret = decode_deferred_tile_slices(s, 1);
+        if (ret < 0)
+            return ret;
+    }
+
     // switching to a new layer, mark previous layer's frame (if any) as done
     if (s->cur_layer != layer_idx &&
         s->layers[s->cur_layer].cur_frame &&
@@ -4186,6 +4422,15 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
         l->cur_frame = NULL;
     }
 
+    /* Deferred slices point into s->pkt, which the split below reuses. A
+     * picture never spans packets, so this only drops leftovers. */
+    if (s->nb_tile_slices) {
+        av_log(s->avctx, AV_LOG_WARNING,
+               "Discarding %u deferred tile slice(s) left from the previous packet\n",
+               s->nb_tile_slices);
+        s->nb_tile_slices = 0;
+    }
+
     /* split the input packet into NAL units, so we know the upper bound on the
      * number of slices in the frame */
     ret = ff_h2645_packet_split(&s->pkt, buf, length, s->avctx,
@@ -4285,6 +4530,14 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
     }
 
 fail:
+    /* A picture never spans packets, so it is complete here */
+    if (s->nb_tile_slices) {
+        int fret = decode_deferred_tile_slices(s, 1);
+
+        if (ret >= 0)
+            ret = fret;
+    }
+
     for (int i = 0; i < FF_ARRAY_ELEMS(s->layers); i++) {
         HEVCLayerContext *l = &s->layers[i];
 
@@ -4464,6 +4717,7 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     av_freep(&s->sh.size);
 
     av_freep(&s->local_ctx);
+    av_freep(&s->tile_slices);
     av_freep(&s->tile_streams);
     av_freep(&s->substreams);
 
@@ -4702,6 +4956,8 @@ static av_cold void hevc_decode_flush(AVCodecContext *avctx)
     ff_hevc_reset_sei(&s->sei);
     ff_dovi_ctx_flush(&s->dovi_ctx);
     av_buffer_unref(&s->rpu_buf);
+    s->nb_tile_slices    = 0;
+    s->tile_slices_frame = NULL;
     s->eos = 1;
     s->skipping_frame = 0;
 

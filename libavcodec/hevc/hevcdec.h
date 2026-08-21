@@ -71,7 +71,8 @@
 #define SAMPLE(tab, x, y) ((tab)[(y) * s->sps->width + (x)])
 #define SAMPLE_CTB(tab, x, y) ((tab)[(y) * min_cb_width + (x)])
 
-#define IS_IDR(s) ((s)->nal_unit_type == HEVC_NAL_IDR_W_RADL || (s)->nal_unit_type == HEVC_NAL_IDR_N_LP)
+#define IS_IDR_TYPE(t) ((t) == HEVC_NAL_IDR_W_RADL || (t) == HEVC_NAL_IDR_N_LP)
+#define IS_IDR(s) IS_IDR_TYPE((s)->nal_unit_type)
 #define IS_BLA(s) ((s)->nal_unit_type == HEVC_NAL_BLA_W_RADL || (s)->nal_unit_type == HEVC_NAL_BLA_W_LP || \
                    (s)->nal_unit_type == HEVC_NAL_BLA_N_LP)
 #define IS_IRAP(s) ((s)->nal_unit_type >= HEVC_NAL_BLA_W_LP && (s)->nal_unit_type <= HEVC_NAL_RSV_IRAP_VCL23)
@@ -502,6 +503,18 @@ typedef struct HEVCLayerContext {
     struct AVRefStructPool *rpl_tab_pool;
 } HEVCLayerContext;
 
+/* A slice deferred to be decoded with the rest of its picture. sh is a
+ * shallow copy with the heap arrays cleared, see defer_tile_slice(). */
+typedef struct HEVCTileSlice {
+    SliceHeader sh;
+    const uint8_t *data;
+    int size;
+    int start_ts;
+    int qp_y_seed;      ///< lc[0].qp_y before deferring, the initial QP predictor
+    const RefPicList *rpl;              ///< reference lists of this slice
+    const HEVCFrame *collocated_ref;    ///< temporal MVP target of this slice
+} HEVCTileSlice;
+
 /* Start and state of one tile, for tiles bound by entry points and for one
  * slice per tile alike. */
 typedef struct HEVCTileStream {
@@ -613,6 +626,15 @@ typedef struct HEVCContext {
 
     AVBufferRef *rpu_buf;       ///< 0 or 1 Dolby Vision RPUs.
     DOVIContext dovi_ctx;       ///< Dolby Vision decoding context
+
+    /* Slices deferred when every tile carries its own slice. Frame and layer
+     * are kept so that leftovers are dropped, not decoded into another
+     * frame. */
+    HEVCTileSlice *tile_slices;
+    unsigned nb_tile_slices;
+    unsigned tile_slices_alloc;
+    const HEVCFrame *tile_slices_frame;
+    int tile_slices_layer;
 
     /* Per-tile substream table of the picture, one entry per tile */
     HEVCTileStream *tile_streams;

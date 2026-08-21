@@ -1004,14 +1004,18 @@ void ff_hevc_hls_filter(HEVCLocalContext *lc, const HEVCLayerContext *l,
     const HEVCContext *const s = lc->parent;
     int x_end = x >= sps->width  - ctb_size;
     int skip = 0;
+
+    /* Deferred slices are decoded after the packet is parsed, when
+     * nal_unit_type may be a suffix SEI; first_nal_type is the picture's. */
     if (s->avctx->skip_loop_filter >= AVDISCARD_ALL ||
-        (s->avctx->skip_loop_filter >= AVDISCARD_NONKEY && !IS_IDR(s)) ||
+        (s->avctx->skip_loop_filter >= AVDISCARD_NONKEY &&
+         !IS_IDR_TYPE(s->first_nal_type)) ||
         (s->avctx->skip_loop_filter >= AVDISCARD_NONINTRA &&
          lc->sh->slice_type != HEVC_SLICE_I) ||
         (s->avctx->skip_loop_filter >= AVDISCARD_BIDIR &&
          lc->sh->slice_type == HEVC_SLICE_B) ||
         (s->avctx->skip_loop_filter >= AVDISCARD_NONREF &&
-        ff_hevc_nal_is_nonref(s->nal_unit_type)))
+        ff_hevc_nal_is_nonref(s->first_nal_type)))
         skip = 1;
 
     if (!skip)
