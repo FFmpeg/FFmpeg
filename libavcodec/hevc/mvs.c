@@ -161,11 +161,12 @@ static int check_mvset(Mv *mvLXCol, const Mv *mvCol,
                 refPicList_col, L ## l, temp_col.ref_idx[l])
 
 // derive the motion vectors section 8.5.3.1.8
-static int derive_temporal_colocated_mvs(const HEVCContext *s, MvField temp_col,
+static int derive_temporal_colocated_mvs(const HEVCContext *s,
+                                         const HEVCLocalContext *lc, MvField temp_col,
                                          int refIdxLx, Mv *mvLXCol, int X,
                                          int colPic, const RefPicList *refPicList_col)
 {
-    const RefPicList *refPicList = s->cur_frame->refPicList;
+    const RefPicList *refPicList = lc->rpl;
 
     if (temp_col.pred_flag == PF_INTRA)
         return 0;
@@ -191,7 +192,7 @@ static int derive_temporal_colocated_mvs(const HEVCContext *s, MvField temp_col,
             else
                 return CHECK_MVSET(1);
         } else {
-            if (s->sh.collocated_list == L1)
+            if (lc->sh->collocated_list == L1)
                 return CHECK_MVSET(0);
             else
                 return CHECK_MVSET(1);
@@ -209,14 +210,16 @@ static int derive_temporal_colocated_mvs(const HEVCContext *s, MvField temp_col,
             ((y ## v) >> sps->log2_min_pu_size))
 
 #define DERIVE_TEMPORAL_COLOCATED_MVS                                   \
-    derive_temporal_colocated_mvs(s, temp_col,                          \
+    derive_temporal_colocated_mvs(s, lc, temp_col,                      \
                                   refIdxLx, mvLXCol, X, colPic,         \
                                   ff_hevc_get_ref_list(ref, x, y))
 
 /*
  * 8.5.3.1.7  temporal luma motion vector prediction
  */
-static int temporal_luma_motion_vector(const HEVCContext *s, const HEVCSPS *sps,
+static int temporal_luma_motion_vector(const HEVCContext *s,
+                                       const HEVCLocalContext *lc,
+                                       const HEVCSPS *sps,
                                        int x0, int y0,
                                        int nPbW, int nPbH, int refIdxLx,
                                        Mv *mvLXCol, int X)
@@ -228,7 +231,7 @@ static int temporal_luma_motion_vector(const HEVCContext *s, const HEVCSPS *sps,
     int availableFlagLXCol = 0;
     int colPic;
 
-    const HEVCFrame *ref = s->collocated_ref;
+    const HEVCFrame *ref = lc->collocated_ref;
 
     if (!ref) {
         memset(mvLXCol, 0, sizeof(*mvLXCol));
@@ -293,7 +296,7 @@ static void derive_spatial_merge_candidates(HEVCLocalContext *lc, const HEVCCont
                                             int merge_idx,
                                             struct MvField mergecandlist[])
 {
-    const RefPicList *refPicList = s->cur_frame->refPicList;
+    const RefPicList *refPicList = lc->rpl;
     const MvField *tab_mvf       = s->cur_frame->tab_mvf;
 
     const int min_pu_width = sps->min_pu_width;
@@ -319,8 +322,8 @@ static void derive_spatial_merge_candidates(HEVCLocalContext *lc, const HEVCCont
     const int xB2    = x0 - 1;
     const int yB2    = y0 - 1;
 
-    const int nb_refs = (s->sh.slice_type == HEVC_SLICE_P) ?
-                        s->sh.nb_refs[0] : FFMIN(s->sh.nb_refs[0], s->sh.nb_refs[1]);
+    const int nb_refs = (lc->sh->slice_type == HEVC_SLICE_P) ?
+                        lc->sh->nb_refs[0] : FFMIN(lc->sh->nb_refs[0], lc->sh->nb_refs[1]);
 
     int zero_idx = 0;
 
@@ -410,13 +413,13 @@ static void derive_spatial_merge_candidates(HEVCLocalContext *lc, const HEVCCont
     }
 
     // temporal motion vector candidate
-    if (s->sh.slice_temporal_mvp_enabled_flag &&
-        nb_merge_cand < s->sh.max_num_merge_cand) {
+    if (lc->sh->slice_temporal_mvp_enabled_flag &&
+        nb_merge_cand < lc->sh->max_num_merge_cand) {
         Mv mv_l0_col = { 0 }, mv_l1_col = { 0 };
-        int available_l0 = temporal_luma_motion_vector(s, sps, x0, y0, nPbW, nPbH,
+        int available_l0 = temporal_luma_motion_vector(s, lc, sps, x0, y0, nPbW, nPbH,
                                                        0, &mv_l0_col, 0);
-        int available_l1 = (s->sh.slice_type == HEVC_SLICE_B) ?
-                           temporal_luma_motion_vector(s, sps, x0, y0, nPbW, nPbH,
+        int available_l1 = (lc->sh->slice_type == HEVC_SLICE_B) ?
+                           temporal_luma_motion_vector(s, lc, sps, x0, y0, nPbW, nPbH,
                                                        0, &mv_l1_col, 1) : 0;
 
         if (available_l0 || available_l1) {
@@ -434,11 +437,11 @@ static void derive_spatial_merge_candidates(HEVCLocalContext *lc, const HEVCCont
     nb_orig_merge_cand = nb_merge_cand;
 
     // combined bi-predictive merge candidates  (applies for B slices)
-    if (s->sh.slice_type == HEVC_SLICE_B && nb_orig_merge_cand > 1 &&
-        nb_orig_merge_cand < s->sh.max_num_merge_cand) {
+    if (lc->sh->slice_type == HEVC_SLICE_B && nb_orig_merge_cand > 1 &&
+        nb_orig_merge_cand < lc->sh->max_num_merge_cand) {
         int comb_idx = 0;
 
-        for (comb_idx = 0; nb_merge_cand < s->sh.max_num_merge_cand &&
+        for (comb_idx = 0; nb_merge_cand < lc->sh->max_num_merge_cand &&
                            comb_idx < nb_orig_merge_cand * (nb_orig_merge_cand - 1); comb_idx++) {
             int l0_cand_idx = l0_l1_cand_idx[comb_idx][0];
             int l1_cand_idx = l0_l1_cand_idx[comb_idx][1];
@@ -462,8 +465,8 @@ static void derive_spatial_merge_candidates(HEVCLocalContext *lc, const HEVCCont
     }
 
     // append Zero motion vector candidates
-    while (nb_merge_cand < s->sh.max_num_merge_cand) {
-        mergecandlist[nb_merge_cand].pred_flag    = PF_L0 + ((s->sh.slice_type == HEVC_SLICE_B) << 1);
+    while (nb_merge_cand < lc->sh->max_num_merge_cand) {
+        mergecandlist[nb_merge_cand].pred_flag    = PF_L0 + ((lc->sh->slice_type == HEVC_SLICE_B) << 1);
         AV_ZERO32(mergecandlist[nb_merge_cand].mv + 0);
         AV_ZERO32(mergecandlist[nb_merge_cand].mv + 1);
         mergecandlist[nb_merge_cand].ref_idx[0]   = zero_idx < nb_refs ? zero_idx : 0;
@@ -514,11 +517,11 @@ void ff_hevc_luma_mv_merge_mode(HEVCLocalContext *lc, const HEVCPPS *pps,
     *mv = mergecand_list[merge_idx];
 }
 
-static av_always_inline void dist_scale(const HEVCContext *s, Mv *mv,
+static av_always_inline void dist_scale(const HEVCContext *s,
+                                        const RefPicList *refPicList, Mv *mv,
                                         int min_pu_width, int x, int y,
                                         int elist, int ref_idx_curr, int ref_idx)
 {
-    const RefPicList *refPicList = s->cur_frame->refPicList;
     const MvField *tab_mvf       = s->cur_frame->tab_mvf;
     int ref_pic_elist      = refPicList[elist].list[TAB_MVF(x, y).ref_idx[elist]];
     int ref_pic_curr       = refPicList[ref_idx_curr].list[ref_idx];
@@ -531,14 +534,13 @@ static av_always_inline void dist_scale(const HEVCContext *s, Mv *mv,
     }
 }
 
-static int mv_mp_mode_mx(const HEVCContext *s, const HEVCSPS *sps,
+static int mv_mp_mode_mx(const HEVCContext *s, const RefPicList *refPicList,
+                         const HEVCSPS *sps,
                          int x, int y, int pred_flag_index,
                          Mv *mv, int ref_idx_curr, int ref_idx)
 {
     const MvField *tab_mvf = s->cur_frame->tab_mvf;
     int min_pu_width = sps->min_pu_width;
-
-    const RefPicList *refPicList = s->cur_frame->refPicList;
 
     if (((TAB_MVF(x, y).pred_flag) & (1 << pred_flag_index)) &&
         refPicList[pred_flag_index].list[TAB_MVF(x, y).ref_idx[pred_flag_index]] == refPicList[ref_idx_curr].list[ref_idx]) {
@@ -548,14 +550,13 @@ static int mv_mp_mode_mx(const HEVCContext *s, const HEVCSPS *sps,
     return 0;
 }
 
-static int mv_mp_mode_mx_lt(const HEVCContext *s, const HEVCSPS *sps,
+static int mv_mp_mode_mx_lt(const HEVCContext *s, const RefPicList *refPicList,
+                            const HEVCSPS *sps,
                             int x, int y, int pred_flag_index,
                             Mv *mv, int ref_idx_curr, int ref_idx)
 {
     const MvField *tab_mvf = s->cur_frame->tab_mvf;
     int min_pu_width = sps->min_pu_width;
-
-    const RefPicList *refPicList = s->cur_frame->refPicList;
 
     if ((TAB_MVF(x, y).pred_flag) & (1 << pred_flag_index)) {
         int currIsLongTerm     = refPicList[ref_idx_curr].isLongTerm[ref_idx];
@@ -566,7 +567,7 @@ static int mv_mp_mode_mx_lt(const HEVCContext *s, const HEVCSPS *sps,
         if (colIsLongTerm == currIsLongTerm) {
             *mv = TAB_MVF(x, y).mv[pred_flag_index];
             if (!currIsLongTerm)
-                dist_scale(s, mv, min_pu_width, x, y,
+                dist_scale(s, refPicList, mv, min_pu_width, x, y,
                            pred_flag_index, ref_idx_curr, ref_idx);
             return 1;
         }
@@ -575,13 +576,13 @@ static int mv_mp_mode_mx_lt(const HEVCContext *s, const HEVCSPS *sps,
 }
 
 #define MP_MX(v, pred, mx)                                      \
-    mv_mp_mode_mx(s, sps,                                       \
+    mv_mp_mode_mx(s, lc->rpl, sps,                              \
                   (x ## v) >> sps->log2_min_pu_size,            \
                   (y ## v) >> sps->log2_min_pu_size,            \
                   pred, &mx, ref_idx_curr, ref_idx)
 
 #define MP_MX_LT(v, pred, mx)                                   \
-    mv_mp_mode_mx_lt(s, sps,                                    \
+    mv_mp_mode_mx_lt(s, lc->rpl, sps,                           \
                      (x ## v) >> sps->log2_min_pu_size,         \
                      (y ## v) >> sps->log2_min_pu_size,         \
                      pred, &mx, ref_idx_curr, ref_idx)
@@ -769,10 +770,10 @@ scalef:
         mvpcand_list[numMVPCandLX++] = mxB;
 
     //temporal motion vector prediction candidate
-    if (numMVPCandLX < 2 && s->sh.slice_temporal_mvp_enabled_flag &&
+    if (numMVPCandLX < 2 && lc->sh->slice_temporal_mvp_enabled_flag &&
         mvp_lx_flag == numMVPCandLX) {
         Mv mv_col;
-        int available_col = temporal_luma_motion_vector(s, sps, x0, y0, nPbW,
+        int available_col = temporal_luma_motion_vector(s, lc, sps, x0, y0, nPbW,
                                                         nPbH, ref_idx,
                                                         &mv_col, LX);
         if (available_col)

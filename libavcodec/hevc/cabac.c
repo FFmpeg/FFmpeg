@@ -429,17 +429,17 @@ static int cabac_reinit(HEVCLocalContext *lc)
 
 static void cabac_init_state(HEVCLocalContext *lc, const HEVCContext *s)
 {
-    int init_type = 2 - s->sh.slice_type;
+    int init_type = 2 - lc->sh->slice_type;
     int i;
 
-    if (s->sh.cabac_init_flag && s->sh.slice_type != HEVC_SLICE_I)
+    if (lc->sh->cabac_init_flag && lc->sh->slice_type != HEVC_SLICE_I)
         init_type ^= 3;
 
     for (i = 0; i < HEVC_CONTEXTS; i++) {
         int init_value = init_values[init_type][i];
         int m = (init_value >> 4) * 5 - 45;
         int n = ((init_value & 15) << 3) - 16;
-        int pre = 2 * (((m * av_clip(s->sh.slice_qp, 0, 51)) >> 4) + n) - 127;
+        int pre = 2 * (((m * av_clip(lc->sh->slice_qp, 0, 51)) >> 4) + n) - 127;
 
         pre ^= pre >> 31;
         if (pre > 124)
@@ -476,24 +476,24 @@ int ff_hevc_cabac_init(HEVCLocalContext *lc, const HEVCPPS *pps,
     const HEVCSPS   *const sps = pps->sps;
     HEVCSubstream *const sub = &lc->sub;
 
-    if (ctb_addr_ts == pps->ctb_addr_rs_to_ts[s->sh.slice_ctb_addr_rs]) {
+    if (ctb_addr_ts == pps->ctb_addr_rs_to_ts[lc->sh->slice_ctb_addr_rs]) {
         /* First CTB of a slice segment. For a dependent slice segment the
          * data still belongs to the new segment. */
         int ret = ff_init_cabac_decoder(&sub->cc, sub->data, sub->size);
         if (ret < 0)
             return ret;
         sub->opened = 1;
-        if (s->sh.dependent_slice_segment_flag == 0 ||
+        if (lc->sh->dependent_slice_segment_flag == 0 ||
             (pps->tiles_enabled_flag &&
              pps->tile_id[ctb_addr_ts] != pps->tile_id[ctb_addr_ts - 1]))
             cabac_init_state(lc, s);
 
-        if (!s->sh.first_slice_in_pic_flag &&
+        if (!lc->sh->first_slice_in_pic_flag &&
             pps->entropy_coding_sync_enabled_flag) {
             if (ctb_addr_ts % sps->ctb_width == 0) {
                 if (sps->ctb_width == 1)
                     cabac_init_state(lc, s);
-                else if (s->sh.dependent_slice_segment_flag == 1)
+                else if (lc->sh->dependent_slice_segment_flag == 1)
                     load_states(lc, sps);
             }
         }
@@ -752,7 +752,7 @@ int ff_hevc_merge_idx_decode(HEVCLocalContext *lc)
     int i = GET_CABAC(MERGE_IDX_OFFSET);
 
     if (i != 0) {
-        while (i < lc->parent->sh.max_num_merge_cand-1 && get_cabac_bypass(&lc->sub.cc))
+        while (i < lc->sh->max_num_merge_cand-1 && get_cabac_bypass(&lc->sub.cc))
             i++;
     }
     return i;
@@ -1146,10 +1146,10 @@ void ff_hevc_hls_residual_coding(HEVCLocalContext *lc, const HEVCPPS *pps,
             int qp_i, offset;
 
             if (c_idx == 1)
-                offset = pps->cb_qp_offset + s->sh.slice_cb_qp_offset +
+                offset = pps->cb_qp_offset + lc->sh->slice_cb_qp_offset +
                          lc->sub.cu_qp_offset_cb;
             else
-                offset = pps->cr_qp_offset + s->sh.slice_cr_qp_offset +
+                offset = pps->cr_qp_offset + lc->sh->slice_cr_qp_offset +
                          lc->sub.cu_qp_offset_cr;
 
             qp_i = av_clip(qp_y + offset, - sps->qp_bd_offset, 57);

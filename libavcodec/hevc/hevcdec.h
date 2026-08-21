@@ -411,6 +411,12 @@ typedef struct HEVCLocalContext {
     void *logctx;
     const struct HEVCContext *parent;
 
+    /* Slice being decoded, read instead of HEVCContext so that tiles of
+     * different slices can be decoded interleaved. */
+    const SliceHeader *sh;
+    const RefPicList  *rpl;             ///< reference lists of that slice, NULL for I slices
+    const HEVCFrame   *collocated_ref;  ///< picture read by the temporal MVP, NULL if none
+
     /**
      * This is a pointer to the common CABAC state.
      * In case entropy_coding_sync_enabled_flag is set,

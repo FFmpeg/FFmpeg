@@ -96,7 +96,7 @@ static int get_qPy_pred(HEVCLocalContext *lc, const HEVCContext *s,
     // qPy_pred
     if (lc->sub.first_qp_group || (!xQgBase && !yQgBase)) {
         lc->sub.first_qp_group = !lc->tu.is_cu_qp_delta_coded;
-        qPy_pred = s->sh.slice_qp;
+        qPy_pred = lc->sh->slice_qp;
     } else {
         qPy_pred = lc->sub.qPy_pred;
     }
@@ -693,13 +693,16 @@ static av_always_inline int mvf_run_equal(const MvField *a, const MvField *b, in
     }
 }
 
-static int boundary_strength(const HEVCContext *s, const MvField *curr, const MvField *neigh,
+/* rpl is the reference list of the slice curr belongs to, neigh_refPicList
+ * the one of the neighbour. */
+static int boundary_strength(const RefPicList *rpl,
+                             const MvField *curr, const MvField *neigh,
                              const RefPicList *neigh_refPicList)
 {
     if (curr->pred_flag == PF_BI &&  neigh->pred_flag == PF_BI) {
         // same L0 and L1
-        if (s->cur_frame->refPicList[0].list[curr->ref_idx[0]] == neigh_refPicList[0].list[neigh->ref_idx[0]]  &&
-            s->cur_frame->refPicList[0].list[curr->ref_idx[0]] == s->cur_frame->refPicList[1].list[curr->ref_idx[1]] &&
+        if (rpl[0].list[curr->ref_idx[0]] == neigh_refPicList[0].list[neigh->ref_idx[0]]  &&
+            rpl[0].list[curr->ref_idx[0]] == rpl[1].list[curr->ref_idx[1]] &&
             neigh_refPicList[0].list[neigh->ref_idx[0]] == neigh_refPicList[1].list[neigh->ref_idx[1]]) {
             if ((FFABS(neigh->mv[0].x - curr->mv[0].x) >= 4 || FFABS(neigh->mv[0].y - curr->mv[0].y) >= 4 ||
                  FFABS(neigh->mv[1].x - curr->mv[1].x) >= 4 || FFABS(neigh->mv[1].y - curr->mv[1].y) >= 4) &&
@@ -708,15 +711,15 @@ static int boundary_strength(const HEVCContext *s, const MvField *curr, const Mv
                 return 1;
             else
                 return 0;
-        } else if (neigh_refPicList[0].list[neigh->ref_idx[0]] == s->cur_frame->refPicList[0].list[curr->ref_idx[0]] &&
-                   neigh_refPicList[1].list[neigh->ref_idx[1]] == s->cur_frame->refPicList[1].list[curr->ref_idx[1]]) {
+        } else if (neigh_refPicList[0].list[neigh->ref_idx[0]] == rpl[0].list[curr->ref_idx[0]] &&
+                   neigh_refPicList[1].list[neigh->ref_idx[1]] == rpl[1].list[curr->ref_idx[1]]) {
             if (FFABS(neigh->mv[0].x - curr->mv[0].x) >= 4 || FFABS(neigh->mv[0].y - curr->mv[0].y) >= 4 ||
                 FFABS(neigh->mv[1].x - curr->mv[1].x) >= 4 || FFABS(neigh->mv[1].y - curr->mv[1].y) >= 4)
                 return 1;
             else
                 return 0;
-        } else if (neigh_refPicList[1].list[neigh->ref_idx[1]] == s->cur_frame->refPicList[0].list[curr->ref_idx[0]] &&
-                   neigh_refPicList[0].list[neigh->ref_idx[0]] == s->cur_frame->refPicList[1].list[curr->ref_idx[1]]) {
+        } else if (neigh_refPicList[1].list[neigh->ref_idx[1]] == rpl[0].list[curr->ref_idx[0]] &&
+                   neigh_refPicList[0].list[neigh->ref_idx[0]] == rpl[1].list[curr->ref_idx[1]]) {
             if (FFABS(neigh->mv[1].x - curr->mv[0].x) >= 4 || FFABS(neigh->mv[1].y - curr->mv[0].y) >= 4 ||
                 FFABS(neigh->mv[0].x - curr->mv[1].x) >= 4 || FFABS(neigh->mv[0].y - curr->mv[1].y) >= 4)
                 return 1;
@@ -731,10 +734,10 @@ static int boundary_strength(const HEVCContext *s, const MvField *curr, const Mv
 
         if (curr->pred_flag & 1) {
             A     = curr->mv[0];
-            ref_A = s->cur_frame->refPicList[0].list[curr->ref_idx[0]];
+            ref_A = rpl[0].list[curr->ref_idx[0]];
         } else {
             A     = curr->mv[1];
-            ref_A = s->cur_frame->refPicList[1].list[curr->ref_idx[1]];
+            ref_A = rpl[1].list[curr->ref_idx[1]];
         }
 
         if (neigh->pred_flag & 1) {
@@ -775,7 +778,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, const HEVCLayer
 
     boundary_upper = y0 > 0 && !(y0 & 7);
     if (boundary_upper &&
-        ((!s->sh.slice_loop_filter_across_slices_enabled_flag &&
+        ((!lc->sh->slice_loop_filter_across_slices_enabled_flag &&
           lc->boundary_flags & BOUNDARY_UPPER_SLICE &&
           (y0 % (1 << sps->log2_ctb_size)) == 0) ||
          ((!pps->loop_filter_across_tiles_enabled_flag || lc->tile_bs_defer) &&
@@ -786,8 +789,8 @@ void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, const HEVCLayer
     if (boundary_upper) {
         const RefPicList *rpl_top = (lc->boundary_flags & BOUNDARY_UPPER_SLICE) ?
                                     ff_hevc_get_ref_list(s->cur_frame, x0, y0 - 1) :
-                                    s->cur_frame->refPicList;
-        int same_rpl = rpl_top == s->cur_frame->refPicList;
+                                    lc->rpl;
+        int same_rpl = rpl_top == lc->rpl;
         int yp_pu = (y0 - 1) >> log2_min_pu_size;
         int yq_pu =  y0      >> log2_min_pu_size;
         int yp_tu = (y0 - 1) >> log2_min_tu_size;
@@ -808,7 +811,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, const HEVCLayer
                 else if (same_rpl && mvf_equal(curr, top))
                     bs = 0;
                 else
-                    bs = boundary_strength(s, curr, top, rpl_top);
+                    bs = boundary_strength(lc->rpl, curr, top, rpl_top);
                 l->horizontal_bs[((x0 + i) + y0 * l->bs_width) >> 2] = bs;
             }
     }
@@ -816,7 +819,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, const HEVCLayer
     // bs for vertical TU boundaries
     boundary_left = x0 > 0 && !(x0 & 7);
     if (boundary_left &&
-        ((!s->sh.slice_loop_filter_across_slices_enabled_flag &&
+        ((!lc->sh->slice_loop_filter_across_slices_enabled_flag &&
           lc->boundary_flags & BOUNDARY_LEFT_SLICE &&
           (x0 % (1 << sps->log2_ctb_size)) == 0) ||
          ((!pps->loop_filter_across_tiles_enabled_flag || lc->tile_bs_defer) &&
@@ -827,8 +830,8 @@ void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, const HEVCLayer
     if (boundary_left) {
         const RefPicList *rpl_left = (lc->boundary_flags & BOUNDARY_LEFT_SLICE) ?
                                      ff_hevc_get_ref_list(s->cur_frame, x0 - 1, y0) :
-                                     s->cur_frame->refPicList;
-        int same_rpl = rpl_left == s->cur_frame->refPicList;
+                                     lc->rpl;
+        int same_rpl = rpl_left == lc->rpl;
         int xp_pu = (x0 - 1) >> log2_min_pu_size;
         int xq_pu =  x0      >> log2_min_pu_size;
         int xp_tu = (x0 - 1) >> log2_min_tu_size;
@@ -849,13 +852,13 @@ void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, const HEVCLayer
                 else if (same_rpl && mvf_equal(curr, left))
                     bs = 0;
                 else
-                    bs = boundary_strength(s, curr, left, rpl_left);
+                    bs = boundary_strength(lc->rpl, curr, left, rpl_left);
                 l->vertical_bs[(x0 + (y0 + i) * l->bs_width) >> 2] = bs;
             }
     }
 
     if (log2_trafo_size > log2_min_pu_size && !is_intra) {
-        const RefPicList *rpl = s->cur_frame->refPicList;
+        const RefPicList *rpl = lc->rpl;
 
         // whole edge lines can be tested at once when there is one MvField entry per 4px segment
         if (log2_min_pu_size == 2 && log2_trafo_size >= 4 && log2_trafo_size <= 6) {
@@ -873,7 +876,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, const HEVCLayer
                     memset(bs_h, 0, n);
                 } else {
                     for (i = 0; i < n; i++)
-                        bs_h[i] = mvf_equal(&curr[i], &top[i]) ? 0 : boundary_strength(s, &curr[i], &top[i], rpl);
+                        bs_h[i] = mvf_equal(&curr[i], &top[i]) ? 0 : boundary_strength(rpl, &curr[i], &top[i], rpl);
                 }
             }
 
@@ -889,7 +892,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, const HEVCLayer
                         bs_v[i] = 0;
                 } else {
                     for (i = 2; i < n; i += 2)
-                        bs_v[i] = mvf_equal(&row[i], &row[i - 1]) ? 0 : boundary_strength(s, &row[i], &row[i - 1], rpl);
+                        bs_v[i] = mvf_equal(&row[i], &row[i - 1]) ? 0 : boundary_strength(rpl, &row[i], &row[i - 1], rpl);
                 }
             }
             return;
@@ -905,7 +908,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, const HEVCLayer
                 const MvField *top  = &tab_mvf[yp_pu * min_pu_width + x_pu];
                 const MvField *curr = &tab_mvf[yq_pu * min_pu_width + x_pu];
 
-                bs = mvf_equal(curr, top) ? 0 : boundary_strength(s, curr, top, rpl);
+                bs = mvf_equal(curr, top) ? 0 : boundary_strength(rpl, curr, top, rpl);
                 l->horizontal_bs[((x0 + i) + (y0 + j) * l->bs_width) >> 2] = bs;
             }
         }
@@ -920,7 +923,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, const HEVCLayer
                 const MvField *left = &tab_mvf[y_pu * min_pu_width + xp_pu];
                 const MvField *curr = &tab_mvf[y_pu * min_pu_width + xq_pu];
 
-                bs = mvf_equal(curr, left) ? 0 : boundary_strength(s, curr, left, rpl);
+                bs = mvf_equal(curr, left) ? 0 : boundary_strength(rpl, curr, left, rpl);
                 l->vertical_bs[((x0 + i) + (y0 + j) * l->bs_width) >> 2] = bs;
             }
         }
@@ -943,7 +946,7 @@ void ff_hevc_tile_boundary_bs(HEVCLocalContext *lc, const HEVCLayerContext *l,
     if ((lc->boundary_flags & BOUNDARY_UPPER_TILE) && y0 > 0) {
         const RefPicList *rpl_top = (lc->boundary_flags & BOUNDARY_UPPER_SLICE) ?
                                     ff_hevc_get_ref_list(s->cur_frame, x0, y0 - 1) :
-                                    s->cur_frame->refPicList;
+                                    lc->rpl;
         int yp_pu = (y0 - 1) >> log2_min_pu_size, yq_pu = y0 >> log2_min_pu_size;
         int yp_tu = (y0 - 1) >> log2_min_tu_size, yq_tu = y0 >> log2_min_tu_size;
         int len = FFMIN(ctb_size, sps->width - x0);
@@ -959,7 +962,7 @@ void ff_hevc_tile_boundary_bs(HEVCLocalContext *lc, const HEVCLayerContext *l,
             else if (curr_cbf || top_cbf)
                 bs = 1;
             else
-                bs = boundary_strength(s, curr, top, rpl_top);
+                bs = boundary_strength(lc->rpl, curr, top, rpl_top);
             l->horizontal_bs[((x0 + i) + y0 * l->bs_width) >> 2] = bs;
         }
     }
@@ -967,7 +970,7 @@ void ff_hevc_tile_boundary_bs(HEVCLocalContext *lc, const HEVCLayerContext *l,
     if ((lc->boundary_flags & BOUNDARY_LEFT_TILE) && x0 > 0) {
         const RefPicList *rpl_left = (lc->boundary_flags & BOUNDARY_LEFT_SLICE) ?
                                      ff_hevc_get_ref_list(s->cur_frame, x0 - 1, y0) :
-                                     s->cur_frame->refPicList;
+                                     lc->rpl;
         int xp_pu = (x0 - 1) >> log2_min_pu_size, xq_pu = x0 >> log2_min_pu_size;
         int xp_tu = (x0 - 1) >> log2_min_tu_size, xq_tu = x0 >> log2_min_tu_size;
         int len = FFMIN(ctb_size, sps->height - y0);
@@ -983,7 +986,7 @@ void ff_hevc_tile_boundary_bs(HEVCLocalContext *lc, const HEVCLayerContext *l,
             else if (curr_cbf || left_cbf)
                 bs = 1;
             else
-                bs = boundary_strength(s, curr, left, rpl_left);
+                bs = boundary_strength(lc->rpl, curr, left, rpl_left);
             l->vertical_bs[(x0 + (y0 + i) * l->bs_width) >> 2] = bs;
         }
     }
@@ -1004,9 +1007,9 @@ void ff_hevc_hls_filter(HEVCLocalContext *lc, const HEVCLayerContext *l,
     if (s->avctx->skip_loop_filter >= AVDISCARD_ALL ||
         (s->avctx->skip_loop_filter >= AVDISCARD_NONKEY && !IS_IDR(s)) ||
         (s->avctx->skip_loop_filter >= AVDISCARD_NONINTRA &&
-         s->sh.slice_type != HEVC_SLICE_I) ||
+         lc->sh->slice_type != HEVC_SLICE_I) ||
         (s->avctx->skip_loop_filter >= AVDISCARD_BIDIR &&
-         s->sh.slice_type == HEVC_SLICE_B) ||
+         lc->sh->slice_type == HEVC_SLICE_B) ||
         (s->avctx->skip_loop_filter >= AVDISCARD_NONREF &&
         ff_hevc_nal_is_nonref(s->nal_unit_type)))
         skip = 1;
