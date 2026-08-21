@@ -32,13 +32,13 @@ const AVChannelLayout ff_iamf_scalable_ch_layouts[10] = {
     // "Loudspeaker configuration for Sound System C"
     AV_CHANNEL_LAYOUT_5POINT1POINT2,
     // "Loudspeaker configuration for Sound System D"
-    AV_CHANNEL_LAYOUT_5POINT1POINT4_BACK,
+    AV_CHANNEL_LAYOUT_5POINT1POINT4,
     // "Loudspeaker configuration for Sound System I"
     AV_CHANNEL_LAYOUT_7POINT1,
     // "Loudspeaker configuration for Sound System I" + Ltf + Rtf
     AV_CHANNEL_LAYOUT_7POINT1POINT2,
     // "Loudspeaker configuration for Sound System J"
-    AV_CHANNEL_LAYOUT_7POINT1POINT4_BACK,
+    AV_CHANNEL_LAYOUT_7POINT1POINT4,
     // Front subset of "Loudspeaker configuration for Sound System J"
     AV_CHANNEL_LAYOUT_3POINT1POINT2,
     // Binaural
@@ -121,7 +121,7 @@ const struct IAMFSoundSystemMap ff_iamf_sound_system_map[14] = {
     { SOUND_SYSTEM_A_0_2_0, AV_CHANNEL_LAYOUT_STEREO },
     { SOUND_SYSTEM_B_0_5_0, AV_CHANNEL_LAYOUT_5POINT1 },
     { SOUND_SYSTEM_C_2_5_0, AV_CHANNEL_LAYOUT_5POINT1POINT2 },
-    { SOUND_SYSTEM_D_4_5_0, AV_CHANNEL_LAYOUT_5POINT1POINT4_BACK },
+    { SOUND_SYSTEM_D_4_5_0, AV_CHANNEL_LAYOUT_5POINT1POINT4 },
     { SOUND_SYSTEM_E_4_5_1,
         {
             .nb_channels = 11,
@@ -130,10 +130,10 @@ const struct IAMFSoundSystemMap ff_iamf_sound_system_map[14] = {
         },
     },
     { SOUND_SYSTEM_F_3_7_0,  AV_CHANNEL_LAYOUT_7POINT2POINT3 },
-    { SOUND_SYSTEM_G_4_9_0,  AV_CHANNEL_LAYOUT_9POINT1POINT4_BACK },
+    { SOUND_SYSTEM_G_4_9_0,  AV_CHANNEL_LAYOUT_9POINT1POINT4 },
     { SOUND_SYSTEM_H_9_10_3, AV_CHANNEL_LAYOUT_22POINT2 },
     { SOUND_SYSTEM_I_0_7_0,  AV_CHANNEL_LAYOUT_7POINT1 },
-    { SOUND_SYSTEM_J_4_7_0,  AV_CHANNEL_LAYOUT_7POINT1POINT4_BACK },
+    { SOUND_SYSTEM_J_4_7_0,  AV_CHANNEL_LAYOUT_7POINT1POINT4 },
     { SOUND_SYSTEM_10_2_7_0, AV_CHANNEL_LAYOUT_7POINT1POINT2 },
     { SOUND_SYSTEM_11_2_3_0, AV_CHANNEL_LAYOUT_3POINT1POINT2 },
     { SOUND_SYSTEM_12_0_1_0, AV_CHANNEL_LAYOUT_MONO },
