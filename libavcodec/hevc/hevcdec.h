@@ -341,8 +341,6 @@ typedef struct TransformUnit {
     int chroma_mode_c;
     uint8_t is_cu_qp_delta_coded;
     uint8_t is_cu_chroma_qp_offset_coded;
-    int8_t  cu_qp_offset_cb;
-    int8_t  cu_qp_offset_cr;
     uint8_t cross_pf;
 } TransformUnit;
 
@@ -388,17 +386,30 @@ typedef struct HEVCFrame {
     uint8_t flags;
 } HEVCFrame;
 
-typedef struct HEVCLocalContext {
-    uint8_t cabac_state[HEVC_CONTEXTS];
+/* State carried from one CTB to the next within a substream: one per tile
+ * column, or one per row for WPP. */
+typedef struct HEVCSubstream {
+    const uint8_t *data;    ///< CABAC bytes of this substream
+    size_t         size;
+    /* 0: open CABAC on data at first use, 1: already open, continue in it */
+    uint8_t        opened;
 
+    CABACContext cc;
+    uint8_t cabac_state[HEVC_CONTEXTS];
     uint8_t stat_coeff[HEVC_STAT_COEFFS];
 
+    int8_t  qp_y;
+    int     qPy_pred;
     uint8_t first_qp_group;
+    int8_t  cu_qp_offset_cb;
+    int8_t  cu_qp_offset_cr;
+} HEVCSubstream;
+
+typedef struct HEVCLocalContext {
+    HEVCSubstream sub;
 
     void *logctx;
     const struct HEVCContext *parent;
-
-    CABACContext cc;
 
     /**
      * This is a pointer to the common CABAC state.
@@ -411,11 +422,6 @@ typedef struct HEVCLocalContext {
      * shared between threads.
      */
     HEVCCABACState *common_cabac_state;
-
-    int8_t qp_y;
-    int8_t curr_qp_y;
-
-    int qPy_pred;
 
     TransformUnit tu;
 
@@ -615,8 +621,7 @@ int ff_hevc_slice_rpl(HEVCContext *s);
 void ff_hevc_save_states(HEVCLocalContext *lc, const HEVCPPS *pps,
                          int ctb_addr_ts);
 int ff_hevc_cabac_init(HEVCLocalContext *lc, const HEVCPPS *pps,
-                       int ctb_addr_ts, const uint8_t *data, size_t size,
-                       int is_wpp);
+                       int ctb_addr_ts);
 int ff_hevc_sao_merge_flag_decode(HEVCLocalContext *lc);
 int ff_hevc_sao_type_idx_decode(HEVCLocalContext *lc);
 int ff_hevc_sao_band_position_decode(HEVCLocalContext *lc);
