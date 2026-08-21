@@ -31,6 +31,7 @@
 #include <float.h>
 
 #include "libavutil/channel_layout.h"
+#include "libavutil/crc.h"
 #include "libavutil/libm.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/mem.h"
@@ -80,6 +81,9 @@
  *     SCE.0 SCE.15 is OK per spec; BUT it won't be decoded by our AAC decoder
  *     which at this time requires that indices fully cover some range starting
  *     from 0 (SCE.1 SCE.0 is OK but not SCE.0 SCE.15).
+ *
+ * - height: 0 for a base layer element, 1 for a top layer element, 2 for a bottom
+ *           layer element.
  *
  * - config_map: total number of elements and their types. Beware, the way the
  *               types are ordered impacts the final channel ordering.
@@ -296,6 +300,110 @@ static const AACPCEInfo aac_pce_configs[] = {
         .config_map = { 5, TYPE_SCE, TYPE_CPE, TYPE_CPE, TYPE_CPE, TYPE_SCE },
         .reorder_map = { 2, 0, 1, 6, 7, 3, 4, 5 },
     },
+    {
+        .layout = AV_CHANNEL_LAYOUT_5POINT1POINT2,
+        .num_ele = { 3, 0, 1, 1 },
+        .pairing = { { 0, 1, 1 }, { 0 }, { 1 }, },
+        .index = { { 0, 0, 2 }, { 0 }, { 1 }, { 0 }, },
+        .height = { { 0, 0, 1 }, { 0 }, { 0 } },
+        .config_map = { 5, TYPE_SCE, TYPE_CPE, TYPE_CPE, TYPE_LFE, TYPE_CPE },
+        .reorder_map = { 2, 0, 1, 4, 5, 3, 6, 7 },
+    },
+    {
+        // ITU-R BS.2051-3 Sound System C
+        .layout = AV_CHANNEL_LAYOUT_5POINT1POINT2_BACK,
+        .num_ele = { 3, 0, 1, 1 },
+        .pairing = { { 0, 1, 1 }, { 0 }, { 1 }, },
+        .index = { { 0, 0, 2 }, { 0 }, { 1 }, { 0 }, },
+        .height = { { 0, 0, 1 }, { 0 }, { 0 } },
+        .config_map = { 5, TYPE_SCE, TYPE_CPE, TYPE_CPE, TYPE_LFE, TYPE_CPE },
+        .reorder_map = { 2, 0, 1, 4, 5, 3, 6, 7 },
+    },
+    {
+        .layout = AV_CHANNEL_LAYOUT_5POINT1POINT4,
+        .num_ele = { 3, 0, 2, 1 },
+        .pairing = { { 0, 1, 1 }, { 0 }, { 1, 1 }, },
+        .index = { { 0, 0, 2 }, { 0 }, { 1, 3 }, { 0 }, },
+        .height = { { 0, 0, 1 }, { 0 }, { 0, 1 } },
+        .config_map = { 6, TYPE_SCE, TYPE_CPE, TYPE_CPE, TYPE_LFE, TYPE_CPE, TYPE_CPE },
+        .reorder_map = { 2, 0, 1, 4, 5, 3, 6, 7, 8, 9 },
+    },
+        // ITU-R BS.2051-3 Sound System D
+    {
+        .layout = {
+            .nb_channels = 10,
+            .order       = AV_CHANNEL_ORDER_NATIVE,
+            .u.mask      = AV_CH_LAYOUT_5POINT1POINT2_BACK | AV_CH_TOP_BACK_LEFT | AV_CH_TOP_BACK_RIGHT,
+        },
+        .num_ele = { 3, 0, 2, 1 },
+        .pairing = { { 0, 1, 1 }, { 0 }, { 1, 1 }, },
+        .index = { { 0, 0, 2 }, { 0 }, { 1, 3 }, { 0 }, },
+        .height = { { 0, 0, 1 }, { 0 }, { 0, 1 } },
+        .config_map = { 6, TYPE_SCE, TYPE_CPE, TYPE_CPE, TYPE_LFE, TYPE_CPE, TYPE_CPE },
+        .reorder_map = { 2, 0, 1, 4, 5, 3, 6, 7, 8, 9 },
+    },
+    {
+        // ITU-R BS.2051-3 Sound System E
+        .layout = {
+            .nb_channels = 11,
+            .order       = AV_CHANNEL_ORDER_NATIVE,
+            .u.mask      = AV_CH_LAYOUT_5POINT1POINT4 | AV_CH_BOTTOM_FRONT_CENTER,
+        },
+        .num_ele = { 4, 0, 2, 1 },
+        .pairing = { { 0, 1, 1, 0 }, { 0 }, { 1, 1 }, },
+        .index = { { 0, 0, 2, 1 }, { 0 }, { 1, 3 }, { 0 }, },
+        .height = { { 0, 0, 1, 2 }, { 0 }, { 0, 1 } },
+        .config_map = { 7, TYPE_SCE, TYPE_CPE, TYPE_CPE, TYPE_LFE, TYPE_CPE, TYPE_CPE, TYPE_SCE },
+        .reorder_map = { 2, 0, 1, 4, 5, 3, 6, 7, 8, 9, 10 },
+    },
+    {
+        .layout = AV_CHANNEL_LAYOUT_7POINT1POINT2,
+        .num_ele = { 3, 0, 2, 1 },
+        .pairing = { { 0, 1, 1 }, { 0 }, { 1, 1 }, },
+        .index = { { 0, 0, 3 }, { 0 }, { 2, 1 }, { 0 } },
+        .height = { { 0, 0, 1 }, { 0 }, { 0, 0 } },
+        .config_map = { 6, TYPE_SCE, TYPE_CPE, TYPE_CPE, TYPE_CPE, TYPE_LFE, TYPE_CPE },
+        .reorder_map = { 2, 0, 1, 4, 5, 6, 7, 3, 8, 9 },
+    },
+    {
+        // ITU-R BS.2051-3 Sound System F
+        .layout = AV_CHANNEL_LAYOUT_7POINT2POINT3,
+        .num_ele = { 3, 0, 3, 2 },
+        .pairing = { { 0, 1, 1 }, { 0 }, { 1, 1, 0 }, },
+        .index = { { 0, 0, 3 }, { 0 }, { 2, 1, 1 }, { 0, 1 } },
+        .height = { { 0, 0, 1 }, { 0 }, { 0, 0, 1 } },
+        .config_map = { 8, TYPE_SCE, TYPE_CPE, TYPE_CPE, TYPE_CPE, TYPE_LFE, TYPE_LFE, TYPE_CPE, TYPE_SCE },
+        .reorder_map = { 2, 0, 1, 4, 5, 6, 7, 3, 11, 8, 9, 10 },
+    },
+    {
+        // ITU-R BS.2051-3 Sound System J
+        .layout = AV_CHANNEL_LAYOUT_7POINT1POINT4,
+        .num_ele = { 3, 0, 3, 1 },
+        .pairing = { { 0, 1, 1 }, { 0 }, { 1, 1, 1 }, },
+        .index = { { 0, 0, 3 }, { 0 }, { 2, 1, 4 }, { 0 } },
+        .height = { { 0, 0, 1 }, { 0 }, { 0, 0, 1 } },
+        .config_map = { 7, TYPE_SCE, TYPE_CPE, TYPE_CPE, TYPE_CPE, TYPE_LFE, TYPE_CPE, TYPE_CPE },
+        .reorder_map = { 2, 0, 1, 4, 5, 6, 7, 3, 8, 9, 10, 11 },
+    },
+    {
+        // ITU-R BS.2051-3 Sound System G
+        .layout = AV_CHANNEL_LAYOUT_9POINT1POINT4,
+        .num_ele = { 4, 0, 3, 1 },
+        .pairing = { { 0, 1, 1, 1 }, { 0 }, { 1, 1, 1 }, },
+        .index = { { 0, 0, 1, 4 }, { 0 }, { 2, 3, 5 }, { 0 } },
+        .height = { { 0, 0, 0, 1 }, { 0 }, { 0, 0, 1 } },
+        .config_map = { 8, TYPE_SCE, TYPE_CPE, TYPE_CPE, TYPE_CPE, TYPE_CPE, TYPE_LFE, TYPE_CPE, TYPE_CPE },
+        .reorder_map = { 2, 6, 7, 0, 1, 8, 9, 4, 5, 3, 10, 11, 12, 13 },
+    },
+    {
+        .layout = AV_CHANNEL_LAYOUT_9POINT1POINT6,
+        .num_ele = { 4, 1, 3, 1 },
+        .pairing = { { 0, 1, 1, 1 }, { 1 }, { 1, 1, 1 }, },
+        .index = { { 0, 0, 1, 4 }, { 5 }, { 2, 3, 6 }, { 0 } },
+        .height = { { 0, 0, 0, 1 }, { 1 }, { 0, 0, 1 } },
+        .config_map = { 9, TYPE_SCE, TYPE_CPE, TYPE_CPE, TYPE_CPE, TYPE_CPE, TYPE_LFE, TYPE_CPE, TYPE_CPE, TYPE_CPE },
+        .reorder_map = { 2, 6, 7, 0, 1, 8, 9, 4, 5, 3, 10, 11, 14, 15, 12, 13 },
+    },
 };
 
 static void put_pce(PutBitContext *pb, AVCodecContext *avctx)
@@ -331,8 +439,28 @@ static void put_pce(PutBitContext *pb, AVCodecContext *avctx)
     }
 
     align_put_bits(pb);
-    put_bits(pb, 8, strlen(aux_data));
-    ff_put_string(pb, aux_data, 0);
+    if (s->needs_height_ext) {
+        const AVCRC *crc_ctx = av_crc_get_table(AV_CRC_8_ATM);
+        PutBitContext height_pb;
+        uint8_t buf[16];
+        int bits = 8 + pce->num_ele[0] * 2 + pce->num_ele[1] * 2 + pce->num_ele[2] * 2;
+        int bytes = (bits + 7) / 8;
+
+        init_put_bits(&height_pb, buf, bytes);
+        put_bits(&height_pb, 8, 0xAC);
+        for (i = 0; i < 3; i++)
+            for (j = 0; j < pce->num_ele[i]; j++)
+                put_bits(&height_pb, 2, pce->height[i][j]);
+        flush_put_bits(&height_pb);
+
+        put_bits(pb, 8, bytes + 1);
+        ff_copy_bits(pb, buf, bits);
+        align_put_bits(pb);
+        put_bits(pb, 8, av_crc(crc_ctx, 0xFF, buf, bytes));
+    } else {
+        put_bits(pb, 8, strlen(aux_data));
+        ff_put_string(pb, aux_data, 0);
+    }
 }
 
 /**
@@ -1560,6 +1688,18 @@ static av_cold int alloc_buffers(AVCodecContext *avctx, AACEncContext *s)
     return 0;
 }
 
+static av_cold int check_height_ext(AVCodecContext *avctx, AACEncContext *s)
+{
+    for (int i = 0; i < avctx->ch_layout.nb_channels; i++) {
+        enum AVChannel ch = av_channel_layout_channel_from_index(&avctx->ch_layout, i);
+        if (ch >= AV_CHAN_TOP_FRONT_LEFT && ch <= AV_CHAN_TOP_BACK_RIGHT)
+            return 1;
+        // Layouts with TOP_SIDE channels also include the above.
+    }
+
+    return 0;
+}
+
 static av_cold int aac_encode_init(AVCodecContext *avctx)
 {
     AACEncContext *s = avctx->priv_data;
@@ -1600,6 +1740,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
         s->pce = aac_pce_configs[i];
         s->reorder_map = s->pce.reorder_map;
         s->chan_map = s->pce.config_map;
+        s->needs_height_ext = check_height_ext(avctx, s);
         chcfg = 0;
     } else {
         s->reorder_map = aac_chan_maps[chcfg - 1];

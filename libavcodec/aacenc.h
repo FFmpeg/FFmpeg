@@ -248,6 +248,7 @@ typedef struct AACPCEInfo {
     uint8_t num_ele[4];                          ///< front, side, back, lfe
     uint8_t pairing[3][8];                       ///< front, side, back
     uint8_t index[4][8];                         ///< front, side, back, lfe
+    uint8_t height[3][8];                        ///< front, side, back
     uint8_t config_map[16];                      ///< configs the encoder's channel specific settings
     uint8_t reorder_map[16];                     ///< maps channels from lavc to aac order
 } AACPCEInfo;
@@ -269,6 +270,7 @@ typedef struct AACEncContext {
 
     int profile;                                 ///< copied from avctx
     int needs_pce;                               ///< flag for non-standard layout
+    int needs_height_ext;                        ///< flag for PCE height extension
     LPCContext lpc;                              ///< used by TNS
     int samplerate_index;                        ///< MPEG-4 samplerate index
     int channels;                                ///< channel count
