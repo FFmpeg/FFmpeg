@@ -572,10 +572,24 @@ static int handle_eac3(MOVMuxContext *mov, AVPacket *pkt, MOVTrack *track)
                 ret /= 8;
 
                 /* get the dependent stream channel map, if exists */
-                if (hdr->channel_map_present)
-                    info->substream[parent].chan_loc |= (hdr->channel_map >> 5) & 0x1f;
-                else
+                if (hdr->channel_map_present) {
+                    /* chanmap is a 16-bit field read MSB-first, so flag index
+                     * i sits at bit (15 - i), matching the indexing of
+                     * ff_eac3_custom_channel_map_locations. chan_loc bits 0-7
+                     * carry flag indices 5-12, i.e. chanmap bit (10 - j).
+                     * The mapping is not contiguous at the top: index 13
+                     * (Lts/Rts) has no chan_loc bit and is skipped, and
+                     * chan_loc bit 8 carries LFE2, which is index 14 and so
+                     * chanmap bit 1. */
+                    for (int j = 0; j < 8; j++) {
+                        if ((hdr->channel_map >> (10 - j)) & 1)
+                            info->substream[parent].chan_loc |= 1 << j;
+                    }
+                    if ((hdr->channel_map >> 1) & 1)
+                        info->substream[parent].chan_loc |= 1 << 8;
+                } else {
                     info->substream[parent].chan_loc |= hdr->channel_mode;
+                }
                 cumul_size += hdr->frame_size;
             }
         }
