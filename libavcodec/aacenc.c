@@ -404,6 +404,30 @@ static const AACPCEInfo aac_pce_configs[] = {
         .config_map = { 9, TYPE_SCE, TYPE_CPE, TYPE_CPE, TYPE_CPE, TYPE_CPE, TYPE_LFE, TYPE_CPE, TYPE_CPE, TYPE_CPE },
         .reorder_map = { 2, 6, 7, 0, 1, 8, 9, 4, 5, 3, 10, 11, 14, 15, 12, 13 },
     },
+    {
+        .layout = AV_CHANNEL_LAYOUT_AMBISONIC_FIRST_ORDER,
+        .num_ele = { 1, 0, 1, 0 },
+        .pairing = { { 1 }, { 0 }, { 1 }, },
+        .index = { { 0 }, { 0 }, { 1 } },
+        .config_map = { 2, TYPE_CPE, TYPE_CPE },
+        .reorder_map = { 0, 1, 2, 3 },
+    },
+    {
+        .layout = { .order = AV_CHANNEL_ORDER_AMBISONIC, .nb_channels = 9 },
+        .num_ele = { 3, 0, 2, 0 },
+        .pairing = { { 0, 1, 1 }, { 0 }, { 1, 1 }, },
+        .index = { { 0, 0, 1 }, { 0 }, { 2, 3 }, },
+        .config_map = { 5, TYPE_SCE, TYPE_CPE, TYPE_CPE, TYPE_CPE, TYPE_CPE },
+        .reorder_map = { 2, 5, 6, 0, 1, 7, 8, 3, 4 },
+    },
+    {
+        .layout = { .order = AV_CHANNEL_ORDER_AMBISONIC, .nb_channels = 16 },
+        .num_ele = { 4, 0, 4, 0 },
+        .pairing = { { 1, 1, 1, 1 }, { 0 }, { 1, 1, 1, 1 }, },
+        .index = { { 0, 1, 2, 3 }, { 0 }, { 4, 5, 6, 7 }, },
+        .config_map = { 8, TYPE_CPE, TYPE_CPE, TYPE_CPE, TYPE_CPE, TYPE_CPE, TYPE_CPE, TYPE_CPE, TYPE_CPE },
+        .reorder_map = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 },
+    },
 };
 
 static void put_pce(PutBitContext *pb, AVCodecContext *avctx)
