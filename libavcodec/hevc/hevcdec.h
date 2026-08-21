@@ -502,6 +502,19 @@ typedef struct HEVCLayerContext {
     struct AVRefStructPool *rpl_tab_pool;
 } HEVCLayerContext;
 
+/* Start and state of one tile, for tiles bound by entry points and for one
+ * slice per tile alike. */
+typedef struct HEVCTileStream {
+    const SliceHeader *sh;  ///< header of the slice this tile belongs to
+    const RefPicList *rpl;  ///< reference lists of that slice, NULL for I slices
+    const HEVCFrame *collocated_ref;    ///< temporal MVP target of that slice
+    const uint8_t *data;    ///< start of the CABAC substream
+    size_t size;
+    int qp_y_seed;
+    int start_ts;           ///< first CTB of the tile, in tile scan order
+    int ended;              ///< the substream signalled its end (damaged input)
+} HEVCTileStream;
+
 typedef struct HEVCContext {
     const AVClass *c;  // needed by private avoptions
     AVCodecContext *avctx;
@@ -600,6 +613,16 @@ typedef struct HEVCContext {
 
     AVBufferRef *rpu_buf;       ///< 0 or 1 Dolby Vision RPUs.
     DOVIContext dovi_ctx;       ///< Dolby Vision decoding context
+
+    /* Per-tile substream table of the picture, one entry per tile */
+    HEVCTileStream *tile_streams;
+    unsigned tile_streams_alloc;
+
+    /* Substream state per tile column, only ever grows */
+    HEVCSubstream *substreams;
+    unsigned nb_substreams;
+
+    int tile_interleave;
 } HEVCContext;
 
 /**
