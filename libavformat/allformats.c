@@ -591,21 +591,20 @@ extern const FFInputFormat  ff_vapoursynth_demuxer;
 #include "libavformat/muxer_list.c"
 #include "libavformat/demuxer_list.c"
 
-static atomic_uintptr_t indev_list_intptr  = 0;
-static atomic_uintptr_t outdev_list_intptr = 0;
+static const FFInputFormat  * const *_Atomic indev_list  = NULL;
+static const FFOutputFormat * const *_Atomic outdev_list = NULL;
 
 const AVOutputFormat *av_muxer_iterate(void **opaque)
 {
     static const uintptr_t size = sizeof(muxer_list)/sizeof(muxer_list[0]) - 1;
     uintptr_t i = (uintptr_t)*opaque;
+    const FFOutputFormat *const *outdevs;
     const FFOutputFormat *f = NULL;
-    uintptr_t tmp;
 
     if (i < size) {
         f = muxer_list[i];
-    } else if (tmp = atomic_load_explicit(&outdev_list_intptr, memory_order_relaxed)) {
-        const FFOutputFormat *const *outdev_list = (const FFOutputFormat *const *)tmp;
-        f = outdev_list[i - size];
+    } else if (outdevs = atomic_load_explicit(&outdev_list, memory_order_relaxed)) {
+        f = outdevs[i - size];
     }
 
     if (f) {
@@ -619,14 +618,13 @@ const AVInputFormat *av_demuxer_iterate(void **opaque)
 {
     static const uintptr_t size = sizeof(demuxer_list)/sizeof(demuxer_list[0]) - 1;
     uintptr_t i = (uintptr_t)*opaque;
+    const FFInputFormat *const *indevs;
     const FFInputFormat *f = NULL;
-    uintptr_t tmp;
 
     if (i < size) {
         f = demuxer_list[i];
-    } else if (tmp = atomic_load_explicit(&indev_list_intptr, memory_order_relaxed)) {
-        const FFInputFormat *const *indev_list = (const FFInputFormat *const *)tmp;
-        f = indev_list[i - size];
+    } else if (indevs = atomic_load_explicit(&indev_list, memory_order_relaxed)) {
+        f = indevs[i - size];
     }
 
     if (f) {
@@ -638,6 +636,6 @@ const AVInputFormat *av_demuxer_iterate(void **opaque)
 
 void avpriv_register_devices(const FFOutputFormat * const o[], const FFInputFormat * const i[])
 {
-    atomic_store_explicit(&outdev_list_intptr, (uintptr_t)o, memory_order_relaxed);
-    atomic_store_explicit(&indev_list_intptr,  (uintptr_t)i, memory_order_relaxed);
+    atomic_store_explicit(&outdev_list, o, memory_order_relaxed);
+    atomic_store_explicit(&indev_list,  i, memory_order_relaxed);
 }

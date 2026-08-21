@@ -437,7 +437,7 @@ end:
     ff_mutex_unlock(&mutex);
 }
 
-static atomic_uintptr_t av_log_callback = (uintptr_t)av_log_default_callback;
+static void (*_Atomic av_log_callback)(void*, int, const char*, va_list) = av_log_default_callback;
 
 void av_log(void* avcl, int level, const char *fmt, ...)
 {
@@ -460,7 +460,7 @@ void av_vlog(void* avcl, int level, const char *fmt, va_list vl)
 {
     AVClass* avc = avcl ? *(AVClass **) avcl : NULL;
     void (*log_callback)(void*, int, const char*, va_list) =
-        (void *)atomic_load_explicit(&av_log_callback, memory_order_relaxed);
+        atomic_load_explicit(&av_log_callback, memory_order_relaxed);
     if (avc && avc->version >= (50 << 16 | 15 << 8 | 2) &&
         avc->log_level_offset_offset && level >= AV_LOG_FATAL)
         level += *(int *) (((uint8_t *) avcl) + avc->log_level_offset_offset);
@@ -490,7 +490,7 @@ int av_log_get_flags(void)
 
 void av_log_set_callback(void (*callback)(void*, int, const char*, va_list))
 {
-    atomic_store_explicit(&av_log_callback, (uintptr_t)callback, memory_order_relaxed);
+    atomic_store_explicit(&av_log_callback, callback, memory_order_relaxed);
 }
 
 static void missing_feature_sample(int sample, void *avc, const char *msg,
