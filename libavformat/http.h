@@ -28,6 +28,27 @@
 #define HTTP_HEADERS_SIZE 4096
 
 /**
+ * Parsed form of a response status line.
+ */
+typedef struct HTTPStatusLine {
+    char        version[4]; /**< protocol version, e.g. "1.1" */
+    int         code;       /**< response status code */
+    const char *reason;     /**< reason phrase, points into the parsed line */
+    int         willclose;  /**< the version implies the connection will close */
+} HTTPStatusLine;
+
+/**
+ * Parse the status line of an HTTP response.
+ *
+ * @param logctx context used for logging, may be NULL
+ * @param line NUL terminated status line, without its trailing CRLF
+ * @param st filled in with the parsed status line
+ * @return 0 on success, a negative AVERROR code on failure
+ */
+int ff_http_parse_status_line(void *logctx, const char *line,
+                              HTTPStatusLine *st);
+
+/**
  * Initialize the authentication state based on another HTTP URLContext.
  * This can be used to pre-initialize the authentication parameters if
  * they are known beforehand, to avoid having to do an initial failing

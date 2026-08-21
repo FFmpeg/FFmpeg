@@ -890,6 +890,34 @@ static int http_get_line(HTTPContext *s, char *line, int line_size)
     }
 }
 
+int ff_http_parse_status_line(void *logctx, const char *line, HTTPStatusLine *st)
+{
+    const char *p = line;
+    char *end;
+
+    memset(st, 0, sizeof(*st));
+
+    if (av_strncasecmp(p, "HTTP/1.0", 8) == 0)
+        st->willclose = 1;
+
+    while (*p != '/' && *p != '\0')
+        p++;
+    while (*p == '/')
+        p++;
+    av_strlcpy(st->version, p, sizeof(st->version));
+
+    while (!av_isspace(*p) && *p != '\0')
+        p++;
+    while (av_isspace(*p))
+        p++;
+    st->code   = strtol(p, &end, 10);
+    st->reason = end;
+
+    av_log(logctx, AV_LOG_TRACE, "http_code=%d\n", st->code);
+
+    return 0;
+}
+
 static int check_http_code(URLContext *h, int http_code, const char *end)
 {
     HTTPContext *s = h->priv_data;
@@ -1181,7 +1209,7 @@ static int process_line(URLContext *h, char *line, int line_count, int *parsed_h
 {
     HTTPContext *s = h->priv_data;
     const char *auto_method =  h->flags & AVIO_FLAG_READ ? "POST" : "GET";
-    char *tag, *p, *end, *method, *resource, *version;
+    char *tag, *p, *method, *resource, *version;
     int ret;
 
     /* end of header */
@@ -1245,25 +1273,24 @@ static int process_line(URLContext *h, char *line, int line_count, int *parsed_h
             }
             av_log(h, AV_LOG_TRACE, "HTTP version string: %s\n", version);
         } else {
-            if (av_strncasecmp(p, "HTTP/1.0", 8) == 0)
-                s->willclose = 1;
-            while (*p != '/' && *p != '\0')
-                p++;
-            while (*p == '/')
-                p++;
-            av_freep(&s->http_version);
-            s->http_version = av_strndup(p, 3);
-            while (!av_isspace(*p) && *p != '\0')
-                p++;
-            while (av_isspace(*p))
-                p++;
-            s->http_code = strtol(p, &end, 10);
+            HTTPStatusLine st;
 
-            av_log(h, AV_LOG_TRACE, "http_code=%d\n", s->http_code);
+            if ((ret = ff_http_parse_status_line(h, p, &st)) < 0)
+                return ret;
+
+            /* Only ever set: a keep-alive decision made earlier must survive. */
+            if (st.willclose)
+                s->willclose = 1;
+
+            av_freep(&s->http_version);
+            if (!(s->http_version = av_strdup(st.version)))
+                return AVERROR(ENOMEM);
+
+            s->http_code = st.code;
 
             *parsed_http_code = 1;
 
-            if ((ret = check_http_code(h, s->http_code, end)) < 0)
+            if ((ret = check_http_code(h, s->http_code, st.reason)) < 0)
                 return ret;
         }
     } else {
