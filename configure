@@ -6484,23 +6484,9 @@ probe_libc(){
         add_${pfx}cppflags -D_POSIX_C_SOURCE=200112 -D_XOPEN_SOURCE=600
     elif test_${pfx}cpp_condition crtversion.h "defined _VC_CRT_MAJOR_VERSION"; then
         eval ${pfx}libc_type=msvcrt
-        if test_${pfx}cpp_condition crtversion.h "_VC_CRT_MAJOR_VERSION < 14"; then
-            if [ "$pfx" = host_ ]; then
-                add_host_cppflags -Dsnprintf=_snprintf
-            else
-                add_compat strtod.o strtod=avpriv_strtod
-                add_compat msvcrt/snprintf.o snprintf=avpriv_snprintf   \
-                                             _snprintf=avpriv_snprintf  \
-                                             vsnprintf=avpriv_vsnprintf
-            fi
-        fi
         add_${pfx}cppflags -D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS
         test_${pfx}cpp_condition windows.h "!defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0601" &&
             add_${pfx}cppflags -D_WIN32_WINNT=0x0601
-        if [ "$pfx" = "" ]; then
-            check_func strtoll || add_allcflags -Dstrtoll=_strtoi64
-            check_func strtoull || add_allcflags -Dstrtoull=_strtoui64
-        fi
     elif test_${pfx}cpp_condition stddef.h "defined __KLIBC__"; then
         eval ${pfx}libc_type=klibc
     elif test_${pfx}cpp_condition sys/cdefs.h "defined __BIONIC__"; then
