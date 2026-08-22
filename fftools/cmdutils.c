@@ -30,7 +30,6 @@
    references to libraries that are not being built. */
 
 #include "config.h"
-#include "compat/va_copy.h"
 #include "libavformat/avformat.h"
 #include "libswscale/swscale.h"
 #include "libswresample/swresample.h"
