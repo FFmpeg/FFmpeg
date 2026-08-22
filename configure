@@ -1717,7 +1717,7 @@ check_pkg_config_cxx(){
 }
 
 check_pkg_config_header_only(){
-    log check_pkg_config_cpp "$@"
+    log check_pkg_config_header_only "$@"
     name="$1"
     test_pkg_config_cpp "$@" &&
         eval add_cflags \$${name}_incflags
