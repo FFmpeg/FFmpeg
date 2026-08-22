@@ -79,6 +79,12 @@ static int vmd_probe(const AVProbeData *p)
     if ((!w || w > 2048 || !h || h > 2048) &&
         sample_rate != 22050)
         return 0;
+    /* the header of a file with a video stream carries the 6bit VGA
+     * palette that vmdvideo_decode_init() loads from offset 28 */
+    if (w && h)
+        for (int i = 28; i < 28 + 3 * 256; i++)
+            if (p->buf[i] > 0x3F)
+                return 0;
 
     /* only return half certainty since this check is a bit sketchy */
     return AVPROBE_SCORE_EXTENSION;
