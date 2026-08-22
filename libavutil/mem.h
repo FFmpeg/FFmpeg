@@ -65,7 +65,7 @@
  * @see <a href="https://gcc.gnu.org/onlinedocs/gcc/Common-Function-Attributes.html#index-g_t_0040code_007bmalloc_007d-function-attribute-3251">Function attribute `malloc` in GCC's documentation</a>
  */
 
-#if AV_GCC_VERSION_AT_LEAST(3,1)
+#if AV_GCC_VERSION_AT_LEAST(3,1) || AV_HAS_ATTRIBUTE(__malloc__)
     #define av_malloc_attrib __attribute__((__malloc__))
 #else
     #define av_malloc_attrib
@@ -86,7 +86,7 @@
  * @see <a href="https://gcc.gnu.org/onlinedocs/gcc/Common-Function-Attributes.html#index-g_t_0040code_007balloc_005fsize_007d-function-attribute-3220">Function attribute `alloc_size` in GCC's documentation</a>
  */
 
-#if AV_GCC_VERSION_AT_LEAST(4,3)
+#if AV_GCC_VERSION_AT_LEAST(4,3) || AV_HAS_ATTRIBUTE(alloc_size)
     #define av_alloc_size(...) __attribute__((alloc_size(__VA_ARGS__)))
 #else
     #define av_alloc_size(...)
