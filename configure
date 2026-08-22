@@ -5380,13 +5380,6 @@ probe_cc(){
         _cflags_speed='-O5'
         _cflags_size='-O5 -xspace'
         _flags_filter=suncc_flags
-    elif $_cc -v 2>&1 | grep -q 'PathScale\|Path64'; then
-        _type=pathscale
-        _ident=$($_cc -v 2>&1 | head -n1 | tr -d :)
-        _depflags='-MMD -MF $(@:.o=.d) -MT $@'
-        _cflags_speed='-O2'
-        _cflags_size='-Os'
-        _flags_filter='filter_out -Wdisabled-optimization'
     elif $_cc -v 2>&1 | grep -q Open64; then
         _type=open64
         _ident=$($_cc -v 2>&1 | head -n1 | tr -d :)
@@ -8122,9 +8115,6 @@ elif enabled clang; then
 elif enabled cparser; then
     add_cflags -Wno-missing-variable-declarations
     add_cflags -Wno-empty-statement
-elif enabled pathscale; then
-    add_cflags -fstrict-overflow -OPT:wrap_around_unsafe_opt=OFF
-    disable inline_asm
 elif enabled_any msvc icl; then
     enabled x86_32 && disable aligned_stack
     enabled_all x86_32 debug && add_cflags -Oy-
