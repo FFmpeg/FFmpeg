@@ -67,7 +67,7 @@ static void write_vlc_type(const VLC *vlc, const VLCElem *base_table, const char
     do {                                                \
         int i;                                          \
         const size_t array_size = FF_ARRAY_ELEMS(name); \
-        printf(prefix" VLC "#name"[%"FMT"] = {{\n",     \
+        printf(prefix" VLC "#name"[%zu] = {{\n",        \
                array_size);                             \
         for (i = 0; i < array_size; i++) {              \
             write_vlc_type(name + i,                    \
