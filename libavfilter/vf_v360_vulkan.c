@@ -296,6 +296,130 @@ static void config_params(AVFilterContext *ctx, AVFilterLink *inlink)
     return;
 }
 
+static av_cold int calculate_output_size(AVFilterContext *ctx)
+{
+    V360VulkanContext   *s = ctx->priv;
+    FFVulkanContext *vkctx = &s->vkctx;
+    AVFilterLink   *inlink = ctx->inputs[0];
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(s->vkctx.output_format);
+    float sar = inlink->sample_aspect_ratio.num ?
+                (float) inlink->sample_aspect_ratio.num / inlink->sample_aspect_ratio.den : 1;
+    float  wf = (float) s->width;
+    float  hf = (float) s->height;
+    int min_w, min_h, pw, ph;
+
+    if (s->width > 0 && s->height > 0) {
+        if (sar == 1) {
+            vkctx->output_width = s->width;
+        }
+        else {
+            vkctx->output_width = lrint(wf / sar);
+            if (vkctx->output_width % 2 != 0)
+                vkctx->output_width++;
+        }
+        vkctx->output_height = s->height;
+    }
+    else if (s->width > 0 && s->height == 0) {
+        if (sar == 1) {
+            vkctx->output_width = s->width;
+        }
+        else {
+            vkctx->output_width = lrint(wf / sar);
+            if (vkctx->output_width % 2 != 0)
+                vkctx->output_width++;
+        }
+        switch (s->out) {
+        case FLAT:
+            hf = wf * s->pd.iflat_range[1] * 2.f;
+            break;
+        case EQUIRECTANGULAR:
+        case DUAL_FISHEYE:
+            hf = wf * sar / 2.f;
+            break;
+        case STEREOGRAPHIC:
+        case FISHEYE:
+            hf = wf * sar;
+            break;
+        default:
+            break;
+        }
+        vkctx->output_height = lrint(hf);
+        if (vkctx->output_height % 2 != 0)
+            vkctx->output_height++;
+    }
+    else { /* s->width == 0 */
+        vkctx->output_height = s->height;
+        if (s->height == 0) {
+            switch (s->in) {
+            case FLAT:
+                 hf = (float)inlink->h / s->pd.iflat_range[1] / 2.f;
+                break;
+            default:
+                hf = (float)inlink->h;
+                break;
+            }
+            switch (s->out) {
+            case FLAT:
+                hf = (float)inlink->h * s->pd.flat_range[1] * 2.f;
+                break;
+            default:
+                break;
+            }
+            vkctx->output_height = lrint(hf);
+            if (vkctx->output_height % 2 != 0)
+                vkctx->output_height++;
+        }
+        switch (s->out) {
+        case FLAT:
+            wf = hf * s->pd.flat_range[0] * 2.f;
+            break;
+        case EQUIRECTANGULAR:
+        case DUAL_FISHEYE:
+            wf = hf * 2.f;
+            break;
+        case STEREOGRAPHIC:
+        case FISHEYE:
+            wf = hf;
+            break;
+        default:
+            break;
+        }
+        vkctx->output_width = lrint(wf / sar);
+        if (vkctx->output_width % 2 != 0)
+            vkctx->output_width++;
+    }
+
+    if (vkctx->output_width < 1  || vkctx->output_width > INT16_MAX ||
+        vkctx->output_height < 1 || vkctx->output_height > INT16_MAX) {
+        av_log(ctx, AV_LOG_ERROR,
+               "Output dimensions %dx%d are outside the allowed range [1, %d].\n",
+               vkctx->output_width, vkctx->output_height, INT16_MAX);
+        return AVERROR(EINVAL);
+    }
+
+    pw = AV_CEIL_RSHIFT(vkctx->output_width, desc->log2_chroma_w);
+    ph = AV_CEIL_RSHIFT(vkctx->output_height, desc->log2_chroma_h);
+    switch (s->out) {
+    case EQUIRECTANGULAR:
+    case DUAL_FISHEYE:
+        min_w = 2;
+        min_h = 1;
+        break;
+    default:
+        min_w = 1;
+        min_h = 1;
+        break;
+    }
+    if (pw < min_w || ph < min_h) {
+        av_log(ctx, AV_LOG_ERROR,
+               "Output %dx%d is too small for the output projection "
+               "(requires at least %dx%d per plane).\n", pw, ph, min_w, min_h);
+        return AVERROR(EINVAL);
+    }
+
+    return 0;
+}
+
 static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
 {
     int err;
@@ -419,6 +543,7 @@ static av_cold int v360_vulkan_config_output(AVFilterLink *outlink)
     AVFilterLink *inlink = ctx->inputs[0];
 
     config_params(ctx, inlink);
+    RET(calculate_output_size(ctx));
 
     RET(ff_vk_filter_config_output(outlink));
 
