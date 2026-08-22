@@ -1469,20 +1469,6 @@ int main(void){ $func(); }
 EOF
 }
 
-check_mathfunc(){
-    log check_mathfunc "$@"
-    func=$1
-    narg=$2
-    shift 2
-    test $narg = 2 && args="f, g" || args="f"
-    disable $func
-    test_ld "cc" "$@" <<EOF && enable $func
-#include <math.h>
-float foo(float f, float g) { return $func($args); }
-int main(void){ return (int) foo; }
-EOF
-}
-
 check_func_headers(){
     log check_func_headers "$@"
     headers=$1
@@ -2503,38 +2489,6 @@ INTRINSICS_LIST="
     intrinsics_sse2
 "
 
-MATH_FUNCS="
-    atanf
-    atan2f
-    cbrt
-    cbrtf
-    copysign
-    cosf
-    erf
-    exp2
-    exp2f
-    expf
-    hypot
-    isfinite
-    isinf
-    isnan
-    ldexpf
-    llrint
-    llrintf
-    log2
-    log2f
-    log10f
-    lrint
-    lrintf
-    powf
-    rint
-    round
-    roundf
-    sinf
-    trunc
-    truncf
-"
-
 SYSTEM_FEATURES="
     dos_paths
     libc_msvcrt
@@ -2707,7 +2661,6 @@ HAVE_LIST="
     $HAVE_LIST_PUB
     $HEADERS_LIST
     $INTRINSICS_LIST
-    $MATH_FUNCS
     $SYSTEM_FEATURES
     $SYSTEM_FUNCS
     $SYSTEM_LIBRARIES
@@ -7209,16 +7162,6 @@ check_lib libdl dlfcn.h "dlopen dlsym" || check_lib libdl dlfcn.h "dlopen dlsym"
 
 check_lib libm math.h sin -lm
 check_host_lib math.h sin -lm
-
-atan2f_args=2
-copysign_args=2
-hypot_args=2
-ldexpf_args=2
-powf_args=2
-
-for func in $MATH_FUNCS; do
-    eval check_mathfunc $func \${${func}_args:-1} $libm_extralibs
-done
 
 # these are off by default, so fail if requested and not available
 enabled avisynth          && { require_headers "avisynth/avisynth_c.h avisynth/avs/version.h" &&
