@@ -5343,13 +5343,6 @@ probe_cc(){
 
     if $_cc --version 2>&1 | grep -q '^GNU assembler'; then
         true # no-op to avoid reading stdin in following checks
-    elif $_cc -v 2>&1 | grep -q '^gcc.*LLVM'; then
-        _type=llvm_gcc
-        gcc_extra_ver=$(expr "$($_cc --version 2>/dev/null | head -n1)" : '.*\((.*)\)')
-        _ident="llvm-gcc $($_cc -dumpversion 2>/dev/null) $gcc_extra_ver"
-        _depflags='-MMD -MF $(@:.o=.d) -MT $@'
-        _cflags_speed='-O3'
-        _cflags_size='-Os'
     elif $_cc -v 2>&1 | grep -qi ^gcc; then
         _type=gcc
         gcc_version=$($_cc --version | head -n1)
@@ -5604,7 +5597,7 @@ add_asflags $extra_cflags
 
 if test -n "$sysroot"; then
     case "$cc_type" in
-        gcc|llvm_gcc|clang)
+        gcc|clang)
             add_cppflags --sysroot="$sysroot"
             add_ldflags --sysroot="$sysroot"
         ;;
@@ -5616,7 +5609,7 @@ if test "$cpu" = host; then
         warn "--cpu=host makes no sense when cross-compiling."
 
     case "$cc_type" in
-        gcc|llvm_gcc)
+        gcc)
             check_native(){
                 : > $TMPC
                 $cc $1=native -v -c -o $TMPO $TMPC >$TMPE 2>&1 || return
@@ -8118,8 +8111,6 @@ elif enabled gcc; then
             ;;
         esac
     fi
-elif enabled llvm_gcc; then
-    check_allcflags -mllvm -stack-alignment=16
 elif enabled clang; then
     if enabled x86_32; then
         # Clang doesn't support maintaining alignment without assuming the
