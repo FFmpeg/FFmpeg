@@ -2637,7 +2637,6 @@ TOOLCHAIN_FEATURES="
     as_func
     as_object_arch
     asm_mod_q
-    blocks_extension
     ebx_available
     gnu_as
     gnu_windres
@@ -7977,10 +7976,6 @@ check_disable_warning_headers(){
 
 check_disable_warning_headers -Wno-deprecated-declarations
 check_disable_warning_headers -Wno-unused-variable
-
-test_cc <<EOF && enable blocks_extension
-void (^block)(void);
-EOF
 
 # add some linker flags
 check_ldflags -Wl,-rpath-link=:libswresample:libswscale:libavfilter:libavdevice:libavformat:libavcodec:libavutil
