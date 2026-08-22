@@ -5380,13 +5380,6 @@ probe_cc(){
         _cflags_speed='-O5'
         _cflags_size='-O5 -xspace'
         _flags_filter=suncc_flags
-    elif $_cc -v 2>&1 | grep -q Open64; then
-        _type=open64
-        _ident=$($_cc -v 2>&1 | head -n1 | tr -d :)
-        _depflags='-MMD -MF $(@:.o=.d) -MT $@'
-        _cflags_speed='-O2'
-        _cflags_size='-Os'
-        _flags_filter='filter_out -Wdisabled-optimization|-Wtype-limits|-fno-signed-zeros'
     elif $_cc 2>&1 | grep -q 'Microsoft.*ARM.*Assembler'; then
         _type=armasm
         _ident=$($_cc | head -n1)
