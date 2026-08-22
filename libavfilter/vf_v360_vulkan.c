@@ -83,6 +83,9 @@ static void multiply_matrix(float c[4][4], const float a[4][4], const float b[4]
     }
 }
 
+#define degree2radian(degree) ((degree) * M_PI / 180.f)
+#define radian2degree(radian) ((radian) * 180.f / M_PI)
+
 static inline void calculate_iflat_range(int in, float ih_fov, float iv_fov,
                                          float *iflat_range)
 {
@@ -161,9 +164,101 @@ static inline void calculate_rotation_matrix(float yaw, float pitch, float roll,
     multiply_matrix(rot_mat, temp, m[rotation_order[2]]);
 }
 
-static void config_params(AVFilterContext *ctx)
+static void config_params(AVFilterContext *ctx, AVFilterLink *inlink)
 {
     V360VulkanContext *s = ctx->priv;
+
+    switch (s->in) {
+    case FLAT: {
+        float sar = inlink->sample_aspect_ratio.num ?
+                    (float) inlink->sample_aspect_ratio.num / inlink->sample_aspect_ratio.den : 1;
+        if (s->ih_fov == 0.f && s->iv_fov == 0.f) {
+            s->ih_fov = 90.f;
+            s->iv_fov = radian2degree(2.f * atanf((float)inlink->h / sar / inlink->w));
+        }
+        else if (s->ih_fov == 0.f || s->ih_fov >= 180.f) {
+            if (s->iv_fov >= 180.f)
+                s->ih_fov = s->iv_fov = 180.f;
+            else
+                s->iv_fov = radian2degree(2.f * atanf((float)inlink->h / sar / inlink->w * tanf(degree2radian(s->ih_fov) / 2.f)));
+        }
+        else if (s->iv_fov == 0.f || s->iv_fov >= 180.f) {
+            if (s->ih_fov >= 180.f)
+                s->ih_fov = s->iv_fov = 180.f;
+            else
+                s->ih_fov = radian2degree(2.f * atanf((float)inlink->w * sar / inlink->h * tanf(degree2radian(s->iv_fov) / 2.f)));
+        }
+        break;
+    }
+    case STEREOGRAPHIC:
+    case DUAL_FISHEYE:
+    case FISHEYE:
+        if (s->ih_fov == 0.f)
+            s->ih_fov = 180.f;
+        if (s->iv_fov == 0.f)
+            s->iv_fov = 180.f;
+        break;
+    case EQUIRECTANGULAR: /* unchangeable */
+        s->ih_fov = 360.f;
+        s->iv_fov = 180.f;
+        break;
+    default:
+        if (s->ih_fov == 0.f)
+            s->ih_fov = 360.f;
+        if (s->iv_fov == 0.f)
+            s->iv_fov = 180.f;
+        break;
+    }
+
+    switch (s->out) {
+    case FLAT:
+        if (s->width > 0 && s->height > 0 &&
+            (s->h_fov == 0.f || s->h_fov >= 180.f || s->v_fov == 0.f || s->v_fov >= 180.f)) {
+            if (s->h_fov == 0.f && s->v_fov == 0.f) {
+                s->h_fov = 90.f;
+                s->v_fov = radian2degree(2.f * atanf((float)s->height / s->width));
+            }
+            else if (s->h_fov == 0.f || s->h_fov >= 180.f) {
+                if (s->v_fov >= 180.f)
+                    s->h_fov = s->v_fov = 180.f;
+                else
+                    s->v_fov = radian2degree(2.f * atanf((float)s->height / s->width * tanf(degree2radian(s->h_fov) / 2.f)));
+            }
+            else if (s->v_fov == 0.f || s->v_fov >= 180.f) {
+                if (s->h_fov >= 180.f)
+                    s->h_fov = s->v_fov = 180.f;
+                else
+                    s->h_fov = radian2degree(2.f * atanf((float)s->width / s->height * tanf(degree2radian(s->v_fov) / 2.f)));
+            }
+        }
+        else {
+            if (s->h_fov >= 180.f || s->v_fov >= 180.f) {
+                s->h_fov = 180.f;
+                s->v_fov = 180.f;
+            }
+            else {
+                if (s->h_fov == 0.f)
+                    s->h_fov = 90.f;
+                if (s->v_fov == 0.f)
+                    s->v_fov = 45.f;
+            }
+        }
+        break;
+    case STEREOGRAPHIC:
+    case DUAL_FISHEYE:
+    case FISHEYE:
+        if (s->h_fov == 0.f)
+            s->h_fov = 180.f;
+        if (s->v_fov == 0.f)
+            s->v_fov = 180.f;
+        break;
+    default:
+        if (s->h_fov == 0.f)
+            s->h_fov = 360.f;
+        if (s->v_fov == 0.f)
+            s->v_fov = 180.f;
+        break;
+    }
 
     for (int order = 0; order < NB_RORDERS; order++) {
         const char c = s->rorder[order];
@@ -308,9 +403,10 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
                            char *res, int res_len, int flags)
 {
     int err;
+    AVFilterLink *inlink = ctx->inputs[0];
 
     RET(ff_filter_process_command(ctx, cmd, args, res, res_len, flags));
-    config_params(ctx);
+    config_params(ctx, inlink);
 
 fail:
     return err;
@@ -320,8 +416,9 @@ static av_cold int v360_vulkan_config_output(AVFilterLink *outlink)
 {
     int err;
     AVFilterContext *ctx = outlink->src;
+    AVFilterLink *inlink = ctx->inputs[0];
 
-    config_params(ctx);
+    config_params(ctx, inlink);
 
     RET(ff_vk_filter_config_output(outlink));
 
@@ -373,10 +470,10 @@ static const AVOption v360_vulkan_options[] = {
     {     "pitch", "pitch rotation",                   OFFSET(pitch), AV_OPT_TYPE_FLOAT,  {.dbl = 0.0f},     -180.f,               180.f, DYNAMIC, "pitch" },
     {      "roll", "roll rotation",                     OFFSET(roll), AV_OPT_TYPE_FLOAT,  {.dbl = 0.0f},     -180.f,               180.f, DYNAMIC, "roll" },
     {    "rorder", "rotation order",                  OFFSET(rorder), AV_OPT_TYPE_STRING, {.str = "ypr"},         0,                   0, DYNAMIC, "rorder" },
-    {     "h_fov", "set output horizontal FOV angle",  OFFSET(h_fov), AV_OPT_TYPE_FLOAT,  {.dbl = 90.0f},  0.00001f,              360.0f, DYNAMIC, "h_fov" },
-    {     "v_fov", "set output vertical FOV angle",    OFFSET(v_fov), AV_OPT_TYPE_FLOAT,  {.dbl = 45.0f},  0.00001f,              360.0f, DYNAMIC, "v_fov" },
-    {    "ih_fov", "set input horizontal FOV angle",  OFFSET(ih_fov), AV_OPT_TYPE_FLOAT,  {.dbl = 90.0f},  0.00001f,              360.0f, DYNAMIC, "ih_fov" },
-    {    "iv_fov", "set input vertical FOV angle",    OFFSET(iv_fov), AV_OPT_TYPE_FLOAT,  {.dbl = 45.0f},  0.00001f,              360.0f, DYNAMIC, "iv_fov" },
+    {     "h_fov", "set output horizontal FOV angle",  OFFSET(h_fov), AV_OPT_TYPE_FLOAT,  {.dbl = 0.0f},       0.0f,              360.0f, DYNAMIC, "h_fov" },
+    {     "v_fov", "set output vertical FOV angle",    OFFSET(v_fov), AV_OPT_TYPE_FLOAT,  {.dbl = 0.0f},       0.0f,              360.0f, DYNAMIC, "v_fov" },
+    {    "ih_fov", "set input horizontal FOV angle",  OFFSET(ih_fov), AV_OPT_TYPE_FLOAT,  {.dbl = 0.0f},       0.0f,              360.0f, DYNAMIC, "ih_fov" },
+    {    "iv_fov", "set input vertical FOV angle",    OFFSET(iv_fov), AV_OPT_TYPE_FLOAT,  {.dbl = 0.0f},       0.0f,              360.0f, DYNAMIC, "iv_fov" },
 
     { NULL },
 };
