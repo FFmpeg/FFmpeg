@@ -500,6 +500,128 @@ static void check_loop_filter_intra(void)
     }
 }
 
+// neon fails at edge cases
+#define H264_CHECK_WEIGHT (!ARCH_ARM && !ARCH_AARCH64)
+
+#if H264_CHECK_WEIGHT
+static void check_weight(void)
+{
+    LOCAL_ALIGNED_16(uint8_t, dst, [32 * 32 * 2]);
+    LOCAL_ALIGNED_16(uint8_t, dst0, [32 * 32 * 2]);
+    LOCAL_ALIGNED_16(uint8_t, dst1, [32 * 32 * 2]);
+    H264DSPContext h;
+    declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *dst, ptrdiff_t stride,
+                      int height, int log2_denom, int weight, int offset);
+
+    for (int bit_depth = 8; bit_depth <= 10; bit_depth += 2) {
+        ff_h264dsp_init(&h, bit_depth, 1);
+        uint32_t mask = pixel_mask[bit_depth - 8];
+        for (int w = 16; w >= 2; w >>= 1) {
+            int idx = 4 - av_log2(w);
+
+            if (check_func(h.weight_pixels_tab[idx], "weight_%dx%d_%d",
+                           w, 16, bit_depth)) {
+                for (int hgt = 16; hgt >= 2; hgt >>= 1) {
+                    for (int i = 0; i < 32; i++) {
+                        int stride = 32 * SIZEOF_PIXEL;
+                        int log2_denom = rnd() % 8;
+                        int weight = (rnd() % 256) - 128;
+                        int offset = (rnd() % 256) - 128;
+
+                        memset(dst, 0, 32 * 32 * 2);
+                        for (int y = 0; y < hgt; y++) {
+                            for (int x = 0; x < w * SIZEOF_PIXEL; x += 4) {
+                                AV_WN32A(dst + y * stride + x, rnd() & mask);
+                            }
+                        }
+                        memcpy(dst0, dst, 32 * 32 * 2);
+                        memcpy(dst1, dst, 32 * 32 * 2);
+                        call_ref(dst0, stride, hgt, log2_denom, weight, offset);
+                        call_new(dst1, stride, hgt, log2_denom, weight, offset);
+                        if (memcmp(dst0, dst1, 32 * 32 * 2))
+                            fail();
+                        bench_new(dst, stride, hgt, log2_denom, weight, offset);
+                    }
+                }
+            }
+        }
+    }
+}
+#endif
+
+// only arch that can pass test
+#define H264_CHECK_BIWEIGHT ARCH_X86
+
+#if H264_CHECK_BIWEIGHT
+static void check_biweight(void)
+{
+    LOCAL_ALIGNED_16(uint8_t, dst, [32 * 32 * 2]);
+    LOCAL_ALIGNED_16(uint8_t, dst0, [32 * 32 * 2]);
+    LOCAL_ALIGNED_16(uint8_t, dst1, [32 * 32 * 2]);
+    LOCAL_ALIGNED_16(uint8_t, src, [32 * 32 * 2]);
+    LOCAL_ALIGNED_16(uint8_t, src0, [32 * 32 * 2]);
+    LOCAL_ALIGNED_16(uint8_t, src1, [32 * 32 * 2]);
+    H264DSPContext h;
+    declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *dst, uint8_t *src,
+                      ptrdiff_t stride, int height, int log2_denom,
+                      int weightd, int weights, int offset);
+
+    for (int bit_depth = 8; bit_depth <= 10; bit_depth += 2) {
+        uint32_t mask = pixel_mask[bit_depth - 8];
+        ff_h264dsp_init(&h, bit_depth, 1);
+        for (int w = 16; w >= 2; w >>= 1) {
+            int idx = 4 - av_log2(w);
+
+            if (check_func(h.biweight_pixels_tab[idx], "biweight_%dx%d_%d",
+                           w, 16, bit_depth)) {
+                for (int hgt = 16; hgt >= 2; hgt >>= 1) {
+                    for (int i = 0; i < 32; i++) {
+                        int stride = 32 * SIZEOF_PIXEL;
+                        // Spec allows for 0 <= log2_denom <= 7 regardless
+                        // of bit depth, but x86 asm impl. is bit accurate
+                        // only up to 6 for 8bpp.
+                        //
+                        // In practice, log2_denom > 3 is rarely used.
+                        int max_log2_denom_8b = 6;
+                        int log2_denom = rnd() %
+                            (bit_depth == 8 ? (max_log2_denom_8b + 1) : 8);
+
+                        int weightd, weights;
+                        do {
+                            weightd = rnd() % 256 - 128;
+                            weights = rnd() % 256 - 128;
+                        } while (weightd + weights < -128 ||
+                                 weightd + weights > (log2_denom == 7 ? 127 : 128));
+                        int offset = (rnd() % 256 - 128) + (rnd() % 256 - 128);
+
+                        memset(dst, 0, 32 * 32 * 2);
+                        memset(src, 0, 32 * 32 * 2);
+                        for (int y = 0; y < hgt; y++) {
+                            for (int x = 0; x < w * SIZEOF_PIXEL; x += 4) {
+                                AV_WN32A(dst + y * stride + x, rnd() & mask);
+                                AV_WN32A(src + y * stride + x, rnd() & mask);
+                            }
+                        }
+                        memcpy(dst0, dst, 32 * 32 * 2);
+                        memcpy(dst1, dst, 32 * 32 * 2);
+                        memcpy(src0, src, 32 * 32 * 2);
+                        memcpy(src1, src, 32 * 32 * 2);
+                        call_ref(dst0, src0, stride, hgt, log2_denom, weightd,
+                                 weights, offset);
+                        call_new(dst1, src1, stride, hgt, log2_denom, weightd,
+                                 weights, offset);
+                        if (memcmp(dst0, dst1, 32 * 32 * 2))
+                            fail();
+                        bench_new(dst, src, stride, hgt, log2_denom, weightd,
+                                  weights, offset);
+                    }
+                }
+            }
+        }
+    }
+}
+#endif
+
 void checkasm_check_h264dsp(void)
 {
     check_idct();
@@ -512,4 +634,14 @@ void checkasm_check_h264dsp(void)
 
     check_loop_filter_intra();
     report("loop_filter_intra");
+
+#if H264_CHECK_WEIGHT
+    check_weight();
+    report("weight");
+#endif
+
+#if H264_CHECK_BIWEIGHT
+    check_biweight();
+    report("biweight");
+#endif
 }

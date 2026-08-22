@@ -54,8 +54,10 @@ SECTION .text
     movd       m2, r3m
     pslld      m0, m2       ; 1<<log2_denom
     SPLATW     m0, m0
+    add        r4w, r4w
+    movzx      r4d, r4w
     shl        r5, 19       ; *8, move to upper half of dword
-    lea        r5, [r5+r4*2+0x10000]
+    lea        r5, [r5+r4+0x10000]
     movd       m3, r5d      ; weight<<1 | 1+(offset<<(3))
     pshufd     m3, m3, 0
     mova       m4, [pw_pixel_max]
@@ -82,7 +84,7 @@ SECTION .text
     psrad       m6, m2
 %if cpuflag(sse4)
     packusdw    m5, m6
-    pminsw      m5, m4
+    pminuw      m5, m4
 %else
     packssdw    m5, m6
     CLIPW       m5, m7, m4
@@ -176,6 +178,7 @@ DECLARE_REG_TMP 7
 %macro BIWEIGHT_SETUP 0
     lea        t0, [t0*4+1] ; (offset<<2)+1
     or         t0, 1
+    and       r5d, 0xFFFF
     shl        r6, 16
     or         r5, r6
     movd       m4, r5d      ; weightd | weights
@@ -214,7 +217,7 @@ DECLARE_REG_TMP 7
     psrad      m2, m6
 %if cpuflag(sse4)
     packusdw   m0, m2
-    pminsw     m0, m3
+    pminuw     m0, m3
 %else
     packssdw   m0, m2
     CLIPW      m0, m7, m3
