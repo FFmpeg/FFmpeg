@@ -44,21 +44,21 @@ SECTION .text
     movd       m6, r3d
     pslld      m5, m6
     psrld      m5, 1
-%if mmsize == 16
     pshuflw    m3, m3, 0
     pshuflw    m5, m5, 0
     punpcklqdq m3, m3
     punpcklqdq m5, m5
-%else
-    pshufw     m3, m3, 0
-    pshufw     m5, m5, 0
-%endif
     pxor       m7, m7
 %endmacro
 
-%macro WEIGHT_OP 2
+%macro WEIGHT_OP 3
+%if %3 == 4
+    movd          m0, [r0+%1]
+    movd          m1, [r0+%2]
+%else
     movh          m0, [r0+%1]
     movh          m1, [r0+%2]
+%endif
     punpcklbw     m0, m7
     punpcklbw     m1, m7
     pmullw        m0, m3
@@ -70,11 +70,11 @@ SECTION .text
     packuswb      m0, m1
 %endmacro
 
-%macro WEIGHT_FUNC_MM 2
-cglobal h264_weight_%1, 6, 6, %2
+%macro WEIGHT_FUNC_MM 1
+cglobal h264_weight_%1, 6, 6, 8
     WEIGHT_SETUP
 .nextrow:
-    WEIGHT_OP 0, mmsize/2
+    WEIGHT_OP 0, mmsize/2, %1
     mova     [r0], m0
     add        r0, r1
     dec        r2d
@@ -83,21 +83,22 @@ cglobal h264_weight_%1, 6, 6, %2
 %endmacro
 
 INIT_XMM sse2
-WEIGHT_FUNC_MM 16, 8
+WEIGHT_FUNC_MM 16
 
-%macro WEIGHT_FUNC_HALF_MM 2
-cglobal h264_weight_%1, 6, 6, %2
+%macro WEIGHT_FUNC_HALF_MM 1
+cglobal h264_weight_%1, 6, 6, 8
     WEIGHT_SETUP
     sar       r2d, 1
     lea        r3, [r1*2]
 .nextrow:
-    WEIGHT_OP 0, r1
+    WEIGHT_OP 0, r1, %1
+%if %1 > 4
     movh     [r0], m0
-%if mmsize == 16
     movhps   [r0+r1], m0
 %else
-    psrlq      m0, 32
-    movh     [r0+r1], m0
+    movd     [r0], m0
+    psrldq     m0, 8
+    movd     [r0+r1], m0
 %endif
     add        r0, r3
     dec        r2d
@@ -105,10 +106,10 @@ cglobal h264_weight_%1, 6, 6, %2
     RET
 %endmacro
 
-INIT_MMX mmxext
-WEIGHT_FUNC_HALF_MM 4, 0
 INIT_XMM sse2
-WEIGHT_FUNC_HALF_MM 8, 8
+WEIGHT_FUNC_HALF_MM 4
+INIT_XMM sse2
+WEIGHT_FUNC_HALF_MM 8
 
 %macro BIWEIGHT_SETUP 0
 %if ARCH_X86_64
@@ -149,18 +150,12 @@ WEIGHT_FUNC_HALF_MM 8, 8
     punpcklqdq m5, m5
 
 %else
-%if mmsize == 16
     pshuflw    m3, m3, 0
     pshuflw    m4, m4, 0
     pshuflw    m5, m5, 0
     punpcklqdq m3, m3
     punpcklqdq m4, m4
     punpcklqdq m5, m5
-%else
-    pshufw     m3, m3, 0
-    pshufw     m4, m4, 0
-    pshufw     m5, m5, 0
-%endif
     pxor       m7, m7
 %endif
 %endmacro
@@ -206,6 +201,28 @@ BIWEIGHT_FUNC_MM 16, 8
 cglobal h264_biweight_%1, 7, 8, %2
     BIWEIGHT_SETUP
     movifnidn r3d, r3m
+%if %1 == 4
+    ; for 4 with sse2, process 1 row at a time
+.nextrow:
+    movd       m0, [r0]
+    movd       m1, [r1]
+%if cpuflag(ssse3)
+    punpcklbw  m0, m1
+    pmaddubsw  m0, m4
+%else
+    punpcklbw  m0, m7
+    punpcklbw  m1, m7
+    pmullw     m0, m3
+    pmullw     m1, m4
+    paddsw     m0, m1
+%endif
+    paddsw     m0, m5
+    psraw      m0, m6
+    packuswb   m0, m0
+    movd       [r0], m0
+    add        r0, r2
+    add        r1, r2
+%else
     sar       r3d, 1
     lea        r4, [r2*2]
 .nextrow:
@@ -213,21 +230,19 @@ cglobal h264_biweight_%1, 7, 8, %2
     BIWEIGHT_STEPA 1, 2, r2
     BIWEIGHT_STEPB
     movh       [r0], m0
-%if mmsize == 16
     movhps     [r0+r2], m0
-%else
-    psrlq      m0, 32
-    movh       [r0+r2], m0
-%endif
     add        r0, r4
     add        r1, r4
+%endif
     dec        r3d
     jnz .nextrow
     RET
 %endmacro
 
-INIT_MMX mmxext
-BIWEIGHT_FUNC_HALF_MM 4, 0
+INIT_XMM sse2
+BIWEIGHT_FUNC_HALF_MM 4, 8
+INIT_XMM ssse3
+BIWEIGHT_FUNC_HALF_MM 4, 7
 INIT_XMM sse2
 BIWEIGHT_FUNC_HALF_MM 8, 8
 

@@ -510,8 +510,8 @@ static void check_weight(void)
     LOCAL_ALIGNED_16(uint8_t, dst0, [32 * 32 * 2]);
     LOCAL_ALIGNED_16(uint8_t, dst1, [32 * 32 * 2]);
     H264DSPContext h;
-    declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *dst, ptrdiff_t stride,
-                      int height, int log2_denom, int weight, int offset);
+    declare_func(void, uint8_t *dst, ptrdiff_t stride, int height,
+                 int log2_denom, int weight, int offset);
 
     for (int bit_depth = 8; bit_depth <= 10; bit_depth += 2) {
         ff_h264dsp_init(&h, bit_depth, 1);
@@ -562,9 +562,8 @@ static void check_biweight(void)
     LOCAL_ALIGNED_16(uint8_t, src0, [32 * 32 * 2]);
     LOCAL_ALIGNED_16(uint8_t, src1, [32 * 32 * 2]);
     H264DSPContext h;
-    declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *dst, uint8_t *src,
-                      ptrdiff_t stride, int height, int log2_denom,
-                      int weightd, int weights, int offset);
+    declare_func(void, uint8_t *dst, uint8_t *src, ptrdiff_t stride, int height,
+                 int log2_denom, int weightd, int weights, int offset);
 
     for (int bit_depth = 8; bit_depth <= 10; bit_depth += 2) {
         uint32_t mask = pixel_mask[bit_depth - 8];
