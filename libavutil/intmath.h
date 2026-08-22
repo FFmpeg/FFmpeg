@@ -35,14 +35,14 @@
 #endif
 
 #if HAVE_FAST_CLZ
-#if AV_GCC_VERSION_AT_LEAST(3,4) || AV_HAS_BUILTIN(__builtin_clz)
+#if defined(__GNUC__) || AV_HAS_BUILTIN(__builtin_clz)
 #ifndef ff_log2
 #   define ff_log2(x) (31 - __builtin_clz((x)|1))
 #   ifndef ff_log2_16bit
 #      define ff_log2_16bit av_log2
 #   endif
 #endif /* ff_log2 */
-#endif /* AV_GCC_VERSION_AT_LEAST(3,4) */
+#endif /* defined(__GNUC__) || AV_HAS_BUILTIN(__builtin_clz) */
 #endif
 
 extern const uint8_t ff_log2_tab[256];
@@ -90,13 +90,13 @@ static av_always_inline av_const int ff_log2_16bit_c(unsigned int v)
  */
 
 #if HAVE_FAST_CLZ
-#if !defined(ff_ctz) && (AV_GCC_VERSION_AT_LEAST(3,4) || AV_HAS_BUILTIN(__builtin_ctz))
+#if !defined(ff_ctz) && (defined(__GNUC__) || AV_HAS_BUILTIN(__builtin_ctz))
 #define ff_ctz(v) __builtin_ctz(v)
 #endif
-#if !defined(ff_ctzll) && (AV_GCC_VERSION_AT_LEAST(3,4) || AV_HAS_BUILTIN(__builtin_ctzll))
+#if !defined(ff_ctzll) && (defined(__GNUC__) || AV_HAS_BUILTIN(__builtin_ctzll))
 #define ff_ctzll(v) __builtin_ctzll(v)
 #endif
-#if !defined(ff_clz) && (AV_GCC_VERSION_AT_LEAST(3,4) || AV_HAS_BUILTIN(__builtin_clz))
+#if !defined(ff_clz) && (defined(__GNUC__) || AV_HAS_BUILTIN(__builtin_clz))
 #define ff_clz(v) __builtin_clz(v)
 #endif
 #endif
@@ -152,7 +152,7 @@ static av_always_inline av_const unsigned ff_clz_c(unsigned x)
 }
 #endif
 
-#if AV_GCC_VERSION_AT_LEAST(3,4) || AV_HAS_BUILTIN(__builtin_parity)
+#if defined(__GNUC__) || AV_HAS_BUILTIN(__builtin_parity)
 #ifndef av_parity
 #define av_parity __builtin_parity
 #endif
