@@ -8018,9 +8018,7 @@ if enabled icc; then
     # The test above does not test linking
     [ -n "$lto" ] && disable symver_asm_label
     if enabled x86_32; then
-        icc_version=$($cc -dumpversion)
-        test ${icc_version%%.*} -ge 11 &&
-            check_cppflags -falign-stack=maintain-16-byte ||
+        check_cppflags -falign-stack=maintain-16-byte ||
             disable aligned_stack
     fi
 elif enabled gcc; then
