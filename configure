@@ -5200,18 +5200,6 @@ armasm_flags(){
    done
 }
 
-cparser_flags(){
-    for flag; do
-        case $flag in
-            -Wno-switch)             echo -Wno-switch-enum ;;
-            -Wno-format-zero-length) ;;
-            -Wdisabled-optimization) ;;
-            -Wno-pointer-sign)       echo -Wno-other ;;
-            *)                       echo $flag ;;
-        esac
-    done
-}
-
 msvc_common_flags(){
     for flag; do
         case $flag in
@@ -5456,13 +5444,6 @@ probe_cc(){
         _flags='-nologo'
         _cxxflags='-Zc:__cplusplus -EHsc'
         disable stripping
-    elif $_cc --version 2>/dev/null | grep -q ^cparser; then
-        _type=cparser
-        _ident=$($_cc --version | head -n1)
-        _depflags='-MMD'
-        _cflags_speed='-O4'
-        _cflags_size='-O2'
-        _flags_filter=cparser_flags
     fi
 
     eval ${pfx}_type=\$_type
@@ -8105,9 +8086,6 @@ elif enabled clang; then
     check_allcflags -Werror=implicit-function-declaration
     check_allcflags -Werror=missing-prototypes
     check_allcflags -Werror=return-type
-elif enabled cparser; then
-    add_cflags -Wno-missing-variable-declarations
-    add_cflags -Wno-empty-statement
 elif enabled_any msvc icl; then
     enabled x86_32 && disable aligned_stack
     enabled_all x86_32 debug && add_cflags -Oy-
