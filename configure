@@ -5365,22 +5365,6 @@ probe_cc(){
         _ident=$($_cc -qversion 2>/dev/null | head -n1)
         _cflags_speed='-O5'
         _cflags_size='-O5 -qcompact'
-    elif $_cc --vsn 2>/dev/null | grep -Eq "ARM (C/C\+\+ )?Compiler"; then
-        test -d "$sysroot" || die "No valid sysroot specified."
-        _type=armcc
-        _ident=$($_cc --vsn | grep -i build | head -n1 | sed 's/.*: //')
-        armcc_conf="$PWD/armcc.conf"
-        $_cc --arm_linux_configure                 \
-             --arm_linux_config_file="$armcc_conf" \
-             --configure_sysroot="$sysroot"        \
-             --configure_cpp_headers="$sysinclude" >>$logfile 2>&1 ||
-             die "Error creating armcc configuration file."
-        $_cc --vsn | grep -q RVCT && armcc_opt=rvct || armcc_opt=armcc
-        _flags="--arm_linux_config_file=$armcc_conf --translate_gcc"
-        as_default="${cross_prefix}gcc"
-        _depflags='-MMD'
-        _cflags_speed='-O3'
-        _cflags_size='-Os'
     elif $_cc -v 2>&1 | grep -q clang && ! $_cc -? > /dev/null 2>&1; then
         _type=clang
         _ident=$($_cc --version 2>/dev/null | head -n1)
@@ -8138,16 +8122,6 @@ elif enabled clang; then
 elif enabled cparser; then
     add_cflags -Wno-missing-variable-declarations
     add_cflags -Wno-empty-statement
-elif enabled armcc; then
-    add_cflags -W${armcc_opt},--diag_suppress=4343 # hardfp compat
-    add_cflags -W${armcc_opt},--diag_suppress=3036 # using . as system include dir
-    # 2523: use of inline assembly is deprecated
-    add_cflags -W${armcc_opt},--diag_suppress=2523
-    add_cflags -W${armcc_opt},--diag_suppress=1207
-    add_cflags -W${armcc_opt},--diag_suppress=1293 # assignment in condition
-    add_cflags -W${armcc_opt},--diag_suppress=3343 # hardfp compat
-    add_cflags -W${armcc_opt},--diag_suppress=167  # pointer sign
-    add_cflags -W${armcc_opt},--diag_suppress=513  # pointer sign
 elif enabled pathscale; then
     add_cflags -fstrict-overflow -OPT:wrap_around_unsafe_opt=OFF
     disable inline_asm
