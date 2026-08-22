@@ -29,9 +29,7 @@
 #include "libavutil/x86/asm.h"
 #include "config.h"
 
-#if   (defined(__i386) && defined(__clang__) && (__clang_major__<2 || (__clang_major__==2 && __clang_minor__<10)))\
-   || (                  !defined(__clang__) && defined(__llvm__) && __GNUC__==4 && __GNUC_MINOR__==2 && __GNUC_PATCHLEVEL__<=1)\
-   || (defined(__INTEL_COMPILER) && defined(_MSC_VER))
+#if defined(__INTEL_COMPILER) && defined(_MSC_VER)
 #       define BROKEN_COMPILER 1
 #else
 #       define BROKEN_COMPILER 0
