@@ -4996,13 +4996,8 @@ case "$toolchain" in
         esac
     ;;
     msvc)
-        cl_major_ver=$(cl.exe 2>&1 | sed -n 's/.*Version \([[:digit:]]\{1,\}\)\..*/\1/p')
-        if [ -z "$cl_major_ver" ] || [ $cl_major_ver -ge 18 ]; then
-            cc_default="cl.exe"
-            cxx_default="cl.exe"
-        else
-            die "Unsupported MSVC version (2013 or newer required)"
-        fi
+        cc_default="cl.exe"
+        cxx_default="cl.exe"
         ld_default="$source_path/compat/windows/mslink"
         windres_default="$source_path/compat/windows/mswindres"
         nm_default="dumpbin.exe -symbols"
