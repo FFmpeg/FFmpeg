@@ -6460,10 +6460,6 @@ probe_libc(){
     # MinGW64 is backwards compatible with MinGW32, so check for it first.
     elif test_${pfx}cpp_condition _mingw.h "defined __MINGW64_VERSION_MAJOR"; then
         eval ${pfx}libc_type=mingw64
-        if test_${pfx}cpp_condition _mingw.h "__MINGW64_VERSION_MAJOR < 3"; then
-            add_compat msvcrt/snprintf.o
-            add_allcflags "-include $source_path/compat/msvcrt/snprintf.h"
-        fi
         add_${pfx}cflags -U__STRICT_ANSI__
         if ! test_${pfx}cpp_condition crtdefs.h "defined(_UCRT)"; then
             add_${pfx}cppflags -D__USE_MINGW_ANSI_STDIO=1
