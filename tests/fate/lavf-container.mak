@@ -74,6 +74,7 @@ fate-lavf-container fate-lavf: $(FATE_LAVF_CONTAINER)
 FATE_LAVF_CONTAINER_FATE-$(call CRC, APV MOV,,           APV_PARSER MP4_MUXER) += apv.mp4
 FATE_LAVF_CONTAINER_FATE-$(call CRC, IVF MOV, AV1,       AV1_PARSER EXTRACT_EXTRADATA_BSF MP4_MUXER)      += av1.mp4
 FATE_LAVF_CONTAINER_FATE-$(call CRC, IVF MATROSKA, AV1,  AV1_PARSER EXTRACT_EXTRADATA_BSF MATROSKA_MUXER) += av1.mkv
+FATE_LAVF_CONTAINER_FATE-$(call CRC, MOV EAC3,,          AC3_PARSER MP4_MUXER) += eac3.mp4
 FATE_LAVF_CONTAINER_FATE-$(call CRC, MOV EVC,,           EVC_PARSER MP4_MUXER) += evc.mp4
 FATE_LAVF_CONTAINER_FATE-$(call CRC, MOV H264,,          H264_PARSER EXTRACT_EXTRADATA_BSF MP4_MUXER) += h264.mp4
 FATE_LAVF_CONTAINER_FATE-$(call CRC, MOV HEVC,,          HEVC_PARSER EXTRACT_EXTRADATA_BSF MP4_MUXER) += hevc.mp4
@@ -97,6 +98,7 @@ $(FATE_LAVF_CONTAINER_FATE): $(AREF) $(VREF)
 fate-lavf-fate-apv.mp4: CMD = lavf_container_fate "apv/profile_422-10.apv" "" "" "-c:v copy"
 fate-lavf-fate-av1.mp4: CMD = lavf_container_fate "av1-test-vectors/av1-1-b8-05-mv.ivf" "-c:v av1" "" "-c:v copy"
 fate-lavf-fate-av1.mkv: CMD = lavf_container_fate "av1-test-vectors/av1-1-b8-05-mv.ivf" "-c:v av1" "" "-c:v copy"
+fate-lavf-fate-eac3.mp4: CMD = lavf_container_fate "eac3/the_great_wall_7.1.eac3" "" "" "-c:a copy"
 fate-lavf-fate-evc.mp4: CMD = lavf_container_fate "evc/akiyo_cif.evc" "" "" "-c:v copy"
 fate-lavf-fate-h264.mp4: CMD = lavf_container_fate "h264/intra_refresh.h264" "" "" "-c:v copy"
 fate-lavf-fate-hevc.mp4: CMD = lavf_container_fate "hevc-conformance/HRD_A_Fujitsu_2.bit" "" "" "-c:v copy"
