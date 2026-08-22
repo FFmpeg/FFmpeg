@@ -8199,26 +8199,9 @@ elif enabled_any msvc icl; then
             disable ebx_available
         fi
     fi
-    # msvcrt10 x64 incorrectly enables log2, only msvcrt12 (MSVC 2013) onwards actually has log2.
-    check_cpp_condition log2 crtversion.h "_VC_CRT_MAJOR_VERSION >= 12"
-    # the new SSA optimizer in VS2015 U3 is mis-optimizing some parts of the code
-    # Issue has been fixed in MSVC v19.00.24218.
-    test_cpp_condition windows.h "_MSC_FULL_VER >= 190024218" ||
-        check_cflags -d2SSAOptimizer-
-    # enable utf-8 source processing on VS2015 U2 and newer
-    test_cpp_condition windows.h "_MSC_FULL_VER >= 190023918" &&
-        add_cflags -utf-8
+    # enable utf-8 source processing
+    check_cflags -utf-8
 fi
-
-for pfx in "" host_; do
-    varname=${pfx%_}cc_type
-    eval "type=\$$varname"
-    if [ "$type" = "msvc" ]; then
-        test_${pfx}cc <<EOF || add_${pfx}cflags -Dinline=__inline
-static inline int foo(int a) { return a; }
-EOF
-    fi
-done
 
 case $as_type in
     clang)
