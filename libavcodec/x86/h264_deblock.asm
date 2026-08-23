@@ -271,9 +271,9 @@ cglobal deblock_h_luma_8, 5,9,8,0x60+16*WIN64
 
     ; transpose 6x16 -> tmp space
     TRANSPOSE6x8_MEM  PASS8ROWS(r6, r5, r1, r8), pix_tmp
-    lea    r6, [r6+r1*8]
+    lea    r0, [r6+r1*8]
     lea    r5, [r5+r1*8]
-    TRANSPOSE6x8_MEM  PASS8ROWS(r6, r5, r1, r8), pix_tmp+8
+    TRANSPOSE6x8_MEM  PASS8ROWS(r0, r5, r1, r8), pix_tmp+8
 
     ; vertical filter
     ; alpha, beta, tc0 are still in r2d, r3d, r4
@@ -286,7 +286,7 @@ cglobal deblock_h_luma_8, 5,9,8,0x60+16*WIN64
     call   deblock_v_luma_8
 
     add    r6, 2
-    add    r5, 2
+    lea    r5, [r6+r8]
 
     INIT_XMM cpuname
 
@@ -295,17 +295,15 @@ cglobal deblock_h_luma_8, 5,9,8,0x60+16*WIN64
     ; the two middle rows are still in the proper registers
     mova       m3, [pix_tmp+0x40]
 
-    punpckhbw  m4, m0, m1
-    punpckhbw  m5, m2, m3
+    punpcklbw         m4, m0, m1
+    punpcklbw         m5, m2, m3
 
     TRANSPOSE8x4B_STORE m4, m5, PASS8ROWS(r6, r5, r7, r8)
 
-    punpcklbw  m0, m1
-    punpcklbw  m2, m3
-    shl    r7,  3
-    sub    r6,  r7
-    sub    r5,  r7
-    shr    r7,  3
+    lea    r6, [r6+r7*8]
+    punpckhbw         m0, m1
+    lea    r5, [r5+r7*8]
+    punpckhbw         m2, m3
 
     TRANSPOSE8x4B_STORE m0, m2, PASS8ROWS(r6, r5, r7, r8)
     RET
