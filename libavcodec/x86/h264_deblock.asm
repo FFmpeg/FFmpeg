@@ -810,7 +810,6 @@ cglobal deblock_h_luma_intra_8, 2,4,8,0x80, pix, stride, pix3, stride3
     mov             pixd,  pixm
 
     ADD              esp, 16
-    lea         stride3d,  [strided*3]
     sub             pixd,  4
     lea            pix3d,  [pixd+stride3d]
 %endif
