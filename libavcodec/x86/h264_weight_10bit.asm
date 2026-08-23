@@ -41,7 +41,11 @@ SECTION .text
 ;-----------------------------------------------------------------------------
 %macro WEIGHT_PROLOGUE 0
 .prologue:
-    PROLOGUE 0,6,8
+%if cpuflag(sse4)
+    PROLOGUE 0,6,6
+%else
+    PROLOGUE 0,6,7
+%endif
     movifnidn  r0, r0mp
     movifnidn r1d, r1m
     movifnidn r2d, r2m
@@ -63,31 +67,31 @@ SECTION .text
     mova       m4, [pw_pixel_max]
     paddw      m2, [sq_1]   ; log2_denom+1
 %if notcpuflag(sse4)
-    pxor       m7, m7
+    pxor       m6, m6
 %endif
 %endmacro
 
 %macro WEIGHT_OP 1-2
 %if %0==1
     mova        m5, [r0+%1]
-    punpckhwd   m6, m5, m0
+    punpckhwd   m1, m5, m0
     punpcklwd   m5, m0
 %else
     movq        m5, [r0+%1]
-    movq        m6, [r0+%2]
+    movq        m1, [r0+%2]
     punpcklwd   m5, m0
-    punpcklwd   m6, m0
+    punpcklwd   m1, m0
 %endif
     pmaddwd     m5, m3
-    pmaddwd     m6, m3
+    pmaddwd     m1, m3
     psrad       m5, m2
-    psrad       m6, m2
+    psrad       m1, m2
 %if cpuflag(sse4)
-    packusdw    m5, m6
+    packusdw    m5, m1
     pminuw      m5, m4
 %else
-    packssdw    m5, m6
-    CLIPW       m5, m7, m4
+    packssdw    m5, m1
+    CLIPW       m5, m6, m4
 %endif
 %endmacro
 
@@ -166,7 +170,11 @@ DECLARE_REG_TMP 7
 
 %macro BIWEIGHT_PROLOGUE 0
 .prologue:
+%if cpuflag(sse4)
+    PROLOGUE 0,8,7
+%else
     PROLOGUE 0,8,8
+%endif
     movifnidn  r0, r0mp
     movifnidn  r1, r1mp
     movifnidn r2d, r2m
