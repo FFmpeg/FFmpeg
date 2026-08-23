@@ -213,6 +213,8 @@ typedef struct AC3EncodeContext {
 
     int cpl_on;                             ///< coupling turned on for this frame
     int cpl_enabled;                        ///< coupling enabled for all frames
+    int phase_flags_in_use;                 ///< coupling phase flags are in use
+    uint8_t phase_flags[AC3_MAX_CPL_BANDS]; ///< coupling phase flags                   (phsflg)
     int num_cpl_subbands;                   ///< number of coupling subbands            (ncplsubnd)
     int num_cpl_bands;                      ///< number of coupling bands               (ncplbnd)
     uint8_t cpl_band_sizes[AC3_MAX_CPL_BANDS];  ///< number of coeffs in each coupling band

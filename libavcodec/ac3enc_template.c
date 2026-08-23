@@ -44,6 +44,10 @@
 #define RENAME(element) element ## _fixed
 #endif
 
+/* power ratios for the -42 dB band floor and the 12 dB difference margin. */
+#define PHASE_BAND_ENERGY_DENOMINATOR (1 << 14)
+#define PHASE_DIFF_ENERGY_FACTOR       (1 << 4)
+
 /*
  * Apply the MDCT to input samples to generate frequency coefficients.
  * This applies the KBD window and normalizes the input to reduce precision
@@ -97,6 +101,7 @@ static void apply_channel_coupling(AC3EncodeContext *s)
     CoefSumType energy[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][16] = {{{0}}};
     int cpl_start, num_cpl_coefs;
 
+    s->phase_flags_in_use = 0;
     memset(cpl_coords,       0, AC3_MAX_BLOCKS * sizeof(*cpl_coords));
 #if AC3ENC_FLOAT
     memset(fixed_cpl_coords, 0, AC3_MAX_BLOCKS * sizeof(*cpl_coords));
@@ -107,6 +112,59 @@ static void apply_channel_coupling(AC3EncodeContext *s)
     cpl_start     = s->start_freq[CPL_CH] - 1;
     num_cpl_coefs = FFALIGN(s->num_cpl_subbands * 12 + 1, 32);
     cpl_start     = FFMIN(256, cpl_start + num_cpl_coefs) - num_cpl_coefs;
+
+    if (s->channel_mode == AC3_CHMODE_STEREO) {
+        uint8_t phase_flags[AC3_MAX_CPL_BANDS];
+        int cpl_blocks = 0;
+
+        /* use a single phase strategy for the frame. a difference carrier is
+         * selected only when it has at least 12 dB more energy and the band
+         * is within 42 dB of the coded channel energy in every coupling
+         * block. */
+        memset(phase_flags, 1, s->num_cpl_bands);
+        for (blk = 0; blk < s->num_blocks; blk++) {
+            AC3Block *block = &s->blocks[blk];
+            CoefSumType sum[AC3_MAX_CPL_BANDS][4];
+            /* the DSP also returns sum and difference energy in slots 2/3. */
+            CoefSumType block_energy[4];
+            CoefSumType max_energy;
+
+            if (!block->cpl_in_use)
+                continue;
+            cpl_blocks++;
+            sum_square_butterfly(s, block_energy,
+                                 block->mdct_coef[1], block->mdct_coef[2],
+                                 s->start_freq[CPL_CH]);
+            i = s->start_freq[CPL_CH];
+            for (bnd = 0; bnd < s->num_cpl_bands; bnd++) {
+                sum_square_butterfly(s, sum[bnd],
+                                     block->mdct_coef[1] + i,
+                                     block->mdct_coef[2] + i,
+                                     s->cpl_band_sizes[bnd]);
+                /* reused by the coupling coordinate calculation below. */
+                energy[blk][1][bnd] = sum[bnd][0];
+                energy[blk][2][bnd] = sum[bnd][1];
+                block_energy[0] += sum[bnd][0];
+                block_energy[1] += sum[bnd][1];
+                i += s->cpl_band_sizes[bnd];
+            }
+            max_energy = FFMAX(block_energy[0], block_energy[1]);
+            for (bnd = 0; bnd < s->num_cpl_bands; bnd++) {
+                CoefSumType band_energy = FFMAX(sum[bnd][0], sum[bnd][1]);
+                int significant = band_energy >
+                    max_energy / PHASE_BAND_ENERGY_DENOMINATOR;
+
+                phase_flags[bnd] &= significant &&
+                    sum[bnd][3] / PHASE_DIFF_ENERGY_FACTOR > sum[bnd][2];
+            }
+        }
+        for (bnd = 0; bnd < s->num_cpl_bands; bnd++) {
+            int phase = phase_flags[bnd] && cpl_blocks;
+
+            s->phase_flags[bnd] = phase;
+            s->phase_flags_in_use |= phase;
+        }
+    }
 
     /* calculate coupling channel from fbw channels */
     for (blk = 0; blk < s->num_blocks; blk++) {
@@ -123,6 +181,20 @@ static void apply_channel_coupling(AC3EncodeContext *s)
                 cpl_coef[i] += ch_coef[i];
         }
 
+        if (s->channel_mode == AC3_CHMODE_STEREO) {
+            CoefType *left  = block->mdct_coef[1];
+            CoefType *right = block->mdct_coef[2];
+
+            i = s->start_freq[CPL_CH];
+            for (bnd = 0; bnd < s->num_cpl_bands; bnd++) {
+                if (s->phase_flags[bnd]) {
+                    for (j = 0; j < s->cpl_band_sizes[bnd]; j++)
+                        block->mdct_coef[CPL_CH][i + j] = left[i + j] - right[i + j];
+                }
+                i += s->cpl_band_sizes[bnd];
+            }
+        }
+
         /* coefficients must be clipped in order to be encoded */
         clip_coefficients(&s->adsp, cpl_coef, num_cpl_coefs);
     }
@@ -133,7 +205,10 @@ static void apply_channel_coupling(AC3EncodeContext *s)
     i = s->start_freq[CPL_CH];
     while (i < s->cpl_end_freq) {
         int band_size = s->cpl_band_sizes[bnd];
-        for (ch = CPL_CH; ch <= s->fbw_channels; ch++) {
+        /* stereo channel energies were filled during phase analysis above. */
+        int last_ch = s->channel_mode == AC3_CHMODE_STEREO ?
+                      CPL_CH : s->fbw_channels;
+        for (ch = CPL_CH; ch <= last_ch; ch++) {
             for (blk = 0; blk < s->num_blocks; blk++) {
                 AC3Block *block = &s->blocks[blk];
                 if (!block->cpl_in_use || (ch > CPL_CH && !block->channel_in_cpl[ch]))

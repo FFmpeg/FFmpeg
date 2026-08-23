@@ -103,6 +103,31 @@ FATE_AC3-$(call ENCDEC, AC3, MP4 MOV, WAV_MUXER WAV_DEMUXER ARESAMPLE_FILTER PCM
 fate-ac3-encode: CMD = enc_dec_pcm mp4 wav s16le $(subst $(SAMPLES),$(TARGET_SAMPLES),$(REF)) -c:a ac3 -b:a 128k
 fate-ac3-encode: CMP_TARGET = 404.53
 
+# coupling must not cancel persistent out-of-phase stereo content.
+AC3_PHASE_EXPR = 0.025*(sin(16000*PI*t)+sin(20000*PI*t)+sin(24000*PI*t)+sin(28000*PI*t))
+tests/data/fate/ac3-phase.wav: TAG = GEN
+tests/data/fate/ac3-phase.wav: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data/fate
+	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin -f lavfi \
+	-i "aevalsrc=$(AC3_PHASE_EXPR)|-$(AC3_PHASE_EXPR):s=48000:d=1" \
+	-c:a pcm_s16le -y $(TARGET_PATH)/$@ 2>/dev/null
+
+AC3_PHASE_DEPS = FFMPEG LAVFI_INDEV AEVALSRC_FILTER ARESAMPLE_FILTER \
+                 MP4_MUXER MOV_DEMUXER WAV_MUXER WAV_DEMUXER \
+                 PCM_S16LE_ENCODER FILE_PROTOCOL PIPE_PROTOCOL
+FATE_AC3_PHASE-$(call ALLYES, $(AC3_PHASE_DEPS) AC3_ENCODER AC3_DECODER) += fate-ac3-phase
+FATE_AC3_PHASE-$(call ALLYES, $(AC3_PHASE_DEPS) AC3_FIXED_ENCODER AC3_DECODER) += fate-ac3-fixed-phase
+FATE_AC3_PHASE-$(call ALLYES, $(AC3_PHASE_DEPS) EAC3_ENCODER EAC3_DECODER) += fate-eac3-phase
+# without phase restoration the measured stddev is about 1158.
+fate-ac3-phase: CMD = enc_dec_pcm mp4 wav s16le $(TARGET_PATH)/tests/data/fate/ac3-phase.wav -c:a ac3 -b:a 128k
+fate-ac3-phase: CMP_TARGET = 588.4
+fate-ac3-fixed-phase: CMD = enc_dec_pcm mp4 wav s16le $(TARGET_PATH)/tests/data/fate/ac3-phase.wav -c:a ac3_fixed -b:a 128k
+fate-ac3-fixed-phase: CMP_TARGET = 588.4
+fate-eac3-phase: CMD = enc_dec_pcm mp4 wav s16le $(TARGET_PATH)/tests/data/fate/ac3-phase.wav -c:a eac3 -b:a 128k
+fate-eac3-phase: CMP_TARGET = 588.4
+fate-ac3-phase fate-ac3-fixed-phase fate-eac3-phase: tests/data/fate/ac3-phase.wav
+fate-ac3-phase fate-ac3-fixed-phase fate-eac3-phase: CMP = stddev
+fate-ac3-phase fate-ac3-fixed-phase fate-eac3-phase: FUZZ = 2
+fate-ac3-phase fate-ac3-fixed-phase fate-eac3-phase: REF = tests/data/fate/ac3-phase.wav
 
 FATE_EAC3-$(call ENCDEC, EAC3, MP4 MOV, WAV_MUXER WAV_DEMUXER ARESAMPLE_FILTER PCM_S16LE_ENCODER PIPE_PROTOCOL) += fate-eac3-encode
 fate-eac3-encode: CMD = enc_dec_pcm mp4 wav s16le $(subst $(SAMPLES),$(TARGET_SAMPLES),$(REF)) -c:a eac3 -b:a 128k
@@ -189,6 +214,6 @@ fate-eac3-core-bsf: CMP = oneline
 fate-eac3-core-bsf: REF = b704bf851e99b7442e9bed368b60e6ca
 
 FATE_SAMPLES_AVCONV += $(FATE_AC3-yes) $(FATE_EAC3-yes)
-FATE_FFMPEG += $(FATE_AC3_DITHER-yes) $(FATE_AC3_FIXED_DEXP24-yes)
+FATE_FFMPEG += $(FATE_AC3_DITHER-yes) $(FATE_AC3_FIXED_DEXP24-yes) $(FATE_AC3_PHASE-yes)
 
-fate-ac3: $(FATE_AC3-yes) $(FATE_EAC3-yes) $(FATE_AC3_DITHER-yes) $(FATE_AC3_FIXED_DEXP24-yes)
+fate-ac3: $(FATE_AC3-yes) $(FATE_EAC3-yes) $(FATE_AC3_DITHER-yes) $(FATE_AC3_FIXED_DEXP24-yes) $(FATE_AC3_PHASE-yes)
