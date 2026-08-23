@@ -34,15 +34,28 @@ layout (constant_id = 1) const int in_transform = 0;
 
 layout (constant_id = 2) const float m_pi = 0;
 layout (constant_id = 3) const float m_pi2 = 0;
+layout (constant_id = 4) const float m_pi4 = 0;
+
+layout (constant_id = 5) const int planes = 0;
+layout (constant_id = 6) const int in_w = 0;
+layout (constant_id = 7) const int in_h = 0;
+layout (constant_id = 8) const int in_chroma_w = 0;
+layout (constant_id = 9) const int in_chroma_h = 0;
 
 layout (set = 0, binding = 0) uniform sampler2D input_img[];
 layout (set = 0, binding = 1) uniform writeonly image2D output_img[];
 
 layout (push_constant, scalar) uniform pushConstants {
     mat4 rot_mat;
-    ivec2 in_img_size[4];
     vec2 iflat_range;
     vec2 flat_range;
+};
+
+ivec2 in_img_size[4] = {
+    ivec2(in_w, in_h),
+    ivec2(in_chroma_w, in_chroma_h),
+    ivec2(in_chroma_w, in_chroma_h),
+    ivec2(in_w, in_h)
 };
 
 #define IS_WITHIN(v1, v2) any(lessThan(v1, v2))
@@ -157,7 +170,7 @@ void main()
 {
     ivec2 pos = ivec2(gl_GlobalInvocationID.xy);
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < planes; i++) {
         ivec2 in_size = in_img_size[i];
         ivec2 out_size = imageSize(output_img[i]);
 

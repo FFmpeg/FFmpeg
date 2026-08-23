@@ -29,7 +29,6 @@ extern const unsigned int ff_v360_comp_spv_len;
 /* Push constants */
 struct PushData {
     float rot_mat[4][4];
-    int in_img_size[4][2];
     float iflat_range[2];
     float flat_range[2];
 };
@@ -428,13 +427,6 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(s->vkctx.output_format);
     const int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
 
-    s->pd.in_img_size[0][0] = s->pd.in_img_size[3][0] = in->width;
-    s->pd.in_img_size[0][1] = s->pd.in_img_size[3][1] = in->height;
-    s->pd.in_img_size[1][0] = s->pd.in_img_size[2][0] =
-        FF_CEIL_RSHIFT(in->width, desc->log2_chroma_w);
-    s->pd.in_img_size[1][1] = s->pd.in_img_size[2][1] =
-        FF_CEIL_RSHIFT(in->height, desc->log2_chroma_h);
-
     RET(ff_vk_init_sampler(vkctx, &s->sampler, 0, VK_FILTER_LINEAR));
 
     s->qf = ff_vk_qf_find(vkctx, VK_QUEUE_COMPUTE_BIT, 0);
@@ -444,15 +436,22 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
         goto fail;
     }
 
-    RET(ff_vk_exec_pool_init(vkctx, s->qf, &s->e, 2, 0, 0, 0, NULL));
+    RET(ff_vk_exec_pool_init(vkctx, s->qf, &s->e, FF_VK_DEFAULT_EXEC_CONTEXTS, 0, 0, 0, NULL));
 
-    SPEC_LIST_CREATE(sl, 4, 2*sizeof(int) + 2*sizeof(float))
+    SPEC_LIST_CREATE(sl, 10, 7*sizeof(int) + 3*sizeof(float))
     SPEC_LIST_ADD(sl, 0, 32, s->out);
     SPEC_LIST_ADD(sl, 1, 32, s->in);
 
-    const float m_pi = M_PI, m_pi2 = M_PI_2;
+    const float m_pi = M_PI, m_pi2 = M_PI_2, m_pi4 = M_PI_4;
     SPEC_LIST_ADD(sl, 2, 32, av_float2int(m_pi));
     SPEC_LIST_ADD(sl, 3, 32, av_float2int(m_pi2));
+    SPEC_LIST_ADD(sl, 4, 32, av_float2int(m_pi4));
+
+    SPEC_LIST_ADD(sl, 5, 32, planes);
+    SPEC_LIST_ADD(sl, 6, 32, in->width);
+    SPEC_LIST_ADD(sl, 7, 32, in->height);
+    SPEC_LIST_ADD(sl, 8, 32, FF_CEIL_RSHIFT(in->width, desc->log2_chroma_w));
+    SPEC_LIST_ADD(sl, 9, 32, FF_CEIL_RSHIFT(in->height, desc->log2_chroma_h));
 
     ff_vk_shader_load(&s->shd, VK_SHADER_STAGE_COMPUTE_BIT,
                       sl, (uint32_t []) { 16, 16, 1 }, 0);
