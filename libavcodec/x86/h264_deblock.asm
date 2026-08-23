@@ -992,11 +992,9 @@ cglobal deblock_h_chroma_8, 5, 7, 8, 0-16, pix_, stride_, alpha_, beta_, tc0_
     CHROMA_H_START_XMM r5, r6
     LOAD_8_ROWS PASS8ROWS(pix_q - 2, r5 - 2, stride_q, r6)
     TRANSPOSE_8x4B_XMM
-    movq [rsp], m0
-    movq [rsp + 8], m3
+    movq [rsp], m3
     CHROMA_INTER_BODY_XMM 1
-    movq m0, [rsp]
-    movq m3, [rsp + 8]
+    movq m3, [rsp]
     TRANSPOSE_4x8B_XMM
     STORE_8_ROWS PASS8ROWS(pix_q - 2, r5 - 2, stride_q, r6)
 RET
@@ -1005,11 +1003,9 @@ cglobal deblock_h_chroma422_8, 5, 7, 8, 0-16, pix_, stride_, alpha_, beta_, tc0_
     CHROMA_H_START_XMM r5, r6
     LOAD_8_ROWS PASS8ROWS(pix_q - 2, r5 - 2, stride_q, r6)
     TRANSPOSE_8x4B_XMM
-    movq [rsp], m0
-    movq [rsp + 8], m3
+    movq [rsp], m3
     CHROMA_INTER_BODY_XMM 2
-    movq m0, [rsp]
-    movq m3, [rsp + 8]
+    movq m3, [rsp]
     TRANSPOSE_4x8B_XMM
     STORE_8_ROWS PASS8ROWS(pix_q - 2, r5 - 2, stride_q, r6)
 
@@ -1019,11 +1015,9 @@ cglobal deblock_h_chroma422_8, 5, 7, 8, 0-16, pix_, stride_, alpha_, beta_, tc0_
 
     LOAD_8_ROWS PASS8ROWS(pix_q - 2, r5 - 2, stride_q, r6)
     TRANSPOSE_8x4B_XMM
-    movq [rsp], m0
-    movq [rsp + 8], m3
+    movq [rsp], m3
     CHROMA_INTER_BODY_XMM 2
-    movq m0, [rsp]
-    movq m3, [rsp + 8]
+    movq m3, [rsp]
     TRANSPOSE_4x8B_XMM
     STORE_8_ROWS PASS8ROWS(pix_q - 2, r5 - 2, stride_q, r6)
 RET
