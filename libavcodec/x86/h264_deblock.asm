@@ -129,13 +129,16 @@ cextern pb_3
     pcmpeqb %4, %5
 %endmacro
 
-; in: m0=p1 m1=p0 m2=q0 m3=q1 %1=alpha-1 %2=beta-1
+; in: m0=p1 m1=p0 m2=q0 m3=q1 %1=alpha-1 %2=beta-1, %4=zero reg
 ; out: m5=beta-1, m7=mask, %3=alpha-1
 ; clobbers: m4,m6
-%macro LOAD_MASK 2-3
+%macro LOAD_MASK 2-4
     movd     m4, %1
     movd     m5, %2
-%if cpuflag(ssse3)
+%if cpuflag(ssse3) && %0 == 4
+    pshufb   m4, %4
+    pshufb   m5, %4
+%elif cpuflag(ssse3)
     pxor     m6, m6
     pshufb   m4, m6
     pshufb   m5, m6
@@ -153,8 +156,12 @@ cextern pb_3
     por      m7, m4
     DIFF_GT  m3, m2, m5, m4, m6 ; |q1-q0| > beta-1
     por      m7, m4
+%if %0 == 4
+    pcmpeqb  m7, %4
+%else
     pxor     m6, m6
     pcmpeqb  m7, m6
+%endif
 %endmacro
 
 ; in: m0=p1 m1=p0 m2=q0 m3=q1 m7=(tc&mask)
@@ -669,7 +676,7 @@ cglobal deblock_v_luma_intra_8, 4,6,16,ARCH_X86_64*0x50-0x50
 %if ARCH_X86_64
     pxor    mpb_0, mpb_0
     mova    mpb_1, [pb_1]
-    LOAD_MASK r2d, r3d, t5 ; m5=beta-1, t5=alpha-1, m7=mask0
+    LOAD_MASK r2d, r3d, t5, mpb_0 ; m5=beta-1, t5=alpha-1, m7=mask0
     SWAP    7, 12 ; m12=mask0
     pavgb   t5, mpb_0
     pavgb   t5, mpb_1 ; alpha/4+1
