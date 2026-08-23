@@ -266,6 +266,10 @@ enum AVChannelOrder {
 #define AV_CH_LAYOUT_7POINT1_TOP_BACK AV_CH_LAYOUT_5POINT1POINT2_BACK
 #endif
 
+/**
+ * @}
+ */
+
 enum AVMatrixEncoding {
     AV_MATRIX_ENCODING_NONE,
     AV_MATRIX_ENCODING_DOLBY,
@@ -276,10 +280,6 @@ enum AVMatrixEncoding {
     AV_MATRIX_ENCODING_DOLBYHEADPHONE,
     AV_MATRIX_ENCODING_NB
 };
-
-/**
- * @}
- */
 
 /**
  * An AVChannelCustom defines a single channel within a custom order layout
