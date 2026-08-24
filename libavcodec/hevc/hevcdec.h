@@ -531,6 +531,10 @@ typedef struct HEVCContext {
     // NoRaslOutputFlag associated with the last IRAP frame
     int no_rasl_output_flag;
 
+    // The first slice of the current picture was skipped (undecodable RASL
+    // or avctx->skip_frame), so drop its remaining slices too
+    int skipping_frame;
+
     HEVCPredContext hpc;
     HEVCDSPContext hevcdsp;
     VideoDSPContext vdsp;
