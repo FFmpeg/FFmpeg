@@ -892,26 +892,42 @@ static int http_get_line(HTTPContext *s, char *line, int line_size)
 
 int ff_http_parse_status_line(void *logctx, const char *line, HTTPStatusLine *st)
 {
-    const char *p = line;
-    char *end;
+    const char *p;
 
     memset(st, 0, sizeof(*st));
 
-    if (av_strncasecmp(p, "HTTP/1.0", 8) == 0)
-        st->willclose = 1;
+    if (!av_strstart(line, "HTTP/", &p) ||
+        !av_isdigit(p[0]) || p[1] != '.' || !av_isdigit(p[2]) ||
+        !av_isspace(p[3])) {
+        av_log(logctx, AV_LOG_ERROR, "Malformed HTTP status line.\n");
+        return AVERROR_INVALIDDATA;
+    }
 
-    while (*p != '/' && *p != '\0')
-        p++;
-    while (*p == '/')
-        p++;
     av_strlcpy(st->version, p, sizeof(st->version));
+    st->willclose = !strcmp(st->version, "1.0");
 
-    while (!av_isspace(*p) && *p != '\0')
-        p++;
+    p += 3;
     while (av_isspace(*p))
         p++;
-    st->code   = strtol(p, &end, 10);
-    st->reason = end;
+
+    /* RFC 9112 mandates a space after the code, but a bare "HTTP/1.1 200"
+     * is common enough in the wild to be worth accepting. */
+    if (!av_isdigit(p[0]) || !av_isdigit(p[1]) || !av_isdigit(p[2]) ||
+        (p[3] && !av_isspace(p[3]))) {
+        av_log(logctx, AV_LOG_ERROR, "Malformed HTTP status code.\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    st->code = 100 * (p[0] - '0') + 10 * (p[1] - '0') + p[2] - '0';
+    if (st->code < 100 || st->code > 599) {
+        av_log(logctx, AV_LOG_ERROR, "HTTP status code %d out of range.\n",
+               st->code);
+        return AVERROR_INVALIDDATA;
+    }
+    p += 3;
+    while (av_isspace(*p))
+        p++;
+    st->reason = p;
 
     av_log(logctx, AV_LOG_TRACE, "http_code=%d\n", st->code);
 
@@ -926,7 +942,6 @@ static int check_http_code(URLContext *h, int http_code, const char *end)
     if (http_code >= 400 && http_code < 600 &&
         (http_code != 401 || s->auth_state.auth_type != HTTP_AUTH_NONE) &&
         (http_code != 407 || s->proxy_auth_state.auth_type != HTTP_AUTH_NONE)) {
-        end += strspn(end, SPACE_CHARS);
         av_log(h, AV_LOG_WARNING, "HTTP error %d %s\n", http_code, end);
         return ff_http_averror(http_code, AVERROR(EIO));
     }

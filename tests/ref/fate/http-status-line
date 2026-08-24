@@ -1,44 +1,44 @@
 "HTTP/1.1 200 OK"
-  version="1.1" code=200 willclose=0 reason=" OK"
+  version="1.1" code=200 willclose=0 reason="OK"
 "HTTP/1.0 200 OK"
-  version="1.0" code=200 willclose=1 reason=" OK"
+  version="1.0" code=200 willclose=1 reason="OK"
 "HTTP/1.1 404 Not Found"
-  version="1.1" code=404 willclose=0 reason=" Not Found"
+  version="1.1" code=404 willclose=0 reason="Not Found"
 "HTTP/1.1 500 Internal Server Error"
-  version="1.1" code=500 willclose=0 reason=" Internal Server Error"
+  version="1.1" code=500 willclose=0 reason="Internal Server Error"
 "HTTP/1.1 204 No Content"
-  version="1.1" code=204 willclose=0 reason=" No Content"
+  version="1.1" code=204 willclose=0 reason="No Content"
 "HTTP/1.1 200"
   version="1.1" code=200 willclose=0 reason=""
 "HTTP/1.1"
-  version="1.1" code=0 willclose=0 reason=""
+  rejected
 "HTTP/1.1 OK"
-  version="1.1" code=0 willclose=0 reason="OK"
+  rejected
 "HTTP"
-  version="" code=0 willclose=0 reason=""
+  rejected
 "200 OK"
-  version="" code=0 willclose=0 reason=""
+  rejected
 "NOT A STATUS LINE"
-  version="" code=0 willclose=0 reason=""
+  rejected
 ""
-  version="" code=0 willclose=0 reason=""
+  rejected
 "ICY 200 OK"
-  version="" code=0 willclose=0 reason=""
+  rejected
 "ICY 404 Not Found"
-  version="" code=0 willclose=0 reason=""
+  rejected
 "HTTP/1.1 200OK"
-  version="1.1" code=200 willclose=0 reason="OK"
+  rejected
 "HTTP/1.1 +200 Plus"
-  version="1.1" code=200 willclose=0 reason=" Plus"
+  rejected
 "HTTP/1.1 20 Short"
-  version="1.1" code=20 willclose=0 reason=" Short"
+  rejected
 "HTTP/1.1 2000 Four"
-  version="1.1" code=2000 willclose=0 reason=" Four"
+  rejected
 "HTTP/x 200 Bad version"
-  version="x 2" code=200 willclose=0 reason=" Bad version"
+  rejected
 "http/1.1 200 lowercase"
-  version="1.1" code=200 willclose=0 reason=" lowercase"
+  rejected
 "HTTP/1.1 099 Too low"
-  version="1.1" code=99 willclose=0 reason=" Too low"
+  rejected
 "HTTP/1.1 600 Too high"
-  version="1.1" code=600 willclose=0 reason=" Too high"
+  rejected
