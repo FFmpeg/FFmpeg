@@ -3559,6 +3559,11 @@ static int decode_slice(HEVCContext *s, unsigned nal_idx, GetBitContext *gb)
         (s->nuh_layer_id > 0 && !(s->layers_active_decode & (1 << layer_idx))))
         return 0;
 
+    // the first slice of this picture was skipped, so drop the remaining
+    // slices before parsing, the context is stale for them
+    if (s->skipping_frame && !show_bits1(gb))
+        return 0;
+
     ret = hls_slice_header(&s->sh, s, gb);
     // Once hls_slice_header has been called, the context is inconsistent with the slice header
     // until the context is reinitialized according to the contents of the new slice header
@@ -3573,8 +3578,12 @@ static int decode_slice(HEVCContext *s, unsigned nal_idx, GetBitContext *gb)
         (s->avctx->skip_frame >= AVDISCARD_NONKEY && !IS_IRAP(s)) ||
         ((s->nal_unit_type == HEVC_NAL_RASL_R || s->nal_unit_type == HEVC_NAL_RASL_N) &&
          s->no_rasl_output_flag)) {
+        if (s->sh.first_slice_in_pic_flag)
+            s->skipping_frame = 1;
         return 0;
     }
+    if (s->sh.first_slice_in_pic_flag)
+        s->skipping_frame = 0;
 
     // switching to a new layer, mark previous layer's frame (if any) as done
     if (s->cur_layer != layer_idx &&
@@ -4076,6 +4085,7 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     s->poc_tid0   = s0->poc_tid0;
     s->eos        = s0->eos;
     s->no_rasl_output_flag = s0->no_rasl_output_flag;
+    s->skipping_frame = s0->skipping_frame;
 
     s->is_nalff        = s0->is_nalff;
     s->nal_length_size = s0->nal_length_size;
@@ -4221,6 +4231,7 @@ static av_cold void hevc_decode_flush(AVCodecContext *avctx)
     ff_dovi_ctx_flush(&s->dovi_ctx);
     av_buffer_unref(&s->rpu_buf);
     s->eos = 1;
+    s->skipping_frame = 0;
 
     if (FF_HW_HAS_CB(avctx, flush))
         FF_HW_SIMPLE_CALL(avctx, flush);
