@@ -11,6 +11,7 @@ version <next>:
 - DVD-Audio LPCM decoder and demuxing support
 - AVFoundation input device selection by unique ID and USB serial number
 - NVIDIA optical flow accelerated interpolation filter (vf_fruc_vulkan)
+- H.264 data partitioning support
 
 
 version 9.0:
