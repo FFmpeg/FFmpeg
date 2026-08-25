@@ -115,7 +115,7 @@ EXT_CHECKASMOBJS-$(ARCH_ARM)                += ext/src/arm/checkasm_32.o \
                                                ext/src/arm/cpu.o ext/src/perf/arm.o
 EXT_CHECKASMOBJS-$(ARCH_LOONGARCH)          += ext/src/loongarch/checkasm.o
 EXT_CHECKASMOBJS-$(CONFIG_LINUX_PERF)       += ext/src/perf/linux.o
-EXT_CHECKASMOBJS-$(CONFIG_MACOS_KPERF)      += ext/src/perf/macos_kperf.o
+EXT_CHECKASMOBJS-$(ARCH_AARCH64)            += ext/src/perf/macos_kperf.o
 EXT_CHECKASMOBJS-$(HAVE_RV)                 += ext/src/riscv/callcheck.o
 EXT_CHECKASMOBJS-$(ARCH_RISCV)              += ext/src/riscv/cpu.o
 EXT_CHECKASMOBJS-$(HAVE_X86ASM)             += ext/src/x86/checkasm.o
