@@ -2077,6 +2077,32 @@ static int h264_slice_init(H264Context *h, H264SliceContext *sl,
     return 0;
 }
 
+/* slice_id follows slice_header() in a partition A (7.3.2.9.1). */
+static int h264_parse_slice_id(const H264Context *h, H264SliceContext *sl)
+{
+    const PPS *pps = h->ps.pps_list[sl->pps_id];
+    const SPS *sps = pps->sps;
+    unsigned nb_slice_ids = sps->mb_width * sps->mb_height;
+
+    if (pps->cabac) {
+        av_log(h->avctx, AV_LOG_ERROR, "Data partitioning requires CAVLC\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    if (sl->picture_structure != PICT_FRAME || sps->mb_aff)
+        nb_slice_ids /= 2;
+
+    sl->slice_id = get_ue_golomb_long(&sl->gb);
+    if (sl->slice_id >= nb_slice_ids) {
+        av_log(h->avctx, AV_LOG_ERROR, "slice_id %u out of range\n", sl->slice_id);
+        return AVERROR_INVALIDDATA;
+    }
+
+    sl->data_partitioning = 1;
+
+    return 0;
+}
+
 int ff_h264_queue_decode_slice(H264Context *h, const H2645NAL *nal)
 {
     H264SliceContext *sl = h->slice_ctx + h->nb_slice_ctx_queued;
@@ -2085,9 +2111,19 @@ int ff_h264_queue_decode_slice(H264Context *h, const H2645NAL *nal)
 
     sl->gb = nal->gb;
 
+    sl->data_partitioning = 0;
+    sl->dpb_available     = 0;
+    sl->dpc_available     = 0;
+
     ret = h264_slice_header_parse(h, sl, nal);
     if (ret < 0)
         return ret;
+
+    if (nal->type == H264_NAL_DPA) {
+        ret = h264_parse_slice_id(h, sl);
+        if (ret < 0)
+            return ret;
+    }
 
     // discard redundant pictures
     if (sl->redundant_pic_count > 0) {
