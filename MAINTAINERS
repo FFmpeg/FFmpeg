@@ -340,6 +340,7 @@ Filters:
   vf_colorconstancy.c                   Mina Sami    (CC <minas.gorgy@gmail.com>)
   vf_colorkey.c                         Timo Rothenpieler
   vf_coreimage.m                        Thilo Borgmann
+  vf_*_d3d12.c                          Steven Xiao
   vf_dejudder.c                         Nicholas Robbins
   vf_delogo.c                           Jean Delvare (CC <jdelvare@suse.com>)
   vf_drawbox.c/drawgrid                 Andrey Utkin
@@ -633,6 +634,7 @@ Sean McGovern (Sean_McG)      6D03 BC60 3A33 E615 6E2E 06AD 8C06 8175 6F59 8684
 Stefano Sabatini              0D0B AD6B 5330 BBAD D3D6 6A0C 719C 2839 FC43 2D5F
 Steinar H. Gunderson          C2E9 004F F028 C18E 4EAD DB83 7F61 7561 7797 8F76
 Stephan Hilb                  4F38 0B3A 5F39 B99B F505 E562 8D5C 5554 4E17 8863
+Steven Xiao                   7ED9 67BF 738C 77D1 E28B FBC4 1C2B 2A37 51E2 98A0
 Thilo Borgmann (thilo)        CE1D B7F4 4D20 FC3A DD9F FE5A 257C 5B8F 1D20 B92F
 Tiancheng "Timothy" Gu        9456 AFC0 814A 8139 E994 8351 7FE6 B095 B582 B0D4
 Tim Nicholson                 38CF DB09 3ED0 F607 8B67 6CED 0C0B FC44 8B0B FC83
