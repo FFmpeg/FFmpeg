@@ -1,0 +1,4 @@
+testsrc2=s=64x48:r=1:d=1,setparams=color_trc=smpte2084:color_primaries=bt2020,scale,split [a][hdr];
+[a] setparams=color_trc=iec61966-2-1:color_primaries=bt709,split [b][sdr];
+[b] scale [base];
+[sdr][hdr] gainmap=mode=maxrgb,scale [gain]
