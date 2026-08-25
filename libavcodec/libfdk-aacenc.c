@@ -263,7 +263,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
         if (!av_channel_layout_compare(&avctx->ch_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_7POINT1)) {
             mode = MODE_7_1_REAR_SURROUND;
 #if FDKENC_VER_AT_LEAST(4, 0) // 4.0.0
-        } else if (!av_channel_layout_compare(&avctx->ch_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_7POINT1_TOP_BACK)) {
+        } else if (!av_channel_layout_compare(&avctx->ch_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_5POINT1POINT2_BACK)) {
             mode = MODE_7_1_TOP_FRONT;
 #endif
         } else {
@@ -566,7 +566,7 @@ static const AVChannelLayout aac_ch_layouts[16] = {
     AV_CHANNEL_LAYOUT_7POINT1,
 #endif
 #if FDKENC_VER_AT_LEAST(4, 0) // 4.0.0
-    AV_CHANNEL_LAYOUT_7POINT1_TOP_BACK,
+    AV_CHANNEL_LAYOUT_5POINT1POINT2_BACK,
 #endif
     { 0 },
 };
