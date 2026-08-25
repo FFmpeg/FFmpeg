@@ -43,6 +43,7 @@ pw_planar4_vy1: dw 1, 1, 1, 1, 0, 0, 0, 0   ; rows 2-3
 pw_planar4_yb0: dw 1, 1, 1, 1, 2, 2, 2, 2   ; y + 1, rows 0-1
 pw_planar4_yb1: dw 3, 3, 3, 3, 4, 4, 4, 4   ; rows 2-3
 
+cextern pb_1
 cextern pw_4
 cextern pw_8
 cextern pw_16
@@ -199,3 +200,73 @@ PRED_PLANAR4
 PRED_PLANAR  8, 1
 PRED_PLANAR 16, 2
 PRED_PLANAR 32, 3
+
+;-----------------------------------------------------------------------------
+; void ff_hevc_ref_filter_3tap_<size>x<size>_8(uint8_t *filtered_left,
+;                                              uint8_t *filtered_top,
+;                                              const uint8_t *left,
+;                                              const uint8_t *top, int size)
+;-----------------------------------------------------------------------------
+
+; out[i] = (in[i-1] + 2*in[i] + in[i+1] + 2) >> 2, exact in bytes: pavgb rounds
+; up, so clearing the low bit of in[i-1]+in[i+1] before the second average
+; gives the wanted result for every triple.
+; Nothing can be assumed aligned - plain stack arrays, pointers offset by one -
+; so three unaligned loads beat a load plus two palignr and this stays SSE2.
+; The last block reads in[2*size]; the input arrays carry 16 samples of slack
+; for that, and its result is discarded.
+; %1 = dst, %2 = src, %3 = offset. Leaves in[i] in m1 for the caller.
+%macro FILTER_3TAP_16 3
+    movu            m0, [%2 + (%3) - 1]
+    movu            m1, [%2 + (%3) + 1]
+    pxor            m2, m0, m1
+    pavgb           m0, m1
+    pand            m2, m3
+    psubb           m0, m2                  ; (in[i-1] + in[i+1]) >> 1
+    movu            m1, [%2 + (%3)]
+    pavgb           m0, m1
+%endmacro
+
+; %1 = dst, %2 = src, %3 = 2 * size
+%macro FILTER_3TAP_ARRAY 3
+%assign %%i 0
+%rep (%3) / 16
+    FILTER_3TAP_16  %1, %2, %%i
+%if %%i == (%3) - 16
+    pxor            m1, m0                  ; last sample is copied, not
+    pand            m1, m4                  ; filtered; select it out of m1 as
+    pxor            m0, m1                  ; the dst has no room past it
+%endif
+    movu  [%1 + %%i], m0
+%assign %%i %%i + 16
+%endrep
+%endmacro
+
+; %1 = size
+%macro REF_FILTER_3TAP 1
+%assign %%n 2 * %1
+cglobal hevc_ref_filter_3tap_%1x%1_8, 4, 6, 5, fleft, ftop, left, top
+    ; The corner is shared by both arrays. Store it as a dword: x86-32 has no
+    ; byte register to spare here, and the 3 bytes past it are filtered below.
+    movzx          r4d, byte [leftq - 1]
+    movzx          r5d, byte [leftq]
+    lea             r5, [r5 + r4*2 + 2]
+    movzx          r4d, byte [topq]
+    add            r5d, r4d
+    shr            r5d, 2
+    mov  [fleftq - 1], r5d
+    mov   [ftopq - 1], r5d
+
+    mova            m3, [pb_1]
+    pcmpeqb         m4, m4
+    pslldq          m4, 15                  ; selects the copied last sample
+
+    FILTER_3TAP_ARRAY fleftq, leftq, %%n
+    FILTER_3TAP_ARRAY  ftopq,  topq, %%n
+    RET
+%endmacro
+
+INIT_XMM sse2
+REF_FILTER_3TAP  8
+REF_FILTER_3TAP 16
+REF_FILTER_3TAP 32
