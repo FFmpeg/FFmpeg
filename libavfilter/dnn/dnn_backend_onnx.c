@@ -853,6 +853,14 @@ static DNNModel *dnn_load_model_onnx(DnnContext *ctx, DNNFunctionType func_type,
     model = &onnx_model->model;
     onnx_model->ctx = ctx;
 
+    if (ctx->nireq > 1) {
+        av_log(ctx, AV_LOG_WARNING,
+               "nireq=%d is not supported by the ONNX Runtime backend, "
+               "which only allocates a single, synchronous inference "
+               "request. Rolling back to nireq=1.\n", ctx->nireq);
+    }
+    ctx->nireq = 1;
+
     status = g_ort->CreateEnv(ORT_LOGGING_LEVEL_WARNING, "FFmpeg", &onnx_model->env);
     if (status != NULL) {
         av_log(ctx, AV_LOG_ERROR, "Failed to create ONNX Runtime environment\n");
