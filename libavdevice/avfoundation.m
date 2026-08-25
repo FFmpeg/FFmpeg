@@ -885,9 +885,7 @@ static int avf_io_get_uint32(io_service_t service, CFStringRef key, uint32_t *ou
         CFRelease(ref);
     return ok;
 }
-#endif
 
-#if HAVE_IOKIT
 static int64_t avf_usb_location_for_serial(const char *serial)
 {
     int64_t location = -1;
@@ -911,14 +909,7 @@ static int64_t avf_usb_location_for_serial(const char *serial)
 
     return location;
 }
-#else
-static int64_t avf_usb_location_for_serial(const char *serial)
-{
-    return -1;
-}
-#endif
 
-#if HAVE_IOKIT
 static NSString *avf_usb_serial_for_location(uint32_t location)
 {
     NSString *serial = nil;
@@ -941,12 +932,6 @@ static NSString *avf_usb_serial_for_location(uint32_t location)
 
     return serial;
 }
-#else
-static NSString *avf_usb_serial_for_location(uint32_t location)
-{
-    return nil;
-}
-#endif
 
 // USB video uniqueID = locationID<<32 | VID<<16 | PID; match on the locationID.
 static AVCaptureDevice *avf_video_device_with_serial(const char *serial,
@@ -973,7 +958,6 @@ static AVCaptureDevice *avf_video_device_with_serial(const char *serial,
 }
 
 // CoreAudio USB-audio UID: AppleUSBAudioEngine:manufacturer:device:serial:interfaces
-#if HAVE_IOKIT
 static NSString *avf_audio_serial_for_uid(NSString *uid)
 {
     if (![uid hasPrefix:@"AppleUSBAudioEngine:"])
@@ -986,7 +970,18 @@ static NSString *avf_audio_serial_for_uid(NSString *uid)
         return serial;
     return nil;
 }
+
 #else
+
+static NSString *avf_usb_serial_for_location(uint32_t location)
+{
+    return nil;
+}
+static AVCaptureDevice *avf_video_device_with_serial(const char *serial,
+    NSArray *devices, NSArray *devices_muxed, int *is_muxed)
+{
+    return nil;
+}
 static NSString *avf_audio_serial_for_uid(NSString *uid)
 {
     return nil;
