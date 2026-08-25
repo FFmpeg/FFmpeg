@@ -314,6 +314,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
         switch (state & 0x1f) {
         case H264_NAL_SLICE:
         case H264_NAL_IDR_SLICE:
+        case H264_NAL_DPA:
             // Do not walk the whole buffer just to decode slice header
             if ((state & 0x1f) == H264_NAL_IDR_SLICE || ((state >> 5) & 0x3) == 0) {
                 /* IDR or disposable slice
@@ -360,6 +361,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
             p->poc.prev_poc_lsb          = 0;
             av_fallthrough;
         case H264_NAL_SLICE:
+        case H264_NAL_DPA:                // starts with a slice header too
             get_ue_golomb_long(&nal.gb);  // skip first_mb_in_slice
             slice_type   = get_ue_golomb_31(&nal.gb);
             s->pict_type = ff_h264_golomb_to_pict_type[slice_type % 5];
