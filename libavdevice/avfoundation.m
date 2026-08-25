@@ -30,11 +30,12 @@
 #import <AVFoundation/AVFoundation.h>
 #if HAVE_IOKIT
 #   import <IOKit/IOKitLib.h>
-    /* kIOMainPortDefault is only available since macOS 12; fall back to the
-     * equivalent kIOMasterPortDefault when targeting older releases. */
-#   if defined(__MAC_OS_X_VERSION_MIN_REQUIRED) && __MAC_OS_X_VERSION_MIN_REQUIRED >= 120000
+    /* kIOMainPortDefault is only available since macOS 12 or iOS 15; fall back
+     * to the equivalent kIOMasterPortDefault on macOS when targeting older
+     * releases. */
+#   if (TARGET_OS_OSX && __MAC_OS_X_VERSION_MIN_REQUIRED >= 120000) || (TARGET_OS_IPHONE && __IPHONE_OS_VERSION_MIN_REQUIRED >= 150000)
 #       define AVF_IO_MAIN_PORT_DEFAULT kIOMainPortDefault
-#   else
+#   elif TARGET_OS_OSX
 #       define AVF_IO_MAIN_PORT_DEFAULT kIOMasterPortDefault
 #   endif
 #endif
@@ -867,7 +868,7 @@ static NSArray* getDevicesWithMediaType(AVMediaType mediaType) {
 #endif
 }
 
-#if HAVE_IOKIT
+#if HAVE_IOKIT && defined(AVF_IO_MAIN_PORT_DEFAULT)
 static int avf_io_get_string(io_service_t service, CFStringRef key, char *buf, size_t size)
 {
     CFTypeRef ref = IORegistryEntryCreateCFProperty(service, key, kCFAllocatorDefault, 0);
