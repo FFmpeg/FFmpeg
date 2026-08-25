@@ -180,6 +180,15 @@ typedef struct H264SliceContext {
     GetBitContext gb;
     ERContext *er;
 
+    /* Data partitioning: residual comes from gb_dpb (intra) or gb_dpc (inter),
+     * chosen per macroblock. Values not pointers: this struct is memcpy'd. */
+    GetBitContext gb_dpb;
+    GetBitContext gb_dpc;
+    int data_partitioning;
+    int dpb_available;
+    int dpc_available;
+    unsigned slice_id;
+
     int slice_num;
     int slice_type;
     int slice_type_nos;         ///< S free slice type (SI/SP are remapped to I/P)
