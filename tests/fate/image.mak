@@ -561,8 +561,13 @@ fate-tiff-zip-rgbaf32le: CMD = framecrc -i $(TARGET_SAMPLES)/tiff/zip_rgbaf32le.
 FATE_TIFF-$(call FRAMECRC, IMAGE2, TIFF, ZLIB) += $(FATE_TIFF_ZIP)
 FATE_TIFF-$(call FRAMECRC, IMAGE2, TIFF) += $(FATE_TIFF)
 
+FATE_TIFF_TRANSCODE-$(call TRANSCODE, TIFF, IMAGE2 IMAGE_TIFF_PIPE, \
+    IMAGE_PNG_PIPE_DEMUXER PNG_DECODER SCALE_FILTER) += fate-tiff-icc
+fate-tiff-icc: CMD = transcode png_pipe $(TARGET_SAMPLES)/png1/lena-int_rgb24.png image2 "-vf scale=1:1 -c:v tiff -compression_algo raw" "" "-show_frames -show_entries frame=side_data_list:frame_tags="
+
 FATE_IMAGE_FRAMECRC += $(FATE_TIFF-yes)
-fate-tiff: $(FATE_TIFF-yes)
+FATE_IMAGE_TRANSCODE += $(FATE_TIFF_TRANSCODE-yes)
+fate-tiff: $(FATE_TIFF-yes) $(FATE_TIFF_TRANSCODE-yes)
 
 FATE_WEBP += fate-webp-rgb-lossless
 fate-webp-rgb-lossless: CMD = framecrc -i $(TARGET_SAMPLES)/webp/rgb_lossless.webp

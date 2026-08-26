@@ -1,0 +1,18 @@
+bcbf8f9edb2b96020b8cce6f0e27a34e *tests/data/fate/tiff-icc.image2
+3352 tests/data/fate/tiff-icc.image2
+#tb 0: 1/25
+#media_type 0: video
+#codec_id 0: rawvideo
+#dimensions 0: 1x1
+#sar 0: 1/1
+0,          0,          0,        1,        3, 0x034d0182
+[FRAME]
+[SIDE_DATA]
+side_data_type=ICC profile
+size=3144
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=EXIF metadata
+size=3348
+[/SIDE_DATA]
+[/FRAME]
