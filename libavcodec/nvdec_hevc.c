@@ -44,6 +44,17 @@ static void dpb_add(CUVIDHEVCPICPARAMS *pp, int idx, const HEVCFrame *src)
     pp->IsLongTerm[idx]     = !!(src->flags & HEVC_FRAME_FLAG_LONG_REF);
 }
 
+static int dpb_find(const HEVCFrame *const *dpb, int dpb_size,
+                    const HEVCFrame *ref)
+{
+    for (int i = 0; i < dpb_size; i++) {
+        if (dpb[i] == ref)
+            return i;
+    }
+
+    return -1;
+}
+
 static void fill_scaling_lists(CUVIDHEVCPICPARAMS *ppc, const HEVCContext *s)
 {
     const ScalingList *sl = s->pps->scaling_list_data_present_flag ?
@@ -71,12 +82,67 @@ static void fill_scaling_lists(CUVIDHEVCPICPARAMS *ppc, const HEVCContext *s)
     }
 }
 
+#ifdef NVDEC_HAVE_MVHEVC_DECODE
+/* Auxiliary alpha video also codes more than one layer, but the native decoder
+ * keeps only the base layer active for pixel formats without an alpha plane,
+ * so it must not be routed through the MV-HEVC path. */
+static int nvdec_hevc_is_multiview(const HEVCContext *s)
+{
+    return s->vps && s->vps->nb_layers > 1 && !ff_hevc_is_alpha_video(s);
+}
+
+/* Number of layers that will consume a decode surface per access unit.  The
+ * caller may have requested fewer views than the VPS codes, and setup_multilayer()
+ * has not run yet when the hardware pool is sized. */
+static int nvdec_hevc_nb_decode_layers(const HEVCContext *s)
+{
+    unsigned active_output;
+    int nb_layers;
+
+    if (!nvdec_hevc_is_multiview(s))
+        return 1;
+
+    nb_layers = ff_hevc_requested_layers(s, s->vps, &active_output);
+    /* An invalid selection is reported by the decoder itself; size for
+     * everything the VPS codes until then. */
+    return nb_layers < 0 ? s->vps->nb_layers : nb_layers;
+}
+
+/* DPB size to request for the selected layers, as passed to
+ * ff_nvdec_frame_params().  Returns the number of decoded layers in nb_layers. */
+static int nvdec_hevc_dpb_size(const AVCodecContext *avctx, int *nb_layers)
+{
+    const HEVCContext *s = avctx->priv_data;
+    const HEVCSPS *sps = s->pps->sps;
+    int dpb_size = sps->temporal_layer[sps->max_sub_layers - 1].max_dec_pic_buffering + 1;
+
+    *nb_layers = nvdec_hevc_nb_decode_layers(s);
+    if (*nb_layers > 1) {
+        const HEVCVPS *vps = s->vps;
+        /* Unlike its SPS and VPS base-layer counterparts, the VPS extension's
+         * max_dec_pic_buffering is not range-checked when parsed, so bound it
+         * before it reaches the surface arithmetic below. */
+        unsigned vps_ext_dpb = FFMIN(vps->dpb_size.max_dec_pic_buffering,
+                                     HEVC_MAX_DPB_SIZE);
+        int vps_dpb = FFMAX(vps->vps_max_dec_pic_buffering[vps->vps_max_sub_layers - 1],
+                            vps_ext_dpb) + 1;
+        dpb_size = FFMAX(dpb_size, vps_dpb);
+        dpb_size *= *nb_layers;
+
+        /* Generic hwaccel setup adds one surface per frame thread. */
+        if (avctx->active_thread_type & FF_THREAD_FRAME)
+            dpb_size += avctx->thread_count * (*nb_layers - 1);
+    }
+
+    return dpb_size;
+}
+#endif
+
 static int nvdec_hevc_start_frame(AVCodecContext *avctx,
                                   const AVBufferRef *buffer_ref,
                                   const uint8_t *buffer, uint32_t size)
 {
     const HEVCContext *s = avctx->priv_data;
-    const HEVCLayerContext *l = &s->layers[s->cur_layer];
     const HEVCPPS *pps = s->pps;
     const HEVCSPS *sps = pps->sps;
 
@@ -85,8 +151,29 @@ static int nvdec_hevc_start_frame(AVCodecContext *avctx,
     CUVIDHEVCPICPARAMS *ppc = &pp->CodecSpecific.hevc;
     FrameDecodeData *fdd;
     NVDECFrame *cf;
+    const HEVCFrame *dpb[FF_ARRAY_ELEMS(ppc->RefPicIdx)];
 
-    int i, j, dpb_size, ret;
+    int i, dpb_size, ret;
+    /* Outside MV-HEVC only the layer being decoded contributes references,
+     * and it is not necessarily the base layer (e.g. auxiliary alpha). */
+    unsigned first_dpb_layer = s->cur_layer, nb_dpb_layers = 1;
+
+    /* The HEVC decoder starts every layer of an access unit before ending any
+     * of them, while NVDECContext has storage for a single pending picture, so
+     * submit the previous layer before its parameters and slices are
+     * overwritten.  Only a non-base layer can have a sibling still pending: a
+     * base-layer picture always starts a new access unit, and state left behind
+     * by a picture whose decoding was aborted must be discarded rather than
+     * submitted, which ff_nvdec_start_frame() below does.  Requiring the base
+     * layer to still be open rejects the leftovers of an aborted access unit
+     * whose base-layer picture was skipped entirely. */
+    if (ctx->nb_slices && s->cur_layer > 0 && s->layers[0].cur_frame) {
+        ret = ff_nvdec_end_frame(avctx);
+        ctx->bitstream_len = 0;
+        ctx->nb_slices     = 0;
+        if (ret < 0)
+            return ret;
+    }
 
     ret = ff_nvdec_start_frame(avctx, s->cur_frame->f);
     if (ret < 0)
@@ -199,6 +286,43 @@ static int nvdec_hevc_start_frame(AVCodecContext *avctx,
         },
     };
 
+#ifdef NVDEC_HAVE_MVHEVC_DECODE
+    if (nvdec_hevc_is_multiview(s)) {
+        const HEVCVPS *vps = s->vps;
+        int layer_idx = vps->layer_idx[s->nuh_layer_id];
+        int nb_inter_layer_refs = s->rps[INTER_LAYER0].nb_refs +
+                                  s->rps[INTER_LAYER1].nb_refs;
+
+        if (layer_idx < 0 || layer_idx >= vps->nb_layers) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Invalid MV-HEVC layer ID: %d\n", s->nuh_layer_id);
+            return AVERROR_INVALIDDATA;
+        }
+        if (s->rps[INTER_LAYER0].nb_refs > FF_ARRAY_ELEMS(ppc->RefPicSetInterLayer0) ||
+            s->rps[INTER_LAYER1].nb_refs > FF_ARRAY_ELEMS(ppc->RefPicSetInterLayer1)) {
+            av_log(avctx, AV_LOG_ERROR, "Too many inter-layer reference frames\n");
+            return AVERROR_INVALIDDATA;
+        }
+        if (ppc->NumPocTotalCurr < nb_inter_layer_refs) {
+            av_log(avctx, AV_LOG_ERROR, "Invalid inter-layer reference count\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        ppc->mv_hevc_enable                 = 1;
+        ppc->nuh_layer_id                   = s->nuh_layer_id;
+        ppc->default_ref_layers_active_flag = vps->default_ref_layers_active;
+        ppc->NumDirectRefLayers             = vps->num_direct_ref_layers[layer_idx];
+        ppc->max_one_active_ref_layer_flag  = vps->max_one_active_ref_layer;
+        ppc->poc_lsb_not_present_flag       = (vps->poc_lsb_not_present >> layer_idx) & 1;
+        ppc->NumActiveRefLayerPics0         = s->rps[INTER_LAYER0].nb_refs;
+        ppc->NumActiveRefLayerPics1         = s->rps[INTER_LAYER1].nb_refs;
+        /* NVDEC counts active inter-layer pictures separately. */
+        ppc->NumPocTotalCurr               -= nb_inter_layer_refs;
+        first_dpb_layer = 0;
+        nb_dpb_layers   = vps->nb_layers;
+    }
+#endif
+
     if (pps->num_tile_columns > FF_ARRAY_ELEMS(ppc->column_width_minus1) ||
         pps->num_tile_rows    > FF_ARRAY_ELEMS(ppc->row_height_minus1)) {
         av_log(avctx, AV_LOG_ERROR, "Too many tiles\n");
@@ -229,43 +353,73 @@ static int nvdec_hevc_start_frame(AVCodecContext *avctx,
     }
 
     dpb_size = 0;
-    for (i = 0; i < FF_ARRAY_ELEMS(l->DPB); i++) {
-        const HEVCFrame *ref = &l->DPB[i];
-        if (!(ref->flags & (HEVC_FRAME_FLAG_SHORT_REF | HEVC_FRAME_FLAG_LONG_REF)))
-            continue;
-        if (dpb_size >= FF_ARRAY_ELEMS(ppc->RefPicIdx)) {
-            av_log(avctx, AV_LOG_ERROR, "Too many reference frames\n");
+    for (unsigned layer = first_dpb_layer; layer < first_dpb_layer + nb_dpb_layers; layer++) {
+        const HEVCLayerContext *layer_ctx = &s->layers[layer];
+
+        for (i = 0; i < FF_ARRAY_ELEMS(layer_ctx->DPB); i++) {
+            const HEVCFrame *ref = &layer_ctx->DPB[i];
+
+            if (!(ref->flags & (HEVC_FRAME_FLAG_SHORT_REF |
+                                HEVC_FRAME_FLAG_LONG_REF)))
+                continue;
+            if (dpb_size >= FF_ARRAY_ELEMS(ppc->RefPicIdx)) {
+                av_log(avctx, AV_LOG_ERROR, "Too many reference frames\n");
+                return AVERROR_INVALIDDATA;
+            }
+            dpb[dpb_size] = ref;
+            dpb_add(ppc, dpb_size++, ref);
+        }
+    }
+
+#ifdef NVDEC_HAVE_MVHEVC_DECODE
+    /* Inter-layer references are long-term references for MV-HEVC. */
+    for (i = 0; i < s->rps[INTER_LAYER0].nb_refs; i++) {
+        int idx = dpb_find(dpb, dpb_size, s->rps[INTER_LAYER0].ref[i]);
+
+        if (idx < 0) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Inter-layer reference frame missing from the DPB\n");
             return AVERROR_INVALIDDATA;
         }
-        dpb_add(ppc, dpb_size++, ref);
-
+        ppc->IsLongTerm[idx] = 1;
+        ppc->RefPicSetInterLayer0[i] = idx;
     }
+    for (i = 0; i < s->rps[INTER_LAYER1].nb_refs; i++) {
+        int idx = dpb_find(dpb, dpb_size, s->rps[INTER_LAYER1].ref[i]);
+
+        if (idx < 0) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Inter-layer reference frame missing from the DPB\n");
+            return AVERROR_INVALIDDATA;
+        }
+        ppc->IsLongTerm[idx] = 1;
+        ppc->RefPicSetInterLayer1[i] = idx;
+    }
+#endif
+
     for (i = dpb_size; i < FF_ARRAY_ELEMS(ppc->RefPicIdx); i++)
         ppc->RefPicIdx[i] = -1;
 
     for (i = 0; i < s->rps[ST_CURR_BEF].nb_refs; i++) {
-        for (j = 0; j < dpb_size; j++) {
-            if (ppc->PicOrderCntVal[j] == s->rps[ST_CURR_BEF].list[i]) {
-                ppc->RefPicSetStCurrBefore[i] = j;
-                break;
-            }
-        }
+        int idx = dpb_find(dpb, dpb_size, s->rps[ST_CURR_BEF].ref[i]);
+
+        if (idx < 0)
+            return AVERROR_BUG;
+        ppc->RefPicSetStCurrBefore[i] = idx;
     }
     for (i = 0; i < s->rps[ST_CURR_AFT].nb_refs; i++) {
-        for (j = 0; j < dpb_size; j++) {
-            if (ppc->PicOrderCntVal[j] == s->rps[ST_CURR_AFT].list[i]) {
-                ppc->RefPicSetStCurrAfter[i] = j;
-                break;
-            }
-        }
+        int idx = dpb_find(dpb, dpb_size, s->rps[ST_CURR_AFT].ref[i]);
+
+        if (idx < 0)
+            return AVERROR_BUG;
+        ppc->RefPicSetStCurrAfter[i] = idx;
     }
     for (i = 0; i < s->rps[LT_CURR].nb_refs; i++) {
-        for (j = 0; j < dpb_size; j++) {
-            if (ppc->PicOrderCntVal[j] == s->rps[LT_CURR].list[i]) {
-                ppc->RefPicSetLtCurr[i] = j;
-                break;
-            }
-        }
+        int idx = dpb_find(dpb, dpb_size, s->rps[LT_CURR].ref[i]);
+
+        if (idx < 0)
+            return AVERROR_BUG;
+        ppc->RefPicSetLtCurr[i] = idx;
     }
 
     fill_scaling_lists(ppc, s);
@@ -300,13 +454,33 @@ static int nvdec_hevc_decode_slice(AVCodecContext *avctx, const uint8_t *buffer,
     return 0;
 }
 
+static int nvdec_hevc_end_frame(AVCodecContext *avctx)
+{
+    NVDECContext *ctx = avctx->internal->hwaccel_priv_data;
+    int ret;
+
+    if (!ctx->nb_slices)
+        return 0;
+
+    ret = ff_nvdec_end_frame(avctx);
+    ctx->bitstream_len = 0;
+    ctx->nb_slices     = 0;
+
+    return ret;
+}
+
 static int nvdec_hevc_frame_params(AVCodecContext *avctx,
                                    AVBufferRef *hw_frames_ctx,
                                    enum AVPixelFormat hw_format)
 {
+#ifdef NVDEC_HAVE_MVHEVC_DECODE
+    int nb_layers;
+    int dpb_size = nvdec_hevc_dpb_size(avctx, &nb_layers);
+#else
     const HEVCContext *s = avctx->priv_data;
     const HEVCSPS *sps = s->pps->sps;
     int dpb_size = sps->temporal_layer[sps->max_sub_layers - 1].max_dec_pic_buffering + 1;
+#endif
 
     return ff_nvdec_frame_params(avctx, hw_frames_ctx, hw_format, dpb_size, 1);
 }
@@ -315,9 +489,32 @@ static int nvdec_hevc_decode_init(AVCodecContext *avctx) {
     NVDECContext *ctx = avctx->internal->hwaccel_priv_data;
     ctx->supports_444 = 1;
 
+#ifdef NVDEC_HAVE_MVHEVC_DECODE
+    {
+        int nb_layers;
+        int dpb_size = nvdec_hevc_dpb_size(avctx, &nb_layers);
+
+        /* Every decoded layer of an access unit occupies a decode surface, so a
+         * capped pool would truncate the output instead of failing at init.
+         * Record the requirement here as well: frame_params() is not called
+         * when the caller supplies its own frames context. */
+        if (nb_layers > 1) {
+            ctx->strict_pool_layers = nb_layers;
+            /* Mirror what avcodec_get_hw_frames_parameters() and
+             * nvdec_init_hwframes() add on top of the requested DPB size. */
+            ctx->strict_pool_min = dpb_size + 2 + 3;
+            if (avctx->active_thread_type & FF_THREAD_FRAME)
+                ctx->strict_pool_min += avctx->thread_count;
+        }
+    }
+#endif
+
     if (avctx->profile != AV_PROFILE_HEVC_MAIN &&
         avctx->profile != AV_PROFILE_HEVC_MAIN_10 &&
         avctx->profile != AV_PROFILE_HEVC_MAIN_STILL_PICTURE &&
+#ifdef NVDEC_HAVE_MVHEVC_DECODE
+        avctx->profile != AV_PROFILE_HEVC_MULTIVIEW_MAIN &&
+#endif
         avctx->profile != AV_PROFILE_HEVC_REXT) {
         av_log(avctx, AV_LOG_ERROR, "Unsupported HEVC profile: %d\n", avctx->profile);
         return AVERROR(ENOTSUP);
@@ -339,7 +536,7 @@ const FFHWAccel ff_hevc_nvdec_hwaccel = {
     .p.id                 = AV_CODEC_ID_HEVC,
     .p.pix_fmt            = AV_PIX_FMT_CUDA,
     .start_frame          = nvdec_hevc_start_frame,
-    .end_frame            = ff_nvdec_end_frame,
+    .end_frame            = nvdec_hevc_end_frame,
     .decode_slice         = nvdec_hevc_decode_slice,
     .frame_params         = nvdec_hevc_cuda_frame_params,
     .init                 = nvdec_hevc_decode_init,
@@ -361,7 +558,7 @@ const FFHWAccel ff_hevc_nvdec_cuarray_hwaccel = {
     .p.id                 = AV_CODEC_ID_HEVC,
     .p.pix_fmt            = AV_PIX_FMT_CUARRAY,
     .start_frame          = nvdec_hevc_start_frame,
-    .end_frame            = ff_nvdec_end_frame,
+    .end_frame            = nvdec_hevc_end_frame,
     .decode_slice         = nvdec_hevc_decode_slice,
     .frame_params         = nvdec_hevc_cuarray_frame_params,
     .init                 = nvdec_hevc_decode_init,

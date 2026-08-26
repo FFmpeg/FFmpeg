@@ -625,19 +625,45 @@ int ff_nvdec_decode_init(AVCodecContext *avctx)
     params.OutputFormat        = output_format;
     params.CodecType           = cuvid_codec_type;
     params.ChromaFormat        = cuvid_chroma_format;
-    params.ulNumDecodeSurfaces = FFMIN(decode_pool_size, 32);
+    /* Hwaccels that need every surface must not start with a capped pool, so
+     * reject the configuration and let format negotiation fall back.  The pool
+     * in use is not proof on its own: frame_params() never runs for a
+     * caller-supplied frames context, so the hwaccel requirement wins. */
+    if (ctx->strict_pool_layers) {
+        int required = FFMAX(decode_pool_size, ctx->strict_pool_min);
+
+        if (required > NVDEC_MAX_DECODE_SURFACES) {
+            int fit = avctx->thread_count -
+                      (required - NVDEC_MAX_DECODE_SURFACES +
+                       ctx->strict_pool_layers - 1) / ctx->strict_pool_layers;
+
+            if ((avctx->active_thread_type & FF_THREAD_FRAME) && fit >= 1)
+                av_log(avctx, AV_LOG_ERROR,
+                       "NVDEC requires %d decode surfaces for this multi-layer "
+                       "stream, exceeding the hardware limit of %d; retry with "
+                       "-threads %d or lower.\n", required,
+                       NVDEC_MAX_DECODE_SURFACES, fit);
+            else
+                av_log(avctx, AV_LOG_ERROR,
+                       "NVDEC requires %d decode surfaces for this multi-layer "
+                       "stream, exceeding the hardware limit of %d.\n",
+                       required, NVDEC_MAX_DECODE_SURFACES);
+            ret = AVERROR(ENOSYS);
+            goto fail;
+        }
+    } else if (decode_pool_size > NVDEC_MAX_DECODE_SURFACES) {
+        av_log(avctx, AV_LOG_WARNING,
+               "NVDEC requires %d decode surfaces, exceeding the hardware limit "
+               "of %d; capping to %d. Decoding may fail for this stream.\n",
+               decode_pool_size, NVDEC_MAX_DECODE_SURFACES,
+               NVDEC_MAX_DECODE_SURFACES);
+    }
+    params.ulNumDecodeSurfaces = FFMIN(decode_pool_size, NVDEC_MAX_DECODE_SURFACES);
     params.ulNumOutputSurfaces = opaque_output ? 0 : (unsafe_output ? FFMIN(frames_ctx->initial_pool_size, 64) : 1);
 
     ret = nvdec_decoder_create(&ctx->decoder, frames_ctx->device_ref, &params, avctx);
-    if (ret < 0) {
-        if (params.ulNumDecodeSurfaces > 32) {
-            av_log(avctx, AV_LOG_WARNING, "Using more than 32 (%d) decode surfaces might cause nvdec to fail.\n",
-                   (int)params.ulNumDecodeSurfaces);
-            av_log(avctx, AV_LOG_WARNING, "Try lowering the amount of threads. Using %d right now.\n",
-                   avctx->thread_count);
-        }
+    if (ret < 0)
         goto fail;
-    }
 
     decoder = ctx->decoder;
     decoder->unsafe_output = unsafe_output;
@@ -689,7 +715,7 @@ int ff_nvdec_decode_init(AVCodecContext *avctx)
         ret = AVERROR(ENOMEM);
         goto fail;
     }
-    pool->dpb_size = FFMIN(decode_pool_size, 32);
+    pool->dpb_size = FFMIN(decode_pool_size, NVDEC_MAX_DECODE_SURFACES);
 
     ctx->decoder_pool = av_refstruct_pool_alloc_ext(sizeof(unsigned int), 0, pool,
                                                     nvdec_decoder_frame_init,

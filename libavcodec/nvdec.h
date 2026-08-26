@@ -49,6 +49,12 @@
 // SDK 13.1 compile time feature checks
 #if NVDECAPI_CHECK_VERSION(13, 1)
 #define NVDEC_HAVE_OPAQUE_OUTPUT_SUPPORT
+#define NVDEC_HAVE_MVHEVC_DECODE
+/* Largest ulNumDecodeSurfaces the hardware can address; the SDK only names the
+ * limit from 13.1 on, where it also bounds cuvidRegisterDecodeSurfaces(). */
+#define NVDEC_MAX_DECODE_SURFACES MAX_NUM_REGISTERED_DECODE_SURFACES
+#else
+#define NVDEC_MAX_DECODE_SURFACES 32
 #endif
 
 typedef struct NVDECFrame {
@@ -76,6 +82,16 @@ typedef struct NVDECContext {
     unsigned int  slice_offsets_allocated;
 
     int           supports_444;
+
+    /* Nonzero when every requested decode surface is actually needed, in which
+     * case exceeding the hardware limit must fail instead of being capped.
+     * The value is the number of surfaces consumed per access unit. */
+    int           strict_pool_layers;
+
+    /* Decode surfaces the hwaccel requires, independent of the frames context
+     * in use.  frame_params() is skipped for a caller-supplied context, so the
+     * pool it carries is not on its own proof that the stream fits. */
+    int           strict_pool_min;
 } NVDECContext;
 
 int ff_nvdec_decode_init(AVCodecContext *avctx);

@@ -456,28 +456,16 @@ int ff_hevc_is_alpha_video(const HEVCContext *s)
     return ret;
 }
 
-static int setup_multilayer(HEVCContext *s, const HEVCVPS *vps)
+int ff_hevc_requested_layers(const HEVCContext *s, const HEVCVPS *vps,
+                             unsigned *active_output)
 {
     unsigned layers_active_output = 0, highest_layer;
 
-    s->layers_active_output = 1;
-    s->layers_active_decode = 1;
-
-    if (ff_hevc_is_alpha_video(s)) {
-        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(s->avctx->pix_fmt);
-
-        if (!(desc->flags & AV_PIX_FMT_FLAG_ALPHA))
-            return 0;
-
-        s->layers_active_decode = (1 << vps->nb_layers) - 1;
-        s->layers_active_output = 1;
-
-        return 0;
-    }
-
     // nothing requested - decode base layer only
-    if (!s->nb_view_ids)
-        return 0;
+    if (!s->nb_view_ids) {
+        *active_output = 1;
+        return 1;
+    }
 
     if (s->nb_view_ids == 1 && s->view_ids[0] == -1) {
         layers_active_output = (1 << vps->nb_layers) - 1;
@@ -519,11 +507,40 @@ static int setup_multilayer(HEVCContext *s, const HEVCVPS *vps)
         return AVERROR(EINVAL);
     }
 
+    *active_output = layers_active_output;
+
     /* Assume a higher layer depends on all the lower ones.
      * This is enforced in VPS parsing currently, this logic will need
      * to be changed if we want to support more complex dependency structures.
      */
-    s->layers_active_decode = (1 << (highest_layer + 1)) - 1;
+    return highest_layer + 1;
+}
+
+static int setup_multilayer(HEVCContext *s, const HEVCVPS *vps)
+{
+    unsigned layers_active_output;
+    int nb_decode_layers;
+
+    s->layers_active_output = 1;
+    s->layers_active_decode = 1;
+
+    if (ff_hevc_is_alpha_video(s)) {
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(s->avctx->pix_fmt);
+
+        if (!(desc->flags & AV_PIX_FMT_FLAG_ALPHA))
+            return 0;
+
+        s->layers_active_decode = (1 << vps->nb_layers) - 1;
+        s->layers_active_output = 1;
+
+        return 0;
+    }
+
+    nb_decode_layers = ff_hevc_requested_layers(s, vps, &layers_active_output);
+    if (nb_decode_layers < 0)
+        return nb_decode_layers;
+
+    s->layers_active_decode = (1 << nb_decode_layers) - 1;
     s->layers_active_output = layers_active_output;
 
     av_log(s->avctx, AV_LOG_DEBUG, "decode/output layers: %x/%x\n",
