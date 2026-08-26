@@ -436,6 +436,15 @@ int ff_mkdir_p(const char *path)
         pos++;
     } else if (!av_strncasecmp(temp, "./", 2) || !av_strncasecmp(temp, ".\\", 2)) {
         pos += 2;
+    } else if (is_dos_path(temp)) {
+        /* Skip Windows drive letter (e.g. "C:") and the separator(s) after it.
+         * Otherwise the loop below calls mkdir("C:"), which on Windows is a
+         * drive-relative path. When the process CWD is on a different drive,
+         * "C:" resolves to the drive root (C:\), and mkdir on the root
+         * returns EACCES, causing spurious "Permission denied" errors. */
+        pos += 2;
+        while (*pos == '/' || *pos == '\\')
+            pos++;
     }
 
     for ( ; *pos != '\0'; ++pos) {
