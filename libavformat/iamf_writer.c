@@ -1274,9 +1274,10 @@ int ff_iamf_write_audio_frame(const IAMFContext *iamf, AVIOContext *pb,
 
     if (codec_config->codec_id == AV_CODEC_ID_OPUS) {
         // IAMF's num_samples_to_trim_at_start is the same as Opus's pre-skip.
-        skip_samples = pkt->dts < 0
-            ? av_rescale(-pkt->dts, 48000, pkt->time_base.den)
-            : 0;
+        if (!skip_samples)
+            skip_samples = pkt->dts < 0
+                ? av_rescale(-pkt->dts, 48000, pkt->time_base.den)
+                : 0;
         discard_padding = av_rescale(discard_padding, 48000, pkt->time_base.den);
     }
 
