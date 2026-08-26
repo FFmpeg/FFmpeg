@@ -396,8 +396,8 @@ int ff_d3d12va_common_frame_params(AVCodecContext *avctx, AVBufferRef *hw_frames
     case AV_PIX_FMT_YUV420P12: frames_ctx->sw_format = AV_PIX_FMT_P012; break;
     default:                   frames_ctx->sw_format = AV_PIX_FMT_NV12; break;
     }
-    frames_ctx->width     = avctx->width;
-    frames_ctx->height    = avctx->height;
+    frames_ctx->width     = avctx->coded_width;
+    frames_ctx->height    = avctx->coded_height;
 
     return 0;
 }
