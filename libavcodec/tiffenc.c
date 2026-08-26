@@ -130,6 +130,7 @@ static int add_entry(TiffEncoderContext *s, enum TiffTags tag,
                      enum AVTiffDataType type, int count, const void *ptr_val)
 {
     uint8_t *entries_ptr = s->entries + 12 * s->num_entries;
+    int64_t data_size = count * (int64_t)type_sizes2[type];
 
     av_assert0(s->num_entries < TIFF_MAX_ENTRY);
 
@@ -140,9 +141,13 @@ static int add_entry(TiffEncoderContext *s, enum TiffTags tag,
     if (type_sizes[type] * (int64_t)count <= 4) {
         tnput(&entries_ptr, count, ptr_val, type, 0);
     } else {
-        bytestream_put_le32(&entries_ptr, *s->buf - s->buf_start);
-        if (check_size(s, count * (int64_t)type_sizes2[type]))
+        int padding = (*s->buf - s->buf_start) & 1;
+
+        if (check_size(s, data_size + padding))
             return AVERROR_INVALIDDATA;
+        if (padding)
+            bytestream_put_byte(s->buf, 0);
+        bytestream_put_le32(&entries_ptr, *s->buf - s->buf_start);
         tnput(s->buf, count, ptr_val, type, 0);
     }
 
@@ -251,17 +256,19 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
     TiffEncoderContext *s = avctx->priv_data;
     const AVFrame *const p = pict;
+    const AVFrameSideData *icc_profile;
     int i;
     uint8_t *ptr;
     uint8_t *offset;
     uint32_t strips;
-    int bytes_per_row;
+    int64_t bytes_per_row;
     uint32_t res[2] = { s->dpi, 1 };    // image resolution (72/1)
     uint16_t bpp_tab[4];
     int ret = 0;
     int is_yuv = 0, alpha = 0;
     int shift_h, shift_v;
-    int packet_size;
+    int64_t packet_size;
+    int icc_size = 0;
 
     s->width          = avctx->width;
     s->height         = avctx->height;
@@ -322,6 +329,15 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     for (i = 0; i < s->bpp_tab_size; i++)
         bpp_tab[i] = desc->comp[i].depth;
 
+    icc_profile = av_frame_get_side_data(pict, AV_FRAME_DATA_ICC_PROFILE);
+    if (icc_profile && icc_profile->size) {
+        if (icc_profile->size > INT_MAX) {
+            av_log(avctx, AV_LOG_ERROR, "ICC profile is too large\n");
+            return AVERROR_INVALIDDATA;
+        }
+        icc_size = icc_profile->size;
+    }
+
     if (s->compr == TIFF_DEFLATE       ||
         s->compr == TIFF_ADOBE_DEFLATE ||
         s->compr == TIFF_LZW)
@@ -329,16 +345,21 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         s->rps = s->height;
     else
         // suggest size of strip
-        s->rps = FFMAX(8192 / (((s->width * s->bpp) >> 3) + 1), 1);
+        s->rps = FFMAX(8192 / ((((int64_t)s->width * s->bpp) >> 3) + 1), 1);
     // round rps up
     s->rps = ((s->rps - 1) / s->subsampling[1] + 1) * s->subsampling[1];
 
     strips = (s->height - 1) / s->rps + 1;
 
-    bytes_per_row = (((s->width - 1) / s->subsampling[0] + 1) * s->bpp *
-                     s->subsampling[0] * s->subsampling[1] + 7) >> 3;
-    packet_size = avctx->height * bytes_per_row * 2 +
-                  avctx->height * 4 + FF_INPUT_BUFFER_MIN_SIZE;
+    bytes_per_row = ((((int64_t)s->width - 1) / s->subsampling[0] + 1) *
+                     s->bpp * s->subsampling[0] * s->subsampling[1] + 7) >> 3;
+    if (bytes_per_row > INT_MAX)
+        return AVERROR(EINVAL);
+    if (avctx->height > (INT64_MAX - FF_INPUT_BUFFER_MIN_SIZE - icc_size -
+                         !!icc_size) / (2 * bytes_per_row + 4))
+        return AVERROR(EINVAL);
+    packet_size = avctx->height * (2 * bytes_per_row + 4) +
+                  FF_INPUT_BUFFER_MIN_SIZE + icc_size + !!icc_size;
 
     if ((ret = ff_alloc_packet(avctx, pkt, packet_size)) < 0)
         return ret;
@@ -515,6 +536,10 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             ADD_ENTRY1(s, TIFF_YCBCR_POSITIONING, AV_TIFF_SHORT, 2);
         ADD_ENTRY(s, TIFF_REFERENCE_BW,      AV_TIFF_RATIONAL, 6, refbw);
     }
+
+    if (icc_size)
+        ADD_ENTRY(s, TIFF_ICC_PROFILE, AV_TIFF_UNDEFINED, icc_size, icc_profile->data);
+
     // write offset to dir
     bytestream_put_le32(&offset, ptr - pkt->data);
 
@@ -587,6 +612,7 @@ const FFCodec ff_tiff_encoder = {
     .p.id           = AV_CODEC_ID_TIFF,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS |
                       AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
+    .caps_internal  = FF_CODEC_CAP_ICC_PROFILES,
     .priv_data_size = sizeof(TiffEncoderContext),
     .init           = encode_init,
     .close          = encode_close,
