@@ -714,22 +714,28 @@ int avio_read_partial(AVIOContext *s, unsigned char *buf, int size)
     return len;
 }
 
-#define AVIO_READER(name, type, read1, shift1, read2, shift2)  \
+#define AVIO_READER(name, type, bytes, load, read1, shift1, read2, shift2) \
 type name(AVIOContext *s)                                       \
 {                                                               \
-    type val = (type)read1(s) << shift1;                        \
-    val     |= (type)read2(s) << shift2;                        \
+    type val;                                                   \
+    if (s->buf_end - s->buf_ptr >= bytes) {                     \
+        val = load(s->buf_ptr);                                 \
+        s->buf_ptr += bytes;                                    \
+    } else {                                                    \
+        val  = (type)read1(s) << shift1;                        \
+        val |= (type)read2(s) << shift2;                        \
+    }                                                           \
     return val;                                                 \
 }
 
-AVIO_READER(avio_rl16, unsigned int, avio_r8,    0, avio_r8,    8)
-AVIO_READER(avio_rl24, unsigned int, avio_rl16,  0, avio_r8,   16)
-AVIO_READER(avio_rl32, unsigned int, avio_rl16,  0, avio_rl16, 16)
-AVIO_READER(avio_rl64, uint64_t,     avio_rl32,  0, avio_rl32, 32)
-AVIO_READER(avio_rb16, unsigned int, avio_r8,    8, avio_r8,    0)
-AVIO_READER(avio_rb24, unsigned int, avio_rb16,  8, avio_r8,    0)
-AVIO_READER(avio_rb32, unsigned int, avio_rb16, 16, avio_rb16,  0)
-AVIO_READER(avio_rb64, uint64_t,     avio_rb32, 32, avio_rb32,  0)
+AVIO_READER(avio_rl16, unsigned int, 2, AV_RL16, avio_r8,    0, avio_r8,    8)
+AVIO_READER(avio_rl24, unsigned int, 3, AV_RL24, avio_rl16,  0, avio_r8,   16)
+AVIO_READER(avio_rl32, unsigned int, 4, AV_RL32, avio_rl16,  0, avio_rl16, 16)
+AVIO_READER(avio_rl64, uint64_t,     8, AV_RL64, avio_rl32,  0, avio_rl32, 32)
+AVIO_READER(avio_rb16, unsigned int, 2, AV_RB16, avio_r8,    8, avio_r8,    0)
+AVIO_READER(avio_rb24, unsigned int, 3, AV_RB24, avio_rb16,  8, avio_r8,    0)
+AVIO_READER(avio_rb32, unsigned int, 4, AV_RB32, avio_rb16, 16, avio_rb16,  0)
+AVIO_READER(avio_rb64, uint64_t,     8, AV_RB64, avio_rb32, 32, avio_rb32,  0)
 int ff_get_line(AVIOContext *s, char *buf, int maxlen)
 {
     int i = 0;
