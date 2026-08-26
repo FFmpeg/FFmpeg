@@ -1467,7 +1467,7 @@ static void sh_partition_constraints(VVCSH *sh, const H266RawSPS *sps, const H26
     sh->min_qt_size[CHROMA] = 1 << min_qt_log2_size_y[CHROMA];
 }
 
-static void sh_entry_points(VVCSH *sh, const H266RawSPS *sps, const VVCPPS *pps)
+static int sh_entry_points(VVCSH *sh, const H266RawSPS *sps, const VVCPPS *pps)
 {
     if (sps->sps_entry_point_offsets_present_flag) {
         for (int i = 1, j = 0; i < sh->num_ctus_in_curr_slice; i++) {
@@ -1478,10 +1478,14 @@ static void sh_entry_points(VVCSH *sh, const H266RawSPS *sps, const VVCPPS *pps)
             if (pps->ctb_to_row_bd[ctb_addr_y] != pps->ctb_to_row_bd[pre_ctb_addr_y] ||
                 pps->ctb_to_col_bd[ctb_addr_x] != pps->ctb_to_col_bd[pre_ctb_addr_x] ||
                 (ctb_addr_y != pre_ctb_addr_y && sps->sps_entropy_coding_sync_enabled_flag)) {
+                if (j >= VVC_MAX_ENTRY_POINTS)
+                    return AVERROR_INVALIDDATA;
                 sh->entry_point_start_ctu[j++] = i;
             }
         }
     }
+
+    return 0;
 }
 
 static int sh_derive(VVCSH *sh, const VVCFrameParamSets *fps)
@@ -1501,7 +1505,9 @@ static int sh_derive(VVCSH *sh, const VVCFrameParamSets *fps)
     sh_qp_y(sh, pps, ph);
     sh_deblock_offsets(sh);
     sh_partition_constraints(sh, sps, ph);
-    sh_entry_points(sh, sps, fps->pps);
+    ret = sh_entry_points(sh, sps, fps->pps);
+    if (ret < 0)
+        return ret;
 
     return 0;
 }
