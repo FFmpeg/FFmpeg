@@ -122,6 +122,7 @@ static const struct exif_tag tag_list[] = { // JEITA CP-3451 EXIF specification:
     {"Software",                   0x131},
     {"Artist",                     0x13B},
     {"Copyright",                  0x8298},
+    {"InterColorProfile",          0x8773},
     {"ExifVersion",                0x9000}, // <- Table 4 Exif IFD Attribute Information (1)
     {"FlashpixVersion",            0xA000},
     {"ColorSpace",                 0xA001},
