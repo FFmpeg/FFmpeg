@@ -255,7 +255,7 @@ int ff_vk_decode_add_slice(AVCodecContext *avctx, FFVulkanDecodePicture *vp,
 
     if (offsets) {
         slice_off = av_fast_realloc(dec->slice_off, &dec->slice_off_max,
-                                    (nb + 1)*sizeof(slice_off));
+                                    (nb + 1)*sizeof(*slice_off));
         if (!slice_off)
             return AVERROR(ENOMEM);
 
