@@ -570,11 +570,11 @@ static int vk_av1_decode_slice(AVCodecContext *avctx,
     AV1VulkanDecodePicture *ap = s->cur_frame.hwaccel_picture_private;
     FFVulkanDecodePicture *vp = &ap->vp;
 
-    /* Too many tiles, exceeding all defined levels in the AV1 spec */
-    if (ap->av1_pic_info.tileCount > MAX_TILES)
-        return AVERROR(ENOSYS);
-
     for (int i = s->tg_start; i <= s->tg_end; i++) {
+        /* Too many tiles, exceeding all defined levels in the AV1 spec */
+        if (ap->av1_pic_info.tileCount >= MAX_TILES)
+            return AVERROR(ENOSYS);
+
         ap->tile_sizes[ap->av1_pic_info.tileCount] = s->tile_group_info[i].tile_size;
 
         err = ff_vk_decode_add_slice(avctx, vp,
