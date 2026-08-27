@@ -87,9 +87,14 @@ static int vpk_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     vpk->current_block++;
     if (vpk->current_block == vpk->block_count) {
-        unsigned size = vpk->last_block_size / par->ch_layout.nb_channels;
-        unsigned skip = (par->block_align - vpk->last_block_size) / par->ch_layout.nb_channels;
-        uint64_t pos = avio_tell(s->pb);
+        unsigned size, skip;
+        uint64_t pos;
+
+        if (par->ch_layout.nb_channels <= 0)
+            return AVERROR_INVALIDDATA;
+        size = vpk->last_block_size / par->ch_layout.nb_channels;
+        skip = (par->block_align - vpk->last_block_size) / par->ch_layout.nb_channels;
+        pos = avio_tell(s->pb);
 
         ret = av_new_packet(pkt, vpk->last_block_size);
         if (ret < 0)
