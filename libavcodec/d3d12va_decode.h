@@ -96,11 +96,6 @@ typedef struct D3D12VADecodeContext {
     UINT used_mask;
 
     /**
-     * Bitstream size for each frame
-     */
-    UINT bitstream_size;
-
-    /**
      * The sync context used to sync command queue
      */
     AVD3D12VASyncContext sync_ctx;
@@ -142,16 +137,6 @@ typedef struct D3D12VADecodeContext {
 #define D3D12VA_FRAMES_CONTEXT(avctx) ((AVHWFramesContext *)(avctx)->hw_frames_ctx->data)
 
 /**
- * @brief Get a suitable maximum bitstream size
- *
- * Creating and destroying a resource on d3d12 needs sync and reallocation, so use this function
- * to help allocate a big enough bitstream buffer to avoid recreating resources when decoding.
- *
- * @return the suitable size
- */
-int ff_d3d12va_get_suitable_max_bitstream_size(AVCodecContext *avctx);
-
-/**
  * @brief init D3D12VADecodeContext
  *
  * @return Error code (ret < 0 if failed)
@@ -175,18 +160,20 @@ int ff_d3d12va_common_frame_params(AVCodecContext *avctx, AVBufferRef *hw_frames
 /**
  * @brief d3d12va common end frame
  *
- * @param avctx    codec context
- * @param frame    current output frame
- * @param pp       picture parameters
- * @param pp_size  the size of the picture parameters
- * @param qm       quantization matrix
- * @param qm_size  the size of the quantization matrix
- * @param callback update decoder-specified input stream arguments
+ * @param avctx           codec context
+ * @param frame           current output frame
+ * @param pp              picture parameters
+ * @param pp_size         the size of the picture parameters
+ * @param qm              quantization matrix
+ * @param qm_size         the size of the quantization matrix
+ * @param bitstream_size  required compressed-bitstream upload-buffer capacity in bytes
+ * @param callback        update decoder-specified input stream arguments
  * @return Error code (ret < 0 if failed)
  */
 int ff_d3d12va_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
     const void *pp, unsigned pp_size,
     const void *qm, unsigned qm_size,
+    UINT64 bitstream_size,
     int(*)(AVCodecContext *, D3D12_VIDEO_DECODE_INPUT_STREAM_ARGUMENTS *, ID3D12Resource *));
 
 #endif /* AVCODEC_D3D12VA_DEC_H */

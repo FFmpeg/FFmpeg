@@ -88,17 +88,11 @@ static int d3d12va_vp9_decode_slice(AVCodecContext *avctx, const uint8_t *buffer
 
 static int update_input_arguments(AVCodecContext *avctx, D3D12_VIDEO_DECODE_INPUT_STREAM_ARGUMENTS *input_args, ID3D12Resource *buffer)
 {
-    D3D12VADecodeContext    *ctx     = D3D12VA_DECODE_CONTEXT(avctx);
     const VP9SharedContext  *h       = avctx->priv_data;
     VP9DecodePictureContext *ctx_pic = h->frames[CUR_FRAME].hwaccel_picture_private;
 
     void *mapped_data;
     D3D12_VIDEO_DECODE_FRAME_ARGUMENT *args;
-
-    if (ctx_pic->slice.SliceBytesInBuffer > ctx->bitstream_size) {
-        av_log(avctx, AV_LOG_ERROR, "Input frame bitstream size exceeds internal buffer!\n");
-        return AVERROR(EINVAL);
-    }
 
     if (FAILED(ID3D12Resource_Map(buffer, 0, NULL, &mapped_data))) {
         av_log(avctx, AV_LOG_ERROR, "Failed to map D3D12 Buffer resource!\n");
@@ -132,7 +126,8 @@ static int d3d12va_vp9_end_frame(AVCodecContext *avctx)
         return -1;
 
     return ff_d3d12va_common_end_frame(avctx, h->frames[CUR_FRAME].tf.f,
-               &ctx_pic->pp, sizeof(ctx_pic->pp), NULL, 0, update_input_arguments);
+               &ctx_pic->pp, sizeof(ctx_pic->pp), NULL, 0, ctx_pic->bitstream_size,
+               update_input_arguments);
 }
 
 static av_cold int d3d12va_vp9_decode_init(AVCodecContext *avctx)

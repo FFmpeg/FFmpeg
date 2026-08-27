@@ -41,6 +41,8 @@ typedef struct D3D12DecodePictureContext {
     unsigned               bitstream_size;
 } D3D12DecodePictureContext;
 
+static const uint8_t vc1_start_code[] = { 0, 0, 1, 0x0d };
+
 static int d3d12va_vc1_start_frame(AVCodecContext *avctx,
                                    av_unused const AVBufferRef *buffer_ref,
                                    av_unused const uint8_t *buffer,
@@ -94,7 +96,6 @@ static int d3d12va_vc1_decode_slice(AVCodecContext *avctx, const uint8_t *buffer
 
 static int update_input_arguments(AVCodecContext *avctx, D3D12_VIDEO_DECODE_INPUT_STREAM_ARGUMENTS *input_args, ID3D12Resource *buffer)
 {
-    D3D12VADecodeContext      *ctx          = D3D12VA_DECODE_CONTEXT(avctx);
     const VC1Context *v                     = avctx->priv_data;
     const MpegEncContext      *s            = &v->s;
     D3D12DecodePictureContext *ctx_pic      = s->cur_pic.ptr->hwaccel_picture_private;
@@ -102,9 +103,6 @@ static int update_input_arguments(AVCodecContext *avctx, D3D12_VIDEO_DECODE_INPU
 
     const unsigned mb_count = s->mb_width * (s->mb_height >> v->field_mode);
     uint8_t *mapped_data, *mapped_ptr;
-    UINT bitstream_size = ctx->bitstream_size;
-
-    static const uint8_t start_code[] = { 0, 0, 1, 0x0d };
 
     if (FAILED(ID3D12Resource_Map(buffer, 0, NULL, (void **)&mapped_data))) {
         av_log(avctx, AV_LOG_ERROR, "Failed to map D3D12 Buffer resource!\n");
@@ -117,12 +115,6 @@ static int update_input_arguments(AVCodecContext *avctx, D3D12_VIDEO_DECODE_INPU
         unsigned position     = slice->dwSliceDataLocation;
         unsigned size         = slice->dwSliceBitsInBuffer / 8;
 
-        if ((uint64_t)size + ((avctx->codec_id == AV_CODEC_ID_VC1) ? sizeof(start_code) : 0) > bitstream_size) {
-            av_log(avctx, AV_LOG_ERROR, "Input frame bitstream size exceeds internal buffer!\n");
-            ID3D12Resource_Unmap(buffer, 0, NULL);
-            return AVERROR(EINVAL);
-        }
-
         slice->dwSliceDataLocation = mapped_ptr - mapped_data;
         if (i < ctx_pic->slice_count - 1)
             slice->wNumberMBsInSlice = slice[1].wNumberMBsInSlice - slice[0].wNumberMBsInSlice;
@@ -130,20 +122,18 @@ static int update_input_arguments(AVCodecContext *avctx, D3D12_VIDEO_DECODE_INPU
             slice->wNumberMBsInSlice = mb_count - slice[0].wNumberMBsInSlice;
 
         if (avctx->codec_id == AV_CODEC_ID_VC1) {
-            memcpy(mapped_ptr, start_code, sizeof(start_code));
+            memcpy(mapped_ptr, vc1_start_code, sizeof(vc1_start_code));
             if (i == 0 && v->second_field)
                 mapped_ptr[3] = 0x0c;
             else if (i > 0)
                 mapped_ptr[3] = 0x0b;
 
-            mapped_ptr += sizeof(start_code);
-            bitstream_size -= sizeof(start_code);
-            slice->dwSliceBitsInBuffer += sizeof(start_code) * 8;
+            mapped_ptr += sizeof(vc1_start_code);
+            slice->dwSliceBitsInBuffer += sizeof(vc1_start_code) * 8;
         }
 
         memcpy(mapped_ptr, &ctx_pic->bitstream[position], size);
         mapped_ptr += size;
-        bitstream_size -= size;
     }
 
     ID3D12Resource_Unmap(buffer, 0, NULL);
@@ -172,6 +162,9 @@ static int d3d12va_vc1_end_frame(AVCodecContext *avctx)
     return ff_d3d12va_common_end_frame(avctx, v->s.cur_pic.ptr->f,
                                        &ctx_pic->pp, sizeof(ctx_pic->pp),
                                        NULL, 0,
+                                       ctx_pic->bitstream_size +
+                                       (avctx->codec_id == AV_CODEC_ID_VC1 ?
+                                        (uint64_t)ctx_pic->slice_count * sizeof(vc1_start_code) : 0),
                                        update_input_arguments);
 }
 

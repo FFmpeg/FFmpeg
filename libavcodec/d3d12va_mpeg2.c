@@ -90,7 +90,6 @@ static int d3d12va_mpeg2_decode_slice(AVCodecContext *avctx, const uint8_t *buff
 
 static int update_input_arguments(AVCodecContext *avctx, D3D12_VIDEO_DECODE_INPUT_STREAM_ARGUMENTS *input_args, ID3D12Resource *buffer)
 {
-    D3D12VADecodeContext      *ctx          = D3D12VA_DECODE_CONTEXT(avctx);
     const MpegEncContext      *s            = avctx->priv_data;
     D3D12DecodePictureContext *ctx_pic      = s->cur_pic.ptr->hwaccel_picture_private;
 
@@ -105,11 +104,6 @@ static int update_input_arguments(AVCodecContext *avctx, D3D12_VIDEO_DECODE_INPU
         .Begin = 0,
         .End = ctx_pic->bitstream_size,
     };
-
-    if (ctx_pic->bitstream_size > ctx->bitstream_size) {
-        av_log(avctx, AV_LOG_ERROR, "Input frame bitstream size exceeds internal buffer!\n");
-        return AVERROR(EINVAL);
-    }
 
     if (FAILED(ID3D12Resource_Map(buffer, 0, &range, &mapped_data))) {
         av_log(avctx, AV_LOG_ERROR, "Failed to map D3D12 Buffer resource!\n");
@@ -152,7 +146,8 @@ static int d3d12va_mpeg2_end_frame(AVCodecContext *avctx)
         return -1;
 
     ret = ff_d3d12va_common_end_frame(avctx, s->cur_pic.ptr->f, &ctx_pic->pp, sizeof(ctx_pic->pp),
-                                      &ctx_pic->qm, sizeof(ctx_pic->qm), update_input_arguments);
+                                      &ctx_pic->qm, sizeof(ctx_pic->qm), ctx_pic->bitstream_size,
+                                      update_input_arguments);
     if (!ret)
         ff_mpeg_draw_horiz_band(s, 0, avctx->height);
 
