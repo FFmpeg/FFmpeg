@@ -158,21 +158,27 @@ CHANGE_DELAY(dbl, double,  0)
 
 static int parse_delays(char *p, char **saveptr, int64_t *result, AVFilterContext *ctx, int sample_rate) {
     float delay, div;
-    int ret;
     char *arg;
-    char type = 0;
+    char suffix;
 
     if (!(arg = av_strtok(p, "|", saveptr)))
         return 1;
 
-    ret = av_sscanf(arg, "%"SCNd64"%c", result, &type);
-    if (ret != 2 || type != 'S') {
-        div = type == 's' ? 1.0 : 1000.0;
+    suffix = arg[strlen(arg) - 1];
+    if (suffix != 'S') {
+        div = suffix == 's' ? 1.0 : 1000.0;
         if (av_sscanf(arg, "%f", &delay) != 1) {
             av_log(ctx, AV_LOG_ERROR, "Invalid syntax for delay.\n");
             return AVERROR(EINVAL);
         }
         *result = delay * sample_rate / div;
+    } else {
+        char type;
+
+        if (av_sscanf(arg, "%"SCNd64"%c", result, &type) != 2 || type != 'S') {
+            av_log(ctx, AV_LOG_ERROR, "Invalid syntax for delay.\n");
+            return AVERROR(EINVAL);
+        }
     }
 
     if (*result < 0) {
