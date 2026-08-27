@@ -2596,6 +2596,16 @@ static int parameters_from_context(AVFormatContext *ic, AVCodecParameters *par,
     if (par_tmp->chroma_location != AVCHROMA_LOC_UNSPECIFIED)
         par->chroma_location = par_tmp->chroma_location;
 
+    /* A failed avcodec_open2() zeroes ch_layout through
+     * ff_codec_close() -> av_opt_free(); do not copy that empty layout
+     * over a container-signaled one. Other AVOption types used here are
+     * integers and are not cleared. */
+    if (par_tmp->ch_layout.nb_channels > 0 && !par->ch_layout.nb_channels) {
+        ret = av_channel_layout_copy(&par->ch_layout, &par_tmp->ch_layout);
+        if (ret < 0)
+            goto fail;
+    }
+
     ret = 0;
 fail:
     avcodec_parameters_free(&par_tmp);
