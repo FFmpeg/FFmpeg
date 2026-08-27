@@ -157,7 +157,7 @@ CHANGE_DELAY(flt, float,   0)
 CHANGE_DELAY(dbl, double,  0)
 
 static int parse_delays(char *p, char **saveptr, int64_t *result, AVFilterContext *ctx, int sample_rate) {
-    float delay, div;
+    double delay, div;
     char *arg;
     char suffix;
 
@@ -166,12 +166,19 @@ static int parse_delays(char *p, char **saveptr, int64_t *result, AVFilterContex
 
     suffix = arg[strlen(arg) - 1];
     if (suffix != 'S') {
+        double delay_samples;
+
         div = suffix == 's' ? 1.0 : 1000.0;
-        if (av_sscanf(arg, "%f", &delay) != 1) {
+        if (av_sscanf(arg, "%lf", &delay) != 1) {
             av_log(ctx, AV_LOG_ERROR, "Invalid syntax for delay.\n");
             return AVERROR(EINVAL);
         }
-        *result = delay * sample_rate / div;
+        delay_samples = delay * sample_rate / div;
+        if (!isfinite(delay_samples) || delay_samples < -0x1p63 || delay_samples >= 0x1p63) {
+            av_log(ctx, AV_LOG_ERROR, "Delay is out of range.\n");
+            return AVERROR(EINVAL);
+        }
+        *result = delay_samples;
     } else {
         char type;
 
