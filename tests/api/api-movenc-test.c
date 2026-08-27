@@ -417,6 +417,13 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    // Write a fragmented file with an initial moov and no samples.
+    init_out("non-empty-moov-no-mdat");
+    av_dict_set(&opts, "movflags", "+frag_keyframe", 0);
+    init(0, 0);
+    finish();
+    close_out();
+
     // Write a fragmented file with an initial moov that actually contains some
     // samples. One moov+mdat with 1 second of data and one moof+mdat with 1
     // second of data.

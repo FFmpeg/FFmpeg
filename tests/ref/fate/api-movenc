@@ -1,4 +1,8 @@
 write_data len 36, time nopts, type header atom ftyp
+write_data len 1123, time nopts, type header atom -
+write_data len 24, time nopts, type trailer atom -
+0f878d7b9767582011dfa104de94b1d9 1183 non-empty-moov-no-mdat
+write_data len 36, time nopts, type header atom ftyp
 write_data len 2429, time nopts, type header atom -
 write_data len 788, time 1000000, type sync atom moof
 write_data len 110, time nopts, type trailer atom -
