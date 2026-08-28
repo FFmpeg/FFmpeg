@@ -67,6 +67,12 @@ const AVProfile ff_mpegh_3da_profiles[] = {
   { AV_PROFILE_UNKNOWN },
 };
 
+const AVProfile ff_cavs_profiles[] = {
+    { AV_PROFILE_CAVS_JIZHUN,       "JiZhun"       },
+    { AV_PROFILE_CAVS_BROADCASTING, "Broadcasting" },
+    { AV_PROFILE_UNKNOWN },
+};
+
 const AVProfile ff_dnxhd_profiles[] = {
   { AV_PROFILE_DNXHD,      "DNXHD"},
   { AV_PROFILE_DNXHR_LB,   "DNXHR LB"},

@@ -219,6 +219,8 @@
 #define AV_PROFILE_APV_4444_12 88
 #define AV_PROFILE_APV_400_10  99
 
+#define AV_PROFILE_CAVS_JIZHUN              0x20
+#define AV_PROFILE_CAVS_BROADCASTING        0x48
 
 #define AV_LEVEL_UNKNOWN                  -99
 

@@ -35,6 +35,7 @@
 #include "golomb.h"
 #include "cavs.h"
 #include "codec_internal.h"
+#include "profiles.h"
 #include "decode.h"
 #include "mathops.h"
 #include "mpeg12data.h"
@@ -1254,9 +1255,8 @@ static int decode_seq_header(AVSContext *h)
     int ret;
 
     profile = get_bits(&h->gb, 8);
-    if (profile != 0x20) {
-        avpriv_report_missing_feature(h->avctx,
-                                      "only support JiZhun profile");
+    if (profile != AV_PROFILE_CAVS_JIZHUN) {
+        avpriv_report_missing_feature(h->avctx, "Profile %#x", profile);
         return AVERROR_PATCHWELCOME;
     }
     level = get_bits(&h->gb, 8);
@@ -1314,6 +1314,7 @@ static int decode_seq_header(AVSContext *h)
     h->mb_width        = mb_width;
     h->mb_height       = mb_height;
     h->low_delay       = low_delay;
+    h->avctx->profile  = profile;
     h->avctx->framerate = ff_mpeg12_frame_rate_tab[frame_rate_code];
     if (!h->top_qp)
         return ff_cavs_init_top_lines(h);
@@ -1422,5 +1423,6 @@ const FFCodec ff_cavs_decoder = {
     FF_CODEC_DECODE_CB(cavs_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
     .flush          = cavs_flush,
+    .p.profiles     = NULL_IF_CONFIG_SMALL(ff_cavs_profiles),
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
