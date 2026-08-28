@@ -306,7 +306,7 @@ OBJS-$(CONFIG_BONK_DECODER)            += bonk.o
 OBJS-$(CONFIG_BRENDER_PIX_DECODER)     += brenderpix.o
 OBJS-$(CONFIG_C93_DECODER)             += c93.o
 OBJS-$(CONFIG_CAVS_DECODER)            += cavs.o cavsdec.o cavsdsp.o \
-                                          cavsdata.o
+                                          cavsdata.o cavs_aec.o
 OBJS-$(CONFIG_CBD2_DPCM_DECODER)       += dpcm.o
 OBJS-$(CONFIG_CCAPTION_DECODER)        += ccaption_dec.o ass.o
 OBJS-$(CONFIG_CDGRAPHICS_DECODER)      += cdgraphics.o
