@@ -29,6 +29,7 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
+#include "libavutil/intmath.h"
 #include "libavutil/mem.h"
 #include "avcodec.h"
 #include "get_bits.h"
@@ -39,6 +40,7 @@
 #include "decode.h"
 #include "mathops.h"
 #include "mpeg12data.h"
+#include "put_bits.h"
 #include "startcode.h"
 
 static const uint8_t mv_scan[4] = {
@@ -600,6 +602,30 @@ static int decode_residual_block(AVSContext *h, GetBitContext *gb,
 }
 
 
+/**
+ * Tell whether the byte aligned 00 00 01 at @p offset is a start code: in a
+ * de-emulated payload it may be a coincidence (annex A).
+ */
+static int is_start_code_offset(AVSContext *h, int offset)
+{
+    int lo = 0, hi = h->nb_stc_offset;
+
+    if (h->gb.buffer != h->deemulated_buf)
+        return 1;
+    /* stc_offset[] is sorted; a crafted payload can hold one every 4 bytes */
+    while (lo < hi) {
+        int mid = lo + (hi - lo) / 2;
+
+        if (h->stc_offset[mid] == offset)
+            return 1;
+        if (h->stc_offset[mid] < offset)
+            lo = mid + 1;
+        else
+            hi = mid;
+    }
+    return 0;
+}
+
 static inline int decode_residual_chroma(AVSContext *h)
 {
     if (h->cbp & (1 << 4)) {
@@ -996,6 +1022,8 @@ static inline int check_for_slice(AVSContext *h)
         GetBitContext peek;
         int stc;
 
+        if (!is_start_code_offset(h, (get_bits_count(gb) + align) >> 3))
+            return 0;
         peek = *gb;
         skip_bits_long(&peek, 24 + align);
         stc = get_bits(&peek, 8);
@@ -1336,6 +1364,150 @@ static int decode_seq_header(AVSContext *h)
     return 0;
 }
 
+/** annex A applies to picture headers and slices, not to other units */
+static int annex_a_applies(int stc)
+{
+    return stc <= (SLICE_MAX_START_CODE & 0xFF) ||
+           stc == (PIC_I_START_CODE  & 0xFF)    ||
+           stc == (PIC_PB_START_CODE & 0xFF);
+}
+
+/**
+ * Copy one region of a picture payload, removing the annex A pseudo start
+ * codes; the clause 5.8.2.4 stuffing is rewritten to keep the next start
+ * code aligned. With pb NULL they are only counted.
+ * @return the number of pseudo start codes found
+ */
+static int deemulate_region(PutBitContext *pb, const uint8_t *buf, int size,
+                            int deemulated)
+{
+    int found = 0;
+    int stuffing = -1;
+    int i;
+
+    if (!deemulated) {
+        for (i = 0; i < size; i++)
+            if (pb)
+                put_bits(pb, 8, buf[i]);
+        return 0;
+    }
+
+    /* the stuffing bit is the last set bit of the region */
+    for (i = size; i > 0 && !buf[i - 1]; i--)
+        ;
+    if (i > 0) {
+        stuffing = i - 1;
+        size     = stuffing;
+    }
+
+    for (i = 0; i < size; i++) {
+        if (i + 2 < size && !buf[i] && !buf[i + 1] && buf[i + 2] == 2) {
+            /* drop the two low bits of the 02 */
+            if (pb) {
+                put_bits(pb, 16, 0);
+                put_bits(pb,  6, 0);
+            }
+            found++;
+            i += 2;
+        } else if (pb) {
+            put_bits(pb, 8, buf[i]);
+        }
+    }
+
+    if (pb) {
+        if (stuffing >= 0) {
+            int n = ff_ctz(buf[stuffing]) + 1;
+            if (n < 8)
+                put_bits(pb, 8 - n, buf[stuffing] >> n);
+            put_bits(pb, 1, 1);     //stuffing_bit
+        }
+        align_put_bits(pb);         /* stuffing_bit until byte aligned */
+    }
+    return found;
+}
+
+/**
+ * Walk the payload region by region, removing the annex A pseudo start
+ * codes; on the writing pass, record every start code prefix offset in
+ * h->stc_offset.
+ * @return the number of pseudo start codes found
+ */
+static int deemulate_picture(AVSContext *h, PutBitContext *pb,
+                             const uint8_t *buf, int size)
+{
+    int deemulated = 1;     /* buf starts inside a picture header */
+    int found      = 0;
+    int pos        = 0;
+
+    while (pos < size) {
+        int end;
+
+        for (end = pos; end + 2 < size; end++) {
+            /* nothing can start at end, end + 1 or end + 2 (annex A) */
+            if (buf[end + 2] > 1) {
+                end += 2;
+                continue;
+            }
+            if (!buf[end] && !buf[end + 1] && buf[end + 2] == 1)
+                break;
+        }
+        if (end + 2 >= size)
+            end = size;
+
+        found += deemulate_region(pb, buf + pos, end - pos, deemulated);
+        if (end == size)
+            break;
+
+        if (pb) {
+            h->stc_offset[h->nb_stc_offset++] = put_bits_count(pb) >> 3;
+            put_bits(pb, 24, 1);    /* start code prefix */
+        }
+        pos = end + 3;
+        if (pos < size) {
+            if (pb)
+                put_bits(pb, 8, buf[pos]);
+            deemulated = annex_a_applies(buf[pos]);
+            pos++;
+        }
+    }
+    return found;
+}
+
+/**
+ * Remove the annex A pseudo start codes from a payload: a byte forming
+ * 00 00 02 with the two before it loses its two least significant bits. buf
+ * runs from just after a picture start code to the packet end.
+ * @return the size of h->deemulated_buf, 0 if buf needs no copy, or < 0
+ */
+static int remove_pseudo_start_codes(AVSContext *h, const uint8_t *buf,
+                                     int size)
+{
+    PutBitContext pb;
+
+    if (size <= 0 || size > INT_MAX / 8 ||
+        !deemulate_picture(h, NULL, buf, size))
+        return 0;
+
+    av_fast_padded_malloc(&h->deemulated_buf, &h->deemulated_buf_size, size);
+    if (!h->deemulated_buf)
+        return AVERROR(ENOMEM);
+
+    av_fast_malloc(&h->stc_offset, &h->stc_offset_size,
+                   (size / 3 + 1) * sizeof(*h->stc_offset));
+    if (!h->stc_offset)
+        return AVERROR(ENOMEM);
+    h->nb_stc_offset = 0;
+
+    init_put_bits(&pb, h->deemulated_buf, size + AV_INPUT_BUFFER_PADDING_SIZE);
+    deemulate_picture(h, &pb, buf, size);
+    flush_put_bits(&pb);
+    av_assert0(put_bytes_output(&pb) <= size);
+    /* de-emulation shrinks, so restore the padding the reader over-reads */
+    memset(h->deemulated_buf + put_bytes_output(&pb), 0,
+           AV_INPUT_BUFFER_PADDING_SIZE);
+    return put_bytes_output(&pb);
+}
+
 static av_cold void cavs_flush(AVCodecContext * avctx)
 {
     AVSContext *h = avctx->priv_data;
@@ -1398,6 +1570,13 @@ static int cavs_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
             *got_frame = 0;
             if (!h->got_keyframe)
                 break;
+            /* annex A, normative for decoders */
+            ret = remove_pseudo_start_codes(h, buf_ptr, input_size);
+            if (ret < 0)
+                return ret;
+            if (ret > 0 &&
+                (ret = init_get_bits8(&h->gb, h->deemulated_buf, ret)) < 0)
+                return ret;
             h->stc = stc;
             ret = decode_pic(h);
             if (ret < 0)

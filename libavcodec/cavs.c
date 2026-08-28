@@ -852,5 +852,9 @@ av_cold int ff_cavs_end(AVCodecContext *avctx)
     av_freep(&h->col_mv);
     av_freep(&h->col_type_base);
     av_freep(&h->edge_emu_buffer);
+    av_freep(&h->deemulated_buf);
+    h->deemulated_buf_size = 0;
+    av_freep(&h->stc_offset);
+    h->stc_offset_size = 0;
     return 0;
 }
