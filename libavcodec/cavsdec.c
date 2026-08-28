@@ -1231,17 +1231,20 @@ static int decode_pic(AVSContext *h)
 static int decode_seq_header(AVSContext *h)
 {
     int frame_rate_code;
+    int profile, level, aspect_ratio;
     int width, height;
+    int mb_width, mb_height;
+    int progressive_seq, low_delay;
     int ret;
 
-    h->profile = get_bits(&h->gb, 8);
-    if (h->profile != 0x20) {
+    profile = get_bits(&h->gb, 8);
+    if (profile != 0x20) {
         avpriv_report_missing_feature(h->avctx,
                                       "only support JiZhun profile");
         return AVERROR_PATCHWELCOME;
     }
-    h->level   = get_bits(&h->gb, 8);
-    skip_bits1(&h->gb); //progressive sequence
+    level = get_bits(&h->gb, 8);
+    progressive_seq = get_bits1(&h->gb);
 
     width  = get_bits(&h->gb, 14);
     height = get_bits(&h->gb, 14);
@@ -1256,7 +1259,7 @@ static int decode_seq_header(AVSContext *h)
     }
     skip_bits(&h->gb, 2); //chroma format
     skip_bits(&h->gb, 3); //sample_precision
-    h->aspect_ratio = get_bits(&h->gb, 4);
+    aspect_ratio = get_bits(&h->gb, 4);
     frame_rate_code = get_bits(&h->gb, 4);
     if (frame_rate_code == 0 || frame_rate_code > 13) {
         av_log(h->avctx, AV_LOG_WARNING,
@@ -1267,16 +1270,34 @@ static int decode_seq_header(AVSContext *h)
     skip_bits(&h->gb, 18); //bit_rate_lower
     skip_bits1(&h->gb);    //marker_bit
     skip_bits(&h->gb, 12); //bit_rate_upper
-    h->low_delay =  get_bits1(&h->gb);
+    low_delay = get_bits1(&h->gb);
 
-    ret = ff_set_dimensions(h->avctx, width, height);
+    mb_width  = (width  + 15) >> 4;
+    /* interlaced: an even number of MB rows (clause 7.2.2) */
+    mb_height = progressive_seq ? (height + 15) >> 4
+                                : ((height + 31) >> 5) * 2;
+    /* the grid sizes the arrays of ff_cavs_init_top_lines(), allocated once */
+    if (h->top_qp && (mb_width != h->mb_width || mb_height != h->mb_height)) {
+        avpriv_report_missing_feature(h->avctx, "Macroblock grid changing");
+        return AVERROR_PATCHWELCOME;
+    }
+
+    /* horizontal_size and vertical_size are only the displayed part */
+    ret = ff_set_dimensions(h->avctx, mb_width * 16, mb_height * 16);
     if (ret < 0)
         return ret;
+    h->avctx->width  = width;
+    h->avctx->height = height;
 
-    h->width  = width;
-    h->height = height;
-    h->mb_width  = (h->width  + 15) >> 4;
-    h->mb_height = (h->height + 15) >> 4;
+    /* commit last: a rejected header must leave the decoder as it was */
+    h->profile         = profile;
+    h->level           = level;
+    h->aspect_ratio    = aspect_ratio;
+    h->width           = width;
+    h->height          = height;
+    h->mb_width        = mb_width;
+    h->mb_height       = mb_height;
+    h->low_delay       = low_delay;
     h->avctx->framerate = ff_mpeg12_frame_rate_tab[frame_rate_code];
     if (!h->top_qp)
         return ff_cavs_init_top_lines(h);
