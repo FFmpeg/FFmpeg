@@ -136,11 +136,11 @@ static av_cold int init(AVFilterContext *ctx)
         return AVERROR(ENOMEM);
 
     for (i = 0; i < nb_delays; i++) {
-        if (s->delay[i] <= 0 || s->delay[i] > 90000) {
+        if (!(s->delay[i] > 0 && s->delay[i] <= 90000)) {
             av_log(ctx, AV_LOG_ERROR, "delay[%d]: %f is out of allowed range: (0, 90000]\n", i, s->delay[i]);
             return AVERROR(EINVAL);
         }
-        if (s->decay[i] <= 0 || s->decay[i] > 1) {
+        if (!(s->decay[i] > 0 && s->decay[i] <= 1)) {
             av_log(ctx, AV_LOG_ERROR, "decay[%d]: %f is out of allowed range: (0, 1]\n", i, s->decay[i]);
             return AVERROR(EINVAL);
         }
