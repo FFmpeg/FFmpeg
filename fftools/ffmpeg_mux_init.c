@@ -47,6 +47,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/stereo3d.h"
 
 #define DEFAULT_PASS_LOGFILENAME_PREFIX "ffmpeg2pass"
 
@@ -545,6 +546,86 @@ static enum AVPixelFormat pix_fmt_parse(OutputStream *ost, const char *name)
     return fmt;
 }
 
+static int parse_stereo3d_type(void *logctx, const char *arg, int *type)
+{
+    static const struct {
+        const char *name;
+        int type;
+    } aliases[] = {
+        { "2d",   AV_STEREO3D_2D },
+        { "mono", AV_STEREO3D_2D },
+        { "sbs",  AV_STEREO3D_SIDEBYSIDE },
+        { "sbsl", AV_STEREO3D_SIDEBYSIDE },
+        { "tb",   AV_STEREO3D_TOPBOTTOM },
+        { "tbl",  AV_STEREO3D_TOPBOTTOM },
+    };
+    static const enum AVStereo3DType v1_types[] = {
+        AV_STEREO3D_2D,
+        AV_STEREO3D_SIDEBYSIDE,
+        AV_STEREO3D_TOPBOTTOM,
+    };
+
+    for (int i = 0; i < FF_ARRAY_ELEMS(aliases); i++) {
+        if (!av_strcasecmp(arg, aliases[i].name)) {
+            *type = aliases[i].type;
+            return 0;
+        }
+    }
+
+    for (int i = 0; i < FF_ARRAY_ELEMS(v1_types); i++) {
+        const char *name = av_stereo3d_type_name(v1_types[i]);
+        if (!av_strcasecmp(arg, name)) {
+            *type = v1_types[i];
+            return 0;
+        }
+    }
+
+    av_log(logctx, AV_LOG_ERROR,
+           "Invalid stereoscopic 3D layout '%s'. "
+           "Valid values are: 2d, mono, sbs, sbsl, side by side, "
+           "tb, tbl, top and bottom.\n", arg);
+    return AVERROR(EINVAL);
+}
+
+static int check_stereo3d_leftovers(Muxer *mux, const OptionsContext *o)
+{
+    AVFormatContext *oc = mux->fc;
+
+    for (int i = 0; i < o->stereo3ds.nb_opt; i++) {
+        const SpecifierOpt *so = &o->stereo3ds.opt[i];
+        int matched_video = 0, matched_other = 0;
+
+        /* Empty specifier applies to video only; ignore other stream types. */
+        if (!so->specifier[0])
+            continue;
+
+        for (unsigned j = 0; j < oc->nb_streams; j++) {
+            AVStream *st = oc->streams[j];
+            if (!stream_specifier_match(&so->stream_spec, oc, st, mux))
+                continue;
+            if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
+                matched_video++;
+            else
+                matched_other++;
+        }
+
+        if (matched_other) {
+            av_log(mux, AV_LOG_ERROR,
+                   "-stereo3d is only valid for video streams (specifier '%s').\n",
+                   so->specifier);
+            return AVERROR(EINVAL);
+        }
+        if (!matched_video) {
+            av_log(mux, AV_LOG_ERROR,
+                   "Stream specifier '%s' for -stereo3d matches no video streams.\n",
+                   so->specifier);
+            return AVERROR(EINVAL);
+        }
+    }
+
+    return 0;
+}
+
 static int new_stream_video(Muxer *mux, const OptionsContext *o,
                             OutputStream *ost, int *keep_pix_fmt,
                             enum VideoSyncMethod *vsync_method)
@@ -553,6 +634,7 @@ static int new_stream_video(Muxer *mux, const OptionsContext *o,
     AVFormatContext *oc = mux->fc;
     AVStream *st;
     const char *frame_rate = NULL, *max_frame_rate = NULL, *frame_aspect_ratio = NULL;
+    const char *stereo3d = NULL;
     int ret = 0;
 
     st  = ost->st;
@@ -583,6 +665,14 @@ static int new_stream_video(Muxer *mux, const OptionsContext *o,
             return AVERROR(EINVAL);
         }
         ost->frame_aspect_ratio = q;
+    }
+
+    opt_match_per_stream_str(ost, &o->stereo3ds, oc, st, &stereo3d);
+    if (stereo3d) {
+        ret = parse_stereo3d_type(ost, stereo3d, &ms->stereo3d_type);
+        if (ret < 0)
+            return ret;
+        ms->stereo3d_set = 1;
     }
 
     if (ost->enc) {
@@ -2067,7 +2157,7 @@ static int create_streams(Muxer *mux, const OptionsContext *o)
         return AVERROR(EINVAL);
     }
 
-    return 0;
+    return check_stereo3d_leftovers(mux, o);
 }
 
 static int setup_sync_queues(Muxer *mux, AVFormatContext *oc,

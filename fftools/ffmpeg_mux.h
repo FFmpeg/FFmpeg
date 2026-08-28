@@ -87,6 +87,9 @@ typedef struct MuxStream {
     int             force_fps;
 
     const char     *apad;
+
+    int             stereo3d_set;
+    int             stereo3d_type;
 } MuxStream;
 
 typedef struct Muxer {
