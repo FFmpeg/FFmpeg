@@ -472,7 +472,7 @@ static inline void mv_pred_direct(AVSContext *h, cavs_vector *pmv_fw,
                                   cavs_vector *col_mv)
 {
     cavs_vector *pmv_bw = pmv_fw + MV_BWD_OFFS;
-    unsigned den = h->direct_den[col_mv->ref];
+    unsigned den = h->direct_den[col_mv->dist];
     int m = FF_SIGNBIT(col_mv->x);
 
     pmv_fw->dist = h->dist[1];
@@ -1087,9 +1087,6 @@ static int decode_pic(AVSContext *h)
             av_log(h->avctx, AV_LOG_ERROR, "sym_factor %d too large\n", h->sym_factor);
             return AVERROR_INVALIDDATA;
         }
-    } else {
-        h->direct_den[0] = h->dist[0] ? 16384 / h->dist[0] : 0;
-        h->direct_den[1] = h->dist[1] ? 16384 / h->dist[1] : 0;
     }
 
     if (h->low_delay)

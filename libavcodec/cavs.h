@@ -241,8 +241,13 @@ typedef struct AVSContext {
 
     /* scaling factors for MV prediction */
     int sym_factor;    ///< for scaling in symmetrical B block
-    int direct_den[2]; ///< for scaling in direct B block
     int scale_den[2];  ///< for scaling neighbouring MVs
+
+    /**
+     * 16384 / BlockDistanceRef of clause 9.9.1 b) 3), indexed by the
+     * co-located block's own distance, which is 9 bits (clause 9.4.6.1)
+     */
+    uint16_t direct_den[512];
 
     uint8_t *edge_emu_buffer;
 

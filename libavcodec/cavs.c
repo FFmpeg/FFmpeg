@@ -829,6 +829,8 @@ av_cold int ff_cavs_init(AVCodecContext *avctx)
     h->intra_pred_c[INTRA_C_DC_128]     = intra_pred_dc_128;
     h->mv[7]                            = un_mv;
     h->mv[19]                           = un_mv;
+    for (int i = 0; i < FF_ARRAY_ELEMS(h->direct_den); i++)
+        h->direct_den[i] = i ? 16384 / i : 0;
     return 0;
 }
 
