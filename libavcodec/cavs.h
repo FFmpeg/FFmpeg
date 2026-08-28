@@ -24,6 +24,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "libavutil/attributes.h"
 #include "libavutil/frame.h"
@@ -153,6 +154,11 @@ typedef struct cavs_vector {
     int16_t y;
     int16_t dist;
     int16_t ref;
+    /**
+     * mb_reference_index of the block, 0 when it codes none (clause 9.4.5);
+     * ref above is where the reference list puts it
+     */
+    int16_t ref_idx;
 } cavs_vector;
 
 struct dec_2dvlc {
@@ -193,6 +199,8 @@ typedef struct AVSContext {
     int prev_delta_qp;    ///< PreviousDeltaQP of clause 9.4.8, an AEC context
     int left_cbp;         ///< MbCBP of the macroblock to the left
     uint8_t *top_cbp;     ///< MbCBP of the macroblock above, one per column
+    int left_mb_type;          ///< MbType to the left, clause 8.4.4.2 b)
+    uint8_t *top_mb_type;      ///< MbType above, one per column
     int left_c_pred_mode;      ///< IntraChromaPredMode to the left, 8.4.4.2 e)
     uint8_t *top_c_pred_mode;  ///< IntraChromaPredMode above, per column
     int loop_filter_disable;
@@ -219,6 +227,8 @@ typedef struct AVSContext {
 
        the same is repeated for backward motion vectors */
     DECLARE_ALIGNED(8, cavs_vector, mv)[2*4*3];
+    /** mv_diff of the same blocks, for the ctxIdxInc of clause 8.4.4.2 g) */
+    int16_t mvd[2*4*3][2];
     cavs_vector *top_mv[2];
     cavs_vector *col_mv;
 
@@ -301,6 +311,23 @@ static inline void set_mvs(cavs_vector *mv, enum cavs_block size) {
         break;
     case BLK_8X16:
         mv[MV_STRIDE] = mv[0];
+        break;
+    }
+}
+
+/** replicate one partition's mv_diff over the 8x8 blocks it covers */
+static inline void set_mvds(int16_t (*mvd)[2], enum cavs_block size)
+{
+    switch (size) {
+    case BLK_16X16:
+        memcpy(mvd[MV_STRIDE  ], mvd[0], sizeof(*mvd));
+        memcpy(mvd[MV_STRIDE+1], mvd[0], sizeof(*mvd));
+        av_fallthrough;
+    case BLK_16X8:
+        memcpy(mvd[1], mvd[0], sizeof(*mvd));
+        break;
+    case BLK_8X16:
+        memcpy(mvd[MV_STRIDE], mvd[0], sizeof(*mvd));
         break;
     }
 }

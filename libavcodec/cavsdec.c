@@ -636,6 +636,148 @@ static int decode_residual_block(AVSContext *h, GetBitContext *gb,
 /** Table 52, priIdx as a function of lMax, which saturates at 5. */
 static const uint8_t cavs_aec_pri_idx[6] = { 0, 1, 2, 3, 3, 4 };
 
+/** Decode mb_skip_run, table 44 unary (8.4.4.2 a)). @return SkipMbCount */
+static int aec_mb_skip_run(AVSContext *h)
+{
+    int v = 0;
+
+    while (!ff_cavs_aec_decode_decision(&h->aec,
+                                        AEC_MB_SKIP_RUN + FFMIN(v, 3))) {
+        if (++v > h->mb_width * h->mb_height) {
+            av_log(h->avctx, AV_LOG_ERROR, "mb_skip_run out of range\n");
+            return AVERROR_INVALIDDATA;
+        }
+    }
+    return v;
+}
+
+/** Decode mb_type, table 44 unary mapped by tables 54 and 55 (9.4.2 a) 2)) */
+static int aec_mb_type_p(AVSContext *h)
+{
+    int v = 0;
+
+    while (!ff_cavs_aec_decode_decision(&h->aec, AEC_MB_TYPE + FFMIN(v, 4))) {
+        if (++v > 5 - h->skip_mode_flag) {
+            av_log(h->avctx, AV_LOG_ERROR, "mb_type out of range\n");
+            return AVERROR_INVALIDDATA;
+        }
+    }
+    return v ? v - 1 + h->skip_mode_flag : 5;
+}
+
+/** Decode mb_type in a B picture (table 45, 8.4.4.2 b)); see table 56. */
+static int aec_mb_type_b(AVSContext *h)
+{
+    int a = (h->flags & A_AVAIL) && h->left_mb_type        != B_SKIP &&
+                                    h->left_mb_type        != B_DIRECT;
+    int b = (h->flags & B_AVAIL) && h->top_mb_type[h->mbx] != B_SKIP &&
+                                    h->top_mb_type[h->mbx] != B_DIRECT;
+    int v;
+
+    if (!ff_cavs_aec_decode_decision(&h->aec, AEC_MB_TYPE + 5 + a + b))
+        return h->skip_mode_flag;
+    for (v = 1;
+         !ff_cavs_aec_decode_decision(&h->aec, AEC_MB_TYPE + 7 + FFMIN(v, 7));
+         v++) {
+        if (v >= 24 - h->skip_mode_flag) {
+            av_log(h->avctx, AV_LOG_ERROR, "mb_type out of range\n");
+            return AVERROR_INVALIDDATA;
+        }
+    }
+    return v + h->skip_mode_flag;
+}
+
+/**
+ * Decode mb_part_type (tables 46 and 57, 8.4.4.2 c)).
+ * @return MbPartType, 0 to 3
+ */
+static int aec_mb_part_type(AVSContext *h)
+{
+    int b0 = ff_cavs_aec_decode_decision(&h->aec, AEC_MB_PART_TYPE);
+    int b1 = ff_cavs_aec_decode_decision(&h->aec,
+                                         AEC_MB_PART_TYPE + (b0 ? 2 : 1));
+
+    return (b0 << 1) | b1;
+}
+
+/** Decode mb_reference_index, table 44 unary (8.4.3 j), 8.4.4.2 f)). */
+static int aec_ref_index(AVSContext *h, int ctx_inc, int max)
+{
+    if (ff_cavs_aec_decode_decision(&h->aec,
+                                    AEC_MB_REFERENCE_INDEX + ctx_inc))
+        return 0;
+    if (h->cur.f->pict_type == AV_PICTURE_TYPE_B)
+        return 1;
+    if (ff_cavs_aec_decode_decision(&h->aec, AEC_MB_REFERENCE_INDEX + 4))
+        return 1;
+    for (int v = 2; v <= max; v++)
+        if (ff_cavs_aec_decode_decision(&h->aec, AEC_MB_REFERENCE_INDEX + 5))
+            return v;
+    av_log(h->avctx, AV_LOG_ERROR, "mb_reference_index out of range\n");
+    return AVERROR_INVALIDDATA;
+}
+
+/**
+ * Decode one mv_diff_x or mv_diff_y (table 49, 8.4.4.2 g)); mvda is the
+ * magnitude of the same component of the left block's mv_diff.
+ */
+static int aec_mv_diff(AVSContext *h, int base, int mvda, int *diff)
+{
+    int v;
+
+    if (!ff_cavs_aec_decode_decision(&h->aec,
+                                     base + (mvda < 2 ? 0 :
+                                             mvda < 16 ? 1 : 2))) {
+        *diff = 0;                  /* mvdSign is not coded for mvdAbs 0 */
+        return 0;
+    }
+    if (!ff_cavs_aec_decode_decision(&h->aec, base + 3)) {
+        v = 1;
+    } else if (!ff_cavs_aec_decode_decision(&h->aec, base + 4)) {
+        v = 2;
+    } else {
+        int even = ff_cavs_aec_decode_decision(&h->aec, base + 5);
+        int k    = 0;
+
+        while (!ff_cavs_aec_decode_bypass(&h->aec)) {
+            if (++k > 11) {
+                av_log(h->avctx, AV_LOG_ERROR, "mv_diff out of range\n");
+                return AVERROR_INVALIDDATA;
+            }
+        }
+        v = (1 << k) - 1;
+        while (k--)
+            v += ff_cavs_aec_decode_bypass(&h->aec) << k;
+        v = 3 + 2 * v + even;
+    }
+    if (ff_cavs_aec_decode_bypass(&h->aec))     /* mvdSign */
+        v = -v;
+    if (v < -4096 || v > 4095) {
+        av_log(h->avctx, AV_LOG_ERROR, "mv_diff %d out of range\n", v);
+        return AVERROR_INVALIDDATA;
+    }
+    *diff = v;
+    return 0;
+}
+
+/**
+ * Decode a motion vector's mv_diff pair into the cache that
+ * ff_cavs_mv() reads and the next block takes its mvda from.
+ */
+static int aec_mv(AVSContext *h, enum cavs_mv_loc nP)
+{
+    for (int i = 0; i < 2; i++) {
+        int base = i ? AEC_MV_DIFF_Y : AEC_MV_DIFF_X;
+        int diff;
+        int ret = aec_mv_diff(h, base, FFABS(h->mvd[nP - 1][i]), &diff);
+
+        if (ret < 0)
+            return ret;
+        h->mvd[nP][i] = diff;
+    }
+    return 0;
+}
+
 /**
  * Decode intra_luma_pred_mode (table 47) and derive IntraLumaPredMode
  * from predIntraPredMode per clause 9.4.4.2 a).
@@ -953,22 +1095,24 @@ static inline int decode_residual_inter(AVSContext *h)
 {
     int block, ret;
 
-    /* get coded block pattern */
-    int cbp = get_ue_golomb(&h->gb);
-    if (cbp > 63U) {
-        av_log(h->avctx, AV_LOG_ERROR, "illegal inter cbp %d\n", cbp);
-        return AVERROR_INVALIDDATA;
+    if (h->aec_enable) {
+        h->cbp = aec_cbp(h);
+    } else {
+        /* get coded block pattern */
+        int cbp = get_ue_golomb(&h->gb);
+        if (cbp > 63U) {
+            av_log(h->avctx, AV_LOG_ERROR, "illegal inter cbp %d\n", cbp);
+            return AVERROR_INVALIDDATA;
+        }
+        h->cbp = cbp_tab[cbp][1];
     }
-    h->cbp = cbp_tab[cbp][1];
-
-    /* get quantizer */
-    if (h->cbp && !h->qp_fixed)
-        h->qp = (h->qp + (unsigned)get_se_golomb(&h->gb)) & 63;
+    ret = decode_mb_qp_delta(h);
+    if (ret < 0)
+        return ret;
     for (block = 0; block < 4; block++)
         if (h->cbp & (1 << block)) {
-            ret = decode_residual_block(h, &h->gb, inter_dec, 0, h->qp,
-                                        h->cy + h->luma_scan[block],
-                                        h->l_stride);
+            ret = decode_residual(h, inter_dec, 0, 0, h->qp,
+                                  h->cy + h->luma_scan[block], h->l_stride);
             if (ret < 0)
                 return ret;
         }
@@ -1003,6 +1147,8 @@ static int decode_mb_i(AVSContext *h, int cbp_code)
     int ret;
 
     ff_cavs_init_mb(h);
+    h->left_mb_type        = I_8X8;
+    h->top_mb_type[h->mbx] = I_8X8;
 
     /* get intra prediction modes from stream */
     for (block = 0; block < 4; block++) {
@@ -1089,42 +1235,114 @@ static inline void set_intra_mode_default(AVSContext *h)
     }
 }
 
+/**
+ * Read the mb_reference_index of a P macroblock's block (table 26,
+ * clauses 7.2.5 and 9.4.5). @return the reference index it selects
+ */
+static int decode_ref_index(AVSContext *h, enum cavs_mv_loc nP)
+{
+    int idx = 0;
+
+    if (!h->ref_flag) {
+        if (h->aec_enable) {
+            /* a and b of 8.4.4.2 f); unavailable, intra and derived
+             * neighbours carry index 0 */
+            int a = h->mv[nP - 1].ref_idx > 0;
+            int b = h->mv[nP - 4].ref_idx > 0;
+
+            idx = aec_ref_index(h, a + 2 * b, 1);
+            if (idx < 0)
+                return idx;
+        } else {
+            idx = get_bits1(&h->gb);
+        }
+    }
+    h->mv[nP].ref     = idx;
+    h->mv[nP].ref_idx = idx;
+    return idx;
+}
+
+/**
+ * Decode one motion vector: under AEC its mv_diff must be read before
+ * ff_cavs_mv() overwrites the cache its context comes from.
+ */
+static int decode_mv(AVSContext *h, enum cavs_mv_loc nP, enum cavs_mv_loc nC,
+                     enum cavs_mv_pred mode, enum cavs_block size, int ref)
+{
+    if (h->aec_enable && mode < MV_PRED_PSKIP) {
+        int ret = aec_mv(h, nP);
+        if (ret < 0)
+            return ret;
+    }
+    ff_cavs_mv(h, nP, nC, mode, size, ref);
+    return 0;
+}
+
+/* what the AEC contexts of later macroblocks read about this one (8.4.4.2) */
+static void set_inter_mb_ctx(AVSContext *h, enum cavs_mb mb_type, int skip)
+{
+    h->left_mb_type            = mb_type;
+    h->top_mb_type[h->mbx]     = mb_type;
+    h->left_c_pred_mode        = INTRA_C_LP;
+    h->top_c_pred_mode[h->mbx] = INTRA_C_LP;
+    if (skip) {
+        h->left_cbp        = 0;
+        h->top_cbp[h->mbx] = 0;
+        h->prev_delta_qp   = 0;
+    }
+}
+
+#define MV(nP, nC, mode, size, ref)                             \
+    do {                                                        \
+        ret = decode_mv(h, nP, nC, mode, size, ref);            \
+        if (ret < 0)                                            \
+            return ret;                                         \
+    } while (0)
+
+#define REF(dst, nP)                                            \
+    do {                                                        \
+        ret = decode_ref_index(h, nP);                          \
+        if (ret < 0)                                            \
+            return ret;                                         \
+        dst = ret;                                              \
+    } while (0)
+
 static int decode_mb_p(AVSContext *h, enum cavs_mb mb_type)
 {
-    GetBitContext *gb = &h->gb;
     int ref[4];
     int ret;
 
     ff_cavs_init_mb(h);
+    set_inter_mb_ctx(h, mb_type, mb_type == P_SKIP);
     switch (mb_type) {
     case P_SKIP:
-        ff_cavs_mv(h, MV_FWD_X0, MV_FWD_C2, MV_PRED_PSKIP,  BLK_16X16, 0);
+        MV(MV_FWD_X0, MV_FWD_C2, MV_PRED_PSKIP,  BLK_16X16, 0);
         break;
     case P_16X16:
-        ref[0] = h->ref_flag ? 0 : get_bits1(gb);
-        ff_cavs_mv(h, MV_FWD_X0, MV_FWD_C2, MV_PRED_MEDIAN, BLK_16X16, ref[0]);
+        REF(ref[0], MV_FWD_X0);
+        MV(MV_FWD_X0, MV_FWD_C2, MV_PRED_MEDIAN, BLK_16X16, ref[0]);
         break;
     case P_16X8:
-        ref[0] = h->ref_flag ? 0 : get_bits1(gb);
-        ref[2] = h->ref_flag ? 0 : get_bits1(gb);
-        ff_cavs_mv(h, MV_FWD_X0, MV_FWD_C2, MV_PRED_TOP,    BLK_16X8, ref[0]);
-        ff_cavs_mv(h, MV_FWD_X2, MV_FWD_A1, MV_PRED_LEFT,   BLK_16X8, ref[2]);
+        REF(ref[0], MV_FWD_X0);
+        REF(ref[2], MV_FWD_X2);
+        MV(MV_FWD_X0, MV_FWD_C2, MV_PRED_TOP,    BLK_16X8, ref[0]);
+        MV(MV_FWD_X2, MV_FWD_A1, MV_PRED_LEFT,   BLK_16X8, ref[2]);
         break;
     case P_8X16:
-        ref[0] = h->ref_flag ? 0 : get_bits1(gb);
-        ref[1] = h->ref_flag ? 0 : get_bits1(gb);
-        ff_cavs_mv(h, MV_FWD_X0, MV_FWD_B3, MV_PRED_LEFT,     BLK_8X16, ref[0]);
-        ff_cavs_mv(h, MV_FWD_X1, MV_FWD_C2, MV_PRED_TOPRIGHT, BLK_8X16, ref[1]);
+        REF(ref[0], MV_FWD_X0);
+        REF(ref[1], MV_FWD_X1);
+        MV(MV_FWD_X0, MV_FWD_B3, MV_PRED_LEFT,     BLK_8X16, ref[0]);
+        MV(MV_FWD_X1, MV_FWD_C2, MV_PRED_TOPRIGHT, BLK_8X16, ref[1]);
         break;
     case P_8X8:
-        ref[0] = h->ref_flag ? 0 : get_bits1(gb);
-        ref[1] = h->ref_flag ? 0 : get_bits1(gb);
-        ref[2] = h->ref_flag ? 0 : get_bits1(gb);
-        ref[3] = h->ref_flag ? 0 : get_bits1(gb);
-        ff_cavs_mv(h, MV_FWD_X0, MV_FWD_B3, MV_PRED_MEDIAN,   BLK_8X8, ref[0]);
-        ff_cavs_mv(h, MV_FWD_X1, MV_FWD_C2, MV_PRED_MEDIAN,   BLK_8X8, ref[1]);
-        ff_cavs_mv(h, MV_FWD_X2, MV_FWD_X1, MV_PRED_MEDIAN,   BLK_8X8, ref[2]);
-        ff_cavs_mv(h, MV_FWD_X3, MV_FWD_X0, MV_PRED_MEDIAN,   BLK_8X8, ref[3]);
+        REF(ref[0], MV_FWD_X0);
+        REF(ref[1], MV_FWD_X1);
+        REF(ref[2], MV_FWD_X2);
+        REF(ref[3], MV_FWD_X3);
+        MV(MV_FWD_X0, MV_FWD_B3, MV_PRED_MEDIAN,   BLK_8X8, ref[0]);
+        MV(MV_FWD_X1, MV_FWD_C2, MV_PRED_MEDIAN,   BLK_8X8, ref[1]);
+        MV(MV_FWD_X2, MV_FWD_X1, MV_PRED_MEDIAN,   BLK_8X8, ref[2]);
+        MV(MV_FWD_X3, MV_FWD_X0, MV_PRED_MEDIAN,   BLK_8X8, ref[3]);
         break;
     default:
         av_log(h->avctx, AV_LOG_ERROR, "Invalid mb_type %d in P frame\n",
@@ -1141,7 +1359,6 @@ static int decode_mb_p(AVSContext *h, enum cavs_mb mb_type)
     }
     ff_cavs_filter(h, mb_type);
     h->col_type_base[h->mbidx] = mb_type;
-
     return 0;
 }
 
@@ -1153,6 +1370,7 @@ static int decode_mb_b(AVSContext *h, enum cavs_mb mb_type)
     int ret;
 
     ff_cavs_init_mb(h);
+    set_inter_mb_ctx(h, mb_type, mb_type == B_SKIP);
 
     /* reset all MVs */
     h->mv[MV_FWD_X0] = CAVS_DIR_MV;
@@ -1173,20 +1391,24 @@ static int decode_mb_b(AVSContext *h, enum cavs_mb mb_type)
                                &h->col_mv[h->mbidx * 4 + block]);
         break;
     case B_FWD_16X16:
-        ff_cavs_mv(h, MV_FWD_X0, MV_FWD_C2, MV_PRED_MEDIAN, BLK_16X16, 1);
+        MV(MV_FWD_X0, MV_FWD_C2, MV_PRED_MEDIAN, BLK_16X16, 1);
         break;
     case B_SYM_16X16:
-        ff_cavs_mv(h, MV_FWD_X0, MV_FWD_C2, MV_PRED_MEDIAN, BLK_16X16, 1);
+        MV(MV_FWD_X0, MV_FWD_C2, MV_PRED_MEDIAN, BLK_16X16, 1);
         mv_pred_sym(h, &h->mv[MV_FWD_X0], BLK_16X16);
         break;
     case B_BWD_16X16:
-        ff_cavs_mv(h, MV_BWD_X0, MV_BWD_C2, MV_PRED_MEDIAN, BLK_16X16, 0);
+        MV(MV_BWD_X0, MV_BWD_C2, MV_PRED_MEDIAN, BLK_16X16, 0);
         break;
     case B_8X8:
 #define TMP_UNUSED_INX  7
         flags = 0;
-        for (block = 0; block < 4; block++)
-            sub_type[block] = get_bits(&h->gb, 2);
+        for (block = 0; block < 4; block++) {
+            if (h->aec_enable)
+                sub_type[block] = aec_mb_part_type(h);
+            else
+                sub_type[block] = get_bits(&h->gb, 2);
+        }
         for (block = 0; block < 4; block++) {
             switch (sub_type[block]) {
             case B_SUB_DIRECT:
@@ -1221,12 +1443,12 @@ static int decode_mb_b(AVSContext *h, enum cavs_mb mb_type)
                                    &h->col_mv[h->mbidx * 4 + block]);
                 break;
             case B_SUB_FWD:
-                ff_cavs_mv(h, mv_scan[block], mv_scan[block] - 3,
-                           MV_PRED_MEDIAN, BLK_8X8, 1);
+                MV(mv_scan[block], mv_scan[block] - 3,
+                   MV_PRED_MEDIAN, BLK_8X8, 1);
                 break;
             case B_SUB_SYM:
-                ff_cavs_mv(h, mv_scan[block], mv_scan[block] - 3,
-                           MV_PRED_MEDIAN, BLK_8X8, 1);
+                MV(mv_scan[block], mv_scan[block] - 3,
+                   MV_PRED_MEDIAN, BLK_8X8, 1);
                 mv_pred_sym(h, &h->mv[mv_scan[block]], BLK_8X8);
                 break;
             }
@@ -1234,9 +1456,9 @@ static int decode_mb_b(AVSContext *h, enum cavs_mb mb_type)
 #undef TMP_UNUSED_INX
         for (block = 0; block < 4; block++) {
             if (sub_type[block] == B_SUB_BWD)
-                ff_cavs_mv(h, mv_scan[block] + MV_BWD_OFFS,
-                           mv_scan[block] + MV_BWD_OFFS - 3,
-                           MV_PRED_MEDIAN, BLK_8X8, 0);
+                MV(mv_scan[block] + MV_BWD_OFFS,
+                   mv_scan[block] + MV_BWD_OFFS - 3,
+                   MV_PRED_MEDIAN, BLK_8X8, 0);
         }
         break;
     default:
@@ -1248,30 +1470,30 @@ static int decode_mb_b(AVSContext *h, enum cavs_mb mb_type)
         flags = ff_cavs_partition_flags[mb_type];
         if (mb_type & 1) { /* 16x8 macroblock types */
             if (flags & FWD0)
-                ff_cavs_mv(h, MV_FWD_X0, MV_FWD_C2, MV_PRED_TOP,  BLK_16X8, 1);
+                MV(MV_FWD_X0, MV_FWD_C2, MV_PRED_TOP,  BLK_16X8, 1);
             if (flags & SYM0)
                 mv_pred_sym(h, &h->mv[MV_FWD_X0], BLK_16X8);
             if (flags & FWD1)
-                ff_cavs_mv(h, MV_FWD_X2, MV_FWD_A1, MV_PRED_LEFT, BLK_16X8, 1);
+                MV(MV_FWD_X2, MV_FWD_A1, MV_PRED_LEFT, BLK_16X8, 1);
             if (flags & SYM1)
                 mv_pred_sym(h, &h->mv[MV_FWD_X2], BLK_16X8);
             if (flags & BWD0)
-                ff_cavs_mv(h, MV_BWD_X0, MV_BWD_C2, MV_PRED_TOP,  BLK_16X8, 0);
+                MV(MV_BWD_X0, MV_BWD_C2, MV_PRED_TOP,  BLK_16X8, 0);
             if (flags & BWD1)
-                ff_cavs_mv(h, MV_BWD_X2, MV_BWD_A1, MV_PRED_LEFT, BLK_16X8, 0);
+                MV(MV_BWD_X2, MV_BWD_A1, MV_PRED_LEFT, BLK_16X8, 0);
         } else {          /* 8x16 macroblock types */
             if (flags & FWD0)
-                ff_cavs_mv(h, MV_FWD_X0, MV_FWD_B3, MV_PRED_LEFT, BLK_8X16, 1);
+                MV(MV_FWD_X0, MV_FWD_B3, MV_PRED_LEFT, BLK_8X16, 1);
             if (flags & SYM0)
                 mv_pred_sym(h, &h->mv[MV_FWD_X0], BLK_8X16);
             if (flags & FWD1)
-                ff_cavs_mv(h, MV_FWD_X1, MV_FWD_C2, MV_PRED_TOPRIGHT, BLK_8X16, 1);
+                MV(MV_FWD_X1, MV_FWD_C2, MV_PRED_TOPRIGHT, BLK_8X16, 1);
             if (flags & SYM1)
                 mv_pred_sym(h, &h->mv[MV_FWD_X1], BLK_8X16);
             if (flags & BWD0)
-                ff_cavs_mv(h, MV_BWD_X0, MV_BWD_B3, MV_PRED_LEFT, BLK_8X16, 0);
+                MV(MV_BWD_X0, MV_BWD_B3, MV_PRED_LEFT, BLK_8X16, 0);
             if (flags & BWD1)
-                ff_cavs_mv(h, MV_BWD_X1, MV_BWD_C2, MV_PRED_TOPRIGHT, BLK_8X16, 0);
+                MV(MV_BWD_X1, MV_BWD_C2, MV_PRED_TOPRIGHT, BLK_8X16, 0);
         }
     }
     ff_cavs_inter(h, mb_type);
@@ -1283,6 +1505,59 @@ static int decode_mb_b(AVSContext *h, enum cavs_mb mb_type)
     }
     ff_cavs_filter(h, mb_type);
 
+    return 0;
+}
+
+#undef MV
+#undef REF
+
+/**
+ * Decode one macroblock of a P or B coded macroblock layer, table 25.
+ * @param skip_count what is left of the current mb_skip_run, or -1 when the
+ *                   next macroblock position starts a new one
+ */
+static int decode_mb_pb_layer(AVSContext *h, int *skip_count)
+{
+    const int b = h->cur.f->pict_type == AV_PICTURE_TYPE_B;
+    const enum cavs_mb skip = b ? B_SKIP : P_SKIP;
+    const enum cavs_mb last = b ? B_8X8  : P_8X8;
+    enum cavs_mb mb_type;
+    int skipped, ret;
+
+    if (h->skip_mode_flag && *skip_count < 0) {
+        if (h->aec_enable) {
+            *skip_count = aec_mb_skip_run(h);
+        } else {
+            if (get_bits_left(&h->gb) < 1)
+                return AVERROR_INVALIDDATA;
+            *skip_count = get_ue_golomb(&h->gb);
+        }
+        if (*skip_count < 0)
+            return AVERROR_INVALIDDATA;
+    }
+    skipped = h->skip_mode_flag && (*skip_count)--;
+    if (skipped) {
+        mb_type = skip;
+    } else if (h->aec_enable) {
+        ret = b ? aec_mb_type_b(h) : aec_mb_type_p(h);
+        if (ret < 0)
+            return ret;
+        mb_type = ret + skip;
+    } else {
+        if (get_bits_left(&h->gb) < 1)
+            return AVERROR_INVALIDDATA;
+        mb_type = get_ue_golomb(&h->gb) + skip + h->skip_mode_flag;
+    }
+    if (mb_type > last)
+        ret = decode_mb_i(h, mb_type - last - 1);
+    else
+        ret = b ? decode_mb_b(h, mb_type) : decode_mb_p(h, mb_type);
+    if (ret < 0)
+        return ret;
+    /* the stuffing bit follows a coded MB and the last one of a skip run */
+    if (h->aec_enable && (!skipped || !*skip_count) &&
+        ff_cavs_aec_decode_stuffing_bit(&h->aec))
+        aec_end_of_slice(h);
     return 0;
 }
 
@@ -1380,7 +1655,6 @@ static int decode_pic(AVSContext *h)
 {
     int ret;
     int skip_count    = -1;
-    enum cavs_mb mb_type;
 
     if (!h->top_qp) {
         av_log(h->avctx, AV_LOG_ERROR, "No sequence header decoded yet\n");
@@ -1508,112 +1782,37 @@ static int decode_pic(AVSContext *h)
     ret = 0;
     h->aec.gb = NULL;   /* started by the first slice header */
     h->pic_data_end = 0;
-    if (h->cur.f->pict_type == AV_PICTURE_TYPE_I) {
-        do {
-            ret = check_for_slice(h);
-            if (ret < 0)
-                break;
-            if (h->aec_enable && !h->aec.gb) {
-                av_log(h->avctx, AV_LOG_ERROR,
-                       "AEC picture without a slice header\n");
-                ret = AVERROR_INVALIDDATA;
-                break;
-            }
-            if (h->pic_data_end) {
-                av_log(h->avctx, AV_LOG_ERROR,
-                       "picture data ended before MB %d\n", h->mbidx);
-                ret = AVERROR_INVALIDDATA;
-                break;
-            }
+    do {
+        ret = check_for_slice(h);
+        if (ret < 0)
+            break;
+        if (ret)
+            skip_count = -1;
+        if (h->aec_enable && !h->aec.gb) {
+            av_log(h->avctx, AV_LOG_ERROR,
+                   "AEC picture without a slice header\n");
+            ret = AVERROR_INVALIDDATA;
+            break;
+        }
+        /* past the picture's data, only a pending skip run can code MBs */
+        if (h->pic_data_end && !(h->skip_mode_flag && skip_count > 0)) {
+            av_log(h->avctx, AV_LOG_ERROR, "picture data ended before MB %d\n",
+                   h->mbidx);
+            ret = AVERROR_INVALIDDATA;
+            break;
+        }
+        if (h->cur.f->pict_type != AV_PICTURE_TYPE_I) {
+            ret = decode_mb_pb_layer(h, &skip_count);
+        } else {
             ret = decode_mb_i(h, 0);
-            if (ret < 0)
-                break;
-            if (h->aec_enable && ff_cavs_aec_decode_stuffing_bit(&h->aec))
+            /* aec_mb_stuffing_bit is 1 on the slice's last MB (7.2.4) */
+            if (ret >= 0 && h->aec_enable &&
+                ff_cavs_aec_decode_stuffing_bit(&h->aec))
                 aec_end_of_slice(h);
-        } while (ff_cavs_next_mb(h));
-    } else if (h->cur.f->pict_type == AV_PICTURE_TYPE_P) {
-        do {
-            ret = check_for_slice(h);
-            if (ret < 0)
-                break;
-            if (ret)
-                skip_count = -1;
-            /* past the picture's data, only a pending skip run can code MBs */
-            if (h->pic_data_end && !(h->skip_mode_flag && skip_count > 0)) {
-                av_log(h->avctx, AV_LOG_ERROR,
-                       "picture data ended before MB %d\n", h->mbidx);
-                ret = AVERROR_INVALIDDATA;
-                break;
-            }
-            if (h->skip_mode_flag && (skip_count < 0)) {
-                if (get_bits_left(&h->gb) < 1) {
-                    ret = AVERROR_INVALIDDATA;
-                    break;
-                }
-                skip_count = get_ue_golomb(&h->gb);
-                if (skip_count < 0) {
-                    ret = AVERROR_INVALIDDATA;
-                    break;
-                }
-            }
-            if (h->skip_mode_flag && skip_count--) {
-                ret = decode_mb_p(h, P_SKIP);
-            } else {
-                if (get_bits_left(&h->gb) < 1) {
-                    ret = AVERROR_INVALIDDATA;
-                    break;
-                }
-                mb_type = get_ue_golomb(&h->gb) + P_SKIP + h->skip_mode_flag;
-                if (mb_type > P_8X8)
-                    ret = decode_mb_i(h, mb_type - P_8X8 - 1);
-                else
-                    ret = decode_mb_p(h, mb_type);
-            }
-            if (ret < 0)
-                break;
-        } while (ff_cavs_next_mb(h));
-    } else { /* AV_PICTURE_TYPE_B */
-        do {
-            ret = check_for_slice(h);
-            if (ret < 0)
-                break;
-            if (ret)
-                skip_count = -1;
-            /* past the picture's data, only a pending skip run can code MBs */
-            if (h->pic_data_end && !(h->skip_mode_flag && skip_count > 0)) {
-                av_log(h->avctx, AV_LOG_ERROR,
-                       "picture data ended before MB %d\n", h->mbidx);
-                ret = AVERROR_INVALIDDATA;
-                break;
-            }
-            if (h->skip_mode_flag && (skip_count < 0)) {
-                if (get_bits_left(&h->gb) < 1) {
-                    ret = AVERROR_INVALIDDATA;
-                    break;
-                }
-                skip_count = get_ue_golomb(&h->gb);
-                if (skip_count < 0) {
-                    ret = AVERROR_INVALIDDATA;
-                    break;
-                }
-            }
-            if (h->skip_mode_flag && skip_count--) {
-                ret = decode_mb_b(h, B_SKIP);
-            } else {
-                if (get_bits_left(&h->gb) < 1) {
-                    ret = AVERROR_INVALIDDATA;
-                    break;
-                }
-                mb_type = get_ue_golomb(&h->gb) + B_SKIP + h->skip_mode_flag;
-                if (mb_type > B_8X8)
-                    ret = decode_mb_i(h, mb_type - B_8X8 - 1);
-                else
-                    ret = decode_mb_b(h, mb_type);
-            }
-            if (ret < 0)
-                break;
-        } while (ff_cavs_next_mb(h));
-    }
+        }
+        if (ret < 0)
+            break;
+    } while (ff_cavs_next_mb(h));
     if (ret >= 0 && h->cur.f->pict_type != AV_PICTURE_TYPE_B) {
         av_frame_unref(h->DPB[1].f);
         FFSWAP(AVSFrame, h->cur, h->DPB[1]);
