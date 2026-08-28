@@ -472,36 +472,73 @@ static inline void store_mvs(AVSContext *h)
 }
 
 /**
+ * Scale one component of the co-located motion vector, den being
+ * 16384 / BlockDistanceRef (clause 9.9.1 b) 3)). The intermediate
+ * products stay unsigned, they can overflow an int.
+ */
+static inline int scale_direct(unsigned den, int mv, int dist)
+{
+    int m = FF_SIGNBIT(mv);
+
+    return (((den + (den * mv * dist ^ m) - m - 1) >> 14) ^ m) - m;
+}
+
+/**
+ * The parity of a field is the parity of its distance index: a first
+ * coded field has an even one, a second field an odd one (clause 9.4.6.1).
+ */
+static inline int field_parity(AVSContext *h, int distance_index)
+{
+    return (distance_index & 1) ^ !h->top_field_first;
+}
+
+/**
  * Direct mode: scale the co-located motion vector by its own
- * BlockDistance, carried in the mv cache (clause 9.9.1 b)).
+ * BlockDistance, carried in the mv cache (clause 9.9.1 b)). Annex B
+ * fixes PictureStructure over a sequence, so the frame and field
+ * conversion of step 2 cannot arise.
  */
 static inline void mv_pred_direct(AVSContext *h, cavs_vector *pmv_fw,
                                   cavs_vector *col_mv)
 {
     cavs_vector *pmv_bw = pmv_fw + MV_BWD_OFFS;
     unsigned den = h->direct_den[col_mv->dist];
-    int m = FF_SIGNBIT(col_mv->x);
+    int delta_fw = 0, delta_bw = 0;
+    int mv_ref_y = col_mv->y;
 
     pmv_fw->ref = h->ref_base[0];
     pmv_bw->ref = h->ref_base[1];
     if (!h->pic_structure) {
-        /* reference field selection of 9.9.1 b) 1), BFieldEnhanced 0 */
-        int di_col = h->DPB[0].poc + h->field;
+        /* reference field selection of 9.9.1 b) 1): an enhanced second
+         * field references index 0 in both directions, its co-located
+         * block being in the first field of the backward reference */
+        int enh    = h->b_field_enhanced;
+        int di_col = h->DPB[0].poc + (enh ? 0 : h->field);
         int di_ref = (di_col - col_mv->dist) & 511;
         int di_fw0 = (h->DPB[1].poc + 1)     & 511;
 
-        pmv_fw->ref += di_ref != di_fw0;
-        pmv_bw->ref += h->field;
+        if (!enh || !h->field)
+            pmv_fw->ref += di_ref != di_fw0;
+        if (!enh)
+            pmv_bw->ref += h->field;
+        if (enh) {
+            /* the field parity offsets of 9.9.1 b) 3) */
+            int par_cur = h->field ^ !h->top_field_first;
+            int par_bw  = h->ref[pmv_bw->ref].parity;
+
+            mv_ref_y += 2 * (field_parity(h, di_ref) - par_bw);
+            delta_fw  = 2 * (h->ref[pmv_fw->ref].parity - par_cur);
+            delta_bw  = 2 * (par_bw - par_cur);
+        }
     }
     pmv_fw->dist    = h->dist[pmv_fw->ref];
     pmv_bw->dist    = h->dist[pmv_bw->ref];
     pmv_fw->ref_idx = pmv_bw->ref_idx = 0;      /* derived (clause 9.4.5) */
     /* scale the co-located motion vector according to its temporal span */
-    pmv_fw->x =     (((den + (den * col_mv->x * pmv_fw->dist ^ m) - m - 1) >> 14) ^ m) - m;
-    pmv_bw->x = m - (((den + (den * col_mv->x * pmv_bw->dist ^ m) - m - 1) >> 14) ^ m);
-    m = FF_SIGNBIT(col_mv->y);
-    pmv_fw->y =     (((den + (den * col_mv->y * pmv_fw->dist ^ m) - m - 1) >> 14) ^ m) - m;
-    pmv_bw->y = m - (((den + (den * col_mv->y * pmv_bw->dist ^ m) - m - 1) >> 14) ^ m);
+    pmv_fw->x =  scale_direct(den, col_mv->x, pmv_fw->dist);
+    pmv_bw->x = -scale_direct(den, col_mv->x, pmv_bw->dist);
+    pmv_fw->y =  scale_direct(den, mv_ref_y, pmv_fw->dist) - delta_fw;
+    pmv_bw->y = -scale_direct(den, mv_ref_y, pmv_bw->dist) - delta_bw;
 }
 
 /**
@@ -1402,6 +1439,10 @@ static int decode_mb_b(AVSContext *h, enum cavs_mb mb_type)
     int flags;
     int ref[2][4];
     int ret;
+    /* the co-located macroblock of an enhanced second field is the one at
+     * the same position in the first field (clause 9.9.1 b) 1)) */
+    int col = h->mbidx - (h->b_field_enhanced && h->field ?
+                          h->mb_width * h->mb_height / 2 : 0);
 
     ff_cavs_init_mb(h);
     set_inter_mb_ctx(h, mb_type, mb_type == B_SKIP);
@@ -1414,7 +1455,7 @@ static int decode_mb_b(AVSContext *h, enum cavs_mb mb_type)
     switch (mb_type) {
     case B_SKIP:
     case B_DIRECT:
-        if (!h->col_type_base[h->mbidx]) {
+        if (!h->col_type_base[col]) {
             /* intra MB at co-location: in-plane prediction (9.9.1 b) 1)) */
             ff_cavs_mv(h, MV_FWD_X0, MV_FWD_C2, MV_PRED_BSKIP, BLK_16X16,
                        h->ref_base[0]);
@@ -1424,7 +1465,7 @@ static int decode_mb_b(AVSContext *h, enum cavs_mb mb_type)
             /* direct prediction from co-located P MB, block-wise */
             for (block = 0; block < 4; block++)
                 mv_pred_direct(h, &h->mv[mv_scan[block]],
-                               &h->col_mv[h->mbidx * 4 + block]);
+                               &h->col_mv[col * 4 + block]);
         break;
     case B_FWD_16X16:
         REF(ref[0][0], 0, MV_FWD_X0);
@@ -1458,7 +1499,7 @@ static int decode_mb_b(AVSContext *h, enum cavs_mb mb_type)
         for (block = 0; block < 4; block++) {
             switch (sub_type[block]) {
             case B_SUB_DIRECT:
-                if (!h->col_type_base[h->mbidx]) {
+                if (!h->col_type_base[col]) {
                     /* intra MB at co-location, do in-plane prediction */
                     if(flags==0) {
                         // if col-MB is a Intra MB, current Block size is 16x16.
@@ -1486,7 +1527,7 @@ static int decode_mb_b(AVSContext *h, enum cavs_mb mb_type)
                     }
                 } else
                     mv_pred_direct(h, &h->mv[mv_scan[block]],
-                                   &h->col_mv[h->mbidx * 4 + block]);
+                                   &h->col_mv[col * 4 + block]);
                 break;
             case B_SUB_FWD:
                 MV(mv_scan[block], mv_scan[block] - 3,
@@ -1802,6 +1843,7 @@ static int decode_pic(AVSContext *h)
     int ret;
     int field;
     int skip_count    = -1;
+    int pb_field_enhanced_flag = 0;
 
     if (!h->top_qp) {
         av_log(h->avctx, AV_LOG_ERROR, "No sequence header decoded yet\n");
@@ -1894,7 +1936,12 @@ static int decode_pic(AVSContext *h)
         else
             /* 1 for a frame coded B picture (clause 7.2.3.2) */
             h->ref_flag        = 1;
-        skip_bits(&h->gb, 4);   //reserved bits
+        /* no_forward_reference_flag, pb_field_enhanced_flag, r(2); table 22.
+         * JiZhun has reserved bits here and must ignore them (clause 5.4) */
+        skip_bits1(&h->gb);
+        pb_field_enhanced_flag = get_bits1(&h->gb) &&
+                                 h->profile == AV_PROFILE_CAVS_BROADCASTING;
+        skip_bits(&h->gb, 2);
         h->skip_mode_flag      = get_bits1(&h->gb);
     }
     h->loop_filter_disable     = get_bits1(&h->gb);
@@ -1918,6 +1965,16 @@ static int decode_pic(AVSContext *h)
             return AVERROR_PATCHWELCOME;
         }
         h->aec_enable = get_bits1(&h->gb);
+    }
+
+    /* in a frame picture the field derivations reduce to the frame ones
+     * (9.9.1 b) 3)); PFieldSkip of 9.9.1 a) 1) is not implemented */
+    h->b_field_enhanced = pb_field_enhanced_flag && !h->pic_structure &&
+                          h->cur.f->pict_type == AV_PICTURE_TYPE_B;
+    if (pb_field_enhanced_flag && !h->pic_structure &&
+        h->cur.f->pict_type == AV_PICTURE_TYPE_P) {
+        avpriv_request_sample(h->avctx, "Enhanced field coded P picture");
+        return AVERROR_PATCHWELCOME;
     }
 
     if (!h->progressive) {

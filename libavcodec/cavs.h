@@ -203,6 +203,7 @@ typedef struct AVSContext {
     int progressive;
     int pic_structure;
     int top_field_first;  ///< first coded field is the top one, clause 7.2.3
+    int b_field_enhanced; ///< BFieldEnhanced of the picture, clause 9.9.1 b)
     int field;            ///< field of the current MB, 0 or 1, clause 3.24
     int field_mby;        ///< macroblock row of the current macroblock in it
     int skip_mode_flag;   ///< select between skip_count or one skip_flag per MB
