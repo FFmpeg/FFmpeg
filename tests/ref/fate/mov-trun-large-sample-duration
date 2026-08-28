@@ -1,0 +1,10 @@
+packet|pts=0|dts=0|duration=16384
+packet|pts=16384|dts=16384|duration=49152
+packet|pts=65536|dts=65536|duration=81920
+packet|pts=147456|dts=147456|duration=114688
+packet|pts=262144|dts=262144|duration=1
+packet|pts=409600|dts=409600|duration=180224
+packet|pts=589824|dts=589824|duration=212992
+packet|pts=802816|dts=802816|duration=245760
+packet|pts=1048576|dts=1048576|duration=278528
+packet|pts=1327104|dts=1327104|duration=16384

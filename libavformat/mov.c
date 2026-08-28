@@ -6404,6 +6404,13 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         if (flags & MOV_TRUN_SAMPLE_FLAGS)    sample_flags    = avio_rb32(pb);
         if (flags & MOV_TRUN_SAMPLE_CTS)      ctts_duration   = avio_rb32(pb);
 
+        if (sample_duration > c->max_stts_delta) {
+            av_log(c->fc, AV_LOG_WARNING,
+                   "Too large sample duration %u in trun entry %u in st:%d. Clipping to 1.\n",
+                   sample_duration, i, st->index);
+            sample_duration = 1;
+        }
+
         mov_update_dts_shift(sc, ctts_duration, c->fc);
         if (pts != AV_NOPTS_VALUE) {
             dts = pts - sc->dts_shift;

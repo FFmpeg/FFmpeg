@@ -313,6 +313,22 @@ FATE_MOV_FFMPEG_FFPROBE-$(call ALLYES, COLOR_FILTER SETPTS_FILTER MPEG4_ENCODER 
                                       MOV_MUXER MOV_DEMUXER FILE_PROTOCOL)      \
                                       += fate-mov-vfr-bframes-derived-duration
 
+FATE_MOV_FFMPEG_FFPROBE-$(call ALLYES, COLOR_FILTER SETPTS_FILTER MPEG4_ENCODER \
+                                      MP4_MUXER MOV_DEMUXER FILE_PROTOCOL)      \
+                                      += fate-mov-trun-large-sample-duration
+
+# Generate a fragmented VFR file, then replace the last sample duration in
+# its first trun with UINT32_MAX.
+fate-mov-trun-large-sample-duration: CMD = run_with_patched_temp \
+    "$(FFMPEG) -nostdin -v error \
+    -filter_complex color=c=black:s=2x2:r=1,setpts=N*N \
+    -frames:v 10 -fps_mode vfr -c:v mpeg4 -g 5 -bf 0 -q:v 2 -threads 1 \
+    -flags +bitexact -fflags +bitexact \
+    -movflags empty_moov+frag_keyframe+default_base_moof -f mp4 -y" \
+    "ffprobe$(PROGSSUF)$(EXESUF) -show_packets \
+    -show_entries packet=pts,dts,duration -print_format compact \
+    -select_streams v -v 0" mp4 923 "\\0377\\0377\\0377\\0377"
+
 # Create VFR B-frames whose presentation durations are not a permutation of
 # the STTS sample deltas.
 tests/data/mov-vfr-bframes-derived-duration.mov: TAG = GEN
