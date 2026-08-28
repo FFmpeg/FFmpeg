@@ -340,11 +340,11 @@ static void OPNAME ## cavs_filt16_h_ ## NAME(uint8_t *dst, const uint8_t *src, p
     OPNAME ## cavs_filt8_h_ ## NAME(dst+8, src+8, dstStride, srcStride);\
 }\
 
-#define CAVS_SUBPIX_HV(OPNAME, OP, NAME, AH, BH, CH, DH, EH, FH, AV, BV, CV, DV, EV, FV, FULL) \
+#define CAVS_SUBPIX_HV(OPNAME, OP, NAME, TYPE, AH, BH, CH, DH, EH, FH, AV, BV, CV, DV, EV, FV, FULL) \
 static void OPNAME ## cavs_filt8_hv_ ## NAME(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, ptrdiff_t dstStride, ptrdiff_t srcStride)\
 {                                                                       \
-    int16_t temp[8*(8+5)];\
-    int16_t *tmp = temp;\
+    TYPE temp[8*(8+5)];\
+    TYPE *tmp = temp;\
     const int h=8;\
     const int w=8;\
     const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP;\
@@ -522,21 +522,23 @@ static void OPNAME ## cavs_qpel ## SIZE ## _mc23_c(uint8_t *dst, const uint8_t *
 CAVS_SUBPIX(put_   , op_put1, hpel,    0, -1,  5,  5, -1,  0)
 CAVS_SUBPIX(put_   , op_put2, qpel_l, -1, -2, 96, 42, -7,  0)
 CAVS_SUBPIX(put_   , op_put2, qpel_r,  0, -7, 42, 96, -2, -1)
-CAVS_SUBPIX_HV(put_, op_put3, jj,      0, -1,  5,  5, -1,  0,  0, -1,  5,  5, -1, 0, 0)
-CAVS_SUBPIX_HV(put_, op_put4, ff,      0, -1,  5,  5, -1,  0, -1, -2, 96, 42, -7, 0, 0)
-CAVS_SUBPIX_HV(put_, op_put4, ii,     -1, -2, 96, 42, -7,  0,  0, -1,  5,  5, -1, 0, 0)
-CAVS_SUBPIX_HV(put_, op_put4, kk,      0, -7, 42, 96, -2, -1,  0, -1,  5,  5, -1, 0, 0)
-CAVS_SUBPIX_HV(put_, op_put4, qq,      0, -1,  5,  5, -1,  0,  0, -7, 42, 96, -2,-1, 0)
-CAVS_SUBPIX_HV(put_, op_put2, egpr,    0, -1,  5,  5, -1,  0,  0, -1,  5,  5, -1, 0, 1)
+/* Only ii and kk need a wide horizontal intermediate (-2550..35190);
+ * the other families use the half-sample filter (-510..2550). */
+CAVS_SUBPIX_HV(put_, op_put3, jj,    int16_t,  0, -1,  5,  5, -1,  0,  0, -1,  5,  5, -1, 0, 0)
+CAVS_SUBPIX_HV(put_, op_put4, ff,    int16_t,  0, -1,  5,  5, -1,  0, -1, -2, 96, 42, -7, 0, 0)
+CAVS_SUBPIX_HV(put_, op_put4, ii,    int,     -1, -2, 96, 42, -7,  0,  0, -1,  5,  5, -1, 0, 0)
+CAVS_SUBPIX_HV(put_, op_put4, kk,    int,      0, -7, 42, 96, -2, -1,  0, -1,  5,  5, -1, 0, 0)
+CAVS_SUBPIX_HV(put_, op_put4, qq,    int16_t,  0, -1,  5,  5, -1,  0,  0, -7, 42, 96, -2,-1, 0)
+CAVS_SUBPIX_HV(put_, op_put2, egpr,  int16_t,  0, -1,  5,  5, -1,  0,  0, -1,  5,  5, -1, 0, 1)
 CAVS_SUBPIX(avg_   , op_avg1, hpel,    0, -1,  5,  5, -1,  0)
 CAVS_SUBPIX(avg_   , op_avg2, qpel_l, -1, -2, 96, 42, -7,  0)
 CAVS_SUBPIX(avg_   , op_avg2, qpel_r,  0, -7, 42, 96, -2, -1)
-CAVS_SUBPIX_HV(avg_, op_avg3, jj,      0, -1,  5,  5, -1,  0,  0, -1,  5,  5, -1, 0, 0)
-CAVS_SUBPIX_HV(avg_, op_avg4, ff,      0, -1,  5,  5, -1,  0, -1, -2, 96, 42, -7, 0, 0)
-CAVS_SUBPIX_HV(avg_, op_avg4, ii,     -1, -2, 96, 42, -7,  0,  0, -1,  5,  5, -1, 0, 0)
-CAVS_SUBPIX_HV(avg_, op_avg4, kk,      0, -7, 42, 96, -2, -1,  0, -1,  5,  5, -1, 0, 0)
-CAVS_SUBPIX_HV(avg_, op_avg4, qq,      0, -1,  5,  5, -1,  0,  0, -7, 42, 96, -2,-1, 0)
-CAVS_SUBPIX_HV(avg_, op_avg2, egpr,    0, -1,  5,  5, -1,  0,  0, -1,  5,  5, -1, 0, 1)
+CAVS_SUBPIX_HV(avg_, op_avg3, jj,    int16_t,  0, -1,  5,  5, -1,  0,  0, -1,  5,  5, -1, 0, 0)
+CAVS_SUBPIX_HV(avg_, op_avg4, ff,    int16_t,  0, -1,  5,  5, -1,  0, -1, -2, 96, 42, -7, 0, 0)
+CAVS_SUBPIX_HV(avg_, op_avg4, ii,    int,     -1, -2, 96, 42, -7,  0,  0, -1,  5,  5, -1, 0, 0)
+CAVS_SUBPIX_HV(avg_, op_avg4, kk,    int,      0, -7, 42, 96, -2, -1,  0, -1,  5,  5, -1, 0, 0)
+CAVS_SUBPIX_HV(avg_, op_avg4, qq,    int16_t,  0, -1,  5,  5, -1,  0,  0, -7, 42, 96, -2,-1, 0)
+CAVS_SUBPIX_HV(avg_, op_avg2, egpr,  int16_t,  0, -1,  5,  5, -1,  0,  0, -1,  5,  5, -1, 0, 1)
 CAVS_MC(put_, 8)
 CAVS_MC(put_, 16)
 CAVS_MC(avg_, 8)
