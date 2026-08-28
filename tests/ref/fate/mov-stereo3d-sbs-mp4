@@ -1,0 +1,22 @@
+bc24ade91fb35a16a47dcb5664a36701 *tests/data/fate/mov-stereo3d-sbs-mp4.mp4
+38520 tests/data/fate/mov-stereo3d-sbs-mp4.mp4
+#extradata 0:       30, 0x47ab0576
+#tb 0: 1/12800
+#media_type 0: video
+#codec_id 0: mpeg4
+#dimensions 0: 352x288
+#sar 0: 1/1
+0,          0,          0,      512,    27837, 0xd9809b60
+0,        512,        512,      512,     9806, 0xbebc2826, F=0x0
+[STREAM]
+[SIDE_DATA]
+side_data_type=Stereo 3D
+type=side by side
+inverted=0
+view=packed
+primary_eye=none
+baseline=0
+horizontal_disparity_adjustment=0/1
+horizontal_field_of_view=0/1
+[/SIDE_DATA]
+[/STREAM]

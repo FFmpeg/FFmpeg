@@ -437,6 +437,16 @@ FATE_MOV_FFMPEG_SAMPLES-$(call REMUX, MP4 MOV, AAC_PARSER) \
                           += fate-mov-mp4-edst-remainder
 fate-mov-mp4-edst-remainder: CMD = stream_remux mov $(TARGET_SAMPLES)/audiomatch/tones_fdkaac_44100_stereo_aac_lc.m4a "" mp4 "" "" "-c:a copy"
 
+# Encode-path injection of -stereo3d into MP4 st3d (requires unofficial).
+FATE_MOV_FFMPEG_FFPROBE-$(call ALLYES, FILE_PROTOCOL PIPE_PROTOCOL FRAMECRC_MUXER \
+                                             RAWVIDEO_DEMUXER RAWVIDEO_DECODER \
+                                             MPEG4_ENCODER MPEG4_DECODER MP4_MUXER MOV_DEMUXER) \
+                          += fate-mov-stereo3d-sbs-mp4
+fate-mov-stereo3d-sbs-mp4: tests/data/vsynth1.yuv
+fate-mov-stereo3d-sbs-mp4: CMD = transcode rawvideo $(TARGET_PATH)/tests/data/vsynth1.yuv mp4 \
+  "-c:v mpeg4 -qscale:v 10 -stereo3d:v sbsl -strict unofficial -frames:v 2" \
+  "-c:v copy" "-show_entries stream_side_data_list" "" "" "-s 352x288 -pix_fmt yuv420p"
+
 # format-level branding: major_brand, minor_version, compatible_brands should be deleted on re-encode
 FATE_MOV_FFMPEG_FFPROBE-$(call ENCDEC, AAC AAC, NUT MOV) += fate-mov-reenc-delete-format-metadata
 fate-mov-reenc-delete-format-metadata: CMD = transcode mov $(TARGET_SAMPLES)/cover_art/Owner-iTunes_9.0.3.15.m4a nut "-map 0:a:0 -c:a aac -bitexact -t 0.1" "-c copy -t 0.1" "-show_entries format_tags" "" "" "" null
