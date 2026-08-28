@@ -83,7 +83,7 @@ static int parse_seq_header(AVCodecParserContext *s, AVCodecContext *avctx,
     int width, height;
     int mb_width, mb_height, progressive;
 
-    skip_bits(gb, 8); // profile
+    avctx->profile = get_bits(gb, 8);
     skip_bits(gb, 8); // level
     progressive = get_bits1(gb);
 
