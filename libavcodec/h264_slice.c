@@ -784,7 +784,8 @@ static void init_scan_tables(H264Context *h)
     }
 }
 
-static enum AVPixelFormat get_pixel_format(H264Context *h, int force_callback)
+static enum AVPixelFormat get_pixel_format(H264Context *h, int force_callback,
+                                           int data_partitioning)
 {
 #define HWACCEL_MAX (CONFIG_H264_DXVA2_HWACCEL + \
                      (CONFIG_H264_D3D11VA_HWACCEL * 2) + \
@@ -918,6 +919,12 @@ static enum AVPixelFormat get_pixel_format(H264Context *h, int force_callback)
         av_log(h->avctx, AV_LOG_ERROR,
                "Unsupported bit depth %d\n", h->ps.sps->bit_depth_luma);
         return AVERROR_INVALIDDATA;
+    }
+
+    /* hwaccels take one self-contained slice NAL, not three */
+    if (data_partitioning) {
+        pix_fmts[0] = fmt[-1];
+        fmt         = pix_fmts + 1;
     }
 
     *fmt = AV_PIX_FMT_NONE;
@@ -1095,7 +1102,8 @@ static int h264_init_ps(H264Context *h, const H264SliceContext *sl, int first_sl
                      || h->mb_height != sps->mb_height
                     ));
     if (h->avctx->pix_fmt == AV_PIX_FMT_NONE
-        || (non_j_pixfmt(h->avctx->pix_fmt) != non_j_pixfmt(get_pixel_format(h, 0))))
+        || (non_j_pixfmt(h->avctx->pix_fmt) !=
+            non_j_pixfmt(get_pixel_format(h, 0, sl->data_partitioning))))
         must_reinit = 1;
 
     if (first_slice && av_cmp_q(sps->vui.sar, h->avctx->sample_aspect_ratio))
@@ -1158,7 +1166,8 @@ static int h264_init_ps(H264Context *h, const H264SliceContext *sl, int first_sl
         if (flush_changes)
             ff_h264_flush_change(h);
 
-        if ((ret = get_pixel_format(h, must_reinit || needs_reinit)) < 0)
+        if ((ret = get_pixel_format(h, must_reinit || needs_reinit,
+                                    sl->data_partitioning)) < 0)
             return ret;
         h->avctx->pix_fmt = ret;
 
@@ -2103,13 +2112,56 @@ static int h264_parse_slice_id(const H264Context *h, H264SliceContext *sl)
     return 0;
 }
 
-int ff_h264_queue_decode_slice(H264Context *h, const H2645NAL *nal)
+int ff_h264_attach_slice_partition(const H264Context *h, H264SliceContext *sl,
+                                   const H2645NAL *nal)
+{
+    const PPS *pps = h->ps.pps_list[sl->pps_id];
+    GetBitContext gb = nal->gb;
+    int redundant_pic_cnt = 0;
+    unsigned slice_id;
+
+    if (!sl->data_partitioning)
+        return AVERROR_INVALIDDATA;
+
+    slice_id = get_ue_golomb_long(&gb);
+    if (pps->sps->residual_color_transform_flag)
+        skip_bits(&gb, 2);                  // colour_plane_id
+    if (pps->redundant_pic_cnt_present)
+        redundant_pic_cnt = get_ue_golomb(&gb);
+
+    if (get_bits_left(&gb) < 0) {
+        av_log(h->avctx, AV_LOG_ERROR, "Truncated slice data partition\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    /* 7.4.2.9.2: B and C repeat the slice_id and redundant_pic_cnt of their A. */
+    if (slice_id != sl->slice_id || redundant_pic_cnt != sl->redundant_pic_count) {
+        av_log(h->avctx, AV_LOG_WARNING, "Slice data partition %c does not "
+               "match the preceding partition A\n",
+               nal->type == H264_NAL_DPB ? 'B' : 'C');
+        return AVERROR_INVALIDDATA;
+    }
+
+    if (nal->type == H264_NAL_DPB) {
+        sl->gb_dpb        = gb;
+        sl->dpb_available = 1;
+    } else {
+        sl->gb_dpc        = gb;
+        sl->dpc_available = 1;
+    }
+
+    return 0;
+}
+
+int ff_h264_queue_decode_slice(H264Context *h, const H2645NAL *nal,
+                               H264SliceContext **queued)
 {
     H264SliceContext *sl = h->slice_ctx + h->nb_slice_ctx_queued;
     int first_slice = sl == h->slice_ctx && !h->current_slice;
     int ret;
 
-    sl->gb = nal->gb;
+    *queued = NULL;
+    sl->gb  = nal->gb;
 
     sl->data_partitioning = 0;
     sl->dpb_available     = 0;
@@ -2234,6 +2286,7 @@ int ff_h264_queue_decode_slice(H264Context *h, const H2645NAL *nal)
         return ret;
 
     h->nb_slice_ctx_queued++;
+    *queued = sl;
 
     return 0;
 }

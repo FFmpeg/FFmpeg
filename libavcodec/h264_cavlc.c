@@ -662,6 +662,23 @@ int decode_luma_residual(const H264Context *h, H264SliceContext *sl,
     }
 }
 
+/* Residual is category 3 (intra) or 4 (inter), so it comes from partition B
+ * or C. NULL if that partition was not received. */
+static GetBitContext *mb_residual_gb(const H264Context *h, H264SliceContext *sl,
+                                     unsigned mb_type)
+{
+    int intra = IS_INTRA(mb_type);
+
+    if (!sl->data_partitioning)
+        return &sl->gb;
+    if (intra ? sl->dpb_available : sl->dpc_available)
+        return intra ? &sl->gb_dpb : &sl->gb_dpc;
+
+    av_log(h->avctx, AV_LOG_ERROR, "Missing slice data partition %c\n",
+           intra ? 'B' : 'C');
+    return NULL;
+}
+
 int ff_h264_decode_mb_cavlc(const H264Context *h, H264SliceContext *sl)
 {
     int mb_xy;
@@ -742,14 +759,18 @@ decode_intra_mb:
     if(IS_INTRA_PCM(mb_type)){
         const int mb_size = ff_h264_mb_sizes[h->ps.sps->chroma_format_idc] *
                             h->ps.sps->bit_depth_luma;
+        GetBitContext *gb = mb_residual_gb(h, sl, mb_type); // samples are category 3
+
+        if (!gb)
+            return AVERROR_INVALIDDATA;
 
         // We assume these blocks are very rare so we do not optimize it.
-        sl->intra_pcm_ptr = align_get_bits(&sl->gb);
-        if (get_bits_left(&sl->gb) < mb_size) {
+        sl->intra_pcm_ptr = align_get_bits(gb);
+        if (get_bits_left(gb) < mb_size) {
             av_log(h->avctx, AV_LOG_ERROR, "Not enough data for an intra PCM block.\n");
             return AVERROR_INVALIDDATA;
         }
-        skip_bits_long(&sl->gb, mb_size);
+        skip_bits_long(gb, mb_size);
 
         // In deblocking, the quantizer is 0
         h->cur_pic.qscale_table[mb_xy] = 0;
@@ -1067,9 +1088,12 @@ decode_intra_mb:
         int i4x4, i8x8, chroma_idx;
         int dquant;
         int ret;
-        GetBitContext *gb = &sl->gb;
+        GetBitContext *gb = mb_residual_gb(h, sl, mb_type);
         const uint8_t *scan, *scan8x8;
         const int max_qp = 51 + 6 * (h->ps.sps->bit_depth_luma - 8);
+
+        if (!gb)
+            return AVERROR_INVALIDDATA;
 
         dquant= get_se_golomb(&sl->gb);
 

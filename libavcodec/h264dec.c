@@ -580,12 +580,35 @@ static void debug_green_metadata(const H264SEIGreenMetaData *gm, void *logctx)
     }
 }
 
+/**
+ * Attach the partitions B and C immediately following the partition A at idx.
+ * Arbitrary slice order may separate them (7.4.1.2.5); that is not supported.
+ *
+ * @return index of the last NAL absorbed, or idx if there were none.
+ */
+static int h264_attach_partitions(const H264Context *h, H264SliceContext *sl,
+                                  int idx)
+{
+    while (idx + 1 < h->pkt.nb_nals) {
+        const H2645NAL *nal = &h->pkt.nals[idx + 1];
+
+        if (nal->type != H264_NAL_DPB && nal->type != H264_NAL_DPC)
+            break;
+        if (ff_h264_attach_slice_partition(h, sl, nal) < 0)
+            break;
+        idx++;
+    }
+
+    return idx;
+}
+
 static int decode_nal_units(H264Context *h, AVBufferRef *buf_ref,
                             const uint8_t *buf, int buf_size)
 {
     AVCodecContext *const avctx = h->avctx;
     int nals_needed = 0; ///< number of NALs that need decoding before the next frame thread starts
     int idr_cleared=0;
+    int dp_attached_to = -1; ///< index of the last partition B/C claimed
     int i, ret = 0;
 
     h->has_slice = 0;
@@ -621,6 +644,7 @@ static int decode_nal_units(H264Context *h, AVBufferRef *buf_ref,
 
     for (i = 0; i < h->pkt.nb_nals; i++) {
         H2645NAL *nal = &h->pkt.nals[i];
+        H264SliceContext *queued;
         int max_slice_ctx, err;
 
         if (avctx->skip_frame >= AVDISCARD_NONREF &&
@@ -647,13 +671,33 @@ static int decode_nal_units(H264Context *h, AVBufferRef *buf_ref,
             h->has_recovery_point = 1;
             av_fallthrough;
         case H264_NAL_SLICE:
+        case H264_NAL_DPA:
             h->has_slice = 1;
 
-            if ((err = ff_h264_queue_decode_slice(h, nal))) {
+            if (nal->type == H264_NAL_DPA) {
+                /* hwaccels take one self-contained slice NAL, not three */
+                if (avctx->hwaccel) {
+                    avpriv_request_sample(avctx, "hardware accelerated data partitioning");
+                    ret = AVERROR_PATCHWELCOME;
+                    goto end;
+                }
+                /* the lookahead needs all three partitions in one packet */
+                if (avctx->flags2 & AV_CODEC_FLAG2_CHUNKS) {
+                    av_log(avctx, AV_LOG_ERROR, "Decoding in chunks is not "
+                           "supported for partitioned slices\n");
+                    ret = AVERROR(ENOSYS);
+                    goto end;
+                }
+            }
+
+            if ((err = ff_h264_queue_decode_slice(h, nal, &queued))) {
                 H264SliceContext *sl = h->slice_ctx + h->nb_slice_ctx_queued;
                 sl->ref_count[0] = sl->ref_count[1] = 0;
                 break;
             }
+
+            if (nal->type == H264_NAL_DPA && queued)
+                dp_attached_to = h264_attach_partitions(h, queued, i);
 
             if (h->current_slice == 1) {
                 if (avctx->active_thread_type & FF_THREAD_FRAME &&
@@ -679,10 +723,13 @@ static int decode_nal_units(H264Context *h, AVBufferRef *buf_ref,
                     goto end;
             }
             break;
-        case H264_NAL_DPA:
         case H264_NAL_DPB:
         case H264_NAL_DPC:
-            avpriv_request_sample(avctx, "data partitioning");
+            /* not claimed by the lookahead above, so it has no partition A */
+            if (i > dp_attached_to)
+                av_log(avctx, AV_LOG_WARNING, "Ignoring slice data partition "
+                       "%c without a matching partition A\n",
+                       nal->type == H264_NAL_DPB ? 'B' : 'C');
             break;
         case H264_NAL_SEI:
             if (h->setup_finished) {
