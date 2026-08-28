@@ -183,8 +183,18 @@ typedef struct AVSContext {
     GetBitContext gb;
     AVSFrame cur;     ///< currently decoded frame
     AVSFrame DPB[2];  ///< reference frames
-    int dist[2];     ///< temporal distances from current frame to ref frames
+    /**
+     * The reference of every reference index, clause 9.4.5: a frame, or the
+     * field of one starting at parity; both lists share the array.
+     */
+    struct {
+        AVFrame *f;   ///< frame the reference belongs to
+        int parity;   ///< first line of the reference field inside it
+    } ref[4];
+    int ref_base[2]; ///< first entry of the forward and the backward list
+    int dist[4];     ///< BlockDistance of every reference, clause 9.4.6.1
     int low_delay;
+    int progressive_seq;
     int profile, level;
     int aspect_ratio;
     int mb_width, mb_height;
@@ -192,6 +202,9 @@ typedef struct AVSContext {
     int stream_revision; ///<0 for samples from 2006, 1 for rm52j encoder
     int progressive;
     int pic_structure;
+    int top_field_first;  ///< first coded field is the top one, clause 7.2.3
+    int field;            ///< field of the current MB, 0 or 1, clause 3.24
+    int field_mby;        ///< macroblock row of the current macroblock in it
     int skip_mode_flag;   ///< select between skip_count or one skip_flag per MB
     int aec_enable;       ///< the macroblock layer uses AEC (AVS1-P16)
     int aec_start;        ///< byte offset of the current AEC slice's payload
@@ -262,9 +275,8 @@ typedef struct AVSContext {
     void (*intra_pred_c[7])(uint8_t *d, uint8_t *top, uint8_t *left, ptrdiff_t stride);
     uint8_t *col_type_base;
 
-    /* scaling factors for MV prediction */
-    int sym_factor;    ///< for scaling in symmetrical B block
-    int scale_den[2];  ///< for scaling neighbouring MVs
+    /** 512 / dist[], for scaling neighbouring MVs (clause 9.4.6.2 step 3) */
+    int scale_den[4];
 
     /**
      * 16384 / BlockDistanceRef of clause 9.9.1 b) 3), indexed by the
@@ -295,10 +307,10 @@ extern const uint8_t     ff_cavs_chroma_qp[64];
 extern const uint8_t     ff_cavs_partition_flags[30];
 
 /** mark block as using intra prediction */
-#define CAVS_DIR_MV   (cavs_vector){ 0, 0, 1, REF_DIR }
+#define CAVS_DIR_MV   (cavs_vector){ 0, 0, 1, REF_DIR, 0 }
 /** mark block as "no prediction from this direction"
     e.g. forward motion vector in BWD partition */
-#define CAVS_INTRA_MV (cavs_vector){ 0, 0, 1, REF_INTRA }
+#define CAVS_INTRA_MV (cavs_vector){ 0, 0, 1, REF_INTRA, 0 }
 
 static inline void set_mvs(cavs_vector *mv, enum cavs_block size) {
     switch(size) {
@@ -341,6 +353,7 @@ void ff_cavs_inter(AVSContext *h, enum cavs_mb mb_type);
 void ff_cavs_mv(AVSContext *h, enum cavs_mv_loc nP, enum cavs_mv_loc nC,
                 enum cavs_mv_pred mode, enum cavs_block size, int ref);
 void ff_cavs_init_mb(AVSContext *h);
+void ff_cavs_set_mb_row(AVSContext *h);
 int  ff_cavs_next_mb(AVSContext *h);
 int ff_cavs_init_pic(AVSContext *h);
 int ff_cavs_init_top_lines(AVSContext *h);
