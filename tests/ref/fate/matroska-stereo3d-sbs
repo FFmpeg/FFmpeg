@@ -1,0 +1,22 @@
+16938e7e91ea9492eef3654d3db9af57 *tests/data/fate/matroska-stereo3d-sbs.matroska
+38205 tests/data/fate/matroska-stereo3d-sbs.matroska
+#extradata 0:       30, 0x47ab0576
+#tb 0: 1/1000
+#media_type 0: video
+#codec_id 0: mpeg4
+#dimensions 0: 352x288
+#sar 0: 1/1
+0,          0,          0,       40,    27837, 0xd9809b60
+0,         40,         40,       40,     9806, 0xbebc2826, F=0x0
+[STREAM]
+[SIDE_DATA]
+side_data_type=Stereo 3D
+type=side by side
+inverted=0
+view=packed
+primary_eye=none
+baseline=0
+horizontal_disparity_adjustment=0/1
+horizontal_field_of_view=0/1
+[/SIDE_DATA]
+[/STREAM]

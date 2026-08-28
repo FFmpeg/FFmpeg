@@ -339,8 +339,64 @@ fate-matroska-reenc-delete-metadata-filter-output: CMD = transcode matroska $(TA
 FATE_MATROSKA_FFMPEG_FFPROBE-$(call TRANSCODE, MPEG2VIDEO HEVC, NUT MATROSKA, SCALE_FILTER) += fate-matroska-reenc-chapter-nofilter
 fate-matroska-reenc-chapter-nofilter: CMD = transcode matroska $(TARGET_SAMPLES)/mkv/hdr10tags-both.mkv nut "-map 0:v:0 -vf scale=iw:ih -c:v mpeg2video -bitexact -metadata:c:0 NUMBER_OF_FRAMES=test" "-c copy -t 0.1" "-show_entries chapter_tags" "" "" "" null
 
+# The following tests only use the generated vsynth input, so unlike the
+# rest of this file they are runnable without the external samples.
+FATE_MATROSKA_STEREO3D-$(call ALLYES, FILE_PROTOCOL PIPE_PROTOCOL FRAMECRC_MUXER \
+                                                       RAWVIDEO_DEMUXER RAWVIDEO_DECODER \
+                                                       MPEG4_ENCODER MATROSKA_MUXER MATROSKA_DEMUXER) \
+                       += fate-matroska-stereo3d-sbs
+fate-matroska-stereo3d-sbs: tests/data/vsynth1.yuv
+fate-matroska-stereo3d-sbs: CMD = transcode rawvideo $(TARGET_PATH)/tests/data/vsynth1.yuv matroska \
+  "-c:v mpeg4 -qscale:v 10 -stereo3d:v sbsl -frames:v 2" \
+  "-c:v copy" "-show_entries stream_side_data_list" "" "" "-s 352x288 -pix_fmt yuv420p"
+
+# The global stereo_mode fallback must keep applying to output streams that
+# do not have -stereo3d.
+FATE_MATROSKA_STEREO3D-$(call ALLYES, FILE_PROTOCOL RAWVIDEO_DEMUXER RAWVIDEO_DECODER \
+                                                       MPEG4_ENCODER MATROSKA_MUXER MATROSKA_DEMUXER) \
+                       += fate-matroska-stereo3d-override
+fate-matroska-stereo3d-override: tests/data/vsynth1.yuv
+fate-matroska-stereo3d-override: CMD = run_with_temp \
+  "$(FFMPEG) -nostdin -nostats -bitexact -s 352x288 -pix_fmt yuv420p \
+   -f rawvideo -i $(TARGET_PATH)/tests/data/vsynth1.yuv -frames:v 2 \
+   -map 0:v -map 0:v -c:v mpeg4 -metadata:g stereo_mode=top_bottom \
+   -stereo3d:v:0 sbsl -f matroska -y" \
+  "ffprobe${PROGSUF}${EXESUF} -v error -bitexact \
+   -show_entries stream=index:stream_tags=stereo_mode:stream_side_data_list \
+   -of default=nw=1" mkv
+
+# A stereo_mode tag inherited from the input must not win over -stereo3d,
+# while an explicitly requested tag still describes the layout.
+FATE_MATROSKA_STEREO3D-$(call ALLYES, FILE_PROTOCOL RAWVIDEO_DEMUXER RAWVIDEO_DECODER \
+                                                       MPEG4_ENCODER MATROSKA_MUXER MATROSKA_DEMUXER) \
+                       += fate-matroska-stereo3d-metadata
+fate-matroska-stereo3d-metadata: tests/data/vsynth1.yuv
+fate-matroska-stereo3d-metadata: CMP = diff
+fate-matroska-stereo3d-metadata: REF = $(SRC_PATH)/tests/ref/fate/matroska-stereo3d-metadata
+fate-matroska-stereo3d-metadata: CMD = tmp=tests/data/fate/matroska-stereo3d-metadata.mkv; \
+  out=$$tmp-out.mkv; \
+  ffmpeg -bitexact -s 352x288 -pix_fmt yuv420p -f rawvideo \
+   -i $(TARGET_PATH)/tests/data/vsynth1.yuv -frames:v 2 -c:v mpeg4 \
+   -metadata:s:v:0 stereo_mode=top_bottom -f matroska -y $$tmp && \
+  echo "option over inherited tag:" && \
+  ffmpeg -y -i $$tmp -c copy -stereo3d:v:0 sbsl -f matroska -y $$out && \
+  probe -v error -show_entries stream=index:stream_tags=stereo_mode:stream_side_data_list \
+   -of default=nw=1 $$out && \
+  echo "explicit tag:" && \
+  ffmpeg -y -i $$tmp -c copy -metadata:s:v:0 stereo_mode=right_left \
+   -f matroska -y $$out && \
+  probe -v error -show_entries stream=index:stream_tags=stereo_mode:stream_side_data_list \
+   -of default=nw=1 $$out && \
+  echo "empty tag:" && \
+  ffmpeg -y -i $$tmp -c copy -stereo3d:v:0 tb -metadata:s:v:0 stereo_mode= \
+   -f matroska -y $$out && \
+  probe -v error -show_entries stream=index:stream_tags=stereo_mode:stream_side_data_list \
+   -of default=nw=1 $$out; \
+  ret=$$?; rm -f $$tmp $$out; test $$ret -eq 0
+
 FATE_SAMPLES_AVCONV += $(FATE_MATROSKA-yes)
 FATE_SAMPLES_FFPROBE += $(FATE_MATROSKA_FFPROBE-yes)
 FATE_SAMPLES_FFMPEG_FFPROBE += $(FATE_MATROSKA_FFMPEG_FFPROBE-yes)
+FATE_FFMPEG_FFPROBE += $(FATE_MATROSKA_STEREO3D-yes)
 
-fate-matroska: $(FATE_MATROSKA-yes) $(FATE_MATROSKA_FFPROBE-yes) $(FATE_MATROSKA_FFMPEG_FFPROBE-yes)
+fate-matroska: $(FATE_MATROSKA-yes) $(FATE_MATROSKA_FFPROBE-yes) $(FATE_MATROSKA_FFMPEG_FFPROBE-yes) $(FATE_MATROSKA_STEREO3D-yes)
