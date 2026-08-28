@@ -668,10 +668,23 @@ static void fill_decode_caches(const H264Context *h, H264SliceContext *sl, int m
          * 4 L . .L . . . .
          * 5 L . .. . . . .
          */
-        /* FIXME: constraint_intra_pred & partitioning & nnz
-         * (let us hope this is just a typo in the spec) */
+        /* 9.2.1: with data partitioning and constrained intra prediction, an
+         * inter neighbour must not contribute to nC for an intra macroblock.
+         * Step 7 would drop it from the (nA + nB + 1) >> 1 average entirely,
+         * but JM's predict_nnz() counts it as present with zero coefficients.
+         * FF_BUG_H264_DP_NNZ picks JM, and is autodetected in h264dec.c. */
+        int nnz_mask     = -1;
+        int nnz_excluded = 64;      // 64: unavailable, 0: present but empty
+
+        if (sl->data_partitioning && h->ps.pps->constrained_intra_pred &&
+            IS_INTRA(mb_type)) {
+            nnz_mask = IS_INTRA(-1);
+            if (h->workaround_bugs & FF_BUG_H264_DP_NNZ)
+                nnz_excluded = 0;
+        }
+
         nnz_cache = sl->non_zero_count_cache;
-        if (top_type) {
+        if (top_type & nnz_mask) {
             nnz = h->non_zero_count[top_xy];
             AV_COPY32(&nnz_cache[4 + 8 * 0], &nnz[4 * 3]);
             if (!h->chroma_y_shift) {
@@ -682,14 +695,15 @@ static void fill_decode_caches(const H264Context *h, H264SliceContext *sl, int m
                 AV_COPY32(&nnz_cache[4 + 8 * 10], &nnz[4 * 9]);
             }
         } else {
-            uint32_t top_empty = CABAC(h) && !IS_INTRA(mb_type) ? 0 : 0x40404040;
+            uint32_t top_empty = CABAC(h) && !IS_INTRA(mb_type) ? 0 :
+                                 top_type ? nnz_excluded * 0x01010101u : 0x40404040;
             AV_WN32A(&nnz_cache[4 + 8 *  0], top_empty);
             AV_WN32A(&nnz_cache[4 + 8 *  5], top_empty);
             AV_WN32A(&nnz_cache[4 + 8 * 10], top_empty);
         }
 
         for (i = 0; i < 2; i++) {
-            if (left_type[LEFT(i)]) {
+            if (left_type[LEFT(i)] & nnz_mask) {
                 nnz = h->non_zero_count[left_xy[LEFT(i)]];
                 nnz_cache[3 + 8 * 1 + 2 * 8 * i] = nnz[left_block[8 + 0 + 2 * i]];
                 nnz_cache[3 + 8 * 2 + 2 * 8 * i] = nnz[left_block[8 + 1 + 2 * i]];
@@ -708,12 +722,14 @@ static void fill_decode_caches(const H264Context *h, H264SliceContext *sl, int m
                     nnz_cache[3 + 8 * 11 + 8 * i] = nnz[left_block[8 + 5 + 2 * i]];
                 }
             } else {
+                int empty = CABAC(h) && !IS_INTRA(mb_type) ? 0 :
+                            left_type[LEFT(i)] ? nnz_excluded : 64;
                 nnz_cache[3 + 8 *  1 + 2 * 8 * i] =
                 nnz_cache[3 + 8 *  2 + 2 * 8 * i] =
                 nnz_cache[3 + 8 *  6 + 2 * 8 * i] =
                 nnz_cache[3 + 8 *  7 + 2 * 8 * i] =
                 nnz_cache[3 + 8 * 11 + 2 * 8 * i] =
-                nnz_cache[3 + 8 * 12 + 2 * 8 * i] = CABAC(h) && !IS_INTRA(mb_type) ? 0 : 64;
+                nnz_cache[3 + 8 * 12 + 2 * 8 * i] = empty;
             }
         }
 

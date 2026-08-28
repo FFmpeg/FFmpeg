@@ -675,6 +675,10 @@ static int decode_nal_units(H264Context *h, AVBufferRef *buf_ref,
             h->has_slice = 1;
 
             if (nal->type == H264_NAL_DPA) {
+                /* partitioned streams all come from JM or a derivative */
+                if (h->workaround_bugs & FF_BUG_AUTODETECT)
+                    h->workaround_bugs |= FF_BUG_H264_DP_NNZ;
+
                 /* hwaccels take one self-contained slice NAL, not three */
                 if (avctx->hwaccel) {
                     avpriv_request_sample(avctx, "hardware accelerated data partitioning");
