@@ -272,19 +272,21 @@ static int read_number(const AVOption *o, const void *dst, double *num, int *den
     return AVERROR(EINVAL);
 }
 
-static int write_number(void *obj, const AVOption *o, void *dst, double num, int den, int64_t intnum)
+static int write_number(void *obj, const AVOption *o, void *dst,
+                        double num, int den, int64_t intnum,
+                        int ignore_range)
 {
     void *logctx = dst ? obj : NULL;
     const enum AVOptionType type = TYPE_BASE(o->type);
 
-    if (type != AV_OPT_TYPE_FLAGS &&
+    if (!ignore_range && type != AV_OPT_TYPE_FLAGS &&
         (!den || o->max * den < num * intnum || o->min * den > num * intnum)) {
         num = den ? num * intnum / den : (num && intnum ? INFINITY : NAN);
         av_log(obj, AV_LOG_ERROR, "Value %f for parameter '%s' out of range [%g - %g]\n",
                num, o->name, o->min, o->max);
         return AVERROR(ERANGE);
     }
-    if (type == AV_OPT_TYPE_FLAGS) {
+    if (!ignore_range && type == AV_OPT_TYPE_FLAGS) {
         double d = num*intnum/den;
         if (d < -1.5 || d > 0xFFFFFFFF+0.5 || (llrint(d*256) & 255)) {
             av_log(logctx, AV_LOG_ERROR,
@@ -433,7 +435,7 @@ static int set_string_number(void *obj, void *target_obj, const AVOption *o, con
         int num, den;
         char c;
         if (sscanf(val, "%d%*1[:/]%d%c", &num, &den, &c) == 2) {
-            if ((ret = write_number(obj, o, dst, 1, den, num)) >= 0)
+            if ((ret = write_number(obj, o, dst, 1, den, num, 0)) >= 0)
                 return ret;
             ret = 0;
         }
@@ -510,7 +512,7 @@ static int set_string_number(void *obj, void *target_obj, const AVOption *o, con
                 d = intnum &~(int64_t)d;
         }
 
-        if ((ret = write_number(obj, o, dst, d, 1, 1)) < 0)
+        if ((ret = write_number(obj, o, dst, d, 1, 1, 0)) < 0)
             return ret;
         val += i;
         if (!i || !*val)
@@ -761,7 +763,7 @@ static int opt_set_elem(void *obj, void *target_obj, const AVOption *o,
         ret = set_string_video_rate(obj, o, val, &tmp);
         if (ret < 0)
             return ret;
-        return write_number(obj, o, dst, 1, tmp.den, tmp.num);
+        return write_number(obj, o, dst, 1, tmp.den, tmp.num, 0);
     }
     case AV_OPT_TYPE_PIXEL_FMT:
         return set_string_pixel_fmt(obj, o, val, dst);
@@ -928,7 +930,7 @@ static int set_number(void *obj, const char *name, double num, int den, int64_t 
     if (ret < 0)
         return ret;
     if (dst)
-        ret = write_number(obj, o, dst, num, den, intnum);
+        ret = write_number(obj, o, dst, num, den, intnum, 0);
 
     return ret;
 }
@@ -1798,19 +1800,19 @@ void av_opt_set_defaults2(void *s, int mask, int flags)
             case AV_OPT_TYPE_DURATION:
             case AV_OPT_TYPE_PIXEL_FMT:
             case AV_OPT_TYPE_SAMPLE_FMT:
-                write_number(s, opt, dst, 1, 1, opt->default_val.i64);
+                write_number(s, opt, dst, 1, 1, opt->default_val.i64, 1);
                 break;
             case AV_OPT_TYPE_DOUBLE:
             case AV_OPT_TYPE_FLOAT: {
                 double val;
                 val = opt->default_val.dbl;
-                write_number(s, opt, dst, val, 1, 1);
+                write_number(s, opt, dst, val, 1, 1, 1);
             }
             break;
             case AV_OPT_TYPE_RATIONAL: {
                 AVRational val;
                 val = av_d2q(opt->default_val.dbl, INT_MAX);
-                write_number(s, opt, dst, 1, val.den, val.num);
+                write_number(s, opt, dst, 1, val.den, val.num, 1);
             }
             break;
             case AV_OPT_TYPE_COLOR:
@@ -2482,7 +2484,7 @@ int av_opt_set_array(void *obj, const char *name, int search_flags,
             default: av_assert0(0);
             }
 
-            ret = write_number(obj, o, dst, num, den, intnum);
+            ret = write_number(obj, o, dst, num, den, intnum, 0);
             if (ret < 0)
                 goto fail;
         } else {
