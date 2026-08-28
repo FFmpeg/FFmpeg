@@ -59,6 +59,17 @@ static const uint8_t tc_tab[64] = {
  *  or not yet decoded */
 static const cavs_vector un_mv = { 0, 0, 1, NOT_AVAIL };
 
+/**
+ * Inverse block scan method 2 (clause 9.5.3 c), figure 23), for field
+ * coded pictures, as the inverse ff_permute_scantable() expects.
+ */
+static const uint8_t cavs_scan_field[64] = {
+     0,  8, 16,  1, 24, 32,  9, 17, 40, 48, 25,  2, 10, 56, 33, 18,
+     3, 41, 49, 26, 11, 19,  4, 57, 34, 12, 42, 27, 20, 50, 35, 28,
+     5, 13, 58, 43, 36, 21,  6, 29, 51, 44, 14, 22, 37, 59, 52, 30,
+    45, 60, 38, 53, 46, 61, 54,  7, 62, 15, 23, 31, 39, 47, 55, 63,
+};
+
 static const int8_t left_modifier_l[8] = {  0, -1,  6, -1, -1, 7, 6, 7 };
 static const int8_t top_modifier_l[8]  = { -1,  1,  5, -1, -1, 5, 7, 7 };
 static const int8_t left_modifier_c[7] = {  5, -1,  2, -1,  6, 5, 6 };
@@ -772,10 +783,16 @@ int ff_cavs_init_top_lines(AVSContext *h)
                                  4 * sizeof(*h->col_mv));
     h->col_type_base = av_mallocz(h->mb_width * h->mb_height);
 
+    h->top_cbp         = av_mallocz(h->mb_width);
+    h->top_c_pred_mode = av_mallocz(h->mb_width);
+
     if (!h->top_qp || !h->top_mv[0] || !h->top_mv[1] || !h->top_pred_Y ||
+        !h->top_cbp || !h->top_c_pred_mode ||
         !h->top_border_y || !h->top_border_u || !h->top_border_v ||
         !h->col_mv || !h->col_type_base) {
         av_freep(&h->top_qp);
+        av_freep(&h->top_cbp);
+        av_freep(&h->top_c_pred_mode);
         av_freep(&h->top_mv[0]);
         av_freep(&h->top_mv[1]);
         av_freep(&h->top_pred_Y);
@@ -800,6 +817,9 @@ av_cold int ff_cavs_init(AVCodecContext *avctx)
     ff_cavsdsp_init(&h->cdsp);
     ff_init_scantable_permutation(permutation, h->cdsp.idct_perm);
     ff_permute_scantable(h->permutated_scantable, ff_zigzag_direct, permutation);
+    ff_permute_scantable(h->permutated_scantable_field, cavs_scan_field,
+                         permutation);
+    h->scantable = h->permutated_scantable;
 
     h->avctx       = avctx;
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
@@ -843,6 +863,8 @@ av_cold int ff_cavs_end(AVCodecContext *avctx)
     av_frame_free(&h->DPB[1].f);
 
     av_freep(&h->top_qp);
+    av_freep(&h->top_cbp);
+    av_freep(&h->top_c_pred_mode);
     av_freep(&h->top_mv[0]);
     av_freep(&h->top_mv[1]);
     av_freep(&h->top_pred_Y);
