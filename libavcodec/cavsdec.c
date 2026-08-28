@@ -928,9 +928,6 @@ static int decode_mb_b(AVSContext *h, enum cavs_mb mb_type)
 
 static inline int decode_slice_header(AVSContext *h, GetBitContext *gb)
 {
-    if (h->stc > 0xAF)
-        av_log(h->avctx, AV_LOG_ERROR, "unexpected start code 0x%02x\n", h->stc);
-
     if (h->stc >= h->mb_height) {
         av_log(h->avctx, AV_LOG_ERROR, "stc 0x%02x is too large\n", h->stc);
         return AVERROR_INVALIDDATA;
@@ -967,10 +964,19 @@ static inline int check_for_slice(AVSContext *h)
     if (!align && (show_bits(gb, 8) == 0x80))
         align = 8;
     if ((show_bits_long(gb, 24 + align) & 0xFFFFFF) == 0x000001) {
-        skip_bits_long(gb, 24 + align);
-        h->stc = get_bits(gb, 8);
-        if (h->stc >= h->mb_height)
+        GetBitContext peek;
+        int stc;
+
+        peek = *gb;
+        skip_bits_long(&peek, 24 + align);
+        stc = get_bits(&peek, 8);
+        /* any other unit ends the picture's data; leave it to the caller */
+        if (stc > (SLICE_MAX_START_CODE & 0xFF)) {
+            h->pic_data_end = 1;
             return 0;
+        }
+        *gb    = peek;
+        h->stc = stc;
         decode_slice_header(h, gb);
         return 1;
     }
@@ -1098,17 +1104,36 @@ static int decode_pic(AVSContext *h)
     }
 
     ret = 0;
+    h->pic_data_end = 0;
     if (h->cur.f->pict_type == AV_PICTURE_TYPE_I) {
         do {
-            check_for_slice(h);
+            ret = check_for_slice(h);
+            if (ret < 0)
+                break;
+            if (h->pic_data_end) {
+                av_log(h->avctx, AV_LOG_ERROR,
+                       "picture data ended before MB %d\n", h->mbidx);
+                ret = AVERROR_INVALIDDATA;
+                break;
+            }
             ret = decode_mb_i(h, 0);
             if (ret < 0)
                 break;
         } while (ff_cavs_next_mb(h));
     } else if (h->cur.f->pict_type == AV_PICTURE_TYPE_P) {
         do {
-            if (check_for_slice(h))
+            ret = check_for_slice(h);
+            if (ret < 0)
+                break;
+            if (ret)
                 skip_count = -1;
+            /* past the picture's data, only a pending skip run can code MBs */
+            if (h->pic_data_end && !(h->skip_mode_flag && skip_count > 0)) {
+                av_log(h->avctx, AV_LOG_ERROR,
+                       "picture data ended before MB %d\n", h->mbidx);
+                ret = AVERROR_INVALIDDATA;
+                break;
+            }
             if (h->skip_mode_flag && (skip_count < 0)) {
                 if (get_bits_left(&h->gb) < 1) {
                     ret = AVERROR_INVALIDDATA;
@@ -1134,8 +1159,18 @@ static int decode_pic(AVSContext *h)
         } while (ff_cavs_next_mb(h));
     } else { /* AV_PICTURE_TYPE_B */
         do {
-            if (check_for_slice(h))
+            ret = check_for_slice(h);
+            if (ret < 0)
+                break;
+            if (ret)
                 skip_count = -1;
+            /* past the picture's data, only a pending skip run can code MBs */
+            if (h->pic_data_end && !(h->skip_mode_flag && skip_count > 0)) {
+                av_log(h->avctx, AV_LOG_ERROR,
+                       "picture data ended before MB %d\n", h->mbidx);
+                ret = AVERROR_INVALIDDATA;
+                break;
+            }
             if (h->skip_mode_flag && (skip_count < 0)) {
                 if (get_bits_left(&h->gb) < 1) {
                     ret = AVERROR_INVALIDDATA;
@@ -1314,9 +1349,7 @@ static int cavs_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
             //mpeg_decode_user_data(avctx, buf_ptr, input_size);
             break;
         default:
-            if (stc <= SLICE_MAX_START_CODE) {
-                decode_slice_header(h, &h->gb);
-            }
+            /* slice start codes are consumed by check_for_slice() */
             break;
         }
     }

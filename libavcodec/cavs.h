@@ -192,6 +192,7 @@ typedef struct AVSContext {
     int mbx, mby, mbidx; ///< macroblock coordinates
     int flags;         ///< availability flags of neighbouring macroblocks
     int stc;           ///< last start code
+    int pic_data_end;  ///< a unit that is not a slice ended the picture's data
     uint8_t *cy, *cu, *cv; ///< current MB sample pointers
     int left_qp;
     uint8_t *top_qp;
