@@ -86,7 +86,7 @@ static av_cold int init(AVFilterContext *ctx)
 
 #define MOD(a, b) (((a) >= (b)) ? (a) - (b) : (a))
 
-#define PHASER_PLANAR(name, type)                                      \
+#define PHASER_PLANAR(name, type, output)                              \
 static void phaser_## name ##p(AudioPhaserContext *s,                  \
                                uint8_t * const *ssrc, uint8_t **ddst,  \
                                int nb_samples, int channels)           \
@@ -114,7 +114,7 @@ static void phaser_## name ##p(AudioPhaserContext *s,                  \
             delay_pos = MOD(delay_pos + 1, s->delay_buffer_length);    \
             buffer[delay_pos] = v;                                     \
                                                                        \
-            *dst = v * s->out_gain;                                    \
+            *dst = output;                                             \
         }                                                              \
     }                                                                  \
                                                                        \
@@ -122,7 +122,7 @@ static void phaser_## name ##p(AudioPhaserContext *s,                  \
     s->modulation_pos = modulation_pos;                                \
 }
 
-#define PHASER(name, type)                                              \
+#define PHASER(name, type, output)                                      \
 static void phaser_## name (AudioPhaserContext *s,                      \
                             uint8_t * const *ssrc, uint8_t **ddst,      \
                             int nb_samples, int channels)               \
@@ -147,7 +147,7 @@ static void phaser_## name (AudioPhaserContext *s,                      \
                                                                         \
             buffer[npos + c] = v;                                       \
                                                                         \
-            *dst = v * s->out_gain;                                     \
+            *dst = output;                                              \
         }                                                               \
                                                                         \
         modulation_pos = MOD(modulation_pos + 1,                        \
@@ -158,15 +158,15 @@ static void phaser_## name (AudioPhaserContext *s,                      \
     s->modulation_pos = modulation_pos;                                 \
 }
 
-PHASER_PLANAR(dbl, double)
-PHASER_PLANAR(flt, float)
-PHASER_PLANAR(s16, int16_t)
-PHASER_PLANAR(s32, int32_t)
+PHASER_PLANAR(dbl, double,  v * s->out_gain)
+PHASER_PLANAR(flt, float,   v * s->out_gain)
+PHASER_PLANAR(s16, int16_t, av_clipd(v * s->out_gain, INT16_MIN, INT16_MAX))
+PHASER_PLANAR(s32, int32_t, av_clipd(v * s->out_gain, INT32_MIN, INT32_MAX))
 
-PHASER(dbl, double)
-PHASER(flt, float)
-PHASER(s16, int16_t)
-PHASER(s32, int32_t)
+PHASER(dbl, double,  v * s->out_gain)
+PHASER(flt, float,   v * s->out_gain)
+PHASER(s16, int16_t, av_clipd(v * s->out_gain, INT16_MIN, INT16_MAX))
+PHASER(s32, int32_t, av_clipd(v * s->out_gain, INT32_MIN, INT32_MAX))
 
 static int config_output(AVFilterLink *outlink)
 {
