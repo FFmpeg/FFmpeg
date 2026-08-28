@@ -172,6 +172,10 @@ static int parse_gains(AVFilterContext *ctx)
             s->gains[i] = expf(gain * M_LN10 / 20.f);
         else
             s->gains[i] = gain;
+        if (!isfinite(s->gains[i])) {
+            av_log(ctx, AV_LOG_ERROR, "Gain %f must be finite.\n", gain);
+            return AVERROR(EINVAL);
+        }
     }
 
     for (; i < MAX_BANDS; i++)
@@ -203,8 +207,8 @@ static av_cold int init(AVFilterContext *ctx)
             av_log(ctx, AV_LOG_ERROR, "Invalid syntax for frequency[%d].\n", i);
             return AVERROR(EINVAL);
         }
-        if (freq <= 0) {
-            av_log(ctx, AV_LOG_ERROR, "Frequency %f must be positive number.\n", freq);
+        if (!isfinite(freq) || freq <= 0) {
+            av_log(ctx, AV_LOG_ERROR, "Frequency %f must be a positive finite number.\n", freq);
             return AVERROR(EINVAL);
         }
 
