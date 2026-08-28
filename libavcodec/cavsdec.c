@@ -1,5 +1,5 @@
 /*
- * Chinese AVS video (AVS1-P2, JiZhun profile) decoder.
+ * Chinese AVS video (AVS1-P2/P16, JiZhun and Broadcasting profiles) decoder.
  * Copyright (c) 2006  Stefan Gehrer <stefan.gehrer@gmx.de>
  *
  * This file is part of FFmpeg.
@@ -21,7 +21,7 @@
 
 /**
  * @file
- * Chinese AVS video (AVS1-P2, JiZhun profile) decoder
+ * Chinese AVS video (AVS1-P2/P16, JiZhun and Broadcasting profiles) decoder
  * @author Stefan Gehrer <stefan.gehrer@gmx.de>
  *
  * Clause, table and figure numbers refer to GY/T 257.1-2012.
@@ -2051,10 +2051,13 @@ static int decode_seq_header(AVSContext *h)
     int width, height;
     int mb_width, mb_height;
     int progressive_seq, low_delay;
+    int chroma_format, sample_precision;
     int ret;
 
     profile = get_bits(&h->gb, 8);
-    if (profile != AV_PROFILE_CAVS_JIZHUN) {
+    /* the sequence header is the same for both profiles (table 14) */
+    if (profile != AV_PROFILE_CAVS_JIZHUN &&
+        profile != AV_PROFILE_CAVS_BROADCASTING) {
         avpriv_report_missing_feature(h->avctx, "Profile %#x", profile);
         return AVERROR_PATCHWELCOME;
     }
@@ -2072,8 +2075,25 @@ static int decode_seq_header(AVSContext *h)
         av_log(h->avctx, AV_LOG_ERROR, "Dimensions invalid\n");
         return AVERROR_INVALIDDATA;
     }
-    skip_bits(&h->gb, 2); //chroma format
-    skip_bits(&h->gb, 3); //sample_precision
+    chroma_format    = get_bits(&h->gb, 2);
+    sample_precision = get_bits(&h->gb, 3);
+    /* the Broadcasting macroblock layer is written for 8 bit 4:2:0 */
+    if (profile == AV_PROFILE_CAVS_BROADCASTING) {
+        if (sample_precision != 1) {
+            av_log(h->avctx, AV_LOG_ERROR,
+                   "sample_precision %d is not 8 bit\n", sample_precision);
+            return AVERROR_INVALIDDATA;
+        }
+        if (chroma_format == 2) {
+            avpriv_request_sample(h->avctx, "4:2:2 chroma");
+            return AVERROR_PATCHWELCOME;
+        }
+        if (chroma_format != 1) {
+            av_log(h->avctx, AV_LOG_ERROR,
+                   "chroma_format %d is reserved\n", chroma_format);
+            return AVERROR_INVALIDDATA;
+        }
+    }
     aspect_ratio = get_bits(&h->gb, 4);
     frame_rate_code = get_bits(&h->gb, 4);
     if (frame_rate_code == 0 || frame_rate_code > 13) {
@@ -2365,7 +2385,7 @@ static int cavs_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
 
 const FFCodec ff_cavs_decoder = {
     .p.name         = "cavs",
-    CODEC_LONG_NAME("Chinese AVS (Audio Video Standard) (AVS1-P2, JiZhun profile)"),
+    CODEC_LONG_NAME("Chinese AVS (Audio Video Standard) (AVS1-P2/P16)"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_CAVS,
     .priv_data_size = sizeof(AVSContext),

@@ -1,5 +1,5 @@
 /*
- * Chinese AVS video (AVS1-P2, JiZhun profile) parser.
+ * Chinese AVS video (AVS1-P2/P16, JiZhun and Broadcasting profiles) parser.
  * Copyright (c) 2006  Stefan Gehrer <stefan.gehrer@gmx.de>
  *
  * This file is part of FFmpeg.
@@ -21,7 +21,7 @@
 
 /**
  * @file
- * Chinese AVS video (AVS1-P2, JiZhun profile) parser
+ * Chinese AVS video (AVS1-P2/P16, JiZhun and Broadcasting profiles) parser
  * @author Stefan Gehrer <stefan.gehrer@gmx.de>
  */
 

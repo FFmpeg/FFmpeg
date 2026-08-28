@@ -1,5 +1,5 @@
 /*
- * Chinese AVS video (AVS1-P2, JiZhun profile) decoder.
+ * Chinese AVS video (AVS1-P2/P16, JiZhun and Broadcasting profiles) decoder.
  * Copyright (c) 2006  Stefan Gehrer <stefan.gehrer@gmx.de>
  *
  * This file is part of FFmpeg.

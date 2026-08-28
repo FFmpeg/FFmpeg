@@ -1,5 +1,5 @@
 /*
- * Chinese AVS video (AVS1-P2, JiZhun profile) decoder.
+ * Chinese AVS video (AVS1-P2/P16, JiZhun and Broadcasting profiles) decoder.
  *
  * DSP functions
  *
