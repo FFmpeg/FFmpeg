@@ -2711,13 +2711,15 @@ int av_opt_is_set_to_default(void *obj, const AVOption *o)
         return !strcmp(str, o->default_val.str);
     case AV_OPT_TYPE_DOUBLE:
         d = *(double *)dst;
-        return o->default_val.dbl == d;
+        return o->default_val.dbl == d || isnan(d) && isnan(o->default_val.dbl);
     case AV_OPT_TYPE_FLOAT:
         d = *(float *)dst;
-        return (float)o->default_val.dbl == d;
-    case AV_OPT_TYPE_RATIONAL:
+        return (float)o->default_val.dbl == d || isnan(d) && isnan(o->default_val.dbl);
+    case AV_OPT_TYPE_RATIONAL: {
+        AVRational v = *(AVRational *) dst;
         q = av_d2q(o->default_val.dbl, INT_MAX);
-        return !av_cmp_q(*(AVRational*)dst, q);
+        return !av_cmp_q(v, q) || (!q.den && !v.den);
+    }
     case AV_OPT_TYPE_BINARY: {
         struct {
             uint8_t *data;
