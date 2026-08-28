@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavcodec/defs.h"
 #include "libavcodec/startcode.h"
 #include "avformat.h"
 #include "rawdec.h"
@@ -28,8 +29,6 @@
 #define CAVS_UNDEF_START_CODE     0x000001b4
 #define CAVS_PIC_PB_START_CODE    0x000001b6
 #define CAVS_VIDEO_EDIT_CODE      0x000001b7
-#define CAVS_PROFILE_JIZHUN       0x20       // AVS1 P2
-#define CAVS_PROFILE_GUANGDIAN    0x48       // AVS1 P16/AVS+
 
 static int cavsvideo_probe(const AVProbeData *p)
 {
@@ -50,8 +49,8 @@ static int cavsvideo_probe(const AVProbeData *p)
             }
             if (code == CAVS_SEQ_START_CODE) {
                 seq++;
-                /* check for the only currently supported profile */
-                if (*ptr != CAVS_PROFILE_JIZHUN && *ptr != CAVS_PROFILE_GUANGDIAN)
+                if (*ptr != AV_PROFILE_CAVS_JIZHUN &&
+                    *ptr != AV_PROFILE_CAVS_BROADCASTING)
                     return 0;
             } else if ((code == CAVS_PIC_I_START_CODE) ||
                        (code == CAVS_PIC_PB_START_CODE)) {
