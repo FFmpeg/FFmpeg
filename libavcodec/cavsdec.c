@@ -944,12 +944,18 @@ static int decode_mb_b(AVSContext *h, enum cavs_mb mb_type)
 
 static inline int decode_slice_header(AVSContext *h, GetBitContext *gb)
 {
-    if (h->stc >= h->mb_height) {
-        av_log(h->avctx, AV_LOG_ERROR, "stc 0x%02x is too large\n", h->stc);
+    int mby = h->stc;
+
+    /* over 2800 lines MbRow carries high bits here (clause 7.2.4) */
+    if (h->height > 2800)
+        mby += get_bits(gb, 3) << 7; //slice_vertical_position_extension
+
+    if (mby >= h->mb_height) {
+        av_log(h->avctx, AV_LOG_ERROR, "MbRow %d is too large\n", mby);
         return AVERROR_INVALIDDATA;
     }
 
-    h->mby   = h->stc;
+    h->mby   = mby;
     h->mbidx = h->mby * h->mb_width;
 
     /* mark top macroblocks as unavailable */
