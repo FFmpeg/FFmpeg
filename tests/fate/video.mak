@@ -76,6 +76,9 @@ fate-cavs: CMD = framecrc -i $(TARGET_SAMPLES)/cavs/cavs.mpg -an
 FATE_VIDEO-$(call FRAMECRC, CAVSVIDEO, CAVS, CAVSVIDEO_PARSER) += fate-cavs-bunny
 fate-cavs-bunny: CMD = framecrc -f cavsvideo -i $(TARGET_SAMPLES)/cavs/bunny.mp4
 
+FATE_VIDEO-$(call FRAMECRC, MPEGTS, CAVS, CAVSVIDEO_PARSER) += fate-cavs-avsplus
+fate-cavs-avsplus: CMD = framecrc -i $(TARGET_SAMPLES)/cavs/avsplus-1080i-testcard.ts -an
+
 FATE_VIDEO-$(call FRAMECRC, CDG, CDGRAPHICS, SCALE_FILTER) += fate-cdgraphics
 fate-cdgraphics: CMD = framecrc -i $(TARGET_SAMPLES)/cdgraphics/BrotherJohn.cdg -pix_fmt rgba -t 1 -vf scale
 
