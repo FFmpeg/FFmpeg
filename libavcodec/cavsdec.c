@@ -1034,6 +1034,8 @@ static int decode_pic(AVSContext *h)
     av_frame_unref(h->cur.f);
 
     skip_bits(&h->gb, 16);//bbv_delay
+    if (h->profile == AV_PROFILE_CAVS_BROADCASTING)
+        skip_bits(&h->gb, 8); //marker_bit, bbv_delay_extension (tables 21, 22)
     if (h->stc == PIC_PB_START_CODE) {
         h->cur.f->pict_type = get_bits(&h->gb, 2) + AV_PICTURE_TYPE_I;
         if (h->cur.f->pict_type > AV_PICTURE_TYPE_B) {
@@ -1048,9 +1050,12 @@ static int decode_pic(AVSContext *h)
         h->cur.f->pict_type = AV_PICTURE_TYPE_I;
         if (get_bits1(&h->gb))
             skip_bits(&h->gb, 24);//time_code
-        /* old sample clips were all progressive and no low_delay,
-           bump stream revision if detected otherwise */
-        if (h->low_delay || !(show_bits(&h->gb, 9) & 1))
+        /* a Broadcasting stream always has the marker bit (table 21); old
+           JiZhun sample clips were all progressive and no low_delay, bump
+           stream revision if detected otherwise */
+        if (h->profile == AV_PROFILE_CAVS_BROADCASTING)
+            h->stream_revision = 1;
+        else if (h->low_delay || !(show_bits(&h->gb, 9) & 1))
             h->stream_revision = 1;
         /* similarly test top_field_first and repeat_first_field */
         else if (show_bits(&h->gb, 11) & 3)
@@ -1129,6 +1134,16 @@ static int decode_pic(AVSContext *h)
         }
     } else {
         h->alpha_offset = h->beta_offset  = 0;
+    }
+
+    /* AWQ parameters and aec_enable end the header (tables 21, 22) */
+    h->aec_enable = 0;
+    if (h->profile == AV_PROFILE_CAVS_BROADCASTING) {
+        if (get_bits1(&h->gb)) { //weighting_quant_flag
+            avpriv_request_sample(h->avctx, "Adaptive weighted quantization");
+            return AVERROR_PATCHWELCOME;
+        }
+        h->aec_enable = get_bits1(&h->gb);
     }
 
     ret = 0;
