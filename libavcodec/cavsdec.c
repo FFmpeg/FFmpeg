@@ -587,12 +587,13 @@ static int decode_residual_block(AVSContext *h, GetBitContext *gb,
         level_buf[i] = level;
         run_buf[i]   = run;
     }
-    if ((ret = dequant(h, level_buf, run_buf, block, dequant_mul[qp],
-                      dequant_shift[qp], i)) < 0)
-        return ret;
-    h->cdsp.cavs_idct8_add(dst, block, stride);
+    ret = dequant(h, level_buf, run_buf, block, dequant_mul[qp],
+                  dequant_shift[qp], i);
+    if (ret >= 0)
+        h->cdsp.cavs_idct8_add(dst, block, stride);
+    /* dequant() can write before it fails, so always clear the block */
     h->bdsp.clear_block(block);
-    return 0;
+    return ret;
 }
 
 
