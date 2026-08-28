@@ -178,6 +178,9 @@ edge padding bug (autodetected per fourcc/version)
 Workaround various bugs in microsoft broken decoders.
 @item trunc
 trancated frames
+@item h264_dp_nnz
+H.264 nC derivation for partitioned slices, as done by JM rather than by
+9.2.1 (autodetected)
 @end table
 
 @item strict @var{integer} (@emph{decoding/encoding,audio,video})
