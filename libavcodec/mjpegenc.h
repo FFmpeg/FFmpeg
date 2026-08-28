@@ -45,6 +45,9 @@ typedef struct MJpegContext {
     int huffman;
     /* Force duplication of mjpeg matrices, useful for rtp streaming */
     int force_duplicated_matrix;
+    /* Tristate controlling the Ultra HDR gain map XMP packet */
+    int xmp_gain_map;
+    int xmp_warned;
     //FIXME use array [3] instead of lumi / chroma, for easier addressing
     uint8_t huff_size_dc_luminance[12];     ///< DC luminance Huffman table size.
     uint16_t huff_code_dc_luminance[12];    ///< DC luminance Huffman table codes.

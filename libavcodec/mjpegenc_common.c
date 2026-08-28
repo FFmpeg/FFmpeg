@@ -160,8 +160,14 @@ int ff_mjpeg_add_icc_profile_size(AVCodecContext *avctx, const AVFrame *frame,
     return 0;
 }
 
-int ff_mjpeg_add_gain_map_size(AVCodecContext *avctx, const AVFrame *frame,
-                               size_t *max_pkt_size)
+static int want_gain_map_xmp(const struct MJpegContext *m,
+                             const AVGainMapParams *p)
+{
+    return m && m->xmp_gain_map && ff_gain_map_params_check_xmp(p);
+}
+
+int ff_mjpeg_add_gain_map_size(AVCodecContext *avctx, struct MJpegContext *m,
+                               const AVFrame *frame, size_t *max_pkt_size)
 {
     if (avctx->codec_id != AV_CODEC_ID_MJPEG)
         return 0;
@@ -176,8 +182,20 @@ int ff_mjpeg_add_gain_map_size(AVCodecContext *avctx, const AVFrame *frame,
     if (ret < 0)
         return ret;
 
-    size_t app2_size = 4 + sizeof(AV_ISO21496_IDENTIFIER) + FF_GAIN_MAP_MAX_PAYLOAD_SIZE;
-    size_t new_pkt_size = *max_pkt_size + app2_size;
+    size_t extra_size = 4 + sizeof(AV_ISO21496_IDENTIFIER) + FF_GAIN_MAP_MAX_PAYLOAD_SIZE;
+    if (m && m->xmp_gain_map) {
+        if (!ff_gain_map_params_check_xmp(params)) {
+            const int level = m->xmp_gain_map > 0 ? AV_LOG_ERROR : AV_LOG_WARNING;
+            av_log_once(avctx, level, AV_LOG_VERBOSE, &m->xmp_warned,
+                        "Gain map metadata is incompatible with Ultra HDR XMP\n");
+            if (m->xmp_gain_map > 0)
+                return AVERROR(ENOTSUP);
+        } else {
+            extra_size += 4 + sizeof(FF_GAIN_MAP_XMP_IDENT) + FF_GAIN_MAP_XMP_MAX_LEN;
+        }
+    }
+
+    size_t new_pkt_size = *max_pkt_size + extra_size;
     if (new_pkt_size < *max_pkt_size) /* overflow */
         return AVERROR_INVALIDDATA;
     *max_pkt_size = new_pkt_size;
@@ -185,7 +203,7 @@ int ff_mjpeg_add_gain_map_size(AVCodecContext *avctx, const AVFrame *frame,
 }
 
 static void jpeg_put_comments(AVCodecContext *avctx, PutBitContext *p,
-                              const AVFrame *frame)
+                              const AVFrame *frame, const struct MJpegContext *m)
 {
     const AVFrameSideData *sd = NULL;
     int size;
@@ -246,9 +264,27 @@ static void jpeg_put_comments(AVCodecContext *avctx, PutBitContext *p,
         av_assert1(!remaining);
     }
 
-    /* ISO 21496-1 gain map metadata */
+    /* Gain map metadata; the ISO 21496-1 blob is written directly after the
+     * XMP packet, as recommended by the Ultra HDR specification */
     sd = avctx->codec_id == AV_CODEC_ID_MJPEG ?
          av_frame_get_side_data(frame, AV_FRAME_DATA_GAIN_MAP_PARAMS) : NULL;
+
+    const AVGainMapParams *gmp = sd ? (const AVGainMapParams *) sd->data : NULL;
+    if (sd && sd->size >= sizeof(AVGainMapParams) && want_gain_map_xmp(m, gmp)) {
+        put_marker(p, APP1);
+        flush_put_bits(p);
+        ptr = put_bits_ptr(p);
+        put_bits(p, 16, 0); /* patched later */
+        ff_put_string(p, FF_GAIN_MAP_XMP_IDENT, 1);
+        flush_put_bits(p);
+
+        /* pre-validated by ff_mjpeg_add_gain_map_size() */
+        size = ff_gain_map_params_to_xmp(gmp, put_bits_ptr(p));
+        av_assert0(size >= 0);
+        skip_put_bytes(p, size);
+        AV_WB16(ptr, 2 + sizeof(FF_GAIN_MAP_XMP_IDENT) + size);
+    }
+
     if (sd && sd->size >= sizeof(AVGainMapParams)) {
         put_marker(p, APP2);
         flush_put_bits(p);
@@ -258,8 +294,7 @@ static void jpeg_put_comments(AVCodecContext *avctx, PutBitContext *p,
         flush_put_bits(p);
 
         /* pre-validated by ff_mjpeg_add_gain_map_size() */
-        const AVGainMapParams *params = (const AVGainMapParams *) sd->data;
-        size = ff_gain_map_params_to_iso21496(params, put_bits_ptr(p));
+        size = ff_gain_map_params_to_iso21496(gmp, put_bits_ptr(p));
         av_assert0(size >= 0);
         skip_put_bytes(p, size);
         AV_WB16(ptr, 2 + sizeof(AV_ISO21496_IDENTIFIER) + size);
@@ -336,7 +371,7 @@ void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
     if (avctx->codec_id == AV_CODEC_ID_AMV)
         return;
 
-    jpeg_put_comments(avctx, pb, frame);
+    jpeg_put_comments(avctx, pb, frame, m);
 
     chroma_matrix = !lossless && !!memcmp(luma_intra_matrix,
                                           chroma_intra_matrix,

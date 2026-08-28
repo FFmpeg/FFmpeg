@@ -1939,7 +1939,7 @@ int ff_mpv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
             ret = ff_mjpeg_add_icc_profile_size(avctx, s->new_pic, &pkt_size);
             if (ret < 0)
                 return ret;
-            ret = ff_mjpeg_add_gain_map_size(avctx, s->new_pic, &pkt_size);
+            ret = ff_mjpeg_add_gain_map_size(avctx, s->mjpeg_ctx, s->new_pic, &pkt_size);
             if (ret < 0)
                 return ret;
         }
