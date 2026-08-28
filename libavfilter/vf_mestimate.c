@@ -26,7 +26,6 @@
 #include "libavutil/motion_vector.h"
 #include "avfilter.h"
 #include "filters.h"
-#include "video.h"
 
 typedef struct MEContext {
     const AVClass *class;
@@ -146,7 +145,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     int32_t mv_count = 0;
     int ret;
 
-    if (frame->pts == AV_NOPTS_VALUE) {
+    if (frame && frame->pts == AV_NOPTS_VALUE) {
         ret = ff_filter_frame(ctx->outputs[0], frame);
         return ret;
     }
@@ -160,6 +159,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     s->mv_table[1] = memcpy(s->mv_table[1], s->mv_table[0], sizeof(*s->mv_table[0]) * s->b_count);
 
     if (!s->cur) {
+        if (!frame)
+            return 0;
         s->cur = av_frame_clone(frame);
         if (!s->cur)
             return AVERROR(ENOMEM);
@@ -172,7 +173,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     if (!out)
         return AVERROR(ENOMEM);
 
-    sd = av_frame_new_side_data(out, AV_FRAME_DATA_MOTION_VECTORS, 2 * s->b_count * sizeof(AVMotionVector));
+    /* The last frame has no forward reference. */
+    const int nb_dirs = s->next ? 2 : 1;
+
+    sd = av_frame_new_side_data(out, AV_FRAME_DATA_MOTION_VECTORS,
+                                nb_dirs * s->b_count * sizeof(AVMotionVector));
     if (!sd) {
         av_frame_free(&out);
         return AVERROR(ENOMEM);
@@ -181,7 +186,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     me_ctx->data_cur = s->cur->data[0];
     me_ctx->linesize = s->cur->linesize[0];
 
-    for (dir = 0; dir < 2; dir++) {
+    for (dir = 0; dir < nb_dirs; dir++) {
         me_ctx->data_ref = (dir ? s->next : s->prev)->data[0];
 
         if (s->method == AV_ME_METHOD_DS)
@@ -326,6 +331,19 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     return ff_filter_frame(ctx->outputs[0], out);
 }
 
+static int request_frame(AVFilterLink *outlink)
+{
+    AVFilterContext *ctx = outlink->src;
+    MEContext *s = ctx->priv;
+    int ret;
+
+    ret = ff_request_frame(ctx->inputs[0]);
+    if (ret == AVERROR_EOF && s->next)
+        ret = filter_frame(ctx->inputs[0], NULL);
+
+    return ret;
+}
+
 static av_cold void uninit(AVFilterContext *ctx)
 {
     MEContext *s = ctx->priv;
@@ -348,6 +366,14 @@ static const AVFilterPad mestimate_inputs[] = {
     },
 };
 
+static const AVFilterPad mestimate_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .request_frame = request_frame,
+    },
+};
+
 const FFFilter ff_vf_mestimate = {
     .p.name        = "mestimate",
     .p.description = NULL_IF_CONFIG_SMALL("Generate motion vectors."),
@@ -356,6 +382,6 @@ const FFFilter ff_vf_mestimate = {
     .priv_size     = sizeof(MEContext),
     .uninit        = uninit,
     FILTER_INPUTS(mestimate_inputs),
-    FILTER_OUTPUTS(ff_video_default_filterpad),
+    FILTER_OUTPUTS(mestimate_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
 };

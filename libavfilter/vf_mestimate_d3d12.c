@@ -561,6 +561,8 @@ static int mestimate_d3d12_filter_frame(AVFilterLink *inlink, AVFrame *frame)
     int mb_width, mb_height, mb_count;
 
     if (!s->initialized) {
+        if (!frame)
+            return 0;
         err = mestimate_d3d12_config_props(ctx->outputs[0]);
         if (err < 0) {
             av_frame_free(&frame);
@@ -575,6 +577,8 @@ static int mestimate_d3d12_filter_frame(AVFilterLink *inlink, AVFrame *frame)
     s->next_frame = frame;
 
     if (!s->cur_frame) {
+        if (!frame)
+            return 0;
         s->cur_frame = av_frame_clone(frame);
         if (!s->cur_frame)
             return AVERROR(ENOMEM);
@@ -588,13 +592,14 @@ static int mestimate_d3d12_filter_frame(AVFilterLink *inlink, AVFrame *frame)
     if (!out)
         return AVERROR(ENOMEM);
 
-    mb_width  = (frame->width + s->block_size - 1) / s->block_size;
-    mb_height = (frame->height + s->block_size - 1) / s->block_size;
+    mb_width  = (s->cur_frame->width  + s->block_size - 1) / s->block_size;
+    mb_height = (s->cur_frame->height + s->block_size - 1) / s->block_size;
     mb_count  = mb_width * mb_height;
+    /* The last frame has no forward reference. */
+    const int nb_dirs = s->next_frame ? 2 : 1;
 
-    // Allocate side data for motion vectors (2 directions)
     sd = av_frame_new_side_data(out, AV_FRAME_DATA_MOTION_VECTORS,
-                                2 * mb_count * sizeof(AVMotionVector));
+                                nb_dirs * mb_count * sizeof(AVMotionVector));
     if (!sd) {
         av_frame_free(&out);
         return AVERROR(ENOMEM);
@@ -913,6 +918,19 @@ static int mestimate_d3d12_filter_frame(AVFilterLink *inlink, AVFrame *frame)
     return ff_filter_frame(ctx->outputs[0], out);
 }
 
+static int mestimate_d3d12_request_frame(AVFilterLink *outlink)
+{
+    AVFilterContext     *ctx = outlink->src;
+    MEstimateD3D12Context *s = ctx->priv;
+    int ret;
+
+    ret = ff_request_frame(ctx->inputs[0]);
+    if (ret == AVERROR_EOF && s->next_frame)
+        ret = mestimate_d3d12_filter_frame(ctx->inputs[0], NULL);
+
+    return ret;
+}
+
 static av_cold void mestimate_d3d12_uninit(AVFilterContext *ctx)
 {
     MEstimateD3D12Context *s = ctx->priv;
@@ -952,9 +970,10 @@ static const AVFilterPad mestimate_d3d12_inputs[] = {
 
 static const AVFilterPad mestimate_d3d12_outputs[] = {
     {
-        .name         = "default",
-        .type         = AVMEDIA_TYPE_VIDEO,
-        .config_props = mestimate_d3d12_config_props,
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .config_props  = mestimate_d3d12_config_props,
+        .request_frame = mestimate_d3d12_request_frame,
     },
 };
 
