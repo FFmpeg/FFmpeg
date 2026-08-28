@@ -780,6 +780,11 @@ static int decode_mb_p(AVSContext *h, enum cavs_mb mb_type)
         ff_cavs_mv(h, MV_FWD_X1, MV_FWD_C2, MV_PRED_MEDIAN,   BLK_8X8, ref[1]);
         ff_cavs_mv(h, MV_FWD_X2, MV_FWD_X1, MV_PRED_MEDIAN,   BLK_8X8, ref[2]);
         ff_cavs_mv(h, MV_FWD_X3, MV_FWD_X0, MV_PRED_MEDIAN,   BLK_8X8, ref[3]);
+        break;
+    default:
+        av_log(h->avctx, AV_LOG_ERROR, "Invalid mb_type %d in P frame\n",
+               mb_type);
+        return AVERROR_INVALIDDATA;
     }
     ff_cavs_inter(h, mb_type);
     set_intra_mode_default(h);
@@ -1162,6 +1167,10 @@ static int decode_pic(AVSContext *h)
                     break;
                 }
                 skip_count = get_ue_golomb(&h->gb);
+                if (skip_count < 0) {
+                    ret = AVERROR_INVALIDDATA;
+                    break;
+                }
             }
             if (h->skip_mode_flag && skip_count--) {
                 ret = decode_mb_p(h, P_SKIP);
@@ -1199,6 +1208,10 @@ static int decode_pic(AVSContext *h)
                     break;
                 }
                 skip_count = get_ue_golomb(&h->gb);
+                if (skip_count < 0) {
+                    ret = AVERROR_INVALIDDATA;
+                    break;
+                }
             }
             if (h->skip_mode_flag && skip_count--) {
                 ret = decode_mb_b(h, B_SKIP);
