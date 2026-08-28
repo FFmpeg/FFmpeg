@@ -23,6 +23,8 @@
  * @file
  * Chinese AVS video (AVS1-P2, JiZhun profile) decoder
  * @author Stefan Gehrer <stefan.gehrer@gmx.de>
+ *
+ * Clause, table and figure numbers refer to GY/T 257.1-2012.
  */
 
 #include "libavutil/attributes.h"
@@ -958,10 +960,10 @@ static inline int decode_slice_header(AVSContext *h, GetBitContext *gb)
     }
     /* inter frame or second slice can have weighting params */
     if ((h->cur.f->pict_type != AV_PICTURE_TYPE_I) ||
-        (!h->pic_structure && h->mby >= h->mb_width / 2))
+        (!h->pic_structure && h->mbidx >= h->mb_width * h->mb_height / 2))
         if (get_bits1(gb)) { //slice_weighting_flag
-            av_log(h->avctx, AV_LOG_ERROR,
-                   "weighted prediction not yet supported\n");
+            avpriv_request_sample(h->avctx, "Weighted prediction");
+            return AVERROR_PATCHWELCOME;
         }
     return 0;
 }
@@ -970,6 +972,7 @@ static inline int check_for_slice(AVSContext *h)
 {
     GetBitContext *gb = &h->gb;
     int align;
+    int ret;
 
     if (h->mbx)
         return 0;
@@ -991,7 +994,9 @@ static inline int check_for_slice(AVSContext *h)
         }
         *gb    = peek;
         h->stc = stc;
-        decode_slice_header(h, gb);
+        ret = decode_slice_header(h, gb);
+        if (ret < 0)
+            return ret;
         return 1;
     }
     return 0;
