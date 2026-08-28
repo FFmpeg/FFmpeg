@@ -239,6 +239,9 @@ fate-filter-negate: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf perms=random,negate
 FATE_FILTER_VSYNTH_PGMYUV-$(CONFIG_HISTOGRAM_FILTER) += fate-filter-histogram-levels
 fate-filter-histogram-levels: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf histogram -flags +bitexact -sws_flags +accurate_rnd+bitexact
 
+FATE_FILTER-$(call FILTERFRAMECRC, TESTSRC2 FORMAT THISTOGRAM) += fate-filter-thistogram-scroll
+fate-filter-thistogram-scroll: CMD = framecrc -lavfi testsrc2=s=65x49:r=1:d=1,format=yuv420p,thistogram=display_mode=parade:components=7:slide=scroll -flags +bitexact
+
 FATE_FILTER_VSYNTH_PGMYUV-$(CONFIG_WAVEFORM_FILTER) += fate-filter-waveform_column
 fate-filter-waveform_column: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf waveform -flags +bitexact -sws_flags +accurate_rnd+bitexact
 
