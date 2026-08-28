@@ -377,6 +377,24 @@ on MPEG-4 Part 14 format with a few incompatible variants, used to
 play files on PlayStation devices.
 @end table
 
+@subsection Stereoscopic 3D
+
+When the output stream has stereoscopic 3D side data (see the
+@option{-stereo3d} option), these muxers write:
+
+@itemize
+@item
+MP4: Google spatial-media @code{st3d} and Apple @code{vexu} can be
+written for supported metadata with @option{-strict unofficial}.
+Stricter compliance levels skip these boxes. Warnings are logged
+when stereoscopic or spherical side data is present, naming
+@code{st3d} or @code{sv3d}, respectively; there is no corresponding
+compliance warning for @code{vexu}. Monoscopic layouts do not
+produce an @code{eyes} box.
+@item
+MOV: Apple @code{vexu} eyes only. @code{st3d} is not written.
+@end itemize
+
 @subsection Fragmentation
 
 The @samp{mov}, @samp{mp4}, and @samp{ismv} muxers support
@@ -2867,6 +2885,11 @@ French).
 
 @item stereo_mode
 Set stereo 3D video layout of two views in a single video track.
+The @option{-stereo3d} option overrides existing stereoscopic side data
+and @code{stereo_mode} metadata for the selected output stream.
+Otherwise, stream-level @code{stereo_mode} metadata takes priority over
+global metadata, and stereoscopic side data is used when neither tag is
+present.
 
 The following values are recognized:
 @table @samp

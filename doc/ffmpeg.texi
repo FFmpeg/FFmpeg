@@ -1590,6 +1590,48 @@ If used together with @option{-vcodec copy}, it will affect the aspect ratio
 stored at container level, but not the aspect ratio stored in encoded
 frames, if it exists.
 
+@item -stereo3d[:@var{stream_specifier}] @var{layout} (@emph{output,per-stream})
+Set stereoscopic 3D layout metadata on the output stream. This does
+@emph{not} rearrange pixels; use @option{-vf stereo3d} for that.
+
+The metadata is stored as @code{AV_PKT_DATA_STEREO3D} side data on the
+output stream. Muxers that already consume that side data will write the
+corresponding container boxes or elements, including:
+
+@itemize
+@item
+MP4 Google spatial-media @code{st3d} (requires @option{-strict unofficial})
+@item
+QuickTime MOV Apple @code{vexu} eyes (no @code{st3d})
+@item
+Matroska @code{StereoMode}; @option{-stereo3d} overrides the
+@code{stereo_mode} metadata tag, including a value inherited from the
+input
+@end itemize
+
+@var{layout} is case-insensitive. The following values are accepted:
+
+@table @samp
+@item 2d
+@itemx mono
+Monoscopic video.
+@item sbs
+@itemx sbsl
+@itemx side by side
+Side-by-side, left eye on the left.
+@item tb
+@itemx tbl
+@itemx top and bottom
+Top-and-bottom, left eye on top.
+@end table
+
+Inverted layouts such as @samp{sbsr} are not supported. An empty stream
+specifier applies to video streams only and is ignored for audio and
+other types. An explicit specifier on a non-video stream (for example
+@option{-stereo3d:a}) is an error.
+
+Recommended form: @option{-stereo3d:v sbsl}.
+
 @item -display_rotation[:@var{stream_specifier}] @var{rotation} (@emph{input,per-stream})
 Set video rotation metadata.
 
