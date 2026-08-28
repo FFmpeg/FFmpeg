@@ -7573,7 +7573,12 @@ static int mov_read_eyes(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     }
 
     sc->stereo3d->flags                           = flags;
-    sc->stereo3d->type                            = type;
+    /* eyes/stri only records packed vs single-eye, not SBS/TB. Keep a more
+     * specific type already set by st3d. */
+    if (type != AV_STEREO3D_UNSPEC)
+        sc->stereo3d->type = type;
+    else if (sc->stereo3d->type == AV_STEREO3D_2D)
+        sc->stereo3d->type = type;
     sc->stereo3d->view                            = view;
     sc->stereo3d->primary_eye                     = primary_eye;
     sc->stereo3d->baseline                        = baseline;
