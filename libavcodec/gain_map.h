@@ -33,6 +33,11 @@
 #define FF_GAIN_MAP_VERSION          0
 #define FF_GAIN_MAP_MAX_PAYLOAD_SIZE 141 /* = 5 + 2*8 + 3*5*8 */
 
+/* For XMP-based encoding */
+#define FF_GAIN_MAP_XMP_IDENT     "http://ns.adobe.com/xap/1.0/"
+#define FF_GAIN_MAP_XMP_NAMESPACE "http://ns.adobe.com/hdr-gain-map/1.0/"
+#define FF_GAIN_MAP_XMP_MAX_LEN   1024
+
 /**
  * Parse the payload of an ISO 21496-1 gain map metadata blob.
  *
@@ -61,5 +66,24 @@ int ff_gain_map_params_from_iso21496(AVGainMapParams *p, const uint8_t *data,
  *       p->version <= AV_ISO21496_VERSION.
  */
 int ff_gain_map_params_to_iso21496(const AVGainMapParams *p, uint8_t *buf);
+
+/**
+ * Returns 1 if the gain map parameters are compatible with the XMP-based
+ * encoding, or 0 otherwise.
+ */
+int ff_gain_map_params_check_xmp(const AVGainMapParams *p);
+
+/**
+ * Serialize an AVGainMapParams as an Ultra HDR XMP packet.
+ *
+ * @param p    parameters to serialize
+ * @param buf  Byte buffer to fill with the serialized data. Must contain at
+ *             least FF_GAIN_MAP_MAX_XMP_LEN bytes.
+ *
+ * @return Number of bytes written on success, or a negative AVERROR on failure
+ *
+ * @note Always succeeds if ff_gain_map_params_check_xmp() returns 1.
+ */
+int ff_gain_map_params_to_xmp(const AVGainMapParams *p, char *buf);
 
 #endif /* AVCODEC_GAIN_MAP_H */
