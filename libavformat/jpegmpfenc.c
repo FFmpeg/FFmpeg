@@ -23,21 +23,28 @@
  * Muxes several JPEG images into a single JPEG Multi-Picture Format file.
  */
 
+#include <stdio.h>
 #include <string.h>
 #include <stddef.h>
 
 #include "libavutil/avassert.h"
+#include "libavutil/avstring.h"
 #include "libavutil/gain_map.h"
 #include "libavutil/internal.h"
 #include "libavutil/mem.h"
 
 #include "libavcodec/bytestream.h"
 #include "libavcodec/exif.h"
+#include "libavcodec/gain_map.h"
 #include "libavcodec/mjpeg.h"
 
 #include "avformat.h"
 #include "avio_internal.h"
 #include "mux.h"
+
+/* Namespace URIs of the GContainer XMP extension */
+#define XMP_CONTAINER_NS "http://ns.google.com/photos/1.0/container/"
+#define XMP_ITEM_NS      "http://ns.google.com/photos/1.0/container/item/"
 
 /* Individual Image Attribute bits, from CIPA DC-007 Figure 8 */
 enum MPFAttribute {
@@ -62,6 +69,7 @@ typedef enum MPFRole {
 
 /* APP2 extension segments */
 typedef enum MPFExt {
+    MPF_EXT_XMP,        /* GContainer directory, First Individual Image only */
     MPF_EXT_INDEX,      /* MP Index IFD, First Individual Image only */
     MPF_EXT_ISO21496,   /* ISO 21496-1 version fields (in the base image) */
     MPF_EXT_NB,
@@ -83,6 +91,8 @@ struct MPFImage {
 
     /* Relative to the packet data (before splicing) */
     int         app2;        /* offset to role-specific APP2 header */
+    int         has_xmp;     /* image already carries an XMP packet */
+    int         has_hdrgm;   /* .. containing Ultra HDR gain map metadata */
     int         splice_pos;  /* where in `packet->data` to splice our segments */
 
     /* Relative to the output file (after splicing) */
@@ -97,6 +107,11 @@ struct MPFImage {
 
 typedef struct MPFMuxContext {
     MPFImage *images;
+
+    /* Holds the XMP GContainer; if needed */
+#define XMP_GCONTAINER_MAX_LEN 1024 /* see XMP_GCONTAINER_TEMPLATE */
+    char xmp_gcontainer[1024];
+    int  xmp_len; /* or 0 */
 } MPFMuxContext;
 
 static int register_dep(AVFormatContext *ctx, MPFImage *img, MPFImage *base)
@@ -204,6 +219,16 @@ static int mpf_init(AVFormatContext *ctx)
     return 0;
 }
 
+static void parse_app1(MPFImage *img, const GetByteContext *gb, int len)
+{
+    if (len < sizeof(FF_GAIN_MAP_XMP_IDENT) ||
+        memcmp(gb->buffer, FF_GAIN_MAP_XMP_IDENT, sizeof(FF_GAIN_MAP_XMP_IDENT)))
+        return; /* not an XMP packet; e.g. Exif */
+
+    img->has_xmp = 1;
+    img->has_hdrgm = !!av_strnstr(gb->buffer, FF_GAIN_MAP_XMP_NAMESPACE, len);
+}
+
 static int parse_app2(AVFormatContext *ctx, MPFImage *img,
                       const GetByteContext *gb, int len)
 {
@@ -275,8 +300,10 @@ static int mpf_write_packet(AVFormatContext *ctx, AVPacket *pkt)
 
         switch (marker) {
         case APP0:
-        case APP1:
             break; /* ignored */
+        case APP1:
+            parse_app1(img, &gb, len);
+            break; /* not spliced past */
         case APP2:
             ret = parse_app2(ctx, img, &gb, len);
             if (ret < 0)
@@ -321,6 +348,80 @@ static void update_offset(AVIOContext *pb, int64_t base, int64_t *offset)
     av_assert0(val >= 0);
     av_assert0(*offset < 0 || *offset == val);
     *offset = val;
+}
+
+#define XMP_GCONTAINER_TEMPLATE                                                  \
+    "<x:xmpmeta xmlns:x=\"adobe:ns:meta/\" x:xmptk=\"Adobe XMP Core 5.1.2\">\n" \
+    "  <rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">\n"    \
+    "    <rdf:Description\n"                                                    \
+    "     xmlns:Container=\"" XMP_CONTAINER_NS "\"\n"                           \
+    "     xmlns:Item=\"" XMP_ITEM_NS "\"\n"                                     \
+    "     xmlns:hdrgm=\"" FF_GAIN_MAP_XMP_NAMESPACE "\"\n"                      \
+    "     hdrgm:Version=\"1.0\">\n"                                             \
+    "      <Container:Directory>\n"                                             \
+    "        <rdf:Seq>\n"                                                       \
+    "          <rdf:li rdf:parseType=\"Resource\">\n"                           \
+    "            <Container:Item\n"                                             \
+    "             Item:Semantic=\"Primary\"\n"                                  \
+    "             Item:Mime=\"image/jpeg\"/>\n"                                 \
+    "          </rdf:li>\n"                                                     \
+    "          <rdf:li rdf:parseType=\"Resource\">\n"                           \
+    "            <Container:Item\n"                                             \
+    "             Item:Semantic=\"GainMap\"\n"                                  \
+    "             Item:Mime=\"image/jpeg\"\n"                                   \
+    "             Item:Length=\"%d\"/>\n"                                       \
+    "          </rdf:li>\n"                                                     \
+    "        </rdf:Seq>\n"                                                      \
+    "      </Container:Directory>\n"                                            \
+    "    </rdf:Description>\n"                                                  \
+    "  </rdf:RDF>\n"                                                            \
+    "</x:xmpmeta>"
+
+static_assert(XMP_GCONTAINER_MAX_LEN > sizeof(XMP_GCONTAINER_TEMPLATE) + 10,
+              "XMP buffer too small for template and values");
+
+static int mpf_build_gcontainer_xmp(AVFormatContext *ctx)
+{
+    MPFMuxContext *s = ctx->priv_data;
+    const MPFImage *base = &s->images[0];
+    const MPFImage *gain = NULL;
+    for (int i = 0; i < base->nb_rev_deps; i++) {
+        if (base->rev_deps[i]->role == MPF_ROLE_GAIN_MAP)
+            gain = base->rev_deps[i];
+    }
+
+    if (!gain || !gain->has_hdrgm)
+        return 0;
+
+    if (base->has_xmp) {
+        av_log(ctx, AV_LOG_WARNING, "The primary image already carries an XMP "
+               "packet; omitting the GContainer directory, as a JPEG file may "
+               "only contain one.\n");
+        return 0;
+    }
+
+    int ret = snprintf(s->xmp_gcontainer, sizeof(s->xmp_gcontainer),
+                       XMP_GCONTAINER_TEMPLATE, gain->packet->size);
+    if (ret < 0 || ret >= sizeof(s->xmp_gcontainer))
+        return AVERROR_BUG;
+
+    s->xmp_len = ret;
+    return 0;
+}
+
+static void mpf_write_xmp(AVFormatContext *ctx, AVIOContext *pb, MPFImage *img)
+{
+    const MPFMuxContext *s = ctx->priv_data;
+
+    avio_w8(pb, 0xFF);
+    avio_w8(pb, APP1);
+
+    const int64_t start = avio_tell(pb);
+    avio_wb16(pb, img->ext_size[MPF_EXT_XMP]);
+    avio_write(pb, FF_GAIN_MAP_XMP_IDENT, sizeof(FF_GAIN_MAP_XMP_IDENT));
+    avio_write(pb, s->xmp_gcontainer, s->xmp_len);
+
+    update_offset(pb, start, &img->ext_size[MPF_EXT_XMP]);
 }
 
 static int mpf_write_index(AVFormatContext *ctx, AVIOContext *pb, int64_t base,
@@ -415,10 +516,15 @@ static void mpf_write_iso21496(AVIOContext *pb, MPFImage *src)
 static int mpf_write_extensions(AVFormatContext *ctx, AVIOContext *pb,
                                 int64_t base, MPFImage *img)
 {
+    MPFMuxContext *s = ctx->priv_data;
     int ret;
 
     switch (img->role) {
     case MPF_ROLE_PRIMARY:
+        /* The GContainer directory goes ahead of the MP Extensions, so that
+         * the latter still directly follow the APP1 segments (DC-007 Fig. 1) */
+        if (s->xmp_len)
+            mpf_write_xmp(ctx, pb, img);
         if (ctx->nb_streams > 1) {
             ret = mpf_write_index(ctx, pb, base, img);
             if (ret < 0)
@@ -471,6 +577,9 @@ static int mpf_write_trailer(AVFormatContext *ctx)
             return AVERROR(EINVAL);
         }
     }
+
+    if ((ret = mpf_build_gcontainer_xmp(ctx)) < 0)
+        return ret;
 
     /* Write the whole file once to a null buffer to settle offsets/sizes */
     AVIOContext *null;
