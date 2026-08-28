@@ -1027,7 +1027,7 @@ static int decode_pic(AVSContext *h)
 
     av_frame_unref(h->cur.f);
 
-    skip_bits(&h->gb, 16);//bbv_dwlay
+    skip_bits(&h->gb, 16);//bbv_delay
     if (h->stc == PIC_PB_START_CODE) {
         h->cur.f->pict_type = get_bits(&h->gb, 2) + AV_PICTURE_TYPE_I;
         if (h->cur.f->pict_type > AV_PICTURE_TYPE_B) {
@@ -1104,7 +1104,7 @@ static int decode_pic(AVSContext *h)
     h->qp       = get_bits(&h->gb, 6);
     if (h->cur.f->pict_type == AV_PICTURE_TYPE_I) {
         if (!h->progressive && !h->pic_structure)
-            skip_bits1(&h->gb);//what is this?
+            skip_bits1(&h->gb); //skip_mode_flag
         skip_bits(&h->gb, 4);   //reserved bits
     } else {
         if (!(h->cur.f->pict_type == AV_PICTURE_TYPE_B && h->pic_structure == 1))
