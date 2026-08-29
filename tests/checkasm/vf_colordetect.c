@@ -65,7 +65,7 @@ static void check_range_detect(int depth)
 
         /* Test performance of base case without any out-of-range values */
         memset(in, 0x80, HEIGHT * STRIDE);
-        bench_new(in, STRIDE, w, HEIGHT, mpeg_min, mpeg_max);
+        bench_new(in, STRIDE, (w & ~31), HEIGHT, mpeg_min, mpeg_max);
     }
 }
 
@@ -146,7 +146,7 @@ static void check_alpha_detect(int depth, enum AVColorRange range, int offset)
         if (res_ref != res_new)
             fail();
 
-        bench_new(luma, STRIDE, alpha, STRIDE, w, HEIGHT, alpha_max, mpeg_range, offset);
+        bench_new(luma, STRIDE, alpha, STRIDE, (w & ~31), HEIGHT, alpha_max, mpeg_range, offset);
     }
 }
 
