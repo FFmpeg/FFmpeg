@@ -278,29 +278,6 @@ av_cold void avpriv_slicethread_free(AVSliceThread **pctx)
     av_freep(pctx);
 }
 
-#else /* HAVE_PTHREADS || HAVE_W32THREADS || HAVE_OS32THREADS */
-
-int avpriv_slicethread_create2(AVSliceThread **pctx, void *priv,
-                               int (*worker_func)(void *priv, int jobnr, int threadnr, int nb_jobs, int nb_threads),
-                               int (*main_func)(void *priv),
-                               int nb_threads)
-{
-    *pctx = NULL;
-    return AVERROR(ENOSYS);
-}
-
-int avpriv_slicethread_execute2(AVSliceThread *ctx, int nb_jobs, int execute_main)
-{
-    av_assert0(0);
-}
-
-void avpriv_slicethread_free(AVSliceThread **pctx)
-{
-    av_assert0(!pctx || !*pctx);
-}
-
-#endif /* HAVE_PTHREADS || HAVE_W32THREADS || HAVE_OS32THREADS */
-
 /**
  * Backwards compatibility wrapper for the deprecated avpriv_ slicethread API.
  */
@@ -345,3 +322,44 @@ void avpriv_slicethread_execute(AVSliceThread *ctx, int nb_jobs, int execute_mai
 }
 
 #endif /* LIBAVUTIL_VERSION_MAJOR < 62 */
+
+#else /* HAVE_PTHREADS || HAVE_W32THREADS || HAVE_OS32THREADS */
+
+int avpriv_slicethread_create2(AVSliceThread **pctx, void *priv,
+                               int (*worker_func)(void *priv, int jobnr, int threadnr, int nb_jobs, int nb_threads),
+                               int (*main_func)(void *priv),
+                               int nb_threads)
+{
+    *pctx = NULL;
+    return AVERROR(ENOSYS);
+}
+
+int avpriv_slicethread_execute2(AVSliceThread *ctx, int nb_jobs, int execute_main)
+{
+    av_assert0(0);
+}
+
+void avpriv_slicethread_free(AVSliceThread **pctx)
+{
+    av_assert0(!pctx || !*pctx);
+}
+
+#if LIBAVUTIL_VERSION_MAJOR < 62
+
+int avpriv_slicethread_create(AVSliceThread **pctx, void *priv,
+                              void (*worker_func)(void *priv, int jobnr, int threadnr, int nb_jobs, int nb_threads),
+                              void (*main_func)(void *priv),
+                              int nb_threads)
+{
+    *pctx = NULL;
+    return AVERROR(ENOSYS);
+}
+
+void avpriv_slicethread_execute(AVSliceThread *ctx, int nb_jobs, int execute_main)
+{
+    av_assert0(0);
+}
+
+#endif /* LIBAVUTIL_VERSION_MAJOR < 62 */
+
+#endif /* HAVE_PTHREADS || HAVE_W32THREADS || HAVE_OS32THREADS */
