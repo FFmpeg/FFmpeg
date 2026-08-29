@@ -380,6 +380,12 @@ static VVCFrame *find_ref_idx(VVCContext *s, VVCFrameContext *fc, int poc, uint8
 
     for (int i = 0; i < FF_ARRAY_ELEMS(fc->DPB); i++) {
         VVCFrame *ref = &fc->DPB[i];
+
+        // In the specification, the current frame is not considered part of
+        // the DPB at this stage, therefore we treat it as if it's not there.
+        if (ref == fc->ref)
+            continue;
+
         if (ref->frame->buf[0] && ref->sequence == s->seq_decode) {
             if ((ref->poc & mask) == poc)
                 return ref;
@@ -450,11 +456,13 @@ static int check_candidate_ref(const VVCFrame *frame, const VVCRefPic *refp)
 static int add_candidate_ref(VVCContext *s, VVCFrameContext *fc, RefPicList *list,
                              int poc, int ref_flag, uint8_t use_msb)
 {
-    VVCFrame *ref   = find_ref_idx(s, fc, poc, use_msb);
     VVCRefPic *refp = &list->refs[list->nb_refs];
+    VVCFrame *ref;
 
-    if (ref == fc->ref || list->nb_refs >= VVC_MAX_REF_ENTRIES)
+    if (use_msb && poc == fc->ref->poc || list->nb_refs >= VVC_MAX_REF_ENTRIES)
         return AVERROR_INVALIDDATA;
+
+    ref = find_ref_idx(s, fc, poc, use_msb);
 
     if (!IS_CVSS(s)) {
         const bool ref_corrupt = !ref || (ref->flags & VVC_FRAME_FLAG_CORRUPT);
