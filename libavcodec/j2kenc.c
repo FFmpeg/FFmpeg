@@ -721,15 +721,16 @@ static int encode_packet(Jpeg2000EncoderContext *s, Jpeg2000ResLevel *rlevel, in
 {
     int bandno, empty = 1;
     int i;
-    // init bitstream
-    *s->buf = 0;
-    s->bit_index = 0;
-
     if (s->sop) {
         bytestream_put_be16(&s->buf, JPEG2000_SOP);
         bytestream_put_be16(&s->buf, 4);
         bytestream_put_be16(&s->buf, packetno);
     }
+
+    // init bitstream
+    *s->buf = 0;
+    s->bit_index = 0;
+
     // header
 
     if (!layno) {
