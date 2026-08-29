@@ -29,13 +29,18 @@ int ASM_FUNC_NAME(const uint8_t *src, ptrdiff_t stride,                         
 static int FUNC_NAME(const uint8_t *src, ptrdiff_t stride,                      \
                      ptrdiff_t width, ptrdiff_t height, int min, int max)       \
 {                                                                               \
-    ptrdiff_t bytes = (width << SHIFT) & ~(MMSIZE - 1);                         \
-    int ret = ASM_FUNC_NAME(src, stride, bytes, height, min, max);              \
-    if (ret == FF_ALPHA_STRAIGHT)                                               \
+    ptrdiff_t total = width << SHIFT;                                           \
+    ptrdiff_t bytes = total & ~(MMSIZE - 1);                                    \
+    int ret;                                                                    \
+    if (!bytes)                                                                 \
+        return C_FUNC_NAME(src, stride, width, height, min, max);               \
+                                                                                \
+    ret = ASM_FUNC_NAME(src, stride, bytes, height, min, max);                  \
+    if (ret || bytes == total)                                                  \
         return ret;                                                             \
                                                                                 \
-    return ret | C_FUNC_NAME(src + bytes, stride, width - (bytes >> SHIFT),     \
-                             height, min, max);                                 \
+    return ret | ASM_FUNC_NAME(src + total - MMSIZE, stride, MMSIZE,            \
+                               height, min, max);                               \
 }
 
 #define DETECT_ALPHA_FUNC(FUNC_NAME, ASM_FUNC_NAME, C_FUNC_NAME, SHIFT, MMSIZE) \
@@ -47,15 +52,21 @@ static int FUNC_NAME(const uint8_t *color, ptrdiff_t color_stride,              
                      const uint8_t *alpha, ptrdiff_t alpha_stride,              \
                      ptrdiff_t width, ptrdiff_t height, int p, int q, int k)    \
 {                                                                               \
-    ptrdiff_t bytes = (width << SHIFT) & ~(MMSIZE - 1);                         \
-    int ret = ASM_FUNC_NAME(color, color_stride, alpha, alpha_stride,           \
-                            bytes, height, p, q, k);                            \
-    if (ret == FF_ALPHA_STRAIGHT)                                               \
+    ptrdiff_t total = width << SHIFT;                                           \
+    ptrdiff_t bytes = total & ~(MMSIZE - 1);                                    \
+    int ret;                                                                    \
+    if (!bytes)                                                                 \
+        return C_FUNC_NAME(color, color_stride, alpha, alpha_stride,            \
+                           width, height, p, q, k);                             \
+                                                                                \
+    ret = ASM_FUNC_NAME(color, color_stride, alpha, alpha_stride,               \
+                        bytes, height, p, q, k);                                \
+    if (ret == FF_ALPHA_STRAIGHT || bytes == total)                             \
         return ret;                                                             \
                                                                                 \
-    return ret | C_FUNC_NAME(color + bytes, color_stride, alpha + bytes,        \
-                             alpha_stride, width - (bytes >> SHIFT), height,    \
-                             p, q, k);                                          \
+    return ret | ASM_FUNC_NAME(color + total - MMSIZE, color_stride,            \
+                               alpha + total - MMSIZE, alpha_stride,            \
+                               MMSIZE, height, p, q, k);                        \
 }
 
 #if HAVE_AVX512ICL_EXTERNAL
