@@ -52,9 +52,16 @@ typedef struct ColorDetectContext {
     const AVPixFmtDescriptor *desc;
     int nb_threads;
     int depth;
+    int range;
     int idx_a;
+
+    /* for color range detection only */
     int mpeg_min;
     int mpeg_max;
+
+    /* for alpha detection only */
+    int mpeg_range;
+    int offset;
 
     atomic_int detected_range; // enum AVColorRange
     atomic_int detected_alpha; // enum FFAlphaDetect
@@ -98,6 +105,7 @@ static int config_input(AVFilterLink *inlink)
     ColorDetectContext *s = ctx->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     const int depth = desc->comp[0].depth;
+    const int range = (1 << depth) - 1;
     const int mpeg_min =  16 << (depth - 8);
     const int mpeg_max = 235 << (depth - 8);
     if (depth > 16) /* not currently possible; prevent future bugs */
@@ -105,9 +113,36 @@ static int config_input(AVFilterLink *inlink)
 
     s->desc = desc;
     s->depth = depth;
+    s->range = range;
+    s->nb_threads = ff_filter_get_nb_threads(ctx);
+
+    /* Color range detection: */
     s->mpeg_min = mpeg_min;
     s->mpeg_max = mpeg_max;
-    s->nb_threads = ff_filter_get_nb_threads(ctx);
+
+    /**
+     * Alpha mode detection:
+     *
+     * To check if a value is out of range, we need to compare the color value
+     * against the maximum possible color for a given alpha value.
+     *   x > ((mpeg_max - mpeg_min) / pixel_max) * a + mpeg_min
+     *
+     * This simplifies to:
+     *   (x - mpeg_min) * pixel_max > (mpeg_max - mpeg_min) * a
+     *   = range * x - offset > mpeg_range * a in the below formula.
+     *
+     * We subtract an additional offset of (1 << (depth - 1)) to account for
+     * rounding errors in the value of `x`.
+     *
+     * For full range input this degenerates to `x > a`, so the offset is 0.
+     */
+    if (inlink->color_range == AVCOL_RANGE_JPEG) {
+        s->mpeg_range = range;
+        s->offset = 0;
+    } else {
+        s->mpeg_range = mpeg_max - mpeg_min;
+        s->offset = range * mpeg_min + (1 << (s->depth - 1));
+    }
 
     if (desc->flags & AV_PIX_FMT_FLAG_RGB) {
         atomic_init(&s->detected_range, AVCOL_RANGE_JPEG);
@@ -159,32 +194,12 @@ static int detect_alpha(AVFilterContext *ctx, void *arg,
     const ptrdiff_t alpha_stride = in->linesize[s->idx_a];
     const uint8_t *alpha = in->data[s->idx_a] + y_start * alpha_stride;
 
-    /**
-     * To check if a value is out of range, we need to compare the color value
-     * against the maximum possible color for a given alpha value.
-     *   x > ((mpeg_max - mpeg_min) / pixel_max) * a + mpeg_min
-     *
-     * This simplifies to:
-     *   (x - mpeg_min) * pixel_max > (mpeg_max - mpeg_min) * a
-     *   = alpha_max * x - offset > mpeg_range * a in the below formula.
-     *
-     * We subtract an additional offset of (1 << (depth - 1)) to account for
-     * rounding errors in the value of `x`.
-     *
-     * For full range input this degenerates to `x > a`, so the offset is 0.
-     */
-    const int alpha_max = (1 << s->depth) - 1;
-    const int mpeg_range = s->mpeg_max - s->mpeg_min;
-    int offset = alpha_max * s->mpeg_min + (1 << (s->depth - 1));
-    if (ctx->inputs[0]->color_range == AVCOL_RANGE_JPEG)
-        offset = 0;
-
     int ret = 0;
     for (int i = 0; i < nb_planes; i++) {
         const ptrdiff_t stride = in->linesize[i];
         ret = s->dsp.detect_alpha(in->data[i] + y_start * stride, stride,
-                                  alpha, alpha_stride, w, h_slice, alpha_max,
-                                  mpeg_range, offset);
+                                  alpha, alpha_stride, w, h_slice, s->range,
+                                  s->mpeg_range, s->offset);
         ret |= atomic_fetch_or_explicit(&s->detected_alpha, ret, memory_order_relaxed);
         if (ret == FF_ALPHA_STRAIGHT)
             break;
