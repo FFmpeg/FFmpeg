@@ -9957,6 +9957,10 @@ premultiplied. Also detects if the alpha plane is fully opaque or not.
 Enable detection of all of the above properties. This is the default.
 @end table
 
+@item threshold
+Allow pixels to exceed the expected bounds by this fraction of the full scale
+value range before treating it as evidence of (respectively) full range or
+straight alpha. Value range is from 0 to 0.05. Defaults to 0.0.
 @end table
 
 @section colorize
