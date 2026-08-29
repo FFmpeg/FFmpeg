@@ -52,7 +52,7 @@ typedef struct FFColorDetectDSPContext {
 void ff_color_detect_dsp_init_aarch64(FFColorDetectDSPContext *dsp, int depth,
                                       enum AVColorRange color_range);
 void ff_color_detect_dsp_init_x86(FFColorDetectDSPContext *dsp, int depth,
-                                  enum AVColorRange color_range);
+                                  int offset, enum AVColorRange color_range);
 
 static inline int ff_detect_range_impl_c(const uint8_t *data, ptrdiff_t stride,
                                     ptrdiff_t width, ptrdiff_t height,
@@ -196,7 +196,7 @@ ff_detect_alpha16_limited_c(const uint8_t *color, ptrdiff_t color_stride,
 }
 
 static av_cold inline void
-ff_color_detect_dsp_init(FFColorDetectDSPContext *dsp, int depth,
+ff_color_detect_dsp_init(FFColorDetectDSPContext *dsp, int depth, int offset,
                          enum AVColorRange color_range)
 {
     dsp->detect_range = depth > 8 ? ff_detect_range16_c : ff_detect_range_c;
@@ -209,7 +209,7 @@ ff_color_detect_dsp_init(FFColorDetectDSPContext *dsp, int depth,
 #if ARCH_AARCH64
     ff_color_detect_dsp_init_aarch64(dsp, depth, color_range);
 #elif ARCH_X86 && HAVE_X86ASM
-    ff_color_detect_dsp_init_x86(dsp, depth, color_range);
+    ff_color_detect_dsp_init_x86(dsp, depth, offset, color_range);
 #endif
 }
 

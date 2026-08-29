@@ -163,7 +163,7 @@ static int config_input(AVFilterLink *inlink)
         atomic_init(&s->detected_alpha, FF_ALPHA_NONE);
     }
 
-    ff_color_detect_dsp_init(&s->dsp, depth, inlink->color_range);
+    ff_color_detect_dsp_init(&s->dsp, depth, s->offset, inlink->color_range);
     return 0;
 }
 
