@@ -49,17 +49,13 @@ static int amf_filter_query_formats(AVFilterContext *avctx)
     const enum AVPixelFormat *output_pix_fmts;
     static const enum AVPixelFormat input_pix_fmts[] = {
         AV_PIX_FMT_AMF_SURFACE,
+        AV_PIX_FMT_D3D11,
+        AV_PIX_FMT_DXVA2_VLD,
         AV_PIX_FMT_NV12,
         AV_PIX_FMT_P010,
-        AV_PIX_FMT_0RGB,
-        AV_PIX_FMT_BGR0,
         AV_PIX_FMT_BGRA,
-        AV_PIX_FMT_RGB0,
         AV_PIX_FMT_RGBA,
-        AV_PIX_FMT_GRAY8,
         AV_PIX_FMT_YUV420P,
-        AV_PIX_FMT_YUV420P10,
-        AV_PIX_FMT_YUYV422,
         AV_PIX_FMT_NONE,
     };
     static const enum AVPixelFormat output_pix_fmts_default[] = {
