@@ -99,6 +99,7 @@ int amf_filter_filter_frame(AVFilterLink *inlink, AVFrame *in)
     enum AVColorRange out_color_range;
 
     AVFrame *out = NULL;
+    int got_frame = 0;
     int ret = 0;
 
     if (!ctx->component)
@@ -137,71 +138,78 @@ int amf_filter_filter_frame(AVFilterLink *inlink, AVFrame *in)
     res = ctx->component->pVtbl->SubmitInput(ctx->component, (AMFData*)surface_in);
     surface_in->pVtbl->Release(surface_in); // release surface after use
     AMF_GOTO_FAIL_IF_FALSE(avctx, res == AMF_OK, AVERROR_UNKNOWN, "SubmitInput() failed with error %d\n", res);
-    res = ctx->component->pVtbl->QueryOutput(ctx->component, &data_out);
-    AMF_GOTO_FAIL_IF_FALSE(avctx, res == AMF_OK, AVERROR_UNKNOWN, "QueryOutput() failed with error %d\n", res);
 
-    if (data_out) {
+    while (1) {
         AMFGuid guid = IID_AMFSurface();
+
+        res = ctx->component->pVtbl->QueryOutput(ctx->component, &data_out);
+        AMF_GOTO_FAIL_IF_FALSE(avctx, res == AMF_OK || res == AMF_REPEAT, AVERROR_UNKNOWN, "QueryOutput() failed with error %d\n", res);
+        if (!data_out)
+            break;
+
         res = data_out->pVtbl->QueryInterface(data_out, &guid, (void**)&surface_out); // query for buffer interface
         data_out->pVtbl->Release(data_out);
+        data_out = NULL;
         AMF_GOTO_FAIL_IF_FALSE(avctx, res == AMF_OK, AVERROR_UNKNOWN, "QueryInterface(IID_AMFSurface) failed with error %d\n", res);
-    } else {
-        ret = AVERROR(EAGAIN);
-        goto fail;
-    }
 
-    out = amf_amfsurface_to_avframe(avctx, surface_out);
-    AMF_GOTO_FAIL_IF_FALSE(avctx, out != NULL, AVERROR(ENOMEM), "Failed to convert AMFSurface to AVFrame\n");
+        out = amf_amfsurface_to_avframe(avctx, surface_out);
+        AMF_GOTO_FAIL_IF_FALSE(avctx, out != NULL, AVERROR(ENOMEM), "Failed to convert AMFSurface to AVFrame\n");
 
-    ret = av_frame_copy_props(out, in);
-    av_frame_unref(in);
+        ret = av_frame_copy_props(out, in);
+        if (ret < 0)
+            goto fail;
+        out->pts = surface_out->pVtbl->GetPts(surface_out);
 
-    out_colorspace = AVCOL_SPC_UNSPECIFIED;
+        out_colorspace = AVCOL_SPC_UNSPECIFIED;
 
-    if (ctx->color_profile != AMF_VIDEO_CONVERTER_COLOR_PROFILE_UNKNOWN) {
-        switch(ctx->color_profile) {
-        case AMF_VIDEO_CONVERTER_COLOR_PROFILE_601:
-            out_colorspace = AVCOL_SPC_SMPTE170M;
-        break;
-        case AMF_VIDEO_CONVERTER_COLOR_PROFILE_709:
-            out_colorspace = AVCOL_SPC_BT709;
-        break;
-        case AMF_VIDEO_CONVERTER_COLOR_PROFILE_2020:
-            out_colorspace = AVCOL_SPC_BT2020_NCL;
-        break;
-        case AMF_VIDEO_CONVERTER_COLOR_PROFILE_JPEG:
-            out_colorspace = AVCOL_SPC_RGB;
-        break;
-        default:
-            out_colorspace = AVCOL_SPC_UNSPECIFIED;
-        break;
+        if (ctx->color_profile != AMF_VIDEO_CONVERTER_COLOR_PROFILE_UNKNOWN) {
+            switch(ctx->color_profile) {
+            case AMF_VIDEO_CONVERTER_COLOR_PROFILE_601:
+                out_colorspace = AVCOL_SPC_SMPTE170M;
+            break;
+            case AMF_VIDEO_CONVERTER_COLOR_PROFILE_709:
+                out_colorspace = AVCOL_SPC_BT709;
+            break;
+            case AMF_VIDEO_CONVERTER_COLOR_PROFILE_2020:
+                out_colorspace = AVCOL_SPC_BT2020_NCL;
+            break;
+            case AMF_VIDEO_CONVERTER_COLOR_PROFILE_JPEG:
+                out_colorspace = AVCOL_SPC_RGB;
+            break;
+            default:
+                out_colorspace = AVCOL_SPC_UNSPECIFIED;
+            break;
+            }
+            out->colorspace = out_colorspace;
         }
-        out->colorspace = out_colorspace;
+
+        out_color_range = AVCOL_RANGE_UNSPECIFIED;
+        if (ctx->out_color_range == AMF_COLOR_RANGE_FULL)
+            out_color_range = AVCOL_RANGE_JPEG;
+        else if (ctx->out_color_range == AMF_COLOR_RANGE_STUDIO)
+            out_color_range = AVCOL_RANGE_MPEG;
+
+        if (ctx->out_color_range != AMF_COLOR_RANGE_UNDEFINED)
+            out->color_range = out_color_range;
+
+        if (ctx->out_primaries != AMF_COLOR_PRIMARIES_UNDEFINED)
+            out->color_primaries = ctx->out_primaries;
+
+        if (ctx->out_trc != AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED)
+            out->color_trc = ctx->out_trc;
+
+        if (ctx->pre_converter)
+            out->colorspace = AVCOL_SPC_RGB;
+
+        ret = ff_filter_frame(outlink, out);
+        out = NULL;
+        if (ret < 0)
+            goto fail;
+        got_frame = 1;
     }
-
-    out_color_range = AVCOL_RANGE_UNSPECIFIED;
-    if (ctx->out_color_range == AMF_COLOR_RANGE_FULL)
-        out_color_range = AVCOL_RANGE_JPEG;
-    else if (ctx->out_color_range == AMF_COLOR_RANGE_STUDIO)
-        out_color_range = AVCOL_RANGE_MPEG;
-
-    if (ctx->out_color_range != AMF_COLOR_RANGE_UNDEFINED)
-        out->color_range = out_color_range;
-
-    if (ctx->out_primaries != AMF_COLOR_PRIMARIES_UNDEFINED)
-        out->color_primaries = ctx->out_primaries;
-
-    if (ctx->out_trc != AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED)
-        out->color_trc = ctx->out_trc;
-
-    if (ctx->pre_converter)
-        out->colorspace = AVCOL_SPC_RGB;
-
-    if (ret < 0)
-        goto fail;
 
     av_frame_free(&in);
-    return ff_filter_frame(outlink, out);
+    return got_frame ? ret : 0;
 fail:
     av_frame_free(&in);
     av_frame_free(&out);
