@@ -31,6 +31,7 @@ typedef struct AMFFilterContext {
 
     int width, height;
     enum AVPixelFormat format;
+    enum AVPixelFormat format_opt;
     int scale_type;
     int in_color_range;
     int in_primaries;
@@ -71,6 +72,7 @@ typedef struct AMFFilterContext {
 
 int amf_filter_init(AVFilterContext *avctx);
 void amf_filter_uninit(AVFilterContext *avctx);
+enum AVPixelFormat amf_inlink_sw_format(AVFilterLink *inlink);
 int amf_init_filter_config(AVFilterLink *outlink, enum AVPixelFormat *in_format);
 int amf_copy_surface(AVFilterContext *avctx, const AVFrame *frame, AMFSurface* surface);
 void amf_free_amfsurface(void *opaque, uint8_t *data);

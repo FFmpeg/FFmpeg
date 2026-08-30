@@ -53,6 +53,7 @@ int amf_filter_init(AVFilterContext *avctx)
             return AVERROR(EINVAL);
         }
     }
+    ctx->format_opt = ctx->format;
 
     return 0;
 }
@@ -298,6 +299,15 @@ int amf_copy_surface(AVFilterContext *avctx, const AVFrame *frame,
         frame->width, frame->height);
 
     return 0;
+}
+
+enum AVPixelFormat amf_inlink_sw_format(AVFilterLink *inlink)
+{
+    FilterLink *inl = ff_filter_link(inlink);
+
+    if (inl->hw_frames_ctx)
+        return ((AVHWFramesContext*)inl->hw_frames_ctx->data)->sw_format;
+    return inlink->format;
 }
 
 int amf_init_filter_config(AVFilterLink *outlink, enum AVPixelFormat *in_format)

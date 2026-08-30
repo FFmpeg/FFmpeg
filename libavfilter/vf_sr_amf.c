@@ -53,15 +53,6 @@
 #endif
 
 
-static enum AVPixelFormat amf_inlink_sw_format(AVFilterLink *inlink)
-{
-    FilterLink *inl = ff_filter_link(inlink);
-
-    if (inl->hw_frames_ctx)
-        return ((AVHWFramesContext*)inl->hw_frames_ctx->data)->sw_format;
-    return inlink->format;
-}
-
 static int amf_hq_scaler_needs_packed_rgb(int algorithm)
 {
     return algorithm == AMF_HQ_SCALER_ALGORITHM_VIDEOSR1_1 ||
@@ -140,21 +131,22 @@ static int amf_filter_config_output(AVFilterLink *outlink)
     needs_conversion = amf_hq_scaler_needs_packed_rgb(ctx->algorithm) &&
                        (in_sw_format == AV_PIX_FMT_NV12 || in_sw_format == AV_PIX_FMT_P010);
 
-    if (amf_hq_scaler_needs_packed_rgb(ctx->algorithm)) {
-        if (!needs_conversion) {
-            if (ctx->format != AV_PIX_FMT_NONE && ctx->format != in_sw_format) {
-                av_log(avctx, AV_LOG_ERROR, "The HQ scaler does not convert formats, format must be same or %s.\n",
-                       av_get_pix_fmt_name(in_sw_format));
-                return AVERROR(EINVAL);
-            }
-            ctx->format = in_sw_format;
-        } else if (ctx->format == AV_PIX_FMT_NONE) {
+    ctx->format = ctx->format_opt;
+
+    if (needs_conversion) {
+        if (ctx->format == AV_PIX_FMT_NONE)
             ctx->format = in_sw_format == AV_PIX_FMT_P010 ? AV_PIX_FMT_X2BGR10 : AV_PIX_FMT_RGBA;
-        } else if (!amf_is_packed_rgb(ctx->format)) {
+        else if (!amf_is_packed_rgb(ctx->format)) {
             av_log(avctx, AV_LOG_ERROR, "This algorithm only outputs packed RGB, format=%s is not supported.\n",
                    av_get_pix_fmt_name(ctx->format));
             return AVERROR(EINVAL);
         }
+    } else if (ctx->format != AV_PIX_FMT_NONE && ctx->format != in_sw_format) {
+        av_log(avctx, AV_LOG_ERROR, "The HQ scaler does not convert formats, format must be same or %s.\n",
+               av_get_pix_fmt_name(in_sw_format));
+        return AVERROR(EINVAL);
+    } else {
+        ctx->format = in_sw_format;
     }
 
     err = amf_init_filter_config(outlink, &in_format);

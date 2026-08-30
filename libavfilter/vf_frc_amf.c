@@ -110,6 +110,8 @@ static int amf_frc_filter_config_output(AVFilterLink *outlink)
     AMF_RESULT res;
     enum AVPixelFormat in_format;
 
+    amf_ctx->format = amf_inlink_sw_format(inlink);
+
     err = amf_init_filter_config(outlink, &in_format);
     if (err < 0)
         return err;
