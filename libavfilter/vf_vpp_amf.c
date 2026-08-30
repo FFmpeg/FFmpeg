@@ -94,7 +94,7 @@ static int amf_filter_config_output(AVFilterLink *outlink)
     // FIXME: add checks whether we have HW context
     hwframes_out = (AVHWFramesContext*)ctx->hwframes_out_ref->data;
     res = ctx->amf_device_ctx->factory->pVtbl->CreateComponent(ctx->amf_device_ctx->factory, ctx->amf_device_ctx->context, AMFVideoConverter, &ctx->component);
-    AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_FILTER_NOT_FOUND, "CreateComponent(%ls) failed with error %d\n", AMFVideoConverter, res);
+    AMF_RETURN_IF_FALSE(avctx, res == AMF_OK, AVERROR_FILTER_NOT_FOUND, "CreateComponent(%ls) failed with error %d\n", AMFVideoConverter, res);
 
     mem_type = av_amf_get_memory_type(ctx->amf_device_ctx);
     if (mem_type != AMF_MEMORY_UNKNOWN)

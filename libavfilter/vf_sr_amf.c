@@ -157,7 +157,7 @@ static int amf_filter_config_output(AVFilterLink *outlink)
         AMFSize in_size = { inlink->w, inlink->h };
 
         res = ctx->amf_device_ctx->factory->pVtbl->CreateComponent(ctx->amf_device_ctx->factory, ctx->amf_device_ctx->context, AMFVideoConverter, &ctx->pre_converter);
-        AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_FILTER_NOT_FOUND, "CreateComponent(%ls) failed with error %d\n", AMFVideoConverter, res);
+        AMF_RETURN_IF_FALSE(avctx, res == AMF_OK, AVERROR_FILTER_NOT_FOUND, "CreateComponent(%ls) failed with error %d\n", AMFVideoConverter, res);
 
         AMF_ASSIGN_PROPERTY_INT64(res, ctx->pre_converter, AMF_VIDEO_CONVERTER_OUTPUT_FORMAT, (amf_int32)av_av_to_amf_format(ctx->format));
         AMF_RETURN_IF_FALSE(avctx, res == AMF_OK, AVERROR_UNKNOWN, "AMFConverter-SetProperty() failed with error %d\n", res);
@@ -182,7 +182,7 @@ static int amf_filter_config_output(AVFilterLink *outlink)
     }
     // FIXME: add checks whether we have HW context
     res = ctx->amf_device_ctx->factory->pVtbl->CreateComponent(ctx->amf_device_ctx->factory, ctx->amf_device_ctx->context, AMFHQScaler, &ctx->component);
-    AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_FILTER_NOT_FOUND, "CreateComponent(%ls) failed with error %d\n", AMFHQScaler, res);
+    AMF_RETURN_IF_FALSE(avctx, res == AMF_OK, AVERROR_FILTER_NOT_FOUND, "CreateComponent(%ls) failed with error %d\n", AMFHQScaler, res);
 
     mem_type = av_amf_get_memory_type(ctx->amf_device_ctx);
     if (mem_type != AMF_MEMORY_UNKNOWN)
