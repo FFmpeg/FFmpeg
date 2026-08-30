@@ -227,7 +227,7 @@ static int amf_frc_filter_avframe(AVFilterLink *inlink, AVFrame *in)
         res = AMF_IFACE_CALL(data_out, QueryInterface, &guid, (void**)&surface_out);
         AMF_IFACE_CALL(data_out, Release);
         data_out = NULL;
-        AMF_RETURN_IF_FALSE(avctx, res == AMF_OK, AVERROR_UNKNOWN, "QueryInterface(IID_AMFSurface) failed with error %d\n", res);
+        AMF_GOTO_FAIL_IF_FALSE(avctx, res == AMF_OK, AVERROR_UNKNOWN, "QueryInterface(IID_AMFSurface) failed with error %d\n", res);
 
         out = amf_amfsurface_to_avframe(avctx, surface_out);
         AMF_GOTO_FAIL_IF_FALSE(avctx, out != NULL, AVERROR(ENOMEM), "Failed to convert AMFSurface to AVFrame\n");
@@ -239,12 +239,6 @@ static int amf_frc_filter_avframe(AVFilterLink *inlink, AVFrame *in)
 
         if (frc_ctx->enable)
             out->duration /= 2;
-
-        out->hw_frames_ctx = av_buffer_ref(amf_ctx->hwframes_out_ref);
-        if (!out->hw_frames_ctx) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
 
         ret = ff_filter_frame(outlink, out);
         out = NULL;

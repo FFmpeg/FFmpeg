@@ -143,12 +143,14 @@ int amf_filter_filter_frame(AVFilterLink *inlink, AVFrame *in)
         AMFGuid guid = IID_AMFSurface();
         res = data_out->pVtbl->QueryInterface(data_out, &guid, (void**)&surface_out); // query for buffer interface
         data_out->pVtbl->Release(data_out);
-        AMF_RETURN_IF_FALSE(avctx, res == AMF_OK, AVERROR_UNKNOWN, "QueryInterface(IID_AMFSurface) failed with error %d\n", res);
+        AMF_GOTO_FAIL_IF_FALSE(avctx, res == AMF_OK, AVERROR_UNKNOWN, "QueryInterface(IID_AMFSurface) failed with error %d\n", res);
     } else {
-        return AVERROR(EAGAIN);
+        ret = AVERROR(EAGAIN);
+        goto fail;
     }
 
     out = amf_amfsurface_to_avframe(avctx, surface_out);
+    AMF_GOTO_FAIL_IF_FALSE(avctx, out != NULL, AVERROR(ENOMEM), "Failed to convert AMFSurface to AVFrame\n");
 
     ret = av_frame_copy_props(out, in);
     av_frame_unref(in);
@@ -196,12 +198,6 @@ int amf_filter_filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     if (ret < 0)
         goto fail;
-
-    out->hw_frames_ctx = av_buffer_ref(ctx->hwframes_out_ref);
-    if (!out->hw_frames_ctx) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
 
     av_frame_free(&in);
     return ff_filter_frame(outlink, out);
@@ -266,15 +262,16 @@ int amf_setup_input_output_formats(AVFilterContext *avctx,
     }
     output_formats = ff_make_pixel_format_list(output_pix_fmts);
     if (!output_formats) {
+        ff_formats_unref(&input_formats);
         return AVERROR(ENOMEM);
     }
 
-    if ((err = ff_formats_ref(input_formats, &avctx->inputs[0]->outcfg.formats)) < 0)
+    if ((err = ff_formats_ref(input_formats, &avctx->inputs[0]->outcfg.formats)) < 0) {
+        ff_formats_unref(&output_formats);
         return err;
+    }
 
-    if ((err = ff_formats_ref(output_formats, &avctx->outputs[0]->incfg.formats)) < 0)
-        return err;
-    return 0;
+    return ff_formats_ref(output_formats, &avctx->outputs[0]->incfg.formats);
 }
 
 int amf_copy_surface(AVFilterContext *avctx, const AVFrame *frame,
@@ -427,8 +424,10 @@ AVFrame *amf_amfsurface_to_avframe(AVFilterContext *avctx, AMFSurface* pSurface)
     AVFrame *frame = av_frame_alloc();
     AMFFilterContext  *ctx = avctx->priv;
 
-    if (!frame)
+    if (!frame) {
+        pSurface->pVtbl->Release(pSurface);
         return NULL;
+    }
 
     if (ctx->hwframes_out_ref) {
         AVHWFramesContext *hwframes_out = (AVHWFramesContext *)ctx->hwframes_out_ref->data;
@@ -443,6 +442,8 @@ AVFrame *amf_amfsurface_to_avframe(AVFilterContext *avctx, AMFSurface* pSurface)
                                             amf_free_amfsurface,
                                             (void*)avctx,
                                             AV_BUFFER_FLAG_READONLY);
+            if (!frame->buf[1])
+                goto fail;
         } else { // FIXME: add processing of other hw formats
             av_log(ctx, AV_LOG_ERROR, "Unknown pixel format\n");
             goto fail;
@@ -491,6 +492,7 @@ AVFrame *amf_amfsurface_to_avframe(AVFilterContext *avctx, AMFSurface* pSurface)
 
     return frame;
 fail:
+    pSurface->pVtbl->Release(pSurface);
     av_frame_free(&frame);
     return NULL;
 }
