@@ -40,6 +40,7 @@ typedef struct URLContext {
     int flags;
     int max_packet_size;        /**< if non zero, the stream is packetized with this max packet size */
     int is_streamed;            /**< true if streamed (no seek possible), default = false */
+    int uses_network;           /**< true if this protocol or one nested in it uses the network */
     int is_connected;
     AVIOInterruptCB interrupt_callback;
     int64_t rw_timeout;         /**< maximum time to wait for (network) read/write operation completion, in mcs */
