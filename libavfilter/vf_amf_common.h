@@ -68,6 +68,7 @@ typedef struct AMFFilterContext {
 
     AVAMFDeviceContext  *amf_device_ctx;
     int                  local_context;
+    int                  shader_input;
 } AMFFilterContext;
 
 int amf_filter_init(AVFilterContext *avctx);

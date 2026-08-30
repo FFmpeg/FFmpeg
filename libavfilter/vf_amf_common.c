@@ -38,6 +38,7 @@
 
 #if CONFIG_D3D11VA
 #include <d3d11.h>
+#include "libavutil/hwcontext_d3d11va.h"
 #endif
 
 int amf_filter_init(AVFilterContext *avctx)
@@ -54,6 +55,7 @@ int amf_filter_init(AVFilterContext *avctx)
         }
     }
     ctx->format_opt = ctx->format;
+    ctx->shader_input = 1;
 
     return 0;
 }
@@ -517,6 +519,58 @@ fail:
     return NULL;
 }
 
+#if CONFIG_D3D11VA
+/* The AMF filter components read their input with a shader, so they reject a
+ * texture created without D3D11_BIND_SHADER_RESOURCE, which is what a D3D11VA
+ * decoder pool gives us. Copy the slice into an AMF allocated surface, which
+ * carries the flags the components need. CopySubresourceRegion() uses the copy
+ * engine, so it can read the decoder texture that a shader cannot. */
+static int amf_copy_d3d11_texture(AVFilterContext *avctx, const AVFrame *frame,
+                                  int index, AMFSurface **ppSurface)
+{
+    AMFFilterContext        *ctx = avctx->priv;
+    AVHWFramesContext    *frames = (AVHWFramesContext*)frame->hw_frames_ctx->data;
+    AVD3D11VADeviceContext *hwctx = frames->device_ctx->hwctx;
+    ID3D11Texture2D      *texture = (ID3D11Texture2D*)frame->data[0];
+    AMFSurface           *surface = NULL;
+    AMFPlane               *plane;
+    D3D11_TEXTURE2D_DESC     desc;
+    D3D11_BOX                 box;
+    AMF_RESULT                res;
+
+    res = ctx->amf_device_ctx->context->pVtbl->AllocSurface(ctx->amf_device_ctx->context,
+              AMF_MEMORY_DX11, av_av_to_amf_format(frames->sw_format),
+              frame->width, frame->height, &surface);
+    AMF_RETURN_IF_FALSE(avctx, res == AMF_OK, AVERROR(ENOMEM), "AllocSurface() failed with error %d\n", res);
+
+    plane = surface->pVtbl->GetPlaneAt(surface, 0);
+    if (!plane) {
+        surface->pVtbl->Release(surface);
+        return AVERROR(ENOMEM);
+    }
+
+    // The decoder pool is allocated with aligned dimensions, so copy the coded
+    // area rather than the whole source subresource. D3D11 wants even bounds
+    // for a planar format, and the source is at least that large.
+    texture->lpVtbl->GetDesc(texture, &desc);
+    box.left   = 0;
+    box.top    = 0;
+    box.front  = 0;
+    box.right  = FFMIN(FFALIGN(frame->width,  2), desc.Width);
+    box.bottom = FFMIN(FFALIGN(frame->height, 2), desc.Height);
+    box.back   = 1;
+
+    hwctx->lock(hwctx->lock_ctx);
+    hwctx->device_context->lpVtbl->CopySubresourceRegion(hwctx->device_context,
+        (ID3D11Resource*)plane->pVtbl->GetNative(plane), 0, 0, 0, 0,
+        (ID3D11Resource*)texture, index, &box);
+    hwctx->unlock(hwctx->lock_ctx);
+
+    *ppSurface = surface;
+    return 0;
+}
+#endif
+
 int amf_avframe_to_amfsurface(AVFilterContext *avctx, const AVFrame *frame, AMFSurface** ppSurface)
 {
     AMFVariantStruct var = { 0 };
@@ -533,6 +587,18 @@ int amf_avframe_to_amfsurface(AVFilterContext *avctx, const AVFrame *frame, AMFS
             static const GUID AMFTextureArrayIndexGUID = { 0x28115527, 0xe7c3, 0x4b66, { 0x99, 0xd3, 0x4f, 0x2a, 0xe6, 0xb4, 0x7f, 0xaf } };
             ID3D11Texture2D *texture = (ID3D11Texture2D*)frame->data[0]; // actual texture
             int index = (intptr_t)frame->data[1]; // index is a slice in texture array is - set to tell AMF which slice to use
+            D3D11_TEXTURE2D_DESC desc;
+            int ret;
+
+            texture->lpVtbl->GetDesc(texture, &desc);
+            if (ctx->shader_input && !(desc.BindFlags & D3D11_BIND_SHADER_RESOURCE) && frame->hw_frames_ctx) {
+                ret = amf_copy_d3d11_texture(avctx, frame, index, &surface);
+                if (ret < 0)
+                    return ret;
+                hw_surface = 1;
+                break;
+            }
+
             texture->lpVtbl->SetPrivateData(texture, &AMFTextureArrayIndexGUID, sizeof(index), &index);
 
             res = ctx->amf_device_ctx->context->pVtbl->CreateSurfaceFromDX11Native(ctx->amf_device_ctx->context, texture, &surface, NULL); // wrap to AMF surface
