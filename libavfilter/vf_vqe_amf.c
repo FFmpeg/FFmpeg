@@ -23,6 +23,7 @@
 
 #include "libavutil/opt.h"
 
+#include "libavutil/pixdesc.h"
 #include "libavutil/hwcontext.h"
 #include "libavutil/hwcontext_amf.h"
 #include "libavutil/hwcontext_amf_internal.h"
@@ -67,20 +68,12 @@ static int amf_filter_query_formats(AVFilterContext *avctx)
         AV_PIX_FMT_DXVA2_VLD,
         AV_PIX_FMT_NV12,
         AV_PIX_FMT_P010,
-        AV_PIX_FMT_BGRA,
-        AV_PIX_FMT_RGBA,
-        AV_PIX_FMT_RGBAF16,
-        AV_PIX_FMT_X2BGR10,
         AV_PIX_FMT_NONE,
     };
     static const enum AVPixelFormat output_pix_fmts_default[] = {
         AV_PIX_FMT_AMF_SURFACE,
         AV_PIX_FMT_NV12,
         AV_PIX_FMT_P010,
-        AV_PIX_FMT_BGRA,
-        AV_PIX_FMT_RGBA,
-        AV_PIX_FMT_RGBAF16,
-        AV_PIX_FMT_X2BGR10,
         AV_PIX_FMT_NONE,
     };
     output_pix_fmts = output_pix_fmts_default;
@@ -107,6 +100,12 @@ static int amf_vqe_filter_config_output(AVFilterLink *outlink)
     err = amf_init_filter_config(outlink, &in_format);
     if (err < 0)
         return err;
+
+    if (in_format != AV_PIX_FMT_NV12 && in_format != AV_PIX_FMT_P010) {
+        av_log(avctx, AV_LOG_ERROR, "The VQ enhancer only accepts nv12 and p010, got %s.\n",
+               av_get_pix_fmt_name(in_format));
+        return AVERROR(EINVAL);
+    }
 
     device_ctx = amf_ctx->amf_device_ctx;
 
