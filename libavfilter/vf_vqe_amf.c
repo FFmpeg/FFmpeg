@@ -141,7 +141,6 @@ static const AVFilterPad amf_filter_inputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = amf_filter_filter_frame,
     }
 };
 
@@ -161,6 +160,7 @@ FFFilter ff_vf_vqe_amf = {
     .priv_size      = sizeof(AMFVQEFilterContext),
     .init           = amf_vqe_init,
     .uninit         = amf_filter_uninit,
+    .activate      = amf_filter_activate,
     FILTER_INPUTS(amf_filter_inputs),
     FILTER_OUTPUTS(amf_filter_outputs),
     FILTER_QUERY_FUNC(&amf_filter_query_formats),

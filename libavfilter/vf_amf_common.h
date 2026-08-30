@@ -20,6 +20,7 @@
 #define AVFILTER_AMF_COMMON_H
 
 #include "avfilter.h"
+#include "libavutil/fifo.h"
 
 #include "AMF/core/Surface.h"
 #include "AMF/components/Component.h"
@@ -32,6 +33,12 @@ typedef struct AMFFilterContext {
     int width, height;
     enum AVPixelFormat format;
     enum AVPixelFormat format_opt;
+    int                eof;
+    int                drained;
+    int                status;
+    int64_t            status_pts;
+    AVFifo            *pending;
+    int                outputs_per_input;
     int scale_type;
     int in_color_range;
     int in_primaries;
@@ -81,5 +88,6 @@ AVFrame *amf_amfsurface_to_avframe(AVFilterContext *avctx, AMFSurface* pSurface)
 int amf_avframe_to_amfsurface(AVFilterContext *avctx, const AVFrame *frame, AMFSurface** ppSurface);
 int amf_setup_input_output_formats(AVFilterContext *avctx, const enum AVPixelFormat *input_pix_fmts);
 int amf_filter_filter_frame(AVFilterLink *inlink, AVFrame *in);
+int amf_filter_activate(AVFilterContext *avctx);
 
 #endif /* AVFILTER_AMF_COMMON_H */

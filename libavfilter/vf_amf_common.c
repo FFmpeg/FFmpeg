@@ -21,6 +21,7 @@
 #include "libavutil/avassert.h"
 #include "avfilter.h"
 #include "avfilter_internal.h"
+#include "filters.h"
 #include "formats.h"
 #include "libavutil/mem.h"
 #include "libavutil/imgutils.h"
@@ -76,6 +77,13 @@ void amf_filter_uninit(AVFilterContext *avctx)
         ctx->pre_converter = NULL;
     }
 
+    if (ctx->pending) {
+        AVFrame *props;
+        while (av_fifo_read(ctx->pending, &props, 1) >= 0)
+            av_frame_free(&props);
+        av_fifo_freep2(&ctx->pending);
+    }
+
     if (ctx->master_display)
         av_freep(&ctx->master_display);
 
@@ -88,79 +96,85 @@ void amf_filter_uninit(AVFilterContext *avctx)
     av_buffer_unref(&ctx->hwframes_out_ref);
 }
 
-int amf_filter_filter_frame(AVFilterLink *inlink, AVFrame *in)
+static int amf_queue_props(AVFilterContext *avctx, const AVFrame *in)
 {
-    AVFilterContext             *avctx = inlink->dst;
+    AMFFilterContext *ctx = avctx->priv;
+    AVFrame *props = av_frame_alloc();
+    int ret;
+
+    if (!props)
+        return AVERROR(ENOMEM);
+    props->width  = in->width;
+    props->height = in->height;
+    ret = av_frame_copy_props(props, in);
+    if (ret >= 0)
+        ret = av_fifo_write(ctx->pending, &props, 1);
+    if (ret < 0)
+        av_frame_free(&props);
+    return ret;
+}
+
+static int amf_receive_surface(AVFilterContext *avctx, AMFComponent *component, AMFSurface **surface)
+{
+    AMFGuid guid = IID_AMFSurface();
+    AMFData *data = NULL;
+    AMF_RESULT res;
+
+    *surface = NULL;
+    res = component->pVtbl->QueryOutput(component, &data);
+    AMF_RETURN_IF_FALSE(avctx, res == AMF_OK || res == AMF_REPEAT || res == AMF_EOF,
+                        AVERROR_UNKNOWN, "QueryOutput() failed with error %d\n", res);
+    if (!data)
+        return res == AMF_EOF ? AVERROR_EOF : 0;
+
+    res = data->pVtbl->QueryInterface(data, &guid, (void**)surface);
+    data->pVtbl->Release(data);
+    AMF_RETURN_IF_FALSE(avctx, res == AMF_OK, AVERROR_UNKNOWN, "QueryInterface(IID_AMFSurface) failed with error %d\n", res);
+    return 1;
+}
+
+static int amf_deliver_output(AVFilterContext *avctx)
+{
     AMFFilterContext             *ctx = avctx->priv;
-    AVFilterLink                *outlink = avctx->outputs[0];
-    AMF_RESULT  res;
-    AMFSurface *surface_in;
-    AMFSurface *surface_out;
-    AMFData *data_out = NULL;
+    AVFilterLink             *outlink = avctx->outputs[0];
+    AMFSurface *surface;
+    AVFrame *props, *out;
     enum AVColorSpace out_colorspace;
     enum AVColorRange out_color_range;
+    int64_t pts;
+    int ret, count = 0;
 
-    AVFrame *out = NULL;
-    int got_frame = 0;
-    int ret = 0;
+    while ((ret = amf_receive_surface(avctx, ctx->component, &surface)) > 0) {
+        pts = surface->pVtbl->GetPts(surface);
+        out = amf_amfsurface_to_avframe(avctx, surface);
+        if (!out)
+            return AVERROR(ENOMEM);
 
-    if (!ctx->component)
-        return AVERROR(EINVAL);
-
-    ret = amf_avframe_to_amfsurface(avctx, in, &surface_in);
-    if (ret < 0)
-        goto fail;
-
-    if (ctx->pre_converter) {
-        AMFGuid guid = IID_AMFSurface();
-        AMFData *data_conv = NULL;
-        AMFSurface *surface_conv = NULL;
-
-        do {
-            res = ctx->pre_converter->pVtbl->SubmitInput(ctx->pre_converter, (AMFData*)surface_in);
-            if (res == AMF_INPUT_FULL)
-                av_usleep(100);
-        } while (res == AMF_INPUT_FULL);
-        surface_in->pVtbl->Release(surface_in);
-        AMF_GOTO_FAIL_IF_FALSE(avctx, res == AMF_OK, AVERROR_UNKNOWN, "Converter SubmitInput() failed with error %d\n", res);
-
-        do {
-            res = ctx->pre_converter->pVtbl->QueryOutput(ctx->pre_converter, &data_conv);
-            if (res == AMF_REPEAT && !data_conv)
-                av_usleep(100);
-        } while (res == AMF_REPEAT && !data_conv);
-        AMF_GOTO_FAIL_IF_FALSE(avctx, res == AMF_OK && data_conv, AVERROR_UNKNOWN, "Converter QueryOutput() failed with error %d\n", res);
-
-        res = data_conv->pVtbl->QueryInterface(data_conv, &guid, (void**)&surface_conv);
-        data_conv->pVtbl->Release(data_conv);
-        AMF_GOTO_FAIL_IF_FALSE(avctx, res == AMF_OK, AVERROR_UNKNOWN, "Converter QueryInterface(IID_AMFSurface) failed with error %d\n", res);
-        surface_in = surface_conv;
-    }
-
-    res = ctx->component->pVtbl->SubmitInput(ctx->component, (AMFData*)surface_in);
-    surface_in->pVtbl->Release(surface_in); // release surface after use
-    AMF_GOTO_FAIL_IF_FALSE(avctx, res == AMF_OK, AVERROR_UNKNOWN, "SubmitInput() failed with error %d\n", res);
-
-    while (1) {
-        AMFGuid guid = IID_AMFSurface();
-
-        res = ctx->component->pVtbl->QueryOutput(ctx->component, &data_out);
-        AMF_GOTO_FAIL_IF_FALSE(avctx, res == AMF_OK || res == AMF_REPEAT, AVERROR_UNKNOWN, "QueryOutput() failed with error %d\n", res);
-        if (!data_out)
-            break;
-
-        res = data_out->pVtbl->QueryInterface(data_out, &guid, (void**)&surface_out); // query for buffer interface
-        data_out->pVtbl->Release(data_out);
-        data_out = NULL;
-        AMF_GOTO_FAIL_IF_FALSE(avctx, res == AMF_OK, AVERROR_UNKNOWN, "QueryInterface(IID_AMFSurface) failed with error %d\n", res);
-
-        out = amf_amfsurface_to_avframe(avctx, surface_out);
-        AMF_GOTO_FAIL_IF_FALSE(avctx, out != NULL, AVERROR(ENOMEM), "Failed to convert AMFSurface to AVFrame\n");
-
-        ret = av_frame_copy_props(out, in);
-        if (ret < 0)
-            goto fail;
-        out->pts = surface_out->pVtbl->GetPts(surface_out);
+        if (ctx->outputs_per_input > 1) {
+            while (av_fifo_can_read(ctx->pending) > 1) {
+                av_fifo_peek(ctx->pending, &props, 1, 1);
+                if (props->pts > pts)
+                    break;
+                av_fifo_read(ctx->pending, &props, 1);
+                av_frame_free(&props);
+            }
+            props = NULL;
+            if (av_fifo_can_read(ctx->pending))
+                av_fifo_peek(ctx->pending, &props, 1, 0);
+            ret = props ? av_frame_copy_props(out, props) : 0;
+        } else {
+            props = NULL;
+            av_fifo_read(ctx->pending, &props, 1);
+            ret = props ? av_frame_copy_props(out, props) : 0;
+            av_frame_free(&props);
+        }
+        if (ret < 0) {
+            av_frame_free(&out);
+            return ret;
+        }
+        out->pts = pts;
+        if (ctx->outputs_per_input > 1)
+            out->duration /= ctx->outputs_per_input;
 
         out_colorspace = AVCOL_SPC_UNSPECIFIED;
 
@@ -204,21 +218,168 @@ int amf_filter_filter_frame(AVFilterLink *inlink, AVFrame *in)
             out->colorspace = AVCOL_SPC_RGB;
 
         ret = ff_filter_frame(outlink, out);
-        out = NULL;
         if (ret < 0)
-            goto fail;
-        got_frame = 1;
+            return ret;
+        count++;
     }
 
-    av_frame_free(&in);
-    return got_frame ? ret : 0;
+    return ret < 0 ? ret : count;
+}
+
+static int amf_submit_surface(AVFilterContext *avctx, AMFComponent *component, AMFSurface *surface,
+                              int (*deliver)(AVFilterContext *avctx))
+{
+    AMF_RESULT res;
+    int ret = 0;
+
+    while ((res = component->pVtbl->SubmitInput(component, (AMFData*)surface)) == AMF_INPUT_FULL) {
+        ret = deliver(avctx);
+        if (ret < 0)
+            break;
+        if (!ret)
+            av_usleep(100);
+    }
+    surface->pVtbl->Release(surface);
+    if (ret < 0)
+        return ret;
+    AMF_RETURN_IF_FALSE(avctx, res == AMF_OK, AVERROR_UNKNOWN, "SubmitInput() failed with error %d\n", res);
+    return 0;
+}
+
+static int amf_forward_converted(AVFilterContext *avctx)
+{
+    AMFFilterContext *ctx = avctx->priv;
+    AMFSurface *surface;
+    int ret, count = 0;
+
+    while ((ret = amf_receive_surface(avctx, ctx->pre_converter, &surface)) > 0) {
+        ret = amf_submit_surface(avctx, ctx->component, surface, amf_deliver_output);
+        if (ret < 0)
+            return ret;
+        count++;
+    }
+
+    return ret < 0 ? ret : count;
+}
+
+static int amf_drain_component(AVFilterContext *avctx, AMFComponent *component,
+                               int (*deliver)(AVFilterContext *avctx))
+{
+    AMF_RESULT res;
+    int ret;
+
+    while ((res = component->pVtbl->Drain(component)) == AMF_INPUT_FULL) {
+        ret = deliver(avctx);
+        if (ret < 0)
+            return ret;
+        if (!ret)
+            av_usleep(100);
+    }
+    AMF_RETURN_IF_FALSE(avctx, res == AMF_OK, AVERROR_UNKNOWN, "Drain() failed with error %d\n", res);
+
+    while ((ret = deliver(avctx)) >= 0)
+        if (!ret)
+            av_usleep(100);
+
+    return ret == AVERROR_EOF ? 0 : ret;
+}
+
+int amf_filter_filter_frame(AVFilterLink *inlink, AVFrame *in)
+{
+    AVFilterContext             *avctx = inlink->dst;
+    AMFFilterContext             *ctx = avctx->priv;
+    AMFSurface *surface_in;
+    int ret;
+
+    if (!ctx->component) {
+        av_frame_free(&in);
+        return AVERROR(EINVAL);
+    }
+
+    ret = amf_avframe_to_amfsurface(avctx, in, &surface_in);
+    if (ret < 0)
+        goto fail;
+
+    ret = amf_queue_props(avctx, in);
+    if (ret < 0) {
+        surface_in->pVtbl->Release(surface_in);
+        goto fail;
+    }
+
+    if (ctx->pre_converter) {
+        ret = amf_submit_surface(avctx, ctx->pre_converter, surface_in, amf_forward_converted);
+        if (ret >= 0)
+            ret = amf_forward_converted(avctx);
+    } else
+        ret = amf_submit_surface(avctx, ctx->component, surface_in, amf_deliver_output);
+    if (ret >= 0)
+        ret = amf_deliver_output(avctx);
 fail:
     av_frame_free(&in);
-    av_frame_free(&out);
     return ret;
 }
 
+static int amf_poll_output(AVFilterContext *avctx)
+{
+    AMFFilterContext *ctx = avctx->priv;
+    int ret = 0;
 
+    if (!av_fifo_can_read(ctx->pending))
+        return 0;
+    if (ctx->pre_converter)
+        ret = amf_forward_converted(avctx);
+    if (ret >= 0)
+        ret = amf_deliver_output(avctx);
+    return ret;
+}
+
+int amf_filter_activate(AVFilterContext *avctx)
+{
+    AMFFilterContext             *ctx = avctx->priv;
+    AVFilterLink              *inlink = avctx->inputs[0];
+    AVFilterLink             *outlink = avctx->outputs[0];
+    AVFrame *in = NULL;
+    int ret;
+
+    FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
+
+    if (!ctx->eof) {
+        if (ctx->component) {
+            ret = amf_poll_output(avctx);
+            if (ret < 0)
+                return ret;
+        }
+        ret = ff_inlink_consume_frame(inlink, &in);
+        if (ret < 0)
+            return ret;
+        if (in) {
+            ret = amf_filter_filter_frame(inlink, in);
+            if (ret < 0)
+                return ret;
+        } else if (ff_inlink_acknowledge_status(inlink, &ctx->status, &ctx->status_pts))
+            ctx->eof = 1;
+    }
+
+    if (ctx->eof) {
+        if (ctx->component && !ctx->drained) {
+            ctx->drained = 1;
+            if (ctx->pre_converter) {
+                ret = amf_drain_component(avctx, ctx->pre_converter, amf_forward_converted);
+                if (ret < 0)
+                    return ret;
+            }
+            ret = amf_drain_component(avctx, ctx->component, amf_deliver_output);
+            if (ret < 0)
+                return ret;
+        }
+        ff_outlink_set_status(outlink, ctx->status, ctx->status_pts);
+        return 0;
+    }
+
+    FF_FILTER_FORWARD_WANTED(outlink, inlink);
+
+    return FFERROR_NOT_READY;
+}
 
 int amf_setup_input_output_formats(AVFilterContext *avctx,
                                     const enum AVPixelFormat *input_pix_fmts)
@@ -355,6 +516,12 @@ int amf_init_filter_config(AVFilterLink *outlink, enum AVPixelFormat *in_format)
                                      ctx->force_divisible_by, w_adj);
     if (err < 0)
         return err;
+
+    if (!ctx->pending) {
+        ctx->pending = av_fifo_alloc2(1, sizeof(AVFrame*), AV_FIFO_FLAG_AUTO_GROW);
+        if (!ctx->pending)
+            return AVERROR(ENOMEM);
+    }
 
     av_buffer_unref(&ctx->amf_device_ref);
     av_buffer_unref(&ctx->hwframes_in_ref);

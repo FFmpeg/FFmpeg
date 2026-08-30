@@ -61,6 +61,7 @@ static int amf_frc_init(AVFilterContext *avctx) {
     AMFFRCFilterContext *ctx = avctx->priv;
 
     ctx->common.format = AV_PIX_FMT_NONE;
+    ctx->common.color_profile = AMF_VIDEO_CONVERTER_COLOR_PROFILE_UNKNOWN;
 
     return 0;
 }
@@ -113,7 +114,10 @@ static int amf_frc_filter_config_output(AVFilterLink *outlink)
 
     outlink->time_base = inlink->time_base;
     ol->frame_rate = il->frame_rate;
-    ol->frame_rate.num *= 2;
+    if (frc_ctx->enable) {
+        ol->frame_rate.num *= 2;
+        amf_ctx->outputs_per_input = 2;
+    }
 
     // Possible bug: FRC must be initialized enabled to be toggleable on the fly after init.
     AMF_FRC_ASSIGN_PROPERTY_INT64_CHECK(avctx, amf_filter, AMF_FRC_MODE, FRC_x2_PRESENT);
@@ -133,6 +137,9 @@ static int amf_frc_filter_config_output(AVFilterLink *outlink)
 
     res = AMF_IFACE_CALL(amf_filter, Init, av_av_to_amf_format(in_format), inlink->w, inlink->h);
     AMF_RETURN_IF_FALSE(avctx, res == AMF_OK, AVERROR_UNKNOWN, "AMFFRC->Init() failed with error %d\n", res);
+
+    AMF_ASSIGN_PROPERTY_INT64(res, amf_filter, AMF_FRC_MODE, frc_ctx->enable ? FRC_x2_PRESENT : FRC_OFF);
+    AMF_RETURN_IF_FALSE(avctx, res == AMF_OK, AVERROR_UNKNOWN, "Failed to %s FRC, error:%d\n", frc_ctx->enable ? "enable" : "disable", res);
 
     return 0;
 }
@@ -171,87 +178,10 @@ static const AVOption frc_amf_options[] = {
 
 AVFILTER_DEFINE_CLASS(frc_amf);
 
-static int amf_frc_filter_avframe(AVFilterLink *inlink, AVFrame *in)
-{
-    AVFilterContext     *avctx = inlink->dst;
-    AMFFRCFilterContext *frc_ctx = avctx->priv;
-    AMFFilterContext *amf_ctx = &frc_ctx->common;
-    AMFComponent     *amf_filter = amf_ctx->component;
-    AVFilterLink     *outlink = avctx->outputs[0];
-    AMFSurface       *surface_out = NULL;
-    AMFSurface       *surface_in = NULL;
-    FilterLink       *il = ff_filter_link(inlink);
-    FilterLink       *ol = ff_filter_link(outlink);
-    AMF_RESULT       res = AMF_FAIL;
-    AMFData          *data_out = NULL;
-    AVFrame          *out = NULL;
-    int              ret = 0;
-
-    if (!amf_filter)
-        return AVERROR(EINVAL);
-
-    ret = amf_avframe_to_amfsurface(avctx, in, &surface_in);
-    if (ret < 0)
-        goto fail;
-
-    if (frc_ctx->enable) {
-        AMF_ASSIGN_PROPERTY_INT64(res, amf_filter, AMF_FRC_MODE, FRC_x2_PRESENT);
-        ol->frame_rate.num = il->frame_rate.num * 2;
-    } else {
-        AMF_ASSIGN_PROPERTY_INT64(res, amf_filter, AMF_FRC_MODE, FRC_OFF);
-        ol->frame_rate.num = il->frame_rate.num;
-    }
-    AMF_GOTO_FAIL_IF_FALSE(avctx, res == AMF_OK, AVERROR_UNKNOWN, "SubmitInput(): Failed to %s FRC, error:%d\n", frc_ctx->enable ? "enable" : "disable", res);
-
-    res = AMF_IFACE_CALL(amf_filter, SubmitInput, (AMFData*)surface_in);
-    AMF_IFACE_CALL(surface_in, Release);
-    surface_in = NULL;
-    AMF_GOTO_FAIL_IF_FALSE(avctx, (res == AMF_OK || res == AMF_INPUT_FULL), AVERROR_UNKNOWN, "SubmitInput() failed with error %d\n", res);
-
-    while (true) {
-        res = AMF_IFACE_CALL(amf_filter, QueryOutput, &data_out);
-
-        AMF_GOTO_FAIL_IF_FALSE(avctx, (res == AMF_OK || res == AMF_REPEAT), AVERROR_UNKNOWN, "QueryOutput() failed with error %d\n", res);
-        if (data_out == NULL)
-            break;
-
-        AMFGuid guid = IID_AMFSurface();
-        res = AMF_IFACE_CALL(data_out, QueryInterface, &guid, (void**)&surface_out);
-        AMF_IFACE_CALL(data_out, Release);
-        data_out = NULL;
-        AMF_GOTO_FAIL_IF_FALSE(avctx, res == AMF_OK, AVERROR_UNKNOWN, "QueryInterface(IID_AMFSurface) failed with error %d\n", res);
-
-        out = amf_amfsurface_to_avframe(avctx, surface_out);
-        AMF_GOTO_FAIL_IF_FALSE(avctx, out != NULL, AVERROR(ENOMEM), "Failed to convert AMFSurface to AVFrame\n");
-
-        ret = av_frame_copy_props(out, in);
-        AMF_GOTO_FAIL_IF_FALSE(avctx, ret >= 0, AVERROR(ENOMEM), "Failed to copy frame properties\n");
-
-        out->pts = AMF_IFACE_CALL(surface_out, GetPts);
-
-        if (frc_ctx->enable)
-            out->duration /= 2;
-
-        ret = ff_filter_frame(outlink, out);
-        out = NULL;
-        if (ret < 0)
-            goto fail;
-    }
-
-fail:
-    av_frame_unref(in);
-    av_frame_free(&in);
-    if (out != NULL)
-        av_frame_free(&out);
-
-    return ret;
-}
-
 static const AVFilterPad amf_filter_inputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = amf_frc_filter_avframe,
     }
 };
 
@@ -272,6 +202,7 @@ FFFilter ff_vf_frc_amf = {
     .priv_size     = sizeof(AMFFRCFilterContext),
     .init          = amf_frc_init,
     .uninit        = amf_filter_uninit,
+    .activate      = amf_filter_activate,
     FILTER_INPUTS(amf_filter_inputs),
     FILTER_OUTPUTS(amf_filter_outputs),
     FILTER_QUERY_FUNC(amf_filter_query_formats),
