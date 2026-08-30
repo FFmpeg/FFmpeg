@@ -226,22 +226,24 @@ int amf_setup_input_output_formats(AVFilterContext *avctx,
     #if CONFIG_D3D11VA
         case AV_HWDEVICE_TYPE_D3D11VA:
             {
-                static const enum AVPixelFormat output_pix_fmts_d3d11[] = {
+                static const enum AVPixelFormat pix_fmts_d3d11[] = {
                     AV_PIX_FMT_D3D11,
                     AV_PIX_FMT_NONE,
                 };
-                output_pix_fmts = output_pix_fmts_d3d11;
+                input_pix_fmts  = pix_fmts_d3d11;
+                output_pix_fmts = pix_fmts_d3d11;
             }
             break;
     #endif
     #if CONFIG_DXVA2
         case AV_HWDEVICE_TYPE_DXVA2:
             {
-                static const enum AVPixelFormat output_pix_fmts_dxva2[] = {
+                static const enum AVPixelFormat pix_fmts_dxva2[] = {
                     AV_PIX_FMT_DXVA2_VLD,
                     AV_PIX_FMT_NONE,
                 };
-                output_pix_fmts = output_pix_fmts_dxva2;
+                input_pix_fmts  = pix_fmts_dxva2;
+                output_pix_fmts = pix_fmts_dxva2;
             }
             break;
     #endif
@@ -256,7 +258,7 @@ int amf_setup_input_output_formats(AVFilterContext *avctx,
         }
     }
 
-    input_formats = ff_make_pixel_format_list(output_pix_fmts);
+    input_formats = ff_make_pixel_format_list(input_pix_fmts);
     if (!input_formats) {
         return AVERROR(ENOMEM);
     }
