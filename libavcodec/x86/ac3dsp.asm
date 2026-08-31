@@ -190,8 +190,8 @@ cglobal ac3_compute_mantissa_size, 1, 1, 5, mant_cnt
     movhps      m3, [mant_cntq+5*32+2]
     pmulhuw     m1, m4
     pmulhuw     m3, m4
-    paddusw     m1, m2
-    paddusw     m1, m3
+    paddw       m1, m2
+    paddw       m1, m3
     pmaddwd     m1, [pw_bap_mul2]
     paddd       m0, m1
     PHADDD4     m0, m1
