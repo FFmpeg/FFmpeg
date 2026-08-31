@@ -1398,7 +1398,7 @@ unsigned stream_group_specifier_match(const StreamSpecifier *ss,
             case AV_STREAM_GROUP_PARAMS_TILE_GRID: {
                 const AVStreamGroupTileGrid *tg = candidate->params.tile_grid;
                 if (!tg->coded_width || !tg->coded_height || !tg->nb_tiles ||
-                    !tg->width       || !tg->height       || !tg->nb_tiles)
+                    !tg->width       || !tg->height       || !tg->offsets)
                     continue;
                 break;
             }
