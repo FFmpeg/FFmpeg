@@ -28,8 +28,8 @@
 
 void ff_ac3_exponent_min_rvb(uint8_t *exp, int, int);
 void ff_ac3_exponent_min_rvv(uint8_t *exp, int, int);
-void ff_extract_exponents_rvb(uint8_t *exp, int32_t *coef, int nb_coefs);
-void ff_extract_exponents_rvvb(uint8_t *exp, int32_t *coef, int nb_coefs);
+void ff_extract_exponents_rvb(uint8_t *exp, const int32_t *coef, int nb_coefs);
+void ff_extract_exponents_rvvb(uint8_t *exp, const int32_t *coef, int nb_coefs);
 void ff_float_to_fixed24_rvv(int32_t *dst, const float *src, size_t len);
 void ff_sum_square_butterfly_int32_rvv(int64_t *, const int32_t *,
                                        const int32_t *, int);

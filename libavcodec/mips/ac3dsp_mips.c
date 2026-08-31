@@ -142,7 +142,7 @@ static void ac3_bit_alloc_calc_bap_mips(int16_t *mask, int16_t *psd,
     } while (end > band_end);
 }
 
-static void ac3_update_bap_counts_mips(uint16_t mant_cnt[16], uint8_t *bap,
+static void ac3_update_bap_counts_mips(uint16_t mant_cnt[16], const uint8_t bap[],
                                        int len)
 {
     void *temp0, *temp2, *temp4, *temp5, *temp6, *temp7;

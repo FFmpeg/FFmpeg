@@ -82,7 +82,7 @@ typedef struct AC3DSPContext {
      * @param[in]  bap        array of bap, pointing to start coef bin
      * @param[in]  len        number of elements to process
      */
-    void (*update_bap_counts)(uint16_t mant_cnt[16], uint8_t *bap, int len);
+    void (*update_bap_counts)(uint16_t mant_cnt[16], const uint8_t bap[], int len);
 
     /**
      * Calculate the number of bits needed to encode a set of mantissas.
@@ -90,9 +90,9 @@ typedef struct AC3DSPContext {
      * @param[in] mant_cnt    bap counts for all blocks
      * @return                mantissa bit count
      */
-    int (*compute_mantissa_size)(uint16_t mant_cnt[6][16]);
+    int (*compute_mantissa_size)(const uint16_t mant_cnt[6][16]);
 
-    void (*extract_exponents)(uint8_t *exp, int32_t *coef, int nb_coefs);
+    void (*extract_exponents)(uint8_t *exp, const int32_t *coef, int nb_coefs);
 
     void (*sum_square_butterfly_int32)(int64_t sum[4], const int32_t *coef0,
                                        const int32_t *coef1, int len);

@@ -153,7 +153,7 @@ cglobal float_to_fixed24, 3, 3, 5, dst, src, len
     RET
 
 ;------------------------------------------------------------------------------
-; int ff_ac3_compute_mantissa_size(uint16_t mant_cnt[6][16])
+; int ff_ac3_compute_mantissa_size(const uint16_t mant_cnt[6][16])
 ;------------------------------------------------------------------------------
 
 %macro PHADDD4 2 ; xmm src, xmm tmp
@@ -201,7 +201,7 @@ cglobal ac3_compute_mantissa_size, 1, 2, 4, mant_cnt, sum
     RET
 
 ;------------------------------------------------------------------------------
-; void ff_ac3_extract_exponents(uint8_t *exp, int32_t *coef, int nb_coefs)
+; void ff_ac3_extract_exponents(uint8_t *exp, const int32_t *coef, int nb_coefs)
 ;------------------------------------------------------------------------------
 
 %macro PABSD 1-2 ; src/dst, unused

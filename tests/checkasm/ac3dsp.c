@@ -95,7 +95,7 @@ static void check_ac3_extract_exponents(AC3DSPContext *c) {
     LOCAL_ALIGNED_16(uint8_t, v2, [MAX_EXPS]);
     int n;
 
-    declare_func(void, uint8_t *, int32_t *, int);
+    declare_func(void, uint8_t *, const int32_t *, int);
 
     for (n = 512; n <= MAX_EXPS; n += 256) {
         if (check_func(c->extract_exponents, "ac3_extract_exponents_n%d", n)) {

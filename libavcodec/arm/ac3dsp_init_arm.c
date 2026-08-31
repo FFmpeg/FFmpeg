@@ -27,7 +27,7 @@
 
 void ff_ac3_exponent_min_neon(uint8_t *exp, int num_reuse_blocks, int nb_coefs);
 void ff_float_to_fixed24_neon(int32_t *dst, const float *src, size_t len);
-void ff_ac3_extract_exponents_neon(uint8_t *exp, int32_t *coef, int nb_coefs);
+void ff_ac3_extract_exponents_neon(uint8_t *exp, const int32_t *coef, int nb_coefs);
 void ff_ac3_sum_square_butterfly_int32_neon(int64_t sum[4],
                                             const int32_t *coef0,
                                             const int32_t *coef1,
@@ -42,7 +42,7 @@ void ff_ac3_bit_alloc_calc_bap_armv6(int16_t *mask, int16_t *psd,
                                      int snr_offset, int floor,
                                      const uint8_t *bap_tab, uint8_t *bap);
 
-void ff_ac3_update_bap_counts_arm(uint16_t mant_cnt[16], uint8_t *bap, int len);
+void ff_ac3_update_bap_counts_arm(uint16_t mant_cnt[16], const uint8_t bap[], int len);
 
 av_cold void ff_ac3dsp_init_arm(AC3DSPContext *c)
 {
