@@ -109,6 +109,7 @@ def download(url, dst):
             with urllib.request.urlopen(url) as r:
                 while chunk := r.read(1 << 16):
                     tmp.write(chunk)
+            tmp.close()
             if dst.exists() and digest(dst) != digest(tmp_path):
                 raise ValueError(f"already exists with different content: {dst}")
             tmp_path.rename(dst)
