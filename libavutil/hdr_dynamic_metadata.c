@@ -379,11 +379,11 @@ int av_dynamic_hdr_plus_to_t35(const AVDynamicHDRPlus *s, uint8_t **data, size_t
             for (int i = 0; i < s->params[w].num_bezier_curve_anchors; i++)
                 put_bits(pb, 10, s->params[w].bezier_curve_anchors[i].num * bezier_anchor_den /
                     s->params[w].bezier_curve_anchors[i].den);
-            put_bits(pb, 1, s->params[w].color_saturation_mapping_flag);
-            if (s->params[w].color_saturation_mapping_flag)
-                put_bits(pb, 6, s->params[w].color_saturation_weight.num * saturation_weight_den /
-                    s->params[w].color_saturation_weight.den);
         }
+        put_bits(pb, 1, s->params[w].color_saturation_mapping_flag);
+        if (s->params[w].color_saturation_mapping_flag)
+            put_bits(pb, 6, s->params[w].color_saturation_weight.num * saturation_weight_den /
+                s->params[w].color_saturation_weight.den);
     }
 
     flush_put_bits(pb);
