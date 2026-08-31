@@ -228,8 +228,7 @@ cglobal ac3_extract_exponents, 3, 3, 4, exp, coef, len
     por       m0, m2
     cvtdq2ps  m1, m0
     psrld     m1, 23
-    mova      m0, m3
-    psubd     m0, m1
+    psubd     m0, m3, m1
     ; move the lowest byte in each of 4 dwords to the low dword
     ; NOTE: We cannot just extract the low bytes with pshufb because the dword
     ;       result for 16777215 is -1 due to float inaccuracy. Using packuswb
