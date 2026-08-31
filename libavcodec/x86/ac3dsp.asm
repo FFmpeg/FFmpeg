@@ -170,10 +170,10 @@ cglobal ac3_compute_mantissa_size, 1, 1, 5, mant_cnt
     movdqa      m4, [pw_bap_mul1]
     paddw       m0, [mant_cntq+ 2*16]
     paddw       m1, [mant_cntq+ 3*16]
-    movhpd      m2, [mant_cntq     +2]
+    movq        m2, [mant_cntq     +2]
     paddw       m0, [mant_cntq+ 4*16]
     paddw       m1, [mant_cntq+ 5*16]
-    movlpd      m2, [mant_cntq+1*32+2]
+    movhps      m2, [mant_cntq+1*32+2]
     paddw       m0, [mant_cntq+ 6*16]
     paddw       m1, [mant_cntq+ 7*16]
     paddw       m0, [mant_cntq+ 8*16]
@@ -184,10 +184,10 @@ cglobal ac3_compute_mantissa_size, 1, 1, 5, mant_cnt
     pmaddwd     m0, [ac3_bap_bits   ]
     pmaddwd     m1, [ac3_bap_bits+16]
     paddd       m0, m1
-    movhpd      m1, [mant_cntq+2*32+2]
-    movlpd      m1, [mant_cntq+3*32+2]
-    movhpd      m3, [mant_cntq+4*32+2]
-    movlpd      m3, [mant_cntq+5*32+2]
+    movq        m1, [mant_cntq+2*32+2]
+    movhps      m1, [mant_cntq+3*32+2]
+    movq        m3, [mant_cntq+4*32+2]
+    movhps      m3, [mant_cntq+5*32+2]
     pmulhuw     m1, m4
     pmulhuw     m3, m4
     paddusw     m1, m2
