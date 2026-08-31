@@ -23300,9 +23300,13 @@ pixel format is used.
 
 The @code{point} and @code{sr1-1} algorithms emit the packed RGB format the
 scaler receives, so for them this option must name one of @code{rgba},
-@code{bgra}, @code{x2bgr10le} or @code{rgbaf16le}. When the input is converted
-automatically, @code{x2bgr10le} is selected for @code{p010} input and
-@code{rgba} otherwise, and the result is tagged as full range RGB.
+@code{bgra}, @code{x2bgr10le} or @code{rgbaf16le}. A named format also decides
+what software input is converted to, and what a hardware surface in another
+format is converted to on the GPU. Without it, @code{x2bgr10le} is selected for
+@code{p010} input and @code{rgba} for other non-RGB input, and the result is
+tagged as full range RGB. libswscale cannot convert other software formats to
+@code{rgbaf16le}; use software input already in that format or a hardware
+input for GPU conversion.
 
 @item keep-ratio
 Force the scaler to keep the aspect ratio of the input image when the output size has a different aspect ratio.

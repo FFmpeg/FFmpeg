@@ -102,6 +102,14 @@ static int amf_filter_query_formats(AVFilterContext *avctx)
         AV_PIX_FMT_DXVA2_VLD,
         AV_PIX_FMT_NONE,
     };
+    enum AVPixelFormat pix_fmts_requested[] = {
+        AV_PIX_FMT_NONE,
+        AV_PIX_FMT_AMF_SURFACE,
+        AV_PIX_FMT_D3D11,
+        AV_PIX_FMT_DXVA2_VLD,
+        AV_PIX_FMT_NONE,
+    };
+    int i;
 
     if (amf_hq_scaler_needs_packed_rgb(ctx->algorithm)) {
         input_pix_fmts  = pix_fmts_packed_rgb;
@@ -109,6 +117,17 @@ static int amf_filter_query_formats(AVFilterContext *avctx)
     } else {
         input_pix_fmts  = input_pix_fmts_default;
         output_pix_fmts = output_pix_fmts_default;
+    }
+
+    if (ctx->format_opt != AV_PIX_FMT_NONE) {
+        for (i = 0; input_pix_fmts[i] != AV_PIX_FMT_NONE; i++) {
+            if (input_pix_fmts[i] == ctx->format_opt) {
+                pix_fmts_requested[0] = ctx->format_opt;
+                input_pix_fmts  = pix_fmts_requested;
+                output_pix_fmts = pix_fmts_requested;
+                break;
+            }
+        }
     }
 
     return amf_setup_input_output_formats(avctx, input_pix_fmts, output_pix_fmts);
@@ -128,25 +147,27 @@ static int amf_filter_config_output(AVFilterLink *outlink)
     int needs_conversion;
 
     in_sw_format = amf_inlink_sw_format(inlink);
-    needs_conversion = amf_hq_scaler_needs_packed_rgb(ctx->algorithm) &&
-                       (in_sw_format == AV_PIX_FMT_NV12 || in_sw_format == AV_PIX_FMT_P010);
-
     ctx->format = ctx->format_opt;
 
-    if (needs_conversion) {
-        if (ctx->format == AV_PIX_FMT_NONE)
-            ctx->format = in_sw_format == AV_PIX_FMT_P010 ? AV_PIX_FMT_X2BGR10 : AV_PIX_FMT_RGBA;
-        else if (!amf_is_packed_rgb(ctx->format)) {
+    if (amf_hq_scaler_needs_packed_rgb(ctx->algorithm)) {
+        if (ctx->format == AV_PIX_FMT_NONE) {
+            if (amf_is_packed_rgb(in_sw_format))
+                ctx->format = in_sw_format;
+            else
+                ctx->format = in_sw_format == AV_PIX_FMT_P010 ? AV_PIX_FMT_X2BGR10 : AV_PIX_FMT_RGBA;
+        } else if (!amf_is_packed_rgb(ctx->format)) {
             av_log(avctx, AV_LOG_ERROR, "This algorithm only outputs packed RGB, format=%s is not supported.\n",
                    av_get_pix_fmt_name(ctx->format));
             return AVERROR(EINVAL);
         }
+        needs_conversion = ctx->format != in_sw_format;
     } else if (ctx->format != AV_PIX_FMT_NONE && ctx->format != in_sw_format) {
         av_log(avctx, AV_LOG_ERROR, "The HQ scaler does not convert formats, format must be same or %s.\n",
                av_get_pix_fmt_name(in_sw_format));
         return AVERROR(EINVAL);
     } else {
         ctx->format = in_sw_format;
+        needs_conversion = 0;
     }
 
     err = amf_init_filter_config(outlink, &in_format);
