@@ -215,10 +215,14 @@ cglobal ac3_extract_exponents, 3, 3, 4, exp, coef, len
     mova      m2, [pd_1]
     mova      m3, [pd_151]
 .loop:
+%if cpuflag(ssse3)
+    pabsd     m0, [coefq+4*lenq]
+%else
     ; move 4 32-bit coefs to xmm0
     mova      m0, [coefq+4*lenq]
     ; absolute value
     PABSD     m0, m1
+%endif
     ; convert to float and extract exponents
     pslld     m0, 1
     por       m0, m2
