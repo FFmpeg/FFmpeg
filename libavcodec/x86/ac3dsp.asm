@@ -156,13 +156,6 @@ cglobal float_to_fixed24, 3, 3, 5, dst, src, len
 ; int ff_ac3_compute_mantissa_size(const uint16_t mant_cnt[6][16])
 ;------------------------------------------------------------------------------
 
-%macro PHADDD4 2 ; xmm src, xmm tmp
-    movhlps  %2, %1
-    paddd    %1, %2
-    pshufd   %2, %1, 0x1
-    paddd    %1, %2
-%endmacro
-
 INIT_XMM sse2
 cglobal ac3_compute_mantissa_size, 1, 1, 5, mant_cnt
     movdqa      m0, [mant_cntq      ]
@@ -194,7 +187,7 @@ cglobal ac3_compute_mantissa_size, 1, 1, 5, mant_cnt
     paddw       m1, m3
     pmaddwd     m1, [pw_bap_mul2]
     paddd       m0, m1
-    PHADDD4     m0, m1
+    HADDD       m0, m1
     movd       eax, m0
     RET
 
