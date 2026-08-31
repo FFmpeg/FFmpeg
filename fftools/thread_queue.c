@@ -200,8 +200,8 @@ static int receive_locked(ThreadQueue *tq, int *stream_idx,
         ret = av_fifo_read(tq->fifo_stream_index, &idx, 1);
         av_assert0(ret >= 0);
 
-        // signal upstream if the fifo is empty
-        if (--tq->stream_count[idx] == 0)
+        // signal upstream if the fifo is no longer full
+        if (tq->stream_count[idx]-- == tq->queue_size)
             pthread_cond_broadcast(&tq->cond_write[idx]);
 
         if (tq->finished[idx] & FINISHED_RECV) {
