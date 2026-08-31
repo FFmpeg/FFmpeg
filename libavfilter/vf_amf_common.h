@@ -79,7 +79,7 @@ int amf_copy_surface(AVFilterContext *avctx, const AVFrame *frame, AMFSurface* s
 void amf_free_amfsurface(void *opaque, uint8_t *data);
 AVFrame *amf_amfsurface_to_avframe(AVFilterContext *avctx, AMFSurface* pSurface);
 int amf_avframe_to_amfsurface(AVFilterContext *avctx, const AVFrame *frame, AMFSurface** ppSurface);
-int amf_setup_input_output_formats(AVFilterContext *avctx, const enum AVPixelFormat *input_pix_fmts, const enum AVPixelFormat *output_pix_fmts);
+int amf_setup_input_output_formats(AVFilterContext *avctx, const enum AVPixelFormat *input_pix_fmts);
 int amf_filter_filter_frame(AVFilterLink *inlink, AVFrame *in);
 
 #endif /* AVFILTER_AMF_COMMON_H */

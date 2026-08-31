@@ -67,7 +67,6 @@ static int amf_frc_init(AVFilterContext *avctx) {
 
 static int amf_filter_query_formats(AVFilterContext *avctx)
 {
-    const enum AVPixelFormat *output_pix_fmts;
     static const enum AVPixelFormat input_pix_fmts[] = {
         AV_PIX_FMT_AMF_SURFACE,
         AV_PIX_FMT_D3D11,
@@ -80,19 +79,8 @@ static int amf_filter_query_formats(AVFilterContext *avctx)
         AV_PIX_FMT_X2BGR10,
         AV_PIX_FMT_NONE,
     };
-    static const enum AVPixelFormat output_pix_fmts_default[] = {
-        AV_PIX_FMT_AMF_SURFACE,
-        AV_PIX_FMT_NV12,
-        AV_PIX_FMT_P010,
-        AV_PIX_FMT_BGRA,
-        AV_PIX_FMT_RGBA,
-        AV_PIX_FMT_RGBAF16,
-        AV_PIX_FMT_X2BGR10,
-        AV_PIX_FMT_NONE,
-    };
-    output_pix_fmts = output_pix_fmts_default;
 
-    return amf_setup_input_output_formats(avctx, input_pix_fmts, output_pix_fmts);
+    return amf_setup_input_output_formats(avctx, input_pix_fmts);
 }
 
 static int amf_frc_filter_config_output(AVFilterLink *outlink)

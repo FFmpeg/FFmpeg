@@ -23286,8 +23286,9 @@ DirectX 12 device, so it is available on Windows only. Inputs in other formats
 such as @code{nv12} or @code{p010} are converted to a packed RGB format
 automatically.
 Note that the VideoSR algorithms (@code{sr1-0} and @code{sr1-1}) do not
-preserve the alpha channel (it is left zeroed); append e.g. @code{format=rgb24}
-downstream if an opaque result is required.
+preserve the alpha channel (it is left zeroed); drop it after the download,
+e.g. with @code{hwdownload,format=rgba,format=rgb24}, if an opaque result is
+required.
 
 @end table
 
@@ -23322,9 +23323,11 @@ which does not fill the entire output surface should be filled with a solid colo
 
 @itemize
 @item
-Scale input to 720p, keeping aspect ratio and ensuring the output is yuv420p.
+Upscale to 720p, keeping aspect ratio, and read the result back into system
+memory. The filter always outputs AMF surfaces, so a @ref{hwdownload} is needed
+to feed a software encoder.
 @example
-sr_amf=-2:720:format=yuv420p
+sr_amf=-2:720,hwdownload,format=nv12
 @end example
 
 @item
@@ -26228,8 +26231,10 @@ JEDEC P22 phosphors
 @itemize
 @item
 Scale input to 720p, keeping aspect ratio and ensuring the output is yuv420p.
+The filter always outputs AMF surfaces, so a @ref{hwdownload} is needed to feed a
+software encoder.
 @example
-vpp_amf=-2:720:format=yuv420p
+vpp_amf=-2:720:format=yuv420p,hwdownload,format=yuv420p
 @end example
 
 @item

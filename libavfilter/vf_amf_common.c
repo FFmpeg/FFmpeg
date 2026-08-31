@@ -221,12 +221,15 @@ fail:
 
 
 int amf_setup_input_output_formats(AVFilterContext *avctx,
-                                    const enum AVPixelFormat *input_pix_fmts,
-                                    const enum AVPixelFormat *output_pix_fmts)
+                                    const enum AVPixelFormat *input_pix_fmts)
 {
     int err;
     AVFilterFormats *input_formats;
     AVFilterFormats *output_formats;
+    static const enum AVPixelFormat output_pix_fmts[] = {
+        AV_PIX_FMT_AMF_SURFACE,
+        AV_PIX_FMT_NONE,
+    };
 
     //in case if hw_device_ctx is set to DXVA2 we change order of pixel formats to set DXVA2 be chosen by default
     //The order is ignored if hw_frames_ctx is not NULL on the config_output stage
@@ -242,7 +245,6 @@ int amf_setup_input_output_formats(AVFilterContext *avctx,
                     AV_PIX_FMT_NONE,
                 };
                 input_pix_fmts  = pix_fmts_d3d11;
-                output_pix_fmts = pix_fmts_d3d11;
             }
             break;
     #endif
@@ -254,7 +256,6 @@ int amf_setup_input_output_formats(AVFilterContext *avctx,
                     AV_PIX_FMT_NONE,
                 };
                 input_pix_fmts  = pix_fmts_dxva2;
-                output_pix_fmts = pix_fmts_dxva2;
             }
             break;
     #endif

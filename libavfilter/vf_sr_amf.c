@@ -68,19 +68,8 @@ static int amf_is_packed_rgb(enum AVPixelFormat format)
 static int amf_filter_query_formats(AVFilterContext *avctx)
 {
     AMFFilterContext *ctx = avctx->priv;
-    const enum AVPixelFormat *input_pix_fmts, *output_pix_fmts;
+    const enum AVPixelFormat *input_pix_fmts;
     static const enum AVPixelFormat input_pix_fmts_default[] = {
-        AV_PIX_FMT_NV12,
-        AV_PIX_FMT_P010,
-        AV_PIX_FMT_BGRA,
-        AV_PIX_FMT_RGBA,
-        AV_PIX_FMT_AMF_SURFACE,
-        AV_PIX_FMT_D3D11,
-        AV_PIX_FMT_DXVA2_VLD,
-        AV_PIX_FMT_RGBAF16,
-        AV_PIX_FMT_NONE,
-    };
-    static const enum AVPixelFormat output_pix_fmts_default[] = {
         AV_PIX_FMT_NV12,
         AV_PIX_FMT_P010,
         AV_PIX_FMT_BGRA,
@@ -111,26 +100,22 @@ static int amf_filter_query_formats(AVFilterContext *avctx)
     };
     int i;
 
-    if (amf_hq_scaler_needs_packed_rgb(ctx->algorithm)) {
-        input_pix_fmts  = pix_fmts_packed_rgb;
-        output_pix_fmts = pix_fmts_packed_rgb;
-    } else {
-        input_pix_fmts  = input_pix_fmts_default;
-        output_pix_fmts = output_pix_fmts_default;
-    }
+    if (amf_hq_scaler_needs_packed_rgb(ctx->algorithm))
+        input_pix_fmts = pix_fmts_packed_rgb;
+    else
+        input_pix_fmts = input_pix_fmts_default;
 
     if (ctx->format_opt != AV_PIX_FMT_NONE) {
         for (i = 0; input_pix_fmts[i] != AV_PIX_FMT_NONE; i++) {
             if (input_pix_fmts[i] == ctx->format_opt) {
                 pix_fmts_requested[0] = ctx->format_opt;
-                input_pix_fmts  = pix_fmts_requested;
-                output_pix_fmts = pix_fmts_requested;
+                input_pix_fmts = pix_fmts_requested;
                 break;
             }
         }
     }
 
-    return amf_setup_input_output_formats(avctx, input_pix_fmts, output_pix_fmts);
+    return amf_setup_input_output_formats(avctx, input_pix_fmts);
 }
 
 static int amf_filter_config_output(AVFilterLink *outlink)
