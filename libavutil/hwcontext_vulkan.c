@@ -3922,8 +3922,13 @@ static int vulkan_map_from_drm_frame_sync(AVHWFramesContext *hwfc, AVFrame *dst,
                                     drm_sync_sem, desc->nb_objects,
                                     VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT, 1);
 
+        /* The imported DRM sync file only orders the external data, not this
+         * frame's earlier use by FFmpeg. The frame may be recycled from the
+         * pool while it is still in flight (and last used on another queue),
+         * so the map waits on its last signal, at ALL_COMMANDS, to be ordered
+         * after that previous use. */
         err = ff_vk_exec_add_dep_frame(&p->vkctx, exec, dst,
-                                       VK_PIPELINE_STAGE_2_NONE,
+                                       VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
                                        VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT);
         if (err < 0) {
             ff_vk_exec_discard(&p->vkctx, exec);
