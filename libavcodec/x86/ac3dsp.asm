@@ -164,40 +164,38 @@ cglobal float_to_fixed24, 3, 3, 5, dst, src, len
 %endmacro
 
 INIT_XMM sse2
-cglobal ac3_compute_mantissa_size, 1, 2, 4, mant_cnt, sum
+cglobal ac3_compute_mantissa_size, 1, 1, 5, mant_cnt
     movdqa      m0, [mant_cntq      ]
     movdqa      m1, [mant_cntq+ 1*16]
+    movdqa      m4, [pw_bap_mul1]
     paddw       m0, [mant_cntq+ 2*16]
     paddw       m1, [mant_cntq+ 3*16]
+    movhpd      m2, [mant_cntq     +2]
     paddw       m0, [mant_cntq+ 4*16]
     paddw       m1, [mant_cntq+ 5*16]
+    movlpd      m2, [mant_cntq+1*32+2]
     paddw       m0, [mant_cntq+ 6*16]
     paddw       m1, [mant_cntq+ 7*16]
     paddw       m0, [mant_cntq+ 8*16]
+    pmulhuw     m2, m4
     paddw       m1, [mant_cntq+ 9*16]
     paddw       m0, [mant_cntq+10*16]
     paddw       m1, [mant_cntq+11*16]
     pmaddwd     m0, [ac3_bap_bits   ]
     pmaddwd     m1, [ac3_bap_bits+16]
     paddd       m0, m1
-    PHADDD4     m0, m1
-    movd      sumd, m0
-    movdqa      m3, [pw_bap_mul1]
-    movhpd      m0, [mant_cntq     +2]
-    movlpd      m0, [mant_cntq+1*32+2]
     movhpd      m1, [mant_cntq+2*32+2]
     movlpd      m1, [mant_cntq+3*32+2]
-    movhpd      m2, [mant_cntq+4*32+2]
-    movlpd      m2, [mant_cntq+5*32+2]
-    pmulhuw     m0, m3
-    pmulhuw     m1, m3
-    pmulhuw     m2, m3
-    paddusw     m0, m1
-    paddusw     m0, m2
-    pmaddwd     m0, [pw_bap_mul2]
+    movhpd      m3, [mant_cntq+4*32+2]
+    movlpd      m3, [mant_cntq+5*32+2]
+    pmulhuw     m1, m4
+    pmulhuw     m3, m4
+    paddusw     m1, m2
+    paddusw     m1, m3
+    pmaddwd     m1, [pw_bap_mul2]
+    paddd       m0, m1
     PHADDD4     m0, m1
     movd       eax, m0
-    add        eax, sumd
     RET
 
 ;------------------------------------------------------------------------------
