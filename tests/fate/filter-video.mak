@@ -848,7 +848,7 @@ fate-filter-metadata-silencedetect: CMD = run $(FILTER_METADATA_COMMAND) "amovie
 EBUR128_METADATA_DEPS = LAVFI_INDEV AMOVIE_FILTER FLAC_DEMUXER FLAC_DECODER ARESAMPLE_FILTER EBUR128_FILTER
 FATE_METADATA_FILTER-$(call ALLYES, $(EBUR128_METADATA_DEPS)) += fate-filter-metadata-ebur128
 fate-filter-metadata-ebur128: SRC = $(TARGET_SAMPLES)/filter/seq-3341-7_seq-3342-5-24bit.flac
-fate-filter-metadata-ebur128: CMD = run $(FILTER_METADATA_COMMAND) "amovie='$(SRC)',ebur128=metadata=1"
+fate-filter-metadata-ebur128: CMD = run $(FILTER_METADATA_COMMAND) "amovie='$(SRC)',ebur128=peak=sample:metadata=1"
 
 EBUR128_HEIGHT_DEPS = FFPROBE LAVFI_INDEV AEVALSRC_FILTER ARESAMPLE_FILTER EBUR128_FILTER
 FATE_FILTER_FFPROBE-$(call ALLYES, $(EBUR128_HEIGHT_DEPS)) += fate-filter-metadata-ebur128-height
