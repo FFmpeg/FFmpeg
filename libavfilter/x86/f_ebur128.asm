@@ -157,7 +157,6 @@ cglobal ebur128_find_peak_2ch, 4, 5, 3, ch_peaks, channels, samples, nb_samples
     movupd [ch_peaksq], m0
     shufpd m1, m0, m0, 1
     maxpd m0, m1
-    movq rax, m0
     RET
 
 %endif ; ARCH_X86_64
