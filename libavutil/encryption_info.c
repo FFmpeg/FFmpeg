@@ -218,16 +218,19 @@ AVEncryptionInitInfo *av_encryption_init_info_alloc(
 
 void av_encryption_init_info_free(AVEncryptionInitInfo *info)
 {
-    uint32_t i;
-    if (info) {
+    while (info) {
+        AVEncryptionInitInfo *next = info->next;
+        uint32_t i;
+
         for (i = 0; i < info->num_key_ids; i++) {
             av_free(info->key_ids[i]);
         }
-        av_encryption_init_info_free(info->next);
         av_free(info->system_id);
         av_free(info->key_ids);
         av_free(info->data);
         av_free(info);
+
+        info = next;
     }
 }
 
