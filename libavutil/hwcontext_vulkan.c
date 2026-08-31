@@ -40,6 +40,7 @@
 #include "hwcontext_internal.h"
 #include "hwcontext_vulkan.h"
 #include "mem.h"
+#include "uuid.h"
 
 #include "vulkan.h"
 #include "vulkan_loader.h"
@@ -2144,10 +2145,15 @@ static int vulkan_device_create(AVHWDeviceContext *ctx, const char *device,
     VulkanDeviceSelection dev_select = { 0 };
     if (device && device[0]) {
         char *end = NULL;
-        dev_select.index = strtol(device, &end, 10);
-        if (end == device) {
-            dev_select.index = 0;
-            dev_select.name  = device;
+
+        if (!av_uuid_parse(device, dev_select.uuid)) {
+            dev_select.has_uuid = 1;
+        } else {
+            dev_select.index = strtol(device, &end, 10);
+            if (end == device || *end) {
+                dev_select.index = 0;
+                dev_select.name  = device;
+            }
         }
     }
 
