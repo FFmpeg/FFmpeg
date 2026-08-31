@@ -181,6 +181,9 @@ AVEncryptionInitInfo *av_encryption_init_info_alloc(
     AVEncryptionInitInfo *info;
     uint32_t i;
 
+    if (num_key_ids && !key_id_size)
+        return NULL;
+
     info = av_mallocz(sizeof(*info));
     if (!info)
         return NULL;
