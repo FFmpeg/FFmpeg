@@ -1013,6 +1013,7 @@ void ff_get_unscaled_swscale(SwsInternal *c);
 void ff_get_unscaled_swscale_ppc(SwsInternal *c);
 void ff_get_unscaled_swscale_arm(SwsInternal *c);
 void ff_get_unscaled_swscale_aarch64(SwsInternal *c);
+void ff_get_unscaled_swscale_loongarch(SwsInternal *c);
 
 void ff_sws_init_scale(SwsInternal *c);
 

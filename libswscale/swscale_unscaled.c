@@ -2702,6 +2702,8 @@ void ff_get_unscaled_swscale(SwsInternal *c)
     ff_get_unscaled_swscale_arm(c);
 #elif ARCH_AARCH64
     ff_get_unscaled_swscale_aarch64(c);
+#elif ARCH_LOONGARCH64 && HAVE_LSX
+    ff_get_unscaled_swscale_loongarch(c);
 #endif
 }
 

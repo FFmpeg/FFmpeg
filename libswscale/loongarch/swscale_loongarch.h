@@ -208,4 +208,26 @@ av_cold void ff_sws_init_output_lasx(SwsInternal *c,
                                      yuv2anyX_fn *yuv2anyX);
 #endif // #if HAVE_LASX
 
+int yuv420_nv12_bgra32_lsx(SwsInternal *c, const uint8_t *const src[], const int srcStride[],
+                           int srcSliceY, int srcSliceH, uint8_t *const dst[], const int dstStride[]);
+int yuv420_nv21_bgra32_lsx(SwsInternal *c, const uint8_t *const src[], const int srcStride[],
+                           int srcSliceY, int srcSliceH, uint8_t *const dst[], const int dstStride[]);
+int yuv420_nv12_rgba32_lsx(SwsInternal *c, const uint8_t *const src[], const int srcStride[],
+                           int srcSliceY, int srcSliceH, uint8_t *const dst[], const int dstStride[]);
+int yuv420_nv21_rgba32_lsx(SwsInternal *c, const uint8_t *const src[], const int srcStride[],
+                           int srcSliceY, int srcSliceH, uint8_t *const dst[], const int dstStride[]);
+int yuv420_nv12_argb32_lsx(SwsInternal *c, const uint8_t *const src[], const int srcStride[],
+                           int srcSliceY, int srcSliceH, uint8_t *const dst[], const int dstStride[]);
+int yuv420_nv21_argb32_lsx(SwsInternal *c, const uint8_t *const src[], const int srcStride[],
+                           int srcSliceY, int srcSliceH, uint8_t *const dst[], const int dstStride[]);
+int yuv420_nv12_abgr32_lsx(SwsInternal *c, const uint8_t *const src[], const int srcStride[],
+                           int srcSliceY, int srcSliceH, uint8_t *const dst[], const int dstStride[]);
+int yuv420_nv21_abgr32_lsx(SwsInternal *c, const uint8_t *const src[], const int srcStride[],
+                           int srcSliceY, int srcSliceH, uint8_t *const dst[], const int dstStride[]);
+
+int ff_nv12ToRgb32_c(SwsInternal *c, const uint8_t *const src[], const int srcStride[],
+                     int srcSliceY, int srcSliceH, uint8_t *const dst[], const int dstStride[]);
+int ff_nv21ToRgb32_c(SwsInternal *c, const uint8_t *const src[], const int srcStride[],
+                     int srcSliceY, int srcSliceH, uint8_t *const dst[], const int dstStride[]);
+
 #endif /* SWSCALE_LOONGARCH_SWSCALE_LOONGARCH_H */

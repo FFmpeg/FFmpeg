@@ -46,6 +46,17 @@
     DUP2_ARG2(__lsx_vilvh_b, zero, m_y1, zero, m_y2, m_y1_h, m_y2_h); \
     DUP2_ARG2(__lsx_vilvl_b, zero, m_y1, zero, m_y2, m_y1, m_y2);     \
 
+#define LOAD_YUV_16_NV12                                              \
+    m_y1 = __lsx_vld(py_1, 0);                                        \
+    m_y2 = __lsx_vld(py_2, 0);                                        \
+    m_uv = __lsx_vld(puv, 0);                                         \
+    m_u   = __lsx_vshuf_b(zero, m_uv, shuf_u);                        \
+    m_u_h = __lsx_vshuf_b(zero, m_uv, shuf_uh);                       \
+    m_v   = __lsx_vshuf_b(zero, m_uv, shuf_v);                        \
+    m_v_h = __lsx_vshuf_b(zero, m_uv, shuf_vh);                       \
+    DUP2_ARG2(__lsx_vilvh_b, zero, m_y1, zero, m_y2, m_y1_h, m_y2_h); \
+    DUP2_ARG2(__lsx_vilvl_b, zero, m_y1, zero, m_y2, m_y1, m_y2);     \
+
 /* YUV2RGB method
  * The conversion method is as follows:
  * R = Y' * y_coeff + V' * vr_coeff
@@ -252,6 +263,83 @@
     return srcSliceH;                       \
 }
 
+#define SHUF_UV_EVEN    {0x1002100210001000, 0x1006100610041004}
+#define SHUF_UV_EVEN_HI {0x100a100a10081008, 0x100e100e100c100c}
+#define SHUF_UV_ODD     {0x1003100310011001, 0x1007100710051005}
+#define SHUF_UV_ODD_HI  {0x100b100b10091009, 0x100f100f100d100d}
+
+#define YUV2RGBFUNC32_NV12(func_name, dst_type, alpha,                             \
+                           SHUF_U, SHUF_UH, SHUF_V, SHUF_VH)                       \
+           int func_name(SwsInternal *c, const uint8_t *const src[],               \
+                         const int srcStride[], int srcSliceY, int srcSliceH,      \
+                         uint8_t *const dst[], const int dstStride[])              \
+{                                                                                   \
+    int x, y, h_size, vshift, res;                                                  \
+    __m128i m_y1, m_y2, m_u, m_v, m_uv;                                             \
+    __m128i m_y1_h, m_y2_h, m_u_h, m_v_h;                                           \
+    __m128i y_1, y_2, u2g, v2g, u2b, v2r, rgb1_l, rgb1_h;                           \
+    __m128i rgb2_l, rgb2_h, r1, g1, b1, r2, g2, b2;                                 \
+    __m128i a = __lsx_vldi(0xFF);                                                   \
+    __m128i zero = __lsx_vldi(0);                                                   \
+    __m128i shuf_u  = SHUF_U;                                                       \
+    __m128i shuf_uh = SHUF_UH;                                                      \
+    __m128i shuf_v  = SHUF_V;                                                       \
+    __m128i shuf_vh = SHUF_VH;                                                      \
+                                                                                    \
+    YUV2RGB_LOAD_COE                                                                \
+                                                                                    \
+    h_size = c->opts.dst_w >> 4;                                                    \
+    res = (c->opts.dst_w & 15) >> 1;                                                \
+    vshift = c->opts.src_format != AV_PIX_FMT_YUV422P;                              \
+    for (y = 0; y < srcSliceH; y += 2) {                                            \
+        int yd = y + srcSliceY;                                                     \
+        dst_type av_unused *r, *g, *b;                                              \
+        dst_type *image1    = (dst_type *)(dst[0] + (yd)     * dstStride[0]);       \
+        dst_type *image2    = (dst_type *)(dst[0] + (yd + 1) * dstStride[0]);       \
+        const uint8_t *py_1 = src[0] +               y * srcStride[0];              \
+        const uint8_t *py_2 = py_1   +                   srcStride[0];              \
+        const uint8_t *puv  = src[1] +   (y >> vshift) * srcStride[1];              \
+        for(x = 0; x < h_size; x++) {                                               \
+
+#define DEALYUV2RGBREMAIN32_NV12                                                    \
+            py_1 += 16;                                                             \
+            py_2 += 16;                                                             \
+            puv += 16;                                                              \
+            image1 += 16;                                                           \
+            image2 += 16;                                                           \
+        }                                                                           \
+        for (x = 0; x < res; x++) {                                                 \
+            av_unused int U, V, Y;                                                  \
+            U = puv[0];                                                             \
+            V = puv[1];                                                             \
+            r = (void *)c->table_rV[V+YUVRGB_TABLE_HEADROOM];                       \
+            g = (void *)(c->table_gU[U+YUVRGB_TABLE_HEADROOM]                       \
+                       + c->table_gV[V+YUVRGB_TABLE_HEADROOM]);                     \
+            b = (void *)c->table_bU[U+YUVRGB_TABLE_HEADROOM];                       \
+
+#define DEALYUV2RGBREMAIN32_NV21                                                    \
+            py_1 += 16;                                                             \
+            py_2 += 16;                                                             \
+            puv += 16;                                                              \
+            image1 += 16;                                                           \
+            image2 += 16;                                                           \
+        }                                                                           \
+        for (x = 0; x < res; x++) {                                                 \
+            av_unused int U, V, Y;                                                  \
+            U = puv[1];                                                             \
+            V = puv[0];                                                             \
+            r = (void *)c->table_rV[V+YUVRGB_TABLE_HEADROOM];                       \
+            g = (void *)(c->table_gU[U+YUVRGB_TABLE_HEADROOM]                       \
+                       + c->table_gV[V+YUVRGB_TABLE_HEADROOM]);                     \
+            b = (void *)c->table_bU[U+YUVRGB_TABLE_HEADROOM];                       \
+
+#define ENDRES32_NV12                       \
+    puv += 2;                               \
+    py_1 += 2;                              \
+    py_2 += 2;                              \
+    image1 += 2;                            \
+    image2 += 2;                            \
+
 YUV2RGBFUNC(yuv420_rgb24_lsx, uint8_t, 0)
     LOAD_YUV_16
     YUV2RGB(m_y1, m_y2, m_u, m_v, r1, g1, b1, r2, g2, b2);
@@ -358,4 +446,180 @@ YUV2RGBFUNC32(yuv420_abgr32_lsx, uint32_t, 0)
     PUTRGB(image1, py_1);
     PUTRGB(image2, py_2);
     ENDRES32
+    END_FUNC()
+
+YUV2RGBFUNC32_NV12(yuv420_nv12_bgra32_lsx, uint32_t, 0,
+                   SHUF_UV_EVEN,
+                   SHUF_UV_EVEN_HI,
+                   SHUF_UV_ODD,
+                   SHUF_UV_ODD_HI)
+    LOAD_YUV_16_NV12
+    YUV2RGB(m_y1, m_y2, m_u, m_v, r1, g1, b1, r2, g2, b2);
+    RGB32_PACK(b1, g1, r1, a, rgb1_l, rgb1_h);
+    RGB32_PACK(b2, g2, r2, a, rgb2_l, rgb2_h);
+    RGB32_STORE(rgb1_l, rgb1_h, image1);
+    RGB32_STORE(rgb2_l, rgb2_h, image2);
+    YUV2RGB(m_y1_h, m_y2_h, m_u_h, m_v_h, r1, g1, b1, r2, g2, b2);
+    RGB32_PACK(b1, g1, r1, a, rgb1_l, rgb1_h);
+    RGB32_PACK(b2, g2, r2, a, rgb2_l, rgb2_h);
+    RGB32_STORE(rgb1_l, rgb1_h, image1 + 8);
+    RGB32_STORE(rgb2_l, rgb2_h, image2 + 8);
+    DEALYUV2RGBREMAIN32_NV12
+    PUTRGB(image1, py_1);
+    PUTRGB(image2, py_2);
+    ENDRES32_NV12
+    END_FUNC()
+
+YUV2RGBFUNC32_NV12(yuv420_nv21_bgra32_lsx, uint32_t, 0,
+                   SHUF_UV_ODD,
+                   SHUF_UV_ODD_HI,
+                   SHUF_UV_EVEN,
+                   SHUF_UV_EVEN_HI)
+    LOAD_YUV_16_NV12
+    YUV2RGB(m_y1, m_y2, m_u, m_v, r1, g1, b1, r2, g2, b2);
+    RGB32_PACK(b1, g1, r1, a, rgb1_l, rgb1_h);
+    RGB32_PACK(b2, g2, r2, a, rgb2_l, rgb2_h);
+    RGB32_STORE(rgb1_l, rgb1_h, image1);
+    RGB32_STORE(rgb2_l, rgb2_h, image2);
+    YUV2RGB(m_y1_h, m_y2_h, m_u_h, m_v_h, r1, g1, b1, r2, g2, b2);
+    RGB32_PACK(b1, g1, r1, a, rgb1_l, rgb1_h);
+    RGB32_PACK(b2, g2, r2, a, rgb2_l, rgb2_h);
+    RGB32_STORE(rgb1_l, rgb1_h, image1 + 8);
+    RGB32_STORE(rgb2_l, rgb2_h, image2 + 8);
+    DEALYUV2RGBREMAIN32_NV21
+    PUTRGB(image1, py_1);
+    PUTRGB(image2, py_2);
+    ENDRES32_NV12
+    END_FUNC()
+
+YUV2RGBFUNC32_NV12(yuv420_nv12_rgba32_lsx, uint32_t, 0,
+                   SHUF_UV_EVEN,
+                   SHUF_UV_EVEN_HI,
+                   SHUF_UV_ODD,
+                   SHUF_UV_ODD_HI)
+    LOAD_YUV_16_NV12
+    YUV2RGB(m_y1, m_y2, m_u, m_v, r1, g1, b1, r2, g2, b2);
+    RGB32_PACK(r1, g1, b1, a, rgb1_l, rgb1_h);
+    RGB32_PACK(r2, g2, b2, a, rgb2_l, rgb2_h);
+    RGB32_STORE(rgb1_l, rgb1_h, image1);
+    RGB32_STORE(rgb2_l, rgb2_h, image2);
+    YUV2RGB(m_y1_h, m_y2_h, m_u_h, m_v_h, r1, g1, b1, r2, g2, b2);
+    RGB32_PACK(r1, g1, b1, a, rgb1_l, rgb1_h);
+    RGB32_PACK(r2, g2, b2, a, rgb2_l, rgb2_h);
+    RGB32_STORE(rgb1_l, rgb1_h, image1 + 8);
+    RGB32_STORE(rgb2_l, rgb2_h, image2 + 8);
+    DEALYUV2RGBREMAIN32_NV12
+    PUTRGB(image1, py_1);
+    PUTRGB(image2, py_2);
+    ENDRES32_NV12
+    END_FUNC()
+
+YUV2RGBFUNC32_NV12(yuv420_nv21_rgba32_lsx, uint32_t, 0,
+                   SHUF_UV_ODD,
+                   SHUF_UV_ODD_HI,
+                   SHUF_UV_EVEN,
+                   SHUF_UV_EVEN_HI)
+    LOAD_YUV_16_NV12
+    YUV2RGB(m_y1, m_y2, m_u, m_v, r1, g1, b1, r2, g2, b2);
+    RGB32_PACK(r1, g1, b1, a, rgb1_l, rgb1_h);
+    RGB32_PACK(r2, g2, b2, a, rgb2_l, rgb2_h);
+    RGB32_STORE(rgb1_l, rgb1_h, image1);
+    RGB32_STORE(rgb2_l, rgb2_h, image2);
+    YUV2RGB(m_y1_h, m_y2_h, m_u_h, m_v_h, r1, g1, b1, r2, g2, b2);
+    RGB32_PACK(r1, g1, b1, a, rgb1_l, rgb1_h);
+    RGB32_PACK(r2, g2, b2, a, rgb2_l, rgb2_h);
+    RGB32_STORE(rgb1_l, rgb1_h, image1 + 8);
+    RGB32_STORE(rgb2_l, rgb2_h, image2 + 8);
+    DEALYUV2RGBREMAIN32_NV21
+    PUTRGB(image1, py_1);
+    PUTRGB(image2, py_2);
+    ENDRES32_NV12
+    END_FUNC()
+
+YUV2RGBFUNC32_NV12(yuv420_nv12_argb32_lsx, uint32_t, 0,
+                   SHUF_UV_EVEN,
+                   SHUF_UV_EVEN_HI,
+                   SHUF_UV_ODD,
+                   SHUF_UV_ODD_HI)
+    LOAD_YUV_16_NV12
+    YUV2RGB(m_y1, m_y2, m_u, m_v, r1, g1, b1, r2, g2, b2);
+    RGB32_PACK(a, r1, g1, b1, rgb1_l, rgb1_h);
+    RGB32_PACK(a, r2, g2, b2, rgb2_l, rgb2_h);
+    RGB32_STORE(rgb1_l, rgb1_h, image1);
+    RGB32_STORE(rgb2_l, rgb2_h, image2);
+    YUV2RGB(m_y1_h, m_y2_h, m_u_h, m_v_h, r1, g1, b1, r2, g2, b2);
+    RGB32_PACK(a, r1, g1, b1, rgb1_l, rgb1_h);
+    RGB32_PACK(a, r2, g2, b2, rgb2_l, rgb2_h);
+    RGB32_STORE(rgb1_l, rgb1_h, image1 + 8);
+    RGB32_STORE(rgb2_l, rgb2_h, image2 + 8);
+    DEALYUV2RGBREMAIN32_NV12
+    PUTRGB(image1, py_1);
+    PUTRGB(image2, py_2);
+    ENDRES32_NV12
+    END_FUNC()
+
+YUV2RGBFUNC32_NV12(yuv420_nv21_argb32_lsx, uint32_t, 0,
+                   SHUF_UV_ODD,
+                   SHUF_UV_ODD_HI,
+                   SHUF_UV_EVEN,
+                   SHUF_UV_EVEN_HI)
+    LOAD_YUV_16_NV12
+    YUV2RGB(m_y1, m_y2, m_u, m_v, r1, g1, b1, r2, g2, b2);
+    RGB32_PACK(a, r1, g1, b1, rgb1_l, rgb1_h);
+    RGB32_PACK(a, r2, g2, b2, rgb2_l, rgb2_h);
+    RGB32_STORE(rgb1_l, rgb1_h, image1);
+    RGB32_STORE(rgb2_l, rgb2_h, image2);
+    YUV2RGB(m_y1_h, m_y2_h, m_u_h, m_v_h, r1, g1, b1, r2, g2, b2);
+    RGB32_PACK(a, r1, g1, b1, rgb1_l, rgb1_h);
+    RGB32_PACK(a, r2, g2, b2, rgb2_l, rgb2_h);
+    RGB32_STORE(rgb1_l, rgb1_h, image1 + 8);
+    RGB32_STORE(rgb2_l, rgb2_h, image2 + 8);
+    DEALYUV2RGBREMAIN32_NV21
+    PUTRGB(image1, py_1);
+    PUTRGB(image2, py_2);
+    ENDRES32_NV12
+    END_FUNC()
+
+YUV2RGBFUNC32_NV12(yuv420_nv12_abgr32_lsx, uint32_t, 0,
+                   SHUF_UV_EVEN,
+                   SHUF_UV_EVEN_HI,
+                   SHUF_UV_ODD,
+                   SHUF_UV_ODD_HI)
+    LOAD_YUV_16_NV12
+    YUV2RGB(m_y1, m_y2, m_u, m_v, r1, g1, b1, r2, g2, b2);
+    RGB32_PACK(a, b1, g1, r1, rgb1_l, rgb1_h);
+    RGB32_PACK(a, b2, g2, r2, rgb2_l, rgb2_h);
+    RGB32_STORE(rgb1_l, rgb1_h, image1);
+    RGB32_STORE(rgb2_l, rgb2_h, image2);
+    YUV2RGB(m_y1_h, m_y2_h, m_u_h, m_v_h, r1, g1, b1, r2, g2, b2);
+    RGB32_PACK(a, b1, g1, r1, rgb1_l, rgb1_h);
+    RGB32_PACK(a, b2, g2, r2, rgb2_l, rgb2_h);
+    RGB32_STORE(rgb1_l, rgb1_h, image1 + 8);
+    RGB32_STORE(rgb2_l, rgb2_h, image2 + 8);
+    DEALYUV2RGBREMAIN32_NV12
+    PUTRGB(image1, py_1);
+    PUTRGB(image2, py_2);
+    ENDRES32_NV12
+    END_FUNC()
+
+YUV2RGBFUNC32_NV12(yuv420_nv21_abgr32_lsx, uint32_t, 0,
+                   SHUF_UV_ODD,
+                   SHUF_UV_ODD_HI,
+                   SHUF_UV_EVEN,
+                   SHUF_UV_EVEN_HI)
+    LOAD_YUV_16_NV12
+    YUV2RGB(m_y1, m_y2, m_u, m_v, r1, g1, b1, r2, g2, b2);
+    RGB32_PACK(a, b1, g1, r1, rgb1_l, rgb1_h);
+    RGB32_PACK(a, b2, g2, r2, rgb2_l, rgb2_h);
+    RGB32_STORE(rgb1_l, rgb1_h, image1);
+    RGB32_STORE(rgb2_l, rgb2_h, image2);
+    YUV2RGB(m_y1_h, m_y2_h, m_u_h, m_v_h, r1, g1, b1, r2, g2, b2);
+    RGB32_PACK(a, b1, g1, r1, rgb1_l, rgb1_h);
+    RGB32_PACK(a, b2, g2, r2, rgb2_l, rgb2_h);
+    RGB32_STORE(rgb1_l, rgb1_h, image1 + 8);
+    RGB32_STORE(rgb2_l, rgb2_h, image2 + 8);
+    DEALYUV2RGBREMAIN32_NV21
+    PUTRGB(image1, py_1);
+    PUTRGB(image2, py_2);
+    ENDRES32_NV12
     END_FUNC()
