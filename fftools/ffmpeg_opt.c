@@ -1804,7 +1804,7 @@ const OptionDef options[] = {
         "disposition", "" },
     { "thread_queue_size",   OPT_TYPE_INT,  OPT_OFFSET | OPT_EXPERT | OPT_OUTPUT,
         { .off = OFFSET(thread_queue_size) },
-        "set the maximum number of queued packets on the muxer" },
+        "set the maximum number of queued packets per stream on the muxer" },
     { "find_stream_info",    OPT_TYPE_BOOL, OPT_INPUT | OPT_EXPERT | OPT_OFFSET,
         { .off = OFFSET(find_stream_info) },
         "read and decode the streams to fill missing information with heuristics" },

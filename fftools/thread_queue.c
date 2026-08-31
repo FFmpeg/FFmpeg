@@ -41,11 +41,13 @@ struct ThreadQueue {
     int             choked;
     int              *finished;
     unsigned int    nb_streams;
+    size_t          queue_size;
 
     enum ThreadQueueType type;
 
     AVContainerFifo *fifo;
     AVFifo          *fifo_stream_index;
+    size_t          *stream_count;
 
     pthread_mutex_t lock;
     pthread_cond_t  cond;
@@ -60,6 +62,7 @@ void tq_free(ThreadQueue **ptq)
 
     av_container_fifo_free(&tq->fifo);
     av_fifo_freep2(&tq->fifo_stream_index);
+    av_freep(&tq->stream_count);
 
     av_freep(&tq->finished);
 
@@ -96,7 +99,7 @@ ThreadQueue *tq_alloc(unsigned int nb_streams, size_t queue_size,
     if (!tq->finished)
         goto fail;
     tq->nb_streams = nb_streams;
-
+    tq->queue_size = queue_size;
     tq->type = type;
 
     tq->fifo = (type == THREAD_QUEUE_FRAMES) ?
@@ -104,14 +107,27 @@ ThreadQueue *tq_alloc(unsigned int nb_streams, size_t queue_size,
     if (!tq->fifo)
         goto fail;
 
-    tq->fifo_stream_index = av_fifo_alloc2(queue_size, sizeof(unsigned), 0);
+    av_assert0(queue_size);
+    if (nb_streams > SIZE_MAX / queue_size)
+        goto fail; // treat like OOM
+
+    tq->fifo_stream_index = av_fifo_alloc2(queue_size * nb_streams, sizeof(unsigned), 0);
     if (!tq->fifo_stream_index)
+        goto fail;
+
+    tq->stream_count = av_calloc(nb_streams, sizeof(*tq->stream_count));
+    if (!tq->stream_count)
         goto fail;
 
     return tq;
 fail:
     tq_free(&tq);
     return NULL;
+}
+
+static int can_write(ThreadQueue *tq, unsigned int stream_idx)
+{
+    return tq->stream_count[stream_idx] < tq->queue_size;
 }
 
 int tq_send(ThreadQueue *tq, unsigned int stream_idx, void *data)
@@ -129,7 +145,7 @@ int tq_send(ThreadQueue *tq, unsigned int stream_idx, void *data)
         goto finish;
     }
 
-    while (!(*finished & FINISHED_RECV) && !av_fifo_can_write(tq->fifo_stream_index))
+    while (!(*finished & FINISHED_RECV) && !can_write(tq, stream_idx))
         pthread_cond_wait(&tq->cond, &tq->lock);
 
     if (*finished & FINISHED_RECV) {
@@ -144,6 +160,7 @@ int tq_send(ThreadQueue *tq, unsigned int stream_idx, void *data)
         if (ret < 0)
             goto finish;
 
+        tq->stream_count[stream_idx]++;
         pthread_cond_broadcast(&tq->cond);
     }
 
@@ -167,6 +184,7 @@ static int receive_locked(ThreadQueue *tq, int *stream_idx,
 
         ret = av_fifo_read(tq->fifo_stream_index, &idx, 1);
         av_assert0(ret >= 0);
+        tq->stream_count[idx]--;
         if (tq->finished[idx] & FINISHED_RECV) {
             (tq->type == THREAD_QUEUE_FRAMES) ?
             av_frame_unref(data) : av_packet_unref(data);

@@ -40,7 +40,7 @@ typedef struct ThreadQueue ThreadQueue;
  * @param nb_streams number of streams for which a distinct EOF state is
  *                   maintained
  * @param queue_size number of items that can be stored in the queue without
- *                   blocking
+ *                   blocking (per stream)
  */
 ThreadQueue *tq_alloc(unsigned int nb_streams, size_t queue_size,
                       enum ThreadQueueType type);
