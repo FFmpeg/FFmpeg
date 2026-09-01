@@ -148,7 +148,8 @@ static bool validate_params(const SwsFilterFunction *fun, SwsScaler scaler)
     case SWS_SCALE_LANCZOS:
         return fun->params[0] >= 1.0 && fun->params[0] <= RADIUS_MAX; /* radius */
     case SWS_SCALE_BICUBIC:
-        return fun->params[0] < 3.0; /* B param (division by zero) */
+        return fun->params[0] >= 0.0 && fun->params[0] <= 1.0 /* B */ &&
+               fun->params[1] >= 0.0 && fun->params[1] <= 1.0 /* C */;
     default:
         return true;
     }
