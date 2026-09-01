@@ -724,13 +724,21 @@ Set max macroblock lagrange factor (VBR).
 
 @item skip_loop_filter @var{integer} (@emph{decoding,video})
 @item skip_idct        @var{integer} (@emph{decoding,video})
+@item skip_pred        @var{integer} (@emph{decoding,video})
 @item skip_frame       @var{integer} (@emph{decoding,video})
 
 Make decoder discard processing depending on the frame type selected
 by the option value.
 
 @option{skip_loop_filter} skips frame loop filtering, @option{skip_idct}
-skips frame IDCT/dequantization, @option{skip_frame} skips decoding.
+skips frame IDCT/dequantization, @option{skip_pred} skips prediction
+(intra prediction and motion compensation), @option{skip_frame} skips
+decoding.
+
+With both @option{skip_pred} and @option{skip_idct} set to @samp{all}
+the decoder may skip all pixel operations and output frames with
+undefined pixels but valid metadata, such as timestamps and frame
+types.
 
 Possible values:
 @table @samp

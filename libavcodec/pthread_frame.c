@@ -476,6 +476,7 @@ static int update_context_from_user(AVCodecContext *dst, const AVCodecContext *s
 
     dst->skip_loop_filter = src->skip_loop_filter;
     dst->skip_idct        = src->skip_idct;
+    dst->skip_pred        = src->skip_pred;
     dst->skip_frame       = src->skip_frame;
 
     dst->frame_num        = src->frame_num;

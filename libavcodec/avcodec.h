@@ -1936,6 +1936,16 @@ typedef struct AVCodecContext {
      * - decoding: Set by libavcodec
      */
     enum AVAlphaMode alpha_mode;
+
+    /**
+     * Skip prediction (intra prediction and motion compensation) for
+     * selected frames. When skip_pred and skip_idct both discard a frame,
+     * the decoder may skip all pixel operations for it and output it with
+     * valid metadata and undefined pixels.
+     * - encoding: unused
+     * - decoding: Set by user.
+     */
+    enum AVDiscard skip_pred;
 } AVCodecContext;
 
 /**
