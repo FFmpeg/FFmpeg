@@ -3733,10 +3733,47 @@ static void decode_reset_recovery_point(HEVCContext *s)
     s->sei.recovery_point.has_recovery_poc = 0;
 }
 
+static int export_stream_params_from_slice(HEVCContext *s, const H2645NAL *nal)
+{
+    GetBitContext gb = nal->gb;
+    const HEVCSPS *sps;
+    const HEVCVPS *vps;
+    unsigned pps_id;
+
+    int is_slice = nal->type <= HEVC_NAL_RASL_R ||
+                   (nal->type >= HEVC_NAL_BLA_W_LP &&
+                    nal->type <= HEVC_NAL_CRA_NUT);
+
+    if (!is_slice || nal->nuh_layer_id)
+        return 0;
+
+    skip_bits1(&gb); // first_slice_segment_in_pic_flag
+    if (nal->type >= HEVC_NAL_BLA_W_LP)
+        skip_bits1(&gb); // no_output_of_prior_pics_flag
+    pps_id = get_ue_golomb_long(&gb);
+    if (pps_id >= HEVC_MAX_PPS_COUNT || !s->ps.pps_list[pps_id])
+        return 0;
+    sps = s->ps.pps_list[pps_id]->sps;
+    vps = sps->vps;
+
+    export_stream_params(s, sps);
+
+    if (vps->nb_layers == 2 && vps->layer_id_in_nuh[1] &&
+        vps->scalability_mask_flag & HEVC_SCALABILITY_AUXILIARY) {
+        enum AVPixelFormat alpha_fmt = map_to_alpha_format(s, sps->pix_fmt);
+
+        if (alpha_fmt != AV_PIX_FMT_NONE)
+            s->avctx->pix_fmt = alpha_fmt;
+    }
+
+    return 1;
+}
+
 static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
 {
     int ret = 0;
     int eos_at_start = 1;
+    int params_exported = 0;
     int flags = (H2645_FLAG_IS_NALFF * !!s->is_nalff) | H2645_FLAG_SMALL_PADDING;
 
     s->cur_frame = s->collocated_ref = NULL;
@@ -3818,8 +3855,21 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
     for (int i = 0; i < s->pkt.nb_nals; i++) {
         H2645NAL *nal = &s->pkt.nals[i];
 
-        if (s->avctx->skip_frame >= AVDISCARD_ALL ||
-            (s->avctx->skip_frame >= AVDISCARD_NONREF && ff_hevc_nal_is_nonref(nal->type)))
+        if (s->avctx->skip_frame >= AVDISCARD_ALL) {
+            switch (nal->type) {
+            case HEVC_NAL_VPS:
+            case HEVC_NAL_SPS:
+            case HEVC_NAL_PPS:
+            case HEVC_NAL_SEI_PREFIX:
+            case HEVC_NAL_SEI_SUFFIX:
+                break;
+            default:
+                if (!s->layers[0].sps && !params_exported)
+                    params_exported = export_stream_params_from_slice(s, nal);
+                continue;
+            }
+        } else if (s->avctx->skip_frame >= AVDISCARD_NONREF &&
+                   ff_hevc_nal_is_nonref(nal->type))
             continue;
 
         ret = decode_nal_unit(s, i);
@@ -3828,6 +3878,12 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
                    "Error parsing NAL unit #%d.\n", i);
             goto fail;
         }
+    }
+
+    if (params_exported) {
+        ret = export_stream_params_from_sei(s);
+        if (ret < 0)
+            goto fail;
     }
 
 fail:
@@ -4300,6 +4356,7 @@ const FFCodec ff_hevc_decoder = {
     .p.capabilities        = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
                              AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS,
     .caps_internal         = FF_CODEC_CAP_EXPORTS_CROPPING |
+                             FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM |
                              FF_CODEC_CAP_USES_PROGRESSFRAMES |
                              FF_CODEC_CAP_INIT_CLEANUP,
     .p.profiles            = NULL_IF_CONFIG_SMALL(ff_hevc_profiles),
