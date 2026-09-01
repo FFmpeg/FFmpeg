@@ -82,13 +82,11 @@ static void compute_row(SwsFilterWeights *f, const SwsFilterFunction *fun,
         return;
     }
 
-    /* First pixel that is actually within the filter envelope */
-    const double start_pos = src_pos - radius;
-    int64_t start_idx = ceil(start_pos);
-    start_idx = FFMAX(start_idx, 0); /* edge clamping */
-    start_idx = FFMIN(start_idx, f->src_size - f->filter_size);
-    const double offset = start_idx - src_pos;
-    *pos = start_idx;
+    /* First and last pixels that are actually within the filter envelope */
+    const int start   = ceil (src_pos - radius);
+    const int stop    = floor(src_pos + radius);
+    const int clamped = av_clip(start, 0, f->src_size - f->filter_size);
+    *pos = clamped;
 
     /**
      * Generate raw filter weights with maximum precision. Sum the positive
@@ -96,14 +94,26 @@ static void compute_row(SwsFilterWeights *f, const SwsFilterFunction *fun,
      * summation order should already give the best precision because abs(w)
      * is monotonically decreasing
      */
-    const double base = stretch_inv * offset;
+    const double base = stretch_inv * (clamped - src_pos);
     double wsum_pos = 0.0, wsum_neg = 0.0;
     for (int i = 0; i < f->filter_size; i++) {
-        tmp[i] = scaler_sample(fun, base + stretch_inv * i);
-        if (tmp[i] >= 0)
-            wsum_pos += tmp[i];
+        /* Fold extra edge weights into the first/last weight in case the
+         * filter got truncated; loop over all needed samples  */
+        int i0 = i, i1 = i;
+        if (i == 0)
+            i0 = start - clamped;
+        if (i == f->filter_size - 1)
+            i1 = stop - clamped;
+
+        double w = 0.0;
+        for (int k = i0; k <= i1; k++)
+            w += scaler_sample(fun, base + stretch_inv * k);
+
+        if (w >= 0)
+            wsum_pos += w;
         else
-            wsum_neg += tmp[i];
+            wsum_neg += w;
+        tmp[i] = w;
     }
 
     const double wsum = wsum_pos + wsum_neg;
