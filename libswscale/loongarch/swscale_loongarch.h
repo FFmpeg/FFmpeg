@@ -50,6 +50,13 @@ void ff_hscale_16_to_19_sub_lsx(SwsInternal *c, int16_t *_dst, int dstW,
                                 const uint8_t *_src, const int16_t *filter,
                                 const int32_t *filterPos, int filterSize, int sh);
 
+void ff_hyscale_fast_lsx(SwsInternal *c, int16_t *dst, int dstWidth,
+                         const uint8_t *src, int srcW, int xInc);
+
+void ff_hcscale_fast_lsx(SwsInternal *c, int16_t *dst1, int16_t *dst2,
+                         int dstWidth, const uint8_t *src1,
+                         const uint8_t *src2, int srcW, int xInc);
+
 void lumRangeFromJpeg_lsx(int16_t *dst, int width, uint32_t coeff, int64_t offset);
 void chrRangeFromJpeg_lsx(int16_t *dstU, int16_t *dstV, int width, uint32_t coeff, int64_t offset);
 void lumRangeToJpeg_lsx(int16_t *dst, int width, uint32_t coeff, int64_t offset);

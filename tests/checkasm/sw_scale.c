@@ -492,10 +492,130 @@ static void check_hscale(void)
     sws_freeContext(sws);
 }
 
+/* Fast-bilinear horizontal scaling (SWS_FAST_BILINEAR, c->hyscale_fast /
+ * c->hcscale_fast): the optimized implementation must be bit-exact with
+ * the C reference. Catches e.g. swapped gather-position/weight tables in
+ * the LoongArch LSX implementation, which no FATE frame test covers.
+ *
+ * Only enabled on LoongArch: other archs' fast-bilinear implementations
+ * are not guaranteed bit-exact with the C reference (e.g. x86 MMXEXT uses
+ * complementary weights), so a cross-arch comparison would fail there. */
+#if ARCH_LOONGARCH64
+static void check_hyscale_fast(void)
+{
+#define HSCALE_FAST_SRC_SIZE 4096
+    static const int dstW_list[] = { 8, 16, 63, 100, 255, 256, 300, 511, 512, 1024 };
+    static const int xInc_list[] = { 32768, 65536, 83886, 98304, 131072, 200000, 262143, 262144 };
+    LOCAL_ALIGNED_32(uint8_t, src, [HSCALE_FAST_SRC_SIZE + 32]);
+    LOCAL_ALIGNED_32(int16_t, dst0, [2048]);
+    LOCAL_ALIGNED_32(int16_t, dst1, [2048]);
+    SwsContext *sws;
+    SwsInternal *c;
+    int i, j;
+
+    declare_func(void, SwsInternal *c, int16_t *dst, int dstWidth,
+                 const uint8_t *src, int srcW, int xInc);
+
+    sws = sws_alloc_context();
+    if (!sws || sws_init_context(sws, NULL, NULL) < 0)
+        fail();
+
+    c = sws_internal(sws);
+    c->srcBpc = 8;
+    c->dstBpc = 8;
+    c->opts.flags  = SWS_FAST_BILINEAR;
+    c->lumXInc = c->chrXInc = 83886;
+    ff_sws_init_scale(c);
+
+    if (check_func(c->hyscale_fast, "hyscale_fast")) {
+        for (i = 0; i < FF_ARRAY_ELEMS(dstW_list); i++) {
+            for (j = 0; j < FF_ARRAY_ELEMS(xInc_list); j++) {
+                int dstW = dstW_list[i];
+                int xInc = xInc_list[j];
+                int srcW = FFMIN(HSCALE_FAST_SRC_SIZE,
+                                 (dstW * xInc) >> 16);
+
+                randomize_buffers(src, srcW + 16);
+                memset(dst0, 0, dstW * sizeof(dst0[0]));
+                memset(dst1, 0, dstW * sizeof(dst1[0]));
+
+                call_ref(NULL, dst0, dstW, src, srcW, xInc);
+                call_new(NULL, dst1, dstW, src, srcW, xInc);
+                if (memcmp(dst0, dst1, dstW * sizeof(dst0[0])))
+                    fail();
+            }
+        }
+        bench_new(NULL, dst1, 300, src, 512, 83886);
+    }
+    sws_freeContext(sws);
+}
+
+static void check_hcscale_fast(void)
+{
+#define HCSCALE_FAST_SRC_SIZE 4096
+    static const int dstW_list[] = { 8, 16, 63, 100, 255, 256, 300, 511, 512, 1024 };
+    static const int xInc_list[] = { 32768, 65536, 83886, 98304, 131072, 200000, 262143, 262144 };
+    LOCAL_ALIGNED_32(uint8_t, src1, [HCSCALE_FAST_SRC_SIZE + 32]);
+    LOCAL_ALIGNED_32(uint8_t, src2, [HCSCALE_FAST_SRC_SIZE + 32]);
+    LOCAL_ALIGNED_32(int16_t, dst0, [2048]);
+    LOCAL_ALIGNED_32(int16_t, dst1, [2048]);
+    LOCAL_ALIGNED_32(int16_t, dst2, [2048]);
+    LOCAL_ALIGNED_32(int16_t, dst3, [2048]);
+    SwsContext *sws;
+    SwsInternal *c;
+    int i, j;
+
+    declare_func(void, SwsInternal *c, int16_t *dst1, int16_t *dst2, int dstWidth,
+                 const uint8_t *src1, const uint8_t *src2, int srcW, int xInc);
+
+    sws = sws_alloc_context();
+    if (!sws || sws_init_context(sws, NULL, NULL) < 0)
+        fail();
+
+    c = sws_internal(sws);
+    c->srcBpc = 8;
+    c->dstBpc = 8;
+    c->opts.flags  = SWS_FAST_BILINEAR;
+    c->lumXInc = c->chrXInc = 83886;
+    ff_sws_init_scale(c);
+
+    if (check_func(c->hcscale_fast, "hcscale_fast")) {
+        for (i = 0; i < FF_ARRAY_ELEMS(dstW_list); i++) {
+            for (j = 0; j < FF_ARRAY_ELEMS(xInc_list); j++) {
+                int dstW = dstW_list[i];
+                int xInc = xInc_list[j];
+                int srcW = FFMIN(HCSCALE_FAST_SRC_SIZE,
+                                 (dstW * xInc) >> 16);
+
+                randomize_buffers(src1, srcW + 16);
+                randomize_buffers(src2, srcW + 16);
+                memset(dst0, 0, dstW * sizeof(dst0[0]));
+                memset(dst1, 0, dstW * sizeof(dst1[0]));
+                memset(dst2, 0, dstW * sizeof(dst2[0]));
+                memset(dst3, 0, dstW * sizeof(dst3[0]));
+
+                call_ref(NULL, dst0, dst2, dstW, src1, src2, srcW, xInc);
+                call_new(NULL, dst1, dst3, dstW, src1, src2, srcW, xInc);
+                if (memcmp(dst0, dst1, dstW * sizeof(dst0[0])) ||
+                    memcmp(dst2, dst3, dstW * sizeof(dst2[0])))
+                    fail();
+            }
+        }
+        bench_new(NULL, dst1, dst2, 300, src1, src2, 512, 83886);
+    }
+    sws_freeContext(sws);
+}
+#endif /* ARCH_LOONGARCH64 */
+
 void checkasm_check_sw_scale(void)
 {
     check_hscale();
     report("hscale");
+#if ARCH_LOONGARCH64
+    check_hyscale_fast();
+    check_hcscale_fast();
+    report("hscale_fast");
+#endif
     check_yuv2yuv1(0);
     check_yuv2yuv1(1);
     report("yuv2yuv1");
