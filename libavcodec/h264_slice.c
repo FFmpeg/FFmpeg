@@ -223,7 +223,8 @@ static int alloc_picture(H264Context *h, H264Picture *pic)
         atomic_init(pic->decode_error_flags, 0);
     }
 
-    if (CONFIG_GRAY && !h->avctx->hwaccel && h->flags & AV_CODEC_FLAG_GRAY && pic->f->data[2]) {
+    if (CONFIG_GRAY && !h->avctx->hwaccel && !ff_h264_skip_all_pixels(h->avctx) &&
+        h->flags & AV_CODEC_FLAG_GRAY && pic->f->data[2]) {
         int h_chroma_shift, v_chroma_shift;
         av_pix_fmt_get_chroma_sub_sample(pic->f->format,
                                          &h_chroma_shift, &v_chroma_shift);
@@ -525,6 +526,7 @@ static int h264_frame_start(H264Context *h)
     pic->needs_fg =
         h->sei.common.film_grain_characteristics &&
         h->sei.common.film_grain_characteristics->present &&
+        !ff_h264_skip_all_pixels(h->avctx) &&
         !h->avctx->hwaccel &&
         !(h->avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN);
 
@@ -1578,7 +1580,7 @@ static int h264_field_start(H264Context *h, const H264SliceContext *sl,
                 if (h->short_ref[0]->field_picture)
                     ff_thread_report_progress(&h->short_ref[0]->tf, INT_MAX, 1);
             } else if (!h->frame_recovered) {
-                if (!h->avctx->hwaccel)
+                if (!h->avctx->hwaccel && !ff_h264_skip_all_pixels(h->avctx))
                     color_frame(h->short_ref[0]->f, c);
                 h->short_ref[0]->gray = 1;
             }
@@ -2885,6 +2887,11 @@ int ff_h264_execute_decode_slices(H264Context *h)
 
     if (h->avctx->hwaccel || context_count < 1)
         return 0;
+
+    if (ff_h264_skip_all_pixels(avctx)) {
+        h->mb_y = h->mb_height;
+        goto finish;
+    }
 
     av_assert0(context_count && h->slice_ctx[context_count - 1].mb_y < h->mb_height);
 
