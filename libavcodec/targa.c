@@ -69,7 +69,12 @@ static int targa_decode_rle(AVCodecContext *avctx, TargaContext *s,
         if (!type) {
             do {
                 int n  = FFMIN(count, w - x);
-                bytestream2_get_buffer(&s->gb, dst, n * depth);
+                if (bytestream2_get_bytes_left(&s->gb) < n * depth) {
+                    av_log(avctx, AV_LOG_ERROR,
+                           "Not enough data for raw RLE packet\n");
+                    return AVERROR_INVALIDDATA;
+                }
+                bytestream2_get_bufferu(&s->gb, dst, n * depth);
                 count -= n;
                 dst   += n * depth;
                 x     += n;
@@ -80,7 +85,11 @@ static int targa_decode_rle(AVCodecContext *avctx, TargaContext *s,
             } while (dst && count > 0);
         } else {
             uint8_t tmp[4];
-            bytestream2_get_buffer(&s->gb, tmp, depth);
+            if (bytestream2_get_buffer(&s->gb, tmp, depth) != depth) {
+                av_log(avctx, AV_LOG_ERROR,
+                       "Not enough data for RLE pixel\n");
+                return AVERROR_INVALIDDATA;
+            }
             do {
                 int n  = FFMIN(count, w - x);
                 count -= n;
