@@ -785,6 +785,7 @@ extern const FFCodec ff_libdav1d_decoder;
 extern const FFCodec ff_libdavs2_decoder;
 extern const FFCodec ff_libfdk_aac_encoder;
 extern const FFCodec ff_libfdk_aac_decoder;
+extern const FFCodec ff_libfdk_xhe_aac_encoder;
 extern const FFCodec ff_libgsm_encoder;
 extern const FFCodec ff_libgsm_decoder;
 extern const FFCodec ff_libgsm_ms_encoder;

@@ -825,6 +825,45 @@ ffmpeg -i input.wav -c:a libfdk_aac -profile:a aac_he -b:a 64k output.m4a
 @end example
 @end itemize
 
+@section libfdk-xhe-aac
+
+libfdk-xhe-aac (Extended High-Efficiency Advanced Audio Coding) encoder wrapper.
+
+The libfdk-xhe-aac library is based on the Fraunhofer FDK Extended High
+Efficiency AAC Encoder Software code from the Android project.
+
+Requires the presence of the libfdk-xhe-aac headers and library during
+configuration. You need to explicitly configure the build with
+@code{--enable-libfdk-xhe-aac}. The library is also incompatible with GPL,
+so if you allow the use of GPL, you should configure with
+@code{--enable-gpl --enable-nonfree --enable-libfdk-xhe-aac}.
+
+@subsection Options
+
+The following are private options of the libfdk_xhe_aac encoder.
+
+@table @option
+@item vbr
+Set VBR mode, from 0 to 6. 0 is lowest quality and 6 is highest quality.
+A value of -1 will disable VBR, and CBR (Constant Bit Rate) is enabled.
+
+If not set, the default is CBR.
+
+@item live_loudness_level
+Set the expected loudness level of the stream, between -31 and -10
+dB LUFS. Defaults to -24 dB LUFS if not set.
+
+@item rap_length
+The duration between encoded Random Access Points in the bitstream.
+
+@item stream_id
+A unique ID of the encoded stream within an adaptation set. The ID
+is embedded into the encoded bitstream.
+
+If not set, the encoder tries to generate a hopefully unique ID for
+the stream.
+@end table
+
 @anchor{liblc3-enc}
 @section liblc3
 

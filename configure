@@ -233,6 +233,7 @@ External library support:
   --enable-libdvdnav       enable libdvdnav, needed for DVD demuxing [no]
   --enable-libdvdread      enable libdvdread, needed for DVD demuxing [no]
   --enable-libfdk-aac      enable AAC de/encoding via libfdk-aac [no]
+  --enable-libfdk-xhe-aac  enable xHE-AAC encoding via libfdk-xhe-aac [no]
   --enable-libflite        enable flite (voice synthesis) support via libflite [no]
   --enable-libfontconfig   enable libfontconfig, useful for drawtext filter [no]
   --enable-libfreetype     enable libfreetype, needed for drawtext filter [no]
@@ -2031,6 +2032,7 @@ EXTERNAL_LIBRARY_GPL_LIST="
 EXTERNAL_LIBRARY_NONFREE_LIST="
     decklink
     libfdk_aac
+    libfdk_xhe_aac
     libmpeghdec
 "
 
@@ -3806,6 +3808,8 @@ libdavs2_decoder_select="avs2_parser"
 libfdk_aac_decoder_deps="libfdk_aac"
 libfdk_aac_encoder_deps="libfdk_aac"
 libfdk_aac_encoder_select="audio_frame_queue"
+libfdk_xhe_aac_encoder_deps="libfdk_xhe_aac"
+libfdk_xhe_aac_encoder_select="audio_frame_queue"
 libgme_demuxer_deps="libgme"
 libgsm_decoder_deps="libgsm"
 libgsm_encoder_deps="libgsm"
@@ -7240,6 +7244,7 @@ enabled libdvdread        && require_pkg_config libdvdread "dvdread >= 6.1.1" dv
 enabled libfdk_aac        && { check_pkg_config libfdk_aac fdk-aac "fdk-aac/aacenc_lib.h" aacEncOpen ||
                                { require libfdk_aac fdk-aac/aacenc_lib.h aacEncOpen -lfdk-aac &&
                                  warn "using libfdk without pkg-config"; } }
+enabled libfdk_xhe_aac    && require_pkg_config libfdk_xhe_aac fdk-xhe-aac "fdk-xhe-aac/xHEAACEnc.h" IIS_xHEAACEnc_Open
 flite_extralibs="-lflite_cmu_time_awb -lflite_cmu_us_awb -lflite_cmu_us_kal -lflite_cmu_us_kal16 -lflite_cmu_us_rms -lflite_cmu_us_slt -lflite_usenglish -lflite_cmulex -lflite"
 enabled libflite          && require libflite "flite/flite.h" flite_init $flite_extralibs
 enabled fontconfig        && enable libfontconfig

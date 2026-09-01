@@ -17,6 +17,7 @@ version <next>:
 - Rhetorex ADPCM decoder
 - ADPCM IMA Citrix decoder
 - Panasonic RW2 decoder
+- xHE-AAC encoding via libfdk-xhe-aac
 
 
 version 9.0:

@@ -326,6 +326,14 @@ Go to @url{http://sourceforge.net/projects/opencore-amr/} and follow the
 instructions for installing the library.
 Then pass @code{--enable-libfdk-aac} to configure to enable it.
 
+@subsection Fraunhofer xHE-AAC library
+
+FFmpeg can make use of the Fraunhofer xHE-AAC library for xHE-AAC encoding.
+
+Go to @url{http://sourceforge.net/projects/opencore-amr/} and follow the
+instructions for installing the library.
+Then pass @code{--enable-libfdk-xhe-aac} to configure to enable it.
+
 @subsection Fraunhofer MPEG-H 3D Audio decoder library
 
 FFmpeg can make use of the Fraunhofer MPEG-H decoder library for MPEG-H 3DA decoding.
