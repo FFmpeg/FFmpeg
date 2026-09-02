@@ -54,146 +54,98 @@ void ff_color_detect_dsp_init_aarch64(FFColorDetectDSPContext *dsp, int depth,
 void ff_color_detect_dsp_init_x86(FFColorDetectDSPContext *dsp, int depth,
                                   int offset, enum AVColorRange color_range);
 
-static inline int ff_detect_range_impl_c(const uint8_t *data, ptrdiff_t stride,
-                                    ptrdiff_t width, ptrdiff_t height,
-                                    uint8_t mpeg_min, uint8_t mpeg_max)
-{
-    while (height--) {
-        uint8_t cond = 0;
-        for (int x = 0; x < width; x++) {
-            const uint8_t val = data[x];
-            cond |= val < mpeg_min || val > mpeg_max;
-        }
-        if (cond)
-            return 1;
-        data += stride;
-    }
-
-    return 0;
+#define DECL_DETECT_RANGE_IMPL(TYPE, NAME)                                     \
+static inline int NAME(const uint8_t* data, ptrdiff_t stride,                  \
+                       ptrdiff_t width, ptrdiff_t height,                      \
+                       int mpeg_min, int mpeg_max)                             \
+{                                                                              \
+    const TYPE min = mpeg_min;                                                 \
+    const TYPE max = mpeg_max;                                                 \
+    av_assume(min == mpeg_min);                                                \
+    av_assume(max == mpeg_max);                                                \
+                                                                               \
+    while (height--) {                                                         \
+        const TYPE *row = (const TYPE *) data;                                 \
+        uint8_t cond = 0;                                                      \
+        for (int x = 0; x < width; x++) {                                      \
+            const TYPE val = row[x];                                           \
+            cond |= val < min || val > max;                                    \
+        }                                                                      \
+        if (cond)                                                              \
+            return 1;                                                          \
+        data += stride;                                                        \
+    }                                                                          \
+                                                                               \
+    return 0;                                                                  \
 }
 
-static inline int ff_detect_range_c(const uint8_t *data, ptrdiff_t stride,
-                                    ptrdiff_t width, ptrdiff_t height,
-                                    int mpeg_min, int mpeg_max)
-{
-    av_assume(mpeg_min >= 0 && mpeg_min <= UINT8_MAX);
-    av_assume(mpeg_max >= 0 && mpeg_max <= UINT8_MAX);
-    return ff_detect_range_impl_c(data, stride, width, height, mpeg_min, mpeg_max);
+DECL_DETECT_RANGE_IMPL(uint8_t,  ff_detect_range_c)
+DECL_DETECT_RANGE_IMPL(uint16_t, ff_detect_range16_c)
+
+#define DECL_DETECT_ALPHA_FULL_IMPL(TYPE, INTER, NAME)                         \
+static inline int NAME(const uint8_t* color, ptrdiff_t color_stride,           \
+                       const uint8_t* alpha, ptrdiff_t alpha_stride,           \
+                       ptrdiff_t width, ptrdiff_t height, int alpha_max,       \
+                       int mpeg_range, int offset)                             \
+{                                                                              \
+    const TYPE  max = alpha_max;                                               \
+    const INTER off = offset;                                                  \
+    av_assume(max == alpha_max);                                               \
+    av_assume(off == offset);                                                  \
+    (void) mpeg_range;                                                         \
+                                                                               \
+    uint8_t transparent = 0;                                                   \
+    while (height--) {                                                         \
+        const TYPE *col = (const TYPE *) color;                                \
+        const TYPE *alp = (const TYPE *) alpha;                                \
+        uint8_t straight = 0;                                                  \
+        for (int x = 0; x < width; x++) {                                      \
+            straight |= col[x] > alp[x] + off;                                 \
+            transparent |= alp[x] != max;                                      \
+        }                                                                      \
+        if (straight)                                                          \
+            return FF_ALPHA_STRAIGHT;                                          \
+        color += color_stride;                                                 \
+        alpha += alpha_stride;                                                 \
+    }                                                                          \
+    return transparent ? FF_ALPHA_TRANSPARENT : 0;                             \
 }
 
-static inline int ff_detect_range16_impl_c(const uint8_t *data, ptrdiff_t stride,
-                                      ptrdiff_t width, ptrdiff_t height,
-                                      uint16_t mpeg_min, uint16_t mpeg_max)
-{
-    while (height--) {
-        const uint16_t *data16 = (const uint16_t *) data;
-        uint8_t cond = 0;
-        for (int x = 0; x < width; x++) {
-            const uint16_t val = data16[x];
-            cond |= val < mpeg_min || val > mpeg_max;
-        }
-        if (cond)
-            return 1;
-        data += stride;
-    }
+DECL_DETECT_ALPHA_FULL_IMPL(uint8_t,  uint16_t, ff_detect_alpha_full_c)
+DECL_DETECT_ALPHA_FULL_IMPL(uint16_t, uint32_t, ff_detect_alpha16_full_c)
 
-    return 0;
+#define DECL_DETECT_ALPHA_LIMITED_IMPL(TYPE, INTER, NAME)                      \
+static inline int NAME(const uint8_t* color, ptrdiff_t color_stride,           \
+                       const uint8_t* alpha, ptrdiff_t alpha_stride,           \
+                       ptrdiff_t width, ptrdiff_t height, int alpha_max,       \
+                       int mpeg_range, int offset)                             \
+{                                                                              \
+    const TYPE  max = alpha_max;                                               \
+    const INTER off = offset;                                                  \
+    const INTER range = mpeg_range;                                            \
+    av_assume(max == alpha_max);                                               \
+    av_assume(off == offset);                                                  \
+    av_assume(range == mpeg_range);                                            \
+                                                                               \
+    uint8_t transparent = 0;                                                   \
+    while (height--) {                                                         \
+        const TYPE *col = (const TYPE *) color;                                \
+        const TYPE *alp = (const TYPE *) alpha;                                \
+        uint8_t straight = 0;                                                  \
+        for (int x = 0; x < width; x++) {                                      \
+            straight |= (INTER) max * col[x] - off > range * alp[x];           \
+            transparent |= alp[x] != max;                                      \
+        }                                                                      \
+        if (straight)                                                          \
+            return FF_ALPHA_STRAIGHT;                                          \
+        color += color_stride;                                                 \
+        alpha += alpha_stride;                                                 \
+    }                                                                          \
+    return transparent ? FF_ALPHA_TRANSPARENT : 0;                             \
 }
 
-static inline int ff_detect_range16_c(const uint8_t *data, ptrdiff_t stride,
-                                      ptrdiff_t width, ptrdiff_t height,
-                                      int mpeg_min, int mpeg_max)
-{
-    av_assume(mpeg_min >= 0 && mpeg_min <= UINT16_MAX);
-    av_assume(mpeg_max >= 0 && mpeg_max <= UINT16_MAX);
-    return ff_detect_range16_impl_c(data, stride, width, height, mpeg_min, mpeg_max);
-}
-
-static inline int
-ff_detect_alpha_full_c(const uint8_t *color, ptrdiff_t color_stride,
-                       const uint8_t *alpha, ptrdiff_t alpha_stride,
-                       ptrdiff_t width, ptrdiff_t height,
-                       int alpha_max, int mpeg_range, int offset)
-{
-    uint8_t transparent = 0;
-    while (height--) {
-        uint8_t straight = 0;
-        for (int x = 0; x < width; x++) {
-            straight |= color[x] > alpha[x] + offset;
-            transparent |= alpha[x] != alpha_max;
-        }
-        if (straight)
-            return FF_ALPHA_STRAIGHT;
-        color += color_stride;
-        alpha += alpha_stride;
-    }
-    return transparent ? FF_ALPHA_TRANSPARENT : 0;
-}
-
-static inline int
-ff_detect_alpha_limited_c(const uint8_t *color, ptrdiff_t color_stride,
-                          const uint8_t *alpha, ptrdiff_t alpha_stride,
-                          ptrdiff_t width, ptrdiff_t height,
-                          int alpha_max, int mpeg_range, int offset)
-{
-    uint8_t transparent = 0;
-    while (height--) {
-        uint8_t straight = 0;
-        for (int x = 0; x < width; x++) {
-            straight  |= alpha_max * color[x] - offset > mpeg_range * alpha[x];
-            transparent |= alpha[x] != alpha_max;
-        }
-        if (straight)
-            return FF_ALPHA_STRAIGHT;
-        color += color_stride;
-        alpha += alpha_stride;
-    }
-    return transparent ? FF_ALPHA_TRANSPARENT : 0;
-}
-
-static inline int
-ff_detect_alpha16_full_c(const uint8_t *color, ptrdiff_t color_stride,
-                         const uint8_t *alpha, ptrdiff_t alpha_stride,
-                         ptrdiff_t width, ptrdiff_t height,
-                         int alpha_max, int mpeg_range, int offset)
-{
-    uint8_t transparent = 0;
-    while (height--) {
-        const uint16_t *color16 = (const uint16_t *) color;
-        const uint16_t *alpha16 = (const uint16_t *) alpha;
-        uint8_t straight = 0;
-        for (int x = 0; x < width; x++) {
-            straight |= color16[x] > alpha16[x] + offset;
-            transparent |= alpha16[x] != alpha_max;
-        }
-        if (straight)
-            return FF_ALPHA_STRAIGHT;
-        color += color_stride;
-        alpha += alpha_stride;
-    }
-    return transparent ? FF_ALPHA_TRANSPARENT : 0;
-}
-
-static inline int
-ff_detect_alpha16_limited_c(const uint8_t *color, ptrdiff_t color_stride,
-                            const uint8_t *alpha, ptrdiff_t alpha_stride,
-                            ptrdiff_t width, ptrdiff_t height,
-                            int alpha_max, int mpeg_range, int offset)
-{
-    uint8_t transparent = 0;
-    while (height--) {
-        const uint16_t *color16 = (const uint16_t *) color;
-        const uint16_t *alpha16 = (const uint16_t *) alpha;
-        for (int x = 0; x < width; x++) {
-            if ((int64_t) alpha_max * color16[x] - offset > (int64_t) mpeg_range * alpha16[x])
-                return FF_ALPHA_STRAIGHT;
-            transparent |= alpha16[x] != alpha_max;
-        }
-        color += color_stride;
-        alpha += alpha_stride;
-    }
-    return transparent ? FF_ALPHA_TRANSPARENT : 0;
-}
+DECL_DETECT_ALPHA_LIMITED_IMPL(uint8_t,  int32_t, ff_detect_alpha_limited_c)
+DECL_DETECT_ALPHA_LIMITED_IMPL(uint16_t, int64_t, ff_detect_alpha16_limited_c)
 
 static av_cold inline void
 ff_color_detect_dsp_init(FFColorDetectDSPContext *dsp, int depth, int offset,
