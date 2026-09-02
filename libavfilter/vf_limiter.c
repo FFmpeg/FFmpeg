@@ -178,7 +178,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
         if (max < 0)
             max = (is_mpeg && p != 3) ? mpeg_max : full_range;
 
-        if (!((1 << p) & s->planes)) {
+        if (!((1 << p) & s->planes) || (min == 0 && max == full_range)) {
             if (out != in)
                 av_image_copy_plane(out->data[p] + slice_start * out->linesize[p],
                                     out->linesize[p],
