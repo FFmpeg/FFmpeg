@@ -102,6 +102,14 @@ static inline void ff_sws_op_chain_free(SwsOpChain *chain)
 int ff_sws_op_chain_append(SwsOpChain *chain, SwsFuncPtr func,
                            void (*free)(SwsOpPriv *), const SwsOpPriv *priv);
 
+/**
+ * Attach a SwsOpChain and all metadata to a SwsCompiledOp (as out->priv).
+ *
+ * Note: This does not initialize *out. The caller is responsible for
+ * assigning out->func.
+ */
+void ff_sws_op_chain_attach(const SwsOpChain *chain, SwsCompiledOp *out);
+
 typedef struct SwsImplParams {
     const SwsUOpTable *table;
     const SwsUOp *uop;

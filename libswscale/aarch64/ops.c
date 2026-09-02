@@ -169,10 +169,8 @@ static int compile_uops_aarch64(SwsContext *ctx, const SwsUOpList *uops,
     chain->cpu_flags = AV_CPU_FLAG_NEON;
 
     *out = (SwsCompiledOp) {
-        .priv        = chain,
-        .slice_align = 1,
-        .free        = ff_sws_op_chain_free_cb,
         .block_size  = block_size,
+        .slice_align = 1,
     };
 
     /* Look up kernel functions. */
@@ -207,8 +205,8 @@ static int compile_uops_aarch64(SwsContext *ctx, const SwsUOpList *uops,
     case 4: process_func = (SwsOpFunc) ff_sws_process_1111_neon; break;
     }
 
-    out->func      = process_func;
-    out->cpu_flags = chain->cpu_flags;
+    out->func = process_func;
+    ff_sws_op_chain_attach(chain, out);
 
     return 0;
 

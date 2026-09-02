@@ -57,6 +57,16 @@ int ff_sws_op_chain_append(SwsOpChain *chain, SwsFuncPtr func,
     return 0;
 }
 
+void ff_sws_op_chain_attach(const SwsOpChain *chain, SwsCompiledOp *out)
+{
+    av_assert0(!out->priv);
+    out->priv = (void *) chain;
+    out->free = ff_sws_op_chain_free_cb;
+    out->cpu_flags = chain->cpu_flags;
+    memcpy(out->over_read,  chain->over_read,  sizeof(out->over_read));
+    memcpy(out->over_write, chain->over_write, sizeof(out->over_write));
+}
+
 int ff_sws_uop_lookup(SwsContext *ctx, const SwsUOpTable *const tables[],
                       int num_tables, const SwsUOp *uop, const int block_size,
                       SwsOpChain *chain)

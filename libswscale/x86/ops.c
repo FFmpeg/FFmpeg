@@ -647,8 +647,6 @@ static int compile_uops_x86(SwsContext *ctx, const SwsUOpList *uops, SwsCompiled
         /* Use at most two full YMM regs during the widest precision section */
         .block_size  = 2 * FFMIN(mmsize, 32) / uops->pixel_size_max,
         .slice_align = 1,
-        .free        = ff_sws_op_chain_free_cb,
-        .priv        = chain,
     };
 
     for (int i = 0; i < uops->num_ops; i++) {
@@ -678,12 +676,8 @@ static int compile_uops_x86(SwsContext *ctx, const SwsUOpList *uops, SwsCompiled
         return ret;
     }
 
-    out->cpu_flags = chain->cpu_flags;
-    memcpy(out->over_read,  chain->over_read,  sizeof(out->over_read));
-    memcpy(out->over_write, chain->over_write, sizeof(out->over_write));
-
     ff_sws_uop_list_print(ctx, AV_LOG_DEBUG, uops);
-
+    ff_sws_op_chain_attach(chain, out);
     return 0;
 
 fail:
