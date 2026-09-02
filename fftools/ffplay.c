@@ -42,6 +42,7 @@
 #include "libavutil/samplefmt.h"
 #include "libavutil/time.h"
 #include "libavutil/bprint.h"
+#include "libavcodec/bsf.h"
 #include "libavformat/avformat.h"
 #include "libavdevice/avdevice.h"
 #include "libswscale/swscale.h"
@@ -178,6 +179,24 @@ typedef struct FrameQueue {
     SDL_cond *cond;
     PacketQueue *pktq;
 } FrameQueue;
+
+typedef struct StreamGroup {
+    AVStreamGroup *stg;
+    AVBitStreamFilterGraph *graph;
+    AVBitStreamFilterContext *sink;
+} StreamGroup;
+
+typedef struct Stream {
+    StreamGroup *group;
+    AVBitStreamFilterContext *filter;
+} Stream;
+
+typedef struct FormatContext {
+    Stream **streams;
+    int nb_streams;
+    StreamGroup **stream_groups;
+    int nb_stream_groups;
+} FormatContext;
 
 enum {
     AV_SYNC_AUDIO_MASTER, /* default choice */
@@ -1254,14 +1273,42 @@ static void video_audio_display(VideoState *s)
     }
 }
 
+static void uninit_bsf_graph(AVFormatContext *ic, int stream_index)
+{
+    FormatContext *ici = ic->opaque;
+    Stream *sti;
+    StreamGroup *stgi;
+
+    if (stream_index >= ici->nb_streams)
+        return;
+
+    sti = ici->streams[stream_index];
+    sti->filter = NULL;
+
+    stgi = sti->group;
+    if (stgi) {
+        av_bsf_graph_free(&stgi->graph);
+        stgi->sink = NULL;
+
+        for (int i = 0; i < stgi->stg->nb_streams; i++) {
+            ici->streams[stgi->stg->streams[i]->index]->filter = NULL;
+            ici->streams[stgi->stg->streams[i]->index]->group = NULL;
+        }
+    }
+    sti->group = stgi;
+}
+
 static void stream_component_close(VideoState *is, int stream_index)
 {
     AVFormatContext *ic = is->ic;
+
     AVCodecParameters *codecpar;
 
     if (stream_index < 0 || stream_index >= ic->nb_streams)
         return;
     codecpar = ic->streams[stream_index]->codecpar;
+
+    uninit_bsf_graph(ic, stream_index);
 
     switch (codecpar->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
@@ -1325,6 +1372,15 @@ static void stream_close(VideoState *is)
         stream_component_close(is, is->video_stream);
     if (is->subtitle_stream >= 0)
         stream_component_close(is, is->subtitle_stream);
+
+    FormatContext *ici = is->ic->opaque;
+    for (int i = 0; i < ici->nb_streams; i++)
+        av_freep(&ici->streams[i]);
+    av_freep(&ici->streams);
+    for (int i = 0; i < ici->nb_stream_groups; i++)
+        av_freep(&ici->stream_groups[i]);
+    av_freep(&ici->stream_groups);
+    av_freep(&is->ic->opaque);
 
     avformat_close_input(&is->ic);
 
@@ -2691,10 +2747,89 @@ static int create_hwaccel(AVBufferRef **device_ctx)
     return ret;
 }
 
+static int init_lcevc_graph(AVFormatContext *ic, int stream_index)
+{
+    FormatContext *ici = ic->opaque;
+    StreamGroup *stgi = ici->streams[stream_index]->group;
+    AVStreamGroup *stg = stgi->stg;
+    const AVBitStreamFilter *filter, *lcevc_filter = av_bsf_get_by_name("lcevc_merge");
+    AVBitStreamFilterContext *lcevc_merge;
+    int ret;
+
+    stgi->graph = av_bsf_graph_alloc();
+    if (!stgi->graph)
+        return AVERROR(ENOMEM);
+
+    const AVStreamGroupLayeredVideo *lcevc = stg->params.layered_video;
+    AVStream *base_st = ic->streams[stream_index];
+    AVStream *lcevc_st = stg->streams[lcevc->el_index];
+    Stream *lcevc_sti = ici->streams[lcevc_st->index];
+    Stream *base_sti = ici->streams[stream_index];
+
+    filter = av_bsf_get_by_name("source");
+    ret = av_bsf_graph_alloc_filter(&base_sti->filter, filter, "lcevc_merge_base", stgi->graph);
+    if (ret < 0)
+        return ret;
+    av_opt_set_q(base_sti->filter->priv_data, "time_base", base_st->time_base, 0);
+    ret = av_bsf_source_parameters_set(base_sti->filter, base_st->codecpar);
+    if (ret < 0)
+        return ret;
+
+    ret = av_bsf_graph_alloc_filter(&lcevc_sti->filter, filter, "lcevc_merge_enhancement", stgi->graph);
+    if (ret < 0)
+        return ret;
+    av_opt_set_q(lcevc_sti->filter->priv_data, "time_base", lcevc_st->time_base, 0);
+    ret = av_bsf_source_parameters_set(lcevc_sti->filter, lcevc_st->codecpar);
+    if (ret < 0)
+        return ret;
+
+    ret = av_bsf_graph_alloc_filter(&lcevc_merge, lcevc_filter, "lcevc_merge", stgi->graph);
+    if (ret < 0)
+        return ret;
+
+    filter = av_bsf_get_by_name("sink");
+    ret = av_bsf_graph_alloc_filter(&stgi->sink, filter, "lcevc_merge_sink", stgi->graph);
+    if (ret < 0)
+        return ret;
+
+    ret = av_bsf_init_dict(base_sti->filter, NULL);
+    if (ret < 0)
+         return ret;
+    ret = av_bsf_init_dict(lcevc_sti->filter, NULL);
+    if (ret < 0)
+        return ret;
+    ret = av_bsf_init_dict(lcevc_merge, NULL);
+    if (ret < 0)
+        return ret;
+    ret = av_bsf_init_dict(stgi->sink, NULL);
+    if (ret < 0)
+        return ret;
+
+    ret = av_bsf_link(base_sti->filter, 0, lcevc_merge, 0);
+    if (ret < 0)
+        return ret;
+    ret = av_bsf_link(lcevc_sti->filter, 0, lcevc_merge, 1);
+    if (ret < 0)
+        return ret;
+    ret = av_bsf_link(lcevc_merge, 0, stgi->sink, 0);
+    if (ret < 0)
+        return ret;
+
+    ret = av_bsf_graph_config(stgi->graph, NULL);
+    if (ret < 0)
+        return ret;
+
+    lcevc_st->discard = AVDISCARD_DEFAULT;
+    lcevc_sti->group = stgi;
+
+    return 0;
+}
+
 /* open a given stream. Return 0 if OK */
 static int stream_component_open(VideoState *is, int stream_index)
 {
     AVFormatContext *ic = is->ic;
+    FormatContext *ici = ic->opaque;
     AVCodecContext *avctx;
     const AVCodec *codec;
     const char *forced_codec_name = NULL;
@@ -2823,6 +2958,10 @@ static int stream_component_open(VideoState *is, int stream_index)
         is->video_stream = stream_index;
         is->video_st = ic->streams[stream_index];
 
+        if (ici->streams[stream_index]->group) {
+            if ((ret = init_lcevc_graph(ic, stream_index)) < 0)
+                goto fail;
+        }
         if ((ret = decoder_init(&is->viddec, avctx, &is->videoq, is->continue_read_thread)) < 0)
             goto fail;
         if ((ret = decoder_start(&is->viddec, video_thread, "video_decoder", is)) < 0)
@@ -2881,11 +3020,70 @@ static int is_realtime(AVFormatContext *s)
     return 0;
 }
 
+static int do_bsf_graph(AVFormatContext *ic, VideoState *is,
+                        Stream *sti, AVPacket *pkt)
+{
+    StreamGroup *stgi = sti->group;
+    AVBitStreamFilterContext *source = sti->filter;
+    int ret;
+
+    ret = av_bsf_source_add_packet(source, pkt, AV_BSF_SOURCE_FLAG_PUSH);
+    if (ret < 0) {
+        if (pkt)
+            av_packet_unref(pkt);
+        av_log(NULL, AV_LOG_ERROR, "Error submitting a packet for filtering: %s\n",
+               av_err2str(ret));
+        return ret;
+    }
+
+    while (1) {
+        ret = av_bsf_sink_get_packet(stgi->sink, pkt, 0);
+        if (ret == AVERROR(EAGAIN))
+            return 0;
+        else if (ret < 0) {
+            if (ret != AVERROR_EOF)
+                av_log(NULL, AV_LOG_ERROR,
+                       "Error applying bitstream filters to a packet: %s\n",
+                       av_err2str(ret));
+            return ret;
+        }
+        pkt->time_base = av_bsf_sink_get_time_base(stgi->sink);
+        packet_queue_put(&is->videoq, pkt);
+    }
+
+    return 0;
+}
+
+static int do_bsf_flush(AVFormatContext *ic, VideoState *is)
+{
+    FormatContext *ici = ic->opaque;
+    int ret;
+
+    for (unsigned i = 0; i < ic->nb_streams; i++) {
+        Stream *sti = ici->streams[i];
+        StreamGroup *stgi = sti->group;
+
+        if (!stgi || !stgi->graph)
+            continue;
+
+        ret = do_bsf_graph(ic, is, sti, NULL);
+        ret = (ret == AVERROR_EOF) ? 0 : (ret < 0) ? ret : AVERROR_BUG;
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Error flushing BSFs: %s\n",
+                   av_err2str(ret));
+            return ret;
+        }
+    }
+
+    return 0;
+}
+
 /* this thread gets the stream from the disk or the network */
 static int read_thread(void *arg)
 {
     VideoState *is = arg;
     AVFormatContext *ic = NULL;
+    FormatContext *ici = NULL;
     int err, i, ret;
     int st_index[AVMEDIA_TYPE_NB];
     AVPacket *pkt = NULL;
@@ -2918,6 +3116,13 @@ static int read_thread(void *arg)
         ret = AVERROR(ENOMEM);
         goto fail;
     }
+    ic->opaque = av_mallocz(sizeof(FormatContext));
+    if (!ic->opaque) {
+        av_log(NULL, AV_LOG_FATAL, "Could not allocate internal context.\n");
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+    ici = ic->opaque;
     ic->interrupt_callback.callback = decode_interrupt_cb;
     ic->interrupt_callback.opaque = is;
     if (!av_dict_get(format_opts, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE)) {
@@ -3003,9 +3208,23 @@ static int read_thread(void *arg)
         av_dump_format(ic, 0, is->filename, 0);
     }
 
+
+    ici->streams = av_calloc(ic->nb_streams, sizeof(*ici->streams));
+    if (!ici->streams) {
+        av_log(NULL, AV_LOG_FATAL, "Could not allocate internal streams context.\n");
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+    ici->nb_streams = ic->nb_streams;
     for (i = 0; i < ic->nb_streams; i++) {
         AVStream *st = ic->streams[i];
         enum AVMediaType type = st->codecpar->codec_type;
+        ici->streams[i] = av_mallocz(sizeof(Stream));
+        if (!ici->streams[i]) {
+            av_log(NULL, AV_LOG_FATAL, "Could not allocate internal stream context.\n");
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
         st->discard = AVDISCARD_ALL;
         if (type >= 0 && wanted_stream_spec[type] && st_index[type] == -1)
             if (avformat_match_stream_specifier(ic, st, wanted_stream_spec[type]) > 0)
@@ -3013,6 +3232,35 @@ static int read_thread(void *arg)
         // Clear all pre-existing metadata update flags to avoid printing
         // initial metadata as update.
         st->event_flags &= ~AVSTREAM_EVENT_FLAG_METADATA_UPDATED;
+    }
+    ici->stream_groups = av_calloc(ic->nb_stream_groups, sizeof(*ici->stream_groups));
+    if (!ici->stream_groups) {
+        av_log(NULL, AV_LOG_FATAL, "Could not allocate internal stream groups context.\n");
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+    ici->nb_stream_groups = ic->nb_stream_groups;
+    for (i = 0; i < ic->nb_stream_groups; i++) {
+        AVStreamGroup *stg = ic->stream_groups[i];
+
+        ici->stream_groups[i] = av_mallocz(sizeof(*ici->stream_groups[i]));
+        if (!ici->stream_groups[i]) {
+            av_log(NULL, AV_LOG_FATAL, "Could not allocate internal stream group.\n");
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+        ici->stream_groups[i]->stg = stg;
+
+        if (stg->type != AV_STREAM_GROUP_PARAMS_LCEVC)
+            continue;
+        if (!av_bsf_get_by_name("lcevc_merge") || stg->nb_streams != 2)
+            continue;
+
+        const AVStreamGroupLayeredVideo *lcevc = stg->params.layered_video;
+        const AVStream *base_st = ic->streams[stg->streams[!lcevc->el_index]->index];
+        Stream *base_sti = ici->streams[base_st->index];
+
+        base_sti->group = ici->stream_groups[i];
     }
     ic->event_flags &= ~AVFMT_EVENT_FLAG_METADATA_UPDATED;
     for (i = 0; i < AVMEDIA_TYPE_NB; i++) {
@@ -3112,8 +3360,14 @@ static int read_thread(void *arg)
                     packet_queue_flush(&is->audioq);
                 if (is->subtitle_stream >= 0)
                     packet_queue_flush(&is->subtitleq);
-                if (is->video_stream >= 0)
+                if (is->video_stream >= 0) {
                     packet_queue_flush(&is->videoq);
+                    uninit_bsf_graph(is->ic, is->video_stream);
+                    if (ici->streams[is->video_stream]->group) {
+                        if ((ret = init_lcevc_graph(is->ic, is->video_stream)) < 0)
+                            goto fail;
+                    }
+                }
                 if (is->seek_flags & AVSEEK_FLAG_BYTE) {
                    set_clock(&is->extclk, NAN, 0);
                 } else {
@@ -3161,8 +3415,12 @@ static int read_thread(void *arg)
         ret = av_read_frame(ic, pkt);
         if (ret < 0) {
             if ((ret == AVERROR_EOF || avio_feof(ic->pb)) && !is->eof) {
-                if (is->video_stream >= 0)
+                if (is->video_stream >= 0) {
+                    ret = do_bsf_flush(ic, is);
+                    if (ret < 0)
+                        goto fail;
                     packet_queue_put_nullpacket(&is->videoq, pkt, is->video_stream);
+                }
                 if (is->audio_stream >= 0)
                     packet_queue_put_nullpacket(&is->audioq, pkt, is->audio_stream);
                 if (is->subtitle_stream >= 0)
@@ -3215,10 +3473,24 @@ static int read_thread(void *arg)
             packet_queue_put(&is->audioq, pkt);
         } else if (pkt->stream_index == is->video_stream && pkt_in_play_range
                    && !(is->video_st->disposition & AV_DISPOSITION_ATTACHED_PIC)) {
-            packet_queue_put(&is->videoq, pkt);
+            Stream *sti = ici->streams[is->video_stream];
+            StreamGroup *stgi = sti->group;
+            if (stgi && stgi->graph) {
+                ret = do_bsf_graph(ic, is, sti, pkt);
+                if (ret < 0)
+                    goto fail;
+            } else
+                packet_queue_put(&is->videoq, pkt);
         } else if (pkt->stream_index == is->subtitle_stream && pkt_in_play_range) {
             packet_queue_put(&is->subtitleq, pkt);
         } else {
+            Stream *sti = ici->streams[pkt->stream_index];
+            StreamGroup *stgi = sti->group;
+            if (stgi && stgi->graph) {
+                ret = do_bsf_graph(ic, is, sti, pkt);
+                if (ret < 0)
+                    goto fail;
+            }
             av_packet_unref(pkt);
         }
     }
