@@ -51,8 +51,9 @@ typedef struct LimiterContext {
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption limiter_options[] = {
-    { "min",    "set min value", OFFSET(min),    AV_OPT_TYPE_INT, {.i64=0},     0, 65535, .flags = FLAGS },
-    { "max",    "set max value", OFFSET(max),    AV_OPT_TYPE_INT, {.i64=65535}, 0, 65535, .flags = FLAGS },
+    { "min",    "set min value", OFFSET(min),    AV_OPT_TYPE_INT, {.i64=0},     -1, 65535, .flags = FLAGS, .unit = "value" },
+    { "max",    "set max value", OFFSET(max),    AV_OPT_TYPE_INT, {.i64=65535}, -1, 65535, .flags = FLAGS, .unit = "value" },
+        { "auto", "automatically use tagged signal range", 0, AV_OPT_TYPE_CONST, {.i64=-1}, .flags = FLAGS, .unit = "value" },
     { "planes", "set planes",    OFFSET(planes), AV_OPT_TYPE_INT, {.i64=15},    0,    15, .flags = FLAGS },
     { NULL }
 };
@@ -63,7 +64,7 @@ static av_cold int init(AVFilterContext *ctx)
 {
     LimiterContext *s = ctx->priv;
 
-    if (s->min > s->max)
+    if (s->min >= 0 && s->max >= 0 && s->min > s->max)
         return AVERROR(EINVAL);
     return 0;
 }
@@ -158,10 +159,24 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     AVFrame *out = td->out;
     int p;
 
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(in->format);
+    const int depth = desc->comp[0].depth;
+    const int full_range = (1 << depth) - 1;
+    const int is_mpeg = in->color_range == AVCOL_RANGE_MPEG &&
+                        !(desc->flags & AV_PIX_FMT_FLAG_RGB);
+
     for (p = 0; p < s->nb_planes; p++) {
         const int h = s->height[p];
         const int slice_start = ff_slice_pos(h, jobnr, nb_jobs);
         const int slice_end = ff_slice_pos(h, jobnr + 1, nb_jobs);
+        const int mpeg_min = 16 << (depth - 8);
+        const int mpeg_max = (p ? 240 : 235) << (depth - 8);
+
+        int min = s->min, max = s->max;
+        if (min < 0)
+            min = (is_mpeg && p != 3) ? mpeg_min : 0;
+        if (max < 0)
+            max = (is_mpeg && p != 3) ? mpeg_max : full_range;
 
         if (!((1 << p) & s->planes)) {
             if (out != in)
@@ -173,11 +188,15 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
             continue;
         }
 
+        /* check only after resolving no-op planes */
+        if (min > max)
+            return AVERROR(EINVAL);
+
         s->dsp.limiter(in->data[p] + slice_start * in->linesize[p],
                        out->data[p] + slice_start * out->linesize[p],
                        in->linesize[p], out->linesize[p],
                        s->width[p], slice_end - slice_start,
-                       s->min, s->max);
+                       min, max);
     }
 
     return 0;

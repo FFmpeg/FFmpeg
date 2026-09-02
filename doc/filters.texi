@@ -17844,10 +17844,14 @@ The filter accepts the following options:
 
 @table @option
 @item min
-Lower bound. Defaults to the lowest allowed value for the input.
+Lower bound. Defaults to the lowest representable value for the input.
+Set to @var{auto} to use the minimum signal level for the input colorspace
+(only affects TV-range YUV signals).
 
 @item max
-Upper bound. Defaults to the highest allowed value for the input.
+Upper bound. Defaults to the highest representable value for the input.
+Set to @var{auto} to use the maximum signal level for the input colorspace
+(only affects TV-range YUV signals).
 
 @item planes
 Specify which planes will be processed. Defaults to all available.
