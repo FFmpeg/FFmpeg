@@ -294,6 +294,9 @@ static int d3d11va_frames_init(AVHWFramesContext *ctx)
     hwctx->BindFlags |= device_hwctx->BindFlags;
     hwctx->MiscFlags |= device_hwctx->MiscFlags;
 
+    if (s->format == DXGI_FORMAT_420_OPAQUE)
+        hwctx->BindFlags &= ~D3D11_BIND_SHADER_RESOURCE;
+
     ctx->initial_pool_size = FFMIN(ctx->initial_pool_size, MAX_ARRAY_SIZE);
 
     texDesc = (D3D11_TEXTURE2D_DESC){
