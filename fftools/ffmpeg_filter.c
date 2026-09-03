@@ -356,7 +356,7 @@ static void sub2video_update(InputFilterPriv *ifp, int64_t heartbeat_pts,
                              const AVSubtitle *sub)
 {
     AVFrame *frame = ifp->sub2video.frame;
-    int8_t *dst;
+    uint8_t *dst;
     int     dst_linesize;
     int num_rects;
     int64_t pts, end_pts;
