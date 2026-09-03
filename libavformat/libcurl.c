@@ -201,6 +201,16 @@ static int curlcode_to_averror(CURLcode code)
     }
 }
 
+static int curlmcode_to_averror(CURLMcode code)
+{
+    switch (code) {
+    case CURLM_OK:                       return 0;
+    case CURLM_UNKNOWN_OPTION:           return AVERROR(EINVAL);
+    case CURLM_OUT_OF_MEMORY:            return AVERROR(ENOMEM);
+    default:                             return AVERROR(EIO);
+    }
+}
+
 static int curlmcode_to_curlcode(CURLMcode code)
 {
     switch (code) {
@@ -647,7 +657,7 @@ static void start_request(CurlContext *c)
                curl_multi_strerror(res));
         c->active = 0;
         pthread_mutex_lock(&c->mutex);
-        update_status_locked(c, AVERROR(EIO), curlmcode_to_curlcode(res));
+        update_status_locked(c, curlmcode_to_averror(res), curlmcode_to_curlcode(res));
         pthread_cond_broadcast(&c->cond);
         pthread_mutex_unlock(&c->mutex);
     }
