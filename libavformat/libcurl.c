@@ -22,6 +22,7 @@
 #include "config_components.h"
 
 #include <curl/curl.h>
+#include <errno.h>
 #include <inttypes.h>
 #include <limits.h>
 #include <stdlib.h>
@@ -256,31 +257,55 @@ static size_t write_callback(char *ptr, size_t size, size_t nmemb, void *userdat
     return bytes;
 }
 
-static int64_t parse_offset(const char *s)
+/* Return 1 if an offset was successfully parsed, 0 otherwise */
+static int parse_offset(const char *str, int64_t *out, const char **ptr)
 {
-    int64_t v = strtoll(s, NULL, 10);
-    return v < 0 ? -1 : v;
+    if (!av_isdigit(str[0]))
+        return 0;
+
+    errno = 0;
+    char *end;
+    int64_t val = strtoll(str, &end, 10);
+    if (errno == ERANGE)
+        return 0;
+
+    *out = val;
+    *ptr = end;
+    return 1;
 }
 
 /* "bytes $from-$to/$document_size" */
 static void parse_content_range(CurlContext *c, const char *v)
 {
+    int64_t start = -1, end = -1, total = -1;
     while (av_isspace(*v))
         v++;
 
-    if (av_strncasecmp(v, "bytes ", 6))
+    if (!av_stristart(v, "bytes ", &v))
         return;
 
-    const char *range = v + 6, *end;
-    if (range[0] != '*') {
-        c->hdr_content_start = parse_offset(range);
-        if ((end = strchr(range, '-')))
-            c->hdr_content_end = parse_offset(end + 1);
+    if (!av_strstart(v, "*", &v)) {
+        if (!parse_offset(v, &start, &v) ||
+            !av_strstart(v, "-", &v) ||
+            !parse_offset(v, &end, &v))
+            return;
     }
 
-    const char *slash = strchr(range, '/');
-    if (slash && slash[1] != '*')
-        c->hdr_content_total = parse_offset(slash + 1);
+    if (!av_strstart(v, "/", &v))
+        return;
+    if (!av_strstart(v, "*", &v) && !parse_offset(v, &total, &v))
+        return;
+
+    while (av_isspace(*v))
+        v++;
+
+    if (v[0] || (total < 0 && start < 0))
+        return; // reject trailing bytes or "*/*"
+
+    /* only set these fields if the header was recognized; ignore otherwise */
+    c->hdr_content_start = start;
+    c->hdr_content_end   = end;
+    c->hdr_content_total = total;
 }
 
 /* Parse a decimal header value, bounded by len since curl does not promise a
