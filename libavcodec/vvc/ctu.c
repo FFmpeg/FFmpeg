@@ -1616,6 +1616,7 @@ static void mvp_add_difference(MotionInfo *mi, const int num_cp_mv,
                 const Mv *mvd = &mvds[i][j];
                 mi->mv[i][j].x += mvd->x * (1 << amvr_shift);
                 mi->mv[i][j].y += mvd->y * (1 << amvr_shift);
+                ff_vvc_wrap_mv(&mi->mv[i][j]);
             }
         }
     }
