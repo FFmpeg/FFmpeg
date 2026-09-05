@@ -470,7 +470,7 @@ static HEVCFrame *generate_missing_ref(HEVCContext *s, HEVCLayerContext *l, int 
     if (!frame)
         return NULL;
 
-    if (!s->avctx->hwaccel) {
+    if (!s->avctx->hwaccel && !ff_decode_skip_all_pixels(s->avctx)) {
         int nb_planes = l->sps->chroma_format_idc ? 3 : 1;
         if (!l->sps->pixel_shift) {
             for (int i = 0; i < nb_planes; i++)

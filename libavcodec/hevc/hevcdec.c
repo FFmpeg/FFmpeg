@@ -3070,6 +3070,9 @@ static int decode_slice_data(HEVCContext *s, const HEVCLayerContext *l,
     if (s->avctx->hwaccel)
         return FF_HW_CALL(s->avctx, decode_slice, nal->raw_data, nal->raw_size);
 
+    if (ff_decode_skip_all_pixels(s->avctx))
+        return 0;
+
     if (s->avctx->profile == AV_PROFILE_HEVC_SCC) {
         av_log(s->avctx, AV_LOG_ERROR,
                "SCC profile is not yet implemented in hevc native decoder.\n");
@@ -3384,6 +3387,7 @@ static int hevc_frame_start(HEVCContext *s, HEVCLayerContext *l,
                                s->sei.common.film_grain_characteristics->present) ||
                               s->sei.common.itut_t35.aom_film_grain.enable) &&
         !(s->avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN) &&
+        !ff_decode_skip_all_pixels(s->avctx) &&
         !s->avctx->hwaccel;
 
     ret = set_side_data(s);
