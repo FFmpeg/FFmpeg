@@ -500,10 +500,6 @@ static void check_loop_filter_intra(void)
     }
 }
 
-// neon fails at edge cases
-#define H264_CHECK_WEIGHT (!ARCH_ARM && !ARCH_AARCH64)
-
-#if H264_CHECK_WEIGHT
 static void check_weight(void)
 {
     LOCAL_ALIGNED_16(uint8_t, dst, [32 * 32 * 2]);
@@ -547,7 +543,6 @@ static void check_weight(void)
         }
     }
 }
-#endif
 
 // only arch that can pass test
 #define H264_CHECK_BIWEIGHT ARCH_X86
@@ -634,10 +629,8 @@ void checkasm_check_h264dsp(void)
     check_loop_filter_intra();
     report("loop_filter_intra");
 
-#if H264_CHECK_WEIGHT
     check_weight();
     report("weight");
-#endif
 
 #if H264_CHECK_BIWEIGHT
     check_biweight();

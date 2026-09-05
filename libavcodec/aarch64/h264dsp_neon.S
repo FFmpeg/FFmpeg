@@ -810,9 +810,9 @@ function ff_weight_h264_pixels_\w\()_neon, export=1
         dup             v18.8h,  w6
         cmp             w4,  #0
         b.lt            10f
-        weight_\w       add
+        weight_\w       sqadd
 10:     neg             w4,  w4
-        weight_\w       sub
+        weight_\w       sqsub
 endfunc
 .endm
 

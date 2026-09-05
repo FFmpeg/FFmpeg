@@ -549,9 +549,9 @@ function ff_weight_h264_pixels_\w\()_neon, export=1
         vdup.16         q9,  lr
         cmp             r12, #0
         blt             10f
-        weight_\w       vadd.s16
+        weight_\w       vqadd.s16
 10:     rsb             r12, r12, #0
-        weight_\w       vsub.s16
+        weight_\w       vqsub.s16
 endfunc
 .endm
 
