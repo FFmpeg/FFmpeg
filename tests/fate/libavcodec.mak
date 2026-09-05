@@ -1,3 +1,7 @@
+FATE_LIBAVCODEC-$(CONFIG_AC3DSP) += fate-ac3-bit-allocation
+fate-ac3-bit-allocation: libavcodec/tests/ac3$(EXESUF)
+fate-ac3-bit-allocation: CMD = run libavcodec/tests/ac3$(EXESUF)
+
 FATE_LIBAVCODEC-$(CONFIG_AV1_VAAPI_ENCODER) += fate-av1-levels
 fate-av1-levels: libavcodec/tests/av1_levels$(EXESUF)
 fate-av1-levels: CMD = run libavcodec/tests/av1_levels$(EXESUF)
