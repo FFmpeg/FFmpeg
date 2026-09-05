@@ -586,8 +586,8 @@ endfunc
 .macro  biweight_16     macs, macd
         dup             v0.16b,  w5
         dup             v1.16b,  w6
-        mov             v4.16b,  v16.16b
-        mov             v6.16b,  v16.16b
+        movi            v4.2d,   #0
+        movi            v6.2d,   #0
 1:      subs            w3,  w3,  #2
         ld1             {v20.16b}, [x0], x2
         \macd           v4.8h,   v0.8b,  v20.8b
@@ -595,14 +595,18 @@ endfunc
         ld1             {v22.16b}, [x1], x2
         \macs           v4.8h,   v1.8b,  v22.8b
         \macs\()2       v6.8H,   v1.16B, v22.16B
-        mov             v24.16b, v16.16b
+        sqadd           v4.8h,   v4.8h,  v16.8h
+        sqadd           v6.8h,   v6.8h,  v16.8h
+        movi            v24.2d,  #0
         ld1             {v28.16b}, [x0], x2
-        mov             v26.16b, v16.16b
+        movi            v26.2d,  #0
         \macd           v24.8h,  v0.8b,  v28.8b
         \macd\()2       v26.8H,  v0.16B, v28.16B
         ld1             {v30.16b}, [x1], x2
         \macs           v24.8h,  v1.8b,  v30.8b
         \macs\()2       v26.8H,  v1.16B, v30.16B
+        sqadd           v24.8h,  v24.8h, v16.8h
+        sqadd           v26.8h,  v26.8h, v16.8h
         sshl            v4.8h,   v4.8h,  v18.8h
         sshl            v6.8h,   v6.8h,  v18.8h
         sqxtun          v4.8b,   v4.8h
@@ -611,9 +615,9 @@ endfunc
         sshl            v26.8h,  v26.8h, v18.8h
         sqxtun          v24.8b,  v24.8h
         sqxtun2         v24.16b, v26.8h
-        mov             v6.16b,  v16.16b
+        movi            v6.2d,   #0
         st1             {v4.16b},  [x7], x2
-        mov             v4.16b,  v16.16b
+        movi            v4.2d,   #0
         st1             {v24.16b}, [x7], x2
         b.ne            1b
         ret
@@ -622,24 +626,26 @@ endfunc
 .macro  biweight_8      macs, macd
         dup             v0.8b,  w5
         dup             v1.8b,  w6
-        mov             v2.16b,  v16.16b
-        mov             v20.16b, v16.16b
+        movi            v2.2d,   #0
+        movi            v20.2d,  #0
 1:      subs            w3,  w3,  #2
         ld1             {v4.8b}, [x0], x2
         \macd           v2.8h,  v0.8b,  v4.8b
         ld1             {v5.8b}, [x1], x2
         \macs           v2.8h,  v1.8b,  v5.8b
+        sqadd           v2.8h,  v2.8h,  v16.8h
         ld1             {v6.8b}, [x0], x2
         \macd           v20.8h, v0.8b,  v6.8b
         ld1             {v7.8b}, [x1], x2
         \macs           v20.8h, v1.8b,  v7.8b
+        sqadd           v20.8h, v20.8h, v16.8h
         sshl            v2.8h,  v2.8h,  v18.8h
         sqxtun          v2.8b,  v2.8h
         sshl            v20.8h, v20.8h, v18.8h
         sqxtun          v4.8b,  v20.8h
-        mov             v20.16b, v16.16b
+        movi            v20.2d,  #0
         st1             {v2.8b}, [x7], x2
-        mov             v2.16b,  v16.16b
+        movi            v2.2d,   #0
         st1             {v4.8b}, [x7], x2
         b.ne            1b
         ret
@@ -648,8 +654,8 @@ endfunc
 .macro  biweight_4      macs, macd
         dup             v0.8b,  w5
         dup             v1.8b,  w6
-        mov             v2.16b, v16.16b
-        mov             v20.16b,v16.16b
+        movi            v2.2d,   #0
+        movi            v20.2d,  #0
 1:      subs            w3,  w3,  #4
         ld1             {v4.s}[0], [x0], x2
         ld1             {v4.s}[1], [x0], x2
@@ -657,6 +663,7 @@ endfunc
         ld1             {v5.s}[0], [x1], x2
         ld1             {v5.s}[1], [x1], x2
         \macs           v2.8h,  v1.8b,  v5.8b
+        sqadd           v2.8h,  v2.8h,  v16.8h
         b.lt            2f
         ld1             {v6.s}[0], [x0], x2
         ld1             {v6.s}[1], [x0], x2
@@ -664,14 +671,15 @@ endfunc
         ld1             {v7.s}[0], [x1], x2
         ld1             {v7.s}[1], [x1], x2
         \macs           v20.8h, v1.8b,  v7.8b
+        sqadd           v20.8h, v20.8h, v16.8h
         sshl            v2.8h,  v2.8h,  v18.8h
         sqxtun          v2.8b,  v2.8h
         sshl            v20.8h, v20.8h, v18.8h
         sqxtun          v4.8b,  v20.8h
-        mov             v20.16b, v16.16b
+        movi            v20.2d,  #0
         st1             {v2.s}[0], [x7], x2
         st1             {v2.s}[1], [x7], x2
-        mov             v2.16b,  v16.16b
+        movi            v2.2d,   #0
         st1             {v4.s}[0], [x7], x2
         st1             {v4.s}[1], [x7], x2
         b.ne            1b

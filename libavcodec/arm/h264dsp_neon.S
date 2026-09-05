@@ -295,8 +295,8 @@ endfunc
 .macro  biweight_16     macs, macd
         vdup.8          d0,  r4
         vdup.8          d1,  r5
-        vmov            q2,  q8
-        vmov            q3,  q8
+        vmov.i64        q2,  #0
+        vmov.i64        q3,  #0
 1:      subs            r3,  r3,  #2
         vld1.8          {d20-d21},[r0,:128], r2
         \macd           q2,  d0,  d20
@@ -306,9 +306,11 @@ endfunc
         \macs           q2,  d1,  d22
         pld             [r1]
         \macs           q3,  d1,  d23
-        vmov            q12, q8
+        vqadd.s16       q2,  q2,  q8
+        vqadd.s16       q3,  q3,  q8
+        vmov.i64        q12, #0
         vld1.8          {d28-d29},[r0,:128], r2
-        vmov            q13, q8
+        vmov.i64        q13, #0
         \macd           q12, d0,  d28
         pld             [r0]
         \macd           q13, d0,  d29
@@ -316,6 +318,8 @@ endfunc
         \macs           q12, d1,  d30
         pld             [r1]
         \macs           q13, d1,  d31
+        vqadd.s16       q12, q12, q8
+        vqadd.s16       q13, q13, q8
         vshl.s16        q2,  q2,  q9
         vshl.s16        q3,  q3,  q9
         vqmovun.s16     d4,  q2
@@ -324,9 +328,9 @@ endfunc
         vshl.s16        q13, q13, q9
         vqmovun.s16     d24, q12
         vqmovun.s16     d25, q13
-        vmov            q3,  q8
+        vmov.i64        q3,  #0
         vst1.8          {d4- d5}, [r6,:128], r2
-        vmov            q2,  q8
+        vmov.i64        q2,  #0
         vst1.8          {d24-d25},[r6,:128], r2
         bne             1b
         pop             {r4-r6, pc}
@@ -335,8 +339,8 @@ endfunc
 .macro  biweight_8      macs, macd
         vdup.8          d0,  r4
         vdup.8          d1,  r5
-        vmov            q1,  q8
-        vmov            q10, q8
+        vmov.i64        q1,  #0
+        vmov.i64        q10, #0
 1:      subs            r3,  r3,  #2
         vld1.8          {d4},[r0,:64], r2
         \macd           q1,  d0,  d4
@@ -344,19 +348,21 @@ endfunc
         vld1.8          {d5},[r1,:64], r2
         \macs           q1,  d1,  d5
         pld             [r1]
+        vqadd.s16       q1,  q1,  q8
         vld1.8          {d6},[r0,:64], r2
         \macd           q10, d0,  d6
         pld             [r0]
         vld1.8          {d7},[r1,:64], r2
         \macs           q10, d1,  d7
         pld             [r1]
+        vqadd.s16       q10, q10, q8
         vshl.s16        q1,  q1,  q9
         vqmovun.s16     d2,  q1
         vshl.s16        q10, q10, q9
         vqmovun.s16     d4,  q10
-        vmov            q10, q8
+        vmov.i64        q10, #0
         vst1.8          {d2},[r6,:64], r2
-        vmov            q1,  q8
+        vmov.i64        q1,  #0
         vst1.8          {d4},[r6,:64], r2
         bne             1b
         pop             {r4-r6, pc}
@@ -365,8 +371,8 @@ endfunc
 .macro  biweight_4      macs, macd
         vdup.8          d0,  r4
         vdup.8          d1,  r5
-        vmov            q1,  q8
-        vmov            q10, q8
+        vmov.i64        q1,  #0
+        vmov.i64        q10, #0
 1:      subs            r3,  r3,  #4
         vld1.32         {d4[0]},[r0,:32], r2
         vld1.32         {d4[1]},[r0,:32], r2
@@ -376,6 +382,7 @@ endfunc
         vld1.32         {d5[1]},[r1,:32], r2
         \macs           q1,  d1,  d5
         pld             [r1]
+        vqadd.s16       q1,  q1,  q8
         blt             2f
         vld1.32         {d6[0]},[r0,:32], r2
         vld1.32         {d6[1]},[r0,:32], r2
@@ -385,14 +392,15 @@ endfunc
         vld1.32         {d7[1]},[r1,:32], r2
         \macs           q10, d1,  d7
         pld             [r1]
+        vqadd.s16       q10, q10, q8
         vshl.s16        q1,  q1,  q9
         vqmovun.s16     d2,  q1
         vshl.s16        q10, q10, q9
         vqmovun.s16     d4,  q10
-        vmov            q10, q8
+        vmov.i64        q10, #0
         vst1.32         {d2[0]},[r6,:32], r2
         vst1.32         {d2[1]},[r6,:32], r2
-        vmov            q1,  q8
+        vmov.i64        q1,  #0
         vst1.32         {d4[0]},[r6,:32], r2
         vst1.32         {d4[1]},[r6,:32], r2
         bne             1b
