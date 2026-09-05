@@ -2689,7 +2689,7 @@ static int FUNC(picture_header) (CodedBitstreamContext *ctx, RWContext *rw,
     ub(sps->sps_log2_max_pic_order_cnt_lsb_minus4 + 4, ph_pic_order_cnt_lsb);
     if (current->ph_gdr_pic_flag)
         ue(ph_recovery_poc_cnt, 0,
-           1 << (sps->sps_log2_max_pic_order_cnt_lsb_minus4 + 4));
+           (1 << (sps->sps_log2_max_pic_order_cnt_lsb_minus4 + 4)) - 1);
 
     for (i = 0; i < sps->sps_num_extra_ph_bytes * 8; i++) {
         if (sps->sps_extra_ph_bit_present_flag[i])
