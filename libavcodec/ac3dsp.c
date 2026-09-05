@@ -83,8 +83,16 @@ static void ac3_bit_alloc_calc_bap_c(int16_t *mask, int16_t *psd,
         return;
     }
 
-    bin  = start;
-    band = ff_ac3_bin_to_band_tab[start];
+    /* the first 28 bands have one coefficient each */
+    for (bin = start; bin < FFMIN(end, 28); bin++) {
+        int m = (FFMAX(mask[bin] - snr_offset - floor, 0) & 0x1FE0) + floor;
+        int address = av_clip_uintp2((psd[bin] - m) >> 5, 6);
+        bap[bin] = bap_tab[address];
+    }
+    if (bin >= end)
+        return;
+
+    band = ff_ac3_bin_to_band_tab[bin];
     do {
         int m = (FFMAX(mask[band] - snr_offset - floor, 0) & 0x1FE0) + floor;
         band_end = ff_ac3_band_start_tab[++band];
