@@ -2009,6 +2009,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
         .mime_types= MT("image/x-panasonic-rw2"),
     },
+    {
+	.id        = AV_CODEC_ID_IMM6,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "imm6",
+        .long_name = NULL_IF_CONFIG_SMALL("Infinity IMM6"),
+        .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
+    },
 
     /* various PCM "codecs" */
     {

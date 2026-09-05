@@ -1136,6 +1136,8 @@ following image formats are supported:
 @item IFF ByteRun1           @tab     @tab  X
     @tab IFF run length encoded bitmap
 @item Infinity IMM4          @tab     @tab  X
+@item Infinity IMM5          @tab     @tab  X
+@item Infinity IMM6          @tab     @tab  X
 @item Intel H.263            @tab     @tab  X
 @item Intel Indeo 2          @tab     @tab  X
 @item Intel Indeo 3          @tab     @tab  X
