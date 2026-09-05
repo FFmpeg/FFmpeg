@@ -943,10 +943,10 @@ endfunc
 
 .macro biweight_calc _in0, _in1, _in2, _in3, _reg0, _reg1, _reg2,\
                      _out0, _out1, _out2, _out3
-    vmov             \_out0,   \_reg0
-    vmov             \_out1,   \_reg0
-    vmov             \_out2,   \_reg0
-    vmov             \_out3,   \_reg0
+    vreplgr2vr.h     \_out0,   zero
+    vreplgr2vr.h     \_out1,   zero
+    vreplgr2vr.h     \_out2,   zero
+    vreplgr2vr.h     \_out3,   zero
     vmaddwev.h.bu.b  \_out0,   \_in0,     \_reg1
     vmaddwev.h.bu.b  \_out1,   \_in1,     \_reg1
     vmaddwev.h.bu.b  \_out2,   \_in2,     \_reg1
@@ -955,6 +955,10 @@ endfunc
     vmaddwod.h.bu.b  \_out1,   \_in1,     \_reg1
     vmaddwod.h.bu.b  \_out2,   \_in2,     \_reg1
     vmaddwod.h.bu.b  \_out3,   \_in3,     \_reg1
+    vsadd.h          \_out0,   \_out0,    \_reg0
+    vsadd.h          \_out1,   \_out1,    \_reg0
+    vsadd.h          \_out2,   \_out2,    \_reg0
+    vsadd.h          \_out3,   \_out3,    \_reg0
 
     vssran.bu.h      \_out0,   \_out0,    \_reg2
     vssran.bu.h      \_out1,   \_out1,    \_reg2
@@ -1133,9 +1137,10 @@ biweight_func 16
 endfunc
 
 .macro biweight_calc_4 _in0, _out0
-    vmov             \_out0,  vr8
+    vreplgr2vr.h     \_out0,  zero
     vmaddwev.h.bu.b  \_out0,  \_in0,  vr20
     vmaddwod.h.bu.b  \_out0,  \_in0,  vr20
+    vsadd.h          \_out0,  \_out0, vr8
     vssran.bu.h      \_out0,  \_out0, vr9
 .endm
 
@@ -1188,12 +1193,14 @@ biweight_func 4
     vilvl.b          vr0,    vr14,   vr4
     vilvl.b          vr10,   vr15,   vr5
 
-    vmov             vr1,    vr8
-    vmov             vr11,   vr8
+    vreplgr2vr.h     vr1,    zero
+    vreplgr2vr.h     vr11,   zero
     vmaddwev.h.bu.b  vr1,    vr0,    vr20
     vmaddwev.h.bu.b  vr11,   vr10,   vr20
     vmaddwod.h.bu.b  vr1,    vr0,    vr20
     vmaddwod.h.bu.b  vr11,   vr10,   vr20
+    vsadd.h          vr1,    vr1,    vr8
+    vsadd.h          vr11,   vr11,   vr8
 
     vssran.bu.h      vr0,    vr1,    vr9   //vec0
     vssran.bu.h      vr10,   vr11,   vr9   //vec0
@@ -1225,12 +1232,14 @@ function ff_biweight_h264_pixels\w\()_8_lasx
 .endm
 
 .macro biweight_calc_lasx _in0, _in1, _reg0, _reg1, _reg2, _out0, _out1
-    xmov              \_out0,   \_reg0
-    xmov              \_out1,   \_reg0
+    xvreplgr2vr.h     \_out0,   zero
+    xvreplgr2vr.h     \_out1,   zero
     xvmaddwev.h.bu.b  \_out0,   \_in0,     \_reg1
     xvmaddwev.h.bu.b  \_out1,   \_in1,     \_reg1
     xvmaddwod.h.bu.b  \_out0,   \_in0,     \_reg1
     xvmaddwod.h.bu.b  \_out1,   \_in1,     \_reg1
+    xvsadd.h          \_out0,   \_out0,    \_reg0
+    xvsadd.h          \_out1,   \_out1,    \_reg0
 
     xvssran.bu.h      \_out0,   \_out0,    \_reg2
     xvssran.bu.h      \_out1,   \_out1,    \_reg2
