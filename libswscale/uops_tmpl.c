@@ -307,9 +307,25 @@ DECL_SETUP(setup_filter_h, params, out)
         return AVERROR(ENOTSUP);
 
     SwsFilterWeights *filter = params->uop->data.kernel;
-    out->priv.ptr = av_refstruct_ref(filter->weights);
     out->priv.i32[2] = filter->filter_size;
-    out->free = ff_op_priv_unref;
+
+    /* The horizontal filter uop reads weights for a full SWS_BLOCK_SIZE
+     * outputs per block (see read_planar_fh), so the weights array must be
+     * padded up to the block-aligned output count. Pad the tail with zero
+     * weights, which contribute nothing to the accumulated sums. */
+    const size_t padded_w = FFALIGN(filter->dst_size, SWS_BLOCK_SIZE);
+    if (padded_w == filter->dst_size) {
+        out->priv.ptr = av_refstruct_ref(filter->weights);
+        out->free = ff_op_priv_unref;
+        return 0;
+    }
+
+    int *weights = av_calloc(padded_w * filter->filter_size, sizeof(*weights));
+    if (!weights)
+        return AVERROR(ENOMEM);
+    memcpy(weights, filter->weights, filter->num_weights * sizeof(*weights));
+    out->priv.ptr = weights;
+    out->free = ff_op_priv_free;
     return 0;
 }
 
