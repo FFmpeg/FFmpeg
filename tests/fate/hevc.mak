@@ -294,6 +294,15 @@ FATE_HEVC_FFPROBE-$(call DEMDEC, MOV, HEVC) += fate-hevc-dv-rpu
 fate-hevc-two-first-slice: CMD = threads=2 framemd5 -i $(TARGET_SAMPLES)/hevc/two_first_slice.mp4 -sws_flags bitexact -t 00:02.00 -an
 FATE_HEVC-$(call FRAMEMD5, MOV, HEVC) += fate-hevc-two-first-slice
 
+fate-hevc-skip-pred: CMD = probeframes -show_entries frame=key_frame,pts,pict_type -skip_pred all -skip_idct all $(TARGET_SAMPLES)/hevc-conformance/RAP_B_Bossen_1.bit
+FATE_HEVC_FFPROBE-$(call PARSERDEMDEC, HEVC, HEVC, HEVC) += fate-hevc-skip-pred
+
+fate-hevc-skip-pred-fields: CMD = probeframes -show_entries frame=key_frame,pts,pict_type,interlaced_frame,top_field_first -skip_pred all -skip_idct all $(TARGET_SAMPLES)/hevc/paired_fields.hevc
+FATE_HEVC_FFPROBE-$(call DEMDEC, HEVC, HEVC) += fate-hevc-skip-pred-fields
+
+fate-hevc-skip-pred-pts: CMD = probeframes -show_entries frame=key_frame,pts,pict_type -skip_pred all -skip_idct all $(TARGET_SAMPLES)/mov/elst_ends_betn_b_and_i.mp4
+FATE_HEVC_FFPROBE-$(call DEMDEC, MOV, HEVC) += fate-hevc-skip-pred-pts
+
 fate-hevc-cabac-tudepth: CMD = framecrc -i $(TARGET_SAMPLES)/hevc/cbf_cr_cb_TUDepth_4_circle.h265 -pix_fmt yuv444p
 FATE_HEVC-$(call FRAMECRC, HEVC, HEVC) += fate-hevc-cabac-tudepth
 
