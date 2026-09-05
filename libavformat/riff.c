@@ -502,6 +502,7 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_AGM,          MKTAG('A', 'G', 'M', '7') },
     { AV_CODEC_ID_LSCR,         MKTAG('L', 'S', 'C', 'R') },
     { AV_CODEC_ID_IMM5,         MKTAG('I', 'M', 'M', '5') },
+    { AV_CODEC_ID_IMM6,         MKTAG('I', 'M', 'M', '6') },
     { AV_CODEC_ID_MVDV,         MKTAG('M', 'V', 'D', 'V') },
     { AV_CODEC_ID_MVHA,         MKTAG('M', 'V', 'H', 'A') },
     { AV_CODEC_ID_MV30,         MKTAG('M', 'V', '3', '0') },
