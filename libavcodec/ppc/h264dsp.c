@@ -749,16 +749,16 @@ void biweight_h264_W_altivec(uint8_t *dst, uint8_t *src, ptrdiff_t stride, int h
             v0 = vec_mladd(v0, vweightd, zero_s16v);
             v2 = vec_mladd(v2, vweights, zero_s16v);
 
-            v0 = vec_adds(v0, voffset);
             v0 = vec_adds(v0, v2);
+            v0 = vec_adds(v0, voffset);
             v0 = vec_sra(v0, vlog2_denom);
         }
         if (w == 16 || !dst_aligned) {
             v1 = vec_mladd(v1, vweightd, zero_s16v);
             v3 = vec_mladd(v3, vweights, zero_s16v);
 
-            v1 = vec_adds(v1, voffset);
             v1 = vec_adds(v1, v3);
+            v1 = vec_adds(v1, voffset);
             v1 = vec_sra(v1, vlog2_denom);
         }
         vdst = vec_packsu(v0, v1);

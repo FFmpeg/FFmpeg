@@ -544,8 +544,8 @@ static void check_weight(void)
     }
 }
 
-// only arch that can pass test
-#define H264_CHECK_BIWEIGHT ARCH_X86
+// only archs that can pass test
+#define H264_CHECK_BIWEIGHT (ARCH_X86 || ARCH_PPC)
 
 #if H264_CHECK_BIWEIGHT
 static void check_biweight(void)
