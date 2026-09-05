@@ -1326,15 +1326,37 @@ static void count_mantissa_bits_update_ch(AC3EncodeContext *s, int ch,
                                           uint16_t mant_cnt[AC3_MAX_BLOCKS][16],
                                           int start, int end)
 {
+    uint16_t counts[16];
+    const uint8_t *prev_bap = NULL;
+    int prev_len = -1;
     int blk;
 
     for (blk = 0; blk < s->num_blocks; blk++) {
         AC3Block *block = &s->blocks[blk];
+        const uint8_t *bap;
+        int len;
+
         if (ch == CPL_CH && !block->cpl_in_use)
             continue;
-        s->ac3dsp.update_bap_counts(mant_cnt[blk],
-                                    s->ref_bap[ch][blk] + start,
-                                    FFMIN(end, block->end_freq[ch]) - start);
+
+        bap = s->ref_bap[ch][blk] + start;
+        len = FFMIN(end, block->end_freq[ch]) - start;
+        /* the same bap buffer can be counted over different lengths */
+        if (bap != prev_bap || len != prev_len) {
+            if (blk + 1 == s->num_blocks ||
+                (ch == CPL_CH && !s->blocks[blk + 1].cpl_in_use) ||
+                bap != s->ref_bap[ch][blk + 1] + start ||
+                len != FFMIN(end, s->blocks[blk + 1].end_freq[ch]) - start) {
+                s->ac3dsp.update_bap_counts(mant_cnt[blk], bap, len);
+                continue;
+            }
+            memset(counts, 0, sizeof(counts));
+            s->ac3dsp.update_bap_counts(counts, bap, len);
+            prev_bap = bap;
+            prev_len = len;
+        }
+        for (int i = 0; i < 16; i++)
+            mant_cnt[blk][i] += counts[i];
     }
 }
 
