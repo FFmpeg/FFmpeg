@@ -64,17 +64,19 @@ func ff_h264_biweight_pixels_simple_8_rvv, zve32x
         ori     a7, a7, 1
         sll     a7, a7, a4
         addi    a4, a4, 1
+        vsetvli t0, zero, e8, m1, ta, ma
+        vmv.v.x v4, a5                      # splat weights (hoisted)
 1:
         vsetvli zero, t6, e16, m2, ta, ma
         vle8.v  v8, (a0)
         addi    a3, a3, -1
         vle8.v  v12, (a1)
         add     a1, a1, a2
-        vmv.v.x v16, a7
         vsetvli     zero, zero, e8, m1, ta, ma
-        vwmaccsu.vx v16, a5, v8
+        vwmulsu.vv  v16, v4, v8
         vwmaccsu.vx v16, a6, v12
         vsetvli     zero, zero, e16, m2, ta, ma
+        vsadd.vx    v16, v16, a7
         vmax.vx v16, v16, zero
         vsetvli zero, zero, e8, m1, ta, ma
         vnclipu.wx  v8, v16, a4
@@ -126,19 +128,20 @@ func ff_h264_biweight_pixels\w\()_\depth\()_rvv, zve64x
         ori     a7, a7, 1
         sll     a7, a7, a4
         addi    a4, a4, 1
+        vsetvli t0, zero, e8, m2, ta, ma
+        vmv.v.x v4, a5                      # splat weights (hoisted)
 1:
         vsetvli     t1, a3, e\b, m2, ta, ma
         vlse\b\().v v8, (a0), a2
         sub     a3, a3, t1
         vlse\b\().v v12, (a1), a2
         mul     t2, t1, a2
-        vsetvli     t0, zero, e16, m4, ta, ma
-        vmv.v.x     v16, a7
-        vsetvli     zero, zero, e8, m2, ta, ma
-        vwmaccsu.vx v16, a5, v8
+        vsetvli     t0, zero, e8, m2, ta, ma
+        vwmulsu.vv  v16, v4, v8
         add     a1, a1, t2
         vwmaccsu.vx v16, a6, v12
         vsetvli     zero, zero, e16, m4, ta, ma
+        vsadd.vx    v16, v16, a7
         vmax.vx     v16, v16, zero
         vsetvli     zero, zero, e8, m2, ta, ma
         vnclipu.wx  v8, v16, a4
