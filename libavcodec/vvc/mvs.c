@@ -1689,15 +1689,13 @@ static int ibc_history_candidates(const VVCLocalContext *lc,
     return 0;
 }
 
-#define MV_BITS 18
-#define IBC_SHIFT(v) ((v) >= (1 << (MV_BITS - 1)) ? ((v) - (1 << MV_BITS)) : (v))
-
 static inline void ibc_add_mvp(Mv *mv, Mv *mvp, const int amvr_shift)
 {
     ff_vvc_round_mv(mv, amvr_shift, 0);
     ff_vvc_round_mv(mvp, amvr_shift, amvr_shift);
-    mv->x = IBC_SHIFT(mv->x + mvp->x);
-    mv->y = IBC_SHIFT(mv->y + mvp->y);
+    mv->x += mvp->x;
+    mv->y += mvp->y;
+    ff_vvc_wrap_mv(mv);
 }
 
 static void ibc_merge_candidates(VVCLocalContext *lc, const int merge_idx, Mv *mv)
@@ -1897,10 +1895,22 @@ void ff_vvc_round_mv(Mv *mv, const int lshift, const int rshift)
     }
 }
 
+#define MV_BITS 18
+#define MV_MIN  (-(1 << (MV_BITS - 1)))
+#define MV_MAX  ((1 << (MV_BITS - 1)) - 1)
+
 void ff_vvc_clip_mv(Mv *mv)
 {
-    mv->x = av_clip(mv->x, -(1 << 17), (1 << 17) - 1);
-    mv->y = av_clip(mv->y, -(1 << 17), (1 << 17) - 1);
+    mv->x = av_clip(mv->x, MV_MIN, MV_MAX);
+    mv->y = av_clip(mv->y, MV_MIN, MV_MAX);
+}
+
+#define MV_WRAP(v) ((((v) & ((1 << MV_BITS) - 1)) ^ (1 << (MV_BITS - 1))) + MV_MIN)
+
+void ff_vvc_wrap_mv(Mv *mv)
+{
+    mv->x = MV_WRAP(mv->x);
+    mv->y = MV_WRAP(mv->y);
 }
 
 //8.5.2.1 Derivation process for motion vector components and reference indices
