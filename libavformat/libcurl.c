@@ -240,6 +240,19 @@ static size_t write_callback(char *ptr, size_t size, size_t nmemb, void *userdat
         return bytes; /* discard */
     }
 
+    /* Prevent overflow / non-addressable byte ranges */
+    if (bytes > INT64_MAX - c->request_start - c->request_received) {
+        av_log(c->h, AV_LOG_ERROR, "Server sent back more data than addressable "
+               "at offset %"PRId64"\n", c->request_start);
+        c->loop->num_errors++;
+        c->stream_ok = 0;
+        if (!c->status)
+            c->status = AVERROR(ERANGE);
+        pthread_cond_broadcast(&c->cond);
+        pthread_mutex_unlock(&c->mutex);
+        return CURL_WRITEFUNC_ERROR;
+    }
+
     space = av_fifo_can_write(c->fifo);
     if (space < bytes) {
         /* pause the transfer and wait for the consumer to drain. */
