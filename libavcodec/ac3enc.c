@@ -1898,11 +1898,8 @@ static void output_audio_block(AC3EncodeContext *s, PutBitContext *pb, int blk)
             case 0:                                          break;
             case 1: if (q != 128) put_bits (pb,   5, q); break;
             case 2: if (q != 128) put_bits (pb,   7, q); break;
-            case 3:               put_sbits(pb,   3, q); break;
             case 4: if (q != 128) put_bits (pb,   7, q); break;
-            case 14:              put_sbits(pb,  14, q); break;
-            case 15:              put_sbits(pb,  16, q); break;
-            default:              put_sbits(pb, b-1, q); break;
+            default:              put_sbits(pb, ff_ac3_bap_bits[b], q); break;
             }
         }
         if (ch == CPL_CH)
