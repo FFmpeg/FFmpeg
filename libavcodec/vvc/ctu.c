@@ -1315,10 +1315,13 @@ static void derive_mmvd(const VVCLocalContext *lc, MvField *mvf, const Mv *mmvd_
         mvf->mv[0].y += mmvd[0].y;
         mvf->mv[1].x += mmvd[1].x;
         mvf->mv[1].y += mmvd[1].y;
+        ff_vvc_clip_mv(&mvf->mv[0]);
+        ff_vvc_clip_mv(&mvf->mv[1]);
     } else {
         const int idx = mvf->pred_flag - PF_L0;
         mvf->mv[idx].x += mmvd_offset->x;
         mvf->mv[idx].y += mmvd_offset->y;
+        ff_vvc_clip_mv(&mvf->mv[idx]);
     }
 
 }
