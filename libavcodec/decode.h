@@ -77,6 +77,17 @@ int ff_decode_frame_props_from_pkt(const AVCodecContext *avctx,
  */
 int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame);
 
+static inline int ff_decode_skip_all_pixels(const AVCodecContext *avctx)
+{
+    return avctx->skip_pred >= AVDISCARD_ALL &&
+           avctx->skip_idct >= AVDISCARD_ALL &&
+           !avctx->err_recognition &&
+           !(avctx->flags2 & AV_CODEC_FLAG2_CHUNKS) &&
+           !(avctx->export_side_data & (AV_CODEC_EXPORT_DATA_MVS |
+                                        AV_CODEC_EXPORT_DATA_VIDEO_ENC_PARAMS)) &&
+           !(avctx->debug & (FF_DEBUG_QP | FF_DEBUG_MB_TYPE));
+}
+
 /**
  * Make sure avctx.hw_frames_ctx is set. If it's not set, the function will
  * try to allocate it from hw_device_ctx. If that is not possible, an error
