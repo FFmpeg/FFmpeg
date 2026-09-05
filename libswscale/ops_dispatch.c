@@ -54,6 +54,7 @@ typedef struct SwsOpPass {
     int palette_idx;
     int *offsets_y;
     int filter_size_h;
+    int filter_size_v;
     bool memcpy_first;
     bool memcpy_last;
     bool memcpy_out;
@@ -166,7 +167,7 @@ static inline int get_lines_in(const SwsOpPass *p, const int y, const int h,
         return h >> base->in_sub_y[plane];
 
     const int y0 = p->offsets_y[y] >> base->in_sub_y[plane];
-    const int y1 = p->offsets_y[y + h - 1] >> base->in_sub_y[plane];
+    const int y1 = (p->offsets_y[y + h - 1] + p->filter_size_v - 1) >> base->in_sub_y[plane];
     return y1 - y0 + 1;
 }
 
@@ -400,8 +401,11 @@ static void op_pass_run(const SwsFrame *out, const SwsFrame *in, const int y,
      *    memcpy the last column on the output side if unpadded.
      */
 
-    const bool memcpy_in  = p->memcpy_last && y + h == pass->lines ||
-                            p->memcpy_first && y == 0;
+    const int y_in_first = p->offsets_y ? p->offsets_y[y] : y;
+    const int y_in_last  = p->offsets_y ? p->offsets_y[y + h - 1] + p->filter_size_v - 1
+                                        : y + h - 1;
+    const bool memcpy_in  = p->memcpy_last && y_in_last == in->height - 1 ||
+                            p->memcpy_first && y_in_first == 0;
     const bool memcpy_out = p->memcpy_out;
     const size_t num_blocks  = p->num_blocks;
     const size_t tail_blocks = p->tail_blocks;
@@ -435,7 +439,7 @@ static void op_pass_run(const SwsFrame *out, const SwsFrame *in, const int y,
         /* Input offsets are relative to the base pointer */
         if (!exec.in_offset_x || memcpy_in)
             exec.in[i] += p->tail_off_in;
-        tail.in[i] += y * tail.in_stride[i];
+        tail.in[i] += (y_in_first >> exec.in_sub_y[i]) * tail.in_stride[i];
     }
     for (int i = 0; i < p->planes_out; i++) {
         exec.out[i] += p->tail_off_out;
@@ -640,6 +644,7 @@ static int compile_single(const CompileArgs *args, const SwsOpList *ops,
     const SwsFilterWeights *filter = read ? read->rw.filter.kernel : NULL;
     if (read && read->rw.filter.op == SWS_OP_FILTER_V) {
         p->offsets_y = av_refstruct_ref(filter->offsets);
+        p->filter_size_v = filter->filter_size;
 
         /* Compute relative pointer bumps for each output line */
         int32_t *bump = av_malloc_array(filter->dst_size, sizeof(*bump));
