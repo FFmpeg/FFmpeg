@@ -1292,8 +1292,9 @@ static int cavs_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
             if (!h->got_keyframe)
                 break;
             h->stc = stc;
-            if (decode_pic(h))
-                break;
+            ret = decode_pic(h);
+            if (ret < 0)
+                return ret;
             *got_frame = 1;
             if (h->cur.f->pict_type != AV_PICTURE_TYPE_B) {
                 if (h->DPB[!h->low_delay].f->data[0]) {
