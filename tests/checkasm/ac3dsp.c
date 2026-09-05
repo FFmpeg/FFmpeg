@@ -129,7 +129,7 @@ static void check_float_to_fixed24(AC3DSPContext *c) {
         call_ref(dst, src, BUF_SIZE);
         call_new(dst2, src, BUF_SIZE);
 
-        if (memcmp(dst, dst2, BUF_SIZE) != 0)
+        if (memcmp(dst, dst2, BUF_SIZE * sizeof(*dst)) != 0)
             fail();
 
         bench_new(dst, src, BUF_SIZE);
