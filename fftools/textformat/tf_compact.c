@@ -194,10 +194,16 @@ static void compact_print_section_header(AVTextFormatContext *wctx, const void *
         wctx->nb_item[wctx->level] = wctx->nb_item[wctx->level - 1];
     } else {
         if (parent_section && !(parent_section->flags & (AV_TEXTFORMAT_SECTION_FLAG_IS_WRAPPER | AV_TEXTFORMAT_SECTION_FLAG_IS_ARRAY))) {
-            if (section->flags & AV_TEXTFORMAT_SECTION_FLAG_IS_ARRAY && !array_has_inline_elems(wctx, section))
-                writer_w8(wctx, '\n');
-            else if (wctx->level && wctx->nb_item[wctx->level - 1])
+            int *parent_open = &compact->terminate_line[wctx->level - 1];
+            if (section->flags & AV_TEXTFORMAT_SECTION_FLAG_IS_ARRAY && !array_has_inline_elems(wctx, section)) {
+                /* Row elements end the parent's line, its footer must not do it again. */
+                if (*parent_open)
+                    writer_w8(wctx, '\n');
+                *parent_open = 0;
+            } else if (wctx->level && wctx->nb_item[wctx->level - 1]) {
                 writer_w8(wctx, compact->item_sep);
+                *parent_open = 1;
+            }
         }
         if (compact->print_section &&
             !(section->flags & (AV_TEXTFORMAT_SECTION_FLAG_IS_WRAPPER | AV_TEXTFORMAT_SECTION_FLAG_IS_ARRAY)))
