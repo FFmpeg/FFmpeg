@@ -44,6 +44,11 @@ coeff16_1: times 2 db 20, -6, 20, -6, -6, 20, -6, 20
 
 SECTION .text
 
+%define MOVU8  movq
+%define MOVA8  movq
+%define MOVU16 movu
+%define MOVA16 mova
+
 %macro PUT_NO_RND_PIXELS_L2 1
 ; void ff_put_no_rnd_pixels8x8_l2(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
 ;                                 ptrdiff_t dstStride, ptrdiff_t src1Stride)
@@ -51,12 +56,12 @@ cglobal put_no_rnd_pixels%1x%1_l2, 5,6,5
     pcmpeqb      m4, m4
     mov         r5d, %1
 .loop:
-    movu         m0, [r1]
+    MOVU%1       m0, [r1]
     add          r1, r4
-    movu         m1, [r1]
+    MOVU%1       m1, [r1]
     add          r1, r4
-    mova         m2, [r2]
-    mova         m3, [r2+%1]
+    MOVA%1       m2, [r2]
+    MOVA%1       m3, [r2+%1]
     pxor         m0, m4
     pxor         m1, m4
     pxor         m2, m4
@@ -65,16 +70,16 @@ cglobal put_no_rnd_pixels%1x%1_l2, 5,6,5
     pavgb        m1, m3
     pxor         m0, m4
     pxor         m1, m4
-    mova       [r0], m0
+    MOVA%1     [r0], m0
     add          r0, r3
-    mova       [r0], m1
+    MOVA%1     [r0], m1
     add          r0, r3
-    movu         m0, [r1]
+    MOVU%1       m0, [r1]
     add          r1, r4
-    movu         m1, [r1]
+    MOVU%1       m1, [r1]
     add          r1, r4
-    mova         m2, [r2+2*%1]
-    mova         m3, [r2+3*%1]
+    MOVA%1       m2, [r2+2*%1]
+    MOVA%1       m3, [r2+3*%1]
     add          r2, 4*%1
     pxor         m0, m4
     pxor         m1, m4
@@ -84,18 +89,17 @@ cglobal put_no_rnd_pixels%1x%1_l2, 5,6,5
     pavgb        m1, m3
     pxor         m0, m4
     pxor         m1, m4
-    mova       [r0], m0
+    MOVA%1     [r0], m0
     add          r0, r3
-    mova       [r0], m1
+    MOVA%1     [r0], m1
     add          r0, r3
     sub         r5d, 4
     jne .loop
     RET
 %endmacro
 
-INIT_MMX mmxext
-PUT_NO_RND_PIXELS_L2 8
 INIT_XMM sse2
+PUT_NO_RND_PIXELS_L2 8
 PUT_NO_RND_PIXELS_L2 16
 
 %macro L2 5

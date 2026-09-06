@@ -34,9 +34,9 @@
 #include "qpel.h"
 
 FF_VISIBILITY_PUSH_HIDDEN
-void ff_put_no_rnd_pixels8x8_l2_mmxext(uint8_t *dst,
-                                       const uint8_t *src1, const uint8_t *src2,
-                                       ptrdiff_t dstStride, ptrdiff_t src1Stride);
+void ff_put_no_rnd_pixels8x8_l2_sse2(uint8_t *dst,
+                                     const uint8_t *src1, const uint8_t *src2,
+                                     ptrdiff_t dstStride, ptrdiff_t src1Stride);
 void ff_put_no_rnd_pixels16x16_l2_sse2(uint8_t *dst,
                                        const uint8_t *src1, const uint8_t *src2,
                                        ptrdiff_t dstStride, ptrdiff_t src1Stride);
@@ -241,10 +241,10 @@ MACRO(put,,                SIZE, SIZEP1, HXMM, VXMM, HVXMM, L2) \
 MACRO(avg,,                SIZE, SIZEP1, HXMM, VXMM, HVXMM, L2) \
 MACRO(put_no_rnd, no_rnd_, SIZE, SIZEP1, HXMM, VXMM, HVXMM, L2)
 
-QPEL3(QPEL_H,   8,  9, ssse3, sse2, ssse3, mmxext)
+QPEL3(QPEL_H,   8,  9, ssse3, sse2, ssse3, sse2)
 QPEL3(QPEL_H,  16, 17, ssse3, sse2, ssse3, sse2)
-QPEL3(QPEL_V,   8,  9, ssse3, sse2, ssse3, mmxext)
-QPEL3(QPEL_HV,  8,  9, ssse3, sse2, ssse3, mmxext)
+QPEL3(QPEL_V,   8,  9, ssse3, sse2, ssse3, sse2)
+QPEL3(QPEL_HV,  8,  9, ssse3, sse2, ssse3, sse2)
 QPEL3(QPEL_V,  16, 17, ssse3, sse2, ssse3, sse2)
 QPEL3(QPEL_HV, 16, 17, ssse3, sse2, ssse3, sse2)
 
