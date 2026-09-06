@@ -40,7 +40,44 @@ typedef struct {
     int rw_timeout;
     int trunc;
     char *priv_key;
+    int verify;
 } LIBSSHContext;
+
+#if LIBSSH_VERSION_INT < SSH_VERSION_INT(0, 8, 0)
+#define ssh_session_is_known_server ssh_is_server_known
+#define SSH_KNOWN_HOSTS_OK          SSH_SERVER_KNOWN_OK
+#define SSH_KNOWN_HOSTS_CHANGED     SSH_SERVER_KNOWN_CHANGED
+#define SSH_KNOWN_HOSTS_OTHER       SSH_SERVER_FOUND_OTHER
+#define SSH_KNOWN_HOSTS_UNKNOWN     SSH_SERVER_NOT_KNOWN
+#define SSH_KNOWN_HOSTS_NOT_FOUND   SSH_SERVER_FILE_NOT_FOUND
+#endif
+
+static av_cold int libssh_verify_hostkey(LIBSSHContext *libssh)
+{
+    int strict = 1;
+
+    ssh_options_set(libssh->session, SSH_OPTIONS_STRICTHOSTKEYCHECK, &strict);
+    switch (ssh_session_is_known_server(libssh->session)) {
+    case SSH_KNOWN_HOSTS_OK:
+        return 0;
+    case SSH_KNOWN_HOSTS_CHANGED:
+        av_log(libssh, AV_LOG_ERROR, "Host key for server has changed; "
+               "possible man-in-the-middle attack, refusing to connect.\n");
+        return AVERROR(EACCES);
+    case SSH_KNOWN_HOSTS_OTHER:
+        av_log(libssh, AV_LOG_ERROR, "Host key of a type different from the one "
+               "in the known_hosts file; refusing to connect.\n");
+        return AVERROR(EACCES);
+    case SSH_KNOWN_HOSTS_UNKNOWN:
+    case SSH_KNOWN_HOSTS_NOT_FOUND:
+        av_log(libssh, AV_LOG_ERROR, "Server is not a known host; refusing to connect.\n");
+        return AVERROR(EACCES);
+    default:
+        av_log(libssh, AV_LOG_ERROR, "Failed to check the server host key: %s\n",
+               ssh_get_error(libssh->session));
+        return AVERROR(EIO);
+    }
+}
 
 static av_cold int libssh_create_ssh_session(LIBSSHContext *libssh, const char* hostname, unsigned int port)
 {
@@ -65,6 +102,12 @@ static av_cold int libssh_create_ssh_session(LIBSSHContext *libssh, const char* 
     if (ssh_connect(libssh->session) != SSH_OK) {
         av_log(libssh, AV_LOG_ERROR, "Connection failed: %s\n", ssh_get_error(libssh->session));
         return AVERROR(EIO);
+    }
+
+    if (libssh->verify) {
+        int ret = libssh_verify_hostkey(libssh);
+        if (ret < 0)
+            return ret;
     }
 
     return 0;
@@ -477,6 +520,7 @@ static const AVOption options[] = {
     {"timeout", "set timeout of socket I/O operations", OFFSET(rw_timeout), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, D|E },
     {"truncate", "Truncate existing files on write", OFFSET(trunc), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, E },
     {"private_key", "set path to private key", OFFSET(priv_key), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, D|E },
+    {"verify", "verify the server host key against the known_hosts file", OFFSET(verify), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, D|E },
     {NULL}
 };
 

@@ -1239,6 +1239,11 @@ truncating. Default value is 1.
 Specify the path of the file containing private key to use during authorization.
 By default libssh searches for keys in the @file{~/.ssh/} directory.
 
+@item verify
+Verify the server host key against the known_hosts file before
+authenticating, if set to 1. Servers that are not in the file, or whose
+key differs from the one recorded there, are refused. Default value is 1.
+
 @end table
 
 Example: Play a file stored on remote server.
