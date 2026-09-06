@@ -23,6 +23,13 @@
 #include "libavcodec/bytestream.h"
 #include "libavcodec/dca_syncwords.h"
 
+static int dca_core_init(AVBSFContext *ctx)
+{
+    ctx->par_out->profile = AV_PROFILE_UNKNOWN;
+
+    return 0;
+}
+
 static int dca_core_filter(AVBSFContext *ctx, AVPacket *pkt)
 {
     GetByteContext gb;
@@ -57,5 +64,6 @@ static const enum AVCodecID codec_ids[] = {
 const FFBitStreamFilter ff_dca_core_bsf = {
     .p.name      = "dca_core",
     .p.codec_ids = codec_ids,
+    .init        = dca_core_init,
     .filter      = dca_core_filter,
 };
