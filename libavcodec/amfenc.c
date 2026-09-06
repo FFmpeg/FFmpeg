@@ -250,7 +250,7 @@ static int amf_copy_buffer(AVCodecContext *avctx, AVPacket *pkt, AMFBuffer *buff
         break;
     }
 
-    if (average_qp >= 0) {
+    if (ctx->qp_stats && average_qp >= 0) {
         ff_encode_add_stats_side_data(pkt, average_qp * FF_QP2LAMBDA, NULL, 0, pict_type);
     }
 
@@ -475,7 +475,9 @@ static int amf_submit_frame(AVCodecContext *avctx, AVFrame    *frame, AMFSurface
 
     switch (avctx->codec->id) {
     case AV_CODEC_ID_H264:
-        AMF_ASSIGN_PROPERTY_BOOL(res, surface, AMF_VIDEO_ENCODER_STATISTICS_FEEDBACK, 1);
+        if (ctx->qp_stats) {
+            AMF_ASSIGN_PROPERTY_BOOL(res, surface, AMF_VIDEO_ENCODER_STATISTICS_FEEDBACK, 1);
+        }
         AMF_ASSIGN_PROPERTY_INT64(res, surface, AMF_VIDEO_ENCODER_INSERT_AUD, !!ctx->aud);
         switch (frame->pict_type) {
         case AV_PICTURE_TYPE_I:
@@ -496,7 +498,9 @@ static int amf_submit_frame(AVCodecContext *avctx, AVFrame    *frame, AMFSurface
         }
         break;
     case AV_CODEC_ID_HEVC:
-        AMF_ASSIGN_PROPERTY_BOOL(res, surface, AMF_VIDEO_ENCODER_HEVC_STATISTICS_FEEDBACK, 1);
+        if (ctx->qp_stats) {
+            AMF_ASSIGN_PROPERTY_BOOL(res, surface, AMF_VIDEO_ENCODER_HEVC_STATISTICS_FEEDBACK, 1);
+        }
         AMF_ASSIGN_PROPERTY_INT64(res, surface, AMF_VIDEO_ENCODER_HEVC_INSERT_AUD, !!ctx->aud);
         switch (frame->pict_type) {
         case AV_PICTURE_TYPE_I:
@@ -513,7 +517,9 @@ static int amf_submit_frame(AVCodecContext *avctx, AVFrame    *frame, AMFSurface
         }
         break;
     case AV_CODEC_ID_AV1:
-        AMF_ASSIGN_PROPERTY_BOOL(res, surface, AMF_VIDEO_ENCODER_AV1_STATISTICS_FEEDBACK, 1);
+        if (ctx->qp_stats) {
+            AMF_ASSIGN_PROPERTY_BOOL(res, surface, AMF_VIDEO_ENCODER_AV1_STATISTICS_FEEDBACK, 1);
+        }
         if (frame->pict_type == AV_PICTURE_TYPE_I) {
             if (ctx->forced_idr) {
                 AMF_ASSIGN_PROPERTY_INT64(res, surface, AMF_VIDEO_ENCODER_AV1_FORCE_INSERT_SEQUENCE_HEADER, 1);

@@ -100,6 +100,7 @@ typedef struct AMFEncoderContext {
     int                 qvbr_quality_level;
     int                 hw_high_motion_quality_boost;
     int                 forced_idr;
+    int                 qp_stats;
 
     // HEVC - specific options
 
