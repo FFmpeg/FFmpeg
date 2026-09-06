@@ -27891,6 +27891,17 @@ horizontal and vertical output chroma subsample values. For example for the
 pixel format "yuv422p" @var{hsub} is 2 and @var{vsub} is 1.
 @end table
 
+@subsection Examples
+
+Convert a full-range, 8-bit YCgCo input to RGB and extract its first frame as
+a PNG:
+@example
+ffmpeg -i input.mov -vf "zscale=matrixin=ycgco:rangein=full:matrix=gbr:range=full,format=gbrp" -frames:v 1 output.png
+@end example
+The planar RGB format @code{gbrp} makes @ref{zscale} perform the color
+conversion before the automatic conversion to a pixel format supported by
+the PNG encoder. Set @option{rangein} to match the input's actual range.
+
 @subsection Commands
 
 This filter supports the following commands:
