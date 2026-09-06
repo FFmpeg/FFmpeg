@@ -755,7 +755,7 @@ static inline void rv34_mc(RV34DecContext *r, const int block_type,
         srcY -= 2 + 2*s->linesize;
         s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer, srcY,
                                  s->linesize, s->linesize,
-                                 (width << 3) + 6, (height << 3) + 6,
+                                 (width << 3) + 6, (height << 3) + 5,
                                  src_x - 2, src_y - 2,
                                  s->h_edge_pos, s->v_edge_pos);
         srcY = s->sc.edge_emu_buffer + 2 + 2*s->linesize;
