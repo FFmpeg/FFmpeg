@@ -416,6 +416,9 @@ fate-rv60-72x72: CMD = framecrc -i $(TARGET_SAMPLES)/rv60/test72x72.rmhd -an
 
 fate-rv60: fate-rv60-72x72 fate-rv60-512x512
 
+FATE_VIDEO-$(call FRAMECRC, AVI, IMM6, SCALE_FILTER) += fate-imm6
+fate-imm6: CMD = framecrc -i $(TARGET_SAMPLES)/imm6/imm6.avi -an -pix_fmt yuv420p10le -vf scale
+
 FATE_VIDEO += $(FATE_VIDEO-yes)
 
 FATE_SAMPLES_FFMPEG += $(FATE_VIDEO)
