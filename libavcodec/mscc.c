@@ -233,7 +233,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
 
     s->uncomp_size = avctx->height * stride;
-    if (!(s->uncomp_buf = av_malloc(s->uncomp_size)))
+    if (!(s->uncomp_buf = av_mallocz(s->uncomp_size)))
         return AVERROR(ENOMEM);
 
     return ff_inflate_init(&s->zstream, avctx);
