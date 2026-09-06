@@ -7922,7 +7922,16 @@ static int mov_create_timecode_track(AVFormatContext *s, int index, int src_inde
         return AVERROR(ENOMEM);
     *track->src_track = src_index;
     track->nb_src_track = 1;
-    track->timescale = mov->tracks[src_index].timescale;
+    if (mov->mode == MODE_ISM || mov->tracks[src_index].timescale <= 100000)
+        track->timescale = mov->tracks[src_index].timescale;
+    else if (tc.flags & AV_TIMECODE_FLAG_DROPFRAME)
+        track->timescale = tc.fps * 1000;
+    else if (tc.rate.den == 1001 && tc.rate.num > 0 && tc.rate.num <= 100000)
+        track->timescale = tc.rate.num;
+    else if (tc.rate.den == 1 && tc.rate.num > 0 && tc.rate.num <= 1000)
+        track->timescale = tc.rate.num;
+    else
+        track->timescale = tc.fps > 0 ? tc.fps : 30;
     if (tc.flags & AV_TIMECODE_FLAG_DROPFRAME)
         track->timecode_flags |= MOV_TIMECODE_FLAG_DROPFRAME;
 
