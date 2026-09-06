@@ -3129,7 +3129,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             if (!ff_alloc_extradata(st->codecpar, descriptor->extradata_size)) {
                 memcpy(st->codecpar->extradata, descriptor->extradata, descriptor->extradata_size);
             }
-        } else if (st->codecpar->codec_id == AV_CODEC_ID_H264) {
+        } else if (st->codecpar->codec_id == AV_CODEC_ID_H264 && source_track->intra_only) {
             int coded_width = mxf_get_codec_ul(mxf_intra_only_picture_coded_width,
                                                &descriptor->essence_codec_ul)->id;
             if (coded_width)
