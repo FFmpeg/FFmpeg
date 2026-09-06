@@ -895,7 +895,7 @@ static int floor_encode(vorbis_enc_context *venc, vorbis_enc_floor *fc,
 static float *put_vector(vorbis_enc_codebook *book, PutBitContext *pb,
                          float *num)
 {
-    int i, entry = -1;
+    int i, entry = 0;
     float distance = FLT_MAX;
     assert(book->dimensions);
     for (i = 0; i < book->nentries; i++) {
