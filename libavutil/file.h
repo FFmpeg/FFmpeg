@@ -59,4 +59,33 @@ int av_file_map(const char *filename, uint8_t **bufptr, size_t *size,
  */
 void av_file_unmap(uint8_t *bufptr, size_t size);
 
+/**
+ * Map the beginning of an open file into memory for shared read and write
+ * access.
+ *
+ * Unlike av_file_map() the mapping is not a private copy of the file, every
+ * store to the returned memory is written to the file and is visible to
+ * every other mapping of it, in this process and in other processes. The
+ * file is extended to size bytes if it is shorter, it is never shortened.
+ * The mapping must be released with av_file_unmap_shared().
+ *
+ * @param fd file descriptor of a file opened for reading and writing
+ * @param size number of bytes to map, must not be zero
+ * @param[out] bufptr pointee is set to the mapped memory
+ * @return 0 in case of success, a negative value corresponding to an
+ * AVERROR error code in case of failure, AVERROR(ENOSYS) when the platform
+ * has no shared file mappings
+ */
+av_warn_unused_result
+int av_file_map_shared(int fd, size_t size, void **bufptr);
+
+/**
+ * Unmap the memory mapped by av_file_map_shared().
+ *
+ * @param bufptr the memory previously mapped by av_file_map_shared()
+ * @param size size in bytes of the mapping, must be the same as passed
+ * to av_file_map_shared()
+ */
+void av_file_unmap_shared(void *bufptr, size_t size);
+
 #endif /* AVUTIL_FILE_H */

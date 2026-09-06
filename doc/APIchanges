@@ -2,6 +2,9 @@ The last version increases of all libraries were on 2026-06-23.
 
 API changes, most recent first:
 
+2026-09-xx - xxxxxxxxxx - lavu 61.8.100 - file.h
+  Add av_file_map_shared() and av_file_unmap_shared().
+
 2026-09-12 - xxxxxxxxxx - lavc 63.13.100 - codec_id.h, defs.h
   Add AV_CODEC_ID_ASTC and the AV_PROFILE_ASTC_* profile values.
 

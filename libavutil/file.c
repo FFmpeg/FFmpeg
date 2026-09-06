@@ -60,6 +60,57 @@ static const AVClass file_log_ctx_class = {
     .parent_log_context_offset = offsetof(FileLogContext, log_ctx),
 };
 
+#if HAVE_MMAP || HAVE_MAPVIEWOFFILE
+/* Map the first size bytes of the file, as a private copy or shared and
+ * writable. The shared mapping extends the file to size, on Windows the
+ * mapping object does it. */
+static int map_file(int fd, size_t size, int shared, void **ptr)
+{
+#if HAVE_MMAP
+    if (shared) {
+        struct stat st;
+        if (fstat(fd, &st) < 0)
+            return AVERROR(errno);
+        if (st.st_size < size && ftruncate(fd, size) < 0)
+            return AVERROR(errno);
+    }
+
+    void *map = mmap(NULL, size, PROT_READ | PROT_WRITE,
+                     shared ? MAP_SHARED : MAP_PRIVATE, fd, 0);
+    if (map == MAP_FAILED)
+        return AVERROR(errno);
+#else
+    HANDLE fh = (HANDLE)_get_osfhandle(fd);
+    if (fh == INVALID_HANDLE_VALUE)
+        return AVERROR(EBADF);
+
+    HANDLE mh = CreateFileMapping(fh, NULL,
+                                  shared ? PAGE_READWRITE : PAGE_READONLY,
+                                  (uint64_t)size >> 32, size, NULL);
+    if (!mh)
+        return AVERROR(EIO);
+
+    void *map = MapViewOfFile(mh, shared ? FILE_MAP_ALL_ACCESS : FILE_MAP_COPY,
+                              0, 0, size);
+    CloseHandle(mh);
+    if (!map)
+        return AVERROR(EIO);
+#endif
+
+    *ptr = map;
+    return 0;
+}
+
+static void unmap_file(void *ptr, size_t size)
+{
+#if HAVE_MMAP
+    munmap(ptr, size);
+#else
+    UnmapViewOfFile(ptr);
+#endif
+}
+#endif
+
 int av_file_map(const char *filename, uint8_t **bufptr, size_t *size,
                 int log_offset, void *log_ctx)
 {
@@ -96,39 +147,15 @@ int av_file_map(const char *filename, uint8_t **bufptr, size_t *size,
         goto out;
     }
 
-#if HAVE_MMAP
-    ptr = mmap(NULL, *size, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
-    if (ptr == MAP_FAILED) {
-        err = AVERROR(errno);
-        av_log(&file_log_ctx, AV_LOG_ERROR, "Error occurred in mmap(): %s\n", av_err2str(err));
+#if HAVE_MMAP || HAVE_MAPVIEWOFFILE
+    err = map_file(fd, *size, 0, &ptr);
+    if (err < 0) {
+        av_log(&file_log_ctx, AV_LOG_ERROR, "Cannot map file '%s': %s\n", filename, av_err2str(err));
         close(fd);
         *size = 0;
         return err;
     }
     *bufptr = ptr;
-#elif HAVE_MAPVIEWOFFILE
-    {
-        HANDLE mh, fh = (HANDLE)_get_osfhandle(fd);
-
-        mh = CreateFileMapping(fh, NULL, PAGE_READONLY, 0, 0, NULL);
-        if (!mh) {
-            av_log(&file_log_ctx, AV_LOG_ERROR, "Error occurred in CreateFileMapping()\n");
-            close(fd);
-            *size = 0;
-            return -1;
-        }
-
-        ptr = MapViewOfFile(mh, FILE_MAP_COPY, 0, 0, *size);
-        CloseHandle(mh);
-        if (!ptr) {
-            av_log(&file_log_ctx, AV_LOG_ERROR, "Error occurred in MapViewOfFile()\n");
-            close(fd);
-            *size = 0;
-            return -1;
-        }
-
-        *bufptr = ptr;
-    }
 #else
     *bufptr = av_malloc(*size);
     if (!*bufptr) {
@@ -149,11 +176,29 @@ void av_file_unmap(uint8_t *bufptr, size_t size)
 {
     if (!size || !bufptr)
         return;
-#if HAVE_MMAP
-    munmap(bufptr, size);
-#elif HAVE_MAPVIEWOFFILE
-    UnmapViewOfFile(bufptr);
+#if HAVE_MMAP || HAVE_MAPVIEWOFFILE
+    unmap_file(bufptr, size);
 #else
     av_free(bufptr);
+#endif
+}
+
+int av_file_map_shared(int fd, size_t size, void **bufptr)
+{
+    *bufptr = NULL;
+    if (!size)
+        return AVERROR(EINVAL);
+#if HAVE_MMAP || HAVE_MAPVIEWOFFILE
+    return map_file(fd, size, 1, bufptr);
+#else
+    return AVERROR(ENOSYS);
+#endif
+}
+
+void av_file_unmap_shared(void *bufptr, size_t size)
+{
+#if HAVE_MMAP || HAVE_MAPVIEWOFFILE
+    if (size && bufptr)
+        unmap_file(bufptr, size);
 #endif
 }
