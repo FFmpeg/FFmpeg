@@ -8155,6 +8155,7 @@ for thread in $THREADS_LIST; do
 done
 
 if disabled stdatomic; then
+    add_cppflags '-I\$(SRC_PATH)/compat/atomics'
     if enabled atomics_win32; then
         add_cppflags '-I\$(SRC_PATH)/compat/atomics/win32'
     else
