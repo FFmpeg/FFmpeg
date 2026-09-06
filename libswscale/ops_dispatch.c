@@ -365,8 +365,8 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
     return 0;
 }
 
-static void copy_lines(uint8_t *dst, const size_t dst_stride,
-                       const uint8_t *src, const size_t src_stride,
+static void copy_lines(uint8_t *dst, const ptrdiff_t dst_stride,
+                       const uint8_t *src, const ptrdiff_t src_stride,
                        const int h, const size_t bytes)
 {
     for (int y = 0; y < h; y++) {
