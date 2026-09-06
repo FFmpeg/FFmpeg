@@ -38,10 +38,13 @@
 typedef struct MFContext {
     AVClass *av_class;
     HMODULE library;
+#if CONFIG_D3D11VA
     HMODULE d3d_dll;
     ID3D11DeviceContext* d3d_context;
     IMFDXGIDeviceManager *dxgiManager;
     int resetToken;
+    AVD3D11VADeviceContext* device_hwctx;
+#endif
 
     MFFunctions functions;
     AVFrame *frame;
@@ -64,7 +67,6 @@ typedef struct MFContext {
     int opt_enc_quality;
     int opt_enc_scenario;
     int opt_enc_hw;
-    AVD3D11VADeviceContext* device_hwctx;
 } MFContext;
 
 static int mf_choose_output_type(AVCodecContext *avctx);
@@ -327,6 +329,7 @@ static int mf_a_avframe_to_sample(AVCodecContext *avctx, const AVFrame *frame, I
     return 0;
 }
 
+#if CONFIG_D3D11VA
 static int initialize_dxgi_manager(AVCodecContext *avctx)
 {
     MFContext *c = avctx->priv_data;
@@ -410,6 +413,8 @@ static int process_d3d11_frame(AVCodecContext *avctx, const AVFrame *frame, IMFS
     return 0;
 }
 
+#endif
+
 static int process_software_frame(AVCodecContext *avctx, const AVFrame *frame, IMFSample **out_sample)
 {
     MFContext *c = avctx->priv_data;
@@ -463,13 +468,16 @@ static int mf_v_avframe_to_sample(AVCodecContext *avctx, const AVFrame *frame, I
     HRESULT hr;
     int ret;
 
+#if CONFIG_D3D11VA
     if (frame->format == AV_PIX_FMT_D3D11) {
         // Handle D3D11 hardware frames
         ret = process_d3d11_frame(avctx, frame, &sample);
         if (ret < 0) {
             return ret;
         }
-    } else {
+    } else
+#endif
+    {
         // Handle software frames
         ret = process_software_frame(avctx, frame, &sample);
         if (ret < 0) {
@@ -1349,7 +1357,9 @@ static int mf_load_library(AVCodecContext *avctx)
 
 #if !HAVE_UWP
     c->library = dlopen("mfplat.dll", 0);
+#if CONFIG_D3D11VA
     c->d3d_dll = dlopen("D3D11.dll", 0);
+#endif
 
     if (!c->library) {
         av_log(c, AV_LOG_ERROR, "DLL mfplat.dll failed to open\n");
@@ -1362,8 +1372,10 @@ static int mf_load_library(AVCodecContext *avctx)
     LOAD_MF_FUNCTION(c, MFCreateAlignedMemoryBuffer);
     LOAD_MF_FUNCTION(c, MFCreateSample);
     LOAD_MF_FUNCTION(c, MFCreateMediaType);
+#if CONFIG_D3D11VA
     LOAD_MF_FUNCTION(c, MFCreateDXGISurfaceBuffer);
     LOAD_MF_FUNCTION(c, MFCreateDXGIDeviceManager);
+#endif
     // MFTEnumEx is missing in Windows Vista's mfplat.dll.
     LOAD_MF_FUNCTION(c, MFTEnumEx);
 
@@ -1380,15 +1392,19 @@ static int mf_close(AVCodecContext *avctx)
     if (c->async_events)
         IMFMediaEventGenerator_Release(c->async_events);
 
+#if CONFIG_D3D11VA
     if (c->dxgiManager)
         IMFDXGIDeviceManager_Release(c->dxgiManager);
+#endif
 
 #if !HAVE_UWP
     if (c->library)
         ff_free_mf(&c->functions, &c->mft);
 
     dlclose(c->library);
+#if CONFIG_D3D11VA
     dlclose(c->d3d_dll);
+#endif
     c->library = NULL;
 #else
     ff_free_mf(&c->functions, &c->mft);
@@ -1480,8 +1496,13 @@ static const FFCodecDefault defaults[] = {
     { NULL },
 };
 
+#if CONFIG_D3D11VA
 #define VFMTS \
         CODEC_PIXFMTS(AV_PIX_FMT_NV12, AV_PIX_FMT_YUV420P, AV_PIX_FMT_D3D11),
+#else
+#define VFMTS \
+        CODEC_PIXFMTS(AV_PIX_FMT_NV12, AV_PIX_FMT_YUV420P),
+#endif
 #define VCAPS \
         .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HYBRID |           \
                           AV_CODEC_CAP_DR1,
