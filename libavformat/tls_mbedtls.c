@@ -673,7 +673,7 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
         goto fail;
     }
 
-    if (!shr->listen && !shr->numerichost) {
+    if (!shr->listen) {
         if ((ret = mbedtls_ssl_set_hostname(&tls_ctx->ssl_context, shr->host)) != 0) {
             av_log(h, AV_LOG_ERROR, "mbedtls_ssl_set_hostname returned %d\n", ret);
             goto fail;
