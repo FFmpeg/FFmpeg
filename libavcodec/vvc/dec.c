@@ -369,13 +369,11 @@ static int pic_arrays_init(VVCContext *s, VVCFrameContext *fc)
     const VVCPPS *pps            = fc->ps.pps;
     const int ctu_count          = pps->ctb_count;
     const int pic_size_in_min_pu = pps->min_pu_width * pps->min_pu_height;
-    int ret;
 
     free_cus(fc);
 
-    ret = frame_context_for_each_tl(fc, tl_create);
-    if (ret < 0)
-        return ret;
+    if (frame_context_for_each_tl(fc, tl_create) < 0)
+        goto fail;
 
     // for error handling case, we may call free_cus before VVC_TASK_STAGE_INIT, so we need to set cus to 0 here
     memset(fc->tab.cus, 0, sizeof(*fc->tab.cus) * ctu_count);
@@ -386,7 +384,7 @@ static int pic_arrays_init(VVCContext *s, VVCFrameContext *fc)
         av_refstruct_pool_uninit(&fc->rpl_tab_pool);
         fc->rpl_tab_pool = av_refstruct_pool_alloc(ctu_count * sizeof(RefPicListTab), 0);
         if (!fc->rpl_tab_pool)
-            return AVERROR(ENOMEM);
+            goto fail;
     }
 
     if (fc->tab.sz.pic_size_in_min_pu != pic_size_in_min_pu) {
@@ -394,7 +392,7 @@ static int pic_arrays_init(VVCContext *s, VVCFrameContext *fc)
         fc->tab_dmvr_mvf_pool = av_refstruct_pool_alloc(
             pic_size_in_min_pu * sizeof(MvField), AV_REFSTRUCT_POOL_FLAG_ZERO_EVERY_TIME);
         if (!fc->tab_dmvr_mvf_pool)
-            return AVERROR(ENOMEM);
+            goto fail;
     }
 
     fc->tab.sz.ctu_count          = pps->ctb_count;
@@ -410,6 +408,11 @@ static int pic_arrays_init(VVCContext *s, VVCFrameContext *fc)
     fc->tab.sz.pixel_shift        = sps->pixel_shift;
 
     return 0;
+
+fail:
+    fc->tab.sz.ctu_count = 0;
+    pic_arrays_free(fc);
+    return AVERROR(ENOMEM);
 }
 
 int ff_vvc_per_frame_init(VVCFrameContext *fc)
