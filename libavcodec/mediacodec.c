@@ -96,6 +96,8 @@ int av_mediacodec_release_buffer(AVMediaCodecBuffer *buffer, int render)
                "Releasing output buffer %zd (%p) ts=%"PRId64" with render=%d [%d pending]\n",
                buffer->index, buffer, buffer->pts, render, atomic_load(&ctx->hw_buffer_count));
         return ff_AMediaCodec_releaseOutputBuffer(ctx->codec, buffer->index, render);
+    } else if (render) {
+        return AVERROR(ENOENT);
     }
 
     return 0;
@@ -114,7 +116,7 @@ int av_mediacodec_render_buffer_at_time(AVMediaCodecBuffer *buffer, int64_t time
         return ff_AMediaCodec_releaseOutputBufferAtTime(ctx->codec, buffer->index, time);
     }
 
-    return 0;
+    return AVERROR(ENOENT);
 }
 
 #else
