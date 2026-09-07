@@ -23,3 +23,4 @@ float fmaxf(float, float);
 long double fmodl(long double, long double);
 long double scalbnl(long double, int);
 long double copysignl(long double, long double);
+float exp2f(float);

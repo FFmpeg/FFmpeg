@@ -45,3 +45,8 @@ long double copysignl(long double x, long double y)
 {
     return copysign(x, y);
 }
+
+float exp2f(float x)
+{
+    return exp2(x);
+}
