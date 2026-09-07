@@ -172,8 +172,9 @@ The decklink output device provides playback capabilities for Blackmagic
 DeckLink devices.
 
 To enable this output device, you need the Blackmagic DeckLink SDK and you
-need to configure with the appropriate @code{--extra-cflags}
-and @code{--extra-ldflags}.
+need to configure with the appropriate @code{--extra-cflags},
+@code{--extra-cxxflags} and @code{--extra-ldflags}. The SDK include directory
+must be available to both the C and C++ compilers.
 On Windows, you need to run the IDL files through @command{widl}.
 
 DeckLink is very picky about the formats it supports. Pixel format is always
