@@ -33,6 +33,7 @@
 #include "libavutil/common.h"
 #include "libavutil/error.h"
 #include "libavutil/hash.h"
+#include "libavutil/internal.h"
 #include "libavutil/macros.h"
 #include "libavutil/opt.h"
 #include "avtextformat.h"
