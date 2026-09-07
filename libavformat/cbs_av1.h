@@ -16,5 +16,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "cbs_av1.h"
-#include "libavcodec/cbs_av1.c"
+#ifndef AVFORMAT_CBS_AV1_H
+#define AVFORMAT_CBS_AV1_H
+
+#include "cbs.h"
+
+#define CBS_AV1_OBU_TILE_LIST 0
+#define CBS_AV1_OBU_METADATA 0
+#define CBS_AV1_OBU_PADDING 0
+
+#include "libavcodec/cbs_av1.h"
+
+#endif /* AVFORMAT_CBS_AV1_H */

@@ -198,6 +198,11 @@ fate-mov-mp4-fragmented-ttml-dfxp: CMD = transcode srt $(TARGET_SAMPLES)/sub/Sub
   "-f lavfi -i smptehdbars=duration=24.5245:size=320x180:rate=24000/1001,format=yuv420p" \
   "" "" "data"
 
+FATE_MOV_FFMPEG_SAMPLES-$(call REMUX, MP4 IVF, MOV_DEMUXER AV1_PARSER EXTRACT_EXTRADATA_BSF) += fate-mov-av1-cenc
+fate-mov-av1-cenc: CMD = transcode ivf $(TARGET_SAMPLES)/av1/non_uniform_tiling.ivf mp4 \
+    "-c:v copy -encryption_scheme cenc-aes-ctr -encryption_key 00112233445566778899aabbccddeeff -encryption_kid 00112233445566778899aabbccddeeff" \
+    "-c:v copy" "" "" "-decryption_key 00112233445566778899aabbccddeeff"
+
 # avif demuxing - still image with 1 item.
 FATE_MOV_FFMPEG_SAMPLES-$(call FRAMECRC, MOV, AV1, AV1_PARSER) \
                            += fate-mov-avif-demux-still-image-1-item

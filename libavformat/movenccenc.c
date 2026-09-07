@@ -21,7 +21,7 @@
 #include "movenccenc.h"
 #include "libavcodec/av1_parse.h"
 #include "libavcodec/bytestream.h"
-#include "libavcodec/cbs_av1.h"
+#include "libavformat/cbs_av1.h"
 #include "libavutil/attributes.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
