@@ -24,6 +24,8 @@
  * MPEG Audio decoder
  */
 
+#include <math.h>
+
 #include "config_components.h"
 
 #include "libavutil/attributes.h"
@@ -31,7 +33,6 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/crc.h"
 #include "libavutil/float_dsp.h"
-#include "libavutil/libm.h"
 #include "libavutil/mem.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/thread.h"

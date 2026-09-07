@@ -34,13 +34,14 @@
 //#define CHECKED
 
 #include <limits.h>
+#include <math.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <assert.h>
 #include <stdio.h>
 #include "config.h"
 #include "attributes.h"
-#include "libm.h"
+#include "mathematics.h"
 #include "macros.h"
 
 #ifndef attribute_align_arg

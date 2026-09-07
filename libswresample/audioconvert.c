@@ -25,8 +25,10 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
+#include <math.h>
+
 #include "libavutil/avassert.h"
-#include "libavutil/libm.h"
+#include "libavutil/internal.h"
 #include "libavutil/mem.h"
 #include "libavutil/samplefmt.h"
 #include "audioconvert.h"

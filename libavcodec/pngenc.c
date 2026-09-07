@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <math.h>
+
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "encode.h"
@@ -33,7 +35,6 @@
 #include "libavutil/buffer.h"
 #include "libavutil/crc.h"
 #include "libavutil/csp.h"
-#include "libavutil/libm.h"
 #include "libavutil/mastering_display_metadata.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"

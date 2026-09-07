@@ -29,10 +29,10 @@
  * add sane pulse detection
  ***********************************/
 #include <float.h>
+#include <math.h>
 
 #include "libavutil/channel_layout.h"
 #include "libavutil/crc.h"
-#include "libavutil/libm.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"

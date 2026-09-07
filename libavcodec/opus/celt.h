@@ -24,6 +24,7 @@
 #ifndef AVCODEC_OPUS_CELT_H
 #define AVCODEC_OPUS_CELT_H
 
+#include <math.h>
 #include <stdint.h>
 
 #include "libavcodec/avcodec.h"
@@ -32,7 +33,6 @@
 #include "rc.h"
 
 #include "libavutil/float_dsp.h"
-#include "libavutil/libm.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/tx.h"
 

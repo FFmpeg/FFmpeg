@@ -32,7 +32,6 @@
 #include <float.h>
 
 #include "avstring.h"
-#include "libm.h"
 
 typedef struct FFFILE {
     size_t buf_size;

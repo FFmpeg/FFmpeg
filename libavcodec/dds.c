@@ -26,10 +26,10 @@
  * https://msdn.microsoft.com/en-us/library/bb943982%28v=vs.85%29.aspx
  */
 
+#include <math.h>
 #include <stdint.h>
 
 #include "libavutil/attributes.h"
-#include "libavutil/libm.h"
 #include "libavutil/imgutils.h"
 
 #include "avcodec.h"

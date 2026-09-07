@@ -23,6 +23,7 @@
  * video crop filter
  */
 
+#include <math.h>
 #include <stdio.h>
 
 #include "avfilter.h"
@@ -32,7 +33,6 @@
 #include "libavutil/eval.h"
 #include "libavutil/avstring.h"
 #include "libavutil/internal.h"
-#include "libavutil/libm.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"

@@ -24,6 +24,7 @@
  * JPEG XL encoder using libjxl
  */
 
+#include <math.h>
 #include <string.h>
 
 #include "libavutil/avutil.h"
@@ -31,7 +32,6 @@
 #include "libavutil/display.h"
 #include "libavutil/error.h"
 #include "libavutil/frame.h"
-#include "libavutil/libm.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"

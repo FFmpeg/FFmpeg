@@ -25,7 +25,8 @@
  * @author Rostislav Pehlivanov ( atomnuker gmail com )
  */
 
-#include "libavutil/libm.h"
+#include <math.h>
+
 #include "aacenc.h"
 #include <float.h>
 #include "aacenc_tns.h"

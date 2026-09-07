@@ -24,9 +24,6 @@
 
 #include "cbrt_data.h"
 #include "libavutil/attributes.h"
-#ifdef HAVE_AV_CONFIG_H // Only include libm.h when building for the target, not the host
-#include "libavutil/libm.h"
-#endif
 
 av_cold void ff_cbrt_dbl_tableinit(double tmp_lut[TMP_LUT_SIZE])
 {

@@ -38,8 +38,6 @@
 #define SINETABLE_CONST const
 #include "libavcodec/sinewin_fixed_tables.h"
 #else
-// do not use libavutil/libm.h since this is compiled both
-// for the host and the target and config.h is only valid for the target
 #include <math.h>
 #include "libavutil/attributes.h"
 

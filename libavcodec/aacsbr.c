@@ -35,7 +35,7 @@
 #include "sbrdsp.h"
 #include "libavutil/internal.h"
 #include "libavutil/intfloat.h"
-#include "libavutil/libm.h"
+#include "libavutil/mathematics.h"
 #include "libavutil/avassert.h"
 #include "libavutil/mem_internal.h"
 

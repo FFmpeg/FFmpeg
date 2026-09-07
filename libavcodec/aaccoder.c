@@ -30,7 +30,7 @@
  * add sane pulse detection
  ***********************************/
 
-#include "libavutil/libm.h" // brought forward to work around cygwin header breakage
+#include <math.h> // brought forward to work around cygwin header breakage
 
 #include <float.h>
 

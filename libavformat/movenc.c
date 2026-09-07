@@ -23,6 +23,7 @@
 
 #include "config_components.h"
 
+#include <math.h>
 #include <stdint.h>
 #include <inttypes.h>
 
@@ -54,7 +55,6 @@
 #include "libavutil/csp.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/mathematics.h"
-#include "libavutil/libm.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/dict.h"

@@ -22,7 +22,6 @@
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/float_dsp.h"
-#include "libavutil/libm.h"
 #include "libavutil/macros.h"
 
 #include "libavcodec/celp_math.h"

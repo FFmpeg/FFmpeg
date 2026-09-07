@@ -22,7 +22,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "libavutil/libm.h"
+#include "libavutil/mathematics.h"
 #include "libavutil/eval.h"
 
 static const double const_values[] = {

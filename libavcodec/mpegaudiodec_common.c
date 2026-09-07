@@ -24,11 +24,11 @@
  * mpeg audio layer decoder tables.
  */
 
+#include <math.h>
 #include <stddef.h>
 #include <stdint.h>
 
 #include "libavutil/avassert.h"
-#include "libavutil/libm.h"
 #include "libavutil/thread.h"
 
 #include "mpegaudiodata.h"
