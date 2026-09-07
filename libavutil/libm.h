@@ -25,11 +25,6 @@
 #define AVUTIL_LIBM_H
 
 #include <math.h>
-#include "config.h"
 #include "mathematics.h"
-
-#if HAVE_MIPSFPU && HAVE_INLINE_ASM
-#include "libavutil/mips/libm_mips.h"
-#endif /* HAVE_MIPSFPU && HAVE_INLINE_ASM*/
 
 #endif /* AVUTIL_LIBM_H */

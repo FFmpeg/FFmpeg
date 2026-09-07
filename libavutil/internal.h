@@ -51,6 +51,10 @@
 #endif
 #endif
 
+#if HAVE_MIPSFPU && HAVE_INLINE_ASM
+#   include "mips/libm_mips.h"
+#endif
+
 #if HAVE_PRAGMA_DEPRECATED
 #    if defined(__ICL) || defined (__INTEL_COMPILER)
 #        define FF_DISABLE_DEPRECATION_WARNINGS __pragma(warning(push)) __pragma(warning(disable:1478))

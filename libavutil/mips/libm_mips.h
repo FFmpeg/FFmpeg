@@ -53,6 +53,8 @@
 #ifndef AVUTIL_MIPS_LIBM_MIPS_H
 #define AVUTIL_MIPS_LIBM_MIPS_H
 
+#include <math.h>
+
 #include "libavutil/attributes.h"
 
 static av_always_inline av_const long int lrintf_mips(float x)
