@@ -304,10 +304,12 @@ static void event_callback(LCEVC_DecoderHandle dec, LCEVC_Event event,
     switch (event) {
     case LCEVC_Log: {
         unsigned int level = 0;
+        if (size < 3)
+            break;
         int ret = sscanf(data, "%u ", &level);
         if (ret != 1 || level >= LCEVC_LogLevelCount || !level_map[level])
             break;
-        av_log(logctx, level_map[level], "%s\n", data);
+        av_log(logctx, level_map[level], "%s\n", data + 2);
         break;
     }
     default:
