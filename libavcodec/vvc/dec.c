@@ -301,7 +301,7 @@ static void ibc_tl_init(TabList *l, VVCFrameContext *fc)
     const int has_ibc    = sps ? sps->r->sps_ibc_enabled_flag : 0;
     const int changed    = fc->tab.sz.chroma_format_idc != chroma_idc ||
         fc->tab.sz.ctu_height != ctu_height ||
-        fc->tab.sz.ctu_size != ctu_size ||
+        fc->tab.sz.ctu_size != ctu_size * ctu_size ||
         fc->tab.sz.pixel_shift != ps;
 
     fc->tab.sz.ibc_buffer_width = ctu_size ? 2 * MAX_CTU_SIZE * MAX_CTU_SIZE / ctu_size : 0;
