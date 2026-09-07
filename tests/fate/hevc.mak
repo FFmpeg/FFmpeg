@@ -265,6 +265,10 @@ fate-hevc-bsf-dovi-split-el-rpu: CMD = framecrc -i $(TARGET_SAMPLES)/mkv/dovi-p7
 fate-hevc-skiploopfilter: CMD = framemd5 -skip_loop_filter nokey -i $(TARGET_SAMPLES)/hevc-conformance/SAO_D_Samsung_5.bit -sws_flags bitexact
 FATE_HEVC-$(call FRAMEMD5, HEVC, HEVC, HEVC_PARSER) += fate-hevc-skiploopfilter
 
+fate-hevc-skipframe-dslice: CMD = framecrc -skip_frame nointra -err_detect explode -i $(TARGET_SAMPLES)/hevc-conformance/DSLICE_A_HHI_5.bit
+fate-hevc-skipframe-slices: CMD = framecrc -skip_frame nointra -err_detect explode -i $(TARGET_SAMPLES)/hevc-conformance/SLICES_A_Rovi_3.bit
+FATE_HEVC-$(call FRAMECRC, HEVC, HEVC, HEVC_PARSER) += fate-hevc-skipframe-dslice fate-hevc-skipframe-slices
+
 # this sample has two stsd entries and needs to reload extradata
 FATE_HEVC-$(call FRAMEMD5, MOV, HEVC, SCALE_FILTER) += fate-hevc-extradata-reload
 fate-hevc-extradata-reload: CMD = framemd5 -i $(TARGET_SAMPLES)/hevc/extradata-reload-multi-stsd.mov -sws_flags bitexact
