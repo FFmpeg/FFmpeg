@@ -707,7 +707,7 @@ void ff_vvc_frame_thread_free(VVCFrameContext *fc)
     ff_cond_destroy(&ft->cond);
     av_freep(&ft->rows);
     av_freep(&ft->tasks);
-    av_freep(&ft);
+    av_freep(&fc->ft);
 }
 
 static void frame_thread_init_score(VVCFrameContext *fc)
