@@ -21,10 +21,6 @@
 
 #include "config.h"
 
-#include "libavutil/error.h"
-
-#include "jit.h"
-
 #if HAVE_MMAP && HAVE_MPROTECT
 #   define _DEFAULT_SOURCE
 #   define _SVID_SOURCE // needed for MAP_ANONYMOUS
@@ -34,6 +30,10 @@
 #       define MAP_ANONYMOUS MAP_ANON
 #   endif
 #endif
+
+#include "libavutil/error.h"
+
+#include "jit.h"
 
 #if HAVE_MMAP && HAVE_MPROTECT && defined(MAP_ANONYMOUS)
 
