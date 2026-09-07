@@ -259,6 +259,7 @@ TESTPROGS = adler32                                                     \
             aes                                                         \
             aes_ctr                                                     \
             ambient_viewing_environment                                 \
+            atomic                                                      \
             audio_fifo                                                  \
             avstring                                                    \
             base64                                                      \

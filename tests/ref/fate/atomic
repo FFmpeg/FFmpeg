@@ -1,0 +1,172 @@
+char exchange  97
+char add       122
+char sub       123
+char or        0
+char xor       16
+char and       0
+char cas       0 90
+char cas weak  1 90 97
+schar exchange  -5
+schar add       42
+schar sub       43
+schar or        0
+schar xor       16
+schar and       0
+schar cas       0 90
+schar cas weak  1 90 -5
+uchar exchange  200
+uchar add       42
+uchar sub       43
+uchar or        0
+uchar xor       16
+uchar and       0
+uchar cas       0 90
+uchar cas weak  1 90 200
+short exchange  -30000
+short add       42
+short sub       43
+short or        0
+short xor       16
+short and       0
+short cas       0 90
+short cas weak  1 90 -30000
+ushort exchange  60000
+ushort add       42
+ushort sub       43
+ushort or        0
+ushort xor       16
+ushort and       0
+ushort cas       0 90
+ushort cas weak  1 90 60000
+int exchange  -2000000000
+int add       2000000000
+int sub       2000000001
+int or        0
+int xor       16
+int and       0
+int cas       0 90
+int cas weak  1 90 -2000000000
+uint exchange  4000000000
+uint add       7
+uint sub       8
+uint or        0
+uint xor       16
+uint and       0
+uint cas       0 90
+uint cas weak  1 90 4000000000
+long exchange  -2000000000
+long add       2000000000
+long sub       2000000001
+long or        0
+long xor       16
+long and       0
+long cas       0 90
+long cas weak  1 90 -2000000000
+ulong exchange  4000000000
+ulong add       7
+ulong sub       8
+ulong or        0
+ulong xor       16
+ulong and       0
+ulong cas       0 90
+ulong cas weak  1 90 4000000000
+llong exchange  -9007199254740993
+llong add       9007199254740993
+llong sub       9007199254740994
+llong or        0
+llong xor       16
+llong and       0
+llong cas       0 90
+llong cas weak  1 90 -9007199254740993
+ullong exchange  -1
+ullong add       3
+ullong sub       4
+ullong or        0
+ullong xor       16
+ullong and       0
+ullong cas       0 90
+ullong cas weak  1 90 -1
+int_least16 exchange  -30000
+int_least16 add       42
+int_least16 sub       43
+int_least16 or        0
+int_least16 xor       16
+int_least16 and       0
+int_least16 cas       0 90
+int_least16 cas weak  1 90 -30000
+uint_least32 exchange  4000000000
+uint_least32 add       7
+uint_least32 sub       8
+uint_least32 or        0
+uint_least32 xor       16
+uint_least32 and       0
+uint_least32 cas       0 90
+uint_least32 cas weak  1 90 4000000000
+int_least64 exchange  -9007199254740993
+int_least64 add       9007199254740993
+int_least64 sub       9007199254740994
+int_least64 or        0
+int_least64 xor       16
+int_least64 and       0
+int_least64 cas       0 90
+int_least64 cas weak  1 90 -9007199254740993
+uint_least64 exchange  -1
+uint_least64 add       3
+uint_least64 sub       4
+uint_least64 or        0
+uint_least64 xor       16
+uint_least64 and       0
+uint_least64 cas       0 90
+uint_least64 cas weak  1 90 -1
+int_fast16 exchange  -30000
+int_fast16 add       42
+int_fast16 sub       43
+int_fast16 or        0
+int_fast16 xor       16
+int_fast16 and       0
+int_fast16 cas       0 90
+int_fast16 cas weak  1 90 -30000
+uint_fast32 exchange  4000000000
+uint_fast32 add       7
+uint_fast32 sub       8
+uint_fast32 or        0
+uint_fast32 xor       16
+uint_fast32 and       0
+uint_fast32 cas       0 90
+uint_fast32 cas weak  1 90 4000000000
+intptr exchange  -123456
+intptr add       42
+intptr sub       43
+intptr or        0
+intptr xor       16
+intptr and       0
+intptr cas       0 90
+intptr cas weak  1 90 -123456
+size exchange  4000000000
+size add       7
+size sub       8
+size or        0
+size xor       16
+size and       0
+size cas       0 90
+size cas weak  1 90 4000000000
+intmax exchange  -9007199254740993
+intmax add       9007199254740993
+intmax sub       9007199254740994
+intmax or        0
+intmax xor       16
+intmax and       0
+intmax cas       0 90
+intmax cas weak  1 90 -9007199254740993
+uint wrap  4294967295 0
+ullong add -1 0
+ullong sub 5 -5
+uchar add  200 44
+bool       1 1 1 0 1
+ptr        1 0 1
+ptr exch   1
+lst        1 1
+flag       0 1 0
+called     1
+init       43
+kill_dep   1
