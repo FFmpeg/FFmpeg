@@ -20,6 +20,7 @@
 #include <stdint.h>
 
 #include "libavutil/avassert.h"
+#include "libavutil/common.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/libm.h"
 #include "libavutil/macros.h"
@@ -50,7 +51,7 @@ int main(void)
     av_assert0(212 == d);
 
     for (i = 1024; i >= 1; i/=2)
-        av_assert0(ff_log2_q15(i) == (1<<15)*((int)log2(i))+(1<<2));
+        av_assert0(ff_log2_q15(i) == (1<<15)*av_log2(i)+(1<<2));
 
     return 0;
 }
