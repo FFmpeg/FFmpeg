@@ -43,7 +43,8 @@ void ff_icc_context_uninit(FFIccContext *s)
 {
     for (int i = 0; i < FF_ARRAY_ELEMS(s->curves); i++)
         cmsFreeToneCurve(s->curves[i]);
-    cmsDeleteContext(s->ctx);
+    if (s->ctx)
+        cmsDeleteContext(s->ctx);
     memset(s, 0, sizeof(*s));
 }
 
