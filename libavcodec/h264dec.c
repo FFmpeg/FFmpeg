@@ -603,6 +603,39 @@ static int h264_attach_partitions(const H264Context *h, H264SliceContext *sl,
     return idx;
 }
 
+static int h264_decode_sei(H264Context *h, H2645NAL *nal)
+{
+    AVCodecContext *const avctx = h->avctx;
+    int ret;
+
+    ret = ff_h264_sei_decode(&h->sei, &nal->gb, &h->ps, avctx);
+    h->has_recovery_point = h->has_recovery_point || h->sei.recovery_point.recovery_frame_cnt != -1;
+    if (avctx->debug & FF_DEBUG_GREEN_MD)
+        debug_green_metadata(&h->sei.green_metadata, avctx);
+    if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))
+        return ret;
+
+    return 0;
+}
+
+/* Decode the SEI NAL units following the slice at idx. */
+static int h264_decode_late_sei(H264Context *h, int idx)
+{
+    for (int i = idx + 1; i < h->pkt.nb_nals; i++) {
+        H2645NAL *nal = &h->pkt.nals[i];
+        int ret;
+
+        if (nal->type != H264_NAL_SEI)
+            continue;
+
+        ret = h264_decode_sei(h, nal);
+        if (ret < 0)
+            return ret;
+    }
+
+    return 0;
+}
+
 static int decode_nal_units(H264Context *h, AVBufferRef *buf_ref,
                             const uint8_t *buf, int buf_size)
 {
@@ -707,6 +740,9 @@ static int decode_nal_units(H264Context *h, AVBufferRef *buf_ref,
             if (h->current_slice == 1) {
                 if (avctx->active_thread_type & FF_THREAD_FRAME &&
                     i >= nals_needed && !h->setup_finished && h->cur_pic_ptr) {
+                    ret = h264_decode_late_sei(h, i);
+                    if (ret < 0)
+                        goto end;
                     ff_thread_finish_setup(avctx);
                     h->setup_finished = 1;
                 }
@@ -737,15 +773,11 @@ static int decode_nal_units(H264Context *h, AVBufferRef *buf_ref,
                        nal->type == H264_NAL_DPB ? 'B' : 'C');
             break;
         case H264_NAL_SEI:
-            if (h->setup_finished) {
-                avpriv_request_sample(avctx, "Late SEI");
+            /* already decoded by h264_decode_late_sei() */
+            if (h->setup_finished)
                 break;
-            }
-            ret = ff_h264_sei_decode(&h->sei, &nal->gb, &h->ps, avctx);
-            h->has_recovery_point = h->has_recovery_point || h->sei.recovery_point.recovery_frame_cnt != -1;
-            if (avctx->debug & FF_DEBUG_GREEN_MD)
-                debug_green_metadata(&h->sei.green_metadata, h->avctx);
-            if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
+            ret = h264_decode_sei(h, nal);
+            if (ret < 0)
                 goto end;
             break;
         case H264_NAL_SPS: {
