@@ -355,6 +355,7 @@ int ff_h2645_sei_ctx_replace(H2645SEI *dst, const H2645SEI *src)
     }
     dst->itut_t35.aom_film_grain.enable = src->itut_t35.aom_film_grain.enable;
 
+    dst->alternative_transfer  = src->alternative_transfer;
     dst->ambient_viewing_environment = src->ambient_viewing_environment;
     dst->mastering_display     = src->mastering_display;
     dst->content_light         = src->content_light;
