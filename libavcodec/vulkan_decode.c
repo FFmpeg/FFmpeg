@@ -460,12 +460,19 @@ int ff_vk_decode_frame(AVCodecContext *avctx,
 
     FFVkExecContext *exec = ff_vk_exec_get(&ctx->s, &ctx->exec_pool);
 
-    /* The current decoding reference has to be bound as an inactive reference */
-    VkVideoReferenceSlotInfoKHR *cur_vk_ref;
-    cur_vk_ref = (void *)&decode_start.pReferenceSlots[decode_start.referenceSlotCount];
-    cur_vk_ref[0] = vp->ref_slot;
-    cur_vk_ref[0].slotIndex = -1;
-    decode_start.referenceSlotCount++;
+    /* The current picture's resource has to be bound as an inactive
+     * reference, unless its slot is already bound as an active one, as when
+     * decoding the second field of a pair. */
+    int cur_bound = 0;
+    for (int i = 0; i < decode_start.referenceSlotCount; i++)
+        cur_bound |= decode_start.pReferenceSlots[i].slotIndex == vp->ref_slot.slotIndex;
+    if (!cur_bound) {
+        VkVideoReferenceSlotInfoKHR *cur_vk_ref;
+        cur_vk_ref = (void *)&decode_start.pReferenceSlots[decode_start.referenceSlotCount];
+        cur_vk_ref[0] = vp->ref_slot;
+        cur_vk_ref[0].slotIndex = -1;
+        decode_start.referenceSlotCount++;
+    }
 
     sd_buf = vp->slices_buf;
 
