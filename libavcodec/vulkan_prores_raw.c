@@ -226,7 +226,10 @@ static int vk_prores_raw_end_frame(AVCodecContext *avctx)
     DecodePushData pd_decode = (DecodePushData) {
         .pkt_data = slices_buf->address,
     };
-    memcpy(pd_decode.qmat, prr->qmat, 64);
+    /* The decoder permutes the quantization matrix to match the layout
+     * expected by its IDCT, undo it here. */
+    for (int i = 0; i < 64; i++)
+        pd_decode.qmat[prr->prodsp.idct_permutation[i]] = prr->qmat[i];
     memcpy(pd_decode.lin_curve, prr->lin_curve, sizeof(pd_decode.lin_curve));
     ff_vk_shader_update_push_const(&ctx->s, exec, decode_shader,
                                    VK_SHADER_STAGE_COMPUTE_BIT,
