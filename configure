@@ -990,10 +990,10 @@ add_objcflags(){
     append OBJCFLAGS $($objcflags_filter "$@")
 }
 
+# This also covers ObjC, it inherits CFLAGS.
 add_allcflags(){
     add_cflags "$@"
     add_cxxflags "$@"
-    add_objcflags "$@"
 }
 
 add_asflags(){
@@ -1390,11 +1390,7 @@ check_objcflags(){
 }
 
 check_allcflags(){
-    allcret=0
-    check_cflags "$@" || allcret=$?
-    check_cxxflags "$@" || allcret=$?
-    check_objcflags "$@" || allcret=$?
-    return $allcret
+    check_cflags "$@" && check_cxxflags "$@"
 }
 
 test_ldflags(){
@@ -7784,7 +7780,7 @@ fi
 
 enabled debug && add_allcflags -g"$debuglevel" && add_asflags -g"$debuglevel"
 
-for lang in c cxx objc; do
+for lang in c cxx; do
     test_${lang}flags -Werror=unused-command-line-argument &&
         append unknown_warning_${lang}flags "-Werror=unused-command-line-argument"
     test_${lang}flags -Werror=unknown-warning-option &&
@@ -7796,7 +7792,6 @@ check_warning(){
     flag_to_add=${2:-$1}
     test_cflags $unknown_warning_cflags $warning_flag && add_cflags $flag_to_add
     test_cxxflags -Werror $unknown_warning_cxxflags $warning_flag && add_cxxflags $flag_to_add
-    test_objcflags $unknown_warning_objcflags $warning_flag && add_objcflags $flag_to_add
 }
 
 check_disable_warning(){
