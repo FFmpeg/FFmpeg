@@ -213,34 +213,10 @@ static int vk_apv_end_frame(AVCodecContext *avctx)
     vkf->layout[0] = VK_IMAGE_LAYOUT_UNDEFINED;
     vkf->access[0] = VK_ACCESS_2_NONE;
 
-    ff_vk_frame_barrier(&ctx->s, exec, apv->output_frame,
-                        img_bar, &nb_img_bar,
-                        VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
-                        VK_PIPELINE_STAGE_2_CLEAR_BIT,
-                        VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                        VK_IMAGE_LAYOUT_GENERAL,
-                        VK_QUEUE_FAMILY_IGNORED);
-    vk->CmdPipelineBarrier2(exec->buf, &(VkDependencyInfo) {
-        .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-        .pImageMemoryBarriers = img_bar,
-        .imageMemoryBarrierCount = nb_img_bar,
-    });
-    nb_img_bar = 0;
-
-    /* Zero frame */
-    for (int i = 0; i < ff_vk_count_images(vkf); i++)
-        vk->CmdClearColorImage(exec->buf, vkf->img[i],
-                               VK_IMAGE_LAYOUT_GENERAL,
-                               &((VkClearColorValue) { 0 }),
-                               1, &((VkImageSubresourceRange) {
-                                   .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                                   .levelCount = 1,
-                                   .layerCount = 1,
-                               }));
-
-    /* Wait for the frame to get zeroed out before continuing */
+    /* The IDCT shader writes every sample of the coded area, so the frame
+     * does not need to be cleared first. */
     ff_vk_frame_barrier(&ctx->s, exec, apv->output_frame, img_bar, &nb_img_bar,
-                        VK_PIPELINE_STAGE_2_CLEAR_BIT,
+                        VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
                         VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                         VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
                         VK_IMAGE_LAYOUT_GENERAL,

@@ -192,7 +192,7 @@ void decode_block(uint cbase, int cstride, ivec2 pos, uint comp)
         if (coeff_zero_run > APV_BLK_COEFFS - scan_pos)
             return;
 
-        /* image was already pre-cleared to all zeroes */
+        /* the coefficient buffer was zero-filled, so runs need no writes */
         scan_pos += coeff_zero_run;
         prev_run = coeff_zero_run;
 
