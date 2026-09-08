@@ -183,6 +183,12 @@ bool decode_slice_header(uint slice_idx, inout SliceContext sc)
     sc.slice_rct_coef = ivec2(1, 1);
     sc.slice_coding_mode = int(0);
 
+    /* Only coded from version 4 on, but the slice context buffer is never
+     * cleared, so they must be reset here */
+    sc.slice_reset_contexts = false;
+    sc.remap = 0;
+    sc.remap_count = i32vec4(0);
+
     for (uint i = 0; i < codec_planes; i++) {
         uint idx = hdr_sym[4 + i];
         if (idx >= quant_table_count)
