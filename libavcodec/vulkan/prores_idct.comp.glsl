@@ -102,13 +102,16 @@ void main(void)
     barrier();
 
     float fact = 1 << (depth - 1);
-    int maxv = (1 << depth) - 1;
+
+    /* Samples are clipped to the legal range, excluding the values reserved
+     * for synchronization, matching the software decoder */
+    int minv = 4, maxv = (1 << depth) - 5;
 
     /* 7.5.1 Color Component Samples. Rescale, clamp and write back to global memory */
     if (act) {
         [[unroll]] for (uint i = 0; i < 8; ++i) {
             float v = round(blocks[block][i * 9 + idx] * fact);
-            put_px(comp, ivec2(gid.x, (gid.y << 3) + i), clamp(int(v), 0, maxv));
+            put_px(comp, ivec2(gid.x, (gid.y << 3) + i), clamp(int(v), minv, maxv));
         }
     }
 }
