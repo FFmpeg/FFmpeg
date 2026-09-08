@@ -276,13 +276,17 @@ struct GetBitContext {
 shared u32vec4 gb_storage[gl_WorkGroupSize.x*gl_WorkGroupSize.y*gl_WorkGroupSize.z*GET_BITS_SMEM];
 
 /* Requires a line-aligned address; LOAD64() absorbs the origin's offset,
- * so refills land on line boundaries. */
+ * so refills land on line boundaries. Lines past the end of the buffer
+ * are clamped to the last one to avoid reading past the padding. */
 #define FILL_SMEM(addr)                                                         \
     {                                                                           \
-        u32vec4buf ptr = u32vec4buf(addr);                                      \
+        uint64_t gb_last_line = max(gb.buf_start & ~uint64_t(15),               \
+                                    (gb.buf_end - 1) & ~uint64_t(15));          \
         [[unroll]]                                                              \
-        for (uint i = 0; i < GET_BITS_SMEM; ++i)                                \
-            gb_storage[gl_LocalInvocationIndex * GET_BITS_SMEM + i] = ptr[i].v; \
+        for (uint i = 0; i < GET_BITS_SMEM; ++i) {                              \
+            u32vec4buf ptr = u32vec4buf(min((addr) + 16*i, gb_last_line));      \
+            gb_storage[gl_LocalInvocationIndex * GET_BITS_SMEM + i] = ptr[0].v; \
+        }                                                                       \
     }
 
 #define LOAD64()                                              \
