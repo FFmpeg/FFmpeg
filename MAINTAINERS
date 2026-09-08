@@ -150,6 +150,7 @@ Codecs:
   8bps.c                                Roberto Togni
   8svx.c                                Jaikrishnan Menon
   aacenc*, aaccoder.c                   Rostislav Pehlivanov
+  ac3dec*, eac3dec*                     Ayoub Nabil Boubagrat
   adpcm.c                               Zane van Iperen
   alacenc.c                             Jaikrishnan Menon
   alsdec.c                              Thilo Borgmann, Umair Khan
