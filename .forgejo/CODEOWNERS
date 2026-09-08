@@ -98,6 +98,7 @@ libavcodec/x86/vpx.* @rbultje
 libavfilter/af_loudnorm.* @kylophone
 libavfilter/af_whisper.* @vpalmisano
 libavfilter/.*_amf* @OvchinnikovDmitrii @ArazIusubov
+libavfilter/.*_d3d12.* @younengxiao
 libavfilter/avfiltergraph.* @haasn
 libavfilter/colorspace.* @rbultje
 libavfilter/formats.* @haasn
