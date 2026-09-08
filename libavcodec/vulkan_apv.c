@@ -406,7 +406,7 @@ static int init_idct_shader(AVCodecContext *avctx, FFVulkanContext *s,
     AVHWFramesContext *dec_frames_ctx;
     dec_frames_ctx = (AVHWFramesContext *)avctx->hw_frames_ctx->data;
 
-    SPEC_LIST_CREATE(sl, 1 + 64, (1 + 64)*sizeof(uint32_t))
+    SPEC_LIST_CREATE(sl, 1 + 8, (1 + 8)*sizeof(uint32_t))
     SPEC_LIST_ADD(sl, 16, 32, 8); /* nb_blocks per workgroup */
 
     const double idct_8_scales[8] = {
@@ -415,9 +415,8 @@ static int init_idct_shader(AVCodecContext *avctx, FFVulkanContext *s,
         cos(4.0*M_PI/16.0) / 2.0, cos(5.0*M_PI/16.0) / 2.0,
         cos(6.0*M_PI/16.0) / 2.0, cos(7.0*M_PI/16.0) / 2.0,
     };
-    for (int i = 0; i < 64; i++)
-        SPEC_LIST_ADD(sl, 18 + i, 32,
-                      av_float2int(idct_8_scales[i >> 3]*idct_8_scales[i & 7]));
+    for (int i = 0; i < 8; i++)
+        SPEC_LIST_ADD(sl, 18 + i, 32, av_float2int(idct_8_scales[i]));
 
     ff_vk_shader_load(shd, VK_SHADER_STAGE_COMPUTE_BIT, sl,
                       (uint32_t []) { 32, 2, 1 }, 0);

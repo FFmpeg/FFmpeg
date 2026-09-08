@@ -106,6 +106,9 @@ void main(void)
     /* blocks fully outside the coded area have nothing stored for them */
     const bool oob = pos.x >= cstride || pos.y >= cheight;
 
+    /* Loop-invariant column scale */
+    const float col_scale = norm * idct_scale[col];
+
     [[unroll]]
     for (uint y = 0u; y < 8u; y++) {
         /* load */
@@ -114,9 +117,9 @@ void main(void)
                                                  pos.x + int(col))]);
         /* dequant + norm */
         int   qs    = level_scale * int(q_matrix[comp][col][y]) * (1 << qp_shift);
-        float v     = float(coeff * qs) * norm;
+        float v     = float(coeff * qs) * col_scale;
         /* scale */
-        blocks[block][y * 9u + col] = v * idct_scale[y * 8u + col];
+        blocks[block][y * 9u + col] = v * idct_scale[y];
     }
     barrier();
 

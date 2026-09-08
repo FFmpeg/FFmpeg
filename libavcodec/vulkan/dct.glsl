@@ -39,20 +39,12 @@
 layout (constant_id = 16) const uint32_t nb_blocks = 1;
 layout (constant_id = 17) const uint32_t nb_components = 1;
 
+/* Coefficient (y, x) is scaled by sv[y]*sv[x]. Kept separable, as a
+ * 64-entry table costs a divergent load per coefficient. */
 #define V(I) layout(constant_id = (18 + I)) const float sv##I = I;
-V( 0) V( 1) V( 2) V( 3) V( 4) V( 5) V( 6) V( 7) V( 8) V( 9) V(10) V(11) V(12)
-V(13) V(14) V(15) V(16) V(17) V(18) V(19) V(20) V(21) V(22) V(23) V(24) V(25)
-V(26) V(27) V(28) V(29) V(30) V(31) V(32) V(33) V(34) V(35) V(36) V(37) V(38)
-V(39) V(40) V(41) V(42) V(43) V(44) V(45) V(46) V(47) V(48) V(49) V(50) V(51)
-V(52) V(53) V(54) V(55) V(56) V(57) V(58) V(59) V(60) V(61) V(62) V(63)
+V( 0) V( 1) V( 2) V( 3) V( 4) V( 5) V( 6) V( 7)
 
-const float idct_scale[64] = {
-     sv0,  sv1,  sv2,  sv3,  sv4,  sv5,  sv6,  sv7,  sv8,  sv9, sv10, sv11, sv12,
-    sv13, sv14, sv15, sv16, sv17, sv18, sv19, sv20, sv21, sv22, sv23, sv24, sv25,
-    sv26, sv27, sv28, sv29, sv30, sv31, sv32, sv33, sv34, sv35, sv36, sv37, sv38,
-    sv39, sv40, sv41, sv42, sv43, sv44, sv45, sv46, sv47, sv48, sv49, sv50, sv51,
-    sv52, sv53, sv54, sv55, sv56, sv57, sv58, sv59, sv60, sv61, sv62, sv63
-};
+const float idct_scale[8] = { sv0, sv1, sv2, sv3, sv4, sv5, sv6, sv7 };
 
 /* Padded by 1 row to avoid bank conflicts */
 shared float blocks[nb_blocks][nb_components*8*(8 + 1)];

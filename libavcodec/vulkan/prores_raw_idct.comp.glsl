@@ -88,13 +88,18 @@ void main(void)
     }
     barrier();
 
+    const float norm = 8.0; /* DCT normalization const */
+
+    /* Loop-invariant column scale */
+    const float col_scale = float(qscale) * norm * idct_scale[ROW_ID];
+
     [[unroll]]
     for (uint y = 0; y < 8; y++) {
         uint block_off = y*8 + ROW_ID;
         int v = int(imageLoad(dst, offs + 2*ivec2(BLOCK_ID*8, 0) + scan[block_off])[0]);
         /* Dequantize (coeff * qmat * qscale), matching the reference decoder */
-        float vf = float(sign_extend(v, 16)) * float(qmat_buf[block_off]) * float(qscale);
-        blocks[BLOCK_ID][COMP_ID*72 + y*9 + ROW_ID] = vf * idct_scale[block_off];
+        float vf = float(sign_extend(v, 16)) * float(qmat_buf[block_off]) * col_scale;
+        blocks[BLOCK_ID][COMP_ID*72 + y*9 + ROW_ID] = vf * idct_scale[y];
     }
 
     /* Column-wise iDCT */
