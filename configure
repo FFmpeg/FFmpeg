@@ -1228,7 +1228,7 @@ void foo(void){ __asm__ volatile($code); }
 EOF
     log_file $TMPC
     test_cmd $cc $CPPFLAGS $CFLAGS $flags "$@" $CC_C $(cc_o $TMPO) $TMPC &&
-    enable $name && add_cflags $flags && add_asflags $flags && add_ldflags $flags
+    enable $name && add_allcflags $flags && add_asflags $flags && add_ldflags $flags
 }
 
 check_insn(){
@@ -5483,7 +5483,7 @@ fi
 
 # Treat unrecognized flags as errors on MSVC
 test_cpp_condition windows.h "_MSC_FULL_VER >= 193030705" &&
-    check_cflags -options:strict
+    check_allcflags -options:strict
 test_host_cpp_condition windows.h "_MSC_FULL_VER >= 193030705" &&
     check_host_cflags -options:strict
 
@@ -5727,15 +5727,15 @@ elif enabled mips; then
             p5600)
                 enable mips32r2
                 enable mips32r5
-                check_cflags "-mtune=p5600" && check_cflags "-msched-weight -mload-store-pairs -funroll-loops"
+                check_allcflags "-mtune=p5600" && check_allcflags "-msched-weight -mload-store-pairs -funroll-loops"
             ;;
             i6400)
                 enable mips64r6
-                check_cflags "-mtune=i6400 -mabi=64" && check_cflags "-msched-weight -mload-store-pairs -funroll-loops" && check_ldflags "-mabi=64"
+                check_allcflags "-mtune=i6400 -mabi=64" && check_allcflags "-msched-weight -mload-store-pairs -funroll-loops" && check_ldflags "-mabi=64"
             ;;
             p6600)
                 enable mips64r6
-                check_cflags "-mtune=p6600 -mabi=64" && check_cflags "-msched-weight -mload-store-pairs -funroll-loops" && check_ldflags "-mabi=64"
+                check_allcflags "-mtune=p6600 -mabi=64" && check_allcflags "-msched-weight -mload-store-pairs -funroll-loops" && check_ldflags "-mabi=64"
             ;;
             # Cores from Loongson
             loongson2e|loongson2f|loongson3*)
@@ -6095,7 +6095,7 @@ case $target_os in
         SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(FULLNAME).$(LIBMAJOR)$(SLIBSUF)'
         enabled x86_64 && objformat="macho64" || objformat="macho32"
         enabled_any pic shared x86_64 ||
-            { check_cflags -mdynamic-no-pic && add_asflags -mdynamic-no-pic; }
+            { check_allcflags -mdynamic-no-pic && add_asflags -mdynamic-no-pic; }
         check_headers dispatch/dispatch.h &&
             add_cppflags '-I\$(SRC_PATH)/compat/dispatch_semaphore'
         if test -n "$sysroot"; then
@@ -6274,7 +6274,7 @@ case $target_os in
     symbian)
         SLIBSUF=".dll"
         enable dos_paths
-        add_cflags --include=$sysinclude/gcce/gcce.h -fvisibility=default
+        add_allcflags --include=$sysinclude/gcce/gcce.h -fvisibility=default
         add_cppflags -D__GCCE__ -D__SYMBIAN32__ -DSYMBIAN_OE_POSIX_SIGNALS
         add_ldflags -Wl,--target1-abs,--no-undefined \
                     -Wl,-Ttext,0x80000,-Tdata,0x1000000 -shared \
@@ -6542,7 +6542,7 @@ elif enabled arm; then
     test_cpp_condition stddef.h "defined __thumb__" && test_cc <<EOF && enable_weak thumb
 float func(float a, float b){ return a+b; }
 EOF
-    enabled thumb && check_cflags -mthumb || check_cflags -marm
+    enabled thumb && check_allcflags -mthumb || check_allcflags -marm
 
     if check_cpp_condition vfp_args stddef.h "defined __ARM_PCS_VFP"; then
         :
@@ -6644,7 +6644,7 @@ elif enabled parisc; then
 
     if enabled gcc; then
         case $($cc -dumpversion) in
-            4.[3-9].*) check_cflags -fno-optimize-sibling-calls ;;
+            4.[3-9].*) check_allcflags -fno-optimize-sibling-calls ;;
         esac
     fi
 
@@ -6656,7 +6656,7 @@ elif enabled ppc; then
     check_inline_asm xform_asm '"lwzx %1, %y0" :: "Z"(*(int*)0), "r"(0)'
 
     if enabled altivec; then
-        check_cflags -maltivec -mabi=altivec
+        check_allcflags -maltivec -mabi=altivec
 
         # check if our compiler supports Motorola AltiVec C API
         check_cc altivec altivec.h "vector signed int v1 = (vector signed int) { 0 };
@@ -6667,7 +6667,7 @@ elif enabled ppc; then
     fi
 
     if enabled vsx; then
-        check_cflags -mvsx
+        check_allcflags -mvsx
         check_cc vsx altivec.h "int v[4] = { 0 };
                                 vector signed int v1 = vec_vsx_ld(0, v);"
     fi
@@ -7928,7 +7928,7 @@ check_optflags -fno-signed-zeros
 
 if [ -n "$lto" ]; then
     test "$cc_type" != "$ld_type" && die "LTO requires same compiler and linker"
-    check_cflags  $lto
+    check_allcflags $lto
     check_ldflags $lto $cpuflags
     disable inline_asm_direct_symbol_refs
     if test "$cc_type" = "clang"; then
@@ -7943,7 +7943,7 @@ if [ -n "$lto" ]; then
     fi
 fi
 
-enabled ftrapv && check_cflags -ftrapv
+enabled ftrapv && check_allcflags -ftrapv
 
 if enabled icc; then
     # Just warnings, no remarks
@@ -8033,21 +8033,21 @@ elif enabled clang; then
     check_allcflags -Werror=return-type
 elif enabled_any msvc icl; then
     enabled x86_32 && disable aligned_stack
-    enabled_all x86_32 debug && add_cflags -Oy-
+    enabled_all x86_32 debug && add_allcflags -Oy-
     enabled debug && add_ldflags -debug
     enable pragma_deprecated
     if enabled icl; then
         # -Qansi-alias is basically -fstrict-aliasing, but does not work
         # (correctly) on icl 13.x.
         test_cpp_condition "windows.h" "__ICL < 1300 || __ICL >= 1400" &&
-            add_cflags -Qansi-alias
+            add_allcflags -Qansi-alias
         # Some inline asm is not compilable in debug
         if enabled debug; then
             disable ebx_available
         fi
     fi
     # enable utf-8 source processing
-    check_cflags -utf-8
+    check_allcflags -utf-8
 fi
 
 case $as_type in
