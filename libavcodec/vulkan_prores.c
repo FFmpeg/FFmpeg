@@ -194,10 +194,18 @@ static int vk_prores_end_frame(AVCodecContext *avctx)
         .bottom_field     = pr->first_field ^ (pr->frame_type == 1),
     };
 
-    memcpy(metadata->mapped_mem + pp->qmat_off,
-           pr->qmat_luma,   sizeof(pr->qmat_luma));
-    memcpy(metadata->mapped_mem + pp->qmat_off + sizeof(pr->qmat_luma),
-           pr->qmat_chroma, sizeof(pr->qmat_chroma));
+    /* The decoder permutes the quantization matrices to match the layout
+     * expected by its IDCT (transposed on x86), undo it here. */
+    {
+        uint8_t *qmat_luma   = metadata->mapped_mem + pp->qmat_off;
+        uint8_t *qmat_chroma = qmat_luma + sizeof(pr->qmat_luma);
+        const uint8_t *perm  = pr->prodsp.idct_permutation;
+
+        for (i = 0; i < 64; i++) {
+            qmat_luma  [perm[i]] = pr->qmat_luma  [i];
+            qmat_chroma[perm[i]] = pr->qmat_chroma[i];
+        }
+    }
 
     FFVkExecContext *exec = ff_vk_exec_get(&ctx->s, &ctx->exec_pool);
     err = ff_vk_exec_start(&ctx->s, exec);
