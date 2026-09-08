@@ -70,6 +70,16 @@ static int encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt)
     av_assert0(0);
 }
 
+static void reset_cpu_flags(void)
+{
+    static int default_cpu_flags = -1;
+
+    if (default_cpu_flags < 0)
+        default_cpu_flags = av_get_cpu_flags();
+
+    av_force_cpu_flags(default_cpu_flags);
+}
+
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     uint64_t maxpixels_per_frame = 512 * 512;
     uint64_t maxpixels;
@@ -79,6 +89,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     uint64_t nb_samples = 0;
     AVDictionary *opts = NULL;
     uint64_t ec_pixels = 0;
+
+    reset_cpu_flags();
 
     if (!c) {
 #define ENCODER_SYMBOL0(CODEC) ff_##CODEC##_encoder

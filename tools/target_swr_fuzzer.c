@@ -67,6 +67,16 @@ static const AVChannelLayout layouts[]={
     AV_CHANNEL_LAYOUT_5POINT1POINT2_BACK ,
 };
 
+static void reset_cpu_flags(void)
+{
+    static int default_cpu_flags = -1;
+
+    if (default_cpu_flags < 0)
+        default_cpu_flags = av_get_cpu_flags();
+
+    av_force_cpu_flags(default_cpu_flags);
+}
+
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     struct SwrContext * swr= NULL;
     AVChannelLayout in_ch_layout = AV_CHANNEL_LAYOUT_MONO, out_ch_layout = AV_CHANNEL_LAYOUT_MONO;
@@ -84,6 +94,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     int out_sample_nb = size;
     int count;
     int ret;
+
+    reset_cpu_flags();
 
     if (size > 128) {
         GetByteContext gbc;

@@ -86,6 +86,16 @@ static void mapres(unsigned *r0, unsigned *r1) {
     *r1 = 1 + (*r1 * maxb) / UINT32_MAX;
 }
 
+static void reset_cpu_flags(void)
+{
+    static int default_cpu_flags = -1;
+
+    if (default_cpu_flags < 0)
+        default_cpu_flags = av_get_cpu_flags();
+
+    av_force_cpu_flags(default_cpu_flags);
+}
+
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     int srcW= 48, srcH = 48;
     int dstW= 48, dstH = 48;
@@ -100,6 +110,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     uint8_t *src[AV_VIDEO_MAX_PLANES] = { 0 };
     uint8_t *dst[AV_VIDEO_MAX_PLANES] = { 0 };
     struct SwsContext *sws = NULL;
+
+    reset_cpu_flags();
 
     if (size > 128) {
         GetByteContext gbc;
