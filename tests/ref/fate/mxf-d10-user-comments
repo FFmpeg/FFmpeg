@@ -1,4 +1,4 @@
-454136266f7c6a18ca2c9efee07d25da *tests/data/fate/mxf-d10-user-comments.mxf_d10
+d0dae277c0cb07f517ae2b456658f123 *tests/data/fate/mxf-d10-user-comments.mxf_d10
 3782189 tests/data/fate/mxf-d10-user-comments.mxf_d10
 #extradata 0:       34, 0x716b05c4
 #tb 0: 1/25
@@ -6,11 +6,11 @@
 #codec_id 0: mpeg2video
 #dimensions 0: 1280x720
 #sar 0: 3/4
-0,         -1,          0,        1,   150000, 0x0071d23b
-0,          0,          1,        1,   150000, 0xbaf7ba4a, F=0x0
-0,          1,          2,        1,   150000, 0xde2b9cd9, F=0x0
-0,          2,          3,        1,   150000, 0x7a66b4c9, F=0x0
-0,          3,          4,        1,   150000, 0xfc7e91a1, F=0x0
+0,         -1,          0,        1,   150000, 0xa811adc1
+0,          0,          1,        1,   150000, 0x4952bac6, F=0x0
+0,          1,          2,        1,   150000, 0x6b437346, F=0x0
+0,          2,          3,        1,   150000, 0x36dbac43, F=0x0
+0,          3,          4,        1,   150000, 0xe1c2955a, F=0x0
 [FORMAT]
 TAG:operational_pattern_ul=060e2b34.04010101.0d010201.01010900
 TAG:uid=adab4424-2f25-4dc7-92ff-000c00000000

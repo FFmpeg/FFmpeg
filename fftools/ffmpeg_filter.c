@@ -125,6 +125,7 @@ typedef struct InputFilterPriv {
     enum AVColorSpace   color_space;
     enum AVColorRange   color_range;
     enum AVAlphaMode    alpha_mode;
+    enum AVChromaLocation chroma_location;
 
     int                 sample_rate;
     AVChannelLayout     ch_layout;
@@ -208,6 +209,7 @@ typedef struct OutputFilterPriv {
     enum AVColorSpace       color_space;
     enum AVColorRange       color_range;
     enum AVAlphaMode        alpha_mode;
+    enum AVChromaLocation   chroma_location;
 
     unsigned                crop_top;
     unsigned                crop_bottom;
@@ -240,6 +242,7 @@ typedef struct OutputFilterPriv {
     const enum AVColorSpace *color_spaces;
     const enum AVColorRange *color_ranges;
     const enum AVAlphaMode *alpha_modes;
+    const enum AVChromaLocation *chroma_locations;
 
     int32_t                 displaymatrix[9];
 
@@ -295,6 +298,7 @@ static int sub2video_get_blank_frame(InputFilterPriv *ifp)
     frame->colorspace = ifp->color_space;
     frame->color_range = ifp->color_range;
     frame->alpha_mode = ifp->alpha_mode;
+    frame->chroma_location = ifp->chroma_location;
 
     ret = av_frame_get_buffer(frame, 0);
     if (ret < 0)
@@ -430,6 +434,10 @@ DEF_CHOOSE_FORMAT(color_ranges, enum AVColorRange, color_range, color_ranges,
 
 DEF_CHOOSE_FORMAT(alpha_modes, enum AVAlphaMode, alpha_mode, alpha_modes,
                   AVALPHA_MODE_UNSPECIFIED, "%s", av_alpha_mode_name)
+
+DEF_CHOOSE_FORMAT(chroma_locations, enum AVChromaLocation, chroma_location,
+                  chroma_locations, AVCHROMA_LOC_UNSPECIFIED, "%s",
+                  av_chroma_location_name)
 
 static void choose_channel_layouts(OutputFilterPriv *ofp, AVBPrint *bprint)
 {
@@ -661,6 +669,7 @@ static const AVOption ofilter_options[] = {
     {"colorspace", "color space", offsetof(OutputFilterPriv, color_space), AV_OPT_TYPE_INT, {.i64 = AVCOL_SPC_UNSPECIFIED }, 0, INT_MAX },
     {"color_range", "color range", offsetof(OutputFilterPriv, color_range), AV_OPT_TYPE_INT, {.i64 = AVCOL_RANGE_UNSPECIFIED }, 0, INT_MAX },
     {"alpha_mode", "color range", offsetof(OutputFilterPriv, alpha_mode), AV_OPT_TYPE_INT, {.i64 = AVALPHA_MODE_UNSPECIFIED }, 0, INT_MAX },
+    {"chroma_location", "chroma sample location", offsetof(OutputFilterPriv, chroma_location), AV_OPT_TYPE_INT, {.i64 = AVCHROMA_LOC_UNSPECIFIED }, 0, INT_MAX },
     {"ar", "set audio sampling rate (in Hz)", offsetof(OutputFilterPriv, sample_rate), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX },
     {"ch_layout", NULL, offsetof(OutputFilterPriv, ch_layout), AV_OPT_TYPE_CHLAYOUT, {.str = NULL }, 0, 0 },
     { NULL },
@@ -975,6 +984,11 @@ int ofilter_bind_enc(OutputFilter *ofilter, unsigned sched_idx_enc,
         else
             ofp->alpha_modes = opts->alpha_modes;
 
+        if (opts->chroma_location != AVCHROMA_LOC_UNSPECIFIED)
+            ofp->chroma_location = opts->chroma_location;
+        else
+            ofp->chroma_locations = opts->chroma_locations;
+
         fgp->disable_conversions |= !!(ofp->flags & OFILTER_FLAG_DISABLE_CONVERT);
 
         ofp->fps.last_frame = av_frame_alloc();
@@ -1101,6 +1115,7 @@ static InputFilter *ifilter_alloc(FilterGraph *fg)
     ifp->color_space     = AVCOL_SPC_UNSPECIFIED;
     ifp->color_range     = AVCOL_RANGE_UNSPECIFIED;
     ifp->alpha_mode      = AVALPHA_MODE_UNSPECIFIED;
+    ifp->chroma_location = AVCHROMA_LOC_UNSPECIFIED;
 
     ifp->frame_queue = av_fifo_alloc2(8, sizeof(AVFrame*), AV_FIFO_FLAG_AUTO_GROW);
     if (!ifp->frame_queue)
@@ -1808,6 +1823,7 @@ static int configure_output_video_filter(FilterGraphPriv *fgp, AVFilterGraph *gr
     choose_color_spaces(ofp, &bprint);
     choose_color_ranges(ofp, &bprint);
     choose_alpha_modes(ofp, &bprint);
+    choose_chroma_locations(ofp, &bprint);
     if (!av_bprint_is_complete(&bprint))
         return AVERROR(ENOMEM);
 
@@ -1977,6 +1993,7 @@ static int configure_input_video_filter(FilterGraph *fg, AVFilterGraph *graph,
     par->color_space         = ifp->color_space;
     par->color_range         = ifp->color_range;
     par->alpha_mode          = ifp->alpha_mode;
+    par->chroma_location     = ifp->chroma_location;
     par->hw_frames_ctx       = ifp->hw_frames_ctx;
     par->side_data           = ifp->side_data;
     par->nb_side_data        = ifp->nb_side_data;
@@ -2255,6 +2272,7 @@ static int configure_filtergraph(FilterGraph *fg, FilterGraphThread *fgt)
         ofp->color_space = av_buffersink_get_colorspace(sink);
         ofp->color_range = av_buffersink_get_color_range(sink);
         ofp->alpha_mode = av_buffersink_get_alpha_mode(sink);
+        ofp->chroma_location = av_buffersink_get_chroma_location(sink);
 
         // If the timing parameters are not locked yet, get the tentative values
         // here but don't lock them. They will only be used if no output frames
@@ -2351,6 +2369,7 @@ static int ifilter_parameters_from_frame(InputFilter *ifilter, const AVFrame *fr
     ifp->color_space         = frame->colorspace;
     ifp->color_range         = frame->color_range;
     ifp->alpha_mode          = frame->alpha_mode;
+    ifp->chroma_location     = frame->chroma_location;
 
     ifp->sample_rate         = frame->sample_rate;
     ret = av_channel_layout_copy(&ifp->ch_layout, &frame->ch_layout);
@@ -3130,6 +3149,7 @@ static int send_eof(FilterGraphThread *fgt, InputFilter *ifilter,
             ifp->color_space            = ifp->opts.fallback->colorspace;
             ifp->color_range            = ifp->opts.fallback->color_range;
             ifp->alpha_mode             = ifp->opts.fallback->alpha_mode;
+            ifp->chroma_location        = ifp->opts.fallback->chroma_location;
             ifp->time_base              = ifp->opts.fallback->time_base;
 
             ret = av_channel_layout_copy(&ifp->ch_layout,
@@ -3200,7 +3220,8 @@ static int send_frame(FilterGraph *fg, FilterGraphThread *fgt,
             ifp->height != frame->height ||
             ifp->color_space != frame->colorspace ||
             ifp->color_range != frame->color_range ||
-            ifp->alpha_mode != frame->alpha_mode)
+            ifp->alpha_mode != frame->alpha_mode ||
+            ifp->chroma_location != frame->chroma_location)
             need_reinit |= VIDEO_CHANGED;
         break;
     }
@@ -3290,10 +3311,11 @@ static int send_frame(FilterGraph *fg, FilterGraphThread *fgt,
                 const char *color_space_name = av_color_space_name(frame->colorspace);
                 const char *color_range_name = av_color_range_name(frame->color_range);
                 const char *alpha_mode = av_alpha_mode_name(frame->alpha_mode);
-                av_bprintf(&reason, "video parameters changed to %s(%s, %s), %dx%d, %s alpha, ",
+                const char *chroma_location = av_chroma_location_name(frame->chroma_location);
+                av_bprintf(&reason, "video parameters changed to %s(%s, %s), %dx%d, %s alpha, %s chroma, ",
                         unknown_if_null(pixel_format_name), unknown_if_null(color_range_name),
                         unknown_if_null(color_space_name), frame->width, frame->height,
-                        unknown_if_null(alpha_mode));
+                        unknown_if_null(alpha_mode), unknown_if_null(chroma_location));
             }
             if (need_reinit & MATRIX_CHANGED)
                 av_bprintf(&reason, "display matrix changed, ");

@@ -1,5 +1,5 @@
-16938e7e91ea9492eef3654d3db9af57 *tests/data/fate/matroska-stereo3d-sbs.matroska
-38205 tests/data/fate/matroska-stereo3d-sbs.matroska
+3d5849ad6cfb704e148b5b1b6f62a9ed *tests/data/fate/matroska-stereo3d-sbs.matroska
+38213 tests/data/fate/matroska-stereo3d-sbs.matroska
 #extradata 0:       30, 0x47ab0576
 #tb 0: 1/1000
 #media_type 0: video

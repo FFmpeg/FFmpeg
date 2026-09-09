@@ -1,4 +1,4 @@
-96dc854fc40a6410d4edc387b63ded1a *tests/data/fate/vsynth3-mpeg2-422.mpeg2video
-75445 tests/data/fate/vsynth3-mpeg2-422.mpeg2video
-f64545a4597f0927dde0b1a9618f4bb9 *tests/data/fate/vsynth3-mpeg2-422.out.rawvideo
-stddev:    5.15 PSNR: 33.89 MAXDIFF:   48 bytes:    86700/    86700
+9ff411140881fc30606d2aa0127372ca *tests/data/fate/vsynth3-mpeg2-422.mpeg2video
+74027 tests/data/fate/vsynth3-mpeg2-422.mpeg2video
+3d015d3e63e63a77f8a16ea119f6b6fa *tests/data/fate/vsynth3-mpeg2-422.out.rawvideo
+stddev:    3.18 PSNR: 38.07 MAXDIFF:   26 bytes:    86700/    86700
