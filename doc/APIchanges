@@ -2,8 +2,8 @@ The last version increases of all libraries were on 2026-06-23.
 
 API changes, most recent first:
 
-2026-09-xx - xxxxxxxxxx - lavfi 12.4.101 - avfilter.h
-  Add AVFilterLink.chroma_location.
+2026-09-xx - xxxxxxxxxx - lavfi 12.4.102 - avfilter.h buffersrc.h
+  Add AVFilterLink.chroma_location and AVBufferSrcParameters.chroma_location.
 
 2026-09-xx - xxxxxxxxxx - lavc 63.16.100 - avcodec.h
   Add AV_CODEC_CONFIG_CHROMA_LOCATION.
