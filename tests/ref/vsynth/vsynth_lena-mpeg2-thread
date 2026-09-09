@@ -1,4 +1,4 @@
-9e734d384b4234d075203dffffa5174c *tests/data/fate/vsynth_lena-mpeg2-thread.mpeg2video
-179656 tests/data/fate/vsynth_lena-mpeg2-thread.mpeg2video
-f8f084b7f51fbe4f82d57b8aeec17edf *tests/data/fate/vsynth_lena-mpeg2-thread.out.rawvideo
+5af2eeb5dfa4c7440de3a5009bf6b24a *tests/data/fate/vsynth_lena-mpeg2-thread.mpeg2video
+179518 tests/data/fate/vsynth_lena-mpeg2-thread.mpeg2video
+2585a8f936080fe9e1ff19180a947981 *tests/data/fate/vsynth_lena-mpeg2-thread.out.rawvideo
 stddev:    4.72 PSNR: 34.65 MAXDIFF:   72 bytes:  7603200/  7603200

@@ -1,4 +1,4 @@
-08310d12ac77af11a0ac564552322e08 *tests/data/fate/vsynth1-mpeg2-thread-ivlc.mpeg2video
-791673 tests/data/fate/vsynth1-mpeg2-thread-ivlc.mpeg2video
-d433c9b07b40b0d6c4fd5426699efb7f *tests/data/fate/vsynth1-mpeg2-thread-ivlc.out.rawvideo
-stddev:    7.63 PSNR: 30.48 MAXDIFF:  110 bytes:  7603200/  7603200
+2b7ab7e3cb89d8f93a3dee501777ba48 *tests/data/fate/vsynth1-mpeg2-thread-ivlc.mpeg2video
+767837 tests/data/fate/vsynth1-mpeg2-thread-ivlc.mpeg2video
+566d3cecd70e58ca0c37a968a5d1382e *tests/data/fate/vsynth1-mpeg2-thread-ivlc.out.rawvideo
+stddev:    7.78 PSNR: 30.30 MAXDIFF:  110 bytes:  7603200/  7603200

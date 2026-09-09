@@ -1,4 +1,4 @@
-5342abedb8fdc788e08c344d4122f2dc *tests/data/fate/vsynth_lena-mpeg4-qprd.avi
-231454 tests/data/fate/vsynth_lena-mpeg4-qprd.avi
-3071250e0864546c2455c9f9c9b8604e *tests/data/fate/vsynth_lena-mpeg4-qprd.out.rawvideo
-stddev:    3.71 PSNR: 36.72 MAXDIFF:   61 bytes:  7603200/  7603200
+e1b755f411c157ee13bbd183b278a011 *tests/data/fate/vsynth_lena-mpeg4-qprd.avi
+232246 tests/data/fate/vsynth_lena-mpeg4-qprd.avi
+10546197e8d17aa209f9747324786f3c *tests/data/fate/vsynth_lena-mpeg4-qprd.out.rawvideo
+stddev:    3.71 PSNR: 36.74 MAXDIFF:   73 bytes:  7603200/  7603200

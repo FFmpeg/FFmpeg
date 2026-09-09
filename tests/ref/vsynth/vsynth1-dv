@@ -1,4 +1,4 @@
-adc7407581ce59a8523c21eafc5816d3 *tests/data/fate/vsynth1-dv.dv
+2d6d0aa8d50ad1678080fa9c33e24bc1 *tests/data/fate/vsynth1-dv.dv
 7200000 tests/data/fate/vsynth1-dv.dv
-03cb7d33cbf595f49ae0a612645b937e *tests/data/fate/vsynth1-dv.out.rawvideo
+7dcf06a0956c25c407c72140cdcfa078 *tests/data/fate/vsynth1-dv.out.rawvideo
 stddev:    6.90 PSNR: 31.34 MAXDIFF:   76 bytes:  7603200/  7603200
