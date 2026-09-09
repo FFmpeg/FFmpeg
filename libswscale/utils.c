@@ -173,6 +173,11 @@ static av_cold int get_local_pos(SwsInternal *s, int chr_subsample, int pos, int
     return pos >> chr_subsample;
 }
 
+static av_cold int get_center_offset(SwsInternal *s, int chr_subsample, int pos, int dir)
+{
+    return (get_local_pos(s, chr_subsample, pos, dir) - 128) * (1 << chr_subsample);
+}
+
 typedef struct {
     int flag;                   ///< flag associated to the algorithm
     const char *description;    ///< human-readable description
@@ -1529,6 +1534,15 @@ av_cold int ff_sws_init_single_context(SwsContext *sws, SwsFilter *srcFilter,
         }
         return 0;
     }
+
+    if (!isGray(srcFormat) &&
+        ((desc_dst->log2_chroma_w &&
+          get_center_offset(c, desc_src->log2_chroma_w, sws->src_h_chr_pos, 0) !=
+          get_center_offset(c, desc_dst->log2_chroma_w, sws->dst_h_chr_pos, 0)) ||
+         (desc_dst->log2_chroma_h &&
+          get_center_offset(c, desc_src->log2_chroma_h, sws->src_v_chr_pos, 1) !=
+          get_center_offset(c, desc_dst->log2_chroma_h, sws->dst_v_chr_pos, 1))))
+        unscaled = 0;
 
     if (isBayer(srcFormat)) {
         if (!unscaled ||

@@ -568,6 +568,12 @@ FATE_FILTER_VSYNTH-$(call ALLYES, TESTSRC_FILTER SCALE_FILTER NULLSINK_FILTER FR
 fate-filter-scale2ref_keep_aspect: tests/data/filtergraphs/scale2ref_keep_aspect
 fate-filter-scale2ref_keep_aspect: CMD = framemd5 -frames:v 5 -/filter_complex $(TARGET_PATH)/tests/data/filtergraphs/scale2ref_keep_aspect -map "[main]"
 
+FATE_FILTER-$(call FILTERFRAMECRC, TESTSRC2 FORMAT SCALE) += fate-filter-scalechroma-yuyv422 fate-filter-scalechroma-uyvy422 fate-filter-scalechroma-yuyv422-topleft fate-filter-scalechroma-nv24
+fate-filter-scalechroma-yuyv422: CMD = framecrc -flags bitexact -lavfi testsrc2=s=64x64:r=1:d=1,scale=flags=accurate_rnd+bitexact,format=yuyv422,scale=in_chroma_loc=left:out_chroma_loc=center:flags=accurate_rnd+bitexact,format=yuv420p -frames:v 1
+fate-filter-scalechroma-uyvy422: CMD = framecrc -flags bitexact -lavfi testsrc2=s=64x64:r=1:d=1,scale=flags=accurate_rnd+bitexact,format=uyvy422,scale=in_chroma_loc=left:out_chroma_loc=center:flags=accurate_rnd+bitexact,format=yuv420p -frames:v 1
+fate-filter-scalechroma-yuyv422-topleft: CMD = framecrc -flags bitexact -lavfi testsrc2=s=64x64:r=1:d=1,scale=flags=accurate_rnd+bitexact,format=yuyv422,scale=in_chroma_loc=left:out_chroma_loc=topleft:flags=accurate_rnd+bitexact,format=yuv420p -frames:v 1
+fate-filter-scalechroma-nv24: CMD = framecrc -flags bitexact -lavfi testsrc2=s=64x64:r=1:d=1,scale=flags=accurate_rnd+bitexact,format=nv24,scale=out_chroma_loc=left:flags=accurate_rnd+bitexact,format=yuv420p -frames:v 1
+
 FATE_FILTER_VSYNTH-$(call FILTERDEMDEC, SCALE, RAWVIDEO, RAWVIDEO) += fate-filter-scalechroma
 fate-filter-scalechroma: tests/data/vsynth1.yuv
 fate-filter-scalechroma: CMD = framecrc -flags bitexact -s 352x288 -pix_fmt yuv444p -i $(TARGET_PATH)/tests/data/vsynth1.yuv -pix_fmt yuv420p -sws_flags +bitexact -vf scale=out_chroma_loc=bottomleft
