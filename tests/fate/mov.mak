@@ -208,10 +208,18 @@ fate-mov-mp4-fragmented-ttml-dfxp: CMD = transcode srt $(TARGET_SAMPLES)/sub/Sub
   "-f lavfi -i smptehdbars=duration=24.5245:size=320x180:rate=24000/1001,format=yuv420p" \
   "" "" "data"
 
-FATE_MOV_FFMPEG_SAMPLES-$(call REMUX, MP4 IVF, MOV_DEMUXER AV1_PARSER EXTRACT_EXTRADATA_BSF) += fate-mov-av1-cenc
-fate-mov-av1-cenc: CMD = transcode ivf $(TARGET_SAMPLES)/av1/non_uniform_tiling.ivf mp4 \
+define FATE_MOV_CENC_TEST
+FATE_MOV_FFMPEG_SAMPLES-$(call REMUX, MP4 $(4), MOV_DEMUXER $(2)_PARSER EXTRACT_EXTRADATA_BSF) += fate-mov-$(1)-cenc
+fate-mov-$(1)-cenc: CMD = transcode $(3) $(TARGET_SAMPLES)/$(5) mp4 \
     "-c:v copy -encryption_scheme cenc-aes-ctr -encryption_key 00112233445566778899aabbccddeeff -encryption_kid 00112233445566778899aabbccddeeff" \
     "-c:v copy" "" "" "-decryption_key 00112233445566778899aabbccddeeff"
+endef
+
+$(eval $(call FATE_MOV_CENC_TEST,av1,AV1,ivf,IVF,av1/non_uniform_tiling.ivf))
+$(eval $(call FATE_MOV_CENC_TEST,h264,H264,h264,H264,h264-conformance/CAMACI3_Sony_C.jsv))
+$(eval $(call FATE_MOV_CENC_TEST,h264_iso,H264,matroska,MATROSKA,h264/dts_5frames.mkv))
+$(eval $(call FATE_MOV_CENC_TEST,hevc,HEVC,hevc,HEVC,hevc-conformance/ipcm_A_NEC_3.bit))
+$(eval $(call FATE_MOV_CENC_TEST,hevc_iso,HEVC,mov,MOV,hevc/extradata-reload-multi-stsd.mov))
 
 # avif demuxing - still image with 1 item.
 FATE_MOV_FFMPEG_SAMPLES-$(call FRAMECRC, MOV, AV1, AV1_PARSER) \

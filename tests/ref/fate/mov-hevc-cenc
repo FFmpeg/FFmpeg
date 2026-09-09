@@ -1,0 +1,9 @@
+67d984d1166e68b085e85dabac1d69fb *tests/data/fate/mov-hevc-cenc.mp4
+6166 tests/data/fate/mov-hevc-cenc.mp4
+#extradata 0:      101, 0x8d351483
+#tb 0: 1/1200000
+#media_type 0: video
+#codec_id 0: hevc
+#dimensions 0: 416x240
+#sar 0: 0/1
+0,          0,          0,    48000,     5155, 0x18ffdb5c

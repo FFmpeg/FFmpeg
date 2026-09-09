@@ -1,0 +1,13 @@
+03e458edc426f90f52b560e175ad32d2 *tests/data/fate/mov-h264_iso-cenc.mp4
+15542 tests/data/fate/mov-h264_iso-cenc.mp4
+#extradata 0:       40, 0xcd870951
+#tb 0: 1/16000
+#media_type 0: video
+#codec_id 0: h264
+#dimensions 0: 512x256
+#sar 0: 1/1
+0,          0,          0,     2672,    14428, 0x1c626b86
+0,       2672,       2672,     2656,       11, 0x08f901f1, F=0x0
+0,       5328,       5328,     2672,       11, 0x09990211, F=0x0
+0,       8000,       8000,     2672,       11, 0x0a390231, F=0x0
+0,      10672,      10672,     2672,       11, 0x0ad90251, F=0x0

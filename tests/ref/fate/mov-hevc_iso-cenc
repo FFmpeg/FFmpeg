@@ -1,0 +1,10 @@
+3b47c19a63210cf0bc2be5bf51fa36ad *tests/data/fate/mov-hevc_iso-cenc.mp4
+5548 tests/data/fate/mov-hevc_iso-cenc.mp4
+#extradata 0:      110, 0xb3a41478
+#tb 0: 1/12800
+#media_type 0: video
+#codec_id 0: hevc
+#dimensions 0: 128x128
+#sar 0: 1/1
+0,          0,          0,      512,     2108, 0x57c38f64
+0,        512,        512,      512,       31, 0xabe10d25, F=0x0
