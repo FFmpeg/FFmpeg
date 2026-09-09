@@ -520,6 +520,16 @@ static int query_formats(const AVFilterContext *ctx,
     if ((ret = ff_formats_ref(formats, &cfg_out[0]->color_ranges)) < 0)
         return ret;
 
+    if ((ret = ff_formats_ref(ff_all_chroma_locations(),
+                              &cfg_in[0]->chroma_locations)) < 0)
+        return ret;
+
+    formats = scale->out_chroma_loc != AVCHROMA_LOC_UNSPECIFIED
+                ? ff_make_formats_list_singleton(scale->out_chroma_loc)
+                : ff_all_chroma_locations();
+    if ((ret = ff_formats_ref(formats, &cfg_out[0]->chroma_locations)) < 0)
+        return ret;
+
     if (scale->sws->alpha_blend) {
         if ((ret = ff_formats_ref(ff_make_formats_list_singleton(AVALPHA_MODE_STRAIGHT),
                                   &cfg_in[0]->alpha_modes)) < 0)
@@ -844,6 +854,8 @@ scale:
     out->color_range = outlink->color_range;
     out->colorspace = outlink->colorspace;
     out->alpha_mode = outlink->alpha_mode;
+    if (outlink->chroma_location != AVCHROMA_LOC_UNSPECIFIED)
+        out->chroma_location = outlink->chroma_location;
     if (scale->out_chroma_loc != AVCHROMA_LOC_UNSPECIFIED)
         out->chroma_location = scale->out_chroma_loc;
     if (scale->out_primaries != -1)
