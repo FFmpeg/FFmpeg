@@ -315,6 +315,9 @@ int avfilter_insert_filter(AVFilterLink *link, AVFilterContext *filt,
     if (link->outcfg.alpha_modes)
         ff_formats_changeref(&link->outcfg.alpha_modes,
                              &filt->outputs[filt_dstpad_idx]->outcfg.alpha_modes);
+    if (link->outcfg.chroma_locations)
+        ff_formats_changeref(&link->outcfg.chroma_locations,
+                             &filt->outputs[filt_dstpad_idx]->outcfg.chroma_locations);
     if (link->outcfg.samplerates)
         ff_formats_changeref(&link->outcfg.samplerates,
                              &filt->outputs[filt_dstpad_idx]->outcfg.samplerates);
@@ -790,6 +793,8 @@ static void free_link(AVFilterLink *link)
     ff_formats_unref(&link->outcfg.color_ranges);
     ff_formats_unref(&link->incfg.alpha_modes);
     ff_formats_unref(&link->outcfg.alpha_modes);
+    ff_formats_unref(&link->incfg.chroma_locations);
+    ff_formats_unref(&link->outcfg.chroma_locations);
     ff_formats_unref(&link->incfg.samplerates);
     ff_formats_unref(&link->outcfg.samplerates);
     ff_channel_layouts_unref(&link->incfg.channel_layouts);

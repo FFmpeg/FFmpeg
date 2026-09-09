@@ -2,6 +2,9 @@ The last version increases of all libraries were on 2026-06-23.
 
 API changes, most recent first:
 
+2026-09-xx - xxxxxxxxxx - lavfi 12.4.101 - avfilter.h
+  Add AVFilterLink.chroma_location.
+
 2026-08-xx - xxxxxxxxxx - lavf 63.7.100 - avformat.h
   Add AV_STREAM_GROUP_PARAMS_GAIN_MAP.
 

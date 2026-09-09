@@ -145,6 +145,12 @@ typedef struct AVFilterFormatsConfig {
      */
     AVFilterFormats *alpha_modes;  ///< AVAlphaMode
 
+    /**
+     * List of supported chroma sample locations, only for video with
+     * subsampled chroma.
+     */
+    AVFilterFormats *chroma_locations; ///< AVChromaLocation
+
 } AVFilterFormatsConfig;
 
 /**
@@ -406,6 +412,11 @@ struct AVFilterLink {
     int nb_side_data;
 
     enum AVAlphaMode alpha_mode; ///< alpha mode (for videos with an alpha channel)
+
+    /**
+     * Agreed upon chroma sample location, for video with subsampled chroma.
+     */
+    enum AVChromaLocation chroma_location;
 
     /*****************************************************************
      * All fields below this line are not part of the public API. They

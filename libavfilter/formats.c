@@ -363,6 +363,7 @@ PRINT_NAME(enum AVPixelFormat,  get_pix_fmt_name)
 PRINT_NAME(enum AVColorSpace,   color_space_name)
 PRINT_NAME(enum AVColorRange,   color_range_name)
 PRINT_NAME(enum AVAlphaMode,    alpha_mode_name)
+PRINT_NAME(enum AVChromaLocation, chroma_location_name)
 
 static void print_channel_layout_desc(AVBPrint *bp, const void *layoutsp)
 {
@@ -420,6 +421,14 @@ static const AVFilterFormatsMerger mergers_video[] = {
         .can_merge  = can_merge_generic,
         .print_list = print_alpha_mode_name,
         .conversion_filter = "premultiply_dynamic",
+    },
+    {
+        .name       = "Chroma locations",
+        .offset     = offsetof(AVFilterFormatsConfig, chroma_locations),
+        .merge      = merge_generic,
+        .can_merge  = can_merge_generic,
+        .print_list = print_chroma_location_name,
+        CONVERSION_FILTER_SWSCALE
     },
 };
 
@@ -733,6 +742,17 @@ AVFilterFormats *ff_all_alpha_modes(void)
     return ret;
 }
 
+AVFilterFormats *ff_all_chroma_locations(void)
+{
+    AVFilterFormats *ret = NULL;
+    for (int loc = 0; loc < AVCHROMA_LOC_NB; loc++) {
+        if (ff_add_format(&ret, loc) < 0)
+            return NULL;
+    }
+
+    return ret;
+}
+
 #define FORMATS_REF(f, ref, unref_fn)                                           \
     void *tmp;                                                                  \
                                                                                 \
@@ -956,6 +976,24 @@ int ff_set_common_all_alpha_modes(AVFilterContext *ctx)
     return ff_set_common_alpha_modes(ctx, ff_all_alpha_modes());
 }
 
+int ff_set_common_chroma_locations(AVFilterContext *ctx,
+                                   AVFilterFormats *chroma_locations)
+{
+    SET_COMMON_FORMATS(ctx, chroma_locations, AVMEDIA_TYPE_VIDEO,
+                       ff_formats_ref, ff_formats_unref);
+}
+
+int ff_set_common_chroma_locations_from_list(AVFilterContext *ctx,
+                                             const int *chroma_locations)
+{
+    return ff_set_common_chroma_locations(ctx, ff_make_format_list(chroma_locations));
+}
+
+int ff_set_common_all_chroma_locations(AVFilterContext *ctx)
+{
+    return ff_set_common_chroma_locations(ctx, ff_all_chroma_locations());
+}
+
 /**
  * A helper for query_formats() which sets all links to the same list of
  * formats. If there are no links hooked to this filter, the list of formats is
@@ -1135,6 +1173,31 @@ int ff_set_common_all_alpha_modes2(const AVFilterContext *ctx,
     return ff_set_common_alpha_modes2(ctx, cfg_in, cfg_out, ff_all_alpha_modes());
 }
 
+int ff_set_common_chroma_locations2(const AVFilterContext *ctx,
+                                    AVFilterFormatsConfig **cfg_in,
+                                    AVFilterFormatsConfig **cfg_out,
+                                    AVFilterFormats *chroma_locations)
+{
+    SET_COMMON_FORMATS2(ctx, cfg_in, cfg_out, chroma_locations, AVMEDIA_TYPE_VIDEO,
+                        ff_formats_ref, ff_formats_unref);
+}
+
+int ff_set_common_chroma_locations_from_list2(const AVFilterContext *ctx,
+                                              AVFilterFormatsConfig **cfg_in,
+                                              AVFilterFormatsConfig **cfg_out,
+                                              const int *chroma_locations)
+{
+    return ff_set_common_chroma_locations2(ctx, cfg_in, cfg_out,
+                                           ff_make_format_list(chroma_locations));
+}
+
+int ff_set_common_all_chroma_locations2(const AVFilterContext *ctx,
+                                        AVFilterFormatsConfig **cfg_in,
+                                        AVFilterFormatsConfig **cfg_out)
+{
+    return ff_set_common_chroma_locations2(ctx, cfg_in, cfg_out, ff_all_chroma_locations());
+}
+
 int ff_set_common_formats2(const AVFilterContext *ctx,
                            AVFilterFormatsConfig **cfg_in,
                            AVFilterFormatsConfig **cfg_out,
@@ -1218,6 +1281,9 @@ int ff_default_query_formats(AVFilterContext *ctx)
         ret = ff_set_common_all_alpha_modes(ctx);
         if (ret < 0)
             return ret;
+        ret = ff_set_common_all_chroma_locations(ctx);
+        if (ret < 0)
+            return ret;
     }
     if (type != AVMEDIA_TYPE_VIDEO) {
         ret = ff_set_common_all_channel_counts(ctx);
@@ -1288,6 +1354,11 @@ int ff_formats_check_color_ranges(void *log, const AVFilterFormats *fmts)
 int ff_formats_check_alpha_modes(void *log, const AVFilterFormats *fmts)
 {
     return check_list(log, "alpha mode", fmts);
+}
+
+int ff_formats_check_chroma_locations(void *log, const AVFilterFormats *fmts)
+{
+    return check_list(log, "chroma location", fmts);
 }
 
 static int layouts_compatible(const AVChannelLayout *a, const AVChannelLayout *b)
