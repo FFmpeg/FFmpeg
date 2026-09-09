@@ -58,6 +58,9 @@ typedef struct BufferSinkContext {
     int                *alphamodes;
     unsigned         nb_alphamodes;
 
+    int                *chromalocations;
+    unsigned         nb_chromalocations;
+
     /* only used for audio */
     enum AVSampleFormat *sample_formats;
     unsigned          nb_sample_formats;
@@ -169,6 +172,7 @@ static int init_video(AVFilterContext *ctx)
     TERMINATE_ARRAY(colorranges, -1);
     TERMINATE_ARRAY(colorspaces, -1);
     TERMINATE_ARRAY(alphamodes, -1);
+    TERMINATE_ARRAY(chromalocations, -1);
 
     return common_init(ctx);
 }
@@ -248,6 +252,7 @@ MAKE_AVFILTERLINK_ACCESSOR(AVRational       , sample_aspect_ratio)
 MAKE_AVFILTERLINK_ACCESSOR(enum AVColorSpace, colorspace)
 MAKE_AVFILTERLINK_ACCESSOR(enum AVColorRange, color_range)
 MAKE_AVFILTERLINK_ACCESSOR(enum AVAlphaMode , alpha_mode)
+MAKE_AVFILTERLINK_ACCESSOR(enum AVChromaLocation, chroma_location)
 
 MAKE_AVFILTERLINK_ACCESSOR(int              , sample_rate        )
 
@@ -314,6 +319,11 @@ static int vsink_query_formats(const AVFilterContext *ctx,
         if (ret < 0)
             return ret;
     }
+    if (buf->nb_chromalocations) {
+        ret = ff_set_common_chroma_locations_from_list2(ctx, cfg_in, cfg_out, buf->chromalocations);
+        if (ret < 0)
+            return ret;
+    }
     if (buf->nb_alphamodes) {
         ret = ff_set_common_alpha_modes_from_list2(ctx, cfg_in, cfg_out, buf->alphamodes);
         if (ret < 0)
@@ -357,6 +367,8 @@ static const AVOption buffersink_options[] = {
     { "colorspaces",    "array of supported color spaces",  OFFSET(colorspaces),
         AV_OPT_TYPE_INT | AV_OPT_TYPE_FLAG_ARRAY, .max = INT_MAX, .flags = FLAGS },
     { "colorranges",    "array of supported color ranges",  OFFSET(colorranges),
+        AV_OPT_TYPE_INT | AV_OPT_TYPE_FLAG_ARRAY, .max = INT_MAX, .flags = FLAGS },
+    { "chromalocations", "array of supported chroma locations", OFFSET(chromalocations),
         AV_OPT_TYPE_INT | AV_OPT_TYPE_FLAG_ARRAY, .max = INT_MAX, .flags = FLAGS },
     { "alphamodes",     "array of supported color ranges",  OFFSET(alphamodes),
         AV_OPT_TYPE_INT | AV_OPT_TYPE_FLAG_ARRAY, .max = INT_MAX, .flags = FLAGS },
