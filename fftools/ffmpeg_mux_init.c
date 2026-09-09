@@ -1147,7 +1147,7 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
     int threads_manual = 0;
     AVRational enc_tb = { 0, 0 };
     enum VideoSyncMethod vsync_method = VSYNC_AUTO;
-    const char *bsfs = NULL, *time_base = NULL, *codec_tag = NULL;
+    const char *bsfs = NULL, *time_base = NULL, *codec_tag = NULL, *manual_disp = NULL;
     char  *next;
     double qscale = -1;
 
@@ -1203,6 +1203,20 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
     ost->kf.ref_pts = AV_NOPTS_VALUE;
     ms->par_in->codec_type   = type;
     st->codecpar->codec_type = type;
+
+    if (ost->type == AVMEDIA_TYPE_VIDEO) {
+        if (ost->ist)
+            ost->st->disposition = ost->ist->st->disposition;
+
+        opt_match_per_stream_str(ost, &o->disposition, oc, st, &manual_disp);
+        if (manual_disp) {
+            ret = av_opt_set(ost->st, "disposition", manual_disp, 0);
+            if (ret < 0)
+                return ret;
+        }
+
+        ost->st->disposition &= AV_DISPOSITION_ATTACHED_PIC;
+    }
 
     ret = choose_encoder(o, oc, ms, &enc);
     if (ret < 0) {
@@ -3257,6 +3271,11 @@ static int set_dispositions(Muxer *mux, const OptionsContext *o)
     dispositions = av_calloc(ctx->nb_streams, sizeof(*dispositions));
     if (!dispositions)
         return AVERROR(ENOMEM);
+
+    // reset any apic flag set for option stream-spec matching in ost_add
+    for (int i = 0; i < ctx->nb_streams; i++) {
+        of->streams[i]->st->disposition = 0;
+    }
 
     // first, copy the input dispositions
     for (int i = 0; i < ctx->nb_streams; i++) {
