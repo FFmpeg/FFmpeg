@@ -2216,7 +2216,7 @@ again:
             s->avctx->pix_fmt == AV_PIX_FMT_RGBA) {
             stride = stride * 5 / 4;
             five_planes =
-            dst = av_malloc(stride * s->height);
+            dst = av_calloc(s->height, stride);
             if (!dst)
                 return AVERROR(ENOMEM);
         }
