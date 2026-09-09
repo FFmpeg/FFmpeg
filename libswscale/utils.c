@@ -505,7 +505,6 @@ static av_cold int initFilter(int16_t **outFilter, int32_t **filterPos,
         ret = RETCODE_USE_CASCADE;
         goto fail;
     }
-    *outFilterSize = filterSize;
 
     if (flags & SWS_PRINT_INFO)
         av_log(NULL, AV_LOG_VERBOSE,
@@ -569,6 +568,8 @@ static av_cold int initFilter(int16_t **outFilter, int32_t **filterPos,
             }
         }
     }
+
+    *outFilterSize = FFMIN(filterSize, FFALIGN(srcW, filterAlign));
 
     // Note the +1 is for the MMX scaler which reads over the end
     /* align at 16 for AltiVec (needed by hScale_altivec_real) */
