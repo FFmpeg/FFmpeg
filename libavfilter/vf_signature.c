@@ -25,8 +25,8 @@
  */
 
 #include "libavcodec/put_bits.h"
-#include "libavformat/avformat.h"
 #include "libavutil/mem.h"
+#include "libavutil/bprint.h"
 #include "libavutil/opt.h"
 #include "libavutil/avstring.h"
 #include "libavutil/file_open.h"
@@ -555,6 +555,59 @@ static int binary_export(AVFilterContext *ctx, StreamContext *sc, const char* fi
     return 0;
 }
 
+static int get_frame_filename(char *buf, int buf_size, const char *path, int64_t number)
+{
+    AVBPrint bp;
+    const char *p;
+    char c;
+    int nd, percentd_found;
+
+    av_bprint_init_for_buffer(&bp, buf, buf_size);
+    p = path;
+    percentd_found = 0;
+    for (;;) {
+        c = *p++;
+        if (c == '\0')
+            break;
+        if (c == '%') {
+            do {
+                nd = 0;
+                while (av_isdigit(*p)) {
+                    if (nd >= INT_MAX / 10 - 255)
+                        goto fail;
+                    nd = nd * 10 + *p++ - '0';
+                }
+                c = *p++;
+            } while (av_isdigit(c));
+
+            switch (c) {
+            case '%':
+                goto addchar;
+            case 'd':
+                if (!percentd_found)
+                    goto fail;
+                percentd_found = 1;
+                if (number < 0)
+                    nd += 1;
+                av_bprintf(&bp, "%0*" PRId64, nd, number);
+                break;
+            default:
+                goto fail;
+            }
+        } else {
+addchar:
+            av_bprint_chars(&bp, c, 1);
+        }
+    }
+    if (!percentd_found)
+        goto fail;
+    if (!av_bprint_is_complete(&bp))
+        return AVERROR(ENOMEM);
+    return 0;
+fail:
+    return AVERROR(EINVAL);
+}
+
 static int export(AVFilterContext *ctx, StreamContext *sc, int input)
 {
     SignatureContext* sic = ctx->priv;
@@ -562,7 +615,7 @@ static int export(AVFilterContext *ctx, StreamContext *sc, int input)
 
     if (sic->nb_inputs > 1) {
         /* error already handled */
-        av_assert0(av_get_frame_filename(filename, sizeof(filename), sic->filename, input) == 0);
+        av_assert0(get_frame_filename(filename, sizeof(filename), sic->filename, input) == 0);
     } else {
         if (av_strlcpy(filename, sic->filename, sizeof(filename)) >= sizeof(filename))
             return AVERROR(EINVAL);
@@ -673,7 +726,7 @@ static av_cold int init(AVFilterContext *ctx)
     }
 
     /* check filename */
-    if (sic->nb_inputs > 1 && strlen(sic->filename) > 0 && av_get_frame_filename(tmp, sizeof(tmp), sic->filename, 0) == -1) {
+    if (sic->nb_inputs > 1 && strlen(sic->filename) > 0 && get_frame_filename(tmp, sizeof(tmp), sic->filename, 0) == -1) {
         av_log(ctx, AV_LOG_ERROR, "The filename must contain %%d or %%0nd, if you have more than one input.\n");
         return AVERROR(EINVAL);
     }
