@@ -14727,6 +14727,10 @@ A '|'-separated list of color range names, such as
 A '|'-separated list of color range names, such as
 "alpha_modes=straight|premultiplied".
 
+@item chroma_locations
+A '|'-separated list of chroma sample location names, such as
+"chroma_locations=left|topleft".
+
 @end table
 
 @subsection Examples
