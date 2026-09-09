@@ -1363,6 +1363,7 @@ const FFCodec ff_mpeg4_encoder = {
     FF_CODEC_ENCODE_CB(ff_mpv_encode_picture),
     .close          = ff_mpv_encode_end,
     CODEC_PIXFMTS(AV_PIX_FMT_YUV420P),
+    CODEC_CHROMA_LOCS(AVCHROMA_LOC_LEFT),
     .color_ranges   = AVCOL_RANGE_MPEG,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
                       AV_CODEC_CAP_SLICE_THREADS |

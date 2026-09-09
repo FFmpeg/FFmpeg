@@ -1314,6 +1314,7 @@ const FFCodec ff_mpeg1video_encoder = {
     .close                = ff_mpv_encode_end,
     CODEC_FRAMERATES_ARRAY(ff_mpeg12_frame_rate_tab + 1),
     CODEC_PIXFMTS(AV_PIX_FMT_YUV420P),
+    CODEC_CHROMA_LOCS(AVCHROMA_LOC_CENTER),
     .color_ranges         = AVCOL_RANGE_MPEG,
     .p.capabilities       = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
                             AV_CODEC_CAP_SLICE_THREADS |
@@ -1321,6 +1322,27 @@ const FFCodec ff_mpeg1video_encoder = {
     .caps_internal        = FF_CODEC_CAP_INIT_CLEANUP,
     .p.priv_class         = &mpeg1_class,
 };
+
+static int mpeg2_get_supported_config(const AVCodecContext *avctx,
+                                      const AVCodec *codec,
+                                      enum AVCodecConfig config,
+                                      unsigned flags, const void **out,
+                                      int *out_num)
+{
+    if (config == AV_CODEC_CONFIG_CHROMA_LOCATION) {
+        static const enum AVChromaLocation left[]    = { AVCHROMA_LOC_LEFT,    AVCHROMA_LOC_UNSPECIFIED };
+        static const enum AVChromaLocation topleft[] = { AVCHROMA_LOC_TOPLEFT, AVCHROMA_LOC_UNSPECIFIED };
+        enum AVPixelFormat pix_fmt = avctx ? avctx->pix_fmt : AV_PIX_FMT_NONE;
+
+        /* 4:2:2 has no vertical subsampling, so the left siting of 4:2:0
+         * fits it too when the pixel format is not decided yet. */
+        *out     = pix_fmt == AV_PIX_FMT_YUV422P ? topleft : left;
+        *out_num = 1;
+        return 0;
+    }
+
+    return ff_default_get_supported_config(avctx, codec, config, flags, out, out_num);
+}
 
 const FFCodec ff_mpeg2video_encoder = {
     .p.name               = "mpeg2video",
@@ -1333,6 +1355,7 @@ const FFCodec ff_mpeg2video_encoder = {
     .close                = ff_mpv_encode_end,
     CODEC_FRAMERATES_ARRAY(ff_mpeg2_frame_rate_tab),
     CODEC_PIXFMTS(AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P),
+    .get_supported_config = mpeg2_get_supported_config,
     .color_ranges         = AVCOL_RANGE_MPEG,
     .p.capabilities       = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
                             AV_CODEC_CAP_SLICE_THREADS |
