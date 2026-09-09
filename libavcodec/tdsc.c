@@ -34,6 +34,7 @@
  */
 
 #include <stdint.h>
+#include <string.h>
 #include <zlib.h>
 
 #include "libavutil/attributes_internal.h"
@@ -498,6 +499,8 @@ static int tdsc_parse_tdsf(AVCodecContext *avctx, int number_tiles)
         ret = av_frame_get_buffer(ctx->refframe, 0);
         if (ret < 0)
             return ret;
+        memset(ctx->refframe->data[0], 0,
+               (size_t)ctx->refframe->linesize[0] * ctx->refframe->height);
     }
 
     /* Decode all tiles in a frame */
