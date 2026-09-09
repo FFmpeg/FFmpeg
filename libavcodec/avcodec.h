@@ -2593,6 +2593,7 @@ enum AVCodecConfig {
     AV_CODEC_CONFIG_COLOR_RANGE,    ///< AVColorRange, terminated by AVCOL_RANGE_UNSPECIFIED
     AV_CODEC_CONFIG_COLOR_SPACE,    ///< AVColorSpace, terminated by AVCOL_SPC_UNSPECIFIED
     AV_CODEC_CONFIG_ALPHA_MODE,     ///< AVAlphaMode, terminated by AVALPHA_MODE_UNSPECIFIED
+    AV_CODEC_CONFIG_CHROMA_LOCATION, ///< AVChromaLocation, terminated by AVCHROMA_LOC_UNSPECIFIED
 };
 
 /**

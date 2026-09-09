@@ -810,6 +810,10 @@ int ff_default_get_supported_config(const AVCodecContext *avctx,
         *out_num_configs = av_popcount(alpha_modes);
         return 0;
 
+    case AV_CODEC_CONFIG_CHROMA_LOCATION:
+        WRAP_CONFIG(AVMEDIA_TYPE_VIDEO, chroma_locations, loc,
+                    enum AVChromaLocation, loc == AVCHROMA_LOC_UNSPECIFIED);
+
     default:
         return AVERROR(EINVAL);
     }
