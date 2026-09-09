@@ -829,7 +829,8 @@ scale:
         in->color_trc = scale->in_transfer;
     if (scale->in_range != AVCOL_RANGE_UNSPECIFIED)
         in->color_range = scale->in_range;
-    in->chroma_location = scale->in_chroma_loc;
+    if (scale->in_chroma_loc != AVCHROMA_LOC_UNSPECIFIED)
+        in->chroma_location = scale->in_chroma_loc;
 
     flags_orig = in->flags;
     if (scale->interlaced > 0)

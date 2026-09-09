@@ -1,11 +1,11 @@
-e486b461b9c408e616873db8ad93b450 *tests/data/fate/png-mdcv.image2pipe
-493893 tests/data/fate/png-mdcv.image2pipe
+f4a586ca1ac51c3db64e58552b990234 *tests/data/fate/png-mdcv.image2pipe
+495592 tests/data/fate/png-mdcv.image2pipe
 #tb 0: 1/25
 #media_type 0: video
 #codec_id 0: rawvideo
 #dimensions 0: 1280x720
 #sar 0: 0/1
-0,          0,          0,        1,  2764800, 0x2bfc7b42
+0,          0,          0,        1,  2764800, 0xc328e339
 frames.frame.0.side_data_list.side_data.0.side_data_type="Content light level metadata"
 frames.frame.0.side_data_list.side_data.0.max_content=1000
 frames.frame.0.side_data_list.side_data.0.max_average=200

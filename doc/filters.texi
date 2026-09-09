@@ -21856,8 +21856,9 @@ Set "MPEG" range (16-235 in case of 8-bit luma).
 
 @item in_chroma_loc
 @item out_chroma_loc
-Set in/output chroma sample location. If not specified, center-sited chroma
-is used by default. Possible values:
+Set in/output chroma sample location. If not specified, the chroma location
+tagged on the input frame is used, and untagged input is treated as
+center-sited. Possible values:
 
 @table @samp
 @item auto, unknown
