@@ -38,6 +38,8 @@ void ff_fdctdsp_init_ppc(FDCTDSPContext *c, struct AVCodecContext *avctx,
                          unsigned high_bit_depth);
 void ff_fdctdsp_init_x86(FDCTDSPContext *c, struct AVCodecContext *avctx,
                          unsigned high_bit_depth);
+void ff_fdctdsp_init_riscv(FDCTDSPContext *c, struct AVCodecContext *avctx,
+                         unsigned high_bit_depth);
 
 void ff_fdct_ifast(int16_t *data);
 void ff_fdct_ifast248(int16_t *data);
