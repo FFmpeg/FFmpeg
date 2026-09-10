@@ -12,6 +12,7 @@
 # =======
 libavcodec/.*aac.* @lynne
 libavcodec/.*ac3.* @lynne
+libavcodec/ac3dec.* @ayoubnabil
 libavcodec/.*adpcm.* @zane @pross
 libavcodec/anm.* @pross
 libavcodec/amf.* @OvchinnikovDmitrii @ArazIusubov
@@ -26,6 +27,7 @@ libavcodec/.*dirac.* @lynne
 libavcodec/.*dovi_rpu.* @haasn
 libavcodec/dpx.* @pross
 libavcodec/dsd.* @pross
+libavcodec/eac3dec.* @ayoubnabil
 libavcodec/eacmv.* @pross
 libavcodec/eaidct.* @pross
 libavcodec/eamad.* @pross
