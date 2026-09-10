@@ -52,7 +52,6 @@ typedef struct XevdContext {
 
     // If end of stream occurs it is required "flushing" (aka draining) the codec,
     // as the codec might buffer multiple frames or packets internally.
-    int draining_mode; // The flag is set if codec enters draining mode.
 
     AVPacket *pkt;     // access unit (a set of NAL units that are consecutive in decoding order and containing exactly one encoded image)
 } XevdContext;
@@ -236,7 +235,6 @@ static av_cold int libxevd_init(AVCodecContext *avctx)
         return AVERROR_EXTERNAL;
     }
 
-    xectx->draining_mode = 0;
     xectx->pkt = av_packet_alloc();
     if (!xectx->pkt) {
         av_log(avctx, AV_LOG_ERROR, "Cannot allocate memory for AVPacket\n");
@@ -329,10 +327,6 @@ static int libxevd_receive_frame(AVCodecContext *avctx, AVFrame *frame)
         av_packet_unref(pkt);
 
         return ret;
-    } else if(ret == AVERROR_EOF && xectx->draining_mode == 0) { // End of stream situations. Enter draining mode
-
-        xectx->draining_mode = 1;
-        av_packet_unref(pkt);
     }
 
     if (pkt->size > 0) {
@@ -481,7 +475,6 @@ static av_cold int libxevd_close(AVCodecContext *avctx)
         xectx->id = NULL;
     }
 
-    xectx->draining_mode = 0;
     av_packet_free(&xectx->pkt);
 
     return 0;
