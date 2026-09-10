@@ -1508,10 +1508,22 @@ int sws_frame_setup(SwsContext *ctx, const AVFrame *dst, const AVFrame *src)
     if ((ret = validate_params(ctx)) < 0)
         return ret;
 
+    const AVPixFmtDescriptor *src_desc = av_pix_fmt_desc_get(src->format);
+    const AVPixFmtDescriptor *dst_desc = av_pix_fmt_desc_get(dst->format);
+    av_assert0(src_desc);
+    av_assert0(dst_desc);
+
+    const int src_is_hwaccel = !!(src_desc->flags & AV_PIX_FMT_FLAG_HWACCEL);
+    const int dst_is_hwaccel = !!(dst_desc->flags & AV_PIX_FMT_FLAG_HWACCEL);
+    if (src_is_hwaccel && !src->hw_frames_ctx)
+        return AVERROR(EINVAL);
+    if (dst_is_hwaccel && !dst->hw_frames_ctx)
+        return AVERROR(EINVAL);
+
     /* For now, if a single frame has a context, then both need a context */
-    if (!!src->hw_frames_ctx != !!dst->hw_frames_ctx) {
+    if (src_is_hwaccel ^ dst_is_hwaccel) {
         return AVERROR(ENOTSUP);
-    } else if (!!src->hw_frames_ctx) {
+    } else if (src_is_hwaccel) {
         /* Both hardware frames must already be allocated */
         if (!src->data[0] || !dst->data[0])
             return AVERROR(EINVAL);

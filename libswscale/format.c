@@ -351,7 +351,12 @@ SwsFormat ff_fmt_from_frame(const AVFrame *frame, int field)
     enum AVPixelFormat hw_format = AV_PIX_FMT_NONE;
 
 #if CONFIG_UNSTABLE
-    if (frame->hw_frames_ctx) {
+    const AVPixFmtDescriptor *hw_desc = av_pix_fmt_desc_get(frame->format);
+    av_assert0(hw_desc);
+
+    if (hw_desc->flags & AV_PIX_FMT_FLAG_HWACCEL) {
+        av_assert0(frame->hw_frames_ctx);
+
         AVHWFramesContext *hwfc = (AVHWFramesContext *)frame->hw_frames_ctx->data;
         hw_format = frame->format;
         format = hwfc->sw_format;
