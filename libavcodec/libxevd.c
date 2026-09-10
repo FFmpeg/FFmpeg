@@ -27,6 +27,7 @@
 
 #include "libavutil/internal.h"
 #include "libavutil/common.h"
+#include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/pixfmt.h"
 #include "libavutil/imgutils.h"
@@ -295,7 +296,8 @@ static int libxevd_return_frame(AVCodecContext *avctx, AVFrame *frame,
     frame->pkt_dts = imgb->ts[XEVD_TS_DTS];
     frame->pts = imgb->ts[XEVD_TS_PTS];
 
-    av_packet_free(&pkt_au_imgb);
+    av_packet_free((AVPacket**)&imgb->pdata[0]);
+    av_freep(&imgb->pdata[1]);
 
     // xevd_pull uses pool of objects of type XEVD_IMGB.
     // The pool size is equal MAX_PB_SIZE (26), so release object when it is no more needed
@@ -364,13 +366,20 @@ static int libxevd_receive_frame(AVCodecContext *avctx, AVFrame *frame)
             bitb.addr = pkt_au->data + bs_read_pos;
             bitb.ssize = nalu_size;
             bitb.pdata[0] = pkt_au;
+            bitb.pdata[1] = av_mallocz(sizeof(stat.stype));
             bitb.ts[XEVD_TS_DTS] = pkt_au->dts;
+
+            if (!bitb.pdata[1]) {
+                av_packet_free(&pkt_au);
+                return AVERROR(ENOMEM);
+            }
 
             /* main decoding block */
             xevd_ret = xevd_decode(xectx->id, &bitb, &stat);
             if (XEVD_FAILED(xevd_ret)) {
                 av_log(avctx, AV_LOG_ERROR, "Failed to decode bitstream\n");
                 av_packet_free(&pkt_au);
+                av_freep(&bitb.pdata[1]);
 
                 return AVERROR_EXTERNAL;
             }
@@ -391,6 +400,8 @@ static int libxevd_receive_frame(AVCodecContext *avctx, AVFrame *frame)
 
             // stat.fnum - has negative value if the decoded data is not frame
             if (stat.fnum >= 0) {
+                // store stat.stype into the bitb.pdata[1] that will be retrieved in an image
+                *(int*)bitb.pdata[1] = stat.stype;
 
                 xevd_ret = xevd_pull(xectx->id, &imgb); // The function returns a valid image only if the return code is XEVD_OK
 
@@ -413,7 +424,7 @@ static int libxevd_receive_frame(AVCodecContext *avctx, AVFrame *frame)
                             return  AVERROR(EAGAIN);
                         }
                     } else {
-                        if (stat.stype == XEVD_ST_I) {
+                        if (*(int*)imgb->pdata[1] == XEVD_ST_I) {
                             frame->pict_type = AV_PICTURE_TYPE_I;
                             frame->flags |= AV_FRAME_FLAG_KEY;
                         }
@@ -441,6 +452,10 @@ static int libxevd_receive_frame(AVCodecContext *avctx, AVFrame *frame)
                 return AVERROR_EXTERNAL;
             }
 
+            if (*(int*)imgb->pdata[1] == XEVD_ST_I) {
+                frame->pict_type = AV_PICTURE_TYPE_I;
+                frame->flags |= AV_FRAME_FLAG_KEY;
+            }
             return libxevd_return_frame(avctx, frame, imgb, NULL);
         }
     }
