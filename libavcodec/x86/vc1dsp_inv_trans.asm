@@ -459,4 +459,58 @@ cglobal vc1_inv_trans_8x8, 1, 1, 12, block
     punpckhqdq  m2, m3
     mova [blockq+ 64], m2
     RET
-%endif
+
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+; void ff_vc1_inv_trans_8x8_avx2(int16_t block[64])
+; Same as above with columns 0-3 in the low and 4-7 in the high 128-bit lane.
+cglobal vc1_inv_trans_8x8, 1, 1, 8, block
+    movu        m0, [blockq+ 0]         ; rows 0, 1; checkasm only guarantees
+    movu        m1, [blockq+32]         ; rows 2, 3; 16-byte alignment
+    movu        m2, [blockq+64]         ; rows 4, 5
+    movu        m3, [blockq+96]         ; rows 6, 7
+    vpermq      m0, m0, q3120           ; columns 0-3 of both rows | columns 4-7
+    vpermq      m1, m1, q3120
+    vpermq      m2, m2, q3120
+    vpermq      m3, m3, q3120
+    punpcklwd   m4, m0, m2              ; (row0,row4) pairs
+    punpckhwd   m0, m2                  ; (row1,row5)
+    punpcklwd   m2, m1, m3              ; (row2,row6)
+    punpckhwd   m1, m3                  ; (row3,row7)
+    VC1_IDCT8_1D 4, 0, 2, 1, 3, 5, 6, 7, pd_4, 3, 0
+    ; 0|7: m6, 1|6: m7, 2|5: m2, 3|4: m0
+    vpermq      m6, m6, q3120           ; row 0 | row 7
+    vpermq      m7, m7, q3120           ; row 1 | row 6
+    vpermq      m2, m2, q3120           ; row 2 | row 5
+    vpermq      m0, m0, q3120           ; row 3 | row 4
+    vperm2i128  m1, m6, m0, q0300       ; row 0 | row 4
+    vperm2i128  m3, m0, m6, q0300       ; row 3 | row 7
+    vperm2i128  m4, m7, m2, q0300       ; row 1 | row 5
+    vperm2i128  m5, m2, m7, q0300       ; row 2 | row 6
+    ; transpose the 4x8 halves of each lane into columns, which are the
+    ; inputs of the second pass; the lanes then hold columns 0-3 | 4-7 again
+    SBUTTERFLY  wd, 1, 4, 0
+    SBUTTERFLY  wd, 5, 3, 0
+    SBUTTERFLY  dq, 1, 5, 0             ; m1 = columns 0, 1; m5 = 2, 3
+    SBUTTERFLY  dq, 4, 3, 0             ; m4 = columns 4, 5; m3 = 6, 7
+    punpcklwd   m0, m1, m4              ; (0,4) pairs
+    punpckhwd   m1, m4                  ; (1,5)
+    punpcklwd   m2, m5, m3              ; (2,6)
+    punpckhwd   m5, m3                  ; (3,7)
+    VC1_IDCT8_1D 0, 1, 2, 5, 3, 4, 6, 7, pd_64, 7, 1
+    ; 0|7: m6, 1|6: m7, 2|5: m2, 3|4: m1
+    vpermq      m6, m6, q3120           ; row 0 | row 7
+    vpermq      m7, m7, q3120           ; row 1 | row 6
+    vpermq      m2, m2, q3120           ; row 2 | row 5
+    vpermq      m1, m1, q3120           ; row 3 | row 4
+    mova         [blockq+  0], xm6
+    vextracti128 [blockq+112], m6, 1
+    mova         [blockq+ 16], xm7
+    vextracti128 [blockq+ 96], m7, 1
+    mova         [blockq+ 32], xm2
+    vextracti128 [blockq+ 80], m2, 1
+    mova         [blockq+ 48], xm1
+    vextracti128 [blockq+ 64], m1, 1
+    RET
+%endif ; HAVE_AVX2_EXTERNAL
+%endif ; ARCH_X86_64

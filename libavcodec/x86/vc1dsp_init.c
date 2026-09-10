@@ -81,6 +81,7 @@ void ff_vc1_inv_trans_4x8_sse2(uint8_t *dest, ptrdiff_t linesize,
 void ff_vc1_inv_trans_8x4_sse2(uint8_t *dest, ptrdiff_t linesize,
                                int16_t *block);
 void ff_vc1_inv_trans_8x8_sse2(int16_t block[64]);
+void ff_vc1_inv_trans_8x8_avx2(int16_t block[64]);
 
 #define MSPEL_FUNC(OP, X, Y, SIZE, XMM)                                     \
     void ff_vc1_ ## OP ## _mspel_mc ## X ## Y ## _ ## SIZE ##_ ## XMM       \
@@ -150,4 +151,8 @@ av_cold void ff_vc1dsp_init_x86(VC1DSPContext *dsp)
         dsp->vc1_h_loop_filter8  = ff_vc1_h_loop_filter8_sse4;
         dsp->vc1_h_loop_filter16 = vc1_h_loop_filter16_sse4;
     }
+#if ARCH_X86_64
+    if (EXTERNAL_AVX2_FAST(cpu_flags))
+        dsp->vc1_inv_trans_8x8 = ff_vc1_inv_trans_8x8_avx2;
+#endif
 }
