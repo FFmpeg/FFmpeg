@@ -484,7 +484,7 @@ static av_cold int libxevd_close(AVCodecContext *avctx)
 }
 
 const FFCodec ff_libxevd_decoder = {
-    .p.name             = "evc",
+    .p.name             = "libxevd",
     CODEC_LONG_NAME("EVC / MPEG-5 Essential Video Coding (EVC)"),
     .p.type             = AVMEDIA_TYPE_VIDEO,
     .p.id               = AV_CODEC_ID_EVC,
