@@ -74,6 +74,13 @@ void ff_vc1_inv_trans_8x4_dc_sse2(uint8_t *dest, ptrdiff_t linesize,
                                   int16_t *block);
 void ff_vc1_inv_trans_8x8_dc_sse2(uint8_t *dest, ptrdiff_t linesize,
                                   int16_t *block);
+void ff_vc1_inv_trans_4x4_sse2(uint8_t *dest, ptrdiff_t linesize,
+                               int16_t *block);
+void ff_vc1_inv_trans_4x8_sse2(uint8_t *dest, ptrdiff_t linesize,
+                               int16_t *block);
+void ff_vc1_inv_trans_8x4_sse2(uint8_t *dest, ptrdiff_t linesize,
+                               int16_t *block);
+void ff_vc1_inv_trans_8x8_sse2(int16_t block[64]);
 
 #define MSPEL_FUNC(OP, X, Y, SIZE, XMM)                                     \
     void ff_vc1_ ## OP ## _mspel_mc ## X ## Y ## _ ## SIZE ##_ ## XMM       \
@@ -115,6 +122,12 @@ av_cold void ff_vc1dsp_init_x86(VC1DSPContext *dsp)
         dsp->vc1_inv_trans_4x8_dc                = ff_vc1_inv_trans_4x8_dc_sse2;
         dsp->vc1_inv_trans_8x4_dc                = ff_vc1_inv_trans_8x4_dc_sse2;
         dsp->vc1_inv_trans_4x4_dc                = ff_vc1_inv_trans_4x4_dc_sse2;
+        dsp->vc1_inv_trans_4x4                   = ff_vc1_inv_trans_4x4_sse2;
+        dsp->vc1_inv_trans_4x8                   = ff_vc1_inv_trans_4x8_sse2;
+        dsp->vc1_inv_trans_8x4                   = ff_vc1_inv_trans_8x4_sse2;
+#if ARCH_X86_64
+        dsp->vc1_inv_trans_8x8                   = ff_vc1_inv_trans_8x8_sse2;
+#endif
 
         ASSIGN_LF816(sse2);
 
