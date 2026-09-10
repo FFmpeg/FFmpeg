@@ -261,6 +261,11 @@ static int vc1_parse(AVCodecParserContext *s,
 static av_cold int vc1_parse_init(AVCodecParserContext *s)
 {
     VC1ParseContext *vpc = s->priv_data;
+    /* Report no picture type until a frame header has actually been read.
+     * av_parser_init() leaves pict_type at AV_PICTURE_TYPE_I, and libavformat
+     * marks a packet a key frame from that default; a track whose frames carry
+     * no start codes yields no header to this parser at all. */
+    s->pict_type = AV_PICTURE_TYPE_NONE;
     vpc->v.s.slice_context_count = 1;
     vpc->v.first_pic_header_flag = 1;
     vpc->v.parse_only = 1;
