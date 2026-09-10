@@ -3033,6 +3033,18 @@ static int vulkan_host_transfer_usable(AVHWFramesContext *hwfc)
     FFVulkanFunctions *vk = &p->vkctx.vkfn;
     VkResult ret;
 
+    /* NVIDIA's host image copy resolves every plane's parameters as if it were
+     * plane 0, so every plane but the first is corrupted on both upload and
+     * download. Frames with one image per plane are unaffected.
+     */
+    const struct FFVkFormatEntry *fmt = vk_find_format_entry(hwfc->sw_format);
+    if (p->dprops.driverID == VK_DRIVER_ID_NVIDIA_PROPRIETARY &&
+        fmt && fmt->vk_planes > 1 && hwctx->format[0] == fmt->vkf) {
+        av_log(hwfc, AV_LOG_VERBOSE, "Disabling host image transfers: "
+               "NVIDIA drivers mishandle multi-plane images\n");
+        return 0;
+    }
+
     const VkImageDrmFormatModifierListCreateInfoEXT *mod_list =
         ff_vk_find_struct(hwctx->create_pnext,
                           VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_LIST_CREATE_INFO_EXT);
