@@ -435,28 +435,32 @@ static int libxevd_receive_frame(AVCodecContext *avctx, AVFrame *frame)
         }
     } else { // decoder draining mode handling
 
-        xevd_ret = xevd_pull(xectx->id, &imgb);
+        while (1) {
+            xevd_ret = xevd_pull(xectx->id, &imgb);
 
-        if (xevd_ret == XEVD_ERR_UNEXPECTED) { // draining process completed
-            av_log(avctx, AV_LOG_DEBUG, "Draining process completed\n");
+            if (xevd_ret == XEVD_ERR_UNEXPECTED) { // draining process completed
+                av_log(avctx, AV_LOG_DEBUG, "Draining process completed\n");
 
-            return AVERROR_EOF;
-        } else if (XEVD_FAILED(xevd_ret)) { // handle all other errors
-            av_log(avctx, AV_LOG_ERROR, "Failed to pull the decoded image (xevd error code: %d)\n", xevd_ret);
-
-            return AVERROR_EXTERNAL;
-        } else { // XEVD_OK
-            if (!imgb) {
-                av_log(avctx, AV_LOG_ERROR, "Invalid decoded image data\n");
+                return AVERROR_EOF;
+            } else if (XEVD_FAILED(xevd_ret)) { // handle all other errors
+                av_log(avctx, AV_LOG_ERROR, "Failed to pull the decoded image (xevd error code: %d)\n", xevd_ret);
 
                 return AVERROR_EXTERNAL;
-            }
+            } else if (xevd_ret == XEVD_OK) {
+                if (!imgb) {
+                    av_log(avctx, AV_LOG_ERROR, "Invalid decoded image data\n");
 
-            if (*(int*)imgb->pdata[1] == XEVD_ST_I) {
-                frame->pict_type = AV_PICTURE_TYPE_I;
-                frame->flags |= AV_FRAME_FLAG_KEY;
+                    continue;
+                }
+
+                if (*(int*)imgb->pdata[1] == XEVD_ST_I) {
+                    frame->pict_type = AV_PICTURE_TYPE_I;
+                    frame->flags |= AV_FRAME_FLAG_KEY;
+                }
+                return libxevd_return_frame(avctx, frame, imgb, NULL);
             }
-            return libxevd_return_frame(avctx, frame, imgb, NULL);
+            av_log(avctx, AV_LOG_WARNING, "Unexpected return code while draining (xevd error code: %d)\n", xevd_ret);
+            return AVERROR_EOF;
         }
     }
 
