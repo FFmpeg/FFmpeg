@@ -325,9 +325,11 @@ fate-vsynth%-mpeg4-adap:         ENCOPTS = $(MPEG4_ADAP_OPTS)
 # This is the same test as fate-vsynth%-mpeg4-adap but with an input padded
 # so the encoder can use it without copy.
 FATE_VCODEC_LAYOUT-$(call ENCDEC, MPEG4, AVI, PAD_FILTER CROP_FILTER) += \
-    fate-vsynth1-mpeg4-layout
+    fate-vsynth1-mpeg4-layout fate-vsynth1-mpeg4-layout-ref
 fate-vsynth%-mpeg4-layout:       ENCOPTS = -vf pad=384:288:0:0,crop=352:288:0:0 \
                                            $(MPEG4_ADAP_OPTS)
+fate-vsynth%-mpeg4-layout-ref:   CMD     = sed s/mpeg4-layout/mpeg4-adap/g $(SRC_PATH)/tests/ref/vsynth/$(@:fate-%-ref=%)
+fate-vsynth%-mpeg4-layout-ref:   REF     = $(SRC_PATH)/tests/ref/vsynth/$(@:fate-%-layout-ref=%)-adap
 
 fate-vsynth%-mpeg4-adv:          ENCOPTS = -qscale 9 -flags +mv4+aic       \
                                            -data_partitioning 1 -trellis 1 \

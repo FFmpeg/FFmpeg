@@ -624,8 +624,6 @@ static void mpeg4_encode_mb(MPVEncContext *const s, int16_t block[][64],
                             break;
 
                         b_pic = pic->f->data[0] + offset;
-                        if (!pic->shared)
-                            b_pic += INPLACE_OFFSET;
 
                         if (x + 16 > s->c.width || y + 16 > s->c.height) {
                             int x1, y1;
