@@ -29,6 +29,8 @@ void ff_prores_idct_put_10_sse2(uint16_t *dst, ptrdiff_t linesize,
                                 int16_t *block, const int16_t *qmat);
 void ff_prores_idct_put_10_avx (uint16_t *dst, ptrdiff_t linesize,
                                 int16_t *block, const int16_t *qmat);
+void ff_prores_idct_put_12_avx2(uint16_t *dst, ptrdiff_t linesize,
+                                int16_t *block, const int16_t *qmat);
 
 av_cold void ff_proresdsp_init_x86(ProresDSPContext *dsp, int bits_per_raw_sample)
 {
@@ -44,6 +46,11 @@ av_cold void ff_proresdsp_init_x86(ProresDSPContext *dsp, int bits_per_raw_sampl
         if (EXTERNAL_AVX(cpu_flags)) {
             dsp->idct_permutation_type = FF_IDCT_PERM_TRANSPOSE;
             dsp->idct_put = ff_prores_idct_put_10_avx;
+        }
+    } else if (bits_per_raw_sample == 12) {
+        if (EXTERNAL_AVX2(cpu_flags)) {
+            dsp->idct_permutation_type = FF_IDCT_PERM_TRANSPOSE;
+            dsp->idct_put = ff_prores_idct_put_12_avx2;
         }
     }
 #endif /* ARCH_X86_64 */
