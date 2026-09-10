@@ -626,6 +626,15 @@ fate-mov-stereo3d-sbs-mp4: CMD = transcode rawvideo $(TARGET_PATH)/tests/data/vs
   "-c:v mpeg4 -qscale:v 10 -stereo3d:v sbsl -strict unofficial -frames:v 2" \
   "-c:v copy" "-show_entries stream_side_data_list" "" "" "-s 352x288 -pix_fmt yuv420p"
 
+# chpl titles are limited to 255 bytes; truncation must not split a UTF-8
+# character. 3gp is used because MP4/MOV read the chapter track, not chpl.
+tests/data/chpl-utf8.ffmeta: TAG = COPY
+tests/data/chpl-utf8.ffmeta: $(SRC_PATH)/tests/chpl-utf8.ffmeta | tests/data
+	$(M)cp $< $@
+fate-mov-chpl-utf8: tests/data/chpl-utf8.ffmeta
+FATE_MOV_FFMPEG_FFPROBE-$(call ALLYES, COLOR_FILTER MPEG4_ENCODER FFMETADATA_DEMUXER TGP_MUXER MOV_DEMUXER FILE_PROTOCOL) += fate-mov-chpl-utf8
+fate-mov-chpl-utf8: CMD = run_with_temp "$(FFMPEG) -nostdin -v error -filter_complex color=c=black:s=2x2:r=1 -f ffmetadata -i $(TARGET_PATH)/tests/data/chpl-utf8.ffmeta -map_chapters 0 -frames:v 1 -c:v mpeg4 -threads 1 -flags +bitexact -fflags +bitexact -f 3gp -y" "ffprobe$(PROGSSUF)$(EXESUF) -loglevel error -bitexact -show_chapters" 3gp
+
 FATE_FFMPEG += $(FATE_MOV_FFMPEG-yes)
 FATE_FFMPEG_FFPROBE += $(FATE_MOV_FFMPEG_FFPROBE-yes)
 

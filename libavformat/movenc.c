@@ -5191,6 +5191,8 @@ static int mov_write_chpl_tag(AVIOContext *pb, AVFormatContext *s)
 
         if ((t = av_dict_get(c->metadata, "title", NULL, 0))) {
             int len = FFMIN(strlen(t->value), 255);
+            while (len > 252 && (t->value[len] & 0xC0) == 0x80)
+                len--;
             avio_w8(pb, len);
             avio_write(pb, t->value, len);
         } else
