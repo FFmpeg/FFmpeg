@@ -1015,7 +1015,8 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     AVRational duration;
     int onein_oneout = st->codecpar->codec_id != AV_CODEC_ID_H264 &&
                        st->codecpar->codec_id != AV_CODEC_ID_HEVC &&
-                       st->codecpar->codec_id != AV_CODEC_ID_VVC;
+                       st->codecpar->codec_id != AV_CODEC_ID_VVC  &&
+                       st->codecpar->codec_id != AV_CODEC_ID_IMM6;
 
     if (s->flags & AVFMT_FLAG_NOFILLIN)
         return;
