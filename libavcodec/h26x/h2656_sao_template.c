@@ -54,8 +54,8 @@ static void FUNC(sao_edge_filter)(uint8_t *_dst, const uint8_t *_src, ptrdiff_t 
     static const int8_t pos[4][2][2] = {
         { { -1,  0 }, {  1, 0 } }, // horizontal
         { {  0, -1 }, {  0, 1 } }, // vertical
-        { { -1, -1 }, {  1, 1 } }, // 45 degree
-        { {  1, -1 }, { -1, 1 } }, // 135 degree
+        { { -1, -1 }, {  1, 1 } }, // 135 degree
+        { {  1, -1 }, { -1, 1 } }, // 45 degree
     };
     pixel *dst = (pixel *)_dst;
     const pixel *src = (const pixel *)_src;

@@ -103,14 +103,14 @@ endfunc
 .Lhevc_sao_edge_pos:
 .word 1 // horizontal
 .word HEVC_SAO_STRIDE // vertical
-.word HEVC_SAO_STRIDE + 1 // 45 degree
-.word HEVC_SAO_STRIDE - 1 // 135 degree
+.word HEVC_SAO_STRIDE + 1 // 135 degree
+.word HEVC_SAO_STRIDE - 1 // 45 degree
 
 .Lvvc_sao_edge_pos:
 .word 1 // horizontal
 .word VVC_SAO_STRIDE // vertical
-.word VVC_SAO_STRIDE + 1 // 45 degree
-.word VVC_SAO_STRIDE - 1 // 135 degree
+.word VVC_SAO_STRIDE + 1 // 135 degree
+.word VVC_SAO_STRIDE - 1 // 45 degree
 
 function ff_vvc_sao_edge_filter_16x16_8_neon, export=1
         adr             x7, .Lvvc_sao_edge_pos

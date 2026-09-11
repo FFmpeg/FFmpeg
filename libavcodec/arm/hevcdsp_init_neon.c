@@ -177,8 +177,8 @@ void ff_hevc_sao_edge_filter_neon_8_wrapper(uint8_t *_dst, const uint8_t *_src, 
     static const int8_t pos[4][2][2] = {
         { { -1,  0 }, {  1, 0 } }, // horizontal
         { {  0, -1 }, {  0, 1 } }, // vertical
-        { { -1, -1 }, {  1, 1 } }, // 45 degree
-        { {  1, -1 }, { -1, 1 } }, // 135 degree
+        { { -1, -1 }, {  1, 1 } }, // 135 degree
+        { {  1, -1 }, { -1, 1 } }, // 45 degree
     };
     uint8_t *dst = _dst;
     const uint8_t *src = _src;

@@ -124,8 +124,8 @@ void ff_hevc_sao_edge_filter_8x8_8_simd128(uint8_t *dst, const uint8_t *src,
     static const int8_t pos[4][2][2] = {
             { { -1,  0 }, {  1, 0 } }, // horizontal
             { {  0, -1 }, {  0, 1 } }, // vertical
-            { { -1, -1 }, {  1, 1 } }, // 45 degree
-            { {  1, -1 }, { -1, 1 } }, // 135 degree
+            { { -1, -1 }, {  1, 1 } }, // 135 degree
+            { {  1, -1 }, { -1, 1 } }, // 45 degree
     };
     int a_stride, b_stride;
     ptrdiff_t stride_src = (2 * HEVC_MAX_PB_SIZE + AV_INPUT_BUFFER_PADDING_SIZE);
@@ -194,8 +194,8 @@ void ff_hevc_sao_edge_filter_16x16_8_simd128(uint8_t *dst, const uint8_t *src,
     static const int8_t pos[4][2][2] = {
             { { -1,  0 }, {  1, 0 } }, // horizontal
             { {  0, -1 }, {  0, 1 } }, // vertical
-            { { -1, -1 }, {  1, 1 } }, // 45 degree
-            { {  1, -1 }, { -1, 1 } }, // 135 degree
+            { { -1, -1 }, {  1, 1 } }, // 135 degree
+            { {  1, -1 }, { -1, 1 } }, // 45 degree
     };
     int a_stride, b_stride;
     ptrdiff_t stride_src = (2 * HEVC_MAX_PB_SIZE + AV_INPUT_BUFFER_PADDING_SIZE);
