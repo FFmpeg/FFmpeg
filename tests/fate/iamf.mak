@@ -83,6 +83,18 @@ fate-iamf-ambisonic_1-projection-copy: CMD = stream_remux iamf $(TARGET_SAMPLES)
   "-map 0 -stream_group map=0=0:st=0:st=1:st=2:st=3 -stream_group map=0=1:stg=0 -streamid 0:0 -streamid 1:1 -streamid 2:2 -streamid 3:3" "" "-c:a copy -frames:a 0 -map 0:g:i:300" \
   "-show_entries stream_group=index,id,nb_streams,type:stream_group_components:stream_group_stream=index,id:stream_group_stream_disposition"
 
+FATE_IAMF_SAMPLES-$(call FRAMECRC, IAMF, PCM_S16LE) += fate-iamf-ambisonic_3-demux
+fate-iamf-ambisonic_3-demux: CMD = stream_demux iamf $(TARGET_SAMPLES)/iamf/test_000096.iamf "" \
+  "-c:a copy -frames:a 0 -map 0:g:\#300" \
+  "-show_entries stream_group=index,id,nb_streams,type:stream_group_components:stream_group_stream=index,id"
+
+FATE_IAMF_SAMPLES-$(call REMUX, IAMF, PCM_S16LE_DECODER) += fate-iamf-ambisonic_3-copy
+fate-iamf-ambisonic_3-copy: CMD = stream_remux iamf $(TARGET_SAMPLES)/iamf/test_000096.iamf "" iamf \
+  "-map 0 -stream_group map=0=0:st=0:st=1:st=2:st=3:st=4:st=5:st=6:st=7:st=8:st=9:st=10:st=11:st=12:st=13:st=14:st=15 \
+   -stream_group map=0=1:stg=0 -streamid 0:0 -streamid 1:1 -streamid 2:2 -streamid 3:3 -streamid 4:4 -streamid 5:5 -streamid 6:6 -streamid 7:7 -streamid 8:8 -streamid 9:9 -streamid 10:10 -streamid 11:11 -streamid 12:12 -streamid 13:13 -streamid 14:14 -streamid 15:15" \
+  "" "-c:a copy -frames:a 0 -map 0:g:i:300" \
+  "-show_entries stream_group=index,id,nb_streams,type:stream_group_components:stream_group_stream=index,id"
+
 FATE_IAMF += $(FATE_IAMF-yes)
 FATE_IAMF_SAMPLES += $(FATE_IAMF_SAMPLES-yes)
 

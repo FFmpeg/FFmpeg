@@ -1,0 +1,282 @@
+#tb 0: 1/48000
+#media_type 0: audio
+#codec_id 0: pcm_s16le
+#sample_rate 0: 48000
+#channel_layout_name 0: mono
+#tb 1: 1/48000
+#media_type 1: audio
+#codec_id 1: pcm_s16le
+#sample_rate 1: 48000
+#channel_layout_name 1: mono
+#tb 2: 1/48000
+#media_type 2: audio
+#codec_id 2: pcm_s16le
+#sample_rate 2: 48000
+#channel_layout_name 2: mono
+#tb 3: 1/48000
+#media_type 3: audio
+#codec_id 3: pcm_s16le
+#sample_rate 3: 48000
+#channel_layout_name 3: mono
+#tb 4: 1/48000
+#media_type 4: audio
+#codec_id 4: pcm_s16le
+#sample_rate 4: 48000
+#channel_layout_name 4: mono
+#tb 5: 1/48000
+#media_type 5: audio
+#codec_id 5: pcm_s16le
+#sample_rate 5: 48000
+#channel_layout_name 5: mono
+#tb 6: 1/48000
+#media_type 6: audio
+#codec_id 6: pcm_s16le
+#sample_rate 6: 48000
+#channel_layout_name 6: mono
+#tb 7: 1/48000
+#media_type 7: audio
+#codec_id 7: pcm_s16le
+#sample_rate 7: 48000
+#channel_layout_name 7: mono
+#tb 8: 1/48000
+#media_type 8: audio
+#codec_id 8: pcm_s16le
+#sample_rate 8: 48000
+#channel_layout_name 8: mono
+#tb 9: 1/48000
+#media_type 9: audio
+#codec_id 9: pcm_s16le
+#sample_rate 9: 48000
+#channel_layout_name 9: mono
+#tb 10: 1/48000
+#media_type 10: audio
+#codec_id 10: pcm_s16le
+#sample_rate 10: 48000
+#channel_layout_name 10: mono
+#tb 11: 1/48000
+#media_type 11: audio
+#codec_id 11: pcm_s16le
+#sample_rate 11: 48000
+#channel_layout_name 11: mono
+#tb 12: 1/48000
+#media_type 12: audio
+#codec_id 12: pcm_s16le
+#sample_rate 12: 48000
+#channel_layout_name 12: mono
+#tb 13: 1/48000
+#media_type 13: audio
+#codec_id 13: pcm_s16le
+#sample_rate 13: 48000
+#channel_layout_name 13: mono
+#tb 14: 1/48000
+#media_type 14: audio
+#codec_id 14: pcm_s16le
+#sample_rate 14: 48000
+#channel_layout_name 14: mono
+#tb 15: 1/48000
+#media_type 15: audio
+#codec_id 15: pcm_s16le
+#sample_rate 15: 48000
+#channel_layout_name 15: mono
+[STREAM_GROUP]
+index=0
+id=0x12c
+nb_streams=16
+type=IAMF Audio Element
+[COMPONENT]
+nb_layers=1
+audio_element_type=1
+default_w=0
+[SUBCOMPONENT]
+channel_layout=ambisonic 3
+ambisonics_mode=0
+[/SUBCOMPONENT]
+[/COMPONENT]
+[STREAM]
+index=0
+id=0x0
+[/STREAM]
+[STREAM]
+index=1
+id=0x1
+[/STREAM]
+[STREAM]
+index=2
+id=0x2
+[/STREAM]
+[STREAM]
+index=3
+id=0x3
+[/STREAM]
+[STREAM]
+index=4
+id=0x4
+[/STREAM]
+[STREAM]
+index=5
+id=0x5
+[/STREAM]
+[STREAM]
+index=6
+id=0x6
+[/STREAM]
+[STREAM]
+index=7
+id=0x7
+[/STREAM]
+[STREAM]
+index=8
+id=0x8
+[/STREAM]
+[STREAM]
+index=9
+id=0x9
+[/STREAM]
+[STREAM]
+index=10
+id=0xa
+[/STREAM]
+[STREAM]
+index=11
+id=0xb
+[/STREAM]
+[STREAM]
+index=12
+id=0xc
+[/STREAM]
+[STREAM]
+index=13
+id=0xd
+[/STREAM]
+[STREAM]
+index=14
+id=0xe
+[/STREAM]
+[STREAM]
+index=15
+id=0xf
+[/STREAM]
+[/STREAM_GROUP]
+[STREAM_GROUP]
+index=1
+id=0x2a
+nb_streams=16
+type=IAMF Mix Presentation
+[COMPONENT]
+nb_submixes=1
+[SUBCOMPONENT]
+en-us=test_mix_pres
+[/SUBCOMPONENT]
+[SUBCOMPONENT]
+nb_elements=1
+nb_layouts=2
+default_mix_gain=0/256
+[PIECE]
+stream_id=300
+default_mix_gain=0/256
+headphones_rendering_mode=1
+[SUBPIECE]
+en-us=test_sub_mix_0_audio_element_0
+[/SUBPIECE]
+[SUBPIECE]
+name=element_mix_config
+nb_subblocks=0
+type=0
+parameter_id=999
+parameter_rate=48000
+duration=0
+constant_subblock_duration=0
+[/SUBPIECE]
+[/PIECE]
+[PIECE]
+name=output_mix_config
+nb_subblocks=0
+type=0
+parameter_id=998
+parameter_rate=48000
+duration=0
+constant_subblock_duration=0
+[/PIECE]
+[PIECE]
+sound_system=stereo
+integrated_loudness=-2834/256
+digital_peak=0/256
+true_peak=0/1
+dialogue_anchored_loudness=0/1
+album_anchored_loudness=0/1
+[/PIECE]
+[PIECE]
+sound_system=binaural
+integrated_loudness=-32768/256
+digital_peak=-32768/256
+true_peak=0/1
+dialogue_anchored_loudness=0/1
+album_anchored_loudness=0/1
+[/PIECE]
+[/SUBCOMPONENT]
+[/COMPONENT]
+[STREAM]
+index=0
+id=0x0
+[/STREAM]
+[STREAM]
+index=1
+id=0x1
+[/STREAM]
+[STREAM]
+index=2
+id=0x2
+[/STREAM]
+[STREAM]
+index=3
+id=0x3
+[/STREAM]
+[STREAM]
+index=4
+id=0x4
+[/STREAM]
+[STREAM]
+index=5
+id=0x5
+[/STREAM]
+[STREAM]
+index=6
+id=0x6
+[/STREAM]
+[STREAM]
+index=7
+id=0x7
+[/STREAM]
+[STREAM]
+index=8
+id=0x8
+[/STREAM]
+[STREAM]
+index=9
+id=0x9
+[/STREAM]
+[STREAM]
+index=10
+id=0xa
+[/STREAM]
+[STREAM]
+index=11
+id=0xb
+[/STREAM]
+[STREAM]
+index=12
+id=0xc
+[/STREAM]
+[STREAM]
+index=13
+id=0xd
+[/STREAM]
+[STREAM]
+index=14
+id=0xe
+[/STREAM]
+[STREAM]
+index=15
+id=0xf
+[/STREAM]
+[/STREAM_GROUP]
