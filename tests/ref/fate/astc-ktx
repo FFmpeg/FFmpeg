@@ -1,0 +1,8 @@
+fe8511ba3b5ed0aab64f4b5c47271bc1 *tests/data/fate/astc-ktx.ktx
+4192 tests/data/fate/astc-ktx.ktx
+#tb 0: 1/1
+#media_type 0: video
+#codec_id 0: rawvideo
+#dimensions 0: 128x128
+#sar 0: 0/1
+0,          0,          0,        1,    65536, 0xd37f6262

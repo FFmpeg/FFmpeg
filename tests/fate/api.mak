@@ -1,3 +1,7 @@
+FATE_API_LIBAVCODEC-$(call ALLYES, LIBASTCENC_ENCODER LIBASTCENC_DECODER) += fate-api-astc-profile
+fate-api-astc-profile: $(APITESTSDIR)/api-astc-profile-test$(EXESUF)
+fate-api-astc-profile: CMD = run $(APITESTSDIR)/api-astc-profile-test$(EXESUF)
+
 FATE_API_LIBAVCODEC-$(call ENCDEC, FLAC, FLAC) += fate-api-flac
 fate-api-flac: $(APITESTSDIR)/api-flac-test$(EXESUF)
 fate-api-flac: CMD = run $(APITESTSDIR)/api-flac-test$(EXESUF)

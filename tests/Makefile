@@ -185,6 +185,7 @@ include $(SRC_PATH)/tests/fate/dvvideo.mak
 include $(SRC_PATH)/tests/fate/ea.mak
 include $(SRC_PATH)/tests/fate/exif.mak
 include $(SRC_PATH)/tests/fate/enc_external.mak
+include $(SRC_PATH)/tests/fate/astc.mak
 # Must be included after lavf-video.mak
 include $(SRC_PATH)/tests/fate/ffmpeg.mak
 include $(SRC_PATH)/tests/fate/ffprobe.mak

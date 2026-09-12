@@ -1,0 +1,11 @@
+requested profile -99, input rgba -> resolved profile 1, decoded rgba: 0x80 0x80 0x80 0xff
+requested profile 1, input rgba -> resolved profile 1, decoded rgba: 0x80 0x80 0x80 0xff
+requested profile 2, input rgba -> resolved profile 2, decoded rgba: 0x80 0x80 0x80 0xff
+requested profile 3, input rgba -> open failed: Invalid argument
+requested profile 4, input rgba -> open failed: Invalid argument
+requested profile 5, input rgba -> open failed: Invalid argument
+requested profile 4, input rgbaf32 -> resolved profile 4, decoded rgbaf16: 2.500 2.500 2.500 2.500
+requested profile 3, input rgbaf32 -> resolved profile 3, decoded rgbaf16: 2.500 2.500 2.500 1.000
+requested profile 2, input rgbaf32 -> resolved profile 3, decoded rgbaf16: 2.500 2.500 2.500 1.000
+requested profile 4, private profile hdr-ldr-a, input rgbaf32 -> resolved profile 3, decoded rgbaf16: 2.500 2.500 2.500 1.000
+requested profile 1, input rgba -> resolved profile 1, decoded rgbaf16: 0.502 0.502 0.502 1.000

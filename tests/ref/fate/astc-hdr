@@ -1,0 +1,8 @@
+bf52e531c5700cd2039de30c0cdb7a22 *tests/data/fate/astc-hdr.astc
+4112 tests/data/fate/astc-hdr.astc
+#tb 0: 1/1
+#media_type 0: video
+#codec_id 0: rawvideo
+#dimensions 0: 128x128
+#sar 0: 0/1
+0,          0,          0,        1,   262144, 0xca65d360

@@ -1,0 +1,2 @@
+linear KTX default decode vs explicit hdr-ldr-a: identical
+linear KTX default decode vs explicit ldr: different

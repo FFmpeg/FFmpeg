@@ -1,0 +1,8 @@
+992ecc2713a9ca3e4f9a2a838ce91a7f *tests/data/fate/astc-3d.astc
+4112 tests/data/fate/astc-3d.astc
+#tb 0: 1/1
+#media_type 0: video
+#codec_id 0: rawvideo
+#dimensions 0: 64x64
+#sar 0: 0/1
+0,          0,          0,        1,    16384, 0x8e695e67

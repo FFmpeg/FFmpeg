@@ -1,0 +1,8 @@
+4e488750dca715be36407f4ca18c0bed *tests/data/fate/astc-hdr-profile-mismatch.astc
+1040 tests/data/fate/astc-hdr-profile-mismatch.astc
+#tb 0: 1/1
+#media_type 0: video
+#codec_id 0: rawvideo
+#dimensions 0: 64x64
+#sar 0: 0/1
+0,          0,          0,        1,    16384, 0x9c27d2c1
