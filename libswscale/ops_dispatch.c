@@ -204,6 +204,17 @@ static size_t safe_blocks_offset(size_t num_blocks, unsigned block_size,
     return safe_blocks;
 }
 
+static void copy_lines(uint8_t *dst, const ptrdiff_t dst_stride,
+                       const uint8_t *src, const ptrdiff_t src_stride,
+                       const int h, const size_t bytes)
+{
+    for (int y = 0; y < h; y++) {
+        memcpy(dst, src, bytes);
+        dst += dst_stride;
+        src += src_stride;
+    }
+}
+
 static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
                          const SwsPass *pass)
 {
@@ -356,17 +367,6 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
     }
 
     return 0;
-}
-
-static void copy_lines(uint8_t *dst, const ptrdiff_t dst_stride,
-                       const uint8_t *src, const ptrdiff_t src_stride,
-                       const int h, const size_t bytes)
-{
-    for (int y = 0; y < h; y++) {
-        memcpy(dst, src, bytes);
-        dst += dst_stride;
-        src += src_stride;
-    }
 }
 
 static void op_pass_run(const SwsFrame *out, const SwsFrame *in, const int y,
