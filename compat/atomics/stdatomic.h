@@ -154,7 +154,17 @@ static av_always_inline void ff_atomic_store_ptr(volatile void *object,
                                                  const volatile void *desired,
                                                  memory_order order)
 {
+/* The alias analysis of MSVC for ARM before 19.44 does not track a pointer
+ * converted to an integer for the store intrinsics, so the stores initializing
+ * the pointed-to object are eliminated as dead. The interlocked exchange is not
+ * affected, and with its result unused it compiles to the same store as a plain
+ * store would without the bug. */
+#if defined(_MSC_VER) && !defined(__clang__) && _MSC_VER < 1944 && \
+    (defined(_M_ARM) || defined(_M_ARM64) || defined(_M_ARM64EC))
+    FF_ATOMIC_SIZE(exchange, sizeof(void *))(object, (uintptr_t)desired, order);
+#else
     FF_ATOMIC_SIZE(store, sizeof(void *))(object, (uintptr_t)desired, order);
+#endif
 }
 
 static av_always_inline uintptr_t
