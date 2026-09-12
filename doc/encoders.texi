@@ -2616,6 +2616,93 @@ Text-like
 
 @end table
 
+@section libastcenc
+
+ARM ASTC Encoder wrapper.
+
+This encoder requires the Arm ASTC Encoder (astc-encoder) library version
+5.4 or newer, which provides high-quality GPU texture compression to the
+ASTC format, installed as @code{astcenc/astcenc.h} next to a library that
+@code{-lastcenc} finds. Pass @code{--enable-version3} together with
+@code{--enable-libastcenc} to configure.
+
+The encoder supports both LDR (8-bit RGBA/RGB) and HDR (float/half RGBA)
+input. When float or half input is detected with an LDR profile, the
+profile is automatically promoted to HDR RGB with LDR alpha
+(@code{HDR_RGB_LDR_A}); an explicitly selected HDR profile is kept.
+
+The raw bitstream can be packaged in the @file{.astc} container (16-byte
+header + compressed blocks) or in the Khronos Texture 1.0 container
+(@file{.ktx}). This implementation writes LDR 2D textures only through the
+@file{.ktx} muxer: HDR ASTC and 3D block footprints are not supported by
+the muxer and @file{.astc} must be used for them instead. The KTX 1.0
+linear ASTC GL enums do not imply LDR either, so a linear @file{.ktx}
+texture may still hold HDR endpoints; such a texture is decoded with HDR
+precision by default.
+The @file{.ktx} muxer records its row order in a @code{KTXorientation} key.
+
+@subsection Pixel Format
+
+The encoder accepts the following pixel formats:
+@itemize
+@item @code{rgba} -- 8-bit packed RGBA (LDR).
+@item @code{rgb24} -- 8-bit packed RGB (LDR, opaque alpha synthesized).
+@item @code{rgbaf16} -- 16-bit floating-point RGBA (HDR).
+@item @code{rgbaf32} -- 32-bit floating-point RGBA (HDR).
+@item @code{gbrapf32} -- planar 32-bit floating-point GBR+Alpha (HDR).
+@end itemize
+
+swscale cannot convert @emph{to} the packed floating-point formats
+(@code{rgbaf16}, @code{rgbaf32}); to encode ordinary image formats as HDR,
+produce a planar floating-point source instead, for example with
+@code{-vf format=gbrapf32}. The packed formats are accepted when they are
+supplied directly, such as from a decoder or a custom filter graph.
+
+@subsection Options
+
+@table @option
+
+@item block_size @var{string}
+ASTC block size specified as @var{W}x@var{H}[@code{x}@var{D}].
+When the third dimension is omitted it defaults to 1 (2D block).
+Valid 2D: 4x4, 5x4, 5x5, 6x5, 6x6, 8x5, 8x6, 8x8, 10x5, 10x6,
+10x8, 10x10, 12x10, 12x12.  Valid 3D: 3x3x3, 4x3x3, 4x4x3, 4x4x4,
+5x4x4, 5x5x4, 5x5x5, 6x5x5, 6x6x5, 6x6x6.
+Default is @code{8x8}.
+
+@item quality @var{float}
+Compression quality from 0 (fastest) to 100 (slowest, exhaustive search).
+Default is @code{60}.
+
+@item profile @var{int}
+Color profile. Possible values:
+@table @samp
+@item ldr
+Linear LDR.
+@item ldr-srgb
+sRGB LDR (default).
+@item hdr-ldr-a
+HDR RGB channels with LDR alpha channel.
+@item hdr
+Full HDR.
+@end table
+
+When float/half input is detected with an LDR profile, the profile is
+automatically promoted to @code{hdr-ldr-a}. Conversely, selecting an HDR
+profile with 8-bit input is rejected.
+This option overrides @code{AVCodecContext.profile}. When it is not set, the
+profile is taken from @code{AVCodecContext.profile} (@code{AV_PROFILE_ASTC_*}),
+where @code{AV_PROFILE_UNKNOWN} selects @code{ldr-srgb} as before.
+
+@item perceptual @var{boolean}
+Use the perceptual (PSNR-weighted) error metric instead of peak-SNR.
+Default is @code{0}.
+
+@item alpha_weight @var{boolean}
+Enable per-texel alpha weighting. Default is @code{1}.
+
+@end table
+
 @section libx264, libx264rgb
 
 x264 H.264/MPEG-4 AVC encoder wrapper.
