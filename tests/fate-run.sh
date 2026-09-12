@@ -320,7 +320,12 @@ transcode(){
     test -z "$final_encode_muxer" && final_encode_muxer="framecrc"
     encfile="${outdir}/${test}.${enc_fmt}"
     test $keep -ge 1 || cleanfiles="$cleanfiles $encfile"
-    tsrcfile=$(target_path $srcfile)
+    # lavfi graphs are not file paths, so do not run them through target_path.
+    if [ "$src_fmt" = "lavfi" ]; then
+        tsrcfile="$srcfile"
+    else
+        tsrcfile=$(target_path $srcfile)
+    fi
     tencfile=$(target_path $encfile)
     ffmpeg -f $src_fmt $DEC_OPTS $enc_opt_in -i $tsrcfile $additional_input \
            $ENC_OPTS $enc_opt $FLAGS -f $enc_fmt -y $tencfile || return
