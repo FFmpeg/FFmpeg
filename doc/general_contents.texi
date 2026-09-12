@@ -521,6 +521,8 @@ library:
 @item ADS/SS2                   @tab   @tab X
     @tab Audio format used on the PS2.
 @item APNG                      @tab X @tab X
+@item .astc                     @tab X @tab X
+    @tab Raw ASTC texture container.
 @item ASF                       @tab X @tab X
     @tab Advanced / Active Streaming Format.
 @item AST                       @tab X @tab X
@@ -856,6 +858,8 @@ library:
     @tab Multimedia format used in Westwood Studios games.
 @item Wideband Single-bit Data (WSD) @tab   @tab X
 @item WVE                       @tab   @tab X
+@item KTX                       @tab X @tab X
+    @tab Khronos Texture 1.0 container for ASTC.
 @item Konami XMD                @tab   @tab X
 @item XMV                       @tab   @tab X
     @tab Microsoft video container used in Xbox games.

@@ -900,6 +900,17 @@ Specify loop end position expressed in milliseconds, from @code{0} to
 assumes the total stream duration.
 @end table
 
+@section astc
+ASTC (Adaptive Scalable Texture Compression) muxer.
+
+This muxer accepts a single @samp{libastcenc} video stream and writes one
+image: the 16-byte @file{.astc} header, taken from the encoder's extradata,
+followed by the raw ASTC bitstream. The block footprint and the image
+dimensions come from the same extradata, and a second packet is rejected.
+
+Use the @file{.ktx} container for a texture that also needs its color space
+or row order recorded.
+
 @section au
 SUN AU audio muxer.
 
@@ -2814,6 +2825,36 @@ This muxer accepts a single @samp{jacosub} subtitles stream.
 
 For more information about the format, see
 @url{http://unicorn.us.com/jacosub/jscripts.html}.
+
+@section ktx
+Khronos Texture 1.0 muxer for ASTC textures.
+
+This muxer accepts a single @samp{libastcenc} video stream and writes one
+image: the ASTC block size and the image dimensions are taken from the
+encoder's extradata, and a second packet is rejected. The stored row order
+is recorded in a @code{KTXorientation} key.
+
+@subsection Options
+
+@table @option
+
+@item srgb @var{integer}
+Select the GL internal format color space. Possible values:
+@table @samp
+@item auto
+Use the color profile published by the encoder, which is the default.
+@item linear
+Write the linear ASTC format.
+@item srgb
+Write the sRGB ASTC format.
+@end table
+
+An explicit value that contradicts a known encoder profile is rejected.
+A raw @file{.astc} input does not carry a color profile, so remuxing it to
+@file{.ktx} with @code{auto} writes the sRGB format; pass
+@option{-srgb linear} to keep a linear texture.
+
+@end table
 
 @section kvag
 Simon & Schuster Interactive VAG muxer.

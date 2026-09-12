@@ -66,6 +66,13 @@ This demuxer is used to demux ASF files and MMS network streams.
 Do not try to resynchronize by looking for a certain optional start code.
 @end table
 
+@section astc
+
+ASTC (Adaptive Scalable Texture Compression) demuxer.
+
+This demuxer reads the 16-byte @file{.astc} header, hands it to the decoder as
+extradata, and emits the compressed image as a single packet.
+
 @anchor{concat}
 @section concat
 
@@ -729,6 +736,15 @@ terminating with the ".png" suffix:
 ffmpeg -framerate 10 -pattern_type glob -i "*.png" out.mkv
 @end example
 @end itemize
+
+@section ktx
+
+Khronos Texture 1.0 demuxer for ASTC textures.
+
+This demuxer reads the KTX 1.0 header and maps the ASTC GL internal format to
+the block footprint the decoder needs, so only files using the ASTC formats
+are accepted. A @code{KTXorientation} key is preserved as stream display
+metadata, and the texture is emitted as a single packet.
 
 @section libgme
 
