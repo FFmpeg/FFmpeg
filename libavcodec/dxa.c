@@ -338,7 +338,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
 
     c->dsize = avctx->width * avctx->height * 2;
-    c->decomp_buf = av_malloc(c->dsize + DECOMP_BUF_PADDING);
+    c->decomp_buf = av_mallocz(c->dsize + DECOMP_BUF_PADDING);
     if (!c->decomp_buf) {
         av_log(avctx, AV_LOG_ERROR, "Can't allocate decompression buffer.\n");
         return AVERROR(ENOMEM);
