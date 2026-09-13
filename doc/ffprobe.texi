@@ -196,6 +196,12 @@ sections:
 stream_tags=title
 @end example
 
+Selecting @code{stream} or @code{streams} does not by itself enable stream
+group output. To also show streams within groups, use
+@code{-show_stream_groups} or select their unique section name, for example
+@code{-show_entries stream_group_stream=index}. The shared names still
+select fields within stream groups when group output is enabled.
+
 @item -show_packets
 Show information about each packet contained in the input multimedia
 stream.

@@ -332,6 +332,7 @@ static const AVTextFormatSection sections[] = {
 
 typedef struct EntrySelection {
     int show_all_entries;
+    int explicitly_selected; ///< Selected by unique name or through a selected parent.
     AVDictionary *entries_to_show;
 } EntrySelection;
 
@@ -2908,15 +2909,17 @@ static int opt_format(void *optctx, const char *opt, const char *arg)
 }
 
 static inline void mark_section_show_entries(SectionID section_id,
-                                             int show_all_entries, AVDictionary *entries)
+                                             int show_all_entries, AVDictionary *entries,
+                                             int explicitly_selected)
 {
     EntrySelection *selection = &selected_entries[section_id];
 
     selection->show_all_entries = show_all_entries;
+    selection->explicitly_selected |= explicitly_selected;
     if (show_all_entries) {
         const AVTextFormatSection *section = &sections[section_id];
         for (const int *id = section->children_ids; *id != -1; id++)
-            mark_section_show_entries(*id, show_all_entries, entries);
+            mark_section_show_entries(*id, show_all_entries, entries, explicitly_selected);
     } else {
         av_dict_copy(&selection->entries_to_show, entries, 0);
     }
@@ -2935,7 +2938,9 @@ static int match_section(const char *section_name,
                    "'%s' matches section with unique name '%s'\n", section_name,
                    (char *)av_x_if_null(section->unique_name, section->name));
             ret++;
-            mark_section_show_entries(section->id, show_all_entries, entries);
+            mark_section_show_entries(section->id, show_all_entries, entries,
+                                      !section->unique_name ||
+                                      !strcmp(section_name, section->unique_name));
         }
     }
     return ret;
@@ -3261,15 +3266,15 @@ static int opt_codec(void *optctx, const char *opt, const char *arg)
 
 static int opt_show_versions(void *optctx, const char *opt, const char *arg)
 {
-    mark_section_show_entries(SECTION_ID_PROGRAM_VERSION, 1, NULL);
-    mark_section_show_entries(SECTION_ID_LIBRARY_VERSION, 1, NULL);
+    mark_section_show_entries(SECTION_ID_PROGRAM_VERSION, 1, NULL, 1);
+    mark_section_show_entries(SECTION_ID_LIBRARY_VERSION, 1, NULL, 1);
     return 0;
 }
 
 #define DEFINE_OPT_SHOW_SECTION(section, target_section_id)             \
     static int opt_show_##section(void *optctx, const char *opt, const char *arg) \
     {                                                                   \
-        mark_section_show_entries(SECTION_ID_##target_section_id, 1, NULL); \
+        mark_section_show_entries(SECTION_ID_##target_section_id, 1, NULL, 1); \
         return 0;                                                       \
     }
 
@@ -3340,22 +3345,27 @@ static const OptionDef real_options[] = {
     { NULL, },
 };
 
-static inline int check_section_show_entries(int section_id)
+static inline int check_section_show_entries(int section_id, int require_explicit)
 {
     const EntrySelection *selection = &selected_entries[section_id];
 
-    if (selection->show_all_entries || selection->entries_to_show)
+    /* Selecting a shared stream section must not implicitly enable groups. */
+    if (section_id == SECTION_ID_STREAM_GROUP_STREAMS)
+        require_explicit = 1;
+
+    if ((!require_explicit || selection->explicitly_selected) &&
+        (selection->show_all_entries || selection->entries_to_show))
         return 1;
 
     const AVTextFormatSection *section = &sections[section_id];
     for (const int *id = section->children_ids; *id != -1; id++)
-        if (check_section_show_entries(*id))
+        if (check_section_show_entries(*id, require_explicit))
             return 1;
     return 0;
 }
 
 #define SET_DO_SHOW(id, varname) do {                                   \
-        if (check_section_show_entries(SECTION_ID_##id))                \
+        if (check_section_show_entries(SECTION_ID_##id, 0))             \
             do_show_##varname = 1;                                      \
     } while (0)
 

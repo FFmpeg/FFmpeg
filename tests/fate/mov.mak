@@ -47,6 +47,18 @@ FATE_MOV_FFPROBE-$(call DEMDEC, MOV, HEVC) += fate-mov-dovi-hvce-mp4-read
 
 FATE_MOV_FFPROBE-$(call DEMDEC, MOV, H264) += fate-mov-vfr-bframes-duration
 
+FATE_MOV_FFPROBE-$(CONFIG_MOV_DEMUXER) += fate-ffprobe-stream-entries-tmcd \
+                                       fate-ffprobe-group-stream-entries-tmcd \
+                                       fate-ffprobe-show-groups-tmcd
+
+fate-ffprobe-stream-entries-tmcd: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -v error -select_streams v:0 \
+    -show_entries stream=index -of compact $(TARGET_SAMPLES)/mov/fcp_export8-236.mov
+fate-ffprobe-group-stream-entries-tmcd: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -v error -select_streams v:0 \
+    -show_entries stream_group_stream=index -of compact $(TARGET_SAMPLES)/mov/fcp_export8-236.mov
+fate-ffprobe-show-groups-tmcd: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -v error -select_streams v:0 -show_stream_groups \
+    -show_entries stream_group=:stream_group_disposition=:stream_group_tags=:stream_group_components=:stream_group_stream_disposition=:stream_group_stream_tags=:stream=index \
+    -of compact $(TARGET_SAMPLES)/mov/fcp_export8-236.mov
+
 FATE_MOV_FASTSTART = fate-mov-faststart-4gb-overflow \
 
 FATE_SAMPLES_FFMPEG += $(FATE_MOV-yes) $(FATE_MOV_REMUX-yes)
