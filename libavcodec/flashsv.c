@@ -227,11 +227,7 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
     if (ret == Z_DATA_ERROR) {
         av_log(avctx, AV_LOG_ERROR, "Zlib resync occurred\n");
         inflateSync(zstream);
-        ret = inflate(zstream, Z_FINISH);
-    }
-
-    if (ret != Z_OK && ret != Z_STREAM_END) {
-        //return -1;
+        inflate(zstream, Z_FINISH);
     }
 
     if (s->is_keyframe) {
@@ -242,6 +238,13 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
     y_pos += s->diff_start;
 
     if (!s->color_depth) {
+        int inflated = s->block_size * 3 - zstream->avail_out;
+
+        if (inflated < width * 3 * s->diff_height) {
+            av_log(avctx, AV_LOG_ERROR, "Inflated %d bytes, but %d are needed\n",
+                   inflated, width * 3 * s->diff_height);
+            return AVERROR_INVALIDDATA;
+        }
         /* Flash Screen Video stores the image upside down, so copy
          * lines to destination in reverse order. */
         for (k = 1; k <= s->diff_height; k++) {
