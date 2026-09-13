@@ -32,6 +32,7 @@
 #include <stdint.h>
 
 #include "libavutil/attributes.h"
+#include "libavutil/sanitizer.h"
 
 #include "ops_chain.h"
 #include "uops_macros.h"
@@ -62,7 +63,11 @@ typedef struct SwsOpIter {
     const SwsOpExec *exec;
 } SwsOpIter;
 
-#ifdef __clang__
+/* UBSan checks inside the loop body defeat the vectorizer, so do not ask
+ * for it in those builds. Clang warns for every loop otherwise. */
+#if HAVE_UBSAN
+#  define SWS_LOOP
+#elif defined(__clang__)
 #  define SWS_LOOP AV_PRAGMA(clang loop vectorize(assume_safety))
 #elif defined(__GNUC__)
 #  define SWS_LOOP AV_PRAGMA(GCC ivdep)

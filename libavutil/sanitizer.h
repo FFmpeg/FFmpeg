@@ -28,6 +28,9 @@
 #if __has_feature(memory_sanitizer)
 #define HAVE_MSAN 1
 #endif
+#if __has_feature(undefined_behavior_sanitizer)
+#define HAVE_UBSAN 1
+#endif
 #endif
 #if defined(__SANITIZE_ADDRESS__)
 #undef  HAVE_ASAN
@@ -38,6 +41,9 @@
 #endif
 #ifndef HAVE_MSAN
 #define HAVE_MSAN 0
+#endif
+#ifndef HAVE_UBSAN
+#define HAVE_UBSAN 0
 #endif
 
 /* Mark allocated memory that nothing may touch until it is unpoisoned. */
