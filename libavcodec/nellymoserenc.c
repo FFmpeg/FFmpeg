@@ -304,7 +304,7 @@ static void get_exponent_dynamic(NellyMoserEncodeContext *s, float *cand, int *i
  *  @param output          output buffer
  *  @param output_size     size of output buffer
  */
-static void encode_block(NellyMoserEncodeContext *s, unsigned char *output, int output_size)
+static int encode_block(NellyMoserEncodeContext *s, unsigned char *output, int output_size)
 {
     PutBitContext pb;
     int i, j, band, block, best_idx, power_idx = 0;
@@ -326,6 +326,10 @@ static void encode_block(NellyMoserEncodeContext *s, unsigned char *output, int 
         }
         cand[band] =
             log2(FFMAX(1.0, coeff_sum / (ff_nelly_band_sizes_table[band] << 7))) * 1024.0;
+        if (!isfinite(cand[band])) {
+            av_log(s->avctx, AV_LOG_ERROR, "Input contains NaN/+-Inf\n");
+            return AVERROR(EINVAL);
+        }
     }
 
     if (s->avctx->trellis) {
@@ -376,6 +380,7 @@ static void encode_block(NellyMoserEncodeContext *s, unsigned char *output, int 
 
     flush_put_bits(&pb);
     memset(put_bits_ptr(&pb), 0, output + output_size - put_bits_ptr(&pb));
+    return 0;
 }
 
 static int encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
@@ -406,7 +411,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     if ((ret = ff_get_encode_buffer(avctx, avpkt, NELLY_BLOCK_LEN, 0)) < 0)
         return ret;
-    encode_block(s, avpkt->data, avpkt->size);
+    if ((ret = encode_block(s, avpkt->data, avpkt->size)) < 0)
+        return ret;
 
     /* Get the next frame pts/duration */
     ret = ff_af_queue_remove(&s->afq, avctx->frame_size, avpkt);
