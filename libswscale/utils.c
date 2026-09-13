@@ -1233,7 +1233,8 @@ av_cold int ff_sws_init_single_context(SwsContext *sws, SwsFilter *srcFilter,
     }
 
     if (i == SWS_FAST_BILINEAR) {
-        if (srcW < 8 || dstW <= 8) {
+        /* the fast bilinear scalers keep the source position in 16.16 fixed point */
+        if (srcW < 8 || dstW <= 8 || srcW >= 65536) {
             i = SWS_BILINEAR;
             flags ^= SWS_FAST_BILINEAR | i;
             sws->flags = flags;
