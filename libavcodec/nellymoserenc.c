@@ -235,7 +235,7 @@ static inline float distance(float x, float y, int band)
     return tmp * tmp;
 }
 
-static void get_exponent_dynamic(NellyMoserEncodeContext *s, float *cand, int *idx_table)
+static int get_exponent_dynamic(NellyMoserEncodeContext *s, float *cand, int *idx_table)
 {
     int i, j, band, best_idx;
     float power_candidate, best_val;
@@ -278,7 +278,6 @@ static void get_exponent_dynamic(NellyMoserEncodeContext *s, float *cand, int *i
                 }
             }
         }
-        av_assert1(c);
     }
 
     best_val = INFINITY;
@@ -290,12 +289,15 @@ static void get_exponent_dynamic(NellyMoserEncodeContext *s, float *cand, int *i
             best_idx = i;
         }
     }
+    if (best_idx < 0)
+        return AVERROR(EINVAL);
     for (band = NELLY_BANDS - 1; band >= 0; band--) {
         idx_table[band] = path[band][best_idx];
         if (band) {
             best_idx -= ff_nelly_delta_table[path[band][best_idx]];
         }
     }
+    return 0;
 }
 
 /**
@@ -333,7 +335,9 @@ static int encode_block(NellyMoserEncodeContext *s, unsigned char *output, int o
     }
 
     if (s->avctx->trellis) {
-        get_exponent_dynamic(s, cand, idx_table);
+        int ret = get_exponent_dynamic(s, cand, idx_table);
+        if (ret < 0)
+            return ret;
     } else {
         get_exponent_greedy(s, cand, idx_table);
     }
