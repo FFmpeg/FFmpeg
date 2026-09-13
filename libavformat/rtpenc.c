@@ -596,12 +596,24 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
     case AV_CODEC_ID_MPEG2VIDEO:
         ff_rtp_send_mpegvideo(s1, pkt->data, size);
         break;
-    case AV_CODEC_ID_AAC:
+    case AV_CODEC_ID_AAC: {
+        const uint8_t *aac_frame = pkt->data;
+
+        /* skip ADTS header, if present */
+        if (!st->codecpar->extradata_size) {
+            if (size < 7) {
+                av_log(s1, AV_LOG_ERROR, "AAC packet too small for ADTS header\n");
+                break;
+            }
+            aac_frame += 7;
+            size      -= 7;
+        }
         if (s->flags & FF_RTP_FLAG_MP4A_LATM)
-            ff_rtp_send_latm(s1, pkt->data, size);
+            ff_rtp_send_latm(s1, aac_frame, size);
         else
-            ff_rtp_send_aac(s1, pkt->data, size);
+            ff_rtp_send_aac(s1, aac_frame, size);
         break;
+    }
     case AV_CODEC_ID_AMR_NB:
     case AV_CODEC_ID_AMR_WB:
         ff_rtp_send_amr(s1, pkt->data, size);
