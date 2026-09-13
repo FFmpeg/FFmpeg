@@ -22,12 +22,32 @@
 #include "config.h"
 
 #if defined(__has_feature)
+#if __has_feature(address_sanitizer)
+#define HAVE_ASAN 1
+#endif
 #if __has_feature(memory_sanitizer)
 #define HAVE_MSAN 1
 #endif
 #endif
+#if defined(__SANITIZE_ADDRESS__)
+#undef  HAVE_ASAN
+#define HAVE_ASAN 1
+#endif
+#ifndef HAVE_ASAN
+#define HAVE_ASAN 0
+#endif
 #ifndef HAVE_MSAN
 #define HAVE_MSAN 0
+#endif
+
+/* Mark allocated memory that nothing may touch until it is unpoisoned. */
+#if HAVE_ASAN
+#include <sanitizer/asan_interface.h>
+#define FF_ASAN_POISON(ptr, size)   __asan_poison_memory_region(ptr, size)
+#define FF_ASAN_UNPOISON(ptr, size) __asan_unpoison_memory_region(ptr, size)
+#else
+#define FF_ASAN_POISON(ptr, size)   ((void)(ptr), (void)(size))
+#define FF_ASAN_UNPOISON(ptr, size) ((void)(ptr), (void)(size))
 #endif
 
 /* Mark memory as uninitialized. */

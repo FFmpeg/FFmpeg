@@ -21,6 +21,7 @@
 #include <string.h>
 
 #include "refstruct.h"
+#include "sanitizer.h"
 
 #include "avassert.h"
 #include "error.h"
@@ -215,6 +216,8 @@ static void pool_free(AVRefStructPool *pool)
 
 static void pool_free_entry(AVRefStructPool *pool, RefCount *ref)
 {
+    if (!pool->free_entry_cb)
+        FF_ASAN_UNPOISON(get_userdata(ref), pool->size);
     if (pool->free_entry_cb)
         pool->free_entry_cb(pool->opaque, get_userdata(ref));
     av_free(ref);
@@ -227,6 +230,11 @@ static void pool_return_entry(void *ref_)
 
     ff_mutex_lock(&pool->mutex);
     if (!pool->uninited) {
+        /* An entry with an entry free callback owns allocations while it
+         * rests in the pool. LeakSanitizer does not follow pointers stored
+         * in poisoned memory, so such entries stay addressable. */
+        if (!pool->free_entry_cb)
+            FF_ASAN_POISON(get_userdata(ref), pool->size);
         ref->opaque.nc = pool->available_entries;
         pool->available_entries = ref;
         ref = NULL;
@@ -258,6 +266,16 @@ static int refstruct_pool_get_ext(void *datap, AVRefStructPool *pool)
     if (pool->available_entries) {
         RefCount *ref = pool->available_entries;
         ret = get_userdata(ref);
+        if (!pool->free_entry_cb)
+            FF_ASAN_UNPOISON(ret, pool->size);
+        /* Entries are zeroed once at allocation and a user may rely on never
+         * written parts staying zero, so only a pool that never zeroes and
+         * keeps no state through callbacks gets its reused entries marked
+         * undefined. */
+        if ((pool->entry_flags & AV_REFSTRUCT_FLAG_NO_ZEROING) &&
+            !(pool->pool_flags & AV_REFSTRUCT_POOL_FLAG_ZERO_EVERY_TIME) &&
+            !pool->init_cb && !pool->reset_cb && !pool->free_entry_cb)
+            FF_MEM_UNDEFINED(ret, pool->size);
         pool->available_entries = ref->opaque.nc;
         ref->opaque.nc = pool;
         atomic_init(&ref->refcount, 1);

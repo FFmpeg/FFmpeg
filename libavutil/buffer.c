@@ -24,6 +24,7 @@
 #include "buffer_internal.h"
 #include "common.h"
 #include "mem.h"
+#include "sanitizer.h"
 #include "thread.h"
 
 static AVBufferRef *buffer_create(AVBuffer *buf, uint8_t *data, size_t size,
@@ -305,6 +306,8 @@ static void buffer_pool_flush(AVBufferPool *pool)
         BufferPoolEntry *buf = pool->pool;
         pool->pool = buf->next;
 
+        if (buf->free == av_buffer_default_free)
+            FF_ASAN_UNPOISON(buf->data, pool->size);
         buf->free(buf->opaque, buf->data);
         av_freep(&buf);
     }
@@ -346,6 +349,9 @@ static void pool_release_buffer(void *opaque, uint8_t *data)
 {
     BufferPoolEntry *buf = opaque;
     AVBufferPool *pool = buf->pool;
+
+    if (buf->free == av_buffer_default_free)
+        FF_ASAN_POISON(buf->data, pool->size);
 
     ff_mutex_lock(&pool->mutex);
     buf->next = pool->pool;
@@ -402,6 +408,14 @@ AVBufferRef *av_buffer_pool_get(AVBufferPool *pool)
             pool->pool = buf->next;
             buf->next = NULL;
             buf->buffer.flags_internal |= BUFFER_FLAG_NO_FREE;
+            if (buf->free == av_buffer_default_free) {
+                FF_ASAN_UNPOISON(buf->data, pool->size);
+                /* A pool that zeroes its buffers may be relied upon for never
+                 * written regions staying zero, so only mark a reused buffer
+                 * undefined when nothing was ever promised about its contents. */
+                if (!pool->alloc2 && pool->alloc == av_buffer_alloc)
+                    FF_MEM_UNDEFINED(buf->data, pool->size);
+            }
         }
     } else {
         ret = pool_alloc_buffer(pool);
