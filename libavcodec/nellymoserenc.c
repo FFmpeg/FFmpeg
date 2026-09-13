@@ -257,7 +257,7 @@ static void get_exponent_dynamic(NellyMoserEncodeContext *s, float *cand, int *i
         float tmp;
         int idx_min, idx_max, idx;
         power_candidate = cand[band];
-        for (q = 1000; !c && q < OPT_SIZE; q <<= 2) {
+        for (q = 1000; !c && q < 2 * OPT_SIZE; q <<= 2) {
             idx_min = FFMAX(0, cand[band] - q);
             idx_max = FFMIN(OPT_SIZE - 1, cand[band - 1] + q);
             for (i = FFMAX(0, cand[band - 1] - q); i < FFMIN(OPT_SIZE, cand[band - 1] + q); i++) {
@@ -278,7 +278,7 @@ static void get_exponent_dynamic(NellyMoserEncodeContext *s, float *cand, int *i
                 }
             }
         }
-        av_assert1(c); //FIXME
+        av_assert1(c);
     }
 
     best_val = INFINITY;
