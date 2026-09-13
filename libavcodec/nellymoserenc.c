@@ -347,6 +347,8 @@ static int encode_block(NellyMoserEncodeContext *s, unsigned char *output, int o
             power_idx = ff_nelly_init_table[idx_table[0]];
             put_bits(&pb, 6, idx_table[0]);
         }
+        if (power_idx >= (31 - POW_TABLE_OFFSET) << 11)
+            return AVERROR(EINVAL);
         power_val = pow_table[power_idx & 0x7FF] / (1 << ((power_idx >> 11) + POW_TABLE_OFFSET));
         for (j = 0; j < ff_nelly_band_sizes_table[band]; i++, j++) {
             s->mdct_out[i] *= power_val;
