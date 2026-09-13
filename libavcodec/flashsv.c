@@ -263,7 +263,6 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
             return ret;
         }
     }
-    skip_bits_long(gb, 8 * block_size); /* skip the consumed bits */
     return 0;
 }
 
@@ -475,6 +474,7 @@ static int flashsv_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                                          i + j * (h_blocks + !!h_part)))
                     av_log(avctx, AV_LOG_ERROR,
                            "error in decompression of block %dx%d\n", i, j);
+                skip_bits_long(&gb, 8 * size);
             }
         }
     }
