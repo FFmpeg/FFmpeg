@@ -739,6 +739,39 @@ static int amf_copy_d3d11_texture(AVFilterContext *avctx, const AVFrame *frame,
 }
 #endif
 
+#if CONFIG_D3D11VA || CONFIG_DXVA2
+typedef struct AMFFrameHolder {
+    AMFSurfaceObserver observer;
+    AVFrame *frame;
+} AMFFrameHolder;
+
+static void AMF_STD_CALL amf_release_held_frame(AMFSurfaceObserver *observer, AMFSurface *surface)
+{
+    AMFFrameHolder *holder = (AMFFrameHolder*)observer;
+
+    av_frame_free(&holder->frame);
+    av_free(holder);
+}
+
+static const AMFSurfaceObserverVtbl amf_frame_holder_vtbl = { amf_release_held_frame };
+
+static int amf_hold_frame(const AVFrame *frame, AMFSurfaceObserver **observer)
+{
+    AMFFrameHolder *holder = av_mallocz(sizeof(*holder));
+
+    if (!holder)
+        return AVERROR(ENOMEM);
+    holder->frame = av_frame_clone(frame);
+    if (!holder->frame) {
+        av_free(holder);
+        return AVERROR(ENOMEM);
+    }
+    holder->observer.pVtbl = &amf_frame_holder_vtbl;
+    *observer = &holder->observer;
+    return 0;
+}
+#endif
+
 int amf_avframe_to_amfsurface(AVFilterContext *avctx, const AVFrame *frame, AMFSurface** ppSurface)
 {
     AMFVariantStruct var = { 0 };
@@ -747,6 +780,9 @@ int amf_avframe_to_amfsurface(AVFilterContext *avctx, const AVFrame *frame, AMFS
     AMFSurface *surface;
     AMF_RESULT  res;
     int hw_surface = 0;
+#if CONFIG_D3D11VA || CONFIG_DXVA2
+    AMFSurfaceObserver *observer;
+#endif
 
     switch (frame->format) {
 #if CONFIG_D3D11VA
@@ -769,7 +805,12 @@ int amf_avframe_to_amfsurface(AVFilterContext *avctx, const AVFrame *frame, AMFS
 
             texture->lpVtbl->SetPrivateData(texture, &AMFTextureArrayIndexGUID, sizeof(index), &index);
 
-            res = ctx->amf_device_ctx->context->pVtbl->CreateSurfaceFromDX11Native(ctx->amf_device_ctx->context, texture, &surface, NULL); // wrap to AMF surface
+            ret = amf_hold_frame(frame, &observer);
+            if (ret < 0)
+                return ret;
+            res = ctx->amf_device_ctx->context->pVtbl->CreateSurfaceFromDX11Native(ctx->amf_device_ctx->context, texture, &surface, observer); // wrap to AMF surface
+            if (res != AMF_OK)
+                amf_release_held_frame(observer, NULL);
             AMF_RETURN_IF_FALSE(avctx, res == AMF_OK, AVERROR(ENOMEM), "CreateSurfaceFromDX11Native() failed  with error %d\n", res);
             hw_surface = 1;
         }
@@ -787,8 +828,14 @@ int amf_avframe_to_amfsurface(AVFilterContext *avctx, const AVFrame *frame, AMFS
     case AV_PIX_FMT_DXVA2_VLD:
         {
             IDirect3DSurface9 *texture = (IDirect3DSurface9 *)frame->data[3]; // actual texture
+            int ret;
 
-            res = ctx->amf_device_ctx->context->pVtbl->CreateSurfaceFromDX9Native(ctx->amf_device_ctx->context, texture, &surface, NULL); // wrap to AMF surface
+            ret = amf_hold_frame(frame, &observer);
+            if (ret < 0)
+                return ret;
+            res = ctx->amf_device_ctx->context->pVtbl->CreateSurfaceFromDX9Native(ctx->amf_device_ctx->context, texture, &surface, observer); // wrap to AMF surface
+            if (res != AMF_OK)
+                amf_release_held_frame(observer, NULL);
             AMF_RETURN_IF_FALSE(avctx, res == AMF_OK, AVERROR(ENOMEM), "CreateSurfaceFromDX9Native() failed  with error %d\n", res);
             hw_surface = 1;
         }
