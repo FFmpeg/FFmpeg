@@ -26,6 +26,14 @@
 extern const unsigned char ff_v360_comp_spv_data[];
 extern const unsigned int ff_v360_comp_spv_len;
 
+/* Push constants */
+struct PushData {
+    float rot_mat[4][4];
+    int in_img_size[4][2];
+    float iflat_range[2];
+    float flat_range[2];
+};
+
 typedef struct V360ulkanContext {
     FFVulkanContext vkctx;
 
@@ -34,10 +42,9 @@ typedef struct V360ulkanContext {
     AVVulkanDeviceQueueFamily *qf;
     FFVulkanShader shd;
     VkSampler sampler;
+    struct PushData pd;
 
     /* Options */
-    int   planewidth[4], planeheight[4];
-    int   inplanewidth[4], inplaneheight[4];
     int   in, out;
     int   width, height;
     float h_fov, v_fov;
@@ -46,14 +53,6 @@ typedef struct V360ulkanContext {
     char *rorder;
     int   rotation_order[3];
 } V360VulkanContext;
-
-/* Push constants */
-struct PushData {
-    float rot_mat[4][4];
-    int in_img_size[4][2];
-    float iflat_range[2];
-    float flat_range[2];
-};
 
 static int get_rorder(char c)
 {
@@ -72,12 +71,99 @@ static int get_rorder(char c)
     }
 }
 
-static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
+static void multiply_matrix(float c[4][4], const float a[4][4], const float b[4][4])
 {
-    int err;
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            float sum = 0.0f;
+            for (int k = 0; k < 3; k++)
+                sum += a[i][k] * b[k][j];
+            c[i][j] = sum;
+        }
+    }
+}
+
+static inline void calculate_iflat_range(int in, float ih_fov, float iv_fov,
+                                         float *iflat_range)
+{
+    switch (in) {
+    case FLAT:
+        iflat_range[0] = tanf(0.5f * FFMIN(ih_fov, 179.f) * M_PI / 180.f);
+        iflat_range[1] = tanf(0.5f * FFMIN(iv_fov, 179.f) * M_PI / 180.f);
+        break;
+    case STEREOGRAPHIC:
+        iflat_range[0] = tanf(FFMIN(ih_fov, 359.f) * M_PI / 720.f);
+        iflat_range[1] = tanf(FFMIN(iv_fov, 359.f) * M_PI / 720.f);
+        break;
+    case DUAL_FISHEYE:
+    case FISHEYE:
+        iflat_range[0] = ih_fov / 180.f;
+        iflat_range[1] = iv_fov / 180.f;
+        break;
+    default:
+        break;
+    }
+}
+
+static inline void calculate_flat_range(int out, float h_fov, float v_fov,
+                                        float *flat_range)
+{
+    switch (out) {
+    case FLAT:
+        flat_range[0] = tanf(0.5f * FFMIN(h_fov, 179.f) * M_PI / 180.f);
+        flat_range[1] = tanf(0.5f * FFMIN(v_fov, 179.f) * M_PI / 180.f);
+        break;
+    case STEREOGRAPHIC:
+        flat_range[0] = tanf(FFMIN(h_fov, 359.f) * M_PI / 720.f);
+        flat_range[1] = tanf(FFMIN(v_fov, 359.f) * M_PI / 720.f);
+        break;
+    case DUAL_FISHEYE:
+    case FISHEYE:
+        flat_range[0] = h_fov / 180.f;
+        flat_range[1] = v_fov / 180.f;
+        break;
+    default:
+        break;
+    }
+}
+
+static inline void calculate_rotation_matrix(float yaw, float pitch, float roll,
+                                             float rot_mat[4][4],
+                                             const int rotation_order[3])
+{
+    const float yaw_rad   = yaw   * M_PI / 180.f;
+    const float pitch_rad = pitch * M_PI / 180.f;
+    const float roll_rad  = roll  * M_PI / 180.f;
+
+    const float sin_yaw   = sinf(yaw_rad);
+    const float cos_yaw   = cosf(yaw_rad);
+    const float sin_pitch = sinf(pitch_rad);
+    const float cos_pitch = cosf(pitch_rad);
+    const float sin_roll  = sinf(roll_rad);
+    const float cos_roll  = cosf(roll_rad);
+
+    float m[3][4][4];
+    float temp[4][4];
+
+    m[0][0][0] =  cos_yaw;  m[0][0][1] = 0;          m[0][0][2] =  sin_yaw;
+    m[0][1][0] =  0;        m[0][1][1] = 1;          m[0][1][2] =  0;
+    m[0][2][0] = -sin_yaw;  m[0][2][1] = 0;          m[0][2][2] =  cos_yaw;
+
+    m[1][0][0] = 1;         m[1][0][1] = 0;          m[1][0][2] =  0;
+    m[1][1][0] = 0;         m[1][1][1] = cos_pitch;  m[1][1][2] = -sin_pitch;
+    m[1][2][0] = 0;         m[1][2][1] = sin_pitch;  m[1][2][2] =  cos_pitch;
+
+    m[2][0][0] = cos_roll;  m[2][0][1] = -sin_roll;  m[2][0][2] =  0;
+    m[2][1][0] = sin_roll;  m[2][1][1] =  cos_roll;  m[2][1][2] =  0;
+    m[2][2][0] = 0;         m[2][2][1] =  0;         m[2][2][2] =  1;
+
+    multiply_matrix(temp, m[rotation_order[0]], m[rotation_order[1]]);
+    multiply_matrix(rot_mat, temp, m[rotation_order[2]]);
+}
+
+static void config_params(AVFilterContext *ctx)
+{
     V360VulkanContext *s = ctx->priv;
-    FFVulkanContext *vkctx = &s->vkctx;
-    const int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
 
     for (int order = 0; order < NB_RORDERS; order++) {
         const char c = s->rorder[order];
@@ -106,6 +192,29 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
 
         s->rotation_order[order] = rorder;
     }
+
+    calculate_iflat_range(s->in, s->ih_fov, s->iv_fov, s->pd.iflat_range);
+    calculate_flat_range(s->out, s->h_fov, s->v_fov, s->pd.flat_range);
+    calculate_rotation_matrix(s->yaw, s->pitch, s->roll,
+                              s->pd.rot_mat, s->rotation_order);
+
+    return;
+}
+
+static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
+{
+    int err;
+    V360VulkanContext *s = ctx->priv;
+    FFVulkanContext *vkctx = &s->vkctx;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(s->vkctx.output_format);
+    const int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
+
+    s->pd.in_img_size[0][0] = s->pd.in_img_size[3][0] = in->width;
+    s->pd.in_img_size[0][1] = s->pd.in_img_size[3][1] = in->height;
+    s->pd.in_img_size[1][0] = s->pd.in_img_size[2][0] =
+        FF_CEIL_RSHIFT(in->width, desc->log2_chroma_w);
+    s->pd.in_img_size[1][1] = s->pd.in_img_size[2][1] =
+        FF_CEIL_RSHIFT(in->height, desc->log2_chroma_h);
 
     RET(ff_vk_init_sampler(vkctx, &s->sampler, 0, VK_FILTER_LINEAR));
 
@@ -159,96 +268,6 @@ fail:
     return err;
 }
 
-static void multiply_matrix(float c[4][4], const float a[4][4], const float b[4][4])
-{
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-            float sum = 0.0f;
-            for (int k = 0; k < 3; k++)
-                sum += a[i][k] * b[k][j];
-            c[i][j] = sum;
-        }
-    }
-}
-
-static inline void calculate_iflat_range(int in, float ih_fov, float iv_fov,
-                                         float *iflat_range)
-{
-    switch (in) {
-    case FLAT:
-        iflat_range[0] = tanf(0.5f * ih_fov * M_PI / 180.f);
-        iflat_range[1] = tanf(0.5f * iv_fov * M_PI / 180.f);
-        break;
-    case STEREOGRAPHIC:
-        iflat_range[0] = tanf(FFMIN(ih_fov, 359.f) * M_PI / 720.f);
-        iflat_range[1] = tanf(FFMIN(iv_fov, 359.f) * M_PI / 720.f);
-        break;
-    case DUAL_FISHEYE:
-    case FISHEYE:
-        iflat_range[0] = ih_fov / 180.f;
-        iflat_range[1] = iv_fov / 180.f;
-        break;
-    default:
-        break;
-    }
-}
-
-static inline void calculate_flat_range(int out, float h_fov, float v_fov,
-                                        float *flat_range)
-{
-    switch (out) {
-    case FLAT:
-        flat_range[0] = tanf(0.5f * h_fov * M_PI / 180.f);
-        flat_range[1] = tanf(0.5f * v_fov * M_PI / 180.f);
-        break;
-    case STEREOGRAPHIC:
-        flat_range[0] = tanf(FFMIN(h_fov, 359.f) * M_PI / 720.f);
-        flat_range[1] = tanf(FFMIN(v_fov, 359.f) * M_PI / 720.f);
-        break;
-    case DUAL_FISHEYE:
-    case FISHEYE:
-        flat_range[0] = h_fov / 180.f;
-        flat_range[1] = v_fov / 180.f;
-        break;
-    default:
-        break;
-    }
-}
-
-static inline void calculate_rotation_matrix(float yaw, float pitch, float roll,
-                                             float rot_mat[4][4],
-                                             const int rotation_order[3])
-{
-    const float yaw_rad   = yaw   * M_PI / 180.f;
-    const float pitch_rad = pitch * M_PI / 180.f;
-    const float roll_rad  = roll  * M_PI / 180.f;
-
-    const float sin_yaw   = sinf(yaw_rad);
-    const float cos_yaw   = cosf(yaw_rad);
-    const float sin_pitch = sinf(pitch_rad);
-    const float cos_pitch = cosf(pitch_rad);
-    const float sin_roll  = sinf(roll_rad);
-    const float cos_roll  = cosf(roll_rad);
-
-    float m[3][4][4];
-    float temp[4][4];
-
-    m[0][0][0] =  cos_yaw;  m[0][0][1] = 0;          m[0][0][2] =  sin_yaw;
-    m[0][1][0] =  0;        m[0][1][1] = 1;          m[0][1][2] =  0;
-    m[0][2][0] = -sin_yaw;  m[0][2][1] = 0;          m[0][2][2] =  cos_yaw;
-
-    m[1][0][0] = 1;         m[1][0][1] = 0;          m[1][0][2] =  0;
-    m[1][1][0] = 0;         m[1][1][1] = cos_pitch;  m[1][1][2] = -sin_pitch;
-    m[1][2][0] = 0;         m[1][2][1] = sin_pitch;  m[1][2][2] =  cos_pitch;
-
-    m[2][0][0] = cos_roll;  m[2][0][1] = -sin_roll;  m[2][0][2] =  0;
-    m[2][1][0] = sin_roll;  m[2][1][1] =  cos_roll;  m[2][1][2] =  0;
-    m[2][2][0] = 0;         m[2][2][1] =  0;         m[2][2][2] =  1;
-
-    multiply_matrix(temp, m[rotation_order[0]], m[rotation_order[1]]);
-    multiply_matrix(rot_mat, temp, m[rotation_order[2]]);
-}
-
 static int v360_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
 {
     int err;
@@ -266,25 +285,9 @@ static int v360_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
     if (!s->initialized)
         RET(init_filter(ctx, in));
 
-    /* Push constants */
-    struct PushData pd = { 0 };
-
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(s->vkctx.input_format);
-    pd.in_img_size[0][0] = pd.in_img_size[3][0] = in->width;
-    pd.in_img_size[0][1] = pd.in_img_size[3][1] = in->height;
-    pd.in_img_size[1][0] = pd.in_img_size[2][0] =
-        FF_CEIL_RSHIFT(in->width, desc->log2_chroma_w);
-    pd.in_img_size[1][1] = pd.in_img_size[2][1] =
-        FF_CEIL_RSHIFT(in->height, desc->log2_chroma_h);
-
-    calculate_iflat_range(s->in, s->ih_fov, s->iv_fov, pd.iflat_range);
-    calculate_flat_range(s->out, s->h_fov, s->v_fov, pd.flat_range);
-    calculate_rotation_matrix(s->yaw, s->pitch, s->roll,
-                              pd.rot_mat, s->rotation_order);
-
     RET(ff_vk_filter_process_simple(&s->vkctx, &s->e, &s->shd,
                                     out, in, s->sampler, 1,
-                                    &pd, sizeof(pd)));
+                                    &s->pd, sizeof(s->pd)));
 
     err = av_frame_copy_props(out, in);
     if (err < 0)
@@ -297,6 +300,32 @@ static int v360_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
 fail:
     av_frame_free(&in);
     av_frame_free(&out);
+    return err;
+}
+
+
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                           char *res, int res_len, int flags)
+{
+    int err;
+
+    RET(ff_filter_process_command(ctx, cmd, args, res, res_len, flags));
+    config_params(ctx);
+
+fail:
+    return err;
+}
+
+static av_cold int v360_vulkan_config_output(AVFilterLink *outlink)
+{
+    int err;
+    AVFilterContext *ctx = outlink->src;
+
+    config_params(ctx);
+
+    RET(ff_vk_filter_config_output(outlink));
+
+fail:
     return err;
 }
 
@@ -343,7 +372,7 @@ static const AVOption v360_vulkan_options[] = {
     {       "yaw", "yaw rotation",                       OFFSET(yaw), AV_OPT_TYPE_FLOAT,  {.dbl = 0.0f},     -180.f,               180.f, DYNAMIC, "yaw" },
     {     "pitch", "pitch rotation",                   OFFSET(pitch), AV_OPT_TYPE_FLOAT,  {.dbl = 0.0f},     -180.f,               180.f, DYNAMIC, "pitch" },
     {      "roll", "roll rotation",                     OFFSET(roll), AV_OPT_TYPE_FLOAT,  {.dbl = 0.0f},     -180.f,               180.f, DYNAMIC, "roll" },
-    {    "rorder", "rotation order",                  OFFSET(rorder), AV_OPT_TYPE_STRING, {.str = "ypr"},         0,                   0,   FLAGS, "rorder" },
+    {    "rorder", "rotation order",                  OFFSET(rorder), AV_OPT_TYPE_STRING, {.str = "ypr"},         0,                   0, DYNAMIC, "rorder" },
     {     "h_fov", "set output horizontal FOV angle",  OFFSET(h_fov), AV_OPT_TYPE_FLOAT,  {.dbl = 90.0f},  0.00001f,              360.0f, DYNAMIC, "h_fov" },
     {     "v_fov", "set output vertical FOV angle",    OFFSET(v_fov), AV_OPT_TYPE_FLOAT,  {.dbl = 45.0f},  0.00001f,              360.0f, DYNAMIC, "v_fov" },
     {    "ih_fov", "set input horizontal FOV angle",  OFFSET(ih_fov), AV_OPT_TYPE_FLOAT,  {.dbl = 90.0f},  0.00001f,              360.0f, DYNAMIC, "ih_fov" },
@@ -367,7 +396,7 @@ static const AVFilterPad v360_vulkan_outputs[] = {
     {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
-        .config_props = &ff_vk_filter_config_output,
+        .config_props = &v360_vulkan_config_output,
     },
 };
 
@@ -383,4 +412,5 @@ const FFFilter ff_vf_v360_vulkan = {
     FILTER_OUTPUTS(v360_vulkan_outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_VULKAN),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
+    .process_command = &process_command,
 };
