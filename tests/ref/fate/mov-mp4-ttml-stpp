@@ -21,9 +21,6 @@ cbd2c7ff864a663b0d893deac5a0caec *tests/data/fate/mov-mp4-ttml-stpp.mp4
             "flags": "K__"
         }
     ],
-    "programs": [
-
-    ],
     "streams": [
         {
             "index": 0,

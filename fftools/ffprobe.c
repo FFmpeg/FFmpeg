@@ -3349,8 +3349,9 @@ static inline int check_section_show_entries(int section_id, int require_explici
 {
     const EntrySelection *selection = &selected_entries[section_id];
 
-    /* Selecting a shared stream section must not implicitly enable groups. */
-    if (section_id == SECTION_ID_STREAM_GROUP_STREAMS)
+    /* A shared stream section must not implicitly enable programs or groups. */
+    if (section_id == SECTION_ID_PROGRAM_STREAMS ||
+        section_id == SECTION_ID_STREAM_GROUP_STREAMS)
         require_explicit = 1;
 
     if ((!require_explicit || selection->explicitly_selected) &&

@@ -34,18 +34,6 @@
 0,      75000,      81000,     3000,      175, 0x17244a4e, F=0x0, S=1, MPEGTS Stream ID,        1, 0x00e000e0
 0,      78000,      78000,     3000,      131, 0x1c0d2a8a, F=0x0, S=1, MPEGTS Stream ID,        1, 0x00e000e0
 0,      81000,      84000,     3000,      391, 0xe4e0b1f6, F=0x0, S=1, MPEGTS Stream ID,        1, 0x00e000e0
-[PROGRAM]
-[STREAM]
-index=0
-codec_name=h264
-id=0x100
-[/STREAM]
-[STREAM]
-index=1
-codec_name=lcevc
-id=0x101
-[/STREAM]
-[/PROGRAM]
 [STREAM_GROUP]
 index=0
 id=0xce

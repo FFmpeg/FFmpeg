@@ -9,6 +9,16 @@ FATE_MPEGTS_PROBE-$(call DEMDEC, MPEGTS, HEVC, LOAS_DEMUXER) += fate-mpegts-prob
 fate-mpegts-probe-latm: SRC = $(TARGET_SAMPLES)/mpegts/loewe.ts
 fate-mpegts-probe-latm: CMD = run $(PROBE_CODEC_NAME_COMMAND) -i "$(SRC)"
 
+FATE_MPEGTS_PROBE-$(call DEMDEC, MPEGTS, HEVC, LOAS_DEMUXER) += fate-mpegts-probe-show-program
+fate-mpegts-probe-show-program: SRC = $(TARGET_SAMPLES)/mpegts/loewe.ts
+fate-mpegts-probe-show-program: CMD = run $(PROBE_CODEC_NAME_COMMAND) -show_programs \
+    -show_entries program=:program_tags=:program_stream_disposition=:program_stream_tags=:stream=codec_name -i "$(SRC)"
+
+FATE_MPEGTS_PROBE-$(call DEMDEC, MPEGTS, HEVC, LOAS_DEMUXER) += fate-mpegts-probe-program-stream
+fate-mpegts-probe-program-stream: SRC = $(TARGET_SAMPLES)/mpegts/loewe.ts
+fate-mpegts-probe-program-stream: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -v 0 -bitexact \
+    -select_streams p:769:v:0 -show_entries program_stream=codec_name -i "$(SRC)"
+
 
 FATE_MPEGTS_PROBE-$(call DEMDEC, MPEGTS, HEVC, LOAS_DEMUXER) += fate-mpegts-probe-program
 fate-mpegts-probe-program: SRC = $(TARGET_SAMPLES)/mpegts/loewe.ts

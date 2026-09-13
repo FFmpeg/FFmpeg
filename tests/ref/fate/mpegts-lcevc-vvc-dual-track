@@ -34,18 +34,6 @@
 0,      72000,      75000,     3000,      169, 0xa24f49ea, F=0x0, S=1, MPEGTS Stream ID,        1, 0x00e000e0
 0,      75000,      81000,     3000,       64, 0xa66c143b, F=0x0, S=1, MPEGTS Stream ID,        1, 0x00e000e0
 0,      78000,      84000,     3000,      184, 0xc61e46d9, F=0x0, S=1, MPEGTS Stream ID,        1, 0x00e000e0
-[PROGRAM]
-[STREAM]
-index=0
-codec_name=vvc
-id=0x100
-[/STREAM]
-[STREAM]
-index=1
-codec_name=lcevc
-id=0x101
-[/STREAM]
-[/PROGRAM]
 [STREAM_GROUP]
 index=0
 id=0xce

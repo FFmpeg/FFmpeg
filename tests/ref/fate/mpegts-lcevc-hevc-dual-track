@@ -34,18 +34,6 @@
 0,      75000,      75000,     3000,      139, 0xb0f93bbf, F=0x0, S=1, MPEGTS Stream ID,        1, 0x00e000e0
 0,      78000,      78000,     3000,      103, 0x303b27b7, F=0x0, S=1, MPEGTS Stream ID,        1, 0x00e000e0
 0,      81000,      84000,     3000,      136, 0x1f1a3853, F=0x0, S=1, MPEGTS Stream ID,        1, 0x00e000e0
-[PROGRAM]
-[STREAM]
-index=0
-codec_name=hevc
-id=0x100
-[/STREAM]
-[STREAM]
-index=1
-codec_name=lcevc
-id=0x101
-[/STREAM]
-[/PROGRAM]
 [STREAM_GROUP]
 index=0
 id=0xce
