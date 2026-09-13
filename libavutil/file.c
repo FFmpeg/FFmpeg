@@ -37,6 +37,14 @@
 #include <windows.h>
 #endif
 
+#ifdef _WIN32
+/* struct stat has a 32 bit st_size with the Windows SDK, use the 64 bit variants */
+#undef stat
+#undef fstat
+#define stat  _stat64
+#define fstat _fstat64
+#endif
+
 typedef struct FileLogContext {
     const AVClass *class;
     int   log_offset;
@@ -59,7 +67,6 @@ int av_file_map(const char *filename, uint8_t **bufptr, size_t *size,
     int err, fd = avpriv_open(filename, O_RDONLY);
     struct stat st;
     av_unused void *ptr;
-    off_t off_size;
     *bufptr = NULL;
     *size = 0;
 
@@ -76,14 +83,13 @@ int av_file_map(const char *filename, uint8_t **bufptr, size_t *size,
         return err;
     }
 
-    off_size = st.st_size;
-    if (off_size > SIZE_MAX) {
+    if (st.st_size > SIZE_MAX) {
         av_log(&file_log_ctx, AV_LOG_ERROR,
                "File size for file '%s' is too big\n", filename);
         close(fd);
         return AVERROR(EINVAL);
     }
-    *size = off_size;
+    *size = st.st_size;
 
     if (!*size) {
         *bufptr = NULL;
