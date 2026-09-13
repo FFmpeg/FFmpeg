@@ -75,6 +75,92 @@ static void poison_memory(void *ptr, size_t size)
     FF_MEM_UNDEFINED(ptr, size);
 }
 
+/* The LLVM ASan runtime for Windows does not intercept the _aligned_malloc
+ * family, so the alignment slack around a block stays addressable and small
+ * overflows go unnoticed, while the runtime shipped with Visual Studio does
+ * intercept it. Which one is linked cannot be told at compile time, so probe
+ * once whether the byte after an aligned allocation is poisoned and align by
+ * hand only when it is not. */
+#if HAVE_ASAN && HAVE_ALIGNED_MALLOC && !HAVE_POSIX_MEMALIGN && !HAVE_MEMALIGN
+#define ASAN_ALIGNED_ALLOC 1
+
+static int asan_aligned_alloc_needed(void)
+{
+    static atomic_int needed = -1;
+    int ret = atomic_load_explicit(&needed, memory_order_relaxed);
+
+    if (ret < 0) {
+        uint8_t *p = _aligned_malloc(16, ALIGN);
+        int probed = !p || !__asan_address_is_poisoned(p + 16);
+        _aligned_free(p);
+        /* Every block must be freed by the allocator that made it, so the
+         * first probe to finish decides for all callers. */
+        if (atomic_compare_exchange_strong_explicit(&needed, &ret, probed,
+                                                    memory_order_relaxed,
+                                                    memory_order_relaxed))
+            ret = probed;
+    }
+    return ret;
+}
+
+typedef struct AsanAlignedHeader {
+    void  *base;
+    size_t size;
+} AsanAlignedHeader;
+
+static void *asan_aligned_malloc(size_t size)
+{
+    AsanAlignedHeader *hdr;
+    uint8_t *base, *ptr;
+    size_t total;
+
+    if (size > SIZE_MAX - ALIGN - sizeof(*hdr))
+        return NULL;
+    total = size + ALIGN + sizeof(*hdr);
+    base  = malloc(total);
+    if (!base)
+        return NULL;
+    ptr = (uint8_t *)FFALIGN((uintptr_t)base + sizeof(*hdr), ALIGN);
+    hdr = (AsanAlignedHeader *)ptr - 1;
+    hdr->base = base;
+    hdr->size = size;
+    FF_ASAN_POISON(base, ptr - base);
+    FF_ASAN_POISON(ptr + size, base + total - (ptr + size));
+    return ptr;
+}
+
+static AsanAlignedHeader *asan_aligned_header(void *ptr)
+{
+    AsanAlignedHeader *hdr = (AsanAlignedHeader *)ptr - 1;
+    FF_ASAN_UNPOISON(hdr, sizeof(*hdr));
+    return hdr;
+}
+
+static void asan_aligned_free(void *ptr)
+{
+    if (ptr)
+        free(asan_aligned_header(ptr)->base);
+}
+
+static void *asan_aligned_realloc(void *ptr, size_t size)
+{
+    AsanAlignedHeader *hdr;
+    void *ret;
+
+    if (!ptr)
+        return asan_aligned_malloc(size);
+    ret = asan_aligned_malloc(size);
+    if (!ret)
+        return NULL;
+    hdr = asan_aligned_header(ptr);
+    memcpy(ret, ptr, FFMIN(size, hdr->size));
+    free(hdr->base);
+    return ret;
+}
+#else
+#define ASAN_ALIGNED_ALLOC 0
+#endif
+
 /* NOTE: if you want to override these functions with your own
  * implementations (not recommended) you have to link libav* as
  * dynamic libraries and remove -Wl,-Bsymbolic from the linker flags.
@@ -111,7 +197,12 @@ void *av_malloc(size_t size)
     if (size > atomic_load_explicit(&max_alloc_size, memory_order_relaxed))
         return NULL;
 
-#if HAVE_POSIX_MEMALIGN
+#if ASAN_ALIGNED_ALLOC
+    if (asan_aligned_alloc_needed())
+        ptr = asan_aligned_malloc(size);
+    else
+        ptr = _aligned_malloc(size, ALIGN);
+#elif HAVE_POSIX_MEMALIGN
     if (size) //OS X on SDK 10.6 has a broken posix_memalign implementation
     if (posix_memalign(&ptr, ALIGN, size))
         ptr = NULL;
@@ -165,7 +256,12 @@ void *av_realloc(void *ptr, size_t size)
     if (size > atomic_load_explicit(&max_alloc_size, memory_order_relaxed))
         return NULL;
 
-#if HAVE_ALIGNED_MALLOC
+#if ASAN_ALIGNED_ALLOC
+    if (asan_aligned_alloc_needed())
+        ret = asan_aligned_realloc(ptr, size + !size);
+    else
+        ret = _aligned_realloc(ptr, size + !size, ALIGN);
+#elif HAVE_ALIGNED_MALLOC
     ret = _aligned_realloc(ptr, size + !size, ALIGN);
 #else
     ret = realloc(ptr, size + !size);
@@ -242,7 +338,12 @@ int av_reallocp_array(void *ptr, size_t nmemb, size_t size)
 
 void av_free(void *ptr)
 {
-#if HAVE_ALIGNED_MALLOC
+#if ASAN_ALIGNED_ALLOC
+    if (asan_aligned_alloc_needed())
+        asan_aligned_free(ptr);
+    else
+        _aligned_free(ptr);
+#elif HAVE_ALIGNED_MALLOC
     _aligned_free(ptr);
 #else
     free(ptr);
