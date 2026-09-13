@@ -55,6 +55,7 @@ static int amf_vqe_init(AVFilterContext *avctx) {
     AMFVQEFilterContext *ctx = avctx->priv;
 
     ctx->common.format = AV_PIX_FMT_NONE;
+    ctx->common.color_profile = AMF_VIDEO_CONVERTER_COLOR_PROFILE_UNKNOWN;
     ctx->common.shader_input = 1;
 
     return 0;
