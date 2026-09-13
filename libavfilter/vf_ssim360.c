@@ -113,7 +113,7 @@ typedef struct HeatmapList {
 } HeatmapList;
 
 typedef struct SampleParams {
-    int stride;
+    int sample_stride;
     int planewidth;
     int planeheight;
     int x_image_offset;
@@ -733,10 +733,10 @@ static void compute_bilinear_map(SampleParams *p, BilinearMap *m, float x, float
     float y_inv_diff = 1.0f - y_diff;
 
     // Indices of the 4 samples from source frame
-    m->tli = x_floor    + y_floor   * p->stride;
-    m->tri = x_ceil     + y_floor   * p->stride;
-    m->bli = x_floor    + y_ceil    * p->stride;
-    m->bri = x_ceil     + y_ceil    * p->stride;
+    m->tli = x_floor    + y_floor   * p->sample_stride;
+    m->tri = x_ceil     + y_floor   * p->sample_stride;
+    m->bli = x_floor    + y_ceil    * p->sample_stride;
+    m->bri = x_ceil     + y_ceil    * p->sample_stride;
 
     // Scale to be applied to each of the 4 samples from source frame
     m->tlf = x_inv_diff * y_inv_diff * fixed_point_scale;
@@ -1079,6 +1079,7 @@ static int generate_tape_maps(SSIM360Context *s, AVFrame *main, const AVFrame *r
     int main_stereo_format = s->main_stereo_format;
     int are_both_stereo = (main_stereo_format != STEREO_FORMAT_MONO) && (ref_stereo_format != STEREO_FORMAT_MONO);
     int min_eye_count = 1 + are_both_stereo;
+    int bytes_per_sample = 1 + (s->max > 255);
     int ret;
 
     for (int i = 0; i < s->nb_components; i ++) {
@@ -1099,7 +1100,7 @@ static int generate_tape_maps(SSIM360Context *s, AVFrame *main, const AVFrame *r
 
         for (int eye = 0; eye < min_eye_count; eye ++) {
             SampleParams ref_sample_params = {
-                .stride         = ref->linesize[i],
+                .sample_stride  = ref->linesize[i] / bytes_per_sample,
                 .planewidth     = ref_width,
                 .planeheight    = ref_height,
                 .x_image_range  = ref_image_width - 1,
@@ -1111,7 +1112,7 @@ static int generate_tape_maps(SSIM360Context *s, AVFrame *main, const AVFrame *r
             };
 
             SampleParams main_sample_params = {
-                .stride         = main->linesize[i],
+                .sample_stride  = main->linesize[i] / bytes_per_sample,
                 .planewidth     = main_width,
                 .planeheight    = main_height,
                 .x_image_range  = main_image_width - 1,
