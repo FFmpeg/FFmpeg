@@ -29,7 +29,12 @@
 
 #include "config.h"
 
+#include <fcntl.h>
 #include <sys/stat.h>
+
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
 
 #ifdef _WIN32
 #if HAVE_DIRECT_H
@@ -41,8 +46,12 @@
 #endif
 
 #ifdef _WIN32
-#  include <fcntl.h>
 #  include <stdint.h>
+#  include <sys/types.h>
+#  ifdef off_t
+#   undef off_t
+#  endif
+#  define off_t int64_t
 #  ifdef lseek
 #   undef lseek
 #  endif
@@ -171,10 +180,17 @@ int ff_poll(struct pollfd *fds, nfds_t numfds, int timeout);
 #endif /* CONFIG_NETWORK */
 
 #ifdef _WIN32
+#include <errno.h>
+#include <limits.h>
 #include <stdio.h>
 #include <windows.h>
 #include "libavutil/mem.h"
 #include "libavutil/wchar_filename.h"
+
+#ifndef _SSIZE_T_DEFINED
+#define _SSIZE_T_DEFINED
+typedef SSIZE_T ssize_t;
+#endif
 
 #define DEF_FS_FUNCTION(name, wfunc, afunc)               \
 static inline int win32_##name(const char *filename_utf8) \
@@ -307,11 +323,89 @@ fallback:
     return ret;
 }
 
+/*
+ * Positional I/O and file locking. Unlike pread() and pwrite() the Windows
+ * versions move the file position of the descriptor. A flock() lock covers
+ * only the first byte of the file, ReadFile() and WriteFile() of that byte
+ * from other processes block or fail while the lock is held. Mapped
+ * views of the file are not affected.
+ */
+#ifndef LOCK_SH
+#define LOCK_SH 1
+#define LOCK_EX 2
+#define LOCK_NB 4
+#define LOCK_UN 8
+#endif
+
+static inline ssize_t win32_pread(int fd, void *buf, size_t size, off_t offset)
+{
+    HANDLE fh = (HANDLE)_get_osfhandle(fd);
+    OVERLAPPED ov = { .Offset = offset, .OffsetHigh = offset >> 32 };
+    DWORD n;
+
+    if (fh == INVALID_HANDLE_VALUE)
+        return -1;
+    if (size > INT_MAX)
+        size = INT_MAX;
+    if (!ReadFile(fh, buf, size, &n, &ov)) {
+        if (GetLastError() == ERROR_HANDLE_EOF)
+            return 0;
+        errno = EIO;
+        return -1;
+    }
+    return n;
+}
+
+static inline ssize_t win32_pwrite(int fd, const void *buf, size_t size, off_t offset)
+{
+    HANDLE fh = (HANDLE)_get_osfhandle(fd);
+    OVERLAPPED ov = { .Offset = offset, .OffsetHigh = offset >> 32 };
+    DWORD n;
+
+    if (fh == INVALID_HANDLE_VALUE)
+        return -1;
+    if (size > INT_MAX)
+        size = INT_MAX;
+    if (!WriteFile(fh, buf, size, &n, &ov)) {
+        errno = GetLastError() == ERROR_DISK_FULL ? ENOSPC : EIO;
+        return -1;
+    }
+    return n;
+}
+
+static inline int win32_flock(int fd, int op)
+{
+    HANDLE fh = (HANDLE)_get_osfhandle(fd);
+    OVERLAPPED ov = { 0 };
+    BOOL ok;
+
+    if (fh == INVALID_HANDLE_VALUE)
+        return -1;
+    if (op & LOCK_UN) {
+        ok = UnlockFileEx(fh, 0, 1, 0, &ov);
+    } else {
+        DWORD flags = 0;
+        if (op & LOCK_EX)
+            flags |= LOCKFILE_EXCLUSIVE_LOCK;
+        if (op & LOCK_NB)
+            flags |= LOCKFILE_FAIL_IMMEDIATELY;
+        ok = LockFileEx(fh, flags, 0, 1, 0, &ov);
+    }
+    if (!ok) {
+        errno = GetLastError() == ERROR_LOCK_VIOLATION ? EWOULDBLOCK : EIO;
+        return -1;
+    }
+    return 0;
+}
+
 #define mkdir(a, b) win32_mkdir(a)
 #define rename      win32_rename
 #define rmdir       win32_rmdir
 #define unlink      win32_unlink
 #define access      win32_access
+#define pread       win32_pread
+#define pwrite      win32_pwrite
+#define flock       win32_flock
 
 #endif
 
