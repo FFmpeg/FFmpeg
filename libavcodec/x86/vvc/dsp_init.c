@@ -24,6 +24,7 @@
 #include "config.h"
 
 #include "libavutil/attributes.h"
+#include "libavutil/avassert.h"
 #include "libavutil/cpu.h"
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/vvc/dec.h"
@@ -294,6 +295,44 @@ void bf(ff_vvc_alf_filter_chroma, bd, opt)(uint8_t *dst, ptrdiff_t dst_stride, \
 
 #endif
 
+#if HAVE_AVX2_EXTERNAL
+#define PLANAR_PROTOTYPE(wd, bd, opt)                                          \
+void ff_vvc_pred_planar_w##wd##_##bd##_##opt(uint8_t *src, const uint8_t *top, \
+    const uint8_t *left, int w, int h, ptrdiff_t stride);
+
+#define PLANAR_PROTOTYPES(bd, opt)                                             \
+    PLANAR_PROTOTYPE( 4, bd, opt)                                              \
+    PLANAR_PROTOTYPE( 8, bd, opt)                                              \
+    PLANAR_PROTOTYPE(16, bd, opt)                                              \
+    PLANAR_PROTOTYPE(32, bd, opt)                                              \
+    PLANAR_PROTOTYPE(64, bd, opt)
+
+PLANAR_PROTOTYPES(8, avx2)
+
+/* pred_planar is one pointer taking a runtime width, so dispatch here. */
+#define PLANAR_DISPATCH(bd, opt)                                               \
+static void vvc_pred_planar_##bd##_##opt(uint8_t *src, const uint8_t *top,     \
+    const uint8_t *left, const int w, const int h, const ptrdiff_t stride)     \
+{                                                                              \
+    static void (*const planar[])(uint8_t *src, const uint8_t *top,            \
+        const uint8_t *left, int w, int h, ptrdiff_t stride) = {               \
+        ff_vvc_pred_planar_w4_##bd##_##opt,                                    \
+        ff_vvc_pred_planar_w8_##bd##_##opt,                                    \
+        ff_vvc_pred_planar_w16_##bd##_##opt,                                   \
+        ff_vvc_pred_planar_w32_##bd##_##opt,                                   \
+        ff_vvc_pred_planar_w64_##bd##_##opt,                                   \
+    };                                                                         \
+    av_assert2(w >= 4 && w <= 64 && !(w & (w - 1)));                           \
+    planar[av_log2(w) - 2](src, top, left, w, h, stride);                      \
+}
+
+PLANAR_DISPATCH(8, avx2)
+
+#define INTRA_INIT(bd, opt) do {                                               \
+    c->intra.pred_planar = vvc_pred_planar_##bd##_##opt;                       \
+} while (0)
+#endif
+
 
 #endif // ARCH_X86_64
 
@@ -317,6 +356,9 @@ av_cold void ff_vvc_dsp_init_x86(VVCDSPContext *const c, const int bd)
             MC_LINKS_AVX2(8);
             OF_INIT(8, avx2);
             SAD_INIT();
+
+            // intra
+            INTRA_INIT(8, avx2);
 
             // filter
             ALF_INIT(8, avx2);
