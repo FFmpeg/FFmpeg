@@ -45,6 +45,7 @@
 #include "intreadwrite.h"
 #include "macros.h"
 #include "mem.h"
+#include "sanitizer.h"
 
 #ifdef MALLOC_PREFIX
 
@@ -65,6 +66,14 @@ void  free(void *ptr);
 #define ALIGN (HAVE_SIMD_ALIGN_64 ? 64 : (HAVE_SIMD_ALIGN_32 ? 32 : 16))
 
 #define FF_MEMORY_POISON 0x2a
+
+static void poison_memory(void *ptr, size_t size)
+{
+#if CONFIG_MEMORY_POISONING
+    memset(ptr, FF_MEMORY_POISON, size);
+#endif
+    FF_MEM_UNDEFINED(ptr, size);
+}
 
 /* NOTE: if you want to override these functions with your own
  * implementations (not recommended) you have to link libav* as
@@ -145,10 +154,8 @@ void *av_malloc(size_t size)
         size = 1;
         ptr= av_malloc(1);
     }
-#if CONFIG_MEMORY_POISONING
     if (ptr)
-        memset(ptr, FF_MEMORY_POISON, size);
-#endif
+        poison_memory(ptr, size);
     return ptr;
 }
 
@@ -163,10 +170,8 @@ void *av_realloc(void *ptr, size_t size)
 #else
     ret = realloc(ptr, size + !size);
 #endif
-#if CONFIG_MEMORY_POISONING
     if (ret && !ptr)
-        memset(ret, FF_MEMORY_POISON, size);
-#endif
+        poison_memory(ret, size);
     return ret;
 }
 
@@ -347,8 +352,8 @@ void *av_dynarray2_add(void **tab_ptr, int *nb_ptr, size_t elem_size,
         tab_elem_data = (uint8_t *)*tab_ptr + (*nb_ptr) * elem_size;
         if (elem_data)
             memcpy(tab_elem_data, elem_data, elem_size);
-        else if (CONFIG_MEMORY_POISONING)
-            memset(tab_elem_data, FF_MEMORY_POISON, elem_size);
+        else
+            poison_memory(tab_elem_data, elem_size);
     }, {
         av_freep(tab_ptr);
         *nb_ptr = 0;
