@@ -26,6 +26,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/crc.h"
 #include "libavutil/error.h"
+#include "libavutil/file.h"
 #include "libavutil/hash.h"
 #include "libavutil/file_open.h"
 #include "libavutil/mem.h"
@@ -33,6 +34,7 @@
 #include "libavutil/time.h"
 
 #include "internal.h"
+#include "os_support.h"
 #include "url.h"
 
 #include <assert.h>
@@ -41,10 +43,13 @@
 #include <inttypes.h>
 #include <stdatomic.h>
 #include <string.h>
-#include <sys/file.h>
-#include <sys/mman.h>
 #include <sys/stat.h>
+#if HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+#ifndef _WIN32
+#include <sys/file.h>
+#endif
 
 /**
  * This hash should be resistant against collision attacks, so that an
@@ -179,9 +184,9 @@ typedef struct SharedContext {
     int64_t blocks_max; ///< maximum number of blocks to cache
 
     /* cache file */
-    uint8_t *cache_data; ///< optional mmap of the cache file
+    uint8_t *cache_data; ///< optional mapping of the cache file
     char *cache_path;
-    off_t cache_size; ///< size of mapped memory region (for munmap)
+    off_t cache_size; ///< size of mapped memory region (for unmapping)
     int fd;
 
     /* space map */
@@ -200,10 +205,8 @@ static int shared_close(URLContext *h)
     SharedContext *s = h->priv_data;
 
     ffurl_close(s->inner);
-    if (s->cache_data)
-        munmap(s->cache_data, s->cache_size);
-    if (s->spacemap)
-        munmap(s->spacemap, s->map_size);
+    av_file_unmap_shared(s->cache_data, s->cache_size);
+    av_file_unmap_shared(s->spacemap, s->map_size);
     if (s->fd != -1)
         close(s->fd);
     if (s->mapfd != -1)
@@ -315,7 +318,7 @@ static int shared_open(URLContext *h, const char *arg, int flags, AVDictionary *
     av_log(h, AV_LOG_VERBOSE, "Opening cache file '%s' for URI: '%s'\n",
            s->cache_path, s->inner ? s->inner->filename : arg);
 
-    const int mode = O_RDWR | (s->inner ? O_CREAT : 0);
+    const int mode = O_RDWR | O_BINARY | (s->inner ? O_CREAT : 0);
     s->fd    = avpriv_open(s->cache_path, mode, 0660);
     s->mapfd = s->fd >= 0 ? avpriv_open(s->map_path, mode, 0660) : -1;
     if (s->fd < 0 || s->mapfd < 0) {
@@ -354,7 +357,7 @@ static int shared_open(URLContext *h, const char *arg, int flags, AVDictionary *
         if (ret < 0)
             goto fail;
 
-        /* If filesize is known, we can directly mmap() the cache file */
+        /* If filesize is known, we can directly map the cache file */
         ret = cache_map(h, filesize);
         if (ret < 0) {
             av_log(h, AV_LOG_WARNING, "Failed to map cache file: %s. Falling "
@@ -387,31 +390,20 @@ static int cache_map(URLContext *h, int64_t filesize)
         return 0;
 
     if (s->cache_data) {
-        munmap(s->cache_data, s->cache_size);
+        av_file_unmap_shared(s->cache_data, s->cache_size);
         s->cache_data = NULL;
         s->cache_size = 0;
     }
 
-    struct stat st;
-    int ret = fstat(s->fd, &st);
+    /* The mapping extends the file to the file size; it can be shorter if
+     * another process wrote the correct filesize to the header but crashed
+     * right before actually successfully resizing the file. */
+    void *map;
+    int ret = av_file_map_shared(s->fd, filesize, &map);
     if (ret < 0)
-        return AVERROR(errno);
+        return ret;
 
-    if (st.st_size != filesize) {
-        /* Ensure the file size is correct before mapping; this can happen if
-         * another process wrote the correct filesize to the header but
-         * crashed right before actually successfully resizing the file. */
-        ret = ftruncate(s->fd, filesize);
-        if (ret < 0)
-            return AVERROR(errno);
-    }
-
-    s->cache_data = mmap(NULL, filesize, PROT_READ | PROT_WRITE, MAP_SHARED, s->fd, 0);
-    if (s->cache_data == MAP_FAILED) {
-        s->cache_data = NULL;
-        return AVERROR(errno);
-    }
-
+    s->cache_data = map;
     s->cache_size = filesize;
     return 0;
 }
@@ -452,25 +444,22 @@ static int spacemap_remap(URLContext *h, size_t map_size)
     if (st.st_size >= map_size)
         goto skip_resize;
 
-    ret = ftruncate(s->mapfd, map_size);
-    if (ret < 0) {
-        ret = AVERROR(errno);
-        goto fail;
-    }
+    /* The new mapping extends the file */
     st.st_size = map_size;
     did_grow = 1;
 
 skip_resize:
-    if (s->spacemap)
-        munmap(s->spacemap, s->map_size);
+    av_file_unmap_shared(s->spacemap, s->map_size);
+    s->spacemap = NULL;
     s->map_size = st.st_size;
-    s->spacemap = mmap(NULL, s->map_size, PROT_READ | PROT_WRITE, MAP_SHARED, s->mapfd, 0);
-    if (s->spacemap == MAP_FAILED) {
-        s->spacemap = NULL; /* for munmap check */
+
+    void *map;
+    ret = av_file_map_shared(s->mapfd, s->map_size, &map);
+    if (ret < 0) {
         s->map_size = 0;
-        ret = AVERROR(errno);
         goto fail;
     }
+    s->spacemap = map;
 
     if (locked) {
         flock(s->mapfd, LOCK_UN);
