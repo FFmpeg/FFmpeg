@@ -85,6 +85,8 @@ static int decode_hybrid(const uint8_t *sptr, const uint8_t *sptr_end, uint8_t *
             if (sptr >= sptr_end)
                 return AVERROR_INVALIDDATA;
             if (*sptr & 0x80) {
+                if (sptr + 2 > sptr_end)
+                    return AVERROR_INVALIDDATA;
                 /* 15-bit color */
                 unsigned c = AV_RB16(sptr) & ~0x8000;
                 unsigned b =  c        & 0x1F;
