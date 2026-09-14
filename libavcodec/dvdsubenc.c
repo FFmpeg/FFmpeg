@@ -340,8 +340,8 @@ static int dvdsub_encode(AVCodecContext *avctx,
     // encode data block
     q = outbuf + 4;
     offset1 = q - outbuf;
-    // worst case memory requirement: 1 nibble per pixel..
-    if ((q - outbuf) + vrect.w * vrect.h / 2 + 17 + 21 > outbuf_size) {
+    // worst case memory requirement: 1 nibble per pixel, lines are byte aligned
+    if ((q - outbuf) + vrect.h * ((vrect.w + 1) / 2) + 17 + 21 > outbuf_size) {
         av_log(NULL, AV_LOG_ERROR, "dvd_subtitle too big\n");
         ret = AVERROR_BUFFER_TOO_SMALL;
         goto fail;
