@@ -130,6 +130,7 @@ void checkasm_check_videodsp(void);
 void checkasm_check_vorbisdsp(void);
 void checkasm_check_vvc_alf(void);
 void checkasm_check_vvc_mc(void);
+void checkasm_check_vvc_pred(void);
 void checkasm_check_vvc_sao(void);
 
 void checkasm_uninit_crc(void);

@@ -244,6 +244,7 @@ static const CheckasmTest tests[] = {
     #if CONFIG_VVC_DECODER
         { "vvc_alf", checkasm_check_vvc_alf },
         { "vvc_mc",  checkasm_check_vvc_mc  },
+        { "vvc_pred", checkasm_check_vvc_pred },
         { "vvc_sao", checkasm_check_vvc_sao },
     #endif
 #endif
