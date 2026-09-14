@@ -3361,6 +3361,8 @@ videotoolbox_hwaccel_deps="videotoolbox pthreads"
 videotoolbox_hwaccel_extralibs="-framework QuartzCore"
 vulkan_deps="threads"
 vulkan_deps_any="libdl LoadLibrary"
+spirv_headers_spirv_h_deps="vulkan"
+spirv_unified1_spirv_h_deps="vulkan"
 
 apv_vulkan_hwaccel_deps="vulkan spirv_compiler"
 apv_vulkan_hwaccel_select="apv_decoder"
