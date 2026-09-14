@@ -221,7 +221,7 @@ static int setup_derivative_buffers(AVFilterContext* ctx, ThreadData *td)
             td->data[b][p] = av_calloc(s->planeheight[p] * s->planewidth[p],
                                        sizeof(*td->data[b][p]));
             if (!td->data[b][p]) {
-                cleanup_derivative_buffers(td, b + 1, p);
+                cleanup_derivative_buffers(td, b, p);
                 return AVERROR(ENOMEM);
             }
         }
