@@ -132,7 +132,7 @@ static av_cold int init(AVFilterContext *ctx)
     fill_items(s->speeds_str, &nb_speeds, s->speeds);
     fill_items(s->depths_str, &nb_depths, s->depths);
 
-    if (nb_delays != nb_decays && nb_delays != nb_speeds && nb_delays != nb_depths) {
+    if (nb_delays != nb_decays || nb_delays != nb_speeds || nb_delays != nb_depths) {
         av_log(ctx, AV_LOG_ERROR, "Number of delays & decays & speeds & depths given must be same.\n");
         return AVERROR(EINVAL);
     }
