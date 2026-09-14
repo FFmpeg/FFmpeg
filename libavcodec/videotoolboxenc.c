@@ -395,20 +395,14 @@ static void vtenc_reset(VTEncContext *vtctx)
         vtctx->supported_props = NULL;
     }
 
-    if (vtctx->color_primaries) {
-        CFRelease(vtctx->color_primaries);
-        vtctx->color_primaries = NULL;
-    }
-
-    if (vtctx->transfer_function) {
-        CFRelease(vtctx->transfer_function);
-        vtctx->transfer_function = NULL;
-    }
-
-    if (vtctx->ycbcr_matrix) {
-        CFRelease(vtctx->ycbcr_matrix);
-        vtctx->ycbcr_matrix = NULL;
-    }
+    /* The colorimetry fields hold references borrowed from CoreVideo (Get
+     * semantics). Releasing them would free CoreVideo's cached string for
+     * codepoints without a constant name, and later lookups of the same
+     * codepoint would hand out a dangling pointer.
+     */
+    vtctx->color_primaries = NULL;
+    vtctx->transfer_function = NULL;
+    vtctx->ycbcr_matrix = NULL;
 }
 
 static int vtenc_q_pop(VTEncContext *vtctx, bool wait, CMSampleBufferRef *buf, ExtraSEI *sei)
