@@ -314,7 +314,10 @@ static void filter(AVFilterContext *ctx, uint8_t *dst[3], uint8_t *src[3],
         p->quality = p->qp * FF_QP2LAMBDA;
     else {
         int qpsum=0;
-        int qpcount = (height>>4) * (height>>4);
+        int qpcount = (width>>4) * (height>>4);
+
+        qpsum   += !qpcount;
+        qpcount += !qpcount;
 
         for (y = 0; y < (height>>4); y++) {
             for (x = 0; x < (width>>4); x++)
