@@ -433,11 +433,6 @@ static int cfhd_decode(AVCodecContext *avctx, AVFrame *pic,
         } else if (tag == ChannelNumber) {
             s->channel_num = data;
             av_log(avctx, AV_LOG_DEBUG, "Channel number %"PRIu16"\n", data);
-            if (s->channel_num >= s->planes) {
-                av_log(avctx, AV_LOG_ERROR, "Invalid channel number\n");
-                ret = AVERROR(EINVAL);
-                goto end;
-            }
             init_plane_defaults(s);
         } else if (tag == SubbandNumber) {
             if (s->subband_num != 0 && data == 1 && (s->transform_type == 0 || s->transform_type == 2))  // hack
@@ -630,6 +625,12 @@ static int cfhd_decode(AVCodecContext *avctx, AVFrame *pic,
             bytestream2_seek(&s->peak.base, s->peak.offset - 4, SEEK_CUR);
         } else
             av_log(avctx, AV_LOG_DEBUG,  "Unknown tag %i data %x\n", tag, data);
+
+        if (s->channel_num >= s->planes) {
+            av_log(avctx, AV_LOG_ERROR, "Invalid channel number\n");
+            ret = AVERROR(EINVAL);
+            goto end;
+        }
 
         if (tag == BitstreamMarker && data == CoefficientSegment &&
             s->coded_format != AV_PIX_FMT_NONE) {
