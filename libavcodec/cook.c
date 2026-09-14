@@ -1249,6 +1249,12 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
         s++;
     }
 
+    if (channel_mask && av_popcount(channel_mask) != total_channels) {
+        av_log(avctx, AV_LOG_ERROR, "Channel mask 0x%x does not match %d subpacket channels\n",
+               channel_mask, total_channels);
+        return AVERROR_INVALIDDATA;
+    }
+
     /* Try to catch some obviously faulty streams, otherwise it might be exploitable */
     if (q->samples_per_channel != 256 && q->samples_per_channel != 512 &&
         q->samples_per_channel != 1024) {
