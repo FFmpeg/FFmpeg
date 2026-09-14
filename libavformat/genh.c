@@ -177,6 +177,11 @@ static int genh_read_packet(AVFormatContext *s, AVPacket *pkt)
         par->ch_layout.nb_channels > 1) {
         int i, ch;
 
+        if (c->interleave_size != 2) {
+            avpriv_request_sample(s, "type1 THP interleave size %d", c->interleave_size);
+            return AVERROR_PATCHWELCOME;
+        }
+
         if (avio_feof(s->pb))
             return AVERROR_EOF;
         ret = av_new_packet(pkt, 8 * par->ch_layout.nb_channels);
