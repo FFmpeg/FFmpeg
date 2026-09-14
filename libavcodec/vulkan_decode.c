@@ -1014,10 +1014,9 @@ static int vulkan_decode_get_profile(AVCodecContext *avctx, AVBufferRef *frames_
                                    VK_VIDEO_DECODE_CAPABILITY_DPB_AND_OUTPUT_DISTINCT_BIT_KHR)) ==
                                    VK_VIDEO_DECODE_CAPABILITY_DPB_AND_OUTPUT_COINCIDE_BIT_KHR &&
                !(caps->flags & VK_VIDEO_CAPABILITY_SEPARATE_REFERENCE_IMAGES_BIT_KHR)) {
-        av_log(avctx, AV_LOG_ERROR, "Cannot initialize Vulkan decoding session, buggy driver: "
-               "VK_VIDEO_DECODE_CAPABILITY_DPB_AND_OUTPUT_COINCIDE_BIT_KHR set "
-               "but VK_VIDEO_CAPABILITY_SEPARATE_REFERENCE_IMAGES_BIT_KHR is unset!\n");
-        return AVERROR_EXTERNAL;
+        av_log(avctx, AV_LOG_VERBOSE,
+               "COINCIDE-only decode without SEPARATE_REFERENCE_IMAGES "
+               "(layered DPB capability); continuing\n");
     }
 
     dec->dedicated_dpb = !!(dec_caps->flags & VK_VIDEO_DECODE_CAPABILITY_DPB_AND_OUTPUT_DISTINCT_BIT_KHR);
