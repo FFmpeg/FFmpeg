@@ -66,26 +66,47 @@ uint32_t av_map_videotoolbox_format_from_pixfmt2(enum AVPixelFormat pix_fmt, boo
 
 /**
  * Convert an AVChromaLocation to a VideoToolbox/CoreVideo chroma location string.
- * Returns 0 if no known equivalent was found.
+ *
+ * The returned string is a CoreVideo constant and must not be released.
+ *
+ * Returns NULL if no known equivalent was found.
  */
 CFStringRef av_map_videotoolbox_chroma_loc_from_av(enum AVChromaLocation loc);
 
 /**
  * Convert an AVColorSpace to a VideoToolbox/CoreVideo color matrix string.
- * Returns 0 if no known equivalent was found.
+ *
+ * The returned string is borrowed from CoreVideo and must not be released.
+ * It is either a constant, or an entry of CoreVideo's internal codepoint
+ * cache; releasing a cached entry makes later lookups of the same value
+ * return a dangling pointer.
+ *
+ * Returns NULL if no known equivalent was found.
  */
 CFStringRef av_map_videotoolbox_color_matrix_from_av(enum AVColorSpace space);
 
 /**
  * Convert an AVColorPrimaries to a VideoToolbox/CoreVideo color primaries string.
- * Returns 0 if no known equivalent was found.
+ *
+ * The returned string is borrowed from CoreVideo and must not be released.
+ * It is either a constant, or an entry of CoreVideo's internal codepoint
+ * cache; releasing a cached entry makes later lookups of the same value
+ * return a dangling pointer.
+ *
+ * Returns NULL if no known equivalent was found.
  */
 CFStringRef av_map_videotoolbox_color_primaries_from_av(enum AVColorPrimaries pri);
 
 /**
  * Convert an AVColorTransferCharacteristic to a VideoToolbox/CoreVideo color transfer
  * function string.
- * Returns 0 if no known equivalent was found.
+ *
+ * The returned string is borrowed from CoreVideo and must not be released.
+ * It is either a constant, or an entry of CoreVideo's internal codepoint
+ * cache; releasing a cached entry makes later lookups of the same value
+ * return a dangling pointer.
+ *
+ * Returns NULL if no known equivalent was found.
  */
 CFStringRef av_map_videotoolbox_color_trc_from_av(enum AVColorTransferCharacteristic trc);
 
