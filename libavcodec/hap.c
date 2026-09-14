@@ -30,7 +30,7 @@ int ff_hap_set_chunk_count(HapContext *ctx, int count, int first_in_frame)
 {
     int ret = 0;
     if (first_in_frame == 1 && ctx->chunk_count != count) {
-        int ret = av_reallocp_array(&ctx->chunks, count, sizeof(HapChunk));
+        ret = av_reallocp_array(&ctx->chunks, count, sizeof(HapChunk));
         if (ret == 0)
             ret = av_reallocp_array(&ctx->chunk_results, count, sizeof(int));
         if (ret < 0) {
