@@ -632,6 +632,12 @@ static int cfhd_decode(AVCodecContext *avctx, AVFrame *pic,
             goto end;
         }
 
+        if (got_buffer && (s->coded_width || s->coded_height || s->coded_format != AV_PIX_FMT_NONE)) {
+            av_log(avctx, AV_LOG_ERROR, "Header tag after end of header\n");
+            ret = AVERROR(EINVAL);
+            goto end;
+        }
+
         if (tag == BitstreamMarker && data == CoefficientSegment &&
             s->coded_format != AV_PIX_FMT_NONE) {
             int lowpass_height = s->plane[s->channel_num].band[0][0].height;
@@ -919,8 +925,7 @@ finish:
     ff_thread_finish_setup(avctx);
 
     if (!s->a_width || !s->a_height || s->a_format == AV_PIX_FMT_NONE ||
-        s->a_transform_type == INT_MIN ||
-        s->coded_width || s->coded_height || s->coded_format != AV_PIX_FMT_NONE) {
+        s->a_transform_type == INT_MIN) {
         av_log(avctx, AV_LOG_ERROR, "Invalid dimensions\n");
         ret = AVERROR(EINVAL);
         goto end;
