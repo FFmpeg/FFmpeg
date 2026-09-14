@@ -144,6 +144,13 @@ static av_cold int init(AVFilterContext *ctx)
         return AVERROR(EINVAL);
     }
 
+    for (int n = 0; n < s->num_chorus; n++) {
+        if (!(s->speeds[n] > 0)) {
+            av_log(ctx, AV_LOG_ERROR, "Speeds must be positive.\n");
+            return AVERROR(EINVAL);
+        }
+    }
+
     s->length = av_calloc(s->num_chorus, sizeof(*s->length));
     s->lookup_table = av_calloc(s->num_chorus, sizeof(*s->lookup_table));
 
