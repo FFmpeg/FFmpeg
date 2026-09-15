@@ -197,7 +197,7 @@ static int output_frame(AVFilterLink *outlink)
 
     // in case we have to do any initial black padding
     if (s->start == TILT_BLACK) {
-        for ( ; ncol < s->hold; ncol++)
+        for ( ; ncol < FFMIN(s->hold, outlink->w); ncol++)
             copy_column(outlink, dst->data, dst->linesize,
                         (const uint8_t **)s->black_buffers, s->black_linesizes,
                         ncol, 0);
