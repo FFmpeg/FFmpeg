@@ -3467,6 +3467,11 @@ int main(int argc, char **argv)
         ret = AVERROR(EINVAL);
         goto end;
     }
+    if (f->flags & AV_TEXTFORMAT_FLAG_IS_DIAGRAM_FORMATTER) {
+        av_log(NULL, AV_LOG_ERROR, "Output format '%s' can only draw filter graphs\n", f_name);
+        ret = AVERROR(EINVAL);
+        goto end;
+    }
 
     if (data_dump_format) {
         if (!strcmp(data_dump_format, "xxd")) {
