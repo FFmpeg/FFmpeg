@@ -974,6 +974,7 @@ static void print_film_grain_params(AVTextFormatContext *tfc,
         [AV_FILM_GRAIN_PARAMS_AV1]  = "av1",
         [AV_FILM_GRAIN_PARAMS_H274] = "h274",
     };
+    const char *const component_names[] = { "Y", "Cb", "Cr" };
 
     AVBPrint pbuf;
     if (!fgp || fgp->type >= FF_ARRAY_ELEMS(film_grain_type_names))
@@ -1014,7 +1015,7 @@ static void print_film_grain_params(AVTextFormatContext *tfc,
         avtext_print_section_header(tfc, NULL, SECTION_ID_FRAME_SIDE_DATA_COMPONENT_LIST);
 
         if (aom->num_y_points) {
-            avtext_print_section_header(tfc, NULL, SECTION_ID_FRAME_SIDE_DATA_COMPONENT);
+            avtext_print_section_header(tfc, component_names[0], SECTION_ID_FRAME_SIDE_DATA_COMPONENT);
 
             print_int("bit_depth_luma", fgp->bit_depth_luma);
             print_list_fmt("y_points_value", "%"PRIu8, aom->num_y_points, 1, aom->y_points[idx][0]);
@@ -1029,7 +1030,7 @@ static void print_film_grain_params(AVTextFormatContext *tfc,
             if (!aom->num_uv_points[uv] && !aom->chroma_scaling_from_luma)
                 continue;
 
-            avtext_print_section_header(tfc, NULL, SECTION_ID_FRAME_SIDE_DATA_COMPONENT);
+            avtext_print_section_header(tfc, component_names[1 + uv], SECTION_ID_FRAME_SIDE_DATA_COMPONENT);
 
             print_int("bit_depth_chroma", fgp->bit_depth_chroma);
             print_list_fmt("uv_points_value", "%"PRIu8, aom->num_uv_points[uv], 1, aom->uv_points[uv][idx][0]);
@@ -1059,13 +1060,13 @@ static void print_film_grain_params(AVTextFormatContext *tfc,
             if (!h274->component_model_present[c])
                 continue;
 
-            avtext_print_section_header(tfc, NULL, SECTION_ID_FRAME_SIDE_DATA_COMPONENT);
+            avtext_print_section_header(tfc, component_names[c], SECTION_ID_FRAME_SIDE_DATA_COMPONENT);
             print_int(c ? "bit_depth_chroma" : "bit_depth_luma", c ? fgp->bit_depth_chroma : fgp->bit_depth_luma);
 
             avtext_print_section_header(tfc, NULL, SECTION_ID_FRAME_SIDE_DATA_PIECE_LIST);
             for (int i = 0; i < h274->num_intensity_intervals[c]; i++) {
 
-                avtext_print_section_header(tfc, NULL, SECTION_ID_FRAME_SIDE_DATA_PIECE);
+                avtext_print_section_header(tfc, "Intensity interval", SECTION_ID_FRAME_SIDE_DATA_PIECE);
                 print_int("intensity_interval_lower_bound", h274->intensity_interval_lower_bound[c][i]);
                 print_int("intensity_interval_upper_bound", h274->intensity_interval_upper_bound[c][i]);
                 print_list_fmt("comp_model_value", "%"PRId16, h274->num_model_values[c], 1, h274->comp_model_value[c][i][idx]);
