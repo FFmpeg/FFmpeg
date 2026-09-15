@@ -58,7 +58,7 @@ int ff_dca_set_channel_layout(AVCodecContext *avctx, int *ch_remap, int dca_mask
     av_channel_layout_uninit(&avctx->ch_layout);
     if (s->output_channel_order == CHANNEL_ORDER_CODED) {
         int ret;
-        for (dca_ch = 0; dca_ch < DCA_SPEAKER_COUNT; dca_ch++)
+        for (dca_ch = 0; dca_ch < DCA_SPEAKER_RSV1; dca_ch++)
             if (dca_mask & (1U << dca_ch))
                 ch_remap[nchannels++] = dca_ch;
         ret = av_channel_layout_custom_init(&avctx->ch_layout, nchannels);
@@ -66,7 +66,7 @@ int ff_dca_set_channel_layout(AVCodecContext *avctx, int *ch_remap, int dca_mask
             return ret;
 
         nchannels = 0;
-        for (dca_ch = 0; dca_ch < DCA_SPEAKER_COUNT; dca_ch++)
+        for (dca_ch = 0; dca_ch < DCA_SPEAKER_RSV1; dca_ch++)
             if (dca_mask & (1U << dca_ch))
                 avctx->ch_layout.u.map[nchannels++].id = dca2wav[dca_ch];
     } else {
