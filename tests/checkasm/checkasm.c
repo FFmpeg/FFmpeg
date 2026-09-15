@@ -178,6 +178,9 @@ static const CheckasmTest tests[] = {
     #if CONFIG_PNG_DECODER
         { "png", checkasm_check_png },
     #endif
+    #if CONFIG_PRORES_DECODER
+        { "proresdsp", checkasm_check_proresdsp },
+    #endif
     #if CONFIG_QPELDSP
         { "qpeldsp", checkasm_check_qpeldsp },
     #endif
