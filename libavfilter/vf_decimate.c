@@ -393,6 +393,10 @@ static int config_output(AVFilterLink *outlink)
 
     dm->hsub      = pix_desc->log2_chroma_w;
     dm->vsub      = pix_desc->log2_chroma_h;
+    if (dm->chroma && ((dm->blockx / 2) >> dm->hsub == 0 || (dm->blocky / 2) >> dm->vsub == 0)) {
+        av_log(ctx, AV_LOG_ERROR, "blockx and blocky must be at least one chroma sample\n");
+        return AVERROR(EINVAL);
+    }
     dm->depth     = pix_desc->comp[0].depth;
     max_value     = (1 << dm->depth) - 1;
     dm->scthresh  = (int64_t)(((int64_t)max_value *          w * h          * dm->scthresh_flt)  / 100);
