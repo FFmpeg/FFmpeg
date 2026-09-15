@@ -21,6 +21,7 @@
 
 #include <string.h>
 
+#include "libavutil/error.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 
@@ -58,6 +59,11 @@ int ff_tee_parse_slave_options(void *log, char *slave,
             goto fail;
         if (strspn(p, slave_opt_close))
             break;
+        if (!*p) {
+            av_log(log, AV_LOG_ERROR, "Unterminated slave options in \"%s\"\n", slave);
+            ret = AVERROR(EINVAL);
+            goto fail;
+        }
         p++;
     }
     *filename = (char *)p + 1;
