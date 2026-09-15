@@ -969,7 +969,8 @@ static void shift_history(DCAEncContext *c, const int32_t *input)
 
     for (k = 0; k < 512; k++)
         for (ch = 0; ch < c->channels; ch++) {
-            const int chi = c->channel_order_tab[ch];
+            const int chi = ch < c->fullband_channels ? c->channel_order_tab[ch]
+                                                      : lfe_index[c->channel_config];
 
             c->history[ch][k] = input[k * c->channels + chi];
         }
