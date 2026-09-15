@@ -2133,7 +2133,9 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
 
     parse_code = buf[4];
 
-    init_get_bits(&s->gb, &buf[13], 8*(size - DATA_UNIT_HEADER_SIZE));
+    ret = init_get_bits8(&s->gb, &buf[13], size - DATA_UNIT_HEADER_SIZE);
+    if (ret < 0)
+        return ret;
 
     if (parse_code == DIRAC_PCODE_SEQ_HEADER) {
         if (s->seen_sequence_header)
