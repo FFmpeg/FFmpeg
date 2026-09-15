@@ -628,6 +628,11 @@ av_cold int ff_rate_control_init(MPVMainEncContext *const m)
                        i, e);
                 return -1;
             }
+            if (rce->pict_type < AV_PICTURE_TYPE_I || rce->pict_type > AV_PICTURE_TYPE_B) {
+                av_log(avctx, AV_LOG_ERROR, "invalid picture type %d at line %d\n",
+                       rce->pict_type, i);
+                return -1;
+            }
 
             p = next;
         }
