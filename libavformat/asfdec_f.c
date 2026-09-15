@@ -134,7 +134,6 @@ static const AVClass asf_class = {
 #undef NDEBUG
 #include <assert.h>
 
-#define ASF_MAX_STREAMS 127
 #define FRAME_HEADER_SIZE 6
 // Fix Me! FRAME_HEADER_SIZE may be different.
 // (7 is known to be too large for GipsyGuitar.wmv)
@@ -310,11 +309,6 @@ static int asf_read_stream_properties(AVFormatContext *s, int64_t size)
     unsigned int tag1;
     int64_t pos1, pos2, start_time;
     int test_for_ext_stream_audio, is_dvr_ms_audio = 0;
-
-    if (s->nb_streams == ASF_MAX_STREAMS) {
-        av_log(s, AV_LOG_ERROR, "too many streams\n");
-        return AVERROR(EINVAL);
-    }
 
     pos1 = avio_tell(pb);
 
