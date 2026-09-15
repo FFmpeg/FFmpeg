@@ -609,8 +609,6 @@ static av_cold int mjpeg_encode_init(AVCodecContext *avctx)
 }
 
 #if CONFIG_AMV_ENCODER
-// maximum over s->mjpeg_vsample[i]
-#define V_MAX 2
 static int amv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
                               const AVFrame *pic_arg, int *got_packet)
 {
@@ -633,8 +631,8 @@ static int amv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
         return AVERROR(ENOMEM);
     //picture should be flipped upside-down
     for(i=0; i < 3; i++) {
-        int vsample = i ? 2 >> chroma_v_shift : 2;
-        pic->data[i] += pic->linesize[i] * (vsample * s->c.height / V_MAX - 1);
+        int v_shift = i ? chroma_v_shift : 0;
+        pic->data[i] += pic->linesize[i] * (AV_CEIL_RSHIFT(s->c.height, v_shift) - 1);
         pic->linesize[i] *= -1;
     }
     ret = ff_mpv_encode_picture(avctx, pkt, pic, got_packet);
