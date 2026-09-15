@@ -218,11 +218,8 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
 
     /* Set up main loop parameters */
     const unsigned block_size = comp->block_size;
-    const size_t num_blocks   = (width + block_size - 1) / block_size;
+    const size_t num_blocks   = p->num_blocks;
     const size_t aligned_w    = num_blocks * block_size;
-    if (aligned_w < width) /* overflow */
-        return AVERROR(EINVAL);
-    p->num_blocks   = num_blocks;
     p->memcpy_first = false;
     p->memcpy_last  = false;
     p->memcpy_out   = false;
@@ -595,6 +592,9 @@ static int compile_single(const CompileArgs *args, const SwsOpList *ops,
     p->planes_out     = rw_data_planes(write);
     p->pixel_bits_out = rw_pixel_bits(write);
     p->palette_idx    = -1;
+    p->num_blocks     = (dst->width + comp->block_size - 1) / comp->block_size;
+    if (p->num_blocks * comp->block_size < (unsigned) dst->width)
+        return AVERROR(ERANGE);
 
     SwsOpExec *exec = &p->exec_base;
     *exec = (SwsOpExec) {
