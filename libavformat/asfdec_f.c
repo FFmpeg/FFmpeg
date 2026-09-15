@@ -1447,7 +1447,6 @@ static int64_t asf_read_pts(AVFormatContext *s, int stream_index,
     FFFormatContext *const si = ffformatcontext(s);
     ASFContext *asf     = s->priv_data;
     AVPacket pkt1, *pkt = &pkt1;
-    ASFStream *asf_st;
     int64_t pts;
     int64_t pos = *ppos;
     int i;
@@ -1477,15 +1476,10 @@ static int64_t asf_read_pts(AVFormatContext *s, int stream_index,
         if (pkt->flags & AV_PKT_FLAG_KEY) {
             AVStream *st = s->streams[pkt->stream_index];
 
-            asf_st = &asf->streams[st->id];
-
-//            assert((asf_st->packet_pos - s->data_offset) % s->packet_size == 0);
-            pos = asf_st->packet_pos;
-            av_assert1(pkt->pos == asf_st->packet_pos);
-
+            pos = pkt->pos;
             av_add_index_entry(st, pos, pts, pkt->size,
                                pos - start_pos[st->id] + 1, AVINDEX_KEYFRAME);
-            start_pos[st->id] = asf_st->packet_pos + 1;
+            start_pos[st->id] = pos + 1;
 
             if (pkt->stream_index == stream_index) {
                 av_packet_unref(pkt);
