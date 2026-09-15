@@ -105,9 +105,8 @@ static void filter(AVFilterContext *ctx, AVFrame *dst,
 {
     YADIFVTContext *s = ctx->priv;
     YADIFContext *y = &s->yadif;
-    int i;
 
-    for (i = 0; i < y->csp->nb_components; i++) {
+    for (int i = 0; i < y->csp->nb_components; i++) {
         int pixel_size, channels;
         const AVComponentDescriptor *comp = &y->csp->comp[i];
         CVMetalTextureRef prev, cur, next, dest;
