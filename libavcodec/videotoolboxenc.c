@@ -2675,9 +2675,14 @@ static int vtenc_populate_extradata(AVCodecContext   *avctx,
         goto pe_cleanup;
     }
 
+    if (!buf) {
+        // VideoToolbox reports a dropped frame as success with no buffer.
+        av_log(avctx, AV_LOG_ERROR, "Extradata frame dropped, no param sets\n");
+        status = AVERROR_EXTERNAL;
+        goto pe_cleanup;
+    }
+
     CFRelease(buf);
-
-
 
 pe_cleanup:
     CVPixelBufferRelease(pix_buf);
