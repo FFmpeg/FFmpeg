@@ -372,6 +372,10 @@ void ff_vvc_dsp_init_aarch64(VVCDSPContext *const c, const int bd)
         c->inter.put[1][5][1][1] =
         c->inter.put[1][6][1][1] = ff_vvc_put_chroma_hv_x16_10_neon;
 
+        c->sao.edge_filter[0] = ff_vvc_sao_edge_filter_8x8_10_neon;
+        for (int i = 1; i < FF_ARRAY_ELEMS(c->sao.edge_filter); i++)
+            c->sao.edge_filter[i] = ff_vvc_sao_edge_filter_16x16_10_neon;
+
         c->alf.filter[LUMA] = alf_filter_luma_10_neon;
         c->alf.filter[CHROMA] = alf_filter_chroma_10_neon;
         c->alf.classify = alf_classify_10_neon;
@@ -423,6 +427,10 @@ void ff_vvc_dsp_init_aarch64(VVCDSPContext *const c, const int bd)
         c->inter.put[1][4][1][1] =
         c->inter.put[1][5][1][1] =
         c->inter.put[1][6][1][1] = ff_vvc_put_chroma_hv_x16_12_neon;
+
+        c->sao.edge_filter[0] = ff_vvc_sao_edge_filter_8x8_12_neon;
+        for (int i = 1; i < FF_ARRAY_ELEMS(c->sao.edge_filter); i++)
+            c->sao.edge_filter[i] = ff_vvc_sao_edge_filter_16x16_12_neon;
 
         c->alf.filter[LUMA] = alf_filter_luma_12_neon;
         c->alf.filter[CHROMA] = alf_filter_chroma_12_neon;

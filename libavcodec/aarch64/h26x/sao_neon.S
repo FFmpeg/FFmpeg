@@ -118,6 +118,12 @@ endfunc
 .word VVC_SAO_STRIDE + 1 // 135 degree
 .word VVC_SAO_STRIDE - 1 // 45 degree
 
+.Lvvc_sao_edge_pos_16bit:
+.word 2 // horizontal
+.word VVC_SAO_STRIDE // vertical
+.word VVC_SAO_STRIDE + 2 // 135 degree
+.word VVC_SAO_STRIDE - 2 // 45 degree
+
 function ff_vvc_sao_edge_filter_16x16_8_neon, export=1
         adr             x7, .Lvvc_sao_edge_pos
         mov             x15, #VVC_SAO_STRIDE
@@ -223,6 +229,23 @@ endfunc
         smin            v0.8h, v0.8h, v31.8h
 .endm
 
+// ff_vvc_sao_edge_filter_16x16_12_neon(char *dst, char *src, ptrdiff stride_dst,
+//                                      int16 *sao_offset_val, int eo, int width, int height)
+function ff_vvc_sao_edge_filter_16x16_12_neon, export=1
+        mvni            v31.8h, #0xf0, lsl #8       // 4095
+        b               .Lvvc_sao_edge_16x16_16bit
+endfunc
+
+// ff_vvc_sao_edge_filter_16x16_10_neon(char *dst, char *src, ptrdiff stride_dst,
+//                                      int16 *sao_offset_val, int eo, int width, int height)
+function ff_vvc_sao_edge_filter_16x16_10_neon, export=1
+        mvni            v31.8h, #0xfc, lsl #8       // 1023
+.Lvvc_sao_edge_16x16_16bit:
+        adr             x7, .Lvvc_sao_edge_pos_16bit
+        mov             x15, #VVC_SAO_STRIDE
+        b               .Lh26x_sao_edge_16x16_16bit
+endfunc
+
 // ff_hevc_sao_edge_filter_16x16_12_neon(char *dst, char *src, ptrdiff stride_dst,
 //                                       int16 *sao_offset_val, int eo, int width, int height)
 function ff_hevc_sao_edge_filter_16x16_12_neon, export=1
@@ -237,6 +260,7 @@ function ff_hevc_sao_edge_filter_16x16_10_neon, export=1
 .Lhevc_sao_edge_16bit:
         adr             x7, .Lhevc_sao_edge_pos_16bit
         mov             x15, #HEVC_SAO_STRIDE
+.Lh26x_sao_edge_16x16_16bit:
         add             w5, w5, #7
         ldr             w4, [x7, w4, uxtw #2]       // a/b offsets in bytes
         bic             w5, w5, #7
@@ -320,6 +344,23 @@ function ff_hevc_sao_edge_filter_8x8_8_neon, export=1
         ret
 endfunc
 
+// ff_vvc_sao_edge_filter_8x8_12_neon(char *dst, char *src, ptrdiff stride_dst,
+//                                    int16 *sao_offset_val, int eo, int width, int height)
+function ff_vvc_sao_edge_filter_8x8_12_neon, export=1
+        mvni            v31.8h, #0xf0, lsl #8       // 4095
+        b               .Lvvc_sao_edge_8x8_16bit
+endfunc
+
+// ff_vvc_sao_edge_filter_8x8_10_neon(char *dst, char *src, ptrdiff stride_dst,
+//                                    int16 *sao_offset_val, int eo, int width, int height)
+function ff_vvc_sao_edge_filter_8x8_10_neon, export=1
+        mvni            v31.8h, #0xfc, lsl #8       // 1023
+.Lvvc_sao_edge_8x8_16bit:
+        adr             x7, .Lvvc_sao_edge_pos_16bit
+        mov             x15, #VVC_SAO_STRIDE
+        b               .Lh26x_sao_edge_8x8_16bit
+endfunc
+
 // ff_hevc_sao_edge_filter_8x8_12_neon(char *dst, char *src, ptrdiff stride_dst,
 //                                     int16 *sao_offset_val, int eo, int width, int height)
 function ff_hevc_sao_edge_filter_8x8_12_neon, export=1
@@ -334,6 +375,7 @@ function ff_hevc_sao_edge_filter_8x8_10_neon, export=1
 .Lhevc_sao_edge_8x8_16bit:
         adr             x7, .Lhevc_sao_edge_pos_16bit
         mov             x15, #HEVC_SAO_STRIDE
+.Lh26x_sao_edge_8x8_16bit:
         ldr             w4, [x7, w4, uxtw #2]      // a/b offsets in bytes
         sao_edge_offsets_init
         sub             x9,  x1, x4                // a neighbours
