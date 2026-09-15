@@ -124,7 +124,7 @@ static void filter(AVFilterContext *ctx, AVFrame *dst,
         channels = comp->step / pixel_size;
         if (pixel_size > 2 || channels > 2) {
             av_log(ctx, AV_LOG_ERROR, "Unsupported pixel format: %s\n", y->csp->name);
-            goto exit;
+            return;
         }
         switch (pixel_size) {
         case 1:
@@ -135,7 +135,7 @@ static void filter(AVFilterContext *ctx, AVFrame *dst,
             break;
         default:
             av_log(ctx, AV_LOG_ERROR, "Unsupported pixel format: %s\n", y->csp->name);
-            goto exit;
+            return;
         }
         av_log(ctx, AV_LOG_TRACE,
                "Deinterlacing plane %d: pixel_size: %d channels: %d\n",
@@ -165,9 +165,6 @@ static void filter(AVFilterContext *ctx, AVFrame *dst,
     if (y->current_field == YADIF_FIELD_END) {
         y->current_field = YADIF_FIELD_NORMAL;
     }
-
-exit:
-    return;
 }
 
 static av_cold void do_uninit(AVFilterContext *ctx) API_AVAILABLE(macos(10.11), ios(8.0))
