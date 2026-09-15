@@ -1735,10 +1735,6 @@ static void mkv_write_blockadditionmapping(AVFormatContext *s, const MatroskaMux
                                            const AVCodecParameters *par, AVIOContext *pb,
                                            mkv_track *track, const AVStream *st)
 {
-#if CONFIG_MATROSKA_MUXER
-    const AVDOVIDecoderConfigurationRecord *dovi;
-    const AVPacketSideData *sd;
-
     if (IS_SEEKABLE(s->pb, mkv)) {
         track->blockadditionmapping_offset = avio_tell(pb);
         // We can't know at this point if there will be a block with BlockAdditions, so
@@ -1754,13 +1750,16 @@ static void mkv_write_blockadditionmapping(AVFormatContext *s, const MatroskaMux
         }
     }
 
-    sd = av_packet_side_data_get(par->coded_side_data, par->nb_coded_side_data,
+#if CONFIG_MATROSKA_MUXER
+    const AVPacketSideData *sd =
+        av_packet_side_data_get(par->coded_side_data, par->nb_coded_side_data,
                                  AV_PKT_DATA_DOVI_CONF);
 
     if (!sd)
         return;
 
-    dovi = (const AVDOVIDecoderConfigurationRecord *)sd->data;
+    const AVDOVIDecoderConfigurationRecord *dovi =
+        (const AVDOVIDecoderConfigurationRecord *)sd->data;
     if (dovi->dv_profile <= 10) {
         ebml_master mapping;
         uint8_t buf[ISOM_DVCC_DVVC_SIZE];
