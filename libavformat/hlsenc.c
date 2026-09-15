@@ -670,6 +670,9 @@ static int do_encrypt(AVFormatContext *s, VariantStream *vs)
 
         if (!hls->iv) {
             AV_WB64(iv + 8, vs->sequence);
+        } else if (strlen(hls->iv) < sizeof(iv)) {
+            av_log(hls, AV_LOG_ERROR, "hls_enc_iv is shorter than %zu bytes\n", sizeof(iv));
+            return AVERROR(EINVAL);
         } else {
             memcpy(iv, hls->iv, sizeof(iv));
         }
@@ -694,6 +697,9 @@ static int do_encrypt(AVFormatContext *s, VariantStream *vs)
                 av_log(s, AV_LOG_ERROR, "Cannot generate a strong random key\n");
                 return ret;
             }
+        } else if (strlen(hls->key) < sizeof(key)) {
+            av_log(hls, AV_LOG_ERROR, "hls_enc_key is shorter than %zu bytes\n", sizeof(key));
+            return AVERROR(EINVAL);
         } else {
             memcpy(key, hls->key, sizeof(key));
         }
