@@ -3,7 +3,7 @@
 #media_type 0: video
 #codec_id 0: av1
 #dimensions 0: 428x240
-#sar 0: 427/428
+#sar 0: 1/1
 0,          0,          0,       33,    25512, 0xf4729b2c, S=1, LCEVC NAL data,    36029, 0xec37a8f7
 0,         33,         33,       33,     5147, 0xbb97ea11, F=0x0, S=1, LCEVC NAL data,       62, 0x6d4212c8
 0,         67,         67,       33,        3, 0x011800e3, F=0x0, S=1, LCEVC NAL data,      236, 0xf5486df1
