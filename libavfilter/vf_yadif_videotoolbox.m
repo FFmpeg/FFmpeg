@@ -146,6 +146,15 @@ static void filter(AVFilterContext *ctx, AVFrame *dst,
         next = ff_metal_texture_from_pixbuf(ctx, s->textureCache, (CVPixelBufferRef)y->next->data[3], i, format);
         dest = ff_metal_texture_from_pixbuf(ctx, s->textureCache, (CVPixelBufferRef)dst->data[3], i, format);
 
+        if (!prev || !cur || !next || !dest) {
+            av_log(ctx, AV_LOG_ERROR, "Failed to create Metal texture for plane %d\n", i);
+            if (prev) CFRelease(prev);
+            if (cur)  CFRelease(cur);
+            if (next) CFRelease(next);
+            if (dest) CFRelease(dest);
+            return;
+        }
+
         tex_prev = CVMetalTextureGetTexture(prev);
         tex_cur  = CVMetalTextureGetTexture(cur);
         tex_next = CVMetalTextureGetTexture(next);
