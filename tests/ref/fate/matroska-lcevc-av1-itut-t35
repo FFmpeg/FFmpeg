@@ -1,0 +1,36 @@
+#extradata 0:        4, 0x021c008d
+#tb 0: 1/1000
+#media_type 0: video
+#codec_id 0: av1
+#dimensions 0: 428x240
+#sar 0: 427/428
+0,          0,          0,       33,    25512, 0xf4729b2c, S=1, LCEVC NAL data,    36029, 0xec37a8f7
+0,         33,         33,       33,     5147, 0xbb97ea11, F=0x0, S=1, LCEVC NAL data,       62, 0x6d4212c8
+0,         67,         67,       33,        3, 0x011800e3, F=0x0, S=1, LCEVC NAL data,      236, 0xf5486df1
+0,        100,        100,       33,       33, 0x78d708a8, F=0x0, S=1, LCEVC NAL data,      784, 0x1ea96586
+0,        133,        133,       33,        3, 0x010800d3, F=0x0, S=1, LCEVC NAL data,      463, 0xc236ed09
+0,        167,        167,       33,      260, 0xdb95748e, F=0x0, S=1, LCEVC NAL data,      857, 0x748fbc9d
+0,        200,        200,       33,        3, 0x01480113, F=0x0, S=1, LCEVC NAL data,     1277, 0x1135a615
+0,        233,        233,       33,       47, 0x6d40123d, F=0x0, S=1, LCEVC NAL data,      986, 0xb9930ef1
+0,        267,        267,       33,        3, 0x00f800c3, F=0x0, S=1, LCEVC NAL data,      738, 0xeb61860b
+0,        300,        300,       33,      781, 0x441b78f8, F=0x0, S=1, LCEVC NAL data,      859, 0x7bd37bcb
+0,        333,        333,       33,        3, 0x010800d3, F=0x0, S=1, LCEVC NAL data,      830, 0x63d3b308
+0,        367,        367,       33,       52, 0xcdde1507, F=0x0, S=1, LCEVC NAL data,      969, 0x7d69f860
+0,        400,        400,       33,        3, 0x01380103, F=0x0, S=1, LCEVC NAL data,      672, 0x92b82640
+0,        433,        433,       33,      253, 0xc19270ce, F=0x0, S=1, LCEVC NAL data,      653, 0x8b7551d9
+0,        467,        467,       33,        3, 0x011800e3, F=0x0, S=1, LCEVC NAL data,      581, 0xe83531ef
+0,        500,        500,       33,       68, 0xe0c4197e, F=0x0, S=1, LCEVC NAL data,      330, 0x4ff38dac
+0,        533,        533,       33,        3, 0x00e800b3, F=0x0, S=1, LCEVC NAL data,      658, 0x7aeb2cb8
+0,        567,        567,       33,     7844, 0x46ff40ce, F=0x0, S=1, LCEVC NAL data,      487, 0x1b7bdc33
+0,        600,        600,       33,        3, 0x01380103, F=0x0, S=1, LCEVC NAL data,      382, 0x2564ae78
+0,        633,        633,       33,       51, 0x8e831375, F=0x0, S=1, LCEVC NAL data,      471, 0x4ec1d60b
+0,        667,        667,       33,        3, 0x01480113, F=0x0, S=1, LCEVC NAL data,      324, 0x9a3ab210
+0,        700,        700,       33,      239, 0xba116dae, F=0x0, S=1, LCEVC NAL data,      239, 0xe0806c1d
+0,        733,        733,       33,        3, 0x012800f3, F=0x0, S=1, LCEVC NAL data,      368, 0x3b9ab314
+0,        767,        767,       33,       52, 0xc1e3147e, F=0x0, S=1, LCEVC NAL data,      399, 0x351abe54
+0,        800,        800,       33,        3, 0x010800d3, F=0x0, S=1, LCEVC NAL data,      312, 0x4edb8ce7
+0,        833,        833,       33,     7626, 0xd1f0c526, F=0x0, S=1, LCEVC NAL data,      373, 0xbb39ad59
+0,        867,        867,       33,        3, 0x00f800c3, F=0x0, S=1, LCEVC NAL data,      149, 0x38173d80
+0,        900,        900,       33,       60, 0x8e2c18b7, F=0x0, S=1, LCEVC NAL data,      131, 0x71e23406
+0,        933,        933,       33,        3, 0x01480113, F=0x0, S=1, LCEVC NAL data,      312, 0x5397849f
+0,        967,        967,       33,      137, 0x51da3901, F=0x0, S=1, LCEVC NAL data,      200, 0x40765c3a

@@ -339,6 +339,9 @@ fate-matroska-reenc-delete-metadata-filter-output: CMD = transcode matroska $(TA
 FATE_MATROSKA_FFMPEG_FFPROBE-$(call TRANSCODE, MPEG2VIDEO HEVC, NUT MATROSKA, SCALE_FILTER) += fate-matroska-reenc-chapter-nofilter
 fate-matroska-reenc-chapter-nofilter: CMD = transcode matroska $(TARGET_SAMPLES)/mkv/hdr10tags-both.mkv nut "-map 0:v:0 -vf scale=iw:ih -c:v mpeg2video -bitexact -metadata:c:0 NUMBER_OF_FRAMES=test" "-c copy -t 0.1" "-show_entries chapter_tags" "" "" "" null
 
+FATE_MATROSKA-$(call FRAMECRC, MATROSKA,, AV1_PARSER) += fate-matroska-lcevc-av1-itut-t35
+fate-matroska-lcevc-av1-itut-t35: CMD = stream_demux matroska $(TARGET_SAMPLES)/lcevc/L_AV1_854x480p_8bit8bit_2D_dd.mkv "" "-c:v copy"
+
 # The following tests only use the generated vsynth input, so unlike the
 # rest of this file they are runnable without the external samples.
 FATE_MATROSKA_STEREO3D-$(call ALLYES, FILE_PROTOCOL PIPE_PROTOCOL FRAMECRC_MUXER \
