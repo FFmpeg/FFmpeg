@@ -168,6 +168,9 @@ typedef struct DnnContext {
     char *device;
     int device_id;
 
+    AVBufferRef *hw_frames_ctx;
+    int zero_copy_negotiated;
+
 #if CONFIG_LIBTENSORFLOW
     TFOptions tf_option;
 #endif

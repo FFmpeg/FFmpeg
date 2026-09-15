@@ -12346,6 +12346,24 @@ inference request. The shared @option{async} and @option{nireq} options
 therefore have no effect for @code{dnn_backend=onnx}; inference always
 runs synchronously regardless of their values.
 
+When FFmpeg is built with Direct3D 12 support and this build's ONNX
+Runtime provides a working DirectML execution provider, setting
+@option{device=dml} together with @code{AV_PIX_FMT_D3D12} NV12 hardware
+frames as input (e.g. via @code{-hwaccel d3d12va -hwaccel_output_format
+d3d12}) keeps frames in VRAM for the whole filter, from the decoder's
+output through DNN inference and back out, without a host round-trip.
+Software-frame input retains the host I/O path. D3D12 input requires
+successful DirectML negotiation; unsupported hardware-input
+configurations fail during configuration. At runtime,
+@file{DirectML.dll} and @file{d3dcompiler_47.dll} must be loadable from
+the application directory or System32. Currently, only single-channel
+(luma-only), @code{FLOAT}/NCHW models with a @code{[1,1,H,W]} output
+tensor and even input/output frame dimensions are supported; the chroma
+plane is copied or bilinearly upscaled on the GPU without going
+through the model. The output frames are D3D12 hardware frames, so they
+must either be consumed by a D3D12 encoder or downloaded explicitly with
+@code{hwdownload,format=nv12}.
+
 @end table
 
 @item model
@@ -12436,6 +12454,28 @@ throughout the pipeline:
 @example
 ./ffmpeg -init_hw_device cuda=cuda -filter_hw_device cuda -i input.mp4 \
   -vf "format=rgb24,hwupload,dnn_processing=dnn_backend=torch:model=my_model.pt,hwdownload,format=rgb0" \
+  -y output.mp4
+@end example
+
+@item
+Run a single-channel (luma-only) super-resolution model on D3D12
+hardware frames with the ONNX Runtime backend, keeping frames in VRAM
+from decode through inference (Windows only, requires a build with
+Direct3D 12 support and @code{--enable-libonnxruntime} against a
+DirectML-capable ONNX Runtime). The D3D12 output frames are encoded
+directly by a D3D12 hardware encoder:
+@example
+./ffmpeg -hwaccel d3d12va -hwaccel_output_format d3d12 -i input.mp4 \
+  -vf dnn_processing=dnn_backend=onnx:model=sr_model.onnx:device=dml \
+  -c:v h264_d3d12va -bf 0 -y output.mp4
+@end example
+
+@item
+Same as above, but download the result to software frames after
+inference so that a software encoder can be used:
+@example
+./ffmpeg -hwaccel d3d12va -hwaccel_output_format d3d12 -i input.mp4 \
+  -vf dnn_processing=dnn_backend=onnx:model=sr_model.onnx:device=dml,hwdownload,format=nv12 \
   -y output.mp4
 @end example
 

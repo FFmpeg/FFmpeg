@@ -57,6 +57,7 @@ int ff_dnn_set_detect_post_proc(DnnContext *ctx, DetectPostProc post_proc);
 int ff_dnn_set_classify_post_proc(DnnContext *ctx, ClassifyPostProc post_proc);
 int ff_dnn_get_input(DnnContext *ctx, DNNData *input);
 int ff_dnn_get_output(DnnContext *ctx, int input_width, int input_height, int *output_width, int *output_height);
+int ff_dnn_set_hw_frames_ctx(DnnContext *ctx, AVBufferRef *hw_frames_ctx);
 int ff_dnn_execute_model(DnnContext *ctx, AVFrame *in_frame, AVFrame *out_frame);
 int ff_dnn_execute_model_classification(DnnContext *ctx, AVFrame *in_frame, AVFrame *out_frame, const char *target);
 DNNAsyncStatusType ff_dnn_get_result(DnnContext *ctx, AVFrame **in_frame, AVFrame **out_frame);
@@ -64,6 +65,9 @@ int ff_dnn_flush(DnnContext *ctx);
 void ff_dnn_uninit(DnnContext *ctx);
 #if CONFIG_CUDA
 int ff_dnn_zero_copy_supported_cuda(DnnContext *ctx, const AVFilterLink *inlink);
+#endif
+#if CONFIG_DNN_ONNX_D3D12
+int ff_dnn_zero_copy_supported_d3d12(DnnContext *ctx, const AVFilterLink *inlink);
 #endif
 
 #endif

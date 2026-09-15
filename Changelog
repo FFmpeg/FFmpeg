@@ -21,6 +21,7 @@ version <next>:
 - jpegapp bitstream filter
 - Infinity IMM6 video decoder
 - Remove the asf_o demuxer
+- D3D12 DirectML zero-copy inference for the ONNX Runtime DNN backend
 
 
 version 9.0:

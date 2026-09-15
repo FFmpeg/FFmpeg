@@ -22,6 +22,7 @@
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/hwcontext.h"
+#include "libavutil/pixdesc.h"
 
 #define MAX_SUPPORTED_OUTPUTS_NB 4
 
@@ -189,6 +190,17 @@ int ff_dnn_get_output(DnnContext *ctx, int input_width, int input_height, int *o
                                   (const char *)output_name, output_width, output_height);
 }
 
+int ff_dnn_set_hw_frames_ctx(DnnContext *ctx, AVBufferRef *hw_frames_ctx)
+{
+    av_buffer_unref(&ctx->hw_frames_ctx);
+    if (hw_frames_ctx) {
+        ctx->hw_frames_ctx = av_buffer_ref(hw_frames_ctx);
+        if (!ctx->hw_frames_ctx)
+            return AVERROR(ENOMEM);
+    }
+    return 0;
+}
+
 int ff_dnn_execute_model(DnnContext *ctx, AVFrame *in_frame, AVFrame *out_frame)
 {
     DNNExecBaseParams exec_params = {
@@ -239,6 +251,7 @@ void ff_dnn_uninit(DnnContext *ctx)
 
         av_freep(&ctx->model_outputnames);
     }
+    av_buffer_unref(&ctx->hw_frames_ctx);
 }
 
 #if CONFIG_CUDA
@@ -278,6 +291,54 @@ int ff_dnn_zero_copy_supported_cuda(DnnContext *ctx, const AVFilterLink *inlink)
     }
 
     av_buffer_unref(&hw_frames_ref);
+    return 0;
+}
+#endif
+
+#if CONFIG_DNN_ONNX_D3D12
+int ff_dnn_zero_copy_supported_d3d12(DnnContext *ctx, const AVFilterLink *inlink)
+{
+    AVBufferRef *hw_frames_ref;
+    AVHWFramesContext *hw_frames_ctx;
+
+    if (ctx->backend_type != DNN_ONNX) {
+        av_log(inlink->dst, AV_LOG_ERROR,
+               "D3D12 zero-copy requires the ONNX Runtime backend (dnn_backend=onnx).\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (ctx->batch_size > 1) {
+        av_log(inlink->dst, AV_LOG_ERROR, "D3D12 zero-copy currently does not support batching.\n");
+        return AVERROR(EINVAL);
+    }
+
+    hw_frames_ref = avfilter_link_get_hw_frames_ctx((AVFilterLink *)inlink);
+    if (!hw_frames_ref) {
+        av_log(inlink->dst, AV_LOG_ERROR, "D3D12 input has no hw_frames_ctx.\n");
+        return AVERROR(EINVAL);
+    }
+    hw_frames_ctx = (AVHWFramesContext *)hw_frames_ref->data;
+
+    if (hw_frames_ctx->sw_format != AV_PIX_FMT_NV12) {
+        av_log(inlink->dst, AV_LOG_ERROR,
+               "D3D12 zero-copy currently only supports NV12 hardware frames, got %s.\n",
+               av_get_pix_fmt_name(hw_frames_ctx->sw_format));
+        av_buffer_unref(&hw_frames_ref);
+        return AVERROR(EINVAL);
+    }
+
+    av_buffer_unref(&hw_frames_ref);
+
+    if (!ctx->zero_copy_negotiated) {
+        av_log(inlink->dst, AV_LOG_ERROR,
+               "D3D12 zero-copy was not negotiated by the ONNX Runtime backend. "
+               "Check that device=dml is set, that this build's ONNX Runtime "
+               "provides a working DirectML execution provider, and that "
+               "DirectML.dll and d3dcompiler_47.dll are available in the "
+               "application directory or System32.\n");
+        return AVERROR(ENOSYS);
+    }
+
     return 0;
 }
 #endif
