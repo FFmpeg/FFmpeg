@@ -594,6 +594,11 @@ static int decode_cell(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
     const vqEntry *delta[2];
     const uint8_t *data_start = data_ptr;
 
+    if (data_ptr >= last_ptr) {
+        av_log(avctx, AV_LOG_ERROR, "attempt to read past end of buffer\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     /* get coding mode and VQ table index from the VQ descriptor byte */
     code     = *data_ptr++;
     mode     = code >> 4;
