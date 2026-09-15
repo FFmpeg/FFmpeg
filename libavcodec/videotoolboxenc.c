@@ -2697,8 +2697,8 @@ pe_cleanup:
     vtctx->frame_ct_out = 0;
 
     av_assert0(status != 0 || (avctx->extradata && avctx->extradata_size > 0));
-    if (!status)
-        vtenc_free_buf_node(node);
+    // NULL once ownership passed to VideoToolbox, so a set node must be freed.
+    vtenc_free_buf_node(node);
 
     return status;
 }
