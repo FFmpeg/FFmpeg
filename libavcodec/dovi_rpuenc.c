@@ -738,7 +738,7 @@ int ff_dovi_rpu_generate(DOVIContext *s, const AVDOVIMetadata *metadata,
 
     dm_compression = 0;
     if (dv_md_compression != AV_DOVI_COMPRESSION_NONE) {
-        if (!cmp_dm_level0(s->dm, color) && try_reuse_ext(s->ext_blocks, metadata))
+        if (s->dm && !cmp_dm_level0(s->dm, color) && try_reuse_ext(s->ext_blocks, metadata))
             dm_compression = 1;
     }
 
