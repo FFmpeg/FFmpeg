@@ -162,6 +162,11 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *pic,
         }
     }
 
+    if (stride > 0 && stride < v210_stride(avctx->width, 6)) {
+        av_log(avctx, AV_LOG_ERROR, "custom_stride %d is smaller than one row\n", stride);
+        return AVERROR_INVALIDDATA;
+    }
+
     if (stride == 0 && ((avctx->width & 1) || (int64_t)avctx->width * avctx->height > INT_MAX / 6)) {
         av_log(avctx, AV_LOG_ERROR, "Strideless v210 is not supported for size %dx%d\n", avctx->width, avctx->height);
         return AVERROR_INVALIDDATA;
