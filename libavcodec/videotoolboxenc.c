@@ -756,6 +756,7 @@ static void vtenc_output_callback(
     }
 
     if (!sample_buffer) {
+        vtenc_free_buf_node(info);
         return;
     }
 
