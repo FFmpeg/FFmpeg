@@ -105,6 +105,41 @@ top-field-first is assumed
 
 @end table
 
+@section libastcenc
+
+ARM ASTC Encoder wrapper for decoding ASTC textures.
+
+This decoder requires the Arm ASTC Encoder (astc-encoder) library version
+5.4 or newer, installed as @code{astcenc/astcenc.h} next to a library that
+@code{-lastcenc} finds. Pass @code{--enable-version3} together with
+@code{--enable-libastcenc} to configure.
+
+The @file{.astc} header does not record the intended decoding profile.
+Individual blocks identify their endpoint encodings, but this does not
+establish the sRGB versus linear interpretation. The decoder therefore uses
+the container metadata or @option{dec_profile}: a KTX sRGB texture is decoded
+as @code{ldr-srgb}, while a KTX texture in the linear format is sampled with
+HDR precision (@code{hdr-ldr-a}, half-float output) because the linear GL
+internal format says nothing about LDR. A raw @code{.astc} file carries no
+profile at all, so it falls back to @code{ldr-srgb}; use @option{dec_profile}
+for a raw HDR image:
+
+@example
+ffmpeg -dec_profile hdr-ldr-a -i input.astc output.png
+@end example
+
+@subsection Options
+@table @option
+@item dec_profile @var{int}
+Color profile to decode with, overriding the container metadata. It must
+match the profile the texture was encoded with: @code{astcenc} substitutes
+a fixed magenta error color for blocks whose endpoints do not fit the
+selected profile. The values are @code{ldr}, @code{ldr-srgb},
+@code{hdr-ldr-a} and @code{hdr}. Without this option the profile published
+by the container is used; a raw @file{.astc} stream, which publishes none,
+falls back to @code{ldr-srgb}.
+@end table
+
 @section libdav1d
 
 dav1d AV1 decoder.
@@ -297,41 +332,6 @@ The lavc FLAC encoder used to produce buggy streams with high lpc values
 (like the default value). This option makes it possible to decode such streams
 correctly by using lavc's old buggy lpc logic for decoding.
 
-@end table
-
-@section libastcenc
-
-ARM ASTC Encoder wrapper for decoding ASTC textures.
-
-This decoder requires the Arm ASTC Encoder (astc-encoder) library version
-5.4 or newer, installed as @code{astcenc/astcenc.h} next to a library that
-@code{-lastcenc} finds. Pass @code{--enable-version3} together with
-@code{--enable-libastcenc} to configure.
-
-The @file{.astc} header does not record the intended decoding profile.
-Individual blocks identify their endpoint encodings, but this does not
-establish the sRGB versus linear interpretation. The decoder therefore uses
-the container metadata or @option{dec_profile}: a KTX sRGB texture is decoded
-as @code{ldr-srgb}, while a KTX texture in the linear format is sampled with
-HDR precision (@code{hdr-ldr-a}, half-float output) because the linear GL
-internal format says nothing about LDR. A raw @code{.astc} file carries no
-profile at all, so it falls back to @code{ldr-srgb}; use @option{dec_profile}
-for a raw HDR image:
-
-@example
-ffmpeg -dec_profile hdr-ldr-a -i input.astc output.png
-@end example
-
-@subsection Options
-@table @option
-@item dec_profile @var{int}
-Color profile to decode with, overriding the container metadata. It must
-match the profile the texture was encoded with: @code{astcenc} substitutes
-a fixed magenta error color for blocks whose endpoints do not fit the
-selected profile. The values are @code{ldr}, @code{ldr-srgb},
-@code{hdr-ldr-a} and @code{hdr}. Without this option the profile published
-by the container is used; a raw @file{.astc} stream, which publishes none,
-falls back to @code{ldr-srgb}.
 @end table
 
 @section ffwavesynth
