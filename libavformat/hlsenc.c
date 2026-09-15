@@ -2725,6 +2725,8 @@ static void hls_deinit(AVFormatContext *s)
         av_freep(&vs->vtt_m3u8_name);
 
         avformat_free_context(vs->vtt_avf);
+        if (vs->avf)
+            ffio_free_dyn_buf(&vs->avf->pb);
         avformat_free_context(vs->avf);
         if (hls->resend_init_file)
             av_freep(&vs->init_buffer);
