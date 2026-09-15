@@ -227,10 +227,11 @@ static void free_buffers(CFHDContext *s)
             s->plane[i].l_h[j] = NULL;
 
         for (int j = 0; j < DWT_LEVELS_3D; j++)
-            p->band[j][0].read_ok =
-            p->band[j][1].read_ok =
-            p->band[j][2].read_ok =
-            p->band[j][3].read_ok = 0;
+            for (unsigned k = 0; k < FF_ARRAY_ELEMS(p->band[j]); k++) {
+                p->band[j][k].a_width  = 0;
+                p->band[j][k].a_height = 0;
+                p->band[j][k].read_ok  = 0;
+            }
     }
     s->a_height = 0;
     s->a_width  = 0;
