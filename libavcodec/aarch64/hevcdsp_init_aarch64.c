@@ -338,6 +338,11 @@ av_cold void ff_hevc_dsp_init_aarch64(HEVCDSPContext *c, const int bit_depth)
         c->idct_dc[2]                  = ff_hevc_idct_16x16_dc_10_neon;
         c->idct_dc[3]                  = ff_hevc_idct_32x32_dc_10_neon;
         c->dequant                     = hevc_dequant_10_neon;
+        c->sao_edge_filter[0]          = ff_hevc_sao_edge_filter_8x8_10_neon;
+        c->sao_edge_filter[1]          =
+        c->sao_edge_filter[2]          =
+        c->sao_edge_filter[3]          =
+        c->sao_edge_filter[4]          = ff_hevc_sao_edge_filter_16x16_10_neon;
     }
     if (bit_depth == 12) {
         c->hevc_h_loop_filter_luma     = ff_hevc_h_loop_filter_luma_12_neon;
@@ -353,5 +358,10 @@ av_cold void ff_hevc_dsp_init_aarch64(HEVCDSPContext *c, const int bit_depth)
         c->idct_dc[2]                  = ff_hevc_idct_16x16_dc_12_neon;
         c->idct_dc[3]                  = ff_hevc_idct_32x32_dc_12_neon;
         c->dequant                     = hevc_dequant_12_neon;
+        c->sao_edge_filter[0]          = ff_hevc_sao_edge_filter_8x8_12_neon;
+        c->sao_edge_filter[1]          =
+        c->sao_edge_filter[2]          =
+        c->sao_edge_filter[3]          =
+        c->sao_edge_filter[4]          = ff_hevc_sao_edge_filter_16x16_12_neon;
     }
 }

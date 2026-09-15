@@ -100,11 +100,17 @@ function ff_h26x_sao_band_filter_16x16_8_neon, export=1
         ret
 endfunc
 
-.Lhevc_sao_edge_pos:
+.Lhevc_sao_edge_pos_8:
 .word 1 // horizontal
 .word HEVC_SAO_STRIDE // vertical
 .word HEVC_SAO_STRIDE + 1 // 135 degree
 .word HEVC_SAO_STRIDE - 1 // 45 degree
+
+.Lhevc_sao_edge_pos_16bit:
+.word 2 // horizontal
+.word HEVC_SAO_STRIDE // vertical
+.word HEVC_SAO_STRIDE + 2 // 135 degree
+.word HEVC_SAO_STRIDE - 2 // 45 degree
 
 .Lvvc_sao_edge_pos:
 .word 1 // horizontal
@@ -121,7 +127,7 @@ endfunc
 // ff_hevc_sao_edge_filter_16x16_8_neon(char *dst, char *src, ptrdiff stride_dst,
 //                                      int16 *sao_offset_val, int eo, int width, int height)
 function ff_hevc_sao_edge_filter_16x16_8_neon, export=1
-        adr             x7, .Lhevc_sao_edge_pos
+        adr             x7, .Lhevc_sao_edge_pos_8
         mov             x15, #HEVC_SAO_STRIDE
 1:
         ld1             {v3.8h}, [x3]              // load sao_offset_val
@@ -179,6 +185,84 @@ function ff_hevc_sao_edge_filter_16x16_8_neon, export=1
         ret
 endfunc
 
+/* Permutes the low byte of sao_offset_val into the byte table v28 by
+ * edge_idx = { 1, 2, 0, 3, 4 }.
+ * v29: bias 2
+ * v30: 0 for clip lower bound
+ * v31: clip higher bound, not set by this macro
+ */
+.macro  sao_edge_offsets_init
+        ld1             {v6.8h}, [x3]
+        mov             x11, #0x0402
+        movi            v29.8b, #2
+        movk            x11, #0x0600, lsl #16
+        movi            v30.8h, #0
+        movk            x11, #0x0008, lsl #32      // 0x0000000806000402
+        fmov            d7, x11
+        tbl             v28.8b, {v6.16b}, v7.8b
+.endm
+
+/* Filters one 8-pixel chunk
+ * v0: cur, and hold clipped result
+ * v1: a
+ * v2: b
+ */
+.macro  sao_edge_filter8
+        cmhi            v16.8h, v1.8h, v0.8h
+        cmhi            v17.8h, v0.8h, v1.8h
+        cmhi            v18.8h, v2.8h, v0.8h
+        cmhi            v19.8h, v0.8h, v2.8h
+        add             v20.8h, v16.8h, v18.8h
+        add             v21.8h, v17.8h, v19.8h
+        sub             v20.8h, v20.8h, v21.8h      // CMP(cur, a) + CMP(cur, b)
+        xtn             v20.8b, v20.8h
+        add             v20.8b, v20.8b, v29.8b      // offset table index
+        tbl             v16.8b, {v28.16b}, v20.8b
+        saddw           v0.8h, v0.8h, v16.8b
+        smax            v0.8h, v0.8h, v30.8h
+        smin            v0.8h, v0.8h, v31.8h
+.endm
+
+// ff_hevc_sao_edge_filter_16x16_12_neon(char *dst, char *src, ptrdiff stride_dst,
+//                                       int16 *sao_offset_val, int eo, int width, int height)
+function ff_hevc_sao_edge_filter_16x16_12_neon, export=1
+        mvni            v31.8h, #0xf0, lsl #8       // 4095
+        b               .Lhevc_sao_edge_16bit
+endfunc
+
+// ff_hevc_sao_edge_filter_16x16_10_neon(char *dst, char *src, ptrdiff stride_dst,
+//                                       int16 *sao_offset_val, int eo, int width, int height)
+function ff_hevc_sao_edge_filter_16x16_10_neon, export=1
+        mvni            v31.8h, #0xfc, lsl #8       // 1023
+.Lhevc_sao_edge_16bit:
+        adr             x7, .Lhevc_sao_edge_pos_16bit
+        mov             x15, #HEVC_SAO_STRIDE
+        add             w5, w5, #7
+        ldr             w4, [x7, w4, uxtw #2]       // a/b offsets in bytes
+        bic             w5, w5, #7
+        sao_edge_offsets_init
+        lsl             w5, w5, #1                  // width in bytes, multiple of 16
+        sub             x15, x15, x5                // src step to the next line
+        sub             x16, x2, x5                 // dst step to the next line
+1:
+        lsr             x14, x5, #4                 // 8-pixel groups
+        sub             x12, x1, x4
+        add             x13, x1, x4
+2:
+        ldr             q0, [x1], #16
+        ldr             q1, [x12], #16
+        ldr             q2, [x13], #16
+        subs            x14, x14, #1
+        sao_edge_filter8
+        str             q0, [x0], #16
+        b.ne            2b
+        subs            w6, w6, #1
+        add             x1, x1, x15
+        add             x0, x0, x16
+        b.ne            1b
+        ret
+endfunc
+
 function ff_vvc_sao_edge_filter_8x8_8_neon, export=1
         adr             x7, .Lvvc_sao_edge_pos
         mov             x15, #VVC_SAO_STRIDE
@@ -188,7 +272,7 @@ endfunc
 // ff_hevc_sao_edge_filter_8x8_8_neon(char *dst, char *src, ptrdiff stride_dst,
 //                                    int16 *sao_offset_val, int eo, int width, int height)
 function ff_hevc_sao_edge_filter_8x8_8_neon, export=1
-        adr             x7, .Lhevc_sao_edge_pos
+        adr             x7, .Lhevc_sao_edge_pos_8
         mov             x15, #HEVC_SAO_STRIDE
 1:
         ldr             w4, [x7, w4, uxtw #2]
@@ -232,6 +316,35 @@ function ff_hevc_sao_edge_filter_8x8_8_neon, export=1
         sqxtun          v7.8b, v21.8h
         st1             {v6.8b}, [ x0], x2
         st1             {v7.8b}, [x16], x2
+        b.ne            1b
+        ret
+endfunc
+
+// ff_hevc_sao_edge_filter_8x8_12_neon(char *dst, char *src, ptrdiff stride_dst,
+//                                     int16 *sao_offset_val, int eo, int width, int height)
+function ff_hevc_sao_edge_filter_8x8_12_neon, export=1
+        mvni            v31.8h, #0xf0, lsl #8     // 4095
+        b               .Lhevc_sao_edge_8x8_16bit
+endfunc
+
+// ff_hevc_sao_edge_filter_8x8_10_neon(char *dst, char *src, ptrdiff stride_dst,
+//                                     int16 *sao_offset_val, int eo, int width, int height)
+function ff_hevc_sao_edge_filter_8x8_10_neon, export=1
+        mvni            v31.8h, #0xfc, lsl #8     // 1023
+.Lhevc_sao_edge_8x8_16bit:
+        adr             x7, .Lhevc_sao_edge_pos_16bit
+        mov             x15, #HEVC_SAO_STRIDE
+        ldr             w4, [x7, w4, uxtw #2]      // a/b offsets in bytes
+        sao_edge_offsets_init
+        sub             x9,  x1, x4                // a neighbours
+        add             x10, x1, x4                // b neighbours
+1:
+        ld1             {v0.8h}, [x1], x15
+        ld1             {v1.8h}, [x9], x15
+        ld1             {v2.8h}, [x10], x15
+        subs            w6, w6, #1
+        sao_edge_filter8
+        st1             {v0.8h}, [x0], x2
         b.ne            1b
         ret
 endfunc

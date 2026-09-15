@@ -32,15 +32,21 @@ void ff_h26x_sao_band_filter_16x16_8_neon(uint8_t *_dst, const uint8_t *_src,
                                         ptrdiff_t stride_dst, ptrdiff_t stride_src,
                                         const int16_t *sao_offset_val, int sao_left_class,
                                         int width, int height);
-void ff_hevc_sao_edge_filter_16x16_8_neon(uint8_t *dst, const uint8_t *src, ptrdiff_t stride_dst,
-                                          const int16_t *sao_offset_val, int eo, int width, int height);
-void ff_hevc_sao_edge_filter_8x8_8_neon(uint8_t *dst, const uint8_t *src, ptrdiff_t stride_dst,
-                                        const int16_t *sao_offset_val, int eo, int width, int height);
+#define SAO_EDGE_FILTER_PROTO(codec, size, depth)                          \
+    void ff_##codec##_sao_edge_filter_##size##_##depth##_neon(             \
+        uint8_t *dst, const uint8_t *src, ptrdiff_t stride_dst,            \
+        const int16_t *sao_offset_val, int eo, int width, int height)
 
-void ff_vvc_sao_edge_filter_16x16_8_neon(uint8_t *dst, const uint8_t *src, ptrdiff_t stride_dst,
-                                         const int16_t *sao_offset_val, int eo, int width, int height);
-void ff_vvc_sao_edge_filter_8x8_8_neon(uint8_t *dst, const uint8_t *src, ptrdiff_t stride_dst,
-                                       const int16_t *sao_offset_val, int eo, int width, int height);
+SAO_EDGE_FILTER_PROTO(hevc, 16x16, 8);
+SAO_EDGE_FILTER_PROTO(hevc, 8x8,   8);
+SAO_EDGE_FILTER_PROTO(hevc, 16x16, 10);
+SAO_EDGE_FILTER_PROTO(hevc, 8x8,   10);
+SAO_EDGE_FILTER_PROTO(hevc, 16x16, 12);
+SAO_EDGE_FILTER_PROTO(hevc, 8x8,   12);
+SAO_EDGE_FILTER_PROTO(vvc,  16x16, 8);
+SAO_EDGE_FILTER_PROTO(vvc,  8x8,   8);
+
+#undef SAO_EDGE_FILTER_PROTO
 
 #define NEON8_FNPROTO_PARTIAL_6(fn, args, ext) \
     void ff_hevc_put_hevc_##fn##_h4_8_neon##ext args;  \
