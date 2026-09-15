@@ -537,7 +537,9 @@ fragment at every frame
 start a new fragment at each video keyframe
 
 @item global_sidx
-write a global sidx index at the start of the file
+write a global sidx index at the start of the file. For fragmented output
+that would otherwise use absolute fragment offsets, this enables
+@samp{default_base_moof}.
 
 @item isml
 create a live smooth streaming feed (for pushing to a publishing point)

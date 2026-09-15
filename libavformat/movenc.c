@@ -8414,6 +8414,17 @@ static int mov_init(AVFormatContext *s)
         mov->flags |= FF_MOV_FLAG_FRAGMENT | FF_MOV_FLAG_EMPTY_MOOV |
                       FF_MOV_FLAG_DEFAULT_BASE_MOOF | FF_MOV_FLAG_NEGATIVE_CTS_OFFSETS;
 
+    /* global_sidx is inserted in a second pass, shifting all fragments. Use
+     * moof-relative addressing so that tfhd offsets remain valid after that
+     * shift, unless absolute offsets are already avoided (omit_tfhd_offset,
+     * ISMV) or no sidx is inserted (hybrid_fragmented). */
+    if (mov->flags & FF_MOV_FLAG_GLOBAL_SIDX &&
+        mov->flags & FF_MOV_FLAG_FRAGMENT &&
+        !(mov->flags & (FF_MOV_FLAG_OMIT_TFHD_OFFSET |
+                        FF_MOV_FLAG_HYBRID_FRAGMENTED)) &&
+        mov->mode != MODE_ISM)
+        mov->flags |= FF_MOV_FLAG_DEFAULT_BASE_MOOF;
+
     if (mov->flags & FF_MOV_FLAG_EMPTY_MOOV && s->flags & AVFMT_FLAG_AUTO_BSF) {
         av_log(s, AV_LOG_VERBOSE, "Empty MOOV enabled; disabling automatic bitstream filtering\n");
         s->flags &= ~AVFMT_FLAG_AUTO_BSF;

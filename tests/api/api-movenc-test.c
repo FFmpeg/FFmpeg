@@ -51,6 +51,7 @@ static uint8_t iobuf[32768];
 static AVDictionary *opts;
 
 static int write_file;
+static const char *out_path;
 static const char *cur_name;
 static FILE* out;
 static int out_size;
@@ -181,16 +182,18 @@ static void init_fps(int bf, int audio_preroll, int fps, int id3)
 {
     AVStream *st;
     int iobuf_size = force_iobuf_size ? force_iobuf_size : sizeof(iobuf);
-    ctx = avformat_alloc_context();
-    if (!ctx)
+    if (avformat_alloc_output_context2(&ctx, NULL, format, out_path) < 0)
         exit(1);
-    ctx->oformat = av_guess_format(format, NULL, NULL);
-    if (!ctx->oformat)
-        exit(1);
-    ctx->pb = avio_alloc_context(iobuf, iobuf_size, 1, NULL, NULL, io_write, NULL);
-    if (!ctx->pb)
-        exit(1);
-    ctx->pb->write_data_type = io_write_data_type;
+    if (out_path) {
+        // A real file, as global_sidx seeks and reopens the output
+        if (avio_open(&ctx->pb, out_path, AVIO_FLAG_WRITE) < 0)
+            exit(1);
+    } else {
+        ctx->pb = avio_alloc_context(iobuf, iobuf_size, 1, NULL, NULL, io_write, NULL);
+        if (!ctx->pb)
+            exit(1);
+        ctx->pb->write_data_type = io_write_data_type;
+    }
     ctx->flags |= AVFMT_FLAG_BITEXACT;
 
     st = avformat_new_stream(ctx, NULL);
@@ -373,16 +376,44 @@ static void signal_init_ts(void)
 
 static void finish(void)
 {
-    av_write_trailer(ctx);
-    avio_context_free(&ctx->pb);
+    check(av_write_trailer(ctx) >= 0, "Failed to write trailer");
+    if (out_path)
+        avio_closep(&ctx->pb);
+    else
+        avio_context_free(&ctx->pb);
     avformat_free_context(ctx);
     ctx = NULL;
 }
 
+// Inserting a global sidx shifts all fragments; check that every packet
+// still reads back the payload mux_frames() wrote, its pts.
+static void test_global_sidx(const char *movflags)
+{
+    AVFormatContext *ic = NULL;
+    int ret, count = 0, wrong = 0;
+
+    av_dict_set(&opts, "movflags", movflags, 0);
+    av_dict_set(&opts, "use_editlist", "0", 0);
+    init(0, 0);
+    mux_gops(2);
+    finish();
+
+    ret = avformat_open_input(&ic, out_path, NULL, NULL);
+    while (ret >= 0 && (ret = av_read_frame(ic, pkt)) >= 0) {
+        wrong += pkt->size != 8 || AV_RB32(pkt->data + 4) != pkt->pts;
+        count++;
+        av_packet_unref(pkt);
+    }
+    printf("%s: %d packets, %d wrong, eof=%d\n",
+           movflags, count, wrong, ret == AVERROR_EOF);
+    avformat_close_input(&ic);
+}
+
 static void help(void)
 {
-    printf("movenc-test [-w]\n"
-           "-w          write output into files\n");
+    printf("movenc-test [-w] [-s file]\n"
+           "-w          write output into files\n"
+           "-s file     check global_sidx output written to file\n");
 }
 
 int main(int argc, char **argv)
@@ -394,10 +425,13 @@ int main(int argc, char **argv)
     int prev_pos;
 
     for (;;) {
-        c = getopt(argc, argv, "wh");
+        c = getopt(argc, argv, "ws:h");
         if (c == -1)
             break;
         switch (c) {
+        case 's':
+            out_path = optarg;
+            break;
         case 'w':
             write_file = 1;
             break;
@@ -415,6 +449,12 @@ int main(int argc, char **argv)
     if (!pkt) {
         av_free(md5);
         return 1;
+    }
+
+    if (out_path) {
+        test_global_sidx("frag_keyframe+empty_moov+global_sidx");
+        test_global_sidx("frag_keyframe+delay_moov+global_sidx");
+        goto end;
     }
 
     // Write a fragmented file with an initial moov and no samples.
@@ -843,6 +883,7 @@ int main(int argc, char **argv)
     finish();
     close_out();
 
+end:
     av_free(md5);
     av_packet_free(&pkt);
 

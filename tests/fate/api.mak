@@ -54,6 +54,10 @@ FATE_API_LIBAVFORMAT-$(call ALLYES, MP4_MUXER ISMV_MUXER) += fate-api-movenc
 fate-api-movenc: $(APITESTSDIR)/api-movenc-test$(EXESUF)
 fate-api-movenc: CMD = run $(APITESTSDIR)/api-movenc-test$(EXESUF)
 
+FATE_API_LIBAVFORMAT-$(call ALLYES, MP4_MUXER MOV_DEMUXER FILE_PROTOCOL) += fate-api-movenc-global-sidx
+fate-api-movenc-global-sidx: $(APITESTSDIR)/api-movenc-test$(EXESUF)
+fate-api-movenc-global-sidx: CMD = run $(APITESTSDIR)/api-movenc-test$(EXESUF) -s $(TARGET_PATH)/tests/data/fate/api-movenc-global-sidx.mp4
+
 FATE_API-$(HAVE_THREADS) += fate-api-threadmessage
 fate-api-threadmessage: $(APITESTSDIR)/api-threadmessage-test$(EXESUF)
 fate-api-threadmessage: CMD = run $(APITESTSDIR)/api-threadmessage-test$(EXESUF) 3 10 30 50 2 20 40
