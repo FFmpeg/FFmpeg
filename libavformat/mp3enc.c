@@ -127,6 +127,8 @@ typedef struct MP3Context {
     int initial_bitrate;
     int has_variable_bitrate;
     MPADecodeHeader2 *hdr;
+    MPADecodeHeader2 *xing_header;
+    MPADecodeHeader2 *first_frame;
     int delay;
     int64_t padding;
 
@@ -209,13 +211,13 @@ static int mp3_write_xing(AVFormatContext *s)
             return 0;
         header |= mask;
 
-        ret = avpriv_mpegaudio_decode_header2(&mp3->hdr, header);
+        ret = avpriv_mpegaudio_decode_header2(&mp3->xing_header, header);
         if (ret < 0)
             return ret;
-        mp3->xing_offset = xing_offtbl[mp3->hdr->lsf == 1][mp3->hdr->nb_channels == 1] + 4;
+        mp3->xing_offset = xing_offtbl[mp3->xing_header->lsf == 1][mp3->xing_header->nb_channels == 1] + 4;
         bytes_needed     = mp3->xing_offset + XING_SIZE;
 
-        if (bytes_needed <= mp3->hdr->frame_size)
+        if (bytes_needed <= mp3->xing_header->frame_size)
             break;
 
         header &= ~mask;
@@ -231,7 +233,7 @@ static int mp3_write_xing(AVFormatContext *s)
     ffio_wfourcc(dyn_ctx, "Xing");
     avio_wb32(dyn_ctx, 0x01 | 0x02 | 0x04 | 0x08);  // frames / size / TOC / vbr scale
 
-    mp3->size = mp3->hdr->frame_size;
+    mp3->size = mp3->xing_header->frame_size;
     mp3->want=1;
     mp3->seen=0;
     mp3->pos=0;
@@ -276,7 +278,7 @@ static int mp3_write_xing(AVFormatContext *s)
     avio_wb16(dyn_ctx, 0); // music crc
     avio_wb16(dyn_ctx, 0); // tag crc
 
-    ffio_fill(dyn_ctx, 0, mp3->hdr->frame_size - bytes_needed);
+    ffio_fill(dyn_ctx, 0, mp3->xing_header->frame_size - bytes_needed);
 
     mp3->xing_frame_size   = avio_close_dyn_buf(dyn_ctx, &mp3->xing_frame);
     mp3->xing_frame_offset = avio_tell(s->pb);
@@ -332,6 +334,23 @@ static int mp3_write_audio_packet(AVFormatContext *s, AVPacket *pkt)
                 mp3->initial_bitrate = mp3->hdr->bit_rate;
             if ((mp3->hdr->bit_rate == 0) || (mp3->initial_bitrate != mp3->hdr->bit_rate))
                 mp3->has_variable_bitrate = 1;
+            if (mp3->xing_offset && !mp3->first_frame) {
+                const MPADecodeHeader2 *xing = mp3->xing_header;
+
+                if (mp3->hdr->layer       != xing->layer       ||
+                    mp3->hdr->sample_rate != xing->sample_rate ||
+                    mp3->hdr->nb_channels != xing->nb_channels) {
+                    av_log(s, AV_LOG_ERROR, "First audio frame (layer %d, %d Hz, %d channels) "
+                           "does not match the stream (layer %d, %d Hz, %d channels).\n",
+                           mp3->hdr->layer, mp3->hdr->sample_rate, mp3->hdr->nb_channels,
+                           xing->layer, xing->sample_rate, xing->nb_channels);
+                    return AVERROR_INVALIDDATA;
+                }
+
+                ret = avpriv_mpegaudio_decode_header2(&mp3->first_frame, h);
+                if (ret < 0)
+                    return ret;
+            }
         } else if (ret == AVERROR(ENOMEM)) {
             return ret;
         } else {
@@ -442,6 +461,15 @@ static void mp3_update_xing(AVFormatContext *s)
     /* replace "Xing" identification string with "Info" for CBR files. */
     if (!mp3->has_variable_bitrate)
         AV_WL32(mp3->xing_frame + mp3->xing_offset, MKTAG('I', 'n', 'f', 'o'));
+
+    if (mp3->first_frame) {
+        MPADecodeHeader2 *header = mp3->first_frame;
+
+        header->error_protection = mp3->xing_header->error_protection;
+        header->bitrate_index    = mp3->xing_header->bitrate_index;
+        header->padding          = mp3->xing_header->padding;
+        AV_WB32(mp3->xing_frame, ff_mpa_encode_header(header));
+    }
 
     AV_WB32(mp3->xing_frame + mp3->xing_offset + 8,  mp3->frames);
     AV_WB32(mp3->xing_frame + mp3->xing_offset + 12, mp3->size);
@@ -694,6 +722,8 @@ static void mp3_deinit(struct AVFormatContext *s)
     ffio_free_dyn_buf(&mp3->id3_pb);
     av_freep(&mp3->xing_frame);
     av_freep(&mp3->hdr);
+    av_freep(&mp3->xing_header);
+    av_freep(&mp3->first_frame);
 }
 
 const FFOutputFormat ff_mp3_muxer = {
