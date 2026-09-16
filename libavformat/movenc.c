@@ -3584,12 +3584,26 @@ static int mov_write_smhd_tag(AVIOContext *pb)
     return 16;
 }
 
-static int mov_write_vmhd_tag(AVIOContext *pb)
+static uint16_t mov_graphics_mode(MOVTrack *track)
+{
+    if (track->mode != MODE_MOV)
+        return 0; /* ISO/IEC 14496-12 doesn't define any other modes */
+
+    switch (track->par->alpha_mode) {
+    default:                         return MOV_GRAPHICS_MODE_COPY;
+    case AVALPHA_MODE_STRAIGHT:      return MOV_GRAPHICS_MODE_STRAIGHT_ALPHA;
+    case AVALPHA_MODE_PREMULTIPLIED: return MOV_GRAPHICS_MODE_PREMUL_BLACK_ALPHA;
+    }
+}
+
+static int mov_write_vmhd_tag(AVIOContext *pb, MOVTrack *track)
 {
     avio_wb32(pb, 0x14); /* size (always 0x14) */
     ffio_wfourcc(pb, "vmhd");
     avio_wb32(pb, 0x01); /* version & flags */
-    avio_wb64(pb, 0); /* reserved (graphics mode = copy) */
+    avio_wb16(pb, mov_graphics_mode(track));
+    for (int i = 0; i < 3; i++)
+        avio_wb16(pb, 0); /* opcolor */
     return 0x14;
 }
 
@@ -3863,7 +3877,7 @@ static int mov_write_minf_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContext
     avio_wb32(pb, 0); /* size */
     ffio_wfourcc(pb, "minf");
     if (track->par->codec_type == AVMEDIA_TYPE_VIDEO)
-        mov_write_vmhd_tag(pb);
+        mov_write_vmhd_tag(pb, track);
     else if (track->par->codec_type == AVMEDIA_TYPE_AUDIO)
         mov_write_smhd_tag(pb);
     else if (track->par->codec_type == AVMEDIA_TYPE_SUBTITLE) {
