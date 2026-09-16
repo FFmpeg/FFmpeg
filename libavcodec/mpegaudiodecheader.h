@@ -28,7 +28,11 @@
 #define AVCODEC_MPEGAUDIODECHEADER_H
 
 #include <stdint.h>
+
+#include "libavutil/attributes.h"
+
 #include "codec_id.h"
+#include "version_major.h"
 
 #define MP3_MASK 0xFFFE0CCF
 
@@ -48,10 +52,49 @@ typedef struct MPADecodeHeader {
   MPA_DECODE_HEADER
 } MPADecodeHeader;
 
+/**
+ * Same as MPADecodeHeader, plus the header fields that carry no decoding
+ * information. Its size is not part of the libavcodec ABI: it is only ever
+ * allocated by avpriv_mpegaudio_decode_header2().
+ */
+typedef struct MPADecodeHeader2 {
+    int frame_size;
+    int error_protection;
+    int layer;
+    int sample_rate;
+    int sample_rate_index; /* between 0 and 8 */
+    int bit_rate;
+    int nb_channels;
+    int mode;
+    int mode_ext;
+    int lsf;
+    int copyright;
+    int original;
+    int emphasis;
+    int bitrate_index;
+    int padding;
+    int private_bit;
+} MPADecodeHeader2;
+
 /* header decoding. MUST check the header before because no
    consistency check is done there. Return 1 if free format found and
    that the frame size must be computed externally */
 int avpriv_mpegaudio_decode_header(MPADecodeHeader *s, uint32_t header);
+
+/**
+ * Decode an MPEG audio header into *phdr, which is allocated if it is NULL.
+ *
+ * The header must have been checked beforehand, as no consistency check is
+ * done here.
+ *
+ * @return 1 if free format was found and the frame size must be computed
+ *         externally, 0 on success, a negative AVERROR code on failure
+ */
+int avpriv_mpegaudio_decode_header2(MPADecodeHeader2 **phdr, uint32_t header);
+
+/* same as avpriv_mpegaudio_decode_header2(), for callers within libavcodec,
+   which are built against this very header and may allocate it themselves */
+int ff_mpegaudio_decode_header(MPADecodeHeader2 *s, uint32_t header);
 
 /* useful helper to get MPEG audio stream info. Return -1 if error in
    header, otherwise the coded frame size in bytes */
@@ -76,6 +119,25 @@ static inline int ff_mpa_check_header(uint32_t header){
     if ((header & (3<<10)) == 3<<10)
         return -1;
     return 0;
+}
+
+static inline uint32_t ff_mpa_encode_header(const MPADecodeHeader2 *s)
+{
+    int version = s->sample_rate_index < 6 ? 3 - s->sample_rate_index / 3 : 0;
+
+    return 0xffeU                   << 20 |
+           version                  << 19 |
+           (4 - s->layer)           << 17 |
+           !s->error_protection     << 16 |
+           s->bitrate_index         << 12 |
+           s->sample_rate_index % 3 << 10 |
+           s->padding               <<  9 |
+           s->private_bit           <<  8 |
+           s->mode                  <<  6 |
+           s->mode_ext              <<  4 |
+           s->copyright             <<  3 |
+           s->original              <<  2 |
+           s->emphasis;
 }
 
 #endif /* AVCODEC_MPEGAUDIODECHEADER_H */

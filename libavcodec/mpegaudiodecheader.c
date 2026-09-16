@@ -24,14 +24,16 @@
  * MPEG Audio header decoder.
  */
 
+#include "libavutil/error.h"
 #include "libavutil/macros.h"
+#include "libavutil/mem.h"
 
 #include "mpegaudio.h"
 #include "mpegaudiodata.h"
 #include "mpegaudiodecheader.h"
 
 
-int avpriv_mpegaudio_decode_header(MPADecodeHeader *s, uint32_t header)
+int ff_mpegaudio_decode_header(MPADecodeHeader2 *s, uint32_t header)
 {
     int sample_rate, frame_size, mpeg25, padding;
     int sample_rate_index, bitrate_index;
@@ -62,12 +64,14 @@ int avpriv_mpegaudio_decode_header(MPADecodeHeader *s, uint32_t header)
 
     bitrate_index = (header >> 12) & 0xf;
     padding = (header >> 9) & 1;
-    //extension = (header >> 8) & 1;
+    s->bitrate_index = bitrate_index;
+    s->padding = padding;
+    s->private_bit = (header >> 8) & 1;
     s->mode = (header >> 6) & 3;
     s->mode_ext = (header >> 4) & 3;
-    //copyright = (header >> 3) & 1;
-    //original = (header >> 2) & 1;
-    //emphasis = header & 3;
+    s->copyright = (header >> 3) & 1;
+    s->original = (header >> 2) & 1;
+    s->emphasis = header & 3;
 
     if (s->mode == MPA_MONO)
         s->nb_channels = 1;
@@ -117,11 +121,57 @@ int avpriv_mpegaudio_decode_header(MPADecodeHeader *s, uint32_t header)
     return 0;
 }
 
+int avpriv_mpegaudio_decode_header2(MPADecodeHeader2 **phdr, uint32_t header)
+{
+    MPADecodeHeader2 *hdr = *phdr;
+    int ret;
+
+    if (!hdr) {
+        ret = ff_mpa_check_header(header);
+        if (ret < 0)
+            return ret;
+        hdr = av_mallocz(sizeof(*hdr));
+        if (!hdr)
+            return AVERROR(ENOMEM);
+    }
+
+    ret = ff_mpegaudio_decode_header(hdr, header);
+    if (ret < 0)
+        return ret;
+
+    *phdr = hdr;
+    return ret;
+}
+
+int avpriv_mpegaudio_decode_header(MPADecodeHeader *s, uint32_t header)
+{
+    MPADecodeHeader2 hdr = { 0 };
+    int ret = ff_mpegaudio_decode_header(&hdr, header);
+
+    if (ret < 0)
+        return ret;
+
+    /* callers in other libraries allocate the smaller structure, so only
+       its fields may be written */
+    s->frame_size        = hdr.frame_size;
+    s->error_protection  = hdr.error_protection;
+    s->layer             = hdr.layer;
+    s->sample_rate       = hdr.sample_rate;
+    s->sample_rate_index = hdr.sample_rate_index;
+    s->bit_rate          = hdr.bit_rate;
+    s->nb_channels       = hdr.nb_channels;
+    s->mode              = hdr.mode;
+    s->mode_ext          = hdr.mode_ext;
+    s->lsf               = hdr.lsf;
+
+    return ret;
+}
+
 int ff_mpa_decode_header(uint32_t head, int *sample_rate, int *channels, int *frame_size, int *bit_rate, enum AVCodecID *codec_id)
 {
-    MPADecodeHeader s1, *s = &s1;
+    MPADecodeHeader2 s1, *s = &s1;
 
-    if (avpriv_mpegaudio_decode_header(s, head) != 0) {
+    if (ff_mpegaudio_decode_header(s, head) != 0) {
         return -1;
     }
 

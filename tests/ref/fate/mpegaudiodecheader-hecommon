@@ -1,0 +1,10 @@
+offset=0 frames=5 header=FFFB9000 layer=3 sample_rate=44100 bit_rate=128000 crc=0 mode=0 mode_ext=0 copyright=0 original=0 emphasis=0 private_bit=0
+offset=2089 frames=1 header=FFFA9200 layer=3 sample_rate=44100 bit_rate=128000 crc=1 mode=0 mode_ext=0 copyright=0 original=0 emphasis=0 private_bit=0
+offset=2507 frames=1 header=FFFA9300 layer=3 sample_rate=44100 bit_rate=128000 crc=1 mode=0 mode_ext=0 copyright=0 original=0 emphasis=0 private_bit=1
+offset=2925 frames=1 header=FFFA9208 layer=3 sample_rate=44100 bit_rate=128000 crc=1 mode=0 mode_ext=0 copyright=1 original=0 emphasis=0 private_bit=0
+offset=3343 frames=1 header=FFFA9204 layer=3 sample_rate=44100 bit_rate=128000 crc=1 mode=0 mode_ext=0 copyright=0 original=1 emphasis=0 private_bit=0
+offset=3761 frames=1 header=FFFA9201 layer=3 sample_rate=44100 bit_rate=128000 crc=1 mode=0 mode_ext=0 copyright=0 original=0 emphasis=1 private_bit=0
+offset=4179 frames=1 header=FFFA9202 layer=3 sample_rate=44100 bit_rate=128000 crc=1 mode=0 mode_ext=0 copyright=0 original=0 emphasis=2 private_bit=0
+offset=4597 frames=1 header=FFFA9203 layer=3 sample_rate=44100 bit_rate=128000 crc=1 mode=0 mode_ext=0 copyright=0 original=0 emphasis=3 private_bit=0
+offset=5015 frames=18 header=FFFA9200 layer=3 sample_rate=44100 bit_rate=128000 crc=1 mode=0 mode_ext=0 copyright=0 original=0 emphasis=0 private_bit=0
+frames=30

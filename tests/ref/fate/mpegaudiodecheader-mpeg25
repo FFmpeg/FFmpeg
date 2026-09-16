@@ -1,0 +1,3 @@
+offset=1062 frames=1 header=FFE338C0 layer=3 sample_rate=8000 bit_rate=24000 crc=0 mode=3 mode_ext=0 copyright=0 original=0 emphasis=0 private_bit=0
+offset=1278 frames=4 header=FFE318C4 layer=3 sample_rate=8000 bit_rate=8000 crc=0 mode=3 mode_ext=0 copyright=0 original=1 emphasis=0 private_bit=0
+frames=5

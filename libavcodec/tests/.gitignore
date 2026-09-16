@@ -18,5 +18,6 @@
 /mathops
 /mjpegenc_huffman
 /mpeg12framerate
+/mpegaudiodecheader
 /rangecoder
 /snowenc

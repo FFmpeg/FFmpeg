@@ -1,0 +1,15 @@
+offset=0 frames=10 header=FFFB18C0 layer=3 sample_rate=32000 bit_rate=32000 crc=0 mode=3 mode_ext=0 copyright=0 original=0 emphasis=0 private_bit=0
+offset=1440 frames=10 header=FFFB28C0 layer=3 sample_rate=32000 bit_rate=40000 crc=0 mode=3 mode_ext=0 copyright=0 original=0 emphasis=0 private_bit=0
+offset=3240 frames=10 header=FFFB38C0 layer=3 sample_rate=32000 bit_rate=48000 crc=0 mode=3 mode_ext=0 copyright=0 original=0 emphasis=0 private_bit=0
+offset=5400 frames=10 header=FFFB48C0 layer=3 sample_rate=32000 bit_rate=56000 crc=0 mode=3 mode_ext=0 copyright=0 original=0 emphasis=0 private_bit=0
+offset=7920 frames=10 header=FFFB58C0 layer=3 sample_rate=32000 bit_rate=64000 crc=0 mode=3 mode_ext=0 copyright=0 original=0 emphasis=0 private_bit=0
+offset=10800 frames=10 header=FFFB68C0 layer=3 sample_rate=32000 bit_rate=80000 crc=0 mode=3 mode_ext=0 copyright=0 original=0 emphasis=0 private_bit=0
+offset=14400 frames=10 header=FFFB78C0 layer=3 sample_rate=32000 bit_rate=96000 crc=0 mode=3 mode_ext=0 copyright=0 original=0 emphasis=0 private_bit=0
+offset=18720 frames=10 header=FFFB88C0 layer=3 sample_rate=32000 bit_rate=112000 crc=0 mode=3 mode_ext=0 copyright=0 original=0 emphasis=0 private_bit=0
+offset=23760 frames=10 header=FFFB98C0 layer=3 sample_rate=32000 bit_rate=128000 crc=0 mode=3 mode_ext=0 copyright=0 original=0 emphasis=0 private_bit=0
+offset=29520 frames=10 header=FFFBA8C0 layer=3 sample_rate=32000 bit_rate=160000 crc=0 mode=3 mode_ext=0 copyright=0 original=0 emphasis=0 private_bit=0
+offset=36720 frames=10 header=FFFBB8C0 layer=3 sample_rate=32000 bit_rate=192000 crc=0 mode=3 mode_ext=0 copyright=0 original=0 emphasis=0 private_bit=0
+offset=45360 frames=10 header=FFFBC8C0 layer=3 sample_rate=32000 bit_rate=224000 crc=0 mode=3 mode_ext=0 copyright=0 original=0 emphasis=0 private_bit=0
+offset=55440 frames=10 header=FFFBD8C0 layer=3 sample_rate=32000 bit_rate=256000 crc=0 mode=3 mode_ext=0 copyright=0 original=0 emphasis=0 private_bit=0
+offset=66960 frames=20 header=FFFBE8C0 layer=3 sample_rate=32000 bit_rate=320000 crc=0 mode=3 mode_ext=0 copyright=0 original=0 emphasis=0 private_bit=0
+frames=150
