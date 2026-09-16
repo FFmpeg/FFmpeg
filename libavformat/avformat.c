@@ -526,7 +526,10 @@ int av_find_best_stream(AVFormatContext *ic, enum AVMediaType type,
         int real_stream_index = program ? program[i] : i;
         AVStream *st          = ic->streams[real_stream_index];
         AVCodecParameters *par = st->codecpar;
+        const AVCodecDescriptor *desc = avcodec_descriptor_get(par->codec_id);
         if (par->codec_type != type)
+            continue;
+        if (desc && (desc->props & AV_CODEC_PROP_ENHANCEMENT))
             continue;
         if (wanted_stream_nb >= 0 && real_stream_index != wanted_stream_nb)
             continue;
