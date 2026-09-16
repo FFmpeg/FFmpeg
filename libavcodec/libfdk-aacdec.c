@@ -65,7 +65,6 @@ typedef struct FDKAACDecContext {
     int output_delay_set;
     int flush_samples;
     int skip_samples;
-    int delay_samples;
     int output_delay;
     int discard_padding;
     int64_t last_pts;
@@ -143,7 +142,6 @@ static int get_stream_info(AVCodecContext *avctx, AVFrame *frame)
     if (!s->output_delay_set && info->outputDelay) {
         // Set this only once.
         s->flush_samples    = info->outputDelay;
-        s->delay_samples    = info->outputDelay;
         s->skip_samples     = info->outputDelay;
         s->output_delay     = info->outputDelay;
         s->last_pts         = AV_NOPTS_VALUE;
@@ -418,7 +416,6 @@ static int fdk_aac_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     AAC_DECODER_ERROR err;
     UINT valid = avpkt->size;
     UINT flags = 0;
-    int input_offset = 0;
 
     if (avpkt->size) {
         err = aacDecoder_Fill(s->handle, &avpkt->data, &avpkt->size, &valid);
@@ -511,35 +508,22 @@ static int fdk_aac_decode_frame(AVCodecContext *avctx, AVFrame *frame,
             AV_WL32(sd->data, skip_samples + s->skip_samples);
             s->skip_samples = 0;
         }
-        if (frame->pts != AV_NOPTS_VALUE && s->output_delay) {
+        if (frame->pts != AV_NOPTS_VALUE && s->output_delay)
             frame->pts = av_sat_sub64(frame->pts,
                                       av_rescale_q(s->output_delay,
                                                    (AVRational){ 1, avctx->sample_rate },
                                                    avctx->time_base));
-            if (frame->pkt_dts != AV_NOPTS_VALUE && s->output_delay)
-                frame->pkt_dts = av_sat_sub64(frame->pkt_dts,
-                                              av_rescale_q(s->output_delay,
-                                                           (AVRational){ 1, avctx->sample_rate },
-                                                           avctx->time_base));
-            s->delay_samples = 0;
-            s->last_pts = frame->pts;
-            s->last_dts = frame->pkt_dts;
-        } else if (s->delay_samples) {
-            // Trim off samples from the start to compensate for extra decoder
-            // delay, in the absense of timestamps.
-            int drop_samples = FFMIN(s->delay_samples, frame->nb_samples);
-            av_log(s, AV_LOG_DEBUG, "Dropping %d/%d delayed samples.\n",
-                                    drop_samples, s->delay_samples);
-            s->delay_samples  -= drop_samples;
-            frame->nb_samples -= drop_samples;
-            input_offset = drop_samples * avctx->ch_layout.nb_channels;
-            if (frame->nb_samples <= 0)
-                return 0;
-        }
+        if (frame->pkt_dts != AV_NOPTS_VALUE && s->output_delay)
+            frame->pkt_dts = av_sat_sub64(frame->pkt_dts,
+                                          av_rescale_q(s->output_delay,
+                                                       (AVRational){ 1, avctx->sample_rate },
+                                                       avctx->time_base));
+        s->last_pts = frame->pts;
+        s->last_dts = frame->pkt_dts;
     }
 #endif
 
-    memcpy(frame->extended_data[0], s->decoder_buffer + input_offset,
+    memcpy(frame->extended_data[0], s->decoder_buffer,
            avctx->ch_layout.nb_channels * frame->nb_samples *
            av_get_bytes_per_sample(avctx->sample_fmt));
 
@@ -561,6 +545,25 @@ static av_cold void fdk_aac_decode_flush(AVCodecContext *avctx)
     if ((err = aacDecoder_SetParam(s->handle,
                                    AAC_TPDEC_CLEAR_BUFFER, 1)) != AAC_DEC_OK)
         av_log(avctx, AV_LOG_WARNING, "failed to clear buffer when flushing\n");
+
+#if FDKDEC_VER_AT_LEAST(2, 5) // 2.5.10
+    s->skip_samples = 0;
+    s->discard_padding = 0;
+    s->flush_samples = 0;
+    s->output_delay = 0;
+    s->last_pts = AV_NOPTS_VALUE;
+    s->last_dts = AV_NOPTS_VALUE;
+    s->output_delay_set = 0;
+
+    // Call aacDecoder_DecodeFrame() with flush and clear history flags as the
+    // above aacDecoder_SetParam() call is seemingly not sufficient.
+    // Ignore the return code given it will not be AAC_DEC_OK if nothing is
+    // buffered internally (e.g. trying to flush the decoder before passing a
+    // single packet to it).
+    aacDecoder_DecodeFrame(s->handle, (INT_PCM *) s->decoder_buffer,
+                           s->decoder_buffer_size / sizeof(INT_PCM),
+                           AACDEC_FLUSH | AACDEC_CLRHIST);
+#endif
 }
 
 const FFCodec ff_libfdk_aac_decoder = {
