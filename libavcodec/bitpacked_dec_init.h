@@ -48,6 +48,8 @@ av_unused static av_cold void ff_bitpackeddec_init(struct BitpackedContext *s)
 
 #if ARCH_AARCH64
     ff_bitpacked_init_aarch64(s);
+#elif ARCH_X86 && HAVE_X86ASM
+    ff_bitpacked_init_x86(s);
 #endif
 }
 
