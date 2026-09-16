@@ -21,6 +21,7 @@ OBJS-$(CONFIG_VP8DSP)                   += aarch64/vp8dsp_init_aarch64.o
 OBJS-$(CONFIG_AAC_DECODER)              += aarch64/aacpsdsp_init_aarch64.o \
                                            aarch64/sbrdsp_init_aarch64.o
 OBJS-$(CONFIG_AAC_ENCODER)              += aarch64/aacencdsp_init.o
+OBJS-$(CONFIG_BITPACKED_DECODER)        += aarch64/bitpacked_init_aarch64.o
 OBJS-$(CONFIG_DCA_DECODER)              += aarch64/dcadsp_init_aarch64.o \
                                            aarch64/synth_filter_init.o
 OBJS-$(CONFIG_OPUS_DECODER)             += aarch64/opusdsp_init.o
@@ -64,6 +65,7 @@ NEON-OBJS-$(CONFIG_VP8DSP)              += aarch64/vp8dsp_neon.o
 
 # decoders/encoders
 NEON-OBJS-$(CONFIG_AAC_DECODER)         += aarch64/aacpsdsp_neon.o
+NEON-OBJS-$(CONFIG_BITPACKED_DECODER)   += aarch64/bitpacked_neon.o
 NEON-OBJS-$(CONFIG_DCA_DECODER)         += aarch64/dcadsp_neon.o             \
                                            aarch64/synth_filter_neon.o
 NEON-OBJS-$(CONFIG_OPUS_DECODER)        += aarch64/opusdsp_neon.o
