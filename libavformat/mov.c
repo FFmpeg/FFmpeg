@@ -10007,6 +10007,39 @@ fail:
     return ret;
 }
 
+static int mov_read_vmhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    avio_rb32(pb); // version & flags
+    uint16_t graphics_mode = avio_rb16(pb);
+    // ignored: opcolor[3]
+
+    if (c->fc->nb_streams < 1)
+        return 0;
+    AVStream *st = c->fc->streams[c->fc->nb_streams - 1];
+    if (st->codecpar->codec_type != AVMEDIA_TYPE_VIDEO)
+        return 0;
+
+    switch (graphics_mode) {
+    case MOV_GRAPHICS_MODE_COPY:
+    case MOV_GRAPHICS_MODE_DITHER_COPY:
+        st->codecpar->alpha_mode = AVALPHA_MODE_UNSPECIFIED;
+        break;
+    case MOV_GRAPHICS_MODE_STRAIGHT_ALPHA:
+        st->codecpar->alpha_mode = AVALPHA_MODE_STRAIGHT;
+        break;
+    case MOV_GRAPHICS_MODE_PREMUL_BLACK_ALPHA:
+        st->codecpar->alpha_mode = AVALPHA_MODE_PREMULTIPLIED;
+        break;
+    default:
+        st->codecpar->alpha_mode = AVALPHA_MODE_UNSPECIFIED;
+        av_log(c->fc, AV_LOG_WARNING, "Unhandled graphics mode: 0x%x\n",
+               graphics_mode);
+        break;
+    }
+
+    return 0;
+}
+
 static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('A','C','L','R'), mov_read_aclr },
 { MKTAG('A','P','R','G'), mov_read_avid },
@@ -10138,6 +10171,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('i','a','c','b'), mov_read_iacb },
 #endif
 { MKTAG('s','r','a','t'), mov_read_srat },
+{ MKTAG('v','m','h','d'), mov_read_vmhd },
 { 0, NULL }
 };
 
