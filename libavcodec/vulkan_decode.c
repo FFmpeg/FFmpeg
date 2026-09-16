@@ -907,7 +907,8 @@ static int vulkan_decode_get_profile(AVCodecContext *avctx, AVBufferRef *frames_
                                    cur_profile);
     }
 
-    if (ret == VK_ERROR_VIDEO_PROFILE_OPERATION_NOT_SUPPORTED_KHR) {
+    if (ret == VK_ERROR_VIDEO_PROFILE_OPERATION_NOT_SUPPORTED_KHR ||
+        ret == VK_ERROR_VIDEO_PROFILE_CODEC_NOT_SUPPORTED_KHR) {
         av_log(avctx, AV_LOG_VERBOSE, "Unable to initialize video session: "
                "%s profile \"%s\" not supported!\n",
                avcodec_get_name(avctx->codec_id),

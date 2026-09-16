@@ -932,7 +932,8 @@ av_cold int ff_vulkan_encode_init(AVCodecContext *avctx, FFVulkanEncodeContext *
         ret = vk->GetPhysicalDeviceVideoCapabilitiesKHR(s->hwctx->phys_dev,
                                                         &ctx->profile,
                                                         &ctx->caps);
-    if (ret == VK_ERROR_VIDEO_PROFILE_OPERATION_NOT_SUPPORTED_KHR) {
+    if (ret == VK_ERROR_VIDEO_PROFILE_OPERATION_NOT_SUPPORTED_KHR ||
+        ret == VK_ERROR_VIDEO_PROFILE_CODEC_NOT_SUPPORTED_KHR) {
         av_log(avctx, AV_LOG_ERROR, "Unable to initialize encoding: "
                "%s profile \"%s\" not supported!\n",
                avcodec_get_name(avctx->codec_id),
