@@ -9,6 +9,7 @@ FATE_CHECKASM = fate-checkasm-aacencdsp                                 \
                 fate-checkasm-audiodsp                                  \
                 fate-checkasm-av_tx                                     \
                 fate-checkasm-base64                                    \
+                fate-checkasm-bitpackeddec                              \
                 fate-checkasm-blockdsp                                  \
                 fate-checkasm-bswapdsp                                  \
                 fate-checkasm-cavsdsp                                   \

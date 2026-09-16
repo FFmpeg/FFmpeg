@@ -40,6 +40,7 @@ void checkasm_check_apv_dsp(void);
 void checkasm_check_audiodsp(void);
 void checkasm_check_av_tx(void);
 void checkasm_check_base64(void);
+void checkasm_check_bitpackeddec(void);
 void checkasm_check_blackdetect(void);
 void checkasm_check_blend(void);
 void checkasm_check_blockdsp(void);

@@ -78,6 +78,9 @@ static const CheckasmTest tests[] = {
     #if CONFIG_AUDIODSP
         { "audiodsp", checkasm_check_audiodsp },
     #endif
+    #if CONFIG_BITPACKED_DECODER
+        { "bitpackeddec", checkasm_check_bitpackeddec },
+    #endif
     #if CONFIG_BLOCKDSP
         { "blockdsp", checkasm_check_blockdsp },
     #endif
