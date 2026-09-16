@@ -1132,10 +1132,19 @@ static int mov_read_dec3(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     enum AVAudioServiceType *ast;
     int eac3info, acmod, lfeon, bsmod;
     uint64_t mask;
+    int ret;
 
     if (c->fc->nb_streams < 1)
         return 0;
     st = c->fc->streams[c->fc->nb_streams-1];
+
+    /* Preserve the complete EC3SpecificBox payload, including optional
+     * extensions such as E-AC-3 JOC signaling. */
+    if (atom.size < 5 || (uint64_t)atom.size > (1 << 30))
+        return AVERROR_INVALIDDATA;
+    ret = ff_get_extradata(c->fc, st->codecpar, pb, atom.size);
+    if (ret < 0)
+        return ret;
 
     sd = av_packet_side_data_new(&st->codecpar->coded_side_data,
                                  &st->codecpar->nb_coded_side_data,
@@ -1146,11 +1155,7 @@ static int mov_read_dec3(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     ast = (enum AVAudioServiceType*)sd->data;
 
-    /* No need to parse fields for additional independent substreams and its
-     * associated dependent substreams since libavcodec's E-AC-3 decoder
-     * does not support them yet. */
-    avio_rb16(pb); /* data_rate and num_ind_sub */
-    eac3info = avio_rb24(pb);
+    eac3info = AV_RB24(st->codecpar->extradata + 2);
     bsmod = (eac3info >> 12) & 0x1f;
     acmod = (eac3info >>  9) & 0x7;
     lfeon = (eac3info >>  8) & 0x1;

@@ -1,5 +1,6 @@
 b73942f473de4f3c88dffe0a14f80c53 *tests/data/fate/copy-trac3074.mp4
 334015 tests/data/fate/copy-trac3074.mp4
+#extradata 0:        5, 0x007c0028
 #tb 0: 1/48000
 #media_type 0: audio
 #codec_id 0: eac3
