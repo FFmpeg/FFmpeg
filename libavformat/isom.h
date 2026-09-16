@@ -439,6 +439,17 @@ void ff_mp4_parse_es_descr(AVIOContext *pb, int *es_id);
 #define MOV_SAMPLE_DEPENDENCY_YES     0x1
 #define MOV_SAMPLE_DEPENDENCY_NO      0x2
 
+/* https://developer.apple.com/documentation/quicktime-file-format/graphics_modes */
+#define MOV_GRAPHICS_MODE_COPY                  0x0
+#define MOV_GRAPHICS_MODE_DITHER_COPY           0x40
+#define MOV_GRAPHICS_MODE_BLEND                 0x20
+#define MOV_GRAPHICS_MODE_TRANSPARENT           0x24
+#define MOV_GRAPHICS_MODE_STRAIGHT_ALPHA        0x100
+#define MOV_GRAPHICS_MODE_PREMUL_WHITE_ALPHA    0x101
+#define MOV_GRAPHICS_MODE_PREMUL_BLACK_ALPHA    0x102
+#define MOV_GRAPHICS_MODE_COMPOSITION           0x103
+#define MOV_GRAPHICS_MODE_STRAIGHT_ALPHA_BLEND  0x104
+
 #define TAG_IS_AVCI(tag)                    \
     ((tag) == MKTAG('a', 'i', '5', 'p') ||  \
      (tag) == MKTAG('a', 'i', '5', 'q') ||  \
