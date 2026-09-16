@@ -55,8 +55,7 @@ typedef struct SwsOpPass {
     int *offsets_y;
     int filter_size_h;
     int filter_size_v;
-    bool memcpy_first;
-    bool memcpy_last;
+    bool memcpy_in;
     bool memcpy_out;
     size_t tail_blocks;
     uint8_t *tail_buf; /* extra memory for fixing unpadded tails */
@@ -220,9 +219,8 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
     const unsigned block_size = comp->block_size;
     const size_t num_blocks   = p->num_blocks;
     const size_t aligned_w    = num_blocks * block_size;
-    p->memcpy_first = false;
-    p->memcpy_last  = false;
-    p->memcpy_out   = false;
+    p->memcpy_in  = false;
+    p->memcpy_out = false;
 
     size_t safe_blocks = num_blocks;
     for (int i = 0; i < p->planes_in; i++) {
@@ -247,9 +245,8 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
         }
 
         if (safe_blocks_in < num_blocks) {
-            p->memcpy_first |= in->linesize[idx] < 0;
-            p->memcpy_last  |= in->linesize[idx] > 0;
-            safe_blocks = FFMIN(safe_blocks, safe_blocks_in);
+            p->memcpy_in = true;
+            safe_blocks  = FFMIN(safe_blocks, safe_blocks_in);
         }
 
         size_t loop_size   = num_blocks * exec->block_size_in[i];
@@ -278,8 +275,7 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
         exec->in_stride[1] = exec->in_bump[1] = 0;
     }
 
-    const bool memcpy_in = p->memcpy_first || p->memcpy_last;
-    if (!memcpy_in && !p->memcpy_out) {
+    if (!p->memcpy_in && !p->memcpy_out) {
         av_assert0(safe_blocks == num_blocks);
         return 0;
     }
@@ -306,7 +302,7 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
     }
 
     const size_t alloc_width = aligned_w - safe_width;
-    for (int i = 0; memcpy_in && i < p->planes_in; i++) {
+    for (int i = 0; p->memcpy_in && i < p->planes_in; i++) {
         size_t needed_size;
         if (exec->in_offset_x) {
             /* The input offset map is already padded to multiples of the block
@@ -330,7 +326,7 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
         alloc_size += tail->out_stride[i] * out->height;
     }
 
-    if (memcpy_in && exec->in_offset_x) {
+    if (p->memcpy_in && exec->in_offset_x) {
         /* `in_offset_x` is indexed relative to the line start, not the start
          * of the section being processed; so we need to over-allocate this
          * array to the full width of the image, even though we will only
@@ -343,7 +339,7 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
         return AVERROR(ENOMEM);
 
     uint8_t *tail_buf = p->tail_buf;
-    for (int i = 0; memcpy_in && i < p->planes_in; i++) {
+    for (int i = 0; p->memcpy_in && i < p->planes_in; i++) {
         tail->in[i] = tail_buf;
         tail_buf += tail->in_stride[i] * in->height;
     }
@@ -353,7 +349,7 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
         tail_buf += tail->out_stride[i] * out->height;
     }
 
-    if (memcpy_in && exec->in_offset_x) {
+    if (p->memcpy_in && exec->in_offset_x) {
         tail->in_offset_x = (int32_t *) tail_buf;
         for (int i = safe_width; i < aligned_w; i++)
             tail->in_offset_x[i] = exec->in_offset_x[i] - p->tail_off_in;
@@ -398,11 +394,8 @@ static void op_pass_run(const SwsFrame *out, const SwsFrame *in, const int y,
      *    memcpy the last column on the output side if unpadded.
      */
 
-    const int y_in_first = p->offsets_y ? p->offsets_y[y] : y;
-    const int y_in_last  = p->offsets_y ? p->offsets_y[y + h - 1] + p->filter_size_v - 1
-                                        : y + h - 1;
-    const bool memcpy_in  = p->memcpy_last && y_in_last == in->height - 1 ||
-                            p->memcpy_first && y_in_first == 0;
+    const int y_in = p->offsets_y ? p->offsets_y[y] : y;
+    const bool memcpy_in  = p->memcpy_in;
     const bool memcpy_out = p->memcpy_out;
     const size_t num_blocks  = p->num_blocks;
     const size_t tail_blocks = p->tail_blocks;
@@ -436,7 +429,7 @@ static void op_pass_run(const SwsFrame *out, const SwsFrame *in, const int y,
         /* Input offsets are relative to the base pointer */
         if (!exec.in_offset_x || memcpy_in)
             exec.in[i] += p->tail_off_in;
-        tail.in[i] += (y_in_first >> exec.in_sub_y[i]) * tail.in_stride[i];
+        tail.in[i] += (y_in >> exec.in_sub_y[i]) * tail.in_stride[i];
     }
     for (int i = 0; i < p->planes_out; i++) {
         exec.out[i] += p->tail_off_out;
