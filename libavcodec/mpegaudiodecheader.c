@@ -24,6 +24,8 @@
  * MPEG Audio header decoder.
  */
 
+#include <string.h>
+
 #include "libavutil/error.h"
 #include "libavutil/macros.h"
 #include "libavutil/mem.h"
@@ -42,6 +44,8 @@ int ff_mpegaudio_decode_header(MPADecodeHeader2 *s, uint32_t header)
     ret = ff_mpa_check_header(header);
     if (ret < 0)
         return ret;
+
+    memset(s, 0, sizeof(*s));
 
     if (header & (1<<20)) {
         s->lsf = (header & (1<<19)) ? 0 : 1;
@@ -143,6 +147,7 @@ int avpriv_mpegaudio_decode_header2(MPADecodeHeader2 **phdr, uint32_t header)
     return ret;
 }
 
+#if FF_MPEGAUDIO_LEGACY_DECODE_HEADER
 int avpriv_mpegaudio_decode_header(MPADecodeHeader *s, uint32_t header)
 {
     MPADecodeHeader2 hdr = { 0 };
@@ -166,6 +171,7 @@ int avpriv_mpegaudio_decode_header(MPADecodeHeader *s, uint32_t header)
 
     return ret;
 }
+#endif
 
 int ff_mpa_decode_header(uint32_t head, int *sample_rate, int *channels, int *frame_size, int *bit_rate, enum AVCodecID *codec_id)
 {

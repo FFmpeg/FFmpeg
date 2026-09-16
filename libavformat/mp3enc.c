@@ -126,6 +126,7 @@ typedef struct MP3Context {
     uint64_t bag[XING_NUM_BAGS];
     int initial_bitrate;
     int has_variable_bitrate;
+    MPADecodeHeader2 *hdr;
     int delay;
     int64_t padding;
 
@@ -150,7 +151,6 @@ static int mp3_write_xing(AVFormatContext *s)
     AVDictionaryEntry *enc = av_dict_get(s->streams[mp3->audio_stream_idx]->metadata, "encoder", NULL, 0);
     AVIOContext *dyn_ctx;
     int32_t        header;
-    MPADecodeHeader  mpah;
     int srate_idx, i, channels;
     int bitrate_idx;
     int best_bitrate_idx = -1;
@@ -175,7 +175,7 @@ static int mp3_write_xing(AVFormatContext *s)
     }
     if (i == FF_ARRAY_ELEMS(ff_mpa_freq_tab)) {
         av_log(s, AV_LOG_WARNING, "Unsupported sample rate, not writing Xing header.\n");
-        return -1;
+        return 0;
     }
 
     switch (par->ch_layout.nb_channels) {
@@ -183,7 +183,7 @@ static int mp3_write_xing(AVFormatContext *s)
     case 2:  channels = MPA_STEREO;                                        break;
     default: av_log(s, AV_LOG_WARNING, "Unsupported number of channels, "
                     "not writing Xing header.\n");
-             return -1;
+             return 0;
     }
 
     /* dummy MPEG audio header */
@@ -206,15 +206,16 @@ static int mp3_write_xing(AVFormatContext *s)
     for (bitrate_idx = best_bitrate_idx; ; bitrate_idx++) {
         int32_t mask = bitrate_idx << (4 + 8);
         if (15 == bitrate_idx)
-            return -1;
+            return 0;
         header |= mask;
 
-        ret = avpriv_mpegaudio_decode_header(&mpah, header);
-        av_assert0(ret >= 0);
-        mp3->xing_offset = xing_offtbl[mpah.lsf == 1][mpah.nb_channels == 1] + 4;
+        ret = avpriv_mpegaudio_decode_header2(&mp3->hdr, header);
+        if (ret < 0)
+            return ret;
+        mp3->xing_offset = xing_offtbl[mp3->hdr->lsf == 1][mp3->hdr->nb_channels == 1] + 4;
         bytes_needed     = mp3->xing_offset + XING_SIZE;
 
-        if (bytes_needed <= mpah.frame_size)
+        if (bytes_needed <= mp3->hdr->frame_size)
             break;
 
         header &= ~mask;
@@ -230,7 +231,7 @@ static int mp3_write_xing(AVFormatContext *s)
     ffio_wfourcc(dyn_ctx, "Xing");
     avio_wb32(dyn_ctx, 0x01 | 0x02 | 0x04 | 0x08);  // frames / size / TOC / vbr scale
 
-    mp3->size = mpah.frame_size;
+    mp3->size = mp3->hdr->frame_size;
     mp3->want=1;
     mp3->seen=0;
     mp3->pos=0;
@@ -275,7 +276,7 @@ static int mp3_write_xing(AVFormatContext *s)
     avio_wb16(dyn_ctx, 0); // music crc
     avio_wb16(dyn_ctx, 0); // tag crc
 
-    ffio_fill(dyn_ctx, 0, mpah.frame_size - bytes_needed);
+    ffio_fill(dyn_ctx, 0, mp3->hdr->frame_size - bytes_needed);
 
     mp3->xing_frame_size   = avio_close_dyn_buf(dyn_ctx, &mp3->xing_frame);
     mp3->xing_frame_offset = avio_tell(s->pb);
@@ -321,17 +322,18 @@ static int mp3_write_audio_packet(AVFormatContext *s, AVPacket *pkt)
     MP3Context  *mp3 = s->priv_data;
 
     if (pkt->data && pkt->size >= 4) {
-        MPADecodeHeader mpah;
         int ret;
         uint32_t h;
 
         h = AV_RB32(pkt->data);
-        ret = avpriv_mpegaudio_decode_header(&mpah, h);
+        ret = avpriv_mpegaudio_decode_header2(&mp3->hdr, h);
         if (ret >= 0) {
             if (!mp3->initial_bitrate)
-                mp3->initial_bitrate = mpah.bit_rate;
-            if ((mpah.bit_rate == 0) || (mp3->initial_bitrate != mpah.bit_rate))
+                mp3->initial_bitrate = mp3->hdr->bit_rate;
+            if ((mp3->hdr->bit_rate == 0) || (mp3->initial_bitrate != mp3->hdr->bit_rate))
                 mp3->has_variable_bitrate = 1;
+        } else if (ret == AVERROR(ENOMEM)) {
+            return ret;
         } else {
             av_log(s, AV_LOG_WARNING, "Audio packet of size %d (starting with %08"PRIX32"...) "
                    "is invalid, writing it anyway.\n", pkt->size, h);
@@ -339,7 +341,7 @@ static int mp3_write_audio_packet(AVFormatContext *s, AVPacket *pkt)
 
 #ifdef FILTER_VBR_HEADERS
         /* filter out XING and INFO headers. */
-        int base = 4 + xing_offtbl[mpah.lsf == 1][mpah.nb_channels == 1];
+        int base = 4 + xing_offtbl[mp3->hdr->lsf == 1][mp3->hdr->nb_channels == 1];
 
         if (base + 4 <= pkt->size) {
             uint32_t v = AV_RB32(pkt->data + base);
@@ -413,10 +415,10 @@ static int mp3_queue_flush(AVFormatContext *s)
     int ret = 0, write = 1;
 
     ret = mp3_finish_id3v2(s);
+    if (ret >= 0)
+        ret = mp3_write_xing(s);
     if (ret < 0)
         write = 0;
-    else
-        mp3_write_xing(s);
 
     while (mp3->queue.head) {
         ff_packet_list_get(&mp3->queue, pkt);
@@ -678,7 +680,7 @@ static int mp3_write_header(struct AVFormatContext *s)
     if (!mp3->pics_to_write) {
         if (mp3->id3v2_version && (ret = mp3_finish_id3v2(s)) < 0)
             return ret;
-        mp3_write_xing(s);
+        return mp3_write_xing(s);
     }
 
     return 0;
@@ -691,6 +693,7 @@ static void mp3_deinit(struct AVFormatContext *s)
     ff_packet_list_free(&mp3->queue);
     ffio_free_dyn_buf(&mp3->id3_pb);
     av_freep(&mp3->xing_frame);
+    av_freep(&mp3->hdr);
 }
 
 const FFOutputFormat ff_mp3_muxer = {

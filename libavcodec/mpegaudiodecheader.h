@@ -36,6 +36,9 @@
 
 #define MP3_MASK 0xFFFE0CCF
 
+#define FF_MPEGAUDIO_LEGACY_DECODE_HEADER (LIBAVCODEC_VERSION_MAJOR < 64)
+
+#if FF_MPEGAUDIO_LEGACY_DECODE_HEADER
 #define MPA_DECODE_HEADER \
     int frame_size; \
     int error_protection; \
@@ -51,6 +54,12 @@
 typedef struct MPADecodeHeader {
   MPA_DECODE_HEADER
 } MPADecodeHeader;
+
+/* header decoding. MUST check the header before because no
+   consistency check is done there. Return 1 if free format found and
+   that the frame size must be computed externally */
+int avpriv_mpegaudio_decode_header(MPADecodeHeader *s, uint32_t header);
+#endif
 
 /**
  * Same as MPADecodeHeader, plus the header fields that carry no decoding
@@ -75,11 +84,6 @@ typedef struct MPADecodeHeader2 {
     int padding;
     int private_bit;
 } MPADecodeHeader2;
-
-/* header decoding. MUST check the header before because no
-   consistency check is done there. Return 1 if free format found and
-   that the frame size must be computed externally */
-int avpriv_mpegaudio_decode_header(MPADecodeHeader *s, uint32_t header);
 
 /**
  * Decode an MPEG audio header into *phdr, which is allocated if it is NULL.
