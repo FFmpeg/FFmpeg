@@ -118,7 +118,7 @@ VkVideoChromaSubsamplingFlagBitsKHR ff_vk_subsampling_from_av_desc(const AVPixFm
         return VK_VIDEO_CHROMA_SUBSAMPLING_MONOCHROME_BIT_KHR;
     else if (!desc->log2_chroma_w && !desc->log2_chroma_h)
         return VK_VIDEO_CHROMA_SUBSAMPLING_444_BIT_KHR;
-    else if (!desc->log2_chroma_w && desc->log2_chroma_h == 1)
+    else if (desc->log2_chroma_w == 1 && !desc->log2_chroma_h)
         return VK_VIDEO_CHROMA_SUBSAMPLING_422_BIT_KHR;
     else if (desc->log2_chroma_w == 1 && desc->log2_chroma_h == 1)
         return VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR;
