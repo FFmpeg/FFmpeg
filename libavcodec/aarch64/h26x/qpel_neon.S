@@ -169,6 +169,40 @@ endconst
         b.hi            1b
 .endm
 
+/*
+ * Blend-and-narrow tails shared by the qpel_uni and qpel_bi horizontal
+ * filters.
+ */
+.macro post_h_2reg type, sz, r0, r1, s0, s1
+.ifc \type, qpel_bi
+        sqadd           \r0\sz, \r0\sz, \s0\sz
+        sqadd           \r1\sz, \r1\sz, \s1\sz
+        sqrshrun        \r0\().8b, \r0\().8h, #7
+        sqrshrun        \r1\().8b, \r1\().8h, #7
+.else
+        sqrshrun        \r0\().8b, \r0\().8h, #6
+        sqrshrun        \r1\().8b, \r1\().8h, #6
+.endif
+.endm
+
+.macro post_h_4reg type, r0, r1, r2, r3, s0, s1, s2, s3
+.ifc \type, qpel_bi
+        sqadd           \r0\().8h, \r0\().8h, \s0\().8h
+        sqadd           \r1\().8h, \r1\().8h, \s1\().8h
+        sqadd           \r2\().8h, \r2\().8h, \s2\().8h
+        sqadd           \r3\().8h, \r3\().8h, \s3\().8h
+        sqrshrun        \r0\().8b, \r0\().8h, #7
+        sqrshrun        \r1\().8b, \r1\().8h, #7
+        sqrshrun        \r2\().8b, \r2\().8h, #7
+        sqrshrun        \r3\().8b, \r3\().8h, #7
+.else
+        sqrshrun        \r0\().8b, \r0\().8h, #6
+        sqrshrun        \r1\().8b, \r1\().8h, #6
+        sqrshrun        \r2\().8b, \r2\().8h, #6
+        sqrshrun        \r3\().8b, \r3\().8h, #6
+.endif
+.endm
+
 .macro put_hevc type
 .ifc \type, qpel
         // void put_hevc_qpel_h(int16_t *dst,
@@ -281,15 +315,7 @@ function ff_hevc_put_hevc_\type\()_h4_8_neon, export=1
         st1             {v23.4h}, [dst], x14
         st1             {v24.4h}, [x10], x14
 .else
-.ifc \type, qpel_bi
-        sqadd           v23.4h, v23.4h, v25.4h
-        sqadd           v24.4h, v24.4h, v26.4h
-        sqrshrun        v23.8b, v23.8h, #7
-        sqrshrun        v24.8b, v24.8h, #7
-.else
-        sqrshrun        v23.8b, v23.8h, #6
-        sqrshrun        v24.8b, v24.8h, #6
-.endif
+        post_h_2reg     \type, .4h, v23, v24, v25, v26
         st1             {v23.s}[0], [dst], x14
         st1             {v24.s}[0], [x10], x14
 .endif
@@ -352,15 +378,7 @@ function ff_hevc_put_hevc_\type\()_h6_8_neon, export=1
         st1             {v23.s}[2], [dst], x14
         st1             {v24.s}[2], [x10], x14
 .else
-.ifc \type, qpel_bi
-        sqadd           v23.8h, v23.8h, v25.8h
-        sqadd           v24.8h, v24.8h, v26.8h
-        sqrshrun        v23.8b, v23.8h, #7
-        sqrshrun        v24.8b, v24.8h, #7
-.else
-        sqrshrun        v23.8b, v23.8h, #6
-        sqrshrun        v24.8b, v24.8h, #6
-.endif
+        post_h_2reg     \type, .8h, v23, v24, v25, v26
         st1             {v23.s}[0], [dst], #4
         st1             {v24.s}[0], [x10], #4
         st1             {v23.h}[2], [dst], x14
@@ -420,15 +438,7 @@ function ff_hevc_put_hevc_\type\()_h8_8_neon, export=1
         st1             {v23.8h}, [dst], x14
         st1             {v24.8h}, [x10], x14
 .else
-.ifc \type, qpel_bi
-        sqadd           v23.8h, v23.8h, v25.8h
-        sqadd           v24.8h, v24.8h, v26.8h
-        sqrshrun        v23.8b, v23.8h, #7
-        sqrshrun        v24.8b, v24.8h, #7
-.else
-        sqrshrun        v23.8b, v23.8h, #6
-        sqrshrun        v24.8b, v24.8h, #6
-.endif
+        post_h_2reg     \type, .8h, v23, v24, v25, v26
         st1             {v23.8b}, [dst], x14
         st1             {v24.8b}, [x10], x14
 .endif
@@ -505,20 +515,8 @@ function ff_hevc_put_hevc_\type\()_h12_8_neon, export=1
 .ifc \type, qpel_bi
         ld1             {v16.8h, v17.8h}, [ x4], x16
         ld1             {v18.8h, v19.8h}, [x15], x16
-        sqadd           v26.8h, v26.8h, v16.8h
-        sqadd           v27.8h, v27.8h, v17.8h
-        sqadd           v28.8h, v28.8h, v18.8h
-        sqadd           v29.8h, v29.8h, v19.8h
-        sqrshrun        v26.8b, v26.8h, #7
-        sqrshrun        v27.8b, v27.8h, #7
-        sqrshrun        v28.8b, v28.8h, #7
-        sqrshrun        v29.8b, v29.8h, #7
-.else
-        sqrshrun        v26.8b, v26.8h, #6
-        sqrshrun        v27.8b, v27.8h, #6
-        sqrshrun        v28.8b, v28.8h, #6
-        sqrshrun        v29.8b, v29.8h, #6
 .endif
+        post_h_4reg     \type, v26, v27, v28, v29, v16, v17, v18, v19
         st1             {v26.8b},   [dst], #8
         st1             {v28.8b},   [x10], #8
         st1             {v27.s}[0], [dst], x14
@@ -650,20 +648,8 @@ function ff_hevc_put_hevc_\type\()_h24_8_neon, export=1
 .ifc \type, qpel_bi
         ld1             {v16.8h, v17.8h}, [ x4], x16
         ld1             {v18.8h, v19.8h}, [x15], x16
-        sqadd           v26.8h, v26.8h, v16.8h
-        sqadd           v27.8h, v27.8h, v17.8h
-        sqadd           v28.8h, v28.8h, v18.8h
-        sqadd           v29.8h, v29.8h, v19.8h
-        sqrshrun        v26.8b, v26.8h, #7
-        sqrshrun        v27.8b, v27.8h, #7
-        sqrshrun        v28.8b, v28.8h, #7
-        sqrshrun        v29.8b, v29.8h, #7
-.else
-        sqrshrun        v26.8b, v26.8h, #6
-        sqrshrun        v27.8b, v27.8h, #6
-        sqrshrun        v28.8b, v28.8h, #6
-        sqrshrun        v29.8b, v29.8h, #6
 .endif
+        post_h_4reg     \type, v26, v27, v28, v29, v16, v17, v18, v19
         st1             {v26.8b, v27.8b}, [dst], #16
         st1             {v28.8b, v29.8b}, [x10], #16
 .endif
@@ -685,14 +671,8 @@ function ff_hevc_put_hevc_\type\()_h24_8_neon, export=1
         ld1             {v26.8h}, [x15], x16
         sub             x4,  x4,  #48
         sub             x15, x15, #48
-        sqadd           v23.8h, v23.8h, v25.8h
-        sqadd           v24.8h, v24.8h, v26.8h
-        sqrshrun        v23.8b, v23.8h, #7
-        sqrshrun        v24.8b, v24.8h, #7
-.else
-        sqrshrun        v23.8b, v23.8h, #6
-        sqrshrun        v24.8b, v24.8h, #6
 .endif
+        post_h_2reg     \type, .8h, v23, v24, v25, v26
         st1             {v23.8b}, [dst], x14
         st1             {v24.8b}, [x10], x14
 .endif
@@ -752,20 +732,8 @@ function ff_hevc_put_hevc_\type\()_h16_8_neon, export=1
 .ifc \type, qpel_bi
         ld1             {v16.8h, v17.8h}, [ x4], x16
         ld1             {v18.8h, v19.8h}, [x15], x16
-        sqadd           v26.8h, v26.8h, v16.8h
-        sqadd           v27.8h, v27.8h, v17.8h
-        sqadd           v28.8h, v28.8h, v18.8h
-        sqadd           v29.8h, v29.8h, v19.8h
-        sqrshrun        v26.8b, v26.8h, #7
-        sqrshrun        v27.8b, v27.8h, #7
-        sqrshrun        v28.8b, v28.8h, #7
-        sqrshrun        v29.8b, v29.8h, #7
-.else
-        sqrshrun        v26.8b, v26.8h, #6
-        sqrshrun        v27.8b, v27.8h, #6
-        sqrshrun        v28.8b, v28.8h, #6
-        sqrshrun        v29.8b, v29.8h, #6
 .endif
+        post_h_4reg     \type, v26, v27, v28, v29, v16, v17, v18, v19
         st1             {v26.8b, v27.8b}, [dst], x14
         st1             {v28.8b, v29.8b}, [x10], x14
         b.gt            1b // double line
@@ -899,20 +867,8 @@ function ff_hevc_put_hevc_\type\()_h32_8_neon, export=1
 .ifc \type, qpel_bi
         ld1             {v20.8h, v21.8h}, [ x4], #32
         ld1             {v22.8h, v23.8h}, [x15], #32
-        sqadd           v26.8h, v26.8h, v20.8h
-        sqadd           v27.8h, v27.8h, v21.8h
-        sqadd           v28.8h, v28.8h, v22.8h
-        sqadd           v29.8h, v29.8h, v23.8h
-        sqrshrun        v26.8b, v26.8h, #7
-        sqrshrun        v27.8b, v27.8h, #7
-        sqrshrun        v28.8b, v28.8h, #7
-        sqrshrun        v29.8b, v29.8h, #7
-.else
-        sqrshrun        v26.8b, v26.8h, #6
-        sqrshrun        v27.8b, v27.8h, #6
-        sqrshrun        v28.8b, v28.8h, #6
-        sqrshrun        v29.8b, v29.8h, #6
 .endif
+        post_h_4reg     \type, v26, v27, v28, v29, v20, v21, v22, v23
         st1             {v26.8b, v27.8b}, [dst], #16
         st1             {v28.8b, v29.8b}, [x10], #16
         b.gt            1b // double line
