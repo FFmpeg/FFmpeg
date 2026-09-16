@@ -21,8 +21,27 @@
 
 %include "libavutil/x86/x86util.asm"
 
-SECTION_RODATA 32
+SECTION_RODATA 64
 
+unpack_shuf_avx512icl:
+    db  1, 0,  2, 1,  3, 2,  4, 3,  6, 5,  7, 6,  8, 7,  9, 8
+    db 11,10, 12,11, 13,12, 14,13, 16,15, 17,16, 18,17, 19,18
+    db 21,20, 22,21, 23,22, 24,23, 26,25, 27,26, 28,27, 29,28
+    db 31,30, 32,31, 33,32, 34,33, 36,35, 37,36, 38,37, 39,38
+y_shuf_avx512icl:
+    db  2, 3,  6, 7, 10,11, 14,15, 18,19, 22,23, 26,27, 30,31
+    db 34,35, 38,39, 42,43, 46,47, 50,51, 54,55, 58,59, 62,63
+    times 32 db 0
+u_shuf_avx512icl:
+    db  0, 1,  8, 9, 16,17, 24,25, 32,33, 40,41, 48,49, 56,57
+    times 48 db 0
+v_shuf_avx512icl:
+    db  4, 5, 12,13, 20,21, 28,29, 36,37, 44,45, 52,53, 60,61
+    times 48 db 0
+input_mask_avx512icl: dq 0x000000ffffffffff
+tail_mask_avx512icl:  dq 0x00000000000fffff
+
+ALIGN 32
 unpack_shuf_avx2:
     db 1,0, 2,1, 3,2, 4,3, 6,5, 7,6, 8,7, 9,8
     db 5,4, 6,5, 7,6, 8,7, 10,9, 11,10, 12,11, 13,12
@@ -180,6 +199,66 @@ cglobal bitpacked_unpack_yuv422p10, 5, 5, 8, src, y, u, v, w
     vextracti128   xm2, m1, 1
     punpckldq      xm1, xm2
     movq           [vq], xm1
+
+.ret:
+    RET
+%endif
+
+%if HAVE_AVX512ICL_EXTERNAL
+INIT_ZMM avx512icl
+cglobal bitpacked_unpack_yuv422p10, 5, 5, 7, src, y, u, v, w
+    mova           m2, [unpack_shuf_avx512icl]
+    VBROADCASTI128 m3, [unpack_mult]
+    mova           m4, [y_shuf_avx512icl]
+    mova           m5, [u_shuf_avx512icl]
+    mova           m6, [v_shuf_avx512icl]
+    kmovq          k1, [input_mask_avx512icl]
+    kmovq          k2, [tail_mask_avx512icl]
+
+    test           wd, 8
+    jz             .setup
+    vmovdqu8       m0{k2}{z}, [srcq]
+    vpermb         m0, m2, m0
+    pmullw         m0, m3
+    psrlw          m0, 6
+
+    vpermb         m1, m4, m0
+    movu           [yq], xm1
+    vpermb         m1, m5, m0
+    movq           [uq], xm1
+    vpermb         m1, m6, m0
+    movq           [vq], xm1
+
+    add            srcq, 20
+    add            yq, 16
+    add            uq, 8
+    add            vq, 8
+    sub            wd, 8
+    jz             .ret
+
+.setup:
+    movsxdifnidn   wq, wd
+    lea            yq, [yq+2*wq]
+    add            uq, wq
+    add            vq, wq
+    neg            wq
+
+.loop:
+    vmovdqu8       m0{k1}{z}, [srcq]
+    vpermb         m0, m2, m0
+    pmullw         m0, m3
+    psrlw          m0, 6
+
+    vpermb         m1, m4, m0
+    movu           [yq+2*wq], ym1
+    vpermb         m1, m5, m0
+    movu           [uq+wq], xm1
+    vpermb         m1, m6, m0
+    movu           [vq+wq], xm1
+
+    add            srcq, 40
+    add            wq, 16
+    jl             .loop
 
 .ret:
     RET

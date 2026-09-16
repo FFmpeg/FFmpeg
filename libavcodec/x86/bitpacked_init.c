@@ -32,6 +32,11 @@ void ff_bitpacked_unpack_yuv422p10_avx2(const uint8_t *src,
                                         uint16_t *y, uint16_t *u, uint16_t *v,
                                         int width);
 #endif
+#if HAVE_AVX512ICL_EXTERNAL
+void ff_bitpacked_unpack_yuv422p10_avx512icl(const uint8_t *src,
+                                             uint16_t *y, uint16_t *u,
+                                             uint16_t *v, int width);
+#endif
 
 av_cold void ff_bitpacked_init_x86(struct BitpackedContext *s)
 {
@@ -43,5 +48,10 @@ av_cold void ff_bitpacked_init_x86(struct BitpackedContext *s)
 #if HAVE_AVX2_EXTERNAL
     if (EXTERNAL_AVX2(cpu_flags))
         s->unpack_yuv422p10 = ff_bitpacked_unpack_yuv422p10_avx2;
+#endif
+
+#if HAVE_AVX512ICL_EXTERNAL
+    if (EXTERNAL_AVX512ICL(cpu_flags))
+        s->unpack_yuv422p10 = ff_bitpacked_unpack_yuv422p10_avx512icl;
 #endif
 }
