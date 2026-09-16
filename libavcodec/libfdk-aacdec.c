@@ -21,6 +21,7 @@
 
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
@@ -63,7 +64,12 @@ typedef struct FDKAACDecContext {
 #if FDKDEC_VER_AT_LEAST(2, 5) // 2.5.10
     int output_delay_set;
     int flush_samples;
+    int skip_samples;
     int delay_samples;
+    int output_delay;
+    int discard_padding;
+    int64_t last_pts;
+    int64_t last_dts;
 #endif
     AVChannelLayout downmix_layout;
 } FDKAACDecContext;
@@ -138,6 +144,10 @@ static int get_stream_info(AVCodecContext *avctx, AVFrame *frame)
         // Set this only once.
         s->flush_samples    = info->outputDelay;
         s->delay_samples    = info->outputDelay;
+        s->skip_samples     = info->outputDelay;
+        s->output_delay     = info->outputDelay;
+        s->last_pts         = AV_NOPTS_VALUE;
+        s->last_dts         = AV_NOPTS_VALUE;
         s->output_delay_set = 1;
     }
 #endif
@@ -420,19 +430,76 @@ static int fdk_aac_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         goto end;
     frame->nb_samples = avctx->frame_size;
 
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
+        goto end;
+
 #if FDKDEC_VER_AT_LEAST(2, 5) // 2.5.10
     if (flags & AACDEC_FLUSH) {
+        if (s->last_pts != AV_NOPTS_VALUE)
+            frame->pts = av_sat_add64(s->last_pts,
+                                      av_rescale_q(frame->nb_samples, avctx->time_base,
+                                                   (AVRational){ 1, avctx->sample_rate }));
+        if (s->last_dts != AV_NOPTS_VALUE)
+            frame->pkt_dts = av_sat_add64(s->last_dts,
+                                          av_rescale_q(frame->nb_samples, avctx->time_base,
+                                                       (AVRational){ 1, avctx->sample_rate }));
+
         // Only return the right amount of samples at the end; if calling the
         // decoder with AACDEC_FLUSH, it will keep returning frames indefinitely.
         frame->nb_samples = FFMIN(s->flush_samples, frame->nb_samples);
         av_log(s, AV_LOG_DEBUG, "Returning %d/%d delayed samples.\n",
                                 frame->nb_samples, s->flush_samples);
+        if (s->skip_samples || s->discard_padding) {
+            AVFrameSideData *sd = av_frame_get_side_data(frame, AV_FRAME_DATA_SKIP_SAMPLES);
+            if (!sd) {
+                sd = av_frame_new_side_data(frame, AV_FRAME_DATA_SKIP_SAMPLES, 10);
+                if (sd)
+                    memset(sd->data, 0, 10);
+            }
+            if (sd && sd->size >= 10) {
+                AV_WL32(sd->data,     s->skip_samples);
+                AV_WL32(sd->data + 4, s->discard_padding);
+            }
+            s->skip_samples = 0;
+            s->discard_padding = 0;
+        }
         s->flush_samples -= frame->nb_samples;
+        s->last_pts = frame->pts;
+        s->last_dts = frame->pkt_dts;
     } else {
-        // Trim off samples from the start to compensate for extra decoder
-        // delay. We could also just adjust the pts, but this avoids
-        // including the extra samples in the output altogether.
-        if (s->delay_samples) {
+        AVFrameSideData *sd = av_frame_get_side_data(frame, AV_FRAME_DATA_SKIP_SAMPLES);
+        if (!sd && s->skip_samples) {
+            sd = av_frame_new_side_data(frame, AV_FRAME_DATA_SKIP_SAMPLES, 10);
+            if (sd)
+                memset(sd->data, 0, 10);
+        }
+        if (sd && sd->size >= 10) {
+            int skip_samples = AV_RL32(sd->data);
+            s->discard_padding = AV_RL32(sd->data + 4);
+            if (s->discard_padding >= s->output_delay) {
+                AV_WL32(sd->data + 4, s->discard_padding - s->output_delay);
+                s->discard_padding = s->output_delay;
+            } else
+                AV_WL32(sd->data + 4, 0);
+            AV_WL32(sd->data, skip_samples + s->skip_samples);
+            s->skip_samples = 0;
+        }
+        if (frame->pts != AV_NOPTS_VALUE && s->output_delay) {
+            frame->pts = av_sat_sub64(frame->pts,
+                                      av_rescale_q(s->output_delay,
+                                                   (AVRational){ 1, avctx->sample_rate },
+                                                   avctx->time_base));
+            if (frame->pkt_dts != AV_NOPTS_VALUE && s->output_delay)
+                frame->pkt_dts = av_sat_sub64(frame->pkt_dts,
+                                              av_rescale_q(s->output_delay,
+                                                           (AVRational){ 1, avctx->sample_rate },
+                                                           avctx->time_base));
+            s->delay_samples = 0;
+            s->last_pts = frame->pts;
+            s->last_dts = frame->pkt_dts;
+        } else if (s->delay_samples) {
+            // Trim off samples from the start to compensate for extra decoder
+            // delay, in the absense of timestamps.
             int drop_samples = FFMIN(s->delay_samples, frame->nb_samples);
             av_log(s, AV_LOG_DEBUG, "Dropping %d/%d delayed samples.\n",
                                     drop_samples, s->delay_samples);
@@ -444,9 +511,6 @@ static int fdk_aac_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         }
     }
 #endif
-
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
-        goto end;
 
     memcpy(frame->extended_data[0], s->decoder_buffer + input_offset,
            avctx->ch_layout.nb_channels * frame->nb_samples *
