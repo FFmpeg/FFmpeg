@@ -32,6 +32,7 @@
 #define PDV_MAX_OFFSET ((1U << 30) - 1)
 
 typedef struct PDVMuxContext {
+    const AVClass *class;
     uint32_t *entries;
     int nb_frames;
     int max_frames;
