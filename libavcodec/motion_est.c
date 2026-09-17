@@ -1149,11 +1149,12 @@ static int estimate_motion_b(MPVEncContext *const s, int mb_x, int mb_y,
         c->pred_x = P_LEFT[0];
         c->pred_y = P_LEFT[1];
 
-        if(mv_table == s->b_forw_mv_table){
-            mv_scale= (s->c.pb_time<<16) / (s->c.pp_time<<shift);
-        }else{
-            mv_scale = ((s->c.pb_time - s->c.pp_time) * (1 << 16)) / (s->c.pp_time<<shift);
-        }
+        int64_t pp = s->c.next_pic.ptr->f->pts - s->c.last_pic.ptr->f->pts;
+        int64_t pb = s->c. cur_pic.ptr->f->pts - s->c.last_pic.ptr->f->pts;
+        if (mv_table == s->b_forw_mv_table)
+            mv_scale = (pb << (16 - shift)) / pp;
+        else
+            mv_scale = (pb - pp) * (1 << (16 - shift)) / pp;
 
         dmin = ff_epzs_motion_search(s, &mx, &my, P, 0, ref_index, s->p_mv_table, mv_scale, 0, 16);
     }
