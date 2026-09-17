@@ -485,10 +485,10 @@ static int fdk_aac_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         if (s->flush_samples > 0) {
             flags |= AACDEC_FLUSH;
         } else {
-            return AVERROR_EOF;
+            return 0;
         }
 #else
-        return AVERROR_EOF;
+        return 0;
 #endif
     }
 
