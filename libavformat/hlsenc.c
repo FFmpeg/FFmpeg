@@ -2535,6 +2535,7 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
         if (hls->segment_type == SEGMENT_TYPE_FMP4) {
             if (!vs->init_range_length) {
                 range_length = avio_close_dyn_buf(oc->pb, &vs->init_buffer);
+                oc->pb = NULL;
                 if (range_length <= 0)
                     return AVERROR(EINVAL);
                 avio_write(vs->out, vs->init_buffer, range_length);
