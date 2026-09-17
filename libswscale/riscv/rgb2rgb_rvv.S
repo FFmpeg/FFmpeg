@@ -132,7 +132,7 @@ func ff_deinterleave_bytes_rvv, zve32x, zba
         ret
 endfunc
 
-.macro yuy2_to_i422p luma, chroma
+.macro yuy2_to_i422p luma, chroma, chroma_offset
         lpad    0
         srai    t4, a4, 1 // pixel width -> chroma width
         lw      t6, (sp)
@@ -163,6 +163,14 @@ endfunc
         add     a0, t0, a0
         bnez    t4, 2b
 
+        andi    t0, a4, 1
+        beqz    t0, 3f
+        // Odd widths need one final U/V sample.
+        lbu     t0, \chroma_offset - 2(a3)
+        lbu     t1, \chroma_offset(a3)
+        sb      t0, (a1)
+        sb      t1, (a2)
+3:
         add     a3, a3, t6
         add     a0, a0, a6
         add     a1, a1, a7
@@ -173,9 +181,9 @@ endfunc
 .endm
 
 func ff_uyvytoyuv422_rvv, zve32x, b
-        yuy2_to_i422p v20, v16
+        yuy2_to_i422p v20, v16, 0
 endfunc
 
 func ff_yuyvtoyuv422_rvv, zve32x, b
-        yuy2_to_i422p v16, v20
+        yuy2_to_i422p v16, v20, 1
 endfunc
