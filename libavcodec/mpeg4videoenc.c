@@ -861,10 +861,9 @@ static void mpeg4_encode_gop_header(MPVMainEncContext *const m)
     time = s->c.cur_pic.ptr->f->pts;
     if (m->reordered_input_picture[1])
         time = FFMIN(time, m->reordered_input_picture[1]->f->pts);
-    time = time * s->c.avctx->time_base.num;
-    s->c.last_time_base = FFUDIV(time, s->c.avctx->time_base.den);
+    seconds = av_rescale_rnd(time, s->c.avctx->time_base.num, s->c.avctx->time_base.den, AV_ROUND_DOWN);
+    s->c.last_time_base = seconds;
 
-    seconds = FFUDIV(time, s->c.avctx->time_base.den);
     minutes = FFUDIV(seconds, 60); seconds = FFUMOD(seconds, 60);
     hours   = FFUDIV(minutes, 60); minutes = FFUMOD(minutes, 60);
     hours   = FFUMOD(hours  , 24);
