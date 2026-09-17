@@ -76,8 +76,10 @@ void main(void)
     uint linesize;
     linesize = align(size.x*bits_per_comp*nb_comp, 32);
 
-    uint offs = pos.y*linesize + pos.x*nb_comp*bits_per_comp;
-    offs /= bits_per_comp;
+    /* The offset must be computed in 64 bits as pos.y*linesize can exceed
+       UINT32_MAX for large frames */
+    uint offs = uint((U64(pos.y)*linesize + pos.x*nb_comp*bits_per_comp)
+                     / bits_per_comp);
 
     if (nb_images == 1) {
         uvec4 val;
