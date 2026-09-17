@@ -371,7 +371,7 @@ static int dvdvideo_menu_open(AVFormatContext *s, DVDVideoPlaybackState *state)
     state->celln_start   = state->pgc->program_map[state->entry_pgn - 1];
     state->celln_end     = state->pgc->nr_of_cells;
     state->celln         = state->celln_start;
-    if (state->celln_start > state->pgc->nr_of_cells) {
+    if (state->celln_start < 1 || state->celln_start > state->pgc->nr_of_cells) {
         av_log(s, AV_LOG_ERROR, "Invalid PGC structure: program map points to unknown cell\n");
 
         return AVERROR_INVALIDDATA;
