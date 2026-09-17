@@ -4899,6 +4899,7 @@ endfunc
 .endm
 
 function hevc_put_hevc_qpel_hv4_8_end_neon
+        mov             x7, #(HEVC_MAX_PB_SIZE * 2)
         load_qpel_filterh x5, x4
 1:
         ldr             d16, [sp]
@@ -4927,6 +4928,7 @@ endfunc
 .endm
 
 function hevc_put_hevc_qpel_hv6_8_end_neon
+        mov             x7, #(HEVC_MAX_PB_SIZE * 2)
         mov             x8, #120
         load_qpel_filterh x5, x4
         ldr             q16, [sp]
@@ -5078,7 +5080,6 @@ endfunc
 .macro qpel_hv suffix
 function ff_hevc_put_hevc_qpel_hv4_8_\suffix, export=1
         add             w10, w3, #8
-        mov             x7, #128
         lsl             x10, x10, #7
         mov             x14, sp
         sub             sp, sp, x10         // tmp_array
@@ -5121,7 +5122,6 @@ endfunc
 
 function ff_hevc_put_hevc_qpel_hv6_8_\suffix, export=1
         add             w10, w3, #8
-        mov             x7, #128
         lsl             x10, x10, #7
         mov             x14, sp
         sub             sp, sp, x10         // tmp_array
