@@ -3691,12 +3691,10 @@ static int encode_picture(MPVMainEncContext *const m, const AVPacket *pkt)
     int bits;
     int context_count = s->c.slice_context_count;
 
-    /* we need to initialize some time vars before we can encode B-frames */
-    // RAL: Condition added for MPEG1VIDEO
-    if (s->c.out_format == FMT_MPEG1 || (s->c.h263_pred && s->c.msmpeg4_version == MSMP4_UNUSED))
+    if (CONFIG_MPEG4_ENCODER && s->c.codec_id == AV_CODEC_ID_MPEG4) {
         set_frame_distances(s);
-    if (CONFIG_MPEG4_ENCODER && s->c.codec_id == AV_CODEC_ID_MPEG4)
         ff_set_mpeg4_time(s);
+    }
 
 //    s->lambda = s->c.cur_pic.ptr->quality; //FIXME qscale / ... stuff for ME rate distortion
 
