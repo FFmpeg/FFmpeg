@@ -1174,7 +1174,13 @@ static int parse_cookie(HTTPContext *s, const char *p, const char *host,
             }
         }
     }
-    int host_only = host && !cookie_domain(new_params);
+    const char *domain = host ? cookie_domain(new_params) : NULL;
+    int host_only = host && !domain;
+    if (domain && !host_in_cookie_domain(host, domain)) {
+        av_log(s, AV_LOG_WARNING, "Ignoring cookie for domain %s set by %s\n", domain, host);
+        av_dict_free(&new_params);
+        return 0;
+    }
     av_dict_free(&new_params);
 
     // duplicate the cookie name (dict will dupe the value)
