@@ -1470,8 +1470,13 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path)
 
         // if a cookie path is provided, ensure the request path is within that path
         e = av_dict_get(cookie_params, "path", NULL, 0);
-        if (e && av_strncasecmp(path, e->value, strlen(e->value)))
-            goto skip_cookie;
+        if (e) {
+            size_t len = strlen(e->value);
+            if (av_strncasecmp(path, e->value, len) ||
+                (len && path[len] && path[len] != '/' && path[len] != '?' &&
+                 e->value[len - 1] != '/'))
+                goto skip_cookie;
+        }
 
         // cookie parameters match, so copy the value
         if (!*cookies) {
