@@ -175,7 +175,12 @@ static int config_output(AVFilterLink *outlink)
         int samples = (int) ((s->delays[n] + s->depths[n]) * outlink->sample_rate / 1000.0);
         int depth_samples = (int) (s->depths[n] * outlink->sample_rate / 1000.0);
 
-        s->length[n] = outlink->sample_rate / s->speeds[n];
+        s->length[n] = av_clipd(outlink->sample_rate / s->speeds[n], 0, INT_MAX);
+        if (s->length[n] < 1) {
+            av_log(ctx, AV_LOG_ERROR, "Speed %g is above the sample rate of %d.\n",
+                   s->speeds[n], outlink->sample_rate);
+            return AVERROR(EINVAL);
+        }
 
         s->lookup_table[n] = av_malloc(sizeof(int32_t) * s->length[n]);
         if (!s->lookup_table[n])
