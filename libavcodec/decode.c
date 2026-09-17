@@ -477,8 +477,9 @@ static inline int decode_simple_internal(AVCodecContext *avctx, AVFrame *frame, 
         av_frame_unref(frame);
 
     // FF_CODEC_CB_TYPE_DECODE decoders must not return AVERROR EAGAIN
+    // or AVERROR_EOF.
     // code later will add AVERROR(EAGAIN) to a pointer
-    av_assert0(consumed != AVERROR(EAGAIN));
+    av_assert0(consumed != AVERROR(EAGAIN) && consumed != AVERROR_EOF);
     if (consumed < 0)
         ret = consumed;
     if (consumed >= 0 && avctx->codec->type == AVMEDIA_TYPE_VIDEO)
