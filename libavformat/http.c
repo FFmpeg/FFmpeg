@@ -1103,6 +1103,22 @@ static int parse_set_cookie(const char *set_cookie, AVDictionary **dict)
     return 0;
 }
 
+static const char *cookie_domain(const AVDictionary *cookie_params)
+{
+    const AVDictionaryEntry *e = av_dict_get(cookie_params, "domain", NULL, 0);
+    const char *domain = e ? e->value + (e->value[0] == '.') : "";
+
+    return *domain ? domain : NULL;
+}
+
+static int host_in_cookie_domain(const char *host, const char *domain)
+{
+    int offset = strlen(host) - strlen(domain);
+
+    return offset >= 0 && !av_strcasecmp(host + offset, domain) &&
+           (!offset || host[offset - 1] == '.');
+}
+
 static int parse_cookie(HTTPContext *s, const char *p, AVDictionary **cookies)
 {
     AVDictionary *new_params = NULL;
@@ -1422,6 +1438,7 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path)
     while ((cookie = av_strtok(next, "\n", &saveptr)) && !ret) {
         AVDictionary *cookie_params = NULL;
         const AVDictionaryEntry *cookie_entry, *e;
+        const char *domain;
 
         next = NULL;
         // store the cookie in a dict in case it is updated in the response
@@ -1447,16 +1464,9 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path)
         }
 
         // if no domain in the cookie assume it applied to this request
-        if ((e = av_dict_get(cookie_params, "domain", NULL, 0)) && e->value) {
-            // find the offset comparison is on the min domain (b.com, not a.b.com)
-            int domain_offset = strlen(s->host) - strlen(e->value);
-            if (domain_offset < 0)
-                goto skip_cookie;
-
-            // match the cookie domain
-            if (av_strcasecmp(&s->host[domain_offset], e->value))
-                goto skip_cookie;
-        }
+        domain = cookie_domain(cookie_params);
+        if (domain && !host_in_cookie_domain(s->host, domain))
+            goto skip_cookie;
 
         // if a cookie path is provided, ensure the request path is within that path
         e = av_dict_get(cookie_params, "path", NULL, 0);
