@@ -1119,12 +1119,14 @@ static int host_in_cookie_domain(const char *host, const char *domain)
            (!offset || host[offset - 1] == '.');
 }
 
-static int parse_cookie(HTTPContext *s, const char *p, AVDictionary **cookies)
+static int parse_cookie(HTTPContext *s, const char *p, const char *host,
+                        AVDictionary **cookies)
 {
     AVDictionary *new_params = NULL;
     const AVDictionaryEntry *e, *cookie_entry;
     const char *eql;
-    char *name;
+    char *name, *value;
+    int len;
 
     // ensure the cookie is parsable
     if (parse_set_cookie(p, &new_params)) {
@@ -1172,6 +1174,7 @@ static int parse_cookie(HTTPContext *s, const char *p, AVDictionary **cookies)
             }
         }
     }
+    int host_only = host && !cookie_domain(new_params);
     av_dict_free(&new_params);
 
     // duplicate the cookie name (dict will dupe the value)
@@ -1179,7 +1182,15 @@ static int parse_cookie(HTTPContext *s, const char *p, AVDictionary **cookies)
     if (!(name = av_strndup(p, eql - p))) return AVERROR(ENOMEM);
 
     // add the cookie to the dictionary
-    av_dict_set(cookies, name, eql, AV_DICT_DONT_STRDUP_KEY);
+    len = strlen(eql);
+    while (len && strchr(WHITESPACES, eql[len - 1]))
+        len--;
+    value = av_asprintf("%.*s%s%s", len, eql, host_only ? "; @hostonly=" : "", host_only ? host : "");
+    if (!value) {
+        av_free(name);
+        return AVERROR(ENOMEM);
+    }
+    av_dict_set(cookies, name, value, AV_DICT_DONT_STRDUP_KEY | AV_DICT_DONT_STRDUP_VAL);
 
     return 0;
 }
@@ -1377,7 +1388,7 @@ static int process_line(URLContext *h, char *line, int line_count, int *parsed_h
             av_free(s->mime_type);
             s->mime_type = av_get_token((const char **)&p, ";");
         } else if (!av_strcasecmp(tag, "Set-Cookie")) {
-            if (parse_cookie(s, p, &s->cookie_dict))
+            if (parse_cookie(s, p, s->host, &s->cookie_dict))
                 av_log(h, AV_LOG_WARNING, "Unable to parse '%s'\n", p);
         } else if (!av_strcasecmp(tag, "Icy-MetaInt")) {
             s->icy_metaint = strtoull(p, NULL, 10);
@@ -1442,7 +1453,7 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path)
 
         next = NULL;
         // store the cookie in a dict in case it is updated in the response
-        if (parse_cookie(s, cookie, &s->cookie_dict))
+        if (parse_cookie(s, cookie, NULL, &s->cookie_dict))
             av_log(s, AV_LOG_WARNING, "Unable to parse '%s'\n", cookie);
 
         // continue on to the next cookie if this one cannot be parsed
@@ -1466,6 +1477,9 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path)
         // if no domain in the cookie assume it applied to this request
         domain = cookie_domain(cookie_params);
         if (domain && !host_in_cookie_domain(s->host, domain))
+            goto skip_cookie;
+
+        if ((e = av_dict_get(cookie_params, "@hostonly", NULL, 0)) && av_strcasecmp(e->value, s->host))
             goto skip_cookie;
 
         // if a cookie path is provided, ensure the request path is within that path
