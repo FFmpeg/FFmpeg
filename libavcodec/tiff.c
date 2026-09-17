@@ -2027,7 +2027,7 @@ again:
 
     if (s->get_thumbnail && !s->is_thumbnail) {
         av_log(avctx, AV_LOG_INFO, "No embedded thumbnail present\n");
-        return AVERROR_EOF;
+        return 0;
     }
 
     /** whether we should process this IFD's SubIFD */
