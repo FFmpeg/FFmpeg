@@ -18,6 +18,7 @@
 
 #define COBJMACROS
 
+#include "libavutil/fifo.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "compat/w32dlfcn.h"
@@ -29,6 +30,11 @@
 #include "filters.h"
 #include "scale_eval.h"
 #include "video.h"
+
+typedef struct D3D12ScaleCommandAllocator {
+    ID3D12CommandAllocator *command_allocator;
+    UINT64 fence_value;
+} D3D12ScaleCommandAllocator;
 
 typedef struct ScaleD3D12Context {
     const AVClass *classCtx;
@@ -42,7 +48,8 @@ typedef struct ScaleD3D12Context {
     ID3D12VideoProcessor *video_processor;
     ID3D12CommandQueue *command_queue;
     ID3D12VideoProcessCommandList *command_list;
-    ID3D12CommandAllocator *command_allocator;
+
+    AVFifo *allocator_queue;
 
     /* Synchronization */
     ID3D12Fence *fence;
@@ -71,9 +78,49 @@ static av_cold int scale_d3d12_init(AVFilterContext *ctx) {
     return 0;
 }
 
+static int scale_d3d12_get_valid_command_allocator(ScaleD3D12Context *s, AVFilterContext *ctx,
+                                                    ID3D12CommandAllocator **ppAllocator)
+{
+    HRESULT hr;
+    D3D12ScaleCommandAllocator allocator;
+
+    if (av_fifo_peek(s->allocator_queue, &allocator, 1, 0) >= 0) {
+        UINT64 completed = ID3D12Fence_GetCompletedValue(s->fence);
+        if (completed >= allocator.fence_value) {
+            *ppAllocator = allocator.command_allocator;
+            av_fifo_read(s->allocator_queue, &allocator, 1);
+            return 0;
+        }
+    }
+
+    hr = ID3D12Device_CreateCommandAllocator(s->device, D3D12_COMMAND_LIST_TYPE_VIDEO_PROCESS,
+                                             &IID_ID3D12CommandAllocator, (void **)ppAllocator);
+    if (FAILED(hr)) {
+        av_log(ctx, AV_LOG_ERROR, "Failed to create a new command allocator: HRESULT 0x%lX\n", hr);
+        return AVERROR_EXTERNAL;
+    }
+
+    return 0;
+}
+
+static int scale_d3d12_discard_command_allocator(ScaleD3D12Context *s, ID3D12CommandAllocator *pAllocator,
+                                                  UINT64 fence_value)
+{
+    D3D12ScaleCommandAllocator allocator = {
+        .command_allocator = pAllocator,
+        .fence_value       = fence_value,
+    };
+
+    av_fifo_write(s->allocator_queue, &allocator, 1);
+
+    return 0;
+}
+
 static void release_d3d12_resources(ScaleD3D12Context *s) {
     UINT64 fence_value;
     HRESULT hr;
+    D3D12ScaleCommandAllocator allocator;
+
     /* Wait for all GPU operations to complete before releasing resources */
     if (s->command_queue && s->fence && s->fence_event) {
         fence_value = s->fence_value - 1;
@@ -104,9 +151,10 @@ static void release_d3d12_resources(ScaleD3D12Context *s) {
         s->command_list = NULL;
     }
 
-    if (s->command_allocator) {
-        ID3D12CommandAllocator_Release(s->command_allocator);
-        s->command_allocator = NULL;
+    if (s->allocator_queue) {
+        while (av_fifo_read(s->allocator_queue, &allocator, 1) >= 0)
+            ID3D12CommandAllocator_Release(allocator.command_allocator);
+        av_fifo_freep2(&s->allocator_queue);
     }
 
     if (s->video_processor) {
@@ -181,6 +229,8 @@ static AVRational get_input_framerate(AVFilterContext *ctx, AVFilterLink *inlink
 
 static int scale_d3d12_configure_processor(ScaleD3D12Context *s, AVFilterContext *ctx) {
     HRESULT hr;
+    int ret;
+    ID3D12CommandAllocator *command_allocator = NULL;
 
     if (s->output_format == DXGI_FORMAT_UNKNOWN) {
         av_log(ctx, AV_LOG_ERROR, "Output format not initialized\n");
@@ -311,35 +361,6 @@ static int scale_d3d12_configure_processor(ScaleD3D12Context *s, AVFilterContext
         return AVERROR_EXTERNAL;
     }
 
-    hr = ID3D12Device_CreateCommandAllocator(
-        s->device,
-        D3D12_COMMAND_LIST_TYPE_VIDEO_PROCESS,
-        &IID_ID3D12CommandAllocator,
-        (void **)&s->command_allocator
-    );
-
-    if (FAILED(hr)) {
-        av_log(ctx, AV_LOG_ERROR, "Failed to create command allocator: HRESULT 0x%lX\n", hr);
-        return AVERROR_EXTERNAL;
-    }
-
-    hr = ID3D12Device_CreateCommandList(
-        s->device,
-        0,
-        D3D12_COMMAND_LIST_TYPE_VIDEO_PROCESS,
-        s->command_allocator,
-        NULL,
-        &IID_ID3D12VideoProcessCommandList,
-        (void **)&s->command_list
-    );
-
-    if (FAILED(hr)) {
-        av_log(ctx, AV_LOG_ERROR, "Failed to create command list: HRESULT 0x%lX\n", hr);
-        return AVERROR_EXTERNAL;
-    }
-
-    ID3D12VideoProcessCommandList_Close(s->command_list);
-
     hr = ID3D12Device_CreateFence(s->device, 0, D3D12_FENCE_FLAG_NONE, &IID_ID3D12Fence, (void **)&s->fence);
     if (FAILED(hr)) {
         av_log(ctx, AV_LOG_ERROR, "Failed to create fence: HRESULT 0x%lX\n", hr);
@@ -353,6 +374,36 @@ static int scale_d3d12_configure_processor(ScaleD3D12Context *s, AVFilterContext
         return AVERROR_EXTERNAL;
     }
 
+    s->allocator_queue = av_fifo_alloc2(2, sizeof(D3D12ScaleCommandAllocator), AV_FIFO_FLAG_AUTO_GROW);
+    if (!s->allocator_queue)
+        return AVERROR(ENOMEM);
+
+    ret = scale_d3d12_get_valid_command_allocator(s, ctx, &command_allocator);
+    if (ret < 0)
+        return ret;
+
+    hr = ID3D12Device_CreateCommandList(
+        s->device,
+        0,
+        D3D12_COMMAND_LIST_TYPE_VIDEO_PROCESS,
+        command_allocator,
+        NULL,
+        &IID_ID3D12VideoProcessCommandList,
+        (void **)&s->command_list
+    );
+
+    if (FAILED(hr)) {
+        av_log(ctx, AV_LOG_ERROR, "Failed to create command list: HRESULT 0x%lX\n", hr);
+        ID3D12CommandAllocator_Release(command_allocator);
+        return AVERROR_EXTERNAL;
+    }
+
+    ID3D12VideoProcessCommandList_Close(s->command_list);
+
+    ret = scale_d3d12_discard_command_allocator(s, command_allocator, 0);
+    if (ret < 0)
+        return ret;
+
     av_log(ctx, AV_LOG_VERBOSE, "D3D12 video processor successfully configured\n");
     return 0;
 }
@@ -365,6 +416,7 @@ static int scale_d3d12_filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFrame          *out = NULL;
     int ret = 0;
     HRESULT hr;
+    ID3D12CommandAllocator *command_allocator = NULL;
 
     if (!in) {
         av_log(ctx, AV_LOG_ERROR, "Null input frame\n");
@@ -478,14 +530,18 @@ static int scale_d3d12_filter_frame(AVFilterLink *inlink, AVFrame *in)
         }
     }
 
-    hr = ID3D12CommandAllocator_Reset(s->command_allocator);
+    ret = scale_d3d12_get_valid_command_allocator(s, ctx, &command_allocator);
+    if (ret < 0)
+        goto fail;
+
+    hr = ID3D12CommandAllocator_Reset(command_allocator);
     if (FAILED(hr)) {
         av_log(ctx, AV_LOG_ERROR, "Failed to reset command allocator: HRESULT 0x%lX\n", hr);
         ret = AVERROR_EXTERNAL;
         goto fail;
     }
 
-    hr = ID3D12VideoProcessCommandList_Reset(s->command_list, s->command_allocator);
+    hr = ID3D12VideoProcessCommandList_Reset(s->command_list, command_allocator);
     if (FAILED(hr)) {
         av_log(ctx, AV_LOG_ERROR, "Failed to reset command list: HRESULT 0x%lX\n", hr);
         ret = AVERROR_EXTERNAL;
@@ -576,6 +632,11 @@ static int scale_d3d12_filter_frame(AVFilterLink *inlink, AVFrame *in)
     output_frame->sync_ctx.fence_value = s->fence_value;
     ID3D12Fence_AddRef(s->fence);  ///< Increment reference count
 
+    ret = scale_d3d12_discard_command_allocator(s, command_allocator, s->fence_value);
+    command_allocator = NULL;
+    if (ret < 0)
+        goto fail;
+
     s->fence_value++;
 
     ret = av_frame_copy_props(out, in);
@@ -593,6 +654,8 @@ static int scale_d3d12_filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, out);
 
 fail:
+    if (command_allocator)
+        scale_d3d12_discard_command_allocator(s, command_allocator, s->fence_value);
     av_frame_free(&in);
     av_frame_free(&out);
     return ret;
