@@ -773,6 +773,13 @@ static int vk_hevc_start_frame(AVCodecContext          *avctx,
         nb_refs++;
     }
 
+    if (h->rps[ST_CURR_BEF].nb_refs > FF_ARRAY_ELEMS(hp->h265pic.RefPicSetStCurrBefore) ||
+        h->rps[ST_CURR_AFT].nb_refs > FF_ARRAY_ELEMS(hp->h265pic.RefPicSetStCurrAfter)  ||
+        h->rps[LT_CURR].nb_refs     > FF_ARRAY_ELEMS(hp->h265pic.RefPicSetLtCurr)) {
+        av_log(avctx, AV_LOG_ERROR, "Too many reference frames\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     memset(hp->h265pic.RefPicSetStCurrBefore, 0xff, 8);
     for (int i = 0; i < h->rps[ST_CURR_BEF].nb_refs; i++) {
         HEVCFrame *frame = h->rps[ST_CURR_BEF].ref[i];
