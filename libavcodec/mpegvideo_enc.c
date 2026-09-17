@@ -1301,6 +1301,13 @@ static int load_input_picture(MPVMainEncContext *const m, const AVFrame *pic_arg
         display_picture_number = m->input_picture_number++;
 
         if (pts != AV_NOPTS_VALUE) {
+            if (s->c.codec_id == AV_CODEC_ID_MPEG4 &&
+                (pts > INT64_MAX / 2 / s->c.avctx->time_base.num ||
+                 pts < INT64_MIN / 2 / s->c.avctx->time_base.num)) {
+                av_log(s->c.avctx, AV_LOG_ERROR, "pts %"PRId64" is out of the supported range\n", pts);
+                return AVERROR_PATCHWELCOME;
+            }
+
             if (m->user_specified_pts != AV_NOPTS_VALUE) {
                 int64_t last = m->user_specified_pts;
 
