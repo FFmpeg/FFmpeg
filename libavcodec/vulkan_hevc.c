@@ -757,6 +757,13 @@ static int vk_hevc_start_frame(AVCodecContext          *avctx,
             continue;
         }
 
+        if (nb_refs >= HEVC_MAX_REFS) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Too many reference frames in DPB: %d >= %d\n",
+                   nb_refs, HEVC_MAX_REFS);
+            return AVERROR_INVALIDDATA;
+        }
+
         err = vk_hevc_fill_pict(avctx, &hp->ref_src[idx], &vp->ref_slots[idx],
                                 &vp->refs[idx], &hp->vkh265_refs[idx],
                                 &hp->h265_refs[idx], (HEVCFrame *)ref, 0, i);
