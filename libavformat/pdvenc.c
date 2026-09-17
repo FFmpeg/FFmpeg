@@ -105,6 +105,8 @@ static int pdv_write_header(AVFormatContext *s)
 
     avio_write(s->pb, PDV_MAGIC, 16);
     pdv->nb_frames_pos = avio_tell(s->pb);
+    if (pdv->nb_frames_pos < 0)
+        return pdv->nb_frames_pos;
     avio_wl16(s->pb, 0);
     avio_wl16(s->pb, 0);
     avio_wl32(s->pb, pdv->fps_bits);
@@ -112,11 +114,12 @@ static int pdv_write_header(AVFormatContext *s)
     avio_wl16(s->pb, st->codecpar->height);
 
     pdv->table_pos = avio_tell(s->pb);
+    if (pdv->table_pos < 0)
+        return pdv->table_pos;
     ffio_fill(s->pb, 0, 4LL * (pdv->max_frames + 1));
     pdv->payload_start = avio_tell(s->pb);
-
-    if (pdv->nb_frames_pos < 0 || pdv->table_pos < 0 || pdv->payload_start < 0)
-        return AVERROR(EIO);
+    if (pdv->payload_start < 0)
+        return pdv->payload_start;
 
     return 0;
 }
@@ -128,10 +131,10 @@ static int pdv_write_packet(AVFormatContext *s, AVPacket *pkt)
     const uint32_t max_table_gap = 4U * pdv->max_frames;
 
     if (offset < 0)
-        return AVERROR(EIO);
+        return offset;
     offset -= pdv->payload_start;
     if (offset < 0)
-        return AVERROR(EIO);
+        return AVERROR(EINVAL);
 
     if (pkt->size <= 0)
         return AVERROR_INVALIDDATA;
@@ -162,7 +165,7 @@ static int pdv_write_trailer(AVFormatContext *s)
     int64_t ret;
 
     if (payload_size < 0)
-        return AVERROR(EIO);
+        return payload_size;
     payload_size -= pdv->payload_start;
     if (payload_size < 0 || payload_size > PDV_MAX_OFFSET - table_gap)
         return AVERROR(EINVAL);
