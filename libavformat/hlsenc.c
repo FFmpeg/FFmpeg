@@ -2494,6 +2494,8 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
                     ((pkt->flags & AV_PKT_FLAG_KEY) || (hls->flags & HLS_SPLIT_BY_TIME));
         is_ref_pkt = (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) && (pkt->stream_index == vs->reference_stream_index);
     }
+    if (st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE)
+        is_ref_pkt = can_split = 0;
     if (pkt->pts == AV_NOPTS_VALUE)
         is_ref_pkt = can_split = 0;
 
