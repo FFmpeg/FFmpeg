@@ -506,8 +506,11 @@ static int gif_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
         return ret;
 
     ret = gif_parse_next_image(s, s->frame);
-    if (ret < 0)
+    if (ret < 0) {
+        if (ret == AVERROR_EOF)
+            ret = bytestream2_tell(&s->gb);
         return ret;
+    }
 
     if ((ret = av_frame_ref(rframe, s->frame)) < 0)
         return ret;
