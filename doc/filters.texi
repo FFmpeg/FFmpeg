@@ -14818,6 +14818,12 @@ Pass through last frame if input duration has not been reached yet.
 @end table
 The default is @code{round}.
 
+If timestamp rounding would otherwise discard every frame, one frame is
+retained when its rounded timestamp equals both the first output timestamp
+and the rounded end of input. This exception extends the output beyond the
+rounded end of input by one output frame period. Frames whose entire interval
+is trimmed by @option{start_time} remain discarded.
+
 @end table
 
 Alternatively, the options can be specified as a flat string:

@@ -83,6 +83,8 @@ typedef struct FPSContext {
     /* Runtime state */
     int      status;        ///< buffered input status
     int64_t  status_pts;    ///< buffered input status timestamp
+    int64_t  last_in_pts;   ///< last frame timestamp in input timebase
+    int      last_frame_trimmed; ///< last frame ends at or before start_time
 
     AVFrame *frames[2];     ///< buffered frames
     int      frames_count;  ///< number of buffered frames
@@ -245,7 +247,7 @@ static int read_frame(AVFilterContext *ctx, FPSContext *s, AVFilterLink *inlink,
     /* Convert frame pts to output timebase.
      * The dance with offsets is required to match the rounding behaviour of the
      * previous version of the fps filter when using the start_time option. */
-    in_pts = frame->pts;
+    in_pts = s->last_in_pts = frame->pts;
     frame->pts = s->out_pts_off + av_rescale_q_rnd(in_pts - s->in_pts_off,
                                                    inlink->time_base, outlink->time_base,
                                                    s->rounding | AV_ROUND_PASS_MINMAX);
@@ -264,6 +266,8 @@ static int read_frame(AVFilterContext *ctx, FPSContext *s, AVFilterLink *inlink,
 static int write_frame(AVFilterContext *ctx, FPSContext *s, AVFilterLink *outlink, int *again)
 {
     AVFrame *frame;
+    int eof_before_or_at_next;
+    int first_output_due;
 
     av_assert1(s->frames_count == 2 || (s->status && s->frames_count == 1));
 
@@ -282,13 +286,20 @@ static int write_frame(AVFilterContext *ctx, FPSContext *s, AVFilterLink *outlin
         }
     }
 
+    eof_before_or_at_next = s->status && s->status_pts <= s->next_pts;
+    first_output_due      = !s->frames_out && !s->cur_frame_out &&
+                            !s->last_frame_trimmed &&
+                            s->frames[0]->pts == s->next_pts &&
+                            s->status_pts == s->next_pts;
+
     /* There are two conditions where we want to drop a frame:
      * - If we have two buffered frames and the second frame is acceptable
      *   as the next output frame, then drop the first buffered frame.
      * - If we have status (EOF) set, drop frames when we hit the
-     *   status timestamp. */
+     *   status timestamp, unless no frame has been output yet and the
+     *   buffered frame is due at the next output timestamp. */
     if ((s->frames_count == 2 && s->frames[1]->pts <= s->next_pts) ||
-        (s->status            && s->status_pts     <= s->next_pts)) {
+        (eof_before_or_at_next && !first_output_due)) {
 
         frame = shift_frame(ctx, s);
         av_frame_free(&frame);
@@ -317,6 +328,14 @@ static int write_frame(AVFilterContext *ctx, FPSContext *s, AVFilterLink *outlin
 static void update_eof_pts(AVFilterContext *ctx, FPSContext *s, AVFilterLink *inlink, AVFilterLink *outlink, int64_t status_pts)
 {
     int eof_rounding = (s->eof_action == EOF_ACTION_PASS) ? AV_ROUND_UP : s->rounding;
+
+    /* Check trimming before rounding can collapse a frame before start_time
+     * and the end of its interval onto the first output timestamp. A frame
+     * starting at start_time is still eligible even with zero duration. */
+    s->last_frame_trimmed = s->start_time != DBL_MAX &&
+                            s->start_time != AV_NOPTS_VALUE &&
+                            s->last_in_pts < s->in_pts_off &&
+                            status_pts <= s->in_pts_off;
     s->status_pts = av_rescale_q_rnd(status_pts, inlink->time_base, outlink->time_base,
                                      eof_rounding | AV_ROUND_PASS_MINMAX);
 
