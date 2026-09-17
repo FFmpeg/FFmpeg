@@ -1722,6 +1722,12 @@ static int set_bframe_chain_length(MPVMainEncContext *const m)
             }
         }
 
+        if (s->c.codec_id == AV_CODEC_ID_MPEG4)
+            while (b_frames &&
+                   m->input_picture[b_frames]->f->pts * s->c.avctx->time_base.num -
+                   s->c.last_non_b_time > UINT16_MAX)
+                b_frames--;
+
         for (int i = b_frames - 1; i >= 0; i--) {
             int type = m->input_picture[i]->f->pict_type;
             if (type && type != AV_PICTURE_TYPE_B)
