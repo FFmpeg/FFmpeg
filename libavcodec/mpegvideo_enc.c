@@ -3665,9 +3665,9 @@ static void set_frame_distances(MPVEncContext *const s)
         s->c.pb_time = s->c.pp_time - (s->c.last_non_b_time - s->c.time);
         av_assert1(s->c.pb_time > 0 && s->c.pb_time < s->c.pp_time);
     }else{
+        av_assert1(s->picture_number == 0 || s->c.time > s->c.last_non_b_time);
         s->c.pp_time = s->c.time - s->c.last_non_b_time;
         s->c.last_non_b_time = s->c.time;
-        av_assert1(s->picture_number == 0 || s->c.pp_time > 0);
     }
 }
 
