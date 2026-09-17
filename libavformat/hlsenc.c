@@ -2764,6 +2764,8 @@ static int hls_write_trailer(struct AVFormatContext *s)
         vs = &hls->var_streams[i];
         oc = vs->avf;
         vtt_oc = vs->vtt_avf;
+        if (!oc->pb)
+            continue;
         old_filename = av_strdup(oc->url);
         use_temp_file = 0;
 
