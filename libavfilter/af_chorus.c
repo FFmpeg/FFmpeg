@@ -182,7 +182,7 @@ static int config_output(AVFilterLink *outlink)
             return AVERROR(EINVAL);
         }
 
-        s->lookup_table[n] = av_malloc(sizeof(int32_t) * s->length[n]);
+        s->lookup_table[n] = av_malloc_array(s->length[n], sizeof(*s->lookup_table[n]));
         if (!s->lookup_table[n])
             return AVERROR(ENOMEM);
 
