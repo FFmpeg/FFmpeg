@@ -245,8 +245,8 @@ static int h263_encode_picture_header(MPVMainEncContext *const m)
     coded_frame_rate_base= (1000+best_clock_code)*best_divisor;
 
     put_bits(&s->pb, 22, 0x20); /* PSC */
-    temp_ref = s->picture_number * (int64_t)coded_frame_rate * s->c.avctx->time_base.num / //FIXME use timestamp
-                         (coded_frame_rate_base * (int64_t)s->c.avctx->time_base.den);
+    temp_ref = av_rescale_rnd(s->picture_number, coded_frame_rate * (int64_t)s->c.avctx->time_base.num, //FIXME use timestamp
+                              coded_frame_rate_base * (int64_t)s->c.avctx->time_base.den, AV_ROUND_ZERO);
     put_sbits(&s->pb, 8, temp_ref); /* TemporalReference */
 
     put_bits(&s->pb, 1, 1);     /* marker */
