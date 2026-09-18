@@ -74,6 +74,17 @@ coverage:
 coverage.ffmpeg.org     Fate code coverage
 
 
+Ampere Server:
+--------------
+Donated by Ampere in June 2026, see https://www.ffmpeg.org/#ampere2026
+AmpereOne (Mt. Mitchell) 2U system with 192 Arm cores, 512 GB of RAM, 24 NVMe bays and 2x25G networking
+Hosted in germany
+Contains a Netint Quadra VPU card, shared by two VMs: a Forgejo runner and a VM developers can get SSH access to
+Runs Forgejo CI jobs (native aarch64 with all dependencies, qemu based riscv, mips and ppc)
+Runs Fairy reviews and bug investigations.
+
+For access to the Ampere server for FFmpeg work, send mail to root at ffmpeg.org
+
 The main and fate server as well as VMs currently run ubuntu
 
 
