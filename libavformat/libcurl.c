@@ -816,6 +816,7 @@ static void execute_command(CurlLoop *loop, CurlCmd *cmd)
         pthread_mutex_lock(&c->mutex);
         av_fifo_reset2(c->fifo);
         const int was_paused = c->paused;
+        c->aborted = 0;
         c->paused = 0;
         c->status = 0;
         c->curl_status = 0;
