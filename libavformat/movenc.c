@@ -9359,6 +9359,7 @@ static const AVCodecTag codec_mp4_tags[] = {
     { AV_CODEC_ID_TSCC2,           MKTAG('m', 'p', '4', 'v') },
     { AV_CODEC_ID_VP9,             MKTAG('v', 'p', '0', '9') },
     { AV_CODEC_ID_AV1,             MKTAG('a', 'v', '0', '1') },
+    { AV_CODEC_ID_AV1,             MKTAG('d', 'a', 'v', '1') },
     { AV_CODEC_ID_AAC,             MKTAG('m', 'p', '4', 'a') },
     { AV_CODEC_ID_APPLE_APAC,      MKTAG('a', 'p', 'a', 'c') },
     { AV_CODEC_ID_ALAC,            MKTAG('a', 'l', 'a', 'c') },
