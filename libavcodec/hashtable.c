@@ -184,15 +184,15 @@ int ff_hashtable_delete(struct FFHashtableContext *ctx, const void *key)
                 if (++wrapped_index == ctx->max_entries)
                     wrapped_index = 0;
                 next_entry = ctx->table + wrapped_index * ctx->entry_size;
-                if (ENTRY_PSL_VAL(next_entry) <= 1) {
-                    ctx->nb_entries--;
-                    return 1;
-                }
+                if (ENTRY_PSL_VAL(next_entry) <= 1)
+                    break;
                 memcpy(entry, next_entry, ctx->entry_size);
                 ENTRY_PSL_VAL(entry)--;
                 ENTRY_PSL_VAL(next_entry) = 0;
                 entry = next_entry;
             }
+            ctx->nb_entries--;
+            return 1;
         }
     }
     return 0;
@@ -201,6 +201,7 @@ int ff_hashtable_delete(struct FFHashtableContext *ctx, const void *key)
 void ff_hashtable_clear(struct FFHashtableContext *ctx)
 {
     memset(ctx->table, 0, ctx->entry_size * ctx->max_entries);
+    ctx->nb_entries = 0;
 }
 
 av_cold void ff_hashtable_freep(FFHashtableContext **ctx)
