@@ -62,15 +62,6 @@ static const AVOption limiter_options[] = {
 
 AVFILTER_DEFINE_CLASS(limiter);
 
-static av_cold int init(AVFilterContext *ctx)
-{
-    LimiterContext *s = ctx->priv;
-
-    if (s->min >= 0 && s->max >= 0 && s->min > s->max)
-        return AVERROR(EINVAL);
-    return 0;
-}
-
 static const enum AVPixelFormat pix_fmts[] = {
     AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV440P,
     AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ440P,
@@ -283,7 +274,6 @@ const FFFilter ff_vf_limiter = {
     .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
                      AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(LimiterContext),
-    .init          = init,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
