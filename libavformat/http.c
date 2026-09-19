@@ -1492,7 +1492,7 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path)
         e = av_dict_get(cookie_params, "path", NULL, 0);
         if (e) {
             size_t len = strlen(e->value);
-            if (av_strncasecmp(path, e->value, len) ||
+            if (strncmp(path, e->value, len) ||
                 (len && path[len] && path[len] != '/' && path[len] != '?' &&
                  e->value[len - 1] != '/'))
                 goto skip_cookie;
