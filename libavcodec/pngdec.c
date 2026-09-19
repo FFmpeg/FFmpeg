@@ -126,6 +126,9 @@ typedef struct PNGDecContext {
     int row_size; /* decompressed row size */
     int pass_row_size; /* decompress row size of the current pass */
     int y;
+    /* sub-8-bit samples of an APNG frame are decoded packed at the start of
+     * the frame row and only moved to the frame position once unpacked */
+    int subframe_packed;
     FFZStream zstream;
 
     AVBufferRef *exif_data;
@@ -344,7 +347,8 @@ static void png_handle_row(PNGDecContext *s, uint8_t *dst, ptrdiff_t dst_stride)
     int got_line;
 
     if (!s->interlace_type) {
-        ptr = dst + dst_stride * (s->y + s->y_offset) + s->x_offset * s->bpp;
+        ptr = dst + dst_stride * (s->y + s->y_offset) +
+              (s->subframe_packed ? 0 : s->x_offset * s->bpp);
         if (s->y == 0)
             last_row = s->last_row;
         else
@@ -917,6 +921,12 @@ static int decode_idat_chunk(AVCodecContext *avctx, PNGDecContext *s,
         s->bpp            = (s->bits_per_pixel + 7) >> 3;
         s->row_size       = (s->cur_w * s->bits_per_pixel + 7) >> 3;
 
+        /* Packed rows of sub-8-bit frames cannot be placed at the frame
+         * offset, as that one is a pixel and not a byte offset. */
+        s->subframe_packed = CONFIG_APNG_DECODER &&
+                             avctx->codec_id == AV_CODEC_ID_APNG &&
+                             s->bits_per_pixel <= 4 && !s->interlace_type;
+
         if ((s->bit_depth == 2 || s->bit_depth == 4 || s->bit_depth == 8) &&
                 s->color_type == PNG_COLOR_TYPE_RGB) {
             avctx->pix_fmt = AV_PIX_FMT_RGB24;
@@ -1219,76 +1229,96 @@ static int decode_sbit_chunk(AVCodecContext *avctx, PNGDecContext *s,
     return 0;
 }
 
-static void handle_small_bpp(PNGDecContext *s, AVFrame *p)
+/* expand one row of packed sub-8-bit samples to one byte per sample, in place */
+static void unpack_small_row(PNGDecContext *s, uint8_t *pd, int width)
 {
     if (s->bits_per_pixel == 1 && s->color_type == PNG_COLOR_TYPE_PALETTE) {
-        int i, j, k;
-        uint8_t *pd = p->data[0];
-        for (j = 0; j < s->height; j++) {
-            i = s->width / 8;
-            for (k = 7; k >= 1; k--)
-                if ((s->width&7) >= k)
-                    pd[8*i + k - 1] = (pd[i]>>8-k) & 1;
-            for (i--; i >= 0; i--) {
-                pd[8*i + 7]=  pd[i]     & 1;
-                pd[8*i + 6]= (pd[i]>>1) & 1;
-                pd[8*i + 5]= (pd[i]>>2) & 1;
-                pd[8*i + 4]= (pd[i]>>3) & 1;
-                pd[8*i + 3]= (pd[i]>>4) & 1;
-                pd[8*i + 2]= (pd[i]>>5) & 1;
-                pd[8*i + 1]= (pd[i]>>6) & 1;
-                pd[8*i + 0]=  pd[i]>>7;
-            }
-            pd += p->linesize[0];
+        int i, k;
+
+        i = width / 8;
+        for (k = 7; k >= 1; k--)
+            if ((width&7) >= k)
+                pd[8*i + k - 1] = (pd[i]>>8-k) & 1;
+        for (i--; i >= 0; i--) {
+            pd[8*i + 7]=  pd[i]     & 1;
+            pd[8*i + 6]= (pd[i]>>1) & 1;
+            pd[8*i + 5]= (pd[i]>>2) & 1;
+            pd[8*i + 4]= (pd[i]>>3) & 1;
+            pd[8*i + 3]= (pd[i]>>4) & 1;
+            pd[8*i + 2]= (pd[i]>>5) & 1;
+            pd[8*i + 1]= (pd[i]>>6) & 1;
+            pd[8*i + 0]=  pd[i]>>7;
         }
     } else if (s->bits_per_pixel == 2) {
-        int i, j;
-        uint8_t *pd = p->data[0];
-        for (j = 0; j < s->height; j++) {
-            i = s->width / 4;
-            if (s->color_type == PNG_COLOR_TYPE_PALETTE) {
-                if ((s->width&3) >= 3) pd[4*i + 2]= (pd[i] >> 2) & 3;
-                if ((s->width&3) >= 2) pd[4*i + 1]= (pd[i] >> 4) & 3;
-                if ((s->width&3) >= 1) pd[4*i + 0]=  pd[i] >> 6;
-                for (i--; i >= 0; i--) {
-                    pd[4*i + 3]=  pd[i]     & 3;
-                    pd[4*i + 2]= (pd[i]>>2) & 3;
-                    pd[4*i + 1]= (pd[i]>>4) & 3;
-                    pd[4*i + 0]=  pd[i]>>6;
-                }
-            } else {
-                if ((s->width&3) >= 3) pd[4*i + 2]= ((pd[i]>>2) & 3)*0x55;
-                if ((s->width&3) >= 2) pd[4*i + 1]= ((pd[i]>>4) & 3)*0x55;
-                if ((s->width&3) >= 1) pd[4*i + 0]= ( pd[i]>>6     )*0x55;
-                for (i--; i >= 0; i--) {
-                    pd[4*i + 3]= ( pd[i]     & 3)*0x55;
-                    pd[4*i + 2]= ((pd[i]>>2) & 3)*0x55;
-                    pd[4*i + 1]= ((pd[i]>>4) & 3)*0x55;
-                    pd[4*i + 0]= ( pd[i]>>6     )*0x55;
-                }
+        int i;
+
+        i = width / 4;
+        if (s->color_type == PNG_COLOR_TYPE_PALETTE) {
+            if ((width&3) >= 3) pd[4*i + 2]= (pd[i] >> 2) & 3;
+            if ((width&3) >= 2) pd[4*i + 1]= (pd[i] >> 4) & 3;
+            if ((width&3) >= 1) pd[4*i + 0]=  pd[i] >> 6;
+            for (i--; i >= 0; i--) {
+                pd[4*i + 3]=  pd[i]     & 3;
+                pd[4*i + 2]= (pd[i]>>2) & 3;
+                pd[4*i + 1]= (pd[i]>>4) & 3;
+                pd[4*i + 0]=  pd[i]>>6;
             }
-            pd += p->linesize[0];
+        } else {
+            if ((width&3) >= 3) pd[4*i + 2]= ((pd[i]>>2) & 3)*0x55;
+            if ((width&3) >= 2) pd[4*i + 1]= ((pd[i]>>4) & 3)*0x55;
+            if ((width&3) >= 1) pd[4*i + 0]= ( pd[i]>>6     )*0x55;
+            for (i--; i >= 0; i--) {
+                pd[4*i + 3]= ( pd[i]     & 3)*0x55;
+                pd[4*i + 2]= ((pd[i]>>2) & 3)*0x55;
+                pd[4*i + 1]= ((pd[i]>>4) & 3)*0x55;
+                pd[4*i + 0]= ( pd[i]>>6     )*0x55;
+            }
         }
     } else if (s->bits_per_pixel == 4) {
-        int i, j;
-        uint8_t *pd = p->data[0];
-        for (j = 0; j < s->height; j++) {
-            i = s->width/2;
-            if (s->color_type == PNG_COLOR_TYPE_PALETTE) {
-                if (s->width&1) pd[2*i+0]= pd[i]>>4;
-                for (i--; i >= 0; i--) {
-                    pd[2*i + 1] = pd[i] & 15;
-                    pd[2*i + 0] = pd[i] >> 4;
-                }
-            } else {
-                if (s->width & 1) pd[2*i + 0]= (pd[i] >> 4) * 0x11;
-                for (i--; i >= 0; i--) {
-                    pd[2*i + 1] = (pd[i] & 15) * 0x11;
-                    pd[2*i + 0] = (pd[i] >> 4) * 0x11;
-                }
+        int i;
+
+        i = width/2;
+        if (s->color_type == PNG_COLOR_TYPE_PALETTE) {
+            if (width&1) pd[2*i+0]= pd[i]>>4;
+            for (i--; i >= 0; i--) {
+                pd[2*i + 1] = pd[i] & 15;
+                pd[2*i + 0] = pd[i] >> 4;
             }
-            pd += p->linesize[0];
+        } else {
+            if (width & 1) pd[2*i + 0]= (pd[i] >> 4) * 0x11;
+            for (i--; i >= 0; i--) {
+                pd[2*i + 1] = (pd[i] & 15) * 0x11;
+                pd[2*i + 0] = (pd[i] >> 4) * 0x11;
+            }
         }
+    }
+}
+
+static void handle_small_bpp(PNGDecContext *s, AVFrame *p)
+{
+    uint8_t *pd = p->data[0];
+
+    for (int j = 0; j < s->height; j++) {
+        unpack_small_row(s, pd, s->width);
+        pd += p->linesize[0];
+    }
+}
+
+/* The offsets of an APNG frame are pixel offsets, so they cannot be applied
+ * to the packed rows: those are decoded at the start of the frame row and
+ * moved to their position within the frame once unpacked. */
+static void handle_small_bpp_apng(PNGDecContext *s, AVFrame *p)
+{
+    /* one byte per sample once unpacked, that is one palette index or one
+     * gray sample per pixel */
+    const int bpp = s->channels;
+    uint8_t *pd = p->data[0] + s->y_offset * p->linesize[0];
+
+    for (int j = 0; j < s->cur_h; j++) {
+        unpack_small_row(s, pd, s->cur_w);
+        if (s->x_offset)
+            memmove(pd + s->x_offset * bpp, pd, s->cur_w * bpp);
+        pd += p->linesize[0];
     }
 }
 
@@ -1735,8 +1765,12 @@ exit_loop:
         goto fail;
     }
 
-    if (s->bits_per_pixel <= 4)
-        handle_small_bpp(s, p);
+    if (s->bits_per_pixel <= 4) {
+        if (CONFIG_APNG_DECODER && s->subframe_packed)
+            handle_small_bpp_apng(s, p);
+        else
+            handle_small_bpp(s, p);
+    }
 
     if (s->exif_data) {
         // we swap because ff_decode_exif_attach_buffer adds to p->metadata
