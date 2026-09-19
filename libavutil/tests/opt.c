@@ -642,5 +642,48 @@ int main(void)
             printf("Error 'foo'\n");
     }
 
+    printf("\nTesting av_opt_copy() into a memdup'ed object\n");
+    {
+        TestContext test_ctx = { 0 };
+        TestContext *copy;
+        uint8_t *layout_name = NULL;
+
+        test_ctx.class = &test_class;
+        av_opt_set_defaults(&test_ctx);
+        av_opt_set(&test_ctx, "cl", "FL@Left+FR@Right", 0);
+
+        copy = av_memdup(&test_ctx, sizeof(test_ctx));
+        if (!copy)
+            return 1;
+        av_opt_copy(copy, &test_ctx);
+        av_opt_free(&test_ctx);
+
+        av_opt_get(copy, "cl", 0, &layout_name);
+        printf("cl=%s\n", layout_name);
+        av_free(layout_name);
+        av_opt_free(copy);
+        av_free(copy);
+    }
+
+    printf("\nTesting av_opt_copy() of a native layout into a custom layout\n");
+    {
+        TestContext src = { 0 }, dst = { 0 };
+        AVChannelLayout native = { AV_CHANNEL_ORDER_NATIVE };
+
+        src.class = dst.class = &test_class;
+        av_opt_set_defaults(&src);
+        av_opt_set_defaults(&dst);
+        av_opt_set(&dst, "cl", "FL@Left+FR@Right", 0);
+
+        native.u.mask      = (uintptr_t)dst.channel_layout.u.map;
+        native.nb_channels = av_popcount64(native.u.mask);
+        av_opt_set_chlayout(&src, "cl", &native, 0);
+
+        printf("copy: %d\n", av_opt_copy(&dst, &src));
+        printf("same layout: %d\n", !av_channel_layout_compare(&src.channel_layout, &dst.channel_layout));
+        av_opt_free(&src);
+        av_opt_free(&dst);
+    }
+
     return 0;
 }

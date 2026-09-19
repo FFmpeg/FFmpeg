@@ -533,3 +533,10 @@ Error 'num64'
 Error 'child_num'
 OK    'child_num'
 Error 'foo'
+
+Testing av_opt_copy() into a memdup'ed object
+cl=2 channels (FL@Left+FR@Right)
+
+Testing av_opt_copy() of a native layout into a custom layout
+copy: 0
+same layout: 1
