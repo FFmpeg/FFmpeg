@@ -1747,8 +1747,11 @@ static int read_from_url(struct representation *pls, struct fragment *seg,
     int ret;
 
     /* limit read if the fragment was only a part of a file */
-    if (seg->size >= 0)
+    if (seg->size >= 0) {
         buf_size = FFMIN(buf_size, pls->cur_seg_size - pls->cur_seg_offset);
+        if (buf_size <= 0)
+            return AVERROR_EOF;
+    }
 
     ret = avio_read(pls->input, buf, buf_size);
     if (ret > 0)
