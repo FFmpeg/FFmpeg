@@ -105,6 +105,9 @@ static int qdm2_parse_config(PayloadContext *qdm, AVStream *st,
                 if (item_len < 30)
                     return AVERROR_INVALIDDATA;
 
+                if (AV_RB32(p + 26) > sizeof(qdm->buf[0]))
+                    return AVERROR_INVALIDDATA;
+
                 ret = ff_alloc_extradata(st->codecpar, 26 + item_len);
                 if (ret < 0) {
                     return ret;
