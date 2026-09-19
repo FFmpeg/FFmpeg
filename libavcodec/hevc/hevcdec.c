@@ -3451,6 +3451,9 @@ static int hevc_frame_start(HEVCContext *s, HEVCLayerContext *l,
                        "Base/non-base layer SPS have unsupported parameter combination\n");
                 return AVERROR(ENOSYS);
             }
+        } else {
+            for (int i = 1; i < FF_ARRAY_ELEMS(s->layers); i++)
+                set_sps(s, &s->layers[i], NULL);
         }
 
         ff_hevc_clear_refs(l);
