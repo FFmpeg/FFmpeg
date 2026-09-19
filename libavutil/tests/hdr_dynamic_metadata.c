@@ -295,11 +295,7 @@ static void fill_hdr_plus_conforming(AVDynamicHDRPlus *s)
 /* Deliberately NOT a conforming Version 1 payload: it combines a second
  * processing window, both actual-peak-luminance matrices and
  * ColorSaturationWeight, all of which §9.4 excludes for Version 1. It exists
- * only to drive the optional serializer/parser branches those fields guard.
- *
- * tone_mapping_flag stays set for every window because the serializer writes
- * color_saturation_mapping_flag inside the tone-mapping block while the parser
- * reads it outside; only tone_mapping_flag=1 round-trips today. */
+ * only to drive the optional serializer/parser branches those fields guard. */
 static void fill_hdr_plus_synthetic(AVDynamicHDRPlus *s)
 {
     memset(s, 0, sizeof(*s));
@@ -362,17 +358,16 @@ static void fill_hdr_plus_synthetic(AVDynamicHDRPlus *s)
             s->mastering_display_actual_peak_luminance[i][j] =
                 (AVRational){ 15 - (i * 2 + j), PEAK_LUMINANCE_DEN };
 
+    s->params[0].tone_mapping_flag = 1;
+    s->params[0].knee_point_x = (AVRational){ 500, KNEE_POINT_DEN };
+    s->params[0].knee_point_y = (AVRational){ 800, KNEE_POINT_DEN };
+    s->params[0].num_bezier_curve_anchors = 3;
+    s->params[0].bezier_curve_anchors[0] = (AVRational){ 100, BEZIER_ANCHOR_DEN };
+    s->params[0].bezier_curve_anchors[1] = (AVRational){ 500, BEZIER_ANCHOR_DEN };
+    s->params[0].bezier_curve_anchors[2] = (AVRational){ 900, BEZIER_ANCHOR_DEN };
+    s->params[1].tone_mapping_flag = 0;
+
     for (int w = 0; w < 2; w++) {
-        s->params[w].tone_mapping_flag = 1;
-        s->params[w].knee_point_x = (AVRational){ 500 + w, KNEE_POINT_DEN };
-        s->params[w].knee_point_y = (AVRational){ 800 + w, KNEE_POINT_DEN };
-        s->params[w].num_bezier_curve_anchors = 3;
-        s->params[w].bezier_curve_anchors[0] =
-            (AVRational){ 100 + w, BEZIER_ANCHOR_DEN };
-        s->params[w].bezier_curve_anchors[1] =
-            (AVRational){ 500 + w, BEZIER_ANCHOR_DEN };
-        s->params[w].bezier_curve_anchors[2] =
-            (AVRational){ 900 + w, BEZIER_ANCHOR_DEN };
         s->params[w].color_saturation_mapping_flag = 1;
         s->params[w].color_saturation_weight =
             (AVRational){ 8 + w, SATURATION_DEN };

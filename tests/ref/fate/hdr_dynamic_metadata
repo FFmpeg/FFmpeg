@@ -54,7 +54,7 @@ decoded:
     maxscl: 20000/100000 30000/100000 40000/100000 average_maxrgb=25000/100000
     distribution_maxrgb: n=1 25%=12500/100000
     fraction_bright_pixels=100/1000
-    tone_mapping_flag=1 knee=501/4095,801/4095 anchors=3: 101/1023 501/1023 901/1023
+    tone_mapping_flag=0
     color_saturation_mapping_flag=1 weight=9/8
 
 Testing error paths
