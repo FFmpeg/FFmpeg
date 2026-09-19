@@ -81,6 +81,15 @@ fate-nellymoser-aref-encode: CMP_SHIFT = -256
 fate-nellymoser-aref-encode: CMP_TARGET = 3863
 fate-nellymoser-aref-encode: SIZE_TOLERANCE = 268
 
+FATE_SAMPLES_AUDIO-$(call ENCDEC, NELLYMOSER, FLV, WAV_MUXER WAV_DEMUXER PCM_S16LE_ENCODER PCM_S16LE_DECODER ARESAMPLE_FILTER PIPE_PROTOCOL) += fate-nellymoser-aref-encode-trellis
+fate-nellymoser-aref-encode-trellis: tests/data/asynth-16000-1.wav
+fate-nellymoser-aref-encode-trellis: CMD = enc_dec_pcm flv wav s16le $(REF) -c:a nellymoser -trellis 1
+fate-nellymoser-aref-encode-trellis: CMP = stddev
+fate-nellymoser-aref-encode-trellis: REF = tests/data/asynth-16000-1.wav
+fate-nellymoser-aref-encode-trellis: CMP_SHIFT = -256
+fate-nellymoser-aref-encode-trellis: CMP_TARGET = 4222
+fate-nellymoser-aref-encode-trellis: SIZE_TOLERANCE = 268
+
 FATE_SAMPLES_AUDIO-$(call FRAMECRC, AVI, ON2AVC, ARESAMPLE_FILTER) += fate-on2avc
 fate-on2avc: CMD = framecrc -i $(TARGET_SAMPLES)/vp7/potter-40.vp7 -frames 30 -vn -af aresample
 
