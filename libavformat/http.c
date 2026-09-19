@@ -1111,12 +1111,17 @@ static const char *cookie_domain(const AVDictionary *cookie_params)
     return *domain ? domain : NULL;
 }
 
+static int host_is_ip_literal(const char *host)
+{
+    return !host[strspn(host, "0123456789.")] || strchr(host, ':');
+}
+
 static int host_in_cookie_domain(const char *host, const char *domain)
 {
     int offset = strlen(host) - strlen(domain);
 
     return offset >= 0 && !av_strcasecmp(host + offset, domain) &&
-           (!offset || host[offset - 1] == '.');
+           (!offset || (host[offset - 1] == '.' && !host_is_ip_literal(host)));
 }
 
 static int parse_cookie(HTTPContext *s, const char *p, const char *host,
