@@ -1092,7 +1092,7 @@ static int parse_set_cookie(const char *set_cookie, AVDictionary **dict)
         next_param = NULL;
         param += strspn(param, WHITESPACES);
         if ((name = av_strtok(param, "=", &value))) {
-            if (av_dict_set(dict, name, value, 0) < 0) {
+            if (av_dict_set(dict, name, value ? value : "", 0) < 0) {
                 av_free(cstr);
                 return -1;
             }
@@ -1460,7 +1460,7 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path)
     while ((cookie = av_strtok(next, "\n", &saveptr)) && !ret) {
         AVDictionary *cookie_params = NULL;
         const AVDictionaryEntry *cookie_entry, *e;
-        const char *domain;
+        const char *domain, *eql;
 
         next = NULL;
         // store the cookie in a dict in case it is updated in the response
@@ -1473,7 +1473,9 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path)
 
         // if the cookie has no value, skip it
         cookie_entry = av_dict_iterate(cookie_params, NULL);
-        if (!cookie_entry || !cookie_entry->value)
+        eql = strchr(cookie, '=');
+        if (!cookie_entry || !eql || eql == cookie + strspn(cookie, WHITESPACES) ||
+            memchr(cookie, ';', eql - cookie))
             goto skip_cookie;
 
         // if the cookie has expired, don't add it
