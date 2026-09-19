@@ -1001,8 +1001,8 @@ static int finalize_frame(H264Context *h, AVFrame *dst, H264Picture *out, int *g
             av_log(h->avctx, AV_LOG_DEBUG, "Duplicating field %d to fill missing\n", field);
 
             for (p = 0; p<4; p++) {
-                dst_data[p] = f->data[p] + (field^1)*f->linesize[p];
-                src_data[p] = f->data[p] +  field   *f->linesize[p];
+                dst_data[p] = FF_PTR_ADD(f->data[p], (field^1)*f->linesize[p]);
+                src_data[p] = FF_PTR_ADD(f->data[p],  field   *f->linesize[p]);
                 linesizes[p] = 2*f->linesize[p];
             }
 
