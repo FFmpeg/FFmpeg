@@ -1481,6 +1481,10 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path)
             memchr(cookie, ';', eql - cookie))
             goto skip_cookie;
 
+        for (e = cookie_entry; (e = av_dict_iterate(cookie_params, e)); )
+            if (!av_strcasecmp(e->key, "secure") && !av_stristart(s->location, "https:", NULL))
+                goto skip_cookie;
+
         // if the cookie has expired, don't add it
         if ((e = av_dict_get(cookie_params, "expires", NULL, 0)) && e->value) {
             struct tm tm_buf = {0};
