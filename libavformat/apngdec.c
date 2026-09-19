@@ -50,6 +50,10 @@ typedef struct APNGDemuxContext {
 
     int is_key_frame;
 
+    /* fcTL and fdAT chunks share a single sequence number, which must start
+     * at 0 and increase by one for every chunk, with no gap or duplicate */
+    uint32_t expected_seq;
+
     /*
      * loop options
      */
@@ -235,6 +239,32 @@ static int apng_read_header(AVFormatContext *s)
     }
 }
 
+/* Out-of-order chunks are only reported: the sequence is resynchronized on the
+ * value actually read, so that every following chunk is not reported as well. */
+static void check_chunk_sequence(AVFormatContext *s, APNGDemuxContext *ctx,
+                                 const char *name, uint32_t sequence_number)
+{
+    /* A seek can resume at any frame, so resynchronize before checking. */
+    if (s->io_repositioned) {
+        ctx->expected_seq = sequence_number;
+        s->io_repositioned = 0;
+    }
+
+    if (sequence_number != ctx->expected_seq)
+        av_log(s, AV_LOG_WARNING, "Invalid %s sequence number %"PRIu32
+               ", expected %"PRIu32"\n", name, sequence_number, ctx->expected_seq);
+
+    ctx->expected_seq = sequence_number + 1;
+}
+
+/* check the sequence number of an fdAT chunk: it is the first field of the
+ * chunk, which the caller has just appended at the end of the packet */
+static void check_fdat_chunk(AVFormatContext *s, APNGDemuxContext *ctx,
+                             AVPacket *pkt, uint32_t len)
+{
+    check_chunk_sequence(s, ctx, "fdAT", AV_RB32(pkt->data + pkt->size - len - 4));
+}
+
 static int decode_fctl_chunk(AVFormatContext *s, APNGDemuxContext *ctx)
 {
     uint32_t sequence_number, width, height, x_offset, y_offset;
@@ -251,6 +281,8 @@ static int decode_fctl_chunk(AVFormatContext *s, APNGDemuxContext *ctx)
     dispose_op      = avio_r8(s->pb);
     blend_op        = avio_r8(s->pb);
     avio_skip(s->pb, 4); /* crc */
+
+    check_chunk_sequence(s, ctx, "fcTL", sequence_number);
 
     /* default is hundredths of seconds */
     if (!delay_den)
@@ -360,6 +392,12 @@ static int apng_read_packet(AVFormatContext *s, AVPacket *pkt)
             (ret = av_append_packet(pb, pkt, size)) < 0)
             return ret;
 
+        if (tag == MKTAG('f', 'd', 'A', 'T')) {
+            if (len < 4 || ret != size)
+                return AVERROR_INVALIDDATA;
+            check_fdat_chunk(s, ctx, pkt, len);
+        }
+
         if (ctx->num_play == 1 && (ret = ffio_ensure_seekback(pb, 8)) < 0)
             return ret;
 
@@ -373,6 +411,13 @@ static int apng_read_packet(AVFormatContext *s, AVPacket *pkt)
             if ((ret = avio_seek(pb, -8, SEEK_CUR)) < 0 ||
                 (ret = av_append_packet(pb, pkt, len + 12)) < 0)
                 return ret;
+
+            if (tag == MKTAG('f', 'd', 'A', 'T')) {
+                if (len < 4 || ret != len + 12)
+                    return AVERROR_INVALIDDATA;
+                check_fdat_chunk(s, ctx, pkt, len);
+            }
+
             if (ctx->num_play == 1 && (ret = ffio_ensure_seekback(pb, 8)) < 0)
                 return ret;
             len = avio_rb32(pb);
@@ -392,6 +437,7 @@ static int apng_read_packet(AVFormatContext *s, AVPacket *pkt)
             avio_seek(pb, -8, SEEK_CUR);
             return AVERROR_EOF;
         }
+        ctx->expected_seq = 0;
         if ((ret = avio_seek(pb, s->streams[0]->codecpar->extradata_size + 8, SEEK_SET)) < 0)
             return ret;
         return 0;
