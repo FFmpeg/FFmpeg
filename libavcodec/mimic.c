@@ -152,6 +152,12 @@ static int mimic_decode_update_thread_context(AVCodecContext *avctx, const AVCod
     dst->cur_index  = src->next_cur_index;
     dst->prev_index = src->next_prev_index;
 
+    if (src->avctx) {
+        dst->avctx = avctx;
+        memcpy(dst->num_vblocks, src->num_vblocks, sizeof(dst->num_vblocks));
+        memcpy(dst->num_hblocks, src->num_hblocks, sizeof(dst->num_hblocks));
+    }
+
     for (int i = 0; i < FF_ARRAY_ELEMS(dst->frames); i++) {
         ff_progress_frame_unref(&dst->frames[i]);
         if (i != src->next_cur_index && src->frames[i].f)
