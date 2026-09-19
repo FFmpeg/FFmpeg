@@ -2,6 +2,28 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 8.1.3:
+4bca65da831 Revert "lavfi/bwdif: fix heap-buffer-overflow with small height videos"
+11076bf2697 avfilter/vf_bwdif: fix line boundary checks for >8 bits content
+6442b04b0ff avformat/hlsenc: fix compile error when mp4 is disabled
+b46c21cf03f swscale/unscaled: fix rgbToRgbWrapper for non-native-endian formats
+51715a5344c avformat/hls: avoid casting callback functions type
+a1ced74e8da avcodec/vulkan/ffv1_dec_setup: act on the slice header rejection
+b2c3ad438c3 avformat/hlsenc: reject out-of-range EXT-X-PROGRAM-DATE-TIME
+4d58e9d8d4e avformat/http: only re-use old connection if valid
+cb4c0da19cc avformat/http: properly re-set s->range_end before requests
+9b88ec31419 avutil/rational: avoid signed integer overflow
+6cebacddcc0 avformat/mpegts: Fix memleak of pes_filter.opaque
+3cd473d8621 avcodec/leaddec: Check input data before allocating buffer
+959b0d15633 avcodec/jpeglsdec: bound cumulative decoded JPEG-LS height per packet
+e1d767484bf avcodec/cbs_h265: allocate VPS hrd_parameters dynamically
+2bd4a58d87b avcodec/atsc_a53: Avoid GetBits API to parse A53 CC data
+32433b4b565 avcodec/pngdec: bound decompressed zTXt/iCCP size (decompression-bomb guard)
+678672a7860 avformat/av1: fix uvlc loop past end of bitstream
+8f0166f5d13 tools/zmqsend: close the input FILE
+b3e09b5fe51 avcodec/ppc/vp8dsp: store the 16 pixel wide rows at any alignment
+3765be13dc0 avformat/os_support: fix return value of win32_rename
+b9575cfd6be vulkan_encode: fix leak and swallowed errors in init_base_units()
+aed52cc81b3 avfilter/dnn: fix async teardown race condition in all backends
 e8c2decf6d6 avfilter/vf_decimate: reject blocks smaller than one chroma sample
 113150ff56f avformat/genh: check for unsupported interlaved size 1 typ1 THP
 54beaa26877 lavc/vvc: Prevent OOB write in sh_entry_points
