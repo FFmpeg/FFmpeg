@@ -67,16 +67,28 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static uint16_t get_value(GetBitContext *gb, int16_t codebook)
+/* Decodes a symbol from the next 32 bits, zero-filled past the end of the
+ * data. Returns a negative value once those are all zero, which is where
+ * the reference decoder stops decoding a component. */
+static av_always_inline int get_value(GetBitContext *gb, int16_t codebook)
 {
-    const int16_t switch_bits = codebook >> 8;
-    const int16_t rice_order  = codebook & 0xf;
-    const int16_t exp_order   = (codebook >> 4) & 0xf;
-    int16_t q, bits;
+    const int switch_bits = codebook >> 8;
+    const int rice_order  = codebook & 0xf;
+    const int exp_order   = (codebook >> 4) & 0xf;
+    int left = get_bits_left(gb);
+    uint32_t b;
+    int q, bits;
 
-    uint32_t b = show_bits_long(gb, 32);
+    b = show_bits_long(gb, 32);
+    if (left < 32) {
+        /* The reader has read past the end of the data; mask that off */
+        if (left <= 0)
+            return -1;
+        b &= 0xFFFFFFFFu << (32 - left);
+    }
     if (!b)
-        return 0;
+        return -1;
+
     q = ff_clz(b);
 
     if (b & 0x80000000) {
@@ -90,9 +102,10 @@ static uint16_t get_value(GetBitContext *gb, int16_t codebook)
                 (((b << (q + 1)) >> 1) >> (31 - rice_order));
     }
 
+    /* No valid code is longer than the window */
     bits = exp_order + (q << 1) - switch_bits;
     if (bits > 32)
-        return 0; // we do not return a negative error code so that we dont produce out of range values on errors
+        return -1;
     skip_bits_long(gb, bits);
     return (b >> (32 - bits)) +
            ((switch_bits + 1) << rice_order) -
@@ -146,11 +159,11 @@ static int decode_comp(AVCodecContext *avctx, TileContext *tile,
 
     LOCAL_ALIGNED_32(int32_t, block, [64*16]);
 
-    int16_t sign = 0;
-    int16_t dc_add = 0;
+    int sign = 0;
+    int dc_add = 0;
     int16_t dc_codebook;
 
-    uint16_t ac, rn, ln;
+    int ac, rn, ln;
     int16_t ac_codebook = 49;
     int16_t rn_codebook = 0;
     int16_t ln_codebook = 66;
@@ -169,19 +182,20 @@ static int decode_comp(AVCodecContext *avctx, TileContext *tile,
 
     /* Special handling for first block */
     int dc = get_value(&gb, 700);
+    if (dc < 0)
+        goto end;
     int prev_dc = (dc >> 1) ^ -(dc & 1);
-    block[0] = (((dc&1) + (dc>>1) ^ -(int)(dc & 1)) + (dc & 1)) + 1;
+    block[0] = prev_dc + 1;
 
     for (int n = 1; n < nb_blocks; n++) {
-        if (get_bits_left(&gb) <= 0)
-            break;
-
         if ((n & 15) == 1)
             dc_codebook = 100;
         else
             dc_codebook = ff_prores_raw_dc_cb[FFMIN(TODCCODEBOOK(dc), DC_CB_MAX)];
 
         dc = get_value(&gb, dc_codebook);
+        if (dc < 0)
+            goto end;
 
         sign = sign ^ dc & 1;
         dc_add = (-sign ^ TODCCODEBOOK(dc)) + sign;
@@ -191,53 +205,48 @@ static int decode_comp(AVCodecContext *avctx, TileContext *tile,
         block[n*64] = prev_dc + 1;
     }
 
-    for (int n = nb_blocks; n <= nb_codes;) {
-        if (get_bits_left(&gb) <= 0)
-            break;
-
+    for (int n = nb_blocks; n < nb_codes;) {
         ln = get_value(&gb, ln_codebook);
+        if (ln < 0)
+            goto end;
 
         for (int i = 0; i < ln; i++) {
-            if (get_bits_left(&gb) <= 0)
-                break;
-
-            if ((n + i) >= nb_codes)
-                break;
-
             ac = get_value(&gb, ac_codebook);
+            if (ac < 0)
+                goto end;
             ac_codebook = ff_prores_raw_ac_cb[FFMIN(ac, AC_CB_MAX)];
             sign = -get_bits1(&gb);
 
-            idx = scan[(n + i) >> log2_nb_blocks] + (((n + i) & block_mask) << 6);
+            idx = scan[n >> log2_nb_blocks] + ((n & block_mask) << 6);
             block[idx] = ((ac + 1) ^ sign) - sign;
+
+            if (++n == nb_codes)
+                goto end;
         }
 
-        n += ln;
-        if (n >= nb_codes)
-            break;
-
         rn = get_value(&gb, rn_codebook);
+        if (rn < 0)
+            goto end;
         rn_codebook = ff_prores_raw_rn_cb[FFMIN(rn, RN_CB_MAX)];
 
         n += rn + 1;
         if (n >= nb_codes)
             break;
 
-        if (get_bits_left(&gb) <= 0)
-            break;
-
         ac = get_value(&gb, ac_codebook);
+        if (ac < 0)
+            goto end;
+        ac_codebook = ff_prores_raw_ac_cb[FFMIN(ac, AC_CB_MAX)];
+        ln_codebook = ff_prores_raw_ln_cb[FFMIN(ac, LN_CB_MAX)];
         sign = -get_bits1(&gb);
 
         idx = scan[n >> log2_nb_blocks] + ((n & block_mask) << 6);
         block[idx] = ((ac + 1) ^ sign) - sign;
 
-        ac_codebook = ff_prores_raw_ac_cb[FFMIN(ac, AC_CB_MAX)];
-        ln_codebook = ff_prores_raw_ln_cb[FFMIN(ac, LN_CB_MAX)];
-
         n++;
     }
 
+end:
     for (int n = 0; n < nb_blocks; n++) {
         uint16_t *ptr = dst + n*16;
         s->prodsp.idct_put_bayer(ptr, linesize, block + n*64, qmat, s->lin_curve);
