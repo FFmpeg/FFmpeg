@@ -3713,13 +3713,11 @@ static void seek_chapter(VideoState *is, int incr)
     /* find the current chapter */
     for (i = 0; i < is->ic->nb_chapters; i++) {
         AVChapter *ch = is->ic->chapters[i];
-        if (av_compare_ts(pos, AV_TIME_BASE_Q, ch->start, ch->time_base) < 0) {
-            i--;
+        if (av_compare_ts(pos, AV_TIME_BASE_Q, ch->start, ch->time_base) < 0)
             break;
-        }
     }
 
-    i += incr;
+    i += incr - 1;
     i = FFMAX(i, 0);
     if (i >= is->ic->nb_chapters)
         return;
