@@ -1248,6 +1248,24 @@ static int chapter_list_visible(VideoState *is)
     return chapter_list_alpha(is, av_gettime_relative()) > 0;
 }
 
+static void seek_chapter(VideoState *is, int i);
+
+/* seeks to the entry under a click, returns whether the click hit the list at all */
+static int chapter_list_click(VideoState *is, int x, int y)
+{
+    ChapterListLayout l = chapter_list_layout(is);
+    int row;
+
+    x -= is->chapter_rect.x;
+    y -= is->chapter_rect.y;
+    if (x < 0 || y < 0 || x >= is->chapter_rect.w || y >= is->chapter_rect.h)
+        return 0;
+    row = (y - l.font / 2) / l.line;
+    if (row < l.nb_rows)
+        seek_chapter(is, l.first + row);
+    return 1;
+}
+
 static void chapter_list_draw(VideoState *is)
 {
     double alpha = chapter_list_alpha(is, av_gettime_relative());
@@ -4118,6 +4136,9 @@ static void event_loop(VideoState *cur_stream)
                 do_exit(cur_stream);
                 break;
             }
+            if (event.button.button == SDL_BUTTON_LEFT && chapter_list_visible(cur_stream) &&
+                chapter_list_click(cur_stream, event.button.x, event.button.y))
+                break;
             if (event.button.button == SDL_BUTTON_LEFT) {
                 static int64_t last_mouse_left_click = 0;
                 if (av_gettime_relative() - last_mouse_left_click <= 500000) {
@@ -4398,6 +4419,7 @@ void show_help_default(const char *opt, const char *arg)
            "l                   keep the chapter list on screen, down/up then move its selection\n"
            "enter               seek to the chapter selected in the chapter list while it is shown\n"
            "mouse wheel         move the chapter list selection while it is shown\n"
+           "left click          seek to the clicked chapter list entry\n"
            "right mouse click   seek to percentage in file corresponding to fraction of width\n"
            "left double-click   toggle full screen\n"
            );
