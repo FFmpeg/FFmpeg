@@ -374,8 +374,19 @@ static int init_decode_shader(AVCodecContext *avctx, FFVulkanContext *s,
     AVHWFramesContext *dec_frames_ctx;
     dec_frames_ctx = (AVHWFramesContext *)avctx->hw_frames_ctx->data;
 
-    SPEC_LIST_CREATE(sl, 1, 1*sizeof(uint32_t))
+    /* Discrete GPUs read host-mapped packets over the bus; prefetch more
+     * to hide the latency. 32 lines (32 KB for the 8x8 workgroup) measured
+     * best; integrated GPUs get slower with every extra line. Clamp to the
+     * shared memory limit, leaving 1 KB for the tables. */
+    int smem_lines = 4;
+    if (s->props.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU &&
+        (s->extensions & FF_VK_EXT_EXTERNAL_HOST_MEMORY)) {
+        uint32_t max_smem = s->props.properties.limits.maxComputeSharedMemorySize;
+        smem_lines = FFMIN(32, (max_smem - 1024) / (8*8*16));
+    }
+    SPEC_LIST_CREATE(sl, 2, 2*sizeof(uint32_t))
     SPEC_LIST_ADD(sl, 0, 32, interlaced);
+    SPEC_LIST_ADD(sl, 1, 32, smem_lines);
 
     ff_vk_shader_load(shd,
                       VK_SHADER_STAGE_COMPUTE_BIT, sl,
