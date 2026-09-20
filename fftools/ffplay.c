@@ -3716,14 +3716,9 @@ static int current_chapter(VideoState *is)
     return i - 1;
 }
 
-static void seek_chapter(VideoState *is, int incr)
+static void seek_chapter(VideoState *is, int i)
 {
-    int i;
-
-    if (!is->ic->nb_chapters)
-        return;
-
-    i = FFMAX(current_chapter(is) + incr, 0);
+    i = FFMAX(i, 0);
     if (i >= is->ic->nb_chapters)
         return;
 
@@ -3801,14 +3796,14 @@ static void event_loop(VideoState *cur_stream)
                     incr = 600.0;
                     goto do_seek;
                 }
-                seek_chapter(cur_stream, 1);
+                seek_chapter(cur_stream, current_chapter(cur_stream) + 1);
                 break;
             case SDLK_PAGEDOWN:
                 if (cur_stream->ic->nb_chapters <= 1) {
                     incr = -600.0;
                     goto do_seek;
                 }
-                seek_chapter(cur_stream, -1);
+                seek_chapter(cur_stream, current_chapter(cur_stream) - 1);
                 break;
             case SDLK_LEFT:
                 incr = seek_interval ? -seek_interval : -10.0;
