@@ -115,17 +115,17 @@ static av_cold int init_filter(AVFilterContext *avctx)
                                 VK_SHADER_STAGE_COMPUTE_BIT);
 
     desc = (FFVulkanDescriptorSetBinding []) {
+        { /* output_images */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
+            .elems  = planes,
+        },
         { /* top_images */
             .type   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
             .stages = VK_SHADER_STAGE_COMPUTE_BIT,
             .elems  = planes,
         },
         { /* bottom_images */
-            .type   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
-            .elems  = planes,
-        },
-        { /* output_images */
             .type   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
             .stages = VK_SHADER_STAGE_COMPUTE_BIT,
             .elems  = planes,

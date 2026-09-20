@@ -79,17 +79,17 @@ static av_cold int init_filter(AVFilterContext *ctx)
                                 VK_SHADER_STAGE_COMPUTE_BIT);
 
     const FFVulkanDescriptorSetBinding desc[] = {
+        { /* output_img */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
+            .elems  = planes,
+        },
         { /* main_img */
             .type   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
             .stages = VK_SHADER_STAGE_COMPUTE_BIT,
             .elems  = planes,
         },
         { /* overlay_img */
-            .type   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
-            .elems  = planes,
-        },
-        { /* output_img */
             .type   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
             .stages = VK_SHADER_STAGE_COMPUTE_BIT,
             .elems  = planes,

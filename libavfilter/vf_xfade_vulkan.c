@@ -113,6 +113,10 @@ static av_cold int init_vulkan(AVFilterContext *avctx)
                       NULL, (int []) { 32, 32, 1 }, 0);
 
     const FFVulkanDescriptorSetBinding desc[] = {
+        { /* output_images */
+            .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
+        },
         { /* a_images */
             .type       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
@@ -122,10 +126,6 @@ static av_cold int init_vulkan(AVFilterContext *avctx)
             .type       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
             .samplers   = DUP_SAMPLER(s->sampler),
-        },
-        { /* output_images */
-            .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-            .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
         },
     };
     ff_vk_shader_add_descriptor_set(vkctx, &s->shd, desc, 3, 0);

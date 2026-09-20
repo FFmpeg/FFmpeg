@@ -445,11 +445,11 @@ int ff_vk_filter_process_Nin(FFVulkanContext *vkctx, FFVkExecPool *e,
     }
 
     /* Update descriptor sets */
-    ff_vk_shader_update_img_array(vkctx, exec, shd, out, out_views, 0, nb_in,
+    ff_vk_shader_update_img_array(vkctx, exec, shd, out, out_views, 0, 0,
                                   VK_IMAGE_LAYOUT_GENERAL,
                                   VK_NULL_HANDLE);
     for (int i = 0; i < nb_in; i++)
-        ff_vk_shader_update_img_array(vkctx, exec, shd, in[i], in_views[i], 0, i,
+        ff_vk_shader_update_img_array(vkctx, exec, shd, in[i], in_views[i], 0, 1 + i,
                                       in_layout,
                                       sampler);
 

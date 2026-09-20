@@ -26,9 +26,9 @@ layout (constant_id = 0) const uint planes = 0;
 
 layout (local_size_x_id = 253, local_size_y_id = 254, local_size_z_id = 255) in;
 
-layout (set = 0, binding = 0) uniform readonly image2D top_img[];
-layout (set = 0, binding = 1) uniform readonly image2D bottom_img[];
-layout (set = 0, binding = 2) uniform writeonly image2D output_img[];
+layout (set = 0, binding = 0) uniform writeonly image2D output_img[];
+layout (set = 0, binding = 1) uniform readonly image2D top_img[];
+layout (set = 0, binding = 2) uniform readonly image2D bottom_img[];
 
 layout (push_constant, scalar) uniform pushConstants {
     vec4 opacity;

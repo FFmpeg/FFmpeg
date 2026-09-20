@@ -57,7 +57,7 @@ int ff_vk_filter_process_2pass(FFVulkanContext *vkctx, FFVkExecPool *e,
                                void *push_src, size_t push_size);
 
 /**
- * Up to 16 inputs, one output
+ * Up to 16 inputs, one output. Output at binding 0, inputs at 1 + i.
  */
 int ff_vk_filter_process_Nin(FFVulkanContext *vkctx, FFVkExecPool *e,
                              FFVulkanShader *shd,
