@@ -3702,23 +3702,28 @@ static void refresh_loop_wait_event(VideoState *is, SDL_Event *event) {
     }
 }
 
-static void seek_chapter(VideoState *is, int incr)
+/* index of the chapter containing the current playback position, -1 before the first one */
+static int current_chapter(VideoState *is)
 {
     int64_t pos = get_master_clock(is) * AV_TIME_BASE;
     int i;
 
-    if (!is->ic->nb_chapters)
-        return;
-
-    /* find the current chapter */
     for (i = 0; i < is->ic->nb_chapters; i++) {
         AVChapter *ch = is->ic->chapters[i];
         if (av_compare_ts(pos, AV_TIME_BASE_Q, ch->start, ch->time_base) < 0)
             break;
     }
+    return i - 1;
+}
 
-    i += incr - 1;
-    i = FFMAX(i, 0);
+static void seek_chapter(VideoState *is, int incr)
+{
+    int i;
+
+    if (!is->ic->nb_chapters)
+        return;
+
+    i = FFMAX(current_chapter(is) + incr, 0);
     if (i >= is->ic->nb_chapters)
         return;
 
