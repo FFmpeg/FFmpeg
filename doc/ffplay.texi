@@ -283,7 +283,8 @@ Move the chapter list selection while it is shown.
 @item left mouse click
 Seek to the clicked chapter list entry, or sort the list by the clicked column
 button. Clicking the same button again flips the order, and ties are resolved
-by the columns clicked before.
+by the columns clicked before. The shuffle button orders the list by a seed
+that its left half lowers and its right half raises.
 
 @item right mouse click
 Seek to percentage in file corresponding to fraction of width.

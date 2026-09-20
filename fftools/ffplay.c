@@ -115,6 +115,7 @@ enum {
     CHAPTER_SORT_ARTIST,
     CHAPTER_SORT_TITLE,
     CHAPTER_SORT_LENGTH,
+    CHAPTER_SORT_SHUFFLE,
     CHAPTER_SORT_NB
 };
 
@@ -407,7 +408,9 @@ static int framedrop = -1;
 static int infinite_buffer = -1;
 static enum ShowMode show_mode = SHOW_MODE_NONE;
 /* the columns the chapter list is sorted by, the most recently clicked first */
-static ChapterSortKey chapter_sort[CHAPTER_SORT_NB] = { { CHAPTER_SORT_NUMBER }, { CHAPTER_SORT_ARTIST }, { CHAPTER_SORT_TITLE }, { CHAPTER_SORT_LENGTH } };
+static ChapterSortKey chapter_sort[CHAPTER_SORT_NB] = { { CHAPTER_SORT_NUMBER }, { CHAPTER_SORT_ARTIST }, { CHAPTER_SORT_TITLE },
+                                                        { CHAPTER_SORT_LENGTH }, { CHAPTER_SORT_SHUFFLE } };
+static int chapter_shuffle_seed;
 static const char *audio_codec_name;
 static const char *subtitle_codec_name;
 static const char *video_codec_name;
@@ -1103,6 +1106,16 @@ static int compare_tags(const char *a, const char *b)
     return !*a != !*b ? !*a - !*b : av_strcasecmp(a, b);
 }
 
+/* the rank of a chapter in the shuffled order for the current seed */
+static uint32_t shuffle_rank(int index)
+{
+    uint32_t rank = (index + 1) * 0x9E3779B1u ^ chapter_shuffle_seed * 0x85EBCA77u;
+
+    rank ^= rank >> 15;
+    rank *= 0x2C1B3C6Du;
+    return rank ^ rank >> 12;
+}
+
 static int compare_chapter_rows(const void *a, const void *b)
 {
     const ChapterRow *ra = a, *rb = b;
@@ -1114,6 +1127,7 @@ static int compare_chapter_rows(const void *a, const void *b)
         case CHAPTER_SORT_ARTIST: cmp = compare_tags(ra->artist, rb->artist); break;
         case CHAPTER_SORT_TITLE:  cmp = compare_tags(ra->title, rb->title);   break;
         case CHAPTER_SORT_LENGTH: cmp = FFDIFFSIGN(ra->length, rb->length);   break;
+        case CHAPTER_SORT_SHUFFLE: cmp = FFDIFFSIGN(shuffle_rank(ra->index), shuffle_rank(rb->index)); break;
         default:                  cmp = ra->index - rb->index;                break;
         }
         if (cmp)
@@ -1122,17 +1136,20 @@ static int compare_chapter_rows(const void *a, const void *b)
     return 0;
 }
 
-/* a column clicked again flips its order, any other becomes the first key ahead of the previous ones */
-static void chapter_sort_by(int key)
+/* a column clicked again flips its order, any other becomes the first key ahead of the previous ones;
+ * the shuffle button instead steps its seed by the side it was clicked on */
+static void chapter_sort_by(int key, int seed_step)
 {
     int i = 0;
 
     while (chapter_sort[i].key != key)
         i++;
-    if (i == 0) {
+    if (key == CHAPTER_SORT_SHUFFLE)
+        chapter_shuffle_seed += seed_step;
+    else if (i == 0)
         chapter_sort[0].descending ^= 1;
+    if (i == 0)
         return;
-    }
     memmove(&chapter_sort[1], &chapter_sort[0], i * sizeof(*chapter_sort));
     chapter_sort[0] = (ChapterSortKey){ key, 0 };
 }
@@ -1173,6 +1190,7 @@ static const struct {
     [CHAPTER_SORT_ARTIST] = { "Artist", 8 },
     [CHAPTER_SORT_TITLE]  = { "Title",  7 },
     [CHAPTER_SORT_LENGTH] = { "Duration", 10 },
+    [CHAPTER_SORT_SHUFFLE] = { "Shuffle", 14 },
 };
 
 #define CHAPTER_LIST_EVENT "Dialogue: 0:00:00.00,9999:00:00.00,"
@@ -1287,9 +1305,13 @@ static void chapter_list_script(VideoState *is, AVBPrint *script)
         int x = l.button_x[b], y = l.button_y[b], w = sort_buttons[b].width * l.font / 2;
 
         bprint_chapter_box(script, b == is->chapter_hover.button ? "ButtonHover" : "Button", x, y, w, l.font * 5 / 4);
-        av_bprintf(script, CHAPTER_LIST_EVENT "%s,{\\an5\\pos(%d,%d)}%s%s\n", chapter_sort[0].key == b ? "Selected" : "Row",
-                   x + w / 2, y + l.font * 5 / 8, sort_buttons[b].label,
-                   chapter_sort[0].key != b ? "" : chapter_sort[0].descending ? " \xe2\x96\xbc" : " \xe2\x96\xb2");
+        av_bprintf(script, CHAPTER_LIST_EVENT "%s,{\\an5\\pos(%d,%d)}", chapter_sort[0].key == b ? "Selected" : "Row",
+                   x + w / 2, y + l.font * 5 / 8);
+        if (b == CHAPTER_SORT_SHUFFLE)
+            av_bprintf(script, "\xe2\x97\x82 %s %d \xe2\x96\xb8\n", sort_buttons[b].label, chapter_shuffle_seed);
+        else
+            av_bprintf(script, "%s%s\n", sort_buttons[b].label,
+                       chapter_sort[0].key != b ? "" : chapter_sort[0].descending ? " \xe2\x96\xbc" : " \xe2\x96\xb2");
     }
     is->chapter_playing = current_chapter(is);
     for (int r = l.first; r < l.first + l.nb_rows; r++) {
@@ -1511,7 +1533,9 @@ static int chapter_list_click(VideoState *is, int x, int y)
     if (hit.row >= 0)
         seek_chapter(is, is->chapter_rows[hit.row].index);
     if (hit.button >= 0) {
-        chapter_sort_by(hit.button);
+        int button_w = sort_buttons[hit.button].width * l.font / 2;
+
+        chapter_sort_by(hit.button, (x - l.font - l.button_x[hit.button]) * 2 < button_w ? -1 : 1);
         chapter_list_show(is, -1);
     }
     return hit.inside;
@@ -4677,7 +4701,8 @@ void show_help_default(const char *opt, const char *arg)
            "l                   keep the chapter list on screen; typing then filters it, down/up move its selection and escape closes it\n"
            "enter               seek to the chapter selected in the chapter list while it is shown\n"
            "mouse wheel         move the chapter list selection while it is shown\n"
-           "left click          seek to the clicked chapter list entry, or sort the list by the clicked column, again to flip it\n"
+           "left click          seek to the clicked chapter list entry, or sort the list by the clicked column, again to flip it;\n"
+           "                    the left half of the shuffle button lowers its seed, the right half raises it\n"
            "right mouse click   seek to percentage in file corresponding to fraction of width\n"
            "left double-click   toggle full screen\n"
            );
