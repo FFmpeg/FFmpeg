@@ -266,6 +266,19 @@ Seek backward/forward 1 minute.
 
 @item page down/page up
 Seek to previous/next chapter or backward/forward 10 minutes if no chapters.
+The chapter list is shown briefly, marking the chapter being played at its
+left edge. It needs the ass filter and the SDL renderer, so it is unavailable
+in builds without libass and with the Vulkan renderer.
+
+@item l
+Keep the chapter list on screen, or let it fade out again. While it is kept,
+down/up move its selection.
+
+@item enter
+Seek to the chapter selected in the chapter list while it is shown.
+
+@item mouse wheel
+Move the chapter list selection while it is shown.
 
 @item right mouse click
 Seek to percentage in file corresponding to fraction of width.
