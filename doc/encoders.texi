@@ -895,6 +895,12 @@ while producing the worst quality.
 Set lowpass cutoff frequency. If unspecified, the encoder dynamically
 adjusts the cutoff.
 
+@item strict (@emph{--strictly-enforce-ISO})
+Enable LAME's strict ISO buffer constraints when set to @samp{strict} or
+@samp{very}. Other values leave LAME's default buffer constraints unchanged.
+This can improve compatibility with some decoders, at the cost of reduced
+bit reservoir usage.
+
 @item reservoir
 Enable use of bit reservoir when set to 1. Default value is 1. LAME
 has this enabled by default, but can be overridden by use

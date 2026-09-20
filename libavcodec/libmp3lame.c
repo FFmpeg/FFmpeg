@@ -146,6 +146,10 @@ static av_cold int mp3lame_encode_init(AVCodecContext *avctx)
     /* original flag */
     lame_set_original(s->gfp, s->original);
 
+    /* strict ISO compliance */
+    if (avctx->strict_std_compliance >= FF_COMPLIANCE_STRICT)
+        lame_set_strict_ISO(s->gfp, 1);
+
     /* set specified parameters */
     if (lame_init_params(s->gfp) < 0) {
         ret = AVERROR_EXTERNAL;
