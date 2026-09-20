@@ -242,6 +242,15 @@ expressed in microseconds. The duration metadata is only set if it is known
 based on the concat file.
 The default is 0.
 
+@item chapter_per_file
+If set to 1, add a chapter for each file, named after the @code{title}
+metadata of the file or, failing that, its file name, and carrying the rest
+of the file's metadata. The files are opened in order when the script is read
+to learn their durations, stopping after the first file whose duration is
+unknown, which gets the last chapter; when all durations are known, this also
+makes the total duration known and the output seekable.
+The default is 0.
+
 @end table
 
 @subsection Examples

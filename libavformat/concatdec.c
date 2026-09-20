@@ -73,6 +73,7 @@ typedef struct {
     ConcatMatchMode stream_match_mode;
     unsigned auto_convert;
     int segment_time_metadata;
+    int chapter_per_file;
 } ConcatContext;
 
 static int concat_probe(const AVProbeData *probe)
@@ -669,6 +670,48 @@ fail:
     return ret == AVERROR_EOF ? 0 : ret;
 }
 
+static int compare_chapter_starts(const void *a, const void *b)
+{
+    const AVChapter *ca = *(const AVChapter *const *)a, *cb = *(const AVChapter *const *)b;
+
+    return av_compare_ts(ca->start, ca->time_base, cb->start, cb->time_base);
+}
+
+static int add_file_chapters(AVFormatContext *avf)
+{
+    ConcatContext *cat = avf->priv_data;
+    int64_t id = 0;
+
+    for (unsigned i = 0; i < avf->nb_chapters; i++)
+        id = FFMAX(id, av_sat_add64(avf->chapters[i]->id, 1));
+    for (unsigned i = 0; i < cat->nb_files; i++) {
+        ConcatFile *file = &cat->files[i];
+        AVDictionaryEntry *title;
+        AVChapter *chapter;
+        int64_t end = AV_NOPTS_VALUE;
+        int ret = probe_file(avf, i);
+
+        if (ret < 0)
+            return ret;
+        if (file->duration != AV_NOPTS_VALUE)
+            end = av_sat_add64(file->start_time, file->duration);
+        if (end == INT64_MAX || id == INT64_MAX || (end != AV_NOPTS_VALUE && end < file->start_time))
+            return AVERROR_INVALIDDATA;
+        file->user_duration = file->duration;
+        title = av_dict_get(cat->avf->metadata, "title", NULL, 0);
+        chapter = avpriv_new_chapter(avf, id++, AV_TIME_BASE_Q, file->start_time, end,
+                                     title ? title->value : av_basename(file->url));
+        if (!chapter || (ret = av_dict_copy(&chapter->metadata, cat->avf->metadata, AV_DICT_DONT_OVERWRITE)) < 0)
+            return chapter ? ret : AVERROR(ENOMEM);
+        if (end == AV_NOPTS_VALUE) {
+            av_log(avf, AV_LOG_WARNING, "Duration of '%s' unknown, no chapters for the files after it\n", file->url);
+            break;
+        }
+    }
+    qsort(avf->chapters, avf->nb_chapters, sizeof(*avf->chapters), compare_chapter_starts);
+    return 0;
+}
+
 static int concat_read_header(AVFormatContext *avf)
 {
     ConcatContext *cat = avf->priv_data;
@@ -683,6 +726,10 @@ static int concat_read_header(AVFormatContext *avf)
         av_log(avf, AV_LOG_ERROR, "No files to concat\n");
         return AVERROR_INVALIDDATA;
     }
+    cat->stream_match_mode = avf->nb_streams ? MATCH_EXACT_ID :
+                                               MATCH_ONE_TO_ONE;
+    if (cat->chapter_per_file && (ret = add_file_chapters(avf)) < 0)
+        return ret;
 
     for (i = 0; i < cat->nb_files; i++) {
         if (cat->files[i].start_time == AV_NOPTS_VALUE)
@@ -706,8 +753,6 @@ static int concat_read_header(AVFormatContext *avf)
         cat->seekable = 1;
     }
 
-    cat->stream_match_mode = avf->nb_streams ? MATCH_EXACT_ID :
-                                               MATCH_ONE_TO_ONE;
     if ((ret = open_file(avf, 0)) < 0)
         return ret;
 
@@ -951,6 +996,8 @@ static const AVOption options[] = {
       OFFSET(auto_convert), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, DEC },
     { "segment_time_metadata", "output file segment start time and duration as packet metadata",
       OFFSET(segment_time_metadata), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC },
+    { "chapter_per_file", "add a chapter for each file, opening them all up front to learn their durations",
+      OFFSET(chapter_per_file), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC },
     { NULL }
 };
 
