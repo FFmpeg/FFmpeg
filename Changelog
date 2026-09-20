@@ -5,7 +5,7 @@ version 9.0.2:
  Update for 9.0.2
  avcodec/ppc/vp8dsp: store the 16 pixel wide rows at any alignment
  avfilter/vf_decimate: reject blocks smaller than one chroma sample
- avformat/genh: check for unsupported interlaved size 1 typ1 THP
+ avformat/genh: check for unsupported interleaved size 1 typ1 THP
  lavc/vvc: Prevent OOB write in sh_entry_points
  avcodec/vulkan_hevc: bound the per category reference counts in vk_hevc_start_frame
  avcodec/vulkan_hevc: bound the reference count in vk_hevc_start_frame
