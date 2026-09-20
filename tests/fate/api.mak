@@ -7,6 +7,10 @@ fate-api-flac: $(APITESTSDIR)/api-flac-test$(EXESUF)
 fate-api-flac: CMD = run $(APITESTSDIR)/api-flac-test$(EXESUF)
 fate-api-flac: CMP = null
 
+FATE_API_LIBAVCODEC-$(CONFIG_MOVTEXT_ENCODER) += fate-api-movtext
+fate-api-movtext: $(APITESTSDIR)/api-movtext-test$(EXESUF)
+fate-api-movtext: CMD = run $(APITESTSDIR)/api-movtext-test$(EXESUF)
+
 FATE_API_LIBAVCODEC-$(call ALLYES, H261_ENCODER H261_PARSER) += fate-api-enc-parser fate-api-enc-parser-cif
 fate-api-enc-parser: $(APITESTSDIR)/api-enc-parser-test$(EXESUF)
 fate-api-enc-parser: CMD = run $(APITESTSDIR)/api-enc-parser-test$(EXESUF) h261 176 144
