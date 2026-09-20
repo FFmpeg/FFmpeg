@@ -342,10 +342,10 @@ static int opus_decode_frame(OpusStreamContext *s, const uint8_t *data, int size
 
         if (s->packet.mode == OPUS_MODE_HYBRID) {
             int celt_delay = s->packet.frame_duration - celt_output_samples;
-            void *delaybuf[2] = { s->celt_output[0] + celt_output_samples,
-                                  s->celt_output[1] + celt_output_samples };
+            void *delaybuf[2];
 
             for (i = 0; i < s->output_channels; i++) {
+                delaybuf[i] = s->celt_output[i] + celt_output_samples;
                 s->fdsp->vector_fmac_scalar(out_tmp[i],
                                             s->celt_output[i], 1.0,
                                             celt_output_samples);
