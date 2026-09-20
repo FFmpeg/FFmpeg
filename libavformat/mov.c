@@ -6255,6 +6255,11 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     entries = avio_rb32(pb);
     av_log(c->fc, AV_LOG_TRACE, "flags 0x%x entries %u\n", flags, entries);
 
+    /* Explicit zero sizes are bounded by the trun payload. Reject a zero
+     * default size before allocating or updating the sample index. */
+    if (entries && !frag->size && !(flags & MOV_TRUN_SAMPLE_SIZE))
+        return AVERROR_INVALIDDATA;
+
     if ((uint64_t)entries+sc->tts_count >= UINT_MAX/sizeof(*sc->tts_data))
         return AVERROR_INVALIDDATA;
     if (flags & MOV_TRUN_DATA_OFFSET)        data_offset        = avio_rb32(pb);
@@ -6464,8 +6469,6 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                 index_entry_pos, offset, dts, sample_size, distance, keyframe);
         distance++;
         if (av_sat_add64(dts, sample_duration) != dts + (uint64_t)sample_duration)
-            return AVERROR_INVALIDDATA;
-        if (!sample_size)
             return AVERROR_INVALIDDATA;
         dts += sample_duration;
         offset += sample_size;

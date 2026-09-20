@@ -1,0 +1,10 @@
+packet|pts=0|dts=0|duration=16384|size=17|pos=939
+packet|pts=16384|dts=16384|duration=49152|size=7|pos=956
+packet|pts=65536|dts=65536|duration=81920|size=7|pos=963
+packet|pts=147456|dts=147456|duration=114688|size=8|pos=970
+packet|pts=262144|dts=262144|duration=147456|size=0|pos=978
+packet|pts=409600|dts=409600|duration=180224|size=17|pos=1138
+packet|pts=589824|dts=589824|duration=212992|size=8|pos=1155
+packet|pts=802816|dts=802816|duration=245760|size=9|pos=1163
+packet|pts=1048576|dts=1048576|duration=278528|size=9|pos=1172
+packet|pts=1327104|dts=1327104|duration=16384|size=9|pos=1181
