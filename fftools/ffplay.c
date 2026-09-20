@@ -332,6 +332,9 @@ typedef struct VideoState {
     char chapter_search[64];
     int chapter_selected;
     int chapter_playing;
+    int chapter_mouse_x, chapter_mouse_y;
+    ChapterListHit chapter_hover;
+    int chapter_render_pending;
     int chapter_pinned;
     int chapter_pin_requested;
     int64_t chapter_fade_start;
@@ -1233,10 +1236,31 @@ static ChapterListLayout chapter_list_layout(VideoState *is)
     return l;
 }
 
+static ChapterListHit chapter_list_hit(VideoState *is, const ChapterListLayout *l, int x, int y)
+{
+    ChapterListHit hit = { 0, -1, -1 };
+    int line;
+
+    x -= l->font;
+    y -= l->font;
+    if (x < 0 || y < 0 || x >= l->width || y >= FFMIN(l->height, l->canvas_h))
+        return hit;
+    hit.inside = 1;
+    line = (y - l->rows_y) / l->line;
+    if (y >= l->rows_y && line < l->nb_rows)
+        hit.row = l->first + line;
+    for (int b = 0; b < FF_ARRAY_ELEMS(sort_buttons); b++)
+        if (x >= l->button_x[b] && x < l->button_x[b] + sort_buttons[b].width * l->font / 2 &&
+            y >= l->button_y[b] && y < l->button_y[b] + l->font * 5 / 4)
+            hit.button = b;
+    return hit;
+}
+
 static void chapter_list_script(VideoState *is, AVBPrint *script)
 {
     ChapterListLayout l = chapter_list_layout(is);
 
+    is->chapter_hover = chapter_list_hit(is, &l, is->chapter_mouse_x, is->chapter_mouse_y);
     is->chapter_rect = (SDL_Rect){ l.font, l.font, l.width, l.canvas_h };
     av_bprintf(script,
                "[Script Info]\nScriptType: v4.00+\nPlayResX: %d\nPlayResY: %d\nWrapStyle: 2\nYCbCr Matrix: None\n\n"
@@ -1249,10 +1273,12 @@ static void chapter_list_script(VideoState *is, AVBPrint *script)
                "Style: Artist,Sans,%d,&H00C0C0C0,&H00000000,0,%d,7\n"
                "Style: ArtistSelected,Sans,%d,&H0080D0FF,&H00000000,-1,%d,7\n"
                "Style: Playing,Sans,%d,&H00FFFFFF,&H00FFFFFF,0,0,7\n"
-               "Style: Hint,Sans,%d,&H00A0A0A0,&H00000000,0,%d,7\n\n"
+               "Style: Hint,Sans,%d,&H00A0A0A0,&H00000000,0,%d,7\n"
+               "Style: Hover,Sans,%d,&HC8FFFFFF,&HC8FFFFFF,0,0,7\n"
+               "Style: ButtonHover,Sans,%d,&H50FFFFFF,&H50FFFFFF,0,0,7\n\n"
                "[Events]\nFormat: Start, End, Style, Text\n",
                is->chapter_rect.w, is->chapter_rect.h, l.font, l.font, l.font, l.font / 16 + 1, l.font, l.font / 16 + 1,
-               l.font * 4 / 5, l.font / 16 + 1, l.font * 4 / 5, l.font / 16 + 1, l.font, l.font, l.font / 16 + 1);
+               l.font * 4 / 5, l.font / 16 + 1, l.font * 4 / 5, l.font / 16 + 1, l.font, l.font, l.font / 16 + 1, l.font, l.font);
     bprint_chapter_box(script, "Panel", 0, 0, l.width, l.height);
     if (is->chapter_pinned)
         bprint_chapter_cell(script, *is->chapter_search ? "Row" : "Hint", l.search_x, l.search_y, l.length_x,
@@ -1260,7 +1286,7 @@ static void chapter_list_script(VideoState *is, AVBPrint *script)
     for (int b = 0; b < FF_ARRAY_ELEMS(sort_buttons); b++) {
         int x = l.button_x[b], y = l.button_y[b], w = sort_buttons[b].width * l.font / 2;
 
-        bprint_chapter_box(script, "Button", x, y, w, l.font * 5 / 4);
+        bprint_chapter_box(script, b == is->chapter_hover.button ? "ButtonHover" : "Button", x, y, w, l.font * 5 / 4);
         av_bprintf(script, CHAPTER_LIST_EVENT "%s,{\\an5\\pos(%d,%d)}%s%s\n", chapter_sort[0].key == b ? "Selected" : "Row",
                    x + w / 2, y + l.font * 5 / 8, sort_buttons[b].label,
                    chapter_sort[0].key != b ? "" : chapter_sort[0].descending ? " \xe2\x96\xbc" : " \xe2\x96\xb2");
@@ -1272,6 +1298,8 @@ static void chapter_list_script(VideoState *is, AVBPrint *script)
         int y = l.rows_y + (r - l.first) * l.line;
         int64_t seconds;
 
+        if (r == is->chapter_hover.row)
+            bprint_chapter_box(script, "Hover", 0, y, l.width, l.line);
         if (row->index == is->chapter_playing)
             bprint_chapter_box(script, "Playing", 0, y, l.font / 6, l.line);
         av_bprintf(script, CHAPTER_LIST_EVENT "%s,{\\an6\\pos(%d,%d)}%d\n", style, l.font * 5 / 2, y + l.line / 2, row->index + 1);
@@ -1333,6 +1361,7 @@ static int chapter_list_render(VideoState *is)
 
     if (!frame)
         return AVERROR(ENOMEM);
+    is->chapter_render_pending = 0;
     av_bprint_init(&script, 0, AV_BPRINT_SIZE_UNLIMITED);
     chapter_list_script(is, &script);
     if (!av_bprint_is_complete(&script))
@@ -1456,24 +1485,21 @@ static void chapter_list_key(VideoState *is, SDL_Keycode key)
     }
 }
 
-static ChapterListHit chapter_list_hit(VideoState *is, const ChapterListLayout *l, int x, int y)
+/* keeps the mouse position for the next render and asks for one when what a visible list points at changed;
+ * the render waits until the pending events are handled, so a sweep across the list renders once */
+static void chapter_list_hover(VideoState *is, int x, int y)
 {
-    ChapterListHit hit = { 0, -1, -1 };
-    int line;
+    ChapterListLayout l;
+    ChapterListHit hit;
 
-    x -= l->font;
-    y -= l->font;
-    if (x < 0 || y < 0 || x >= l->width || y >= FFMIN(l->height, l->canvas_h))
-        return hit;
-    hit.inside = 1;
-    line = (y - l->rows_y) / l->line;
-    if (y >= l->rows_y && line < l->nb_rows)
-        hit.row = l->first + line;
-    for (int b = 0; b < FF_ARRAY_ELEMS(sort_buttons); b++)
-        if (x >= l->button_x[b] && x < l->button_x[b] + sort_buttons[b].width * l->font / 2 &&
-            y >= l->button_y[b] && y < l->button_y[b] + l->font * 5 / 4)
-            hit.button = b;
-    return hit;
+    is->chapter_mouse_x = x;
+    is->chapter_mouse_y = y;
+    if (!chapter_list_visible(is))
+        return;
+    l   = chapter_list_layout(is);
+    hit = chapter_list_hit(is, &l, x, y);
+    if (hit.row != is->chapter_hover.row || hit.button != is->chapter_hover.button)
+        is->chapter_render_pending = 1;
 }
 
 /* seeks to the entry under a click or sorts by the button under it, returns whether the click hit the list at all */
@@ -4177,7 +4203,7 @@ static void refresh_loop_wait_event(VideoState *is, SDL_Event *event) {
         if (remaining_time > 0.0)
             av_usleep((int64_t)(remaining_time * 1000000.0));
         remaining_time = REFRESH_RATE;
-        if (chapter_list_visible(is) && current_chapter(is) != is->chapter_playing)
+        if (is->chapter_render_pending || (chapter_list_visible(is) && current_chapter(is) != is->chapter_playing))
             chapter_list_render(is);
         if (chapter_list_alpha(is, av_gettime_relative()) != is->chapter_drawn_alpha)
             is->force_refresh = 1;
@@ -4383,6 +4409,8 @@ static void event_loop(VideoState *cur_stream)
                 cursor_hidden = 0;
             }
             cursor_last_shown = av_gettime_relative();
+            if (event.type == SDL_MOUSEMOTION)
+                chapter_list_hover(cur_stream, event.motion.x, event.motion.y);
             if (event.type == SDL_MOUSEBUTTONDOWN) {
                 if (event.button.button != SDL_BUTTON_RIGHT)
                     break;
@@ -4419,6 +4447,9 @@ static void event_loop(VideoState *cur_stream)
             break;
         case SDL_WINDOWEVENT:
             switch (event.window.event) {
+                case SDL_WINDOWEVENT_LEAVE:
+                    chapter_list_hover(cur_stream, -1, -1);
+                    break;
                 case SDL_WINDOWEVENT_SIZE_CHANGED:
                     screen_width  = cur_stream->width  = event.window.data1;
                     screen_height = cur_stream->height = event.window.data2;
