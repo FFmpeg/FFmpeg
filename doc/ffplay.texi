@@ -271,8 +271,8 @@ left edge. It needs the ass filter and the SDL renderer, so it is unavailable
 in builds without libass and with the Vulkan renderer.
 
 @item l
-Keep the chapter list on screen, or let it fade out again. While it is kept,
-down/up move its selection.
+Keep the chapter list on screen. While it is kept, typing filters the list by
+artist and title, down/up move its selection and escape closes it.
 
 @item enter
 Seek to the chapter selected in the chapter list while it is shown.

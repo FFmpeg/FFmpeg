@@ -322,9 +322,11 @@ typedef struct VideoState {
     AVFilterContext *chapter_sink;
     ChapterRow *chapter_rows;
     int nb_chapter_rows;
+    char chapter_search[64];
     int chapter_selected;
     int chapter_playing;
     int chapter_pinned;
+    int chapter_pin_requested;
     int64_t chapter_fade_start;
     int64_t chapter_last_input;
     double chapter_drawn_alpha;
@@ -1065,6 +1067,7 @@ static void draw_video_background(VideoState *is)
 }
 
 static int current_chapter(VideoState *is);
+static void seek_chapter(VideoState *is, int i);
 
 static double chapter_list_alpha(VideoState *is, int64_t now)
 {
@@ -1124,7 +1127,7 @@ static void chapter_sort_by(int key)
     chapter_sort[0] = (ChapterSortKey){ key, 0 };
 }
 
-/* rebuilds the rows in the current sort order, keeping the selected chapter selected */
+/* rebuilds the rows matching the search in the current sort order, keeping the selected chapter selected */
 static int chapter_list_update_rows(VideoState *is)
 {
     int selected = is->nb_chapter_rows ? is->chapter_rows[is->chapter_selected].index : 0;
@@ -1141,7 +1144,8 @@ static int chapter_list_update_rows(VideoState *is)
         if (chapter->end != AV_NOPTS_VALUE && chapter->end > chapter->start &&
             (uint64_t)chapter->end - chapter->start <= INT64_MAX)
             row.length = av_rescale_q(chapter->end - chapter->start, chapter->time_base, AV_TIME_BASE_Q);
-        is->chapter_rows[is->nb_chapter_rows++] = row;
+        if (av_stristr(row.artist, is->chapter_search) || av_stristr(row.title, is->chapter_search))
+            is->chapter_rows[is->nb_chapter_rows++] = row;
     }
     qsort(is->chapter_rows, is->nb_chapter_rows, sizeof(*is->chapter_rows), compare_chapter_rows);
     is->chapter_selected = 0;
@@ -1180,7 +1184,7 @@ static void bprint_chapter_cell(AVBPrint *script, const char *style, int x, int 
 typedef struct ChapterListLayout {
     int font, line, width, height, canvas_h, nb_rows, first;
     int button_x[CHAPTER_SORT_NB], button_y[CHAPTER_SORT_NB];
-    int rows_y, text_x, text_right, length_x;
+    int search_x, search_y, rows_y, text_x, text_right, length_x;
 } ChapterListLayout;
 
 /* button widths are in half font sizes, a quarter apart, wrapping onto further lines when the panel is too narrow */
@@ -1204,8 +1208,15 @@ static ChapterListLayout chapter_list_layout(VideoState *is)
         l.button_y[b] = y;
         x += w + l.font / 4;
     }
-    l.rows_y     = y + l.font * 3 / 2;
-    l.canvas_h   = FFMIN(l.rows_y + CHAPTER_LIST_ROWS * l.line + l.font / 2, is->height - l.font * 2);
+    /* the search field follows the buttons, or takes its own line when they leave it less than 8 em */
+    if (x + l.font * 8 > l.width - l.font / 2) {
+        x  = l.font / 2;
+        y += l.font * 3 / 2;
+    }
+    l.search_x   = x;
+    l.search_y   = y;
+    l.rows_y     = is->chapter_pinned ? y + l.font * 3 / 2 : l.button_y[CHAPTER_SORT_NB - 1] + l.font * 3 / 2;
+    l.canvas_h   = FFMIN(y + l.font * 2 + CHAPTER_LIST_ROWS * l.line, is->height - l.font * 2);
     l.nb_rows    = FFMIN(is->nb_chapter_rows, FFMAX(1, (l.canvas_h - l.rows_y - l.font / 2) / l.line));
     l.first      = av_clip(is->chapter_selected - l.nb_rows / 2, 0, is->nb_chapter_rows - l.nb_rows);
     l.height     = l.rows_y + l.nb_rows * l.line + l.font / 2;
@@ -1230,11 +1241,15 @@ static void chapter_list_script(VideoState *is, AVBPrint *script)
                "Style: Selected,Sans,%d,&H0080D0FF,&H00000000,-1,%d,7\n"
                "Style: Artist,Sans,%d,&H00C0C0C0,&H00000000,0,%d,7\n"
                "Style: ArtistSelected,Sans,%d,&H0080D0FF,&H00000000,-1,%d,7\n"
-               "Style: Playing,Sans,%d,&H00FFFFFF,&H00FFFFFF,0,0,7\n\n"
+               "Style: Playing,Sans,%d,&H00FFFFFF,&H00FFFFFF,0,0,7\n"
+               "Style: Hint,Sans,%d,&H00A0A0A0,&H00000000,0,%d,7\n\n"
                "[Events]\nFormat: Start, End, Style, Text\n",
                is->chapter_rect.w, is->chapter_rect.h, l.font, l.font, l.font, l.font / 16 + 1, l.font, l.font / 16 + 1,
-               l.font * 4 / 5, l.font / 16 + 1, l.font * 4 / 5, l.font / 16 + 1, l.font);
+               l.font * 4 / 5, l.font / 16 + 1, l.font * 4 / 5, l.font / 16 + 1, l.font, l.font, l.font / 16 + 1);
     bprint_chapter_box(script, "Panel", 0, 0, l.width, l.height);
+    if (is->chapter_pinned)
+        bprint_chapter_cell(script, *is->chapter_search ? "Row" : "Hint", l.search_x, l.search_y, l.length_x,
+                            l.search_y + l.font * 3 / 2, *is->chapter_search ? is->chapter_search : "type to search");
     for (int b = 0; b < FF_ARRAY_ELEMS(sort_buttons); b++) {
         int x = l.button_x[b], y = l.button_y[b], w = sort_buttons[b].width * l.font / 2;
 
@@ -1346,6 +1361,8 @@ static int chapter_list_render(VideoState *is)
         if (is->chapter_texture)
             SDL_DestroyTexture(is->chapter_texture);
         is->chapter_texture = NULL;
+        is->chapter_pinned  = 0;
+        SDL_StopTextInput();
     }
     av_frame_free(&frame);
     av_bprint_finalize(&script, NULL);
@@ -1378,7 +1395,59 @@ static int chapter_list_visible(VideoState *is)
     return chapter_list_alpha(is, av_gettime_relative()) > 0;
 }
 
-static void seek_chapter(VideoState *is, int i);
+/* appends the typed text to the search, or erases its last character when nothing was typed */
+static void chapter_list_search(VideoState *is, const char *typed)
+{
+    int len = strlen(is->chapter_search);
+
+    if (typed) {
+        if (len + strlen(typed) < sizeof(is->chapter_search))
+            av_strlcat(is->chapter_search, typed, sizeof(is->chapter_search));
+    } else if (len) {
+        while (len > 0 && (is->chapter_search[--len] & 0xC0) == 0x80)
+            ;
+        is->chapter_search[len] = 0;
+    }
+    chapter_list_update_rows(is);
+    chapter_list_render(is);
+}
+
+static void chapter_list_pin(VideoState *is, int pinned)
+{
+    if (!renderer)
+        return;
+    is->chapter_pinned = pinned;
+    if (pinned) {
+        chapter_list_show(is, current_chapter(is));
+        is->chapter_pinned = !!is->chapter_texture;
+        if (is->chapter_pinned)
+            SDL_StartTextInput();
+    } else {
+        SDL_StopTextInput();
+        is->chapter_last_input = av_gettime_relative() - CHAPTER_LIST_HOLD_TIME;
+        is->chapter_search[0] = 0;
+        chapter_list_update_rows(is);
+        chapter_list_render(is);
+    }
+}
+
+/* keys while the list is pinned; typed characters arrive as text input instead */
+static void chapter_list_key(VideoState *is, SDL_Keycode key)
+{
+    switch (key) {
+    case SDLK_ESCAPE:    chapter_list_pin(is, 0); break;
+    case SDLK_UP:        chapter_list_move(is, -1); break;
+    case SDLK_DOWN:      chapter_list_move(is, 1); break;
+    case SDLK_PAGEUP:    seek_chapter(is, current_chapter(is) + 1); break;
+    case SDLK_PAGEDOWN:  seek_chapter(is, current_chapter(is) - 1); break;
+    case SDLK_BACKSPACE: chapter_list_search(is, NULL); break;
+    case SDLK_RETURN:
+    case SDLK_KP_ENTER:
+        if (is->nb_chapter_rows)
+            seek_chapter(is, is->chapter_rows[is->chapter_selected].index);
+        break;
+    }
+}
 
 /* seeks to the entry under a click, returns whether the click hit the list at all */
 static int chapter_list_click(VideoState *is, int x, int y)
@@ -4136,13 +4205,18 @@ static void event_loop(VideoState *cur_stream)
         refresh_loop_wait_event(cur_stream, &event);
         switch (event.type) {
         case SDL_KEYDOWN:
-            if (exit_on_keydown || event.key.keysym.sym == SDLK_ESCAPE || event.key.keysym.sym == SDLK_q) {
+            if (exit_on_keydown || (!cur_stream->chapter_pinned &&
+                                    (event.key.keysym.sym == SDLK_ESCAPE || event.key.keysym.sym == SDLK_q))) {
                 do_exit(cur_stream);
                 break;
             }
             // If we don't yet have a window, skip all key events, because read_thread might still be initializing...
             if (!cur_stream->width)
                 continue;
+            if (cur_stream->chapter_pinned) {
+                chapter_list_key(cur_stream, event.key.keysym.sym);
+                break;
+            }
             switch (event.key.keysym.sym) {
             case SDLK_f:
                 toggle_full_screen(cur_stream);
@@ -4181,13 +4255,7 @@ static void event_loop(VideoState *cur_stream)
                 stream_cycle_channel(cur_stream, AVMEDIA_TYPE_SUBTITLE);
                 break;
             case SDLK_l:
-                if (!renderer || !cur_stream->ic->nb_chapters)
-                    break;
-                cur_stream->chapter_pinned = !cur_stream->chapter_pinned;
-                if (cur_stream->chapter_pinned)
-                    chapter_list_show(cur_stream, current_chapter(cur_stream));
-                else
-                    cur_stream->chapter_last_input = av_gettime_relative() - CHAPTER_LIST_HOLD_TIME;
+                cur_stream->chapter_pin_requested = cur_stream->ic->nb_chapters > 0;
                 break;
             case SDLK_RETURN:
             case SDLK_KP_ENTER:
@@ -4224,17 +4292,9 @@ static void event_loop(VideoState *cur_stream)
                 incr = seek_interval ? seek_interval : 10.0;
                 goto do_seek;
             case SDLK_UP:
-                if (cur_stream->chapter_pinned) {
-                    chapter_list_move(cur_stream, -1);
-                    break;
-                }
                 incr = 60.0;
                 goto do_seek;
             case SDLK_DOWN:
-                if (cur_stream->chapter_pinned) {
-                    chapter_list_move(cur_stream, 1);
-                    break;
-                }
                 incr = -60.0;
             do_seek:
                     if (seek_by_bytes) {
@@ -4264,6 +4324,16 @@ static void event_loop(VideoState *cur_stream)
             default:
                 break;
             }
+            break;
+        case SDL_KEYUP:
+            /* on the release of a press made while unpinned, so that the key's own text input does not start the search */
+            if (event.key.keysym.sym == SDLK_l && cur_stream->chapter_pin_requested)
+                chapter_list_pin(cur_stream, 1);
+            cur_stream->chapter_pin_requested = 0;
+            break;
+        case SDL_TEXTINPUT:
+            if (cur_stream->chapter_pinned)
+                chapter_list_search(cur_stream, event.text.text);
             break;
         case SDL_MOUSEWHEEL:
             if (chapter_list_visible(cur_stream))
@@ -4554,7 +4624,7 @@ void show_help_default(const char *opt, const char *arg)
            "left/right          seek backward/forward by 10 seconds or a custom interval if -seek_interval is set\n"
            "down/up             seek backward/forward 1 minute\n"
            "page down/page up   seek to previous/next chapter or backward/forward 10 minutes if no chapters\n"
-           "l                   keep the chapter list on screen, down/up then move its selection\n"
+           "l                   keep the chapter list on screen; typing then filters it, down/up move its selection and escape closes it\n"
            "enter               seek to the chapter selected in the chapter list while it is shown\n"
            "mouse wheel         move the chapter list selection while it is shown\n"
            "left click          seek to the clicked chapter list entry, or sort the list by the clicked column, again to flip it\n"
