@@ -548,13 +548,16 @@ static int decode_frame(AVCodecContext *avctx,
 
     s->frame = frame;
 
+    ret = ff_hwaccel_frame_priv_alloc(avctx, &s->hwaccel_picture_private);
+    if (ret < 0)
+        return ret;
+
+    /* Everything the next frame thread needs is known, let it start */
+    ff_thread_finish_setup(avctx);
+
     /* Start */
     if (avctx->hwaccel) {
         const FFHWAccel *hwaccel = ffhwaccel(avctx->hwaccel);
-
-        ret = ff_hwaccel_frame_priv_alloc(avctx, &s->hwaccel_picture_private);
-        if (ret < 0)
-            return ret;
 
         ret = hwaccel->start_frame(avctx, avpkt->buf, avpkt->data, avpkt->size);
         if (ret < 0)
