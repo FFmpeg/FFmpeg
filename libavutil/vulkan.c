@@ -2227,13 +2227,16 @@ void ff_vk_frame_barrier(FFVulkanContext *s, FFVkExecContext *e,
             break;
         }
 
+    /* Earlier submissions are ordered by the frame's semaphore, which makes
+     * their writes available and visible, so only accesses recorded in this
+     * command buffer belong in the source scope. */
     for (int i = 0; i < nb_images; i++) {
         bar[*nb_bar] = (VkImageMemoryBarrier2) {
             .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
             .pNext = NULL,
             .srcStageMask = src_stage,
             .dstStageMask = dst_stage,
-            .srcAccessMask = found >= 0 ? e->access_dst[found] : vkf->access[i],
+            .srcAccessMask = found >= 0 ? e->access_dst[found] : VK_ACCESS_2_NONE,
             .dstAccessMask = new_access,
             .oldLayout = found >= 0 ? e->layout_dst[found] : vkf->layout[0],
             .newLayout = new_layout,
