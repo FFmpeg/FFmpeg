@@ -8629,9 +8629,13 @@ Substation Alpha) subtitles files.
 
 This filter accepts @option{filename}/@option{f}, @option{original_size},
 @option{fontsdir}, and @option{alpha} from the @ref{subtitles} filter, plus the
-following option:
+following options:
 
 @table @option
+@item script
+The ASS script to render, given inline. Exactly one of @option{filename} and
+@option{script} must be set.
+
 @item shaping
 Set the shaping engine.
 

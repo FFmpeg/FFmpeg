@@ -53,6 +53,7 @@ typedef struct AssContext {
     ASS_Renderer *renderer;
     ASS_Track    *track;
     char *filename;
+    char *script;
     char *fontsdir;
     char *charenc;
     char *force_style;
@@ -141,11 +142,6 @@ static void ass_log(int ass_level, const char *fmt, va_list args, void *ctx)
 static av_cold int init(AVFilterContext *ctx)
 {
     AssContext *ass = ctx->priv;
-
-    if (!ass->filename) {
-        av_log(ctx, AV_LOG_ERROR, "No filename provided!\n");
-        return AVERROR(EINVAL);
-    }
 
     ass->library = ass_library_init();
     if (!ass->library) {
@@ -269,6 +265,7 @@ static const AVFilterPad ass_inputs[] = {
 static const AVOption ass_options[] = {
     COMMON_OPTIONS
     SHAPING_OPTIONS
+    {"script", "set the ASS script to render instead of reading a file", OFFSET(script), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, FLAGS },
     {NULL},
 };
 
@@ -277,19 +274,24 @@ AVFILTER_DEFINE_CLASS(ass);
 static av_cold int init_ass(AVFilterContext *ctx)
 {
     AssContext *ass = ctx->priv;
-    int ret = init(ctx);
+    int ret;
 
+    if (!ass->filename == !ass->script) {
+        av_log(ctx, AV_LOG_ERROR, "Exactly one of filename and script must be set\n");
+        return AVERROR(EINVAL);
+    }
+    ret = init(ctx);
     if (ret < 0)
         return ret;
 
     /* Initialize fonts */
     ass_set_fonts(ass->renderer, NULL, NULL, 1, NULL, 1);
 
-    ass->track = ass_read_file(ass->library, ass->filename, NULL);
+    ass->track = ass->script ? ass_read_memory(ass->library, ass->script, strlen(ass->script), NULL)
+                             : ass_read_file(ass->library, ass->filename, NULL);
     if (!ass->track) {
-        av_log(ctx, AV_LOG_ERROR,
-               "Could not create a libass track when reading file '%s'\n",
-               ass->filename);
+        av_log(ctx, AV_LOG_ERROR, "Could not create a libass track from %s\n",
+               ass->filename ? ass->filename : "the script");
         return AVERROR(EINVAL);
     }
     return 0;
@@ -367,6 +369,11 @@ static av_cold int init_subtitles(AVFilterContext *ctx)
     AVStream *st;
     AVPacket pkt;
     AssContext *ass = ctx->priv;
+
+    if (!ass->filename) {
+        av_log(ctx, AV_LOG_ERROR, "No filename provided!\n");
+        return AVERROR(EINVAL);
+    }
 
     /* Init libass */
     ret = init(ctx);
