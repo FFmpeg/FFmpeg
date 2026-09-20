@@ -22,6 +22,10 @@
 
 #pragma shader_stage(compute)
 #extension GL_GOOGLE_include_directive : require
+#extension GL_KHR_shader_subgroup_basic : require
+#extension GL_KHR_shader_subgroup_ballot : require
+#extension GL_KHR_shader_subgroup_arithmetic : require
+#extension GL_KHR_shader_subgroup_shuffle : require
 
 #define SB_QUALI readonly
 #include "common.glsl"
@@ -29,125 +33,140 @@
 
 layout (set = 1, binding = 1) uniform uimage2D src[];
 
-layout (set = 1, binding = 2, scalar) buffer fltmap_buf {
-    uint fltmap[];
+layout (set = 1, binding = 2, scalar) workgroupcoherent buffer fltmap_buf {
+    u32vec2 fltmap[];
 };
 
-/* The shared fltmap_buf is laid out per (slice, plane) as a
- * max_pixels_per_slice*3 uint block, where the first
- * max_pixels_per_slice*2 entries hold interleaved (val, ndx) pairs and
- * the trailing [max_pixels_per_slice] entries are the bitmap region used
- * by the setup/encode shaders. Padding past pixel_num is the sentinel
- * (UINT32_MAX, UINT32_MAX) so it sorts at the end. */
+/* Per slice, fltmap_buf holds the sorted (val, ndx) pairs of each plane,
+ * max_pixels_per_slice each, followed by the bitmaps of each plane, which
+ * the setup shader fills after the sort, so they serve as its scratch. */
 
-/* Per-workgroup bitonic-sort buffer. Limits a slice's pow2 size; large
- * slices fall back to working in global memory */
-shared u32vec2 smem[8192];
+#define RADIX_BITS 4
+#define RADIX_SIZE 16
+
+shared uint cnt[RADIX_SIZE][gl_WorkGroupSize.x / 4];
+shared uint hist[RADIX_SIZE];
+
+uint slice_w, sxs, sys;
+
+u32vec2 load_pixel(uint i, int p)
+{
+    uint y = i / slice_w;
+    uint x = i - y*slice_w;
+    uint v = imageLoad(src[p], ivec2(sxs + x, sys + y))[0];
+    if (remap_mode == 2)
+        v = ((v & 0x80000000u) != 0u) ? v : (v ^ 0x7FFFFFFFu);
+    return u32vec2(v, i);
+}
+
+/* Lanes of the subgroup whose element has the digit d */
+uvec4 digit_lanes(bool live, uint d)
+{
+    uvec4 lanes = subgroupBallot(live);
+    [[unroll]] for (int k = 0; k < RADIX_BITS; k++) {
+        uvec4 b = subgroupBallot(live && ((d >> k) & 1u) != 0u);
+        lanes &= ((d >> k) & 1u) != 0u ? b : ~b;
+    }
+    return lanes;
+}
+
+/* LSD radix sort, 4 bits per pass, between the two buffers. Each subgroup
+ * owns a block of rows of elements, one per lane, ranked with ballots. */
+void radix_sort(int p, uint n, uint src, uint dst)
+{
+    const uint sg = gl_SubgroupID;
+    const uint lane = gl_SubgroupInvocationID;
+    const uint S = min(gl_SubgroupSize, gl_WorkGroupSize.x);
+    const uint rows = (n + gl_WorkGroupSize.x - 1) / gl_WorkGroupSize.x;
+    const uint block = sg*rows*S;
+
+    for (uint shift = 0; shift < 32; shift += RADIX_BITS) {
+        for (uint v = lane; v < RADIX_SIZE; v += S)
+            cnt[v][sg] = 0;
+        if (gl_LocalInvocationIndex < RADIX_SIZE)
+            hist[gl_LocalInvocationIndex] = 0;
+        barrier();
+
+        /* Count of each digit per block and in total */
+        for (uint m = 0; m < rows; m++) {
+            const uint i = block + m*S + lane;
+            const bool live = i < n;
+            const u32vec2 e = !live ? u32vec2(0) : shift == 0 ?
+                              load_pixel(i, p) : fltmap[src + i];
+            const uint d = (e.x >> shift) & (RADIX_SIZE - 1);
+            const uvec4 lanes = digit_lanes(live, d);
+            if (live && subgroupBallotExclusiveBitCount(lanes) == 0) {
+                atomicAdd(cnt[d][sg], subgroupBallotBitCount(lanes));
+                atomicAdd(hist[d], subgroupBallotBitCount(lanes));
+            }
+        }
+        barrier();
+
+        /* Offset of each digit per block: the digit's base plus its count
+         * in the blocks before */
+        for (uint v = sg; v < RADIX_SIZE; v += gl_NumSubgroups) {
+            uint carry = 0;
+            for (uint w = 0; w < v; w++)
+                carry += hist[w];
+            for (uint c = 0; c < gl_NumSubgroups; c += S) {
+                const bool has = c + lane < gl_NumSubgroups;
+                const uint x = has ? cnt[v][c + lane] : 0;
+                const uint ex = subgroupExclusiveAdd(x);
+                if (has)
+                    cnt[v][c + lane] = carry + ex;
+                carry += subgroupAdd(x);
+            }
+        }
+        barrier();
+
+        /* Scatter each row from the offsets, advancing them */
+        for (uint m = 0; m < rows; m++) {
+            const uint i = block + m*S + lane;
+            const bool live = i < n;
+            const u32vec2 e = !live ? u32vec2(0) : shift == 0 ?
+                              load_pixel(i, p) : fltmap[src + i];
+            const uint d = (e.x >> shift) & (RADIX_SIZE - 1);
+            const uvec4 lanes = digit_lanes(live, d);
+            const uint before = subgroupBallotExclusiveBitCount(lanes);
+            uint pos = 0;
+            if (live && before == 0)
+                pos = atomicAdd(cnt[d][sg], subgroupBallotBitCount(lanes));
+            pos = subgroupShuffle(pos, subgroupBallotFindLSB(lanes)) + before;
+            if (live)
+                fltmap[dst + pos] = e;
+        }
+        controlBarrier(gl_ScopeWorkgroup, gl_ScopeWorkgroup,
+                       gl_StorageSemanticsShared | gl_StorageSemanticsBuffer,
+                       gl_SemanticsAcquireRelease);
+
+        const uint t = src;
+        src = dst;
+        dst = t;
+    }
+}
 
 void main(void)
 {
     const uint slice_idx = gl_WorkGroupID.y*gl_NumWorkGroups.x + gl_WorkGroupID.x;
     uvec2 img_size = imageSize(src[0]);
 
-    uint sxs = slice_coord(img_size.x, gl_WorkGroupID.x + 0,
-                           gl_NumWorkGroups.x, 0);
+    sxs = slice_coord(img_size.x, gl_WorkGroupID.x + 0,
+                      gl_NumWorkGroups.x, 0);
     uint sxe = slice_coord(img_size.x, gl_WorkGroupID.x + 1,
                            gl_NumWorkGroups.x, 0);
-    uint sys = slice_coord(img_size.y, gl_WorkGroupID.y + 0,
-                           gl_NumWorkGroups.y, 0);
+    sys = slice_coord(img_size.y, gl_WorkGroupID.y + 0,
+                      gl_NumWorkGroups.y, 0);
     uint sye = slice_coord(img_size.y, gl_WorkGroupID.y + 1,
                            gl_NumWorkGroups.y, 0);
 
-    uint slice_w = sxe - sxs;
+    slice_w = sxe - sxs;
     uint slice_h = sye - sys;
     uint pixel_num = slice_w * slice_h;
 
-    /* Round up to next pow2 for bitonic sort */
-    uint N = 1;
-    while (N < pixel_num)
-        N <<= 1;
-    N = max(N, 2);
-    if (N > max_pixels_per_slice)
-        N = max_pixels_per_slice;
+    const uint slice_base = slice_idx*6u*max_pixels_per_slice;
+    const uint scratch = slice_base + 4u*max_pixels_per_slice;
 
-    const uint plane_stride = max_pixels_per_slice*3u;
-    const bool use_smem = N <= 8192u;
-
-    for (int p = 0; p < color_planes; p++) {
-        uint base = (slice_idx*4u + uint(p))*plane_stride;
-
-        /* Load pixels */
-        for (uint i = gl_LocalInvocationIndex; i < N;
-             i += gl_WorkGroupSize.x * gl_WorkGroupSize.y) {
-            uint v, ndx;
-            if (i < pixel_num) {
-                uint y = i / slice_w;
-                uint x = i - y*slice_w;
-                v = imageLoad(src[p], ivec2(sxs + x, sys + y))[0];
-                if (remap_mode == 2)
-                    v = ((v & 0x80000000u) != 0u) ? v : (v ^ 0x7FFFFFFFu);
-                ndx = i;
-            } else {
-                v = 0xFFFFFFFFu;
-                ndx = 0xFFFFFFFFu;
-            }
-            if (use_smem) {
-                smem[i] = u32vec2(v, ndx);
-            } else {
-                fltmap[base + 2u*i + 0u] = v;
-                fltmap[base + 2u*i + 1u] = ndx;
-            }
-        }
-        barrier();
-        if (!use_smem) memoryBarrierBuffer();
-
-        /* Bitonic sort of the (val, ndx) pairs. */
-        for (uint k = 2; k <= N; k <<= 1) {
-            for (uint j = k >> 1; j > 0; j >>= 1) {
-                for (uint i = gl_LocalInvocationIndex; i < N;
-                     i += gl_WorkGroupSize.x * gl_WorkGroupSize.y) {
-                    uint partner = i ^ j;
-                    if (partner > i) {
-                        bool ascending = (i & k) == 0;
-                        u32vec2 a, b;
-                        if (use_smem) {
-                            a = smem[i];
-                            b = smem[partner];
-                        } else {
-                            a = u32vec2(fltmap[base + 2u*i + 0u],
-                                        fltmap[base + 2u*i + 1u]);
-                            b = u32vec2(fltmap[base + 2u*partner + 0u],
-                                        fltmap[base + 2u*partner + 1u]);
-                        }
-                        bool a_gt_b = (a.x > b.x) ||
-                                      (a.x == b.x && a.y > b.y);
-                        if (a_gt_b == ascending) {
-                            if (use_smem) {
-                                smem[i] = b;
-                                smem[partner] = a;
-                            } else {
-                                fltmap[base + 2u*i + 0u] = b.x;
-                                fltmap[base + 2u*i + 1u] = b.y;
-                                fltmap[base + 2u*partner + 0u] = a.x;
-                                fltmap[base + 2u*partner + 1u] = a.y;
-                            }
-                        }
-                    }
-                }
-                barrier();
-                if (!use_smem) memoryBarrierBuffer();
-            }
-        }
-
-        /* Write sorted pairs back to global */
-        if (use_smem) {
-            for (uint i = gl_LocalInvocationIndex; i < N;
-                 i += gl_WorkGroupSize.x * gl_WorkGroupSize.y) {
-                u32vec2 u = smem[i];
-                fltmap[base + 2u*i + 0u] = u.x;
-                fltmap[base + 2u*i + 1u] = u.y;
-            }
-            barrier();
-        }
-    }
+    for (int p = 0; p < color_planes; p++)
+        radix_sort(p, pixel_num, slice_base + uint(p)*max_pixels_per_slice,
+                   scratch);
 }

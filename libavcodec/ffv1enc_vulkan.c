@@ -361,7 +361,7 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
 
     if (f->remap_mode) {
         if (fv->is_float32) {
-            /* Per (slice, plane): [units : max_pixels*2 uints] + [bitmap : max_pixels uints]. */
+            /* Per slice: [units : 4*max_pixels*2 uints] + [bitmaps : 4*max_pixels uints]. */
             remap_data_size = 4*fv->max_pixels_per_slice*3*sizeof(uint32_t);
         } else {
             const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fv->s.frames->sw_format);
@@ -1003,7 +1003,8 @@ static int init_sort32_shader(AVCodecContext *avctx, VkSpecializationInfo *sl)
     VulkanEncodeFFv1Context *fv = avctx->priv_data;
     FFVulkanShader *shd = &fv->sort32;
 
-    uint32_t wg_x = FFMIN(fv->max_pixels_per_slice, 256);
+    uint32_t wg_x = FFMIN3(fv->max_pixels_per_slice, 1024,
+                           fv->s.props.properties.limits.maxComputeWorkGroupSize[0]);
     ff_vk_shader_load(shd, VK_SHADER_STAGE_COMPUTE_BIT, sl,
                       (uint32_t []) { wg_x, 1, 1 }, 0);
 

@@ -252,16 +252,13 @@ ivec4 load_components(uint slice_idx, in SliceContext sc, ivec2 pos)
     ivec4 pix;
 #ifdef FLOAT
     if (c_bits >= 32) {
-        /* 32-bit float: per-pixel-position bitmap lookup. The bitmap region
-         * follows the units region in the same buffer. */
+        /* 32-bit float: per-pixel-position bitmap lookup. The bitmaps of
+         * the planes follow the units of the planes in the same buffer. */
         ivec2 rel = pos - sc.slice_pos;
         uint pixel_idx = uint(rel.x + sc.slice_dim.x*rel.y);
-        uint plane_stride = max_pixels_per_slice*3u;
-        for (int i = 0; i < color_planes; i++) {
-            uint base = (slice_idx*4u + uint(i))*plane_stride
-                        + max_pixels_per_slice*2u;
-            pix[i] = int(fltmap[base + pixel_idx]);
-        }
+        uint base = (slice_idx*12u + 8u)*max_pixels_per_slice;
+        for (int i = 0; i < color_planes; i++)
+            pix[i] = int(fltmap[base + uint(i)*max_pixels_per_slice + pixel_idx]);
     } else {
         /* 16-bit float: value-indexed lookup. Source view is r16_uint so
          * imageLoad returns the raw fp16 bit pattern in .x. */

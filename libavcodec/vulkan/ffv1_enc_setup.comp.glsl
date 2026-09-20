@@ -148,15 +148,15 @@ void encode_float32_remap(uint slice_idx, inout SliceContext sc)
     const uint slice_w = uint(sc.slice_dim.x);
     const uint slice_h = uint(sc.slice_dim.y);
     const uint pixel_num = slice_w * slice_h;
-    const uint plane_stride = max_pixels_per_slice*3u;
+    const uint slice_base = slice_idx*12u*max_pixels_per_slice;
     const int64_t end = int64_t(0xFFFFFFFFu);
 
     for (int p = 0; p < color_planes; p++) {
-        /* Layout: per (slice, plane) we have units (max_pixels*8 bytes)
-         * followed by bitmap (max_pixels*4 bytes). The units region is
-         * read-only here, the bitmap region is written. */
-        const uint plane_base = (slice_idx*4u + uint(p))*plane_stride;
-        const uint bitmap_base = plane_base + max_pixels_per_slice*2u;
+        /* Layout: per slice, the sorted units of each plane (max_pixels*8
+         * bytes), then the bitmaps of each plane (max_pixels*4 bytes). The
+         * units are read-only here, the bitmap is written. */
+        const uint plane_base = slice_base + uint(p)*2u*max_pixels_per_slice;
+        const uint bitmap_base = slice_base + (8u + uint(p))*max_pixels_per_slice;
 
         for (int i = 0; i < NB_CONTEXTS*CONTEXT_SIZE; i++)
             rc_state[i] = uint8_t(128);
