@@ -130,6 +130,13 @@ typedef struct ChapterRow {
     int64_t length;
 } ChapterRow;
 
+/* what lies under a window position: the row and the sort button, -1 for none, and whether it is inside the list at all */
+typedef struct ChapterListHit {
+    int inside;
+    int row;
+    int button;
+} ChapterListHit;
+
 #define USE_ONEPASS_SUBTITLE_RENDER 1
 
 typedef struct MyAVPacketList {
@@ -1449,27 +1456,39 @@ static void chapter_list_key(VideoState *is, SDL_Keycode key)
     }
 }
 
-/* seeks to the entry under a click, returns whether the click hit the list at all */
+static ChapterListHit chapter_list_hit(VideoState *is, const ChapterListLayout *l, int x, int y)
+{
+    ChapterListHit hit = { 0, -1, -1 };
+    int line;
+
+    x -= l->font;
+    y -= l->font;
+    if (x < 0 || y < 0 || x >= l->width || y >= FFMIN(l->height, l->canvas_h))
+        return hit;
+    hit.inside = 1;
+    line = (y - l->rows_y) / l->line;
+    if (y >= l->rows_y && line < l->nb_rows)
+        hit.row = l->first + line;
+    for (int b = 0; b < FF_ARRAY_ELEMS(sort_buttons); b++)
+        if (x >= l->button_x[b] && x < l->button_x[b] + sort_buttons[b].width * l->font / 2 &&
+            y >= l->button_y[b] && y < l->button_y[b] + l->font * 5 / 4)
+            hit.button = b;
+    return hit;
+}
+
+/* seeks to the entry under a click or sorts by the button under it, returns whether the click hit the list at all */
 static int chapter_list_click(VideoState *is, int x, int y)
 {
     ChapterListLayout l = chapter_list_layout(is);
-    int row;
+    ChapterListHit hit = chapter_list_hit(is, &l, x, y);
 
-    x -= is->chapter_rect.x;
-    y -= is->chapter_rect.y;
-    if (x < 0 || y < 0 || x >= l.width || y >= FFMIN(l.height, l.canvas_h))
-        return 0;
-    row = (y - l.rows_y) / l.line;
-    if (y >= l.rows_y && row < l.nb_rows)
-        seek_chapter(is, is->chapter_rows[l.first + row].index);
-    for (int b = 0; b < FF_ARRAY_ELEMS(sort_buttons); b++) {
-        if (x < l.button_x[b] || x >= l.button_x[b] + sort_buttons[b].width * l.font / 2 ||
-            y < l.button_y[b] || y >= l.button_y[b] + l.font * 5 / 4)
-            continue;
-        chapter_sort_by(b);
+    if (hit.row >= 0)
+        seek_chapter(is, is->chapter_rows[hit.row].index);
+    if (hit.button >= 0) {
+        chapter_sort_by(hit.button);
         chapter_list_show(is, -1);
     }
-    return 1;
+    return hit.inside;
 }
 
 static void chapter_list_draw(VideoState *is)
