@@ -60,9 +60,9 @@
 #define MUL(a, b)    MUL16(a, b)
 #define MAC(a, b, c) MAC16(a, b, c)
 
-#elif BIT_DEPTH == 10 || BIT_DEPTH == 12
+#elif BIT_DEPTH == 10 || BIT_DEPTH == 12 || BIT_DEPTH == 16
 
-# if BIT_DEPTH == 10
+# if BIT_DEPTH == 10 || BIT_DEPTH == 16
 #define W1 22725 // 90901
 #define W2 21407 //  85627
 #define W3 19265 //  77062
@@ -71,7 +71,17 @@
 #define W6  8867 //  35468
 #define W7  4520 //  18081
 
-#   ifdef EXTRA_SHIFT
+#   if BIT_DEPTH == 16
+/* 16-bit output from 16-bit coefficients. The rows keep two more
+ * fractional bits than 16-bit intermediates could hold, and the columns
+ * are shifted by as little as the 32-bit sums of a 16-bit result allow */
+#    if IN_IDCT_DEPTH != 32
+#error "The 16-bit iDCT needs 32-bit intermediates"
+#    endif
+#define ROW_SHIFT 13
+#define COL_SHIFT 15
+#define DC_SHIFT  1
+#   elif defined(EXTRA_SHIFT)
 #define ROW_SHIFT 13
 #define COL_SHIFT 18
 #define DC_SHIFT  1
