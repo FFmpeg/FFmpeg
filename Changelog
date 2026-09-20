@@ -9,7 +9,7 @@ version 8.1.3:
  avformat/hls: avoid casting callback functions type
  avcodec/vulkan/ffv1_dec_setup: act on the slice header rejection
  avformat/hlsenc: reject out-of-range EXT-X-PROGRAM-DATE-TIME
- avformat/http: only re-use old connection if valid
+ avformat/http: only reuse old connection if valid
  avformat/http: properly re-set s->range_end before requests
  avutil/rational: avoid signed integer overflow
  avformat/mpegts: Fix memleak of pes_filter.opaque
@@ -25,7 +25,7 @@ version 8.1.3:
  vulkan_encode: fix leak and swallowed errors in init_base_units()
  avfilter/dnn: fix async teardown race condition in all backends
  avfilter/vf_decimate: reject blocks smaller than one chroma sample
- avformat/genh: check for unsupported interlaved size 1 typ1 THP
+ avformat/genh: check for unsupported interleaved size 1 typ1 THP
  lavc/vvc: Prevent OOB write in sh_entry_points
  avcodec/vulkan_hevc: bound the per category reference counts in vk_hevc_start_frame
  avcodec/vulkan_hevc: bound the reference count in vk_hevc_start_frame
