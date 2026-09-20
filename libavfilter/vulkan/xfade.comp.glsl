@@ -53,6 +53,20 @@ layout (push_constant, scalar) uniform pushConstants {
     float progress;
 };
 
+/* vf_xfade counts progress down and derives every edge from that value;
+ * mirror its operations so the truncation matches */
+float rev_progress()
+{
+    precise float p = 1.0 - progress;
+    return p;
+}
+
+float fwd_progress()
+{
+    precise float p = 1.0 - rev_progress();
+    return p;
+}
+
 void transition_fade(int idx, ivec2 pos)
 {
     vec4 a = texture(a_images[idx], pos);
@@ -63,7 +77,7 @@ void transition_fade(int idx, ivec2 pos)
 void transition_wipeleft(int idx, ivec2 pos)
 {
     ivec2 size = imageSize(output_img[idx]);
-    int  s = int(size.x * (1.0 - progress));
+    int  s = int(size.x * rev_progress());
     vec4 a = texture(a_images[idx], pos);
     vec4 b = texture(b_images[idx], pos);
     imageStore(output_img[idx], pos, pos.x > s ? b : a);
@@ -72,7 +86,7 @@ void transition_wipeleft(int idx, ivec2 pos)
 void transition_wiperight(int idx, ivec2 pos)
 {
     ivec2 size = imageSize(output_img[idx]);
-    int  s = int(size.x * progress);
+    int  s = int(size.x * fwd_progress());
     vec4 a = texture(a_images[idx], pos);
     vec4 b = texture(b_images[idx], pos);
     imageStore(output_img[idx], pos, pos.x > s ? a : b);
@@ -81,7 +95,7 @@ void transition_wiperight(int idx, ivec2 pos)
 void transition_wipeup(int idx, ivec2 pos)
 {
     ivec2 size = imageSize(output_img[idx]);
-    int  s = int(size.y * (1.0 - progress));
+    int  s = int(size.y * rev_progress());
     vec4 a = texture(a_images[idx], pos);
     vec4 b = texture(b_images[idx], pos);
     imageStore(output_img[idx], pos, pos.y > s ? b : a);
@@ -90,7 +104,7 @@ void transition_wipeup(int idx, ivec2 pos)
 void transition_wipedown(int idx, ivec2 pos)
 {
     ivec2 size = imageSize(output_img[idx]);
-    int  s = int(size.y * progress);
+    int  s = int(size.y * fwd_progress());
     vec4 a = texture(a_images[idx], pos);
     vec4 b = texture(b_images[idx], pos);
     imageStore(output_img[idx], pos, pos.y > s ? a : b);
@@ -100,7 +114,7 @@ void transition_wipedown(int idx, ivec2 pos)
 void transition_ ## name(int idx, ivec2 pos)                                   \
 {                                                                              \
     ivec2 size = imageSize(output_img[idx]);                                   \
-    ivec2 pi = ivec2(progress * size);                                         \
+    ivec2 pi = size - ivec2(rev_progress() * size);                            \
     ivec2 p = pos + pi * direction;                                            \
     ivec2 f = p % size;                                                        \
     f = f + size * ivec2(f.x < 0, f.y < 0);                                    \
@@ -119,10 +133,10 @@ SHADER_SLIDE_COMMON(slideright, ivec2(-1, 0))
 void transition_ ## name(int idx, ivec2 pos)                                   \
 {                                                                              \
     const ivec2 half_size = imageSize(output_img[idx]) / 2;                    \
-    const float z = dot(half_size, half_size);                                 \
-    float p = ((open ? (1.0 - progress) : progress) - 0.5) * 3.0;              \
+    const float z = length(vec2(half_size));                                   \
+    float p = ((open ? rev_progress() : fwd_progress()) - 0.5) * 3.0;          \
     ivec2 dsize = pos - half_size;                                             \
-    float sm = dot(dsize, dsize) / z + p;                                      \
+    float sm = length(vec2(dsize)) / z + p;                                    \
     vec4 a = texture(a_images[idx], pos);                                      \
     vec4 b = texture(b_images[idx], pos);                                      \
     imageStore(output_img[idx], pos,                                           \
@@ -140,7 +154,7 @@ float frand(vec2 v)
 
 void transition_dissolve(int idx, ivec2 pos)
 {
-    float sm = frand(pos) * 2.0 + (1.0 - progress) * 2.0 - 1.5;
+    float sm = frand(pos) * 2.0 + rev_progress() * 2.0 - 1.5;
     vec4 a = texture(a_images[idx], pos);
     vec4 b = texture(b_images[idx], pos);
     imageStore(output_img[idx], pos, sm >= 0.5 ? a : b);
@@ -149,21 +163,23 @@ void transition_dissolve(int idx, ivec2 pos)
 void transition_pixelize(int idx, ivec2 pos)
 {
     ivec2 size = imageSize(output_img[idx]);
-    float d = min(progress, 1.0 - progress);
+    float pc = rev_progress();
+    precise float d = min(pc, 1.0 - pc);
     float dist = ceil(d * 50.0) / 50.0;
     float sq = 2.0 * dist * min(size.x, size.y) / 20.0;
-    float sx = dist > 0.0 ? min((floor(pos.x / sq) + 0.5) * sq, size.x - 1) : pos.x;
-    float sy = dist > 0.0 ? min((floor(pos.y / sq) + 0.5) * sq, size.y - 1) : pos.y;
-    vec4 a = texture(a_images[idx], vec2(sx, sy));
-    vec4 b = texture(b_images[idx], vec2(sx, sy));
+    ivec2 sp = pos;
+    if (dist > 0.0)
+        sp = ivec2(min((floor(vec2(pos) / sq) + 0.5) * sq, vec2(size - 1)));
+    vec4 a = texture(a_images[idx], sp);
+    vec4 b = texture(b_images[idx], sp);
     imageStore(output_img[idx], pos, mix(a, b, progress));
 }
 
 void transition_wipetl(int idx, ivec2 pos)
 {
     ivec2 size = imageSize(output_img[idx]);
-    float zw = size.x * (1.0 - progress);
-    float zh = size.y * (1.0 - progress);
+    float zw = size.x * rev_progress();
+    float zh = size.y * rev_progress();
     vec4 a = texture(a_images[idx], pos);
     vec4 b = texture(b_images[idx], pos);
     imageStore(output_img[idx], pos, (pos.y <= zh && pos.x <= zw) ? a : b);
@@ -172,8 +188,8 @@ void transition_wipetl(int idx, ivec2 pos)
 void transition_wipetr(int idx, ivec2 pos)
 {
     ivec2 size = imageSize(output_img[idx]);
-    float zw = size.x * (progress);
-    float zh = size.y * (1.0 - progress);
+    float zw = size.x * fwd_progress();
+    float zh = size.y * rev_progress();
     vec4 a = texture(a_images[idx], pos);
     vec4 b = texture(b_images[idx], pos);
     imageStore(output_img[idx], pos, (pos.y <= zh && pos.x > zw) ? a : b);
@@ -182,8 +198,8 @@ void transition_wipetr(int idx, ivec2 pos)
 void transition_wipebl(int idx, ivec2 pos)
 {
     ivec2 size = imageSize(output_img[idx]);
-    float zw = size.x * (1.0 - progress);
-    float zh = size.y * (progress);
+    float zw = size.x * rev_progress();
+    float zh = size.y * fwd_progress();
     vec4 a = texture(a_images[idx], pos);
     vec4 b = texture(b_images[idx], pos);
     imageStore(output_img[idx], pos, (pos.y > zh && pos.x <= zw) ? a : b);
@@ -192,8 +208,8 @@ void transition_wipebl(int idx, ivec2 pos)
 void transition_wipebr(int idx, ivec2 pos)
 {
     ivec2 size = imageSize(output_img[idx]);
-    float zw = size.x * (progress);
-    float zh = size.y * (progress);
+    float zw = size.x * fwd_progress();
+    float zh = size.y * fwd_progress();
     vec4 a = texture(a_images[idx], pos);
     vec4 b = texture(b_images[idx], pos);
     imageStore(output_img[idx], pos, (pos.y > zh && pos.x > zw) ? a : b);
@@ -202,7 +218,6 @@ void transition_wipebr(int idx, ivec2 pos)
 void main()
 {
     ivec2 pos = ivec2(gl_GlobalInvocationID.xy);
-    vec2 ipos = pos + vec2(0.5);
 
     for (int i = 0; i < planes; i++) {
         ivec2 size = imageSize(output_img[i]);
