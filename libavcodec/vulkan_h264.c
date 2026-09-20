@@ -37,7 +37,8 @@ const FFVulkanDecodeDescriptor ff_vk_dec_h264_desc = {
 typedef struct H264VulkanDecodePicture {
     FFVulkanDecodePicture           vp;
 
-    /* PICT_* mask of what was actually decoded into the picture's DPB slot */
+    /* DPB slot the picture was decoded into, and a PICT_* mask of what was */
+    int                             slot;
     int                             decoded;
 
     /* Current picture */
@@ -70,16 +71,46 @@ static int vk_h264_fill_pict(AVCodecContext *avctx, H264Picture **ref_src,
     FFVulkanDecodeShared *ctx = dec->shared_ctx;
     H264VulkanDecodePicture *hp = pic->hwaccel_picture_private;
     FFVulkanDecodePicture *vkpic = &hp->vp;
-    const int dpb_slot_index = pic - h->DPB;
     int err;
 
-    /* A slot only holds what was decoded into it: not the pictures the
-     * decoder synthesizes to fill frame_num gaps or to stand in for missing
-     * references, nor fields lost to a seek. */
-    if (!is_current) {
+    if (is_current) {
+        /* Frame num gap dummies carry the duplicated picture's state, and with
+         * it its slot, which thus outlives that picture's DPB entry. Slots
+         * cannot follow DPB indices then: take the lowest one no reference
+         * holds when the picture is first decoded. */
+        if (!hp->decoded) {
+            uint32_t used = 0, free_slots;
+
+            for (int i = 0; i < H264_MAX_PICTURE_COUNT; i++) {
+                const H264VulkanDecodePicture *p = h->DPB[i].hwaccel_picture_private;
+                if ((h->DPB[i].reference & PICT_FRAME) && p && p->decoded)
+                    used |= 1U << p->slot;
+            }
+
+            /* ff_ctz(0) is undefined; a fully-set mask means no slot is free */
+            free_slots = ~used;
+            hp->slot = free_slots ? ff_ctz(free_slots) : ctx->caps.maxDpbSlots;
+            if (hp->slot >= ctx->caps.maxDpbSlots) {
+                av_log(avctx, AV_LOG_ERROR, "Not enough DPB slots for the "
+                       "stream's references\n");
+                return AVERROR(ENOTSUP);
+            }
+        }
+    } else {
+        H264VulkanDecodePicture *cur = h->cur_pic_ptr->hwaccel_picture_private;
+
+        /* A slot only holds what was decoded into it: not the pictures the
+         * decoder synthesizes to fill frame_num gaps or to stand in for
+         * missing references, nor fields lost to a seek. */
         picture_structure &= hp->decoded;
         if (!picture_structure)
             return 0;
+
+        /* Frame_num gap dummies share the duplicated picture's state, and a
+         * slot can only be bound once. */
+        for (H264Picture **p = cur->ref_src; p < ref_src; p++)
+            if ((*p)->hwaccel_picture_private == hp)
+                return 0;
     }
 
     err = ff_vk_decode_prepare_frame(dec, pic->f, vkpic, is_current,
@@ -114,14 +145,14 @@ static int vk_h264_fill_pict(AVCodecContext *avctx, H264Picture **ref_src,
         .sType = VK_STRUCTURE_TYPE_VIDEO_PICTURE_RESOURCE_INFO_KHR,
         .codedOffset = (VkOffset2D){ 0, 0 },
         .codedExtent = (VkExtent2D){ pic->f->width, pic->f->height },
-        .baseArrayLayer = ctx->common.layered_dpb ? dpb_slot_index : 0,
+        .baseArrayLayer = ctx->common.layered_dpb ? hp->slot : 0,
         .imageViewBinding = vkpic->view.ref,
     };
 
     *ref_slot = (VkVideoReferenceSlotInfoKHR) {
         .sType = VK_STRUCTURE_TYPE_VIDEO_REFERENCE_SLOT_INFO_KHR,
         .pNext = vkh264_ref,
-        .slotIndex = dpb_slot_index,
+        .slotIndex = hp->slot,
         .pPictureResource = ref,
     };
 
