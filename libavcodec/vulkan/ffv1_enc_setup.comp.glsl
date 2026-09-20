@@ -122,12 +122,34 @@ void encode_histogram_remap(uint slice_idx, inout SliceContext sc)
  * lu = 0,1 and category = 0 (run/step-1), 1 (delta, unused here), 2 (mul). */
 #define CTX_F32(lu, cat) ((uint(lu)*3u + uint(cat))*CONTEXT_SIZE)
 
+void set_compact_index(uint plane_base, uint bitmap_base, uint pixel_num,
+                       inout uint i, int ci)
+{
+    const uint u_val = fltmap[plane_base + 2u*i + 0u];
+
+    /* Assign the index to every pixel with this value (sorted, so adjacent) */
+    do {
+        fltmap[bitmap_base + fltmap[plane_base + 2u*i + 1u]] = uint(ci);
+        i++;
+    } while (i < pixel_num && fltmap[plane_base + 2u*i + 0u] == u_val);
+}
+
+/* Codes the sorted unique values of each plane by mirroring the decoder's
+ * state machine. The decoder walks a cursor over the 32-bit value range and
+ * alternates between two modes:
+ *   lu == 0: reads run, emits the single value (cursor + run), moves the
+ *            cursor past it, and switches to lu == 1 if run was 0.
+ *   lu == 1: reads run, emits run consecutive values starting at the cursor,
+ *            skips one value, and switches to lu == 0 if run was 0.
+ * It stops once the cursor is past 0xFFFFFFFF. A single multiplier of 1 is
+ * used (mul_count == 1), so every value is coded with unit steps. */
 void encode_float32_remap(uint slice_idx, inout SliceContext sc)
 {
     const uint slice_w = uint(sc.slice_dim.x);
     const uint slice_h = uint(sc.slice_dim.y);
     const uint pixel_num = slice_w * slice_h;
     const uint plane_stride = max_pixels_per_slice*3u;
+    const int64_t end = int64_t(0xFFFFFFFFu);
 
     for (int p = 0; p < color_planes; p++) {
         /* Layout: per (slice, plane) we have units (max_pixels*8 bytes)
@@ -139,89 +161,63 @@ void encode_float32_remap(uint slice_idx, inout SliceContext sc)
         for (int i = 0; i < NB_CONTEXTS*CONTEXT_SIZE; i++)
             rc_state[i] = uint8_t(128);
 
+        /* mul_count */
         put_usymbol(1, CTX_F32(0, 0));
 
         for (int i = 0; i < NB_CONTEXTS*CONTEXT_SIZE; i++)
             rc_state[i] = uint8_t(128);
 
-        /* last_val is the last unique value (or 0xFFFFFFFF as the "before
-         * any value" sentinel, this lets step = val - last_val give val+1
-         * for the first emission via unsigned wraparound). */
-        uint last_val = 0xFFFFFFFFu;
+        int64_t cursor = 0;
         uint lu = 0;
-        uint run = 0;
         int ci = -1;
-        bool emit_first_mul = true;
+        uint i = 0;
 
-        for (uint i = 0; i < pixel_num; i++) {
-            uint u_val = fltmap[plane_base + 2u*i + 0u];
-            uint u_ndx = fltmap[plane_base + 2u*i + 1u];
-
-            /* Duplicate of the previous unique value? Reuse ci. */
-            if (i > 0u && last_val == u_val) {
-                fltmap[bitmap_base + u_ndx] = uint(ci);
+        while (cursor <= end) {
+            if (i >= pixel_num) {
+                /* No values left: move the decoder's cursor past the end */
+                if (lu == 0u) {
+                    put_usymbol(uint(end + 1 - cursor), CTX_F32(0, 0));
+                    cursor = end + 1;
+                } else {
+                    put_usymbol(0, CTX_F32(1, 0));
+                    cursor++;
+                    lu = 0;
+                }
                 continue;
             }
 
-            uint step = u_val - last_val;
-
             if (lu == 0u) {
-                put_usymbol(step - 1u, CTX_F32(0, 0));
+                const int64_t val = int64_t(fltmap[plane_base + 2u*i + 0u]);
+                const uint run = uint(val - cursor);
 
-                if (emit_first_mul) {
+                put_usymbol(run, CTX_F32(0, 0));
+
+                /* The decoder reads the multiplier right after the first
+                 * value, unless that value is the last possible one */
+                if (ci < 0 && val < end)
                     put_usymbol(1, CTX_F32(0, 2));
-                    emit_first_mul = false;
-                }
 
-                last_val = u_val;
-                if (step == 1u) {
-                    lu = 1;
-                    run = 0;
-                }
+                set_compact_index(plane_base, bitmap_base, pixel_num, i, ++ci);
+
+                cursor = val + 1;
+                lu = uint(run == 0u);
             } else {
-                if (step == 1u) {
+                uint run = 0;
+
+                while (i < pixel_num &&
+                       int64_t(fltmap[plane_base + 2u*i + 0u]) == cursor) {
+                    set_compact_index(plane_base, bitmap_base, pixel_num, i, ++ci);
+                    cursor++;
                     run++;
-                    last_val = u_val;
-                } else {
-                    if (run > 0u) {
-                        put_usymbol(run, CTX_F32(1, 0));
-                        put_usymbol(0, CTX_F32(1, 0));
-                        last_val += 2u;
-                    } else {
-                        put_usymbol(0, CTX_F32(1, 0));
-                        last_val += 1u;
-                    }
-                    lu = 0;
-                    run = 0;
-
-                    step = u_val - last_val;
-                    put_usymbol(step - 1u, CTX_F32(0, 0));
-
-                    last_val = u_val;
-                    if (step == 1u) {
-                        lu = 1;
-                        run = 0;
-                    }
                 }
-            }
 
-            ci++;
-            fltmap[bitmap_base + u_ndx] = uint(ci);
-        }
-
-        if (lu == 1u) {
-            if (run > 0u) {
                 put_usymbol(run, CTX_F32(1, 0));
-                put_usymbol(0, CTX_F32(1, 0));
-                last_val += 2u;
-            } else {
-                put_usymbol(0, CTX_F32(1, 0));
-                last_val += 1u;
+
+                /* The decoder skips one value after a run */
+                cursor++;
+                lu = uint(run != 0u);
             }
         }
-
-        if (last_val != 0xFFFFFFFFu)
-            put_usymbol(0xFFFFFFFFu - last_val, CTX_F32(0, 0));
 
         sc.remap_count[p] = ci + 1;
     }
