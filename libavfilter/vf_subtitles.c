@@ -265,11 +265,28 @@ static const AVFilterPad ass_inputs[] = {
 static const AVOption ass_options[] = {
     COMMON_OPTIONS
     SHAPING_OPTIONS
-    {"script", "set the ASS script to render instead of reading a file", OFFSET(script), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, FLAGS },
+    {"script", "set the ASS script to render instead of reading a file", OFFSET(script), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, FLAGS | AV_OPT_FLAG_RUNTIME_PARAM },
     {NULL},
 };
 
 AVFILTER_DEFINE_CLASS(ass);
+
+static int read_track(AVFilterContext *ctx)
+{
+    AssContext *ass = ctx->priv;
+    ASS_Track *track = ass->script ? ass_read_memory(ass->library, ass->script, strlen(ass->script), NULL)
+                                   : ass_read_file(ass->library, ass->filename, NULL);
+
+    if (!track) {
+        av_log(ctx, AV_LOG_ERROR, "Could not create a libass track from %s\n",
+               ass->filename ? ass->filename : "the script");
+        return AVERROR(EINVAL);
+    }
+    if (ass->track)
+        ass_free_track(ass->track);
+    ass->track = track;
+    return 0;
+}
 
 static av_cold int init_ass(AVFilterContext *ctx)
 {
@@ -287,14 +304,17 @@ static av_cold int init_ass(AVFilterContext *ctx)
     /* Initialize fonts */
     ass_set_fonts(ass->renderer, NULL, NULL, 1, NULL, 1);
 
-    ass->track = ass->script ? ass_read_memory(ass->library, ass->script, strlen(ass->script), NULL)
-                             : ass_read_file(ass->library, ass->filename, NULL);
-    if (!ass->track) {
-        av_log(ctx, AV_LOG_ERROR, "Could not create a libass track from %s\n",
-               ass->filename ? ass->filename : "the script");
-        return AVERROR(EINVAL);
-    }
-    return 0;
+    return read_track(ctx);
+}
+
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *arg,
+                           char *res, int res_len, int flags)
+{
+    int ret = ff_filter_process_command(ctx, cmd, arg, res, res_len, flags);
+
+    if (ret < 0 || (ret = read_track(ctx)) < 0)
+        return ret;
+    return config_input(ctx->inputs[0]);
 }
 
 const FFFilter ff_vf_ass = {
@@ -307,6 +327,7 @@ const FFFilter ff_vf_ass = {
     FILTER_INPUTS(ass_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_QUERY_FUNC2(query_formats),
+    .process_command = process_command,
 };
 #endif
 

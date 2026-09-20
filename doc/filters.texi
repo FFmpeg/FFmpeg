@@ -8654,6 +8654,11 @@ and Thai. Requires libass to be built with HarfBuzz.
 The default is @code{auto}.
 @end table
 
+@subsection Commands
+
+This filter supports the @option{script} option as @ref{commands}; the new
+script replaces the one being rendered.
+
 @section atadenoise
 Apply an Adaptive Temporal Averaging Denoiser to the video input.
 
