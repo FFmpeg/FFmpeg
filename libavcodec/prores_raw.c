@@ -185,7 +185,7 @@ static int decode_comp(AVCodecContext *avctx, TileContext *tile,
     if (dc < 0)
         goto end;
     int prev_dc = (dc >> 1) ^ -(dc & 1);
-    block[0] = prev_dc + 1;
+    block[0] = prev_dc;
 
     for (int n = 1; n < nb_blocks; n++) {
         if ((n & 15) == 1)
@@ -202,7 +202,7 @@ static int decode_comp(AVCodecContext *avctx, TileContext *tile,
         sign = dc_add < 0;
         prev_dc += dc_add;
 
-        block[n*64] = prev_dc + 1;
+        block[n*64] = prev_dc;
     }
 
     for (int n = nb_blocks; n < nb_codes;) {

@@ -42,9 +42,9 @@
 #undef BIT_DEPTH
 #undef IN_IDCT_DEPTH
 
-/* 32bit iDCT for the ProRes RAW */
+/* 16-bit iDCT for ProRes RAW */
 #define IN_IDCT_DEPTH 32
-#define BIT_DEPTH 12
+#define BIT_DEPTH 16
 #include "simple_idct_template.c"
 #undef BIT_DEPTH
 #undef IN_IDCT_DEPTH
@@ -83,21 +83,18 @@ static void prores_idct_12(int16_t *restrict block, const int16_t *restrict qmat
 }
 
 /*
- * 32-bit iDCT for the ProRes RAW
- * qmat must be s->qmat[i] * scale
+ * ProRes RAW iDCT: 16-bit coefficients to a 16-bit output centered on zero
  */
-static void prores_idct_bayer_32(int32_t *restrict block, const int16_t *restrict qmat)
+static void prores_idct_bayer_16(int32_t *restrict block, const int16_t *restrict qmat)
 {
     for (int i = 0; i < 64; i++)
-        block[i] = (block[i] * qmat[i]) >> 1;
+        block[i] = av_clip_int16(block[i] * qmat[i]);
 
     for (int i = 0; i < 8; i++)
-        idctRowCondDC_int32_12bit(block + i*8, 0);
+        idctRowCondDC_int32_16bit(block + i*8, 0);
 
-    for (int i = 0; i < 8; i++) {
-        block[i] += 8192;
-        idctSparseCol_int32_12bit(block + i);
-    }
+    for (int i = 0; i < 8; i++)
+        idctSparseCol_int32_16bit(block + i);
 }
 
 #define CLIP_MIN (1 << 2)                     ///< minimum value for clipping resulting pixels
@@ -131,10 +128,9 @@ static inline void put_pixel_bayer_lin_curve_12(uint16_t *dst, ptrdiff_t linesiz
 {
     for (int y = 0; y < 8; y++, dst += linesize) {
         for (int x = 0; x < 8; x++) {
-            /* Convert the 32-bit input into 16-bits (lrintf(x*16 - 15.5f) = 16) */
-            int u = av_clip_uint16(in[(y << 3) + x]*16 - 16);
-            uint32_t seg  = (uint32_t)u >> 13;
-            uint32_t frac = (uint32_t)u & 0x1FFF;
+            uint32_t u    = av_clip_uint16(in[(y << 3) + x] + 32768);
+            uint32_t seg  = u >> 13;
+            uint32_t frac = u & 0x1FFF;
             uint32_t cp0  = lin_curve[seg];
             uint32_t cp1  = seg < 7 ? lin_curve[seg + 1] : 0;
             uint32_t o    = (cp0 * 8192 + ((cp1 - cp0) & 0xFFFF) * frac + 4096) >> 13;
@@ -169,7 +165,7 @@ static void prores_idct_put_bayer_12_c(uint16_t *out, ptrdiff_t linesize,
                                        int32_t *block, const int16_t *qmat,
                                        const uint16_t *lin_curve)
 {
-    prores_idct_bayer_32(block, qmat);
+    prores_idct_bayer_16(block, qmat);
     put_pixel_bayer_lin_curve_12(out, linesize << 1, block, lin_curve);
 }
 
