@@ -337,9 +337,6 @@ static int decode_frame(AVCodecContext *avctx,
     DECLARE_ALIGNED(32, uint8_t, qmat)[64];
     memset(qmat, 1, 64);
 
-    if (avctx->skip_frame >= AVDISCARD_ALL)
-        return avpkt->size;
-
     switch (avctx->codec_tag) {
     case 0:
         break;
@@ -516,6 +513,11 @@ static int decode_frame(AVCodecContext *avctx,
         }
     }
     av_assert1(n == s->nb_tiles);
+
+    /* The stream parameters are all set by now, which is all that probing
+     * with frames skipped needs */
+    if (avctx->skip_frame >= AVDISCARD_ALL)
+        return avpkt->size;
 
     /**
      * Any data between last tile and frame end is vendor-specific metadata:
