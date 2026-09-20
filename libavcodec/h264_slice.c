@@ -1575,9 +1575,8 @@ static int h264_field_start(H264Context *h, const H264SliceContext *sl,
                 if (ret < 0)
                     return ret;
                 h->short_ref[0]->poc = prev->poc + 2U;
-                /* The frame POC is all hwaccels see; leaving the field POCs
-                 * at their INT_MAX init value breaks their reference
-                 * ordering. */
+                /* The field POCs are what hwaccels see; leaving them at
+                 * their INT_MAX init value breaks their reference ordering. */
                 h->short_ref[0]->field_poc[0] = h->short_ref[0]->poc;
                 h->short_ref[0]->field_poc[1] = h->short_ref[0]->poc;
                 h->short_ref[0]->gray = prev->gray;
