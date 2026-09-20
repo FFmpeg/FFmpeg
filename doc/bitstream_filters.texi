@@ -612,6 +612,45 @@ For example, to remux 30 MB/sec NTSC IMX to MOV:
 ffmpeg -i input.mxf -c copy -bsf:v imxdump -tag:v mx3n output.mov
 @end example
 
+@section jpegapp
+
+Inject JPEG APP0..APP15 segments from a length-prefixed sidecar into each
+MJPEG packet, after SOI.
+
+The sidecar is a sequence of records, one per encoded JPEG, in encode
+order:
+
+@example
+u32be length
+u8    payload[length]
+@end example
+
+@var{length} does not include the 4-byte prefix and must not exceed
+16 MiB. A zero @var{length} leaves that packet unchanged. A non-empty
+payload must be a concatenation of complete APP segments (@code{FF En}
+plus the 16-bit length that includes those two length bytes).
+
+If the payload starts with APP0 and the packet has an APP0 marker in
+the two bytes immediately following SOI, that APP0 segment is dropped.
+APP0 segments preceded by fill bytes or another segment are retained.
+An APP1-only payload keeps the encoder APP0: SOI, APP1, APP0, DQT, ...
+
+The filter requires @option{filename}. Extra unused sidecar bytes are
+ignored; a packet without a matching record is an error.
+Records follow packets in arrival order. Flushing the filter does not
+rewind the sidecar, so a reused context needs a sidecar positioned for
+the packets it will see next.
+A sidecar read or validation error prevents further record consumption
+by that filter context. To resume, create a new context with a sidecar
+matching the remaining packets. Flushing does not clear this error.
+
+@example
+ffmpeg -i in.mp4 -c:v mjpeg -bsf:v jpegapp=filename=app.bin frame_%d.jpg
+@end example
+
+On Windows, escape the drive colon in the BSF option:
+@code{filename='E\:/path/app.bin'}.
+
 @section mjpeg2jpeg
 
 Convert MJPEG/AVI1 packets to full JPEG/JFIF packets.

@@ -49,6 +49,7 @@ extern const FFBitStreamFilter ff_hapqa_extract_bsf;
 extern const FFBitStreamFilter ff_hevc_metadata_bsf;
 extern const FFBitStreamFilter ff_hevc_mp4toannexb_bsf;
 extern const FFBitStreamFilter ff_imx_dump_header_bsf;
+extern const FFBitStreamFilter ff_jpegapp_bsf;
 extern const FFBitStreamFilter ff_lcevc_merge_bsf;
 extern const FFBitStreamFilter ff_lcevc_metadata_bsf;
 extern const FFBitStreamFilter ff_media100_to_mjpegb_bsf;
