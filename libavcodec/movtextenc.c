@@ -283,8 +283,10 @@ static int encode_sample_description(AVCodecContext *avctx)
                 font_names_total_len += strlen(ass->styles[i].font_name);
             }
         }
-    } else
+    } else {
         av_dynarray_add(&s->fonts, &s->font_count, (char*)"Serif");
+        font_names_total_len = strlen("Serif");
+    }
 
     //     FontTableBox {
     p = buf;
