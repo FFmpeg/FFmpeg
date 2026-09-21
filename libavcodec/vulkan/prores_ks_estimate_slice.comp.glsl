@@ -254,6 +254,16 @@ void main() [[maximally_reconverges]]
     scores[slice].bits[q][plane] = FFALIGN(bits, 8);
     scores[slice].score[q][plane] = error;
 
+    /* The trellis and the encoder sum all four planes */
+    if (num_planes == 3 && plane == 0) {
+        scores[slice].bits[q][3] = 0;
+        scores[slice].score[q][3] = 0;
+        if (q == max_quant) {
+            scores[slice].bits[max_quant + 1][3] = 0;
+            scores[slice].score[max_quant + 1][3] = 0;
+        }
+    }
+
     /* Accumulate total bits and error of all planes */
     int total_bits = sum_of_planes(bits);
     int total_score = sum_of_planes(error);
