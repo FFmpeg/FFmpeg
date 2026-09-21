@@ -380,7 +380,7 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
     RET(ff_vk_get_pooled_buffer(&fv->s, &fv->compacted_data_pool,
                                 &fd->compacted_data_ref,
                                 VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-                                NULL, maxsize,
+                                NULL, maxsize + AV_INPUT_BUFFER_PADDING_SIZE,
                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                 fv->s.host_cached_flag));
     compacted_buf = fd->compacted_data_ref;
@@ -763,6 +763,8 @@ static int get_packet(AVCodecContext *avctx, FFVkExecContext *exec,
         vk->InvalidateMappedMemoryRanges(fv->s.hwctx->act_dev,
                                          1, &invalidate_data);
     }
+
+    memset(compacted_buf->mapped_mem + pkt->size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
     /* Hand the gathered buffer to the packet with no copy: pkt->buf references
      * the pooled Vulkan buffer, returned to its pool when the packet is freed. */
