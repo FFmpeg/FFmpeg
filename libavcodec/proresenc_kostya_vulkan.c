@@ -119,6 +119,7 @@ typedef struct ProresVulkanContext {
     AVRefStructPool *frame_size_buf_pool;
 
     size_t slice_slot_size;
+    int estimate_slices_per_wg;
     int payload_off;
 
     FFVulkanShader alpha_data_shd;
@@ -244,8 +245,13 @@ static int init_estimate_slice_pipeline(ProresVulkanContext *pv, FFVulkanShader*
     int err = 0;
     FFVulkanContext *vkctx = &pv->vkctx;
     FFVulkanDescriptorSetBinding *desc;
-    int subgroup_size = vkctx->subgroup_props.maxSubgroupSize;
-    int dim_x = pv->ctx.alpha_bits ? subgroup_size : (subgroup_size / 3) * 3;
+    /* A single subgroup per workgroup, pinned to its size where possible */
+    int required = vkctx->subgroup_props.requiredSubgroupSizeStages &
+                   VK_SHADER_STAGE_COMPUTE_BIT;
+    int dim_x = required ? vkctx->subgroup_props.maxSubgroupSize :
+                           vkctx->subgroup_props.minSubgroupSize;
+
+    pv->estimate_slices_per_wg = dim_x / pv->ctx.num_planes;
 
     SPEC_LIST_CREATE(sl, 8, 8 * sizeof(uint32_t))
     SPEC_LIST_ADD(sl, 0, 32, pv->ctx.mbs_per_slice);
@@ -258,7 +264,7 @@ static int init_estimate_slice_pipeline(ProresVulkanContext *pv, FFVulkanShader*
     SPEC_LIST_ADD(sl, 7, 32, pv->ctx.bits_per_mb);
 
     ff_vk_shader_load(shd, VK_SHADER_STAGE_COMPUTE_BIT, sl,
-                      (uint32_t []) { dim_x, 1, 1 }, 0);
+                      (uint32_t []) { dim_x, 1, 1 }, required ? dim_x : 0);
 
     desc = (FFVulkanDescriptorSetBinding []) {
         {
@@ -424,8 +430,6 @@ static int vulkan_encode_prores_submit_frame(AVCodecContext *avctx, FFVkExecCont
     int err = 0, nb_img_bar = 0, i, is_chroma;
     int min_quant = ctx->profile_info->min_quant;
     int max_quant = ctx->profile_info->max_quant;
-    int subgroup_size = vkctx->subgroup_props.maxSubgroupSize;
-    int estimate_dim_x = ctx->alpha_bits ? subgroup_size : (subgroup_size / 3) * 3;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(vkctx->frames->sw_format);
     VkImageView views[AV_NUM_DATA_POINTERS];
     VkImageMemoryBarrier2 img_bar[AV_NUM_DATA_POINTERS];
@@ -579,7 +583,8 @@ static int vulkan_encode_prores_submit_frame(AVCodecContext *avctx, FFVkExecCont
                                     &pv->prores_data_tables_buf, 0, pv->prores_data_tables_buf.size,
                                     VK_FORMAT_UNDEFINED);
     ff_vk_exec_bind_shader(vkctx, exec, &pv->estimate_slice_shd);
-    vk->CmdDispatch(exec->buf, (ctx->slices_per_picture * ctx->num_planes + estimate_dim_x - 1) / estimate_dim_x,
+    vk->CmdDispatch(exec->buf, (ctx->slices_per_picture + pv->estimate_slices_per_wg - 1) /
+                               pv->estimate_slices_per_wg,
                                ctx->force_quant ? 1 : (max_quant - min_quant + 1), 1);
 
     /* Wait for writes to score buffer. */
