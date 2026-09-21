@@ -172,7 +172,8 @@ void main() [[maximally_reconverges]]
         slice_row_size = force_slice_row_quants();
 
     int subgroup_sum = subgroupAdd(slice_row_size);
-    subgroup_sizes[gl_SubgroupID] = subgroup_sum;
+    if (subgroupElect())
+        subgroup_sizes[gl_SubgroupID] = subgroup_sum;
     barrier();
 
     int buf_start = subgroupExclusiveAdd(slice_row_size);

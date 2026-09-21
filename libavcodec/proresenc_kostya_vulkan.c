@@ -293,7 +293,8 @@ static int init_trellis_node_pipeline(ProresVulkanContext *pv, FFVulkanShader* s
     int err = 0;
     FFVulkanContext *vkctx = &pv->vkctx;
     FFVulkanDescriptorSetBinding *desc;
-    int subgroup_size = vkctx->subgroup_props.maxSubgroupSize;
+    /* The driver picks the subgroup size; size for the most it may use */
+    int subgroup_size = vkctx->subgroup_props.minSubgroupSize;
     int num_subgroups = FFALIGN(pv->ctx.mb_height, subgroup_size) / subgroup_size;
 
     SPEC_LIST_CREATE(sl, 8, 8 * sizeof(uint32_t))
