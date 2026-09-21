@@ -514,7 +514,7 @@ static av_cold void geq_uninit(AVFilterContext *ctx)
         for (int j = 0; j < MAX_NB_THREADS; j++)
             av_expr_free(geq->e[i][j]);
     for (i = 0; i < NB_PLANES; i++)
-        av_freep(&geq->pixel_sums);
+        av_freep(&geq->pixel_sums[i]);
 }
 
 static const AVFilterPad geq_inputs[] = {
