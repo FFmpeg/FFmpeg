@@ -24,11 +24,11 @@
  * include records from the compiler's stdout into a .d file, written next to
  * the object file as a byproduct of compilation.
  *
- * Dependency paths are rewritten relative to the current directory, which
- * keeps the .d files independent of how the environment maps Windows drives
- * (MSYS, Cygwin and WSL all differ). Paths on a different drive or share are
- * kept absolute, in forward slash form. Spaces, '#' and '$' are escaped the
- * same way gcc escapes them in -MD output.
+ * Dependency paths below the current directory are written relative to it,
+ * which keeps the .d files independent of how the environment maps Windows
+ * drives (MSYS, Cygwin and WSL all differ). Everything else stays absolute,
+ * in forward slash form. Spaces, '#' and '$' are escaped the same way gcc
+ * escapes them in -MD output.
  *
  * On a POSIX host driving a Windows compiler (cl.exe through WSL interop, for
  * example) the records carry Windows paths. Each distinct drive or share root
@@ -195,60 +195,17 @@ static int chr_eq(char a, char b)
 #endif
 }
 
-/* Length of the root that "../" cannot climb out of, "//server/share" for
- * UNC paths and "X:" for drive letter paths, 0 otherwise. Forward slashes only. */
-static size_t root_len(const char *p)
-{
-    size_t i = 0;
-
-    if (p[0] == '/' && p[1] == '/') {
-        for (i = 2; p[i] && p[i] != '/'; i++)
-            ;
-        if (p[i])
-            for (i++; p[i] && p[i] != '/'; i++)
-                ;
-    } else if (isalpha(p[0]) && p[1] == ':') {
-        i = 2;
-    }
-    return i;
-}
-
+/* Relative form of a path below the current directory, NULL for any other. */
 static char *make_relative(const char *path)
 {
-    size_t i, tail = 0, updirs = 0, root = root_len(path);
-    int found = 0;
-    const char *rest;
-    char *out, *q;
+    size_t i;
 
-    /* longest common prefix ending on a component boundary */
-    for (i = 0;; i++) {
-        int pb = !path[i] || path[i] == '/';
-        int cb = !cwd[i]  || cwd[i]  == '/';
-        if (pb && cb) {
-            tail  = i;
-            found = 1;
-        }
-        if (!path[i] || !cwd[i] || !chr_eq(path[i], cwd[i]))
-            break;
-    }
-    /* nothing to name, or a different drive or share */
-    if (!found || !path[tail] || tail < root || root_len(cwd) != root)
+    for (i = 0; cwd[i]; i++)
+        if (!path[i] || !chr_eq(path[i], cwd[i]))
+            return NULL;
+    if (path[i] != '/' || !path[i + 1])
         return NULL;
-
-    if (cwd[tail])
-        for (i = tail + 1;; i++) {
-            if (!cwd[i] || cwd[i] == '/')
-                updirs++;
-            if (!cwd[i])
-                break;
-        }
-
-    rest = path + tail + 1;
-    out  = q = xrealloc(NULL, 3 * updirs + strlen(rest) + 1);
-    for (i = 0; i < updirs; i++, q += 3)
-        memcpy(q, "../", 3);
-    strcpy(q, rest);
-    return out;
+    return xstrdup(path + i + 1);
 }
 
 static void add_dep(char *path)
@@ -268,6 +225,24 @@ static void add_dep(char *path)
 static const char *unmapped;
 
 #ifndef _WIN32
+
+/* Length of the root that "../" cannot climb out of, "//server/share" for
+ * UNC paths and "X:" for drive letter paths, 0 otherwise. */
+static size_t root_len(const char *p)
+{
+    size_t i = 0;
+
+    if (p[0] == '/' && p[1] == '/') {
+        for (i = 2; p[i] && p[i] != '/'; i++)
+            ;
+        if (p[i])
+            for (i++; p[i] && p[i] != '/'; i++)
+                ;
+    } else if (isalpha(p[0]) && p[1] == ':') {
+        i = 2;
+    }
+    return i;
+}
 
 static struct {
     char *root;
