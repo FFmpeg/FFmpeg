@@ -150,7 +150,8 @@ static int read_shape_from_file(int *cols, int *rows, int **values, const char *
             w = 0;
         } else if (w == INT_MAX) {
             av_log(log_ctx, AV_LOG_ERROR, "Overflow on the number of columns in the file\n");
-            return AVERROR_INVALIDDATA;
+            ret = AVERROR_INVALIDDATA;
+            goto end;
         }
         w++;
     }
