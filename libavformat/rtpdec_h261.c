@@ -122,6 +122,8 @@ static int h261_handle_packet(AVFormatContext *ctx, PayloadContext *rtp_h261_ctx
             res = init_get_bits(&gb, buf, len*8 - ebit);
             if (res < 0)
                 return res;
+            if (get_bits_left(&gb) < sbit + (rtp_h261_ctx->endbyte_bits ? 8 - rtp_h261_ctx->endbyte_bits : 0))
+                return AVERROR_INVALIDDATA;
             skip_bits(&gb, sbit);
             if (rtp_h261_ctx->endbyte_bits) {
                 rtp_h261_ctx->endbyte |= get_bits(&gb, 8 - rtp_h261_ctx->endbyte_bits);
