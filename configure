@@ -6306,25 +6306,21 @@ case $target_os in
         ;;
 esac
 
-# test if creating links works
-link_dest=$(mktemp -u $TMPDIR/dest_XXXXXXXX)
-link_name=$(mktemp -u $TMPDIR/name_XXXXXXXX)
-mkdir "$link_dest"
-$ln_s "$link_dest" "$link_name"
-touch "$link_dest/test_file"
-if [ "$source_path" != "." ] && [ "$source_path" != "./src" ] && ([ ! -d src ] || [ -L src ]) && [ -e "$link_name/test_file" ]; then
-    # create link to source path
+# Ask for native links and keep the link only if the compiler works with them.
+link_dir(){
+    MSYS="$MSYS winsymlinks:native" CYGWIN="$CYGWIN winsymlinks:native" $ln_s "$@"
+}
+
+# Link the source tree into the build directory and use it the way the build
+# does, with the full source path as the fallback.
+source_link="$source_path"
+if [ "$source_path" != "." ] && [ "$source_path" != "./src" ] && ([ ! -d src ] || [ -L src ]); then
     [ -e src ] && rm src
-    $ln_s "$source_path" src
-    source_link=src
-else
-    # creating directory links doesn't work
-    # fall back to using the full source path
-    source_link="$source_path"
+    link_dir "$source_path" src && [ -L src ] && test_cpp -I. <<EOF && source_link=src
+#include "src/libavutil/version_major.h"
+EOF
+    [ "$source_link" = src ] || rm -rf src
 fi
-# cleanup
-rm -r "$link_dest"
-rm -r "$link_name"
 
 # determine libc flavour
 
