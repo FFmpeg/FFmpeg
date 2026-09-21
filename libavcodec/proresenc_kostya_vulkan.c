@@ -438,11 +438,6 @@ static int vulkan_encode_prores_submit_frame(AVCodecContext *avctx, FFVkExecCont
     EncodeSliceInfo encode_info;
     FFVulkanShader *shd;
 
-    /* Start recording */
-    err = ff_vk_exec_start(vkctx, exec);
-    if (err < 0)
-        return err;
-
     /* Sparse slice output: one fixed-stride, device-local slot per slice */
     RET(ff_vk_get_pooled_buffer(vkctx, &pv->pkt_buf_pool, &pd->out_data_ref[picture_idx],
                                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
@@ -705,10 +700,7 @@ static int vulkan_encode_prores_submit_frame(AVCodecContext *avctx, FFVkExecCont
                                    0, sizeof(gather_pd), &gather_pd);
     vk->CmdDispatch(exec->buf, ctx->slices_per_picture, 1, 1);
 
-    return 0;
-
 fail:
-    ff_vk_exec_discard(vkctx, exec);
     return err;
 }
 
@@ -937,12 +929,22 @@ static int vulkan_encode_prores_receive_packet(AVCodecContext *avctx, AVPacket *
             frame->opaque_ref    = NULL;
         }
 
-        err = vulkan_encode_prores_submit_frame(avctx, exec, frame, 0);
-        if (ctx->pictures_per_frame > 1)
-            vulkan_encode_prores_submit_frame(avctx, exec, frame, 1);
+        err = ff_vk_exec_start(&pv->vkctx, exec);
+        if (err < 0) {
+            av_frame_unref(frame);
+            return err;
+        }
 
-        /* Submit execution context */
-        ff_vk_exec_submit(&pv->vkctx, exec);
+        for (int i = 0; i < ctx->pictures_per_frame; i++) {
+            err = vulkan_encode_prores_submit_frame(avctx, exec, frame, i);
+            if (err < 0) {
+                ff_vk_exec_discard(&pv->vkctx, exec);
+                av_frame_unref(frame);
+                return err;
+            }
+        }
+
+        err = ff_vk_exec_submit(&pv->vkctx, exec);
         av_frame_unref(frame);
         if (err < 0)
             return err;
