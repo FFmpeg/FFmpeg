@@ -776,6 +776,15 @@ static int config_input(AVFilterLink *inlink)
     s->pblock_size = FFALIGN(s->block_size * 2, av_cpu_max_align());
     s->pgroup_size = FFALIGN(s->group_size * 2, av_cpu_max_align());
 
+    for (int p = 0; p < s->nb_planes; p++) {
+        if (!((1 << p) & s->planes))
+            continue;
+        if (s->planewidth[p] < s->block_size || s->planeheight[p] < s->block_size) {
+            av_log(ctx, AV_LOG_ERROR, "Plane %d is smaller than the block size\n", p);
+            return AVERROR(EINVAL);
+        }
+    }
+
     for (int i = 0; i < s->nb_threads; i++) {
         SliceContext *sc = &s->slices[i];
         float iscale = 0.5f / s->block_size;
