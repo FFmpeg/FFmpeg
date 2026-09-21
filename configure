@@ -400,7 +400,7 @@ Toolchain options:
   --x86asmexe=EXE          use nasm-compatible assembler EXE [$x86asmexe_default]
   --cc=CC                  use C compiler CC [$cc_default]
   --stdc=STDC              use C standard STDC [$stdc_default]
-  --cxx=CXX                use C compiler CXX [$cxx_default]
+  --cxx=CXX                use C++ compiler CXX [C++ driver of CC]
   --stdcxx=STDCXX          use C standard STDCXX [$stdcxx_default]
   --objcc=OCC              use ObjC compiler OCC [$cc_default]
   --dep-cc=DEPCC           use dependency generator DEPCC [$cc_default]
@@ -4398,7 +4398,6 @@ ar_default="ar"
 cc_default="gcc"
 stdc_default="c17"
 stdcxx_default="c++17"
-cxx_default="g++"
 host_cc_default="gcc"
 doxygen_default="doxygen"
 makeinfo_default="makeinfo"
@@ -4929,11 +4928,9 @@ case "$toolchain" in
     clang-*)
         requested_sanitizers="${toolchain#clang-}"
         cc_default="clang"
-        cxx_default="clang++"
     ;;
     llvm|llvm-*)
         cc_default="clang"
-        cxx_default="clang++"
         ar_default="llvm-ar"
         nm_default="llvm-nm -g"
         ranlib_default="llvm-ranlib"
@@ -4944,7 +4941,6 @@ case "$toolchain" in
     gcc-*)
         requested_sanitizers="${toolchain#gcc-}"
         cc_default="gcc"
-        cxx_default="g++"
         # In case of tsan with gcc, PIC has to be enabled
         if [ "${toolchain#gcc-}" = "tsan" ]; then
             add_allcflags -fPIC
@@ -4964,7 +4960,6 @@ case "$toolchain" in
     ;;
     msvc|msvc-*)
         cc_default="cl.exe"
-        cxx_default="cl.exe"
         ld_default="$source_path/compat/windows/mslink"
         windres_default="$source_path/compat/windows/mswindres"
         nm_default="dumpbin.exe -symbols"
@@ -5026,7 +5021,6 @@ fi
 
 ar_default="${cross_prefix}${ar_default}"
 cc_default="${cross_prefix}${cc_default}"
-cxx_default="${cross_prefix}${cxx_default}"
 nm_default="${cross_prefix}${nm_default}"
 pkg_config_default="${cross_prefix}${pkg_config_default}"
 ranlib_default="${cross_prefix}${ranlib_default}"
@@ -5060,7 +5054,7 @@ if enabled cuda_nvcc; then
     fi
 fi
 
-set_default arch cc cxx doxygen pkg_config ranlib strip sysinclude \
+set_default arch cc doxygen pkg_config ranlib strip sysinclude \
     target_exec x86asmexe glslc metalcc metallib stdc stdcxx makeinfo
 enabled cross_compile || host_cc_default=$cc
 set_default host_cc
@@ -5459,7 +5453,15 @@ test -n "$cc_type" && enable $cc_type ||
 : ${dep_cc_default:=$cc}
 : ${ld_default:=$cc}
 : ${host_ld_default:=$host_cc}
-set_default ar as objcc dep_cc ld ln_s host_ld windres response_files
+
+case $cc_type,$cc in
+    gcc,*gcc*)           cxx_default="${cc%gcc*}g++${cc##*gcc}" ;;
+    clang,*clang*)       cxx_default="${cc%clang*}clang++${cc##*clang}" ;;
+    gcc,*cc*|clang,*cc*) cxx_default="${cc%cc*}c++${cc##*cc}" ;;
+    icc,*icc*)           cxx_default="${cc%icc*}icpc${cc##*icc}" ;;
+    *)                   cxx_default=$cc ;;
+esac
+set_default ar as cxx objcc dep_cc ld ln_s host_ld windres response_files
 
 probe_cc as "$as"
 asflags_filter=$_flags_filter
