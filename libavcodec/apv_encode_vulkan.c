@@ -280,8 +280,13 @@ static int init_entropy_shader(AVCodecContext *avctx, int blocks_per_mb,
      * Luma and chroma tile-components hold different block counts under
      * chroma sub-sampling, so each gets a pipeline with its own size. */
     uint32_t wg = ev->tile_mb_w * ev->tile_mb_h * blocks_per_mb;
+    uint32_t min_sg = ev->s.subgroup_props.minSubgroupSize;
 
-    ff_vk_shader_load(shd, VK_SHADER_STAGE_COMPUTE_BIT, NULL,
+    /* The driver picks the subgroup size; size for the most it may use */
+    SPEC_LIST_CREATE(sl, 1, sizeof(uint32_t))
+    SPEC_LIST_ADD(sl, 0, 32, FFALIGN(wg, min_sg) / min_sg);
+
+    ff_vk_shader_load(shd, VK_SHADER_STAGE_COMPUTE_BIT, sl,
                       (uint32_t []) { wg, 1, 1 }, 0);
 
     ff_vk_shader_add_push_const(shd, 0, sizeof(EntropyPushData),
