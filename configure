@@ -1391,7 +1391,8 @@ check_objcflags(){
 }
 
 check_allcflags(){
-    check_cflags "$@" && check_cxxflags "$@"
+    check_cxxflags "$@"
+    check_cflags "$@"
 }
 
 test_ldflags(){
