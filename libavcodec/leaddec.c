@@ -240,7 +240,7 @@ static int lead_decode_frame(AVCodecContext *avctx, AVFrame * frame,
                         ret = decode_block(s, &gb, dc_vlc, dc_bits, ac_vlc, ac_bits,
                             dc_pred + plane, dequant[!(b < 4)], tmp, 8);
                         for (int yy = 0; yy < 8 && y + yy < avctx->height / 2; yy++)
-                            memcpy(frame->data[plane] + (y+yy)*frame->linesize[plane] + x, tmp + yy, 8);
+                            memcpy(frame->data[plane] + (y+yy)*frame->linesize[plane] + x, tmp + 8*yy, 8);
                     } else {
                         ret = decode_block(s, &gb, dc_vlc, dc_bits, ac_vlc, ac_bits,
                             dc_pred + plane, dequant[!(b < 4)],
