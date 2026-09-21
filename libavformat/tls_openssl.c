@@ -425,6 +425,7 @@ typedef struct TLSContext {
     TLSShared tls_shared;
     SSL_CTX *ctx;
     SSL *ssl;
+    int do_shutdown;
     BIO_METHOD* url_bio_method;
     int io_err;
     char error_message[256];
@@ -483,10 +484,16 @@ static int print_ssl_error(URLContext *h, int ret)
 {
     TLSContext *c = h->priv_data;
     int printed = 0, e, averr = AVERROR(EIO);
+    int err = SSL_get_error(c->ssl, ret);
     if (h->flags & AVIO_FLAG_NONBLOCK) {
-        int err = SSL_get_error(c->ssl, ret);
         if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE)
             return AVERROR(EAGAIN);
+    }
+    switch (err) {
+    case SSL_ERROR_SSL:
+    case SSL_ERROR_SYSCALL:
+        c->do_shutdown = 0;
+        break;
     }
     while ((e = ERR_get_error()) != 0) {
         av_log(h, AV_LOG_ERROR, "%s\n", ERR_error_string(e, NULL));
@@ -507,7 +514,8 @@ static int tls_close(URLContext *h)
 {
     TLSContext *c = h->priv_data;
     if (c->ssl) {
-        SSL_shutdown(c->ssl);
+        if (c->do_shutdown)
+            SSL_shutdown(c->ssl);
         SSL_free(c->ssl);
     }
     if (c->ctx)
@@ -653,6 +661,7 @@ static int dtls_handshake(URLContext *h)
         ret = SSL_do_handshake(c->ssl);
         if (ret == 1) {
             av_log(c, AV_LOG_TRACE, "Handshake success\n");
+            c->do_shutdown = 1;
             break;
         }
         err = SSL_get_error(c->ssl, ret);
@@ -918,6 +927,7 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
             ret = print_ssl_error(h, ret);
             goto fail;
         }
+        c->do_shutdown = 1;
     }
 
     return 0;
