@@ -222,7 +222,7 @@ static double eval_expr(Parser *p, AVExpr *e)
             double min = eval_expr(p, e->param[1]), max = eval_expr(p, e->param[2]);
             if (isnan(min) || isnan(max) || isnan(x) || min > max)
                 return NAN;
-            return e->value * av_clipd(eval_expr(p, e->param[0]), min, max);
+            return e->value * av_clipd(x, min, max);
         }
         case e_between: {
             double d = eval_expr(p, e->param[0]);
