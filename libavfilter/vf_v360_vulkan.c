@@ -22,6 +22,7 @@
 #include "v360.h"
 #include "filters.h"
 #include "video.h"
+#include "framesync.h"
 
 extern const unsigned char ff_v360_comp_spv_data[];
 extern const unsigned int ff_v360_comp_spv_len;
@@ -35,6 +36,7 @@ struct PushData {
 
 typedef struct V360ulkanContext {
     FFVulkanContext vkctx;
+    FFFrameSync fs;
 
     int initialized;
     FFVkExecPool e;
@@ -51,6 +53,7 @@ typedef struct V360ulkanContext {
     float yaw, pitch, roll;
     char *rorder;
     int   rotation_order[3];
+    int   overlap;
 } V360VulkanContext;
 
 static int get_rorder(char c)
@@ -198,6 +201,7 @@ static void config_params(AVFilterContext *ctx, AVFilterLink *inlink)
             s->iv_fov = 180.f;
         break;
     case EQUIRECTANGULAR: /* unchangeable */
+    case GOPROMAX:
         s->ih_fov = 360.f;
         s->iv_fov = 180.f;
         break;
@@ -335,6 +339,9 @@ static av_cold int calculate_output_size(AVFilterContext *ctx)
         case DUAL_FISHEYE:
             hf = wf * sar / 2.f;
             break;
+        case EQUIANGULAR:
+            hf = wf * sar / 3.f * 2.f;
+            break;
         case STEREOGRAPHIC:
         case FISHEYE:
             hf = wf * sar;
@@ -352,6 +359,9 @@ static av_cold int calculate_output_size(AVFilterContext *ctx)
             switch (s->in) {
             case FLAT:
                  hf = (float)inlink->h / s->pd.iflat_range[1] / 2.f;
+                break;
+            case GOPROMAX:
+                hf = (float)inlink->h * 2.f;
                 break;
             default:
                 hf = (float)inlink->h;
@@ -375,6 +385,9 @@ static av_cold int calculate_output_size(AVFilterContext *ctx)
         case EQUIRECTANGULAR:
         case DUAL_FISHEYE:
             wf = hf * 2.f;
+            break;
+        case EQUIANGULAR:
+            wf = hf * 3.f / 2.f;
             break;
         case STEREOGRAPHIC:
         case FISHEYE:
@@ -403,6 +416,10 @@ static av_cold int calculate_output_size(AVFilterContext *ctx)
     case DUAL_FISHEYE:
         min_w = 2;
         min_h = 1;
+        break;
+    case EQUIANGULAR:
+        min_w = 3;
+        min_h = 2;
         break;
     default:
         min_w = 1;
@@ -438,7 +455,7 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
 
     RET(ff_vk_exec_pool_init(vkctx, s->qf, &s->e, FF_VK_DEFAULT_EXEC_CONTEXTS, 0, 0, 0, NULL));
 
-    SPEC_LIST_CREATE(sl, 10, 7*sizeof(int) + 3*sizeof(float))
+    SPEC_LIST_CREATE(sl, 17, 14*sizeof(int) + 3*sizeof(float))
     SPEC_LIST_ADD(sl, 0, 32, s->out);
     SPEC_LIST_ADD(sl, 1, 32, s->in);
 
@@ -453,6 +470,19 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
     SPEC_LIST_ADD(sl, 8, 32, FF_CEIL_RSHIFT(in->width, desc->log2_chroma_w));
     SPEC_LIST_ADD(sl, 9, 32, FF_CEIL_RSHIFT(in->height, desc->log2_chroma_h));
 
+    if (s->in == GOPROMAX) {
+        int cube_size = in->height;
+        int gopro_cube_width = (in->width - cube_size) / 2;
+
+        SPEC_LIST_ADD(sl, 10, 32, cube_size);
+        SPEC_LIST_ADD(sl, 11, 32, gopro_cube_width);
+        SPEC_LIST_ADD(sl, 12, 32, s->overlap);
+        SPEC_LIST_ADD(sl, 13, 32, gopro_cube_width + cube_size);
+        SPEC_LIST_ADD(sl, 14, 32, gopro_cube_width / 2 - s->overlap);
+        SPEC_LIST_ADD(sl, 15, 32, gopro_cube_width / 2);
+        SPEC_LIST_ADD(sl, 16, 32, gopro_cube_width / 2 + s->overlap);
+    }
+
     ff_vk_shader_load(&s->shd, VK_SHADER_STAGE_COMPUTE_BIT,
                       sl, (uint32_t []) { 16, 16, 1 }, 0);
 
@@ -460,19 +490,25 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
                                 VK_SHADER_STAGE_COMPUTE_BIT);
 
     const FFVulkanDescriptorSetBinding desc_set[] = {
+        { /* output_img */
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
+            .elems  = planes,
+        },
         { /* input_img */
             .type     = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             .stages   = VK_SHADER_STAGE_COMPUTE_BIT,
             .elems    = planes,
             .samplers = DUP_SAMPLER(s->sampler),
         },
-        { /* output_img */
-            .type   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
-            .elems  = planes,
+        { /* input2_img */
+            .type     = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .stages   = VK_SHADER_STAGE_COMPUTE_BIT,
+            .elems    = planes,
+            .samplers = DUP_SAMPLER(s->sampler),
         },
     };
-    ff_vk_shader_add_descriptor_set(vkctx, &s->shd, desc_set, 2, 0);
+    ff_vk_shader_add_descriptor_set(vkctx, &s->shd, desc_set, 3, 0);
 
     RET(ff_vk_shader_link(vkctx, &s->shd,
                           ff_v360_comp_spv_data,
@@ -486,13 +522,20 @@ fail:
     return err;
 }
 
-static int v360_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
+static int v360_vulkan_filter_frame(FFFrameSync *fs)
 {
     int err;
-    AVFrame *out = NULL;
-    AVFilterContext *ctx = link->dst;
-    V360VulkanContext *s = ctx->priv;
+    AVFilterContext  *ctx = fs->parent;
+    V360VulkanContext  *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
+    AVFrame *in[2] = { NULL };
+    AVFrame *out = NULL;
+
+    for (int i = 0; i < ctx->nb_inputs; i++) {
+        RET(ff_framesync_get_frame(fs, i, &in[i], 0));
+        if (!in[i])
+            return 0;
+    }
 
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
@@ -500,27 +543,37 @@ static int v360_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
         goto fail;
     }
 
-    if (!s->initialized)
-        RET(init_filter(ctx, in));
+    if (!s->initialized) {
+        AVHWFramesContext *fc0 = (AVHWFramesContext*)in[0]->hw_frames_ctx->data;
+        for (int i = 1; i < ctx->nb_inputs; i++) {
+            AVHWFramesContext *fci = (AVHWFramesContext*)in[i]->hw_frames_ctx->data;
+            if (fc0->sw_format != fci->sw_format) {
+                av_log(ctx, AV_LOG_ERROR, "Input %d has a different format "
+                                          "from input 0\n", i);
+                err = AVERROR(EINVAL);
+                goto fail;
+            }
+        }
+        RET(init_filter(ctx, in[0]));
+    }
 
-    RET(ff_vk_filter_process_simple(&s->vkctx, &s->e, &s->shd,
-                                    out, in, s->sampler, 1,
-                                    &s->pd, sizeof(s->pd)));
-
-    err = av_frame_copy_props(out, in);
-    if (err < 0)
-        goto fail;
-
-    av_frame_free(&in);
+    RET(ff_vk_filter_process_Nin(&s->vkctx, &s->e, &s->shd, out,
+                                 in, ctx->nb_inputs, s->sampler, 1,
+                                 &s->pd, sizeof(s->pd)));
+    RET(av_frame_copy_props(out, in[0]));
 
     return ff_filter_frame(outlink, out);
 
 fail:
-    av_frame_free(&in);
     av_frame_free(&out);
     return err;
 }
 
+static int v360_vulkan_activate(AVFilterContext *ctx)
+{
+    V360VulkanContext *s = ctx->priv;
+    return ff_framesync_activate(&s->fs);
+}
 
 static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
                            char *res, int res_len, int flags)
@@ -539,12 +592,79 @@ static av_cold int v360_vulkan_config_output(AVFilterLink *outlink)
 {
     int err;
     AVFilterContext *ctx = outlink->src;
+    V360VulkanContext *s = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
+
+    if (s->in == GOPROMAX) {
+        if (s->overlap == 0) {
+            if (inlink->h <= 960) {
+                s->overlap = 32;
+            }
+            else if (inlink->h < 1920) {
+                s->overlap = 64;
+            }
+            else
+                s->overlap = 96;
+        }
+        if (ctx->nb_inputs != 2) {
+            av_log(ctx, AV_LOG_ERROR, "GoPro Max. requires 2 input streams.\n");
+            return AVERROR(EINVAL);
+        }
+        if ((inlink->w != ctx->inputs[1]->w) ||
+            (inlink->h != ctx->inputs[1]->h) ||
+            (inlink->w < inlink->h * 3) ||
+            (inlink->w > inlink->h * 3 + s->overlap * 2)) {
+            av_log(ctx, AV_LOG_ERROR, "Incompatible inputs for GoPro Max. (%dx%d + %dx%d)\n",
+                                      inlink->w, inlink->h, ctx->inputs[1]->w, ctx->inputs[1]->h);
+            return AVERROR(EINVAL);
+       }
+    }
+    else if (ctx->nb_inputs != 1) {
+        av_log(ctx, AV_LOG_ERROR, "Too many inputs (%d)\n", ctx->nb_inputs);
+        return AVERROR(EINVAL);
+    }
 
     config_params(ctx, inlink);
     RET(calculate_output_size(ctx));
-
     RET(ff_vk_filter_config_output(outlink));
+
+    RET(ff_framesync_init(&s->fs, ctx, ctx->nb_inputs));
+    for (int i = 0; i < ctx->nb_inputs; i++) {
+        s->fs.in[i].time_base = ctx->inputs[i]->time_base;
+        s->fs.in[i].sync      = 1;
+        s->fs.in[i].before    = EXT_STOP;
+        s->fs.in[i].after     = EXT_STOP;
+    }
+    s->fs.on_event = &v360_vulkan_filter_frame;
+
+    RET(ff_framesync_configure(&s->fs));
+    outlink->time_base = s->fs.time_base;
+
+fail:
+    return err;
+}
+
+static av_cold int v360_vulkan_init(AVFilterContext *avctx)
+{
+    int err;
+    V360VulkanContext *s = avctx->priv;
+    AVFilterPad pad = {
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .config_props = ff_vk_filter_config_input,
+    };
+
+    if (s->in == GOPROMAX) {
+        pad.name = "front";
+        RET(ff_append_inpad(avctx, &pad));
+        pad.name = "rear";
+        RET(ff_append_inpad(avctx, &pad));
+    }
+    else {
+        pad.name = "default";
+        RET(ff_append_inpad(avctx, &pad));
+    }
+
+    return ff_vk_filter_init(avctx);
 
 fail:
     return err;
@@ -556,6 +676,7 @@ static void v360_vulkan_uninit(AVFilterContext *avctx)
     FFVulkanContext *vkctx = &s->vkctx;
     FFVulkanFunctions *vk = &vkctx->vkfn;
 
+    ff_framesync_uninit(&s->fs);
     ff_vk_exec_pool_free(vkctx, &s->e);
     ff_vk_shader_free(vkctx, &s->shd);
 
@@ -579,10 +700,12 @@ static const AVOption v360_vulkan_options[] = {
     {  "dfisheye", "dual fisheye",                                 0, AV_OPT_TYPE_CONST,  {.i64=DUAL_FISHEYE},    0,                   0,   FLAGS, "in" },
     {        "sg", "stereographic",                                0, AV_OPT_TYPE_CONST,  {.i64=STEREOGRAPHIC},   0,                   0,   FLAGS, "in" },
     {   "fisheye", "fisheye",                                      0, AV_OPT_TYPE_CONST,  {.i64=FISHEYE},         0,                   0,   FLAGS, "in" },
+    {  "gopromax", "GoPro Max (two inputs)",                       0, AV_OPT_TYPE_CONST,  {.i64=GOPROMAX},        0,                   0,   FLAGS, "in" },
 
     {    "output", "set output projection",              OFFSET(out), AV_OPT_TYPE_INT,    {.i64=FLAT},            0,    NB_PROJECTIONS-1,   FLAGS, "out" },
     {         "e", "equirectangular",                              0, AV_OPT_TYPE_CONST,  {.i64=EQUIRECTANGULAR}, 0,                   0,   FLAGS, "out" },
     {  "equirect", "equirectangular",                              0, AV_OPT_TYPE_CONST,  {.i64=EQUIRECTANGULAR}, 0,                   0,   FLAGS, "out" },
+    {       "eac", "equi-angular cubemap",                         0, AV_OPT_TYPE_CONST,  {.i64=EQUIANGULAR},     0,                   0,   FLAGS, "out" },
     {      "flat", "regular video",                                0, AV_OPT_TYPE_CONST,  {.i64=FLAT},            0,                   0,   FLAGS, "out" },
     {  "dfisheye", "dual fisheye",                                 0, AV_OPT_TYPE_CONST,  {.i64=DUAL_FISHEYE},    0,                   0,   FLAGS, "out" },
     {        "sg", "stereographic",                                0, AV_OPT_TYPE_CONST,  {.i64=STEREOGRAPHIC},   0,                   0,   FLAGS, "out" },
@@ -598,26 +721,18 @@ static const AVOption v360_vulkan_options[] = {
     {     "v_fov", "set output vertical FOV angle",    OFFSET(v_fov), AV_OPT_TYPE_FLOAT,  {.dbl = 0.0f},       0.0f,              360.0f, DYNAMIC, "v_fov" },
     {    "ih_fov", "set input horizontal FOV angle",  OFFSET(ih_fov), AV_OPT_TYPE_FLOAT,  {.dbl = 0.0f},       0.0f,              360.0f, DYNAMIC, "ih_fov" },
     {    "iv_fov", "set input vertical FOV angle",    OFFSET(iv_fov), AV_OPT_TYPE_FLOAT,  {.dbl = 0.0f},       0.0f,              360.0f, DYNAMIC, "iv_fov" },
+    {   "overlap", "overlapped pixels for GoPro Max", OFFSET(overlap), AV_OPT_TYPE_INT,    {.i64 = 0},            0,                1024,   FLAGS, "overlap" },
 
     { NULL },
 };
 
-AVFILTER_DEFINE_CLASS(v360_vulkan);
-
-static const AVFilterPad v360_vulkan_inputs[] = {
-    {
-        .name         = "default",
-        .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = &v360_vulkan_filter_frame,
-        .config_props = &ff_vk_filter_config_input,
-    },
-};
+FRAMESYNC_DEFINE_CLASS(v360_vulkan, V360VulkanContext, fs);
 
 static const AVFilterPad v360_vulkan_outputs[] = {
     {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
-        .config_props = &v360_vulkan_config_output,
+        .config_props = v360_vulkan_config_output,
     },
 };
 
@@ -625,13 +740,14 @@ const FFFilter ff_vf_v360_vulkan = {
     .p.name         = "v360_vulkan",
     .p.description  = NULL_IF_CONFIG_SMALL("Convert 360 projection of video."),
     .p.priv_class   = &v360_vulkan_class,
-    .p.flags        = AVFILTER_FLAG_HWDEVICE,
+    .p.flags        = AVFILTER_FLAG_HWDEVICE | AVFILTER_FLAG_DYNAMIC_INPUTS,
     .priv_size      = sizeof(V360VulkanContext),
-    .init           = &ff_vk_filter_init,
-    .uninit         = &v360_vulkan_uninit,
-    FILTER_INPUTS(v360_vulkan_inputs),
+    .preinit        = v360_vulkan_framesync_preinit,
+    .init           = v360_vulkan_init,
+    .uninit         = v360_vulkan_uninit,
+    .activate       = v360_vulkan_activate,
     FILTER_OUTPUTS(v360_vulkan_outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_VULKAN),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
-    .process_command = &process_command,
+    .process_command = process_command,
 };

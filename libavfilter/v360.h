@@ -55,6 +55,7 @@ enum Projections {
     ORTHOGRAPHIC,
     OCTAHEDRON,
     CYLINDRICALEA,
+    GOPROMAX,
     NB_PROJECTIONS,
 };
 
