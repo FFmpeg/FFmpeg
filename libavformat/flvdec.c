@@ -551,7 +551,7 @@ static int parse_keyframes_index(AVFormatContext *s, AVIOContext *ioc, int64_t m
             break;
 
         arraylen = avio_rb32(ioc);
-        if (arraylen>>28)
+        if (arraylen>>28 || arraylen > (max_pos - avio_tell(ioc)) / 9)
             break;
 
         if       (!strcmp(KEYFRAMES_TIMESTAMP_TAG , str_val) && !times) {
