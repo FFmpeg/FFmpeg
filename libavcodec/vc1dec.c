@@ -659,53 +659,16 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
             av_log(avctx, AV_LOG_INFO, "Read %i bits in overflow\n", -count);
         }
     } else { // VC1/WVC1/WVP2
-        const uint8_t *start = avctx->extradata;
-        const uint8_t *end = avctx->extradata + avctx->extradata_size;
-        const uint8_t *next;
-        int size, buf2_size;
-        uint8_t *buf2 = NULL;
-        int seq_initialized = 0, ep_initialized = 0;
+        int seq_initialized, ep_initialized;
 
         if (avctx->extradata_size < 16) {
             av_log(avctx, AV_LOG_ERROR, "Extradata size too small: %i\n", avctx->extradata_size);
             return AVERROR_INVALIDDATA;
         }
 
-        buf2  = av_mallocz(avctx->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
-        if (!buf2)
-            return AVERROR(ENOMEM);
-
-        start = find_next_marker(start, end); // in WVC1 extradata first byte is its size, but can be 0 in mkv
-        next  = start;
-        for (; next < end; start = next) {
-            next = find_next_marker(start + 4, end);
-            size = next - start - 4;
-            if (size <= 0)
-                continue;
-            buf2_size = v->vc1dsp.vc1_unescape_buffer(start + 4, size, buf2);
-            ret = init_get_bits8(&gb, buf2, buf2_size);
-            if (ret < 0) {
-                av_free(buf2);
-                return ret;
-            }
-            switch (AV_RB32(start)) {
-            case VC1_CODE_SEQHDR:
-                if ((ret = ff_vc1_decode_sequence_header(avctx, v, &gb)) < 0) {
-                    av_free(buf2);
-                    return ret;
-                }
-                seq_initialized = 1;
-                break;
-            case VC1_CODE_ENTRYPOINT:
-                if ((ret = ff_vc1_decode_entry_point(avctx, v, &gb)) < 0) {
-                    av_free(buf2);
-                    return ret;
-                }
-                ep_initialized = 1;
-                break;
-            }
-        }
-        av_free(buf2);
+        ret = ff_vc1_decode_extradata(avctx, v, &seq_initialized, &ep_initialized);
+        if (ret < 0)
+            return ret;
         if (!seq_initialized || !ep_initialized) {
             av_log(avctx, AV_LOG_ERROR, "Incomplete extradata\n");
             return AVERROR_INVALIDDATA;

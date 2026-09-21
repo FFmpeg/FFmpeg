@@ -26,6 +26,7 @@
  * VC-1 and WMV3 decoder common code
  */
 
+#include "libavutil/mem.h"
 #include "avcodec.h"
 #include "decode.h"
 #include "mpegvideo.h"
@@ -549,6 +550,55 @@ int ff_vc1_decode_entry_point(AVCodecContext *avctx, VC1Context *v, GetBitContex
            v->fastuvmc, v->extended_mv, v->dquant, v->vstransform, v->overlap, v->quantizer_mode);
 
     return 0;
+}
+
+int ff_vc1_decode_extradata(AVCodecContext *avctx, VC1Context *v,
+                            int *seq_initialized, int *ep_initialized)
+{
+    const uint8_t *start = avctx->extradata;
+    const uint8_t *end   = avctx->extradata + avctx->extradata_size;
+    const uint8_t *next;
+    uint8_t *buf2;
+    GetBitContext gb;
+    int ret = 0;
+
+    *seq_initialized = 0;
+    *ep_initialized  = 0;
+
+    buf2 = av_mallocz(avctx->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
+    if (!buf2)
+        return AVERROR(ENOMEM);
+
+    start = find_next_marker(start, end); // in WVC1 extradata first byte is its size, but can be 0 in mkv
+    next  = start;
+    for (; next < end; start = next) {
+        int size, buf2_size;
+
+        next = find_next_marker(start + 4, end);
+        size = next - start - 4;
+        if (size <= 0)
+            continue;
+        buf2_size = v->vc1dsp.vc1_unescape_buffer(start + 4, size, buf2);
+        ret = init_get_bits8(&gb, buf2, buf2_size);
+        if (ret < 0)
+            break;
+        switch (AV_RB32(start)) {
+        case VC1_CODE_SEQHDR:
+            if ((ret = ff_vc1_decode_sequence_header(avctx, v, &gb)) < 0)
+                goto end;
+            *seq_initialized = 1;
+            break;
+        case VC1_CODE_ENTRYPOINT:
+            if ((ret = ff_vc1_decode_entry_point(avctx, v, &gb)) < 0)
+                goto end;
+            *ep_initialized = 1;
+            break;
+        }
+    }
+
+end:
+    av_free(buf2);
+    return ret;
 }
 
 /* fill lookup tables for intensity compensation */

@@ -417,6 +417,22 @@ int ff_vc1_decode_sequence_header(AVCodecContext *avctx, VC1Context *v, GetBitCo
 
 int ff_vc1_decode_entry_point(AVCodecContext *avctx, VC1Context *v, GetBitContext *gb);
 
+/**
+ * Read the sequence and entry point headers carried in VC-1 extradata
+ *
+ * Walks the markers of VC1/WVC1/WVP2 extradata and feeds every sequence header
+ * and entry point it finds to the readers above. Callers decide what an absent
+ * or unreadable header means: the decoder needs both and fails without them,
+ * the parser takes what it gets.
+ *
+ * @param avctx Codec context holding the extradata to read
+ * @param seq_initialized Set to 1 if a sequence header was read
+ * @param ep_initialized Set to 1 if an entry point was read
+ * @return 0 on success, a negative AVERROR on a malformed header
+ */
+int ff_vc1_decode_extradata(AVCodecContext *avctx, VC1Context *v,
+                            int *seq_initialized, int *ep_initialized);
+
 int ff_vc1_parse_frame_header    (VC1Context *v, GetBitContext *gb);
 int ff_vc1_parse_frame_header_adv(VC1Context *v, GetBitContext *gb);
 void ff_vc1_init_common(VC1Context *v);
