@@ -1087,6 +1087,11 @@ static int get_input_ov(DNNModel *model, DNNData *input, const char *input_name)
         av_log(ctx, AV_LOG_ERROR, "Failed to get input port shape.\n");
         return ov2_map_error(status, NULL);
     }
+    if (input_shape.rank != 4) {
+        av_log(ctx, AV_LOG_ERROR, "Input has %"PRId64" dimensions, only 4-dimensional inputs are supported.\n", input_shape.rank);
+        ov_shape_free(&input_shape);
+        return AVERROR(ENOSYS);
+    }
     for (int i = 0; i < 4; i++)
         input->dims[i] = input_shape.dims[i];
     if (input_resizable) {
