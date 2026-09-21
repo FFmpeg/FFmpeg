@@ -142,31 +142,11 @@ static int checkline(void *ctx, const unsigned char *src, int stride, int len, i
     return total;
 }
 
-static int checkline_edge(void *ctx, const unsigned char *src, int stride, int len, int bpp)
+static int checkline_edge(void *ctx, const unsigned char *src, int stride, int len)
 {
-    const uint16_t *src16 = (const uint16_t *)src;
-
-    switch (bpp) {
-    case 1:
-        while (--len >= 0) {
-            if (src[0]) return 0;
-            src += stride;
-        }
-        break;
-    case 2:
-        stride >>= 1;
-        while (--len >= 0) {
-            if (src16[0]) return 0;
-            src16 += stride;
-        }
-        break;
-    case 3:
-    case 4:
-        while (--len >= 0) {
-            if (src[0] || src[1] || src[2]) return 0;
-            src += stride;
-        }
-        break;
+    while (--len >= 0) {
+        if (src[0]) return 0;
+        src += stride;
     }
 
     return 1;
@@ -359,7 +339,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
 #define FIND_EDGE(DST, FROM, NOEND, INC, STEP0, STEP1, LEN)             \
     for (last_y = y = FROM; NOEND; y = y INC) {                         \
-        if (checkline_edge(ctx, tmpbuf + STEP0 * y, STEP1, LEN, 1)) {   \
+        if (checkline_edge(ctx, tmpbuf + STEP0 * y, STEP1, LEN)) {      \
             if (last_y INC == y) {                                      \
                 DST = y;                                                \
                 break;                                                  \
