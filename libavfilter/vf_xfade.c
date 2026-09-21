@@ -1451,14 +1451,14 @@ static void fadegrays##name##_transition(AVFilterContext *ctx,                  
                 const type *yf0 = (const type *)(a->data[0] +                        \
                                                  y * a->linesize[0]);                \
                 const type *yf1 = (const type *)(b->data[0] +                        \
-                                                 y * a->linesize[0]);                \
+                                                 y * b->linesize[0]);                \
                 bg[0][0] = yf0[x];                                                   \
                 bg[1][0] = yf1[x];                                                   \
                 if (s->nb_planes == 4) {                                             \
                     const type *af0 = (const type *)(a->data[3] +                    \
                                                      y * a->linesize[3]);            \
                     const type *af1 = (const type *)(b->data[3] +                    \
-                                                     y * a->linesize[3]);            \
+                                                     y * b->linesize[3]);            \
                     bg[0][3] = af0[x];                                               \
                     bg[1][3] = af1[x];                                               \
                 }                                                                    \
