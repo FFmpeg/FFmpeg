@@ -149,9 +149,10 @@ static int xan_huffman_decode(uint8_t *dest, int dest_len,
  * unpack simple compression
  *
  * @param dest destination buffer of dest_len, must be padded with at least 130 bytes
+ * @return number of bytes written to dest
  */
-static void xan_unpack(uint8_t *dest, int dest_len,
-                       const uint8_t *src, int src_len)
+static int xan_unpack(uint8_t *dest, int dest_len,
+                      const uint8_t *src, int src_len)
 {
     uint8_t opcode;
     int size;
@@ -185,7 +186,7 @@ static void xan_unpack(uint8_t *dest, int dest_len,
             if (dest_end - dest < size + size2 ||
                 dest + size - dest_org < back ||
                 bytestream2_get_bytes_left(&ctx) < size)
-                return;
+                break;
             bytestream2_get_buffer(&ctx, dest, size);
             dest += size;
             av_memcpy_backptr(dest, back, size2);
@@ -195,13 +196,14 @@ static void xan_unpack(uint8_t *dest, int dest_len,
             size = finish ? opcode & 3 : ((opcode & 0x1f) << 2) + 4;
 
             if (dest_end - dest < size || bytestream2_get_bytes_left(&ctx) < size)
-                return;
+                break;
             bytestream2_get_buffer(&ctx, dest, size);
             dest += size;
             if (finish)
-                return;
+                break;
         }
     }
+    return dest - dest_org;
 }
 
 static inline void xan_wc3_output_pixel_run(XanContext *s, AVFrame *frame,
@@ -342,9 +344,8 @@ static int xan_wc3_decode_frame(XanContext *s, AVFrame *frame)
     opcode_buffer_end = opcode_buffer + ret;
 
     if (imagedata_segment[0] == 2) {
-        xan_unpack(s->buffer2, s->buffer2_size,
-                   &imagedata_segment[1], s->size - imagedata_offset - 1);
-        imagedata_size = s->buffer2_size;
+        imagedata_size = xan_unpack(s->buffer2, s->buffer2_size,
+                                    &imagedata_segment[1], s->size - imagedata_offset - 1);
     } else {
         imagedata_size = s->size - imagedata_offset - 1;
         imagedata_buffer = &imagedata_segment[1];
