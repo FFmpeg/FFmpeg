@@ -649,6 +649,7 @@ static int dtls_handshake(URLContext *h)
             goto end;
         }
 
+        ERR_clear_error();
         ret = SSL_do_handshake(c->ssl);
         if (ret == 1) {
             av_log(c, AV_LOG_TRACE, "Handshake success\n");
@@ -907,6 +908,7 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
         }
         av_log(c, AV_LOG_VERBOSE, "Setup ok, MTU=%d\n", c->tls_shared.mtu);
     } else {
+        ERR_clear_error();
         ret = s->listen ? SSL_accept(c->ssl) : SSL_connect(c->ssl);
         if (ret == 0) {
             av_log(h, AV_LOG_ERROR, "Unable to negotiate TLS/SSL session\n");
@@ -941,6 +943,7 @@ static int tls_read(URLContext *h, uint8_t *buf, int size)
     // Set or clear the AVIO_FLAG_NONBLOCK on the underlying socket
     uc->flags &= ~AVIO_FLAG_NONBLOCK;
     uc->flags |= h->flags & AVIO_FLAG_NONBLOCK;
+    ERR_clear_error();
     ret = SSL_read(c->ssl, buf, size);
     if (ret > 0)
         return ret;
@@ -965,6 +968,7 @@ static int tls_write(URLContext *h, const uint8_t *buf, int size)
         size = FFMIN(size, mtu_size);
     }
 
+    ERR_clear_error();
     ret = SSL_write(c->ssl, buf, size);
     if (ret > 0)
         return ret;
