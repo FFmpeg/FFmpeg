@@ -968,7 +968,7 @@ static int parse_location(HTTPContext *s, const char *p)
 }
 
 /* "bytes $from-$to/$document_size" */
-static void parse_content_range(URLContext *h, const char *p)
+static int parse_content_range(URLContext *h, const char *p)
 {
     HTTPContext *s = h->priv_data;
     const char *slash, *end;
@@ -976,13 +976,20 @@ static void parse_content_range(URLContext *h, const char *p)
     if (!strncmp(p, "bytes ", 6)) {
         p     += 6;
         s->off = strtoull(p, NULL, 10);
-        if ((end = strchr(p, '-')) && strlen(end) > 0)
+        if ((end = strchr(p, '-')) && strlen(end) > 0) {
             s->range_end = strtoull(end + 1, NULL, 10) + 1;
+            if (s->range_end <= s->off) {
+                av_log(h, AV_LOG_ERROR, "Invalid Content-Range: end %"PRIu64" before start %"PRIu64"\n",
+                       s->range_end - 1, s->off);
+                return AVERROR_INVALIDDATA;
+            }
+        }
         if ((slash = strchr(p, '/')) && strlen(slash) > 0)
             s->filesize_from_content_range = strtoull(slash + 1, NULL, 10);
     }
     if (s->seekable == -1 && (!s->is_akamai || s->filesize != 2147483647))
         h->is_streamed = 0; /* we _can_ in fact seek */
+    return 0;
 }
 
 static int parse_content_encoding(URLContext *h, const char *p)
@@ -1374,7 +1381,8 @@ static int process_line(URLContext *h, char *line, int line_count, int *parsed_h
                    s->filesize == UINT64_MAX) {
             s->filesize = strtoull(p, NULL, 10);
         } else if (!av_strcasecmp(tag, "Content-Range")) {
-            parse_content_range(h, p);
+            if ((ret = parse_content_range(h, p)) < 0)
+                return ret;
         } else if (!av_strcasecmp(tag, "Accept-Ranges") &&
                    !strncmp(p, "bytes", 5) &&
                    s->seekable == -1) {
