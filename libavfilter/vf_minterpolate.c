@@ -1053,7 +1053,7 @@ static void bilateral_obmc(MIContext *mi_ctx, Block *block, int mb_x, int mb_y, 
                 nb_x = (((x - start_x) >> (mi_ctx->log2_mb_size - 1)) * 2 - 3) / 2;
                 nb_y = (((y - start_y) >> (mi_ctx->log2_mb_size - 1)) * 2 - 3) / 2;
 
-                if (nb_x || nb_y) {
+                if ((nb_x || nb_y) && mb_x + nb_x < mi_ctx->b_width && mb_y + nb_y < mi_ctx->b_height) {
                     uint64_t sbad = sbads[nb_x + 1 + (nb_y + 1) * 3];
                     nb = &mi_ctx->int_blocks[mb_x + nb_x + (mb_y + nb_y) * mi_ctx->b_width];
 
