@@ -108,6 +108,9 @@ static inline uint64_t ff_vk_extensions_to_mask(const char * const *extensions,
 #ifdef VK_KHR_internally_synchronized_queues
         { VK_KHR_INTERNALLY_SYNCHRONIZED_QUEUES_EXTENSION_NAME, FF_VK_EXT_INTERNAL_QUEUE_SYNC   },
 #endif
+#ifdef VK_KHR_maintenance11
+        { VK_KHR_MAINTENANCE_11_EXTENSION_NAME,            FF_VK_EXT_MAINTENANCE_11         },
+#endif
     };
 
     FFVulkanExtensions mask = 0x0;

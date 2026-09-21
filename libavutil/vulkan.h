@@ -330,6 +330,9 @@ typedef struct FFVulkanContext {
 #ifdef VK_KHR_unified_image_layouts
     VkPhysicalDeviceUnifiedImageLayoutsFeaturesKHR unified_layout_feats;
 #endif
+#ifdef VK_KHR_maintenance11
+    VkPhysicalDeviceMaintenance11FeaturesKHR maintenance_11_feats;
+#endif
     VkPhysicalDeviceFeatures2 feats;
 
     VkMemoryPropertyFlagBits host_cached_flag;

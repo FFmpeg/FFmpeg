@@ -107,6 +107,9 @@ typedef struct VulkanDeviceFeatures {
 #ifdef VK_KHR_maintenance9
     VkPhysicalDeviceMaintenance9FeaturesKHR maintenance_9;
 #endif
+#ifdef VK_KHR_maintenance11
+    VkPhysicalDeviceMaintenance11FeaturesKHR maintenance_11;
+#endif
 #ifdef VK_KHR_unified_image_layouts
     VkPhysicalDeviceUnifiedImageLayoutsFeaturesKHR unified_layouts;
 #endif
@@ -287,6 +290,10 @@ static void device_features_init(AVHWDeviceContext *ctx, VulkanDeviceFeatures *f
     FF_VK_STRUCT_EXT(s, &feats->device, &feats->maintenance_9, FF_VK_EXT_MAINTENANCE_9,
                      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_9_FEATURES_KHR);
 #endif
+#ifdef VK_KHR_maintenance11
+    FF_VK_STRUCT_EXT(s, &feats->device, &feats->maintenance_11, FF_VK_EXT_MAINTENANCE_11,
+                     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_11_FEATURES_KHR);
+#endif
 #ifdef VK_KHR_unified_image_layouts
     FF_VK_STRUCT_EXT(s, &feats->device, &feats->unified_layouts, FF_VK_EXT_UNIFIED_IMAGE_LAYOUTS,
                      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFIED_IMAGE_LAYOUTS_FEATURES_KHR);
@@ -439,6 +446,9 @@ static void device_features_copy_needed(VulkanDeviceFeatures *dst, VulkanDeviceF
 
 #ifdef VK_KHR_maintenance9
     COPY_VAL(maintenance_9.maintenance9);
+#endif
+#ifdef VK_KHR_maintenance11
+    COPY_VAL(maintenance_11.maintenance11);
 #endif
 #ifdef VK_KHR_unified_image_layouts
     COPY_VAL(unified_layouts.unifiedImageLayouts);
@@ -772,6 +782,9 @@ static const VulkanOptExtension optional_device_exts[] = {
 #endif
 #ifdef VK_KHR_maintenance9
     { VK_KHR_MAINTENANCE_9_EXTENSION_NAME,                    FF_VK_EXT_MAINTENANCE_9          },
+#endif
+#ifdef VK_KHR_maintenance11
+    { VK_KHR_MAINTENANCE_11_EXTENSION_NAME,                   FF_VK_EXT_MAINTENANCE_11         },
 #endif
 #ifdef VK_KHR_unified_image_layouts
     { VK_KHR_UNIFIED_IMAGE_LAYOUTS_EXTENSION_NAME,            FF_VK_EXT_UNIFIED_IMAGE_LAYOUTS  },
