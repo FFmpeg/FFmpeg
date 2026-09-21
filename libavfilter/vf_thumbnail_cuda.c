@@ -239,11 +239,11 @@ static int thumbnail(AVFilterContext *ctx, int *histogram, AVFrame *in)
     case AV_PIX_FMT_YUV444P10MSB:
     case AV_PIX_FMT_YUV444P12MSB:
     case AV_PIX_FMT_YUV444P16:
-        thumbnail_kernel(ctx, s->cu_func_ushort2, 1,
+        thumbnail_kernel(ctx, s->cu_func_ushort, 1,
             histogram, in->data[0], in->width, in->height, in->linesize[0], 2);
-        thumbnail_kernel(ctx, s->cu_func_ushort2, 1,
+        thumbnail_kernel(ctx, s->cu_func_ushort, 1,
             histogram + 256, in->data[1], in->width, in->height, in->linesize[1], 2);
-        thumbnail_kernel(ctx, s->cu_func_ushort2, 1,
+        thumbnail_kernel(ctx, s->cu_func_ushort, 1,
             histogram + 512, in->data[2], in->width, in->height, in->linesize[2], 2);
         break;
     default:
