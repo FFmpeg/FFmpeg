@@ -210,6 +210,8 @@ void ff_dnn_uninit(DnnContext *ctx)
     if (ctx->dnn_module) {
         (ctx->dnn_module->free_model)(&ctx->model);
     }
+    for (void *child = NULL; (child = ff_dnn_child_next(ctx, child));)
+        av_opt_free(child);
     if (ctx->model_outputnames) {
         for (int i = 0; i < ctx->nb_outputs; i++)
             av_free(ctx->model_outputnames[i]);
