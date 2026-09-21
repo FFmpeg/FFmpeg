@@ -321,8 +321,8 @@ static void hue_rotate_matrix(float matrix[4][4], float rotation,
     y_rotate_matrix(matrix, yrs, yrc);
 
     transform_point(matrix, rlw, glw, blw, &lx, &ly, &lz);
-    zsx = lx / lz;
-    zsy = ly / lz;
+    zsx = lz ? lx / lz : 0.f;
+    zsy = lz ? ly / lz : 0.f;
     z_shear_matrix(matrix, zsx, zsy);
 
     zrs = sinf(rotation * M_PI / 180.f);
