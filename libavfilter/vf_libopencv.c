@@ -180,6 +180,8 @@ static int read_shape_from_file(int *cols, int *rows, int **values, const char *
 
 end:
     av_file_unmap(buf, size);
+    if (ret < 0)
+        return ret;
 
 #ifdef DEBUG
     {
