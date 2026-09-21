@@ -54,6 +54,7 @@ typedef struct VC1ParseContext {
     ParseContext pc;
     VC1Context v;
     uint8_t prev_start_code;
+    uint8_t extradata_parsed;
     size_t bytes_to_skip;
     uint8_t unesc_buffer[UNESCAPED_LIMIT];
     size_t unesc_index;
@@ -125,6 +126,32 @@ static void vc1_extract_header(AVCodecParserContext *s, AVCodecContext *avctx,
     }
 }
 
+/**
+ * Seed the parse context from extradata, the way the decoder does at init.
+ *
+ * libavformat closes and reopens the parser on every reposition
+ * (ff_read_frame_flush()), so each seek starts from a zeroed VC1Context: profile
+ * reads as simple, and max_coded_width/max_coded_height as zero, until an
+ * in-stream sequence header happens to pass. An entry point reaching a context in
+ * that state is read at the wrong bit offset, because whether hrd_full[] precedes
+ * coded_size_flag is a property of the sequence header, and the size it then
+ * falls back to is the zero pair.
+ *
+ * Unlike the decoder, a parser that learns nothing here still runs: it keeps
+ * reading headers out of the stream as it did before.
+ */
+static void vc1_parse_extradata(AVCodecParserContext *s, AVCodecContext *avctx)
+{
+    VC1ParseContext *vpc = s->priv_data;
+    int seq_initialized, ep_initialized;
+
+    if (!avctx->extradata || avctx->extradata_size < 16)
+        return;
+
+    vpc->v.s.avctx = avctx;
+    ff_vc1_decode_extradata(avctx, &vpc->v, &seq_initialized, &ep_initialized);
+}
+
 static int vc1_parse(AVCodecParserContext *s,
                            AVCodecContext *avctx,
                            const uint8_t **poutbuf, int *poutbuf_size,
@@ -141,6 +168,11 @@ static int vc1_parse(AVCodecParserContext *s,
     int start_code_found = 0;
     int next = END_NOT_FOUND;
     int i = vpc->bytes_to_skip;
+
+    if (!vpc->extradata_parsed) {
+        vpc->extradata_parsed = 1;
+        vc1_parse_extradata(s, avctx);
+    }
 
     if (pic_found && buf_size == 0) {
         /* EOF considered as end of frame */
@@ -270,6 +302,7 @@ static av_cold int vc1_parse_init(AVCodecParserContext *s)
     vpc->v.first_pic_header_flag = 1;
     vpc->v.parse_only = 1;
     vpc->prev_start_code = 0;
+    vpc->extradata_parsed = 0;
     vpc->bytes_to_skip = 0;
     vpc->unesc_index = 0;
     vpc->search_state = NO_MATCH;
