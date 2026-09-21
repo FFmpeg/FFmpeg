@@ -154,6 +154,11 @@ static int read_shape_from_file(int *cols, int *rows, int **values, const char *
         }
         w++;
     }
+    if (*cols == 0) {
+        av_log(log_ctx, AV_LOG_ERROR, "No columns in the shape file\n");
+        ret = AVERROR_INVALIDDATA;
+        goto end;
+    }
     if (*rows > (SIZE_MAX / sizeof(int) / *cols)) {
         av_log(log_ctx, AV_LOG_ERROR, "File with size %dx%d is too big\n",
                *rows, *cols);
