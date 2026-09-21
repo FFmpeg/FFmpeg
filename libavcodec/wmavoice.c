@@ -1960,8 +1960,8 @@ static int wmavoice_decode_packet(AVCodecContext *ctx, AVFrame *frame,
                 s->spillover_nbits = avpkt->size * 8 - cnt;
             }
             copy_bits(&s->pb, buf, size, gb, s->spillover_nbits);
+            s->sframe_cache_size = put_bits_count(&s->pb);
             flush_put_bits(&s->pb);
-            s->sframe_cache_size += s->spillover_nbits;
             if ((res = synth_superframe(ctx, frame, got_frame_ptr)) == 0 &&
                 *got_frame_ptr) {
                 cnt += s->spillover_nbits;
@@ -1993,10 +1993,11 @@ static int wmavoice_decode_packet(AVCodecContext *ctx, AVFrame *frame,
             res = cnt >> 3;
             return res;
         }
-    } else if ((s->sframe_cache_size = pos) > 0) {
+    } else if (pos > 0) {
         /* ... cache it for spillover in next packet */
         init_put_bits(&s->pb, s->sframe_cache, SFRAME_CACHE_MAXSIZE);
-        copy_bits(&s->pb, buf, size, gb, s->sframe_cache_size);
+        copy_bits(&s->pb, buf, size, gb, pos);
+        s->sframe_cache_size = put_bits_count(&s->pb);
         // FIXME bad - just copy bytes as whole and add use the
         // skip_bits_next field
     }
