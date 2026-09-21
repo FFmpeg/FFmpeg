@@ -27,14 +27,11 @@
  */
 
 #include "avcodec.h"
+#include "bitpacked_dec.h"
+#include "bitpacked_dec_init.h"
 #include "codec_internal.h"
 #include "libavutil/imgutils.h"
 #include "thread.h"
-
-struct BitpackedContext {
-    int (*decode)(AVCodecContext *avctx, AVFrame *frame,
-                  const AVPacket *pkt);
-};
 
 /* For this format, it's a simple passthrough */
 static int bitpacked_decode_uyvy422(AVCodecContext *avctx, AVFrame *frame,
@@ -62,11 +59,13 @@ static int bitpacked_decode_uyvy422(AVCodecContext *avctx, AVFrame *frame,
 static int bitpacked_decode_yuv422p10(AVCodecContext *avctx, AVFrame *frame,
                                       const AVPacket *avpkt)
 {
+    struct BitpackedContext *bc = avctx->priv_data;
     uint64_t frame_size = (uint64_t)avctx->width * (uint64_t)avctx->height * 20;
     uint64_t packet_size = (uint64_t)avpkt->size * 8;
-    uint8_t *src;
+    const uint8_t *src;
     uint16_t *y, *u, *v;
-    int ret, i, j;
+    const int bulk = avctx->width & ~7;
+    int ret, i;
 
     ret = ff_thread_get_buffer(avctx, frame, 0);
     if (ret < 0)
@@ -84,13 +83,16 @@ static int bitpacked_decode_yuv422p10(AVCodecContext *avctx, AVFrame *frame,
         u = (uint16_t*)(frame->data[1] + i * frame->linesize[1]);
         v = (uint16_t*)(frame->data[2] + i * frame->linesize[2]);
 
-        for (j = 0; j < avctx->width; j += 2) {
-            *u++ = (src[0] << 2) | (src[1] >> 6);
-            *v++ = ((src[2] << 6) | (src[3] >> 2)) & 0x3ff;
-            *y++ = ((src[1] << 4) | (src[2] >> 4)) & 0x3ff;
-            *y++ = ((src[3] << 8) | (src[4]))      & 0x3ff;
-            src += 5;
+        if (bulk) {
+            bc->unpack_yuv422p10(src, y, u, v, bulk);
+            src += bulk * 5 / 2;
+            y   += bulk;
+            u   += bulk / 2;
+            v   += bulk / 2;
         }
+
+        bitpacked_unpack_yuv422p10_c(src, y, u, v, avctx->width - bulk);
+        src += (avctx->width - bulk) * 5 / 2;
     }
 
     return 0;
@@ -102,6 +104,8 @@ static av_cold int bitpacked_init_decoder(AVCodecContext *avctx)
 
     if (!avctx->codec_tag || !avctx->width || !avctx->height)
         return AVERROR_INVALIDDATA;
+
+    ff_bitpackeddec_init(bc);
 
     if (avctx->codec_tag == MKTAG('U', 'Y', 'V', 'Y')) {
         if (avctx->bits_per_coded_sample == 16 &&
