@@ -204,11 +204,13 @@ static int config_input(AVFilterLink *inlink)
             // calculate the actual transforms from the local motions
             if (vsLocalmotions2Transforms(td, &mlms, &tc->trans) != VS_OK) {
                 av_log(ctx, AV_LOG_ERROR, "calculating transformations failed\n");
+                fclose(f);
                 return AVERROR(EINVAL);
             }
         } else { // try to read old format
             if (!vsReadOldTransforms(td, f, &tc->trans)) { /* read input file */
                 av_log(ctx, AV_LOG_ERROR, "error parsing input file %s\n", tc->input);
+                fclose(f);
                 return AVERROR(EINVAL);
             }
         }
