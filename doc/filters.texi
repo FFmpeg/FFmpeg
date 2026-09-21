@@ -25067,6 +25067,7 @@ from the video stream (if available).
 Use specified codec instead of snow.
 @end table
 
+@anchor{v360}
 @section v360
 
 Convert 360 videos between various formats.
@@ -29973,6 +29974,113 @@ Preserve landscape geometry (when @var{width} >= @var{height}).
 @end table
 
 @end table
+
+@anchor{v360_vulkan}
+@section v360_vulkan
+
+Convert 360 videos between various formats.
+Supported formats (projections) are subset of @ref{v360} filter,
+that are most popular 360-degree video formats.
+
+The filter accepts subset of @ref{v360} options:
+
+@table @option
+
+@item input
+@item output
+Set format of the input/output video.
+
+@table @samp
+
+@item e
+@item equirect
+Equirectangular projection.
+
+@item eac
+Equi-Angular Cubemap. (Output only)
+
+@b{FIXME}: current output doesn't contain padding.
+
+@item flat
+Regular video.
+
+@item dfisheye
+Dual fisheye.
+
+@item sg
+Stereographic format.
+
+@item fisheye
+Fisheye projection.
+
+@item gopromax
+GoPro Max .360 format. (Input only)
+
+A .360 video file contains two video streams (front and rear);
+with this input projection the filter takes two inputs and combines
+them into a single stream. See the @option{overlap} option.
+@end table
+
+@item w
+@item h
+Set the output video resolution.
+See @ref{v360} options.
+
+@item yaw
+@item pitch
+@item roll
+@item rorder
+Set rotation for the output video.
+See @ref{v360} options.
+
+@item h_fov
+@item v_fov
+Set output horizontal/vertical field of view.
+See @ref{v360} options.
+
+@item ih_fov
+@item iv_fov
+Set input horizontal/vertical field of view.
+See @ref{v360} options.
+
+@item overlap
+Set number of overlapped pixels on input .360 video.
+Only used with @code{input=gopromax}.
+
+The GoPro Max .360 video contains overlapped area
+(See @url{https://gopro.com/news/max-tech-specs-stitching-resolution}).
+The filter blends overlapped images in these two areas.
+
+The number of pixels of overlapped areas depends on the video resolution.
+In most cases, the value is automatically calculated based on input video size,
+but it may be changed on GoPro Max2 or future models.
+The option is to adjust for unknown video resolutions.
+
+@end table
+
+@subsection Examples
+Special notes exist to use with @code{input=gopromax}.
+
+The GoPro Max .360 video file contains two video streams,
+and the stream number must be specified.
+The stream number (e.g., @code{[0:5]}) depends on the model and shooting mode.
+Please check actual stream number with @code{ffprobe} command.
+
+@itemize
+@item
+Convert GoPro Max (8bit color depth) .360 to Equirectangular projection.
+GoPro Max uses obsolete yuvj420p pixel format, thus convert the format to yuv420p before this filter.
+@example
+ffmpeg -init_hw_device vulkan -i INPUT.360 -filter_complex "[0:0]format=yuv420p,hwupload[vf],[0:5]format=yuv420p,hwupload[vr], [vf][vr]v360_vulkan=input=gopromax:output=e, hwdownload,format=yuv420p" OUTPUT.mkv
+@end example
+
+@item
+Convert GoPro Max2 (10bit color depth) .360 to Dual fisheye projection.
+GoPro Max2 uses yuv420p10le pixel format.
+@example
+ffmpeg -init_hw_device vulkan -i INPUT.360 -filter_complex "[0:0]hwupload[vf],[0:4]hwupload[vr], [vf][vr]v360_vulkan=input=gopromax:output=dfisheye, hwdownload,format=yuv420p10le" OUTPUT.mkv
+@end example
+@end itemize
 
 @c man end VULKAN VIDEO FILTERS
 
