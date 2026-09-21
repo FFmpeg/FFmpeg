@@ -742,7 +742,7 @@ static int load_data(AVFilterContext *ctx, int azim, int elev, float radius, int
 
     av_log(ctx, AV_LOG_DEBUG, "IR length: %d.\n", s->sofa.hrtf->N);
     s->sofa.ir_samples = s->sofa.hrtf->N;
-    s->sofa.n_samples = 1 << (32 - ff_clz(s->sofa.ir_samples));
+    s->sofa.n_samples = FFMAX(32, 1 << (32 - ff_clz(s->sofa.ir_samples)));
 
     n_samples = s->sofa.n_samples;
     ir_samples = s->sofa.ir_samples;
