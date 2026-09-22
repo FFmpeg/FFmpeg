@@ -38,6 +38,7 @@ int main(int argc, char **argv)
 {
     int i;
     av_log_set_level(AV_LOG_DEBUG);
+    check_color_terminal();
     for (use_color=0; use_color<=256; use_color = 255*use_color+1) {
         av_log(NULL, AV_LOG_FATAL, "use_color: %d\n", use_color);
         for (i = AV_LOG_DEBUG; i>=AV_LOG_QUIET; i-=8) {
