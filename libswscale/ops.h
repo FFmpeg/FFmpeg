@@ -74,26 +74,6 @@ const char *ff_sws_op_type_name(SwsOpType op);
 /* Compute SwsCompMask from values with denominator != 0 */
 SwsCompMask ff_sws_comp_mask_q4(const AVRational64 q[4]);
 
-typedef enum SwsCompFlags {
-    SWS_COMP_GARBAGE = 1 << 0, /* contents are undefined / garbage data */
-    SWS_COMP_EXACT   = 1 << 1, /* value is an exact integer */
-    SWS_COMP_ZERO    = 1 << 2, /* known to be a constant zero */
-    SWS_COMP_SWAPPED = 1 << 3, /* byte order is swapped */
-    SWS_COMP_COPY    = 1 << 4, /* value is unmodified from the source plane */
-    SWS_COMP_CONST   = 1 << 5, /* value is a fixed constant */
-} SwsCompFlags;
-
-typedef struct SwsOpPad {
-    SwsCompFlags flags; /* knowledge about (output) component contents */
-
-    /* Keeps track of the known possible value range, or {0, 0} for undefined
-     * or (unknown range) floating point inputs */
-    AVRational64 min, max;
-
-    /* Keeps track of input (forward) and output (reverse) dependencies */
-    SwsCompMask dep_in, dep_out;
-} SwsOpPad;
-
 typedef enum SwsReadWriteMode {
     /**
      * Note: 1-component reads are either SWS_RW_PLANAR or SWS_RW_PACKED,
@@ -237,6 +217,26 @@ typedef struct SwsLut3dOp {
     const SwsLut3D *lut; /* refstruct */
     bool dynamic;
 } SwsLut3dOp;
+
+typedef enum SwsCompFlags {
+    SWS_COMP_GARBAGE = 1 << 0, /* contents are undefined / garbage data */
+    SWS_COMP_EXACT   = 1 << 1, /* value is an exact integer */
+    SWS_COMP_ZERO    = 1 << 2, /* known to be a constant zero */
+    SWS_COMP_SWAPPED = 1 << 3, /* byte order is swapped */
+    SWS_COMP_COPY    = 1 << 4, /* value is unmodified from the source plane */
+    SWS_COMP_CONST   = 1 << 5, /* value is a fixed constant */
+} SwsCompFlags;
+
+typedef struct SwsOpPad {
+    SwsCompFlags flags; /* knowledge about (output) component contents */
+
+    /* Keeps track of the known possible value range, or {0, 0} for undefined
+     * or (unknown range) floating point inputs */
+    AVRational64 min, max;
+
+    /* Keeps track of input (forward) and output (reverse) dependencies */
+    SwsCompMask dep_in, dep_out;
+} SwsOpPad;
 
 typedef struct SwsOp {
     SwsOpType op;      /* operation to perform */
