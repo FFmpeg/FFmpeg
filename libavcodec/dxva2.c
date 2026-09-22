@@ -478,7 +478,16 @@ static DXGI_FORMAT d3d11va_map_sw_to_hw_format(enum AVPixelFormat pix_fmt)
     switch (pix_fmt) {
     case AV_PIX_FMT_NV12:       return DXGI_FORMAT_NV12;
     case AV_PIX_FMT_P010:       return DXGI_FORMAT_P010;
-    case AV_PIX_FMT_P012:       return DXGI_FORMAT_P016;
+    case AV_PIX_FMT_P012:
+    case AV_PIX_FMT_P016:       return DXGI_FORMAT_P016;
+    case AV_PIX_FMT_YUYV422:    return DXGI_FORMAT_YUY2;
+    case AV_PIX_FMT_Y210:       return DXGI_FORMAT_Y210;
+    case AV_PIX_FMT_Y212:
+    case AV_PIX_FMT_Y216:       return DXGI_FORMAT_Y216;
+    case AV_PIX_FMT_VUYX:       return DXGI_FORMAT_AYUV;
+    case AV_PIX_FMT_XV30:       return DXGI_FORMAT_Y410;
+    case AV_PIX_FMT_XV36:
+    case AV_PIX_FMT_XV48:       return DXGI_FORMAT_Y416;
     case AV_PIX_FMT_YUV420P:    return DXGI_FORMAT_420_OPAQUE;
     default:                    return DXGI_FORMAT_UNKNOWN;
     }
@@ -651,6 +660,12 @@ int ff_dxva2_common_frame_params(AVCodecContext *avctx,
     switch (avctx->sw_pix_fmt) {
     case AV_PIX_FMT_YUV420P10: frames_ctx->sw_format = AV_PIX_FMT_P010; break;
     case AV_PIX_FMT_YUV420P12: frames_ctx->sw_format = AV_PIX_FMT_P012; break;
+    case AV_PIX_FMT_YUV422P:   frames_ctx->sw_format = AV_PIX_FMT_YUYV422; break;
+    case AV_PIX_FMT_YUV422P10: frames_ctx->sw_format = AV_PIX_FMT_Y210; break;
+    case AV_PIX_FMT_YUV422P12: frames_ctx->sw_format = AV_PIX_FMT_Y212; break;
+    case AV_PIX_FMT_YUV444P:   frames_ctx->sw_format = AV_PIX_FMT_VUYX; break;
+    case AV_PIX_FMT_YUV444P10: frames_ctx->sw_format = AV_PIX_FMT_XV30; break;
+    case AV_PIX_FMT_YUV444P12: frames_ctx->sw_format = AV_PIX_FMT_XV36; break;
     default:                   frames_ctx->sw_format = AV_PIX_FMT_NV12; break;
     }
     frames_ctx->width = FFALIGN(avctx->coded_width, surface_alignment);
