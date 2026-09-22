@@ -333,7 +333,8 @@ static int64_t get_best_effort_duration(ConcatFile *file, AVFormatContext *avf)
     return AV_NOPTS_VALUE;
 }
 
-static int open_file(AVFormatContext *avf, unsigned fileno)
+/* opens the file and places it on the timeline, leaving the output streams alone */
+static int probe_file(AVFormatContext *avf, unsigned fileno)
 {
     ConcatContext *cat = avf->priv_data;
     ConcatFile *file = &cat->files[fileno];
@@ -376,7 +377,17 @@ static int open_file(AVFormatContext *avf, unsigned fileno)
     file->file_start_time = (cat->avf->start_time == AV_NOPTS_VALUE) ? 0 : cat->avf->start_time;
     file->file_inpoint = (file->inpoint == AV_NOPTS_VALUE) ? file->file_start_time : file->inpoint;
     file->duration = get_best_effort_duration(file, cat->avf);
+    return 0;
+}
 
+static int open_file(AVFormatContext *avf, unsigned fileno)
+{
+    ConcatContext *cat = avf->priv_data;
+    ConcatFile *file = &cat->files[fileno];
+    int ret = probe_file(avf, fileno);
+
+    if (ret < 0)
+        return ret;
     if (cat->segment_time_metadata) {
         av_dict_set_int(&file->metadata, "lavf.concatdec.start_time", file->start_time, 0);
         if (file->duration != AV_NOPTS_VALUE)
