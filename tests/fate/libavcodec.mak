@@ -122,5 +122,13 @@ FATE_LIBAVCODEC-yes += fate-libavcodec-htmlsubtitles
 fate-libavcodec-htmlsubtitles: libavcodec/tests/htmlsubtitles$(EXESUF)
 fate-libavcodec-htmlsubtitles: CMD = run libavcodec/tests/htmlsubtitles$(EXESUF)
 
+FATE_SAMPLES_ENC_RECON-$(call DEMDEC, H264, H264, H264_PARSER SNOW_ENCODER SNOW_DECODER SWSCALE) += fate-enc-recon-snow-97 fate-enc-recon-snow-53
+fate-enc-recon-snow-97: CMD = run tools/enc_recon_frame_test$(EXESUF) $(TARGET_SAMPLES)/h264-conformance/SVA_NL2_E.264 snow pred=dwt97
+fate-enc-recon-snow-53: CMD = run tools/enc_recon_frame_test$(EXESUF) $(TARGET_SAMPLES)/h264-conformance/SVA_NL2_E.264 snow pred=dwt53
+$(FATE_SAMPLES_ENC_RECON-yes): tools/enc_recon_frame_test$(EXESUF)
+$(FATE_SAMPLES_ENC_RECON-yes): CMP = null
+FATE_EXTERN-yes += $(FATE_SAMPLES_ENC_RECON-yes)
+fate-enc-recon: $(FATE_SAMPLES_ENC_RECON-yes)
+
 FATE-$(CONFIG_AVCODEC) += $(FATE_LIBAVCODEC-yes)
 fate-libavcodec: $(FATE_LIBAVCODEC-yes)
