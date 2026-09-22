@@ -6,6 +6,11 @@ FATE_LIBSWSCALE += fate-sws-floatimg-cmp
 fate-sws-floatimg-cmp: libswscale/tests/floatimg_cmp$(EXESUF)
 fate-sws-floatimg-cmp: CMD = run libswscale/tests/floatimg_cmp$(EXESUF)
 
+FATE_LIBSWSCALE += fate-sws-rgb2rgb-bounds
+fate-sws-rgb2rgb-bounds: libswscale/tests/colorspace$(EXESUF)
+fate-sws-rgb2rgb-bounds: CMD = run libswscale/tests/colorspace$(EXESUF)
+fate-sws-rgb2rgb-bounds: CMP = null
+
 SWS_SLICE_TEST-$(call DEMDEC, MATROSKA, VP9) += fate-sws-slice-yuv422-12bit-rgb48
 fate-sws-slice-yuv422-12bit-rgb48: CMD = run tools/scale_slice_test$(EXESUF) $(TARGET_SAMPLES)/vp9-test-vectors/vp93-2-20-12bit-yuv422.webm 150 100 rgb48
 
@@ -83,6 +88,11 @@ fate-sws-uops-macros: REF = $(SRC_PATH)/libswscale/uops_macros.h
 fate-sws-uops-macros: CMD = run libswscale/uops_macros_gen$(EXESUF)
 
 endif
+
+FATE_LIBSWSCALE-$(CONFIG_UNSTABLE) += fate-sws-rational64
+fate-sws-rational64: libswscale/tests/rational64$(EXESUF)
+fate-sws-rational64: CMD = run libswscale/tests/rational64$(EXESUF)
+fate-sws-rational64: CMP = null
 
 FATE_LIBSWSCALE-$(CONFIG_UNSTABLE) += fate-sws-ops-entries-aarch64
 fate-sws-ops-entries-aarch64: libswscale/tests/sws_ops_aarch64$(EXESUF)
