@@ -43,6 +43,7 @@
 #include "os_support.h"
 #include "libavcodec/jpegxl_parse.h"
 #include "libavcodec/mjpeg.h"
+#include "libavcodec/png.h"
 #include "libavcodec/vbn.h"
 #include "libavcodec/xwd.h"
 #include "subtitles.h"
@@ -892,10 +893,33 @@ static int pictor_probe(const AVProbeData *p)
 static int png_probe(const AVProbeData *p)
 {
     const uint8_t *b = p->buf;
+    int size = p->buf_size;
+    int pos = 8;
 
-    if (AV_RB64(b) == 0x89504e470d0a1a0a)
-        return AVPROBE_SCORE_MAX - 1;
-    return 0;
+    if (AV_RB64(b) != PNGSIG)
+        return 0;
+
+    /* png_pipe demuxes a sequence of images, so the bytes after a whole
+     * image in the buffer have to match another signature as far as the
+     * buffer goes. Anything else is an unrelated payload behind a PNG,
+     * like the 1x1 image some CDNs prepend to MPEG-TS segments, and the
+     * signature alone must not outscore the demuxer of that payload. */
+    while (size - pos >= 12) {
+        uint32_t len = AV_RB32(b + pos);
+        uint32_t tag = AV_RB32(b + pos + 4);
+
+        if (len > size - pos - 12)
+            break;
+        pos += 12 + len;
+        if (tag == MKBETAG('I', 'E', 'N', 'D')) {
+            int n = FFMIN(size - pos, 8);
+            if (n && (AV_RB64(b + pos) ^ PNGSIG) >> (64 - 8 * n))
+                return AVPROBE_SCORE_RETRY;
+            pos += n;
+        }
+    }
+
+    return AVPROBE_SCORE_MAX - 1;
 }
 
 static int psd_probe(const AVProbeData *p)
