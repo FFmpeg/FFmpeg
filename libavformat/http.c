@@ -1092,6 +1092,9 @@ static int parse_set_cookie(const char *set_cookie, AVDictionary **dict)
         next_param = NULL;
         param += strspn(param, WHITESPACES);
         if ((name = av_strtok(param, "=", &value))) {
+            char *end = name + strlen(name);
+            while (end > name && strchr(WHITESPACES, end[-1]))
+                *--end = '\0';
             if (av_dict_set(dict, name, value ? value : "", 0) < 0) {
                 av_free(cstr);
                 return -1;
