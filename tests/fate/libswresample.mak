@@ -1198,6 +1198,15 @@ FATE_SWR_REALLOC-$(CONFIG_SWRESAMPLE) += fate-swr-resample-realloc
 fate-swr-resample-realloc: libswresample/tests/swresample_resample_realloc$(EXESUF)
 fate-swr-resample-realloc: CMD = run libswresample/tests/swresample_resample_realloc$(EXESUF)
 
+# A subset of the 10000 default cases to keep the run time short
+FATE_SWR_SELFTEST-$(CONFIG_SWRESAMPLE) += fate-swr-selftest
+fate-swr-selftest: libswresample/tests/swresample$(EXESUF)
+fate-swr-selftest: CMD = run libswresample/tests/swresample$(EXESUF) 1000
+fate-swr-selftest: CMP = null
+
+FATE-yes += $(FATE_SWR_SELFTEST-yes)
+fate-swr: $(FATE_SWR_SELFTEST-yes)
+
 FATE_SWR += $(FATE_SWR_REALLOC-yes)
 
 FATE_FFMPEG += $(FATE_SWR)
