@@ -136,6 +136,7 @@ typedef struct ChapterListHit {
     int inside;
     int row;
     int button;
+    int detail;
 } ChapterListHit;
 
 #define USE_ONEPASS_SUBTITLE_RENDER 1
@@ -1212,7 +1213,7 @@ static void bprint_chapter_cell(AVBPrint *script, const char *style, int x, int 
 typedef struct ChapterListLayout {
     int font, line, width, height, canvas_h, nb_rows, first;
     int button_x[CHAPTER_SORT_NB], button_y[CHAPTER_SORT_NB];
-    int search_x, search_y, rows_y, text_x, text_right, length_x;
+    int search_x, search_y, rows_y, text_x, text_right, length_x, detail_x, canvas_w;
 } ChapterListLayout;
 
 /* button widths are in half font sizes, a quarter apart, wrapping onto further lines when the panel is too narrow */
@@ -1249,14 +1250,16 @@ static ChapterListLayout chapter_list_layout(VideoState *is)
     l.first      = av_clip(is->chapter_selected - l.nb_rows / 2, 0, is->nb_chapter_rows - l.nb_rows);
     l.height     = l.rows_y + l.nb_rows * l.line + l.font / 2;
     l.text_x     = l.font * 3;
-    l.text_right = l.width - l.font * 9 / 2;
-    l.length_x   = l.width - l.font / 2;
+    l.text_right = l.width - l.font * 11 / 2;
+    l.length_x   = l.width - l.font * 5 / 2;
+    l.detail_x   = l.width - l.font * 5 / 4;
+    l.canvas_w   = is->width - l.font * 2;
     return l;
 }
 
 static ChapterListHit chapter_list_hit(VideoState *is, const ChapterListLayout *l, int x, int y)
 {
-    ChapterListHit hit = { 0, -1, -1 };
+    ChapterListHit hit = { 0, -1, -1, 0 };
     int line;
 
     x -= l->font;
@@ -1265,8 +1268,10 @@ static ChapterListHit chapter_list_hit(VideoState *is, const ChapterListLayout *
         return hit;
     hit.inside = 1;
     line = (y - l->rows_y) / l->line;
-    if (y >= l->rows_y && line < l->nb_rows)
-        hit.row = l->first + line;
+    if (y >= l->rows_y && line < l->nb_rows) {
+        hit.row    = l->first + line;
+        hit.detail = x >= l->width - l->font * 2;
+    }
     for (int b = 0; b < FF_ARRAY_ELEMS(sort_buttons); b++)
         if (x >= l->button_x[b] && x < l->button_x[b] + sort_buttons[b].width * l->font / 2 &&
             y >= l->button_y[b] && y < l->button_y[b] + l->font * 5 / 4)
@@ -1274,12 +1279,45 @@ static ChapterListHit chapter_list_hit(VideoState *is, const ChapterListLayout *
     return hit;
 }
 
+/* a circle outline drawn as four bezier arcs around a center */
+static void bprint_chapter_ring(AVBPrint *script, int cx, int cy, int r)
+{
+    int k = r * 552 / 1000;
+
+    av_bprintf(script, CHAPTER_LIST_EVENT "Ring,{\\an5\\pos(%d,%d)\\p1}m 0 %d b 0 %d %d 0 %d 0 b %d 0 %d %d %d %d "
+               "b %d %d %d %d %d %d b %d %d 0 %d 0 %d{\\p0}\n",
+               cx, cy, r, r - k, r - k, r, r + k, 2 * r, r - k, 2 * r, r, 2 * r, r + k, r + k, 2 * r, r, 2 * r,
+               r - k, 2 * r, r + k, r);
+}
+
+/* the metadata of the chapter whose symbol the mouse is over, as a popup beside the list or over its rows when the window is narrow */
+static void bprint_chapter_details(VideoState *is, AVBPrint *script, const ChapterListLayout *l)
+{
+    const AVChapter *chapter = is->ic->chapters[is->chapter_rows[is->chapter_hover.row].index];
+    const AVDictionaryEntry *tag = NULL;
+    int beside = l->canvas_w - l->width >= l->font * 12;
+    int height = FFMIN(av_dict_count(chapter->metadata) * l->font + l->font / 2, is->chapter_rect.h);
+    int x      = beside ? l->width + l->font / 2 : l->text_x;
+    int right  = beside ? l->canvas_w : l->length_x - l->font / 2;
+    int y = av_clip(l->rows_y + (is->chapter_hover.row - l->first) * l->line, 0, is->chapter_rect.h - height);
+
+    if (!av_dict_count(chapter->metadata))
+        return;
+    bprint_chapter_box(script, "Popup", x, y, right - x, height);
+    for (int i = 0; (tag = av_dict_iterate(chapter->metadata, tag)); i++) {
+        int line_y = y + l->font / 4 + i * l->font;
+
+        bprint_chapter_cell(script, "Detail", x + l->font / 2, line_y, x + l->font * 7, y + height, tag->key);
+        bprint_chapter_cell(script, "Detail", x + l->font * 15 / 2, line_y, right - l->font / 4, y + height, tag->value);
+    }
+}
+
 static void chapter_list_script(VideoState *is, AVBPrint *script)
 {
     ChapterListLayout l = chapter_list_layout(is);
 
     is->chapter_hover = chapter_list_hit(is, &l, is->chapter_mouse_x, is->chapter_mouse_y);
-    is->chapter_rect = (SDL_Rect){ l.font, l.font, l.width, l.canvas_h };
+    is->chapter_rect = (SDL_Rect){ l.font, l.font, l.canvas_w, l.canvas_h };
     av_bprintf(script,
                "[Script Info]\nScriptType: v4.00+\nPlayResX: %d\nPlayResY: %d\nWrapStyle: 2\nYCbCr Matrix: None\n\n"
                "[V4+ Styles]\n"
@@ -1293,10 +1331,14 @@ static void chapter_list_script(VideoState *is, AVBPrint *script)
                "Style: Playing,Sans,%d,&H00FFFFFF,&H00FFFFFF,0,0,7\n"
                "Style: Hint,Sans,%d,&H00A0A0A0,&H00000000,0,%d,7\n"
                "Style: Hover,Sans,%d,&HC8FFFFFF,&HC8FFFFFF,0,0,7\n"
-               "Style: ButtonHover,Sans,%d,&H50FFFFFF,&H50FFFFFF,0,0,7\n\n"
+               "Style: ButtonHover,Sans,%d,&H50FFFFFF,&H50FFFFFF,0,0,7\n"
+               "Style: Ring,Sans,%d,&HFF000000,&H00A0A0A0,0,%d,7\n"
+               "Style: Popup,Sans,%d,&H20000000,&H20000000,0,0,7\n"
+               "Style: Detail,Sans,%d,&H00FFFFFF,&H00000000,0,%d,7\n\n"
                "[Events]\nFormat: Start, End, Style, Text\n",
                is->chapter_rect.w, is->chapter_rect.h, l.font, l.font, l.font, l.font / 16 + 1, l.font, l.font / 16 + 1,
-               l.font * 4 / 5, l.font / 16 + 1, l.font * 4 / 5, l.font / 16 + 1, l.font, l.font, l.font / 16 + 1, l.font, l.font);
+               l.font * 4 / 5, l.font / 16 + 1, l.font * 4 / 5, l.font / 16 + 1, l.font, l.font, l.font / 16 + 1, l.font, l.font,
+               l.font, l.font / 16 + 1, l.font, l.font * 4 / 5, l.font / 16 + 1);
     bprint_chapter_box(script, "Panel", 0, 0, l.width, l.height);
     if (is->chapter_pinned)
         bprint_chapter_cell(script, *is->chapter_search ? "Row" : "Hint", l.search_x, l.search_y, l.length_x,
@@ -1328,6 +1370,8 @@ static void chapter_list_script(VideoState *is, AVBPrint *script)
         bprint_chapter_cell(script, style, l.text_x, y + l.font / 8, l.text_right, y + l.line, row->title);
         bprint_chapter_cell(script, r == is->chapter_selected ? "ArtistSelected" : "Artist", l.text_x, y + l.font * 5 / 4,
                             l.text_right, y + l.line, row->artist);
+        bprint_chapter_ring(script, l.detail_x, y + l.line / 2, l.font * 9 / 20);
+        av_bprintf(script, CHAPTER_LIST_EVENT "Hint,{\\an5\\pos(%d,%d)}i\n", l.detail_x, y + l.line / 2);
         if (row->length < 0)
             continue;
         seconds = (row->length + AV_TIME_BASE / 2) / AV_TIME_BASE;
@@ -1337,6 +1381,8 @@ static void chapter_list_script(VideoState *is, AVBPrint *script)
         else
             av_bprintf(script, "%d:%02d\n", (int)(seconds / 60), (int)(seconds % 60));
     }
+    if (is->chapter_hover.detail)
+        bprint_chapter_details(is, script, &l);
 }
 
 static int chapter_list_configure(VideoState *is, const char *script)
@@ -1520,7 +1566,7 @@ static void chapter_list_hover(VideoState *is, int x, int y)
         return;
     l   = chapter_list_layout(is);
     hit = chapter_list_hit(is, &l, x, y);
-    if (hit.row != is->chapter_hover.row || hit.button != is->chapter_hover.button)
+    if (hit.row != is->chapter_hover.row || hit.button != is->chapter_hover.button || hit.detail != is->chapter_hover.detail)
         is->chapter_render_pending = 1;
 }
 
@@ -1530,7 +1576,7 @@ static int chapter_list_click(VideoState *is, int x, int y)
     ChapterListLayout l = chapter_list_layout(is);
     ChapterListHit hit = chapter_list_hit(is, &l, x, y);
 
-    if (hit.row >= 0)
+    if (hit.row >= 0 && !hit.detail)
         seek_chapter(is, is->chapter_rows[hit.row].index);
     if (hit.button >= 0) {
         int button_w = sort_buttons[hit.button].width * l.font / 2;
@@ -4703,6 +4749,7 @@ void show_help_default(const char *opt, const char *arg)
            "mouse wheel         move the chapter list selection while it is shown\n"
            "left click          seek to the clicked chapter list entry, or sort the list by the clicked column, again to flip it;\n"
            "                    the left half of the shuffle button lowers its seed, the right half raises it\n"
+           "mouse over (i)      show the metadata of that chapter list entry\n"
            "right mouse click   seek to percentage in file corresponding to fraction of width\n"
            "left double-click   toggle full screen\n"
            );

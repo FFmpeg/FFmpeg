@@ -280,6 +280,9 @@ Seek to the chapter selected in the chapter list while it is shown.
 @item mouse wheel
 Move the chapter list selection while it is shown.
 
+@item mouse over the (i) symbol
+Show the metadata of that chapter list entry.
+
 @item left mouse click
 Seek to the clicked chapter list entry, or sort the list by the clicked column
 button. Clicking the same button again flips the order, and ties are resolved
