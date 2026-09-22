@@ -32,6 +32,7 @@ layout (constant_id = 2) const int alpha_bits = 0;
 layout (constant_id = 3) const int num_planes = 0;
 layout (constant_id = 4) const int slices_per_picture = 0;
 layout (constant_id = 5) const int max_quant = 0;
+layout (constant_id = 6) const int force_quant = 0;
 
 struct SliceData {
     uint32_t mbs_per_slice;
@@ -242,7 +243,7 @@ void main()
 
     uint plane = gl_GlobalInvocationID.y;
     int q = scores[slice].quant;
-    int q_idx = min(q, max_quant + 1);
+    int q_idx = force_quant != 0 ? 0 : min(q, max_quant + 1);
     ivec4 bits = scores[slice].bits[q_idx];
     int slice_hdr_size = 2 * num_planes;
     int slice_size = slice_hdr_size + ((bits.x + bits.y + bits.z + bits.w) / 8);

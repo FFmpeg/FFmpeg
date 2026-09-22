@@ -253,7 +253,7 @@ static int init_estimate_slice_pipeline(ProresVulkanContext *pv, FFVulkanShader*
 
     pv->estimate_slices_per_wg = dim_x / pv->ctx.num_planes;
 
-    SPEC_LIST_CREATE(sl, 8, 8 * sizeof(uint32_t))
+    SPEC_LIST_CREATE(sl, 9, 9 * sizeof(uint32_t))
     SPEC_LIST_ADD(sl, 0, 32, pv->ctx.mbs_per_slice);
     SPEC_LIST_ADD(sl, 1, 32, pv->ctx.chroma_factor);
     SPEC_LIST_ADD(sl, 2, 32, pv->ctx.alpha_bits);
@@ -262,6 +262,7 @@ static int init_estimate_slice_pipeline(ProresVulkanContext *pv, FFVulkanShader*
     SPEC_LIST_ADD(sl, 5, 32, pv->ctx.force_quant ? 0 : pv->ctx.profile_info->min_quant);
     SPEC_LIST_ADD(sl, 6, 32, pv->ctx.force_quant ? 0 : pv->ctx.profile_info->max_quant);
     SPEC_LIST_ADD(sl, 7, 32, pv->ctx.bits_per_mb);
+    SPEC_LIST_ADD(sl, 8, 32, pv->ctx.force_quant);
 
     ff_vk_shader_load(shd, VK_SHADER_STAGE_COMPUTE_BIT, sl,
                       (uint32_t []) { dim_x, 1, 1 }, required ? dim_x : 0);
@@ -346,13 +347,14 @@ static int init_encode_slice_pipeline(ProresVulkanContext *pv, FFVulkanShader* s
     FFVulkanContext *vkctx = &pv->vkctx;
     FFVulkanDescriptorSetBinding *desc;
 
-    SPEC_LIST_CREATE(sl, 6, 6 * sizeof(uint32_t))
+    SPEC_LIST_CREATE(sl, 7, 7 * sizeof(uint32_t))
     SPEC_LIST_ADD(sl, 0, 32, pv->ctx.mbs_per_slice);
     SPEC_LIST_ADD(sl, 1, 32, pv->ctx.chroma_factor);
     SPEC_LIST_ADD(sl, 2, 32, pv->ctx.alpha_bits);
     SPEC_LIST_ADD(sl, 3, 32, pv->ctx.num_planes);
     SPEC_LIST_ADD(sl, 4, 32, pv->ctx.slices_per_picture);
-    SPEC_LIST_ADD(sl, 5, 32, pv->ctx.force_quant ? pv->ctx.force_quant : pv->ctx.profile_info->max_quant);
+    SPEC_LIST_ADD(sl, 5, 32, pv->ctx.profile_info->max_quant);
+    SPEC_LIST_ADD(sl, 6, 32, pv->ctx.force_quant);
 
     ff_vk_shader_load(shd, VK_SHADER_STAGE_COMPUTE_BIT, sl,
                       (uint32_t []) { 64, 1, 1 }, 0);
@@ -1066,13 +1068,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
                          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
     RET(ff_vk_map_buffer(vkctx, &pv->prores_data_tables_buf, (void *)&pv->tables, 0));
-    for (q = 0; q < MAX_STORED_Q; ++q) {
-        for (i = 0; i < 64; i++) {
-            pv->tables->qmat[q][i] = ctx->quants[q][ctx->scantable[i]];
-            pv->tables->qmat_chroma[q][i] = ctx->quants_chroma[q][ctx->scantable[i]];
-        }
-    }
-    for (q = MAX_STORED_Q; q < 128; ++q) {
+    for (q = 0; q < 128; ++q) {
         for (i = 0; i < 64; i++) {
             pv->tables->qmat[q][i] = ctx->quant_mat[ctx->scantable[i]] * q;
             pv->tables->qmat_chroma[q][i] = ctx->quant_chroma_mat[ctx->scantable[i]] * q;
