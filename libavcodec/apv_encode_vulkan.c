@@ -517,7 +517,7 @@ static int submit_frame(AVCodecContext *avctx, FFVkExecContext *exec,
         RET(ff_vk_seg_gather(&ev->s, exec, &ev->shd_compact,
                              sizes_buf, 0, ev->tile_count * ev->num_comp,
                              bytestream_buf, ev->slot_size,
-                             compacted_buf, 0));
+                             compacted_buf, 0, 0));
 
     err = ff_vk_exec_submit(&ev->s, exec);
     if (err < 0)

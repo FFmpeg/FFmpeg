@@ -684,7 +684,7 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
                          &fv->results_buf, fd->idx*(f->max_slice_count + 1)*sizeof(uint32_t),
                          f->slice_count,
                          out_data_buf, (out_data_buf->size / f->slice_count) & ~(size_t)15,
-                         compacted_buf, 0));
+                         compacted_buf, 0, 0));
 
     /* Submit */
     ff_vk_exec_move_dep_refstruct(&fv->s, exec, &slice_data_buf);

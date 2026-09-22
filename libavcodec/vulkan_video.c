@@ -548,6 +548,7 @@ fail:
 typedef struct SegGatherPushData {
     VkDeviceAddress sparse;
     VkDeviceAddress compacted;
+    VkDeviceAddress offset_addr;
     uint32_t        slot_size;
 } SegGatherPushData;
 
@@ -583,14 +584,16 @@ fail:
 int ff_vk_seg_gather(FFVulkanContext *s, FFVkExecContext *exec, FFVulkanShader *shd,
                      FFVkBuffer *sizes, size_t sizes_offset, uint32_t nb_segs,
                      FFVkBuffer *sparse, uint32_t slot_size,
-                     FFVkBuffer *compacted, size_t compacted_offset)
+                     FFVkBuffer *compacted, size_t compacted_offset,
+                     VkDeviceAddress offset_addr)
 {
     int err;
     FFVulkanFunctions *vk = &s->vkfn;
     SegGatherPushData pd = {
-        .sparse    = sparse->address,
-        .compacted = compacted->address + compacted_offset,
-        .slot_size = slot_size,
+        .sparse      = sparse->address,
+        .compacted   = compacted->address + compacted_offset,
+        .offset_addr = offset_addr,
+        .slot_size   = slot_size,
     };
 
     vk->CmdPipelineBarrier2(exec->buf, &(VkDependencyInfo) {

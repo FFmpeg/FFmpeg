@@ -146,12 +146,14 @@ int ff_vk_seg_gather_init(FFVulkanContext *s, FFVkExecPool *pool,
  * Gathers nb_segs slots of slot_size bytes from sparse into compacted, with
  * the segment sizes given as nb_segs uint32_t in sizes at sizes_offset,
  * followed by one more that receives the packed size. Both are made visible
- * to the host.
+ * to the host. If offset_addr is non-zero, the uint32_t it points to is added
+ * to compacted_offset.
  */
 int ff_vk_seg_gather(FFVulkanContext *s, FFVkExecContext *exec, FFVulkanShader *shd,
                      FFVkBuffer *sizes, size_t sizes_offset, uint32_t nb_segs,
                      FFVkBuffer *sparse, uint32_t slot_size,
-                     FFVkBuffer *compacted, size_t compacted_offset);
+                     FFVkBuffer *compacted, size_t compacted_offset,
+                     VkDeviceAddress offset_addr);
 
 /**
  * Frame loop for compute encoders. Keeps up to pool_size frames in flight,

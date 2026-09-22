@@ -46,9 +46,10 @@ layout (set = 0, binding = 0, scalar) buffer sizes_buf {
 };
 
 layout (push_constant, scalar) uniform pushConstants {
-    u8buf sparse;       /* one slot per segment       */
-    u8buf compacted;    /* contiguous output          */
-    uint  slot_size;    /* stride between sparse slots */
+    u8buf    sparse;      /* one slot per segment        */
+    u8buf    compacted;   /* contiguous output           */
+    uint64_t offset_addr; /* extra output offset, or 0   */
+    uint     slot_size;   /* stride between sparse slots */
 };
 
 shared uint s_dst_off;
@@ -110,7 +111,8 @@ void main(void)
     const uint n = seg_sizes[seg];
 
     const uint64_t src_base = uint64_t(sparse)    + seg * slot_size;
-    const uint64_t dst_base = uint64_t(compacted) + s_dst_off;
+    const uint base = offset_addr != 0ul ? u32buf(offset_addr).v : 0u;
+    const uint64_t dst_base = uint64_t(compacted) + base + s_dst_off;
 
     u8buf src8 = u8buf(src_base);
     u8buf dst8 = u8buf(dst_base);
