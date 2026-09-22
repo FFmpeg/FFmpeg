@@ -95,6 +95,10 @@ fate-rangecoder: libavcodec/tests/rangecoder$(EXESUF)
 fate-rangecoder: CMD = run libavcodec/tests/rangecoder$(EXESUF)
 fate-rangecoder: CMP = null
 
+FATE_LIBAVCODEC-$(CONFIG_SNOW_ENCODER) += fate-snow-dwt
+fate-snow-dwt: libavcodec/tests/snowenc$(EXESUF)
+fate-snow-dwt: CMD = run libavcodec/tests/snowenc$(EXESUF)
+
 FATE_LIBAVCODEC-yes += fate-mathops
 fate-mathops: libavcodec/tests/mathops$(EXESUF)
 fate-mathops: CMD = run libavcodec/tests/mathops$(EXESUF)
