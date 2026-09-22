@@ -686,7 +686,6 @@ retry:
                 RET(ff_sws_op_list_insert_at(ops, n + 1, &(SwsOp) {
                     .op    = SWS_OP_CLEAR,
                     .type  = op->type,
-                    .comps = op->comps,
                     .clear = clear,
                 }));
                 goto retry;
