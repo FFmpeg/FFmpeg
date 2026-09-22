@@ -1,0 +1,31 @@
+41                  65         0x41         1     A
+0A                  10         0xA          1     \n
+C3A9                233        0xE9         2     é
+0A                  10         0xA          1     \n
+E282AC              8364       0x20AC       3     €
+0A                  10         0xA          1     \n
+F09F9880            128512     0x1F600      4     😀
+0A                  10         0xA          1     \n
+F48FBFBF            1114111    0x10FFFF     4     􏿿
+0A                  10         0xA          1     \n
+F4908080            1114112    0x110000     4     invalid code range
+0A                  10         0xA          1     \n
+F888808080          2097152    0x200000     5     invalid code range
+0A                  10         0xA          1     \n
+C080                invalid sequence
+0A                  10         0xA          1     \n
+E08080              invalid sequence
+0A                  10         0xA          1     \n
+EDA080              55296      0xD800       3     invalid code range
+0A                  10         0xA          1     \n
+EFBFBF              65535      0xFFFF       3     invalid code range
+0A                  10         0xA          1     \n
+80                  invalid sequence
+0A                  10         0xA          1     \n
+FE                  invalid sequence
+0A                  10         0xA          1     \n
+C3                  invalid sequence
+41                  65         0x41         1     A
+0A                  10         0xA          1     \n
+E2                  invalid sequence
+82                  invalid sequence
