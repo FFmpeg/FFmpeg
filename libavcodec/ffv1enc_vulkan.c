@@ -536,12 +536,12 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
                                     slice_data_buf,
                                     0, slice_data_size*f->slice_count,
                                     VK_FORMAT_UNDEFINED);
-    if (f->remap_mode)
-        ff_vk_shader_update_desc_buffer(&fv->s, exec,
-                                        &fv->setup, 1, 1, 0,
-                                        remap_data_buf,
-                                        0, remap_data_size*f->slice_count,
-                                        VK_FORMAT_UNDEFINED);
+    /* The remap table is only read in remap mode, but must be a valid buffer */
+    ff_vk_shader_update_desc_buffer(&fv->s, exec,
+                                    &fv->setup, 1, 1, 0,
+                                    f->remap_mode ? remap_data_buf : slice_data_buf,
+                                    0, VK_WHOLE_SIZE,
+                                    VK_FORMAT_UNDEFINED);
 
     ff_vk_exec_bind_shader(&fv->s, exec, &fv->setup);
     ff_vk_shader_update_push_const(&fv->s, exec, &fv->setup,
