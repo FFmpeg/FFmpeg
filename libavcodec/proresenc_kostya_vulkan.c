@@ -88,14 +88,9 @@ typedef struct VulkanEncodeProresFrameData {
     FFVkBuffer *frame_size_ref[2];
 
     /* Copied from the source */
-    int64_t pts;
-    int64_t duration;
-    void        *frame_opaque;
-    AVBufferRef *frame_opaque_ref;
     enum AVColorTransferCharacteristic color_trc;
     enum AVColorSpace colorspace;
     enum AVColorPrimaries color_primaries;
-    int key_frame;
     int flags;
 } VulkanEncodeProresFrameData;
 
@@ -125,13 +120,10 @@ typedef struct ProresVulkanContext {
     FFVulkanShader gather_shd;
     FFVkBuffer prores_data_tables_buf;
 
-    int *slice_quants;
-    SliceScore *slice_scores;
     ProresDataTables *tables;
 
-    int in_flight;
     int async_depth;
-    AVFrame *frame;
+    FFVkEncodeLoop loop;
     VulkanEncodeProresFrameData *exec_ctx_info;
 } ProresVulkanContext;
 
@@ -382,8 +374,8 @@ fail:
     return err;
 }
 
-static int vulkan_encode_prores_submit_frame(AVCodecContext *avctx, FFVkExecContext *exec,
-                                             AVFrame *frame, int picture_idx)
+static int encode_picture(AVCodecContext *avctx, FFVkExecContext *exec,
+                          AVFrame *frame, int picture_idx)
 {
     ProresVulkanContext *pv = avctx->priv_data;
     ProresContext *ctx = &pv->ctx;
@@ -790,93 +782,48 @@ static int get_packet(AVCodecContext *avctx, FFVkExecContext *exec, AVPacket *pk
     pkt->data = wrap_buf->mapped_mem;
     pkt->size = frame_size;
 
-    pkt->pts      = pd->pts;
-    pkt->dts      = pd->pts;
-    pkt->duration = pd->duration;
-    pkt->flags   |= AV_PKT_FLAG_KEY * pd->key_frame;
-
-    if (avctx->flags & AV_CODEC_FLAG_COPY_OPAQUE) {
-        pkt->opaque          = pd->frame_opaque;
-        pkt->opaque_ref      = pd->frame_opaque_ref;
-        pd->frame_opaque_ref = NULL;
-    }
-
     av_log(avctx, AV_LOG_VERBOSE, "Encoded data: %iMiB\n", pkt->size / (1024*1024));
 
     return 0;
 }
 
-static int vulkan_encode_prores_receive_packet(AVCodecContext *avctx, AVPacket *pkt)
+static int vulkan_encode_prores_submit_frame(AVCodecContext *avctx, FFVkExecContext *exec,
+                                             AVFrame *frame)
 {
     int err;
     ProresVulkanContext *pv = avctx->priv_data;
-    ProresContext *ctx = &pv->ctx;
-    VulkanEncodeProresFrameData *pd;
-    FFVkExecContext *exec;
-    AVFrame *frame;
+    VulkanEncodeProresFrameData *pd = exec->opaque;
 
-    while (1) {
-        /* Roll an execution context */
-        exec = ff_vk_exec_get(&pv->vkctx, &pv->e);
+    pd->color_primaries = frame->color_primaries;
+    pd->color_trc = frame->color_trc;
+    pd->colorspace = frame->colorspace;
+    pd->flags = frame->flags;
 
-        /* If it had a frame, immediately output it */
-        if (exec->had_submission) {
-            exec->had_submission = 0;
-            pv->in_flight--;
-            return get_packet(avctx, exec, pkt);
-        }
+    err = ff_vk_exec_start(&pv->vkctx, exec);
+    if (err < 0)
+        return err;
 
-        /* Get next frame to encode */
-        frame = pv->frame;
-        err = ff_encode_get_frame(avctx, frame);
-        if (err < 0 && err != AVERROR_EOF) {
-            return err;
-        } else if (err == AVERROR_EOF) {
-            if (!pv->in_flight)
-                return err;
-            continue;
-        }
-
-        /* Encode frame */
-        pd = exec->opaque;
-        pd->color_primaries = frame->color_primaries;
-        pd->color_trc = frame->color_trc;
-        pd->colorspace = frame->colorspace;
-        pd->pts = frame->pts;
-        pd->duration = frame->duration;
-        pd->flags = frame->flags;
-        if (avctx->flags & AV_CODEC_FLAG_COPY_OPAQUE) {
-            pd->frame_opaque     = frame->opaque;
-            pd->frame_opaque_ref = frame->opaque_ref;
-            frame->opaque_ref    = NULL;
-        }
-
-        err = ff_vk_exec_start(&pv->vkctx, exec);
+    for (int i = 0; i < pv->ctx.pictures_per_frame; i++) {
+        err = encode_picture(avctx, exec, frame, i);
         if (err < 0) {
-            av_frame_unref(frame);
+            ff_vk_exec_discard(&pv->vkctx, exec);
             return err;
         }
-
-        for (int i = 0; i < ctx->pictures_per_frame; i++) {
-            err = vulkan_encode_prores_submit_frame(avctx, exec, frame, i);
-            if (err < 0) {
-                ff_vk_exec_discard(&pv->vkctx, exec);
-                av_frame_unref(frame);
-                return err;
-            }
-        }
-
-        err = ff_vk_exec_submit(&pv->vkctx, exec);
-        av_frame_unref(frame);
-        if (err < 0)
-            return err;
-
-        pv->in_flight++;
-        if (pv->in_flight < pv->async_depth)
-            return AVERROR(EAGAIN);
     }
 
-    return 0;
+    return ff_vk_exec_submit(&pv->vkctx, exec);
+}
+
+static int vulkan_encode_prores_receive_packet(AVCodecContext *avctx, AVPacket *pkt)
+{
+    ProresVulkanContext *pv = avctx->priv_data;
+    return ff_vk_encode_loop_receive_packet(avctx, &pv->loop, pkt);
+}
+
+static av_cold void vulkan_encode_prores_flush(AVCodecContext *avctx)
+{
+    ProresVulkanContext *pv = avctx->priv_data;
+    ff_vk_encode_loop_flush(avctx, &pv->loop);
 }
 
 static av_cold int encode_close(AVCodecContext *avctx)
@@ -898,6 +845,22 @@ static av_cold int encode_close(AVCodecContext *avctx)
     ff_vk_shader_free(vkctx, &pv->gather_shd);
 
     ff_vk_free_buf(vkctx, &pv->prores_data_tables_buf);
+
+    if (pv->exec_ctx_info) {
+        for (int i = 0; i < pv->async_depth; i++) {
+            VulkanEncodeProresFrameData *pd = &pv->exec_ctx_info[i];
+            for (int j = 0; j < 2; j++) {
+                av_refstruct_unref(&pd->out_data_ref[j]);
+                av_refstruct_unref(&pd->slice_sizes_ref[j]);
+                av_refstruct_unref(&pd->gathered_ref[j]);
+                av_refstruct_unref(&pd->slice_data_ref[j]);
+                av_refstruct_unref(&pd->slice_score_ref[j]);
+                av_refstruct_unref(&pd->frame_size_ref[j]);
+            }
+        }
+        av_freep(&pv->exec_ctx_info);
+    }
+    ff_vk_encode_loop_uninit(&pv->loop);
 
     av_refstruct_pool_uninit(&pv->pkt_buf_pool);
     av_refstruct_pool_uninit(&pv->slice_sizes_buf_pool);
@@ -927,17 +890,12 @@ static av_cold int encode_init(AVCodecContext *avctx)
         return AVERROR(ENOTSUP);
     }
 
-    RET(ff_vk_exec_pool_init(vkctx, pv->qf, &pv->e, 1, 0, 0, 0, NULL));
+    RET(ff_vk_exec_pool_init(vkctx, pv->qf, &pv->e, pv->async_depth, 0, 0, 0, NULL));
 
     /* Init common prores structures */
     err = ff_prores_kostya_encode_init(avctx, ctx, vkctx->frames->sw_format);
     if (err < 0)
         return err;
-
-    /* Temporary frame */
-    pv->frame = av_frame_alloc();
-    if (!pv->frame)
-        return AVERROR(ENOMEM);
 
     /* Async data pool */
     pv->async_depth = pv->e.pool_size;
@@ -946,6 +904,9 @@ static av_cold int encode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
     for (int i = 0; i < pv->async_depth; i++)
         pv->e.contexts[i].opaque = &pv->exec_ctx_info[i];
+
+    RET(ff_vk_encode_loop_init(vkctx, &pv->e, &pv->loop,
+                               vulkan_encode_prores_submit_frame, get_packet));
 
     /* Compile shaders used by encoder */
     init_slice_data_pipeline(pv, &pv->slice_data_shd[0], 2);
@@ -1069,6 +1030,7 @@ const FFCodec ff_prores_ks_vulkan_encoder = {
     .init           = encode_init,
     .close          = encode_close,
     FF_CODEC_RECEIVE_PACKET_CB(&vulkan_encode_prores_receive_packet),
+    .flush          = &vulkan_encode_prores_flush,
     .p.capabilities = AV_CODEC_CAP_DELAY |
                       AV_CODEC_CAP_HARDWARE |
                       AV_CODEC_CAP_ENCODER_FLUSH |
@@ -1078,5 +1040,5 @@ const FFCodec ff_prores_ks_vulkan_encoder = {
     .color_ranges   = AVCOL_RANGE_MPEG,
     .p.priv_class   = &proresenc_class,
     .p.profiles     = NULL_IF_CONFIG_SMALL(ff_prores_profiles),
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_EOF_FLUSH,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };

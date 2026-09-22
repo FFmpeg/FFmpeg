@@ -17,6 +17,7 @@
  */
 
 #include "libavutil/mem.h"
+#include "encode.h"
 #include "vulkan_video.h"
 
 #define ASPECT_2PLANE (VK_IMAGE_ASPECT_PLANE_0_BIT | VK_IMAGE_ASPECT_PLANE_1_BIT)
@@ -628,4 +629,119 @@ int ff_vk_seg_gather(FFVulkanContext *s, FFVkExecContext *exec, FFVulkanShader *
 
 fail:
     return err;
+}
+
+int ff_vk_encode_loop_init(FFVulkanContext *s, FFVkExecPool *pool, FFVkEncodeLoop *l,
+                           int (*submit_frame)(AVCodecContext *avctx, FFVkExecContext *exec, AVFrame *frame),
+                           int (*get_packet)(AVCodecContext *avctx, FFVkExecContext *exec, AVPacket *pkt))
+{
+    l->s            = s;
+    l->pool         = pool;
+    l->submit_frame = submit_frame;
+    l->get_packet   = get_packet;
+    l->head         = 0;
+    l->in_flight    = 0;
+
+    l->frames = av_calloc(pool->pool_size, sizeof(*l->frames));
+    l->frame  = av_frame_alloc();
+    l->pkt    = av_packet_alloc();
+    if (!l->frames || !l->frame || !l->pkt)
+        return AVERROR(ENOMEM);
+
+    return 0;
+}
+
+static int loop_get_packet(AVCodecContext *avctx, FFVkEncodeLoop *l, AVPacket *pkt)
+{
+    int err;
+    int idx = (l->head + l->pool->pool_size - l->in_flight) % l->pool->pool_size;
+
+    l->in_flight--;
+
+    err = l->get_packet(avctx, &l->pool->contexts[idx], pkt);
+    if (err < 0) {
+        av_buffer_unref(&l->frames[idx].opaque_ref);
+        return err;
+    }
+
+    pkt->pts      = l->frames[idx].pts;
+    pkt->dts      = l->frames[idx].pts;
+    pkt->duration = l->frames[idx].duration;
+    if (avctx->flags & AV_CODEC_FLAG_COPY_OPAQUE) {
+        pkt->opaque     = l->frames[idx].opaque;
+        pkt->opaque_ref = l->frames[idx].opaque_ref;
+        l->frames[idx].opaque_ref = NULL;
+    }
+
+    return 0;
+}
+
+static int loop_oldest_done(FFVkEncodeLoop *l)
+{
+    FFVulkanFunctions *vk = &l->s->vkfn;
+    int idx = (l->head + l->pool->pool_size - l->in_flight) % l->pool->pool_size;
+    FFVkExecContext *e = &l->pool->contexts[idx];
+    uint64_t val;
+
+    return vk->GetSemaphoreCounterValue(l->s->hwctx->act_dev, e->sem, &val) == VK_SUCCESS &&
+           val >= e->sem_value;
+}
+
+int ff_vk_encode_loop_receive_packet(AVCodecContext *avctx, FFVkEncodeLoop *l,
+                                     AVPacket *pkt)
+{
+    int err, eof = 0;
+    FFVkExecPool *pool = l->pool;
+
+    err = ff_encode_get_frame(avctx, l->frame);
+    if (err == AVERROR_EOF) {
+        eof = 1;
+    } else if (err >= 0) {
+        l->frames[l->head].pts      = l->frame->pts;
+        l->frames[l->head].duration = l->frame->duration;
+        if (avctx->flags & AV_CODEC_FLAG_COPY_OPAQUE) {
+            l->frames[l->head].opaque     = l->frame->opaque;
+            l->frames[l->head].opaque_ref = l->frame->opaque_ref;
+            l->frame->opaque_ref = NULL;
+        }
+
+        err = l->submit_frame(avctx, &pool->contexts[l->head], l->frame);
+        av_frame_unref(l->frame);
+        if (err < 0) {
+            av_buffer_unref(&l->frames[l->head].opaque_ref);
+            return err;
+        }
+
+        l->head = (l->head + 1) % pool->pool_size;
+        l->in_flight++;
+    } else if (err != AVERROR(EAGAIN)) {
+        return err;
+    }
+
+    if (!l->in_flight)
+        return eof ? AVERROR_EOF : AVERROR(EAGAIN);
+    if (l->in_flight < pool->pool_size && !eof && !loop_oldest_done(l))
+        return AVERROR(EAGAIN);
+
+    return loop_get_packet(avctx, l, pkt);
+}
+
+void ff_vk_encode_loop_flush(AVCodecContext *avctx, FFVkEncodeLoop *l)
+{
+    while (l->in_flight) {
+        if (loop_get_packet(avctx, l, l->pkt) >= 0)
+            av_packet_unref(l->pkt);
+    }
+    l->head = 0;
+}
+
+void ff_vk_encode_loop_uninit(FFVkEncodeLoop *l)
+{
+    if (l->frames) {
+        for (int i = 0; i < l->pool->pool_size; i++)
+            av_buffer_unref(&l->frames[i].opaque_ref);
+        av_freep(&l->frames);
+    }
+    av_frame_free(&l->frame);
+    av_packet_free(&l->pkt);
 }

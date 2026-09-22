@@ -153,4 +153,45 @@ int ff_vk_seg_gather(FFVulkanContext *s, FFVkExecContext *exec, FFVulkanShader *
                      FFVkBuffer *sparse, uint32_t slot_size,
                      FFVkBuffer *compacted, size_t compacted_offset);
 
+/**
+ * Frame loop for compute encoders. Keeps up to pool_size frames in flight,
+ * submitting each into its own execution context, and returns their packets
+ * in order as soon as they complete, or once the pool is full.
+ */
+typedef struct FFVkEncodeLoop {
+    FFVulkanContext *s;
+    FFVkExecPool *pool;
+    int (*submit_frame)(AVCodecContext *avctx, FFVkExecContext *exec, AVFrame *frame);
+    int (*get_packet)(AVCodecContext *avctx, FFVkExecContext *exec, AVPacket *pkt);
+
+    AVFrame *frame;
+    AVPacket *pkt;
+    struct {
+        int64_t pts;
+        int64_t duration;
+        void *opaque;
+        AVBufferRef *opaque_ref;
+    } *frames;
+    int head;
+    int in_flight;
+} FFVkEncodeLoop;
+
+int ff_vk_encode_loop_init(FFVulkanContext *s, FFVkExecPool *pool, FFVkEncodeLoop *l,
+                           int (*submit_frame)(AVCodecContext *avctx, FFVkExecContext *exec, AVFrame *frame),
+                           int (*get_packet)(AVCodecContext *avctx, FFVkExecContext *exec, AVPacket *pkt));
+
+/**
+ * Call from FFCodec.cb.receive_packet; the packet metadata is carried from
+ * the submitted frame to its packet.
+ */
+int ff_vk_encode_loop_receive_packet(AVCodecContext *avctx, FFVkEncodeLoop *l,
+                                     AVPacket *pkt);
+
+/**
+ * Waits for and discards every frame in flight.
+ */
+void ff_vk_encode_loop_flush(AVCodecContext *avctx, FFVkEncodeLoop *l);
+
+void ff_vk_encode_loop_uninit(FFVkEncodeLoop *l);
+
 #endif /* AVCODEC_VULKAN_VIDEO_H */

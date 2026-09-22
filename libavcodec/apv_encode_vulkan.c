@@ -74,12 +74,6 @@ typedef struct VulkanEncodeAPVFrameData {
     FFVkBuffer *bytestream_ref;
     FFVkBuffer *compacted_ref;
     FFVkBuffer *sizes_ref;
-
-    int64_t pts;
-    int64_t duration;
-    void   *frame_opaque;
-    AVBufferRef *frame_opaque_ref;
-    int     flags;
 } VulkanEncodeAPVFrameData;
 
 typedef struct VulkanEncodeAPVContext {
@@ -106,11 +100,10 @@ typedef struct VulkanEncodeAPVContext {
     CodedBitstreamContext *cbc;
     CodedBitstreamFragment au;
 
-    AVFrame *frame;
+    FFVkEncodeLoop loop;
 
     /* Async machinery */
     int async_depth;
-    int in_flight;
     VulkanEncodeAPVFrameData *exec_ctx_info;
 
     /* Derived per-encoder state */
@@ -671,17 +664,6 @@ static int build_packet(AVCodecContext *avctx, FFVkExecContext *exec,
     if (err < 0)
         return err;
 
-    pkt->pts      = fd->pts;
-    pkt->dts      = fd->pts;
-    pkt->duration = fd->duration;
-    pkt->flags   |= AV_PKT_FLAG_KEY; /* APV is all intra */
-
-    if (avctx->flags & AV_CODEC_FLAG_COPY_OPAQUE) {
-        pkt->opaque          = fd->frame_opaque;
-        pkt->opaque_ref      = fd->frame_opaque_ref;
-        fd->frame_opaque_ref = NULL;
-    }
-
     av_log(avctx, AV_LOG_VERBOSE, "Encoded APV frame: %i bytes (%.2f MiB)\n",
            pkt->size, pkt->size / (1024.0 * 1024.0));
 
@@ -696,51 +678,14 @@ static int build_packet(AVCodecContext *avctx, FFVkExecContext *exec,
 static int vulkan_encode_apv_receive_packet(AVCodecContext *avctx,
                                             AVPacket *pkt)
 {
-    int err;
     VulkanEncodeAPVContext *ev = avctx->priv_data;
-    VulkanEncodeAPVFrameData *fd;
-    FFVkExecContext *exec;
-    AVFrame *frame;
+    return ff_vk_encode_loop_receive_packet(avctx, &ev->loop, pkt);
+}
 
-    while (1) {
-        exec = ff_vk_exec_get(&ev->s, &ev->exec_pool);
-
-        if (exec->had_submission) {
-            exec->had_submission = 0;
-            ev->in_flight--;
-            return build_packet(avctx, exec, pkt);
-        }
-
-        frame = ev->frame;
-        err = ff_encode_get_frame(avctx, frame);
-        if (err < 0 && err != AVERROR_EOF)
-            return err;
-        else if (err == AVERROR_EOF) {
-            if (!ev->in_flight)
-                return err;
-            continue;
-        }
-
-        fd = exec->opaque;
-        fd->pts = frame->pts;
-        fd->duration = frame->duration;
-        fd->flags = frame->flags;
-        if (avctx->flags & AV_CODEC_FLAG_COPY_OPAQUE) {
-            fd->frame_opaque     = frame->opaque;
-            fd->frame_opaque_ref = frame->opaque_ref;
-            frame->opaque_ref    = NULL;
-        }
-
-        err = submit_frame(avctx, exec, frame);
-        av_frame_unref(frame);
-        if (err < 0)
-            return err;
-
-        ev->in_flight++;
-        if (ev->in_flight < ev->async_depth)
-            return AVERROR(EAGAIN);
-    }
-    return 0;
+static av_cold void vulkan_encode_apv_flush(AVCodecContext *avctx)
+{
+    VulkanEncodeAPVContext *ev = avctx->priv_data;
+    ff_vk_encode_loop_flush(avctx, &ev->loop);
 }
 
 static av_cold int vulkan_encode_apv_close(AVCodecContext *avctx)
@@ -761,7 +706,6 @@ static av_cold int vulkan_encode_apv_close(AVCodecContext *avctx)
             av_refstruct_unref(&fd->bytestream_ref);
             av_refstruct_unref(&fd->compacted_ref);
             av_refstruct_unref(&fd->sizes_ref);
-            av_buffer_unref(&fd->frame_opaque_ref);
         }
         av_freep(&ev->exec_ctx_info);
     }
@@ -774,7 +718,7 @@ static av_cold int vulkan_encode_apv_close(AVCodecContext *avctx)
     ff_cbs_fragment_free(&ev->au);
     ff_cbs_close(&ev->cbc);
 
-    av_frame_free(&ev->frame);
+    ff_vk_encode_loop_uninit(&ev->loop);
     ff_vk_uninit(&ev->s);
 
     return 0;
@@ -962,9 +906,9 @@ static av_cold int vulkan_encode_apv_init(AVCodecContext *avctx)
      * build them once. */
     build_dct_push_const(avctx);
 
-    ev->frame = av_frame_alloc();
-    if (!ev->frame)
-        return AVERROR(ENOMEM);
+    err = ff_vk_encode_loop_init(&ev->s, &ev->exec_pool, &ev->loop, submit_frame, build_packet);
+    if (err < 0)
+        return err;
 
     /* Async data pool */
     ev->async_depth = ev->exec_pool.pool_size;
@@ -1028,6 +972,7 @@ const FFCodec ff_apv_vulkan_encoder = {
     .priv_data_size = sizeof(VulkanEncodeAPVContext),
     .init           = &vulkan_encode_apv_init,
     FF_CODEC_RECEIVE_PACKET_CB(&vulkan_encode_apv_receive_packet),
+    .flush          = &vulkan_encode_apv_flush,
     .close          = &vulkan_encode_apv_close,
     .p.priv_class   = &vulkan_encode_apv_class,
     .p.capabilities = AV_CODEC_CAP_DELAY |
@@ -1035,7 +980,7 @@ const FFCodec ff_apv_vulkan_encoder = {
                       AV_CODEC_CAP_DR1 |
                       AV_CODEC_CAP_ENCODER_FLUSH |
                       AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_EOF_FLUSH,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .defaults       = vulkan_encode_apv_defaults,
     CODEC_PIXFMTS(AV_PIX_FMT_VULKAN),
     .hw_configs     = vulkan_encode_apv_hw_configs,

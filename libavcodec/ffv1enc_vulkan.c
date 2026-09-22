@@ -45,26 +45,19 @@ typedef struct VulkanEncodeFFv1FrameData {
     FFVkBuffer *out_data_ref;
     FFVkBuffer *compacted_data_ref;
 
-    /* Copied from the source */
-    int64_t pts;
-    int64_t duration;
-    void        *frame_opaque;
-    AVBufferRef *frame_opaque_ref;
-
     int key_frame;
     int idx;
 } VulkanEncodeFFv1FrameData;
 
 typedef struct VulkanEncodeFFv1Context {
     FFV1Context ctx;
-    AVFrame *frame;
+    FFVkEncodeLoop loop;
 
     FFVulkanContext s;
     AVVulkanDeviceQueueFamily *qf;
     FFVkExecPool exec_pool;
 
     VulkanEncodeFFv1FrameData *exec_ctx_info;
-    int in_flight;
     int async_depth;
 
     FFVulkanShader rct_search;
@@ -270,7 +263,7 @@ static int run_sort32(AVCodecContext *avctx, FFVkExecContext *exec,
 
 static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
                                            FFVkExecContext *exec,
-                                           const AVFrame *pict)
+                                           AVFrame *pict)
 {
     int err;
     VulkanEncodeFFv1Context *fv = avctx->priv_data;
@@ -386,7 +379,7 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
     compacted_buf = fd->compacted_data_ref;
 
     /* Image views */
-    AVFrame *src = (AVFrame *)pict;
+    AVFrame *src = pict;
     VkImageView src_views[AV_NUM_DATA_POINTERS];
 
     AVFrame *tmp = NULL;
@@ -777,17 +770,7 @@ static int get_packet(AVCodecContext *avctx, FFVkExecContext *exec,
     }
     fd->compacted_data_ref = NULL; /* ownership passed to pkt->buf */
     pkt->data = compacted_buf->mapped_mem;
-
-    pkt->pts      = fd->pts;
-    pkt->dts      = fd->pts;
-    pkt->duration = fd->duration;
-    pkt->flags   |= AV_PKT_FLAG_KEY * fd->key_frame;
-
-    if (avctx->flags & AV_CODEC_FLAG_COPY_OPAQUE) {
-        pkt->opaque          = fd->frame_opaque;
-        pkt->opaque_ref      = fd->frame_opaque_ref;
-        fd->frame_opaque_ref = NULL;
-    }
+    pkt->flags |= AV_PKT_FLAG_KEY * fd->key_frame;
 
     av_refstruct_unref(&fd->out_data_ref);
 
@@ -797,55 +780,15 @@ static int get_packet(AVCodecContext *avctx, FFVkExecContext *exec,
 static int vulkan_encode_ffv1_receive_packet(AVCodecContext *avctx,
                                              AVPacket *pkt)
 {
-    int err;
     VulkanEncodeFFv1Context *fv = avctx->priv_data;
-    VulkanEncodeFFv1FrameData *fd;
-    FFVkExecContext *exec;
-    AVFrame *frame;
+    return ff_vk_encode_loop_receive_packet(avctx, &fv->loop, pkt);
+}
 
-    while (1) {
-        /* Roll an execution context */
-        exec = ff_vk_exec_get(&fv->s, &fv->exec_pool);
-
-        /* If it had a frame, immediately output it */
-        if (exec->had_submission) {
-            exec->had_submission = 0;
-            fv->in_flight--;
-            return get_packet(avctx, exec, pkt);
-        }
-
-        /* Get next frame to encode */
-        frame = fv->frame;
-        err = ff_encode_get_frame(avctx, frame);
-        if (err < 0 && err != AVERROR_EOF) {
-            return err;
-        } else if (err == AVERROR_EOF) {
-            if (!fv->in_flight)
-                return err;
-            continue;
-        }
-
-        /* Encode frame */
-        fd = exec->opaque;
-        fd->pts = frame->pts;
-        fd->duration = frame->duration;
-        if (avctx->flags & AV_CODEC_FLAG_COPY_OPAQUE) {
-            fd->frame_opaque     = frame->opaque;
-            fd->frame_opaque_ref = frame->opaque_ref;
-            frame->opaque_ref    = NULL;
-        }
-
-        err = vulkan_encode_ffv1_submit_frame(avctx, exec, frame);
-        av_frame_unref(frame);
-        if (err < 0)
-            return err;
-
-        fv->in_flight++;
-        if (fv->in_flight < fv->async_depth)
-            return AVERROR(EAGAIN);
-    }
-
-    return 0;
+static av_cold void vulkan_encode_ffv1_flush(AVCodecContext *avctx)
+{
+    VulkanEncodeFFv1Context *fv = avctx->priv_data;
+    ff_vk_encode_loop_flush(avctx, &fv->loop);
+    fv->ctx.picture_number = 0;
 }
 
 static int init_indirect(AVCodecContext *avctx, enum AVPixelFormat sw_format)
@@ -1454,10 +1397,8 @@ static av_cold int vulkan_encode_ffv1_init(AVCodecContext *avctx)
                                         0, 256*sizeof(uint32_t),
                                         VK_FORMAT_UNDEFINED));
 
-    /* Temporary frame */
-    fv->frame = av_frame_alloc();
-    if (!fv->frame)
-        return AVERROR(ENOMEM);
+    RET(ff_vk_encode_loop_init(&fv->s, &fv->exec_pool, &fv->loop,
+                               vulkan_encode_ffv1_submit_frame, get_packet));
 
     /* Async data pool */
     fv->async_depth = fv->exec_pool.pool_size;
@@ -1501,7 +1442,6 @@ static av_cold int vulkan_encode_ffv1_close(AVCodecContext *avctx)
             VulkanEncodeFFv1FrameData *fd = &fv->exec_ctx_info[i];
             av_refstruct_unref(&fd->out_data_ref);
             av_refstruct_unref(&fd->compacted_data_ref);
-            av_buffer_unref(&fd->frame_opaque_ref);
         }
     }
     av_free(fv->exec_ctx_info);
@@ -1519,7 +1459,7 @@ static av_cold int vulkan_encode_ffv1_close(AVCodecContext *avctx)
 
     ff_vk_free_buf(&fv->s, &fv->consts_buf);
 
-    av_frame_free(&fv->frame);
+    ff_vk_encode_loop_uninit(&fv->loop);
     ff_vk_uninit(&fv->s);
 
     return 0;
@@ -1602,6 +1542,7 @@ const FFCodec ff_ffv1_vulkan_encoder = {
     .priv_data_size = sizeof(VulkanEncodeFFv1Context),
     .init           = &vulkan_encode_ffv1_init,
     FF_CODEC_RECEIVE_PACKET_CB(&vulkan_encode_ffv1_receive_packet),
+    .flush          = &vulkan_encode_ffv1_flush,
     .close          = &vulkan_encode_ffv1_close,
     .p.priv_class   = &vulkan_encode_ffv1_class,
     .p.capabilities = AV_CODEC_CAP_DELAY |
@@ -1609,7 +1550,7 @@ const FFCodec ff_ffv1_vulkan_encoder = {
                       AV_CODEC_CAP_DR1 |
                       AV_CODEC_CAP_ENCODER_FLUSH |
                       AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_EOF_FLUSH,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .defaults       = vulkan_encode_ffv1_defaults,
     CODEC_PIXFMTS(AV_PIX_FMT_VULKAN),
     .hw_configs     = vulkan_encode_ffv1_hw_configs,
