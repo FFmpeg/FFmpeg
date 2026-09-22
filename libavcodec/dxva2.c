@@ -352,22 +352,30 @@ static int dxva2_get_decoder_configuration(AVCodecContext *avctx, const GUID *de
     return ret;
 }
 
+static D3DFORMAT dxva2_map_sw_to_hw_format(enum AVPixelFormat pix_fmt)
+{
+    switch (pix_fmt) {
+    case AV_PIX_FMT_NV12:       return MKTAG('N', 'V', '1', '2');
+    case AV_PIX_FMT_P010:       return MKTAG('P', '0', '1', '0');
+    default:                    return D3DFMT_UNKNOWN;
+    }
+}
+
 static int dxva2_create_decoder(AVCodecContext *avctx)
 {
     FFDXVASharedContext *sctx = DXVA_SHARED_CONTEXT(avctx);
     GUID *guid_list;
     unsigned guid_count;
     GUID device_guid;
-    D3DFORMAT surface_format = avctx->sw_pix_fmt == AV_PIX_FMT_YUV420P10 ?
-                               MKTAG('P', '0', '1', '0') : MKTAG('N', 'V', '1', '2');
+    AVHWFramesContext *frames_ctx = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
+    AVDXVA2FramesContext *frames_hwctx = frames_ctx->hwctx;
+    AVDXVA2DeviceContext *device_hwctx = frames_ctx->device_ctx->hwctx;
+    D3DFORMAT surface_format = dxva2_map_sw_to_hw_format(frames_ctx->sw_format);
     DXVA2_VideoDesc desc = { 0 };
     DXVA2_ConfigPictureDecode config;
     HRESULT hr;
     int ret;
     HANDLE device_handle;
-    AVHWFramesContext *frames_ctx = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
-    AVDXVA2FramesContext *frames_hwctx = frames_ctx->hwctx;
-    AVDXVA2DeviceContext *device_hwctx = frames_ctx->device_ctx->hwctx;
 
     hr = IDirect3DDeviceManager9_OpenDeviceHandle(device_hwctx->devmgr,
                                                   &device_handle);
