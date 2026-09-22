@@ -22,13 +22,10 @@
 #extension GL_EXT_control_flow_attributes : require
 #extension GL_EXT_scalar_block_layout : require
 #extension GL_EXT_shader_explicit_arithmetic_types : require
-#extension GL_KHR_shader_subgroup_arithmetic : require
-#extension GL_EXT_maximal_reconvergence : require
 
 layout (local_size_x_id = 253, local_size_y_id = 254, local_size_z_id = 255) in;
 
 layout (constant_id = 0) const int slices_per_row = 1;
-layout (constant_id = 1) const int num_subgroups = 1;
 layout (constant_id = 2) const int num_planes = 0;
 layout (constant_id = 3) const int force_quant = 0;
 layout (constant_id = 4) const int min_quant = 0;
@@ -42,14 +39,10 @@ struct SliceScore {
     int total_bits[16];
     int total_score[16];
     int overquant;
-    int buf_start;
     int quant;
 };
 
-layout (set = 0, binding = 0, scalar) writeonly buffer FrameSize {
-    int frame_size;
-};
-layout (set = 0, binding = 1, scalar) buffer SliceScores {
+layout (set = 0, binding = 0, scalar) buffer SliceScores {
     SliceScore scores[];
 };
 
@@ -62,10 +55,6 @@ struct TrellisNode {
     int bits;
     int score;
 };
-
-shared int subgroup_sizes[num_subgroups];
-
-int slice_sizes[slices_per_row];
 
 TrellisNode nodes[(slices_per_row + 1) * TRELLIS_WIDTH];
 
@@ -117,7 +106,7 @@ int find_slice_quant(int slice_x)
     return pq;
 }
 
-int find_slice_row_quants()
+void find_slice_row_quants()
 {
     for (int i = min_quant; i < max_quant + 2; i++) {
         nodes[i].prev_node = -1;
@@ -130,67 +119,21 @@ int find_slice_row_quants()
         q = find_slice_quant(slice_x);
     }
 
-    int slice_hdr_size = 2 * num_planes;
-    int slice_row_size = slice_hdr_size * slices_per_row;
     int y = int(gl_LocalInvocationID.x);
     for (int x = slices_per_row - 1; x >= 0; x--) {
         int slice = x + y * slices_per_row;
-        int quant = nodes[q].quant;
-        int q_idx = min(quant, max_quant + 1);
-        ivec4 bits = scores[slice].bits[q_idx];
-        slice_sizes[x] = (bits.x + bits.y + bits.z + bits.w) / 8;
-        slice_row_size += slice_sizes[x];
-        scores[slice].quant = quant;
+        scores[slice].quant = nodes[q].quant;
         q = nodes[q].prev_node;
     }
-
-    return slice_row_size;
 }
 
-int force_slice_row_quants()
+void main()
 {
-    int slice_hdr_size = 2 * num_planes;
-    int slice_row_size = slice_hdr_size * slices_per_row;
-    int y = int(gl_LocalInvocationID.x);
-    for (int x = slices_per_row - 1; x >= 0; x--) {
-        int slice = x + y * slices_per_row;
-        ivec4 bits = scores[slice].bits[0];
-        slice_sizes[x] = (bits.x + bits.y + bits.z + bits.w) / 8;
-        slice_row_size += slice_sizes[x];
-        scores[slice].quant = force_quant;
+    if (force_quant == 0) {
+        find_slice_row_quants();
+    } else {
+        int y = int(gl_LocalInvocationID.x);
+        for (int x = 0; x < slices_per_row; x++)
+            scores[x + y * slices_per_row].quant = force_quant;
     }
-
-    return slice_row_size;
-}
-
-void main() [[maximally_reconverges]]
-{
-    int slice_row_size;
-    if (force_quant == 0)
-        slice_row_size = find_slice_row_quants();
-    else
-        slice_row_size = force_slice_row_quants();
-
-    int subgroup_sum = subgroupAdd(slice_row_size);
-    if (subgroupElect())
-        subgroup_sizes[gl_SubgroupID] = subgroup_sum;
-    barrier();
-
-    int buf_start = subgroupExclusiveAdd(slice_row_size);
-    [[unroll]] for (int i = 0; i < num_subgroups; ++i) {
-        if (i >= gl_SubgroupID)
-            break;
-        buf_start += subgroup_sizes[i];
-    }
-
-    int slice_hdr_size = 2 * num_planes;
-    int y = int(gl_LocalInvocationID.x);
-    [[unroll]] for (int x = 0; x < slices_per_row; ++x) {
-        int slice = x + y * slices_per_row;
-        scores[slice].buf_start = buf_start;
-        buf_start += slice_hdr_size + slice_sizes[x];
-    }
-
-    if (y == gl_WorkGroupSize.x - 1)
-        frame_size = buf_start;
 }

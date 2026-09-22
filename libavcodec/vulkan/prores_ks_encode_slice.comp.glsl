@@ -45,7 +45,6 @@ struct SliceScore {
     int total_bits[16];
     int total_score[16];
     int overquant;
-    int buf_start;
     int quant;
 };
 
