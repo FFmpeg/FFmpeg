@@ -4344,7 +4344,7 @@ avutil_suggest="amf clock_gettime ffnvcodec gcrypt libm zlib libdrm libmfx openc
 swresample_deps="avutil"
 swresample_suggest="libm libsoxr stdatomic"
 swscale_deps="avutil"
-swscale_suggest="libm stdatomic"
+swscale_suggest="libm stdatomic int128"
 shader_compression_suggest="zlib"
 
 avcodec_extralibs="pthreads_extralibs iconv_extralibs dxva2_extralibs liblcevc_dec_extralibs lcms2_extralibs"
@@ -6820,7 +6820,23 @@ fi
 check_builtin atomics_win32 intrin.h "long v = 0; _InterlockedOr(&v, 0)"
 check_builtin gmtime_r time.h "time_t *time; struct tm *tm; gmtime_r(time, tm)"
 check_builtin localtime_r time.h "time_t *time; struct tm *tm; localtime_r(time, tm)"
-check_builtin int128 "" "volatile __int128 i128var = 1; i128var /= 100;"
+check_int128(){
+    check_builtin int128 "" "volatile __int128 i128var = 1; i128var /= 100;" "$@" &&
+        int128_extralibs="$*"
+}
+
+# Clang targeting MSVC compiles __int128 but does not link the compiler-rt
+# builtins providing the 128-bit division helpers. Ask the driver for the
+# library name and link it explicitly.
+check_int128 ||
+    case "$cc_type" in
+        clang|msvc)
+            rtlib=$($cc $CFLAGS -print-libgcc-file-name --rtlib=compiler-rt 2>/dev/null)
+            case $rtlib in
+                *.lib) check_int128 -l$(basename "$rtlib" .lib) ;;
+            esac
+        ;;
+    esac
 
 check_builtin float16 "" "_Float16 f16var"
 if enabled float16; then
