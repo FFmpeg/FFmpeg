@@ -585,6 +585,10 @@ int ff_vk_exec_pool_init(FFVulkanContext *s, AVVulkanDeviceQueueFamily *qf,
             .queueFamilyIndex = qf->idx,
             .queueIndex       = e->qi,
         };
+        if (!vk->GetDeviceQueue2) {
+            av_log(s, AV_LOG_ERROR, "vkGetDeviceQueue2 is unavailable on this device\n");
+            return AVERROR_EXTERNAL;
+        }
         vk->GetDeviceQueue2(s->hwctx->act_dev, &qinfo, &e->queue);
     }
 
