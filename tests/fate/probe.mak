@@ -22,6 +22,9 @@ fate-probe-format-mp3-with-art: REF = mp3
 FATE_PROBE_FORMAT-$(CONFIG_MPEGTS_DEMUXER) += fate-probe-format-mpegts-png-prefix
 fate-probe-format-mpegts-png-prefix: REF = mpegts
 
+FATE_PROBE_FORMAT-$(CONFIG_MPEGTS_DEMUXER) += fate-probe-format-mpegts-png-prefix-unaligned
+fate-probe-format-mpegts-png-prefix-unaligned: REF = mpegts
+
 FATE_PROBE_FORMAT-$(call ALLYES, IMAGE_TIFF_PIPE_DEMUXER MPEGTS_DEMUXER) += fate-probe-format-tiff-not-mpegts
 fate-probe-format-tiff-not-mpegts: REF = tiff_pipe
 
