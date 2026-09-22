@@ -5447,11 +5447,11 @@ test -n "$cc_type" && enable $cc_type ||
 : ${host_ld_default:=$host_cc}
 
 case $cc_type,$cc in
-    gcc,*gcc*)           cxx_default="${cc%gcc*}g++${cc##*gcc}" ;;
-    clang,*clang*)       cxx_default="${cc%clang*}clang++${cc##*clang}" ;;
-    gcc,*cc*|clang,*cc*) cxx_default="${cc%cc*}c++${cc##*cc}" ;;
-    icc,*icc*)           cxx_default="${cc%icc*}icpc${cc##*icc}" ;;
-    *)                   cxx_default=$cc ;;
+    clang,*clang*)         cxx_default="${cc%clang*}clang++${cc##*clang}" ;;
+    gcc,*gcc*|clang,*gcc*) cxx_default="${cc%gcc*}g++${cc##*gcc}" ;;
+    gcc,*cc*|clang,*cc*)   cxx_default="${cc%cc*}c++${cc##*cc}" ;;
+    icc,*icc*)             cxx_default="${cc%icc*}icpc${cc##*icc}" ;;
+    *)                     cxx_default=$cc ;;
 esac
 set_default ar as cxx objcc dep_cc ld ln_s host_ld windres response_files
 
