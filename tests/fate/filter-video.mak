@@ -985,6 +985,30 @@ FATE_FILTER-$(call ALLYES, TESTSRC2_FILTER SPLIT_FILTER AVGBLUR_FILTER        \
 FATE_FILTER-$(call FILTERFRAMECRC, TESTSRC SCALE PREMULTIPLY, LAVFI_INDEV) += fate-filter-scale-premultiply
 fate-filter-scale-premultiply: CMD = framecrc -auto_conversion_filters -lavfi "testsrc,format=rgba,setparams=alpha_mode=premultiplied,format=rgba:alpha_modes=straight" -frames:v 10
 
+FATE_FILTER-$(call FILTERFRAMECRC, COLOR XFADE FORMAT) += fate-filter-xfade-slideleft
+fate-filter-xfade-slideleft: CMD = framecrc -filter_complex "color=c=red:s=8x8:r=8:d=4,format=yuv444p[a];color=c=0x0000ff:s=8x8:r=8:d=4,format=yuv444p[b];[a][b]xfade=transition=slideleft:offset=1:duration=2"
+
+FATE_FILTER-$(call FILTERFRAMECRC, COLOR XFADE FORMAT) += fate-filter-xfade-slideup
+fate-filter-xfade-slideup: CMD = framecrc -filter_complex "color=c=red:s=8x8:r=8:d=4,format=yuv444p[a];color=c=0x0000ff:s=8x8:r=8:d=4,format=yuv444p[b];[a][b]xfade=transition=slideup:offset=1:duration=2"
+
+FATE_FILTER-$(call FILTERFRAMECRC, COLOR XFADE FORMAT) += fate-filter-xfade-revealleft
+fate-filter-xfade-revealleft: CMD = framecrc -filter_complex "color=c=red:s=8x8:r=8:d=4,format=yuv444p[a];color=c=0x0000ff:s=8x8:r=8:d=4,format=yuv444p[b];[a][b]xfade=transition=revealleft:offset=1:duration=2"
+
+FATE_FILTER-$(call FILTERFRAMECRC, COLOR XFADE FORMAT) += fate-filter-xfade-revealup
+fate-filter-xfade-revealup: CMD = framecrc -filter_complex "color=c=red:s=8x8:r=8:d=4,format=yuv444p[a];color=c=0x0000ff:s=8x8:r=8:d=4,format=yuv444p[b];[a][b]xfade=transition=revealup:offset=1:duration=2"
+
+FATE_FILTER-$(call FILTERFRAMECRC, COLOR XFADE FORMAT) += fate-filter-xfade-squeezeh
+fate-filter-xfade-squeezeh: CMD = framecrc -filter_complex "color=c=red:s=8x8:r=8:d=4,format=yuv444p[a];color=c=0x0000ff:s=8x8:r=8:d=4,format=yuv444p[b];[a][b]xfade=transition=squeezeh:offset=1:duration=2"
+
+FATE_FILTER-$(call FILTERFRAMECRC, COLOR XFADE FORMAT) += fate-filter-xfade-squeezev
+fate-filter-xfade-squeezev: CMD = framecrc -filter_complex "color=c=red:s=8x8:r=8:d=4,format=yuv444p[a];color=c=0x0000ff:s=8x8:r=8:d=4,format=yuv444p[b];[a][b]xfade=transition=squeezev:offset=1:duration=2"
+
+FATE_FILTER-$(call FILTERFRAMECRC, COLOR XFADE FORMAT SCALE) += fate-filter-xfade-slideup16
+fate-filter-xfade-slideup16: CMD = framecrc -filter_complex "color=c=red:s=8x8:r=8:d=4,format=yuv444p16le,scale,format=yuv444p16[a];color=c=0x0000ff:s=8x8:r=8:d=4,format=yuv444p16le,scale,format=yuv444p16[b];[a][b]xfade=transition=slideup:offset=1:duration=2,scale" -pix_fmt yuv444p16le
+
+FATE_FILTER-$(call FILTERFRAMECRC, COLOR XFADE FORMAT) += fate-filter-xfade-duration0
+fate-filter-xfade-duration0: CMD = framecrc -filter_complex "color=c=red:s=8x8:r=8:d=4,format=yuv444p[a];color=c=0x0000ff:s=8x8:r=8:d=4,format=yuv444p[b];[a][b]xfade=transition=squeezeh:offset=1:duration=0"
+
 FATE_SAMPLES_FFPROBE += $(FATE_METADATA_FILTER-yes)
 FATE_SAMPLES_FFMPEG += $(FATE_FILTER_SAMPLES-yes)
 FATE_FFPROBE += $(FATE_FILTER_FFPROBE-yes)
