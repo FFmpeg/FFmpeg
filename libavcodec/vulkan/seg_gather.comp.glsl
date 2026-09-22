@@ -37,9 +37,11 @@
  *
  * One workgroup per segment. Inputs: the sparse slot buffer, the per-segment
  * sizes, and the slot stride.
+ *
+ * The last workgroup writes the packed size after the segment sizes.
  */
 
-layout (set = 0, binding = 0, scalar) readonly buffer sizes_buf {
+layout (set = 0, binding = 0, scalar) buffer sizes_buf {
     uint32_t seg_sizes[];
 };
 
@@ -141,4 +143,7 @@ void main(void)
 
     for (uint i = head + (nsafe << 4u) + b; i < n; i += wg)
         dst8[i].v = src8[i].v;
+
+    if (seg == gl_NumWorkGroups.x - 1u && b == 0u)
+        seg_sizes[gl_NumWorkGroups.x] = s_dst_off + n;
 }

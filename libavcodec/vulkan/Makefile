@@ -4,9 +4,10 @@ clean::
 OBJS-$(CONFIG_APV_VULKAN_HWACCEL) += vulkan/apv_decode.comp.spv.o \
                                      vulkan/apv_idct.comp.spv.o
 
+OBJS-$(CONFIG_VULKAN) += vulkan/seg_gather.comp.spv.o
+
 OBJS-$(CONFIG_APV_VULKAN_ENCODER) += vulkan/apv_encode_dct.comp.spv.o \
-                                     vulkan/apv_encode_tiles.comp.spv.o \
-                                     vulkan/seg_gather.comp.spv.o
+                                     vulkan/apv_encode_tiles.comp.spv.o
 
 OBJS-$(CONFIG_FFV1_VULKAN_ENCODER) += vulkan/ffv1_enc_setup.comp.spv.o \
                                       vulkan/ffv1_enc_reset.comp.spv.o \
@@ -21,8 +22,7 @@ OBJS-$(CONFIG_FFV1_VULKAN_ENCODER) += vulkan/ffv1_enc_setup.comp.spv.o \
                                       vulkan/ffv1_enc_rgb_float_golomb.comp.spv.o \
                                       vulkan/ffv1_enc_sort32.comp.spv.o \
                                       vulkan/ffv1_enc_bayer.comp.spv.o \
-                                      vulkan/ffv1_enc_bayer_golomb.comp.spv.o \
-                                      vulkan/seg_gather.comp.spv.o
+                                      vulkan/ffv1_enc_bayer_golomb.comp.spv.o
 
 OBJS-$(CONFIG_FFV1_VULKAN_HWACCEL) += vulkan/ffv1_dec_setup.comp.spv.o \
                                       vulkan/ffv1_dec_reset.comp.spv.o \

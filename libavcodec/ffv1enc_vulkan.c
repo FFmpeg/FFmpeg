@@ -31,6 +31,7 @@
 #include "ffv1.h"
 #include "ffv1enc.h"
 #include "ffv1_vulkan.h"
+#include "vulkan_video.h"
 
 /* Parallel Golomb alignment */
 #define LG_ALIGN_W 32
@@ -92,9 +93,6 @@ typedef struct VulkanEncodeFFv1Context {
     /* Output data buffer */
     AVRefStructPool *out_data_pool;
 
-    /* Gathered (contiguous) device-local buffer pool */
-    AVRefStructPool *gathered_data_pool;
-
     /* Host-visible readback buffer pool */
     AVRefStructPool *compacted_data_pool;
 
@@ -112,12 +110,6 @@ typedef struct VulkanEncodeFFv1Context {
     int ppi;
     int chunks;
 } VulkanEncodeFFv1Context;
-
-typedef struct SegGatherPushData {
-    VkDeviceAddress sparse;
-    VkDeviceAddress compacted;
-    uint32_t        slot_size;
-} SegGatherPushData;
 
 extern const char *ff_source_common_comp;
 extern const char *ff_source_rangecoder_comp;
@@ -166,9 +158,6 @@ extern const unsigned int ff_ffv1_enc_bayer_comp_spv_len;
 
 extern const unsigned char ff_ffv1_enc_bayer_golomb_comp_spv_data[];
 extern const unsigned int ff_ffv1_enc_bayer_golomb_comp_spv_len;
-
-extern const unsigned char ff_seg_gather_comp_spv_data[];
-extern const unsigned int ff_seg_gather_comp_spv_len;
 
 /* Size output slots with the v4 worst case; v3's ~(2*bits+5) bytes/sample runs
  * to gigabytes on large frames. The bitstream version is unaffected. */
@@ -303,7 +292,6 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
     /* Output data */
     size_t maxsize;
     FFVkBuffer *out_data_buf;
-    FFVkBuffer *gathered_buf = NULL;
     FFVkBuffer *compacted_buf;
 
     int has_inter = avctx->gop_size > 1;
@@ -388,19 +376,10 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
                                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
     out_data_buf = fd->out_data_ref;
 
-    /* Device-local gather destination */
-    RET(ff_vk_get_pooled_buffer(&fv->s, &fv->gathered_data_pool,
-                                &gathered_buf,
-                                VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
-                                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                                VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-                                NULL, maxsize,
-                                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
-
     /* Contiguous output, read back by the CPU. */
     RET(ff_vk_get_pooled_buffer(&fv->s, &fv->compacted_data_pool,
                                 &fd->compacted_data_ref,
-                                VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                                 NULL, maxsize,
                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                 fv->s.host_cached_flag));
@@ -673,7 +652,7 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
     ff_vk_shader_update_desc_buffer(&fv->s, exec,
                                     &fv->enc, 1, 1, 0,
                                     &fv->results_buf,
-                                    fd->idx*f->max_slice_count*sizeof(uint32_t),
+                                    fd->idx*(f->max_slice_count + 1)*sizeof(uint32_t),
                                     f->slice_count*sizeof(uint32_t),
                                     VK_FORMAT_UNDEFINED);
     ff_vk_shader_update_desc_buffer(&fv->s, exec, &fv->enc,
@@ -706,60 +685,16 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
                                    0, sizeof(FFv1ShaderParams), &pd);
     vk->CmdDispatch(exec->buf, fv->ctx.num_h_slices, fv->ctx.num_v_slices, 1);
 
-    /* Gather the per-slice slots into one contiguous buffer, in the same
+    /* Gather the per-slice slots into the packet buffer, in the same
      * submission. */
-    FFVkBuffer *results_buf = &fv->results_buf;
-    ff_vk_buf_barrier(buf_bar[nb_buf_bar++], out_data_buf,
-                      COMPUTE_SHADER_BIT, SHADER_WRITE_BIT, NONE_KHR,
-                      COMPUTE_SHADER_BIT, SHADER_READ_BIT, NONE_KHR,
-                      0, VK_WHOLE_SIZE);
-    ff_vk_buf_barrier(buf_bar[nb_buf_bar++], results_buf,
-                      COMPUTE_SHADER_BIT, SHADER_WRITE_BIT, NONE_KHR,
-                      COMPUTE_SHADER_BIT, SHADER_READ_BIT, NONE_KHR,
-                      0, VK_WHOLE_SIZE);
-    vk->CmdPipelineBarrier2(exec->buf, &(VkDependencyInfo) {
-        .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-        .pBufferMemoryBarriers = buf_bar,
-        .bufferMemoryBarrierCount = nb_buf_bar,
-    });
-    nb_buf_bar = 0;
-
-    SegGatherPushData gather_pd = {
-        .sparse    = out_data_buf->address,
-        .compacted = gathered_buf->address,
-        .slot_size = (uint32_t)((out_data_buf->size / f->slice_count) & ~(size_t)15),
-    };
-    ff_vk_shader_update_desc_buffer(&fv->s, exec, &fv->gather, 0, 0, 0,
-                                    &fv->results_buf,
-                                    fd->idx*f->max_slice_count*sizeof(uint32_t),
-                                    f->slice_count*sizeof(uint32_t),
-                                    VK_FORMAT_UNDEFINED);
-    ff_vk_exec_bind_shader(&fv->s, exec, &fv->gather);
-    ff_vk_shader_update_push_const(&fv->s, exec, &fv->gather,
-                                   VK_SHADER_STAGE_COMPUTE_BIT,
-                                   0, sizeof(gather_pd), &gather_pd);
-    vk->CmdDispatch(exec->buf, f->slice_count, 1, 1);
-
-    /* Read the gathered bitstream back with the copy engine. The size is
-     * only known once the encode is done, so the whole buffer is copied;
-     * with the version-4 slot sizing this is close to the payload size. */
-    ff_vk_buf_barrier(buf_bar[nb_buf_bar++], gathered_buf,
-                      COMPUTE_SHADER_BIT, SHADER_WRITE_BIT, NONE_KHR,
-                      TRANSFER_BIT, TRANSFER_READ_BIT, NONE_KHR,
-                      0, VK_WHOLE_SIZE);
-    vk->CmdPipelineBarrier2(exec->buf, &(VkDependencyInfo) {
-        .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-        .pBufferMemoryBarriers = buf_bar,
-        .bufferMemoryBarrierCount = nb_buf_bar,
-    });
-    nb_buf_bar = 0;
-
-    vk->CmdCopyBuffer(exec->buf, gathered_buf->buf, compacted_buf->buf,
-                      1, &(VkBufferCopy) { .size = maxsize });
+    RET(ff_vk_seg_gather(&fv->s, exec, &fv->gather,
+                         &fv->results_buf, fd->idx*(f->max_slice_count + 1)*sizeof(uint32_t),
+                         f->slice_count,
+                         out_data_buf, (out_data_buf->size / f->slice_count) & ~(size_t)15,
+                         compacted_buf, 0));
 
     /* Submit */
     ff_vk_exec_move_dep_refstruct(&fv->s, exec, &slice_data_buf);
-    ff_vk_exec_move_dep_refstruct(&fv->s, exec, &gathered_buf);
     if (remap_data_buf)
         ff_vk_exec_move_dep_refstruct(&fv->s, exec, &remap_data_buf);
     err = ff_vk_exec_submit(&fv->s, exec);
@@ -778,7 +713,6 @@ fail:
     av_frame_free(&tmp);
     av_refstruct_unref(&slice_data_buf);
     av_refstruct_unref(&remap_data_buf);
-    av_refstruct_unref(&gathered_buf);
 
     return err;
 }
@@ -802,27 +736,20 @@ static int get_packet(AVCodecContext *avctx, FFVkExecContext *exec,
     /* Make sure the encode + gather submission is done */
     ff_vk_exec_wait(&fv->s, exec);
 
-    /* Invalidate the per-slice sizes if needed */
-    uint32_t rb_off = fd->idx*f->max_slice_count*sizeof(uint32_t);
+    /* Invalidate the packed size if needed */
+    size_t total_off = (fd->idx*(f->max_slice_count + 1) + f->slice_count)*sizeof(uint32_t);
     if (!(fv->results_buf.flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
         VkMappedMemoryRange invalidate_data = {
             .sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
             .memory = fv->results_buf.mem,
-            .offset = rb_off,
-            .size = f->slice_count*sizeof(uint32_t),
+            .offset = total_off,
+            .size = sizeof(uint32_t),
         };
         vk->InvalidateMappedMemoryRanges(fv->s.hwctx->act_dev,
                                          1, &invalidate_data);
     }
 
-    /* The gather packed the slices tight and in order; sum their lengths. */
-    pkt->size = 0;
-    uint8_t *rb = fv->results_buf.mapped_mem + rb_off;
-    for (int i = 0; i < f->slice_count; i++) {
-        uint32_t sl_len = AV_RN32(rb + i*4);
-        av_log(avctx, AV_LOG_DEBUG, "Slice %i size = %u\n", i, sl_len);
-        pkt->size += sl_len;
-    }
+    pkt->size = AV_RN32(fv->results_buf.mapped_mem + total_off);
     av_log(avctx, AV_LOG_VERBOSE, "Encoded data: %iMiB\n", pkt->size / (1024*1024));
 
     /* Invalidate the gathered bitstream if needed */
@@ -1288,36 +1215,6 @@ fail:
     return err;
 }
 
-static int init_gather_shader(AVCodecContext *avctx)
-{
-    int err;
-    VulkanEncodeFFv1Context *fv = avctx->priv_data;
-    FFVulkanShader *shd = &fv->gather;
-
-    ff_vk_shader_load(shd, VK_SHADER_STAGE_COMPUTE_BIT, NULL,
-                      (uint32_t []) { 256, 1, 1 }, 0);
-
-    ff_vk_shader_add_push_const(shd, 0, sizeof(SegGatherPushData),
-                                VK_SHADER_STAGE_COMPUTE_BIT);
-
-    const FFVulkanDescriptorSetBinding desc_set[] = {
-        { /* sizes_buf */
-            .type   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
-        },
-    };
-    ff_vk_shader_add_descriptor_set(&fv->s, shd, desc_set, 1, 0);
-
-    RET(ff_vk_shader_link(&fv->s, shd,
-                          ff_seg_gather_comp_spv_data,
-                          ff_seg_gather_comp_spv_len, "main"));
-
-    RET(ff_vk_shader_register_exec(&fv->s, &fv->exec_pool, shd));
-
-fail:
-    return err;
-}
-
 static av_cold int vulkan_encode_ffv1_init(AVCodecContext *avctx)
 {
     int err;
@@ -1521,7 +1418,7 @@ static av_cold int vulkan_encode_ffv1_init(AVCodecContext *avctx)
         return err;
 
     /* Gather shader */
-    err = init_gather_shader(avctx);
+    err = ff_vk_seg_gather_init(&fv->s, &fv->exec_pool, &fv->gather);
     if (err < 0)
         return err;
 
@@ -1572,7 +1469,7 @@ static av_cold int vulkan_encode_ffv1_init(AVCodecContext *avctx)
 
     /* Buffers */
     RET(ff_vk_create_buf(&fv->s, &fv->results_buf,
-                         fv->async_depth*f->max_slice_count*sizeof(uint32_t),
+                         fv->async_depth*(f->max_slice_count + 1)*sizeof(uint32_t),
                          NULL, NULL,
                          VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
@@ -1610,7 +1507,6 @@ static av_cold int vulkan_encode_ffv1_close(AVCodecContext *avctx)
     av_buffer_unref(&fv->intermediate_frames_ref);
 
     av_refstruct_pool_uninit(&fv->out_data_pool);
-    av_refstruct_pool_uninit(&fv->gathered_data_pool);
     av_refstruct_pool_uninit(&fv->compacted_data_pool);
 
     av_refstruct_unref(&fv->keyframe_slice_data_ref);

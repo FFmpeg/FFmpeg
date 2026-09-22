@@ -30,6 +30,7 @@
 #include "codec_internal.h"
 #include "encode.h"
 #include "hwconfig.h"
+#include "vulkan_video.h"
 #include "internal.h"
 
 #include "apv.h"
@@ -41,9 +42,6 @@ extern const unsigned int ff_apv_encode_dct_comp_spv_len;
 
 extern const unsigned char ff_apv_encode_tiles_comp_spv_data[];
 extern const unsigned int ff_apv_encode_tiles_comp_spv_len;
-
-extern const unsigned char ff_seg_gather_comp_spv_data[];
-extern const unsigned int ff_seg_gather_comp_spv_len;
 
 #define APV_DEFAULT_QMAT 16
 #define APV_MAX_NUM_COMP 4
@@ -70,12 +68,6 @@ typedef struct EntropyPushData {
     int      tile_mb_dim[2];   /* full-tile size in MBs */
     uint32_t blocks_per_mb;    /* blocks per MB of this dispatch's components */
 } EntropyPushData;
-
-typedef struct CompactPushData {
-    VkDeviceAddress sparse;
-    VkDeviceAddress compacted;
-    uint32_t        slot_size;
-} CompactPushData;
 
 typedef struct VulkanEncodeAPVFrameData {
     FFVkBuffer *coeffs_ref;
@@ -104,7 +96,6 @@ typedef struct VulkanEncodeAPVContext {
     /* Per-frame buffer pools */
     AVRefStructPool *coeffs_pool;
     AVRefStructPool *bytestream_pool;
-    AVRefStructPool *gathered_pool;
     AVRefStructPool *compacted_pool;
     AVRefStructPool *sizes_pool;
 
@@ -316,37 +307,6 @@ fail:
     return err;
 }
 
-static int init_compact_shader(AVCodecContext *avctx)
-{
-    int err;
-    VulkanEncodeAPVContext *ev = avctx->priv_data;
-    FFVulkanShader *shd = &ev->shd_compact;
-
-    ff_vk_shader_load(shd, VK_SHADER_STAGE_COMPUTE_BIT, NULL,
-                      (uint32_t []) { 256, 1, 1 }, 0);
-
-    ff_vk_shader_add_push_const(shd, 0, sizeof(CompactPushData),
-                                VK_SHADER_STAGE_COMPUTE_BIT);
-
-    const FFVulkanDescriptorSetBinding desc_set[] = {
-        {
-            .name   = "sizes_buf",
-            .type   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
-        },
-    };
-    ff_vk_shader_add_descriptor_set(&ev->s, shd, desc_set, 1, 0);
-
-    RET(ff_vk_shader_link(&ev->s, shd,
-                          ff_seg_gather_comp_spv_data,
-                          ff_seg_gather_comp_spv_len, "main"));
-
-    RET(ff_vk_shader_register_exec(&ev->s, &ev->exec_pool, shd));
-
-fail:
-    return err;
-}
-
 /*
  * The DCT/quantize shader's push constants are entirely encoder-constant:
  * frame geometry, the per-component quant scale qf, and the quantisation
@@ -410,7 +370,6 @@ static int submit_frame(AVCodecContext *avctx, FFVkExecContext *exec,
     FFVkBuffer *coeffs_buf;
     FFVkBuffer *bytestream_buf;
 
-    FFVkBuffer *gathered_buf = NULL;
     FFVkBuffer *compacted_buf;
     FFVkBuffer *sizes_buf;
 
@@ -437,22 +396,10 @@ static int submit_frame(AVCodecContext *avctx, FFVkExecContext *exec,
                                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
     bytestream_buf = fd->bytestream_ref;
 
-    /* The compaction shader gathers the sparse slots into here, contiguous.
-     * Device-local: shader stores over the bus are unreliably slow on some
-     * drivers, so the transfer to the host is left to the copy engine. */
-    RET(ff_vk_get_pooled_buffer(&ev->s, &ev->gathered_pool,
-                                &gathered_buf,
-                                VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
-                                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                                VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-                                NULL, ev->bytestream_size,
-                                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
-
-    /* Copy-engine destination the CPU assembles the packet from.
-     * Host-visible + host-cached so the readback is a fast cached copy. */
+    /* The compaction shader gathers the sparse slots into here, and the CPU
+     * assembles the packet from it. */
     RET(ff_vk_get_pooled_buffer(&ev->s, &ev->compacted_pool,
                                 &fd->compacted_ref,
-                                VK_BUFFER_USAGE_TRANSFER_DST_BIT |
                                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                                 VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                                 NULL, ev->bytestream_size,
@@ -571,61 +518,14 @@ static int submit_frame(AVCodecContext *avctx, FFVkExecContext *exec,
         vk->CmdDispatch(exec->buf, ev->tile_cols, ev->tile_rows, z_comps);
     }
 
-    /* Compaction pass: gather the sparse per-tile-component slots into one
-     * contiguous device-local buffer, then read it back with the copy
-     * engine. */
-    if (!ev->headers_only) {
-        ff_vk_buf_barrier(buf_bar[nb_buf_bar++], bytestream_buf,
-                          COMPUTE_SHADER_BIT, SHADER_WRITE_BIT, NONE,
-                          COMPUTE_SHADER_BIT, SHADER_READ_BIT, NONE,
-                          0, bytestream_buf->size);
-        ff_vk_buf_barrier(buf_bar[nb_buf_bar++], sizes_buf,
-                          COMPUTE_SHADER_BIT, SHADER_WRITE_BIT, NONE,
-                          COMPUTE_SHADER_BIT, SHADER_READ_BIT, NONE,
-                          0, sizes_buf->size);
-        vk->CmdPipelineBarrier2(exec->buf, &(VkDependencyInfo) {
-            .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-            .pBufferMemoryBarriers = buf_bar,
-            .bufferMemoryBarrierCount = nb_buf_bar,
-        });
-        nb_buf_bar = 0;
+    /* Compaction pass: gather the sparse per-tile-component slots into the
+     * output buffer. */
+    if (!ev->headers_only)
+        RET(ff_vk_seg_gather(&ev->s, exec, &ev->shd_compact,
+                             sizes_buf, 0, ev->tile_count * ev->num_comp,
+                             bytestream_buf, ev->slot_size,
+                             compacted_buf, 0));
 
-        CompactPushData pd = {
-            .sparse    = bytestream_buf->address,
-            .compacted = gathered_buf->address,
-            .slot_size = (uint32_t)ev->slot_size,
-        };
-
-        ff_vk_shader_update_desc_buffer(&ev->s, exec, &ev->shd_compact,
-                                        0, 0, 0,
-                                        sizes_buf, 0, sizes_buf->size,
-                                        VK_FORMAT_UNDEFINED);
-        ff_vk_exec_bind_shader(&ev->s, exec, &ev->shd_compact);
-        ff_vk_shader_update_push_const(&ev->s, exec, &ev->shd_compact,
-                                       VK_SHADER_STAGE_COMPUTE_BIT,
-                                       0, sizeof(pd), &pd);
-
-        vk->CmdDispatch(exec->buf, ev->tile_count * ev->num_comp, 1, 1);
-
-        /* The gathered size is only known once the encode is done, so the
-         * whole buffer is copied; the slots are sized to the entropy coder's
-         * worst case, which keeps this close to the payload size. */
-        ff_vk_buf_barrier(buf_bar[nb_buf_bar++], gathered_buf,
-                          COMPUTE_SHADER_BIT, SHADER_WRITE_BIT, NONE,
-                          TRANSFER_BIT, TRANSFER_READ_BIT, NONE,
-                          0, gathered_buf->size);
-        vk->CmdPipelineBarrier2(exec->buf, &(VkDependencyInfo) {
-            .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-            .pBufferMemoryBarriers = buf_bar,
-            .bufferMemoryBarrierCount = nb_buf_bar,
-        });
-        nb_buf_bar = 0;
-
-        vk->CmdCopyBuffer(exec->buf, gathered_buf->buf, compacted_buf->buf,
-                          1, &(VkBufferCopy) { .size = ev->bytestream_size });
-    }
-
-    ff_vk_exec_move_dep_refstruct(&ev->s, exec, &gathered_buf);
     err = ff_vk_exec_submit(&ev->s, exec);
     if (err < 0)
         return err;
@@ -633,7 +533,6 @@ static int submit_frame(AVCodecContext *avctx, FFVkExecContext *exec,
     return 0;
 
 fail:
-    av_refstruct_unref(&gathered_buf);
     ff_vk_exec_discard(&ev->s, exec);
     return err;
 }
@@ -869,7 +768,6 @@ static av_cold int vulkan_encode_apv_close(AVCodecContext *avctx)
 
     av_refstruct_pool_uninit(&ev->coeffs_pool);
     av_refstruct_pool_uninit(&ev->bytestream_pool);
-    av_refstruct_pool_uninit(&ev->gathered_pool);
     av_refstruct_pool_uninit(&ev->compacted_pool);
     av_refstruct_pool_uninit(&ev->sizes_pool);
 
@@ -1002,7 +900,7 @@ static av_cold int vulkan_encode_apv_init(AVCodecContext *avctx)
     ev->slot_size = blocks_per_tile * APV_BLK_COEFFS * 8;
     ev->slot_size = FFALIGN(ev->slot_size, 64);
     ev->bytestream_size = (size_t)ev->tile_count * ev->num_comp * ev->slot_size;
-    ev->sizes_size = (size_t)ev->tile_count * ev->num_comp * sizeof(uint32_t);
+    ev->sizes_size = ((size_t)ev->tile_count * ev->num_comp + 1) * sizeof(uint32_t);
 
     av_log(avctx, AV_LOG_VERBOSE,
            "APV Vulkan encoder: %dx%d, %d tiles (%dx%d MBs each), "
@@ -1056,7 +954,7 @@ static av_cold int vulkan_encode_apv_init(AVCodecContext *avctx)
                               &ev->shd_entropy[1]);
     if (err < 0)
         return err;
-    err = init_compact_shader(avctx);
+    err = ff_vk_seg_gather_init(&ev->s, &ev->exec_pool, &ev->shd_compact);
     if (err < 0)
         return err;
 

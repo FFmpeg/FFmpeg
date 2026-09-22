@@ -543,3 +543,89 @@ fail:
     ff_vk_video_common_uninit(s, common);
     return err;
 }
+
+typedef struct SegGatherPushData {
+    VkDeviceAddress sparse;
+    VkDeviceAddress compacted;
+    uint32_t        slot_size;
+} SegGatherPushData;
+
+extern const unsigned char ff_seg_gather_comp_spv_data[];
+extern const unsigned int ff_seg_gather_comp_spv_len;
+
+int ff_vk_seg_gather_init(FFVulkanContext *s, FFVkExecPool *pool,
+                          FFVulkanShader *shd)
+{
+    int err;
+    FFVulkanDescriptorSetBinding desc_set[] = {
+        {
+            .name   = "sizes_buf",
+            .type   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .stages = VK_SHADER_STAGE_COMPUTE_BIT,
+        },
+    };
+
+    ff_vk_shader_load(shd, VK_SHADER_STAGE_COMPUTE_BIT, NULL,
+                      (uint32_t []) { 256, 1, 1 }, 0);
+    ff_vk_shader_add_push_const(shd, 0, sizeof(SegGatherPushData),
+                                VK_SHADER_STAGE_COMPUTE_BIT);
+    ff_vk_shader_add_descriptor_set(s, shd, desc_set, 1, 0);
+
+    RET(ff_vk_shader_link(s, shd, ff_seg_gather_comp_spv_data,
+                          ff_seg_gather_comp_spv_len, "main"));
+    RET(ff_vk_shader_register_exec(s, pool, shd));
+
+fail:
+    return err;
+}
+
+int ff_vk_seg_gather(FFVulkanContext *s, FFVkExecContext *exec, FFVulkanShader *shd,
+                     FFVkBuffer *sizes, size_t sizes_offset, uint32_t nb_segs,
+                     FFVkBuffer *sparse, uint32_t slot_size,
+                     FFVkBuffer *compacted, size_t compacted_offset)
+{
+    int err;
+    FFVulkanFunctions *vk = &s->vkfn;
+    SegGatherPushData pd = {
+        .sparse    = sparse->address,
+        .compacted = compacted->address + compacted_offset,
+        .slot_size = slot_size,
+    };
+
+    vk->CmdPipelineBarrier2(exec->buf, &(VkDependencyInfo) {
+        .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+        .pMemoryBarriers = &(VkMemoryBarrier2) {
+            .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
+            .srcStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+            .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT,
+            .dstStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+            .dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT |
+                             VK_ACCESS_2_SHADER_WRITE_BIT,
+        },
+        .memoryBarrierCount = 1,
+    });
+
+    RET(ff_vk_shader_update_desc_buffer(s, exec, shd, 0, 0, 0,
+                                        sizes, sizes_offset, (nb_segs + 1)*sizeof(uint32_t),
+                                        VK_FORMAT_UNDEFINED));
+    ff_vk_exec_bind_shader(s, exec, shd);
+    ff_vk_shader_update_push_const(s, exec, shd, VK_SHADER_STAGE_COMPUTE_BIT,
+                                   0, sizeof(pd), &pd);
+    vk->CmdDispatch(exec->buf, nb_segs, 1, 1);
+
+    /* For the host to read the output and the packed size */
+    vk->CmdPipelineBarrier2(exec->buf, &(VkDependencyInfo) {
+        .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+        .pMemoryBarriers = &(VkMemoryBarrier2) {
+            .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
+            .srcStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+            .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT,
+            .dstStageMask = VK_PIPELINE_STAGE_2_HOST_BIT,
+            .dstAccessMask = VK_ACCESS_2_HOST_READ_BIT,
+        },
+        .memoryBarrierCount = 1,
+    });
+
+fail:
+    return err;
+}

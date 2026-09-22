@@ -42,6 +42,7 @@
 #include "proresdata.h"
 #include "proresenc_kostya_common.h"
 #include "hwconfig.h"
+#include "vulkan_video.h"
 
 #define DCTSIZE 8
 
@@ -61,12 +62,6 @@ typedef struct EncodeSliceInfo {
     VkDeviceAddress slice_sizes;
     uint32_t        slot_size;
 } EncodeSliceInfo;
-
-typedef struct SegGatherPushData {
-    VkDeviceAddress sparse;
-    VkDeviceAddress compacted;
-    uint32_t        slot_size;
-} SegGatherPushData;
 
 typedef struct SliceData {
     uint32_t mbs_per_slice;
@@ -142,9 +137,6 @@ typedef struct ProresVulkanContext {
 
 extern const unsigned char ff_prores_ks_alpha_data_comp_spv_data[];
 extern const unsigned int ff_prores_ks_alpha_data_comp_spv_len;
-
-extern const unsigned char ff_seg_gather_comp_spv_data[];
-extern const unsigned int ff_seg_gather_comp_spv_len;
 
 extern const unsigned char ff_prores_ks_slice_data_comp_spv_data[];
 extern const unsigned int ff_prores_ks_slice_data_comp_spv_len;
@@ -390,37 +382,6 @@ fail:
     return err;
 }
 
-static int init_gather_pipeline(ProresVulkanContext *pv, FFVulkanShader *shd)
-{
-    int err = 0;
-    FFVulkanContext *vkctx = &pv->vkctx;
-    FFVulkanDescriptorSetBinding *desc;
-
-    ff_vk_shader_load(shd, VK_SHADER_STAGE_COMPUTE_BIT, NULL,
-                      (uint32_t []) { 256, 1, 1 }, 0);
-
-    desc = (FFVulkanDescriptorSetBinding []) {
-        {
-            .name        = "sizes_buf",
-            .type        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-            .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
-        },
-    };
-    ff_vk_shader_add_descriptor_set(vkctx, shd, desc, 1, 0);
-
-    ff_vk_shader_add_push_const(shd, 0, sizeof(SegGatherPushData),
-                                VK_SHADER_STAGE_COMPUTE_BIT);
-
-    RET(ff_vk_shader_link(vkctx, shd,
-                          ff_seg_gather_comp_spv_data,
-                          ff_seg_gather_comp_spv_len, "main"));
-
-    RET(ff_vk_shader_register_exec(vkctx, &pv->e, shd));
-
-fail:
-    return err;
-}
-
 static int vulkan_encode_prores_submit_frame(AVCodecContext *avctx, FFVkExecContext *exec,
                                              AVFrame *frame, int picture_idx)
 {
@@ -454,7 +415,7 @@ static int vulkan_encode_prores_submit_frame(AVCodecContext *avctx, FFVkExecCont
     RET(ff_vk_get_pooled_buffer(vkctx, &pv->slice_sizes_buf_pool, &pd->slice_sizes_ref[picture_idx],
                                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                                 VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, NULL,
-                                ctx->slices_per_picture * sizeof(uint32_t),
+                                (ctx->slices_per_picture + 1) * sizeof(uint32_t),
                                 VK_MEMORY_PROPERTY_HOST_CACHED_BIT |
                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                 VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
@@ -655,52 +616,11 @@ static int vulkan_encode_prores_submit_frame(AVCodecContext *avctx, FFVkExecCont
 
     /* Gather the sparse slots into the contiguous bitstream, in the same
      * submission. */
-    VkBufferMemoryBarrier2 gather_bar[2] = {
-        {
-            .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2,
-            .srcStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-            .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT,
-            .dstStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-            .dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT,
-            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .buffer = pkt_vk_buf->buf,
-            .offset = 0,
-            .size = pkt_vk_buf->size,
-        }, {
-            .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2,
-            .srcStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-            .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT,
-            .dstStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-            .dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT,
-            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .buffer = pd->slice_sizes_ref[picture_idx]->buf,
-            .offset = 0,
-            .size = pd->slice_sizes_ref[picture_idx]->size,
-        },
-    };
-    vk->CmdPipelineBarrier2(exec->buf, &(VkDependencyInfo) {
-        .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-        .pBufferMemoryBarriers = gather_bar,
-        .bufferMemoryBarrierCount = 2,
-    });
-
-    SegGatherPushData gather_pd = {
-        .sparse    = pkt_vk_buf->address,
-        .compacted = pd->gathered_ref[picture_idx]->address +
-                     (picture_idx == 0 ? pv->payload_off : 0),
-        .slot_size = pv->slice_slot_size,
-    };
-    ff_vk_shader_update_desc_buffer(vkctx, exec, &pv->gather_shd, 0, 0, 0,
-                                    pd->slice_sizes_ref[picture_idx],
-                                    0, ctx->slices_per_picture * sizeof(uint32_t),
-                                    VK_FORMAT_UNDEFINED);
-    ff_vk_exec_bind_shader(vkctx, exec, &pv->gather_shd);
-    ff_vk_shader_update_push_const(vkctx, exec, &pv->gather_shd,
-                                   VK_SHADER_STAGE_COMPUTE_BIT,
-                                   0, sizeof(gather_pd), &gather_pd);
-    vk->CmdDispatch(exec->buf, ctx->slices_per_picture, 1, 1);
+    RET(ff_vk_seg_gather(vkctx, exec, &pv->gather_shd,
+                         pd->slice_sizes_ref[picture_idx], 0, ctx->slices_per_picture,
+                         pkt_vk_buf, pv->slice_slot_size,
+                         pd->gathered_ref[picture_idx],
+                         picture_idx == 0 ? pv->payload_off : 0));
 
 fail:
     return err;
@@ -1033,7 +953,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     init_estimate_slice_pipeline(pv, &pv->estimate_slice_shd);
     init_trellis_node_pipeline(pv, &pv->trellis_node_shd);
     init_encode_slice_pipeline(pv, &pv->encode_slice_shd);
-    init_gather_pipeline(pv, &pv->gather_shd);
+    RET(ff_vk_seg_gather_init(vkctx, &pv->e, &pv->gather_shd));
 
     /* Size slots for the entropy coder's worst case; bits_per_mb is only a rate-control average */
     {
