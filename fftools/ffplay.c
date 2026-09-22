@@ -1373,14 +1373,16 @@ static void stream_close(VideoState *is)
     if (is->subtitle_stream >= 0)
         stream_component_close(is, is->subtitle_stream);
 
-    FormatContext *ici = is->ic->opaque;
-    for (int i = 0; i < ici->nb_streams; i++)
-        av_freep(&ici->streams[i]);
-    av_freep(&ici->streams);
-    for (int i = 0; i < ici->nb_stream_groups; i++)
-        av_freep(&ici->stream_groups[i]);
-    av_freep(&ici->stream_groups);
-    av_freep(&is->ic->opaque);
+    if (is->ic) {
+        FormatContext *ici = is->ic->opaque;
+        for (int i = 0; i < ici->nb_streams; i++)
+            av_freep(&ici->streams[i]);
+        av_freep(&ici->streams);
+        for (int i = 0; i < ici->nb_stream_groups; i++)
+            av_freep(&ici->stream_groups[i]);
+        av_freep(&ici->stream_groups);
+        av_freep(&is->ic->opaque);
+    }
 
     avformat_close_input(&is->ic);
 
@@ -3122,7 +3124,6 @@ static int read_thread(void *arg)
         ret = AVERROR(ENOMEM);
         goto fail;
     }
-    ici = ic->opaque;
     ic->interrupt_callback.callback = decode_interrupt_cb;
     ic->interrupt_callback.opaque = is;
     if (!av_dict_get(format_opts, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE)) {
@@ -3208,7 +3209,7 @@ static int read_thread(void *arg)
         av_dump_format(ic, 0, is->filename, 0);
     }
 
-
+    ici = ic->opaque;
     ici->streams = av_calloc(ic->nb_streams, sizeof(*ici->streams));
     if (!ici->streams) {
         av_log(NULL, AV_LOG_FATAL, "Could not allocate internal streams context.\n");
@@ -3497,8 +3498,10 @@ static int read_thread(void *arg)
 
     ret = 0;
  fail:
-    if (ic && !is->ic)
+    if (ic && !is->ic) {
+        av_freep(&ic->opaque);
         avformat_close_input(&ic);
+    }
 
     av_packet_free(&pkt);
     if (ret != 0) {
