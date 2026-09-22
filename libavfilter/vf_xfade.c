@@ -2099,8 +2099,9 @@ static int config_output(AVFilterLink *outlink)
 
     s->start_pts = s->inputs_offset_pts = AV_NOPTS_VALUE;
 
-    if (s->duration)
-        s->duration_pts = av_rescale_q(s->duration, AV_TIME_BASE_Q, outlink->time_base);
+    s->duration_pts = av_rescale_q(s->duration, AV_TIME_BASE_Q, outlink->time_base);
+    if (!s->duration_pts)
+        s->duration_pts = 1;
 
     switch (s->transition) {
     case CUSTOM:     s->transitionf = s->depth <= 8 ? custom8_transition     : custom16_transition;     break;
