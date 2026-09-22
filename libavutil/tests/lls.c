@@ -24,6 +24,13 @@
 #include "libavutil/lls.h"
 #include "libavutil/mem_internal.h"
 
+/* Values below the printed precision are rounding noise whose sign varies
+ * between platforms, so print them as zero. */
+static double clean(double v)
+{
+    return fabs(v) < 1e-9 ? 0.0 : v;
+}
+
 int main(void)
 {
     LLSModel m;
@@ -46,9 +53,10 @@ int main(void)
         for (order = 0; order < 3; order++) {
             eval = m.evaluate_lls(&m, var + 1, order);
             printf("real:%9f order:%d pred:%9f var:%f coeffs:%f %9f %9f\n",
-                   var[0], order, eval, sqrt(m.variance[order] / (i + 1)),
-                   m.coeff[order][0], m.coeff[order][1],
-                   m.coeff[order][2]);
+                   var[0], order, eval,
+                   sqrt(FFMAX(m.variance[order], 0) / (i + 1)),
+                   clean(m.coeff[order][0]), clean(m.coeff[order][1]),
+                   clean(m.coeff[order][2]));
         }
     }
     return 0;
