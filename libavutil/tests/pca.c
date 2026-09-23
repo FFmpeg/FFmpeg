@@ -97,5 +97,6 @@ int main(void){
         printf("  %9.1f %f\n", eigenvalue[i], eigenvalue[i]/eigenvalue[0]);
     }
 
+    ff_pca_free(pca);
     return 0;
 }
