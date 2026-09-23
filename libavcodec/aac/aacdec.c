@@ -2183,6 +2183,9 @@ static void spectral_to_sample(AACDecContext *ac, int samples)
                 che->present = 0;
             } else if (che) {
                 av_log(ac->avctx, AV_LOG_VERBOSE, "ChannelElement %d.%d missing \n", type, i);
+                memset(che->ch[0].output, 0, samples * sizeof(*che->ch[0].output));
+                if (type == TYPE_CPE)
+                    memset(che->ch[1].output, 0, samples * sizeof(*che->ch[1].output));
             }
         }
     }
