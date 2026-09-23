@@ -78,6 +78,30 @@
 #define PSY_3GPP_CLIP_HI_L      0.95f
 #define PSY_3GPP_CLIP_HI_S      0.75f
 
+/* Floor on how close a coded band's mask may come to the band's own energy.
+ * The two rate-control families want different shapes, and measurably so:
+ * in VBR/ABR the mask IS the rate authority, so a mask that has risen to meet
+ * its band's energy tells the solver the band is free to destroy and it buys
+ * no bits for it - a broadband floor is right there. In CBR the budget is
+ * fixed and the mask only ranks bands against each other, so the same
+ * broadband floor just moves bits around and costs ~2% Zim on random content;
+ * restricted to the top end, where the mask degenerates to within 2 dB of band
+ * energy on every sample measured, it is a clear win. */
+#define PSY_THRFL_QUALITY       10.0f   /* VBR/ABR depth, dB, all bands */
+#define PSY_THRFL_CBR            6.0f   /* CBR depth, dB */
+#define PSY_THRFL_CBR_KNEE    8000.0f   /* CBR: only above this frequency */
+
+/* Strength of the 3GPP bit-demand curve: its deviation from unity is
+ * amplified, since the trellis coder wants far stronger per-frame budget
+ * modulation than the reference encoder's gentle curve provides.
+ * The amplified factor goes negative in high-PE frames on a starved
+ * reservoir (15-30% of CBR frames). The desired PE is then <= 0 and the
+ * reduction raises every threshold as far as the min-SNR and hole rules
+ * allow, so those frames are shaped for constant SNR instead of by the
+ * mask. That regime is load-bearing: flooring the demand at frame_bits/8
+ * costs 3-5% Zimtohrli at 64 kbps stereo. */
+#define PSY_3GPP_DEMAND_SCALE    2.5f
+
 #define PSY_3GPP_AH_THR_LONG    0.5f
 #define PSY_3GPP_AH_THR_SHORT   0.63f
 
@@ -551,7 +575,7 @@ static int calc_bit_demand(AacPsyContext *ctx, float pe, int bits, int size,
                            int short_window)
 {
     const float bitsave_slope  = short_window ? PSY_3GPP_SAVE_SLOPE_S  : PSY_3GPP_SAVE_SLOPE_L;
-    const float bitsave_add    = short_window ? PSY_3GPP_SAVE_ADD_S    : PSY_3GPP_SAVE_ADD_L;
+    const float bitsave_add   = short_window ? PSY_3GPP_SAVE_ADD_S    : PSY_3GPP_SAVE_ADD_L;
     const float bitspend_slope = short_window ? PSY_3GPP_SPEND_SLOPE_S : PSY_3GPP_SPEND_SLOPE_L;
     const float bitspend_add   = short_window ? PSY_3GPP_SPEND_ADD_S   : PSY_3GPP_SPEND_ADD_L;
     const float clip_low       = short_window ? PSY_3GPP_CLIP_LO_S     : PSY_3GPP_CLIP_LO_L;
@@ -573,6 +597,7 @@ static int calc_bit_demand(AacPsyContext *ctx, float pe, int bits, int size,
      * Hopefully below is correct.
      */
     bit_factor = 1.0f - bit_save + ((bit_spend - bit_save) / (ctx->pe.max - ctx->pe.min)) * (clipped_pe - ctx->pe.min);
+    bit_factor = 1.0f + (bit_factor - 1.0f) * PSY_3GPP_DEMAND_SCALE;
     /* NOTE: The reference encoder attempts to center pe max/min around the current pe.
      * Here we do that by slowly forgetting pe.min when pe stays in a range that makes
      * it unlikely (ie: above the mean)
@@ -806,9 +831,13 @@ static void psy_3gpp_analyze_channel(FFPsyContext *ctx, int channel,
          *       little effect on the final bitrate. Probably a good idea to come
          *       back and do more testing later.
          */
-        if (ctx->bitres.bits > 0)
+        if (ctx->bitres.bits > 0) {
+            /* symmetric in the log domain: a negative previous demand (see
+             * PSY_3GPP_DEMAND_SCALE) sits on the lower bound, and the
+             * asymmetric 0.85 there costs ~2% Zimtohrli at 64 kbps */
             desired_pe *= av_clipf(pctx->pe.previous / PSY_3GPP_BITS_TO_PE(ctx->bitres.bits),
-                                   0.85f, 1.15f);
+                                   1.0f / 1.15f, 1.15f);
+        }
     }
     pctx->pe.previous = PSY_3GPP_BITS_TO_PE(desired_bits);
     ctx->bitres.alloc = desired_bits;
@@ -902,6 +931,32 @@ static void psy_3gpp_analyze_channel(FFPsyContext *ctx, int channel,
                 }
             }
             /* TODO: allow more holes (unused without mid/side) */
+        }
+    }
+
+    /* Signal-relative mask ceiling. 5.6.1.3.3 exempts bands that are quiet
+     * relative to the spread energy from the min-SNR floor ("holes allowed
+     * here"), so on spectrally lopsided programme their mask is free to rise
+     * until it meets their own energy - the model then calls a band that
+     * carries real texture inaudible, and every consumer of the mask agrees:
+     * the allocator buys it nothing and the quality-target solver sees a mask
+     * it cannot fail. A band we still choose to code must never be allowed
+     * noise within PSY_THRFL_* dB of its own energy, whatever the hole logic said. */
+    {
+        int qmode = !!(ctx->avctx->flags & AV_CODEC_FLAG_QSCALE);
+        float lim  = qmode ? PSY_THRFL_QUALITY : PSY_THRFL_CBR;
+        float knee = qmode ? 0.0f : PSY_THRFL_CBR_KNEE;
+        float lo   = ff_exp10f(-lim / 10.0f);
+        float l2f  = ctx->avctx->sample_rate / 2.0f /
+                     (wi->num_windows == 1 ? 1024.0f : 128.0f);
+        for (w = 0; w < wi->num_windows*16; w += 16) {
+            int start = 0;
+            for (g = 0; g < num_bands; g++) {
+                AacPsyBand *band = &pch->band[w+g];
+                if (start * l2f >= knee)
+                    band->thr = FFMIN(band->thr, band->energy * lo);
+                start += band_sizes[g];
+            }
         }
     }
 
