@@ -1219,6 +1219,12 @@ av_cold int ff_sws_init_single_context(SwsContext *sws, SwsFilter *srcFilter,
         }
     }
 
+    ret = av_image_check_size2(srcW, srcH, INT64_MAX, AV_PIX_FMT_NONE, 0, c);
+    if (ret >= 0)
+        ret = av_image_check_size2(dstW, dstH, INT64_MAX, AV_PIX_FMT_NONE, 0, c);
+    if (ret < 0)
+        return ret;
+
     if (!dstFilter)
         dstFilter = &dummyFilter;
     if (!srcFilter)
