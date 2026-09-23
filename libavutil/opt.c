@@ -2169,8 +2169,15 @@ static int opt_copy_elem(void *logctx, enum AVOptionType type,
         *ddictp = NULL;
         return av_dict_copy(ddictp, sdict, 0);
     } else if (type == AV_OPT_TYPE_CHLAYOUT) {
-        if (dst != src)
+        const AVChannelLayout *slayout = (const AVChannelLayout *)src;
+        AVChannelLayout *dlayout = (AVChannelLayout *)dst;
+        if (dlayout != slayout) {
+            if (dlayout->order == AV_CHANNEL_ORDER_CUSTOM &&
+                slayout->order == AV_CHANNEL_ORDER_CUSTOM &&
+                dlayout->u.map == slayout->u.map)
+                dlayout->u.map = NULL;
             return av_channel_layout_copy(dst, src);
+        }
     } else if (opt_is_pod(type)) {
         size_t size = opt_type_desc[type].size;
         memcpy(dst, src, size);
