@@ -2710,6 +2710,10 @@ int avformat_init_output(AVFormatContext *s, AVDictionary **options);
  *            set to the index of the corresponding stream in @ref
  *            AVFormatContext.streams "s->streams".
  *            <br>
+ *            The packet data must be followed by AV_INPUT_BUFFER_PADDING_SIZE
+ *            bytes, as for decoder input; packets from libavcodec and from
+ *            demuxers are.
+ *            <br>
  *            The timestamps (@ref AVPacket.pts "pts", @ref AVPacket.dts "dts")
  *            must be set to correct values in the stream's timebase (unless the
  *            output format is flagged with the AVFMT_NOTIMESTAMPS flag, then
@@ -2753,6 +2757,10 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt);
  *            Packet's @ref AVPacket.stream_index "stream_index" field must be
  *            set to the index of the corresponding stream in @ref
  *            AVFormatContext.streams "s->streams".
+ *            <br>
+ *            The packet data must be followed by AV_INPUT_BUFFER_PADDING_SIZE
+ *            bytes, as for decoder input; packets from libavcodec and from
+ *            demuxers are.
  *            <br>
  *            The timestamps (@ref AVPacket.pts "pts", @ref AVPacket.dts "dts")
  *            must be set to correct values in the stream's timebase (unless the
