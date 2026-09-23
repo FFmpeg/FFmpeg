@@ -1563,9 +1563,12 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
     }
 
     opt_match_per_stream_dbl(ost, &o->qscale, oc, st, &qscale);
-    if (ost->enc && qscale >= 0) {
-        ost->enc->flags          |= AV_CODEC_FLAG_QSCALE;
-        ost->enc->global_quality  = FF_QP2LAMBDA * qscale;
+    if (ost->enc) {
+        if (qscale >= 0) {
+            ost->enc->flags          |= AV_CODEC_FLAG_QSCALE;
+            ost->enc->global_quality  = FF_QP2LAMBDA * qscale;
+        } else
+            ost->enc->global_quality  = ost->enc->enc_ctx->global_quality;
     }
 
     if (ms->sch_idx >= 0) {
