@@ -2430,7 +2430,6 @@ ARCH_FEATURES="
 "
 
 BUILTIN_LIST="
-    MemoryBarrier
     mm_empty
     rdtsc
     sem_timedwait
@@ -3018,7 +3017,6 @@ valgrind_backtrace_conflict="optimizations"
 valgrind_backtrace_deps="valgrind_valgrind_h"
 
 # threading support
-atomics_win32_if="MemoryBarrier"
 atomics_os2_if="stdatomic"
 atomics_native_if_any="$ATOMICS_LIST"
 w32threads_deps="atomics_native"
@@ -6825,7 +6823,7 @@ if ! disabled network; then
     fi
 fi
 
-check_builtin MemoryBarrier windows.h "MemoryBarrier()"
+check_builtin atomics_win32 intrin.h "long v = 0; _InterlockedOr(&v, 0)"
 check_builtin gmtime_r time.h "time_t *time; struct tm *tm; gmtime_r(time, tm)"
 check_builtin localtime_r time.h "time_t *time; struct tm *tm; localtime_r(time, tm)"
 check_builtin int128 "" "volatile __int128 i128var = 1; i128var /= 100;"
