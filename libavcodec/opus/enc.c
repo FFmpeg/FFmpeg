@@ -170,34 +170,29 @@ static void celt_frame_setup_input(OpusEncContext *s, CeltFrame *f)
 /* Apply the pre emphasis filter */
 static void celt_apply_preemph_filter(OpusEncContext *s, CeltFrame *f)
 {
-    const int subframesize = s->avctx->frame_size;
-    const int subframes = OPUS_BLOCK_SIZE(s->packet.framesize) / subframesize;
+    const int frame_len = OPUS_BLOCK_SIZE(s->packet.framesize);
     const float c = ff_opus_deemph_weights[0];
 
-    /* Filter overlap */
     for (int ch = 0; ch < f->channels; ch++) {
         CeltBlock *b = &f->block[ch];
         float m = b->emph_coeff;
+
+        /* Filter the overlap (the trailing CELT_OVERLAP samples of the previous frame) */
         for (int i = 0; i < CELT_OVERLAP; i++) {
             float sample = b->overlap[i];
             b->overlap[i] = sample - m;
             m = sample * c;
         }
-        b->emph_coeff = m;
-    }
 
-    /* Filter the samples but do not update the last subframe's coeff - overlap ^^^ */
-    for (int sf = 0; sf < subframes; sf++) {
-        for (int ch = 0; ch < f->channels; ch++) {
-            CeltBlock *b = &f->block[ch];
-            float m = b->emph_coeff;
-            for (int i = 0; i < subframesize; i++) {
-                float sample = b->samples[sf*subframesize + i];
-                b->samples[sf*subframesize + i] = sample - m;
-                m = sample * c;
-            }
-            if (sf != (subframes - 1))
+        /* Filter the samples. The trailing CELT_OVERLAP samples are filtered
+         * again as the next frame's overlap, so the filter state saved for
+         * the next frame is the one from right before them. */
+        for (int i = 0; i < frame_len; i++) {
+            float sample = b->samples[i];
+            if (i == frame_len - CELT_OVERLAP)
                 b->emph_coeff = m;
+            b->samples[i] = sample - m;
+            m = sample * c;
         }
     }
 }
