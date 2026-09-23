@@ -238,8 +238,11 @@ typedef struct AACNMRCurves {
     int     rc_sat_frame;                        ///< the current frame hit a saturated overage
     int     frames_since_short;                  ///< long-block frames since the last short run (the "gap"): large = isolated transient
     int     prev_was_short;                      ///< previous frame was a short block (for run-start detection)
+    int64_t win_frame_num;                       ///< frame the window history was last advanced for
     float   run_burst;                           ///< transient bit-burst factor, set at run start and held across the short run
     float   lam_slew;                            ///< final operating lambda of the previous RC frame (slew-limiter state)
+    float   lam_slew_ch[16];                     ///< per-channel slew state for decoupled solo solves (a shared slew cross-contaminates the pair)
+    float   vbr_infl[16];                        ///< per-channel grouped-stat inflation measured at shorts-run entry
     float   nd_ema;                              ///< smoothed achieved distortion/real-mask over long-frame coded bands (1 = at threshold; >>1 flags psy-unreliable noise-class content)
     float   press;                               ///< rate-pressure ramp [0,1]: lambda EMA against anchors that scale up when nd_ema flags noise-class content (psy masks unreliable there, lambda reads inflated)
     float   lam_short_ema;                       ///< smoothed operating lambda of short frames

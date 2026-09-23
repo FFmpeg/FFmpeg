@@ -1537,8 +1537,21 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         }
 
         if (avctx->flags & AV_CODEC_FLAG_QSCALE) {
-            /* When using a constant Q-scale, don't mess with lambda */
-            break;
+            /* When using a constant Q-scale, don't mess with lambda, unless
+             * the frame does not fit the decoder buffer: retry coarser (the
+             * coders' legality caps shrink with lambda) */
+            frame_bits = put_bits_count(&s->pb);
+            if (frame_bits < 6144 * s->channels - 3 || its >= 16)
+                break;
+            s->lambda *= FFMIN(0.9f, (6144.0f * s->channels - 3) / frame_bits);
+            for (i = 0; i < s->chan_map[0]; i++) {
+                chans = s->chan_map[i + 1] == TYPE_CPE ? 2 : 1;
+                for (ch = 0; ch < chans; ch++)
+                    memcpy(s->cpe[i].ch[ch].coeffs, s->cpe[i].ch[ch].pcoeffs,
+                           sizeof(s->cpe[i].ch[ch].coeffs));
+            }
+            its++;
+            continue;
         }
 
         frame_bits = put_bits_count(&s->pb);
@@ -1616,6 +1629,8 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             break;
         }
     } while (1);
+    if (avctx->flags & AV_CODEC_FLAG_QSCALE)
+        s->lambda = avctx->global_quality > 0 ? avctx->global_quality : 120;
 
     /* tool-usage stats over the final per-band decisions of this frame */
     for (i = 0; i < s->chan_map[0]; i++) {
@@ -1676,7 +1691,15 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     }
     avpkt->size            = put_bytes_output(&s->pb);
 
-    s->lambda_sum += (s->nmr && s->nmr->lam_rc > 0.0f) ? s->nmr->lam_rc : s->lambda;
+    /* NMR reports its real operating lambda: the corridor centre in CBR,
+     * the quality-mode slew state in VBR - the lambda of the last long
+     * operating-point solve, which short frames and legality re-solves do
+     * not update (the outer-loop s->lambda is never touched for this coder
+     * and would pin Qavg at its 120 init) */
+    s->lambda_sum += (s->nmr && s->nmr->lam_slew > 0.0f &&
+                      (avctx->flags & AV_CODEC_FLAG_QSCALE)) ?
+                     s->nmr->lam_slew :
+                     (s->nmr && s->nmr->lam_rc > 0.0f) ? s->nmr->lam_rc : s->lambda;
     s->lambda_count++;
 
     ret = ff_af_queue_remove(&s->afq, avctx->frame_size, avpkt);
@@ -1877,9 +1900,20 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     if (avctx->cutoff > 0) {
         s->bandwidth = avctx->cutoff;
     } else {
-        int frame_br = (avctx->flags & AV_CODEC_FLAG_QSCALE) ?
-                       (avctx->bit_rate / 2.0f * (s->lambda / 120.f) * 1.5f) :
-                       (avctx->bit_rate / avctx->ch_layout.nb_channels);
+        int frame_br;
+        if (avctx->flags & AV_CODEC_FLAG_QSCALE) {
+            if (s->options.coder == AAC_CODER_NMR) {
+                /* nd-target VBR: expected per-channel rate from the quality
+                 * ladder (measured: q=1 ~ 64.5 kbps/ch, x1.27 per doubling) */
+                float q = avctx->global_quality > 0 ?
+                          avctx->global_quality / (float)FF_QP2LAMBDA : 1.0f;
+                frame_br = 66000 * powf(q, 0.29f);
+            } else {
+                frame_br = avctx->bit_rate / 2.0f * (s->lambda / 120.f) * 1.5f;
+            }
+        } else {
+            frame_br = avctx->bit_rate / avctx->ch_layout.nb_channels;
+        }
 
         if (s->options.coder == AAC_CODER_NMR && frame_br >= 24000) {
             /* Ear-tuned, not metric-tuned: Zim rewards HF presence and cannot
@@ -1930,9 +1964,12 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     lengths[1] = ff_aac_num_swb_128[s->samplerate_index];
     for (i = 0; i < s->chan_map[0]; i++)
         grouping[i] = s->chan_map[i + 1] == TYPE_CPE;
+    s->psy.unbounded_pe = (avctx->flags & AV_CODEC_FLAG_QSCALE) &&
+                          s->options.coder == AAC_CODER_NMR;
     if ((ret = ff_psy_init(&s->psy, avctx, 2, sizes, lengths,
                            s->chan_map[0], grouping, s->bandwidth)) < 0)
         return ret;
+
     ff_lpc_init(&s->lpc, 2*avctx->frame_size, TNS_MAX_ORDER, FF_LPC_TYPE_LEVINSON);
     s->random_state = 0x1f2e3d4c;
 

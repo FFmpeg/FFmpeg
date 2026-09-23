@@ -44,6 +44,13 @@ Set quality for variable bit rate (VBR) mode. This option is valid only using
 the @command{ffmpeg} command-line tool. For library interface users, use
 @option{global_quality}.
 
+With the default @samp{nmr} coder, VBR holds a constant noise-to-mask target
+and lets the bitrate follow the content. Higher values are finer: @code{1}
+lands near 128 kbps for typical stereo music, and each doubling of the value
+raises the rate by roughly a third; values above about 6 make no further
+difference. A quality setting takes precedence over @option{b} and
+@option{aac_rc}.
+
 @item cutoff
 Set cutoff frequency. If unspecified will allow the encoder to dynamically
 adjust the cutoff to improve clarity on low bitrates.

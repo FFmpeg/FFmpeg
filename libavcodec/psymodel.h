@@ -94,6 +94,7 @@ typedef struct FFPsyContext {
     FFPsyChannelGroup *group;         ///< channel group information
     int num_groups;                   ///< number of channel groups
     int cutoff;                       ///< lowpass frequency cutoff for analysis
+    int unbounded_pe;                 ///< PE reduction at a fixed reference quality, not the rate (quality-target coder owns the rate)
 
     uint8_t **bands;                  ///< scalefactor band sizes for possible frame sizes
     int     *num_bands;               ///< number of scalefactor bands for possible frame sizes

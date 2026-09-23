@@ -807,7 +807,17 @@ static void psy_3gpp_analyze_channel(FFPsyContext *ctx, int channel,
 
     /* 5.6.1.3.2 "Calculation of the desired perceptual entropy" */
     ctx->ch[channel].entropy = pe;
-    if (ctx->avctx->flags & AV_CODEC_FLAG_QSCALE) {
+    if (ctx->unbounded_pe) {
+        /* quality-target coder: run the PE reduction at a FIXED reference
+         * quality so thresholds keep their perceptual shaping but stay
+         * independent of the user's -q:a (the coder's own noise-to-mask
+         * target is the sole quality authority) */
+        desired_pe = pe * 120.0f / (2 * 2.5f * 120.0f);
+        desired_bits = FFMIN(2560, PSY_3GPP_PE_TO_BITS(desired_pe));
+        desired_pe = PSY_3GPP_BITS_TO_PE(desired_bits);
+        pctx->pe.max = FFMAX(pe, pctx->pe.max);
+        pctx->pe.min = FFMIN(pe, pctx->pe.min);
+    } else if (ctx->avctx->flags & AV_CODEC_FLAG_QSCALE) {
         /* (2.5 * 120) achieves almost transparent rate, and we want to give
          * ample room downwards, so we make that equivalent to QSCALE=2.4
          */
