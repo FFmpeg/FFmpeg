@@ -224,8 +224,9 @@ static int config_props_output(AVFilterLink *outlink)
     ol->frame_rate = il->frame_rate;
     outlink->sample_aspect_ratio = inlink_a->sample_aspect_ratio;
 
-    if (s->duration)
-        s->duration_pts = av_rescale_q(s->duration, AV_TIME_BASE_Q, inlink_a->time_base);
+    s->duration_pts = av_rescale_q(s->duration, AV_TIME_BASE_Q, inlink_a->time_base);
+    if (!s->duration_pts)
+        s->duration_pts = 1;
     RET(ff_vk_filter_config_output(outlink));
 
 fail:
