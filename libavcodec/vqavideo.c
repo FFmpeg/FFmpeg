@@ -183,7 +183,7 @@ static av_cold int vqa_decode_init(AVCodecContext *avctx)
 
     /* allocate codebooks */
     s->codebook_size = MAX_CODEBOOK_SIZE;
-    s->codebook = av_malloc(s->codebook_size);
+    s->codebook = av_mallocz(s->codebook_size);
     if (!s->codebook)
         return AVERROR(ENOMEM);
     s->next_codebook_buffer = av_malloc(s->codebook_size);
