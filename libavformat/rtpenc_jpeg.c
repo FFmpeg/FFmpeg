@@ -50,6 +50,11 @@ void ff_rtp_send_jpeg(AVFormatContext *s1, const uint8_t *buf, int size)
         if (buf[i] != 0xff)
             continue;
 
+        if (size - i < 5 || (buf[i + 1] == SOF0 && size - i < 18)) {
+            av_log(s1, AV_LOG_ERROR, "Too short JPEG header. Aborted!\n");
+            return;
+        }
+
         if (buf[i + 1] == DQT) {
             int tables, j;
             if (buf[i + 4] & 0xF0)
