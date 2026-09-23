@@ -37,7 +37,7 @@ int main(void)
                (int)(16 - strlen(desc->name)), "");
         r = ff_draw_init(&draw, f, 0);
         if (r < 0) {
-            printf("no: %s\n", av_err2str(r));
+            printf("no: %s\n", r == AVERROR(ENOSYS) ? "unsupported" : av_err2str(r));
             continue;
         }
         ff_draw_color(&draw, &color, (uint8_t[]) { 1, 0, 0, 1 });
