@@ -56,6 +56,7 @@
 #include "libavcodec/exif.h"
 #include "libavcodec/flac.h"
 #include "libavcodec/hevc/hevc.h"
+#include "libavcodec/mpegaudiodata.h"
 #include "libavcodec/mpegaudiodecheader.h"
 #include "libavcodec/mlp_parse.h"
 #include "avformat.h"
@@ -10039,6 +10040,44 @@ static int mov_read_vmhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
+static int mov_read_mhac(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    AVFormatContext *ctx = c->fc;
+    AVStream *st;
+    int profile_level_indication, reference_ch_layout, config_length;
+    int ret = 0;
+
+    if (ctx->nb_streams < 1)
+        return 0;
+
+    st = ctx->streams[ctx->nb_streams - 1];
+    if (st->codecpar->codec_type != AVMEDIA_TYPE_AUDIO)
+        return 0;
+
+    if (avio_r8(pb) != 1) // ConfigurationVersion
+        return 0;
+
+    profile_level_indication = avio_r8(pb);
+    st->codecpar->profile =  (profile_level_indication - 1) / 5;
+    st->codecpar->level   = ((profile_level_indication - 1) % 5) + 1;
+
+    reference_ch_layout = avio_r8(pb);
+    config_length = avio_rb16(pb);
+    if (config_length)
+        ret = ff_get_extradata(ctx, st->codecpar, pb, config_length);
+
+    if (!reference_ch_layout ||
+        reference_ch_layout >= FF_ARRAY_ELEMS(ff_mpa_cicp_channel_layout_masks)) {
+        av_log(ctx, AV_LOG_WARNING, "Unknown referenceChannelLayout value: %d\n", reference_ch_layout);
+        return ret;
+    }
+
+    av_channel_layout_from_mask(&st->codecpar->ch_layout,
+                                ff_mpa_cicp_channel_layout_masks[reference_ch_layout]);
+
+    return ret;
+}
+
 static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('A','C','L','R'), mov_read_aclr },
 { MKTAG('A','P','R','G'), mov_read_avid },
@@ -10171,6 +10210,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 #endif
 { MKTAG('s','r','a','t'), mov_read_srat },
 { MKTAG('v','m','h','d'), mov_read_vmhd },
+{ MKTAG('m','h','a','C'), mov_read_mhac },
 { 0, NULL }
 };
 
