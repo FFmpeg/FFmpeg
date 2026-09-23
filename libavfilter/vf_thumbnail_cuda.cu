@@ -56,8 +56,8 @@ __global__ void Thumbnail_ushort(cudaTextureObject_t ushort_tex,
 
     if (y < src_height && x < src_width)
     {
-        unsigned short pixel = (tex2D<unsigned short>(ushort_tex, x, y) + 128) >> 8;
-        atomicAdd(&histogram[pixel], 1);
+        int pixel = (tex2D<unsigned short>(ushort_tex, x, y) + 128) >> 8;
+        atomicAdd(&histogram[min(pixel, 255)], 1);
     }
 }
 
@@ -70,8 +70,8 @@ __global__ void Thumbnail_ushort2(cudaTextureObject_t ushort2_tex,
     if (y < src_height && x < src_width)
     {
         ushort2 pixel = tex2D<ushort2>(ushort2_tex, x, y);
-        atomicAdd(&histogram[(pixel.x + 128) >> 8], 1);
-        atomicAdd(&histogram[256 + ((pixel.y + 128) >> 8)], 1);
+        atomicAdd(&histogram[min((pixel.x + 128) >> 8, 255)], 1);
+        atomicAdd(&histogram[256 + min((pixel.y + 128) >> 8, 255)], 1);
     }
 }
 
