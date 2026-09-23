@@ -1401,7 +1401,9 @@ The following options are supported by FFmpeg's FFv1 encoder.
 
 @table @option
 @item context
-Sets the context size, 0 (default) is small, 1 is big.
+Sets the context size, 0 (default) is small, 1 is big, 2 is minimal.
+The minimal context set compresses better when coding many slices, as each
+slice has too little data for larger context sets to adapt to.
 
 @item coder
 Set the coder,

@@ -1471,7 +1471,7 @@ static const AVOption vulkan_encode_ffv1_options[] = {
     { "slicecrc", "Protect slices with CRCs", OFFSET(ctx.ec), AV_OPT_TYPE_INT,
             { .i64 = -1 }, -1, 2, VE },
     { "context", "Context model", OFFSET(ctx.context_model), AV_OPT_TYPE_INT,
-            { .i64 = 0 }, 0, 1, VE },
+            { .i64 = 0 }, 0, 2, VE },
     { "coder", "Coder type", OFFSET(ctx.ac), AV_OPT_TYPE_INT,
             { .i64 = AC_RANGE_CUSTOM_TAB }, -2, 2, VE, .unit = "coder" },
         { "rice", "Golomb rice", 0, AV_OPT_TYPE_CONST,

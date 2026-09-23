@@ -691,6 +691,21 @@ av_cold int ff_ffv1_encode_init(AVCodecContext *avctx)
         }
     }
 
+    /* Small context set: only the two nearest gradients, coarsely quantized.
+     * With many slices there is too little data per slice for large context
+     * sets to adapt, and this codes smaller while using a fraction of the
+     * state. */
+    if (s->context_model == 2) {
+        const int8_t *q5 = (s->qtable == -1 && s->bits_per_raw_sample <= 8) || s->qtable == 1 ?
+                           quant5 : quant5_10bit;
+        s->quant_table_count = 3;
+        for (i = 0; i < 256; i++) {
+            s->quant_tables[2][0][i] =   q5[i];
+            s->quant_tables[2][1][i] = 5*q5[i];
+        }
+        s->context_count[2] = (5 * 5 + 1) / 2;
+    }
+
     if ((ret = ff_ffv1_allocate_initial_states(s)) < 0)
         return ret;
 
@@ -2059,7 +2074,7 @@ static const AVOption options[] = {
         { "ac", "Range with custom table (the ac option exists for compatibility and is deprecated)", 0, AV_OPT_TYPE_CONST,
             { .i64 = 1 }, INT_MIN, INT_MAX, VE, .unit = "coder" },
     { "context", "Context model", OFFSET(context_model), AV_OPT_TYPE_INT,
-            { .i64 = 0 }, 0, 1, VE },
+            { .i64 = 0 }, 0, 2, VE },
     { "qtable", "Quantization table", OFFSET(qtable), AV_OPT_TYPE_INT,
             { .i64 = -1 }, -1, 2, VE , .unit = "qtable"},
         { "default", NULL, 0, AV_OPT_TYPE_CONST,
