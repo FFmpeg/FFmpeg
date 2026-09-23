@@ -753,6 +753,15 @@ static void apply_intensity_stereo(ChannelElement *cpe)
 /* PNS-stereo gate: substitute only clearly-decorrelated (wide) bands. */
 #define NMR_PNS_STEREO_DECORR 0.6f
 
+/* M/S balance gate: no M/S on bands panned harder than this energy ratio */
+#define NMR_MS_BALANCE 0.25f
+
+/* Perceptual I/S: highly correlated long-window bands above this frequency
+ * take I/S at this image-error budget regardless of rate pressure */
+#define NMR_IS_PERC_FREQ 8000.0f
+#define NMR_IS_PERC_CORR 0.85f
+#define NMR_IS_PERC_GATE 50.0f
+
 /* Recode one band's window group as mid+side in place. */
 static void nmr_apply_ms_band(AACEncContext *s, ChannelElement *cpe,
                               int w, int g, int start, int len, int gl)
@@ -872,7 +881,8 @@ static void nmr_decide_stereo(AACEncContext *s, ChannelElement *cpe)
      * not admit it). Unengaged candidates fall back to M/S. */
     float is_ramp = s->nmr ? s->nmr->press *
         av_clipf((s->nmr->lam_floor - 40.0f) / (120.0f - 40.0f), 0.0f, 1.0f) : 0.0f;
-    const int allow_is = s->options.intensity_stereo && is_ramp > 0.0f;
+    /* perceptual I/S (below) makes candidacy pressure-independent */
+    const int allow_is = s->options.intensity_stereo;
 
     const int pidx = (s->cur_channel >> 1) & 15;
     const int decoupled = s->psy.pair_decoupled[pidx];
@@ -931,6 +941,18 @@ static void nmr_decide_stereo(AACEncContext *s, ChannelElement *cpe)
             float eqgate = NMR_MS_EQUIV * (prev == 1 ? 1.5f : 1.0f);   /* stay-until es>0.75em */
             /* I/S = lossy economy: image-error budget scales with pressure */
             float imgate = NMR_IS_IMG_GATE * is_ramp * (prev == 2 ? NMR_STICKY : 1.0f);
+            /* Perceptual I/S (metric-blind by design - Zimtohrli penalizes
+             * even sub-mask image error, ears above ~8k do not hear
+             * interaural fine structure): engage on genuinely intensity-
+             * panned HF - high inter-channel correlation, long windows,
+             * sticky - regardless of rate pressure. Freed bits are judged
+             * by the sub-8k spectrum; the image itself is judged by ears. */
+            if (cpe->ch[0].ics.num_windows != 8 && ener0 > FLT_MIN && ener1 > FLT_MIN) {
+                float corr = dot / sqrtf(ener0 * ener1);
+                if (start * freq_mult > NMR_IS_PERC_FREQ &&
+                    fabsf(corr) > NMR_IS_PERC_CORR * (prev == 2 ? 0.9f : 1.0f))
+                    imgate = FFMAX(imgate, NMR_IS_PERC_GATE * (prev == 2 ? NMR_STICKY : 1.0f));
+            }
             float es_d = es_tot, em_d = em_tot;
             if (s->nmr) {
                 float *ees = &s->nmr->sema_es[pi][sidx];
@@ -942,10 +964,14 @@ static void nmr_decide_stereo(AACEncContext *s, ChannelElement *cpe)
                 }
                 es_d = *ees; em_d = *eem;
             }
+            /* Balance gate: M/S has no coding gain on a hard-panned band
+             * (|S| ~ |M|), and M/S quantization noise decorrelates across
+             * the unfold, smearing the panned source into the far channel. */
+            int bal_ok = FFMIN(ener0, ener1) > NMR_MS_BALANCE * FFMAX(ener0, ener1);
             int ms_would = s->options.mid_side &&
                            (s->options.mid_side == 1 ||
-                            es_d < eqgate * em_d ||
-                            es_tot < NMR_MS_MASK  * thr_g);
+                            ((es_d < eqgate * em_d ||
+                              es_tot < NMR_MS_MASK  * thr_g) && bal_ok));
             int ms_ok = ms_would && !decoupled;
             float scale, sr_, imgratio; int p;
             /* I/S competes with M/S above the frequency limit (candidacy must
