@@ -393,9 +393,17 @@ void ff_opus_rc_enc_end(OpusRangeCoder *rc, uint8_t *dst, int size)
         rb_src = rc->buf + OPUS_MAX_FRAME_SIZE + 12 - rc->rb.bytes;
         rb_dst = dst + FFMAX(size - rc->rb.bytes, 0);
         lap = &dst[rng_bytes] - rb_dst;
+        if (lap < 0) {
+            /* Zero the unused bytes between the range coded and the raw bits
+             * parts instead of copying whatever is in the buffer there */
+            memset(&dst[rng_bytes], 0, -lap);
+            lap = 0;
+        }
         for (i = 0; i < lap; i++)
             rb_dst[i] |= rb_src[i];
         memcpy(&rb_dst[lap], &rb_src[lap], FFMAX(rc->rb.bytes - lap, 0));
+    } else if (rng_bytes < size) {
+        memset(&dst[rng_bytes], 0, size - rng_bytes);
     }
 }
 
