@@ -1,0 +1,15 @@
+#extradata 0:      182, 0xca4e2e16
+#tb 0: 1/48000
+#media_type 0: audio
+#codec_id 0: mpegh_3d_audio
+#sample_rate 0: 48000
+#channel_layout_name 0: 5.1.4
+0,          0,          0,     1024,     4572, 0xd8c97111
+0,       1024,       1024,     1024,     2647, 0x6346f1d0, F=0x0
+0,       2048,       2048,     1024,     2647, 0xcc2f0082, F=0x0
+0,       3072,       3072,     1024,     2640, 0x65eb1e04, F=0x0
+[STREAM]
+profile=3
+level=3
+codec_tag_string=mhm1
+[/STREAM]

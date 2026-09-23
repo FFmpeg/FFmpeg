@@ -329,6 +329,12 @@ fate-mov-reenc-delete-stream-metadata: CMD = transcode mov $(TARGET_SAMPLES)/qt-
 FATE_MOV_FFMPEG_FFPROBE_SAMPLES-$(call ENCDEC, FLAC PCM_S16BE, NUT MOV) += fate-mov-reenc-delete-stream-metadata-global-tag
 fate-mov-reenc-delete-stream-metadata-global-tag: CMD = transcode mov $(TARGET_SAMPLES)/qt-surge-suite/surge-2-16-B-twos.mov nut "-c:a flac -bitexact -t 0.1 -metadata vendor_id=custom" "-c copy -t 0.1" "-show_entries format_tags:stream_tags" "" "" "" null
 
+FATE_MOV_FFMPEG_FFPROBE_SAMPLES-$(call DEMMUX, MOV, MP4, FRAMECRC_MUXER) += fate-mov-mp4-mpegh-5_1_4
+fate-mov-mp4-mpegh-5_1_4: CMD = stream_demux mp4 $(TARGET_SAMPLES)/mov/mpegh_layout16.mp4 "" "-c:a copy" "-show_entries stream=profile,level,codec_tag_string"
+
+FATE_MOV_FFMPEG_FFPROBE_SAMPLES-$(call REMUX, MP4 MOV) += fate-mov-mp4-mpegh-5_1_4-copy
+fate-mov-mp4-mpegh-5_1_4-copy: CMD = stream_remux mp4 $(TARGET_SAMPLES)/mov/mpegh_layout16.mp4 "" mp4 "" "" "-c:a copy" "-show_entries stream=profile,level,codec_tag_string"
+
 FATE_SAMPLES_FFMPEG_FFPROBE += $(FATE_MOV_FFMPEG_FFPROBE_SAMPLES-yes)
 FATE_SAMPLES_FFMPEG += $(FATE_MOV_FFMPEG_SAMPLES-yes)
 
