@@ -3266,6 +3266,11 @@ static int hevc_frame_start(HEVCContext *s, HEVCLayerContext *l,
         return AVERROR_INVALIDDATA;
     }
 
+    if (l != &s->layers[0] && ff_hevc_is_alpha_video(s) && !s->layers[0].cur_frame) {
+        av_log(s->avctx, AV_LOG_ERROR, "Alpha layer frame without a base layer frame\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     av_refstruct_replace(&s->pps, pps);
     if (l->sps != sps) {
         const HEVCSPS *sps_base = s->layers[0].sps;
