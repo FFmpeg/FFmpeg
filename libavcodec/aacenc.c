@@ -1042,7 +1042,16 @@ static void encode_band_info(AACEncContext *s, SingleChannelElement *sce)
         s->coder->set_special_band_scalefactors(s, sce);
 
     for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w])
-        s->coder->encode_window_bands_info(s, sce, w, sce->ics.group_len[w], s->lambda);
+        {
+            /* the sectioning trellis must trade section bits against
+             * spectral bits at the coder's REAL operating lambda; the
+             * NMR outer-loop lambda is a static 120 */
+            float slam = s->lambda;
+            if (s->options.coder == AAC_CODER_NMR && s->nmr &&
+                s->nmr->lam_slew > 0.0f)
+                slam = s->nmr->lam_slew;
+            s->coder->encode_window_bands_info(s, sce, w, sce->ics.group_len[w], slam);
+        }
 }
 
 /**
@@ -1321,6 +1330,12 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                     max = FFMAX(max, fabsf(wbuf[j]));
                 wi[ch].clipping[w] = max;
             }
+            /* Pre-attenuating hot frames costs 0.45 dB of level accuracy on
+             * loud masters; float decoders don't clip, so the NMR coder
+             * keeps levels exact. */
+            if (s->options.coder == AAC_CODER_NMR)
+                for (w = 0; w < ics->num_windows; w++)
+                    wi[ch].clipping[w] = 0;
             for (w = 0; w < ics->num_windows; w++) {
                 if (wi[ch].clipping[w] > CLIP_AVOIDANCE_FACTOR) {
                     ics->window_clipping[w] = 1;
@@ -1841,8 +1856,12 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
                        (avctx->bit_rate / avctx->ch_layout.nb_channels);
 
         if (s->options.coder == AAC_CODER_NMR && frame_br >= 24000) {
+            /* Ear-tuned, not metric-tuned: Zim rewards HF presence and cannot
+             * hear HF graininess, so metric sweeps push this table wide. At
+             * these rates coarse HF reads as beat-synchronous crunch (velvet);
+             * FDK sits at 14k and Apple at ~16k for 64 kbps/ch. */
             static const int rates[] = { 24000, 32000, 48000, 64000, 96000, 192000 };
-            static const int bws[]   = { 14000, 14000, 18500, 20000, 21000, 22000 };
+            static const int bws[]   = { 14000, 14000, 15000, 16000, 19500, 22000 };
             int bw_i = 0;
             for (; bw_i < FF_ARRAY_ELEMS(rates) - 2 && frame_br > rates[bw_i + 1]; bw_i++);
             s->bandwidth = bws[bw_i] + (int)((int64_t)(bws[bw_i + 1] - bws[bw_i]) *

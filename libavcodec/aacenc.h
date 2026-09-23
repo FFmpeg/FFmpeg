@@ -200,6 +200,7 @@ typedef struct NMRSlot {
     float pener[128];                            ///< band energy (PNS noise target)
     float pspread[128];                          ///< band tonality spread (1 = noise)
     uint8_t is_pns[128];                         ///< band coded as noise
+    uint8_t hftx[128];                           ///< band strongly HF-tapered: excluded from the nd stat (deficit is by design)
 } NMRSlot;
 
 typedef struct AACNMRCurves {

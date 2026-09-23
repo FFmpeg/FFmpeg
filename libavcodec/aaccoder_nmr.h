@@ -73,6 +73,9 @@
  * energy-matched noise (PNS); an audible hole sounds worse than matched noise. */
 #define NMR_PNS_HOLE_FRAC   0.5f
 #define NMR_PNS_HOLE_SPREAD 0.5f
+/* Hole fill applies at any operating lambda above this (comfortable rates
+ * included): sparse-line renditions of noise are audible at every rate. */
+#define NMR_PNS_HOLE_LAM    20.0f
 
 /* RC servo gain: scale the corridor centre by exp2(-K*fill/R) each frame to hold
  * the long-run mean rate; without it a bad centre drifts for dozens of frames. */
@@ -98,6 +101,15 @@
 /* Zero-decision hysteresis: previously-coded bands need this margin below
  * threshold to zero (marginal bands flicker audibly otherwise). */
 #define NMR_ZERO_STICKY 0.5f
+
+/* Short-window groups keep a borderline window coded down to this fraction
+ * of its zero threshold rather than muting it inside a coded group. */
+#define NMR_GROUP_KEEP 0.25f
+
+/* HF precision taper: thresholds rise by NMR_HF_TAPER dB per kHz^2 above the
+ * knee (Apple's measured HF precision rolloff). */
+#define NMR_HF_TAPER      0.08f
+#define NMR_HF_TAPER_KNEE 8000.0f
 
 /* Transient bit-burst: an isolated onset (preceded by >= NMR_BURST_GAP long frames)
  * is coded NMR_BURST_GAIN x finer, held uniform across the run, repaid from steady stretches. */
@@ -297,7 +309,10 @@ static int nmr_setup_channel(AVCodecContext *avctx, AACEncContext *s,
 
     /* Allocation law; short frames blend to softer energy exponents under
      * pressure (roll anti-starvation, see memory). */
-    float a_ae = 0.443f, a_at = 0.111f;
+    /* The Apple-RE constants (0.443/0.111) describe THEIR bit distribution,
+     * not this trellis's optimum: more psy-threshold influence is worth -38%
+     * Zim / +0.06 ViSQOL at 128k stereo and -15% at 64k, flat plateau beyond. */
+    float a_ae = 0.50f, a_at = 0.18f;
     if (sce->ics.num_windows == 8 && s->nmr) {
         /* blend to mask-weighted exponents under rate pressure */
         a_ae += (0.35f - a_ae) * s->nmr->press;
@@ -331,6 +346,17 @@ static int nmr_setup_channel(AVCodecContext *avctx, AACEncContext *s,
                 ratio = eside / FFMAX(mb->energy * sce->ics.group_len[w], 1e-9f);
                 zthr_mul *= 0.25f + 0.75f * av_clipf(ratio / 0.3f, 0.0f, 1.0f);
             }
+            /* HF precision taper (bitstream RE): at 128k Apple codes
+             * 7.5-12.6k ~6dB coarser and 12.6k+ ~28dB coarser than we do,
+             * funding their LF/mid SNR edge; a quadratic thr rise above the
+             * knee reproduces that rolloff */
+            float hftdb;
+            {
+                float bfreq = start * (avctx->sample_rate * (sce->ics.num_windows == 8 ? 4.0f : 0.5f)) / 1024.0f;
+                float k = FFMAX(0.0f, bfreq - NMR_HF_TAPER_KNEE) / 1000.0f;
+                hftdb = NMR_HF_TAPER * k * k;
+            }
+            t->hftx[w*16+g] = 0;
             for (int w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
                 FFPsyBand *band = &s->psy.ch[s->cur_channel].psy_bands[(w+w2)*16+g];
                 ener   += band->energy;
@@ -343,11 +369,36 @@ static int nmr_setup_channel(AVCodecContext *avctx, AACEncContext *s,
                 uplim += band->threshold;
                 nz = 1;
             }
+            if (nz && sce->ics.group_len[w] > 1) {
+                /* a coded group must not mute individual borderline windows:
+                 * they share the group's scalefactor (near-free to keep) and
+                 * a 3-6ms in-band mute right before an attack reads as a
+                 * gated crunch on every beat */
+                for (int w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
+                    FFPsyBand *band = &s->psy.ch[s->cur_channel].psy_bands[(w+w2)*16+g];
+                    if (sce->zeroes[(w+w2)*16+g] && start < cutoff &&
+                        band->threshold > 0.0f &&
+                        band->energy > band->threshold * zthr_mul * NMR_GROUP_KEEP) {
+                        sce->zeroes[(w+w2)*16+g] = 0;
+                        uplim += band->threshold;
+                    }
+                }
+            }
             zprev[w*16+g] = !nz;
             sce->zeroes[w*16+g] = !nz;
             t->thr_real[w*16+g] = uplim;    /* real mask, before the allocation law (PNS gate) */
-            if (nz && ener > 0.0f && uplim > 0.0f)   /* allocation law */
+            if (nz && ener > 0.0f && uplim > 0.0f) { /* allocation law */
                 uplim = expf(a_ae * logf(ener) + a_at * logf(uplim));
+                if (hftdb != 0.0f) {
+                    uplim *= powf(10.0f, hftdb * 0.1f);
+                    /* a band pushed well past its real mask reads as huge
+                     * achieved-nd; keep the deliberate deficit out of the
+                     * psy-reliability stat or press ramps into noise-class
+                     * RC on clean tonal content */
+                    if (hftdb > 2.0f)
+                        t->hftx[w*16+g] = 1;
+                }
+            }
             t->thr[w*16+g]     = uplim;
             t->pener[w*16+g]   = ener;
             t->pspread[w*16+g] = spread;
@@ -752,7 +803,7 @@ static void nmr_solve_group(AVCodecContext *avctx, AACEncContext *s,
             float (*ndk)[NMR_NCAND] = s->nmr->nd[t->si];
             for (int b_ = 0; b_ < t->nact; b_++) {
                 int b = t->act[b_], bi = t->bidx[b];
-                if (t->thr_real[bi] > 0.0f && t->thr[bi] > 0.0f) {
+                if (t->thr_real[bi] > 0.0f && t->thr[bi] > 0.0f && !t->hftx[bi]) {
                     ndsum += ndk[b][t->chosen[b]] * t->thr[bi] / t->thr_real[bi];
                     ndn++;
                 }
@@ -826,13 +877,17 @@ static void nmr_solve_group(AVCodecContext *avctx, AACEncContext *s,
                 /* (can_pns was already checked above; gates below fill `want`) */
                 if (t->pener[bi] > NMR_PNS_MAX_ET * t->thr_real[bi]) {
                     force_exit = 1;                       /* loud-band guard */
+                } else if (lam > NMR_PNS_HOLE_LAM &&
+                           (frac = ndk[b][t->chosen[b]] * t->thr[bi] /
+                                   FFMAX(t->pener[bi], 1e-9f)) > NMR_PNS_HOLE_FRAC * (was ? 0.7f : 1.0f) &&
+                           spread > NMR_PNS_HOLE_SPREAD) {
+                    /* Spectral-hole fill: a noise-like band whose chosen
+                     * rendition leaves most of its energy uncoded turns to
+                     * sparse lines - structure damage the NMR objective
+                     * cannot see - at ANY comfortable lambda */
+                    want = 1;
                 } else if (lam > pns_lam) {
-                    /* Spectral-hole fill: a noise-like band left mostly empty */
-                    frac = ndk[b][t->chosen[b]] * t->thr[bi] / FFMAX(t->pener[bi], 1e-9f);
-                    if (spread > NMR_PNS_HOLE_SPREAD &&
-                        frac > NMR_PNS_HOLE_FRAC * (was ? 0.7f : 1.0f)) {
-                        want = 1;
-                    } else if (ndk[b][t->chosen[b]] * t->thr[bi] >
+                    if (ndk[b][t->chosen[b]] * t->thr[bi] >
                                NMR_PNS_NDGATE * t->thr_real[bi] * (was ? 0.5f : 1.0f)) {
                         /* replace only a band coded audibly badly; cost of
                          * energy-matched noise = its non-noise-like fraction */
@@ -851,9 +906,9 @@ static void nmr_solve_group(AVCodecContext *avctx, AACEncContext *s,
                     if (want) { if (*ron  < 255) (*ron)++;  *roff = 0; }
                     else      { if (*roff < 255) (*roff)++; *ron  = 0; }
                     if (force_exit)
-                        want = 0;
+                        want = was && *roff < 2;   /* tolerate 1-frame loudness blips */
                     else if (!was)
-                        want = near ? want : *ron >= NMR_PNS_ON;
+                        want = *ron >= (near ? 2 : NMR_PNS_ON);
                     else if (near)
                         want = 1;   /* physics-hysteresis: noise until audible */
                     else
