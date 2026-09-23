@@ -360,10 +360,10 @@ static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     AudioLimiterContext *s = ctx->priv;
-    int obuffer_size;
+    int64_t obuffer_size;
 
-    obuffer_size = inlink->sample_rate * inlink->ch_layout.nb_channels * 100 / 1000. + inlink->ch_layout.nb_channels;
-    if (obuffer_size < inlink->ch_layout.nb_channels)
+    obuffer_size = inlink->sample_rate * (int64_t)inlink->ch_layout.nb_channels / 10 + inlink->ch_layout.nb_channels;
+    if (obuffer_size > INT_MAX)
         return AVERROR(EINVAL);
 
     s->buffer = av_calloc(obuffer_size, sizeof(*s->buffer));
