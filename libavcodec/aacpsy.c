@@ -332,14 +332,16 @@ static float lame_calc_attack_threshold(int bitrate)
 /**
  * LAME psy model specific initialization
  */
-static av_cold void lame_window_init(AacPsyContext *ctx, AVCodecContext *avctx)
+static av_cold void lame_window_init(FFPsyContext *fctx, AacPsyContext *ctx, AVCodecContext *avctx)
 {
     int i, j;
 
     for (i = 0; i < avctx->ch_layout.nb_channels; i++) {
         AacPsyChannel *pch = &ctx->ch[i];
 
-        if (avctx->flags & AV_CODEC_FLAG_QSCALE)
+        if ((avctx->flags & AV_CODEC_FLAG_QSCALE) || fctx->unbounded_pe)
+            /* quality-target coders (VBR and ABR) switch windows for quality,
+             * not rate: use the quality attack map regardless of bit_rate */
             pch->attack_threshold = psy_vbr_map[av_clip(avctx->global_quality / FF_QP2LAMBDA, 0, 10)].st_lrm;
         else
             pch->attack_threshold = lame_calc_attack_threshold(avctx->bit_rate / avctx->ch_layout.nb_channels / 1000);
@@ -456,7 +458,7 @@ static av_cold int psy_3gpp_init(FFPsyContext *ctx) {
     for (i = 0; i < ctx->avctx->ch_layout.nb_channels; i++)
         pctx->ch[i].rc_frame_num = -1;
 
-    lame_window_init(pctx, ctx->avctx);
+    lame_window_init(ctx, pctx, ctx->avctx);
 
     return 0;
 }
@@ -953,7 +955,7 @@ static void psy_3gpp_analyze_channel(FFPsyContext *ctx, int channel,
      * it cannot fail. A band we still choose to code must never be allowed
      * noise within PSY_THRFL_* dB of its own energy, whatever the hole logic said. */
     {
-        int qmode = !!(ctx->avctx->flags & AV_CODEC_FLAG_QSCALE);
+        int qmode = ctx->unbounded_pe || (ctx->avctx->flags & AV_CODEC_FLAG_QSCALE);
         float lim  = qmode ? PSY_THRFL_QUALITY : PSY_THRFL_CBR;
         float knee = qmode ? 0.0f : PSY_THRFL_CBR_KNEE;
         float lo   = ff_exp10f(-lim / 10.0f);

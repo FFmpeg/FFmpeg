@@ -91,18 +91,45 @@
 
 /* Quality-target calibration anchor: the nd set-point of -q:a 1, which lands
  * near 128-136 kbps stereo on the tuning corpora with the q ladder's own
- * bandwidth. It moved -2.1 -> -0.75 with the quality-target mask floor
- * (PSY_THRFL_QUALITY), which lowers thr_real and so lifts the whole statistic.
- * The reachable-range clamp is set by the stat's -4/band sub-mask clip, which
- * the mask floor does not touch: targets below it are asymptotically
- * unreachable - the bisect rails at the finest lambda, the frame exceeds the
- * decoder buffer and the outer re-encode loop never converges. */
+ * bandwidth. The ABR servo seeds off the same constant (referenced to 81.5
+ * kbps/ch, where it measured before the bandwidth retune; the boot corrects
+ * the per-content seed error), so they are one constant. It moved
+ * -2.1 -> -0.75 with the quality-target mask floor (PSY_THRFL_QUALITY), which
+ * lowers thr_real and so lifts the whole statistic.
+ * The reachable-range clamps did NOT move
+ * with it: their floors are set by the stat's -4/band sub-mask clip, which the
+ * mask floor does not touch. Targets below them are asymptotically unreachable
+ * - the bisect rails at the finest lambda, the frame exceeds the decoder buffer
+ * and the outer re-encode loop never converges (the 384k stall). Raising them
+ * with the anchor railed the ABR servo instead: it wanted a finer target to
+ * meet its rate ask on easy content and could not ask for one. */
 #define NMR_VBR_ANCHOR (-0.75f)
 #define NMR_VBR_TMIN   (-3.8f)
+/* ABR set-point range. The coarse end is a quality guard: set-points past it
+ * buy little rate for a lot of quality (2.5 -> 6.0 at a 48k ask: -5% rate,
+ * +32% Zimtohrli), so asks below ~56 kbps stereo land above the ask - CBR
+ * is the mode for those rates. At the fine end, easy content can fall short
+ * of very high asks (no padding). */
+#define NMR_ABR_TMIN   (-3.0f)
+#define NMR_ABR_TMAX     2.5f
+
+/* ABR servo: integrator gain on the log rate error, rate EMA weight after the
+ * boot, set-point step size and minimum frames between steps */
+#define NMR_ABR_K         0.003f
+#define NMR_ABR_EMA       0.0023f
+#define NMR_ABR_STEP      0.15f
+#define NMR_ABR_HOLD      120
+/* ABR boot: open-loop correction gain over the nominal loop gain, the rate
+ * error that re-arms it, the re-arm budget and the settle time before one */
+#define NMR_ABR_BOOT_GAIN 1.2f
+#define NMR_ABR_TOL       0.02f
+#define NMR_ABR_BOOTS     6
+#define NMR_ABR_SETTLE    100
 
 /* VBR shorts: the measured stat inflation counts fully once this share of
  * the frame's energy sits above 6 kHz */
 #define NMR_INFL_HF 0.10f
+
 /* Reservoir half-window (bits/ch); swept 512/1536/3072, 1536 optimal. */
 #define NMR_CBR_BUF   1536
 /* Slew limit on the FINAL operating lambda per frame; bits deviate instead,
@@ -754,9 +781,14 @@ static void nmr_solve_group(AVCodecContext *avctx, AACEncContext *s,
     }
 
     int vbr = (avctx->flags & AV_CODEC_FLAG_QSCALE) && s->nmr;
+    int abr = !vbr && s->options.rc == 1 && avctx->bit_rate > 0 && s->nmr;
     int vbr_subst = 1;
     float vbr_t = 0.0f;
-    if (vbr) {
+    if (abr) {
+        /* ABR: same quality-target solve, set-point owned by the rate servo */
+        vbr_t = s->nmr->abr_t;
+        vbr   = 1;
+    } else if (vbr) {
         /* nd-target VBR: constant achieved noise-to-mask, bits float. */
         /* target in log2(dist/real-mask), anchored so -q:a 1 lands near
          * 128 kbps stereo on the tuning corpus; higher q is finer, each q
@@ -1011,6 +1043,48 @@ static void nmr_solve_group(AVCodecContext *avctx, AACEncContext *s,
             hardcap = FFMAX(hardcap - (int)(FFMAX(s->nmr->side_ema, 0.0f) * chans / s->channels), 256);
         for (int k = 0; k < nsl; k++)
             tot += nmr_slot_bits(sl[k], s->nmr->nb[sl[k]->si], NMR_STEP);
+        if (abr && s->nmr->abr_ema < rc_rate_frame) {
+            /* bits-fill: under the long-run target, top an easy frame up
+             * toward the ask by moving lambda FINER only - the quality
+             * target is a floor, never traded away. Spends the rate the
+             * user asked for on sub-mask margin the nd statistic cannot
+             * see (it clips at -4/band); without this, stat-transparent
+             * content caps the rate below any ask. Active from frame one
+             * (the immature EMA reads as a deficit, so the stream head is
+             * held near the ask) and fades continuously as the EMA
+             * converges - a boot-gated fill flips regimes at ~2s, an
+             * audible quality step.
+             * The fill target follows the psy PE demand shape: per-frame
+             * demand carries perceptual information the nd model does not
+             * (the constant-lambda lesson) - and routing it through the
+             * fill keeps the quality floor intact. */
+            float dshape = 1.0f;
+            int fill;
+            if (s->psy.bitres.alloc > 0) {
+                float *aema = &s->nmr->abr_alloc_ema;
+                if (*aema <= 0.0f) *aema = s->psy.bitres.alloc;
+                else *aema += 0.01f * (s->psy.bitres.alloc - *aema);
+                dshape = av_clipf(s->psy.bitres.alloc / *aema, 0.6f, 1.7f);
+            }
+            fill = (int)((rc_rate_frame + (rc_rate_frame - (int)s->nmr->abr_ema)) * dshape) *
+                   chans / s->channels;
+            fill = FFMIN3(fill, 3 * rc_rate_frame * chans / s->channels / 2, hardcap);
+            if (tot < fill) {
+                /* the fill dive is the easy-frame operating point: slew it
+                 * like any other lambda move and let it carry the
+                 * continuity state, or per-frame depth variation reads as
+                 * frame-rate HF wobble */
+                float flo = lam / 64.0f;
+                if (*vslew_st > 0.0f)
+                    flo = FFMIN(FFMAX(flo, *vslew_st / NMR_SLEW), lam);
+                lam = nmr_solve_slots(s, sl, nsl, NMR_STEP, fill, flo, lam, NMR_RC_ITERS);
+                if (!is8_any)
+                    *vslew_st = s->nmr->lam_slew = lam;
+                tot = 0;
+                for (int k = 0; k < nsl; k++)
+                    tot += nmr_slot_bits(sl[k], s->nmr->nb[sl[k]->si], NMR_STEP);
+            }
+        }
         if (tot > hardcap) {
             lam = nmr_solve_slots(s, sl, nsl, NMR_STEP, hardcap, lam, 1e4f, NMR_RC_ITERS);
             tot = 0;
@@ -1280,7 +1354,7 @@ static void search_for_quantizers_nmr(AVCodecContext *avctx,
     /* Global-lambda RC: one solve per frame at a servoed centre lambda; the reservoir
      * holds the long-run mean rate. Bypassed for VBR (-q:a) and the bootstrap frame. */
     int rc_eligible = !(avctx->flags & AV_CODEC_FLAG_QSCALE) && avctx->bit_rate > 0 &&
-                      avctx->bit_rate_tolerance != 0;
+                      avctx->bit_rate_tolerance != 0 && s->options.rc == 0;
     /* Signed reservoir; soft steering (bounded repay + rc_off), hard cap =
      * legality only. */
     int rc_rate_frame = avctx->bit_rate * 1024.0 / avctx->sample_rate;
@@ -1291,6 +1365,108 @@ static void search_for_quantizers_nmr(AVCodecContext *avctx,
 
     s->nmr->counted[s->cur_channel] = 0;
 
+    if (s->options.rc == 1 && !(avctx->flags & AV_CODEC_FLAG_QSCALE) &&
+        avctx->bit_rate > 0 && avctx->frame_num != n->abr_frame_num) {
+        /* ABR servo: integrate the log rate error, but apply it to the nd
+         * set-point in RARE, DISCRETE steps. The set-point must be
+         * quasi-static: any drift on content timescales moves lambda, and
+         * with it band/PNS/scalefactor state - measured 2x worse than a
+         * fixed target at equal mean rate. Locally this mode IS fixed-target
+         * VBR; rate honesty converges on the minutes scale. */
+        if (n->abr_frame_num == 0 && n->abr_ema <= 0.0f) {
+            /* seed the set-point from the VBR calibration anchor (see
+             * NMR_VBR_ANCHOR for the 81.5 kbps/ch reference); the servo
+             * trims the rest */
+            n->abr_t   = av_clipf(NMR_VBR_ANCHOR - 2.5f * log2f(avctx->bit_rate /
+                                  (81500.0f * s->channels)), NMR_ABR_TMIN, NMR_ABR_TMAX);
+            n->abr_ema = rc_rate_frame;
+        } else if (s->last_frame_pb_count > 0) {
+            /* bootstrap: fast rate measurement for ~2s, then one open-loop
+             * jump over the measured loop gain (~ -0.24 log2 rate per target
+             * unit) corrects the seed's per-content error; the quasi-static
+             * stepper handles drift from there */
+            /* seed on-target: an EMA warming up from zero reads as a fake
+             * deficit and the fill overspends the whole stream head */
+            if (n->abr_ema <= 0.0f)
+                n->abr_ema = rc_rate_frame;
+            n->abr_ema += (n->abr_booted ? NMR_ABR_EMA : 0.02f) *
+                          (s->last_frame_pb_count - n->abr_ema);
+            n->abr_hold++;
+            if (!n->abr_booted) {
+                n->abr_longs += sce->ics.window_sequence[0] != EIGHT_SHORT_SEQUENCE;
+                /* boot only off a REPRESENTATIVE window: an all-transient
+                 * head (castanets roll) reads over-target and would coarsen
+                 * the very content that needs bits. Time out eventually. */
+                if ((n->abr_hold >= 86 && n->abr_longs >= n->abr_hold / 2) ||
+                    n->abr_hold >= 400) {
+                    /* glide the seed correction in, never step it: a
+                     * one-frame noise-floor jump at a fixed stream time is
+                     * audible against revealing content */
+                    n->abr_glide = NMR_ABR_BOOT_GAIN * log2f(n->abr_ema / rc_rate_frame) / 0.24f;
+                    n->abr_booted = 1;
+                    n->abr_boots++;
+                    n->abr_hold   = 0;
+                }
+            } else {
+                /* Re-arm the open-loop correction while the rate is still
+                 * off. One boot leaves a residual whenever the real loop gain
+                 * differs from the nominal 0.24, and the estimator is biased
+                 * toward the ask by construction (the EMA is seeded ON target
+                 * so a cold start cannot read as a deficit), so it understates
+                 * the error it is correcting. The quasi-static stepper cannot
+                 * drain that inside a track - measured, male_speech ended a
+                 * 774-frame file 23% short and still moving. Re-measuring and
+                 * firing again converges regardless of the gain estimate, and
+                 * keeps the set-point quasi-static: corrections stay rare,
+                 * glided, and bounded in number. */
+                if (n->abr_boots < NMR_ABR_BOOTS && n->abr_glide == 0.0f &&
+                    n->abr_hold >= NMR_ABR_SETTLE &&
+                    fabsf(log2f(n->abr_ema / rc_rate_frame)) > NMR_ABR_TOL) {
+                    /* Re-seed the estimator ON target, exactly as the cold
+                     * start does - never to zero. The value is read again
+                     * before anything re-seeds it: by the integrator below
+                     * (log2f(0) is -inf, which pinned the accumulator at its
+                     * clip) and by the bits-fill later in this same frame
+                     * (a zero EMA reads as a 100% deficit and authorises a
+                     * one-frame overspend). Drop the residual integral with
+                     * it: it describes the regime being left, and the boot
+                     * is about to re-measure that same error open-loop. */
+                    n->abr_booted = 0;
+                    n->abr_ema    = rc_rate_frame;
+                    n->abr_acc    = 0.0f;
+                    n->abr_hold   = 0;
+                    n->abr_longs  = 0;
+                } else {
+                    n->abr_acc = av_clipf(n->abr_acc + NMR_ABR_K * log2f(n->abr_ema / rc_rate_frame),
+                                          -4.0f * NMR_ABR_STEP, 4.0f * NMR_ABR_STEP);
+                    /* step in calm stretches (a set-point move during a transient
+                     * section coarsens exactly what needs the bits) - but dense
+                     * content must not deadlock the servo: after 3x the hold the
+                     * step fires regardless. Large errors step at double size;
+                     * the remainder carries over instead of being discarded. */
+                    if (fabsf(n->abr_acc) >= NMR_ABR_STEP && n->abr_hold >= NMR_ABR_HOLD &&
+                        (n->frames_since_short >= 12 || n->abr_hold >= 3 * NMR_ABR_HOLD)) {
+                        float ms   = NMR_ABR_STEP * (fabsf(n->abr_acc) > 3.0f * NMR_ABR_STEP ? 2.0f : 1.0f);
+                        float step = av_clipf(n->abr_acc, -ms, ms);
+                        n->abr_glide += step;
+                        n->abr_acc  -= step;
+                        n->abr_hold  = 0;
+                    }
+                }
+            }
+            if (n->abr_glide != 0.0f) {
+                /* drain pending set-point corrections smoothly (~0.5
+                 * log2-units/s): the decision stays quasi-static and
+                 * calm-gated, only the application glides */
+                float d = av_clipf(n->abr_glide, -0.012f, 0.012f);
+                n->abr_t = av_clipf(n->abr_t + d, NMR_ABR_TMIN, NMR_ABR_TMAX);
+                n->abr_glide -= d;
+                if (fabsf(n->abr_glide) < 1e-4f)
+                    n->abr_glide = 0.0f;
+            }
+        }
+        n->abr_frame_num = avctx->frame_num;
+    }
     if (rc_eligible && !n->rc_fill_seeded) {
         /* the decoder bit reservoir starts FULL: seed it so the head may frontload */
         n->rc_fill = rc_bmax;

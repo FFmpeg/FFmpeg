@@ -72,6 +72,7 @@ typedef struct AACEncOptions {
     int intensity_stereo;
     int nmr_speed;          ///< NMR coder speed level: 0 = slowest/best, higher is faster
     int allow_71wide;
+    int rc;                 ///< rate-control mode: 0 = cbr (corridor+bucket), 1 = abr (nd-target + slow servo)
 } AACEncOptions;
 
 /**
@@ -248,6 +249,18 @@ typedef struct AACNMRCurves {
     float   lam_short_ema;                       ///< smoothed operating lambda of short frames
     float   lam_long_ema;                        ///< smoothed operating lambda of long frames
     float   lam_floor;                           ///< lambda min-tracker (snaps down, +2%/frame up): sustained-strain floor; bursty spikes at a comfortable rate cannot raise it
+
+    /* ABR: nd-target set-point servoed to hold the long-run mean rate */
+    float   abr_t;                     ///< current nd target (log2 dist/mask)
+    float   abr_glide;                 ///< pending set-point correction, drained per-frame (no discrete quality steps)
+    float   abr_ema;                   ///< EMA of real frame bits
+    float   abr_acc;                   ///< accumulated set-point correction
+    int     abr_hold;                  ///< frames since the target last stepped
+    int     abr_booted;                ///< seed correction applied (re-armed while the rate is still off)
+    int     abr_boots;                 ///< open-loop corrections fired so far
+    float   abr_alloc_ema;             ///< EMA of psy bit demand (fill shaping)
+    int     abr_longs;                 ///< long frames seen during bootstrap
+    int64_t abr_frame_num;             ///< once-per-frame servo guard
 } AACNMRCurves;
 
 typedef struct AACPCEInfo {

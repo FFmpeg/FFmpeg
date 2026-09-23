@@ -1692,12 +1692,12 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     avpkt->size            = put_bytes_output(&s->pb);
 
     /* NMR reports its real operating lambda: the corridor centre in CBR,
-     * the quality-mode slew state in VBR - the lambda of the last long
+     * the quality-mode slew state in VBR/ABR - the lambda of the last long
      * operating-point solve, which short frames and legality re-solves do
      * not update (the outer-loop s->lambda is never touched for this coder
      * and would pin Qavg at its 120 init) */
     s->lambda_sum += (s->nmr && s->nmr->lam_slew > 0.0f &&
-                      (avctx->flags & AV_CODEC_FLAG_QSCALE)) ?
+                      ((avctx->flags & AV_CODEC_FLAG_QSCALE) || s->options.rc == 1)) ?
                      s->nmr->lam_slew :
                      (s->nmr && s->nmr->lam_rc > 0.0f) ? s->nmr->lam_rc : s->lambda;
     s->lambda_count++;
@@ -1964,7 +1964,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     lengths[1] = ff_aac_num_swb_128[s->samplerate_index];
     for (i = 0; i < s->chan_map[0]; i++)
         grouping[i] = s->chan_map[i + 1] == TYPE_CPE;
-    s->psy.unbounded_pe = (avctx->flags & AV_CODEC_FLAG_QSCALE) &&
+    s->psy.unbounded_pe = ((avctx->flags & AV_CODEC_FLAG_QSCALE) || s->options.rc == 1) &&
                           s->options.coder == AAC_CODER_NMR;
     if ((ret = ff_psy_init(&s->psy, avctx, 2, sizes, lengths,
                            s->chan_map[0], grouping, s->bandwidth)) < 0)
@@ -1991,6 +1991,9 @@ static const AVOption aacenc_options[] = {
     {"aac_pns", "Perceptual noise substitution", offsetof(AACEncContext, options.pns), AV_OPT_TYPE_BOOL, {.i64 = 1}, -1, 1, AACENC_FLAGS},
     {"aac_tns", "Temporal noise shaping", offsetof(AACEncContext, options.tns), AV_OPT_TYPE_BOOL, {.i64 = 1}, -1, 1, AACENC_FLAGS},
     {"aac_pce", "Forces the use of PCEs", offsetof(AACEncContext, options.pce), AV_OPT_TYPE_BOOL, {.i64 = 0}, -1, 1, AACENC_FLAGS},
+    {"aac_rc", "Rate-control mode (NMR coder)", offsetof(AACEncContext, options.rc), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, AACENC_FLAGS, .unit = "aac_rc"},
+        {"cbr", "Constant bitrate (corridor + leaky bucket)", 0, AV_OPT_TYPE_CONST, {.i64 = 0}, INT_MIN, INT_MAX, AACENC_FLAGS, .unit = "aac_rc"},
+        {"abr", "Average bitrate (constant-quality target, slow rate servo)", 0, AV_OPT_TYPE_CONST, {.i64 = 1}, INT_MIN, INT_MAX, AACENC_FLAGS, .unit = "aac_rc"},
     {"aac_nmr_speed", "NMR coder speed level: 0 = slowest/best, higher trades quality for speed", offsetof(AACEncContext, options.nmr_speed), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 4, AACENC_FLAGS},
     {"aac_allow_71wide", "Allow non-PCE use of 7.1(wide) channel layout", offsetof(AACEncContext, options.allow_71wide), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, AACENC_FLAGS},
     FF_AAC_PROFILE_OPTS

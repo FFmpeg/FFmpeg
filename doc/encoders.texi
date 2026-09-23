@@ -85,6 +85,22 @@ and much faster at higher bitrates.
 
 @end table
 
+@item aac_rc
+Rate-control mode of the @samp{nmr} coder when a bitrate is set with @option{b}
+(other coders ignore it; @option{q} takes precedence). Possible values:
+
+@table @samp
+@item cbr
+Constant bitrate within the decoder's bit reservoir. This is the default.
+
+@item abr
+Average bitrate: a constant-quality target, as in VBR, whose set-point a slow
+servo moves to meet @option{b} over the length of the stream. Local quality
+stays constant, so short files and individual passages can deviate from the
+requested rate; the average converges over minutes rather than seconds. Below
+roughly 56 kbps stereo the rate lands above the request; use @samp{cbr} there.
+@end table
+
 @item aac_ms
 Sets mid/side coding mode. The default value of "auto" will automatically use
 M/S with bands which will benefit from such coding. Can be forced for all bands
