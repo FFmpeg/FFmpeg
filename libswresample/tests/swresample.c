@@ -22,6 +22,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
+#include "libavutil/mem_internal.h"
 #include "libavutil/opt.h"
 
 #include "libswresample/swresample.h"
@@ -222,9 +223,9 @@ int main(int argc, char **argv){
     int in_sample_rate, out_sample_rate, ch ,i, flush_count;
     AVChannelLayout in_ch_layout = { 0 }, out_ch_layout = { 0 };
     enum AVSampleFormat in_sample_fmt, out_sample_fmt;
-    uint8_t array_in[SAMPLES*8*8];
-    uint8_t array_mid[SAMPLES*8*8*3];
-    uint8_t array_out[SAMPLES*8*8+100];
+    LOCAL_ALIGNED(32, uint8_t, array_in,  [SAMPLES*8*8]);
+    LOCAL_ALIGNED(32, uint8_t, array_mid, [SAMPLES*8*8*3]);
+    LOCAL_ALIGNED(32, uint8_t, array_out, [SAMPLES*8*8+100]);
     uint8_t *ain[SWR_CH_MAX];
     uint8_t *aout[SWR_CH_MAX];
     uint8_t *amid[SWR_CH_MAX];
