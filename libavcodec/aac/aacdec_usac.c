@@ -564,6 +564,7 @@ int ff_aac_usac_config_decode(AACDecContext *ac, AVCodecContext *avctx,
     int elem_id[3 /* SCE, CPE, LFE */];
 
     int map_pos_set = 0;
+    int nb_elements = 0;
     uint8_t layout_map[MAX_ELEM_ID*4][3] = { 0 };
 
     if (!ac)
@@ -644,7 +645,6 @@ int ff_aac_usac_config_decode(AACDecContext *ac, AVCodecContext *avctx,
         if (ret < 0)
             return ret;
     } else {
-        int nb_elements;
         if ((ret = ff_aac_set_default_channel_config(ac, avctx, layout_map,
                                                      &nb_elements, channel_config_idx)))
             return ret;
@@ -677,6 +677,14 @@ int ff_aac_usac_config_decode(AACDecContext *ac, AVCodecContext *avctx,
                                             "configuration\n");
             usac->nb_elems = 0;
             return AVERROR(EINVAL);
+        }
+        if (map_pos_set && e->type != ID_USAC_EXT &&
+            (map_count >= nb_elements ||
+             layout_map[map_count][0] != (e->type == ID_USAC_LFE ? TYPE_LFE : e->type))) {
+            av_log(ac->avctx, AV_LOG_ERROR, "Element %d does not match the "
+                                            "channel configuration\n", i);
+            usac->nb_elems = 0;
+            return AVERROR_INVALIDDATA;
         }
 
         av_log(ac->avctx, AV_LOG_DEBUG, "Element present: idx %i, type %i\n",
@@ -725,6 +733,13 @@ int ff_aac_usac_config_decode(AACDecContext *ac, AVCodecContext *avctx,
                 return ret;
             break;
         };
+    }
+
+    if (map_pos_set && elem_id[0] + elem_id[1] + elem_id[2] != nb_elements) {
+        av_log(ac->avctx, AV_LOG_ERROR, "Element count does not match the "
+                                        "channel configuration\n");
+        usac->nb_elems = 0;
+        return AVERROR_INVALIDDATA;
     }
 
     ret = ff_aac_output_configure(ac, layout_map, elem_id[0] + elem_id[1] + elem_id[2],
