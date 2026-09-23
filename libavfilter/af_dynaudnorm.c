@@ -172,7 +172,9 @@ static av_cold int init(AVFilterContext *ctx)
 
 static inline int frame_size(int sample_rate, int frame_len_msec)
 {
-    const int frame_size = lrint((double)sample_rate * (frame_len_msec / 1000.0));
+    const int64_t frame_size = llrint((double)sample_rate * (frame_len_msec / 1000.0));
+    if (frame_size >= INT_MAX / 2)
+        return AVERROR(EINVAL);
     return frame_size + (frame_size % 2);
 }
 
@@ -350,6 +352,8 @@ static int config_input(AVFilterLink *inlink)
 
     s->channels = inlink->ch_layout.nb_channels;
     s->frame_len = frame_size(inlink->sample_rate, s->frame_len_msec);
+    if (s->frame_len < 0)
+        return s->frame_len;
     av_log(ctx, AV_LOG_DEBUG, "frame len %d\n", s->frame_len);
 
     s->prev_amplification_factor = av_malloc_array(inlink->ch_layout.nb_channels, sizeof(*s->prev_amplification_factor));
@@ -1001,7 +1005,10 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
         }
     }
 
-    s->frame_len = frame_size(inlink->sample_rate, s->frame_len_msec);
+    ret = frame_size(inlink->sample_rate, s->frame_len_msec);
+    if (ret < 0)
+        return ret;
+    s->frame_len = ret;
     s->sample_advance = FFMAX(1, lrint(s->frame_len * (1. - s->overlap)));
     if (s->expr_str) {
         ret = av_expr_parse(&s->expr, s->expr_str, var_names, NULL, NULL,
