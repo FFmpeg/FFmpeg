@@ -88,9 +88,12 @@ static int flush(AVFormatContext *s, int trailer, int64_t pts)
         skip = 12;
 
     if (AV_RL32(w->last_pkt->data + skip) == AV_RL32("VP8X")) {
+        int64_t vp8x_end = skip + 8 + (int64_t)AV_RL32(w->last_pkt->data + skip + 4);
+        if (vp8x_end > w->last_pkt->size)
+            return AVERROR_INVALIDDATA;
         flags |= w->last_pkt->data[skip + 4 + 4];
         vp8x = 1;
-        skip += AV_RL32(w->last_pkt->data + skip + 4) + 8;
+        skip = vp8x_end;
     }
 
     if (!w->wrote_webp_header) {
