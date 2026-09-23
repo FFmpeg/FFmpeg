@@ -437,8 +437,15 @@ static void celt_encode_frame(OpusEncContext *s, OpusRangeCoder *rc,
     if (f->silence) {
         if (f->framebits >= 16)
             ff_opus_rc_enc_log(rc, 1, 15); /* Silence (if using explicit signalling) */
-        for (int ch = 0; ch < s->channels; ch++)
-            memset(s->last_quantized_energy[ch], 0.0f, sizeof(float)*CELT_MAX_BANDS);
+        for (int ch = 0; ch < s->channels; ch++) {
+            /* The decoder sets all band energies to CELT_ENERGY_SILENCE on
+             * a silence frame, and predicts the next frame's from them. */
+            for (int i = 0; i < CELT_MAX_BANDS; i++)
+                s->last_quantized_energy[ch][i] = CELT_ENERGY_SILENCE;
+            /* The frame is all zeros, so this is the pre emphasis filter state
+             * at the point the next frame's overlap starts */
+            f->block[ch].emph_coeff = 0.0f;
+        }
         return;
     }
 
