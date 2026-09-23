@@ -311,7 +311,10 @@ void ff_opus_psy_celt_frame_init(OpusPsyContext *s, CeltFrame *f, int index)
 
     f->silence = silence;
     if (f->silence) {
-        f->framebits = 0; /* Otherwise the silence flag eats up 16(!) bits */
+        /* Explicitly signal silence in a 2 byte frame, like libopus does.
+         * A zero length frame would instead signal a lost frame to decoders,
+         * which conceal it by extrapolating the preceding audio. */
+        f->framebits = 16;
         f->intensity_stereo = f->end_band; /* Read by postencode_update for avg_is_band */
         return;
     }
@@ -546,7 +549,7 @@ void ff_opus_psy_postencode_update(OpusPsyContext *s, CeltFrame *f)
 
     for (i = 0; i < s->p.frames; i++) {
         s->avg_is_band += f[i].intensity_stereo;
-        if (f[i].framebits > 0)
+        if (!f[i].silence && f[i].framebits > 0)
             s->lambda *= ideal_fbits / f[i].framebits;
     }
 
