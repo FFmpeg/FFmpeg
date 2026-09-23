@@ -1,0 +1,270 @@
+Testing yuv420p...         ok
+Testing yuyv422...         no: Function not implemented
+Testing rgb24...           ok
+Testing bgr24...           ok
+Testing yuv422p...         ok
+Testing yuv444p...         ok
+Testing yuv410p...         ok
+Testing yuv411p...         ok
+Testing gray...            ok
+Testing monow...           no: Function not implemented
+Testing monob...           no: Function not implemented
+Testing pal8...            no: Function not implemented
+Testing yuvj420p...        ok
+Testing yuvj422p...        ok
+Testing yuvj444p...        ok
+Testing uyvy422...         no: Function not implemented
+Testing uyyvyy411...       no: Function not implemented
+Testing bgr8...            no: Function not implemented
+Testing bgr4...            no: Function not implemented
+Testing bgr4_byte...       no: Function not implemented
+Testing rgb8...            no: Function not implemented
+Testing rgb4...            no: Function not implemented
+Testing rgb4_byte...       no: Function not implemented
+Testing nv12...            ok
+Testing nv21...            ok
+Testing argb...            ok
+Testing rgba...            ok
+Testing abgr...            ok
+Testing bgra...            ok
+Testing gray16be...        no: Function not implemented
+Testing gray16le...        ok
+Testing yuv440p...         ok
+Testing yuvj440p...        ok
+Testing yuva420p...        ok
+Testing rgb48be...         no: Function not implemented
+Testing rgb48le...         ok
+Testing rgb565be...        no: Function not implemented
+Testing rgb565le...        no: Function not implemented
+Testing rgb555be...        no: Function not implemented
+Testing rgb555le...        no: Function not implemented
+Testing bgr565be...        no: Function not implemented
+Testing bgr565le...        no: Function not implemented
+Testing bgr555be...        no: Function not implemented
+Testing bgr555le...        no: Function not implemented
+Testing vaapi...           no: Function not implemented
+Testing yuv420p16le...     ok
+Testing yuv420p16be...     no: Function not implemented
+Testing yuv422p16le...     ok
+Testing yuv422p16be...     no: Function not implemented
+Testing yuv444p16le...     ok
+Testing yuv444p16be...     no: Function not implemented
+Testing dxva2_vld...       no: Function not implemented
+Testing rgb444le...        no: Function not implemented
+Testing rgb444be...        no: Function not implemented
+Testing bgr444le...        no: Function not implemented
+Testing bgr444be...        no: Function not implemented
+Testing ya8...             ok
+Testing bgr48be...         no: Function not implemented
+Testing bgr48le...         ok
+Testing yuv420p9be...      no: Function not implemented
+Testing yuv420p9le...      ok
+Testing yuv420p10be...     no: Function not implemented
+Testing yuv420p10le...     ok
+Testing yuv422p10be...     no: Function not implemented
+Testing yuv422p10le...     ok
+Testing yuv444p9be...      no: Function not implemented
+Testing yuv444p9le...      ok
+Testing yuv444p10be...     no: Function not implemented
+Testing yuv444p10le...     ok
+Testing yuv422p9be...      no: Function not implemented
+Testing yuv422p9le...      ok
+Testing gbrp...            ok
+Testing gbrp9be...         no: Function not implemented
+Testing gbrp9le...         ok
+Testing gbrp10be...        no: Function not implemented
+Testing gbrp10le...        ok
+Testing gbrp16be...        no: Function not implemented
+Testing gbrp16le...        ok
+Testing yuva422p...        ok
+Testing yuva444p...        ok
+Testing yuva420p9be...     no: Function not implemented
+Testing yuva420p9le...     ok
+Testing yuva422p9be...     no: Function not implemented
+Testing yuva422p9le...     ok
+Testing yuva444p9be...     no: Function not implemented
+Testing yuva444p9le...     ok
+Testing yuva420p10be...    no: Function not implemented
+Testing yuva420p10le...    ok
+Testing yuva422p10be...    no: Function not implemented
+Testing yuva422p10le...    ok
+Testing yuva444p10be...    no: Function not implemented
+Testing yuva444p10le...    ok
+Testing yuva420p16be...    no: Function not implemented
+Testing yuva420p16le...    ok
+Testing yuva422p16be...    no: Function not implemented
+Testing yuva422p16le...    ok
+Testing yuva444p16be...    no: Function not implemented
+Testing yuva444p16le...    ok
+Testing vdpau...           no: Function not implemented
+Testing xyz12le...         no: Function not implemented
+Testing xyz12be...         no: Function not implemented
+Testing nv16...            ok
+Testing nv20le...          ok
+Testing nv20be...          no: Function not implemented
+Testing rgba64be...        no: Function not implemented
+Testing rgba64le...        no: Function not implemented
+Testing bgra64be...        no: Function not implemented
+Testing bgra64le...        no: Function not implemented
+Testing yvyu422...         no: Function not implemented
+Testing ya16be...          no: Function not implemented
+Testing ya16le...          ok
+Testing gbrap...           ok
+Testing gbrap16be...       no: Function not implemented
+Testing gbrap16le...       ok
+Testing qsv...             no: Function not implemented
+Testing mmal...            no: Function not implemented
+Testing d3d11va_vld...     no: Function not implemented
+Testing cuda...            no: Function not implemented
+Testing 0rgb...            ok
+Testing rgb0...            ok
+Testing 0bgr...            ok
+Testing bgr0...            ok
+Testing yuv420p12be...     no: Function not implemented
+Testing yuv420p12le...     ok
+Testing yuv420p14be...     no: Function not implemented
+Testing yuv420p14le...     ok
+Testing yuv422p12be...     no: Function not implemented
+Testing yuv422p12le...     ok
+Testing yuv422p14be...     no: Function not implemented
+Testing yuv422p14le...     ok
+Testing yuv444p12be...     no: Function not implemented
+Testing yuv444p12le...     ok
+Testing yuv444p14be...     no: Function not implemented
+Testing yuv444p14le...     ok
+Testing gbrp12be...        no: Function not implemented
+Testing gbrp12le...        ok
+Testing gbrp14be...        no: Function not implemented
+Testing gbrp14le...        ok
+Testing yuvj411p...        ok
+Testing bayer_bggr8...     no: Function not implemented
+Testing bayer_rggb8...     no: Function not implemented
+Testing bayer_gbrg8...     no: Function not implemented
+Testing bayer_grbg8...     no: Function not implemented
+Testing bayer_bggr16le...  no: Function not implemented
+Testing bayer_bggr16be...  no: Function not implemented
+Testing bayer_rggb16le...  no: Function not implemented
+Testing bayer_rggb16be...  no: Function not implemented
+Testing bayer_gbrg16le...  no: Function not implemented
+Testing bayer_gbrg16be...  no: Function not implemented
+Testing bayer_grbg16le...  no: Function not implemented
+Testing bayer_grbg16be...  no: Function not implemented
+Testing yuv440p10le...     ok
+Testing yuv440p10be...     no: Function not implemented
+Testing yuv440p12le...     ok
+Testing yuv440p12be...     no: Function not implemented
+Testing ayuv64le...        no: Function not implemented
+Testing ayuv64be...        no: Function not implemented
+Testing videotoolbox_vld...no: Function not implemented
+Testing p010le...          ok
+Testing p010be...          no: Function not implemented
+Testing gbrap12be...       no: Function not implemented
+Testing gbrap12le...       ok
+Testing gbrap10be...       no: Function not implemented
+Testing gbrap10le...       ok
+Testing mediacodec...      no: Function not implemented
+Testing gray12be...        no: Function not implemented
+Testing gray12le...        ok
+Testing gray10be...        no: Function not implemented
+Testing gray10le...        ok
+Testing p016le...          ok
+Testing p016be...          no: Function not implemented
+Testing d3d11...           no: Function not implemented
+Testing gray9be...         no: Function not implemented
+Testing gray9le...         ok
+Testing gbrpf32be...       no: Function not implemented
+Testing gbrpf32le...       no: Function not implemented
+Testing gbrapf32be...      no: Function not implemented
+Testing gbrapf32le...      no: Function not implemented
+Testing drm_prime...       no: Function not implemented
+Testing opencl...          no: Function not implemented
+Testing gray14be...        no: Function not implemented
+Testing gray14le...        ok
+Testing grayf32be...       no: Function not implemented
+Testing grayf32le...       no: Function not implemented
+Testing yuva422p12be...    no: Function not implemented
+Testing yuva422p12le...    ok
+Testing yuva444p12be...    no: Function not implemented
+Testing yuva444p12le...    ok
+Testing nv24...            ok
+Testing nv42...            ok
+Testing vulkan...          no: Function not implemented
+Testing y210be...          no: Function not implemented
+Testing y210le...          no: Function not implemented
+Testing x2rgb10le...       no: Function not implemented
+Testing x2rgb10be...       no: Function not implemented
+Testing x2bgr10le...       no: Function not implemented
+Testing x2bgr10be...       no: Function not implemented
+Testing p210be...          no: Function not implemented
+Testing p210le...          ok
+Testing p410be...          no: Function not implemented
+Testing p410le...          ok
+Testing p216be...          no: Function not implemented
+Testing p216le...          ok
+Testing p416be...          no: Function not implemented
+Testing p416le...          ok
+Testing vuya...            ok
+Testing rgbaf16be...       no: Function not implemented
+Testing rgbaf16le...       no: Function not implemented
+Testing vuyx...            ok
+Testing p012le...          ok
+Testing p012be...          no: Function not implemented
+Testing y212be...          no: Function not implemented
+Testing y212le...          no: Function not implemented
+Testing xv30be...          no: Function not implemented
+Testing xv30le...          no: Function not implemented
+Testing xv36be...          no: Function not implemented
+Testing xv36le...          no: Function not implemented
+Testing rgbf32be...        no: Function not implemented
+Testing rgbf32le...        no: Function not implemented
+Testing rgbaf32be...       no: Function not implemented
+Testing rgbaf32le...       no: Function not implemented
+Testing p212be...          no: Function not implemented
+Testing p212le...          ok
+Testing p412be...          no: Function not implemented
+Testing p412le...          ok
+Testing gbrap14be...       no: Function not implemented
+Testing gbrap14le...       ok
+Testing d3d12...           no: Function not implemented
+Testing ayuv...            ok
+Testing uyva...            ok
+Testing vyu444...          ok
+Testing v30xbe...          no: Function not implemented
+Testing v30xle...          no: Function not implemented
+Testing rgbf16be...        no: Function not implemented
+Testing rgbf16le...        no: Function not implemented
+Testing rgba128be...       no: Function not implemented
+Testing rgba128le...       no: Function not implemented
+Testing rgb96be...         no: Function not implemented
+Testing rgb96le...         no: Function not implemented
+Testing y216be...          no: Function not implemented
+Testing y216le...          no: Function not implemented
+Testing xv48be...          no: Function not implemented
+Testing xv48le...          no: Function not implemented
+Testing gbrpf16be...       no: Function not implemented
+Testing gbrpf16le...       no: Function not implemented
+Testing gbrapf16be...      no: Function not implemented
+Testing gbrapf16le...      no: Function not implemented
+Testing grayf16be...       no: Function not implemented
+Testing grayf16le...       no: Function not implemented
+Testing amf...             no: Function not implemented
+Testing gray32be...        no: Function not implemented
+Testing gray32le...        no: Function not implemented
+Testing yaf32be...         no: Function not implemented
+Testing yaf32le...         no: Function not implemented
+Testing yaf16be...         no: Function not implemented
+Testing yaf16le...         no: Function not implemented
+Testing gbrap32be...       no: Function not implemented
+Testing gbrap32le...       no: Function not implemented
+Testing yuv444p10msbbe...  no: Function not implemented
+Testing yuv444p10msble...  ok
+Testing yuv444p12msbbe...  no: Function not implemented
+Testing yuv444p12msble...  ok
+Testing gbrp10msbbe...     no: Function not implemented
+Testing gbrp10msble...     ok
+Testing gbrp12msbbe...     no: Function not implemented
+Testing gbrp12msble...     ok
+Testing ohcodec...         no: Function not implemented
+Testing cuarray...         no: Function not implemented
+half transparent red over transparent rgba by mask: 128 0 0 128
+half transparent red over transparent rgba by rectangle: 128 0 0 128

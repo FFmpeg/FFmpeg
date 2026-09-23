@@ -50,5 +50,20 @@ int main(void)
         }
         printf("ok\n");
     }
+
+    ff_draw_init(&draw, AV_PIX_FMT_RGBA, FF_DRAW_PROCESS_ALPHA);
+    ff_draw_color(&draw, &color, (uint8_t[]) { 255, 0, 0, 128 });
+    for (int pass = 0; pass < 2; pass++) {
+        uint8_t pixel[4] = { 0 };
+        uint8_t *dst[4] = { pixel }, mask = 0xFF;
+        int linesize[4] = { 4 };
+
+        if (pass)
+            ff_blend_rectangle(&draw, &color, dst, linesize, 1, 1, 0, 0, 1, 1);
+        else
+            ff_blend_mask(&draw, &color, dst, linesize, 1, 1, &mask, 1, 1, 1, 3, 0, 0, 0);
+        printf("half transparent red over transparent rgba by %s: %d %d %d %d\n",
+               pass ? "rectangle" : "mask", pixel[0], pixel[1], pixel[2], pixel[3]);
+    }
     return 0;
 }
