@@ -567,11 +567,37 @@ enum AMF_MEMORY_TYPE av_amf_get_memory_type(AVAMFDeviceContext *amf_ctx)
     AMFContext  *context = amf_ctx->context;
     AMFContext1 *context1 = NULL;
     AMFGuid guid1 = IID_AMFContext1();
+    void * device = NULL;
+
+#ifdef _WIN32
+    // At the moment used only for DX12.
+    AMFContext2 *context2 = NULL;
+
+    /*
+    Work around the incorrect C Context2 IID in unpatched AMF 1.5.2 headers;
+    mostly pedantic fix as it works as it is in practice.
+    TODO: replace with AMFGuid guid2 = IID_AMFContext2()
+    once AMF 1.5.3 is available to public and marked as required version in ffmpeg.
+    */
+    static const AMFGuid guid2 = {
+        0x726241d3, 0xbd46, 0x4e90,
+        0x99, 0x68, 0x93, 0xe0, 0x7e, 0xa2, 0x98, 0x4d
+    };
+#endif
 
     if (!amf_ctx)
         return AMF_MEMORY_UNKNOWN;
 
 #ifdef _WIN32
+    if (AMF_IFACE_CALL(context, QueryInterface, &guid2, (void**)&context2) == AMF_OK)
+    {
+        device = AMF_IFACE_CALL(context2, GetDX12Device, AMF_DX12);
+        AMF_IFACE_CALL(context2, Release);
+
+        if (device)
+            return AMF_MEMORY_DX12;
+    }
+
     if (AMF_IFACE_CALL(context, GetDX11Device, AMF_DX11_1))
         return AMF_MEMORY_DX11;
 
@@ -582,10 +608,10 @@ enum AMF_MEMORY_TYPE av_amf_get_memory_type(AVAMFDeviceContext *amf_ctx)
     if (AMF_IFACE_CALL(context, QueryInterface, &guid1, (void**)&context1) != AMF_OK)
         return AMF_MEMORY_UNKNOWN;
 
-    if (AMF_IFACE_CALL(context1, GetVulkanDevice)) {
-        context1->pVtbl->Release(context1);
+    device = AMF_IFACE_CALL(context1, GetVulkanDevice);
+    AMF_IFACE_CALL(context1, Release);
+    if (device)
         return AMF_MEMORY_VULKAN;
-    }
 
     return AMF_MEMORY_UNKNOWN;
 }
@@ -593,10 +619,18 @@ enum AMF_MEMORY_TYPE av_amf_get_memory_type(AVAMFDeviceContext *amf_ctx)
 static int amf_device_init(AVHWDeviceContext *ctx)
 {
     AVAMFDeviceContext *amf_ctx = ctx->hwctx;
-    AMFContext *context = amf_ctx->context;
+    AMFContext  *context = amf_ctx->context;
     AMFContext1 *context1 = NULL;
     AMFGuid guid1 = IID_AMFContext1();
     AMF_RESULT res;
+
+#ifdef _WIN32
+    AMFContext2 *context2 = NULL;
+    static const AMFGuid guid2 = {
+        0x726241d3, 0xbd46, 0x4e90,
+        0x99, 0x68, 0x93, 0xe0, 0x7e, 0xa2, 0x98, 0x4d
+    };
+#endif
 
     if (!amf_ctx->lock) {
         amf_ctx->lock_ctx = av_mallocz(sizeof(AVMutex));
@@ -620,6 +654,18 @@ static int amf_device_init(AVHWDeviceContext *ctx)
         return 0;
     }
 
+    res = AMF_IFACE_CALL(context, QueryInterface, &guid2, (void**)&context2);
+    if (res == AMF_OK) {
+        res = AMF_IFACE_CALL(context2, InitDX12, NULL, AMF_DX12);
+        AMF_IFACE_CALL(context2, Release);
+        if (res == AMF_OK) {
+            av_log(ctx, AV_LOG_VERBOSE, "Successfully initialized AMF via D3D12.\n");
+            return 0;
+        }
+    } else {
+        av_log(ctx, AV_LOG_VERBOSE, "QueryInterface(AMFContext2) failed with error %d, trying older D3D APIs...\n", res);
+    }
+
     res = AMF_IFACE_CALL(context, InitDX9, NULL);
     if (res == AMF_OK) {
         av_log(ctx, AV_LOG_VERBOSE, "Successfully initialized AMF via D3D9.\n");
@@ -630,14 +676,17 @@ static int amf_device_init(AVHWDeviceContext *ctx)
 #endif
 
     res = AMF_IFACE_CALL(context, QueryInterface, &guid1, (void**)&context1);
-    AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_UNKNOWN, "CreateContext1() failed with error %d\n", res);
+    if (res != AMF_OK) {
+        av_log(ctx, AV_LOG_ERROR, "QueryInterface(AMFContext1) failed with error %d\n", res);
+        return AVERROR_UNKNOWN;
+    }
 
     res = AMF_IFACE_CALL(context1, InitVulkan, NULL);
     AMF_IFACE_CALL(context1, Release);
 
-    if (res == AMF_OK)
+    if (res == AMF_OK) {
         av_log(ctx, AV_LOG_VERBOSE, "Successfully initialized AMF via Vulkan.\n");
-    else {
+    } else {
         if (res == AMF_NOT_SUPPORTED)
             av_log(ctx, AV_LOG_ERROR, "AMF via Vulkan is not supported on the given device.\n");
         else
@@ -834,7 +883,7 @@ static int amf_device_derive(AVHWDeviceContext *device_ctx,
                               AVHWDeviceContext *child_device_ctx, AVDictionary *opts,
                               int flags)
 {
-#if CONFIG_DXVA2 || CONFIG_D3D11VA
+#if CONFIG_DXVA2 || CONFIG_D3D11VA || CONFIG_D3D12VA
     AVAMFDeviceContext        *amf_ctx = device_ctx->hwctx;
 #endif
     int ret;
