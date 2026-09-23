@@ -2281,11 +2281,6 @@ THREADS_LIST="
     w32threads
 "
 
-ATOMICS_LIST="
-    atomics_win32
-    atomics_os2
-"
-
 AUTODETECT_LIBS="
     $EXTERNAL_AUTODETECT_LIBRARY_LIST
     $HWACCEL_AUTODETECT_LIBRARY_LIST
@@ -3017,8 +3012,7 @@ valgrind_backtrace_conflict="optimizations"
 valgrind_backtrace_deps="valgrind_valgrind_h"
 
 # threading support
-atomics_os2_if="stdatomic"
-atomics_native_if_any="$ATOMICS_LIST"
+atomics_native_if_any="stdatomic atomics_win32"
 w32threads_deps="atomics_native"
 os2threads_deps="atomics_native"
 threads_if_any="$THREADS_LIST"
@@ -4086,7 +4080,7 @@ schannel_conflict="openssl gnutls libtls mbedtls"
 sctp_protocol_deps="struct_sctp_event_subscribe struct_msghdr_msg_flags"
 sctp_protocol_select="network"
 securetransport_conflict="openssl gnutls libtls mbedtls"
-shared_protocol_deps_any="stdatomic atomics_native"
+shared_protocol_deps="atomics_native"
 srtp_protocol_select="rtp_protocol srtp"
 tcp_protocol_select="network"
 tls_protocol_deps_any="gnutls openssl schannel securetransport libtls mbedtls"
