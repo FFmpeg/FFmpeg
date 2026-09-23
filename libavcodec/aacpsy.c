@@ -112,6 +112,24 @@ enum {
 #define PSY_LAME_HIST      32       ///< HP sub-block peak history depth
 #define PSY_LAME_NOV_BACK  30       ///< novelty look-back in sub-blocks
 
+/* HF-novelty veto: an attack candidate stays long when its first-difference
+ * envelope is both relatively and absolutely unremarkable, and pre-echo is
+ * masked by what precedes it. */
+#define PSY_LAME_HFN_REL    4.0f    ///< max derivative rise over the recent envelope
+#define PSY_LAME_HFN_ABS 2000.0f    ///< max absolute derivative peak
+#define PSY_LAME_HFN_PRE    8.0f    ///< max candidate rise over the ~5ms pre-attack minimum
+
+/* Gap-onset detection against a decaying program-level peak-hold */
+#define PSY_LAME_GAP_DEPTH  6.0f    ///< a gap is this far below the peak-hold
+#define PSY_LAME_GAP_BACK   24      ///< gap look-back in sub-blocks (<= PSY_LAME_HIST)
+#define PSY_LAME_GAP_LEVEL  0.4f    ///< candidate must reach this fraction of the peak-hold
+#define PSY_LAME_GAP_FLOOR 4000.0f  ///< and this absolute peak
+#define PSY_LAME_GAP_TOWER  4.0f    ///< HP tower: rise over the whole look-back
+
+/* Level-homogeneous short-window grouping */
+#define PSY_LAME_GRP_RATIO  2.5f    ///< max adjacent-window level ratio inside a group
+#define PSY_LAME_GRP_MAX    4       ///< max windows per group
+
 /**
  * @}
  */
@@ -145,7 +163,12 @@ typedef struct AacPsyChannel{
     /* LAME psy model specific members */
     float attack_threshold;              ///< attack threshold for this channel
     float prev_energy_subshort[AAC_NUM_BLOCKS_SHORT * PSY_LAME_NUM_SUBBLOCKS];
+    float next_win_level[AAC_NUM_BLOCKS_SHORT]; ///< lookahead short-window peak levels (grouping homogeneity)
+    float dif_env_hist[PSY_LAME_HIST];   ///< rolling first-difference sub-block peak envelope (HF novelty)
     float hp_env_hist[PSY_LAME_HIST];    ///< rolling HP sub-block peak envelope
+    float raw_env_hist[PSY_LAME_HIST];   ///< rolling broadband sub-block peak envelope
+    float gap_wall;                      ///< decaying broadband peak-hold (gap-onset reference)
+    float gap_wall_hp;                   ///< decaying HP peak-hold (gap-onset reference)
     int   prev_attack;                   ///< attack value for the last short block in the previous sequence
     int   next_attack0_zero;          ///< whether attack[0] of the next frame is zero
     int   frames_since_short;            ///< consecutive long frames (pre-echo-aware isolated-onset gate)
@@ -300,7 +323,8 @@ static av_cold void lame_window_init(AacPsyContext *ctx, AVCodecContext *avctx)
         for (j = 0; j < AAC_NUM_BLOCKS_SHORT * PSY_LAME_NUM_SUBBLOCKS; j++)
             pch->prev_energy_subshort[j] = 10.0f;
         for (j = 0; j < PSY_LAME_HIST; j++)
-            pch->hp_env_hist[j] = 10.0f;
+            pch->hp_env_hist[j] = pch->raw_env_hist[j] = pch->dif_env_hist[j] = 10.0f;
+        pch->gap_wall = pch->gap_wall_hp = 0.0f;
     }
 }
 
@@ -1008,13 +1032,30 @@ static int psy_lame_detect(AacPsyContext *pctx, AacPsyChannel *pch,
 
             attack_intensity[i + PSY_LAME_NUM_SUBBLOCKS] = p;
         }
+        for (i = 0; i < AAC_NUM_BLOCKS_SHORT; i++)
+            pch->next_win_level[i] = energy_short[1 + i];
 
         {   /* pre-echo-aware threshold relaxation + periodicity/novelty check
              * (a pulse train repeats its peak; a real onset towers) */
             float frame_peak = 1.0f;
             float env[PSY_LAME_HIST + AAC_NUM_BLOCKS_SHORT * PSY_LAME_NUM_SUBBLOCKS];
+            float denv[PSY_LAME_HIST + AAC_NUM_BLOCKS_SHORT * PSY_LAME_NUM_SUBBLOCKS];
             const float nov_gate = 1.25f;
-            memcpy(env, pch->hp_env_hist, sizeof(pch->hp_env_hist));
+            /* first-difference peak per sub-block: an attack that shorts can
+             * help has HF novelty; a bass pluck under a long window does not */
+            memcpy(denv, pch->dif_env_hist, sizeof(pch->dif_env_hist));
+            {
+                const int sub = AAC_BLOCK_SIZE_LONG / (AAC_NUM_BLOCKS_SHORT * PSY_LAME_NUM_SUBBLOCKS);
+                for (i = 0; i < AAC_NUM_BLOCKS_SHORT * PSY_LAME_NUM_SUBBLOCKS; i++) {
+                    float p = 0.0f;
+                    for (int j2 = i*sub + 1; j2 < (i+1)*sub; j2++)
+                        p = FFMAX(p, fabsf(la[j2] - la[j2-1]));
+                    denv[PSY_LAME_HIST + i] = FFMAX(p * 32768.0f, 1.0f);
+                }
+            }
+            memcpy(pch->dif_env_hist, denv + AAC_NUM_BLOCKS_SHORT * PSY_LAME_NUM_SUBBLOCKS,
+                   sizeof(pch->dif_env_hist));
+            memcpy(env,pch->hp_env_hist, sizeof(pch->hp_env_hist));
             memcpy(env + PSY_LAME_HIST, energy_subshort + PSY_LAME_NUM_SUBBLOCKS,
                    AAC_NUM_BLOCKS_SHORT * PSY_LAME_NUM_SUBBLOCKS * sizeof(*env));
             for (i = PSY_LAME_NUM_SUBBLOCKS; i < (AAC_NUM_BLOCKS_SHORT + 1) * PSY_LAME_NUM_SUBBLOCKS; i++)
@@ -1044,6 +1085,33 @@ static int psy_lame_detect(AacPsyContext *pctx, AacPsyChannel *pch,
                                  pch->frames_since_short >= PSY_LAME_PE_GAP))
                                 continue;    /* periodic, not an onset */
                         }
+                        if (i >= PSY_LAME_NUM_SUBBLOCKS) {
+                            /* no HF novelty: pre-echo is masked by the
+                             * sustained LF itself, and the short excursion
+                             * (HF mute, then the stop frame's noisy HF
+                             * hand-back) is the audible event. Both bars
+                             * must agree: absolutely small AND relatively
+                             * unremarkable - a quiet transient rising out
+                             * of silence has a tiny derivative but maximal
+                             * novelty, and its pre-echo lands on silence */
+                            const int pos = PSY_LAME_HIST + i - PSY_LAME_NUM_SUBBLOCKS;
+                            float dmax = 1.0f, premin = 1e30f;
+                            for (int k = 1; k <= PSY_LAME_NOV_BACK; k++)
+                                dmax = FFMAX(dmax, denv[pos - k]);
+                            /* pre-echo audibility: the veto is only safe
+                             * when the surroundings mask the smear - a deep
+                             * dip right before a LOUD attack (stop-gap
+                             * slams) means the long window's pre-echo lands
+                             * on quiet. Quiet candidates keep the veto:
+                             * their smear is at the noise floor, and shorts
+                             * would only fragment the passage */
+                            for (int k = 1; k <= 4; k++)
+                                premin = FFMIN(premin, env[pos - k]);
+                            if (denv[pos] < PSY_LAME_HFN_REL * dmax &&
+                                denv[pos] < PSY_LAME_HFN_ABS &&
+                                premin * PSY_LAME_HFN_PRE > energy_subshort[i])
+                                continue;
+                        }
                         attacks[i / PSY_LAME_NUM_SUBBLOCKS] = (i % PSY_LAME_NUM_SUBBLOCKS) + 1;
                     }
                 }
@@ -1065,6 +1133,74 @@ static int psy_lame_detect(AacPsyContext *pctx, AacPsyChannel *pch,
                 }
             }
             att_sum += attacks[i];
+        }
+
+        {   /* Gap-onset detection on the broadband envelope: a slam that ends
+             * a quiet gap (stop-start riffing, kick after a break) can be
+             * invisible to the HP path - no content above fs/4, or a rise too
+             * gradual for the 2-sub-block ratio - yet pre-echo into the gap
+             * is maximally audible (no forward masking there). Fire when the
+             * candidate towers over a recent dip. Pulse trains cannot fire:
+             * their inter-pulse floor never dips far enough below the pulse. */
+            float renv[PSY_LAME_HIST + AAC_NUM_BLOCKS_SHORT * PSY_LAME_NUM_SUBBLOCKS];
+            /* scan both envelopes: broadband (kick+chug slams with LF
+             * dominance) and HP (events whose gap only exists above the
+             * sustained bass) */
+            float henv[PSY_LAME_HIST + AAC_NUM_BLOCKS_SHORT * PSY_LAME_NUM_SUBBLOCKS];
+            float *walls[2] = { &pch->gap_wall, &pch->gap_wall_hp };
+            const float *envs[2] = { renv, henv };
+            memcpy(renv, pch->raw_env_hist, sizeof(pch->raw_env_hist));
+            for (i = 0; i < AAC_NUM_BLOCKS_SHORT * PSY_LAME_NUM_SUBBLOCKS; i++) {
+                float p = 0.0f;
+                for (int j2 = 0; j2 < 64; j2++)
+                    p = FFMAX(p, fabsf(la[i*64 + j2]));
+                renv[PSY_LAME_HIST + i] = FFMAX(p * 32768.0f, 1.0f);
+            }
+            memcpy(henv, pch->hp_env_hist, sizeof(pch->hp_env_hist));
+            memcpy(henv + PSY_LAME_HIST, energy_subshort + PSY_LAME_NUM_SUBBLOCKS,
+                   AAC_NUM_BLOCKS_SHORT * PSY_LAME_NUM_SUBBLOCKS * sizeof(*henv));
+            for (int e = 0; e < 2; e++) {
+                const float *ev = envs[e];
+                float wall = *walls[e];
+                for (i = 0; i < AAC_NUM_BLOCKS_SHORT * PSY_LAME_NUM_SUBBLOCKS; i++) {
+                    const int b = (i + PSY_LAME_NUM_SUBBLOCKS) / PSY_LAME_NUM_SUBBLOCKS;
+                    const int pos = PSY_LAME_HIST + i;
+                    const float cand  = ev[pos];
+                    const float quiet = wall / PSY_LAME_GAP_DEPTH;
+                    int run = 0, k0 = 0;
+                    /* the gap must end adjacent to the candidate (<= 5
+                     * rising sub-blocks) and hold >= 4 sub-blocks (~6ms).
+                     * A pulse train's inter-pulse floor never drops this
+                     * far below its own running peak, so it cannot fire. */
+                    for (int k = 3; k <= 8; k++)
+                        if (ev[pos - k] < quiet) {
+                            k0 = k;
+                            break;
+                        }
+                    if (k0)
+                        for (int k = k0; k <= PSY_LAME_GAP_BACK && ev[pos - k] < quiet; k++)
+                            run++;
+                    if (e == 1 && !(run >= 4)) {
+                        /* HP tower: an onset rising far above everything
+                         * in the look-back, even without a silent gap
+                         * (cymbal-less slams leave the bass sustaining) */
+                        float dmax = 1.0f;
+                        for (int k = 3; k <= PSY_LAME_GAP_BACK; k++)
+                            dmax = FFMAX(dmax, ev[pos - k]);
+                        if (cand > PSY_LAME_GAP_TOWER * dmax)
+                            run = 4;    /* qualify via the same fire path */
+                    }
+                    if (!attacks[b] && run >= 4 && cand > PSY_LAME_GAP_LEVEL * wall &&
+                        cand > PSY_LAME_GAP_FLOOR) {
+                        attacks[b] = (i + PSY_LAME_NUM_SUBBLOCKS) % PSY_LAME_NUM_SUBBLOCKS + 1;
+                        att_sum += attacks[b];
+                    }
+                    wall = FFMAX(wall * 0.996f, cand);
+                }
+                *walls[e] = wall;
+            }
+            memcpy(pch->raw_env_hist, renv + AAC_NUM_BLOCKS_SHORT * PSY_LAME_NUM_SUBBLOCKS,
+                   sizeof(pch->raw_env_hist));
         }
 
         /* roll the HP sub-block peak history */
@@ -1154,6 +1290,24 @@ static FFPsyWindowInfo psy_lame_apply(AacPsyContext *pctx, AacPsyChannel *pch,
     }
     pch->next_grouping = window_grouping[grouping];
 
+    {
+        /* energy-homogeneous grouping: fixed attack-position patterns force
+         * disparate windows to share scalefactors; regroup on level jumps */
+        uint8_t bits = 0;
+        int glen = 1;
+        for (i = 1; i < AAC_NUM_BLOCKS_SHORT; i++) {
+            float a = pch->next_win_level[i], b = pch->next_win_level[i-1];
+            float hi = FFMAX(a, b), lo = FFMAX(FFMIN(a, b), 1.0f);
+            if (hi <= lo * PSY_LAME_GRP_RATIO && glen < PSY_LAME_GRP_MAX) {
+                bits |= 1 << i;
+                glen++;
+            } else {
+                glen = 1;
+            }
+        }
+        pch->next_grouping = bits;
+    }
+
     pch->prev_attack = attacks[AAC_NUM_BLOCKS_SHORT - 1];
 
     return wi;
@@ -1203,6 +1357,11 @@ static void psy_lame_window_pair(FFPsyContext *ctx,
      * should isolate the first attack heard in EITHER channel. */
     for (int i = 0; i < AAC_NUM_BLOCKS_SHORT + 1; i++)
         merged[i] = att0[i] ? att0[i] : att1[i];
+
+    /* grouping must also match across the pair: merge the level maps */
+    for (int i = 0; i < AAC_NUM_BLOCKS_SHORT; i++)
+        pch0->next_win_level[i] = pch1->next_win_level[i] =
+            FFMAX(pch0->next_win_level[i], pch1->next_win_level[i]);
 
     wi[0] = psy_lame_apply(pctx, pch0, u, merged, prev_type0, !!la0);
     wi[1] = psy_lame_apply(pctx, pch1, u, merged, prev_type1, !!la1);
