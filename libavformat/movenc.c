@@ -5225,6 +5225,9 @@ static int mov_write_udta_tag(AVIOContext *pb, MOVMuxContext *mov,
         mov_write_string_metadata(s, pb_buf, "\251nam", "title",       0);
         mov_write_string_metadata(s, pb_buf, "\251aut", "author",      0);
         mov_write_string_metadata(s, pb_buf, "\251alb", "album",       0);
+        /* mov_read_udta_string() already maps this atom back to "composer";
+         * without it a mov to mov remux dropped the tag on the floor. */
+        mov_write_string_metadata(s, pb_buf, "\251com", "composer",    0);
         mov_write_string_metadata(s, pb_buf, "\251day", "date",        0);
         mov_write_string_metadata(s, pb_buf, "\251swr", "encoder",     0);
         // currently ignored by mov.c

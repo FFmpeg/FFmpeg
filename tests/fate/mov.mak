@@ -417,6 +417,14 @@ fate-mov-vfr: CMD = md5 -filter_complex testsrc=size=2x2:duration=1,setpts=N*N:s
 fate-mov-vfr: CMP = oneline
 fate-mov-vfr: REF = 1558b4a9398d8635783c93f84eb5a60d
 
+# The QuickTime user data list has to carry the composer atom the demuxer
+# already reads: without it a mov to mov remux dropped the tag.
+FATE_MOV_FFMPEG_FFPROBE-$(call TRANSCODE, PCM_S16LE, MOV, WAV_DEMUXER ARESAMPLE_FILTER) += fate-mov-composer-metadata
+fate-mov-composer-metadata: tests/data/asynth-44100-2.wav
+fate-mov-composer-metadata: CMD = transcode wav ./tests/data/asynth-44100-2.wav mov \
+    "-af aresample -c:a pcm_s16le -t 0.05 -metadata composer=Bach" \
+    "-af aresample -c:a pcm_s16le" "-show_entries format_tags"
+
 FATE_MOV_FFMPEG_FFPROBE-$(call ALLYES, COLOR_FILTER SETPTS_FILTER MPEG4_ENCODER \
                                       MOV_MUXER MOV_DEMUXER FILE_PROTOCOL)      \
                                       += fate-mov-vfr-bframes-derived-duration
