@@ -42,8 +42,11 @@ int main(int argc, char **argv)
     int failedNum      = 0;
     int passedNum      = 0;
 
-    if (!srcBuffer || !dstBuffer)
+    if (!srcBuffer || !dstBuffer) {
+        av_free(srcBuffer);
+        av_free(dstBuffer);
         return -1;
+    }
 
     av_log(NULL, AV_LOG_INFO, "memory corruption test ...\n");
     ff_sws_rgb2rgb_init();
@@ -167,5 +170,7 @@ int main(int argc, char **argv)
     av_log(NULL, AV_LOG_INFO,
            "\n%d converters passed, %d converters randomly overwrote memory\n",
            passedNum, failedNum);
+    av_free(srcBuffer);
+    av_free(dstBuffer);
     return failedNum;
 }
