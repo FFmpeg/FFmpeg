@@ -131,20 +131,17 @@ static void celt_frame_setup_input(OpusEncContext *s, CeltFrame *f)
 
     for (int ch = 0; ch < f->channels; ch++) {
         CeltBlock *b = &f->block[ch];
-        const char *input = cur->extended_data[ch];
-        size_t bps = av_get_bytes_per_sample(cur->format);
+        const float *input = (const float *)cur->extended_data[ch];
         /* The MDCT overlap is the trailing CELT_OVERLAP samples of the
-         * previous packet's last frame. Because the encoder advertises
-         * AV_CODEC_CAP_SMALL_LAST_FRAME, that frame can be shorter than
-         * CELT_OVERLAP; in that case, zero-pad the leading part of the
-         * overlap buffer and copy only what's available. */
-        int n = FFMIN(cur->nb_samples, CELT_OVERLAP);
-        if (n < CELT_OVERLAP) {
-            memset(b->overlap, 0, (CELT_OVERLAP - n) * bps);
-        }
-        memcpy((char *)b->overlap + (CELT_OVERLAP - n) * bps,
-               input + (cur->nb_samples - n) * bps,
-               n * bps);
+         * previous packet's last frame, as they were when that frame was
+         * encoded. Because the encoder advertises AV_CODEC_CAP_SMALL_LAST_FRAME,
+         * that frame may have been shorter than frame_size, in which case it
+         * was zero padded, so the overlap has to be zero padded the same way. */
+        const int start = subframesize - CELT_OVERLAP;
+        const int n = av_clip(cur->nb_samples - start, 0, CELT_OVERLAP);
+        if (n > 0)
+            memcpy(b->overlap, input + start, n * sizeof(float));
+        memset(b->overlap + n, 0, (CELT_OVERLAP - n) * sizeof(float));
     }
 
     av_frame_free(&cur);
@@ -157,12 +154,11 @@ static void celt_frame_setup_input(OpusEncContext *s, CeltFrame *f)
 
         for (int ch = 0; ch < f->channels; ch++) {
             CeltBlock *b = &f->block[ch];
-            const void *input = cur->extended_data[ch];
-            const size_t bps  = av_get_bytes_per_sample(cur->format);
-            const size_t left = (subframesize - cur->nb_samples)*bps;
-            const size_t len  = FFMIN(subframesize, cur->nb_samples)*bps;
-            memcpy(&b->samples[sf*subframesize], input, len);
-            memset(&b->samples[cur->nb_samples], 0, left);
+            const float *input = (const float *)cur->extended_data[ch];
+            float *dst = &b->samples[sf * subframesize];
+            const int n = FFMIN(cur->nb_samples, subframesize);
+            memcpy(dst, input, n * sizeof(float));
+            memset(dst + n, 0, (subframesize - n) * sizeof(float));
         }
 
         /* Last frame isn't popped off and freed yet - we need it for overlap */
