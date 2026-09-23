@@ -400,5 +400,9 @@ int main(int argc, char **argv){
         fprintf(stderr, "\n");
     }
 
+    swr_free(&forw_ctx);
+    swr_free(&backw_ctx);
+    av_channel_layout_uninit(&in_ch_layout);
+    av_channel_layout_uninit(&out_ch_layout);
     return 0;
 }
