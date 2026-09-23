@@ -988,7 +988,7 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
     DynamicAudioNormalizerContext *s = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
     int prev_filter_size = s->filter_size;
-    int ret;
+    int frame_len, ret;
 
     ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
     if (ret < 0)
@@ -1005,10 +1005,17 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
         }
     }
 
-    ret = frame_size(inlink->sample_rate, s->frame_len_msec);
-    if (ret < 0)
-        return ret;
-    s->frame_len = ret;
+    frame_len = frame_size(inlink->sample_rate, s->frame_len_msec);
+    if (frame_len < 0)
+        return frame_len;
+    if (frame_len != s->frame_len) {
+        AVFrame *window = ff_get_audio_buffer(ctx->outputs[0], frame_len * 2);
+        if (!window)
+            return AVERROR(ENOMEM);
+        av_frame_free(&s->window);
+        s->window = window;
+        s->frame_len = frame_len;
+    }
     s->sample_advance = FFMAX(1, lrint(s->frame_len * (1. - s->overlap)));
     if (s->expr_str) {
         ret = av_expr_parse(&s->expr, s->expr_str, var_names, NULL, NULL,
