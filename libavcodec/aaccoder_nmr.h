@@ -85,6 +85,9 @@
 /* Corridor: bisect within [lam_rc/NMR_RC_CORR, lam_rc*NMR_RC_CORR] so quality stays
  * smooth while per-frame demand is tracked; 1.5 cuts lambda jitter ~25%. */
 #define NMR_RC_CORR   1.5f
+/* Reservoir-cap re-solve coarsens at most this far past the corridor per
+ * escalation step; the residual overage rides as reservoir debt. */
+#define NMR_RC_CAPK   3.0f
 
 /* Reservoir half-window (bits/ch); swept 512/1536/3072, 1536 optimal. */
 #define NMR_CBR_BUF   1536
@@ -707,7 +710,36 @@ static void nmr_solve_group(AVCodecContext *avctx, AACEncContext *s,
         /* legality cap only; no spend-floor (rc_off spends the bank) */
         rc_cap   = FFMIN(hardcap, (s->nmr->rc_fill + rc_rate_frame + rc_bmax) * chans / s->channels);
         if (tot > rc_cap) {
-            lam = nmr_solve_slots(s, sl, nsl, cstep, rc_cap, lam, 1e4f, NMR_CITERS);
+            /* reservoir-empty: coarsen, but never past a bounded excursion
+             * of the corridor. The coarse grid's bit curve is steppy: an
+             * unbounded fit here can jump lambda by orders of magnitude and
+             * potato-frame the burst recovery frame (audible LF scratch).
+             * The fine pass works from the bounded lambda, and the reservoir
+             * cap is enforced once more on the fine grid after it, where the
+             * fit only moves lambda as far as the frame really needs. */
+            lam = nmr_solve_slots(s, sl, nsl, cstep, rc_cap, lam, lam * NMR_RC_CAPK, NMR_CITERS);
+            tot = 0;
+            for (int k = 0; k < nsl; k++)
+                tot += nmr_slot_bits(sl[k], s->nmr->nb[sl[k]->si], cstep);
+            if (tot > rc_cap && s->nmr->rc_fill <= -(rc_bmax * 9 / 10)) {
+                /* the debt ledger clips at -rc_bmax: with no capacity
+                 * left, further overage would be silently forgiven and
+                 * sustained transient content rides hot forever (a
+                 * castanets roll hit 215 kbps for its first second on a
+                 * 128k ask). A one-frame hard fit trades that for a
+                 * potato frame (audible click); instead the bound
+                 * ESCALATES with consecutive saturated frames - chronic
+                 * rolls converge within a few frames, isolated bursts
+                 * never see more than one escalation step. */
+                float ek = NMR_RC_CAPK * (1 + FFMIN(s->nmr->rc_satrun, 8));
+                lam = nmr_solve_slots(s, sl, nsl, cstep, rc_cap, lam, lam * ek, NMR_CITERS);
+                s->nmr->rc_sat_frame = 1;
+                tot = 0;
+                for (int k = 0; k < nsl; k++)
+                    tot += nmr_slot_bits(sl[k], s->nmr->nb[sl[k]->si], cstep);
+            }
+            if (tot > hardcap)   /* decoder-buffer legality is absolute */
+                lam = nmr_solve_slots(s, sl, nsl, cstep, hardcap, lam, 1e4f, NMR_CITERS);
         }
     } else {
         /* per-frame bisection, warm-started off the previous frame's lambda;
@@ -764,7 +796,8 @@ static void nmr_solve_group(AVCodecContext *avctx, AACEncContext *s,
     lam_dem = lam;   /* demand-solved lambda, pre bucket clamp: what content wants */
 
     if (rc_global) {
-        /* legality clamp, then the quality slew limiter */
+        /* reservoir cap on the fine grid (see the coarse-pass bound above),
+         * then the quality slew limiter */
         int hardcap = av_clip((int)(5800.f * FFMIN(1.f, lambda / 120.f)), 256, 5800) * chans;
         int tot = 0, rc_cap;
         for (int k = 0; k < nsl; k++)
@@ -772,6 +805,21 @@ static void nmr_solve_group(AVCodecContext *avctx, AACEncContext *s,
         rc_cap   = FFMIN(hardcap, (s->nmr->rc_fill + rc_rate_frame + rc_bmax) * chans / s->channels);
         if (tot > rc_cap) {
             lam = nmr_solve_slots(s, sl, nsl, NMR_STEP, rc_cap, lam, 1e4f, NMR_RC_ITERS);
+        }
+        {   /* bucket-full spend floor: bits saved beyond the reservoir's
+             * remaining headroom are simply lost, so with a full bucket the
+             * plan must not sit below nominal minus what can still be
+             * banked. Without this a quiet intro poisons the corridor high
+             * and the loud entrance rate-limits through it - a muffled
+             * first second at the exact moment the listener tunes in. */
+            int headroom = rc_bmax - av_clip(s->nmr->rc_fill, -rc_bmax, rc_bmax);
+            int fbits = (rc_rate_frame - headroom) * chans / s->channels;
+            if (tot < fbits) {
+                lam = nmr_solve_slots(s, sl, nsl, NMR_STEP, fbits, lam / 64.0f, lam, NMR_RC_ITERS);
+                tot = 0;
+                for (int k = 0; k < nsl; k++)
+                    tot += nmr_slot_bits(sl[k], s->nmr->nb[sl[k]->si], NMR_STEP);
+            }
         }
         if (s->nmr->lam_slew > 0.0f) {
             float kup, kdn;
@@ -791,6 +839,17 @@ static void nmr_solve_group(AVCodecContext *avctx, AACEncContext *s,
             }
         }
         s->nmr->lam_slew = lam;
+    } else if (rc_eligible) {
+        /* corridor not yet bootstrapped: the same bucket-full floor, so a
+         * fade-in bootstraps lam_rc at a spending operating point instead
+         * of memorizing the intro's starvation lambda */
+        int headroom = rc_bmax - av_clip(s->nmr->rc_fill, -rc_bmax, rc_bmax);
+        int fbits = (rc_rate_frame - headroom) * chans / s->channels;
+        int tot = 0;
+        for (int k = 0; k < nsl; k++)
+            tot += nmr_slot_bits(sl[k], s->nmr->nb[sl[k]->si], NMR_STEP);
+        if (tot < fbits)
+            lam = nmr_solve_slots(s, sl, nsl, NMR_STEP, fbits, lam / 64.0f, lam, NMR_RC_ITERS);
     }
 
     for (int k = 0; k < nsl; k++)
@@ -984,6 +1043,10 @@ static void search_for_quantizers_nmr(AVCodecContext *avctx,
                                  -rc_bmax, rc_bmax);
         n->rc_frame_num = avctx->frame_num;
         n->pending = 0;    /* a deferred first channel never crosses a frame */
+        /* consecutive saturated frames, once per frame across all element
+         * groups: any frame without a saturated overage ends the run */
+        n->rc_satrun    = n->rc_sat_frame ? n->rc_satrun + 1 : 0;
+        n->rc_sat_frame = 0;
         /* latch the RC mode per frame: a mid-frame bootstrap must not flip
          * the CPE defer logic between channels */
         n->rc_gl = rc_eligible && n->lam_rc > 0.0f;

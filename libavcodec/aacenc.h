@@ -234,6 +234,8 @@ typedef struct AACNMRCurves {
     int64_t rc_frame_num;                        ///< frame the reservoir was last advanced for
     float   lam_rc;                              ///< global-lambda rate control: operating lambda, 0 until bootstrapped
     int     rc_fill;                             ///< virtual bit reservoir fill, + = bits saved vs nominal
+    int     rc_satrun;                           ///< consecutive frames with saturated reservoir debt (cap escalation)
+    int     rc_sat_frame;                        ///< the current frame hit a saturated overage
     int     frames_since_short;                  ///< long-block frames since the last short run (the "gap"): large = isolated transient
     int     prev_was_short;                      ///< previous frame was a short block (for run-start detection)
     float   run_burst;                           ///< transient bit-burst factor, set at run start and held across the short run
