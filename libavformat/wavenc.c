@@ -145,6 +145,22 @@ static void bwf_write_bext_chunk(AVFormatContext *s)
     ff_end_tag(s->pb, bext);
 }
 
+static av_cold int wav_init(AVFormatContext *s)
+{
+    WAVMuxContext *wav = s->priv_data;
+
+    if (wav->write_peak == PEAK_ONLY) {
+        if (wav->rf64 == RF64_ALWAYS) {
+            av_log(s, AV_LOG_ERROR, "write_peak=only is not compatible with RF64\n");
+            return AVERROR(EINVAL);
+        }
+        if (wav->rf64 == RF64_AUTO)
+            wav->rf64 = RF64_NEVER;
+    }
+
+    return 0;
+}
+
 static av_cold void wav_deinit(AVFormatContext *s)
 {
     WAVMuxContext *wav = s->priv_data;
@@ -533,6 +549,7 @@ const FFOutputFormat ff_wav_muxer = {
     .p.audio_codec     = AV_CODEC_ID_PCM_S16LE,
     .p.video_codec     = AV_CODEC_ID_NONE,
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
+    .init              = wav_init,
     .write_header      = wav_write_header,
     .write_packet      = wav_write_packet,
     .write_trailer     = wav_write_trailer,
