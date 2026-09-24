@@ -105,6 +105,7 @@ typedef struct VulkanEncodeAPVContext {
     /* CBS used to assemble the output packet */
     CodedBitstreamContext *cbc;
     CodedBitstreamFragment au;
+    APVRawFrame raw_frame;
 
     FFVkEncodeLoop loop;
 
@@ -550,7 +551,7 @@ static int build_packet(AVCodecContext *avctx, FFVkExecContext *exec,
     VulkanEncodeAPVFrameData *fd = exec->opaque;
     FFVkBuffer *compacted_buf = fd->compacted_ref;
     FFVkBuffer *sizes_buf     = fd->sizes_ref;
-    APVRawFrame *raw_frame = NULL;
+    APVRawFrame *raw_frame = &ev->raw_frame;
 
     /* Wait for the GPU encode to finish */
     ff_vk_exec_wait(&ev->s, exec);
@@ -582,10 +583,7 @@ static int build_packet(AVCodecContext *avctx, FFVkExecContext *exec,
         sizes = (const uint32_t *)sizes_buf->mapped_mem;
     }
 
-    /* Allocate the cbs frame structure */
-    raw_frame = av_mallocz(sizeof(*raw_frame));
-    if (!raw_frame)
-        return AVERROR(ENOMEM);
+    memset(raw_frame, 0, sizeof(*raw_frame));
 
     raw_frame->pbu_header.pbu_type = APV_PBU_PRIMARY_FRAME;
     raw_frame->pbu_header.group_id = 1;
@@ -664,12 +662,8 @@ static int build_packet(AVCodecContext *avctx, FFVkExecContext *exec,
 
     err = ff_cbs_insert_unit_content(&ev->au, -1, APV_PBU_PRIMARY_FRAME,
                                      raw_frame, NULL);
-    if (err < 0) {
-        av_freep(&raw_frame);
+    if (err < 0)
         return err;
-    }
-    /* raw_frame is now owned by the fragment unit */
-    raw_frame = NULL;
 
     /* Assemble straight into the packet: ff_cbs_write_packet() hands pkt a
      * reference to CBS's own assembled buffer -- no copy. */
