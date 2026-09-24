@@ -8519,12 +8519,12 @@ static int mov_read_tenc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         if (!sc->cenc.encryption_index)
             return AVERROR(ENOMEM);
     }
-    sc->cenc.per_sample_iv_size = avio_r8(pb);
-    if (sc->cenc.per_sample_iv_size != 0 && sc->cenc.per_sample_iv_size != 8 &&
-        sc->cenc.per_sample_iv_size != 16) {
+    iv_size = avio_r8(pb);
+    if (iv_size != 0 && iv_size != 8 && iv_size != 16) {
         av_log(c->fc, AV_LOG_ERROR, "invalid per-sample IV size value\n");
         return AVERROR_INVALIDDATA;
     }
+    sc->cenc.per_sample_iv_size = iv_size;
     if (avio_read(pb, sc->cenc.default_encrypted_sample->key_id, 16) != 16) {
         av_log(c->fc, AV_LOG_ERROR, "failed to read the default key ID\n");
         return AVERROR_INVALIDDATA;
