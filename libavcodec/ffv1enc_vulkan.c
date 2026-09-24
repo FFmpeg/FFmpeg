@@ -1501,7 +1501,7 @@ static const AVOption vulkan_encode_ffv1_options[] = {
             { .i64 = 1 }, 0, 1, VE },
 
     { "async_depth", "Internal parallelization depth", OFFSET(async_depth), AV_OPT_TYPE_INT,
-            { .i64 = 1 }, 1, INT_MAX, VE },
+            { .i64 = 2 }, 1, INT_MAX, VE },
 
     { "remap_mode", "Remap Mode", OFFSET(ctx.remap_mode), AV_OPT_TYPE_INT,
             { .i64 = -1 }, -1, 2, VE, .unit = "remap_mode" },
