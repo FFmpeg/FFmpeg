@@ -38,6 +38,7 @@
 
 #include "codec_internal.h"
 #include "decode.h"
+#include "profiles.h"
 
 #define MAX_LOST_FRAMES 2
 // max framesize * (max delay frames + 1)
@@ -218,5 +219,6 @@ const FFCodec ff_libmpeghdec_decoder = {
     FF_CODEC_DECODE_CB(mpegh3dadec_decode_frame),
     .flush          = mpegh3dadec_flush,
     .close          = mpegh3dadec_close,
+    .p.profiles     = NULL_IF_CONFIG_SMALL(ff_mpegh_3da_profiles),
     .p.wrapper_name = "libmpeghdec",
 };

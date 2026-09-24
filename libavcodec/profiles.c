@@ -59,6 +59,14 @@ const AVProfile ff_truehd_profiles[] = {
   { AV_PROFILE_UNKNOWN },
 };
 
+const AVProfile ff_mpegh_3da_profiles[] = {
+  { AV_PROFILE_MPEGH_3DA_MAIN,   "Main"},
+  { AV_PROFILE_MPEGH_3DA_HIGH,   "High"},
+  { AV_PROFILE_MPEGH_3DA_LC,     "LC"},
+  { AV_PROFILE_MPEGH_3DA_BL,     "BL"},
+  { AV_PROFILE_UNKNOWN },
+};
+
 const AVProfile ff_dnxhd_profiles[] = {
   { AV_PROFILE_DNXHD,      "DNXHD"},
   { AV_PROFILE_DNXHR_LB,   "DNXHR LB"},
