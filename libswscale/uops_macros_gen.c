@@ -242,7 +242,8 @@ fail:
 }
 
 static const SwsUOpFlags uop_flags[] = {
-    0,
+    SWS_UOP_FLAG_EXPAND_BIT | SWS_UOP_FLAG_READ_PALETTE | SWS_UOP_FLAG_ADD,
+    SWS_UOP_FLAG_EXPAND_BIT | SWS_UOP_FLAG_READ_PALETTE | SWS_UOP_FLAG_ADD |
     SWS_UOP_FLAG_PSHUFB | SWS_UOP_FLAG_FMA, /* x86 backend */
 };
 

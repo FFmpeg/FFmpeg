@@ -328,7 +328,7 @@ static int translate_rw_op(SwsContext *ctx, SwsUOpList *ops, SwsUOpFlags flags,
             return AVERROR(ENOTSUP);
         uop.uop = is_read ? SWS_UOP_READ_PACKED : SWS_UOP_WRITE_PACKED;
     } else if (op->rw.mode == SWS_RW_PALETTE) {
-        if (op->rw.frac || !is_read)
+        if (!(flags & SWS_UOP_FLAG_READ_PALETTE) || op->rw.frac || !is_read)
             return AVERROR(ENOTSUP);
         uop.uop = SWS_UOP_READ_PALETTE;
     } else if (op->rw.frac == 3) {
@@ -455,7 +455,7 @@ static int translate_swizzle(SwsUOpList *ops, const SwsOp *op)
     return ff_sws_uop_list_append(ops, &uop);
 }
 
-static int translate_dither_op(SwsUOpList *ops, const SwsOp *op)
+static int translate_dither_op(SwsUOpList *ops, SwsUOpFlags flags, const SwsOp *op)
 {
     SwsUOp uop = {
         .type = op->type,
@@ -463,7 +463,7 @@ static int translate_dither_op(SwsUOpList *ops, const SwsOp *op)
         .par.dither.size_log2 = op->dither.size_log2,
     };
 
-    if (op->dither.size_log2 == 0) {
+    if ((flags & SWS_UOP_FLAG_ADD) && op->dither.size_log2 == 0) {
         /* Constant offset */
         const SwsPixel val = Q2PIXEL(op->dither.matrix[0]);
         uop.uop = SWS_UOP_ADD;
@@ -578,7 +578,7 @@ static int translate_op(SwsContext *ctx, SwsUOpList *uops, SwsUOpFlags flags,
     case SWS_OP_SWIZZLE:
         return translate_swizzle(uops, op);
     case SWS_OP_DITHER:
-        return translate_dither_op(uops, op);
+        return translate_dither_op(uops, flags, op);
     case SWS_OP_LINEAR:
         return translate_linear_op(ctx, uops, flags, op, input);
     default:
@@ -641,7 +641,7 @@ static int translate_op(SwsContext *ctx, SwsUOpList *uops, SwsUOpFlags flags,
         }
         break;
     case SWS_OP_SCALE:
-        if (is_expand_bit(op->type, op->scale.factor)) {
+        if ((flags & SWS_UOP_FLAG_EXPAND_BIT) && is_expand_bit(op->type, op->scale.factor)) {
             uop.uop = SWS_UOP_EXPAND_BIT;
         } else {
             uop.uop = SWS_UOP_SCALE;
