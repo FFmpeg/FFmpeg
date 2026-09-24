@@ -1268,8 +1268,8 @@ int av_write_trailer(AVFormatContext *s)
 
     if (s->pb)
        avio_flush(s->pb);
-    if (ret == 0)
-       ret = s->pb ? s->pb->error : 0;
+    if (ret >= 0 && s->pb && s->pb->error < 0)
+       ret = s->pb->error;
     for (unsigned i = 0; i < s->nb_streams; i++) {
         av_freep(&s->streams[i]->priv_data);
         av_freep(&ffstream(s->streams[i])->index_entries);

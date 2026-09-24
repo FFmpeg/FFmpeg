@@ -2812,7 +2812,7 @@ int av_write_uncoded_frame_query(AVFormatContext *s, int stream_index);
  * May only be called after a successful call to avformat_write_header.
  *
  * @param s media file handle
- * @return 0 if OK, AVERROR_xxx on error
+ * @return >=0 if OK, AVERROR_xxx on error
  */
 int av_write_trailer(AVFormatContext *s);
 
