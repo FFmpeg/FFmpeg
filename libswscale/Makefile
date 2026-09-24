@@ -56,5 +56,6 @@ TESTPROGS = colorspace                                                  \
 
 TESTPROGS-$(CONFIG_UNSTABLE) = sws_ops                                  \
                                sws_ops_aarch64                          \
+                               rational64                               \
 
 DEVPROGS-$(CONFIG_UNSTABLE)  = uops_macros_gen                          \
