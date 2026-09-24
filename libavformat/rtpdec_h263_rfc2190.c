@@ -118,6 +118,11 @@ static int h263_handle_packet(AVFormatContext *ctx, PayloadContext *data,
     buf += header_size;
     len -= header_size;
 
+    if (!len) {
+        av_log(ctx, AV_LOG_ERROR, "H.263 RTP packet without payload\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     if (!data->buf) {
         /* Check the picture start code, only start buffering a new frame
          * if this is correct */
