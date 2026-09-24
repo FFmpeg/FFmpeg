@@ -16,6 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
 #include "libavutil/mem.h"
 #include "encode.h"
 #include "vulkan_video.h"
@@ -545,6 +546,7 @@ fail:
     return err;
 }
 
+#if CONFIG_VULKAN_SEG_GATHER
 typedef struct SegGatherPushData {
     VkDeviceAddress sparse;
     VkDeviceAddress compacted;
@@ -633,6 +635,7 @@ int ff_vk_seg_gather(FFVulkanContext *s, FFVkExecContext *exec, FFVulkanShader *
 fail:
     return err;
 }
+#endif /* CONFIG_VULKAN_SEG_GATHER */
 
 int ff_vk_encode_loop_init(FFVulkanContext *s, FFVkExecPool *pool, FFVkEncodeLoop *l,
                            int (*submit_frame)(AVCodecContext *avctx, FFVkExecContext *exec, AVFrame *frame),

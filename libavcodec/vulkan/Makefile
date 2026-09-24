@@ -4,7 +4,7 @@ clean::
 OBJS-$(CONFIG_APV_VULKAN_HWACCEL) += vulkan/apv_decode.comp.spv.o \
                                      vulkan/apv_idct.comp.spv.o
 
-OBJS-$(CONFIG_VULKAN) += vulkan/seg_gather.comp.spv.o
+OBJS-$(CONFIG_VULKAN_SEG_GATHER) += vulkan/seg_gather.comp.spv.o
 
 OBJS-$(CONFIG_APV_VULKAN_ENCODER) += vulkan/apv_encode_dct.comp.spv.o \
                                      vulkan/apv_encode_tiles.comp.spv.o

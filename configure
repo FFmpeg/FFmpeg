@@ -2800,6 +2800,7 @@ CONFIG_EXTRA="
     vp3dsp
     vp8dsp
     vulkan_encode
+    vulkan_seg_gather
     vvc_sei
     wma_freqs
     wmv2dsp
@@ -3102,7 +3103,7 @@ apng_encoder_select="deflate_wrapper llvidencdsp"
 aptx_encoder_select="audio_frame_queue"
 aptx_hd_encoder_select="audio_frame_queue"
 apv_decoder_select="cbs_apv"
-apv_vulkan_encoder_select="vulkan spirv_compiler cbs_apv"
+apv_vulkan_encoder_select="vulkan spirv_compiler cbs_apv vulkan_seg_gather"
 asv1_decoder_select="blockdsp bswapdsp idctdsp"
 asv1_encoder_select="aandcttables bswapdsp fdctdsp pixblockdsp"
 asv2_decoder_select="blockdsp bswapdsp idctdsp"
@@ -3140,7 +3141,7 @@ exr_decoder_select="bswapdsp"
 exr_encoder_deps="zlib"
 ffv1_decoder_select="rangecoder"
 ffv1_encoder_select="rangecoder"
-ffv1_vulkan_encoder_select="vulkan spirv_compiler"
+ffv1_vulkan_encoder_select="vulkan spirv_compiler vulkan_seg_gather"
 ffvhuff_decoder_select="huffyuv_decoder"
 ffvhuff_encoder_select="huffyuv_encoder"
 fic_decoder_select="golomb"
@@ -3249,7 +3250,7 @@ prores_decoder_select="blockdsp idctdsp"
 prores_encoder_select="fdctdsp"
 prores_aw_encoder_select="fdctdsp"
 prores_ks_encoder_select="fdctdsp"
-prores_ks_vulkan_encoder_select="vulkan spirv_compiler"
+prores_ks_vulkan_encoder_select="vulkan spirv_compiler vulkan_seg_gather"
 prores_raw_decoder_select="blockdsp idctdsp"
 qcelp_decoder_select="lsp"
 qdm2_decoder_select="mpegaudiodsp"
@@ -3538,6 +3539,7 @@ qsvvpp_select="qsv"
 vaapi_encode_deps="vaapi"
 vulkan_1_4_deps="vulkan"
 vulkan_encode_deps="vulkan"
+vulkan_seg_gather_deps="vulkan spirv_compiler"
 v4l2_m2m_deps="linux_videodev2_h sem_timedwait"
 
 bilateral_cuda_filter_deps="ffnvcodec"
