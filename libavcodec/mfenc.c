@@ -365,6 +365,7 @@ static int process_d3d11_frame(AVCodecContext *avctx, const AVFrame *frame, IMFS
     ID3D11Texture2D *d3d11_texture = NULL;
     IMFSample *sample = NULL;
     IMFMediaBuffer *buffer = NULL;
+    DWORD buffer_length;
     int subIdx = 0;
     HRESULT hr;
 
@@ -395,6 +396,26 @@ static int process_d3d11_frame(AVCodecContext *avctx, const AVFrame *frame, IMFS
     hr = func->MFCreateDXGISurfaceBuffer(&IID_ID3D11Texture2D, (IUnknown*)d3d11_texture, subIdx, 0, &buffer);
     if (FAILED(hr)) {
         av_log(avctx, AV_LOG_ERROR, "Failed to create DXGI surface buffer: %s\n", ff_hr_str(hr));
+        IMFSample_Release(sample);
+        return AVERROR_EXTERNAL;
+    }
+
+    hr = IMFMediaBuffer_GetMaxLength(buffer, &buffer_length);
+    if (FAILED(hr)) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Failed to get DXGI surface buffer length: %s\n",
+               ff_hr_str(hr));
+        IMFMediaBuffer_Release(buffer);
+        IMFSample_Release(sample);
+        return AVERROR_EXTERNAL;
+    }
+
+    hr = IMFMediaBuffer_SetCurrentLength(buffer, buffer_length);
+    if (FAILED(hr)) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Failed to set DXGI surface buffer length: %s\n",
+               ff_hr_str(hr));
+        IMFMediaBuffer_Release(buffer);
         IMFSample_Release(sample);
         return AVERROR_EXTERNAL;
     }
