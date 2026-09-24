@@ -43,6 +43,7 @@
 #include "libavcodec/ac3_parser_internal.h"
 #include "libavcodec/dnxhddata.h"
 #include "libavcodec/flac.h"
+#include "libavcodec/mpegaudiodata.h"
 #include "libavcodec/get_bits.h"
 
 #include "libavcodec/internal.h"
@@ -969,6 +970,43 @@ static int mov_write_dmlp_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *tra
     return update_size(pb, pos);
 }
 
+static int mov_write_mhac_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *track)
+{
+    int64_t pos = avio_tell(pb);
+    int layout = 0;
+
+    if (track->extradata_size[track->last_stsd_index] > UINT16_MAX) {
+        av_log(s, AV_LOG_ERROR,
+               "Invalid extradata size %d for MPEGH-H stream.\n",
+               track->extradata_size[track->last_stsd_index]);
+        return AVERROR(EINVAL);
+    }
+
+    avio_wb32(pb, 0);
+    ffio_wfourcc(pb, "mhaC");
+
+    avio_w8(pb, 1); // ConfigurationVersion
+    avio_w8(pb, track->par->profile * 5 + track->par->level);
+
+    for (size_t i = 0; i < FF_ARRAY_ELEMS(ff_mpa_cicp_channel_layout_masks); i++) {
+        if (ff_mpa_cicp_channel_layout_masks[i]) {
+            AVChannelLayout ch_layout;
+            av_channel_layout_from_mask(&ch_layout, ff_mpa_cicp_channel_layout_masks[i]);
+            if (!av_channel_layout_compare(&track->par->ch_layout, &ch_layout)) {
+                layout = i;
+                break;
+            }
+        }
+    }
+
+    avio_w8(pb, layout);
+    avio_wb16(pb, track->extradata_size[track->last_stsd_index]);
+    avio_write(pb, track->extradata[track->last_stsd_index],
+                   track->extradata_size[track->last_stsd_index]);
+
+    return update_size(pb, pos);
+}
+
 static int mov_write_SA3D_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *track)
 {
     const AVDictionaryEntry *str = av_dict_get(track->st->metadata, "SA3D", NULL, 0);
@@ -1551,6 +1589,8 @@ static int mov_write_audio_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
         ret = mov_write_dops_tag(s, pb, track);
     else if (track->par->codec_id == AV_CODEC_ID_TRUEHD)
         ret = mov_write_dmlp_tag(s, pb, track);
+    else if (track->par->codec_id == AV_CODEC_ID_MPEGH_3D_AUDIO)
+        ret = mov_write_mhac_tag(s, pb, track);
     else if (tag == MOV_MP4_IPCM_TAG || tag == MOV_MP4_FPCM_TAG) {
         if (track->par->sample_rate > UINT16_MAX)
             mov_write_srat_tag(pb, track);
