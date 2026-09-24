@@ -415,9 +415,8 @@ static int submit_frame(AVCodecContext *avctx, FFVkExecContext *exec,
     RET(ff_vk_get_pooled_buffer(&ev->s, &ev->sizes_pool, &fd->sizes_ref,
                                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                                 NULL, ev->sizes_size,
-                                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
+                                VK_MEMORY_PROPERTY_HOST_CACHED_BIT));
     sizes_buf = fd->sizes_ref;
 
     ff_vk_exec_add_dep_refstruct(&ev->s, exec, fd->coeffs_ref);
