@@ -40,6 +40,7 @@
 FF_VISIBILITY_PUSH_HIDDEN
 extern const uint16_t ff_mpa_bitrate_tab[2][3][15];
 extern const uint16_t ff_mpa_freq_tab[3];
+extern const uint64_t ff_mpa_cicp_channel_layout_masks[20];
 extern const int ff_mpa_sblimit_table[5];
 extern const int ff_mpa_quant_steps[17];
 extern const int ff_mpa_quant_bits[17];

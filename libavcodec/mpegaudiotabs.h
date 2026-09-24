@@ -24,6 +24,8 @@
 
 #include <stdint.h>
 
+#include "libavutil/channel_layout.h"
+
 const uint16_t ff_mpa_bitrate_tab[2][3][15] = {
     { { 0, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448 },
       { 0, 32, 48, 56,  64,  80,  96, 112, 128, 160, 192, 224, 256, 320, 384 },
@@ -35,5 +37,19 @@ const uint16_t ff_mpa_bitrate_tab[2][3][15] = {
 };
 
 const uint16_t ff_mpa_freq_tab[3] = { 44100, 48000, 32000 };
+
+const uint64_t ff_mpa_cicp_channel_layout_masks[20] = {
+    0,
+    AV_CH_LAYOUT_MONO,               AV_CH_LAYOUT_STEREO,
+    AV_CH_LAYOUT_SURROUND,           AV_CH_LAYOUT_4POINT0,
+    AV_CH_LAYOUT_5POINT0,            AV_CH_LAYOUT_5POINT1,
+    AV_CH_LAYOUT_7POINT1_WIDE,       0,
+    AV_CH_LAYOUT_2_1,                AV_CH_LAYOUT_2_2,
+    AV_CH_LAYOUT_6POINT1,            AV_CH_LAYOUT_7POINT1,
+    AV_CH_LAYOUT_22POINT2,           AV_CH_LAYOUT_5POINT1POINT2,
+    AV_CH_LAYOUT_7POINT2POINT3,      AV_CH_LAYOUT_5POINT1POINT4,
+    AV_CH_LAYOUT_5POINT1POINT6,      AV_CH_LAYOUT_7POINT1POINT6,
+    AV_CH_LAYOUT_7POINT1POINT4,
+};
 
 #endif

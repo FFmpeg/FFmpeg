@@ -38,6 +38,7 @@
 
 #include "codec_internal.h"
 #include "decode.h"
+#include "mpegaudiodata.h"
 #include "profiles.h"
 
 #define MAX_LOST_FRAMES 2
@@ -69,23 +70,10 @@ static av_cold int mpegh3dadec_close(AVCodecContext *avctx)
 // https://github.com/Fraunhofer-IIS/mpeghdec/wiki/MPEG-H-decoder-target-layouts
 static av_cold int channel_layout_to_cicp(const AVChannelLayout *layout)
 {
-    static const uint64_t channel_layout_masks[] = {
-        0,
-        AV_CH_LAYOUT_MONO,               AV_CH_LAYOUT_STEREO,
-        AV_CH_LAYOUT_SURROUND,           AV_CH_LAYOUT_4POINT0,
-        AV_CH_LAYOUT_5POINT0,            AV_CH_LAYOUT_5POINT1,
-        AV_CH_LAYOUT_7POINT1_WIDE,       0,
-        AV_CH_LAYOUT_2_1,                AV_CH_LAYOUT_2_2,
-        AV_CH_LAYOUT_6POINT1,            AV_CH_LAYOUT_7POINT1,
-        AV_CH_LAYOUT_22POINT2,           AV_CH_LAYOUT_5POINT1POINT2,
-        AV_CH_LAYOUT_7POINT2POINT3,      AV_CH_LAYOUT_5POINT1POINT4,
-        AV_CH_LAYOUT_5POINT1POINT6,      AV_CH_LAYOUT_7POINT1POINT6,
-        AV_CH_LAYOUT_7POINT1POINT4,
-    };
-    for (size_t i = 0; i < FF_ARRAY_ELEMS(channel_layout_masks); ++i) {
-        if (channel_layout_masks[i]) {
+    for (size_t i = 0; i < FF_ARRAY_ELEMS(ff_mpa_cicp_channel_layout_masks); ++i) {
+        if (ff_mpa_cicp_channel_layout_masks[i]) {
             AVChannelLayout ch_layout;
-            av_channel_layout_from_mask(&ch_layout, channel_layout_masks[i]);
+            av_channel_layout_from_mask(&ch_layout, ff_mpa_cicp_channel_layout_masks[i]);
             if (!av_channel_layout_compare(layout, &ch_layout))
                 return i;
         }
