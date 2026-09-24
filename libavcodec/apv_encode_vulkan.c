@@ -74,6 +74,12 @@ typedef struct VulkanEncodeAPVFrameData {
     FFVkBuffer *bytestream_ref;
     FFVkBuffer *compacted_ref;
     FFVkBuffer *sizes_ref;
+
+    /* Copied from the source */
+    enum AVColorPrimaries color_primaries;
+    enum AVColorTransferCharacteristic color_trc;
+    enum AVColorSpace colorspace;
+    enum AVColorRange color_range;
 } VulkanEncodeAPVFrameData;
 
 typedef struct VulkanEncodeAPVContext {
@@ -366,6 +372,11 @@ static int submit_frame(AVCodecContext *avctx, FFVkExecContext *exec,
     FFVkBuffer *compacted_buf;
     FFVkBuffer *sizes_buf;
 
+    fd->color_primaries = frame->color_primaries;
+    fd->color_trc       = frame->color_trc;
+    fd->colorspace      = frame->colorspace;
+    fd->color_range     = frame->color_range;
+
     /* Start recording */
     err = ff_vk_exec_start(&ev->s, exec);
     if (err < 0)
@@ -589,12 +600,14 @@ static int build_packet(AVCodecContext *avctx, FFVkExecContext *exec,
     fh->frame_info.bit_depth_minus8 = ev->bit_depth - 8;
     fh->frame_info.capture_time_distance = 0;
 
-    fh->color_description_present_flag = 0;
-    /* Inferred values when the flag is 0, per the spec. */
-    fh->color_primaries          = 2;
-    fh->transfer_characteristics = 2;
-    fh->matrix_coefficients      = 2;
-    fh->full_range_flag          = 0;
+    fh->color_primaries          = fd->color_primaries;
+    fh->transfer_characteristics = fd->color_trc;
+    fh->matrix_coefficients      = fd->colorspace;
+    fh->full_range_flag          = fd->color_range == AVCOL_RANGE_JPEG;
+    fh->color_description_present_flag = fh->color_primaries          != AVCOL_PRI_UNSPECIFIED ||
+                                         fh->transfer_characteristics != AVCOL_TRC_UNSPECIFIED ||
+                                         fh->matrix_coefficients      != AVCOL_SPC_UNSPECIFIED ||
+                                         fh->full_range_flag;
 
     /* compute_pf_table() builds the encoder's pf scale from the same matrix;
      * the two must stay in sync. use_q_matrix is only signalled when the
