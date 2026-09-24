@@ -158,6 +158,9 @@ static av_cold int wav_init(AVFormatContext *s)
             wav->rf64 = RF64_NEVER;
     }
 
+    if (wav->rf64 == RF64_AUTO && !(s->pb->seekable & AVIO_SEEKABLE_NORMAL))
+        wav->rf64 = RF64_NEVER;
+
     return 0;
 }
 
@@ -320,10 +323,6 @@ static int wav_write_header(AVFormatContext *s)
     WAVMuxContext *wav = s->priv_data;
     AVIOContext *pb = s->pb;
     int64_t fmt;
-
-    if (wav->rf64 == RF64_AUTO && !(s->pb->seekable & AVIO_SEEKABLE_NORMAL)) {
-        wav->rf64 = RF64_NEVER;
-    }
 
     if (wav->rf64 == RF64_ALWAYS) {
         ffio_wfourcc(pb, "RF64");
