@@ -225,8 +225,6 @@ typedef struct FFVulkanShader {
     /* Creation info */
     VkPipelineShaderStageRequiredSubgroupSizeCreateInfo subgroup_info;
 
-    /* Base shader object */
-    VkShaderEXT object;
     VkPipeline pipeline;
 
     /* Pipeline layout */
