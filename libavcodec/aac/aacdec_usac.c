@@ -2095,8 +2095,10 @@ int ff_aac_usac_decode_frame(AVCodecContext *avctx, AACDecContext *ac,
         ratio_dec = 1;
     }
 
-    ff_aac_output_configure(ac, ac->oc[1].layout_map, ac->oc[1].layout_map_tags,
-                            ac->oc[1].status, 0);
+    ret = ff_aac_output_configure(ac, ac->oc[1].layout_map, ac->oc[1].layout_map_tags,
+                                  ac->oc[1].status, 0);
+    if (ret < 0)
+        return ret;
 
     ac->avctx->profile = AV_PROFILE_AAC_USAC;
 
