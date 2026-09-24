@@ -406,6 +406,9 @@ static av_cold int liboapve_init(AVCodecContext *avctx)
 {
     ApvEncContext *apv = avctx->priv_data;
     oapve_cdesc_t *cdsc = &apv->cdsc;
+#if OAPV_VER_APISET >= 1
+    oapvm_cdesc_t mcdsc = { 0 };
+#endif
     unsigned char *bs_buf;
     int ret;
 
@@ -435,7 +438,11 @@ static av_cold int liboapve_init(AVCodecContext *avctx)
     }
 
     /* create metadata handler */
+#if OAPV_VER_APISET >= 1
+    apv->mid = oapvm_create(&mcdsc, &ret);
+#else
     apv->mid = oapvm_create(&ret);
+#endif
     if (apv->mid == NULL || OAPV_FAILED(ret)) {
         av_log(avctx, AV_LOG_ERROR, "cannot create OAPV metadata handler\n");
         return AVERROR_EXTERNAL;
