@@ -4,7 +4,7 @@
 
 OPUS_CELT_SAMPLES   = $(addprefix testvector, 01 11) tron.6ch.tinypkts
 OPUS_HYBRID_SAMPLES = $(addprefix testvector, 05 06)
-OPUS_SILK_SAMPLES   = $(addprefix testvector, 02 03 04) silk-lbrr
+OPUS_SILK_SAMPLES   = $(addprefix testvector, 02 03 04) silk-lbrr silk-lbrr-mono
 OPUS_OTHER_SAMPLES  = $(addprefix testvector, 07 08 09 10 12)
 
 define FATE_OPUS_TEST
@@ -34,6 +34,7 @@ fate-opus-testvector10:      CMP_TARGET = 38
 fate-opus-testvector11:      CMP_TARGET = 0
 fate-opus-testvector12:      CMP_TARGET = 160
 fate-opus-silk-lbrr:         CMP_TARGET = 0
+fate-opus-silk-lbrr-mono:    CMP_TARGET = 0
 fate-opus-tron.6ch.tinypkts: CMP_SHIFT = 1440
 fate-opus-tron.6ch.tinypkts: CMP_TARGET = 0
 
