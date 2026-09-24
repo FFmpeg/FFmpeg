@@ -954,7 +954,7 @@ static const AVOption options[] = {
     { "alpha_bits", "bits for alpha plane", OFFSET(ctx.alpha_bits), AV_OPT_TYPE_INT,
         { .i64 = 16 }, 0, 16, VE },
     { "async_depth", "Internal parallelization depth", OFFSET(async_depth), AV_OPT_TYPE_INT,
-            { .i64 = 1 }, 1, INT_MAX, VE },
+            { .i64 = 2 }, 1, INT_MAX, VE },
     { NULL }
 };
 
