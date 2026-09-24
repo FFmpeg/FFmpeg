@@ -199,24 +199,23 @@ static void tdsc_paint_cursor(AVCodecContext *avctx, uint8_t *dst, int stride)
 static int tdsc_load_cursor(AVCodecContext *avctx)
 {
     TDSCContext *ctx  = avctx->priv_data;
-    int i, j, k, ret, cursor_fmt;
+    int i, j, k, ret, cursor_fmt, w, h;
     uint8_t *dst;
 
     ctx->cursor_hot_x = bytestream2_get_le16(&ctx->gbc);
     ctx->cursor_hot_y = bytestream2_get_le16(&ctx->gbc);
-    ctx->cursor_w     = bytestream2_get_le16(&ctx->gbc);
-    ctx->cursor_h     = bytestream2_get_le16(&ctx->gbc);
+    w                 = bytestream2_get_le16(&ctx->gbc);
+    h                 = bytestream2_get_le16(&ctx->gbc);
 
-    ctx->cursor_stride = FFALIGN(ctx->cursor_w, 32) * 4;
     cursor_fmt = bytestream2_get_le32(&ctx->gbc);
 
-    if (ctx->cursor_w < 1 || ctx->cursor_w > 256 ||
-        ctx->cursor_h < 1 || ctx->cursor_h > 256) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Invalid cursor dimensions %dx%d.\n",
-               ctx->cursor_w, ctx->cursor_h);
+    if (w < 1 || w > 256 || h < 1 || h > 256) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid cursor dimensions %dx%d.\n", w, h);
         return AVERROR_INVALIDDATA;
     }
+    ctx->cursor_w      = w;
+    ctx->cursor_h      = h;
+    ctx->cursor_stride = FFALIGN(w, 32) * 4;
     if (ctx->cursor_hot_x > ctx->cursor_w ||
         ctx->cursor_hot_y > ctx->cursor_h) {
         av_log(avctx, AV_LOG_WARNING, "Invalid hotspot position %d.%d.\n",
