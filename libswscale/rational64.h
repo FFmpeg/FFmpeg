@@ -61,7 +61,7 @@ typedef struct AVRational64 {
  *
  * @note The return value is not reduced.
  */
-static inline AVRational64 av_make_q64(int64_t num, int64_t den)
+static inline AVRational64 ff_make_q64(int64_t num, int64_t den)
 {
     AVRational64 r = { num, den };
     return r;
@@ -79,7 +79,7 @@ static inline AVRational64 av_make_q64(int64_t num, int64_t den)
  *         - -1 if `a < b`
  *         - `INT_MIN` if one of the values is of the form `0 / 0`
  */
-int av_cmp_q64(AVRational64 a, AVRational64 b);
+int ff_cmp_q64(AVRational64 a, AVRational64 b);
 
 /**
  * Convert an AVRational64 to a `double`.
@@ -87,7 +87,7 @@ int av_cmp_q64(AVRational64 a, AVRational64 b);
  * @return `a` in floating-point form
  * @see av_d2q()
  */
-static inline double av_q2d_64(AVRational64 a){
+static inline double ff_q2d_64(AVRational64 a){
     return a.num / (double) a.den;
 }
 
@@ -97,7 +97,7 @@ static inline double av_q2d_64(AVRational64 a){
  * @param c Second multiplicant
  * @return b*c
  */
-AVRational64 av_mul_q64(AVRational64 b, AVRational64 c) av_const;
+AVRational64 ff_mul_q64(AVRational64 b, AVRational64 c) av_const;
 
 /**
  * Divide one 64-bit rational by another.
@@ -105,7 +105,7 @@ AVRational64 av_mul_q64(AVRational64 b, AVRational64 c) av_const;
  * @param c Divisor
  * @return b/c
  */
-AVRational64 av_div_q64(AVRational64 b, AVRational64 c) av_const;
+AVRational64 ff_div_q64(AVRational64 b, AVRational64 c) av_const;
 
 /**
  * Add two 64-bit rationals.
@@ -113,7 +113,7 @@ AVRational64 av_div_q64(AVRational64 b, AVRational64 c) av_const;
  * @param c Second addend
  * @return b+c
  */
-AVRational64 av_add_q64(AVRational64 b, AVRational64 c) av_const;
+AVRational64 ff_add_q64(AVRational64 b, AVRational64 c) av_const;
 
 /**
  * Subtract one 64-bit rational from another.
@@ -121,14 +121,14 @@ AVRational64 av_add_q64(AVRational64 b, AVRational64 c) av_const;
  * @param c Subtrahend
  * @return b-c
  */
-AVRational64 av_sub_q64(AVRational64 b, AVRational64 c) av_const;
+AVRational64 ff_sub_q64(AVRational64 b, AVRational64 c) av_const;
 
 /**
  * Invert a 64-bit rational.
  * @param q value
  * @return 1 / q
  */
-static av_always_inline AVRational64 av_inv_q64(AVRational64 q)
+static av_always_inline AVRational64 ff_inv_q64(AVRational64 q)
 {
     AVRational64 r = { q.den, q.num };
     return r;

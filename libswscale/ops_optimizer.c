@@ -128,7 +128,7 @@ static bool op_commute_swizzle(SwsOp *op, SwsOp *next)
             if (!SWS_OP_NEEDED(op, i))
                 continue;
             const int j = op->swizzle.in[i];
-            if (seen[j] && av_cmp_q64(next->clamp.limit[j], c.limit[i]))
+            if (seen[j] && ff_cmp_q64(next->clamp.limit[j], c.limit[i]))
                 return false;
             next->clamp.limit[j] = c.limit[i];
             seen[j] = true;
@@ -249,7 +249,7 @@ static bool extract_scalar(const SwsLinearOp *c,
         if ((prev->flags[i]  & SWS_COMP_ZERO) ||
             (comps->flags[i] & SWS_COMP_GARBAGE))
             continue;
-        if (scale.factor.den && av_cmp_q64(s, scale.factor))
+        if (scale.factor.den && ff_cmp_q64(s, scale.factor))
             return false;
         scale.factor = s;
     }
@@ -568,7 +568,7 @@ retry:
             if (next->op == SWS_OP_SCALE && !op->convert.expand &&
                 ff_sws_pixel_type_is_int(op->type) &&
                 ff_sws_pixel_type_is_int(op->convert.to) &&
-                !av_cmp_q64(next->scale.factor,
+                !ff_cmp_q64(next->scale.factor,
                             ff_sws_pixel_expand(op->type, op->convert.to)))
             {
                 op->convert.expand = true;
@@ -581,7 +581,7 @@ retry:
             for (int i = 0; i < 4; i++) {
                 if (!SWS_OP_NEEDED(op, i) || !op->clamp.limit[i].den)
                     continue;
-                if (av_cmp_q64(op->clamp.limit[i], prev->comps.max[i]) >= 0)
+                if (ff_cmp_q64(op->clamp.limit[i], prev->comps.max[i]) >= 0)
                     op->clamp.limit[i] = (AVRational64) {0}; /* no-op */
                 else
                     noop = false;
@@ -597,7 +597,7 @@ retry:
             for (int i = 0; i < 4; i++) {
                 if (!SWS_OP_NEEDED(op, i) || !op->clamp.limit[i].den)
                     continue;
-                if (av_cmp_q64(prev->comps.min[i], op->clamp.limit[i]) >= 0)
+                if (ff_cmp_q64(prev->comps.min[i], op->clamp.limit[i]) >= 0)
                     op->clamp.limit[i] = (AVRational64) {0};
                 else
                     noop = false;
@@ -647,9 +647,9 @@ retry:
                     for (int j = 0; j < 5; j++) {
                         AVRational64 sum = Q(0);
                         for (int k = 0; k < 4; k++)
-                            sum = av_add_q64(sum, av_mul_q64(m2.m[i][k], m1.m[k][j]));
+                            sum = ff_add_q64(sum, ff_mul_q64(m2.m[i][k], m1.m[k][j]));
                         if (j == 4) /* m1.m[4][j] == 1 */
-                            sum = av_add_q64(sum, m2.m[i][4]);
+                            sum = ff_add_q64(sum, m2.m[i][4]);
                         op->lin.m[i][j] = sum;
                     }
                 }
@@ -718,7 +718,7 @@ retry:
 
             /* Merge consecutive scaling operations */
             if (next->op == SWS_OP_SCALE) {
-                op->scale.factor = av_mul_q64(op->scale.factor, next->scale.factor);
+                op->scale.factor = ff_mul_q64(op->scale.factor, next->scale.factor);
                 ff_sws_op_list_remove_at(ops, n + 1, 1);
                 goto retry;
             }

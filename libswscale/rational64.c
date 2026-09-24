@@ -105,7 +105,7 @@ done:;
     return res;
 }
 
-int av_cmp_q64(AVRational64 a, AVRational64 b)
+int ff_cmp_q64(AVRational64 a, AVRational64 b)
 {
     const av_int128 p = av_mul128(av_to128i(a.num), av_to128i(b.den));
     const av_int128 q = av_mul128(av_to128i(b.num), av_to128i(a.den));
@@ -121,24 +121,24 @@ int av_cmp_q64(AVRational64 a, AVRational64 b)
         return INT_MIN;
 }
 
-AVRational64 av_mul_q64(AVRational64 b, AVRational64 c)
+AVRational64 ff_mul_q64(AVRational64 b, AVRational64 c)
 {
     return reduce64(av_mul128(av_to128i(b.num), av_to128i(c.num)),
                     av_mul128(av_to128i(b.den), av_to128i(c.den)));
 }
 
-AVRational64 av_div_q64(AVRational64 b, AVRational64 c)
+AVRational64 ff_div_q64(AVRational64 b, AVRational64 c)
 {
-    return av_mul_q64(b, av_inv_q64(c));
+    return ff_mul_q64(b, ff_inv_q64(c));
 }
 
-AVRational64 av_add_q64(AVRational64 b, AVRational64 c) {
+AVRational64 ff_add_q64(AVRational64 b, AVRational64 c) {
     return reduce64(av_add128(av_mul128(av_to128i(b.num), av_to128i(c.den)),
                               av_mul128(av_to128i(c.num), av_to128i(b.den))),
                     av_mul128(av_to128i(b.den), av_to128i(c.den)));
 }
 
-AVRational64 av_sub_q64(AVRational64 b, AVRational64 c)
+AVRational64 ff_sub_q64(AVRational64 b, AVRational64 c)
 {
     return reduce64(av_sub128(av_mul128(av_to128i(b.num), av_to128i(c.den)),
                               av_mul128(av_to128i(c.num), av_to128i(b.den))),
