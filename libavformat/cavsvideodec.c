@@ -33,7 +33,7 @@
 static int cavsvideo_probe(const AVProbeData *p)
 {
     uint32_t code= -1;
-    int pic=0, seq=0, slice_pos = 0;
+    int pic=0, seq=0, slice_pos = 0, seq_at_start = 0;
     const uint8_t *ptr = p->buf, *end = p->buf + p->buf_size;
 
     while (ptr < end) {
@@ -49,6 +49,8 @@ static int cavsvideo_probe(const AVProbeData *p)
             }
             if (code == CAVS_SEQ_START_CODE) {
                 seq++;
+                if (ptr == p->buf + 4)
+                    seq_at_start = 1;
                 if (*ptr != AV_PROFILE_CAVS_JIZHUN &&
                     *ptr != AV_PROFILE_CAVS_BROADCASTING)
                     return 0;
@@ -62,7 +64,8 @@ static int cavsvideo_probe(const AVProbeData *p)
         }
     }
     if(seq && seq*9<=pic*10)
-        return AVPROBE_SCORE_EXTENSION+1;
+        return seq_at_start ? AVPROBE_SCORE_EXTENSION + 1 :
+                              AVPROBE_SCORE_EXTENSION / 2;
     return 0;
 }
 
