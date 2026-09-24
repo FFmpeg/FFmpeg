@@ -789,7 +789,7 @@ int ff_silk_decode_superframe(SilkContext *s, OpusRangeCoder *rc,
                               int coded_channels,
                               int duration_ms)
 {
-    int active[2][6], redundancy[2];
+    int active[2][6] = {{0}}, redundancy[2] = {0};
     int nb_frames, i, j;
 
     if (bandwidth > OPUS_BANDWIDTH_WIDEBAND ||
