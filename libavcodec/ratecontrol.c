@@ -571,9 +571,9 @@ av_cold int ff_rate_control_init(MPVMainEncContext *const m)
         char *p;
 
         /* find number of pics */
-        p = avctx->stats_in;
-        for (i = -1; p; i++)
-            p = strchr(p + 1, ';');
+        for (i = 0, p = avctx->stats_in;
+             i < INT_MAX / sizeof(RateControlEntry) && p && (p = strchr(p, ';')); i++)
+            p++;
         i += m->max_b_frames;
         if (i <= 0 || i >= INT_MAX / sizeof(RateControlEntry))
             return -1;
