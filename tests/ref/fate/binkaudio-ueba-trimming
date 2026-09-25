@@ -1,0 +1,17 @@
+packet|pts=0|duration=1920
+frame|pts=0|nb_samples=1920
+packet|pts=1920|duration=1920
+frame|pts=1920|nb_samples=1920
+packet|pts=3840|duration=1920
+frame|pts=3840|nb_samples=1920
+packet|pts=5760|duration=1920
+frame|pts=5760|nb_samples=1920
+packet|pts=7680|duration=1920
+frame|pts=7680|nb_samples=1920
+packet|pts=9600|duration=1920
+frame|pts=9600|nb_samples=1920
+packet|pts=11520|duration=1920
+frame|pts=11520|nb_samples=1920
+packet|pts=13440|duration=1065|side_datum/skip_samples:side_data_type=Skip Samples|side_datum/skip_samples:skip_samples=0|side_datum/skip_samples:discard_padding=855|side_datum/skip_samples:skip_reason=0|side_datum/skip_samples:discard_reason=0
+frame|pts=13440|nb_samples=1065
+stream|duration_ts=14505
