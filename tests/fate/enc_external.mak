@@ -14,3 +14,18 @@ fate-libx264-hdr10: CMD = enc_external $(TARGET_SAMPLES)/hevc/hdr10_plus_h265_sa
 
 FATE_SAMPLES_FFMPEG_FFPROBE += $(FATE_ENC_EXTERNAL-yes)
 fate-enc-external: $(FATE_ENC_EXTERNAL-yes)
+
+# Check decoded frame counts without depending on libspeex's encoded bytes.
+FATE_LIBSPEEX-$(call ALLYES, LIBSPEEX_ENCODER SPEEX_DECODER OGG_MUXER OGG_DEMUXER LAVFI_INDEV SINE_FILTER ARESAMPLE_FILTER \
+                               PCM_S16$(if $(filter yes,$(HAVE_BIGENDIAN)),BE,LE)_DECODER FILE_PROTOCOL) += fate-libspeex-encode fate-libspeex-encode-stereo
+fate-libspeex-encode: SPEEX_OPTS = -ac 1
+fate-libspeex-encode-stereo: SPEEX_OPTS = -ac 2 -frames_per_packet 2
+$(FATE_LIBSPEEX-yes): CMD = run_with_temp \
+    "$(FFMPEG) -nostdin -hide_banner -loglevel error \
+    -f lavfi -i sine=frequency=1000:sample_rate=32000:duration=1 \
+    -c:a libspeex -b:a 30k $(SPEEX_OPTS) -f ogg -y" \
+    "ffprobe$(PROGSSUF)$(EXESUF) -v error -bitexact -count_frames \
+    -show_entries stream=codec_name,sample_rate,channels,nb_read_frames" ogg
+
+FATE_FFMPEG_FFPROBE += $(FATE_LIBSPEEX-yes)
+fate-enc-external: $(FATE_LIBSPEEX-yes)

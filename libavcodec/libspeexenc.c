@@ -292,7 +292,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         s->pkt_frame_count = 0;
         if ((ret = ff_alloc_packet(avctx, avpkt, speex_bits_nbytes(&s->bits))) < 0)
             return ret;
-        ret = speex_bits_write(&s->bits, avpkt->data, avpkt->size);
+        avpkt->size = speex_bits_write(&s->bits, avpkt->data, avpkt->size);
         speex_bits_reset(&s->bits);
 
         /* Get the next frame pts/duration */
@@ -301,7 +301,6 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         if (ret < 0)
             return ret;
 
-        avpkt->size = ret;
         *got_packet_ptr = 1;
         return 0;
     }

@@ -1,0 +1,6 @@
+[STREAM]
+codec_name=speex
+sample_rate=32000
+channels=2
+nb_read_frames=25
+[/STREAM]
