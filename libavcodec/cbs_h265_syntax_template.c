@@ -1515,7 +1515,6 @@ static int FUNC(slice_segment_header)(CodedBitstreamContext *ctx, RWContext *rw,
     CodedBitstreamH265Context *h265 = ctx->priv_data;
     const H265RawSPS *sps;
     const H265RawPPS *pps;
-    unsigned int min_cb_log2_size_y, ctb_log2_size_y, ctb_size_y;
     unsigned int pic_width_in_ctbs_y, pic_height_in_ctbs_y, pic_size_in_ctbs_y;
     unsigned int num_pic_total_curr = 0;
     int err, i;
@@ -1548,13 +1547,7 @@ static int FUNC(slice_segment_header)(CodedBitstreamContext *ctx, RWContext *rw,
     }
     h265->active_sps = sps;
 
-    min_cb_log2_size_y = sps->log2_min_luma_coding_block_size_minus3 + 3;
-    ctb_log2_size_y = min_cb_log2_size_y + sps->log2_diff_max_min_luma_coding_block_size;
-    ctb_size_y = 1 << ctb_log2_size_y;
-    pic_width_in_ctbs_y =
-        (sps->pic_width_in_luma_samples + ctb_size_y - 1) / ctb_size_y;
-    pic_height_in_ctbs_y =
-        (sps->pic_height_in_luma_samples + ctb_size_y - 1) / ctb_size_y;
+    cbs_h265_pic_size_in_ctbs(sps, &pic_width_in_ctbs_y, &pic_height_in_ctbs_y);
     pic_size_in_ctbs_y = pic_width_in_ctbs_y * pic_height_in_ctbs_y;
 
     if (!current->first_slice_segment_in_pic_flag) {

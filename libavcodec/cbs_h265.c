@@ -26,6 +26,16 @@
 #include "cbs_sei.h"
 #include "get_bits.h"
 
+// PicWidthInCtbsY and PicHeightInCtbsY (7.4.3.2.1).
+static void cbs_h265_pic_size_in_ctbs(const H265RawSPS *sps,
+                                      unsigned int *width, unsigned int *height)
+{
+    unsigned int ctb_log2_size_y = sps->log2_min_luma_coding_block_size_minus3 + 3 +
+                                   sps->log2_diff_max_min_luma_coding_block_size;
+    *width  = AV_CEIL_RSHIFT(sps->pic_width_in_luma_samples,  ctb_log2_size_y);
+    *height = AV_CEIL_RSHIFT(sps->pic_height_in_luma_samples, ctb_log2_size_y);
+}
+
 #define HEADER(name) do { \
         ff_cbs_trace_header(ctx, name); \
     } while (0)
