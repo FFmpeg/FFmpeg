@@ -938,7 +938,7 @@ int sws_setColorspaceDetails(SwsContext *sws, const int inv_table[4],
                 }
             }
 
-            if (srcW*srcH > dstW*dstH) {
+            if (srcW*(int64_t)srcH > dstW*(int64_t)dstH) {
                 tmp_width  = dstW;
                 tmp_height = dstH;
             } else {
