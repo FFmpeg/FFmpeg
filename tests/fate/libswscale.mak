@@ -35,11 +35,13 @@ fate-sws-yuv-range: CMD = framecrc \
 FATE_LIBSWSCALE-$(CONFIG_UNSTABLE) += fate-sws-unscaled
 fate-sws-unscaled: libswscale/tests/swscale$(EXESUF)
 fate-sws-unscaled: CMD = run libswscale/tests/swscale$(EXESUF) -scaler none -backends unstable -v 16
+fate-sws-unscaled: REF = /dev/null
 
 # Run only 2% of swscale tests to keep the run time short, and only check for failure
 FATE_LIBSWSCALE-$(CONFIG_UNSTABLE) += fate-sws-unstable
 fate-sws-unstable: libswscale/tests/swscale$(EXESUF)
 fate-sws-unstable: CMD = run libswscale/tests/swscale$(EXESUF) -backends unstable -p 0.02 -v 16
+fate-sws-unstable: REF = /dev/null
 
 ifneq ($(HAVE_BIGENDIAN),yes)
 
