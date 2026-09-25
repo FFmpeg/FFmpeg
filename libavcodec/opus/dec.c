@@ -183,8 +183,8 @@ static int opus_flush_resample(OpusStreamContext *s, int nb_samples)
         s->redundancy_idx = 0;
     }
 
-    s->cur_out[0]         += nb_samples;
-    s->cur_out[1]         += nb_samples;
+    for (i = 0; i < s->output_channels; i++)
+        s->cur_out[i]     += nb_samples;
     s->remaining_out_size -= nb_samples * sizeof(float);
 
     return 0;
