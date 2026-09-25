@@ -77,8 +77,7 @@ av_cold int AAC_RENAME(ff_aac_sbr_ctx_alloc_init)(AACDecContext *ac,
 
     if (!ext)
         return AVERROR(ENOMEM);
-    *che = &ext->ch;
-    sbr  = &ext->sbr;
+    sbr = &ext->sbr;
     ext->ch.ch[0].AAC_RENAME(predictor_state) = ext->predictor_state[0];
     ext->ch.ch[1].AAC_RENAME(predictor_state) = ext->predictor_state[1];
 
@@ -96,20 +95,25 @@ av_cold int AAC_RENAME(ff_aac_sbr_ctx_alloc_init)(AACDecContext *ac,
                      USE_FIXED ? AV_TX_INT32_MDCT : AV_TX_FLOAT_MDCT,
                      1, 64, &scale, 0);
     if (ret < 0)
-        return ret;
+        goto fail;
 
     scale = USE_FIXED ? -1.0 : -2.0 * 32768;
     ret = av_tx_init(&sbr->mdct_ana, &sbr->mdct_ana_fn,
                      USE_FIXED ? AV_TX_INT32_MDCT : AV_TX_FLOAT_MDCT,
                      1, 64, &scale, 0);
     if (ret < 0)
-        return ret;
+        goto fail;
 
     AAC_RENAME(ff_ps_ctx_init)(&sbr->ps);
     AAC_RENAME(ff_sbrdsp_init)(&sbr->dsp);
     aacsbr_func_ptr_init(&sbr->c);
 
+    *che = &ext->ch;
     return 0;
+fail:
+    av_tx_uninit(&sbr->mdct);
+    av_free(ext);
+    return ret;
 }
 
 av_cold void AAC_RENAME(ff_aac_sbr_ctx_close)(ChannelElement *che)
