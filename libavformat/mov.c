@@ -4417,9 +4417,8 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
 
                     if (edit_list_start_encountered == 0) {
                         num_discarded_begin++;
-                        frame_duration_buffer = av_realloc(frame_duration_buffer,
-                                                           num_discarded_begin * sizeof(int64_t));
-                        if (!frame_duration_buffer) {
+                        if (av_reallocp_array(&frame_duration_buffer, num_discarded_begin,
+                                              sizeof(*frame_duration_buffer)) < 0) {
                             av_log(mov->fc, AV_LOG_ERROR, "Cannot reallocate frame duration buffer\n");
                             break;
                         }
