@@ -494,16 +494,17 @@ static void filter_column(uint8_t *dst, int height,
                           int dstride, int stride, int size)
 {
     DECLARE_ALIGNED(64, unsigned, sum)[16];
+    const int width = FFMIN(16, size);
 
     for (int y = 0; y < height; y++) {
         memset(sum, 0, sizeof(sum));
 
         for (int i = 0; i < 2 * radius + 1; i++) {
-            for (int off16 = 0; off16 < 16; off16++)
+            for (int off16 = 0; off16 < width; off16++)
                 sum[off16] += (unsigned)c[i][0 + y * stride + off16] * matrix[i];
         }
 
-        for (int off16 = 0; off16 < 16; off16++) {
+        for (int off16 = 0; off16 < width; off16++) {
             dst[off16] = av_clip_uint8((int)sum[off16] * rdiv + bias + 0.5f);
         }
         dst += dstride;
@@ -612,12 +613,12 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
                 s->setup[plane](radius, c, src, stride, x, width, y, height, bpc);
                 s->filter[plane](dst + yoff + xoff, 1, rdiv,
                                  bias, matrix, c, s->max, radius,
-                                 dstride, stride, slice_end - step);
+                                 dstride, stride, slice_end - y);
             }
             s->setup[plane](radius, c, src, stride, left, width, y, height, bpc);
             s->filter[plane](dst + yoff + xoff, right - left,
                              rdiv, bias, matrix, c, s->max, radius,
-                             dstride, stride, slice_end - step);
+                             dstride, stride, slice_end - y);
             for (x = right; x < sizew; x++) {
                 const int xoff = mode == MATRIX_COLUMN ? (y - slice_start) * bpc : x * bpc;
                 const int yoff = mode == MATRIX_COLUMN ? x * dstride : 0;
@@ -625,7 +626,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
                 s->setup[plane](radius, c, src, stride, x, width, y, height, bpc);
                 s->filter[plane](dst + yoff + xoff, 1, rdiv,
                                  bias, matrix, c, s->max, radius,
-                                 dstride, stride, slice_end - step);
+                                 dstride, stride, slice_end - y);
             }
             if (mode != MATRIX_COLUMN)
                 dst += dstride;
