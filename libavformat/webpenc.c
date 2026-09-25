@@ -60,6 +60,8 @@ static int is_animated_webp_packet(AVPacket *pkt)
     if (pkt->size < skip + 4)
         return AVERROR_INVALIDDATA;
     if (AV_RL32(pkt->data + skip) == AV_RL32("VP8X")) {
+        if (pkt->size < skip + 9)
+            return AVERROR_INVALIDDATA;
         flags |= pkt->data[skip + 4 + 4];
     }
 
