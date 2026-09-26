@@ -32,6 +32,7 @@
 #define PB_UNALIGNED
 #include "common.glsl"
 #include "ffv1_common.glsl"
+#extension GL_KHR_shader_subgroup_arithmetic : require
 
 layout (set = 0, binding = 2, scalar) uniform crc_ieee_buf {
     uint32_t crc_ieee[256];
@@ -58,6 +59,7 @@ layout (set = 1, binding = 2, scalar) buffer slice_state_buf {
 };
 
 layout (constant_id = 19) const bool enc_ext = false;
+shared uint crc_tab[has_crc ? 256 : 1];
 
 void encode_line_pcm(in SliceContext sc, readonly uimage2D img,
                      ivec2 sp, int y, uint p, uint comp)
@@ -560,11 +562,6 @@ void finalize_slice(in uint slice_idx)
 {
 #ifdef GOLOMB
     uint32_t enc_len = hdr_len + flush_put_bits(pb);
-#else
-    uint32_t enc_len = rac_terminate();
-    if (gl_LocalInvocationID.x > 0)
-        return;
-#endif
 
     u8buf bs = u8buf(slice_data + rc.bs_start);
 
@@ -596,6 +593,52 @@ void finalize_slice(in uint slice_idx)
     }
 
     slice_results[slice_idx] = enc_len;
+#else
+    uint enc_len = rac_terminate();
+    uint lane = gl_SubgroupInvocationID;
+    u8buf bs = u8buf(slice_data + rc.bs_start);
+
+    if (lane < 3 + uint(has_crc))
+        bs[enc_len + lane].v = uint8_t(lane < 3 ? enc_len >> (16 - 8*lane) : 0);
+    enc_len += 3 + uint(has_crc);
+
+    if (has_crc) {
+        controlBarrier(gl_ScopeWorkgroup, gl_ScopeWorkgroup,
+                       gl_StorageSemanticsBuffer, gl_SemanticsAcquireRelease);
+
+        uint seg = enc_len >> 5;
+        uint len0 = enc_len - 31*seg;
+        uint start = lane == 0 ? 0 : len0 + (lane - 1)*seg;
+        uint len = lane == 0 ? len0 : seg;
+        uint crc = lane == 0 ? crcref : 0;
+        uint z = 1u << lane;
+        for (uint i = 0; i < len0; i += 8) {
+            uint b[8];
+            [[unroll]] for (uint k = 0; k < 8; k++)
+                b[k] = i + k < len ? uint(bs[start + i + k].v) : 0;
+            [[unroll]] for (uint k = 0; k < 8; k++) {
+                if (i + k < len)
+                    crc = crc_tab[(crc ^ b[k]) & 0xFF] ^ (crc >> 8);
+                if (i + k < seg)
+                    z = crc_tab[z & 0xFF] ^ (z >> 8);
+            }
+        }
+
+        uint acc = subgroupBroadcast(crc, 0);
+        for (uint i = 1; i < 32; i++)
+            acc = subgroupXor(bitfieldExtract(acc, int(lane), 1) != 0 ? z : 0) ^
+                  subgroupBroadcast(crc, i);
+        if (crcref != 0x00000000)
+            acc ^= 0x8CD88196;
+
+        if (lane < 4)
+            bs[enc_len + lane].v = uint8_t(acc >> (8*lane));
+        enc_len += 4;
+    }
+
+    if (lane == 0)
+        slice_results[slice_idx] = enc_len;
+#endif
 }
 
 void main(void)
@@ -607,6 +650,9 @@ void main(void)
         rc = slice_ctx[slice_idx].c;
     barrier();
 #else
+    if (has_crc)
+        for (uint i = gl_LocalInvocationID.x; i < 256; i += gl_WorkGroupSize.x)
+            crc_tab[i] = crc_ieee[i];
     rac_init_enc(slice_ctx[slice_idx].c);
 #endif
 
