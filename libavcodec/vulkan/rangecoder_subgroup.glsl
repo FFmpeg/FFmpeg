@@ -25,6 +25,8 @@
 
 #extension GL_KHR_shader_subgroup_basic : require
 #extension GL_KHR_shader_subgroup_ballot : require
+#extension GL_KHR_shader_subgroup_shuffle : require
+#extension GL_KHR_shader_subgroup_shuffle_relative : require
 
 #define CONTEXT_SIZE 32
 #define MAX_OVERREAD 2
@@ -64,6 +66,9 @@ uint rac_range1(uint range, uint state24)
 uint rc_top;
 uint rc_oc;
 int rc_ob;
+uint rc_nev;
+uint rc_ev;
+uint rc_ev2;
 
 void rac_init_enc(in RangeCoder c)
 {
@@ -75,6 +80,53 @@ void rac_init_enc(in RangeCoder c)
     rc_top = rc.low + rc.range;
     rc_oc = uint(rc.outstanding_count);
     rc_ob = int(rc.outstanding_byte);
+    rc_nev = 0;
+    rc_ev = 0;
+    rc_ev2 = 0;
+}
+
+void rac_emit_block(uint low, uint cnt)
+{
+    uint lane = gl_SubgroupInvocationID;
+    bool deferred = lane < cnt && low - 0xFF01u < 0xFFu;
+    if (rc_ob >= 0 && rc_oc == 0 && subgroupBallot(deferred).x == 0) {
+        uint digit = (low >> 8) & 0xFFu;
+        uint prev = subgroupShuffleUp(digit, 1);
+        uint b = ((lane == 0 ? uint(rc_ob) : prev) + (low >> 16)) & 0xFFu;
+        if (lane < cnt)
+            slice_data[rc.bs_off + lane].v = uint8_t(b);
+        rc.bs_off += cnt;
+        rc_ob = int(subgroupBroadcast(digit, cnt - 1));
+    } else {
+        for (uint i = 0; i < cnt; i++) {
+            uint l = subgroupBroadcast(low, i);
+            if (rc_ob < 0) {
+                rc_ob = int(l >> 8);
+            } else if (l - 0xFF01u < 0xFFu) {
+                rc_oc++;
+            } else {
+                uint carry = l >> 16;
+                if (lane == 0)
+                    slice_data[rc.bs_off].v = uint8_t(uint(rc_ob) + carry);
+                for (uint k = 0; k < rc_oc; k += 32)
+                    if (lane < rc_oc - k)
+                        slice_data[rc.bs_off + 1 + k + lane].v = uint8_t(carry - 1u);
+                rc.bs_off += 1 + rc_oc;
+                rc_oc = 0;
+                rc_ob = int((l >> 8) & 0xFFu);
+            }
+        }
+    }
+}
+
+void rac_emit(void)
+{
+    if (rc_nev == 0)
+        return;
+    rac_emit_block(rc_ev, min(rc_nev, 32u));
+    if (rc_nev > 32)
+        rac_emit_block(rc_ev2, rc_nev - 32);
+    rc_nev = 0;
 }
 
 void rac_renorm_enc(void)
@@ -82,23 +134,9 @@ void rac_renorm_enc(void)
     uint low = rc_top - rc.range;
     rc.range <<= 8;
     rc_top = ((low & 0xFFu) << 8) + rc.range;
-
-    if (rc_ob < 0) {
-        rc_ob = int(low >> 8);
-    } else if (low - 0xFF01u < 0xFFu) {
-        rc_oc++;
-    } else {
-        uint lane = gl_SubgroupInvocationID;
-        uint carry = low >> 16;
-        if (lane == 0)
-            slice_data[rc.bs_off].v = uint8_t(uint(rc_ob) + carry);
-        for (uint k = 0; k < rc_oc; k += 32)
-            if (lane < rc_oc - k)
-                slice_data[rc.bs_off + 1 + k + lane].v = uint8_t(carry - 1u);
-        rc.bs_off += 1 + rc_oc;
-        rc_oc = 0;
-        rc_ob = int((low >> 8) & 0xFFu);
-    }
+    rc_ev = gl_SubgroupInvocationID == rc_nev ? low : rc_ev;
+    rc_ev2 = gl_SubgroupInvocationID + 32 == rc_nev ? low : rc_ev2;
+    rc_nev++;
 }
 
 void put_rac_range1(uint range1, bool bit)
@@ -121,6 +159,8 @@ void put_rac_equi(bool bit)
 
 uint rac_terminate(void)
 {
+    rac_emit();
+
     uint range1 = (rc.range * 129) >> 8;
     rc.range -= range1;
     rc_top -= range1;
@@ -133,6 +173,7 @@ uint rac_terminate(void)
     rc_top = rc_top - rc.range + 0xFFu;
     rc.range = 0xFFu;
     rac_renorm_enc();
+    rac_emit();
 
     rc.low = rc_top - rc.range;
     rc.outstanding_count = uint16_t(rc_oc);
@@ -157,12 +198,24 @@ void put_isymbol(inout uint st, int v)
     uint a = abs(v);
     int e = findMSB(a);
 
-    for (int i = 0; i < e; i++)
-        put_rac_state(st, 1 + min(i, 9), true);
+    for (int i = 0; i < min(e, 9); i++)
+        put_rac_state(st, 1 + i, true);
+    for (int i = 9; i < e; i++) {
+        put_rac_state(st, 10, true);
+        if (rc_nev > 60)
+            rac_emit();
+    }
     put_rac_state(st, 1 + min(e, 9), false);
 
-    for (int i = e - 1; i >= 0; i--)
-        put_rac_state(st, 22 + min(i, 9), bitfieldExtract(a, i, 1) != 0);
+    for (int i = e - 1; i >= 9; i--) {
+        put_rac_state(st, 31, bitfieldExtract(a, i, 1) != 0);
+        if (rc_nev > 60)
+            rac_emit();
+    }
+    if (e > 9 && rc_nev > 50)
+        rac_emit();
+    for (int i = min(e, 9) - 1; i >= 0; i--)
+        put_rac_state(st, 22 + i, bitfieldExtract(a, i, 1) != 0);
 
     put_rac_state(st, 11 + min(e, 10), v < 0);
 }

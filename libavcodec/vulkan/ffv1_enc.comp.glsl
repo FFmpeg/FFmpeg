@@ -77,6 +77,8 @@ void encode_line_pcm(in SliceContext sc, readonly uimage2D img,
 
         for (uint i = (rct_offset >> 1); i > 0; i >>= 1)
             put_rac_equi(bool(v & i));
+        if (rc_nev > 32)
+            rac_emit();
     }
 }
 
@@ -118,6 +120,8 @@ void encode_line(in SliceContext sc, readonly uimage2D img, uint state_off,
         put_isymbol(st, d[1]);
         slice_rc_state[rc_off] = uint8_t(st);
         linecache_next(cur);
+        if (rc_nev > 42)
+            rac_emit();
     }
 }
 
