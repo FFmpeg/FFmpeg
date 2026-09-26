@@ -215,7 +215,10 @@ static void fill_picture_rgb(AVFilterContext *ctx, AVFrame *picref)
 static int alloc_grid(AVFilterContext *ctx)
 {
     LifeContext *life = ctx->priv;
-
+    if (life->w <= 0 || life->h <= 0 || life->w > INT_MAX / life->h) {
+        av_log(ctx, AV_LOG_ERROR, "Invalid grid size %dx%d\n", life->w, life->h);
+        return AVERROR(EINVAL);
+    }
     if (!(life->buf[0] = av_calloc(life->h * life->w, sizeof(*life->buf[0]))) ||
         !(life->buf[1] = av_calloc(life->h * life->w, sizeof(*life->buf[1])))) {
         av_freep(&life->buf[0]);
