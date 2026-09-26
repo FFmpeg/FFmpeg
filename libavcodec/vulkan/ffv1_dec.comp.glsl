@@ -22,6 +22,7 @@
 
 #pragma shader_stage(compute)
 #extension GL_GOOGLE_include_directive : require
+#extension GL_KHR_shader_subgroup_ballot : require
 
 #define DECODE
 #include "common.glsl"
@@ -46,6 +47,8 @@ layout(set = 1, binding = 6) readonly buffer fltmap_buf {
 layout (set = 1, binding = 3, scalar) buffer slice_state_buf {
     uint8_t slice_rc_state[];
 };
+
+layout (constant_id = 20) const bool quant_ballot = false;
 
 #define READ(idx) get_rac_state(idx)
 shared int sym_e;
@@ -130,9 +133,23 @@ void decode_line(ivec2 sp, int w,
 
     linecache_load(dec[p], sp, y, 0);
 
+    bool ext = extend_lookup[quant_table_idx];
+    ivec2 qthr = quant_ballot ? quant_thresh[quant_table_idx][gl_LocalInvocationID.x] : ivec2(0);
+    ivec2 qso = quant_ballot ? quant_scale_off[quant_table_idx] : ivec2(0);
+
     for (int x = 0; x < w; x++) {
-        ivec2 pr = get_pred(dec[p], sp, ivec2(x, y), 0, w,
-                            quant_table_idx, extend_lookup[quant_table_idx]);
+        ivec2 pr;
+        if (quant_ballot) {
+            ivec3 top = get_pred_top(dec[p], sp, ivec2(x, y), 0, w, quant_table_idx, ext);
+            TYPE cur = linecache[1];
+            uvec4 q0 = subgroupBallot(int(int8_t(cur - top[0])) >= qthr.x);
+            uvec4 q3 = subgroupBallot(ext && int(int8_t(linecache[0] - cur)) >= qthr.y);
+            pr = ivec2(top[2] + qso.y + int(subgroupBallotBitCount(q0)) +
+                       qso.x*int(subgroupBallotBitCount(q3)),
+                       predict(cur, top.xy));
+        } else {
+            pr = get_pred(dec[p], sp, ivec2(x, y), 0, w, quant_table_idx, ext);
+        }
 
         uint rc_off = state_off + CONTEXT_SIZE*abs(pr[0]) + gl_LocalInvocationID.x;
 

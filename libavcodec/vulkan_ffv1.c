@@ -687,13 +687,13 @@ static int init_decode_shader(FFV1Context *f, FFVulkanContext *s,
                               AVHWFramesContext *dec_frames_ctx,
                               AVHWFramesContext *out_frames_ctx,
                               VkSpecializationInfo *sl, int ac, int rgb,
-                              int bayer)
+                              int bayer, int ballot)
 {
     int err;
 
     uint32_t wg_x = ac != AC_GOLOMB_RICE ? CONTEXT_SIZE : 1;
     ff_vk_shader_load(shd, VK_SHADER_STAGE_COMPUTE_BIT, sl,
-                      (uint32_t []) { wg_x, 1, 1 }, 0);
+                      (uint32_t []) { wg_x, 1, 1 }, ballot ? CONTEXT_SIZE : 0);
 
     ff_vk_shader_add_push_const(shd, 0, sizeof(FFv1ShaderParams),
                                 VK_SHADER_STAGE_COMPUTE_BIT);
@@ -856,6 +856,8 @@ static void vk_decode_ffv1_uninit(FFVulkanDecodeShared *ctx)
 static int vk_decode_ffv1_init(AVCodecContext *avctx)
 {
     int err;
+    int ballot = 0;
+    FFv1QuantBallot qb;
     FFV1Context *f = avctx->priv_data;
     FFVulkanDecodeContext *dec = avctx->internal->hwaccel_priv_data;
     FFVulkanDecodeShared *ctx = NULL;
@@ -897,7 +899,7 @@ static int vk_decode_ffv1_init(AVCodecContext *avctx)
         dctx = (AVHWFramesContext *)fv->intermediate_frames_ref->data;
     }
 
-    SPEC_LIST_CREATE(sl, 15, 15*sizeof(uint32_t))
+    SPEC_LIST_CREATE(sl, 16, 16*sizeof(uint32_t))
     ff_ffv1_vk_set_common_sl(avctx, f, sl, sw_format);
 
     if (RGB_LINECACHE != 2)
@@ -905,6 +907,16 @@ static int vk_decode_ffv1_init(AVCodecContext *avctx)
 
     if (f->ec && !!(avctx->err_recognition & AV_EF_CRCCHECK))
         SPEC_LIST_ADD(sl, 1, 32, 1);
+
+    /* The ballot quantizer holds one threshold per invocation, so the
+     * workgroup must be a single subgroup of CONTEXT_SIZE invocations */
+    if (f->ac != AC_GOLOMB_RICE &&
+        ctx->s.subgroup_props.minSubgroupSize <= CONTEXT_SIZE &&
+        ctx->s.subgroup_props.maxSubgroupSize >= CONTEXT_SIZE &&
+        (ctx->s.subgroup_props.requiredSubgroupSizeStages & VK_SHADER_STAGE_COMPUTE_BIT))
+        ballot = ff_ffv1_vk_quant_ballot(f, &qb);
+    if (ballot)
+        SPEC_LIST_ADD(sl, 20, 32, 1);
 
     /* Setup shader */
     RET(init_setup_shader(f, &ctx->s, &ctx->exec_pool, &fv->setup, sl));
@@ -914,7 +926,7 @@ static int vk_decode_ffv1_init(AVCodecContext *avctx)
 
     /* Decode shaders */
     RET(init_decode_shader(f, &ctx->s, &ctx->exec_pool, &fv->decode,
-                           dctx, hwfc, sl, f->ac, is_rgb, f->bayer));
+                           dctx, hwfc, sl, f->ac, is_rgb, f->bayer, ballot));
 
     /* Init static data */
     RET(ff_ffv1_vk_init_consts(&ctx->s, &fv->consts_buf, f));
@@ -942,7 +954,8 @@ static int vk_decode_ffv1_init(AVCodecContext *avctx)
                                         &fv->consts_buf,
                                         256*sizeof(uint32_t) + 512*sizeof(uint8_t),
                                         MAX_QUANT_TABLES*MAX_CONTEXT_INPUTS*
-                                        MAX_QUANT_TABLE_SIZE*sizeof(int32_t),
+                                        MAX_QUANT_TABLE_SIZE*sizeof(int32_t) +
+                                        sizeof(FFv1QuantBallot),
                                         VK_FORMAT_UNDEFINED));
 
 fail:

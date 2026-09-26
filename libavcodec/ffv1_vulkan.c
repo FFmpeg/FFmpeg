@@ -82,6 +82,42 @@ static void set_rc_state_tab(FFV1Context *f, uint8_t *buf)
     }
 }
 
+int ff_ffv1_vk_quant_ballot(const FFV1Context *f, FFv1QuantBallot *qb)
+{
+    int ok = 1;
+
+    for (int i = 0; i < MAX_QUANT_TABLES; i++)
+        for (int k = 0; k < 32; k++)
+            qb->thresh[i][k][0] = qb->thresh[i][k][1] = 128;
+    memset(qb->scale_off, 0, sizeof(qb->scale_off));
+
+    for (int i = 0; i < f->quant_table_count; i++) {
+        for (int j = 0; j < 2; j++) {
+            const int16_t *qt = f->quant_tables[i][3*j];
+            int n = 0, scale = 0;
+
+            for (int d = -127; d < 128; d++) {
+                int step = qt[d & 255] - qt[(d - 1) & 255];
+                if (!step)
+                    continue;
+                if (!scale)
+                    scale = step;
+                if (step != scale || n == 32 || (!j && step != 1)) {
+                    ok = 0;
+                    break;
+                }
+                qb->thresh[i][n++][j] = d;
+            }
+
+            if (j)
+                qb->scale_off[i][0] = scale;
+            qb->scale_off[i][1] += qt[128];
+        }
+    }
+
+    return ok;
+}
+
 int ff_ffv1_vk_init_consts(FFVulkanContext *s, FFVkBuffer *vkb, FFV1Context *f)
 {
     int err;
@@ -92,7 +128,8 @@ int ff_ffv1_vk_init_consts(FFVulkanContext *s, FFVkBuffer *vkb, FFV1Context *f)
                      512*sizeof(uint8_t) + /* Rangecoder */
                      MAX_QUANT_TABLES*
                      MAX_CONTEXT_INPUTS*
-                     MAX_QUANT_TABLE_SIZE*sizeof(int32_t);
+                     MAX_QUANT_TABLE_SIZE*sizeof(int32_t) +
+                     sizeof(FFv1QuantBallot);
 
     RET(ff_vk_create_buf(s, vkb,
                          buf_len,
@@ -112,6 +149,8 @@ int ff_ffv1_vk_init_consts(FFVulkanContext *s, FFVkBuffer *vkb, FFV1Context *f)
         for (int j = 0; j < MAX_CONTEXT_INPUTS; j++)
             for (int k = 0; k < MAX_QUANT_TABLE_SIZE; k++)
                 quant_tables[i][j][k] = f->quant_tables[i][j][k];
+
+    ff_ffv1_vk_quant_ballot(f, (FFv1QuantBallot *)(quant_tables + MAX_QUANT_TABLES));
 
     RET(ff_vk_unmap_buffer(s, vkb, 1));
 

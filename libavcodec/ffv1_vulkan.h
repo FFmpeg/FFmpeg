@@ -30,6 +30,21 @@ void ff_ffv1_vk_set_common_sl(AVCodecContext *avctx, FFV1Context *f,
 
 int ff_ffv1_vk_init_consts(FFVulkanContext *s, FFVkBuffer *vkb, FFV1Context *f);
 
+/* Context inputs 0 and 3 of the quant tables as a function of the signed
+ * 8-bit difference d, with one threshold per subgroup invocation:
+ * q(d) = q(-128) + scale*#{k : thresh[k] <= d}, where scale is 1 for input 0.
+ * scale_off holds the scale of input 3 and the sum of both q(-128). */
+typedef struct FFv1QuantBallot {
+    int32_t thresh[MAX_QUANT_TABLES][32][2];
+    int32_t scale_off[MAX_QUANT_TABLES][2];
+} FFv1QuantBallot;
+
+/**
+ * Fill in the ballot quantizers of all quant tables.
+ * Returns 1 if all of them can be evaluated with a ballot.
+ */
+int ff_ffv1_vk_quant_ballot(const FFV1Context *f, FFv1QuantBallot *qb);
+
 typedef struct FFv1ShaderParams {
     VkDeviceAddress slice_data;
 

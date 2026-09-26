@@ -1390,7 +1390,8 @@ static av_cold int vulkan_encode_ffv1_init(AVCodecContext *avctx)
                                         &fv->consts_buf,
                                         256*sizeof(uint32_t) + 512*sizeof(uint8_t),
                                         MAX_QUANT_TABLES*MAX_CONTEXT_INPUTS*
-                                        MAX_QUANT_TABLE_SIZE*sizeof(int32_t),
+                                        MAX_QUANT_TABLE_SIZE*sizeof(int32_t) +
+                                        sizeof(FFv1QuantBallot),
                                         VK_FORMAT_UNDEFINED));
     RET(ff_vk_shader_update_desc_buffer(&fv->s, &fv->exec_pool.contexts[0],
                                         &fv->enc, 0, 2, 0,
