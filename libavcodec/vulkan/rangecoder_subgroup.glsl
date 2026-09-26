@@ -192,11 +192,26 @@ void put_isymbol_tail(int e, uint st24, uint a, bool neg)
             s[11 + i] = subgroupBroadcast(st24, 22 + i);
     s[20] = subgroupBroadcast(st24, 11 + e);
 
-    put_rac(s[0], false);
+    uint range = rc.range;
+    uint top = rc_top;
+    uint r = rac_range1(rc.range, s[0]);
+    rc.range -= r;
+    rc_top -= r;
     [[unroll]] for (int i = 0; i < 9; i++)
         if (i < e)
-            put_rac(s[1 + i], true);
-    put_rac(s[1 + e], false);
+            rc.range = rac_range1(rc.range, s[1 + i]);
+    r = rac_range1(rc.range, s[1 + e]);
+    rc.range -= r;
+    rc_top -= r;
+    [[dont_flatten]] if (rc.range < 0x100) {
+        rc.range = range;
+        rc_top = top;
+        put_rac(s[0], false);
+        [[unroll]] for (int i = 0; i < 9; i++)
+            if (i < e)
+                put_rac(s[1 + i], true);
+        put_rac(s[1 + e], false);
+    }
     [[unroll]] for (int i = 8; i >= 0; i--)
         if (i < e)
             put_rac(s[11 + i], bitfieldExtract(a, i, 1) != 0);
