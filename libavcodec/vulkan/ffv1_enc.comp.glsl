@@ -46,6 +46,9 @@ layout (set = 1, binding = 1, scalar) writeonly buffer slice_results_buf {
  * formats this avoids the fp16/fp32 conversion that would otherwise flush
  * denormals before we get to look at them. */
 layout (set = 1, binding = 3) uniform uimage2D src[];
+layout (set = 1, binding = 6, scalar) readonly buffer slice_order_buf {
+    uint32_t slice_order[];
+};
 #ifdef FLOAT
 layout (set = 1, binding = 5, scalar) readonly buffer fltmap_buf {
     uint fltmap[];
@@ -460,7 +463,7 @@ void encode_slice(in SliceContext sc, uint slice_idx)
     int bayer_w = sc.slice_dim.x >> 1;
     int bayer_h = sc.slice_dim.y >> 1;
     sp.x >>= 1;
-    sp.y = int(gl_WorkGroupID.y)*rgb_linecache;
+    sp.y = int(slice_idx / gl_NumWorkGroups.x)*rgb_linecache;
     /* c_bits = bps + 1 for is_rgb pixfmts (Bayer is treated as RGB). gm uses
      * raw bps; gd/b-gm/r-gm need an extra bit for the RCT difference. PCM
      * stores raw samples so all planes use bps. */
@@ -469,7 +472,7 @@ void encode_slice(in SliceContext sc, uint slice_idx)
     else
         bits = u16vec4(c_bits - 1, c_bits - 1, c_bits - 1, c_bits - 1);
 #elif defined(RGB)
-    sp.y = int(gl_WorkGroupID.y)*rgb_linecache;
+    sp.y = int(slice_idx / gl_NumWorkGroups.x)*rgb_linecache;
 #endif
 
 #ifndef GOLOMB
@@ -643,7 +646,7 @@ void finalize_slice(in uint slice_idx)
 
 void main(void)
 {
-    uint slice_idx = gl_WorkGroupID.y*gl_NumWorkGroups.x + gl_WorkGroupID.x;
+    uint slice_idx = slice_order[gl_WorkGroupID.y*gl_NumWorkGroups.x + gl_WorkGroupID.x];
 
 #ifdef GOLOMB
     if (gl_LocalInvocationID.x == 0)
