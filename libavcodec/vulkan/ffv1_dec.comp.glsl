@@ -30,8 +30,8 @@
 #include "common.glsl"
 #include "ffv1_common.glsl"
 
-layout (set = 1, binding = 1, scalar) readonly buffer slice_offsets_buf {
-    u32vec2 slice_offsets[];
+layout (set = 1, binding = 1, scalar) readonly buffer slice_order_buf {
+    uint32_t slice_order[];
 };
 layout (set = 1, binding = 2, scalar) writeonly buffer slice_status_buf {
     uint32_t slice_status[];
@@ -378,7 +378,7 @@ void decode_slice(in SliceContext sc, uint slice_idx)
     w >>= 1;
     int bayer_h = sc.slice_dim.y >> 1;
     sp.x >>= 1;
-    sp.y = int(gl_WorkGroupID.y)*rgb_linecache;
+    sp.y = int(slice_idx / gl_NumWorkGroups.x)*rgb_linecache;
     /* c_bits = bps + 1 (the +1 is for is_rgb). For PCM mode, all planes use
      * raw bps. For non-PCM, gm uses bps (bps+1 before 4.8, which coded an
      * extra bit); gd/b-gm/r-gm use bps+1. */
@@ -389,7 +389,7 @@ void decode_slice(in SliceContext sc, uint slice_idx)
     } else
         bits = u16vec4(c_bits - 1, c_bits - 1, c_bits - 1, c_bits - 1);
 #elif defined(RGB)
-    sp.y = int(gl_WorkGroupID.y)*rgb_linecache;
+    sp.y = int(slice_idx / gl_NumWorkGroups.x)*rgb_linecache;
 #endif
 
 #ifndef GOLOMB
@@ -471,7 +471,7 @@ void decode_slice(in SliceContext sc, uint slice_idx)
 
 void main(void)
 {
-    uint slice_idx = gl_WorkGroupID.y*gl_NumWorkGroups.x + gl_WorkGroupID.x;
+    uint slice_idx = slice_order[gl_WorkGroupID.y*gl_NumWorkGroups.x + gl_WorkGroupID.x];
 
 #ifdef GOLOMB
     rc = slice_ctx[slice_idx].c;

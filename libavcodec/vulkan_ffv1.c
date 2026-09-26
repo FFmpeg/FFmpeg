@@ -76,6 +76,7 @@ typedef struct FFv1VulkanDecodePicture {
     FFVkBuffer *slice_fltmap_buf;
     FFVkBuffer *slice_feedback_buf;
     uint32_t    *slice_offset;
+    uint32_t     slice_size[MAX_SLICES];
     int          slice_num;
     int          crc_checked;
 
@@ -176,7 +177,7 @@ static int vk_ffv1_start_frame(AVCodecContext          *avctx,
     err = ff_vk_get_pooled_buffer(&ctx->s, &fv->slice_feedback_pool,
                                   &fp->slice_feedback_buf,
                                   VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-                                  NULL, 2*(2*f->slice_count*sizeof(uint32_t)),
+                                  NULL, 5*f->slice_count*sizeof(uint32_t),
                                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
                                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
     if (err < 0)
@@ -229,6 +230,9 @@ static int vk_ffv1_decode_slice(AVCodecContext *avctx,
     FFVkBuffer *slice_offset = fp->slice_feedback_buf;
     FFVkBuffer *slices_buf = vp->slices_buf;
 
+    if (fp->slice_num < MAX_SLICES)
+        fp->slice_size[fp->slice_num] = size;
+
     if (slices_buf && slices_buf->host_ref) {
         AV_WN32(slice_offset->mapped_mem + (2*fp->slice_num + 0)*sizeof(uint32_t),
                 data - slices_buf->mapped_mem);
@@ -250,6 +254,12 @@ static int vk_ffv1_decode_slice(AVCodecContext *avctx,
     }
 
     return 0;
+}
+
+static int cmp_slice_order(const void *a, const void *b)
+{
+    uint64_t x = *(const uint64_t *)a, y = *(const uint64_t *)b;
+    return (x < y) - (x > y);
 }
 
 static int vk_ffv1_end_frame(AVCodecContext *avctx)
@@ -514,6 +524,16 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
     nb_img_bar = 0;
     nb_buf_bar = 0;
 
+    /* Decode the largest slices first: they get the oldest waves, which
+     * have issue priority when several waves share a SIMD */
+    uint64_t order[MAX_SLICES];
+    for (int i = 0; i < f->slice_count; i++)
+        order[i] = (uint64_t)(i < fp->slice_num ? fp->slice_size[i] : 0) << 32 | (UINT32_MAX - i);
+    qsort(order, f->slice_count, sizeof(*order), cmp_slice_order);
+    for (int i = 0; i < f->slice_count; i++)
+        AV_WN32(slice_feedback->mapped_mem + (4*f->slice_count + i)*sizeof(uint32_t),
+                UINT32_MAX - (uint32_t)order[i]);
+
     /* Decode */
     ff_vk_shader_update_desc_buffer(&ctx->s, exec, &fv->decode,
                                     1, 0, 0,
@@ -523,7 +543,8 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
     ff_vk_shader_update_desc_buffer(&ctx->s, exec, &fv->decode,
                                     1, 1, 0,
                                     slice_feedback,
-                                    0, 2*f->slice_count*sizeof(uint32_t),
+                                    4*f->slice_count*sizeof(uint32_t),
+                                    f->slice_count*sizeof(uint32_t),
                                     VK_FORMAT_UNDEFINED);
     ff_vk_shader_update_desc_buffer(&ctx->s, exec, &fv->decode,
                                     1, 2, 0,
