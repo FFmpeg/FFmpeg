@@ -143,7 +143,7 @@ void put_rac_range1(uint range1, bool bit)
 {
     rc_top = bit ? rc_top : rc_top - range1;
     rc.range = bit ? range1 : rc.range - range1;
-    if (rc.range < 0x100)
+    [[dont_flatten]] if (rc.range < 0x100)
         rac_renorm_enc();
 }
 
@@ -181,43 +181,114 @@ uint rac_terminate(void)
     return rc.bs_off - rc.bs_start;
 }
 
-void put_rac_state(inout uint st, uint i, bool bit)
+void put_isymbol_tail(int e, uint st24, uint a, bool neg)
 {
-    uint s = subgroupBroadcast(st, i);
-    put_rac(s << 24, bit);
-    uint ns = uint(zero_one_state[(uint(bit) << 8) + s]);
-    st = gl_SubgroupInvocationID == i ? ns : st;
+    uint s[21];
+    [[unroll]] for (int i = 0; i < 11; i++)
+        if (i <= e + 1)
+            s[i] = subgroupBroadcast(st24, i);
+    [[unroll]] for (int i = 0; i < 9; i++)
+        if (i < e)
+            s[11 + i] = subgroupBroadcast(st24, 22 + i);
+    s[20] = subgroupBroadcast(st24, 11 + e);
+
+    put_rac(s[0], false);
+    [[unroll]] for (int i = 0; i < 9; i++)
+        if (i < e)
+            put_rac(s[1 + i], true);
+    put_rac(s[1 + e], false);
+    [[unroll]] for (int i = 8; i >= 0; i--)
+        if (i < e)
+            put_rac(s[11 + i], bitfieldExtract(a, i, 1) != 0);
+    put_rac(s[20], neg);
 }
 
-void put_isymbol(inout uint st, int v)
+void put_isymbol_esc(int e, uint st, uint a, bool neg, out uint s10, out uint s31)
 {
-    put_rac_state(st, 0, v == 0);
-    if (v == 0)
-        return;
+    uint st24 = st << 24;
+    uint s[10];
+    [[unroll]] for (int i = 0; i < 10; i++)
+        s[i] = subgroupBroadcast(st24, i);
+    s10 = subgroupBroadcast(st, 10);
+    s31 = subgroupBroadcast(st, 31);
+    put_rac(s[0], false);
+    [[unroll]] for (int i = 1; i < 10; i++)
+        put_rac(s[i], true);
+    if (rc_nev > 40)
+        rac_emit();
 
-    uint a = abs(v);
-    int e = findMSB(a);
-
-    for (int i = 0; i < min(e, 9); i++)
-        put_rac_state(st, 1 + i, true);
     for (int i = 9; i < e; i++) {
-        put_rac_state(st, 10, true);
+        uint nx = rangecoder_state[256 + s10];
+        put_rac(s10 << 24, true);
         if (rc_nev > 60)
             rac_emit();
+        s10 = nx;
     }
-    put_rac_state(st, 1 + min(e, 9), false);
+    uint nx = rangecoder_state[s10];
+    put_rac(s10 << 24, false);
+    s10 = nx;
 
     for (int i = e - 1; i >= 9; i--) {
-        put_rac_state(st, 31, bitfieldExtract(a, i, 1) != 0);
+        bool b = bitfieldExtract(a, i, 1) != 0;
+        uint n0 = rangecoder_state[s31];
+        uint n1 = rangecoder_state[256 + s31];
+        put_rac(s31 << 24, b);
         if (rc_nev > 60)
             rac_emit();
+        s31 = b ? n1 : n0;
     }
-    if (e > 9 && rc_nev > 50)
+    if (rc_nev > 50)
         rac_emit();
-    for (int i = min(e, 9) - 1; i >= 0; i--)
-        put_rac_state(st, 22 + i, bitfieldExtract(a, i, 1) != 0);
 
-    put_rac_state(st, 11 + min(e, 10), v < 0);
+    [[unroll]] for (int i = 8; i >= 0; i--)
+        s[i] = subgroupBroadcast(st24, 22 + i);
+    uint ss = subgroupBroadcast(st24, 21);
+    [[unroll]] for (int i = 8; i >= 0; i--)
+        put_rac(s[i], bitfieldExtract(a, i, 1) != 0);
+    put_rac(ss, neg);
+}
+
+void put_isymbol(uint st, int v, out uint s10, out uint s31)
+{
+    uint st24 = st << 24;
+    uint a = abs(v);
+    int e = findMSB(a);
+    bool neg = v < 0;
+    s10 = 0;
+    s31 = 0;
+
+    if (v != 0) {
+        if (e < 4) {
+            if (e < 2) {
+                if (e == 1)
+                    put_isymbol_tail(1, st24, a, neg);
+                else
+                    put_isymbol_tail(0, st24, a, neg);
+            } else if (e == 3) {
+                put_isymbol_tail(3, st24, a, neg);
+            } else {
+                put_isymbol_tail(2, st24, a, neg);
+            }
+        } else if (e < 7) {
+            if (e == 4)
+                put_isymbol_tail(4, st24, a, neg);
+            else if (e == 5)
+                put_isymbol_tail(5, st24, a, neg);
+            else
+                put_isymbol_tail(6, st24, a, neg);
+        } else if (e < 10) {
+            if (e == 7)
+                put_isymbol_tail(7, st24, a, neg);
+            else if (e == 8)
+                put_isymbol_tail(8, st24, a, neg);
+            else
+                put_isymbol_tail(9, st24, a, neg);
+        } else {
+            put_isymbol_esc(e, st, a, neg, s10, s31);
+        }
+    } else {
+        put_rac(subgroupBroadcast(st24, 0), true);
+    }
 }
 #endif
 

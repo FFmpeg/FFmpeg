@@ -114,11 +114,26 @@ void encode_line(in SliceContext sc, readonly uimage2D img, uint state_off,
 
         d[1] = fold(d[1], bits);
 
-        uint rc_off = state_off + CONTEXT_SIZE*d[0] + gl_LocalInvocationID.x;
-
+        uint lane = gl_SubgroupInvocationID;
+        uint rc_off = state_off + CONTEXT_SIZE*d[0] + lane;
         uint st = slice_rc_state[rc_off];
-        put_isymbol(st, d[1]);
-        slice_rc_state[rc_off] = uint8_t(st);
+
+        uint ad = abs(d[1]);
+        int e = findMSB(ad);
+        int ec = clamp(e, 0, 9);
+        int es = 11 + min(e, 10);
+        uint used = d[1] == 0 ? 1u : 1u | ((4u << ec) - 2u) | (((1u << ec) - 1u) << 22) | (1u << es);
+        uint ones = d[1] == 0 ? 1u : ((2u << ec) - 2u) | ((ad & ((1u << ec) - 1u)) << 22) |
+                                     (uint(d[1] < 0) << es);
+        uint nst = zero_one_state[(bitfieldExtract(ones, int(lane), 1) << 8) + st];
+
+        uint s10, s31;
+        put_isymbol(st, d[1], s10, s31);
+
+        uint adapted = bitfieldExtract(used, int(lane), 1) != 0 ? nst : st;
+        if (ad >= 1024)
+            adapted = lane == 10 ? s10 : lane == 31 ? s31 : adapted;
+        slice_rc_state[rc_off] = uint8_t(adapted);
         linecache_next(cur);
         if (rc_nev > 42)
             rac_emit();
