@@ -1331,7 +1331,7 @@ static av_cold int vulkan_encode_ffv1_init(AVCodecContext *avctx)
                        !fv->force_pcm && fv->optimize_rct && !f->bayer;
 
     /* Init shader specialization consts */
-    SPEC_LIST_CREATE(sl, 19, 19*sizeof(uint32_t))
+    SPEC_LIST_CREATE(sl, 20, 20*sizeof(uint32_t))
     SPEC_LIST_ADD(sl,  0, 32, RGB_LINECACHE);
     SPEC_LIST_ADD(sl,  1, 32, f->ec);
     ff_ffv1_vk_set_common_sl(avctx, f, sl, fv->s.frames->sw_format);
@@ -1339,6 +1339,11 @@ static av_cold int vulkan_encode_ffv1_init(AVCodecContext *avctx)
     SPEC_LIST_ADD(sl, 16, 32, fv->optimize_rct);
     SPEC_LIST_ADD(sl, 17, 32, f->context_model);
     SPEC_LIST_ADD(sl, 18, 32, f->remap_mode);
+
+    if (f->ac != AC_GOLOMB_RICE) {
+        const int16_t (*qt)[MAX_QUANT_TABLE_SIZE] = f->quant_tables[f->context_model];
+        SPEC_LIST_ADD(sl, 19, 32, qt[3][127] || qt[4][127]);
+    }
 
     if (fv->optimize_rct) {
         err = init_rct_search_shader(avctx, sl);
