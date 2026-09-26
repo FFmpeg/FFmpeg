@@ -255,6 +255,9 @@ int ff_get_wav_header(AVFormatContext *s, AVIOContext *pb,
     if (par->codec_id == AV_CODEC_ID_ADPCM_G726 && par->sample_rate)
         par->bits_per_coded_sample = par->bit_rate / par->sample_rate;
 
+    if (par->codec_id == AV_CODEC_ID_ADPCM_RHETOREX && par->bits_per_coded_sample == 3)
+        par->sample_rate = par->sample_rate * 3LL / 4;
+
     /* ignore WAVEFORMATEXTENSIBLE layout if different from channel count */
     if (channels != par->ch_layout.nb_channels) {
         av_channel_layout_uninit(&par->ch_layout);
