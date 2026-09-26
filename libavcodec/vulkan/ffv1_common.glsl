@@ -81,7 +81,11 @@ layout (push_constant, scalar) uniform pushConstants {
     bool remap_allowed;
 };
 
+#ifdef RC_SUBGROUP
+#include "rangecoder_subgroup.glsl"
+#else
 #include "rangecoder.glsl"
+#endif
 
 #if !defined(RGB)
 #define TYPE int16_t
@@ -202,13 +206,19 @@ const uint32_t log2_run[41] = {
     24,
 };
 
+#ifdef DECODE
+#define IMG_QUALI coherent readonly
+VTYPE2 linecache;
+#else
+#define IMG_QUALI readonly
 shared VTYPE2 linecache;
+#endif
 
 #ifdef RGB
 #define RGB_LBUF (rgb_linecache - 1)
 #define LADDR(p) (ivec2((p).x, ((p).y & RGB_LBUF)))
 
-ivec4 get_top(readonly uimage2D pred, ivec2 sp, ivec2 off,
+ivec4 get_top(IMG_QUALI uimage2D pred, ivec2 sp, ivec2 off,
               uint comp, int sw, bool extend_lookup)
 {
     ivec2 yoff_border1 = expectEXT(off.x == 0, false) ? off + ivec2(1, -1) : off;
@@ -235,7 +245,7 @@ ivec4 get_top(readonly uimage2D pred, ivec2 sp, ivec2 off,
 
 #define LADDR(p) (p)
 
-ivec4 get_top(readonly uimage2D pred, ivec2 sp, ivec2 off,
+ivec4 get_top(IMG_QUALI uimage2D pred, ivec2 sp, ivec2 off,
               uint comp, int sw, bool extend_lookup)
 {
     ivec2 yoff_border1 = off.x == 0 ? ivec2(1, -1) : ivec2(0, 0);
@@ -271,7 +281,7 @@ ivec3 get_pred_top_quant(ivec4 top, uint8_t quant_table_idx, bool extend_lookup)
     return ivec3(top[0], top[1], base);
 }
 
-ivec3 get_pred_top(readonly uimage2D pred, ivec2 sp, ivec2 off,
+ivec3 get_pred_top(IMG_QUALI uimage2D pred, ivec2 sp, ivec2 off,
                    uint comp, int sw, uint8_t quant_table_idx, bool extend_lookup)
 {
     return get_pred_top_quant(get_top(pred, sp, off, comp, sw, extend_lookup),
@@ -296,15 +306,20 @@ ivec2 get_pred_left(ivec3 top, uint8_t quant_table_idx, bool extend_lookup)
     return ivec2(base, predict(cur, top.xy));
 }
 
-ivec2 get_pred(readonly uimage2D pred, ivec2 sp, ivec2 off,
+ivec2 get_pred(IMG_QUALI uimage2D pred, ivec2 sp, ivec2 off,
                uint comp, int sw, uint8_t quant_table_idx, bool extend_lookup)
 {
     return get_pred_left(get_pred_top(pred, sp, off, comp, sw, quant_table_idx, extend_lookup),
                          quant_table_idx, extend_lookup);
 }
 
-void linecache_load(readonly uimage2D src, ivec2 sp, int y, uint comp)
+void linecache_load(IMG_QUALI uimage2D src, ivec2 sp, int y, uint comp)
 {
+#ifdef DECODE
+    linecache = VTYPE2(TYPE(0), TYPE(0));
+    if (y > 0)
+        linecache[1] = TYPE(imageLoad(src, sp + LADDR(ivec2(0, y - 1)))[comp]);
+#else
     if (gl_LocalInvocationID.x == 0)
         linecache[0] = TYPE(0);
 
@@ -319,6 +334,7 @@ void linecache_load(readonly uimage2D src, ivec2 sp, int y, uint comp)
     }
 
     barrier();
+#endif
 }
 
 void linecache_next(TYPE cur)
