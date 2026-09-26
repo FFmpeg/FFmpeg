@@ -941,7 +941,8 @@ static int vk_decode_ffv1_init(AVCodecContext *avctx)
                                         &fv->decode, 0, 1, 0,
                                         &fv->consts_buf,
                                         256*sizeof(uint32_t) + 512*sizeof(uint8_t),
-                                        VK_WHOLE_SIZE,
+                                        MAX_QUANT_TABLES*MAX_CONTEXT_INPUTS*
+                                        MAX_QUANT_TABLE_SIZE*sizeof(int32_t),
                                         VK_FORMAT_UNDEFINED));
 
 fail:

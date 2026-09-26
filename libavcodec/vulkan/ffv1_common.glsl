@@ -180,7 +180,7 @@ u16vec4 get_slice_bits(in SliceContext sc)
 }
 
 layout (set = 0, binding = 1, scalar) readonly uniform quant_buf {
-    int16_t quant_table[MAX_QUANT_TABLES]
+    int32_t quant_table[MAX_QUANT_TABLES]
                        [MAX_CONTEXT_INPUTS]
                        [MAX_QUANT_TABLE_SIZE];
 };

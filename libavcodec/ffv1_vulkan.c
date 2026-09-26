@@ -87,11 +87,12 @@ int ff_ffv1_vk_init_consts(FFVulkanContext *s, FFVkBuffer *vkb, FFV1Context *f)
     int err;
 
     uint8_t *buf_mapped;
+    int32_t (*quant_tables)[MAX_CONTEXT_INPUTS][MAX_QUANT_TABLE_SIZE];
     size_t buf_len = 256*sizeof(uint32_t) + /* CRC */
                      512*sizeof(uint8_t) + /* Rangecoder */
                      MAX_QUANT_TABLES*
                      MAX_CONTEXT_INPUTS*
-                     MAX_QUANT_TABLE_SIZE*sizeof(int16_t);
+                     MAX_QUANT_TABLE_SIZE*sizeof(int32_t);
 
     RET(ff_vk_create_buf(s, vkb,
                          buf_len,
@@ -106,8 +107,11 @@ int ff_ffv1_vk_init_consts(FFVulkanContext *s, FFVkBuffer *vkb, FFV1Context *f)
 
     set_rc_state_tab(f, buf_mapped + 256*sizeof(uint32_t));
 
-    memcpy(buf_mapped + 256*sizeof(uint32_t) + 512*sizeof(uint8_t),
-           f->quant_tables, sizeof(f->quant_tables));
+    quant_tables = (void *)(buf_mapped + 256*sizeof(uint32_t) + 512*sizeof(uint8_t));
+    for (int i = 0; i < MAX_QUANT_TABLES; i++)
+        for (int j = 0; j < MAX_CONTEXT_INPUTS; j++)
+            for (int k = 0; k < MAX_QUANT_TABLE_SIZE; k++)
+                quant_tables[i][j][k] = f->quant_tables[i][j][k];
 
     RET(ff_vk_unmap_buffer(s, vkb, 1));
 
