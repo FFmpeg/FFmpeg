@@ -60,6 +60,114 @@ uint rac_range1(uint range, uint state24)
     return hi;
 }
 
+#ifdef ENCODE
+uint rc_top;
+uint rc_oc;
+int rc_ob;
+
+void rac_init_enc(in RangeCoder c)
+{
+    for (uint i = gl_SubgroupInvocationID; i < 512; i += gl_SubgroupSize)
+        zero_one_state[i] = rangecoder_state[i];
+    barrier();
+
+    rc = c;
+    rc_top = rc.low + rc.range;
+    rc_oc = uint(rc.outstanding_count);
+    rc_ob = int(rc.outstanding_byte);
+}
+
+void rac_renorm_enc(void)
+{
+    uint low = rc_top - rc.range;
+    rc.range <<= 8;
+    rc_top = ((low & 0xFFu) << 8) + rc.range;
+
+    if (rc_ob < 0) {
+        rc_ob = int(low >> 8);
+    } else if (low - 0xFF01u < 0xFFu) {
+        rc_oc++;
+    } else {
+        uint lane = gl_SubgroupInvocationID;
+        uint carry = low >> 16;
+        if (lane == 0)
+            slice_data[rc.bs_off].v = uint8_t(uint(rc_ob) + carry);
+        for (uint k = 0; k < rc_oc; k += 32)
+            if (lane < rc_oc - k)
+                slice_data[rc.bs_off + 1 + k + lane].v = uint8_t(carry - 1u);
+        rc.bs_off += 1 + rc_oc;
+        rc_oc = 0;
+        rc_ob = int((low >> 8) & 0xFFu);
+    }
+}
+
+void put_rac_range1(uint range1, bool bit)
+{
+    rc_top = bit ? rc_top : rc_top - range1;
+    rc.range = bit ? range1 : rc.range - range1;
+    if (rc.range < 0x100)
+        rac_renorm_enc();
+}
+
+void put_rac(uint state24, bool bit)
+{
+    put_rac_range1(rac_range1(rc.range, state24), bit);
+}
+
+void put_rac_equi(bool bit)
+{
+    put_rac_range1(rc.range >> 1, bit);
+}
+
+uint rac_terminate(void)
+{
+    uint range1 = (rc.range * 129) >> 8;
+    rc.range -= range1;
+    rc_top -= range1;
+    if (rc.range < 0x100)
+        rac_renorm_enc();
+
+    rc_top = rc_top - rc.range + 0x1FEu;
+    rc.range = 0xFFu;
+    rac_renorm_enc();
+    rc_top = rc_top - rc.range + 0xFFu;
+    rc.range = 0xFFu;
+    rac_renorm_enc();
+
+    rc.low = rc_top - rc.range;
+    rc.outstanding_count = uint16_t(rc_oc);
+    rc.outstanding_byte = int16_t(rc_ob);
+    return rc.bs_off - rc.bs_start;
+}
+
+void put_rac_state(inout uint st, uint i, bool bit)
+{
+    uint s = subgroupBroadcast(st, i);
+    put_rac(s << 24, bit);
+    uint ns = uint(zero_one_state[(uint(bit) << 8) + s]);
+    st = gl_SubgroupInvocationID == i ? ns : st;
+}
+
+void put_isymbol(inout uint st, int v)
+{
+    put_rac_state(st, 0, v == 0);
+    if (v == 0)
+        return;
+
+    uint a = abs(v);
+    int e = findMSB(a);
+
+    for (int i = 0; i < e; i++)
+        put_rac_state(st, 1 + min(i, 9), true);
+    put_rac_state(st, 1 + min(e, 9), false);
+
+    for (int i = e - 1; i >= 0; i--)
+        put_rac_state(st, 22 + min(i, 9), bitfieldExtract(a, i, 1) != 0);
+
+    put_rac_state(st, 11 + min(e, 10), v < 0);
+}
+#endif
+
 #ifdef DECODE
 uint rc_win;
 uint rc_dist;

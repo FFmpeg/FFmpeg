@@ -24,6 +24,9 @@
 #extension GL_GOOGLE_include_directive : require
 
 #define ENCODE
+#ifndef GOLOMB
+#define RC_SUBGROUP
+#endif
 /* Golomb slices start writing at rac_terminate()'s byte count, with no
  * alignment guarantee */
 #define PB_UNALIGNED
@@ -54,33 +57,9 @@ layout (set = 1, binding = 2, scalar) buffer slice_state_buf {
     uint8_t slice_rc_state[];
 };
 
-#define WRITE(idx, val) put_rac(rc_state[idx], val)
-void put_symbol(int v)
-{
-    bool is_nil = (v == 0);
-    WRITE(0, is_nil);
-    if (is_nil)
-        return;
-
-    int a = abs(v);
-    int e = findMSB(a);
-
-    for (int i = 0; i < e; i++)
-        WRITE(1 + min(i, 9), true);
-    WRITE(1 + min(e, 9), false);
-
-    for (int i = e - 1; i >= 0; i--)
-        WRITE(22 + min(i, 9), bool(bitfieldExtract(a, i, 1)));
-
-    WRITE(22 - 11 + min(e, 10), v < 0);
-}
-
 void encode_line_pcm(in SliceContext sc, readonly uimage2D img,
                      ivec2 sp, int y, uint p, uint comp)
 {
-    if (gl_LocalInvocationID.x > 0)
-        return;
-
     int w = sc.slice_dim.x;
 #ifdef BAYER
     w >>= 1;
@@ -94,7 +73,7 @@ void encode_line_pcm(in SliceContext sc, readonly uimage2D img,
 #endif
 
     for (int x = 0; x < w; x++) {
-        uint v = imageLoad(img, sp + LADDR(ivec2(x, y)))[comp];
+        uint v = subgroupBroadcastFirst(imageLoad(img, sp + LADDR(ivec2(x, y)))[comp]);
 
         for (uint i = (rct_offset >> 1); i > 0; i >>= 1)
             put_rac_equi(bool(v & i));
@@ -135,16 +114,10 @@ void encode_line(in SliceContext sc, readonly uimage2D img, uint state_off,
 
         uint rc_off = state_off + CONTEXT_SIZE*d[0] + gl_LocalInvocationID.x;
 
-        rc_state[gl_LocalInvocationID.x] = slice_rc_state[rc_off];
-        barrier();
-
-        if (gl_LocalInvocationID.x == 0) {
-            put_symbol(d[1]);
-            linecache_next(cur);
-        }
-
-        barrier();
-        slice_rc_state[rc_off] = rc_state[gl_LocalInvocationID.x];
+        uint st = slice_rc_state[rc_off];
+        put_isymbol(st, d[1]);
+        slice_rc_state[rc_off] = uint8_t(st);
+        linecache_next(cur);
     }
 }
 
@@ -460,6 +433,8 @@ void finalize_slice(in uint slice_idx)
     uint32_t enc_len = hdr_len + flush_put_bits(pb);
 #else
     uint32_t enc_len = rac_terminate();
+    if (gl_LocalInvocationID.x > 0)
+        return;
 #endif
 
     u8buf bs = u8buf(slice_data + rc.bs_start);
@@ -498,12 +473,18 @@ void main(void)
 {
     uint slice_idx = gl_WorkGroupID.y*gl_NumWorkGroups.x + gl_WorkGroupID.x;
 
+#ifdef GOLOMB
     if (gl_LocalInvocationID.x == 0)
         rc = slice_ctx[slice_idx].c;
     barrier();
+#else
+    rac_init_enc(slice_ctx[slice_idx].c);
+#endif
 
     encode_slice(slice_ctx[slice_idx], slice_idx);
 
+#ifdef GOLOMB
     if (gl_LocalInvocationID.x == 0)
+#endif
         finalize_slice(slice_idx);
 }

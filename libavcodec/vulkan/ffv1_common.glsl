@@ -208,9 +208,13 @@ const uint32_t log2_run[41] = {
 
 #ifdef DECODE
 #define IMG_QUALI coherent readonly
-VTYPE2 linecache;
 #else
 #define IMG_QUALI readonly
+#endif
+
+#if defined(DECODE) || defined(RC_SUBGROUP)
+VTYPE2 linecache;
+#else
 shared VTYPE2 linecache;
 #endif
 
@@ -315,7 +319,7 @@ ivec2 get_pred(IMG_QUALI uimage2D pred, ivec2 sp, ivec2 off,
 
 void linecache_load(IMG_QUALI uimage2D src, ivec2 sp, int y, uint comp)
 {
-#ifdef DECODE
+#if defined(DECODE) || defined(RC_SUBGROUP)
     linecache = VTYPE2(TYPE(0), TYPE(0));
     if (y > 0)
         linecache[1] = TYPE(imageLoad(src, sp + LADDR(ivec2(0, y - 1)))[comp]);
