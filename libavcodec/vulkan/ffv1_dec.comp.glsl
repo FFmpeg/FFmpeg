@@ -72,6 +72,8 @@ void decode_line_pcm(ivec2 sp, int w, int y, int p)
     }
 }
 
+shared int16_t quant_top[2][3][MAX_QUANT_TABLE_SIZE];
+
 void decode_line(ivec2 sp, int w,
                  int y, int p, int bits, uint state_off,
                  uint8_t quant_table_idx, int run_index, bool ext)
@@ -103,10 +105,25 @@ void decode_line(ivec2 sp, int w,
     ivec2 qthr = quant_ballot ? quant_thresh[quant_table_idx][gl_LocalInvocationID.x] : ivec2(0);
     ivec2 qso = quant_ballot ? quant_scale_off[quant_table_idx] : ivec2(0);
 
+#ifdef BAYER
+    int slot = p == 0 ? 0 : p > 1 ? 1 : -1;
+#else
+    int slot = p == 0 ? 0 : p < 3 ? 1 : -1;
+#endif
+
     ivec4 tr = get_top(dec[p], sp, ivec2(min(1 + int(gl_LocalInvocationID.x), w - 1), y),
                        0, w, ext);
     for (int x = 0; x < w; x += 32) {
-        ivec3 tn = get_pred_top_quant(tr, quant_table_idx, ext);
+        ivec3 tn;
+        if (slot >= 0) {
+            int tb = quant_top[slot][0][(tr[0] - tr[1]) & MAX_QUANT_TABLE_MASK] +
+                     quant_top[slot][1][(tr[1] - tr[2]) & MAX_QUANT_TABLE_MASK];
+            if (ext)
+                tb += quant_top[slot][2][(tr[3] - tr[1]) & MAX_QUANT_TABLE_MASK];
+            tn = ivec3(tr[0], tr[1], tb);
+        } else {
+            tn = get_pred_top_quant(tr, quant_table_idx, ext);
+        }
         tn.z += qso.y;
         tr = get_top(dec[p], sp, ivec2(min(x + 33 + int(gl_LocalInvocationID.x), w - 1), y),
                      0, w, ext);
@@ -435,6 +452,14 @@ void decode_slice(in SliceContext sc, uint slice_idx)
 #ifdef GOLOMB
     slice_state_off >>= 3; // division by VLC_STATE_SIZE
     golomb_init();
+#else
+    for (uint i = gl_LocalInvocationID.x; i < 2*3*MAX_QUANT_TABLE_SIZE; i += gl_WorkGroupSize.x) {
+        uint t = i / (3*MAX_QUANT_TABLE_SIZE);
+        uint k = (i / MAX_QUANT_TABLE_SIZE) % 3;
+        uint e = i % MAX_QUANT_TABLE_SIZE;
+        quant_top[t][k][e] = int16_t(quant_table[sc.quant_table_idx[t]][k == 2 ? 4 : k + 1][e]);
+    }
+    barrier();
 #endif
 
 #ifdef BAYER
