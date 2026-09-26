@@ -83,44 +83,85 @@ void decode_line(ivec2 sp, int w,
     }
 #endif
 
+    bool ext = extend_lookup[quant_table_idx];
     linecache_load(dec[p], sp, y, 0);
 
-    bool ext = extend_lookup[quant_table_idx];
+    ivec3 top = subgroupBroadcast(get_pred_top(dec[p], sp, ivec2(0, y), 0, w,
+                                               quant_table_idx, ext), 0u);
+    ivec2 pr = get_pred_left(top, quant_table_idx, ext);
+    int c = pr[0];
+    int pred = pr[1];
+    int sgn = c < 0 ? -1 : 1;
+    int tl = top.y;
+    int l = linecache[1];
+    uint ctx = abs(c);
+    uint sbase = state_off + gl_LocalInvocationID.x;
+    uint soff = sbase + CONTEXT_SIZE*ctx;
+    uint ld = slice_rc_state[soff];
+    uint8_t adapted = uint8_t(0);
+    bool same = false;
+    uint row = 0;
     ivec2 qthr = quant_ballot ? quant_thresh[quant_table_idx][gl_LocalInvocationID.x] : ivec2(0);
     ivec2 qso = quant_ballot ? quant_scale_off[quant_table_idx] : ivec2(0);
-    uint sbase = state_off + gl_LocalInvocationID.x;
 
-    for (int x = 0; x < w; x++) {
-        ivec2 pr;
-        if (quant_ballot) {
-            ivec3 top = get_pred_top(dec[p], sp, ivec2(x, y), 0, w, quant_table_idx, ext);
-            TYPE cur = linecache[1];
-            uvec4 q0 = subgroupBallot(int(int8_t(cur - top[0])) >= qthr.x);
-            uvec4 q3 = subgroupBallot(ext && int(int8_t(linecache[0] - cur)) >= qthr.y);
-            pr = ivec2(top[2] + qso.y + int(subgroupBallotBitCount(q0)) +
-                       qso.x*int(subgroupBallotBitCount(q3)),
-                       predict(cur, top.xy));
-        } else {
-            pr = get_pred(dec[p], sp, ivec2(x, y), 0, w, quant_table_idx, ext);
-        }
+    ivec4 tr = get_top(dec[p], sp, ivec2(min(1 + int(gl_LocalInvocationID.x), w - 1), y),
+                       0, w, ext);
+    for (int x = 0; x < w; x += 32) {
+        ivec3 tn = get_pred_top_quant(tr, quant_table_idx, ext);
+        tn.z += qso.y;
+        tr = get_top(dec[p], sp, ivec2(min(x + 33 + int(gl_LocalInvocationID.x), w - 1), y),
+                     0, w, ext);
+        int gmin = min(tn.y - tn.x, 0);
+        int gmax = max(tn.y - tn.x, 0);
+        int n = min(w - x, 32);
 
-        int sgn = pr[0] < 0 ? -1 : 1;
-        uint soff = sbase + CONTEXT_SIZE*abs(pr[0]);
-        uint st = slice_rc_state[soff];
+        int j = 0;
+        do {
+            uint st = same ? uint(adapted) : ld;
+            int base = subgroupBroadcast(tn.z, j);
+            int t = subgroupBroadcast(tn.y, j);
 
-        uint used, used_bits;
-        int v = get_isymbol(st, pr[1], sgn, used, used_bits);
-        rac_renorm();
-        uint vz = zero_extend(v, bits);
-        rac_check_window();
+            uint used, used_bits;
+            int v = get_isymbol(st, pred, sgn, used, used_bits);
+            uint vz = zero_extend(v, bits);
+#ifdef FLOAT
+            v = int(vz);
+#endif
 
-        if (subgroupInverseBallot(uvec4(used, 0, 0, 0)))
-            slice_rc_state[soff] =
-                zero_one_state[st + (subgroupInverseBallot(uvec4(used_bits, 0, 0, 0)) ? 256 : 0)];
+            if (quant_ballot) {
+                uvec4 q0 = subgroupBallot(int(int8_t(v - tl)) >= qthr.x);
+                uvec4 q3 = subgroupBallot(ext && int(int8_t(l - v)) >= qthr.y);
+                c = base + int(subgroupBallotBitCount(q0)) + qso.x*int(subgroupBallotBitCount(q3));
+            } else {
+                c = base + quant_table[quant_table_idx][0][(v - tl) & MAX_QUANT_TABLE_MASK];
+                if (ext)
+                    c += quant_table[quant_table_idx][3][(l - v) & MAX_QUANT_TABLE_MASK];
+            }
+            uint ctx_prev = ctx;
+            uint soff_prev = soff;
+            ctx = abs(c);
+            soff = sbase + CONTEXT_SIZE*ctx;
+            same = ctx == ctx_prev;
+            if (!same)
+                ld = slice_rc_state[soff];
+            rac_renorm();
+            uint nst = zero_one_state[st + (subgroupInverseBallot(uvec4(used_bits, 0, 0, 0)) ? 256 : 0)];
 
-        if (gl_LocalInvocationID.x == 0)
-            imageStore(dec[p], sp + LADDR(ivec2(x, y)), uvec4(vz));
-        linecache_next(TYPE(vz));
+            adapted = uint8_t(subgroupInverseBallot(uvec4(used, 0, 0, 0)) ? nst : st);
+            slice_rc_state[soff_prev] = adapted;
+            sgn = c < 0 ? -1 : 1;
+
+            int vm = int(TYPE(vz));
+            pred = subgroupBroadcast(clamp(tn.y, vm + gmin, vm + gmax), j);
+            row = gl_LocalInvocationID.x == j ? vz : row;
+            rac_check_window();
+
+            l = v;
+            tl = t;
+        } while (++j < n);
+
+        if (gl_LocalInvocationID.x < n)
+            imageStore(dec[p], sp + LADDR(ivec2(x + int(gl_LocalInvocationID.x), y)), uvec4(row));
     }
 
     memoryBarrierImage();
