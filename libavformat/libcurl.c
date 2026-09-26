@@ -583,7 +583,7 @@ static size_t header_callback(char *ptr, size_t size, size_t nitems, void *userd
         }
 
         c->stream_ok = 1;
-        c->request_end = content_end;
+        c->request_end = c->hdr_compressed ? -1 : content_end;
         /* Capture the post-redirect URL, this is exposed as "location" AVOption
          * for compatibility with http.c. */
         if (!c->probed) {
@@ -622,6 +622,14 @@ static size_t header_callback(char *ptr, size_t size, size_t nitems, void *userd
             c->seekable     = 0;
             c->content_size = -1;
         }
+    } else if (status == 416 && c->probed && c->content_size < 0 &&
+               (c->hdr_content_total < 0 ||
+                c->hdr_content_total <= c->request_start)) {
+        /* A 416 on a follow-up request of a file of unknown size is EOF, unless
+         * it states a size past the requested offset. */
+        c->content_size = c->hdr_content_total;
+        c->stream_ok = 0;
+        update_status_locked(c, AVERROR_EOF, CURLE_OK);
     } else {
         c->loop->num_errors++;
         c->stream_ok = 0;
@@ -780,7 +788,7 @@ static void on_done(CurlContext *c, CURLcode code)
     }
 
     if (code == CURLE_OK && c->stream_ok) {
-        int64_t file_end = c->content_size > 0 ? c->content_size - 1 : -1;
+        int64_t file_end = c->content_size >= 0 ? c->content_size - 1 : INT64_MAX;
         if (c->end_off > 0)
             file_end = FFMIN(file_end, c->end_off - 1);
         if (c->seekable && c->request_end >= 0 && c->request_end < file_end) {
