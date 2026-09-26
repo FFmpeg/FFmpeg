@@ -74,7 +74,7 @@ void decode_line_pcm(ivec2 sp, int w, int y, int p)
 
 void decode_line(ivec2 sp, int w,
                  int y, int p, int bits, uint state_off,
-                 uint8_t quant_table_idx, int run_index)
+                 uint8_t quant_table_idx, int run_index, bool ext)
 {
 #ifndef RGB
     if (p > 0 && p < 3) {
@@ -83,7 +83,6 @@ void decode_line(ivec2 sp, int w,
     }
 #endif
 
-    bool ext = extend_lookup[quant_table_idx];
     linecache_load(dec[p], sp, y, 0);
 
     ivec3 top = subgroupBroadcast(get_pred_top(dec[p], sp, ivec2(0, y), 0, w,
@@ -188,7 +187,7 @@ void golomb_init(void)
 
 void decode_line(ivec2 sp, int w,
                  int y, int p, int bits, uint state_off,
-                 uint8_t quant_table_idx, inout int run_index)
+                 uint8_t quant_table_idx, inout int run_index, bool ext)
 {
 #ifndef RGB
     if (p > 0 && p < 3) {
@@ -206,7 +205,7 @@ void decode_line(ivec2 sp, int w,
         ivec2 pos = sp + ivec2(x, y);
         int diff;
         ivec2 pr = get_pred(dec[p], sp, ivec2(x, y), 0, w,
-                            quant_table_idx, extend_lookup[quant_table_idx]);
+                            quant_table_idx, ext);
 
         uint vlc_off = state_off + abs(pr[0]);
 
@@ -255,6 +254,15 @@ void decode_line(ivec2 sp, int w,
     }
 }
 #endif
+
+void decode_plane_line(ivec2 sp, int w, int y, int p, int bits, uint state_off,
+                       uint8_t quant_table_idx, inout int run_index)
+{
+    if (has_extend_lookup && extend_lookup[quant_table_idx])
+        decode_line(sp, w, y, p, bits, state_off, quant_table_idx, run_index, true);
+    else
+        decode_line(sp, w, y, p, bits, state_off, quant_table_idx, run_index, false);
+}
 
 #ifdef BAYER
 void writeout_bayer(uint slice_idx, in SliceContext sc, ivec2 sp, int w, int y)
@@ -433,8 +441,8 @@ void decode_slice(in SliceContext sc, uint slice_idx)
     int run_index = 0;
     for (int y = 0; y < bayer_h; y++) {
         for (int p = 0; p < 4; p++)
-            decode_line(sp, w, y, p, bits[p],
-                        slice_state_off[p], quant_table_idx[p], run_index);
+            decode_plane_line(sp, w, y, p, bits[p], slice_state_off[p],
+                              quant_table_idx[p], run_index);
 
         writeout_bayer(slice_idx, sc, sp, w, y);
     }
@@ -442,8 +450,8 @@ void decode_slice(in SliceContext sc, uint slice_idx)
     int run_index = 0;
     for (int y = 0; y < sc.slice_dim.y; y++) {
         for (int p = 0; p < color_planes; p++)
-            decode_line(sp, w, y, p, bits[p],
-                        slice_state_off[p], quant_table_idx[p], run_index);
+            decode_plane_line(sp, w, y, p, bits[p], slice_state_off[p],
+                              quant_table_idx[p], run_index);
 
         writeout_rgb(slice_idx, sc, sp, w, y, true);
     }
@@ -455,8 +463,8 @@ void decode_slice(in SliceContext sc, uint slice_idx)
 
         int run_index = 0;
         for (int y = 0; y < h; y++)
-            decode_line(sp, w, y, p, bits[p],
-                        slice_state_off[p], quant_table_idx[p], run_index);
+            decode_plane_line(sp, w, y, p, bits[p], slice_state_off[p],
+                              quant_table_idx[p], run_index);
     }
 #endif
 }
