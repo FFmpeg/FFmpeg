@@ -1923,6 +1923,7 @@ static int show_stream(AVTextFormatContext *tfc, AVFormatContext *fmt_ctx, int s
         } else
             print_str_opt("profile", "unknown");
     }
+    print_int("level", par->level);
 
     s = av_get_media_type_string(par->codec_type);
     if (s) print_str    ("codec_type", s);
@@ -1963,7 +1964,6 @@ static int show_stream(AVTextFormatContext *tfc, AVFormatContext *fmt_ctx, int s
             print_str_opt("display_aspect_ratio", "N/A");
         }
         print_pixel_format(tfc, par->format);
-        print_int("level",   par->level);
 
         print_color_range(tfc, par->color_range);
         print_color_space(tfc, par->color_space);

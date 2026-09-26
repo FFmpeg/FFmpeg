@@ -270,6 +270,7 @@
     <xsd:attribute name="codec_name"       type="xsd:string" />
     <xsd:attribute name="codec_long_name"  type="xsd:string" />
     <xsd:attribute name="profile"          type="xsd:string" />
+    <xsd:attribute name="level"            type="xsd:int"/>
     <xsd:attribute name="codec_type"       type="xsd:string" />
     <xsd:attribute name="codec_tag"        type="xsd:string" use="required"/>
     <xsd:attribute name="codec_tag_string" type="xsd:string" use="required"/>
@@ -289,7 +290,6 @@
     <xsd:attribute name="sample_aspect_ratio"  type="xsd:string"/>
     <xsd:attribute name="display_aspect_ratio" type="xsd:string"/>
     <xsd:attribute name="pix_fmt"              type="xsd:string"/>
-    <xsd:attribute name="level"                type="xsd:int"/>
     <xsd:attribute name="color_range"          type="xsd:string"/>
     <xsd:attribute name="color_space"          type="xsd:string"/>
     <xsd:attribute name="color_transfer"       type="xsd:string"/>
