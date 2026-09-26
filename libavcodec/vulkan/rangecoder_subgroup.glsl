@@ -131,6 +131,38 @@ bool get_rac_equi(void)
     return bit;
 }
 
+int get_isymbol_tail(int e, uint range, uint range1, uint sx, int pred, int sgn,
+                     out uint read, out uint bits)
+{
+    uint m[9];
+    [[unroll]] for (int k = 8; k >= 0; k--)
+        if (k + 1 < e)
+            m[k] = subgroupBroadcast(sx, 22 + k);
+    uint ss = subgroupBroadcast(sx, 10 + e);
+
+    rc.range = range - range1;
+    rc_dist -= range1;
+    rac_renorm();
+
+    uint a = 0;
+    [[unroll]] for (int k = 8; k >= 0; k--) {
+        if (k + 1 < e) {
+            a = (a << 1) + uint(get_rac_internal(rac_range1(rc.range, m[k])));
+            rac_renorm();
+        }
+    }
+
+    a += 1u << (e - 1);
+    int sa = int(a)*sgn;
+    int vp = pred + sa;
+    int vn = vp - 2*sa;
+    bool neg = get_rac_internal(rac_range1(rc.range, ss));
+    int v = neg ? vn : vp;
+    read = (2u << e) - 1u + (((1u << (e - 1)) - 1u) << 22) + (1u << (10 + e));
+    bits = (a << 22) + (1u << e) - 2u - (1u << (21 + e)) + (neg ? 1u << (10 + e) : 0u);
+    return v;
+}
+
 const int AVERROR_INVALIDDATA = -0x41444E49;
 
 int get_isymbol_esc(inout uint st, uint sx, int pred, int sgn, out uint read, out uint bits)
@@ -171,7 +203,7 @@ int get_isymbol_esc(inout uint st, uint sx, int pred, int sgn, out uint read, ou
     [[unroll]] for (int k = 8; k >= 0; k--)
         a = (a << 1) | uint(get_rac(subgroupBroadcast(sx, 22 + k)));
 
-    bool neg = get_rac(subgroupBroadcast(sx, 21));
+    bool neg = get_rac_internal(rac_range1(rc.range, subgroupBroadcast(sx, 21)));
     int sa = int(a)*sgn;
     read = 0xFFE007FFu;
     bits = ((esc ? 0x1FFu : 0x3FFu) << 1) | ((a & 0x3FFu) << 22) | (uint(neg) << 21);
@@ -181,27 +213,136 @@ int get_isymbol_esc(inout uint st, uint sx, int pred, int sgn, out uint read, ou
 int get_isymbol(inout uint st, int pred, int sgn, out uint read, out uint bits)
 {
     uint st24 = st << 24;
-    if (get_rac(subgroupBroadcast(st24, 0))) {
-        read = 1u;
-        bits = 1u;
-        return pred;
+    uint s[11];
+    [[unroll]] for (int i = 0; i < 11; i++)
+        s[i] = subgroupBroadcast(st24, i);
+
+    read = 1u;
+    bits = 1u;
+
+    uint range = rc.range;
+    uint dist = rc_dist;
+    uint range0 = rac_range1(range, s[0]);
+    uint r[11];
+    r[0] = range - range0;
+    r[1] = rac_range1(r[0], s[1]);
+    rc.range = r[0];
+    rc_dist = dist - range0;
+    uint lim = max(rc_dist, 0xffu);
+
+    int v;
+    uint sx = st24;
+    while (true) {
+        uint skip;
+        [[unroll]] for (int i = 2; i < 6; i++)
+            r[i] = rac_range1(r[i - 1], s[i]);
+
+        if (r[5] > lim) {
+            [[unroll]] for (int i = 6; i < 11; i++)
+                r[i] = rac_range1(r[i - 1], s[i]);
+            if (r[6] > lim) {
+                if (r[7] > lim) {
+                    if (r[8] > lim) {
+                        if (r[9] > lim) {
+                            if (r[10] > lim) {
+                                rc.range = r[10];
+                                v = get_isymbol_esc(st, sx, pred, sgn, read, bits);
+                                break;
+                            } else if (r[10] <= rc_dist) {
+                                v = get_isymbol_tail(10, r[9], r[10], sx, pred, sgn, read, bits);
+                                break;
+                            } else {
+                                skip = 10;
+                                rc.range = r[10];
+                            }
+                        } else if (r[9] <= rc_dist) {
+                            v = get_isymbol_tail(9, r[8], r[9], sx, pred, sgn, read, bits);
+                            break;
+                        } else {
+                            skip = 9;
+                            rc.range = r[9];
+                        }
+                    } else if (r[8] <= rc_dist) {
+                        v = get_isymbol_tail(8, r[7], r[8], sx, pred, sgn, read, bits);
+                        break;
+                    } else {
+                        skip = 8;
+                        rc.range = r[8];
+                    }
+                } else if (r[7] <= rc_dist) {
+                    v = get_isymbol_tail(7, r[6], r[7], sx, pred, sgn, read, bits);
+                    break;
+                } else {
+                    skip = 7;
+                    rc.range = r[7];
+                }
+            } else if (r[6] <= rc_dist) {
+                v = get_isymbol_tail(6, r[5], r[6], sx, pred, sgn, read, bits);
+                break;
+            } else {
+                skip = 6;
+                rc.range = r[6];
+            }
+        } else if (r[4] > lim) {
+            if (r[5] <= rc_dist) {
+                v = get_isymbol_tail(5, r[4], r[5], sx, pred, sgn, read, bits);
+                break;
+            } else {
+                skip = 5;
+                rc.range = r[5];
+            }
+        } else if (r[3] > lim) {
+            if (r[4] <= rc_dist) {
+                v = get_isymbol_tail(4, r[3], r[4], sx, pred, sgn, read, bits);
+                break;
+            } else {
+                skip = 4;
+                rc.range = r[4];
+            }
+        } else if (r[2] > lim) {
+            if (r[3] <= rc_dist) {
+                v = get_isymbol_tail(3, r[2], r[3], sx, pred, sgn, read, bits);
+                break;
+            } else {
+                skip = 3;
+                rc.range = r[3];
+            }
+        } else if (r[1] > lim) {
+            if (r[2] <= rc_dist) {
+                v = get_isymbol_tail(2, r[1], r[2], sx, pred, sgn, read, bits);
+                break;
+            } else {
+                skip = 2;
+                rc.range = r[2];
+            }
+        } else if (range0 > min(dist, range - 0x100)) {
+            if (dist < range0) {
+                rc.range = range0;
+                rc_dist = dist;
+                v = pred;
+                break;
+            }
+            skip = 0;
+            rc.range = r[0];
+        } else if (r[1] <= rc_dist) {
+            v = get_isymbol_tail(1, r[0], r[1], sx, pred, sgn, read, bits);
+            break;
+        } else {
+            skip = 1;
+            rc.range = r[1];
+        }
+
+        refill();
+        lim = max(rc_dist, 0xffu);
+        r[0] = rc.range;
+        r[1] = skip > 0 ? rc.range + skip - 1 : rac_range1(rc.range, s[1]);
+        range0 = 0;
+        sx = subgroupInverseBallot(uvec4((2u << skip) - 2u, 0, 0, 0)) ? ~0u : sx;
+        [[unroll]] for (int i = 2; i < 11; i++)
+            s[i] = subgroupBroadcast(sx, i);
     }
 
-    int e = 1;
-    while (e < 11 && get_rac(subgroupBroadcast(st24, e)))
-        e++;
-    if (e == 11)
-        return get_isymbol_esc(st, st24, pred, sgn, read, bits);
-
-    uint a = 1u;
-    for (int k = e - 2; k >= 0; k--)
-        a = (a << 1) | uint(get_rac(subgroupBroadcast(st24, 22 + k)));
-    bool neg = get_rac(subgroupBroadcast(st24, 10 + e));
-
-    read = (2u << e) - 1u + (((1u << (e - 1)) - 1u) << 22) + (1u << (10 + e));
-    bits = (a << 22) + (1u << e) - 2u - (1u << (21 + e)) + (neg ? 1u << (10 + e) : 0u);
-    int sa = int(a)*sgn;
-    return neg ? pred - sa : pred + sa;
+    return v;
 }
 #endif
 

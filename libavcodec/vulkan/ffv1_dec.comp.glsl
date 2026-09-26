@@ -110,6 +110,7 @@ void decode_line(ivec2 sp, int w,
 
         uint used, used_bits;
         int v = get_isymbol(st, pr[1], sgn, used, used_bits);
+        rac_renorm();
         uint vz = zero_extend(v, bits);
         rac_check_window();
 
