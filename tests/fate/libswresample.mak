@@ -1106,6 +1106,16 @@ fate-swr-custom-rematrix: REF = 2a14a44deb4ae26e3b474ddbfbc048f8
 
 FATE_SWR += $(FATE_SWR_CUSTOM_REMATRIX-yes)
 
+FATE_SWR_S32_SRC = mod(n*$(1)\,4294967296)/2147483648-1
+FATE_SWR_S32_7_1 = $(call FATE_SWR_S32_SRC,1103515245)|$(call FATE_SWR_S32_SRC,22695477)|$(call FATE_SWR_S32_SRC,214013)|$(call FATE_SWR_S32_SRC,1664525)|$(call FATE_SWR_S32_SRC,134775813)|$(call FATE_SWR_S32_SRC,69069)|$(call FATE_SWR_S32_SRC,1812433253)|$(call FATE_SWR_S32_SRC,2654435761)
+
+FATE_SWR_CUSTOM_REORDER-$(call ENCMUX, PCM_S32LE, PCM_S32LE, AEVALSRC_FILTER ARESAMPLE_FILTER AFORMAT_FILTER FILE_PROTOCOL) += fate-swr-custom-reorder
+fate-swr-custom-reorder: CMD = md5 -filter_complex "aevalsrc=$(FATE_SWR_S32_7_1):c=7.1:d=0.5,aresample,aformat=f=s32:cl=7.1,aresample,aformat=f=s32:cl=FR+FL+FC+LFE+SL+SR+BL+BR[OUT]" -map [OUT] -f s32le
+fate-swr-custom-reorder: CMP = oneline
+fate-swr-custom-reorder: REF = 3621f90f05eb313858791b3915b9ca18
+
+FATE_SWR += $(FATE_SWR_CUSTOM_REORDER-yes)
+
 FATE_SWR_22_2_LAYOUTS   = 9.1.6 9.1.4 7.2.3 7.1.6 7.1.4 7.1.2 5.1.6 5.1.4 5.1.2 7.1 5.1 stereo mono
 FATE_SWR_9_1_6_LAYOUTS  = 9.1.4 7.2.3 7.1.6 7.1.4 7.1.2 5.1.6 5.1.4 5.1.2 7.1 5.1 stereo mono
 FATE_SWR_9_1_4_LAYOUTS  = 7.2.3 7.1.4 7.1.2 5.1.4 5.1.2 7.1 5.1 stereo mono

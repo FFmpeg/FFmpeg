@@ -208,6 +208,8 @@ void swri_noise_shaping_float (SwrContext *s, AudioData *dsts, const AudioData *
 void swri_noise_shaping_double(SwrContext *s, AudioData *dsts, const AudioData *srcs, const AudioData *noises, int count);
 
 av_warn_unused_result
+int swri_rematrix_build(SwrContext *s);
+av_warn_unused_result
 int swri_rematrix_init(SwrContext *s);
 void swri_rematrix_free(SwrContext *s);
 int swri_rematrix(SwrContext *s, AudioData *out, AudioData *in, int len, int mustcopy);

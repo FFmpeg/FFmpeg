@@ -697,7 +697,8 @@ av_cold static int auto_matrix(SwrContext *s)
     if (s->rematrix_maxval > 0) {
         maxval = s->rematrix_maxval;
     } else if (   av_get_packed_sample_fmt(s->out_sample_fmt) < AV_SAMPLE_FMT_FLT
-               || av_get_packed_sample_fmt(s->int_sample_fmt) < AV_SAMPLE_FMT_FLT) {
+               || (s->user_int_sample_fmt != AV_SAMPLE_FMT_NONE &&
+                   av_get_packed_sample_fmt(s->user_int_sample_fmt) < AV_SAMPLE_FMT_FLT)) {
         maxval = 1.0;
     } else
         maxval = INT_MAX;
@@ -709,12 +710,11 @@ av_cold static int auto_matrix(SwrContext *s)
                              s->matrix[1] - s->matrix[0], s->matrix_encoding, s);
 }
 
-av_cold int swri_rematrix_init(SwrContext *s){
+av_cold int swri_rematrix_build(SwrContext *s)
+{
     int i, j;
     int nb_in  = s->used_ch_layout.nb_channels;
     int nb_out = s->out.ch_count;
-
-    s->mix_any_f = NULL;
 
     if (!s->rematrix_custom) {
         int r = auto_matrix(s);
@@ -734,6 +734,34 @@ av_cold int swri_rematrix_init(SwrContext *s){
             }
             av_log(s, AV_LOG_DEBUG, "\n");
         }
+    }
+
+    /* a channel that is one channel of the input, or silent, is not mixed */
+    for (i = 0; i < nb_out; i++) {
+        int sources = 0;
+        for (j = 0; j < nb_in; j++) {
+            if (s->matrix[i][j] == 0.0)
+                continue;
+            if (s->matrix[i][j] != 1.0 || sources++)
+                return 1;
+        }
+    }
+
+    return 0;
+}
+
+av_cold int swri_rematrix_init(SwrContext *s){
+    int i, j;
+    int nb_in  = s->used_ch_layout.nb_channels;
+    int nb_out = s->out.ch_count;
+
+    s->mix_any_f = NULL;
+
+    /* a matrix that is applied was built by swri_rematrix_build() */
+    if (!s->rematrix) {
+        int r = auto_matrix(s);
+        if (r)
+            return r;
     }
     if (s->midbuf.fmt == AV_SAMPLE_FMT_S16P){
         int maxsum = 0;
