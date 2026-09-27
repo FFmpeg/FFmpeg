@@ -88,8 +88,8 @@ typedef struct OGGContext {
 static int ogg_write_trailer(AVFormatContext *s);
 
 static const AVOption options[] = {
-    { "serial_offset", "serial number offset",
-        OFFSET(serial_offset), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, PARAM },
+    { "serial_offset", "serial number offset, -1 to derive it from the stream headers",
+        OFFSET(serial_offset), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, INT_MAX, PARAM },
     { "page_duration", "preferred page duration, in microseconds",
         OFFSET(pref_duration), AV_OPT_TYPE_INT64, { .i64 = 1000000 }, 0, INT64_MAX, PARAM },
     { NULL },
@@ -486,17 +486,43 @@ static void ogg_write_pages(AVFormatContext *s, int flush)
     ogg->page_list = p;
 }
 
+/**
+ * Derive a bitexact serial number from the stream's header packets, which
+ * makes links muxed apart unlikely to share one, though not certain not to.
+ */
+static unsigned ogg_bitexact_serial(const OGGStreamContext *oggstream, unsigned seed)
+{
+    const AVCRC *table = av_crc_get_table(AV_CRC_32_IEEE);
+    uint32_t crc = seed;
+
+    for (int i = 0; i < 3; i++)
+        if (oggstream->header_len[i])
+            crc = av_crc(table, crc, oggstream->header[i], oggstream->header_len[i]);
+
+    return crc;
+}
+
+static int ogg_serial_in_use(AVFormatContext *s, int nb_streams, unsigned serial_num)
+{
+    for (int i = 0; i < nb_streams; i++) {
+        const OGGStreamContext *oggstream = s->streams[i]->priv_data;
+        if (oggstream->serial_num == serial_num)
+            return 1;
+    }
+    return 0;
+}
+
 // This function can be used on an initialized context to reinitialize the
 // streams.
 static int ogg_init(AVFormatContext *s)
 {
     OGGContext *ogg = s->priv_data;
     OGGStreamContext *oggstream = NULL;
-    int i, j;
+    int i;
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
-        unsigned serial_num = i + ogg->serial_offset;
+        unsigned serial_num;
 
         if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
             if (st->codecpar->codec_id == AV_CODEC_ID_OPUS)
@@ -534,17 +560,6 @@ static int ogg_init(AVFormatContext *s)
         }
 
         oggstream->page.stream_index = i;
-
-        if (!(s->flags & AVFMT_FLAG_BITEXACT))
-            do {
-                serial_num = av_get_random_seed();
-                for (j = 0; j < i; j++) {
-                    OGGStreamContext *sc = s->streams[j]->priv_data;
-                    if (serial_num == sc->serial_num)
-                        break;
-                }
-            } while (j < i);
-        oggstream->serial_num = serial_num;
 
         av_dict_copy(&st->metadata, s->metadata, AV_DICT_DONT_OVERWRITE);
 
@@ -620,6 +635,17 @@ static int ogg_init(AVFormatContext *s)
                        oggstream->kfgshift, oggstream->vrev);
             }
         }
+
+        if (s->flags & AVFMT_FLAG_BITEXACT && ogg->serial_offset >= 0)
+            serial_num = i + ogg->serial_offset;
+        else if (s->flags & AVFMT_FLAG_BITEXACT)
+            serial_num = ogg_bitexact_serial(oggstream, i);
+        else
+            serial_num = av_get_random_seed();
+        while (ogg_serial_in_use(s, i, serial_num))
+            serial_num = s->flags & AVFMT_FLAG_BITEXACT ? serial_num + 1
+                                                        : av_get_random_seed();
+        oggstream->serial_num = serial_num;
     }
 
     return 0;
