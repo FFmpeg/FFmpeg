@@ -1158,6 +1158,14 @@ FATE_SWR_REMATRIX-$(CONFIG_SWRESAMPLE) += fate-swr-rematrix-unused-mono-output
 fate-swr-rematrix-unused-mono-output: libswresample/tests/rematrix$(EXESUF)
 fate-swr-rematrix-unused-mono-output: CMD = run libswresample/tests/rematrix$(EXESUF) stereo UNSD+FR
 
+FATE_SWR_REMATRIX-$(CONFIG_SWRESAMPLE) += fate-swr-rematrix-downmix-input
+fate-swr-rematrix-downmix-input: libswresample/tests/rematrix$(EXESUF)
+fate-swr-rematrix-downmix-input: CMD = run libswresample/tests/rematrix$(EXESUF) DR+DL 5.1
+
+FATE_SWR_REMATRIX-$(CONFIG_SWRESAMPLE) += fate-swr-rematrix-downmix-output
+fate-swr-rematrix-downmix-output: libswresample/tests/rematrix$(EXESUF)
+fate-swr-rematrix-downmix-output: CMD = run libswresample/tests/rematrix$(EXESUF) 5.1 DR+UNSD+DL
+
 FATE_SWR += $(FATE_SWR_REMATRIX-yes)
 fate-swr-rematrix: $(FATE_SWR_REMATRIX-yes)
 

@@ -132,6 +132,28 @@ static int clean_layout(AVChannelLayout *out, const AVChannelLayout *in, void *s
     return 0;
 }
 
+/**
+ * Stereo downmix channels are mixed like stereo, unless the other layout has
+ * such channels as well. The channels keep their places.
+ */
+static void clean_downmix(AVChannelLayout *ch_layout, const AVChannelLayout *other)
+{
+    if (av_channel_layout_subset(ch_layout, ~(uint64_t)0) != AV_CH_LAYOUT_STEREO_DOWNMIX ||
+        av_channel_layout_subset(other, AV_CH_LAYOUT_STEREO_DOWNMIX))
+        return;
+
+    if (ch_layout->order == AV_CHANNEL_ORDER_NATIVE) {
+        ch_layout->u.mask = AV_CH_LAYOUT_STEREO;
+    } else if (ch_layout->order == AV_CHANNEL_ORDER_CUSTOM) {
+        for (int i = 0; i < ch_layout->nb_channels; i++) {
+            if (ch_layout->u.map[i].id == AV_CHAN_STEREO_LEFT)
+                ch_layout->u.map[i].id = AV_CHAN_FRONT_LEFT;
+            else if (ch_layout->u.map[i].id == AV_CHAN_STEREO_RIGHT)
+                ch_layout->u.map[i].id = AV_CHAN_FRONT_RIGHT;
+        }
+    }
+}
+
 static int sane_layout(const AVChannelLayout *ch_layout) {
     if(ch_layout->nb_channels >= SWR_CH_MAX)
         return 0;
@@ -605,18 +627,8 @@ av_cold int swr_build_matrix2(const AVChannelLayout *in_layout, const AVChannelL
     if (ret < 0)
         goto fail;
 
-    if(   !av_channel_layout_compare(&out_ch_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO_DOWNMIX)
-       && !av_channel_layout_subset(&in_ch_layout, AV_CH_LAYOUT_STEREO_DOWNMIX)
-    ) {
-        av_channel_layout_uninit(&out_ch_layout);
-        out_ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
-    }
-    if(   !av_channel_layout_compare(&in_ch_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO_DOWNMIX)
-       && !av_channel_layout_subset(&out_ch_layout, AV_CH_LAYOUT_STEREO_DOWNMIX)
-    ) {
-        av_channel_layout_uninit(&in_ch_layout);
-        in_ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
-    }
+    clean_downmix(&out_ch_layout, &in_ch_layout);
+    clean_downmix(&in_ch_layout, &out_ch_layout);
 
     if(!av_channel_layout_check(&in_ch_layout)) {
         av_log(log_context, AV_LOG_ERROR, "Input channel layout is invalid\n");
