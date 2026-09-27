@@ -154,7 +154,7 @@ static void clean_downmix(AVChannelLayout *ch_layout, const AVChannelLayout *oth
     }
 }
 
-static int sane_layout(const AVChannelLayout *ch_layout) {
+static int sane_layout(const AVChannelLayout *ch_layout, int mixed) {
     if(ch_layout->nb_channels > SWR_CH_MAX)
         return 0;
     if(ch_layout->order == AV_CHANNEL_ORDER_CUSTOM)
@@ -168,6 +168,8 @@ static int sane_layout(const AVChannelLayout *ch_layout) {
         }
     else if (ch_layout->order != AV_CHANNEL_ORDER_NATIVE)
         return 0;
+    if (!mixed)
+        return 1;
     uint64_t mask = av_channel_layout_subset(ch_layout, ~(uint64_t)0);
     if(!(mask & AV_CH_LAYOUT_SURROUND)) // at least 1 front speaker
         return 0;
@@ -618,7 +620,7 @@ av_cold int swr_build_matrix2(const AVChannelLayout *in_layout, const AVChannelL
                               double rematrix_volume, double *matrix_param,
                               ptrdiff_t stride, enum AVMatrixEncoding matrix_encoding, void *log_context)
 {
-    int i, j, ret;
+    int i, j, ret, mixed;
     AVChannelLayout in_ch_layout = { 0 }, out_ch_layout = { 0 };
     char buf[128];
 
@@ -630,12 +632,16 @@ av_cold int swr_build_matrix2(const AVChannelLayout *in_layout, const AVChannelL
     clean_downmix(&out_ch_layout, &in_ch_layout);
     clean_downmix(&in_ch_layout, &out_ch_layout);
 
+    /* the same channels on both sides change their places at most */
+    mixed = av_channel_layout_subset(&in_ch_layout,  ~(uint64_t)0) !=
+            av_channel_layout_subset(&out_ch_layout, ~(uint64_t)0);
+
     if(!av_channel_layout_check(&in_ch_layout)) {
         av_log(log_context, AV_LOG_ERROR, "Input channel layout is invalid\n");
         ret = AVERROR(EINVAL);
         goto fail;
     }
-    if(!sane_layout(&in_ch_layout)) {
+    if(!sane_layout(&in_ch_layout, mixed)) {
         av_channel_layout_describe(&in_ch_layout, buf, sizeof(buf));
         av_log(log_context, AV_LOG_ERROR, "Input channel layout '%s' is not supported\n", buf);
         ret = AVERROR(EINVAL);
@@ -647,7 +653,7 @@ av_cold int swr_build_matrix2(const AVChannelLayout *in_layout, const AVChannelL
         ret = AVERROR(EINVAL);
         goto fail;
     }
-    if(!sane_layout(&out_ch_layout)) {
+    if(!sane_layout(&out_ch_layout, mixed)) {
         av_channel_layout_describe(&out_ch_layout, buf, sizeof(buf));
         av_log(log_context, AV_LOG_ERROR, "Output channel layout '%s' is not supported\n", buf);
         ret = AVERROR(EINVAL);
