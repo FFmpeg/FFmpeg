@@ -34,6 +34,11 @@ typedef struct {
     AVBPrint buffer;
     unsigned timestamp_end;
     int count;
+    int64_t cue_start_ms;
+    int64_t cue_end_ms;
+    int64_t current_time_ms;
+    int64_t last_timestamp_ms;
+    int64_t pending_duration_ms;
     char stack[WEBVTT_STACK_SIZE];
     int stack_ptr;
 } WebVTTContext;
@@ -106,6 +111,37 @@ static void webvtt_style_apply(WebVTTContext *s, const char *style)
     }
 }
 
+static void webvtt_print_timestamp(WebVTTContext *s, int64_t millisec)
+{
+    int64_t sec = millisec / 1000;
+    millisec %= 1000;
+    int64_t min = sec / 60;
+    sec %= 60;
+    int64_t hour = min / 60;
+    min %= 60;
+    if (hour > 0) {
+        webvtt_print(s, "<%02"PRId64":%02"PRId64":%02"PRId64".%03"PRId64">", hour, min, sec, millisec);
+    } else {
+        webvtt_print(s, "<%02"PRId64":%02"PRId64".%03"PRId64">", min, sec, millisec);
+    }
+}
+
+static void webvtt_flush_karaoke_timestamp(WebVTTContext *s)
+{
+    if (s->pending_duration_ms <= 0)
+        return;
+
+    int64_t next_ts = s->current_time_ms <= INT64_MAX - s->pending_duration_ms ?
+                      s->current_time_ms + s->pending_duration_ms : INT64_MAX;
+    if (next_ts > s->cue_start_ms && next_ts < s->cue_end_ms &&
+        next_ts > s->last_timestamp_ms) {
+        webvtt_print_timestamp(s, next_ts);
+        s->last_timestamp_ms = next_ts;
+    }
+    s->current_time_ms = next_ts;
+    s->pending_duration_ms = 0;
+}
+
 static void webvtt_text_cb(void *priv, const char *text, int len)
 {
     WebVTTContext *s = priv;
@@ -114,7 +150,16 @@ static void webvtt_text_cb(void *priv, const char *text, int len)
 
 static void webvtt_new_line_cb(void *priv, int forced)
 {
-    webvtt_print(priv, "\n");
+    WebVTTContext *s = priv;
+    webvtt_print(s, "\n");
+}
+
+static void webvtt_karaoke_cb(void *priv, unsigned int duration)
+{
+    WebVTTContext *s = priv;
+
+    webvtt_flush_karaoke_timestamp(s);
+    s->pending_duration_ms = (int64_t)duration * 10;
 }
 
 static void webvtt_style_cb(void *priv, char style, int close)
@@ -135,6 +180,8 @@ static void webvtt_cancel_overrides_cb(void *priv, const char *style)
 
 static void webvtt_end_cb(void *priv)
 {
+    WebVTTContext *s = priv;
+    webvtt_flush_karaoke_timestamp(s);
     webvtt_stack_push_pop(priv, 0, 1);
 }
 
@@ -148,6 +195,7 @@ static const ASSCodesCallbacks webvtt_callbacks = {
     .alignment        = NULL,
     .cancel_overrides = webvtt_cancel_overrides_cb,
     .move             = NULL,
+    .karaoke          = webvtt_karaoke_cb,
     .end              = webvtt_end_cb,
 };
 
@@ -159,6 +207,18 @@ static int webvtt_encode_frame(AVCodecContext *avctx,
     int i;
 
     av_bprint_init_for_buffer(&s->buffer, buf, bufsize);
+
+    /* Multiple rectangles are independent overlays. One monotonic WebVTT
+     * cue cannot represent them, so keep the previous plain-text path. */
+    if (sub->pts != AV_NOPTS_VALUE && sub->num_rects == 1) {
+        s->cue_start_ms = av_rescale_q(sub->pts, AV_TIME_BASE_Q, (AVRational){ 1, 1000 });
+        s->cue_end_ms   = s->cue_start_ms + sub->end_display_time;
+    } else {
+        s->cue_start_ms = s->cue_end_ms = 0;
+    }
+    s->current_time_ms = s->cue_start_ms;
+    s->last_timestamp_ms = -1;
+    s->pending_duration_ms = 0;
 
     for (i=0; i<sub->num_rects; i++) {
         const char *ass = sub->rects[i]->ass;
