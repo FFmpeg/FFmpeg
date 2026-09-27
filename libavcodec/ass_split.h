@@ -160,6 +160,14 @@ typedef struct {
     /** @} */
 
     /**
+     * @defgroup ass_karaoke      ASS karaoke
+     * @{
+     */
+    /* duration is in centiseconds */
+    void (*karaoke)(void *priv, unsigned int duration);
+    /** @} */
+
+    /**
      * @defgroup ass_end    end of Dialogue Event
      * @{
      */
