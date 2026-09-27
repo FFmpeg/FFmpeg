@@ -304,6 +304,31 @@ FATE_MOV_FFMPEG_FFPROBE_SAMPLES-$(call REMUX, MP4 MOV, MATROSKA_DEMUXER HEVC_DEC
                           += fate-mov-dovi-hvce-mkv-to-mp4
 fate-mov-dovi-hvce-mkv-to-mp4: CMD = transcode matroska $(TARGET_SAMPLES)/mkv/dovi-p7-hvce.mkv mp4 "-map 0 -c copy -strict unofficial" "-map 0 -c copy" "-show_entries stream_side_data_list -select_streams v"
 
+FATE_MOV_FFMPEG_SAMPLES-$(call REMUX, MP4 MOV, H264_PARSER) \
+                          += fate-mov-mp4-multiple-stsd-muxing
+fate-mov-mp4-multiple-stsd-muxing: CMD = transcode mov $(TARGET_SAMPLES)/h264/extradata-reload-multi-stsd.mov mp4 "-c:v copy" "-c:v copy"
+
+FATE_MOV_FFMPEG_SAMPLES-$(call REMUX, MP4 MOV, AAC_PARSER) \
+                          += fate-mov-mp4-edst-remainder
+fate-mov-mp4-edst-remainder: CMD = stream_remux mov $(TARGET_SAMPLES)/audiomatch/tones_fdkaac_44100_stereo_aac_lc.m4a "" mp4 "" "" "-c:a copy"
+
+# format-level branding: major_brand, minor_version, compatible_brands should be deleted on re-encode
+FATE_MOV_FFMPEG_FFPROBE_SAMPLES-$(call ENCDEC, AAC AAC, NUT MOV) += fate-mov-reenc-delete-format-metadata
+fate-mov-reenc-delete-format-metadata: CMD = transcode mov $(TARGET_SAMPLES)/cover_art/Owner-iTunes_9.0.3.15.m4a nut "-map 0:a:0 -c:a aac -bitexact -t 0.1" "-c copy -t 0.1" "-show_entries format_tags" "" "" "" null
+
+# audio-only format tags (gapless_playback, iTunSMPB, iTunNORM) must survive when
+# only the cover-art video stream is re-encoded and the audio is stream-copied
+FATE_MOV_FFMPEG_FFPROBE_SAMPLES-$(call ENCDEC, PNG MJPEG, NUT MOV, SCALE_FILTER) += fate-mov-cover-reenc-keeps-audio-format-tags
+fate-mov-cover-reenc-keeps-audio-format-tags: CMD = transcode mov $(TARGET_SAMPLES)/cover_art/Owner-iTunes_9.0.3.15.m4a nut "-map 0:a:0 -c:a copy -map 0:v:0 -filter:v scale -c:v png -bitexact -t 0.1" "-c copy -t 0.1" "-show_entries format_tags" "" "" "" null
+
+# stream-level branding: vendor_id should be deleted on re-encode
+FATE_MOV_FFMPEG_FFPROBE_SAMPLES-$(call ENCDEC, FLAC PCM_S16BE, NUT MOV) += fate-mov-reenc-delete-stream-metadata
+fate-mov-reenc-delete-stream-metadata: CMD = transcode mov $(TARGET_SAMPLES)/qt-surge-suite/surge-2-16-B-twos.mov nut "-c:a flac -bitexact -t 0.1" "-c copy -t 0.1" "-show_entries stream_tags" "" "" "" null
+
+# plain -metadata (global scope) must not suppress stream-level vendor_id pruning
+FATE_MOV_FFMPEG_FFPROBE_SAMPLES-$(call ENCDEC, FLAC PCM_S16BE, NUT MOV) += fate-mov-reenc-delete-stream-metadata-global-tag
+fate-mov-reenc-delete-stream-metadata-global-tag: CMD = transcode mov $(TARGET_SAMPLES)/qt-surge-suite/surge-2-16-B-twos.mov nut "-c:a flac -bitexact -t 0.1 -metadata vendor_id=custom" "-c copy -t 0.1" "-show_entries format_tags:stream_tags" "" "" "" null
+
 FATE_SAMPLES_FFMPEG_FFPROBE += $(FATE_MOV_FFMPEG_FFPROBE_SAMPLES-yes)
 FATE_SAMPLES_FFMPEG += $(FATE_MOV_FFMPEG_SAMPLES-yes)
 
@@ -441,14 +466,6 @@ fate-mov-mp4-iamf-ambisonic_1: CMD = transcode wav $(SRC) mp4 "-auto_conversion_
   -streamid 0:0 -streamid 1:1 -streamid 2:2 -streamid 3:3 -map [MONO0] -map [MONO1] -map [MONO2] -map [MONO3] -c:a flac -t 1" "-c:a copy -map 0" \
   "-show_entries stream_group=index,id,nb_streams,type:stream_group_components:stream_group_disposition:stream_group_tags:stream_group_stream=index,id:stream_group_stream_disposition"
 
-FATE_MOV_FFMPEG_SAMPLES-$(call REMUX, MP4 MOV, H264_PARSER) \
-                          += fate-mov-mp4-multiple-stsd-muxing
-fate-mov-mp4-multiple-stsd-muxing: CMD = transcode mov $(TARGET_SAMPLES)/h264/extradata-reload-multi-stsd.mov mp4 "-c:v copy" "-c:v copy"
-
-FATE_MOV_FFMPEG_SAMPLES-$(call REMUX, MP4 MOV, AAC_PARSER) \
-                          += fate-mov-mp4-edst-remainder
-fate-mov-mp4-edst-remainder: CMD = stream_remux mov $(TARGET_SAMPLES)/audiomatch/tones_fdkaac_44100_stereo_aac_lc.m4a "" mp4 "" "" "-c:a copy"
-
 # Encode-path injection of -stereo3d into MP4 st3d (requires unofficial).
 FATE_MOV_FFMPEG_FFPROBE-$(call ALLYES, FILE_PROTOCOL PIPE_PROTOCOL FRAMECRC_MUXER \
                                              RAWVIDEO_DEMUXER RAWVIDEO_DECODER \
@@ -458,23 +475,6 @@ fate-mov-stereo3d-sbs-mp4: tests/data/vsynth1.yuv
 fate-mov-stereo3d-sbs-mp4: CMD = transcode rawvideo $(TARGET_PATH)/tests/data/vsynth1.yuv mp4 \
   "-c:v mpeg4 -qscale:v 10 -stereo3d:v sbsl -strict unofficial -frames:v 2" \
   "-c:v copy" "-show_entries stream_side_data_list" "" "" "-s 352x288 -pix_fmt yuv420p"
-
-# format-level branding: major_brand, minor_version, compatible_brands should be deleted on re-encode
-FATE_MOV_FFMPEG_FFPROBE-$(call ENCDEC, AAC AAC, NUT MOV) += fate-mov-reenc-delete-format-metadata
-fate-mov-reenc-delete-format-metadata: CMD = transcode mov $(TARGET_SAMPLES)/cover_art/Owner-iTunes_9.0.3.15.m4a nut "-map 0:a:0 -c:a aac -bitexact -t 0.1" "-c copy -t 0.1" "-show_entries format_tags" "" "" "" null
-
-# audio-only format tags (gapless_playback, iTunSMPB, iTunNORM) must survive when
-# only the cover-art video stream is re-encoded and the audio is stream-copied
-FATE_MOV_FFMPEG_FFPROBE-$(call ENCDEC, PNG MJPEG, NUT MOV, SCALE_FILTER) += fate-mov-cover-reenc-keeps-audio-format-tags
-fate-mov-cover-reenc-keeps-audio-format-tags: CMD = transcode mov $(TARGET_SAMPLES)/cover_art/Owner-iTunes_9.0.3.15.m4a nut "-map 0:a:0 -c:a copy -map 0:v:0 -filter:v scale -c:v png -bitexact -t 0.1" "-c copy -t 0.1" "-show_entries format_tags" "" "" "" null
-
-# stream-level branding: vendor_id should be deleted on re-encode
-FATE_MOV_FFMPEG_FFPROBE-$(call ENCDEC, FLAC PCM_S16BE, NUT MOV) += fate-mov-reenc-delete-stream-metadata
-fate-mov-reenc-delete-stream-metadata: CMD = transcode mov $(TARGET_SAMPLES)/qt-surge-suite/surge-2-16-B-twos.mov nut "-c:a flac -bitexact -t 0.1" "-c copy -t 0.1" "-show_entries stream_tags" "" "" "" null
-
-# plain -metadata (global scope) must not suppress stream-level vendor_id pruning
-FATE_MOV_FFMPEG_FFPROBE-$(call ENCDEC, FLAC PCM_S16BE, NUT MOV) += fate-mov-reenc-delete-stream-metadata-global-tag
-fate-mov-reenc-delete-stream-metadata-global-tag: CMD = transcode mov $(TARGET_SAMPLES)/qt-surge-suite/surge-2-16-B-twos.mov nut "-c:a flac -bitexact -t 0.1 -metadata vendor_id=custom" "-c copy -t 0.1" "-show_entries format_tags:stream_tags" "" "" "" null
 
 FATE_FFMPEG += $(FATE_MOV_FFMPEG-yes)
 FATE_FFMPEG_FFPROBE += $(FATE_MOV_FFMPEG_FFPROBE-yes)
