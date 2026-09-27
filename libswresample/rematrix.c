@@ -155,7 +155,7 @@ static void clean_downmix(AVChannelLayout *ch_layout, const AVChannelLayout *oth
 }
 
 static int sane_layout(const AVChannelLayout *ch_layout) {
-    if(ch_layout->nb_channels >= SWR_CH_MAX)
+    if(ch_layout->nb_channels > SWR_CH_MAX)
         return 0;
     if(ch_layout->order == AV_CHANNEL_ORDER_CUSTOM)
         for (int i = 0; i < ch_layout->nb_channels; i++) {
