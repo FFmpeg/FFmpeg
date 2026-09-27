@@ -43,6 +43,8 @@ static bool op_commute_clear(SwsOp *op, SwsOp *next)
     av_assert1(op->op == SWS_OP_CLEAR);
     switch (next->op) {
     case SWS_OP_CONVERT:
+        for (int i = 0; i < 4; i++)
+            op->clear.type[i] = next->convert.to;
         op->type = next->convert.to;
         av_fallthrough;
     case SWS_OP_LSHIFT:
@@ -56,12 +58,18 @@ static bool op_commute_clear(SwsOp *op, SwsOp *next)
         return true;
     case SWS_OP_FILTER_H:
     case SWS_OP_FILTER_V:
+        for (int i = 0; i < 4; i++)
+            op->clear.type[i] = next->filter.type;
         op->type = next->filter.type;
         return true;
-    case SWS_OP_SWIZZLE:
+    case SWS_OP_SWIZZLE: {
+        const SwsClearOp orig = op->clear;
+        for (int i = 0; i < 4; i++)
+            op->clear.type[i] = orig.type[next->swizzle.in[i]];
         ff_sws_comp_mask_swizzle(&op->clear.mask, &next->swizzle);
         ff_sws_apply_op_q(next, op->clear.value);
         return true;
+    }
     case SWS_OP_SWAP_BYTES:
         switch (next->type) {
         case SWS_PIXEL_U16:
@@ -280,6 +288,7 @@ static bool extract_constant_rows(SwsLinearOp *c, const SwsOpPad inputs[4],
         if (const_row && (mask & SWS_MASK_ROW(i))) {
             clear.mask |= SWS_COMP(i);
             clear.value[i] = c->m[i][4];
+            clear.type[i] = c->type[i];
             for (int j = 0; j < 5; j++)
                 c->m[i][j] = Q(i == j);
             ret = true;
@@ -490,8 +499,10 @@ retry:
             /* Transitive clear */
             if (next->op == SWS_OP_CLEAR) {
                 for (int i = 0; i < 4; i++) {
-                    if (SWS_COMP_TEST(next->clear.mask, i))
+                    if (SWS_COMP_TEST(next->clear.mask, i)) {
                         op->clear.value[i] = next->clear.value[i];
+                        op->clear.type[i]  = next->clear.type[i];
+                    }
                 }
                 op->clear.mask |= next->clear.mask;
                 ff_sws_op_list_remove_at(ops, n + 1, 1);
@@ -508,7 +519,7 @@ retry:
                     for (int i = 0; i < 4; i++) {
                         if (!next->lin.m[i][j].num)
                             continue;
-                        av_assert0(next->lin.type[i] == op->type);
+                        av_assert0(next->lin.type[i] == op->clear.type[j]);
                         const AVRational64 kx = ff_mul_q64(next->lin.m[i][j], x);
                         next->lin.m[i][4] = ff_add_q64(next->lin.m[i][4], kx);
                         next->lin.m[i][j] = Q(0);

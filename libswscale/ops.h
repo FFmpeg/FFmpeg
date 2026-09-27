@@ -146,7 +146,8 @@ typedef struct SwsShiftOp {
 } SwsShiftOp;
 
 typedef struct SwsClearOp {
-    SwsCompMask mask;    /* mask of components to clear */
+    SwsPixelType type[4];  /* type of each value */
+    SwsCompMask mask;      /* mask of components to clear */
     AVRational64 value[4]; /* value to set */
 } SwsClearOp;
 

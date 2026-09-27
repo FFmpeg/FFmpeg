@@ -112,7 +112,7 @@ static int compile(SwsContext *ctx, const SwsOpList *ops, SwsCompiledOp *out)
                  * can't memset on multi-byte sequences */
                 uint8_t val = op->clear.value[i].num & 0xFF;
                 uint32_t ref = val;
-                switch (ff_sws_pixel_type_size(op->type)) {
+                switch (ff_sws_pixel_type_size(op->clear.type[i])) {
                 case 2: ref *= 0x101; break;
                 case 4: ref *= 0x1010101; break;
                 }

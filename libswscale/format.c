@@ -1058,16 +1058,22 @@ static SwsClearOp fmt_clear(const SwsFormat *fmt)
     const AVPixFmtDescriptor *desc = fmt_desc_decoded(fmt->format);
     const bool has_chroma = desc->nb_components >= 3;
     const bool has_alpha  = desc->flags & AV_PIX_FMT_FLAG_ALPHA;
+    const SwsPixelType type = fmt_pixel_type(desc);
 
-    SwsClearOp c = {0};
+    SwsClearOp c = {
+        .mask = SWS_COMP_NONE,
+    };
+
     if (!has_chroma) {
         c.mask |= SWS_COMP(1) | SWS_COMP(2);
         c.value[1] = c.value[2] = Q(0);
+        c.type[1] = c.type[2] = type;
     }
 
     if (!has_alpha) {
         c.mask |= SWS_COMP(3);
         c.value[3] = Q(0);
+        c.type[3] = type;
     }
 
     return c;
@@ -1200,6 +1206,7 @@ static int encode_pixfmt(SwsOpList *ops, const SwsFormat *fmt)
         RET(ff_sws_op_list_append(ops, &(SwsOp) {
             .op   = SWS_OP_CLEAR,
             .type = pixel_type,
+            .clear.type[3] = pixel_type,
             .clear.mask = SWS_COMP(3),
             .clear.value[3] = Q(0),
         }));
