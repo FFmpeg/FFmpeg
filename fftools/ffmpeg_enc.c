@@ -525,7 +525,7 @@ static int do_subtitle_out(OutputFile *of, OutputStream *ost, const AVSubtitle *
 
         av_shrink_packet(pkt, subtitle_out_size);
         pkt->time_base = AV_TIME_BASE_Q;
-        pkt->pts       = sub->pts;
+        pkt->pts       = pts;
         pkt->duration = av_rescale_q(sub->end_display_time, (AVRational){ 1, 1000 }, pkt->time_base);
         if (enc->codec_id == AV_CODEC_ID_DVB_SUBTITLE) {
             /* XXX: the pts correction is handled here. Maybe handling
