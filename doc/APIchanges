@@ -2,6 +2,14 @@ The last version increases of all libraries were on 2026-06-23.
 
 API changes, most recent first:
 
+2026-09-27 - xxxxxxxxxx - lavc 63.15.100 - defs.h
+  Add AV_PROFILE_MPEGH_3DA_MAIN, AV_PROFILE_MPEGH_3DA_HIGH
+  AV_PROFILE_MPEGH_3DA_LC, AV_PROFILE_MPEGH_3DA_BL.
+
+2026-09-27 - xxxxxxxxxx - lavu 61.9.100 - channel_layout.h
+  Add AV_CH_LAYOUT_5POINT1POINT6 and AV_CHANNEL_LAYOUT_5POINT1POINT6.
+  Add AV_CH_LAYOUT_7POINT1POINT6 and AV_CHANNEL_LAYOUT_7POINT1POINT6.
+
 2026-09-xx - xxxxxxxxxx - lavu 61.8.100 - file.h
   Add av_file_map_shared() and av_file_unmap_shared().
 
