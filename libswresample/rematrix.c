@@ -98,17 +98,38 @@ static int even(int64_t layout){
 
 static int clean_layout(AVChannelLayout *out, const AVChannelLayout *in, void *s)
 {
-    int ret = 0;
+    int used = in->nb_channels, idx = 0;
 
-    if (av_channel_layout_index_from_channel(in, AV_CHAN_FRONT_CENTER) < 0 && in->nb_channels == 1) {
-        char buf[128];
-        av_channel_layout_describe(in, buf, sizeof(buf));
-        av_log(s, AV_LOG_VERBOSE, "Treating %s as mono\n", buf);
+    if (in->order == AV_CHANNEL_ORDER_CUSTOM && in->nb_channels > 1) {
+        used = 0;
+        for (int i = 0; i < in->nb_channels; i++) {
+            if (in->u.map[i].id != AV_CHAN_UNUSED) {
+                idx = i;
+                used++;
+            }
+        }
+    }
+
+    if (used != 1 ||
+        av_channel_layout_channel_from_index(in, idx) == AV_CHAN_FRONT_CENTER)
+        return av_channel_layout_copy(out, in);
+
+    char buf[128];
+    av_channel_layout_describe(in, buf, sizeof(buf));
+    av_log(s, AV_LOG_VERBOSE, "Treating %s as mono\n", buf);
+
+    if (in->nb_channels == 1) {
         *out = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
-    } else
-        ret = av_channel_layout_copy(out, in);
+        return 0;
+    }
 
-    return ret;
+    /* the channel keeps its place among the unused ones */
+    int ret = av_channel_layout_copy(out, in);
+    if (ret < 0)
+        return ret;
+    out->u.map[idx].id = AV_CHAN_FRONT_CENTER;
+
+    return 0;
 }
 
 static int sane_layout(const AVChannelLayout *ch_layout) {
