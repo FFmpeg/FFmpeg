@@ -1649,6 +1649,10 @@ static int vp9_decode_frame(AVCodecContext *avctx, AVFrame *frame,
             return ret;
         frame->pts     = pkt->pts;
         frame->pkt_dts = pkt->dts;
+        if (pkt->flags & AV_PKT_FLAG_DISCARD)
+            frame->flags |= AV_FRAME_FLAG_DISCARD;
+        else
+            frame->flags &= ~AV_FRAME_FLAG_DISCARD;
         *got_frame = 1;
         return pkt->size;
     }

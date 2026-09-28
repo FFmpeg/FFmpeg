@@ -141,6 +141,9 @@ FATE_VP9-$(call FRAMEMD5, IVF, VP9, SCALE_FILTER) += fate-vp9-05-resize
 fate-vp9-05-resize: CMD = framemd5 -i $(TARGET_SAMPLES)/vp9-test-vectors/vp90-2-05-resize.ivf -s 352x288 -sws_flags bitexact+bilinear
 fate-vp9-05-resize: REF = $(SRC_PATH)/tests/ref/fate/vp9-05-resize
 
+FATE_VP9-$(call FRAMEMD5, MATROSKA, VP9, TRIM_BSF) += fate-vp9-trim-preroll
+fate-vp9-trim-preroll: CMD = framemd5 -bsf:v trim=start=133:preroll=1 -i $(TARGET_SAMPLES)/vp9-test-vectors/vp90-2-10-show-existing-frame.webm
+
 fate-vp9-encparams: CMD = venc_data $(TARGET_SAMPLES)/vp9-test-vectors/vp90-2-segmentation-aq-akiyo.webm 0 5
 FATE_SAMPLES_DUMP_DATA-$(call DEMDEC, MATROSKA, VP9) += fate-vp9-encparams
 
