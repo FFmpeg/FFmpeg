@@ -346,8 +346,12 @@ static int scale_hw(AVFrame *dst, const AVFrame *src,
         goto error;
     }
 
-    sws_hw->flags  = mode->flags;
-    sws_hw->dither = mode->dither;
+    sws_hw->flags      = mode->flags;
+    sws_hw->dither     = mode->dither;
+    sws_hw->scaler     = mode->scaler;
+    sws_hw->scaler_sub = mode->scaler_sub;
+    sws_hw->threads    = opts->threads;
+    sws_hw->backends   = opts->backends;
 
     in_ref = av_hwframe_ctx_alloc(hw_device_ctx);
     if (!in_ref) {
