@@ -1218,6 +1218,13 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
             return AVERROR_PATCHWELCOME;
         }
 
+        if (q->subpacket[s].joint_stereo &&
+            q->subpacket[s].js_subband_start > q->subpacket[s].subbands) {
+            av_log(avctx, AV_LOG_ERROR, "js_subband_start %d > subbands %d\n",
+                   q->subpacket[s].js_subband_start, q->subpacket[s].subbands);
+            return AVERROR_INVALIDDATA;
+        }
+
         if ((q->subpacket[s].js_vlc_bits > 6) ||
             (q->subpacket[s].js_vlc_bits < 2 * q->subpacket[s].joint_stereo)) {
             av_log(avctx, AV_LOG_ERROR, "js_vlc_bits = %d, only >= %d and <= 6 allowed!\n",
