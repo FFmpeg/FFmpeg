@@ -47,7 +47,7 @@ typedef struct DeintVAAPIContext {
     int                extra_delay_for_timestamps;
 
     int                eof;
-    int                prev_pts;
+    int64_t            prev_pts;
 } DeintVAAPIContext;
 
 static const char *deint_vaapi_mode_name(int mode)
