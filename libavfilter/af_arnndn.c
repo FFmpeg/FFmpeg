@@ -1342,6 +1342,9 @@ static void compute_rnn(AudioRNNContext *s, RNNState *rnn, float *gains, float *
     LOCAL_ALIGNED_32(float, noise_input,   [MAX_NEURONS * 3]);
     LOCAL_ALIGNED_32(float, denoise_input, [MAX_NEURONS * 3]);
 
+    memset(dense_out,     0, MAX_NEURONS     * sizeof(float));
+    memset(noise_input,   0, MAX_NEURONS * 3 * sizeof(float));
+    memset(denoise_input, 0, MAX_NEURONS * 3 * sizeof(float));
     compute_dense(rnn->model->input_dense, dense_out, input);
     compute_gru(s, rnn->model->vad_gru, rnn->vad_gru_state, dense_out);
     compute_dense(rnn->model->vad_output, vad, rnn->vad_gru_state);
