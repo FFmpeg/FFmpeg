@@ -202,4 +202,21 @@ AVEncryptionInitInfo *av_encryption_init_info_get_side_data(
 uint8_t *av_encryption_init_info_add_side_data(
     const AVEncryptionInitInfo *info, size_t *side_data_size);
 
+/**
+ * Appends a copy of the given encryption init info list to encryption init
+ * info side data, growing the side data with av_fast_realloc().
+ *
+ * @param side_data      Side data created by this function or
+ *                       av_encryption_init_info_add_side_data(), *side_data
+ *                       may be NULL to create new side data.
+ * @param side_data_size Size of *side_data.
+ * @param allocated_size Allocated size of *side_data, as for av_fast_realloc().
+ * @param info           The list to append.
+ * @return 0 on success, a negative AVERROR code on failure, in which case
+ *         *side_data and *side_data_size are unchanged.
+ */
+int av_encryption_init_info_append_side_data(
+    uint8_t **side_data, size_t *side_data_size, unsigned int *allocated_size,
+    const AVEncryptionInitInfo *info);
+
 #endif /* AVUTIL_ENCRYPTION_INFO_H */

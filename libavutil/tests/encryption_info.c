@@ -141,8 +141,9 @@ static AVEncryptionInitInfo *create_init_info(void)
 static void run_encryption_init_info_test(void)
 {
     AVEncryptionInitInfo *info, *copy;
-    uint8_t *side_data;
-    size_t side_data_size;
+    uint8_t *side_data, *appended;
+    size_t side_data_size, appended_size;
+    unsigned int allocated_size = 0;
 
     info = create_init_info();
 
@@ -157,6 +158,8 @@ static void run_encryption_init_info_test(void)
 
     // Make the first init info different from the second to test the correct order.
     memset(info->system_id, 0, info->system_id_size);
+    appended = av_encryption_init_info_add_side_data(info, &appended_size);
+    av_assert0(appended);
     info->next = create_init_info();
     side_data = av_encryption_init_info_add_side_data(info, &side_data_size);
     av_assert0(side_data);
@@ -164,6 +167,11 @@ static void run_encryption_init_info_test(void)
     av_assert0(copy);
     av_assert0(compare_encryption_init_info(info, copy) == 0);
     av_encryption_init_info_free(copy);
+
+    av_assert0(av_encryption_init_info_append_side_data(&appended, &appended_size, &allocated_size, info->next) == 0);
+    av_assert0(appended_size == side_data_size);
+    av_assert0(memcmp(appended, side_data, side_data_size) == 0);
+    av_free(appended);
     av_free(side_data);
 
     av_encryption_init_info_free(info);
