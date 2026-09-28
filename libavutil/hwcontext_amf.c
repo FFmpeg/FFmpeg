@@ -1097,6 +1097,10 @@ static int amf_map_frame(AVHWFramesContext *device_ctx, AVFrame *dst, const AVFr
     size_t plane_count = 0;
     int ret = -1;
 
+    if (dst->format != AV_PIX_FMT_NONE &&
+        av_pix_fmt_desc_get(dst->format)->flags & AV_PIX_FMT_FLAG_HWACCEL)
+        return AVERROR(ENOSYS);
+
     AMF_RETURN_IF_FALSE(device_ctx, surface != NULL, AVERROR(EINVAL) , "Source surface is null");
 
     res = AMF_IFACE_CALL(surface, QueryInterface, &guid, (void**)&surface1);
