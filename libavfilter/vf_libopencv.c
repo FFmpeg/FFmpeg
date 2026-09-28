@@ -155,8 +155,8 @@ static int read_shape_from_file(int *cols, int *rows, int **values, const char *
             av_log(log_ctx, AV_LOG_ERROR, "Overflow on the number of columns in the file\n");
             ret = AVERROR_INVALIDDATA;
             goto end;
-        }
-        w++;
+        } else
+            w++;
     }
     if (*cols == 0) {
         av_log(log_ctx, AV_LOG_ERROR, "No columns in the shape file\n");
