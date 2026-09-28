@@ -1171,6 +1171,10 @@ static int set_output_frame(AVCodecContext *avctx, AVFrame *frame)
 
     frame->pts = pkt->pts;
     frame->pkt_dts = pkt->dts;
+    if (pkt->flags & AV_PKT_FLAG_DISCARD)
+        frame->flags |= AV_FRAME_FLAG_DISCARD;
+    else
+        frame->flags &= ~AV_FRAME_FLAG_DISCARD;
 
     av_packet_unref(pkt);
 
