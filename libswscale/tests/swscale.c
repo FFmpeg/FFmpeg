@@ -337,9 +337,6 @@ static int scale_hw(AVFrame *dst, const AVFrame *src,
     AVFrame *out_f = NULL;
     int ret;
 
-    if (src->format == dst->format)
-        return AVERROR(ENOTSUP);
-
     sws_hw = sws_alloc_context();
     if (!sws_hw) {
         ret = AVERROR(ENOMEM);
