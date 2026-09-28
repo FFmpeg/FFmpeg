@@ -317,7 +317,14 @@ static int rnnoise_model_from_file(FILE *f, RNNModel **rnn)
     INPUT_DENSE(denoise_output);
     INPUT_DENSE(vad_output);
 
-    if (vad_output->nb_neurons != 1) {
+    if (input_dense->nb_inputs    != NB_FEATURES ||
+        vad_gru->nb_inputs        != input_dense->nb_neurons ||
+        noise_gru->nb_inputs      != input_dense->nb_neurons + vad_gru->nb_neurons + NB_FEATURES ||
+        denoise_gru->nb_inputs    != vad_gru->nb_neurons + noise_gru->nb_neurons + NB_FEATURES ||
+        denoise_output->nb_inputs != denoise_gru->nb_neurons ||
+        denoise_output->nb_neurons != NB_BANDS ||
+        vad_output->nb_inputs     != vad_gru->nb_neurons ||
+        vad_output->nb_neurons    != 1) {
         rnnoise_model_free(ret);
         return AVERROR(EINVAL);
     }
