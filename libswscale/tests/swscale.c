@@ -971,6 +971,7 @@ static int parse_options(int argc, char **argv, struct options *opts, FILE **fp)
                     "       Use selected swscale API for the main conversion (default: new)\n"
                     "   -hw <device>\n"
                     "       Use Vulkan hardware acceleration on the specified device for the main conversion\n"
+                    "       If 'default', use the default device, and skip all tests if none is available\n"
                     "   -threads <threads>\n"
                     "       Use the specified number of threads\n"
                     "   -cpuflags <cpuflags>\n"
@@ -1076,12 +1077,18 @@ static int parse_options(int argc, char **argv, struct options *opts, FILE **fp)
             }
             opts->api = ret;
         } else if (!strcmp(argv[i], "-hw")) {
+            const int hw_default = !strcmp(argv[i + 1], "default");
             ret = av_hwdevice_ctx_create(&hw_device_ctx,
                                          AV_HWDEVICE_TYPE_VULKAN,
-                                         argv[i + 1], NULL, 0);
+                                         hw_default ? NULL : argv[i + 1], NULL, 0);
             if (ret < 0) {
-                fprintf(stderr, "Failed to create Vulkan device '%s'\n",
-                        argv[i + 1]);
+                if (hw_default) {
+                    fprintf(stderr, "No Vulkan device available, skipping.\n");
+                    ret = AVERROR(ENOTSUP);
+                } else {
+                    fprintf(stderr, "Failed to create Vulkan device '%s'\n",
+                            argv[i + 1]);
+                }
                 goto end;
             }
             hw_device_constr = av_hwdevice_get_hwframe_constraints(hw_device_ctx,
@@ -1141,9 +1148,13 @@ int main(int argc, char **argv)
 
     AVFrame *ref = NULL;
     FILE *fp = NULL;
-    int ret = -1;
 
-    if (parse_options(argc, argv, &opts, &fp) < 0)
+    int ret = parse_options(argc, argv, &opts, &fp);
+    if (ret == AVERROR(ENOTSUP)) {
+        ret = 0;
+        goto error;
+    }
+    if (ret < 0)
         goto error;
 
     ff_sfc64_init(&prng_state, 0, 0, 0, 12);
