@@ -713,7 +713,8 @@ static void dump_stream_group(const AVFormatContext *ic, uint8_t *printed,
             av_log(NULL, AV_LOG_INFO, "\n");
             for (int k = 0; channel_count > 0 && k < stg->nb_streams; k++) {
                 AVStream *st = stg->streams[k];
-                dump_stream_format(ic, st->index, i, index, is_output, AV_LOG_VERBOSE);
+                int loglevel = printed[st->index] ? AV_LOG_VERBOSE : AV_LOG_INFO;
+                dump_stream_format(ic, st->index, i, index, is_output, loglevel);
                 printed[st->index] = 1;
                 channel_count -= st->codecpar->ch_layout.nb_channels;
             }
