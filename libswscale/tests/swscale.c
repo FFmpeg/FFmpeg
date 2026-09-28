@@ -1152,16 +1152,20 @@ int main(int argc, char **argv)
     sws_ref_src = sws_alloc_context();
     sws_src_dst = sws_alloc_context();
     sws_dst_out = sws_alloc_context();
-    if (!sws_ref_src || !sws_src_dst || !sws_dst_out)
+    if (!sws_ref_src || !sws_src_dst || !sws_dst_out) {
+        ret = AVERROR(ENOMEM);
         goto error;
+    }
     sws_ref_src->flags = SWS_BILINEAR | SWS_BITEXACT | SWS_ACCURATE_RND;
     sws_dst_out->flags = SWS_BILINEAR | SWS_BITEXACT | SWS_ACCURATE_RND;
     sws_ref_src->backends = SWS_BACKEND_ALL;
     sws_dst_out->backends = SWS_BACKEND_ALL;
 
     ref = av_frame_alloc();
-    if (!ref)
+    if (!ref) {
+        ret = AVERROR(ENOMEM);
         goto error;
+    }
     ref->width  = opts.w;
     ref->height = opts.h;
     ref->format = AV_PIX_FMT_YUVA444P;
