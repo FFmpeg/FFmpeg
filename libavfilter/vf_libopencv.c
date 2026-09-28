@@ -130,8 +130,8 @@ static int read_shape_from_file(int *cols, int *rows, int **values, const char *
                                 void *log_ctx)
 {
     uint8_t *buf, *p, *pend;
-    size_t size;
-    int ret, i, j, w;
+    size_t size, i;
+    int ret, j, w;
 
     if ((ret = av_file_map(filename, &buf, &size, 0, log_ctx)) < 0)
         return ret;
@@ -201,7 +201,7 @@ end:
             for (j = 0; j < *cols; j++)
                 line[j] = (*values)[i * *cols + j] ? '@' : ' ';
             line[j] = 0;
-            av_log(log_ctx, AV_LOG_DEBUG, "%3d: %s\n", i, line);
+            av_log(log_ctx, AV_LOG_DEBUG, "%3zu: %s\n", i, line);
         }
         av_free(line);
     }
