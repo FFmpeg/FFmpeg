@@ -161,7 +161,8 @@ static int set_stats(AVCodecContext *avctx)
     int ret = 1;
 
     while (ret > 0 && ctx->pass_size - ctx->pass_pos > 0) {
-        ret = rav1e_twopass_in(ctx->ctx, ctx->pass_data + ctx->pass_pos, ctx->pass_size);
+        ret = rav1e_twopass_in(ctx->ctx, ctx->pass_data + ctx->pass_pos,
+                               ctx->pass_size - ctx->pass_pos);
         if (ret < 0)
             return AVERROR_EXTERNAL;
         ctx->pass_pos += ret;
