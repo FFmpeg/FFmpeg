@@ -217,8 +217,8 @@ static int rnnoise_model_from_file(FILE *f, RNNModel **rnn)
     ALLOC_LAYER(DenseLayer, denoise_output);
     ALLOC_LAYER(DenseLayer, vad_output);
 
-#define INPUT_VAL(name) do { \
-    if (fscanf(f, "%d", &in) != 1 || in < 0 || in > 128) { \
+#define INPUT_VAL(name, min) do { \
+    if (fscanf(f, "%d", &in) != 1 || in < (min) || in > 128) { \
         rnnoise_model_free(ret); \
         return AVERROR(EINVAL); \
     } \
@@ -227,7 +227,7 @@ static int rnnoise_model_from_file(FILE *f, RNNModel **rnn)
 
 #define INPUT_ACTIVATION(name) do { \
     int activation; \
-    INPUT_VAL(activation); \
+    INPUT_VAL(activation, 0); \
     switch (activation) { \
     case F_ACTIVATION_SIGMOID: \
         name = ACTIVATION_SIGMOID; \
@@ -285,8 +285,8 @@ static int rnnoise_model_from_file(FILE *f, RNNModel **rnn)
     } while (0)
 
 #define INPUT_DENSE(name) do { \
-    INPUT_VAL(name->nb_inputs); \
-    INPUT_VAL(name->nb_neurons); \
+    INPUT_VAL(name->nb_inputs, 1); \
+    INPUT_VAL(name->nb_neurons, 1); \
     ret->name ## _size = name->nb_neurons; \
     INPUT_ACTIVATION(name->activation); \
     NEW_LINE(); \
@@ -297,8 +297,8 @@ static int rnnoise_model_from_file(FILE *f, RNNModel **rnn)
     } while (0)
 
 #define INPUT_GRU(name) do { \
-    INPUT_VAL(name->nb_inputs); \
-    INPUT_VAL(name->nb_neurons); \
+    INPUT_VAL(name->nb_inputs, 1); \
+    INPUT_VAL(name->nb_neurons, 1); \
     ret->name ## _size = name->nb_neurons; \
     INPUT_ACTIVATION(name->activation); \
     NEW_LINE(); \
