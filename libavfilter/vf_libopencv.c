@@ -136,6 +136,9 @@ static int read_shape_from_file(int *cols, int *rows, int **values, const char *
     if ((ret = av_file_map(filename, &buf, &size, 0, log_ctx)) < 0)
         return ret;
 
+    /* the file alone defines the size of the shape */
+    *cols = *rows = 0;
+
     /* prescan file to get the number of lines and the maximum width */
     w = 0;
     for (i = 0; i < size; i++) {
