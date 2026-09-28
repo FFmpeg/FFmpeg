@@ -95,7 +95,7 @@ static int amf_frc_filter_config_output(AVFilterLink *outlink)
     AMFFilterContext     *amf_ctx = &frc_ctx->common;
     AVAMFDeviceContext   *device_ctx = NULL;
 
-    int err;
+    int err, engine_type;
     AMF_RESULT res;
     enum AVPixelFormat in_format;
 
@@ -122,8 +122,16 @@ static int amf_frc_filter_config_output(AVFilterLink *outlink)
     // Possible bug: FRC must be initialized enabled to be toggleable on the fly after init.
     AMF_FRC_ASSIGN_PROPERTY_INT64_CHECK(avctx, amf_filter, AMF_FRC_MODE, FRC_x2_PRESENT);
 
-    if (frc_ctx->engine_type != -1)
-        AMF_FRC_ASSIGN_PROPERTY_INT64_CHECK(avctx, amf_filter, AMF_FRC_ENGINE_TYPE, frc_ctx->engine_type);
+    engine_type = frc_ctx->engine_type;
+#if CONFIG_D3D11VA
+    if (engine_type == -1 && av_amf_get_memory_type(device_ctx) == AMF_MEMORY_DX11) {
+        ID3D11Device *d3d11 = AMF_IFACE_CALL(device_ctx->context, GetDX11Device, AMF_DX11_0);
+        if (d3d11 && d3d11->lpVtbl->GetFeatureLevel(d3d11) >= D3D_FEATURE_LEVEL_11_1)
+            engine_type = FRC_ENGINE_DX11;
+    }
+#endif
+    if (engine_type != -1)
+        AMF_FRC_ASSIGN_PROPERTY_INT64_CHECK(avctx, amf_filter, AMF_FRC_ENGINE_TYPE, engine_type);
 
     AMF_FRC_ASSIGN_PROPERTY_INT64_CHECK(avctx, amf_filter, AMF_FRC_ENABLE_FALLBACK, frc_ctx->fallback);
 
