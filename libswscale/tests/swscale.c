@@ -752,7 +752,7 @@ static int run_self_tests(const AVFrame *ref, const struct options *opts)
                         int dst_w = (opts->dst_w >= 0) ? opts->dst_w : dst_w_values[w];
                         int dst_h = (opts->dst_h >= 0) ? opts->dst_h : dst_h_values[h];
 
-                        if (opts->scaler >= 0 && opts->w == dst_w && opts->h == dst_h)
+                        if (opts->scaler > SWS_SCALE_AUTO && opts->w == dst_w && opts->h == dst_h)
                             continue;
 
                         if (ff_sfc64_get(&prng_state) <= UINT64_MAX * opts->prob) {
