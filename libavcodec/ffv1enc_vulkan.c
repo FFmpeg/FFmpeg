@@ -1108,10 +1108,11 @@ static int init_encode_shader(AVCodecContext *avctx, VkSpecializationInfo *sl)
     FFV1Context *f = &fv->ctx;
     FFVulkanShader *shd = &fv->enc;
 
-    uint32_t wg_x = fv->ctx.ac != AC_GOLOMB_RICE ? CONTEXT_SIZE : 1;
+    uint32_t subgroup_size;
+    uint32_t lanes = ff_ffv1_vk_rc_lanes(&fv->s, &subgroup_size);
     ff_vk_shader_load(shd, VK_SHADER_STAGE_COMPUTE_BIT, sl,
-                      (uint32_t []) { wg_x, 1, 1 },
-                      fv->ctx.ac != AC_GOLOMB_RICE ? CONTEXT_SIZE : 0);
+                      (uint32_t []) { fv->ctx.ac != AC_GOLOMB_RICE ? lanes : 1, 1, 1 },
+                      fv->ctx.ac != AC_GOLOMB_RICE ? subgroup_size : 0);
 
     ff_vk_shader_add_push_const(shd, 0, sizeof(FFv1ShaderParams),
                                 VK_SHADER_STAGE_COMPUTE_BIT);
@@ -1318,17 +1319,6 @@ static av_cold int vulkan_encode_ffv1_init(AVCodecContext *avctx)
     if (!fv->qf) {
         av_log(avctx, AV_LOG_ERROR, "Device has no compute queues!\n");
         return err;
-    }
-
-    /* Range coded slices are encoded by one subgroup of CONTEXT_SIZE
-     * invocations, each holding one of the states of a context */
-    if (f->ac != AC_GOLOMB_RICE &&
-        !(fv->s.subgroup_props.minSubgroupSize <= CONTEXT_SIZE &&
-          fv->s.subgroup_props.maxSubgroupSize >= CONTEXT_SIZE &&
-          (fv->s.subgroup_props.requiredSubgroupSizeStages & VK_SHADER_STAGE_COMPUTE_BIT))) {
-        av_log(avctx, AV_LOG_ERROR, "Range coded FFv1 encoding needs subgroups "
-               "of %i invocations\n", CONTEXT_SIZE);
-        return AVERROR(ENOTSUP);
     }
 
     maxsize = ffv1_vk_buffer_size(avctx);

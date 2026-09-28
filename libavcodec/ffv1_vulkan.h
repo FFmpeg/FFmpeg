@@ -40,6 +40,15 @@ typedef struct FFv1QuantBallot {
 } FFv1QuantBallot;
 
 /**
+ * Number of invocations that range code a slice together, as a single
+ * subgroup. Each of them holds CONTEXT_SIZE/lanes of the states of a
+ * context. This is CONTEXT_SIZE if the subgroup size can be set to it, or
+ * the largest subgroup size below it otherwise. required is set to the
+ * subgroup size the shader must be created with, or 0.
+ */
+uint32_t ff_ffv1_vk_rc_lanes(const FFVulkanContext *s, uint32_t *required);
+
+/**
  * Fill in the ballot quantizers of all quant tables.
  * Returns 1 if all of them can be evaluated with a ballot.
  */

@@ -110,7 +110,9 @@ void encode_line(in SliceContext sc, readonly uimage2D img, uint state_off,
 
     int lane = int(gl_SubgroupInvocationID);
     uint last_off = ~0u;
-    uint adapted = 0;
+    uint adapted[RC_K];
+    [[unroll]] for (uint k = 0; k < RC_K; k++)
+        adapted[k] = 0;
 
     ivec2 pc = ivec2(min(lane, w - 1), y);
     uvec4 rcur, rT, rTR, rL, rTL, rLL = uvec4(0), rTT = uvec4(0);
@@ -139,7 +141,7 @@ void encode_line(in SliceContext sc, readonly uimage2D img, uint state_off,
     }
 #endif
 
-    for (int x = 0; x < w; x += 32) {
+    for (int x = 0; x < w; x += int(RC_LANES)) {
         int px = min(x + lane, w - 1);
         int cur = int(TYPE(rcur[comp]));
         int T   = int(TYPE(rT[comp]));
@@ -182,16 +184,19 @@ void encode_line(in SliceContext sc, readonly uimage2D img, uint state_off,
         uint ones = d == 0 ? 1u : ((2u << ec) - 2u) | ((ad & ((1u << ec) - 1u)) << 22) |
                                   (uint(d < 0) << es);
 
-        int n = min(w - x, 32);
+        int n = min(w - x, int(RC_LANES));
         uint so_n = subgroupBroadcast(soff, 0);
         int v_n = subgroupBroadcast(d, 0);
         uint used_n = subgroupBroadcast(used, 0);
         uint ones_n = subgroupBroadcast(ones, 0);
-        uint st = uint(slice_rc_state[so_n + lane]);
-        st = so_n == last_off ? adapted : st;
+        RCStates st;
+        [[unroll]] for (uint k = 0; k < RC_K; k++) {
+            st.v[k] = uint(slice_rc_state[so_n + lane + k*RC_LANES]);
+            st.v[k] = so_n == last_off ? adapted[k] : st.v[k];
+        }
 
-        if (x + 32 < w) {
-            pc = ivec2(min(x + 32 + lane, w - 1), y);
+        if (x + int(RC_LANES) < w) {
+            pc = ivec2(min(x + int(RC_LANES) + lane, w - 1), y);
 #ifdef RGB
             rcur = imageLoad(img, sp + LADDR(pc));
             rT   = imageLoad(img, sp + LADDR(pc + ivec2(0, -1)));
@@ -199,7 +204,8 @@ void encode_line(in SliceContext sc, readonly uimage2D img, uint state_off,
             rL   = imageLoad(img, sp + LADDR(pc + ivec2(-1, 0)));
             rTL  = imageLoad(img, sp + LADDR(pc + ivec2(-1, -1)));
             if (enc_ext) {
-                rLL = imageLoad(img, sp + LADDR(pc + ivec2(-2, 0)));
+                rLL = imageLoad(img, sp + LADDR(RC_LANES > 1 || pc.x > 1 ? pc + ivec2(-2, 0) :
+                                                                       ivec2(0, y - 1)));
                 rTT = imageLoad(img, sp + LADDR(pc + ivec2(0, -2)));
             }
 #else
@@ -209,7 +215,8 @@ void encode_line(in SliceContext sc, readonly uimage2D img, uint state_off,
             rL   = imageLoad(img, sp + pc + ivec2(-1, 0));
             rTL  = imageLoad(img, sp + ivec2(pc.x - 1, y1));
             if (enc_ext) {
-                rLL = imageLoad(img, sp + pc + ivec2(-2, 0));
+                rLL = RC_LANES > 1 || pc.x > 1 ? imageLoad(img, sp + pc + ivec2(-2, 0)) :
+                      y > 0 ? imageLoad(img, sp + ivec2(0, y1)) : uvec4(0);
                 rTT = y > 1 ? imageLoad(img, sp + ivec2(pc.x, y2)) : uvec4(0);
             }
 #endif
@@ -222,25 +229,34 @@ void encode_line(in SliceContext sc, readonly uimage2D img, uint state_off,
                 int v = v_n;
                 uint used_j = used_n;
                 uint ones_j = ones_n;
-                uint nst = zero_one_state[(bitfieldExtract(ones_j, lane, 1) << 8) + st];
+                uint nst[RC_K];
+                [[unroll]] for (uint k = 0; k < RC_K; k++) {
+                    uint one = bitfieldExtract(ones_j, lane + int(k*RC_LANES), 1);
+                    nst[k] = zero_one_state[(one << 8) + st.v[k]];
+                }
 
                 int jn = min(j + 1, n - 1);
                 so_n = subgroupBroadcast(soff, jn);
                 v_n = subgroupBroadcast(d, jn);
                 used_n = subgroupBroadcast(used, jn);
                 ones_n = subgroupBroadcast(ones, jn);
-                uint ld = uint(slice_rc_state[so_n + lane]);
+                uint ld[RC_K];
+                [[unroll]] for (uint k = 0; k < RC_K; k++)
+                    ld[k] = uint(slice_rc_state[so_n + lane + k*RC_LANES]);
 
                 uint s10, s31;
                 put_isymbol(st, v, s10, s31);
 
-                adapted = bitfieldExtract(used_j, lane, 1) != 0 ? nst : st;
-                if (abs(v) >= 1024)
-                    adapted = lane == 10 ? s10 : lane == 31 ? s31 : adapted;
+                [[unroll]] for (uint k = 0; k < RC_K; k++) {
+                    int l = lane + int(k*RC_LANES);
+                    adapted[k] = bitfieldExtract(used_j, l, 1) != 0 ? nst[k] : st.v[k];
+                    if (abs(v) >= 1024)
+                        adapted[k] = l == 10 ? s10 : l == 31 ? s31 : adapted[k];
 
-                slice_rc_state[so + lane] = uint8_t(adapted);
+                    slice_rc_state[so + uint(l)] = uint8_t(adapted[k]);
+                    st.v[k] = so_n == so ? adapted[k] : ld[k];
+                }
                 last_off = so;
-                st = so_n == so ? adapted : ld;
             } while (++j < n && rc_nev <= 42);
             if (rc_nev > 42)
                 rac_emit();
@@ -601,20 +617,22 @@ void finalize_slice(in uint slice_idx)
     uint lane = gl_SubgroupInvocationID;
     u8buf bs = u8buf(slice_data + rc.bs_start);
 
-    if (lane < 3 + uint(has_crc))
-        bs[enc_len + lane].v = uint8_t(lane < 3 ? enc_len >> (16 - 8*lane) : 0);
+    for (uint i = lane; i < 3 + uint(has_crc); i += RC_LANES)
+        bs[enc_len + i].v = uint8_t(i < 3 ? enc_len >> (16 - 8*i) : 0);
     enc_len += 3 + uint(has_crc);
 
     if (has_crc) {
         controlBarrier(gl_ScopeWorkgroup, gl_ScopeWorkgroup,
                        gl_StorageSemanticsBuffer, gl_SemanticsAcquireRelease);
 
-        uint seg = enc_len >> 5;
-        uint len0 = enc_len - 31*seg;
+        uint seg = enc_len / RC_LANES;
+        uint len0 = enc_len - (RC_LANES - 1)*seg;
         uint start = lane == 0 ? 0 : len0 + (lane - 1)*seg;
         uint len = lane == 0 ? len0 : seg;
         uint crc = lane == 0 ? crcref : 0;
-        uint z = 1u << lane;
+        uint z[RC_K];
+        [[unroll]] for (uint c = 0; c < RC_K; c++)
+            z[c] = 1u << (lane + c*RC_LANES);
         for (uint i = 0; i < len0; i += 8) {
             uint b[8];
             [[unroll]] for (uint k = 0; k < 8; k++)
@@ -623,19 +641,23 @@ void finalize_slice(in uint slice_idx)
                 if (i + k < len)
                     crc = crc_tab[(crc ^ b[k]) & 0xFF] ^ (crc >> 8);
                 if (i + k < seg)
-                    z = crc_tab[z & 0xFF] ^ (z >> 8);
+                    [[unroll]] for (uint c = 0; c < RC_K; c++)
+                        z[c] = crc_tab[z[c] & 0xFF] ^ (z[c] >> 8);
             }
         }
 
         uint acc = subgroupBroadcast(crc, 0);
-        for (uint i = 1; i < 32; i++)
-            acc = subgroupXor(bitfieldExtract(acc, int(lane), 1) != 0 ? z : 0) ^
-                  subgroupBroadcast(crc, i);
+        for (uint i = 1; i < RC_LANES; i++) {
+            uint m = 0;
+            [[unroll]] for (uint c = 0; c < RC_K; c++)
+                m ^= bitfieldExtract(acc, int(lane + c*RC_LANES), 1) != 0 ? z[c] : 0;
+            acc = subgroupXor(m) ^ subgroupBroadcast(crc, i);
+        }
         if (crcref != 0x00000000)
             acc ^= 0x8CD88196;
 
-        if (lane < 4)
-            bs[enc_len + lane].v = uint8_t(acc >> (8*lane));
+        for (uint i = lane; i < 4; i += RC_LANES)
+            bs[enc_len + i].v = uint8_t(acc >> (8*i));
         enc_len += 4;
     }
 

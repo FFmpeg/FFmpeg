@@ -82,6 +82,25 @@ static void set_rc_state_tab(FFV1Context *f, uint8_t *buf)
     }
 }
 
+uint32_t ff_ffv1_vk_rc_lanes(const FFVulkanContext *s, uint32_t *required)
+{
+    const VkPhysicalDeviceSubgroupSizeControlProperties *p = &s->subgroup_props;
+    uint32_t min = p->minSubgroupSize ? p->minSubgroupSize : s->props_11.subgroupSize;
+    uint32_t max = p->maxSubgroupSize ? p->maxSubgroupSize : s->props_11.subgroupSize;
+
+    /* A workgroup of the required size is a single, full subgroup */
+    if ((p->requiredSubgroupSizeStages & VK_SHADER_STAGE_COMPUTE_BIT) &&
+        min <= CONTEXT_SIZE) {
+        *required = FFMIN(max, CONTEXT_SIZE);
+        return *required;
+    }
+
+    /* Otherwise, a workgroup no larger than the smallest subgroup is part of
+     * a single one */
+    *required = 0;
+    return FFMIN(min, CONTEXT_SIZE);
+}
+
 int ff_ffv1_vk_quant_ballot(const FFV1Context *f, FFv1QuantBallot *qb)
 {
     int ok = 1;

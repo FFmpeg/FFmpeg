@@ -708,14 +708,13 @@ static int init_decode_shader(FFV1Context *f, FFVulkanContext *s,
                               AVHWFramesContext *dec_frames_ctx,
                               AVHWFramesContext *out_frames_ctx,
                               VkSpecializationInfo *sl, int ac, int rgb,
-                              int bayer)
+                              int bayer, uint32_t lanes, uint32_t subgroup_size)
 {
     int err;
 
-    uint32_t wg_x = ac != AC_GOLOMB_RICE ? CONTEXT_SIZE : 1;
     ff_vk_shader_load(shd, VK_SHADER_STAGE_COMPUTE_BIT, sl,
-                      (uint32_t []) { wg_x, 1, 1 },
-                      ac != AC_GOLOMB_RICE ? CONTEXT_SIZE : 0);
+                      (uint32_t []) { ac != AC_GOLOMB_RICE ? lanes : 1, 1, 1 },
+                      ac != AC_GOLOMB_RICE ? subgroup_size : 0);
 
     ff_vk_shader_add_push_const(shd, 0, sizeof(FFv1ShaderParams),
                                 VK_SHADER_STAGE_COMPUTE_BIT);
@@ -898,18 +897,6 @@ static int vk_decode_ffv1_init(AVCodecContext *avctx)
         return err;
     ctx = dec->shared_ctx;
 
-    /* Range coded slices are decoded by one subgroup of CONTEXT_SIZE
-     * invocations, each holding one of the states of a context */
-    if (f->ac != AC_GOLOMB_RICE &&
-        !(ctx->s.subgroup_props.minSubgroupSize <= CONTEXT_SIZE &&
-          ctx->s.subgroup_props.maxSubgroupSize >= CONTEXT_SIZE &&
-          (ctx->s.subgroup_props.requiredSubgroupSizeStages & VK_SHADER_STAGE_COMPUTE_BIT))) {
-        av_log(avctx, AV_LOG_ERROR, "Range coded FFv1 decoding needs subgroups "
-               "of %i invocations\n", CONTEXT_SIZE);
-        err = AVERROR(ENOTSUP);
-        goto fail;
-    }
-
     fv = ctx->sd_ctx = av_mallocz(sizeof(*fv));
     if (!fv) {
         err = AVERROR(ENOMEM);
@@ -940,7 +927,12 @@ static int vk_decode_ffv1_init(AVCodecContext *avctx)
     if (f->ec && !!(avctx->err_recognition & AV_EF_CRCCHECK))
         SPEC_LIST_ADD(sl, 1, 32, 1);
 
-    if (f->ac != AC_GOLOMB_RICE) {
+    uint32_t subgroup_size;
+    uint32_t lanes = ff_ffv1_vk_rc_lanes(&ctx->s, &subgroup_size);
+
+    /* The ballot quantizers have a threshold for each of CONTEXT_SIZE
+     * invocations */
+    if (f->ac != AC_GOLOMB_RICE && lanes == CONTEXT_SIZE) {
         FFv1QuantBallot qb;
         if (ff_ffv1_vk_quant_ballot(f, &qb))
             SPEC_LIST_ADD(sl, 20, 32, 1);
@@ -954,7 +946,8 @@ static int vk_decode_ffv1_init(AVCodecContext *avctx)
 
     /* Decode shaders */
     RET(init_decode_shader(f, &ctx->s, &ctx->exec_pool, &fv->decode,
-                           dctx, hwfc, sl, f->ac, is_rgb, f->bayer));
+                           dctx, hwfc, sl, f->ac, is_rgb, f->bayer,
+                           lanes, subgroup_size));
 
     /* Init static data */
     RET(ff_ffv1_vk_init_consts(&ctx->s, &fv->consts_buf, f));

@@ -98,8 +98,12 @@ void decode_line(ivec2 sp, int w,
     uint ctx = abs(c);
     uint sbase = state_off + gl_LocalInvocationID.x;
     uint soff = sbase + CONTEXT_SIZE*ctx;
-    uint ld = slice_rc_state[soff];
-    uint8_t adapted = uint8_t(0);
+    uint ld[RC_K];
+    uint8_t adapted[RC_K];
+    [[unroll]] for (uint k = 0; k < RC_K; k++) {
+        ld[k] = slice_rc_state[soff + k*RC_LANES];
+        adapted[k] = uint8_t(0);
+    }
     bool same = false;
     uint row = 0;
     ivec2 qthr = quant_ballot ? quant_thresh[quant_table_idx][gl_LocalInvocationID.x] : ivec2(0);
@@ -113,7 +117,7 @@ void decode_line(ivec2 sp, int w,
 
     ivec4 tr = get_top(dec[p], sp, ivec2(min(1 + int(gl_LocalInvocationID.x), w - 1), y),
                        0, w, ext);
-    for (int x = 0; x < w; x += 32) {
+    for (int x = 0; x < w; x += int(RC_LANES)) {
         ivec3 tn;
         if (slot >= 0) {
             int tb = quant_top[slot][0][(tr[0] - tr[1]) & MAX_QUANT_TABLE_MASK] +
@@ -125,15 +129,18 @@ void decode_line(ivec2 sp, int w,
             tn = get_pred_top_quant(tr, quant_table_idx, ext);
         }
         tn.z += qso.y;
-        tr = get_top(dec[p], sp, ivec2(min(x + 33 + int(gl_LocalInvocationID.x), w - 1), y),
+        tr = get_top(dec[p], sp,
+                     ivec2(min(x + int(RC_LANES) + 1 + int(gl_LocalInvocationID.x), w - 1), y),
                      0, w, ext);
         int gmin = min(tn.y - tn.x, 0);
         int gmax = max(tn.y - tn.x, 0);
-        int n = min(w - x, 32);
+        int n = min(w - x, int(RC_LANES));
 
         int j = 0;
         do {
-            uint st = same ? uint(adapted) : ld;
+            RCStates st;
+            [[unroll]] for (uint k = 0; k < RC_K; k++)
+                st.v[k] = same ? uint(adapted[k]) : ld[k];
             int base = subgroupBroadcast(tn.z, j);
             int t = subgroupBroadcast(tn.y, j);
 
@@ -159,12 +166,16 @@ void decode_line(ivec2 sp, int w,
             soff = sbase + CONTEXT_SIZE*ctx;
             same = ctx == ctx_prev;
             if (!same)
-                ld = slice_rc_state[soff];
+                [[unroll]] for (uint k = 0; k < RC_K; k++)
+                    ld[k] = slice_rc_state[soff + k*RC_LANES];
             rac_renorm();
-            uint nst = zero_one_state[st + (subgroupInverseBallot(uvec4(used_bits, 0, 0, 0)) ? 256 : 0)];
-
-            adapted = uint8_t(subgroupInverseBallot(uvec4(used, 0, 0, 0)) ? nst : st);
-            slice_rc_state[soff_prev] = adapted;
+            [[unroll]] for (uint k = 0; k < RC_K; k++) {
+                bool one = subgroupInverseBallot(uvec4(used_bits >> (k*RC_LANES), 0, 0, 0));
+                uint nst = zero_one_state[st.v[k] + (one ? 256 : 0)];
+                bool read = subgroupInverseBallot(uvec4(used >> (k*RC_LANES), 0, 0, 0));
+                adapted[k] = uint8_t(read ? nst : st.v[k]);
+                slice_rc_state[soff_prev + k*RC_LANES] = adapted[k];
+            }
             sgn = c < 0 ? -1 : 1;
 
             int vm = int(TYPE(vz));

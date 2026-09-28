@@ -31,6 +31,13 @@
 #define CONTEXT_SIZE 32
 #define MAX_OVERREAD 2
 
+#define RC_LANES gl_WorkGroupSize.x
+#define RC_K (CONTEXT_SIZE/RC_LANES)
+
+struct RCStates {
+    uint v[RC_K];
+};
+
 #ifdef DECODE
 #define RC_BTYPE readonly buffer
 #else
@@ -67,12 +74,11 @@ uint rc_top;
 uint rc_oc;
 int rc_ob;
 uint rc_nev;
-uint rc_ev;
-uint rc_ev2;
+uint rc_ev[64/RC_LANES];
 
 void rac_init_enc(in RangeCoder c)
 {
-    for (uint i = gl_SubgroupInvocationID; i < 512; i += gl_SubgroupSize)
+    for (uint i = gl_SubgroupInvocationID; i < 512; i += RC_LANES)
         zero_one_state[i] = rangecoder_state[i];
     barrier();
 
@@ -81,8 +87,8 @@ void rac_init_enc(in RangeCoder c)
     rc_oc = uint(rc.outstanding_count);
     rc_ob = int(rc.outstanding_byte);
     rc_nev = 0;
-    rc_ev = 0;
-    rc_ev2 = 0;
+    [[unroll]] for (uint k = 0; k < 64/RC_LANES; k++)
+        rc_ev[k] = 0;
 }
 
 void rac_emit_block(uint low, uint cnt)
@@ -108,7 +114,7 @@ void rac_emit_block(uint low, uint cnt)
                 uint carry = l >> 16;
                 if (lane == 0)
                     slice_data[rc.bs_off].v = uint8_t(uint(rc_ob) + carry);
-                for (uint k = 0; k < rc_oc; k += 32)
+                for (uint k = 0; k < rc_oc; k += RC_LANES)
                     if (lane < rc_oc - k)
                         slice_data[rc.bs_off + 1 + k + lane].v = uint8_t(carry - 1u);
                 rc.bs_off += 1 + rc_oc;
@@ -121,11 +127,9 @@ void rac_emit_block(uint low, uint cnt)
 
 void rac_emit(void)
 {
-    if (rc_nev == 0)
-        return;
-    rac_emit_block(rc_ev, min(rc_nev, 32u));
-    if (rc_nev > 32)
-        rac_emit_block(rc_ev2, rc_nev - 32);
+    [[unroll]] for (uint k = 0; k < 64/RC_LANES; k++)
+        if (rc_nev > k*RC_LANES)
+            rac_emit_block(rc_ev[k], min(rc_nev - k*RC_LANES, RC_LANES));
     rc_nev = 0;
 }
 
@@ -134,8 +138,8 @@ void rac_renorm_enc(void)
     uint low = rc_top - rc.range;
     rc.range <<= 8;
     rc_top = ((low & 0xFFu) << 8) + rc.range;
-    rc_ev = gl_SubgroupInvocationID == rc_nev ? low : rc_ev;
-    rc_ev2 = gl_SubgroupInvocationID + 32 == rc_nev ? low : rc_ev2;
+    [[unroll]] for (uint k = 0; k < 64/RC_LANES; k++)
+        rc_ev[k] = gl_SubgroupInvocationID + k*RC_LANES == rc_nev ? low : rc_ev[k];
     rc_nev++;
 }
 
@@ -181,16 +185,16 @@ uint rac_terminate(void)
     return rc.bs_off - rc.bs_start;
 }
 
-void put_isymbol_tail(int e, uint st24, uint a, bool neg)
+void put_isymbol_tail(int e, RCStates st24, uint a, bool neg)
 {
     uint s[21];
-    [[unroll]] for (int i = 0; i < 11; i++)
+    [[unroll]] for (uint i = 0; i < 11; i++)
         if (i <= e + 1)
-            s[i] = subgroupBroadcast(st24, i);
-    [[unroll]] for (int i = 0; i < 9; i++)
+            s[i] = subgroupBroadcast(st24.v[i/RC_LANES], i % RC_LANES);
+    [[unroll]] for (uint i = 0; i < 9; i++)
         if (i < e)
-            s[11 + i] = subgroupBroadcast(st24, 22 + i);
-    s[20] = subgroupBroadcast(st24, 11 + e);
+            s[11 + i] = subgroupBroadcast(st24.v[(22 + i)/RC_LANES], (22 + i) % RC_LANES);
+    s[20] = subgroupBroadcast(st24.v[(11 + e)/RC_LANES], (11 + e) % RC_LANES);
 
     uint range = rc.range;
     uint top = rc_top;
@@ -218,14 +222,14 @@ void put_isymbol_tail(int e, uint st24, uint a, bool neg)
     put_rac(s[20], neg);
 }
 
-void put_isymbol_esc(int e, uint st, uint a, bool neg, out uint s10, out uint s31)
+void put_isymbol_esc(int e, RCStates st, RCStates st24, uint a, bool neg,
+                     out uint s10, out uint s31)
 {
-    uint st24 = st << 24;
     uint s[10];
-    [[unroll]] for (int i = 0; i < 10; i++)
-        s[i] = subgroupBroadcast(st24, i);
-    s10 = subgroupBroadcast(st, 10);
-    s31 = subgroupBroadcast(st, 31);
+    [[unroll]] for (uint i = 0; i < 10; i++)
+        s[i] = subgroupBroadcast(st24.v[i/RC_LANES], i % RC_LANES);
+    s10 = subgroupBroadcast(st.v[10/RC_LANES], 10 % RC_LANES);
+    s31 = subgroupBroadcast(st.v[31/RC_LANES], 31 % RC_LANES);
     put_rac(s[0], false);
     [[unroll]] for (int i = 1; i < 10; i++)
         put_rac(s[i], true);
@@ -256,16 +260,18 @@ void put_isymbol_esc(int e, uint st, uint a, bool neg, out uint s10, out uint s3
         rac_emit();
 
     [[unroll]] for (int i = 8; i >= 0; i--)
-        s[i] = subgroupBroadcast(st24, 22 + i);
-    uint ss = subgroupBroadcast(st24, 21);
+        s[i] = subgroupBroadcast(st24.v[(22 + i)/RC_LANES], (22 + i) % RC_LANES);
+    uint ss = subgroupBroadcast(st24.v[21/RC_LANES], 21 % RC_LANES);
     [[unroll]] for (int i = 8; i >= 0; i--)
         put_rac(s[i], bitfieldExtract(a, i, 1) != 0);
     put_rac(ss, neg);
 }
 
-void put_isymbol(uint st, int v, out uint s10, out uint s31)
+void put_isymbol(RCStates st, int v, out uint s10, out uint s31)
 {
-    uint st24 = st << 24;
+    RCStates st24;
+    [[unroll]] for (uint k = 0; k < RC_K; k++)
+        st24.v[k] = st.v[k] << 24;
     uint a = abs(v);
     int e = findMSB(a);
     bool neg = v < 0;
@@ -299,16 +305,17 @@ void put_isymbol(uint st, int v, out uint s10, out uint s31)
             else
                 put_isymbol_tail(9, st24, a, neg);
         } else {
-            put_isymbol_esc(e, st, a, neg, s10, s31);
+            put_isymbol_esc(e, st, st24, a, neg, s10, s31);
         }
     } else {
-        put_rac(subgroupBroadcast(st24, 0), true);
+        put_rac(subgroupBroadcast(st24.v[0], 0), true);
     }
 }
 #endif
 
 #ifdef DECODE
 uint rc_win;
+uint rc_winx[RC_K];
 uint rc_dist;
 uint rc_next;
 uint rc_pos;
@@ -319,11 +326,15 @@ void rac_load_window(void)
     rc_pos &= ~31u;
     uint o = rc.bs_off + gl_SubgroupInvocationID;
     rc_win = uint(~(o < rc.bs_end ? u8buf(uint64_t(slice_data) + o).v : uint8_t(0)));
+    [[unroll]] for (uint k = 1; k < RC_K; k++) {
+        o += RC_LANES;
+        rc_winx[k] = uint(~(o < rc.bs_end ? u8buf(uint64_t(slice_data) + o).v : uint8_t(0)));
+    }
 }
 
 void rac_init_dec(in RangeCoder c)
 {
-    for (uint i = gl_SubgroupInvocationID; i < 512; i += gl_SubgroupSize)
+    for (uint i = gl_SubgroupInvocationID; i < 512; i += RC_LANES)
         zero_one_state[i] = rangecoder_state[i];
     barrier();
 
@@ -344,7 +355,12 @@ void refill(void)
 {
     rc.range <<= 8;
     rc_dist = (rc_dist << 8) | rc_next;
-    rc_next = subgroupBroadcast(rc_win, ++rc_pos);
+    if (RC_K == 1)
+        rc_next = subgroupBroadcast(rc_win, ++rc_pos);
+    else if (++rc_pos < RC_LANES)
+        rc_next = subgroupBroadcast(rc_win, rc_pos);
+    else
+        rc_next = subgroupBroadcast(rc_winx[rc_pos/RC_LANES], rc_pos % RC_LANES);
 }
 
 void rac_renorm(void)
@@ -378,14 +394,14 @@ bool get_rac_equi(void)
     return bit;
 }
 
-int get_isymbol_tail(int e, uint range, uint range1, uint sx, int pred, int sgn,
+int get_isymbol_tail(int e, uint range, uint range1, RCStates sx, int pred, int sgn,
                      out uint read, out uint bits)
 {
     uint m[9];
     [[unroll]] for (int k = 8; k >= 0; k--)
         if (k + 1 < e)
-            m[k] = subgroupBroadcast(sx, 22 + k);
-    uint ss = subgroupBroadcast(sx, 10 + e);
+            m[k] = subgroupBroadcast(sx.v[(22 + k)/RC_LANES], (22 + k) % RC_LANES);
+    uint ss = subgroupBroadcast(sx.v[(10 + e)/RC_LANES], (10 + e) % RC_LANES);
 
     rc.range = range - range1;
     rc_dist -= range1;
@@ -412,12 +428,13 @@ int get_isymbol_tail(int e, uint range, uint range1, uint sx, int pred, int sgn,
 
 const int AVERROR_INVALIDDATA = -0x41444E49;
 
-int get_isymbol_esc(inout uint st, uint sx, int pred, int sgn, out uint read, out uint bits)
+int get_isymbol_esc(inout RCStates st, RCStates sx, int pred, int sgn,
+                    out uint read, out uint bits)
 {
     bool esc = c_bits > 10;
     int n = 11;
     if (esc) {
-        uint s10 = subgroupBroadcast(st, 10);
+        uint s10 = subgroupBroadcast(st.v[10/RC_LANES], 10 % RC_LANES);
         bool one;
         [[dont_unroll]] do {
             s10 = rangecoder_state[s10 + 256];
@@ -425,7 +442,7 @@ int get_isymbol_esc(inout uint st, uint sx, int pred, int sgn, out uint read, ou
             rac_check_window();
             one = get_rac(s10 << 24);
         } while (one && n < 33);
-        st = gl_SubgroupInvocationID == 10 ? s10 : st;
+        st.v[10/RC_LANES] = gl_SubgroupInvocationID == 10 % RC_LANES ? s10 : st.v[10/RC_LANES];
 
         if (one) {
             read = 0x7FFu;
@@ -434,7 +451,7 @@ int get_isymbol_esc(inout uint st, uint sx, int pred, int sgn, out uint read, ou
         }
     }
 
-    uint s31 = subgroupBroadcast(st, 31);
+    uint s31 = subgroupBroadcast(st.v[31/RC_LANES], 31 % RC_LANES);
     rac_check_window();
     bool b = get_rac(s31 << 24);
     uint a = b ? 0x3 : 0x2;
@@ -444,25 +461,30 @@ int get_isymbol_esc(inout uint st, uint sx, int pred, int sgn, out uint read, ou
         b = get_rac(s31 << 24);
         a = (a << 1) | uint(b);
     }
-    st = gl_SubgroupInvocationID == 31 ? s31 : st;
+    st.v[31/RC_LANES] = gl_SubgroupInvocationID == 31 % RC_LANES ? s31 : st.v[31/RC_LANES];
 
     rac_check_window();
-    [[unroll]] for (int k = 8; k >= 0; k--)
-        a = (a << 1) | uint(get_rac(subgroupBroadcast(sx, 22 + k)));
+    [[unroll]] for (int k = 8; k >= 0; k--) {
+        uint sk = subgroupBroadcast(sx.v[(22 + k)/RC_LANES], (22 + k) % RC_LANES);
+        a = (a << 1) | uint(get_rac(sk));
+    }
 
-    bool neg = get_rac_internal(rac_range1(rc.range, subgroupBroadcast(sx, 21)));
+    uint ss = subgroupBroadcast(sx.v[21/RC_LANES], 21 % RC_LANES);
+    bool neg = get_rac_internal(rac_range1(rc.range, ss));
     int sa = int(a)*sgn;
     read = 0xFFE007FFu;
     bits = ((esc ? 0x1FFu : 0x3FFu) << 1) | ((a & 0x3FFu) << 22) | (uint(neg) << 21);
     return neg ? pred - sa : pred + sa;
 }
 
-int get_isymbol(inout uint st, int pred, int sgn, out uint read, out uint bits)
+int get_isymbol(inout RCStates st, int pred, int sgn, out uint read, out uint bits)
 {
-    uint st24 = st << 24;
+    RCStates sx;
+    [[unroll]] for (uint k = 0; k < RC_K; k++)
+        sx.v[k] = st.v[k] << 24;
     uint s[11];
-    [[unroll]] for (int i = 0; i < 11; i++)
-        s[i] = subgroupBroadcast(st24, i);
+    [[unroll]] for (uint i = 0; i < 11; i++)
+        s[i] = subgroupBroadcast(sx.v[i/RC_LANES], i % RC_LANES);
 
     read = 1u;
     bits = 1u;
@@ -478,7 +500,6 @@ int get_isymbol(inout uint st, int pred, int sgn, out uint read, out uint bits)
     uint lim = max(rc_dist, 0xffu);
 
     int v;
-    uint sx = st24;
     while (true) {
         uint skip;
         [[unroll]] for (int i = 2; i < 6; i++)
@@ -584,9 +605,11 @@ int get_isymbol(inout uint st, int pred, int sgn, out uint read, out uint bits)
         r[0] = rc.range;
         r[1] = skip > 0 ? rc.range + skip - 1 : rac_range1(rc.range, s[1]);
         range0 = 0;
-        sx = subgroupInverseBallot(uvec4((2u << skip) - 2u, 0, 0, 0)) ? ~0u : sx;
-        [[unroll]] for (int i = 2; i < 11; i++)
-            s[i] = subgroupBroadcast(sx, i);
+        uint skipped = (2u << skip) - 2u;
+        [[unroll]] for (uint k = 0; k < RC_K; k++)
+            sx.v[k] = subgroupInverseBallot(uvec4(skipped >> (k*RC_LANES), 0, 0, 0)) ? ~0u : sx.v[k];
+        [[unroll]] for (uint i = 2; i < 11; i++)
+            s[i] = subgroupBroadcast(sx.v[i/RC_LANES], i % RC_LANES);
     }
 
     return v;
