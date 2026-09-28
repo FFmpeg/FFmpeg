@@ -8350,12 +8350,12 @@ static int mov_read_saio(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
 static int mov_read_pssh(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
-    AVEncryptionInitInfo *info, *old_init_info;
+    AVEncryptionInitInfo *info;
     uint8_t **key_ids;
     AVStream *st;
-    const AVPacketSideData *old_side_data;
-    uint8_t *side_data, *extra_data;
-    size_t side_data_size;
+    AVPacketSideData *old_side_data = NULL;
+    uint8_t *side_data = NULL, *extra_data;
+    size_t side_data_size = 0;
     int ret = 0;
     unsigned int version, kid_count, extra_data_size, alloc_size = 0;
 
@@ -8432,37 +8432,35 @@ static int mov_read_pssh(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     info->data = extra_data;
     info->data_size = extra_data_size;
 
-    // If there is existing initialization data, append to the list.
-    old_side_data = av_packet_side_data_get(st->codecpar->coded_side_data, st->codecpar->nb_coded_side_data,
-                                            AV_PKT_DATA_ENCRYPTION_INIT_INFO);
-    if (old_side_data) {
-        old_init_info = av_encryption_init_info_get_side_data(old_side_data->data, old_side_data->size);
-        if (old_init_info) {
-            // Append to the end of the list.
-            for (AVEncryptionInitInfo *cur = old_init_info;; cur = cur->next) {
-                if (!cur->next) {
-                    cur->next = info;
-                    break;
-                }
-            }
-            info = old_init_info;
-        } else {
-            // Assume existing side-data will be valid, so the only error we could get is OOM.
-            ret = AVERROR(ENOMEM);
-            goto finish;
-        }
-    }
+    for (int i = 0; i < st->codecpar->nb_coded_side_data; i++)
+        if (st->codecpar->coded_side_data[i].type == AV_PKT_DATA_ENCRYPTION_INIT_INFO)
+            old_side_data = &st->codecpar->coded_side_data[i];
 
-    side_data = av_encryption_init_info_add_side_data(info, &side_data_size);
-    if (!side_data) {
+    // If there is existing initialization data, append the new record to it.
+    if (old_side_data) {
+        side_data      = old_side_data->data;
+        side_data_size = old_side_data->size;
+    }
+    if (!old_side_data || side_data != c->pssh_side_data)
+        c->pssh_side_data_allocated = 0;
+
+    ret = av_encryption_init_info_append_side_data(&side_data, &side_data_size,
+                                                   &c->pssh_side_data_allocated, info);
+    if (ret < 0)
+        goto finish;
+
+    if (old_side_data) {
+        old_side_data->data = side_data;
+        old_side_data->size = side_data_size;
+    } else if (!av_packet_side_data_add(&st->codecpar->coded_side_data,
+                                        &st->codecpar->nb_coded_side_data,
+                                        AV_PKT_DATA_ENCRYPTION_INIT_INFO,
+                                        side_data, side_data_size, 0)) {
+        av_free(side_data);
         ret = AVERROR(ENOMEM);
         goto finish;
     }
-    if (!av_packet_side_data_add(&st->codecpar->coded_side_data,
-                                 &st->codecpar->nb_coded_side_data,
-                                 AV_PKT_DATA_ENCRYPTION_INIT_INFO,
-                                 side_data, side_data_size, 0))
-        av_free(side_data);
+    c->pssh_side_data = side_data;
 
 finish:
     av_encryption_init_info_free(info);
@@ -12586,6 +12584,7 @@ static int mov_switch_root(AVFormatContext *s, int64_t target, int index)
     }
 
     mov->found_mdat = 0;
+    mov->pssh_side_data = NULL;
 
     ret = mov_read_default(mov, s->pb, (MOVAtom){ AV_RL32("root"), INT64_MAX });
     if (ret < 0)
