@@ -6662,7 +6662,7 @@ elif enabled parisc; then
 
 elif enabled ppc; then
 
-    check_inline_asm dcbzl     '"dcbzl 0, %0" :: "r"(0)'
+    disabled dcbzl || check_inline_asm dcbzl '"dcbzl 0, %0" :: "r"(0)'
     check_inline_asm ibm_asm   '"add 0, 0, 0"'
     check_inline_asm ppc4xx    '"maclhw r10, r11, r12"'
     check_inline_asm xform_asm '"lwzx %1, %y0" :: "Z"(*(int*)0), "r"(0)'
