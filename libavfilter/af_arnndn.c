@@ -1336,8 +1336,6 @@ static void compute_gru(AudioRNNContext *s, const GRULayer *gru, float *state, c
     RNN_COPY(state, h, N);
 }
 
-#define INPUT_SIZE 42
-
 static void compute_rnn(AudioRNNContext *s, RNNState *rnn, float *gains, float *vad, const float *input)
 {
     LOCAL_ALIGNED_32(float, dense_out,     [MAX_NEURONS]);
@@ -1352,7 +1350,7 @@ static void compute_rnn(AudioRNNContext *s, RNNState *rnn, float *gains, float *
     memcpy(noise_input + rnn->model->input_dense_size,
            rnn->vad_gru_state, rnn->model->vad_gru_size * sizeof(float));
     memcpy(noise_input + rnn->model->input_dense_size + rnn->model->vad_gru_size,
-           input, INPUT_SIZE * sizeof(float));
+           input, NB_FEATURES * sizeof(float));
 
     compute_gru(s, rnn->model->noise_gru, rnn->noise_gru_state, noise_input);
 
@@ -1360,7 +1358,7 @@ static void compute_rnn(AudioRNNContext *s, RNNState *rnn, float *gains, float *
     memcpy(denoise_input + rnn->model->vad_gru_size,
            rnn->noise_gru_state, rnn->model->noise_gru_size * sizeof(float));
     memcpy(denoise_input + rnn->model->vad_gru_size + rnn->model->noise_gru_size,
-           input, INPUT_SIZE * sizeof(float));
+           input, NB_FEATURES * sizeof(float));
 
     compute_gru(s, rnn->model->denoise_gru, rnn->denoise_gru_state, denoise_input);
     compute_dense(rnn->model->denoise_output, gains, rnn->denoise_gru_state);
