@@ -1094,6 +1094,84 @@ static void amf_unmap_frame(AVHWFramesContext *ctx, HWMapDescriptor *hwmap)
     AMF_IFACE_CALL(surface1, Release);
 }
 
+#if CONFIG_D3D11VA
+static int amf_same_d3d11_device(ID3D11Device *a, ID3D11Device *b)
+{
+    static const GUID iid_unknown = { 0x00000000, 0x0000, 0x0000, { 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 } };
+    IUnknown *unk_a, *unk_b;
+    int same;
+
+    if (a == b)
+        return 1;
+    if (!a || !b)
+        return 0;
+    if (FAILED(a->lpVtbl->QueryInterface(a, &iid_unknown, (void **)&unk_a)))
+        return 0;
+    if (FAILED(b->lpVtbl->QueryInterface(b, &iid_unknown, (void **)&unk_b))) {
+        unk_a->lpVtbl->Release(unk_a);
+        return 0;
+    }
+    same = unk_a == unk_b;
+    unk_a->lpVtbl->Release(unk_a);
+    unk_b->lpVtbl->Release(unk_b);
+    return same;
+}
+
+static int amf_map_to_d3d11(AVHWFramesContext *ctx, AVFrame *dst, const AVFrame *src)
+{
+    AVAMFDeviceContext *amf_ctx = ctx->device_ctx->hwctx;
+    AVHWFramesContext *dst_fc;
+    AVD3D11VADeviceContext *d3d11_ctx;
+    AMFSurface *surface = (AMFSurface *)src->data[0];
+    D3D11_TEXTURE2D_DESC desc;
+    ID3D11Texture2D *texture;
+    AMFPlane *plane;
+    int ret;
+
+    AMF_RETURN_IF_FALSE(ctx, surface, AVERROR(EINVAL), "Source surface is null\n");
+    if (!dst->hw_frames_ctx)
+        return AVERROR(EINVAL);
+    dst_fc    = (AVHWFramesContext *)dst->hw_frames_ctx->data;
+    if (dst_fc->device_ctx->type != AV_HWDEVICE_TYPE_D3D11VA)
+        return AVERROR(ENOSYS);
+    d3d11_ctx = dst_fc->device_ctx->hwctx;
+    if (dst_fc->sw_format != ctx->sw_format ||
+        dst_fc->width != ctx->width || dst_fc->height != ctx->height)
+        return AVERROR(ENOSYS);
+    if (!amf_same_d3d11_device(AMF_IFACE_CALL(amf_ctx->context, GetDX11Device, AMF_DX11_0),
+                               d3d11_ctx->device)) {
+        av_log(ctx, AV_LOG_DEBUG, "The AMF context does not use the D3D11 device of the target frames.\n");
+        return AVERROR(ENOSYS);
+    }
+    if (AMF_IFACE_CALL(surface, GetMemoryType) != AMF_MEMORY_DX11)
+        return AVERROR(ENOSYS);
+
+    plane = AMF_IFACE_CALL(surface, GetPlaneAt, 0);
+    AMF_RETURN_IF_FALSE(ctx, plane, AVERROR(EINVAL), "Surface has no plane\n");
+    texture = plane->pVtbl->GetNative(plane);
+    AMF_RETURN_IF_FALSE(ctx, texture, AVERROR(EINVAL), "Surface has no D3D11 texture\n");
+    for (int i = 1; i < AMF_IFACE_CALL(surface, GetPlanesCount); i++) {
+        plane = AMF_IFACE_CALL(surface, GetPlaneAt, i);
+        if (!plane || plane->pVtbl->GetNative(plane) != texture)
+            return AVERROR(ENOSYS);
+    }
+    texture->lpVtbl->GetDesc(texture, &desc);
+    if (desc.ArraySize > 1 ||
+        desc.Width != dst_fc->width || desc.Height != dst_fc->height)
+        return AVERROR(ENOSYS);
+
+    ret = ff_hwframe_map_create(dst->hw_frames_ctx, dst, src, NULL, NULL);
+    if (ret < 0)
+        return ret;
+
+    dst->data[0] = (uint8_t *)texture;
+    dst->data[1] = 0;
+    dst->width   = src->width;
+    dst->height  = src->height;
+    return 0;
+}
+#endif
+
 static int amf_map_frame(AVHWFramesContext *device_ctx, AVFrame *dst, const AVFrame *src, int flags)
 {
     AVAMFDeviceContext *amf_ctx = device_ctx->device_ctx->hwctx;
@@ -1107,6 +1185,10 @@ static int amf_map_frame(AVHWFramesContext *device_ctx, AVFrame *dst, const AVFr
     size_t plane_count = 0;
     int ret = -1;
 
+#if CONFIG_D3D11VA
+    if (dst->format == AV_PIX_FMT_D3D11)
+        return amf_map_to_d3d11(device_ctx, dst, src);
+#endif
     if (dst->format != AV_PIX_FMT_NONE &&
         av_pix_fmt_desc_get(dst->format)->flags & AV_PIX_FMT_FLAG_HWACCEL)
         return AVERROR(ENOSYS);
