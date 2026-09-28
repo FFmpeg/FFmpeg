@@ -393,6 +393,9 @@ static inline void mc_dir_part(AVSContext *h, AVFrame *pic, int chroma_height,
                                qpel_mc_func *qpix_op,
                                h264_chroma_mc_func chroma_op, cavs_vector *mv)
 {
+    if (!pic->data[0])
+        return;
+
     const int mx         = mv->x + src_x_offset * 8;
     const int my         = mv->y + src_y_offset * 8;
     const int luma_xy    = (mx & 3) + ((my & 3) << 2);
@@ -407,8 +410,6 @@ static inline void mc_dir_part(AVSContext *h, AVFrame *pic, int chroma_height,
     const int pic_height = 16 * h->mb_height;
     int emu = 0;
 
-    if (!pic->data[0])
-        return;
     if (mx & 7)
         extra_width  -= 3;
     if (my & 7)
