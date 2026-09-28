@@ -643,6 +643,9 @@ int av_seek_frame(AVFormatContext *s, int stream_index,
 {
     int ret;
 
+    if (stream_index < -1 || stream_index >= (int)s->nb_streams)
+        return AVERROR(EINVAL);
+
     if (ffifmt(s->iformat)->read_seek2 && !ffifmt(s->iformat)->read_seek) {
         int64_t min_ts = INT64_MIN, max_ts = INT64_MAX;
         if ((flags & AVSEEK_FLAG_BACKWARD))
