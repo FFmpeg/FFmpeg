@@ -7,6 +7,21 @@ fate-ogg-flac-copy-chained-meta: $(APITESTSDIR)/api-dump-stream-meta-test$(EXESU
 fate-ogg-flac-copy-chained-meta: REF = $(SRC_PATH)/tests/ref/fate/ogg-flac-chained-meta.txt
 fate-ogg-flac-copy-chained-meta: CMD = run_with_temp "$(FFMPEG) -nostdin -hide_banner -loglevel quiet -i $(TARGET_SAMPLES)/ogg-flac/chained-meta.ogg -c copy -f ogg -y" "$(APITESTSDIR)/api-dump-stream-meta-test$(EXESUF)" ogg
 
+# The pages of a bitexact remux, whose serial numbers the muxer chooses or
+# takes from an explicit offset.
+OGG_FLAC_SERIAL_MUX = "$(FFMPEG) -nostdin -hide_banner -loglevel quiet \
+    -i $(TARGET_SAMPLES)/ogg-flac/chained-meta.ogg -c copy -fflags +bitexact"
+
+FATE_OGG_COPY_FLAC-$(call PARSERDEMDEC, FLAC, OGG, FLAC, OGG_MUXER) += fate-ogg-flac-serial-default
+fate-ogg-flac-serial-default: libavformat/tests/ogg_pages$(EXESUF)
+fate-ogg-flac-serial-default: CMD = run_with_temp $(OGG_FLAC_SERIAL_MUX)" -f ogg -y" \
+    "libavformat/tests/ogg_pages$(EXESUF)" ogg
+
+FATE_OGG_COPY_FLAC-$(call PARSERDEMDEC, FLAC, OGG, FLAC, OGG_MUXER) += fate-ogg-flac-serial-offset
+fate-ogg-flac-serial-offset: libavformat/tests/ogg_pages$(EXESUF)
+fate-ogg-flac-serial-offset: CMD = run_with_temp $(OGG_FLAC_SERIAL_MUX)" -serial_offset 67574 -f ogg -y" \
+    "libavformat/tests/ogg_pages$(EXESUF)" ogg
+
 FATE_OGG_FLAC-$(call DEMDEC, OGG, FLAC, FLAC_PARSER) += $(FATE_OGG_FLAC)
 
 FATE_SAMPLES_DUMP_STREAM_META += $(FATE_OGG_FLAC-yes)

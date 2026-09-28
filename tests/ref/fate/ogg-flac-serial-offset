@@ -1,0 +1,6 @@
+pos=0 serial=67574 sequence=0 granule=0 flags=-b- segments=1 size=51
+pos=79 serial=67574 sequence=1 granule=0 flags=--- segments=1 size=70
+pos=177 serial=67574 sequence=2 granule=8820 flags=--e segments=10 size=2418
+pos=2632 serial=67574 sequence=0 granule=0 flags=-b- segments=1 size=51
+pos=2711 serial=67574 sequence=1 granule=0 flags=--- segments=1 size=71
+pos=2810 serial=67574 sequence=2 granule=17640 flags=--e segments=10 size=2418
