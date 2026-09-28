@@ -815,6 +815,10 @@ static int init_passes(SwsGraph *graph)
     }
 
     if (!pass) {
+        /* Plane passthrough is not implemented for hardware frames */
+        if (src.hw_format != AV_PIX_FMT_NONE || dst.hw_format != AV_PIX_FMT_NONE)
+            return AVERROR(ENOTSUP);
+
         /* No passes were added, so no operations were necessary */
         graph->noop = 1;
 
