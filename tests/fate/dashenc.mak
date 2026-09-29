@@ -24,5 +24,24 @@ fate-dash-mpd-timing: tests/data/dash_mpd_timing.mpd
 fate-dash-mpd-timing: CMD = sed -n -e /suggestedPresentationDelay=/p -e /availabilityStartTime=/p $(TARGET_PATH)/tests/data/dash_mpd_timing.mpd
 fate-dash-mpd-timing: CMP = diff
 
+tests/data/dash_big_init.mpd: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
+	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
+	-filter_complex "aevalsrc=cos(2*PI*t)*sin(2*PI*(440+4*t)*t):d=2:s=16000,asplit=100" \
+	-codec:a mp2fixed -b:a 8k -bitexact -f hls -hls_time 1 -hls_list_size 0 \
+	-hls_segment_type fmp4 -hls_fmp4_init_filename dash_big_init.mp4 \
+	-hls_segment_filename $(TARGET_PATH)/tests/data/dash_big_init_%d.m4s \
+	$(TARGET_PATH)/tests/data/dash_big_init.m3u8 2>/dev/null
+	$(Q)printf '%s\n' \
+	'<MPD xmlns="urn:mpeg:dash:schema:mpd:2011" profiles="urn:mpeg:dash:profile:full:2011" type="static" mediaPresentationDuration="PT2S" minBufferTime="PT1S">' \
+	'<Period><AdaptationSet mimeType="audio/mp4"><Representation id="0" bandwidth="1000000">' \
+	'<SegmentList timescale="16000" duration="16128"><Initialization sourceURL="dash_big_init.mp4"/>' \
+	'<SegmentURL media="dash_big_init_0.m4s"/><SegmentURL media="dash_big_init_1.m4s"/>' \
+	'</SegmentList></Representation></AdaptationSet></Period></MPD>' > $@
+
+FATE_DASHENC_LAVFI-$(call ALLYES, AEVALSRC_FILTER ASPLIT_FILTER ARESAMPLE_FILTER MP2FIXED_ENCODER HLS_MUXER MP4_MUXER DASH_DEMUXER MOV_DEMUXER MP3_DECODER FILE_PROTOCOL FRAMECRC_MUXER PIPE_PROTOCOL) += fate-dash-big-init
+fate-dash-big-init: tests/data/dash_big_init.mpd
+fate-dash-big-init: CLEANFILES = tests/data/dash_big_init.mpd tests/data/dash_big_init.m3u8 tests/data/dash_big_init.mp4 tests/data/dash_big_init_*.m4s
+fate-dash-big-init: CMD = framecrc -i $(TARGET_PATH)/tests/data/dash_big_init.mpd -map 0:a:99 -c copy
+
 FATE_FFMPEG += $(FATE_DASHENC_LAVFI-yes)
 fate-dashenc: $(FATE_DASHENC_LAVFI-yes)
