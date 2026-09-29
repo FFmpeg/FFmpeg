@@ -219,9 +219,33 @@ int ocio_finalize_processor(AVFilterContext *ctx, OCIOHandle handle, int input_f
         if (!s || !s->processor)
             return -1;
 
-        s->cpu = s->processor->getOptimizedCPUProcessor(
-        get_ocio_depth(input_format), get_ocio_depth(output_format),
-        OCIO::OPTIMIZATION_DEFAULT);
+        OCIO::ConstProcessorRcPtr processor = s->processor;
+        const AVPixFmtDescriptor *in_desc =
+            av_pix_fmt_desc_get((AVPixelFormat)input_format);
+        const AVPixFmtDescriptor *out_desc =
+            av_pix_fmt_desc_get((AVPixelFormat)output_format);
+
+        if (!(in_desc->flags & AV_PIX_FMT_FLAG_ALPHA) &&
+             (out_desc->flags & AV_PIX_FMT_FLAG_ALPHA)) {
+            // Supply opaque input alpha before the user's transform so it
+            // can use alpha in RGB calculations and transform alpha itself.
+            const double matrix[16] = { 1, 0, 0, 0,
+                                       0, 1, 0, 0,
+                                       0, 0, 1, 0,
+                                       0, 0, 0, 0 };
+            const double offset[4] = { 0, 0, 0, 1 };
+            OCIO::MatrixTransformRcPtr opaque = OCIO::MatrixTransform::Create();
+            opaque->setMatrix(matrix);
+            opaque->setOffset(offset);
+            OCIO::GroupTransformRcPtr group = OCIO::GroupTransform::Create();
+            group->appendTransform(opaque);
+            group->appendTransform(s->processor->createGroupTransform());
+            processor = s->config->getProcessor(group);
+        }
+
+        s->cpu = processor->getOptimizedCPUProcessor(
+            get_ocio_depth(input_format), get_ocio_depth(output_format),
+            OCIO::OPTIMIZATION_DEFAULT);
 
         return 0;
     } catch (OCIO::Exception &e) {

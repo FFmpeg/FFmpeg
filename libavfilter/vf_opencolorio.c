@@ -63,21 +63,117 @@ static int ocio_filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_
     return ocio_apply(ctx, s->ocio, in, out, slice_start, slice_h);
 }
 
-static int query_formats(AVFilterContext *ctx) {
-    static const enum AVPixelFormat pix_fmts[] = {
-      // 8-bit
-      AV_PIX_FMT_RGBA, AV_PIX_FMT_RGB24,
-      // 16-bit
-      AV_PIX_FMT_RGBA64, AV_PIX_FMT_RGB48,
-      // 10-bit
-      AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRAP10,
-      // 12-bit
-      AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRAP12,
-      // Half-float and float
-      AV_PIX_FMT_GBRPF16, AV_PIX_FMT_GBRAPF16,
-      // Float
-      AV_PIX_FMT_GBRPF32, AV_PIX_FMT_GBRAPF32, AV_PIX_FMT_NONE};
-    return ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
+// Formats supported for output (also accepted as input).
+static const enum AVPixelFormat output_pix_fmts[] = {
+    // 8-bit
+    AV_PIX_FMT_RGBA, AV_PIX_FMT_RGB24,
+    // 16-bit
+    AV_PIX_FMT_RGBA64, AV_PIX_FMT_RGB48,
+    // 10-bit
+    AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRAP10,
+    // 12-bit
+    AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRAP12,
+    // Float
+    AV_PIX_FMT_GBRPF32, AV_PIX_FMT_GBRAPF32,
+    AV_PIX_FMT_NONE
+};
+
+// All formats accepted as input, including half-float.
+// Half-float is input-only because swscale has no F16 write support.
+// We promote half-float to float on output, which is lossless. swscale's
+// legacy F16 read path also clamps to [0,1], and its new backend has no
+// half-float support yet.
+static const enum AVPixelFormat input_pix_fmts[] = {
+    // 8-bit
+    AV_PIX_FMT_RGBA, AV_PIX_FMT_RGB24,
+    // 16-bit
+    AV_PIX_FMT_RGBA64, AV_PIX_FMT_RGB48,
+    // 10-bit
+    AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRAP10,
+    // 12-bit
+    AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRAP12,
+    // Half-float (input only)
+    AV_PIX_FMT_GBRPF16, AV_PIX_FMT_GBRAPF16,
+    // Float
+    AV_PIX_FMT_GBRPF32, AV_PIX_FMT_GBRAPF32,
+    AV_PIX_FMT_NONE
+};
+
+
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
+{
+    static const enum AVPixelFormat float_fmts[] = {
+        AV_PIX_FMT_GBRPF32, AV_PIX_FMT_GBRAPF32, AV_PIX_FMT_NONE
+    };
+    const OCIOContext *s = ctx->priv;
+    const AVFilterFormats *in;
+    int has_f16 = 0;
+    int ret;
+
+    // Input accepts all supported formats including half-float
+    if (!cfg_in[0]->formats) {
+        ret = ff_formats_ref(ff_make_pixel_format_list(input_pix_fmts),
+                             &cfg_in[0]->formats);
+        if (ret < 0)
+            return ret;
+
+        // Returning AVERROR(EAGAIN) skips the generic defaults, but the
+        // graph may insert a converter on the input before this filter
+        // publishes anything, and that code expects these lists to exist.
+        if ((ret = ff_formats_ref(ff_all_color_spaces(), &cfg_in[0]->color_spaces)) < 0 ||
+            (ret = ff_formats_ref(ff_all_color_ranges(), &cfg_in[0]->color_ranges)) < 0 ||
+            (ret = ff_formats_ref(ff_all_alpha_modes(), &cfg_in[0]->alpha_modes)) < 0 ||
+            (ret = ff_formats_ref(ff_all_chroma_locations(), &cfg_in[0]->chroma_locations)) < 0)
+            return ret;
+    }
+
+    // The default output depends on the input, so wait until the input list
+    // has been merged with the upstream one. Until then it is still this
+    // filter's own list and says nothing about the actual input format.
+    // The merged list need not be a singleton. This inspects the link
+    // because the merge cannot be observed through cfg_in alone.
+    if (s->output_format == AV_PIX_FMT_NONE &&
+        ctx->inputs[0]->incfg.formats != cfg_in[0]->formats)
+        return AVERROR(EAGAIN);
+
+    // Only publish the output attributes together with the output pixel
+    // formats: a converter inserted on the output would otherwise find
+    // them set while the format list is still missing.
+    if ((ret = ff_formats_ref(cfg_in[0]->color_spaces, &cfg_out[0]->color_spaces)) < 0 ||
+        (ret = ff_formats_ref(cfg_in[0]->color_ranges, &cfg_out[0]->color_ranges)) < 0 ||
+        (ret = ff_formats_ref(cfg_in[0]->alpha_modes, &cfg_out[0]->alpha_modes)) < 0 ||
+        (ret = ff_formats_ref(cfg_in[0]->chroma_locations, &cfg_out[0]->chroma_locations)) < 0)
+        return ret;
+
+    // Output: if user specified a format, constrain to just that format
+    if (s->output_format != AV_PIX_FMT_NONE) {
+        const enum AVPixelFormat user_fmts[] = { s->output_format, AV_PIX_FMT_NONE };
+        return ff_formats_ref(ff_make_pixel_format_list(user_fmts),
+                              &cfg_out[0]->formats);
+    }
+
+    // No user-specified format: the default output is the input format,
+    // except that half-float input is promoted to the matching float
+    // format, because swscale clips F16 to [0,1] when converting it.
+    in = cfg_in[0]->formats;
+    for (unsigned i = 0; i < in->nb_formats; i++) {
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(in->formats[i]);
+        if (desc->comp[0].depth == 16 && (desc->flags & AV_PIX_FMT_FLAG_FLOAT))
+            has_f16 = 1;
+    }
+
+    // No half-float candidate: the output is the input format, so share
+    // the list and let downstream constraints narrow the input as well.
+    if (!has_f16)
+        return ff_formats_ref(cfg_in[0]->formats, &cfg_out[0]->formats);
+
+    // The input may be half-float (possibly among other candidates, e.g.
+    // behind zscale): only offer float output, which is lossless for every
+    // input format. Negotiation picks the one matching the input's alpha.
+    return ff_formats_ref(ff_make_pixel_format_list(float_fmts),
+                          &cfg_out[0]->formats);
 }
 
 static int config_props(AVFilterLink *inlink)
@@ -91,19 +187,10 @@ static int config_props(AVFilterLink *inlink)
         return AVERROR(EINVAL);
     }
 
-    int is_half =
-        (desc->comp[0].depth == 16 && desc->flags & AV_PIX_FMT_FLAG_FLOAT);
-    if (s->output_format == AV_PIX_FMT_NONE) {
-        // Need to set the output format now, if not known.
-        if (is_half) {
-            // If its half-float, we output float, due to a bug in ffmpeg with
-            // half-float frames
-            s->output_format = AV_PIX_FMT_GBRAPF32;
-        } else {
-            // If output format not set, use same as input
-            s->output_format = inlink->format;
-        }
-    }
+    // The output format was already constrained during negotiation.
+    // Read it from the negotiated output link if not set by the user.
+    if (s->output_format == AV_PIX_FMT_NONE)
+        s->output_format = ctx->outputs[0]->format;
 
     s->channels = desc->nb_components; // 3 or 4
 
@@ -127,10 +214,29 @@ static int config_props(AVFilterLink *inlink)
 static av_cold int init(AVFilterContext *ctx)
 {
     OCIOContext *s = ctx->priv;
-    if (s->out_format_string != NULL)
+    if (s->out_format_string != NULL) {
         s->output_format = av_get_pix_fmt(s->out_format_string);
-    else
+        if (s->output_format == AV_PIX_FMT_NONE) {
+            av_log(ctx, AV_LOG_ERROR, "Unknown pixel format: '%s'\n",
+                   s->out_format_string);
+            return AVERROR(EINVAL);
+        }
+        // Verify the format is a supported output format
+        int valid = 0;
+        for (int i = 0; output_pix_fmts[i] != AV_PIX_FMT_NONE; i++) {
+            if (s->output_format == output_pix_fmts[i]) {
+                valid = 1;
+                break;
+            }
+        }
+        if (!valid) {
+            av_log(ctx, AV_LOG_ERROR,
+                   "Unsupported output format: '%s'\n", s->out_format_string);
+            return AVERROR(EINVAL);
+        }
+    } else {
         s->output_format = AV_PIX_FMT_NONE; // Default to same as input format (see later).
+    }
 
     if (s->filetransform && strlen(s->filetransform) > 0) {
         s->ocio = ocio_create_file_transform_processor(
@@ -287,4 +393,4 @@ const FFFilter ff_vf_ocio = {
     .uninit = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
-    FILTER_QUERY_FUNC(query_formats)};
+    FILTER_QUERY_FUNC2(query_formats)};
