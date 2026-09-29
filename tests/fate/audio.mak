@@ -72,7 +72,7 @@ fate-nellymoser: CMD = pcm -i $(TARGET_SAMPLES)/nellymoser/nellymoser.flv
 fate-nellymoser: CMP = oneoff
 fate-nellymoser: REF = $(SAMPLES)/nellymoser/nellymoser.pcm
 
-FATE_SAMPLES_AUDIO-$(call ENCMUX, NELLYMOSER, FLV, ARESAMPLE_FILTER PIPE_PROTOCOL) += fate-nellymoser-aref-encode
+FATE_SAMPLES_AUDIO-$(call ENCDEC, NELLYMOSER, FLV, WAV_MUXER WAV_DEMUXER PCM_S16LE_ENCODER PCM_S16LE_DECODER ARESAMPLE_FILTER PIPE_PROTOCOL) += fate-nellymoser-aref-encode
 fate-nellymoser-aref-encode: $(AREF) ./tests/data/asynth-16000-1.wav
 fate-nellymoser-aref-encode: CMD = enc_dec_pcm flv wav s16le $(REF) -c:a nellymoser
 fate-nellymoser-aref-encode: CMP = stddev
