@@ -94,6 +94,7 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
 
     int in_planes = av_pix_fmt_count_planes(s->vkctx.input_format);
     int out_planes = av_pix_fmt_count_planes(s->vkctx.output_format);
+    const AVHWFramesContext *frames = (AVHWFramesContext *)in->hw_frames_ctx->data;
 
     switch (s->scaler) {
     case F_NEAREST:
@@ -167,8 +168,9 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
         s->opts.yuv_matrix[3][3] = 1.0;
     }
 
-    s->opts.in_dims[0] = in->width;
-    s->opts.in_dims[1] = in->height;
+    /* Normalized texture coordinates include hardware frame padding. */
+    s->opts.in_dims[0] = frames->width;
+    s->opts.in_dims[1] = frames->height;
 
     RET(ff_vk_shader_link(vkctx, shd,
                           ff_scale_comp_spv_data,
