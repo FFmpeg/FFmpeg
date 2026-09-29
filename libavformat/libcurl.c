@@ -91,7 +91,7 @@ typedef struct CurlLoop {
     CURLM          *multi;
     CURLSH         *share;   /* shared cookies/HSTS */
 
-    pthread_mutex_t mutex;   /* guards the command queue, exit and cmd->done */
+    pthread_mutex_t mutex;   /* guards the command queue, exit, share and cmd->done */
     pthread_cond_t  cond;    /* signaled when a sync command completes */
     CurlCmd        *cmd_head, *cmd_tail;
     int             exit;
@@ -920,6 +920,20 @@ static int curl_dispatch(CurlLoop *loop, enum cmd_kind kind, CurlContext *c,
     return 0;
 }
 
+static void share_lock_callback(CURL *handle, curl_lock_data data,
+                                curl_lock_access access, void *userdata)
+{
+    CurlLoop *loop = userdata;
+    pthread_mutex_lock(&loop->mutex);
+}
+
+static void share_unlock_callback(CURL *handle, curl_lock_data data,
+                                  void *userdata)
+{
+    CurlLoop *loop = userdata;
+    pthread_mutex_unlock(&loop->mutex);
+}
+
 static CurlLoop *curl_loop_create(AVFormatContext *avfc)
 {
     CurlLoop *loop = av_mallocz(sizeof(*loop));
@@ -945,6 +959,9 @@ static CurlLoop *curl_loop_create(AVFormatContext *avfc)
     loop->share = curl_share_init();
     if (!loop->share)
         goto fail3;
+    curl_share_setopt(loop->share, CURLSHOPT_USERDATA,   loop);
+    curl_share_setopt(loop->share, CURLSHOPT_LOCKFUNC,   share_lock_callback);
+    curl_share_setopt(loop->share, CURLSHOPT_UNLOCKFUNC, share_unlock_callback);
     curl_share_setopt(loop->share, CURLSHOPT_SHARE, CURL_LOCK_DATA_COOKIE);
     curl_share_setopt(loop->share, CURLSHOPT_SHARE, CURL_LOCK_DATA_HSTS);
 
