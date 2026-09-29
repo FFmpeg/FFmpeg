@@ -1937,8 +1937,10 @@ static av_cold int nvenc_alloc_surface(AVCodecContext *avctx, int idx)
     nv_status = p_nvenc->nvEncCreateBitstreamBuffer(ctx->nvencoder, &allocOut);
     if (nv_status != NV_ENC_SUCCESS) {
         int err = nvenc_print_error(avctx, nv_status, "CreateBitstreamBuffer failed");
-        if (!IS_HWACCEL(avctx->pix_fmt))
+        if (!IS_HWACCEL(avctx->pix_fmt)) {
             p_nvenc->nvEncDestroyInputBuffer(ctx->nvencoder, ctx->surfaces[idx].input_surface);
+            ctx->surfaces[idx].input_surface = NULL;
+        }
         av_frame_free(&ctx->surfaces[idx].in_ref);
         return err;
     }
@@ -2072,10 +2074,11 @@ av_cold int ff_nvenc_encode_close(AVCodecContext *avctx)
 
     if (ctx->surfaces) {
         for (i = 0; i < ctx->nb_surfaces; ++i) {
-            if (!IS_HWACCEL(avctx->pix_fmt))
+            if (!IS_HWACCEL(avctx->pix_fmt) && ctx->surfaces[i].input_surface)
                 p_nvenc->nvEncDestroyInputBuffer(ctx->nvencoder, ctx->surfaces[i].input_surface);
             av_frame_free(&ctx->surfaces[i].in_ref);
-            p_nvenc->nvEncDestroyBitstreamBuffer(ctx->nvencoder, ctx->surfaces[i].output_surface);
+            if (ctx->surfaces[i].output_surface)
+                p_nvenc->nvEncDestroyBitstreamBuffer(ctx->nvencoder, ctx->surfaces[i].output_surface);
         }
     }
     av_freep(&ctx->surfaces);
