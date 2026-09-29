@@ -157,6 +157,7 @@ struct CurlContext {
     int64_t         hdr_content_start; /* inclusive start, or -1 */
     int64_t         hdr_content_end;   /* inclusive end,   or -1 */
     int64_t         hdr_content_total; /* if known, or -1 */
+    int64_t         hdr_content_length; /* if known, or -1 */
     AVDictionary   *hdr_icy;           /* "Icy-*" headers of this block */
     int64_t         hdr_icy_metaint;   /* in-band metadata interval, or -1 */
 
@@ -358,6 +359,42 @@ static void commit_icy_headers(CurlContext *c)
     av_dict_copy(&c->metadata, c->hdr_icy, 0);
 }
 
+static int verify_content_range(CurlContext *c, int64_t start, int64_t end,
+                                int64_t total)
+{
+    if (start < 0 || start != c->request_start) {
+        av_log(c->h, AV_LOG_ERROR, "Server sent back unexpected reply "
+               "with offset %"PRId64" (expected %"PRId64")\n",
+               start, c->request_start);
+        return 0;
+    }
+
+    if (end >= 0 && end < start) {
+        av_log(c->h, AV_LOG_ERROR, "Server sent back backwards content range "
+               "%"PRId64"-%"PRId64"\n", start, end);
+        return 0;
+    }
+
+    if (total >= 0 && (start >= total || end >= total)) {
+        av_log(c->h, AV_LOG_ERROR, "Server sent back content range "
+               "%"PRId64"-%"PRId64" that exceeds the total size "
+               "%"PRId64"\n", start, end, total);
+        return 0;
+    }
+
+    if (c->hdr_content_length >= 0 && end >= 0 &&
+        (c->hdr_content_length - 1 > INT64_MAX - start ||
+        start + (c->hdr_content_length - 1) != end))
+    {
+        av_log(c->h, AV_LOG_ERROR, "Server sent back content range "
+               "%"PRId64"-%"PRId64" that doesn't match the content length "
+               "%"PRId64"\n", start, end, c->hdr_content_length);
+        return 0;
+    }
+
+    return 1;
+}
+
 static size_t header_callback(char *ptr, size_t size, size_t nitems, void *userdata)
 {
     CurlContext *c = userdata;
@@ -374,6 +411,7 @@ static size_t header_callback(char *ptr, size_t size, size_t nitems, void *userd
         c->hdr_content_start = -1;
         c->hdr_content_end   = -1;
         c->hdr_content_total = -1;
+        c->hdr_content_length = -1;
         c->hdr_icy_metaint   = -1;
         av_dict_free(&c->hdr_icy);
         return len;
@@ -414,17 +452,19 @@ static size_t header_callback(char *ptr, size_t size, size_t nitems, void *userd
     if (status < 200 || (status >= 300 && status < 400))
         return len;
 
+    curl_off_t cl = -1;
+    if (curl_easy_getinfo(c->easy, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, &cl) == CURLE_OK)
+        c->hdr_content_length = cl >= 0 ? cl : -1;
+
     pthread_mutex_lock(&c->mutex);
     if (status >= 200 && status < 300) {
         int64_t content_start = status == 206 ? c->hdr_content_start : 0;
-        /* The reply must start at the offset we requested: for follow-up
-         * requests always, for the initial one when an explicit nonzero
-         * offset was requested. */
-        if ((c->probed ? c->seekable : c->off > 0) &&
-            content_start != c->request_start) {
-            av_log(c->h, AV_LOG_ERROR, "Server sent back unexpected reply "
-                   "with offset %"PRId64" (expected %"PRId64")\n",
-                   content_start, c->request_start);
+        int64_t content_end   = status == 206 ? c->hdr_content_end : -1;
+        int64_t content_total = status == 206 ? c->hdr_content_total : c->hdr_content_length;
+        if (content_end < 0 && content_total > 0)
+            content_end = content_total - 1;
+
+        if (!verify_content_range(c, content_start, content_end, content_total)) {
             c->loop->num_errors++;
             c->stream_ok = 0;
             if (!c->status)
@@ -434,7 +474,23 @@ static size_t header_callback(char *ptr, size_t size, size_t nitems, void *userd
             return len;
         }
 
+        /* Don't unlearn a known size when a reply omits it. */
+        if (!c->hdr_compressed && content_total >= 0)
+            c->content_size = content_total;
+
+        if (!c->hdr_compressed) {
+            int64_t total = content_total;
+            if (total < 0 && status != 206)
+                total = c->hdr_content_length;
+            /* Don't unlearn a known size when a reply omits it. */
+            if (total >= 0)
+                c->content_size = total;
+            if (content_end < 0)
+                content_end = c->content_size > 0 ? c->content_size - 1 : -1;
+        }
+
         c->stream_ok = 1;
+        c->request_end = content_end;
         /* Capture the post-redirect URL, this is exposed as "location" AVOption
          * for compatibility with http.c. */
         if (!c->probed) {
@@ -455,24 +511,6 @@ static size_t header_callback(char *ptr, size_t size, size_t nitems, void *userd
          * gives us free compression for other payloads like text playlist. */
         c->seekable = !c->hdr_compressed &&
                       (status == 206 || c->hdr_accept_ranges);
-        if (!c->hdr_compressed) {
-            int64_t total = c->hdr_content_total;
-            if (total < 0 && status != 206) {
-                curl_off_t cl = -1;
-                if (curl_easy_getinfo(c->easy, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T,
-                                      &cl) == CURLE_OK && cl >= 0)
-                    total = cl;
-            }
-            /* Don't unlearn a known size when a reply omits it. */
-            if (total >= 0)
-                c->content_size = total;
-        }
-        if (c->seekable) {
-            if (c->hdr_content_end >= 0)
-                c->request_end = c->hdr_content_end;
-            else
-                c->request_end = c->content_size > 0 ? c->content_size - 1 : -1;
-        }
         /* Apply the user override on every reply so re-evaluation of a
          * follow-up reply doesn't clobber it. */
         if (c->seekable_opt >= 0)
