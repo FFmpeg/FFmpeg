@@ -195,6 +195,7 @@ const FFFilter ff_vf_setdar = {
     .priv_size   = sizeof(AspectContext),
     FILTER_INPUTS(aspect_inputs),
     FILTER_OUTPUTS(avfilter_vf_setdar_outputs),
+    .flags_internal = FF_FILTER_FLAG_DYNAMIC_FRAME_PARAMS,
 };
 
 #endif /* CONFIG_SETDAR_FILTER */
@@ -250,6 +251,7 @@ const FFFilter ff_vf_setsar = {
     .priv_size   = sizeof(AspectContext),
     FILTER_INPUTS(aspect_inputs),
     FILTER_OUTPUTS(avfilter_vf_setsar_outputs),
+    .flags_internal = FF_FILTER_FLAG_DYNAMIC_FRAME_PARAMS,
 };
 
 #endif /* CONFIG_SETSAR_FILTER */

@@ -150,4 +150,5 @@ const FFFilter ff_vf_random = {
     .uninit      = uninit,
     FILTER_INPUTS(random_inputs),
     FILTER_OUTPUTS(random_outputs),
+    .flags_internal = FF_FILTER_FLAG_DYNAMIC_FRAME_PARAMS,
 };

@@ -181,6 +181,7 @@ const FFFilter ff_vf_settb = {
     FILTER_INPUTS(ff_video_default_filterpad),
     FILTER_OUTPUTS(avfilter_vf_settb_outputs),
     .activate    = activate,
+    .flags_internal = FF_FILTER_FLAG_DYNAMIC_FRAME_PARAMS,
 };
 #endif /* CONFIG_SETTB_FILTER */
 

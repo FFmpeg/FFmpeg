@@ -234,6 +234,7 @@ const FFFilter ff_vf_setparams = {
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_QUERY_FUNC2(query_formats),
+    .flags_internal = FF_FILTER_FLAG_DYNAMIC_FRAME_PARAMS,
 };
 
 #if CONFIG_SETRANGE_FILTER
@@ -277,6 +278,7 @@ const FFFilter ff_vf_setrange = {
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_QUERY_FUNC2(query_formats),
+    .flags_internal = FF_FILTER_FLAG_DYNAMIC_FRAME_PARAMS,
 };
 #endif /* CONFIG_SETRANGE_FILTER */
 
@@ -314,5 +316,6 @@ const FFFilter ff_vf_setfield = {
     .init        = init_setfield,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
+    .flags_internal = FF_FILTER_FLAG_DYNAMIC_FRAME_PARAMS,
 };
 #endif /* CONFIG_SETFIELD_FILTER */
