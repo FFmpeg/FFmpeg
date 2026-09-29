@@ -197,16 +197,25 @@ static int collect_ops_compile(SwsContext *ctx, const SwsOpList *ops,
     struct AVTreeNode **root = (struct AVTreeNode **) ctx->opaque;
     int ret;
 
-    /* Use at most two full vregs during the widest precision section */
-    int block_size = (ff_sws_op_list_max_size(ops) == 4) ? 8 : 16;
+    SwsUOpList *uops = ff_sws_uop_list_alloc();
+    if (!uops)
+        return AVERROR(ENOMEM);
 
-    for (int i = 0; i < ops->num_ops; i++) {
+    const SwsUOpFlags flags = (ctx->flags & SWS_BITEXACT) ? 0 : SWS_UOP_FLAG_FMA;
+    ret = ff_sws_ops_translate(ctx, ops, flags, uops);
+    if (ret == AVERROR(ENOTSUP)) {
+        ret = 0;
+        goto end;
+    }
+    if (ret < 0)
+        goto end;
+
+    /* Use at most two full vregs during the widest precision section */
+    int block_size = (uops->pixel_size_max == 4) ? 8 : 16;
+
+    for (int i = 0; i < uops->num_ops; i++) {
         SwsAArch64OpImplParams params = { 0 };
-        ret = convert_to_aarch64_impl(ctx, ops, i, block_size, &params);
-        if (ret == AVERROR(ENOTSUP))
-            continue;
-        if (ret < 0)
-            goto end;
+        convert_to_aarch64_impl(&uops->ops[i], block_size, &params);
         ret = aarch64_collect_op(&params, root);
         if (ret < 0)
             goto end;
@@ -226,6 +235,7 @@ static int collect_ops_compile(SwsContext *ctx, const SwsOpList *ops,
     ret = 0;
 
 end:
+    ff_sws_uop_list_free(&uops);
     return ret;
 }
 

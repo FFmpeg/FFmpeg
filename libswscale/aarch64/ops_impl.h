@@ -41,7 +41,7 @@ static inline uint16_t nibble_mask(SwsCompMask mask)
 
 /**
  * SwsAArch64OpImplParams describes the parameters for an SwsUOpType
- * operation. It consists of simplified parameters from the SwsOp structure,
+ * operation. It consists of simplified parameters from the SwsUOp structure,
  * with the purpose of being straight-forward to implement and execute.
  */
 typedef struct SwsAArch64OpImplParams {
