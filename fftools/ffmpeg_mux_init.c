@@ -2481,7 +2481,10 @@ static int of_serialize_options(Muxer *mux, void *obj, AVBPrint *bp)
     char *ptr;
     int ret;
 
-    ret = av_opt_serialize(obj, 0, AV_OPT_SERIALIZE_SKIP_DEFAULTS | AV_OPT_SERIALIZE_SEARCH_CHILDREN,
+    ret = av_opt_serialize(obj, AV_OPT_FLAG_DEPRECATED,
+                           AV_OPT_SERIALIZE_SKIP_DEFAULTS |
+                           AV_OPT_SERIALIZE_SEARCH_CHILDREN |
+                           AV_OPT_SERIALIZE_OPT_FLAGS_EXCLUDE,
                            &ptr, '=', ':');
     if (ret < 0) {
         av_log(mux, AV_LOG_ERROR, "Failed to serialize group\n");
