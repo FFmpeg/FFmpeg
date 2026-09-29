@@ -1313,7 +1313,6 @@ endfunc
 
 .macro epel_v4_step src0, src1, src2, src3
         ld1             {\src3\().s}[0], [x1], x2
-        movi            v4.8h, #0
         calc_epelb      v4, \src0, \src1, \src2, \src3
         subs            w3, w3, #1
         st1             {v4.4h}, [x0], x10
@@ -1333,7 +1332,6 @@ endfunc
 
 .macro epel_v6_step src0, src1, src2, src3
         ld1             {\src3\().8b}, [x1], x2
-        movi            v4.8h, #0
         calc_epelb      v4, \src0, \src1, \src2, \src3
         st1             {v4.d}[0], [x0], #8
         subs            w3, w3, #1
@@ -1354,7 +1352,6 @@ endfunc
 
 .macro epel_v8_step src0, src1, src2, src3
         ld1             {\src3\().8b}, [x1], x2
-        movi            v4.8h, #0
         calc_epelb      v4, \src0, \src1, \src2, \src3
         subs            w3, w3, #1
         st1             {v4.8h}, [x0], x10
@@ -1374,8 +1371,6 @@ endfunc
 
 .macro epel_v12_step src0, src1, src2, src3
         ld1             {\src3\().16b}, [x1], x2
-        movi            v4.8h, #0
-        movi            v5.8h, #0
         calc_epelb      v4, \src0, \src1, \src2, \src3
         calc_epelb2     v5, \src0, \src1, \src2, \src3
         str             q4, [x0]
@@ -1398,8 +1393,6 @@ endfunc
 
 .macro epel_v16_step src0, src1, src2, src3
         ld1             {\src3\().16b}, [x1], x2
-        movi            v4.8h, #0
-        movi            v5.8h, #0
         calc_epelb      v4, \src0, \src1, \src2, \src3
         calc_epelb2     v5, \src0, \src1, \src2, \src3
         subs            w3, w3, #1
@@ -1420,9 +1413,6 @@ endfunc
 
 .macro epel_v24_step src0, src1, src2, src3, src4, src5, src6, src7, src8, src9, src10, src11
         ld1             {\src9\().8b, \src10\().8b, \src11\().8b}, [x1], x2
-        movi            v4.8h, #0
-        movi            v5.8h, #0
-        movi            v6.8h, #0
         calc_epelb      v4, \src0, \src3, \src6, \src9
         calc_epelb      v5, \src1, \src4, \src7, \src10
         calc_epelb      v6, \src2, \src5, \src8, \src11
@@ -1443,10 +1433,6 @@ endfunc
 
 .macro epel_v32_step src0, src1, src2, src3, src4, src5, src6, src7
         ld1             {\src6\().16b, \src7\().16b}, [x1], x2
-        movi            v4.8h, #0
-        movi            v5.8h, #0
-        movi            v6.8h, #0
-        movi            v7.8h, #0
         calc_epelb      v4, \src0, \src2, \src4, \src6
         calc_epelb2     v5, \src0, \src2, \src4, \src6
         calc_epelb      v6, \src1, \src3, \src5, \src7
@@ -1468,12 +1454,6 @@ endfunc
 
 .macro epel_v48_step src0, src1, src2, src3, src4, src5, src6, src7, src8, src9, src10, src11
         ld1             {\src9\().16b, \src10\().16b, \src11\().16b}, [x1], x2
-        movi            v4.8h, #0
-        movi            v5.8h, #0
-        movi            v6.8h, #0
-        movi            v7.8h, #0
-        movi            v28.8h, #0
-        movi            v29.8h, #0
         calc_epelb      v4,  \src0, \src3, \src6, \src9
         calc_epelb2     v5,  \src0, \src3, \src6, \src9
         calc_epelb      v6,  \src1, \src4, \src7, \src10
@@ -1498,14 +1478,6 @@ endfunc
 
 .macro epel_v64_step src0, src1, src2, src3, src4, src5, src6, src7, src8, src9, src10, src11, src12, src13, src14, src15
         ld1             {\src12\().16b-\src15\().16b}, [x1], x2
-        movi            v4.8h, #0
-        movi            v5.8h, #0
-        movi            v6.8h, #0
-        movi            v7.8h, #0
-        movi            v8.8h, #0
-        movi            v9.8h, #0
-        movi            v10.8h, #0
-        movi            v11.8h, #0
         calc_epelb      v4,  \src0, \src4, \src8,  \src12
         calc_epelb2     v5,  \src0, \src4, \src8,  \src12
         calc_epelb      v6,  \src1, \src5, \src9,  \src13
