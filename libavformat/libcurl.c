@@ -173,8 +173,9 @@ struct CurlContext {
     pthread_cond_t  cond;
     AVFifo         *fifo;
     int             paused;      /* write callback paused, FIFO was full */
-    int             status;      /* current stream status (AVERROR code) */
     int             aborted;     /* transfer should stop (open was interrupted) */
+    int             status;      /* current stream status (AVERROR code) */
+    CURLcode        curl_status; /* corresponding libcurl status code */
     int64_t         icy_metaint; /* in-band metadata interval, 0 if none */
 };
 
@@ -200,6 +201,18 @@ static int curlcode_to_averror(CURLcode code)
     }
 }
 
+static int curlmcode_to_curlcode(CURLMcode code)
+{
+    switch (code) {
+    case CURLM_OK:                       return CURLE_OK;
+    case CURLM_UNKNOWN_OPTION:           return CURLE_UNKNOWN_OPTION;
+    case CURLM_OUT_OF_MEMORY:            return CURLE_OUT_OF_MEMORY;
+    case CURLM_ABORTED_BY_CALLBACK:      return CURLE_ABORTED_BY_CALLBACK;
+    case CURLM_UNRECOVERABLE_POLL:       return CURLE_UNRECOVERABLE_POLL;
+    default:                             return CURLE_FAILED_INIT;
+    }
+}
+
 static int is_recoverable(CURLcode code)
 {
     switch (code) {
@@ -221,6 +234,15 @@ static int is_recoverable(CURLcode code)
 /* ------------------------------------------------------------------------- */
 /* curl callbacks (run on the loop thread)                                   */
 /* ------------------------------------------------------------------------- */
+
+static void update_status_locked(CurlContext *c, int status, CURLcode code)
+{
+    if (c->status)
+        return;
+
+    c->status = status;
+    c->curl_status = code;
+}
 
 static size_t write_callback(char *ptr, size_t size, size_t nmemb, void *userdata)
 {
@@ -505,8 +527,7 @@ static size_t header_callback(char *ptr, size_t size, size_t nitems, void *userd
         if (!verify_content_range(c, content_start, content_end, content_total)) {
             c->loop->num_errors++;
             c->stream_ok = 0;
-            if (!c->status)
-                c->status = AVERROR(EIO);
+            update_status_locked(c, AVERROR(EIO), CURLE_OK);
             pthread_cond_broadcast(&c->cond);
             pthread_mutex_unlock(&c->mutex);
             return len;
@@ -570,8 +591,7 @@ static size_t header_callback(char *ptr, size_t size, size_t nitems, void *userd
     } else {
         c->loop->num_errors++;
         c->stream_ok = 0;
-        if (!c->status)
-            c->status = ff_http_averror(status, AVERROR(EIO));
+        update_status_locked(c, ff_http_averror(status, AVERROR(EIO)), CURLE_OK);
     }
     c->probed = 1;
     pthread_cond_broadcast(&c->cond);
@@ -627,8 +647,7 @@ static void start_request(CurlContext *c)
                curl_multi_strerror(res));
         c->active = 0;
         pthread_mutex_lock(&c->mutex);
-        if (!c->status)
-            c->status = AVERROR(EIO);
+        update_status_locked(c, AVERROR(EIO), curlmcode_to_curlcode(res));
         pthread_cond_broadcast(&c->cond);
         pthread_mutex_unlock(&c->mutex);
     }
@@ -669,10 +688,9 @@ static void on_done(CurlContext *c, CURLcode code)
     received = c->request_received;
     /* Advance past delivered bytes so a retry or seek resumes at the right offset. */
     if (received > INT64_MAX - c->request_start) {
-        if (!c->status)
-            c->status = AVERROR(EIO);
         received = 0;
         aborted  = 1;
+        update_status_locked(c, AVERROR(EIO), code);
         pthread_cond_broadcast(&c->cond);
     }
     c->request_start    += received;
@@ -685,9 +703,8 @@ static void on_done(CurlContext *c, CURLcode code)
         pthread_mutex_lock(&c->mutex);
         c->probed    = 1;
         c->stream_ok = 0;
-        if (!c->status)
-            c->status = curlcode_to_averror(code);
         c->loop->num_errors++;
+        update_status_locked(c, curlcode_to_averror(code), code);
         pthread_cond_broadcast(&c->cond);
         pthread_mutex_unlock(&c->mutex);
         return;
@@ -715,6 +732,7 @@ static void on_done(CurlContext *c, CURLcode code)
         }
         pthread_mutex_lock(&c->mutex);
         c->status = AVERROR_EOF;
+        c->curl_status = CURLE_OK;
         pthread_cond_broadcast(&c->cond);
         pthread_mutex_unlock(&c->mutex);
         return;
@@ -737,8 +755,7 @@ static void on_done(CurlContext *c, CURLcode code)
 
     /* Unhandled generic curl error */
     pthread_mutex_lock(&c->mutex);
-    if (!c->status)
-        c->status = curlcode_to_averror(code);
+    update_status_locked(c, curlcode_to_averror(code), code);
     pthread_cond_broadcast(&c->cond);
     pthread_mutex_unlock(&c->mutex);
 }
@@ -793,6 +810,7 @@ static void execute_command(CurlLoop *loop, CurlCmd *cmd)
         const int was_paused = c->paused;
         c->paused = 0;
         c->status = 0;
+        c->curl_status = 0;
         pthread_mutex_unlock(&c->mutex);
         c->request_start    = cmd->pos;
         c->request_received = 0;
