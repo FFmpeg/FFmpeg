@@ -3455,6 +3455,10 @@ static int FUNC(slice_header) (CodedBitstreamContext *ctx, RWContext *rw,
             for (i = 0; i < current->curr_subpic_idx; i++) {
                 slice_idx += pps->num_slices_in_subpic[i];
             }
+            if (slice_idx > pps->pps_num_slices_in_pic_minus1) {
+                av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid slice address %d\n", slice_idx);
+                return AVERROR_INVALIDDATA;
+            }
 
             if (pps->pps_single_slice_per_subpic_flag) {
                 const int width_in_ctus = sps->sps_subpic_width_minus1[slice_idx] + 1;
