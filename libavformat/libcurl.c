@@ -43,6 +43,7 @@
 #include "avformat.h"
 #include "http.h"
 #include "internal.h"
+#include "network.h"
 #include "url.h"
 #include "version.h"
 
@@ -58,6 +59,12 @@
 
 /* Largest in-band metadata block: the length byte counts 16 byte units. */
 #define ICY_MAX_BLOCK (255 * 16)
+
+/* How many microseconds to wait before retrying a failed request; grows
+ * exponentially (2^) with each consecutive failure up to MAX_US. Note that the
+ * first retry is always immediate. */
+#define CURL_RETRY_BASE_US 1000000
+#define CURL_RETRY_MAX_US  60000000
 
 typedef struct CurlContext CurlContext;
 
@@ -140,6 +147,7 @@ struct CurlContext {
     /* URL thread bookkeeping, not touched by loop thread */
     int64_t         logical_pos;    /* next byte url_read() will return, caller side */
     int             retry_count;    /* consecutive recoverable failures */
+    int64_t         retry_time;     /* timestamp of next retry */
     int64_t         icy_data_read;    /* payload bytes since the last block, caller side */
     int             icy_block_len;    /* -1 while the length byte is pending */
     int             icy_block_filled;
@@ -1252,31 +1260,52 @@ static int wait_for_probe(CurlContext *c)
     return ret;
 }
 
-static int retry_request_locked(URLContext *h)
+/* Scales by the recurrence relationship x := 2x + 1, i.e. 2^n - 1 */
+static int64_t retry_delay(CurlContext *c)
+{
+    int64_t factor = INT64_MAX >> FFMAX(63 - c->retry_count, 0);
+    if (factor >= CURL_RETRY_MAX_US / CURL_RETRY_BASE_US)
+        return CURL_RETRY_MAX_US;
+    return factor * CURL_RETRY_BASE_US;
+}
+
+static int retry_request_locked(URLContext *h, int nonblock)
 {
     CurlContext *c = h->priv_data;
     const int status = c->status;
     const CURLcode code = c->curl_status;
     pthread_mutex_unlock(&c->mutex);
 
-    if (c->retry_count >= c->max_retries) {
-        av_log(h, AV_LOG_ERROR, "Maximum number of retries (%d) reached\n",
-               c->max_retries);
-        return status;
+    if (!c->retry_time) {
+        if (c->retry_count >= c->max_retries) {
+            av_log(h, AV_LOG_ERROR, "Maximum number of retries (%d) reached\n",
+                c->max_retries);
+            return status;
+        }
+
+        const int64_t delay = retry_delay(c);
+        c->retry_time = av_gettime_relative() + delay;
+        c->retry_count++;
+
+        av_log(h, AV_LOG_WARNING, "Retrying (#%d) from %"PRId64" in %.3fs "
+               "after: %s (%s)\n", c->retry_count, c->logical_pos,
+               delay * 1e-6, av_err2str(status),
+               curl_easy_strerror(code));
     }
 
-    c->retry_count++;
-    av_log(h, AV_LOG_WARNING, "Retrying (#%d) from %"PRId64" after: %s (%s)\n",
-           c->retry_count, c->logical_pos, av_err2str(status), curl_easy_strerror(code));
-
-    /**
-     * Use a synchronous request to ensure that the seek is registered, and
-     * the reset of c->state is observable, before the next libcurl_read()
-     * call, otherwise this might hit the exact same retry path a second time.
-     */
-    int ret = curl_dispatch(c->loop, CMD_SEEK, c, c->logical_pos, 1);
-    if (ret < 0)
-        return ret;
+    const int64_t sleep_us = c->retry_time - av_gettime_relative();
+    if (sleep_us > 0 && !nonblock) {
+        av_usleep(FFMIN(sleep_us, CURL_WAIT_US));
+    } else if (sleep_us <= 0) {
+        /* Use a synchronous request to ensure that the seek is registered, and
+         * the reset of c->state is observable, before the next libcurl_read()
+         * call, otherwise this might hit the exact same retry path a second
+         * time. */
+        int ret = curl_dispatch(c->loop, CMD_SEEK, c, c->logical_pos, 1);
+        if (ret < 0)
+            return ret;
+        c->retry_time = 0;
+    }
 
     return AVERROR(EAGAIN); /* allow caller to handle interrupts and retry */
 }
@@ -1434,12 +1463,13 @@ static int libcurl_read(URLContext *h, unsigned char *buf, int size)
             c->icy_data_read += ret;
             c->logical_pos   += ret;
             c->retry_count    = 0;
+            c->retry_time     = 0;
             break;
         }
 
         if (c->status) {
             if (c->seekable && is_recoverable(c->curl_status))
-                return retry_request_locked(h);
+                return retry_request_locked(h, nonblock);
             if (c->status == AVERROR_EOF && c->icy_block_len >= 0)
                 av_log(h, AV_LOG_WARNING,
                        "Stream ended inside an ICY metadata block\n");
@@ -1511,6 +1541,7 @@ static int64_t libcurl_seek(URLContext *h, int64_t pos, int whence)
     curl_dispatch(c->loop, CMD_SEEK, c, newpos, 1);
     c->logical_pos = newpos;
     c->retry_count = 0;
+    c->retry_time = 0;
 
     return newpos;
 }
