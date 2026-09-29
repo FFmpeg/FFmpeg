@@ -300,4 +300,5 @@ const FFFilter ff_vf_fsync = {
     .formats_state = FF_FILTER_FORMATS_PASSTHROUGH,
     FILTER_INPUTS(ff_video_default_filterpad),
     FILTER_OUTPUTS(fsync_outputs),
+    .flags_internal = FF_FILTER_FLAG_DYNAMIC_FRAME_PARAMS,
 };

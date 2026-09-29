@@ -610,6 +610,7 @@ const FFFilter ff_vf_sendcmd = {
     .priv_size   = sizeof(SendCmdContext),
     FILTER_INPUTS(sendcmd_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
+    .flags_internal = FF_FILTER_FLAG_DYNAMIC_FRAME_PARAMS,
 };
 
 #endif

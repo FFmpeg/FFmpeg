@@ -40,4 +40,5 @@ const FFFilter ff_vsink_nullsink = {
     .p.outputs   = NULL,
     .priv_size   = 0,
     FILTER_INPUTS(avfilter_vsink_nullsink_inputs),
+    .flags_internal = FF_FILTER_FLAG_DYNAMIC_FRAME_PARAMS,
 };

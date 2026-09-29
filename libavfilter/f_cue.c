@@ -108,6 +108,7 @@ const FFFilter ff_vf_cue = {
     FILTER_INPUTS(ff_video_default_filterpad),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     .activate    = activate,
+    .flags_internal = FF_FILTER_FLAG_DYNAMIC_FRAME_PARAMS,
 };
 #endif /* CONFIG_CUE_FILTER */
 

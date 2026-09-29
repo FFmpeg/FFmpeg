@@ -358,6 +358,7 @@ const FFFilter ff_vf_trim = {
     .priv_size   = sizeof(TrimContext),
     FILTER_INPUTS(trim_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
+    .flags_internal = FF_FILTER_FLAG_DYNAMIC_FRAME_PARAMS,
 };
 #endif // CONFIG_TRIM_FILTER
 

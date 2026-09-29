@@ -350,6 +350,7 @@ const FFFilter ff_vf_setpts = {
 
     FILTER_INPUTS(avfilter_vf_setpts_inputs),
     FILTER_OUTPUTS(outputs_video),
+    .flags_internal = FF_FILTER_FLAG_DYNAMIC_FRAME_PARAMS,
 };
 #endif /* CONFIG_SETPTS_FILTER */
 

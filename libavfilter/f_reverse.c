@@ -155,6 +155,7 @@ const FFFilter ff_vf_reverse = {
     .uninit      = uninit,
     FILTER_INPUTS(reverse_inputs),
     FILTER_OUTPUTS(reverse_outputs),
+    .flags_internal = FF_FILTER_FLAG_DYNAMIC_FRAME_PARAMS,
 };
 
 #endif /* CONFIG_REVERSE_FILTER */
