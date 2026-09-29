@@ -28,6 +28,7 @@ int main(void)
 {
     AVRational64 a64,b64,r64;
     int i;
+    int ret = 0;
 
     for (a64.num = -2; a64.num <= 2; a64.num++) {
         for (a64.den = -2; a64.den <= 2; a64.den++) {
@@ -40,10 +41,12 @@ int main(void)
                                   adbl >  bdbl ?  1 :
                                   adbl <  bdbl ? -1 : INT_MIN;
 
-                    if (c != d)
+                    if (c != d) {
                         av_log(NULL, AV_LOG_ERROR, "%lld/%lld %lld/%lld, %d != %d\n",
                                (long long) a64.num, (long long) a64.den,
                                (long long) b64.num, (long long) b64.den, c,d);
+                        ret = 1;
+                    }
 
                     // Check arithmetic result
                     if (a64.den && b64.den) {
@@ -54,6 +57,7 @@ int main(void)
                         if (rdbl != adbl + bdbl) {
                             av_log(NULL, AV_LOG_ERROR, "%f + %f = %f != %f\n",
                                    adbl, bdbl, rdbl, adbl + bdbl);
+                            ret = 1;
                         }
 
                         r64 = ff_mul_q64(a64, b64);
@@ -61,6 +65,7 @@ int main(void)
                         if (rdbl != adbl * bdbl) {
                             av_log(NULL, AV_LOG_ERROR, "%f * %f = %f != %f\n",
                                    adbl, bdbl, rdbl, adbl * bdbl);
+                            ret = 1;
                         }
                     }
 
@@ -73,6 +78,7 @@ int main(void)
                         av_log(NULL, AV_LOG_ERROR, "%lld/%lld != %lld/%lld\n",
                                (long long) a64.num, (long long) a64.den,
                                (long long) r64.num, (long long) r64.den);
+                        ret = 1;
                     }
 
                     if (b64.num) {
@@ -85,6 +91,7 @@ int main(void)
                             av_log(NULL, AV_LOG_ERROR, "%lld/%lld != %lld/%lld\n",
                                    (long long) a64.num, (long long) a64.den,
                                    (long long) r64.num, (long long) r64.den);
+                            ret = 1;
                         }
                     }
                 }
@@ -118,6 +125,7 @@ int main(void)
                        (long long) b.num, (long long) b.den,
                        (long long) r.num, (long long) r.den,
                        (long long) c.num, (long long) c.den);
+                ret = 1;
             }
         }
     }
@@ -147,9 +155,10 @@ int main(void)
                        (long long) b.num, (long long) b.den,
                        (long long) r.num, (long long) r.den,
                        (long long) c.num, (long long) c.den);
+                ret = 1;
             }
         }
     }
 
-    return 0;
+    return ret;
 }
