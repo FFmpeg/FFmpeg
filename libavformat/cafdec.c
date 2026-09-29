@@ -277,6 +277,8 @@ static int read_pakt_chunk(AVFormatContext *s, int64_t size)
     st->nb_frames  = avio_rb64(pb); /* valid frames */
     priming        = avio_rb32(pb); /* priming frames */
     caf->remainder = avio_rb32(pb); /* remainder frames */
+    if (st->nb_frames < 0 || INT64_MAX - priming - caf->remainder < st->nb_frames)
+        return AVERROR_INVALIDDATA;
 
     caf->frame_cnt = -(int64_t)priming;
     st->codecpar->initial_padding = priming;
