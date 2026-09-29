@@ -152,37 +152,37 @@ int av_find_nearest_q_idx(AVRational q, const AVRational* q_list)
 }
 
 uint32_t av_q2intfloat(AVRational q) {
-    int64_t n;
+    int64_t n, num = q.num, den = q.den;
     int shift;
-    int sign = 0;
+    uint32_t sign = 0;
 
-    if (q.den < 0) {
-        q.den *= -1;
-        q.num *= -1;
+    if (den < 0) {
+        den = -den;
+        num = -num;
     }
-    if (q.num < 0) {
-        q.num *= -1;
-        sign = 1;
+    if (num < 0) {
+        num = -num;
+        sign = 1U << 31;
     }
 
-    if (!q.num && !q.den) return 0xFFC00000;
-    if (!q.num) return 0;
-    if (!q.den) return 0x7F800000 | (q.num & 0x80000000);
+    if (!num && !den) return 0xFFC00000;
+    if (!num) return 0;
+    if (!den) return sign | 0x7F800000;
 
-    shift = 23 + av_log2(q.den) - av_log2(q.num);
-    if (shift >= 0) n = av_rescale(q.num, 1LL<<shift, q.den);
-    else            n = av_rescale(q.num, 1, ((int64_t)q.den) << -shift);
+    shift = 23 + av_log2(den) - av_log2(num);
+    if (shift >= 0) n = av_rescale(num, 1LL<<shift, den);
+    else            n = av_rescale(num, 1, den << -shift);
 
     shift -= n >= (1<<24);
     shift += n <  (1<<23);
 
-    if (shift >= 0) n = av_rescale(q.num, 1LL<<shift, q.den);
-    else            n = av_rescale(q.num, 1, ((int64_t)q.den) << -shift);
+    if (shift >= 0) n = av_rescale(num, 1LL<<shift, den);
+    else            n = av_rescale(num, 1, den << -shift);
 
     av_assert1(n <  (1<<24));
     av_assert1(n >= (1<<23));
 
-    return sign<<31 | (150-shift)<<23 | (n - (1<<23));
+    return sign | (150-shift)<<23 | (n - (1<<23));
 }
 
 AVRational av_gcd_q(AVRational a, AVRational b, int max_den, AVRational def)
