@@ -186,6 +186,33 @@ FATE_FFPROBE_DEMUX-$(call DEMDEC, MPEGTS HLS) += fate-ts-timed-id3-hls-demux
 fate-ts-timed-id3-hls-demux: tests/data/id3.m3u8
 fate-ts-timed-id3-hls-demux: CMD = ffprobe_demux $(TARGET_PATH)/tests/data/id3.m3u8
 
+tests/data/hls-webvtt.m3u8: TAG = GEN
+tests/data/hls-webvtt.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
+	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
+        -f lavfi -i "aevalsrc=0:d=6" -c:a mp2fixed -flags +bitexact -muxdelay 0 -muxpreload 0 \
+        -f hls -hls_time 2 -hls_list_size 0 \
+        -hls_segment_filename $(TARGET_PATH)/tests/data/hls-webvtt-a%d.ts \
+        $(TARGET_PATH)/tests/data/hls-webvtt-a.m3u8 2>/dev/null
+	$(Q)printf '#EXTM3U\n#EXT-X-TARGETDURATION:2\n#EXTINF:2,\nhls-webvtt-s0.vtt\n#EXTINF:2,\nhls-webvtt-s1.vtt\n#EXTINF:2,\nhls-webvtt-s2.vtt\n#EXT-X-ENDLIST\n' > tests/data/hls-webvtt-s.m3u8
+	$(Q)printf 'WEBVTT\n\n00:00.500 --> 00:01.500\nfirst\n' > tests/data/hls-webvtt-s0.vtt
+	$(Q)printf 'WEBVTT\n\n00:02.500 --> 00:03.500\nsecond\n' > tests/data/hls-webvtt-s1.vtt
+	$(Q)printf 'WEBVTT\n\n00:04.500 --> 00:05.500\nthird\n' > tests/data/hls-webvtt-s2.vtt
+	$(Q)printf '#EXTM3U\n#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="s",NAME="en",URI="hls-webvtt-s.m3u8"\n#EXT-X-STREAM-INF:BANDWIDTH=64000,SUBTITLES="s"\nhls-webvtt-a.m3u8\n' > $@
+
+FATE_FFMPEG-$(call FILTERDEMDECENCMUX, AEVALSRC ARESAMPLE, HLS MPEGTS WEBVTT, MP2 PCM_F64LE, MP2FIXED, HLS MPEGTS NULL WEBVTT, LAVFI_INDEV MPEGAUDIO_PARSER PIPE_PROTOCOL) += fate-hls-webvtt-demux
+fate-hls-webvtt-demux: tests/data/hls-webvtt.m3u8
+fate-hls-webvtt-demux: CLEANFILES = tests/data/hls-webvtt*.m3u8 tests/data/hls-webvtt-*.ts tests/data/hls-webvtt-*.vtt
+fate-hls-webvtt-demux: CMD = fmtstdout webvtt -copyts -i $(TARGET_PATH)/tests/data/hls-webvtt.m3u8 -map 0:a -c copy -f null - -map 0:s -c copy
+
+tests/data/hls-self-variant.m3u8: TAG = GEN
+tests/data/hls-self-variant.m3u8: | tests/data
+	$(Q)printf '#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=64000\nhls-self-variant.m3u8\n#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="s",NAME="en",URI="hls-self-variant-missing.m3u8"\n#EXTINF:2,\nhls-self-variant.vtt\n' > $@
+
+FATE_FFPROBE-$(call DEMDEC, HLS) += fate-hls-self-variant-demux
+fate-hls-self-variant-demux: tests/data/hls-self-variant.m3u8
+fate-hls-self-variant-demux: CLEANFILES = tests/data/hls-self-variant.m3u8
+fate-hls-self-variant-demux: CMD = ffprobe_demux $(TARGET_PATH)/tests/data/hls-self-variant.m3u8
+
 FATE_SAMPLES_DEMUX-$(call PARSERDEM, JPEGXS, IMAGE_JPEGXS_PIPE, CONCAT_PROTOCOL) += fate-jxs-concat-demux
 fate-jxs-concat-demux: CMD = framecrc "-i concat:$(TARGET_SAMPLES)/jxs/lena.jxs|$(TARGET_SAMPLES)/jxs/lena.jxs -c:v copy"
 
