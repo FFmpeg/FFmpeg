@@ -252,6 +252,19 @@ fate-hls-iframes-single-fmp4: CLEANFILES = tests/data/hls_iframes_single_fmp4.m3
 fate-hls-iframes-single-fmp4: CMD = sed -n -e /^\#EXT-X-MAP:/p -e /^\#EXT-X-BYTERANGE:/p $(TARGET_PATH)/tests/data/hls_iframes_single_fmp4.m3u8
 fate-hls-iframes-single-fmp4: CMP = diff
 
+tests/data/hls_fmp4_big_init.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
+	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
+	-filter_complex "aevalsrc=cos(2*PI*t)*sin(2*PI*(440+4*t)*t):d=2:s=16000,asplit=100" \
+	-codec:a mp2fixed -b:a 8k -bitexact -f hls -hls_time 1 -hls_list_size 0 \
+	-hls_segment_type fmp4 -hls_fmp4_init_filename hls_fmp4_big_init.mp4 \
+	-hls_segment_filename $(TARGET_PATH)/tests/data/hls_fmp4_big_init_%d.m4s \
+	$(TARGET_PATH)/tests/data/hls_fmp4_big_init.m3u8 2>/dev/null
+
+FATE_HLSENC_LAVFI-$(call ALLYES, AEVALSRC_FILTER ASPLIT_FILTER ARESAMPLE_FILTER MP2FIXED_ENCODER HLS_MUXER MP4_MUXER HLS_DEMUXER MOV_DEMUXER FILE_PROTOCOL) += fate-hls-fmp4-big-init
+fate-hls-fmp4-big-init: tests/data/hls_fmp4_big_init.m3u8
+fate-hls-fmp4-big-init: CLEANFILES = tests/data/hls_fmp4_big_init.m3u8 tests/data/hls_fmp4_big_init.mp4 tests/data/hls_fmp4_big_init_*.m4s
+fate-hls-fmp4-big-init: CMD = framecrc -i $(TARGET_PATH)/tests/data/hls_fmp4_big_init.m3u8 -map 0:a:99 -c copy
+
 FATE_HLSENC_LAVFI-yes := $(if $(call FRAMECRC), $(FATE_HLSENC_LAVFI-yes))
 
 FATE_FFMPEG += $(FATE_HLSENC_LAVFI-yes)
