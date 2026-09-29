@@ -1950,8 +1950,11 @@ static int init_subtitle_context(struct playlist *pls)
     pls->ctx->io_open  = nested_io_open;
 
     ret = ff_copy_whiteblacklists(pls->ctx, pls->parent);
-    if (ret < 0)
+    if (ret < 0) {
+        avformat_free_context(pls->ctx);
+        pls->ctx = NULL;
         return ret;
+    }
 
     in_fmt = av_find_input_format("webvtt");
     av_dict_copy(&opts, c->seg_format_opts, 0);
