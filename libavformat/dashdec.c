@@ -1888,7 +1888,7 @@ restart:
     if (v->init_sec_buf_read_offset < v->init_sec_data_len) {
         /* Push init section out first before first actual fragment */
         int copy_size = FFMIN(v->init_sec_data_len - v->init_sec_buf_read_offset, buf_size);
-        memcpy(buf, v->init_sec_buf, copy_size);
+        memcpy(buf, v->init_sec_buf + v->init_sec_buf_read_offset, copy_size);
         v->init_sec_buf_read_offset += copy_size;
         ret = copy_size;
         goto end;
