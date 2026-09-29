@@ -1156,11 +1156,11 @@ static int parse_playlist(HLSContext *c, const char *url,
             av_log(c->ctx, AV_LOG_WARNING, "Media sequence changed unexpectedly: %"PRId64" -> %"PRId64"\n",
                    prev_start_seq_no, pls->start_seq_no);
         }
-        free_segment_dynarray(prev_segments, prev_n_segments);
-        av_freep(&prev_segments);
     }
 
 fail:
+    free_segment_dynarray(prev_segments, prev_n_segments);
+    av_freep(&prev_segments);
     if (pls)
         pls->last_load_time = load_start;
     av_free(new_url);
