@@ -350,6 +350,7 @@ void ff_id3v2_start(ID3v2EncContext *id3, AVIOContext *pb, int id3v2_version,
                     const char *magic)
 {
     id3->version = id3v2_version;
+    id3->len = 0;
 
     avio_wb32(pb, MKBETAG(magic[0], magic[1], magic[2], id3v2_version));
     avio_w8(pb, 0);

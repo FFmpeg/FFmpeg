@@ -2,6 +2,10 @@
 #fate-async: libavformat/tests/async$(EXESUF)
 #fate-async: CMD = run libavformat/tests/async
 
+FATE_LIBAVFORMAT-$(CONFIG_MP3_MUXER) += fate-id3v2enc
+fate-id3v2enc: libavformat/tests/id3v2enc$(EXESUF)
+fate-id3v2enc: CMD = run libavformat/tests/id3v2enc$(EXESUF)
+
 FATE_LIBAVFORMAT += fate-mkdir
 fate-mkdir: libavformat/tests/mkdir$(EXESUF)
 fate-mkdir: CMD = run libavformat/tests/mkdir$(EXESUF)

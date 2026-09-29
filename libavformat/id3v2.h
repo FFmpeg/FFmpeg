@@ -130,7 +130,7 @@ void ff_id3v2_read(AVFormatContext *s, const char *magic, ID3v2ExtraMeta **extra
                    unsigned int max_search_size);
 
 /**
- * Initialize an ID3v2 tag.
+ * Initialize the encoding context and write the header for a new ID3v2 tag.
  */
 void ff_id3v2_start(ID3v2EncContext *id3, AVIOContext *pb, int id3v2_version,
                     const char *magic);

@@ -801,6 +801,7 @@ TESTPROGS-$(CONFIG_HTTP_PROTOCOL)        += http
 TESTPROGS-$(CONFIG_NETWORK)              += noproxy
 TESTPROGS-$(CONFIG_SRTP)                 += srtp
 TESTPROGS-$(CONFIG_IMF_DEMUXER)          += imf
+TESTPROGS-$(CONFIG_MP3_MUXER)            += id3v2enc
 TESTPROGS-$(CONFIG_OGG_MUXER)            += ogg_pages
 
 TOOLS     = aviocat                                                     \
