@@ -27,17 +27,38 @@
 #include "libavutil/log.h"
 
 #include <stdio.h>
+#include <string.h>
 
 static const SoftFloat FLOAT_0_017776489257 = {0x1234, 12};
 static const SoftFloat FLOAT_1374_40625 = {0xabcd, 25};
 static const SoftFloat FLOAT_0_1249694824218 = {0xFFF, 15};
 
+static double add_mul(int i)
+{
+    double d1 = i, d2 = i/100.0;
 
-int main(void){
+    for (int j = 0; j < 1000; j++)
+        d1 = (d1+1)*d2;
+    return d1;
+}
+
+static SoftFloat add_mul_sf(int i)
+{
+    SoftFloat one = av_int2sf(1, 0);
+    SoftFloat sf1 = av_int2sf(i, 0);
+    SoftFloat sf2 = av_div_sf(av_int2sf(i, 2), av_int2sf(200, 3));
+
+    for (int j = 0; j < 1000; j++)
+        sf1 = av_mul_sf(av_add_sf(sf1, one), sf2);
+    return sf1;
+}
+
+int main(int argc, char **argv){
     SoftFloat one= av_int2sf(1, 0);
     SoftFloat sf1, sf2, sf3;
     double d1, d2, d3;
     int i, j;
+    int bench = argc > 1 && !strcmp(argv[1], "-t");
     av_log_set_level(AV_LOG_DEBUG);
 
     d1= 1;
@@ -53,26 +74,24 @@ int main(void){
     printf("test1 sf    =%d\n", av_sf2int(sf1, 24));
 
 
-    for(i= 0; i<100; i++){
-        START_TIMER
-        d1= i;
-        d2= i/100.0;
-        for(j= 0; j<1000; j++){
-            d1= (d1+1)*d2;
+    if (bench) {
+        for(i= 0; i<100; i++){
+            START_TIMER
+            d1= add_mul(i);
+            STOP_TIMER("float add mul")
         }
-        STOP_TIMER("float add mul")
-    }
+    } else
+        d1= add_mul(99);
     printf("test2 double=%d\n", (int)(d1 * (1<<24)));
 
-    for(i= 0; i<100; i++){
-        START_TIMER
-        sf1= av_int2sf(i, 0);
-        sf2= av_div_sf(av_int2sf(i, 2), av_int2sf(200, 3));
-        for(j= 0; j<1000; j++){
-            sf1= av_mul_sf(av_add_sf(sf1, one),sf2);
+    if (bench) {
+        for(i= 0; i<100; i++){
+            START_TIMER
+            sf1= add_mul_sf(i);
+            STOP_TIMER("softfloat add mul")
         }
-        STOP_TIMER("softfloat add mul")
-    }
+    } else
+        sf1= add_mul_sf(99);
     printf("test2 sf    =%d (%d %d)\n", av_sf2int(sf1, 24), sf1.exp, sf1.mant);
 
     d1 = 0.0177764893;
