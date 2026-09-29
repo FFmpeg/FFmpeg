@@ -102,7 +102,6 @@ enum PlaylistType {
 struct playlist {
     char url[MAX_URL_SIZE];
     FFIOContext pb;
-    uint8_t* read_buffer;
     AVIOContext *input;
     int input_read_done;
     int input_reuse;
@@ -1929,19 +1928,21 @@ static int init_subtitle_context(struct playlist *pls)
     HLSContext *c = pls->parent->priv_data;
     const AVInputFormat *in_fmt;
     AVDictionary *opts = NULL;
+    uint8_t *buf;
     int ret;
 
     if (!(pls->ctx = avformat_alloc_context()))
         return AVERROR(ENOMEM);
 
-    pls->read_buffer = av_malloc(INITIAL_BUFFER_SIZE);
-    if (!pls->read_buffer) {
+    buf = av_malloc(INITIAL_BUFFER_SIZE);
+    if (!buf) {
         avformat_free_context(pls->ctx);
         pls->ctx = NULL;
         return AVERROR(ENOMEM);
     }
 
-    ffio_init_context(&pls->pb, pls->read_buffer, INITIAL_BUFFER_SIZE, 0, pls,
+    av_freep(&pls->pb.pub.buffer);
+    ffio_init_context(&pls->pb, buf, INITIAL_BUFFER_SIZE, 0, pls,
                       read_data_subtitle_segment, NULL, NULL);
     pls->pb.pub.seekable = 0;
     pls->ctx->pb       = &pls->pb.pub;
@@ -2412,6 +2413,8 @@ static int hls_read_header(AVFormatContext *s)
         char *url;
         AVDictionary *options = NULL;
         struct segment *seg = NULL;
+        uint8_t *buf;
+        int buf_size;
 
         if (!(pls->ctx = avformat_alloc_context()))
             return AVERROR(ENOMEM);
@@ -2435,19 +2438,21 @@ static int hls_read_header(AVFormatContext *s)
             pls->cur_seq_no = highest_cur_seq_no;
         }
 
-        pls->read_buffer = av_malloc(INITIAL_BUFFER_SIZE);
-        if (!pls->read_buffer){
+        if (pls->is_subtitle) {
+            buf_size = strlen("WEBVTT\n");
+            buf = av_memdup("WEBVTT\n", buf_size);
+        } else {
+            buf_size = INITIAL_BUFFER_SIZE;
+            buf = av_malloc(buf_size);
+        }
+        if (!buf) {
             avformat_free_context(pls->ctx);
             pls->ctx = NULL;
             return AVERROR(ENOMEM);
         }
 
-        if (pls->is_subtitle)
-            ffio_init_context(&pls->pb, (unsigned char*)av_strdup("WEBVTT\n"), (int)strlen("WEBVTT\n"), 0, pls,
-                                       NULL, NULL, NULL);
-        else
-            ffio_init_context(&pls->pb, pls->read_buffer, INITIAL_BUFFER_SIZE, 0, pls,
-                                        read_data_continuous, NULL, NULL);
+        ffio_init_context(&pls->pb, buf, buf_size, 0, pls,
+                          pls->is_subtitle ? NULL : read_data_continuous, NULL, NULL);
 
         /*
          * If encryption scheme is SAMPLE-AES, try to read  ID3 tags of
