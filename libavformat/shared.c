@@ -185,9 +185,7 @@ typedef struct SharedContext {
     int64_t blocks_max; ///< maximum number of blocks to cache
 
     /* cache file */
-    uint8_t *cache_data; ///< optional mapping of the cache file
     char *cache_path;
-    off_t cache_size; ///< size of mapped memory region (for unmapping)
     int fd;
 
     /* space map */
@@ -206,7 +204,6 @@ static int shared_close(URLContext *h)
     SharedContext *s = h->priv_data;
 
     ffurl_close(s->inner);
-    av_file_unmap_shared(s->cache_data, s->cache_size);
     av_file_unmap_shared(s->spacemap, s->map_size);
     if (s->fd != -1)
         close(s->fd);
@@ -221,7 +218,6 @@ static int shared_close(URLContext *h)
     return 0;
 }
 
-static int cache_map(URLContext *h, int64_t filesize);
 static int spacemap_init(URLContext *h, const uint8_t hash[HASH_SIZE]);
 static int spacemap_grow(URLContext *h, int64_t block);
 
@@ -253,10 +249,6 @@ static int set_filesize(URLContext *h, int64_t new_size)
                 "%"PRId64", got: %"PRIu64"!\n", new_size,
                 (uint64_t) atomic_load(&s->spacemap->filesize));
         return ret;
-    } else if (ret) {
-        /* Opportunistically map the file; this also sets the correct filesize.
-         * Ignore errors as this is not critical to the cache logic. */
-        cache_map(h, new_size);
     }
 
     return ret;
@@ -361,14 +353,6 @@ static int shared_open(URLContext *h, const char *arg, int flags, AVDictionary *
         ret = spacemap_grow(h, last_block);
         if (ret < 0)
             goto fail;
-
-        /* If filesize is known, we can directly map the cache file */
-        ret = cache_map(h, filesize);
-        if (ret < 0) {
-            av_log(h, AV_LOG_WARNING, "Failed to map cache file: %s. Falling "
-                   "back to normal read/write\n", av_err2str(ret));
-            ret = 0;
-        }
     }
 
     /* Temporary buffer needed for pread/pwrite() fallback */
@@ -386,31 +370,6 @@ fail:
     if (ret < 0)
         shared_close(h);
     return ret;
-}
-
-static int cache_map(URLContext *h, int64_t filesize)
-{
-    SharedContext *s = h->priv_data;
-    if (s->cache_size >= filesize || filesize > SIZE_MAX)
-        return 0;
-
-    if (s->cache_data) {
-        av_file_unmap_shared(s->cache_data, s->cache_size);
-        s->cache_data = NULL;
-        s->cache_size = 0;
-    }
-
-    /* The mapping extends the file to the file size; it can be shorter if
-     * another process wrote the correct filesize to the header but crashed
-     * right before actually successfully resizing the file. */
-    void *map;
-    int ret = av_file_map_shared(s->fd, filesize, &map);
-    if (ret < 0)
-        return ret;
-
-    s->cache_data = map;
-    s->cache_size = filesize;
-    return 0;
 }
 
 static int spacemap_remap(URLContext *h, size_t map_size)
@@ -573,12 +532,6 @@ static int spacemap_init(URLContext *h, const uint8_t hash[HASH_SIZE])
 
 static int read_cache(SharedContext *s, uint8_t *buf, size_t size, off_t offset)
 {
-    if (s->cache_data) {
-        av_assert1(offset + size <= s->cache_size);
-        memcpy(buf, s->cache_data + offset, size);
-        return 0;
-    }
-
     while (size) {
         ssize_t ret = pread(s->fd, buf, size, offset);
         if (ret <= 0)
@@ -593,12 +546,6 @@ static int read_cache(SharedContext *s, uint8_t *buf, size_t size, off_t offset)
 
 static int write_cache(SharedContext *s, const uint8_t *buf, size_t size, off_t offset)
 {
-    if (s->cache_data) {
-        av_assert1(offset + size <= s->cache_size);
-        memcpy(s->cache_data + offset, buf, size);
-        return 0;
-    }
-
     while (size) {
         ssize_t ret = pwrite(s->fd, buf, size, offset);
         if (ret <= 0)
@@ -666,23 +613,18 @@ retry:
 
         /* We always need to read the entire block to verify integrity */
         block_size = clamp_size(h, block_size, block_pos, filesize);
-        if (s->cache_data) {
-            av_assert1(block_pos + block_size <= s->cache_size);
-            tmp = s->cache_data + block_pos;
-        } else {
-            tmp = s->tmp_buf;
-            ret = read_cache(s, tmp, block_size, block_pos);
-            if (ret < 0) {
-                av_log(h, AV_LOG_ERROR, "Failed to read from cache file: %s\n", av_err2str(ret));
-                if (ret == AVERROR_EOF) { /* e.g. cache appears truncated? */
-                    if (s->retry_corrupt) {
-                        s->num_corrupt++;
-                        goto read_block;
-                    }
-                    ret = AVERROR(EIO); /* don't propagate EOF to caller */
+        tmp = s->tmp_buf;
+        ret = read_cache(s, tmp, block_size, block_pos);
+        if (ret < 0) {
+            av_log(h, AV_LOG_ERROR, "Failed to read from cache file: %s\n", av_err2str(ret));
+            if (ret == AVERROR_EOF) { /* e.g. cache appears truncated? */
+                if (s->retry_corrupt) {
+                    s->num_corrupt++;
+                    goto read_block;
                 }
-                return ret;
+                ret = AVERROR(EIO); /* don't propagate EOF to caller */
             }
+            return ret;
         }
 
         uint32_t crc = get_block_crc(tmp, block_size);
@@ -838,11 +780,7 @@ read_block:
     }
 
     int write_back = 1;
-    if (s->cache_data && acquired) {
-        /* Read directly into memory mapped cache file */
-        tmp = s->cache_data + block_pos;
-        write_back = 0;
-    } else if (size >= block_size && !offset) {
+    if (size >= block_size && !offset) {
         /* Read directly into output buffer if aligned and large enough */
         tmp = buf;
     } else {
