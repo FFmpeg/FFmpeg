@@ -680,10 +680,10 @@ static int swr_convert_internal(struct SwrContext *s, AudioData *out, int out_co
         if(postin != midbuf)
             if ((out_count = resample(s, midbuf, out_count, postin, in_count)) < 0)
                 return out_count;
-        if(midbuf != preout)
+        if(midbuf != preout && out_count)
             swri_rematrix(s, preout, midbuf, out_count, preout==out);
     }else{
-        if(postin != midbuf)
+        if(postin != midbuf && in_count)
             swri_rematrix(s, midbuf, postin, in_count, midbuf==out);
         if(midbuf != preout)
             if ((out_count = resample(s, preout, out_count, midbuf, in_count)) < 0)
