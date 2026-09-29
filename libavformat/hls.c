@@ -657,9 +657,10 @@ static int ensure_playlist(HLSContext *c, struct playlist **pls, const char *url
 {
     if (*pls)
         return 0;
-    if (!new_variant(c, NULL, url, NULL))
+    struct variant *var = new_variant(c, NULL, url, NULL);
+    if (!var)
         return AVERROR(ENOMEM);
-    *pls = c->playlists[c->n_playlists - 1];
+    *pls = var->playlists[0];
     return 0;
 }
 
