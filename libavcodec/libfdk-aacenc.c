@@ -441,8 +441,10 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     }
 
     cpb_props = ff_encode_add_cpb_side_data(avctx);
-    if (!cpb_props)
-        return AVERROR(ENOMEM);
+    if (!cpb_props) {
+        ret = AVERROR(ENOMEM);
+        goto error;
+    }
     cpb_props->max_bitrate =
     cpb_props->min_bitrate =
     cpb_props->avg_bitrate = avctx->bit_rate;
