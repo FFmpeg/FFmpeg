@@ -2816,10 +2816,18 @@ static int opt_serialize(void *obj, int opt_flags, int flags, int *cnt,
     while (o = av_opt_next(obj, o)) {
         if (o->type == AV_OPT_TYPE_CONST)
             continue;
-        if ((flags & AV_OPT_SERIALIZE_OPT_FLAGS_EXACT) && o->flags != opt_flags)
-            continue;
-        else if (((o->flags & opt_flags) != opt_flags))
-            continue;
+        if ((flags & AV_OPT_SERIALIZE_OPT_FLAGS_EXCLUDE)) {
+            if ((flags & AV_OPT_SERIALIZE_OPT_FLAGS_EXACT)) {
+                if (o->flags == opt_flags)
+                    continue;
+            } else if ((o->flags & opt_flags) == opt_flags)
+                continue;
+        } else {
+            if ((flags & AV_OPT_SERIALIZE_OPT_FLAGS_EXACT) && o->flags != opt_flags)
+                continue;
+            else if (((o->flags & opt_flags) != opt_flags))
+                continue;
+        }
         if (flags & AV_OPT_SERIALIZE_SKIP_DEFAULTS && av_opt_is_set_to_default(obj, o) > 0)
             continue;
         if ((ret = av_opt_get(obj, o->name, 0, &buf)) < 0) {

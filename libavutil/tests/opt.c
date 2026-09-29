@@ -385,22 +385,30 @@ int main(void)
             if (ret < 0)
                 printf("Error ret '%d'\n", ret);
             if (av_opt_serialize(&test_ctx, 0, 0, &buf, '=', ',') >= 0) {
-                ChildContext child_ctx = { 0 };
+                ChildContext child_ctx = { .child_num64 = 1, .child_unum = 1 };
                 printf("%s\n", buf);
                 av_free(buf);
                 child_ctx.class = &child_class;
                 test_ctx.child = &child_ctx;
-                if (av_opt_serialize(&test_ctx, 0,
+                printf("Exclude flag EXPORT:\n");
+                if (av_opt_serialize(&test_ctx, AV_OPT_FLAG_EXPORT,
+                                     AV_OPT_SERIALIZE_SKIP_DEFAULTS|AV_OPT_SERIALIZE_SEARCH_CHILDREN|
+                                     AV_OPT_SERIALIZE_OPT_FLAGS_EXCLUDE,
+                                     &buf, '=', ',') >= 0) {
+                    printf("%s\n", buf);
+                    av_free(buf);
+                }
+                printf("Include flag EXPORT:\n");
+                if (av_opt_serialize(&test_ctx, AV_OPT_FLAG_EXPORT,
                                      AV_OPT_SERIALIZE_SKIP_DEFAULTS|AV_OPT_SERIALIZE_SEARCH_CHILDREN,
                                      &buf, '=', ',') >= 0) {
                     printf("%s\n", buf);
                     av_free(buf);
                 }
-                child_ctx.child_num64 = 1;
-                child_ctx.child_unum = 1;
-                printf("Include flag EXPORT:\n");
-                if (av_opt_serialize(&test_ctx, AV_OPT_FLAG_EXPORT,
-                                     AV_OPT_SERIALIZE_SKIP_DEFAULTS|AV_OPT_SERIALIZE_SEARCH_CHILDREN,
+                printf("Exclude flag 1:\n");
+                if (av_opt_serialize(&test_ctx, 1,
+                                     AV_OPT_SERIALIZE_SKIP_DEFAULTS|AV_OPT_SERIALIZE_SEARCH_CHILDREN|
+                                     AV_OPT_SERIALIZE_OPT_FLAGS_EXCLUDE,
                                      &buf, '=', ',') >= 0) {
                     printf("%s\n", buf);
                     av_free(buf);
@@ -412,10 +420,26 @@ int main(void)
                     printf("%s\n", buf);
                     av_free(buf);
                 }
+                printf("Exclude exact match flag 1:\n");
+                if (av_opt_serialize(&test_ctx, 1,
+                                     AV_OPT_SERIALIZE_SKIP_DEFAULTS|AV_OPT_SERIALIZE_SEARCH_CHILDREN|
+                                     AV_OPT_SERIALIZE_OPT_FLAGS_EXACT|AV_OPT_SERIALIZE_OPT_FLAGS_EXCLUDE,
+                                     &buf, '=', ',') >= 0) {
+                    printf("%s\n", buf);
+                    av_free(buf);
+                }
                 printf("Include exact match flag 1:\n");
                 if (av_opt_serialize(&test_ctx, 1,
                                      AV_OPT_SERIALIZE_SKIP_DEFAULTS|AV_OPT_SERIALIZE_SEARCH_CHILDREN|
                                      AV_OPT_SERIALIZE_OPT_FLAGS_EXACT,
+                                     &buf, '=', ',') >= 0) {
+                    printf("%s\n", buf);
+                    av_free(buf);
+                }
+                printf("Exclude exact match flag EXPORT|READONLY:\n");
+                if (av_opt_serialize(&test_ctx, AV_OPT_FLAG_EXPORT | AV_OPT_FLAG_READONLY,
+                                     AV_OPT_SERIALIZE_SKIP_DEFAULTS|AV_OPT_SERIALIZE_SEARCH_CHILDREN|
+                                     AV_OPT_SERIALIZE_OPT_FLAGS_EXACT|AV_OPT_SERIALIZE_OPT_FLAGS_EXCLUDE,
                                      &buf, '=', ',') >= 0) {
                     printf("%s\n", buf);
                     av_free(buf);

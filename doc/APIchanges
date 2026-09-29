@@ -2,6 +2,9 @@ The last version increases of all libraries were on 2026-06-23.
 
 API changes, most recent first:
 
+2026-10-07 - xxxxxxxxxx - lavu 61.12.100 - opt.h
+  Add AV_OPT_SERIALIZE_OPT_FLAGS_EXCLUDE.
+
 2026-10-03 - xxxxxxxxxx - lavu 61.11.100 - pixfmt.h
   Add AV_PIX_FMT_XYZP12LE, AV_PIX_FMT_XYZP12BE, and AV_PIX_FMT_XYZP12.
 

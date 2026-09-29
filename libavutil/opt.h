@@ -1090,8 +1090,17 @@ int av_opt_is_set_to_default_by_name(void *obj, const char *name, int search_fla
 int av_opt_flag_is_set(void *obj, const char *field_name, const char *flag_name);
 
 #define AV_OPT_SERIALIZE_SKIP_DEFAULTS              0x00000001  ///< Serialize options that are not set to default values only.
-#define AV_OPT_SERIALIZE_OPT_FLAGS_EXACT            0x00000002  ///< Serialize options that exactly match opt_flags only.
+/**
+ * Match only options with the exact @ref AVOption.flags flags
+ * in @ref opt_flags, for exclusion or inclusion in serialization.
+ */
+#define AV_OPT_SERIALIZE_OPT_FLAGS_EXACT            0x00000002
 #define AV_OPT_SERIALIZE_SEARCH_CHILDREN            0x00000004  ///< Serialize options in possible children of the given object.
+/**
+ * Serialize options with @ref AVOption.flags flags not
+ * in @ref opt_flags.
+ */
+#define AV_OPT_SERIALIZE_OPT_FLAGS_EXCLUDE          0x00000008
 
 /**
  * Serialize object's options.
