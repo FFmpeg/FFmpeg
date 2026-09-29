@@ -23,6 +23,23 @@
 #include "libavutil/integer.h"
 #include "libavutil/intfloat.h"
 
+static int check_q2intfloat(AVRational q)
+{
+    float f  = av_int2float(av_q2intfloat(q));
+    float f2 = av_q2d(q);
+    int fail;
+
+    if (isnan(f) || isnan(f2))
+        fail = !isnan(f) || !isnan(f2);
+    else if (isinf(f) || isinf(f2))
+        fail = f != f2;
+    else
+        fail = fabs(f - f2) > fabs(f)/5000000;
+    if (fail)
+        av_log(NULL, AV_LOG_ERROR, "%d/%d %f %f\n", q.num, q.den, f, f2);
+    return fail;
+}
+
 int main(void)
 {
     AVRational a,b,r;
@@ -179,18 +196,22 @@ int main(void)
         }
     }
 
-    for (a.den = 1; a.den < 0x100000000U/3; a.den*=3) {
+    for (int64_t den = 1; den <= INT_MAX; den *= 3) {
+        a.den = den;
         for (a.num = -1; a.num < (1<<27); a.num += 1 + a.num/100) {
-            float f  = av_int2float(av_q2intfloat(a));
-            float f2 = av_q2d(a);
-            if (fabs(f - f2) > fabs(f)/5000000) {
-                av_log(NULL, AV_LOG_ERROR, "%d/%d %f %f\n", a.num,
-                       a.den, f, f2);
+            if (check_q2intfloat(a))
                 return 1;
-            }
-
         }
     }
+
+    static const AVRational q2intfloat_list[] = {
+        {INT_MIN, 1}, {1, INT_MIN}, {INT_MIN, INT_MIN}, {INT_MIN, -1}, {-1, INT_MIN},
+        {INT_MAX, INT_MIN}, {INT_MIN, INT_MAX}, {-3, -7}, {3, -7},
+        {1, 0}, {-1, 0}, {INT_MIN, 0}, {0, 0}, {0, 1}, {0, INT_MIN},
+    };
+
+    for (i = 0; i < FF_ARRAY_ELEMS(q2intfloat_list); i++)
+        ret |= check_q2intfloat(q2intfloat_list[i]);
 
     return ret;
 }
