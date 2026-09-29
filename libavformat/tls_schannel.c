@@ -1168,6 +1168,7 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
             schannel_cred.dwFlags = SCH_CRED_MANUAL_CRED_VALIDATION |
                                     SCH_CRED_IGNORE_NO_REVOCATION_CHECK |
                                     SCH_CRED_IGNORE_REVOCATION_OFFLINE;
+        schannel_cred.dwFlags |= SCH_CRED_NO_DEFAULT_CREDS;
 
 #if CONFIG_DTLS_PROTOCOL
         if (s->is_dtls)
