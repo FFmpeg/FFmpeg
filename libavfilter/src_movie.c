@@ -653,6 +653,8 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
 
         if (sscanf(args, "%i|%"SCNi64"|%i %1s", &idx, &ts, &flags, tail) != 3)
             return AVERROR(EINVAL);
+        if (idx + 1U > movie->format_ctx->nb_streams)
+            return AVERROR(EINVAL);
 
         ret = av_seek_frame(movie->format_ctx, idx, ts, flags);
         if (ret < 0)
