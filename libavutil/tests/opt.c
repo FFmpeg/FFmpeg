@@ -130,14 +130,16 @@ typedef struct ChildContext {
     const AVClass *class;
     int64_t child_num64;
     int child_num;
+    unsigned int child_unum;
 } ChildContext;
 
 #undef OFFSET
 #define OFFSET(x) offsetof(ChildContext, x)
 
 static const AVOption child_options[]= {
-    {"child_num64", "set num 64bit", OFFSET(child_num64), AV_OPT_TYPE_INT64, { .i64 = 0 }, 0, 100, 1 },
+    {"child_num64", "set num 64bit", OFFSET(child_num64), AV_OPT_TYPE_INT64, { .i64 = 0 }, 0, 100, 1 | AV_OPT_FLAG_EXPORT | AV_OPT_FLAG_READONLY },
     {"child_num",   "set child_num", OFFSET(child_num),   AV_OPT_TYPE_INT,   { .i64 = 1 }, 0, 100, 1 },
+    {"child_unum",  "set child_unum", OFFSET(child_unum),  AV_OPT_TYPE_UINT,  { .i64 = 0 }, 0, 100, AV_OPT_FLAG_EXPORT | AV_OPT_FLAG_READONLY },
     { NULL },
 };
 
@@ -390,6 +392,38 @@ int main(void)
                 test_ctx.child = &child_ctx;
                 if (av_opt_serialize(&test_ctx, 0,
                                      AV_OPT_SERIALIZE_SKIP_DEFAULTS|AV_OPT_SERIALIZE_SEARCH_CHILDREN,
+                                     &buf, '=', ',') >= 0) {
+                    printf("%s\n", buf);
+                    av_free(buf);
+                }
+                child_ctx.child_num64 = 1;
+                child_ctx.child_unum = 1;
+                printf("Include flag EXPORT:\n");
+                if (av_opt_serialize(&test_ctx, AV_OPT_FLAG_EXPORT,
+                                     AV_OPT_SERIALIZE_SKIP_DEFAULTS|AV_OPT_SERIALIZE_SEARCH_CHILDREN,
+                                     &buf, '=', ',') >= 0) {
+                    printf("%s\n", buf);
+                    av_free(buf);
+                }
+                printf("Include flag 1:\n");
+                if (av_opt_serialize(&test_ctx, 1,
+                                     AV_OPT_SERIALIZE_SKIP_DEFAULTS|AV_OPT_SERIALIZE_SEARCH_CHILDREN,
+                                     &buf, '=', ',') >= 0) {
+                    printf("%s\n", buf);
+                    av_free(buf);
+                }
+                printf("Include exact match flag 1:\n");
+                if (av_opt_serialize(&test_ctx, 1,
+                                     AV_OPT_SERIALIZE_SKIP_DEFAULTS|AV_OPT_SERIALIZE_SEARCH_CHILDREN|
+                                     AV_OPT_SERIALIZE_OPT_FLAGS_EXACT,
+                                     &buf, '=', ',') >= 0) {
+                    printf("%s\n", buf);
+                    av_free(buf);
+                }
+                printf("Include exact match flag EXPORT|READONLY:\n");
+                if (av_opt_serialize(&test_ctx, AV_OPT_FLAG_EXPORT | AV_OPT_FLAG_READONLY,
+                                     AV_OPT_SERIALIZE_SKIP_DEFAULTS|AV_OPT_SERIALIZE_SEARCH_CHILDREN|
+                                     AV_OPT_SERIALIZE_OPT_FLAGS_EXACT,
                                      &buf, '=', ',') >= 0) {
                     printf("%s\n", buf);
                     av_free(buf);
