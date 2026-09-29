@@ -947,7 +947,6 @@ put_hevc qpel_bi
 
 .macro qpel_v4_step tmp, src0, src1, src2, src3, src4, src5, src6, src7
         ld1             {\tmp\().s}[0], [x1], x2
-        movi            v24.8h, #0
         calc_qpelb      v24, \src0, \src1, \src2, \src3, \src4, \src5, \src6, \src7
         st1             {v24.4h}, [x0], x9
         subs            w3, w3, #1
@@ -975,7 +974,6 @@ endfunc
 
 .macro qpel_v6_step tmp, src0, src1, src2, src3, src4, src5, src6, src7
         ld1             {\tmp\().8b}, [x1], x2
-        movi            v24.8h, #0
         calc_qpelb      v24, \src0, \src1, \src2, \src3, \src4, \src5, \src6, \src7
         st1             {v24.4h}, [x0], #8
         st1             {v24.s}[2], [x0], x9
@@ -1004,7 +1002,6 @@ endfunc
 
 .macro qpel_v8_step tmp, src0, src1, src2, src3, src4, src5, src6, src7
         ld1             {\tmp\().8b}, [x1], x2
-        movi            v24.8h, #0
         calc_qpelb      v24, \src0, \src1, \src2, \src3, \src4, \src5, \src6, \src7
         st1             {v24.8h}, [x0], x9
         subs            w3, w3, #1
@@ -1032,8 +1029,6 @@ endfunc
 
 .macro qpel_v12_step tmp, src0, src1, src2, src3, src4, src5, src6, src7
         ld1             {\tmp\().16b}, [x1], x2
-        movi            v24.8h, #0
-        movi            v25.8h, #0
         calc_qpelb      v24, \src0, \src1, \src2, \src3, \src4, \src5, \src6, \src7
         calc_qpelb2     v25, \src0, \src1, \src2, \src3, \src4, \src5, \src6, \src7
         st1             {v24.8h}, [x0], #16
@@ -1063,8 +1058,6 @@ endfunc
 
 .macro qpel_v16_step tmp, src0, src1, src2, src3, src4, src5, src6, src7
         ld1             {\tmp\().16b}, [x1], x2
-        movi            v24.8h, #0
-        movi            v25.8h, #0
         calc_qpelb      v24, \src0, \src1, \src2, \src3, \src4, \src5, \src6, \src7
         calc_qpelb2     v25, \src0, \src1, \src2, \src3, \src4, \src5, \src6, \src7
         subs            w3, w3, #1
@@ -1093,9 +1086,6 @@ endfunc
 
 .macro qpel_v24_step tmp0, tmp1, src0, src1, src2, src3, src4, src5, src6, src7, src8, src9, src10, src11, src12, src13, src14, src15
         ld1             {\tmp0\().16b, \tmp1\().16b}, [x1], x2
-        movi            v8.8h, #0
-        movi            v9.8h, #0
-        movi            v10.8h, #0
         calc_qpelb      v8,  \src0, \src1, \src2,  \src3,  \src4,  \src5,  \src6,  \src7
         calc_qpelb2     v9,  \src0, \src1, \src2,  \src3,  \src4,  \src5,  \src6,  \src7
         calc_qpelb      v10, \src8, \src9, \src10, \src11, \src12, \src13, \src14, \src15
@@ -1127,10 +1117,6 @@ endfunc
 
 .macro qpel_v32_step tmp0, tmp1, src0, src1, src2, src3, src4, src5, src6, src7, src8, src9, src10, src11, src12, src13, src14, src15
         ld1             {\tmp0\().16b, \tmp1\().16b}, [x1], x2
-        movi            v8.8h, #0
-        movi            v9.8h, #0
-        movi            v10.8h, #0
-        movi            v11.8h, #0
         calc_qpelb      v8,  \src0, \src1, \src2,  \src3,  \src4,  \src5,  \src6,  \src7
         calc_qpelb2     v9,  \src0, \src1, \src2,  \src3,  \src4,  \src5,  \src6,  \src7
         calc_qpelb      v10, \src8, \src9, \src10, \src11, \src12, \src13, \src14, \src15
@@ -1178,10 +1164,6 @@ endfunc
 
 .macro qpel_v64_step tmp0, tmp1, src0, src1, src2, src3, src4, src5, src6, src7, src8, src9, src10, src11, src12, src13, src14, src15
         ld1             {\tmp0\().16b, \tmp1\().16b}, [x8], x2
-        movi            v8.8h, #0
-        movi            v9.8h, #0
-        movi            v10.8h, #0
-        movi            v11.8h, #0
         calc_qpelb      v8,  \src0, \src1, \src2,  \src3,  \src4,  \src5,  \src6,  \src7
         calc_qpelb2     v9,  \src0, \src1, \src2,  \src3,  \src4,  \src5,  \src6,  \src7
         calc_qpelb      v10, \src8, \src9, \src10, \src11, \src12, \src13, \src14, \src15
@@ -1305,7 +1287,6 @@ endfunc
 
 .macro qpel_bi_v4_step tmp, src0, src1, src2, src3, src4, src5, src6, src7
         ld1             {\tmp\().s}[0], [x2], x3
-        movi            v24.8h, #0
         calc_qpelb      v24, \src0, \src1, \src2, \src3, \src4, \src5, \src6, \src7
         ld1             {v25.4h}, [x4], x12 // src2
         sqadd           v24.8h, v24.8h, v25.8h
@@ -1332,7 +1313,6 @@ endfunc
 
 .macro qpel_bi_v6_step tmp, src0, src1, src2, src3, src4, src5, src6, src7
         ld1             {\tmp\().8b}, [x2], x3
-        movi            v24.8h, #0
         calc_qpelb      v24, \src0, \src1, \src2, \src3, \src4, \src5, \src6, \src7
         ld1             {v25.8h}, [x4], x12 // src2
         sqadd           v24.8h, v24.8h, v25.8h
@@ -1361,7 +1341,6 @@ endfunc
 
  .macro qpel_bi_v8_step tmp, src0, src1, src2, src3, src4, src5, src6, src7
         ld1             {\tmp\().8b}, [x2], x3
-        movi            v24.8h, #0
         calc_qpelb      v24, \src0, \src1, \src2, \src3, \src4, \src5, \src6, \src7
         ld1             {v25.8h}, [x4], x12   // src2
         sqadd           v24.8h, v24.8h, v25.8h
@@ -1388,8 +1367,6 @@ endfunc
 
 .macro qpel_bi_v12_step tmp, src0, src1, src2, src3, src4, src5, src6, src7
         ld1             {\tmp\().16b}, [x2], x3
-        movi            v24.8h, #0
-        movi            v25.8h, #0
         calc_qpelb      v24, \src0, \src1, \src2, \src3, \src4, \src5, \src6, \src7
         calc_qpelb2     v25, \src0, \src1, \src2, \src3, \src4, \src5, \src6, \src7
         ld1             {v26.8h, v27.8h}, [x4], x12   // src2
@@ -1421,8 +1398,6 @@ endfunc
 
 .macro qpel_bi_v16_step tmp, src0, src1, src2, src3, src4, src5, src6, src7
         ld1             {\tmp\().16b}, [x2], x3
-        movi            v24.8h, #0
-        movi            v25.8h, #0
         calc_qpelb      v24, \src0, \src1, \src2, \src3, \src4, \src5, \src6, \src7
         calc_qpelb2     v25, \src0, \src1, \src2, \src3, \src4, \src5, \src6, \src7
         ld1             {v26.8h, v27.8h}, [x4], x12   // src2
@@ -1473,10 +1448,6 @@ endfunc
 
 .macro qpel_bi_v32_step tmp0, tmp1, src0, src1, src2, src3, src4, src5, src6, src7, src8, src9, src10, src11, src12, src13, src14, src15
         ld1             {\tmp0\().8h, \tmp1\().8h}, [x8], x3
-        movi            v8.8h, #0
-        movi            v9.8h, #0
-        movi            v10.8h, #0
-        movi            v11.8h, #0
         calc_qpelb      v8,  \src0,  \src1, \src2,  \src3,  \src4,  \src5,  \src6,  \src7
         calc_qpelb2     v9,  \src0, \src1,  \src2,  \src3,  \src4,  \src5,  \src6,  \src7
         calc_qpelb      v10, \src8, \src9, \src10, \src11, \src12, \src13, \src14, \src15
