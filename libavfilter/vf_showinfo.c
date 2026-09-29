@@ -738,7 +738,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     FilterLink *inl = ff_filter_link(inlink);
     AVFilterContext *ctx = inlink->dst;
     ShowInfoContext *s = ctx->priv;
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
     uint32_t plane_checksum[4] = {0}, checksum = 0;
     int64_t sum[4] = {0}, sum2[4] = {0};
     int32_t pixelcount[4] = {0};
@@ -748,7 +748,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
     for (plane = 0; plane < 4 && s->calculate_checksums && frame->data[plane] && frame->linesize[plane]; plane++) {
         uint8_t *data = frame->data[plane];
-        int h = plane == 1 || plane == 2 ? AV_CEIL_RSHIFT(inlink->h, vsub) : inlink->h;
+        int h = plane == 1 || plane == 2 ? AV_CEIL_RSHIFT(frame->height, vsub) : frame->height;
         int linesize = av_image_get_linesize(frame->format, frame->width, plane);
         int width = linesize >> (bitdepth > 8);
 
@@ -945,4 +945,5 @@ const FFFilter ff_vf_showinfo = {
     FILTER_INPUTS(avfilter_vf_showinfo_inputs),
     FILTER_OUTPUTS(avfilter_vf_showinfo_outputs),
     .priv_size   = sizeof(ShowInfoContext),
+    .flags_internal = FF_FILTER_FLAG_DYNAMIC_FRAME_PARAMS,
 };
