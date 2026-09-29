@@ -160,5 +160,6 @@ const FFFilter ff_vf_perms = {
     FILTER_INPUTS(perms_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     .process_command = ff_filter_process_command,
+    .flags_internal = FF_FILTER_FLAG_DYNAMIC_FRAME_PARAMS,
 };
 #endif /* CONFIG_PERMS_FILTER */

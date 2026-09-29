@@ -410,5 +410,6 @@ const FFFilter ff_vf_metadata = {
     .uninit      = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
+    .flags_internal = FF_FILTER_FLAG_DYNAMIC_FRAME_PARAMS,
 };
 #endif /* CONFIG_METADATA_FILTER */

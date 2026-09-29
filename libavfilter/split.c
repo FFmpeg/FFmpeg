@@ -133,6 +133,7 @@ const FFFilter ff_vf_split = {
     .init        = split_init,
     .activate    = activate,
     FILTER_INPUTS(ff_video_default_filterpad),
+    .flags_internal = FF_FILTER_FLAG_DYNAMIC_FRAME_PARAMS,
 };
 
 const FFFilter ff_af_asplit = {

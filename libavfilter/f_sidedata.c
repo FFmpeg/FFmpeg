@@ -219,5 +219,6 @@ const FFFilter ff_vf_sidedata = {
     .init        = init,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
+    .flags_internal = FF_FILTER_FLAG_DYNAMIC_FRAME_PARAMS,
 };
 #endif /* CONFIG_SIDEDATA_FILTER */

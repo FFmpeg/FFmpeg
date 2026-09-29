@@ -98,4 +98,5 @@ const FFFilter ff_vf_framestep = {
     .priv_size   = sizeof(FrameStepContext),
     FILTER_INPUTS(framestep_inputs),
     FILTER_OUTPUTS(framestep_outputs),
+    .flags_internal = FF_FILTER_FLAG_DYNAMIC_FRAME_PARAMS,
 };

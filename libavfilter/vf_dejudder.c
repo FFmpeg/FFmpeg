@@ -183,4 +183,5 @@ const FFFilter ff_vf_dejudder = {
     FILTER_OUTPUTS(dejudder_outputs),
     .init        = dejudder_init,
     .uninit      = dejudder_uninit,
+    .flags_internal = FF_FILTER_FLAG_DYNAMIC_FRAME_PARAMS,
 };

@@ -299,6 +299,7 @@ const FFFilter ff_vf_segment = {
     .priv_size   = sizeof(SegmentContext),
     .activate    = activate,
     FILTER_INPUTS(segment_inputs),
+    .flags_internal = FF_FILTER_FLAG_DYNAMIC_FRAME_PARAMS,
 };
 #endif // CONFIG_SEGMENT_FILTER
 
