@@ -490,8 +490,11 @@ of the other. Its audio counterpart is the @code{amix} filter.
 While decoders are normally associated with demuxer streams, it is also possible
 to create "loopback" decoders that decode the output from some encoder and allow
 it to be fed back to complex filtergraphs. This is done with the @code{-dec}
-directive, which takes as a parameter the index of the output stream that should
-be decoded. Every such directive creates a new loopback decoder, indexed with
+directive, which takes as a parameter @var{output_file_index}:@var{stream_index}
+to select the output stream that should be decoded. Both indices are zero-based
+integers: the first identifies the output file and the second identifies the
+stream within that file. Stream specifiers such as @code{v:0} are not supported.
+Every such directive creates a new loopback decoder, indexed with
 successive integers starting at zero. These indices should then be used to refer
 to loopback decoders in complex filtergraph link labels, as described in the
 documentation for @option{-filter_complex}.
