@@ -55,7 +55,6 @@ typedef struct AACContext {
     int prog_ref;
     int metadata_mode;
     AACENC_MetaData metaDataSetup;
-    int delay;
     int frame_length;
 
     AudioFrameQueue afq;
@@ -420,7 +419,6 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     }
 
     avctx->frame_size = info.frameLength;
-    s->delay =
 #if FDKENC_VER_AT_LEAST(4, 0) // 4.0.0
     avctx->initial_padding = info.nDelay;
 #else
