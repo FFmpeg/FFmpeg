@@ -5377,8 +5377,7 @@ DISABLE_I8MM
 .endm
 
 .macro qpel_uni_w_hv4_end_step tmp, src0, src1, src2, src3, src4, src5, src6, src7
-        ldr             \tmp, [sp]
-        add             sp, sp, x10
+        ld1             {\tmp\().4h}, [sp], x10
         QPEL_FILTER_H   v26, \src0, \src1, \src2, \src3, \src4, \src5, \src6, \src7
         subs            w22, w22, #1
         QPEL_UNI_W_HV_4
@@ -5396,21 +5395,21 @@ DISABLE_I8MM
         add             sp, sp, x10, lsl #1
         ldr             \type\()22, [sp]
         add             sp, sp, x10
-1:      \step           \type\()23, v16, v17, v18, v19, v20, v21, v22, v23
+1:      \step           v23, v16, v17, v18, v19, v20, v21, v22, v23
         b.eq            2f
-        \step           \type\()16, v17, v18, v19, v20, v21, v22, v23, v16
+        \step           v16, v17, v18, v19, v20, v21, v22, v23, v16
         b.eq            2f
-        \step           \type\()17, v18, v19, v20, v21, v22, v23, v16, v17
+        \step           v17, v18, v19, v20, v21, v22, v23, v16, v17
         b.eq            2f
-        \step           \type\()18, v19, v20, v21, v22, v23, v16, v17, v18
+        \step           v18, v19, v20, v21, v22, v23, v16, v17, v18
         b.eq            2f
-        \step           \type\()19, v20, v21, v22, v23, v16, v17, v18, v19
+        \step           v19, v20, v21, v22, v23, v16, v17, v18, v19
         b.eq            2f
-        \step           \type\()20, v21, v22, v23, v16, v17, v18, v19, v20
+        \step           v20, v21, v22, v23, v16, v17, v18, v19, v20
         b.eq            2f
-        \step           \type\()21, v22, v23, v16, v17, v18, v19, v20, v21
+        \step           v21, v22, v23, v16, v17, v18, v19, v20, v21
         b.eq            2f
-        \step           \type\()22, v23, v16, v17, v18, v19, v20, v21, v22
+        \step           v22, v23, v16, v17, v18, v19, v20, v21, v22
         b.hi            1b
 2:
         QPEL_UNI_W_HV_END
@@ -5440,8 +5439,7 @@ endfunc
 .endm
 
 .macro qpel_uni_w_hv6_end_step tmp, src0, src1, src2, src3, src4, src5, src6, src7
-        ldr             \tmp, [sp]
-        add             sp, sp, x10
+        ld1             {\tmp\().8h}, [sp], x10
         QPEL_FILTER_H   v26, \src0, \src1, \src2, \src3, \src4, \src5, \src6, \src7
         QPEL_FILTER_H2  v27, \src0, \src1, \src2, \src3, \src4, \src5, \src6, \src7
         subs            w22, w22, #1
@@ -5468,8 +5466,7 @@ endfunc
 .endm
 
 .macro qpel_uni_w_hv8_end_step tmp, src0, src1, src2, src3, src4, src5, src6, src7
-        ldr             \tmp, [sp]
-        add             sp, sp, x10
+        ld1             {\tmp\().8h}, [sp], x10
         QPEL_FILTER_H   v26, \src0, \src1, \src2, \src3, \src4, \src5, \src6, \src7
         QPEL_FILTER_H2  v27, \src0, \src1, \src2, \src3, \src4, \src5, \src6, \src7
         subs            w22, w22, #1
