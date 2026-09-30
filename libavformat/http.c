@@ -1837,6 +1837,11 @@ done:
     return err;
 }
 
+static uint64_t requested_end(HTTPContext *s)
+{
+    return s->end_off ? FFMIN(s->end_off, s->filesize) : s->filesize;
+}
+
 static int http_buf_read(URLContext *h, uint8_t *buf, int size)
 {
     HTTPContext *s = h->priv_data;
@@ -1962,7 +1967,7 @@ static int http_read_stream(URLContext *h, uint8_t *buf, int size)
     int conn_attempts = 1;
 
     if (!s->hd)
-        return s->off < s->filesize ? AVERROR(EIO) : AVERROR_EOF;
+        return s->off < requested_end(s) ? AVERROR(EIO) : AVERROR_EOF;
 
     if (s->end_chunked_post && !s->end_header) {
         err = http_read_header(h);
@@ -1979,7 +1984,8 @@ retry:
     read_ret = http_buf_read(h, buf, size);
     while (read_ret < 0) {
         uint64_t target = h->is_streamed ? 0 : s->off;
-        bool is_premature = s->filesize > 0 && s->off < s->filesize;
+        uint64_t file_end = requested_end(s);
+        bool is_premature = file_end > 0 && s->off < file_end;
 
         if (read_ret == AVERROR_EXIT)
             break;
