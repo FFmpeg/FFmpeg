@@ -47,9 +47,9 @@ void main()
 
     ivec2 dst;
     switch (flip) {
-    case FLIP_HORIZONTAL: dst = ivec2(size.x - pos.x, pos.y); break;
-    case FLIP_VERTICAL:   dst = ivec2(pos.x, size.y - pos.y); break;
-    case FLIP_BOTH:       dst = ivec2(size.xy - pos.xy);      break;
+    case FLIP_HORIZONTAL: dst = ivec2(size.x - 1 - pos.x, pos.y); break;
+    case FLIP_VERTICAL:   dst = ivec2(pos.x, size.y - 1 - pos.y); break;
+    case FLIP_BOTH:       dst = ivec2(size.xy - 1 - pos.xy);      break;
     default:              dst = pos;                          break;
     }
 
