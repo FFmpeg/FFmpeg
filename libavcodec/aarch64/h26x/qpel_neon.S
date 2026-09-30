@@ -5395,22 +5395,7 @@ DISABLE_I8MM
         add             sp, sp, x10, lsl #1
         ldr             \type\()22, [sp]
         add             sp, sp, x10
-1:      \step           v23, v16, v17, v18, v19, v20, v21, v22, v23
-        b.eq            2f
-        \step           v16, v17, v18, v19, v20, v21, v22, v23, v16
-        b.eq            2f
-        \step           v17, v18, v19, v20, v21, v22, v23, v16, v17
-        b.eq            2f
-        \step           v18, v19, v20, v21, v22, v23, v16, v17, v18
-        b.eq            2f
-        \step           v19, v20, v21, v22, v23, v16, v17, v18, v19
-        b.eq            2f
-        \step           v20, v21, v22, v23, v16, v17, v18, v19, v20
-        b.eq            2f
-        \step           v21, v22, v23, v16, v17, v18, v19, v20, v21
-        b.eq            2f
-        \step           v22, v23, v16, v17, v18, v19, v20, v21, v22
-        b.hi            1b
+1:      calc_all        \step
 2:
         QPEL_UNI_W_HV_END
         ret
