@@ -899,6 +899,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         /*no need for any filtering */
         if (outlink->chroma_location != AVCHROMA_LOC_UNSPECIFIED)
             in->chroma_location = outlink->chroma_location;
+        update_output_color_information(s, in);
         return ff_filter_frame(outlink, in);
     }
 fail:

@@ -611,6 +611,9 @@ FATE_FILTER-$(call ALLYES, SCALE_FILTER COLOR_FILTER LAVFI_INDEV WRAPPED_AVFRAME
 fate-filter-scale-zero-dim: CMD = ! run $(FFMPEG) -nostdin -hide_banner -f lavfi -i "color=c=red:s=3000x2:d=1" -vf "scale=iw/2:-2,scale=iw/3:-2,scale=iw/2:-2" -f null none
 fate-filter-scale-zero-dim: CMP = null
 
+FATE_FILTER_FFPROBE-$(call ALLYES, FFPROBE LAVFI_INDEV WRAPPED_AVFRAME_DECODER TESTSRC2_FILTER FORMAT_FILTER SETPARAMS_FILTER ZSCALE_FILTER) += fate-filter-zscale-passthrough
+fate-filter-zscale-passthrough: CMD = probe -print_format compact -show_entries frame=color_primaries,color_transfer -f lavfi "testsrc2=s=64x64:r=2:d=2,format=gbrp,setparams=color_primaries=bt709:color_trc=bt709,zscale=primariesin=bt470bg:primaries=bt470bg:transferin=smpte170m:transfer=smpte170m"
+
 FATE_FILTER_VSYNTH_VIDEO_FILTER-$(CONFIG_VFLIP_FILTER) += fate-filter-vflip
 fate-filter-vflip: CMD = video_filter "vflip"
 
