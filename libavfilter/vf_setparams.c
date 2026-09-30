@@ -167,6 +167,13 @@ static int query_formats(const AVFilterContext *ctx,
             return ret;
     }
 
+    if (s->chroma_location >= 0) {
+        ret = ff_formats_ref(ff_make_formats_list_singleton(s->chroma_location),
+                             &cfg_out[0]->chroma_locations);
+        if (ret < 0)
+            return ret;
+    }
+
     if (s->alpha_mode >= 0) {
         ret = ff_formats_ref(ff_make_formats_list_singleton(s->alpha_mode),
                              &cfg_out[0]->alpha_modes);
