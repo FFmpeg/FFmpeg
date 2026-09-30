@@ -1226,6 +1226,19 @@ that specifies the language for the "value" string. "key" must be the same as th
 all sub-mix element's @var{annotations}s
 @end table
 
+@item gain_map
+Groups together a base @var{stream} with a gain map, which together form a
+pair of renditions (e.g. HDR and SDR) as per ISO 21496-1.
+
+For this group @var{type}, the following options are available
+
+@table @option
+@item el_index
+Index of the gain map stream within the group. Defaults to 0.
+@item video_size
+Size of the final image for presentation.
+@end table
+
 @end table
 
 E.g. to create an scalable 5.1 IAMF file from several WAV input files

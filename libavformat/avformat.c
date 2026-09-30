@@ -109,6 +109,7 @@ void ff_free_stream_group(AVStreamGroup **pstg)
         break;
     case AV_STREAM_GROUP_PARAMS_LCEVC:
     case AV_STREAM_GROUP_PARAMS_DOLBY_VISION:
+    case AV_STREAM_GROUP_PARAMS_GAIN_MAP:
         av_opt_free(stg->params.layered_video);
         av_freep(&stg->params.layered_video);
         break;
@@ -275,6 +276,7 @@ const char *avformat_stream_group_name(enum AVStreamGroupParamsType type)
     case AV_STREAM_GROUP_PARAMS_LCEVC:                     return "LCEVC (Split video and enhancement)";
     case AV_STREAM_GROUP_PARAMS_TREF:                      return "Track Reference";
     case AV_STREAM_GROUP_PARAMS_DOLBY_VISION:              return "Dolby Vision (Split base and enhancement layer)";
+    case AV_STREAM_GROUP_PARAMS_GAIN_MAP:                  return "Gain Map (Split base rendition and gain map)";
     }
     return NULL;
 }

@@ -2610,6 +2610,7 @@ static int of_map_group(Muxer *mux, AVDictionary **dict, AVBPrint *bp, const cha
     case AV_STREAM_GROUP_PARAMS_LCEVC:
     case AV_STREAM_GROUP_PARAMS_TREF:
     case AV_STREAM_GROUP_PARAMS_DOLBY_VISION:
+    case AV_STREAM_GROUP_PARAMS_GAIN_MAP:
         break;
     default:
         av_log(mux, AV_LOG_ERROR, "Unsupported mapped group type %d.\n", stg->type);
@@ -2637,6 +2638,8 @@ static int of_parse_group_token(Muxer *mux, const char *token, char *ptr)
                 { .i64 = AV_STREAM_GROUP_PARAMS_LCEVC }, .unit = "type" },
             { "tref", NULL, 0, AV_OPT_TYPE_CONST,
                 { .i64 = AV_STREAM_GROUP_PARAMS_TREF }, .unit = "type" },
+            { "gain_map", NULL, 0, AV_OPT_TYPE_CONST,
+                { .i64 = AV_STREAM_GROUP_PARAMS_GAIN_MAP }, .unit = "type" },
         { NULL },
     };
     const AVClass class = {
