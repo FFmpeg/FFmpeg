@@ -30,14 +30,6 @@ layout (local_size_x_id = 253, local_size_y_id = 254, local_size_z_id = 255) in;
 layout (set = 0, binding = 0) uniform readonly  image2D input_img[];
 layout (set = 0, binding = 1) uniform writeonly image2D output_img[];
 
-#define TRANSPOSE_CCLOCK_FLIP 0
-#define TRANSPOSE_CLOCK 1
-#define TRANSPOSE_CCLOCK 2
-#define TRANSPOSE_CLOCK_FLIP 3
-#define TRANSPOSE_REVERSAL 4
-#define TRANSPOSE_HFLIP 5
-#define TRANSPOSE_VFLIP 6
-
 layout (push_constant, scalar) uniform pushConstants {
     int dir;
 };
@@ -45,22 +37,15 @@ layout (push_constant, scalar) uniform pushConstants {
 void main()
 {
     ivec2 pos = ivec2(gl_GlobalInvocationID.xy);
-    if (dir == TRANSPOSE_CCLOCK || dir == TRANSPOSE_CLOCK || dir == TRANSPOSE_CLOCK_FLIP)
-        pos = pos.yx;
-
-    ivec2 size = imageSize(input_img[nonuniformEXT(gl_LocalInvocationID.z)]);
+    ivec2 size = imageSize(output_img[nonuniformEXT(gl_LocalInvocationID.z)]);
     if (any(greaterThanEqual(pos, size)))
         return;
 
-    ivec2 dst;
-    switch (dir) {
-    case TRANSPOSE_CCLOCK:     dst = ivec2(size.y - pos.y, pos.x); break;
-    case TRANSPOSE_CLOCK:      pos = ivec2(pos.x, size.y - pos.y); /* fall */
-    case TRANSPOSE_CLOCK_FLIP: dst = ivec2(size.yx - pos.yx);      break;
-    default:                   dst = pos.yx;                       break;
-    }
+    /* size is the output size, so the input is size.yx */
+    ivec2 src = ivec2((dir & 2) != 0 ? size.y - 1 - pos.y : pos.y,
+                      (dir & 1) != 0 ? size.x - 1 - pos.x : pos.x);
 
-    vec4 res = imageLoad(input_img[nonuniformEXT(gl_LocalInvocationID.z)], pos);
+    vec4 res = imageLoad(input_img[nonuniformEXT(gl_LocalInvocationID.z)], src);
 
-    imageStore(output_img[nonuniformEXT(gl_LocalInvocationID.z)], dst, res);
+    imageStore(output_img[nonuniformEXT(gl_LocalInvocationID.z)], pos, res);
 }
