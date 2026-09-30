@@ -1366,7 +1366,6 @@ static int aom_encode(AVCodecContext *avctx, AVPacket *pkt,
             break;
         }
 
-        aom_img_remove_metadata(rawimg);
         sd = av_frame_get_side_data(frame, AV_FRAME_DATA_DOVI_METADATA);
         if (ctx->dovi.cfg.dv_profile && sd) {
             const AVDOVIMetadata *metadata = (const AVDOVIMetadata *)sd->data;
