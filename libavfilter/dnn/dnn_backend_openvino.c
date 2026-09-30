@@ -1280,7 +1280,7 @@ static int get_output_ov(DNNModel *model, const char *input_name, int input_widt
     int ret;
     OVModel *ov_model = (OVModel *)model;
     DnnContext *ctx = ov_model->ctx;
-    TaskItem task;
+    TaskItem task = { 0 };
     OVRequestItem *request;
     DNNExecBaseParams exec_params = {
         .input_name     = input_name,
