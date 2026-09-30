@@ -17733,7 +17733,10 @@ offering the maximum possible speed.
 @end table
 
 @subsection Commands
-This filter supports almost all of the above options as @ref{commands}.
+This filter supports almost all of the above options as @ref{commands}. The
+options negotiated with the filtergraph, @option{format}, @option{colorspace},
+@option{range}, @option{chroma_location} and @option{alpha_mode}, are fixed
+once the filtergraph is configured and can not be changed with commands.
 
 @subsection Examples
 @itemize
