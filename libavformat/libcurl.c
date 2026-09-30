@@ -174,6 +174,7 @@ struct CurlContext {
 
     /* Probe result. Set by the loop thread, read by url_open() once probed. */
     int             probed;
+    int             probe_ok;    /* the first reply can be read */
     int             stream_ok;
     int             seekable;
     int64_t         content_size;
@@ -626,7 +627,10 @@ static size_t header_callback(char *ptr, size_t size, size_t nitems, void *userd
         c->stream_ok = 0;
         update_status_locked(c, ff_http_averror(status, AVERROR(EIO)), CURLE_OK);
     }
-    c->probed = 1;
+    if (!c->probed) {
+        c->probe_ok = c->stream_ok;
+        c->probed = 1;
+    }
     pthread_cond_broadcast(&c->cond);
     pthread_mutex_unlock(&c->mutex);
 
@@ -1349,7 +1353,7 @@ static int wait_for_probe(CurlContext *c)
         curl_cond_wait(c);
     }
     if (!ret) {
-        if (!c->stream_ok)
+        if (!c->probe_ok)
             ret = c->status ? c->status : AVERROR(EIO);
     }
     pthread_mutex_unlock(&c->mutex);
