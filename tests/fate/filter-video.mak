@@ -592,6 +592,22 @@ FATE_FILTER-$(call FILTERFRAMECRC, TESTSRC2 FORMAT SCALE) += fate-filter-scalech
 fate-filter-scalechroma-matrix: CMD = framecrc -flags bitexact -lavfi testsrc2=s=64x64:r=1:d=1,format=yuv420p,scale=96:80:in_color_matrix=bt709:out_color_matrix=bt470bg:in_range=tv:out_range=tv:in_chroma_loc=topleft:out_chroma_loc=center:flags=accurate_rnd+bitexact,format=yuv420p -frames:v 1
 fate-filter-scalechroma-downscale: CMD = framecrc -flags bitexact -lavfi testsrc2=s=2048x2048:r=1:d=1,format=yuv420p,scale=8:8:in_chroma_loc=topleft:out_chroma_loc=center:flags=accurate_rnd+bitexact,format=yuv420p -frames:v 1
 
+FATE_FILTER-$(call FILTERFRAMECRC, TESTSRC2 FORMAT SETPARAMS SCALE) += fate-filter-scalechroma-setparams
+fate-filter-scalechroma-setparams: CMD = framecrc -flags bitexact -lavfi testsrc2=s=64x64:r=1:d=1,format=yuv420p,format=chroma_locations=left,setparams=chroma_location=center,scale=flags=accurate_rnd+bitexact,format=yuv420p -frames:v 1
+
+FATE_FILTER-$(call FILTERFRAMECRC, TESTSRC2 FORMAT SCALE) += fate-filter-scalechroma-ref
+fate-filter-scalechroma-ref: CMD = framecrc -flags bitexact -lavfi "testsrc2=s=64x64:r=1:d=1,format=yuv420p,format=chroma_locations=left[m];testsrc2=s=32x48:r=1:d=1,format=yuv420p,format=chroma_locations=center[r];[m][r]scale=w=rw:h=rh:flags=accurate_rnd+bitexact,format=yuv420p" -frames:v 1
+
+FATE_FILTER-$(call FILTERFRAMECRC, TESTSRC2 FORMAT SCALE) += fate-filter-scalechroma-untagged fate-filter-scalechroma-untagged-422
+fate-filter-scalechroma-untagged: CMD = framecrc -flags bitexact -lavfi testsrc2=s=64x64:r=1:d=1,format=yuv420p,scale=96:80:flags=accurate_rnd+bitexact,format=pix_fmts=yuv420p:chroma_locations=left -frames:v 1
+fate-filter-scalechroma-untagged-422: CMD = framecrc -flags bitexact -lavfi testsrc2=s=64x64:r=1:d=1,format=yuv420p,scale=flags=accurate_rnd+bitexact,format=pix_fmts=yuv422p:chroma_locations=topleft -frames:v 1
+
+FATE_FILTER-$(call FILTERFRAMECRC, TESTSRC2 FORMAT SETPARAMS SCALE NOFORMAT) += fate-filter-noformat-chroma
+fate-filter-noformat-chroma: CMD = framecrc -flags bitexact -lavfi testsrc2=s=64x64:r=1:d=1,format=yuv420p,setparams=chroma_location=left,scale=flags=accurate_rnd+bitexact,noformat=chroma_locations=left -frames:v 1
+
+FATE_FILTER-$(call FILTERFRAMECRC, TESTSRC2 FORMAT SETPARAMS ZSCALE SCALE, LAVFI_INDEV WRAPPED_AVFRAME_DECODER) += fate-filter-zscale-chroma-input-override
+fate-filter-zscale-chroma-input-override: CMD = framecrc -flags bitexact -f lavfi -i testsrc2=s=64x64:r=2:d=2,setparams=chroma_location=left -vf zscale=chromalin=center,format=chroma_locations=center,scale=flags=accurate_rnd+bitexact -frames:v 4
+
 FATE_FILTER-$(call ALLYES, SCALE_FILTER TESTSRC2_FILTER LAVFI_INDEV \
                            WRAPPED_AVFRAME_DECODER WRAPPED_AVFRAME_ENCODER \
                            NULL_MUXER) += fate-filter-scale-print-info \

@@ -16,6 +16,9 @@ fate-ffmpeg-filter_colorkey: CMD = framecrc -auto_conversion_filters -idct simpl
 FATE_FFMPEG-$(call FILTERFRAMECRC, COLOR) += fate-ffmpeg-lavfi
 fate-ffmpeg-lavfi: CMD = framecrc -lavfi color=d=1:r=5 -fflags +bitexact
 
+FATE_FFMPEG-$(call FILTERFRAMECRC, TESTSRC2 FORMAT SETPARAMS SCALE, LAVFI_INDEV WRAPPED_AVFRAME_DECODER MPEG2VIDEO_ENCODER) += fate-ffmpeg-chroma-location
+fate-ffmpeg-chroma-location: CMD = framecrc -auto_conversion_filters -f lavfi -i testsrc2=s=64x64:r=25:d=1,format=yuv420p,setparams=chroma_location=topleft -sws_flags +accurate_rnd+bitexact -flags +bitexact -idct simple -dct fastint -threads 1 -c:v mpeg2video -qscale:v 2 -frames:v 1
+
 FATE_FFMPEG-$(call ENCDEC2, MPEG4, RAWVIDEO, AVI, RAWVIDEO_DEMUXER FRAMECRC_MUXER) += fate-force_key_frames
 fate-force_key_frames: tests/data/vsynth1.yuv
 fate-force_key_frames: CMD = enc_dec \
