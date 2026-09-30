@@ -73,7 +73,7 @@ static void vvenc_log_callback(void *ctx, int level,
     }
 }
 
-static void vvenc_set_verbository(vvenc_config *params)
+static void vvenc_set_verbosity(vvenc_config *params)
 {
     int loglevel = av_log_get_level();
     params->m_verbosity = VVENC_SILENT;
@@ -251,7 +251,7 @@ static av_cold int vvenc_init(AVCodecContext *avctx)
     vvenc_init_default(&params, avctx->width, avctx->height, framerate,
                        avctx->bit_rate, s->qp, preset);
 
-    vvenc_set_verbository(&params);
+    vvenc_set_verbosity(&params);
 
     if (avctx->thread_count > 0)
         params.m_numThreads = avctx->thread_count;
