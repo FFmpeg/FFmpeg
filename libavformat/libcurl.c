@@ -657,6 +657,17 @@ static void start_request(CurlContext *c)
     CURLcode cc;
     int ret;
 
+    /* At or past the end of the file, report EOF without a request. */
+    if (c->probed && c->seekable &&
+        ((c->content_size >= 0 && c->request_start >= c->content_size) ||
+         (c->end_off > 0 && c->request_start >= c->end_off))) {
+        pthread_mutex_lock(&c->mutex);
+        update_status_locked(c, AVERROR_EOF, CURLE_OK);
+        pthread_cond_broadcast(&c->cond);
+        pthread_mutex_unlock(&c->mutex);
+        return;
+    }
+
     if (!c->probed || c->seekable) {
         int64_t start = c->request_start;
         int64_t request_size = c->request_size;
@@ -773,6 +784,16 @@ static void on_done(CurlContext *c, CURLcode code)
         if (c->end_off > 0)
             file_end = FFMIN(file_end, c->end_off - 1);
         if (c->seekable && c->request_end >= 0 && c->request_end < file_end) {
+            if (!received) {
+                av_log(c->h, AV_LOG_ERROR, "Server sent back no data at offset "
+                       "%"PRId64"\n", c->request_start);
+                c->loop->num_errors++;
+                pthread_mutex_lock(&c->mutex);
+                update_status_locked(c, AVERROR(EIO), CURLE_OK);
+                pthread_cond_broadcast(&c->cond);
+                pthread_mutex_unlock(&c->mutex);
+                return;
+            }
             c->is_initial = 0;
             start_request(c);
             return;
