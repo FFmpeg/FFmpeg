@@ -153,6 +153,13 @@ static int config_props_output(AVFilterLink *outlink)
     AVFilterLink *inlink = avctx->inputs[0];
     FilterLink *inl = ff_filter_link(inlink);
 
+    if (s->dir & 4) {
+        av_log(avctx, AV_LOG_WARNING,
+               "dir values greater than 3 are deprecated, use the passthrough option instead\n");
+        s->dir &= 3;
+        s->passthrough = TRANSPOSE_PT_TYPE_LANDSCAPE;
+    }
+
     if ((inlink->w >= inlink->h && s->passthrough == TRANSPOSE_PT_TYPE_LANDSCAPE) ||
         (inlink->w <= inlink->h && s->passthrough == TRANSPOSE_PT_TYPE_PORTRAIT)) {
         av_log(avctx, AV_LOG_VERBOSE,
