@@ -23,6 +23,7 @@
 
 #include "avfilter.h"
 #include "filters.h"
+#include "formats.h"
 #include "scale_eval.h"
 #include "video.h"
 #include "vaapi_vpp.h"
@@ -67,6 +68,27 @@ static const char *scale_vaapi_mode_name(int mode)
     }
 }
 
+static int scale_vaapi_query_formats(const AVFilterContext *avctx,
+                                     AVFilterFormatsConfig **cfg_in,
+                                     AVFilterFormatsConfig **cfg_out)
+{
+    const ScaleVAAPIContext *ctx = avctx->priv;
+    AVFilterFormats *formats;
+    int err;
+
+    err = ff_vaapi_vpp_query_formats(avctx, cfg_in, cfg_out);
+    if (err < 0)
+        return err;
+
+    err = ff_formats_ref(ff_all_chroma_locations(), &cfg_in[0]->chroma_locations);
+    if (err < 0)
+        return err;
+
+    formats = ctx->chroma_location != AVCHROMA_LOC_UNSPECIFIED
+                ? ff_make_formats_list_singleton(ctx->chroma_location)
+                : ff_all_chroma_locations();
+    return ff_formats_ref(formats, &cfg_out[0]->chroma_locations);
+}
 
 static int scale_vaapi_config_output(AVFilterLink *outlink)
 {
@@ -100,7 +122,8 @@ static int scale_vaapi_config_output(AVFilterLink *outlink)
         ctx->colour_transfer == AVCOL_TRC_UNSPECIFIED &&
         ctx->colour_matrix == AVCOL_SPC_UNSPECIFIED &&
         ctx->colour_range == AVCOL_RANGE_UNSPECIFIED &&
-        ctx->chroma_location == AVCHROMA_LOC_UNSPECIFIED)
+        (inlink->chroma_location == outlink->chroma_location ||
+         outlink->chroma_location == AVCHROMA_LOC_UNSPECIFIED))
         vpp_ctx->passthrough = 1;
 
     err = ff_vaapi_vpp_config_output(outlink);
@@ -131,8 +154,11 @@ static int scale_vaapi_filter_frame(AVFilterLink *inlink, AVFrame *input_frame)
            av_get_pix_fmt_name(input_frame->format),
            input_frame->width, input_frame->height, input_frame->pts);
 
-   if (vpp_ctx->passthrough)
-       return ff_filter_frame(outlink, input_frame);
+    if (vpp_ctx->passthrough) {
+        if (input_frame->chroma_location == AVCHROMA_LOC_UNSPECIFIED)
+            input_frame->chroma_location = outlink->chroma_location;
+        return ff_filter_frame(outlink, input_frame);
+    }
 
     if (vpp_ctx->va_context == VA_INVALID_ID)
         return AVERROR(EINVAL);
@@ -162,8 +188,8 @@ static int scale_vaapi_filter_frame(AVFilterLink *inlink, AVFrame *input_frame)
         output_frame->colorspace = ctx->colour_matrix;
     if (ctx->colour_range != AVCOL_RANGE_UNSPECIFIED)
         output_frame->color_range = ctx->colour_range;
-    if (ctx->chroma_location != AVCHROMA_LOC_UNSPECIFIED)
-        output_frame->chroma_location = ctx->chroma_location;
+    if (outlink->chroma_location != AVCHROMA_LOC_UNSPECIFIED)
+        output_frame->chroma_location = outlink->chroma_location;
 
     err = ff_vaapi_vpp_init_params(avctx, &params,
                                    input_frame, output_frame);
@@ -318,6 +344,6 @@ const FFFilter ff_vf_scale_vaapi = {
     .uninit        = &ff_vaapi_vpp_ctx_uninit,
     FILTER_INPUTS(scale_vaapi_inputs),
     FILTER_OUTPUTS(scale_vaapi_outputs),
-    FILTER_QUERY_FUNC2(&ff_vaapi_vpp_query_formats),
+    FILTER_QUERY_FUNC2(&scale_vaapi_query_formats),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
