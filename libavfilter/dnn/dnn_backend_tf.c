@@ -315,7 +315,7 @@ static int get_output_tf(DNNModel *model, const char *input_name, int input_widt
     int ret;
     TFModel *tf_model = (TFModel *)model;
     DnnContext *ctx = tf_model->ctx;
-    TaskItem task;
+    TaskItem task = { 0 };
     TFRequestItem *request;
     DNNExecBaseParams exec_params = {
         .input_name     = input_name,
