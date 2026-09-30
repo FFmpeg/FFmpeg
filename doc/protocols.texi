@@ -599,6 +599,10 @@ Reconnect automatically when disconnected before EOF is hit.
 @item reconnect_at_eof
 If set then eof is treated like an error and causes reconnection, this is useful
 for live / endless streams.
+This does not apply to the deliberately established end of a resource whose
+complete size is unknown, i.e. when a ranged request past the end is answered
+with @code{416}. Such an end is reported as a clean EOF and is not retried,
+unless @option{reconnect_on_http_error} lists 416 by number.
 
 @item reconnect_on_network_error
 Reconnect automatically in case of TCP/TLS errors during connect.
@@ -606,6 +610,10 @@ Reconnect automatically in case of TCP/TLS errors during connect.
 @item reconnect_on_http_error
 A comma separated list of HTTP status codes to reconnect on. The list can
 include specific status codes (e.g. '503') or the strings '4xx' / '5xx'.
+A @code{416} that ends a read or a seek past the end of a resource whose
+complete size is unknown is reported as EOF. It is retried first only if 416
+is listed by number, for example to read a resource that is still being
+written. '4xx' does not cover it.
 
 @item reconnect_streamed
 If set then even streamed/non seekable streams will be reconnected on errors.
