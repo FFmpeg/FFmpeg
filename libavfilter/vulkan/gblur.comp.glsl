@@ -54,8 +54,8 @@ void main()
     for(int i = 1; i < kernel.length(); i++) {
         ivec2 offs = gl_WorkGroupSize.x > gl_WorkGroupSize.y ? ivec2(i, 0) :
                                                                ivec2(0, i);
-        sum += imageLoad(input_img[P_IDX], pos + offs) * kernel[i];
-        sum += imageLoad(input_img[P_IDX], pos - offs) * kernel[i];
+        sum += imageLoad(input_img[P_IDX], min(pos + offs, size - 1)) * kernel[i];
+        sum += imageLoad(input_img[P_IDX], max(pos - offs, ivec2(0))) * kernel[i];
     }
 
     imageStore(output_img[P_IDX], pos, sum);
