@@ -1334,6 +1334,17 @@ Use the default huffman tables. This is the default strategy.
 Compute and use optimal huffman tables.
 
 @end table
+
+@item intra_dc_precision @var{integer}
+Set the precision of the DC coefficient minus 8. Valid range is 0 to 3.
+Higher values quantize DC more finely as the DC entry of the written
+quantization table is 8 >> @var{intra_dc_precision} so 3 gives a DC
+quantizer of 1. Default is 0 which keeps the previous fixed DC
+quantizer of 8.
+
+Combined with @code{-q:v 1} and an @code{intra_matrix} of all 8s,
+a value of 3 produces a quantization table of all ones.
+
 @end table
 
 @anchor{wavpackenc}

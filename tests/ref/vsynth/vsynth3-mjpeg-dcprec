@@ -1,0 +1,4 @@
+72e395ca9005268c746de2d2c7ac4b66 *tests/data/fate/vsynth3-mjpeg-dcprec.avi
+67142 tests/data/fate/vsynth3-mjpeg-dcprec.avi
+b6c7b383aa0686e1e3d81ab1b875ecd8 *tests/data/fate/vsynth3-mjpeg-dcprec.out.rawvideo
+stddev:    8.60 PSNR: 29.43 MAXDIFF:   58 bytes:    86700/    86700
