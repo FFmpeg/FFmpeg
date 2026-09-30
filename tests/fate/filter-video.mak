@@ -574,6 +574,12 @@ fate-filter-scalechroma-uyvy422: CMD = framecrc -flags bitexact -lavfi testsrc2=
 fate-filter-scalechroma-yuyv422-topleft: CMD = framecrc -flags bitexact -lavfi testsrc2=s=64x64:r=1:d=1,scale=flags=accurate_rnd+bitexact,format=yuyv422,scale=in_chroma_loc=left:out_chroma_loc=topleft:flags=accurate_rnd+bitexact,format=yuv420p -frames:v 1
 fate-filter-scalechroma-nv24: CMD = framecrc -flags bitexact -lavfi testsrc2=s=64x64:r=1:d=1,scale=flags=accurate_rnd+bitexact,format=nv24,scale=out_chroma_loc=left:flags=accurate_rnd+bitexact,format=yuv420p -frames:v 1
 
+FATE_FILTER-$(call FILTERFRAMECRC, TESTSRC2 FORMAT SCALE) += fate-filter-scalechroma-infer
+fate-filter-scalechroma-infer: CMD = framecrc -flags bitexact -lavfi testsrc2=s=64x64:r=1:d=1,format=yuv420p,scale=96:80:out_chroma_loc=left:flags=accurate_rnd+bitexact,format=yuv420p -frames:v 1
+
+FATE_FILTER_FFPROBE-$(call ALLYES, FFPROBE LAVFI_INDEV WRAPPED_AVFRAME_DECODER TESTSRC2_FILTER FORMAT_FILTER SCALE_FILTER) += fate-filter-scalechroma-infer-noop
+fate-filter-scalechroma-infer-noop: CMD = probe -print_format compact -show_entries frame=chroma_location -f lavfi "testsrc2=s=64x64:r=1:d=1,format=yuv420p,scale=out_chroma_loc=left"
+
 FATE_FILTER_VSYNTH-$(call FILTERDEMDEC, SCALE, RAWVIDEO, RAWVIDEO) += fate-filter-scalechroma
 fate-filter-scalechroma: tests/data/vsynth1.yuv
 fate-filter-scalechroma: CMD = framecrc -flags bitexact -s 352x288 -pix_fmt yuv444p -i $(TARGET_PATH)/tests/data/vsynth1.yuv -pix_fmt yuv420p -sws_flags +bitexact -vf scale=out_chroma_loc=bottomleft

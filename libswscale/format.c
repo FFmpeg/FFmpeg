@@ -556,6 +556,27 @@ bool ff_infer_colors(SwsColor *src, SwsColor *dst)
     return incomplete;
 }
 
+static int infer_loc_ref(SwsFormat *fmt, const SwsFormat *ref)
+{
+    if (fmt->loc != AVCHROMA_LOC_UNSPECIFIED ||
+        ref->loc == AVCHROMA_LOC_UNSPECIFIED ||
+        (!fmt->desc->log2_chroma_w && !fmt->desc->log2_chroma_h))
+        return 0;
+
+    fmt->loc = ref->loc;
+    return 1;
+}
+
+bool ff_infer_chroma_loc(SwsFormat *src, SwsFormat *dst)
+{
+    int incomplete = 0;
+
+    incomplete |= infer_loc_ref(dst, src);
+    incomplete |= infer_loc_ref(src, dst);
+
+    return incomplete;
+}
+
 void ff_sws_chroma_pos(const SwsFormat *fmt, bool *incomplete,
                        int *out_x_pos, int *out_y_pos)
 {
@@ -700,6 +721,7 @@ int sws_is_noop(const AVFrame *dst, const AVFrame *src)
     for (int field = 0; field < 2; field++) {
         SwsFormat dst_fmt = ff_fmt_from_frame(dst, field);
         SwsFormat src_fmt = ff_fmt_from_frame(src, field);
+        ff_infer_chroma_loc(&src_fmt, &dst_fmt);
         if (!ff_fmt_equal(&dst_fmt, &src_fmt))
             return 0;
         if (!dst_fmt.interlaced)

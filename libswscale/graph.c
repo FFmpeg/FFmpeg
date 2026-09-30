@@ -804,6 +804,8 @@ static int init_passes(SwsGraph *graph)
     SwsPass *pass = NULL; /* read from main input image */
     int ret;
 
+    graph->incomplete |= ff_infer_chroma_loc(&src, &dst);
+
     ret = generate_3dlut(graph, &src, &dst);
     if (ret < 0)
         return ret;

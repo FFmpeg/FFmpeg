@@ -162,6 +162,12 @@ int ff_test_fmt(SwsBackend backends, const SwsFormat *fmt, int output);
 bool ff_infer_colors(SwsColor *src, SwsColor *dst);
 
 /**
+ * Infers an unspecified chroma location of a subsampled format from the
+ * other format. Returns true if a location was inferred, false otherwise.
+ */
+bool ff_infer_chroma_loc(SwsFormat *src, SwsFormat *dst);
+
+/**
  * Wrapper around av_chroma_location_enum_to_pos() that accounts for
  * the per-field offset introduced by interlacing.
  */
