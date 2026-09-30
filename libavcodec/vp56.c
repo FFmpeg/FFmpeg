@@ -654,9 +654,11 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     }
 
     if (res == VP56_SIZE_CHANGE) {
-        if (vp56_size_changed(s)) {
+        ret = vp56_size_changed(s);
+        if (ret < 0) {
             av_frame_unref(p);
-            return AVERROR_INVALIDDATA;
+            ff_set_dimensions(avctx, 0, 0);
+            return ret;
         }
     }
 
