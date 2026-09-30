@@ -975,7 +975,8 @@ static int mov_write_mhac_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *tra
     int64_t pos = avio_tell(pb);
     int layout = 0;
 
-    if (track->extradata_size[track->last_stsd_index] > UINT16_MAX) {
+    if (!track->extradata_size[track->last_stsd_index] ||
+         track->extradata_size[track->last_stsd_index] > UINT16_MAX) {
         av_log(s, AV_LOG_ERROR,
                "Invalid extradata size %d for MPEGH-H stream.\n",
                track->extradata_size[track->last_stsd_index]);
