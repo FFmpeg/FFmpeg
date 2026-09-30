@@ -5384,46 +5384,41 @@ DISABLE_I8MM
         QPEL_UNI_W_HV_4
 .endm
 
-function hevc_put_hevc_qpel_uni_w_hv4_8_end_neon
-        ldr             d16, [sp]
-        ldr             d17, [sp, x10]
+.macro qpel_uni_w_hv_tail type, step
+        ldr             \type\()16, [sp]
+        ldr             \type\()17, [sp, x10]
         add             sp, sp, x10, lsl #1
-        ldr             d18, [sp]
-        ldr             d19, [sp, x10]
+        ldr             \type\()18, [sp]
+        ldr             \type\()19, [sp, x10]
         add             sp, sp, x10, lsl #1
-        ldr             d20, [sp]
-        ldr             d21, [sp, x10]
+        ldr             \type\()20, [sp]
+        ldr             \type\()21, [sp, x10]
         add             sp, sp, x10, lsl #1
-        ldr             d22, [sp]
+        ldr             \type\()22, [sp]
         add             sp, sp, x10
-1:
-        qpel_uni_w_hv4_end_step d23, v16, v17, v18, v19, v20, v21, v22, v23
+1:      \step           \type\()23, v16, v17, v18, v19, v20, v21, v22, v23
         b.eq            2f
-
-        qpel_uni_w_hv4_end_step d16, v17, v18, v19, v20, v21, v22, v23, v16
+        \step           \type\()16, v17, v18, v19, v20, v21, v22, v23, v16
         b.eq            2f
-
-        qpel_uni_w_hv4_end_step d17, v18, v19, v20, v21, v22, v23, v16, v17
+        \step           \type\()17, v18, v19, v20, v21, v22, v23, v16, v17
         b.eq            2f
-
-        qpel_uni_w_hv4_end_step d18, v19, v20, v21, v22, v23, v16, v17, v18
+        \step           \type\()18, v19, v20, v21, v22, v23, v16, v17, v18
         b.eq            2f
-
-        qpel_uni_w_hv4_end_step d19, v20, v21, v22, v23, v16, v17, v18, v19
+        \step           \type\()19, v20, v21, v22, v23, v16, v17, v18, v19
         b.eq            2f
-
-        qpel_uni_w_hv4_end_step d20, v21, v22, v23, v16, v17, v18, v19, v20
+        \step           \type\()20, v21, v22, v23, v16, v17, v18, v19, v20
         b.eq            2f
-
-        qpel_uni_w_hv4_end_step d21, v22, v23, v16, v17, v18, v19, v20, v21
+        \step           \type\()21, v22, v23, v16, v17, v18, v19, v20, v21
         b.eq            2f
-
-        qpel_uni_w_hv4_end_step d22, v23, v16, v17, v18, v19, v20, v21, v22
+        \step           \type\()22, v23, v16, v17, v18, v19, v20, v21, v22
         b.hi            1b
-
 2:
         QPEL_UNI_W_HV_END
         ret
+.endm
+
+function hevc_put_hevc_qpel_uni_w_hv4_8_end_neon
+        qpel_uni_w_hv_tail d, qpel_uni_w_hv4_end_step
 endfunc
 
 // hv6: process 6 pixels (4 + 2), use 8-element loads/stores
@@ -5454,45 +5449,7 @@ endfunc
 .endm
 
 function hevc_put_hevc_qpel_uni_w_hv6_8_end_neon
-        ldr             q16, [sp]
-        ldr             q17, [sp, x10]
-        add             sp, sp, x10, lsl #1
-        ldr             q18, [sp]
-        ldr             q19, [sp, x10]
-        add             sp, sp, x10, lsl #1
-        ldr             q20, [sp]
-        ldr             q21, [sp, x10]
-        add             sp, sp, x10, lsl #1
-        ldr             q22, [sp]
-        add             sp, sp, x10
-1:
-        qpel_uni_w_hv6_end_step q23, v16, v17, v18, v19, v20, v21, v22, v23
-        b.eq            2f
-
-        qpel_uni_w_hv6_end_step q16, v17, v18, v19, v20, v21, v22, v23, v16
-        b.eq            2f
-
-        qpel_uni_w_hv6_end_step q17, v18, v19, v20, v21, v22, v23, v16, v17
-        b.eq            2f
-
-        qpel_uni_w_hv6_end_step q18, v19, v20, v21, v22, v23, v16, v17, v18
-        b.eq            2f
-
-        qpel_uni_w_hv6_end_step q19, v20, v21, v22, v23, v16, v17, v18, v19
-        b.eq            2f
-
-        qpel_uni_w_hv6_end_step q20, v21, v22, v23, v16, v17, v18, v19, v20
-        b.eq            2f
-
-        qpel_uni_w_hv6_end_step q21, v22, v23, v16, v17, v18, v19, v20, v21
-        b.eq            2f
-
-        qpel_uni_w_hv6_end_step q22, v23, v16, v17, v18, v19, v20, v21, v22
-        b.hi            1b
-
-2:
-        QPEL_UNI_W_HV_END
-        ret
+        qpel_uni_w_hv_tail q, qpel_uni_w_hv6_end_step
 endfunc
 
 .macro QPEL_UNI_W_HV_8
@@ -5520,45 +5477,7 @@ endfunc
 .endm
 
 function hevc_put_hevc_qpel_uni_w_hv8_8_end_neon
-        ldr             q16, [sp]
-        ldr             q17, [sp, x10]
-        add             sp, sp, x10, lsl #1
-        ldr             q18, [sp]
-        ldr             q19, [sp, x10]
-        add             sp, sp, x10, lsl #1
-        ldr             q20, [sp]
-        ldr             q21, [sp, x10]
-        add             sp, sp, x10, lsl #1
-        ldr             q22, [sp]
-        add             sp, sp, x10
-1:
-        qpel_uni_w_hv8_end_step q23, v16, v17, v18, v19, v20, v21, v22, v23
-        b.eq            2f
-
-        qpel_uni_w_hv8_end_step q16, v17, v18, v19, v20, v21, v22, v23, v16
-        b.eq            2f
-
-        qpel_uni_w_hv8_end_step q17, v18, v19, v20, v21, v22, v23, v16, v17
-        b.eq            2f
-
-        qpel_uni_w_hv8_end_step q18, v19, v20, v21, v22, v23, v16, v17, v18
-        b.eq            2f
-
-        qpel_uni_w_hv8_end_step q19, v20, v21, v22, v23, v16, v17, v18, v19
-        b.eq            2f
-
-        qpel_uni_w_hv8_end_step q20, v21, v22, v23, v16, v17, v18, v19, v20
-        b.eq            2f
-
-        qpel_uni_w_hv8_end_step q21, v22, v23, v16, v17, v18, v19, v20, v21
-        b.eq            2f
-
-        qpel_uni_w_hv8_end_step q22, v23, v16, v17, v18, v19, v20, v21, v22
-        b.hi            1b
-
-2:
-        QPEL_UNI_W_HV_END
-        ret
+        qpel_uni_w_hv_tail q, qpel_uni_w_hv8_end_step
 endfunc
 
 // hv12: process 12 pixels = 8 + 4
