@@ -231,6 +231,15 @@ static int query_formats(const AVFilterContext *ctx,
     if ((ret = ff_formats_ref(formats, &cfg_out[0]->color_ranges)) < 0)
         return ret;
 
+    if ((ret = ff_formats_ref(ff_all_chroma_locations(), &cfg_in[0]->chroma_locations)) < 0)
+        return ret;
+
+    formats = s->chromal != -1
+        ? ff_make_formats_list_singleton(s->chromal + 1)
+        : ff_all_chroma_locations();
+    if ((ret = ff_formats_ref(formats, &cfg_out[0]->chroma_locations)) < 0)
+        return ret;
+
     if ((ret = ff_formats_ref(ff_all_alpha_modes(), &cfg_in[0]->alpha_modes))  < 0 ||
         (ret = ff_formats_ref(ff_all_alpha_modes(), &cfg_out[0]->alpha_modes)) < 0)
         return ret;
@@ -784,6 +793,8 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         av_frame_copy_props(out, in);
         out->colorspace = outlink->colorspace;
         out->color_range = outlink->color_range;
+        if (outlink->chroma_location != AVCHROMA_LOC_UNSPECIFIED)
+            out->chroma_location = outlink->chroma_location;
 
         if ((ret = realign_frame(link, desc, &in)) < 0)
             goto fail;
@@ -806,10 +817,13 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         zimg_image_format_default(&s->dst_format, ZIMG_API_VERSION);
         zimg_graph_builder_params_default(&s->params, ZIMG_API_VERSION);
 
-        format_init(&s->src_format, in, desc, s->colorspace_in,
-            s->primaries_in, s->trc_in, s->range_in, s->chromal_in);
         format_init(&s->dst_format, out, odesc, s->colorspace,
             s->primaries, s->trc, s->range, s->chromal);
+        /* Input without a chroma location is assumed to be sited like the output. */
+        format_init(&s->src_format, in, desc, s->colorspace_in,
+            s->primaries_in, s->trc_in, s->range_in,
+            s->chromal_in == -1 && in->chroma_location == AVCHROMA_LOC_UNSPECIFIED ?
+            s->dst_format.chroma_location : s->chromal_in);
         s->first_time = 0;
 
         s->params.dither_type = s->dither;
@@ -883,6 +897,8 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         }
     } else {
         /*no need for any filtering */
+        if (outlink->chroma_location != AVCHROMA_LOC_UNSPECIFIED)
+            in->chroma_location = outlink->chroma_location;
         return ff_filter_frame(outlink, in);
     }
 fail:
