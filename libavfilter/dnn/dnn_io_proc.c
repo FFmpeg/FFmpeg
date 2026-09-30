@@ -46,6 +46,7 @@ int ff_proc_from_dnn_to_frame(AVFrame *frame, DNNData *output, void *log_ctx)
     int linesize[4] = { 0 };
     void **dst_data = NULL;
     void *middle_data = NULL;
+    void *dst_data_buf[4] = { NULL, NULL, NULL, NULL };
     uint8_t *planar_data[4] = { 0 };
     int plane_size = frame->width * frame->height * sizeof(uint8_t);
     enum AVPixelFormat src_fmt = AV_PIX_FMT_NONE;
@@ -77,7 +78,8 @@ int ff_proc_from_dnn_to_frame(AVFrame *frame, DNNData *output, void *log_ctx)
             ret = AVERROR(ENOMEM);
             goto err;
         }
-        dst_data = &middle_data;
+        dst_data_buf[0] = middle_data;
+        dst_data = dst_data_buf;
         linesize[0] = frame->width * 3;
     }
 
@@ -198,6 +200,7 @@ int ff_proc_from_frame_to_dnn(AVFrame *frame, DNNData *input, void *log_ctx)
     int linesize[4] = { 0 };
     void **src_data = NULL;
     void *middle_data = NULL;
+    void *src_data_buf[4] = { NULL, NULL, NULL, NULL };
     uint8_t *planar_data[4] = { 0 };
     int plane_size = frame->width * frame->height * sizeof(uint8_t);
     enum AVPixelFormat dst_fmt = AV_PIX_FMT_NONE;
@@ -227,7 +230,8 @@ int ff_proc_from_frame_to_dnn(AVFrame *frame, DNNData *input, void *log_ctx)
             ret = AVERROR(ENOMEM);
             goto err;
         }
-        src_data = &middle_data;
+        src_data_buf[0] = middle_data;
+        src_data = src_data_buf;
         linesize[0] = frame->width * 3;
     }
 
