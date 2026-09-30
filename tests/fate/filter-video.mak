@@ -578,6 +578,14 @@ FATE_FILTER_VSYNTH-$(call FILTERDEMDEC, SCALE, RAWVIDEO, RAWVIDEO) += fate-filte
 fate-filter-scalechroma: tests/data/vsynth1.yuv
 fate-filter-scalechroma: CMD = framecrc -flags bitexact -s 352x288 -pix_fmt yuv444p -i $(TARGET_PATH)/tests/data/vsynth1.yuv -pix_fmt yuv420p -sws_flags +bitexact -vf scale=out_chroma_loc=bottomleft
 
+FATE_FILTER-$(call FILTERFRAMECRC, TESTSRC2 FORMAT SCALE, SWSCALE_ALPHA) += fate-filter-scalechroma-alphablend fate-filter-scalechroma-alphablend-scaled
+fate-filter-scalechroma-alphablend: CMD = framecrc -flags bitexact -lavfi testsrc2=s=64x64:r=1:d=1:alpha=128,format=yuva420p,scale=in_chroma_loc=topleft:out_chroma_loc=center:alphablend=uniform_color:flags=accurate_rnd+bitexact,format=yuv420p -frames:v 1
+fate-filter-scalechroma-alphablend-scaled: CMD = framecrc -flags bitexact -lavfi testsrc2=s=64x64:r=1:d=1:alpha=128,format=yuva420p,scale=96:80:in_chroma_loc=topleft:out_chroma_loc=center:alphablend=uniform_color:flags=accurate_rnd+bitexact,format=yuv420p -frames:v 1
+
+FATE_FILTER-$(call FILTERFRAMECRC, TESTSRC2 FORMAT SCALE) += fate-filter-scalechroma-matrix fate-filter-scalechroma-downscale
+fate-filter-scalechroma-matrix: CMD = framecrc -flags bitexact -lavfi testsrc2=s=64x64:r=1:d=1,format=yuv420p,scale=96:80:in_color_matrix=bt709:out_color_matrix=bt470bg:in_range=tv:out_range=tv:in_chroma_loc=topleft:out_chroma_loc=center:flags=accurate_rnd+bitexact,format=yuv420p -frames:v 1
+fate-filter-scalechroma-downscale: CMD = framecrc -flags bitexact -lavfi testsrc2=s=2048x2048:r=1:d=1,format=yuv420p,scale=8:8:in_chroma_loc=topleft:out_chroma_loc=center:flags=accurate_rnd+bitexact,format=yuv420p -frames:v 1
+
 FATE_FILTER-$(call ALLYES, SCALE_FILTER TESTSRC2_FILTER LAVFI_INDEV \
                            WRAPPED_AVFRAME_DECODER WRAPPED_AVFRAME_ENCODER \
                            NULL_MUXER) += fate-filter-scale-print-info \

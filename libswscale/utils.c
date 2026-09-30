@@ -93,6 +93,19 @@ static SwsContext *alloc_set_opts(int srcW, int srcH, enum AVPixelFormat srcForm
     return sws;
 }
 
+static void set_cascade_chr_pos(SwsContext *cascade, const SwsContext *sws,
+                                int src, int dst)
+{
+    if (src) {
+        cascade->src_h_chr_pos = sws->src_h_chr_pos;
+        cascade->src_v_chr_pos = sws->src_v_chr_pos;
+    }
+    if (dst) {
+        cascade->dst_h_chr_pos = sws->dst_h_chr_pos;
+        cascade->dst_v_chr_pos = sws->dst_v_chr_pos;
+    }
+}
+
 int ff_shuffle_filter_coefficients(SwsInternal *c, int *filterPos,
                                    int filterSize, int16_t *filter,
                                    int dstW)
@@ -963,6 +976,7 @@ int sws_setColorspaceDetails(SwsContext *sws, const int inv_table[4],
                 return -1;
 
             c->cascaded_context[0]->alpha_blend = sws->alpha_blend;
+            set_cascade_chr_pos(c->cascaded_context[0], sws, 1, 0);
             ret = sws_init_context(c->cascaded_context[0], NULL , NULL);
             if (ret < 0)
                 return ret;
@@ -978,6 +992,7 @@ int sws_setColorspaceDetails(SwsContext *sws, const int inv_table[4],
                 return -1;
             c->cascaded_context[1]->src_range = srcRange;
             c->cascaded_context[1]->dst_range = dstRange;
+            set_cascade_chr_pos(c->cascaded_context[1], sws, 0, 1);
             ret = sws_init_context(c->cascaded_context[1], NULL , NULL);
             if (ret < 0)
                 return ret;
@@ -1485,13 +1500,15 @@ av_cold int ff_sws_init_single_context(SwsContext *sws, SwsFilter *srcFilter,
         if (ret < 0)
             return ret;
 
-        c->cascaded_context[0] = sws_getContext(srcW, srcH, srcFormat,
+        c->cascaded_context[0] = alloc_set_opts(srcW, srcH, srcFormat,
                                                 srcW, srcH, tmpFmt,
-                                                flags, NULL, NULL,
-                                                sws->scaler_params);
-        if (!c->cascaded_context[0]) {
+                                                flags, sws->scaler_params);
+        if (!c->cascaded_context[0])
             return AVERROR(ENOMEM);
-        }
+        set_cascade_chr_pos(c->cascaded_context[0], sws, 1, 0);
+        ret = sws_init_context(c->cascaded_context[0], NULL, NULL);
+        if (ret < 0)
+            return ret;
 
         c->cascaded_context[1] = sws_getContext(srcW, srcH, tmpFmt,
                                                 dstW, dstH, tmpFmt,
@@ -1525,12 +1542,15 @@ av_cold int ff_sws_init_single_context(SwsContext *sws, SwsFilter *srcFilter,
             if (ret < 0)
                 return ret;
 
-            c->cascaded_context[2] = sws_getContext(dstW, dstH, tmpFmt,
+            c->cascaded_context[2] = alloc_set_opts(dstW, dstH, tmpFmt,
                                                     dstW, dstH, dstFormat,
-                                                    flags, NULL, NULL,
-                                                    sws->scaler_params);
+                                                    flags, sws->scaler_params);
             if (!c->cascaded_context[2])
                 return AVERROR(ENOMEM);
+            set_cascade_chr_pos(c->cascaded_context[2], sws, 0, 1);
+            ret = sws_init_context(c->cascaded_context[2], NULL, NULL);
+            if (ret < 0)
+                return ret;
         }
         return 0;
     }
@@ -1562,12 +1582,15 @@ av_cold int ff_sws_init_single_context(SwsContext *sws, SwsFilter *srcFilter,
             if (!c->cascaded_context[0])
                 return AVERROR(ENOMEM);
 
-            c->cascaded_context[1] = sws_getContext(srcW, srcH, tmpFormat,
+            c->cascaded_context[1] = alloc_set_opts(srcW, srcH, tmpFormat,
                                                     dstW, dstH, dstFormat,
-                                                    flags, NULL, dstFilter,
-                                                    sws->scaler_params);
+                                                    flags, sws->scaler_params);
             if (!c->cascaded_context[1])
                 return AVERROR(ENOMEM);
+            set_cascade_chr_pos(c->cascaded_context[1], sws, 0, 1);
+            ret = sws_init_context(c->cascaded_context[1], NULL, dstFilter);
+            if (ret < 0)
+                return ret;
             return 0;
         }
     }
@@ -1618,6 +1641,7 @@ av_cold int ff_sws_init_single_context(SwsContext *sws, SwsFilter *srcFilter,
 
                 c->cascaded_context[1]->src_range = sws->src_range;
                 c->cascaded_context[1]->dst_range = sws->dst_range;
+                set_cascade_chr_pos(c->cascaded_context[1], sws, 1, 1);
                 ret = sws_init_context(c->cascaded_context[1], srcFilter , dstFilter);
                 if (ret < 0)
                     return ret;
@@ -1839,19 +1863,25 @@ fail: // FIXME replace things by appropriate error codes
         if (ret < 0)
             return ret;
 
-        c->cascaded_context[0] = sws_getContext(srcW, srcH, srcFormat,
+        c->cascaded_context[0] = alloc_set_opts(srcW, srcH, srcFormat,
                                                 tmpW, tmpH, tmpFormat,
-                                                flags, srcFilter, NULL,
-                                                sws->scaler_params);
+                                                flags, sws->scaler_params);
         if (!c->cascaded_context[0])
             return AVERROR(ENOMEM);
+        set_cascade_chr_pos(c->cascaded_context[0], sws, 1, 0);
+        ret = sws_init_context(c->cascaded_context[0], srcFilter, NULL);
+        if (ret < 0)
+            return ret;
 
-        c->cascaded_context[1] = sws_getContext(tmpW, tmpH, tmpFormat,
+        c->cascaded_context[1] = alloc_set_opts(tmpW, tmpH, tmpFormat,
                                                 dstW, dstH, dstFormat,
-                                                flags, NULL, dstFilter,
-                                                sws->scaler_params);
+                                                flags, sws->scaler_params);
         if (!c->cascaded_context[1])
             return AVERROR(ENOMEM);
+        set_cascade_chr_pos(c->cascaded_context[1], sws, 0, 1);
+        ret = sws_init_context(c->cascaded_context[1], NULL, dstFilter);
+        if (ret < 0)
+            return ret;
         return 0;
     }
     return ret;
