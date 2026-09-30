@@ -20,6 +20,7 @@
 
 #include "libavutil/random_seed.h"
 #include "libavutil/opt.h"
+#include "libavutil/pixdesc.h"
 #include "vulkan_filter.h"
 
 #include "filters.h"
@@ -53,6 +54,7 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
     AvgBlurVulkanContext *s = ctx->priv;
     FFVulkanContext *vkctx = &s->vkctx;
     const int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(s->vkctx.output_format);
 
     s->qf = ff_vk_qf_find(vkctx, VK_QUEUE_COMPUTE_BIT, 0);
     if (!s->qf) {
@@ -90,11 +92,13 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
     RET(ff_vk_shader_register_exec(vkctx, &s->e, &s->shd));
 
     s->initialized = 1;
-    s->opts.filter_len[0] = s->size_x - 1;
-    s->opts.filter_len[1] = s->size_y - 1;
+    /* like avgblur, at most half the chroma plane */
+    s->opts.filter_len[0] = FFMIN(s->size_x,
+                                  AV_CEIL_RSHIFT(vkctx->output_width,  desc->log2_chroma_w) / 2);
+    s->opts.filter_len[1] = FFMIN(s->size_y,
+                                  AV_CEIL_RSHIFT(vkctx->output_height, desc->log2_chroma_h) / 2);
 
-    s->opts.filter_norm[0] = s->opts.filter_len[0]*2 + 1;
-    s->opts.filter_norm[0] = 1.0/(s->opts.filter_norm[0]*s->opts.filter_norm[0]);
+    s->opts.filter_norm[0] = 1.0/((s->opts.filter_len[0]*2 + 1)*(s->opts.filter_len[1]*2 + 1));
     s->opts.filter_norm[1] = s->opts.filter_norm[0];
     s->opts.filter_norm[2] = s->opts.filter_norm[0];
     s->opts.filter_norm[3] = s->opts.filter_norm[0];
