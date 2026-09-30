@@ -87,6 +87,7 @@ static av_cold int b ##basis## _i ##interleave(AVTXContext *s,                 \
 DECL_INIT_FN(8, 0)
 DECL_INIT_FN(8, 2)
 
+#if ARCH_X86_64
 static av_cold int factor_init(AVTXContext *s, const FFTXCodelet *cd,
                                uint64_t flags, FFTXCodeletOptions *opts,
                                int len, int inv, const void *scale)
@@ -227,6 +228,7 @@ static av_cold int fft_pfa_init(AVTXContext *s,
 
     return 0;
 }
+#endif
 
 const FFTXCodelet * const ff_tx_codelet_list_float_x86[] = {
     TX_DEF(fft2,     FFT,  2,  2, 2, 0, 128, NULL,  sse3, SSE3, AV_TX_INPLACE, 0),
