@@ -64,6 +64,23 @@ enum { kVTQPModulationLevel_Disable = 0 };
 #   define TARGET_CPU_ARM64 0
 #endif
 
+/*
+ * Upper bound of the reorder depth of VideoToolbox H.264 and HEVC
+ * output, in frames. The encoder shifts the decode timestamps
+ * VideoToolbox reports by the pts distance of this many frames, and
+ * the value is published as AVCodecContext.has_b_frames; understating
+ * it outputs frames with dts greater than pts.
+ *
+ * The VideoToolbox API does not report the depth, so the value was
+ * measured from encoder output on macOS 15 (Apple silicon). It bounds
+ * the real depth instead of matching it everywhere: the software
+ * H.264 encoder (require_sw) reorders by one frame, and untested
+ * devices may reorder less. Keeping one value for every encoder is
+ * safe because overstating only shifts dts earlier, and it is simpler
+ * than branching per encoder.
+ */
+#define REORDER_DELAY 2
+
 typedef OSStatus (*getParameterSetAtIndex)(CMFormatDescriptionRef videoDesc,
                                            size_t parameterSetIndex,
                                            const uint8_t **parameterSetPointerOut,
@@ -1659,7 +1676,7 @@ static int vtenc_configure_encoder(AVCodecContext *avctx)
     if (vtctx->codec_id == AV_CODEC_ID_H264) {
         vtctx->get_param_set_func = CMVideoFormatDescriptionGetH264ParameterSetAtIndex;
 
-        vtctx->has_b_frames = avctx->max_b_frames > 0;
+        vtctx->has_b_frames = avctx->max_b_frames > 0 ? REORDER_DELAY : 0;
         if(vtctx->has_b_frames && (0xFF & vtctx->profile) == AV_PROFILE_H264_BASELINE){
             av_log(avctx, AV_LOG_WARNING, "Cannot use B-frames with baseline profile. Output will not contain B-frames.\n");
             vtctx->has_b_frames = 0;
@@ -1675,8 +1692,7 @@ static int vtenc_configure_encoder(AVCodecContext *avctx)
         vtctx->get_param_set_func = compat_keys.CMVideoFormatDescriptionGetHEVCParameterSetAtIndex;
         if (!vtctx->get_param_set_func) return AVERROR(EINVAL);
         if (!get_vt_hevc_profile_level(avctx, &profile_level)) return AVERROR(EINVAL);
-        // HEVC has b-byramid
-        vtctx->has_b_frames = avctx->max_b_frames > 0 ? 2 : 0;
+        vtctx->has_b_frames = avctx->max_b_frames > 0 ? REORDER_DELAY : 0;
     } else if (vtctx->codec_id == AV_CODEC_ID_PRORES) {
         avctx->codec_tag = av_bswap32(codec_type);
     }
@@ -1790,9 +1806,8 @@ static av_cold int vtenc_init(AVCodecContext *avctx)
 
     if (!status && has_b_frames_cfbool) {
         //Some devices don't output B-frames for main profile, even if requested.
-        // HEVC has b-pyramid
         if (CFBooleanGetValue(has_b_frames_cfbool))
-            vtctx->has_b_frames = avctx->codec_id == AV_CODEC_ID_HEVC ? 2 : 1;
+            vtctx->has_b_frames = REORDER_DELAY;
         else
             vtctx->has_b_frames = 0;
         CFRelease(has_b_frames_cfbool);
