@@ -114,7 +114,8 @@ static av_cold int mpegh3dadec_init(AVCodecContext *avctx)
         return AVERROR_EXTERNAL;
     }
 
-    if (avctx->extradata_size) {
+    if (avctx->codec_tag != MKTAG('m', 'h', 'm', '1') &&
+        avctx->codec_tag != MKTAG('m', 'h', 'm', '2') && avctx->extradata_size) {
         if (mpeghdecoder_setMhaConfig(s->decoder, avctx->extradata,
                                       avctx->extradata_size)) {
             av_log(avctx, AV_LOG_ERROR, "Unable to set MHA configuration\n");
