@@ -1748,6 +1748,10 @@ The accepted options are:
 @item cache_dir
 Path to the directory where cache files are stored. This option is required.
 
+@item metadata_dir
+Path to the directory where metadata files are stored. Optional. If not
+specified, metadata is stored in the same directory as the cache file.
+
 @item block_shift
 Shift factor (log2) of the block size used for internal reads/writes. Defaults
 to 15, i.e. 32KB blocks. If this does not match the value that was specified

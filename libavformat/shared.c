@@ -165,6 +165,7 @@ typedef struct SharedContext {
 
     /* options */
     char *cache_dir;
+    char *metadata_dir;
     int block_shift; ///< requested shift; updated on init if it disagrees
     int read_only;
     int64_t timeout;
@@ -287,6 +288,10 @@ static int shared_open(URLContext *h, const char *arg, int flags, AVDictionary *
         return AVERROR(EINVAL);
     }
 
+    const char *spacemap_dir = s->cache_dir;
+    if (s->metadata_dir && s->metadata_dir[0])
+        spacemap_dir = s->metadata_dir;
+
     s->fd = s->mapfd = -1; /* Set these early for shared_close() failure path */
 
     /* Open underlying protocol */
@@ -309,7 +314,7 @@ static int shared_open(URLContext *h, const char *arg, int flags, AVDictionary *
     char filename[2 * 16 + 1];
     ff_data_to_hex(filename, hash, sizeof(filename)/2, 0);
     s->cache_path = av_asprintf("%s/%s.cache",    s->cache_dir, filename);
-    s->map_path   = av_asprintf("%s/%s.spacemap", s->cache_dir, filename);
+    s->map_path   = av_asprintf("%s/%s.spacemap", spacemap_dir, filename);
     if (!s->cache_path || !s->map_path) {
         ret = AVERROR(ENOMEM);
         goto fail;
@@ -996,6 +1001,7 @@ static int shared_get_short_seek(URLContext *h)
 
 static const AVOption options[] = {
     { "cache_dir",      "Directory path for shared file cache",             OFFSET(cache_dir),      AV_OPT_TYPE_STRING, {.str = NULL}, .flags = D },
+    { "metadata_dir",   "Directory path for shared file cache metadata",    OFFSET(metadata_dir),   AV_OPT_TYPE_STRING, {.str = NULL}, .flags = D },
     { "block_shift",    "Set the base 2 logarithm of the block size",       OFFSET(block_shift),    AV_OPT_TYPE_INT, {.i64 = 15}, 9, 30, .flags = D },
     { "read_only",      "Don't write data to the cache, only read from it", OFFSET(read_only),      AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, .flags = D },
     { "cache_verify",   "Verify correctness of the cache against the source",   OFFSET(verify),     AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, .flags = D },
