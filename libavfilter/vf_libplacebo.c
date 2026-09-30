@@ -968,6 +968,8 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
     out->colorspace = outlink->colorspace;
     out->color_range = outlink->color_range;
     out->alpha_mode = outlink->alpha_mode;
+    if (outlink->chroma_location != AVCHROMA_LOC_UNSPECIFIED)
+        out->chroma_location = outlink->chroma_location;
     if (s->deinterlace)
         out->flags &= ~(AV_FRAME_FLAG_INTERLACED | AV_FRAME_FLAG_TOP_FIELD_FIRST);
 
@@ -983,8 +985,6 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
         out->color_trc = s->color_trc;
     if (s->color_primaries >= 0)
         out->color_primaries = s->color_primaries;
-    if (s->chroma_location >= 0)
-        out->chroma_location = s->chroma_location;
 
     /* Strip side data if no longer relevant */
     if (out->width != ref->width || out->height != ref->height)
@@ -1145,6 +1145,10 @@ static int handle_input(AVFilterContext *ctx, LibplaceboInput *input)
             .unmap       = unmap_frame,
             .discard     = discard_frame,
         };
+
+        /* Input without a chroma location is assumed to be sited like the output. */
+        if (in->chroma_location == AVCHROMA_LOC_UNSPECIFIED)
+            in->chroma_location = outlink->chroma_location;
 
         in->opaque = s;
         pl_queue_push(input->queue, &src);
@@ -1351,6 +1355,7 @@ done:
         RET(ff_formats_ref(ff_all_color_spaces(), &cfg_in[i]->color_spaces));
         RET(ff_formats_ref(ff_all_color_ranges(), &cfg_in[i]->color_ranges));
         RET(ff_formats_ref(ff_all_alpha_modes(), &cfg_in[i]->alpha_modes));
+        RET(ff_formats_ref(ff_all_chroma_locations(), &cfg_in[i]->chroma_locations));
     }
 
     RET(ff_formats_ref(outfmts, &cfg_out[0]->formats));
@@ -1366,6 +1371,10 @@ done:
     outfmts = s->alpha_mode > 0 ? ff_make_formats_list_singleton(s->alpha_mode)
                                  : ff_all_alpha_modes();
     RET(ff_formats_ref(outfmts, &cfg_out[0]->alpha_modes));
+
+    outfmts = s->chroma_location > 0 ? ff_make_formats_list_singleton(s->chroma_location)
+                                     : ff_all_chroma_locations();
+    RET(ff_formats_ref(outfmts, &cfg_out[0]->chroma_locations));
     return 0;
 
 fail:
@@ -1669,8 +1678,8 @@ static const AVOption libplacebo_options[] = {
     {"arib-std-b67",                   NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_ARIB_STD_B67}, INT_MIN, INT_MAX, STATIC, .unit = "color_trc"},
     {"vlog",                           NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_V_LOG},        INT_MIN, INT_MAX, STATIC, .unit = "color_trc"},
 
-    {"chroma_location", "select chroma location", OFFSET(chroma_location), AV_OPT_TYPE_INT, {.i64=-1}, -1, AVCHROMA_LOC_NB-1, DYNAMIC, .unit = "chroma_location"},
-    {"auto",  "keep the same chroma location",  0, AV_OPT_TYPE_CONST, {.i64=-1},                        0, 0, STATIC, .unit = "chroma_location"},
+    {"chroma_location", "select chroma location", OFFSET(chroma_location), AV_OPT_TYPE_INT, {.i64=-1}, -1, AVCHROMA_LOC_NB-1, STATIC, .unit = "chroma_location"},
+    {"auto",  "use the negotiated chroma location",  0, AV_OPT_TYPE_CONST, {.i64=-1},                        0, 0, STATIC, .unit = "chroma_location"},
     {"unspecified",                      NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_UNSPECIFIED},  0, 0, STATIC, .unit = "chroma_location"},
     {"unknown",                          NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_UNSPECIFIED},  0, 0, STATIC, .unit = "chroma_location"},
     {"left",                             NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_LEFT},         0, 0, STATIC, .unit = "chroma_location"},

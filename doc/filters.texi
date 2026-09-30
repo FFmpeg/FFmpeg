@@ -17262,9 +17262,12 @@ fail negotiation otherwise. Disabled by default.
 @item color_trc
 @item range
 @item chroma_location
-Configure the colorspace that output frames will be delivered in. The default
-value of @code{auto} outputs frames in the same format as the input frames,
-leading to no change. For any other value, conversion will be performed.
+Configure the colorspace that output frames will be delivered in. For any value
+other than the default @code{auto}, conversion will be performed. With
+@code{auto}, @option{color_primaries} and @option{color_trc} keep the values of
+the input frames, while @option{colorspace}, @option{range} and
+@option{chroma_location} use the values negotiated with the filtergraph, which
+are those of the input unless a following filter requires others.
 
 See the @ref{setparams} filter for a list of possible values.
 
