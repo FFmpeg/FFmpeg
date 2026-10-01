@@ -148,10 +148,14 @@ static int init_context_defaults(AVCodecContext *s, const AVCodec *codec)
 
 AVCodecContext *avcodec_alloc_context3(const AVCodec *codec)
 {
-    AVCodecContext *avctx= av_malloc(sizeof(AVCodecContext));
+    FFCodecContext *ffavc;
+    AVCodecContext *avctx;
 
-    if (!avctx)
+    ffavc = av_mallocz(sizeof(*ffavc));
+    if (!ffavc)
         return NULL;
+
+    avctx = &ffavc->pub;
 
     if (init_context_defaults(avctx, codec) < 0) {
         av_free(avctx);

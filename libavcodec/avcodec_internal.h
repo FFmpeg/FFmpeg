@@ -27,9 +27,20 @@
 
 #include "libavutil/frame.h"
 
+#include "avcodec.h"
 #include "packet.h"
 
-struct AVCodecContext;
+typedef struct FFCodecContext {
+    /**
+     * The public context.
+     */
+    AVCodecContext pub;
+} FFCodecContext;
+
+static av_always_inline FFCodecContext *ffcodeccontext(AVCodecContext *avctx)
+{
+    return (FFCodecContext*)avctx;
+}
 
 typedef struct SideDataMap {
     enum AVPacketSideDataType packet;
