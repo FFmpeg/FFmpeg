@@ -1267,6 +1267,7 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
                                           bit_rate_num);
             if (status == kVTPropertyNotSupportedErr) {
                 av_log(avctx, AV_LOG_ERROR, "-constant_bit_rate true is not supported by the encoder.\n");
+                CFRelease(bit_rate_num);
                 return AVERROR_EXTERNAL;
             }
         } else {
