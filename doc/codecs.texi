@@ -1041,6 +1041,8 @@ Note: The required alignment depends on if @code{AV_CODEC_FLAG_UNALIGNED} is set
 CPU. @code{AV_CODEC_FLAG_UNALIGNED} cannot be changed from the command line. Also hardware
 decoders will not apply left/top Cropping.
 
+@item lcevc-dec-params @var{string} (@emph{decoding,video})
+A :-separated list of key=value parameters passed to liblcevc-dec to initialize it.
 
 @end table
 

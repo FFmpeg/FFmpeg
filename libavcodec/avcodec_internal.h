@@ -35,6 +35,8 @@ typedef struct FFCodecContext {
      * The public context.
      */
     AVCodecContext pub;
+
+    struct AVDictionary *lcevc_params;
 } FFCodecContext;
 
 static av_always_inline FFCodecContext *ffcodeccontext(AVCodecContext *avctx)

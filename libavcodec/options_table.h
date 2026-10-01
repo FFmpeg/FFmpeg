@@ -30,8 +30,10 @@
 
 #include "libavutil/opt.h"
 #include "avcodec.h"
+#include "avcodec_internal.h"
 #include "version_major.h"
 
+#define FFOFFSET(x) offsetof(FFCodecContext,x)
 #define OFFSET(x) offsetof(AVCodecContext,x)
 #define DEFAULT 0 //should be NAN but it does not work as it is not a constant in glibc as required by ANSI/ISO C
 //these names are too long to be readable
@@ -420,6 +422,9 @@ static const AVOption avcodec_options[] = {
     {"content_light_level",         .default_val.i64 = AV_PKT_DATA_CONTENT_LIGHT_LEVEL,         .type = AV_OPT_TYPE_CONST, .flags = A|D, .unit = "side_data_pkt" },
     {"icc_profile",                 .default_val.i64 = AV_PKT_DATA_ICC_PROFILE,                 .type = AV_OPT_TYPE_CONST, .flags = A|D, .unit = "side_data_pkt" },
     {"exif",                        .default_val.i64 = AV_PKT_DATA_EXIF,                        .type = AV_OPT_TYPE_CONST, .flags = A|D, .unit = "side_data_pkt" },
+
+// FFCodecContext options
+{"lcevc-dec-params", "Configure liblcevc-dec using a :-separated list of key=value parameters", FFOFFSET(lcevc_params), AV_OPT_TYPE_DICT, { 0 }, 0, 0, V|D },
 {NULL},
 };
 
@@ -431,5 +436,6 @@ static const AVOption avcodec_options[] = {
 #undef CC
 #undef DEFAULT
 #undef OFFSET
+#undef FFOFFSET
 
 #endif /* AVCODEC_OPTIONS_TABLE_H */
