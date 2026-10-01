@@ -30576,7 +30576,7 @@ value is "25".
 @item c0, c1, c2, c3, c4, c5, c6, c7
 Set 8 colors. Default values for colors is to pick random one.
 
-@item x0, y0, y0, y1
+@item x0, y0, x1, y1
 Set gradient line source and destination points. If negative or out of range, random ones
 are picked.
 
