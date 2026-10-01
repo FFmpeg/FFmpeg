@@ -1957,7 +1957,7 @@ static int http_buf_read(URLContext *h, uint8_t *buf, int size)
         memcpy(buf, s->buf_ptr, len);
         s->buf_ptr += len;
     } else {
-        uint64_t file_end   = s->end_off   ? s->end_off   : s->filesize;
+        uint64_t file_end   = requested_end(s);
         uint64_t target_end = s->range_end ? s->range_end : file_end;
         if ((!s->willclose || s->chunksize == UINT64_MAX) && s->off >= file_end)
             return AVERROR_EOF;
@@ -2325,14 +2325,11 @@ static int64_t http_seek_internal(URLContext *h, int64_t off, int whence, int fo
     s->end_of_resource = 0;
 
     /* do not try to make a new connection if seeking past the end of the file */
-    if (s->end_off || s->filesize != UINT64_MAX) {
-        uint64_t end_pos = s->end_off ? s->end_off : s->filesize;
-        if (s->off >= end_pos) {
-            /* nothing of the old reply belongs to this offset */
-            ffurl_closep(&s->hd);
-            s->buf_ptr = s->buf_end = s->buffer;
-            return s->off;
-        }
+    if (s->off >= requested_end(s)) {
+        /* nothing of the old reply belongs to this offset */
+        ffurl_closep(&s->hd);
+        s->buf_ptr = s->buf_end = s->buffer;
+        return s->off;
     }
 
     /* if the location changed (redirect), revert to the original uri */
