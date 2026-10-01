@@ -430,6 +430,13 @@ static int redirect_cache_set(HTTPContext *s, const char *source, const char *de
     return 0;
 }
 
+/* The redirects that http_open_cnx() follows. */
+static int is_redirect(int http_code)
+{
+    return http_code == 301 || http_code == 302 || http_code == 303 ||
+           http_code == 307 || http_code == 308;
+}
+
 /* A 416 reply for a resource of unknown size marks its end, unless it states
  * a length past the refused offset. */
 static int is_end_of_resource(HTTPContext *s, int err, uint64_t off)
@@ -535,9 +542,7 @@ redo:
         } else
             goto fail;
     }
-    if ((s->http_code == 301 || s->http_code == 302 ||
-         s->http_code == 303 || s->http_code == 307 || s->http_code == 308) &&
-        s->new_location) {
+    if (is_redirect(s->http_code) && s->new_location) {
         /* url moved, get next */
         ffurl_closep(&s->hd);
         if (redirects++ >= s->max_redirects) {
@@ -1009,6 +1014,7 @@ static int parse_content_range(URLContext *h, const char *p)
     if (!strncmp(p, "bytes ", 6)) {
         p     += 6;
         s->off = strtoull(p, NULL, 10);
+        s->range_end = 0;
         if ((end = strchr(p, '-')) && strlen(end) > 0) {
             s->range_end = strtoull(end + 1, NULL, 10) + 1;
             if (s->range_end <= s->off) {
@@ -1865,7 +1871,10 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     s->sum_latency += latency;
     s->max_latency = FFMAX(s->max_latency, latency);
 
-    if (s->new_location)
+    /* Redirects and authentication challenges are answered with another
+     * request, whose reply is checked instead. */
+    if ((s->new_location && is_redirect(s->http_code)) ||
+        s->http_code == 401 || s->http_code == 407)
         s->off = off;
 
     if (off != s->off) {
