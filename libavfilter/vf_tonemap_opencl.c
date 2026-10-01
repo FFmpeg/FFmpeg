@@ -116,6 +116,7 @@ static const float sdr_avg = 0.25f;
 
 static int tonemap_opencl_init(AVFilterContext *avctx)
 {
+    unsigned util_init[2 * DETECTION_FRAMES + 7] = { 0 };
     TonemapOpenCLContext *ctx = avctx->priv;
     int rgb2rgb_passthrough = 1;
     double rgb2rgb[3][3], rgb2yuv[3][3], yuv2rgb[3][3];
@@ -258,10 +259,12 @@ static int tonemap_opencl_init(AVFilterContext *avctx)
     ctx->kernel = clCreateKernel(ctx->ocf.program, "tonemap", &cle);
     CL_FAIL_ON_ERROR(AVERROR(EIO), "Failed to create kernel %d.\n", cle);
 
+    // The kernel keeps its peak detection state here and expects it to
+    // start at zero, but a buffer created without a host pointer has
+    // undefined contents.
     ctx->util_mem =
-        clCreateBuffer(ctx->ocf.hwctx->context, 0,
-                       (2 * DETECTION_FRAMES + 7) * sizeof(unsigned),
-                       NULL, &cle);
+        clCreateBuffer(ctx->ocf.hwctx->context, CL_MEM_COPY_HOST_PTR,
+                       sizeof(util_init), util_init, &cle);
     CL_FAIL_ON_ERROR(AVERROR(EIO), "Failed to create util buffer: %d.\n", cle);
 
     ctx->initialised = 1;
