@@ -1272,7 +1272,6 @@ static int get_output_ov(DNNModel *model, const char *input_name, int input_widt
                                    const char *output_name, int *output_width, int *output_height)
 {
 #if HAVE_OPENVINO2
-    ov_dimension_t dims[4] = {{1, 1}, {1, 1}, {input_height, input_height}, {input_width, input_width}};
     ov_status_e status;
     ov_shape_t input_shape = {0};
     ov_partial_shape_t partial_shape;
@@ -1300,11 +1299,6 @@ static int get_output_ov(DNNModel *model, const char *input_name, int input_widt
 
 #if HAVE_OPENVINO2
     if (ctx->ov_option.input_resizable) {
-        status = ov_partial_shape_create(4, dims, &partial_shape);
-        if (status != OK) {
-            av_log(ctx, AV_LOG_ERROR, "Failed to create partial shape.\n");
-            return ov2_map_error(status, NULL);
-        }
         status = ov_const_port_get_shape(ov_model->input_port, &input_shape);
         if (status != OK) {
             av_log(ctx, AV_LOG_ERROR, "Failed to create shape for model input resize.\n");
