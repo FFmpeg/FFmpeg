@@ -459,6 +459,7 @@ redo:
     cur_proxy_auth_type = s->auth_state.auth_type;
 
     off = s->off;
+    s->http_code = 0;
     ret = http_open_cnx_internal(h, options);
     if (ret < 0) {
         if (!http_should_reconnect(s, ret) ||
@@ -1690,8 +1691,7 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
              * WWW-Authenticate header, or an 100 continue if no auth actually
              * is needed. */
             if (auth && *auth &&
-                s->auth_state.auth_type == HTTP_AUTH_NONE &&
-                s->http_code != 401)
+                s->auth_state.auth_type == HTTP_AUTH_NONE)
                 send_expect_100 = 1;
         }
     }
