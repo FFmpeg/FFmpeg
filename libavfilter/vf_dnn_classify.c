@@ -49,13 +49,16 @@ static const AVOption dnn_classify_options[] = {
 #if (CONFIG_LIBOPENVINO == 1)
     { "openvino",    "openvino backend flag",      0,                        AV_OPT_TYPE_CONST,     { .i64 = DNN_OV },    0, 0, FLAGS, .unit = "backend" },
 #endif
+#if (CONFIG_LIBONNXRUNTIME == 1)
+    { "onnx",        "onnx backend flag",          0,                        AV_OPT_TYPE_CONST,     { .i64 = DNN_ONNX },  0, 0, FLAGS, .unit = "backend" },
+#endif
     { "confidence",  "threshold of confidence",    OFFSET2(confidence),      AV_OPT_TYPE_FLOAT,     { .dbl = 0.5 },  0, 1, FLAGS},
     { "labels",      "path to labels file",        OFFSET2(labels_filename), AV_OPT_TYPE_STRING,    { .str = NULL }, 0, 0, FLAGS },
     { "target",      "which one to be classified", OFFSET2(target),          AV_OPT_TYPE_STRING,    { .str = NULL }, 0, 0, FLAGS },
     { NULL }
 };
 
-AVFILTER_DNN_DEFINE_CLASS(dnn_classify, DNN_OV);
+AVFILTER_DNN_DEFINE_CLASS(dnn_classify, DNN_OV | DNN_ONNX);
 
 static int dnn_classify_post_proc(AVFrame *frame, DNNData *output, uint32_t bbox_index, AVFilterContext *filter_ctx)
 {

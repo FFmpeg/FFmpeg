@@ -337,6 +337,9 @@ static enum AVPixelFormat get_pixel_format(DNNData *data)
     return AV_PIX_FMT_BGR24;
 }
 
+static void detect_write_tensor(DNNData *input, const uint8_t *src,
+                                int src_linesize, int w, int h);
+
 int ff_frame_to_dnn_classify(AVFrame *frame, DNNData *input, uint32_t bbox_index, void *log_ctx)
 {
     const AVPixFmtDescriptor *desc;
@@ -362,11 +365,6 @@ int ff_frame_to_dnn_classify(AVFrame *frame, DNNData *input, uint32_t bbox_index
         return AVERROR(ENOSYS);
     }
 
-    if (input->layout == DL_NCHW) {
-        av_log(log_ctx, AV_LOG_ERROR, "dnn_classify input data doesn't support layout: NCHW\n");
-        return AVERROR(ENOSYS);
-    }
-
     width_idx = dnn_get_width_idx_by_layout(input->layout);
     height_idx = dnn_get_height_idx_by_layout(input->layout);
 
@@ -377,28 +375,6 @@ int ff_frame_to_dnn_classify(AVFrame *frame, DNNData *input, uint32_t bbox_index
     width = bbox->w;
     top = bbox->y;
     height = bbox->h;
-
-    fmt = get_pixel_format(input);
-    sws_ctx = sws_getContext(width, height, frame->format,
-                             input->dims[width_idx],
-                             input->dims[height_idx], fmt,
-                             SWS_FAST_BILINEAR, NULL, NULL, NULL);
-    if (!sws_ctx) {
-        av_log(log_ctx, AV_LOG_ERROR, "Failed to create scale context for the conversion "
-               "fmt:%s s:%dx%d -> fmt:%s s:%dx%d\n",
-               av_get_pix_fmt_name(frame->format), width, height,
-               av_get_pix_fmt_name(fmt),
-               input->dims[width_idx],
-               input->dims[height_idx]);
-        return AVERROR(EINVAL);
-    }
-
-    ret = av_image_fill_linesizes(linesizes, fmt, input->dims[width_idx]);
-    if (ret < 0) {
-        av_log(log_ctx, AV_LOG_ERROR, "unable to get linesizes with av_image_fill_linesizes");
-        sws_freeContext(sws_ctx);
-        return ret;
-    }
 
     desc = av_pix_fmt_desc_get(frame->format);
     offsetx[1] = offsetx[2] = AV_CEIL_RSHIFT(left, desc->log2_chroma_w);
@@ -411,11 +387,66 @@ int ff_frame_to_dnn_classify(AVFrame *frame, DNNData *input, uint32_t bbox_index
     for (int k = 0; frame->data[k]; k++)
         bbox_data[k] = frame->data[k] + offsety[k] * frame->linesize[k] + offsetx[k] * max_step[k];
 
-    sws_scale(sws_ctx, (const uint8_t *const *)&bbox_data, frame->linesize,
-                       0, height,
-                       (uint8_t *const [4]){input->data, 0, 0, 0}, linesizes);
+    if (input->layout == DL_NCHW) {
+        /*
+         * For NCHW layout, scale the bbox region into a packed RGB temp buffer,
+         * then deinterleave into the NCHW tensor using detect_write_tensor().
+         */
+        int dst_w = input->dims[width_idx];
+        int dst_h = input->dims[height_idx];
+        int tmp_linesize = dst_w * 3;
+        uint8_t *tmp_buf = av_malloc(tmp_linesize * dst_h);
+        if (!tmp_buf)
+            return AVERROR(ENOMEM);
 
-    sws_freeContext(sws_ctx);
+        sws_ctx = sws_getContext(width, height, frame->format,
+                                 dst_w, dst_h, AV_PIX_FMT_RGB24,
+                                 SWS_FAST_BILINEAR, NULL, NULL, NULL);
+        if (!sws_ctx) {
+            av_log(log_ctx, AV_LOG_ERROR, "Failed to create scale context for the conversion "
+                   "fmt:%s s:%dx%d -> fmt:%s s:%dx%d\n",
+                   av_get_pix_fmt_name(frame->format), width, height,
+                   av_get_pix_fmt_name(AV_PIX_FMT_RGB24), dst_w, dst_h);
+            av_free(tmp_buf);
+            return AVERROR(EINVAL);
+        }
+
+        sws_scale(sws_ctx, (const uint8_t *const *)&bbox_data, frame->linesize,
+                           0, height,
+                           (uint8_t *const [4]){tmp_buf, 0, 0, 0},
+                           (const int [4]){tmp_linesize, 0, 0, 0});
+        sws_freeContext(sws_ctx);
+
+        detect_write_tensor(input, tmp_buf, tmp_linesize, dst_w, dst_h);
+        av_free(tmp_buf);
+    } else {
+        fmt = get_pixel_format(input);
+        sws_ctx = sws_getContext(width, height, frame->format,
+                                 input->dims[width_idx],
+                                 input->dims[height_idx], fmt,
+                                 SWS_FAST_BILINEAR, NULL, NULL, NULL);
+        if (!sws_ctx) {
+            av_log(log_ctx, AV_LOG_ERROR, "Failed to create scale context for the conversion "
+                   "fmt:%s s:%dx%d -> fmt:%s s:%dx%d\n",
+                   av_get_pix_fmt_name(frame->format), width, height,
+                   av_get_pix_fmt_name(fmt),
+                   input->dims[width_idx],
+                   input->dims[height_idx]);
+            return AVERROR(EINVAL);
+        }
+
+        ret = av_image_fill_linesizes(linesizes, fmt, input->dims[width_idx]);
+        if (ret < 0) {
+            av_log(log_ctx, AV_LOG_ERROR, "unable to get linesizes with av_image_fill_linesizes");
+            sws_freeContext(sws_ctx);
+            return ret;
+        }
+
+        sws_scale(sws_ctx, (const uint8_t *const *)&bbox_data, frame->linesize,
+                           0, height,
+                           (uint8_t *const [4]){input->data, 0, 0, 0}, linesizes);
+        sws_freeContext(sws_ctx);
+    }
 
     return ret;
 }
