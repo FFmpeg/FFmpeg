@@ -196,7 +196,10 @@ static int curlcode_to_averror(CURLcode code)
     switch (code) {
     case CURLE_OK:                       return 0;
     case CURLE_URL_MALFORMAT:
-    case CURLE_UNSUPPORTED_PROTOCOL:     return AVERROR(EINVAL);
+    case CURLE_UNSUPPORTED_PROTOCOL:
+    case CURLE_BAD_FUNCTION_ARGUMENT:    return AVERROR(EINVAL);
+    case CURLE_UNKNOWN_OPTION:
+    case CURLE_NOT_BUILT_IN:             return AVERROR(ENOSYS);
     case CURLE_COULDNT_RESOLVE_PROXY:
     case CURLE_COULDNT_RESOLVE_HOST:     return AVERROR(EHOSTUNREACH);
     case CURLE_COULDNT_CONNECT:          return AVERROR(ECONNREFUSED);
@@ -208,6 +211,16 @@ static int curlcode_to_averror(CURLcode code)
     case CURLE_SSL_CACERT_BADFILE:       return AVERROR_INVALIDDATA;
     default:                             return AVERROR(EIO);
     }
+}
+
+static int curl_setopt_checked(CurlContext *c, const char *name, CURLcode code)
+{
+    if (code == CURLE_OK)
+        return 0;
+
+    av_log(c->h, AV_LOG_ERROR, "Could not set %s: %s\n",
+           name, curl_easy_strerror(code));
+    return curlcode_to_averror(code);
 }
 
 static int curlmcode_to_averror(CURLMcode code)
@@ -634,9 +647,13 @@ static int xferinfo_callback(void *userdata, curl_off_t dltotal, curl_off_t dlno
  * thread only. */
 static void start_request(CurlContext *c)
 {
+    char range[48];
+    const char *range_value = NULL;
+    CURLcode cc;
+    int ret;
+
     if (!c->probed || c->seekable) {
         int64_t start = c->request_start;
-        char range[48];
         int64_t request_size = c->request_size;
         if (c->is_initial && c->initial_request_size > 0)
             request_size = c->initial_request_size;
@@ -652,9 +669,16 @@ static void start_request(CurlContext *c)
         } else {
             snprintf(range, sizeof(range), "%"PRId64"-", start);
         }
-        curl_easy_setopt(c->easy, CURLOPT_RANGE, range);
-    } else {
-        curl_easy_setopt(c->easy, CURLOPT_RANGE, NULL);
+        range_value = range;
+    }
+    cc = curl_easy_setopt(c->easy, CURLOPT_RANGE, range_value);
+    if ((ret = curl_setopt_checked(c, "CURLOPT_RANGE", cc)) < 0) {
+        c->loop->num_errors++;
+        pthread_mutex_lock(&c->mutex);
+        update_status_locked(c, ret, cc);
+        pthread_cond_broadcast(&c->cond);
+        pthread_mutex_unlock(&c->mutex);
+        return;
     }
     c->loop->num_requests++;
     c->request_received = 0;
@@ -1086,43 +1110,56 @@ static int debug_callback(CURL *easy, curl_infotype type, char *data,
     return 0;
 }
 
-/* Build the custom request header list from the referer and headers options. */
-static struct curl_slist *build_headers(CurlContext *c)
+static int slist_append(struct curl_slist **list, const char *str)
 {
-    struct curl_slist *list = NULL;
-    int user_set_icy = 0;
+    struct curl_slist *tmp = curl_slist_append(*list, str);
+    if (!tmp)
+        return AVERROR(ENOMEM);
+    *list = tmp;
+    return 0;
+}
+
+/* Build the custom request header list from the referer and headers options. */
+static int build_headers(CurlContext *c)
+{
+    int user_set_icy = 0, ret = 0;
 
     if (c->referer && c->referer[0]) {
         char *h = av_asprintf("Referer: %s", c->referer);
-        if (h) {
-            list = curl_slist_append(list, h);
-            av_free(h);
-        }
+        if (!h)
+            return AVERROR(ENOMEM);
+        ret = slist_append(&c->header_list, h);
+        av_free(h);
+        if (ret < 0)
+            return ret;
     }
     if (c->headers && c->headers[0]) {
         char *copy = av_strdup(c->headers);
         char *line, *saveptr = NULL;
-        if (copy) {
-            for (line = av_strtok(copy, "\r\n", &saveptr); line;
-                 line = av_strtok(NULL, "\r\n", &saveptr)) {
-                if (!av_strncasecmp(line, "Icy-MetaData:", 13))
-                    user_set_icy = 1;
-                list = curl_slist_append(list, line);
-            }
-            av_free(copy);
+        if (!copy)
+            return AVERROR(ENOMEM);
+        for (line = av_strtok(copy, "\r\n", &saveptr); line && ret >= 0;
+             line = av_strtok(NULL, "\r\n", &saveptr)) {
+            if (!av_strncasecmp(line, "Icy-MetaData:", 13))
+                user_set_icy = 1;
+            ret = slist_append(&c->header_list, line);
         }
+        av_free(copy);
+        if (ret < 0)
+            return ret;
     }
     /* libcurl does not deduplicate the list, so only add ours if the user
      * did not already ask for one. */
     if (c->icy && !user_set_icy)
-        list = curl_slist_append(list, "Icy-MetaData: 1");
-    return list;
+        return slist_append(&c->header_list, "Icy-MetaData: 1");
+    return 0;
 }
 
 static int setup_protocols(CurlContext *c)
 {
     const char *wl = c->h->protocol_whitelist;
     const char *bl = c->h->protocol_blacklist;
+    int ret;
     if (!wl && !bl)
         return 0;
 
@@ -1154,96 +1191,134 @@ static int setup_protocols(CurlContext *c)
         return AVERROR(EINVAL);
     }
 
-    curl_easy_setopt(c->easy, CURLOPT_PROTOCOLS_STR, bp.str);
-    curl_easy_setopt(c->easy, CURLOPT_REDIR_PROTOCOLS_STR, bp.str);
+    ret = curl_setopt_checked(c, "CURLOPT_PROTOCOLS_STR",
+                            curl_easy_setopt(c->easy, CURLOPT_PROTOCOLS_STR, bp.str));
+    if (!ret)
+        ret = curl_setopt_checked(c, "CURLOPT_REDIR_PROTOCOLS_STR",
+                                  curl_easy_setopt(c->easy, CURLOPT_REDIR_PROTOCOLS_STR, bp.str));
     av_bprint_finalize(&bp, NULL);
-    return 0;
+    return ret;
 }
 
-static void setup_curl(CurlContext *c)
+/* A failed setopt used to be ignored, so an unsupported option such as
+ * -http_version 3 on a libcurl built without HTTP/3 was silently dropped and
+ * the request went out with curl's default version. */
+#define CURL_SETOPT(opt, val)                                               \
+    do {                                                                    \
+        int ret_ = curl_setopt_checked(c, #opt,                            \
+                                       curl_easy_setopt(e, opt, val));      \
+        if (ret_ < 0)                                                       \
+            return ret_;                                                    \
+    } while (0)
+
+static int setup_curl(CurlContext *c)
 {
+    const curl_version_info_data *info = curl_version_info(CURLVERSION_NOW);
     CURL *e = c->easy;
+    CURLcode cc;
+    int ret;
     const char *url = c->h->filename;
 
     /* Drop an optional "libcurl:" prefix that forces this protocol. */
     av_strstart(url, "libcurl:", &url);
 
-    curl_easy_setopt(e, CURLOPT_URL, url);
-    curl_easy_setopt(e, CURLOPT_PRIVATE, c);
-    curl_easy_setopt(e, CURLOPT_NOSIGNAL, 1L);
-    curl_easy_setopt(e, CURLOPT_SHARE, c->loop->share);
+    CURL_SETOPT(CURLOPT_URL, url);
+    CURL_SETOPT(CURLOPT_PRIVATE, c);
+    CURL_SETOPT(CURLOPT_NOSIGNAL, 1L);
+    CURL_SETOPT(CURLOPT_SHARE, c->loop->share);
 
-    curl_easy_setopt(e, CURLOPT_WRITEFUNCTION, write_callback);
-    curl_easy_setopt(e, CURLOPT_WRITEDATA, c);
-    curl_easy_setopt(e, CURLOPT_HEADERFUNCTION, header_callback);
-    curl_easy_setopt(e, CURLOPT_HEADERDATA, c);
+    CURL_SETOPT(CURLOPT_WRITEFUNCTION, write_callback);
+    CURL_SETOPT(CURLOPT_WRITEDATA, c);
+    CURL_SETOPT(CURLOPT_HEADERFUNCTION, header_callback);
+    CURL_SETOPT(CURLOPT_HEADERDATA, c);
 
-    curl_easy_setopt(e, CURLOPT_NOPROGRESS, 0L);
-    curl_easy_setopt(e, CURLOPT_XFERINFOFUNCTION, xferinfo_callback);
-    curl_easy_setopt(e, CURLOPT_XFERINFODATA, c);
+    CURL_SETOPT(CURLOPT_NOPROGRESS, 0L);
+    CURL_SETOPT(CURLOPT_XFERINFOFUNCTION, xferinfo_callback);
+    CURL_SETOPT(CURLOPT_XFERINFODATA, c);
 
     if (av_log_get_level() >= AV_LOG_DEBUG) {
-        curl_easy_setopt(e, CURLOPT_VERBOSE, 1L);
-        curl_easy_setopt(e, CURLOPT_DEBUGFUNCTION, debug_callback);
-        curl_easy_setopt(e, CURLOPT_DEBUGDATA, c);
+        CURL_SETOPT(CURLOPT_VERBOSE, 1L);
+        CURL_SETOPT(CURLOPT_DEBUGFUNCTION, debug_callback);
+        CURL_SETOPT(CURLOPT_DEBUGDATA, c);
     }
 
-    curl_easy_setopt(e, CURLOPT_FOLLOWLOCATION, 1L);
-    curl_easy_setopt(e, CURLOPT_MAXREDIRS, (long)c->max_redirects);
-    curl_easy_setopt(e, CURLOPT_HTTP_VERSION, (long)c->http_version);
-    curl_easy_setopt(e, CURLOPT_TCP_KEEPALIVE, c->multiple_requests ? 1L : 0L);
-    curl_easy_setopt(e, CURLOPT_FORBID_REUSE,  c->multiple_requests ? 0L : 1L);
-    curl_easy_setopt(e, CURLOPT_HSTS_CTRL, (long)CURLHSTS_ENABLE);
-    curl_easy_setopt(e, CURLOPT_ACCEPT_ENCODING,
-                     c->off > 0 || c->end_off > 0 ? "identity" : "");
+    CURL_SETOPT(CURLOPT_FOLLOWLOCATION, 1L);
+    CURL_SETOPT(CURLOPT_MAXREDIRS, (long)c->max_redirects);
+    CURL_SETOPT(CURLOPT_HTTP_VERSION, (long)c->http_version);
+    CURL_SETOPT(CURLOPT_TCP_KEEPALIVE, c->multiple_requests ? 1L : 0L);
+    CURL_SETOPT(CURLOPT_FORBID_REUSE,  c->multiple_requests ? 0L : 1L);
+    if (info->features & CURL_VERSION_HSTS)
+        CURL_SETOPT(CURLOPT_HSTS_CTRL, (long)CURLHSTS_ENABLE);
+    CURL_SETOPT(CURLOPT_ACCEPT_ENCODING,
+                c->off > 0 || c->end_off > 0 ? "identity" : "");
     if (c->connect_timeout > 0)
-        curl_easy_setopt(e, CURLOPT_CONNECTTIMEOUT_MS,
-                         (long)c->connect_timeout * 1000);
+        CURL_SETOPT(CURLOPT_CONNECTTIMEOUT_MS,
+                    (long)c->connect_timeout * 1000);
 
     if (c->user_agent && c->user_agent[0])
-        curl_easy_setopt(e, CURLOPT_USERAGENT, c->user_agent);
+        CURL_SETOPT(CURLOPT_USERAGENT, c->user_agent);
     if (c->http_proxy && c->http_proxy[0])
-        curl_easy_setopt(e, CURLOPT_PROXY, c->http_proxy);
+        CURL_SETOPT(CURLOPT_PROXY, c->http_proxy);
 
-    curl_easy_setopt(e, CURLOPT_SSL_OPTIONS, (long)CURLSSLOPT_NATIVE_CA);
-    curl_easy_setopt(e, CURLOPT_SSL_VERIFYPEER, c->tls_verify ? 1L : 0L);
-    curl_easy_setopt(e, CURLOPT_SSL_VERIFYHOST, c->tls_verify ? 2L : 0L);
+    if (info->features & CURL_VERSION_SSL)
+        CURL_SETOPT(CURLOPT_SSL_OPTIONS, (long)CURLSSLOPT_NATIVE_CA);
+    CURL_SETOPT(CURLOPT_SSL_VERIFYPEER, c->tls_verify ? 1L : 0L);
+    CURL_SETOPT(CURLOPT_SSL_VERIFYHOST, c->tls_verify ? 2L : 0L);
     if (c->ca_file)
-        curl_easy_setopt(e, CURLOPT_CAINFO, c->ca_file);
+        CURL_SETOPT(CURLOPT_CAINFO, c->ca_file);
     if (c->cert_file)
-        curl_easy_setopt(e, CURLOPT_SSLCERT, c->cert_file);
+        CURL_SETOPT(CURLOPT_SSLCERT, c->cert_file);
     if (c->key_file)
-        curl_easy_setopt(e, CURLOPT_SSLKEY, c->key_file);
+        CURL_SETOPT(CURLOPT_SSLKEY, c->key_file);
 
-    curl_easy_setopt(e, CURLOPT_COOKIEFILE, "");
+    /* The cookie engine is optional unless the user supplied cookies. */
+    cc = curl_easy_setopt(e, CURLOPT_COOKIEFILE, "");
+    if ((cc != CURLE_UNKNOWN_OPTION && cc != CURLE_NOT_BUILT_IN) ||
+        (c->cookies && c->cookies[0])) {
+        ret = curl_setopt_checked(c, "CURLOPT_COOKIEFILE", cc);
+        if (ret < 0)
+            return ret;
+    }
     if (c->cookies && c->cookies[0]) {
         char *copy = av_strdup(c->cookies);
         char *line, *saveptr = NULL;
-        if (copy) {
-            for (line = av_strtok(copy, "\r\n", &saveptr); line;
-                 line = av_strtok(NULL, "\r\n", &saveptr)) {
-                char *sc = av_asprintf("Set-Cookie: %s", line);
-                if (sc) {
-                    curl_easy_setopt(e, CURLOPT_COOKIELIST, sc);
-                    av_free(sc);
-                }
+        if (!copy)
+            return AVERROR(ENOMEM);
+        for (line = av_strtok(copy, "\r\n", &saveptr); line;
+             line = av_strtok(NULL, "\r\n", &saveptr)) {
+            char *sc = av_asprintf("Set-Cookie: %s", line);
+
+            if (!sc) {
+                av_free(copy);
+                return AVERROR(ENOMEM);
             }
-            av_free(copy);
+            cc = curl_easy_setopt(e, CURLOPT_COOKIELIST, sc);
+            av_free(sc);
+            if ((ret = curl_setopt_checked(c, "CURLOPT_COOKIELIST", cc)) < 0) {
+                av_free(copy);
+                return ret;
+            }
         }
+        av_free(copy);
     }
 
-    c->header_list = build_headers(c);
+    if ((ret = build_headers(c)) < 0)
+        return ret;
     if (c->header_list)
-        curl_easy_setopt(e, CURLOPT_HTTPHEADER, c->header_list);
+        CURL_SETOPT(CURLOPT_HTTPHEADER, c->header_list);
 
     /* Shoutcast v1 answers "ICY 200 OK", which curl would otherwise reject as
      * HTTP/0.9 before any header reaches header_callback(). */
     if (c->icy_status) {
-        c->alias_list = curl_slist_append(NULL, "ICY 200");
-        if (c->alias_list)
-            curl_easy_setopt(e, CURLOPT_HTTP200ALIASES, c->alias_list);
+        if ((ret = slist_append(&c->alias_list, "ICY 200")) < 0)
+            return ret;
+        CURL_SETOPT(CURLOPT_HTTP200ALIASES, c->alias_list);
     }
+
+    return 0;
 }
+
+#undef CURL_SETOPT
 
 static void curl_cond_wait(CurlContext *c)
 {
@@ -1385,7 +1460,9 @@ static int libcurl_open(URLContext *h, const char *url, int flags,
     if (ret < 0)
         goto fail;
 
-    setup_curl(c);
+    ret = setup_curl(c);
+    if (ret < 0)
+        goto fail;
 
     ret = curl_dispatch(c->loop, CMD_ADD, c, 0, 0);
     if (ret < 0)
