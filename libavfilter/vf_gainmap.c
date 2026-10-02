@@ -623,8 +623,9 @@ static int process_frame(FFFrameSync *fs)
     AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *base, *alt, *out;
 
-    int ret = ff_framesync_dualinput_get(fs, &base, &alt);
-    if (ret < 0)
+    int ret;
+    if ((ret = ff_framesync_get_frame(fs, 0, &base, 0)) < 0 ||
+        (ret = ff_framesync_get_frame(fs, 1, &alt,  0)) < 0)
         return ret;
     if (!base || !alt)
         return AVERROR_BUG;
@@ -637,6 +638,7 @@ static int process_frame(FFFrameSync *fs)
     if (!out)
         return AVERROR(ENOMEM);
     av_frame_copy_props(out, base);
+    out->pts = av_rescale_q(fs->pts, fs->time_base, outlink->time_base);
     av_frame_side_data_remove_by_props(&out->side_data, &out->nb_side_data,
                                        AV_SIDE_DATA_PROP_COLOR_DEPENDENT);
 
