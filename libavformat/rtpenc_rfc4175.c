@@ -87,10 +87,10 @@ void ff_rtp_send_raw_rfc4175(AVFormatContext *s1, const uint8_t *buf, int size, 
             length = (pixels * pgroup) / xinc;
 
             left -= head_size;
-            if (left >= length) {
+            if (left >= length && length <= 0xFFFF) {
                 next_line = 1;
             } else {
-                pixels = (left / pgroup) * xinc;
+                pixels = (FFMIN(left, 0xFFFF) / pgroup) * xinc;
                 length = (pixels * pgroup) / xinc;
                 next_line = 0;
             }
