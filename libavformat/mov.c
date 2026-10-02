@@ -1822,6 +1822,8 @@ static int update_frag_index(MOVContext *c, int64_t offset)
     if (index < c->frag_index.nb_items)
         memmove(c->frag_index.item + index + 1, c->frag_index.item + index,
                 (c->frag_index.nb_items - index) * sizeof(*c->frag_index.item));
+    if (index <= c->frag_index.current)
+        c->frag_index.current++;
 
     item = &c->frag_index.item[index];
     item->headers_read = 0;
