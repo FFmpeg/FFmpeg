@@ -965,6 +965,15 @@ static int decode_slice(VVCContext *s, VVCFrameContext *fc, AVBufferRef *buf_ref
         ret = frame_setup(fc, s);
         if (ret < 0)
             return ret;
+    } else {
+        const H266RawSlice *first = fc->slices[0]->ref;
+        const H266RawSlice *slice = sc->ref;
+
+        if (slice->ph != first->ph || slice->pps != first->pps) {
+            av_log(fc->log_ctx, AV_LOG_ERROR,
+                   "Slice does not use the PH and PPS of the first slice.\n");
+            return AVERROR_INVALIDDATA;
+        }
     }
 
     ret = slice_start(sc, s, fc, unit, is_first_slice);
