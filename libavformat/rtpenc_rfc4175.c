@@ -61,6 +61,11 @@ void ff_rtp_send_raw_rfc4175(AVFormatContext *s1, const uint8_t *buf, int size, 
             return;
     }
 
+    if (s->max_payload_size < 2 + 6 + pgroup) {
+        av_log(s1, AV_LOG_ERROR, "Max payload size %d too low\n", s->max_payload_size);
+        return;
+    }
+
     while (i < height) {
         int left = s->max_payload_size;
         uint8_t *dest = s->buf;
