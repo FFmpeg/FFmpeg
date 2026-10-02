@@ -1836,6 +1836,7 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     s->line_count       = 0;
     s->off              = 0;
     s->icy_data_read    = 0;
+    s->chunkend         = 0;
     s->filesize         = UINT64_MAX;
     s->range_end        = 0;
     s->willclose        = !keep_alive;
@@ -2283,6 +2284,7 @@ static int64_t http_seek_internal(URLContext *h, int64_t off, int whence, int fo
     uint64_t old_off = s->off;
     uint64_t old_range_end = s->range_end;
     uint64_t old_chunksize = s->chunksize;
+    int old_chunkend = s->chunkend;
     int old_willclose = s->willclose;
 #if CONFIG_ZLIB
     int old_compressed = s->compressed;
@@ -2384,6 +2386,7 @@ static int64_t http_seek_internal(URLContext *h, int64_t off, int whence, int fo
             s->hd      = old_hd;
             s->range_end = old_range_end;
             s->chunksize = old_chunksize;
+            s->chunkend  = old_chunkend;
             s->willclose = old_willclose;
 #if CONFIG_ZLIB
             s->compressed = old_compressed;
