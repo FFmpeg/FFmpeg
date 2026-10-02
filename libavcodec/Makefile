@@ -1397,6 +1397,7 @@ TESTPROGS-$(CONFIG_APV_DECODER)           += apv
 TESTPROGS-$(CONFIG_AV1_VAAPI_ENCODER)     += av1_levels
 TESTPROGS-$(CONFIG_CABAC)                 += cabac
 TESTPROGS-$(CONFIG_CELP_MATH)             += celp_math
+TESTPROGS-$(CONFIG_ENCODERS)              += hw_base_encode
 TESTPROGS-$(CONFIG_GOLOMB)                += golomb
 TESTPROGS-$(CONFIG_IDCTDSP)               += dct
 TESTPROGS-$(CONFIG_DXV_ENCODER)           += hashtable
