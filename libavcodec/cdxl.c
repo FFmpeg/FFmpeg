@@ -65,7 +65,7 @@ static av_cold int cdxl_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static void import_palette(CDXLVideoContext *c, uint32_t *new_palette)
+static int import_palette(CDXLVideoContext *c, uint32_t *new_palette)
 {
     if (c->type == 1) {
         for (int i = 0; i < c->palette_size / 2; i++) {
@@ -75,11 +75,13 @@ static void import_palette(CDXLVideoContext *c, uint32_t *new_palette)
             unsigned b   =  (rgb       & 0xF) * 0x11;
             AV_WN32(&new_palette[i], (0xFFU << 24) | (r << 16) | (g << 8) | b);
         }
+        return c->palette_size / 2;
     } else {
         for (int i = 0; i < c->palette_size / 3; i++) {
             unsigned rgb = AV_RB24(&c->palette[i * 3]);
             AV_WN32(&new_palette[i], (0xFFU << 24) | rgb);
         }
+        return c->palette_size / 3;
     }
 }
 
@@ -158,17 +160,17 @@ static void cdxl_decode_raw(CDXLVideoContext *c, AVFrame *frame)
     import_format(c, frame->linesize[0], frame->data[0]);
 }
 
-static void cdxl_decode_ham6(CDXLVideoContext *c, AVFrame *frame)
+static int cdxl_decode_ham6(CDXLVideoContext *c, AVFrame *frame)
 {
     AVCodecContext *avctx = c->avctx;
     uint32_t new_palette[16], r, g, b;
     uint8_t *ptr, *out, index, op;
-    int x, y;
+    int x, y, nb_colors;
 
     ptr = c->new_video;
     out = frame->data[0];
 
-    import_palette(c, new_palette);
+    nb_colors = import_palette(c, new_palette);
     import_format(c, avctx->width, c->new_video);
 
     for (y = 0; y < avctx->height; y++) {
@@ -181,6 +183,8 @@ static void cdxl_decode_ham6(CDXLVideoContext *c, AVFrame *frame)
             index &= 15;
             switch (op) {
             case 0:
+                if (index >= nb_colors)
+                    return AVERROR_INVALIDDATA;
                 r = new_palette[index] & 0xFF0000;
                 g = new_palette[index] & 0xFF00;
                 b = new_palette[index] & 0xFF;
@@ -199,19 +203,20 @@ static void cdxl_decode_ham6(CDXLVideoContext *c, AVFrame *frame)
         }
         out += frame->linesize[0];
     }
+    return 0;
 }
 
-static void cdxl_decode_ham8(CDXLVideoContext *c, AVFrame *frame)
+static int cdxl_decode_ham8(CDXLVideoContext *c, AVFrame *frame)
 {
     AVCodecContext *avctx = c->avctx;
     uint32_t new_palette[64], r, g, b;
     uint8_t *ptr, *out, index, op;
-    int x, y;
+    int x, y, nb_colors;
 
     ptr = c->new_video;
     out = frame->data[0];
 
-    import_palette(c, new_palette);
+    nb_colors = import_palette(c, new_palette);
     import_format(c, avctx->width, c->new_video);
 
     for (y = 0; y < avctx->height; y++) {
@@ -224,6 +229,8 @@ static void cdxl_decode_ham8(CDXLVideoContext *c, AVFrame *frame)
             index &= 63;
             switch (op) {
             case 0:
+                if (index >= nb_colors)
+                    return AVERROR_INVALIDDATA;
                 r = new_palette[index] & 0xFF0000;
                 g = new_palette[index] & 0xFF00;
                 b = new_palette[index] & 0xFF;
@@ -242,6 +249,7 @@ static void cdxl_decode_ham8(CDXLVideoContext *c, AVFrame *frame)
         }
         out += frame->linesize[0];
     }
+    return 0;
 }
 
 static int cdxl_decode_frame(AVCodecContext *avctx, AVFrame *p,
@@ -313,9 +321,11 @@ static int cdxl_decode_frame(AVCodecContext *avctx, AVFrame *p,
         if (!c->new_video)
             return AVERROR(ENOMEM);
         if (c->bpp == 8)
-            cdxl_decode_ham8(c, p);
+            ret = cdxl_decode_ham8(c, p);
         else
-            cdxl_decode_ham6(c, p);
+            ret = cdxl_decode_ham6(c, p);
+        if (ret < 0)
+            return ret;
     } else if (avctx->pix_fmt == AV_PIX_FMT_PAL8) {
         cdxl_decode_rgb(c, p);
     } else {
