@@ -6009,7 +6009,7 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                 (sti->nb_index_entries - index_entry_pos));
         memmove(sc->tts_data + index_entry_pos + entries,
                 sc->tts_data + index_entry_pos,
-                sizeof(*sc->tts_data) * (sc->tts_count - index_entry_pos));
+                sizeof(*sc->tts_data) * (sti->nb_index_entries - index_entry_pos));
         if (index_entry_pos < sc->current_sample) {
             sc->current_sample += entries;
         }
