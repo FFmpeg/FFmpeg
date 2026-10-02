@@ -31,6 +31,7 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/bswap.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avconfig.h"
@@ -2149,20 +2150,9 @@ static int packedCopyWrapper(SwsInternal *c, const uint8_t *const src[],
                              const int srcStride[], int srcSliceY, int srcSliceH,
                              uint8_t *const dst[], const int dstStride[])
 {
-    if (dstStride[0] == srcStride[0] && srcStride[0] > 0)
-        memcpy(dst[0] + dstStride[0] * srcSliceY, src[0], srcSliceH * dstStride[0]);
-    else {
-        int i;
-        const uint8_t *srcPtr = src[0];
-        uint8_t *dstPtr = dst[0] + dstStride[0] * srcSliceY;
-
-        const int length = FFMIN(FFABS(dstStride[0]), FFABS(srcStride[0]));
-        for (i = 0; i < srcSliceH; i++) {
-            memcpy(dstPtr, srcPtr, length);
-            srcPtr += srcStride[0];
-            dstPtr += dstStride[0];
-        }
-    }
+    ff_copyPlane(src[0], srcStride[0], srcSliceY, srcSliceH,
+                 av_image_get_linesize(c->opts.src_format, c->opts.src_w, 0),
+                 dst[0], dstStride[0]);
     return srcSliceH;
 }
 
