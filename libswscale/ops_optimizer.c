@@ -182,8 +182,12 @@ static bool op_commute_filter(SwsOp *op, SwsOp *prev)
     switch (prev->op) {
     case SWS_OP_SWIZZLE:
     case SWS_OP_SCALE:
-    case SWS_OP_LINEAR:
     case SWS_OP_DITHER:
+        prev->type = op->filter.type;
+        return true;
+    case SWS_OP_LINEAR:
+        for (int i = 0; i < 4; i++)
+            prev->lin.type[i] = op->filter.type;
         prev->type = op->filter.type;
         return true;
     case SWS_OP_CONVERT:
@@ -502,6 +506,9 @@ retry:
 
                     const AVRational64 x = op->clear.value[j];
                     for (int i = 0; i < 4; i++) {
+                        if (!next->lin.m[i][j].num)
+                            continue;
+                        av_assert0(next->lin.type[i] == op->type);
                         const AVRational64 kx = ff_mul_q64(next->lin.m[i][j], x);
                         next->lin.m[i][4] = ff_add_q64(next->lin.m[i][4], kx);
                         next->lin.m[i][j] = Q(0);
@@ -648,6 +655,7 @@ retry:
                 const SwsLinearOp m1 = op->lin;
                 const SwsLinearOp m2 = next->lin;
                 for (int i = 0; i < 4; i++) {
+                    op->lin.type[i] = m2.type[i];
                     for (int j = 0; j < 5; j++) {
                         AVRational64 sum = Q(0);
                         for (int k = 0; k < 4; k++)
@@ -808,6 +816,8 @@ retry:
                 ff_sws_pixel_type_is_int(next->convert.to) &&
                 op_result_is_exact(op))
             {
+                for (int i = 0; i < 4; i++)
+                    op->lin.type[i] = next->convert.to;
                 op->type = next->convert.to;
                 FFSWAP(SwsOp, *op, *next);
                 goto retry;

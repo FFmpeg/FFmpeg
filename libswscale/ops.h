@@ -171,6 +171,12 @@ typedef struct SwsDitherOp {
 
 typedef struct SwsLinearOp {
     /**
+     * Pixel type per output component. This must match the type of incoming
+     * values, as determined by the weights matrix.
+     */
+    SwsPixelType type[4];
+
+    /**
      * Generalized 5x5 affine transformation:
      *   [ Out.x ] = [ A B C D E ]
      *   [ Out.y ] = [ F G H I J ] * [ x y z w 1 ]

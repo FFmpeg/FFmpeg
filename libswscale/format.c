@@ -1247,17 +1247,23 @@ static inline AVRational64 av_neg_q64(AVRational64 x)
     return (AVRational64) { -x.num, x.den };
 }
 
-static SwsLinearOp fmt_encode_range(const SwsFormat *fmt, bool *incomplete)
+#define LINEAR_OP_DATA(TYPE, ...) ((SwsLinearOp) {  \
+    .type = { TYPE, TYPE, TYPE, TYPE },             \
+    .m    = { __VA_ARGS__ },                        \
+})
+
+static SwsLinearOp fmt_encode_range(const SwsFormat *fmt, SwsPixelType type,
+                                    bool *incomplete)
 {
     const AVRational64 q0 = Q(0);
     const AVRational64 q1 = Q(1);
 
-    SwsLinearOp c = { .m = {
+    SwsLinearOp c = LINEAR_OP_DATA(type,
         { q1, q0, q0, q0, q0 },
         { q0, q1, q0, q0, q0 },
         { q0, q0, q1, q0, q0 },
         { q0, q0, q0, q1, q0 },
-    }};
+    );
 
     const AVPixFmtDescriptor *desc = fmt_desc_decoded(fmt->format);
     const int depth0 = desc->comp[0].depth;
@@ -1311,9 +1317,9 @@ static SwsLinearOp fmt_encode_range(const SwsFormat *fmt, bool *incomplete)
     return c;
 }
 
-static SwsLinearOp fmt_decode_range(const SwsFormat *fmt, bool *incomplete)
+static SwsLinearOp fmt_decode_range(const SwsFormat *fmt, SwsPixelType type, bool *incomplete)
 {
-    SwsLinearOp c = fmt_encode_range(fmt, incomplete);
+    SwsLinearOp c = fmt_encode_range(fmt, type, incomplete);
 
     /* Invert main diagonal + offset: x = s * y + k  ==>  y = (x - k) / s */
     for (int i = 0; i < 4; i++) {
@@ -1483,16 +1489,17 @@ static int fmt_dither(SwsContext *ctx, SwsOpList *ops,
 #define Q64(x) ff_make_q64((x).num, (x).den)
 
 static inline SwsLinearOp
-linear_mat3(const AVRational m00, const AVRational m01, const AVRational m02,
+linear_mat3(const SwsPixelType type,
+            const AVRational m00, const AVRational m01, const AVRational m02,
             const AVRational m10, const AVRational m11, const AVRational m12,
             const AVRational m20, const AVRational m21, const AVRational m22)
 {
-    return (SwsLinearOp) {{
+    return LINEAR_OP_DATA(type,
         { Q64(m00), Q64(m01), Q64(m02), Q(0), Q(0) },
         { Q64(m10), Q64(m11), Q64(m12), Q(0), Q(0) },
         { Q64(m20), Q64(m21), Q64(m22), Q(0), Q(0) },
         {     Q(0),     Q(0),     Q(0), Q(1), Q(0) },
-    }};
+    );
 }
 
 /* Transform decoded pixel values to normalized RGB */
@@ -1518,7 +1525,7 @@ static int decode_colors(SwsContext *ctx, SwsPixelType type, SwsOpList *ops,
     RET(ff_sws_op_list_append(ops, &(SwsOp) {
         .type = type,
         .op   = SWS_OP_LINEAR,
-        .lin  = fmt_decode_range(fmt, incomplete),
+        .lin  = fmt_decode_range(fmt, type, incomplete),
     }));
 
     if (fmt->desc->flags & AV_PIX_FMT_FLAG_XYZ)
@@ -1548,7 +1555,7 @@ static int decode_colors(SwsContext *ctx, SwsPixelType type, SwsOpList *ops,
         return ff_sws_op_list_append(ops, &(SwsOp) {
             .type = type,
             .op   = SWS_OP_LINEAR,
-            .lin  = linear_mat3(
+            .lin  = linear_mat3(type,
                 q1,  q0, m02,
                 q1, m11, m12,
                 q1, m21,  q0
@@ -1560,7 +1567,7 @@ static int decode_colors(SwsContext *ctx, SwsPixelType type, SwsOpList *ops,
         return ff_sws_op_list_append(ops, &(SwsOp) {
             .type = type,
             .op   = SWS_OP_LINEAR,
-            .lin  = linear_mat3(
+            .lin  = linear_mat3(type,
                 q1, av_make_q(-1, 1), av_make_q( 1, 1),
                 q1, av_make_q( 1, 1), av_make_q( 0, 1),
                 q1, av_make_q(-1, 1), av_make_q(-1, 1)
@@ -1623,7 +1630,7 @@ static int encode_colors(SwsContext *ctx, SwsPixelType type, SwsOpList *ops,
         RET(ff_sws_op_list_append(ops, &(SwsOp) {
             .type = type,
             .op   = SWS_OP_LINEAR,
-            .lin  = linear_mat3(
+            .lin  = linear_mat3(type,
                 c->cr, c->cg, c->cb,
                 m10,     m11,   m20,
                 m20,     m21,   m22
@@ -1636,7 +1643,7 @@ static int encode_colors(SwsContext *ctx, SwsPixelType type, SwsOpList *ops,
         RET(ff_sws_op_list_append(ops, &(SwsOp) {
             .type = type,
             .op   = SWS_OP_LINEAR,
-            .lin  = linear_mat3(
+            .lin  = linear_mat3(type,
                 av_make_q( 1, 4), av_make_q(1, 2), av_make_q( 1, 4),
                 av_make_q( 1, 2), av_make_q(0, 1), av_make_q(-1, 2),
                 av_make_q(-1, 4), av_make_q(1, 2), av_make_q(-1, 4)
@@ -1662,7 +1669,7 @@ static int encode_colors(SwsContext *ctx, SwsPixelType type, SwsOpList *ops,
     RET(ff_sws_op_list_append(ops, &(SwsOp) {
         .type = type,
         .op   = SWS_OP_LINEAR,
-        .lin  = fmt_encode_range(dst, incomplete),
+        .lin  = fmt_encode_range(dst, type, incomplete),
     }));
 
     if (!(dst->desc->flags & AV_PIX_FMT_FLAG_FLOAT)) {
@@ -1786,12 +1793,12 @@ static int apply_lut3d(SwsContext *ctx, SwsPixelType type, SwsOpList *ops,
     RET(ff_sws_op_list_append(ops, &(SwsOp) {
         .type   = type,
         .op     = SWS_OP_LINEAR,
-        .lin    = {{
+        .lin    = LINEAR_OP_DATA(type,
             { domain,   Q(0),   Q(0), Q(0), Q(0) },
             {   Q(0), domain,   Q(0), Q(0), Q(0) },
             {   Q(0),   Q(0), domain, Q(0), Q(0) },
             {   Q(0),   Q(0),   Q(0), Q(1), Q(0) },
-        }},
+        ),
     }));
 
     RET(ff_sws_op_list_append(ops, &(SwsOp) {
@@ -1819,12 +1826,12 @@ static int apply_lut3d(SwsContext *ctx, SwsPixelType type, SwsOpList *ops,
     RET(ff_sws_op_list_append(ops, &(SwsOp) {
         .type   = type,
         .op     = SWS_OP_LINEAR,
-        .lin    = {{
+        .lin    = LINEAR_OP_DATA(type,
             {  inv, Q(0), Q(0), Q(0), Q(0) },
             { Q(0),  inv, Q(0), Q(0), Q(0) },
             { Q(0), Q(0),  inv, Q(0), Q(0) },
             { Q(0), Q(0), Q(0), Q(1), Q(0) },
-        }},
+        ),
     }));
 
     return 0;
