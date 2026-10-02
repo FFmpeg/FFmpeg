@@ -224,12 +224,11 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
     size_t safe_blocks = num_blocks;
     for (int i = 0; i < p->planes_in; i++) {
         const int idx = p->idx_in[i];
-        size_t input_bytes = in->linesize[idx];
-        if (p->filter_size_h && float_in) {
-            /* Floating point inputs may contain NaN / Infinity in the padding */
-            const int plane_w = AV_CEIL_RSHIFT(in->width, exec->in_sub_x[i]);
-            input_bytes = pixel_bytes(plane_w, p->pixel_bits_in, AV_ROUND_UP);
-        }
+        const int plane_w = AV_CEIL_RSHIFT(in->width, exec->in_sub_x[i]);
+        size_t input_bytes = pixel_bytes(plane_w, p->pixel_bits_in, AV_ROUND_UP);
+        /* Floating point inputs may contain NaN / Infinity in the padding */
+        if (!p->filter_size_h || !float_in)
+            input_bytes += in->padding[idx];
 
         size_t safe_bytes = safe_bytes_pad(input_bytes, comp->over_read[i]);
         size_t safe_blocks_in;
@@ -256,7 +255,10 @@ static int op_pass_setup(const SwsFrame *out, const SwsFrame *in,
 
     for (int i = 0; i < p->planes_out; i++) {
         const int idx = p->idx_out[i];
-        size_t safe_bytes = safe_bytes_pad(out->linesize[idx], comp->over_write[i]);
+        const int plane_w = AV_CEIL_RSHIFT(out->width, exec->out_sub_x[i]);
+        size_t output_bytes = pixel_bytes(plane_w, p->pixel_bits_out, AV_ROUND_UP) +
+                              out->padding[idx];
+        size_t safe_bytes = safe_bytes_pad(output_bytes, comp->over_write[i]);
         size_t safe_blocks_out = safe_bytes / exec->block_size_out[i];
         if (safe_blocks_out < num_blocks) {
             p->memcpy_out = true;
