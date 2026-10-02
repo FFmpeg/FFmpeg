@@ -540,18 +540,18 @@ static void update_output_pads(SwsOpList *ops, SwsOp *op,
                 const AVRational64 k = op->lin.m[i][j];
                 AVRational64 mink = ff_mul_q64(src->min, k);
                 AVRational64 maxk = ff_mul_q64(src->max, k);
-                if (k.num) {
-                    FORWARD(i, j, flags);
-                    if (k.den != 1) /* fractional coefficient */
-                        dst->flags &= ~SWS_COMP_EXACT;
-                    if (k.num < 0)
-                        FFSWAP(AVRational64, mink, maxk);
-                    dst->min = ff_add_q64(dst->min, mink);
-                    dst->max = ff_add_q64(dst->max, maxk);
-                    if (!first || ff_cmp_q64(k, Q(1)))
-                        dst->flags &= SWS_COMP_DIRTY;
-                    first = false;
-                }
+                if (!k.num)
+                    continue;
+                FORWARD(i, j, flags);
+                if (k.den != 1) /* fractional coefficient */
+                    dst->flags &= ~SWS_COMP_EXACT;
+                if (k.num < 0)
+                    FFSWAP(AVRational64, mink, maxk);
+                dst->min = ff_add_q64(dst->min, mink);
+                dst->max = ff_add_q64(dst->max, maxk);
+                if (!first || ff_cmp_q64(k, Q(1)))
+                    dst->flags &= SWS_COMP_DIRTY;
+                first = false;
             }
             if (op->lin.m[i][4].num) { /* nonzero offset */
                 dst->flags &= ~SWS_COMP_ZERO & SWS_COMP_DIRTY;
