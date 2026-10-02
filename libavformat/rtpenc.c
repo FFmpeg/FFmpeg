@@ -228,9 +228,15 @@ static int rtp_write_header(AVFormatContext *s1)
             s->nal_length_size = (st->codecpar->extradata[21] & 0x03) + 1;
         }
         break;
-    case AV_CODEC_ID_MJPEG:
     case AV_CODEC_ID_BITPACKED:
     case AV_CODEC_ID_RAWVIDEO:
+        if (st->codecpar->width > 32767 || st->codecpar->height > 32767) {
+            av_log(s1, AV_LOG_ERROR, "dimensions %dx%d too large for RFC 4175\n",
+                   st->codecpar->width, st->codecpar->height);
+            return AVERROR(EINVAL);
+        }
+        av_fallthrough;
+    case AV_CODEC_ID_MJPEG:
         if (st->codecpar->width <= 0 || st->codecpar->height <= 0) {
             av_log(s1, AV_LOG_ERROR, "dimensions not set\n");
             return AVERROR(EINVAL);
