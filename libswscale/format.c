@@ -738,6 +738,7 @@ void ff_sws_frame_from_avframe(SwsFrame *dst, const AVFrame *src)
     for (int i = 0; i < FF_ARRAY_ELEMS(dst->data); i++) {
         dst->data[i]     = src->data[i];
         dst->linesize[i] = src->linesize[i];
+        dst->padding[i]  = 0;
     }
 }
 

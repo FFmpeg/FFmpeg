@@ -215,6 +215,12 @@ typedef struct SwsFrame {
     enum AVPixelFormat format;
 
     /**
+     * Number of bytes after the last pixel of each line that may be read
+     * (input frames) or written (output frames).
+     */
+    int padding[4];
+
+    /**
      * Pointer to the original AVFrame, if there is a 1:1 correspondence.
      **/
     const AVFrame *avframe;
