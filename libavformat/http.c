@@ -2226,8 +2226,12 @@ static int64_t http_seek_internal(URLContext *h, int64_t off, int whence, int fo
     /* do not try to make a new connection if seeking past the end of the file */
     if (s->end_off || s->filesize != UINT64_MAX) {
         uint64_t end_pos = s->end_off ? s->end_off : s->filesize;
-        if (s->off >= end_pos)
+        if (s->off >= end_pos) {
+            /* nothing of the old reply belongs to this offset */
+            ffurl_closep(&s->hd);
+            s->buf_ptr = s->buf_end = s->buffer;
             return s->off;
+        }
     }
 
     /* if the location changed (redirect), revert to the original uri */
