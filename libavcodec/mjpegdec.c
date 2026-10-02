@@ -44,6 +44,7 @@
 #include "decode.h"
 #include "exif.h"
 #include "exif_internal.h"
+#include "gain_map.h"
 #include "hwaccel_internal.h"
 #include "hwconfig.h"
 #include "idctdsp.h"
@@ -2126,6 +2127,38 @@ static int mjpeg_decode_app(MJpegDecodeContext *s, int start_code)
             av_log(s->avctx, AV_LOG_WARNING, "Read more ICC markers than are supposed to be coded\n");
     }
 
+    if (start_code == APP2 && id == AV_RB32("urn:")) {
+        bytestream2_seek(&s->gB, -4, SEEK_CUR); /* include `urn:` in the string */
+        len += 4;
+
+        if (len >= sizeof(AV_ISO21496_IDENTIFIER) &&
+            !memcmp(s->gB.buffer, AV_ISO21496_IDENTIFIER, sizeof(AV_ISO21496_IDENTIFIER)))
+        {
+            bytestream2_skipu(&s->gB, sizeof(AV_ISO21496_IDENTIFIER));
+            len -= sizeof(AV_ISO21496_IDENTIFIER);
+
+            /* Discard gain map version stubs from base layer */
+            if (len <= sizeof(uint16_t[2]))
+                goto out;
+            else if (s->gain_map) {
+                av_log(s->avctx, AV_LOG_WARNING, "Multiple ISO 21496 gain map headers\n");
+                goto out;
+            }
+
+            s->gain_map = av_gain_map_params_alloc(&s->gain_map_size);
+            if (!s->gain_map)
+                return AVERROR(ENOMEM);
+
+            ret = av_gain_map_params_from_iso21496(s->gain_map, s->gB.buffer, len);
+            if (ret < 0) {
+                av_log(s->avctx, AV_LOG_WARNING, "Failed to parse ISO 21496 gain map header\n");
+                av_freep(&s->gain_map);
+                s->gain_map_size = 0;
+                goto out;
+            }
+        }
+    }
+
 out:
     /* slow but needed for extreme adobe jpegs */
     if (len < 0)
@@ -2399,6 +2432,7 @@ int ff_mjpeg_decode_frame_from_buf(AVCodecContext *avctx, AVFrame *frame,
 
     av_exif_free(&s->exif_metadata);
     av_freep(&s->stereo3d);
+    av_freep(&s->gain_map);
     s->adobe_transform = -1;
 
     if (s->iccnum != 0)
@@ -2831,6 +2865,18 @@ the_end:
         av_freep(&s->stereo3d);
     }
 
+    if (s->gain_map) {
+        AVFrameSideData *sd;
+        ret = ff_frame_new_side_data(avctx, frame, AV_FRAME_DATA_GAIN_MAP_PARAMS, s->gain_map_size, &sd);
+        if (ret < 0)
+            return ret;
+
+        if (sd)
+            memcpy(sd->data, s->gain_map, s->gain_map_size);
+        av_freep(&s->gain_map);
+        s->gain_map_size = 0;
+    }
+
     if (s->iccnum != 0 && s->iccnum == s->iccread) {
         AVFrameSideData *sd;
         size_t offset = 0;
@@ -2904,6 +2950,8 @@ av_cold int ff_mjpeg_decode_end(AVCodecContext *avctx)
     av_freep(&s->stereo3d);
     av_freep(&s->ljpeg_buffer);
     s->ljpeg_buffer_size = 0;
+    av_freep(&s->gain_map);
+    s->gain_map_size = 0;
 
     for (i = 0; i < 3; i++) {
         for (j = 0; j < 4; j++)

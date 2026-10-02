@@ -29,6 +29,7 @@
 #ifndef AVCODEC_MJPEGDEC_H
 #define AVCODEC_MJPEGDEC_H
 
+#include "libavutil/gain_map.h"
 #include "libavutil/log.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/pixdesc.h"
@@ -152,6 +153,9 @@ typedef struct MJpegDecodeContext {
     AVExifMetadata exif_metadata;
 
     AVStereo3D *stereo3d; ///!< stereoscopic information (cached, since it is read before frame allocation)
+
+    AVGainMapParams *gain_map;
+    size_t gain_map_size;
 
     const AVPixFmtDescriptor *pix_desc;
 
