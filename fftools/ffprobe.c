@@ -1003,6 +1003,35 @@ static void print_ambient_viewing_environment(AVTextFormatContext *tfc,
     print_q("ambient_light_y",     env->ambient_light_y,     '/');
 }
 
+static void print_gain_map_params(AVTextFormatContext *tfc,
+                                  const AVGainMapParams *p)
+{
+    const char *const channel_names[] = { "R", "G", "B" };
+
+    print_int("version", p->version);
+    print_int("use_base_color_space", p->use_base_color_space);
+    print_q("base_hdr_headroom", p->base_hdr_headroom, '/');
+    print_q("alternate_hdr_headroom", p->alternate_hdr_headroom, '/');
+    if (!(p->nb_channels == 1 || p->nb_channels == 3))
+        return;
+
+    avtext_print_section_header(tfc, NULL, SECTION_ID_FRAME_SIDE_DATA_COMPONENT_LIST);
+    for (int c = 0; c < p->nb_channels; c++) {
+        const struct AVGainMapChannel *ch = &p->channels[c];
+        const char *comp_name = p->nb_channels == 1 ? "RGB" : channel_names[c];
+        avtext_print_section_header(tfc, comp_name, SECTION_ID_FRAME_SIDE_DATA_COMPONENT);
+        print_q("gain_map_min",     ch->gain_map_min,     '/');
+        print_q("gain_map_max",     ch->gain_map_max,     '/');
+        print_q("gamma",            ch->gamma,            '/');
+        print_q("base_offset",      ch->base_offset,      '/');
+        print_q("alternate_offset", ch->alternate_offset, '/');
+        // SECTION_ID_FRAME_SIDE_DATA_COMPONENT
+        avtext_print_section_footer(tfc);
+    }
+    // SECTION_ID_FRAME_SIDE_DATA_COMPONENT_LIST
+    avtext_print_section_footer(tfc);
+}
+
 static void print_film_grain_params(AVTextFormatContext *tfc,
                                     const AVFilmGrainParams *fgp)
 {
@@ -1576,6 +1605,9 @@ static void print_frame_side_data(AVTextFormatContext *tfc,
         } else if (sd->type == AV_FRAME_DATA_FILM_GRAIN_PARAMS) {
             AVFilmGrainParams *fgp = (AVFilmGrainParams *)sd->data;
             print_film_grain_params(tfc, fgp);
+        } else if (sd->type == AV_FRAME_DATA_GAIN_MAP_PARAMS &&
+                   sd->size >= sizeof(AVGainMapParams)) {
+            print_gain_map_params(tfc, (const AVGainMapParams *)sd->data);
         } else if (sd->type == AV_FRAME_DATA_VIEW_ID) {
             print_int("view_id", *(int*)sd->data);
         } else if (sd->type == AV_FRAME_DATA_EXIF) {
