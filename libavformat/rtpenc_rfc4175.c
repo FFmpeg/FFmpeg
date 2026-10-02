@@ -134,7 +134,7 @@ void ff_rtp_send_raw_rfc4175(AVFormatContext *s1, const uint8_t *buf, int size, 
                 l_line = 2 * l_line + l_field;
             copy_offset = (l_line * (int64_t)width + l_off) * pgroup / xinc;
             if (copy_offset + length > size)
-                break;
+                return;
             memcpy (dest, buf + copy_offset, length);
             dest += length;
         } while (cont);
