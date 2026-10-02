@@ -1869,15 +1869,18 @@ static int http_buf_read(URLContext *h, uint8_t *buf, int size)
                    "Chunked encoding data size: %"PRIu64"\n",
                     s->chunksize);
 
-            if (!s->chunksize && s->multiple_requests) {
-                http_get_line(s, line, sizeof(line)); // read empty chunk
-                s->chunkend = 1;
-                return 0;
-            }
-            else if (!s->chunksize) {
-                av_log(h, AV_LOG_DEBUG, "Last chunk received, closing conn\n");
-                ffurl_closep(&s->hd);
-                return 0;
+            if (!s->chunksize) {
+                /* a partial reply that ends at its range end is continued */
+                int more = s->range_end && s->off == s->range_end &&
+                           s->range_end < requested_end(s);
+                if (s->multiple_requests) {
+                    http_get_line(s, line, sizeof(line)); // read empty chunk
+                    s->chunkend = !more;
+                } else {
+                    av_log(h, AV_LOG_DEBUG, "Last chunk received, closing conn\n");
+                    ffurl_closep(&s->hd);
+                }
+                return more ? AVERROR(EAGAIN) : 0;
             }
             else if (s->chunksize == UINT64_MAX) {
                 av_log(h, AV_LOG_ERROR, "Invalid chunk size %"PRIu64"\n",
@@ -1937,6 +1940,10 @@ static int http_buf_read_compressed(URLContext *h, uint8_t *buf, int size)
 
     if (s->inflate_stream.avail_in == 0) {
         int read = http_buf_read(h, s->inflate_buffer, DECOMPRESS_BUF_SIZE);
+        if (read == AVERROR(EAGAIN)) {
+            s->chunkend = 1;
+            return AVERROR_EOF;
+        }
         if (read <= 0)
             return read;
         s->inflate_stream.next_in  = s->inflate_buffer;
