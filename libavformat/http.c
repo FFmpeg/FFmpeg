@@ -1919,7 +1919,10 @@ static int http_buf_read(URLContext *h, uint8_t *buf, int size)
                 int more = s->range_end && s->off == s->range_end &&
                            s->range_end < requested_end(s);
                 if (s->multiple_requests) {
-                    http_get_line(s, line, sizeof(line)); // read empty chunk
+                    do {
+                        if ((err = http_get_line(s, line, sizeof(line))) < 0)
+                            return err;
+                    } while (*line);
                     s->chunkend = !more;
                 } else {
                     av_log(h, AV_LOG_DEBUG, "Last chunk received, closing conn\n");
