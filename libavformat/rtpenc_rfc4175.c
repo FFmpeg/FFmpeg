@@ -27,7 +27,7 @@ void ff_rtp_send_raw_rfc4175(AVFormatContext *s1, const uint8_t *buf, int size, 
     int width = s1->streams[0]->codecpar->width;
     int height = s1->streams[0]->codecpar->height;
     int xinc, yinc, pgroup;
-    int i = 0;
+    int i = field;
     int offset = 0;
 
     s->timestamp = s->cur_timestamp;
