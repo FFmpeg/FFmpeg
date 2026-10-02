@@ -379,23 +379,20 @@ static av_always_inline int dnxhd_decode_dct_block(const DNXHDContext *ctx,
 
     if (!ctx->is_444) {
         if (n & 2) {
-            component     = 1 + (n & 1);
-            scale = row->chroma_scale;
-            weight_matrix = ctx->cid_table->chroma_weight;
+            component = 1 + (n & 1);
         } else {
-            component     = 0;
-            scale = row->luma_scale;
-            weight_matrix = ctx->cid_table->luma_weight;
+            component = 0;
         }
     } else {
         component = (n >> 1) % 3;
-        if (component) {
-            scale = row->chroma_scale;
-            weight_matrix = ctx->cid_table->chroma_weight;
-        } else {
-            scale = row->luma_scale;
-            weight_matrix = ctx->cid_table->luma_weight;
-        }
+    }
+
+    if (component) {
+        scale = row->chroma_scale;
+        weight_matrix = ctx->cid_table->chroma_weight;
+    } else {
+        scale = row->luma_scale;
+        weight_matrix = ctx->cid_table->luma_weight;
     }
 
     UPDATE_CACHE(bs, &row->gb);
