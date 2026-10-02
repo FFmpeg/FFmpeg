@@ -1038,6 +1038,8 @@ static int kempf_restore_buf(const uint8_t *src, int len,
             continue;
         for (i = 0; i < width; i++) {
             col = get_bits(&gb, nb);
+            if (col >= npal)
+                return AVERROR_INVALIDDATA;
             if (col != tidx)
                 memcpy(dst + i * 3, pal + col * 3, 3);
             else
@@ -1114,11 +1116,9 @@ static int kempf_decode_tile(G2MContext *c, int tile_x, int tile_y,
         return AVERROR_INVALIDDATA;
     src += zsize;
 
-    if (sub_type == 2) {
-        kempf_restore_buf(c->kempf_buf, dlen, dst, c->framebuf_stride,
-                          NULL, 0, width, height, pal, npal, tidx);
-        return 0;
-    }
+    if (sub_type == 2)
+        return kempf_restore_buf(c->kempf_buf, dlen, dst, c->framebuf_stride,
+                                 NULL, 0, width, height, pal, npal, tidx);
 
     nblocks = *src++ + 1;
     cblocks = 0;
@@ -1151,11 +1151,9 @@ static int kempf_decode_tile(G2MContext *c, int tile_x, int tile_y,
                     c->jpeg_tile, c->tile_stride,
                     c->kempf_flags, bstride, nblocks * 4, 0);
 
-    kempf_restore_buf(c->kempf_buf, dlen, dst, c->framebuf_stride,
-                      c->jpeg_tile, c->tile_stride,
-                      width, height, pal, npal, tidx);
-
-    return 0;
+    return kempf_restore_buf(c->kempf_buf, dlen, dst, c->framebuf_stride,
+                             c->jpeg_tile, c->tile_stride,
+                             width, height, pal, npal, tidx);
 }
 
 static int g2m_init_buffers(G2MContext *c)
