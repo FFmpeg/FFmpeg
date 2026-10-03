@@ -31,7 +31,18 @@
 #include "libavutil/pixfmt.h"
 #include "libavutil/time.h"
 
-static int test_format(AVBufferRef *device_ref, enum AVPixelFormat fmt)
+static void vflip(AVFrame *frame, const AVPixFmtDescriptor *desc)
+{
+    for (int i = 0; i < FF_ARRAY_ELEMS(frame->data) && frame->data[i]; i++) {
+        int shift = (i == 1 || i == 2) ? desc->log2_chroma_h : 0;
+
+        frame->data[i]    += (AV_CEIL_RSHIFT(frame->height, shift) - 1) * frame->linesize[i];
+        frame->linesize[i] = -frame->linesize[i];
+    }
+}
+
+static int test_format(AVBufferRef *device_ref, enum AVPixelFormat fmt,
+                       int flip_upload, int flip_download)
 {
     AVBufferRef *frames_ref = NULL;
     AVHWFramesContext *hwfc;
@@ -69,6 +80,8 @@ static int test_format(AVBufferRef *device_ref, enum AVPixelFormat fmt)
     ret = av_frame_get_buffer(sw_frame, 0);
     if (ret < 0)
         goto fail;
+    if (flip_upload)
+        vflip(sw_frame, desc);
 
     {
         int linesizes[4];
@@ -99,6 +112,8 @@ static int test_format(AVBufferRef *device_ref, enum AVPixelFormat fmt)
     ret = av_frame_get_buffer(download, 0);
     if (ret < 0)
         goto fail;
+    if (flip_download)
+        vflip(download, desc);
 
     ret = av_hwframe_transfer_data(download, hw_frame, 0);
     if (ret < 0)
@@ -113,9 +128,8 @@ static int test_format(AVBufferRef *device_ref, enum AVPixelFormat fmt)
             int h = AV_CEIL_RSHIFT(64, shift);
 
             for (int y = 0; y < h; y++) {
-                int off = y * FFMIN(sw_frame->linesize[i], download->linesize[i]);
-                if (memcmp(sw_frame->data[i] + off,
-                           download->data[i] + off,
+                if (memcmp(sw_frame->data[i] + y * sw_frame->linesize[i],
+                           download->data[i] + y * download->linesize[i],
                            linesizes[i])) {
                     printf("fail: %-16s plane %d row %d mismatch\n",
                            av_get_pix_fmt_name(fmt), i, y);
@@ -270,7 +284,9 @@ int main(void)
                 failures++;
             }
         } else {
-            ret = test_format(device_ref, fmt);
+            ret = 0;
+            for (int flip = 0; flip < 4 && ret >= 0; flip++)
+                ret = test_format(device_ref, fmt, flip & 1, flip & 2);
             if (ret < 0) {
                 printf("fail: %-16s %s\n",
                        av_get_pix_fmt_name(fmt),
