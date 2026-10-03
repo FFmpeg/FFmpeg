@@ -105,6 +105,21 @@ Other:
   rational.c, rational.h            [2] Michael Niedermayer
   rc4                                   Reimar Doeffinger
   ripemd.c, ripemd.h                    James Almer
+  tests/ambient_viewing_environment.c,
+  tests/buffer.c, tests/csp.c,
+  tests/detection_bbox.c,
+  tests/dovi_meta.c,
+  tests/downmix_info.c,
+  tests/film_grain_params.c,
+  tests/hdr_dynamic_metadata.c,
+  tests/hdr_dynamic_vivid_metadata.c,
+  tests/mastering_display_metadata.c,
+  tests/mathematics.c, tests/rc4.c,
+  tests/samplefmt.c, tests/side_data.c,
+  tests/spherical.c, tests/stereo3d.c,
+  tests/tdrdi.c, tests/timestamp.c,
+  tests/video_enc_params.c,
+  tests/video_hint.c                    Marcos Ashton Iglesias
   tx*                               [2] Lynne
 
 
