@@ -653,6 +653,7 @@ static int vkfmt_from_pixfmt2(AVHWDeviceContext *dev_ctx, enum AVPixelFormat p,
                 basics_secondary = (feats_secondary & basic_flags) == basic_flags;
                 storage_secondary = !!(feats_secondary & VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT);
             } else {
+                feats_secondary = feats_primary;
                 basics_secondary = basics_primary;
                 storage_secondary = storage_primary;
             }
