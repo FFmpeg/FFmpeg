@@ -54,8 +54,9 @@ static int pcx_rle_decode(GetByteContext *gb,
                 dst[i++] = value;
         }
     } else {
-        bytestream2_get_buffer(gb, dst, bytes_per_scanline);
+        i = bytestream2_get_buffer(gb, dst, bytes_per_scanline);
     }
+    memset(dst + i, 0, bytes_per_scanline - i);
     return 0;
 }
 
