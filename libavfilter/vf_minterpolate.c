@@ -1208,12 +1208,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *avf_in)
     return 0;
 }
 
-static av_cold void free_blocks(Block *block, int sb)
+static av_cold void free_blocks(Block *block)
 {
     if (block->subs)
-        free_blocks(block->subs, 1);
-    if (sb)
-        av_freep(&block);
+        for (int i = 0; i < 4; i++)
+            free_blocks(&block->subs[i]);
+    av_freep(&block->subs);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -1226,7 +1226,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&mi_ctx->pixel_refs);
     if (mi_ctx->int_blocks)
         for (m = 0; m < mi_ctx->b_count; m++)
-            free_blocks(&mi_ctx->int_blocks[m], 0);
+            free_blocks(&mi_ctx->int_blocks[m]);
     av_freep(&mi_ctx->int_blocks);
 
     for (i = 0; i < NB_FRAMES; i++) {
