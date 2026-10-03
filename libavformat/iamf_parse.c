@@ -1268,8 +1268,8 @@ int ff_iamf_parse_obu_header(const uint8_t *buf, int buf_size,
     return size;
 }
 
-int ff_iamfdec_read_descriptors(IAMFContext *c, AVIOContext *pb,
-                                int max_size, void *log_ctx)
+static int read_descriptors(IAMFContext *c, AVIOContext *pb,
+                            int max_size, void *log_ctx)
 {
     uint8_t header[MAX_IAMF_OBU_HEADER_SIZE + AV_INPUT_BUFFER_PADDING_SIZE];
     int ret;
@@ -1328,4 +1328,14 @@ int ff_iamfdec_read_descriptors(IAMFContext *c, AVIOContext *pb,
     }
 
     return 0;
+}
+
+int ff_iamfdec_read_descriptors(IAMFContext *c, AVIOContext *pb,
+                                int max_size, void *log_ctx)
+{
+    int ret = read_descriptors(c, pb, max_size, log_ctx);
+
+    if (ret < 0)
+        ff_iamf_uninit_context(c);
+    return ret;
 }
