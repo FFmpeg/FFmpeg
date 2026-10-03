@@ -123,7 +123,7 @@ bool decode_remap(uint slice_idx, inout SliceContext sc)
             uint run0 = lu != 0 ? 0u  : run;
             uint run1 = lu != 0 ? run : 1u;
 
-            i += int64_t(run0) * int64_t(current_mul);
+            i += int64_t(run0 * uint(current_mul));
 
             while (run1 > 0u) {
                 run1--;
