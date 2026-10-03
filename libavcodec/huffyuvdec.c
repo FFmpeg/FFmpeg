@@ -722,6 +722,7 @@ static void decode_plane_bitstream(HYuvDecContext *s, int width, int plane)
             for (i = 0; i < count && BITS_LEFT(re, &s->gb) > 0; i++) {
                 READ_2PIX_PLANE(s->temp[0][2 * i], s->temp[0][2 * i + 1], plane, OP8bits);
             }
+            memset(s->temp[0] + 2 * i, 0, 2 * (count - i));
         } else {
             for(i=0; i<count; i++){
                 READ_2PIX_PLANE(s->temp[0][2 * i], s->temp[0][2 * i + 1], plane, OP8bits);
@@ -734,7 +735,8 @@ static void decode_plane_bitstream(HYuvDecContext *s, int width, int plane)
             index = SHOW_UBITS(re, &s->gb, VLC_BITS);
             VLC_INTERN(s->temp[0][width-1], s->vlc[plane].table,
                        &s->gb, re, VLC_BITS, 3);
-        }
+        } else if (width & 1)
+            s->temp[0][width - 1] = 0;
         CLOSE_READER(re, &s->gb);
     } else if (s->bps <= 14) {
         OPEN_READER(re, &s->gb);
@@ -742,6 +744,7 @@ static void decode_plane_bitstream(HYuvDecContext *s, int width, int plane)
             for (i = 0; i < count && BITS_LEFT(re, &s->gb) > 0; i++) {
                 READ_2PIX_PLANE(s->temp16[0][2 * i], s->temp16[0][2 * i + 1], plane, OP14bits);
             }
+            memset(s->temp16[0] + 2 * i, 0, 4 * (count - i));
         } else {
             for(i=0; i<count; i++){
                 READ_2PIX_PLANE(s->temp16[0][2 * i], s->temp16[0][2 * i + 1], plane, OP14bits);
@@ -754,13 +757,15 @@ static void decode_plane_bitstream(HYuvDecContext *s, int width, int plane)
             index = SHOW_UBITS(re, &s->gb, VLC_BITS);
             VLC_INTERN(s->temp16[0][width-1], s->vlc[plane].table,
                        &s->gb, re, VLC_BITS, 3);
-        }
+        } else if (width & 1)
+            s->temp16[0][width - 1] = 0;
         CLOSE_READER(re, &s->gb);
     } else {
         if (count >= (get_bits_left(&s->gb)) / (32 * 2)) {
             for (i = 0; i < count && get_bits_left(&s->gb) > 0; i++) {
                 READ_2PIX_PLANE16(s->temp16[0][2 * i], s->temp16[0][2 * i + 1], plane);
             }
+            memset(s->temp16[0] + 2 * i, 0, 4 * (count - i));
         } else {
             for(i=0; i<count; i++){
                 READ_2PIX_PLANE16(s->temp16[0][2 * i], s->temp16[0][2 * i + 1], plane);
@@ -769,7 +774,8 @@ static void decode_plane_bitstream(HYuvDecContext *s, int width, int plane)
         if( width&1 && get_bits_left(&s->gb)>0 ) {
             int dst = (unsigned)get_vlc2(&s->gb, s->vlc[plane].table, VLC_BITS, 3)<<2;
             s->temp16[0][width-1] = dst + get_bits(&s->gb, 2);
-        }
+        } else if (width & 1)
+            s->temp16[0][width - 1] = 0;
     }
 }
 
@@ -849,6 +855,7 @@ static av_always_inline void decode_bgr_1(HYuvDecContext *s, int count,
             s->temp[0][4 * i + A] = 0;
     }
     CLOSE_READER(re, &s->gb);
+    memset(s->temp[0] + 4 * i, 0, 4 * (count - i));
 }
 
 static void decode_bgr_bitstream(HYuvDecContext *s, int count)
