@@ -90,6 +90,7 @@ typedef struct CurlLoop {
     pthread_t       thread;
     CURLM          *multi;
     CURLSH         *share;   /* shared cookies/HSTS */
+    int             has_cookies; /* libcurl was built with cookie support */
 
     pthread_mutex_t mutex;   /* guards the command queue, exit, share and cmd->done */
     pthread_cond_t  cond;    /* signaled when a sync command completes */
@@ -992,6 +993,7 @@ static CurlLoop *curl_loop_create(AVFormatContext *avfc)
     res = curl_share_setopt(loop->share, CURLSHOPT_SHARE, CURL_LOCK_DATA_COOKIE);
     if (res != CURLSHE_OK && res != CURLSHE_NOT_BUILT_IN)
         goto fail3;
+    loop->has_cookies = res == CURLSHE_OK;
     res = curl_share_setopt(loop->share, CURLSHOPT_SHARE, CURL_LOCK_DATA_HSTS);
     if (res != CURLSHE_OK && res != CURLSHE_NOT_BUILT_IN)
         goto fail3;
@@ -1278,13 +1280,11 @@ static int setup_curl(CurlContext *c)
     if (c->key_file)
         CURL_SETOPT(CURLOPT_SSLKEY, c->key_file);
 
-    /* The cookie engine is optional unless the user supplied cookies. */
-    cc = curl_easy_setopt(e, CURLOPT_COOKIEFILE, "");
-    if ((cc != CURLE_UNKNOWN_OPTION && cc != CURLE_NOT_BUILT_IN) ||
-        (c->cookies && c->cookies[0])) {
-        ret = curl_setopt_checked(c, "CURLOPT_COOKIEFILE", cc);
-        if (ret < 0)
-            return ret;
+    if (c->loop->has_cookies) {
+        CURL_SETOPT(CURLOPT_COOKIEFILE, "");
+    } else if (c->cookies && c->cookies[0]) {
+        av_log(c->h, AV_LOG_ERROR, "libcurl was built without cookie support\n");
+        return AVERROR(ENOSYS);
     }
     if (c->cookies && c->cookies[0]) {
         char *copy = av_strdup(c->cookies);
