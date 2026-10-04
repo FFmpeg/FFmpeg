@@ -11,6 +11,10 @@ FATE_API_LIBAVCODEC-$(CONFIG_MOVTEXT_ENCODER) += fate-api-movtext
 fate-api-movtext: $(APITESTSDIR)/api-movtext-test$(EXESUF)
 fate-api-movtext: CMD = run $(APITESTSDIR)/api-movtext-test$(EXESUF)
 
+FATE_API_LIBAVCODEC-$(call ALLYES, HEVC_MP4TOANNEXB_BSF HEVC_DECODER) += fate-api-hevc-mp4toannexb
+fate-api-hevc-mp4toannexb: $(APITESTSDIR)/api-hevc-mp4toannexb-test$(EXESUF)
+fate-api-hevc-mp4toannexb: CMD = run $(APITESTSDIR)/api-hevc-mp4toannexb-test$(EXESUF)
+
 FATE_API_LIBAVCODEC-$(call ALLYES, H261_ENCODER H261_PARSER) += fate-api-enc-parser fate-api-enc-parser-cif
 fate-api-enc-parser: $(APITESTSDIR)/api-enc-parser-test$(EXESUF)
 fate-api-enc-parser: CMD = run $(APITESTSDIR)/api-enc-parser-test$(EXESUF) h261 176 144
