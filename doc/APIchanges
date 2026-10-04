@@ -9,7 +9,7 @@ API changes, most recent first:
 2026-09-xx - xxxxxxxxxx - lavc 63.16.100 - avcodec.h
   Add AV_CODEC_CONFIG_CHROMA_LOCATION.
 
-2026-08-xx - xxxxxxxxxx - lavf 63.7.100 - avformat.h
+2026-08-xx - xxxxxxxxxx - lavf 63.8.100 - avformat.h
   Add AV_STREAM_GROUP_PARAMS_GAIN_MAP.
 
 2026-09-30 - xxxxxxxxxx - lavu 61.10.100 - frame.h gain_map.h
