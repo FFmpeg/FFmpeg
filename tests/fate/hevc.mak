@@ -233,7 +233,7 @@ FATE_HEVC-$(call DEMMUX, HEVC MOV, MOV HEVC, HEVC_PARSER HEVC_MP4TOANNEXB_BSF EX
 fate-hevc-bsf-mp4toannexb: tests/data/hevc-mp4.mov
 fate-hevc-bsf-mp4toannexb: CMD = md5 -i $(TARGET_PATH)/tests/data/hevc-mp4.mov -c:v copy -fflags +bitexact -f hevc
 fate-hevc-bsf-mp4toannexb: CMP = oneline
-fate-hevc-bsf-mp4toannexb: REF = 73019329ed7f81c24f9af67c34c640c0
+fate-hevc-bsf-mp4toannexb: REF = 7d05a79c7a6665ae22c0043a4d83a811
 
 FATE_HEVC-$(call DEMMUX, HEVC MOV, MOV HEVC, HEVC_PARSER HEVC_MP4TOANNEXB_BSF EXTRACT_EXTRADATA_BSF HEVC_METADATA_BSF SCALE_FILTER) += fate-hevc-bsf-mp4toannexb-new-extradata
 fate-hevc-bsf-mp4toannexb-new-extradata: CMD = stream_remux mov $(TARGET_SAMPLES)/hevc/extradata-reload-multi-stsd.mov "" hevc "-bsf:v hevc_mp4toannexb,hevc_metadata -map 0:v"
