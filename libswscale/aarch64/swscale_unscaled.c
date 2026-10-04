@@ -146,8 +146,10 @@ static int nv24_to_yuv420p_neon_wrapper(SwsInternal *c, const uint8_t *const src
         && c->opts.dst_format == AV_PIX_FMT_##OFMT                                          \
         && !(c->opts.src_h & 1)                                                             \
         && !(c->opts.src_w & 15)                                                            \
-        && !accurate_rnd)                                                                   \
+        && !accurate_rnd) {                                                                 \
         c->convert_unscaled = ifmt##_to_##ofmt##_neon_wrapper;                              \
+        c->dst_slice_align = FFMAX(c->dst_slice_align, 1 << c->chrSrcVSubSample);            \
+    }                                                                                     \
 } while (0)
 
 #define SET_FF_YUVX_TO_ALL_RGBX_FUNC(yuvx, YUVX, accurate_rnd) do {                         \
