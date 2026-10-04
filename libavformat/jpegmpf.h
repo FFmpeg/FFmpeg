@@ -30,15 +30,36 @@
 enum MPFAttribute {
     MPF_DEPENDENT_PARENT = 0x80000000,
     MPF_DEPENDENT_CHILD  = 0x40000000,
+    MPF_REPRESENTATIVE   = 0x20000000,
+    MPF_ATTR_FORMAT_MASK = 0x07000000,
+    MPF_ATTR_TYPE_MASK   = 0x00FFFFFF,
     MPF_FORMAT_JPEG      = 0x00000000,
 };
 
 /* MP Type Codes, from CIPA DC-007 Table 4 */
 enum MPFType {
-    MPF_TYPE_UNDEFINED = 0x000000,
-    MPF_TYPE_PRIMARY   = 0x030000, /* Baseline MP Primary Image */
-    MPF_TYPE_GAIN_MAP  = 0x050000,
+    MPF_TYPE_UNDEFINED       = 0x000000,
+    MPF_TYPE_LARGE_THUMBNAIL = 0x010000, /* + class (1-5) */
+    MPF_TYPE_MULTI_FRAME     = 0x020000, /* + panorama / disparity / multi-angle */
+    MPF_TYPE_PRIMARY         = 0x030000, /* Baseline MP Primary Image */
+    MPF_TYPE_ORIGINAL        = 0x040000, /* Original preservation image */
+    MPF_TYPE_GAIN_MAP        = 0x050000,
+
+    MPF_TYPE_INFO_MASK       = 0xFF0000, /* see CIPA DC-007 Figure 9 */
 };
+
+/* Returns whether images of this type only exist as dependent images */
+static inline int mpf_type_is_child(enum MPFType type)
+{
+    switch (type & MPF_TYPE_INFO_MASK) {
+    case MPF_TYPE_LARGE_THUMBNAIL:
+    case MPF_TYPE_ORIGINAL:
+    case MPF_TYPE_GAIN_MAP:
+        return 1;
+    default:
+        return 0;
+    }
+}
 
 /* MP Index IFD tags, from CIPA DC-007 Table 3 */
 enum MPFTag {

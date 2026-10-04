@@ -650,6 +650,8 @@ library:
     @tab A format used by libvpx
 @item Internet Video Recording  @tab   @tab X
 @item IRCAM                     @tab X @tab X
+@item JPEG Multi-Picture Format @tab X @tab X
+    @tab Includes JPEG Ultra HDR (ISO 21496-1 gain map) images.
 @item LAF                       @tab   @tab X
     @tab Limitless Audio Format
 @item LATM                      @tab X @tab X
