@@ -29,6 +29,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/gain_map.h"
 #include "libavutil/mem.h"
+#include "libavutil/opt.h"
 
 #include "libavcodec/bytestream.h"
 #include "libavcodec/exif.h"
@@ -50,10 +51,15 @@ typedef struct MPFDemuxImage {
 } MPFDemuxImage;
 
 typedef struct MPFDemuxContext {
+    const AVClass *class;
+    AVRational framerate;
+    int loop;
+
     MPFDemuxImage *images; /* sorted by position in the file */
     int nb_images;
 
     int cur_image;    /* index of next image to return */
+    int64_t pts;      /* number of times all images were returned */
     int has_gain_map; /* the primary image carries ISO 21496-1 metadata */
     int passthrough;  /* not an MPF file */
     int first_img;    /* index of the first individual image */
@@ -373,7 +379,8 @@ static int mpf_read_header(AVFormatContext *ctx)
             st->disposition |= AV_DISPOSITION_DEFAULT;
         if (img->child || mpf_type_is_child(img->type))
             st->disposition |= AV_DISPOSITION_DEPENDENT;
-        avpriv_set_pts_info(st, 64, 1, 25);
+        avpriv_set_pts_info(st, 64, s->framerate.den, s->framerate.num);
+        st->avg_frame_rate = st->r_frame_rate = s->framerate;
         if (s->passthrough) /* we don't know the image size */
             ffstream(st)->need_parsing = AVSTREAM_PARSE_FULL;
 
@@ -425,6 +432,11 @@ static int mpf_read_packet(AVFormatContext *ctx, AVPacket *pkt)
     AVIOContext *pb = ctx->pb;
     int ret;
 
+    if (s->cur_image >= s->nb_images && s->loop && !s->passthrough) {
+        s->cur_image = 0;
+        s->pts++;
+    }
+
     if (s->cur_image >= s->nb_images) {
         if (!s->passthrough)
             return AVERROR_EOF;
@@ -460,7 +472,7 @@ static int mpf_read_packet(AVFormatContext *ctx, AVPacket *pkt)
     }
 
     pkt->stream_index = img->st->index;
-    pkt->pts = pkt->dts = 0;
+    pkt->pts = pkt->dts = s->pts;
     pkt->duration = 1;
     pkt->flags |= AV_PKT_FLAG_KEY;
     return 0;
@@ -470,7 +482,7 @@ static int mpf_read_seek(AVFormatContext *ctx, int stream_index,
                          int64_t timestamp, int flags)
 {
     MPFDemuxContext *s = ctx->priv_data;
-    if (s->passthrough || timestamp != 0)
+    if (s->passthrough || timestamp < 0 || (!s->loop && timestamp > 0))
         return -1;
 
     /* Don't seek if the initial packet is still pending; since this would
@@ -482,6 +494,7 @@ static int mpf_read_seek(AVFormatContext *ctx, int stream_index,
     }
 
     s->cur_image = 0;
+    s->pts = timestamp;
     return 0;
 }
 
@@ -493,9 +506,25 @@ static int mpf_read_close(AVFormatContext *ctx)
     return 0;
 }
 
+#define OFFSET(x) offsetof(MPFDemuxContext, x)
+#define DEC AV_OPT_FLAG_DECODING_PARAM
+static const AVOption mpf_options[] = {
+    { "framerate", "set the video framerate", OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT_MAX, DEC },
+    { "loop",      "loop over the images in the file", OFFSET(loop), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC },
+    { NULL },
+};
+
+static const AVClass mpf_class = {
+    .class_name = "jpeg_mpf demuxer",
+    .item_name  = av_default_item_name,
+    .option     = mpf_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 const FFInputFormat ff_jpeg_mpf_demuxer = {
     .p.name         = "jpeg_mpf",
     .p.long_name    = NULL_IF_CONFIG_SMALL("JPEG Multi-Picture Format"),
+    .p.priv_class   = &mpf_class,
     .p.extensions   = "mpo",
     .priv_data_size = sizeof(MPFDemuxContext),
     .flags_internal = FF_INFMT_FLAG_INIT_CLEANUP | FF_INFMT_FLAG_ID3V2_AUTO,

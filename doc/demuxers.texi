@@ -760,6 +760,16 @@ frame side data by the decoder.
 Images of any other type (e.g. large thumbnails or multi-view images) are
 exposed as additional streams.
 
+This demuxer accepts the following options, which behave like the options of
+the same name of the @samp{image2} demuxer:
+@table @option
+@item framerate
+Set the frame rate of the video streams. The default is 25.
+@item loop
+If set to 1, loop over the images in the file. The default is 0. This requires
+seekable input.
+@end table
+
 @section ktx
 
 Khronos Texture 1.0 demuxer for ASTC textures.
