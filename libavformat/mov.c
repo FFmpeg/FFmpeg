@@ -9513,8 +9513,9 @@ static int mov_read_iprp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             goto fail;
         }
         av_log(c->fc, AV_LOG_TRACE, "ipco: index %d, box type %s\n", nb_atoms, av_fourcc2str(ref->type));
-        avio_seek(pb, -8, SEEK_CUR);
-        if (avio_read(pb, ref->data, ref->size) != ref->size) {
+        AV_WB32(ref->data, ref->size);
+        AV_WL32(ref->data + 4, ref->type);
+        if (avio_read(pb, ref->data + 8, ref->size - 8) != ref->size - 8) {
             ret = AVERROR_INVALIDDATA;
             goto fail;
         }
