@@ -155,6 +155,7 @@ libavformat/.*jpegxl.* @Traneptora
 libavformat/jv.* @pross
 libavformat/.*jxl.* @Traneptora
 libavformat/kvag.* @zane
+libavformat/libcurl.* @kasper93
 libavformat/mccdec.* @programmerjake
 libavformat/mccenc.* @programmerjake
 libavformat/mlv.* @pross
