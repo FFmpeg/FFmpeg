@@ -626,16 +626,19 @@ FATE_IMAGE += $(FATE_IMAGE-yes)
 FATE_IMAGE_PROBE += $(FATE_IMAGE_PROBE-yes)
 FATE_IMAGE_TRANSCODE += $(FATE_IMAGE_TRANSCODE-yes)
 
-FATE_JPEG_MPF-$(call ALLYES, LAVFI_INDEV TESTSRC2_FILTER SCALE_FILTER FORMAT_FILTER \
+FATE_JPEG_MPF-$(call ALLYES, LAVFI_INDEV WRAPPED_AVFRAME_DECODER TESTSRC2_FILTER SCALE_FILTER FORMAT_FILTER \
     SPLIT_FILTER SETPARAMS_FILTER GAINMAP_FILTER MJPEG_ENCODER JPEG_MPF_MUXER \
-    FILE_PROTOCOL) += fate-jpeg-mpf-gainmap
+    JPEG_MPF_DEMUXER MJPEG_DECODER RAWVIDEO_ENCODER FRAMECRC_MUXER PIPE_PROTOCOL \
+    FILE_PROTOCOL FFPROBE) += fate-jpeg-mpf-gainmap
 fate-jpeg-mpf-gainmap: tests/data/filtergraphs/jpeg_mpf_gainmap
-fate-jpeg-mpf-gainmap: CMD = md5 -bitexact -sws_flags +accurate_rnd+bitexact \
-    -/filter_complex $(TARGET_PATH)/tests/data/filtergraphs/jpeg_mpf_gainmap \
-    -map "[base]" -map "[gain]" -stream_group "type=gain_map:st=0:st=1:el_index=1" \
-    -pix_fmt yuvj444p -c:v mjpeg -dct int -f jpeg_mpf
+fate-jpeg-mpf-gainmap: CMD = transcode lavfi testsrc2=s=64x48:r=1:d=1 jpeg_mpf \
+    "-sws_flags +accurate_rnd+bitexact \
+     -/filter_complex $(TARGET_PATH)/tests/data/filtergraphs/jpeg_mpf_gainmap \
+     -map [base] -map [gain] -stream_group type=gain_map:st=0:st=1:el_index=1 \
+     -pix_fmt yuvj444p -c:v mjpeg -dct int" "-map 0" \
+    "-show_entries stream_group=index,type,nb_streams:stream_group_stream=index:frame=stream_index:frame_side_data_list -of compact"
 
-FATE_FFMPEG += $(FATE_JPEG_MPF-yes)
+FATE_FFMPEG_FFPROBE += $(FATE_JPEG_MPF-yes)
 fate-jpeg-mpf: $(FATE_JPEG_MPF-yes)
 
 FATE_IMG2_MUXER-$(call ALLYES, LAVFI_INDEV COLOR_FILTER FORMAT_FILTER \
