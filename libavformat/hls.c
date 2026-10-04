@@ -1332,7 +1332,7 @@ static void handle_id3(AVIOContext *pb, struct playlist *pls)
         av_dict_free(&metadata);
     }
 
-    if (!pls->id3_deferred_extra)
+    if (pls->id3_deferred_extra != extra_meta)
         ff_id3v2_free_extra_meta(&extra_meta);
 }
 
