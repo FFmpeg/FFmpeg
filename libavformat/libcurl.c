@@ -1209,9 +1209,6 @@ static int setup_protocols(CurlContext *c)
     return ret;
 }
 
-/* A failed setopt used to be ignored, so an unsupported option such as
- * -http_version 3 on a libcurl built without HTTP/3 was silently dropped and
- * the request went out with curl's default version. */
 #define CURL_SETOPT(opt, val)                                               \
     do {                                                                    \
         int ret_ = curl_setopt_checked(c, #opt,                            \
