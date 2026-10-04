@@ -607,9 +607,11 @@ av_cold int ff_rate_control_init(MPVMainEncContext *const m)
                 next++;
             }
             e = sscanf(p, " in:%d ", &picture_number);
-
-            av_assert0(picture_number >= 0);
-            av_assert0(picture_number < rcc->num_entries);
+            if (e != 1 || picture_number < 0 || picture_number >= rcc->num_entries) {
+                av_log(avctx, AV_LOG_ERROR,
+                       "statistics are damaged at line %d, parser out=%d\n", i, e);
+                return -1;
+            }
             rce = &rcc->entry[picture_number];
 
             e += sscanf(p, " in:%*d out:%*d type:%d q:%f itex:%d ptex:%d "
