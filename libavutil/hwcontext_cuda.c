@@ -196,6 +196,44 @@ done:
     return ret;
 }
 
+#if HAVE_CUDAFUNCTIONS_CUMEMHOSTALLOC
+static void cuda_transfer_buffer_free(void *opaque, uint8_t *data)
+{
+    AVHWDeviceContext *device_ctx = opaque;
+    AVCUDADeviceContext    *hwctx = device_ctx->hwctx;
+    CudaFunctions             *cu = hwctx->internal->cuda_dl;
+    CUcontext dummy;
+
+    CHECK_CU(cu->cuCtxPushCurrent(hwctx->cuda_ctx));
+    CHECK_CU(cu->cuMemFreeHost(data));
+    CHECK_CU(cu->cuCtxPopCurrent(&dummy));
+}
+
+/* The device transfers directly to and from page-locked memory, other memory
+ * goes through a buffer of the driver. */
+static AVBufferRef *cuda_transfer_buffer_alloc(void *device_ref, size_t size)
+{
+    AVHWDeviceContext *device_ctx = (AVHWDeviceContext *)((AVBufferRef *)device_ref)->data;
+    AVCUDADeviceContext    *hwctx = device_ctx->hwctx;
+    CudaFunctions             *cu = hwctx->internal->cuda_dl;
+    AVBufferRef *ret = NULL;
+    CUcontext dummy;
+    void *host;
+
+    if (CHECK_CU(cu->cuCtxPushCurrent(hwctx->cuda_ctx)) < 0)
+        return av_buffer_alloc(size);
+
+    if (CHECK_CU(cu->cuMemHostAlloc(&host, size, 0)) >= 0) {
+        ret = av_buffer_create(host, size, cuda_transfer_buffer_free, device_ctx, 0);
+        if (!ret)
+            CHECK_CU(cu->cuMemFreeHost(host));
+    }
+
+    CHECK_CU(cu->cuCtxPopCurrent(&dummy));
+    return ret ? ret : av_buffer_alloc(size);
+}
+#endif
+
 static void cuda_frames_uninit(AVHWFramesContext *ctx)
 {
     AVHWDeviceContext *device_ctx = ctx->device_ctx;
@@ -645,7 +683,8 @@ static int cuda_transfer_data(AVHWFramesContext *ctx, AVFrame *dst,
             break;
     }
 
-    if (!dst->hw_frames_ctx) {
+    /* The caller may reuse host memory once the transfer returns. */
+    if (!src->hw_frames_ctx || !dst->hw_frames_ctx) {
         ret = CHECK_CU(cu->cuStreamSynchronize(hwctx->stream));
         if (ret < 0)
             goto exit;
@@ -951,6 +990,9 @@ const HWContextType ff_hwcontext_type_cuda = {
     .frames_uninit        = cuda_frames_uninit,
     .frames_get_buffer    = cuda_get_buffer,
     .transfer_get_formats = cuda_transfer_get_formats,
+#if HAVE_CUDAFUNCTIONS_CUMEMHOSTALLOC
+    .transfer_buffer_alloc = cuda_transfer_buffer_alloc,
+#endif
     .transfer_data_to     = cuda_transfer_data,
     .transfer_data_from   = cuda_transfer_data,
 

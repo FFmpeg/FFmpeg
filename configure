@@ -2604,6 +2604,7 @@ TOOLCHAIN_FEATURES="
 "
 
 TYPES_LIST="
+    CudaFunctions_cuMemHostAlloc
     DPI_AWARENESS_CONTEXT
     IDXGIOutput5
     __x_ABI_CWindows_CGraphics_CCapture_CIGraphicsCaptureSession5
@@ -7121,6 +7122,7 @@ fi
 
 if enabled ffnvcodec; then
     check_cpp_condition ffnvcodec_cuarray ffnvcodec/dynlink_loader.h "defined(CUDA_ARRAY3D_VIDEO_ENCODE_DECODE)"
+    check_struct ffnvcodec/dynlink_loader.h CudaFunctions cuMemHostAlloc
 fi
 
 check_cpp_condition winrt windows.h "!WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)"

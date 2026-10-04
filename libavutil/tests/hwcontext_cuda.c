@@ -16,15 +16,20 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <inttypes.h>
+#include <stdatomic.h>
 #include <stdio.h>
 #include <string.h>
 
+#include "libavutil/adler32.h"
 #include "libavutil/hwcontext.h"
+#include "libavutil/hwcontext_cuda_internal.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/log.h"
 #include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/pixfmt.h"
+#include "libavutil/time.h"
 
 static int test_format(AVBufferRef *device_ref, enum AVPixelFormat fmt)
 {
@@ -129,6 +134,83 @@ fail:
     return ret;
 }
 
+static atomic_int source_overwritten;
+
+/* Hold the stream until the source was overwritten, at most 100 ms. */
+static void CUDAAPI hold_stream(CUstream stream, CUresult status, void *opaque)
+{
+    int64_t start = av_gettime_relative();
+    while (!atomic_load(&source_overwritten) && av_gettime_relative() - start < 100000);
+}
+
+/* Reuse the memory of an uploaded transfer buffer while the stream is still
+ * busy, the upload must not see the new contents. */
+static int test_source_reuse(AVBufferRef *device_ref)
+{
+    AVCUDADeviceContext *hwctx = ((AVHWDeviceContext *)device_ref->data)->hwctx;
+    CudaFunctions *cu = hwctx->internal->cuda_dl;
+    AVBufferRef *frames_ref = av_hwframe_ctx_alloc(device_ref);
+    AVFrame *sw_frame = av_frame_alloc(), *hw_frame = av_frame_alloc();
+    AVFrame *download = av_frame_alloc();
+    AVHWFramesContext *hwfc;
+    CUcontext dummy;
+    AVAdler checksum = 1;
+    int ret = AVERROR(ENOMEM);
+
+    if (!frames_ref || !sw_frame || !hw_frame || !download)
+        goto fail;
+
+    hwfc = (AVHWFramesContext *)frames_ref->data;
+    hwfc->format    = AV_PIX_FMT_CUDA;
+    hwfc->sw_format = AV_PIX_FMT_GRAY8;
+    hwfc->width     = 64;
+    hwfc->height    = 64;
+    if ((ret = av_hwframe_ctx_init(frames_ref)) < 0 ||
+        (ret = av_hwframe_get_buffer(frames_ref, hw_frame, 0)) < 0)
+        goto fail;
+
+    for (int value = 0x11; value <= 0x22; value += 0x11) {
+        av_frame_unref(sw_frame);
+        sw_frame->format = AV_PIX_FMT_GRAY8;
+        sw_frame->width  = 64;
+        sw_frame->height = 64;
+        if ((ret = av_hwframe_get_transfer_buffer(frames_ref, sw_frame)) < 0)
+            goto fail;
+        for (int y = 0; y < 64; y++)
+            memset(sw_frame->data[0] + y * sw_frame->linesize[0], value, 64);
+        if (value == 0x22) {
+            atomic_store(&source_overwritten, 1);
+            break;
+        }
+
+        ret = AVERROR_EXTERNAL;
+        if (cu->cuCtxPushCurrent(hwctx->cuda_ctx) != CUDA_SUCCESS)
+            goto fail;
+        if (cu->cuStreamAddCallback(hwctx->stream, hold_stream, NULL, 0) == CUDA_SUCCESS)
+            ret = 0;
+        cu->cuCtxPopCurrent(&dummy);
+        if (ret < 0)
+            goto fail;
+
+        if ((ret = av_hwframe_transfer_data(hw_frame, sw_frame, 0)) < 0)
+            goto fail;
+    }
+
+    if ((ret = av_hwframe_transfer_data(download, hw_frame, 0)) < 0)
+        goto fail;
+    for (int y = 0; y < 64; y++)
+        checksum = av_adler32_update(checksum,
+                                     download->data[0] + y * download->linesize[0], 64);
+    fprintf(stderr, "source reuse checksum: %08"PRIx32"\n", checksum);
+
+fail:
+    av_frame_free(&sw_frame);
+    av_frame_free(&hw_frame);
+    av_frame_free(&download);
+    av_buffer_unref(&frames_ref);
+    return ret;
+}
+
 /* Verify that an unsupported sw_format is refused at init time. Returns 0 when
  * the format is correctly rejected, and an error when it is wrongly accepted. */
 static int test_rejected(AVBufferRef *device_ref, enum AVPixelFormat fmt)
@@ -169,7 +251,7 @@ int main(void)
          * NVIDIA GPU or usable driver. Skip cleanly in that case so that
          * make fate does not fail for an unavailable test environment. A real
          * transfer mismatch below still returns a nonzero exit status. */
-        printf("No CUDA device available, skipping.\n");
+        fprintf(stderr, "No CUDA device available, skipping.\n");
         return 0;
     }
 
@@ -196,6 +278,13 @@ int main(void)
                 failures++;
             }
         }
+    }
+
+    total++;
+    ret = test_source_reuse(device_ref);
+    if (ret < 0) {
+        printf("fail: source reuse %s\n", av_err2str(ret));
+        failures++;
     }
 
     av_buffer_unref(&device_ref);
