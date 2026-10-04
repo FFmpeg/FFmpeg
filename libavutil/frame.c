@@ -21,6 +21,7 @@
 #include "buffer.h"
 #include "dict.h"
 #include "frame.h"
+#include "frame_internal.h"
 #include "imgutils.h"
 #include "mem.h"
 #include "refstruct.h"
@@ -72,7 +73,9 @@ void av_frame_free(AVFrame **frame)
 
 #define ALIGN (HAVE_SIMD_ALIGN_64 ? 64 : 32)
 
-static int get_video_buffer(AVFrame *frame, int align)
+int ff_frame_get_video_buffer(AVFrame *frame, int align,
+                              AVBufferRef *(*alloc)(void *opaque, size_t size),
+                              void *opaque)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
     int ret, padded_height;
@@ -119,7 +122,7 @@ static int get_video_buffer(AVFrame *frame, int align)
         total_size += sizes[i];
     }
 
-    frame->buf[0] = av_buffer_alloc(total_size);
+    frame->buf[0] = alloc ? alloc(opaque, total_size) : av_buffer_alloc(total_size);
     if (!frame->buf[0]) {
         ret = AVERROR(ENOMEM);
         goto fail;
@@ -209,7 +212,7 @@ int av_frame_get_buffer(AVFrame *frame, int align)
         return AVERROR(EINVAL);
 
     if (frame->width > 0 && frame->height > 0)
-        return get_video_buffer(frame, align);
+        return ff_frame_get_video_buffer(frame, align, NULL, NULL);
     else if (frame->nb_samples > 0 &&
              (av_channel_layout_check(&frame->ch_layout)))
         return get_audio_buffer(frame, align);
