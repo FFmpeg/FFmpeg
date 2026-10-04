@@ -357,6 +357,29 @@ static const AACPCEInfo aac_pce_configs[] = {
         .reorder_map = { 2, 0, 1, 4, 5, 3, 6, 7, 8, 9, 10 },
     },
     {
+        .layout = AV_CHANNEL_LAYOUT_5POINT1POINT6,
+        .num_ele = { 4, 1, 2, 1 },
+        .pairing = { { 0, 1, 0, 1 }, { 0 }, { 1, 1 }, },
+        .index = { { 0, 0, 1, 2 }, { 2 }, { 1, 3 }, { 0 }, },
+        .height = { { 0, 0, 1, 1 }, { 1 }, { 0, 1 } },
+        .config_map = { 8, TYPE_SCE, TYPE_CPE, TYPE_CPE, TYPE_LFE, TYPE_SCE, TYPE_CPE, TYPE_SCE, TYPE_CPE },
+        .reorder_map = { 2, 0, 1, 4, 5, 3, 8, 7, 9, 6, 10, 11 },
+    },
+    {
+        .layout = {
+            .nb_channels = 12,
+            .order       = AV_CHANNEL_ORDER_NATIVE,
+            .u.mask      = AV_CH_LAYOUT_5POINT1POINT2_BACK | AV_CH_TOP_BACK_LEFT | AV_CH_TOP_BACK_RIGHT |
+                           AV_CH_TOP_CENTER | AV_CH_TOP_FRONT_CENTER,
+        },
+        .num_ele = { 4, 1, 2, 1 },
+        .pairing = { { 0, 1, 0, 1 }, { 0 }, { 1, 1 }, },
+        .index = { { 0, 0, 1, 2 }, { 2 }, { 1, 3 }, { 0 }, },
+        .height = { { 0, 0, 1, 1 }, { 1 }, { 0, 1 } },
+        .config_map = { 8, TYPE_SCE, TYPE_CPE, TYPE_CPE, TYPE_LFE, TYPE_SCE, TYPE_CPE, TYPE_SCE, TYPE_CPE },
+        .reorder_map = { 2, 0, 1, 4, 5, 3, 8, 7, 9, 6, 10, 11 },
+    },
+    {
         .layout = AV_CHANNEL_LAYOUT_7POINT1POINT2,
         .num_ele = { 3, 0, 2, 1 },
         .pairing = { { 0, 1, 1 }, { 0 }, { 1, 1 }, },
@@ -384,6 +407,15 @@ static const AACPCEInfo aac_pce_configs[] = {
         .height = { { 0, 0, 1 }, { 0 }, { 0, 0, 1 } },
         .config_map = { 7, TYPE_SCE, TYPE_CPE, TYPE_CPE, TYPE_CPE, TYPE_LFE, TYPE_CPE, TYPE_CPE },
         .reorder_map = { 2, 0, 1, 4, 5, 6, 7, 3, 8, 9, 10, 11 },
+    },
+    {
+        .layout = AV_CHANNEL_LAYOUT_7POINT1POINT6,
+        .num_ele = { 4, 1, 3, 1 },
+        .pairing = { { 0, 1, 0, 1 }, { 0 }, { 1, 1, 1 }, },
+        .index = { { 0, 0, 1, 3 }, { 2 }, { 2, 1, 4 }, { 0 } },
+        .height = { { 0, 0, 1, 1 }, { 1 }, { 0, 0, 1 } },
+        .config_map = { 9, TYPE_SCE, TYPE_CPE, TYPE_CPE, TYPE_CPE, TYPE_LFE, TYPE_SCE, TYPE_CPE, TYPE_SCE, TYPE_CPE },
+        .reorder_map = { 2, 0, 1, 4, 5, 6, 7, 3, 10, 9, 11, 8, 12, 13 },
     },
     {
         // ITU-R BS.2051-3 Sound System G
