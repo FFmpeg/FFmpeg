@@ -35,6 +35,12 @@ AVFrame *ff_default_get_video_buffer2(AVFilterLink *link, int w, int h, int alig
 AVFrame *ff_null_get_video_buffer(AVFilterLink *link, int w, int h);
 
 /**
+ * get_buffer.video() of the input of a filter that uploads software frames
+ * to the hardware frames context of its output link.
+ */
+AVFrame *ff_hwupload_get_video_buffer(AVFilterLink *link, int w, int h);
+
+/**
  * Request a picture buffer with a specific set of permissions.
  *
  * @param link  the output link to the filter from which the buffer will

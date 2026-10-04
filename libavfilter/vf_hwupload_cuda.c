@@ -195,6 +195,7 @@ static const AVFilterPad cudaupload_inputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = cudaupload_filter_frame,
+        .get_buffer.video = ff_hwupload_get_video_buffer,
     },
 };
 

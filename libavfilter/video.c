@@ -92,6 +92,31 @@ AVFrame *ff_default_get_video_buffer(AVFilterLink *link, int w, int h)
     return ff_default_get_video_buffer2(link, w, h, av_cpu_max_align());
 }
 
+AVFrame *ff_hwupload_get_video_buffer(AVFilterLink *link, int w, int h)
+{
+    AVBufferRef *hw_frames_ctx = ff_filter_link(link->dst->outputs[0])->hw_frames_ctx;
+    AVFrame *frame;
+
+    if (!hw_frames_ctx || ff_filter_link(link)->hw_frames_ctx)
+        return ff_default_get_video_buffer(link, w, h);
+
+    frame = av_frame_alloc();
+    if (!frame)
+        return NULL;
+
+    frame->format = link->format;
+    frame->width  = w;
+    frame->height = h;
+    if (av_hwframe_get_transfer_buffer(hw_frames_ctx, frame) < 0) {
+        av_frame_free(&frame);
+        return NULL;
+    }
+
+    set_link_props(frame, link);
+
+    return frame;
+}
+
 AVFrame *ff_get_video_buffer(AVFilterLink *link, int w, int h)
 {
     AVFrame *ret = NULL;
