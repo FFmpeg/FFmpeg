@@ -9558,7 +9558,9 @@ static int mov_read_iprp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                 index <<= 8;
                 index |= avio_r8(pb);
             }
-            if (index > nb_atoms || index <= 0) {
+            if (!index)
+                continue;
+            if (index > nb_atoms) {
                 ret = AVERROR_INVALIDDATA;
                 goto fail;
             }
