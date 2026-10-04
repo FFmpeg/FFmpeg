@@ -503,6 +503,7 @@ Protocols:
   bluray.c                              Petri Hintukainen
   ftp.c                                 Lukasz Marek
   http.c                                Ronald S. Bultje
+  libcurl.c                             Kacper Michajłow
   libsrt.c                              Zhao Zhili
   libssh.c                              Lukasz Marek
   libzmq.c                              Andriy Gelman
