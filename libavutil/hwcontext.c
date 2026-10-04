@@ -461,7 +461,7 @@ static int transfer_data_alloc(AVFrame *dst, const AVFrame *src, int flags)
     frame_tmp->width  = ctx->width;
     frame_tmp->height = ctx->height;
 
-    ret = av_frame_get_buffer(frame_tmp, 0);
+    ret = av_hwframe_get_transfer_buffer(src->hw_frames_ctx, frame_tmp);
     if (ret < 0)
         goto fail;
 

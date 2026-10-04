@@ -399,7 +399,7 @@ int av_hwframe_get_transfer_buffer(AVBufferRef *hwframe_ctx, AVFrame *frame);
  * AV_HWFRAME_TRANSFER_DIRECTION_TO)
  *
  * dst may be "clean" (i.e. with data/buf pointers unset), in which case the
- * data buffers will be allocated by this function using av_frame_get_buffer().
+ * data buffers will be allocated by this function.
  * If dst->format is set, then this format will be used, otherwise (when
  * dst->format is AV_PIX_FMT_NONE) the first acceptable format will be chosen.
  *
