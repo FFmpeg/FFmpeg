@@ -56,6 +56,8 @@
 #define MPEG_TIME_BASE 90000
 #define MPEG_TIME_BASE_Q (AVRational){1, MPEG_TIME_BASE}
 
+#define PACKED_AUDIO_FORMATS "aac,ac3,eac3,mp3"
+
 /*
  * An apple http stream consists of a playlist with media segment files,
  * played sequentially. There may be several playlists with the same
@@ -1311,9 +1313,10 @@ static void handle_id3(AVIOContext *pb, struct playlist *pls)
         pls->id3_found = 1;
 
         /* get picture attachment and set text metadata */
-        if (pls->ctx->nb_streams)
-            ff_id3v2_parse_apic(pls->ctx, extra_meta);
-        else
+        if (pls->ctx->nb_streams) {
+            if (av_match_name(pls->ctx->iformat->name, PACKED_AUDIO_FORMATS))
+                ff_id3v2_parse_apic(pls->ctx, extra_meta);
+        } else
             /* demuxer not yet opened, defer picture attachment */
             pls->id3_deferred_extra = extra_meta;
 
@@ -2562,7 +2565,8 @@ static int hls_read_header(AVFormatContext *s)
             return ret;
 
         if (pls->id3_deferred_extra && pls->ctx->nb_streams == 1) {
-            ff_id3v2_parse_apic(pls->ctx, pls->id3_deferred_extra);
+            if (av_match_name(pls->ctx->iformat->name, PACKED_AUDIO_FORMATS))
+                ff_id3v2_parse_apic(pls->ctx, pls->id3_deferred_extra);
             avformat_queue_attached_pictures(pls->ctx);
             ff_id3v2_parse_priv(pls->ctx, pls->id3_deferred_extra);
             ff_id3v2_free_extra_meta(&pls->id3_deferred_extra);
