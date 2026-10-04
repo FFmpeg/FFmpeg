@@ -1,5 +1,5 @@
-d97fad39ae2d7044cd12da83580d8909 *tests/data/fate/aac-nmr-vbr-encode.adts
-113631 tests/data/fate/aac-nmr-vbr-encode.adts
+e81c4916deef786ee1c608312a10cfd3 *tests/data/fate/aac-nmr-vbr-encode.adts
+113626 tests/data/fate/aac-nmr-vbr-encode.adts
 #tb 0: 1/28224000
 #media_type 0: audio
 #codec_id 0: aac
@@ -56,7 +56,7 @@ d97fad39ae2d7044cd12da83580d8909 *tests/data/fate/aac-nmr-vbr-encode.adts
 0,   31457280,   31457280,   655360,     1356, 0xd2f1e61e
 0,   32112640,   32112640,   655360,     1360, 0x2cfacf15
 0,   32768000,   32768000,   655360,     1374, 0x853bf9c4
-0,   33423360,   33423360,   655360,     1339, 0x1ed6df4e
+0,   33423360,   33423360,   655360,     1337, 0x8718e0bc
 0,   34078720,   34078720,   655360,     1333, 0x3443cb14
 0,   34734080,   34734080,   655360,     1391, 0xaf6ddeb5
 0,   35389440,   35389440,   655360,     1349, 0x966dfa91
@@ -67,7 +67,7 @@ d97fad39ae2d7044cd12da83580d8909 *tests/data/fate/aac-nmr-vbr-encode.adts
 0,   38666240,   38666240,   655360,     1328, 0x2e4dcf0b
 0,   39321600,   39321600,   655360,     1300, 0x943cc8f7
 0,   39976960,   39976960,   655360,     1316, 0x9071cda4
-0,   40632320,   40632320,   655360,     1325, 0x43eda4ce
+0,   40632320,   40632320,   655360,     1322, 0xff05acac
 0,   41287680,   41287680,   655360,     1397, 0x820ac663
 0,   41943040,   41943040,   655360,     1127, 0x03e73eef
 0,   42598400,   42598400,   655360,     1125, 0xd8fa42ed
