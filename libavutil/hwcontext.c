@@ -405,6 +405,12 @@ int av_hwframe_transfer_get_formats(AVBufferRef *hwframe_ref,
     return ctxi->hw_type->transfer_get_formats(&ctxi->p, dir, formats);
 }
 
+static void transfer_pool_free(void *opaque)
+{
+    AVBufferRef *device_ref = opaque;
+    av_buffer_unref(&device_ref);
+}
+
 static AVBufferRef *transfer_buffer_alloc(void *opaque, size_t size)
 {
     FFHWFramesContext *ctxi = opaque;
@@ -412,15 +418,25 @@ static AVBufferRef *transfer_buffer_alloc(void *opaque, size_t size)
 
     ff_mutex_lock(&ctxi->transfer_pool_lock);
     if (ctxi->transfer_pool_size != size) {
+        /* buffers of the hardware context type need the device to be freed */
+        AVBufferRef *device_ref = ctxi->hw_type->transfer_buffer_alloc ?
+                                  av_buffer_ref(ctxi->p.device_ref) : NULL;
+
         av_buffer_pool_uninit(&ctxi->transfer_pool);
-        ctxi->transfer_pool      = av_buffer_pool_init(size, NULL);
+        ctxi->transfer_pool      = device_ref ?
+            av_buffer_pool_init2(size, device_ref,
+                                 ctxi->hw_type->transfer_buffer_alloc,
+                                 transfer_pool_free) :
+            av_buffer_pool_init(size, NULL);
         ctxi->transfer_pool_size = ctxi->transfer_pool ? size : 0;
+        if (!ctxi->transfer_pool)
+            av_buffer_unref(&device_ref);
     }
     if (ctxi->transfer_pool)
         buf = av_buffer_pool_get(ctxi->transfer_pool);
     ff_mutex_unlock(&ctxi->transfer_pool_lock);
 
-    return buf;
+    return buf ? buf : av_buffer_alloc(size);
 }
 
 int av_hwframe_get_transfer_buffer(AVBufferRef *hwframe_ctx, AVFrame *frame)

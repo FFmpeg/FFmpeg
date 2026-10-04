@@ -72,6 +72,14 @@ typedef struct HWContextType {
     void             (*frames_uninit)(AVHWFramesContext *ctx);
 
     int              (*frames_get_buffer)(AVHWFramesContext *ctx, AVFrame *frame);
+
+    /**
+     * Allocate a buffer of size bytes for av_hwframe_get_transfer_buffer(),
+     * av_buffer_alloc() is used if this is not set or returns NULL.
+     *
+     * @param device_ref the AVBufferRef of the AVHWDeviceContext
+     */
+    AVBufferRef     *(*transfer_buffer_alloc)(void *device_ref, size_t size);
     int              (*transfer_get_formats)(AVHWFramesContext *ctx,
                                              enum AVHWFrameTransferDirection dir,
                                              enum AVPixelFormat **formats);
