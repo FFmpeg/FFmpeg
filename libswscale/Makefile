@@ -53,6 +53,7 @@ TESTPROGS = colorspace                                                  \
             floatimg_cmp                                                \
             pixdesc_query                                               \
             swscale                                                     \
+            unscaled_threaded                                           \
 
 TESTPROGS-$(CONFIG_UNSTABLE) = sws_ops                                  \
                                sws_ops_aarch64                          \

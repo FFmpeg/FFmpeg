@@ -1,3 +1,7 @@
+FATE_LIBSWSCALE += fate-sws-unscaled-threaded
+fate-sws-unscaled-threaded: libswscale/tests/unscaled_threaded$(EXESUF)
+fate-sws-unscaled-threaded: CMD = run libswscale/tests/unscaled_threaded$(EXESUF)
+
 FATE_LIBSWSCALE += fate-sws-pixdesc-query
 fate-sws-pixdesc-query: libswscale/tests/pixdesc_query$(EXESUF)
 fate-sws-pixdesc-query: CMD = run libswscale/tests/pixdesc_query$(EXESUF)
