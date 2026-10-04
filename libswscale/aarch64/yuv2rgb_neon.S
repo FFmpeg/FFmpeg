@@ -941,10 +941,10 @@ endfunc
 // share one chroma row, so the chroma -> RGB offsets (v20-v25) are
 // computed once and applied to both luma rows.
 //
-// Precondition: slice height is even. SET_FF_YUVX_TO_RGBX_FUNC gates
-// on !(src_h & 1); scale_internal()'s macro_height_src check in
-// libswscale/swscale.c rejects any odd srcSliceH for vertically-
-// subsampled sources (chrSrcVSubSample > 0).
+// Precondition: the slice starts on an even luma row and has even height.
+// SET_FF_YUVX_TO_RGBX_FUNC requires an even frame height and raises
+// dst_slice_align, which both the legacy worker and graph splitter honor.
+// For direct sws_scale() calls, scale_internal() checks input slice alignment.
 .macro declare_2l_packed ifmt ofmt
 function ff_\ifmt\()_to_\ofmt\()_neon, export=1
         uxtw            widthx, width
