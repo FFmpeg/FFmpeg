@@ -961,6 +961,7 @@ static void share_unlock_callback(CURL *handle, curl_lock_data data,
 static CurlLoop *curl_loop_create(AVFormatContext *avfc)
 {
     CurlLoop *loop = av_mallocz(sizeof(*loop));
+    CURLSHcode res;
     if (!loop)
         return NULL;
     loop->avfc = avfc;
@@ -978,16 +979,22 @@ static CurlLoop *curl_loop_create(AVFormatContext *avfc)
     loop->multi = curl_multi_init();
     if (!loop->multi)
         goto fail3;
-    curl_multi_setopt(loop->multi, CURLMOPT_PIPELINING, CURLPIPE_MULTIPLEX);
+    if (curl_multi_setopt(loop->multi, CURLMOPT_PIPELINING, CURLPIPE_MULTIPLEX) != CURLM_OK)
+        goto fail3;
 
     loop->share = curl_share_init();
     if (!loop->share)
         goto fail3;
-    curl_share_setopt(loop->share, CURLSHOPT_USERDATA,   loop);
-    curl_share_setopt(loop->share, CURLSHOPT_LOCKFUNC,   share_lock_callback);
-    curl_share_setopt(loop->share, CURLSHOPT_UNLOCKFUNC, share_unlock_callback);
-    curl_share_setopt(loop->share, CURLSHOPT_SHARE, CURL_LOCK_DATA_COOKIE);
-    curl_share_setopt(loop->share, CURLSHOPT_SHARE, CURL_LOCK_DATA_HSTS);
+    if (curl_share_setopt(loop->share, CURLSHOPT_USERDATA,   loop)                  != CURLSHE_OK ||
+        curl_share_setopt(loop->share, CURLSHOPT_LOCKFUNC,   share_lock_callback)   != CURLSHE_OK ||
+        curl_share_setopt(loop->share, CURLSHOPT_UNLOCKFUNC, share_unlock_callback) != CURLSHE_OK)
+        goto fail3;
+    res = curl_share_setopt(loop->share, CURLSHOPT_SHARE, CURL_LOCK_DATA_COOKIE);
+    if (res != CURLSHE_OK && res != CURLSHE_NOT_BUILT_IN)
+        goto fail3;
+    res = curl_share_setopt(loop->share, CURLSHOPT_SHARE, CURL_LOCK_DATA_HSTS);
+    if (res != CURLSHE_OK && res != CURLSHE_NOT_BUILT_IN)
+        goto fail3;
 
     if (pthread_create(&loop->thread, NULL, curl_worker, loop))
         goto fail3;
