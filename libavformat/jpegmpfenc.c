@@ -264,6 +264,8 @@ static int mpf_write_packet(AVFormatContext *ctx, AVPacket *pkt)
         }
 
         int marker = bytestream2_get_byte(&gb);
+        while (marker == 0xFF) /* fill bytes */
+            marker = bytestream2_get_byte(&gb);
         if (marker == SOS || marker == TEM || (marker >= RST0 && marker <= EOI)) {
             if (!img->splice_pos)
                 img->splice_pos = pos;
