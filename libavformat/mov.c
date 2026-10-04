@@ -9491,9 +9491,10 @@ static int mov_read_iprp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     a.size = avio_rb32(pb);
     a.type = avio_rl32(pb);
 
-    if (a.size < 8 || a.type != MKTAG('i','p','c','o'))
+    if (a.size < 8 || a.size > atom.size || a.type != MKTAG('i','p','c','o'))
         return AVERROR_INVALIDDATA;
 
+    atom.size -= a.size;
     a.size -= 8;
     while (a.size >= 8) {
         MOVAtoms *ref = av_dynarray2_add((void**)&atoms, &nb_atoms, sizeof(MOVAtoms), NULL);
@@ -9529,7 +9530,7 @@ static int mov_read_iprp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     a.size = avio_rb32(pb);
     a.type = avio_rl32(pb);
 
-    if (a.size < 8 || a.type != MKTAG('i','p','m','a')) {
+    if (a.size < 16 || a.size > atom.size || a.type != MKTAG('i','p','m','a')) {
         ret = AVERROR_INVALIDDATA;
         goto fail;
     }
@@ -9537,12 +9538,14 @@ static int mov_read_iprp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     version = avio_r8(pb);
     flags   = avio_rb24(pb);
     count   = avio_rb32(pb);
+    a.size -= 16;
 
     for (int i = 0; i < count; i++) {
         int item_id = version ? avio_rb32(pb) : avio_rb16(pb);
         int assoc_count = avio_r8(pb);
 
-        if (avio_feof(pb)) {
+        a.size -= (version ? 5 : 3) + assoc_count * (1 + (flags & 1));
+        if (avio_feof(pb) || a.size < 0) {
             ret = AVERROR_INVALIDDATA;
             goto fail;
         }
