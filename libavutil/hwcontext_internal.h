@@ -23,6 +23,7 @@
 
 #include "buffer.h"
 #include "hwcontext.h"
+#include "thread.h"
 #include "frame.h"
 #include "pixfmt.h"
 
@@ -99,6 +100,14 @@ typedef struct FFHWFramesContext {
     const HWContextType *hw_type;
 
     AVBufferPool *pool_internal;
+
+    /**
+     * Buffers of transfer_pool_size bytes for av_hwframe_get_transfer_buffer(),
+     * both guarded by transfer_pool_lock.
+     */
+    AVBufferPool *transfer_pool;
+    size_t        transfer_pool_size;
+    AVMutex       transfer_pool_lock;
 
     /**
      * For a derived context, a reference to the original frames
