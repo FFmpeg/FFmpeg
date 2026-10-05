@@ -1862,9 +1862,9 @@ static void uninit_bsf_graph(AVFormatContext *ic, int stream_index)
         av_bsf_graph_free(&stgi->graph);
         stgi->sink = NULL;
 
-        for (int i = 0; i < stgi->stg->nb_streams; i++) {
-            ici->streams[stgi->stg->streams[i]->index]->filter = NULL;
-            ici->streams[stgi->stg->streams[i]->index]->group = NULL;
+        for (int i = 0; i < stgi->stg->nb_entries; i++) {
+            ici->streams[stgi->stg->entries[i]->stream->index]->filter = NULL;
+            ici->streams[stgi->stg->entries[i]->stream->index]->group = NULL;
         }
     }
     sti->group = stgi;
@@ -3341,7 +3341,7 @@ static int init_lcevc_graph(AVFormatContext *ic, int stream_index)
 
     const AVStreamGroupLayeredVideo *lcevc = stg->params.layered_video;
     AVStream *base_st = ic->streams[stream_index];
-    AVStream *lcevc_st = stg->streams[lcevc->el_index];
+    AVStream *lcevc_st = stg->entries[lcevc->el_index]->stream;
     Stream *lcevc_sti = ici->streams[lcevc_st->index];
     Stream *base_sti = ici->streams[stream_index];
 
@@ -3831,11 +3831,18 @@ static int read_thread(void *arg)
 
         if (stg->type != AV_STREAM_GROUP_PARAMS_LCEVC)
             continue;
-        if (!av_bsf_get_by_name("lcevc_merge") || stg->nb_streams != 2)
+        if (!av_bsf_get_by_name("lcevc_merge") || stg->nb_entries != 2)
             continue;
+        for (int j = 0; j < stg->nb_entries; j++) {
+            AVStreamGroupEntry *entry = stg->entries[j];
+            if (entry->type != AV_STREAM_GROUP_ENTRY_STREAM) {
+                ret = AVERROR_BUG;
+                goto fail;
+            }
+        }
 
         const AVStreamGroupLayeredVideo *lcevc = stg->params.layered_video;
-        const AVStream *base_st = ic->streams[stg->streams[!lcevc->el_index]->index];
+        const AVStream *base_st = ic->streams[stg->entries[!lcevc->el_index]->stream->index];
         Stream *base_sti = ici->streams[base_st->index];
 
         base_sti->group = ici->stream_groups[i];
