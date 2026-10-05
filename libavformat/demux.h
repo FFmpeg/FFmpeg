@@ -88,6 +88,15 @@ typedef struct FFInputFormat {
      * Tell if a given file has a chance of being parsed as this format.
      * The buffer provided is guaranteed to be AVPROBE_PADDING_SIZE bytes
      * big so you do not have to check for that unless you need more.
+     *
+     * If the final score is not yet resolvable, the special return value
+     * AVERROR(EAGAIN) can be used to signal to the caller that probing must
+     * be tried again with more bytes.
+     *
+     * This is distinct from AVPROBE_SCORE_RETRY, which means "possibly mine,
+     * but if another format is more confident, let it have the file", whereas
+     * AVERROR(EAGAIN) means "possibly mine, don't let another format claim
+     * it until I've seen enough data to make a decision".
      */
     int (*read_probe)(const AVProbeData *);
 

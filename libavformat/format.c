@@ -153,8 +153,9 @@ const AVInputFormat *av_find_input_format(const char *short_name)
     return NULL;
 }
 
-const AVInputFormat *av_probe_input_format3(const AVProbeData *pd,
-                                            int is_opened, int *score_ret)
+static const AVInputFormat *
+probe_input_format_internal(const AVProbeData *pd, int is_opened,
+                            int *score_ret, int *undecided)
 {
     AVProbeData lpd = *pd;
     const AVInputFormat *fmt1 = NULL;
@@ -196,7 +197,13 @@ const AVInputFormat *av_probe_input_format3(const AVProbeData *pd,
         score = 0;
         if (ffifmt(fmt1)->read_probe) {
             score = ffifmt(fmt1)->read_probe(&lpd);
-            if (score)
+            if (score == AVERROR(EAGAIN)) {
+                av_log(NULL, AV_LOG_TRACE, "Probing %s score:undecided size:%d\n",
+                       fmt1->name, lpd.buf_size);
+                if (undecided)
+                    *undecided = 1;
+                score = 0;
+            } else if (score)
                 av_log(NULL, AV_LOG_TRACE, "Probing %s score:%d size:%d\n", fmt1->name, score, lpd.buf_size);
             if (fmt1->extensions && av_match_ext(lpd.filename, fmt1->extensions)) {
                 switch (nodat) {
@@ -235,11 +242,18 @@ const AVInputFormat *av_probe_input_format3(const AVProbeData *pd,
     return fmt;
 }
 
+const AVInputFormat *av_probe_input_format3(const AVProbeData *pd,
+                                            int is_opened, int *score_ret)
+{
+    return probe_input_format_internal(pd, is_opened, score_ret, NULL);
+}
+
 const AVInputFormat *av_probe_input_format2(const AVProbeData *pd,
                                             int is_opened, int *score_max)
 {
     int score_ret;
-    const AVInputFormat *fmt = av_probe_input_format3(pd, is_opened, &score_ret);
+    const AVInputFormat *fmt;
+    fmt = probe_input_format_internal(pd, is_opened, &score_ret, NULL);
     if (score_ret > *score_max) {
         *score_max = score_ret;
         return fmt;
@@ -250,7 +264,7 @@ const AVInputFormat *av_probe_input_format2(const AVProbeData *pd,
 const AVInputFormat *av_probe_input_format(const AVProbeData *pd, int is_opened)
 {
     int score = 0;
-    return av_probe_input_format2(pd, is_opened, &score);
+    return probe_input_format_internal(pd, is_opened, &score, NULL);
 }
 
 int av_probe_input_buffer2(AVIOContext *pb, const AVInputFormat **fmt,
@@ -313,7 +327,18 @@ int av_probe_input_buffer2(AVIOContext *pb, const AVInputFormat **fmt,
         memset(pd.buf + pd.buf_size, 0, AVPROBE_PADDING_SIZE);
 
         /* Guess file format. */
-        *fmt = av_probe_input_format2(&pd, 1, &score);
+        int score_new, undecided = 0;
+        const AVInputFormat *fmt_new;
+        fmt_new = probe_input_format_internal(&pd, 1, &score_new, &undecided);
+
+        /* Retry undecided formats as long as we have more data to feed */
+        if (undecided && probe_size < max_probe_size && !eof) {
+            continue;
+        } else if (score_new > score) {
+            score = score_new;
+            *fmt  = fmt_new;
+        }
+
         if (*fmt) {
             /* This can only be true in the last iteration. */
             if (score <= AVPROBE_SCORE_RETRY) {
