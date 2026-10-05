@@ -450,6 +450,9 @@ int ff_filter_config_links(AVFilterContext *filter)
                     return ret;
                 }
 
+            li->cfg_format = link->format;
+            li->cfg_w      = link->w;
+            li->cfg_h      = link->h;
             li->init_state = AVLINK_INIT;
         }
     }
@@ -1567,6 +1570,22 @@ AVFrame *ff_inlink_peek_frame(AVFilterLink *link, size_t idx)
 {
     FilterLinkInternal * const li = ff_link_internal(link);
     return ff_framequeue_peek(&li->fifo, idx);
+}
+
+int ff_inlink_check_frame_params(AVFilterLink *link, const AVFrame *frame,
+                                 int dynamic_flags)
+{
+    const FilterLinkInternal *li = ff_link_internal(link);
+
+    if ((frame->format == li->cfg_format ||
+         dynamic_flags & FF_FILTER_FLAG_DYNAMIC_FRAME_FORMAT) &&
+        (frame->width == li->cfg_w && frame->height == li->cfg_h ||
+         dynamic_flags & FF_FILTER_FLAG_DYNAMIC_FRAME_SIZE))
+        return 0;
+
+    av_log(link->dst, AV_LOG_ERROR,
+           "Frame size or format changed without filter graph reinitialization\n");
+    return AVERROR(EINVAL);
 }
 
 int ff_inlink_make_frame_writable(AVFilterLink *link, AVFrame **rframe)
