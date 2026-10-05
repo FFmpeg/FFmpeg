@@ -444,6 +444,11 @@ static int activate(AVFilterContext *ctx)
     while ((ret = ff_inlink_consume_frame(inlink, &in))) {
         if (ret < 0)
             return ret;
+        if (select->do_scene_detect &&
+            (ret = ff_inlink_check_frame_params(inlink, in, 0)) < 0) {
+            av_frame_free(&in);
+            return ret;
+        }
         select_frame(ctx, in);
         if (select->select && !ff_outlink_get_status(ctx->outputs[select->select_out]))
             return ff_filter_frame(ctx->outputs[select->select_out], in);
@@ -564,5 +569,6 @@ const FFFilter ff_vf_select = {
     .priv_size     = sizeof(SelectContext),
     FILTER_INPUTS(avfilter_vf_select_inputs),
     FILTER_QUERY_FUNC2(query_formats),
+    .flags_internal = FF_FILTER_FLAG_DYNAMIC_FRAME_PARAMS,
 };
 #endif /* CONFIG_SELECT_FILTER */
