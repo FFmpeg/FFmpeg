@@ -25,6 +25,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/display.h"
+#include "libavutil/gain_map.h"
 #include "libavutil/iamf.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
@@ -468,6 +469,33 @@ static void dump_tdrdi(void *ctx, const AVPacketSideData *sd, int log_level)
     av_log(ctx, log_level, "number of reference displays: %u", tdrdi->num_ref_displays);
 }
 
+static void dump_gain_map_params(void *ctx, const AVPacketSideData *sd, int log_level)
+{
+    const AVGainMapParams *p = (const AVGainMapParams *) sd->data;
+
+    av_log(ctx, log_level, "version=%d, nb_channels=%d, use_base_color_space=%d, "
+           "base_hdr_headroom=%f, alternate_hdr_headroom=%f, channels={ ",
+           p->version, p->nb_channels, p->use_base_color_space,
+           av_q2d(p->base_hdr_headroom), av_q2d(p->alternate_hdr_headroom));
+
+    if (!(p->nb_channels == 1 || p->nb_channels == 3)) {
+        av_log(ctx, AV_LOG_ERROR, "invalid data }\n");
+        return;
+    }
+
+    for (int c = 0; c < p->nb_channels; c++) {
+        const struct AVGainMapChannel *ch = &p->channels[c];
+        av_log(ctx, log_level,
+               "{ gain_map_min=%f, gain_map_max=%f, gamma=%f, "
+               "base_offset=%f, alternate_offset=%f } ",
+               av_q2d(ch->gain_map_min), av_q2d(ch->gain_map_max),
+               av_q2d(ch->gamma), av_q2d(ch->base_offset),
+               av_q2d(ch->alternate_offset));
+    }
+
+    av_log(ctx, log_level, "}");
+}
+
 static void dump_sidedata(void *ctx, const AVPacketSideData *side_data, int nb_side_data,
                           int w, int h, AVRational avg_frame_rate,
                           const char *indent, int log_level)
@@ -531,6 +559,9 @@ static void dump_sidedata(void *ctx, const AVPacketSideData *side_data, int nb_s
             break;
         case AV_PKT_DATA_3D_REFERENCE_DISPLAYS:
             dump_tdrdi(ctx, sd, log_level);
+            break;
+        case AV_PKT_DATA_GAIN_MAP_PARAMS:
+            dump_gain_map_params(ctx, sd, log_level);
             break;
         default:
             if (name)
