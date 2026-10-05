@@ -3209,7 +3209,8 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
         lcevc = stg->params.layered_video;
         if (lcevc->width && lcevc->height)
             continue;
-        st = stg->streams[lcevc->el_index];
+        av_assert0(stg->entries[lcevc->el_index]->type == AV_STREAM_GROUP_ENTRY_STREAM);
+        st = stg->entries[lcevc->el_index]->stream;
         lcevc->width  = st->codecpar->width;
         lcevc->height = st->codecpar->height;
     }
