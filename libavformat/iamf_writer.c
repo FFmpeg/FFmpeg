@@ -108,7 +108,7 @@ static int populate_audio_roll_distance(IAMFCodecConfig *codec_config)
 static int fill_codec_config(IAMFContext *iamf, const AVStreamGroup *stg,
                              IAMFCodecConfig *codec_config, void *log_ctx)
 {
-    const AVStream *st = stg->streams[0];
+    const AVStream *st = stg->entries[0]->stream;
     IAMFCodecConfig **tmp;
     int j, ret = 0;
 
@@ -229,9 +229,17 @@ int ff_iamf_add_audio_element(IAMFContext *iamf, const AVStreamGroup *stg, void 
 
     if (stg->type != AV_STREAM_GROUP_PARAMS_IAMF_AUDIO_ELEMENT)
         return AVERROR(EINVAL);
-    if (!stg->nb_streams) {
+    if (!stg->nb_entries) {
         av_log(log_ctx, AV_LOG_ERROR, "Audio Element id %"PRId64" has no streams\n", stg->id);
         return AVERROR(EINVAL);
+    }
+    for (int i = 0; i < stg->nb_entries; i++) {
+        if (stg->entries[i]->type != AV_STREAM_GROUP_ENTRY_STREAM) {
+            av_log(log_ctx, AV_LOG_ERROR, "Unsupported Stream Group entry #%d "
+                                          "in Audio Element id %"PRId64"\n",
+                   i, stg->id);
+            return AVERROR(EINVAL);
+        }
     }
 
     iamf_audio_element = stg->params.iamf_audio_element;
@@ -250,8 +258,8 @@ int ff_iamf_add_audio_element(IAMFContext *iamf, const AVStreamGroup *stg, void 
             av_log(log_ctx, AV_LOG_ERROR, "Unsupported ambisonics mode %d\n", layer->ambisonics_mode);
             return AVERROR_PATCHWELCOME;
         }
-        for (int i = 0; i < stg->nb_streams; i++) {
-            if (stg->streams[i]->codecpar->ch_layout.nb_channels > 1) {
+        for (int i = 0; i < stg->nb_entries; i++) {
+            if (stg->entries[i]->stream->codecpar->ch_layout.nb_channels > 1) {
                 av_log(log_ctx, AV_LOG_ERROR, "Invalid amount of channels in a stream for MONO mode ambisonics\n");
                 return AVERROR(EINVAL);
             }
@@ -334,12 +342,12 @@ int ff_iamf_add_audio_element(IAMFContext *iamf, const AVStreamGroup *stg, void 
     audio_element->audio_element_id = stg->id;
     audio_element->codec_config_id = ret;
 
-    audio_element->substreams = av_calloc(stg->nb_streams, sizeof(*audio_element->substreams));
+    audio_element->substreams = av_calloc(stg->nb_entries, sizeof(*audio_element->substreams));
     if (!audio_element->substreams) {
         ret = AVERROR(ENOMEM);
         goto fail;
     }
-    audio_element->nb_substreams = stg->nb_streams;
+    audio_element->nb_substreams = stg->nb_entries;
 
     audio_element->layers = av_calloc(iamf_audio_element->nb_layers, sizeof(*audio_element->layers));
     if (!audio_element->layers) {
@@ -354,8 +362,8 @@ int ff_iamf_add_audio_element(IAMFContext *iamf, const AVStreamGroup *stg, void 
 
         if (i)
             nb_channels -= iamf_audio_element->layers[i - 1]->ch_layout.nb_channels;
-        for (; nb_channels > 0 && j < stg->nb_streams; j++) {
-            const AVStream *st = stg->streams[j];
+        for (; nb_channels > 0 && j < stg->nb_entries; j++) {
+            const AVStream *st = stg->entries[j]->stream;
             IAMFSubStream *substream = &audio_element->substreams[j];
 
             substream->audio_substream_id = st->id;
@@ -437,9 +445,17 @@ int ff_iamf_add_mix_presentation(IAMFContext *iamf, const AVStreamGroup *stg, vo
 
     if (stg->type != AV_STREAM_GROUP_PARAMS_IAMF_MIX_PRESENTATION)
         return AVERROR(EINVAL);
-    if (!stg->nb_streams) {
+    if (!stg->nb_entries) {
         av_log(log_ctx, AV_LOG_ERROR, "Mix Presentation id %"PRId64" has no streams\n", stg->id);
         return AVERROR(EINVAL);
+    }
+    for (int i = 0; i < stg->nb_entries; i++) {
+        if (stg->entries[i]->type != AV_STREAM_GROUP_ENTRY_STREAM) {
+            av_log(log_ctx, AV_LOG_ERROR, "Unsupported Stream Group entry #%d "
+                                          "in Mix Presentation id %"PRId64"\n",
+                   i, stg->id);
+            return AVERROR(EINVAL);
+        }
     }
 
     for (int i = 0; i < iamf->nb_mix_presentations; i++) {

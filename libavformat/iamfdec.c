@@ -145,8 +145,8 @@ static int iamf_read_header(AVFormatContext *s)
                     }
                 av_assert0(audio_element);
 
-                for (int l = 0; l < audio_element->nb_streams; l++) {
-                    ret = avformat_stream_group_add_stream(stg, audio_element->streams[l]);
+                for (int l = 0; l < audio_element->nb_entries; l++) {
+                    ret = avformat_stream_group_add_stream(stg, audio_element->entries[l]->stream);
                     if (ret < 0 && ret != AVERROR(EEXIST))
                         return ret;
                 }
