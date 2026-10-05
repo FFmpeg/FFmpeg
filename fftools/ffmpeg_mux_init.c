@@ -1688,8 +1688,11 @@ static int map_auto_video(Muxer *mux, const OptionsContext *o)
             if (!istg->fg)
                 continue;
 
-            for (int j = 0; j < istg->stg->nb_streams; j++) {
-                AVStream *st = istg->stg->streams[j];
+            for (int j = 0; j < istg->stg->nb_entries; j++) {
+                if (istg->stg->entries[j]->type != AV_STREAM_GROUP_ENTRY_STREAM)
+                    continue;
+
+                AVStream *st = istg->stg->entries[j]->stream;
 
                 if (st->event_flags & AVSTREAM_EVENT_FLAG_NEW_PACKETS) {
                     score = 100000000;
@@ -2739,8 +2742,8 @@ static int of_parse_group_token(Muxer *mux, const char *token, char *ptr)
             ret = AVERROR(EINVAL);
             goto end;
         }
-        for (unsigned i = 0; i < oc->stream_groups[idx]->nb_streams; i++) {
-            ret = avformat_stream_group_add_stream(stg, oc->stream_groups[idx]->streams[i]);
+        for (unsigned i = 0; i < oc->stream_groups[idx]->nb_entries; i++) {
+            ret = avformat_stream_group_add_stream(stg, oc->stream_groups[idx]->entries[i]->stream);
             if (ret < 0)
                 goto end;
         }
