@@ -2084,8 +2084,8 @@ static int open_demux_for_component(AVFormatContext *s, struct representation *p
 
         stg->id = s->nb_stream_groups;
 
-        for (int j = 0; j < istg->nb_streams; j++) {
-            AVStream *ist = istg->streams[j];
+        for (int j = 0; j < istg->nb_entries; j++) {
+            AVStream *ist = istg->entries[j]->stream;
             AVStream *st = s->streams[ist->index + pls->stream_index];
             ret = avformat_stream_group_add_stream(stg, st);
             if (ret < 0)
@@ -2330,7 +2330,7 @@ static int dash_read_header(AVFormatContext *s)
         if (ret < 0)
             return ret;
         stg->id = stg->index;
-        stg->params.layered_video->el_index = stg->nb_streams - 1;
+        stg->params.layered_video->el_index = stg->nb_entries - 1;
     }
 
     return 0;
