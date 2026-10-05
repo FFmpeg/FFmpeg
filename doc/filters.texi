@@ -10829,13 +10829,13 @@ It accepts the following parameters:
 @table @option
 @item w, out_w
 The width of the output video. It defaults to @code{iw}.
-This expression is evaluated only once during the filter
-configuration, or when the @samp{w} or @samp{out_w} command is sent.
+This expression is evaluated during the filter configuration, when the
+@samp{w} or @samp{out_w} command is sent, or when the input frame size changes.
 
 @item h, out_h
 The height of the output video. It defaults to @code{ih}.
-This expression is evaluated only once during the filter
-configuration, or when the @samp{h} or @samp{out_h} command is sent.
+This expression is evaluated during the filter configuration, when the
+@samp{h} or @samp{out_h} command is sent, or when the input frame size changes.
 
 @item x
 The horizontal position, in the input video, of the left edge of the output
