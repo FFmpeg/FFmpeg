@@ -219,6 +219,9 @@ static int nppsharpen_filter_frame(AVFilterLink* link, AVFrame* in)
     if (ret < 0)
         goto pop_ctx;
 
+    out->width  = outlink->w;
+    out->height = outlink->h;
+
     av_frame_free(&in);
 
 pop_ctx:
