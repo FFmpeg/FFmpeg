@@ -77,6 +77,7 @@ typedef struct CropContext {
     int  y;             ///< y offset of the non-cropped area with respect to the input area
     int  w;             ///< width of the cropped area
     int  h;             ///< height of the cropped area
+    int in_w, in_h;     ///< input size the cropped area was computed for
 
     AVRational out_sar; ///< output sample aspect ratio
     int keep_aspect;    ///< keep display aspect ratio when cropping
@@ -124,7 +125,7 @@ static inline int normalize_double(int *n, double d)
     return ret;
 }
 
-static int config_input(AVFilterLink *link)
+static int config_crop_area(AVFilterLink *link)
 {
     AVFilterContext *ctx = link->dst;
     CropContext *s = ctx->priv;
@@ -140,8 +141,6 @@ static int config_input(AVFilterLink *link)
     s->var_values[VAR_DAR]   = s->var_values[VAR_A] * s->var_values[VAR_SAR];
     s->var_values[VAR_HSUB]  = 1<<pix_desc->log2_chroma_w;
     s->var_values[VAR_VSUB]  = 1<<pix_desc->log2_chroma_h;
-    s->var_values[VAR_X]     = NAN;
-    s->var_values[VAR_Y]     = NAN;
     s->var_values[VAR_OUT_W] = s->var_values[VAR_OW] = NAN;
     s->var_values[VAR_OUT_H] = s->var_values[VAR_OH] = NAN;
     s->var_values[VAR_N]     = 0;
@@ -187,15 +186,6 @@ static int config_input(AVFilterLink *link)
         s->h &= ~((1 << s->vsub) - 1);
     }
 
-    av_expr_free(s->x_pexpr);
-    av_expr_free(s->y_pexpr);
-    s->x_pexpr = s->y_pexpr = NULL;
-    if ((ret = av_expr_parse(&s->x_pexpr, s->x_expr, var_names,
-                             NULL, NULL, NULL, NULL, 0, ctx)) < 0 ||
-        (ret = av_expr_parse(&s->y_pexpr, s->y_expr, var_names,
-                             NULL, NULL, NULL, NULL, 0, ctx)) < 0)
-        return AVERROR(EINVAL);
-
     if (s->keep_aspect) {
         AVRational dar = av_mul_q(link->sample_aspect_ratio,
                                   (AVRational){ link->w, link->h });
@@ -223,11 +213,31 @@ static int config_input(AVFilterLink *link)
         s->x &= ~((1 << s->hsub) - 1);
         s->y &= ~((1 << s->vsub) - 1);
     }
+    s->in_w = link->w;
+    s->in_h = link->h;
     return 0;
 
 fail_expr:
     av_log(ctx, AV_LOG_ERROR, "Error when evaluating the expression '%s'\n", expr);
     return ret;
+}
+
+static int config_input(AVFilterLink *link)
+{
+    CropContext *s = link->dst->priv;
+
+    s->var_values[VAR_X] = NAN;
+    s->var_values[VAR_Y] = NAN;
+    av_expr_free(s->x_pexpr);
+    av_expr_free(s->y_pexpr);
+    s->x_pexpr = s->y_pexpr = NULL;
+    if (av_expr_parse(&s->x_pexpr, s->x_expr, var_names,
+                      NULL, NULL, NULL, NULL, 0, link->dst) < 0 ||
+        av_expr_parse(&s->y_pexpr, s->y_expr, var_names,
+                      NULL, NULL, NULL, NULL, 0, link->dst) < 0)
+        return AVERROR(EINVAL);
+
+    return config_crop_area(link);
 }
 
 static int config_output(AVFilterLink *link)
@@ -253,7 +263,18 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
     AVFilterContext *ctx = link->dst;
     CropContext *s = ctx->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(link->format);
-    int i;
+    int i, ret;
+
+    if (frame->width != s->in_w || frame->height != s->in_h) {
+        link->w = frame->width;
+        link->h = frame->height;
+        if ((ret = config_crop_area(link)) < 0 ||
+            (ret = config_output(ctx->outputs[0])) < 0) {
+            s->in_w = -1;
+            av_frame_free(&frame);
+            return ret;
+        }
+    }
 
     s->var_values[VAR_N] = l->frame_count_out;
     s->var_values[VAR_T] = frame->pts == AV_NOPTS_VALUE ?
@@ -395,4 +416,5 @@ const FFFilter ff_vf_crop = {
     FILTER_OUTPUTS(avfilter_vf_crop_outputs),
     FILTER_QUERY_FUNC2(query_formats),
     .process_command = process_command,
+    .flags_internal = FF_FILTER_FLAG_DYNAMIC_FRAME_SIZE,
 };
