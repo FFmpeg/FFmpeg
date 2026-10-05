@@ -1081,19 +1081,15 @@ int ff_filter_frame(AVFilterLink *link, AVFrame *frame)
 
     /* Consistency checks */
     if (link->type == AVMEDIA_TYPE_VIDEO) {
-        if (strcmp(link->dst->filter->name, "buffersink") &&
-            strcmp(link->dst->filter->name, "format") &&
-            strcmp(link->dst->filter->name, "idet") &&
-            strcmp(link->dst->filter->name, "null") &&
-            strcmp(link->dst->filter->name, "scale") &&
-            strcmp(link->dst->filter->name, "libplacebo") &&
-            strcmp(link->dst->filter->name, "hqdn3d")) {
-            av_assert1(frame->format        == link->format);
-            av_assert1(frame->width         == link->w);
-            av_assert1(frame->height        == link->h);
-            if (av_pix_fmt_desc_get(link->format)->flags & AV_PIX_FMT_FLAG_ALPHA)
-                av_assert1(frame->alpha_mode == link->alpha_mode);
+        int dynamic_flags = fffilter(link->dst->filter)->flags_internal;
+
+        if ((ret = ff_inlink_check_frame_params(link, frame, dynamic_flags)) < 0) {
+            av_frame_free(&frame);
+            return ret;
         }
+        if (!(dynamic_flags & FF_FILTER_FLAG_DYNAMIC_FRAME_FORMAT) &&
+            av_pix_fmt_desc_get(link->format)->flags & AV_PIX_FMT_FLAG_ALPHA)
+            av_assert1(frame->alpha_mode == link->alpha_mode);
     } else {
         if (frame->format != link->format) {
             av_log(link->dst, AV_LOG_ERROR, "Format change is not supported\n");

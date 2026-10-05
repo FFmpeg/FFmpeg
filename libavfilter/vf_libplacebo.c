@@ -1818,5 +1818,5 @@ const FFFilter ff_vf_libplacebo = {
     .process_command = &libplacebo_process_command,
     FILTER_OUTPUTS(libplacebo_outputs),
     FILTER_QUERY_FUNC2(libplacebo_query_format),
-    .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
+    .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE | FF_FILTER_FLAG_DYNAMIC_FRAME_PARAMS,
 };
