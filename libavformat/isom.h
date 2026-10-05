@@ -297,8 +297,10 @@ typedef struct HEIFItemRef {
 
 typedef struct HEIFItem {
     AVStream *st;
+    AVStreamGroup *stg;
     HEIFItemRef *iref_list;
     int nb_iref_list;
+    int flags;
     char *name;
     int item_id;
     int64_t extent_length;
@@ -434,6 +436,8 @@ void ff_mp4_parse_es_descr(AVIOContext *pb, int *es_id);
 #define MOV_TKHD_FLAG_IN_MOVIE      0x0002
 #define MOV_TKHD_FLAG_IN_PREVIEW    0x0004
 #define MOV_TKHD_FLAG_IN_POSTER     0x0008
+
+#define MOV_INFE_FLAG_HIDDEN            0x01
 
 #define MOV_SAMPLE_DEPENDENCY_UNKNOWN 0x0
 #define MOV_SAMPLE_DEPENDENCY_YES     0x1

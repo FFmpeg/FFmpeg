@@ -46,6 +46,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/aes.h"
 #include "libavutil/aes_ctr.h"
+#include "libavutil/gain_map.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/sha.h"
 #include "libavutil/spherical.h"
@@ -9539,10 +9540,10 @@ static int mov_read_infe(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     int64_t size = atom.size;
     uint32_t item_type;
     int item_id;
-    int i, version, ret;
+    int i, version, flags, ret;
 
     version = avio_r8(pb);
-    avio_rb24(pb);  // flags.
+    flags = avio_rb24(pb);
     size -= 4;
     if (size < 0)
         return AVERROR_INVALIDDATA;
@@ -9595,6 +9596,7 @@ static int mov_read_infe(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     av_bprint_finalize(&item_name, ret ? &item->name : NULL);
     item->item_id = item_id;
     item->type    = item_type;
+    item->flags   = flags;
 
     switch (item_type) {
     case MKTAG('a','v','0','1'):
@@ -9679,13 +9681,104 @@ fail:
     return ret;
 }
 
+static int mov_read_iref_dimg_tmap(MOVContext *c, AVIOContext *pb,
+                                   HEIFItem *item, int version, int entries)
+{
+    HEIFGroup *tmap = av_realloc_array(c->heif_group, c->nb_heif_group + 1U,
+                                       sizeof(*c->heif_group));
+    int ret;
+
+    if (!tmap)
+        return AVERROR(ENOMEM);
+    c->heif_group = tmap;
+
+    if (entries != 2) {
+        avpriv_report_missing_feature(c->fc, "Derived image item of type %s with an "
+                                             "item reference count other than 2",
+                                      av_fourcc2str(item->type));
+        return 0;
+    }
+
+    tmap = &tmap[c->nb_heif_group];
+
+    tmap->item_idx_list = NULL; // Not needed
+    tmap->item_id_list = av_malloc_array(entries, sizeof(*tmap->item_id_list));
+    tmap->item_list = av_calloc(entries, sizeof(*tmap->item_list));
+    if (!tmap->item_id_list || !tmap->item_list) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    /* 'to' item ids */
+    for (int i = 0; i < entries; i++) {
+        tmap->item_id_list[i] = version ? avio_rb32(pb) : avio_rb16(pb);
+
+        if (avio_feof(pb)) {
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
+        }
+    }
+
+    tmap->nb_items = entries;
+    tmap->item = item;
+    ++c->nb_heif_group;
+
+    return 0;
+fail:
+    av_freep(&tmap->item_id_list);
+    av_freep(&tmap->item_list);
+
+    return ret;
+}
+
+static int mov_read_iref_dimg_grid(MOVContext *c, AVIOContext *pb,
+                                   HEIFItem *item, int version, int entries)
+{
+    HEIFGroup *grid = av_realloc_array(c->heif_group, c->nb_heif_group + 1U,
+                                       sizeof(*c->heif_group));
+    int ret;
+
+    if (!grid)
+        return AVERROR(ENOMEM);
+    c->heif_group = grid;
+    grid = &grid[c->nb_heif_group];
+
+    grid->item_id_list = av_malloc_array(entries, sizeof(*grid->item_id_list));
+    grid->item_idx_list = av_calloc(entries, sizeof(*grid->item_idx_list));
+    grid->item_list = av_calloc(entries, sizeof(*grid->item_list));
+    if (!grid->item_id_list || !grid->item_list || !grid->item_idx_list) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+    /* 'to' item ids */
+    for (int i = 0; i < entries; i++) {
+        grid->item_id_list[i] = version ? avio_rb32(pb) : avio_rb16(pb);
+
+        if (avio_feof(pb)) {
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
+        }
+    }
+
+    grid->nb_items = entries;
+    grid->item = item;
+    ++c->nb_heif_group;
+
+    return 0;
+fail:
+    av_freep(&grid->item_id_list);
+    av_freep(&grid->item_idx_list);
+    av_freep(&grid->item_list);
+
+    return ret;
+}
+
 static int mov_read_iref_dimg(MOVContext *c, AVIOContext *pb, int version)
 {
     HEIFItem *item = NULL;
-    HEIFGroup *grid;
-    int entries, i;
+    int entries;
     int from_item_id = version ? avio_rb32(pb) : avio_rb16(pb);
-    int ret = 0;
+    int ret;
 
     for (int i = 0; i < c->nb_heif_group; i++) {
         if (c->heif_group[i].item->item_id == from_item_id) {
@@ -9702,6 +9795,7 @@ static int mov_read_iref_dimg(MOVContext *c, AVIOContext *pb, int version)
         switch (item->type) {
         case MKTAG('g','r','i','d'):
         case MKTAG('i','o','v','l'):
+        case MKTAG('t','m','a','p'):
             break;
         default:
             avpriv_report_missing_feature(c->fc, "Derived Image item of type %s",
@@ -9711,7 +9805,7 @@ static int mov_read_iref_dimg(MOVContext *c, AVIOContext *pb, int version)
         break;
     }
     if (!item) {
-        av_log(c->fc, AV_LOG_ERROR, "Missing grid information\n");
+        av_log(c->fc, AV_LOG_ERROR, "Missing derived image information\n");
         return AVERROR_INVALIDDATA;
     }
 
@@ -9722,42 +9816,20 @@ static int mov_read_iref_dimg(MOVContext *c, AVIOContext *pb, int version)
         return AVERROR_INVALIDDATA;
     }
 
-    grid = av_realloc_array(c->heif_group, c->nb_heif_group + 1U,
-                            sizeof(*c->heif_group));
-    if (!grid)
-        return AVERROR(ENOMEM);
-    c->heif_group = grid;
-    grid = &grid[c->nb_heif_group];
-
-    grid->item_id_list = av_malloc_array(entries, sizeof(*grid->item_id_list));
-    grid->item_idx_list = av_calloc(entries, sizeof(*grid->item_idx_list));
-    grid->item_list = av_calloc(entries, sizeof(*grid->item_list));
-    if (!grid->item_id_list || !grid->item_list || !grid->item_idx_list) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
-    /* 'to' item ids */
-    for (i = 0; i < entries; i++) {
-        grid->item_id_list[i] = version ? avio_rb32(pb) : avio_rb16(pb);
-
-        if (avio_feof(pb)) {
-            ret = AVERROR_INVALIDDATA;
-            goto fail;
-        }
-    }
-
-    grid->nb_items = entries;
-    grid->item = item;
-    ++c->nb_heif_group;
-
     av_log(c->fc, AV_LOG_TRACE, "dimg: from_item_id %d, entries %d\n",
            from_item_id, entries);
 
-    return 0;
-fail:
-    av_freep(&grid->item_id_list);
-    av_freep(&grid->item_idx_list);
-    av_freep(&grid->item_list);
+    switch (item->type) {
+    case MKTAG('g','r','i','d'):
+    case MKTAG('i','o','v','l'):
+        ret = mov_read_iref_dimg_grid(c, pb, item, version, entries);
+        break;
+    case MKTAG('t','m','a','p'):
+        ret = mov_read_iref_dimg_tmap(c, pb, item, version, entries);
+        break;
+    default:
+        av_unreachable("item->type should have been checked above");
+    }
 
     return ret;
 }
@@ -11332,6 +11404,203 @@ static int mov_parse_tiles(AVFormatContext *s)
     return 0;
 }
 
+static int mov_parse_heif_layered_video_tmap(AVFormatContext *s, const HEIFGroup *tmap)
+{
+    MOVContext *mov = s->priv_data;
+    AVStreamGroup *stg;
+    AVStreamGroupLayeredVideo *layered_video;
+    AVGainMapParams *gain = NULL;
+    uint8_t *payload = NULL;
+    int64_t pos, offset = 0;
+    size_t gain_size;
+    int64_t err64;
+    int err;
+
+    if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL)) {
+        av_log(s, AV_LOG_WARNING, "tmap box with non seekable input\n");
+        return 0;
+    }
+
+    stg = avformat_stream_group_create(s, AV_STREAM_GROUP_PARAMS_GAIN_MAP, NULL);
+    if (!stg)
+        return AVERROR(ENOMEM);
+
+    stg->id = tmap->item->item_id;
+    layered_video = stg->params.layered_video;
+
+    for (int j = 0; j < tmap->nb_items; j++) {
+        int item_id = tmap->item_id_list[j];
+        HEIFItem *item = get_heif_item(mov, item_id);
+        AVStreamGroup *child_stg;
+        AVStream *st;
+
+        if (!item) {
+            av_log(s, AV_LOG_WARNING, "HEIF item id %d referenced by tmap id %d doesn't "
+                                      "exist\n",
+                   item_id, tmap->item->item_id);
+            ff_remove_stream_group(s, stg);
+            return 0;
+        }
+
+        st = item->st;
+        child_stg = item->stg;
+        if (!st && !child_stg) {
+            av_log(s, AV_LOG_WARNING, "HEIF item id %d from tmap id %d doesn't "
+                                      "reference a stream or tmap\n",
+                   item_id, tmap->item->item_id);
+            ff_remove_stream_group(s, stg);
+            return 0;
+        }
+        av_assert0(!st != !child_stg);
+
+        tmap->item_list[j] = item;
+
+        if (st)
+            err = avformat_stream_group_add_stream(stg, st);
+        else
+            err = avformat_stream_group_add_stream_group(stg, child_stg);
+        if (err < 0) {
+            if (err == AVERROR(EEXIST))
+                err = AVERROR_INVALIDDATA;
+
+            return err;
+        }
+
+        if ((item->flags & MOV_INFE_FLAG_HIDDEN)) {
+            if (st)
+                st->disposition |= AV_DISPOSITION_DEPENDENT;
+            else
+                child_stg->disposition |= AV_DISPOSITION_DEPENDENT;
+        }
+    }
+
+    layered_video->width  = tmap->item->width;
+    layered_video->height = tmap->item->height;
+
+    if (tmap->item->is_idat_relative) {
+        if (!mov->idat_offset) {
+            av_log(s, AV_LOG_ERROR, "Missing idat box required by the tmap\n");
+            return AVERROR_INVALIDDATA;
+        }
+        offset = mov->idat_offset;
+    }
+
+    if (offset > INT64_MAX - tmap->item->extent_offset)
+        return AVERROR_INVALIDDATA;
+
+    gain = av_gain_map_params_alloc(&gain_size);
+    if (!gain)
+        return AVERROR(ENOMEM);
+
+    payload = av_malloc(tmap->item->extent_length);
+    if (!payload) {
+        return AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    pos = avio_tell(s->pb);
+    err64 = avio_seek(s->pb, tmap->item->extent_offset + offset, SEEK_SET);
+    if (err64 != tmap->item->extent_offset + offset) {
+        err64 = err64 < 0 ? err64 : AVERROR_INVALIDDATA;
+        goto fail;
+    }
+    avio_r8(s->pb); /* version */
+
+    err = avio_read(s->pb, payload, tmap->item->extent_length);
+    if (err == tmap->item->extent_length)
+        err64 = avio_seek(s->pb, pos, SEEK_SET);
+    else {
+        err = err < 0 ? err : AVERROR_INVALIDDATA;
+        goto fail;
+    }
+    if (err64 != pos) {
+        err = err64 < 0 ? err64 : AVERROR_INVALIDDATA;
+        goto fail;
+    }
+
+    err = av_gain_map_params_from_iso21496(gain, payload, tmap->item->extent_length);
+    av_freep(&payload);
+    if (err < 0)
+        goto fail;
+
+    for (int j = 0; j < tmap->nb_items; j++) {
+        HEIFItem *item = tmap->item_list[j];
+        AVPacketSideData *sd;
+        AVPacketSideData **coded_side_data;
+        int *nb_coded_side_data;
+
+        if (!(item->flags & MOV_INFE_FLAG_HIDDEN))
+            continue;
+
+        layered_video->el_index = j;
+
+        if (item->st) {
+            coded_side_data    = &item->st->codecpar->coded_side_data;
+            nb_coded_side_data = &item->st->codecpar->nb_coded_side_data;
+        } else {
+            av_assert0(item->stg);
+            coded_side_data    = &item->stg->coded_side_data;
+            nb_coded_side_data = &item->stg->nb_coded_side_data;
+        }
+
+        sd = av_packet_side_data_add(coded_side_data, nb_coded_side_data,
+                                     AV_PKT_DATA_GAIN_MAP_PARAMS,
+                                     (uint8_t *)gain, gain_size, 0);
+        if (!sd) {
+            av_free(gain);
+            return AVERROR(ENOMEM);
+        }
+        gain = NULL;
+
+        break;
+    }
+    av_free(gain);
+
+    err = mov_parse_heif_item_references(s, tmap->item, &stg->coded_side_data,
+                                                        &stg->nb_coded_side_data);
+    if (err < 0)
+        return err;
+
+    if (tmap->item->name)
+        av_dict_set(&stg->metadata, "title", tmap->item->name, 0);
+    if (tmap->item->item_id == mov->primary_item_id)
+        stg->disposition |= AV_DISPOSITION_DEFAULT;
+
+    tmap->item->stg = stg;
+
+    return 0;
+fail:
+    av_free(gain);
+    av_free(payload);
+
+    return err;
+}
+
+static int mov_parse_heif_layered_video(AVFormatContext *s)
+{
+    MOVContext *mov = s->priv_data;
+    int err;
+
+    for (int i = 0; i < mov->nb_heif_group; i++) {
+        const HEIFGroup *tmap = &mov->heif_group[i];
+
+        if (!tmap->item)
+            continue;
+
+        switch (tmap->item->type) {
+        case MKTAG('t','m','a','p'):
+            err = mov_parse_heif_layered_video_tmap(s, tmap);
+            if (err < 0)
+                return err;
+            break;
+        default:
+            break;
+        }
+    }
+
+    return 0;
+}
+
 static int mov_parse_heif_items(AVFormatContext *s)
 {
     MOVContext *mov = s->priv_data;
@@ -11388,6 +11657,10 @@ static int mov_parse_heif_items(AVFormatContext *s)
 
     if (mov->nb_heif_group) {
         err = mov_parse_tiles(s);
+        if (err < 0)
+            return err;
+
+        err = mov_parse_heif_layered_video(s);
         if (err < 0)
             return err;
     }
