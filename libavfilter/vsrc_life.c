@@ -238,6 +238,10 @@ static int init_pattern_from_file(AVFilterContext *ctx)
                            0, ctx)) < 0)
         return ret;
     av_freep(&life->filename);
+    if (life->file_bufsize > INT_MAX) {
+        av_log(ctx, AV_LOG_ERROR, "Pattern file too large\n");
+        return AVERROR(EINVAL);
+    }
 
     /* prescan file to get the number of lines and the maximum width */
     w = 0;
