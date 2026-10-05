@@ -390,6 +390,7 @@ const FFFilter ff_vsink_buffer = {
     .activate      = activate,
     FILTER_INPUTS(ff_video_default_filterpad),
     FILTER_QUERY_FUNC2(vsink_query_formats),
+    .flags_internal = FF_FILTER_FLAG_DYNAMIC_FRAME_PARAMS,
 };
 
 static const AVFilterPad inputs_audio[] = {

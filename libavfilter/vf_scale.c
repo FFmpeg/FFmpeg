@@ -1200,6 +1200,7 @@ const FFFilter ff_vf_scale = {
     FILTER_QUERY_FUNC2(query_formats),
     .activate        = activate,
     .process_command = process_command,
+    .flags_internal = FF_FILTER_FLAG_DYNAMIC_FRAME_PARAMS,
 };
 
 static const AVClass *scale2ref_child_class_iterate(void **iter)
@@ -1267,4 +1268,5 @@ const FFFilter ff_vf_scale2ref = {
     FILTER_OUTPUTS(avfilter_vf_scale2ref_outputs),
     FILTER_QUERY_FUNC2(query_formats),
     .process_command = process_command,
+    .flags_internal = FF_FILTER_FLAG_DYNAMIC_FRAME_PARAMS,
 };
