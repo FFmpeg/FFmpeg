@@ -562,6 +562,7 @@ int ff_aac_usac_config_decode(AACDecContext *ac, AVCodecContext *avctx,
     MPEG4AudioConfig *m4ac = &oc->m4ac;
     AACUSACConfig *usac = &oc->usac;
     int elem_id[3 /* SCE, CPE, LFE */];
+    int nb_elems;
 
     int map_pos_set = 0;
     int nb_elements = 0;
@@ -658,15 +659,14 @@ int ff_aac_usac_config_decode(AACDecContext *ac, AVCodecContext *avctx,
 
     /* UsacDecoderConfig */
     elem_id[0] = elem_id[1] = elem_id[2] = 0;
-    usac->nb_elems = get_escaped_value(gb, 4, 8, 16) + 1;
-    if (usac->nb_elems > 64) {
+    nb_elems = get_escaped_value(gb, 4, 8, 16) + 1;
+    if (nb_elems > 64) {
         av_log(ac->avctx, AV_LOG_ERROR, "Too many elements: %i\n",
-               usac->nb_elems);
-        usac->nb_elems = 0;
+               nb_elems);
         return AVERROR(EINVAL);
     }
 
-    for (int i = 0; i < usac->nb_elems; i++) {
+    for (int i = 0; i < nb_elems; i++) {
         int map_count = elem_id[0] + elem_id[1] + elem_id[2];
         AACUsacElemConfig *e = &usac->elems[i];
         memset(e, 0, sizeof(*e));
@@ -675,7 +675,6 @@ int ff_aac_usac_config_decode(AACDecContext *ac, AVCodecContext *avctx,
         if (e->type != ID_USAC_EXT && (map_count + 1) > nb_channels) {
             av_log(ac->avctx, AV_LOG_ERROR, "Too many channels for the channel "
                                             "configuration\n");
-            usac->nb_elems = 0;
             return AVERROR(EINVAL);
         }
         if (map_pos_set && e->type != ID_USAC_EXT &&
@@ -746,7 +745,6 @@ int ff_aac_usac_config_decode(AACDecContext *ac, AVCodecContext *avctx,
                                   OC_GLOBAL_HDR, 0);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Unable to parse channel config!\n");
-        usac->nb_elems = 0;
         return ret;
     }
 
@@ -792,6 +790,7 @@ int ff_aac_usac_config_decode(AACDecContext *ac, AVCodecContext *avctx,
                -57.75f + 0.25f * usac->loudness.input_method_val,
                usac->loudness.input_method_val);
 
+    usac->nb_elems = nb_elems;
     ret = ff_aac_usac_reset_state(ac, oc);
     if (ret < 0)
         return ret;
