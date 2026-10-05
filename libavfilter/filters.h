@@ -208,6 +208,21 @@ static inline FilterLink* ff_filter_link(AVFilterLink *link)
 #define FF_FILTER_FLAG_HWFRAME_AWARE (1 << 0)
 
 /**
+ * The filter handles input frames whose size differs from the one its input
+ * link was configured with.
+ */
+#define FF_FILTER_FLAG_DYNAMIC_FRAME_SIZE   (1 << 1)
+
+/**
+ * The filter handles input frames whose pixel format differs from the one its
+ * input link was configured with.
+ */
+#define FF_FILTER_FLAG_DYNAMIC_FRAME_FORMAT (1 << 2)
+
+#define FF_FILTER_FLAG_DYNAMIC_FRAME_PARAMS (FF_FILTER_FLAG_DYNAMIC_FRAME_SIZE | \
+                                             FF_FILTER_FLAG_DYNAMIC_FRAME_FORMAT)
+
+/**
  * Find the index of a link.
  *
  * I.e. find i such that link == ctx->(in|out)puts[i]
@@ -555,6 +570,17 @@ int ff_inlink_consume_samples(AVFilterLink *link, unsigned min, unsigned max,
  * @return the frame at idx position in the link fifo.
  */
 AVFrame *ff_inlink_peek_frame(AVFilterLink *link, size_t idx);
+
+/**
+ * Check that a video frame has the size and pixel format its link was
+ * configured with.
+ *
+ * @param dynamic_flags FF_FILTER_FLAG_DYNAMIC_* flags of the parameters
+ *                      allowed to differ
+ * @return 0 if the frame matches, AVERROR(EINVAL) otherwise
+ */
+int ff_inlink_check_frame_params(AVFilterLink *link, const AVFrame *frame,
+                                 int dynamic_flags);
 
 /**
  * Make sure a frame is writable.

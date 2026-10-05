@@ -46,6 +46,11 @@ typedef struct FilterLinkInternal {
     FFFrameQueue fifo;
 
     /**
+     * Format and size of the video frames the link was configured with.
+     */
+    int cfg_format, cfg_w, cfg_h;
+
+    /**
      * If set, the source filter can not generate a frame as is.
      * The goal is to avoid repeatedly calling the request_frame() method on
      * the same link.
