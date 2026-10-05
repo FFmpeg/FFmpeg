@@ -328,6 +328,44 @@ static int init_muxer(AVFormatContext *s, AVDictionary **options)
             par->codec_id != AV_CODEC_ID_SMPTE_2038)
             fci->nb_interleaved_streams++;
     }
+    for (unsigned i = 0; i < s->nb_stream_groups; i++) {
+        AVStreamGroup *const  stg = s->stream_groups[i];
+
+        switch (stg->type) {
+        case AV_STREAM_GROUP_PARAMS_TILE_GRID: {
+#if FF_API_STREAM_GROUP_ENTRIES
+FF_DISABLE_DEPRECATION_WARNINGS
+            AVStreamGroupTileGrid *tile_grid = stg->params.tile_grid;
+
+            // If both the global and the deprecated Tile Grid specific
+            // side data arrays are populated, prefer the latter.
+            if (tile_grid->nb_coded_side_data && stg->nb_coded_side_data)
+                av_packet_side_data_free(&stg->coded_side_data,
+                                         &stg->nb_coded_side_data);
+            if (tile_grid->nb_coded_side_data) {
+                for (int j = 0;  j < tile_grid->nb_coded_side_data; j++) {
+                    const AVPacketSideData *src = &tile_grid->coded_side_data[j];
+                    AVPacketSideData *dst;
+
+                    dst = av_packet_side_data_new(&stg->coded_side_data,
+                                                  &stg->nb_coded_side_data,
+                                                  src->type, src->size, 0);
+                    if (!dst) {
+                        ret = AVERROR(ENOMEM);
+                        goto fail;
+                    }
+
+                    memcpy(dst->data, src->data, src->size);
+                }
+            }
+            break;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+        }
+        default:
+            break;
+        }
+    }
     fci->interleave_packet = of->interleave_packet;
     if (!fci->interleave_packet)
         fci->interleave_packet = fci->nb_interleaved_streams > 1 ?

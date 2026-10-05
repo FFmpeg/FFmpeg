@@ -1071,18 +1071,26 @@ typedef struct AVStreamGroupTileGrid {
      */
     int height;
 
+#if FF_API_STREAM_GROUP_ENTRIES
     /**
      * Additional data associated with the grid.
      *
      * Should be allocated with av_packet_side_data_new() or
      * av_packet_side_data_add(), and will be freed by avformat_free_context().
+     *
+     * @deprecated, use @ref AVStreamGroup.coded_side_data.
      */
+    attribute_deprecated
     AVPacketSideData *coded_side_data;
 
     /**
      * Amount of entries in @ref coded_side_data.
+     *
+     * @deprecated, use @ref AVStreamGroup.nb_coded_side_data.
      */
+    attribute_deprecated
     int nb_coded_side_data;
+#endif
 } AVStreamGroupTileGrid;
 
 /**
@@ -1290,6 +1298,19 @@ typedef struct AVStreamGroup {
      * Freed by libavformat in avformat_free_context().
      */
     AVStreamGroupEntry **entries;
+
+    /**
+     * Additional data associated with the group.
+     *
+     * Should be allocated with av_packet_side_data_new() or
+     * av_packet_side_data_add(), and will be freed by avformat_free_context().
+     */
+    AVPacketSideData *coded_side_data;
+
+    /**
+     * Amount of entries in @ref coded_side_data.
+     */
+    int nb_coded_side_data;
 } AVStreamGroup;
 
 struct AVCodecParserContext *av_stream_get_parser(const AVStream *s);

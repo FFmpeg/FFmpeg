@@ -92,6 +92,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
     for (int i = 0; i < stg->nb_entries; i++)
         av_freep(&stg->entries[i]);
     av_freep(&stg->entries);
+    av_packet_side_data_free(&stg->coded_side_data,
+                             &stg->nb_coded_side_data);
     av_dict_free(&stg->metadata);
     av_freep(&stg->priv_data);
     switch (stg->type) {
@@ -106,8 +108,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
     case AV_STREAM_GROUP_PARAMS_TILE_GRID:
         av_opt_free(stg->params.tile_grid);
         av_freep(&stg->params.tile_grid->offsets);
+#if FF_API_STREAM_GROUP_ENTRIES
+FF_DISABLE_DEPRECATION_WARNINGS
         av_packet_side_data_free(&stg->params.tile_grid->coded_side_data,
                                  &stg->params.tile_grid->nb_coded_side_data);
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
         av_freep(&stg->params.tile_grid);
         break;
     case AV_STREAM_GROUP_PARAMS_TREF:

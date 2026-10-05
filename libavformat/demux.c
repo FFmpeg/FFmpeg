@@ -354,6 +354,29 @@ int avformat_open_input(AVFormatContext **ps, const char *filename,
 
     update_stream_avctx(s);
 
+#if FF_API_STREAM_GROUP_ENTRIES
+FF_DISABLE_DEPRECATION_WARNINGS
+    for (unsigned i = 0; i < s->nb_stream_groups; i++) {
+        AVStreamGroup *const  stg = s->stream_groups[i];
+        if (stg->nb_coded_side_data && stg->type == AV_STREAM_GROUP_PARAMS_TILE_GRID) {
+            AVStreamGroupTileGrid *tile_grid = stg->params.tile_grid;
+            for (int j = 0;  j < stg->nb_coded_side_data; j++) {
+                const AVPacketSideData *src = &stg->coded_side_data[j];
+                AVPacketSideData *dst = av_packet_side_data_new(&tile_grid->coded_side_data,
+                                                                &tile_grid->nb_coded_side_data,
+                                                                src->type, src->size, 0);
+                if (!dst) {
+                    ret = AVERROR(ENOMEM);
+                    goto close;
+                }
+
+                memcpy(dst->data, src->data, src->size);
+            }
+        }
+    }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
     if (options) {
         av_dict_free(options);
         *options = tmp;

@@ -2,6 +2,15 @@ The last version increases of all libraries were on 2026-06-23.
 
 API changes, most recent first:
 
+2026-10-12 - xxxxxxxxxx - lavf 63.10.100 - avformat.h
+  Add AVStreamGroupEntry
+  Add AV_STREAM_GROUP_ENTRY_STREAM and AV_STREAM_GROUP_ENTRY_STREAM_GROUP
+  Add AVStreamGroup.entries, AVStreamGroup.nb_entries
+  Add AVStreamGroup.coded_side_data, AVStreamGroup.nb_coded_side_data
+  Add avformat_stream_group_add_stream_group()
+  Deprecate AVStreamGroup.streams, AVStreamGroup.nb_streams
+  Deprecate AVStreamGroupTileGrid.coded_side_data, AVStreamGroupTileGrid.nb_coded_side_data
+
 2026-10-xx - xxxxxxxxxx - lavu 61.13.100 - raw_color_params.h
   Add AV_RAW_COLOR_PARAMS_RW2 and AVRW2RawColorParams.
 
