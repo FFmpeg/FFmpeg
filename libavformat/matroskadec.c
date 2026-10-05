@@ -3426,7 +3426,7 @@ static int matroska_parse_dovi_streams(AVFormatContext *s)
     if (err < 0)
         return err;
 
-    stg->params.layered_video->el_index = stg->nb_streams - 1;
+    stg->params.layered_video->el_index = stg->nb_entries - 1;
     stg->params.layered_video->width = bl_st->codecpar->width;
     stg->params.layered_video->height = bl_st->codecpar->height;
 
