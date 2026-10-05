@@ -1162,6 +1162,19 @@ enum AVStreamGroupParamsType {
 struct AVIAMFAudioElement;
 struct AVIAMFMixPresentation;
 
+enum AVStreamGroupEntryType {
+    AV_STREAM_GROUP_ENTRY_STREAM,
+    AV_STREAM_GROUP_ENTRY_STREAM_GROUP,
+};
+
+typedef struct AVStreamGroupEntry {
+    enum AVStreamGroupEntryType type;
+    union {
+        AVStream *stream;
+        struct AVStreamGroup *stream_group;
+    };
+} AVStreamGroupEntry;
+
 typedef struct AVStreamGroup {
     /**
      * A class for @ref avoptions. Set by avformat_stream_group_create().
@@ -1219,11 +1232,15 @@ typedef struct AVStreamGroup {
      */
     AVDictionary *metadata;
 
+#if FF_API_STREAM_GROUP_ENTRIES
     /**
      * Number of elements in AVStreamGroup.streams.
      *
-     * Set by avformat_stream_group_add_stream() must not be modified by any other code.
+     * Set by avformat_stream_group_add_stream(), must not be modified by any other code.
+     *
+     * @deprecated Use AVStreamGroup.nb_entries.
      */
+    attribute_deprecated
     unsigned int nb_streams;
 
     /**
@@ -1236,8 +1253,12 @@ typedef struct AVStreamGroup {
      * - muxing: entries are created by the user before avformat_write_header().
      *
      * Freed by libavformat in avformat_free_context().
+     *
+     * @deprecated Use AVStreamGroup.entries.
      */
+    attribute_deprecated
     AVStream **streams;
+#endif
 
     /**
      * Stream group disposition - a combination of AV_DISPOSITION_* flags.
@@ -1248,6 +1269,27 @@ typedef struct AVStreamGroup {
      * - muxing: may be set by the caller before avformat_write_header().
      */
     int disposition;
+
+    /**
+     * Number of elements in AVStreamGroup.entries.
+     *
+     * Set by avformat_stream_group_add_stream() or avformat_stream_group_add_stream_group(),
+     * must not be modified by any other code.
+     */
+    unsigned int nb_entries;
+
+    /**
+     * A list of streams or child groups in the group. New entries are created with
+     * or avformat_stream_group_add_stream() or avformat_stream_group_add_stream_group().
+     *
+     * - demuxing: entries are created by libavformat on group creation.
+     *             If AVFMTCTX_NOHEADER is set in ctx_flags, then new entries may also
+     *             appear in av_read_frame().
+     * - muxing: entries are created by the user before avformat_write_header().
+     *
+     * Freed by libavformat in avformat_free_context().
+     */
+    AVStreamGroupEntry **entries;
 } AVStreamGroup;
 
 struct AVCodecParserContext *av_stream_get_parser(const AVStream *s);
@@ -1414,7 +1456,8 @@ typedef struct AVFormatContext {
     unsigned int nb_stream_groups;
     /**
      * A list of all stream groups in the file. New groups are created with
-     * avformat_stream_group_create(), and filled with avformat_stream_group_add_stream().
+     * avformat_stream_group_create(), and filled with avformat_stream_group_add_stream()
+     * and avformat_stream_group_add_stream_group.
      *
      * - demuxing: groups may be created by libavformat in avformat_open_input().
      *             If AVFMTCTX_NOHEADER is set in ctx_flags, then new groups may also
@@ -2116,11 +2159,13 @@ const char *avformat_stream_group_name(enum AVStreamGroupParamsType type);
  * by avformat_stream_group_create().
  *
  * New streams can be added to the group with avformat_stream_group_add_stream().
+ * Child groups can be added to the group with avformat_stream_group_add_stream_group().
  *
  * @param s media file handle
  *
  * @return newly created group or NULL on error.
- * @see avformat_new_stream, avformat_stream_group_add_stream.
+ * @see avformat_new_stream.
+ * @see avformat_stream_group_add_stream, avformat_stream_group_add_stream_group.
  */
 AVStreamGroup *avformat_stream_group_create(AVFormatContext *s,
                                             enum AVStreamGroupParamsType type,
@@ -2169,6 +2214,31 @@ AVStream *avformat_new_stream(AVFormatContext *s, const struct AVCodec *c);
  * @see avformat_new_stream, avformat_stream_group_create.
  */
 int avformat_stream_group_add_stream(AVStreamGroup *stg, AVStream *st);
+
+/**
+ * Add an already allocated stream group to another stream group.
+ *
+ * When demuxing, it may be called by the demuxer in read_header(). If the
+ * flag AVFMTCTX_NOHEADER is set in s.ctx_flags, then it may also
+ * be called in read_packet().
+ *
+ * When muxing, may be called by the user before avformat_write_header() after
+ * having allocated a both the parent and child groups with
+ * avformat_stream_group_create().
+ *
+ * User is required to call avformat_free_context() to clean up the allocation
+ * by avformat_stream_group_add_stream_group().
+ *
+ * @param stg stream group belonging to a media file.
+ * @param group stream group in the media file to add to the group.
+ *
+ * @retval 0                 success
+ * @retval AVERROR(EEXIST)   the stream group was already in the group
+ * @retval "another negative error code" legitimate errors
+ *
+ * @see avformat_stream_group_create.
+ */
+int avformat_stream_group_add_stream_group(AVStreamGroup *stg, AVStreamGroup *group);
 
 AVProgram *av_new_program(AVFormatContext *s, int id);
 

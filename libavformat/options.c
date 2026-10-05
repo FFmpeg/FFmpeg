@@ -547,13 +547,37 @@ fail:
 
 static int stream_group_add_stream(AVStreamGroup *stg, AVStream *st)
 {
+#if FF_API_STREAM_GROUP_ENTRIES
+FF_DISABLE_DEPRECATION_WARNINGS
     AVStream **streams = av_realloc_array(stg->streams, stg->nb_streams + 1,
                                           sizeof(*stg->streams));
     if (!streams)
         return AVERROR(ENOMEM);
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
+    AVStreamGroupEntry **entries = av_realloc_array(stg->entries, stg->nb_entries + 1,
+                                                    sizeof(*stg->entries));
+    if (!entries)
+        return AVERROR(ENOMEM);
+
+    stg->entries = entries;
+    stg->entries[stg->nb_entries] = av_mallocz(sizeof(*stg->entries[stg->nb_entries]));
+    if (!stg->entries[stg->nb_entries])
+        return AVERROR(ENOMEM);
+
+    stg->entries[stg->nb_entries]->type = AV_STREAM_GROUP_ENTRY_STREAM;
+    stg->entries[stg->nb_entries++]->stream = st;
+
+#if FF_API_STREAM_GROUP_ENTRIES
+FF_DISABLE_DEPRECATION_WARNINGS
     stg->streams = streams;
-    stg->streams[stg->nb_streams++] = st;
+    if (stg->nb_streams == (stg->nb_entries - 1))
+        stg->streams[stg->nb_streams++] = st;
+    else
+        stg->nb_streams = 0;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     return 0;
 }
@@ -566,11 +590,57 @@ int avformat_stream_group_add_stream(AVStreamGroup *stg, AVStream *st)
     if (stgi->fmtctx != sti->fmtctx)
         return AVERROR(EINVAL);
 
-    for (int i = 0; i < stg->nb_streams; i++)
-        if (stg->streams[i]->index == st->index)
+    for (int i = 0; i < stg->nb_entries; i++) {
+        const AVStreamGroupEntry *entry = stg->entries[i];
+        if (entry->type != AV_STREAM_GROUP_ENTRY_STREAM)
+            continue;
+        if (entry->stream->index == st->index)
             return AVERROR(EEXIST);
+    }
 
     return stream_group_add_stream(stg, st);
+}
+
+static int stream_group_add_stream_group(AVStreamGroup *stg, AVStreamGroup *group)
+{
+    AVStreamGroupEntry **entries = av_realloc_array(stg->entries, stg->nb_entries + 1,
+                                                    sizeof(*stg->entries));
+    if (!entries)
+        return AVERROR(ENOMEM);
+
+    stg->entries = entries;
+    stg->entries[stg->nb_entries] = av_mallocz(sizeof(*stg->entries[stg->nb_entries]));
+    if (!stg->entries[stg->nb_entries])
+        return AVERROR(ENOMEM);
+
+    stg->entries[stg->nb_entries]->type = AV_STREAM_GROUP_ENTRY_STREAM_GROUP;
+    stg->entries[stg->nb_entries++]->stream_group = group;
+#if FF_API_STREAM_GROUP_ENTRIES
+FF_DISABLE_DEPRECATION_WARNINGS
+    stg->nb_streams = 0;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
+    return 0;
+}
+
+int avformat_stream_group_add_stream_group(AVStreamGroup *stg, AVStreamGroup *group)
+{
+    const FFStreamGroup *stgi = cffstreamgroup(stg);
+    const FFStreamGroup *groupi = cffstreamgroup(group);
+
+    if (stgi->fmtctx != groupi->fmtctx)
+        return AVERROR(EINVAL);
+
+    for (int i = 0; i < stg->nb_entries; i++) {
+        const AVStreamGroupEntry *entry = stg->entries[i];
+        if (entry->type != AV_STREAM_GROUP_ENTRY_STREAM_GROUP)
+            continue;
+        if (entry->stream_group->index == group->index)
+            return AVERROR(EEXIST);
+    }
+
+    return stream_group_add_stream_group(stg, group);
 }
 
 static int option_is_disposition(const AVOption *opt)

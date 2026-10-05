@@ -84,7 +84,14 @@ void ff_free_stream_group(AVStreamGroup **pstg)
     if (!stg)
         return;
 
+#if FF_API_STREAM_GROUP_ENTRIES
+FF_DISABLE_DEPRECATION_WARNINGS
     av_freep(&stg->streams);
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+    for (int i = 0; i < stg->nb_entries; i++)
+        av_freep(&stg->entries[i]);
+    av_freep(&stg->entries);
     av_dict_free(&stg->metadata);
     av_freep(&stg->priv_data);
     switch (stg->type) {
@@ -642,8 +649,10 @@ static int match_stream_specifier(const AVFormatContext *s, const AVStream *st,
                 }
                 if (group_idx < 0 || group_idx >= s->nb_stream_groups)
                     return AVERROR(EINVAL);
-                for (unsigned j = 0; j < s->stream_groups[group_idx]->nb_streams; j++) {
-                    if (st->index == s->stream_groups[group_idx]->streams[j]->index) {
+                for (unsigned j = 0; j < s->stream_groups[group_idx]->nb_entries; j++) {
+                    if (s->stream_groups[group_idx]->entries[j]->type != AV_STREAM_GROUP_ENTRY_STREAM)
+                        continue;
+                    if (st->index == s->stream_groups[group_idx]->entries[j]->stream->index) {
                         found = 1;
                         if (g)
                             *g = s->stream_groups[group_idx];
@@ -772,9 +781,11 @@ int avformat_match_stream_specifier(AVFormatContext *s, AVStream *st,
         return (index == st->index);
 
     /* If we requested a matching stream index, we have to ensure st is that. */
-    nb_streams = g ? g->nb_streams : (p ? p->nb_stream_indexes : s->nb_streams);
+    nb_streams = g ? g->nb_entries : (p ? p->nb_stream_indexes : s->nb_streams);
     for (int i = 0; i < nb_streams && index >= 0; i++) {
-        unsigned idx = g ? g->streams[i]->index : (p ? p->stream_index[i] : i);
+        if (g && g->entries[i]->type != AV_STREAM_GROUP_ENTRY_STREAM)
+            continue;
+        unsigned idx = g ? g->entries[i]->stream->index : (p ? p->stream_index[i] : i);
         const AVStream *candidate = s->streams[idx];
         ret = match_stream_specifier(s, candidate, spec, NULL, NULL, NULL);
         if (ret < 0)
