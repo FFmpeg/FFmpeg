@@ -31,41 +31,11 @@
 
 /* May differ from AV_ISO21496_VERSION if libraries are not in sync */
 #define FF_GAIN_MAP_VERSION          0
-#define FF_GAIN_MAP_MAX_PAYLOAD_SIZE 141 /* = 5 + 2*8 + 3*5*8 */
 
 /* For XMP-based encoding */
 #define FF_GAIN_MAP_XMP_IDENT     "http://ns.adobe.com/xap/1.0/"
 #define FF_GAIN_MAP_XMP_NAMESPACE "http://ns.adobe.com/hdr-gain-map/1.0/"
 #define FF_GAIN_MAP_XMP_MAX_LEN   1024
-
-/**
- * Parse the payload of an ISO 21496-1 gain map metadata blob.
- *
- * @param p   struct to fill; overwritten on success, untouched on failure
- * @param data payload, excluding container-specific identifiers
- * @param size size of `data` in bytes
- *
- * @return >= 0 on success, or a negative AVERROR on failure
- */
-int ff_gain_map_params_from_iso21496(AVGainMapParams *p, const uint8_t *data,
-                                     size_t size);
-
-/**
- * Serialize an AVGainMapParams as an ISO 21496-1 gain map metadata blob.
- *
- * The output starts at the minimum_version field; the caller should prepend
- * whatever identifier its container requires.
- *
- * @param p   parameters to serialize
- * @param buf Byte buffer to fill with the serialized data. Must contain at
- *            least FF_GAIN_MAP_MAX_PAYLOAD_SIZE bytes.
- *
- * @return Number of bytes written on success, or a negative AVERROR on failure
- *
- * @note Always succeeds if av_gain_map_params_validate() returns >= 0, and
- *       p->version <= AV_ISO21496_VERSION.
- */
-int ff_gain_map_params_to_iso21496(const AVGainMapParams *p, uint8_t *buf);
 
 /**
  * Returns 1 if the gain map parameters are compatible with the XMP-based

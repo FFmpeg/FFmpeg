@@ -84,6 +84,36 @@ typedef struct AVGainMapParams {
 } AVGainMapParams;
 
 /**
+ * Parse the payload of an ISO 21496-1 gain map metadata blob.
+ *
+ * @param p   struct to fill; overwritten on success, untouched on failure
+ * @param data payload, excluding container-specific identifiers
+ * @param size size of `data` in bytes
+ *
+ * @return >= 0 on success, or a negative AVERROR on failure
+ */
+int av_gain_map_params_from_iso21496(AVGainMapParams *p, const uint8_t *data,
+                                     size_t size);
+
+#define AV_GAIN_MAP_MAX_PAYLOAD_SIZE 141 /* = 5 + 2*8 + 3*5*8 */
+
+/**
+ * Serialize an AVGainMapParams as an ISO 21496-1 gain map metadata blob.
+ *
+ * The output starts at the minimum_version field; the caller should prepend
+ * whatever identifier its container requires.
+ *
+ * @param p   parameters to serialize
+ * @param buf Byte buffer to fill with the serialized data. Must contain at
+ *            least AV_GAIN_MAP_MAX_PAYLOAD_SIZE bytes.
+ *
+ * @return Number of bytes written on success, or a negative AVERROR on failure
+ *
+ * @note Always succeeds if av_gain_map_params_validate() returns >= 0.
+ */
+int av_gain_map_params_to_iso21496(const AVGainMapParams *p, uint8_t *buf);
+
+/**
  * Returns >= 0 if the given AVGainMapParams struct contains valid data;
  * or a negative AVERROR otherwise.
  */

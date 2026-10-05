@@ -182,7 +182,7 @@ int ff_mjpeg_add_gain_map_size(AVCodecContext *avctx, struct MJpegContext *m,
     if (ret < 0)
         return ret;
 
-    size_t extra_size = 4 + sizeof(AV_ISO21496_IDENTIFIER) + FF_GAIN_MAP_MAX_PAYLOAD_SIZE;
+    size_t extra_size = 4 + sizeof(AV_ISO21496_IDENTIFIER) + AV_GAIN_MAP_MAX_PAYLOAD_SIZE;
     if (m && m->xmp_gain_map) {
         if (!ff_gain_map_params_check_xmp(params)) {
             const int level = m->xmp_gain_map > 0 ? AV_LOG_ERROR : AV_LOG_WARNING;
@@ -294,7 +294,7 @@ static void jpeg_put_comments(AVCodecContext *avctx, PutBitContext *p,
         flush_put_bits(p);
 
         /* pre-validated by ff_mjpeg_add_gain_map_size() */
-        size = ff_gain_map_params_to_iso21496(gmp, put_bits_ptr(p));
+        size = av_gain_map_params_to_iso21496(gmp, put_bits_ptr(p));
         av_assert0(size >= 0);
         skip_put_bytes(p, size);
         AV_WB16(ptr, 2 + sizeof(AV_ISO21496_IDENTIFIER) + size);
