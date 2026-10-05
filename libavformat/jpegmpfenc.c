@@ -132,11 +132,15 @@ static int init_gain_map(AVFormatContext *ctx, const AVStreamGroup *sg)
 {
     MPFMuxContext *s = ctx->priv_data;
     const AVStreamGroupLayeredVideo *lv = sg->params.layered_video;
-    if (sg->nb_streams != 2 || lv->el_index >= sg->nb_streams)
+    if (sg->nb_entries != 2 || lv->el_index >= sg->nb_entries)
         return AVERROR(EINVAL);
 
-    const AVStream *bl = sg->streams[!lv->el_index];
-    const AVStream *el = sg->streams[lv->el_index];
+    if (sg->entries[!lv->el_index]->type != AV_STREAM_GROUP_ENTRY_STREAM ||
+        sg->entries[ lv->el_index]->type != AV_STREAM_GROUP_ENTRY_STREAM)
+        return AVERROR(EINVAL);
+
+    const AVStream *bl = sg->entries[!lv->el_index]->stream;
+    const AVStream *el = sg->entries[lv->el_index]->stream;
     MPFImage *base = &s->images[bl->index];
     MPFImage *gain = &s->images[el->index];
 
