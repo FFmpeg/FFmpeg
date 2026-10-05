@@ -11197,6 +11197,45 @@ fail:
     return err;
 }
 
+static int mov_parse_heif_item_references(AVFormatContext *s, HEIFItem *item,
+                                          AVPacketSideData **coded_side_data,
+                                          int *nb_coded_side_data)
+{
+    MOVContext *mov = s->priv_data;
+    int err;
+
+    for (int j = 0; j < item->nb_iref_list; j++) {
+        HEIFItem *ref = get_heif_item(mov, item->iref_list[j].item_id);
+
+        av_assert0(ref);
+        switch(ref->type) {
+        case MKTAG('E','x','i','f'):
+            err = mov_parse_exif_item(s, coded_side_data, nb_coded_side_data, ref);
+            if (err < 0 && (s->error_recognition & AV_EF_EXPLODE))
+                return err;
+            break;
+        default:
+            break;
+        }
+    }
+
+    /* rotation */
+    if (item->rotation || item->hflip || item->vflip) {
+        err = set_display_matrix_from_item(coded_side_data, nb_coded_side_data, item);
+        if (err < 0)
+            return err;
+    }
+
+    /* ICC profile */
+    if (item->icc_profile_size) {
+        err = set_icc_profile_from_item(coded_side_data, nb_coded_side_data, item);
+        if (err < 0)
+            return err;
+    }
+
+    return 0;
+}
+
 static int mov_parse_tiles(AVFormatContext *s)
 {
     MOVContext *mov = s->priv_data;
@@ -11282,37 +11321,10 @@ static int mov_parse_tiles(AVFormatContext *s)
         if (err < 0)
             return err;
 
-        for (int j = 0; j < grid->item->nb_iref_list; j++) {
-            HEIFItem *ref = get_heif_item(mov, grid->item->iref_list[j].item_id);
-
-            av_assert0(ref);
-            switch(ref->type) {
-            case MKTAG('E','x','i','f'):
-                err = mov_parse_exif_item(s, &stg->coded_side_data,
-                                             &stg->nb_coded_side_data, ref);
-                if (err < 0 && (s->error_recognition & AV_EF_EXPLODE))
-                    return err;
-                break;
-            default:
-                break;
-            }
-        }
-
-        /* rotation */
-        if (grid->item->rotation || grid->item->hflip || grid->item->vflip) {
-            err = set_display_matrix_from_item(&stg->coded_side_data,
-                                               &stg->nb_coded_side_data, grid->item);
-            if (err < 0)
-                return err;
-        }
-
-        /* ICC profile */
-        if (grid->item->icc_profile_size) {
-            err = set_icc_profile_from_item(&stg->coded_side_data,
-                                            &stg->nb_coded_side_data, grid->item);
-            if (err < 0)
-                return err;
-        }
+        err = mov_parse_heif_item_references(s, grid->item, &stg->coded_side_data,
+                                                            &stg->nb_coded_side_data);
+        if (err < 0)
+            return err;
 
         if (grid->item->name)
             av_dict_set(&stg->metadata, "title", grid->item->name, 0);
@@ -11364,31 +11376,15 @@ static int mov_parse_heif_items(AVFormatContext *s)
 
         sc->chunk_offsets[0] = item->extent_offset + offset;
 
+        err = mov_parse_heif_item_references(s, item, &st->codecpar->coded_side_data,
+                                                      &st->codecpar->nb_coded_side_data);
+        if (err < 0)
+            return err;
+
+        if (item->name)
+            av_dict_set(&st->metadata, "title", item->name, 0);
         if (item->item_id == mov->primary_item_id)
             st->disposition |= AV_DISPOSITION_DEFAULT;
-
-        for (int j = 0; j < item->nb_iref_list; j++) {
-            HEIFItem *ref = get_heif_item(mov, item->iref_list[j].item_id);
-
-            av_assert0(ref);
-            switch(ref->type) {
-            case MKTAG('E','x','i','f'):
-                err = mov_parse_exif_item(s, &st->codecpar->coded_side_data,
-                                             &st->codecpar->nb_coded_side_data, ref);
-                if (err < 0 && (s->error_recognition & AV_EF_EXPLODE))
-                    return err;
-                break;
-            default:
-                break;
-            }
-        }
-
-        if (item->rotation || item->hflip || item->vflip) {
-            err = set_display_matrix_from_item(&st->codecpar->coded_side_data,
-                                               &st->codecpar->nb_coded_side_data, item);
-            if (err < 0)
-                return err;
-        }
 
         mov_build_index(mov, st);
     }
