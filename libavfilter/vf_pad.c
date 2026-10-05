@@ -332,14 +332,19 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     PadContext *s = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
     AVFrame *out;
-    int needs_copy;
+    int needs_copy, ret;
+
+    if (s->eval_mode == EVAL_MODE_INIT &&
+        (ret = ff_inlink_check_frame_params(inlink, in, 0)) < 0) {
+        av_frame_free(&in);
+        return ret;
+    }
+
     if(s->eval_mode == EVAL_MODE_FRAME && (
            in->width  != s->inlink_w
         || in->height != s->inlink_h
         || in->format != outlink->format
         || in->sample_aspect_ratio.den != outlink->sample_aspect_ratio.den || in->sample_aspect_ratio.num != outlink->sample_aspect_ratio.num)) {
-        int ret;
-
         inlink->dst->inputs[0]->format = in->format;
         inlink->dst->inputs[0]->w      = in->width;
         inlink->dst->inputs[0]->h      = in->height;
@@ -464,4 +469,5 @@ const FFFilter ff_vf_pad = {
     FILTER_INPUTS(avfilter_vf_pad_inputs),
     FILTER_OUTPUTS(avfilter_vf_pad_outputs),
     FILTER_QUERY_FUNC2(query_formats),
+    .flags_internal = FF_FILTER_FLAG_DYNAMIC_FRAME_SIZE,
 };
