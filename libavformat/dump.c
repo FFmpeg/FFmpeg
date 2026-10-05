@@ -711,8 +711,11 @@ static void dump_stream_group(const AVFormatContext *ic, uint8_t *printed,
             if (ret >= 0)
                 av_log(NULL, AV_LOG_INFO, " %s", buf);
             av_log(NULL, AV_LOG_INFO, "\n");
-            for (int k = 0; channel_count > 0 && k < stg->nb_streams; k++) {
-                AVStream *st = stg->streams[k];
+            for (int k = 0; channel_count > 0 && k < stg->nb_entries; k++) {
+                const AVStreamGroupEntry *entry = stg->entries[k];
+                if (entry->type != AV_STREAM_GROUP_ENTRY_STREAM)
+                    continue;
+                const AVStream *st = entry->stream;
                 int loglevel = printed[st->index] ? AV_LOG_VERBOSE : AV_LOG_INFO;
                 av_log(NULL, loglevel, "  ");
                 dump_stream_format(ic, st->index, i, index, is_output, loglevel);
@@ -769,16 +772,19 @@ static void dump_stream_group(const AVFormatContext *ic, uint8_t *printed,
         AVCodecContext *avctx = avcodec_alloc_context3(NULL);
         const char *ptr = NULL;
         av_log(NULL, AV_LOG_INFO, " Tile Grid:");
-        if (avctx && stg->nb_streams && !avcodec_parameters_to_context(avctx, stg->streams[0]->codecpar)) {
-            avctx->width  = tile_grid->width;
-            avctx->height = tile_grid->height;
-            avctx->coded_width  = tile_grid->coded_width;
-            avctx->coded_height = tile_grid->coded_height;
-            if (ic->dump_separator)
-                av_opt_set(avctx, "dump_separator", ic->dump_separator, 0);
-            buf[0] = 0;
-            avcodec_string(buf, sizeof(buf), avctx, is_output);
-            ptr = av_stristr(buf, " ");
+        if (avctx && stg->nb_entries && stg->entries[0]->type == AV_STREAM_GROUP_ENTRY_STREAM) {
+            const AVStream *st = stg->entries[0]->stream;
+            if (!avcodec_parameters_to_context(avctx, st->codecpar)) {
+                avctx->width  = tile_grid->width;
+                avctx->height = tile_grid->height;
+                avctx->coded_width  = tile_grid->coded_width;
+                    avctx->coded_height = tile_grid->coded_height;
+                if (ic->dump_separator)
+                    av_opt_set(avctx, "dump_separator", ic->dump_separator, 0);
+                buf[0] = 0;
+                avcodec_string(buf, sizeof(buf), avctx, is_output);
+                ptr = av_stristr(buf, " ");
+            }
         }
         avcodec_free_context(&avctx);
         if (ptr)
@@ -786,20 +792,27 @@ static void dump_stream_group(const AVFormatContext *ic, uint8_t *printed,
         dump_disposition(stg->disposition, AV_LOG_INFO);
         av_log(NULL, AV_LOG_INFO, "\n");
         dump_metadata(NULL, stg->metadata, "    ", AV_LOG_INFO);
-        dump_sidedata(NULL, tile_grid->coded_side_data, tile_grid->nb_coded_side_data,
+        dump_sidedata(NULL, stg->coded_side_data, stg->nb_coded_side_data,
                       tile_grid->width, tile_grid->height, (AVRational) {0,1},
                       "    ", AV_LOG_INFO);
         for (int i = 0; i < tile_grid->nb_tiles; i++) {
             const AVStream *st = NULL;
-            if (tile_grid->offsets[i].idx < stg->nb_streams)
-                st = stg->streams[tile_grid->offsets[i].idx];
+            if (tile_grid->offsets[i].idx < stg->nb_entries) {
+                const AVStreamGroupEntry *entry = stg->entries[tile_grid->offsets[i].idx];
+                if (entry->type != AV_STREAM_GROUP_ENTRY_STREAM)
+                    continue;
+                st = entry->stream;
+            }
             if (st && !printed[st->index]) {
                 dump_stream_format(ic, st->index, i, index, is_output, AV_LOG_VERBOSE);
                 printed[st->index] = 1;
             }
         }
-        for (int i = 0; i < stg->nb_streams; i++) {
-            const AVStream *st = stg->streams[i];
+        for (int i = 0; i < stg->nb_entries; i++) {
+            const AVStreamGroupEntry *entry = stg->entries[i];
+            if (entry->type != AV_STREAM_GROUP_ENTRY_STREAM)
+                continue;
+            const AVStream *st = entry->stream;
             if (!printed[st->index]) {
                 dump_stream_format(ic, st->index, i, index, is_output, AV_LOG_INFO);
                 printed[st->index] = 1;
@@ -814,24 +827,30 @@ static void dump_stream_group(const AVFormatContext *ic, uint8_t *printed,
         const char *ptr = NULL;
         av_log(NULL, AV_LOG_INFO, " %s:", stg->type == AV_STREAM_GROUP_PARAMS_DOLBY_VISION ?
                                           "Dolby Vision" : "LCEVC");
-        if (avctx && stg->nb_streams == 2 &&
-            !avcodec_parameters_to_context(avctx, stg->streams[!layered_video->el_index]->codecpar)) {
-            avctx->width  = layered_video->width;
-            avctx->height = layered_video->height;
-            avctx->coded_width  = layered_video->width;
-            avctx->coded_height = layered_video->height;
-            if (ic->dump_separator)
-                av_opt_set(avctx, "dump_separator", ic->dump_separator, 0);
-            buf[0] = 0;
-            avcodec_string(buf, sizeof(buf), avctx, is_output);
-            ptr = av_stristr(buf, " ");
+        if (avctx && stg->nb_entries == 2 &&
+            stg->entries[!layered_video->el_index]->type == AV_STREAM_GROUP_ENTRY_STREAM) {
+            const AVStream *st = stg->entries[!layered_video->el_index]->stream;
+            if (!avcodec_parameters_to_context(avctx, st->codecpar)) {
+                avctx->width  = layered_video->width;
+                avctx->height = layered_video->height;
+                avctx->coded_width  = layered_video->width;
+                avctx->coded_height = layered_video->height;
+                if (ic->dump_separator)
+                    av_opt_set(avctx, "dump_separator", ic->dump_separator, 0);
+                buf[0] = 0;
+                avcodec_string(buf, sizeof(buf), avctx, is_output);
+                ptr = av_stristr(buf, " ");
+            }
         }
         avcodec_free_context(&avctx);
         if (ptr)
             av_log(NULL, AV_LOG_INFO, "%s", ptr);
         av_log(NULL, AV_LOG_INFO, "\n");
-        for (int i = 0; i < stg->nb_streams; i++) {
-            const AVStream *st = stg->streams[i];
+        for (int i = 0; i < stg->nb_entries; i++) {
+            const AVStreamGroupEntry *entry = stg->entries[i];
+            if (entry->type != AV_STREAM_GROUP_ENTRY_STREAM)
+                continue;
+            const AVStream *st = entry->stream;
             dump_stream_format(ic, st->index, i, index, is_output, AV_LOG_VERBOSE);
             printed[st->index] = 1;
         }
@@ -839,8 +858,11 @@ static void dump_stream_group(const AVFormatContext *ic, uint8_t *printed,
     }
     case AV_STREAM_GROUP_PARAMS_TREF: {
         av_log(NULL, AV_LOG_INFO, " Track Reference:\n");
-        for (int i = 0; i < stg->nb_streams; i++) {
-            const AVStream *st = stg->streams[i];
+        for (int i = 0; i < stg->nb_entries; i++) {
+            const AVStreamGroupEntry *entry = stg->entries[i];
+            if (entry->type != AV_STREAM_GROUP_ENTRY_STREAM)
+                continue;
+            const AVStream *st = entry->stream;
             dump_stream_format(ic, st->index, i, index, is_output, AV_LOG_INFO);
             printed[st->index] = 1;
         }
