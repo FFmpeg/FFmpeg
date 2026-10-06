@@ -284,7 +284,7 @@ av_unused static int64_t flac_read_timestamp(AVFormatContext *s, int stream_inde
     AVPacket *const pkt = si->parse_pkt;
     AVStream *st = s->streams[stream_index];
     AVCodecParserContext *parser;
-    int ret;
+    int ret = 0;
     int64_t pts = AV_NOPTS_VALUE;
 
     if (avio_seek(s->pb, *ppos, SEEK_SET) < 0)
@@ -309,7 +309,8 @@ av_unused static int64_t flac_read_timestamp(AVFormatContext *s, int stream_inde
         uint8_t *data;
         int size;
 
-        ret = ff_raw_read_partial_packet(s, pkt);
+        if (ret >= 0 || ret == AVERROR(EAGAIN))
+            ret = ff_raw_read_partial_packet(s, pkt);
         if (ret < 0){
             if (ret == AVERROR(EAGAIN))
                 continue;
