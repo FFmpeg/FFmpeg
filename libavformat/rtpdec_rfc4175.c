@@ -260,7 +260,7 @@ static int rfc4175_handle_packet(AVFormatContext *ctx, PayloadContext *data,
         }
 
         if (!data->frame)
-            data->frame = av_malloc(data->frame_size);
+            data->frame = av_mallocz(data->frame_size + AV_INPUT_BUFFER_PADDING_SIZE);
 
         data->timestamp = *timestamp;
 
