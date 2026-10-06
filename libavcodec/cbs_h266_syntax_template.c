@@ -2162,6 +2162,8 @@ static int FUNC(pps) (CodedBitstreamContext *ctx, RWContext *rw,
                         current->num_slices_in_subpic[i]++;
                     }
                 }
+                if (!current->num_slices_in_subpic[i])
+                    return AVERROR_INVALIDDATA;
                 num_slices += current->num_slices_in_subpic[i];
             }
             if (current->pps_num_slices_in_pic_minus1 + 1 != num_slices)
