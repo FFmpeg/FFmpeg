@@ -567,8 +567,10 @@ static int mms_open(URLContext *h, const char *uri, int flags)
     }
     mms->header_parsed = 1;
 
-    if (!mms->asf_packet_len || !mms->stream_num)
+    if (!mms->asf_packet_len || !mms->stream_num) {
+        err = AVERROR_INVALIDDATA;
         goto fail;
+    }
 
     clear_stream_buffers(mms);
     err = mms_safe_send_recv(mmst, send_stream_selection_request, SC_PKT_STREAM_ID_ACCEPTED);
