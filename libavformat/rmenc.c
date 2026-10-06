@@ -374,10 +374,12 @@ static int rm_write_audio(AVFormatContext *s, const uint8_t *buf, int size, int 
 
     if (stream->par->codec_id == AV_CODEC_ID_AC3) {
         /* for AC-3, the words seem to be reversed */
-        for (i = 0; i < size; i += 2) {
+        for (i = 0; i + 1 < size; i += 2) {
             avio_w8(pb, buf[i + 1]);
             avio_w8(pb, buf[i]);
         }
+        if (i < size)
+            avio_w8(pb, buf[i]);
     } else {
         avio_write(pb, buf, size);
     }
