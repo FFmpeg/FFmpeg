@@ -225,7 +225,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     return 0;
 }
 
-static void filter(AVFilterContext *ctx, AVFrame *dstpic,
+static int filter(AVFilterContext *ctx, AVFrame *dstpic,
                    int parity, int tff)
 {
     YADIFContext *yadif = ctx->priv;
@@ -249,6 +249,8 @@ static void filter(AVFilterContext *ctx, AVFrame *dstpic,
         ff_filter_execute(ctx, filter_slice, &td, NULL,
                           FFMIN(h, ff_filter_get_nb_threads(ctx)));
     }
+
+    return 0;
 }
 
 static const enum AVPixelFormat pix_fmts[] = {

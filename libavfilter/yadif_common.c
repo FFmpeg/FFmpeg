@@ -49,7 +49,11 @@ static int return_frame(AVFilterContext *ctx, int is_second)
             yadif->current_field = YADIF_FIELD_END;
     }
 
-    yadif->filter(ctx, yadif->out, tff ^ !is_second, tff);
+    ret = yadif->filter(ctx, yadif->out, tff ^ !is_second, tff);
+    if (ret < 0) {
+        av_frame_free(&yadif->out);
+        return ret;
+    }
 
     if (is_second) {
         int64_t cur_pts  = yadif->cur->pts;
@@ -100,13 +104,19 @@ int ff_yadif_filter_frame(AVFilterLink *link, AVFrame *frame)
 {
     AVFilterContext *ctx = link->dst;
     YADIFContext *yadif = ctx->priv;
+    int ret;
 
     av_assert0(frame);
 
     ff_ccfifo_extract(&yadif->cc_fifo, frame);
 
-    if (yadif->frame_pending)
-        return_frame(ctx, 1);
+    if (yadif->frame_pending) {
+        ret = return_frame(ctx, 1);
+        if (ret < 0) {
+            av_frame_free(&frame);
+            return ret;
+        }
+    }
 
     if (yadif->prev)
         av_frame_free(&yadif->prev);
@@ -177,10 +187,8 @@ int ff_yadif_request_frame(AVFilterLink *link)
     YADIFContext *yadif = ctx->priv;
     int ret;
 
-    if (yadif->frame_pending) {
-        return_frame(ctx, 1);
-        return 0;
-    }
+    if (yadif->frame_pending)
+        return return_frame(ctx, 1);
 
     if (yadif->eof)
         return AVERROR_EOF;
@@ -196,13 +204,11 @@ int ff_yadif_request_frame(AVFilterLink *link)
         yadif->current_field = YADIF_FIELD_BACK_END;
         next->pts = yadif->next->pts * 2 - yadif->cur->pts;
 
-        ff_yadif_filter_frame(ctx->inputs[0], next);
+        ret = ff_yadif_filter_frame(ctx->inputs[0], next);
         yadif->eof = 1;
-    } else if (ret < 0) {
-        return ret;
     }
 
-    return 0;
+    return ret;
 }
 
 int ff_yadif_config_output_common(AVFilterLink *outlink)

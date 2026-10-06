@@ -100,7 +100,7 @@ static void call_kernel(AVFilterContext *ctx,
     ff_objc_release(&buffer);
 }
 
-static void filter(AVFilterContext *ctx, AVFrame *dst,
+static int filter(AVFilterContext *ctx, AVFrame *dst,
                    int parity, int tff) API_AVAILABLE(macos(10.11), ios(8.0))
 {
     YADIFVTContext *s = ctx->priv;
@@ -123,7 +123,7 @@ static void filter(AVFilterContext *ctx, AVFrame *dst,
         channels = comp->step / pixel_size;
         if (pixel_size > 2 || channels > 2) {
             av_log(ctx, AV_LOG_ERROR, "Unsupported pixel format: %s\n", y->csp->name);
-            return;
+            return AVERROR(EINVAL);
         }
         switch (pixel_size) {
         case 1:
@@ -134,7 +134,7 @@ static void filter(AVFilterContext *ctx, AVFrame *dst,
             break;
         default:
             av_log(ctx, AV_LOG_ERROR, "Unsupported pixel format: %s\n", y->csp->name);
-            return;
+            return AVERROR(EINVAL);
         }
         av_log(ctx, AV_LOG_TRACE,
                "Deinterlacing plane %d: pixel_size: %d channels: %d\n",
@@ -151,7 +151,7 @@ static void filter(AVFilterContext *ctx, AVFrame *dst,
             if (cur)  CFRelease(cur);
             if (next) CFRelease(next);
             if (dest) CFRelease(dest);
-            return;
+            return AVERROR_EXTERNAL;
         }
 
         tex_prev = CVMetalTextureGetTexture(prev);
@@ -173,6 +173,8 @@ static void filter(AVFilterContext *ctx, AVFrame *dst,
     if (y->current_field == YADIF_FIELD_END) {
         y->current_field = YADIF_FIELD_NORMAL;
     }
+
+    return 0;
 }
 
 static av_cold void do_uninit(AVFilterContext *ctx) API_AVAILABLE(macos(10.11), ios(8.0))

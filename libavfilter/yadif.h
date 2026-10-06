@@ -62,7 +62,7 @@ typedef struct YADIFContext {
     AVFrame *prev;
     AVFrame *out;
 
-    void (*filter)(AVFilterContext *ctx, AVFrame *dstpic, int parity, int tff);
+    int (*filter)(AVFilterContext *ctx, AVFrame *dstpic, int parity, int tff);
 
     /**
      * Required alignment for filter_line

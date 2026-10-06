@@ -102,7 +102,7 @@ fail:
     return err;
 }
 
-static void bwdif_vulkan_filter_frame(AVFilterContext *ctx, AVFrame *dst,
+static int bwdif_vulkan_filter_frame(AVFilterContext *ctx, AVFrame *dst,
                                       int parity, int tff)
 {
     BWDIFVulkanContext *s = ctx->priv;
@@ -112,13 +112,16 @@ static void bwdif_vulkan_filter_frame(AVFilterContext *ctx, AVFrame *dst,
         .tff = tff,
         .current_field = y->current_field,
     };
+    int ret;
 
-    ff_vk_filter_process_Nin(&s->vkctx, &s->e, &s->shd, dst,
+    ret = ff_vk_filter_process_Nin(&s->vkctx, &s->e, &s->shd, dst,
                              (AVFrame *[]){ y->prev, y->cur, y->next }, 3,
                              VK_NULL_HANDLE, 1, &params, sizeof(params));
 
     if (y->current_field == YADIF_FIELD_END)
         y->current_field = YADIF_FIELD_NORMAL;
+
+    return ret;
 }
 
 static void bwdif_vulkan_uninit(AVFilterContext *avctx)
