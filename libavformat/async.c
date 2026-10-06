@@ -28,6 +28,7 @@
  */
 
 #include <inttypes.h>
+#include <stdatomic.h>
 #include <string.h>
 
 #include "libavutil/avassert.h"
@@ -78,7 +79,7 @@ typedef struct AsyncContext {
     pthread_mutex_t mutex;
     pthread_t       async_buffer_thread;
 
-    int             abort_request;
+    atomic_int      abort_request;
     AVIOInterruptCB interrupt_callback;
 } AsyncContext;
 
@@ -174,13 +175,13 @@ static int async_check_interrupt(void *arg)
     URLContext *h   = arg;
     AsyncContext *c = h->priv_data;
 
-    if (c->abort_request)
+    if (atomic_load(&c->abort_request))
         return 1;
 
     if (ff_check_interrupt(&c->interrupt_callback))
-        c->abort_request = 1;
+        atomic_store(&c->abort_request, 1);
 
-    return c->abort_request;
+    return atomic_load(&c->abort_request);
 }
 
 static void *async_buffer_task(void *arg)
@@ -256,6 +257,7 @@ static int async_open(URLContext *h, const char *arg, int flags, AVDictionary **
     AVIOInterruptCB  interrupt_callback = {.callback = async_check_interrupt, .opaque = h};
 
     av_strstart(arg, "async:", &arg);
+    atomic_init(&c->abort_request, 0);
 
     ret = ring_init(&c->ring, BUFFER_CAPACITY, READ_BACK_CAPACITY);
     if (ret < 0)
@@ -322,7 +324,7 @@ static int async_close(URLContext *h)
     int      ret;
 
     pthread_mutex_lock(&c->mutex);
-    c->abort_request = 1;
+    atomic_store(&c->abort_request, 1);
     pthread_cond_signal(&c->cond_wakeup_background);
     pthread_mutex_unlock(&c->mutex);
 
