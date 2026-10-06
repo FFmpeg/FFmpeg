@@ -192,8 +192,10 @@ static int ogg_buffer_page(AVFormatContext *s, OGGStreamContext *oggstream)
     OGGPageList **p = &ogg->page_list;
     OGGPageList *l = av_mallocz(sizeof(*l));
 
-    if (!l)
+    if (!l) {
+        ogg_reset_cur_page(oggstream);
         return AVERROR(ENOMEM);
+    }
     l->page = oggstream->page;
 
     oggstream->page.start_granule = ogg_granule_to_timestamp(oggstream, oggstream->page.granule);
