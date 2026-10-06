@@ -3048,6 +3048,7 @@ static int mxf_init(AVFormatContext *s)
                 if (st->codecpar->codec_id != AV_CODEC_ID_PCM_S16LE &&
                     st->codecpar->codec_id != AV_CODEC_ID_PCM_S24LE) {
                     av_log(s, AV_LOG_ERROR, "MXF D-10 only support 16 or 24 bits le audio\n");
+                    return AVERROR_PATCHWELCOME;
                 }
                 sc->index = INDEX_D10_AUDIO;
                 sc->container_ul = ((MXFStreamContext*)s->streams[0]->priv_data)->container_ul;
