@@ -175,9 +175,12 @@ static int ishttp(char *url)
     return proto_name && av_strstart(proto_name, "http", NULL);
 }
 
-static int aligned(int val)
+static int add_url_size(int *url_size, uint64_t len)
 {
-    return ((val + 0x3F) >> 6) << 6;
+    if (len > INT_MAX - 0x3F - *url_size)
+        return AVERROR(ERANGE);
+    *url_size = FFALIGN(*url_size + len, 64);
+    return 0;
 }
 
 static int64_t get_current_time_in_sec(void)
@@ -736,13 +739,14 @@ static int resolve_content_path(AVFormatContext *s, const char *url, int *max_ur
     int updated = 0;
     int size = 0;
     int i;
-    int tmp_max_url_size = strlen(url);
+    int tmp_max_url_size = 0;
+    uint64_t url_len = strlen(url);
 
     for (i = n_baseurl_nodes-1; i >= 0 ; i--) {
         text = xmlNodeGetContent(baseurl_nodes[i]);
         if (!text)
             continue;
-        tmp_max_url_size += strlen(text);
+        url_len += strlen(text);
         if (ishttp(text)) {
             xmlFree(text);
             break;
@@ -750,7 +754,9 @@ static int resolve_content_path(AVFormatContext *s, const char *url, int *max_ur
         xmlFree(text);
     }
 
-    tmp_max_url_size = aligned(tmp_max_url_size);
+    updated = add_url_size(&tmp_max_url_size, url_len);
+    if (updated < 0)
+        goto end;
     text = av_mallocz(tmp_max_url_size + 1);
     if (!text) {
         updated = AVERROR(ENOMEM);
@@ -977,10 +983,12 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
     baseurl_nodes[3] = representation_baseurl_node;
 
     ret = resolve_content_path(s, url, &c->max_url_size, baseurl_nodes, 4);
-    c->max_url_size = aligned(c->max_url_size
-                              + (rep->id ? strlen(rep->id) : 0)
-                              + (rep_bandwidth_val ? strlen(rep_bandwidth_val) : 0));
-    if (ret == AVERROR(ENOMEM) || ret == 0)
+    if (ret <= 0)
+        goto free;
+    ret = add_url_size(&c->max_url_size,
+                       (rep->id ? strlen(rep->id) : 0) +
+                       (rep_bandwidth_val ? strlen(rep_bandwidth_val) : 0));
+    if (ret < 0)
         goto free;
     if (representation_segmenttemplate_node || fragment_template_node || period_segmenttemplate_node) {
         fragment_timeline_node = NULL;
@@ -997,7 +1005,11 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
                 xmlFree(val);
                 goto enomem;
             }
-            c->max_url_size = aligned(c->max_url_size  + strlen(val));
+            ret = add_url_size(&c->max_url_size, strlen(val));
+            if (ret < 0) {
+                xmlFree(val);
+                goto free;
+            }
             rep->init_section->url = get_content_url(baseurl_nodes, 4,
                                                      c->max_url_size, rep->id,
                                                      rep_bandwidth_val, val);
@@ -1008,7 +1020,11 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
         }
         val = get_val_from_nodes_tab(fragment_templates_tab, 4, "media");
         if (val) {
-            c->max_url_size = aligned(c->max_url_size  + strlen(val));
+            ret = add_url_size(&c->max_url_size, strlen(val));
+            if (ret < 0) {
+                xmlFree(val);
+                goto free;
+            }
             rep->url_template = get_content_url(baseurl_nodes, 4,
                                                 c->max_url_size, rep->id,
                                                 rep_bandwidth_val, val);
