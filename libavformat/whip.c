@@ -857,6 +857,12 @@ static int exchange_sdp(AVFormatContext *s)
     }
 
     if (ff_http_get_new_location(whip_uc)) {
+        proto_name = avio_find_protocol_name(ff_http_get_new_location(whip_uc));
+        if (!proto_name || !av_strstart(proto_name, "http", NULL)) {
+            av_log(whip, AV_LOG_ERROR, "Unsupported resource url %s\n", ff_http_get_new_location(whip_uc));
+            ret = AVERROR_INVALIDDATA;
+            goto end;
+        }
         whip->whip_resource_url = av_strdup(ff_http_get_new_location(whip_uc));
         if (!whip->whip_resource_url) {
             ret = AVERROR(ENOMEM);
