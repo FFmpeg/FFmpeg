@@ -311,10 +311,8 @@ static int fill_marker(xmlNodePtr marker_elem, FFIMFMarker *marker)
     if (!(marker->scope_utf8 = xmlGetNoNsProp(element, "scope"))) {
         marker->scope_utf8
             = xmlCharStrdup("http://www.smpte-ra.org/schemas/2067-3/2013#standard-markers");
-        if (!marker->scope_utf8) {
-            xmlFree(marker->label_utf8);
+        if (!marker->scope_utf8)
             return AVERROR(ENOMEM);
-        }
     }
 
     return ret;
