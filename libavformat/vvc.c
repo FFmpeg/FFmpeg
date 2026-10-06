@@ -245,6 +245,8 @@ static int vvcc_parse_vps(GetBitContext *gb,
 
     vps_max_layers_minus1 = get_bits(gb, 6);
     vps_max_sublayers_minus1 = get_bits(gb, 3);
+    if (vps_max_sublayers_minus1 >= VVC_MAX_SUBLAYERS)
+        return AVERROR_INVALIDDATA;
 
     /*
      * numTemporalLayers greater than 1 indicates that the stream to which this
@@ -310,9 +312,11 @@ static int vvcc_parse_vps(GetBitContext *gb,
         else
             vps_pt_present_flag[i] = 1;
 
-        if (!vps_default_ptl_dpb_hrd_max_tid_flag)
+        if (!vps_default_ptl_dpb_hrd_max_tid_flag) {
             vps_ptl_max_tid[i] = get_bits(gb, 3);
-        else
+            if (vps_ptl_max_tid[i] > vps_max_sublayers_minus1)
+                return AVERROR_INVALIDDATA;
+        } else
             vps_ptl_max_tid[i] = vps_max_sublayers_minus1;
     }
 
@@ -336,6 +340,8 @@ static int vvcc_parse_sps(GetBitContext *gb,
 
     skip_bits(gb, 8);  // sps_seq_parameter_set_id && sps_video_parameter_set_id
     sps_max_sublayers_minus1 = get_bits(gb, 3);
+    if (sps_max_sublayers_minus1 >= VVC_MAX_SUBLAYERS)
+        return AVERROR_INVALIDDATA;
 
     /*
      * numTemporalLayers greater than 1 indicates that the stream to which this
