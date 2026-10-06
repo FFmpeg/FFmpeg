@@ -2817,7 +2817,9 @@ AVCodecParserContext *av_parser_init(enum AVCodecID codec_id);
  * @param buf_size      buffer size in bytes without the padding. I.e. the full buffer
                         size is assumed to be buf_size + AV_INPUT_BUFFER_PADDING_SIZE.
                         To signal EOF, this should be 0 (so that the last frame
-                        can be output).
+                        can be output). After EOF has been signaled, only
+                        further calls with buf_size 0 are allowed; to parse
+                        new data, close the parser and allocate a new one.
  * @param pts           input presentation timestamp.
  * @param dts           input decoding timestamp.
  * @param pos           input byte position in stream.
