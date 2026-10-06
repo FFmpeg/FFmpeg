@@ -194,7 +194,8 @@ static av_cold int peak_init_writer(AVFormatContext *s)
                "Writing 16 bit peak for 8 bit audio does not make sense\n");
         return AVERROR(EINVAL);
     }
-    if (par->ch_layout.nb_channels > INT_MAX / (wav->peak_bps * wav->peak_ppv))
+    if (par->ch_layout.nb_channels <= 0 ||
+        par->ch_layout.nb_channels > INT_MAX / (wav->peak_bps * wav->peak_ppv))
         return AVERROR(ERANGE);
     wav->size_increment = par->ch_layout.nb_channels * wav->peak_bps * wav->peak_ppv;
 
