@@ -301,6 +301,9 @@ rdt_parse_packet (AVFormatContext *ctx, PayloadContext *rdt, AVStream *st,
 {
     int seq = 1, res;
 
+    if (st->index >= rdt->nb_rmst || !rdt->rmst[st->index])
+        return AVERROR_INVALIDDATA;
+
     if (rdt->audio_pkt_cnt == 0) {
         FFIOContext pb;
         int pos, rmflags;
