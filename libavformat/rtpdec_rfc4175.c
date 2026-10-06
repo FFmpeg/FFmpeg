@@ -344,6 +344,11 @@ invalid:
     return missed_last_packet ? 0 : AVERROR_INVALIDDATA;
 }
 
+static void rfc4175_close_context(PayloadContext *data)
+{
+    av_freep(&data->frame);
+}
+
 const RTPDynamicProtocolHandler ff_rfc4175_rtp_handler = {
     .enc_name           = "raw",
     .codec_type         = AVMEDIA_TYPE_VIDEO,
@@ -351,4 +356,5 @@ const RTPDynamicProtocolHandler ff_rfc4175_rtp_handler = {
     .priv_data_size     = sizeof(PayloadContext),
     .parse_sdp_a_line   = rfc4175_parse_sdp_line,
     .parse_packet       = rfc4175_handle_packet,
+    .close              = rfc4175_close_context,
 };
