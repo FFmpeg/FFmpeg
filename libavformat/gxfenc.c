@@ -878,7 +878,7 @@ static int gxf_parse_mpeg_frame(GXFStreamContext *sc, const uint8_t *buf, int si
         if(c == 0x1B8 && sc->first_gop_closed == -1) /* GOP start code */
             sc->first_gop_closed= (buf[i+4]>>6)&1;
     }
-    return (buf[i+1]>>3)&7;
+    return i + 1 < size ? (buf[i+1]>>3)&7 : 0;
 }
 
 static int gxf_write_media_preamble(AVFormatContext *s, AVPacket *pkt, int size)
