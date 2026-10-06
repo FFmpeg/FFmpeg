@@ -238,12 +238,20 @@ static int rfc4175_handle_packet(AVFormatContext *ctx, PayloadContext *data,
                                  uint16_t seq, int flags)
 {
     int length, line, offset, cont, field;
-    const uint8_t *headers = buf + 2; /* skip extended seqnum */
-    const uint8_t *payload = buf + 2;
-    int payload_len = len - 2;
+    const uint8_t *headers, *payload;
+    int payload_len;
     int missed_last_packet = 0;
 
     uint8_t *dest;
+
+    if (!buf) {
+        *timestamp = data->timestamp;
+        return rfc4175_finalize_packet(data, pkt, st->index);
+    }
+
+    headers = buf + 2; /* skip extended seqnum */
+    payload = buf + 2;
+    payload_len = len - 2;
 
     if (*timestamp != data->timestamp) {
         if (data->frame && (!data->interlaced || data->field)) {
@@ -255,8 +263,7 @@ static int rfc4175_handle_packet(AVFormatContext *ctx, PayloadContext *data,
              * previous frame (or pair of fields) anyway by filling the AVPacket.
              */
             av_log(ctx, AV_LOG_ERROR, "Missed previous RTP Marker\n");
-            missed_last_packet = 1;
-            rfc4175_finalize_packet(data, pkt, st->index);
+            missed_last_packet = rfc4175_finalize_packet(data, pkt, st->index) >= 0;
         }
 
         if (!data->frame)
@@ -266,7 +273,7 @@ static int rfc4175_handle_packet(AVFormatContext *ctx, PayloadContext *data,
 
         if (!data->frame) {
             av_log(ctx, AV_LOG_ERROR, "Out of memory.\n");
-            return AVERROR(ENOMEM);
+            return missed_last_packet ? 0 : AVERROR(ENOMEM);
         }
     }
 
@@ -276,7 +283,7 @@ static int rfc4175_handle_packet(AVFormatContext *ctx, PayloadContext *data,
      */
     do {
         if (payload_len < 6)
-            return AVERROR_INVALIDDATA;
+            goto invalid;
 
         cont = payload[4] & 0x80;
         payload += 6;
@@ -288,7 +295,7 @@ static int rfc4175_handle_packet(AVFormatContext *ctx, PayloadContext *data,
         int copy_offset;
 
         if (payload_len < data->pgroup)
-            return AVERROR_INVALIDDATA;
+            goto invalid;
 
         length = (headers[0] << 8) | headers[1];
         field = (headers[2] & 0x80) >> 7;
@@ -299,7 +306,7 @@ static int rfc4175_handle_packet(AVFormatContext *ctx, PayloadContext *data,
         data->field = field;
 
         if (!data->pgroup || length % data->pgroup)
-            return AVERROR_INVALIDDATA;
+            goto invalid;
 
         if (length > payload_len)
             length = payload_len;
@@ -308,12 +315,12 @@ static int rfc4175_handle_packet(AVFormatContext *ctx, PayloadContext *data,
             line = 2 * line + field;
 
         if (line >= data->height)
-            return AVERROR_INVALIDDATA;
+            goto invalid;
 
         /* prevent ill-formed packets to write after buffer's end */
         copy_offset = (line * data->width + offset) * data->pgroup / data->xinc;
         if (copy_offset + length > data->frame_size || !data->frame)
-            return AVERROR_INVALIDDATA;
+            goto invalid;
 
         dest = data->frame + copy_offset;
         memcpy(dest, payload, length);
@@ -322,13 +329,16 @@ static int rfc4175_handle_packet(AVFormatContext *ctx, PayloadContext *data,
         payload_len -= length;
     } while (cont);
 
-    if ((flags & RTP_FLAG_MARKER)) {
+    if (missed_last_packet) {
+        return !!(flags & RTP_FLAG_MARKER);
+    } else if ((flags & RTP_FLAG_MARKER)) {
         return rfc4175_finalize_packet(data, pkt, st->index);
-    } else if (missed_last_packet) {
-        return 0;
     }
 
     return AVERROR(EAGAIN);
+
+invalid:
+    return missed_last_packet ? 0 : AVERROR_INVALIDDATA;
 }
 
 const RTPDynamicProtocolHandler ff_rfc4175_rtp_handler = {
