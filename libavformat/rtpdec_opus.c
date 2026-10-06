@@ -96,6 +96,9 @@ static int opus_parse_packet(AVFormatContext *ctx, PayloadContext *data,
     int rv;
     int duration;
 
+    if (!len)
+        return AVERROR_INVALIDDATA;
+
     if ((rv = av_new_packet(pkt, len)) < 0)
         return rv;
 
