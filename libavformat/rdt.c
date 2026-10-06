@@ -440,6 +440,8 @@ rdt_parse_sdp_line (AVFormatContext *s, int st_index,
                            (count - rdt->nb_rmst) * sizeof(*rdt->rmst));
                     rdt->nb_rmst = count;
                 }
+                if (rdt->rmst[s->streams[n]->index])
+                    continue;
                 rdt->rmst[s->streams[n]->index] = ff_rm_alloc_rmstream();
                 if (!rdt->rmst[s->streams[n]->index])
                     return AVERROR(ENOMEM);
