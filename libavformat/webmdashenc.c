@@ -61,6 +61,7 @@ typedef struct WebMDashMuxContext {
     char *utc_timing_url;
     double time_shift_buffer_depth;
     int minimum_update_period;
+    AVDictionary **escaped_metadata;
 } WebMDashMuxContext;
 
 static const char *get_codec_name(int codec_id)
@@ -179,7 +180,8 @@ static int write_representation(AVFormatContext *s, AVStream *st, char *id,
     WebMDashMuxContext *w = s->priv_data;
     AVIOContext *pb = s->pb;
     const AVCodecParameters *par = st->codecpar;
-    AVDictionaryEntry *bandwidth = av_dict_get(st->metadata, BANDWIDTH, NULL, 0);
+    AVDictionary *metadata = w->escaped_metadata[st->index];
+    AVDictionaryEntry *bandwidth = av_dict_get(metadata, BANDWIDTH, NULL, 0);
     const char *bandwidth_str;
     avio_printf(pb, "<Representation id=\"%s\"", id);
     if (bandwidth) {
@@ -207,10 +209,10 @@ static int write_representation(AVFormatContext *s, AVStream *st, char *id,
         avio_printf(pb, " startsWithSAP=\"1\"");
         avio_printf(pb, ">");
     } else {
-        AVDictionaryEntry *irange = av_dict_get(st->metadata, INITIALIZATION_RANGE, NULL, 0);
-        AVDictionaryEntry *cues_start = av_dict_get(st->metadata, CUES_START, NULL, 0);
-        AVDictionaryEntry *cues_end = av_dict_get(st->metadata, CUES_END, NULL, 0);
-        AVDictionaryEntry *filename = av_dict_get(st->metadata, FILENAME, NULL, 0);
+        AVDictionaryEntry *irange = av_dict_get(metadata, INITIALIZATION_RANGE, NULL, 0);
+        AVDictionaryEntry *cues_start = av_dict_get(metadata, CUES_START, NULL, 0);
+        AVDictionaryEntry *cues_end = av_dict_get(metadata, CUES_END, NULL, 0);
+        AVDictionaryEntry *filename = av_dict_get(metadata, FILENAME, NULL, 0);
         if (!irange || !cues_start || !cues_end || !filename)
             return AVERROR(EINVAL);
 
@@ -365,7 +367,7 @@ static int write_adaptation_set(AVFormatContext *s, int as_index)
 
     if (w->is_live) {
         AVDictionaryEntry *filename =
-            av_dict_get(st->metadata, FILENAME, NULL, 0);
+            av_dict_get(w->escaped_metadata[st->index], FILENAME, NULL, 0);
         char *underscore_pos, *period_pos;
         int ret;
         if (!filename)
@@ -393,7 +395,7 @@ static int write_adaptation_set(AVFormatContext *s, int as_index)
         int ret;
         if (w->is_live) {
             AVDictionaryEntry *filename =
-                av_dict_get(st->metadata, FILENAME, NULL, 0);
+                av_dict_get(w->escaped_metadata[st->index], FILENAME, NULL, 0);
             if (!filename)
                 return AVERROR(EINVAL);
             ret = split_filename(filename->value, &underscore_pos, &period_pos);
@@ -497,6 +499,24 @@ static int webm_dash_manifest_write_header(AVFormatContext *s)
             return AVERROR(EINVAL);
     }
 
+    w->escaped_metadata = av_calloc(s->nb_streams, sizeof(*w->escaped_metadata));
+    if (!w->escaped_metadata)
+        return AVERROR(ENOMEM);
+    for (i = 0; i < s->nb_streams; i++) {
+        const AVDictionaryEntry *e = NULL;
+        while ((e = av_dict_iterate(s->streams[i]->metadata, e))) {
+            char *value;
+            ret = av_escape(&value, e->value, NULL, AV_ESCAPE_MODE_XML,
+                            AV_ESCAPE_FLAG_XML_DOUBLE_QUOTES);
+            if (ret < 0)
+                goto fail;
+            ret = av_dict_set(&w->escaped_metadata[i], e->key, value,
+                              AV_DICT_DONT_STRDUP_VAL | AV_DICT_MULTIKEY);
+            if (ret < 0)
+                goto fail;
+        }
+    }
+
     ret = parse_adaptation_sets(s);
     if (ret < 0) {
         goto fail;
@@ -523,6 +543,9 @@ static int webm_dash_manifest_write_header(AVFormatContext *s)
     write_footer(s);
 fail:
     free_adaptation_sets(s);
+    for (i = 0; i < s->nb_streams; i++)
+        av_dict_free(&w->escaped_metadata[i]);
+    av_freep(&w->escaped_metadata);
     return ret < 0 ? ret : 0;
 }
 
