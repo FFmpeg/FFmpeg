@@ -1784,6 +1784,9 @@ some risk of collision if the same URL is used for different content (e.g.
 as a result of extra POST data being used to select the stream ID). To avoid
 this, make sure to only use this protocol for URLs that uniquely identify
 the content; otherwise you may get a garbled mix of sources.
+This includes content selected by request options such as headers, cookies or
+credentials: data cached for one user is returned to every other user of the
+same cache directory.
 
 The accepted options are:
 @table @option
