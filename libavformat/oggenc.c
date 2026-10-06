@@ -221,7 +221,7 @@ static int ogg_buffer_data(AVFormatContext *s, AVStream *st,
     OGGContext *ogg = s->priv_data;
     int total_segments = size / 255 + 1;
     const uint8_t *p = data;
-    int i, segments, len, flush = 0;
+    int i, segments, len, ret, flush = 0;
 
     // Handles VFR by flushing page because this frame needs to have a timestamp
     // For theora and VP8, keyframes also need to have a timestamp to correctly mark
@@ -232,15 +232,17 @@ static int ogg_buffer_data(AVFormatContext *s, AVStream *st,
         (ogg_granule_to_timestamp(oggstream, granule) >
          ogg_granule_to_timestamp(oggstream, oggstream->last_granule) + 1 ||
          ogg_key_granule(oggstream, granule))) {
-        if (oggstream->page.granule != -1)
-            ogg_buffer_page(s, oggstream);
+        if (oggstream->page.granule != -1 &&
+            (ret = ogg_buffer_page(s, oggstream)) < 0)
+            return ret;
         flush = 1;
     }
 
     // avoid a continued page
     if (!header && oggstream->page.size > 0 &&
         MAX_PAGE_SIZE - oggstream->page.size < size) {
-        ogg_buffer_page(s, oggstream);
+        if ((ret = ogg_buffer_page(s, oggstream)) < 0)
+            return ret;
     }
 
     for (i = 0; i < total_segments; ) {
@@ -275,17 +277,20 @@ static int ogg_buffer_data(AVFormatContext *s, AVStream *st,
                                          time_base, AV_TIME_BASE_Q);
 
             if (page->segments_count == 255) {
-                ogg_buffer_page(s, oggstream);
+                if ((ret = ogg_buffer_page(s, oggstream)) < 0)
+                    return ret;
             } else if (!header) {
                 if (ogg->pref_duration > 0 && next - start >= ogg->pref_duration) {
-                    ogg_buffer_page(s, oggstream);
+                    if ((ret = ogg_buffer_page(s, oggstream)) < 0)
+                        return ret;
                 }
             }
         }
     }
 
-    if (flush && oggstream->page.granule != -1)
-        ogg_buffer_page(s, oggstream);
+    if (flush && oggstream->page.granule != -1 &&
+        (ret = ogg_buffer_page(s, oggstream)) < 0)
+        return ret;
 
     return 0;
 }
@@ -656,24 +661,33 @@ static int ogg_init(AVFormatContext *s)
 static int ogg_write_header(AVFormatContext *s)
 {
     OGGStreamContext *oggstream = NULL;
-    int i, j;
+    int i, j, ret;
 
     for (j = 0; j < s->nb_streams; j++) {
         oggstream = s->streams[j]->priv_data;
-        ogg_buffer_data(s, s->streams[j], oggstream->header[0],
-                        oggstream->header_len[0], 0, 1);
+        ret = ogg_buffer_data(s, s->streams[j], oggstream->header[0],
+                              oggstream->header_len[0], 0, 1);
+        if (ret < 0)
+            return ret;
         oggstream->page.flags |= 2; // bos
-        ogg_buffer_page(s, oggstream);
+        ret = ogg_buffer_page(s, oggstream);
+        if (ret < 0)
+            return ret;
     }
     for (j = 0; j < s->nb_streams; j++) {
         AVStream *st = s->streams[j];
         oggstream = st->priv_data;
         for (i = 1; i < 3; i++) {
-            if (oggstream->header_len[i])
-                ogg_buffer_data(s, st, oggstream->header[i],
-                                oggstream->header_len[i], 0, 1);
+            if (oggstream->header_len[i]) {
+                ret = ogg_buffer_data(s, st, oggstream->header[i],
+                                      oggstream->header_len[i], 0, 1);
+                if (ret < 0)
+                    return ret;
+            }
         }
-        ogg_buffer_page(s, oggstream);
+        ret = ogg_buffer_page(s, oggstream);
+        if (ret < 0)
+            return ret;
     }
 
     oggstream->page.start_granule = AV_NOPTS_VALUE;
@@ -794,15 +808,16 @@ static int ogg_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
 
 static int ogg_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    int i;
+    int i, ret;
 
     if (pkt)
         return pkt->size || !pkt->side_data_elems ? ogg_write_packet_internal(s, pkt) : 0;
 
     for (i = 0; i < s->nb_streams; i++) {
         OGGStreamContext *oggstream = s->streams[i]->priv_data;
-        if (oggstream->page.segments_count)
-            ogg_buffer_page(s, oggstream);
+        if (oggstream->page.segments_count &&
+            (ret = ogg_buffer_page(s, oggstream)) < 0)
+            return ret;
     }
 
     ogg_write_pages(s, 2);
@@ -811,14 +826,15 @@ static int ogg_write_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int ogg_write_trailer(AVFormatContext *s)
 {
-    int i;
+    int i, ret;
 
     /* flush current page if needed */
     for (i = 0; i < s->nb_streams; i++) {
         OGGStreamContext *oggstream = s->streams[i]->priv_data;
 
-        if (oggstream->page.segments_count)
-            ogg_buffer_page(s, oggstream);
+        if (oggstream->page.segments_count &&
+            (ret = ogg_buffer_page(s, oggstream)) < 0)
+            return ret;
     }
 
     ogg_write_pages(s, 1);
