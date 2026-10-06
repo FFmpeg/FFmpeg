@@ -150,6 +150,11 @@ static av_cold int wav_init(AVFormatContext *s)
 {
     WAVMuxContext *wav = s->priv_data;
 
+    if (s->streams[0]->codecpar->ch_layout.nb_channels <= 0) {
+        av_log(s, AV_LOG_ERROR, "Invalid number of channels\n");
+        return AVERROR(EINVAL);
+    }
+
     if (wav->write_peak == PEAK_ONLY) {
         if (wav->rf64 == RF64_ALWAYS) {
             av_log(s, AV_LOG_ERROR, "write_peak=only is not compatible with RF64\n");
