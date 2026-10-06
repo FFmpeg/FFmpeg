@@ -950,6 +950,10 @@ static int write_sm_data(AVFormatContext *s, AVIOContext *bc, AVPacket *pkt, int
             case AV_PKT_DATA_QUALITY_STATS:
                 // belongs into meta, not side data
                 break;
+            case AV_PKT_DATA_IAMF_MIX_GAIN_PARAM:
+            case AV_PKT_DATA_IAMF_DEMIXING_INFO_PARAM:
+            case AV_PKT_DATA_IAMF_RECON_GAIN_INFO_PARAM:
+                break;
             }
         }
     }
