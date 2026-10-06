@@ -3050,6 +3050,10 @@ static int mxf_init(AVFormatContext *s)
                     av_log(s, AV_LOG_ERROR, "MXF D-10 only support 16 or 24 bits le audio\n");
                     return AVERROR_PATCHWELCOME;
                 }
+                if (st->codecpar->ch_layout.nb_channels > 8) {
+                    av_log(s, AV_LOG_ERROR, "MXF D-10 supports at most 8 audio channels\n");
+                    return AVERROR(EINVAL);
+                }
                 sc->index = INDEX_D10_AUDIO;
                 sc->container_ul = ((MXFStreamContext*)s->streams[0]->priv_data)->container_ul;
                 sc->frame_size = 4 + 8 * av_rescale_rnd(st->codecpar->sample_rate, mxf->time_base.num, mxf->time_base.den, AV_ROUND_UP) * 4;
