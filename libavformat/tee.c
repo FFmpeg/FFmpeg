@@ -585,6 +585,7 @@ static int tee_write_packet(AVFormatContext *avf, AVPacket *pkt)
             ret = tee_process_slave_failure(avf, i, ret);
             if (!ret_all && ret < 0)
                 ret_all = ret;
+            continue;
         }
 
         while(1) {
