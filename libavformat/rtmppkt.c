@@ -314,7 +314,7 @@ int ff_rtmp_packet_write(URLContext *h, RTMPPacket *pkt,
                          int chunk_size, RTMPPacket **prev_pkt_ptr,
                          int *nb_prev_pkt)
 {
-    uint8_t pkt_hdr[16], *p = pkt_hdr;
+    uint8_t pkt_hdr[18], *p = pkt_hdr;
     int mode = RTMP_PS_TWELVEBYTES;
     int off = 0;
     int written = 0;
