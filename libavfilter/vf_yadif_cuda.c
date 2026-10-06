@@ -69,7 +69,7 @@ static int call_kernel(AVFilterContext *ctx, CUfunction func,
     CudaFunctions *cu = s->hwctx->internal->cuda_dl;
     CUtexObject tex_prev = 0, tex_cur = 0, tex_next = 0;
     int ret;
-    int skip_spatial_check = s->yadif.mode&2;
+    int skip_spatial_check = !!(s->yadif.mode&2);
 
     void *args[] = { &dst, &tex_prev, &tex_cur, &tex_next,
                      &dst_width, &dst_height, &dst_pitch,
