@@ -317,6 +317,8 @@ rdt_parse_packet (AVFormatContext *ctx, PayloadContext *rdt, AVStream *st,
             return res;
         if (res > 0) {
             if (st->codecpar->codec_id == AV_CODEC_ID_AAC) {
+                if (len - pos > sizeof(rdt->buffer))
+                    return AVERROR_INVALIDDATA;
                 memcpy (rdt->buffer, buf + pos, len - pos);
                 rdt->rmctx->pb = avio_alloc_context (rdt->buffer, len - pos, 0,
                                                     NULL, NULL, NULL, NULL);
