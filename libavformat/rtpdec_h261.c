@@ -112,10 +112,16 @@ static int h261_handle_packet(AVFormatContext *ctx, PayloadContext *rtp_h261_ctx
     if (rtp_h261_ctx->endbyte_bits || sbit) {
         if (rtp_h261_ctx->endbyte_bits == sbit) {
             rtp_h261_ctx->endbyte     |= buf[0] & (0xff >> sbit);
-            rtp_h261_ctx->endbyte_bits = 0;
             buf++;
             len--;
-            avio_w8(rtp_h261_ctx->buf, rtp_h261_ctx->endbyte);
+            if (!len && ebit) {
+                rtp_h261_ctx->endbyte     &= 0xff << ebit;
+                rtp_h261_ctx->endbyte_bits = 8 - ebit;
+                ebit = 0;
+            } else {
+                rtp_h261_ctx->endbyte_bits = 0;
+                avio_w8(rtp_h261_ctx->buf, rtp_h261_ctx->endbyte);
+            }
         } else {
             /* ebit/sbit values inconsistent, assuming packet loss */
             GetBitContext gb;
