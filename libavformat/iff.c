@@ -612,7 +612,7 @@ static int iff_read_header(AVFormatContext *s)
                 return AVERROR_INVALIDDATA;
             if (!stv)
                 return AVERROR_INVALIDDATA;
-            if ((fmt_size = avio_read(pb, fmt, sizeof(fmt))) < 0)
+            if ((fmt_size = ffio_read_size(pb, fmt, sizeof(fmt))) < 0)
                 return fmt_size;
             if (fmt_size == sizeof(deep_rgb24) && !memcmp(fmt, deep_rgb24, sizeof(deep_rgb24)))
                 stv->codecpar->format = AV_PIX_FMT_RGB24;
