@@ -295,7 +295,11 @@ static void av_des_crypt_mac(AVDES *d, uint8_t *dst, const uint8_t *src,
     uint64_t iv_val = iv ? AV_RB64(iv) : 0;
     while (count-- > 0) {
         uint64_t dst_val;
-        uint64_t src_val = src ? AV_RB64(src) : 0;
+        uint64_t src_val = 0;
+        if (src) {
+            src_val = AV_RB64(src);
+            src += 8;
+        }
         if (decrypt) {
             uint64_t tmp = src_val;
             if (d->triple_des) {
@@ -313,7 +317,6 @@ static void av_des_crypt_mac(AVDES *d, uint8_t *dst, const uint8_t *src,
             iv_val = iv ? dst_val : 0;
         }
         AV_WB64(dst, dst_val);
-        src += 8;
         if (!mac)
             dst += 8;
     }
