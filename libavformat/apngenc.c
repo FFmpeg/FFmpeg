@@ -120,6 +120,8 @@ static int flush_packet(AVFormatContext *format_context, AVPacket *packet)
     side_data = av_packet_get_side_data(apng->prev_packet, AV_PKT_DATA_NEW_EXTRADATA, &side_data_size);
 
     if (side_data_size) {
+        if (side_data_size > INT_MAX)
+            return AVERROR(EINVAL);
         av_freep(&apng->extra_data);
         apng->extra_data = av_mallocz(side_data_size + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!apng->extra_data)
