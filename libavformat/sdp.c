@@ -121,6 +121,7 @@ static int resolve_destination(char *dest_addr, int size, char *type,
 static int resolve_destination(char *dest_addr, int size, char *type,
                                int type_size)
 {
+    av_strlcpy(type, "IP4", type_size);
     return 0;
 }
 #endif
