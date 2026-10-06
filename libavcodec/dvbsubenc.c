@@ -221,8 +221,8 @@ static int dvb_encode_rle8(uint8_t **pq, int buf_size,
     q = *pq;
 
     for (y = 0; y < h; y++) {
-        // Worst case line is 12 bits per value, + 3 bytes overhead
-        if (buf_size * 8 < w * 12 + 24)
+        // Worst case line is 12 bits per value, + 4 bytes overhead
+        if (buf_size * 8 < w * 12 + 32)
             return AVERROR_BUFFER_TOO_SMALL;
         line_begin = q;
         *q++ = 0x12;
