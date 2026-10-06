@@ -119,11 +119,11 @@ void ff_rtp_send_vc2hq(AVFormatContext *ctx, const uint8_t *frame_buf, int frame
     uint8_t parse_code;
     uint32_t unit_size;
 
-    while (unit < end) {
+    while (end - unit >= DIRAC_DATA_UNIT_HEADER_SIZE) {
         parse_code = unit[4];
         unit_size = AV_RB32(&unit[5]);
 
-        if (unit_size > end - unit)
+        if (unit_size < DIRAC_DATA_UNIT_HEADER_SIZE || unit_size > end - unit)
             break;
 
         switch (parse_code) {
@@ -131,13 +131,11 @@ void ff_rtp_send_vc2hq(AVFormatContext *ctx, const uint8_t *frame_buf, int frame
         /* end of sequence */
         case DIRAC_PCODE_SEQ_HEADER:
         case DIRAC_PCODE_END_SEQ:
-            if (unit_size >= DIRAC_DATA_UNIT_HEADER_SIZE)
-                send_packet(ctx, parse_code, 0, unit + DIRAC_DATA_UNIT_HEADER_SIZE, unit_size - DIRAC_DATA_UNIT_HEADER_SIZE, 0, 0, 0);
+            send_packet(ctx, parse_code, 0, unit + DIRAC_DATA_UNIT_HEADER_SIZE, unit_size - DIRAC_DATA_UNIT_HEADER_SIZE, 0, 0, 0);
             break;
         /* HQ picture */
         case DIRAC_PCODE_PICTURE_HQ:
-            if (unit_size >= DIRAC_DATA_UNIT_HEADER_SIZE)
-                send_picture(ctx, unit + DIRAC_DATA_UNIT_HEADER_SIZE, unit_size - DIRAC_DATA_UNIT_HEADER_SIZE, interlaced);
+            send_picture(ctx, unit + DIRAC_DATA_UNIT_HEADER_SIZE, unit_size - DIRAC_DATA_UNIT_HEADER_SIZE, interlaced);
             break;
         /* parse codes without specification */
         case DIRAC_PCODE_AUX:
