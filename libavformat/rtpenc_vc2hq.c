@@ -80,6 +80,8 @@ static int send_picture(AVFormatContext *ctx, const uint8_t *buf, int size, int 
     get_interleaved_ue_golomb(&gc);
     for(lvl = 0; lvl < wavelet_depth; lvl++)
     {
+        if (get_bits_left(&gc) < 0)
+            return AVERROR_INVALIDDATA;
         get_interleaved_ue_golomb(&gc);
         get_interleaved_ue_golomb(&gc);
         get_interleaved_ue_golomb(&gc);
