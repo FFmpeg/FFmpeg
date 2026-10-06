@@ -101,7 +101,7 @@ static void call_kernel(AVFilterContext *ctx,
 }
 
 static int filter(AVFilterContext *ctx, AVFrame *dst,
-                   int parity, int tff) API_AVAILABLE(macos(10.11), ios(8.0))
+                  int parity, int tff) API_AVAILABLE(macos(10.11), ios(8.0))
 {
     YADIFVTContext *s = ctx->priv;
     YADIFContext *y = &s->yadif;

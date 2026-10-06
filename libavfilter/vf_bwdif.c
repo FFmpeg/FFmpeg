@@ -109,7 +109,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 }
 
 static int filter(AVFilterContext *ctx, AVFrame *dstpic,
-                   int parity, int tff)
+                  int parity, int tff)
 {
     BWDIFContext *bwdif = ctx->priv;
     YADIFContext *yadif = &bwdif->yadif;

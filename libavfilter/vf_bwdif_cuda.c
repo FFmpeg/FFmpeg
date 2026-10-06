@@ -54,16 +54,16 @@ typedef struct DeintCUDAContext {
 #define CHECK_CU(x) FF_CUDA_CHECK_DL(ctx, s->hwctx->internal->cuda_dl, x)
 
 static int call_kernel(AVFilterContext *ctx, CUfunction func,
-                            CUdeviceptr prev, CUdeviceptr cur, CUdeviceptr next,
-                            CUarray_format format, int channels,
-                            int src_width,  // Width is pixels per channel
-                            int src_height, // Height is pixels per channel
-                            int src_pitch,  // Pitch is bytes
-                            CUdeviceptr dst,
-                            int dst_width,  // Width is pixels per channel
-                            int dst_height, // Height is pixels per channel
-                            int dst_pitch,  // Pitch is pixels per channel
-                            int parity, int tff, int clip_max)
+                       CUdeviceptr prev, CUdeviceptr cur, CUdeviceptr next,
+                       CUarray_format format, int channels,
+                       int src_width,  // Width is pixels per channel
+                       int src_height, // Height is pixels per channel
+                       int src_pitch,  // Pitch is bytes
+                       CUdeviceptr dst,
+                       int dst_width,  // Width is pixels per channel
+                       int dst_height, // Height is pixels per channel
+                       int dst_pitch,  // Pitch is pixels per channel
+                       int parity, int tff, int clip_max)
 {
     DeintCUDAContext *s = ctx->priv;
     YADIFContext *y = &s->yadif;
@@ -123,7 +123,7 @@ exit:
 }
 
 static int filter(AVFilterContext *ctx, AVFrame *dst,
-                   int parity, int tff)
+                  int parity, int tff)
 {
     DeintCUDAContext *s = ctx->priv;
     YADIFContext *y = &s->yadif;
@@ -175,18 +175,18 @@ static int filter(AVFilterContext *ctx, AVFrame *dst,
                "Deinterlacing plane %d: pixel_size: %d channels: %d\n",
                comp->plane, pixel_size, channels);
         ret = call_kernel(ctx, func,
-                    (CUdeviceptr)y->prev->data[i],
-                    (CUdeviceptr)y->cur->data[i],
-                    (CUdeviceptr)y->next->data[i],
-                    format, channels,
-                    AV_CEIL_RSHIFT(y->cur->width, i ? y->csp->log2_chroma_w : 0),
-                    AV_CEIL_RSHIFT(y->cur->height, i ? y->csp->log2_chroma_h : 0),
-                    y->cur->linesize[i],
-                    (CUdeviceptr)dst->data[i],
-                    AV_CEIL_RSHIFT(dst->width, i ? y->csp->log2_chroma_w : 0),
-                    AV_CEIL_RSHIFT(dst->height, i ? y->csp->log2_chroma_h : 0),
-                    dst->linesize[i] / comp->step,
-                    parity, tff, clip_max);
+                          (CUdeviceptr)y->prev->data[i],
+                          (CUdeviceptr)y->cur->data[i],
+                          (CUdeviceptr)y->next->data[i],
+                          format, channels,
+                          AV_CEIL_RSHIFT(y->cur->width, i ? y->csp->log2_chroma_w : 0),
+                          AV_CEIL_RSHIFT(y->cur->height, i ? y->csp->log2_chroma_h : 0),
+                          y->cur->linesize[i],
+                          (CUdeviceptr)dst->data[i],
+                          AV_CEIL_RSHIFT(dst->width, i ? y->csp->log2_chroma_w : 0),
+                          AV_CEIL_RSHIFT(dst->height, i ? y->csp->log2_chroma_h : 0),
+                          dst->linesize[i] / comp->step,
+                          parity, tff, clip_max);
         if (ret < 0)
             goto exit;
     }

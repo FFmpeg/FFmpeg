@@ -226,7 +226,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 }
 
 static int filter(AVFilterContext *ctx, AVFrame *dstpic,
-                   int parity, int tff)
+                  int parity, int tff)
 {
     YADIFContext *yadif = ctx->priv;
     ThreadData td = { .frame = dstpic, .parity = parity, .tff = tff };
