@@ -478,8 +478,10 @@ int av_hwframe_transfer_data(AVFrame *dst, const AVFrame *src, int flags)
             return AVERROR(ENOSYS);
         }
 
-        ret = src_ctx->hw_type->transfer_data_from(&src_ctx->p, dst, src);
-        if (ret == AVERROR(ENOSYS))
+        ret = AVERROR(ENOSYS);
+        if (src_ctx->hw_type->transfer_data_from)
+            ret = src_ctx->hw_type->transfer_data_from(&src_ctx->p, dst, src);
+        if (ret == AVERROR(ENOSYS) && dst_ctx->hw_type->transfer_data_to)
             ret = dst_ctx->hw_type->transfer_data_to(&dst_ctx->p, dst, src);
         if (ret < 0)
             return ret;
@@ -487,11 +489,17 @@ int av_hwframe_transfer_data(AVFrame *dst, const AVFrame *src, int flags)
         if (src->hw_frames_ctx) {
             FFHWFramesContext *ctx = (FFHWFramesContext*)src->hw_frames_ctx->data;
 
+            if (!ctx->hw_type->transfer_data_from)
+                return AVERROR(ENOSYS);
+
             ret = ctx->hw_type->transfer_data_from(&ctx->p, dst, src);
             if (ret < 0)
                 return ret;
         } else if (dst->hw_frames_ctx) {
             FFHWFramesContext *ctx = (FFHWFramesContext*)dst->hw_frames_ctx->data;
+
+            if (!ctx->hw_type->transfer_data_to)
+                return AVERROR(ENOSYS);
 
             ret = ctx->hw_type->transfer_data_to(&ctx->p, dst, src);
             if (ret < 0)
