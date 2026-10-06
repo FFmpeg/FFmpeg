@@ -57,7 +57,7 @@ static const AVClass latm_muxer_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-static int latm_decode_extradata(AVFormatContext *s, uint8_t *buf, int size)
+static int latm_decode_extradata(AVFormatContext *s, uint8_t *buf, size_t size)
 {
     LATMContext *ctx = s->priv_data;
     MPEG4AudioConfig m4ac;
