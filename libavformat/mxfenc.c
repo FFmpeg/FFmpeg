@@ -2676,8 +2676,7 @@ static int mxf_parse_ffv1_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt)
         ff_init_range_decoder(&c, st->codecpar->extradata, st->codecpar->extradata_size);
         ff_build_rac_states(&c, 0.05 * (1LL << 32), 256 - 8);
         v = get_ffv1_unsigned_symbol(&c, state);
-        av_assert0(v >= 2);
-        if (v > 4) {
+        if (v < 2 || v > 4) {
             av_log(s, AV_LOG_ERROR, "unsupported ffv1 version %d\n", v);
             return 0;
         }
@@ -2688,7 +2687,8 @@ static int mxf_parse_ffv1_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt)
         ff_build_rac_states(&c, 0.05 * (1LL << 32), 256 - 8);
         get_rac(&c, &keystate); // keyframe
         v = get_ffv1_unsigned_symbol(&c, state);
-        av_assert0(v < 2);
+        if (v >= 2)
+            return 0;
     }
     sc->codec_ul = &mxf_ffv1_codec_uls[v];
     sc->sub_descriptor = FFV1SubDescriptor;
