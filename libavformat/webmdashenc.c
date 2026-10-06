@@ -333,8 +333,15 @@ static int write_adaptation_set(AVFormatContext *s, int as_index)
     avio_printf(pb, " codecs=\"%s\"", get_codec_name(par->codec_id));
 
     lang = av_dict_get(st->metadata, "language", NULL, 0);
-    if (lang)
-        avio_printf(pb, " lang=\"%s\"", lang->value);
+    if (lang) {
+        char *escaped;
+        int ret = av_escape(&escaped, lang->value, NULL, AV_ESCAPE_MODE_XML,
+                            AV_ESCAPE_FLAG_XML_DOUBLE_QUOTES);
+        if (ret < 0)
+            return ret;
+        avio_printf(pb, " lang=\"%s\"", escaped);
+        av_free(escaped);
+    }
 
     if (par->codec_type == AVMEDIA_TYPE_VIDEO && width_in_as)
         avio_printf(pb, " width=\"%d\"", par->width);
