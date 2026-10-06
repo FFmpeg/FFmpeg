@@ -228,8 +228,6 @@ static int av1_handle_packet(AVFormatContext *ctx, PayloadContext *data,
             rem_pkt_size -= num_lebs;
             buf_ptr += num_lebs;
         }
-        // read first byte (which is the header byte only for non-fragmented elements)
-        obu_hdr = *buf_ptr;
         if (obu_size > rem_pkt_size) {
             av_log(ctx, AV_LOG_ERROR, "AV1 OBU size %u larger than remaining pkt size %d\n", obu_size, rem_pkt_size);
             return AVERROR_INVALIDDATA;
@@ -240,6 +238,8 @@ static int av1_handle_packet(AVFormatContext *ctx, PayloadContext *data,
             return AVERROR_INVALIDDATA;
         }
 
+        // read first byte (which is the header byte only for non-fragmented elements)
+        obu_hdr = *buf_ptr;
         if (!is_frag_cont) {
             uint8_t obu_type = (obu_hdr >> AV1S_OBU_TYPE) & AV1M_OBU_TYPE;
             if (obu_hdr & AV1F_OBU_FORBIDDEN) {
