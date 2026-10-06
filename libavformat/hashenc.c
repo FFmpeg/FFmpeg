@@ -303,7 +303,9 @@ static int framehash_write_packet(struct AVFormatContext *s, AVPacket *pkt)
                     uint32_t data = AV_RL32(pkt->side_data[i].data + j);
                     av_hash_update(c->hashes[0], (uint8_t *)&data, sizeof(uint32_t));
                 }
-            } else
+            } else if (pkt->side_data[i].type != AV_PKT_DATA_IAMF_MIX_GAIN_PARAM &&
+                       pkt->side_data[i].type != AV_PKT_DATA_IAMF_DEMIXING_INFO_PARAM &&
+                       pkt->side_data[i].type != AV_PKT_DATA_IAMF_RECON_GAIN_INFO_PARAM)
                 av_hash_update(c->hashes[0], pkt->side_data[i].data, pkt->side_data[i].size);
             snprintf(buf, sizeof(buf) - (AV_HASH_MAX_SIZE * 2 + 1),
                      ", %8zu, ", pkt->side_data[i].size);
