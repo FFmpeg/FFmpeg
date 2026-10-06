@@ -126,14 +126,14 @@ static int kset(AVFormatContext *s, const uint8_t *r_val, const uint8_t *n_val,
             memset(oc->r_val, 0, 24);
             memcpy(oc->r_val, r_val, len);
         }
-        memcpy(&oc->r_val[16], r_val, 8);
+        memcpy(&oc->r_val[16], oc->r_val, 8);
     }
     if (n_val) {
         if (n_val != oc->n_val) {
             memset(oc->n_val, 0, 24);
             memcpy(oc->n_val, n_val, len);
         }
-        memcpy(&oc->n_val[16], n_val, 8);
+        memcpy(&oc->n_val[16], oc->n_val, 8);
     }
 
     return 0;
