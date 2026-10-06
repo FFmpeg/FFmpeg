@@ -2296,7 +2296,7 @@ static int dash_read_header(AVFormatContext *s)
             if (!ref->nb_assoc_stream)
                 continue;
             const AVDictionaryEntry *id = av_dict_get(ref->assoc_stream[0]->metadata, "id", NULL, AV_DICT_MATCH_CASE);
-            if (!strcmp(rep->dependencyid, id->value))
+            if (id && !strcmp(rep->dependencyid, id->value))
                 break;
         }
         if (j >= c->n_videos || !av_strstart(rep->codecs, "lvc1", NULL) ||
