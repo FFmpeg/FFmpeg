@@ -98,6 +98,8 @@ void ff_dash_fill_tmpl_params(char *dst, size_t buffer_size,
                                   int64_t time) {
     int dst_pos = 0;
     const char *t_cur = template;
+    if (!buffer_size)
+        return;
     while (dst_pos < buffer_size - 1 && *t_cur) {
         char format_tag[7]; // May be "%d", "%0Xd", or "%0Xlld" (for $Time$), where X is in [0-9]
         int n = 0;
