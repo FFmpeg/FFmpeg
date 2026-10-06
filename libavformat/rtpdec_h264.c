@@ -198,6 +198,9 @@ void ff_h264_parse_framesize(AVCodecParameters *par, const char *p)
         *dst++ = *p++;
     *dst = '\0';
 
+    if (*p != '-')
+        return;
+
     // a='framesize:96 320-240'
     // set our parameters
     par->width   = atoi(buf1);
