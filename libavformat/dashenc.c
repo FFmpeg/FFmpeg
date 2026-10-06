@@ -650,8 +650,13 @@ static int write_adaptation_set(AVFormatContext *s, AVIOContext *out, int as_ind
         avio_printf(out, " par=\"%d:%d\"", as->par.num, as->par.den);
     }
     lang = av_dict_get(as->metadata, "language", NULL, 0);
-    if (lang)
-        avio_printf(out, " lang=\"%s\"", lang->value);
+    if (lang) {
+        char *escaped = xmlescape(lang->value);
+        if (!escaped)
+            return AVERROR(ENOMEM);
+        avio_printf(out, " lang=\"%s\"", escaped);
+        av_free(escaped);
+    }
     avio_printf(out, ">\n");
 
     if (!final && c->ldash && as->max_frag_duration && !(c->profile & MPD_PROFILE_DVB))
@@ -659,8 +664,13 @@ static int write_adaptation_set(AVFormatContext *s, AVIOContext *out, int as_ind
     if (as->trick_idx >= 0)
         avio_printf(out, "\t\t\t<EssentialProperty id=\"%d\" schemeIdUri=\"http://dashif.org/guidelines/trickmode\" value=\"%d\"/>\n", as->id, as->trick_idx);
     role = av_dict_get(as->metadata, "role", NULL, 0);
-    if (role)
-        avio_printf(out, "\t\t\t<Role schemeIdUri=\"urn:mpeg:dash:role:2011\" value=\"%s\"/>\n", role->value);
+    if (role) {
+        char *escaped = xmlescape(role->value);
+        if (!escaped)
+            return AVERROR(ENOMEM);
+        avio_printf(out, "\t\t\t<Role schemeIdUri=\"urn:mpeg:dash:role:2011\" value=\"%s\"/>\n", escaped);
+        av_free(escaped);
+    }
     if (as->descriptor)
         avio_printf(out, "\t\t\t%s\n", as->descriptor);
     for (i = 0; i < s->nb_streams; i++) {
@@ -1078,8 +1088,10 @@ static int write_manifest(AVFormatContext *s, int final)
     }
 
     for (i = 0; i < c->nb_as; i++) {
-        if ((ret = write_adaptation_set(s, out, i, final)) < 0)
+        if ((ret = write_adaptation_set(s, out, i, final)) < 0) {
+            dashenc_io_close(s, &c->mpd_out, temp_filename);
             return ret;
+        }
     }
     avio_printf(out, "\t</Period>\n");
 
