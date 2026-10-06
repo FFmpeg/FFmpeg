@@ -1897,7 +1897,11 @@ static uint8_t *h26x_prefix_aud(const uint8_t *aud, const int aud_size,
     const uint8_t *extra_data, const int extra_size, AVPacket *pkt, int *size)
 {
     const int sz = 4;       //start code size
-    uint8_t *data = av_malloc(pkt->size + sz + aud_size + extra_size);
+    uint8_t *data;
+
+    if (pkt->size > INT_MAX - sz - aud_size - extra_size)
+        return NULL;
+    data = av_malloc(pkt->size + sz + aud_size + extra_size);
     if (!data)
         return NULL;
     AV_WB32(data, 0x00000001);
@@ -2000,7 +2004,11 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
             /* Move the AUD up to the beginning of the frame, where the H.264
              * spec requires it to appear. Emit the extradata after it. */
             PutByteContext pb;
-            const int new_pkt_size = pkt->size + 1 + extradd;
+            int new_pkt_size;
+
+            if (pkt->size > INT_MAX - 1 - extradd)
+                return AVERROR(ENOMEM);
+            new_pkt_size = pkt->size + 1 + extradd;
             data = av_malloc(new_pkt_size);
             if (!data)
                 return AVERROR(ENOMEM);
