@@ -906,6 +906,8 @@ static int write_sm_data(AVFormatContext *s, AVIOContext *bc, AVPacket *pkt, int
                 } else if(pkt->side_data[i].type == AV_PKT_DATA_MATROSKA_BLOCKADDITIONAL) {
                     snprintf(tmp, sizeof(tmp), "CodecSpecificSide%"PRId64"", AV_RB64(data));
                     put_str(dyn_bc, tmp);
+                    data += 8;
+                    size -= 8;
                 } else {
                     snprintf(tmp, sizeof(tmp), "UserData%s-SD-%d",
                             (s->flags & AVFMT_FLAG_BITEXACT) ? "Lavf" : LIBAVFORMAT_IDENT,
@@ -914,8 +916,8 @@ static int write_sm_data(AVFormatContext *s, AVIOContext *bc, AVPacket *pkt, int
                 }
                 put_s(dyn_bc, -2);
                 put_str(dyn_bc, "bin");
-                put_v(dyn_bc, pkt->side_data[i].size);
-                avio_write(dyn_bc, data, pkt->side_data[i].size);
+                put_v(dyn_bc, size);
+                avio_write(dyn_bc, data, size);
                 sm_data_count++;
                 break;
             case AV_PKT_DATA_PARAM_CHANGE:
