@@ -1444,7 +1444,8 @@ static void sh_partition_constraints(VVCSH *sh, const H266RawSPS *sps, const H26
 static int sh_entry_points(VVCSH *sh, const H266RawSPS *sps, const VVCPPS *pps)
 {
     if (sps->sps_entry_point_offsets_present_flag) {
-        for (int i = 1, j = 0; i < sh->num_ctus_in_curr_slice; i++) {
+        int j = 0;
+        for (int i = 1; i < sh->num_ctus_in_curr_slice; i++) {
             const int pre_ctb_addr_x = sh->ctb_addr_in_curr_slice[i - 1] % pps->ctb_width;
             const int pre_ctb_addr_y = sh->ctb_addr_in_curr_slice[i - 1] / pps->ctb_width;
             const int ctb_addr_x     = sh->ctb_addr_in_curr_slice[i] % pps->ctb_width;
@@ -1457,6 +1458,8 @@ static int sh_entry_points(VVCSH *sh, const H266RawSPS *sps, const VVCPPS *pps)
                 sh->entry_point_start_ctu[j++] = i;
             }
         }
+        if (j != sh->r->num_entry_points)
+            return AVERROR_INVALIDDATA;
     }
 
     return 0;
