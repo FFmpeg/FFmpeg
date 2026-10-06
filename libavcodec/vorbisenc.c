@@ -1035,39 +1035,12 @@ static int apply_window_and_mdct(vorbis_enc_context *venc)
     return 1;
 }
 
-/* Used for padding the last encoded packet */
-static AVFrame *spawn_empty_frame(AVCodecContext *avctx, int channels)
-{
-    AVFrame *f = av_frame_alloc();
-    int ch;
-
-    if (!f)
-        return NULL;
-
-    f->format = avctx->sample_fmt;
-    f->nb_samples = avctx->frame_size;
-    f->ch_layout.order = AV_CHANNEL_ORDER_UNSPEC;
-    f->ch_layout.nb_channels = channels;
-
-    if (av_frame_get_buffer(f, 4)) {
-        av_frame_free(&f);
-        return NULL;
-    }
-
-    for (ch = 0; ch < channels; ch++) {
-        size_t bps = av_get_bytes_per_sample(f->format);
-        memset(f->extended_data[ch], 0, bps * f->nb_samples);
-    }
-    return f;
-}
-
 /* Set up audio samples for psy analysis and window/mdct */
-static void move_audio(vorbis_enc_context *venc, int sf_size)
+static void move_audio(vorbis_enc_context *venc)
 {
     AVFrame *cur = NULL;
     int frame_size = 1 << (venc->log2_blocksize[1] - 1);
-    int subframes = frame_size / sf_size;
-    int sf, ch;
+    int ch;
 
     /* Copy samples from last frame into current frame */
     if (venc->have_saved)
@@ -1078,8 +1051,9 @@ static void move_audio(vorbis_enc_context *venc, int sf_size)
         for (ch = 0; ch < venc->channels; ch++)
             memset(venc->samples + 2 * ch * frame_size, 0, sizeof(float) * frame_size);
 
-    for (sf = 0; sf < subframes; sf++) {
+    if (venc->bufqueue.available) {
         cur = ff_bufqueue_get(&venc->bufqueue);
+        av_assert0(!venc->bufqueue.available);
 
         for (ch = 0; ch < venc->channels; ch++) {
             float *offset = venc->samples + 2 * ch * frame_size + frame_size;
@@ -1087,8 +1061,8 @@ static void move_audio(vorbis_enc_context *venc, int sf_size)
             const float *input = (float *) cur->extended_data[ch];
             const size_t len  = cur->nb_samples * sizeof(float);
 
-            memcpy(offset + sf*sf_size, input, len);
-            memcpy(save + sf*sf_size, input, len);   // Move samples for next frame
+            memcpy(offset, input, len);
+            memcpy(save, input, len);   // Move samples for next frame
         }
         av_frame_free(&cur);
     }
@@ -1100,7 +1074,7 @@ static int vorbis_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                                const AVFrame *frame, int *got_packet_ptr)
 {
     vorbis_enc_context *venc = avctx->priv_data;
-    int i, ret, need_more;
+    int i, ret;
     int frame_size = 1 << (venc->log2_blocksize[1] - 1);
     vorbis_enc_mode *mode;
     vorbis_enc_mapping *mapping;
@@ -1118,28 +1092,7 @@ static int vorbis_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         if (!venc->afq.remaining_samples)
             return 0;
 
-    need_more = venc->bufqueue.available * avctx->frame_size < frame_size;
-    need_more = frame && need_more;
-    if (need_more)
-        return 0;
-
-    /* Pad the bufqueue with empty frames for encoding the last packet. */
-    if (!frame) {
-        if (venc->bufqueue.available * avctx->frame_size < frame_size) {
-            int frames_needed = (frame_size/avctx->frame_size) - venc->bufqueue.available;
-            int i;
-
-            for (i = 0; i < frames_needed; i++) {
-               AVFrame *empty = spawn_empty_frame(avctx, venc->channels);
-               if (!empty)
-                   return AVERROR(ENOMEM);
-
-               ff_bufqueue_add(avctx, &venc->bufqueue, empty);
-            }
-        }
-    }
-
-    move_audio(venc, avctx->frame_size);
+    move_audio(venc);
 
     if (!apply_window_and_mdct(venc))
         return 0;
@@ -1297,7 +1250,7 @@ static av_cold int vorbis_encode_init(AVCodecContext *avctx)
         return ret;
     avctx->extradata_size = ret;
 
-    avctx->frame_size = 64;
+    avctx->frame_size = 1 << (venc->log2_blocksize[1] - 1);
     avctx->initial_padding = 1 << (venc->log2_blocksize[1] - 1);
 
     ff_af_queue_init(avctx, &venc->afq);
