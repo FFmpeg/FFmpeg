@@ -203,6 +203,8 @@ static int mxg_read_packet(AVFormatContext *s, AVPacket *pkt)
                     ret = mxg_update_cache(s, size);
                     if (ret < 0)
                         return ret;
+                    if (mxg->cache_size < size)
+                        return AVERROR_EOF;
                     startmarker_ptr = mxg->buffer_ptr - 2;
                     mxg->cache_size = 0;
                 } else {
