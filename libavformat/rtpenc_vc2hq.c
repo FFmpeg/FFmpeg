@@ -98,7 +98,7 @@ static int send_picture(AVFormatContext *ctx, const uint8_t *buf, int size, int 
     size -= frag_len;
 
     while (size > 0) {
-        frag_len = FFMIN(rtp_ctx->max_payload_size - 20 /* pl header */, size);
+        frag_len = FFMIN3(rtp_ctx->max_payload_size - 20 /* pl header */, size, UINT16_MAX);
         AV_WB16(&info_hdr[ 8], frag_len);
         AV_WB16(&info_hdr[10], 1 /* nr. of slices */);
         AV_WB16(&info_hdr[12], 0 /* slice x */);
