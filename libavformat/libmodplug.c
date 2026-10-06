@@ -197,7 +197,7 @@ static int modplug_read_header(AVFormatContext *s)
             return r;
     }
 
-    modplug->buf = av_malloc(modplug->max_size);
+    modplug->buf = av_malloc(sz);
     if (!modplug->buf)
         return AVERROR(ENOMEM);
     sz = avio_read(pb, modplug->buf, sz);
