@@ -8401,10 +8401,14 @@ static int mov_init(AVFormatContext *s)
             av_log(s, AV_LOG_ERROR, "AVIF output supports only video streams\n");
             return AVERROR(EINVAL);
         }
+        if (!av_pix_fmt_desc_get(s->streams[0]->codecpar->format)) {
+            av_log(s, AV_LOG_ERROR, "AVIF output requires a known pixel format\n");
+            return AVERROR(EINVAL);
+        }
         if (s->nb_streams > 1) {
             const AVPixFmtDescriptor *pixdesc =
                 av_pix_fmt_desc_get(s->streams[1]->codecpar->format);
-            if (pixdesc->nb_components != 1) {
+            if (!pixdesc || pixdesc->nb_components != 1) {
                 av_log(s, AV_LOG_ERROR, "Second stream for AVIF (alpha) output must have exactly one plane\n");
                 return AVERROR(EINVAL);
             }
