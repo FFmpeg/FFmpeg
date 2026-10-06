@@ -1790,6 +1790,9 @@ The accepted options are:
 
 @item cache_dir
 Path to the directory where cache files are stored. This option is required.
+Anyone who can write to this directory or to @option{metadata_dir} can alter
+the data read by all users of the cache, or make them crash, so neither may be
+writable by untrusted users.
 
 @item metadata_dir
 Path to the directory where metadata files are stored. Optional. If not
