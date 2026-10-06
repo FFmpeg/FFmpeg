@@ -130,7 +130,9 @@ static void hash_print_sidedata(struct AVFormatContext *s,
                 uint32_t data = AV_RL32(sd[i].data + j);
                 av_hash_update(c->hashes->hash, (uint8_t *)&data, sizeof(uint32_t));
             }
-        } else
+        } else if (sd[i].type != AV_PKT_DATA_IAMF_MIX_GAIN_PARAM &&
+                   sd[i].type != AV_PKT_DATA_IAMF_DEMIXING_INFO_PARAM &&
+                   sd[i].type != AV_PKT_DATA_IAMF_RECON_GAIN_INFO_PARAM)
             av_hash_update(c->hashes->hash, sd[i].data, sd[i].size);
         snprintf(buf, sizeof(buf) - (AV_HASH_MAX_SIZE * 2 + 1),
                  ", %8zu, ", sd[i].size);
