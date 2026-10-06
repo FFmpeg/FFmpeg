@@ -198,7 +198,8 @@ static int dxa_read_packet(AVFormatContext *s, AVPacket *pkt)
         case MKTAG('C', 'M', 'A', 'P'):
             pal_size = 768+4;
             memcpy(pal, buf, 4);
-            avio_read(s->pb, pal + 4, 768);
+            if ((ret = ffio_read_size(s->pb, pal + 4, 768)) < 0)
+                return ret;
             break;
         case MKTAG('F', 'R', 'A', 'M'):
             if ((ret = avio_read(s->pb, buf + 4, DXA_EXTRA_SIZE - 4)) != DXA_EXTRA_SIZE - 4) {
