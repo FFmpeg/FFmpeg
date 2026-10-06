@@ -1935,6 +1935,7 @@ int ff_rtsp_connect(AVFormatContext *s)
     int port, err, tcp_fd;
     RTSPMessageHeader reply1, *reply = &reply1;
     int lower_transport_mask = 0;
+    int redirects = 0;
     int default_port = RTSP_DEFAULT_PORT;
     int https_tunnel = 0;
     char real_challenge[64] = "";
@@ -2243,6 +2244,11 @@ redirect:
     if (reply->status_code >=300 && reply->status_code < 400 && s->iformat) {
         int ret;
 
+        if (redirects++ >= 8 /* MAX_RTSP_REDIRECTS */) {
+            av_log(s, AV_LOG_ERROR, "Too many RTSP redirects\n");
+            err = AVERROR(EIO);
+            goto fail2;
+        }
         if (!rtsp_url_same_origin(s->url, reply->location)) {
             memset(rt->auth, 0, sizeof(rt->auth));
             memset(&rt->auth_state, 0, sizeof(rt->auth_state));
