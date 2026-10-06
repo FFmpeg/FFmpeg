@@ -36,7 +36,7 @@ static int nist_probe(const AVProbeData *p)
 static int nist_read_header(AVFormatContext *s)
 {
     char buffer[256]= {0}, coding[32] = "pcm", format[32] = "01";
-    int bps = 0, be = 0;
+    int bps = 0, be = 0, ret;
     int32_t header_size = -1;
     AVStream *st;
 
@@ -73,8 +73,10 @@ static int nist_read_header(AVFormatContext *s)
                 st->codecpar->codec_id = AV_CODEC_ID_PCM_MULAW;
             } else if (!av_strncasecmp(coding, "pcm,embedded-shorten", 20)) {
                 st->codecpar->codec_id = AV_CODEC_ID_SHORTEN;
-                if (ff_alloc_extradata(st->codecpar, 1))
-                    st->codecpar->extradata[0] = 1;
+                ret = ff_alloc_extradata(st->codecpar, 1);
+                if (ret < 0)
+                    return ret;
+                st->codecpar->extradata[0] = 1;
             } else {
                 avpriv_request_sample(s, "coding %s", coding);
             }
