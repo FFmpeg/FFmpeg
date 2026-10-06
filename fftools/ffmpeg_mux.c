@@ -166,9 +166,7 @@ static int mux_fixup_ts(Muxer *mux, MuxStream *ms, AVPacket *pkt)
             av_log(ost, AV_LOG_WARNING, "Invalid DTS: %"PRId64" PTS: %"PRId64", replacing by guess\n",
                    pkt->dts, pkt->pts);
             pkt->pts =
-            pkt->dts = pkt->pts + pkt->dts + ms->last_mux_dts + 1
-                     - FFMIN3(pkt->pts, pkt->dts, ms->last_mux_dts + 1)
-                     - FFMAX3(pkt->pts, pkt->dts, ms->last_mux_dts + 1);
+            pkt->dts = av_clip64(ms->last_mux_dts, pkt->pts - 1, pkt->dts - 1) + 1;
         }
         if ((ost->type == AVMEDIA_TYPE_AUDIO || ost->type == AVMEDIA_TYPE_VIDEO || ost->type == AVMEDIA_TYPE_SUBTITLE) &&
             pkt->dts != AV_NOPTS_VALUE &&
