@@ -2287,7 +2287,7 @@ static int dash_read_header(AVFormatContext *s)
     for (i = 0; i < c->n_videos; i++) {
         struct representation *ref;
         rep = c->videos[i];
-        if (!rep->dependencyid || !rep->nb_assoc_stream)
+        if (!rep->dependencyid || !rep->codecs || !rep->nb_assoc_stream)
             continue;
         for (j = 0; j < c->n_videos; j++) {
             if (j == i)
