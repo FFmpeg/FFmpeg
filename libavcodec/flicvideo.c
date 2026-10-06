@@ -883,6 +883,7 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
                 while (pixel_countdown > 0) {
                     *((signed short*)(&pixels[pixel_ptr])) = AV_RL16(&buf[pixel_ptr]);
                     pixel_ptr += 2;
+                    pixel_countdown--;
                 }
 #endif
                 y_ptr += s->frame->linesize[0];
