@@ -34,6 +34,7 @@
 #include "ttmlenc.h"
 #include "libavcodec/ttmlenc.h"
 #include "libavutil/internal.h"
+#include "libavutil/mem.h"
 
 enum TTMLPacketType {
     PACKET_TYPE_PARAGRAPH,
@@ -129,7 +130,6 @@ static int ttml_write_header(AVFormatContext *ctx)
 
     const AVDictionaryEntry *lang = av_dict_get(st->metadata, "language", NULL,
                                                 0);
-    const char *printed_lang = (lang && lang->value) ? lang->value : "";
 
     ttml_ctx->document_written = 0;
     ttml_ctx->input_type = ff_is_ttml_stream_paragraph_based(st->codecpar) ?
@@ -140,6 +140,7 @@ static int ttml_write_header(AVFormatContext *ctx)
 
     if (ttml_ctx->input_type == PACKET_TYPE_PARAGRAPH) {
         struct TTMLHeaderParameters header_params;
+        char *printed_lang;
         int ret = ttml_set_header_values_from_extradata(
             st->codecpar, &header_params);
         if (ret < 0) {
@@ -149,10 +150,16 @@ static int ttml_write_header(AVFormatContext *ctx)
             return ret;
         }
 
+        ret = av_escape(&printed_lang, lang ? lang->value : "", NULL,
+                        AV_ESCAPE_MODE_XML, AV_ESCAPE_FLAG_XML_DOUBLE_QUOTES);
+        if (ret < 0)
+            return ret;
+
         avio_printf(pb, ttml_header_text,
                     header_params.tt_element_params,
                     printed_lang,
                     header_params.pre_body_elements);
+        av_free(printed_lang);
     }
 
     return 0;
