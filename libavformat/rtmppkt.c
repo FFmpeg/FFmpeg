@@ -551,7 +551,7 @@ static int amf_get_field_value2(GetByteContext *gb,
                     return -1;
                 if (dst_size < len + 1)
                     len = dst_size - 1;
-                bytestream2_get_buffer(gb, dst, len);
+                len = bytestream2_get_buffer(gb, dst, len);
                 dst[len] = 0;
                 break;
             default:
