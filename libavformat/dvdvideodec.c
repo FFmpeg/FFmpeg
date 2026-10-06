@@ -252,6 +252,13 @@ static int dvdvideo_ifo_open(AVFormatContext *s)
             return AVERROR_EXTERNAL;
         }
 
+        if ((!c->opt_menu_vts && c->vmg_ifo->vmgi_mat->nr_of_vmgm_audio_streams > 8) ||
+            ( c->opt_menu_vts && c->vts_ifo->vtsi_mat->nr_of_vtsm_audio_streams > 8)) {
+            av_log(s, AV_LOG_ERROR, "Menu has invalid headers (too many audio streams)\n");
+
+            return AVERROR_INVALIDDATA;
+        }
+
         return 0;
     }
 
