@@ -8396,7 +8396,7 @@ static int mov_init(AVFormatContext *s)
             av_log(s, AV_LOG_ERROR, "AVIF output requires exactly one or two streams\n");
             return AVERROR(EINVAL);
         }
-        if (s->streams[0]->codecpar->codec_type != AVMEDIA_TYPE_VIDEO &&
+        if (s->streams[0]->codecpar->codec_type != AVMEDIA_TYPE_VIDEO ||
             (s->nb_streams > 1 && s->streams[1]->codecpar->codec_type != AVMEDIA_TYPE_VIDEO)) {
             av_log(s, AV_LOG_ERROR, "AVIF output supports only video streams\n");
             return AVERROR(EINVAL);
