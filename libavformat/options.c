@@ -490,7 +490,6 @@ AVStreamGroup *avformat_stream_group_create(AVFormatContext *s,
 
     stg->av_class = &stream_group_class;
     av_opt_set_defaults(stg);
-    stg->type = type;
     switch (type) {
     case AV_STREAM_GROUP_PARAMS_IAMF_AUDIO_ELEMENT:
         stg->params.iamf_audio_element = av_iamf_audio_element_alloc();
@@ -528,6 +527,7 @@ AVStreamGroup *avformat_stream_group_create(AVFormatContext *s,
     default:
         goto fail;
     }
+    stg->type = type;
 
     if (options) {
         if (av_opt_set_dict2(stg, options, AV_OPT_SEARCH_CHILDREN))
