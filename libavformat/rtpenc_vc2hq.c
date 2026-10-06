@@ -69,7 +69,7 @@ static int send_picture(AVFormatContext *ctx, const uint8_t *buf, int size, int 
     size -= DIRAC_PIC_NR_SIZE;
     second_field = interlaced && (pic_nr & 0x01);
 
-    init_get_bits(&gc, buf, 8  * size);
+    init_get_bits8(&gc, buf, FFMIN(size, UINT16_MAX));
                     get_interleaved_ue_golomb(&gc); /* wavelet_idx */
     wavelet_depth = get_interleaved_ue_golomb(&gc);
                     get_interleaved_ue_golomb(&gc); /* num_x */
