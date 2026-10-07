@@ -952,19 +952,35 @@ void ff_hevc_hls_filter(HEVCLocalContext *lc, const HEVCLayerContext *l,
     if (!skip)
         deblocking_filter_CTB(s, l, pps, sps, x, y);
     if (sps->sao_enabled && !skip) {
-        int y_end = y >= sps->height - ctb_size;
-        if (y && x)
-            sao_filter_CTB(lc, l, s, pps, sps, x - ctb_size, y - ctb_size);
-        if (x && y_end)
-            sao_filter_CTB(lc, l, s, pps, sps, x - ctb_size, y);
+        int y_end  = y >= sps->height - ctb_size;
+        int x0, x_sao, x_delay = ctb_size;
+
+        /* Horizontal chroma deblocking leaves the last 8<<hshift luma columns
+         * of a CTB to the next CTB. With a 16x16 CTB and horizontally
+         * subsampled chroma that span is the whole CTB, so those edges are
+         * filtered only while the CTB to the right is deblocked. EO classes
+         * 0 and 2 on the rightmost chroma column read that region and have
+         * to run one CTB later. Every other CTB size, and 4:4:4, keep the
+         * original one-CTB delay. The total number of SAO invocations is
+         * unchanged; row-end catch-up covers the columns this delay skips. */
+        if (ctb_size == 16 && sps->hshift[1])
+            x_delay = 2 * ctb_size;
+        x_sao = x - x_delay;
+
+        if (y && x_sao >= 0)
+            sao_filter_CTB(lc, l, s, pps, sps, x_sao, y - ctb_size);
+        if (x_sao >= 0 && y_end)
+            sao_filter_CTB(lc, l, s, pps, sps, x_sao, y);
         if (y && x_end) {
-            sao_filter_CTB(lc, l, s, pps, sps, x, y - ctb_size);
-            if (s->avctx->active_thread_type & FF_THREAD_FRAME )
+            for (x0 = FFMAX(x_sao + ctb_size, 0); x0 <= x; x0 += ctb_size)
+                sao_filter_CTB(lc, l, s, pps, sps, x0, y - ctb_size);
+            if (s->avctx->active_thread_type & FF_THREAD_FRAME)
                 ff_progress_frame_report(&s->cur_frame->tf, y);
         }
         if (x_end && y_end) {
-            sao_filter_CTB(lc, l, s, pps, sps, x , y);
-            if (s->avctx->active_thread_type & FF_THREAD_FRAME )
+            for (x0 = FFMAX(x_sao + ctb_size, 0); x0 <= x; x0 += ctb_size)
+                sao_filter_CTB(lc, l, s, pps, sps, x0, y);
+            if (s->avctx->active_thread_type & FF_THREAD_FRAME)
                 ff_progress_frame_report(&s->cur_frame->tf, y + ctb_size);
         }
     } else if (s->avctx->active_thread_type & FF_THREAD_FRAME && x_end)
