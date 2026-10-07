@@ -742,6 +742,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->slice_min);
     av_freep(&s->slice_max);
     av_freep(&s->slice_sum);
+    av_freep(&s->params);
 }
 
 static const AVFilterPad gainmap_inputs[] = {
