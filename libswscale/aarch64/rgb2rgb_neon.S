@@ -884,6 +884,9 @@ function ff_\src_fmt\()to\dst_fmt\()_neon, export=1
 
         b.eq            6f
 
+.ifc \dst_fmt, yuv420
+        cbz             w5, 30f                           // height==1: no full line pairs, handle the lone line only
+.endif
 1:                                                        // fast path - the width is at least 32
         and             w14, w4, #~31                     // w14 is the main loop counter
         and             w9, w4, #31                       // w9 holds the remaining width, 0 to 31
@@ -898,7 +901,9 @@ function ff_\src_fmt\()to\dst_fmt\()_neon, export=1
         b.ne            1b
 
 .ifc \dst_fmt, yuv420                                    // handle the last line in case the height is odd
+30:
         cbz             w17, 3f
+        and             w9, w4, #31                       // tail width, needed by the shift-back below
         and             w14, w4, #~31
 4:
         fastpath_iteration \src_fmt, \dst_fmt, 0, 1
@@ -916,6 +921,9 @@ function ff_\src_fmt\()to\dst_fmt\()_neon, export=1
 
 6:                                                        // slow path - width is at most 31
         and             w9, w4, #31
+.ifc \dst_fmt, yuv420
+        cbz             w5, 60f                           // height==1: no full line pairs, handle the lone line only
+.endif
         cbz             w9, 9f                            // even part empty (orig width 0 or 1)
 7:
         subs            w9, w9, #2
@@ -928,6 +936,7 @@ function ff_\src_fmt\()to\dst_fmt\()_neon, export=1
         b.ne            6b
 
 .ifc \dst_fmt, yuv420
+60:
         cbz             w17, 8f
         and             w9, w4, #31
 .ifc \src_fmt, uyvy
