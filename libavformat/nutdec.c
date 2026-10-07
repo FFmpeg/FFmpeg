@@ -937,6 +937,9 @@ static int read_sm_data(AVFormatContext *s, AVIOContext *bc, AVPacket *pkt, int 
             if(!dst)
                 return AVERROR(ENOMEM);
             avio_read(bc, dst, value_len);
+            if (HAVE_BIGENDIAN && !strcmp(name, "Palette"))
+                for (int j = 0; j + 4 <= value_len; j += 4)
+                    AV_WN32(dst + j, AV_RL32(dst + j));
         } else if (value == -3) {
             value = get_s(bc);
         } else if (value == -4) {
