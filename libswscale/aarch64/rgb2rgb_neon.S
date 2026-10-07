@@ -644,11 +644,11 @@ w17 - set to 1 if last line has to be handled separately (odd height)
 
 .ifc \dst_fmt, yuv420                                    // store UV
 .ifc \src_fmt, uyvy
-        uhadd           v0.16b, v4.16b, v0.16b            // halving sum of U
-        uhadd           v2.16b, v6.16b, v2.16b            // halving sum of V
+        urhadd          v0.16b, v4.16b, v0.16b            // halving sum of U
+        urhadd          v2.16b, v6.16b, v2.16b            // halving sum of V
 .else
-        uhadd           v1.16b, v5.16b, v1.16b            // halving sum of U
-        uhadd           v3.16b, v7.16b, v3.16b            // halving sum of V
+        urhadd          v1.16b, v5.16b, v1.16b            // halving sum of U
+        urhadd          v3.16b, v7.16b, v3.16b            // halving sum of V
 .endif
 .endif
 
@@ -738,6 +738,7 @@ w17 - set to 1 if last line has to be handled separately (odd height)
         ldrb            w12, [x3], #1
         ldrb            w14, [x13], #1
         add             w12, w12, w14
+        add             w12, w12, #1
         lsr             w12, w12, #1
         strb            w12, [x1], #1
         ldrb            w14, [x3], #1
@@ -747,6 +748,7 @@ w17 - set to 1 if last line has to be handled separately (odd height)
         ldrb            w14, [x13], #1
         ldrb            w12, [x3], #1
         add             w12, w12, w14
+        add             w12, w12, #1
         lsr             w12, w12, #1
         strb            w12, [x2], #1
         ldrb            w14, [x3], #1
@@ -768,6 +770,7 @@ w17 - set to 1 if last line has to be handled separately (odd height)
         ldrb            w12, [x3], #1
         ldrb            w14, [x13], #1
         add             w12, w12, w14
+        add             w12, w12, #1
         lsr             w12, w12, #1
         strb            w12, [x1], #1
         ldrb            w14, [x3], #1
@@ -777,6 +780,7 @@ w17 - set to 1 if last line has to be handled separately (odd height)
         ldrb            w14, [x13], #1
         ldrb            w12, [x3], #1
         add             w12, w12, w14
+        add             w12, w12, #1
         lsr             w12, w12, #1
         strb            w12, [x2], #1
 .endif
@@ -829,14 +833,16 @@ w17 - set to 1 if last line has to be handled separately (odd height)
         strb            w12, [x0]
         ldrb            w12, [x13, #1]                    // Y, bottom line
         strb            w12, [x10]
-        ldrb            w12, [x3]                         // U = (top + bottom) >> 1
+        ldrb            w12, [x3]                         // U = (top + bottom + 1) >> 1
         ldrb            w14, [x13]
         add             w12, w12, w14
+        add             w12, w12, #1
         lsr             w12, w12, #1
         strb            w12, [x1]
-        ldrb            w12, [x3, #2]                     // V = (top + bottom) >> 1
+        ldrb            w12, [x3, #2]                     // V = (top + bottom + 1) >> 1
         ldrb            w14, [x13, #2]
         add             w12, w12, w14
+        add             w12, w12, #1
         lsr             w12, w12, #1
         strb            w12, [x2]
 .else
@@ -844,14 +850,16 @@ w17 - set to 1 if last line has to be handled separately (odd height)
         strb            w12, [x0]
         ldrb            w12, [x13]                        // Y, bottom line
         strb            w12, [x10]
-        ldrb            w12, [x3, #1]                     // U = (top + bottom) >> 1
+        ldrb            w12, [x3, #1]                     // U = (top + bottom + 1) >> 1
         ldrb            w14, [x13, #1]
         add             w12, w12, w14
+        add             w12, w12, #1
         lsr             w12, w12, #1
         strb            w12, [x1]
-        ldrb            w12, [x3, #3]                     // V = (top + bottom) >> 1
+        ldrb            w12, [x3, #3]                     // V = (top + bottom + 1) >> 1
         ldrb            w14, [x13, #3]
         add             w12, w12, w14
+        add             w12, w12, #1
         lsr             w12, w12, #1
         strb            w12, [x2]
 .endif

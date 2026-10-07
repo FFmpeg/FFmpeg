@@ -1746,8 +1746,8 @@ static void extract_even2avg_mmxext(const uint8_t *src0, const uint8_t *src1, ui
     }
 #endif
     while(count<0) {
-        dst0[count]= (src0[4*count+0]+src1[4*count+0])>>1;
-        dst1[count]= (src0[4*count+2]+src1[4*count+2])>>1;
+        dst0[count] = (src0[4*count+0]+src1[4*count+0]+1)>>1;
+        dst1[count] = (src0[4*count+2]+src1[4*count+2]+1)>>1;
         count++;
     }
 }
@@ -1848,8 +1848,8 @@ static void extract_odd2avg_mmxext(const uint8_t *src0, const uint8_t *src1, uin
     src0++;
     src1++;
     while(count<0) {
-        dst0[count]= (src0[4*count+0]+src1[4*count+0])>>1;
-        dst1[count]= (src0[4*count+2]+src1[4*count+2])>>1;
+        dst0[count] = (src0[4*count+0]+src1[4*count+0]+1)>>1;
+        dst1[count] = (src0[4*count+2]+src1[4*count+2]+1)>>1;
         count++;
     }
 }
