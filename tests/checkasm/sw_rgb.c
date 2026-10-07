@@ -40,7 +40,8 @@
 static const uint8_t width[] = {12, 16, 20, 32, 36, 128};
 static const struct {uint8_t w, h;} planes[] = {
     {12,16}, {16,16}, {20,23}, {32,18}, {8,128}, {128,128},
-    {1,1}, {1,4}, {3,8}, {13,16}, {21,9}, {63,7}, {127,5}
+    {1,1}, {1,4}, {3,8}, {13,16}, {21,9}, {63,7}, {127,5},
+    {13,1}, {32,1}, {66,1}
 };
 
 #define MAX_STRIDE 128
@@ -964,6 +965,10 @@ void checkasm_check_sw_rgb(void)
     report("uyvytoyuv422");
     check_interleaved_to_planar(yuyvtoyuv422, "yuyvtoyuv422", 2);
     report("yuyvtoyuv422");
+    check_interleaved_to_planar(uyvytoyuv420, "uyvytoyuv420", 1);
+    report("uyvytoyuv420");
+    check_interleaved_to_planar(yuyvtoyuv420, "yuyvtoyuv420", 2);
+    report("yuyvtoyuv420");
 
     check_interleave_bytes();
     report("interleave_bytes");
