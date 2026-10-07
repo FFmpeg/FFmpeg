@@ -3679,7 +3679,7 @@ static int hevc_frame_end(HEVCContext *s, HEVCLayerContext *l)
 {
     HEVCFrame *out = l->cur_frame;
     const AVFilmGrainParams *fgp;
-    av_unused int ret;
+    int ret;
 
     if (out->needs_fg) {
         av_assert0(out->frame_grain->buf[0]);
@@ -3695,7 +3695,10 @@ static int hevc_frame_end(HEVCContext *s, HEVCLayerContext *l)
             ret = ff_aom_apply_film_grain(out->frame_grain, out->f, fgp);
             break;
         }
-        av_assert1(ret >= 0);
+        if (ret < 0) {
+            out->needs_fg = 0;
+            return ret;
+        }
     }
 
     if (s->avctx->hwaccel) {

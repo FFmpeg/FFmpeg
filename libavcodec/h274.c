@@ -42,9 +42,25 @@ typedef struct H274FilmGrainDatabase {
     // Database of film grain patterns, lazily computed as-needed
     int8_t db[13 /* h */][13 /* v */][64][64];
     atomic_uint residency[6];
+    // Temporary buffer for slice generation (protected by init_slice's mutex)
+    int16_t tmp[64][64];
 } H274FilmGrainDatabase;
 
-static H274FilmGrainDatabase film_grain_db;
+static H274FilmGrainDatabase *film_grain_db;
+static AVOnce film_grain_db_once = AV_ONCE_INIT;
+
+static av_cold void init_film_grain_db(void)
+{
+    // Only `residency` (24 bytes with 32-bit atomic_uint) needs
+    // zero-initialization (`init_slice_c` fully writes each `db[h][v]` slice
+    // and `tmp` before reading them), so use `av_malloc` instead of
+    // `av_mallocz` to avoid faulting in and dirtying all 700,440 bytes upfront.
+    film_grain_db = av_malloc(sizeof(*film_grain_db));
+    if (film_grain_db) {
+        for (size_t i = 0; i < FF_ARRAY_ELEMS(film_grain_db->residency); i++)
+            atomic_init(&film_grain_db->residency[i], 0);
+    }
+}
 
 static const int8_t Gaussian_LUT[2048+4];
 static const uint32_t Seed_LUT[256];
@@ -67,9 +83,8 @@ static void init_slice_c(int8_t out[64][64], uint8_t h, uint8_t v)
     const uint8_t deblock_coeff = deblock_factors[v];
     const uint8_t freq_h = ((h + 3) << 2) - 1;
     const uint8_t freq_v = ((v + 3) << 2) - 1;
-    // Temporary buffer for slice generation
-    // FIXME: Static or not?
-    static int16_t tmp[64][64];
+    // Temporary buffer for slice generation (protected by init_slice's mutex).
+    int16_t (*tmp)[64] = film_grain_db->tmp;
     uint32_t seed = Seed_LUT[h + v * 13];
 
     // Initialize with random gaussian values, using the output array as a
@@ -123,17 +138,17 @@ static void init_slice(uint8_t h, uint8_t v)
 {
     static AVMutex mutex = AV_MUTEX_INITIALIZER;
     unsigned bitpos = h * 13 + v;
-    unsigned res = atomic_load_explicit(&film_grain_db.residency[bitpos / 32],
+    unsigned res = atomic_load_explicit(&film_grain_db->residency[bitpos / 32],
                                         memory_order_acquire);
 
     if (res & (1U << (bitpos & 31)))
         return;
 
     ff_mutex_lock(&mutex);
-    res = atomic_load_explicit(&film_grain_db.residency[bitpos / 32], memory_order_relaxed);
+    res = atomic_load_explicit(&film_grain_db->residency[bitpos / 32], memory_order_relaxed);
     if (!(res & (1U << (bitpos & 31)))) {
-        init_slice_c(film_grain_db.db[h][v], h, v);
-        atomic_store_explicit(&film_grain_db.residency[bitpos / 32],
+        init_slice_c(film_grain_db->db[h][v], h, v);
+        atomic_store_explicit(&film_grain_db->residency[bitpos / 32],
                               res | (1U << (bitpos & 31)), memory_order_release);
     }
     ff_mutex_unlock(&mutex);
@@ -228,7 +243,7 @@ static av_always_inline void generate(int8_t *out, int out_stride,
         scale = -scale;
 
     synth_grain_8x8_c(out, out_stride, scale, shift,
-                      &film_grain_db.db[h][v][y_offset][x_offset]);
+                      &film_grain_db->db[h][v][y_offset][x_offset]);
 
     if (deblock)
         deblock_8x8_c(out, out_stride);
@@ -253,6 +268,10 @@ int ff_h274_apply_film_grain(AVFrame *out_frame, const AVFrame *in_frame,
     av_assert1(out_frame->format == in_frame->format);
     if (in_frame->format != AV_PIX_FMT_YUV420P)
         return AVERROR_PATCHWELCOME;
+
+    ff_thread_once(&film_grain_db_once, init_film_grain_db);
+    if (!film_grain_db)
+        return AVERROR(ENOMEM);
 
     for (int c = 0; c < 3; c++) {
         static const uint8_t color_offset[3] = { 0, 85, 170 };

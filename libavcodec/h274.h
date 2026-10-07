@@ -45,11 +45,11 @@ static inline int ff_h274_film_grain_params_supported(int model_id, enum AVPixel
 // must already have been allocated and set to the same size and format as
 // `in`.
 //
-// Returns a negative error code on error, such as invalid params.
-// If ff_h274_film_grain_params_supported() indicated that the parameters
-// are supported, no error will be returned if the arguments given to
-// ff_h274_film_grain_params_supported() coincide with actual values
-// from the frames and params.
+// Returns a negative error code on error, such as invalid params or
+// AVERROR(ENOMEM). If ff_h274_film_grain_params_supported() indicated that the
+// parameters are supported and the arguments given to
+// ff_h274_film_grain_params_supported() coincide with actual values from the
+// frames and params, only AVERROR(ENOMEM) can be returned.
 int ff_h274_apply_film_grain(AVFrame *out, const AVFrame *in,
                              const AVFilmGrainParams *params);
 
