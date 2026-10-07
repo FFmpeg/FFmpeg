@@ -2145,6 +2145,8 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
                 trim_end = AV_RL32(side_data + 4) * 48000 / st->codecpar->sample_rate;
             }
 
+            if (pkt->size > INT_MAX - 7 - pkt->size / 255)
+                return AVERROR(ENOMEM);
             ctrl_header_size = pkt->size + 2 + pkt->size / 255 + 1;
             if (ts_st->opus_pending_trim_start)
               ctrl_header_size += 2;
