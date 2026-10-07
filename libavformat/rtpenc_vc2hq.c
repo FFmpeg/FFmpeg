@@ -77,14 +77,16 @@ static int send_picture(AVFormatContext *ctx, const uint8_t *buf, int size, int 
     prefix_bytes  = get_interleaved_ue_golomb(&gc);
     size_scaler   = get_interleaved_ue_golomb(&gc);
     /* pass the quantization matrices */
-    get_interleaved_ue_golomb(&gc);
-    for(lvl = 0; lvl < wavelet_depth; lvl++)
-    {
-        if (get_bits_left(&gc) < 0)
-            return AVERROR_INVALIDDATA;
+    if (get_bits1(&gc)) {
         get_interleaved_ue_golomb(&gc);
-        get_interleaved_ue_golomb(&gc);
-        get_interleaved_ue_golomb(&gc);
+        for(lvl = 0; lvl < wavelet_depth; lvl++)
+        {
+            if (get_bits_left(&gc) < 0)
+                return AVERROR_INVALIDDATA;
+            get_interleaved_ue_golomb(&gc);
+            get_interleaved_ue_golomb(&gc);
+            get_interleaved_ue_golomb(&gc);
+        }
     }
 
     frag_len = (get_bits_count(&gc) + 7) / 8; /* length of transform parameters */
