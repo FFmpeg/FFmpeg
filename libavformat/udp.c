@@ -60,12 +60,7 @@
 #define IPPROTO_UDPLITE                                  136
 #endif
 
-#if HAVE_W32THREADS
-#undef HAVE_PTHREAD_CANCEL
-#define HAVE_PTHREAD_CANCEL 1
-#endif
-
-#if HAVE_PTHREAD_CANCEL
+#if HAVE_THREADS
 #include "libavutil/thread.h"
 #endif
 
@@ -109,7 +104,7 @@ typedef struct UDPContext {
     int64_t bitrate; /* number of bits to send per second */
     int64_t burst_bits;
     int close_req;
-#if HAVE_PTHREAD_CANCEL
+#if HAVE_THREADS
     pthread_t circular_buffer_thread;
     pthread_mutex_t mutex;
     pthread_cond_t cond;
@@ -146,7 +141,7 @@ static const AVOption options[] = {
     { "ttl",            "Time to live (multicast only)",                   OFFSET(ttl),            AV_OPT_TYPE_INT,    { .i64 = 16 },     0, 255,     E },
     { "dscp",           "DSCP class for outgoing packets",                 OFFSET(dscp),           AV_OPT_TYPE_INT,    { .i64 = -1 },    -1, 63,      E },
     { "connect",        "set if connect() should be called on socket",     OFFSET(is_connected),   AV_OPT_TYPE_BOOL,   { .i64 =  0 },     0, 1,       .flags = D|E },
-    { "fifo_size",      "set the UDP circular buffer size (in 188-byte packets)", OFFSET(circular_buffer_size), AV_OPT_TYPE_INT, {.i64 = HAVE_PTHREAD_CANCEL ? 7*4096 : 0}, 0, INT_MAX, D },
+    { "fifo_size",      "set the UDP circular buffer size (in 188-byte packets)", OFFSET(circular_buffer_size), AV_OPT_TYPE_INT, {.i64 = HAVE_THREADS ? 7*4096 : 0}, 0, INT_MAX, D },
     { "overrun_nonfatal", "survive in case of UDP receiving circular buffer overrun", OFFSET(overrun_nonfatal), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1,    D },
     { "timeout",        "set raise error timeout, in microseconds (only in read mode)",OFFSET(timeout),         AV_OPT_TYPE_INT,  {.i64 = 0}, 0, INT_MAX, D },
     { "sources",        "Source list",                                     OFFSET(sources),        AV_OPT_TYPE_STRING, { .str = NULL },               .flags = D|E },
@@ -525,7 +520,7 @@ static int udp_get_file_handle(URLContext *h)
     return s->udp_fd;
 }
 
-#if HAVE_PTHREAD_CANCEL
+#if HAVE_THREADS
 static void *circular_buffer_task_rx( void *_URLContext)
 {
     URLContext *h = _URLContext;
@@ -712,14 +707,14 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         if (ret < 0)
             goto fail;
     }
-    if (!HAVE_PTHREAD_CANCEL) {
+    if (!HAVE_THREADS) {
         int64_t      optvals[] = {s->overrun_nonfatal, s->bitrate, s->circular_buffer_size};
         const char* optnames[] = {  "overrun_nonfatal",  "bitrate",  "fifo_size"};
         for (unsigned i = 0; i < FF_ARRAY_ELEMS(optvals); i++) {
             if (optvals[i])
                 av_log(h, AV_LOG_WARNING,
                        "'%s' option was set but it is not supported "
-                       "on this build (pthread support is required)\n", optnames[i]);
+                       "on this build (threading support is required)\n", optnames[i]);
         }
     }
     if (s->sources) {
@@ -904,7 +899,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
 
     s->udp_fd = udp_fd;
 
-#if HAVE_PTHREAD_CANCEL
+#if HAVE_THREADS
     /*
       Create thread in case of:
       1. Input and circular_buffer_size is set
@@ -950,7 +945,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
 #endif
 
     return 0;
-#if HAVE_PTHREAD_CANCEL
+#if HAVE_THREADS
  thread_fail:
     pthread_cond_destroy(&s->cond);
  cond_fail:
@@ -979,7 +974,7 @@ static int udp_read(URLContext *h, uint8_t *buf, int size)
 {
     UDPContext *s = h->priv_data;
     int ret;
-#if HAVE_PTHREAD_CANCEL
+#if HAVE_THREADS
     int avail, nonblock = h->flags & AVIO_FLAG_NONBLOCK;
 
     if (s->rx_fifo) {
@@ -1047,7 +1042,7 @@ static int udp_write(URLContext *h, const uint8_t *buf, int size)
     UDPContext *s = h->priv_data;
     int ret;
 
-#if HAVE_PTHREAD_CANCEL
+#if HAVE_THREADS
     if (s->tx_fifo) {
         uint8_t tmp[4];
 
@@ -1096,7 +1091,7 @@ static int udp_close(URLContext *h)
 {
     UDPContext *s = h->priv_data;
 
-#if HAVE_PTHREAD_CANCEL
+#if HAVE_THREADS
     if (s->thread_started) {
         pthread_mutex_lock(&s->mutex);
         s->close_req = 1;
@@ -1108,7 +1103,7 @@ static int udp_close(URLContext *h)
     if (s->is_multicast && (h->flags & AVIO_FLAG_READ))
         udp_leave_multicast_group(s->udp_fd, (struct sockaddr *)&s->dest_addr,
                                   (struct sockaddr *)&s->local_addr_storage, h);
-#if HAVE_PTHREAD_CANCEL
+#if HAVE_THREADS
     if (s->thread_started) {
         int ret;
         ret = pthread_join(s->circular_buffer_thread, NULL);

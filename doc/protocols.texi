@@ -2517,6 +2517,7 @@ exclude the source addresses in the multicast subscription.
 @item fifo_size=@var{units}
 Set the UDP receiving circular buffer size, expressed as a number of
 packets with size of 188 bytes. If not specified defaults to 7*4096.
+Set to 0 to disable the receiving circular buffer and its receive thread.
 
 @item overrun_nonfatal=@var{1|0}
 Survive in case of UDP receiving circular buffer overrun. Default
