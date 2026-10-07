@@ -32,6 +32,7 @@ struct RTPMuxContext {
     uint32_t ssrc;
     const char *cname;
     int seq;
+    uint16_t seq_high;
     uint32_t timestamp;
     uint32_t base_timestamp;
     uint32_t cur_timestamp;
