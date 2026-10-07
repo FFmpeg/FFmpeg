@@ -88,6 +88,8 @@ static int send_picture(AVFormatContext *ctx, const uint8_t *buf, int size, int 
     }
 
     frag_len = (get_bits_count(&gc) + 7) / 8; /* length of transform parameters */
+    if (get_bits_left(&gc) < 0)
+        return AVERROR_INVALIDDATA;
 
     AV_WB32(&info_hdr[ 0], pic_nr);
     AV_WB16(&info_hdr[ 4], prefix_bytes);
