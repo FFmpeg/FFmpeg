@@ -124,6 +124,8 @@ void ff_rtp_send_vc2hq(AVFormatContext *ctx, const uint8_t *frame_buf, int frame
     while (end - unit >= DIRAC_DATA_UNIT_HEADER_SIZE) {
         parse_code = unit[4];
         unit_size = AV_RB32(&unit[5]);
+        if (!unit_size)
+            unit_size = end - unit;
 
         if (unit_size < DIRAC_DATA_UNIT_HEADER_SIZE || unit_size > end - unit)
             break;
