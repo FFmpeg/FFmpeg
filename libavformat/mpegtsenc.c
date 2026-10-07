@@ -1906,7 +1906,8 @@ static uint8_t *h26x_prefix_aud(const uint8_t *aud, const int aud_size,
         return NULL;
     AV_WB32(data, 0x00000001);
     memcpy(data + sz, aud, aud_size);
-    memcpy(data + sz + aud_size, extra_data, extra_size);
+    if (extra_size)
+        memcpy(data + sz + aud_size, extra_data, extra_size);
     memcpy(data + sz + aud_size + extra_size, pkt->data, pkt->size);
     *size = pkt->size + sz + aud_size + extra_size;
     return data;
