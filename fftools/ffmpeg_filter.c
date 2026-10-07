@@ -2908,6 +2908,7 @@ static int fg_output_step(OutputFilterPriv *ofp, FilterGraphThread *fgt,
                           AVFrame *frame)
 {
     FilterGraphPriv    *fgp = fgp_from_fg(ofp->ofilter.graph);
+    FilterGraph         *fg = &fgp->fg;
     AVFilterContext *filter = ofp->ofilter.filter;
     FrameData *fd;
     int ret;
@@ -2959,6 +2960,20 @@ static int fg_output_step(OutputFilterPriv *ofp, FilterGraphThread *fgt,
         ret = clone_side_data(&fd->side_data, &fd->nb_side_data,
                               ofp->side_data, ofp->nb_side_data, 0);
         if (ret < 0) {
+            av_frame_unref(frame);
+            return ret;
+        }
+    }
+
+    // Copy global side data to the output frame for the cases the
+    // filtergraph is internal (e.g. created to merge a Tile Grid)
+    // which don't come from a decoder that would have already
+    // copied said side data from the global decoder context.
+    if (fg->is_internal) {
+        ret = clone_side_data(&frame->side_data, &frame->nb_side_data,
+                              ofp->side_data, ofp->nb_side_data,
+                              AV_FRAME_SIDE_DATA_FLAG_REPLACE);
+        if (ret < 0 && ret != AVERROR(EEXIST)) {
             av_frame_unref(frame);
             return ret;
         }
