@@ -58,7 +58,7 @@ static int send_picture(AVFormatContext *ctx, const uint8_t *buf, int size, int 
     GetBitContext gc;
     int lvl, second_field;
     uint32_t pic_nr, wavelet_depth, prefix_bytes, size_scaler;
-    uint16_t frag_len;
+    int frag_len;
     char *info_hdr = &rtp_ctx->buf[4];
 
     if (size < DIRAC_PIC_NR_SIZE)
@@ -88,7 +88,7 @@ static int send_picture(AVFormatContext *ctx, const uint8_t *buf, int size, int 
     }
 
     frag_len = (get_bits_count(&gc) + 7) / 8; /* length of transform parameters */
-    if (get_bits_left(&gc) < 0)
+    if (get_bits_left(&gc) < 0 || frag_len > UINT16_MAX)
         return AVERROR_INVALIDDATA;
 
     AV_WB32(&info_hdr[ 0], pic_nr);
