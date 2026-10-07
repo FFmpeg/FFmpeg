@@ -156,7 +156,7 @@ static void vvcc_update_ptl(VVCDecoderConfigurationRecord *vvcc,
                 FFMAX(vvcc->ptl.sublayer_level_idc[i],
                       ptl->sublayer_level_idc[i]);
         } else {
-            if (i == vvcc->num_sublayers - 1) {
+            if (i == vvcc->num_sublayers - 2) {
                 vvcc->ptl.sublayer_level_idc[i] = vvcc->ptl.general_level_idc;
             } else {
                 vvcc->ptl.sublayer_level_idc[i] =
