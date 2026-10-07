@@ -76,6 +76,8 @@ static int send_picture(AVFormatContext *ctx, const uint8_t *buf, int size, int 
                     get_interleaved_ue_golomb(&gc); /* num_y */
     prefix_bytes  = get_interleaved_ue_golomb(&gc);
     size_scaler   = get_interleaved_ue_golomb(&gc);
+    if (prefix_bytes > UINT16_MAX || size_scaler > UINT16_MAX)
+        return AVERROR_INVALIDDATA;
     /* pass the quantization matrices */
     if (get_bits1(&gc)) {
         get_interleaved_ue_golomb(&gc);
