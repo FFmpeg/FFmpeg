@@ -747,7 +747,7 @@ static int config_input(AVFilterLink *inlink)
     for (rdft_bits = RDFT_BITS_MIN; rdft_bits <= RDFT_BITS_MAX; rdft_bits++) {
         s->rdft_len = 1 << rdft_bits;
         s->nsamples_max = s->rdft_len - s->fir_len + 1;
-        if (s->nsamples_max * 2 >= s->fir_len)
+        if ((int64_t)s->nsamples_max * 2 >= s->fir_len)
             break;
     }
 
