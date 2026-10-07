@@ -917,7 +917,12 @@ static int write_sm_data(AVFormatContext *s, AVIOContext *bc, AVPacket *pkt, int
                 put_s(dyn_bc, -2);
                 put_str(dyn_bc, "bin");
                 put_v(dyn_bc, size);
-                avio_write(dyn_bc, data, size);
+                if (HAVE_BIGENDIAN && pkt->side_data[i].type == AV_PKT_DATA_PALETTE) {
+                    for (int j = 0; j + 4 <= size; j += 4)
+                        avio_wl32(dyn_bc, AV_RN32(data + j));
+                    avio_write(dyn_bc, data + (size & ~3), size & 3);
+                } else
+                    avio_write(dyn_bc, data, size);
                 sm_data_count++;
                 break;
             case AV_PKT_DATA_PARAM_CHANGE:
