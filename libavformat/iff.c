@@ -567,7 +567,7 @@ static int iff_read_header(AVFormatContext *s)
                                      data_size + IFF_EXTRA_VIDEO_SIZE);
             if (res < 0)
                 return res;
-            if ((res = avio_read(pb, stv->codecpar->extradata + IFF_EXTRA_VIDEO_SIZE, data_size)) < 0) {
+            if ((res = ffio_read_size(pb, stv->codecpar->extradata + IFF_EXTRA_VIDEO_SIZE, data_size)) < 0) {
                 av_freep(&stv->codecpar->extradata);
                 stv->codecpar->extradata_size = 0;
                 return res;
