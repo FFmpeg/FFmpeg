@@ -147,6 +147,12 @@ fate-filter-firequalizer: CMP = oneoff
 fate-filter-firequalizer: CMP_UNIT = s16
 fate-filter-firequalizer: SIZE_TOLERANCE = 1058400 - 1097208
 
+# The FIR length fits in int, but no supported RDFT length can contain it.
+FATE_AFILTER-$(call ALLYES, LAVFI_INDEV SINE_FILTER FIREQUALIZER_FILTER ARESAMPLE_FILTER PCM_S16$(if $(filter yes,$(HAVE_BIGENDIAN)),BE,LE)_DECODER PCM_S16LE_ENCODER NULL_MUXER) += fate-filter-firequalizer-large-delay
+fate-filter-firequalizer-large-delay: CMD = ! run $(FFMPEG) -nostdin -hide_banner -f lavfi -i "sine=sample_rate=48000" -af "firequalizer=delay=12500" -c:a pcm_s16le -t 0.1 -f null -
+fate-filter-firequalizer-large-delay: CMP = grep
+fate-filter-firequalizer-large-delay: REF = too large delay, please decrease it.
+
 FATE_AFILTER-$(call FILTERDEMDECENCMUX, PAN, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-pan-mono1
 fate-filter-pan-mono1: tests/data/asynth-44100-2.wav
 fate-filter-pan-mono1: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
