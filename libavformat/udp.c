@@ -530,32 +530,30 @@ static void *circular_buffer_task_rx( void *_URLContext)
 {
     URLContext *h = _URLContext;
     UDPContext *s = h->priv_data;
-    int old_cancelstate;
 
     ff_thread_setname("udp-rx");
 
-    pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_cancelstate);
     pthread_mutex_lock(&s->mutex);
-    if (ff_socket_nonblock(s->udp_fd, 0) < 0) {
-        av_log(h, AV_LOG_ERROR, "Failed to set blocking mode");
-        s->circular_buffer_error = AVERROR(EIO);
-        goto end;
-    }
     while(1) {
         UDPQueuedPacketHeader pkt_header;
+        int err = 0;
+
+        if (s->close_req)
+            goto end;
+
         pkt_header.addr_len = sizeof(pkt_header.addr);
 
         pthread_mutex_unlock(&s->mutex);
-        /* Blocking operations are always cancellation points;
-           see "General Information" / "Thread Cancellation Overview"
-           in Single Unix. */
-        pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_cancelstate);
         pkt_header.pkt_size = recvfrom(s->udp_fd, s->tmp + sizeof(pkt_header), sizeof(s->tmp) - sizeof(pkt_header), 0, (struct sockaddr *)&pkt_header.addr, &pkt_header.addr_len);
-        pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_cancelstate);
+        if (pkt_header.pkt_size < 0) {
+            err = ff_neterrno();
+            if (err == AVERROR(EAGAIN))
+                err = ff_network_wait_fd(s->udp_fd, 0);
+        }
         pthread_mutex_lock(&s->mutex);
         if (pkt_header.pkt_size < 0) {
-            if (ff_neterrno() != AVERROR(EAGAIN) && ff_neterrno() != AVERROR(EINTR)) {
-                s->circular_buffer_error = ff_neterrno();
+            if (err < 0 && err != AVERROR(EAGAIN) && err != AVERROR(EINTR)) {
+                s->circular_buffer_error = err;
                 goto end;
             }
             continue;
@@ -891,7 +889,10 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         }
 
         /* make the socket non-blocking */
-        ff_socket_nonblock(udp_fd, 1);
+        if (ff_socket_nonblock(udp_fd, 1) < 0) {
+            ret = ff_neterrno();
+            goto fail;
+        }
     }
     if (s->is_connected) {
         if (connect(udp_fd, (struct sockaddr *) &s->dest_addr, s->dest_addr_len)) {
@@ -1096,8 +1097,7 @@ static int udp_close(URLContext *h)
     UDPContext *s = h->priv_data;
 
 #if HAVE_PTHREAD_CANCEL
-    // Request close once writing is finished
-    if (s->thread_started && !(h->flags & AVIO_FLAG_READ)) {
+    if (s->thread_started) {
         pthread_mutex_lock(&s->mutex);
         s->close_req = 1;
         pthread_cond_signal(&s->cond);
@@ -1111,18 +1111,6 @@ static int udp_close(URLContext *h)
 #if HAVE_PTHREAD_CANCEL
     if (s->thread_started) {
         int ret;
-        // Cancel only read, as write has been signaled as success to the user
-        if (h->flags & AVIO_FLAG_READ) {
-#ifdef _WIN32
-            /* recvfrom() is not a cancellation point for win32, so we shutdown
-             * the socket and abort pending IO, subsequent recvfrom() calls
-             * will fail with WSAESHUTDOWN causing the thread to exit. */
-            shutdown(s->udp_fd, SD_RECEIVE);
-            CancelIoEx((HANDLE)(SOCKET)s->udp_fd, NULL);
-#else
-            pthread_cancel(s->circular_buffer_thread);
-#endif
-        }
         ret = pthread_join(s->circular_buffer_thread, NULL);
         if (ret != 0)
             av_log(h, AV_LOG_ERROR, "pthread_join(): %s\n", strerror(ret));
