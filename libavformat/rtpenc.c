@@ -384,6 +384,8 @@ void ff_rtp_send_data(AVFormatContext *s1, const uint8_t *buf1, int len, int m)
     avio_flush(s1->pb);
 
     s->seq = (s->seq + 1) & 0xffff;
+    if (!s->seq)
+        s->seq_high++;
     s->octet_count += len;
     s->packet_count++;
 }

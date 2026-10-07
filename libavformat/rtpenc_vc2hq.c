@@ -43,7 +43,7 @@ static int send_packet(AVFormatContext *ctx, uint8_t parse_code, int info_hdr_si
         return AVERROR_INVALIDDATA;
     }
 
-    AV_WB16(&rtp_ctx->buf[0], 0); /* extended sequence number */
+    AV_WB16(&rtp_ctx->buf[0], rtp_ctx->seq_high); /* extended sequence number */
     AV_WB8 (&rtp_ctx->buf[2], i ? (f ? (0x03) : (0x02)) : 0x00); /* flags: interlaced, second field */
     AV_WB8 (&rtp_ctx->buf[3], parse_code);
     if (size > 0)
