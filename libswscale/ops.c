@@ -432,6 +432,10 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
                     dst->flags |= SWS_COMP_COPY;
                 }
             }
+
+            /* Forward unused/untouched components */
+            for (int i = op->rw.elems; i < 4; i++)
+                FORWARD(i, i, flags);
             break;
         case SWS_OP_SWAP_BYTES:
             for (int i = 0; i < 4; i++) {
