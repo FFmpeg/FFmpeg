@@ -227,12 +227,11 @@ typedef struct SwsLut3dOp {
 } SwsLut3dOp;
 
 typedef enum SwsCompFlags {
-    SWS_COMP_GARBAGE = 1 << 0, /* contents are undefined / garbage data */
-    SWS_COMP_EXACT   = 1 << 1, /* value is an exact integer */
-    SWS_COMP_ZERO    = 1 << 2, /* known to be a constant zero */
-    SWS_COMP_SWAPPED = 1 << 3, /* byte order is swapped */
-    SWS_COMP_COPY    = 1 << 4, /* value is unmodified from the source plane */
-    SWS_COMP_CONST   = 1 << 5, /* value is a fixed constant */
+    SWS_COMP_EXACT   = 1 << 0, /* value is an exact integer */
+    SWS_COMP_ZERO    = 1 << 1, /* known to be a constant zero */
+    SWS_COMP_SWAPPED = 1 << 2, /* byte order is swapped */
+    SWS_COMP_COPY    = 1 << 3, /* value is unmodified from the source plane */
+    SWS_COMP_CONST   = 1 << 4, /* value is a fixed constant */
 } SwsCompFlags;
 
 typedef struct SwsOpPad {
@@ -280,7 +279,7 @@ struct SwsOp {
     SwsOpList *ops;
 };
 
-#define SWS_OP_NEEDED(op, idx) (!((op)->outputs[idx].flags & SWS_COMP_GARBAGE))
+#define SWS_OP_NEEDED(op, idx) ((op)->outputs[idx].dep_out != 0)
 
 /* Compute SwsCompMask from a mask of needed components */
 SwsCompMask ff_sws_comp_mask_needed(const SwsOp *op);

@@ -322,7 +322,7 @@ enum {
 /* merge_comp_flags() forms a monoid with SWS_COMP_IDENTITY as the null element */
 static SwsCompFlags merge_comp_flags(SwsCompFlags a, SwsCompFlags b)
 {
-    const SwsCompFlags flags_or  = SWS_COMP_GARBAGE | SWS_COMP_SWAPPED;
+    const SwsCompFlags flags_or  = SWS_COMP_SWAPPED;
     const SwsCompFlags flags_and = SWS_COMP_IDENTITY;
     return ((a & b) & flags_and) | ((a | b) & flags_or);
 }
@@ -349,12 +349,7 @@ static void apply_filter_weights(SwsOpPad outputs[4], const SwsOpPad inputs[4],
 /* Infer + propagate known information about components */
 void ff_sws_op_list_update_comps(SwsOpList *ops)
 {
-    SwsOpPad prev[4] = {
-        { .flags = SWS_COMP_GARBAGE },
-        { .flags = SWS_COMP_GARBAGE },
-        { .flags = SWS_COMP_GARBAGE },
-        { .flags = SWS_COMP_GARBAGE },
-    };
+    SwsOpPad prev[4] = {0};
 
     /* Forwards pass, propagates knowledge about the incoming pixel values */
     for (int n = 0; n < ops->num_ops; n++) {
@@ -406,7 +401,7 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
         #define RESET(I) do {                                                   \
             SwsOpPad *dst = &op->outputs[I];                                    \
             dst->type = SWS_PIXEL_NONE;                                         \
-            dst->flags = SWS_COMP_GARBAGE;                                      \
+            dst->flags = 0;                                                     \
             dst->min = dst->max = (AVRational64) {0};                           \
             dst->dep_in = SWS_COMP_NONE;                                        \
         } while (0)
@@ -425,7 +420,6 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
 
                 const SwsOpPad *src = &ops->inputs[idx];
                 SwsOpPad *dst = &op->outputs[i];
-                av_assert0(!(src->flags & SWS_COMP_GARBAGE));
                 dst->type   = op->rw.type;
                 dst->flags  = src->flags & SWS_COMP_DIRTY;
                 dst->min    = src->min;
@@ -459,7 +453,7 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
             break;
         case SWS_OP_WRITE:
             for (int i = 0; i < op->rw.elems; i++)
-                av_assert1(!(prev[i].flags & SWS_COMP_GARBAGE));
+                av_assert1(prev[i].type == op->rw.type);
             for (int i = 0; i < 4; i++)
                 FORWARD(i, i, flags);
             break;
@@ -595,10 +589,9 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
         }
         case SWS_OP_LUT_3D:
             for (int i = 0; i < 3; i++) {
-                /* 3x3 dependency matrix; strip all information except
-                 * SWS_COMP_GARBAGE (for correctness validation) */
+                /* 3x3 dependency matrix; strip all information */
                 for (int j = 0; j < 3; j++)
-                    FORWARD(i, j, flags & SWS_COMP_GARBAGE);
+                    FORWARD(i, j, flags & 0);
                 /* LUT output domain is always scaled to full 16-bit range */
                 op->outputs[i].min = Q(0);
                 op->outputs[i].max = Q(UINT16_MAX);
@@ -879,9 +872,7 @@ uint32_t ff_sws_linear_mask(const SwsLinearOp *c)
 
 static const char *describe_comp_flags(SwsCompFlags flags)
 {
-    if (flags & SWS_COMP_GARBAGE)
-        return "garbage";
-    else if (flags & SWS_COMP_ZERO)
+    if (flags & SWS_COMP_ZERO)
         return "zero";
     else if (flags & SWS_COMP_SWAPPED)
         return "swapped";

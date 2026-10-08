@@ -250,8 +250,7 @@ static bool extract_scalar(const SwsLinearOp *c,
 
     for (int i = 0; i < 4; i++) {
         const AVRational64 s = c->m[i][i];
-        if ((inputs[i].flags  & SWS_COMP_ZERO) ||
-            (outputs[i].flags & SWS_COMP_GARBAGE))
+        if ((inputs[i].flags & SWS_COMP_ZERO) || !outputs[i].dep_out)
             continue;
         if (scale.factor.den && ff_cmp_q64(s, scale.factor))
             return false;
@@ -468,7 +467,7 @@ retry:
                     continue;
 
                 if ((prev->outputs[i].flags & SWS_COMP_ZERO) &&
-                    !(prev->outputs[i].flags & SWS_COMP_GARBAGE) &&
+                    prev->outputs[i].type == op->clear.type[i] &&
                     op->clear.value[i].num == 0)
                 {
                     /* Redundant clear-to-zero of zero component */
