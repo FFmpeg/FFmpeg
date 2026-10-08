@@ -298,6 +298,13 @@ static int config_output(AVFilterLink *outlink)
                 return ret;
         }
 
+        if (lilv_plugin_has_feature(s->plugin, s->powerOf2BlockLength) ||
+            lilv_plugin_has_feature(s->plugin, s->fixedBlockLength) ||
+            lilv_plugin_has_feature(s->plugin, s->boundedBlockLength)) {
+            FilterLink *inl = ff_filter_link(inlink);
+
+            inl->min_samples = inl->max_samples = 4096;
+        }
     } else {
         outlink->sample_rate = sample_rate = s->sample_rate;
         outlink->time_base   = (AVRational){1, s->sample_rate};
@@ -378,15 +385,6 @@ static int config_output(AVFilterLink *outlink)
             index = lilv_port_get_index(s->plugin, port);
             s->controls[index] = val;
         }
-    }
-
-    if (s->nb_inputs &&
-        (lilv_plugin_has_feature(s->plugin, s->powerOf2BlockLength) ||
-         lilv_plugin_has_feature(s->plugin, s->fixedBlockLength) ||
-         lilv_plugin_has_feature(s->plugin, s->boundedBlockLength))) {
-        FilterLink *inlink = ff_filter_link(ctx->inputs[0]);
-
-        inlink->min_samples = inlink->max_samples = 4096;
     }
 
     lilv_instance_activate(s->instance);
