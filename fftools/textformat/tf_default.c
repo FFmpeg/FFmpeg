@@ -36,7 +36,6 @@ typedef struct DefaultContext {
     const AVClass *class;
     int nokey;
     int noprint_wrappers;
-    int nested_section[SECTION_MAX_NB_LEVELS];
 } DefaultContext;
 
 #undef OFFSET
@@ -63,27 +62,32 @@ static inline char *upcase_string(char *dst, size_t dst_size, const char *src)
     return dst;
 }
 
+static int default_is_nested(AVTextFormatContext *wctx)
+{
+    const AVTextFormatSection *parent_section = tf_get_parent_section(wctx, wctx->level);
+
+    return parent_section &&
+           !(parent_section->flags & (AV_TEXTFORMAT_SECTION_FLAG_IS_WRAPPER | AV_TEXTFORMAT_SECTION_FLAG_IS_ARRAY));
+}
+
 static void default_print_section_header(AVTextFormatContext *wctx, const void *data)
 {
     DefaultContext *def = wctx->priv;
     char buf[32];
     const AVTextFormatSection *section = tf_get_section(wctx, wctx->level);
-    const AVTextFormatSection *parent_section = tf_get_parent_section(wctx, wctx->level);
+    int nested = default_is_nested(wctx);
 
     if (!section)
         return;
 
     av_bprint_clear(&wctx->section_pbuf[wctx->level]);
-    if (parent_section &&
-        !(parent_section->flags & (AV_TEXTFORMAT_SECTION_FLAG_IS_WRAPPER | AV_TEXTFORMAT_SECTION_FLAG_IS_ARRAY))) {
-        def->nested_section[wctx->level] = 1;
+    if (nested)
         av_bprintf(&wctx->section_pbuf[wctx->level], "%s%s:",
                    wctx->section_pbuf[wctx->level - 1].str,
                    upcase_string(buf, sizeof(buf),
                                  av_x_if_null(section->element_name, section->name)));
-    }
 
-    if (def->noprint_wrappers || def->nested_section[wctx->level])
+    if (def->noprint_wrappers || nested)
         return;
 
     if (!(section->flags & (AV_TEXTFORMAT_SECTION_FLAG_IS_WRAPPER | AV_TEXTFORMAT_SECTION_FLAG_IS_ARRAY)))
@@ -100,7 +104,7 @@ static void default_print_section_footer(AVTextFormatContext *wctx)
     if (!section)
         return;
 
-    if (def->noprint_wrappers || def->nested_section[wctx->level])
+    if (def->noprint_wrappers || default_is_nested(wctx))
         return;
 
     if (!(section->flags & (AV_TEXTFORMAT_SECTION_FLAG_IS_WRAPPER | AV_TEXTFORMAT_SECTION_FLAG_IS_ARRAY)))
