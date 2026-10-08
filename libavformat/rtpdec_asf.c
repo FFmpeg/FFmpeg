@@ -250,6 +250,7 @@ static int asfrtp_parse_packet(AVFormatContext *s, PayloadContext *asf,
                 avio_skip(pb, len - off);
                 if (!(flags & RTP_FLAG_MARKER))
                     return -1;
+                av_freep(&asf->buf);
                 out_len     = avio_close_dyn_buf(asf->pktbuf, &asf->buf);
                 asf->pktbuf = NULL;
             } else {
