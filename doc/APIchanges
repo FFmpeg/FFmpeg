@@ -2,6 +2,9 @@ The last version increases of all libraries were on 2026-06-23.
 
 API changes, most recent first:
 
+2026-10-xx - xxxxxxxxxx - lavu 61.13.100 - raw_color_params.h
+  Add AV_RAW_COLOR_PARAMS_RW2 and AVRW2RawColorParams.
+
 2026-10-xx - xxxxxxxxxx - lavc 63.18.100 - codec_id.h
   Add AV_CODEC_ID_RW2.
 

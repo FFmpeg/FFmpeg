@@ -35,6 +35,12 @@ enum AVRawColorParamsType {
      * (codec.prores_raw).
      */
     AV_RAW_COLOR_PARAMS_PRORES_RAW,
+
+    /**
+     * The union is valid when interpreted as AVRW2RawColorParams
+     * (codec.rw2).
+     */
+    AV_RAW_COLOR_PARAMS_RW2,
 };
 
 /**
@@ -81,6 +87,29 @@ typedef struct AVProResRawColorParams {
 } AVProResRawColorParams;
 
 /**
+ * Panasonic RW2 as-shot white balance, from the file's WB level tags.
+ *
+ * The file carries no camera matrix. After white balance and debayering,
+ * camera RGB needs a profile for the camera model, which the EXIF side data
+ * names.
+ *
+ * @note The struct must be allocated as part of AVRawColorParams using
+ *       av_raw_color_params_alloc(). Its size is not a part of the public ABI.
+ */
+typedef struct AVRW2RawColorParams {
+    /**
+     * White balance multiplier for the red channel, applied pre-debayer.
+     */
+    AVRational wb_red;
+
+    /**
+     * White balance multiplier for the blue channel, applied pre-debayer.
+     * The green channel is implicitly 1.0.
+     */
+    AVRational wb_blue;
+} AVRW2RawColorParams;
+
+/**
  * Per-frame color information for a RAW camera codec. Carried as side data of
  * type AV_FRAME_DATA_RAW_COLOR_PARAMS.
  *
@@ -125,6 +154,7 @@ typedef struct AVRawColorParams {
      */
     union {
         AVProResRawColorParams prores_raw;
+        AVRW2RawColorParams rw2;
     } codec;
 } AVRawColorParams;
 
