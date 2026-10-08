@@ -615,6 +615,9 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
         memcpy(prev, op->outputs, sizeof(prev));
     }
 
+    #undef FORWARD
+    #undef RESET
+
     /* Backwards pass, solves for output component dependencies */
     SwsCompMask need_out[4] = {0};
 
@@ -622,11 +625,8 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
         SwsOp *op = &ops->ops[n];
         SwsCompMask need_in[4] = {0};
 
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 4; i++)
             op->outputs[i].dep_out = need_out[i];
-            if (!need_out[i])
-                RESET(i);
-        }
 
         switch (op->op) {
         case SWS_OP_READ:
@@ -684,9 +684,6 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
 
         memcpy(need_out, need_in, sizeof(need_in));
     }
-
-    #undef FORWARD
-    #undef RESET
 }
 
 static void op_uninit(SwsOp *op)
