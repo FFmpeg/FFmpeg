@@ -91,9 +91,14 @@ typedef struct CompactContext {
     int print_section;
     char *escape_mode_str;
     const char * (*escape_str)(AVBPrint *dst, const char *src, const char sep, void *log_ctx);
-    int nested_section[SECTION_MAX_NB_LEVELS];
-    int has_nested_elems[SECTION_MAX_NB_LEVELS];
-    int terminate_line[SECTION_MAX_NB_LEVELS];
+    /** level of the row whose line the fields at this level belong to, -1 for none */
+    int row_level[SECTION_MAX_NB_LEVELS];
+    /** number of fields written to the row at this level */
+    int nb_fields[SECTION_MAX_NB_LEVELS];
+    /** the line of the row at this level */
+    AVBPrint line[SECTION_MAX_NB_LEVELS];
+    /** the lines of the rows nested in the row at this level */
+    AVBPrint rows[SECTION_MAX_NB_LEVELS];
 } CompactContext;
 
 #undef OFFSET
@@ -117,6 +122,11 @@ static av_cold int compact_init(AVTextFormatContext *wctx)
 {
     CompactContext *compact = wctx->priv;
 
+    for (int i = 0; i < SECTION_MAX_NB_LEVELS; i++) {
+        av_bprint_init(&compact->line[i], 1, AV_BPRINT_SIZE_UNLIMITED);
+        av_bprint_init(&compact->rows[i], 1, AV_BPRINT_SIZE_UNLIMITED);
+    }
+
     if (strlen(compact->item_sep_str) != 1) {
         av_log(wctx, AV_LOG_ERROR, "Item separator '%s' specified, but must contain a single character\n",
                compact->item_sep_str);
@@ -138,13 +148,21 @@ static av_cold int compact_init(AVTextFormatContext *wctx)
     return 0;
 }
 
-static int array_has_inline_elems(const AVTextFormatContext *wctx,
-                                  const AVTextFormatSection *section)
+static av_cold int compact_uninit(AVTextFormatContext *wctx)
 {
-    for (int i = 0; section->children_ids[i] != -1; i++)
-        if (wctx->sections[section->children_ids[i]].flags & AV_TEXTFORMAT_SECTION_FLAG_HAS_TYPE)
-            return 1;
+    CompactContext *compact = wctx->priv;
+
+    for (int i = 0; i < SECTION_MAX_NB_LEVELS; i++) {
+        av_bprint_finalize(&compact->line[i], NULL);
+        av_bprint_finalize(&compact->rows[i], NULL);
+    }
+
     return 0;
+}
+
+static void bprint_append_bprint(AVBPrint *dst, const AVBPrint *src)
+{
+    av_bprint_append_data(dst, src->str, FFMIN(src->len, src->size - 1));
 }
 
 static void compact_print_section_header(AVTextFormatContext *wctx, const void *data)
@@ -152,29 +170,27 @@ static void compact_print_section_header(AVTextFormatContext *wctx, const void *
     CompactContext *compact = wctx->priv;
     const AVTextFormatSection *section = tf_get_section(wctx, wctx->level);
     const AVTextFormatSection *parent_section = tf_get_parent_section(wctx, wctx->level);
+    int level = wctx->level;
 
     if (!section)
         return;
 
-    compact->terminate_line[wctx->level] = 1;
-    compact->has_nested_elems[wctx->level] = 0;
+    av_bprint_clear(&wctx->section_pbuf[level]);
+    compact->row_level[level] = level ? compact->row_level[level - 1] : -1;
 
-    av_bprint_clear(&wctx->section_pbuf[wctx->level]);
     if (parent_section &&
         (section->flags & AV_TEXTFORMAT_SECTION_FLAG_HAS_TYPE ||
             (!(section->flags & AV_TEXTFORMAT_SECTION_FLAG_IS_ARRAY) &&
                 !(parent_section->flags & (AV_TEXTFORMAT_SECTION_FLAG_IS_WRAPPER | AV_TEXTFORMAT_SECTION_FLAG_IS_ARRAY))))) {
 
         /* define a prefix for elements not contained in an array or
-           in a wrapper, or for array elements with a type */
+           in a wrapper, or for array elements with a type, their
+           fields continue the line of the enclosing row */
         const char *element_name = (char *)av_x_if_null(section->element_name, section->name);
-        AVBPrint *section_pbuf = &wctx->section_pbuf[wctx->level];
-
-        compact->nested_section[wctx->level] = 1;
-        compact->has_nested_elems[wctx->level - 1] = 1;
+        AVBPrint *section_pbuf = &wctx->section_pbuf[level];
 
         av_bprintf(section_pbuf, "%s%s",
-                   wctx->section_pbuf[wctx->level - 1].str, element_name);
+                   wctx->section_pbuf[level - 1].str, element_name);
 
         if (section->flags & AV_TEXTFORMAT_SECTION_FLAG_HAS_TYPE) {
             // add /TYPE to prefix
@@ -190,39 +206,65 @@ static void compact_print_section_header(AVTextFormatContext *wctx, const void *
             }
         }
         av_bprint_chars(section_pbuf, ':', 1);
-
-        wctx->nb_item[wctx->level] = wctx->nb_item[wctx->level - 1];
-    } else {
-        if (parent_section && !(parent_section->flags & (AV_TEXTFORMAT_SECTION_FLAG_IS_WRAPPER | AV_TEXTFORMAT_SECTION_FLAG_IS_ARRAY))) {
-            int *parent_open = &compact->terminate_line[wctx->level - 1];
-            if (section->flags & AV_TEXTFORMAT_SECTION_FLAG_IS_ARRAY && !array_has_inline_elems(wctx, section)) {
-                /* Row elements end the parent's line, its footer must not do it again. */
-                if (*parent_open)
-                    writer_w8(wctx, '\n');
-                *parent_open = 0;
-            } else if (wctx->level && wctx->nb_item[wctx->level - 1]) {
-                writer_w8(wctx, compact->item_sep);
-                *parent_open = 1;
-            }
-        }
-        if (compact->print_section &&
-            !(section->flags & (AV_TEXTFORMAT_SECTION_FLAG_IS_WRAPPER | AV_TEXTFORMAT_SECTION_FLAG_IS_ARRAY)))
-            writer_printf(wctx, "%s%c", section->name, compact->item_sep);
+        return;
     }
+
+    if (section->flags & (AV_TEXTFORMAT_SECTION_FLAG_IS_WRAPPER | AV_TEXTFORMAT_SECTION_FLAG_IS_ARRAY))
+        return;
+
+    /* a row, printed as one line once the section ends */
+    compact->row_level[level] = level;
+    compact->nb_fields[level] = 0;
+    av_bprint_clear(&compact->line[level]);
+    av_bprint_clear(&compact->rows[level]);
+    if (compact->print_section)
+        av_bprintf(&compact->line[level], "%s", section->name);
 }
 
 static void compact_print_section_footer(AVTextFormatContext *wctx)
 {
     CompactContext *compact = wctx->priv;
     const AVTextFormatSection *section = tf_get_section(wctx, wctx->level);
+    int level = wctx->level;
+    int parent_row;
 
-    if (!section)
+    if (!section || compact->row_level[level] != level)
         return;
 
-    if (!compact->nested_section[wctx->level] &&
-        compact->terminate_line[wctx->level] &&
-        !(section->flags & (AV_TEXTFORMAT_SECTION_FLAG_IS_WRAPPER | AV_TEXTFORMAT_SECTION_FLAG_IS_ARRAY)))
-        writer_w8(wctx, '\n');
+    /* the row's line, followed by the lines of the rows nested in it */
+    av_bprint_chars(&compact->line[level], '\n', 1);
+    bprint_append_bprint(&compact->line[level], &compact->rows[level]);
+
+    parent_row = level ? compact->row_level[level - 1] : -1;
+    if (parent_row >= 0)
+        bprint_append_bprint(&compact->rows[parent_row], &compact->line[level]);
+    else
+        writer_put_str(wctx, compact->line[level].str);
+}
+
+static void compact_print_field(AVTextFormatContext *wctx, const char *key, const char *value)
+{
+    CompactContext *compact = wctx->priv;
+    int row = compact->row_level[wctx->level];
+    AVBPrint tmp, *line = &tmp;
+
+    if (row >= 0) {
+        line = &compact->line[row];
+        if (compact->nb_fields[row]++ || compact->print_section)
+            av_bprint_chars(line, compact->item_sep, 1);
+    } else {
+        /* a field outside of any row */
+        av_bprint_init(&tmp, 1, AV_BPRINT_SIZE_UNLIMITED);
+    }
+
+    if (!compact->nokey)
+        av_bprintf(line, "%s%s=", wctx->section_pbuf[wctx->level].str, key);
+    av_bprintf(line, "%s", value);
+
+    if (line == &tmp) {
+        writer_put_str(wctx, tmp.str);
+        av_bprint_finalize(&tmp, NULL);
+    }
 }
 
 static void compact_print_str(AVTextFormatContext *wctx, const char *key, const char *value)
@@ -230,34 +272,24 @@ static void compact_print_str(AVTextFormatContext *wctx, const char *key, const 
     CompactContext *compact = wctx->priv;
     AVBPrint buf;
 
-    if (wctx->nb_item[wctx->level])
-        writer_w8(wctx, compact->item_sep);
-
-    if (!compact->nokey)
-        writer_printf(wctx, "%s%s=", wctx->section_pbuf[wctx->level].str, key);
-
     av_bprint_init(&buf, 1, AV_BPRINT_SIZE_UNLIMITED);
-    writer_put_str(wctx, compact->escape_str(&buf, value, compact->item_sep, wctx));
+    compact_print_field(wctx, key, compact->escape_str(&buf, value, compact->item_sep, wctx));
     av_bprint_finalize(&buf, NULL);
 }
 
 static void compact_print_int(AVTextFormatContext *wctx, const char *key, int64_t value)
 {
-    CompactContext *compact = wctx->priv;
+    char buf[32];
 
-    if (wctx->nb_item[wctx->level])
-        writer_w8(wctx, compact->item_sep);
-
-    if (!compact->nokey)
-        writer_printf(wctx, "%s%s=", wctx->section_pbuf[wctx->level].str, key);
-
-    writer_printf(wctx, "%"PRId64, value);
+    snprintf(buf, sizeof(buf), "%"PRId64, value);
+    compact_print_field(wctx, key, buf);
 }
 
 const AVTextFormatter avtextformatter_compact = {
     .name                 = "compact",
     .priv_size            = sizeof(CompactContext),
     .init                 = compact_init,
+    .uninit               = compact_uninit,
     .print_section_header = compact_print_section_header,
     .print_section_footer = compact_print_section_footer,
     .print_integer        = compact_print_int,
@@ -289,6 +321,7 @@ const AVTextFormatter avtextformatter_csv = {
     .name                 = "csv",
     .priv_size            = sizeof(CompactContext),
     .init                 = compact_init,
+    .uninit               = compact_uninit,
     .print_section_header = compact_print_section_header,
     .print_section_footer = compact_print_section_footer,
     .print_integer        = compact_print_int,
