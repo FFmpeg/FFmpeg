@@ -947,6 +947,8 @@ following image formats are supported:
     @tab V.Flash PTX format
 @item QOI          @tab X @tab X
     @tab Quite OK Image format
+@item RW2          @tab   @tab X
+    @tab Panasonic raw image, RawFormat 8 only
 @item SGI          @tab X @tab X
     @tab SGI RGB image format
 @item Sun Rasterfile  @tab X @tab X

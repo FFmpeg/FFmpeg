@@ -982,6 +982,13 @@ static int tiff_probe(const AVProbeData *p)
     return 0;
 }
 
+static int rw2_probe(const AVProbeData *p)
+{
+    if (AV_RB32(p->buf) == 0x49495500 && AV_RL32(p->buf + 4) >= 8)
+        return AVPROBE_SCORE_MAX;
+    return 0;
+}
+
 static int webp_probe(const AVProbeData *p)
 {
     const uint8_t *b = p->buf;
@@ -1241,6 +1248,7 @@ IMAGEAUTO_DEMUXER(ppm,       PPM)
 IMAGEAUTO_DEMUXER(psd,       PSD)
 IMAGEAUTO_DEMUXER(qdraw,     QDRAW)
 IMAGEAUTO_DEMUXER(qoi,       QOI)
+IMAGEAUTO_DEMUXER(rw2,       RW2)
 IMAGEAUTO_DEMUXER(sgi,       SGI)
 IMAGEAUTO_DEMUXER(sunrast,   SUNRAST)
 IMAGEAUTO_DEMUXER(svg,       SVG)

@@ -57,6 +57,7 @@
     TAG(TIFF,            tiff     ) \
     TAG(TIFF,            tif      ) \
     TAG(TIFF,            dng      ) \
+    TAG(RW2,             rw2      ) \
     TAG(SGI,             sgi      ) \
     TAG(PTX,             ptx      ) \
     TAG(PHOTOCD,         pcd      ) \
