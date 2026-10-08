@@ -188,9 +188,12 @@ static void build_frame_code(AVFormatContext *s)
         start++;
     }
 
-    for (stream_id = 0; stream_id < s->nb_streams; stream_id++) {
-        int start2 = start + (end - start) * stream_id       / s->nb_streams;
-        int end2   = start + (end - start) * (stream_id + 1) / s->nb_streams;
+    /* Each stream needs up to 6 frame codes, streams beyond use the escape frame codes */
+    int nb_frame_code_streams = FFMIN(s->nb_streams, (end - start) / 6);
+
+    for (stream_id = 0; stream_id < nb_frame_code_streams; stream_id++) {
+        int start2 = start + (end - start) * stream_id       / nb_frame_code_streams;
+        int end2   = start + (end - start) * (stream_id + 1) / nb_frame_code_streams;
         AVCodecParameters *par        = s->streams[stream_id]->codecpar;
         int is_audio                  = par->codec_type == AVMEDIA_TYPE_AUDIO;
         int intra_only        = /*codec->intra_only || */ is_audio;
