@@ -24,6 +24,7 @@
  * Calculate the VMAF between two input videos.
  */
 
+#include "config.h"
 #include "config_components.h"
 
 #include <libvmaf.h>
@@ -105,6 +106,39 @@ static enum VmafPixelFormat pix_fmt_map(enum AVPixelFormat av_pix_fmt)
     }
 }
 
+#if HAVE_LIBVMAF_PICTURE_WRAP
+static int release_frame(VmafPicture *pic, void *cookie)
+{
+    AVFrame *frame = cookie;
+    av_frame_free(&frame);
+    return 0;
+}
+
+static int wrap_picture_data(AVFrame *src, VmafPicture *dst, unsigned bpc)
+{
+    AVFrame *ref = av_frame_clone(src);
+    if (!ref)
+        return AVERROR(ENOMEM);
+
+    VmafPictureWrapped pic_wrapped = {
+        .pix_fmt = pix_fmt_map(src->format),
+        .bpc = bpc,
+        .w = src->width,
+        .h = src->height,
+        .data = { src->data[0], src->data[1], src->data[2] },
+        .stride = { src->linesize[0], src->linesize[1], src->linesize[2] },
+        .cookie = ref,
+        .release_picture = release_frame,
+    };
+
+    if (vmaf_picture_wrap(dst, pic_wrapped)) {
+        av_frame_free(&ref);
+        return AVERROR(ENOMEM);
+    }
+
+    return 0;
+}
+#else
 static int copy_picture_data(AVFrame *src, VmafPicture *dst, unsigned bpc)
 {
     const int bytes_per_value = bpc > 8 ? 2 : 1;
@@ -124,6 +158,16 @@ static int copy_picture_data(AVFrame *src, VmafPicture *dst, unsigned bpc)
     }
 
     return 0;
+}
+#endif
+
+static int get_picture(AVFrame *src, VmafPicture *dst, unsigned bpc)
+{
+#if HAVE_LIBVMAF_PICTURE_WRAP
+    return wrap_picture_data(src, dst, bpc);
+#else
+    return copy_picture_data(src, dst, bpc);
+#endif
 }
 
 static int do_vmaf(FFFrameSync *fs)
@@ -147,13 +191,13 @@ static int do_vmaf(FFFrameSync *fs)
                av_color_range_name(ref->color_range));
     }
 
-    err = copy_picture_data(ref, &pic_ref, s->bpc);
+    err = get_picture(ref, &pic_ref, s->bpc);
     if (err) {
         av_log(ctx, AV_LOG_ERROR, "problem during vmaf_picture_alloc.\n");
         return AVERROR(ENOMEM);
     }
 
-    err = copy_picture_data(dist, &pic_dist, s->bpc);
+    err = get_picture(dist, &pic_dist, s->bpc);
     if (err) {
         av_log(ctx, AV_LOG_ERROR, "problem during vmaf_picture_alloc.\n");
         vmaf_picture_unref(&pic_ref);
