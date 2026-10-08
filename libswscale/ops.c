@@ -688,6 +688,26 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
         update_input_pads(ops, &ops->ops[n], need_out);
 }
 
+static void op_ref(SwsOp *op)
+{
+    switch (op->op) {
+    case SWS_OP_READ:
+        if (op->rw.filter.kernel)
+            av_refstruct_ref(op->rw.filter.kernel);
+        break;
+    case SWS_OP_DITHER:
+        av_refstruct_ref(op->dither.matrix);
+        break;
+    case SWS_OP_FILTER_H:
+    case SWS_OP_FILTER_V:
+        av_refstruct_ref(op->filter.kernel);
+        break;
+    case SWS_OP_LUT_3D:
+        av_refstruct_ref_c(op->lut3d.lut);
+        break;
+    }
+}
+
 static void op_uninit(SwsOp *op)
 {
     switch (op->op) {
@@ -754,25 +774,8 @@ SwsOpList *ff_sws_op_list_duplicate(const SwsOpList *ops)
     }
 
     for (int i = 0; i < copy->num_ops; i++) {
-        SwsOp *op = &copy->ops[i];
-        op->ops = copy;
-
-        switch (op->op) {
-        case SWS_OP_READ:
-            if (op->rw.filter.kernel)
-                av_refstruct_ref(op->rw.filter.kernel);
-            break;
-        case SWS_OP_DITHER:
-            av_refstruct_ref(op->dither.matrix);
-            break;
-        case SWS_OP_FILTER_H:
-        case SWS_OP_FILTER_V:
-            av_refstruct_ref(op->filter.kernel);
-            break;
-        case SWS_OP_LUT_3D:
-            av_refstruct_ref_c(op->lut3d.lut);
-            break;
-        }
+        op_ref(&copy->ops[i]);
+        copy->ops[i].ops = copy;
     }
 
     return copy;
