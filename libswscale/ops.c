@@ -702,7 +702,9 @@ SwsOpList *ff_sws_op_list_duplicate(const SwsOpList *ops)
     }
 
     for (int i = 0; i < copy->num_ops; i++) {
-        const SwsOp *op = &copy->ops[i];
+        SwsOp *op = &copy->ops[i];
+        op->ops = copy;
+
         switch (op->op) {
         case SWS_OP_READ:
             if (op->rw.filter.kernel)
@@ -764,6 +766,7 @@ int ff_sws_op_list_insert_at(SwsOpList *ops, int index, SwsOp *op)
     for (int i = ops->num_ops - 1; i > index; i--)
         ops->ops[i] = ops->ops[i - 1];
     ops->ops[index] = *op;
+    ops->ops[index].ops = ops;
     return 0;
 }
 

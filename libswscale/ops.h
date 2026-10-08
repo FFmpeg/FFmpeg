@@ -238,7 +238,10 @@ typedef struct SwsOpPad {
     SwsCompMask dep_in, dep_out;
 } SwsOpPad;
 
-typedef struct SwsOp {
+typedef struct SwsOp     SwsOp;
+typedef struct SwsOpList SwsOpList;
+
+struct SwsOp {
     SwsOpType op;      /* operation to perform */
     SwsPixelType type; /* pixel type to operate on */
     union {
@@ -264,7 +267,10 @@ typedef struct SwsOp {
      * metadata for all operations, during ff_sws_ops_compile().
      */
     SwsOpPad outputs[4];
-} SwsOp;
+
+    /* Link back to the SwsOpList that owns this operation */
+    SwsOpList *ops;
+};
 
 #define SWS_OP_NEEDED(op, idx) (!((op)->outputs[idx].flags & SWS_COMP_GARBAGE))
 
