@@ -803,11 +803,8 @@ int av_frame_apply_cropping(AVFrame *frame, int flags)
             min_log2_align = FFMIN(log2_align, min_log2_align);
         }
 
-        /* we assume, and it should always be true, that the data alignment is
-         * related to the cropping alignment by a constant power-of-2 factor */
-        if (log2_crop_align < min_log2_align)
-            return AVERROR_BUG;
-
+        /* The data alignment is the cropping alignment scaled by a power of 2,
+         * up for multi-byte pixels and down for subsampled planes */
         if (min_log2_align < 5 && log2_crop_align != INT_MAX) {
             frame->crop_left &= ~((1 << (5 + log2_crop_align - min_log2_align)) - 1);
             ret = calc_cropping_offsets(offsets, frame, desc);
