@@ -415,6 +415,7 @@ static void exif_write_values(PutByteContext *pb, int le, const AVExifEntry *ent
 }
 
 static const uint8_t aoc_header[] = { 'A', 'O', 'C', 0, };
+static const uint8_t apple_header[] = { 'A', 'p', 'p', 'l', 'e', ' ', 'i', 'O', 'S', 0, 0, 1, 'M', 'M'};
 static const uint8_t casio_header[] = { 'Q', 'V', 'C', 0, 0, 0, };
 static const uint8_t foveon_header[] = { 'F', 'O', 'V', 'E', 'O', 'N', 0, 0, };
 static const uint8_t fuji_header[] = { 'F', 'U', 'J', 'I', };
@@ -439,6 +440,7 @@ struct exif_makernote_data {
 
 static const struct exif_makernote_data makernote_data[] = {
     MAKERNOTE_STRUCT(aoc_header, 6),
+    MAKERNOTE_STRUCT(apple_header, 14),
     MAKERNOTE_STRUCT(casio_header, -1),
     MAKERNOTE_STRUCT(foveon_header, 10),
     MAKERNOTE_STRUCT(fuji_header, -1),
