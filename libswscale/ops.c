@@ -327,23 +327,19 @@ static SwsCompFlags merge_comp_flags(SwsCompFlags a, SwsCompFlags b)
     return ((a & b) & flags_and) | ((a | b) & flags_or);
 }
 
-static void apply_filter_weights(SwsOpPad outputs[4], const SwsOpPad inputs[4],
-                                 const SwsFilterWeights *weights)
+static void apply_filter_weights(SwsOpPad *pad, const SwsFilterWeights *weights)
 {
     const AVRational64 posw = { weights->sum_positive, SWS_FILTER_SCALE };
     const AVRational64 negw = { weights->sum_negative, SWS_FILTER_SCALE };
-    for (int i = 0; i < 4; i++) {
-        outputs[i].flags  = inputs[i].flags & SWS_COMP_DIRTY;
-        outputs[i].dep_in = inputs[i].dep_in;
-        /* Only point sampling preserves exactness */
-        if (weights->filter_size != 1)
-            outputs[i].flags &= ~SWS_COMP_EXACT;
-        /* Update min/max assuming extremes */
-        outputs[i].min = ff_add_q64(ff_mul_q64(inputs[i].min, posw),
-                                    ff_mul_q64(inputs[i].max, negw));
-        outputs[i].max = ff_add_q64(ff_mul_q64(inputs[i].min, negw),
-                                    ff_mul_q64(inputs[i].max, posw));
-    }
+
+    /* Only point sampling preserves exactness */
+    if (weights->filter_size != 1)
+        pad->flags &= ~SWS_COMP_EXACT;
+
+    /* Update min/max assuming extremes */
+    const AVRational64 min = pad->min, max = pad->max;
+    pad->min = ff_add_q64(ff_mul_q64(min, posw), ff_mul_q64(max, negw));
+    pad->max = ff_add_q64(ff_mul_q64(min, negw), ff_mul_q64(max, posw));
 }
 
 /* Infer + propagate known information about components */
@@ -360,8 +356,6 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
         case SWS_OP_DITHER:
         case SWS_OP_SWAP_BYTES:
         case SWS_OP_UNPACK:
-        case SWS_OP_FILTER_H:
-        case SWS_OP_FILTER_V:
         case SWS_OP_LUT_3D:
             break; /* special cases, handled below */
         default: {
@@ -426,22 +420,17 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
                 dst->max    = src->max;
                 dst->dep_in = SWS_COMP(i);
 
-                /**
-                 * Don't mark packed or fractional reads as a copy, because the
-                 * read operation implicitly unpacks the data into separate
-                 * components. The only case in which op lists involving such
-                 * reads can be refcopies is in the case of a true noop, which
-                 * is already covered by the no-op check.
-                 */
-                if (op->rw.mode == SWS_RW_PLANAR && !op->rw.frac)
+                if (op->rw.filter.op) {
+                    apply_filter_weights(dst, op->rw.filter.kernel);
+                    dst->type = op->rw.filter.type;
+                } else if (op->rw.mode == SWS_RW_PLANAR && !op->rw.frac) {
+                    /* Don't mark packed or fractional reads as a copy, because
+                     * the read operation implicitly unpacks the data into
+                     * separate components. The only case in which op lists
+                     * involving such reads can be refcopies is in the case of
+                     * a true no-op, which is covered by the no-op check. */
                     dst->flags |= SWS_COMP_COPY;
-            }
-
-            if (op->rw.filter.op) {
-                memcpy(prev, op->outputs, sizeof(prev));
-                apply_filter_weights(op->outputs, prev, op->rw.filter.kernel);
-                for (int i = 0; i < op->rw.elems; i++)
-                    op->outputs[i].type = op->rw.filter.type;
+                }
             }
             break;
         case SWS_OP_SWAP_BYTES:
@@ -582,9 +571,11 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
             break;
         case SWS_OP_FILTER_H:
         case SWS_OP_FILTER_V: {
-            apply_filter_weights(op->outputs, prev, op->filter.kernel);
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < 4; i++) {
+                FORWARD(i, i, flags & SWS_COMP_DIRTY);
+                apply_filter_weights(&op->outputs[i], op->filter.kernel);
                 op->outputs[i].type = op->filter.type;
+            }
             break;
         }
         case SWS_OP_LUT_3D:
