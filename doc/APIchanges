@@ -2,6 +2,9 @@ The last version increases of all libraries were on 2026-06-23.
 
 API changes, most recent first:
 
+2026-10-xx - xxxxxxxxxx - lavc 63.18.100 - codec_id.h
+  Add AV_CODEC_ID_RW2.
+
 2026-10-07 - xxxxxxxxxx - lavu 61.12.100 - opt.h
   Add AV_OPT_SERIALIZE_OPT_FLAGS_EXCLUDE.
 
