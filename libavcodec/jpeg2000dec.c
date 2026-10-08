@@ -2917,8 +2917,6 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, AVFrame *picture,
         if (++x == s->ncomponents)
             picture->flags |= AV_FRAME_FLAG_LOSSLESS;
 
-    ff_thread_finish_setup(avctx);
-
     avctx->execute2(avctx, jpeg2000_decode_tile, picture, NULL,
                     s->numXtiles * s->numYtiles);
 
