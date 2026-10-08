@@ -1309,6 +1309,7 @@ OBJS-$(CONFIG_PRORES_RAW_PARSER)       += prores_raw_parser.o
 OBJS-$(CONFIG_QOI_PARSER)              += qoi_parser.o
 OBJS-$(CONFIG_PRORES_PARSER)           += prores_parser.o
 OBJS-$(CONFIG_RV34_PARSER)             += rv34_parser.o
+OBJS-$(CONFIG_RW2_PARSER)              += rw2_parser.o
 OBJS-$(CONFIG_SBC_PARSER)              += sbc_parser.o
 OBJS-$(CONFIG_SIPR_PARSER)             += sipr_parser.o
 OBJS-$(CONFIG_TAK_PARSER)              += tak_parser.o tak.o
