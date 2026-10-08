@@ -83,8 +83,8 @@ static int sap_read_header(AVFormatContext *s)
         av_strlcpy(host, "224.2.127.254", sizeof(host));
     }
 
-    ff_url_join(url, sizeof(url), "udp", NULL, host, port, "?localport=%d",
-                port);
+    ff_url_join(url, sizeof(url), "udp", NULL, host, port,
+                "?localport=%d&fifo_size=0", port);
     ret = ffurl_open_whitelist(&sap->ann_fd, url, AVIO_FLAG_READ,
                                &s->interrupt_callback, NULL,
                                s->protocol_whitelist, s->protocol_blacklist, NULL);
