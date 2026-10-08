@@ -64,7 +64,7 @@ typedef struct Syncpoint {
 
 typedef struct FrameCode {
     uint16_t flags;
-    uint8_t  stream_id;
+    int      stream_id;
     uint16_t size_mul;
     uint16_t size_lsb;
     int16_t  pts_delta;
