@@ -254,6 +254,7 @@ FATE_H264_FFPROBE-$(call DEMDEC, MATROSKA, H264) += fate-h264-dts_5frames
 FATE_H264_FFPROBE-$(call DEMDEC, MATROSKA, H264) += fate-h264-skip-pred-pts
 FATE_H264_FFPROBE-$(call DEMDEC, MOV, H264) += fate-h264-late-sei
 FATE_H264_FFPROBE-$(call PARSERDEMDEC, H264, H264, H264) += fate-h264-afd
+FATE_H264_FFPROBE-$(call PARSERDEMDEC, H264, H264, H264) += fate-h264-timecode-probe
 FATE_H264_FFPROBE-$(call PARSERDEMDEC, H264, H264, H264) += fate-h264-skip-pred \
                                                             fate-h264-skip-pred-fields
 
@@ -502,6 +503,8 @@ fate-h264-skip-pred-fields:                       CMD = probeframes -show_entrie
 fate-h264-skip-pred-pts:                          CMD = probeframes -show_entries frame=key_frame,pts,pict_type \
                                                         -skip_pred all -skip_idct all $(TARGET_SAMPLES)/h264/dts_5frames.mkv
 fate-h264-late-sei:                               CMD = probeframes -of compact -show_entries frame=color_transfer $(TARGET_SAMPLES)/h264/late-sei.mp4
+fate-h264-timecode-probe:                         CMD = probe -of compact -show_entries frame=key_frame,pict_type:frame_side_data_list \
+                                                        -read_intervals "%+\#2" $(TARGET_SAMPLES)/h264/crew_cif_timecode-2.h264
 fate-h264-afd:                                    CMD = run ffprobe$(PROGSSUF)$(EXESUF) -bitexact -apply_cropping 0 \
                                                         -show_entries frame=width,height,crop_top,crop_bottom,crop_left,crop_right:frame_side_data_list:stream=width,height,coded_width,coded_height \
                                                         $(TARGET_SAMPLES)/h264/bbc2.sample.h264

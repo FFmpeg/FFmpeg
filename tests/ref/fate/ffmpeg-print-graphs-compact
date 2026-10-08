@@ -1,0 +1,20 @@
+graph|graph_index=0|name=Graph 0.0|id=Graph_0_0|description=[0:v]scale=32:32,format=yuv420p[v]
+graph_input|input_index=0|link_label=0:v|filter_id=G0_graph_0_input_from_stream_0_0|filter_name=buffer|media_type=video
+graph_output|output_index=0|name=#0:0|filter_id=G0_out__0_0|filter_name=buffersink|media_type=video
+filter|filter_name=scale|description=Scale the input video size and/or convert the image format.|nb_inputs=1|nb_outputs=1
+filter_input|input_index=0|pad_name=default|source_filter_id=in_0_v|source_pad_name=default|filter_id=G0_Parsed_scale_0|media_type=video|format=yuv420p|width=64|height=64|sar=1:1|sample_rate=1/25
+filter_output|dest_filter_id=G0_Parsed_format_1|output_index=0|pad_name=default|dest_pad_name=default|filter_id=G0_Parsed_scale_0|media_type=video|format=yuv420p|width=32|height=32|sar=1:1|sample_rate=1/25
+filter|filter_name=format|description=Convert the input video to one of the specified pixel formats.|nb_inputs=1|nb_outputs=1
+filter_input|input_index=0|pad_name=default|source_filter_id=G0_Parsed_scale_0|source_pad_name=default|filter_id=G0_Parsed_format_1|media_type=video|format=yuv420p|width=32|height=32|sar=1:1|sample_rate=1/25
+filter_output|dest_filter_id=out__0_0|output_index=0|pad_name=default|dest_pad_name=default|filter_id=G0_Parsed_format_1|media_type=video|format=yuv420p|width=32|height=32|sar=1:1|sample_rate=1/25
+filter|filter_name=buffer|description=Buffer video frames, and make them accessible to the filterchain.|nb_inputs=0|nb_outputs=1
+filter_output|dest_filter_id=G0_Parsed_scale_0|output_index=0|pad_name=default|dest_pad_name=default|filter_id=G0_graph_0_input_from_stream_0_0|media_type=video|format=yuv420p|width=64|height=64|sar=1:1|sample_rate=1/25
+filter|filter_name=buffersink|description=Buffer video frames, and make them available to the end of the filter graph.|nb_inputs=1|nb_outputs=0
+filter_input|input_index=0|pad_name=default|source_filter_id=G0_Parsed_format_1|source_pad_name=default|filter_id=G0_out__0_0|media_type=video|format=yuv420p|width=32|height=32|sar=1:1|sample_rate=1/25
+
+inputfile|index=0|demuxer_name=lavfi|file_extension=08|url=testsrc2=s=64x64:r=25:d=0.08
+inputstream|id=r_in_0_0|name=AVFrame to AVPacket passthrough|index=0|media_type=video
+decoder|source_id=r_in_0_0|id=in_0_0|name=wrapped_avframe|media_type=video
+encoder|id=out__0_0|dest_id=r_out__0_0|name=rawvideo|media_type=video
+outputfile|index=0|muxer_name=null|url=pipe:
+outputstream|id=r_out__0_0|name=raw video|index=0|media_type=video

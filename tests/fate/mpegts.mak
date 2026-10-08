@@ -29,6 +29,12 @@ FATE_MPEGTS_PROBE-$(call DEMDEC, MPEGTS) += fate-mpegts-probe-pmt-merge
 fate-mpegts-probe-pmt-merge: SRC = $(TARGET_SAMPLES)/mpegts/pmtchange.ts
 fate-mpegts-probe-pmt-merge: CMD = run $(PROBE_CODEC_NAME_COMMAND) -merge_pmt_versions 1 -i "$(SRC)"
 
+FATE_MPEGTS_PROBE-$(call DEMDEC, MPEGTS, HEVC, LOAS_DEMUXER) += fate-mpegts-probe-program-compact
+fate-mpegts-probe-program-compact: SRC = $(TARGET_SAMPLES)/mpegts/loewe.ts
+fate-mpegts-probe-program-compact: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -v 0 -bitexact -of compact \
+    -show_entries packet=stream_index,pts:packet_side_data_list:program=program_id,nb_streams:program_stream=index,codec_name \
+    -read_intervals "%+\#2" -i "$(SRC)"
+
 FATE_MPEGTS_FFMPEG_FFPROBE-$(call FRAMECRC, MOV, H264, H264_PARSER LCEVC_PARSER) += fate-mpegts-lcevc-h264-single-track
 fate-mpegts-lcevc-h264-single-track: CMD = stream_demux mpegts $(TARGET_SAMPLES)/lcevc/L_H264_640x360p_8bit8bit_2D_dd.ts \
   "" "-c:v copy" \
