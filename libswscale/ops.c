@@ -168,6 +168,26 @@ const SwsOp *ff_sws_op_next(const SwsOp *op)
     return idx < ops->num_ops - 1 ? &ops->ops[idx + 1] : NULL;
 }
 
+SwsPixelType ff_sws_op_output_type(const SwsOp *op)
+{
+    SwsPixelType type = SWS_PIXEL_NONE;
+    for (int i = 0; op && i < 4; i++) {
+        if (!SWS_OP_NEEDED(op, i) || !op->outputs[i].type)
+            continue;
+        else if (!type)
+            type = op->outputs[i].type;
+        else if (op->outputs[i].type != type)
+            return SWS_PIXEL_NONE;
+    }
+
+    return type;
+}
+
+SwsPixelType ff_sws_op_input_type(const SwsOp *op)
+{
+    return ff_sws_op_output_type(ff_sws_op_prev(op));
+}
+
 /* biased towards `a` */
 static AVRational64 av_min_q64(AVRational64 a, AVRational64 b)
 {

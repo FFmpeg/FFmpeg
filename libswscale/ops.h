@@ -292,6 +292,13 @@ SwsCompMask ff_sws_comp_mask_needed(const SwsOp *op);
 int ff_sws_rw_op_planes(const SwsOp *op);
 
 /**
+ * Return the input/output type of an operation, if all inputs/outputs are
+ * the same type, or SWS_PIXEL_NONE if no type can be established.
+ */
+SwsPixelType ff_sws_op_input_type(const SwsOp *op);
+SwsPixelType ff_sws_op_output_type(const SwsOp *op);
+
+/**
  * Describe an operation in human-readable form.
  */
 void ff_sws_op_desc(AVBPrint *bp, const SwsOp *op);
