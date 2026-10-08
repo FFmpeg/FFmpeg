@@ -29,15 +29,6 @@
 #include "libavutil/opt.h"
 #include "tf_internal.h"
 
-/* Default output */
-
-typedef struct DefaultContext {
-    const AVClass *class;
-    int nokey;
-    int noprint_wrappers;
-    int nested_section[SECTION_MAX_NB_LEVELS];
-} DefaultContext;
-
 /* INI format output */
 
 typedef struct INIContext {
