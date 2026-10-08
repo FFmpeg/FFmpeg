@@ -1160,10 +1160,25 @@ static int rm_read_seek(AVFormatContext *s, int stream_index,
                         int64_t pts, int flags)
 {
     RMDemuxContext *rm = s->priv_data;
+    unsigned int i;
 
     if (ff_seek_frame_binary(s, stream_index, pts, flags) < 0)
         return -1;
     rm->audio_pkt_cnt = 0;
+
+    /* A stale sub_packet_cnt makes the first interleave block after the
+     * seek reuse pre-seek payload in the remaining descramble slots and
+     * lose its container timestamp, which also shifts all following
+     * block boundaries. */
+    for (i = 0; i < s->nb_streams; i++) {
+        AVStream *st  = s->streams[i];
+        RMStream *ast = st->priv_data;
+
+        if (ast && st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+            ast->sub_packet_cnt = 0;
+            ast->audiotimestamp = AV_NOPTS_VALUE;
+        }
+    }
     return 0;
 }
 
