@@ -763,6 +763,9 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
 
     ff_set_sar(avctx, avctx->sample_aspect_ratio);
 
+    if (avctx->skip_frame >= AVDISCARD_ALL)
+        return buf_size;
+
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
         return ret;
 
