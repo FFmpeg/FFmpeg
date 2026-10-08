@@ -11,7 +11,6 @@ filter|filter_name=buffer|description=Buffer video frames, and make them accessi
 filter_output|dest_filter_id=G0_Parsed_scale_0|output_index=0|pad_name=default|dest_pad_name=default|filter_id=G0_graph_0_input_from_stream_0_0|media_type=video|format=yuv420p|width=64|height=64|sar=1:1|sample_rate=1/25
 filter|filter_name=buffersink|description=Buffer video frames, and make them available to the end of the filter graph.|nb_inputs=1|nb_outputs=0
 filter_input|input_index=0|pad_name=default|source_filter_id=G0_Parsed_format_1|source_pad_name=default|filter_id=G0_out__0_0|media_type=video|format=yuv420p|width=32|height=32|sar=1:1|sample_rate=1/25
-
 inputfile|index=0|demuxer_name=lavfi|file_extension=08|url=testsrc2=s=64x64:r=25:d=0.08
 inputstream|id=r_in_0_0|name=AVFrame to AVPacket passthrough|index=0|media_type=video
 decoder|source_id=r_in_0_0|id=in_0_0|name=wrapped_avframe|media_type=video

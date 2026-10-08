@@ -124,35 +124,230 @@ typedef struct GraphPrintContext {
     AVTextFormatContext *tfc;
     AVTextWriterContext *wctx;
     AVDiagramConfig diagram_config;
+    /** record of the print calls, used instead of a formatter context */
+    AVBPrint *rec;
 
     int id_prefix_num;
     int is_diagram;
     int opt_flags;
+    int show_value_unit;
     int skip_buffer_filters;
     AVBPrint pbuf;
 
 } GraphPrintContext;
 
+enum GraphPrintOp {
+    GP_OP_SECTION_HEADER,
+    GP_OP_SECTION_FOOTER,
+    GP_OP_STRING,
+    GP_OP_INTEGER,
+    GP_OP_UNIT_INTEGER,
+};
+
+static void rec_write(AVBPrint *rec, const void *data, size_t size)
+{
+    av_bprint_append_data(rec, data, size);
+}
+
+static void rec_write_str(AVBPrint *rec, const char *str)
+{
+    uint32_t len = str ? strlen(str) + 1 : 0;
+
+    rec_write(rec, &len, sizeof(len));
+    if (len)
+        rec_write(rec, str, len);
+}
+
+static int rec_read(const uint8_t **p, const uint8_t *end, void *data, size_t size)
+{
+    if ((size_t)(end - *p) < size)
+        return AVERROR_INVALIDDATA;
+    memcpy(data, *p, size);
+    *p += size;
+    return 0;
+}
+
+static int rec_read_str(const uint8_t **p, const uint8_t *end, const char **str)
+{
+    uint32_t len;
+    int ret = rec_read(p, end, &len, sizeof(len));
+
+    if (ret < 0)
+        return ret;
+    if ((size_t)(end - *p) < len || (len && (*p)[len - 1]))
+        return AVERROR_INVALIDDATA;
+    *str = len ? (const char *)*p : NULL;
+    *p += len;
+    return 0;
+}
+
+static void gp_section_header(const GraphPrintContext *gpc, const AVTextFormatSectionContext *sec_ctx, int section_id)
+{
+    if (gpc->rec) {
+        uint8_t op = GP_OP_SECTION_HEADER, has_ctx = !!sec_ctx;
+        int32_t id = section_id;
+
+        rec_write(gpc->rec, &op, sizeof(op));
+        rec_write(gpc->rec, &id, sizeof(id));
+        rec_write(gpc->rec, &has_ctx, sizeof(has_ctx));
+        if (sec_ctx) {
+            int32_t flags = sec_ctx->context_flags;
+
+            rec_write_str(gpc->rec, sec_ctx->context_id);
+            rec_write_str(gpc->rec, sec_ctx->context_type);
+            rec_write(gpc->rec, &flags, sizeof(flags));
+        }
+        return;
+    }
+    avtext_print_section_header(gpc->tfc, sec_ctx, section_id);
+}
+
+static void gp_section_footer(const GraphPrintContext *gpc)
+{
+    if (gpc->rec) {
+        uint8_t op = GP_OP_SECTION_FOOTER;
+
+        rec_write(gpc->rec, &op, sizeof(op));
+        return;
+    }
+    avtext_print_section_footer(gpc->tfc);
+}
+
+static void gp_print_string(const GraphPrintContext *gpc, const char *key, const char *value, int flags)
+{
+    if (gpc->rec) {
+        uint8_t op = GP_OP_STRING;
+        int32_t f = flags;
+
+        rec_write(gpc->rec, &op, sizeof(op));
+        rec_write(gpc->rec, &f, sizeof(f));
+        rec_write_str(gpc->rec, key);
+        rec_write_str(gpc->rec, value);
+        return;
+    }
+    avtext_print_string(gpc->tfc, key, value, flags);
+}
+
+static void gp_print_integer(const GraphPrintContext *gpc, const char *key, int64_t value, int flags)
+{
+    if (gpc->rec) {
+        uint8_t op = GP_OP_INTEGER;
+        int32_t f = flags;
+
+        rec_write(gpc->rec, &op, sizeof(op));
+        rec_write(gpc->rec, &f, sizeof(f));
+        rec_write_str(gpc->rec, key);
+        rec_write(gpc->rec, &value, sizeof(value));
+        return;
+    }
+    avtext_print_integer(gpc->tfc, key, value, flags);
+}
+
+static void gp_print_unit_integer(const GraphPrintContext *gpc, const char *key, int64_t value, const char *unit)
+{
+    if (gpc->rec) {
+        uint8_t op = GP_OP_UNIT_INTEGER;
+
+        rec_write(gpc->rec, &op, sizeof(op));
+        rec_write_str(gpc->rec, key);
+        rec_write(gpc->rec, &value, sizeof(value));
+        rec_write_str(gpc->rec, unit);
+        return;
+    }
+    avtext_print_unit_integer(gpc->tfc, key, value, AV_TEXTFORMAT_VALUE_FMT_INT, unit);
+}
+
+static void gp_print_rational(const GraphPrintContext *gpc, const char *key, AVRational q, char sep)
+{
+    char buf[44];
+
+    snprintf(buf, sizeof(buf), "%d%c%d", q.num, sep, q.den);
+    gp_print_string(gpc, key, buf, 0);
+}
+
+static int gp_replay(const GraphPrintContext *gpc, const AVBPrint *rec)
+{
+    const uint8_t *p = (const uint8_t *)rec->str;
+    const uint8_t *end = p + FFMIN(rec->len, rec->size - 1);
+    int ret;
+
+    while (p < end) {
+        AVTextFormatSectionContext sec_ctx = { 0 };
+        const char *key, *str;
+        uint8_t op, has_ctx;
+        int32_t id, flags;
+        int64_t value;
+
+        if ((ret = rec_read(&p, end, &op, sizeof(op))) < 0)
+            return ret;
+
+        switch (op) {
+        case GP_OP_SECTION_HEADER:
+            if ((ret = rec_read(&p, end, &id, sizeof(id))) < 0 ||
+                (ret = rec_read(&p, end, &has_ctx, sizeof(has_ctx))) < 0)
+                return ret;
+            if (has_ctx) {
+                if ((ret = rec_read_str(&p, end, &str)) < 0 ||
+                    (ret = rec_read_str(&p, end, &sec_ctx.context_type)) < 0 ||
+                    (ret = rec_read(&p, end, &flags, sizeof(flags))) < 0)
+                    return ret;
+                sec_ctx.context_id    = (char *)str;
+                sec_ctx.context_flags = flags;
+            }
+            avtext_print_section_header(gpc->tfc, has_ctx ? &sec_ctx : NULL, id);
+            break;
+        case GP_OP_SECTION_FOOTER:
+            avtext_print_section_footer(gpc->tfc);
+            break;
+        case GP_OP_STRING:
+            if ((ret = rec_read(&p, end, &flags, sizeof(flags))) < 0 ||
+                (ret = rec_read_str(&p, end, &key)) < 0 ||
+                (ret = rec_read_str(&p, end, &str)) < 0)
+                return ret;
+            avtext_print_string(gpc->tfc, key, str, flags);
+            break;
+        case GP_OP_INTEGER:
+            if ((ret = rec_read(&p, end, &flags, sizeof(flags))) < 0 ||
+                (ret = rec_read_str(&p, end, &key)) < 0 ||
+                (ret = rec_read(&p, end, &value, sizeof(value))) < 0)
+                return ret;
+            avtext_print_integer(gpc->tfc, key, value, flags);
+            break;
+        case GP_OP_UNIT_INTEGER:
+            if ((ret = rec_read_str(&p, end, &key)) < 0 ||
+                (ret = rec_read(&p, end, &value, sizeof(value))) < 0 ||
+                (ret = rec_read_str(&p, end, &str)) < 0)
+                return ret;
+            avtext_print_unit_integer(gpc->tfc, key, value, AV_TEXTFORMAT_VALUE_FMT_INT, str);
+            break;
+        default:
+            return AVERROR_INVALIDDATA;
+        }
+    }
+
+    return 0;
+}
+
 /* Text Format API Shortcuts */
 #define print_id(k, v)          print_sanizied_id(gpc, k, v, 0)
 #define print_id_noprefix(k, v) print_sanizied_id(gpc, k, v, 1)
-#define print_int(k, v)         avtext_print_integer(tfc, k, v, 0)
-#define print_int_opt(k, v)     avtext_print_integer(tfc, k, v, gpc->opt_flags)
-#define print_q(k, v, s)        avtext_print_rational(tfc, k, v, s)
-#define print_str(k, v)         avtext_print_string(tfc, k, v, 0)
-#define print_str_opt(k, v)     avtext_print_string(tfc, k, v, gpc->opt_flags)
-#define print_val(k, v, u)      avtext_print_unit_integer(tfc, k, v, AV_TEXTFORMAT_VALUE_FMT_INT, u)
+#define print_int(k, v)         gp_print_integer(gpc, k, v, 0)
+#define print_int_opt(k, v)     gp_print_integer(gpc, k, v, gpc->opt_flags)
+#define print_q(k, v, s)        gp_print_rational(gpc, k, v, s)
+#define print_str(k, v)         gp_print_string(gpc, k, v, 0)
+#define print_str_opt(k, v)     gp_print_string(gpc, k, v, gpc->opt_flags)
+#define print_val(k, v, u)      gp_print_unit_integer(gpc, k, v, u)
 
 #define print_fmt(k, f, ...) do {              \
     av_bprint_clear(&gpc->pbuf);                    \
     av_bprintf(&gpc->pbuf, f, __VA_ARGS__);         \
-    avtext_print_string(tfc, k, gpc->pbuf.str, 0);    \
+    gp_print_string(gpc, k, gpc->pbuf.str, 0);    \
 } while (0)
 
 #define print_fmt_opt(k, f, ...) do {              \
     av_bprint_clear(&gpc->pbuf);                    \
     av_bprintf(&gpc->pbuf, f, __VA_ARGS__);         \
-    avtext_print_string(tfc, k, gpc->pbuf.str, gpc->opt_flags);    \
+    gp_print_string(gpc, k, gpc->pbuf.str, gpc->opt_flags);    \
 } while (0)
 
 
@@ -201,7 +396,6 @@ static char *get_extension(const char *url)
 
 static void print_hwdevicecontext(const GraphPrintContext *gpc, const AVHWDeviceContext *hw_device_context)
 {
-    AVTextFormatContext *tfc = gpc->tfc;
 
     if (!hw_device_context)
         return;
@@ -212,14 +406,13 @@ static void print_hwdevicecontext(const GraphPrintContext *gpc, const AVHWDevice
 
 static void print_hwframescontext(const GraphPrintContext *gpc, const AVHWFramesContext *hw_frames_context)
 {
-    AVTextFormatContext *tfc = gpc->tfc;
     const AVPixFmtDescriptor *pix_desc_hw;
     const AVPixFmtDescriptor *pix_desc_sw;
 
     if (!hw_frames_context || !hw_frames_context->device_ctx)
         return;
 
-    avtext_print_section_header(tfc, NULL, SECTION_ID_HWFRAMESCONTEXT);
+    gp_section_header(gpc, NULL, SECTION_ID_HWFRAMESCONTEXT);
 
     print_int_opt("has_hw_frames_context", 1);
     print_str("hw_device_type", av_hwdevice_get_type_name(hw_frames_context->device_ctx->type));
@@ -242,12 +435,11 @@ static void print_hwframescontext(const GraphPrintContext *gpc, const AVHWFrames
     print_int_opt("height", hw_frames_context->height);
     print_int_opt("initial_pool_size", hw_frames_context->initial_pool_size);
 
-    avtext_print_section_footer(tfc); // SECTION_ID_HWFRAMESCONTEXT
+    gp_section_footer(gpc); // SECTION_ID_HWFRAMESCONTEXT
 }
 
 static void print_link(GraphPrintContext *gpc, AVFilterLink *link)
 {
-    AVTextFormatContext *tfc = gpc->tfc;
     AVBufferRef *hw_frames_ctx;
     char layout_string[64];
 
@@ -272,7 +464,7 @@ static void print_link(GraphPrintContext *gpc, AVFilterLink *link)
         }
 
         if (link->w && link->h) {
-            if (tfc->opts.show_value_unit) {
+            if (gpc->show_value_unit) {
                 print_fmt("size", "%dx%d", link->w, link->h);
             } else {
                 print_int("width", link->w);
@@ -293,7 +485,7 @@ static void print_link(GraphPrintContext *gpc, AVFilterLink *link)
         ////print_str("format", av_x_if_null(av_get_subtitle_fmt_name(link->format), "?"));
 
         if (link->w && link->h) {
-            if (tfc->opts.show_value_unit) {
+            if (gpc->show_value_unit) {
                 print_fmt("size", "%dx%d", link->w, link->h);
             } else {
                 print_int("width", link->w);
@@ -307,7 +499,7 @@ static void print_link(GraphPrintContext *gpc, AVFilterLink *link)
         av_channel_layout_describe(&link->ch_layout, layout_string, sizeof(layout_string));
         print_str("channel_layout", layout_string);
         print_val("channels", link->ch_layout.nb_channels, "ch");
-        if (tfc->opts.show_value_unit)
+        if (gpc->show_value_unit)
             print_fmt("sample_rate", "%d.1 kHz", link->sample_rate / 1000);
         else
             print_val("sample_rate", link->sample_rate, "Hz");
@@ -331,7 +523,6 @@ static char sanitize_char(const char c)
 
 static void print_sanizied_id(const GraphPrintContext *gpc, const char *key, const char *id_str, int skip_prefix)
 {
-    AVTextFormatContext *tfc = gpc->tfc;
     AVBPrint buf;
 
     if (!key || !id_str)
@@ -353,7 +544,6 @@ static void print_sanizied_id(const GraphPrintContext *gpc, const char *key, con
 
 static void print_section_header_id(const GraphPrintContext *gpc, int section_id, const char *id_str, int skip_prefix)
 {
-    AVTextFormatContext *tfc = gpc->tfc;
     AVTextFormatSectionContext sec_ctx = { 0 };
     AVBPrint buf;
 
@@ -371,7 +561,7 @@ static void print_section_header_id(const GraphPrintContext *gpc, int section_id
 
     sec_ctx.context_id = buf.str;
 
-    avtext_print_section_header(tfc, &sec_ctx, section_id);
+    gp_section_header(gpc, &sec_ctx, section_id);
 
     av_bprint_finalize(&buf, NULL);
 }
@@ -383,7 +573,6 @@ static const char *get_filterpad_name(const AVFilterPad *pad)
 
 static void print_filter(GraphPrintContext *gpc, const AVFilterContext *filter, AVDictionary *input_map, AVDictionary *output_map)
 {
-    AVTextFormatContext *tfc = gpc->tfc;
     AVTextFormatSectionContext sec_ctx = { 0 };
 
     print_section_header_id(gpc, SECTION_ID_FILTER, filter->name, 0);
@@ -404,14 +593,14 @@ static void print_filter(GraphPrintContext *gpc, const AVFilterContext *filter, 
             print_int("extra_hw_frames", filter->extra_hw_frames);
     }
 
-    avtext_print_section_header(tfc, NULL, SECTION_ID_FILTER_INPUTS);
+    gp_section_header(gpc, NULL, SECTION_ID_FILTER_INPUTS);
 
     for (unsigned i = 0; i < filter->nb_inputs; i++) {
         AVDictionaryEntry *dic_entry;
         AVFilterLink *link = filter->inputs[i];
 
         sec_ctx.context_type = av_get_media_type_string(link->type);
-        avtext_print_section_header(tfc, &sec_ctx, SECTION_ID_FILTER_INPUT);
+        gp_section_header(gpc, &sec_ctx, SECTION_ID_FILTER_INPUT);
         sec_ctx.context_type = NULL;
 
         print_int_opt("input_index", i);
@@ -431,12 +620,12 @@ static void print_filter(GraphPrintContext *gpc, const AVFilterContext *filter, 
 
         print_link(gpc, link);
 
-        avtext_print_section_footer(tfc); // SECTION_ID_FILTER_INPUT
+        gp_section_footer(gpc); // SECTION_ID_FILTER_INPUT
     }
 
-    avtext_print_section_footer(tfc); // SECTION_ID_FILTER_INPUTS
+    gp_section_footer(gpc); // SECTION_ID_FILTER_INPUTS
 
-    avtext_print_section_header(tfc, NULL, SECTION_ID_FILTER_OUTPUTS);
+    gp_section_header(gpc, NULL, SECTION_ID_FILTER_OUTPUTS);
 
     for (unsigned i = 0; i < filter->nb_outputs; i++) {
         AVDictionaryEntry *dic_entry;
@@ -444,7 +633,7 @@ static void print_filter(GraphPrintContext *gpc, const AVFilterContext *filter, 
         char buf[256];
 
         sec_ctx.context_type = av_get_media_type_string(link->type);
-        avtext_print_section_header(tfc, &sec_ctx, SECTION_ID_FILTER_OUTPUT);
+        gp_section_header(gpc, &sec_ctx, SECTION_ID_FILTER_OUTPUT);
         sec_ctx.context_type = NULL;
 
         dic_entry = av_dict_get(output_map, link->dst->name, NULL, 0);
@@ -463,17 +652,16 @@ static void print_filter(GraphPrintContext *gpc, const AVFilterContext *filter, 
 
         print_link(gpc, link);
 
-        avtext_print_section_footer(tfc); // SECTION_ID_FILTER_OUTPUT
+        gp_section_footer(gpc); // SECTION_ID_FILTER_OUTPUT
     }
 
-    avtext_print_section_footer(tfc); // SECTION_ID_FILTER_OUTPUTS
+    gp_section_footer(gpc); // SECTION_ID_FILTER_OUTPUTS
 
-    avtext_print_section_footer(tfc); // SECTION_ID_FILTER
+    gp_section_footer(gpc); // SECTION_ID_FILTER
 }
 
 static void print_filtergraph_single(GraphPrintContext *gpc, FilterGraph *fg, AVFilterGraph *graph)
 {
-    AVTextFormatContext *tfc = gpc->tfc;
     AVDictionary *input_map = NULL;
     AVDictionary *output_map = NULL;
 
@@ -488,7 +676,7 @@ static void print_filtergraph_single(GraphPrintContext *gpc, FilterGraph *fg, AV
         InputFilter *ifilter = fg->inputs[i];
         enum AVMediaType media_type = ifilter->type;
 
-        avtext_print_section_header(tfc, NULL, SECTION_ID_GRAPH_INPUT);
+        gp_section_header(gpc, NULL, SECTION_ID_GRAPH_INPUT);
 
         print_int("input_index", ifilter->index);
 
@@ -507,17 +695,17 @@ static void print_filtergraph_single(GraphPrintContext *gpc, FilterGraph *fg, AV
 
         print_str("media_type", av_get_media_type_string(media_type));
 
-        avtext_print_section_footer(tfc); // SECTION_ID_GRAPH_INPUT
+        gp_section_footer(gpc); // SECTION_ID_GRAPH_INPUT
     }
 
-    avtext_print_section_footer(tfc); // SECTION_ID_GRAPH_INPUTS
+    gp_section_footer(gpc); // SECTION_ID_GRAPH_INPUTS
 
     print_section_header_id(gpc, SECTION_ID_GRAPH_OUTPUTS, "Output_File", 0);
 
     for (int i = 0; i < fg->nb_outputs; i++) {
         OutputFilter *ofilter = fg->outputs[i];
 
-        avtext_print_section_header(tfc, NULL, SECTION_ID_GRAPH_OUTPUT);
+        gp_section_header(gpc, NULL, SECTION_ID_GRAPH_OUTPUT);
 
         print_int("output_index", ofilter->index);
 
@@ -537,17 +725,17 @@ static void print_filtergraph_single(GraphPrintContext *gpc, FilterGraph *fg, AV
 
         print_str("media_type", av_get_media_type_string(ofilter->type));
 
-        avtext_print_section_footer(tfc); // SECTION_ID_GRAPH_OUTPUT
+        gp_section_footer(gpc); // SECTION_ID_GRAPH_OUTPUT
     }
 
-    avtext_print_section_footer(tfc); // SECTION_ID_GRAPH_OUTPUTS
+    gp_section_footer(gpc); // SECTION_ID_GRAPH_OUTPUTS
 
     if (graph) {
         AVTextFormatSectionContext sec_ctx = { 0 };
 
         sec_ctx.context_id = av_asprintf("Graph_%d_%d", gpc->id_prefix_num, fg->index);
 
-        avtext_print_section_header(tfc, &sec_ctx, SECTION_ID_FILTERS);
+        gp_section_header(gpc, &sec_ctx, SECTION_ID_FILTERS);
 
         if (gpc->is_diagram) {
             print_fmt("name", "Graph %d.%d", gpc->id_prefix_num, fg->index);
@@ -572,7 +760,7 @@ static void print_filtergraph_single(GraphPrintContext *gpc, FilterGraph *fg, AV
             print_filter(gpc, filter, input_map, output_map);
         }
 
-        avtext_print_section_footer(tfc); // SECTION_ID_FILTERS
+        gp_section_footer(gpc); // SECTION_ID_FILTERS
     }
 
     // Clean up dictionaries
@@ -582,7 +770,6 @@ static void print_filtergraph_single(GraphPrintContext *gpc, FilterGraph *fg, AV
 
 static int print_streams(GraphPrintContext *gpc, InputFile **ifiles, int nb_ifiles, OutputFile **ofiles, int nb_ofiles)
 {
-    AVTextFormatContext       *tfc = gpc->tfc;
     AVBPrint                   buf;
     AVTextFormatSectionContext sec_ctx = { 0 };
 
@@ -595,7 +782,7 @@ static int print_streams(GraphPrintContext *gpc, InputFile **ifiles, int nb_ifil
         AVFormatContext *fc = ifi->ctx;
 
         sec_ctx.context_id = av_asprintf("Input_%d", n);
-        avtext_print_section_header(tfc, &sec_ctx, SECTION_ID_INPUTFILE);
+        gp_section_header(gpc, &sec_ctx, SECTION_ID_INPUTFILE);
         av_freep(&sec_ctx.context_id);
 
         print_fmt("index", "%d", ifi->index);
@@ -614,7 +801,7 @@ static int print_streams(GraphPrintContext *gpc, InputFile **ifiles, int nb_ifil
 
         sec_ctx.context_id = av_asprintf("InputStreams_%d", n);
 
-        avtext_print_section_header(tfc, &sec_ctx, SECTION_ID_INPUTSTREAMS);
+        gp_section_header(gpc, &sec_ctx, SECTION_ID_INPUTSTREAMS);
 
         av_freep(&sec_ctx.context_id);
 
@@ -631,7 +818,7 @@ static int print_streams(GraphPrintContext *gpc, InputFile **ifiles, int nb_ifil
 
             sec_ctx.context_type = av_get_media_type_string(ist->par->codec_type);
 
-            avtext_print_section_header(tfc, &sec_ctx, SECTION_ID_INPUTSTREAM);
+            gp_section_header(gpc, &sec_ctx, SECTION_ID_INPUTSTREAM);
             av_freep(&sec_ctx.context_id);
             sec_ctx.context_type = NULL;
 
@@ -657,14 +844,14 @@ static int print_streams(GraphPrintContext *gpc, InputFile **ifiles, int nb_ifil
             if (ist->dec)
                 print_str_opt("media_type", av_get_media_type_string(ist->par->codec_type));
 
-            avtext_print_section_footer(tfc); // SECTION_ID_INPUTSTREAM
+            gp_section_footer(gpc); // SECTION_ID_INPUTSTREAM
         }
 
-        avtext_print_section_footer(tfc); // SECTION_ID_INPUTSTREAMS
-        avtext_print_section_footer(tfc); // SECTION_ID_INPUTFILE
+        gp_section_footer(gpc); // SECTION_ID_INPUTSTREAMS
+        gp_section_footer(gpc); // SECTION_ID_INPUTFILE
     }
 
-    avtext_print_section_footer(tfc); // SECTION_ID_INPUTFILES
+    gp_section_footer(gpc); // SECTION_ID_INPUTFILES
 
 
     print_section_header_id(gpc, SECTION_ID_DECODERS, "Decoders", 0);
@@ -682,7 +869,7 @@ static int print_streams(GraphPrintContext *gpc, InputFile **ifiles, int nb_ifil
             sec_ctx.context_type = av_get_media_type_string(ist->par->codec_type);
             sec_ctx.context_flags = 2;
 
-            avtext_print_section_header(tfc, &sec_ctx, SECTION_ID_DECODER);
+            gp_section_header(gpc, &sec_ctx, SECTION_ID_DECODER);
             av_freep(&sec_ctx.context_id);
             sec_ctx.context_type = NULL;
             sec_ctx.context_flags = 0;
@@ -697,11 +884,11 @@ static int print_streams(GraphPrintContext *gpc, InputFile **ifiles, int nb_ifil
 
             print_str_opt("media_type", av_get_media_type_string(ist->par->codec_type));
 
-            avtext_print_section_footer(tfc); // SECTION_ID_DECODER
+            gp_section_footer(gpc); // SECTION_ID_DECODER
         }
     }
 
-    avtext_print_section_footer(tfc); // SECTION_ID_DECODERS
+    gp_section_footer(gpc); // SECTION_ID_DECODERS
 
 
     print_section_header_id(gpc, SECTION_ID_ENCODERS, "Encoders", 0);
@@ -722,7 +909,7 @@ static int print_streams(GraphPrintContext *gpc, InputFile **ifiles, int nb_ifil
             sec_ctx.context_type = av_get_media_type_string(ost->type);
             sec_ctx.context_flags = 2;
 
-            avtext_print_section_header(tfc, &sec_ctx, SECTION_ID_ENCODER);
+            gp_section_header(gpc, &sec_ctx, SECTION_ID_ENCODER);
             av_freep(&sec_ctx.context_id);
             sec_ctx.context_type = NULL;
             sec_ctx.context_flags = 0;
@@ -736,11 +923,11 @@ static int print_streams(GraphPrintContext *gpc, InputFile **ifiles, int nb_ifil
 
             print_str_opt("media_type", av_get_media_type_string(ost->type));
 
-            avtext_print_section_footer(tfc); // SECTION_ID_ENCODER
+            gp_section_footer(gpc); // SECTION_ID_ENCODER
         }
     }
 
-    avtext_print_section_footer(tfc); // SECTION_ID_ENCODERS
+    gp_section_footer(gpc); // SECTION_ID_ENCODERS
 
 
     print_section_header_id(gpc, SECTION_ID_OUTPUTFILES, "Outputs", 0);
@@ -754,7 +941,7 @@ static int print_streams(GraphPrintContext *gpc, InputFile **ifiles, int nb_ifil
 
         sec_ctx.context_id = av_asprintf("Output_%d", n);
 
-        avtext_print_section_header(tfc, &sec_ctx, SECTION_ID_OUTPUTFILE);
+        gp_section_header(gpc, &sec_ctx, SECTION_ID_OUTPUTFILE);
 
         av_freep(&sec_ctx.context_id);
 
@@ -773,7 +960,7 @@ static int print_streams(GraphPrintContext *gpc, InputFile **ifiles, int nb_ifil
 
         sec_ctx.context_id = av_asprintf("OutputStreams_%d", n);
 
-        avtext_print_section_header(tfc, &sec_ctx, SECTION_ID_OUTPUTSTREAMS);
+        gp_section_header(gpc, &sec_ctx, SECTION_ID_OUTPUTSTREAMS);
 
         av_freep(&sec_ctx.context_id);
 
@@ -783,7 +970,7 @@ static int print_streams(GraphPrintContext *gpc, InputFile **ifiles, int nb_ifil
 
             sec_ctx.context_id = av_asprintf("r_out__%d_%d", n, i);
             sec_ctx.context_type = av_get_media_type_string(ost->type);
-            avtext_print_section_header(tfc, &sec_ctx, SECTION_ID_OUTPUTSTREAM);
+            gp_section_header(gpc, &sec_ctx, SECTION_ID_OUTPUTSTREAM);
             av_freep(&sec_ctx.context_id);
             sec_ctx.context_type = NULL;
 
@@ -802,17 +989,17 @@ static int print_streams(GraphPrintContext *gpc, InputFile **ifiles, int nb_ifil
 
             print_str_opt("media_type", av_get_media_type_string(ost->type));
 
-            avtext_print_section_footer(tfc); // SECTION_ID_OUTPUTSTREAM
+            gp_section_footer(gpc); // SECTION_ID_OUTPUTSTREAM
         }
 
-        avtext_print_section_footer(tfc); // SECTION_ID_OUTPUTSTREAMS
-        avtext_print_section_footer(tfc); // SECTION_ID_OUTPUTFILE
+        gp_section_footer(gpc); // SECTION_ID_OUTPUTSTREAMS
+        gp_section_footer(gpc); // SECTION_ID_OUTPUTFILE
     }
 
-    avtext_print_section_footer(tfc); // SECTION_ID_OUTPUTFILES
+    gp_section_footer(gpc); // SECTION_ID_OUTPUTFILES
 
 
-    avtext_print_section_header(tfc, NULL, SECTION_ID_STREAMLINKS);
+    gp_section_header(gpc, NULL, SECTION_ID_STREAMLINKS);
 
     for (int n = 0; n < nb_ofiles; n++) {
         OutputFile *of = ofiles[n];
@@ -822,7 +1009,7 @@ static int print_streams(GraphPrintContext *gpc, InputFile **ifiles, int nb_ifil
 
             if (ost->ist && !ost->filter) {
                 sec_ctx.context_type = av_get_media_type_string(ost->type);
-                avtext_print_section_header(tfc, &sec_ctx, SECTION_ID_STREAMLINK);
+                gp_section_header(gpc, &sec_ctx, SECTION_ID_STREAMLINK);
                 sec_ctx.context_type = NULL;
 
                 if (ost->enc) {
@@ -837,12 +1024,12 @@ static int print_streams(GraphPrintContext *gpc, InputFile **ifiles, int nb_ifil
 
                 print_str_opt("media_type", av_get_media_type_string(ost->type));
 
-                avtext_print_section_footer(tfc); // SECTION_ID_STREAMLINK
+                gp_section_footer(gpc); // SECTION_ID_STREAMLINK
             }
         }
     }
 
-    avtext_print_section_footer(tfc); // SECTION_ID_STREAMLINKS
+    gp_section_footer(gpc); // SECTION_ID_STREAMLINKS
 
     av_bprint_finalize(&buf, NULL);
     return 0;
@@ -863,7 +1050,7 @@ static void uninit_graphprint(GraphPrintContext *gpc)
     av_freep(&gpc);
 }
 
-static int init_graphprint(GraphPrintContext **pgpc, AVBPrint *target_buf)
+static int init_graphprint(GraphPrintContext **pgpc, AVBPrint *target_buf, int record)
 {
     const AVTextFormatter *text_formatter;
     AVTextFormatContext *tfc = NULL;
@@ -884,20 +1071,22 @@ static int init_graphprint(GraphPrintContext **pgpc, AVBPrint *target_buf)
         goto fail;
     }
 
-    ret = avtextwriter_create_buffer(&wctx, target_buf);
-    if (ret < 0) {
-        av_log(NULL, AV_LOG_ERROR, "avtextwriter_create_buffer failed. Error code %d\n", ret);
-        ret = AVERROR(EINVAL);
-        goto fail;
-    }
+    if (!record) {
+        ret = avtextwriter_create_buffer(&wctx, target_buf);
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_ERROR, "avtextwriter_create_buffer failed. Error code %d\n", ret);
+            ret = AVERROR(EINVAL);
+            goto fail;
+        }
 
-    AVTextFormatOptions tf_options = { .show_optional_fields = -1 };
-    const char *w_args = print_graphs_format ? strchr(print_graphs_format, '=') : NULL;
-    if (w_args)
-        ++w_args; // consume '='
-    ret = avtext_context_open(&tfc, text_formatter, wctx, w_args, sections, FF_ARRAY_ELEMS(sections), tf_options, NULL);
-    if (ret < 0) {
-        goto fail;
+        AVTextFormatOptions tf_options = { .show_optional_fields = -1 };
+        const char *w_args = print_graphs_format ? strchr(print_graphs_format, '=') : NULL;
+        if (w_args)
+            ++w_args; // consume '='
+        ret = avtext_context_open(&tfc, text_formatter, wctx, w_args, sections, FF_ARRAY_ELEMS(sections), tf_options, NULL);
+        if (ret < 0) {
+            goto fail;
+        }
     }
 
     gpc = av_mallocz(sizeof(GraphPrintContext));
@@ -908,20 +1097,24 @@ static int init_graphprint(GraphPrintContext **pgpc, AVBPrint *target_buf)
 
     gpc->wctx = wctx;
     gpc->tfc = tfc;
+    gpc->rec = record ? target_buf : NULL;
     av_bprint_init(&gpc->pbuf, 0, AV_BPRINT_SIZE_UNLIMITED);
 
     gpc->id_prefix_num = atomic_fetch_add(&prefix_num, 1);
-    gpc->is_diagram = !!(tfc->formatter->flags & AV_TEXTFORMAT_FLAG_IS_DIAGRAM_FORMATTER);
+    gpc->is_diagram = !!(text_formatter->flags & AV_TEXTFORMAT_FLAG_IS_DIAGRAM_FORMATTER);
     if (gpc->is_diagram) {
-        tfc->opts.show_value_unit = 1;
-        tfc->opts.show_optional_fields = -1;
+        gpc->show_value_unit = 1;
         gpc->opt_flags = AV_TEXTFORMAT_PRINT_STRING_OPTIONAL;
         gpc->skip_buffer_filters = 1;
+        if (tfc) {
+            tfc->opts.show_value_unit = 1;
+            tfc->opts.show_optional_fields = -1;
+        }
         ////} else {
         ////    gpc->opt_flags = AV_TEXTFORMAT_PRINT_STRING_OPTIONAL;
     }
 
-    if (!strcmp(text_formatter->name, "mermaid") || !strcmp(text_formatter->name, "mermaidhtml")) {
+    if (tfc && (!strcmp(text_formatter->name, "mermaid") || !strcmp(text_formatter->name, "mermaidhtml"))) {
         gpc->diagram_config.diagram_css = ff_resman_get_string(FF_RESOURCE_GRAPH_CSS);
 
         if (!strcmp(text_formatter->name, "mermaidhtml"))
@@ -950,68 +1143,55 @@ int print_filtergraph(FilterGraph *fg, AVFilterGraph *graph)
     av_assert2(fg);
 
     GraphPrintContext *gpc = NULL;
-    AVTextFormatContext *tfc;
     AVBPrint *target_buf = &fg->graph_print_buf;
     int ret;
 
     if (target_buf->len)
         av_bprint_finalize(target_buf, NULL);
 
-    ret = init_graphprint(&gpc, target_buf);
+    // Due to the threading model each graph needs to print itself from its own
+    // thread. The actual printing happens short before cleanup in ffmpeg.c
+    // where all graphs are assembled together, so the print calls are recorded
+    // here and replayed there.
+    ret = init_graphprint(&gpc, target_buf, 1);
     if (ret)
         return ret;
 
-    tfc = gpc->tfc;
-
-    // Due to the threading model each graph needs to print itself into a buffer
-    // from its own thread. The actual printing happens short before cleanup in ffmpeg.c
-    // where all graphs are assembled together. To make this work, we need to put the
-    // formatting context into the same state like it would be when printing all at once,
-    // so here we print the section headers and clear the buffer to get into the right state.
-    avtext_print_section_header(tfc, NULL, SECTION_ID_ROOT);
-    avtext_print_section_header(tfc, NULL, SECTION_ID_FILTERGRAPHS);
-    avtext_print_section_header(tfc, NULL, SECTION_ID_FILTERGRAPH);
-
-    av_bprint_clear(target_buf);
-
+    gp_section_header(gpc, NULL, SECTION_ID_FILTERGRAPH);
     print_filtergraph_single(gpc, fg, graph);
-
-    if (gpc->is_diagram) {
-        avtext_print_section_footer(tfc); // SECTION_ID_FILTERGRAPH
-        avtext_print_section_footer(tfc); // SECTION_ID_FILTERGRAPHS
-    }
+    gp_section_footer(gpc); // SECTION_ID_FILTERGRAPH
 
     uninit_graphprint(gpc);
 
     return 0;
 }
 
+static void print_recorded_graph(const GraphPrintContext *gpc, AVBPrint *graph_buf)
+{
+    if (graph_buf->len > 0) {
+        if (!av_bprint_is_complete(graph_buf))
+            av_log(NULL, AV_LOG_ERROR, "Incomplete record of a filter graph\n");
+        else if (gp_replay(gpc, graph_buf) < 0)
+            av_log(NULL, AV_LOG_ERROR, "Invalid record of a filter graph\n");
+        av_bprint_finalize(graph_buf, NULL);
+    }
+}
+
 static int print_filtergraphs_priv(FilterGraph **graphs, int nb_graphs, InputFile **ifiles, int nb_ifiles, OutputFile **ofiles, int nb_ofiles)
 {
     GraphPrintContext *gpc = NULL;
-    AVTextFormatContext *tfc;
     AVBPrint target_buf;
     int ret;
 
-    ret = init_graphprint(&gpc, &target_buf);
+    ret = init_graphprint(&gpc, &target_buf, 0);
     if (ret)
         goto cleanup;
 
-    tfc = gpc->tfc;
+    gp_section_header(gpc, NULL, SECTION_ID_ROOT);
+    gp_section_header(gpc, NULL, SECTION_ID_FILTERGRAPHS);
 
-    avtext_print_section_header(tfc, NULL, SECTION_ID_ROOT);
-    avtext_print_section_header(tfc, NULL, SECTION_ID_FILTERGRAPHS);
-
-    for (int i = 0; i < nb_graphs; i++) {
-        AVBPrint *graph_buf = &graphs[i]->graph_print_buf;
-
-        if (graph_buf->len > 0) {
-            avtext_print_section_header(tfc, NULL, SECTION_ID_FILTERGRAPH);
-            av_bprint_append_data(&target_buf, graph_buf->str, graph_buf->len);
-            av_bprint_finalize(graph_buf, NULL);
-            avtext_print_section_footer(tfc); // SECTION_ID_FILTERGRAPH
-        }
-    }
+    for (int i = 0; i < nb_graphs; i++)
+        print_recorded_graph(gpc, &graphs[i]->graph_print_buf);
 
     for (int n = 0; n < nb_ofiles; n++) {
         OutputFile *of = ofiles[n];
@@ -1019,24 +1199,16 @@ static int print_filtergraphs_priv(FilterGraph **graphs, int nb_graphs, InputFil
         for (int i = 0; i < of->nb_streams; i++) {
             OutputStream *ost = of->streams[i];
 
-            if (ost->fg_simple) {
-                AVBPrint *graph_buf = &ost->fg_simple->graph_print_buf;
-
-                if (graph_buf->len > 0) {
-                    avtext_print_section_header(tfc, NULL, SECTION_ID_FILTERGRAPH);
-                    av_bprint_append_data(&target_buf, graph_buf->str, graph_buf->len);
-                    av_bprint_finalize(graph_buf, NULL);
-                    avtext_print_section_footer(tfc); // SECTION_ID_FILTERGRAPH
-                }
-            }
+            if (ost->fg_simple)
+                print_recorded_graph(gpc, &ost->fg_simple->graph_print_buf);
         }
     }
 
-    avtext_print_section_footer(tfc); // SECTION_ID_FILTERGRAPHS
+    gp_section_footer(gpc); // SECTION_ID_FILTERGRAPHS
 
     print_streams(gpc, ifiles, nb_ifiles, ofiles, nb_ofiles);
 
-    avtext_print_section_footer(tfc); // SECTION_ID_ROOT
+    gp_section_footer(gpc); // SECTION_ID_ROOT
 
     if (print_graphs_file) {
         AVIOContext *avio = NULL;
