@@ -67,7 +67,7 @@ typedef struct LV2Context {
     LV2_Feature        unmap_feature;
     LV2_Atom_Sequence  seq_in[2];
     LV2_Atom_Sequence *seq_out;
-    const LV2_Feature *features[5];
+    const LV2_Feature *features[6];
 
     float *mins;
     float *maxes;
@@ -285,6 +285,7 @@ static int config_output(AVFilterLink *outlink)
     s->features[2] = &buf_size_features[0];
     s->features[3] = &buf_size_features[1];
     s->features[4] = &buf_size_features[2];
+    s->features[5] = NULL;
 
     if (ctx->nb_inputs) {
         AVFilterLink *inlink = ctx->inputs[0];
