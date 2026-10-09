@@ -227,7 +227,7 @@ static int parse_imf_asset_map_from_xml_dom(AVFormatContext *s,
     asset_map->assets = tmp;
 
     asset_element = xmlFirstElementChild(node);
-    while (asset_element) {
+    for (; asset_element; asset_element = xmlNextElementSibling(asset_element)) {
         if (av_strcasecmp(asset_element->name, "Asset") != 0)
             continue;
 
@@ -280,7 +280,6 @@ static int parse_imf_asset_map_from_xml_dom(AVFormatContext *s,
         av_log(s, AV_LOG_DEBUG, "Found asset absolute URI: %s\n", asset->absolute_uri);
 
         asset_map->asset_count++;
-        asset_element = xmlNextElementSibling(asset_element);
     }
 
     return ret;
