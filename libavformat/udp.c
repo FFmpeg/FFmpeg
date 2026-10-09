@@ -73,6 +73,10 @@
 #define UDP_RX_BUF_SIZE 393216
 #define UDP_MAX_PKT_SIZE 65536
 #define UDP_HEADER_SIZE 8
+/* Bounds how long udp_close() waits when signaling the wakeup channel
+ * failed and no datagram arrives to release the rx thread.
+ */
+#define UDP_RX_WAIT_TIMEOUT_MS 1000
 
 typedef struct UDPQueuedPacketHeader {
     int pkt_size;
@@ -108,6 +112,7 @@ typedef struct UDPContext {
     pthread_t circular_buffer_thread;
     pthread_mutex_t mutex;
     pthread_cond_t cond;
+    FFNetWakeup wakeup; /* ends the rx thread's socket wait on close */
     int thread_started;
 #endif
     uint8_t tmp[UDP_MAX_PKT_SIZE + sizeof(UDPQueuedPacketHeader)];
@@ -543,10 +548,16 @@ static void *circular_buffer_task_rx( void *_URLContext)
         if (pkt_header.pkt_size < 0) {
             err = ff_neterrno();
             if (err == AVERROR(EAGAIN))
-                err = ff_network_wait_fd(s->udp_fd, 0);
+                err = ff_network_wait_fd_wakeup(s->udp_fd, 0,
+                                                UDP_RX_WAIT_TIMEOUT_MS,
+                                                &s->wakeup);
         }
         pthread_mutex_lock(&s->mutex);
         if (pkt_header.pkt_size < 0) {
+            // ff_network_wakeup_signal to exit
+            if (err == AVERROR_EXIT)
+                goto end;
+
             if (err < 0 && err != AVERROR(EAGAIN) && err != AVERROR(EINTR)) {
                 s->circular_buffer_error = err;
                 goto end;
@@ -934,11 +945,18 @@ static int udp_open(URLContext *h, const char *uri, int flags)
             ret = AVERROR(ret);
             goto cond_fail;
         }
+        if (!is_output) {
+            ret = ff_network_wakeup_open(&s->wakeup);
+            if (ret < 0) {
+                av_log(h, AV_LOG_ERROR, "Failed to create the wakeup channel\n");
+                goto thread_fail;
+            }
+        }
         ret = pthread_create(&s->circular_buffer_thread, NULL, is_output?circular_buffer_task_tx:circular_buffer_task_rx, h);
         if (ret != 0) {
             av_log(h, AV_LOG_ERROR, "pthread_create failed : %s\n", strerror(ret));
             ret = AVERROR(ret);
-            goto thread_fail;
+            goto create_fail;
         }
         s->thread_started = 1;
     }
@@ -946,6 +964,9 @@ static int udp_open(URLContext *h, const char *uri, int flags)
 
     return 0;
 #if HAVE_THREADS
+ create_fail:
+    if (!is_output)
+        ff_network_wakeup_close(&s->wakeup);
  thread_fail:
     pthread_cond_destroy(&s->cond);
  cond_fail:
@@ -1097,6 +1118,8 @@ static int udp_close(URLContext *h)
         s->close_req = 1;
         pthread_cond_signal(&s->cond);
         pthread_mutex_unlock(&s->mutex);
+        if (s->rx_fifo)
+            ff_network_wakeup_signal(&s->wakeup);
     }
 #endif
 
@@ -1109,6 +1132,8 @@ static int udp_close(URLContext *h)
         ret = pthread_join(s->circular_buffer_thread, NULL);
         if (ret != 0)
             av_log(h, AV_LOG_ERROR, "pthread_join(): %s\n", strerror(ret));
+        if (s->rx_fifo)
+            ff_network_wakeup_close(&s->wakeup);
         pthread_mutex_destroy(&s->mutex);
         pthread_cond_destroy(&s->cond);
     }
