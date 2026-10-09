@@ -299,8 +299,10 @@ typedef struct HEIFItemRef {
 typedef struct HEIFItem {
     AVStream *st;
     AVStreamGroup *stg;
-    HEIFItemRef *iref_list;
-    int nb_iref_list;
+    HEIFItemRef *iref_from_list;
+    int nb_iref_from_list;
+    HEIFItemRef *iref_to_list;
+    int nb_iref_to_list;
     int flags;
     char *name;
     int item_id;
@@ -312,6 +314,7 @@ typedef struct HEIFItem {
     int hflip;
     int vflip;
     int type;
+    int is_gainmap;
     int is_idat_relative;
     AVExifMetadata ifd;
     uint8_t *icc_profile;
