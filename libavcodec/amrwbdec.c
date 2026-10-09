@@ -32,6 +32,7 @@
 #include "libavutil/lfg.h"
 
 #include "avcodec.h"
+#include "get_bits.h"
 #include "lsp.h"
 #include "celp_filters.h"
 #include "celp_math.h"
@@ -48,6 +49,35 @@
 #if ARCH_MIPS
 #include "mips/amrwbdec_mips.h"
 #endif /* ARCH_MIPS */
+
+/**
+ * High band gain of the comfort noise relative to the low band one.
+ *
+ * This is a non-reference approximation for the high band excitation
+ * scaling, not a value ported from the reference decoder: the reference
+ * shapes much less noise into the high band but has no single constant
+ * counterpart to this figure.
+ */
+#define CN_HF_GAIN_FAC  0.25f
+
+/** Received frame types used by the comfort noise (DTX) state machine */
+enum RXFrameType {
+    RX_SPEECH_GOOD = 0,
+    RX_SPEECH_PROBABLY_DEGRADED,
+    RX_SPEECH_LOST,
+    RX_SPEECH_BAD,
+    RX_SID_FIRST,
+    RX_SID_UPDATE,
+    RX_SID_BAD,
+    RX_NO_DATA
+};
+
+/** States of the comfort noise (DTX) state machine */
+enum DTXState {
+    DTX_SPEECH = 0,
+    DTX,
+    DTX_MUTE
+};
 
 typedef struct AMRWBContext {
     AMRWBFrame                             frame; ///< AMRWB parameters decoded from bitstream
@@ -96,6 +126,28 @@ typedef struct AMRWBContext {
     CELPFContext                       celpf_ctx; ///< context for filters for CELP-based codecs
     CELPMContext                       celpm_ctx; ///< context for fixed point math operations
 
+    /* Comfort noise (DTX) state */
+    int   dtx_state;                              ///< current DTX state (SPEECH, DTX or DTX_MUTE)
+    int   since_last_sid;                         ///< frames since the last SID update
+    float sid_period_inv;                         ///< inverse of the SID update period
+    float cn_log_en;                              ///< comfort noise log2 energy of the last SID
+    float cn_log_en_old;                          ///< comfort noise log2 energy before the last SID
+    float cn_isf[LP_ORDER];                       ///< comfort noise ISF vector of the last SID
+    float cn_isf_old[LP_ORDER];                   ///< comfort noise ISF vector before the last SID
+    int16_t cn_seed;                              ///< comfort noise generator seed
+    int16_t cn_dither_seed;                       ///< comfort noise dithering seed
+    int   cn_dith;                                ///< comfort noise dithering flag from the last SID
+    float isf_hist[DTX_HIST_SIZE][LP_ORDER];      ///< ISF history used when a SID frame starts DTX
+    float log_en_hist[DTX_HIST_SIZE];             ///< energy history used when a SID frame starts DTX
+    int   hist_ptr;                               ///< next position to write in the DTX history
+    int   hangover_count;                         ///< remaining DTX hangover frames
+    int   dec_ana_elapsed;                        ///< frames since the last DTX hangover
+    int   hangover_added;                         ///< a DTX hangover was assumed for this frame
+    int   sid_frame;                              ///< the current frame carries CN parameters
+    int   valid_data;                             ///< the CN parameters of this frame may be used
+    int   data_updated;                           ///< CN parameters have been renewed at least once
+    int   vad_hist;                               ///< consecutive frames without voice activity
+
 } AMRWBContext;
 
 typedef struct AMRWBChannelsContext {
@@ -133,6 +185,24 @@ static av_cold int amrwb_decode_init(AVCodecContext *avctx)
 
         for (i = 0; i < 4; i++)
             ctx->prediction_error[i] = MIN_ENERGY;
+
+        /* Comfort noise state, matches the DTX decoder reset */
+        ctx->dtx_state       = DTX_SPEECH;
+        ctx->sid_period_inv  = 0.25f;
+        ctx->cn_log_en       = CN_LOG_EN_INIT;
+        ctx->cn_log_en_old   = CN_LOG_EN_INIT;
+        ctx->cn_seed         = CN_NOISE_SEED_INIT;
+        ctx->cn_dither_seed  = CN_NOISE_SEED_INIT;
+        ctx->hangover_count  = DTX_HANG_CONST;
+        ctx->dec_ana_elapsed = 32767;
+
+        for (i = 0; i < LP_ORDER; i++)
+            ctx->cn_isf[i] = ctx->cn_isf_old[i] = isf_init[i] * (1.0f / (1 << 15));
+
+        for (i = 0; i < DTX_HIST_SIZE; i++) {
+            memcpy(ctx->isf_hist[i], ctx->cn_isf, LP_ORDER * sizeof(*ctx->cn_isf));
+            ctx->log_en_hist[i] = CN_LOG_EN_HIST_INIT;
+        }
 
         ff_acelp_filter_init(&ctx->acelpf_ctx);
         ff_acelp_vectors_init(&ctx->acelpv_ctx);
@@ -556,8 +626,8 @@ static void decode_fixed_vector(float *fixed_vector, const uint16_t *pulse_hi,
                            ((int) pulse_hi[i] << 11), 4, 1);
         break;
     default:
-        av_unreachable("Everything >= MODE_SID is impossible: MODE_SID is patchwelcome,"
-                       "> MODE_SID is invalid");
+        av_unreachable("SID and the unused frame types are handled before this "
+                       "function, so only speech modes reach it");
     }
 
     memset(fixed_vector, 0, sizeof(float) * AMRWB_SFR_SIZE);
@@ -1109,6 +1179,474 @@ static void update_sub_state(AMRWBContext *ctx)
             LP_ORDER_16k * sizeof(float));
 }
 
+/**
+ * Comfort noise (DTX) generation, see 3GPP TS 26.192.
+ *
+ * The implementation follows the reference decoder in 3GPP TS 26.173,
+ * with the fixed-point arithmetic replaced by floating point. ISF vectors
+ * and log2 energies stay in the same units as the speech path (0..0.5
+ * normalized frequency and log2 of the excitation energy). The tables are
+ * the noise ISF codebooks from that specification.
+ */
+
+/**
+ * Generate the next sample of the white noise used as comfort noise
+ * excitation. The seed wraps around like a 16 bit integer.
+ */
+static int16_t noise_gen_amrwb(int16_t *seed)
+{
+    *seed = (int16_t)(uint16_t)((int32_t) *seed * 31821 + 13849);
+
+    return *seed;
+}
+
+/**
+ * Decode the comfort noise parameters of a SID frame.
+ *
+ * The payload is 40 bits, of which 36 are used: five ISF indices
+ * (6, 6, 6, 5 and 5 bits), the log energy index (6 bits), the comfort noise
+ * dithering flag and a flag telling whether this is the first SID frame of a
+ * silent period.
+ *
+ * @param[in]     buf               Pointer to the frame payload (5 bytes)
+ * @param[out]    ind               The five ISF indices
+ * @param[out]    en_idx            Index of the logarithmic frame energy
+ *
+ * @return non zero if this is a SID update frame
+ */
+static int decode_sid_frame(AMRWBContext *ctx, const uint8_t *buf,
+                            int *ind, int *en_idx)
+{
+    GetBitContext gb;
+    int dith, sid_update;
+
+    init_get_bits8(&gb, buf, 5);
+
+    ind[0] = get_bits(&gb, 6);
+    ind[1] = get_bits(&gb, 6);
+    ind[2] = get_bits(&gb, 6);
+    ind[3] = get_bits(&gb, 5);
+    ind[4] = get_bits(&gb, 5);
+    *en_idx = get_bits(&gb, 6);
+
+    /* TS 26.173 reads the dither flag only on a valid SID_UPDATE. A
+       SID_FIRST frame carries the bit but must not change the flag used
+       for later frames that have no data. */
+    dith = get_bits1(&gb);
+    sid_update = get_bits1(&gb);
+    if (sid_update)
+        ctx->cn_dith = dith;
+
+    return sid_update;
+}
+
+/**
+ * Decode the quantized background noise ISF vector of a SID frame.
+ *
+ * @param[in]     ind               The five quantization indices
+ * @param[out]    isf_q             Buffer for isf_q[LP_ORDER]
+ */
+static void decode_isf_noise(const int *ind, float *isf_q)
+{
+    int i;
+
+    isf_q[0] = dico1_isf_noise[ind[0]][0] * (1.0f / (1 << 15));
+    isf_q[1] = dico1_isf_noise[ind[0]][1] * (1.0f / (1 << 15));
+
+    for (i = 0; i < 3; i++) {
+        isf_q[i + 2] = dico2_isf_noise[ind[1]][i] * (1.0f / (1 << 15));
+        isf_q[i + 5] = dico3_isf_noise[ind[2]][i] * (1.0f / (1 << 15));
+    }
+
+    for (i = 0; i < 4; i++) {
+        isf_q[i +  8] = dico4_isf_noise[ind[3]][i] * (1.0f / (1 << 15));
+        isf_q[i + 12] = dico5_isf_noise[ind[4]][i] * (1.0f / (1 << 15));
+    }
+
+    for (i = 0; i < LP_ORDER; i++)
+        isf_q[i] += mean_isf_noise[i] * (1.0f / (1 << 15));
+
+    ff_set_min_dist_lsf(isf_q, MIN_ISF_SPACING, LP_ORDER - 1);
+}
+
+/**
+ * Draw a dithering value in [-1, 1] from the comfort noise generator.
+ *
+ * @param[in,out] ctx               The Context
+ */
+static float cn_dither_noise(AMRWBContext *ctx)
+{
+    return ((noise_gen_amrwb(&ctx->cn_dither_seed) >> 1) +
+            (noise_gen_amrwb(&ctx->cn_dither_seed) >> 1)) * (1.0f / 32768.0f);
+}
+
+/**
+ * Insert comfort noise dithering, used when the background noise is not
+ * stationary.
+ *
+ * @param[in,out] ctx               The Context
+ * @param[in,out] isf               ISF vector of the comfort noise
+ * @param[in,out] log_en            log2 energy of the comfort noise
+ */
+static void cn_dithering(AMRWBContext *ctx, float *isf, float *log_en)
+{
+    float fac;
+    int i;
+
+    /* Insert comfort noise dithering for energy parameter */
+    *log_en = FFMAX(*log_en + cn_dither_noise(ctx) * CN_DITH_GAIN_FAC, 0.0f);
+
+    /* Insert comfort noise dithering for spectral parameters (ISF vector) */
+    fac = ISF_DITH_FAC_LOW;
+    isf[0] = FFMAX(isf[0] + cn_dither_noise(ctx) * fac, MIN_ISF_SPACING);
+
+    for (i = 1; i < LP_ORDER - 1; i++) {
+        float cur;
+        fac += ISF_DITH_FAC_STEP;
+        cur = isf[i] + cn_dither_noise(ctx) * fac;
+        /* Make sure that the ISF spacing remains at least ISF_DITH_GAP */
+        isf[i] = FFMAX(cur, isf[i - 1] + ISF_DITH_GAP);
+    }
+
+    isf[LP_ORDER - 2] = FFMIN(isf[LP_ORDER - 2], 0.5f);
+}
+
+/**
+ * Store the ISF vector and the excitation energy of a speech frame so
+ * that the first SID frame of a silent period can reuse them.
+ *
+ * @param[in,out] ctx               The Context
+ * @param[in]     isf               ISF vector of the decoded frame
+ * @param[in]     exc_energy        Excitation energy of the decoded frame
+ */
+static void dtx_activity_update(AMRWBContext *ctx, const float *isf,
+                                float exc_energy)
+{
+    ctx->hist_ptr = (ctx->hist_ptr + 1) & (DTX_HIST_SIZE - 1);
+    memcpy(ctx->isf_hist[ctx->hist_ptr], isf, LP_ORDER * sizeof(*isf));
+    ctx->log_en_hist[ctx->hist_ptr] = log2f(FFMAX(exc_energy, 1.0f) /
+                                            (4 * AMRWB_SFR_SIZE));
+}
+
+/**
+ * Update the comfort noise state and generate the excitation of the
+ * comfort noise for this frame.
+ *
+ * @param[in,out] ctx               The Context
+ * @param[out]    cn_exc            Excitation for the whole frame (256 samples)
+ * @param[in]     new_state         DTX state of this frame
+ * @param[in]     ind               ISF indices of the SID frame
+ * @param[in]     en_idx            Energy index of the SID frame
+ */
+static void dtx_dec(AMRWBContext *ctx, float *cn_exc, int new_state,
+                    const int *ind, int en_idx)
+{
+    float *isf = ctx->isf_cur;
+    float log_en, int_fac;
+    int i, j, period;
+
+    /* SID frames that start a silent period reuse the noise parameters
+       of the speech frames preceding them. */
+    if (ctx->hangover_added && ctx->sid_frame) {
+        int ptr = (ctx->hist_ptr + 1) & (DTX_HIST_SIZE - 1);
+
+        memcpy(ctx->isf_hist[ptr], ctx->isf_hist[ctx->hist_ptr],
+               sizeof(ctx->isf_hist[0]));
+        ctx->log_en_hist[ptr] = ctx->log_en_hist[ctx->hist_ptr];
+
+        ctx->cn_log_en = 0.0f;
+        for (i = 0; i < DTX_HIST_SIZE; i++)
+            ctx->cn_log_en += ctx->log_en_hist[i];
+        /* the reference decoder keeps the average in Q9 and adds 2 so that
+           the value stays positive, it is subtracted again when the level
+           of the excitation is computed */
+        ctx->cn_log_en = ctx->cn_log_en / DTX_HIST_SIZE + 2.0f;
+        ctx->cn_log_en = FFMAX(ctx->cn_log_en, 0.0f);
+
+        for (j = 0; j < LP_ORDER; j++) {
+            float acc = 0.0f;
+            for (i = 0; i < DTX_HIST_SIZE; i++)
+                acc += ctx->isf_hist[i][j];
+            ctx->cn_isf[j] = acc / DTX_HIST_SIZE;
+        }
+    }
+
+    if (ctx->sid_frame) {
+        memcpy(ctx->cn_isf_old, ctx->cn_isf, LP_ORDER * sizeof(*ctx->cn_isf));
+        ctx->cn_log_en_old = ctx->cn_log_en;
+
+        if (ctx->valid_data) {
+            period = FFMIN(ctx->since_last_sid, 32);
+            ctx->sid_period_inv = period >= 2 ? 1.0f / period : 0.5f;
+
+            decode_isf_noise(ind, ctx->cn_isf);
+            ctx->cn_log_en = en_idx * (1.0f / 2.625f);
+
+            /* no interpolation at startup or right after speech */
+            if (!ctx->data_updated || ctx->dtx_state == DTX_SPEECH) {
+                memcpy(ctx->cn_isf_old, ctx->cn_isf,
+                       LP_ORDER * sizeof(*ctx->cn_isf));
+                ctx->cn_log_en_old = ctx->cn_log_en;
+            }
+        }
+    }
+
+    /* A frame carrying new parameters ends the interpolation, so the
+       parameters of this very frame are the ones used below. The counter is
+       reset again at the end of this function. */
+    if (ctx->sid_frame && ctx->valid_data)
+        ctx->since_last_sid = 0;
+
+    /* Interpolate the comfort noise parameters since the last update */
+    int_fac = FFMIN(ctx->since_last_sid * ctx->sid_period_inv, 1.0f);
+
+    log_en = int_fac * ctx->cn_log_en + (1.0f - int_fac) * ctx->cn_log_en_old;
+    for (j = 0; j < LP_ORDER; j++)
+        isf[j] = int_fac * ctx->cn_isf[j] + (1.0f - int_fac) * ctx->cn_isf_old[j];
+
+    if (ctx->cn_dith)
+        cn_dithering(ctx, isf, &log_en);
+
+    /* Generate the excitation and scale it to the wanted energy */
+    for (i = 0; i < 4 * AMRWB_SFR_SIZE; i++)
+        cn_exc[i] = noise_gen_amrwb(&ctx->cn_seed) >> 4;
+
+    /* the excitation carries the energy of the decoded noise parameters */
+    ff_scale_vector_to_given_sum_of_squares(cn_exc, cn_exc,
+                                            (4 * AMRWB_SFR_SIZE) *
+                                            exp2f(log_en - 2.0f),
+                                            4 * AMRWB_SFR_SIZE);
+
+    if (new_state == DTX_MUTE) {
+        /* Mute the comfort noise, nothing has been updated for a while */
+        period = ctx->since_last_sid;
+        if (period > 32)
+            period = 32;
+        if (period <= 0)
+            period = 8;
+        ctx->sid_period_inv = 1.0f / period;
+        ctx->since_last_sid = 0;
+        ctx->cn_log_en_old  = ctx->cn_log_en;
+        ctx->cn_log_en     -= CN_LOG_EN_MUTE_STEP;
+    }
+
+    if (ctx->sid_frame &&
+        (ctx->valid_data || (!ctx->valid_data && ctx->hangover_added))) {
+        ctx->since_last_sid = 0;
+        ctx->data_updated   = 1;
+    }
+}
+
+/**
+ * Update the comfort noise state machine for a received frame.
+ *
+ * @param[in,out] ctx               The Context
+ * @param[in]     frame_type        Type of the received frame
+ *
+ * @return the DTX state to decode this frame with
+ */
+static int dtx_handler(AMRWBContext *ctx, int frame_type)
+{
+    int new_state, enc_state;
+
+    if (frame_type == RX_SID_FIRST  || frame_type == RX_SID_UPDATE ||
+        frame_type == RX_SID_BAD    ||
+        ((ctx->dtx_state == DTX || ctx->dtx_state == DTX_MUTE) &&
+         (frame_type == RX_NO_DATA    || frame_type == RX_SPEECH_BAD ||
+          frame_type == RX_SPEECH_LOST))) {
+        new_state = DTX;
+
+        /* stay muted for these input types */
+        if (ctx->dtx_state == DTX_MUTE &&
+            (frame_type == RX_SID_BAD   || frame_type == RX_SID_FIRST  ||
+             frame_type == RX_SPEECH_LOST || frame_type == RX_NO_DATA))
+            new_state = DTX_MUTE;
+
+        ctx->since_last_sid = FFMIN(ctx->since_last_sid + 1, 32767);
+
+        /* SID updates are handled separately to avoid muting a late one */
+        if (frame_type != RX_SID_UPDATE &&
+            ctx->since_last_sid > DTX_MAX_EMPTY_THRESH)
+            new_state = DTX_MUTE;
+    } else {
+        new_state = DTX_SPEECH;
+        ctx->since_last_sid = 0;
+    }
+
+    if (!ctx->data_updated && frame_type == RX_SID_UPDATE)
+        ctx->dec_ana_elapsed = 0;
+
+    ctx->dec_ana_elapsed = FFMIN(ctx->dec_ana_elapsed + 1, 32767);
+    ctx->hangover_added  = 0;
+
+    if (frame_type == RX_SID_FIRST || frame_type == RX_SID_UPDATE ||
+        frame_type == RX_SID_BAD   ||
+        (frame_type == RX_NO_DATA && (ctx->dtx_state != DTX_SPEECH ||
+                                      ctx->vad_hist >= DTX_HANG_CONST)))
+        enc_state = DTX;
+    else
+        enc_state = DTX_SPEECH;
+
+    if (enc_state == DTX_SPEECH) {
+        ctx->hangover_count = DTX_HANG_CONST;
+    } else if (ctx->dec_ana_elapsed > DTX_ELAPSED_FRAMES_THRESH) {
+        ctx->hangover_added  = 1;
+        ctx->dec_ana_elapsed = 0;
+        ctx->hangover_count  = 0;
+    } else if (!ctx->hangover_count) {
+        ctx->dec_ana_elapsed = 0;
+    } else {
+        ctx->hangover_count--;
+    }
+
+    if (new_state != DTX_SPEECH) {
+        ctx->sid_frame  = 0;
+        ctx->valid_data = 0;
+
+        if (frame_type == RX_SID_FIRST) {
+            ctx->sid_frame = 1;
+        } else if (frame_type == RX_SID_UPDATE) {
+            ctx->sid_frame  = 1;
+            ctx->valid_data = 1;
+        } else if (frame_type == RX_SID_BAD) {
+            ctx->sid_frame      = 1;
+            ctx->hangover_added = 0;
+        }
+    }
+
+    return new_state;
+}
+
+/**
+ * Reset the speech decoder state, it is not used during a silent period.
+ */
+static void cn_reset_speech_state(AMRWBContext *ctx)
+{
+    memset(ctx->excitation_buf, 0, sizeof(ctx->excitation_buf));
+    memset(ctx->isf_q_past, 0, sizeof(ctx->isf_q_past));
+
+    ctx->first_frame       = 1;
+    ctx->prev_tr_gain      = 0.0f;
+    ctx->prev_ir_filter_nr = 0;
+    ctx->tilt_coef         = 0.0f;
+
+    /* Reset_decoder(st, 0) clears the phase-dispersion memory, including
+       the previous fixed gain and the pitch-gain history. */
+    memset(ctx->pitch_gain, 0, sizeof(ctx->pitch_gain));
+    memset(ctx->fixed_gain, 0, sizeof(ctx->fixed_gain));
+    ctx->prev_sparse_fixed_gain = 0.0f;
+}
+
+/**
+ * Post-process one synthesized subframe, generate the high frequency band
+ * and store the result at 16 kHz.
+ *
+ * @param[in,out] ctx               The Context
+ * @param[out]    sub_buf           Output samples of the subframe at 16 kHz
+ * @param[in]     synth_exc         Excitation the subframe was built from
+ * @param[in]     sub               Subframe index
+ * @param[in]     hb_idx            High-band gain index (23k85 mode only)
+ * @param[in]     vad               Voice activity flag of the frame
+ * @param[in]     hf_gain           Scaling of the high band noise
+ */
+static void subframe_output(AMRWBContext *ctx, float *sub_buf,
+                            const float *synth_exc, int sub, uint16_t hb_idx,
+                            uint8_t vad, float hf_gain)
+{
+    float hb_exc[AMRWB_SFR_SIZE_16k];
+    float hb_samples[AMRWB_SFR_SIZE_16k];
+    float hb_gain;
+    int i;
+
+    /* Synthesis speech post-processing */
+    de_emphasis(&ctx->samples_up[UPS_MEM_SIZE], &ctx->samples_az[LP_ORDER],
+                PREEMPH_FAC, ctx->demph_mem);
+
+    ctx->acelpf_ctx.acelp_apply_order_2_transfer_function(&ctx->samples_up[UPS_MEM_SIZE],
+                                                          &ctx->samples_up[UPS_MEM_SIZE], hpf_zeros, hpf_31_poles,
+                                                          hpf_31_gain, ctx->hpf_31_mem, AMRWB_SFR_SIZE);
+
+    upsample_5_4(sub_buf, &ctx->samples_up[UPS_FIR_SIZE],
+                 AMRWB_SFR_SIZE_16k, &ctx->celpm_ctx);
+
+    /* High frequency band (6.4 - 7.0 kHz) generation part */
+    ctx->acelpf_ctx.acelp_apply_order_2_transfer_function(hb_samples,
+                                                          &ctx->samples_up[UPS_MEM_SIZE], hpf_zeros, hpf_400_poles,
+                                                          hpf_400_gain, ctx->hpf_400_mem, AMRWB_SFR_SIZE);
+
+    hb_gain = find_hb_gain(ctx, hb_samples, hb_idx, vad);
+
+    scaled_hb_excitation(ctx, hb_exc, synth_exc, hb_gain * hf_gain);
+
+    hb_synthesis(ctx, sub, &ctx->samples_hb[LP_ORDER_16k],
+                 hb_exc, ctx->isf_cur, ctx->isf_past_final);
+
+    /* High-band post-processing filters */
+    hb_fir_filter(hb_samples, bpf_6_7_coef, ctx->bpf_6_7_mem,
+                  &ctx->samples_hb[LP_ORDER_16k]);
+
+    if (ctx->fr_cur_mode == MODE_23k85)
+        hb_fir_filter(hb_samples, lpf_7_coef, ctx->lpf_7_mem,
+                      hb_samples);
+
+    /* Add the low and high frequency bands */
+    for (i = 0; i < AMRWB_SFR_SIZE_16k; i++)
+        sub_buf[i] = (sub_buf[i] + hb_samples[i]) * (1.0f / (1 << 15));
+
+    /* Update buffers and history */
+    update_sub_state(ctx);
+}
+
+/**
+ * Decode one frame of comfort noise into the output buffer.
+ *
+ * @param[in,out] ctx               The Context
+ * @param[in]     new_state         DTX state of this frame
+ * @param[in]     ind               ISF indices of the SID frame
+ * @param[in]     en_idx            Energy index of the SID frame
+ * @param[out]    buf_out           Output buffer for one frame at 16 kHz
+ */
+static void cn_frame(AMRWBContext *ctx, int new_state, const int *ind,
+                     int en_idx, float *buf_out)
+{
+    float cn_exc[4 * AMRWB_SFR_SIZE];
+    float synth_exc[AMRWB_SFR_SIZE];
+    int sub;
+
+    dtx_dec(ctx, cn_exc, new_state, ind, en_idx);
+
+    ff_set_min_dist_lsf(ctx->isf_cur, MIN_ISF_SPACING, LP_ORDER - 1);
+
+    ctx->isf_cur[LP_ORDER - 1] *= 2.0;
+    ff_acelp_lsf2lspd(ctx->isp[3], ctx->isf_cur, LP_ORDER);
+    ff_amrwb_lsp2lpc(ctx->isp[3], ctx->lp_coef[0], LP_ORDER);
+    for (sub = 1; sub < 4; sub++)
+        memcpy(ctx->lp_coef[sub], ctx->lp_coef[0], sizeof(ctx->lp_coef[0]));
+
+    /* the reference decoder uses one set of CN parameters per frame and
+       no adaptive codebook contribution */
+    ctx->pitch_gain[0] = 0.0f;
+
+    for (sub = 0; sub < 4; sub++) {
+        float *sub_buf = buf_out + sub * AMRWB_SFR_SIZE_16k;
+
+        memcpy(ctx->fixed_vector, &cn_exc[sub * AMRWB_SFR_SIZE],
+               AMRWB_SFR_SIZE * sizeof(*ctx->fixed_vector));
+
+        synthesis(ctx, ctx->lp_coef[sub], synth_exc, 1.0f,
+                  ctx->fixed_vector, &ctx->samples_az[LP_ORDER]);
+
+        subframe_output(ctx, sub_buf, synth_exc, sub, 0, !ctx->vad_hist,
+                        CN_HF_GAIN_FAC);
+    }
+
+    memcpy(ctx->isp_sub4_past, ctx->isp[3], LP_ORDER * sizeof(ctx->isp[3][0]));
+    memcpy(ctx->isf_past_final, ctx->isf_cur, LP_ORDER * sizeof(*ctx->isf_cur));
+
+    cn_reset_speech_state(ctx);
+    ctx->dtx_state = new_state;
+}
+
 static int amrwb_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                               int *got_frame_ptr, AVPacket *avpkt)
 {
@@ -1125,16 +1663,16 @@ static int amrwb_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     for (int ch = 0; ch < avctx->ch_layout.nb_channels; ch++) {
         AMRWBContext *ctx  = &s->ch[ch];
         AMRWBFrame   *cf   = &ctx->frame;
-        int expected_fr_size, header_size;
+        int expected_fr_size, header_size, rx_type, new_state;
         float spare_vector[AMRWB_SFR_SIZE];      // extra stack space to hold result from anti-sparseness processing
         float fixed_gain_factor;                 // fixed gain correction factor (gamma)
         float *synth_fixed_vector;               // pointer to the fixed vector that synthesis should use
         float synth_fixed_gain;                  // the fixed gain that synthesis should use
         float voice_fac, stab_fac;               // parameters used for gain smoothing
         float synth_exc[AMRWB_SFR_SIZE];         // post-processed excitation for synthesis
-        float hb_exc[AMRWB_SFR_SIZE_16k];        // excitation for the high frequency band
-        float hb_samples[AMRWB_SFR_SIZE_16k];    // filtered high-band samples from synthesis
-        float hb_gain;
+        int sid_ind[5] = { 0 };                  // ISF indices of a SID frame
+        int sid_en_idx = 0;                      // energy index of a SID frame
+        float frame_exc_energy = 0.0f;           // excitation energy of this frame
         float *buf_out = (float *)frame->extended_data[ch];
 
         header_size      = decode_mime_header(ctx, buf);
@@ -1143,32 +1681,56 @@ static int amrwb_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         if (!ctx->fr_quality)
             av_log(avctx, AV_LOG_ERROR, "Encountered a bad or corrupted frame\n");
 
-        if (ctx->fr_cur_mode == NO_DATA || !ctx->fr_quality) {
-            /* The specification suggests a "random signal" and
-               "a muting technique" to "gradually decrease the output level". */
-            av_samples_set_silence(&frame->extended_data[ch], 0, frame->nb_samples, 1, AV_SAMPLE_FMT_FLT);
-            buf += expected_fr_size;
-            buf_size -= expected_fr_size;
-            continue;
-        }
-        if (ctx->fr_cur_mode > MODE_SID) {
-            av_log(avctx, AV_LOG_ERROR,
-                   "Invalid mode %d\n", ctx->fr_cur_mode);
-            return AVERROR_INVALIDDATA;
-        }
-
         if (buf_size < expected_fr_size) {
             av_log(avctx, AV_LOG_ERROR,
                    "Frame too small (%d bytes). Truncated file?\n", buf_size);
             *got_frame_ptr = 0;
             return AVERROR_INVALIDDATA;
         }
-
-        if (ctx->fr_cur_mode == MODE_SID) { /* Comfort noise frame */
-            avpriv_request_sample(avctx, "SID mode");
-            return AVERROR_PATCHWELCOME;
+        /* Classify the received frame for the comfort noise state machine */
+        if (ctx->fr_cur_mode == MODE_SID) {
+            if (ctx->fr_quality) {
+                if (decode_sid_frame(ctx, buf + 1, sid_ind, &sid_en_idx))
+                    rx_type = RX_SID_UPDATE;
+                else
+                    rx_type = RX_SID_FIRST;
+            } else {
+                rx_type = RX_SID_BAD;
+            }
+        } else if (ctx->fr_cur_mode == NO_DATA ||
+                   (ctx->fr_cur_mode > MODE_SID && ctx->fr_cur_mode < SP_LOST)) {
+            /* the reference decoder replaces the unused frame types by
+               frames carrying no data */
+            rx_type = RX_NO_DATA;
+        } else if (ctx->fr_cur_mode == SP_LOST) {
+            rx_type = RX_SPEECH_LOST;
+        } else if (!ctx->fr_quality) {
+            rx_type = RX_SPEECH_BAD;
+        } else {
+            rx_type = RX_SPEECH_GOOD;
         }
-
+        new_state = dtx_handler(ctx, rx_type);
+        if (new_state != DTX_SPEECH) {
+            /* Comfort noise is generated for SID frames and, once a silent
+               period has started, for the frames carrying no data at all */
+            cn_frame(ctx, new_state, sid_ind, sid_en_idx,
+                     (float *)frame->extended_data[ch]);
+            buf += expected_fr_size;
+            buf_size -= expected_fr_size;
+            continue;
+        }
+        if (ctx->fr_cur_mode > MODE_SID || !ctx->fr_quality) {
+            /* The specification suggests a "random signal" and
+               "a muting technique" to "gradually decrease the output level".
+               Outside of a silent period no comfort noise parameters are
+               available, so the frames carrying no payload at all are output
+               as silence. They still produce a full frame of samples, keeping
+               the frame count and the timing of the decoded stream correct. */
+            av_samples_set_silence(&frame->extended_data[ch], 0, frame->nb_samples, 1, AV_SAMPLE_FMT_FLT);
+            buf += expected_fr_size;
+            buf_size -= expected_fr_size;
+            continue;
+        }
         ff_amr_bit_reorder((uint16_t *) &ctx->frame, sizeof(AMRWBFrame),
                            buf + header_size, amr_bit_orderings_by_mode[ctx->fr_cur_mode]);
 
@@ -1234,6 +1796,11 @@ static int amrwb_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                 ctx->excitation[i] = truncf(ctx->excitation[i]);
             }
 
+            /* the excitation energy is the comfort noise reference for the
+               silent periods following this frame */
+            frame_exc_energy += ctx->celpm_ctx.dot_productf(ctx->excitation,
+                                                            ctx->excitation,
+                                                            AMRWB_SFR_SIZE);
             /* Post-processing of excitation elements */
             synth_fixed_gain = noise_enhancer(ctx->fixed_gain[0], &ctx->prev_tr_gain,
                                               voice_fac, stab_fac);
@@ -1246,50 +1813,23 @@ static int amrwb_decode_frame(AVCodecContext *avctx, AVFrame *frame,
             synthesis(ctx, ctx->lp_coef[sub], synth_exc, synth_fixed_gain,
                       synth_fixed_vector, &ctx->samples_az[LP_ORDER]);
 
-            /* Synthesis speech post-processing */
-            de_emphasis(&ctx->samples_up[UPS_MEM_SIZE],
-                        &ctx->samples_az[LP_ORDER], PREEMPH_FAC, ctx->demph_mem);
-
-            ctx->acelpf_ctx.acelp_apply_order_2_transfer_function(&ctx->samples_up[UPS_MEM_SIZE],
-                                                                  &ctx->samples_up[UPS_MEM_SIZE], hpf_zeros, hpf_31_poles,
-                                                                  hpf_31_gain, ctx->hpf_31_mem, AMRWB_SFR_SIZE);
-
-            upsample_5_4(sub_buf, &ctx->samples_up[UPS_FIR_SIZE],
-                         AMRWB_SFR_SIZE_16k, &ctx->celpm_ctx);
-
-            /* High frequency band (6.4 - 7.0 kHz) generation part */
-            ctx->acelpf_ctx.acelp_apply_order_2_transfer_function(hb_samples,
-                                                                  &ctx->samples_up[UPS_MEM_SIZE], hpf_zeros, hpf_400_poles,
-                                                                  hpf_400_gain, ctx->hpf_400_mem, AMRWB_SFR_SIZE);
-
-            hb_gain = find_hb_gain(ctx, hb_samples,
-                                   cur_subframe->hb_gain, cf->vad);
-
-            scaled_hb_excitation(ctx, hb_exc, synth_exc, hb_gain);
-
-            hb_synthesis(ctx, sub, &ctx->samples_hb[LP_ORDER_16k],
-                         hb_exc, ctx->isf_cur, ctx->isf_past_final);
-
-            /* High-band post-processing filters */
-            hb_fir_filter(hb_samples, bpf_6_7_coef, ctx->bpf_6_7_mem,
-                          &ctx->samples_hb[LP_ORDER_16k]);
-
-            if (ctx->fr_cur_mode == MODE_23k85)
-                hb_fir_filter(hb_samples, lpf_7_coef, ctx->lpf_7_mem,
-                              hb_samples);
-
-            /* Add the low and high frequency bands */
-            for (i = 0; i < AMRWB_SFR_SIZE_16k; i++)
-                sub_buf[i] = (sub_buf[i] + hb_samples[i]) * (1.0f / (1 << 15));
-
-            /* Update buffers and history */
-            update_sub_state(ctx);
+            subframe_output(ctx, sub_buf, synth_exc, sub,
+                            cur_subframe->hb_gain, cf->vad, 1.0f);
         }
 
         /* update state for next frame */
         memcpy(ctx->isp_sub4_past, ctx->isp[3], LP_ORDER * sizeof(ctx->isp[3][0]));
         memcpy(ctx->isf_past_final, ctx->isf_cur, LP_ORDER * sizeof(float));
 
+        /* keep the noise parameters of this speech frame for the next SID */
+        ctx->isf_cur[LP_ORDER - 1] *= 0.5f;
+        dtx_activity_update(ctx, ctx->isf_cur, frame_exc_energy);
+        ctx->isf_cur[LP_ORDER - 1] *= 2.0f;
+        if (ctx->fr_quality) {
+            ctx->vad_hist = cf->vad ? 0 : FFMIN(ctx->vad_hist + 1, 32767);
+        } else if (ctx->vad_hist > 0)
+            ctx->vad_hist = FFMIN(ctx->vad_hist + 1, 32767);
+        ctx->dtx_state = new_state;
         buf += expected_fr_size;
         buf_size -= expected_fr_size;
     }

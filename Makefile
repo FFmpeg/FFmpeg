@@ -18,7 +18,7 @@ vpath %.ptx  $(SRC_PATH)
 vpath %.metal $(SRC_PATH)
 vpath %/fate_config.sh.template $(SRC_PATH)
 
-TESTTOOLS   = audiogen videogen rotozoom tiny_psnr tiny_ssim base64 audiomatch
+TESTTOOLS   = audiogen videogen rotozoom tiny_psnr tiny_ssim base64 audiomatch amrgen
 HOSTPROGS  := $(TESTTOOLS:%=tests/%) doc/print_options
 
 ALLFFLIBS =            \

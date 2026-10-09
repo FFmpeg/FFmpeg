@@ -65,6 +65,10 @@ tests/data/streamgroups/%: TAG = COPY
 tests/data/streamgroups/%: $(SRC_PATH)/tests/streamgroups/% | tests/data/streamgroups
 	$(M)cp $< $@
 
+tests/data/fate/%.amr: TAG = GEN
+tests/data/fate/%.amr: tests/amrgen$(HOSTEXESUF) | tests/data/fate
+	$(M)./$< $@
+
 RUNNING_FATE := $(filter check fate%,$(filter-out fate-rsync,$(MAKECMDGOALS)))
 
 # Check sanity of dependencies when running FATE tests.
