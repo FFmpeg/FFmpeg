@@ -1129,12 +1129,12 @@ static int export_film_grain(AVCodecContext *avctx, AVFrame *frame)
         aom->ar_coeffs_uv[1][i] = film_grain->ar_coeffs_cr_plus_128[i] - 128;
     }
 
-    aom->uv_mult[0] = film_grain->cb_mult;
-    aom->uv_mult[1] = film_grain->cr_mult;
-    aom->uv_mult_luma[0] = film_grain->cb_luma_mult;
-    aom->uv_mult_luma[1] = film_grain->cr_luma_mult;
-    aom->uv_offset[0] = film_grain->cb_offset;
-    aom->uv_offset[1] = film_grain->cr_offset;
+    aom->uv_mult[0] = film_grain->cb_mult - 128;
+    aom->uv_mult[1] = film_grain->cr_mult - 128;
+    aom->uv_mult_luma[0] = film_grain->cb_luma_mult - 128;
+    aom->uv_mult_luma[1] = film_grain->cr_luma_mult - 128;
+    aom->uv_offset[0] = film_grain->cb_offset - 256;
+    aom->uv_offset[1] = film_grain->cr_offset - 256;
 
     return 0;
 }
