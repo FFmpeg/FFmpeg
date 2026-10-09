@@ -597,13 +597,17 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
             goto error;
         if (opts->align_src) {
             ret = av_frame_get_buffer(src, opts->align_src);
-            if (ret < 0)
+            if (ret < 0) {
+                av_frame_free(&src);
                 goto error;
+            }
         }
 
         ret = checked_sws_scale_frame(sws_ref_src, src, ref);
-        if (ret < 0)
+        if (ret < 0) {
+            av_frame_free(&src);
             goto error;
+        }
         *psrc = src;
     }
 
