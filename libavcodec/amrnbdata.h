@@ -1663,4 +1663,42 @@ static const float highpass_zeros[2] = { -2.0, 1.0 };
 static const float highpass_poles[2] = { -1.933105469, 0.935913085 };
 static const float highpass_gain     = 0.939819335;
 
+/* Comfort noise (DTX) tables and constants, see 3GPP TS 26.092 */
+
+#define DTX_HIST_SIZE            8
+#define DTX_MAX_EMPTY_THRESH     50
+#define DTX_HANG_CONST           7
+#define DTX_ELAPSED_FRAMES_THRESH 30
+#define CN_NB_PULSE             10
+#define CN_PN_SEED_INIT         0x70816958u
+/** Initial LSP vector of the comfort noise decoder */
+static const float cn_lsp_init[LP_FILTER_ORDER] = {
+    0.915527f, 0.793457f, 0.640869f, 0.457764f, 0.244141f, 0.000000f, -0.244141f, -0.457764f, -0.640869f, -0.793457f
+};
+
+/**
+ * Initial prediction residual vectors of the comfort noise LSF decoder,
+ * indexed by the first SID parameter, see 3GPP TS 26.073
+ */
+static const int16_t past_rq_init[8][LP_FILTER_ORDER] = {
+    {  -258,  -318,  -439,  -634,  -656,  -773,  -711,  -502,  -268,  -193},
+    {    -2,   125,   122,   -39,    -9,   105,   129,   283,   372,   575},
+    {  -277,  -324,  -197,  -487,  -445,  -362,  -292,   -27,   177,   543},
+    {   342,   517,   516,   130,    27,  -104,  -120,  -140,   -74,   -56},
+    {  -564,  -943, -1520,  -965,  -814,  -526,  -322,    -2,   159,   657},
+    {  -312,  -284,  -386,  -597,  -493,  -526,  -418,  -229,   105,   449},
+    {  -557,  -870, -1075,  -919,  -950,  -752,  -709,  -316,    62,   486},
+    {  -314,  -191,  -203,  -330,  -160,  -103,   -51,   131,   338,   515},
+};
+
+/** Scale factors applied to the deviation from the mean LSF vector */
+static const float lsf_hist_mean_scale[LP_FILTER_ORDER] = {
+    0.610352f, 0.610352f, 0.610352f, 0.610352f, 0.610352f, 0.549316f, 0.500000f, 0.250000f, 0.000000f, 0.000000f
+};
+
+/** Speech mode dependent adjustment of the comfort noise level */
+static const float dtx_log_en_adjust[9] = {
+    -0.499512f, -0.428711f, -0.357422f, -0.286133f, -0.214844f, -0.143555f, -0.072266f, 0.000000f, 0.000000f
+};
+
 #endif /* AVCODEC_AMRNBDATA_H */
