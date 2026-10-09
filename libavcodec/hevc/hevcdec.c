@@ -3148,6 +3148,21 @@ static int alloc_tile_streams(HEVCContext *s, unsigned n)
     return 0;
 }
 
+static int alloc_tile_segments(HEVCContext *s, unsigned n)
+{
+    if (n > s->tile_segments_alloc) {
+        void *tmp = av_realloc_array(s->tile_segments, n, sizeof(*s->tile_segments));
+
+        if (!tmp)
+            return AVERROR(ENOMEM);
+
+        s->tile_segments       = tmp;
+        s->tile_segments_alloc = n;
+    }
+
+    return 0;
+}
+
 static int alloc_substreams(HEVCContext *s, unsigned n)
 {
     if (n > s->nb_substreams) {
@@ -3166,9 +3181,11 @@ static int alloc_substreams(HEVCContext *s, unsigned n)
     return 0;
 }
 
-/* Walk the picture in raster order. A band of tile rows has one tile per
- * column, so one substream state per column is enough; lc switches state
- * when the column changes. */
+/* One CABAC state per tile column suffices: tile_id is assigned in tile row
+ * major order, so tile % num_tile_columns is the column. Within a tile the
+ * walk visits CTBs in increasing ts, so each segment is entered at its
+ * first CTB.
+ */
 static int decode_tiles_row_major(HEVCContext *s, const HEVCLayerContext *l,
                                   HEVCTileStream *tiles)
 {
@@ -3184,8 +3201,16 @@ static int decode_tiles_row_major(HEVCContext *s, const HEVCLayerContext *l,
         const int tile = pps->tile_id[ts];
         HEVCTileStream *const t   = &tiles[tile];
         HEVCSubstream  *const sub = &s->substreams[tile % pps->num_tile_columns];
+        int enter = t->next_seg < t->end_seg &&
+                    s->tile_segments[t->next_seg].start_ts == ts;
 
-        if (t->ended)
+        if (enter)
+            t->seg = &s->tile_segments[t->next_seg++];
+
+        /* No segment covers this CTB: damaged input, either a segment
+         * ended early or a slice is missing
+         */
+        if (!t->seg)
             continue;
 
         if (cur != sub) {
@@ -3195,10 +3220,11 @@ static int decode_tiles_row_major(HEVCContext *s, const HEVCLayerContext *l,
             cur = sub;
         }
 
-        bind_slice_ctx(lc, t->sh, t->rpl, t->collocated_ref);
+        bind_slice_ctx(lc, t->seg->sh, t->seg->rpl, t->seg->collocated_ref);
 
-        if (ts == t->start_ts)
-            substream_load(&lc->sub, t->data, t->size, t->qp_y_seed);
+        if (enter)
+            substream_load(&lc->sub, t->seg->data, t->seg->size,
+                           t->seg->qp_y_seed);
 
         ret = decode_ctb(s, l, lc, rs);
         if (ret < 0)
@@ -3207,9 +3233,8 @@ static int decode_tiles_row_major(HEVCContext *s, const HEVCLayerContext *l,
         if (rs == sps->ctb_size - 1)
             last_ctb_decoded = 1;
 
-        /* End of substream: last CTB of the tile, or damaged input */
         if (!ret)
-            t->ended = 1;
+            t->seg = NULL;
     }
 
     /* lc still carries the slice of the last column */
@@ -3242,22 +3267,29 @@ static int hls_decode_entry_tiles(HEVCContext *s, const H2645NAL *nal)
     if (ret < 0)
         return ret;
 
+    ret = alloc_tile_segments(s, nb_tiles);
+    if (ret < 0)
+        return ret;
+
     for (int i = 0; i < nb_tiles; i++) {
-        HEVCTileStream *const t = &s->tile_streams[i];
+        HEVCTileSegment *const seg = &s->tile_segments[i];
         const int start_ts = pps->ctb_addr_rs_to_ts[pps->tile_pos_rs[i]];
 
         if (s->sh.size[i] <= 0 || pps->tile_id[start_ts] != i)
             return AVERROR_INVALIDDATA;
 
-        t->sh        = &s->sh;
-        t->rpl       = s->cur_frame->refPicList;
-        t->collocated_ref = s->collocated_ref;
-        t->data      = s->data + s->sh.offset[i];
-        t->size      = s->sh.size[i];
-        t->start_ts  = start_ts;
+        seg->sh        = &s->sh;
+        seg->rpl       = s->cur_frame->refPicList;
+        seg->collocated_ref = s->collocated_ref;
+        seg->data      = s->data + s->sh.offset[i];
+        seg->size      = s->sh.size[i];
+        seg->start_ts  = start_ts;
         /* The QP seed is the value decode_slice_data() left in lc[0]; with
          * cu_qp_delta enabled it must not be overwritten with slice_qp */
-        t->qp_y_seed = s->local_ctx[0].sub.qp_y;
+        seg->qp_y_seed = s->local_ctx[0].sub.qp_y;
+
+        s->tile_streams[i].next_seg = i;
+        s->tile_streams[i].end_seg  = i + 1;
     }
 
     ret = decode_tiles_row_major(s, l, s->tile_streams);
@@ -3378,9 +3410,14 @@ static int build_tile_streams(HEVCContext *s, unsigned nb)
     if (ret < 0)
         return ret;
 
+    ret = alloc_tile_segments(s, nb_tiles);
+    if (ret < 0)
+        return ret;
+
     for (unsigned i = 0; i < nb; i++) {
         const HEVCTileSlice *const sl = &s->tile_slices[i];
         HEVCTileStream *t;
+        HEVCTileSegment *seg;
         const uint8_t *data;
         size_t size;
         int tile;
@@ -3398,23 +3435,27 @@ static int build_tile_streams(HEVCContext *s, unsigned nb)
             return 0;
 
         t = &s->tile_streams[tile];
-        if (t->sh)
+        if (t->end_seg)
             return 0;
 
         if (tile_slice_payload(sl, &data, &size) < 0)
             return 0;
 
-        t->sh        = &sl->sh;
-        t->rpl       = sl->rpl;
-        t->collocated_ref = sl->collocated_ref;
-        t->data      = data;
-        t->size      = size;
-        t->start_ts  = sl->start_ts;
-        t->qp_y_seed = sl->qp_y_seed;
+        seg = &s->tile_segments[tile];
+        seg->sh        = &sl->sh;
+        seg->rpl       = sl->rpl;
+        seg->collocated_ref = sl->collocated_ref;
+        seg->data      = data;
+        seg->size      = size;
+        seg->start_ts  = sl->start_ts;
+        seg->qp_y_seed = sl->qp_y_seed;
+
+        t->next_seg = tile;
+        t->end_seg  = tile + 1;
     }
 
     for (unsigned i = 0; i < nb_tiles; i++)
-        if (!s->tile_streams[i].sh)
+        if (!s->tile_streams[i].end_seg)
             return 0;
 
     return 1;
@@ -4893,6 +4934,7 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
 
     av_freep(&s->local_ctx);
     av_freep(&s->tile_slices);
+    av_freep(&s->tile_segments);
     av_freep(&s->tile_streams);
     av_freep(&s->substreams);
 
