@@ -618,11 +618,8 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
     ret = (opts->api == IMPL_LEGACY) ? scale_legacy(dst, src, mode, opts, &r.time)
         : hw_device_ctx              ? scale_hw(dst, src, mode, opts, &r.time)
         :                              scale_new(dst, src, mode, opts, &r.time);
-    if (ret < 0) {
-        if (ret == AVERROR(ENOTSUP))
-            ret = 0;
+    if (ret < 0)
         goto error;
-    }
 
     ret = init_frame(&out, ref, ref->width, ref->height, ref->format);
     if (ret < 0)
@@ -670,6 +667,8 @@ bad_loss:
  error:
     av_frame_free(&dst);
     av_frame_free(&out);
+    if (ret == AVERROR(ENOTSUP))
+        ret = 0;
     return ret;
 }
 
