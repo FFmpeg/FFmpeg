@@ -2492,6 +2492,7 @@ SYSTEM_FUNCS="
     closesocket
     CommandLineToArgvW
     elf_aux_info
+    eventfd
     fcntl
     getaddrinfo
     getauxval
@@ -6893,6 +6894,7 @@ check_func  mmap
 check_func  mprotect
 # Solaris has nanosleep in -lrt, OpenSolaris no longer needs that
 check_func_headers time.h nanosleep || check_lib nanosleep time.h nanosleep -lrt
+check_func_headers sys/eventfd.h eventfd
 check_func_headers sys/prctl.h prctl
 check_func  sched_getaffinity
 check_func  setrlimit

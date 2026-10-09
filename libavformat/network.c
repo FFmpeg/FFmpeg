@@ -29,6 +29,9 @@
 #endif
 
 #include <fcntl.h>
+#if HAVE_EVENTFD
+#include <sys/eventfd.h>
+#endif
 #include "network.h"
 #include "tls.h"
 #include "url.h"
@@ -98,6 +101,121 @@ int ff_network_wait_fd_timeout(int fd, int write, int64_t timeout, AVIOInterrupt
                 return AVERROR(ETIMEDOUT);
         }
     }
+}
+
+int ff_network_wakeup_open(FFNetWakeup *w)
+{
+#if HAVE_WINSOCK2_H
+    /* select() and WSAPoll() only accept sockets, so use a datagram socket
+     * connected to itself: sending a datagram to it makes it readable.
+     */
+    struct sockaddr_in addr = { .sin_family = AF_INET };
+    socklen_t len = sizeof(addr);
+    int ret, fd = ff_socket(AF_INET, SOCK_DGRAM, 0, NULL);
+
+    if (fd < 0)
+        return ff_neterrno();
+
+    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    if (bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0 ||
+        getsockname(fd, (struct sockaddr *)&addr, &len) < 0 ||
+        connect(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+        ret = ff_neterrno();
+        closesocket(fd);
+        return ret;
+    }
+
+    w->rfd = w->wfd = fd;
+#elif HAVE_EVENTFD
+    int fd = eventfd(0, EFD_CLOEXEC);
+
+    if (fd < 0)
+        return AVERROR(errno);
+
+    w->rfd = w->wfd = fd;
+#else
+    int fds[2];
+
+    if (pipe(fds) < 0)
+        return AVERROR(errno);
+
+#if HAVE_FCNTL
+    for (int i = 0; i < 2; i++) {
+        if (fcntl(fds[i], F_SETFD, FD_CLOEXEC) < 0) {
+            int ret = AVERROR(errno);
+            closesocket(fds[0]);
+            closesocket(fds[1]);
+            return ret;
+        }
+    }
+#endif
+
+    w->rfd = fds[0];
+    w->wfd = fds[1];
+#endif
+
+    atomic_init(&w->signaled, 0);
+
+    return 0;
+}
+
+int ff_network_wakeup_signal(FFNetWakeup *w)
+{
+    /* An eventfd only accepts 8-byte writes; a pipe or a socket takes any
+     * payload, so the same value serves every channel type.
+     */
+    const uint64_t one = 1;
+    int ret;
+
+    /* wfd is blocking; writing at most once keeps the write from blocking.
+     * The flag publishes no other data, so relaxed ordering is enough.
+     */
+    if (atomic_exchange_explicit(&w->signaled, 1, memory_order_relaxed))
+        return 0;
+
+#if HAVE_WINSOCK2_H
+    ret = send(w->wfd, (const char *)&one, sizeof(one), 0);
+#else
+    ret = write(w->wfd, &one, sizeof(one));
+#endif
+
+    return ret < 0 ? ff_neterrno() : 0;
+}
+
+void ff_network_wakeup_close(FFNetWakeup *w)
+{
+    if (w->wfd != w->rfd)
+        closesocket(w->wfd);
+    closesocket(w->rfd);
+
+    w->rfd = w->wfd = -1;
+}
+
+int ff_network_wait_fd_wakeup(int fd, int write, int timeout_ms,
+                              const FFNetWakeup *w)
+{
+    int ev = write ? POLLOUT : POLLIN;
+    struct pollfd p[2] = {
+        { .fd = w->rfd, .events = POLLIN },
+        { .fd = fd,     .events = ev },
+    };
+    int ret;
+
+    /* Return without polling once signaled. This also ends the wait when
+     * the write in ff_network_wakeup_signal() failed and rfd never became
+     * readable.
+     */
+    if (atomic_load_explicit(&w->signaled, memory_order_relaxed))
+        return AVERROR_EXIT;
+
+    ret = poll(p, 2, timeout_ms);
+    if (ret < 0)
+        return ff_neterrno();
+
+    if (p[0].revents & POLLIN)
+        return AVERROR_EXIT;
+
+    return p[1].revents & (ev | POLLERR | POLLHUP) ? 0 : AVERROR(EAGAIN);
 }
 
 int ff_network_sleep_interruptible(int64_t timeout, AVIOInterruptCB *int_cb)

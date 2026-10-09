@@ -22,6 +22,7 @@
 #define AVFORMAT_NETWORK_H
 
 #include <errno.h>
+#include <stdatomic.h>
 #include <stdint.h>
 
 #include "config.h"
@@ -106,6 +107,68 @@ int ff_network_wait_fd_timeout(int fd, int write, int64_t timeout, AVIOInterrupt
  * @return AVERROR(ETIMEDOUT) if timeout expirted, AVERROR_EXIT if interrupted by int_cb
  */
 int ff_network_sleep_interruptible(int64_t timeout, AVIOInterruptCB *int_cb);
+
+/**
+ * A channel for waking a thread that is blocked in
+ * ff_network_wait_fd_wakeup(), from another thread.
+ *
+ * Usage: the waiting thread calls ff_network_wait_fd_wakeup(); another
+ * thread calls ff_network_wakeup_signal() to end that wait; once the
+ * waiting thread has been joined, ff_network_wakeup_close() is called.
+ *
+ * rfd is pollable together with sockets on every platform. It is an
+ * eventfd, the read end of a pipe, or a loopback datagram socket on
+ * Windows, where only sockets can be waited on together with sockets.
+ * wfd is the end ff_network_wakeup_signal() writes to; it equals rfd
+ * unless a pipe is in use. On systems other than Windows both fds are
+ * close-on-exec.
+ */
+typedef struct FFNetWakeup {
+    int rfd;
+    int wfd;
+    atomic_int signaled;
+} FFNetWakeup;
+
+/**
+ * Create a wakeup channel. On Windows ff_network_init() must have been
+ * called first.
+ *
+ * @return 0 on success, a negative AVERROR code on failure
+ */
+int ff_network_wakeup_open(FFNetWakeup *w);
+
+/**
+ * Wake the thread blocked in ff_network_wait_fd_wakeup() on this channel,
+ * or the next one that waits on it: the signal is not consumed, so a
+ * signal sent before the wait starts is not lost. Only the first call has
+ * an effect; the function may be called any number of times, from any
+ * thread.
+ *
+ * @return 0 on success, a negative AVERROR code if the first call failed
+ *         to write to the channel
+ */
+int ff_network_wakeup_signal(FFNetWakeup *w);
+
+/**
+ * Close the channel. Call it after the waiting thread has been joined and
+ * no thread can signal any more.
+ */
+void ff_network_wakeup_close(FFNetWakeup *w);
+
+/**
+ * Like ff_network_wait_fd(), but also returns as soon as the wakeup
+ * channel is signaled, and with a caller chosen timeout.
+ *
+ * @param fd Socket descriptor
+ * @param write Set 1 to wait for the socket to be writable, 0 for readable
+ * @param timeout_ms Timeout in milliseconds, or -1 to wait indefinitely
+ * @param w Wakeup channel to watch, must have been opened
+ * @return 0 if fd is ready, AVERROR(EAGAIN) if the timeout expired,
+ *         AVERROR_EXIT if w was signaled (also when fd is ready),
+ *         or a negative error code
+ */
+int ff_network_wait_fd_wakeup(int fd, int write, int timeout_ms,
+                              const FFNetWakeup *w);
 
 #if !HAVE_STRUCT_SOCKADDR_STORAGE
 struct sockaddr_storage {
