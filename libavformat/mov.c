@@ -11241,11 +11241,16 @@ static int mov_parse_tiles(AVFormatContext *s)
     MOVContext *mov = s->priv_data;
 
     for (int i = 0; i < mov->nb_heif_grid; i++) {
-        AVStreamGroup *stg = avformat_stream_group_create(s, AV_STREAM_GROUP_PARAMS_TILE_GRID, NULL);
+        AVStreamGroup *stg;
         AVStreamGroupTileGrid *tile_grid;
         const HEIFGrid *grid = &mov->heif_grid[i];
-        int err, loop = 1;
+        int err;
 
+        if (!grid->item || (grid->item->type != MKTAG('g','r','i','d') &&
+                            grid->item->type != MKTAG('i','o','v','l')))
+            continue;
+
+        stg = avformat_stream_group_create(s, AV_STREAM_GROUP_PARAMS_TILE_GRID, NULL);
         if (!stg)
             return AVERROR(ENOMEM);
 
@@ -11254,58 +11259,48 @@ static int mov_parse_tiles(AVFormatContext *s)
 
         for (int j = 0; j < grid->nb_tiles; j++) {
             int tile_id = grid->tile_id_list[j];
-            int k;
+            HEIFItem *item = get_heif_item(mov, tile_id);
+            AVStream *st;
 
-            for (k = 0; k < mov->nb_heif_item; k++) {
-                HEIFItem *item = mov->heif_item[k];
-                AVStream *st;
-
-                if (!item || item->item_id != tile_id)
-                    continue;
-                st = item->st;
-                if (!st) {
-                    av_log(s, AV_LOG_WARNING, "HEIF item id %d from grid id %d doesn't "
-                                              "reference a stream\n",
-                           tile_id, grid->item->item_id);
-                    ff_remove_stream_group(s, stg);
-                    loop = 0;
-                    break;
-                }
-
-                grid->tile_item_list[j] = item;
-                grid->tile_idx_list[j] = stg->nb_entries;
-
-                err = avformat_stream_group_add_stream(stg, st);
-                if (err < 0) {
-                    int l;
-                    if (err != AVERROR(EEXIST))
-                        return err;
-
-                    for (l = 0; l < stg->nb_entries; l++)
-                        if (stg->entries[l]->stream->index == st->index)
-                            break;
-                    av_assert0(l < stg->nb_entries);
-                    grid->tile_idx_list[j] = l;
-                }
-
-                if (item->item_id != mov->primary_item_id)
-                    st->disposition |= AV_DISPOSITION_DEPENDENT;
-                break;
-            }
-
-            if (k == mov->nb_heif_item) {
-                av_assert0(loop);
+            if (!item) {
                 av_log(s, AV_LOG_WARNING, "HEIF item id %d referenced by grid id %d doesn't "
                                           "exist\n",
                        tile_id, grid->item->item_id);
                 ff_remove_stream_group(s, stg);
-                loop = 0;
-            }
-            if (!loop)
+                stg = NULL;
                 break;
-        }
+            }
 
-        if (!loop)
+            st = item->st;
+            if (!st) {
+                av_log(s, AV_LOG_WARNING, "HEIF item id %d from grid id %d doesn't "
+                                          "reference a stream\n",
+                       tile_id, grid->item->item_id);
+                ff_remove_stream_group(s, stg);
+                stg = NULL;
+                break;
+            }
+
+            grid->tile_item_list[j] = item;
+            grid->tile_idx_list[j] = stg->nb_entries;
+
+            err = avformat_stream_group_add_stream(stg, st);
+            if (err < 0) {
+                int l;
+                if (err != AVERROR(EEXIST))
+                    return err;
+
+                for (l = 0; l < stg->nb_entries; l++)
+                    if (stg->entries[l]->stream->index == st->index)
+                        break;
+                av_assert0(l < stg->nb_entries);
+                grid->tile_idx_list[j] = l;
+            }
+
+            if (item->item_id != mov->primary_item_id)
+                st->disposition |= AV_DISPOSITION_DEPENDENT;
+        }
+        if (!stg)
             continue;
 
         switch (grid->item->type) {
@@ -11330,6 +11325,8 @@ static int mov_parse_tiles(AVFormatContext *s)
             av_dict_set(&stg->metadata, "title", grid->item->name, 0);
         if (grid->item->item_id == mov->primary_item_id)
             stg->disposition |= AV_DISPOSITION_DEFAULT;
+
+        grid->item->stg = stg;
     }
 
     return 0;
