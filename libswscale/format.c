@@ -1837,6 +1837,11 @@ int ff_sws_op_list_generate(SwsContext *ctx, const SwsFormat *src,
         ctx->alpha_blend != SWS_ALPHA_BLEND_NONE)
         return AVERROR(ENOTSUP);
 
+    /* XYZ<->RGB conversion requires application of a gamma function which
+     * are not currently implemented */
+    if ((src->desc->flags ^ dst->desc->flags) & AV_PIX_FMT_FLAG_XYZ)
+        return AVERROR(ENOTSUP);
+
     SwsOpList *ops = ff_sws_op_list_alloc();
     if (!ops)
         return AVERROR(ENOMEM);
