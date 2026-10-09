@@ -9682,13 +9682,13 @@ fail:
 static int mov_read_iref_dimg(MOVContext *c, AVIOContext *pb, int version)
 {
     HEIFItem *item = NULL;
-    HEIFGrid *grid;
+    HEIFGroup *grid;
     int entries, i;
     int from_item_id = version ? avio_rb32(pb) : avio_rb16(pb);
     int ret = 0;
 
-    for (int i = 0; i < c->nb_heif_grid; i++) {
-        if (c->heif_grid[i].item->item_id == from_item_id) {
+    for (int i = 0; i < c->nb_heif_group; i++) {
+        if (c->heif_group[i].item->item_id == from_item_id) {
             av_log(c->fc, AV_LOG_ERROR, "More than one 'dimg' box "
                                         "referencing the same Derived Image item\n");
             return AVERROR_INVALIDDATA;
@@ -9722,23 +9722,23 @@ static int mov_read_iref_dimg(MOVContext *c, AVIOContext *pb, int version)
         return AVERROR_INVALIDDATA;
     }
 
-    grid = av_realloc_array(c->heif_grid, c->nb_heif_grid + 1U,
-                            sizeof(*c->heif_grid));
+    grid = av_realloc_array(c->heif_group, c->nb_heif_group + 1U,
+                            sizeof(*c->heif_group));
     if (!grid)
         return AVERROR(ENOMEM);
-    c->heif_grid = grid;
-    grid = &grid[c->nb_heif_grid];
+    c->heif_group = grid;
+    grid = &grid[c->nb_heif_group];
 
-    grid->tile_id_list = av_malloc_array(entries, sizeof(*grid->tile_id_list));
-    grid->tile_idx_list = av_calloc(entries, sizeof(*grid->tile_idx_list));
-    grid->tile_item_list = av_calloc(entries, sizeof(*grid->tile_item_list));
-    if (!grid->tile_id_list || !grid->tile_item_list || !grid->tile_idx_list) {
+    grid->item_id_list = av_malloc_array(entries, sizeof(*grid->item_id_list));
+    grid->item_idx_list = av_calloc(entries, sizeof(*grid->item_idx_list));
+    grid->item_list = av_calloc(entries, sizeof(*grid->item_list));
+    if (!grid->item_id_list || !grid->item_list || !grid->item_idx_list) {
         ret = AVERROR(ENOMEM);
         goto fail;
     }
     /* 'to' item ids */
     for (i = 0; i < entries; i++) {
-        grid->tile_id_list[i] = version ? avio_rb32(pb) : avio_rb16(pb);
+        grid->item_id_list[i] = version ? avio_rb32(pb) : avio_rb16(pb);
 
         if (avio_feof(pb)) {
             ret = AVERROR_INVALIDDATA;
@@ -9746,18 +9746,18 @@ static int mov_read_iref_dimg(MOVContext *c, AVIOContext *pb, int version)
         }
     }
 
-    grid->nb_tiles = entries;
+    grid->nb_items = entries;
     grid->item = item;
-    ++c->nb_heif_grid;
+    ++c->nb_heif_group;
 
     av_log(c->fc, AV_LOG_TRACE, "dimg: from_item_id %d, entries %d\n",
            from_item_id, entries);
 
     return 0;
 fail:
-    av_freep(&grid->tile_id_list);
-    av_freep(&grid->tile_idx_list);
-    av_freep(&grid->tile_item_list);
+    av_freep(&grid->item_id_list);
+    av_freep(&grid->item_idx_list);
+    av_freep(&grid->item_list);
 
     return ret;
 }
@@ -10767,12 +10767,12 @@ static int mov_read_close(AVFormatContext *s)
         av_freep(&mov->heif_item[i]);
     }
     av_freep(&mov->heif_item);
-    for (i = 0; i < mov->nb_heif_grid; i++) {
-        av_freep(&mov->heif_grid[i].tile_id_list);
-        av_freep(&mov->heif_grid[i].tile_idx_list);
-        av_freep(&mov->heif_grid[i].tile_item_list);
+    for (i = 0; i < mov->nb_heif_group; i++) {
+        av_freep(&mov->heif_group[i].item_id_list);
+        av_freep(&mov->heif_group[i].item_idx_list);
+        av_freep(&mov->heif_group[i].item_list);
     }
-    av_freep(&mov->heif_grid);
+    av_freep(&mov->heif_group);
 
     return 0;
 }
@@ -10949,7 +10949,7 @@ static int set_display_matrix_from_item(AVPacketSideData **coded_side_data, int 
     return 0;
 }
 
-static int read_image_grid(AVFormatContext *s, const HEIFGrid *grid,
+static int read_image_grid(AVFormatContext *s, const HEIFGroup *grid,
                            AVStreamGroupTileGrid *tile_grid)
 {
     MOVContext *c = s->priv_data;
@@ -10993,15 +10993,15 @@ static int read_image_grid(AVFormatContext *s, const HEIFGrid *grid,
     avio_seek(s->pb, pos, SEEK_SET);
 
     size = tile_rows * tile_cols;
-    tile_grid->nb_tiles = grid->nb_tiles;
+    tile_grid->nb_tiles = grid->nb_items;
 
     if (tile_grid->nb_tiles != size)
         return AVERROR_INVALIDDATA;
 
     for (int i = 0; i < tile_cols; i++)
-        coded_width  += grid->tile_item_list[i]->width;
+        coded_width  += grid->item_list[i]->width;
     for (int i = 0; i < size; i += tile_cols)
-        coded_height += grid->tile_item_list[i]->height;
+        coded_height += grid->item_list[i]->height;
 
     if (coded_width > INT_MAX || coded_height > INT_MAX)
         return AVERROR_INVALIDDATA;
@@ -11020,11 +11020,11 @@ static int read_image_grid(AVFormatContext *s, const HEIFGrid *grid,
             if (i == tile_grid->nb_tiles)
                 return AVERROR_INVALIDDATA;
 
-            tile_grid->offsets[i].idx        = grid->tile_idx_list[i];
+            tile_grid->offsets[i].idx        = grid->item_idx_list[i];
             tile_grid->offsets[i].horizontal = x;
             tile_grid->offsets[i].vertical   = y;
 
-            x += grid->tile_item_list[i++]->width;
+            x += grid->item_list[i++]->width;
         }
 
         if (x > tile_grid->coded_width) {
@@ -11033,7 +11033,7 @@ static int read_image_grid(AVFormatContext *s, const HEIFGrid *grid,
         }
 
         x  = 0;
-        y += grid->tile_item_list[left_col]->height;
+        y += grid->item_list[left_col]->height;
     }
 
     if (y > tile_grid->coded_height || i != tile_grid->nb_tiles) {
@@ -11044,7 +11044,7 @@ static int read_image_grid(AVFormatContext *s, const HEIFGrid *grid,
     return 0;
 }
 
-static int read_image_iovl(AVFormatContext *s, const HEIFGrid *grid,
+static int read_image_iovl(AVFormatContext *s, const HEIFGroup *grid,
                            AVStreamGroupTileGrid *tile_grid)
 {
     MOVContext *c = s->priv_data;
@@ -11090,7 +11090,7 @@ static int read_image_iovl(AVFormatContext *s, const HEIFGrid *grid,
     av_log(c->fc, AV_LOG_TRACE, "iovl: output_width %d, output_height %d\n",
            tile_grid->width, tile_grid->height);
 
-    tile_grid->nb_tiles = grid->nb_tiles;
+    tile_grid->nb_tiles = grid->nb_items;
     tile_grid->offsets = av_malloc_array(tile_grid->nb_tiles, sizeof(*tile_grid->offsets));
     if (!tile_grid->offsets) {
         ret = AVERROR(ENOMEM);
@@ -11098,7 +11098,7 @@ static int read_image_iovl(AVFormatContext *s, const HEIFGrid *grid,
     }
 
     for (int i = 0; i < tile_grid->nb_tiles; i++) {
-        tile_grid->offsets[i].idx        = grid->tile_idx_list[i];
+        tile_grid->offsets[i].idx        = grid->item_idx_list[i];
         tile_grid->offsets[i].horizontal = (flags & 1) ? avio_rb32(s->pb) : avio_rb16(s->pb);
         tile_grid->offsets[i].vertical   = (flags & 1) ? avio_rb32(s->pb) : avio_rb16(s->pb);
         av_log(c->fc, AV_LOG_TRACE, "iovl: stream_idx[%d] %u, "
@@ -11240,10 +11240,10 @@ static int mov_parse_tiles(AVFormatContext *s)
 {
     MOVContext *mov = s->priv_data;
 
-    for (int i = 0; i < mov->nb_heif_grid; i++) {
+    for (int i = 0; i < mov->nb_heif_group; i++) {
         AVStreamGroup *stg;
         AVStreamGroupTileGrid *tile_grid;
-        const HEIFGrid *grid = &mov->heif_grid[i];
+        const HEIFGroup *grid = &mov->heif_group[i];
         int err;
 
         if (!grid->item || (grid->item->type != MKTAG('g','r','i','d') &&
@@ -11257,8 +11257,8 @@ static int mov_parse_tiles(AVFormatContext *s)
         stg->id = grid->item->item_id;
         tile_grid = stg->params.tile_grid;
 
-        for (int j = 0; j < grid->nb_tiles; j++) {
-            int tile_id = grid->tile_id_list[j];
+        for (int j = 0; j < grid->nb_items; j++) {
+            int tile_id = grid->item_id_list[j];
             HEIFItem *item = get_heif_item(mov, tile_id);
             AVStream *st;
 
@@ -11281,8 +11281,8 @@ static int mov_parse_tiles(AVFormatContext *s)
                 break;
             }
 
-            grid->tile_item_list[j] = item;
-            grid->tile_idx_list[j] = stg->nb_entries;
+            grid->item_list[j] = item;
+            grid->item_idx_list[j] = stg->nb_entries;
 
             err = avformat_stream_group_add_stream(stg, st);
             if (err < 0) {
@@ -11294,7 +11294,7 @@ static int mov_parse_tiles(AVFormatContext *s)
                     if (stg->entries[l]->stream->index == st->index)
                         break;
                 av_assert0(l < stg->nb_entries);
-                grid->tile_idx_list[j] = l;
+                grid->item_idx_list[j] = l;
             }
 
             if (item->item_id != mov->primary_item_id)
@@ -11386,7 +11386,7 @@ static int mov_parse_heif_items(AVFormatContext *s)
         mov_build_index(mov, st);
     }
 
-    if (mov->nb_heif_grid) {
+    if (mov->nb_heif_group) {
         err = mov_parse_tiles(s);
         if (err < 0)
             return err;

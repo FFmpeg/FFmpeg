@@ -314,13 +314,13 @@ typedef struct HEIFItem {
     size_t icc_profile_size;
 } HEIFItem;
 
-typedef struct HEIFGrid {
+typedef struct HEIFGroup {
     HEIFItem *item;
-    HEIFItem **tile_item_list;
-    int16_t *tile_id_list;
-    unsigned *tile_idx_list;
-    int nb_tiles;
-} HEIFGrid;
+    HEIFItem **item_list;
+    int16_t *item_id_list;
+    unsigned *item_idx_list;
+    int nb_items;
+} HEIFGroup;
 
 typedef struct MOVContext {
     const AVClass *class; ///< class for private options
@@ -385,8 +385,8 @@ typedef struct MOVContext {
     int cur_item_id;
     HEIFItem **heif_item;
     int nb_heif_item;
-    HEIFGrid *heif_grid;
-    int nb_heif_grid;
+    HEIFGroup *heif_group;
+    int nb_heif_group;
     int64_t idat_offset;
     int interleaved_read;
     AVDictionary* decryption_keys;
