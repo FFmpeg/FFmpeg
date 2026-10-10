@@ -56,7 +56,7 @@ fate-ffprobe-stream-entries-tmcd: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -v error
 fate-ffprobe-group-stream-entries-tmcd: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -v error -select_streams v:0 \
     -show_entries stream_group_stream=index -of compact $(TARGET_SAMPLES)/mov/fcp_export8-236.mov
 fate-ffprobe-show-groups-tmcd: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -v error -select_streams v:0 -show_stream_groups \
-    -show_entries stream_group=:stream_group_disposition=:stream_group_tags=:stream_group_components=:stream_group_stream_disposition=:stream_group_stream_tags=:stream=index \
+    -show_entries stream_group=:stream_group_disposition=:stream_group_tags=:stream_group_components=:stream_group_stream_disposition=:stream_group_stream_tags=:stream_group_stream_side_data=:stream=index \
     -of compact $(TARGET_SAMPLES)/mov/fcp_export8-236.mov
 
 FATE_MOV_FASTSTART = fate-mov-faststart-4gb-overflow \
