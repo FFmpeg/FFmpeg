@@ -273,6 +273,13 @@ static void clut_add(ARIBCaptionContext *ctx, uint32_t rgba)
     clut_set_alpha(ctx, CLUT_A(rgba));
 }
 
+/* whether a region is left out: ruby with ignore_ruby, or no character */
+static int region_skipped(const ARIBCaptionContext *ctx,
+                          const aribcc_caption_region_t *region)
+{
+    return !region->char_count || (region->is_ruby && ctx->ignore_ruby);
+}
+
 /* add the character colors of a region to the CLUT */
 static void clut_add_region(ARIBCaptionContext *ctx, aribcc_caption_region_t *region)
 {
@@ -401,7 +408,7 @@ static int aribcaption_trans_bitmap_subtitle(ARIBCaptionContext *ctx)
            Seed the CLUT with the colors of every region that may be drawn. */
         clut_reset(ctx);
         for (int i = 0; i < ctx->caption.region_count; i++)
-            if (!(ctx->ignore_ruby && ctx->caption.regions[i].is_ruby))
+            if (!region_skipped(ctx, &ctx->caption.regions[i]))
                 clut_add_region(ctx, &ctx->caption.regions[i]);
 
         rect->w = image->width * ctx->bitmap_plane_width / ctx->frame_width;
@@ -623,7 +630,7 @@ static int aribcaption_trans_ass_subtitle(ARIBCaptionContext *ctx)
         x = ctx->plane_width;
         y = ctx->plane_height;
         for (int i = 0; i < ctx->caption.region_count; i++) {
-            if (ctx->caption.regions[i].is_ruby && ctx->ignore_ruby)
+            if (region_skipped(ctx, &ctx->caption.regions[i]))
                 continue;
             region_position(ctx, &ctx->caption.regions[i], &rx, &ry);
             if (rx < x)
@@ -650,7 +657,7 @@ static int aribcaption_trans_ass_subtitle(ARIBCaptionContext *ctx)
         int char_height = ctx->font_size;
         int char_horizontal_spacing = 0;
 
-        if (region->is_ruby && ctx->ignore_ruby)
+        if (region_skipped(ctx, region))
             continue;
 
         if (single_rect && emitted)
