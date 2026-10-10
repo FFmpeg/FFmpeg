@@ -479,6 +479,7 @@ static int aribcaption_trans_bitmap_subtitle(ARIBCaptionContext *ctx)
             av_log(ctx, AV_LOG_WARNING, "CLUT overflow (%d).\n", ctx->clut_overflow);
     }
     sub->num_rects = rect_idx;
+    aribcc_render_result_cleanup(&ctx->render_result);
 
     return rect_idx;
 
@@ -494,6 +495,7 @@ fail:
         av_freep(&sub->rects);
     }
     sub->num_rects = 0;
+    aribcc_render_result_cleanup(&ctx->render_result);
 
     return ret;
 }
