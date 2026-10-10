@@ -64,7 +64,8 @@ static int realtext_read_header(AVFormatContext *s)
     AVStream *st = avformat_new_stream(s, NULL);
     AVBPrint buf;
     char c = 0;
-    int res = 0, duration = read_ts("60"); // default duration is 60 seconds
+    int res = 0;
+    int64_t duration = read_ts("60"); // default duration is 60 seconds
     FFTextReader tr;
     ff_text_init_avio(s, &tr, s->pb);
 
