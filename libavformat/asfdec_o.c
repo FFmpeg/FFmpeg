@@ -841,7 +841,7 @@ static int asf_read_simple_index(AVFormatContext *s, const GUIDParseTable *g)
     int64_t offset;
     uint64_t size = avio_rl64(pb);
 
-    if (size < 24)
+    if (size < 24 || size > INT64_MAX)
         return AVERROR_INVALIDDATA;
 
     // simple index objects should be ordered by stream number, this loop tries to find
