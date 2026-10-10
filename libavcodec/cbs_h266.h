@@ -538,7 +538,7 @@ typedef struct H266RawPPS {
     uint16_t pps_slice_width_in_tiles_minus1[VVC_MAX_SLICES];
     uint16_t pps_slice_height_in_tiles_minus1[VVC_MAX_SLICES];
     uint16_t pps_num_exp_slices_in_tile[VVC_MAX_SLICES];
-    uint16_t pps_exp_slice_height_in_ctus_minus1[VVC_MAX_SLICES][VVC_MAX_TILE_ROWS];
+    uint16_t pps_exp_slice_height_in_ctus_minus1[VVC_MAX_SLICES];
     int16_t  pps_tile_idx_delta_val[VVC_MAX_SLICES];
 
     uint8_t  pps_loop_filter_across_slices_enabled_flag;
