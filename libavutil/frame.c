@@ -730,7 +730,7 @@ void av_frame_remove_side_data(AVFrame *frame, enum AVFrameSideDataType type)
     av_frame_side_data_remove(&frame->side_data, &frame->nb_side_data, type);
 }
 
-static int calc_cropping_offsets(size_t offsets[4], const AVFrame *frame,
+static int calc_cropping_offsets(ptrdiff_t offsets[4], const AVFrame *frame,
                                  const AVPixFmtDescriptor *desc)
 {
     for (int i = 0; frame->data[i]; i++) {
@@ -753,8 +753,8 @@ static int calc_cropping_offsets(size_t offsets[4], const AVFrame *frame,
         if (!comp)
             return AVERROR_BUG;
 
-        offsets[i] = (frame->crop_top  >> shift_y) * frame->linesize[i] +
-                     (frame->crop_left >> shift_x) * comp->step;
+        offsets[i] = (ptrdiff_t)(frame->crop_top  >> shift_y) * frame->linesize[i] +
+                     (ptrdiff_t)(frame->crop_left >> shift_x) * comp->step;
     }
 
     return 0;
@@ -763,7 +763,7 @@ static int calc_cropping_offsets(size_t offsets[4], const AVFrame *frame,
 int av_frame_apply_cropping(AVFrame *frame, int flags)
 {
     const AVPixFmtDescriptor *desc;
-    size_t offsets[4];
+    ptrdiff_t offsets[4];
     int ret;
 
     if (!(frame->width > 0 && frame->height > 0))
