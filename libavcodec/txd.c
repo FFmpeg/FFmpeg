@@ -81,9 +81,14 @@ static int txd_decode_frame(AVCodecContext *avctx, AVFrame *p,
         case TXD_DXT3:
             if (bytestream2_get_bytes_left(&gb) < AV_CEIL_RSHIFT(w, 2) * AV_CEIL_RSHIFT(h, 2) * 16 + 4)
                 return AVERROR_INVALIDDATA;
+            break;
+        default:
+            goto unsupported;
         }
     } else if (depth == 32) {
         avctx->pix_fmt = AV_PIX_FMT_RGBA;
+        if (d3d_format != 0x15 && d3d_format != 0x16)
+            goto unsupported;
         if (bytestream2_get_bytes_left(&gb) < h * w * 4)
             return AVERROR_INVALIDDATA;
     } else {
