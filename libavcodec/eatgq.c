@@ -272,12 +272,17 @@ static int tgq_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     tgq_calculate_qtable(s, bytestream2_get_byteu(&gbyte));
     bytestream2_skipu(&gbyte, 3);
 
+    int mb_width  = FFALIGN(avctx->width,  16) >> 4;
+    int mb_height = FFALIGN(avctx->height, 16) >> 4;
+    if (bytestream2_get_bytes_left(&gbyte) < mb_width * mb_height)
+        return AVERROR_INVALIDDATA;
+
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
 
     frame->flags |= AV_FRAME_FLAG_KEY;
-    for (y = 0; y < FFALIGN(avctx->height, 16) >> 4; y++)
-        for (x = 0; x < FFALIGN(avctx->width, 16) >> 4; x++)
+    for (y = 0; y < mb_height; y++)
+        for (x = 0; x < mb_width; x++)
             if (tgq_decode_mb(s, &gbyte, frame, y, x) < 0)
                 return AVERROR_INVALIDDATA;
 
