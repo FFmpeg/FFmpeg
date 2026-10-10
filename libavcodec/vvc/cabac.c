@@ -855,6 +855,10 @@ int ff_vvc_cabac_init(VVCLocalContext *lc,
             ret = cabac_reinit(lc);
         if (!ret)
             cabac_init_state(lc);
+    } else if (lc->sc->nb_eps == 1 && rx == pps->ctb_to_col_bd[rx] &&
+               lc->fc->ps.sps->r->sps_entropy_coding_sync_enabled_flag) {
+        avpriv_report_missing_feature(lc->fc->log_ctx, "Entropy coding sync without entry points");
+        return AVERROR_PATCHWELCOME;
     }
     return ret;
 }
