@@ -81,6 +81,19 @@
 #define MIN_LSF_SPACING    (50.0488 / 8000.0) ///< Ensures stability of LPC filter
 #define PITCH_LAG_MIN_MODE_12k2          18   ///< Lower bound on decoded lag search in 12.2kbit/s mode
 
+/**
+ * Weights of the past LSFs and of their mean when concealing a lost frame,
+ * ALPHA and ONE_ALPHA of 3GPP TS 26.073. The 12.2 kbit/s mode uses a
+ * different pair than all the other modes do:
+ *
+ *   D_plsf_3()  d_plsf_3.c:51-52  29491 /  3277 (0.90 / 0.10)
+ *   D_plsf_5()  d_plsf_5.c:49-50  31128 /  1639 (0.95 / 0.05)
+ */
+#define LSF_ALPHA        (29491.0f / 32768.0f)
+#define LSF_ONE_ALPHA    ( 3277.0f / 32768.0f)
+#define LSF_ALPHA_5      (31128.0f / 32768.0f)
+#define LSF_ONE_ALPHA_5  ( 1639.0f / 32768.0f)
+
 /** Initial energy in dB. Also used for bad frames (unimplemented). */
 #define MIN_ENERGY -14.0
 
@@ -192,8 +205,12 @@ typedef struct AMRContext {
     int         valid_data;                           ///< the CN parameters of this frame may be used
     int         data_updated;                         ///< CN parameters have been renewed at least once
     int         prev_bf;                              ///< the previous frame could not be used
-    float       prev_pitch_gain;                      ///< pitch gain of the last usable frame
-    float       prev_fixed_gain;                      ///< fixed gain of the last usable frame
+
+    /* Bad frame handling and error concealment state, 3GPP TS 26.091 */
+    int         bfh_state;                            ///< bad frame handling state (0..6)
+    uint32_t    no_data_seed;                         ///< pseudo-random source for lost frames
+    float       ec_gain_pbuf[5], ec_gain_past_pit, ec_gain_prev_pit;
+    float       ec_gain_gbuf[5], ec_gain_past_code, ec_gain_prev_code;
 } AMRContext;
 
 typedef struct AMRChannelsContext {
@@ -210,6 +227,30 @@ static void weighted_vector_sumd(double *out, const double *in_a,
     for (i = 0; i < length; i++)
         out[i] = weight_coeff_a * in_a[i]
                + weight_coeff_b * in_b[i];
+}
+
+/**
+ * Reset the bad frame handling and gain concealment states, matching
+ * Decoder_amr_reset() and ec_gain_*_reset() in 3GPP TS 26.073.
+ */
+static void ec_reset(AMRContext *p)
+{
+    int i;
+
+    p->bfh_state    = 0;
+    p->no_data_seed = 21845;
+    /* ec_gain_pitch_reset() stores 1640 in Q14. ec_gain_code_reset() stores 1
+       in Q1 (0.5). In this floating-point decoder p->excitation[] uses unit
+       pulse amplitude and is truncated with truncf(), so 1.0f is used as an
+       intentional unit-pulse floor rather than the 0.5 fixed-point scale. */
+    for (i = 0; i < 5; i++) {
+        p->ec_gain_pbuf[i] = 1640.0f / 16384.0f;
+        p->ec_gain_gbuf[i] = 1.0f;
+    }
+    p->ec_gain_past_pit  = 0.0f;
+    p->ec_gain_prev_pit  = 1.0f;
+    p->ec_gain_past_code = 0.0f;
+    p->ec_gain_prev_code = 1.0f;
 }
 
 static av_cold int amrnb_decode_init(AVCodecContext *avctx)
@@ -252,8 +293,8 @@ static av_cold int amrnb_decode_init(AVCodecContext *avctx)
         p->hangover_count  = DTX_HANG_CONST;
         p->dec_ana_elapsed = 32767;
         p->prev_bf         = 0;
-        p->prev_pitch_gain = 0.0f;
-        p->prev_fixed_gain = 0.0f;
+
+        ec_reset(p);
 
         for (i = 0; i < LP_FILTER_ORDER; i++)
             p->cn_lsp[i] = p->cn_lsp_old[i] = cn_lsp_init[i];
@@ -376,13 +417,43 @@ static void lsf2lsp_for_mode12k2(AMRContext *p, double lsp[LP_FILTER_ORDER],
  * Decode a set of 5 split-matrix quantized lsf indexes into 2 lsp vectors.
  *
  * @param p                 pointer to the AMRContext
+ * @param bfi               the frame is unusable, conceal the LSF vector
  */
-static void lsf2lsp_5(AMRContext *p)
+static void lsf2lsp_5(AMRContext *p, int bfi)
 {
     const uint16_t *lsf_param = p->frame.lsf;
     float lsf_no_r[LP_FILTER_ORDER]; // LSFs without the residual vector
     const int16_t *lsf_quantizer[5];
+    float lsf_q[LP_FILTER_ORDER];
     int i;
+
+    if (bfi) {
+        /* Use the past LSFs slightly shifted towards their mean, and update
+           the prediction residual, see D_plsf_5() in 3GPP TS 26.073
+           (d_plsf_5.c:88-115). The LSFs are kept in Hertz while the
+           residual prev_lsf_r is in the codebook domain (LSF_R_FAC). */
+        for (i = 0; i < LP_FILTER_ORDER; i++)
+            lsf_q[i] = (LSF_ALPHA_5 * p->lsf_q[3][i] * 8000.0f +
+                        LSF_ONE_ALPHA_5 * lsf_5_mean[i]) * (1.0f / 8000.0f);
+
+        for (i = 0; i < LP_FILTER_ORDER; i++)
+            p->prev_lsf_r[i] = av_clip_int16(lrintf(
+                (lsf_q[i] * 8000.0f -
+                 (lsf_5_mean[i] + PRED_FAC_MODE_12k2 * p->prev_lsf_r[i] *
+                  LSF_R_FAC)) / LSF_R_FAC));
+
+        ff_set_min_dist_lsf(lsf_q, MIN_LSF_SPACING, LP_FILTER_ORDER);
+        interpolate_lsf(&p->acelpv_ctx, p->lsf_q, lsf_q);
+        ff_acelp_lsf2lspd(p->lsp[3], lsf_q, LP_FILTER_ORDER);
+
+        /* the first and second LSP vectors are concealed identically */
+        memcpy(p->lsp[1], p->lsp[3], sizeof(p->lsp[1]));
+        weighted_vector_sumd(p->lsp[0], p->prev_lsp_sub4, p->lsp[1], 0.5, 0.5,
+                             LP_FILTER_ORDER);
+        weighted_vector_sumd(p->lsp[2], p->lsp[1], p->lsp[3], 0.5, 0.5,
+                             LP_FILTER_ORDER);
+        return;
+    }
 
     lsf_quantizer[0] = lsf_5_1[lsf_param[0]];
     lsf_quantizer[1] = lsf_5_2[lsf_param[1]];
@@ -405,14 +476,43 @@ static void lsf2lsp_5(AMRContext *p)
  * Decode a set of 3 split-matrix quantized lsf indexes into an lsp vector.
  *
  * @param p                 pointer to the AMRContext
+ * @param bfi               the frame is unusable, conceal the LSF vector
  */
-static void lsf2lsp_3(AMRContext *p)
+static void lsf2lsp_3(AMRContext *p, int bfi)
 {
     const uint16_t *lsf_param = p->frame.lsf;
-    int16_t lsf_r[LP_FILTER_ORDER]; // residual LSF vector
     float lsf_q[LP_FILTER_ORDER]; // quantified LSF vector
-    const int16_t *lsf_quantizer;
     int i, j;
+
+    if (bfi) {
+        /* Use the past LSFs slightly shifted towards their mean, and update
+           the prediction residual, see D_plsf_3() in 3GPP TS 26.073
+           (d_plsf_3.c:84-115). The LSFs are kept in Hertz while the residual
+           prev_lsf_r is in the codebook domain (LSF_R_FAC). */
+        for (i = 0; i < LP_FILTER_ORDER; i++)
+            lsf_q[i] = (LSF_ALPHA * p->lsf_q[3][i] * 8000.0f +
+                        LSF_ONE_ALPHA * lsf_3_mean[i]) * (1.0f / 8000.0f);
+
+        for (i = 0; i < LP_FILTER_ORDER; i++)
+            p->prev_lsf_r[i] = av_clip_int16(lrintf(
+                (lsf_q[i] * 8000.0f -
+                 (lsf_3_mean[i] + pred_fac[i] * p->prev_lsf_r[i] *
+                  LSF_R_FAC)) / LSF_R_FAC));
+
+        ff_set_min_dist_lsf(lsf_q, MIN_LSF_SPACING, LP_FILTER_ORDER);
+        interpolate_lsf(&p->acelpv_ctx, p->lsf_q, lsf_q);
+        ff_acelp_lsf2lspd(p->lsp[3], lsf_q, LP_FILTER_ORDER);
+
+        // interpolate LSP vectors at subframes 1, 2 and 3
+        for (i = 1; i <= 3; i++)
+            for (j = 0; j < LP_FILTER_ORDER; j++)
+                p->lsp[i-1][j] = p->prev_lsp_sub4[j] +
+                    (p->lsp[3][j] - p->prev_lsp_sub4[j]) * 0.25 * i;
+        return;
+    }
+
+    int16_t lsf_r[LP_FILTER_ORDER]; // residual LSF vector
+    const int16_t *lsf_quantizer;
 
     lsf_quantizer = (p->cur_frame_mode == MODE_7k95 ? lsf_3_1_MODE_7k95 : lsf_3_1)[lsf_param[0]];
     memcpy(lsf_r, lsf_quantizer, 3 * sizeof(*lsf_r));
@@ -472,12 +572,22 @@ static void decode_pitch_lag_1_6(int *lag_int, int *lag_frac, int pitch_index,
 
 static void decode_pitch_vector(AMRContext *p,
                                 const AMRNBSubframe *amr_subframe,
-                                const int subframe)
+                                const int subframe, const int bfi)
 {
     int pitch_lag_int, pitch_lag_frac;
     enum Mode mode = p->cur_frame_mode;
 
-    if (p->cur_frame_mode == MODE_12k2) {
+    if (bfi) {
+        /* Graceful pitch degradation for a lost frame, see Decoder_amr() in
+           3GPP TS 26.073 (dec_amr.c:527-548 for the delta-coded modes and
+           dec_amr.c:559-568 for 12.2kbit/s). The integer lag keeps growing
+           until it reaches its maximum instead of being decoded. */
+        if (mode != MODE_12k2)
+            pitch_lag_int = FFMIN(p->pitch_lag_int + 1, PITCH_DELAY_MAX);
+        else
+            pitch_lag_int = p->pitch_lag_int;
+        pitch_lag_frac = 0;
+    } else if (p->cur_frame_mode == MODE_12k2) {
         decode_pitch_lag_1_6(&pitch_lag_int, &pitch_lag_frac,
                              amr_subframe->p_lag, p->pitch_lag_int,
                              subframe);
@@ -733,6 +843,149 @@ static void decode_gains(AMRContext *p, const AMRNBSubframe *amr_subframe,
         p->pitch_gain[4]   = gains[0] * (1.0 / 16384.0);
         *fixed_gain_factor = gains[1] * (1.0 /  4096.0);
     }
+}
+
+/// @}
+
+
+/// @name AMR error concealment functions
+/// @{
+
+/**
+ * Median of the last five gain values, equivalent to gmed_n() in
+ * 3GPP TS 26.073 (gmed_n.c:57-84).
+ */
+static float ec_gain_median(const float *buf)
+{
+    float tmp[5];
+    int i, j;
+
+    memcpy(tmp, buf, sizeof(tmp));
+
+    for (i = 1; i < 5; i++) {
+        float v = tmp[i];
+
+        for (j = i - 1; j >= 0 && tmp[j] > v; j--)
+            tmp[j + 1] = tmp[j];
+        tmp[j + 1] = v;
+    }
+
+    return tmp[2];
+}
+
+/**
+ * Conceal the pitch gain of a lost subframe, ec_gain_pitch() in
+ * 3GPP TS 26.073 (ec_gains.c:306-330).
+ *
+ * @param p     the context
+ * @param state state of the bad frame handling state machine
+ */
+static void ec_gain_pitch(AMRContext *p, int state)
+{
+    /* pdown[] from 3GPP TS 26.073, kept as exact fractions of 32768 */
+    static const float pdown[7] = {
+        32767.0f / 32768.0f, 32112.0f / 32768.0f, 32112.0f / 32768.0f,
+        26214.0f / 32768.0f,  9830.0f / 32768.0f,  6553.0f / 32768.0f,
+         6553.0f / 32768.0f,
+    };
+    float gain = ec_gain_median(p->ec_gain_pbuf);
+
+    if (gain > p->ec_gain_past_pit)
+        gain = p->ec_gain_past_pit;
+    p->pitch_gain[4] = gain * pdown[state];
+}
+
+/**
+ * Update the pitch gain concealment state, ec_gain_pitch_update() in
+ * 3GPP TS 26.073 (ec_gains.c:343-379).
+ *
+ * @param p     the context
+ * @param bfi   the current frame is unusable
+ */
+static void ec_gain_pitch_update(AMRContext *p, int bfi)
+{
+    int i;
+
+    if (!bfi) {
+        /* Limit the gain of the first usable subframe after an unusable
+           frame to the last usable gain (3GPP TS 26.091 clause 7.2.2). */
+        if (p->prev_bf && p->pitch_gain[4] > p->ec_gain_prev_pit)
+            p->pitch_gain[4] = p->ec_gain_prev_pit;
+        p->ec_gain_prev_pit = p->pitch_gain[4];
+    }
+
+    p->ec_gain_past_pit = FFMIN(p->pitch_gain[4], 1.0f);
+
+    for (i = 1; i < 5; i++)
+        p->ec_gain_pbuf[i - 1] = p->ec_gain_pbuf[i];
+    p->ec_gain_pbuf[4] = p->ec_gain_past_pit;
+}
+
+/**
+ * Advance the gain predictor with the average of the four past energies,
+ * gc_pred_average_limited() followed by gc_pred_update(), as ec_gain_code()
+ * does in 3GPP TS 26.073 when the energies of the frame are not available.
+ *
+ * @param p the context
+ */
+static void ec_gain_code_predictor_update(AMRContext *p)
+{
+    float avg = 0.0f;
+    int i;
+
+    for (i = 0; i < 4; i++)
+        avg += p->prediction_error[i];
+    avg = FFMAX(avg * 0.25f, MIN_ENERGY);
+
+    memmove(&p->prediction_error[0], &p->prediction_error[1],
+            3 * sizeof(p->prediction_error[0]));
+    p->prediction_error[3] = avg;
+}
+
+/**
+ * Conceal the codebook gain of a lost subframe, ec_gain_code() in
+ * 3GPP TS 26.073 (ec_gains.c:137-171).
+ *
+ * @param p     the context
+ * @param state state of the bad frame handling state machine
+ */
+static void ec_gain_code(AMRContext *p, int state)
+{
+    /* cdown[] from 3GPP TS 26.073, kept as exact fractions of 32768 */
+    static const float cdown[7] = {
+        32767.0f / 32768.0f, 32112.0f / 32768.0f, 32112.0f / 32768.0f,
+        32112.0f / 32768.0f, 32112.0f / 32768.0f, 32112.0f / 32768.0f,
+        22937.0f / 32768.0f,
+    };
+    float gain = ec_gain_median(p->ec_gain_gbuf);
+
+    if (gain > p->ec_gain_past_code)
+        gain = p->ec_gain_past_code;
+    p->fixed_gain[4] = gain * cdown[state];
+}
+
+/**
+ * Update the codebook gain concealment state, ec_gain_code_update() in
+ * 3GPP TS 26.073 (ec_gains.c:184-219).
+ *
+ * @param p     the context
+ * @param bfi   the current frame is unusable
+ */
+static void ec_gain_code_update(AMRContext *p, int bfi)
+{
+    int i;
+
+    if (!bfi) {
+        if (p->prev_bf && p->fixed_gain[4] > p->ec_gain_prev_code)
+            p->fixed_gain[4] = p->ec_gain_prev_code;
+        p->ec_gain_prev_code = p->fixed_gain[4];
+    }
+
+    p->ec_gain_past_code = p->fixed_gain[4];
+
+    for (i = 1; i < 5; i++)
+        p->ec_gain_gbuf[i - 1] = p->ec_gain_gbuf[i];
+    p->ec_gain_gbuf[4] = p->fixed_gain[4];
 }
 
 /// @}
@@ -1402,7 +1655,12 @@ static void cn_update_from_sid(AMRContext *p, const int *ind)
         }
     }
 
-    /* Initialize the gain predictor using this SID frame's energy. */
+    /* Initialize the gain predictor using this SID frame's energy.
+
+       Note: this decoder's log2-vs-dB gain-predictor modelling (pred_init)
+       differs from the reference's fixed-point ma_pred_init (dtx_dec.c:446)
+       on the first subframe after DTX; ma_pred_init corresponds to TS 26.092
+       clause 6.2's "predictor memories are initialized". */
     pred_init = FFMIN(p->cn_log_en - 9000.0f / 1024.0f, 0.0f);
     pred_init = FFMAX(pred_init, MIN_ENERGY);
     for (i = 0; i < 4; i++)
@@ -1446,14 +1704,14 @@ static void cn_synthesize(AMRContext *p, const float *lpc_variab, float level,
     p->beta          = 0.0f;
     p->pitch_lag_int = 40;
 
-    /* The reference decoder resets the error concealment states with every
-       frame of a silent period, so the gains of the speech frame starting
-       the next speech burst are limited to zero as well (3GPP TS 26.091
-       clause 7.2.2). It also marks the frame as unusable when the comfort
-       noise had been muted. */
-    p->prev_pitch_gain = 0.0f;
-    p->prev_fixed_gain = 0.0f;
-    p->prev_bf         = new_state == DTX_MUTE;
+    /* The reference decoder resets the bad frame handling and error
+       concealment states with every frame of a silent period
+       (Decoder_amr_reset() and ec_gain_*_reset() in 3GPP TS 26.073), so the
+       gains of the speech frame starting the next speech burst are limited
+       accordingly (3GPP TS 26.091 clause 7.2.2). It also marks the frame as
+       unusable when the comfort noise had been muted. */
+    ec_reset(p);
+    p->prev_bf = new_state == DTX_MUTE;
 
     /* Decoder_amr_reset(MRDTX) clears the fixed-gain history and the
        phase-dispersion state. dtx_dec() then restarts smoothing with
@@ -1595,6 +1853,39 @@ static void cn_frame(AMRContext *p, int new_state, const int *ind, int mode,
     p->dtx_state = new_state;
 }
 
+/**
+ * Fill the frame parameters of a lost speech frame with pseudo-random
+ * values, see build_CN_param() in 3GPP TS 26.073 (b_cn_cod.c:145-162).
+ * Only the fields the concealment does not itself overwrite are actually
+ * consumed (notably the fixed codebook pulses). The field order follows
+ * the AMRNBFrame order table, not the reference's bitstream parameter
+ * order, so this is deliberately not bit-exact with the reference -- the
+ * decoder is float and not bit-exact either (see the file header).
+ *
+ * @param p     the context
+ * @param seed  state of the pseudo-random generator
+ * @param mode  speech mode of the lost frame
+ */
+static void build_bad_frame_params(AMRContext *p, uint32_t *seed, enum Mode mode)
+{
+    const uint8_t *ord = amr_unpacking_bitmaps_per_mode[mode];
+    const int16_t *win;
+
+    /* reference LCG: seed = (seed * 31821 + 13849) mod 2^16 */
+    *seed = (*seed * 31821U + 13849U) & 0xFFFFU;
+    win   = &window_200_40[*seed & 0x7F];
+
+    while (*ord) {
+        int field_size = *ord++;
+        int field      = *ord++;            /* byte offset into AMRNBFrame */
+
+        ((uint16_t *)&p->frame)[field >> 1] =
+            *win++ & ((1 << field_size) - 1);
+
+        ord += field_size;                  /* skip the bit-position list */
+    }
+}
+
 static int amrnb_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                               int *got_frame_ptr, AVPacket *avpkt)
 {
@@ -1623,7 +1914,8 @@ static int amrnb_decode_frame(AVCodecContext *avctx, AVFrame *frame,
             return AVERROR_INVALIDDATA;
 
         int mode = buf[0] >> 3 & 0x0F;
-        int channel_size, rx_type, new_state;
+        int channel_size, rx_type, new_state, bfi;
+        int prev_dtx_state = p->dtx_state;       // DTX state before this frame
         int sid_ind[5] = { 0 };
         int sid_mode = 0;
         float synth[AMR_BLOCK_SIZE];             // synthesis before post-filtering
@@ -1702,23 +1994,41 @@ static int amrnb_decode_frame(AVCodecContext *avctx, AVFrame *frame,
             continue;
         }
 
-        p->dtx_state = new_state;
+        /* A speech frame that is either flagged as bad or carries no data
+           at all cannot be decoded: its parameters are concealed instead
+           (3GPP TS 26.091 clause 7). */
+        bfi = rx_type == RX_SPEECH_BAD || rx_type == RX_NO_DATA;
 
-        if (rx_type == RX_NO_DATA) {
-            /* Outside of a silent period a frame carrying no data still
-               produces a full frame of samples, keeping the frame count and
-               the timing of the decoded stream correct. */
-            memset(buf_out, 0, AMR_BLOCK_SIZE * sizeof(*buf_out));
-            p->prev_bf = 1;
-            buf += channel_size;
-            buf_size -= channel_size;
-            continue;
+        /* Bad frame handling state machine, 3GPP TS 26.073
+           (dec_amr.c:357-398). The state saturates at 6 and, once it has
+           reached 6, only decays to 5 on a good frame. */
+        if (bfi)
+            p->bfh_state = FFMIN(p->bfh_state + 1, 6);
+        else
+            p->bfh_state = p->bfh_state == 6 ? 5 : 0;
+
+        /* The first speech frame after a comfort noise period is seeded with
+           the DTX state of the frame before it: prev_dtx_state was saved
+           above, before this frame could overwrite dtx_state. */
+        if (prev_dtx_state == DTX) {
+            p->bfh_state = 5;
+            p->prev_bf   = 0;
+        } else if (prev_dtx_state == DTX_MUTE) {
+            p->bfh_state = 5;
+            p->prev_bf   = 1;
         }
 
+        /* A frame carrying no data has no parameters of its own, fill them
+           with pseudo-random values (3GPP TS 26.073 build_CN_param()). */
+        if (rx_type == RX_NO_DATA)
+            build_bad_frame_params(p, &p->no_data_seed, p->cur_frame_mode);
+
+        p->dtx_state = new_state;
+
         if (p->cur_frame_mode == MODE_12k2) {
-            lsf2lsp_5(p);
+            lsf2lsp_5(p, bfi);
         } else
-            lsf2lsp_3(p);
+            lsf2lsp_3(p, bfi);
 
         for (i = 0; i < 4; i++)
             ff_acelp_lspd2lpc(p->lsp[i], p->lpc[i], 5);
@@ -1726,7 +2036,7 @@ static int amrnb_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         for (subframe = 0; subframe < 4; subframe++) {
             const AMRNBSubframe *amr_subframe = &p->frame.subframe[subframe];
 
-            decode_pitch_vector(p, amr_subframe, subframe);
+            decode_pitch_vector(p, amr_subframe, subframe, bfi);
 
             decode_fixed_sparse(&fixed_sparse, amr_subframe->pulses,
                                 p->cur_frame_mode, subframe);
@@ -1735,8 +2045,16 @@ static int amrnb_decode_frame(AVCodecContext *avctx, AVFrame *frame,
             // (section 6.1.2), but the fixed vector calculation uses
             // pitch sharpening based on the on the pitch gain (section 6.1.3).
             // So the correct order is: pitch gain, pitch sharpening, fixed gain.
-            decode_gains(p, amr_subframe, p->cur_frame_mode, subframe,
-                         &fixed_gain_factor);
+            if (bfi)
+                ec_gain_pitch(p, p->bfh_state);
+            else
+                decode_gains(p, amr_subframe, p->cur_frame_mode, subframe,
+                             &fixed_gain_factor);
+
+            /* Keep the concealment history and limit the gain of the first
+               usable subframe after an unusable one (3GPP TS 26.073
+               ec_gain_pitch_update(), 3GPP TS 26.091 clause 7.2.2). */
+            ec_gain_pitch_update(p, bfi);
 
             pitch_sharpening(p, subframe, p->cur_frame_mode, &fixed_sparse);
 
@@ -1747,24 +2065,20 @@ static int amrnb_decode_frame(AVCodecContext *avctx, AVFrame *frame,
             ff_set_fixed_vector(p->fixed_vector, &fixed_sparse, 1.0,
                                 AMR_SUBFRAME_SIZE);
 
-            p->fixed_gain[4] =
-                ff_amr_set_fixed_gain(fixed_gain_factor,
-                                      p->celpm_ctx.dot_productf(p->fixed_vector,
-                                                                p->fixed_vector,
-                                                                AMR_SUBFRAME_SIZE) /
-                                      AMR_SUBFRAME_SIZE,
-                                      p->prediction_error,
-                                      energy_mean[p->cur_frame_mode], energy_pred_fac);
-
-            /* 3GPP TS 26.091 clause 7.2.2: the gains of the first usable frame
-               after an unusable one are limited to the ones of the last usable
-               frame, so that the speech does not start at full level */
-            if (p->prev_bf) {
-                p->pitch_gain[4] = FFMIN(p->pitch_gain[4], p->prev_pitch_gain);
-                p->fixed_gain[4] = FFMIN(p->fixed_gain[4], p->prev_fixed_gain);
+            if (bfi) {
+                ec_gain_code(p, p->bfh_state);
+                ec_gain_code_predictor_update(p);
+            } else {
+                p->fixed_gain[4] =
+                    ff_amr_set_fixed_gain(fixed_gain_factor,
+                                          p->celpm_ctx.dot_productf(p->fixed_vector,
+                                                                    p->fixed_vector,
+                                                                    AMR_SUBFRAME_SIZE) /
+                                          AMR_SUBFRAME_SIZE,
+                                          p->prediction_error,
+                                          energy_mean[p->cur_frame_mode], energy_pred_fac);
             }
-            p->prev_pitch_gain = p->pitch_gain[4];
-            p->prev_fixed_gain = p->fixed_gain[4];
+            ec_gain_code_update(p, bfi);
 
             // The excitation feedback is calculated without any processing such
             // as fixed gain smoothing. This isn't mentioned in the specification.
@@ -1815,7 +2129,7 @@ static int amrnb_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                                                             highpass_gain * AMR_SAMPLE_SCALE,
                                                             p->high_pass_mem, AMR_BLOCK_SIZE);
 
-        p->prev_bf = 0;
+        p->prev_bf = bfi;
 
         /* keep the noise parameters of this speech frame for the next SID */
         dtx_activity_update(p, synth);

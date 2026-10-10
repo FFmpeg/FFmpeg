@@ -62,13 +62,13 @@ fate-amrnb-state-resume-update: REF = RMS level dB: -53\.
 FATE_AMRNB_DTX-$(call ALLYES, $(AMRNB_DTX_DEPS)) += fate-amrnb-nodata-ft15-q1 fate-amrnb-nodata-ft15-q0 fate-amrnb-nodata-reserved-q1
 fate-amrnb-nodata-ft15-q1: CMD = ffmpeg -i $(TARGET_PATH)/tests/data/fate/amrnb-nodata-cases.amr -af "atrim=start_sample=1280:end_sample=1440,aresample=osf=flt,astats=metadata=0:reset=0" -c:a pcm_f32le -f null -
 fate-amrnb-nodata-ft15-q1: CMP = grep
-fate-amrnb-nodata-ft15-q1: REF = RMS level dB: -inf
+fate-amrnb-nodata-ft15-q1: REF = RMS level dB: -52\.
 fate-amrnb-nodata-ft15-q0: CMD = ffmpeg -i $(TARGET_PATH)/tests/data/fate/amrnb-nodata-cases.amr -af "atrim=start_sample=2720:end_sample=2880,aresample=osf=flt,astats=metadata=0:reset=0" -c:a pcm_f32le -f null -
 fate-amrnb-nodata-ft15-q0: CMP = grep
-fate-amrnb-nodata-ft15-q0: REF = RMS level dB: -inf
+fate-amrnb-nodata-ft15-q0: REF = RMS level dB: -53\.
 fate-amrnb-nodata-reserved-q1: CMD = ffmpeg -i $(TARGET_PATH)/tests/data/fate/amrnb-nodata-cases.amr -af "atrim=start_sample=4160:end_sample=4320,aresample=osf=flt,astats=metadata=0:reset=0" -c:a pcm_f32le -f null -
 fate-amrnb-nodata-reserved-q1: CMP = grep
-fate-amrnb-nodata-reserved-q1: REF = RMS level dB: -inf
+fate-amrnb-nodata-reserved-q1: REF = RMS level dB: -52\.
 
 # A SID frame arriving after a lost frame must still update the comfort
 # noise. Frame 10 is the first comfort-noise frame after that SID.
