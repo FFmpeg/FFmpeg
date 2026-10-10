@@ -927,7 +927,7 @@ static int ph_max_num_subblock_merge_cand(const H266RawSPS *sps, const H266RawPi
     return sps->sps_sbtmvp_enabled_flag && ph->ph_temporal_mvp_enabled_flag;
 }
 
-static int ph_vb_pos(uint16_t *vbs, uint8_t *num_vbs, const uint16_t *pos_minus_1, const uint8_t num_pos, uint16_t max, const int ctb_size_y)
+static int ph_vb_pos(uint16_t *vbs, uint8_t *num_vbs, const uint16_t *pos_minus_1, const uint8_t num_pos, int max, const int ctb_size_y)
 {
     max = FF_CEIL_RSHIFT(max, 3) - 2;
     for (int i = 0; i < num_pos; i++) {
