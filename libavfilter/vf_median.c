@@ -143,6 +143,11 @@ static int config_input(AVFilterLink *inlink)
 
     s->nb_threads = FFMAX(1, FFMIN(s->planeheight[1] / (s->radiusV + 1), ff_filter_get_nb_threads(inlink->dst)));
     s->bins   = 1 << ((s->depth + 1) / 2);
+    if (inlink->w > INT_MAX / (s->bins * s->bins)) {
+        av_log(inlink->dst, AV_LOG_ERROR, "Width %d is too large for depth %d\n",
+               inlink->w, s->depth);
+        return AVERROR(EINVAL);
+    }
     s->fine_size = s->bins * s->bins * inlink->w;
     s->coarse_size = s->bins * inlink->w;
     s->coarse = av_calloc(s->nb_threads, sizeof(*s->coarse));
