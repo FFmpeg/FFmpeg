@@ -437,6 +437,9 @@ static int get_tiles_info(AVCodecContext *avctx, const AV1RawTileGroup *tile_gro
     s->tg_start = tile_group->tg_start;
     s->tg_end = tile_group->tg_end;
 
+    if (tile_group->tg_end >= s->raw_frame_header->tile_cols * s->raw_frame_header->tile_rows)
+        return AVERROR_INVALIDDATA;
+
     for (tile_num = tile_group->tg_start; tile_num <= tile_group->tg_end; tile_num++) {
         tile_row = tile_num / s->raw_frame_header->tile_cols;
         tile_col = tile_num % s->raw_frame_header->tile_cols;
