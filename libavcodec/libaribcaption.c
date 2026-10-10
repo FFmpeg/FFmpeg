@@ -273,11 +273,16 @@ static void clut_add(ARIBCaptionContext *ctx, uint32_t rgba)
     clut_set_alpha(ctx, CLUT_A(rgba));
 }
 
-/* whether a region is left out: ruby with ignore_ruby, or no character */
+/* whether a region is left out: no character, or ruby when ruby is ignored */
+static int region_left_out(const aribcc_caption_region_t *region, int ignore_ruby)
+{
+    return !region->char_count || (region->is_ruby && ignore_ruby);
+}
+
 static int region_skipped(const ARIBCaptionContext *ctx,
                           const aribcc_caption_region_t *region)
 {
-    return !region->char_count || (region->is_ruby && ctx->ignore_ruby);
+    return region_left_out(region, ctx->ignore_ruby);
 }
 
 /* add the character colors of a region to the CLUT */
@@ -815,14 +820,23 @@ static int aribcaption_trans_text_subtitle(ARIBCaptionContext *ctx)
 {
     AVSubtitle *sub = ctx->sub;
     AVSubtitleRect *rect;
-    int ret = 0;
-    const char *text;
+    int ret = 0, has_text = 0;
+    const char *text = ctx->caption.text ? ctx->caption.text : "";
 
-    /* Only an explicit clear screen (CS) erases the previous caption;
-       a statement containing only TIME also has no region. */
-    if (ctx->caption.region_count == 0 &&
-        !(ctx->caption.flags & ARIBCC_CAPTIONFLAGS_CLEARSCREEN))
-        return 0;
+    /* The text leaves ruby out (except a placeholder for an unknown DRCS)
+       and may hold line breaks without any character, so decide on the
+       regions. */
+    for (int i = 0; i < ctx->caption.region_count && !has_text; i++)
+        has_text = !region_left_out(&ctx->caption.regions[i], 1);
+
+    if (!has_text) {
+        /* Nothing to show: there is no region, or only ruby. Only an
+           explicit clear screen (CS) erases the previous caption, with an
+           empty text; a statement containing only TIME also has no region. */
+        if (!(ctx->caption.flags & ARIBCC_CAPTIONFLAGS_CLEARSCREEN))
+            return 0;
+        text = "";
+    }
 
     sub->rects = av_calloc(1, sizeof(*sub->rects));
     if (!sub->rects) {
@@ -838,12 +852,7 @@ static int aribcaption_trans_text_subtitle(ARIBCaptionContext *ctx)
     }
     rect = sub->rects[0];
 
-    if (ctx->caption.region_count == 0)
-        text = ""; /* clear previous caption */
-    else {
-        text = ctx->caption.text;
-        ff_dlog(ctx, "TEXT subtitle: %s\n", text);
-    }
+    ff_dlog(ctx, "TEXT subtitle: %s\n", text);
     rect->text = av_strdup(text);
     if (!rect->text) {
         ret = AVERROR(ENOMEM);
