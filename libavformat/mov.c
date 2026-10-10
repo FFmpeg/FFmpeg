@@ -4555,6 +4555,8 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
         return;
     }
 
+    int64_t max_entries = nb_old * 16LL + (1 << 16);
+
     // allocate the index ranges array
     msc->index_ranges = av_malloc_array(msc->elst_count + 1,
                                         sizeof(msc->index_ranges[0]));
@@ -4654,6 +4656,11 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
         edit_list_start_encountered = 0;
         found_keyframe_after_edit = 0;
         for (; current < e_old_end; current++, index++) {
+            if (sti->nb_index_entries >= max_entries) {
+                av_log(mov->fc, AV_LOG_ERROR, "Edit list expands the sample index beyond %"PRId64" entries\n",
+                       max_entries);
+                goto truncated;
+            }
             // check  if frame outside edit list mark it for discard
             frame_duration = (current + 1 <  e_old_end) ?
                              ((current + 1)->timestamp - current->timestamp) : edit_list_duration;
@@ -4792,6 +4799,7 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
             }
         }
     }
+truncated:
     // If there are empty edits, then msc->min_corrected_pts might be positive
     // intentionally. So we subtract the sum duration of empty edits here.
     msc->min_corrected_pts -= empty_edits_sum_duration;
