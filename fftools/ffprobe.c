@@ -2450,15 +2450,31 @@ static void print_iamf_mix_presentation_params(AVTextFormatContext *tfc, const A
     avtext_print_section_footer(tfc); // SECTION_ID_STREAM_GROUP_COMPONENT
 }
 
+static void print_layered_video_params(AVTextFormatContext *tfc, const AVStreamGroup *stg,
+                                       const AVStreamGroupLayeredVideo *layered_video)
+{
+    avtext_print_section_header(tfc, stg, SECTION_ID_STREAM_GROUP_COMPONENT);
+    print_int("el_index", layered_video->el_index);
+    print_int("width", layered_video->width);
+    print_int("height", layered_video->height);
+    avtext_print_section_footer(tfc); // SECTION_ID_STREAM_GROUP_COMPONENT
+}
+
 static void print_stream_group_params(AVTextFormatContext *tfc, AVStreamGroup *stg)
 {
     avtext_print_section_header(tfc, NULL, SECTION_ID_STREAM_GROUP_COMPONENTS);
-    if (stg->type == AV_STREAM_GROUP_PARAMS_TILE_GRID)
-        print_tile_grid_params(tfc, stg, stg->params.tile_grid);
-    else if (stg->type == AV_STREAM_GROUP_PARAMS_IAMF_AUDIO_ELEMENT)
-        print_iamf_audio_element_params(tfc, stg, stg->params.iamf_audio_element);
-    else if (stg->type == AV_STREAM_GROUP_PARAMS_IAMF_MIX_PRESENTATION)
-        print_iamf_mix_presentation_params(tfc, stg, stg->params.iamf_mix_presentation);
+    switch (stg->type) {
+    case AV_STREAM_GROUP_PARAMS_TILE_GRID:
+        print_tile_grid_params(tfc, stg, stg->params.tile_grid); break;
+    case AV_STREAM_GROUP_PARAMS_IAMF_AUDIO_ELEMENT:
+        print_iamf_audio_element_params(tfc, stg, stg->params.iamf_audio_element); break;
+    case AV_STREAM_GROUP_PARAMS_IAMF_MIX_PRESENTATION:
+        print_iamf_mix_presentation_params(tfc, stg, stg->params.iamf_mix_presentation); break;
+    case AV_STREAM_GROUP_PARAMS_LCEVC:
+    case AV_STREAM_GROUP_PARAMS_DOLBY_VISION:
+    case AV_STREAM_GROUP_PARAMS_GAIN_MAP:
+        print_layered_video_params(tfc, stg, stg->params.layered_video); break;
+    }
     avtext_print_section_footer(tfc); // SECTION_ID_STREAM_GROUP_COMPONENTS
 }
 
@@ -2524,6 +2540,12 @@ static int show_stream_group(AVTextFormatContext *tfc, InputFile *ifile, AVStrea
             const AVStreamGroupTileGrid *tile_grid = stg->params.tile_grid;
             width = tile_grid->width;
             height = tile_grid->height;
+            break;
+        }
+        case AV_STREAM_GROUP_PARAMS_GAIN_MAP: {
+            const AVStreamGroupLayeredVideo *layered_video = stg->params.layered_video;
+            width = layered_video->width;
+            height = layered_video->height;
             break;
         }
         default:
