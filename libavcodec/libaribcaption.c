@@ -310,7 +310,7 @@ static int aribcaption_trans_bitmap_subtitle(ARIBCaptionContext *ctx)
 {
     int ret = 0;
     AVSubtitle *sub = ctx->sub;
-    int status, rect_idx, image_count = 0;
+    int status, rect_idx, image_count = 0, seed_idx, seed_overflow;
     int old_width = ctx->frame_width;
     int old_height = ctx->frame_height;
 
@@ -398,18 +398,24 @@ static int aribcaption_trans_bitmap_subtitle(ARIBCaptionContext *ctx)
         }
     }
 
+    /* The renderer drops ruby regions with ignore_ruby and regions too small
+       to draw, without telling which region an image comes from. Seed the
+       CLUT with the colors of every region that may be drawn, once. Each
+       image only appends colors past the seed, so dropping them restores it. */
+    clut_reset(ctx);
+    for (int i = 0; i < ctx->caption.region_count; i++)
+        if (!region_skipped(ctx, &ctx->caption.regions[i]))
+            clut_add_region(ctx, &ctx->caption.regions[i]);
+    seed_idx = ctx->clut_idx;
+    seed_overflow = ctx->clut_overflow;
+
     for (rect_idx = 0; rect_idx < image_count; rect_idx++) {
         AVSubtitleRect *rect = sub->rects[rect_idx];
         aribcc_image_t *image = &ctx->render_result.images[rect_idx];
         int w, h, shrink_height, dst_idx;
 
-        /* The renderer drops ruby regions with ignore_ruby and regions too
-           small to draw, without telling which region an image comes from.
-           Seed the CLUT with the colors of every region that may be drawn. */
-        clut_reset(ctx);
-        for (int i = 0; i < ctx->caption.region_count; i++)
-            if (!region_skipped(ctx, &ctx->caption.regions[i]))
-                clut_add_region(ctx, &ctx->caption.regions[i]);
+        ctx->clut_idx = seed_idx;
+        ctx->clut_overflow = seed_overflow;
 
         rect->w = image->width * ctx->bitmap_plane_width / ctx->frame_width;
         rect->h = image->height * ctx->bitmap_plane_height / ctx->frame_height;
