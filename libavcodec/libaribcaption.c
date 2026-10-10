@@ -618,12 +618,18 @@ static int aribcaption_trans_ass_subtitle(ARIBCaptionContext *ctx)
     if (ctx->avctx->profile == AV_PROFILE_ARIB_PROFILE_C)
         single_rect = true;
 
-    sub->format = 1; /* text */
     if (ctx->caption.region_count == 0) {
+        /* Only an explicit clear screen (CS) erases the previous caption;
+           a statement containing only TIME also has no region. */
+        if (!(ctx->caption.flags & ARIBCC_CAPTIONFLAGS_CLEARSCREEN))
+            return 0;
         /* clear previous caption for indefinite duration  */
+        sub->format = 1; /* text */
         ff_ass_add_rect(sub, "", ctx->readorder++, 0, NULL, NULL);
         return 1;
     }
+
+    sub->format = 1; /* text */
 
     av_bprint_init(&buf, ARIBC_BPRINT_SIZE_INIT, ARIBC_BPRINT_SIZE_MAX);
 
@@ -813,6 +819,12 @@ static int aribcaption_trans_text_subtitle(ARIBCaptionContext *ctx)
     AVSubtitleRect *rect;
     int ret = 0;
     const char *text;
+
+    /* Only an explicit clear screen (CS) erases the previous caption;
+       a statement containing only TIME also has no region. */
+    if (ctx->caption.region_count == 0 &&
+        !(ctx->caption.flags & ARIBCC_CAPTIONFLAGS_CLEARSCREEN))
+        return 0;
 
     sub->rects = av_calloc(1, sizeof(*sub->rects));
     if (!sub->rects) {
