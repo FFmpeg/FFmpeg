@@ -1587,7 +1587,7 @@ static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
 
     flag(sps_virtual_boundaries_enabled_flag);
     if (current->sps_virtual_boundaries_enabled_flag) {
-        flag(sps_virtual_boundaries_present_flag);
+        u(1, sps_virtual_boundaries_present_flag, 0, !current->sps_res_change_in_clvs_allowed_flag);
         if (current->sps_virtual_boundaries_present_flag) {
             ue(sps_num_ver_virtual_boundaries,
                0, current->sps_pic_width_max_in_luma_samples <= 8 ? 0 : VVC_MAX_VBS);
