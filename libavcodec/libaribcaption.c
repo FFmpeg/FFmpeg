@@ -250,57 +250,36 @@ static uint8_t clut_pick_or_set(ARIBCaptionContext *ctx, int r, int g, int b, in
     return c;
 }
 
-/* initialize CLUT with each character colors */
-static void clut_init(ARIBCaptionContext *ctx, aribcc_caption_region_t *region)
+/* initialize CLUT with only the transparent color */
+static void clut_reset(ARIBCaptionContext *ctx)
 {
-    aribcc_color_t text_color, back_color, stroke_color;
-    uint32_t rgba;
-
     ctx->clut[0] = CLUT_RGBA(0,0,0,0); /* transparent */
     ctx->clut_alpha[0] = 0xFF;
     ctx->clut_idx = 1;
     ctx->clut_overflow = 0;
-    text_color = region->chars[0].text_color;
-    back_color = region->chars[0].back_color;
-    stroke_color = region->chars[0].stroke_color;
-    rgba = ARIBCC_COLOR_TO_CLUT_RGBA(text_color, ARIBC_ALPHA_DEFAULT_FRONT);
-    ctx->clut[ctx->clut_idx++] = rgba;
-    clut_set_alpha(ctx, CLUT_A(rgba));
-    rgba = ARIBCC_COLOR_TO_CLUT_RGBA(back_color, ARIBC_ALPHA_DEFAULT_BACK);
-    ctx->clut[ctx->clut_idx++] = rgba;
-    clut_set_alpha(ctx, CLUT_A(rgba));
-    rgba = ARIBCC_COLOR_TO_CLUT_RGBA(stroke_color, ARIBC_ALPHA_DEFAULT_FRONT);
-    if (clut_find(ctx, rgba) < 0) {
-        ctx->clut[ctx->clut_idx++] = rgba;
-        clut_set_alpha(ctx, CLUT_A(rgba));
-    }
+}
 
-    for (int i = 1; i < region->char_count; i++) {
-        if (region->chars[i].text_color != text_color) {
-            rgba = ARIBCC_COLOR_TO_CLUT_RGBA(region->chars[i].text_color,
-                                             ARIBC_ALPHA_DEFAULT_FRONT);
-            if (clut_find(ctx, rgba) < 0) {
-                ctx->clut[ctx->clut_idx++] = rgba;
-                clut_set_alpha(ctx, CLUT_A(rgba));
-            }
-        }
-        if (region->chars[i].back_color != back_color) {
-            rgba = ARIBCC_COLOR_TO_CLUT_RGBA(region->chars[i].back_color,
-                                             ARIBC_ALPHA_DEFAULT_BACK);
-            if (clut_find(ctx, rgba) < 0) {
-                ctx->clut[ctx->clut_idx++] = rgba;
-                clut_set_alpha(ctx, CLUT_A(rgba));
-            }
-        }
-        if (region->chars[i].stroke_color != stroke_color) {
-            rgba = ARIBCC_COLOR_TO_CLUT_RGBA(region->chars[i].stroke_color,
-                                             ARIBC_ALPHA_DEFAULT_FRONT);
-            if (clut_find(ctx, rgba) < 0) {
-                if (ctx->clut_idx < AVPALETTE_COUNT)
-                    ctx->clut[ctx->clut_idx++] = rgba;
-                clut_set_alpha(ctx, CLUT_A(rgba));
-            }
-        }
+/* add a color to the CLUT unless it is already there or the CLUT is full */
+static void clut_add(ARIBCaptionContext *ctx, uint32_t rgba)
+{
+    if (clut_find(ctx, rgba) >= 0)
+        return;
+    if (ctx->clut_idx >= AVPALETTE_COUNT) {
+        ctx->clut_overflow++;
+        return;
+    }
+    ctx->clut[ctx->clut_idx++] = rgba;
+    clut_set_alpha(ctx, CLUT_A(rgba));
+}
+
+/* add the character colors of a region to the CLUT */
+static void clut_add_region(ARIBCaptionContext *ctx, aribcc_caption_region_t *region)
+{
+    for (int i = 0; i < region->char_count; i++) {
+        aribcc_caption_char_t *ch = &region->chars[i];
+        clut_add(ctx, ARIBCC_COLOR_TO_CLUT_RGBA(ch->text_color, ARIBC_ALPHA_DEFAULT_FRONT));
+        clut_add(ctx, ARIBCC_COLOR_TO_CLUT_RGBA(ch->back_color, ARIBC_ALPHA_DEFAULT_BACK));
+        clut_add(ctx, ARIBCC_COLOR_TO_CLUT_RGBA(ch->stroke_color, ARIBC_ALPHA_DEFAULT_FRONT));
     }
 }
 
@@ -318,7 +297,7 @@ static int aribcaption_trans_bitmap_subtitle(ARIBCaptionContext *ctx)
 {
     int ret = 0;
     AVSubtitle *sub = ctx->sub;
-    int status, rect_idx;
+    int status, rect_idx, image_count = 0;
     int old_width = ctx->frame_width;
     int old_height = ctx->frame_height;
 
@@ -396,13 +375,14 @@ static int aribcaption_trans_bitmap_subtitle(ARIBCaptionContext *ctx)
         return 0;
     }
 
+    image_count = ctx->render_result.image_count;
     sub->format = 0; /* graphic */
-    sub->rects = av_calloc(ctx->render_result.image_count, sizeof(*sub->rects));
+    sub->rects = av_calloc(image_count, sizeof(*sub->rects));
     if (!sub->rects) {
         ret = AVERROR(ENOMEM);
         goto fail;
     }
-    for (int i = 0; i < ctx->render_result.image_count; i++) {
+    for (int i = 0; i < image_count; i++) {
         sub->rects[i] = av_mallocz(sizeof(*sub->rects[i]));
         if (!sub->rects[i]) {
             ret = AVERROR(ENOMEM);
@@ -410,12 +390,18 @@ static int aribcaption_trans_bitmap_subtitle(ARIBCaptionContext *ctx)
         }
     }
 
-    for (rect_idx = 0; rect_idx < ctx->caption.region_count; rect_idx++) {
+    for (rect_idx = 0; rect_idx < image_count; rect_idx++) {
         AVSubtitleRect *rect = sub->rects[rect_idx];
         aribcc_image_t *image = &ctx->render_result.images[rect_idx];
         int w, h, shrink_height, dst_idx;
 
-        clut_init(ctx, &ctx->caption.regions[rect_idx]);
+        /* The renderer drops ruby regions with ignore_ruby and regions too
+           small to draw, without telling which region an image comes from.
+           Seed the CLUT with the colors of every region that may be drawn. */
+        clut_reset(ctx);
+        for (int i = 0; i < ctx->caption.region_count; i++)
+            if (!(ctx->ignore_ruby && ctx->caption.regions[i].is_ruby))
+                clut_add_region(ctx, &ctx->caption.regions[i]);
 
         rect->w = image->width * ctx->bitmap_plane_width / ctx->frame_width;
         rect->h = image->height * ctx->bitmap_plane_height / ctx->frame_height;
@@ -475,7 +461,7 @@ static int aribcaption_trans_bitmap_subtitle(ARIBCaptionContext *ctx)
             /* ARIB TR-B14 version 3.8 Fascicle 1-(2/2) Volume 3 [Section 4] */
             /* No position information is provided for profile C */
             rect->x = (ctx->frame_width - rect->w) / 2;
-            rect->y = ctx->frame_height - rect->h * (ctx->caption.region_count - rect_idx);
+            rect->y = ctx->frame_height - rect->h * (image_count - rect_idx);
         } else {
             rect->x = image->dst_x * ctx->bitmap_plane_width / ctx->frame_width;
             rect->y = image->dst_y * ctx->bitmap_plane_height / ctx->frame_height;
@@ -484,8 +470,7 @@ static int aribcaption_trans_bitmap_subtitle(ARIBCaptionContext *ctx)
         rect->linesize[0] = rect->w;
         rect->nb_colors = 256;
 
-        ff_dlog(ctx, "BITMAP subtitle%s (%d,%d) %dx%d -> (%d,%d) %dx%d [%d]: %d colors\n",
-                (ctx->caption.regions[rect_idx].is_ruby) ? " (ruby)" : "",
+        ff_dlog(ctx, "BITMAP subtitle (%d,%d) %dx%d -> (%d,%d) %dx%d [%d]: %d colors\n",
                 image->dst_x, image->dst_y, image->width, image->height,
                 rect->x, rect->y, rect->w, rect->h,
                 rect_idx, ctx->clut_idx);
@@ -499,7 +484,7 @@ static int aribcaption_trans_bitmap_subtitle(ARIBCaptionContext *ctx)
 
 fail:
     if (sub->rects) {
-        for (int i = 0; i < ctx->caption.region_count; i++) {
+        for (int i = 0; i < image_count; i++) {
             if (sub->rects[i]) {
                 av_freep(&sub->rects[i]->data[0]);
                 av_freep(&sub->rects[i]->data[1]);
