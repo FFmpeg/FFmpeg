@@ -778,7 +778,7 @@ static inline int16_t adpcm_rhetorex_expand_nibble(ADPCMChannelStatus *c, uint16
     c->sample2 = c->sample1;
     c->sample1 = sample;
 
-    c->step_index = FFABS(64512 * c->step_index + 65536 * rhetorex_index[delta]) >> 16;
+    c->step_index = FFABS((int)(64512U * c->step_index + 65536U * rhetorex_index[delta])) >> 16;
 
     return sample;
 }
