@@ -4594,8 +4594,9 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
             break;
         }
         num_discarded_begin = 0;
-        if (!found_non_empty_edit && edit_list_media_time == -1) {
-            empty_edits_sum_duration += edit_list_duration;
+        if (edit_list_media_time == -1) {
+            if (!found_non_empty_edit)
+                empty_edits_sum_duration += edit_list_duration;
             continue;
         }
         found_non_empty_edit = 1;
