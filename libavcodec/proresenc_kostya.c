@@ -762,10 +762,14 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int frame_size, picture_size, slice_size;
     int pkt_size, ret;
     int max_slice_size = (ctx->frame_size_upper_bound - 200) / (ctx->pictures_per_frame * ctx->slices_per_picture + 1);
+    int slice_size_upper_bound = ctx->mbs_per_slice * (ctx->chroma_factor == CFACTOR_Y444 ? 768 : 512) * 8;
     uint8_t frame_flags;
 
+    if (ctx->alpha_bits)
+        slice_size_upper_bound += ctx->mbs_per_slice * 256 * (1 + ctx->alpha_bits + 1) + 7 >> 3;
+
     ctx->pic = pic;
-    pkt_size = ctx->frame_size_upper_bound;
+    pkt_size = ctx->frame_size_upper_bound + slice_size_upper_bound;
 
     if ((ret = ff_alloc_packet(avctx, pkt, pkt_size + FF_INPUT_BUFFER_MIN_SIZE)) < 0)
         return ret;
@@ -839,7 +843,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                 bytestream_put_byte(&buf, slice_hdr_size << 3);
                 slice_hdr = buf;
                 buf += slice_hdr_size - 1;
-                if (pkt_size <= buf - orig_buf + 2 * max_slice_size) {
+                if (pkt_size - (buf - orig_buf) < slice_size_upper_bound) {
                     uint8_t *start = pkt->data;
                     // Recompute new size according to max_slice_size
                     // and deduce delta
@@ -847,7 +851,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                                 ctx->slices_per_picture + 1) *
                                 max_slice_size - pkt_size;
 
-                    delta = FFMAX(delta, 2 * max_slice_size);
+                    delta = FFMAX(delta, slice_size_upper_bound);
                     ctx->frame_size_upper_bound += delta;
 
                     if (!ctx->warn) {
