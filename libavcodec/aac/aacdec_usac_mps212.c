@@ -375,7 +375,7 @@ static void attach_lsb(GetBitContext *gb, int16_t *data_msb,
         int msb = data_msb[i];
         if (nb_lsb > 0) {
             uint32_t lsb = get_bits(gb, nb_lsb);
-            data[i] = ((msb << nb_lsb) | lsb) - offset;
+            data[i] = ((msb * (1 << nb_lsb)) | lsb) - offset;
         } else {
             data[i] = msb - offset;
         }
