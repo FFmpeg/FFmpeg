@@ -549,7 +549,7 @@ static int parse_time_sequence(struct sbg_parser *p, int inblock)
 
     if (av_sat_add64(p->current_time.t, rel_ts) != p->current_time.t + (uint64_t)rel_ts)
         return AVERROR_INVALIDDATA;
-    ts.t    = p->current_time.t + rel_ts;
+    ts.t    = inblock ? rel_ts : p->current_time.t + rel_ts;
     r = parse_fade(p, &fade);
     if (r < 0)
         return r;
@@ -989,7 +989,7 @@ static int expand_tseq(void *log, struct sbg_script *s, int *nb_ev_max,
                               &s->nb_events, nb_ev_max);
         if (!ev)
             return AVERROR(ENOMEM);
-        ev->ts          = tseq->ts.t;
+        ev->ts          = t0;
         ev->elements    = def->elements;
         ev->nb_elements = def->nb_elements;
         ev->fade        = tseq->fade;
