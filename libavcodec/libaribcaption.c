@@ -254,6 +254,7 @@ static uint8_t clut_pick_or_set(ARIBCaptionContext *ctx, int r, int g, int b, in
 static void clut_reset(ARIBCaptionContext *ctx)
 {
     ctx->clut[0] = CLUT_RGBA(0,0,0,0); /* transparent */
+    memset(ctx->clut_alpha, 0, sizeof(ctx->clut_alpha));
     ctx->clut_alpha[0] = 0xFF;
     ctx->clut_idx = 1;
     ctx->clut_overflow = 0;
