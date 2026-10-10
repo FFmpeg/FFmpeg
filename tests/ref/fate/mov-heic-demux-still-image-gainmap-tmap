@@ -1,0 +1,43 @@
+#extradata 0:      105, 0x607d1563
+#extradata 1:      105, 0x607d1563
+#extradata 2:      105, 0x607d1563
+#extradata 3:      105, 0x607d1563
+#extradata 4:      106, 0xc3c117ca
+#tb 0: 1/1
+#media_type 0: video
+#codec_id 0: hevc
+#dimensions 0: 512x512
+#sar 0: 0/1
+#tb 1: 1/1
+#media_type 1: video
+#codec_id 1: hevc
+#dimensions 1: 512x512
+#sar 1: 0/1
+#tb 2: 1/1
+#media_type 2: video
+#codec_id 2: hevc
+#dimensions 2: 512x512
+#sar 2: 0/1
+#tb 3: 1/1
+#media_type 3: video
+#codec_id 3: hevc
+#dimensions 3: 512x512
+#sar 3: 0/1
+#tb 4: 1/1
+#media_type 4: video
+#codec_id 4: hevc
+#dimensions 4: 150x200
+#sar 4: 0/1
+0,          0,          0,        1,     1900, 0xdc4fa164
+1,          0,          0,        1,      716, 0x9eb062d8
+2,          0,          0,        1,     1344, 0x60ee8d67
+3,          0,          0,        1,      730, 0x7dfa6c3d
+4,          0,          0,        1,       48, 0x1b7c177a
+stream_group|index=0|id=0x5|nb_streams=4|type=Tile Grid|component_entry/tile_grid:nb_tiles=4|component_entry/tile_grid:coded_width=1024|component_entry/tile_grid:coded_height=1024|component_entry/tile_grid:horizontal_offset=0|component_entry/tile_grid:vertical_offset=0|component_entry/tile_grid:width=600|component_entry/tile_grid:height=800|subcomponent_entry/tile_offset:stream_index=0|subcomponent_entry/tile_offset:tile_horizontal_offset=0|subcomponent_entry/tile_offset:tile_vertical_offset=0|subcomponent_entry/tile_offset:stream_index=1|subcomponent_entry/tile_offset:tile_horizontal_offset=512|subcomponent_entry/tile_offset:tile_vertical_offset=0|subcomponent_entry/tile_offset:stream_index=2|subcomponent_entry/tile_offset:tile_horizontal_offset=0|subcomponent_entry/tile_offset:tile_vertical_offset=512|subcomponent_entry/tile_offset:stream_index=3|subcomponent_entry/tile_offset:tile_horizontal_offset=512|subcomponent_entry/tile_offset:tile_vertical_offset=512|disposition:default=1|disposition:dub=0|disposition:original=0|disposition:comment=0|disposition:lyrics=0|disposition:karaoke=0|disposition:forced=0|disposition:hearing_impaired=0|disposition:visual_impaired=0|disposition:clean_effects=0|disposition:attached_pic=0|disposition:timed_thumbnails=0|disposition:non_diegetic=0|disposition:captions=0|disposition:descriptions=0|disposition:metadata=0|disposition:dependent=0|disposition:still_image=0|disposition:multilayer=0|side_datum/exif_metadata:side_data_type=EXIF metadata|side_datum/exif_metadata:size=796|side_datum/icc_profile:side_data_type=ICC Profile
+stream|index=0|id=0x1|disposition:default=0|disposition:dub=0|disposition:original=0|disposition:comment=0|disposition:lyrics=0|disposition:karaoke=0|disposition:forced=0|disposition:hearing_impaired=0|disposition:visual_impaired=0|disposition:clean_effects=0|disposition:attached_pic=0|disposition:timed_thumbnails=0|disposition:non_diegetic=0|disposition:captions=0|disposition:descriptions=0|disposition:metadata=0|disposition:dependent=1|disposition:still_image=0|disposition:multilayer=0|side_datum/icc_profile:side_data_type=ICC Profile
+stream|index=1|id=0x2|disposition:default=0|disposition:dub=0|disposition:original=0|disposition:comment=0|disposition:lyrics=0|disposition:karaoke=0|disposition:forced=0|disposition:hearing_impaired=0|disposition:visual_impaired=0|disposition:clean_effects=0|disposition:attached_pic=0|disposition:timed_thumbnails=0|disposition:non_diegetic=0|disposition:captions=0|disposition:descriptions=0|disposition:metadata=0|disposition:dependent=1|disposition:still_image=0|disposition:multilayer=0|side_datum/icc_profile:side_data_type=ICC Profile
+stream|index=2|id=0x3|disposition:default=0|disposition:dub=0|disposition:original=0|disposition:comment=0|disposition:lyrics=0|disposition:karaoke=0|disposition:forced=0|disposition:hearing_impaired=0|disposition:visual_impaired=0|disposition:clean_effects=0|disposition:attached_pic=0|disposition:timed_thumbnails=0|disposition:non_diegetic=0|disposition:captions=0|disposition:descriptions=0|disposition:metadata=0|disposition:dependent=1|disposition:still_image=0|disposition:multilayer=0|side_datum/icc_profile:side_data_type=ICC Profile
+stream|index=3|id=0x4|disposition:default=0|disposition:dub=0|disposition:original=0|disposition:comment=0|disposition:lyrics=0|disposition:karaoke=0|disposition:forced=0|disposition:hearing_impaired=0|disposition:visual_impaired=0|disposition:clean_effects=0|disposition:attached_pic=0|disposition:timed_thumbnails=0|disposition:non_diegetic=0|disposition:captions=0|disposition:descriptions=0|disposition:metadata=0|disposition:dependent=1|disposition:still_image=0|disposition:multilayer=0|side_datum/icc_profile:side_data_type=ICC Profile
+stream_group|index=1|id=0x7|nb_streams=2|type=Gain Map (Split base rendition and gain map)|component_entry/gain_map__split_base_rendition_and_gain_map_:el_index=1|component_entry/gain_map__split_base_rendition_and_gain_map_:width=600|component_entry/gain_map__split_base_rendition_and_gain_map_:height=800|disposition:default=0|disposition:dub=0|disposition:original=0|disposition:comment=0|disposition:lyrics=0|disposition:karaoke=0|disposition:forced=0|disposition:hearing_impaired=0|disposition:visual_impaired=0|disposition:clean_effects=0|disposition:attached_pic=0|disposition:timed_thumbnails=0|disposition:non_diegetic=0|disposition:captions=0|disposition:descriptions=0|disposition:metadata=0|disposition:dependent=0|disposition:still_image=0|disposition:multilayer=0|side_datum/icc_profile:side_data_type=ICC Profile
+stream_group|index=0|id=0x5|nb_streams=4|type=Tile Grid
+stream|index=4|id=0x6|disposition:default=0|disposition:dub=0|disposition:original=0|disposition:comment=0|disposition:lyrics=0|disposition:karaoke=0|disposition:forced=0|disposition:hearing_impaired=0|disposition:visual_impaired=0|disposition:clean_effects=0|disposition:attached_pic=0|disposition:timed_thumbnails=0|disposition:non_diegetic=0|disposition:captions=0|disposition:descriptions=0|disposition:metadata=0|disposition:dependent=1|disposition:still_image=0|disposition:multilayer=0|side_datum/gain_map_parameters:side_data_type=Gain Map Parameters|side_datum/gain_map_parameters:version=0|side_datum/gain_map_parameters:use_base_color_space=1|side_datum/gain_map_parameters:base_hdr_headroom=0/1|side_datum/gain_map_parameters:alternate_hdr_headroom=9646899/4194304|side_datum/gain_map_parameters:nb_channels=1|component_entry/gain_map_channel:gain_map_min=0/1|component_entry/gain_map_channel:gain_map_max=0/1|component_entry/gain_map_channel:gamma=1/1|component_entry/gain_map_channel:base_offset=0/1|component_entry/gain_map_channel:alternate_offset=0/1
