@@ -2024,12 +2024,13 @@ static int FUNC(pps) (CodedBitstreamContext *ctx, RWContext *rw,
 
                         for (j = 0; j < current->pps_num_exp_slices_in_tile[i];
                              j++) {
-                            ues(pps_exp_slice_height_in_ctus_minus1[i][j], 0,
+                            xue(pps_exp_slice_height_in_ctus_minus1[i][j],
+                                current->pps_exp_slice_height_in_ctus_minus1[i + j], 0,
                                 remaining_height_in_ctbs_y - (current->pps_num_exp_slices_in_tile[i] - j), 2,
                                 i, j);
                             slice_height_in_ctus =
                                 current->
-                                pps_exp_slice_height_in_ctus_minus1[i][j] + 1;
+                                pps_exp_slice_height_in_ctus_minus1[i + j] + 1;
 
                             current->slice_height_in_ctus[i + j] =
                                 slice_height_in_ctus;
@@ -2041,7 +2042,7 @@ static int FUNC(pps) (CodedBitstreamContext *ctx, RWContext *rw,
                         }
                         uniform_slice_height = 1 +
                             (j == 0 ? current->row_height_val[tile_y] - 1:
-                            current->pps_exp_slice_height_in_ctus_minus1[i][j-1]);
+                            current->pps_exp_slice_height_in_ctus_minus1[i + j - 1]);
 
                         num_uniform_slices = (remaining_height_in_ctbs_y + uniform_slice_height - 1)
                                            / uniform_slice_height;
