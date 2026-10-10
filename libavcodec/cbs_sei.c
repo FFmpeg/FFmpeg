@@ -279,11 +279,8 @@ int ff_cbs_sei_list_add(SEIRawMessageList *list)
 
         list->messages = ptr;
         list->nb_messages_allocated = new_count;
-
-        // Zero the newly-added entries.
-        memset(list->messages + old_count, 0,
-               (new_count - old_count) * sizeof(*list->messages));
     }
+    memset(&list->messages[list->nb_messages], 0, sizeof(*list->messages));
     ++list->nb_messages;
     return 0;
 }
