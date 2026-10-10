@@ -482,6 +482,7 @@ const FFFilter ff_vf_drawbox = {
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
     .process_command = process_command,
+    .flags_internal = FF_FILTER_FLAG_DYNAMIC_FRAME_SIZE,
 };
 #endif /* CONFIG_DRAWBOX_FILTER */
 
@@ -557,6 +558,7 @@ const FFFilter ff_vf_drawgrid = {
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
     .process_command = process_command,
+    .flags_internal = FF_FILTER_FLAG_DYNAMIC_FRAME_SIZE,
 };
 
 #endif  /* CONFIG_DRAWGRID_FILTER */

@@ -165,4 +165,5 @@ const FFFilter ff_vf_shuffleplanes = {
     FILTER_INPUTS(shuffleplanes_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_QUERY_FUNC2(query_formats),
+    .flags_internal = FF_FILTER_FLAG_DYNAMIC_FRAME_SIZE,
 };

@@ -76,4 +76,5 @@ const FFFilter ff_vf_copy = {
     FILTER_INPUTS(avfilter_vf_copy_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_QUERY_FUNC2(query_formats),
+    .flags_internal = FF_FILTER_FLAG_DYNAMIC_FRAME_SIZE,
 };
