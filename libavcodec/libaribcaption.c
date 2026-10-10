@@ -781,6 +781,15 @@ static int aribcaption_trans_ass_subtitle(ARIBCaptionContext *ctx)
             rect_idx++;
         }
     }
+    if (!single_rect && !rect_idx) {
+        /* Every region was skipped as ruby. A clear screen (CS) must still
+           erase the previous caption. */
+        av_bprint_finalize(&buf, NULL);
+        if (!(ctx->caption.flags & ARIBCC_CAPTIONFLAGS_CLEARSCREEN))
+            return 0;
+        ret = ff_ass_add_rect(sub, "", ctx->readorder++, 0, NULL, NULL);
+        return ret < 0 ? ret : 1;
+    }
     if (single_rect) {
         if (!av_bprint_is_complete(&buf)) {
             ret = AVERROR(ENOMEM);
