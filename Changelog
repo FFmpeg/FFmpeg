@@ -20,6 +20,7 @@ version <next>:
 - xHE-AAC encoding via libfdk-xhe-aac
 - jpegapp bitstream filter
 - Infinity IMM6 video decoder
+- Remove the asf_o demuxer
 
 
 version 9.0:
