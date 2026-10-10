@@ -1004,8 +1004,8 @@ static int dng_decode_tiles(AVCodecContext *avctx, AVFrame *frame,
     has_height_leftover = (s->height % s->tile_length != 0);
 
     /* Calculate tile counts (round up) */
-    tile_count_x = (s->width + s->tile_width - 1) / s->tile_width;
-    tile_count_y = (s->height + s->tile_length - 1) / s->tile_length;
+    tile_count_x = (s->width - 1) / s->tile_width + 1;
+    tile_count_y = (s->height - 1) / s->tile_length + 1;
 
     /* Iterate over the number of tiles */
     for (tile_idx = 0; tile_idx < tile_count_x * tile_count_y; tile_idx++) {
