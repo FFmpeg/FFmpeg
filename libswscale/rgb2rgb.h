@@ -93,32 +93,18 @@ void ff_rgb24toyv12_c(const uint8_t *src, uint8_t *ydst, uint8_t *udst,
                       uint8_t *vdst, int width, int height, int lumStride,
                       int chromStride, int srcStride, const int32_t *rgb2yuv);
 
-/**
- * Height should be a multiple of 2 and width should be a multiple of 16.
- * (If this is a problem for anyone then tell me, and I will fix it.)
- */
 extern void (*yv12toyuy2)(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc, uint8_t *dst,
                           int width, int height,
                           int lumStride, int chromStride, int dstStride);
 
-/**
- * Width should be a multiple of 16.
- */
 extern void (*yuv422ptoyuy2)(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc, uint8_t *dst,
                              int width, int height,
                              int lumStride, int chromStride, int dstStride);
 
-/**
- * Height should be a multiple of 2 and width should be a multiple of 16.
- * (If this is a problem for anyone then tell me, and I will fix it.)
- */
 extern void (*yv12touyvy)(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc, uint8_t *dst,
                           int width, int height,
                           int lumStride, int chromStride, int dstStride);
 
-/**
- * Width should be a multiple of 16.
- */
 extern void (*yuv422ptouyvy)(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc, uint8_t *dst,
                              int width, int height,
                              int lumStride, int chromStride, int dstStride);
@@ -156,6 +142,22 @@ extern void (*yuyvtoyuv422)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst, const u
                             int lumStride, int chromStride, int srcStride);
 
 void ff_sws_rgb2rgb_init(void);
+
+/**
+ * Packs the chroma positions from..to-1 of one line as YUYV when
+ * luma_first is set and as UYVY otherwise.
+ */
+static inline void ff_pack_yuv422_line(uint8_t *dst, const uint8_t *ysrc,
+                                       const uint8_t *usrc, const uint8_t *vsrc,
+                                       int from, int to, int luma_first)
+{
+    for (int i = from; i < to; i++) {
+        dst[4 * i +     !luma_first] = ysrc[2 * i];
+        dst[4 * i + 2 + !luma_first] = ysrc[2 * i + 1];
+        dst[4 * i +      luma_first] = usrc[i];
+        dst[4 * i + 2 +  luma_first] = vsrc[i];
+    }
+}
 
 void rgb2rgb_init_aarch64(void);
 void rgb2rgb_init_riscv(void);
