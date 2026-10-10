@@ -348,12 +348,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         inlink->dst->inputs[0]->sample_aspect_ratio.num = in->sample_aspect_ratio.num;
 
 
-        if ((ret = config_input(inlink)) < 0) {
+        if ((ret = config_input(inlink)) < 0 ||
+            (ret = config_output(outlink)) < 0) {
             s->inlink_w = -1;
-            return ret;
-        }
-        if ((ret = config_output(outlink)) < 0) {
-            s->inlink_w = -1;
+            av_frame_free(&in);
             return ret;
         }
     }
