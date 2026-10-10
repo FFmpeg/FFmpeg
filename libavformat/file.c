@@ -740,8 +740,9 @@ static int android_content_open(URLContext *h, const char *filename, int flags)
         goto done;
 
     if (fstat(fd, &st) < 0) {
+        ret = AVERROR(errno);
         close(fd);
-        return AVERROR(errno);
+        goto done;
     }
 
     c->fd = fd;
