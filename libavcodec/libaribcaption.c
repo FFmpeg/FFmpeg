@@ -582,6 +582,15 @@ static void set_ass_color(AVBPrint *buf, int color_num,
                                           0xFF - ARIBCC_COLOR_A(new_color));
 }
 
+/* position of a region, keeping the existing wrapping of negative values
+   in ass mode */
+static void region_position(const ARIBCaptionContext *ctx,
+                            const aribcc_caption_region_t *region, int *x, int *y)
+{
+    *x = region->x < 0 ? region->x + ctx->plane_width  : region->x;
+    *y = region->y < 0 ? region->y + ctx->plane_height : region->y;
+}
+
 static int aribcaption_trans_ass_subtitle(ARIBCaptionContext *ctx)
 {
     AVSubtitle *sub = ctx->sub;
@@ -615,16 +624,13 @@ static int aribcaption_trans_ass_subtitle(ARIBCaptionContext *ctx)
         for (int i = 0; i < ctx->caption.region_count; i++) {
             if (ctx->caption.regions[i].is_ruby && ctx->ignore_ruby)
                 continue;
-            rx = ctx->caption.regions[i].x;
-            ry = ctx->caption.regions[i].y;
+            region_position(ctx, &ctx->caption.regions[i], &rx, &ry);
             if (rx < x)
                 x = rx;
             if (ry < y)
                 y = ry;
         }
         av_bprintf(&buf, "{\\an7}");
-        if (y < 0)
-            y += ctx->plane_height;
         if (x > 0 || y > 0)
             av_bprintf(&buf, "{\\pos(%d,%d)}", x, y);
     }
@@ -651,12 +657,8 @@ static int aribcaption_trans_ass_subtitle(ARIBCaptionContext *ctx)
         emitted = true;
 
         if (!single_rect) {
-            int x = region->x;
-            int y = region->y;
-            if (x < 0)
-                x += ctx->plane_width;
-            if (y < 0)
-                y += ctx->plane_height;
+            int x, y;
+            region_position(ctx, region, &x, &y);
             av_bprint_clear(&buf);
             av_bprintf(&buf, "{\\an7}");
             if (x > 0 || y > 0)
