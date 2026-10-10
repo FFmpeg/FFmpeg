@@ -218,7 +218,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
     ColorDetectContext *s = ctx->priv;
-    const int nb_threads = FFMIN(inlink->h, s->nb_threads);
+    const int nb_threads = FFMIN(in->height, s->nb_threads);
 
     enum AVColorRange detected_range = atomic_load_explicit(&s->detected_range, memory_order_relaxed);
     if (s->mode & COLOR_DETECT_COLOR_RANGE && detected_range == AVCOL_RANGE_UNSPECIFIED)
