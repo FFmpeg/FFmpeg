@@ -625,8 +625,8 @@ static int aribcaption_trans_ass_subtitle(ARIBCaptionContext *ctx)
             return 0;
         /* clear previous caption for indefinite duration  */
         sub->format = 1; /* text */
-        ff_ass_add_rect(sub, "", ctx->readorder++, 0, NULL, NULL);
-        return 1;
+        ret = ff_ass_add_rect(sub, "", ctx->readorder++, 0, NULL, NULL);
+        return ret < 0 ? ret : 1;
     }
 
     sub->format = 1; /* text */
