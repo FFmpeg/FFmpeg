@@ -60,6 +60,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     }
 
     res = f ? av_bsf_alloc(f, &bsf) : av_bsf_get_null_filter(&bsf);
+    if (res == AVERROR(ENOTSUP))
+        return 0; // multi-input filters cannot be used through av_bsf_alloc()
     if (res < 0)
         error("Failed memory allocation");
     f = bsf->filter;
