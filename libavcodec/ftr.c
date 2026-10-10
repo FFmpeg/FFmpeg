@@ -132,6 +132,8 @@ static int ftr_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         }
 
         ret = avcodec_receive_frame(codec_avctx, s->frame);
+        if (ret == AVERROR(EAGAIN))
+            return AVERROR_INVALIDDATA;
         if (ret < 0)
             return ret;
 
