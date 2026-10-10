@@ -1225,7 +1225,7 @@ static int asf_read_packet_header(AVFormatContext *s)
 
     asf->packet_offset = avio_tell(pb);
     if (asf->packet_offset > INT64_MAX/2)
-        asf->packet_offset = 0;
+        return AVERROR_INVALIDDATA;
     error_flags = avio_r8(pb); // read Error Correction Flags
     if (error_flags & ASF_PACKET_FLAG_ERROR_CORRECTION_PRESENT) {
         if (!(error_flags & ASF_ERROR_CORRECTION_LENGTH_TYPE)) {
@@ -1309,7 +1309,8 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR_EOF;
     while (!pb->eof_reached) {
         if (asf->state == PARSE_PACKET_HEADER) {
-            asf_read_packet_header(s);
+            if ((ret = asf_read_packet_header(s)) < 0)
+                return ret;
             if (pb->eof_reached)
                 break;
             if (!asf->nb_mult_left)
