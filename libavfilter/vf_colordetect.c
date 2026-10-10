@@ -308,4 +308,5 @@ const FFFilter ff_vf_colordetect = {
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_QUERY_FUNC2(query_format),
     .activate      = activate,
+    .flags_internal = FF_FILTER_FLAG_DYNAMIC_FRAME_SIZE,
 };

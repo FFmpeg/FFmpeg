@@ -136,4 +136,5 @@ const FFFilter ff_vf_iccdetect = {
     .uninit      = &iccdetect_uninit,
     FILTER_INPUTS(iccdetect_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
+    .flags_internal = FF_FILTER_FLAG_DYNAMIC_FRAME_PARAMS,
 };

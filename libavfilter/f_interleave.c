@@ -239,6 +239,7 @@ const FFFilter ff_vf_interleave = {
     .init        = init,
     .activate    = activate,
     FILTER_OUTPUTS(interleave_outputs),
+    .flags_internal = FF_FILTER_FLAG_DYNAMIC_FRAME_PARAMS,
 };
 
 #endif

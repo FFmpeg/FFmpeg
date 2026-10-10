@@ -306,6 +306,7 @@ const FFFilter ff_vf_streamselect = {
     .uninit          = uninit,
     .activate        = activate,
     .priv_size       = sizeof(StreamSelectContext),
+    .flags_internal = FF_FILTER_FLAG_DYNAMIC_FRAME_PARAMS,
 };
 
 const FFFilter ff_af_astreamselect = {
