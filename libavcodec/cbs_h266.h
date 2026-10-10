@@ -280,7 +280,8 @@ typedef struct H266RawVPS {
     uint8_t  vps_num_ptls_minus1;
     uint8_t  vps_pt_present_flag[VVC_MAX_PTLS];
     uint8_t  vps_ptl_max_tid[VVC_MAX_PTLS];
-    H266RawProfileTierLevel vps_profile_tier_level[VVC_MAX_PTLS];
+    H266RawProfileTierLevel *vps_profile_tier_level;
+    AVBufferRef             *vps_profile_tier_level_ref;
     uint8_t  vps_ols_ptl_idx[VVC_MAX_TOTAL_NUM_OLSS];
 
     uint16_t vps_num_dpb_params_minus1;
