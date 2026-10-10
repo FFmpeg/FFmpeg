@@ -587,6 +587,7 @@ static int aribcaption_trans_ass_subtitle(ARIBCaptionContext *ctx)
     AVSubtitle *sub = ctx->sub;
     AVBPrint buf;
     bool single_rect = ctx->ass_single_rect;
+    bool emitted = false;
     int ret = 0, rect_idx;
 
     if (ctx->caption.plane_width > 0 && ctx->caption.plane_height > 0 &&
@@ -623,6 +624,8 @@ static int aribcaption_trans_ass_subtitle(ARIBCaptionContext *ctx)
         x = ctx->plane_width;
         y = ctx->plane_height;
         for (int i = 0; i < ctx->caption.region_count; i++) {
+            if (ctx->caption.regions[i].is_ruby && ctx->ignore_ruby)
+                continue;
             rx = ctx->caption.regions[i].x;
             ry = ctx->caption.regions[i].y;
             if (rx < x)
@@ -653,6 +656,10 @@ static int aribcaption_trans_ass_subtitle(ARIBCaptionContext *ctx)
 
         if (region->is_ruby && ctx->ignore_ruby)
             continue;
+
+        if (single_rect && emitted)
+            av_bprintf(&buf, "{\\r}\\N");
+        emitted = true;
 
         if (!single_rect) {
             int x = region->x;
@@ -744,12 +751,9 @@ static int aribcaption_trans_ass_subtitle(ARIBCaptionContext *ctx)
         }
 
         if (single_rect) {
-            if (i + 1 < ctx->caption.region_count)
-                av_bprintf(&buf, "{\\r}\\N");
-            ff_dlog(ctx, "ASS subtitle%s (%d,%d) %dx%d [%d]\n",
+            ff_dlog(ctx, "ASS subtitle%s (%d,%d) %dx%d [region %d]\n",
                     (region->is_ruby) ? " (ruby)" : "",
-                    region->x, region->y, region->width, region->height,
-                    rect_idx);
+                    region->x, region->y, region->width, region->height, i);
         } else {
             if (!av_bprint_is_complete(&buf)) {
                 ret = AVERROR(ENOMEM);
@@ -766,9 +770,9 @@ static int aribcaption_trans_ass_subtitle(ARIBCaptionContext *ctx)
             rect_idx++;
         }
     }
-    if (!single_rect && !rect_idx) {
-        /* Every region was skipped as ruby. A clear screen (CS) must still
-           erase the previous caption. */
+    if (!emitted) {
+        /* Every region was skipped as ruby. Emit nothing, but a clear
+           screen (CS) must still erase the previous caption. */
         av_bprint_finalize(&buf, NULL);
         if (!(ctx->caption.flags & ARIBCC_CAPTIONFLAGS_CLEARSCREEN))
             return 0;
