@@ -971,14 +971,14 @@ float ff_rate_estimate_qscale(MPVMainEncContext *const m, int dry_run)
             wanted_bits_double = m->bit_rate * (double)picture_number / fps;
         else
             wanted_bits_double = m->bit_rate * (double)dts_pic->f->pts / fps;
-        if (wanted_bits_double > INT64_MAX) {
+        if (wanted_bits_double >= 0x1p63) {
             av_log(s->c.avctx, AV_LOG_WARNING, "Bits exceed 64bit range\n");
             wanted_bits = INT64_MAX;
         } else
-            wanted_bits = (int64_t)wanted_bits_double;
+            wanted_bits = FFMAX(wanted_bits_double, INT64_MIN);
     }
 
-    diff = m->total_bits - wanted_bits;
+    diff = (double)m->total_bits - wanted_bits;
     br_compensation = (a->bit_rate_tolerance - diff) / a->bit_rate_tolerance;
     if (br_compensation <= 0.0)
         br_compensation = 0.001;
