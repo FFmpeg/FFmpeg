@@ -604,17 +604,6 @@ static int aribcaption_trans_ass_subtitle(ARIBCaptionContext *ctx)
     if (ctx->avctx->profile == AV_PROFILE_ARIB_PROFILE_C)
         single_rect = true;
 
-    if (ctx->caption.region_count == 0) {
-        /* Only an explicit clear screen (CS) erases the previous caption;
-           a statement containing only TIME also has no region. */
-        if (!(ctx->caption.flags & ARIBCC_CAPTIONFLAGS_CLEARSCREEN))
-            return 0;
-        /* clear previous caption for indefinite duration  */
-        sub->format = 1; /* text */
-        ret = ff_ass_add_rect(sub, "", ctx->readorder++, 0, NULL, NULL);
-        return ret < 0 ? ret : 1;
-    }
-
     sub->format = 1; /* text */
 
     av_bprint_init(&buf, ARIBC_BPRINT_SIZE_INIT, ARIBC_BPRINT_SIZE_MAX);
@@ -771,13 +760,19 @@ static int aribcaption_trans_ass_subtitle(ARIBCaptionContext *ctx)
         }
     }
     if (!emitted) {
-        /* Every region was skipped as ruby. Emit nothing, but a clear
-           screen (CS) must still erase the previous caption. */
-        av_bprint_finalize(&buf, NULL);
-        if (!(ctx->caption.flags & ARIBCC_CAPTIONFLAGS_CLEARSCREEN))
+        /* Nothing to show: there is no region, or every region was skipped
+           as ruby. Only an explicit clear screen (CS) erases the previous
+           caption, for indefinite duration; a statement containing only
+           TIME also has no region. */
+        if (!(ctx->caption.flags & ARIBCC_CAPTIONFLAGS_CLEARSCREEN)) {
+            av_bprint_finalize(&buf, NULL);
             return 0;
+        }
         ret = ff_ass_add_rect(sub, "", ctx->readorder++, 0, NULL, NULL);
-        return ret < 0 ? ret : 1;
+        if (ret < 0)
+            goto fail;
+        av_bprint_finalize(&buf, NULL);
+        return 1;
     }
     if (single_rect) {
         if (!av_bprint_is_complete(&buf)) {
