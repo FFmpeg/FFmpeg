@@ -2018,8 +2018,6 @@ int ff_h264_decode_mb_cabac(const H264Context *h, H264SliceContext *sl)
         }
     } else {
         mb_type = decode_cabac_intra_mb_type(sl, 3, 1);
-        if (sl->slice_type == AV_PICTURE_TYPE_SI && mb_type)
-            mb_type--;
         av_assert2(sl->slice_type_nos == AV_PICTURE_TYPE_I);
 decode_intra_mb:
         partition_count = 0;
