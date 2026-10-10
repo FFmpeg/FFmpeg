@@ -760,7 +760,7 @@ static void decode_plane_bitstream(HYuvDecContext *s, int width, int plane)
             s->temp16[0][width - 1] = 0;
         CLOSE_READER(re, &s->gb);
     } else {
-        if (count >= (get_bits_left(&s->gb)) / (32 * 2)) {
+        if (count >= (get_bits_left(&s->gb)) / (33 * 2)) {
             for (i = 0; i < count && get_bits_left(&s->gb) > 0; i++) {
                 READ_2PIX_PLANE16(s->temp16[0][2 * i], s->temp16[0][2 * i + 1], plane);
             }
