@@ -223,6 +223,15 @@ static int fd_dup(URLContext *h, int oldfd)
 }
 #endif
 
+#if CONFIG_FD_PROTOCOL || CONFIG_PIPE_PROTOCOL
+/* Without a check, avio_check() would open the descriptor, rewinding seekable
+ * output. It cannot pass the option selecting the descriptor, so just fail. */
+static int fd_check(URLContext *h, int mask)
+{
+    return AVERROR(ENOSYS);
+}
+#endif
+
 static int file_close(URLContext *h)
 {
     FileContext *c = h->priv_data;
@@ -481,7 +490,7 @@ const URLProtocol ff_pipe_protocol = {
     .url_write           = file_write,
     .url_close           = file_close,
     .url_get_file_handle = file_get_handle,
-    .url_check           = file_check,
+    .url_check           = fd_check,
     .priv_data_size      = sizeof(FileContext),
     .priv_data_class     = &pipe_class,
     .default_whitelist   = "crypto,data"
@@ -527,7 +536,7 @@ const URLProtocol ff_fd_protocol = {
     .url_seek            = file_seek,
     .url_close           = file_close,
     .url_get_file_handle = file_get_handle,
-    .url_check           = file_check,
+    .url_check           = fd_check,
     .priv_data_size      = sizeof(FileContext),
     .priv_data_class     = &fd_class,
     .default_whitelist   = "crypto,data"
@@ -687,7 +696,6 @@ const URLProtocol ff_android_content_protocol = {
     .url_seek            = file_seek,
     .url_close           = file_close,
     .url_get_file_handle = file_get_handle,
-    .url_check           = NULL,
     .priv_data_size      = sizeof(FileContext),
     .priv_data_class     = &android_content_class,
 };
