@@ -263,7 +263,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     if (desc->flags & AV_PIX_FMT_FLAG_ALPHA && odesc->flags & AV_PIX_FMT_FLAG_ALPHA) {
         av_image_copy_plane(out->data[3], out->linesize[3],
                             in->data[3], in->linesize[3],
-                            out->linesize[3], outlink->h);
+                            out->width * odesc->comp[3].step, outlink->h);
     } else if (odesc->flags & AV_PIX_FMT_FLAG_ALPHA) {
         for (y = 0; y < out->height; y++) {
             for (x = 0; x < out->width; x++) {
