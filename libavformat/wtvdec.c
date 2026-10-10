@@ -199,7 +199,7 @@ static AVIOContext * wtvfile_open_sector(unsigned first_sector, uint64_t length,
         for (i = 0; i < nb_sectors1; i++) {
             if (seek_by_sector(s->pb, sectors1[i], 0) < 0)
                 break;
-            wf->nb_sectors += read_ints(s->pb, wf->sectors + i * WTV_SECTOR_SIZE / 4, WTV_SECTOR_SIZE / 4);
+            wf->nb_sectors += read_ints(s->pb, wf->sectors + wf->nb_sectors, WTV_SECTOR_SIZE / 4);
         }
     } else {
         av_log(s, AV_LOG_ERROR, "unsupported file allocation table depth (0x%x)\n", depth);
