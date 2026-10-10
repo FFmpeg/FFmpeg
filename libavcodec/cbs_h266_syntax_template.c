@@ -930,6 +930,9 @@ static int FUNC(vps) (CodedBitstreamContext *ctx, RWContext *rw,
             return AVERROR_INVALIDDATA;
     }
 
+    allocate(current->vps_profile_tier_level,
+             (current->vps_num_ptls_minus1 + 1) *
+             sizeof(*current->vps_profile_tier_level));
     for (i = 0; i <= current->vps_num_ptls_minus1; i++) {
         CHECK(FUNC(profile_tier_level) (ctx, rw,
                                         current->vps_profile_tier_level + i,

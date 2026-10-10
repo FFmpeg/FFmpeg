@@ -143,7 +143,7 @@ static int FUNC_H266(name) args
                                         AV_INPUT_BUFFER_PADDING_SIZE); \
         if (!name ## _ref) \
             return AVERROR(ENOMEM); \
-        name = name ## _ref->data; \
+        name = (void *)name ## _ref->data; \
     } while (0)
 
 #define FUNC(name) FUNC_H266(name)
@@ -760,7 +760,17 @@ static void cbs_h266_free_sei(AVRefStructOpaque unused, void *content)
 static CodedBitstreamUnitTypeDescriptor cbs_h266_unit_types[] = {
     CBS_UNIT_TYPE_INTERNAL_REF(VVC_DCI_NUT, H266RawDCI, extension_data.data),
     CBS_UNIT_TYPE_INTERNAL_REF(VVC_OPI_NUT, H266RawOPI, extension_data.data),
-    CBS_UNIT_TYPE_INTERNAL_REF(VVC_VPS_NUT, H266RawVPS, extension_data.data),
+    {
+        .nb_unit_types     = 1,
+        .unit_type.list[0] = VVC_VPS_NUT,
+        .content_type      = CBS_CONTENT_TYPE_INTERNAL_REFS,
+        .content_size      = sizeof(H266RawVPS),
+        .type.ref          = {
+            .nb_offsets = 2,
+            .offsets    = { offsetof(H266RawVPS, vps_profile_tier_level),
+                            offsetof(H266RawVPS, extension_data.data) }
+        },
+    },
     {
         .nb_unit_types     = 1,
         .unit_type.list[0] = VVC_SPS_NUT,
