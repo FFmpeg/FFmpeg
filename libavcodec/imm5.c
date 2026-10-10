@@ -24,10 +24,13 @@
 
 #include "avcodec.h"
 #include "codec_internal.h"
+#include "decode.h"
+#include "internal.h"
 
 typedef struct IMM5Context {
     AVCodecContext *h264_avctx;   // wrapper context for H264
     AVCodecContext *hevc_avctx;   // wrapper context for HEVC
+    AVCodecContext *codec_avctx;
 } IMM5Context;
 
 static const struct IMM5_unit {
@@ -66,6 +69,7 @@ static av_cold int imm5_init(AVCodecContext *avctx)
     ret = avcodec_open2(ctx->h264_avctx, NULL, NULL);
     if (ret < 0)
         return ret;
+    ctx->codec_avctx = ctx->h264_avctx;
 
     EXTERN const FFCodec ff_hevc_decoder;
     ctx->hevc_avctx = avcodec_alloc_context3(&ff_hevc_decoder.p);
@@ -82,8 +86,7 @@ static av_cold int imm5_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int imm5_decode_frame(AVCodecContext *avctx, AVFrame *frame,
-                             int *got_frame, AVPacket *avpkt)
+static int imm5_send_packet(AVCodecContext *avctx, AVPacket *avpkt)
 {
     IMM5Context *ctx = avctx->priv_data;
     AVCodecContext *codec_avctx = ctx->h264_avctx;
@@ -131,18 +134,36 @@ static int imm5_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         }
     }
 
+    ctx->codec_avctx = codec_avctx;
     ret = avcodec_send_packet(codec_avctx, avpkt);
-    if (ret < 0) {
+    if (ret < 0)
         av_log(avctx, AV_LOG_ERROR, "Error submitting a packet for decoding\n");
-        return ret;
-    }
+    return ret;
+}
 
-    ret = avcodec_receive_frame(codec_avctx, frame);
-    if (ret == AVERROR(EAGAIN))
-        return avpkt->size;
+static int imm5_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+{
+    IMM5Context *ctx = avctx->priv_data;
+    AVPacket *avpkt = avctx->internal->in_pkt;
+    int ret;
+
+    while ((ret = avcodec_receive_frame(ctx->codec_avctx, frame)) == AVERROR(EAGAIN)) {
+        ret = ff_decode_get_packet(avctx, avpkt);
+        if (ret == AVERROR_EOF) {
+            avcodec_send_packet(ctx->codec_avctx, NULL);
+            continue;
+        }
+        if (ret < 0)
+            return ret;
+        ret = imm5_send_packet(avctx, avpkt);
+        av_packet_unref(avpkt);
+        if (ret < 0)
+            return ret;
+    }
     if (ret < 0)
         return ret;
 
+    AVCodecContext *codec_avctx = ctx->codec_avctx;
     avctx->pix_fmt      = codec_avctx->pix_fmt;
     avctx->coded_width  = codec_avctx->coded_width;
     avctx->coded_height = codec_avctx->coded_height;
@@ -155,9 +176,7 @@ static int imm5_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     avctx->color_primaries = codec_avctx->color_primaries;
     avctx->chroma_sample_location = codec_avctx->chroma_sample_location;
 
-    *got_frame = 1;
-
-    return avpkt->size;
+    return 0;
 }
 
 static av_cold void imm5_flush(AVCodecContext *avctx)
@@ -183,8 +202,9 @@ const FFCodec ff_imm5_decoder = {
     CODEC_LONG_NAME("Infinity IMM5"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_IMM5,
+    .p.capabilities = AV_CODEC_CAP_DELAY,
     .init           = imm5_init,
-    FF_CODEC_DECODE_CB(imm5_decode_frame),
+    FF_CODEC_RECEIVE_FRAME_CB(imm5_receive_frame),
     .close          = imm5_close,
     .flush          = imm5_flush,
     .priv_data_size = sizeof(IMM5Context),
