@@ -180,6 +180,16 @@ FATE_SUBTITLES_ASS-$(call DEMDEC, MPEGTS, LIBARIBCAPTION) += fate-sub-aribcaptio
 fate-sub-aribcaption-clear-ass: CMD = fmtstdout ass -sub_type ass -font sans-serif -i $(TARGET_SAMPLES)/sub/aribcaption_clear.ts
 fate-sub-aribcaption-clear-text fate-sub-aribcaption-clear-ass: CMP = diff
 
+# caption, CS + ruby only, CS + ruby above a caption, ruby only without CS;
+# with ignore_ruby only CS must clear, and skipped ruby must not be drawn
+FATE_SUBTITLES_PROBE-$(call DEMDEC, MPEGTS, LIBARIBCAPTION) += fate-sub-aribcaption-ruby-bitmap
+fate-sub-aribcaption-ruby-bitmap: CMD = probeframes -sub_type bitmap -ignore_ruby 1 $(TARGET_SAMPLES)/sub/aribcaption_ruby.ts
+FATE_SUBTITLES_ASS-$(call DEMDEC, MPEGTS, LIBARIBCAPTION) += fate-sub-aribcaption-ruby-ass
+fate-sub-aribcaption-ruby-ass: CMD = fmtstdout ass -sub_type ass -font sans-serif -ass_single_rect 0 -ignore_ruby 1 -i $(TARGET_SAMPLES)/sub/aribcaption_ruby.ts
+FATE_SUBTITLES_ASS-$(call DEMDEC, MPEGTS, LIBARIBCAPTION) += fate-sub-aribcaption-ruby-ass-single
+fate-sub-aribcaption-ruby-ass-single: CMD = fmtstdout ass -sub_type ass -font sans-serif -ass_single_rect 1 -ignore_ruby 1 -i $(TARGET_SAMPLES)/sub/aribcaption_ruby.ts
+fate-sub-aribcaption-ruby-bitmap fate-sub-aribcaption-ruby-ass fate-sub-aribcaption-ruby-ass-single: CMP = diff
+
 FATE_SUBTITLES-$(call ENCMUX, ASS, ASS) += $(FATE_SUBTITLES_ASS-yes)
 FATE_SUBTITLES += $(FATE_SUBTITLES-yes)
 FATE_SUBTITLES := $(if $(CONFIG_PIPE_PROTOCOL), $(FATE_SUBTITLES))

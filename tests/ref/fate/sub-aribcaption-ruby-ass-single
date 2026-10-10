@@ -1,0 +1,15 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 960
+PlayResY: 540
+WrapStyle: 2
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,sans-serif,36,&Hffffff,&Hffffff,&H0,&H0,0,0,0,0,100,100,0,0,4,0,4,2,10,10,10,0
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:01.00,9:59:59.99,Default,,0,0,0,,{\an7}{\pos(100,300)}{\fsp4}{\3a&Hff&}{\4a&Hff&}〓
+Dialogue: 0,0:00:02.00,9:59:59.99,Default,,0,0,0,,
+Dialogue: 0,0:00:03.00,9:59:59.99,Default,,0,0,0,,{\an7}{\pos(100,300)}{\fsp4}{\3a&Hff&}{\4a&Hff&}〓
