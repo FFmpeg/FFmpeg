@@ -4277,17 +4277,8 @@ static int find_prev_closest_index(AVStream *st,
         av_assert0(tts_index);
         av_assert0(tts_sample);
         // Find out the ctts_index for the found frame.
-        *tts_index = 0;
+        *tts_index = FFMIN(*index, tts_count);
         *tts_sample = 0;
-        for (int64_t index_tts_count = 0; index_tts_count < *index; index_tts_count++) {
-            if (*tts_index < tts_count) {
-                (*tts_sample)++;
-                if (tts_data[*tts_index].count == *tts_sample) {
-                    (*tts_index)++;
-                    *tts_sample = 0;
-                }
-            }
-        }
 
         while (*index >= 0 && (*tts_index) >= 0 && (*tts_index) < tts_count) {
             // Find a "key frame" with PTS <= timestamp_pts (So that we can decode B-frames correctly).
