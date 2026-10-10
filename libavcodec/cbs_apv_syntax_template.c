@@ -71,8 +71,8 @@ static int FUNC(frame_info)(CodedBitstreamContext *ctx, RWContext *rw,
 
     u(5, reserved_zero_5bits, 0, 0);
 
-    ub(24, frame_width);
-    ub(24, frame_height);
+    u(24, frame_width,  1, MAX_UINT_BITS(24));
+    u(24, frame_height, 1, MAX_UINT_BITS(24));
 
     u(4, chroma_format_idc, 0, 4);
     if (current->chroma_format_idc == 1) {
