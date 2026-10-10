@@ -283,6 +283,10 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
                 break;
             }
         } else if (c->flags & FLAG_MULTITHREAD) {
+            if (len < 8) {
+                av_log(avctx, AV_LOG_ERROR, "len %d is too small\n", len);
+                return AVERROR_INVALIDDATA;
+            }
             mthread_inlen = AV_RL32(buf);
             mthread_inlen = FFMIN(mthread_inlen, len - 8);
             mthread_outlen = AV_RL32(buf + 4);
