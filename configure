@@ -2534,6 +2534,7 @@ SYSTEM_FUNCS="
     mmap
     mprotect
     nanosleep
+    open_osfhandle
     PeekNamedPipe
     posix_memalign
     prctl
@@ -4097,6 +4098,7 @@ unix_protocol_deps="sys_un_h"
 unix_protocol_select="network"
 ipfs_gateway_protocol_select="https_protocol"
 ipns_gateway_protocol_select="https_protocol"
+windows_handle_protocol_deps="windows_h open_osfhandle GetStdHandle"
 
 # external library protocols
 libamqp_protocol_deps="librabbitmq"
@@ -6899,6 +6901,7 @@ check_func  usleep
 
 check_func_headers conio.h kbhit
 check_func_headers io.h setmode
+check_func_headers io.h _open_osfhandle && enable open_osfhandle
 check_func_headers lzo/lzo1x.h lzo1x_999_compress
 check_func_headers mach/mach_time.h mach_absolute_time
 check_func_headers setjmp.h siglongjmp

@@ -419,6 +419,40 @@ Gophers protocol.
 
 The Gopher protocol with TLS encapsulation.
 
+@section handle
+
+Windows handle access protocol.
+
+The accepted syntax is:
+@example
+handle: -handle @var{handle}
+@end example
+
+If @option{handle} is not specified, by default the output handle will be
+used for writing, input handle for reading. This protocol is only available
+on Windows. It has seek support if the handle corresponds to a regular file.
+It doesn't support passing the handle via URL.
+
+This protocol accepts the following options:
+
+@table @option
+@item blocksize
+Set I/O operation maximum block size, in bytes. Default value is
+@code{INT_MAX}, which results in not limiting the requested block size.
+Setting this value reasonably low improves user termination request reaction
+time, which is valuable if data transmission is slow.
+
+@item handle
+Set Windows handle.
+
+The supplied handle must already be valid in the calling process.
+When launching @command{ffmpeg}, arrange for the child process to
+inherit the handle before passing its numeric value with
+@option{handle}. Handles opened with @code{FILE_FLAG_OVERLAPPED}
+are not supported. Closing the protocol does not close the
+caller's original handle.
+@end table
+
 @section http
 
 HTTP (Hyper Text Transfer Protocol).

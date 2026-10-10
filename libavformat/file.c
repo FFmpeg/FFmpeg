@@ -103,6 +103,9 @@ typedef struct FileContext {
 #if HAVE_DIRENT_H
     DIR *dir;
 #endif
+#if CONFIG_WINDOWS_HANDLE_PROTOCOL
+    int64_t handle;
+#endif
 } FileContext;
 
 static const AVOption file_options[] = {
@@ -223,7 +226,7 @@ static int fd_dup(URLContext *h, int oldfd)
 }
 #endif
 
-#if CONFIG_FD_PROTOCOL || CONFIG_PIPE_PROTOCOL
+#if CONFIG_FD_PROTOCOL || CONFIG_PIPE_PROTOCOL || CONFIG_WINDOWS_HANDLE_PROTOCOL
 /* Without a check, avio_check() would open the descriptor, rewinding seekable
  * output. It cannot pass the option selecting the descriptor, so just fail. */
 static int fd_check(URLContext *h, int mask)
@@ -543,6 +546,85 @@ const URLProtocol ff_fd_protocol = {
 };
 
 #endif /* CONFIG_FD_PROTOCOL */
+
+#if CONFIG_WINDOWS_HANDLE_PROTOCOL
+
+#include <windows.h>
+
+static const AVOption windows_handle_options[] = {
+    { "blocksize", "set I/O operation maximum block size", offsetof(FileContext, blocksize), AV_OPT_TYPE_INT, { .i64 = INT_MAX }, 1, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
+    { "handle", "set Windows handle", offsetof(FileContext, handle), AV_OPT_TYPE_INT64, { .i64 = -1 }, -1, INT64_MAX, AV_OPT_FLAG_ENCODING_PARAM },
+    { NULL }
+};
+
+static const AVClass windows_handle_class = {
+    .class_name = "windows_handle",
+    .item_name  = av_default_item_name,
+    .option     = windows_handle_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+static int windows_handle_open(URLContext *h, const char *filename, int flags)
+{
+    FileContext *c = h->priv_data;
+    HANDLE handle = (HANDLE)(intptr_t)c->handle;
+    HANDLE dup_handle;
+    int fd;
+    struct stat st;
+
+    if (strcmp(filename, "handle:") != 0) {
+        av_log(h, AV_LOG_ERROR, "Doesn't support passing Windows handles via URL,"
+                                " please set it via -handle {num}\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (handle == INVALID_HANDLE_VALUE || !handle) {
+        if (flags & AVIO_FLAG_WRITE)
+            handle = GetStdHandle(STD_OUTPUT_HANDLE);
+        else
+            handle = GetStdHandle(STD_INPUT_HANDLE);
+        if (handle == INVALID_HANDLE_VALUE || !handle)
+            return AVERROR(EBADF);
+    }
+
+    if (!DuplicateHandle(GetCurrentProcess(), handle,
+                         GetCurrentProcess(), &dup_handle,
+                         0, FALSE, DUPLICATE_SAME_ACCESS))
+        return GetLastError() == ERROR_INVALID_HANDLE ? AVERROR(EBADF)
+                                                      : AVERROR(EIO);
+
+    fd = _open_osfhandle((intptr_t)dup_handle, O_BINARY);
+    if (fd == -1) {
+        CloseHandle(dup_handle);
+        return AVERROR(errno);
+    }
+
+    if (fstat(fd, &st) < 0) {
+        close(fd);
+        return AVERROR(errno);
+    }
+
+    c->fd = fd;
+    h->is_streamed = !(S_ISREG(st.st_mode) || S_ISBLK(st.st_mode));
+
+    return 0;
+}
+
+const URLProtocol ff_windows_handle_protocol = {
+    .name                = "handle",
+    .url_open            = windows_handle_open,
+    .url_read            = file_read,
+    .url_write           = file_write,
+    .url_seek            = file_seek,
+    .url_close           = file_close,
+    .url_get_file_handle = file_get_handle,
+    .url_check           = fd_check,
+    .priv_data_size      = sizeof(FileContext),
+    .priv_data_class     = &windows_handle_class,
+    .default_whitelist   = "crypto,data"
+};
+
+#endif /* CONFIG_WINDOWS_HANDLE_PROTOCOL */
 
 #if CONFIG_ANDROID_CONTENT_PROTOCOL
 #include <jni.h>
