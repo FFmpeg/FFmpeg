@@ -105,9 +105,10 @@ struct playlist {
     uint8_t* read_buffer;
     AVIOContext *input;
     int input_read_done;
-    int input_reuse;
+    int64_t input_end; /* end of the byte range requested on input, or -1 */
     AVIOContext *input_next;
     int input_next_requested;
+    int64_t input_next_end;
     AVFormatContext *parent;
     int index;
     AVFormatContext *ctx;
@@ -295,7 +296,6 @@ static void free_playlist_list(HLSContext *c)
         av_freep(&pls->pb.pub.buffer);
         ff_format_io_close(c->ctx, &pls->input);
         pls->input_read_done = 0;
-        pls->input_reuse = 0;
         ff_format_io_close(c->ctx, &pls->input_next);
         pls->input_next_requested = 0;
         if (pls->ctx) {
@@ -1187,19 +1187,34 @@ static struct segment *next_segment(struct playlist *pls)
     return pls->segments[n];
 }
 
-/* True if 'next' can be reached by seeking the open 'in' instead of reopening.
- * An unencrypted, contiguous byte range directly following 'cur' in the same
- * seekable resource (i.e. consecutive EXT-X-BYTERANGE segments). */
-static int segment_reusable(AVIOContext *in, const struct segment *cur,
-                            const struct segment *next)
+/* True if 'next' is an unencrypted byte range that directly follows 'cur' in
+ * the same resource and ends within the range requested up to 'end', so that
+ * it is read on from the input of 'cur' (i.e. consecutive EXT-X-BYTERANGE
+ * segments). */
+static int segment_continues(const struct segment *cur,
+                             const struct segment *next, int64_t end)
 {
-    return in && cur && next &&
-           (in->seekable & AVIO_SEEKABLE_NORMAL) &&
+    return cur && next &&
            cur->size >= 0 && next->size >= 0 &&
            next->url_offset == cur->url_offset + cur->size &&
+           next->url_offset + next->size <= end &&
            cur->key_type == KEY_NONE && next->key_type == KEY_NONE &&
            next->init_section == cur->init_section &&
            !strcmp(next->url, cur->url);
+}
+
+static int64_t range_end(struct playlist *pls, const struct segment *seg)
+{
+    int64_t n = pls->cur_seq_no - pls->start_seq_no + 1;
+
+    if (seg == next_segment(pls))
+        n++;
+    else if (seg != current_segment(pls))
+        return seg->url_offset + seg->size;
+    for (; n < pls->n_segments &&
+           segment_continues(seg, pls->segments[n], INT64_MAX); n++)
+        seg = pls->segments[n];
+    return seg->url_offset + seg->size;
 }
 
 static int read_from_url(struct playlist *pls, struct segment *seg,
@@ -1450,54 +1465,23 @@ static int read_key(HLSContext *c, struct playlist *pls, struct segment *seg)
     return 0;
 }
 
-static int open_input(HLSContext *c, struct playlist *pls, struct segment *seg, AVIOContext **in)
+static int open_input(HLSContext *c, struct playlist *pls, struct segment *seg,
+                      AVIOContext **in, int64_t *end)
 {
     AVDictionary *opts = NULL;
     int ret;
     int is_http = 0;
 
-    /* Reuse a kept-open connection to the same resource by seeking instead of
-     * reopening. For contiguous ranges the seek is a no-op and issues no request. */
-    if (*in && pls->input_reuse && seg->key_type == KEY_NONE &&
-        ((*in)->seekable & AVIO_SEEKABLE_NORMAL)) {
-        int64_t seek_ret = avio_seek(*in, seg->url_offset, SEEK_SET);
-        pls->input_reuse = 0;
-        if (seek_ret >= 0) {
-            av_log(pls->parent, AV_LOG_VERBOSE,
-                   "HLS reusing connection for url '%s', offset %"PRId64", playlist %d\n",
-                   seg->url, seg->url_offset, pls->index);
-            pls->input_read_done = 0;
-            pls->cur_seg_offset = 0;
-            return 0;
-        }
-        /* Seek failed: drop the connection and reopen. */
-        ff_format_io_close(pls->parent, in);
-    }
-    pls->input_reuse = 0;
-
     if (c->http_persistent)
         av_dict_set(&opts, "multiple_requests", "1", 0);
 
+    *end = -1;
     if (seg->size >= 0) {
-        /* Restrict the request to the wanted byte range. The end is extended
-         * across following contiguous segments of the same resource so one
-         * connection serves the whole run. */
-        int64_t end_offset = seg->url_offset + seg->size;
-        if (seg == current_segment(pls)) {
-            int64_t n = pls->cur_seq_no - pls->start_seq_no + 1;
-            while (n < pls->n_segments) {
-                struct segment *ns = pls->segments[n];
-                if (ns->size < 0 || ns->url_offset != end_offset ||
-                    ns->key_type != KEY_NONE ||
-                    ns->init_section != seg->init_section ||
-                    strcmp(ns->url, seg->url))
-                    break;
-                end_offset = ns->url_offset + ns->size;
-                n++;
-            }
-        }
+        /* Restrict the request to the wanted byte range, extended so that one
+         * request serves the whole run of segments that continue it. */
+        *end = range_end(pls, seg);
         av_dict_set_int(&opts, "offset", seg->url_offset, 0);
-        av_dict_set_int(&opts, "end_offset", end_offset, 0);
+        av_dict_set_int(&opts, "end_offset", *end, 0);
     }
 
     av_log(pls->parent, AV_LOG_VERBOSE, "HLS request for url '%s', offset %"PRId64", playlist %d\n",
@@ -1573,7 +1557,7 @@ static int update_init_section(struct playlist *pls, struct segment *seg)
     if (!seg->init_section)
         return 0;
 
-    ret = open_input(c, pls, seg->init_section, &pls->input);
+    ret = open_input(c, pls, seg->init_section, &pls->input, &pls->input_end);
     if (ret < 0) {
         av_log(pls->parent, AV_LOG_WARNING,
                "Failed to open an initialization section in playlist %d\n",
@@ -1776,11 +1760,12 @@ restart:
 
         if (c->http_multiple == 1 && v->input_next_requested) {
             FFSWAP(AVIOContext *, v->input, v->input_next);
+            FFSWAP(int64_t, v->input_end, v->input_next_end);
             v->cur_seg_offset = 0;
             v->input_next_requested = 0;
             ret = 0;
         } else {
-            ret = open_input(c, v, seg, &v->input);
+            ret = open_input(c, v, seg, &v->input, &v->input_end);
         }
         if (ret < 0) {
             if (ff_check_interrupt(c->interrupt_callback))
@@ -1801,6 +1786,7 @@ restart:
         }
         segment_retries = 0;
         just_opened = 1;
+        v->input_read_done = 0;
     }
 
     if (c->http_multiple == -1) {
@@ -1815,8 +1801,8 @@ restart:
     seg = next_segment(v);
     if (c->http_multiple == 1 && !v->input_next_requested &&
         seg && seg->key_type == KEY_NONE && av_strstart(seg->url, "http", NULL) &&
-        !segment_reusable(v->input, current_segment(v), seg)) {
-        ret = open_input(c, v, seg, &v->input_next);
+        !segment_continues(current_segment(v), seg, v->input_end)) {
+        ret = open_input(c, v, seg, &v->input_next, &v->input_next_end);
         if (ret < 0) {
             if (ff_check_interrupt(c->interrupt_callback))
                 return AVERROR_EXIT;
@@ -1847,16 +1833,21 @@ restart:
 
         return ret;
     }
-    if (ret == 0 && segment_reusable(v->input, seg, next_segment(v))) {
-        /* Clean boundary, and the next segment continues this resource. Keep
-         * the connection open and read it as a whole. Note that splitting
-         * segments in these cases is useful for dynamic variant/quality
-         * switching, but this is not supported by our HLS demuxer, so we
-         * join the ranges. */
-        v->input_reuse = 1;
-        v->input_read_done = 1;
-    } else if (c->http_persistent &&
-        seg->key_type == KEY_NONE && av_strstart(seg->url, "http", NULL)) {
+    if (ret == 0 && segment_continues(seg, next_segment(v), v->input_end)) {
+        /* The next segment follows within the requested range and is read
+         * on from the same input. */
+        v->cur_seq_no++;
+        c->cur_seq_no = v->cur_seq_no;
+        v->cur_seg_offset = 0;
+        just_opened = 1;
+        goto restart;
+    }
+    /* Keep the connection for the next request only if its reply was read
+     * to the end. */
+    if (c->http_persistent &&
+        seg->key_type == KEY_NONE && av_strstart(seg->url, "http", NULL) &&
+        (seg->size >= 0 ? ret == 0 && seg->url_offset + seg->size == v->input_end
+                        : ret == AVERROR_EOF)) {
         v->input_read_done = 1;
     } else {
         ff_format_io_close(v->parent, &v->input);
@@ -1882,7 +1873,7 @@ static int read_data_subtitle_segment(void *opaque, uint8_t *buf, int buf_size)
     }
 
     if (!v->input) {
-        ret = open_input(c, v, seg, &v->input);
+        ret = open_input(c, v, seg, &v->input, &v->input_end);
         if (ret < 0) {
             if (ff_check_interrupt(c->interrupt_callback))
                 return AVERROR_EXIT;
@@ -2438,7 +2429,6 @@ static int hls_read_header(AVFormatContext *s)
             ff_format_io_close(pls->parent, &pls->input);
             pls->input = NULL;
             pls->input_read_done = 0;
-            pls->input_reuse = 0;
             ff_format_io_close(pls->parent, &pls->input_next);
             pls->input_next = NULL;
             pls->input_next_requested = 0;
@@ -2610,7 +2600,6 @@ static int recheck_discard_flags(AVFormatContext *s, int first)
         } else if (first && !cur_needed && pls->needed) {
             ff_format_io_close(pls->parent, &pls->input);
             pls->input_read_done = 0;
-            pls->input_reuse = 0;
             ff_format_io_close(pls->parent, &pls->input_next);
             pls->input_next_requested = 0;
             if (pls->is_subtitle)
@@ -2939,7 +2928,6 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
         AVIOContext *const pb = &pls->pb.pub;
         ff_format_io_close(pls->parent, &pls->input);
         pls->input_read_done = 0;
-        pls->input_reuse = 0;
         ff_format_io_close(pls->parent, &pls->input_next);
         pls->input_next_requested = 0;
         av_packet_unref(pls->pkt);
