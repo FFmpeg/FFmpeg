@@ -484,6 +484,7 @@ const FFFilter ff_vf_drawgraph = {
     FILTER_INPUTS(drawgraph_inputs),
     FILTER_OUTPUTS(drawgraph_outputs),
     FILTER_QUERY_FUNC2(query_formats),
+    .flags_internal = FF_FILTER_FLAG_DYNAMIC_FRAME_PARAMS,
 };
 
 #endif // CONFIG_DRAWGRAPH_FILTER

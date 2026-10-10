@@ -172,4 +172,5 @@ const FFFilter ff_vf_iccgen = {
     .uninit      = &iccgen_uninit,
     FILTER_INPUTS(iccgen_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
+    .flags_internal = FF_FILTER_FLAG_DYNAMIC_FRAME_PARAMS,
 };

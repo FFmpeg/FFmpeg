@@ -139,4 +139,5 @@ const FFFilter ff_vf_ocr = {
     FILTER_INPUTS(ocr_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
+    .flags_internal = FF_FILTER_FLAG_DYNAMIC_FRAME_SIZE,
 };
