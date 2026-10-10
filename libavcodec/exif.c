@@ -478,10 +478,12 @@ static int exif_get_makernote_offset(GetByteContext *gb)
 }
 
 static int exif_parse_ifd_list(void *logctx, GetByteContext *gb, int le,
-                               int depth, AVExifMetadata *ifd, int guess);
+                               int depth, int *entries_left,
+                               AVExifMetadata *ifd, int guess);
 
 static int exif_decode_tag(void *logctx, GetByteContext *gb, int le,
-                           int depth, AVExifEntry *entry)
+                           int depth, int *entries_left, int guess,
+                           AVExifEntry *entry)
 {
     int ret = 0, makernote_offset = -1, tell, is_ifd, count;
     enum AVTiffDataType type;
@@ -534,7 +536,8 @@ static int exif_decode_tag(void *logctx, GetByteContext *gb, int le,
                 return AVERROR(ENOMEM);
             bytestream2_get_buffer(gb, entry->ifd_lead, entry->ifd_offset);
         }
-        ret = exif_parse_ifd_list(logctx, gb, le, depth + 1, &entry->value.ifd, entry->id == MAKERNOTE_TAG);
+        ret = exif_parse_ifd_list(logctx, gb, le, depth + 1, entries_left,
+                                  &entry->value.ifd, guess || entry->id == MAKERNOTE_TAG);
         if (ret < 0 && entry->id == MAKERNOTE_TAG) {
             /*
              * we guessed that MakerNote was an IFD
@@ -561,7 +564,8 @@ end:
 }
 
 static int exif_parse_ifd_list(void *logctx, GetByteContext *gb, int le,
-                               int depth, AVExifMetadata *ifd, int guess)
+                               int depth, int *entries_left,
+                               AVExifMetadata *ifd, int guess)
 {
     uint32_t entries;
     size_t required_size;
@@ -591,6 +595,13 @@ static int exif_parse_ifd_list(void *logctx, GetByteContext *gb, int le,
         ret = AVERROR_INVALIDDATA;
         goto end;
     }
+    if (entries > entries_left[guess]) {
+        av_log(logctx, guess ? AV_LOG_DEBUG : AV_LOG_ERROR,
+               "IFD tree has more entries than the EXIF buffer can hold\n");
+        ret = AVERROR_INVALIDDATA;
+        goto end;
+    }
+    entries_left[guess] -= entries;
 
     ifd->count = entries;
     av_log(logctx, AV_LOG_DEBUG, "entry count for IFD: %u\n", ifd->count);
@@ -618,7 +629,7 @@ static int exif_parse_ifd_list(void *logctx, GetByteContext *gb, int le,
     memset(ifd->entries, 0, required_size);
 
     for (uint32_t i = 0; i < entries; i++) {
-        ret = exif_decode_tag(logctx, gb, le, depth, &ifd->entries[i]);
+        ret = exif_decode_tag(logctx, gb, le, depth, entries_left, guess, &ifd->entries[i]);
         if (ret < 0)
             goto end;
     }
@@ -934,7 +945,8 @@ int av_exif_parse_buffer(void *logctx, const uint8_t *buf, size_t size,
      */
     int ifd_offsets[17] = { bytestream2_tell(&gbytes) };
     int nb_ifds = 1;
-    ret = exif_parse_ifd_list(logctx, &gbytes, le, 0, ifd, 0);
+    int entries_left[2] = { size / BASE_TAG_SIZE, size / BASE_TAG_SIZE };
+    ret = exif_parse_ifd_list(logctx, &gbytes, le, 0, entries_left, ifd, 0);
     if (ret < 0) {
         av_log(logctx, AV_LOG_ERROR, "error decoding EXIF data: %s\n", av_err2str(ret));
         return ret;
@@ -954,7 +966,7 @@ int av_exif_parse_buffer(void *logctx, const uint8_t *buf, size_t size,
             }
         }
         ifd_offsets[nb_ifds++] = next;
-        ret = exif_parse_ifd_list(logctx, &gbytes, le, 0, &extra_ifd, 1);
+        ret = exif_parse_ifd_list(logctx, &gbytes, le, 0, entries_left, &extra_ifd, 1);
         if (ret < 0) {
             av_exif_free(&extra_ifd);
             break;
