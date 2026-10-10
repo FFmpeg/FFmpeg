@@ -37,6 +37,7 @@
 #define SBG_SCALE (1 << 16)
 #define DAY (24 * 60 * 60)
 #define DAY_TS ((int64_t)DAY * AV_TIME_BASE)
+#define SBG_MAX_CHANNELS 16
 
 struct sbg_demuxer {
     AVClass *class;
@@ -756,6 +757,11 @@ static int parse_synth_def(struct sbg_parser *p,
     lex_space(p);
     if (synth == p->scs.nb_synth)
         return AVERROR_INVALIDDATA;
+    if (p->scs.nb_synth - synth > SBG_MAX_CHANNELS) {
+        snprintf(p->err_msg, sizeof(p->err_msg),
+                 "too many channels in tone-set");
+        return AVERROR_INVALIDDATA;
+    }
     if (!lex_line_end(p))
         return AVERROR_INVALIDDATA;
     def->type        = 'S';
