@@ -31,6 +31,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/mem.h"
+#include "libavutil/qsort.h"
 #include "avformat.h"
 #include "avio_internal.h"
 #include "demux.h"
@@ -126,6 +127,11 @@ static int64_t wtvfile_seek(void *opaque, int64_t offset, int whence)
     return offset;
 }
 
+static int cmp_sector(const uint32_t *a, const uint32_t *b)
+{
+    return (*a > *b) - (*a < *b);
+}
+
 /**
  * read non-zero integers (le32) from input stream
  * @param pb
@@ -203,6 +209,24 @@ static AVIOContext * wtvfile_open_sector(unsigned first_sector, uint64_t length,
     wf->sector_bits = length & (1ULL<<63) ? WTV_SECTOR_BITS : WTV_BIGSECTOR_BITS;
 
     if (!wf->nb_sectors) {
+        av_freep(&wf->sectors);
+        av_freep(&wf);
+        return NULL;
+    }
+
+    uint32_t *sorted = av_memdup(wf->sectors, wf->nb_sectors * sizeof(*wf->sectors));
+    uint32_t *tmp    = av_malloc_array(wf->nb_sectors, sizeof(*tmp));
+    int i = 0;
+    if (sorted && tmp) {
+        AV_MSORT(sorted, tmp, wf->nb_sectors, uint32_t, cmp_sector);
+        for (i = 1; i < wf->nb_sectors && sorted[i] != sorted[i - 1]; i++)
+            ;
+        if (i < wf->nb_sectors)
+            av_log(s, AV_LOG_ERROR, "file allocation table lists sector %"PRIu32" more than once\n", sorted[i]);
+    }
+    av_free(sorted);
+    av_free(tmp);
+    if (i < wf->nb_sectors) {
         av_freep(&wf->sectors);
         av_freep(&wf);
         return NULL;
