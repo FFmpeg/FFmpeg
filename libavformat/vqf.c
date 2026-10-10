@@ -152,7 +152,7 @@ static int vqf_read_header(AVFormatContext *s)
             rate_flag           = AV_RB32(comm_chunk + 8);
             avio_skip(s->pb, len-12);
 
-            if (st->codecpar->ch_layout.nb_channels <= 0) {
+            if (st->codecpar->ch_layout.nb_channels <= 0 || st->codecpar->ch_layout.nb_channels > 2) {
                 av_log(s, AV_LOG_ERROR, "Invalid number of channels\n");
                 return AVERROR_INVALIDDATA;
             }
