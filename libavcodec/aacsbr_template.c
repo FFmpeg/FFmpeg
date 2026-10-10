@@ -1210,12 +1210,11 @@ int ff_aac_sbr_config_usac(AACDecContext *ac, ChannelElement *che,
     return 0;
 }
 
-int ff_aac_sbr_decode_usac_data(AACDecContext *ac, ChannelElement *che,
-                                AACUsacElemConfig *ue, GetBitContext *gb,
-                                int sbr_ch, int indep_flag)
+static int read_usac_sbr_data(AACDecContext *ac, SpectralBandReplication *sbr,
+                              AACUsacElemConfig *ue, GetBitContext *gb,
+                              int sbr_ch, int indep_flag)
 {
     int ret;
-    SpectralBandReplication *sbr = get_sbr(che);
     int info_present = 1;
     int header_present = 1;
 
@@ -1355,6 +1354,19 @@ int ff_aac_sbr_decode_usac_data(AACDecContext *ac, ChannelElement *che,
     }
 
     return 0;
+}
+
+int ff_aac_sbr_decode_usac_data(AACDecContext *ac, ChannelElement *che,
+                                AACUsacElemConfig *ue, GetBitContext *gb,
+                                int sbr_ch, int indep_flag)
+{
+    SpectralBandReplication *sbr = get_sbr(che);
+    int ret = read_usac_sbr_data(ac, sbr, ue, gb, sbr_ch, indep_flag);
+
+    if (ret < 0)
+        sbr_turnoff(sbr);
+
+    return ret;
 }
 #endif
 
