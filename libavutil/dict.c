@@ -32,6 +32,7 @@
 struct AVDictionary {
     int count;
     AVDictionaryEntry *elems;
+    int duplicate_keys;
 };
 
 int av_dict_count(const AVDictionary *m)
@@ -154,6 +155,8 @@ int av_dict_set(AVDictionary **pm, const char *key, const char *value,
         m->elems[m->count].key = copy_key;
         m->elems[m->count].value = copy_value;
         m->count++;
+        if (flags & (AV_DICT_MATCH_CASE | AV_DICT_IGNORE_SUFFIX | AV_DICT_MULTIKEY))
+            m->duplicate_keys = 1;
     } else {
         err = 0;
         goto end;
@@ -247,6 +250,29 @@ void av_dict_free(AVDictionary **pm)
 int av_dict_copy(AVDictionary **dst, const AVDictionary *src, int flags)
 {
     const AVDictionaryEntry *t = NULL;
+
+    if (!*dst && src && src->count && !src->duplicate_keys &&
+        !(flags & AV_DICT_IGNORE_SUFFIX)) {
+        AVDictionary *m = av_mallocz(sizeof(*m));
+        if (!m)
+            return AVERROR(ENOMEM);
+        m->elems = av_calloc(src->count, sizeof(*m->elems));
+        if (!m->elems) {
+            av_free(m);
+            return AVERROR(ENOMEM);
+        }
+        *dst = m;
+        for (int i = 0; i < src->count; i++) {
+            m->elems[i].key   = av_strdup(src->elems[i].key);
+            m->elems[i].value = av_strdup(src->elems[i].value);
+            m->count++;
+            if (!m->elems[i].key || !m->elems[i].value) {
+                av_dict_free(dst);
+                return AVERROR(ENOMEM);
+            }
+        }
+        return 0;
+    }
 
     while ((t = av_dict_iterate(src, t))) {
         int ret = av_dict_set(dst, t->key, t->value, flags);
