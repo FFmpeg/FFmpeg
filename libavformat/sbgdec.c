@@ -1347,15 +1347,15 @@ static int generate_intervals(void *log, struct sbg_script *s, int sample_rate,
 static int encode_intervals(struct sbg_script *s, AVCodecParameters *par,
                             struct ws_intervals *inter)
 {
-    int i, edata_size = 4, ret;
+    int i, ret;
+    int64_t edata_size = 4;
     uint8_t *edata;
 
-    for (i = 0; i < inter->nb_inter; i++) {
+    for (i = 0; i < inter->nb_inter; i++)
         edata_size += inter->inter[i].type == WS_SINE  ? 44 :
                       inter->inter[i].type == WS_NOISE ? 32 : 0;
-        if (edata_size < 0)
-            return AVERROR(ENOMEM);
-    }
+    if (edata_size > INT_MAX)
+        return AVERROR(ENOMEM);
     if ((ret = ff_alloc_extradata(par, edata_size)) < 0)
         return ret;
     edata = par->extradata;
