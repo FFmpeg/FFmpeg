@@ -184,7 +184,7 @@ int ff_dca_export_downmix_matrix(AVCodecContext *avctx, AVFrame *frame,
     matrix_l = av_downmix_matrix_coeff(dm, 0, 0);
     matrix_r = av_downmix_matrix_coeff(dm, 1, 0);
 
-    for (int i = 0; i <= av_log2(output_mask); i++) {
+    for (int i = 0; i < DCA_SPEAKER_RSV1; i++) {
         if (!(output_mask & (1U << i)))
             continue;
 
