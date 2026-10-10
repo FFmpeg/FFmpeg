@@ -201,7 +201,7 @@ static int parameter_block_obu(AVFormatContext *s, IAMFDemuxContext *c,
 
         if (!param_definition->mode && !constant_subblock_duration) {
             subblock_duration = ffio_read_leb(pb);
-            if (duration - total_duration > subblock_duration) {
+            if (subblock_duration > duration - total_duration) {
                 av_log(s, AV_LOG_ERROR, "Invalid subblock durations in parameter_id %u\n", parameter_id);
                 ret = AVERROR_INVALIDDATA;
                 goto fail;
