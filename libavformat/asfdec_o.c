@@ -1103,6 +1103,11 @@ static int asf_read_multiple_payload(AVFormatContext *s, AVPacket *pkt,
             ff_asfcrypt_dec(s->key, p, ret);
         avio_skip(pb, skip);
         asf_pkt->size_left -= pay_len;
+        if (ret < pay_len) {
+            av_shrink_packet(asf_pkt->avpkt, p - asf_pkt->avpkt->data + ret);
+            asf_pkt->data_size = asf_pkt->avpkt->size;
+            asf_pkt->size_left = 0;
+        }
         asf->nb_mult_left--;
     }
 
@@ -1154,6 +1159,11 @@ static int asf_read_single_payload(AVFormatContext *s, ASFPacket *asf_pkt)
         return ret;
     if (s->key && s->keylen == 20)
             ff_asfcrypt_dec(s->key, p, ret);
+    if (ret < size) {
+        av_shrink_packet(asf_pkt->avpkt, p - asf_pkt->avpkt->data + ret);
+        asf_pkt->data_size = asf_pkt->avpkt->size;
+        asf_pkt->size_left = 0;
+    }
     if (asf->packet_size_internal)
         avio_skip(pb, asf->packet_size - asf->packet_size_internal);
     avio_skip(pb, asf->pad_len); // skip padding
