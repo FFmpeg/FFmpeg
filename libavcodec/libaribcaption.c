@@ -793,7 +793,7 @@ static int aribcaption_trans_ass_subtitle(ARIBCaptionContext *ctx)
 
 fail:
     if (sub->rects) {
-        for (int i = 0; i < ctx->caption.region_count; i++) {
+        for (int i = 0; i < sub->num_rects; i++) {
             if (sub->rects[i]) {
                 av_freep(&sub->rects[i]->ass);
                 av_freep(&sub->rects[i]);
