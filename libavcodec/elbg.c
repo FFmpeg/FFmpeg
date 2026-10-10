@@ -45,7 +45,7 @@ typedef struct cell_s {
  * ELBG internal data
  */
 typedef struct ELBGContext {
-    int error;
+    int64_t error;
     int dim;
     int num_cb;
     int *codebook;
@@ -368,9 +368,9 @@ static void do_elbg(ELBGContext *restrict elbg, int *points, int numpoints,
     int *const size_part = elbg->size_part;
     int i, j, steps = 0;
     int best_idx = 0;
-    int last_error;
+    int64_t last_error;
 
-    elbg->error = INT_MAX;
+    elbg->error = INT64_MAX;
     elbg->points = points;
 
     do {
@@ -398,7 +398,7 @@ static void do_elbg(ELBGContext *restrict elbg, int *points, int numpoints,
                 }
             }
             elbg->nearest_cb[i] = best_idx;
-            elbg->error = (elbg->error >= INT_MAX - best_dist) ? INT_MAX : elbg->error + best_dist;
+            elbg->error += best_dist;
             elbg->utility[elbg->nearest_cb[i]] = (elbg->utility[elbg->nearest_cb[i]] >= INT_MAX - best_dist) ?
                                                   INT_MAX : elbg->utility[elbg->nearest_cb[i]] + best_dist;
             free_cells->index = i;
