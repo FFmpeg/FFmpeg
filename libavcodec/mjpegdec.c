@@ -1477,20 +1477,9 @@ next_field:
             const int copy_mb = mb_bitmask && !get_bits1(&mb_bitmask_gb);
             int restart;
 
-            if (s->avctx->codec_id == AV_CODEC_ID_THP) {
-                if (s->restart_count < 0) {
-                    ret = ff_mjpeg_unescape_sos(s);
-                    if (ret < 0)
-                        return ret;
-                }
-                restart = ff_mjpeg_should_restart(s);
-                if (restart)
-                    align_get_bits(&s->gb);
-            } else {
-                ret = ff_mjpeg_handle_restart(s, &restart);
-                if (ret < 0)
-                    return ret;
-            }
+            ret = ff_mjpeg_handle_restart(s, &restart);
+            if (ret < 0)
+                return ret;
             if (restart) {
                 for (i = 0; i < nb_components; i++)
                     s->last_dc[i] = (4 << s->bits);

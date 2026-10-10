@@ -217,8 +217,13 @@ static inline int ff_mjpeg_should_restart(MJpegDecodeContext *s)
 
 static inline int ff_mjpeg_handle_restart(MJpegDecodeContext *s, int *restart)
 {
+    int first = s->restart_count < 0;
     *restart = ff_mjpeg_should_restart(s);
     if (*restart) {
+        if (s->avctx->codec_id == AV_CODEC_ID_THP && !first) {
+            align_get_bits(&s->gb);
+            return 0;
+        }
         int ret = ff_mjpeg_unescape_sos(s);
         if (ret < 0)
             return ret;
