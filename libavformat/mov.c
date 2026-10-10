@@ -4205,7 +4205,7 @@ static int get_edit_list_entry(MOVContext *mov,
                                      global_timescale);
 
     if (*edit_list_duration < 0 ||
-        *edit_list_duration + (uint64_t)*edit_list_media_time > INT64_MAX)
+        *edit_list_media_time > INT64_MAX - *edit_list_duration)
         *edit_list_duration = 0;
 
     return 1;
