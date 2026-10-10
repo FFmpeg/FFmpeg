@@ -814,7 +814,7 @@ static int aribcaption_trans_text_subtitle(ARIBCaptionContext *ctx)
     int ret = 0;
     const char *text;
 
-    sub->rects = av_calloc(ctx->caption.region_count, sizeof(*sub->rects));
+    sub->rects = av_calloc(1, sizeof(*sub->rects));
     if (!sub->rects) {
         ret = AVERROR(ENOMEM);
         goto fail;
