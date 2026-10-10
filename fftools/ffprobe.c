@@ -1148,6 +1148,20 @@ static void print_pkt_side_data(AVTextFormatContext *tfc,
         SECTION_ID_STREAM_GROUP_STREAM_SIDE_DATA,
         SECTION_ID_PROGRAM_STREAM_SIDE_DATA,
     };
+    const SectionID section_component_list[] = {
+        SECTION_ID_PACKET_SIDE_DATA_COMPONENT_LIST,
+        SECTION_ID_STREAM_SIDE_DATA_COMPONENT_LIST,
+        SECTION_ID_STREAM_GROUP_SIDE_DATA_COMPONENT_LIST,
+        SECTION_ID_STREAM_GROUP_STREAM_SIDE_DATA_COMPONENT_LIST,
+        SECTION_ID_PROGRAM_STREAM_SIDE_DATA_COMPONENT_LIST,
+    };
+    const SectionID section_component[] = {
+        SECTION_ID_PACKET_SIDE_DATA_COMPONENT,
+        SECTION_ID_STREAM_SIDE_DATA_COMPONENT,
+        SECTION_ID_STREAM_GROUP_SIDE_DATA_COMPONENT,
+        SECTION_ID_STREAM_GROUP_STREAM_SIDE_DATA_COMPONENT,
+        SECTION_ID_PROGRAM_STREAM_SIDE_DATA_COMPONENT,
+    };
 
     av_assert0(container < FF_ARRAY_ELEMS(section_header));
 
@@ -1246,6 +1260,28 @@ static void print_pkt_side_data(AVTextFormatContext *tfc,
         print_int("block_additional_id", AV_RB64(sd->data));
         if (do_show_data)
             avtext_print_data(tfc, "block_additional_data", sd->data + 8, sd->size - 8);
+    } else if (sd->type == AV_PKT_DATA_GAIN_MAP_PARAMS) {
+        const AVGainMapParams *gain = (AVGainMapParams *)sd->data;
+        print_int("version", gain->version);
+        print_int("use_base_color_space", gain->use_base_color_space);
+        print_q("base_hdr_headroom", gain->base_hdr_headroom, '/');
+        print_q("alternate_hdr_headroom", gain->alternate_hdr_headroom, '/');
+        print_int("nb_channels", gain->nb_channels);
+
+        av_assert0(container < FF_ARRAY_ELEMS(section_component_list) &&
+                   container < FF_ARRAY_ELEMS(section_component));
+        avtext_print_section_header(tfc, NULL, section_component_list[container]);
+        for (int c = 0; c < gain->nb_channels; c++) {
+            const struct AVGainMapChannel *channel = &gain->channels[c];
+            avtext_print_section_header(tfc, "Gain Map Channel", section_component[container]);
+            print_q("gain_map_min", channel->gain_map_min, '/');
+            print_q("gain_map_max", channel->gain_map_min, '/');
+            print_q("gamma", channel->gamma, '/');
+            print_q("base_offset", channel->base_offset, '/');
+            print_q("alternate_offset", channel->alternate_offset, '/');
+            avtext_print_section_footer(tfc);
+        }
+        avtext_print_section_footer(tfc);
     }
     avtext_print_section_footer(tfc);
 }
