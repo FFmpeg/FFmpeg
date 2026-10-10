@@ -257,6 +257,7 @@ static void clut_init(ARIBCaptionContext *ctx, aribcc_caption_region_t *region)
     uint32_t rgba;
 
     ctx->clut[0] = CLUT_RGBA(0,0,0,0); /* transparent */
+    memset(ctx->clut_alpha, 0, sizeof(ctx->clut_alpha));
     ctx->clut_alpha[0] = 0xFF;
     ctx->clut_idx = 1;
     ctx->clut_overflow = 0;
