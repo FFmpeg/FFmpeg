@@ -932,6 +932,8 @@ int av_exif_parse_buffer(void *logctx, const uint8_t *buf, size_t size,
      * parse IFD0 here. If the return value is positive that tells us
      * there is subimage metadata, but we don't parse that IFD here
      */
+    int ifd_offsets[17] = { bytestream2_tell(&gbytes) };
+    int nb_ifds = 1;
     ret = exif_parse_ifd_list(logctx, &gbytes, le, 0, ifd, 0);
     if (ret < 0) {
         av_log(logctx, AV_LOG_ERROR, "error decoding EXIF data: %s\n", av_err2str(ret));
@@ -945,6 +947,13 @@ int av_exif_parse_buffer(void *logctx, const uint8_t *buf, size_t size,
     /* cap at 16 extra IFDs for sanity/parse security */
     for (int extra_tag = 0xFFFCu; extra_tag > 0xFFECu; extra_tag--) {
         AVExifMetadata extra_ifd = { 0 };
+        for (int i = 0; i < nb_ifds; i++) {
+            if (ifd_offsets[i] == next) {
+                av_log(logctx, AV_LOG_WARNING, "EXIF IFD chain loops back to offset %d\n", next);
+                goto finish;
+            }
+        }
+        ifd_offsets[nb_ifds++] = next;
         ret = exif_parse_ifd_list(logctx, &gbytes, le, 0, &extra_ifd, 1);
         if (ret < 0) {
             av_exif_free(&extra_ifd);
