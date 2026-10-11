@@ -201,6 +201,10 @@ static int modplug_read_header(AVFormatContext *s)
     if (!modplug->buf)
         return AVERROR(ENOMEM);
     sz = avio_read(pb, modplug->buf, sz);
+    if (sz < 0) {
+        av_freep(&modplug->buf);
+        return sz;
+    }
 
     ModPlug_GetSettings(&settings);
     settings.mChannels       = 2;
