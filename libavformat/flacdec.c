@@ -311,6 +311,10 @@ av_unused static int64_t flac_read_timestamp(AVFormatContext *s, int stream_inde
 
         if (ret >= 0 || ret == AVERROR(EAGAIN))
             ret = ff_raw_read_partial_packet(s, pkt);
+        if (!ret) {
+            av_packet_unref(pkt);
+            continue;
+        }
         if (ret < 0){
             if (ret == AVERROR(EAGAIN))
                 continue;
