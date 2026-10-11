@@ -2177,10 +2177,10 @@ static void print_tile_grid_params(AVTextFormatContext *tfc, const AVStreamGroup
         avtext_print_section_footer(tfc);
     }
     avtext_print_section_footer(tfc);
-    if (tile_grid->nb_coded_side_data) {
+    if (stg->nb_coded_side_data) {
         avtext_print_section_header(tfc, NULL, SECTION_ID_STREAM_GROUP_SIDE_DATA_LIST);
-        for (int i = 0; i < tile_grid->nb_coded_side_data; i++) {
-            print_pkt_side_data(tfc, tile_grid->width, tile_grid->height, &tile_grid->coded_side_data[i],
+        for (int i = 0; i < stg->nb_coded_side_data; i++) {
+            print_pkt_side_data(tfc, tile_grid->width, tile_grid->height, &stg->coded_side_data[i],
                                 SECTION_ID_STREAM_GROUP_SIDE_DATA);
             avtext_print_section_footer(tfc);
         }
@@ -2385,7 +2385,7 @@ static int show_stream_group(AVTextFormatContext *tfc, InputFile *ifile, AVStrea
     print_int("index", stg->index);
     if (fmt_ctx->iformat->flags & AVFMT_SHOW_IDS) print_fmt    ("id", "0x%"PRIx64, stg->id);
     else                                          print_str_opt("id", "N/A");
-    print_int("nb_streams", stg->nb_streams);
+    print_int("nb_streams", stg->nb_entries);
     if (stg->type != AV_STREAM_GROUP_PARAMS_NONE)
         print_str("type", av_x_if_null(avformat_stream_group_name(stg->type), "unknown"));
     else
@@ -2403,9 +2403,12 @@ static int show_stream_group(AVTextFormatContext *tfc, InputFile *ifile, AVStrea
         goto end;
 
     avtext_print_section_header(tfc, NULL, SECTION_ID_STREAM_GROUP_STREAMS);
-    for (unsigned i = 0; i < stg->nb_streams; i++) {
-        if (selected_streams[stg->streams[i]->index]) {
-            ret = show_stream(tfc, fmt_ctx, stg->streams[i]->index, &ifile->streams[stg->streams[i]->index], IN_STREAM_GROUP);
+    for (unsigned i = 0; i < stg->nb_entries; i++) {
+        AVStreamGroupEntry *entry = stg->entries[i];
+        if (entry->type != AV_STREAM_GROUP_ENTRY_STREAM)
+            continue;
+        if (selected_streams[stg->entries[i]->stream->index]) {
+            ret = show_stream(tfc, fmt_ctx, entry->stream->index, &ifile->streams[entry->stream->index], IN_STREAM_GROUP);
             if (ret < 0)
                 break;
         }
