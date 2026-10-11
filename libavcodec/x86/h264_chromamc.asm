@@ -1,5 +1,5 @@
 ;******************************************************************************
-;* MMX/SSSE3-optimized functions for H.264 chroma MC
+;* SSE2/SSSE3-optimized functions for H.264 chroma MC
 ;* Copyright (c) 2005 Zoltan Hidvegi <hzoli -a- hzoli -d- com>,
 ;*               2005-2008 Loren Merritt
 ;*
@@ -67,8 +67,8 @@ SECTION .text
     jne .next4rows
 %endmacro
 
-%macro chroma_mc2_mmx_func 2
-cglobal %1_%2_chroma_mc2, 6, 7, 0
+%macro chroma_mc2_sse2_func 2
+cglobal %1_%2_chroma_mc2, 6, 7, 6
     mov          r6d, r4d
     shl          r4d, 16
     sub          r4d, r6d
@@ -78,29 +78,29 @@ cglobal %1_%2_chroma_mc2, 6, 7, 0
     sub          r4d, r5d         ; x*(8-y)<<16 | (8-x)*(8-y)
 
     movd          m5, r4d
-    movd          m6, r5d
+    movd          m4, r5d
     punpckldq     m5, m5          ; mm5 = {A,B,A,B}
-    punpckldq     m6, m6          ; mm6 = {C,D,C,D}
-    pxor          m7, m7
+    punpckldq     m4, m4          ; mm4 = {C,D,C,D}
+    pxor          m3, m3
     movd          m2, [r1]
-    punpcklbw     m2, m7
-    pshufw        m2, m2, 0x94    ; mm0 = src[0,1,1,2]
+    punpcklbw     m2, m3
+    pshuflw       m2, m2, 0x94    ; mm0 = src[0,1,1,2]
 
 .nextrow:
     add           r1, r2
     movq          m1, m2
     pmaddwd       m1, m5          ; mm1 = A * src[0,1] + B * src[1,2]
     movd          m0, [r1]
-    punpcklbw     m0, m7
-    pshufw        m0, m0, 0x94    ; mm0 = src[0,1,1,2]
+    punpcklbw     m0, m3
+    pshuflw       m0, m0, 0x94    ; mm0 = src[0,1,1,2]
     movq          m2, m0
-    pmaddwd       m0, m6
+    pmaddwd       m0, m4
     paddw         m1, [rnd_2d_%2]
     paddw         m1, m0          ; mm1 += C * src[0,1] + D * src[1,2]
     psrlw         m1, 6
-    packssdw      m1, m7
-    packuswb      m1, m7
-    CHROMAMC_AVG4 m1, m3, [r0]
+    packssdw      m1, m3
+    packuswb      m1, m3
+    CHROMAMC_AVG4 m1, m0, [r0]
     movd         r5d, m1
     mov         [r0], r5w
     add           r0, r2
@@ -125,14 +125,14 @@ cglobal %1_%2_chroma_mc2, 6, 7, 0
 %endmacro
 
 
-INIT_MMX mmxext
+INIT_XMM sse2
 %define CHROMAMC_AVG  NOTHING
 %define CHROMAMC_AVG4 NOTHING
-chroma_mc2_mmx_func put, h264
+chroma_mc2_sse2_func put, h264
 
 %define CHROMAMC_AVG  DIRECT_AVG
 %define CHROMAMC_AVG4 COPY_AVG
-chroma_mc2_mmx_func avg, h264
+chroma_mc2_sse2_func avg, h264
 
 %macro chroma_mc8_ssse3_func 2-3
 cglobal %1_%2_chroma_mc8%3, 6, 7+UNIX64, 8

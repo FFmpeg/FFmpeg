@@ -46,8 +46,8 @@ static void check_chroma_mc(void)
     DECLARE_ALIGNED_16(uint8_t, dst0)[16 * 18 * 2];
     DECLARE_ALIGNED_16(uint8_t, dst1)[16 * 18 * 2];
 
-    declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *dst, const uint8_t *src,
-                      ptrdiff_t stride, int h, int x, int y);
+    declare_func(void, uint8_t *dst, const uint8_t *src,
+                 ptrdiff_t stride, int h, int x, int y);
 
     for (int bit_depth = 8; bit_depth <= 10; bit_depth++) {
         ff_h264chroma_init(&h, bit_depth);
