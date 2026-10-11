@@ -209,6 +209,11 @@ static int tdsc_load_cursor(AVCodecContext *avctx)
 
     cursor_fmt = bytestream2_get_le32(&ctx->gbc);
 
+    if (cursor_fmt != CUR_FMT_MONO && cursor_fmt != CUR_FMT_BGRA &&
+        cursor_fmt != CUR_FMT_RGBA) {
+        avpriv_request_sample(avctx, "Cursor format %08x", cursor_fmt);
+        return AVERROR_PATCHWELCOME;
+    }
     if (w < 1 || w > 256 || h < 1 || h > 256) {
         av_log(avctx, AV_LOG_ERROR, "Invalid cursor dimensions %dx%d.\n", w, h);
         return AVERROR_INVALIDDATA;
@@ -305,9 +310,6 @@ static int tdsc_load_cursor(AVCodecContext *avctx)
             }
         }
         break;
-    default:
-        avpriv_request_sample(avctx, "Cursor format %08x", cursor_fmt);
-        return AVERROR_PATCHWELCOME;
     }
 
     return 0;
