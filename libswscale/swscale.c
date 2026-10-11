@@ -1562,6 +1562,12 @@ int sws_frame_setup(SwsContext *ctx, const AVFrame *dst, const AVFrame *src)
             goto fail;
         }
 
+        if (src_fmt.height <= 0 || dst_fmt.height <= 0) {
+            err_msg = "Interlaced frames need at least two lines";
+            ret = AVERROR(EINVAL);
+            goto fail;
+        }
+
         src_ok = ff_test_fmt(backends, &src_fmt, 0);
         dst_ok = ff_test_fmt(backends, &dst_fmt, 1);
         if ((!src_ok || !dst_ok) && !ff_fmt_equal(&src_fmt, &dst_fmt)) {
