@@ -1202,7 +1202,11 @@ static int mov_read_chnl(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return 0;
     }
 
-    ff_mov_read_chnl(c->fc, pb, st);
+    ret = ff_mov_read_chnl(c->fc, pb, st);
+    if (ret < 0) {
+        avio_seek(pb, end, SEEK_SET);
+        return 0;
+    }
 
     if (avio_tell(pb) != end) {
         av_log(c->fc, AV_LOG_WARNING, "skip %" PRId64 " bytes of unknown data inside chnl\n",
