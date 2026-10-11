@@ -45,6 +45,24 @@ static const uint32_t pixel_mask[3] = { 0xffffffff, 0x01ff01ff, 0x03ff03ff };
         }                                          \
     } while (0)
 
+/* 0/max stripes with period 3 in both directions take the centre filter's
+ * intermediate sums to their extremes; phase covers every column offset
+ * and both polarities */
+static void fill_stripes(uint8_t *buf0, uint8_t *buf1, int width, int bit_depth, int phase)
+{
+    int max = (1 << bit_depth) - 1;
+    for (int k = 0; k < BUF_SIZE / SIZEOF_PIXEL; k++) {
+        int x = k % width, y = k / width;
+        int v = ((y % 3 == 1) ^ ("010010"[(x + phase) % 6] - '0') ^ (phase >= 6)) ? max : 0;
+        if (bit_depth == 8) {
+            buf0[k] = buf1[k] = v;
+        } else {
+            AV_WN16A(buf0 + 2 * k, v);
+            AV_WN16A(buf1 + 2 * k, v);
+        }
+    }
+}
+
 #define src0 (buf0 + 3 * 2 * 16) /* h264qpel functions read data from negative src pointer offsets */
 #define src1 (buf1 + 3 * 2 * 16)
 
@@ -73,6 +91,15 @@ void checkasm_check_h264qpel(void)
                         call_new(dst1, src1, size * SIZEOF_PIXEL);
                         if (memcmp(buf0, buf1, BUF_SIZE) || memcmp(dst0, dst1, BUF_SIZE))
                             fail();
+                        for (int phase = 0; phase < 12; phase++) {
+                            fill_stripes(buf0, buf1, size, bit_depth, phase);
+                            call_ref(dst0, src0, size * SIZEOF_PIXEL);
+                            call_new(dst1, src1, size * SIZEOF_PIXEL);
+                            if (memcmp(buf0, buf1, BUF_SIZE) || memcmp(dst0, dst1, BUF_SIZE)) {
+                                fail();
+                                break;
+                            }
+                        }
                         bench_new(dst1, src1, size * SIZEOF_PIXEL);
                     }
             }

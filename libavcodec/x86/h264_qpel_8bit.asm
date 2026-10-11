@@ -682,7 +682,7 @@ cglobal %1_h264_qpel8_hv2_lowpass, 3,4,6 ; dst, tmp, dstStride
     psubw         m0, m1
     psraw         m0, 2
     psubw         m0, m1
-    paddw         m0, m2
+    paddsw        m0, m2
     psraw         m0, 2
     paddw         m0, m2
     psraw         m0, 6
@@ -730,8 +730,8 @@ cglobal %1_h264_qpel16_hv2_lowpass, 3,4,8 ; dst, tmp, dstStride
     psraw         m3, 2
     psubw         m0, m1
     psubw         m3, m4
-    paddw         m0, m2
-    paddw         m3, m5
+    paddsw        m0, m2
+    paddsw        m3, m5
     psraw         m0, 2
     psraw         m3, 2
     paddw         m0, m2
