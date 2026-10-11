@@ -571,6 +571,8 @@ int ff_aac_usac_config_decode(AACDecContext *ac, AVCodecContext *avctx,
     if (!ac)
         return AVERROR_PATCHWELCOME;
 
+    for (int i = 0; i < usac->nb_elems; i++)
+        av_refstruct_unref(&usac->elems[i].ext.pl_buf);
     memset(usac, 0, sizeof(*usac));
     usac->loudness.input_method_val = -1;
 
