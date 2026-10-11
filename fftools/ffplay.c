@@ -1374,10 +1374,10 @@ static void chapter_list_script(VideoState *is, AVBPrint *script)
         av_bprintf(script, CHAPTER_LIST_EVENT "Hint,{\\an5\\pos(%d,%d)}i\n", l.detail_x, y + l.line / 2);
         if (row->length < 0)
             continue;
-        seconds = (row->length + AV_TIME_BASE / 2) / AV_TIME_BASE;
+        seconds = av_rescale_rnd(row->length, 1, AV_TIME_BASE, AV_ROUND_NEAR_INF);
         av_bprintf(script, CHAPTER_LIST_EVENT "%s,{\\an6\\pos(%d,%d)}", style, l.length_x, y + l.line / 2);
         if (seconds >= 3600)
-            av_bprintf(script, "%d:%02d:%02d\n", (int)(seconds / 3600), (int)(seconds / 60 % 60), (int)(seconds % 60));
+            av_bprintf(script, "%"PRId64":%02d:%02d\n", seconds / 3600, (int)(seconds / 60 % 60), (int)(seconds % 60));
         else
             av_bprintf(script, "%d:%02d\n", (int)(seconds / 60), (int)(seconds % 60));
     }
