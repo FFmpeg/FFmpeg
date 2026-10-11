@@ -472,7 +472,6 @@ static void pop_output_configuration(AACDecContext *ac)
     if (ac->oc[1].status != OC_LOCKED && ac->oc[0].status != OC_NONE) {
         copy_oc(&ac->oc[1], &ac->oc[0]);
 
-        ac->avctx->ch_layout = ac->oc[1].ch_layout;
         ff_aac_output_configure(ac, ac->oc[1].layout_map, ac->oc[1].layout_map_tags,
                                 ac->oc[1].status, 0);
     }
