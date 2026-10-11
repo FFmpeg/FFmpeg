@@ -9627,6 +9627,14 @@ static int mov_read_iinf(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (entry_count > atom.size)
         return AVERROR_INVALIDDATA;
 
+    /* account for the version/flags/entry_count fields already consumed,
+     * so the per-entry loop below can bound each infe box by what is
+     * actually left in this iinf box, the same way mov_read_iprp() bounds
+     * ipco/ipma entries by the remaining iprp size. */
+    atom.size -= version ? 8 : 6;
+    if (atom.size < 0)
+        return AVERROR_INVALIDDATA;
+
     heif_item = av_realloc_array(c->heif_item, FFMAX(entry_count, c->nb_heif_item), sizeof(*c->heif_item));
     if (!heif_item)
         return AVERROR(ENOMEM);
@@ -9639,12 +9647,17 @@ static int mov_read_iinf(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     for (i = 0; i < entry_count; i++) {
         MOVAtom infe;
 
-        infe.size = avio_rb32(pb) - 8;
+        infe.size = avio_rb32(pb);
         infe.type = avio_rl32(pb);
-        if (avio_feof(pb)) {
+        if (avio_feof(pb) || infe.size < 8 || infe.size > atom.size ||
+            infe.type != MKTAG('i','n','f','e')) {
             ret = AVERROR_INVALIDDATA;
             goto fail;
         }
+
+        atom.size -= infe.size;
+        infe.size -= 8;
+
         ret = mov_read_infe(c, pb, infe);
         if (ret < 0)
             goto fail;
