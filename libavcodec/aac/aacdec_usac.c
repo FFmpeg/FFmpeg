@@ -625,24 +625,22 @@ int ff_aac_usac_config_decode(AACDecContext *ac, AVCodecContext *avctx,
         if (nb_channels > 64)
             return AVERROR(EINVAL);
 
-        av_channel_layout_uninit(&ac->oc[1].ch_layout);
+        AVChannelLayout ch_layout = { 0 };
 
-        ret = av_channel_layout_custom_init(&ac->oc[1].ch_layout, nb_channels);
+        ret = av_channel_layout_custom_init(&ch_layout, nb_channels);
         if (ret < 0)
             return ret;
 
         for (int i = 0; i < nb_channels; i++) {
-            AVChannelCustom *cm = &ac->oc[1].ch_layout.u.map[i];
+            AVChannelCustom *cm = &ch_layout.u.map[i];
             cm->id = usac_ch_pos_to_av[get_bits(gb, 5)]; /* bsOutputChannelPos */
         }
 
-        ret = av_channel_layout_retype(&ac->oc[1].ch_layout,
-                                       AV_CHANNEL_ORDER_NATIVE,
+        ret = av_channel_layout_retype(&ch_layout, AV_CHANNEL_ORDER_NATIVE,
                                        AV_CHANNEL_LAYOUT_RETYPE_FLAG_CANONICAL);
-        if (ret < 0)
-            return ret;
-
-        ret = av_channel_layout_copy(&avctx->ch_layout, &ac->oc[1].ch_layout);
+        if (ret >= 0)
+            ret = av_channel_layout_copy(&avctx->ch_layout, &ch_layout);
+        av_channel_layout_uninit(&ch_layout);
         if (ret < 0)
             return ret;
     } else {
