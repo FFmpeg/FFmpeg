@@ -199,7 +199,7 @@ static int sunrast_decode_frame(AVCodecContext *avctx, AVFrame *p,
         uint8_t *ptr_free = ptr2;
         ptr = p->data[0];
         for (y=0; y<h; y++) {
-            for (x = 0; x < (w + 7 >> 3) * depth; x++) {
+            for (x = 0; x < len; x++) {
                 if (depth == 1) {
                     ptr[8*x]   = ptr2[x] >> 7;
                     ptr[8*x+1] = ptr2[x] >> 6 & 1;
