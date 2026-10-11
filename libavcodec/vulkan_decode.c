@@ -1343,12 +1343,12 @@ int ff_vk_decode_init(AVCodecContext *avctx)
         VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL;
         void *create_pnext = (void *)ff_vk_find_struct(ctx->s.hwfc->create_pnext,
                                                        VK_STRUCTURE_TYPE_VIDEO_PROFILE_LIST_INFO_KHR);
-        /* Reference (DPB) images use the same tiling and pNext chain as output.
-         * If VK_VIDEO_DECODE_CAPABILITY_DPB_AND_OUTPUT_DISTINCT_BIT_KHR is 0, the
-         * driver does not support separate output and DPB with different layouts/tiling. */
+        /* With DPB_AND_OUTPUT_DISTINCT, DPB images never leave the decoder,
+         * so they don't need the output's DRM modifiers. */
         void *drm_create_pnext = (void *)ff_vk_find_struct(ctx->s.hwfc->create_pnext,
                                                            VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_LIST_CREATE_INFO_EXT);
-        if (drm_create_pnext) {
+        if (drm_create_pnext &&
+            !(ctx->dec_caps.flags & VK_VIDEO_DECODE_CAPABILITY_DPB_AND_OUTPUT_DISTINCT_BIT_KHR)) {
             create_pnext = drm_create_pnext;
             tiling       = VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT;
             av_assert2(ff_vk_find_struct(drm_create_pnext, VK_STRUCTURE_TYPE_VIDEO_PROFILE_LIST_INFO_KHR));
