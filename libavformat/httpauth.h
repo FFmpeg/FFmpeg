@@ -34,7 +34,7 @@ typedef enum HTTPAuthType {
 
 typedef struct DigestParams {
     char nonce[300];       /**< Server specified nonce */
-    char algorithm[10];    /**< Server specified digest algorithm */
+    char algorithm[sizeof("SHA-512-256-sess")]; /**< Server specified digest algorithm */
     char qop[30];          /**< Quality of protection, containing the one
                              *  that we've chosen to use, from the
                              *  alternatives that the server offered. */

@@ -19,14 +19,21 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdbool.h>
+
 #include "httpauth.h"
 #include "libavutil/base64.h"
 #include "libavutil/avstring.h"
 #include "libavutil/mem.h"
 #include "internal.h"
 #include "libavutil/random_seed.h"
-#include "libavutil/md5.h"
+#include "libavutil/hash.h"
 #include "urldecode.h"
+
+/**
+ * Maximum length of a hash string in hexadecimal, with a string terminator
+ */
+#define HASH_STRING_LEN (AV_HASH_MAX_SIZE * 2 + 1)
 
 static void handle_basic_params(void *context, const char *key,
                                 int key_len, char **dest, int *dest_len)
@@ -118,22 +125,21 @@ void ff_http_auth_handle_header(HTTPAuthState *state, const char *key,
     }
 }
 
-
-static void update_md5_strings(struct AVMD5 *md5ctx, ...)
+static void update_hash_strings(struct AVHashContext *hashctx, ...)
 {
     va_list vl;
 
-    va_start(vl, md5ctx);
+    va_start(vl, hashctx);
     while (1) {
         const char* str = va_arg(vl, const char*);
         if (!str)
             break;
-        av_md5_update(md5ctx, str, strlen(str));
+        av_hash_update(hashctx, str, strlen(str));
     }
     va_end(vl);
 }
 
-/* Generate a digest reply, according to RFC 2617. */
+/* Generate a digest reply, according to RFC 2617 and RFC 7616. */
 static char *make_digest_auth(HTTPAuthState *state, const char *username,
                               const char *password, const char *uri,
                               const char *method)
@@ -144,55 +150,66 @@ static char *make_digest_auth(HTTPAuthState *state, const char *username,
     char cnonce[17];
     char nc[9];
     int i;
-    char A1hash[33], A2hash[33], response[33];
-    struct AVMD5 *md5ctx;
-    uint8_t hash[16];
+    char A1hash[HASH_STRING_LEN], A2hash[HASH_STRING_LEN], response[HASH_STRING_LEN];
+    struct AVHashContext *hashctx = NULL;
+    uint8_t hash[AV_HASH_MAX_SIZE];
+    const char* algorithm = NULL;
+    bool is_session = false;
+    int hash_size;
     char *authstr;
 
     digest->nc++;
     snprintf(nc, sizeof(nc), "%08x", digest->nc);
+
+    if (!strcmp(digest->algorithm, ""))                     { algorithm = "MD5"; }
+    else if (!strcmp(digest->algorithm, "MD5"))             { algorithm = "MD5"; }
+    else if (!strcmp(digest->algorithm, "MD5-sess"))        { algorithm = "MD5"; is_session = true; }
+    else if (!strcmp(digest->algorithm, "SHA-256"))         { algorithm = "SHA256"; }
+    else if (!strcmp(digest->algorithm, "SHA-256-sess"))    { algorithm = "SHA256"; is_session = true; }
+    else if (!strcmp(digest->algorithm, "SHA-512-256"))     { algorithm = "SHA512/256"; }
+    else if (!strcmp(digest->algorithm, "SHA-512-256-sess")){ algorithm = "SHA512/256"; is_session = true; }
+    else {
+        /* Unsupported algorithm */
+        return NULL;
+    }
 
     /* Generate a client nonce. */
     for (i = 0; i < 2; i++)
         cnonce_buf[i] = av_get_random_seed();
     ff_data_to_hex(cnonce, (const uint8_t*) cnonce_buf, sizeof(cnonce_buf), 1);
 
-    md5ctx = av_md5_alloc();
-    if (!md5ctx)
+    if (av_hash_alloc(&hashctx, algorithm) < 0)
         return NULL;
 
-    av_md5_init(md5ctx);
-    update_md5_strings(md5ctx, username, ":", state->realm, ":", password, NULL);
-    av_md5_final(md5ctx, hash);
-    ff_data_to_hex(A1hash, hash, 16, 1);
+    hash_size = av_hash_get_size(hashctx);
 
-    if (!strcmp(digest->algorithm, "") || !strcmp(digest->algorithm, "MD5")) {
-    } else if (!strcmp(digest->algorithm, "MD5-sess")) {
-        av_md5_init(md5ctx);
-        update_md5_strings(md5ctx, A1hash, ":", digest->nonce, ":", cnonce, NULL);
-        av_md5_final(md5ctx, hash);
-        ff_data_to_hex(A1hash, hash, 16, 1);
-    } else {
-        /* Unsupported algorithm */
-        av_free(md5ctx);
-        return NULL;
+    av_hash_init (hashctx);
+    update_hash_strings(hashctx, username, ":", state->realm, ":", password, NULL);
+    av_hash_final(hashctx, hash);
+    ff_data_to_hex(A1hash, hash, hash_size, 1);
+
+    if (is_session) {
+        av_hash_init(hashctx);
+        update_hash_strings(hashctx, A1hash, ":", digest->nonce, ":", cnonce, NULL);
+        av_hash_final(hashctx, hash);
+        ff_data_to_hex(A1hash, hash, hash_size, 1);
     }
 
-    av_md5_init(md5ctx);
-    update_md5_strings(md5ctx, method, ":", uri, NULL);
-    av_md5_final(md5ctx, hash);
-    ff_data_to_hex(A2hash, hash, 16, 1);
+    av_hash_init(hashctx);
+    update_hash_strings(hashctx, method, ":", uri, NULL);
+    av_hash_final(hashctx, hash);
+    ff_data_to_hex(A2hash, hash, hash_size, 1);
 
-    av_md5_init(md5ctx);
-    update_md5_strings(md5ctx, A1hash, ":", digest->nonce, NULL);
+    av_hash_init(hashctx);
+    update_hash_strings(hashctx, A1hash, ":", digest->nonce, NULL);
     if (!strcmp(digest->qop, "auth") || !strcmp(digest->qop, "auth-int")) {
-        update_md5_strings(md5ctx, ":", nc, ":", cnonce, ":", digest->qop, NULL);
+        update_hash_strings(hashctx, ":", nc, ":", cnonce, ":", digest->qop, NULL);
     }
-    update_md5_strings(md5ctx, ":", A2hash, NULL);
-    av_md5_final(md5ctx, hash);
-    ff_data_to_hex(response, hash, 16, 1);
+    update_hash_strings(hashctx, ":", A2hash, NULL);
+    av_hash_final(hashctx, hash);
+    ff_data_to_hex(response, hash, hash_size, 1);
 
-    av_free(md5ctx);
+    av_hash_freep(&hashctx);
 
     if (!strcmp(digest->qop, "") || !strcmp(digest->qop, "auth")) {
     } else if (!strcmp(digest->qop, "auth-int")) {
