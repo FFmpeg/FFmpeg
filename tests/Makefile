@@ -210,6 +210,7 @@ include $(SRC_PATH)/tests/fate/image.mak
 include $(SRC_PATH)/tests/fate/imf.mak
 include $(SRC_PATH)/tests/fate/indeo.mak
 include $(SRC_PATH)/tests/fate/jpeg2000.mak
+include $(SRC_PATH)/tests/fate/jpegapp.mak
 include $(SRC_PATH)/tests/fate/jxl.mak
 include $(SRC_PATH)/tests/fate/libavcodec.mak
 include $(SRC_PATH)/tests/fate/libavdevice.mak
