@@ -764,7 +764,6 @@ static int set_sps(HEVCContext *s, HEVCLayerContext *l, const HEVCSPS *sps)
 
     pic_arrays_free(l);
     av_refstruct_unref(&l->sps);
-    av_refstruct_unref(&s->vps);
 
     if (!sps)
         return 0;
@@ -772,6 +771,8 @@ static int set_sps(HEVCContext *s, HEVCLayerContext *l, const HEVCSPS *sps)
     ret = pic_arrays_init(l, sps);
     if (ret < 0)
         goto fail;
+
+    av_refstruct_unref(&s->vps);
 
     ff_hevc_pred_init(&s->hpc,     sps->bit_depth);
     ff_hevc_dsp_init (&s->hevcdsp, sps->bit_depth);
