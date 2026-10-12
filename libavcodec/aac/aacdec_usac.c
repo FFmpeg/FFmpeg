@@ -1875,12 +1875,12 @@ static int decode_usac_core_coder(AACDecContext *ac, AACUSACConfig *usac,
         }
     }
 
-    if (ec->sbr.ratio) {
-        int sbr_ch = nb_channels;
-        if (nb_channels == 2 &&
-            !(ec->stereo_config_index == 0 || ec->stereo_config_index == 3))
-            sbr_ch = 1;
+    int sbr_ch = nb_channels;
+    if (nb_channels == 2 &&
+        !(ec->stereo_config_index == 0 || ec->stereo_config_index == 3))
+        sbr_ch = 1;
 
+    if (ec->sbr.ratio) {
         ret = ff_aac_sbr_decode_usac_data(ac, che, ec, gb, sbr_ch, indep_flag);
         if (ret < 0)
             return ret;
@@ -1895,10 +1895,15 @@ static int decode_usac_core_coder(AACDecContext *ac, AACUSACConfig *usac,
     spectrum_decode(ac, usac, che, core_nb_channels);
 
     if (ac->oc[1].m4ac.sbr > 0) {
-        ac->proc.sbr_apply(ac, che, nb_channels == 2 ? TYPE_CPE : TYPE_SCE, 0,
+        ac->proc.sbr_apply(ac, che, sbr_ch == 2 ? TYPE_CPE : TYPE_SCE, 0,
                            che->ch[0].output,
                            che->ch[1].output);
     }
+
+    /* The MPS212 upmix is not implemented, output the downmix on both channels */
+    if (sbr_ch < nb_channels)
+        memcpy(che->ch[1].output, che->ch[0].output,
+               ac->frame->nb_samples * sizeof(*che->ch[0].output));
 
     return 0;
 }
