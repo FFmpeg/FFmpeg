@@ -749,8 +749,6 @@ static int init_model_ov(OVModel *ov_model, const char *input_name, const char *
     status = ov_preprocess_prepostprocessor_build(ov_model->preprocess, &ov_model->ov_model);
     if (status != OK) {
         av_log(ctx, AV_LOG_ERROR, "Failed to update OV model\n");
-        ov_model_free(tmp_ov_model);
-        tmp_ov_model = NULL;
         ret = ov2_map_error(status, NULL);
         goto err;
     }
