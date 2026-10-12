@@ -25,7 +25,9 @@ const enum AVPixelFormat ff_vidstab_pix_fmts[] =  {
     AV_PIX_FMT_YUV444P,  AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV420P,
     AV_PIX_FMT_YUV411P,  AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUVA420P,
     AV_PIX_FMT_YUV440P,  AV_PIX_FMT_GRAY8,
+#if defined(LIBVIDSTAB_VERSION_INT) && LIBVIDSTAB_VERSION_INT >= AV_VERSION_INT(1, 4, 0)
     AV_PIX_FMT_RGB24,    AV_PIX_FMT_BGR24,   AV_PIX_FMT_RGBA,
+#endif
     AV_PIX_FMT_NONE
 };
 
@@ -41,9 +43,11 @@ VSPixelFormat ff_av2vs_pixfmt(AVFilterContext *ctx, enum AVPixelFormat pf)
     case AV_PIX_FMT_YUV440P:  return PF_YUV440P;
     case AV_PIX_FMT_YUVA420P: return PF_YUVA420P;
     case AV_PIX_FMT_GRAY8:    return PF_GRAY8;
+#if defined(LIBVIDSTAB_VERSION_INT) && LIBVIDSTAB_VERSION_INT >= AV_VERSION_INT(1, 4, 0)
     case AV_PIX_FMT_RGB24:    return PF_RGB24;
     case AV_PIX_FMT_BGR24:    return PF_BGR24;
     case AV_PIX_FMT_RGBA:     return PF_RGBA;
+#endif
     default:
         av_log(ctx, AV_LOG_ERROR, "cannot deal with pixel format %i\n", pf);
         return PF_NONE;
