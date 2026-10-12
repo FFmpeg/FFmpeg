@@ -496,7 +496,8 @@ static void get_tag(AVFormatContext *s, AVIOContext *pb, const char *key, int ty
         snprintf(buf, sizeof(buf), "%u", avio_rl16(pb));
     } else if (type == 6 && length == 16) {
         ff_asf_guid guid;
-        avio_read(pb, guid, 16);
+        if (ff_get_guid(pb, &guid) < 0)
+            return;
         snprintf(buf, sizeof(buf), PRI_PRETTY_GUID, ARG_PRETTY_GUID(guid));
     } else if (type == 2 && !strcmp(key, "WM/Picture")) {
         get_attachment(s, pb, length);
