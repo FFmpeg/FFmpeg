@@ -233,3 +233,26 @@ function ff_scalarproduct_float_neon, export=1
         faddp           s0, v0.2s
         ret
 endfunc
+
+function ff_scalarproduct_double_neon, export=1
+        movi            v0.2d, #0
+        movi            v1.2d, #0
+        movi            v2.2d, #0
+        movi            v3.2d, #0
+1:
+        ld1             {v4.2d, v5.2d}, [x0], #32
+        ld1             {v6.2d, v7.2d}, [x1], #32
+        ld1             {v16.2d, v17.2d}, [x0], #32
+        ld1             {v18.2d, v19.2d}, [x1], #32
+        subs            x2, x2, #8
+        fmla            v0.2d, v4.2d, v6.2d
+        fmla            v1.2d, v5.2d, v7.2d
+        fmla            v2.2d, v16.2d, v18.2d
+        fmla            v3.2d, v17.2d, v19.2d
+        b.gt            1b
+        fadd            v0.2d, v0.2d, v1.2d
+        fadd            v2.2d, v2.2d, v3.2d
+        fadd            v0.2d, v0.2d, v2.2d
+        faddp           d0, v0.2d
+        ret
+endfunc

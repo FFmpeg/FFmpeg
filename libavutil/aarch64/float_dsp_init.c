@@ -51,12 +51,16 @@ void ff_butterflies_float_neon(float *v1, float *v2, int len);
 
 float ff_scalarproduct_float_neon(const float *v1, const float *v2, int len);
 
+double ff_scalarproduct_double_neon(const double *v1, const double *v2,
+                                    size_t len);
+
 av_cold void ff_float_dsp_init_aarch64(AVFloatDSPContext *fdsp)
 {
     int cpu_flags = av_get_cpu_flags();
 
     if (have_neon(cpu_flags)) {
         fdsp->butterflies_float   = ff_butterflies_float_neon;
+        fdsp->scalarproduct_double = ff_scalarproduct_double_neon;
         fdsp->scalarproduct_float = ff_scalarproduct_float_neon;
         fdsp->vector_dmul_scalar  = ff_vector_dmul_scalar_neon;
         fdsp->vector_fmul         = ff_vector_fmul_neon;
