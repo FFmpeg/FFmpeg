@@ -3148,7 +3148,12 @@ static int mkv_write_packet_internal(AVFormatContext *s, const AVPacket *pkt)
             ret = mkv_end_cluster(s);
             if (ret < 0)
                 return ret;
-            av_log(s, AV_LOG_WARNING, "Starting new cluster due to timestamp\n");
+            av_log(s, AV_LOG_WARNING,
+                   "Starting new cluster due to %s timestamp jump in stream %d: "
+                   "timestamp %"PRId64" ms, current cluster timestamp %"PRId64
+                   " ms, delta %"PRId64" ms outside the signed 16-bit range\n",
+                   cluster_time < 0 ? "backward" : "forward", pkt->stream_index,
+                   ts, mkv->cluster_pts, cluster_time);
         }
     }
 
