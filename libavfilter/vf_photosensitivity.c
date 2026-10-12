@@ -152,12 +152,12 @@ static int blend_frame_partial(AVFilterContext *ctx, void *arg, int jobnr, int n
     const uint16_t t_mul = 0x100 - s_mul;
     const int slice_start = ff_slice_pos(td->target->height, jobnr, nb_jobs);
     const int slice_end = ff_slice_pos(td->target->height, jobnr + 1, nb_jobs);
-    const int linesize = td->target->linesize[0];
+    const int width = td->target->width * NUM_CHANNELS;
 
     for (y = slice_start; y < slice_end; y++) {
         t = td->target->data[0] + y * td->target->linesize[0];
         s = td->source->data[0] + y * td->source->linesize[0];
-        for (x = 0; x < linesize; x++) {
+        for (x = 0; x < width; x++) {
             *t = (*t * t_mul + *s * s_mul) >> 8;
             t++; s++;
         }
