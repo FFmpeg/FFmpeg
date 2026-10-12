@@ -6315,7 +6315,7 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     frag_stream_info = get_current_frag_stream_info(&c->frag_index);
     if (frag_stream_info) {
         if (frag_stream_info->next_trun_dts != AV_NOPTS_VALUE) {
-            dts = frag_stream_info->next_trun_dts - sc->time_offset;
+            dts = av_sat_sub64(frag_stream_info->next_trun_dts, sc->time_offset);
         } else if (frag_stream_info->first_tfra_pts != AV_NOPTS_VALUE &&
             c->use_mfra_for == FF_MOV_FLAG_MFRA_PTS) {
             pts = frag_stream_info->first_tfra_pts;
@@ -6340,7 +6340,7 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             }
 
             if (has_tfdt && c->use_tfdt || fallback_tfdt) {
-                dts = frag_stream_info->tfdt_dts - sc->time_offset;
+                dts = av_sat_sub64(frag_stream_info->tfdt_dts, sc->time_offset);
                 av_log(c->fc, AV_LOG_DEBUG, "found tfdt time %"PRId64
                         ", using it for dts\n", dts);
             } else if (has_sidx && !c->use_tfdt || fallback_sidx) {
@@ -6350,13 +6350,13 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                 av_log(c->fc, AV_LOG_DEBUG, "found sidx time %"PRId64
                         ", using it for dts\n", frag_stream_info->sidx_pts);
             } else {
-                dts = sc->track_end - sc->time_offset;
+                dts = av_sat_sub64(sc->track_end, sc->time_offset);
                 av_log(c->fc, AV_LOG_DEBUG, "found track end time %"PRId64
                         ", using it for dts\n", dts);
             }
         }
     } else {
-        dts = sc->track_end - sc->time_offset;
+        dts = av_sat_sub64(sc->track_end, sc->time_offset);
         av_log(c->fc, AV_LOG_DEBUG, "found track end time %"PRId64
                 ", using it for dts\n", dts);
     }
@@ -6446,11 +6446,11 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
         mov_update_dts_shift(sc, ctts_duration, c->fc);
         if (pts != AV_NOPTS_VALUE) {
-            dts = pts - sc->dts_shift;
+            dts = av_sat_sub64(pts, sc->dts_shift);
             if (flags & MOV_TRUN_SAMPLE_CTS) {
-                dts -= ctts_duration;
+                dts = av_sat_sub64(dts, ctts_duration);
             } else {
-                dts -= sc->time_offset;
+                dts = av_sat_sub64(dts, sc->time_offset);
             }
             av_log(c->fc, AV_LOG_DEBUG,
                    "pts %"PRId64" calculated dts %"PRId64
@@ -6504,7 +6504,7 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         }
     }
     if (frag_stream_info)
-        frag_stream_info->next_trun_dts = dts + sc->time_offset;
+        frag_stream_info->next_trun_dts = av_sat_add64(dts, sc->time_offset);
     if (i < entries) {
         // EOF found before reading all entries.  Fix the hole this would
         // leave in index_entries and tts_data
@@ -6551,7 +6551,7 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     frag->implicit_offset = offset;
 
-    sc->track_end = dts + sc->time_offset;
+    sc->track_end = av_sat_add64(dts, sc->time_offset);
     if (st->duration < sc->track_end)
         st->duration = sc->track_end;
 
