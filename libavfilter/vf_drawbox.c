@@ -313,36 +313,48 @@ static int config_input(AVFilterLink *inlink)
                                           var_names, var_values,
                                           NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0 && i == NUM_EXPR_EVALS)
             goto fail;
-        s->x = var_values[VAR_X] = res;
+        var_values[VAR_X] = res;
 
         var_values[VAR_MAX] = inlink->h;
         if ((ret = av_expr_parse_and_eval(&res, (expr = s->y_expr),
                                           var_names, var_values,
                                           NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0 && i == NUM_EXPR_EVALS)
             goto fail;
-        s->y = var_values[VAR_Y] = res;
+        var_values[VAR_Y] = res;
 
-        var_values[VAR_MAX] = inlink->w - s->x;
+        var_values[VAR_MAX] = inlink->w - trunc(var_values[VAR_X]);
         if ((ret = av_expr_parse_and_eval(&res, (expr = s->w_expr),
                                           var_names, var_values,
                                           NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0 && i == NUM_EXPR_EVALS)
             goto fail;
-        s->w = var_values[VAR_W] = res;
+        var_values[VAR_W] = res;
 
-        var_values[VAR_MAX] = inlink->h - s->y;
+        var_values[VAR_MAX] = inlink->h - trunc(var_values[VAR_Y]);
         if ((ret = av_expr_parse_and_eval(&res, (expr = s->h_expr),
                                           var_names, var_values,
                                           NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0 && i == NUM_EXPR_EVALS)
             goto fail;
-        s->h = var_values[VAR_H] = res;
+        var_values[VAR_H] = res;
 
         var_values[VAR_MAX] = INT_MAX;
         if ((ret = av_expr_parse_and_eval(&res, (expr = s->t_expr),
                                           var_names, var_values,
                                           NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0 && i == NUM_EXPR_EVALS)
             goto fail;
-        s->thickness = var_values[VAR_T] = res;
+        var_values[VAR_T] = res;
     }
+
+    if (!(fabs(var_values[VAR_X]) <= INT_MAX / 4 && fabs(var_values[VAR_Y]) <= INT_MAX / 4 &&
+          fabs(var_values[VAR_W]) <= INT_MAX / 4 && fabs(var_values[VAR_H]) <= INT_MAX / 4 &&
+          fabs(var_values[VAR_T]) <= INT_MAX)) {
+        av_log(ctx, AV_LOG_ERROR, "Position, size or thickness out of range.\n");
+        return AVERROR(EINVAL);
+    }
+    s->x         = var_values[VAR_X];
+    s->y         = var_values[VAR_Y];
+    s->w         = var_values[VAR_W];
+    s->h         = var_values[VAR_H];
+    s->thickness = var_values[VAR_T];
 
     /* if w or h are zero, use the input w/h */
     s->w = (s->w > 0) ? s->w : inlink->w;
