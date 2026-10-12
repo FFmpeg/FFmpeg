@@ -2827,12 +2827,12 @@ static int recheck_discard_flags(AVFormatContext *s, int first)
 static void fill_timing_for_id3_timestamped_stream(struct playlist *pls)
 {
     if (pls->id3_offset >= 0) {
-        pls->pkt->dts = pls->id3_mpegts_timestamp +
-                                 av_rescale_q(pls->id3_offset,
-                                              pls->ctx->streams[pls->pkt->stream_index]->time_base,
-                                              MPEG_TIME_BASE_Q);
+        pls->pkt->dts = av_sat_add64(pls->id3_mpegts_timestamp,
+                                     av_rescale_q(pls->id3_offset,
+                                                  pls->ctx->streams[pls->pkt->stream_index]->time_base,
+                                                  MPEG_TIME_BASE_Q));
         if (pls->pkt->duration)
-            pls->id3_offset += pls->pkt->duration;
+            pls->id3_offset = av_sat_add64(pls->id3_offset, pls->pkt->duration);
         else
             pls->id3_offset = -1;
     } else {
