@@ -240,6 +240,12 @@ static int parse_iplconvkernel(IplConvKernel **kernel, char *buf, void *log_ctx)
         goto out;
     }
 
+    if (rows > (INT_MAX - sizeof(IplConvKernel) - 32) / sizeof(int) / cols) {
+        av_log(log_ctx, AV_LOG_ERROR, "Shape size %dx%d is too big\n", cols, rows);
+        ret = AVERROR(EINVAL);
+        goto out;
+    }
+
     if (anchor_x < 0 || anchor_y < 0 || anchor_x >= cols || anchor_y >= rows) {
         av_log(log_ctx, AV_LOG_ERROR,
                "Shape anchor %dx%d is not inside the rectangle with size %dx%d.\n",
