@@ -890,8 +890,11 @@ static av_cold int init_thread(PerThreadContext *p, int *threads_to_free,
     }
     p->thread_init = NEEDS_CLOSE;
 
-    if (first)
-        update_context_from_thread(avctx, copy, 1);
+    if (first) {
+        err = update_context_from_thread(avctx, copy, 1);
+        if (err < 0)
+            return err;
+    }
 
     const AVCodecContext *src = first ? copy : avctx;
     AVCodecContext       *dst = first ? avctx : copy;
