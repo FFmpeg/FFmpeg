@@ -2803,8 +2803,8 @@ static int recheck_discard_flags(AVFormatContext *s, int first)
             pls->pb.pub.eof_reached = 0;
             if (c->cur_timestamp != AV_NOPTS_VALUE) {
                 /* catch up */
-                pls->seek_timestamp = c->cur_timestamp +
-                    (pls->ts_offset != AV_NOPTS_VALUE ? pls->ts_offset : 0);
+                pls->seek_timestamp = av_sat_add64(c->cur_timestamp,
+                    pls->ts_offset != AV_NOPTS_VALUE ? pls->ts_offset : 0);
                 pls->seek_flags = AVSEEK_FLAG_ANY;
                 pls->seek_stream_index = -1;
             }
@@ -2935,7 +2935,7 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
                                               get_timebase(pls), AV_TIME_BASE_Q);
 
                     for (int64_t k = 0; k < seg_idx && k < pls->n_segments; k++)
-                        ts -= pls->segments[k]->duration;
+                        ts = av_sat_sub64(ts, pls->segments[k]->duration);
 
                     if (c->first_timestamp == AV_NOPTS_VALUE) {
                         c->first_timestamp = ts;
@@ -2946,19 +2946,19 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
                          * order, but another stream in the same segment may
                          * start earlier. Lower the estimate while packets of
                          * that segment are still arriving. */
-                        int64_t delta = c->first_timestamp - ts;
+                        int64_t delta = av_sat_sub64(c->first_timestamp, ts);
 
                         if (delta > 0 && delta <= pls->target_duration) {
                             c->first_timestamp = ts;
                             for (int k = 0; k < c->n_playlists; k++)
                                 if (c->playlists[k]->ts_offset != AV_NOPTS_VALUE)
-                                    c->playlists[k]->ts_offset += delta;
+                                    c->playlists[k]->ts_offset = av_sat_add64(c->playlists[k]->ts_offset, delta);
                             adjusted = 1;
                         }
                     }
 
                     if (pls->ts_offset == AV_NOPTS_VALUE)
-                        pls->ts_offset = ts - c->first_timestamp;
+                        pls->ts_offset = av_sat_sub64(ts, c->first_timestamp);
 
                     if (adjusted) {
                         for (unsigned k = 0; k < s->nb_streams; k++)
@@ -3224,7 +3224,7 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
          * have different DTS baselines, so translate the threshold onto this
          * playlist's own baseline using its captured offset. */
         if (pls->ts_offset != AV_NOPTS_VALUE)
-            pls->seek_timestamp = seek_timestamp + pls->ts_offset;
+            pls->seek_timestamp = av_sat_add64(seek_timestamp, pls->ts_offset);
         else
             pls->seek_timestamp = seek_timestamp;
         pls->seek_flags = flags;
@@ -3235,7 +3235,7 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
              * to not discard the keyframe and land one segment late. */
             int64_t idx = seq_no - pls->start_seq_no;
             if (idx >= 0 && idx < pls->n_segments)
-                pls->seek_timestamp -= pls->segments[idx]->duration;
+                pls->seek_timestamp = av_sat_sub64(pls->seek_timestamp, pls->segments[idx]->duration);
         }
 
         if (pls != seek_pls) {
