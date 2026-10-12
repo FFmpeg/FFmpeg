@@ -2995,8 +2995,8 @@ static void mov_parse_stsd_video(MOVContext *c, AVIOContext *pb,
     }
 }
 
-static void mov_parse_stsd_audio(MOVContext *c, AVIOContext *pb,
-                                 AVStream *st, MOVStreamContext *sc)
+static int mov_parse_stsd_audio(MOVContext *c, AVIOContext *pb,
+                                AVStream *st, MOVStreamContext *sc)
 {
     int bits_per_sample, flags;
     uint16_t version = avio_rb16(pb);
@@ -3035,8 +3035,18 @@ static void mov_parse_stsd_audio(MOVContext *c, AVIOContext *pb,
             sc->bytes_per_frame = avio_rb32(pb);
             avio_rb32(pb); /* bytes per sample */
         } else if (version == 2) {
+            double sample_rate;
+
             avio_rb32(pb); /* sizeof struct only */
-            st->codecpar->sample_rate = av_int2double(avio_rb64(pb));
+            sample_rate = av_int2double(avio_rb64(pb));
+
+            if (sample_rate < 0 || sample_rate > INT_MAX ||
+                isnan(sample_rate)) {
+                av_log(c->fc, AV_LOG_ERROR, "Invalid sample rate %g\n",
+                       sample_rate);
+                return AVERROR_INVALIDDATA;
+            }
+            st->codecpar->sample_rate = sample_rate;
             channel_count = avio_rb32(pb);
             st->codecpar->ch_layout.order = AV_CHANNEL_ORDER_UNSPEC;
             st->codecpar->ch_layout.nb_channels = channel_count;
@@ -3114,6 +3124,8 @@ static void mov_parse_stsd_audio(MOVContext *c, AVIOContext *pb,
         st->codecpar->bits_per_coded_sample = bits_per_sample;
         sc->sample_size = (bits_per_sample >> 3) * st->codecpar->ch_layout.nb_channels;
     }
+
+    return 0;
 }
 
 static void mov_parse_stsd_subtitle(MOVContext *c, AVIOContext *pb,
@@ -3407,7 +3419,9 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
         if (st->codecpar->codec_type==AVMEDIA_TYPE_VIDEO) {
             mov_parse_stsd_video(c, pb, st, sc);
         } else if (st->codecpar->codec_type==AVMEDIA_TYPE_AUDIO) {
-            mov_parse_stsd_audio(c, pb, st, sc);
+            ret = mov_parse_stsd_audio(c, pb, st, sc);
+            if (ret < 0)
+                return ret;
             if (st->codecpar->sample_rate < 0) {
                 av_log(c->fc, AV_LOG_ERROR, "Invalid sample rate %d\n", st->codecpar->sample_rate);
                 return AVERROR_INVALIDDATA;
