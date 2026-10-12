@@ -682,7 +682,6 @@ static int init_model_ov(OVModel *ov_model, const char *input_name, const char *
         }
         nb_outputs = output_size;
     }
-    ov_model->nb_outputs = nb_outputs;
     for (int i = 0; i < nb_outputs; i++) {
         if (output_names)
             status = ov_preprocess_prepostprocessor_get_output_info_by_name(
@@ -764,6 +763,7 @@ static int init_model_ov(OVModel *ov_model, const char *input_name, const char *
             ret = AVERROR(ENOMEM);
             goto err;
         }
+        ov_model->nb_outputs = nb_outputs;
     } else
         for (int i = 0; i < nb_outputs; i++) {
             ov_output_const_port_free(ov_model->output_ports[i]);
