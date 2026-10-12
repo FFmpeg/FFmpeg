@@ -567,10 +567,16 @@ static int cuda_transfer_data(AVHWFramesContext *ctx, AVFrame *dst,
         int src_is_nonplanar_cuarray = 0;
         int dst_is_nonplanar_cuarray = 0;
 
+        int bytewidth = av_image_get_linesize(ctx->sw_format, src->width, i);
+        if (bytewidth < 0) {
+            ret = bytewidth;
+            goto fail;
+        }
+
         CUDA_MEMCPY2D cpy = {
             .srcPitch      = src->linesize[i],
             .dstPitch      = dst->linesize[i],
-            .WidthInBytes  = FFMIN(src->linesize[i], dst->linesize[i]),
+            .WidthInBytes  = bytewidth,
             .Height        = AV_CEIL_RSHIFT(src->height, ((i == 0 || i == 3) ? 0 : priv->shift_height)),
         };
 
