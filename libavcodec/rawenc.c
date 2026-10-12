@@ -87,7 +87,7 @@ const FFCodec ff_rawvideo_encoder = {
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_RAWVIDEO,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS |
-                      AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
+                      AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE | AV_CODEC_CAP_PARAM_CHANGE,
     .init           = raw_encode_init,
     FF_CODEC_ENCODE_CB(raw_encode),
 };
