@@ -10081,86 +10081,68 @@ static int mov_read_imir(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-static int mov_read_iprp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+typedef struct MOVAtomExt {
+    uint32_t type;
+    int64_t size;
+    uint8_t *data;
+} MOVAtomExt;
+
+static int mov_read_ipco(MOVContext *c, AVIOContext *pb, MOVAtom atom,
+                         MOVAtomExt **atoms, int *nb_atoms)
 {
-    typedef struct MOVAtoms {
-        FFIOContext b;
-        uint32_t type;
-        int64_t  size;
-        uint8_t *data;
-    } MOVAtoms;
-    MOVAtoms *atoms = NULL;
-    MOVAtom a;
-    unsigned count;
-    int nb_atoms = 0;
-    int version, flags;
-    int ret;
+    while (atom.size >= 8) {
+        MOVAtomExt *ref = av_dynarray2_add((void**)atoms, nb_atoms, sizeof(MOVAtomExt), NULL);
+        if (!ref)
+            return AVERROR(ENOMEM);
 
-    a.size = avio_rb32(pb);
-    a.type = avio_rl32(pb);
-
-    if (a.size < 8 || a.size > atom.size || a.type != MKTAG('i','p','c','o'))
-        return AVERROR_INVALIDDATA;
-
-    atom.size -= a.size;
-    a.size -= 8;
-    while (a.size >= 8) {
-        MOVAtoms *ref = av_dynarray2_add((void**)&atoms, &nb_atoms, sizeof(MOVAtoms), NULL);
-        if (!ref) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
         ref->data = NULL;
         ref->size = avio_rb32(pb);
         ref->type = avio_rl32(pb);
-        if (ref->size > a.size || ref->size < 8)
+        if (ref->size > atom.size || ref->size < 8)
             break;
         ref->data = av_malloc(ref->size);
-        if (!ref->data) {
-            ret = AVERROR_INVALIDDATA;
-            goto fail;
-        }
-        av_log(c->fc, AV_LOG_TRACE, "ipco: index %d, box type %s\n", nb_atoms, av_fourcc2str(ref->type));
+        if (!ref->data)
+            return AVERROR_INVALIDDATA;
+
+        av_log(c->fc, AV_LOG_TRACE, "ipco: index %d, box type %s\n", *nb_atoms,
+               av_fourcc2str(ref->type));
         AV_WB32(ref->data, ref->size);
         AV_WL32(ref->data + 4, ref->type);
         if (avio_read(pb, ref->data + 8, ref->size - 8) != ref->size - 8) {
-            ret = AVERROR_INVALIDDATA;
-            goto fail;
+            return AVERROR_INVALIDDATA;
         }
-        ffio_init_read_context(&ref->b, ref->data, ref->size);
-        a.size -= ref->size;
+        atom.size -= ref->size;
     }
 
-    if (a.size) {
-        ret = AVERROR_INVALIDDATA;
-        goto fail;
-    }
+    if (atom.size)
+        return AVERROR_INVALIDDATA;
 
-    a.size = avio_rb32(pb);
-    a.type = avio_rl32(pb);
+    return 0;
+}
 
-    if (a.size < 16 || a.size > atom.size || a.type != MKTAG('i','p','m','a')) {
-        ret = AVERROR_INVALIDDATA;
-        goto fail;
-    }
+static int mov_read_ipma(MOVContext *c, AVIOContext *pb, MOVAtom atom,
+                         MOVAtomExt *atoms, int nb_atoms)
+{
+    unsigned count;
+    int version, flags;
+    int ret;
 
     version = avio_r8(pb);
     flags   = avio_rb24(pb);
     count   = avio_rb32(pb);
-    a.size -= 16;
+    atom.size -= 8;
 
     for (int i = 0; i < count; i++) {
         int item_id = version ? avio_rb32(pb) : avio_rb16(pb);
         int assoc_count = avio_r8(pb);
 
-        a.size -= (version ? 5 : 3) + assoc_count * (1 + (flags & 1));
-        if (avio_feof(pb) || a.size < 0) {
-            ret = AVERROR_INVALIDDATA;
-            goto fail;
-        }
+        atom.size -= (version ? 5 : 3) + assoc_count * (1 + (flags & 1));
+        if (avio_feof(pb) || atom.size < 0)
+            return AVERROR_INVALIDDATA;
 
         for (int j = 0; j < assoc_count; j++) {
-            MOVAtoms *ref;
+            FFIOContext b;
+            MOVAtomExt *ref;
             int index = avio_r8(pb) & 0x7f;
             if (flags & 1) {
                 index <<= 8;
@@ -10169,8 +10151,7 @@ static int mov_read_iprp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             if (!index)
                 continue;
             if (index > nb_atoms) {
-                ret = AVERROR_INVALIDDATA;
-                goto fail;
+                return AVERROR_INVALIDDATA;
             }
             ref = &atoms[--index];
 
@@ -10179,14 +10160,54 @@ static int mov_read_iprp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
             c->cur_item_id = item_id;
 
-            ret = mov_read_default(c, &ref->b.pub,
+            ffio_init_read_context(&b, ref->data, ref->size);
+            ret = mov_read_default(c, &b.pub,
                                    (MOVAtom) { .size = ref->size,
                                                .type = MKTAG('i','p','c','o') });
             if (ret < 0)
-                goto fail;
-            ffio_init_read_context(&ref->b, ref->data, ref->size);
+                return ret;
         }
     }
+
+    if (atom.size)
+        return AVERROR_INVALIDDATA;
+
+    return 0;
+}
+
+static int mov_read_iprp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    MOVAtomExt *atoms = NULL;
+    MOVAtom a;
+    int nb_atoms = 0;
+    int ret;
+
+    a.size = avio_rb32(pb);
+    a.type = avio_rl32(pb);
+
+    if (a.size <= 8 || a.size > atom.size || a.type != MKTAG('i','p','c','o'))
+        return AVERROR_INVALIDDATA;
+
+    atom.size -= a.size;
+    a.size -= 8;
+
+    ret = mov_read_ipco(c, pb, a, &atoms, &nb_atoms);
+    if (ret < 0)
+        goto fail;
+
+    a.size = avio_rb32(pb);
+    a.type = avio_rl32(pb);
+
+    if (a.size <= 8 || a.size > atom.size || a.type != MKTAG('i','p','m','a')) {
+        ret = AVERROR_INVALIDDATA;
+        goto fail;
+    }
+
+    a.size -= 8;
+
+    ret = mov_read_ipma(c, pb, a, atoms, nb_atoms);
+    if (ret < 0)
+        goto fail;
 
     ret = 0;
 fail:
