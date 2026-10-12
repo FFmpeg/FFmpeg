@@ -1788,7 +1788,8 @@ static int decode_usac_core_coder(AACDecContext *ac, AACUSACConfig *usac,
             ret = ff_aac_ldp_parse_channel_stream(ac, usac, ue, gb);
             if (ret < 0)
                 return ret;
-            continue;
+            avpriv_report_missing_feature(ac->avctx, "AAC USAC LPD");
+            return AVERROR_PATCHWELCOME;
         }
 
         if ((core_nb_channels == 1) ||
