@@ -251,7 +251,8 @@ static uint64_t get_sbad(AVMotionEstContext *me_ctx, int x, int y, int x_mv, int
 {
     uint8_t *data_cur = me_ctx->data_cur;
     uint8_t *data_next = me_ctx->data_ref;
-    int linesize = me_ctx->linesize;
+    int linesize_cur  = me_ctx->linesize_cur;
+    int linesize_next = me_ctx->linesize_ref;
     int mv_x1 = x_mv - x;
     int mv_y1 = y_mv - y;
     int mv_x, mv_y, i, j;
@@ -262,12 +263,12 @@ static uint64_t get_sbad(AVMotionEstContext *me_ctx, int x, int y, int x_mv, int
     mv_x = av_clip(x_mv - x, -FFMIN(x - me_ctx->x_min, me_ctx->x_max - x), FFMIN(x - me_ctx->x_min, me_ctx->x_max - x));
     mv_y = av_clip(y_mv - y, -FFMIN(y - me_ctx->y_min, me_ctx->y_max - y), FFMIN(y - me_ctx->y_min, me_ctx->y_max - y));
 
-    data_cur += (y + mv_y) * linesize;
-    data_next += (y - mv_y) * linesize;
+    data_cur += (y + mv_y) * linesize_cur;
+    data_next += (y - mv_y) * linesize_next;
 
     for (j = 0; j < me_ctx->mb_size; j++)
         for (i = 0; i < me_ctx->mb_size; i++)
-            sbad += FFABS(data_cur[x + mv_x + i + j * linesize] - data_next[x - mv_x + i + j * linesize]);
+            sbad += FFABS(data_cur[x + mv_x + i + j * linesize_cur] - data_next[x - mv_x + i + j * linesize_next]);
 
     return sbad + (FFABS(mv_x1 - me_ctx->pred_x) + FFABS(mv_y1 - me_ctx->pred_y)) * COST_PRED_SCALE;
 }
@@ -276,7 +277,8 @@ static uint64_t get_sbad_ob(AVMotionEstContext *me_ctx, int x, int y, int x_mv, 
 {
     uint8_t *data_cur = me_ctx->data_cur;
     uint8_t *data_next = me_ctx->data_ref;
-    int linesize = me_ctx->linesize;
+    int linesize_cur  = me_ctx->linesize_cur;
+    int linesize_next = me_ctx->linesize_ref;
     int x_min = me_ctx->x_min + me_ctx->mb_size / 2;
     int x_max = me_ctx->x_max - me_ctx->mb_size / 2;
     int y_min = me_ctx->y_min + me_ctx->mb_size / 2;
@@ -293,7 +295,7 @@ static uint64_t get_sbad_ob(AVMotionEstContext *me_ctx, int x, int y, int x_mv, 
 
     for (j = -me_ctx->mb_size / 2; j < me_ctx->mb_size * 3 / 2; j++)
         for (i = -me_ctx->mb_size / 2; i < me_ctx->mb_size * 3 / 2; i++)
-            sbad += FFABS(data_cur[x + mv_x + i + (y + mv_y + j) * linesize] - data_next[x - mv_x + i + (y - mv_y + j) * linesize]);
+            sbad += FFABS(data_cur[x + mv_x + i + (y + mv_y + j) * linesize_cur] - data_next[x - mv_x + i + (y - mv_y + j) * linesize_next]);
 
     return sbad + (FFABS(mv_x1 - me_ctx->pred_x) + FFABS(mv_y1 - me_ctx->pred_y)) * COST_PRED_SCALE;
 }
@@ -302,7 +304,8 @@ static uint64_t get_sad_ob(AVMotionEstContext *me_ctx, int x, int y, int x_mv, i
 {
     uint8_t *data_ref = me_ctx->data_ref;
     uint8_t *data_cur = me_ctx->data_cur;
-    int linesize = me_ctx->linesize;
+    int linesize_ref = me_ctx->linesize_ref;
+    int linesize_cur = me_ctx->linesize_cur;
     int x_min = me_ctx->x_min + me_ctx->mb_size / 2;
     int x_max = me_ctx->x_max - me_ctx->mb_size / 2;
     int y_min = me_ctx->y_min + me_ctx->mb_size / 2;
@@ -319,7 +322,7 @@ static uint64_t get_sad_ob(AVMotionEstContext *me_ctx, int x, int y, int x_mv, i
 
     for (j = -me_ctx->mb_size / 2; j < me_ctx->mb_size * 3 / 2; j++)
         for (i = -me_ctx->mb_size / 2; i < me_ctx->mb_size * 3 / 2; i++)
-            sad += FFABS(data_ref[x_mv + i + (y_mv + j) * linesize] - data_cur[x + i + (y + j) * linesize]);
+            sad += FFABS(data_ref[x_mv + i + (y_mv + j) * linesize_ref] - data_cur[x + i + (y + j) * linesize_cur]);
 
     return sad + (FFABS(mv_x - me_ctx->pred_x) + FFABS(mv_y - me_ctx->pred_y)) * COST_PRED_SCALE;
 }
@@ -753,7 +756,8 @@ static int inject_frame(AVFilterLink *inlink, AVFrame *avf_in)
 
             if (mi_ctx->frames[1].avf) {
                 for (dir = 0; dir < 2; dir++) {
-                    mi_ctx->me_ctx.linesize = mi_ctx->frames[2].avf->linesize[0];
+                    mi_ctx->me_ctx.linesize_cur = mi_ctx->frames[2].avf->linesize[0];
+                    mi_ctx->me_ctx.linesize_ref = mi_ctx->frames[dir ? 3 : 1].avf->linesize[0];
                     mi_ctx->me_ctx.data_cur = mi_ctx->frames[2].avf->data[0];
                     mi_ctx->me_ctx.data_ref = mi_ctx->frames[dir ? 3 : 1].avf->data[0];
 
@@ -770,7 +774,8 @@ static int inject_frame(AVFilterLink *inlink, AVFrame *avf_in)
             if (!mi_ctx->frames[0].avf)
                 return 0;
 
-            mi_ctx->me_ctx.linesize = mi_ctx->frames[0].avf->linesize[0];
+            mi_ctx->me_ctx.linesize_cur = mi_ctx->frames[1].avf->linesize[0];
+            mi_ctx->me_ctx.linesize_ref = mi_ctx->frames[2].avf->linesize[0];
             mi_ctx->me_ctx.data_cur = mi_ctx->frames[1].avf->data[0];
             mi_ctx->me_ctx.data_ref = mi_ctx->frames[2].avf->data[0];
 
