@@ -3710,7 +3710,9 @@ static int encode_picture(MPVMainEncContext *const m, const AVPacket *pkt)
         ret = estimate_qp(m, 1);
         if (ret < 0)
             return ret;
-        ff_get_2pass_fcode(m);
+        ret = ff_get_2pass_fcode(m);
+        if (ret < 0)
+            return ret;
     } else if (!(s->c.avctx->flags & AV_CODEC_FLAG_QSCALE)) {
         if (s->c.pict_type == AV_PICTURE_TYPE_B)
             s->lambda = m->last_lambda_for[s->c.pict_type];

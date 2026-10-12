@@ -900,14 +900,21 @@ static void adaptive_quantization(RateControlContext *const rcc,
     }
 }
 
-void ff_get_2pass_fcode(MPVMainEncContext *const m)
+int ff_get_2pass_fcode(MPVMainEncContext *const m)
 {
     MPVEncContext *const s = &m->s;
     const RateControlContext *rcc = &m->rc_context;
-    const RateControlEntry   *rce = &rcc->entry[s->picture_number];
+    const RateControlEntry   *rce;
+
+    if (s->picture_number >= rcc->num_entries) {
+        av_log(s->c.avctx, AV_LOG_ERROR, "Input is longer than 2-pass log file\n");
+        return AVERROR(EINVAL);
+    }
+    rce = &rcc->entry[s->picture_number];
 
     s->f_code = rce->f_code;
     s->b_code = rce->b_code;
+    return 0;
 }
 
 // FIXME rd or at least approx for dquant
