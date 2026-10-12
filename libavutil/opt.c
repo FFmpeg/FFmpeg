@@ -565,8 +565,10 @@ static int set_string_color(void *obj, const AVOption *o, const char *val, uint8
     } else {
         uint8_t tmp[4];
         ret = av_parse_color(tmp, val, -1, obj);
-        if (ret < 0)
+        if (ret < 0) {
             av_log(logctx, AV_LOG_ERROR, "Unable to parse \"%s\" option value \"%s\" as color\n", o->name, val);
+            return ret;
+        }
         if (dst)
             memcpy(dst, tmp, sizeof(tmp));
         return ret;
