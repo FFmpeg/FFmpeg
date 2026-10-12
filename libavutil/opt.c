@@ -534,8 +534,10 @@ static int set_string_image_size(void *obj, const AVOption *o, const char *val, 
         return 0;
     }
     ret = av_parse_video_size(&tmp[0], &tmp[1], val);
-    if (ret < 0)
+    if (ret < 0) {
         av_log(logctx, AV_LOG_ERROR, "Unable to parse \"%s\" option value \"%s\" as image size\n", o->name, val);
+        return ret;
+    }
     if (dst)
         memcpy(dst, tmp, sizeof(tmp));
     return ret;
