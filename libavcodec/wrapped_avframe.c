@@ -108,7 +108,7 @@ const FFCodec ff_wrapped_avframe_encoder = {
     CODEC_LONG_NAME("AVFrame to AVPacket passthrough"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_WRAPPED_AVFRAME,
-    .p.capabilities = AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
+    .p.capabilities = AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE | AV_CODEC_CAP_PARAM_CHANGE,
     FF_CODEC_ENCODE_CB(wrapped_avframe_encode),
 };
 
