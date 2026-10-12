@@ -588,6 +588,10 @@ int ff_aac_usac_config_decode(AACDecContext *ac, AVCodecContext *avctx,
     }
 
     usac->core_sbr_frame_len_idx = get_bits(gb, 3); /* coreSbrFrameLengthIndex */
+    if (usac->core_sbr_frame_len_idx == 2 || usac->core_sbr_frame_len_idx == 4) {
+        avpriv_report_missing_feature(avctx, "USAC SBR with a ratio other than 2:1");
+        return AVERROR_PATCHWELCOME;
+    }
     m4ac->frame_length_short = usac->core_sbr_frame_len_idx == 0 ||
                                usac->core_sbr_frame_len_idx == 2;
 
