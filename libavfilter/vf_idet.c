@@ -156,9 +156,9 @@ static void filter(AVFilterContext *ctx)
         }
 
         for (y = 2; y < h - 2; y++) {
-            uint8_t *prev = &idet->prev->data[i][y*refs];
+            uint8_t *prev = &idet->prev->data[i][y*idet->prev->linesize[i]];
             uint8_t *cur  = &idet->cur ->data[i][y*refs];
-            uint8_t *next = &idet->next->data[i][y*refs];
+            uint8_t *next = &idet->next->data[i][y*idet->next->linesize[i]];
             alpha[ y   &1] += filter_line(cur-refs, prev, cur+refs, w);
             alpha[(y^1)&1] += filter_line(cur-refs, next, cur+refs, w);
             delta          += filter_line(cur-refs,  cur, cur+refs, w);
