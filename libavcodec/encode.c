@@ -518,6 +518,15 @@ static int encode_send_frame_internal(AVCodecContext *avctx, const AVFrame *src)
                 }
             }
         }
+    } else if (!(avctx->codec->capabilities & AV_CODEC_CAP_PARAM_CHANGE)) {
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(src->format);
+
+        if (!(desc && desc->flags & AV_PIX_FMT_FLAG_HWACCEL) &&
+            (src->format != avctx->pix_fmt ||
+             src->width  < avctx->width  || src->height < avctx->height)) {
+            av_log(avctx, AV_LOG_ERROR, "Frame size or pixel format does not match the encoder\n");
+            return AVERROR(EINVAL);
+        }
     }
 
     ret = av_frame_ref(dst, src);
