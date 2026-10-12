@@ -184,10 +184,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     }
 
     me_ctx->data_cur = s->cur->data[0];
-    me_ctx->linesize = s->cur->linesize[0];
+    me_ctx->linesize_cur = s->cur->linesize[0];
 
     for (dir = 0; dir < nb_dirs; dir++) {
-        me_ctx->data_ref = (dir ? s->next : s->prev)->data[0];
+        me_ctx->data_ref     = (dir ? s->next : s->prev)->data[0];
+        me_ctx->linesize_ref = (dir ? s->next : s->prev)->linesize[0];
 
         if (s->method == AV_ME_METHOD_DS)
             SEARCH_MV(ds);
