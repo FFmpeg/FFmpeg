@@ -171,16 +171,16 @@ static double clean_mean(double *values, int count)
  * chooses the most likely shift by the smallest difference in blocks.
  */
 static void find_block_motion(DeshakeContext *deshake, uint8_t *src1,
-                              uint8_t *src2, int cx, int cy, int stride,
-                              IntMotionVector *mv)
+                              uint8_t *src2, int cx, int cy, int stride1,
+                              int stride2, IntMotionVector *mv)
 {
     int x, y;
     int diff;
     int smallest = INT_MAX;
     int tmp, tmp2;
 
-    #define CMP(i, j) deshake->sad(src1 + cy  * stride + cx,  stride,\
-                                   src2 + (j) * stride + (i), stride)
+    #define CMP(i, j) deshake->sad(src1 + cy  * stride1 + cx,  stride1,\
+                                   src2 + (j) * stride2 + (i), stride2)
 
     if (deshake->search == EXHAUSTIVE) {
         // Compare every possible position - this is sloooow!
@@ -285,7 +285,7 @@ static double block_angle(int x, int y, int cx, int cy, IntMotionVector *shift)
  * motion vector (1, -2).
  */
 static void find_motion(DeshakeContext *deshake, uint8_t *src1, uint8_t *src2,
-                        int width, int height, int stride, Transform *t)
+                        int width, int height, int stride1, int stride2, Transform *t)
 {
     int x, y;
     IntMotionVector mv = {0, 0};
@@ -312,10 +312,10 @@ static void find_motion(DeshakeContext *deshake, uint8_t *src1, uint8_t *src2,
         for (x = deshake->rx; x < width - deshake->rx - 16; x += 16) {
             // If the contrast is too low, just skip this block as it probably
             // won't be very useful to us.
-            contrast = block_contrast(src2, x, y, stride, deshake->blocksize);
+            contrast = block_contrast(src2, x, y, stride2, deshake->blocksize);
             if (contrast > deshake->contrast) {
                 //av_log(NULL, AV_LOG_ERROR, "%d\n", contrast);
-                find_block_motion(deshake, src1, src2, x, y, stride, &mv);
+                find_block_motion(deshake, src1, src2, x, y, stride1, stride2, &mv);
                 if (mv.x != -1 && mv.y != -1) {
                     deshake->counts[mv.x + deshake->rx][mv.y + deshake->ry] += 1;
                     if (x > deshake->rx && y > deshake->ry)
@@ -476,7 +476,8 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     }
     av_frame_copy_props(out, in);
 
-    aligned = !((intptr_t)in->data[0] & 15 | in->linesize[0] & 15);
+    const AVFrame *ref = deshake->ref ? deshake->ref : in;
+    aligned = !((intptr_t)ref->data[0] & 15 | ref->linesize[0] & 15);
     deshake->sad = av_pixelutils_get_sad_fn(4, 4, aligned, deshake); // 16x16, 2nd source unaligned
     if (!deshake->sad) {
         ret = AVERROR(EINVAL);
@@ -485,9 +486,9 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
 
     if (deshake->cx < 0 || deshake->cy < 0 || deshake->cw < 0 || deshake->ch < 0) {
         // Find the most likely global motion for the current frame
-        find_motion(deshake, (deshake->ref == NULL) ? in->data[0] : deshake->ref->data[0], in->data[0], link->w, link->h, in->linesize[0], &t);
+        find_motion(deshake, ref->data[0], in->data[0], link->w, link->h, ref->linesize[0], in->linesize[0], &t);
     } else {
-        uint8_t *src1 = (deshake->ref == NULL) ? in->data[0] : deshake->ref->data[0];
+        uint8_t *src1 = ref->data[0];
         uint8_t *src2 = in->data[0];
 
         deshake->cx = FFMIN(deshake->cx, link->w);
@@ -499,10 +500,10 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         // Quadword align right margin
         deshake->cw &= ~15;
 
-        src1 += deshake->cy * in->linesize[0] + deshake->cx;
+        src1 += deshake->cy * ref->linesize[0] + deshake->cx;
         src2 += deshake->cy * in->linesize[0] + deshake->cx;
 
-        find_motion(deshake, src1, src2, deshake->cw, deshake->ch, in->linesize[0], &t);
+        find_motion(deshake, src1, src2, deshake->cw, deshake->ch, ref->linesize[0], in->linesize[0], &t);
     }
 
 
