@@ -255,10 +255,16 @@ static int cuda_transfer_data(AVHWFramesContext *ctx, AVFrame *dst,
         return ret;
 
     for (i = 0; i < FF_ARRAY_ELEMS(src->data) && src->data[i]; i++) {
+        int bytewidth = av_image_get_linesize(ctx->sw_format, src->width, i);
+        if (bytewidth < 0) {
+            ret = bytewidth;
+            goto exit;
+        }
+
         CUDA_MEMCPY2D cpy = {
             .srcPitch      = src->linesize[i],
             .dstPitch      = dst->linesize[i],
-            .WidthInBytes  = FFMIN(src->linesize[i], dst->linesize[i]),
+            .WidthInBytes  = bytewidth,
             .Height        = src->height >> ((i == 0 || i == 3) ? 0 : priv->shift_height),
         };
 
@@ -292,7 +298,7 @@ static int cuda_transfer_data(AVHWFramesContext *ctx, AVFrame *dst,
 exit:
     CHECK_CU(cu->cuCtxPopCurrent(&dummy));
 
-    return 0;
+    return ret;
 }
 
 static void cuda_device_uninit(AVHWDeviceContext *device_ctx)
