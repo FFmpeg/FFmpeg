@@ -553,6 +553,8 @@ FF_DISABLE_DEPRECATION_WARNINGS
                                           sizeof(*stg->streams));
     if (!streams)
         return AVERROR(ENOMEM);
+
+    stg->streams = streams;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
@@ -571,7 +573,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
 #if FF_API_STREAM_GROUP_ENTRIES
 FF_DISABLE_DEPRECATION_WARNINGS
-    stg->streams = streams;
     if (stg->nb_streams == (stg->nb_entries - 1))
         stg->streams[stg->nb_streams++] = st;
     else
