@@ -726,7 +726,7 @@ static void reset_ptr(const uint8_t *src[], enum AVPixelFormat format)
 }
 
 static int check_image_pointers(const uint8_t * const data[4], enum AVPixelFormat pix_fmt,
-                                const int linesizes[4])
+                                const int linesizes[4], int h)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     int i;
@@ -735,7 +735,7 @@ static int check_image_pointers(const uint8_t * const data[4], enum AVPixelForma
 
     for (i = 0; i < 4; i++) {
         int plane = desc->comp[i].plane;
-        if (!data[plane] || !linesizes[plane])
+        if (!data[plane] || !linesizes[plane] || FFABS((int64_t)linesizes[plane]) * h > INT_MAX)
             return 0;
     }
 
@@ -1060,12 +1060,12 @@ static int scale_internal(SwsContext *sws,
         return AVERROR(EINVAL);
     }
 
-    if (!check_image_pointers(srcSlice, sws->src_format, srcStride)) {
-        av_log(c, AV_LOG_ERROR, "bad src image pointers\n");
+    if (!check_image_pointers(srcSlice, sws->src_format, srcStride, sws->src_h)) {
+        av_log(c, AV_LOG_ERROR, "bad src image pointers or strides\n");
         return AVERROR(EINVAL);
     }
-    if (!check_image_pointers((const uint8_t* const*)dstSlice, sws->dst_format, dstStride)) {
-        av_log(c, AV_LOG_ERROR, "bad dst image pointers\n");
+    if (!check_image_pointers((const uint8_t* const*)dstSlice, sws->dst_format, dstStride, sws->dst_h)) {
+        av_log(c, AV_LOG_ERROR, "bad dst image pointers or strides\n");
         return AVERROR(EINVAL);
     }
 
@@ -1108,7 +1108,7 @@ static int scale_internal(SwsContext *sws,
         int x,y;
 
         av_fast_malloc(&c->rgb0_scratch, &c->rgb0_scratch_allocated,
-                       FFABS(srcStride[0]) * srcSliceH + 32);
+                       FFABS((int64_t)srcStride[0]) * srcSliceH + 32);
         if (!c->rgb0_scratch)
             return AVERROR(ENOMEM);
 
@@ -1127,7 +1127,7 @@ static int scale_internal(SwsContext *sws,
         uint8_t *base;
 
         av_fast_malloc(&c->xyz_scratch, &c->xyz_scratch_allocated,
-                       FFABS(srcStride[0]) * srcSliceH + 32);
+                       FFABS((int64_t)srcStride[0]) * srcSliceH + 32);
         if (!c->xyz_scratch)
             return AVERROR(ENOMEM);
 
@@ -1402,6 +1402,14 @@ int sws_receive_slice(SwsContext *sws, unsigned int slice_start,
                           dst, c->frame_dst->linesize, slice_start, slice_height);
 }
 
+static int frame_strides_fit(const AVFrame *frame)
+{
+    for (int i = 0; i < FF_ARRAY_ELEMS(frame->linesize); i++)
+        if (FFABS((int64_t)frame->linesize[i]) * frame->height > INT_MAX)
+            return 0;
+    return 1;
+}
+
 int sws_scale_frame(SwsContext *sws, AVFrame *dst, const AVFrame *src)
 {
     int ret, allocated = 0;
@@ -1431,6 +1439,11 @@ int sws_scale_frame(SwsContext *sws, AVFrame *dst, const AVFrame *src)
 
     if (!src->data[0])
         return 0;
+
+    if (!frame_strides_fit(src) || (dst->data[0] && !frame_strides_fit(dst))) {
+        av_log(sws, AV_LOG_ERROR, "Frame planes larger than INT_MAX bytes are not supported\n");
+        return AVERROR(EINVAL);
+    }
 
     const SwsGraph *top = c->graph[FIELD_TOP];
     const SwsGraph *bot = c->graph[FIELD_BOTTOM];
