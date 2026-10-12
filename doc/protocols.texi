@@ -524,7 +524,8 @@ Exports the HTTP response version number. Usually "1.0" or "1.1".
 @item cookies
 Set the cookies to be sent in future requests. The format of each cookie is the
 same as the value of a Set-Cookie HTTP response field. Multiple cookies can be
-delimited by a newline character.
+delimited by a newline character. A cookie without a Domain attribute is only
+sent to the host of the URL it is set for.
 
 @item icy
 If set to 1 request ICY (SHOUTcast) metadata from the server. If the server
@@ -675,7 +676,7 @@ is used for reading large video packets with small audio packets in between.
 
 Some HTTP requests will be denied unless cookie values are passed in with the
 request. The @option{cookies} option allows these cookies to be specified. At
-the very least, each cookie must specify a value along with a path and domain.
+the very least, each cookie must specify a value.
 HTTP requests that match both the domain and path will automatically include the
 cookie value in the HTTP Cookie header field. Multiple cookies can be delimited
 by a newline.

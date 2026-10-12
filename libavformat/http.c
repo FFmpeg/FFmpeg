@@ -239,6 +239,7 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
                         const char *hoststr, const char *auth,
                         const char *proxyauth);
 static int http_read_header(URLContext *h);
+static int bind_cookies_to_host(HTTPContext *s);
 static int http_shutdown(URLContext *h, int flags);
 
 void ff_http_init_auth_state(URLContext *dest, const URLContext *src)
@@ -837,6 +838,9 @@ static int http_open(URLContext *h, const char *uri, int flags,
     if (!s->uri)
         return AVERROR(ENOMEM);
 
+    if (s->cookies && (ret = bind_cookies_to_host(s)) < 0)
+        goto bail_out;
+
     if (options)
         av_dict_copy(&s->chained_options, *options, 0);
 
@@ -1256,6 +1260,49 @@ static int parse_cookie(HTTPContext *s, const char *p, const char *host,
     }
     av_dict_set(cookies, name, value, AV_DICT_DONT_STRDUP_KEY | AV_DICT_DONT_STRDUP_VAL);
 
+    return 0;
+}
+
+/* Cookies without a Domain apply only to the host they are given for. */
+static int bind_cookies_to_host(HTTPContext *s)
+{
+    char host[1024], *cookies, *cookie, *next, *saveptr = NULL, *bound;
+    AVBPrint bp;
+    int ret = 0;
+
+    av_url_split(NULL, 0, NULL, 0, host, sizeof(host), NULL, NULL, 0, s->location);
+
+    next = cookies = av_strdup(s->cookies);
+    if (!cookies)
+        return AVERROR(ENOMEM);
+
+    av_bprint_init(&bp, 0, AV_BPRINT_SIZE_UNLIMITED);
+    while ((cookie = av_strtok(next, "\n", &saveptr))) {
+        AVDictionary *params = NULL;
+        int len = strlen(cookie), host_only;
+
+        next = NULL;
+        while (len && strchr(WHITESPACES, cookie[len - 1]))
+            len--;
+        if ((ret = parse_set_cookie(cookie, &params)) < 0) {
+            av_dict_free(&params);
+            break;
+        }
+        host_only = !cookie_domain(params) && !av_dict_get(params, "@hostonly", NULL, 0);
+        av_dict_free(&params);
+        av_bprintf(&bp, "%.*s%s%s\n", len, cookie, host_only ? "; @hostonly=" : "", host_only ? host : "");
+    }
+    av_free(cookies);
+    if (ret >= 0 && !av_bprint_is_complete(&bp))
+        ret = AVERROR(ENOMEM);
+    if (ret < 0) {
+        av_bprint_finalize(&bp, NULL);
+        return ret;
+    }
+    if ((ret = av_bprint_finalize(&bp, &bound)) < 0)
+        return ret;
+    av_free(s->cookies);
+    s->cookies = bound;
     return 0;
 }
 
