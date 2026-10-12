@@ -59,18 +59,19 @@ void ff_me_init_context(AVMotionEstContext *me_ctx, int mb_size, int search_para
 
 uint64_t ff_me_cmp_sad(AVMotionEstContext *me_ctx, int x_mb, int y_mb, int x_mv, int y_mv)
 {
-    const int linesize = me_ctx->linesize;
+    const int linesize_ref = me_ctx->linesize_ref;
+    const int linesize_cur = me_ctx->linesize_cur;
     uint8_t *data_ref = me_ctx->data_ref;
     uint8_t *data_cur = me_ctx->data_cur;
     uint64_t sad = 0;
     int i, j;
 
-    data_ref += y_mv * linesize;
-    data_cur += y_mb * linesize;
+    data_ref += y_mv * linesize_ref;
+    data_cur += y_mb * linesize_cur;
 
     for (j = 0; j < me_ctx->mb_size; j++)
         for (i = 0; i < me_ctx->mb_size; i++)
-            sad += FFABS(data_ref[x_mv + i + j * linesize] - data_cur[x_mb + i + j * linesize]);
+            sad += FFABS(data_ref[x_mv + i + j * linesize_ref] - data_cur[x_mb + i + j * linesize_cur]);
 
     return sad;
 }
