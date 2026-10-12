@@ -17,6 +17,9 @@ fate-ogg-vorbis-ts-offset: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_frames -o
 FATE_OGG_VORBIS_PROBE-$(call DEMDEC, OGG, VORBIS) += fate-ogg-vorbis-ts-seek
 fate-ogg-vorbis-ts-seek: CMD = ffprobe_demux -of default -bitexact -select_streams a -read_intervals 2.5%+\#5 -show_packets -show_entries packet=pts,dts,duration,flags -show_entries stream=codec_name,initial_padding $(TARGET_SAMPLES)/ogg-vorbis/tos.ogg
 
+FATE_OGG_VORBIS_PROBE-$(call DEMDEC, OGG, VORBIS) += fate-ogg-vorbis-ts-seek-1.5s
+fate-ogg-vorbis-ts-seek-1.5s: CMD = ffprobe_demux -of default -bitexact -select_streams a -read_intervals 1.5%+\#5 -show_packets -show_entries packet=pts,dts,duration,flags -show_entries stream=codec_name,initial_padding $(TARGET_SAMPLES)/ogg-vorbis/tos.ogg
+
 # Regression test for files with granule=0 on audio pages
 # See https://trac.ffmpeg.org/ticket/3710
 FATE_OGG_VORBIS_PROBE-$(call DEMDEC, OGG, VORBIS) += fate-ogg-vorbis-bear
