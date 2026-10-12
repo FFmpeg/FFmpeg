@@ -260,7 +260,7 @@ static int vvcc_parse_vps(GetBitContext *gb,
     if (vps_max_layers_minus1 > 0 && vps_max_sublayers_minus1 > 0)
         vps_default_ptl_dpb_hrd_max_tid_flag = get_bits1(gb);
     else
-        vps_default_ptl_dpb_hrd_max_tid_flag = 0;
+        vps_default_ptl_dpb_hrd_max_tid_flag = 1;
     if (vps_max_layers_minus1 > 0)
         vps_all_independent_layers_flag = get_bits1(gb);
     else
