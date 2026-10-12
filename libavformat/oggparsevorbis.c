@@ -478,10 +478,10 @@ static int vorbis_packet(AVFormatContext *s, int idx)
 
     bos = os->page_start && os->page_pos == priv->bos_page_pos;
 
-    if (bos) {
+    if (bos || (os->page_start && os->lastpts == AV_NOPTS_VALUE))
         av_vorbis_parse_reset(priv->vp);
+    if (bos)
         priv->last_page_granule = 0;
-    }
 
     duration = av_vorbis_parse_frame_flags(priv->vp, os->buf + os->pstart, 1, &flags);
     if (duration < 0) {
@@ -497,12 +497,35 @@ static int vorbis_packet(AVFormatContext *s, int idx)
     if (!priv->ts_offset)
         priv->ts_offset = os->pduration;
 
-    /* Initial position shift to account for encoder delay. */
+    /* Initial position shift to account for encoder delay, or page scan
+     * to recover the page start timestamp after a seek. */
     if (bos) {
         if (os->lastpts != AV_NOPTS_VALUE)
             os->lastpts -= priv->ts_offset;
         if (os->lastdts != AV_NOPTS_VALUE)
             os->lastdts -= priv->ts_offset;
+    } else if (os->page_start && os->lastpts == AV_NOPTS_VALUE &&
+               !(os->flags & OGG_FLAG_EOS) && (int64_t)os->granule >= 0) {
+        int seg, page_duration = os->pduration;
+        uint8_t *last_pkt = os->buf + os->pstart + os->psize;
+        uint8_t *next_pkt = last_pkt;
+
+        for (seg = os->segp; seg < os->nsegs; seg++) {
+            next_pkt += os->segments[seg];
+            if (os->segments[seg] < 255 && next_pkt != last_pkt) {
+                int pkt_flags = 0;
+                int d = av_vorbis_parse_frame_flags(priv->vp, last_pkt, 1, &pkt_flags);
+                if (d < 0) {
+                    page_duration = os->granule;
+                    break;
+                }
+                page_duration += d;
+                last_pkt = next_pkt;
+            }
+        }
+        av_vorbis_parse_frame_flags(priv->vp, os->buf + os->pstart, 1, &flags);
+        os->lastpts =
+        os->lastdts = os->granule - page_duration;
     }
 
     /* Broken files may have granule=0 on pages that contain audio data.
