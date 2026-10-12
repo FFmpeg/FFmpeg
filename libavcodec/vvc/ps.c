@@ -438,11 +438,11 @@ static int pps_single_slice_picture(VVCPPS *pps, int *off)
     return 0;
 }
 
-static int tile_at_or_after(const uint16_t *bd, const int ctb_pos)
+static int tile_at_or_after(const uint16_t *bd, const int num_tiles, const int ctb_pos)
 {
     int tile = 0;
 
-    while (bd[tile] < ctb_pos)
+    while (tile < num_tiles && bd[tile] < ctb_pos)
         tile++;
 
     return tile;
@@ -451,13 +451,14 @@ static int tile_at_or_after(const uint16_t *bd, const int ctb_pos)
 static void subpic_tiles(int *tile_x, int *tile_y, int *tile_x_end, int *tile_y_end,
     const VVCSPS *sps, const VVCPPS *pps,  const int i)
 {
+    const H266RawPPS *r = pps->r;
     const int rx = sps->r->sps_subpic_ctu_top_left_x[i];
     const int ry = sps->r->sps_subpic_ctu_top_left_y[i];
 
-    *tile_x     = tile_at_or_after(pps->col_bd, rx);
-    *tile_y     = tile_at_or_after(pps->row_bd, ry);
-    *tile_x_end = tile_at_or_after(pps->col_bd, rx + sps->r->sps_subpic_width_minus1[i] + 1);
-    *tile_y_end = tile_at_or_after(pps->row_bd, ry + sps->r->sps_subpic_height_minus1[i] + 1);
+    *tile_x     = tile_at_or_after(pps->col_bd, r->num_tile_columns, rx);
+    *tile_y     = tile_at_or_after(pps->row_bd, r->num_tile_rows,    ry);
+    *tile_x_end = tile_at_or_after(pps->col_bd, r->num_tile_columns, rx + sps->r->sps_subpic_width_minus1[i] + 1);
+    *tile_y_end = tile_at_or_after(pps->row_bd, r->num_tile_rows,    ry + sps->r->sps_subpic_height_minus1[i] + 1);
 }
 
 static int pps_subpic_less_than_one_tile_slice(VVCPPS *pps, const VVCSPS *sps, const int i, const int tx, const int ty, int *off)
