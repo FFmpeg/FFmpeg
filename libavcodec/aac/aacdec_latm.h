@@ -308,6 +308,7 @@ static int latm_decode_frame(AVCodecContext *avctx, AVFrame *out,
     default:
         err = aac_decode_frame_int(avctx, out, got_frame_ptr, &gb, avpkt);
     }
+    latmctx->aac_ctx.frame = NULL;
     if (err < 0)
         return err;
 
