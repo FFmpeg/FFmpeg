@@ -635,6 +635,11 @@ av_cold int ff_rate_control_init(MPVMainEncContext *const m)
                        rce->pict_type, i);
                 return -1;
             }
+            if ((unsigned)rce->f_code > MAX_FCODE || (unsigned)rce->b_code > MAX_FCODE) {
+                av_log(avctx, AV_LOG_ERROR, "invalid fcode %d / bcode %d at line %d\n",
+                       rce->f_code, rce->b_code, i);
+                return -1;
+            }
 
             p = next;
         }
