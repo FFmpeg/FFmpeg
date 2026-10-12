@@ -288,6 +288,9 @@ static const CheckasmTest tests[] = {
     #if CONFIG_NLMEANS_FILTER
         { "vf_nlmeans", checkasm_check_nlmeans },
     #endif
+    #if CONFIG_LIMITER_FILTER
+        { "vf_limiter", checkasm_check_vf_limiter },
+    #endif
     #if CONFIG_PP7_FILTER
         { "vf_pp7", checkasm_check_vf_pp7 },
     #endif

@@ -119,6 +119,7 @@ void checkasm_check_vf_eq(void);
 void checkasm_check_vf_fspp(void);
 void checkasm_check_vf_gblur(void);
 void checkasm_check_vf_hflip(void);
+void checkasm_check_vf_limiter(void);
 void checkasm_check_vf_pp7(void);
 void checkasm_check_vf_threshold(void);
 void checkasm_check_vf_sobel(void);
