@@ -11682,6 +11682,22 @@ static int mov_parse_heif_layered_video_tmap(AVFormatContext *s, const HEIFGroup
         }
         gain = NULL;
 
+        for (int k = 0; k < item->nb_iref_to_list; k++) {
+            HEIFItem *ref = get_heif_item(mov, item->iref_to_list[k].item_id);
+
+            av_assert0(ref);
+            // Remove auxl reference so we don't create the same group we made with
+            // this tmap using it. Strictly speaking, the chances for Apple style
+            // Exif values being present on a base item referenced by a tmap item
+            // are very low, but better safe than sorry.
+            if (item->iref_to_list[k].type == MKTAG('a','u','x','l') &&
+                (ref == tmap->item_list[!j])) {
+                if (k != (item->nb_iref_to_list - 1))
+                    item->iref_to_list[k] = item->iref_to_list[item->nb_iref_to_list - 1];
+                --item->nb_iref_to_list;
+                break;
+            }
+        }
         break;
     }
     av_free(gain);
