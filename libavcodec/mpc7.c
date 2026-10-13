@@ -109,6 +109,10 @@ static av_cold int mpc7_decode_init(AVCodecContext * avctx)
     skip_bits_long(&gb, 88);
     c->gapless = get_bits1(&gb);
     c->lastframelen = get_bits(&gb, 11);
+    if (c->lastframelen > MPC_FRAME_SIZE) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid last frame length: %d\n", c->lastframelen);
+        return AVERROR_INVALIDDATA;
+    }
     av_log(avctx, AV_LOG_DEBUG, "IS: %d, MSS: %d, TG: %d, LFL: %d, bands: %d\n",
             c->IS, c->MSS, c->gapless, c->lastframelen, c->maxbands);
     c->frames_to_skip = 0;
