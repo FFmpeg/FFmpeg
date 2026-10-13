@@ -97,13 +97,17 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
            in_perm == out_perm ? " (no-op)" : "");
 
     if (in_perm == RO && out_perm == RW) {
-        if ((ret = ff_inlink_make_frame_writable(inlink, &frame)) < 0)
+        if ((ret = ff_inlink_make_frame_writable(inlink, &frame)) < 0) {
+            av_frame_free(&frame);
             return ret;
+        }
         out = frame;
     } else if (in_perm == RW && out_perm == RO) {
         out = av_frame_clone(frame);
-        if (!out)
+        if (!out) {
+            av_frame_free(&frame);
             return AVERROR(ENOMEM);
+        }
     }
 
     ret = ff_filter_frame(ctx->outputs[0], out);
