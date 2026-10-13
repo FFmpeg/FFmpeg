@@ -355,6 +355,7 @@ static int init_pic_params(AVCodecContext *avctx, FFHWBaseEncodePicture *pic,
         av_assert0(pic->nb_refs[0] == 0 || pic->nb_refs[1]);
         ap->av1pic_info.frame_type = STD_VIDEO_AV1_FRAME_TYPE_KEY;
         ap->av1pic_info.refresh_frame_flags = 0xFF;
+        ap->av1pic_info.primary_ref_frame = STD_VIDEO_AV1_PRIMARY_REF_NONE;
         quantization->base_q_idx = enc->q_idx_idr;
         ap->slot = 0;
         ap->last_idr_frame = pic->display_order;
