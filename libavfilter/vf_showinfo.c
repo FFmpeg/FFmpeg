@@ -772,8 +772,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     int bitdepth = desc->comp[0].depth;
     int be = desc->flags & AV_PIX_FMT_FLAG_BE;
     int i, plane, vsub = desc->log2_chroma_h;
+    int calculate_checksums = s->calculate_checksums && !(desc->flags & AV_PIX_FMT_FLAG_HWACCEL);
 
-    for (plane = 0; plane < 4 && s->calculate_checksums && frame->data[plane] && frame->linesize[plane]; plane++) {
+    for (plane = 0; plane < 4 && calculate_checksums && frame->data[plane] && frame->linesize[plane]; plane++) {
         uint8_t *data = frame->data[plane];
         int h = plane == 1 || plane == 2 ? AV_CEIL_RSHIFT(frame->height, vsub) : frame->height;
         int linesize = av_image_get_linesize(frame->format, frame->width, plane);
@@ -809,7 +810,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
            !!(frame->flags & AV_FRAME_FLAG_KEY),
            av_get_picture_type_char(frame->pict_type));
 
-    if (s->calculate_checksums) {
+    if (calculate_checksums) {
         av_log(ctx, AV_LOG_INFO,
                "checksum:%08"PRIX32" plane_checksum:[%08"PRIX32,
                checksum, plane_checksum[0]);
