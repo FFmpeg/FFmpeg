@@ -850,7 +850,7 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
                         palette_idx1 = bytestream2_get_byte(&g2);
                         CHECK_PIXEL_PTR(byte_run);
                         for (j = 0; j < byte_run; j++) {
-                            pixels[pixel_ptr++] = palette_idx1;
+                            pixels[pixel_ptr++ ^ HAVE_BIGENDIAN] = palette_idx1;
                             pixel_countdown--;
                             if (pixel_countdown < 0)
                                 av_log(avctx, AV_LOG_ERROR, "pixel_countdown < 0 (%d) (linea%d)\n",
@@ -863,7 +863,7 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
                         CHECK_PIXEL_PTR(byte_run);
                         for (j = 0; j < byte_run; j++) {
                             palette_idx1 = bytestream2_get_byte(&g2);
-                            pixels[pixel_ptr++] = palette_idx1;
+                            pixels[pixel_ptr++ ^ HAVE_BIGENDIAN] = palette_idx1;
                             pixel_countdown--;
                             if (pixel_countdown < 0)
                                 av_log(avctx, AV_LOG_ERROR, "pixel_countdown < 0 (%d) at line %d\n",
@@ -871,21 +871,6 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
                         }
                     }
                 }
-
-                /* Now FLX is strange, in that it is "byte" as opposed to "pixel" run length compressed.
-                 * This does not give us any good opportunity to perform word endian conversion
-                 * during decompression. So if it is required (i.e., this is not a LE target, we do
-                 * a second pass over the line here, swapping the bytes.
-                 */
-#if HAVE_BIGENDIAN
-                pixel_ptr = y_ptr;
-                pixel_countdown = s->avctx->width;
-                while (pixel_countdown > 0) {
-                    *((signed short*)(&pixels[pixel_ptr])) = AV_RL16(&pixels[pixel_ptr]);
-                    pixel_ptr += 2;
-                    pixel_countdown--;
-                }
-#endif
                 y_ptr += s->frame->linesize[0];
             }
             break;
