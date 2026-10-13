@@ -94,6 +94,11 @@ int list_view_key(ListView *lv, SDL_Keycode key);
 void list_view_text(ListView *lv, const char *text);
 
 /**
+ * Clears the search, listing all entries.
+ */
+void list_view_clear_search(ListView *lv);
+
+/**
  * Keeps the mouse position, in window coordinates, -1 when the mouse left the window.
  */
 void list_view_hover(ListView *lv, int x, int y);

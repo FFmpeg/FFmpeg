@@ -819,8 +819,7 @@ void list_view_pin(ListView *lv, int pinned)
     } else {
         SDL_StopTextInput();
         lv->last_input = av_gettime_relative() - LIST_HOLD_TIME;
-        lv->search[0] = 0;
-        list_update_rows(lv);
+        list_view_clear_search(lv);
     }
     lv->render_pending = 1;
 }
@@ -862,6 +861,13 @@ int list_view_key(ListView *lv, SDL_Keycode key)
 void list_view_text(ListView *lv, const char *text)
 {
     list_search(lv, text);
+}
+
+void list_view_clear_search(ListView *lv)
+{
+    lv->search[0] = 0;
+    list_update_rows(lv);
+    lv->render_pending = 1;
 }
 
 /* asks for a render when what a visible list points at changed; the render waits until the pending events are handled,
