@@ -311,6 +311,9 @@ typedef struct VideoState {
     int eof;
 
     char *filename;
+    char *title;
+    int seek_by_bytes;
+    int infinite_buffer;
     int width, height, xleft, ytop;
     int step;
 
@@ -1438,6 +1441,7 @@ static void stream_close(VideoState *is)
     SDL_DestroyCond(is->continue_read_thread);
     sws_freeContext(is->sub_convert_ctx);
     av_free(is->filename);
+    av_free(is->title);
     if (is->vis_texture)
         SDL_DestroyTexture(is->vis_texture);
     if (is->vid_texture)
@@ -1501,9 +1505,7 @@ static int video_open(VideoState *is)
     w = screen_width ? screen_width : default_width;
     h = screen_height ? screen_height : default_height;
 
-    if (!window_title)
-        window_title = input_filename;
-    SDL_SetWindowTitle(window, window_title);
+    SDL_SetWindowTitle(window, window_title ? window_title : is->title ? is->title : is->filename);
 
     SDL_SetWindowSize(window, w, h);
     SDL_SetWindowPosition(window, screen_left, screen_top);
@@ -3221,15 +3223,15 @@ static int read_thread(void *arg)
     if (ic->pb)
         ic->pb->eof_reached = 0; // FIXME hack, ffplay maybe should not use avio_feof() to test for the end
 
-    if (seek_by_bytes < 0)
-        seek_by_bytes = !(ic->iformat->flags & AVFMT_NO_BYTE_SEEK) &&
-                        !!(ic->iformat->flags & AVFMT_TS_DISCONT) &&
-                        strcmp("ogg", ic->iformat->name);
+    if (is->seek_by_bytes < 0)
+        is->seek_by_bytes = !(ic->iformat->flags & AVFMT_NO_BYTE_SEEK) &&
+                            !!(ic->iformat->flags & AVFMT_TS_DISCONT) &&
+                            strcmp("ogg", ic->iformat->name);
 
     is->max_frame_duration = (ic->iformat->flags & AVFMT_TS_DISCONT) ? 10.0 : 3600.0;
 
     if (!window_title && (t = av_dict_get(ic->metadata, "title", NULL, 0)))
-        window_title = av_asprintf("%s - %s", t->value, input_filename);
+        is->title = av_asprintf("%s - %s", t->value, is->filename);
 
     /* if seeking requested, we execute it */
     if (start_time != AV_NOPTS_VALUE) {
@@ -3373,8 +3375,8 @@ static int read_thread(void *arg)
         goto fail;
     }
 
-    if (infinite_buffer < 0 && is->realtime)
-        infinite_buffer = 1;
+    if (is->infinite_buffer < 0 && is->realtime)
+        is->infinite_buffer = 1;
 
     for (;;) {
         if (is->abort_request)
@@ -3389,7 +3391,7 @@ static int read_thread(void *arg)
 #if CONFIG_RTSP_DEMUXER || CONFIG_MMSH_PROTOCOL
         if (is->paused &&
                 (!strcmp(ic->iformat->name, "rtsp") ||
-                 (ic->pb && !strncmp(input_filename, "mmsh:", 5)))) {
+                 (ic->pb && !strncmp(is->filename, "mmsh:", 5)))) {
             /* wait 10 ms to avoid trying to get another packet */
             /* XXX: horrible */
             SDL_Delay(10);
@@ -3443,7 +3445,7 @@ static int read_thread(void *arg)
         }
 
         /* if the queue are full, no need to read more */
-        if (infinite_buffer<1 &&
+        if (is->infinite_buffer < 1 &&
               (is->audioq.size + is->videoq.size + is->subtitleq.size > MAX_QUEUE_SIZE
             || (stream_has_enough_packets(is->audio_st, is->audio_stream, &is->audioq) &&
                 stream_has_enough_packets(is->video_st, is->video_stream, &is->videoq) &&
@@ -3582,6 +3584,8 @@ static VideoState *stream_open(const char *filename,
     if (!is->filename || !is->chapter_list)
         goto fail;
     is->iformat = iformat;
+    is->seek_by_bytes   = seek_by_bytes;
+    is->infinite_buffer = infinite_buffer;
     is->ytop    = 0;
     is->xleft   = 0;
 
@@ -3895,7 +3899,7 @@ static void event_loop(VideoState *cur_stream)
             case SDLK_DOWN:
                 incr = -60.0;
             do_seek:
-                    if (seek_by_bytes) {
+                    if (cur_stream->seek_by_bytes) {
                         pos = -1;
                         if (pos < 0 && cur_stream->video_stream >= 0)
                             pos = frame_queue_last_pos(&cur_stream->pictq);
@@ -3976,7 +3980,7 @@ static void event_loop(VideoState *cur_stream)
                     break;
                 x = event.motion.x;
             }
-                if (seek_by_bytes || cur_stream->ic->duration <= 0) {
+                if (cur_stream->seek_by_bytes || cur_stream->ic->duration <= 0) {
                     uint64_t size =  avio_size(cur_stream->ic->pb);
                     stream_seek(cur_stream, size*x/cur_stream->width, 0, 1);
                 } else {
