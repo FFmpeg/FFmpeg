@@ -111,8 +111,8 @@ void ff_rtp_send_h263_rfc2190(AVFormatContext *s1, const uint8_t *buf, int size,
 
     s->timestamp = s->cur_timestamp;
 
-    init_get_bits8(&gb, buf, FFMIN(size, 6));
-    if (get_bits(&gb, 22) == 0x20) { /* Picture Start Code */
+    if (init_get_bits8(&gb, buf, FFMIN(size, 6)) >= 0 &&
+        get_bits(&gb, 22) == 0x20) { /* Picture Start Code */
         info.tr  = get_bits(&gb, 8);
         skip_bits(&gb, 2); /* PTYPE start, H.261 disambiguation */
         skip_bits(&gb, 3); /* Split screen, document camera, freeze picture release */
