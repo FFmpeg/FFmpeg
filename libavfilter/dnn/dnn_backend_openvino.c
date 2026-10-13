@@ -915,6 +915,7 @@ static int init_model_ov(OVModel *ov_model, const char *input_name, const char *
         status = ov_compiled_model_create_infer_request(ov_model->compiled_model, &item->infer_request);
         if (status != OK) {
             av_log(ctx, AV_LOG_ERROR, "Failed to Creates an inference request object.\n");
+            ret = ov2_map_error(status, NULL);
             goto err;
         }
 #else
