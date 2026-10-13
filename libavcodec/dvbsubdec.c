@@ -999,6 +999,9 @@ static int dvbsub_parse_object_segment(AVCodecContext *avctx,
 
     int coding_method, non_modifying_color;
 
+    if (buf_size < 3)
+        return AVERROR_INVALIDDATA;
+
     object_id = AV_RB16(buf);
     buf += 2;
 
@@ -1011,6 +1014,8 @@ static int dvbsub_parse_object_segment(AVCodecContext *avctx,
     non_modifying_color = ((*buf++) >> 1) & 1;
 
     if (coding_method == 0) {
+        if (buf_end - buf < 4)
+            return AVERROR_INVALIDDATA;
         top_field_len = AV_RB16(buf);
         buf += 2;
         bottom_field_len = AV_RB16(buf);
