@@ -441,6 +441,9 @@ static int FUNC(metadata_user_defined)(CodedBitstreamContext *ctx,
 
     HEADER("User-Defined Metadata");
 
+    if (payload_size < 16)
+        return AVERROR_INVALIDDATA;
+
     for (int i = 0; i < 16; i++)
         ubs(8, uuid[i], 1, i);
 
