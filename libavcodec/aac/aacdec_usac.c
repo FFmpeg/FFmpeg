@@ -623,6 +623,7 @@ int ff_aac_usac_config_decode(AACDecContext *ac, AVCodecContext *avctx,
 
     m4ac->sampling_index = ff_aac_sample_rate_idx(m4ac->sample_rate);
     m4ac->sbr = sbr_ratio > 0;
+    m4ac->chan_config = 0;
 
     channel_config_idx = get_bits(gb, 5); /* channelConfigurationIndex */
     if (!channel_config_idx) {
@@ -1932,8 +1933,6 @@ static int parse_audio_preroll(AACDecContext *ac, GetBitContext *gb)
     if (ret < 0) {
         *m4ac = m4ac_bak;
         return ret;
-    } else {
-        ac->oc[1].m4ac.chan_config = 0;
     }
 
     /* 7.18.3.3 Bitrate adaption
