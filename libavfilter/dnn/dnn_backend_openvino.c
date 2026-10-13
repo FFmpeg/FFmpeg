@@ -778,7 +778,7 @@ static int init_model_ov(OVModel *ov_model, const char *input_name, const char *
             status = ov_model_const_output_by_index(ov_model->ov_model, i,
                                             &ov_model->output_ports[i]);
         if (status != OK) {
-            av_log(ctx, AV_LOG_ERROR, "Failed to get output port %s.\n", output_names[i]);
+            av_log(ctx, AV_LOG_ERROR, "Failed to get output port %d.\n", i);
             ret = ov2_map_error(status, NULL);
             goto err;
         }
