@@ -95,7 +95,7 @@
         if (bn)                                     \
             ret = (mpz_set_str(bn, buf, 16) == 0);  \
         else                                        \
-            ret = 1;                                \
+            ret = 0;                                \
     } while (0)
 #define bn_random(bn, num_bits)                       \
     do {                                              \
@@ -198,7 +198,7 @@ static int bn_modexp(FFBigNum bn, FFBigNum y, FFBigNum q, FFBigNum p)
         if (bn)                                     \
             ret = (mbedtls_mpi_read_string(bn, 16, buf) == 0);  \
         else                                        \
-            ret = 1;                                \
+            ret = 0;                                \
     } while (0)
 #define bn_random(bn, num_bits)                     \
     do {                                            \
