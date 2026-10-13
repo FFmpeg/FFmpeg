@@ -726,7 +726,7 @@ static av_cold int init(AVFilterContext *ctx)
     }
 
     /* check filename */
-    if (sic->nb_inputs > 1 && strlen(sic->filename) > 0 && get_frame_filename(tmp, sizeof(tmp), sic->filename, 0) == -1) {
+    if (sic->nb_inputs > 1 && strlen(sic->filename) > 0 && get_frame_filename(tmp, sizeof(tmp), sic->filename, 0) < 0) {
         av_log(ctx, AV_LOG_ERROR, "The filename must contain %%d or %%0nd, if you have more than one input.\n");
         return AVERROR(EINVAL);
     }
