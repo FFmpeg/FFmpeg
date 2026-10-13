@@ -97,22 +97,19 @@ static av_cold int init(AVFilterContext *ctx)
 {
     AudioLimiterContext *s = ctx->priv;
 
-    s->attack   /= 1000.;
-    s->release  /= 1000.;
     s->att       = 1.;
     s->asc_pos   = -1;
-    s->asc_coeff = pow(0.5, s->asc_coeff - 0.5) * 2 * -1;
 
     return 0;
 }
 
-static double get_rdelta(AudioLimiterContext *s, double release, int sample_rate,
+static double get_rdelta(AudioLimiterContext *s, double release, double asc_coeff, int sample_rate,
                          double peak, double limit, double patt, int asc)
 {
     double rdelta = (1.0 - patt) / (sample_rate * release);
 
     if (asc && s->auto_release && s->asc_c > 0) {
-        double a_att = limit / (s->asc_coeff * s->asc) * (double)s->asc_c;
+        double a_att = limit / (asc_coeff * s->asc) * (double)s->asc_c;
 
         if (a_att > patt) {
             double delta = FFMAX((a_att - patt) / (sample_rate * release), rdelta / 10);
@@ -134,7 +131,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     const int channels = inlink->ch_layout.nb_channels;
     const int buffer_size = s->buffer_size;
     double *dst, *buffer = s->buffer;
-    const double release = s->release;
+    const double release = s->release / 1000.;
+    const double asc_coeff = pow(0.5, s->asc_coeff - 0.5) * 2 * -1;
     const double limit = s->limit;
     double *nextdelta = s->nextdelta;
     double level = s->auto_level ? 1 / limit : 1;
@@ -179,7 +177,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
         if (peak > limit) {
             double patt = FFMIN(limit / peak, 1.);
-            double rdelta = get_rdelta(s, release, inlink->sample_rate,
+            double rdelta = get_rdelta(s, release, asc_coeff, inlink->sample_rate,
                                        peak, limit, patt, 0);
             double delta = (limit / peak - s->att) / buffer_size * channels;
             int found = 0;
@@ -240,7 +238,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
         if ((s->pos + channels) % buffer_size == nextpos[s->nextiter]) {
             if (s->auto_release) {
-                s->delta = get_rdelta(s, release, inlink->sample_rate,
+                s->delta = get_rdelta(s, release, asc_coeff, inlink->sample_rate,
                                       peak, limit, s->att, 1);
                 if (s->nextlen > 1) {
                     double ppeak = 0, pdelta;
@@ -373,7 +371,7 @@ static int config_input(AVFilterLink *inlink)
         return AVERROR(ENOMEM);
 
     memset(s->nextpos, -1, obuffer_size * sizeof(*s->nextpos));
-    s->buffer_size = inlink->sample_rate * s->attack * inlink->ch_layout.nb_channels;
+    s->buffer_size = inlink->sample_rate * (s->attack / 1000.) * inlink->ch_layout.nb_channels;
     s->buffer_size -= s->buffer_size % inlink->ch_layout.nb_channels;
     if (s->latency)
         s->in_trim = s->out_pad = s->buffer_size / inlink->ch_layout.nb_channels - 1;
