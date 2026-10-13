@@ -44,6 +44,11 @@ typedef struct MediaCodecDecContext {
 
     FFAMediaCodec *codec;
     FFAMediaFormat *format;
+    /* Set once the codec has signalled an output format or produced output.
+     * Until then format is the one set up at configure time and its stream
+     * info is not applied.
+     */
+    bool has_output_format;
 
     void *surface;
 

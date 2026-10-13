@@ -597,6 +597,17 @@ static int mediacodec_dec_parse_video_format(AVCodecContext *avctx, MediaCodecDe
         goto fail;
     }
 
+    /* Until the codec signals a format change, the output format is the one
+     * set up by configure(), before the codec has seen any input. Its crop
+     * rectangle, display size and color description do not describe the
+     * stream, so keep the values set by the caller. The fields above
+     * describe the configured output buffers and always apply.
+     */
+    if (!s->has_output_format) {
+        av_freep(&format);
+        return 0;
+    }
+
     /* Optional fields */
     AMEDIAFORMAT_GET_INT32(s->crop_top,    "crop-top",    0);
     AMEDIAFORMAT_GET_INT32(s->crop_bottom, "crop-bottom", 0);
@@ -1028,6 +1039,19 @@ int ff_mediacodec_dec_receive(AVCodecContext *avctx, MediaCodecDecContext *s,
         }
 
         if (info.size) {
+            if (s->format && !s->has_output_format) {
+                /* No format change preceded the first output buffer, so the
+                 * initial output format describes the decoded frames. Only
+                 * video fetches that format at init.
+                 */
+                s->has_output_format = true;
+                if ((ret = mediacodec_dec_parse_format(avctx, s)) < 0) {
+                    av_log(avctx, AV_LOG_ERROR, "Failed to parse output format\n");
+                    ff_AMediaCodec_releaseOutputBuffer(codec, index, 0);
+                    return ret;
+                }
+            }
+
             if (s->surface) {
                 if ((ret = mediacodec_wrap_hw_buffer(avctx, s, index, &info, frame)) < 0) {
                     av_log(avctx, AV_LOG_ERROR, "Failed to wrap MediaCodec buffer\n");
@@ -1066,6 +1090,7 @@ int ff_mediacodec_dec_receive(AVCodecContext *avctx, MediaCodecDecContext *s,
         }
 
         s->format = ff_AMediaCodec_getOutputFormat(codec);
+        s->has_output_format = true;
         if (!s->format) {
             av_log(avctx, AV_LOG_ERROR, "Failed to get output format\n");
             return AVERROR_EXTERNAL;
