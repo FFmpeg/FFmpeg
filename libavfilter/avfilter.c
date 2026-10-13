@@ -1596,6 +1596,8 @@ int ff_inlink_make_frame_writable(AVFilterLink *link, AVFrame **rframe)
 
     switch (link->type) {
     case AVMEDIA_TYPE_VIDEO:
+        if (frame->format != link->format)
+            return av_frame_make_writable(frame);
         out = ff_get_video_buffer(link, frame->width, frame->height);
         break;
     case AVMEDIA_TYPE_AUDIO:
