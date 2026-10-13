@@ -337,9 +337,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
                 scan_w = s->x2 - s->x1;
                 scan_h = s->y2 - s->y1;
 
-#define FIND_EDGE(DST, FROM, NOEND, INC, STEP0, STEP1, LEN)             \
+#define FIND_EDGE(DST, FROM, NOEND, INC, BASE, STEP0, STEP1, LEN)       \
     for (last_y = y = FROM; NOEND; y = y INC) {                         \
-        if (checkline_edge(ctx, tmpbuf + STEP0 * y, STEP1, LEN)) {      \
+        if (checkline_edge(ctx, BASE + STEP0 * y, STEP1, LEN)) {        \
             if (last_y INC == y) {                                      \
                 DST = y;                                                \
                 break;                                                  \
@@ -351,10 +351,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         DST = y -(INC);                                                 \
     }
 
-                FIND_EDGE(s->y1, s->y1, y >=  0, -1, inw, 1, scan_w);
-                FIND_EDGE(s->y2, s->y2, y < inh, +1, inw, 1, scan_w);
-                FIND_EDGE(s->x1, s->x1, y >=  0, -1, 1, inw, scan_h);
-                FIND_EDGE(s->x2, s->x2, y < inw, +1, 1, inw, scan_h);
+                const uint8_t *rows = tmpbuf + s->x1;
+                const uint8_t *cols = tmpbuf + s->y1 * inw;
+                FIND_EDGE(s->y1, s->y1, y >=  0, -1, rows, inw, 1, scan_w);
+                FIND_EDGE(s->y2, s->y2, y < inh, +1, rows, inw, 1, scan_w);
+                FIND_EDGE(s->x1, s->x1, y >=  0, -1, cols, 1, inw, scan_h);
+                FIND_EDGE(s->x2, s->x2, y < inw, +1, cols, 1, inw, scan_h);
 
                 // queue bboxes
                 bboff = (s->frame_nb - 1) % s->window_size;
