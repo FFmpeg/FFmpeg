@@ -76,6 +76,8 @@ static const AVOption atadenoise_options[] = {
     { "1b", "set threshold B for 2nd plane", OFFSET(fthrb[1]), AV_OPT_TYPE_FLOAT, {.dbl=0.04}, 0, 5.0, FLAGS },
     { "2a", "set threshold A for 3rd plane", OFFSET(fthra[2]), AV_OPT_TYPE_FLOAT, {.dbl=0.02}, 0, 0.3, FLAGS },
     { "2b", "set threshold B for 3rd plane", OFFSET(fthrb[2]), AV_OPT_TYPE_FLOAT, {.dbl=0.04}, 0, 5.0, FLAGS },
+    { "3a", "set threshold A for 4th plane", OFFSET(fthra[3]), AV_OPT_TYPE_FLOAT, {.dbl=0.02}, 0, 0.3, FLAGS },
+    { "3b", "set threshold B for 4th plane", OFFSET(fthrb[3]), AV_OPT_TYPE_FLOAT, {.dbl=0.04}, 0, 5.0, FLAGS },
     { "s",  "set how many frames to use",    OFFSET(size),     AV_OPT_TYPE_INT,   {.i64=9},   5, SIZE, VF    },
     { "p",  "set what planes to filter",     OFFSET(planes),   AV_OPT_TYPE_FLAGS, {.i64=7},    0, 15,  FLAGS },
     { "a",  "set variant of algorithm",      OFFSET(algorithm),AV_OPT_TYPE_INT,   {.i64=PARALLEL},  0, NB_ATAA-1, FLAGS, .unit = "a" },
@@ -84,6 +86,7 @@ static const AVOption atadenoise_options[] = {
     { "0s", "set sigma for 1st plane",       OFFSET(sigma[0]), AV_OPT_TYPE_FLOAT, {.dbl=INT16_MAX}, 0, INT16_MAX, FLAGS },
     { "1s", "set sigma for 2nd plane",       OFFSET(sigma[1]), AV_OPT_TYPE_FLOAT, {.dbl=INT16_MAX}, 0, INT16_MAX, FLAGS },
     { "2s", "set sigma for 3rd plane",       OFFSET(sigma[2]), AV_OPT_TYPE_FLOAT, {.dbl=INT16_MAX}, 0, INT16_MAX, FLAGS },
+    { "3s", "set sigma for 4th plane",       OFFSET(sigma[3]), AV_OPT_TYPE_FLOAT, {.dbl=INT16_MAX}, 0, INT16_MAX, FLAGS },
     { NULL }
 };
 
@@ -409,15 +412,11 @@ static int config_input(AVFilterLink *inlink)
             s->dsp.filter_row[p] = s->algorithm == PARALLEL ? fweight_row16 : fweight_row16_serial;
     }
 
-    s->thra[0] = s->fthra[0] * (1 << depth) - 1;
-    s->thra[1] = s->fthra[1] * (1 << depth) - 1;
-    s->thra[2] = s->fthra[2] * (1 << depth) - 1;
-    s->thrb[0] = s->fthrb[0] * (1 << depth) - 1;
-    s->thrb[1] = s->fthrb[1] * (1 << depth) - 1;
-    s->thrb[2] = s->fthrb[2] * (1 << depth) - 1;
-
     for (int p = 0; p < s->nb_planes; p++) {
         float sigma = s->radius * s->sigma[p];
+
+        s->thra[p] = s->fthra[p] * (1 << depth) - 1;
+        s->thrb[p] = s->fthrb[p] * (1 << depth) - 1;
 
         s->weights[p][s->radius] = 1.f;
         for (int n = 1; n <= s->radius; n++) {
@@ -473,12 +472,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
         for (i = 0; i < s->size; i++) {
             AVFrame *frame = ff_bufqueue_peek(&s->q, i);
 
-            s->data[0][i] = frame->data[0];
-            s->data[1][i] = frame->data[1];
-            s->data[2][i] = frame->data[2];
-            s->linesize[0][i] = frame->linesize[0];
-            s->linesize[1][i] = frame->linesize[1];
-            s->linesize[2][i] = frame->linesize[2];
+            for (int p = 0; p < s->nb_planes; p++) {
+                s->data[p][i] = frame->data[p];
+                s->linesize[p][i] = frame->linesize[p];
+            }
         }
 
         td.in = in; td.out = out;
