@@ -1593,18 +1593,20 @@ static int chapter_list_render(VideoState *is)
 }
 
 /* shows the list with the chapter selected, or with the selection kept when no row shows it */
-static void chapter_list_show(VideoState *is, int chapter)
+static int chapter_list_show(VideoState *is, int chapter)
 {
     int64_t now = av_gettime_relative();
+    int ret = renderer ? chapter_list_update_rows(is) : AVERROR(EINVAL);
 
-    if (!renderer || chapter_list_update_rows(is) < 0)
-        return;
+    if (ret < 0)
+        return ret;
     for (int row = 0; row < is->nb_chapter_rows; row++)
         if (is->chapter_rows[row].index == chapter)
             is->chapter_selected = row;
     is->chapter_fade_start = now - chapter_list_alpha(is, now) * CHAPTER_LIST_FADE_TIME;
     is->chapter_last_input = now;
-    chapter_list_render(is);
+    is->chapter_render_pending = 1;
+    return 0;
 }
 
 static void chapter_list_move(VideoState *is, int delta)
@@ -1615,7 +1617,7 @@ static void chapter_list_move(VideoState *is, int delta)
 
 static int chapter_list_visible(VideoState *is)
 {
-    return chapter_list_alpha(is, av_gettime_relative()) > 0;
+    return is->chapter_pinned || chapter_list_alpha(is, av_gettime_relative()) > 0;
 }
 
 /* appends the typed text to the search, or erases its last character when nothing was typed */
@@ -1632,7 +1634,7 @@ static void chapter_list_search(VideoState *is, const char *typed)
         is->chapter_search[len] = 0;
     }
     chapter_list_update_rows(is);
-    chapter_list_render(is);
+    is->chapter_render_pending = 1;
 }
 
 static void chapter_list_pin(VideoState *is, int pinned)
@@ -1641,8 +1643,7 @@ static void chapter_list_pin(VideoState *is, int pinned)
         return;
     is->chapter_pinned = pinned;
     if (pinned) {
-        chapter_list_show(is, current_chapter(is));
-        is->chapter_pinned = !!is->chapter_bitmap;
+        is->chapter_pinned = chapter_list_show(is, current_chapter(is)) >= 0;
         if (is->chapter_pinned)
             SDL_StartTextInput();
     } else {
@@ -1650,7 +1651,7 @@ static void chapter_list_pin(VideoState *is, int pinned)
         is->chapter_last_input = av_gettime_relative() - CHAPTER_LIST_HOLD_TIME;
         is->chapter_search[0] = 0;
         chapter_list_update_rows(is);
-        chapter_list_render(is);
+        is->chapter_render_pending = 1;
     }
 }
 
@@ -4657,7 +4658,7 @@ static void event_loop(VideoState *cur_stream)
                         cur_stream->vis_texture = NULL;
                     }
                     if (cur_stream->chapter_bitmap)
-                        chapter_list_render(cur_stream);
+                        cur_stream->chapter_render_pending = 1;
                     if (vk_renderer)
                         vk_renderer_resize(vk_renderer, screen_width, screen_height);
                     av_fallthrough;
