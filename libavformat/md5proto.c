@@ -62,6 +62,7 @@ static int md5_close(URLContext *h)
     int err = 0;
 
     av_md5_final(c->md5, md5);
+    av_freep(&c->md5);
     ff_data_to_hex(buf, md5, sizeof(md5), 1);
     buf[2 * sizeof(md5)] = '\n';
 
@@ -79,8 +80,6 @@ static int md5_close(URLContext *h)
         if (fwrite(buf, 1, sizeof(buf), stdout) < sizeof(buf))
             err = AVERROR(errno);
     }
-
-    av_freep(&c->md5);
 
     return err;
 }
