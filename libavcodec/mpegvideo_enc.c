@@ -1969,7 +1969,7 @@ vbv_retry:
             pkt->size = avctx->internal->byte_buffer_size;
         }
         if (ret < 0)
-            return -1;
+            return ret;
 
         frame_end(m);
 
