@@ -155,15 +155,19 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 
     long int layer;
     int text_len;
-    char *p = pkt->data;
+    char *text = av_strndup(pkt->data, pkt->size);
+    char *p = text;
     int64_t start = pkt->pts;
     int64_t end   = start + pkt->duration;
     int hh1, mm1, ss1, ms1;
     int hh2, mm2, ss2, ms2;
     DialogueLine *dialogue = av_mallocz(sizeof(*dialogue));
 
-    if (!dialogue)
+    if (!text || !dialogue) {
+        av_free(text);
+        av_free(dialogue);
         return AVERROR(ENOMEM);
+    }
 
     dialogue->readorder = strtol(p, &p, 10);
     if (dialogue->readorder < ass->expected_readorder)
@@ -192,6 +196,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     dialogue->line = av_asprintf("%s%ld,%d:%02d:%02d.%02d,%d:%02d:%02d.%02d,%.*s",
                                  ass->ssa_mode ? "Marked=" : "",
                                  layer, hh1, mm1, ss1, ms1, hh2, mm2, ss2, ms2, text_len, p);
+    av_free(text);
     if (!dialogue->line) {
         av_free(dialogue);
         return AVERROR(ENOMEM);
