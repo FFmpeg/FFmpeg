@@ -1760,8 +1760,7 @@ static int do_llnw_auth(RTMPContext *rt, const char *user, const char *nonce)
     av_md5_init(md5);
     av_md5_update(md5, hashstr1, strlen(hashstr1));
     av_md5_update(md5, ":", 1);
-    if (nonce)
-        av_md5_update(md5, nonce, strlen(nonce));
+    av_md5_update(md5, nonce, strlen(nonce));
     av_md5_update(md5, ":", 1);
     av_md5_update(md5, nc, strlen(nc));
     av_md5_update(md5, ":", 1);
@@ -1864,6 +1863,10 @@ static int handle_connect_error(URLContext *s, const char *desc)
         if ((ret = do_adobe_auth(rt, user, salt, opaque, challenge)) < 0)
             return ret;
     } else {
+        if (!nonce) {
+            av_log(s, AV_LOG_ERROR, "No nonce in the llnw authentication challenge\n");
+            return AVERROR_UNKNOWN;
+        }
         if ((ret = do_llnw_auth(rt, user, nonce)) < 0)
             return ret;
     }
