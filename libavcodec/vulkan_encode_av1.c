@@ -188,6 +188,7 @@ static int init_pic_params(AVCodecContext *avctx, FFHWBaseEncodePicture *pic,
 
     uint32_t ref_name_mask = 0x0;
     int name_slots[STD_VIDEO_AV1_REFS_PER_FRAME];
+    int name;
 
     StdVideoAV1Segmentation *segmentation = &ap->segmentation;
     StdVideoAV1LoopFilter  *loop_filter = &ap->loop_filter;
@@ -397,10 +398,10 @@ static int init_pic_params(AVCodecContext *avctx, FFHWBaseEncodePicture *pic,
             }
             ref = pic->refs[0][pic->nb_refs[0] - 2];
             ap_ref = ref->codec_priv;
-            ap->av1pic_info.ref_frame_idx[3] = ap_ref->slot;
             ap->av1pic_info.ref_order_hint[ap_ref->slot] = ref->display_order - ap_ref->last_idr_frame;
-//            vpic->ref_frame_ctrl_l0.fields.search_idx1 = AV1_REF_FRAME_GOLDEN;
-            set_name_slot(ap_ref->av1pic_info.current_frame_id, name_slots, ref_name_mask, 0);
+            /* The header must name the same reference the encoder uses for it. */
+            name = set_name_slot(ap_ref->av1pic_info.current_frame_id, name_slots, ref_name_mask, 0);
+            ap->av1pic_info.ref_frame_idx[name] = ap_ref->slot;
         }
         break;
     case FF_HW_PICTURE_TYPE_B:
