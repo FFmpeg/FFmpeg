@@ -350,8 +350,10 @@ static int activate(AVFilterContext *ctx)
         }
 
         ret = send_frame(inlink, in);
-        if (ret < 0)
+        if (ret < 0) {
+            av_frame_free(&in);
             return ret;
+        }
     }
 
     out = ff_get_video_buffer(outlink, lcevc->w, lcevc->h);
