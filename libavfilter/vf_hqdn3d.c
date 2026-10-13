@@ -254,6 +254,7 @@ static int config_input(AVFilterLink *inlink)
     int i, depth;
 
     uninit(inlink->dst);
+    s->width = 0;
 
     s->hsub  = desc->log2_chroma_w;
     s->vsub  = desc->log2_chroma_h;
