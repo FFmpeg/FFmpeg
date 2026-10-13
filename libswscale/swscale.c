@@ -1232,8 +1232,7 @@ static int frame_alloc_buffers(SwsContext *sws, AVFrame *frame)
     FFFramePool *pool = &c->frame_pool;
 
     av_assert0(!frame->hw_frames_ctx);
-    const int nb_planes = av_pix_fmt_count_planes(frame->format);
-    for (int i = 0; i < nb_planes; i++) {
+    for (int i = 0; i < 4 && pool->pools[i]; i++) {
         frame->linesize[i] = pool->linesize[i];
         frame->buf[i] = av_buffer_pool_get(pool->pools[i]);
         if (!frame->buf[i]) {
