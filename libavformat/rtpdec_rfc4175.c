@@ -216,7 +216,7 @@ fail:
 static int rfc4175_finalize_packet(PayloadContext *data, AVPacket *pkt,
                                    int stream_index)
 {
-    int ret = 0;
+    int ret = AVERROR(EAGAIN);
 
     pkt->stream_index = stream_index;
     if (!data->interlaced || data->field) {
