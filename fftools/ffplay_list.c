@@ -16,23 +16,25 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
+
 #include <limits.h>
 #include <string.h>
 
+#if CONFIG_LIBASS
+#include <ass/ass.h>
+#endif
+
 #include "libavutil/avstring.h"
+#include "libavutil/avutil.h"
 #include "libavutil/bprint.h"
 #include "libavutil/common.h"
 #include "libavutil/error.h"
-#include "libavutil/frame.h"
 #include "libavutil/log.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/mem.h"
-#include "libavutil/opt.h"
-#include "libavutil/pixdesc.h"
 #include "libavutil/qsort.h"
 #include "libavutil/time.h"
-#include "libavfilter/avfilter.h"
-#include "libavfilter/buffersink.h"
 
 #include "ffplay_list.h"
 
@@ -65,7 +67,7 @@ typedef struct ListHit {
 /* a strip rendered once, kept while it may be shown again */
 typedef struct ListCacheEntry {
     char *script;
-    const char *background;
+    uint32_t background;
     int x, w, h;
     uint8_t *pixels;
     unsigned last_used;
@@ -83,8 +85,10 @@ struct ListView {
     SDL_Rect dirty;
     uint8_t *bitmap;
     SDL_Rect rect;
-    AVFilterGraph *graph;
-    AVFilterContext *sink;
+#if CONFIG_LIBASS
+    ASS_Library *library;
+    ASS_Renderer *ass;
+#endif
     ListStrip *strips;
     int nb_strips;
     ListCacheEntry **cache;
@@ -111,7 +115,7 @@ struct ListView {
     /* the columns the list is sorted by, the most recently clicked first */
     ListSortKey sort[LIST_SORT_NB];
     int shuffle_seed;
-    int filter_missing_reported;
+    int libass_missing_reported;
 };
 
 static double list_alpha(const ListView *lv, int64_t now)
@@ -312,10 +316,10 @@ static void bprint_ring(AVBPrint *script, int cx, int cy, int r)
                r - k, 2 * r, r + k, r);
 }
 
-/* strip backgrounds, with premultiplied alpha as the ass filter composites */
-static const char panel_color[] = "0x000000BF";
-static const char hover_color[] = "0x373737CD";
-static const char popup_color[] = "0x000000DF";
+/* strip backgrounds as ARGB */
+#define PANEL_COLOR 0xBF000000
+#define HOVER_COLOR 0xCD444444
+#define POPUP_COLOR 0xDF000000
 
 static void bprint_styles(AVBPrint *script, const ListLayout *l)
 {
@@ -412,7 +416,7 @@ static void cache_make_room(ListView *lv, size_t bytes)
 static int strip_render(ListView *lv, ListCacheEntry *entry);
 
 /* the cached strip for the script, background and place, rendered when there is none */
-static int cache_get(ListView *lv, const SDL_Rect *rect, const char *background, const AVBPrint *script, ListCacheEntry **entry)
+static int cache_get(ListView *lv, const SDL_Rect *rect, uint32_t background, const AVBPrint *script, ListCacheEntry **entry)
 {
     int ret;
 
@@ -448,7 +452,7 @@ static int cache_get(ListView *lv, const SDL_Rect *rect, const char *background,
     return 0;
 }
 
-static int strip_add(ListView *lv, ListStrip **strips, int *nb, SDL_Rect rect, const char *background, const AVBPrint *script)
+static int strip_add(ListView *lv, ListStrip **strips, int *nb, SDL_Rect rect, uint32_t background, const AVBPrint *script)
 {
     int ret;
 
@@ -491,7 +495,7 @@ static int list_strips(ListView *lv, const ListLayout *l, ListStrip **strips, in
             bprint_header_strip(lv, &script, l);
         else if (row >= 0)
             bprint_row_strip(lv, &script, l, row);
-        ret = strip_add(lv, strips, nb, rect, row >= 0 && row == lv->hover.row ? hover_color : panel_color, &script);
+        ret = strip_add(lv, strips, nb, rect, row >= 0 && row == lv->hover.row ? HOVER_COLOR : PANEL_COLOR, &script);
     }
     if (ret >= 0 && lv->hover.detail) {
         const AVDictionary *metadata = lv->entries[lv->rows[lv->hover.row]].metadata;
@@ -517,7 +521,7 @@ static int list_strips(ListView *lv, const ListLayout *l, ListStrip **strips, in
                 bprint_cell(&script, "Detail", x + l->font * 15 / 2, l->font / 4 + (i - 1) * l->font, right - l->font / 4,
                             rect.h, lines[i]->value);
             }
-            ret   = strip_add(lv, strips, nb, rect, popup_color, &script);
+            ret   = strip_add(lv, strips, nb, rect, POPUP_COLOR, &script);
             above = tag;
             tag   = tag ? av_dict_iterate(metadata, tag) : NULL;
         }
@@ -528,7 +532,6 @@ static int list_strips(ListView *lv, const ListLayout *l, ListStrip **strips, in
 
 static void list_discard(ListView *lv)
 {
-    avfilter_graph_free(&lv->graph);
     av_freep(&lv->bitmap);
     av_freep(&lv->strips);
     lv->nb_strips = 0;
@@ -542,75 +545,106 @@ static void list_discard(ListView *lv)
     lv->texture = NULL;
 }
 
-/* a graph rendering one strip of the bitmap at a time, the bitmap itself and the texture it is uploaded to */
+#if CONFIG_LIBASS
+static void libass_log(int libass_level, const char *fmt, va_list args, void *opaque)
+{
+    static const int levels[] = { AV_LOG_FATAL, AV_LOG_ERROR, AV_LOG_WARNING, AV_LOG_WARNING,
+                                  AV_LOG_VERBOSE, AV_LOG_VERBOSE, AV_LOG_DEBUG, AV_LOG_TRACE };
+    int level = levels[av_clip(libass_level, 0, FF_ARRAY_ELEMS(levels) - 1)];
+
+    av_vlog(NULL, level, fmt, args);
+    av_log(NULL, level, "\n");
+}
+#endif
+
+/* the bitmap, the texture it is uploaded to, and libass rendering a canvas wide strip at a time */
 static int list_configure(ListView *lv, const ListLayout *l, const SDL_Rect *canvas)
 {
-    const AVFilter *ass_filter = avfilter_get_by_name("ass");
-    AVFilterContext *source, *ass;
-    char source_args[64];
-    int ret;
-
-    if (!ass_filter) {
-        if (!lv->filter_missing_reported++)
-            av_log(NULL, AV_LOG_ERROR, "The chapter list needs the ass filter, which this build lacks\n");
-        return AVERROR_FILTER_NOT_FOUND;
-    }
+#if CONFIG_LIBASS
     list_discard(lv);
     lv->rect = *canvas;
     if (l->canvas_w <= 0 || l->canvas_h <= 0 || l->canvas_w > INT_MAX / 4 / l->canvas_h)
         return AVERROR(EINVAL);
-    if (!(lv->graph = avfilter_graph_alloc()) ||
-        !(lv->bitmap = av_mallocz(l->canvas_w * l->canvas_h * 4)))
+    if (!(lv->bitmap = av_mallocz(l->canvas_w * l->canvas_h * 4)))
         return AVERROR(ENOMEM);
     if (!(lv->texture = SDL_CreateTexture(lv->renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING,
                                           l->canvas_w, l->canvas_h)) ||
         SDL_SetTextureBlendMode(lv->texture, SDL_BLENDMODE_BLEND) < 0)
         return AVERROR_EXTERNAL;
     lv->dirty = (SDL_Rect){ 0, 0, l->canvas_w, l->canvas_h };
-    snprintf(source_args, sizeof(source_args), "color=black@0:rate=1:size=%dx%d", l->canvas_w, l->strip_h);
-    ass      = avfilter_graph_alloc_filter(lv->graph, ass_filter, "ass");
-    lv->sink = avfilter_graph_alloc_filter(lv->graph, avfilter_get_by_name("buffersink"), "sink");
-    if (!ass || !lv->sink)
-        return AVERROR(ENOMEM);
-    if ((ret = avfilter_graph_create_filter(&source, avfilter_get_by_name("color"), "source", source_args, NULL, lv->graph)) < 0 ||
-        (ret = av_opt_set(ass, "script", "[Script Info]\nScriptType: v4.00+\n", AV_OPT_SEARCH_CHILDREN)) < 0 ||
-        (ret = av_opt_set_int(ass, "alpha", 1, AV_OPT_SEARCH_CHILDREN)) < 0 ||
-        (ret = avfilter_init_str(ass, NULL)) < 0 ||
-        (ret = av_opt_set_array(lv->sink, "pixel_formats", AV_OPT_SEARCH_CHILDREN, 0, 1, AV_OPT_TYPE_PIXEL_FMT,
-                                &(enum AVPixelFormat){ AV_PIX_FMT_RGB32 })) < 0 ||
-        (ret = avfilter_init_str(lv->sink, NULL)) < 0 ||
-        (ret = avfilter_link(source, 0, ass, 0)) < 0 ||
-        (ret = avfilter_link(ass, 0, lv->sink, 0)) < 0)
-        return ret;
-    return avfilter_graph_config(lv->graph, NULL);
+    if (!lv->library) {
+        if (!(lv->library = ass_library_init()))
+            return AVERROR(ENOMEM);
+        ass_set_message_cb(lv->library, libass_log, NULL);
+        ass_set_extract_fonts(lv->library, 1);
+        if (!(lv->ass = ass_renderer_init(lv->library))) {
+            ass_library_done(lv->library);
+            lv->library = NULL;
+            return AVERROR(ENOMEM);
+        }
+        ass_set_fonts(lv->ass, NULL, NULL, 1, NULL, 1);
+    }
+    ass_set_frame_size(lv->ass, l->canvas_w, l->strip_h);
+    ass_set_storage_size(lv->ass, l->canvas_w, l->strip_h);
+    return 0;
+#else
+    if (!lv->libass_missing_reported++)
+        av_log(NULL, AV_LOG_ERROR, "The chapter list needs libass, which this build lacks\n");
+    return AVERROR(ENOSYS);
+#endif
 }
 
-/* renders the strip, the ass filter composing it over its background */
+#if CONFIG_LIBASS
+/* the color with opacity a over the pixel, both ARGB, using the 16.16 reciprocals of the alpha values */
+static uint32_t blend_over(uint32_t dst, uint32_t rgb, int a, const uint32_t *reciprocal)
+{
+    int dst_a = dst >> 24, out_a = a + (dst_a * (255 - a) + 127) / 255;
+    uint32_t out = (uint32_t)out_a << 24;
+
+    for (int shift = 0; shift < 24; shift += 8) {
+        int premultiplied = ((rgb >> shift & 0xFF) * a * 255 + (dst >> shift & 0xFF) * dst_a * (255 - a) + 255 * 127) / (255 * 255);
+
+        out |= FFMIN(premultiplied * reciprocal[out_a] >> 16, 255) << shift;
+    }
+    return out;
+}
+#endif
+
+/* renders the strip over its background */
 static int strip_render(ListView *lv, ListCacheEntry *entry)
 {
-    AVFrame *frame = av_frame_alloc();
-    int alpha = av_pix_fmt_desc_get(AV_PIX_FMT_RGB32)->comp[3].offset;
-    uint32_t scale[256] = { 1 << 16 };
-    int ret;
+#if CONFIG_LIBASS
+    ASS_Track *track = ass_read_memory(lv->library, entry->script, strlen(entry->script), NULL);
+    uint32_t *pixels = (uint32_t *)entry->pixels, reciprocal[256] = { 1 << 16 };
+    int w = entry->w, h = entry->h;
 
-    if (!frame)
-        return AVERROR(ENOMEM);
+    if (!track)
+        return AVERROR(EINVAL);
     for (int a = 1; a < 256; a++)
-        scale[a] = ((255 << 16) + a - 1) / a;
-    if ((ret = avfilter_graph_send_command(lv->graph, "source", "color", entry->background, NULL, 0, 0)) >= 0 &&
-        (ret = avfilter_graph_send_command(lv->graph, "ass", "script", entry->script, NULL, 0, 0)) >= 0)
-        ret = av_buffersink_get_frame(lv->sink, frame);
-    /* the ass filter composites with premultiplied alpha, SDL blends straight alpha */
-    for (int y = 0; ret >= 0 && y < entry->h; y++) {
-        const uint8_t *src = frame->data[0] + y * frame->linesize[0] + entry->x * 4;
-        uint8_t *dst = entry->pixels + y * entry->w * 4;
+        reciprocal[a] = ((255 << 16) + a - 1) / a;
+    for (int i = 0; i < w * h; i++)
+        pixels[i] = entry->background;
+    for (const ASS_Image *image = ass_render_frame(lv->ass, track, 0, NULL); image; image = image->next) {
+        int opacity = 255 - (image->color & 0xFF);
+        int x0 = FFMAX(image->dst_x, entry->x), x1 = FFMIN(image->dst_x + image->w, entry->x + w);
 
-        for (int x = 0; x < entry->w * 4; x += 4)
-            for (int c = 0; c < 4; c++)
-                dst[x + c] = c == alpha ? src[x + c] : FFMIN(src[x + c] * scale[src[x + alpha]] >> 16, 255);
+        for (int y = FFMAX(image->dst_y, 0); x0 < x1 && y < FFMIN(image->dst_y + image->h, h); y++) {
+            const uint8_t *coverage = image->bitmap + (y - image->dst_y) * image->stride + x0 - image->dst_x;
+            uint32_t *dst = pixels + y * w + x0 - entry->x;
+
+            for (int x = 0; x < x1 - x0; x++) {
+                int a = (opacity * coverage[x] + 127) / 255;
+
+                if (a)
+                    dst[x] = blend_over(dst[x], image->color >> 8, a, reciprocal);
+            }
+        }
     }
-    av_frame_free(&frame);
-    return ret;
+    ass_free_track(track);
+    return 0;
+#else
+    return AVERROR(ENOSYS);
+#endif
 }
 
 static void bitmap_touched(ListView *lv, const SDL_Rect *rect)
@@ -634,7 +668,7 @@ static int list_render(ListView *lv)
     lv->frame++;
     for (int i = 0; i < lv->nb_strips; i++)
         lv->strips[i].entry->last_used = lv->frame;
-    if (!lv->graph || !SDL_RectEquals(&lv->rect, &canvas))
+    if (!lv->bitmap || !SDL_RectEquals(&lv->rect, &canvas))
         ret = list_configure(lv, &l, &canvas);
     if (ret >= 0)
         ret = list_strips(lv, &l, &strips, &nb);
@@ -664,7 +698,7 @@ static int list_render(ListView *lv)
         bitmap_touched(lv, &dirty);
     }
     if (ret < 0) {
-        if (ret != AVERROR_FILTER_NOT_FOUND)
+        if (ret != AVERROR(ENOSYS))
             av_log(NULL, AV_LOG_ERROR, "Could not render the chapter list: %s\n", av_err2str(ret));
         list_discard(lv);
         av_freep(&strips);
@@ -728,6 +762,12 @@ void list_view_free(ListView **plv)
     if (!lv)
         return;
     list_discard(lv);
+#if CONFIG_LIBASS
+    if (lv->ass)
+        ass_renderer_done(lv->ass);
+    if (lv->library)
+        ass_library_done(lv->library);
+#endif
     av_freep(&lv->entries);
     av_freep(&lv->rows);
     av_freep(&lv->sort_tmp);
