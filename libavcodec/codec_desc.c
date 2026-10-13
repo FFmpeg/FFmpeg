@@ -623,7 +623,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .id        = AV_CODEC_ID_AVS,
         .type      = AVMEDIA_TYPE_VIDEO,
         .name      = "avs",
-        .long_name = NULL_IF_CONFIG_SMALL("AVS (Audio Video Standard) video"),
+        .long_name = NULL_IF_CONFIG_SMALL("Argonaut Games Creature Shock video"),
         .props     = AV_CODEC_PROP_LOSSY,
     },
     {

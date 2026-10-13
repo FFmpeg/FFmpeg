@@ -1011,6 +1011,8 @@ following image formats are supported:
 @item Apple QuickDraw        @tab     @tab  X
     @tab fourcc: qdrw
 @item APV                    @tab     @tab  X
+@item Argonaut Games Creature Shock video  @tab     @tab  X
+    @tab Video encoding used by the Creature Shock game.
 @item Argonaut Video         @tab     @tab  X
     @tab Used in some Argonaut games.
 @item Asus v1                @tab  X  @tab  X
@@ -1030,8 +1032,6 @@ following image formats are supported:
     @tab Supported through external libraries libaom, libdav1d, librav1e and libsvtav1
 @item Avid 1:1 10-bit RGB Packer  @tab  X  @tab  X
     @tab fourcc: AVrp
-@item AVS (Audio Video Standard) video  @tab     @tab  X
-    @tab Video encoding used by the Creature Shock game.
 @item AVS2-P2/IEEE1857.4     @tab  E  @tab  E
     @tab Supported through external libraries libxavs2 and libdavs2
 @item AVS3-P2/IEEE1857.10    @tab     @tab  E

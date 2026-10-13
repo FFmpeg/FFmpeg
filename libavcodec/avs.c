@@ -179,7 +179,7 @@ static av_cold int avs_decode_end(AVCodecContext *avctx)
 
 const FFCodec ff_avs_decoder = {
     .p.name         = "avs",
-    CODEC_LONG_NAME("AVS (Audio Video Standard) video"),
+    CODEC_LONG_NAME("Argonaut Games Creature Shock video"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_AVS,
     .priv_data_size = sizeof(AvsContext),
