@@ -453,6 +453,10 @@ static int init_pic_params(AVCodecContext *avctx, FFHWBaseEncodePicture *pic,
         .primaryReferenceCdfOnly = 0,
         .generateObuExtensionHeader = 0,
     };
+    /* With rate control on, the driver picks the quantiser; constantQIndex must be 0
+     * (VUID-vkCmdEncodeVideoKHR-constantQIndex-10320). */
+    if (ctx->opts.rc_mode != VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DISABLED_BIT_KHR)
+        ap->vkav1pic_info.constantQIndex = 0;
     encode_info->pNext = &ap->vkav1pic_info;
 
     for (int i = 0; i < FF_ARRAY_ELEMS(ap->vkav1pic_info.referenceNameSlotIndices); i++)
