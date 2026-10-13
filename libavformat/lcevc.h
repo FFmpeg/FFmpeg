@@ -27,11 +27,15 @@
 typedef struct LCEVCDecoderConfigurationRecord {
     uint8_t  profile_idc;
     uint8_t  level_idc;
+    uint8_t  sublevel_idc;
     uint8_t  chroma_format_idc;
     uint8_t  bit_depth_luma_minus8;
     uint8_t  bit_depth_chroma_minus8;
     uint32_t pic_width_in_luma_samples;
     uint32_t pic_height_in_luma_samples;
+    uint8_t  processed_planes_type_flag;
+    uint8_t  picture_type_bit_flag;
+    uint8_t  field_type_bit_flag;
 } LCEVCDecoderConfigurationRecord;
 
 int ff_isom_write_lvcc(AVIOContext *pb, const uint8_t *data, int len, void *logctx);

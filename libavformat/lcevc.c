@@ -89,6 +89,7 @@ static int write_nalu(LCEVCDecoderConfigurationRecord *lvcc, AVIOContext *pb,
 
             lvcc->profile_idc = get_bits(&gb, 4);
             lvcc->level_idc = get_bits(&gb, 4);
+            lvcc->sublevel_idc = get_bits(&gb, 2);
 
             avio_write(pb, raw_gbc.buffer, raw_block_size);
             nalu_length += raw_block_size;
@@ -96,12 +97,11 @@ static int write_nalu(LCEVCDecoderConfigurationRecord *lvcc, AVIOContext *pb,
             break;
         case 1: {
             int resolution_type, bit_depth;
-            int processed_planes_type_flag;
 
             if (gc)
                 break;
 
-            processed_planes_type_flag = get_bits1(&gb);
+            lvcc->processed_planes_type_flag = get_bits1(&gb);
             resolution_type = get_bits(&gb, 6);
 
             skip_bits1(&gb);
@@ -126,7 +126,7 @@ static int write_nalu(LCEVCDecoderConfigurationRecord *lvcc, AVIOContext *pb,
                 skip_bits(&gb, 4);
                 tile_dimensions_type = get_bits(&gb, 2);
                 skip_bits(&gb, 4);
-                if (processed_planes_type_flag)
+                if (lvcc->processed_planes_type_flag)
                     skip_bits(&gb, 4);
                 if (temporal_step_width_modifier_signalled_flag)
                     skip_bits(&gb, 8);
@@ -150,6 +150,19 @@ static int write_nalu(LCEVCDecoderConfigurationRecord *lvcc, AVIOContext *pb,
             avio_write(pb, raw_gbc.buffer, raw_block_size);
             nalu_length += raw_block_size;
             gc = 1;
+            break;
+        }
+        case 2: {
+            int no_enhancement_bit_flag = get_bits1(&gb);
+
+            skip_bits(&gb, 4);
+            lvcc->picture_type_bit_flag = get_bits1(&gb);
+            skip_bits(&gb, 2);
+
+            if (!no_enhancement_bit_flag)
+                skip_bits(&gb, 16);
+
+            lvcc->field_type_bit_flag = lvcc->picture_type_bit_flag ? get_bits1(&gb) : 0;
             break;
         }
         case 5:
