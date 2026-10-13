@@ -186,7 +186,7 @@ static int mbedtls_gen_x509_cert(mbedtls_pk_context *key, char *cert_buf, size_t
     ret = av_random_bytes((uint8_t *)serial, sizeof(serial));
     if (ret < 0) {
         av_log(NULL, AV_LOG_ERROR, "Failed to generate random serial number!\n");
-        return ret;
+        goto end;
     }
 
     if ((ret = mbedtls_x509write_crt_set_serial_raw(&crt, serial, sizeof(serial))) != 0) {
@@ -208,7 +208,7 @@ static int mbedtls_gen_x509_cert(mbedtls_pk_context *key, char *cert_buf, size_t
     if ((ret = mbedtls_x509write_crt_pem(&crt, cert_buf, cert_sz,
                                         mbedtls_ctr_drbg_random, &ctr_drbg)) != 0) {
         av_log(NULL, AV_LOG_ERROR, "mbedtls_x509write_crt_pem returned %d\n", ret);
-        return ret;
+        goto end;
     }
 
 end:
