@@ -99,7 +99,7 @@ static int h2645_ps_to_nalu(const uint8_t *src, int src_size, uint8_t **out, int
 
     /* Escape 0x00, 0x00, 0x0{0-3} pattern */
     for (i = 4; i < *out_size; i++) {
-        if (i < *out_size - 3 &&
+        if (i < *out_size - 2 &&
             p[i + 0] == 0 &&
             p[i + 1] == 0 &&
             p[i + 2] <= 3) {
