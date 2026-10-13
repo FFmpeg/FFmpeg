@@ -239,30 +239,36 @@ static int parse_features(AVFilterContext *ctx)
     }
 
     for (unsigned i = 0; i < dict_cnt; i++) {
-        char *feature_name = NULL;
+        const AVDictionaryEntry *name = av_dict_get(dict[i], "name", NULL,
+                                                    AV_DICT_MATCH_CASE);
         VmafFeatureDictionary *feature_opts_dict = NULL;
         const AVDictionaryEntry *e = NULL;
 
+        if (!name) {
+            av_log(ctx, AV_LOG_ERROR, "feature without a name: %s\n",
+                   s->feature_cfg);
+            err = AVERROR(EINVAL);
+            goto exit;
+        }
+
         while (e = av_dict_iterate(dict[i], e)) {
-            if (!strcmp(e->key, "name")) {
-                feature_name = e->value;
+            if (!strcmp(e->key, "name"))
                 continue;
-            }
 
             err = vmaf_feature_dictionary_set(&feature_opts_dict, e->key,
                                               e->value);
             if (err) {
                 av_log(ctx, AV_LOG_ERROR,
                        "could not set feature option: %s.%s=%s\n",
-                       feature_name, e->key, e->value);
+                       name->value, e->key, e->value);
                 goto exit;
             }
         }
 
-        err = vmaf_use_feature(s->vmaf, feature_name, feature_opts_dict);
+        err = vmaf_use_feature(s->vmaf, name->value, feature_opts_dict);
         if (err) {
             av_log(ctx, AV_LOG_ERROR,
-                   "problem during vmaf_use_feature: %s\n", feature_name);
+                   "problem during vmaf_use_feature: %s\n", name->value);
             goto exit;
         }
     }
