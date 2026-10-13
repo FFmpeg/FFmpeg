@@ -615,8 +615,7 @@ static int mediacodec_dec_parse_video_format(AVCodecContext *avctx, MediaCodecDe
     AMEDIAFORMAT_GET_INT32(s->crop_right,  "crop-right",  0);
 
     // Try "crop" for NDK
-    // MediaTek SOC return some default value like Rect(0, 0, 318, 238)
-    if (!(s->crop_right && s->crop_bottom) && s->use_ndk_codec && !strstr(s->codec_name, ".mtk."))
+    if (!(s->crop_right && s->crop_bottom) && s->use_ndk_codec)
         ff_AMediaFormat_getRect(s->format, "crop", &s->crop_left, &s->crop_top, &s->crop_right, &s->crop_bottom);
 
     if (s->crop_right && s->crop_bottom) {
