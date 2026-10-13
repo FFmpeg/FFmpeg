@@ -340,6 +340,7 @@ typedef struct VideoState {
     AVFilterContext *chapter_sink;
     ChapterStrip *chapter_strips;
     int nb_chapter_strips;
+    int chapter_first;
     ChapterRow *chapter_rows;
     int nb_chapter_rows;
     char chapter_search[64];
@@ -1542,6 +1543,47 @@ static void chapter_bitmap_touched(VideoState *is, const SDL_Rect *rect)
     is->force_refresh = 1;
 }
 
+/* moves the pixels and strips of the rows that stay visible when the list scrolls, so that only the rows scrolling in are
+ * rendered; rows the popup covered hold popup pixels and are rendered anew, as is that part of the popup */
+static void chapter_list_scroll(VideoState *is, const ChapterListLayout *l, const ChapterStrip *strips, int nb)
+{
+    int shift = is->chapter_first - l->first, kept = l->nb_rows - FFABS(shift);
+    SDL_Rect block = { 0, l->rows_y, l->width, l->nb_rows * l->line }, popup = { 0, 0, 0, 0 };
+
+    if (!shift || kept <= 0 || is->nb_chapter_strips <= l->nb_rows || nb <= l->nb_rows)
+        return;
+    ChapterStrip *rows = is->chapter_strips + 1;
+    for (int j = 0; j < l->nb_rows; j++) {
+        SDL_Rect slot = { 0, block.y + j * l->line, l->width, l->line };
+
+        if (!SDL_RectEquals(&rows[j].rect, &slot) || !SDL_RectEquals(&strips[j + 1].rect, &slot))
+            return;
+    }
+    for (int i = 0; i < is->nb_chapter_strips; i++) {
+        if (is->chapter_strips[i].background == chapter_popup_color && SDL_HasIntersection(&is->chapter_strips[i].rect, &block)) {
+            SDL_UnionRect(&popup, &is->chapter_strips[i].rect, &popup);
+            is->chapter_strips[i].background = NULL;
+        }
+    }
+    for (int j = 0; j < l->nb_rows; j++)
+        if (SDL_HasIntersection(&rows[j].rect, &popup))
+            rows[j].background = NULL;
+    for (int k = 0; k < kept * l->line; k++) {
+        int y = shift > 0 ? block.y + block.h - 1 - k : block.y + k;
+
+        memcpy(is->chapter_bitmap + y * is->chapter_rect.w * 4, is->chapter_bitmap + (y - shift * l->line) * is->chapter_rect.w * 4,
+               l->width * 4);
+    }
+    for (int j = 0; j < FFABS(shift); j++)
+        av_freep(&rows[shift > 0 ? kept + j : j].script);
+    memmove(rows + FFMAX(shift, 0), rows + FFMAX(-shift, 0), kept * sizeof(*rows));
+    for (int j = 0; j < FFABS(shift); j++)
+        rows[shift > 0 ? j : kept + j] = (ChapterStrip){ { 0 } };
+    for (int j = 0; j < l->nb_rows; j++)
+        rows[j].rect = strips[j + 1].rect;
+    chapter_bitmap_touched(is, &block);
+}
+
 /* brings the bitmap up to date, rendering only the strips whose content, place or background changed */
 static int chapter_list_render(VideoState *is)
 {
@@ -1556,6 +1598,8 @@ static int chapter_list_render(VideoState *is)
         ret = chapter_list_configure(is, &l, &canvas);
     if (ret >= 0)
         ret = chapter_list_strips(is, &l, &strips, &nb);
+    if (ret >= 0)
+        chapter_list_scroll(is, &l, strips, nb);
     /* what the strips no longer cover becomes transparent again; a strip is drawn anew when it changed or lies on what was
      * cleared or drawn before it */
     for (int i = 0; ret >= 0 && i < is->nb_chapter_strips; i++) {
@@ -1590,6 +1634,7 @@ static int chapter_list_render(VideoState *is)
     chapter_strips_free(&is->chapter_strips, &is->nb_chapter_strips);
     is->chapter_strips    = strips;
     is->nb_chapter_strips = nb;
+    is->chapter_first     = l.first;
     return ret;
 }
 
