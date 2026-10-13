@@ -50,6 +50,7 @@ typedef struct THModel {
     SafeQueue *request_queue;
     Queue *task_queue;
     Queue *lltask_queue;
+    int nb_requests;
 } THModel;
 
 typedef struct THInferRequest {
@@ -130,7 +131,7 @@ static void dnn_free_model_th(DNNModel **model)
     th_model = (THModel *)(*model);
 
     if (th_model->request_queue) {
-        ff_dnn_wait_requests(th_model->request_queue, th_model->ctx->nireq);
+        ff_dnn_wait_requests(th_model->request_queue, th_model->nb_requests);
         while (ff_safe_queue_size(th_model->request_queue) != 0) {
             THRequestItem *item = (THRequestItem *)ff_safe_queue_pop_front(th_model->request_queue);
             destroy_request_item(&item);
@@ -676,6 +677,7 @@ static DNNModel *dnn_load_model_th(DnnContext *ctx, DNNFunctionType func_type, A
         if (ff_safe_queue_push_back(th_model->request_queue, item) < 0) {
             goto fail;
         }
+        th_model->nb_requests++;
         item = NULL;
     }
 
