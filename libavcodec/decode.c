@@ -1669,14 +1669,14 @@ int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
         if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))
             return ret;
 
-        // force get_buffer2() to allocate the base frame using the same dimensions
-        // as the final enhanced frame, in order to prevent reinitializing the buffer
+        // force get_buffer2() to allocate the base frame with at least the dimensions
+        // of the final enhanced frame, in order to prevent reinitializing the buffer
         // pools unnecessarely
         if (!ret && dc->lcevc.width && dc->lcevc.height) {
             dc->lcevc.base_width  = frame->width;
             dc->lcevc.base_height = frame->height;
-            frame->width  = dc->lcevc.width;
-            frame->height = dc->lcevc.height;
+            frame->width  = FFMAX(frame->width,  dc->lcevc.width);
+            frame->height = FFMAX(frame->height, dc->lcevc.height);
         } else
             dc->lcevc.frame = 0;
     }
