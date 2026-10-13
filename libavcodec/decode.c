@@ -1019,7 +1019,7 @@ enum AVPixelFormat avcodec_default_get_format(struct AVCodecContext *avctx,
         AVHWDeviceContext *device_ctx =
             (AVHWDeviceContext*)avctx->hw_device_ctx->data;
         for (i = 0;; i++) {
-            config = &ffcodec(avctx->codec)->hw_configs[i]->public;
+            config = avcodec_get_hw_config(avctx->codec, i);
             if (!config)
                 break;
             if (!(config->methods &
