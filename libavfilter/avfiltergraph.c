@@ -1186,15 +1186,14 @@ static void swap_channel_layouts_on_filter(AVFilterContext *filter)
             continue;
 
         for (j = 0; j < outlink->incfg.channel_layouts->nb_channel_layouts; j++) {
-            AVChannelLayout in_chlayout = { 0 }, out_chlayout = { 0 };
+            AVChannelLayout  in_chlayout = link->outcfg.channel_layouts->channel_layouts[0];
+            AVChannelLayout out_chlayout = outlink->incfg.channel_layouts->channel_layouts[j];
             int  in_channels;
             int out_channels;
             int count_diff;
             int matched_channels, extra_channels;
             int score = 100000;
 
-            av_channel_layout_copy(&in_chlayout, &link->outcfg.channel_layouts->channel_layouts[0]);
-            av_channel_layout_copy(&out_chlayout, &outlink->incfg.channel_layouts->channel_layouts[j]);
             in_channels            = in_chlayout.nb_channels;
             out_channels           = out_chlayout.nb_channels;
             count_diff             = out_channels - in_channels;
@@ -1209,8 +1208,8 @@ static void swap_channel_layouts_on_filter(AVFilterContext *filter)
                     out_channels = FF_LAYOUT2COUNT(&out_chlayout);
                 score -= 10000 + FFABS(out_channels - in_channels) +
                          (in_channels > out_channels ? 10000 : 0);
-                av_channel_layout_uninit(&in_chlayout);
-                av_channel_layout_uninit(&out_chlayout);
+                in_chlayout  = (AVChannelLayout){ 0 };
+                out_chlayout = (AVChannelLayout){ 0 };
                 /* Let the remaining computation run, even if the score
                    value is not altered */
             }
