@@ -779,8 +779,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         int linesize = av_image_get_linesize(frame->format, frame->width, plane);
         int width = linesize >> (bitdepth > 8);
 
-        if (linesize < 0)
+        if (linesize < 0) {
+            av_frame_free(&frame);
             return linesize;
+        }
 
         for (i = 0; i < h; i++) {
             plane_checksum[plane] = av_adler32_update(plane_checksum[plane], data, linesize);
