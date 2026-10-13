@@ -233,8 +233,8 @@ PRED_PLANAR 32, 3
 %rep (%3) / 16
     FILTER_3TAP_16  %1, %2, %%i
 %if %%i == (%3) - 16
-    pxor            m1, m0                  ; last sample is copied, not
-    pand            m1, m4                  ; filtered; select it out of m1 as
+    pxor            m0, m1                  ; last sample is copied, not
+    pand            m0, m4                  ; filtered; select it out of m1 as
     pxor            m0, m1                  ; the dst has no room past it
 %endif
     movu  [%1 + %%i], m0
@@ -259,7 +259,7 @@ cglobal hevc_ref_filter_3tap_%1x%1_8, 4, 6, 5, fleft, ftop, left, top
 
     mova            m3, [pb_1]
     pcmpeqb         m4, m4
-    pslldq          m4, 15                  ; selects the copied last sample
+    psrldq          m4, 1                   ; clears the copied last sample
 
     FILTER_3TAP_ARRAY fleftq, leftq, %%n
     FILTER_3TAP_ARRAY  ftopq,  topq, %%n
