@@ -604,7 +604,8 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
     }
 
     /* Image is at s->buf_data[buf.index].start */
-    if (atomic_load(&s->buffers_queued) == FFMAX(s->buffers / 8, 1)) {
+    if (atomic_load(&s->buffers_queued) == FFMAX(s->buffers / 8, 1) ||
+        ctx->video_codec_id != AV_CODEC_ID_RAWVIDEO) {
         /* when we start getting low on queued buffers, fall back on copying data */
         res = av_new_packet(pkt, bytesused);
         if (res < 0) {
