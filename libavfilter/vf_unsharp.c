@@ -310,7 +310,7 @@ static int config_input(AVFilterLink *inlink)
     if (ret < 0)
         return ret;
 
-    return 0;
+    return init_filter_param(inlink->dst, &s->alpha, "alpha", inlink->w);
 }
 
 static void free_filter_param(UnsharpFilterParam *fp, int nb_threads)
@@ -331,6 +331,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     free_filter_param(&s->luma, s->nb_threads);
     free_filter_param(&s->chroma, s->nb_threads);
+    free_filter_param(&s->alpha, s->nb_threads);
 }
 
 static int filter_frame(AVFilterLink *link, AVFrame *in)
