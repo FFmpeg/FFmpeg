@@ -269,7 +269,10 @@ static int rfc4175_handle_packet(AVFormatContext *ctx, PayloadContext *data,
         if (!data->frame)
             data->frame = av_mallocz(data->frame_size + AV_INPUT_BUFFER_PADDING_SIZE);
 
-        data->timestamp = *timestamp;
+        if (missed_last_packet)
+            FFSWAP(uint32_t, data->timestamp, *timestamp);
+        else
+            data->timestamp = *timestamp;
 
         if (!data->frame) {
             av_log(ctx, AV_LOG_ERROR, "Out of memory.\n");
