@@ -922,6 +922,10 @@ static int nvdec_retrieve_data(void *logctx, AVFrame *frame)
     if (ret < 0)
         goto finish;
 
+    ret = av_buffer_replace(&frame->hw_frames_ctx, decoder->real_hw_frames_ref);
+    if (ret < 0)
+        goto copy_fail;
+
     unmap_data = av_mallocz(sizeof(*unmap_data));
     if (!unmap_data) {
         ret = AVERROR(ENOMEM);
@@ -936,10 +940,6 @@ static int nvdec_retrieve_data(void *logctx, AVFrame *frame)
         goto copy_fail;
     }
 
-    ret = av_buffer_replace(&frame->hw_frames_ctx, decoder->real_hw_frames_ref);
-    if (ret < 0)
-        goto copy_fail;
-
     unmap_data->idx = cf->idx;
     unmap_data->decoder = av_refstruct_ref(cf->decoder);
 
@@ -953,12 +953,8 @@ static int nvdec_retrieve_data(void *logctx, AVFrame *frame)
     goto finish;
 
 copy_fail:
-    if (!frame->buf[1]) {
-        CHECK_CU(decoder->cvdl->cuvidUnmapVideoFrame(decoder->decoder, devptr));
-        av_freep(&unmap_data);
-    } else {
-        av_buffer_unref(&frame->buf[1]);
-    }
+    CHECK_CU(decoder->cvdl->cuvidUnmapVideoFrame(decoder->decoder, devptr));
+    av_freep(&unmap_data);
 
 finish:
     CHECK_CU(decoder->cudl->cuCtxPopCurrent(&dummy));
