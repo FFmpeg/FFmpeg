@@ -290,6 +290,12 @@ static void run_copy(const SwsFrame *out, const SwsFrame *in, int y, int h,
         const int lines = h >> ff_fmt_vshift(in->format, i);
         av_assert1(in_data[i]);
 
+        if (i == 1 && av_pix_fmt_desc_get(in->format)->flags & AV_PIX_FMT_FLAG_PAL) {
+            if (!y && in->data[1] != out->data[1])
+                memcpy(out->data[1], in->data[1], AVPALETTE_SIZE);
+            break;
+        }
+
         if (in_data[i] == out_data[i]) {
             av_assert0(in->linesize[i] == out->linesize[i]);
         } else if (in->linesize[i] == out->linesize[i]) {
