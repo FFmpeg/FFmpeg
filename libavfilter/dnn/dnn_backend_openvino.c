@@ -62,6 +62,7 @@ typedef struct OVModel{
     Queue *task_queue;          // holds TaskItem
     Queue *lltask_queue;     // holds LastLevelTaskItem
     int nb_outputs;
+    int nb_requests;
 } OVModel;
 
 // one request for one call to openvino
@@ -516,7 +517,7 @@ static void dnn_free_model_ov(DNNModel **model)
         return;
 
     ov_model = (OVModel *)(*model);
-    ff_dnn_wait_requests(ov_model->request_queue, ov_model->ctx->nireq);
+    ff_dnn_wait_requests(ov_model->request_queue, ov_model->nb_requests);
     while (ff_safe_queue_size(ov_model->request_queue) != 0) {
         OVRequestItem *item = ff_safe_queue_pop_front(ov_model->request_queue);
         if (item && item->infer_request) {
@@ -910,6 +911,7 @@ static int init_model_ov(OVModel *ov_model, const char *input_name, const char *
             ret = AVERROR(ENOMEM);
             goto err;
         }
+        ov_model->nb_requests++;
 
 #if HAVE_OPENVINO2
         status = ov_compiled_model_create_infer_request(ov_model->compiled_model, &item->infer_request);
