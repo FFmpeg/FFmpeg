@@ -225,17 +225,21 @@ fail_expr:
 static int config_input(AVFilterLink *link)
 {
     CropContext *s = link->dst->priv;
+    AVExpr *x_pexpr = NULL, *y_pexpr = NULL;
 
     s->var_values[VAR_X] = NAN;
     s->var_values[VAR_Y] = NAN;
+    if (av_expr_parse(&x_pexpr, s->x_expr, var_names,
+                      NULL, NULL, NULL, NULL, 0, link->dst) < 0 ||
+        av_expr_parse(&y_pexpr, s->y_expr, var_names,
+                      NULL, NULL, NULL, NULL, 0, link->dst) < 0) {
+        av_expr_free(x_pexpr);
+        return AVERROR(EINVAL);
+    }
     av_expr_free(s->x_pexpr);
     av_expr_free(s->y_pexpr);
-    s->x_pexpr = s->y_pexpr = NULL;
-    if (av_expr_parse(&s->x_pexpr, s->x_expr, var_names,
-                      NULL, NULL, NULL, NULL, 0, link->dst) < 0 ||
-        av_expr_parse(&s->y_pexpr, s->y_expr, var_names,
-                      NULL, NULL, NULL, NULL, 0, link->dst) < 0)
-        return AVERROR(EINVAL);
+    s->x_pexpr = x_pexpr;
+    s->y_pexpr = y_pexpr;
 
     return config_crop_area(link);
 }
