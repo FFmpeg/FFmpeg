@@ -1502,26 +1502,28 @@ static int dnn_execute_model_ov(const DNNModel *model, DNNExecBaseParams *exec_p
                             exec_params->output_names, exec_params->nb_output);
         if (ret != 0) {
             av_log(ctx, AV_LOG_ERROR, "Failed init OpenVINO executable network or inference request\n");
-            return ret;
+            goto fail;
         }
     }
 
     task = av_malloc(sizeof(*task));
     if (!task) {
         av_log(ctx, AV_LOG_ERROR, "unable to alloc memory for task item.\n");
-        return AVERROR(ENOMEM);
+        ret = AVERROR(ENOMEM);
+        goto fail;
     }
 
     ret = ff_dnn_fill_task(task, exec_params, ov_model, ctx->async, 1);
     if (ret != 0) {
         av_freep(&task);
-        return ret;
+        goto fail;
     }
 
     if (ff_queue_push_back(ov_model->task_queue, task) < 0) {
         av_freep(&task);
         av_log(ctx, AV_LOG_ERROR, "unable to push back task_queue.\n");
-        return AVERROR(ENOMEM);
+        ret = AVERROR(ENOMEM);
+        goto fail;
     }
 
     ret = extract_lltask_from_task(model->func_type, task, ov_model->lltask_queue, exec_params);
@@ -1566,6 +1568,10 @@ static int dnn_execute_model_ov(const DNNModel *model, DNNExecBaseParams *exec_p
         }
         return execute_model_ov(request, ov_model->lltask_queue);
     }
+fail:
+    av_frame_free(&exec_params->in_frame);
+    av_frame_free(&exec_params->out_frame);
+    return ret;
 }
 
 static DNNAsyncStatusType dnn_get_result_ov(const DNNModel *model, AVFrame **in, AVFrame **out)
