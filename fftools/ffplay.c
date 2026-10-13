@@ -1592,10 +1592,19 @@ static int chapter_list_render(VideoState *is)
     return ret;
 }
 
+static void chapter_list_select(VideoState *is, int row)
+{
+    int64_t now = av_gettime_relative();
+
+    is->chapter_selected       = row;
+    is->chapter_fade_start     = now - chapter_list_alpha(is, now) * CHAPTER_LIST_FADE_TIME;
+    is->chapter_last_input     = now;
+    is->chapter_render_pending = 1;
+}
+
 /* shows the list with the chapter selected, or with the selection kept when no row shows it */
 static int chapter_list_show(VideoState *is, int chapter)
 {
-    int64_t now = av_gettime_relative();
     int ret = renderer ? chapter_list_update_rows(is) : AVERROR(EINVAL);
 
     if (ret < 0)
@@ -1603,16 +1612,14 @@ static int chapter_list_show(VideoState *is, int chapter)
     for (int row = 0; row < is->nb_chapter_rows; row++)
         if (is->chapter_rows[row].index == chapter)
             is->chapter_selected = row;
-    is->chapter_fade_start = now - chapter_list_alpha(is, now) * CHAPTER_LIST_FADE_TIME;
-    is->chapter_last_input = now;
-    is->chapter_render_pending = 1;
+    chapter_list_select(is, is->chapter_selected);
     return 0;
 }
 
 static void chapter_list_move(VideoState *is, int delta)
 {
     if (is->nb_chapter_rows)
-        chapter_list_show(is, is->chapter_rows[av_clip(is->chapter_selected + delta, 0, is->nb_chapter_rows - 1)].index);
+        chapter_list_select(is, av_clip(is->chapter_selected + delta, 0, is->nb_chapter_rows - 1));
 }
 
 static int chapter_list_visible(VideoState *is)
