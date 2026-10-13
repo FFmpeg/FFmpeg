@@ -520,6 +520,11 @@ static void fill_buffer(AVIOContext *s)
                           s->buf_end : s->buffer;
     int len             = s->buffer_size - (dst - s->buffer);
 
+    if (s->error == AVERROR(EAGAIN)) {
+        s->error       = 0;
+        s->eof_reached = 0;
+    }
+
     /* can't fill the buffer without read_packet, just set EOF if appropriate */
     if (!s->read_packet && s->buf_ptr >= s->buf_end)
         s->eof_reached = 1;
@@ -622,6 +627,10 @@ int avio_read(AVIOContext *s, unsigned char *buf, int size)
         if (len == 0 || s->write_flag) {
             if((s->direct || size > s->buffer_size) && !s->update_checksum && s->read_packet) {
                 // bypass the buffer and read data directly into buf
+                if (s->error == AVERROR(EAGAIN)) {
+                    s->error       = 0;
+                    s->eof_reached = 0;
+                }
                 len = read_packet_wrapper(s, buf, size);
                 if (len == AVERROR_EOF) {
                     /* do not modify buffer if EOF reached so that a seek back can
