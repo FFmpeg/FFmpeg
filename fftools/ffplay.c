@@ -452,6 +452,7 @@ static int exit_status = 0;
 
 static SDL_Window *window;
 static SDL_Renderer *renderer;
+static int wait_for_events;
 static SDL_RendererInfo renderer_info = {0};
 static SDL_AudioDeviceID audio_dev;
 
@@ -4407,8 +4408,12 @@ static void refresh_loop_wait_event(VideoState *is, SDL_Event *event) {
             SDL_ShowCursor(0);
             cursor_hidden = 1;
         }
-        if (remaining_time > 0.0)
-            av_usleep((int64_t)(remaining_time * 1000000.0));
+        if (remaining_time > 0.0) {
+            if (!wait_for_events)
+                av_usleep((int64_t)(remaining_time * 1000000.0));
+            else if (SDL_WaitEventTimeout(NULL, ceil(remaining_time * 1000)))
+                continue;
+        }
         remaining_time = REFRESH_RATE;
         if (is->chapter_render_pending || (chapter_list_visible(is) && current_chapter(is) != is->chapter_playing))
             chapter_list_render(is);
@@ -4979,6 +4984,10 @@ int main(int argc, char **argv)
             av_log(NULL, AV_LOG_FATAL, "Failed to create window: %s", SDL_GetError());
             do_exit(NULL);
         }
+        SDL_version version;
+        SDL_GetVersion(&version);
+        /* SDL before 2.0.16 waits for events by polling */
+        wait_for_events = SDL_VERSIONNUM(version.major, version.minor, version.patch) >= SDL_VERSIONNUM(2, 0, 16);
 
         if (vk_renderer) {
             AVDictionary *dict = NULL;
