@@ -334,6 +334,8 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     av_expr_free(qr->x_pexpr);
     av_expr_free(qr->y_pexpr);
+    av_expr_free(qr->rendered_qrcode_width_pexpr);
+    av_expr_free(qr->rendered_padded_qrcode_width_pexpr);
 
     av_bprint_finalize(&qr->expanded_text, NULL);
 
