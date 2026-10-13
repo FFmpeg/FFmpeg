@@ -584,7 +584,7 @@ static int get_frame_filename(char *buf, int buf_size, const char *path, int64_t
             case '%':
                 goto addchar;
             case 'd':
-                if (!percentd_found)
+                if (percentd_found)
                     goto fail;
                 percentd_found = 1;
                 if (number < 0)
