@@ -180,7 +180,9 @@ static int read_shape_from_file(int *cols, int *rows, int **values, const char *
     pend = buf + size-1;
     for (i = 0; i < *rows; i++) {
         for (j = 0;; j++) {
-            if (p > pend || *p == '\n') {
+            if (p > pend)
+                break;
+            if (*p == '\n') {
                 p++;
                 break;
             } else
