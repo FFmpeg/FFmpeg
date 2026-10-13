@@ -429,10 +429,10 @@ func ff_vc1_unescape_buffer_rvv, zve32x
         bgez           t2, 4f # found an escape byte?
 
         vse8.v         v16, (a2)
-        addi           t2, t0, -2
+        addi           t2, t0, -1
         add            a2, a2, t0
 2:
-        vslidedown.vx  v8, v16, t2
+        vslidedown.vx  v8, v12, t2
         sub            a1, a1, t0
         vslidedown.vi  v12, v8, 1
         add            a0, a0, t0
@@ -449,7 +449,6 @@ func ff_vc1_unescape_buffer_rvv, zve32x
         vse8.v         v16, (a2)
         addi           t0, t2, 1
         add            a2, a2, t2
-        addi           t2, t2, -1
-        vsetvli        zero, t0, e8, m4, ta, ma
+        vsetivli       zero, 2, e8, m4, ta, ma
         j              2b
 endfunc
