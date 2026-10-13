@@ -1282,8 +1282,7 @@ static int frame_alloc_buffers(SwsContext *sws, AVFrame *frame)
         buf_start++;
     int nb_bufs = 0;
 
-    const int nb_planes = av_pix_fmt_count_planes(frame->format);
-    for (int i = 0; i < nb_planes; i++) {
+    for (int i = 0; i < 4 && pool->pools[i]; i++) {
         if (frame->data[i])
             continue; /* already ref'd by frame_ref */
 
