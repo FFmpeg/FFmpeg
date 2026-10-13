@@ -36,6 +36,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mastering_display_metadata.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "demux.h"
 #include "internal.h"
 #include "flv.h"
@@ -1342,7 +1343,7 @@ static int flv_parse_mod_ex_data(AVFormatContext *s, int *pkt_type, int *size, i
     if (!ex_data)
         return AVERROR(ENOMEM);
 
-    ret = avio_read(s->pb, ex_data, ex_size);
+    ret = ffio_read_size(s->pb, ex_data, ex_size);
     if (ret < 0) {
         av_free(ex_data);
         return ret;
