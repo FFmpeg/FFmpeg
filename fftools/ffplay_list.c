@@ -598,7 +598,7 @@ static int list_configure(ListView *lv, const ListLayout *l, const SDL_Rect *can
     return 0;
 #else
     if (!lv->libass_missing_reported++)
-        av_log(NULL, AV_LOG_ERROR, "The chapter list needs libass, which this build lacks\n");
+        av_log(NULL, AV_LOG_ERROR, "The list needs libass, which this build lacks\n");
     return AVERROR(ENOSYS);
 #endif
 }
@@ -708,7 +708,7 @@ static int list_render(ListView *lv)
     }
     if (ret < 0) {
         if (ret != AVERROR(ENOSYS))
-            av_log(NULL, AV_LOG_ERROR, "Could not render the chapter list: %s\n", av_err2str(ret));
+            av_log(NULL, AV_LOG_ERROR, "Could not render the list: %s\n", av_err2str(ret));
         list_discard(lv);
         av_freep(&strips);
         nb = 0;
@@ -759,8 +759,7 @@ ListView *list_view_alloc(SDL_Renderer *renderer)
     lv->playing  = -1;
     lv->mouse_x  = lv->mouse_y = -1;
     lv->hover    = (ListHit){ 0, -1, -1, 0 };
-    for (int i = 0; i < LIST_SORT_NB; i++)
-        lv->sort[i].key = i;
+    list_view_clear(lv);
     return lv;
 }
 
@@ -823,6 +822,16 @@ int list_view_show(ListView *lv, const ListEntry *entries, int nb_entries, int s
             lv->selected = row;
     list_select(lv, lv->selected);
     return 0;
+}
+
+void list_view_clear(ListView *lv)
+{
+    lv->nb_entries = lv->nb_rows = lv->selected = 0;
+    lv->search[0]  = 0;
+    for (int i = 0; i < LIST_SORT_NB; i++)
+        lv->sort[i] = (ListSortKey){ i, 0 };
+    lv->shuffle_seed   = 0;
+    lv->render_pending = 1;
 }
 
 void list_view_pin(ListView *lv, int pinned)
@@ -939,7 +948,7 @@ int list_view_update(ListView *lv)
 {
     int changed;
 
-    if (lv->render_pending)
+    if (lv->render_pending && lv->width)
         list_render(lv);
     changed = lv->changed || list_alpha(lv, av_gettime_relative()) != lv->drawn_alpha;
     lv->changed = 0;

@@ -2544,6 +2544,7 @@ SYSTEM_FUNCS="
     pthread_set_name_np
     pthread_setaffinity_np
     pthread_setname_np
+    realpath
     sched_getaffinity
     SecItemImport
     SetConsoleTextAttribute
@@ -6911,6 +6912,7 @@ check_func_headers mach/mach_time.h mach_absolute_time
 check_func_headers setjmp.h siglongjmp
 check_func_headers signal.h sigaction
 check_func_headers stdlib.h getenv
+check_func_headers stdlib.h realpath
 check_func_headers sys/ioctl.h ioctl
 check_func_headers sys/stat.h lstat
 check_func_headers sys/auxv.h getauxval

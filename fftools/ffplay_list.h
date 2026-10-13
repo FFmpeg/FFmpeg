@@ -37,12 +37,13 @@ typedef struct ListEntry {
     const char *title;
     const char *artist;
     int64_t length;                 ///< in AV_TIME_BASE units, negative when unknown
-    const AVDictionary *metadata;   ///< shown when the mouse is over the entry's symbol, may be NULL
+    AVDictionary *metadata;         ///< shown when the mouse is over the entry's symbol, may be NULL
 } ListEntry;
 
 typedef struct ListView ListView;
 
 /**
+ * @param renderer NULL when there is none, which leaves the list unable to show
  * @return the list, hidden, or NULL on allocation failure
  */
 ListView *list_view_alloc(SDL_Renderer *renderer);
@@ -58,6 +59,11 @@ void list_view_free(ListView **lv);
  * @return 0 or a negative error code
  */
 int list_view_show(ListView *lv, const ListEntry *entries, int nb_entries, int selected);
+
+/**
+ * Removes the entries, which may be freed after this, and resets the sort and the search.
+ */
+void list_view_clear(ListView *lv);
 
 /**
  * Keeps the list on screen and lets it take the keyboard and text input, or lets it fade out again.

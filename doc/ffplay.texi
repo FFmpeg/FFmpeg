@@ -274,6 +274,11 @@ in builds without libass and with the Vulkan renderer.
 Keep the chapter list on screen. While it is kept, typing filters the list by
 artist and title, down/up move its selection and escape closes it.
 
+@item o
+Show the files in the directory of the input. Enter or a click plays the
+selected file or opens the selected directory, escape closes the list. Typing
+filters the list by name.
+
 @item enter
 Seek to the chapter selected in the chapter list while it is shown.
 

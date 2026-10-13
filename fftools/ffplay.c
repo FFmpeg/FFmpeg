@@ -58,6 +58,7 @@
 #include <SDL_thread.h>
 
 #include "cmdutils.h"
+#include "ffplay_dir.h"
 #include "ffplay_list.h"
 #include "ffplay_renderer.h"
 #include "opt_common.h"
@@ -312,6 +313,7 @@ typedef struct VideoState {
 
     char *filename;
     int id;
+    SDL_atomic_t replacement;
     char *title;
     int seek_by_bytes;
     int infinite_buffer;
@@ -375,6 +377,23 @@ static int cursor_hidden = 0;
 static ListView *list;
 /* the key that pins the list when it is released, 0 for none */
 static SDL_Keycode list_key;
+/* whether the list shows the files of dir_list rather than the chapters of the stream playing */
+static int list_shows_files;
+static DirList *dir_list;
+/* the directory dir_thread reads, taken over by the event loop once done is set */
+static struct {
+    char *path;
+    AVDictionary *options;
+    int play_if_no_dir;
+    int cancelled;
+    SDL_atomic_t abort;
+    DirList *dl;
+    int ret;
+    SDL_atomic_t done;
+} dir_request;
+static SDL_Thread *dir_thread;
+/* the stream chosen in the file list, paused until it can play and replace the one playing */
+static VideoState *next_stream;
 static const char **vfilters_list = NULL;
 static int nb_vfilters = 0;
 static char *afilters = NULL;
@@ -390,6 +409,8 @@ static const char *hwaccel = NULL;
 static int is_full_screen;
 
 #define FF_QUIT_EVENT    (SDL_USEREVENT + 2)
+/* a stream has a picture to show, has no video, no picture before the end of its video, or no room to buffer more */
+#define FF_READY_EVENT   (SDL_USEREVENT + 3)
 
 static int last_stream_id;
 
@@ -1040,6 +1061,7 @@ static void draw_video_background(VideoState *is)
 }
 
 static int current_chapter(VideoState *is);
+static void file_list_listed(VideoState *is);
 static void seek_chapter(VideoState *is, int i);
 
 static const char *chapter_tag(const AVChapter *chapter, const char *key)
@@ -1064,9 +1086,12 @@ static int chapter_list_show(VideoState *is, int chapter)
         if (ch->end != AV_NOPTS_VALUE && ch->end > ch->start && (uint64_t)ch->end - ch->start <= INT64_MAX)
             entries[i].length = av_rescale_q(ch->end - ch->start, ch->time_base, AV_TIME_BASE_Q);
     }
-    list_view_set_playing(list, current_chapter(is));
+    if (list_shows_files)
+        list_view_clear(list);
     ret = list_view_show(list, entries, is->ic->nb_chapters, chapter);
     av_free(entries);
+    if (ret >= 0)
+        list_shows_files = 0;
     return ret;
 }
 
@@ -1363,6 +1388,7 @@ static void stream_component_close(VideoState *is, int stream_index)
     switch (codecpar->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
         decoder_abort(&is->auddec, &is->sampq);
+        avfilter_graph_free(&is->agraph);
         SDL_CloseAudioDevice(is->audio_dev);
         is->audio_dev = 0;
         decoder_destroy(&is->auddec);
@@ -1463,6 +1489,21 @@ static void do_exit(VideoState *is)
     if (is) {
         stream_close(is);
     }
+    if (next_stream)
+        stream_close(next_stream);
+    SDL_AtomicSet(&dir_request.abort, 1);
+    for (int waited = 0; dir_thread && !SDL_AtomicGet(&dir_request.done) && waited < 2000; waited += 10)
+        SDL_Delay(10);
+    if (dir_thread && !SDL_AtomicGet(&dir_request.done)) {
+        /* a protocol that does not take the interrupt keeps the thread and its request until the process ends */
+        SDL_DetachThread(dir_thread);
+    } else {
+        if (dir_thread)
+            SDL_WaitThread(dir_thread, NULL);
+        dir_list_free(&dir_request.dl);
+        av_freep(&dir_request.path);
+        av_dict_free(&dir_request.options);
+    }
     list_view_free(&list);
     if (renderer)
         SDL_DestroyRenderer(renderer);
@@ -1478,6 +1519,7 @@ static void do_exit(VideoState *is)
     av_freep(&audio_codec_name);
     av_freep(&subtitle_codec_name);
     av_freep(&input_filename);
+    dir_list_free(&dir_list);
     avformat_network_deinit();
     if (show_status)
         printf("\n");
@@ -1537,7 +1579,7 @@ static void video_display(VideoState *is)
     SDL_RenderClear(renderer);
     if (is->audio_st && is->show_mode != SHOW_MODE_VIDEO)
         video_audio_display(is);
-    else if (is->video_st)
+    else if (is->video_st && is->pictq.rindex_shown)
         video_image_display(is);
     list_view_draw(list);
     SDL_RenderPresent(renderer);
@@ -1857,7 +1899,7 @@ retry:
         }
 display:
         /* display picture */
-        if (!display_disable && is->force_refresh && is->show_mode == SHOW_MODE_VIDEO && is->pictq.rindex_shown)
+        if (!display_disable && is->force_refresh && is->show_mode == SHOW_MODE_VIDEO)
             video_display(is);
     }
     is->force_refresh = 0;
@@ -2344,7 +2386,7 @@ static int video_thread(void *arg)
     AVFrame *frame = av_frame_alloc();
     double pts;
     double duration;
-    int ret;
+    int ret, announced = 0;
     AVRational tb = is->video_st->time_base;
     AVRational frame_rate = av_guess_frame_rate(is->ic, is->video_st, NULL);
 
@@ -2363,8 +2405,13 @@ static int video_thread(void *arg)
         ret = get_video_frame(is, frame);
         if (ret < 0)
             goto the_end;
-        if (!ret)
+        if (!ret) {
+            if (is->viddec.finished == is->viddec.pkt_serial && !announced) {
+                push_stream_event(is, FF_READY_EVENT);
+                announced = 1;
+            }
             continue;
+        }
 
         if (   last_w != frame->width
             || last_h != frame->height
@@ -2425,6 +2472,10 @@ static int video_thread(void *arg)
             pts = (frame->pts == AV_NOPTS_VALUE) ? NAN : frame->pts * av_q2d(tb);
             ret = queue_picture(is, frame, pts, duration, fd ? fd->pkt_pos : -1, is->viddec.pkt_serial);
             av_frame_unref(frame);
+            if (ret >= 0 && !announced) {
+                push_stream_event(is, FF_READY_EVENT);
+                announced = 1;
+            }
             if (is->videoq.serial != is->viddec.pkt_serial)
                 break;
         }
@@ -2433,6 +2484,8 @@ static int video_thread(void *arg)
             goto the_end;
     }
  the_end:
+    if (!announced && SDL_AtomicGet(&is->replacement))
+        push_stream_event(is, FF_QUIT_EVENT);
     avfilter_graph_free(&graph);
     av_frame_free(&frame);
     return 0;
@@ -3012,7 +3065,7 @@ static int stream_component_open(VideoState *is, int stream_index)
             is->auddec.start_pts = is->audio_st->start_time;
             is->auddec.start_pts_tb = is->audio_st->time_base;
         }
-        if ((ret = audio_start(is)) < 0)
+        if (!SDL_AtomicGet(&is->replacement) && (ret = audio_start(is)) < 0)
             stream_component_close(is, stream_index);
         break;
     case AVMEDIA_TYPE_VIDEO:
@@ -3150,6 +3203,7 @@ static int read_thread(void *arg)
     int64_t stream_start_time;
     char metadata_description[96];
     int pkt_in_play_range = 0;
+    int announced = 0;
     const AVDictionaryEntry *t;
     SDL_mutex *wait_mutex = SDL_CreateMutex();
     AVDictionary *format_options = NULL;
@@ -3389,6 +3443,8 @@ static int read_thread(void *arg)
         ret = -1;
         goto fail;
     }
+    if (is->video_stream < 0)
+        push_stream_event(is, FF_READY_EVENT);
 
     if (is->infinite_buffer < 0 && is->realtime)
         is->infinite_buffer = 1;
@@ -3465,6 +3521,10 @@ static int read_thread(void *arg)
             || (stream_has_enough_packets(is->audio_st, is->audio_stream, &is->audioq) &&
                 stream_has_enough_packets(is->video_st, is->video_stream, &is->videoq) &&
                 stream_has_enough_packets(is->subtitle_st, is->subtitle_stream, &is->subtitleq)))) {
+            if (!announced && SDL_AtomicGet(&is->replacement) && is->audioq.size + is->videoq.size + is->subtitleq.size > MAX_QUEUE_SIZE) {
+                push_stream_event(is, FF_READY_EVENT);
+                announced = 1;
+            }
             /* wait 10 ms */
             SDL_LockMutex(wait_mutex);
             SDL_CondWaitTimeout(is->continue_read_thread, wait_mutex, 10);
@@ -3579,8 +3639,10 @@ static int read_thread(void *arg)
     return 0;
 }
 
+/* replaced is the stream playing which the new one is to replace, NULL for none; the replacement starts paused with
+ * the volume of the stream it replaces, and opens no audio device before stream_replace() */
 static VideoState *stream_open(const char *filename,
-                               const AVInputFormat *iformat)
+                               const AVInputFormat *iformat, const VideoState *replaced)
 {
     VideoState *is;
 
@@ -3639,6 +3701,12 @@ static VideoState *stream_open(const char *filename,
     }
     is->audio_volume = SDL_MIX_MAXVOLUME * av_clip(startup_volume, 0, 100) / 100;
     is->muted = 0;
+    if (replaced) {
+        SDL_AtomicSet(&is->replacement, 1);
+        is->audio_volume = replaced->audio_volume;
+        is->muted        = replaced->muted;
+        is->paused = is->audclk.paused = is->vidclk.paused = is->extclk.paused = 1;
+    }
     is->av_sync_type = av_sync_type;
     is->read_tid     = SDL_CreateThread(read_thread, "read_thread", is);
     if (!is->read_tid) {
@@ -3767,7 +3835,9 @@ static void refresh_loop_wait_event(VideoState *is, SDL_Event *event) {
         }
         remaining_time = REFRESH_RATE;
         if (list_view_visible(list))
-            list_view_set_playing(list, current_chapter(is));
+            list_view_set_playing(list, list_shows_files ? -1 : current_chapter(is));
+        if (dir_thread && SDL_AtomicGet(&dir_request.done))
+            file_list_listed(is);
         if (list_view_update(list))
             is->force_refresh = 1;
         if (is->show_mode != SHOW_MODE_NONE && (!is->paused || is->force_refresh))
@@ -3802,6 +3872,171 @@ static void seek_chapter(VideoState *is, int i)
                                  AV_TIME_BASE_Q), 0, 0);
 }
 
+/* shows the files of the directory with the entry selected */
+static int file_list_show(DirList *dl, int selected)
+{
+    int ret;
+
+    if (!list_shows_files)
+        list_view_clear(list);
+    ret = list_view_show(list, dl->entries, dl->nb_entries, selected);
+    if (ret >= 0)
+        list_shows_files = 1;
+    return ret;
+}
+
+/* opens the file to replace the stream playing once it can play */
+static void file_play(VideoState *is, const char *path)
+{
+    if (next_stream)
+        stream_close(next_stream);
+    if (!(next_stream = stream_open(path, file_iformat, is)))
+        av_log(NULL, AV_LOG_ERROR, "Could not open '%s'\n", path);
+}
+
+static int dir_interrupt_cb(void *ctx)
+{
+    return SDL_AtomicGet(&dir_request.abort);
+}
+
+static int dir_thread_func(void *arg)
+{
+    const AVIOInterruptCB int_cb = { dir_interrupt_cb };
+
+    dir_request.ret = dir_list_read(&dir_request.dl, dir_request.path, &int_cb, &dir_request.options);
+    SDL_AtomicSet(&dir_request.done, 1);
+    return 0;
+}
+
+/* starts reading the directory on dir_thread, unless it is busy; with play_if_no_dir the path is played when it is no
+ * directory */
+static void file_list_read(const char *path, int play_if_no_dir)
+{
+    int ret = 0;
+
+    if (dir_thread)
+        return;
+    dir_request.play_if_no_dir = play_if_no_dir;
+    dir_request.cancelled      = 0;
+    SDL_AtomicSet(&dir_request.abort, 0);
+    SDL_AtomicSet(&dir_request.done, 0);
+    if (!(dir_request.path = av_strdup(path)))
+        ret = AVERROR(ENOMEM);
+    else
+        ret = av_dict_copy(&dir_request.options, format_opts, 0);
+    if (ret < 0 || !(dir_thread = SDL_CreateThread(dir_thread_func, "dir_reader", NULL))) {
+        av_log(NULL, AV_LOG_ERROR, "Could not list the directory '%s': %s\n", path, ret < 0 ? av_err2str(ret) : SDL_GetError());
+        av_freep(&dir_request.path);
+        av_dict_free(&dir_request.options);
+    }
+}
+
+/* takes over what dir_thread read: shows the directory, plays the path when it is no directory, or drops the result of
+ * a cancelled request */
+static void file_list_listed(VideoState *is)
+{
+    int ret;
+
+    SDL_WaitThread(dir_thread, NULL);
+    dir_thread = NULL;
+    av_dict_free(&dir_request.options);
+    if (dir_request.cancelled) {
+        dir_list_free(&dir_request.dl);
+    } else if (dir_request.ret < 0) {
+        av_log(NULL, dir_request.play_if_no_dir ? AV_LOG_VERBOSE : AV_LOG_ERROR, "Could not list the directory '%s': %s\n",
+               dir_request.path, av_err2str(dir_request.ret));
+        if (dir_request.play_if_no_dir)
+            file_play(is, dir_request.path);
+    } else if ((ret = file_list_show(dir_request.dl, 0)) < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Could not show the list: %s\n", av_err2str(ret));
+        dir_list_free(&dir_request.dl);
+    } else {
+        dir_list_free(&dir_list);
+        dir_list = dir_request.dl;
+        dir_request.dl = NULL;
+        list_view_clear_search(list);
+        list_view_pin(list, 1);
+    }
+    av_freep(&dir_request.path);
+}
+
+/* pins the file list, showing the directory listed last or else the directory of the input */
+static void file_list_open(VideoState *is)
+{
+    const char *name = is->filename, *dir;
+    char *path;
+
+    if (dir_list) {
+        if (file_list_show(dir_list, -1) >= 0)
+            list_view_pin(list, 1);
+        return;
+    }
+    av_strstart(name, "file:", &name);
+    if (!(path = av_strdup(name)))
+        return;
+    dir = av_dirname(path);
+    file_list_read(*dir ? dir : "/", 0);
+    av_free(path);
+}
+
+/* lists the chosen directory, or plays the chosen file */
+static void file_list_choose(VideoState *is, int entry)
+{
+    char *path = dir_list_path(dir_list, entry);
+
+    if (!path)
+        return;
+    if (entry < dir_list->nb_dirs + dir_list->nb_maybe_dirs)
+        file_list_read(path, entry >= dir_list->nb_dirs);
+    else
+        file_play(is, path);
+    av_free(path);
+}
+
+static void list_choose(VideoState *is, int entry)
+{
+    if (list_shows_files)
+        file_list_choose(is, entry);
+    else
+        seek_chapter(is, entry);
+}
+
+/* plays next_stream instead of the stream playing, which goes on from its position when next_stream has no video and
+ * its audio cannot play */
+static VideoState *stream_replace(VideoState *is)
+{
+    int audio_stream = is->audio_stream;
+    double pos = get_master_clock(is);
+
+    stream_component_close(is, audio_stream);
+    SDL_AtomicSet(&next_stream->replacement, 0);
+    if (next_stream->audio_stream >= 0 && audio_start(next_stream) < 0) {
+        stream_component_close(next_stream, next_stream->audio_stream);
+        if (next_stream->video_stream < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Could not play '%s'\n", next_stream->filename);
+            stream_close(next_stream);
+            next_stream = NULL;
+            if (audio_stream >= 0 && stream_component_open(is, audio_stream) < 0)
+                av_log(NULL, AV_LOG_ERROR, "Could not reopen the audio of '%s'\n", is->filename);
+            if (!is->seek_by_bytes && !isnan(pos))
+                stream_seek(is, (int64_t)(pos * AV_TIME_BASE), 0, 0);
+            return is;
+        }
+    }
+    /* the chapter entries belong to the stream closed */
+    if (!list_shows_files)
+        list_view_clear(list);
+    list_view_pin(list, 0);
+    next_stream->width  = is->width;
+    next_stream->height = is->height;
+    stream_close(is);
+    is = next_stream;
+    next_stream = NULL;
+    SDL_SetWindowTitle(window, window_title ? window_title : is->title ? is->title : is->filename);
+    toggle_pause(is);
+    return is;
+}
+
 /* handle an event sent by the GUI */
 static void event_loop(VideoState *cur_stream)
 {
@@ -3823,10 +4058,15 @@ static void event_loop(VideoState *cur_stream)
             if (!cur_stream->width)
                 continue;
             if (list_view_pinned(list)) {
-                if (event.key.keysym.sym == SDLK_PAGEUP || event.key.keysym.sym == SDLK_PAGEDOWN)
+                if (!list_shows_files && (event.key.keysym.sym == SDLK_PAGEUP || event.key.keysym.sym == SDLK_PAGEDOWN))
                     seek_chapter(cur_stream, current_chapter(cur_stream) + (event.key.keysym.sym == SDLK_PAGEUP ? 1 : -1));
                 else if ((chosen = list_view_key(list, event.key.keysym.sym)) >= 0)
-                    seek_chapter(cur_stream, chosen);
+                    list_choose(cur_stream, chosen);
+                /* escape while a directory is being read for the list */
+                if (dir_thread && !list_view_pinned(list)) {
+                    dir_request.cancelled = 1;
+                    SDL_AtomicSet(&dir_request.abort, 1);
+                }
                 break;
             }
             switch (event.key.keysym.sym) {
@@ -3869,10 +4109,13 @@ static void event_loop(VideoState *cur_stream)
             case SDLK_l:
                 list_key = cur_stream->ic->nb_chapters > 0 ? SDLK_l : 0;
                 break;
+            case SDLK_o:
+                list_key = SDLK_o;
+                break;
             case SDLK_RETURN:
             case SDLK_KP_ENTER:
                 if (list_view_visible(list) && (chosen = list_view_selected(list)) >= 0)
-                    seek_chapter(cur_stream, chosen);
+                    list_choose(cur_stream, chosen);
                 break;
             case SDLK_w:
                 if (cur_stream->show_mode == SHOW_MODE_VIDEO && cur_stream->vfilter_idx < nb_vfilters - 1) {
@@ -3939,8 +4182,12 @@ static void event_loop(VideoState *cur_stream)
             break;
         case SDL_KEYUP:
             /* on the release of a press made while unpinned, so that the key's own text input does not start the search */
-            if (list_key && event.key.keysym.sym == list_key)
-                chapter_list_pin(cur_stream);
+            if (list_key && event.key.keysym.sym == list_key) {
+                if (list_key == SDLK_o)
+                    file_list_open(cur_stream);
+                else
+                    chapter_list_pin(cur_stream);
+            }
             list_key = 0;
             break;
         case SDL_TEXTINPUT:
@@ -3959,7 +4206,7 @@ static void event_loop(VideoState *cur_stream)
             if (event.button.button == SDL_BUTTON_LEFT && list_view_visible(list) &&
                 list_view_click(list, event.button.x, event.button.y, &chosen)) {
                 if (chosen >= 0)
-                    seek_chapter(cur_stream, chosen);
+                    list_choose(cur_stream, chosen);
                 break;
             }
             if (event.button.button == SDL_BUTTON_LEFT) {
@@ -4035,7 +4282,16 @@ static void event_loop(VideoState *cur_stream)
                     cur_stream->force_refresh = 1;
             }
             break;
+        case FF_READY_EVENT:
+            if (next_stream && event.user.code == next_stream->id)
+                cur_stream = stream_replace(cur_stream);
+            break;
         case FF_QUIT_EVENT:
+            if (next_stream && event.user.code == next_stream->id) {
+                av_log(NULL, AV_LOG_ERROR, "Could not play '%s'\n", next_stream->filename);
+                stream_close(next_stream);
+                next_stream = NULL;
+            }
             if (event.user.code != cur_stream->id)
                 break;
             av_fallthrough;
@@ -4246,6 +4502,7 @@ void show_help_default(const char *opt, const char *arg)
            "down/up             seek backward/forward 1 minute\n"
            "page down/page up   seek to previous/next chapter or backward/forward 10 minutes if no chapters\n"
            "l                   keep the chapter list on screen; typing then filters it, down/up move its selection and escape closes it\n"
+           "o                   list the directory of the input; enter or a click opens a directory or plays a file, escape closes the list\n"
            "enter               seek to the chapter selected in the chapter list while it is shown\n"
            "mouse wheel         move the chapter list selection while it is shown\n"
            "left click          seek to the clicked chapter list entry, or sort the list by the clicked column, again to flip it;\n"
@@ -4387,7 +4644,7 @@ int main(int argc, char **argv)
         av_log(NULL, AV_LOG_FATAL, "Could not allocate the list\n");
         do_exit(NULL);
     }
-    is = stream_open(input_filename, file_iformat);
+    is = stream_open(input_filename, file_iformat, NULL);
     if (!is) {
         av_log(NULL, AV_LOG_FATAL, "Failed to initialize VideoState!\n");
         do_exit(NULL);

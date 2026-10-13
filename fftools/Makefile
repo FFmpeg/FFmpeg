@@ -53,6 +53,7 @@ OBJS-ffprobe +=                       \
 
 OBJS-ffmpeg += $(COMPAT_OBJS:%=compat/%)
 OBJS-ffplay += fftools/ffplay_renderer.o
+OBJS-ffplay += fftools/ffplay_dir.o
 OBJS-ffplay += fftools/ffplay_list.o
 
 define DOFFTOOL
