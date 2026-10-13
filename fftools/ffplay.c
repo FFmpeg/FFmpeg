@@ -1517,10 +1517,13 @@ static int chapter_strip_render(VideoState *is, const ChapterStrip *strip)
 {
     AVFrame *frame = av_frame_alloc();
     int alpha = av_pix_fmt_desc_get(AV_PIX_FMT_RGB32)->comp[3].offset;
+    uint32_t scale[256] = { 1 << 16 };
     int ret;
 
     if (!frame)
         return AVERROR(ENOMEM);
+    for (int a = 1; a < 256; a++)
+        scale[a] = ((255 << 16) + a - 1) / a;
     if ((ret = avfilter_graph_send_command(is->chapter_graph, "source", "color", strip->background, NULL, 0, 0)) >= 0 &&
         (ret = avfilter_graph_send_command(is->chapter_graph, "ass", "script", strip->script, NULL, 0, 0)) >= 0)
         ret = av_buffersink_get_frame(is->chapter_sink, frame);
@@ -1531,7 +1534,7 @@ static int chapter_strip_render(VideoState *is, const ChapterStrip *strip)
 
         for (int x = 0; x < strip->rect.w * 4; x += 4)
             for (int c = 0; c < 4; c++)
-                dst[x + c] = c == alpha || !src[x + alpha] ? src[x + c] : FFMIN(src[x + c] * 255 / src[x + alpha], 255);
+                dst[x + c] = c == alpha ? src[x + c] : FFMIN(src[x + c] * scale[src[x + alpha]] >> 16, 255);
     }
     av_frame_free(&frame);
     return ret;
