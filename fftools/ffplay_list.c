@@ -183,7 +183,7 @@ static void list_sort_by(ListView *lv, int key, int seed_step)
     while (lv->sort[i].key != key)
         i++;
     if (key == LIST_SORT_SHUFFLE)
-        lv->shuffle_seed += seed_step;
+        lv->shuffle_seed = (unsigned)lv->shuffle_seed + seed_step;
     else if (i == 0)
         lv->sort[0].descending ^= 1;
     if (i == 0)
