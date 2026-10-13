@@ -800,7 +800,9 @@ static int init_model_ov(OVModel *ov_model, const char *input_name, const char *
     ov_preprocess_input_model_info_free(input_model_info);
     input_model_info = NULL;
     ov_layout_free(NCHW_layout);
+    NCHW_layout = NULL;
     ov_layout_free(NHWC_layout);
+    NHWC_layout = NULL;
 #else
     if (ctx->batch_size > 1) {
         input_shapes_t input_shapes;
