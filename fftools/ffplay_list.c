@@ -62,11 +62,19 @@ typedef struct ListHit {
     int detail;
 } ListHit;
 
-/* a horizontal band of the list bitmap, rendered on its own when its content changes */
+/* a strip rendered once, kept while it may be shown again */
+typedef struct ListCacheEntry {
+    char *script;
+    const char *background;
+    int x, w, h;
+    uint8_t *pixels;
+    unsigned last_used;
+} ListCacheEntry;
+
+/* a horizontal band of the list bitmap and the rendered strip shown there */
 typedef struct ListStrip {
     SDL_Rect rect;
-    const char *background;
-    char *script;
+    ListCacheEntry *entry;
 } ListStrip;
 
 struct ListView {
@@ -79,7 +87,10 @@ struct ListView {
     AVFilterContext *sink;
     ListStrip *strips;
     int nb_strips;
-    int first;
+    ListCacheEntry **cache;
+    int nb_cache;
+    size_t cache_bytes;
+    unsigned frame;
     ListEntry *entries;
     int nb_entries;
     /* the listed entries in display order, and the scratch space sorting them needs */
@@ -372,8 +383,75 @@ static void bprint_row_strip(const ListView *lv, AVBPrint *script, const ListLay
         av_bprintf(script, "%d:%02d\n", (int)(seconds / 60), (int)(seconds % 60));
 }
 
-static int strip_add(ListStrip **strips, int *nb, SDL_Rect rect, const char *background, const AVBPrint *script)
+static void cache_entry_free(ListCacheEntry **entry)
 {
+    if (*entry) {
+        av_freep(&(*entry)->script);
+        av_freep(&(*entry)->pixels);
+    }
+    av_freep(entry);
+}
+
+/* drops the least recently used strips not shown in this frame until the new one fits into twice the bitmap size */
+static void cache_make_room(ListView *lv, size_t bytes)
+{
+    while (lv->cache_bytes + bytes > 2 * (size_t)lv->rect.w * lv->rect.h * 4) {
+        int oldest = -1;
+
+        for (int i = 0; i < lv->nb_cache; i++)
+            if (lv->cache[i]->last_used != lv->frame && (oldest < 0 || lv->cache[i]->last_used < lv->cache[oldest]->last_used))
+                oldest = i;
+        if (oldest < 0)
+            return;
+        lv->cache_bytes -= (size_t)lv->cache[oldest]->w * lv->cache[oldest]->h * 4;
+        cache_entry_free(&lv->cache[oldest]);
+        lv->cache[oldest] = lv->cache[--lv->nb_cache];
+    }
+}
+
+static int strip_render(ListView *lv, ListCacheEntry *entry);
+
+/* the cached strip for the script, background and place, rendered when there is none */
+static int cache_get(ListView *lv, const SDL_Rect *rect, const char *background, const AVBPrint *script, ListCacheEntry **entry)
+{
+    int ret;
+
+    for (int i = 0; i < lv->nb_cache; i++) {
+        ListCacheEntry *e = lv->cache[i];
+
+        if (e->background == background && e->x == rect->x && e->w == rect->w && e->h == rect->h &&
+            !strcmp(e->script, script->str)) {
+            e->last_used = lv->frame;
+            *entry = e;
+            return 0;
+        }
+    }
+    cache_make_room(lv, (size_t)rect->w * rect->h * 4);
+    if (!(lv->nb_cache & (lv->nb_cache - 1))) {
+        ListCacheEntry **grown = av_realloc_array(lv->cache, lv->nb_cache ? 2 * lv->nb_cache : 1, sizeof(*grown));
+
+        if (!grown)
+            return AVERROR(ENOMEM);
+        lv->cache = grown;
+    }
+    if (!(*entry = av_mallocz(sizeof(**entry))))
+        return AVERROR(ENOMEM);
+    **entry = (ListCacheEntry){ av_strdup(script->str), background, rect->x, rect->w, rect->h,
+                                av_malloc_array(rect->w * rect->h, 4), lv->frame };
+    ret = (*entry)->script && (*entry)->pixels ? strip_render(lv, *entry) : AVERROR(ENOMEM);
+    if (ret < 0) {
+        cache_entry_free(entry);
+        return ret;
+    }
+    lv->cache[lv->nb_cache++] = *entry;
+    lv->cache_bytes += (size_t)rect->w * rect->h * 4;
+    return 0;
+}
+
+static int strip_add(ListView *lv, ListStrip **strips, int *nb, SDL_Rect rect, const char *background, const AVBPrint *script)
+{
+    int ret;
+
     if (rect.w <= 0 || rect.h <= 0)
         return 0;
     if (!av_bprint_is_complete(script))
@@ -385,16 +463,16 @@ static int strip_add(ListStrip **strips, int *nb, SDL_Rect rect, const char *bac
             return AVERROR(ENOMEM);
         *strips = grown;
     }
-    (*strips)[*nb] = (ListStrip){ rect, background, av_strdup(script->str) };
-    if (!(*strips)[*nb].script)
-        return AVERROR(ENOMEM);
+    (*strips)[*nb].rect = rect;
+    if ((ret = cache_get(lv, &rect, background, script, &(*strips)[*nb].entry)) < 0)
+        return ret;
     (*nb)++;
     return 0;
 }
 
 /* the strips the list consists of right now: the header, each visible row, the bottom padding and the lines of the metadata
  * popup, beside the list or over its rows when the window leaves no room there */
-static int list_strips(const ListView *lv, const ListLayout *l, ListStrip **strips, int *nb)
+static int list_strips(ListView *lv, const ListLayout *l, ListStrip **strips, int *nb)
 {
     AVBPrint script;
     int ret = 0;
@@ -413,7 +491,7 @@ static int list_strips(const ListView *lv, const ListLayout *l, ListStrip **stri
             bprint_header_strip(lv, &script, l);
         else if (row >= 0)
             bprint_row_strip(lv, &script, l, row);
-        ret = strip_add(strips, nb, rect, row >= 0 && row == lv->hover.row ? hover_color : panel_color, &script);
+        ret = strip_add(lv, strips, nb, rect, row >= 0 && row == lv->hover.row ? hover_color : panel_color, &script);
     }
     if (ret >= 0 && lv->hover.detail) {
         const AVDictionary *metadata = lv->entries[lv->rows[lv->hover.row]].metadata;
@@ -439,7 +517,7 @@ static int list_strips(const ListView *lv, const ListLayout *l, ListStrip **stri
                 bprint_cell(&script, "Detail", x + l->font * 15 / 2, l->font / 4 + (i - 1) * l->font, right - l->font / 4,
                             rect.h, lines[i]->value);
             }
-            ret   = strip_add(strips, nb, rect, popup_color, &script);
+            ret   = strip_add(lv, strips, nb, rect, popup_color, &script);
             above = tag;
             tag   = tag ? av_dict_iterate(metadata, tag) : NULL;
         }
@@ -448,19 +526,17 @@ static int list_strips(const ListView *lv, const ListLayout *l, ListStrip **stri
     return ret;
 }
 
-static void strips_free(ListStrip **strips, int *nb)
-{
-    for (int i = 0; i < *nb; i++)
-        av_freep(&(*strips)[i].script);
-    av_freep(strips);
-    *nb = 0;
-}
-
 static void list_discard(ListView *lv)
 {
     avfilter_graph_free(&lv->graph);
     av_freep(&lv->bitmap);
-    strips_free(&lv->strips, &lv->nb_strips);
+    av_freep(&lv->strips);
+    lv->nb_strips = 0;
+    for (int i = 0; i < lv->nb_cache; i++)
+        cache_entry_free(&lv->cache[i]);
+    av_freep(&lv->cache);
+    lv->nb_cache    = 0;
+    lv->cache_bytes = 0;
     if (lv->texture)
         SDL_DestroyTexture(lv->texture);
     lv->texture = NULL;
@@ -509,8 +585,8 @@ static int list_configure(ListView *lv, const ListLayout *l, const SDL_Rect *can
     return avfilter_graph_config(lv->graph, NULL);
 }
 
-/* renders the strip, the ass filter composing it over its background, and writes it into the bitmap */
-static int strip_render(ListView *lv, const ListStrip *strip)
+/* renders the strip, the ass filter composing it over its background */
+static int strip_render(ListView *lv, ListCacheEntry *entry)
 {
     AVFrame *frame = av_frame_alloc();
     int alpha = av_pix_fmt_desc_get(AV_PIX_FMT_RGB32)->comp[3].offset;
@@ -521,15 +597,15 @@ static int strip_render(ListView *lv, const ListStrip *strip)
         return AVERROR(ENOMEM);
     for (int a = 1; a < 256; a++)
         scale[a] = ((255 << 16) + a - 1) / a;
-    if ((ret = avfilter_graph_send_command(lv->graph, "source", "color", strip->background, NULL, 0, 0)) >= 0 &&
-        (ret = avfilter_graph_send_command(lv->graph, "ass", "script", strip->script, NULL, 0, 0)) >= 0)
+    if ((ret = avfilter_graph_send_command(lv->graph, "source", "color", entry->background, NULL, 0, 0)) >= 0 &&
+        (ret = avfilter_graph_send_command(lv->graph, "ass", "script", entry->script, NULL, 0, 0)) >= 0)
         ret = av_buffersink_get_frame(lv->sink, frame);
     /* the ass filter composites with premultiplied alpha, SDL blends straight alpha */
-    for (int y = 0; ret >= 0 && y < strip->rect.h; y++) {
-        const uint8_t *src = frame->data[0] + y * frame->linesize[0] + strip->rect.x * 4;
-        uint8_t *dst = lv->bitmap + ((strip->rect.y + y) * lv->rect.w + strip->rect.x) * 4;
+    for (int y = 0; ret >= 0 && y < entry->h; y++) {
+        const uint8_t *src = frame->data[0] + y * frame->linesize[0] + entry->x * 4;
+        uint8_t *dst = entry->pixels + y * entry->w * 4;
 
-        for (int x = 0; x < strip->rect.w * 4; x += 4)
+        for (int x = 0; x < entry->w * 4; x += 4)
             for (int c = 0; c < 4; c++)
                 dst[x + c] = c == alpha ? src[x + c] : FFMIN(src[x + c] * scale[src[x + alpha]] >> 16, 255);
     }
@@ -543,98 +619,63 @@ static void bitmap_touched(ListView *lv, const SDL_Rect *rect)
     lv->changed = 1;
 }
 
-/* moves the pixels and strips of the rows that stay visible when the list scrolls, so that only the rows scrolling in are
- * rendered; rows the popup covered hold popup pixels and are rendered anew, as is that part of the popup */
-static void list_scroll(ListView *lv, const ListLayout *l, const ListStrip *strips, int nb)
-{
-    int shift = lv->first - l->first, kept = l->nb_rows - FFABS(shift);
-    SDL_Rect block = { 0, l->rows_y, l->width, l->nb_rows * l->line }, popup = { 0, 0, 0, 0 };
-
-    if (!shift || kept <= 0 || lv->nb_strips <= l->nb_rows || nb <= l->nb_rows)
-        return;
-    ListStrip *rows = lv->strips + 1;
-    for (int j = 0; j < l->nb_rows; j++) {
-        SDL_Rect slot = { 0, block.y + j * l->line, l->width, l->line };
-
-        if (!SDL_RectEquals(&rows[j].rect, &slot) || !SDL_RectEquals(&strips[j + 1].rect, &slot))
-            return;
-    }
-    for (int i = 0; i < lv->nb_strips; i++) {
-        if (lv->strips[i].background == popup_color && SDL_HasIntersection(&lv->strips[i].rect, &block)) {
-            SDL_UnionRect(&popup, &lv->strips[i].rect, &popup);
-            lv->strips[i].background = NULL;
-        }
-    }
-    for (int j = 0; j < l->nb_rows; j++)
-        if (SDL_HasIntersection(&rows[j].rect, &popup))
-            rows[j].background = NULL;
-    for (int k = 0; k < kept * l->line; k++) {
-        int y = shift > 0 ? block.y + block.h - 1 - k : block.y + k;
-
-        memcpy(lv->bitmap + y * lv->rect.w * 4, lv->bitmap + (y - shift * l->line) * lv->rect.w * 4, l->width * 4);
-    }
-    for (int j = 0; j < FFABS(shift); j++)
-        av_freep(&rows[shift > 0 ? kept + j : j].script);
-    memmove(rows + FFMAX(shift, 0), rows + FFMAX(-shift, 0), kept * sizeof(*rows));
-    for (int j = 0; j < FFABS(shift); j++)
-        rows[shift > 0 ? j : kept + j] = (ListStrip){ { 0 } };
-    for (int j = 0; j < l->nb_rows; j++)
-        rows[j].rect = strips[j + 1].rect;
-    bitmap_touched(lv, &block);
-}
-
-/* brings the bitmap up to date, rendering only the strips whose content, place or background changed */
+/* brings the bitmap up to date: what differs from the strips shown before is cleared and composed again from the strips
+ * covering it, rendering only strips that are not cached */
 static int list_render(ListView *lv)
 {
     ListLayout l = list_layout(lv);
-    SDL_Rect canvas = { l.font, l.font, l.canvas_w, l.canvas_h }, redrawn = { 0, 0, 0, 0 };
+    SDL_Rect canvas = { l.font, l.font, l.canvas_w, l.canvas_h }, dirty = { 0, 0, 0, 0 };
     ListStrip *strips = NULL;
     int nb = 0, ret = 0;
 
     lv->render_pending = 0;
     lv->hover = list_hit(&l, lv->mouse_x, lv->mouse_y);
+    /* the strips shown stay cached until compared with the new ones */
+    lv->frame++;
+    for (int i = 0; i < lv->nb_strips; i++)
+        lv->strips[i].entry->last_used = lv->frame;
     if (!lv->graph || !SDL_RectEquals(&lv->rect, &canvas))
         ret = list_configure(lv, &l, &canvas);
     if (ret >= 0)
         ret = list_strips(lv, &l, &strips, &nb);
-    if (ret >= 0)
-        list_scroll(lv, &l, strips, nb);
-    /* what the strips no longer cover becomes transparent again; a strip is drawn anew when it changed or lies on what was
-     * cleared or drawn before it */
-    for (int i = 0; ret >= 0 && i < lv->nb_strips; i++) {
-        const SDL_Rect *old = &lv->strips[i].rect;
+    for (int i = 0; ret >= 0 && i < FFMAX(nb, lv->nb_strips); i++) {
+        const ListStrip *old = i < lv->nb_strips ? &lv->strips[i] : NULL, *new = i < nb ? &strips[i] : NULL;
 
-        if (i < nb && SDL_RectEquals(old, &strips[i].rect))
+        if (old && new && old->entry == new->entry && SDL_RectEquals(&old->rect, &new->rect))
             continue;
-        for (int y = 0; y < old->h; y++)
-            memset(lv->bitmap + ((old->y + y) * lv->rect.w + old->x) * 4, 0, old->w * 4);
-        SDL_UnionRect(&redrawn, old, &redrawn);
-        bitmap_touched(lv, old);
+        if (old)
+            SDL_UnionRect(&dirty, &old->rect, &dirty);
+        if (new)
+            SDL_UnionRect(&dirty, &new->rect, &dirty);
     }
-    for (int i = 0; ret >= 0 && i < nb; i++) {
-        const ListStrip *old = i < lv->nb_strips ? &lv->strips[i] : NULL;
+    if (ret >= 0 && dirty.w) {
+        for (int y = dirty.y; y < dirty.y + dirty.h; y++)
+            memset(lv->bitmap + (y * lv->rect.w + dirty.x) * 4, 0, dirty.w * 4);
+        for (int i = 0; i < nb; i++) {
+            const ListCacheEntry *entry = strips[i].entry;
+            SDL_Rect part;
 
-        if (old && SDL_RectEquals(&old->rect, &strips[i].rect) && old->background == strips[i].background &&
-            !strcmp(old->script, strips[i].script) && !SDL_HasIntersection(&strips[i].rect, &redrawn))
-            continue;
-        if ((ret = strip_render(lv, &strips[i])) < 0)
-            break;
-        SDL_UnionRect(&redrawn, &strips[i].rect, &redrawn);
-        bitmap_touched(lv, &strips[i].rect);
+            if (!SDL_IntersectRect(&strips[i].rect, &dirty, &part))
+                continue;
+            for (int y = part.y; y < part.y + part.h; y++)
+                memcpy(lv->bitmap + (y * lv->rect.w + part.x) * 4,
+                       entry->pixels + ((y - strips[i].rect.y) * entry->w + part.x - strips[i].rect.x) * 4, part.w * 4);
+        }
+        bitmap_touched(lv, &dirty);
     }
     if (ret < 0) {
         if (ret != AVERROR_FILTER_NOT_FOUND)
             av_log(NULL, AV_LOG_ERROR, "Could not render the chapter list: %s\n", av_err2str(ret));
         list_discard(lv);
-        strips_free(&strips, &nb);
+        av_freep(&strips);
+        nb = 0;
         if (lv->pinned)
             SDL_StopTextInput();
         lv->pinned = 0;
     }
-    strips_free(&lv->strips, &lv->nb_strips);
+    av_freep(&lv->strips);
     lv->strips    = strips;
     lv->nb_strips = nb;
-    lv->first     = l.first;
     return ret;
 }
 
