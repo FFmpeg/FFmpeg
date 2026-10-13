@@ -296,7 +296,6 @@ typedef struct VideoState {
     SDL_AudioDeviceID audio_dev;
     int64_t audio_callback_time;
     ListView *chapter_list;
-    int chapter_pin_requested;
 
     int subtitle_stream;
     AVStream *subtitle_st;
@@ -374,6 +373,8 @@ static const char *video_codec_name;
 double rdftspeed = 0.02;
 static int64_t cursor_last_shown;
 static int cursor_hidden = 0;
+/* the key that pins a list when it is released, 0 for none */
+static SDL_Keycode list_key;
 static const char **vfilters_list = NULL;
 static int nb_vfilters = 0;
 static char *afilters = NULL;
@@ -3865,7 +3866,7 @@ static void event_loop(VideoState *cur_stream)
                 stream_cycle_channel(cur_stream, AVMEDIA_TYPE_SUBTITLE);
                 break;
             case SDLK_l:
-                cur_stream->chapter_pin_requested = cur_stream->ic->nb_chapters > 0;
+                list_key = cur_stream->ic->nb_chapters > 0 ? SDLK_l : 0;
                 break;
             case SDLK_RETURN:
             case SDLK_KP_ENTER:
@@ -3937,9 +3938,9 @@ static void event_loop(VideoState *cur_stream)
             break;
         case SDL_KEYUP:
             /* on the release of a press made while unpinned, so that the key's own text input does not start the search */
-            if (event.key.keysym.sym == SDLK_l && cur_stream->chapter_pin_requested)
+            if (list_key && event.key.keysym.sym == list_key)
                 chapter_list_pin(cur_stream);
-            cur_stream->chapter_pin_requested = 0;
+            list_key = 0;
             break;
         case SDL_TEXTINPUT:
             if (list_view_pinned(cur_stream->chapter_list))
