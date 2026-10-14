@@ -201,6 +201,8 @@ retry:
         return AVERROR_INVALIDDATA;
 
     ret = av_append_packet(s->pb, pkt, fsize - pkt->size);
+    if (ret >= 0)
+        pkt->flags |= AV_PKT_FLAG_KEY;
 
     return ret;
 }

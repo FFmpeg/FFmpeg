@@ -7,6 +7,9 @@ fate-adts-id3v1-demux: CMD = framecrc -f aac -i $(TARGET_SAMPLES)/aac/id3v1.aac 
 fate-adts-id3v2-demux: CMD = framecrc -f aac -i $(TARGET_SAMPLES)/aac/id3v2.aac -c:a copy
 fate-adts-id3v2-two-tags-demux: CMD = framecrc -i $(TARGET_SAMPLES)/aac/id3v2_two_tags.aac -c:a copy
 
+FATE_FFPROBE_DEMUX-$(call DEMDEC, AAC, AAC) += fate-adts-noparse-demux
+fate-adts-noparse-demux: CMD = ffprobe_demux $(TARGET_SAMPLES)/aac/id3v1.aac -f aac -fflags +noparse
+
 FATE_SAMPLES_DEMUX-$(call FRAMECRC, AA,, SIPR_PARSER) += fate-aa-demux
 fate-aa-demux: CMD = framecrc -i $(TARGET_SAMPLES)/aa/bush.aa -c:a copy
 
