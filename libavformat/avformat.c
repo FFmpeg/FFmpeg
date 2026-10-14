@@ -296,14 +296,21 @@ const char *avformat_stream_group_name(enum AVStreamGroupParamsType type)
 
 AVProgram *av_new_program(AVFormatContext *ac, int id)
 {
+    FFFormatContext *const si = ffformatcontext(ac);
     AVProgram *program = NULL;
     int ret;
 
     av_log(ac, AV_LOG_TRACE, "new_program: id=0x%04x\n", id);
 
-    for (unsigned i = 0; i < ac->nb_programs; i++)
-        if (ac->programs[i]->id == id)
-            program = ac->programs[i];
+    if (!ac->nb_programs) {
+        si->program_ids_monotonic = 1;
+    } else if (!si->program_ids_monotonic || ac->programs[ac->nb_programs - 1]->id >= id) {
+        for (unsigned i = 0; i < ac->nb_programs; i++)
+            if (ac->programs[i]->id == id)
+                program = ac->programs[i];
+        if (!program)
+            si->program_ids_monotonic = 0;
+    }
 
     if (!program) {
         program = av_mallocz(sizeof(*program));

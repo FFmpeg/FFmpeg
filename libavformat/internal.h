@@ -120,6 +120,11 @@ typedef struct FFFormatContext {
     int missing_streams;
 
     /**
+     * Set if program ids are strictly monotonic.
+     */
+    int program_ids_monotonic;
+
+    /**
      * Shared libcurl event loop, created on demand on the first use. Freed on
      * context free. This allows to share libcurl state across URLContexts,
      * scoped to this context.
