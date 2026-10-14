@@ -141,11 +141,12 @@ typedef struct CUDATex {
 enum {
     CUDA_SCALE_BUF_IN,
     CUDA_SCALE_BUF_TMP,
+    CUDA_SCALE_BUF_TMP2,
     CUDA_SCALE_BUF_OUT,
     CUDA_SCALE_BUF_NB,
 };
 
-#define CUDA_SCALE_MAX_PASSES 2
+#define CUDA_SCALE_MAX_PASSES 3
 
 /*
  * One kernel pass. Everything the kernels need beyond the geometry of the
@@ -166,7 +167,9 @@ typedef struct CUDAScalePass {
 typedef struct CUDAScaleFilterSet {
     CUDAScalePass passes[CUDA_SCALE_MAX_PASSES];
     int nb_passes;
-    CUDATex tmp;                ///< CUDA_SCALE_BUF_TMP
+    CUDATex tmp[2];             ///< CUDA_SCALE_BUF_TMP, CUDA_SCALE_BUF_TMP2
+    int in_use_linear;          ///< texture filtering of the input
+    int in_as_integer;          ///< integer texture reads of the input
     int in_width, in_height;
     int normalize_crop;
 } CUDAScaleFilterSet;
@@ -208,6 +211,9 @@ typedef struct CUDAScaleContext {
     CUfunction  cu_func_out_uv[2];
     CUfunction  cu_func_tmp;
     CUfunction  cu_func_tmp_uv;
+    CUfunction  cu_func_tmp_v;      ///< vertical float pass before RGB->YUV
+    CUfunction  cu_func_conv;       ///< conversion with a float RGB side
+    CUfunction  cu_func_conv_uv;
     CUstream    cu_stream;
 
     int interp_algo;
@@ -335,7 +341,8 @@ static void cuda_tex_uninit(CudaFunctions *cu, CUDATex *t)
 
 static void filter_set_uninit(CudaFunctions *cu, CUDAScaleFilterSet *set)
 {
-    cuda_tex_uninit(cu, &set->tmp);
+    for (int i = 0; i < FF_ARRAY_ELEMS(set->tmp); i++)
+        cuda_tex_uninit(cu, &set->tmp[i]);
     for (int i = 0; i < FF_ARRAY_ELEMS(set->passes); i++) {
         filter_uninit(cu, &set->passes[i].filter);
         filter_uninit(cu, &set->passes[i].filter_uv);
@@ -406,7 +413,10 @@ fail:
 }
 
 static int inter_buf_init(AVFilterContext *ctx, CUDATex *tex,
-                          int out_width, int in_height,
+                          int width, int height,
+                          int log2_chroma_w, int log2_chroma_h,
+                          int nb_planes, const int depths[4],
+                          const int channels[4],
                           int use_float, unsigned int planes)
 {
     CUDAScaleContext *s = ctx->priv;
@@ -414,25 +424,24 @@ static int inter_buf_init(AVFilterContext *ctx, CUDATex *tex,
     int ret = 0;
 
     *tex = (CUDATex) {
-        .width          = out_width,
-        .height         = in_height,
-        .crop_width     = out_width,
-        .crop_height    = in_height,
-        .log2_chroma_w  = s->out_desc->log2_chroma_w,
-        .log2_chroma_h  = s->in_desc->log2_chroma_h,
+        .width          = width,
+        .height         = height,
+        .crop_width     = width,
+        .crop_height    = height,
+        .log2_chroma_w  = log2_chroma_w,
+        .log2_chroma_h  = log2_chroma_h,
     };
 
-    for (int i = 0; i < s->in_planes; i++) {
+    for (int i = 0; i < nb_planes; i++) {
         const int is_chroma = i == 1 || i == 2;
         const unsigned int plane = is_chroma ? CUDA_SCALE_PLANE_CHROMA :
                                                CUDA_SCALE_PLANE_PRIMARY;
         const int sub_x   = is_chroma ? tex->log2_chroma_w : 0;
         const int sub_y   = is_chroma ? tex->log2_chroma_h : 0;
-        const int plane_w = AV_CEIL_RSHIFT(out_width, sub_x);
-        const int plane_h = AV_CEIL_RSHIFT(in_height, sub_y);
+        const int plane_w = AV_CEIL_RSHIFT(width,  sub_x);
+        const int plane_h = AV_CEIL_RSHIFT(height, sub_y);
         const int sizeof_pixel = (use_float ? sizeof(float) :
-                                  s->in_plane_depths[i] <= 8 ? 1 : 2) *
-                                  s->in_plane_channels[i];
+                                  depths[i] <= 8 ? 1 : 2) * channels[i];
 
         if (!(planes & plane))
             continue;
@@ -453,10 +462,10 @@ static int inter_buf_init(AVFilterContext *ctx, CUDATex *tex,
         CUDA_RESOURCE_DESC res_desc = {
             .resType = CU_RESOURCE_TYPE_PITCH2D,
             .res.pitch2D.format = use_float ? CU_AD_FORMAT_FLOAT :
-                                  s->in_plane_depths[i] <= 8 ?
+                                  depths[i] <= 8 ?
                                   CU_AD_FORMAT_UNSIGNED_INT8 :
                                   CU_AD_FORMAT_UNSIGNED_INT16,
-            .res.pitch2D.numChannels  = s->in_plane_channels[i],
+            .res.pitch2D.numChannels  = channels[i],
             .res.pitch2D.devPtr       = tex->data[i],
             .res.pitch2D.pitchInBytes = pitch,
             .res.pitch2D.width        = plane_w,
@@ -639,14 +648,6 @@ static av_cold int init_processing_chain(AVFilterContext *ctx, int in_width, int
     s->yuv2rgb = !(s->in_desc->flags & AV_PIX_FMT_FLAG_RGB) &&
                   (s->out_desc->flags & AV_PIX_FMT_FLAG_RGB);
     if (s->yuv2rgb) {
-        /* Hardware cropping keeps the link dimensions, so the exact size
-         * check happens per frame. Only reject what can never match. */
-        if (out_width > in_width || out_height > in_height) {
-            av_log(ctx, AV_LOG_ERROR,
-                   "Resizing is not supported during YUV->RGB conversion, "
-                   "use a separate scale_cuda instance for resizing\n");
-            return AVERROR(ENOSYS);
-        }
 
         enum AVColorSpace cs = inlink->colorspace;
         bool limited_range;
@@ -671,15 +672,6 @@ static av_cold int init_processing_chain(AVFilterContext *ctx, int in_width, int
 
         s->color_range = limited_range ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
 
-        /* YUV->RGB only supports Nearest for now. Forcing it here also makes
-         * the generic filter path get disabled below. */
-        if (s->interp_algo != INTERP_ALGO_DEFAULT &&
-            s->interp_algo != INTERP_ALGO_NEAREST)
-            av_log(ctx, AV_LOG_WARNING,
-                   "YUV->RGB conversion only supports nearest interpolation, "
-                   "ignoring interp_algo\n");
-        s->interp_algo = INTERP_ALGO_NEAREST;
-
         av_log(ctx, AV_LOG_VERBOSE,
                "YUV->RGB conversion enabled (%s, %s range)\n",
                av_color_space_name(cs),
@@ -689,13 +681,6 @@ static av_cold int init_processing_chain(AVFilterContext *ctx, int in_width, int
     s->rgb2yuv = (s->in_desc->flags & AV_PIX_FMT_FLAG_RGB) &&
                  !(s->out_desc->flags & AV_PIX_FMT_FLAG_RGB);
     if (s->rgb2yuv) {
-        if (out_width > in_width || out_height > in_height) {
-            av_log(ctx, AV_LOG_ERROR,
-                   "Resizing is not supported during RGB->YUV conversion, "
-                   "use a separate scale_cuda instance for resizing\n");
-            return AVERROR(ENOSYS);
-        }
-
         /* The matrix and range are those negotiated for the output, which
          * the output frames are tagged with. When unspecified, use BT.601
          * (SMPTE 170M) limited range to match swscale behavior. */
@@ -712,15 +697,6 @@ static av_cold int init_processing_chain(AVFilterContext *ctx, int in_width, int
             return ret;
 
         s->color_range = limited_range ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
-
-        /* RGB->YUV only supports Nearest for now. Forcing it here also makes
-         * the generic filter path get disabled below. */
-        if (s->interp_algo != INTERP_ALGO_DEFAULT &&
-            s->interp_algo != INTERP_ALGO_NEAREST)
-            av_log(ctx, AV_LOG_WARNING,
-                   "RGB->YUV conversion only supports nearest interpolation, "
-                   "ignoring interp_algo\n");
-        s->interp_algo = INTERP_ALGO_NEAREST;
 
         av_log(ctx, AV_LOG_VERBOSE,
                "RGB->YUV conversion enabled (%s, %s range)\n",
@@ -799,7 +775,15 @@ static av_cold int init_processing_chain(AVFilterContext *ctx, int in_width, int
             s->use_filters_opt != 1)
             s->interp_algo = INTERP_ALGO_NEAREST;
 
-        if (s->interp_algo == INTERP_ALGO_NEAREST) {
+        if (s->yuv2rgb || s->rgb2yuv) {
+            /* Conversions plan their own passes, see
+             * cudascale_conv_set_init(). */
+            if (s->use_filters_opt == 0 &&
+                (in_width != out_width || in_height != out_height))
+                av_log(ctx, AV_LOG_WARNING, "Scaling during YUV<->RGB "
+                       "conversion always uses the generic filters\n");
+            s->use_filters = 0;
+        } else if (s->interp_algo == INTERP_ALGO_NEAREST) {
             s->use_filters = 0;
         } else if (s->use_filters_opt >= 0) {
             s->use_filters = s->use_filters_opt;
@@ -849,7 +833,9 @@ static av_cold int cudascale_load_functions(AVFilterContext *ctx)
     extern const unsigned char ff_vf_scale_cuda_ptx_data[];
     extern const unsigned int ff_vf_scale_cuda_ptx_len;
 
-    switch (s->interp_algo) {
+    /* The direct conversion kernels sample 1:1; scaling during conversion
+     * uses the generic filters with interp_algo instead. */
+    switch (s->yuv2rgb || s->rgb2yuv ? INTERP_ALGO_NEAREST : s->interp_algo) {
     case INTERP_ALGO_NEAREST:
         fixed_infix = "Nearest";
         fixed_use_linear = 0;
@@ -947,6 +933,43 @@ static av_cold int cudascale_load_functions(AVFilterContext *ctx)
         }
     }
 
+    if (s->yuv2rgb || s->rgb2yuv) {
+        const char *rgb_name = s->yuv2rgb ? out_fmt_name : in_fmt_name;
+
+        snprintf(buf, sizeof(buf), "Conv_float_%s_%s", in_fmt_name, out_fmt_name);
+        ret = CHECK_CU(cu->cuModuleGetFunction(&s->cu_func_conv, s->cu_module, buf));
+        if (ret < 0)
+            goto unsupported;
+
+        snprintf(buf, sizeof(buf), "Subsample_Generic_float_h_%s_%s", rgb_name, rgb_name);
+        ret = CHECK_CU(cu->cuModuleGetFunction(&s->cu_func_tmp, s->cu_module, buf));
+        if (ret < 0)
+            goto unsupported;
+
+        if (s->yuv2rgb) {
+            static const char *const infix[] = { "Generic_h", "Generic_v" };
+
+            for (int dir = CUDA_SCALE_DIR_X; dir <= CUDA_SCALE_DIR_Y; dir++) {
+                snprintf(buf, sizeof(buf), "Subsample_%s_%s_%s",
+                         infix[dir], rgb_name, rgb_name);
+                ret = CHECK_CU(cu->cuModuleGetFunction(&s->cu_func_out[dir],
+                                                       s->cu_module, buf));
+                if (ret < 0)
+                    goto unsupported;
+            }
+        } else {
+            snprintf(buf, sizeof(buf), "Conv_float_%s_%s_uv", in_fmt_name, out_fmt_name);
+            ret = CHECK_CU(cu->cuModuleGetFunction(&s->cu_func_conv_uv, s->cu_module, buf));
+            if (ret < 0)
+                goto unsupported;
+
+            snprintf(buf, sizeof(buf), "Subsample_Generic_float_v_%s_%s", rgb_name, rgb_name);
+            ret = CHECK_CU(cu->cuModuleGetFunction(&s->cu_func_tmp_v, s->cu_module, buf));
+            if (ret < 0)
+                goto unsupported;
+        }
+    }
+
     goto fail;
 
 unsupported:
@@ -980,7 +1003,7 @@ static int cudascale_filter_init(AVFilterContext *ctx,
         params.virtual_size = 0.0;
     } else {
         switch (s->interp_algo) {
-        case INTERP_ALGO_NEAREST:  return 0; /* no weights needed */
+        case INTERP_ALGO_NEAREST:  params.scaler = SWS_SCALE_POINT; break;
         case INTERP_ALGO_BILINEAR: params.scaler = SWS_SCALE_BILINEAR; break;
         case INTERP_ALGO_LANCZOS:
             params.scaler = SWS_SCALE_LANCZOS;
@@ -1046,6 +1069,103 @@ fail:
     return ret;
 }
 
+/*
+ * Converting together with scaling scales on the RGB side, so that every
+ * scaling pass works on a single packed plane and reuses the generic RGB
+ * kernels: YUV->RGB converts at the visible input size before scaling,
+ * RGB->YUV after scaling at the output size. The RGB intermediates are
+ * normalized floats, so the scaler rounds and clamps only once.
+ */
+static int cudascale_conv_set_init(AVFilterContext *ctx,
+                                   CUDAScaleFilterSet *set,
+                                   int in_width, int in_height)
+{
+    CUDAScaleContext *s = ctx->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
+    const AVPixFmtDescriptor *rgb_desc = s->yuv2rgb ? s->out_desc : s->in_desc;
+    static const int rgb_depths[4]   = { 8 };
+    static const int rgb_channels[4] = { 4 };
+    const int scale_x = in_width  != outlink->w;
+    const int scale_y = in_height != outlink->h;
+    int src = CUDA_SCALE_BUF_IN, tmp = CUDA_SCALE_BUF_TMP;
+    CUDAScalePass *pass;
+    int ret;
+
+    /* Scaling reads RGB input as normalized floats. */
+    set->in_use_linear = 0;
+    set->in_as_integer = s->yuv2rgb;
+
+    if (s->yuv2rgb) {
+        ret = inter_buf_init(ctx, &set->tmp[tmp - CUDA_SCALE_BUF_TMP],
+                             in_width, in_height, 0, 0, 1,
+                             rgb_depths, rgb_channels, 1,
+                             CUDA_SCALE_PLANE_PRIMARY);
+        if (ret < 0)
+            return ret;
+
+        set->passes[set->nb_passes++] = (CUDAScalePass) {
+            .func     = s->cu_func_conv,
+            .planes   = CUDA_SCALE_PLANE_PRIMARY,
+            .src      = src,
+            .dst      = tmp,
+            .src_desc = s->in_desc,
+            .dst_desc = rgb_desc,
+        };
+        src = tmp++;
+    }
+
+    for (int dir = CUDA_SCALE_DIR_X; dir <= CUDA_SCALE_DIR_Y; dir++) {
+        const int last = dir == CUDA_SCALE_DIR_Y || !scale_y;
+        const int to_out = last && s->yuv2rgb;
+
+        if (!(dir == CUDA_SCALE_DIR_X ? scale_x : scale_y))
+            continue;
+
+        if (!to_out) {
+            ret = inter_buf_init(ctx, &set->tmp[tmp - CUDA_SCALE_BUF_TMP],
+                                 outlink->w,
+                                 dir == CUDA_SCALE_DIR_Y ? outlink->h : in_height,
+                                 0, 0, 1, rgb_depths, rgb_channels, 1,
+                                 CUDA_SCALE_PLANE_PRIMARY);
+            if (ret < 0)
+                return ret;
+        }
+
+        pass = &set->passes[set->nb_passes++];
+        *pass = (CUDAScalePass) {
+            .func     = to_out ? s->cu_func_out[dir] :
+                        dir == CUDA_SCALE_DIR_X ? s->cu_func_tmp :
+                                                  s->cu_func_tmp_v,
+            .planes   = CUDA_SCALE_PLANE_PRIMARY,
+            .src      = src,
+            .dst      = to_out ? CUDA_SCALE_BUF_OUT : tmp,
+            .src_desc = rgb_desc,
+            .dst_desc = rgb_desc,
+        };
+        ret = dir == CUDA_SCALE_DIR_X ?
+              cudascale_filter_init(ctx, &pass->filter, in_width, outlink->w, 0.0, 1) :
+              cudascale_filter_init(ctx, &pass->filter, in_height, outlink->h, 0.0, 1);
+        if (ret < 0)
+            return ret;
+        if (!to_out)
+            src = tmp++;
+    }
+
+    if (s->rgb2yuv) {
+        set->passes[set->nb_passes++] = (CUDAScalePass) {
+            .func     = s->cu_func_conv,
+            .func_uv  = s->cu_func_conv_uv,
+            .planes   = CUDA_SCALE_PLANE_PRIMARY | CUDA_SCALE_PLANE_CHROMA,
+            .src      = src,
+            .dst      = CUDA_SCALE_BUF_OUT,
+            .src_desc = rgb_desc,
+            .dst_desc = s->out_desc,
+        };
+    }
+
+    return 0;
+}
+
 static int cudascale_filter_set_init(AVFilterContext *ctx,
                                      CUDAScaleFilterSet *set,
                                      int in_width, int in_height,
@@ -1071,9 +1191,16 @@ static int cudascale_filter_set_init(AVFilterContext *ctx,
     set->in_width       = in_width;
     set->in_height      = in_height;
     set->normalize_crop = normalize_crop;
+    set->in_use_linear  = s->interp_use_linear;
+    set->in_as_integer  = s->interp_as_integer;
+
+    if ((s->yuv2rgb || s->rgb2yuv) &&
+        (in_width != outlink->w || in_height != outlink->h))
+        return cudascale_conv_set_init(ctx, set, in_width, in_height);
 
     if (!s->use_filters) {
-        /* The fixed function kernels scale and convert in a single pass. */
+        /* The fixed function kernels scale and convert in a single pass,
+         * as do the conversion kernels without scaling. */
         set->passes[set->nb_passes++] = (CUDAScalePass) {
             .func     = s->cu_func_fixed,
             .func_uv  = s->cu_func_fixed_uv,
@@ -1175,8 +1302,10 @@ static int cudascale_filter_set_init(AVFilterContext *ctx,
     }
 
     if (pass_x && pass_x->dst == CUDA_SCALE_BUF_TMP) {
-        ret = inter_buf_init(ctx, &set->tmp,
+        ret = inter_buf_init(ctx, &set->tmp[0],
                              outlink->w, in_height,
+                             out_sub_x, in_sub_y, s->in_planes,
+                             s->in_plane_depths, s->in_plane_channels,
                              s->interp_algo == INTERP_ALGO_LANCZOS,
                              pass_x->planes);
         if (ret < 0)
@@ -1196,9 +1325,10 @@ static int cudascale_prepare_filter_set(AVFilterContext *ctx,
     CUDAScaleFilterSet old;
     int ret;
 
-    /* Only the generic filters depend on the visible input size. */
+    /* Only the generic filters and conversions depend on the visible
+     * input size. */
     if (s->filter_set.nb_passes &&
-        (!s->use_filters ||
+        ((!s->use_filters && !s->yuv2rgb && !s->rgb2yuv) ||
          (s->filter_set.in_width == in_width &&
           s->filter_set.in_height == in_height &&
           s->filter_set.normalize_crop == normalize_crop)))
@@ -1670,7 +1800,8 @@ static int cudascale_scale(AVFilterContext *ctx, AVFrame *out, AVFrame *in,
     CUDATex in_tex = {0}, out_tex = {0};
     ret = cuda_tex_map_frame(ctx, in, s->in_plane_depths,
                              s->in_plane_channels, &in_tex,
-                             s->interp_use_linear, s->interp_as_integer);
+                             s->filter_set.in_use_linear,
+                             s->filter_set.in_as_integer);
     if (ret < 0)
         goto fail;
 
@@ -1681,7 +1812,8 @@ static int cudascale_scale(AVFilterContext *ctx, AVFrame *out, AVFrame *in,
     /* Local views of the buffers; intermediates borrow textures below. */
     CUDATex bufs[CUDA_SCALE_BUF_NB] = {
         [CUDA_SCALE_BUF_IN]  = in_tex,
-        [CUDA_SCALE_BUF_TMP] = s->filter_set.tmp,
+        [CUDA_SCALE_BUF_TMP]  = s->filter_set.tmp[0],
+        [CUDA_SCALE_BUF_TMP2] = s->filter_set.tmp[1],
         [CUDA_SCALE_BUF_OUT] = out_tex,
     };
 
@@ -1760,17 +1892,6 @@ static int cudascale_filter_frame(AVFilterLink *link, AVFrame *in)
                                    &normalize_crop);
     if (ret < 0)
         goto fail;
-
-    /* The conversion kernels read the visible area 1:1 without resizing. */
-    if ((s->yuv2rgb || s->rgb2yuv) &&
-        (in_width != outlink->w || in_height != outlink->h)) {
-        av_log(ctx, AV_LOG_ERROR,
-               "Visible input size %dx%d does not match output size %dx%d; "
-               "resizing is not supported during YUV<->RGB conversion\n",
-               in_width, in_height, outlink->w, outlink->h);
-        ret = AVERROR(ENOSYS);
-        goto fail;
-    }
 
     out = av_frame_alloc();
     if (!out) {

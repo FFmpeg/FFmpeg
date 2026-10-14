@@ -1032,15 +1032,17 @@ FATE_SCALE_CUDA_SPECIAL := $(addprefix fate-filter-scale_cuda-, nv12-bgra-bt709 
                                                                crop-nv12-bgra crop-bgra-nv12 nv12-bgra-full-gbr roundtrip-nv12-bt709)
 FATE_SCALE_CUDA_ODD_RGB := $(addprefix fate-filter-scale_cuda-, odd-bgra-nv12 odd-bgra-yuv420p)
 FATE_SCALE_CUDA_ODD_YUV := $(addprefix fate-filter-scale_cuda-, odd-nv12-bgra odd-yuv420p-bgra)
+FATE_SCALE_CUDA_RESIZE  := $(addprefix fate-filter-scale_cuda-resize-, nv12-bgra-up p010-bgra-down yuv420p-rgba-w \
+                                                                      bgra-nv12-down bgra-p010-up bgra-yuv444p-h crop-nv12-bgra)
 
 FATE_SCALE_CUDA := $(FATE_SCALE_CUDA_YUV_RGB) $(FATE_SCALE_CUDA_RGB_YUV) $(FATE_SCALE_CUDA_SPECIAL) \
-                   $(FATE_SCALE_CUDA_ODD_RGB) $(FATE_SCALE_CUDA_ODD_YUV)
+                   $(FATE_SCALE_CUDA_ODD_RGB) $(FATE_SCALE_CUDA_ODD_YUV) $(FATE_SCALE_CUDA_RESIZE)
 
 FATE_SCALE_CUDA-$(call FILTERFRAMECRC, $(SCALE_CUDA_FILTERS), FFMPEG) := $(FATE_SCALE_CUDA)
 
 $(FATE_SCALE_CUDA-yes): CMD = framecrc -lavfi "testsrc2=s=$(SIZE),$(LAVFI)" -frames:v 5
 
-$(FATE_SCALE_CUDA_YUV_RGB) $(FATE_SCALE_CUDA_RGB_YUV) $(FATE_SCALE_CUDA_SPECIAL): SIZE = 160x120
+$(FATE_SCALE_CUDA_YUV_RGB) $(FATE_SCALE_CUDA_RGB_YUV) $(FATE_SCALE_CUDA_SPECIAL) $(FATE_SCALE_CUDA_RESIZE): SIZE = 160x120
 $(FATE_SCALE_CUDA_ODD_RGB): SIZE = 161x121
 # testsrc2 rounds subsampled YUV sizes down, so crop exactly to 161x121 instead.
 $(FATE_SCALE_CUDA_ODD_YUV): SIZE = 162x122
@@ -1076,6 +1078,20 @@ fate-filter-scale_cuda-roundtrip-nv12-bt709: LAVFI = format=nv12,setparams=color
 # Hardware crop keeps the link size, so the visible size is passed explicitly.
 fate-filter-scale_cuda-crop-nv12-bgra: LAVFI = format=nv12,hwupload_cuda,crop=96:64:16:8,scale_cuda=96:64:format=bgra,hwdownload,format=bgra
 fate-filter-scale_cuda-crop-bgra-nv12: LAVFI = format=bgra,hwupload_cuda,crop=96:64:16:8,scale_cuda=96:64:format=nv12:out_range=limited,hwdownload,format=nv12
+
+# Resizing during conversion, in one or both directions.
+fate-filter-scale_cuda-resize-nv12-bgra-up:    LAVFI = format=nv12,hwupload_cuda,scale_cuda=240:180:format=bgra,hwdownload,format=bgra
+fate-filter-scale_cuda-resize-p010-bgra-down:  LAVFI = format=p010,hwupload_cuda,scale_cuda=80:60:format=bgra:interp_algo=lanczos,hwdownload,format=bgra
+fate-filter-scale_cuda-resize-yuv420p-rgba-w:  LAVFI = format=yuv420p,hwupload_cuda,scale_cuda=240:120:format=rgba:interp_algo=bilinear,hwdownload,format=rgba
+fate-filter-scale_cuda-resize-bgra-nv12-down:  LAVFI = format=bgra,hwupload_cuda,scale_cuda=80:60:format=nv12:out_range=limited,hwdownload,format=nv12
+fate-filter-scale_cuda-resize-bgra-p010-up:    LAVFI = format=bgra,hwupload_cuda,scale_cuda=240:180:format=p010:out_range=limited,hwdownload,format=p010
+fate-filter-scale_cuda-resize-bgra-yuv444p-h:  LAVFI = format=bgra,hwupload_cuda,scale_cuda=160:60:format=yuv444p:out_range=limited:interp_algo=nearest,hwdownload,format=yuv444p
+fate-filter-scale_cuda-resize-crop-nv12-bgra:  LAVFI = format=nv12,hwupload_cuda,crop=96:64:16:8,scale_cuda=192:128:format=bgra,hwdownload,format=bgra
+
+# A sharp step resized with Lanczos overshoots; limited range high bit depth luma keeps it up to the code maximum.
+FATE_SCALE_CUDA_STEP-$(call FILTERFRAMECRC, $(SCALE_CUDA_FILTERS) COLOR HSTACK, FFMPEG) += fate-filter-scale_cuda-resize-step-p010
+fate-filter-scale_cuda-resize-step-p010: CMD = framecrc -lavfi "color=black:s=3x4,format=bgra[a];color=white:s=5x4,format=bgra[b];[a][b]hstack,hwupload_cuda,scale_cuda=32:4:format=p010:interp_algo=lanczos:out_range=limited,hwdownload,format=p010" -frames:v 1
+FATE_SCALE_CUDA-yes += $(FATE_SCALE_CUDA_STEP-yes)
 
 fate-filter-scale_cuda-odd-bgra-nv12:    LAVFI = $(call sc_rgb_yuv,bgra,nv12)
 fate-filter-scale_cuda-odd-bgra-yuv420p: LAVFI = $(call sc_rgb_yuv,bgra,yuv420p)

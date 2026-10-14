@@ -27892,7 +27892,11 @@ pixel format is used.
 Converting between @code{yuv420p}, @code{yuv422p}, @code{yuv444p},
 @code{yuv420p10}, @code{yuv422p10}, @code{yuv444p10}, @code{nv12}, @code{nv16},
 @code{p010} or @code{p210} and @code{bgra}, @code{rgba}, @code{bgr0} or
-@code{rgb0} is supported, but cannot be combined with resizing.
+@code{rgb0} is supported, also together with resizing. Resizing is then done
+on the RGB side, after converting from YUV or before converting to YUV, and
+always uses the generic filters selected with @option{interp_algo}. Resizing
+the YUV side in a separate instance instead needs less intermediate memory and
+may be faster, but filters chroma differently.
 YUV to RGB conversion uses the YCbCr matrix and range of the input, RGB to YUV
 conversion those selected for the output (see @option{out_color_matrix} and
 @option{out_range}). An unspecified matrix is treated as BT.601 and an
@@ -27913,7 +27917,8 @@ If set to 1, filter with a generic weight LUT instead of using fixed-function
 shader kernels. May be faster or slower depending on the hardware. A value
 of @code{auto} (the default) enables this automatically when required for
 correct anti-aliasing when downscaling, and for high-quality Lanczos scaling.
-Set this to 0 to use the legacy fixed 4-tap Lanczos kernel.
+Set this to 0 to use the legacy fixed 4-tap Lanczos kernel. Resizing during
+YUV to RGB or RGB to YUV conversion always uses the generic filters.
 
 @item param
 Algorithm-specific parameter. For @var{bicubic}, this affects the filter
@@ -27976,10 +27981,15 @@ scale_cuda=passthrough=0
 
 @item
 Convert BT.709 input to RGB for a filter that requires it, then back to
-BT.709 NV12 with limited range. Note the separate instances, as scaling and
-color space conversion cannot be combined.
+BT.709 NV12 with limited range.
 @example
 scale_cuda=format=bgra,scale_cuda=format=nv12:out_color_matrix=bt709:out_range=limited
+@end example
+
+@item
+Scale to 720p while converting to RGB.
+@example
+scale_cuda=-2:720:format=bgra
 @end example
 @end itemize
 
