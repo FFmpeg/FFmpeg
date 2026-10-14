@@ -90,6 +90,8 @@ struct segment {
 };
 
 struct rendition;
+struct rendition_group;
+struct variant;
 
 enum PlaylistType {
     PLS_TYPE_UNSPECIFIED,
@@ -177,6 +179,11 @@ struct playlist {
     int n_renditions;
     struct rendition **renditions;
 
+    /* The last variant this playlist was added to and the last rendition
+     * group whose renditions were added to it. */
+    struct variant *last_variant;
+    struct rendition_group *last_group;
+
     /* Media Initialization Sections (EXT-X-MAP) associated with this
      * playlist, if any. */
     int n_init_sections;
@@ -201,7 +208,6 @@ struct playlist {
 struct rendition {
     enum AVMediaType type;
     struct playlist *playlist;
-    char group_id[MAX_FIELD_LEN];
     char language[MAX_FIELD_LEN];
     char name[MAX_FIELD_LEN];
     int disposition;
@@ -219,6 +225,27 @@ struct variant {
     char subtitles_group[MAX_FIELD_LEN];
 };
 
+/*
+ * The renditions with the same TYPE and GROUP-ID, which variants reference
+ * by the group id.
+ */
+struct rendition_group {
+    enum AVMediaType type;
+    char id[MAX_FIELD_LEN];
+
+    /* playlists of the external renditions */
+    int n_playlists;
+    struct playlist **playlists;
+
+    /* renditions that are part of the variant main Media Playlists */
+    int n_renditions;
+    struct rendition **renditions;
+
+    /* variants that reference the group */
+    int n_variants;
+    struct variant **variants;
+};
+
 typedef struct HLSContext {
     AVClass *class;
     AVFormatContext *ctx;
@@ -229,6 +256,9 @@ typedef struct HLSContext {
     struct AVTreeNode *playlists_by_url;
     int n_renditions;
     struct rendition **renditions;
+    int n_rendition_groups;
+    struct rendition_group **rendition_groups;
+    struct AVTreeNode *rendition_groups_by_id;
 
     int64_t cur_seq_no;
     int m3u8_hold_counters;
@@ -334,6 +364,16 @@ static void free_rendition_list(HLSContext *c)
         av_freep(&c->renditions[i]);
     av_freep(&c->renditions);
     c->n_renditions = 0;
+    for (i = 0; i < c->n_rendition_groups; i++) {
+        av_freep(&c->rendition_groups[i]->playlists);
+        av_freep(&c->rendition_groups[i]->renditions);
+        av_freep(&c->rendition_groups[i]->variants);
+        av_freep(&c->rendition_groups[i]);
+    }
+    av_freep(&c->rendition_groups);
+    c->n_rendition_groups = 0;
+    av_tree_destroy(c->rendition_groups_by_id);
+    c->rendition_groups_by_id = NULL;
 }
 
 static int cmp_url_playlist(const void *key, const void *b)
@@ -549,14 +589,59 @@ struct rendition_info {
     char characteristics[MAX_CHARACTERISTICS_LEN];
 };
 
-static struct rendition *new_rendition(HLSContext *c, struct rendition_info *info,
-                                      const char *url_base)
+static int cmp_rendition_group(const void *a, const void *b)
 {
+    const struct rendition_group *ga = a, *gb = b;
+
+    if (ga->type != gb->type)
+        return FFDIFFSIGN(ga->type, gb->type);
+    return strcmp(ga->id, gb->id);
+}
+
+static struct rendition_group *find_rendition_group(HLSContext *c,
+                                                    enum AVMediaType type,
+                                                    const char *id)
+{
+    struct rendition_group key = { .type = type };
+
+    av_strlcpy(key.id, id, sizeof(key.id));
+    return av_tree_find(c->rendition_groups_by_id, &key, cmp_rendition_group, NULL);
+}
+
+static struct rendition_group *new_rendition_group(HLSContext *c,
+                                                   enum AVMediaType type,
+                                                   const char *id)
+{
+    struct rendition_group *group = find_rendition_group(c, type, id);
+    struct AVTreeNode *node;
+
+    if (group)
+        return group;
+
+    group = av_mallocz(sizeof(*group));
+    node  = av_tree_node_alloc();
+    if (!group || !node ||
+        av_dynarray_add_nofree(&c->rendition_groups, &c->n_rendition_groups, group) < 0) {
+        av_free(group);
+        av_free(node);
+        return NULL;
+    }
+    group->type = type;
+    av_strlcpy(group->id, id, sizeof(group->id));
+    av_tree_insert(&c->rendition_groups_by_id, group, cmp_rendition_group, &node);
+    return group;
+}
+
+static int new_rendition(HLSContext *c, struct rendition_info *info,
+                         const char *url_base)
+{
+    struct rendition_group *group;
     struct rendition *rend;
     enum AVMediaType type = AVMEDIA_TYPE_UNKNOWN;
     char *characteristic;
     char *chr_ptr;
     char *saveptr;
+    int ret;
 
     if (!strcmp(info->type, "AUDIO"))
         type = AVMEDIA_TYPE_AUDIO;
@@ -567,27 +652,34 @@ static struct rendition *new_rendition(HLSContext *c, struct rendition_info *inf
     else if (!strcmp(info->type, "CLOSED-CAPTIONS"))
         /* CLOSED-CAPTIONS is ignored since we do not support CEA-608 CC in
          * AVC SEI RBSP anyway */
-        return NULL;
+        return 0;
 
     if (type == AVMEDIA_TYPE_UNKNOWN) {
         av_log(c->ctx, AV_LOG_WARNING, "Can't support the type: %s\n", info->type);
-        return NULL;
+        return 0;
     }
 
     /* URI is mandatory for subtitles as per spec */
     if (type == AVMEDIA_TYPE_SUBTITLE && !info->uri[0]) {
         av_log(c->ctx, AV_LOG_ERROR, "The URI tag is REQUIRED for subtitle.\n");
-        return NULL;
+        return 0;
     }
+
+    group = new_rendition_group(c, type, info->group_id);
+    if (!group)
+        return AVERROR(ENOMEM);
 
     rend = av_mallocz(sizeof(struct rendition));
     if (!rend)
-        return NULL;
+        return AVERROR(ENOMEM);
 
-    dynarray_add(&c->renditions, &c->n_renditions, rend);
+    ret = av_dynarray_add_nofree(&c->renditions, &c->n_renditions, rend);
+    if (ret < 0) {
+        av_free(rend);
+        return ret;
+    }
 
     rend->type = type;
-    strcpy(rend->group_id, info->group_id);
     strcpy(rend->language, info->language);
     strcpy(rend->name, info->name);
 
@@ -599,10 +691,18 @@ static struct rendition *new_rendition(HLSContext *c, struct rendition_info *inf
                 rend->playlist->is_subtitle = 1;
                 rend->playlist->is_id3_timestamped = 0;
             }
-            dynarray_add(&rend->playlist->renditions,
-                         &rend->playlist->n_renditions, rend);
+            ret = av_dynarray_add_nofree(&rend->playlist->renditions,
+                                         &rend->playlist->n_renditions, rend);
+            if (ret < 0)
+                return ret;
         }
     }
+    if (rend->playlist)
+        ret = av_dynarray_add_nofree(&group->playlists, &group->n_playlists, rend->playlist);
+    else
+        ret = av_dynarray_add_nofree(&group->renditions, &group->n_renditions, rend);
+    if (ret < 0)
+        return ret;
 
     if (info->assoc_language[0]) {
         size_t langlen = strlen(rend->language);
@@ -633,7 +733,7 @@ static struct rendition *new_rendition(HLSContext *c, struct rendition_info *inf
         chr_ptr = NULL;
     }
 
-    return rend;
+    return 0;
 }
 
 static void handle_rendition_args(void *vinfo, const char *key,
@@ -966,7 +1066,9 @@ static int parse_playlist(HLSContext *c, const char *url,
                 goto fail;
             }
             ff_parse_key_value(ptr, handle_rendition_args, &info);
-            new_rendition(c, &info, url);
+            ret = new_rendition(c, &info, url);
+            if (ret < 0)
+                goto fail;
         } else if (av_strstart(line, "#EXT-X-TARGETDURATION:", &ptr)) {
             int64_t t;
             ret = ensure_playlist(c, &pls, url);
@@ -2017,28 +2119,59 @@ restart:
     goto restart;
 }
 
-static void add_renditions_to_variant(HLSContext *c, struct variant *var,
-                                      enum AVMediaType type, const char *group_id)
+static int add_renditions_to_variant(HLSContext *c, struct variant *var,
+                                     enum AVMediaType type, const char *group_id)
 {
-    int i;
+    struct rendition_group *group = find_rendition_group(c, type, group_id);
+    int ret;
 
-    for (i = 0; i < c->n_renditions; i++) {
-        struct rendition *rend = c->renditions[i];
+    if (!group)
+        return 0;
 
-        if (rend->type == type && !strcmp(rend->group_id, group_id)) {
+    ret = av_dynarray_add_nofree(&group->variants, &group->n_variants, var);
+    if (ret < 0)
+        return ret;
 
-            if (rend->playlist)
-                /* rendition is an external playlist
-                 * => add the playlist to the variant */
-                dynarray_add(&var->playlists, &var->n_playlists, rend->playlist);
-            else
-                /* rendition is part of the variant main Media Playlist
-                 * => add the rendition to the main Media Playlist */
-                dynarray_add(&var->playlists[0]->renditions,
-                             &var->playlists[0]->n_renditions,
-                             rend);
+    /* add the playlists of the external renditions to the variant */
+    for (int i = 0; i < group->n_playlists; i++) {
+        struct playlist *pls = group->playlists[i];
+
+        if (pls->last_variant != var) {
+            ret = av_dynarray_add_nofree(&var->playlists, &var->n_playlists, pls);
+            if (ret < 0)
+                return ret;
+            pls->last_variant = var;
         }
     }
+    return 0;
+}
+
+/* The renditions without a playlist are part of the main Media Playlist of
+ * every variant that references their group. */
+static int add_renditions_to_playlists(HLSContext *c, enum AVMediaType type)
+{
+    for (int i = 0; i < c->n_rendition_groups; i++) {
+        struct rendition_group *group = c->rendition_groups[i];
+
+        if (group->type != type || !group->n_renditions)
+            continue;
+
+        for (int j = 0; j < group->n_variants; j++) {
+            struct playlist *pls = group->variants[j]->playlists[0];
+
+            if (pls->last_group == group)
+                continue;
+
+            for (int k = 0; k < group->n_renditions; k++) {
+                int ret = av_dynarray_add_nofree(&pls->renditions, &pls->n_renditions,
+                                                 group->renditions[k]);
+                if (ret < 0)
+                    return ret;
+            }
+            pls->last_group = group;
+        }
+    }
+    return 0;
 }
 
 static void add_metadata_from_renditions(AVFormatContext *s, struct playlist *pls,
@@ -2399,13 +2532,19 @@ static int hls_read_header(AVFormatContext *s)
     for (i = 0; i < c->n_variants; i++) {
         struct variant *var = c->variants[i];
 
-        if (var->audio_group[0])
-            add_renditions_to_variant(c, var, AVMEDIA_TYPE_AUDIO, var->audio_group);
-        if (var->video_group[0])
-            add_renditions_to_variant(c, var, AVMEDIA_TYPE_VIDEO, var->video_group);
-        if (var->subtitles_group[0])
-            add_renditions_to_variant(c, var, AVMEDIA_TYPE_SUBTITLE, var->subtitles_group);
+        if (var->audio_group[0] &&
+            (ret = add_renditions_to_variant(c, var, AVMEDIA_TYPE_AUDIO, var->audio_group)) < 0)
+            return ret;
+        if (var->video_group[0] &&
+            (ret = add_renditions_to_variant(c, var, AVMEDIA_TYPE_VIDEO, var->video_group)) < 0)
+            return ret;
+        if (var->subtitles_group[0] &&
+            (ret = add_renditions_to_variant(c, var, AVMEDIA_TYPE_SUBTITLE, var->subtitles_group)) < 0)
+            return ret;
     }
+    if ((ret = add_renditions_to_playlists(c, AVMEDIA_TYPE_AUDIO)) < 0 ||
+        (ret = add_renditions_to_playlists(c, AVMEDIA_TYPE_VIDEO)) < 0)
+        return ret;
 
     /* Create a program for each variant */
     for (i = 0; i < c->n_variants; i++) {
