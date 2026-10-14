@@ -2359,8 +2359,8 @@ static int set_stream_info_from_input_stream(AVStream *st, struct playlist *pls,
     else
         avpriv_set_pts_info(st, ist->pts_wrap_bits, ist->time_base.num, ist->time_base.den);
 
-    // copy disposition
-    st->disposition = ist->disposition;
+    // add the dispositions of the subdemuxer stream to the rendition ones
+    st->disposition |= ist->disposition;
 
     av_dict_copy(&st->metadata, ist->metadata, 0);
 
