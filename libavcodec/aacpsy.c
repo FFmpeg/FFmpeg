@@ -769,7 +769,7 @@ static void psy_3gpp_analyze_channel(FFPsyContext *ctx, int channel,
         AacPsyBand *bands = &pch->band[w];
 
         /* 5.4.2.3 "Spreading" & 5.4.3 "Spread Energy Calculation" */
-        spread_en[0] = bands[0].energy;
+        spread_en[w] = bands[0].energy;
         for (g = 1; g < num_bands; g++) {
             bands[g].thr   = FFMAX(bands[g].thr,    bands[g-1].thr * coeffs[g].spread_hi[0]);
             spread_en[w+g] = FFMAX(bands[g].energy, spread_en[w+g-1] * coeffs[g].spread_hi[1]);
