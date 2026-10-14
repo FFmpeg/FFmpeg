@@ -488,7 +488,7 @@ void ff_hevc_luma_mv_merge_mode(HEVCLocalContext *lc, const HEVCPPS *pps,
     const HEVCContext *const s = lc->parent;
     int singleMCLFlag = 0;
     int nCS = 1 << log2_cb_size;
-    MvField mergecand_list[MRG_MAX_NUM_CANDS];
+    MvField mergecand_list[MRG_MAX_NUM_CANDS] = { 0 };
     int nPbW2 = nPbW;
     int nPbH2 = nPbH;
 
