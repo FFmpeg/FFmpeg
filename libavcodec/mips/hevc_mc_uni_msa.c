@@ -976,7 +976,7 @@ static void common_vt_8t_4w_msa(const uint8_t *src, int32_t src_stride,
         src += 2 * src_stride;
         ILVR_B2_SB(src7, src6, src8, src7, src76_r, src87_r);
         src8776 = (v16i8)__msa_ilvr_d((v2i64) src87_r, (v2i64) src76_r);
-        src8776 = (v16i8)__msa_xori_b(src8776, 128);
+        src8776 = (v16i8)__msa_xori_b((v16u8) src8776, 128);
         out10 = (v8i16)__msa_dotp_s_h((v16i8) src2110, (v16i8) filt0);
         out10 = (v8i16)__msa_dpadd_s_h((v8i16) out10, src4332, filt1);
         out10 = (v8i16)__msa_dpadd_s_h((v8i16) out10, src6554, filt2);

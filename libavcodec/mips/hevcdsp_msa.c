@@ -220,7 +220,7 @@ static void hevc_copy_12w_msa(const uint8_t *src, int32_t src_stride,
         in0   = (v8i16)__msa_ilvl_b((v16i8) zero, (v16i8) src0);
         in0_r = in0_r << 6;
         in0   = in0 << 6;
-        ST_UH(in0_r, dst);
+        ST_SH(in0_r, dst);
         out0 = __msa_copy_u_d((v2i64) in0, 0);
         SD(out0, dst + 8);
         dst += dst_stride;
@@ -1101,8 +1101,8 @@ static void hevc_vt_8t_4w_msa(const uint8_t *src, int32_t src_stride,
         LD_SB2(src, src_stride, src7, src8);
         src += 2 * src_stride;
         ILVR_B2_SB(src7, src6, src8, src7, src76_r, src87_r);
-        src8776 = (v16i8)__msa_ilvr_d((v2i64) src87_r, src76_r);
-        src8776 = (v16i8)__msa_xori_b((v16i8) src8776, 128);
+        src8776 = (v16i8)__msa_ilvr_d((v2i64) src87_r, (v2i64) src76_r);
+        src8776 = (v16i8)__msa_xori_b((v16u8) src8776, 128);
         dst10 = const_vec;
         DPADD_SB4_SH(src2110, src4332, src6554, src8776,
                      filt0, filt1, filt2, filt3, dst10, dst10, dst10, dst10);

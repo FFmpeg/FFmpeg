@@ -361,8 +361,8 @@ static uint32_t sad_hv_bilinear_filter_8width_msa(const uint8_t *src,
         comp2 = __msa_hadd_u_h(temp1, temp1);
         comp2 += comp0;
         comp2 = (v8u16)__msa_srari_h((v8i16) comp2, 2);
-        comp0 = (v16u8) __msa_pckev_b((v16i8) zero, (v16i8) comp2);
-        diff = __msa_asub_u_b(src0, comp0);
+        comp0 = (v8u16) __msa_pckev_b((v16i8) zero, (v16i8) comp2);
+        diff = __msa_asub_u_b(src0, (v16u8) comp0);
         diff = (v16u8)__msa_ilvr_d((v2i64) zero, (v2i64) diff);
         sad += __msa_hadd_u_h(diff, diff);
     }
@@ -546,7 +546,7 @@ static uint32_t sse_4width_msa(const uint8_t *src_ptr, int32_t src_stride,
         ref_ptr += ref_stride;
         src  = (v16u8)__msa_insert_w((v4i32) src, 0, src0);
         ref  = (v16u8)__msa_insert_w((v4i32) ref, 0, ref0);
-        reg0 = (v16u8)__msa_ilvr_b(src, ref);
+        reg0 = (v16u8)__msa_ilvr_b((v16i8) src, (v16i8) ref);
         reg0 = (v16u8)__msa_ilvr_d((v2i64) zero, (v2i64) reg0);
         tmp0 = (v8i16)__msa_hsub_u_h((v16u8) reg0, (v16u8) reg0);
         var  = (v4i32)__msa_dpadd_s_w((v4i32) var, (v8i16) tmp0, (v8i16) tmp0);
@@ -585,7 +585,7 @@ static uint32_t sse_8width_msa(const uint8_t *src_ptr, int32_t src_stride,
         ref0 = LD_UB(ref_ptr);
         src_ptr += src_stride;
         ref_ptr += ref_stride;
-        ref1 = (v16u8)__msa_ilvr_b(src0, ref0);
+        ref1 = (v16u8)__msa_ilvr_b((v16i8) src0, (v16i8) ref0);
         tmp0 = (v8i16)__msa_hsub_u_h((v16u8) ref1, (v16u8) ref1);
         var  = (v4i32)__msa_dpadd_s_w((v4i32) var, (v8i16) tmp0, (v8i16) tmp0);
     }
