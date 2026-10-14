@@ -800,7 +800,7 @@ static int nvdec_retrieve_data(void *logctx, AVFrame *frame)
     NVDECFrame        *cf = (NVDECFrame*)fdd->hwaccel_priv;
     NVDECDecoder *decoder = cf->decoder;
 
-    AVHWFramesContext *hwctx = (AVHWFramesContext *)frame->hw_frames_ctx->data;
+    AVHWFramesContext *hwctx = (AVHWFramesContext *)decoder->real_hw_frames_ref->data;
 
     CUVIDPROCPARAMS vpp = { 0 };
     NVDECFrame *unmap_data = NULL;
