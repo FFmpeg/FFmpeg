@@ -635,6 +635,8 @@ static int param_parse(void *s, IAMFContext *c, AVIOContext *pb,
         }
 
     parameter_rate = ffio_read_leb(pb);
+    if (!parameter_rate)
+        return AVERROR_INVALIDDATA;
     mode = avio_r8(pb) >> 7;
 
     if (mode == 0) {
