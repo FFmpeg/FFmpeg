@@ -1310,6 +1310,12 @@ static int parse_manifest(AVFormatContext *s, const char *url, AVIOContext *in)
 
     if (av_opt_get(in, "location", AV_OPT_SEARCH_CHILDREN, (uint8_t**)&c->base_url) < 0)
         c->base_url = av_strdup(url);
+    if (!c->base_url) {
+        if (close_in)
+            ff_format_io_close(s, &in);
+        return AVERROR(ENOMEM);
+    }
+    url = c->base_url;
 
     av_bprint_init(&buf, 0, INT_MAX); // xmlReadMemory uses integer bufsize
 
