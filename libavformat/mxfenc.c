@@ -118,6 +118,7 @@ typedef struct MXFStreamContext {
     int max_gop;             ///< maximum gop size, used by mpeg-2 descriptor
     int b_picture_count;     ///< maximum number of consecutive b pictures, used in mpeg-2 descriptor
     int low_delay;           ///< low delay, used in mpeg-2 descriptor
+    int version;             ///< format version, used in ffv1 descriptor
     int micro_version;       ///< format micro_version, used in ffv1 descriptor
     j2k_info_t j2k_info;
     enum MXFMetadataSetType sub_descriptor;
@@ -1633,7 +1634,7 @@ static void mxf_write_ffv1_subdesc(AVFormatContext *s, AVStream *st)
     }
 
     mxf_write_local_tag(s, 2, 0xDFDA);
-    avio_wb16(pb, (*sc->codec_ul)[14]); // FFV1Version
+    avio_wb16(pb, sc->version); // FFV1Version
 
     if (st->codecpar->extradata_size) {
         mxf_write_local_tag(s, 2, 0xDFD9);
@@ -2690,6 +2691,7 @@ static int mxf_parse_ffv1_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt)
         if (v >= 2)
             return 0;
     }
+    sc->version = v;
     sc->codec_ul = &mxf_ffv1_codec_uls[v];
     sc->sub_descriptor = FFV1SubDescriptor;
 
