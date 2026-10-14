@@ -101,6 +101,7 @@ typedef struct DecodeContext {
         FFLCEVCContext *ctx;
         int frame;
         enum AVPixelFormat format;
+        enum AVPixelFormat base_format;
         int base_width;
         int base_height;
         int width;
@@ -1665,6 +1666,7 @@ int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
 
     if (dc->lcevc.frame) {
         ret = ff_lcevc_parse_frame(dc->lcevc.ctx, frame, &dc->lcevc.format,
+                                   &dc->lcevc.base_format,
                                    &dc->lcevc.width, &dc->lcevc.height);
         if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))
             return ret;
@@ -1672,7 +1674,8 @@ int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
         // force get_buffer2() to allocate the base frame with at least the dimensions
         // of the final enhanced frame, in order to prevent reinitializing the buffer
         // pools unnecessarely
-        if (!ret && dc->lcevc.width && dc->lcevc.height) {
+        if (!ret && dc->lcevc.width && dc->lcevc.height &&
+            frame->format == dc->lcevc.base_format) {
             dc->lcevc.base_width  = frame->width;
             dc->lcevc.base_height = frame->height;
             frame->width  = FFMAX(frame->width,  dc->lcevc.width);
@@ -1742,11 +1745,13 @@ int ff_attach_decode_data(AVCodecContext *avctx, AVFrame *frame)
 
         if (dc->lcevc.frame) {
             int ret = ff_lcevc_parse_frame(dc->lcevc.ctx, frame, &dc->lcevc.format,
+                                           &dc->lcevc.base_format,
                                            &dc->lcevc.width, &dc->lcevc.height);
             if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))
                 return ret;
 
-            if (!ret && dc->lcevc.width && dc->lcevc.height) {
+            if (!ret && dc->lcevc.width && dc->lcevc.height &&
+                frame->format == dc->lcevc.base_format) {
                 dc->lcevc.base_width  = frame->width;
                 dc->lcevc.base_height = frame->height;
             } else
@@ -2427,6 +2432,7 @@ av_cold void ff_decode_internal_sync(AVCodecContext *dst, const AVCodecContext *
     dst_dc->lcevc.width = src_dc->lcevc.width;
     dst_dc->lcevc.height = src_dc->lcevc.height;
     dst_dc->lcevc.format = src_dc->lcevc.format;
+    dst_dc->lcevc.base_format = src_dc->lcevc.base_format;
 #endif
 }
 
