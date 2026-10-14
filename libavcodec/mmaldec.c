@@ -659,7 +659,6 @@ static int ffmal_copy_frame(AVCodecContext *avctx,  AVFrame *frame,
 
     frame->sample_aspect_ratio = avctx->sample_aspect_ratio;
     frame->width  = avctx->width;
-    frame->width  = avctx->width;
     frame->height = avctx->height;
     frame->format = avctx->pix_fmt;
 
