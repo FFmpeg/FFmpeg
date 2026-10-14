@@ -39,6 +39,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/dict.h"
 #include "libavutil/time.h"
+#include "libavutil/tree.h"
 #include "avformat.h"
 #include "demux.h"
 #include "internal.h"
@@ -225,6 +226,7 @@ typedef struct HLSContext {
     struct variant **variants;
     int n_playlists;
     struct playlist **playlists;
+    struct AVTreeNode *playlists_by_url;
     int n_renditions;
     struct rendition **renditions;
 
@@ -309,6 +311,8 @@ static void free_playlist_list(HLSContext *c)
     }
     av_freep(&c->playlists);
     c->n_playlists = 0;
+    av_tree_destroy(c->playlists_by_url);
+    c->playlists_by_url = NULL;
 }
 
 static void free_variant_list(HLSContext *c)
@@ -332,29 +336,43 @@ static void free_rendition_list(HLSContext *c)
     c->n_renditions = 0;
 }
 
+static int cmp_url_playlist(const void *key, const void *b)
+{
+    const struct playlist *pls = b;
+    return strcmp(key, pls->url);
+}
+
+static int cmp_playlist_url(const void *a, const void *b)
+{
+    const struct playlist *pa = a, *pb = b;
+    return strcmp(pa->url, pb->url);
+}
+
 static struct playlist *new_playlist(HLSContext *c, const char *url,
                                      const char *base)
 {
     struct playlist *pls;
+    struct AVTreeNode *node;
     char abs_url[MAX_URL_SIZE];
 
     ff_make_absolute_url(abs_url, sizeof(abs_url), base, url);
     if (!abs_url[0])
         return NULL;
 
-    for (int i = 0; i < c->n_playlists; i++) {
-        if (!strcmp(c->playlists[i]->url, abs_url))
-            return c->playlists[i];
-    }
+    /* the same URL in several variants or renditions shares one playlist */
+    pls = av_tree_find(c->playlists_by_url, abs_url, cmp_url_playlist, NULL);
+    if (pls)
+        return pls;
 
-    pls = av_mallocz(sizeof(struct playlist));
-    if (!pls)
-        return NULL;
+    pls  = av_mallocz(sizeof(struct playlist));
+    node = av_tree_node_alloc();
+    if (!pls || !node)
+        goto fail;
+
     pls->pkt = av_packet_alloc();
-    if (!pls->pkt) {
-        av_free(pls);
-        return NULL;
-    }
+    if (!pls->pkt)
+        goto fail;
+
     av_strlcpy(pls->url, abs_url, sizeof(pls->url));
     pls->ts_offset = AV_NOPTS_VALUE;
     pls->seek_timestamp = AV_NOPTS_VALUE;
@@ -364,8 +382,17 @@ static struct playlist *new_playlist(HLSContext *c, const char *url,
     pls->id3_mpegts_timestamp = AV_NOPTS_VALUE;
     pls->timed_id3_stream_index = -1;
 
-    dynarray_add(&c->playlists, &c->n_playlists, pls);
+    if (av_dynarray_add_nofree(&c->playlists, &c->n_playlists, pls) < 0)
+        goto fail;
+    av_tree_insert(&c->playlists_by_url, pls, cmp_playlist_url, &node);
     return pls;
+
+fail:
+    if (pls)
+        av_packet_free(&pls->pkt);
+    av_free(pls);
+    av_free(node);
+    return NULL;
 }
 
 struct variant_info {
