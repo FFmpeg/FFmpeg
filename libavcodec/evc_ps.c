@@ -70,7 +70,7 @@ static int hrd_parameters(GetBitContext *gb, HRDParameters *hrd)
     }
     hrd->initial_cpb_removal_delay_length_minus1 = get_bits(gb, 5);
     hrd->cpb_removal_delay_length_minus1 = get_bits(gb, 5);
-    hrd->cpb_removal_delay_length_minus1 = get_bits(gb, 5);
+    hrd->dpb_output_delay_length_minus1 = get_bits(gb, 5);
     hrd->time_offset_length = get_bits(gb, 5);
 
     return 0;
