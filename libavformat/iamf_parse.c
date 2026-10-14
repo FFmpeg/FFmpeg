@@ -110,6 +110,8 @@ static int aac_decoder_config(IAMFCodecConfig *codec_config,
         return ret;
 
     codec_config->sample_rate = cfg.sample_rate;
+    if (codec_config->sample_rate <= 0)
+        return AVERROR_INVALIDDATA;
 
     return 0;
 }
@@ -138,6 +140,8 @@ static int flac_decoder_config(IAMFCodecConfig *codec_config,
 
     codec_config->extradata_size = left;
     codec_config->sample_rate = AV_RB24(codec_config->extradata + 10) >> 4;
+    if (codec_config->sample_rate <= 0)
+        return AVERROR_INVALIDDATA;
 
     return 0;
 }
@@ -154,8 +158,11 @@ static int ipcm_decoder_config(IAMFCodecConfig *codec_config,
     if (sample_format > 1 || sample_size > 2U || codec_config->audio_roll_distance)
         return AVERROR_INVALIDDATA;
 
-    codec_config->codec_id = sample_fmt[sample_format][sample_size];
     codec_config->sample_rate = avio_rb32(pb);
+    if (codec_config->sample_rate <= 0)
+        return AVERROR_INVALIDDATA;
+
+    codec_config->codec_id = sample_fmt[sample_format][sample_size];
 
     if (len - avio_tell(pb))
         return AVERROR_INVALIDDATA;
