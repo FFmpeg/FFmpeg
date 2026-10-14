@@ -1275,7 +1275,7 @@ static void print_pkt_side_data(AVTextFormatContext *tfc,
             const struct AVGainMapChannel *channel = &gain->channels[c];
             avtext_print_section_header(tfc, "Gain Map Channel", section_component[container]);
             print_q("gain_map_min", channel->gain_map_min, '/');
-            print_q("gain_map_max", channel->gain_map_min, '/');
+            print_q("gain_map_max", channel->gain_map_max, '/');
             print_q("gamma", channel->gamma, '/');
             print_q("base_offset", channel->base_offset, '/');
             print_q("alternate_offset", channel->alternate_offset, '/');
