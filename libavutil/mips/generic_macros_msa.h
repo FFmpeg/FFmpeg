@@ -1756,6 +1756,7 @@
     out0 = (RTYPE) __msa_pckev_h((v8i16) in0, (v8i16) in1);  \
     out1 = (RTYPE) __msa_pckev_h((v8i16) in2, (v8i16) in3);  \
 }
+#define PCKEV_H2_SB(...) PCKEV_H2(v16i8, __VA_ARGS__)
 #define PCKEV_H2_SH(...) PCKEV_H2(v8i16, __VA_ARGS__)
 #define PCKEV_H2_SW(...) PCKEV_H2(v4i32, __VA_ARGS__)
 
@@ -1765,6 +1766,7 @@
     PCKEV_H2(RTYPE, in0, in1, in2, in3, out0, out1);             \
     PCKEV_H2(RTYPE, in4, in5, in6, in7, out2, out3);             \
 }
+#define PCKEV_H4_SB(...) PCKEV_H4(v16i8, __VA_ARGS__)
 #define PCKEV_H4_SH(...) PCKEV_H4(v8i16, __VA_ARGS__)
 #define PCKEV_H4_SW(...) PCKEV_H4(v4i32, __VA_ARGS__)
 
