@@ -216,6 +216,23 @@ fate-hls-self-variant-demux: tests/data/hls-self-variant.m3u8
 fate-hls-self-variant-demux: CLEANFILES = tests/data/hls-self-variant.m3u8
 fate-hls-self-variant-demux: CMD = ffprobe_demux $(TARGET_PATH)/tests/data/hls-self-variant.m3u8
 
+tests/data/hls-shared-renditions.m3u8: TAG = GEN
+tests/data/hls-shared-renditions.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
+	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
+        -f lavfi -i "aevalsrc=0:s=16000:d=2" -c:a mp2fixed -flags +bitexact -muxdelay 0 -muxpreload 0 \
+        -f hls -hls_time 2 -hls_list_size 0 \
+        -hls_segment_filename $(TARGET_PATH)/tests/data/hls-shared-renditions-a%d.ts \
+        $(TARGET_PATH)/tests/data/hls-shared-renditions-a.m3u8 2>/dev/null
+	$(Q)printf '#EXTM3U\n#EXT-X-TARGETDURATION:2\n#EXTINF:2,\nhls-shared-renditions-s0.vtt\n#EXT-X-ENDLIST\n' > tests/data/hls-shared-renditions-s.m3u8
+	$(Q)printf 'WEBVTT\n\n00:00.500 --> 00:01.500\nfirst\n' > tests/data/hls-shared-renditions-s0.vtt
+	$(Q)printf '#EXTM3U\n#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="g",NAME="German",LANGUAGE="de",URI="hls-shared-renditions-s.m3u8"\n#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="g",NAME="English",LANGUAGE="en",DEFAULT=YES\n#EXT-X-STREAM-INF:BANDWIDTH=64000,AUDIO="g",SUBTITLES="g"\nhls-shared-renditions-a.m3u8\n#EXT-X-STREAM-INF:BANDWIDTH=128000,AUDIO="g",SUBTITLES="g"\nhls-shared-renditions-a.m3u8\n' > $@
+
+FATE_HLS_SHARED_RENDITIONS-$(call FILTERDEMDECENCMUX, AEVALSRC ARESAMPLE, HLS MPEGTS WEBVTT, MP3FLOAT PCM_F64LE, MP2FIXED, HLS MPEGTS, LAVFI_INDEV MPEGAUDIO_PARSER) += fate-hls-shared-renditions-demux
+FATE_FFMPEG_FFPROBE += $(FATE_HLS_SHARED_RENDITIONS-yes)
+fate-hls-shared-renditions-demux: tests/data/hls-shared-renditions.m3u8
+fate-hls-shared-renditions-demux: CLEANFILES = tests/data/hls-shared-renditions*.m3u8 tests/data/hls-shared-renditions-*.ts tests/data/hls-shared-renditions-*.vtt
+fate-hls-shared-renditions-demux: CMD = ffprobe_demux $(TARGET_PATH)/tests/data/hls-shared-renditions.m3u8 -show_programs
+
 FATE_SAMPLES_DEMUX-$(call PARSERDEM, JPEGXS, IMAGE_JPEGXS_PIPE, CONCAT_PROTOCOL) += fate-jxs-concat-demux
 fate-jxs-concat-demux: CMD = framecrc "-i concat:$(TARGET_SAMPLES)/jxs/lena.jxs|$(TARGET_SAMPLES)/jxs/lena.jxs -c:v copy"
 
