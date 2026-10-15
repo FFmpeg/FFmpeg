@@ -91,8 +91,8 @@ static int draw_triangle_slice(AVFilterContext *ctx, void *arg, int job, int nb_
     AVFrame *frame = arg;
     const int width  = frame->width;
     const int height = frame->height;
-    const int start = (height *  job   ) / nb_jobs;
-    const int end   = (height * (job+1)) / nb_jobs;
+    const int start = ff_slice_pos(height, job, nb_jobs);
+    const int end   = ff_slice_pos(height, job + 1, nb_jobs);
     uint8_t *dst = frame->data[0] + start * frame->linesize[0];
 
     for (int y = start; y < end; y++) {
@@ -116,8 +116,8 @@ static int draw_carpet_slice(AVFilterContext *ctx, void *arg, int job, int nb_jo
     AVFrame *frame = arg;
     const int width  = frame->width;
     const int height = frame->height;
-    const int start = (height *  job   ) / nb_jobs;
-    const int end   = (height * (job+1)) / nb_jobs;
+    const int start = ff_slice_pos(height, job, nb_jobs);
+    const int end   = ff_slice_pos(height, job + 1, nb_jobs);
     uint8_t *dst = frame->data[0] + start * frame->linesize[0];
 
     for (int y = start; y < end; y++) {

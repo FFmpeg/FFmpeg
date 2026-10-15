@@ -93,8 +93,8 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
     for (plane = 0; plane < 4 && in->data[plane] && in->linesize[plane]; plane++) {
         const int width  = s->planewidth[plane] / s->bayer_plus1;
         const int height = s->planeheight[plane];
-        const int start = (height *  job   ) / nb_jobs;
-        const int end   = (height * (job+1)) / nb_jobs;
+        const int start = ff_slice_pos(height, job, nb_jobs);
+        const int end   = ff_slice_pos(height, job + 1, nb_jobs);
 
         step = s->max_step[plane];
 

@@ -86,8 +86,8 @@ static int filter##name##_slice(AVFilterContext *ctx, void *arg, int job,      \
     const int w = rect->planewidth[plane], h = rect->planeheight[plane];       \
     const int xcenter = rect->cx * w;                                          \
     const int ycenter = rect->cy * h;                                          \
-    const int start = (h *  job   ) / nb_jobs;                                 \
-    const int end   = (h * (job+1)) / nb_jobs;                                 \
+    const int start = ff_slice_pos(h, job, nb_jobs);                           \
+    const int end   = ff_slice_pos(h, job + 1, nb_jobs);                       \
     const int inlinesize = in->linesize[plane] / sizeof(type);                 \
     const int outlinesize = out->linesize[plane] / sizeof(type);               \
     const type *indata = (const type *)in->data[plane];                        \
@@ -128,8 +128,8 @@ static int filter##name##_slice_bilinear(AVFilterContext *ctx, void *arg,      \
     const int w = rect->planewidth[plane], h = rect->planeheight[plane];       \
     const int xcenter = rect->cx * w;                                          \
     const int ycenter = rect->cy * h;                                          \
-    const int start = (h *  job   ) / nb_jobs;                                 \
-    const int end   = (h * (job+1)) / nb_jobs;                                 \
+    const int start = ff_slice_pos(h, job, nb_jobs);                           \
+    const int end   = ff_slice_pos(h, job + 1, nb_jobs);                       \
     const int inlinesize = in->linesize[plane] / sizeof(type);                 \
     const int outlinesize = out->linesize[plane] / sizeof(type);               \
     const type *indata = (const type *)in->data[plane];                        \
