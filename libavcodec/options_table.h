@@ -31,6 +31,7 @@
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "avcodec_internal.h"
+#include "packet_internal.h"
 #include "version_major.h"
 
 #define FFOFFSET(x) offsetof(FFCodecContext,x)
@@ -45,6 +46,9 @@
 #define CC AV_OPT_FLAG_CHILD_CONSTS
 
 #define AR AV_OPT_TYPE_FLAG_ARRAY
+
+#define SIDE_DATA_PKT_CONST(pkt_type, handle) \
+    { handle, .default_val.i64 = AV_PKT_DATA_ ## pkt_type, .type = AV_OPT_TYPE_CONST, .flags = V|A|S|D, .unit = "side_data_pkt" },
 
 #define AV_CODEC_DEFAULT_BITRATE 200*1000
 
@@ -413,15 +417,7 @@ static const AVOption avcodec_options[] = {
 {"discard_damaged_percentage", "Percentage of damaged samples to discard a frame", OFFSET(discard_damaged_percentage), AV_OPT_TYPE_INT, {.i64 = 95 }, 0, 100, V|D },
 {"side_data_prefer_packet", "Comma-separated list of side data types for which user-supplied (container) data is preferred over coded bytestream",
     OFFSET(side_data_prefer_packet), AV_OPT_TYPE_INT | AR, .min = -1, .max = INT_MAX, .flags = V|A|S|D, .unit = "side_data_pkt" },
-    {"replaygain",                  .default_val.i64 = AV_PKT_DATA_REPLAYGAIN,                  .type = AV_OPT_TYPE_CONST, .flags = A|D, .unit = "side_data_pkt" },
-    {"displaymatrix",               .default_val.i64 = AV_PKT_DATA_DISPLAYMATRIX,               .type = AV_OPT_TYPE_CONST, .flags = A|D, .unit = "side_data_pkt" },
-    {"spherical",                   .default_val.i64 = AV_PKT_DATA_SPHERICAL,                   .type = AV_OPT_TYPE_CONST, .flags = A|D, .unit = "side_data_pkt" },
-    {"stereo3d",                    .default_val.i64 = AV_PKT_DATA_STEREO3D,                    .type = AV_OPT_TYPE_CONST, .flags = A|D, .unit = "side_data_pkt" },
-    {"audio_service_type",          .default_val.i64 = AV_PKT_DATA_AUDIO_SERVICE_TYPE,          .type = AV_OPT_TYPE_CONST, .flags = A|D, .unit = "side_data_pkt" },
-    {"mastering_display_metadata",  .default_val.i64 = AV_PKT_DATA_MASTERING_DISPLAY_METADATA,  .type = AV_OPT_TYPE_CONST, .flags = A|D, .unit = "side_data_pkt" },
-    {"content_light_level",         .default_val.i64 = AV_PKT_DATA_CONTENT_LIGHT_LEVEL,         .type = AV_OPT_TYPE_CONST, .flags = A|D, .unit = "side_data_pkt" },
-    {"icc_profile",                 .default_val.i64 = AV_PKT_DATA_ICC_PROFILE,                 .type = AV_OPT_TYPE_CONST, .flags = A|D, .unit = "side_data_pkt" },
-    {"exif",                        .default_val.i64 = AV_PKT_DATA_EXIF,                        .type = AV_OPT_TYPE_CONST, .flags = A|D, .unit = "side_data_pkt" },
+    FF_PACKET_SIDE_DATA_HANDLES(SIDE_DATA_PKT_CONST)
 
 // FFCodecContext options
 {"lcevc-dec-params", "Configure liblcevc-dec using a :-separated list of key=value parameters", FFOFFSET(lcevc_params), AV_OPT_TYPE_DICT, { 0 }, 0, 0, V|D },
@@ -433,6 +429,7 @@ static const AVOption avcodec_options[] = {
 #undef S
 #undef E
 #undef D
+#undef SIDE_DATA_PKT_CONST
 #undef CC
 #undef DEFAULT
 #undef OFFSET
