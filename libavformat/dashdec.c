@@ -169,7 +169,7 @@ typedef struct DASHContext {
 
 } DASHContext;
 
-static int ishttp(char *url)
+static int ishttp(const char *url)
 {
     const char *proto_name = avio_find_protocol_name(url);
     return proto_name && av_strstart(proto_name, "http", NULL);
@@ -726,12 +726,10 @@ static int resolve_content_path(AVFormatContext *s, const char *url, int *max_ur
 {
     char *tmp_str = NULL;
     char *path = NULL;
-    char *mpdName = NULL;
     xmlNodePtr node = NULL;
     char *baseurl = NULL;
     char *root_url = NULL;
     char *text = NULL;
-    char *tmp = NULL;
     int isRootHttp = 0;
     char token ='/';
     int start =  0;
@@ -757,18 +755,6 @@ static int resolve_content_path(AVFormatContext *s, const char *url, int *max_ur
     updated = add_url_size(&tmp_max_url_size, url_len);
     if (updated < 0)
         goto end;
-    text = av_mallocz(tmp_max_url_size + 1);
-    if (!text) {
-        updated = AVERROR(ENOMEM);
-        goto end;
-    }
-    av_strlcpy(text, url, strlen(url)+1);
-    tmp = text;
-    while (mpdName = av_strtok(tmp, "/", &tmp))  {
-        size = strlen(mpdName);
-    }
-    av_free(text);
-
     path = av_mallocz(tmp_max_url_size + 2);
     tmp_str = av_mallocz(tmp_max_url_size + 2);
     if (!tmp_str || !path) {
@@ -776,7 +762,14 @@ static int resolve_content_path(AVFormatContext *s, const char *url, int *max_ur
         goto end;
     }
 
-    av_strlcpy (path, url, strlen(url) - size + 1);
+    if (ishttp(url)) {
+        const char *colon = strchr(url, ':');
+        if (colon && colon[1] == '/' && colon[2] == '/') {
+            updated = ff_make_absolute_url(path, tmp_max_url_size + 2, url, ".");
+            if (updated < 0)
+                goto end;
+        }
+    }
     for (rootId = n_baseurl_nodes - 1; rootId > 0; rootId --) {
         if (!(node = baseurl_nodes[rootId])) {
             continue;
