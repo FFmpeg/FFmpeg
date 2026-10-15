@@ -21,6 +21,7 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "codec_internal.h"
+#include "libavutil/avassert.h"
 #include "libavutil/colorspace.h"
 #include "libavutil/opt.h"
 
@@ -302,9 +303,12 @@ static int dvbsub_encode(AVCodecContext *avctx, uint8_t *outbuf, int buf_size,
     if (h->num_rects >= 256)
         return AVERROR(EINVAL);
 
-    for (i = 0; i < h->num_rects; i++)
+    for (i = 0; i < h->num_rects; i++) {
+        av_assert0(h->rects[i]->w >= 0 && h->rects[i]->h >= 0 &&
+                   h->rects[i]->nb_colors >= 0 && h->rects[i]->nb_colors <= 256);
         if (h->rects[i]->w > 0xFFFF || h->rects[i]->h > 0xFFFF)
             return AVERROR(EINVAL);
+    }
 
     if (avctx->width > 0 && avctx->height > 0) {
         if (buf_size < 11)
