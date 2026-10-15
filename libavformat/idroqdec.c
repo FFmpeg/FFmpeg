@@ -142,7 +142,7 @@ static int roq_read_packet(AVFormatContext *s,
                 break;
             }
             /* don't care about this chunk anymore */
-            avio_skip(pb, RoQ_CHUNK_PREAMBLE_SIZE);
+            avio_skip(pb, chunk_size);
             break;
 
         case RoQ_QUAD_CODEBOOK:
