@@ -2,6 +2,10 @@ The last version increases of all libraries were on 2026-06-23.
 
 API changes, most recent first:
 
+2026-10-xx - xxxxxxxxxx - lavc 63.23.102 - avcodec.h
+  AVCodecContext.seek_preroll may be raised by a decoder to the pre-roll it
+  needs, as the AAC decoder does.
+
 2026-10-xx - xxxxxxxxxx - lavc 63.23.101 - codec_par.h
   avcodec_parameters_to_context() no longer sets AVCodecContext.delay from
   AVCodecParameters.initial_padding.

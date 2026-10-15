@@ -2177,6 +2177,7 @@ int ff_aac_usac_decode_frame(AVCodecContext *avctx, AACDecContext *ac,
     if (ac->oc[1].status && audio_found) {
         avctx->sample_rate = ac->oc[1].m4ac.ext_sample_rate;
         avctx->frame_size = samples;
+        avctx->seek_preroll = FFMAX(avctx->seek_preroll, samples);
         ac->oc[1].status = OC_LOCKED;
     }
 

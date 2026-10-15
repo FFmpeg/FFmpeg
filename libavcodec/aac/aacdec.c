@@ -1296,6 +1296,29 @@ static av_cold int init_dsp(AVCodecContext *avctx)
     return 0;
 }
 
+/**
+ * The samples output after a seek before the output is reliable.
+ * Frames overlap, so the frame before the first one is needed, and the
+ * three before it for the low delay filterbank of ELD. SBR also keeps the
+ * state of the frame before and codes its envelopes relative to it, so one
+ * more frame is needed, of twice as many output samples when SBR doubles
+ * the sample rate.
+ */
+static int seek_preroll(const MPEG4AudioConfig *m4ac)
+{
+    int frame = m4ac->frame_length_short ? 960 : 1024;
+    int frames = 1 + (m4ac->sbr == 1);
+    int upsampled = m4ac->sbr == 1 && m4ac->ext_sample_rate > m4ac->sample_rate;
+
+    if (m4ac->object_type == AOT_USAC)
+        frame = m4ac->frame_length_short ? 768 : 1024;
+    else if (m4ac->object_type == AOT_ER_AAC_LD || m4ac->object_type == AOT_ER_AAC_ELD)
+        frame >>= 1;
+    if (m4ac->object_type == AOT_ER_AAC_ELD)
+        frames += 2;
+    return (frame * frames) << upsampled;
+}
+
 av_cold int ff_aac_decode_init(AVCodecContext *avctx)
 {
     AACDecContext *ac = avctx->priv_data;
@@ -1345,6 +1368,9 @@ av_cold int ff_aac_decode_init(AVCodecContext *avctx)
                 return AVERROR_INVALIDDATA;
         }
     }
+
+    /* A larger pre-roll declared by the container is kept. */
+    avctx->seek_preroll = FFMAX(avctx->seek_preroll, seek_preroll(&ac->oc[1].m4ac));
 
     if (avctx->ch_layout.nb_channels > MAX_CHANNELS) {
         av_log(avctx, AV_LOG_ERROR, "Too many channels\n");
@@ -2468,6 +2494,8 @@ static int decode_frame_ga(AVCodecContext *avctx, AACDecContext *ac,
     if (ac->oc[1].status && audio_found) {
         avctx->sample_rate = ac->oc[1].m4ac.sample_rate << multiplier;
         avctx->frame_size = samples;
+        // Implicit SBR is only known once found in a frame.
+        avctx->seek_preroll = FFMAX(avctx->seek_preroll, seek_preroll(&ac->oc[1].m4ac));
         ac->oc[1].status = OC_LOCKED;
     }
 

@@ -1127,7 +1127,8 @@ typedef struct AVCodecContext {
 
     /**
      * Number of samples to skip after a discontinuity
-     * - decoding: unused
+     * - decoding: may be set by the user, a decoder may raise it to the
+     *             pre-roll it needs
      * - encoding: set by libavcodec
      */
     int seek_preroll;
