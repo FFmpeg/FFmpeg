@@ -286,8 +286,8 @@ static int resample_cubic(AVFilterContext *ctx, void *arg,
     int h = td->h;
     int hsub = td->hsub;
     int vsub = td->vsub;
-    int start = (h * job) / nb_jobs;
-    int end   = (h * (job+1)) / nb_jobs;
+    int start = ff_slice_pos(h, job, nb_jobs);
+    int end   = ff_slice_pos(h, job + 1, nb_jobs);
     const int linesize = s->linesize[0];
     int x, y;
 
@@ -365,8 +365,8 @@ static int resample_linear(AVFilterContext *ctx, void *arg,
     int h = td->h;
     int hsub = td->hsub;
     int vsub = td->vsub;
-    int start = (h * job) / nb_jobs;
-    int end   = (h * (job+1)) / nb_jobs;
+    int start = ff_slice_pos(h, job, nb_jobs);
+    int end   = ff_slice_pos(h, job + 1, nb_jobs);
     const int linesize = s->linesize[0];
     int x, y;
 
