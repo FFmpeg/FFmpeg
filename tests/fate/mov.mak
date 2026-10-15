@@ -405,6 +405,62 @@ fate-mov-trun-zero-sample-size: CMD = run_with_patched_temp \
     -show_entries packet=pts,dts,duration,size,pos -print_format compact \
     -select_streams v -v 0" mp4 927 "\\0000\\0000\\0000\\0000"
 
+FATE_MOV_FFMPEG_FFPROBE-$(call ALLYES, LAVFI_INDEV ANULLSRC_FILTER AFORMAT_FILTER \
+                                      PCM_S16$(if $(filter yes,$(HAVE_BIGENDIAN)),BE,LE)_DECODER \
+                                      PCM_S16BE_ENCODER                          \
+                                      MOV_MUXER MOV_DEMUXER FILE_PROTOCOL)       \
+                                      += fate-mov-stsd-v2-sample-rate-nan \
+                                         fate-mov-stsd-v2-sample-rate-overflow \
+                                         fate-mov-stsd-v2-sample-rate-negative \
+                                         fate-mov-stsd-v2-sample-rate-zero
+
+# A version 2 SoundDescription stores the sample rate as a double. Requesting
+# a rate that does not fit the legacy 16.16 field makes the muxer write one,
+# and empty_moov puts it ahead of mdat, so the double always starts at offset
+# 489 of the generated file. The tests below replace it with values that must
+# not be converted to codecpar->sample_rate.
+#
+# The diagnostic also identifies which check rejected the file: it prints the
+# double, while the later sample_rate check runs after the conversion and can
+# only report its result.
+#
+# The decoder dependency follows the host endianness, because the lavfi input
+# device describes its s16 output with the native-endian PCM codec id.
+MOV_STSD_V2_GEN = $(FFMPEG) -nostdin -v error \
+    -f lavfi -i anullsrc=cl=stereo:r=96000,aformat=sample_fmts=s16 \
+    -t 0.01 -c:a pcm_s16be -threads 1 \
+    -flags +bitexact -fflags +bitexact -movflags empty_moov+frag_keyframe \
+    -f mov -y
+MOV_STSD_V2_PROBE = ffprobe$(PROGSSUF)$(EXESUF) -v error \
+    -show_entries stream=sample_rate -print_format compact
+
+# NaN: converting it to an integer is undefined.
+fate-mov-stsd-v2-sample-rate-nan: CMD = run_with_patched_temp \
+    "$(MOV_STSD_V2_GEN)" "$(MOV_STSD_V2_PROBE)" mov \
+    489 "\\0177\\0370\\0000\\0000\\0000\\0000\\0000\\0000" ; test $$? -ne 0
+fate-mov-stsd-v2-sample-rate-nan: CMP = grep
+fate-mov-stsd-v2-sample-rate-nan: REF = Invalid sample rate nan
+
+# INT_MAX + 1: the smallest positive double that does not fit an int.
+fate-mov-stsd-v2-sample-rate-overflow: CMD = run_with_patched_temp \
+    "$(MOV_STSD_V2_GEN)" "$(MOV_STSD_V2_PROBE)" mov \
+    489 "\\0101\\0340\\0000\\0000\\0000\\0000\\0000\\0000" ; test $$? -ne 0
+fate-mov-stsd-v2-sample-rate-overflow: CMP = grep
+fate-mov-stsd-v2-sample-rate-overflow: REF = Invalid sample rate 2.14748e+09
+
+# A negative rate fits an int, and is rejected for being negative.
+fate-mov-stsd-v2-sample-rate-negative: CMD = run_with_patched_temp \
+    "$(MOV_STSD_V2_GEN)" "$(MOV_STSD_V2_PROBE)" mov \
+    489 "\\0277\\0360\\0000\\0000\\0000\\0000\\0000\\0000" ; test $$? -ne 0
+fate-mov-stsd-v2-sample-rate-negative: CMP = grep
+fate-mov-stsd-v2-sample-rate-negative: REF = Invalid sample rate -1
+
+# Zero must stay accepted: mov_finalize_stsd_codec() then falls back to the
+# media timescale, which is 96000 here.
+fate-mov-stsd-v2-sample-rate-zero: CMD = run_with_patched_temp \
+    "$(MOV_STSD_V2_GEN)" "$(MOV_STSD_V2_PROBE)" mov \
+    489 "\\0000\\0000\\0000\\0000\\0000\\0000\\0000\\0000"
+
 # Create VFR B-frames whose presentation durations are not a permutation of
 # the STTS sample deltas.
 tests/data/mov-vfr-bframes-derived-duration.mov: TAG = GEN
