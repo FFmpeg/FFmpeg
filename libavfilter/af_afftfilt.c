@@ -258,6 +258,8 @@ static int filter_channel(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
     const int end = ff_slice_pos(channels, jobnr + 1, nb_jobs);
     double values[VAR_VARS_NB];
 
+    av_assert0(window_size > 0 && s->hop_size > 0 && s->hop_size <= window_size);
+
     memcpy(values, arg, sizeof(values));
 
     for (int ch = start; ch < end; ch++) {
