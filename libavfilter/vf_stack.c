@@ -148,8 +148,8 @@ static int process_slice(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
     StackContext *s = ctx->priv;
     AVFrame *out = arg;
     AVFrame **in = s->frames;
-    const int start = (s->nb_inputs *  job   ) / nb_jobs;
-    const int end   = (s->nb_inputs * (job+1)) / nb_jobs;
+    const int start = ff_slice_pos(s->nb_inputs, job, nb_jobs);
+    const int end   = ff_slice_pos(s->nb_inputs, job + 1, nb_jobs);
 
     for (int i = start; i < end; i++) {
         StackItem *item = &s->items[i];
