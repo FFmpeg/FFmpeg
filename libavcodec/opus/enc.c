@@ -547,8 +547,8 @@ static AVFrame *spawn_empty_frame(OpusEncContext *s)
         av_frame_free(&f);
         return NULL;
     }
+    size_t bps = av_get_bytes_per_sample(f->format);
     for (int i = 0; i < s->channels; i++) {
-        size_t bps = av_get_bytes_per_sample(f->format);
         memset(f->extended_data[i], 0, bps*f->nb_samples);
     }
     return f;
