@@ -17,6 +17,10 @@ fate-avpacket: libavcodec/tests/avpacket$(EXESUF)
 fate-avpacket: CMD = run libavcodec/tests/avpacket$(EXESUF)
 fate-avpacket: CMP = null
 
+FATE_LIBAVCODEC-yes += fate-packet-side-data-handle
+fate-packet-side-data-handle: libavcodec/tests/packet_side_data_handle$(EXESUF)
+fate-packet-side-data-handle: CMD = run libavcodec/tests/packet_side_data_handle$(EXESUF)
+
 FATE_LIBAVCODEC-yes += fate-bitstream-be
 fate-bitstream-be: libavcodec/tests/bitstream_be$(EXESUF)
 fate-bitstream-be: CMD = run libavcodec/tests/bitstream_be$(EXESUF)

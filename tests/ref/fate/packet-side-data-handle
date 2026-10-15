@@ -1,0 +1,44 @@
+ 0: palette
+ 1: new_extradata
+ 2: param_change
+ 3: h263_mb_info
+ 4: replaygain
+ 5: displaymatrix
+ 6: stereo3d
+ 7: audio_service_type
+ 8: quality_stats
+ 9: fallback_track
+10: cpb_properties
+11: skip_samples
+12: jp_dualmono
+13: strings_metadata
+14: subtitle_position
+15: matroska_blockadditional
+16: webvtt_identifier
+17: webvtt_settings
+18: metadata_update
+19: mpegts_stream_id
+20: mastering_display_metadata
+21: spherical
+22: content_light_level
+23: a53_cc
+24: encryption_init_info
+25: encryption_info
+26: afd
+27: prft
+28: icc_profile
+29: dovi_conf
+30: s12m_timecode
+31: hdr10_plus
+32: iamf_mix_gain_param
+33: iamf_demixing_info_param
+34: iamf_recon_gain_info_param
+35: ambient_viewing_environment
+36: frame_cropping
+37: lcevc
+38: 3d_reference_displays
+39: rtcp_sr
+40: exif
+41: hdr_smpte_2094_app5
+42: hevc_conf
+43: gain_map_params
