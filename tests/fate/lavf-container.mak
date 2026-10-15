@@ -78,6 +78,8 @@ FATE_LAVF_CONTAINER_FATE-$(call CRC, MOV EAC3,,          AC3_PARSER MP4_MUXER) +
 FATE_LAVF_CONTAINER_FATE-$(call CRC, MOV EVC,,           EVC_PARSER MP4_MUXER) += evc.mp4
 FATE_LAVF_CONTAINER_FATE-$(call CRC, MOV H264,,          H264_PARSER EXTRACT_EXTRADATA_BSF MP4_MUXER) += h264.mp4
 FATE_LAVF_CONTAINER_FATE-$(call CRC, MOV HEVC,,          HEVC_PARSER EXTRACT_EXTRADATA_BSF MP4_MUXER) += hevc.mp4
+FATE_LAVF_CONTAINER_FATE-$(call CRC, MPEGTS MOV,,        H264_PARSER LCEVC_PARSER EXTRACT_EXTRADATA_BSF MP4_MUXER) += lcevc.mp4
+FATE_LAVF_CONTAINER_FATE-$(call CRC, MPEGTS,,            H264_PARSER LCEVC_PARSER EXTRACT_EXTRADATA_BSF MPEGTS_MUXER) += lcevc.ts
 FATE_LAVF_CONTAINER_FATE-$(call CRC, MOV,,               MOV_MUXER)   += mv_hevc.mov
 FATE_LAVF_CONTAINER_FATE-$(call CRC, MATROSKA, VVC,      VVC_PARSER SETTS_BSF MATROSKA_MUXER)         += vvc.mkv
 FATE_LAVF_CONTAINER_FATE-$(call CRC, MOV, VVC,           VVC_PARSER EXTRACT_EXTRADATA_BSF MP4_MUXER)  += vvc.mp4
@@ -102,6 +104,8 @@ fate-lavf-fate-eac3.mp4: CMD = lavf_container_fate "eac3/the_great_wall_7.1.eac3
 fate-lavf-fate-evc.mp4: CMD = lavf_container_fate "evc/akiyo_cif.evc" "" "" "-c:v copy"
 fate-lavf-fate-h264.mp4: CMD = lavf_container_fate "h264/intra_refresh.h264" "" "" "-c:v copy"
 fate-lavf-fate-hevc.mp4: CMD = lavf_container_fate "hevc-conformance/HRD_A_Fujitsu_2.bit" "" "" "-c:v copy"
+fate-lavf-fate-lcevc.mp4: CMD = lavf_container_fate "lcevc/L_H264_640x360p_8bit8bit_2D_dd_dualTrack.ts" "" "-map 0 -stream_group map=0=0:st=0:st=1" "-map 0:g:0:1 -c:v copy"
+fate-lavf-fate-lcevc.ts: CMD = lavf_container_fate "lcevc/L_H264_640x360p_8bit8bit_2D_dd_dualTrack.ts" "" "-map 0 -stream_group map=0=0:st=0:st=1" "-map 0:g:0:1 -c:v copy"
 fate-lavf-fate-vvc.mkv: CMD = lavf_container_fate "vvc-conformance/VPS_A_3.bit" "" "-bsf:v setts=pts=DTS" "-c:v copy"
 fate-lavf-fate-vvc.mp4: CMD = lavf_container_fate "vvc-conformance/VPS_A_3.bit" "" "" "-c:v copy"
 fate-lavf-fate-vp3.ogg: CMD = lavf_container_fate "vp3/coeff_level64.mkv" "-idct auto"
