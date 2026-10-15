@@ -1049,7 +1049,7 @@ static const CIDEntry dnxhd_cid_table[] = {
       { 0 }, { 57344, 255} },
     { 1271, DNXHD_VARIABLE, DNXHD_VARIABLE, DNXHD_VARIABLE, DNXHD_VARIABLE,
       0, 6, DNXHD_VARIABLE, 4,
-      dnxhd_1241_luma_weight, dnxhd_1241_chroma_weight,
+      dnxhd_1235_luma_weight, dnxhd_1235_chroma_weight,
       dnxhd_1235_dc_codes, dnxhd_1235_dc_bits,
       dnxhd_1235_ac_codes, dnxhd_1235_ac_bits, dnxhd_1235_ac_info,
       dnxhd_1235_run_codes, dnxhd_1235_run_bits, dnxhd_1235_run,
