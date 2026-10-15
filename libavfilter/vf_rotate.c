@@ -420,8 +420,8 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
     const int plane = td->plane;
     const int xi = td->xi, yi = td->yi;
     const int c = td->c, s = td->s;
-    const int start = (outh *  job   ) / nb_jobs;
-    const int end   = (outh * (job+1)) / nb_jobs;
+    const int start = ff_slice_pos(outh, job, nb_jobs);
+    const int end   = ff_slice_pos(outh, job + 1, nb_jobs);
     int xprime = td->xprime + start * s;
     int yprime = td->yprime + start * c;
     int i, j, x, y;

@@ -254,8 +254,8 @@ static int draw_gradients_slice(AVFilterContext *ctx, void *arg, int job, int nb
     AVFrame *frame = arg;
     const int width  = frame->width;
     const int height = frame->height;
-    const int start = (height *  job   ) / nb_jobs;
-    const int end   = (height * (job+1)) / nb_jobs;
+    const int start = ff_slice_pos(height, job, nb_jobs);
+    const int end   = ff_slice_pos(height, job + 1, nb_jobs);
     const ptrdiff_t linesize = frame->linesize[0] / 4;
     uint32_t *dst = (uint32_t *)frame->data[0] + start * linesize;
     const int type = s->type;
@@ -278,8 +278,8 @@ static int draw_gradients_slice16(AVFilterContext *ctx, void *arg, int job, int 
     AVFrame *frame = arg;
     const int width  = frame->width;
     const int height = frame->height;
-    const int start = (height *  job   ) / nb_jobs;
-    const int end   = (height * (job+1)) / nb_jobs;
+    const int start = ff_slice_pos(height, job, nb_jobs);
+    const int end   = ff_slice_pos(height, job + 1, nb_jobs);
     const ptrdiff_t linesize = frame->linesize[0] / 8;
     uint64_t *dst = (uint64_t *)frame->data[0] + start * linesize;
     const int type = s->type;
@@ -302,8 +302,8 @@ static int draw_gradients_slice32_planar(AVFilterContext *ctx, void *arg, int jo
     AVFrame *frame = arg;
     const int width  = frame->width;
     const int height = frame->height;
-    const int start = (height *  job   ) / nb_jobs;
-    const int end   = (height * (job+1)) / nb_jobs;
+    const int start = ff_slice_pos(height, job, nb_jobs);
+    const int end   = ff_slice_pos(height, job + 1, nb_jobs);
     const ptrdiff_t linesize_g = frame->linesize[0] / 4;
     const ptrdiff_t linesize_b = frame->linesize[1] / 4;
     const ptrdiff_t linesize_r = frame->linesize[2] / 4;

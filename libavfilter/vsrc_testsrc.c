@@ -2131,8 +2131,8 @@ static int zoneplate_fill_slice_##name(AVFilterContext *ctx,       \
     const int ky = test->ky, kx = test->kx, kxy = test->kxy;       \
     const int lut_mask = (1 << test->lut_precision) - 1;           \
     const int nkt2t = kt2 * t * t, nktt = kt * t;                  \
-    const int start = (h *  job   ) / nb_jobs;                     \
-    const int end   = (h * (job+1)) / nb_jobs;                     \
+    const int start = ff_slice_pos(h, job, nb_jobs);               \
+    const int end   = ff_slice_pos(h, job + 1, nb_jobs);           \
     const ptrdiff_t ylinesize = frame->linesize[0] / sizeof(type); \
     const ptrdiff_t ulinesize = frame->linesize[1] / sizeof(type); \
     const ptrdiff_t vlinesize = frame->linesize[2] / sizeof(type); \
