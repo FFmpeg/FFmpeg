@@ -662,6 +662,9 @@ static int pred_angle(const IntraPredContext * p, uint8_t * dst, int stride, int
 {
     uint8_t filtered1[96], filtered2[96];
 
+    if (size < 4 || size > 64 || (size & (size - 1)))
+        return AVERROR_INVALIDDATA;
+
     if (!imode) {
         pred_plane(p, dst, stride, size);
     } else if (imode == 1) {
@@ -670,8 +673,13 @@ static int pred_angle(const IntraPredContext * p, uint8_t * dst, int stride, int
         int ang_weight = rv60_ipred_angle[10 - imode];
         int add_size = (size * ang_weight + 31) >> 5;
         if (size <= 16) {
-            filter_weak(filtered1 + 32, &p->l[1], size + add_size);
+            const int filtered_size = size + add_size;
+            if (filtered_size < 1 || filtered_size > 64)
+                return AVERROR_INVALIDDATA;
+            filter_weak(filtered1 + 32, &p->l[1], filtered_size);
         } else {
+            if (add_size < 0 || add_size > 32)
+                return AVERROR_INVALIDDATA;
             filter_bilin32(filtered1 + 32, p->l[1], p->l[33], 32);
             filter_bilin32(filtered1 + 64, p->l[32], p->l[64], add_size);
         }
@@ -746,9 +754,14 @@ static int pred_angle(const IntraPredContext * p, uint8_t * dst, int stride, int
     } else if (imode <= 34) {
         int ang_weight = rv60_ipred_angle[imode - 26];
         int add_size = (size * ang_weight + 31) >> 5;
-        if (size <= 16)
-            filter_weak(&filtered1[32], &p->t[1], size + add_size);
-        else {
+        if (size <= 16) {
+            const int filtered_size = size + add_size;
+            if (filtered_size < 1 || filtered_size > 64)
+                return AVERROR_INVALIDDATA;
+            filter_weak(&filtered1[32], &p->t[1], filtered_size);
+        } else {
+            if (add_size < 0 || add_size > 32)
+                return AVERROR_INVALIDDATA;
             filter_bilin32(filtered1 + 32, p->t[1], p->t[33], 32);
             filter_bilin32(filtered1 + 64, p->t[32], p->t[64], add_size);
         }
