@@ -1145,14 +1145,14 @@ static int submit_frame(VVCContext *s, VVCFrameContext *fc, AVFrame *output, int
     int ret;
 
     if (s->avctx->hwaccel) {
-        if (ret = FF_HW_SIMPLE_CALL(s->avctx, end_frame) < 0) {
+        if ((ret = FF_HW_SIMPLE_CALL(s->avctx, end_frame)) < 0) {
             av_log(s->avctx, AV_LOG_ERROR,
                    "Hardware accelerator failed to decode picture\n");
             ff_vvc_unref_frame(fc, fc->ref, ~0);
             return ret;
         }
     } else {
-        if (ret = ff_vvc_frame_submit(s, fc) < 0) {
+        if ((ret = ff_vvc_frame_submit(s, fc)) < 0) {
             ff_vvc_report_frame_finished(fc->ref);
             return ret;
         }
