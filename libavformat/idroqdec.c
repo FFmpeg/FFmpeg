@@ -139,7 +139,7 @@ static int roq_read_packet(AVFormatContext *s,
                     return ret;
                 st->codecpar->width  = roq->width  = AV_RL16(preamble);
                 st->codecpar->height = roq->height = AV_RL16(preamble + 2);
-                break;
+                chunk_size -= RoQ_CHUNK_PREAMBLE_SIZE;
             }
             /* don't care about this chunk anymore */
             avio_skip(pb, chunk_size);
