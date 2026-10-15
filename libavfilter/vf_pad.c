@@ -180,10 +180,10 @@ static int config_input(AVFilterLink *inlink)
         goto eval_fail;
     s->x = var_values[VAR_X] = res;
 
-    if (s->x < 0 || s->x + inlink->w > s->w)
-        s->x = var_values[VAR_X] = (s->w - inlink->w) / 2;
-    if (s->y < 0 || s->y + inlink->h > s->h)
-        s->y = var_values[VAR_Y] = (s->h - inlink->h) / 2;
+    if (s->x < 0 || (int64_t)s->x + inlink->w > s->w)
+        s->x = var_values[VAR_X] = ((int64_t)s->w - inlink->w) / 2;
+    if (s->y < 0 || (int64_t)s->y + inlink->h > s->h)
+        s->y = var_values[VAR_Y] = ((int64_t)s->h - inlink->h) / 2;
 
     s->w    = ff_draw_round_to_sub(&s->draw, 0, -1, s->w);
     s->h    = ff_draw_round_to_sub(&s->draw, 1, -1, s->h);
