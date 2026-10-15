@@ -832,7 +832,7 @@ void list_view_clear(ListView *lv)
     for (int i = 0; i < LIST_SORT_NB; i++)
         lv->sort[i] = (ListSortKey){ i, 0 };
     lv->shuffle_seed   = 0;
-    lv->render_pending = 1;
+    list_discard(lv);
 }
 
 void list_view_pin(ListView *lv, int pinned)
@@ -933,8 +933,10 @@ void list_view_set_size(ListView *lv, int width, int height)
         return;
     lv->width  = width;
     lv->height = height;
-    if (lv->bitmap)
+    if (list_view_visible(lv))
         lv->render_pending = 1;
+    else
+        list_discard(lv);
 }
 
 void list_view_set_playing(ListView *lv, int entry)
