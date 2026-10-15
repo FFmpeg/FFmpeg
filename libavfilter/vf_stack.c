@@ -116,8 +116,11 @@ static av_cold int init(AVFilterContext *ctx)
             }
         }
 
-        if (is_grid)
+        if (is_grid) {
+            if (s->nb_grid_rows > INT_MAX / s->nb_grid_columns)
+                return AVERROR(EINVAL);
             s->nb_inputs = s->nb_grid_rows * s->nb_grid_columns;
+        }
     }
 
     s->frames = av_calloc(s->nb_inputs, sizeof(*s->frames));
