@@ -314,6 +314,7 @@ typedef struct VideoState {
     char *title;
     int seek_by_bytes;
     int infinite_buffer;
+    int loop;
     int width, height, xleft, ytop;
     int step;
 
@@ -3462,7 +3463,7 @@ static int read_thread(void *arg)
         if (!is->paused &&
             (!is->audio_st || (is->auddec.finished == is->audioq.serial && frame_queue_nb_remaining(&is->sampq) == 0)) &&
             (!is->video_st || (is->viddec.finished == is->videoq.serial && frame_queue_nb_remaining(&is->pictq) == 0))) {
-            if (loop != 1 && (!loop || --loop)) {
+            if (is->loop != 1 && (!is->loop || --is->loop)) {
                 stream_seek(is, start_time != AV_NOPTS_VALUE ? start_time : 0, 0, 0);
             } else if (autoexit) {
                 ret = AVERROR_EOF;
@@ -3590,6 +3591,7 @@ static VideoState *stream_open(const char *filename,
     is->iformat = iformat;
     is->seek_by_bytes   = seek_by_bytes;
     is->infinite_buffer = infinite_buffer;
+    is->loop            = loop;
     is->ytop    = 0;
     is->xleft   = 0;
 
