@@ -313,6 +313,7 @@ typedef struct VideoState {
     int eof;
 
     char *filename;
+    int id;
     char *title;
     int seek_by_bytes;
     int infinite_buffer;
@@ -388,6 +389,8 @@ static const char *hwaccel = NULL;
 static int is_full_screen;
 
 #define FF_QUIT_EVENT    (SDL_USEREVENT + 2)
+
+static int last_stream_id;
 
 static volatile sig_atomic_t received_sigterm = 0;
 static volatile int received_nb_signals = 0;
@@ -2325,6 +2328,14 @@ static int decoder_start(Decoder *d, int (*fn)(void *), const char *thread_name,
     return 0;
 }
 
+/* pushes the event for the event loop, marked with the stream it comes from */
+static void push_stream_event(VideoState *is, Uint32 type)
+{
+    SDL_Event event = { .user = { .type = type, .code = is->id } };
+
+    SDL_PushEvent(&event);
+}
+
 static int video_thread(void *arg)
 {
     VideoState *is = arg;
@@ -2372,10 +2383,7 @@ static int video_thread(void *arg)
             }
             graph->nb_threads = filter_nbthreads;
             if ((ret = configure_video_filters(graph, is, vfilters_list ? vfilters_list[is->vfilter_idx] : NULL, frame)) < 0) {
-                SDL_Event event;
-                event.type = FF_QUIT_EVENT;
-                event.user.data1 = is;
-                SDL_PushEvent(&event);
+                push_stream_event(is, FF_QUIT_EVENT);
                 goto the_end;
             }
             filt_in  = is->in_video_filter;
@@ -3562,13 +3570,8 @@ static int read_thread(void *arg)
     av_dict_free(&format_options);
 
     av_packet_free(&pkt);
-    if (ret != 0) {
-        SDL_Event event;
-
-        event.type = FF_QUIT_EVENT;
-        event.user.data1 = is;
-        SDL_PushEvent(&event);
-    }
+    if (ret != 0)
+        push_stream_event(is, FF_QUIT_EVENT);
     SDL_DestroyMutex(wait_mutex);
     return 0;
 }
@@ -3585,6 +3588,7 @@ static VideoState *stream_open(const char *filename,
     is->last_audio_stream = is->audio_stream = -1;
     is->last_subtitle_stream = is->subtitle_stream = -1;
     is->filename = av_strdup(filename);
+    is->id = ++last_stream_id;
     is->chapter_list = list_view_alloc(renderer);
     if (!is->filename || !is->chapter_list)
         goto fail;
@@ -4029,8 +4033,11 @@ static void event_loop(VideoState *cur_stream)
                     cur_stream->force_refresh = 1;
             }
             break;
-        case SDL_QUIT:
         case FF_QUIT_EVENT:
+            if (event.user.code != cur_stream->id)
+                break;
+            av_fallthrough;
+        case SDL_QUIT:
             do_exit(cur_stream);
             break;
         default:
