@@ -279,11 +279,7 @@ static int put_cod(Jpeg2000EncoderContext *s)
     // SGcod
     bytestream_put_byte(&s->buf, s->prog); // progression level
     bytestream_put_be16(&s->buf, s->nlayers); // num of layers
-    if(s->avctx->pix_fmt == AV_PIX_FMT_YUV444P){
-        bytestream_put_byte(&s->buf, 0); // unspecified
-    }else{
-        bytestream_put_byte(&s->buf, 0); // unspecified
-    }
+    bytestream_put_byte(&s->buf, 0); // unspecified
     // SPcod
     bytestream_put_byte(&s->buf, codsty->nreslevels - 1); // num of decomp. levels
     bytestream_put_byte(&s->buf, codsty->log2_cblk_width-2); // cblk width
