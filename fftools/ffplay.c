@@ -295,7 +295,6 @@ typedef struct VideoState {
     SDL_Texture *vid_texture;
     SDL_AudioDeviceID audio_dev;
     int64_t audio_callback_time;
-    ListView *chapter_list;
 
     int subtitle_stream;
     AVStream *subtitle_st;
@@ -373,7 +372,8 @@ static const char *video_codec_name;
 double rdftspeed = 0.02;
 static int64_t cursor_last_shown;
 static int cursor_hidden = 0;
-/* the key that pins a list when it is released, 0 for none */
+static ListView *list;
+/* the key that pins the list when it is released, 0 for none */
 static SDL_Keycode list_key;
 static const char **vfilters_list = NULL;
 static int nb_vfilters = 0;
@@ -1064,8 +1064,8 @@ static int chapter_list_show(VideoState *is, int chapter)
         if (ch->end != AV_NOPTS_VALUE && ch->end > ch->start && (uint64_t)ch->end - ch->start <= INT64_MAX)
             entries[i].length = av_rescale_q(ch->end - ch->start, ch->time_base, AV_TIME_BASE_Q);
     }
-    list_view_set_playing(is->chapter_list, current_chapter(is));
-    ret = list_view_show(is->chapter_list, entries, is->ic->nb_chapters, chapter);
+    list_view_set_playing(list, current_chapter(is));
+    ret = list_view_show(list, entries, is->ic->nb_chapters, chapter);
     av_free(entries);
     return ret;
 }
@@ -1073,7 +1073,7 @@ static int chapter_list_show(VideoState *is, int chapter)
 static void chapter_list_pin(VideoState *is)
 {
     if (chapter_list_show(is, current_chapter(is)) >= 0)
-        list_view_pin(is->chapter_list, 1);
+        list_view_pin(list, 1);
 }
 
 static void video_image_display(VideoState *is)
@@ -1455,7 +1455,6 @@ static void stream_close(VideoState *is)
         SDL_DestroyTexture(is->vid_texture);
     if (is->sub_texture)
         SDL_DestroyTexture(is->sub_texture);
-    list_view_free(&is->chapter_list);
     av_free(is);
 }
 
@@ -1464,6 +1463,7 @@ static void do_exit(VideoState *is)
     if (is) {
         stream_close(is);
     }
+    list_view_free(&list);
     if (renderer)
         SDL_DestroyRenderer(renderer);
     if (vk_renderer)
@@ -1522,7 +1522,7 @@ static int video_open(VideoState *is)
 
     is->width  = w;
     is->height = h;
-    list_view_set_size(is->chapter_list, w, h);
+    list_view_set_size(list, w, h);
 
     return 0;
 }
@@ -1539,7 +1539,7 @@ static void video_display(VideoState *is)
         video_audio_display(is);
     else if (is->video_st)
         video_image_display(is);
-    list_view_draw(is->chapter_list);
+    list_view_draw(list);
     SDL_RenderPresent(renderer);
 }
 
@@ -3592,8 +3592,7 @@ static VideoState *stream_open(const char *filename,
     is->last_subtitle_stream = is->subtitle_stream = -1;
     is->filename = av_strdup(filename);
     is->id = ++last_stream_id;
-    is->chapter_list = list_view_alloc(renderer);
-    if (!is->filename || !is->chapter_list)
+    if (!is->filename)
         goto fail;
     is->iformat = iformat;
     is->seek_by_bytes   = seek_by_bytes;
@@ -3767,9 +3766,9 @@ static void refresh_loop_wait_event(VideoState *is, SDL_Event *event) {
                 continue;
         }
         remaining_time = REFRESH_RATE;
-        if (list_view_visible(is->chapter_list))
-            list_view_set_playing(is->chapter_list, current_chapter(is));
-        if (list_view_update(is->chapter_list))
+        if (list_view_visible(list))
+            list_view_set_playing(list, current_chapter(is));
+        if (list_view_update(list))
             is->force_refresh = 1;
         if (is->show_mode != SHOW_MODE_NONE && (!is->paused || is->force_refresh))
             video_refresh(is, &remaining_time);
@@ -3815,7 +3814,7 @@ static void event_loop(VideoState *cur_stream)
         refresh_loop_wait_event(cur_stream, &event);
         switch (event.type) {
         case SDL_KEYDOWN:
-            if (exit_on_keydown || (!list_view_pinned(cur_stream->chapter_list) &&
+            if (exit_on_keydown || (!list_view_pinned(list) &&
                                     (event.key.keysym.sym == SDLK_ESCAPE || event.key.keysym.sym == SDLK_q))) {
                 do_exit(cur_stream);
                 break;
@@ -3823,10 +3822,10 @@ static void event_loop(VideoState *cur_stream)
             // If we don't yet have a window, skip all key events, because read_thread might still be initializing...
             if (!cur_stream->width)
                 continue;
-            if (list_view_pinned(cur_stream->chapter_list)) {
+            if (list_view_pinned(list)) {
                 if (event.key.keysym.sym == SDLK_PAGEUP || event.key.keysym.sym == SDLK_PAGEDOWN)
                     seek_chapter(cur_stream, current_chapter(cur_stream) + (event.key.keysym.sym == SDLK_PAGEUP ? 1 : -1));
-                else if ((chosen = list_view_key(cur_stream->chapter_list, event.key.keysym.sym)) >= 0)
+                else if ((chosen = list_view_key(list, event.key.keysym.sym)) >= 0)
                     seek_chapter(cur_stream, chosen);
                 break;
             }
@@ -3872,7 +3871,7 @@ static void event_loop(VideoState *cur_stream)
                 break;
             case SDLK_RETURN:
             case SDLK_KP_ENTER:
-                if (list_view_visible(cur_stream->chapter_list) && (chosen = list_view_selected(cur_stream->chapter_list)) >= 0)
+                if (list_view_visible(list) && (chosen = list_view_selected(list)) >= 0)
                     seek_chapter(cur_stream, chosen);
                 break;
             case SDLK_w:
@@ -3945,20 +3944,20 @@ static void event_loop(VideoState *cur_stream)
             list_key = 0;
             break;
         case SDL_TEXTINPUT:
-            if (list_view_pinned(cur_stream->chapter_list))
-                list_view_text(cur_stream->chapter_list, event.text.text);
+            if (list_view_pinned(list))
+                list_view_text(list, event.text.text);
             break;
         case SDL_MOUSEWHEEL:
-            if (list_view_visible(cur_stream->chapter_list))
-                list_view_move(cur_stream->chapter_list, -event.wheel.y);
+            if (list_view_visible(list))
+                list_view_move(list, -event.wheel.y);
             break;
         case SDL_MOUSEBUTTONDOWN:
             if (exit_on_mousedown) {
                 do_exit(cur_stream);
                 break;
             }
-            if (event.button.button == SDL_BUTTON_LEFT && list_view_visible(cur_stream->chapter_list) &&
-                list_view_click(cur_stream->chapter_list, event.button.x, event.button.y, &chosen)) {
+            if (event.button.button == SDL_BUTTON_LEFT && list_view_visible(list) &&
+                list_view_click(list, event.button.x, event.button.y, &chosen)) {
                 if (chosen >= 0)
                     seek_chapter(cur_stream, chosen);
                 break;
@@ -3981,7 +3980,7 @@ static void event_loop(VideoState *cur_stream)
             }
             cursor_last_shown = av_gettime_relative();
             if (event.type == SDL_MOUSEMOTION)
-                list_view_hover(cur_stream->chapter_list, event.motion.x, event.motion.y);
+                list_view_hover(list, event.motion.x, event.motion.y);
             if (event.type == SDL_MOUSEBUTTONDOWN) {
                 if (event.button.button != SDL_BUTTON_RIGHT)
                     break;
@@ -4019,7 +4018,7 @@ static void event_loop(VideoState *cur_stream)
         case SDL_WINDOWEVENT:
             switch (event.window.event) {
                 case SDL_WINDOWEVENT_LEAVE:
-                    list_view_hover(cur_stream->chapter_list, -1, -1);
+                    list_view_hover(list, -1, -1);
                     break;
                 case SDL_WINDOWEVENT_SIZE_CHANGED:
                     screen_width  = cur_stream->width  = event.window.data1;
@@ -4028,7 +4027,7 @@ static void event_loop(VideoState *cur_stream)
                         SDL_DestroyTexture(cur_stream->vis_texture);
                         cur_stream->vis_texture = NULL;
                     }
-                    list_view_set_size(cur_stream->chapter_list, screen_width, screen_height);
+                    list_view_set_size(list, screen_width, screen_height);
                     if (vk_renderer)
                         vk_renderer_resize(vk_renderer, screen_width, screen_height);
                     av_fallthrough;
@@ -4383,6 +4382,11 @@ int main(int argc, char **argv)
         }
     }
 
+    list = list_view_alloc(renderer);
+    if (!list) {
+        av_log(NULL, AV_LOG_FATAL, "Could not allocate the list\n");
+        do_exit(NULL);
+    }
     is = stream_open(input_filename, file_iformat);
     if (!is) {
         av_log(NULL, AV_LOG_FATAL, "Failed to initialize VideoState!\n");
