@@ -994,7 +994,7 @@ static int64_t ftp_parse_date(const char *date)
 static int ftp_parse_entry_nlst(char *line, AVIODirEntry *next)
 {
     next->name = av_strdup(line);
-    return 0;
+    return next->name ? 0 : AVERROR(ENOMEM);
 }
 
 static int ftp_parse_entry_mlsd(char *mlsd, AVIODirEntry *next)
@@ -1005,7 +1005,8 @@ static int ftp_parse_entry_mlsd(char *mlsd, AVIODirEntry *next)
     while(fact = av_strtok(p, ";", &saveptr)) {
         p = NULL;
         if (fact[0] == ' ') {
-            next->name = av_strdup(&fact[1]);
+            if (!(next->name = av_strdup(&fact[1])))
+                return AVERROR(ENOMEM);
             continue;
         }
         fact = av_strtok(fact, "=", &value);
