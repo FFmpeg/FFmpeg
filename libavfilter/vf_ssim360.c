@@ -1498,8 +1498,8 @@ static int generate_density_map(SSIM360Context *s, int w, int h)
     case PROJECTION_BARREL:
         // side face
         for (int i = 0; i < h; i++) {
+            d = cos(((0.5 + i) / h - 0.5) * DEFAULT_EXPANSION_COEF * M_PI_2);
             for (int j = 0; j < w * 4 / 5; j++) {
-                d = cos(((0.5 + i) / h - 0.5) * DEFAULT_EXPANSION_COEF * M_PI_2);
                 s->density.value[i * w + j] = d * d * d;
             }
         }
