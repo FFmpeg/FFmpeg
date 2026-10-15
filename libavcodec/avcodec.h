@@ -578,8 +578,9 @@ typedef struct AVCodecContext {
      *   For encoding, this field is unused (see initial_padding).
      *
      *   For decoding, this is the number of samples the decoder needs to
-     *   output before the decoder's output is valid. When seeking, you should
-     *   start decoding this many samples prior to your desired seek point.
+     *   output before the decoder's output is valid. They are discarded when
+     *   the decoder is opened. When seeking, start decoding seek_preroll
+     *   samples prior to the desired seek point instead.
      *
      * - encoding: Set by libavcodec.
      * - decoding: Set by libavcodec.
