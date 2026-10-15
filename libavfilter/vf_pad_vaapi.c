@@ -133,10 +133,10 @@ static int pad_vaapi_config_output(AVFilterLink *outlink)
         return ret;
     ctx->x = var_values[VAR_X] = res;
 
-    if (ctx->x < 0 || ctx->x + inlink->w > ctx->w)
-        ctx->x = var_values[VAR_X] = (ctx->w - inlink->w) / 2;
-    if (ctx->y < 0 || ctx->y + inlink->h > ctx->h)
-        ctx->y = var_values[VAR_Y] = (ctx->h - inlink->h) / 2;
+    if (ctx->x < 0 || (int64_t)ctx->x + inlink->w > ctx->w)
+        ctx->x = var_values[VAR_X] = ((int64_t)ctx->w - inlink->w) / 2;
+    if (ctx->y < 0 || (int64_t)ctx->y + inlink->h > ctx->h)
+        ctx->y = var_values[VAR_Y] = ((int64_t)ctx->h - inlink->h) / 2;
 
     /* sanity check params */
     if (ctx->w < inlink->w || ctx->h < inlink->h) {
