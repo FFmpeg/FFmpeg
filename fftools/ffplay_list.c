@@ -442,46 +442,36 @@ static int cache_get(ListView *lv, const SDL_Rect *rect, uint32_t background, co
         }
     }
     cache_make_room(lv, (size_t)rect->w * rect->h * 4);
-    if (!(lv->nb_cache & (lv->nb_cache - 1))) {
-        ListCacheEntry **grown = av_realloc_array(lv->cache, lv->nb_cache ? 2 * lv->nb_cache : 1, sizeof(*grown));
-
-        if (!grown)
-            return AVERROR(ENOMEM);
-        lv->cache = grown;
-    }
     if (!(*entry = av_mallocz(sizeof(**entry))))
         return AVERROR(ENOMEM);
     **entry = (ListCacheEntry){ av_strdup(script->str), background, rect->x, rect->w, rect->h,
                                 av_malloc_array(rect->w * rect->h, 4), lv->frame };
     ret = (*entry)->script && (*entry)->pixels ? strip_render(lv, *entry) : AVERROR(ENOMEM);
+    if (ret >= 0)
+        ret = av_dynarray_add_nofree(&lv->cache, &lv->nb_cache, *entry);
     if (ret < 0) {
         cache_entry_free(entry);
         return ret;
     }
-    lv->cache[lv->nb_cache++] = *entry;
     lv->cache_bytes += (size_t)rect->w * rect->h * 4;
     return 0;
 }
 
 static int strip_add(ListView *lv, ListStrip **strips, int *nb, SDL_Rect rect, uint32_t background, const AVBPrint *script)
 {
+    ListCacheEntry *entry;
+    ListStrip *strip;
     int ret;
 
     if (rect.w <= 0 || rect.h <= 0)
         return 0;
     if (!av_bprint_is_complete(script))
         return AVERROR(ENOMEM);
-    if (!(*nb & (*nb - 1))) {
-        ListStrip *grown = av_realloc_array(*strips, *nb ? 2 * *nb : 1, sizeof(**strips));
-
-        if (!grown)
-            return AVERROR(ENOMEM);
-        *strips = grown;
-    }
-    (*strips)[*nb].rect = rect;
-    if ((ret = cache_get(lv, &rect, background, script, &(*strips)[*nb].entry)) < 0)
+    if ((ret = cache_get(lv, &rect, background, script, &entry)) < 0)
         return ret;
-    (*nb)++;
+    if (!(strip = av_dynarray2_add((void **)strips, nb, sizeof(*strip), NULL)))
+        return AVERROR(ENOMEM);
+    *strip = (ListStrip){ rect, entry };
     return 0;
 }
 
