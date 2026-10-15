@@ -3140,6 +3140,7 @@ static int read_thread(void *arg)
     int pkt_in_play_range = 0;
     const AVDictionaryEntry *t;
     SDL_mutex *wait_mutex = SDL_CreateMutex();
+    AVDictionary *format_options = NULL;
     int scan_all_pmts_set = 0;
     int64_t pkt_ts;
 
@@ -3172,21 +3173,23 @@ static int read_thread(void *arg)
     }
     ic->interrupt_callback.callback = decode_interrupt_cb;
     ic->interrupt_callback.opaque = is;
-    if (!av_dict_get(format_opts, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE)) {
-        av_dict_set(&format_opts, "scan_all_pmts", "1", AV_DICT_DONT_OVERWRITE);
+    if ((ret = av_dict_copy(&format_options, format_opts, 0)) < 0)
+        goto fail;
+    if (!av_dict_get(format_options, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE)) {
+        av_dict_set(&format_options, "scan_all_pmts", "1", AV_DICT_DONT_OVERWRITE);
         scan_all_pmts_set = 1;
     }
-    err = avformat_open_input(&ic, is->filename, is->iformat, &format_opts);
+    err = avformat_open_input(&ic, is->filename, is->iformat, &format_options);
     if (err < 0) {
         print_error(is->filename, err);
         ret = -1;
         goto fail;
     }
     if (scan_all_pmts_set)
-        av_dict_set(&format_opts, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE);
-    remove_avoptions(&format_opts, codec_opts);
+        av_dict_set(&format_options, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE);
+    remove_avoptions(&format_options, codec_opts);
 
-    ret = check_avoptions(format_opts);
+    ret = check_avoptions(format_options);
     if (ret < 0)
         goto fail;
     is->ic = ic;
@@ -3555,6 +3558,7 @@ static int read_thread(void *arg)
         av_freep(&ic->opaque);
         avformat_close_input(&ic);
     }
+    av_dict_free(&format_options);
 
     av_packet_free(&pkt);
     if (ret != 0) {
