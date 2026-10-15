@@ -300,6 +300,25 @@ fate-ffmpeg-trim-bsf-priming-duration: CMD = framecrc -copyts -i $(TARGET_SAMPLE
 FATE_SAMPLES_FFMPEG-$(call DEMMUX, MOV, FRAMECRC, TRIM_BSF PIPE_PROTOCOL) += fate-ffmpeg-trim-bsf-priming-untrimmed
 fate-ffmpeg-trim-bsf-priming-untrimmed: CMD = framecrc -copyts -i $(TARGET_SAMPLES)/audiomatch/tones_afconvert_16000_mono_aac_lc.m4a -c:a copy -bsf:a trim=start=1:start_type=pkt_index:trim_packets=0 -frames:a 3
 
+FATE_SAMPLES_FFMPEG-$(call DEMMUX, MOV, FRAMECRC, SIDE_DATA_BSF PIPE_PROTOCOL) += fate-ffmpeg-side-data-bsf-remove
+fate-ffmpeg-side-data-bsf-remove: CMD = framecrc -i $(TARGET_SAMPLES)/audiomatch/tones_afconvert_16000_mono_aac_lc.m4a -c:a copy -bsf:a side_data=remove=skip_samples -frames:a 2
+
+# Only the first and the last packets carry skip samples: the priming and the
+# padding.
+FATE_SAMPLES_FFMPEG-$(call DEMMUX, MOV, FRAMECRC, SIDE_DATA_BSF PIPE_PROTOCOL) += fate-ffmpeg-side-data-bsf-select
+fate-ffmpeg-side-data-bsf-select: CMD = framecrc -i $(TARGET_SAMPLES)/audiomatch/tones_afconvert_16000_mono_aac_lc.m4a -c:a copy -bsf:a side_data=select=skip_samples -frames:a 2
+
+FATE_SAMPLES_FFMPEG-$(call DEMMUX, MOV, FRAMECRC, SIDE_DATA_BSF PIPE_PROTOCOL) += fate-ffmpeg-side-data-bsf-select-none
+fate-ffmpeg-side-data-bsf-select-none: CMD = framecrc -i $(TARGET_SAMPLES)/audiomatch/tones_afconvert_16000_mono_aac_lc.m4a -c:a copy -bsf:a side_data=select=palette -frames:a 2
+
+# The display matrix is stream side data, which ffprobe shows on the output.
+# Removing another type keeps it.
+FATE_SAMPLES_FFMPEG_FFPROBE-$(call REMUX, MOV, SIDE_DATA_BSF) += fate-ffmpeg-side-data-bsf-keep-stream
+fate-ffmpeg-side-data-bsf-keep-stream: CMD = transcode mov $(TARGET_SAMPLES)/filter/sample-in-issue-505.mov mov "-c copy -an -t 0.5 -bsf:v side_data=remove=palette" "-c copy" "-select_streams v -show_entries stream_side_data_list"
+
+FATE_SAMPLES_FFMPEG_FFPROBE-$(call REMUX, MOV, SIDE_DATA_BSF) += fate-ffmpeg-side-data-bsf-remove-stream
+fate-ffmpeg-side-data-bsf-remove-stream: CMD = transcode mov $(TARGET_SAMPLES)/filter/sample-in-issue-505.mov mov "-c copy -an -t 0.5 -bsf:v side_data=remove=displaymatrix" "-c copy" "-select_streams v -show_entries stream_side_data_list"
+
 # The composed skips cover 800 + 300 of the 1024 samples, leaving nothing.
 FATE_SAMPLES_FFMPEG-$(call DEMMUX, AAC, FRAMECRC, AAC_PARSER TRIM_BSF PIPE_PROTOCOL) += fate-ffmpeg-trim-bsf-skip-samples-empty
 fate-ffmpeg-trim-bsf-skip-samples-empty: CMD = framecrc -i $(TARGET_SAMPLES)/audiomatch/tones_afconvert_16000_mono_aac_lc.adts -c:a copy -bsf:a trim=start=3217536,trim=end=3083472

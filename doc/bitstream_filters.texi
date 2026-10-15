@@ -1059,6 +1059,30 @@ ffmpeg -i INPUT -c:a copy -bsf:a setts=pts=DTS out.mkv
 Log basic packet information. Mainly useful for testing, debugging,
 and development.
 
+@section side_data
+Remove side data from packets and from the stream, or select packets by their
+side data.
+
+It accepts the following parameters:
+@table @option
+@item remove
+Set the side data types to remove, joined with @samp{+}, from the packets and
+from the side data of the stream. Each type is given by its handle;
+@command{ffmpeg -h bsf=side_data} lists them.
+
+@item select
+Set the side data types of the packets to keep, joined with @samp{+}. A packet
+is kept if it carries any of them, and dropped otherwise. The selection looks
+at the side data before @option{remove} applies. Dropping a packet breaks the
+decoding of the packets that depend on it, so this is meant for analysis or for
+streams where each packet decodes on its own.
+@end table
+
+For example, to drop the display matrix and the replay gain of a stream:
+@example
+ffmpeg -i INPUT -c copy -bsf:v side_data=remove=displaymatrix+replaygain output.mkv
+@end example
+
 @section smpte436m_to_eia608
 
 Convert from a @code{SMPTE_436M_ANC} data stream to a @code{EIA_608} stream,

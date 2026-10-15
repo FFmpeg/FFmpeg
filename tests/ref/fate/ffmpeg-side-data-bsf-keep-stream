@@ -1,0 +1,34 @@
+5e6354ce54a9c6e031beee981a3befbd *tests/data/fate/ffmpeg-side-data-bsf-keep-stream.mov
+61851 tests/data/fate/ffmpeg-side-data-bsf-keep-stream.mov
+#extradata 0:       29, 0x757e07f6
+#tb 0: 1/19200
+#media_type 0: video
+#codec_id 0: h264
+#dimensions 0: 480x272
+#sar 0: 0/1
+0,          0,          0,      640,    21606, 0x5ac94251
+0,        640,        640,      640,     3931, 0x753d20e1, F=0x0
+0,       1280,       1280,      640,     3086, 0xe338e2f2, F=0x0
+0,       1920,       1920,      640,     1770, 0xcfaf2034, F=0x0
+0,       2560,       2560,      640,     3240, 0xaa21fc9b, F=0x0
+0,       3200,       3200,      640,     1283, 0x63254a14, F=0x0
+0,       3840,       3840,      640,     2747, 0x1eaf0ce0, F=0x0
+0,       4480,       4480,      640,     2765, 0x12700d6d, F=0x0
+0,       5120,       5120,      640,     3109, 0xd340baa5, F=0x0
+0,       5760,       5760,      640,     3435, 0xb2cc6f4b, F=0x0
+0,       6400,       6400,      640,     3255, 0xd79c0f3e, F=0x0
+0,       7040,       7040,      640,     2968, 0xf29089f2, F=0x0
+0,       7680,       7680,      640,     2825, 0x270546c9, F=0x0
+0,       8320,       8320,      640,     2543, 0x6a95941c, F=0x0
+0,       8960,       8960,      640,     2355, 0x476128dc, F=0x0
+[STREAM]
+[SIDE_DATA]
+side_data_type=Display Matrix
+displaymatrix=
+00000000:            0       65536           0
+00000001:       -65536           0           0
+00000002:     17825792           0  1073741824
+
+rotation=-90
+[/SIDE_DATA]
+[/STREAM]
