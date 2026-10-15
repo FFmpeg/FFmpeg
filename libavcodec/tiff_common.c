@@ -108,7 +108,7 @@ int ff_tadd_doubles_metadata(int count, const char *name, const char *sep,
     if (bytestream2_get_bytes_left(gb) < count * sizeof(int64_t))
         return AVERROR_INVALIDDATA;
 
-    av_bprint_init(&bp, 10 * count, 100 * count);
+    av_bprint_init(&bp, 0, AV_BPRINT_SIZE_UNLIMITED);
 
     for (i = 0; i < count; i++) {
         av_bprintf(&bp, "%s%.15g", auto_sep(count, sep, i, 4), ff_tget_double(gb, le));
@@ -129,7 +129,7 @@ int ff_tadd_shorts_metadata(int count, const char *name, const char *sep,
     if (bytestream2_get_bytes_left(gb) < count * sizeof(int16_t))
         return AVERROR_INVALIDDATA;
 
-    av_bprint_init(&bp, 10 * count, AV_BPRINT_SIZE_UNLIMITED);
+    av_bprint_init(&bp, 0, AV_BPRINT_SIZE_UNLIMITED);
 
     for (i = 0; i < count; i++) {
         int v = is_signed ? (int16_t)ff_tget_short(gb, le) :  ff_tget_short(gb, le);
