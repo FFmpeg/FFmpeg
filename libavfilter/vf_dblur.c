@@ -247,9 +247,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             }
         } else {
             for (y = 0; y < height; y++) {
-                for (x = 0; x < width; x++) {
-                    memcpy(bptr, src32, width * sizeof(float));
-                }
+                memcpy(bptr, src32, width * sizeof(float));
                 bptr += width;
                 src32 += in->linesize[plane] / 4;
             }
@@ -276,9 +274,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             }
         } else {
             for (y = 0; y < height; y++) {
-                for (x = 0; x < width; x++) {
-                    memcpy(dst32, bptr, width * sizeof(float));
-                }
+                memcpy(dst32, bptr, width * sizeof(float));
                 bptr += width;
                 dst32 += out->linesize[plane] / 4;
             }
