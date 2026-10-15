@@ -155,6 +155,10 @@ fate-mov-aac-2048-priming: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_packets -
 FATE_MOV_FFPROBE-$(call DEMDEC, MOV, AAC) += fate-mov-aac-2048-priming-preroll
 fate-mov-aac-2048-priming-preroll: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream=initial_padding,seek_preroll -print_format compact $(TARGET_SAMPLES)/mov/aac-2048-priming.mov
 
+# Where a seek lands.
+FATE_MOV_FFPROBE-$(call DEMDEC, MOV, AAC) += fate-mov-aac-2048-priming-seek-landing
+fate-mov-aac-2048-priming-seek-landing: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -read_intervals 2.3%+\#3 -show_entries packet=pts,dts,duration -print_format compact $(TARGET_SAMPLES)/mov/aac-2048-priming.mov
+
 # Seeking into the stream must not drop samples to the container's priming.
 FATE_MOV-$(call FRAMECRC, MOV, AAC, PCM_S16LE_ENCODER ARESAMPLE_FILTER VOLUME_FILTER) += fate-mov-aac-2048-priming-seek
 fate-mov-aac-2048-priming-seek: CMD = framecrc -ss 2.3 -t 0.15 -i $(TARGET_SAMPLES)/mov/aac-2048-priming.mov -af volume=0,aresample -c:a pcm_s16le
