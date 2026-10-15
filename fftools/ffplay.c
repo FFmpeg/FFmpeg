@@ -2995,15 +2995,13 @@ static int stream_component_open(VideoState *is, int stream_index)
     ic->streams[stream_index]->discard = AVDISCARD_DEFAULT;
     switch (avctx->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
-        {
-            is->audio_filter_src.freq           = avctx->sample_rate;
-            ret = av_channel_layout_copy(&is->audio_filter_src.ch_layout, &avctx->ch_layout);
-            if (ret < 0)
-                goto fail;
-            is->audio_filter_src.fmt            = avctx->sample_fmt;
-            if ((ret = configure_audio_filters(is, afilters, 0)) < 0)
-                goto fail;
-        }
+        is->audio_filter_src.freq           = avctx->sample_rate;
+        ret = av_channel_layout_copy(&is->audio_filter_src.ch_layout, &avctx->ch_layout);
+        if (ret < 0)
+            goto fail;
+        is->audio_filter_src.fmt            = avctx->sample_fmt;
+        if ((ret = configure_audio_filters(is, afilters, 0)) < 0)
+            goto fail;
 
         is->audio_stream = stream_index;
         is->audio_st = ic->streams[stream_index];
