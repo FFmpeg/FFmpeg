@@ -151,6 +151,10 @@ fate-mov-stream-shorter-than-movie: CMD = framemd5 -flags +bitexact -i $(TARGET_
 
 fate-mov-aac-2048-priming: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_packets -print_format compact $(TARGET_SAMPLES)/mov/aac-2048-priming.mov
 
+# The container's priming and the pre-roll a seek needs are different things.
+FATE_MOV_FFPROBE-$(call DEMDEC, MOV, AAC) += fate-mov-aac-2048-priming-preroll
+fate-mov-aac-2048-priming-preroll: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream=initial_padding,seek_preroll -print_format compact $(TARGET_SAMPLES)/mov/aac-2048-priming.mov
+
 # Seeking into the stream must not drop samples to the container's priming.
 FATE_MOV-$(call FRAMECRC, MOV, AAC, PCM_S16LE_ENCODER ARESAMPLE_FILTER VOLUME_FILTER) += fate-mov-aac-2048-priming-seek
 fate-mov-aac-2048-priming-seek: CMD = framecrc -ss 2.3 -t 0.15 -i $(TARGET_SAMPLES)/mov/aac-2048-priming.mov -af volume=0,aresample -c:a pcm_s16le

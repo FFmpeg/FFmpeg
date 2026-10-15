@@ -389,8 +389,20 @@ FATE_AAC_ENCODE_FFPROBE-$(call TRANSCODE, AAC, ADTS AAC, WAV_DEMUXER PCM_S16LE_D
 
 FATE_AAC_BSF-$(call FRAMECRC, AAC MATROSKA, AAC, AAC_PARSER AAC_ADTSTOASC_BSF MATROSKA_MUXER) += fate-aac-autobsf-adtstoasc
 
+# The pre-roll a seek needs, by how long a frame is in output samples.
+FATE_AAC_PREROLL-$(call DEMDEC, MOV, AAC) += fate-aac-seek-preroll-sbr \
+                                            fate-aac-seek-preroll-sbr-no-doubling \
+                                            fate-aac-seek-preroll-frame-length-short \
+                                            fate-aac-seek-preroll-eld
+fate-aac-seek-preroll-sbr: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream=profile,sample_rate,seek_preroll -print_format compact $(TARGET_SAMPLES)/aac/al_sbr_cm_48_2.mp4
+fate-aac-seek-preroll-sbr-no-doubling: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream=profile,sample_rate,seek_preroll -print_format compact $(TARGET_SAMPLES)/aac/al_sbr_sr_48_2_fsaac48.mp4
+fate-aac-seek-preroll-frame-length-short: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream=profile,sample_rate,seek_preroll -print_format compact $(TARGET_SAMPLES)/aac/al04sf_48.mp4
+fate-aac-seek-preroll-eld: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream=profile,sample_rate,seek_preroll -print_format compact $(TARGET_SAMPLES)/aac/er_eld2000np_48_ep0.mp4
+
+FATE_SAMPLES_FFPROBE += $(FATE_AAC_PREROLL-yes)
+
 FATE_SAMPLES_FFMPEG += $(FATE_AAC_ALL) $(FATE_AAC_FRAMECRC-yes) $(FATE_AAC_ENCODE-yes) $(FATE_AAC_BSF-yes)
 FATE_SAMPLES_FFMPEG_FFPROBE += $(FATE_AAC_ENCODE_FFPROBE-yes)
 
-fate-aac: $(FATE_AAC_ALL) $(FATE_AAC_FRAMECRC-yes) $(FATE_AAC_ENCODE-yes) $(FATE_AAC_ENCODE_FFPROBE-yes) $(FATE_AAC_BSF-yes)
+fate-aac: $(FATE_AAC_ALL) $(FATE_AAC_PREROLL-yes) $(FATE_AAC_FRAMECRC-yes) $(FATE_AAC_ENCODE-yes) $(FATE_AAC_ENCODE_FFPROBE-yes) $(FATE_AAC_BSF-yes)
 fate-aac-latm: $(FATE_AAC_LATM-yes)
