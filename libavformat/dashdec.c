@@ -763,7 +763,7 @@ static int resolve_content_path(AVFormatContext *s, const char *url, int *max_ur
     av_free(text);
 
     path = av_mallocz(tmp_max_url_size + 2);
-    tmp_str = av_mallocz(tmp_max_url_size);
+    tmp_str = av_mallocz(tmp_max_url_size + 2);
     if (!tmp_str || !path) {
         updated = AVERROR(ENOMEM);
         goto end;
@@ -810,7 +810,6 @@ static int resolve_content_path(AVFormatContext *s, const char *url, int *max_ur
 
     if (size > 0 && root_url[size - 1] != token) {
         av_strlcat(root_url, "/", size + 2);
-        size += 2;
     }
 
     for (i = 0; i < n_baseurl_nodes; ++i) {
@@ -821,7 +820,7 @@ static int resolve_content_path(AVFormatContext *s, const char *url, int *max_ur
         if (text && !av_strstart(text, "/", NULL)) {
             memset(tmp_str, 0, strlen(tmp_str));
             if (!ishttp(text) && isRootHttp) {
-                av_strlcpy(tmp_str, root_url, size + 1);
+                av_strlcpy(tmp_str, root_url, tmp_max_url_size + 2);
             }
             start = (text[0] == token);
             if (start && av_stristr(tmp_str, text)) {
@@ -834,7 +833,7 @@ static int resolve_content_path(AVFormatContext *s, const char *url, int *max_ur
                 p = strchr(p, '/');
                 memset(p + 1, 0, strlen(p));
             }
-            av_strlcat(tmp_str, text + start, tmp_max_url_size);
+            av_strlcat(tmp_str, text + start, tmp_max_url_size + 2);
             xmlFree(text);
             xmlChar* escaped = xmlEncodeSpecialChars(NULL, tmp_str);
             if (!escaped) {
