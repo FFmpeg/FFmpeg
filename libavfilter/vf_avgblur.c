@@ -174,7 +174,7 @@ static void build_lut(AVFilterContext *ctx, int max)
     const int area = (2 * s->radiusV + 1) * (2 * s->radius + 1);
 
     s->area = area;
-    if (max * area >= FF_ARRAY_ELEMS(s->lut))
+    if ((int64_t)max * area >= FF_ARRAY_ELEMS(s->lut))
         return;
 
     for (int i = 0, j = 0, k = 0; i < max * area; i++, j++) {
@@ -234,7 +234,7 @@ static void averageiir2d(AVFilterContext *ctx, AVFrame *in, AVFrame *out, int pl
     AverageBlurContext *s = ctx->priv;
     const int width = s->planewidth[plane];
     const int height = s->planeheight[plane];
-    const int slow = (s->max * s->area) >= FF_ARRAY_ELEMS(s->lut);
+    const int slow = ((int64_t)s->max * s->area) >= FF_ARRAY_ELEMS(s->lut);
     ThreadData td;
 
     td.width = width;
