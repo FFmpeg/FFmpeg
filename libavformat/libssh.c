@@ -420,7 +420,7 @@ static int libssh_read_dir(URLContext *h, AVIODirEntry **next)
         entry->type = AVIO_ENTRY_UNKNOWN;
     }
     sftp_attributes_free(attr);
-    return 0;
+    return entry->name ? 0 : AVERROR(ENOMEM);
 }
 
 static int libssh_close_dir(URLContext *h)

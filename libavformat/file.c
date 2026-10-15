@@ -416,7 +416,7 @@ static int file_read_dir(URLContext *h, AVIODirEntry **next)
     }
 
     (*next)->name = av_strdup(dir->d_name);
-    return 0;
+    return (*next)->name ? 0 : AVERROR(ENOMEM);
 #else
     return AVERROR(ENOSYS);
 #endif /* HAVE_LSTAT */
