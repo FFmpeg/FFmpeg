@@ -63,6 +63,7 @@ int main(int argc, char **argv)
     int64_t timestamp;
     AVDictionary *format_opts = NULL;
     int64_t seekfirst = AV_NOPTS_VALUE;
+    int64_t seekfirst_min = AV_NOPTS_VALUE;
     int firstback=0;
     int frame_count = 1;
     int duration = 4;
@@ -74,6 +75,8 @@ int main(int argc, char **argv)
         } else if(!strcmp(argv[i], "-seekback")){
             seekfirst = atoi(argv[i+1]);
             firstback = 1;
+        } else if(!strcmp(argv[i], "-seekmin")){
+            seekfirst_min = atoi(argv[i+1]);
         } else if(!strcmp(argv[i], "-stream_id")){
             seekfirst_stream = atoi(argv[i+1]);
         } else if(!strcmp(argv[i], "-frames")){
@@ -117,7 +120,9 @@ int main(int argc, char **argv)
 
     if(seekfirst != AV_NOPTS_VALUE){
         if(firstback)   avformat_seek_file(ic, seekfirst_stream, INT64_MIN, seekfirst, seekfirst, 0);
-        else            avformat_seek_file(ic, seekfirst_stream, seekfirst, seekfirst, INT64_MAX, 0);
+        else            avformat_seek_file(ic, seekfirst_stream,
+                                           seekfirst_min != AV_NOPTS_VALUE ? seekfirst_min : seekfirst,
+                                           seekfirst, INT64_MAX, 0);
     }
     for(i=0; ; i++){
         AVPacket pkt = { 0 };
