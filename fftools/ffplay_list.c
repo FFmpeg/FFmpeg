@@ -110,6 +110,8 @@ struct ListView {
     int render_pending;
     int changed;
     int pinned;
+    /* the search line is shown and typed into: set while pinned, kept until the list is hidden */
+    int typing;
     int64_t fade_start;
     int64_t last_input;
     double drawn_alpha;
@@ -276,7 +278,7 @@ static ListLayout list_layout(const ListView *lv)
     }
     l.search_x   = x;
     l.search_y   = y;
-    l.rows_y     = lv->pinned ? y + l.font * 3 / 2 : l.button_y[LIST_SORT_NB - 1] + l.font * 3 / 2;
+    l.rows_y     = lv->typing ? y + l.font * 3 / 2 : l.button_y[LIST_SORT_NB - 1] + l.font * 3 / 2;
     l.canvas_h   = FFMIN(y + l.font * 2 + LIST_ROWS * l.line, lv->height - l.font * 2);
     l.strip_h    = FFMAX(l.line, y + l.font * 3 / 2);
     l.nb_rows    = FFMIN(lv->nb_rows, FFMAX(1, (l.canvas_h - l.rows_y - l.font / 2) / l.line));
@@ -352,7 +354,7 @@ static void bprint_styles(AVBPrint *script, const ListLayout *l)
 
 static void bprint_header_strip(const ListView *lv, AVBPrint *script, const ListLayout *l)
 {
-    if (lv->pinned)
+    if (lv->typing)
         bprint_cell(script, *lv->search ? "Row" : "Hint", l->search_x, l->search_y, l->length_x,
                     l->search_y + l->font * 3 / 2, *lv->search ? lv->search : "type to search");
     for (int b = 0; b < FF_ARRAY_ELEMS(sort_buttons); b++) {
@@ -839,10 +841,10 @@ void list_view_pin(ListView *lv, int pinned)
     lv->pinned = pinned;
     if (pinned) {
         SDL_StartTextInput();
+        lv->typing = 1;
     } else {
         SDL_StopTextInput();
         lv->last_input = av_gettime_relative() - LIST_HOLD_TIME;
-        list_view_clear_search(lv);
     }
     lv->render_pending = 1;
 }
@@ -946,11 +948,17 @@ void list_view_set_playing(ListView *lv, int entry)
 
 int list_view_update(ListView *lv)
 {
+    double alpha = list_alpha(lv, av_gettime_relative());
     int changed;
 
+    if (lv->typing && !lv->pinned && alpha <= 0) {
+        lv->typing    = 0;
+        lv->search[0] = 0;
+        list_update_rows(lv);
+    }
     if (lv->render_pending && lv->width)
         list_render(lv);
-    changed = lv->changed || list_alpha(lv, av_gettime_relative()) != lv->drawn_alpha;
+    changed = lv->changed || alpha != lv->drawn_alpha;
     lv->changed = 0;
     return changed;
 }
