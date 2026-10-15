@@ -129,6 +129,13 @@ static int r3d_read_rdvo(AVFormatContext *s, Atom *atom)
             break;
         }
         av_log(s, AV_LOG_TRACE, "video offset %d: %#x\n", i, video_offset);
+        if (st->avg_frame_rate.num) {
+            int ret = av_add_index_entry(st, video_offset,
+                                        av_rescale_q(i, av_inv_q(st->avg_frame_rate), st->time_base),
+                                        0, 0, AVINDEX_KEYFRAME);
+            if (ret < 0)
+                return ret;
+        }
     }
 
     if (st->avg_frame_rate.num)
@@ -206,8 +213,10 @@ static int r3d_read_header(AVFormatContext *s)
         if (read_atom(s, &atom) < 0)
             av_log(s, AV_LOG_ERROR, "error reading 'rdvo' atom\n");
         if (atom.tag == MKTAG('R','D','V','O')) {
-            if (r3d_read_rdvo(s, &atom) < 0)
+            if ((ret = r3d_read_rdvo(s, &atom)) < 0) {
                 av_log(s, AV_LOG_ERROR, "error parsing 'rdvo' atom\n");
+                return ret;
+            }
         }
     }
 
@@ -377,31 +386,6 @@ static int r3d_probe(const AVProbeData *p)
     return 0;
 }
 
-static int r3d_seek(AVFormatContext *s, int stream_index, int64_t sample_time, int flags)
-{
-    AVStream *st = s->streams[0]; // video stream
-    R3DContext *r3d = s->priv_data;
-    int frame_num;
-
-    if (!st->avg_frame_rate.num)
-        return -1;
-
-    frame_num = av_rescale_q(sample_time, st->time_base,
-                             av_inv_q(st->avg_frame_rate));
-    av_log(s, AV_LOG_TRACE, "seek frame num %d timestamp %"PRId64"\n",
-            frame_num, sample_time);
-
-    if (frame_num < r3d->video_offsets_count) {
-        if (avio_seek(s->pb, r3d->video_offsets_count, SEEK_SET) < 0)
-            return -1;
-    } else {
-        av_log(s, AV_LOG_ERROR, "could not seek to frame %d\n", frame_num);
-        return -1;
-    }
-
-    return 0;
-}
-
 const FFInputFormat ff_r3d_demuxer = {
     .p.name         = "r3d",
     .p.long_name    = NULL_IF_CONFIG_SMALL("REDCODE R3D"),
@@ -409,5 +393,4 @@ const FFInputFormat ff_r3d_demuxer = {
     .read_probe     = r3d_probe,
     .read_header    = r3d_read_header,
     .read_packet    = r3d_read_packet,
-    .read_seek      = r3d_seek,
 };
