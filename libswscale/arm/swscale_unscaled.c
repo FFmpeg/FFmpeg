@@ -150,6 +150,7 @@ DECLARE_FF_NVX_TO_ALL_RGBX_FUNCS(nv21)
         && !(c->opts.src_w & 15)                                                            \
         && !accurate_rnd) {                                                                 \
         c->convert_unscaled = ifmt##_to_##ofmt##_neon_wrapper;                              \
+        c->dst_slice_align = FFMAX(c->dst_slice_align, 1 << c->chrSrcVSubSample);            \
     }                                                                                       \
 } while (0)
 
