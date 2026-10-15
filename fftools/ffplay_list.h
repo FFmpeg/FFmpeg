@@ -95,7 +95,7 @@ void list_view_move(ListView *lv, int delta);
 int list_view_key(ListView *lv, SDL_Keycode key);
 
 /**
- * Appends text typed while the list is pinned to the search.
+ * Appends text typed while the list is pinned to the search, or erases its last character when text is NULL.
  */
 void list_view_text(ListView *lv, const char *text);
 

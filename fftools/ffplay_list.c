@@ -134,16 +134,11 @@ static double list_alpha(const ListView *lv, int64_t now)
     return av_clipd(alpha, 0, 1);
 }
 
-static const char *entry_tag(const char *tag)
-{
-    return tag ? tag : "";
-}
-
 /* case-insensitive, with missing tags after all others */
 static int compare_tags(const char *a, const char *b)
 {
-    a = entry_tag(a);
-    b = entry_tag(b);
+    a = av_x_if_null(a, "");
+    b = av_x_if_null(b, "");
     return !*a != !*b ? !*a - !*b : av_strcasecmp(a, b);
 }
 
@@ -202,7 +197,8 @@ static void list_update_rows(ListView *lv)
 
     lv->nb_rows = 0;
     for (int i = 0; i < lv->nb_entries; i++)
-        if (av_stristr(entry_tag(lv->entries[i].artist), lv->search) || av_stristr(entry_tag(lv->entries[i].title), lv->search))
+        if (av_stristr(av_x_if_null(lv->entries[i].artist, ""), lv->search) ||
+            av_stristr(av_x_if_null(lv->entries[i].title, ""), lv->search))
             lv->rows[lv->nb_rows++] = i;
 #define CMP(a, b) compare_rows(lv, a, b)
     AV_MSORT(lv->rows, lv->sort_tmp, lv->nb_rows, int, CMP);
@@ -235,7 +231,7 @@ static void bprint_box(AVBPrint *script, const char *style, int x, int y, int w,
 static void bprint_cell(AVBPrint *script, const char *style, int x, int y, int right, int bottom, const char *text)
 {
     av_bprintf(script, LIST_EVENT "%s,{\\pos(%d,%d)\\clip(0,0,%d,%d)}", style, x, y, right, bottom);
-    for (text = entry_tag(text); *text; text++)
+    for (text = av_x_if_null(text, ""); *text; text++)
         av_bprint_chars(script, strchr("{}\\\r\n", *text) ? ' ' : *text, 1);
     av_bprint_chars(script, '\n', 1);
 }
@@ -647,12 +643,6 @@ static int strip_render(ListView *lv, ListCacheEntry *entry)
 #endif
 }
 
-static void bitmap_touched(ListView *lv, const SDL_Rect *rect)
-{
-    SDL_UnionRect(&lv->dirty, rect, &lv->dirty);
-    lv->changed = 1;
-}
-
 /* brings the bitmap up to date: what differs from the strips shown before is cleared and composed again from the strips
  * covering it, rendering only strips that are not cached */
 static int list_render(ListView *lv)
@@ -695,7 +685,8 @@ static int list_render(ListView *lv)
                 memcpy(lv->bitmap + (y * lv->rect.w + part.x) * 4,
                        entry->pixels + ((y - strips[i].rect.y) * entry->w + part.x - strips[i].rect.x) * 4, part.w * 4);
         }
-        bitmap_touched(lv, &dirty);
+        SDL_UnionRect(&lv->dirty, &dirty, &lv->dirty);
+        lv->changed = 1;
     }
     if (ret < 0) {
         if (ret != AVERROR(ENOSYS))
@@ -723,14 +714,13 @@ static void list_select(ListView *lv, int row)
     lv->render_pending = 1;
 }
 
-/* appends the typed text to the search, or erases its last character when nothing was typed */
-static void list_search(ListView *lv, const char *typed)
+void list_view_text(ListView *lv, const char *text)
 {
     int len = strlen(lv->search);
 
-    if (typed) {
-        if (len + strlen(typed) < sizeof(lv->search))
-            av_strlcat(lv->search, typed, sizeof(lv->search));
+    if (text) {
+        if (len + strlen(text) < sizeof(lv->search))
+            av_strlcat(lv->search, text, sizeof(lv->search));
     } else if (len) {
         while (len > 0 && (lv->search[--len] & 0xC0) == 0x80)
             ;
@@ -865,16 +855,11 @@ int list_view_key(ListView *lv, SDL_Keycode key)
     case SDLK_ESCAPE:    list_view_pin(lv, 0); break;
     case SDLK_UP:        list_view_move(lv, -1); break;
     case SDLK_DOWN:      list_view_move(lv, 1); break;
-    case SDLK_BACKSPACE: list_search(lv, NULL); break;
+    case SDLK_BACKSPACE: list_view_text(lv, NULL); break;
     case SDLK_RETURN:
     case SDLK_KP_ENTER:  return list_view_selected(lv);
     }
     return -1;
-}
-
-void list_view_text(ListView *lv, const char *text)
-{
-    list_search(lv, text);
 }
 
 void list_view_clear_search(ListView *lv)
