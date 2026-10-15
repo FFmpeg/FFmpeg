@@ -1071,9 +1071,9 @@ static int ftp_read_dir(URLContext *h, AVIODirEntry **next)
             if (s->dir_buffer_size)
                 memmove(s->dir_buffer, start, s->dir_buffer_size);
             ret = ffurl_read(s->conn_data, s->dir_buffer + s->dir_buffer_size, DIR_BUFFER_SIZE - (s->dir_buffer_size + 1));
-            if (ret < 0)
+            if (ret < 0 && ret != AVERROR_EOF)
                 return ret;
-            if (!ret) {
+            if (ret <= 0) {
                 *next = NULL;
                 return 0;
             }
