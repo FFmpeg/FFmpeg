@@ -293,6 +293,8 @@ typedef struct VideoState {
     SDL_Texture *vis_texture;
     SDL_Texture *sub_texture;
     SDL_Texture *vid_texture;
+    SDL_AudioDeviceID audio_dev;
+    int64_t audio_callback_time;
     ListView *chapter_list;
     int chapter_pin_requested;
 
@@ -384,7 +386,6 @@ static const char *hwaccel = NULL;
 
 /* current context */
 static int is_full_screen;
-static int64_t audio_callback_time;
 
 #define FF_QUIT_EVENT    (SDL_USEREVENT + 2)
 
@@ -396,7 +397,6 @@ static SDL_Window *window;
 static SDL_Renderer *renderer;
 static int wait_for_events;
 static SDL_RendererInfo renderer_info = {0};
-static SDL_AudioDeviceID audio_dev;
 
 static VkRenderer *vk_renderer;
 
@@ -1189,8 +1189,8 @@ static void video_audio_display(VideoState *s)
 
         /* to be more precise, we take into account the time spent since
            the last buffer computation */
-        if (audio_callback_time) {
-            time_diff = av_gettime_relative() - audio_callback_time;
+        if (s->audio_callback_time) {
+            time_diff = av_gettime_relative() - s->audio_callback_time;
             delay -= (time_diff * s->audio_tgt.freq) / 1000000;
         }
 
@@ -1358,7 +1358,7 @@ static void stream_component_close(VideoState *is, int stream_index)
     switch (codecpar->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
         decoder_abort(&is->auddec, &is->sampq);
-        SDL_CloseAudioDevice(audio_dev);
+        SDL_CloseAudioDevice(is->audio_dev);
         decoder_destroy(&is->auddec);
         swr_free(&is->swr_ctx);
         av_freep(&is->audio_buf1);
@@ -2544,7 +2544,7 @@ static int audio_decode_frame(VideoState *is)
     do {
 #if defined(_WIN32)
         while (frame_queue_nb_remaining(&is->sampq) == 0) {
-            if ((av_gettime_relative() - audio_callback_time) > 1000000LL * is->audio_hw_buf_size / is->audio_tgt.bytes_per_sec / 2)
+            if ((av_gettime_relative() - is->audio_callback_time) > 1000000LL * is->audio_hw_buf_size / is->audio_tgt.bytes_per_sec / 2)
                 return -1;
             av_usleep (1000);
         }
@@ -2646,7 +2646,7 @@ static void sdl_audio_callback(void *opaque, Uint8 *stream, int len)
     VideoState *is = opaque;
     int audio_size, len1;
 
-    audio_callback_time = av_gettime_relative();
+    is->audio_callback_time = av_gettime_relative();
 
     while (len > 0) {
         if (is->audio_buf_index >= is->audio_buf_size) {
@@ -2679,12 +2679,12 @@ static void sdl_audio_callback(void *opaque, Uint8 *stream, int len)
     is->audio_write_buf_size = is->audio_buf_size - is->audio_buf_index;
     /* Let's assume the audio driver that is used by SDL has two periods. */
     if (!isnan(is->audio_clock)) {
-        set_clock_at(&is->audclk, is->audio_clock - (double)(2 * is->audio_hw_buf_size + is->audio_write_buf_size) / is->audio_tgt.bytes_per_sec, is->audio_clock_serial, audio_callback_time / 1000000.0);
+        set_clock_at(&is->audclk, is->audio_clock - (double)(2 * is->audio_hw_buf_size + is->audio_write_buf_size) / is->audio_tgt.bytes_per_sec, is->audio_clock_serial, is->audio_callback_time / 1000000.0);
         sync_clock_to_slave(&is->extclk, &is->audclk);
     }
 }
 
-static int audio_open(void *opaque, AVChannelLayout *wanted_channel_layout, int wanted_sample_rate, struct AudioParams *audio_hw_params)
+static int audio_open(VideoState *is, AVChannelLayout *wanted_channel_layout, int wanted_sample_rate, struct AudioParams *audio_hw_params)
 {
     SDL_AudioSpec wanted_spec, spec;
     const char *env;
@@ -2716,8 +2716,8 @@ static int audio_open(void *opaque, AVChannelLayout *wanted_channel_layout, int 
     wanted_spec.silence = 0;
     wanted_spec.samples = FFMAX(SDL_AUDIO_MIN_BUFFER_SIZE, 2 << av_log2(wanted_spec.freq / SDL_AUDIO_MAX_CALLBACKS_PER_SEC));
     wanted_spec.callback = sdl_audio_callback;
-    wanted_spec.userdata = opaque;
-    while (!(audio_dev = SDL_OpenAudioDevice(NULL, 0, &wanted_spec, &spec, SDL_AUDIO_ALLOW_FREQUENCY_CHANGE | SDL_AUDIO_ALLOW_CHANNELS_CHANGE))) {
+    wanted_spec.userdata = is;
+    while (!(is->audio_dev = SDL_OpenAudioDevice(NULL, 0, &wanted_spec, &spec, SDL_AUDIO_ALLOW_FREQUENCY_CHANGE | SDL_AUDIO_ALLOW_CHANNELS_CHANGE))) {
         av_log(NULL, AV_LOG_WARNING, "SDL_OpenAudio (%d channels, %d Hz): %s\n",
                wanted_spec.channels, wanted_spec.freq, SDL_GetError());
         wanted_spec.channels = next_nb_channels[FFMIN(7, wanted_spec.channels)];
@@ -3001,7 +3001,7 @@ static int stream_component_open(VideoState *is, int stream_index)
         }
         if ((ret = decoder_start(&is->auddec, audio_thread, "audio_decoder", is)) < 0)
             goto out;
-        SDL_PauseAudioDevice(audio_dev, 0);
+        SDL_PauseAudioDevice(is->audio_dev, 0);
         break;
     case AVMEDIA_TYPE_VIDEO:
         is->video_stream = stream_index;
