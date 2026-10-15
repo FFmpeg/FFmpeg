@@ -88,6 +88,7 @@ struct ListView {
 #if CONFIG_LIBASS
     ASS_Library *library;
     ASS_Renderer *ass;
+    ASS_Track *track;
 #endif
     ListStrip *strips;
     int nb_strips;
@@ -240,7 +241,7 @@ static void bprint_cell(AVBPrint *script, const char *style, int x, int y, int r
 }
 
 typedef struct ListLayout {
-    int font, line, width, height, canvas_h, strip_h, nb_rows, first;
+    int font, line, width, height, canvas_h, nb_rows, first;
     int button_x[LIST_SORT_NB], button_y[LIST_SORT_NB];
     int search_x, search_y, rows_y, text_x, text_right, length_x, detail_x, canvas_w;
 } ListLayout;
@@ -280,7 +281,6 @@ static ListLayout list_layout(const ListView *lv)
     l.search_y   = y;
     l.rows_y     = lv->typing ? y + l.font * 3 / 2 : l.button_y[LIST_SORT_NB - 1] + l.font * 3 / 2;
     l.canvas_h   = FFMIN(y + l.font * 2 + LIST_ROWS * l.line, lv->height - l.font * 2);
-    l.strip_h    = FFMAX(l.line, y + l.font * 3 / 2);
     l.nb_rows    = FFMIN(lv->nb_rows, FFMAX(1, (l.canvas_h - l.rows_y - l.font / 2) / l.line));
     l.first      = av_clip(lv->selected - l.nb_rows / 2, 0, lv->nb_rows - l.nb_rows);
     l.height     = l.rows_y + l.nb_rows * l.line + l.font / 2;
@@ -347,7 +347,7 @@ static void bprint_styles(AVBPrint *script, const ListLayout *l)
                "Style: Ring,Sans,%d,&HFF000000,&H00A0A0A0,0,%d,7\n"
                "Style: Detail,Sans,%d,&H00FFFFFF,&H00000000,0,%d,7\n\n"
                "[Events]\nFormat: Start, End, Style, Text\n",
-               l->canvas_w, l->strip_h, l->font, l->font, l->font / 16 + 1, l->font, l->font / 16 + 1,
+               l->canvas_w, l->canvas_h, l->font, l->font, l->font / 16 + 1, l->font, l->font / 16 + 1,
                l->font * 4 / 5, l->font / 16 + 1, l->font * 4 / 5, l->font / 16 + 1, l->font, l->font, l->font / 16 + 1,
                l->font, l->font, l->font / 16 + 1, l->font * 4 / 5, l->font / 16 + 1);
 }
@@ -485,8 +485,8 @@ static int strip_add(ListView *lv, ListStrip **strips, int *nb, SDL_Rect rect, u
     return 0;
 }
 
-/* the strips the list consists of right now: the header, each visible row, the bottom padding and the lines of the metadata
- * popup, beside the list or over its rows when the window leaves no room there */
+/* the strips the list consists of right now: the header, each visible row, the bottom padding and the metadata popup,
+ * beside the list or over its rows when the window leaves no room there */
 static int list_strips(ListView *lv, const ListLayout *l, ListStrip **strips, int *nb)
 {
     AVBPrint script;
@@ -501,7 +501,6 @@ static int list_strips(ListView *lv, const ListLayout *l, ListStrip **strips, in
             rect.h = l->font / 2;
         rect.h = FFMIN(rect.h, l->canvas_h - rect.y);
         av_bprint_clear(&script);
-        bprint_styles(&script, l);
         if (!i)
             bprint_header_strip(lv, &script, l);
         else if (row >= 0)
@@ -510,32 +509,20 @@ static int list_strips(ListView *lv, const ListLayout *l, ListStrip **strips, in
     }
     if (ret >= 0 && lv->hover.detail) {
         const AVDictionary *metadata = lv->entries[lv->rows[lv->hover.row]].metadata;
-        const AVDictionaryEntry *above = NULL, *tag = av_dict_iterate(metadata, NULL);
+        const AVDictionaryEntry *tag = NULL;
         int beside = l->canvas_w - l->width >= l->font * 12;
         int height = FFMIN(av_dict_count(metadata) * l->font + l->font / 2, l->canvas_h);
         int x      = beside ? l->width + l->font / 2 : l->text_x;
         int right  = beside ? l->canvas_w : l->length_x - l->font / 2;
-        int y      = av_clip(l->rows_y + (lv->hover.row - l->first) * l->line, 0, l->canvas_h - height);
+        SDL_Rect rect = { x, av_clip(l->rows_y + (lv->hover.row - l->first) * l->line, 0, l->canvas_h - height),
+                          right - x, height };
 
-        /* the descenders of a line reach into the line below, so each line's strip also draws the line above it */
-        for (int top = 0; ret >= 0 && top < height && (above || tag); top += l->font) {
-            const AVDictionaryEntry *lines[2] = { above, tag };
-            SDL_Rect rect = { x, y + top, right - x, FFMIN(l->font, height - top) };
-
-            av_bprint_clear(&script);
-            bprint_styles(&script, l);
-            for (int i = 0; i < 2; i++) {
-                if (!lines[i])
-                    continue;
-                bprint_cell(&script, "Detail", x + l->font / 2, l->font / 4 + (i - 1) * l->font, x + l->font * 7, rect.h,
-                            lines[i]->key);
-                bprint_cell(&script, "Detail", x + l->font * 15 / 2, l->font / 4 + (i - 1) * l->font, right - l->font / 4,
-                            rect.h, lines[i]->value);
-            }
-            ret   = strip_add(lv, strips, nb, rect, POPUP_COLOR, &script);
-            above = tag;
-            tag   = tag ? av_dict_iterate(metadata, tag) : NULL;
+        av_bprint_clear(&script);
+        for (int top = l->font / 4; top < height + l->font && (tag = av_dict_iterate(metadata, tag)); top += l->font) {
+            bprint_cell(&script, "Detail", x + l->font / 2, top, x + l->font * 7, height, tag->key);
+            bprint_cell(&script, "Detail", x + l->font * 15 / 2, top, right - l->font / 4, height, tag->value);
         }
+        ret = strip_add(lv, strips, nb, rect, POPUP_COLOR, &script);
     }
     av_bprint_finalize(&script, NULL);
     return ret;
@@ -554,6 +541,11 @@ static void list_discard(ListView *lv)
     if (lv->texture)
         SDL_DestroyTexture(lv->texture);
     lv->texture = NULL;
+#if CONFIG_LIBASS
+    if (lv->track)
+        ass_free_track(lv->track);
+    lv->track = NULL;
+#endif
 }
 
 #if CONFIG_LIBASS
@@ -568,10 +560,12 @@ static void libass_log(int libass_level, const char *fmt, va_list args, void *op
 }
 #endif
 
-/* the bitmap, the texture it is uploaded to, and libass rendering a canvas wide strip at a time */
+/* the bitmap, the texture it is uploaded to, and libass with the styles of the layout, rendering a strip at a time */
 static int list_configure(ListView *lv, const ListLayout *l, const SDL_Rect *canvas)
 {
 #if CONFIG_LIBASS
+    AVBPrint styles;
+
     list_discard(lv);
     lv->rect = *canvas;
     if (l->canvas_w <= 0 || l->canvas_h <= 0 || l->canvas_w > INT_MAX / 4 / l->canvas_h)
@@ -595,8 +589,15 @@ static int list_configure(ListView *lv, const ListLayout *l, const SDL_Rect *can
         }
         ass_set_fonts(lv->ass, NULL, NULL, 1, NULL, 1);
     }
-    ass_set_frame_size(lv->ass, l->canvas_w, l->strip_h);
-    ass_set_storage_size(lv->ass, l->canvas_w, l->strip_h);
+    av_bprint_init(&styles, 0, AV_BPRINT_SIZE_UNLIMITED);
+    bprint_styles(&styles, l);
+    if (av_bprint_is_complete(&styles) && (lv->track = ass_new_track(lv->library)))
+        ass_process_codec_private(lv->track, styles.str, styles.len);
+    av_bprint_finalize(&styles, NULL);
+    if (!lv->track)
+        return AVERROR(ENOMEM);
+    ass_set_frame_size(lv->ass, l->canvas_w, l->canvas_h);
+    ass_set_storage_size(lv->ass, l->canvas_w, l->canvas_h);
     return 0;
 #else
     if (!lv->libass_missing_reported++)
@@ -625,17 +626,16 @@ static uint32_t blend_over(uint32_t dst, uint32_t rgb, int a, const uint32_t *re
 static int strip_render(ListView *lv, ListCacheEntry *entry)
 {
 #if CONFIG_LIBASS
-    ASS_Track *track = ass_read_memory(lv->library, entry->script, strlen(entry->script), NULL);
     uint32_t *pixels = (uint32_t *)entry->pixels, reciprocal[256] = { 1 << 16 };
     int w = entry->w, h = entry->h;
 
-    if (!track)
-        return AVERROR(EINVAL);
+    ass_flush_events(lv->track);
+    ass_process_data(lv->track, entry->script, strlen(entry->script));
     for (int a = 1; a < 256; a++)
         reciprocal[a] = ((255 << 16) + a - 1) / a;
     for (int i = 0; i < w * h; i++)
         pixels[i] = entry->background;
-    for (const ASS_Image *image = ass_render_frame(lv->ass, track, 0, NULL); image; image = image->next) {
+    for (const ASS_Image *image = ass_render_frame(lv->ass, lv->track, 0, NULL); image; image = image->next) {
         int opacity = 255 - (image->color & 0xFF);
         int x0 = FFMAX(image->dst_x, entry->x), x1 = FFMIN(image->dst_x + image->w, entry->x + w);
 
@@ -651,7 +651,6 @@ static int strip_render(ListView *lv, ListCacheEntry *entry)
             }
         }
     }
-    ass_free_track(track);
     return 0;
 #else
     return AVERROR(ENOSYS);
