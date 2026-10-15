@@ -1364,6 +1364,7 @@ static void stream_component_close(VideoState *is, int stream_index)
     case AVMEDIA_TYPE_AUDIO:
         decoder_abort(&is->auddec, &is->sampq);
         SDL_CloseAudioDevice(is->audio_dev);
+        is->audio_dev = 0;
         decoder_destroy(&is->auddec);
         swr_free(&is->swr_ctx);
         av_freep(&is->audio_buf1);
@@ -2883,6 +2884,35 @@ static int init_lcevc_graph(AVFormatContext *ic, int stream_index)
     return 0;
 }
 
+/* opens the audio device for the output of the audio filters and starts decoding and playing the audio */
+static int audio_start(VideoState *is)
+{
+    AVChannelLayout ch_layout = { 0 };
+    int ret = av_buffersink_get_ch_layout(is->out_audio_filter, &ch_layout);
+
+    if (ret >= 0)
+        ret = audio_open(is, &ch_layout, av_buffersink_get_sample_rate(is->out_audio_filter), &is->audio_tgt);
+    av_channel_layout_uninit(&ch_layout);
+    if (ret < 0)
+        return ret;
+    is->audio_hw_buf_size = ret;
+    is->audio_src = is->audio_tgt;
+    is->audio_buf_size  = 0;
+    is->audio_buf_index = 0;
+
+    /* init averaging filter */
+    is->audio_diff_avg_coef  = exp(log(0.01) / AUDIO_DIFF_AVG_NB);
+    is->audio_diff_avg_count = 0;
+    /* since we do not have a precise anough audio FIFO fullness,
+       we correct audio sync only if larger than this threshold */
+    is->audio_diff_threshold = (double)(is->audio_hw_buf_size) / is->audio_tgt.bytes_per_sec;
+
+    if ((ret = decoder_start(&is->auddec, audio_thread, "audio_decoder", is)) < 0)
+        return ret;
+    SDL_PauseAudioDevice(is->audio_dev, 0);
+    return 0;
+}
+
 /* open a given stream. Return 0 if OK */
 static int stream_component_open(VideoState *is, int stream_index)
 {
@@ -2892,8 +2922,6 @@ static int stream_component_open(VideoState *is, int stream_index)
     const AVCodec *codec;
     const char *forced_codec_name = NULL;
     AVDictionary *opts = NULL;
-    int sample_rate;
-    AVChannelLayout ch_layout = { 0 };
     int ret = 0;
     int stream_lowres = lowres;
 
@@ -2968,8 +2996,6 @@ static int stream_component_open(VideoState *is, int stream_index)
     switch (avctx->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
         {
-            AVFilterContext *sink;
-
             is->audio_filter_src.freq           = avctx->sample_rate;
             ret = av_channel_layout_copy(&is->audio_filter_src.ch_layout, &avctx->ch_layout);
             if (ret < 0)
@@ -2977,27 +3003,7 @@ static int stream_component_open(VideoState *is, int stream_index)
             is->audio_filter_src.fmt            = avctx->sample_fmt;
             if ((ret = configure_audio_filters(is, afilters, 0)) < 0)
                 goto fail;
-            sink = is->out_audio_filter;
-            sample_rate    = av_buffersink_get_sample_rate(sink);
-            ret = av_buffersink_get_ch_layout(sink, &ch_layout);
-            if (ret < 0)
-                goto fail;
         }
-
-        /* prepare audio output */
-        if ((ret = audio_open(is, &ch_layout, sample_rate, &is->audio_tgt)) < 0)
-            goto fail;
-        is->audio_hw_buf_size = ret;
-        is->audio_src = is->audio_tgt;
-        is->audio_buf_size  = 0;
-        is->audio_buf_index = 0;
-
-        /* init averaging filter */
-        is->audio_diff_avg_coef  = exp(log(0.01) / AUDIO_DIFF_AVG_NB);
-        is->audio_diff_avg_count = 0;
-        /* since we do not have a precise anough audio FIFO fullness,
-           we correct audio sync only if larger than this threshold */
-        is->audio_diff_threshold = (double)(is->audio_hw_buf_size) / is->audio_tgt.bytes_per_sec;
 
         is->audio_stream = stream_index;
         is->audio_st = ic->streams[stream_index];
@@ -3008,9 +3014,8 @@ static int stream_component_open(VideoState *is, int stream_index)
             is->auddec.start_pts = is->audio_st->start_time;
             is->auddec.start_pts_tb = is->audio_st->time_base;
         }
-        if ((ret = decoder_start(&is->auddec, audio_thread, "audio_decoder", is)) < 0)
-            goto out;
-        SDL_PauseAudioDevice(is->audio_dev, 0);
+        if ((ret = audio_start(is)) < 0)
+            stream_component_close(is, stream_index);
         break;
     case AVMEDIA_TYPE_VIDEO:
         is->video_stream = stream_index;
@@ -3043,7 +3048,6 @@ static int stream_component_open(VideoState *is, int stream_index)
 fail:
     avcodec_free_context(&avctx);
 out:
-    av_channel_layout_uninit(&ch_layout);
     av_dict_free(&opts);
 
     return ret;
