@@ -542,6 +542,8 @@ static void generate_min_phase_kernel(FIREqualizerContext *s, float *rdft_buf)
     double norm = 2.0 / cepstrum_len;
     double minval = 1e-7 / rdft_len;
 
+    av_assert0(cepstrum_len >= 2);
+
     memset(s->cepstrum_buf, 0, cepstrum_len * sizeof(*s->cepstrum_buf));
     memset(s->cepstrum_tbuf, 0, (cepstrum_len + 2) * sizeof(*s->cepstrum_tbuf));
     memcpy(s->cepstrum_buf, rdft_buf, rdft_len/2 * sizeof(*rdft_buf));
