@@ -252,6 +252,7 @@ include $(SRC_PATH)/tests/fate/qoa.mak
 include $(SRC_PATH)/tests/fate/qt.mak
 include $(SRC_PATH)/tests/fate/qtrle.mak
 include $(SRC_PATH)/tests/fate/real.mak
+include $(SRC_PATH)/tests/fate/rtsp.mak
 include $(SRC_PATH)/tests/fate/sbc.mak
 include $(SRC_PATH)/tests/fate/screen.mak
 include $(SRC_PATH)/tests/fate/segafilm.mak
