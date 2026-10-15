@@ -192,6 +192,8 @@ static void draw_region_rgb_packed(AVFrame *frame, DrawBoxContext *ctx, int left
             }
         }
     } else {
+        const float alpha = (float)ctx->rgba_color[A] / 255.f;
+
         for (int y = top; y < down; y++) {
             ASSIGN_THREE_CHANNELS_PACKED
             if (ctx->invert_color) {
@@ -203,8 +205,6 @@ static void draw_region_rgb_packed(AVFrame *frame, DrawBoxContext *ctx, int left
                     }
             } else {
                 for (int x = left; x < right; x++) {
-                    float alpha = (float)ctx->rgba_color[A] / 255.f;
-
                     if (pixel_belongs_to_region(ctx, x, y)) {
                         row[0][x*C] = (1.f - alpha) * row[0][x*C] + alpha * ctx->rgba_color[R];
                         row[1][x*C] = (1.f - alpha) * row[1][x*C] + alpha * ctx->rgba_color[G];
