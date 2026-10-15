@@ -2377,7 +2377,8 @@ static void push_stream_event(VideoState *is, Uint32 type)
 {
     SDL_Event event = { .user = { .type = type, .code = is->id } };
 
-    SDL_PushEvent(&event);
+    if (SDL_PushEvent(&event) < 0)
+        av_log(NULL, AV_LOG_ERROR, "Could not push the event of '%s': %s\n", is->filename, SDL_GetError());
 }
 
 static int video_thread(void *arg)
@@ -3914,8 +3915,10 @@ static void file_list_read(const char *path, int play_if_no_dir)
 {
     int ret = 0;
 
-    if (dir_thread)
+    if (dir_thread) {
+        av_log(NULL, AV_LOG_VERBOSE, "Not listing '%s' while '%s' is being read\n", path, dir_request.path);
         return;
+    }
     dir_request.play_if_no_dir = play_if_no_dir;
     dir_request.cancelled      = 0;
     SDL_AtomicSet(&dir_request.abort, 0);
