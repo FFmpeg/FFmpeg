@@ -513,9 +513,10 @@ static int ftp_set_dir(FTPContext *s)
 static int ftp_list_mlsd(FTPContext *s)
 {
     static const char *command = "MLSD\r\n";
-    static const int mlsd_codes[] = {150, 500, 0}; /* 500 is incorrect code */
+    static const int mlsd_codes[] = {150, 125, 500, 0}; /* 500 is incorrect code */
+    int resp_code = ftp_send_command(s, command, mlsd_codes, NULL);
 
-    if (ftp_send_command(s, command, mlsd_codes, NULL) != 150)
+    if (resp_code != 150 && resp_code != 125)
         return AVERROR(ENOSYS);
     s->listing_method = MLSD;
     return 0;
