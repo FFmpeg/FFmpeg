@@ -496,7 +496,7 @@ static int compare_fields(FieldMatchContext *fm, int match1, int match2, int fie
     const AVFrame *src = fm->src;
 
     for (plane = 0; plane < (fm->mchroma ? 3 : 1); plane++) {
-        int x, y, temp1, temp2, fbase;
+        int x, y, temp1, temp2, fbase, stopy;
         const AVFrame *prev, *next;
         uint8_t *mapp    = fm->map_data[plane];
         int map_linesize = fm->map_linesize[plane];
@@ -519,6 +519,7 @@ static int compare_fields(FieldMatchContext *fm, int match1, int match2, int fie
         /* match1 */
         fbase = get_field_base(match1, field);
         srcf  = srcp + (fbase + 1) * src_linesize;
+        stopy = height - 1 - fbase;
         srcpf = srcf - srcf_linesize;
         srcnf = srcf + srcf_linesize;
         mapp  = mapp + fbase * map_linesize;
@@ -544,7 +545,7 @@ static int compare_fields(FieldMatchContext *fm, int match1, int match2, int fie
             build_diff_map(fm, prvnf, prvf_linesize, nxtnf, nxtf_linesize,
                            mapp + map_linesize, map_linesize, height, width, plane);
 
-        for (y = 2; y < height - 2; y += 2) {
+        for (y = 2; y < stopy; y += 2) {
             if (y0a == y1a || y < y0a || y > y1a) {
                 for (x = startx; x < stopx; x++) {
                     if (mapp[x] > 0 || mapp[x + map_linesize] > 0) {
