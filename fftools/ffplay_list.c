@@ -97,6 +97,8 @@ struct ListView {
     unsigned frame;
     ListEntry *entries;
     int nb_entries;
+    /* whether any entry has an artist or a length, without which the column has no sort button */
+    int has_artist, has_length;
     /* the listed entries in display order, and the scratch space sorting them needs */
     int *rows, *sort_tmp;
     int nb_rows;
@@ -254,6 +256,11 @@ static ListLayout list_layout(const ListView *lv)
     for (int b = 0; b < LIST_SORT_NB; b++) {
         int w = sort_buttons[b].width * l.font / 2;
 
+        if (b == LIST_SORT_ARTIST && !lv->has_artist || b == LIST_SORT_LENGTH && !lv->has_length) {
+            l.button_x[b] = -1;
+            l.button_y[b] = 0;
+            continue;
+        }
         if (x > l.font / 2 && x + w > l.width - l.font / 2) {
             x  = l.font / 2;
             y += l.font * 3 / 2;
@@ -299,7 +306,7 @@ static ListHit list_hit(const ListLayout *l, int x, int y)
         hit.detail = x >= l->width - l->font * 2;
     }
     for (int b = 0; b < FF_ARRAY_ELEMS(sort_buttons); b++)
-        if (x >= l->button_x[b] && x < l->button_x[b] + sort_buttons[b].width * l->font / 2 &&
+        if (l->button_x[b] >= 0 && x >= l->button_x[b] && x < l->button_x[b] + sort_buttons[b].width * l->font / 2 &&
             y >= l->button_y[b] && y < l->button_y[b] + l->font * 5 / 4)
             hit.button = b;
     return hit;
@@ -351,6 +358,8 @@ static void bprint_header_strip(const ListView *lv, AVBPrint *script, const List
     for (int b = 0; b < FF_ARRAY_ELEMS(sort_buttons); b++) {
         int x = l->button_x[b], y = l->button_y[b], w = sort_buttons[b].width * l->font / 2;
 
+        if (x < 0)
+            continue;
         bprint_box(script, b == lv->hover.button ? "ButtonHover" : "Button", x, y, w, l->font * 5 / 4);
         av_bprintf(script, LIST_EVENT "%s,{\\an5\\pos(%d,%d)}", lv->sort[0].key == b ? "Selected" : "Row",
                    x + w / 2, y + l->font * 5 / 8);
@@ -800,6 +809,11 @@ int list_view_show(ListView *lv, const ListEntry *entries, int nb_entries, int s
     lv->sort_tmp   = sort_tmp;
     lv->nb_entries = nb_entries;
     lv->nb_rows    = 0;
+    lv->has_artist = lv->has_length = 0;
+    for (int i = 0; i < nb_entries; i++) {
+        lv->has_artist |= entries[i].artist && *entries[i].artist;
+        lv->has_length |= entries[i].length >= 0;
+    }
     list_update_rows(lv);
     for (int row = 0; row < lv->nb_rows; row++)
         if (lv->rows[row] == previous)
