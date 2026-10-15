@@ -367,7 +367,7 @@ static int scale_vulkan_config_output(AVFilterLink *outlink)
             av_log(avctx, AV_LOG_ERROR, "Unsupported output format for debayer\n");
             return AVERROR(EINVAL);
         }
-        if (inlink->w != outlink->w || inlink->w != outlink->w) {
+        if (inlink->w != outlink->w || inlink->h != outlink->h) {
             av_log(avctx, AV_LOG_ERROR, "Scaling is not supported with debayering\n");
             return AVERROR_PATCHWELCOME;
         }
