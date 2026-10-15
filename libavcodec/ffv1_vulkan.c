@@ -27,8 +27,7 @@ void ff_ffv1_vk_set_common_sl(AVCodecContext *avctx, FFV1Context *f,
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(sw_format);
     int color_planes = av_pix_fmt_desc_get(sw_format)->nb_components;
-    int is_rgb = !(f->colorspace == 0 && sw_format != AV_PIX_FMT_YA8) &&
-                 !(sw_format == AV_PIX_FMT_YA8);
+    int is_rgb = f->colorspace != 0 && sw_format != AV_PIX_FMT_YA8;
 
     SPEC_LIST_ADD(sl,  2, 32, f->version);
     SPEC_LIST_ADD(sl,  3, 32, f->quant_table_count);
