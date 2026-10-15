@@ -555,6 +555,7 @@
             "channels": 1,
             "bits_per_sample": 16,
             "initial_padding": 0,
+            "seek_preroll": 0,
             "r_frame_rate": "0/0",
             "avg_frame_rate": "0/0",
             "time_base": "1/44100",

@@ -16,6 +16,7 @@ channels=8
 channel_layout=5.1.2(back)
 bits_per_sample=0
 initial_padding=0
+seek_preroll=0
 id=N/A
 r_frame_rate=0/0
 avg_frame_rate=0/0

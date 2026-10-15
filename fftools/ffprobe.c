@@ -2105,6 +2105,7 @@ static int show_stream(AVTextFormatContext *tfc, AVFormatContext *fmt_ctx, int s
         print_int("bits_per_sample", av_get_bits_per_sample(par->codec_id));
 
         print_int("initial_padding", par->initial_padding);
+        print_int("seek_preroll", par->seek_preroll);
         break;
 
     case AVMEDIA_TYPE_SUBTITLE:
