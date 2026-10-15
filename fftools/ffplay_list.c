@@ -121,6 +121,8 @@ struct ListView {
     ListSortKey sort[LIST_SORT_NB];
     int shuffle_seed;
     int libass_missing_reported;
+    /* 16.16 reciprocals of the alpha values, for the un-premultiplication of blended pixels */
+    uint32_t reciprocal[256];
 };
 
 static double list_alpha(const ListView *lv, int64_t now)
@@ -612,13 +614,11 @@ static uint32_t blend_over(uint32_t dst, uint32_t rgb, int a, const uint32_t *re
 static int strip_render(ListView *lv, ListCacheEntry *entry)
 {
 #if CONFIG_LIBASS
-    uint32_t *pixels = (uint32_t *)entry->pixels, reciprocal[256] = { 1 << 16 };
+    uint32_t *pixels = (uint32_t *)entry->pixels;
     int w = entry->w, h = entry->h;
 
     ass_flush_events(lv->track);
     ass_process_data(lv->track, entry->script, strlen(entry->script));
-    for (int a = 1; a < 256; a++)
-        reciprocal[a] = ((255 << 16) + a - 1) / a;
     for (int i = 0; i < w * h; i++)
         pixels[i] = entry->background;
     for (const ASS_Image *image = ass_render_frame(lv->ass, lv->track, 0, NULL); image; image = image->next) {
@@ -633,7 +633,7 @@ static int strip_render(ListView *lv, ListCacheEntry *entry)
                 int a = (opacity * coverage[x] + 127) / 255;
 
                 if (a)
-                    dst[x] = blend_over(dst[x], image->color >> 8, a, reciprocal);
+                    dst[x] = blend_over(dst[x], image->color >> 8, a, lv->reciprocal);
             }
         }
     }
@@ -740,6 +740,9 @@ ListView *list_view_alloc(SDL_Renderer *renderer)
     lv->playing  = -1;
     lv->mouse_x  = lv->mouse_y = -1;
     lv->hover    = (ListHit){ 0, -1, -1, 0 };
+    lv->reciprocal[0] = 1 << 16;
+    for (int a = 1; a < 256; a++)
+        lv->reciprocal[a] = ((255 << 16) + a - 1) / a;
     list_view_clear(lv);
     return lv;
 }
