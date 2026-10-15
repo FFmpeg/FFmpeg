@@ -611,6 +611,7 @@ static int decoder_init(Decoder *d, AVCodecContext *avctx, PacketQueue *queue, S
     d->empty_queue_cond = empty_queue_cond;
     d->start_pts = AV_NOPTS_VALUE;
     d->pkt_serial = -1;
+    packet_queue_start(d->queue);
     return 0;
 }
 
@@ -2320,7 +2321,6 @@ static int audio_thread(void *arg)
 
 static int decoder_start(Decoder *d, int (*fn)(void *), const char *thread_name, void* arg)
 {
-    packet_queue_start(d->queue);
     d->decoder_tid = SDL_CreateThread(fn, thread_name, arg);
     if (!d->decoder_tid) {
         av_log(NULL, AV_LOG_ERROR, "SDL_CreateThread(): %s\n", SDL_GetError());
