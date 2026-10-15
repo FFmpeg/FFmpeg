@@ -234,5 +234,5 @@ $(sort $(OUTDIRS)):
 # so this saves some time on slow systems.
 .SUFFIXES:
 
-.PHONY: all all-yes alltools build check config testprogs
+.PHONY: all all-yes alltools build check config devprogs testprogs
 .PHONY: *clean install* uninstall*
