@@ -190,7 +190,7 @@ static void draw_arrow(uint8_t *buf, int sx, int sy, int ex,
     if (dx * dx + dy * dy > 3 * 3) {
         int rx =  dx + dy;
         int ry = -dx + dy;
-        int length = sqrt((rx * rx + ry * ry) << 8);
+        int length = sqrt((rx * (int64_t)rx + ry * (int64_t)ry) << 8);
 
         // FIXME subpixel accuracy
         rx = ROUNDED_DIV(rx * (3 << 4), length);
