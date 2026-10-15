@@ -955,6 +955,11 @@ static int config_input(AVFilterLink *inlink)
     const int w = inlink->w;
     const int h = inlink->h;
 
+    if (h <= fm->blocky / 2 || AV_CEIL_RSHIFT(h, pix_desc->log2_chroma_h) < 4) {
+        av_log(ctx, AV_LOG_ERROR, "Height %d is too small\n", h);
+        return AVERROR(EINVAL);
+    }
+
     fm->scthresh = (int64_t)((w * h * 255.0 * fm->scthresh_flt) / 100.0);
 
     if ((ret = av_image_alloc(fm->map_data,   fm->map_linesize,   w, h, inlink->format, 32)) < 0 ||
