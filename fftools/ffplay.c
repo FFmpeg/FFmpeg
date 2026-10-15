@@ -3625,9 +3625,7 @@ static VideoState *stream_open(const char *filename,
                 goto fail;
         }
     }
-    startup_volume = av_clip(startup_volume, 0, 100);
-    startup_volume = av_clip(SDL_MIX_MAXVOLUME * startup_volume / 100, 0, SDL_MIX_MAXVOLUME);
-    is->audio_volume = startup_volume;
+    is->audio_volume = SDL_MIX_MAXVOLUME * av_clip(startup_volume, 0, 100) / 100;
     is->muted = 0;
     is->av_sync_type = av_sync_type;
     is->read_tid     = SDL_CreateThread(read_thread, "read_thread", is);
