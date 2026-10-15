@@ -758,35 +758,26 @@ void list_view_free(ListView **plv)
         ass_library_done(lv->library);
 #endif
     av_freep(&lv->entries);
-    av_freep(&lv->rows);
-    av_freep(&lv->sort_tmp);
     av_freep(plv);
 }
 
 int list_view_show(ListView *lv, const ListEntry *entries, int nb_entries, int selected)
 {
     ListEntry *copy;
-    int *rows, *sort_tmp, previous = list_view_selected(lv);
+    int previous = list_view_selected(lv);
 
     if (!lv->renderer)
         return AVERROR(EINVAL);
-    copy     = av_malloc_array(nb_entries, sizeof(*copy));
-    rows     = av_malloc_array(nb_entries, sizeof(*rows));
-    sort_tmp = av_malloc_array(nb_entries, sizeof(*sort_tmp));
-    if (!copy || !rows || !sort_tmp) {
-        av_free(copy);
-        av_free(rows);
-        av_free(sort_tmp);
+    /* the rows and the sort scratch follow the entries */
+    copy = av_malloc_array(nb_entries, sizeof(*copy) + 2 * sizeof(*lv->rows));
+    if (!copy)
         return AVERROR(ENOMEM);
-    }
     if (nb_entries)
         memcpy(copy, entries, nb_entries * sizeof(*entries));
     av_free(lv->entries);
-    av_free(lv->rows);
-    av_free(lv->sort_tmp);
     lv->entries    = copy;
-    lv->rows       = rows;
-    lv->sort_tmp   = sort_tmp;
+    lv->rows       = (int *)(copy + nb_entries);
+    lv->sort_tmp   = lv->rows + nb_entries;
     lv->nb_entries = nb_entries;
     lv->nb_rows    = 0;
     lv->has_artist = lv->has_length = 0;
