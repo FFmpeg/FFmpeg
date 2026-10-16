@@ -290,10 +290,21 @@ void main() [[maximally_reconverges]]
         scores[slice].score[max_quant + 1][plane] = error;
         scores[slice].overquant = int(max_quant);
     } else {
-        /* Keep searching until an encoding fits our budget. The loop stays
-         * subgroup-uniform, as the sums must not run under divergence. */
-        bool done = false;
-        for (uint oq = max_quant + 1; oq < 128 && !subgroupAll(done); ++oq) {
+        /* Search upwards for a quantizer whose encoding fits our budget.
+         * Gallop until an estimate fits, then bisect between the highest
+         * quantizer known to overshoot and the lowest known to fit: about
+         * 2 * log2(distance) estimates instead of one per step. Bits nearly
+         * always fall as the quantizer rises, and then this finds the same
+         * quantizer as stepping up one at a time. When they don't, it may
+         * settle on a higher one that also fits. A slice that fits nowhere
+         * ends on q = 127's estimates, as before.
+         * The loop stays subgroup-uniform, as the sums must not run under
+         * divergence. */
+        uint below = max_quant, fit = 128, step = 1;
+        int fit_bits = 0, fit_error = 0, fit_total_bits = 0, fit_total_score = 0;
+        bool galloping = true, done = false;
+        while (!subgroupAll(done)) {
+            uint oq = galloping ? min(below + step, 127u) : (below + fit) / 2;
             int e = 0, b = 0;
             if (!done)
                 b = plane == 3 ? estimate_alpha_plane(slice) :
@@ -306,9 +317,28 @@ void main() [[maximally_reconverges]]
                 error = e;
                 total_bits = tb;
                 total_score = ts;
-                q = oq;
-                done = total_bits <= bits_per_mb * mbs_per_slice;
+                if (total_bits <= bits_per_mb * mbs_per_slice) {
+                    fit = oq;
+                    fit_bits = b;
+                    fit_error = e;
+                    fit_total_bits = tb;
+                    fit_total_score = ts;
+                    galloping = false;
+                } else {
+                    below = oq;
+                    step <<= 1;
+                }
+                done = galloping ? below == 127 : fit - below <= 1;
             }
+        }
+
+        q = 127;
+        if (fit < 128) {
+            bits = fit_bits;
+            error = fit_error;
+            total_bits = fit_total_bits;
+            total_score = fit_total_score;
+            q = fit;
         }
 
         scores[slice].bits[max_quant + 1][plane] = bits;
