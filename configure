@@ -334,7 +334,6 @@ External library support:
   --enable-ohcodec         enable OpenHarmony Codec support [no]
   --enable-openal          enable OpenAL 1.1 capture support [no]
   --enable-opencl          enable OpenCL processing [no]
-  --enable-opengl          enable OpenGL rendering [no]
   --enable-openssl         enable openssl, needed for https support
                            if gnutls, libtls or mbedtls is not used [no]
   --enable-pocketsphinx    enable PocketSphinx, needed for asr filter [no]
@@ -2143,7 +2142,6 @@ EXTERNAL_LIBRARY_LIST="
     mediacodec
     ohcodec
     openal
-    opengl
     openssl
     pocketsphinx
     vapoursynth
@@ -2455,7 +2453,6 @@ HEADERS_LIST="
     dirent_h
     dxgidebug_h
     dxva_h
-    ES2_gl_h
     gsm_h
     io_h
     linux_dma_buf_h
@@ -2520,7 +2517,6 @@ SYSTEM_FUNCS="
     GetSystemTimeAsFileTime
     gettimeofday
     glob
-    glXGetProcAddress
     gmtime_r
     inet_aton
     ioctl
@@ -2563,7 +2559,6 @@ SYSTEM_FUNCS="
     usleep
     UTGetOSTypeFromString
     VirtualAlloc
-    wglGetProcAddress
 "
 
 SYSTEM_LIBRARIES="
@@ -7467,13 +7462,6 @@ enabled opencl            && { check_pkg_config opencl OpenCL CL/cl.h clEnqueueN
                              { test_cpp_condition "OpenCL/cl.h" "defined(CL_VERSION_1_2)" ||
                                test_cpp_condition "CL/cl.h" "defined(CL_VERSION_1_2)" ||
                                die "ERROR: opencl must be installed and version must be 1.2 or compatible"; }
-enabled opengl            && { check_lib opengl GL/glx.h glXGetProcAddress "-lGL" ||
-                               check_lib opengl windows.h wglGetProcAddress "-lopengl32 -lgdi32" ||
-                               check_lib opengl OpenGL/gl3.h glGetError "-framework OpenGL" ||
-                               check_lib opengl ES2/gl.h glGetError "-isysroot=${sysroot} -framework OpenGLES" ||
-                               die "ERROR: opengl not found."
-                             }
-
 enabled openssl           && { { check_pkg_config openssl "openssl >= 3.0.0" openssl/ssl.h DTLS_get_data_mtu &&
                                  { enabled gplv3 || ! enabled gpl || enabled nonfree || die "ERROR: OpenSSL >=3.0.0 requires --enable-version3"; }; } ||
                                { enabled gpl && ! enabled nonfree && die "ERROR: OpenSSL <3.0.0 is incompatible with the gpl"; } ||

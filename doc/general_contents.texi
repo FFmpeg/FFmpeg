@@ -1640,7 +1640,6 @@ performance on systems without hardware floating point support).
 @item LIBCDIO           @tab X
 @item LIBDC1394         @tab X      @tab
 @item OpenAL            @tab X
-@item OpenGL            @tab        @tab X
 @item OSS               @tab X      @tab X
 @item PulseAudio        @tab X      @tab X
 @item SDL               @tab        @tab X
