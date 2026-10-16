@@ -117,6 +117,7 @@ struct playlist {
     int index;
     AVFormatContext *ctx;
     AVPacket *pkt;
+    int64_t last_cue_pts; /* reference for the cues read without media */
     int has_noheader_flag;
 
     /* main demuxer streams associated with this playlist
@@ -416,6 +417,7 @@ static struct playlist *new_playlist(HLSContext *c, const char *url,
 
     av_strlcpy(pls->url, abs_url, sizeof(pls->url));
     pls->ts_offset = AV_NOPTS_VALUE;
+    pls->last_cue_pts = AV_NOPTS_VALUE;
     pls->seek_timestamp = AV_NOPTS_VALUE;
     pls->first_read_seq_no = -1;
 
@@ -2122,6 +2124,60 @@ static int init_subtitle_context(struct playlist *pls)
     return ret;
 }
 
+static AVRational get_timebase(struct playlist *pls);
+
+/* The position of the media, the reference for the cue times: the last
+ * returned packet, or a packet buffered from a media playlist before
+ * anything was returned. AV_NOPTS_VALUE without media. */
+static int64_t media_position(HLSContext *c)
+{
+    if (c->cur_timestamp != AV_NOPTS_VALUE)
+        return c->cur_timestamp;
+    for (int i = 0; i < c->n_playlists; i++) {
+        struct playlist *pls = c->playlists[i];
+
+        if (!pls->is_subtitle && pls->needed && pls->pkt->data &&
+            pls->pkt->dts != AV_NOPTS_VALUE)
+            return av_rescale_q(pls->pkt->dts, get_timebase(pls), AV_TIME_BASE_Q);
+    }
+    return AV_NOPTS_VALUE;
+}
+
+/* The MPEG-TS time of a cue is on the 33 bit PES clock, this is the period
+ * of that clock nearest to ref, both in MPEG_TIME_BASE_Q. */
+static int64_t nearest_period(int64_t pts, int64_t ref)
+{
+    const int64_t period = 1LL << 33, half = 1LL << 32;
+    int64_t d = pts - ref;
+
+    return pts - (d >= 0 ? d + half : d - half) / period * period;
+}
+
+static void unwrap_pkt(AVPacket *pkt, AVRational tb, int64_t ref)
+{
+    int64_t pts;
+
+    if (pkt->pts == AV_NOPTS_VALUE)
+        return;
+    pts = nearest_period(av_rescale_q(pkt->pts, tb, MPEG_TIME_BASE_Q), ref);
+    pkt->pts = pkt->dts = av_rescale_q(pts, MPEG_TIME_BASE_Q, tb);
+}
+
+/* Put a cue on the period nearest to the media position, where the
+ * timestamps of the other renditions continue after a wrap. Without media
+ * a cue follows the previous cue of its playlist. */
+static void unwrap_cue_pts(HLSContext *c, struct playlist *v, AVPacket *pkt)
+{
+    AVRational tb = v->ctx->streams[pkt->stream_index]->time_base;
+    int64_t ref = media_position(c);
+
+    if (ref != AV_NOPTS_VALUE)
+        unwrap_pkt(pkt, tb, av_rescale_q(ref, AV_TIME_BASE_Q, MPEG_TIME_BASE_Q));
+    else if (v->last_cue_pts != AV_NOPTS_VALUE)
+        unwrap_pkt(pkt, tb, av_rescale_q(v->last_cue_pts, tb, MPEG_TIME_BASE_Q));
+    v->last_cue_pts = pkt->pts;
+}
+
 static int read_subtitle_packet(struct playlist *v, AVPacket *pkt)
 {
     HLSContext *c = v->parent->priv_data;
@@ -2143,7 +2199,8 @@ restart:
 
     ret = av_read_frame(v->ctx, v->pkt);
     if (!ret) {
-        return ret;
+        unwrap_cue_pts(c, v, v->pkt);
+        return 0;
     }
     ff_format_io_close(v->parent, &v->input);
     v->cur_seq_no++;
@@ -2603,7 +2660,7 @@ static int hls_read_header(AVFormatContext *s)
         highest_cur_seq_no = FFMAX(highest_cur_seq_no, pls->cur_seq_no);
     }
 
-    av_dict_set(&c->seg_format_opts, "prefer_hls_mpegts_pts", "1", 0);
+    av_dict_set(&c->seg_format_opts, "timestamp_map", "1", 0);
 
     /* Open the demuxer for each playlist */
     for (i = 0; i < c->n_playlists; i++) {
@@ -2849,8 +2906,10 @@ static int recheck_discard_flags(AVFormatContext *s, int first)
             pls->input_read_done = 0;
             ff_format_io_close(pls->parent, &pls->input_next);
             pls->input_next_requested = 0;
-            if (pls->is_subtitle)
+            if (pls->is_subtitle) {
                 avformat_close_input(&pls->ctx);
+                pls->last_cue_pts = AV_NOPTS_VALUE;
+            }
             pls->needed = 0;
             changed = 1;
             av_log(s, AV_LOG_INFO, "No longer receiving playlist %d\n", i);
@@ -2927,16 +2986,24 @@ static int metadata_has_changed(const AVDictionary *current,
 static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     HLSContext *c = s->priv_data;
-    int ret, i, minplaylist = -1;
+    int ret, i, minplaylist = -1, deferred = 0, unanchored = 0;
 
     recheck_discard_flags(s, c->first_packet);
     c->first_packet = 0;
 
+retry:
     for (i = 0; i < c->n_playlists; i++) {
         struct playlist *pls = c->playlists[i];
         /* Make sure we've got one buffered packet from each open playlist
          * stream */
         if (pls->needed && !pls->pkt->data) {
+            /* a cue is placed relative to the media, so the media playlists
+             * buffer their packets first */
+            if (pls->is_subtitle && !unanchored &&
+                media_position(c) == AV_NOPTS_VALUE) {
+                deferred = 1;
+                continue;
+            }
             while (1) {
                 int64_t ts_diff;
                 AVRational tb;
@@ -3038,6 +3105,14 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
                 av_packet_unref(pls->pkt);
             }
         }
+    }
+
+    for (i = 0; i < c->n_playlists; i++) {
+        struct playlist *pls = c->playlists[i];
+
+        /* a cue buffered without media is placed once the media is */
+        if (pls->is_subtitle && pls->pkt->data)
+            unwrap_cue_pts(c, pls, pls->pkt);
         /* Check if this stream has the packet with the lowest dts */
         if (pls->pkt->data) {
             struct playlist *minpls = minplaylist < 0 ?
@@ -3053,6 +3128,13 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
                     minplaylist = i;
             }
         }
+    }
+
+    /* without media the cues are read as they are */
+    if (minplaylist < 0 && deferred) {
+        deferred   = 0;
+        unanchored = 1;
+        goto retry;
     }
 
     /* If we got a packet, return it */
@@ -3115,7 +3197,9 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
         av_packet_move_ref(pkt, pls->pkt);
         pkt->stream_index = st->index;
 
-        if (pkt->dts != AV_NOPTS_VALUE)
+        /* a cue read without media does not set the media position */
+        if (pkt->dts != AV_NOPTS_VALUE &&
+            (!pls->is_subtitle || c->first_timestamp != AV_NOPTS_VALUE))
             c->cur_timestamp = av_rescale_q(pkt->dts,
                                             ist->time_base,
                                             AV_TIME_BASE_Q);
@@ -3247,8 +3331,10 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
             for (j = 0; j < (int)pls->ctx->nb_streams; j++)
                 ffstream(pls->ctx->streams[j])->pts_wrap_reference = AV_NOPTS_VALUE;
         }
-        if (pls->is_subtitle)
+        if (pls->is_subtitle) {
             avformat_close_input(&pls->ctx);
+            pls->last_cue_pts = AV_NOPTS_VALUE;
+        }
 
         /* Reset the init segment so it's re-fetched and served appropriately */
         pls->cur_init_section = NULL;

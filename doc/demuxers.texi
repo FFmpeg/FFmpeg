@@ -574,6 +574,9 @@ available in a metadata key named "variant_bitrate". It is unset when
 the stream is shared by variants with different bitrates. The value is
 always available in the corresponding program's metadata.
 
+The X-TIMESTAMP-MAP header of WebVTT subtitle segments is applied, so the
+cue times are on the timeline of the other renditions.
+
 It accepts the following options:
 
 @table @option
