@@ -103,11 +103,9 @@ typedef struct NNEDIContext {
     float **output_buf;
 
     void (*read)(const uint8_t *src, float *dst,
-                 int src_stride, int dst_stride,
-                 int width, int height, float scale);
+                 int width, float scale);
     void (*write)(const float *src, uint8_t *dst,
-                  int src_stride, int dst_stride,
-                  int width, int height, int depth, float scale);
+                  int width, int depth, float scale);
     void (*prescreen[2])(AVFilterContext *ctx,
                          const void *src, ptrdiff_t src_stride,
                          uint8_t *prescreen, int N,
@@ -440,77 +438,47 @@ static void predictor(AVFilterContext *ctx,
 }
 
 static void read_bytes(const uint8_t *src, float *dst,
-                       int src_stride, int dst_stride,
-                       int width, int height, float scale)
+                       int width, float scale)
 {
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < 32; x++)
-            dst[-x - 1] = src[FFMIN(x, width - 1)];
+    for (int x = 0; x < 32; x++)
+        dst[-x - 1] = src[FFMIN(x, width - 1)];
 
-        for (int x = 0; x < width; x++)
-            dst[x] = src[x];
+    for (int x = 0; x < width; x++)
+        dst[x] = src[x];
 
-        for (int x = 0; x < 32; x++)
-            dst[width + x] = src[FFMAX(width - x - 1, 0)];
-
-        dst += dst_stride;
-        src += src_stride;
-    }
+    for (int x = 0; x < 32; x++)
+        dst[width + x] = src[FFMAX(width - x - 1, 0)];
 }
 
 static void read_words(const uint8_t *srcp, float *dst,
-                       int src_stride, int dst_stride,
-                       int width, int height, float scale)
+                       int width, float scale)
 {
     const uint16_t *src = (const uint16_t *)srcp;
 
-    src_stride /= 2;
+    for (int x = 0; x < 32; x++)
+        dst[-x - 1] = src[FFMIN(x, width - 1)] * scale;
 
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < 32; x++)
-            dst[-x - 1] = src[FFMIN(x, width - 1)] * scale;
+    for (int x = 0; x < width; x++)
+        dst[x] = src[x] * scale;
 
-        for (int x = 0; x < width; x++)
-            dst[x] = src[x] * scale;
-
-        for (int x = 0; x < 32; x++)
-            dst[width + x] = src[FFMAX(width - x - 1, 0)] * scale;
-
-        dst += dst_stride;
-        src += src_stride;
-    }
+    for (int x = 0; x < 32; x++)
+        dst[width + x] = src[FFMAX(width - x - 1, 0)] * scale;
 }
 
 static void write_bytes(const float *src, uint8_t *dst,
-                        int src_stride, int dst_stride,
-                        int width, int height, int depth,
-                        float scale)
+                        int width, int depth, float scale)
 {
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++)
-            dst[x] = av_clip_uint8(src[x]);
-
-        dst += dst_stride;
-        src += src_stride;
-    }
+    for (int x = 0; x < width; x++)
+        dst[x] = av_clip_uint8(src[x]);
 }
 
 static void write_words(const float *src, uint8_t *dstp,
-                        int src_stride, int dst_stride,
-                        int width, int height, int depth,
-                        float scale)
+                        int width, int depth, float scale)
 {
     uint16_t *dst = (uint16_t *)dstp;
 
-    dst_stride /= 2;
-
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++)
-            dst[x] = av_clip_uintp2_c(src[x] * scale, depth);
-
-        dst += dst_stride;
-        src += src_stride;
-    }
+    for (int x = 0; x < width; x++)
+        dst[x] = av_clip_uintp2_c(src[x] * scale, depth);
 }
 
 static void interpolation(const void *src, ptrdiff_t src_stride,
@@ -559,11 +527,11 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
         const int src_linesize = in->linesize[p];
         const int dst_linesize = out->linesize[p];
         uint8_t *prescreen_buf = s->prescreen_buf[jobnr];
-        float *srcbuf = s->input_buf[jobnr];
+        float *srcbuf = s->input_buf[jobnr] + 32;
         const int srcbuf_stride = width + 64;
         float *dstbuf = s->output_buf[jobnr];
-        const int dstbuf_stride = width;
-        const int slice_height = (slice_end - slice_start + tff) / 2;
+        const int y0 = slice_start + !tff;
+        const int nb_lines = (slice_end - y0 + 1) / 2;
         // first and last line of the field that is kept
         const int first = FFMIN(tff, height - 1);
         const int last = FFMAX(height - 1 - ((height - 1 - tff) & 1), 0);
@@ -590,45 +558,32 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
             out_line += dst_linesize * 2;
         }
 
-        if (!slice_height)
-            continue;
+        for (int i = 0; i < nb_lines + 5; i++) {
+            const int y = av_clip(y0 - 5 + 2 * i, first, last);
 
-        y_out = slice_start + ((!tff) ^ (slice_start & 1));
-        out_line = dst_data + (y_out * dst_linesize);
-
-        for (int i = 0; i < slice_height + 5; i++) {
-            const int y = av_clip(y_out - 5 + 2 * i, first, last);
-
-            s->read(src_data + y * src_linesize, srcbuf + 32 + i * srcbuf_stride,
-                    src_linesize * 2, srcbuf_stride, width, 1, in_scale);
+            s->read(src_data + y * src_linesize, srcbuf + i * srcbuf_stride,
+                    width, in_scale);
         }
-        srcbuf += 3 * srcbuf_stride;
 
         if (!s->pscrn)
             memset(prescreen_buf, 0, width);
 
-        for (int y = 0; y < 2 * slice_height; y += 2) {
-            if (s->pscrn > 0)
-                s->prescreen[s->pscrn > 1](ctx, srcbuf + (y / 2) * srcbuf_stride + 32,
-                             srcbuf_stride, prescreen_buf, width,
-                             &s->prescreener[s->pscrn - 1]);
+        for (int i = 0; i < nb_lines; i++) {
+            const float *src = srcbuf + (i + 3) * srcbuf_stride;
 
-            predictor(ctx,
-                      srcbuf + (y / 2) * srcbuf_stride + 32,
-                      srcbuf_stride,
-                      dstbuf + (y / 2) * dstbuf_stride,
-                      prescreen_buf, width,
+            if (s->pscrn > 0)
+                s->prescreen[s->pscrn > 1](ctx, src, srcbuf_stride, prescreen_buf, width,
+                                           &s->prescreener[s->pscrn - 1]);
+
+            predictor(ctx, src, srcbuf_stride, dstbuf, prescreen_buf, width,
                       &s->coeffs[s->etype][s->nnsparam][s->nsize], s->qual == 2);
 
             if (s->pscrn > 0)
-                interpolation(srcbuf + (y / 2) * srcbuf_stride + 32,
-                              srcbuf_stride,
-                              dstbuf + (y / 2) * dstbuf_stride,
-                              prescreen_buf, width);
-        }
+                interpolation(src, srcbuf_stride, dstbuf, prescreen_buf, width);
 
-        s->write(dstbuf, out_line, dstbuf_stride, dst_linesize * 2,
-                 width, slice_height, depth, out_scale);
+            s->write(dstbuf, dst_data + (y0 + 2 * i) * dst_linesize,
+                     width, depth, out_scale);
+        }
     }
 
     return 0;
