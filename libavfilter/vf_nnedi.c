@@ -445,13 +445,13 @@ static void read_bytes(const uint8_t *src, float *dst,
 {
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < 32; x++)
-            dst[-x - 1] = src[x];
+            dst[-x - 1] = src[FFMIN(x, width - 1)];
 
         for (int x = 0; x < width; x++)
             dst[x] = src[x];
 
         for (int x = 0; x < 32; x++)
-            dst[width + x] = src[width - x - 1];
+            dst[width + x] = src[FFMAX(width - x - 1, 0)];
 
         dst += dst_stride;
         src += src_stride;
@@ -468,13 +468,13 @@ static void read_words(const uint8_t *srcp, float *dst,
 
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < 32; x++)
-            dst[-x - 1] = src[x] * scale;
+            dst[-x - 1] = src[FFMIN(x, width - 1)] * scale;
 
         for (int x = 0; x < width; x++)
             dst[x] = src[x] * scale;
 
         for (int x = 0; x < 32; x++)
-            dst[width + x] = src[width - x - 1] * scale;
+            dst[width + x] = src[FFMAX(width - x - 1, 0)] * scale;
 
         dst += dst_stride;
         src += src_stride;
