@@ -134,6 +134,12 @@ static void draw_region(AVFrame *frame, DrawBoxContext *ctx, int left, int top, 
             }
         }
     } else {
+        const double alpha = (double)ctx->yuv_color[A] / 255;
+        const int hsub = ctx->hsub;
+        const int yc = ctx->yuv_color[Y];
+        const int uc = ctx->yuv_color[U];
+        const int vc = ctx->yuv_color[V];
+
         for (y = top; y < down; y++) {
             ASSIGN_THREE_CHANNELS
             if (ctx->invert_color) {
@@ -142,12 +148,10 @@ static void draw_region(AVFrame *frame, DrawBoxContext *ctx, int left, int top, 
                         row[0][x] = 0xff - row[0][x];
             } else {
                 for (x = left; x < right; x++) {
-                    double alpha = (double)ctx->yuv_color[A] / 255;
-
                     if (pixel_belongs_to_region(ctx, x, y)) {
-                        row[0][x             ] = (1 - alpha) * row[0][x             ] + alpha * ctx->yuv_color[Y];
-                        row[1][x >> ctx->hsub] = (1 - alpha) * row[1][x >> ctx->hsub] + alpha * ctx->yuv_color[U];
-                        row[2][x >> ctx->hsub] = (1 - alpha) * row[2][x >> ctx->hsub] + alpha * ctx->yuv_color[V];
+                        row[0][x        ] = (1 - alpha) * row[0][x        ] + alpha * yc;
+                        row[1][x >> hsub] = (1 - alpha) * row[1][x >> hsub] + alpha * uc;
+                        row[2][x >> hsub] = (1 - alpha) * row[2][x >> hsub] + alpha * vc;
                     }
                 }
             }
