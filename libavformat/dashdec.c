@@ -698,8 +698,8 @@ static int parse_manifest_segmenttimeline(AVFormatContext *s, struct representat
             val = xmlGetProp(fragment_timeline_node, attr->name);
 
             if (!val) {
-                av_log(s, AV_LOG_WARNING, "parse_manifest_segmenttimeline attr->name = %s val is NULL\n", attr->name);
-                continue;
+                av_free(tml);
+                return AVERROR(ENOMEM);
             }
 
             if (!av_strcasecmp(attr->name, "t")) {
@@ -1362,6 +1362,10 @@ static int parse_manifest(AVFormatContext *s, const char *url, AVIOContext *in)
         attr = node->properties;
         while (attr) {
             val = xmlGetProp(node, attr->name);
+            if (!val) {
+                ret = AVERROR(ENOMEM);
+                goto cleanup;
+            }
 
             if (!av_strcasecmp(attr->name, "availabilityStartTime")) {
                 c->availability_start_time = get_utc_date_time_insec(s, val);
@@ -1408,6 +1412,10 @@ static int parse_manifest(AVFormatContext *s, const char *url, AVIOContext *in)
                 attr = node->properties;
                 while (attr) {
                     val = xmlGetProp(node, attr->name);
+                    if (!val) {
+                        ret = AVERROR(ENOMEM);
+                        goto cleanup;
+                    }
                     if (!av_strcasecmp(attr->name, "duration")) {
                         period_duration_sec = get_duration_insec(s, val);
                     } else if (!av_strcasecmp(attr->name, "start")) {
