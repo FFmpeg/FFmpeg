@@ -3106,6 +3106,13 @@ retry:
                         pls->seek_timestamp = AV_NOPTS_VALUE;
                         break;
                     }
+                    /* a cue still shown at the target is delivered, the cues
+                     * after it may still have ended before the target */
+                    if (pls->is_subtitle && pls->pkt->duration > 0 &&
+                        av_rescale_q_rnd(pls->pkt->dts + pls->pkt->duration, tb,
+                                         AV_TIME_BASE_Q, AV_ROUND_DOWN) >
+                        pls->seek_timestamp)
+                        break;
                 }
                 av_packet_unref(pls->pkt);
             }
