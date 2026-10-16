@@ -39,8 +39,8 @@
 #define ARIBC_BPRINT_SIZE_INIT         64
 #define ARIBC_BPRINT_SIZE_MAX          (8 * 1024)
 #define ARIBC_ALPHA_MAX_NUM            4
-#define ARIBC_ALPHA_DEFAULT_FRONT      0xFF
-#define ARIBC_ALPHA_DEFAULT_BACK       0x80
+#define ARIBC_ALPHA_DEFAULT_FRONT      0xFFu
+#define ARIBC_ALPHA_DEFAULT_BACK       0x80u
 
 #define ARIBCC_COLOR_RGB(c)            ((c) & 0xFFFFFF)
 #define ARIBCC_COLOR_DIFF_RGB(c1,c2)   (((c1) ^ (c2)) & 0x00FFFFFF)
