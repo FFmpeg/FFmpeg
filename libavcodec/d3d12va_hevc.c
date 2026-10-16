@@ -65,7 +65,8 @@ static int d3d12va_hevc_start_frame(AVCodecContext *avctx,
 
     ctx->used_mask = 0;
 
-    ff_dxva2_hevc_fill_picture_parameters(avctx, (AVDXVAContext *)ctx, &ctx_pic->pp);
+    if (ff_dxva2_hevc_fill_picture_parameters(avctx, (AVDXVAContext *)ctx, &ctx_pic->pp) < 0)
+        return -1;
 
     ff_dxva2_hevc_fill_scaling_lists(avctx, (AVDXVAContext *)ctx, &ctx_pic->qm);
 
