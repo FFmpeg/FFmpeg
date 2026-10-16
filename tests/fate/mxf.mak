@@ -24,9 +24,10 @@ fate-mxf-probe-d10: SRC = $(TARGET_SAMPLES)/mxf/Sony-00001.mxf
 fate-mxf-probe-d10: CMD = run $(PROBE_FORMAT_STREAMS_COMMAND) -i "$(SRC)"
 
 # Long GOP AVC must retain its in-band parameter sets, not AVC-Intra defaults.
+# Count both fields per packet; discard the sample's truncated final packet.
 FATE_MXF_PROBE-$(call DEMDEC, MXF, H264, H264_PARSER EXTRACT_EXTRADATA_BSF) += fate-mxf-probe-h264-extradata
 fate-mxf-probe-h264-extradata: SRC = $(TARGET_SAMPLES)/h264/SonyXAVC_LongGOP_green_pixelation_early_Frames.MXF
-fate-mxf-probe-h264-extradata: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -bitexact -v 0 -select_streams v -show_entries stream=extradata,extradata_size,extradata_hash -show_data_hash md5 -i "$(SRC)"
+fate-mxf-probe-h264-extradata: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -bitexact -v 0 -fflags +discardcorrupt -select_streams v -show_entries stream=avg_frame_rate,extradata,extradata_size,extradata_hash -show_data_hash md5 -i "$(SRC)"
 
 FATE_MXF_PROBE-$(call DEMDEC, MXF, DNXHD) += fate-mxf-probe-dnxhd
 fate-mxf-probe-dnxhd: SRC = $(TARGET_SAMPLES)/mxf/multiple_components.mxf

@@ -253,6 +253,7 @@ FATE_H264-$(call FRAMECRC, MPEGTS, H264, H264_PARSER MP3_DECODER SCALE_FILTER AR
 FATE_H264_FFPROBE-$(call DEMDEC, MATROSKA, H264) += fate-h264-dts_5frames
 FATE_H264_FFPROBE-$(call DEMDEC, MATROSKA, H264) += fate-h264-skip-pred-pts
 FATE_H264_FFPROBE-$(call DEMDEC, MOV, H264) += fate-h264-late-sei
+FATE_H264_FFPROBE-$(call DEMDEC, MOV, H264, H264_PARSER) += fate-h264-twofields-packet-probe
 FATE_H264_FFPROBE-$(call PARSERDEMDEC, H264, H264, H264) += fate-h264-afd
 FATE_H264_FFPROBE-$(call PARSERDEMDEC, H264, H264, H264) += fate-h264-timecode-probe
 FATE_H264_FFPROBE-$(call PARSERDEMDEC, H264, H264, H264) += fate-h264-skip-pred \
@@ -523,3 +524,8 @@ fate-h264-bsf-redundant-pps-side-data2: CMD = transcode mov $(TARGET_SAMPLES)/h2
 
 fate-h264-encparams: CMD = venc_data $(TARGET_SAMPLES)/h264-conformance/FRext/FRExt_MMCO4_Sony_B.264 0 1
 FATE_SAMPLES_DUMP_DATA += fate-h264-encparams
+
+# Progressive-source fields must not acquire an interlaced stream label.
+fate-h264-twofields-packet-probe: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -bitexact -v 0 -select_streams v \
+                                          -show_entries stream=field_order,avg_frame_rate \
+                                          $(TARGET_SAMPLES)/h264/twofields_packet.mp4

@@ -252,6 +252,54 @@ static int scan_mmco_reset(AVCodecParserContext *s, GetBitContext *gb,
 }
 
 /**
+ * Check whether a slice is the first slice of the field of opposite
+ * parity to the field picture already parsed, and derive its POC if possible.
+ */
+static int parse_second_field(const H264ParseContext *p, H2645NAL *nal,
+                              int *second_poc)
+{
+    GetBitContext *gb = &nal->gb;
+    H264POCContext poc = p->poc;
+    int field_poc[2] = { INT_MAX, INT_MAX };
+    int picture_structure, pic_poc;
+    const SPS *sps;
+    unsigned int pps_id;
+
+    if (get_ue_golomb_long(gb)) // first_mb_in_slice
+        return 0;
+    get_ue_golomb_31(gb);       // slice_type
+    pps_id = get_ue_golomb(gb);
+    if (pps_id >= MAX_PPS_COUNT || !p->ps.pps_list[pps_id])
+        return 0;
+    sps = p->ps.pps_list[pps_id]->sps;
+    if (sps->residual_color_transform_flag)
+        skip_bits(gb, 2);       // colour_plane_id
+    poc.frame_num = get_bits(gb, sps->log2_max_frame_num);
+    if (poc.frame_num != p->poc.prev_frame_num ||
+        sps->frame_mbs_only_flag || !get_bits1(gb)) // field_pic_flag
+        return 0;
+    picture_structure = PICT_TOP_FIELD + get_bits1(gb); // bottom_field_flag
+    if (picture_structure == p->picture_structure || get_bits_left(gb) < 0)
+        return 0;
+
+    /* Derive display order without changing the first field's parser state. */
+    if (nal->type == H264_NAL_IDR_SLICE) {
+        poc.prev_frame_num = poc.prev_frame_num_offset = 0;
+        poc.prev_poc_msb = poc.prev_poc_lsb = 0;
+        get_ue_golomb_long(gb); // idr_pic_id
+    }
+    if (sps->poc_type == 0)
+        poc.poc_lsb = get_bits(gb, sps->log2_max_poc_lsb);
+    if (sps->poc_type == 1 && !sps->delta_pic_order_always_zero_flag)
+        poc.delta_poc[0] = get_se_golomb(gb);
+    if (sps == p->ps.sps && get_bits_left(gb) >= 0 &&
+        ff_h264_init_poc(field_poc, &pic_poc, sps, &poc,
+                         picture_structure, nal->ref_idc) >= 0)
+        *second_poc = pic_poc;
+    return 1;
+}
+
+/**
  * Parse NAL units of found picture and decode some basic information.
  *
  * @param s parser context.
@@ -270,6 +318,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
     unsigned int pps_id;
     unsigned int slice_type;
     int state = -1, got_reset = 0;
+    int first_field = 0;
     int q264 = buf_size >=4 && !memcmp("Q264", buf, 4);
     int field_poc[2];
     int ret;
@@ -332,7 +381,14 @@ static inline int parse_nal_units(AVCodecParserContext *s,
         if (consumed < 0)
             break;
 
-        buf_index += consumed;
+        /* A capped slice-header read may end inside the next start code. */
+        if (consumed == src_length && src_length < next_avc - buf_index) {
+            if (p->is_avc)
+                buf_index = next_avc;
+            else
+                buf_index += consumed - 3;
+        } else
+            buf_index += consumed;
 
         ret = init_get_bits8(&nal.gb, nal.data, nal.size);
         if (ret < 0)
@@ -340,6 +396,37 @@ static inline int parse_nal_units(AVCodecParserContext *s,
         get_bits1(&nal.gb);
         nal.ref_idc = get_bits(&nal.gb, 2);
         nal.type    = get_bits(&nal.gb, 5);
+
+        if (first_field) {
+            int second_poc = INT_MAX;
+
+            /* The packet also holds the second field of the pair. */
+            if ((nal.type == H264_NAL_SLICE     ||
+                 nal.type == H264_NAL_IDR_SLICE ||
+                 nal.type == H264_NAL_DPA) &&
+                parse_second_field(p, &nal, &second_poc)) {
+                s->repeat_pict++;
+                s->field_order = AV_FIELD_UNKNOWN;
+                if (!got_reset && nal.ref_idc &&
+                    !(p->ps.sps->pic_struct_present_flag &&
+                      p->sei.picture_timing.present &&
+                      (p->sei.picture_timing.ct_type & 3) == 1) &&
+                    second_poc != INT_MAX &&
+                    second_poc != s->output_picture_number) {
+                    if (p->picture_structure == PICT_TOP_FIELD)
+                        s->field_order = s->output_picture_number < second_poc ?
+                                         AV_FIELD_TT : AV_FIELD_TB;
+                    else
+                        s->field_order = s->output_picture_number < second_poc ?
+                                         AV_FIELD_BB : AV_FIELD_BT;
+                }
+                s->picture_structure = AV_PICTURE_STRUCTURE_FRAME;
+                break;
+            }
+            /* Keep the parameter sets the second field may refer to. */
+            if (nal.type != H264_NAL_SPS && nal.type != H264_NAL_PPS)
+                continue;
+        }
 
         switch (nal.type) {
         case H264_NAL_SPS:
@@ -577,11 +664,19 @@ static inline int parse_nal_units(AVCodecParserContext *s,
                           sps->num_units_in_tick * 2, den, 1 << 30);
             }
 
+            /* A complete frame starting with a field picture may hold
+             * both fields of the pair, look for the second one. */
+            if ((s->flags & PARSER_FLAG_COMPLETE_FRAMES) &&
+                p->picture_structure != PICT_FRAME) {
+                first_field = 1;
+                break;
+            }
+
             av_freep(&rbsp.rbsp_buffer);
             return 0; /* no need to evaluate the rest */
         }
     }
-    if (q264) {
+    if (first_field || q264) {
         av_freep(&rbsp.rbsp_buffer);
         return 0;
     }
