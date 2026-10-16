@@ -1362,6 +1362,11 @@ static av_cold int vulkan_encode_ffv1_init(AVCodecContext *avctx)
         if (n < 2)
             n = 2;
         fv->max_pixels_per_slice = n;
+
+        if ((uint64_t)n * 12 * sizeof(uint32_t) * f->max_slice_count > UINT32_MAX) {
+            av_log(avctx, AV_LOG_ERROR, "Frame too large for the float remap\n");
+            return AVERROR_PATCHWELCOME;
+        }
     }
 
     /* Init rct search shader */
