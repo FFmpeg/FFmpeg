@@ -26,6 +26,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/internal.h"
+#include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"
 #include "libavutil/thread.h"
 #include "codec_internal.h"
@@ -2462,6 +2463,19 @@ static int mpeg4_decode_visual_object(MpegEncContext *s, GetBitContext *gb)
                 s->avctx->color_primaries = get_bits(gb, 8);
                 s->avctx->color_trc       = get_bits(gb, 8);
                 s->avctx->colorspace      = get_bits(gb, 8);
+
+                // Reserved and unassigned values carry no colour information
+                if (s->avctx->color_primaries == AVCOL_PRI_RESERVED0 ||
+                    s->avctx->color_primaries == AVCOL_PRI_RESERVED  ||
+                    !av_color_primaries_name(s->avctx->color_primaries))
+                    s->avctx->color_primaries = AVCOL_PRI_UNSPECIFIED;
+                if (s->avctx->color_trc == AVCOL_TRC_RESERVED0 ||
+                    s->avctx->color_trc == AVCOL_TRC_RESERVED  ||
+                    !av_color_transfer_name(s->avctx->color_trc))
+                    s->avctx->color_trc = AVCOL_TRC_UNSPECIFIED;
+                if (s->avctx->colorspace == AVCOL_SPC_RESERVED ||
+                    !av_color_space_name(s->avctx->colorspace))
+                    s->avctx->colorspace = AVCOL_SPC_UNSPECIFIED;
             }
         }
     }
