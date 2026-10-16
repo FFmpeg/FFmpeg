@@ -339,12 +339,14 @@
     <xsd:sequence>
       <xsd:element name="disposition"      type="ffprobe:streamDispositionType" minOccurs="0" maxOccurs="1"/>
       <xsd:element name="tags"             type="ffprobe:tagsType" minOccurs="0" maxOccurs="1"/>
+      <xsd:element name="side_data_list"   type="ffprobe:packetSideDataListType" minOccurs="0" maxOccurs="1"/>
       <xsd:element name="streams"          type="ffprobe:streamsType" minOccurs="0" maxOccurs="1"/>
+      <xsd:element name="stream_groups"    type="ffprobe:StreamGroupsType" minOccurs="0" maxOccurs="1"/>
       <xsd:element name="components"       type="ffprobe:streamGroupComponentList" minOccurs="0" maxOccurs="1"/>
     </xsd:sequence>
 
     <xsd:attribute name="index"            type="xsd:int"    use="required"/>
-    <xsd:attribute name="nb_streams"       type="xsd:int"    use="required"/>
+    <xsd:attribute name="nb_entries"       type="xsd:int"    use="required"/>
     <xsd:attribute name="type"             type="xsd:string" use="required"/>
   </xsd:complexType>
 
@@ -357,7 +359,6 @@
   <xsd:complexType name="streamGroupComponentType">
     <xsd:sequence>
       <xsd:element name="subcomponents" type="ffprobe:streamGroupSubComponentList" minOccurs="0" maxOccurs="1"/>
-      <xsd:element name="side_data_list" type="ffprobe:packetSideDataListType" minOccurs="0" maxOccurs="1"/>
       <xsd:element name="component_entry" type="ffprobe:streamGroupEntryType" minOccurs="0" maxOccurs="unbounded"/>
     </xsd:sequence>
   </xsd:complexType>
