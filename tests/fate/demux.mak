@@ -204,7 +204,7 @@ tests/data/hls-webvtt.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 
 FATE_FFMPEG-$(call FILTERDEMDECENCMUX, AEVALSRC ARESAMPLE, HLS MPEGTS WEBVTT, MP2 PCM_F64LE, MP2FIXED, HLS MPEGTS NULL WEBVTT, LAVFI_INDEV MPEGAUDIO_PARSER PIPE_PROTOCOL) += fate-hls-webvtt-demux
 fate-hls-webvtt-demux: tests/data/hls-webvtt.m3u8
-fate-hls-webvtt-demux: CLEANFILES = tests/data/hls-webvtt*.m3u8 tests/data/hls-webvtt-*.ts tests/data/hls-webvtt-*.vtt
+fate-hls-webvtt-demux: CLEANFILES = tests/data/hls-webvtt.m3u8 tests/data/hls-webvtt-a.m3u8 tests/data/hls-webvtt-s.m3u8 tests/data/hls-webvtt-a[0-9]*.ts tests/data/hls-webvtt-s[0-9]*.vtt
 fate-hls-webvtt-demux: CMD = fmtstdout webvtt -copyts -i $(TARGET_PATH)/tests/data/hls-webvtt.m3u8 -map 0:a -c copy -f null - -map 0:s -c copy
 
 tests/data/hls-self-variant.m3u8: TAG = GEN
