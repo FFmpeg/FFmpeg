@@ -846,6 +846,8 @@ static int resolve_content_path(AVFormatContext *s, const char *url, int *max_ur
             xmlNodeSetContent(baseurl_nodes[i], escaped);
             updated = 1;
             xmlFree(escaped);
+        } else {
+            xmlFree(text);
         }
     }
 
