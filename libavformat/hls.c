@@ -3024,7 +3024,11 @@ retry:
                     fill_timing_for_id3_timestamped_stream(pls);
                 }
 
-                if (pls->pkt->dts != AV_NOPTS_VALUE &&
+                if (pls->is_subtitle) {
+                    /* the cues are on the shared timeline */
+                    if (pls->ts_offset == AV_NOPTS_VALUE)
+                        pls->ts_offset = 0;
+                } else if (pls->pkt->dts != AV_NOPTS_VALUE &&
                     (pls->ts_offset == AV_NOPTS_VALUE ||
                      (!c->first_timestamp_locked &&
                       c->first_timestamp_pls == pls &&
@@ -3053,7 +3057,8 @@ retry:
                         if (delta > 0 && delta <= pls->target_duration) {
                             c->first_timestamp = ts;
                             for (int k = 0; k < c->n_playlists; k++)
-                                if (c->playlists[k]->ts_offset != AV_NOPTS_VALUE)
+                                if (c->playlists[k]->ts_offset != AV_NOPTS_VALUE &&
+                                    !c->playlists[k]->is_subtitle)
                                     c->playlists[k]->ts_offset = av_sat_add64(c->playlists[k]->ts_offset, delta);
                             adjusted = 1;
                         }
