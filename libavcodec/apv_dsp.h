@@ -36,4 +36,6 @@ void ff_apv_dsp_init(APVDSPContext *dsp);
 
 void ff_apv_dsp_init_x86_64(APVDSPContext *dsp);
 
+void ff_apv_dsp_init_aarch64(APVDSPContext *dsp);
+
 #endif /* AVCODEC_APV_DSP_H */
