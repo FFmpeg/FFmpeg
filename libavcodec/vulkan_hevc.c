@@ -450,11 +450,15 @@ static void set_sps(const HEVCSPS *sps, int sps_idx,
     };
 }
 
-static void set_pps(const HEVCPPS *pps, const HEVCSPS *sps,
-                    StdVideoH265ScalingLists *vkpps_scaling,
-                    StdVideoH265PictureParameterSet *vkpps,
-                    StdVideoH265PredictorPaletteEntries *pal)
+static int set_pps(const HEVCPPS *pps, const HEVCSPS *sps,
+                   StdVideoH265ScalingLists *vkpps_scaling,
+                   StdVideoH265PictureParameterSet *vkpps,
+                   StdVideoH265PredictorPaletteEntries *pal)
 {
+    if (pps->num_tile_columns > FF_ARRAY_ELEMS(vkpps->column_width_minus1) + 1 ||
+        pps->num_tile_rows    > FF_ARRAY_ELEMS(vkpps->row_height_minus1) + 1)
+        return AVERROR(ENOSYS);
+
     copy_scaling_list(&pps->scaling_list, vkpps_scaling);
 
     *vkpps = (StdVideoH265PictureParameterSet) {
@@ -536,6 +540,8 @@ static void set_pps(const HEVCPPS *pps, const HEVCSPS *sps,
         vkpps->cb_qp_offset_list[i] = pps->cb_qp_offset_list[i];
         vkpps->cr_qp_offset_list[i] = pps->cr_qp_offset_list[i];
     }
+
+    return 0;
 }
 
 static void set_vps(const HEVCVPS *vps,
@@ -680,8 +686,10 @@ static int vk_hevc_create_params(AVCodecContext *avctx, AVBufferRef **buf)
             const HEVCPPS *pps_l = h->ps.pps_list[i];
             const HEVCSPS *sps_l = h->ps.sps_list[pps_l->sps_id];
             int idx = h265_params_info.stdPPSCount++;
-            set_pps(pps_l, sps_l, &hdr->hpps[idx].scaling,
-                    &hdr->pps[idx], &hdr->hpps[idx].pal);
+            err = set_pps(pps_l, sps_l, &hdr->hpps[idx].scaling,
+                          &hdr->pps[idx], &hdr->hpps[idx].pal);
+            if (err < 0)
+                return err;
         }
     }
 
@@ -883,7 +891,9 @@ static int vk_hevc_end_frame(AVCodecContext *avctx)
     VkVideoDecodeH265InlineSessionParametersInfoKHR h265_params;
 
     if (ctx->s.extensions & FF_VK_EXT_VIDEO_MAINTENANCE_2) {
-        set_pps(pps, sps, &vkpps_p.scaling, &vkpps, &vkpps_p.pal);
+        err = set_pps(pps, sps, &vkpps_p.scaling, &vkpps, &vkpps_p.pal);
+        if (err < 0)
+            return err;
         set_sps(sps, pps->sps_id, &vksps_p.scaling, &vksps_p.vui_header,
                 &vksps_p.vui, &vksps, vksps_p.nal_hdr,
                 vksps_p.vcl_hdr, &vksps_p.ptl, &vksps_p.dpbm,
