@@ -95,6 +95,14 @@ static int alloc_base_frame(FFLCEVCContext *lcevc,
     desc.cropRight  = frame->crop_right;
     desc.sampleAspectRatioNum  = frame->sample_aspect_ratio.num;
     desc.sampleAspectRatioDen  = frame->sample_aspect_ratio.den;
+    desc.colorRange = LCEVC_ColorRange_Unknown;
+    if (frame->color_range == AVCOL_RANGE_JPEG)
+        desc.colorRange = LCEVC_ColorRange_Full;
+    else if (frame->color_range == AVCOL_RANGE_MPEG)
+        desc.colorRange = LCEVC_ColorRange_Limited;
+    desc.colorPrimaries = (LCEVC_ColorPrimaries)frame->color_primaries;
+    desc.matrixCoefficients = (LCEVC_MatrixCoefficients)frame->colorspace;
+    desc.transferCharacteristics = (LCEVC_TransferCharacteristics)frame->color_trc;
 
     for (int i = 0; i < AV_VIDEO_MAX_PLANES; i++) {
         planes[i].firstSample = frame->data[i];
@@ -235,14 +243,24 @@ static int generate_output(FFLCEVCFrame *frame_ctx, AVFrame *out)
     out->sample_aspect_ratio.den = desc.sampleAspectRatioDen;
     out->width = desc.width + out->crop_left + out->crop_right;
     out->height = desc.height + out->crop_top + out->crop_bottom;
+    out->color_range = AVCOL_RANGE_UNSPECIFIED;
+    if (desc.colorRange == LCEVC_ColorRange_Full)
+        out->color_range = AVCOL_RANGE_JPEG;
+    else if (desc.colorRange == LCEVC_ColorRange_Limited)
+        out->color_range = AVCOL_RANGE_MPEG;
+    out->color_primaries = (enum AVColorPrimaries)desc.colorPrimaries;
+    out->colorspace = (enum AVColorSpace)desc.matrixCoefficients;
+    out->color_trc = (enum AVColorTransferCharacteristic)desc.transferCharacteristics;
 
     av_log(lcevc, AV_LOG_DEBUG,  "out PTS %"PRId64", %dx%d, "
                                  "%zu/%zu/%zu/%zu, "
                                  "SAR %d:%d, "
+                                 "color_range %d, color_primaries %d, colorspace %d, color_trc %d, "
                                  "hasEnhancement %d, enhanced %d\n",
            out->pts, out->width, out->height,
            out->crop_top, out->crop_bottom, out->crop_left, out->crop_right,
            out->sample_aspect_ratio.num, out->sample_aspect_ratio.den,
+           out->color_range, out->color_primaries, out->colorspace, out->color_trc,
            info.hasEnhancement, info.enhanced);
 
     res = LCEVC_FreePicture(lcevc->decoder, picture);
