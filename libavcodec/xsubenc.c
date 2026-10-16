@@ -128,8 +128,13 @@ static int xsub_encode(AVCodecContext *avctx, unsigned char *buf,
         return AVERROR_BUFFER_TOO_SMALL;
     }
 
+    if (!h->num_rects) {
+        av_log(avctx, AV_LOG_ERROR, "No subtitle rectangle to encode.\n");
+        return AVERROR(EINVAL);
+    }
+
     // TODO: support multiple rects
-    if (h->num_rects != 1)
+    if (h->num_rects > 1)
         av_log(avctx, AV_LOG_WARNING, "Only single rects supported (%d in subtitle.)\n", h->num_rects);
 
     // TODO: render text-based subtitles into bitmaps
