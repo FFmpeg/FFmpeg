@@ -204,7 +204,8 @@ typedef struct FFStreamInfo {
     int duration_count;
     int64_t rfps_duration_sum;
     double (*duration_error)[2][MAX_STD_TIMEBASES];
-    int64_t codec_info_duration;
+    int64_t codec_info_duration; /**< Duration used for the probing budget. */
+    int64_t fps_duration;        /**< Duration of non-corrupt FPS samples. */
     int64_t codec_info_duration_fields;
     int frame_delay_evidence;
 

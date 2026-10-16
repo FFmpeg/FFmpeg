@@ -1,0 +1,3 @@
+clean: packets=11 fps=15/1
+corrupt: packets=11 fps=15/1
+corrupt-long: packets=9 fps=15/1

@@ -1,3 +1,7 @@
+FATE_LIBAVFORMAT += fate-demux-probe
+fate-demux-probe: libavformat/tests/demux_probe$(EXESUF)
+fate-demux-probe: CMD = run libavformat/tests/demux_probe$(EXESUF)
+
 #FATE_LIBAVFORMAT-$(HAVE_PTHREADS) += fate-async
 #fate-async: libavformat/tests/async$(EXESUF)
 #fate-async: CMD = run libavformat/tests/async

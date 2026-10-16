@@ -2973,8 +2973,15 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                     sti->info->codec_info_duration = FFMIN(pkt->pts - st->start_time, sti->info->codec_info_duration + pkt->duration);
                 } else
                     sti->info->codec_info_duration += pkt->duration;
-                sti->info->codec_info_duration_fields += sti->parser && sti->need_parsing && fields
-                                                         ? sti->parser->repeat_pict + 1 : 2;
+                /* A corrupt packet may hold only part of a frame. Keep its
+                 * duration in the probing budget, but exclude it from FPS. */
+                if (avctx->codec_type == AVMEDIA_TYPE_VIDEO &&
+                    !(pkt->flags & AV_PKT_FLAG_CORRUPT) &&
+                    pkt->duration < INT64_MAX - sti->info->fps_duration) {
+                    sti->info->fps_duration += pkt->duration;
+                    sti->info->codec_info_duration_fields += sti->parser && sti->need_parsing && fields
+                                                             ? sti->parser->repeat_pict + 1 : 2;
+                }
             }
         }
         if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
@@ -3074,18 +3081,18 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
             /* estimate average framerate if not set by demuxer */
             if (sti->info->codec_info_duration_fields &&
                 !st->avg_frame_rate.num &&
-                sti->info->codec_info_duration) {
+                sti->info->fps_duration) {
                 int best_fps      = 0;
                 double best_error = 0.01;
                 AVRational codec_frame_rate = avctx->framerate;
 
-                if (sti->info->codec_info_duration        >= INT64_MAX / st->time_base.num / 2||
+                if (sti->info->fps_duration               >= INT64_MAX / st->time_base.num / 2||
                     sti->info->codec_info_duration_fields >= INT64_MAX / st->time_base.den ||
-                    sti->info->codec_info_duration        < 0)
+                    sti->info->fps_duration               < 0)
                     continue;
                 av_reduce(&st->avg_frame_rate.num, &st->avg_frame_rate.den,
                           sti->info->codec_info_duration_fields * (int64_t) st->time_base.den,
-                          sti->info->codec_info_duration * 2 * (int64_t) st->time_base.num, 60000);
+                          sti->info->fps_duration * 2 * (int64_t) st->time_base.num, 60000);
 
                 /* Round guessed framerate to a "standard" framerate if it's
                  * within 1% of the original estimate. */
