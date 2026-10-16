@@ -1001,7 +1001,7 @@ static int config_input(AVFilterLink *inlink)
         }
     }
 
-    s->input_size = (s->planewidth[0] + 64) * (s->planeheight[0] + 6);
+    s->input_size = (s->planewidth[0] + 64) * ((s->planeheight[0] + 1) / 2 + 5);
     s->input_buf = av_calloc(s->nb_threads, sizeof(*s->input_buf));
     if (!s->input_buf)
         return AVERROR(ENOMEM);
@@ -1017,7 +1017,7 @@ static int config_input(AVFilterLink *inlink)
         return AVERROR(ENOMEM);
 
     for (int i = 0; i < s->nb_threads; i++) {
-        s->output_buf[i] = av_calloc(s->input_size, sizeof(**s->output_buf));
+        s->output_buf[i] = av_calloc(s->planewidth[0], sizeof(**s->output_buf));
         if (!s->output_buf[i])
             return AVERROR(ENOMEM);
     }
