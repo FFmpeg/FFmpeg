@@ -775,6 +775,10 @@ static int resolve_content_path(AVFormatContext *s, const char *url, int *max_ur
             continue;
         }
         text = xmlNodeGetContent(node);
+        if (!text) {
+            updated = AVERROR(ENOMEM);
+            goto end;
+        }
         if (ishttp(text)) {
             xmlFree(text);
             break;
@@ -784,15 +788,14 @@ static int resolve_content_path(AVFormatContext *s, const char *url, int *max_ur
 
     node = baseurl_nodes[rootId];
     baseurl = xmlNodeGetContent(node);
-    if (baseurl) {
-        size_t len = xmlStrlen(baseurl)+2;
-        char *tmp = xmlRealloc(baseurl, len);
-        if (!tmp) {
-            updated = AVERROR(ENOMEM);
-            goto end;
-        }
-        baseurl = tmp;
+    tmp = NULL;
+    if (baseurl)
+        tmp = xmlRealloc(baseurl, xmlStrlen(baseurl) + 2);
+    if (!tmp) {
+        updated = AVERROR(ENOMEM);
+        goto end;
     }
+    baseurl = tmp;
     root_url = (av_strcasecmp(baseurl, "")) ? baseurl : path;
     if (node) {
         xmlChar *escaped = xmlEncodeSpecialChars(NULL, root_url);
