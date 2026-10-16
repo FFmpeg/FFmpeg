@@ -214,13 +214,18 @@ static int vaapi_hevc_start_frame(AVCodecContext          *avctx,
     fill_vaapi_reference_frames(h, l, pic_param);
 
     if (pps->tiles_enabled_flag) {
+        if (pps->num_tile_columns > FF_ARRAY_ELEMS(pic_param->column_width_minus1) + 1 ||
+            pps->num_tile_rows    > FF_ARRAY_ELEMS(pic_param->row_height_minus1) + 1) {
+            av_log(avctx, AV_LOG_ERROR, "Too many tiles\n");
+            return AVERROR(ENOSYS);
+        }
         pic_param->num_tile_columns_minus1 = pps->num_tile_columns - 1;
         pic_param->num_tile_rows_minus1    = pps->num_tile_rows - 1;
 
-        for (i = 0; i < pps->num_tile_columns; i++)
+        for (i = 0; i < FFMIN(pps->num_tile_columns, FF_ARRAY_ELEMS(pic_param->column_width_minus1)); i++)
             pic_param->column_width_minus1[i] = pps->column_width[i] - 1;
 
-        for (i = 0; i < pps->num_tile_rows; i++)
+        for (i = 0; i < FFMIN(pps->num_tile_rows, FF_ARRAY_ELEMS(pic_param->row_height_minus1)); i++)
             pic_param->row_height_minus1[i] = pps->row_height[i] - 1;
     }
 
