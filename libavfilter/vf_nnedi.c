@@ -1096,7 +1096,7 @@ static int config_input(AVFilterLink *inlink)
         return AVERROR(ENOMEM);
 
     for (int i = 0; i < s->nb_threads; i++) {
-        s->prescreen_buf[i] = av_calloc(s->planewidth[0], sizeof(**s->prescreen_buf));
+        s->prescreen_buf[i] = av_calloc(FFALIGN(s->planewidth[0], 4), sizeof(**s->prescreen_buf));
         if (!s->prescreen_buf[i])
             return AVERROR(ENOMEM);
     }
