@@ -342,6 +342,19 @@ int avio_check(const char *url, int flags);
 int avio_open_dir(AVIODirContext **s, const char *url, AVDictionary **options);
 
 /**
+ * Open directory for reading, with an interrupt callback for the protocol.
+ *
+ * @param s       directory read context. Pointer to a NULL pointer must be passed.
+ * @param url     directory to be listed.
+ * @param int_cb  an interrupt callback to be used at the protocols level, may be NULL.
+ * @param options A dictionary filled with protocol-private options. On return
+ *                this parameter will be destroyed and replaced with a dictionary
+ *                containing options that were not found. May be NULL.
+ * @return >=0 on success or negative on error.
+ */
+int avio_open_dir2(AVIODirContext **s, const char *url, const AVIOInterruptCB *int_cb, AVDictionary **options);
+
+/**
  * Get next directory entry.
  *
  * Returned entry must be freed with avio_free_directory_entry(). In particular

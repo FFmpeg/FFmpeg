@@ -2,6 +2,9 @@ The last version increases of all libraries were on 2026-06-23.
 
 API changes, most recent first:
 
+2026-10-xx - xxxxxxxxxx - lavf 63.11.100 - avio.h
+  Add avio_open_dir2().
+
 2026-10-xx - xxxxxxxxxx - lavu 61.14.100 - gain_map.h
   Add av_gain_map_params_from_iso21496() and av_gain_map_params_to_iso21496().
   Add AV_GAIN_MAP_MAX_PAYLOAD_SIZE.
