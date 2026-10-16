@@ -551,8 +551,8 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     for (int p = 0; p < s->nb_planes; p++) {
         const int height = s->planeheight[p];
         const int width = s->planewidth[p];
-        const int slice_start = 2 * (ff_slice_pos(height / 2, jobnr, nb_jobs));
-        const int slice_end = 2 * (ff_slice_pos(height / 2, jobnr + 1, nb_jobs));
+        const int slice_start = 2 * (ff_slice_pos((height + 1) / 2, jobnr, nb_jobs));
+        const int slice_end = FFMIN(2 * (ff_slice_pos((height + 1) / 2, jobnr + 1, nb_jobs)), height);
         const uint8_t *src_data = in->data[p];
         uint8_t *dst_data = out->data[p];
         uint8_t *dst = out->data[p] + slice_start * out->linesize[p];
@@ -563,8 +563,11 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
         const int srcbuf_stride = width + 64;
         float *dstbuf = s->output_buf[jobnr];
         const int dstbuf_stride = width;
-        const int slice_height = (slice_end - slice_start) / 2;
+        const int slice_height = (slice_end - slice_start + tff) / 2;
         const int last_slice = slice_end == height;
+        // first and last line of the field that is kept
+        const int first = FFMIN(tff, height - 1);
+        const int last = FFMAX(height - 1 - ((height - 1 - tff) & 1), 0);
         const uint8_t *in_line;
         uint8_t *out_line;
         int y_out;
@@ -588,27 +591,30 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
             out_line += dst_linesize * 2;
         }
 
+        if (!slice_height)
+            continue;
+
         y_out = slice_start + ((!tff) ^ (slice_start & 1));
 
-        s->read(src_data + FFMAX(y_out - 5, tff) * src_linesize,
+        s->read(src_data + FFMAX(y_out - 5, first) * src_linesize,
                 srcbuf + 32,
                 src_linesize * 2, srcbuf_stride,
                 width, 1, in_scale);
         srcbuf += srcbuf_stride;
 
-        s->read(src_data + FFMAX(y_out - 3, tff) * src_linesize,
+        s->read(src_data + FFMAX(y_out - 3, first) * src_linesize,
                 srcbuf + 32,
                 src_linesize * 2, srcbuf_stride,
                 width, 1, in_scale);
         srcbuf += srcbuf_stride;
 
-        s->read(src_data + FFMAX(y_out - 1, tff) * src_linesize,
+        s->read(src_data + FFMAX(y_out - 1, first) * src_linesize,
                 srcbuf + 32,
                 src_linesize * 2, srcbuf_stride,
                 width, 1, in_scale);
         srcbuf += srcbuf_stride;
 
-        in_line  = src_data + FFMIN(y_out + 1, height - 1 - !tff) * src_linesize;
+        in_line  = src_data + FFMIN(y_out + 1, last) * src_linesize;
         out_line = dst_data + (y_out * dst_linesize);
 
         s->read(in_line, srcbuf + 32, src_linesize * 2, srcbuf_stride,
@@ -616,17 +622,17 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 
         y_out += (slice_height - last_slice) * 2;
 
-        s->read(src_data + FFMIN(y_out + 1, height - 1 - !tff) * src_linesize,
+        s->read(src_data + FFMIN(y_out + 1, last) * src_linesize,
                 srcbuf + 32 + srcbuf_stride * (slice_height - last_slice),
                 src_linesize * 2, srcbuf_stride,
                 width, 1, in_scale);
 
-        s->read(src_data + FFMIN(y_out + 3, height - 1 - !tff) * src_linesize,
+        s->read(src_data + FFMIN(y_out + 3, last) * src_linesize,
                 srcbuf + 32 + srcbuf_stride * (slice_height + 1 - last_slice),
                 src_linesize * 2, srcbuf_stride,
                 width, 1, in_scale);
 
-        s->read(src_data + FFMIN(y_out + 5, height - 1 - !tff) * src_linesize,
+        s->read(src_data + FFMIN(y_out + 5, last) * src_linesize,
                 srcbuf + 32 + srcbuf_stride * (slice_height + 2 - last_slice),
                 src_linesize * 2, srcbuf_stride,
                 width, 1, in_scale);
@@ -634,7 +640,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
         if (!s->pscrn)
             memset(prescreen_buf, 0, width);
 
-        for (int y = 0; y < slice_end - slice_start; y += 2) {
+        for (int y = 0; y < 2 * slice_height; y += 2) {
             if (s->pscrn > 0)
                 s->prescreen[s->pscrn > 1](ctx, srcbuf + (y / 2) * srcbuf_stride + 32,
                              srcbuf_stride, prescreen_buf, width,
@@ -675,7 +681,7 @@ static int get_frame(AVFilterContext *ctx, int is_second)
     dst->pts = s->pts;
 
     ff_filter_execute(ctx, filter_slice, dst, NULL,
-                      FFMIN(s->planeheight[1] / 2, s->nb_threads));
+                      FFMIN((s->planeheight[1] + 1) / 2, s->nb_threads));
 
     if (s->field == -2 || s->field > 1)
         s->field_n = !s->field_n;
