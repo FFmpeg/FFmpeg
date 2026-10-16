@@ -324,6 +324,7 @@ static int discard_samples(AVCodecContext *avctx, AVFrame *frame, int64_t *disca
     AVCodecInternal *avci = avctx->internal;
     AVFrameSideData *side;
     uint32_t discard_padding = 0;
+    int nb_samples = frame->nb_samples;
     uint8_t skip_reason = 0;
     uint8_t discard_reason = 0;
 
@@ -399,7 +400,9 @@ static int discard_samples(AVCodecContext *avctx, AVFrame *frame, int64_t *disca
         }
     }
 
-    if (discard_padding > 0 && discard_padding <= frame->nb_samples) {
+    if (discard_padding > 0 && discard_padding <= nb_samples) {
+        // The padding may overlap the samples skipped at the start.
+        discard_padding = FFMIN(discard_padding, frame->nb_samples);
         if (discard_padding == frame->nb_samples) {
             av_log(avctx, AV_LOG_DEBUG, "discard whole frame\n");
             *discarded_samples += frame->nb_samples;
