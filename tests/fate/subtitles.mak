@@ -109,6 +109,9 @@ fate-sub-webvtt: CMD = fmtstdout ass -i $(TARGET_SAMPLES)/sub/WebVTT_capability_
 FATE_SUBTITLES_ASS-$(call DEMDEC, WEBVTT, WEBVTT) += fate-sub-webvtt2
 fate-sub-webvtt2: CMD = fmtstdout ass -i $(TARGET_SAMPLES)/sub/WebVTT_extended_tester.vtt
 
+FATE_SUBTITLES-$(call ALLYES, WEBVTT_DEMUXER FRAMECRC_MUXER) += fate-sub-webvtt-timestamp-map
+fate-sub-webvtt-timestamp-map: CMD = framecrc -copyts -timestamp_map 1 -i $(TARGET_SAMPLES)/sub/WebVTT_timestamp_map.vtt -timestamp_map 1 -i $(TARGET_SAMPLES)/sub/WebVTT_timestamp_map_block.vtt -timestamp_map 1 -i $(TARGET_SAMPLES)/sub/WebVTT_timestamp_map_invalid.vtt -timestamp_map 1 -i $(TARGET_SAMPLES)/sub/WebVTT_timestamp_map_nolocal.vtt -timestamp_map 1 -i $(TARGET_SAMPLES)/sub/WebVTT_timestamp_map_range.vtt -i $(TARGET_SAMPLES)/sub/WebVTT_timestamp_map.vtt -map 0 -map 1 -map 2 -map 3 -map 4 -map 5 -c copy
+
 FATE_SUBTITLES-$(call ALLYES, SRT_DEMUXER SUBRIP_DECODER WEBVTT_ENCODER WEBVTT_MUXER) += fate-sub-webvttenc
 fate-sub-webvttenc: CMD = fmtstdout webvtt -i $(TARGET_SAMPLES)/sub/SubRip_capability_tester.srt
 

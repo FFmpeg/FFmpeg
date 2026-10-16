@@ -1279,4 +1279,22 @@ color hint will be used, otherwise transparent black will be used for
 the background. Default value is false.
 @end table
 
+@section webvtt
+
+WebVTT subtitle demuxer.
+
+It accepts the following options:
+
+@table @option
+@item kind
+Set the kind of the track: @samp{subtitles} (default), @samp{captions},
+@samp{descriptions} or @samp{metadata}.
+
+@item timestamp_map
+Apply the @code{X-TIMESTAMP-MAP} header of HLS WebVTT segments to the cue
+timestamps, which moves them onto the MPEG-TS timeline of the other
+renditions, and use the 90 kHz MPEG-TS time base for the stream. Default
+value is false.
+@end table
+
 @c man end DEMUXERS

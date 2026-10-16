@@ -28,6 +28,7 @@
 #include "demux.h"
 #include "internal.h"
 #include "subtitles.h"
+#include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
@@ -36,6 +37,7 @@ typedef struct {
     const AVClass *class;
     FFDemuxSubtitlesQueue q;
     int kind;
+    int timestamp_map;
 } WebVTTContext;
 
 static int webvtt_probe(const AVProbeData *p)
@@ -58,16 +60,55 @@ static int64_t read_ts(const char *s)
     return AV_NOPTS_VALUE;
 }
 
+/* X-TIMESTAMP-MAP=LOCAL:<cue time>,MPEGTS:<MPEG-2 time>, in either order,
+ * on a header line of its own */
+static void parse_timestamp_map(AVFormatContext *s, const char *p,
+                                AVRational time_base, int64_t *offset)
+{
+    int64_t local = AV_NOPTS_VALUE, mpegts = AV_NOPTS_VALUE;
+
+    while (*p && !av_strstart(p, "X-TIMESTAMP-MAP=", NULL)) {
+        p += strcspn(p, "\r\n");
+        p += strspn(p, "\r\n");
+    }
+    if (!*p)
+        return;
+    p += strlen("X-TIMESTAMP-MAP=");
+    while (*p && *p != '\r' && *p != '\n') {
+        const char *val;
+        if (av_strstart(p, "LOCAL:", &val)) {
+            local = read_ts(val);
+        } else if (av_strstart(p, "MPEGTS:", &val)) {
+            char *end;
+            mpegts = strtoll(val, &end, 10);
+            if (end == val || (*end && !strchr(",\r\n", *end)) ||
+                mpegts < 0 || mpegts >= (1LL << 33))
+                mpegts = AV_NOPTS_VALUE;
+        }
+        p += strcspn(p, ",\r\n");
+        if (*p == ',')
+            p++;
+    }
+    if (local == AV_NOPTS_VALUE || mpegts == AV_NOPTS_VALUE) {
+        av_log(s, AV_LOG_WARNING, "Invalid X-TIMESTAMP-MAP header\n");
+        return;
+    }
+
+    *offset = av_rescale_q(mpegts, (AVRational){ 1, 90000 }, time_base) -
+              av_rescale_q(local, (AVRational){ 1, 1000 }, time_base);
+}
+
 static int webvtt_read_header(AVFormatContext *s)
 {
     WebVTTContext *webvtt = s->priv_data;
     AVBPrint cue;
     int res = 0;
+    int64_t ts_offset = 0;
     AVStream *st = avformat_new_stream(s, NULL);
 
     if (!st)
         return AVERROR(ENOMEM);
-    avpriv_set_pts_info(st, 64, 1, 1000);
+    avpriv_set_pts_info(st, 64, 1, webvtt->timestamp_map ? 90000 : 1000);
     st->codecpar->codec_type = AVMEDIA_TYPE_SUBTITLE;
     st->codecpar->codec_id   = AV_CODEC_ID_WEBVTT;
     st->disposition |= webvtt->kind;
@@ -92,10 +133,16 @@ static int webvtt_read_header(AVFormatContext *s)
         p = identifier = cue.str;
         pos = avio_tell(s->pb);
 
-        /* ignore header chunk */
+        /* header chunk */
         if (!strncmp(p, "\xEF\xBB\xBFWEBVTT", 9) ||
             !strncmp(p, "WEBVTT", 6) ||
-            !strncmp(p, "STYLE", 5) ||
+            (!strncmp(p, "X-TIMESTAMP-MAP=", 16) && !strstr(p, "-->"))) {
+            if (webvtt->timestamp_map)
+                parse_timestamp_map(s, p, st->time_base, &ts_offset);
+            continue;
+        }
+
+        if (!strncmp(p, "STYLE", 5) ||
             !strncmp(p, "REGION", 6) ||
             !strncmp(p, "NOTE", 4))
             continue;
@@ -148,8 +195,10 @@ static int webvtt_read_header(AVFormatContext *s)
             goto end;
         }
         sub->pos = pos;
-        sub->pts = ts_start;
-        sub->duration = ts_end - ts_start;
+        sub->pts = av_rescale_q(ts_start, (AVRational){ 1, 1000 }, st->time_base) +
+                   ts_offset;
+        sub->duration = av_rescale_q(ts_end - ts_start, (AVRational){ 1, 1000 },
+                                     st->time_base);
 
 #define SET_SIDE_DATA(name, type) do {                                  \
     if (name##_len) {                                                   \
@@ -203,6 +252,7 @@ static const AVOption options[] = {
         { "captions",     "WebVTT captions kind",     0, AV_OPT_TYPE_CONST, { .i64 = AV_DISPOSITION_CAPTIONS },     INT_MIN, INT_MAX, KIND_FLAGS, .unit = "webvtt_kind" },
         { "descriptions", "WebVTT descriptions kind", 0, AV_OPT_TYPE_CONST, { .i64 = AV_DISPOSITION_DESCRIPTIONS }, INT_MIN, INT_MAX, KIND_FLAGS, .unit = "webvtt_kind" },
         { "metadata",     "WebVTT metadata kind",     0, AV_OPT_TYPE_CONST, { .i64 = AV_DISPOSITION_METADATA },     INT_MIN, INT_MAX, KIND_FLAGS, .unit = "webvtt_kind" },
+    { "timestamp_map", "Apply the X-TIMESTAMP-MAP header to the cue timestamps, in the 90 kHz MPEG-TS time base", OFFSET(timestamp_map), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, KIND_FLAGS },
     { NULL }
 };
 

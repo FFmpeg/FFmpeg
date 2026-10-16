@@ -1,0 +1,26 @@
+#tb 0: 1/90000
+#media_type 0: subtitle
+#codec_id 0: webvtt
+#tb 1: 1/90000
+#media_type 1: subtitle
+#codec_id 1: webvtt
+#tb 2: 1/90000
+#media_type 2: subtitle
+#codec_id 2: webvtt
+#tb 3: 1/90000
+#media_type 3: subtitle
+#codec_id 3: webvtt
+#tb 4: 1/90000
+#media_type 4: subtitle
+#codec_id 4: webvtt
+#tb 5: 1/1000
+#media_type 5: subtitle
+#codec_id 5: webvtt
+2,      90000,      90000,    90000,        4, 0x044101bc
+3,      90000,      90000,    90000,        4, 0x042401aa
+4,      90000,      90000,    90000,        3, 0x02a30154
+5,       1000,       1000,     1000,        3, 0x028e0142, S=1, WebVTT ID,       15, 0x226c0444
+5,       3000,       3000,      500,        3, 0x02b9015a, S=1, WebVTT Settings,        6, 0x08210213
+0,     990000,     990000,    90000,        3, 0x028e0142, S=1, WebVTT ID,       15, 0x226c0444
+1,    1125000,    1125000,    45000,        5, 0x06690218
+0,    1170000,    1170000,    45000,        3, 0x02b9015a, S=1, WebVTT Settings,        6, 0x08210213
