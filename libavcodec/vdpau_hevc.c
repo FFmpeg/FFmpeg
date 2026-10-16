@@ -150,6 +150,11 @@ static int vdpau_hevc_start_frame(AVCodecContext *avctx,
     info->tiles_enabled_flag = pps->tiles_enabled_flag;
     info->entropy_coding_sync_enabled_flag = pps->entropy_coding_sync_enabled_flag;
     if (info->tiles_enabled_flag) {
+        if (pps->num_tile_columns > FF_ARRAY_ELEMS(info->column_width_minus1) ||
+            pps->num_tile_rows    > FF_ARRAY_ELEMS(info->row_height_minus1)) {
+            av_log(avctx, AV_LOG_ERROR, "Too many tiles\n");
+            return AVERROR(ENOSYS);
+        }
         /* Only valid if tiles_enabled_flag is set. Ignored otherwise. */
         info->num_tile_columns_minus1 = pps->num_tile_columns - 1;
         /* Only valid if tiles_enabled_flag is set. Ignored otherwise. */
