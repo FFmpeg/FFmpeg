@@ -1440,7 +1440,7 @@ void ff_vp8_h_loop_filter_simple_mmi(uint8_t *dst, ptrdiff_t stride, int flim)
             vp8_filter_common_is4tap(dst + i * stride, 1);
 }
 
-void ff_put_vp8_pixels16_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+void ff_put_vp8_pixels16_mmi(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,
         ptrdiff_t srcstride, int h, int x, int y)
 {
 #if 1
@@ -1487,7 +1487,7 @@ void ff_put_vp8_pixels16_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
 #endif
 }
 
-void ff_put_vp8_pixels8_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+void ff_put_vp8_pixels8_mmi(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,
         ptrdiff_t srcstride, int h, int x, int y)
 {
 #if 1
@@ -1527,7 +1527,7 @@ void ff_put_vp8_pixels8_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
 #endif
 }
 
-void ff_put_vp8_pixels4_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+void ff_put_vp8_pixels4_mmi(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,
         ptrdiff_t srcstride, int h, int x, int y)
 {
 #if 1
@@ -1567,7 +1567,7 @@ void ff_put_vp8_pixels4_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
 #endif
 }
 
-void ff_put_vp8_epel16_h4_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+void ff_put_vp8_epel16_h4_mmi(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,
         ptrdiff_t srcstride, int h, int mx, int my)
 {
 #if 1
@@ -1652,7 +1652,7 @@ void ff_put_vp8_epel16_h4_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
 #endif
 }
 
-void ff_put_vp8_epel8_h4_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+void ff_put_vp8_epel8_h4_mmi(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,
         ptrdiff_t srcstride, int h, int mx, int my)
 {
 #if 1
@@ -1722,7 +1722,7 @@ void ff_put_vp8_epel8_h4_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
 #endif
 }
 
-void ff_put_vp8_epel4_h4_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+void ff_put_vp8_epel4_h4_mmi(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,
         ptrdiff_t srcstride, int h, int mx, int my)
 {
 #if 1
@@ -1785,7 +1785,7 @@ void ff_put_vp8_epel4_h4_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
 #endif
 }
 
-void ff_put_vp8_epel16_h6_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+void ff_put_vp8_epel16_h6_mmi(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,
         ptrdiff_t srcstride, int h, int mx, int my)
 {
 #if 1
@@ -1875,7 +1875,7 @@ void ff_put_vp8_epel16_h6_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
 #endif
 }
 
-void ff_put_vp8_epel8_h6_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+void ff_put_vp8_epel8_h6_mmi(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,
         ptrdiff_t srcstride, int h, int mx, int my)
 {
 #if 1
@@ -1949,7 +1949,7 @@ void ff_put_vp8_epel8_h6_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
 #endif
 }
 
-void ff_put_vp8_epel4_h6_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+void ff_put_vp8_epel4_h6_mmi(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,
         ptrdiff_t srcstride, int h, int mx, int my)
 {
 #if 1
@@ -2017,7 +2017,7 @@ void ff_put_vp8_epel4_h6_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
 #endif
 }
 
-void ff_put_vp8_epel16_v4_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+void ff_put_vp8_epel16_v4_mmi(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,
         ptrdiff_t srcstride, int h, int mx, int my)
 {
 #if 1
@@ -2103,7 +2103,7 @@ void ff_put_vp8_epel16_v4_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
 #endif
 }
 
-void ff_put_vp8_epel8_v4_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+void ff_put_vp8_epel8_v4_mmi(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,
         ptrdiff_t srcstride, int h, int mx, int my)
 {
 #if 1
@@ -2174,7 +2174,7 @@ void ff_put_vp8_epel8_v4_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
 #endif
 }
 
-void ff_put_vp8_epel4_v4_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+void ff_put_vp8_epel4_v4_mmi(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,
         ptrdiff_t srcstride, int h, int mx, int my)
 {
 #if 1
@@ -2239,7 +2239,7 @@ void ff_put_vp8_epel4_v4_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
 #endif
 }
 
-void ff_put_vp8_epel16_v6_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+void ff_put_vp8_epel16_v6_mmi(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,
         ptrdiff_t srcstride, int h, int mx, int my)
 {
 #if 1
@@ -2330,7 +2330,7 @@ void ff_put_vp8_epel16_v6_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
 #endif
 }
 
-void ff_put_vp8_epel8_v6_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+void ff_put_vp8_epel8_v6_mmi(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,
         ptrdiff_t srcstride, int h, int mx, int my)
 {
 #if 1
@@ -2406,7 +2406,7 @@ void ff_put_vp8_epel8_v6_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
 #endif
 }
 
-void ff_put_vp8_epel4_v6_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+void ff_put_vp8_epel4_v6_mmi(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,
         ptrdiff_t srcstride, int h, int mx, int my)
 {
 #if 1
@@ -2476,7 +2476,7 @@ void ff_put_vp8_epel4_v6_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
 #endif
 }
 
-void ff_put_vp8_epel16_h4v4_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+void ff_put_vp8_epel16_h4v4_mmi(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,
         ptrdiff_t srcstride, int h, int mx, int my)
 {
 #if 1
@@ -2515,7 +2515,7 @@ void ff_put_vp8_epel16_h4v4_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
 #endif
 }
 
-void ff_put_vp8_epel8_h4v4_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+void ff_put_vp8_epel8_h4v4_mmi(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,
         ptrdiff_t srcstride, int h, int mx, int my)
 {
 #if 1
@@ -2554,7 +2554,7 @@ void ff_put_vp8_epel8_h4v4_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
 #endif
 }
 
-void ff_put_vp8_epel4_h4v4_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+void ff_put_vp8_epel4_h4v4_mmi(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,
         ptrdiff_t srcstride, int h, int mx, int my)
 {
 #if 1
@@ -2592,7 +2592,7 @@ void ff_put_vp8_epel4_h4v4_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
 #endif
 }
 
-void ff_put_vp8_epel16_h4v6_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+void ff_put_vp8_epel16_h4v6_mmi(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,
         ptrdiff_t srcstride, int h, int mx, int my)
 {
 #if 1
@@ -2631,7 +2631,7 @@ void ff_put_vp8_epel16_h4v6_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
 #endif
 }
 
-void ff_put_vp8_epel8_h4v6_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+void ff_put_vp8_epel8_h4v6_mmi(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,
         ptrdiff_t srcstride, int h, int mx, int my)
 {
 #if 1
@@ -2670,7 +2670,7 @@ void ff_put_vp8_epel8_h4v6_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
 #endif
 }
 
-void ff_put_vp8_epel4_h4v6_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+void ff_put_vp8_epel4_h4v6_mmi(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,
         ptrdiff_t srcstride, int h, int mx, int my)
 {
 #if 1
@@ -2709,7 +2709,7 @@ void ff_put_vp8_epel4_h4v6_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
 #endif
 }
 
-void ff_put_vp8_epel16_h6v4_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+void ff_put_vp8_epel16_h6v4_mmi(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,
         ptrdiff_t srcstride, int h, int mx, int my)
 {
 #if 1
@@ -2748,7 +2748,7 @@ void ff_put_vp8_epel16_h6v4_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
 #endif
 }
 
-void ff_put_vp8_epel8_h6v4_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+void ff_put_vp8_epel8_h6v4_mmi(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,
         ptrdiff_t srcstride, int h, int mx, int my)
 {
 #if 1
@@ -2787,7 +2787,7 @@ void ff_put_vp8_epel8_h6v4_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
 #endif
 }
 
-void ff_put_vp8_epel4_h6v4_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+void ff_put_vp8_epel4_h6v4_mmi(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,
         ptrdiff_t srcstride, int h, int mx, int my)
 {
 #if 1
@@ -2826,7 +2826,7 @@ void ff_put_vp8_epel4_h6v4_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
 #endif
 }
 
-void ff_put_vp8_epel16_h6v6_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+void ff_put_vp8_epel16_h6v6_mmi(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,
         ptrdiff_t srcstride, int h, int mx, int my)
 {
 #if 1
@@ -2865,7 +2865,7 @@ void ff_put_vp8_epel16_h6v6_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
 #endif
 }
 
-void ff_put_vp8_epel8_h6v6_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+void ff_put_vp8_epel8_h6v6_mmi(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,
         ptrdiff_t srcstride, int h, int mx, int my)
 {
 #if 1
@@ -2904,7 +2904,7 @@ void ff_put_vp8_epel8_h6v6_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
 #endif
 }
 
-void ff_put_vp8_epel4_h6v6_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+void ff_put_vp8_epel4_h6v6_mmi(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,
         ptrdiff_t srcstride, int h, int mx, int my)
 {
 #if 1
@@ -2943,7 +2943,7 @@ void ff_put_vp8_epel4_h6v6_mmi(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
 #endif
 }
 
-void ff_put_vp8_bilinear16_h_mmi(uint8_t *dst, ptrdiff_t dstride, uint8_t *src,
+void ff_put_vp8_bilinear16_h_mmi(uint8_t *dst, ptrdiff_t dstride, const uint8_t *src,
         ptrdiff_t sstride, int h, int mx, int my)
 {
 #if 1
@@ -3021,7 +3021,7 @@ void ff_put_vp8_bilinear16_h_mmi(uint8_t *dst, ptrdiff_t dstride, uint8_t *src,
 #endif
 }
 
-void ff_put_vp8_bilinear16_v_mmi(uint8_t *dst, ptrdiff_t dstride, uint8_t *src,
+void ff_put_vp8_bilinear16_v_mmi(uint8_t *dst, ptrdiff_t dstride, const uint8_t *src,
         ptrdiff_t sstride, int h, int mx, int my)
 {
 #if 1
@@ -3091,7 +3091,7 @@ void ff_put_vp8_bilinear16_v_mmi(uint8_t *dst, ptrdiff_t dstride, uint8_t *src,
 #endif
 }
 
-void ff_put_vp8_bilinear16_hv_mmi(uint8_t *dst, ptrdiff_t dstride, uint8_t *src,
+void ff_put_vp8_bilinear16_hv_mmi(uint8_t *dst, ptrdiff_t dstride, const uint8_t *src,
         ptrdiff_t sstride, int h, int mx, int my)
 {
 #if 1
@@ -3125,7 +3125,7 @@ void ff_put_vp8_bilinear16_hv_mmi(uint8_t *dst, ptrdiff_t dstride, uint8_t *src,
 #endif
 }
 
-void ff_put_vp8_bilinear8_h_mmi(uint8_t *dst, ptrdiff_t dstride, uint8_t *src,
+void ff_put_vp8_bilinear8_h_mmi(uint8_t *dst, ptrdiff_t dstride, const uint8_t *src,
         ptrdiff_t sstride, int h, int mx, int my)
 {
 #if 1
@@ -3187,7 +3187,7 @@ void ff_put_vp8_bilinear8_h_mmi(uint8_t *dst, ptrdiff_t dstride, uint8_t *src,
 #endif
 }
 
-void ff_put_vp8_bilinear8_v_mmi(uint8_t *dst, ptrdiff_t dstride, uint8_t *src,
+void ff_put_vp8_bilinear8_v_mmi(uint8_t *dst, ptrdiff_t dstride, const uint8_t *src,
         ptrdiff_t sstride, int h, int mx, int my)
 {
 #if 1
@@ -3251,7 +3251,7 @@ void ff_put_vp8_bilinear8_v_mmi(uint8_t *dst, ptrdiff_t dstride, uint8_t *src,
 #endif
 }
 
-void ff_put_vp8_bilinear8_hv_mmi(uint8_t *dst, ptrdiff_t dstride, uint8_t *src,
+void ff_put_vp8_bilinear8_hv_mmi(uint8_t *dst, ptrdiff_t dstride, const uint8_t *src,
         ptrdiff_t sstride, int h, int mx, int my)
 {
 #if 1
@@ -3285,7 +3285,7 @@ void ff_put_vp8_bilinear8_hv_mmi(uint8_t *dst, ptrdiff_t dstride, uint8_t *src,
 #endif
 }
 
-void ff_put_vp8_bilinear4_h_mmi(uint8_t *dst, ptrdiff_t dstride, uint8_t *src,
+void ff_put_vp8_bilinear4_h_mmi(uint8_t *dst, ptrdiff_t dstride, const uint8_t *src,
         ptrdiff_t sstride, int h, int mx, int my)
 {
 #if 1
@@ -3344,7 +3344,7 @@ void ff_put_vp8_bilinear4_h_mmi(uint8_t *dst, ptrdiff_t dstride, uint8_t *src,
 #endif
 }
 
-void ff_put_vp8_bilinear4_v_mmi(uint8_t *dst, ptrdiff_t dstride, uint8_t *src,
+void ff_put_vp8_bilinear4_v_mmi(uint8_t *dst, ptrdiff_t dstride, const uint8_t *src,
         ptrdiff_t sstride, int h, int mx, int my)
 {
 #if 1
@@ -3405,7 +3405,7 @@ void ff_put_vp8_bilinear4_v_mmi(uint8_t *dst, ptrdiff_t dstride, uint8_t *src,
 #endif
 }
 
-void ff_put_vp8_bilinear4_hv_mmi(uint8_t *dst, ptrdiff_t dstride, uint8_t *src,
+void ff_put_vp8_bilinear4_hv_mmi(uint8_t *dst, ptrdiff_t dstride, const uint8_t *src,
         ptrdiff_t sstride, int h, int mx, int my)
 {
 #if 1
