@@ -55,7 +55,7 @@ static int dvb_encode_rle2(uint8_t **pq, int buf_size,
 
     for(y = 0; y < h; y++) {
         // Worst case line is 3 bits per value + 4 bytes overhead
-        if (buf_size * 8 < w * 3 + 32)
+        if (buf_size * 8LL < w * 3 + 32)
             return AVERROR_BUFFER_TOO_SMALL;
         line_begin = q;
         *q++ = 0x10;
@@ -150,7 +150,7 @@ static int dvb_encode_rle4(uint8_t **pq, int buf_size,
 
     for(y = 0; y < h; y++) {
         // Worst case line is 6 bits per value, + 4 bytes overhead
-        if (buf_size * 8 < w * 6 + 32)
+        if (buf_size * 8LL < w * 6 + 32)
             return AVERROR_BUFFER_TOO_SMALL;
         line_begin = q;
         *q++ = 0x11;
@@ -223,7 +223,7 @@ static int dvb_encode_rle8(uint8_t **pq, int buf_size,
 
     for (y = 0; y < h; y++) {
         // Worst case line is 12 bits per value, + 4 bytes overhead
-        if (buf_size * 8 < w * 12 + 32)
+        if (buf_size * 8LL < w * 12 + 32)
             return AVERROR_BUFFER_TOO_SMALL;
         line_begin = q;
         *q++ = 0x12;
