@@ -61,6 +61,9 @@ typedef struct {
     int alpha_info;
     void (*unpack_alpha)(GetBitContext *gb, uint16_t *dst, int num_coeffs, const int num_bits);
     enum AVPixelFormat pix_fmt;
+    enum AVColorPrimaries container_color_primaries; ///< used when the frame header has none
+    enum AVColorTransferCharacteristic container_color_trc; ///< used when the frame header has none
+    enum AVColorSpace container_colorspace;          ///< used when the frame header has none
 } ProresContext;
 
 #endif /* AVCODEC_PRORESDEC_H */

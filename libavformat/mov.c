@@ -2288,11 +2288,17 @@ static int mov_read_colr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                 st->codecpar->color_range = AVCOL_RANGE_MPEG;
         }
 
-        if (!av_color_primaries_name(color_primaries))
+        // Reserved and unassigned values carry no colour information
+        if (color_primaries == AVCOL_PRI_RESERVED0 ||
+            color_primaries == AVCOL_PRI_RESERVED  ||
+            !av_color_primaries_name(color_primaries))
             color_primaries = AVCOL_PRI_UNSPECIFIED;
-        if (!av_color_transfer_name(color_trc))
+        if (color_trc == AVCOL_TRC_RESERVED0 ||
+            color_trc == AVCOL_TRC_RESERVED  ||
+            !av_color_transfer_name(color_trc))
             color_trc = AVCOL_TRC_UNSPECIFIED;
-        if (!av_color_space_name(color_matrix))
+        if (color_matrix == AVCOL_SPC_RESERVED ||
+            !av_color_space_name(color_matrix))
             color_matrix = AVCOL_SPC_UNSPECIFIED;
 
         st->codecpar->color_primaries = color_primaries;

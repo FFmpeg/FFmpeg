@@ -31,6 +31,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/mem.h"
 #include "libavutil/mem_internal.h"
+#include "libavutil/pixdesc.h"
 
 #include "avcodec.h"
 #include "codec_internal.h"
@@ -137,6 +138,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     avctx->bits_per_raw_sample = 10;
 
+    ctx->container_color_primaries = avctx->color_primaries;
+    ctx->container_color_trc       = avctx->color_trc;
+    ctx->container_colorspace      = avctx->colorspace;
+
     switch (avctx->codec_tag) {
     case MKTAG('a','p','c','o'):
         avctx->profile = AV_PROFILE_PRORES_PROXY;
@@ -181,6 +186,17 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ctx->pix_fmt = AV_PIX_FMT_NONE;
 
     return 0;
+}
+
+/**
+ * Whether a frame header colour value describes a colour. 0 and 2 both mean
+ * unknown in all three fields (RDD 36), unlike 0 in H.273; 3 is reserved.
+ *
+ * @param name FFmpeg name of the value, NULL if it has none
+ */
+static int describes_colour(int value, const char *name)
+{
+    return value != 0 && value != 2 && value != 3 && name;
 }
 
 static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
@@ -280,9 +296,12 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
 #endif
     }
 
-    avctx->color_primaries = buf[14];
-    avctx->color_trc       = buf[15];
-    avctx->colorspace      = buf[16];
+    avctx->color_primaries = describes_colour(buf[14], av_color_primaries_name(buf[14])) ?
+                             buf[14] : ctx->container_color_primaries;
+    avctx->color_trc       = describes_colour(buf[15], av_color_transfer_name(buf[15])) ?
+                             buf[15] : ctx->container_color_trc;
+    avctx->colorspace      = describes_colour(buf[16], av_color_space_name(buf[16])) ?
+                             buf[16] : ctx->container_colorspace;
     avctx->color_range     = AVCOL_RANGE_MPEG;
 
     ptr   = buf + 20;

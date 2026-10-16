@@ -6,6 +6,6 @@ c6b96e10140cb9554d1eb6a5dccc1c1b *tests/data/fate/mov-colr-reserved-color-tags.m
 #dimensions 0: 160x120
 #sar 0: 0/1
 0,          0,          0,     1920,     6838, 0x2d59b149
-color_space=reserved
-color_transfer=reserved
-color_primaries=reserved
+color_space=unknown
+color_transfer=unknown
+color_primaries=unknown

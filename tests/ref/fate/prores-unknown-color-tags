@@ -7,6 +7,6 @@ e8fedc135d405134af2dada81b173cc9 *tests/data/fate/prores-unknown-color-tags.mov
 #sar 0: 0/1
 0,          0,          0,      400,    57296, 0x4cc02182
 0,        400,        400,      400,    57296, 0x4cc02182
-color_space=gbr
-color_primaries=reserved
-color_transfer=reserved
+color_space=smpte170m
+color_primaries=smpte170m
+color_transfer=smpte170m
