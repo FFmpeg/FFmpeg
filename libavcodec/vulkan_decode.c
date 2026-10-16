@@ -250,9 +250,11 @@ int ff_vk_decode_add_slice(AVCodecContext *avctx, FFVulkanDecodePicture *vp,
     uint32_t *slice_off;
     FFVkBuffer *vkbuf;
 
-    size_t new_size = vp->slices_size + startcode_len + size +
-                      ctx->caps.minBitstreamBufferSizeAlignment;
+    uint64_t new_size = vp->slices_size + startcode_len + size +
+                        ctx->caps.minBitstreamBufferSizeAlignment;
     new_size = FFALIGN(new_size, ctx->caps.minBitstreamBufferSizeAlignment);
+    if (new_size > INT32_MAX)
+        return AVERROR(ENOSYS);
 
     if (offsets) {
         slice_off = av_fast_realloc(dec->slice_off, &dec->slice_off_max,
@@ -275,7 +277,7 @@ int ff_vk_decode_add_slice(AVCodecContext *avctx, FFVulkanDecodePicture *vp,
 
         /* Align buffer to nearest power of two. Makes fragmentation management
          * easier, and gives us ample headroom. */
-        buf_size = 2 << av_log2(buf_size);
+        buf_size = 2ULL << av_log2(buf_size);
 
         /* When the frames context uses DRM modifier tiling,
          * hwctx->create_pnext contains VkImageDrmFormatModifierListCreateInfoEXT,
