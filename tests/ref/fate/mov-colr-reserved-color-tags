@@ -1,0 +1,11 @@
+c6b96e10140cb9554d1eb6a5dccc1c1b *tests/data/fate/mov-colr-reserved-color-tags.mov
+7552 tests/data/fate/mov-colr-reserved-color-tags.mov
+#tb 0: 1/19200
+#media_type 0: video
+#codec_id 0: qtrle
+#dimensions 0: 160x120
+#sar 0: 0/1
+0,          0,          0,     1920,     6838, 0x2d59b149
+color_space=reserved
+color_transfer=reserved
+color_primaries=reserved

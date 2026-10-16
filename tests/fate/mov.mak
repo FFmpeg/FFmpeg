@@ -47,6 +47,12 @@ FATE_MOV_FFPROBE-$(call DEMDEC, MOV, HEVC) += fate-mov-dovi-hvce-mp4-read
 
 FATE_MOV_FFPROBE-$(call DEMDEC, MOV, H264) += fate-mov-vfr-bframes-duration
 
+# vpcC set to 3/3/3, with no colr box
+FATE_MOV_FFPROBE-$(call DEMDEC, MOV, VP9) += fate-mov-vpcc-reserved-color-tags
+fate-mov-vpcc-reserved-color-tags: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -v error \
+    -show_entries stream=color_primaries,color_transfer,color_space -of default=nw=1 \
+    $(TARGET_SAMPLES)/mov/vpcc-reserved-color-tags.mp4
+
 FATE_MOV_FFPROBE-$(CONFIG_MOV_DEMUXER) += fate-ffprobe-stream-entries-tmcd \
                                        fate-ffprobe-group-stream-entries-tmcd \
                                        fate-ffprobe-show-groups-tmcd
@@ -351,6 +357,12 @@ fate-mov-mp4-multiple-stsd-muxing: CMD = transcode mov $(TARGET_SAMPLES)/h264/ex
 FATE_MOV_FFMPEG_SAMPLES-$(call REMUX, MP4 MOV, AAC_PARSER) \
                           += fate-mov-mp4-edst-remainder
 fate-mov-mp4-edst-remainder: CMD = stream_remux mov $(TARGET_SAMPLES)/audiomatch/tones_fdkaac_44100_stereo_aac_lc.m4a "" mp4 "" "" "-c:a copy"
+
+# A colr box can carry reserved colour values; they must not reach the stream
+FATE_MOV_FFMPEG_FFPROBE_SAMPLES-$(call REMUX, MOV, QTRLE_DECODER) += fate-mov-colr-reserved-color-tags
+fate-mov-colr-reserved-color-tags: CMD = stream_remux mov $(TARGET_SAMPLES)/qtrle/aletrek-rle.mov "" mov \
+    "-map 0:v -frames:v 1 -color_primaries 3 -color_trc 3 -colorspace 3" "" "-c:v copy" \
+    "-select_streams v -show_entries stream=color_primaries,color_transfer,color_space -of default=nw=1"
 
 # format-level branding: major_brand, minor_version, compatible_brands should be deleted on re-encode
 FATE_MOV_FFMPEG_FFPROBE_SAMPLES-$(call ENCDEC, AAC AAC, NUT MOV) += fate-mov-reenc-delete-format-metadata

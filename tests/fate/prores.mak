@@ -28,4 +28,17 @@ fate-prores-metadata: CMD = md5 -i $(TARGET_SAMPLES)/prores/Sequence_1-Apple_Pro
 FATE_SAMPLES_FFMPEG_FFPROBE-$(call FRAMECRC, MOV, PRORES,) += fate-prores-probe
 fate-prores-probe: CMD = stream_demux mov $(TARGET_SAMPLES)/prores/Sequence_1-Apple_ProRes_422_HQ.mov "" "-c:v copy" "-show_frames"
 
+# A frame header can carry 0 for "unknown"; the colr tags must win over it
+FATE_SAMPLES_FFMPEG_FFPROBE-$(call REMUX, MOV, PRORES_METADATA_BSF PRORES_DECODER) += fate-prores-unknown-color-tags
+fate-prores-unknown-color-tags: CMD = stream_remux mov $(TARGET_SAMPLES)/prores/Sequence_1-Apple_ProRes_422_Proxy.mov "" mov \
+    "-map 0:v -bsf:v prores_metadata=color_primaries=0:color_trc=0:colorspace=0 -color_primaries smpte170m -color_trc smpte170m -colorspace smpte170m" "" "-c:v copy" \
+    "-select_streams v -read_intervals %+\#1 -show_entries frame=color_primaries,color_transfer,color_space -of default=nw=1"
+
+# colr set to smpte170m, frame headers set to 1/1/1 then 0/0/0: the second frame must not inherit the first's tags
+FATE_PRORES_FFPROBE-$(call DEMDEC, MOV, PRORES) += fate-prores-color-tags-fallback
+fate-prores-color-tags-fallback: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -v error \
+    -show_entries frame=color_primaries,color_transfer,color_space -of default=nw=1 \
+    $(TARGET_SAMPLES)/prores/color-tags-fallback.mov
+
 FATE_SAMPLES_FFMPEG-$(call DEMMUX, MOV, MOV, PRORES_METADATA_BSF) += $(FATE_PRORES_METADATA_BSF)
+FATE_SAMPLES_FFPROBE += $(FATE_PRORES_FFPROBE-yes)

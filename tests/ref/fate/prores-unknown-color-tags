@@ -1,0 +1,12 @@
+e8fedc135d405134af2dada81b173cc9 *tests/data/fate/prores-unknown-color-tags.mov
+115303 tests/data/fate/prores-unknown-color-tags.mov
+#tb 0: 1/11988
+#media_type 0: video
+#codec_id 0: prores
+#dimensions 0: 1920x1080
+#sar 0: 0/1
+0,          0,          0,      400,    57296, 0x4cc02182
+0,        400,        400,      400,    57296, 0x4cc02182
+color_space=gbr
+color_primaries=reserved
+color_transfer=reserved

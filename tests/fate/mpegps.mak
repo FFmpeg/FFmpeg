@@ -5,3 +5,9 @@ fate-mpegps-remuxed-pcm-demux: CMD = stream_remux "mpeg" "$(TARGET_SAMPLES)/mpeg
 
 FATE_SAMPLES_FFMPEG += $(FATE_MPEGPS-yes)
 fate-mpegps: $(FATE_MPEGPS-yes)
+
+# A sequence display extension can carry reserved colour values; they must not reach the frame
+FATE_SAMPLES_FFMPEG_FFPROBE-$(call REMUX, MPEG2VIDEO MPEGVIDEO, MPEGVIDEO_PARSER MPEG2_METADATA_BSF EXTRACT_EXTRADATA_BSF MPEG2VIDEO_DECODER) += fate-mpeg2-reserved-color-tags
+fate-mpeg2-reserved-color-tags: CMD = stream_remux mpegvideo $(TARGET_SAMPLES)/mpeg2/tcela-6.bits "" mpeg2video \
+    "-map 0:v:0 -frames:v 3 -bsf:v mpeg2_metadata=colour_primaries=3:transfer_characteristics=3:matrix_coefficients=3" "" "-c:v copy" \
+    "-select_streams v -read_intervals %+\#1 -show_entries frame=color_primaries,color_transfer,color_space -of default=nw=1"
