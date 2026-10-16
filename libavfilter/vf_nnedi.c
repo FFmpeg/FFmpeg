@@ -631,6 +631,9 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
                 src_linesize * 2, srcbuf_stride,
                 width, 1, in_scale);
 
+        if (!s->pscrn)
+            memset(prescreen_buf, 0, width);
+
         for (int y = 0; y < slice_end - slice_start; y += 2) {
             if (s->pscrn > 0)
                 s->prescreen[s->pscrn > 1](ctx, srcbuf + (y / 2) * srcbuf_stride + 32,
