@@ -9,6 +9,6 @@
 0,          0, -9223372036854775808,    40000,   155871, 0x11269f42
 0,      40000, -9223372036854775808,    40000,    73388, 0x29d1370d, F=0x0
 0,      80000,      80000,    40000,    39606, 0x19f9a3d7, F=0x0
-color_space=reserved
-color_primaries=reserved
-color_transfer=reserved
+color_space=unknown
+color_primaries=unknown
+color_transfer=unknown
