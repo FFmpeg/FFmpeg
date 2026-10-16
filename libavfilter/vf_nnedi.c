@@ -564,7 +564,6 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
         float *dstbuf = s->output_buf[jobnr];
         const int dstbuf_stride = width;
         const int slice_height = (slice_end - slice_start + tff) / 2;
-        const int last_slice = slice_end == height;
         // first and last line of the field that is kept
         const int first = FFMIN(tff, height - 1);
         const int last = FFMAX(height - 1 - ((height - 1 - tff) & 1), 0);
@@ -595,47 +594,15 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
             continue;
 
         y_out = slice_start + ((!tff) ^ (slice_start & 1));
-
-        s->read(src_data + FFMAX(y_out - 5, first) * src_linesize,
-                srcbuf + 32,
-                src_linesize * 2, srcbuf_stride,
-                width, 1, in_scale);
-        srcbuf += srcbuf_stride;
-
-        s->read(src_data + FFMAX(y_out - 3, first) * src_linesize,
-                srcbuf + 32,
-                src_linesize * 2, srcbuf_stride,
-                width, 1, in_scale);
-        srcbuf += srcbuf_stride;
-
-        s->read(src_data + FFMAX(y_out - 1, first) * src_linesize,
-                srcbuf + 32,
-                src_linesize * 2, srcbuf_stride,
-                width, 1, in_scale);
-        srcbuf += srcbuf_stride;
-
-        in_line  = src_data + FFMIN(y_out + 1, last) * src_linesize;
         out_line = dst_data + (y_out * dst_linesize);
 
-        s->read(in_line, srcbuf + 32, src_linesize * 2, srcbuf_stride,
-                width, slice_height - last_slice, in_scale);
+        for (int i = 0; i < slice_height + 5; i++) {
+            const int y = av_clip(y_out - 5 + 2 * i, first, last);
 
-        y_out += (slice_height - last_slice) * 2;
-
-        s->read(src_data + FFMIN(y_out + 1, last) * src_linesize,
-                srcbuf + 32 + srcbuf_stride * (slice_height - last_slice),
-                src_linesize * 2, srcbuf_stride,
-                width, 1, in_scale);
-
-        s->read(src_data + FFMIN(y_out + 3, last) * src_linesize,
-                srcbuf + 32 + srcbuf_stride * (slice_height + 1 - last_slice),
-                src_linesize * 2, srcbuf_stride,
-                width, 1, in_scale);
-
-        s->read(src_data + FFMIN(y_out + 5, last) * src_linesize,
-                srcbuf + 32 + srcbuf_stride * (slice_height + 2 - last_slice),
-                src_linesize * 2, srcbuf_stride,
-                width, 1, in_scale);
+            s->read(src_data + y * src_linesize, srcbuf + 32 + i * srcbuf_stride,
+                    src_linesize * 2, srcbuf_stride, width, 1, in_scale);
+        }
+        srcbuf += 3 * srcbuf_stride;
 
         if (!s->pscrn)
             memset(prescreen_buf, 0, width);
