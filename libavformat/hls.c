@@ -85,6 +85,7 @@ struct segment {
     char *key;
     enum KeyType key_type;
     uint8_t iv[16];
+    uint64_t discontinuity_seq;
     /* associated Media Initialization Section, treated as a segment */
     struct segment *init_section;
 };
@@ -118,6 +119,13 @@ struct playlist {
     AVFormatContext *ctx;
     AVPacket *pkt;
     int64_t last_cue_pts; /* reference for the cues read without media */
+    AVPacket **prev_cues;
+    int n_prev_cues;
+    int prev_cue_pos;
+    int cues_unanchored; /* cues kept before the media position was known */
+    uint64_t cues_discontinuity_seq; /* of the segment the kept cues are from */
+    AVPacket **cur_cues;
+    int n_cur_cues;
     int has_noheader_flag;
 
     /* main demuxer streams associated with this playlist
@@ -315,6 +323,23 @@ static void free_init_section_list(struct playlist *pls)
     pls->n_init_sections = 0;
 }
 
+static void free_cue_list(AVPacket ***cues, int *n_cues)
+{
+    for (int i = 0; i < *n_cues; i++)
+        av_packet_free(&(*cues)[i]);
+    av_freep(cues);
+    *n_cues = 0;
+}
+
+static void free_subtitle_cues(struct playlist *pls)
+{
+    free_cue_list(&pls->prev_cues, &pls->n_prev_cues);
+    free_cue_list(&pls->cur_cues, &pls->n_cur_cues);
+    pls->prev_cue_pos = 0;
+    pls->cues_unanchored = 0;
+    pls->last_cue_pts = AV_NOPTS_VALUE;
+}
+
 static void free_playlist_list(HLSContext *c)
 {
     int i;
@@ -322,6 +347,7 @@ static void free_playlist_list(HLSContext *c)
         struct playlist *pls = c->playlists[i];
         free_segment_list(pls);
         free_init_section_list(pls);
+        free_subtitle_cues(pls);
         av_freep(&pls->main_streams);
         av_freep(&pls->renditions);
         av_freep(&pls->id3_buf);
@@ -978,6 +1004,7 @@ static int parse_playlist(HLSContext *c, const char *url,
 {
     int ret = 0, is_segment = 0, is_variant = 0;
     int64_t duration = 0;
+    uint64_t discontinuity_seq = 0;
     enum KeyType key_type = KEY_NONE;
     uint8_t iv[16] = "";
     int has_iv = 0;
@@ -1176,6 +1203,10 @@ static int parse_playlist(HLSContext *c, const char *url,
             }
         } else if (av_strstart(line, "#EXT-X-ENDLIST", &ptr)) {
             finished = 1;
+        } else if (av_strstart(line, "#EXT-X-DISCONTINUITY-SEQUENCE:", &ptr)) {
+            discontinuity_seq = strtoull(ptr, NULL, 10);
+        } else if (!strcmp(line, "#EXT-X-DISCONTINUITY")) {
+            discontinuity_seq++;
         } else if (av_strstart(line, "#EXTINF:", &ptr)) {
             double d = atof(ptr) * AV_TIME_BASE;
             if (d < 0 || d > INT64_MAX || isnan(d)) {
@@ -1270,6 +1301,7 @@ static int parse_playlist(HLSContext *c, const char *url,
                 }
                 seg->duration = duration;
                 seg->key_type = key_type;
+                seg->discontinuity_seq = discontinuity_seq;
                 dynarray_add(&pls->segments, &pls->n_segments, seg);
                 is_segment = 0;
 
@@ -2124,6 +2156,46 @@ static int init_subtitle_context(struct playlist *pls)
     return ret;
 }
 
+static int cue_repeated(struct playlist *v, const AVPacket *pkt)
+{
+    /* both segments are in pts order, so the candidates start where the
+     * previous lookup stopped */
+    while (v->prev_cue_pos < v->n_prev_cues &&
+           v->prev_cues[v->prev_cue_pos]->pts < pkt->pts)
+        v->prev_cue_pos++;
+
+    for (int i = v->prev_cue_pos; i < v->n_prev_cues; i++) {
+        const AVPacket *prev = v->prev_cues[i];
+        const uint8_t *settings, *prev_settings;
+        size_t size, prev_size;
+
+        if (prev->pts != pkt->pts)
+            break;
+        if (prev->duration != pkt->duration || prev->size != pkt->size ||
+            memcmp(prev->data, pkt->data, pkt->size))
+            continue;
+        settings = av_packet_get_side_data(pkt, AV_PKT_DATA_WEBVTT_SETTINGS, &size);
+        prev_settings = av_packet_get_side_data(prev, AV_PKT_DATA_WEBVTT_SETTINGS,
+                                                &prev_size);
+        if (size == prev_size && (!size || !memcmp(settings, prev_settings, size)))
+            return 1;
+    }
+    return 0;
+}
+
+static int remember_cue(struct playlist *v, const AVPacket *pkt)
+{
+    AVPacket *cue = av_packet_clone(pkt);
+
+    if (!cue)
+        return AVERROR(ENOMEM);
+    if (av_dynarray_add_nofree(&v->cur_cues, &v->n_cur_cues, cue) < 0) {
+        av_packet_free(&cue);
+        return AVERROR(ENOMEM);
+    }
+    return 0;
+}
+
 static AVRational get_timebase(struct playlist *pls);
 
 /* The position of the media, the reference for the cue times: the last
@@ -2165,22 +2237,36 @@ static void unwrap_pkt(AVPacket *pkt, AVRational tb, int64_t ref)
 
 /* Put a cue on the period nearest to the media position, where the
  * timestamps of the other renditions continue after a wrap. Without media
- * a cue follows the previous cue of its playlist. */
+ * a cue follows the previous cue of its playlist, and the cues kept from
+ * that time move to the media position once it is known. */
 static void unwrap_cue_pts(HLSContext *c, struct playlist *v, AVPacket *pkt)
 {
     AVRational tb = v->ctx->streams[pkt->stream_index]->time_base;
     int64_t ref = media_position(c);
 
-    if (ref != AV_NOPTS_VALUE)
-        unwrap_pkt(pkt, tb, av_rescale_q(ref, AV_TIME_BASE_Q, MPEG_TIME_BASE_Q));
-    else if (v->last_cue_pts != AV_NOPTS_VALUE)
-        unwrap_pkt(pkt, tb, av_rescale_q(v->last_cue_pts, tb, MPEG_TIME_BASE_Q));
+    if (ref != AV_NOPTS_VALUE) {
+        ref = av_rescale_q(ref, AV_TIME_BASE_Q, MPEG_TIME_BASE_Q);
+        if (v->cues_unanchored) {
+            for (int i = 0; i < v->n_prev_cues; i++)
+                unwrap_pkt(v->prev_cues[i], tb, ref);
+            for (int i = 0; i < v->n_cur_cues; i++)
+                unwrap_pkt(v->cur_cues[i], tb, ref);
+            v->prev_cue_pos    = 0;
+            v->cues_unanchored = 0;
+        }
+        unwrap_pkt(pkt, tb, ref);
+    } else {
+        v->cues_unanchored = 1;
+        if (v->last_cue_pts != AV_NOPTS_VALUE)
+            unwrap_pkt(pkt, tb, av_rescale_q(v->last_cue_pts, tb, MPEG_TIME_BASE_Q));
+    }
     v->last_cue_pts = pkt->pts;
 }
 
 static int read_subtitle_packet(struct playlist *v, AVPacket *pkt)
 {
     HLSContext *c = v->parent->priv_data;
+    struct segment *seg;
     int ret;
 
 restart:
@@ -2192,21 +2278,42 @@ restart:
         ff_format_io_close(v->parent, &v->input);
 
     if (!v->input && !v->ctx) {
+        /* nothing is repeated across a discontinuity */
+        seg = current_segment(v);
+        if (seg && seg->discontinuity_seq != v->cues_discontinuity_seq) {
+            free_subtitle_cues(v);
+            v->cues_discontinuity_seq = seg->discontinuity_seq;
+        }
         ret = init_subtitle_context(v);
         if (ret < 0)
             return ret;
     }
 
-    ret = av_read_frame(v->ctx, v->pkt);
-    if (!ret) {
+    while (!(ret = av_read_frame(v->ctx, v->pkt))) {
+        int repeated;
+
         unwrap_cue_pts(c, v, v->pkt);
-        return 0;
+        repeated = cue_repeated(v, v->pkt);
+
+        ret = remember_cue(v, v->pkt);
+        if (ret < 0) {
+            av_packet_unref(v->pkt);
+            return ret;
+        }
+        if (!repeated)
+            return 0;
+        av_packet_unref(v->pkt);
     }
     ff_format_io_close(v->parent, &v->input);
     v->cur_seq_no++;
     c->cur_seq_no = v->cur_seq_no;
 
     avformat_close_input(&v->ctx);
+
+    free_cue_list(&v->prev_cues, &v->n_prev_cues);
+    FFSWAP(AVPacket **, v->prev_cues, v->cur_cues);
+    FFSWAP(int, v->n_prev_cues, v->n_cur_cues);
+    v->prev_cue_pos = 0;
 
     goto restart;
 }
@@ -2908,7 +3015,7 @@ static int recheck_discard_flags(AVFormatContext *s, int first)
             pls->input_next_requested = 0;
             if (pls->is_subtitle) {
                 avformat_close_input(&pls->ctx);
-                pls->last_cue_pts = AV_NOPTS_VALUE;
+                free_subtitle_cues(pls);
             }
             pls->needed = 0;
             changed = 1;
@@ -3345,7 +3452,7 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
         }
         if (pls->is_subtitle) {
             avformat_close_input(&pls->ctx);
-            pls->last_cue_pts = AV_NOPTS_VALUE;
+            free_subtitle_cues(pls);
         }
 
         /* Reset the init segment so it's re-fetched and served appropriately */
