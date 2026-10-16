@@ -23,6 +23,7 @@
  */
 
 #include "mpegvideo_mips.h"
+#include "libavutil/avassert.h"
 #include "libavutil/mips/mmiutils.h"
 
 void ff_dct_unquantize_h263_intra_mmi(const MPVContext *s, int16_t *block,
