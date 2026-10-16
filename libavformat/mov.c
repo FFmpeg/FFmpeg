@@ -6918,11 +6918,17 @@ static int mov_read_vpcc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (avio_rb16(pb)) /* codecIntializationDataSize */
         return AVERROR_INVALIDDATA;
 
-    if (!av_color_primaries_name(color_primaries))
+    // Reserved and unassigned values carry no colour information
+    if (color_primaries == AVCOL_PRI_RESERVED0 ||
+        color_primaries == AVCOL_PRI_RESERVED  ||
+        !av_color_primaries_name(color_primaries))
         color_primaries = AVCOL_PRI_UNSPECIFIED;
-    if (!av_color_transfer_name(color_trc))
+    if (color_trc == AVCOL_TRC_RESERVED0 ||
+        color_trc == AVCOL_TRC_RESERVED  ||
+        !av_color_transfer_name(color_trc))
         color_trc = AVCOL_TRC_UNSPECIFIED;
-    if (!av_color_space_name(color_space))
+    if (color_space == AVCOL_SPC_RESERVED ||
+        !av_color_space_name(color_space))
         color_space = AVCOL_SPC_UNSPECIFIED;
 
     st->codecpar->color_range     = (color_range & 1) ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
