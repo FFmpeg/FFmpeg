@@ -43,6 +43,19 @@ fate-preroll-aac-caf-decode-in-priming: CMD = framecrc -noaccurate_seek -ss 0.01
 # open at the end.
 FATE_PREROLL_SEEK-$(call DEMDEC, MOV, AAC) += fate-preroll-aac-mov-seek-forward
 fate-preroll-aac-mov-seek-forward: CMD = run libavformat/tests/seek$(EXESUF) $(TARGET_SAMPLES)/gapless/102400samples_qt-lc-aac.m4a -seekforw 530000 -seekmin 400000 -frames 2 -duration 3
+
+# A seek past the end lands on the last packet, which carries the padding
+# to discard at the end of the stream.
+FATE_PREROLL_FFPROBE-$(call DEMDEC, CAF, AAC) += fate-preroll-aac-caf-landing-end
+fate-preroll-aac-caf-landing-end: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -select_streams a:0 -read_intervals 5.45%+\#2 -show_entries packet=pts,duration:packet_side_data=skip_samples,discard_padding -print_format compact $(TARGET_SAMPLES)/caf/aac.caf
+FATE_PREROLL_FFPROBE-$(call DEMDEC, MATROSKA, OPUS) += fate-preroll-opus-mkv-landing-end
+fate-preroll-opus-mkv-landing-end: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -select_streams a:0 -read_intervals 1.1%+\#2 -show_entries packet=pts,duration:packet_side_data=skip_samples,discard_padding -print_format compact $(TARGET_SAMPLES)/mkv/codec_delay_opus.mkv
+
+# A seek on the video stream, just after a keyframe: the audio pre-roll
+# still needs room.
+FATE_PREROLL_SEEK-$(call DEMDEC, MOV, AAC H264) += fate-preroll-aac-mov-seek-video
+fate-preroll-aac-mov-seek-video: CMD = run libavformat/tests/seek$(EXESUF) $(TARGET_SAMPLES)/h264/twofields_packet.mp4 -stream_id 0 -seekback 182000 -frames 4 -duration 3
+
 $(FATE_PREROLL_SEEK-yes): libavformat/tests/seek$(EXESUF)
 
 FATE_SAMPLES_FFPROBE += $(FATE_PREROLL_FFPROBE-yes)
