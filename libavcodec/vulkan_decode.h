@@ -56,7 +56,7 @@ typedef struct FFVulkanDecodeContext {
     VkVideoSessionParametersKHR *session_params;
 
     int dedicated_dpb; /* Oddity  #1 - separate DPB images */
-    int external_fg;   /* Oddity  #2 - hardware can't apply film grain */
+    int external_fg;   /* Oddity  #2 - the session can't apply film grain */
 
     /* Workaround for NVIDIA drivers tested with CTS version 1.3.8 for AV1.
      * The tests were incorrect as the OrderHints were offset by 1. */

@@ -24,6 +24,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/mem.h"
 #include "libavutil/vulkan_loader.h"
+#include "av1dec.h"
 #include "h264dec.h"
 
 #define DECODER_IS_SDR(codec_id) \
@@ -781,7 +782,6 @@ static VkResult vulkan_setup_profile(AVCodecContext *avctx,
         usage->pNext = av1_profile;
         av1_profile->sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_PROFILE_INFO_KHR;
         av1_profile->stdProfile = cur_profile;
-        av1_profile->filmGrainSupport = !(avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN);
     }
 
     usage->sType           = VK_STRUCTURE_TYPE_VIDEO_DECODE_USAGE_INFO_KHR;
@@ -895,8 +895,35 @@ static int vulkan_decode_get_profile(AVCodecContext *avctx, AVBufferRef *frames_
     else if (avctx->codec_id == AV_CODEC_ID_AV1)
         dec_caps->pNext = &av1_caps;
 
+    if (avctx->codec_id == AV_CODEC_ID_AV1)
+        prof->av1_profile.filmGrainSupport =
+            !(avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN);
+
     ret = vulkan_setup_profile(avctx, prof, hwctx, vk, vk_desc, caps, dec_caps,
                                cur_profile);
+
+    /* ANV returns OPERATION_NOT_SUPPORTED when it lacks filmGrainSupport */
+    if (profile_unsupported(ret) && prof->av1_profile.filmGrainSupport) {
+        const AV1DecContext *s = avctx->priv_data;
+
+        av_log(avctx, AV_LOG_VERBOSE, "%s profile %s not supported, "
+               "attempting again without filmGrainSupport\n",
+               avcodec_get_name(avctx->codec_id),
+               profile_name(avctx->codec_id, cur_profile));
+        prof->av1_profile.filmGrainSupport = 0;
+        if (vulkan_setup_profile(avctx, prof, hwctx, vk, vk_desc, caps,
+                                 dec_caps, cur_profile) != VK_SUCCESS) {
+            prof->av1_profile.filmGrainSupport = 1;
+        } else if (s->raw_seq->film_grain_params_present) {
+            av_log(avctx, AV_LOG_ERROR, "The device does not support film "
+                   "grain; set export_side_data to film_grain to export it as "
+                   "side data instead\n");
+            return AVERROR(ENOTSUP);
+        } else {
+            ret = VK_SUCCESS;
+        }
+    }
+
     if (profile_unsupported(ret) &&
         avctx->hwaccel_flags & AV_HWACCEL_FLAG_ALLOW_PROFILE_MISMATCH &&
         avctx->profile != base_profile) {
@@ -1290,6 +1317,13 @@ int ff_vk_decode_init(AVCodecContext *avctx)
     if ((vk_desc->queue_flags & VK_QUEUE_VIDEO_DECODE_BIT_KHR) && !profile) {
         av_log(avctx, AV_LOG_ERROR, "Video profile missing from frames context!");
         return AVERROR(EINVAL);
+    }
+
+    if (avctx->codec_id == AV_CODEC_ID_AV1) {
+        const VkVideoDecodeAV1ProfileInfoKHR *av1_profile =
+            ff_vk_find_struct(profile->pNext,
+                              VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_PROFILE_INFO_KHR);
+        dec->external_fg = !av1_profile->filmGrainSupport;
     }
 
     /* Create queue context */

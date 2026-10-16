@@ -271,6 +271,12 @@ static int vk_av1_start_frame(AVCodecContext          *avctx,
                                                          STD_VIDEO_AV1_FRAME_RESTORATION_TYPE_WIENER,
                                                          STD_VIDEO_AV1_FRAME_RESTORATION_TYPE_SGRPROJ };
 
+    if (apply_grain && dec->external_fg) {
+        av_log(avctx, AV_LOG_ERROR, "The decode session has no filmGrainSupport, "
+               "but this frame needs film grain\n");
+        return AVERROR(ENOTSUP);
+    }
+
     /* Use the current frame_ids in ref[] to decide occupied frame_ids */
     for (int i = 0; i < STD_VIDEO_AV1_NUM_REF_FRAMES; i++) {
         const AV1VulkanDecodePicture* rp = s->ref[i].hwaccel_picture_private;
