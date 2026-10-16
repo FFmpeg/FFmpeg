@@ -189,11 +189,17 @@ static void check_color_terminal(void)
 static void ansi_fputs(int level, int tint, const char *str, int local_use_color)
 {
     if (local_use_color == 1) {
+        uint32_t intensity = (color[level] >> 4) & 15;
+        uint32_t fg       = color[level] & 15;
+#if defined(_WIN32)
+        /* Piped stderr is 8-color ANSI. Linux keeps 0;33m; Windows console
+         * already uses win_color 14 (bright yellow), so match that here. */
+        if (level == AV_LOG_WARNING / 8)
+            intensity = 1;
+#endif
         fprintf(stderr,
                 "\033[%"PRIu32";3%"PRIu32"m%s\033[0m",
-                (color[level] >> 4) & 15,
-                color[level] & 15,
-                str);
+                intensity, fg, str);
     } else if (tint && use_color == 256) {
         fprintf(stderr,
                 "\033[48;5;%"PRIu32"m\033[38;5;%dm%s\033[0m",
