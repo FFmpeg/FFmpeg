@@ -1128,6 +1128,8 @@ av_cold int ff_mpv_encode_end(AVCodecContext *avctx)
 static inline void put_dct(MPVEncContext *const s,
                            int16_t *block, int i, uint8_t *dest, int line_size, int qscale)
 {
+    if (s->skipdct & (1U << i))
+        return;
     s->c.dct_unquantize_intra(&s->c, block, i, qscale);
     s->c.idsp.idct_put(dest, line_size, block);
 }
@@ -1142,6 +1144,13 @@ static inline void add_dequant_dct(MPVEncContext *const s,
     }
 }
 
+static inline int chroma_block_offset(int pair, int chroma_x_shift, int row_offset)
+{
+    if (chroma_x_shift)
+        return pair * row_offset;
+    return (pair >> 1) * row_offset + (pair & 1) * 8;
+}
+
 /**
  * Performs dequantization and IDCT (if necessary)
  */
@@ -1151,6 +1160,8 @@ static void mpv_reconstruct_mb(MPVEncContext *const s, int16_t block[12][64])
        /* print DCT coefficients */
        av_log(s->c.avctx, AV_LOG_DEBUG, "DCT coeffs of MB at %dx%d:\n", s->c.mb_x, s->c.mb_y);
        for (int i = 0; i < 6; i++) {
+           if (s->c.mb_intra && (s->skipdct & (1U << i)))
+               continue;
            for (int j = 0; j < 64; j++) {
                av_log(s->c.avctx, AV_LOG_DEBUG, "%5d",
                       block[i][s->c.idsp.idct_permutation[j]]);
@@ -1200,17 +1211,16 @@ static void mpv_reconstruct_mb(MPVEncContext *const s, int16_t block[12][64])
                 if (s->c.chroma_y_shift) {
                     put_dct(s, block[4], 4, dest_cb, uvlinesize, s->c.chroma_qscale);
                     put_dct(s, block[5], 5, dest_cr, uvlinesize, s->c.chroma_qscale);
-                } else if (!s->c.chroma_x_shift) {
+                } else if (s->mjpeg_ctx || !s->c.chroma_x_shift) {
                     const int uv_dct_linesize = uvlinesize << s->c.interlaced_dct;
                     const int uv_dct_offset   = s->c.interlaced_dct ? uvlinesize : uvlinesize * block_size;
-                    put_dct(s, block[ 4],  4, dest_cb,                              uv_dct_linesize, s->c.chroma_qscale);
-                    put_dct(s, block[ 5],  5, dest_cr,                              uv_dct_linesize, s->c.chroma_qscale);
-                    put_dct(s, block[ 6],  6, dest_cb + block_size,                 uv_dct_linesize, s->c.chroma_qscale);
-                    put_dct(s, block[ 7],  7, dest_cr + block_size,                 uv_dct_linesize, s->c.chroma_qscale);
-                    put_dct(s, block[ 8],  8, dest_cb + uv_dct_offset,              uv_dct_linesize, s->c.chroma_qscale);
-                    put_dct(s, block[ 9],  9, dest_cr + uv_dct_offset,              uv_dct_linesize, s->c.chroma_qscale);
-                    put_dct(s, block[10], 10, dest_cb + uv_dct_offset + block_size, uv_dct_linesize, s->c.chroma_qscale);
-                    put_dct(s, block[11], 11, dest_cr + uv_dct_offset + block_size, uv_dct_linesize, s->c.chroma_qscale);
+                    for (int i = 0; i < (4 >> s->c.chroma_x_shift); i++) {
+                        int offset = chroma_block_offset(i, s->c.chroma_x_shift, uv_dct_offset);
+                        put_dct(s, block[4 + 2 * i], 4 + 2 * i, dest_cb + offset,
+                                uv_dct_linesize, s->c.chroma_qscale);
+                        put_dct(s, block[5 + 2 * i], 5 + 2 * i, dest_cr + offset,
+                                uv_dct_linesize, s->c.chroma_qscale);
+                    }
                 } else {
                     dct_offset   >>= 1;
                     dct_linesize >>= 1;
@@ -1807,9 +1817,11 @@ static int select_input_picture(MPVMainEncContext *const m)
         m->reordered_input_picture[0]->reference =
            m->reordered_input_picture[0]->f->pict_type != AV_PICTURE_TYPE_B;
 
-        if (m->reordered_input_picture[0]->shared || s->c.avctx->rc_buffer_size) {
-            // input is a shared pix, so we can't modify it -> allocate a new
-            // one & ensure that the shared one is reusable
+        if (m->reordered_input_picture[0]->shared || s->c.avctx->rc_buffer_size ||
+            (s->mjpeg_ctx && !s->c.chroma_y_shift &&
+             (s->c.avctx->flags & (AV_CODEC_FLAG_GRAY | AV_CODEC_FLAG_PSNR)) ==
+             (AV_CODEC_FLAG_GRAY | AV_CODEC_FLAG_PSNR))) {
+            // Preserve input for sharing, VBV retries or grayscale PSNR.
             av_frame_move_ref(s->new_pic, m->reordered_input_picture[0]->f);
 
             ret = prepare_picture(s, m->reordered_input_picture[0]->f, s->new_pic);
@@ -2279,6 +2291,25 @@ static void get_visual_weight(int16_t *weight, const uint8_t *ptr, int stride)
     }
 }
 
+static av_always_inline void quantize_blocks(MPVEncContext *const s,
+                                             const int *skip_dct, int first, int last)
+{
+    for (int i = first; i < last; i++) {
+        if (!skip_dct[i]) {
+            int overflow;
+            s->c.block_last_index[i] = s->dct_quantize(s, s->block[i], i, s->c.qscale, &overflow);
+            // FIXME we could decide to change to quantizer instead of
+            // clipping
+            // JS: I don't think that would be a good idea it could lower
+            //     quality instead of improve it. Just INTRADC clipping
+            //     deserves changes in quantizer
+            if (overflow)
+                clip_coeffs(s, s->block[i], s->c.block_last_index[i]);
+        } else
+            s->c.block_last_index[i] = -1;
+    }
+}
+
 static av_always_inline void encode_mb_internal(MPVEncContext *const s,
                                                 int motion_x, int motion_y,
                                                 int mb_block_height,
@@ -2304,7 +2335,7 @@ static av_always_inline void encode_mb_internal(MPVEncContext *const s,
     ptrdiff_t wrap_y, wrap_c;
 
     for (i = 0; i < mb_block_count; i++)
-        skip_dct[i] = s->skipdct;
+        skip_dct[i] = s->skipdct & (1U << i);
 
     if (s->adaptive_quant) {
         const int last_qp = s->c.qscale;
@@ -2396,27 +2427,24 @@ static av_always_inline void encode_mb_internal(MPVEncContext *const s,
             }
         }
 
-        s->pdsp.get_pixels(s->block[0], ptr_y,                  wrap_y);
-        s->pdsp.get_pixels(s->block[1], ptr_y + 8,              wrap_y);
-        s->pdsp.get_pixels(s->block[2], ptr_y + dct_offset,     wrap_y);
-        s->pdsp.get_pixels(s->block[3], ptr_y + dct_offset + 8, wrap_y);
+        for (i = 0; i < 4; i++) {
+            if (!skip_dct[i])
+                s->pdsp.get_pixels(s->block[i],
+                                    ptr_y + (i & 1) * 8 + (i >> 1) * dct_offset,
+                                    wrap_y);
+        }
 
         if (s->c.avctx->flags & AV_CODEC_FLAG_GRAY) {
             skip_dct[4] = 1;
             skip_dct[5] = 1;
         } else {
-            s->pdsp.get_pixels(s->block[4], ptr_cb, wrap_c);
-            s->pdsp.get_pixels(s->block[5], ptr_cr, wrap_c);
-            if (chroma_format == CHROMA_422) {
-                s->pdsp.get_pixels(s->block[6], ptr_cb + uv_dct_offset, wrap_c);
-                s->pdsp.get_pixels(s->block[7], ptr_cr + uv_dct_offset, wrap_c);
-            } else if (chroma_format == CHROMA_444) {
-                s->pdsp.get_pixels(s->block[ 6], ptr_cb + 8, wrap_c);
-                s->pdsp.get_pixels(s->block[ 7], ptr_cr + 8, wrap_c);
-                s->pdsp.get_pixels(s->block[ 8], ptr_cb + uv_dct_offset, wrap_c);
-                s->pdsp.get_pixels(s->block[ 9], ptr_cr + uv_dct_offset, wrap_c);
-                s->pdsp.get_pixels(s->block[10], ptr_cb + uv_dct_offset + 8, wrap_c);
-                s->pdsp.get_pixels(s->block[11], ptr_cr + uv_dct_offset + 8, wrap_c);
+            for (i = 4; i < mb_block_count; i += 2) {
+                int offset;
+                if (skip_dct[i])
+                    continue;
+                offset = chroma_block_offset((i - 4) / 2, chroma_x_shift, uv_dct_offset);
+                s->pdsp.get_pixels(s->block[i],     ptr_cb + offset, wrap_c);
+                s->pdsp.get_pixels(s->block[i + 1], ptr_cr + offset, wrap_c);
             }
         }
     } else {
@@ -2539,24 +2567,12 @@ static av_always_inline void encode_mb_internal(MPVEncContext *const s,
             get_visual_weight(weight[2], ptr_y + dct_offset    , wrap_y);
         if (!skip_dct[3])
             get_visual_weight(weight[3], ptr_y + dct_offset + 8, wrap_y);
-        if (!skip_dct[4])
-            get_visual_weight(weight[4], ptr_cb                , wrap_c);
-        if (!skip_dct[5])
-            get_visual_weight(weight[5], ptr_cr                , wrap_c);
-        if (chroma_format == CHROMA_422) {
-            if (!skip_dct[6])
-                get_visual_weight(weight[6], ptr_cb + uv_dct_offset,
-                                  wrap_c);
-            if (!skip_dct[7])
-                get_visual_weight(weight[7], ptr_cr + uv_dct_offset,
-                                  wrap_c);
-        } else if (chroma_format == CHROMA_444) {
-            for (i = 6; i < 12; i++) {
-                const uint8_t *ptr = i & 1 ? ptr_cr : ptr_cb;
-                if (!skip_dct[i])
-                    get_visual_weight(weight[i], ptr + (i >= 8) * uv_dct_offset +
-                                      ((i >> 1) & 1) * 8, wrap_c);
-            }
+        for (i = 4; i < mb_block_count; i++) {
+            int offset;
+            if (skip_dct[i])
+                continue;
+            offset = chroma_block_offset((i - 4) / 2, chroma_x_shift, uv_dct_offset);
+            get_visual_weight(weight[i], (i & 1 ? ptr_cr : ptr_cb) + offset, wrap_c);
         }
         memcpy(orig[0], s->block[0], sizeof(int16_t) * 64 * mb_block_count);
     }
@@ -2564,19 +2580,16 @@ static av_always_inline void encode_mb_internal(MPVEncContext *const s,
     /* DCT & quantize */
     av_assert2(s->c.out_format != FMT_MJPEG || s->c.qscale == 8);
     {
-        for (i = 0; i < mb_block_count; i++) {
-            if (!skip_dct[i]) {
-                int overflow;
-                s->c.block_last_index[i] = s->dct_quantize(s, s->block[i], i, s->c.qscale, &overflow);
-                // FIXME we could decide to change to quantizer instead of
-                // clipping
-                // JS: I don't think that would be a good idea it could lower
-                //     quality instead of improve it. Just INTRADC clipping
-                //     deserves changes in quantizer
-                if (overflow)
-                    clip_coeffs(s, s->block[i], s->c.block_last_index[i]);
-            } else
-                s->c.block_last_index[i] = -1;
+        if (s->mjpeg_ctx && !chroma_y_shift) {
+            const int bottom = s->skipdct & 1;
+            const int chroma_blocks = mb_block_count / 2 - 2;
+            int first = bottom * 2;
+            memset(s->c.block_last_index, -1, mb_block_count * sizeof(*s->c.block_last_index));
+            quantize_blocks(s, skip_dct, first, first + 2);
+            first = 4 + bottom * chroma_blocks;
+            quantize_blocks(s, skip_dct, first, first + chroma_blocks);
+        } else {
+            quantize_blocks(s, skip_dct, 0, mb_block_count);
         }
         if (s->quantizer_noise_shaping) {
             for (i = 0; i < mb_block_count; i++) {
@@ -2789,6 +2802,9 @@ static int sse(const MPVEncContext *const s, const uint8_t *src1, const uint8_t 
 
     if(w==16 && h==16)
         return s->sse_cmp[0](NULL, src1, src2, stride, 16);
+    else if (w == 16 && h == 8)
+        return s->sse_cmp[1](NULL, src1, src2, stride, 8) +
+               s->sse_cmp[1](NULL, src1 + 8, src2 + 8, stride, 8);
     else if(w==8 && h==8)
         return s->sse_cmp[1](NULL, src1, src2, stride, 8);
 
@@ -2987,6 +3003,8 @@ int ff_mpv_reallocate_putbitbuffer(MPVEncContext *const s, size_t threshold, siz
 static int encode_thread(AVCodecContext *c, void *arg){
     MPVEncContext *const s = *(void**)arg;
     int chr_w = 16 >> s->c.chroma_x_shift;
+    const int row_passes = s->mjpeg_ctx && !s->c.chroma_y_shift ? 2 : 1;
+    const int psnr_per_pass = row_passes == 2 && !(c->flags & AV_CODEC_FLAG_GRAY);
     int chr_h = 16 >> s->c.chroma_y_shift;
     int i;
     MBBackup best_s = { 0 }, backup_s;
@@ -3035,7 +3053,10 @@ static int encode_thread(AVCodecContext *c, void *arg){
     s->c.resync_mb_y = 0;
     s->c.first_slice_line = 1;
     s->ptr_lastgob = s->pb.buf;
-    for (int mb_y_order = s->c.start_mb_y; mb_y_order < s->c.end_mb_y; mb_y_order++) {
+    /* JPEG 4:2:2 and 4:4:4 encode each row in two 8-pixel passes. */
+    for (int mb_y_order = s->c.start_mb_y * row_passes;
+         mb_y_order < s->c.end_mb_y * row_passes; mb_y_order++) {
+        const int pass = mb_y_order % row_passes;
         int mb_y;
         if (CONFIG_SPEEDHQ_ENCODER && s->c.codec_id == AV_CODEC_ID_SPEEDHQ) {
             int first_in_slice;
@@ -3044,8 +3065,17 @@ static int encode_thread(AVCodecContext *c, void *arg){
                 ff_speedhq_end_slice(s);
             s->last_dc[0] = s->last_dc[1] = s->last_dc[2] = 1024;
         } else {
-            mb_y = mb_y_order;
+            mb_y = mb_y_order / row_passes;
         }
+        const int has_bottom = row_passes == 2 && 16 * mb_y + 8 < s->c.height;
+        /* Do not feed replicated rows from an absent MCU row to the denoiser. */
+        if (pass && !has_bottom)
+            break;
+
+        /* Bit 0 also selects the bottom pass in the quantizer and scan writer. */
+        s->skipdct = row_passes == 1 ? 0
+                   : s->c.chroma_format == CHROMA_422
+                   ? (pass ? 0x033 : 0x0cc) : (pass ? 0x0f3 : 0xf0c);
         s->c.mb_x = 0;
         s->c.mb_y = mb_y;
 
@@ -3083,7 +3113,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
             mb_type = s->mb_type[xy];
 
             /* write gob / video packet header  */
-            if(s->rtp_mode){
+            if (s->rtp_mode && !pass) {
                 int current_packet_size, is_gob_start;
 
                 current_packet_size = put_bytes_count(&s->pb, 1)
@@ -3411,7 +3441,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                         s->c.mv[1][0][0] = best_s.mv[1][0][0];
                         s->c.mv[1][0][1] = best_s.mv[1][0][1];*/
                         backup_s.dquant= 0;
-                        s->skipdct=1;
+                        s->skipdct=~0U;
                         encode_mb_hq(s, &backup_s, &best_s, pb, pb2, tex_pb,
                                         &dmin, &next_block, mx, my);
                         s->skipdct=0;
@@ -3587,22 +3617,24 @@ static int encode_thread(AVCodecContext *c, void *arg){
 #endif
             }
 
-            if (s->c.avctx->flags & AV_CODEC_FLAG_PSNR) {
-                int w= 16;
-                int h= 16;
-
-                if (s->c.mb_x*16 + 16 > s->c.width ) w = s->c.width - s->c.mb_x*16;
-                if (s->c.mb_y*16 + 16 > s->c.height) h = s->c.height- s->c.mb_y*16;
+            if ((c->flags & AV_CODEC_FLAG_PSNR) &&
+                (psnr_per_pass || pass || !has_bottom)) {
+                /* Compare each pass before the next macroblock can overwrite its input. */
+                const int line = psnr_per_pass ? pass * 8 : 0;
+                const int w = FFMIN(16, s->c.width - 16 * s->c.mb_x);
+                const int h = FFMIN(psnr_per_pass ? 8 : 16, s->c.height - 16 * s->c.mb_y - line);
+                const int y_offset = (16 * s->c.mb_y + line) * s->c.linesize;
+                const int c_offset = (chr_h * s->c.mb_y + line) * s->c.uvlinesize;
 
                 s->encoding_error[0] += sse(
-                    s, s->new_pic->data[0] + s->c.mb_x*16 + s->c.mb_y*s->c.linesize*16,
-                    s->c.dest[0], w, h, s->c.linesize);
-                s->encoding_error[1] += sse(
-                    s, s->new_pic->data[1] + s->c.mb_x*chr_w + s->c.mb_y*s->c.uvlinesize*chr_h,
-                    s->c.dest[1], w>>s->c.chroma_x_shift, h>>s->c.chroma_y_shift, s->c.uvlinesize);
-                s->encoding_error[2] += sse(
-                    s, s->new_pic->data[2] + s->c.mb_x*chr_w + s->c.mb_y*s->c.uvlinesize*chr_h,
-                    s->c.dest[2], w>>s->c.chroma_x_shift, h>>s->c.chroma_y_shift, s->c.uvlinesize);
+                    s, s->new_pic->data[0] + s->c.mb_x * 16 + y_offset,
+                    s->c.dest[0] + line * s->c.linesize, w, h, s->c.linesize);
+                for (int plane = 1; plane < 3; plane++) {
+                    s->encoding_error[plane] += sse(
+                        s, s->new_pic->data[plane] + s->c.mb_x * chr_w + c_offset,
+                        s->c.dest[plane] + line * s->c.uvlinesize,
+                        w >> s->c.chroma_x_shift, h >> s->c.chroma_y_shift, s->c.uvlinesize);
+                }
             }
             if (s->loop_filter) {
                 if (CONFIG_H263_ENCODER && s->c.out_format == FMT_H263)

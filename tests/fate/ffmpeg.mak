@@ -573,3 +573,18 @@ fate-ffmpeg-mjpeg-444-qns: CMD = framecrc -cpuflags 0 -f lavfi -i "testsrc2=s=32
 # alpha merging
 fate-ffmpeg-heif-merge-alpha: CMD = framecrc -auto_conversion_filters -i $(TARGET_SAMPLES)/heif/alpha.heic
 FATE_SAMPLES_FFMPEG-$(call FRAMECRC, MOV, HEVC, HEVC_PARSER SCALE_FILTER) += fate-ffmpeg-heif-merge-alpha
+
+# Quality Stats side data includes the encoder's reconstruction error.
+# Use scalar reconstruction to keep rounding consistent across architectures.
+FATE_FFMPEG-$(call ALLYES, TESTSRC2_FILTER FORMAT_FILTER NOISE_FILTER LAVFI_INDEV WRAPPED_AVFRAME_DECODER MJPEG_ENCODER FRAMECRC_MUXER PIPE_PROTOCOL) += fate-ffmpeg-mjpeg-444-psnr
+fate-ffmpeg-mjpeg-444-psnr: CMD = framecrc -cpuflags 0 -f lavfi -i "testsrc2=s=128x120,format=yuvj444p,noise=alls=100:allf=t+u" -flags +bitexact+psnr -dct fastint -idct simple -threads 1 -c:v mjpeg -huffman default -q:v 3 -frames:v 1
+
+# Cover restart intervals and partial MCU rows/columns with two slices.
+FATE_FFMPEG-$(call ALLYES, TESTSRC2_FILTER FORMAT_FILTER NOISE_FILTER LAVFI_INDEV WRAPPED_AVFRAME_DECODER MJPEG_ENCODER FRAMECRC_MUXER PIPE_PROTOCOL) += fate-ffmpeg-mjpeg-422-slice fate-ffmpeg-mjpeg-444-slice
+fate-ffmpeg-mjpeg-422-slice: PIXFMT = yuvj422p
+fate-ffmpeg-mjpeg-444-slice: PIXFMT = yuvj444p
+fate-ffmpeg-mjpeg-422-slice fate-ffmpeg-mjpeg-444-slice: CMD = framecrc -cpuflags 0 -f lavfi -i "testsrc2=s=34x50,format=$(PIXFMT),noise=alls=100:allf=t+u" -flags +bitexact -dct fastint -idct simple -threads 2 -thread_type slice -slices 2 -c:v mjpeg -huffman default -q:v 3 -frames:v 2
+
+# Padding in an empty bottom pass must not affect denoising of the next frame.
+FATE_FFMPEG-$(call ALLYES, TESTSRC2_FILTER FORMAT_FILTER NOISE_FILTER LAVFI_INDEV WRAPPED_AVFRAME_DECODER MJPEG_ENCODER FRAMECRC_MUXER PIPE_PROTOCOL) += fate-ffmpeg-mjpeg-empty-pass
+fate-ffmpeg-mjpeg-empty-pass: CMD = framecrc -cpuflags 0 -f lavfi -i "testsrc2=s=352x120,format=yuvj422p,noise=alls=100:allf=t+u" -flags +bitexact -dct fastint -idct simple -threads 1 -c:v mjpeg -huffman default -q:v 6 -mbd rd -noise_reduction 2000 -frames:v 2

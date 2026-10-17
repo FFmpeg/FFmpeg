@@ -3,5 +3,5 @@
 #codec_id 0: mjpeg
 #dimensions 0: 32x32
 #sar 0: 1/1
-0,          0,          0,        1,     1957, 0xc0f86f6f, S=1, Quality stats,        8, 0x031b0064
-0,          1,          1,        1,     1990, 0xe8208929, S=1, Quality stats,        8, 0x031b0064
+0,          0,          0,        1,     1962, 0xc40c720b, S=1, Quality stats,        8, 0x031b0064
+0,          1,          1,        1,     1994, 0x2f8bad3e, S=1, Quality stats,        8, 0x031b0064

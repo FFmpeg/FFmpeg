@@ -54,7 +54,7 @@ typedef struct MPVEncContext {
     int *lambda_table;
     int adaptive_quant;         ///< use adaptive quantization
     int dquant;                 ///< qscale difference to prev qscale
-    int skipdct;                ///< skip dct and code zero residual
+    unsigned skipdct;           ///< bitmask of blocks whose DCT is skipped
 
     int quantizer_noise_shaping;
 

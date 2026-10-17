@@ -56,12 +56,11 @@ static int put_huffman_table(PutBitContext *p, int table_class, int table_id,
     return n + 17;
 }
 
-static void jpeg_table_header(AVCodecContext *avctx, PutBitContext *p,
-                              const MJpegContext *m,
+static void jpeg_table_header(PutBitContext *p, const MJpegContext *m,
                               const uint8_t intra_matrix_permutation[64],
                               const uint16_t luma_intra_matrix[64],
                               const uint16_t chroma_intra_matrix[64],
-                              int hsample[3], int use_slices, int matrices_differ)
+                              int restart_interval, int matrices_differ)
 {
     int size;
     uint8_t *ptr;
@@ -90,10 +89,10 @@ static void jpeg_table_header(AVCodecContext *avctx, PutBitContext *p,
         }
     }
 
-    if (use_slices) {
+    if (restart_interval) {
         put_marker(p, DRI);
         put_bits(p, 16, 4);
-        put_bits(p, 16, (avctx->width-1)/(8*hsample[0]) + 1);
+        put_bits(p, 16, restart_interval);
     }
 
     /* huffman table */
@@ -349,6 +348,8 @@ void ff_mjpeg_init_hvsample(const AVCodecContext *avctx, int hsample[4], int vsa
         hsample[1] = 2 >> chroma_h_shift;
         hsample[2] = 2 >> chroma_h_shift;
     }
+    if (avctx->codec_id == AV_CODEC_ID_MJPEG && vsample[1] == 2)
+        vsample[0] = vsample[1] = vsample[2] = 1;
 }
 
 void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
@@ -361,7 +362,7 @@ void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
     const int lossless = !m;
     int hsample[4], vsample[4];
     int components = 3 + (avctx->pix_fmt == AV_PIX_FMT_BGRA);
-    int chroma_matrix;
+    int chroma_matrix, restart_interval = 0;
 
     ff_mjpeg_init_hvsample(avctx, hsample, vsample);
 
@@ -376,9 +377,12 @@ void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
     chroma_matrix = !lossless && !!memcmp(luma_intra_matrix,
                                           chroma_intra_matrix,
                                           sizeof(luma_intra_matrix[0]) * 64);
-    jpeg_table_header(avctx, pb, m, intra_matrix_permutation,
-                      luma_intra_matrix, chroma_intra_matrix, hsample,
-                      use_slices, chroma_matrix);
+    /* Restart interval of one macroblock row. */
+    if (use_slices)
+        restart_interval = ((avctx->width - 1) / (8 * hsample[0]) + 1) * (2 / vsample[0]);
+    jpeg_table_header(pb, m, intra_matrix_permutation,
+                      luma_intra_matrix, chroma_intra_matrix,
+                      restart_interval, chroma_matrix);
 
     switch (avctx->codec_id) {
     case AV_CODEC_ID_MJPEG:  put_marker(pb, SOF0 ); break;

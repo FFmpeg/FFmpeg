@@ -1,0 +1,6 @@
+#tb 0: 1/25
+#media_type 0: video
+#codec_id 0: mjpeg
+#dimensions 0: 128x120
+#sar 0: 1/1
+0,          0,          0,        1,    24930, 0x8a250718, S=1, Quality stats,       32, 0x3f8d0332

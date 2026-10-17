@@ -462,70 +462,33 @@ static void encode_block(MPVEncContext *const s, int16_t block[], int n)
         put_bits(&s->pb, huff_size_ac[0], huff_code_ac[0]);
 }
 
-static void mjpeg_record_mb(MPVEncContext *const s, int16_t block[][64],
-                            int unused_x, int unused_y)
-{
-    if (s->c.chroma_format == CHROMA_444) {
-        record_block(s, block[0], 0);
-        record_block(s, block[2], 2);
-        record_block(s, block[4], 4);
-        record_block(s, block[8], 8);
-        record_block(s, block[5], 5);
-        record_block(s, block[9], 9);
-
-        if (16*s->c.mb_x+8 < s->c.width) {
-            record_block(s, block[1],   1);
-            record_block(s, block[3],   3);
-            record_block(s, block[6],   6);
-            record_block(s, block[10], 10);
-            record_block(s, block[7],   7);
-            record_block(s, block[11], 11);
-        }
-    } else {
-        for (int i = 0; i < 5; i++)
-            record_block(s, block[i], i);
-        if (s->c.chroma_format == CHROMA_420) {
-            record_block(s, block[5], 5);
-        } else {
-            record_block(s, block[6], 6);
-            record_block(s, block[5], 5);
-            record_block(s, block[7], 7);
-        }
-    }
-}
-
 static void mjpeg_encode_mb(MPVEncContext *const s, int16_t block[][64],
                             int unused_x, int unused_y)
 {
-    if (s->c.chroma_format == CHROMA_444) {
-        encode_block(s, block[0], 0);
-        encode_block(s, block[2], 2);
-        encode_block(s, block[4], 4);
-        encode_block(s, block[8], 8);
-        encode_block(s, block[5], 5);
-        encode_block(s, block[9], 9);
+    static const uint8_t blocks[][12] = {
+        [CHROMA_420] = { 0, 1, 2, 3, 4, 5 },
+        [CHROMA_422] = { 0, 1, 4, 5, 2, 3, 6, 7 },
+        [CHROMA_444] = { 0, 4, 5, 1, 6, 7, 2, 8, 9, 3, 10, 11 },
+    };
+    const MJpegContext *const m = s->mjpeg_ctx;
+    const int bottom = s->skipdct & 1;
+    int count = s->c.chroma_format == CHROMA_422 ? 4 : 6;
+    const uint8_t *order = blocks[s->c.chroma_format] + bottom * count;
 
-        if (16 * s->c.mb_x + 8 < s->c.width) {
-            encode_block(s, block[1], 1);
-            encode_block(s, block[3], 3);
-            encode_block(s, block[6], 6);
-            encode_block(s, block[10], 10);
-            encode_block(s, block[7], 7);
-            encode_block(s, block[11], 11);
+    if (s->c.chroma_format == CHROMA_444 && 16 * s->c.mb_x + 8 >= s->c.width)
+        count = 3;
+    if (m->huffman == HUFFMAN_TABLE_OPTIMAL) {
+        for (int i = 0; i < count; i++) {
+            int n = order[i];
+            record_block(s, block[n], n);
         }
     } else {
-        for (int i = 0; i < 5; i++)
-            encode_block(s, block[i], i);
-        if (s->c.chroma_format == CHROMA_420) {
-            encode_block(s, block[5], 5);
-        } else {
-            encode_block(s, block[6], 6);
-            encode_block(s, block[5], 5);
-            encode_block(s, block[7], 7);
+        for (int i = 0; i < count; i++) {
+            int n = order[i];
+            encode_block(s, block[n], n);
         }
+        s->i_tex_bits += get_bits_diff(s);
     }
-
-    s->i_tex_bits += get_bits_diff(s);
 }
 
 static av_cold int mjpeg_encode_init(AVCodecContext *avctx)
@@ -537,7 +500,6 @@ static av_cold int mjpeg_encode_init(AVCodecContext *avctx)
 
     s->mjpeg_ctx = m;
     m2->mpeg.encode_picture_header = mjpeg_amv_encode_picture_header;
-    // May be overridden below
     s->encode_mb                   = mjpeg_encode_mb;
 
     if (s->mpv_flags & FF_MPV_FLAG_QP_RD) {
@@ -601,7 +563,6 @@ static av_cold int mjpeg_encode_init(AVCodecContext *avctx)
 
     if (m->huffman == HUFFMAN_TABLE_OPTIMAL) {
         // If we are here, we have only one slice_context. So no loop necessary.
-        s->encode_mb = mjpeg_record_mb;
         return alloc_huffman(m2);
     }
 
