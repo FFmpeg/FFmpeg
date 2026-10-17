@@ -2564,6 +2564,14 @@ int av_seek_frame(AVFormatContext *s, int stream_index, int64_t timestamp,
  * keyframes (this may not be supported by all demuxers).
  * If flags contain AVSEEK_FLAG_BACKWARD, it is ignored.
  *
+ * A seek by timestamp moves ts back by the largest
+ * AVCodecParameters.seek_preroll of the audio streams that are not discarded,
+ * whatever stream_index is, so that the decoders get their declared pre-roll
+ * before ts. The target stays within min_ts and after the start of the
+ * stream, so less room may be left. max_ts moves back as much, unless it is
+ * INT64_MAX. If that seek fails, the seek is done to ts. This also applies to
+ * av_seek_frame() with a demuxer that only implements this function.
+ *
  * @param s            media file handle
  * @param stream_index index of the stream which is used as time base reference
  * @param min_ts       smallest acceptable timestamp

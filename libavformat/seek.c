@@ -664,23 +664,45 @@ int av_seek_frame(AVFormatContext *s, int stream_index,
     return ret;
 }
 
-int avformat_seek_file(AVFormatContext *s, int stream_index, int64_t min_ts,
-                       int64_t ts, int64_t max_ts, int flags)
+/**
+ * The largest pre-roll of the audio streams that are not discarded, in the
+ * units of the seek: the time base of the stream, or AV_TIME_BASE when no
+ * stream is given. Audio decoders need the frames before the target to
+ * produce reliable output at it, and declare how many samples in
+ * AVCodecParameters.seek_preroll.
+ */
+static int64_t seek_preroll(const AVFormatContext *s, int stream_index)
+{
+    AVRational unit = stream_index >= 0 ? s->streams[stream_index]->time_base
+                                        : AV_TIME_BASE_Q;
+    int64_t preroll = 0;
+
+    for (unsigned i = 0; i < s->nb_streams; i++) {
+        const AVStream *st = s->streams[i];
+        const AVCodecParameters *par = st->codecpar;
+        int64_t v;
+
+        if (st->discard >= AVDISCARD_ALL)
+            continue;
+        if (par->codec_type != AVMEDIA_TYPE_AUDIO || par->seek_preroll <= 0 ||
+            par->sample_rate <= 0)
+            continue;
+
+        v = av_rescale_q_rnd(par->seek_preroll, (AVRational){ 1, par->sample_rate },
+                             unit, AV_ROUND_UP);
+        preroll = FFMAX(preroll, v);
+    }
+
+    return preroll;
+}
+
+static int seek_file(AVFormatContext *s, int stream_index, int64_t min_ts,
+                     int64_t ts, int64_t max_ts, int flags)
 {
     int dir;
     int ret;
 
-    if (min_ts > ts || max_ts < ts)
-        return -1;
-    if (stream_index < -1 || stream_index >= (int)s->nb_streams)
-        return AVERROR(EINVAL);
-
-    if (s->seek2any > 0)
-        flags |= AVSEEK_FLAG_ANY;
-    flags &= ~AVSEEK_FLAG_BACKWARD;
-
     if (ffifmt(s->iformat)->read_seek2) {
-        int ret;
         ff_read_frame_flush(s);
 
         if (stream_index == -1 && s->nb_streams == 1) {
@@ -706,6 +728,45 @@ int avformat_seek_file(AVFormatContext *s, int stream_index, int64_t min_ts,
         if (ret >= 0)
             ret = av_seek_frame(s, stream_index, ts, flags | (dir^AVSEEK_FLAG_BACKWARD));
     }
+    return ret;
+}
+
+int avformat_seek_file(AVFormatContext *s, int stream_index, int64_t min_ts,
+                       int64_t ts, int64_t max_ts, int flags)
+{
+    int64_t target = ts, target_max = max_ts;
+    int ret;
+
+    if (min_ts > ts || max_ts < ts)
+        return -1;
+    if (stream_index < -1 || stream_index >= (int)s->nb_streams)
+        return AVERROR(EINVAL);
+
+    if (s->seek2any > 0)
+        flags |= AVSEEK_FLAG_ANY;
+    flags &= ~AVSEEK_FLAG_BACKWARD;
+
+    if (!(flags & (AVSEEK_FLAG_BYTE | AVSEEK_FLAG_FRAME))) {
+        int64_t preroll = seek_preroll(s, stream_index);
+        int64_t start = stream_index >= 0 ? s->streams[stream_index]->start_time
+                                          : s->start_time;
+
+        // Land early enough to decode the pre-roll, without leaving the
+        // range the caller asked for or going before the start.
+        target = FFMAX(av_sat_sub64(ts, preroll), min_ts);
+        if (start != AV_NOPTS_VALUE)
+            target = FFMAX(target, FFMIN(start, ts));
+        // Move the finite upper bound back by the same amount as the target.
+        // An open upper bound stays open.
+        if (max_ts != INT64_MAX)
+            target_max = av_sat_sub64(max_ts, av_sat_sub64(ts, target));
+    }
+
+    ret = seek_file(s, stream_index, min_ts, target, target_max, flags);
+    // Without a known start, the earlier target may come before the first
+    // packet.
+    if (ret < 0 && target != ts)
+        ret = seek_file(s, stream_index, min_ts, ts, max_ts, flags);
     return ret;
 }
 
