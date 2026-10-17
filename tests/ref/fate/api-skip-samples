@@ -1,0 +1,7 @@
+frame 1000 skip    0 discard    0: 1000 samples
+frame 1000 skip  300 discard    0: 700 samples
+frame 1000 skip    0 discard  400: 600 samples
+frame 1000 skip  300 discard  400: 300 samples
+frame 1000 skip  300 discard  700: 0 samples
+frame 1000 skip  300 discard  800: 700 samples
+frame 1000 skip  300 discard 1100: 700 samples

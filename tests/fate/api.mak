@@ -7,6 +7,10 @@ fate-api-flac: $(APITESTSDIR)/api-flac-test$(EXESUF)
 fate-api-flac: CMD = run $(APITESTSDIR)/api-flac-test$(EXESUF)
 fate-api-flac: CMP = null
 
+FATE_API_LIBAVCODEC-$(CONFIG_PCM_S16LE_DECODER) += fate-api-skip-samples
+fate-api-skip-samples: $(APITESTSDIR)/api-skip-samples-test$(EXESUF)
+fate-api-skip-samples: CMD = run $(APITESTSDIR)/api-skip-samples-test$(EXESUF)
+
 FATE_API_LIBAVCODEC-$(CONFIG_MOVTEXT_ENCODER) += fate-api-movtext
 fate-api-movtext: $(APITESTSDIR)/api-movtext-test$(EXESUF)
 fate-api-movtext: CMD = run $(APITESTSDIR)/api-movtext-test$(EXESUF)
