@@ -271,6 +271,7 @@ const FFHWAccel ff_h264_vdpau_hwaccel = {
     .end_frame      = vdpau_h264_end_frame,
     .decode_slice   = vdpau_h264_decode_slice,
     .frame_priv_data_size = sizeof(struct vdpau_picture_context),
+    .free_frame_priv = ff_vdpau_free_frame_priv,
     .init           = vdpau_h264_init,
     .uninit         = ff_vdpau_common_uninit,
     .frame_params   = ff_vdpau_common_frame_params,
