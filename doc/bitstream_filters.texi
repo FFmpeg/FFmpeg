@@ -635,7 +635,7 @@ the two bytes immediately following SOI, that APP0 segment is dropped.
 APP0 segments preceded by fill bytes or another segment are retained.
 An APP1-only payload keeps the encoder APP0: SOI, APP1, APP0, DQT, ...
 
-The filter requires @option{filename}. Extra unused sidecar bytes are
+The filter requires @option{sidecar}. Extra unused sidecar bytes are
 ignored; a packet without a matching record is an error.
 Records follow packets in arrival order. Flushing the filter does not
 rewind the sidecar, so a reused context needs a sidecar positioned for
@@ -645,11 +645,8 @@ by that filter context. To resume, create a new context with a sidecar
 matching the remaining packets. Flushing does not clear this error.
 
 @example
-ffmpeg -i in.mp4 -c:v mjpeg -bsf:v jpegapp=filename=app.bin frame_%d.jpg
+ffmpeg -i in.mp4 -c:v mjpeg -bsf:v jpegapp=sidecar=00000004DEADBEEF frame_%d.jpg
 @end example
-
-On Windows, escape the drive colon in the BSF option:
-@code{filename='E\:/path/app.bin'}.
 
 @section mjpeg2jpeg
 

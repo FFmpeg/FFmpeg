@@ -56,16 +56,16 @@
 
 #include "libavcodec/bsf.h"
 #include "libavcodec/bsf_internal.h"
+#include "libavcodec/bytestream.h"
 #include "libavcodec/mjpeg.h"
 
 #define JPEGAPP_MAX_RECORD (16 * 1024 * 1024)
 
 typedef struct JPEGAppContext {
     const AVClass *class;
-    char *filename;
-    FILE *file;
-    uint8_t *buf;
-    int buf_size;
+    GetByteContext gb;
+    uint8_t *sidecar;
+    int sidecar_len;
     int read_error;
     int64_t packet_index;
 } JPEGAppContext;
@@ -99,84 +99,43 @@ static int jpegapp_init(AVBSFContext *ctx)
 {
     JPEGAppContext *s = ctx->priv_data;
 
-    if (!s->filename || !s->filename[0]) {
-        av_log(ctx, AV_LOG_ERROR, "Option filename is required\n");
+    if (s->sidecar_len <= 0) {
+        av_log(ctx, AV_LOG_ERROR, "Option sidecar is required\n");
         return AVERROR(EINVAL);
     }
 
-    s->file = avpriv_fopen_utf8(s->filename, "rb");
-    if (!s->file) {
-        int err = errno ? AVERROR(errno) : AVERROR(EIO);
-        av_log(ctx, AV_LOG_ERROR, "Could not open '%s': %s\n",
-               s->filename, av_err2str(err));
-        return err;
-    }
+    bytestream2_init(&s->gb, s->sidecar, s->sidecar_len);
+
     return 0;
-}
-
-static void jpegapp_close(AVBSFContext *ctx)
-{
-    JPEGAppContext *s = ctx->priv_data;
-
-    if (s->file) {
-        fclose(s->file);
-        s->file = NULL;
-    }
-    av_freep(&s->buf);
-    s->buf_size = 0;
 }
 
 static int jpegapp_read_record(AVBSFContext *ctx, int *out_size)
 {
     JPEGAppContext *s = ctx->priv_data;
-    uint8_t hdr[4];
     uint32_t n;
-    size_t got;
     int ret;
 
-    errno = 0;
-    got = fread(hdr, 1, 4, s->file);
-    ret = errno;
-    if (got == 0 && feof(s->file) && !ferror(s->file)) {
+    if (!bytestream2_get_bytes_left(&s->gb)) {
         av_log(ctx, AV_LOG_ERROR,
                "jpegapp: no sidecar record for packet %"PRId64"\n",
                s->packet_index);
         return AVERROR_INVALIDDATA;
     }
-    if (got != 4) {
-        if (ferror(s->file)) {
-            av_log(ctx, AV_LOG_ERROR, "jpegapp: sidecar read failed\n");
-            return ret ? AVERROR(ret) : AVERROR(EIO);
-        }
+    if (bytestream2_get_bytes_left(&s->gb) < 4) {
         av_log(ctx, AV_LOG_ERROR, "jpegapp: truncated length prefix\n");
         return AVERROR_INVALIDDATA;
     }
-    n = AV_RB32(hdr);
+    n = bytestream2_get_be32(&s->gb);
     if (n > JPEGAPP_MAX_RECORD) {
         av_log(ctx, AV_LOG_ERROR, "jpegapp: record length %u too large\n", n);
         return AVERROR_INVALIDDATA;
     }
-    if (n > (uint32_t)s->buf_size) {
-        ret = av_reallocp(&s->buf, n);
-        if (ret < 0) {
-            s->buf_size = 0;
-            return ret;
-        }
-        s->buf_size = n;
-    }
     if (n) {
-        errno = 0;
-        got = fread(s->buf, 1, n, s->file);
-        ret = errno;
-        if (got != n) {
-            if (ferror(s->file)) {
-                av_log(ctx, AV_LOG_ERROR, "jpegapp: sidecar read failed\n");
-                return ret ? AVERROR(ret) : AVERROR(EIO);
-            }
+        if (n > bytestream2_get_bytes_left(&s->gb)) {
             av_log(ctx, AV_LOG_ERROR, "jpegapp: truncated record payload\n");
             return AVERROR_INVALIDDATA;
         }
-        ret = jpegapp_validate_payload(s->buf, n);
+        ret = jpegapp_validate_payload(s->gb.buffer, n);
         if (ret < 0) {
             av_log(ctx, AV_LOG_ERROR,
                    "jpegapp: payload is not a sequence of APP0..APP15 segments\n");
@@ -213,7 +172,7 @@ static int jpegapp_filter(AVBSFContext *ctx, AVPacket *out)
     }
 
     src_off = 2;
-    if (rec_size >= 2 && s->buf[0] == 0xff && s->buf[1] == APP0 &&
+    if (rec_size >= 2 && s->gb.buffer[0] == 0xff && s->gb.buffer[1] == APP0 &&
         in->size >= 4 && in->data[2] == 0xff && in->data[3] == APP0) {
         int skip = jpeg_app_segment_len(in->data + 2, in->size - 2);
         if (skip < 0) {
@@ -243,7 +202,7 @@ static int jpegapp_filter(AVBSFContext *ctx, AVPacket *out)
         goto fail;
 
     memcpy(out->data, in->data, 2);
-    memcpy(out->data + 2, s->buf, rec_size);
+    bytestream2_get_buffer(&s->gb, out->data + 2, rec_size);
     memcpy(out->data + 2 + rec_size, in->data + src_off, in->size - src_off);
     av_packet_free(&in);
     return 0;
@@ -258,10 +217,8 @@ fail:
 #define OFFSET(x) offsetof(JPEGAppContext, x)
 #define FLAGS (AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_BSF_PARAM)
 static const AVOption jpegapp_options[] = {
-    { "filename", "sidecar of u32be-length + APP-segment records", OFFSET(filename),
-      AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, FLAGS },
-    { "file",     "sidecar of u32be-length + APP-segment records", OFFSET(filename),
-      AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, FLAGS },
+    { "sidecar", "sidecar of u32be-length + APP-segment records", OFFSET(sidecar),
+      AV_OPT_TYPE_BINARY, .flags = FLAGS },
     { NULL },
 };
 
@@ -282,6 +239,5 @@ const FFBitStreamFilter ff_jpegapp_bsf = {
     .p.priv_class   = &jpegapp_class,
     .priv_data_size = sizeof(JPEGAppContext),
     .init           = jpegapp_init,
-    .close          = jpegapp_close,
     .filter         = jpegapp_filter,
 };
