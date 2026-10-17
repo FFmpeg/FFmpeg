@@ -266,6 +266,37 @@ static void cuvid_decoder_cleanup_free(void *opaque, uint8_t *data)
 
 #endif
 
+static int cuvid_destroy_decoder(AVCodecContext *avctx)
+{
+    CuvidContext *ctx = avctx->priv_data;
+    int ret = 0;
+
+#ifdef NVDEC_HAVE_OPAQUE_OUTPUT_SUPPORT
+    if (ctx->decoder_cleanup) {
+        ctx->decoder_cleanup->cudecoder            = ctx->cudecoder;
+        ctx->decoder_cleanup->cuarray_surfaces     = ctx->cuarray_surfaces;
+        ctx->decoder_cleanup->cuarray_num_surfaces = ctx->cuarray_num_surfaces;
+        ctx->decoder_cleanup = NULL;
+    } else {
+        if (ctx->cudecoder)
+            ret = CHECK_CU(ctx->cvdl->cuvidDestroyDecoder(ctx->cudecoder));
+        for (int i = 0; i < ctx->cuarray_num_surfaces; i++)
+            CHECK_CU(ctx->cudl->cuArrayDestroy(ctx->cuarray_surfaces[i]));
+        av_freep(&ctx->cuarray_surfaces);
+    }
+    ctx->cuarray_surfaces     = NULL;
+    ctx->cuarray_num_surfaces = 0;
+    av_buffer_unref(&ctx->surface_in_use_ref);
+    ctx->surface_in_use = NULL;
+#else
+    if (ctx->cudecoder)
+        ret = CHECK_CU(ctx->cvdl->cuvidDestroyDecoder(ctx->cudecoder));
+#endif
+    ctx->cudecoder = NULL;
+
+    return ret;
+}
+
 static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* format)
 {
     AVCodecContext *avctx = opaque;
@@ -479,10 +510,9 @@ static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* form
 
     if (ctx->cudecoder) {
         av_log(avctx, AV_LOG_TRACE, "Re-initializing decoder\n");
-        ctx->internal_error = CHECK_CU(ctx->cvdl->cuvidDestroyDecoder(ctx->cudecoder));
+        ctx->internal_error = cuvid_destroy_decoder(avctx);
         if (ctx->internal_error < 0)
             return 0;
-        ctx->cudecoder = NULL;
     }
 
     if (hwframe_ctx->pool && (
@@ -607,68 +637,55 @@ static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* form
 
         ff_nvdec_fill_cuarray_desc(&arr_desc, avctx, cuinfo.OutputFormat);
 
-        if (ctx->cuarray_surfaces) {
-            if (ctx->decoder_cleanup) {
-                ctx->decoder_cleanup->cuarray_surfaces = NULL;
-                ctx->decoder_cleanup->cuarray_num_surfaces = 0;
-                ctx->decoder_cleanup->cudecoder = NULL;
-                ctx->decoder_cleanup = NULL;
-            }
-            for (i = 0; i < ctx->cuarray_num_surfaces; i++)
-                ctx->cudl->cuArrayDestroy(ctx->cuarray_surfaces[i]);
-            av_freep(&ctx->cuarray_surfaces);
-            av_buffer_unref(&ctx->surface_in_use_ref);
-            ctx->surface_in_use = NULL;
-        }
-        ctx->cuarray_num_surfaces = ctx->nb_surfaces;
-        ctx->cuarray_surfaces = av_calloc(ctx->cuarray_num_surfaces, sizeof(CUarray));
+        ctx->cuarray_surfaces = av_calloc(ctx->nb_surfaces, sizeof(CUarray));
         if (!ctx->cuarray_surfaces) {
             ctx->internal_error = AVERROR(ENOMEM);
             return 0;
         }
         {
-            atomic_int *flags = av_calloc(ctx->cuarray_num_surfaces, sizeof(*flags));
+            atomic_int *flags = av_calloc(ctx->nb_surfaces, sizeof(*flags));
             CuvidDecoderCleanup *cleanup = NULL;
             if (!flags) {
                 ctx->internal_error = AVERROR(ENOMEM);
                 return 0;
             }
             if (ctx->zero_copy) {
+                int err = AVERROR(ENOMEM);
                 cleanup = av_mallocz(sizeof(*cleanup));
-                if (!cleanup) {
-                    av_free((void *)flags);
-                    ctx->internal_error = AVERROR(ENOMEM);
+                if (cleanup) {
+                    cleanup->hwdevice = av_buffer_ref(ctx->hwdevice);
+                    if (cleanup->hwdevice)
+                        err = cuvid_load_functions(&cleanup->cvdl, avctx);
+                }
+                if (err < 0) {
+                    cuvid_decoder_cleanup_free(cleanup, (uint8_t *)flags);
+                    ctx->internal_error = err;
                     return 0;
                 }
-                ctx->decoder_cleanup = cleanup;
             }
             ctx->surface_in_use_ref = av_buffer_create(
-                (uint8_t *)flags, ctx->cuarray_num_surfaces * sizeof(*flags),
+                (uint8_t *)flags, ctx->nb_surfaces * sizeof(*flags),
                 cleanup ? cuvid_decoder_cleanup_free : NULL,
                 cleanup, 0);
             if (!ctx->surface_in_use_ref) {
-                av_free((void *)flags);
-                av_free(cleanup);
-                ctx->decoder_cleanup = NULL;
+                cuvid_decoder_cleanup_free(cleanup, (uint8_t *)flags);
                 ctx->internal_error = AVERROR(ENOMEM);
                 return 0;
             }
+            ctx->decoder_cleanup = cleanup;
             ctx->surface_in_use = flags;
         }
 
-        for (i = 0; i < ctx->cuarray_num_surfaces; i++) {
+        for (i = 0; i < ctx->nb_surfaces; i++) {
             ctx->internal_error = CHECK_CU(ctx->cudl->cuArray3DCreate(
                 &ctx->cuarray_surfaces[i], &arr_desc));
             if (ctx->internal_error < 0) {
-                for (int j = 0; j < i; j++)
-                    ctx->cudl->cuArrayDestroy(ctx->cuarray_surfaces[j]);
-                av_freep(&ctx->cuarray_surfaces);
-                av_buffer_unref(&ctx->surface_in_use_ref);
-                ctx->surface_in_use = NULL;
-                ctx->cuarray_num_surfaces = 0;
+                ctx->cuarray_num_surfaces = i;
+                cuvid_destroy_decoder(avctx);
                 return 0;
             }
         }
+        ctx->cuarray_num_surfaces = ctx->nb_surfaces;
 
         {
             AVHWDeviceContext *dev_ctx =
@@ -695,12 +712,6 @@ static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* form
         CHECK_CU(ctx->cudl->cuCtxPopCurrent(&dummy));
         if (ctx->internal_error < 0)
             return 0;
-
-        if (ctx->decoder_cleanup) {
-            ctx->decoder_cleanup->cudecoder = ctx->cudecoder;
-            ctx->decoder_cleanup->cuarray_surfaces = ctx->cuarray_surfaces;
-            ctx->decoder_cleanup->cuarray_num_surfaces = ctx->cuarray_num_surfaces;
-        }
     }
 #endif
 
@@ -1253,34 +1264,7 @@ static av_cold int cuvid_decode_end(AVCodecContext *avctx)
 
         if (ctx->cuparser)
             ctx->cvdl->cuvidDestroyVideoParser(ctx->cuparser);
-#ifdef NVDEC_HAVE_OPAQUE_OUTPUT_SUPPORT
-        if (ctx->decoder_cleanup) {
-            ctx->decoder_cleanup->hwdevice = av_buffer_ref(ctx->hwdevice);
-            ctx->decoder_cleanup->cvdl = ctx->cvdl;
-            ctx->cvdl = NULL;
-            ctx->cudecoder = NULL;
-            ctx->cuarray_surfaces = NULL;
-            ctx->cuarray_num_surfaces = 0;
-            av_buffer_unref(&ctx->surface_in_use_ref);
-            ctx->surface_in_use = NULL;
-            ctx->decoder_cleanup = NULL;
-        } else
-#endif
-        {
-            if (ctx->cudecoder)
-                ctx->cvdl->cuvidDestroyDecoder(ctx->cudecoder);
-
-#ifdef NVDEC_HAVE_OPAQUE_OUTPUT_SUPPORT
-            if (ctx->cuarray_surfaces) {
-                for (int i = 0; i < ctx->cuarray_num_surfaces; i++)
-                    ctx->cudl->cuArrayDestroy(ctx->cuarray_surfaces[i]);
-                av_freep(&ctx->cuarray_surfaces);
-                av_buffer_unref(&ctx->surface_in_use_ref);
-                ctx->surface_in_use = NULL;
-                ctx->cuarray_num_surfaces = 0;
-            }
-#endif
-        }
+        cuvid_destroy_decoder(avctx);
 
         ctx->cudl->cuCtxPopCurrent(&dummy);
     }
@@ -1731,10 +1715,7 @@ static void cuvid_flush(AVCodecContext *avctx)
 
     av_fifo_reset2(ctx->frame_queue);
 
-    if (ctx->cudecoder) {
-        ctx->cvdl->cuvidDestroyDecoder(ctx->cudecoder);
-        ctx->cudecoder = NULL;
-    }
+    cuvid_destroy_decoder(avctx);
 
     if (ctx->cuparser) {
         ctx->cvdl->cuvidDestroyVideoParser(ctx->cuparser);
