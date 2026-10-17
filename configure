@@ -2536,7 +2536,6 @@ SYSTEM_FUNCS="
     PeekNamedPipe
     posix_memalign
     prctl
-    pthread_cancel
     pthread_set_name_np
     pthread_setaffinity_np
     pthread_setname_np
@@ -7162,7 +7161,6 @@ if ! disabled pthreads && ! enabled w32threads && ! enabled os2threads; then
 
     if enabled pthreads; then
         check_builtin sem_timedwait semaphore.h "sem_t *s; sem_init(s,0,0); sem_timedwait(s,0); sem_destroy(s)" $pthreads_extralibs
-        check_func pthread_cancel $pthreads_extralibs
         hdrs=pthread.h
         if enabled pthread_np_h; then
             hdrs="$hdrs pthread_np.h"
