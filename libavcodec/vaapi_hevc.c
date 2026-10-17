@@ -32,6 +32,8 @@
 #include "hevc/hevcdec.h"
 
 typedef struct VAAPIDecodePictureHEVC {
+    VAAPIDecodePicture pic;
+
 #if VA_CHECK_VERSION(1, 2, 0)
     VAPictureParameterBufferHEVCExtension pic_param;
     VASliceParameterBufferHEVCExtension last_slice_param;
@@ -41,8 +43,6 @@ typedef struct VAAPIDecodePictureHEVC {
 #endif
     const uint8_t *last_buffer;
     size_t         last_size;
-
-    VAAPIDecodePicture pic;
 } VAAPIDecodePictureHEVC;
 
 static void init_vaapi_pic(VAPictureHEVC *va_pic)
