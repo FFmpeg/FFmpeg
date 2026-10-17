@@ -63,9 +63,6 @@ typedef CONDITION_VARIABLE pthread_cond_t;
 #define InitializeCriticalSection(x) InitializeCriticalSectionEx(x, 0, 0)
 #define WaitForSingleObject(a, b) WaitForSingleObjectEx(a, b, FALSE)
 
-#define PTHREAD_CANCEL_ENABLE 1
-#define PTHREAD_CANCEL_DISABLE 0
-
 #if HAVE_WINRT
 #define THREADFUNC_RETTYPE DWORD
 #else
@@ -207,11 +204,6 @@ static inline int pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *
 static inline int pthread_cond_signal(pthread_cond_t *cond)
 {
     WakeConditionVariable(cond);
-    return 0;
-}
-
-static inline int pthread_setcancelstate(int state, int *oldstate)
-{
     return 0;
 }
 
