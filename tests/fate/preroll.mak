@@ -56,6 +56,19 @@ fate-preroll-opus-mkv-landing-end: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -select
 FATE_PREROLL_SEEK-$(call DEMDEC, MOV, AAC H264) += fate-preroll-aac-mov-seek-video
 fate-preroll-aac-mov-seek-video: CMD = run libavformat/tests/seek$(EXESUF) $(TARGET_SAMPLES)/h264/twofields_packet.mp4 -stream_id 0 -seekback 182000 -frames 4 -duration 3
 
+# A seek on the stream that starts later, close enough to its start that
+# the seek targets it: the other stream is already past its own start.
+FATE_PREROLL_SEEK-$(call ALLYES, MOV_DEMUXER MOV_MUXER AAC_DECODER FILE_PROTOCOL) += fate-preroll-aac-mov-seek-staggered
+fate-preroll-aac-mov-seek-staggered: CMD = seek_staggered $(TARGET_SAMPLES)/gapless/102400samples_qt-lc-aac.m4a 1 -stream_id 1 -seekback 42500 -frames 4 -duration 3
+
+# A seek through the concat demuxer, which seeks in the file it reads.
+FATE_PREROLL_SEEK-$(call ALLYES, CONCAT_DEMUXER MOV_DEMUXER AAC_DECODER FILE_PROTOCOL) += fate-preroll-aac-concat-seek
+fate-preroll-aac-concat-seek: CMD = seek_concat $(SRC_PATH)/tests/preroll.ffconcat $(TARGET_SAMPLES)/gapless/102400samples_qt-lc-aac.m4a -seekback 530000 -frames 3 -duration 3
+
+# A seek close to the start of a stream whose start time is unknown.
+FATE_PREROLL_SEEK-$(call DEMDEC, AAC, AAC) += fate-preroll-aac-adts-seek-start
+fate-preroll-aac-adts-seek-start: CMD = run libavformat/tests/seek$(EXESUF) $(TARGET_SAMPLES)/aac/id3v2.aac -seekback 10000 -frames 2 -duration 3
+
 $(FATE_PREROLL_SEEK-yes): libavformat/tests/seek$(EXESUF)
 
 FATE_SAMPLES_FFPROBE += $(FATE_PREROLL_FFPROBE-yes)

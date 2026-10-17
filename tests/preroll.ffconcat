@@ -1,0 +1,7 @@
+ffconcat version 1.0
+
+file %SRCFILE%
+duration 2.321995
+
+file %SRCFILE%
+duration 2.321995

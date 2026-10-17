@@ -1,0 +1,32 @@
+ret: 0         st: 0 flags:1 dts:-0.024671 pts:-0.024671 pos:   1372 size:   251
+ret: 0         st: 0 flags:1 dts:-0.001451 pts:-0.001451 pos:   1623 size:   168
+ret: 0         st: 0 flags:1 dts: 0.021769 pts: 0.021769 pos:   1791 size:    89
+ret: 0         st:-1 flags:0  ts:-1.000000
+ret: 0         st: 0 flags:1 dts:-0.047891 pts:-0.047891 pos:   1366 size:     6 skip:2112 discard:0
+ret: 0         st: 0 flags:1 dts:-0.024671 pts:-0.024671 pos:   1372 size:   251
+ret: 0         st: 0 flags:1 dts:-0.001451 pts:-0.001451 pos:   1623 size:   168
+ret:-1         st:-1 flags:1  ts:-0.105833
+ret:-1         st: 0 flags:0  ts: 0.788345
+ret:-1         st: 0 flags:1  ts: 1.682494
+ret:-1         st:-1 flags:0  ts:-0.423332
+ret:-1         st:-1 flags:1  ts: 0.470835
+ret:-1         st: 0 flags:0  ts: 1.365011
+ret:-1         st: 0 flags:1  ts:-0.740839
+ret:-1         st:-1 flags:0  ts: 0.153336
+ret:-1         st:-1 flags:1  ts: 1.047503
+ret:-1         st: 0 flags:0  ts: 1.941678
+ret:-1         st: 0 flags:1  ts:-0.164172
+ret:-1         st:-1 flags:0  ts: 0.730004
+ret:-1         st:-1 flags:1  ts: 1.624171
+ret:-1         st: 0 flags:0  ts:-0.481655
+ret:-1         st: 0 flags:1  ts: 0.412494
+ret:-1         st:-1 flags:0  ts: 1.306672
+ret:-1         st:-1 flags:1  ts:-0.799161
+ret:-1         st: 0 flags:0  ts: 0.095011
+ret:-1         st: 0 flags:1  ts: 0.989184
+ret:-1         st:-1 flags:0  ts: 1.883340
+ret:-1         st:-1 flags:1  ts:-0.222493
+ret:-1         st: 0 flags:0  ts: 0.671678
+ret:-1         st: 0 flags:1  ts: 1.565850
+ret:-1         st:-1 flags:0  ts:-0.539992
+ret:-1         st:-1 flags:1  ts: 0.354175
