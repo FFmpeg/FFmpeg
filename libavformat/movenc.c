@@ -3831,16 +3831,29 @@ static int mov_write_ispe_tag(AVIOContext *pb, MOVMuxContext *mov, AVFormatConte
 static int mov_write_pixi_tag(AVIOContext *pb, MOVMuxContext *mov, AVFormatContext *s,
                               int stream_index)
 {
+    MOVTrack *trk = &mov->tracks[stream_index];
     int64_t pos = avio_tell(pb);
     const AVPixFmtDescriptor *pixdesc =
         av_pix_fmt_desc_get(s->streams[stream_index]->codecpar->format);
+    int depth, nb_components;
+    if (pixdesc->nb_components > 0) {
+        depth = pixdesc->comp[0].depth;
+        nb_components = pixdesc->nb_components;
+    } else {
+        AV1SequenceParameters seq;
+        int ret = ff_av1_parse_seq_header(&seq, trk->extradata[trk->last_stsd_index],
+                                                trk->extradata_size[trk->last_stsd_index]);
+        if (ret < 0)
+            return ret;
+        depth = seq.bitdepth;
+        nb_components = seq.monochrome ? 1 : 3;
+    }
     avio_wb32(pb, 0); /* size */
     ffio_wfourcc(pb, "pixi");
     avio_wb32(pb, 0); /* Version & flags */
-    avio_w8(pb, pixdesc->nb_components); /* num_channels */
-    for (int i = 0; i < pixdesc->nb_components; ++i) {
-      avio_w8(pb, pixdesc->comp[i].depth); /* bits_per_channel */
-    }
+    avio_w8(pb, nb_components); /* num_channels */
+    for (int i = 0; i < nb_components; ++i)
+        avio_w8(pb, depth); /* bits_per_channel */
     return update_size(pb, pos);
 }
 
@@ -6373,9 +6386,25 @@ static int mov_write_ftyp_tag(AVIOContext *pb, AVFormatContext *s)
     if (mov->mode == MODE_ISM) {
         ffio_wfourcc(pb, "piff");
     } else if (mov->mode == MODE_AVIF) {
+        const MOVTrack *trk = &mov->tracks[0];
         const AVPixFmtDescriptor *pix_fmt_desc =
             av_pix_fmt_desc_get(s->streams[0]->codecpar->format);
-        const int depth = pix_fmt_desc->comp[0].depth;
+        int depth = 0, log2_chroma_w, log2_chroma_h;
+
+        if (pix_fmt_desc->nb_components > 0) {
+            depth = pix_fmt_desc->comp[0].depth;
+            log2_chroma_w = pix_fmt_desc->log2_chroma_w;
+            log2_chroma_h = pix_fmt_desc->log2_chroma_h;
+        } else {
+            AV1SequenceParameters seq;
+            int ret = ff_av1_parse_seq_header(&seq, trk->extradata[trk->last_stsd_index],
+                                                    trk->extradata_size[trk->last_stsd_index]);
+            if (!ret) {
+                depth = seq.bitdepth;
+                log2_chroma_w = seq.chroma_subsampling_x;
+                log2_chroma_h = seq.chroma_subsampling_y;
+            }
+        }
         if (mov->is_animated_avif) {
             // For animated AVIF, major brand is "avis". Add "avif" as a
             // compatible brand.
@@ -6389,7 +6418,7 @@ static int mov_write_ftyp_tag(AVIOContext *pb, AVFormatContext *s)
             // MA1B and MA1A brands are based on AV1 profile. Short hand for
             // computing that is based on chroma subsampling type. 420 chroma
             // subsampling is MA1B.  444 chroma subsampling is MA1A.
-            if (!pix_fmt_desc->log2_chroma_w && !pix_fmt_desc->log2_chroma_h) {
+            if (!log2_chroma_w && !log2_chroma_h) {
                 // 444 chroma subsampling.
                 ffio_wfourcc(pb, "MA1A");
             } else {
