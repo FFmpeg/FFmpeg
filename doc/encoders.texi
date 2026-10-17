@@ -3781,6 +3781,11 @@ Select the mpeg2 level to encode:
 @item low
 @end table
 
+@item seq_end @var{boolean}
+Write a sequence end code after the last picture. Disabled by default.
+Cannot be combined with @option{flags +low_delay} or frame skipping
+(@option{skip_threshold} or @option{skip_factor}).
+
 @item seq_disp_ext @var{integer}
 Specifies if the encoder should write a sequence_display_extension to the
 output.

@@ -1916,6 +1916,7 @@ int ff_mpv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
     MPVMainEncContext *const m = avctx->priv_data;
     MPVEncContext    *const s = &m->s;
     int stuffing_count, ret;
+    int seq_end = !pic_arg && m->seq_end;
     int context_count = s->c.slice_context_count;
 
     ff_mpv_unref_picture(&s->c.cur_pic);
@@ -1931,6 +1932,10 @@ int ff_mpv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
     ret = select_input_picture(m);
     if (ret < 0)
         return ret;
+
+    /* Both queues must be empty after selecting the last picture. */
+    for (int i = 1; seq_end && i <= MPVENC_MAX_B_FRAMES; i++)
+        seq_end = !m->input_picture[i] && !m->reordered_input_picture[i];
 
     /* output? */
     if (s->new_pic->data[0]) {
@@ -1980,7 +1985,7 @@ vbv_retry:
             int hq = (avctx->mb_decision == FF_MB_DECISION_RD || avctx->trellis);
             int min_step = hq ? 1 : (1<<(FF_LAMBDA_SHIFT + 7))/139;
 
-            if (put_bits_count(&s->pb) > max_size &&
+            if (put_bits_count(&s->pb) + 32 * seq_end > max_size &&
                 s->lambda < m->lmax) {
                 m->next_lambda = FFMAX(s->lambda + min_step, s->lambda *
                                        (s->c.qscale + 1) / s->c.qscale);
@@ -2025,7 +2030,8 @@ vbv_retry:
         flush_put_bits(&s->pb);
         m->frame_bits  = put_bits_count(&s->pb);
 
-        stuffing_count = ff_vbv_update(m, m->frame_bits);
+        /* The sequence end code is part of the last picture's VBV size. */
+        stuffing_count = ff_vbv_update(m, m->frame_bits + 32 * seq_end);
         m->stuffing_bits = 8*stuffing_count;
         if (stuffing_count) {
             if (put_bytes_left(&s->pb, 0) < stuffing_count + 50) {
@@ -2054,6 +2060,12 @@ vbv_retry:
             }
             flush_put_bits(&s->pb);
             m->frame_bits  = put_bits_count(&s->pb);
+        }
+
+        if (seq_end) {
+            put_bits32(&s->pb, 0x1B7); // sequence_end_code
+            flush_put_bits(&s->pb);
+            m->frame_bits = put_bits_count(&s->pb);
         }
 
         /* update MPEG-1/2 vbv_delay for CBR */

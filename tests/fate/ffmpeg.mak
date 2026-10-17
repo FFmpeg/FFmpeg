@@ -502,6 +502,23 @@ fate-ffmpeg-loopback-decoding: CMD = transcode \
     "-map 0:v:0 -c:v mpeg2video -f null - -flags +bitexact -idct simple -threads $$threads -dec 0:0 -filter_complex '[0:v][dec:0]hstack[stack]' -map '[stack]' -c:v ffv1" ""
 FATE_FFMPEG-$(call ENCDEC2, MPEG2VIDEO, FFV1, NUT, HSTACK_FILTER PIPE_PROTOCOL FRAMECRC_MUXER) += fate-ffmpeg-loopback-decoding
 
+# Test sequence end with a partial B-frame chain and with queued B-frames.
+FATE_FFMPEG-$(call ENCMUX, MPEG2VIDEO, MPEG2VIDEO, TESTSRC2_FILTER FILE_PROTOCOL) += fate-mpeg2-seq-end-short fate-mpeg2-seq-end-bframes
+fate-mpeg2-seq-end-short: CMD = md5 -filter_complex testsrc2=s=64x64:r=25:d=0.08 -c:v mpeg2video -flags +bitexact -dct fastint -q:v 2 -bf 2 -seq_end 1 -f mpeg2video
+fate-mpeg2-seq-end-bframes: CMD = md5 -filter_complex testsrc2=s=64x64:r=25:d=0.12 -c:v mpeg2video -flags +bitexact -dct fastint -q:v 2 -bf 1 -seq_end 1 -f mpeg2video
+
+# Account for the end code before calculating CBR stuffing and vbv_delay.
+FATE_FFMPEG-$(call ENCMUX, MPEG2VIDEO, MPEG2VIDEO, COLOR_FILTER FILE_PROTOCOL) += fate-mpeg2-seq-end-cbr
+fate-mpeg2-seq-end-cbr: CMD = md5 -filter_complex color=s=64x64:r=25:d=0.08 -c:v mpeg2video -flags +bitexact -dct fastint -b:v 90000 -minrate 90000 -maxrate 90000 -bufsize 65536 -rc_init_occupancy 65536 -seq_end 1 -f mpeg2video
+
+# Skipping the last queued picture would leave no packet for the end code.
+FATE_FFMPEG-$(call ENCMUX, MPEG2VIDEO, MPEG2VIDEO, COLOR_FILTER PIPE_PROTOCOL) += fate-mpeg2-seq-end-skip-threshold fate-mpeg2-seq-end-skip-factor
+fate-mpeg2-seq-end-skip-threshold: SKIP_OPT = skip_threshold
+fate-mpeg2-seq-end-skip-factor: SKIP_OPT = skip_factor
+fate-mpeg2-seq-end-skip-threshold fate-mpeg2-seq-end-skip-factor: CMP = grep
+fate-mpeg2-seq-end-skip-threshold fate-mpeg2-seq-end-skip-factor: REF = Sequence end code is not supported with frame skipping
+fate-mpeg2-seq-end-skip-threshold fate-mpeg2-seq-end-skip-factor: CMD = ffmpeg -filter_complex color=s=64x64:r=25:d=0.08 -c:v mpeg2video -$(SKIP_OPT) 1 -seq_end 1 -f mpeg2video -; test $$? -ne 0
+
 # test matching by stream disposition
 fate-ffmpeg-spec-disposition: CMD = framecrc -i $(TARGET_SAMPLES)/mpegts/pmtchange.ts -map '0:disp:visual_impaired+descriptions:1' -c copy
 FATE_SAMPLES_FFMPEG-$(call FRAMECRC, MPEGTS,,) += fate-ffmpeg-spec-disposition

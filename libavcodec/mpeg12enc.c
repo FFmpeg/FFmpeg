@@ -1056,6 +1056,16 @@ static av_cold int encode_init(AVCodecContext *avctx)
     int ret;
     int max_size = avctx->codec_id == AV_CODEC_ID_MPEG2VIDEO ? 16383 : 4095;
 
+    if (m->seq_end && (avctx->flags & AV_CODEC_FLAG_LOW_DELAY)) {
+        av_log(avctx, AV_LOG_ERROR, "Sequence end code is not supported with low delay\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (m->seq_end && (m->frame_skip_threshold || m->frame_skip_factor)) {
+        av_log(avctx, AV_LOG_ERROR, "Sequence end code is not supported with frame skipping\n");
+        return AVERROR(EINVAL);
+    }
+
     if (avctx->width > max_size || avctx->height > max_size) {
         av_log(avctx, AV_LOG_ERROR, "%s does not support resolutions above %dx%d\n",
                CONFIG_SMALL ? avctx->codec->name : avctx->codec->long_name,
@@ -1268,6 +1278,7 @@ static const AVOption mpeg2_options[] = {
       FF_MPV_OFFSET(c.intra_vlc_format),    AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
     { "non_linear_quant", "Use nonlinear quantizer.",    FF_MPV_OFFSET(c.q_scale_type),   AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
     { "alternate_scan",   "Enable alternate scantable.", FF_MPV_OFFSET(c.alternate_scan), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
+    { "seq_end",          "Write sequence end code.",    FF_MPV_MAIN_OFFSET(seq_end),     AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
     { "a53cc", "Use A53 Closed Captions (if available)", OFFSET(a53_cc),         AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, VE },
     { "seq_disp_ext",     "Write sequence_display_extension blocks.", OFFSET(seq_disp_ext), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 1, VE, .unit = "seq_disp_ext" },
     {     "auto",   NULL, 0, AV_OPT_TYPE_CONST,  {.i64 = -1},  0, 0, VE, .unit = "seq_disp_ext" },
