@@ -2838,6 +2838,7 @@ static void find_compressor(char * compressor_name, int len, MOVTrack *track)
     }
 }
 
+#if CONFIG_AVIF_MUXER
 static int mov_write_ccst_tag(AVIOContext *pb)
 {
     int64_t pos = avio_tell(pb);
@@ -2866,6 +2867,7 @@ static int mov_write_aux_tag(AVIOContext *pb, const char *aux_type)
     avio_write(pb, "urn:mpeg:mpegB:cicp:systems:auxiliary:alpha\0", 44);
     return update_size(pb, pos);
 }
+#endif
 
 static int mov_write_video_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContext *mov, MOVTrack *track)
 {
@@ -3131,11 +3133,13 @@ static int mov_write_video_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
     if (avid)
         avio_wb32(pb, 0);
 
+#if CONFIG_AVIF_MUXER
     if (track->mode == MODE_AVIF) {
         mov_write_ccst_tag(pb);
         if (mov->nb_streams > 0 && track == &mov->tracks[1])
             mov_write_aux_tag(pb, "auxi");
     }
+#endif
 
     return update_size(pb, pos);
 }
@@ -3739,6 +3743,7 @@ static int mov_write_hdlr_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *tra
     return update_size(pb, pos);
 }
 
+#if CONFIG_AVIF_MUXER
 static int mov_write_pitm_tag(AVIOContext *pb, int item_id)
 {
     int64_t pos = avio_tell(pb);
@@ -3908,6 +3913,7 @@ static int mov_write_iprp_tag(AVIOContext *pb, MOVMuxContext *mov, AVFormatConte
     mov_write_ipma_tag(pb, mov, s);
     return update_size(pb, pos);
 }
+#endif
 
 static int mov_write_hmhd_tag(AVIOContext *pb)
 {
@@ -4106,11 +4112,13 @@ static int mov_write_tkhd_tag(AVIOContext *pb, MOVMuxContext *mov,
     uint32_t *display_matrix = NULL;
     int       i;
 
+#if CONFIG_AVIF_MUXER
     if (mov->mode == MODE_AVIF)
         if (!mov->avif_loop_count)
             duration = INT64_MAX;
         else
             duration *= mov->avif_loop_count;
+#endif
 
     if (st) {
         const AVPacketSideData *sd;
@@ -4263,6 +4271,7 @@ static int mov_write_edts_tag(AVIOContext *pb, MOVMuxContext *mov,
     delay = av_rescale_rnd(start_dts + start_ct, mov->movie_timescale,
                            track->timescale, AV_ROUND_DOWN);
 
+#if CONFIG_AVIF_MUXER
     if (mov->mode == MODE_AVIF) {
         delay = 0;
         // Section 9.6.3 of ISO/IEC 23008-12: flags specifies repetition of the
@@ -4272,6 +4281,7 @@ static int mov_write_edts_tag(AVIOContext *pb, MOVMuxContext *mov,
         flags = mov->avif_loop_count != 1;
         start_ct = 0;
     }
+#endif
 
     version |= delay < INT32_MAX ? 0 : 1;
 
@@ -5064,6 +5074,7 @@ static int mov_write_meta_tag(AVIOContext *pb, MOVMuxContext *mov,
         mov_write_mdta_hdlr_tag(pb, mov, s);
         mov_write_mdta_keys_tag(pb, mov, s);
         mov_write_mdta_ilst_tag(pb, mov, s);
+#if CONFIG_AVIF_MUXER
     } else if (mov->mode == MODE_AVIF) {
         mov_write_hdlr_tag(s, pb, &mov->tracks[0]);
         // We always write the primary item id as 1 since only one track is
@@ -5074,6 +5085,7 @@ static int mov_write_meta_tag(AVIOContext *pb, MOVMuxContext *mov,
         if (mov->nb_streams > 1)
             mov_write_iref_tag(pb, mov, s);
         mov_write_iprp_tag(pb, mov, s);
+#endif
     } else {
         /* iTunes metadata tag */
         mov_write_itunes_hdlr_tag(pb, mov, s);
@@ -6386,6 +6398,7 @@ static int mov_write_ftyp_tag(AVIOContext *pb, AVFormatContext *s)
     // compatible brand a second time.
     if (mov->mode == MODE_ISM) {
         ffio_wfourcc(pb, "piff");
+#if CONFIG_AVIF_MUXER
     } else if (mov->mode == MODE_AVIF) {
         const MOVTrack *trk = &mov->tracks[0];
         const AVPixFmtDescriptor *pix_fmt_desc =
@@ -6427,6 +6440,7 @@ static int mov_write_ftyp_tag(AVIOContext *pb, AVFormatContext *s)
                 ffio_wfourcc(pb, "MA1B");
             }
         }
+#endif
     } else if (mov->mode != MODE_MOV) {
         // We add tfdt atoms when fragmenting, signal this with the iso6 compatible
         // brand, if not already the major brand. This is compatible with users that
@@ -8419,6 +8433,7 @@ static int mov_init(AVFormatContext *s)
         return AVERROR(EINVAL);
     }
 
+#if CONFIG_AVIF_MUXER
     /* AVIF output must have at most two video streams (one for YUV and one for
      * alpha). */
     if (mov->mode == MODE_AVIF) {
@@ -8445,6 +8460,7 @@ static int mov_init(AVFormatContext *s)
         }
         s->streams[0]->disposition |= AV_DISPOSITION_DEFAULT;
     }
+#endif
 
     for (i = 0; i < s->nb_stream_groups; i++) {
         AVStreamGroup *stg = s->stream_groups[i];
