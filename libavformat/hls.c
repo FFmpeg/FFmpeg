@@ -264,6 +264,7 @@ typedef struct HLSContext {
     int m3u8_hold_counters;
     int live_start_index;
     int prefer_x_start;
+    int master_time_offset_flag; ///< EXT-X-START was set by the Master Playlist
     int first_packet;
     int64_t first_timestamp;
     struct playlist *first_timestamp_pls;
@@ -979,6 +980,9 @@ static int parse_playlist(HLSContext *c, const char *url,
     int prev_n_segments = 0;
     int64_t prev_start_seq_no = -1;
     int64_t load_start = av_gettime_relative();
+    int64_t start_time_offset = 0;
+    int time_offset_flag = 0;
+    int finished = 0;
 
     if (is_http && !in && c->http_persistent && c->playlist_pb) {
         in = c->playlist_pb;
@@ -1139,15 +1143,11 @@ static int parse_playlist(HLSContext *c, const char *url,
 
         } else if (av_strstart(line, "#EXT-X-START:", &ptr)) {
             const char *time_offset_value = NULL;
-            ret = ensure_playlist(c, &pls, url);
-            if (ret < 0) {
-                goto fail;
-            }
             if (av_strstart(ptr, "TIME-OFFSET=", &time_offset_value)) {
                 double offset = strtod(time_offset_value, NULL) * AV_TIME_BASE;
                 if (offset >= -0x1p63 && offset < 0x1p63) {
-                    pls->start_time_offset = offset;
-                    pls->time_offset_flag = 1;
+                    start_time_offset = offset;
+                    time_offset_flag  = 1;
                 } else {
                     av_log(c->ctx, AV_LOG_WARNING, "TIME-OFFSET value is"
                                                     "invalid, it will be ignored");
@@ -1158,8 +1158,7 @@ static int parse_playlist(HLSContext *c, const char *url,
                 continue;
             }
         } else if (av_strstart(line, "#EXT-X-ENDLIST", &ptr)) {
-            if (pls)
-                pls->finished = 1;
+            finished = 1;
         } else if (av_strstart(line, "#EXTINF:", &ptr)) {
             double d = atof(ptr) * AV_TIME_BASE;
             if (d < 0 || d > INT64_MAX || isnan(d)) {
@@ -1287,6 +1286,27 @@ static int parse_playlist(HLSContext *c, const char *url,
         } else if (pls->start_seq_no < prev_start_seq_no) {
             av_log(c->ctx, AV_LOG_WARNING, "Media sequence changed unexpectedly: %"PRId64" -> %"PRId64"\n",
                    prev_start_seq_no, pls->start_seq_no);
+        }
+    }
+
+    /* Media Playlist tags may precede the first tag that allocates the
+     * playlist. */
+    if (pls && finished)
+        pls->finished = 1;
+
+    /* EXT-X-START is valid in both playlist types. A value from the Master
+     * Playlist applies to all its Media Playlists, which then ignore their
+     * own (RFC 8216 4.3.5). */
+    if (time_offset_flag && !c->master_time_offset_flag) {
+        if (pls) {
+            pls->start_time_offset = start_time_offset;
+            pls->time_offset_flag  = 1;
+        } else {
+            c->master_time_offset_flag = 1;
+            for (int i = 0; i < c->n_playlists; i++) {
+                c->playlists[i]->start_time_offset = start_time_offset;
+                c->playlists[i]->time_offset_flag  = 1;
+            }
         }
     }
 
