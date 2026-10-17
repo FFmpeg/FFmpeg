@@ -277,6 +277,9 @@ typedef struct VTEncContext {
     BufNode *q_head;
     BufNode *q_tail;
 
+    /* Nodes handed to VideoToolbox and not reported back yet. */
+    BufNode *submitted_head;
+
     int64_t frame_ct_out;
     int64_t frame_ct_in;
 
@@ -400,12 +403,33 @@ static void clear_frame_queue(VTEncContext *vtctx)
     set_async_error(vtctx, 0);
 }
 
+static void vtenc_submitted_clear(VTEncContext *vtctx)
+{
+    BufNode *info;
+
+    pthread_mutex_lock(&vtctx->lock);
+
+    while (vtctx->submitted_head) {
+        info = vtctx->submitted_head->next;
+        vtenc_free_buf_node(vtctx->submitted_head);
+        vtctx->submitted_head = info;
+    }
+
+    pthread_mutex_unlock(&vtctx->lock);
+}
+
 static void vtenc_reset(VTEncContext *vtctx)
 {
     if (vtctx->session) {
+        /* The session may be retained elsewhere; invalidate before
+         * release so teardown is deterministic.
+         */
+        VTCompressionSessionInvalidate(vtctx->session);
         CFRelease(vtctx->session);
         vtctx->session = NULL;
     }
+
+    vtenc_submitted_clear(vtctx);
 
     if (vtctx->supported_props) {
         CFRelease(vtctx->supported_props);
@@ -484,6 +508,37 @@ static void vtenc_q_push(VTEncContext *vtctx, BufNode *info)
 
     pthread_cond_signal(&vtctx->cv_sample_sent);
     pthread_mutex_unlock(&vtctx->lock);
+}
+
+static void vtenc_submitted_add(VTEncContext *vtctx, BufNode *info)
+{
+    pthread_mutex_lock(&vtctx->lock);
+
+    info->next = vtctx->submitted_head;
+    vtctx->submitted_head = info;
+
+    pthread_mutex_unlock(&vtctx->lock);
+}
+
+static BufNode *vtenc_submitted_remove(VTEncContext *vtctx, void *refcon)
+{
+    BufNode **link;
+    BufNode *info;
+
+    pthread_mutex_lock(&vtctx->lock);
+
+    link = &vtctx->submitted_head;
+    while (*link && *link != refcon)
+        link = &(*link)->next;
+    info = *link;
+    if (info) {
+        *link = info->next;
+        info->next = NULL;
+    }
+
+    pthread_mutex_unlock(&vtctx->lock);
+
+    return info;
 }
 
 static int count_nalus(size_t length_code_size,
@@ -757,7 +812,12 @@ static void vtenc_output_callback(
 {
     AVCodecContext *avctx = ctx;
     VTEncContext   *vtctx = avctx->priv_data;
-    BufNode *info = sourceFrameCtx;
+    BufNode *info;
+
+    info = vtenc_submitted_remove(vtctx, sourceFrameCtx);
+    /* The node may already be gone if the session was reset. */
+    if (!info)
+        return;
 
     av_buffer_unref(&info->frame_buf);
     if (vtctx->async_error) {
@@ -2519,6 +2579,9 @@ static int vtenc_send_frame(AVCodecContext *avctx,
 #endif
 
     time = CMTimeMake(frame->pts * avctx->time_base.num, avctx->time_base.den);
+
+    vtenc_submitted_add(vtctx, node);
+
     status = VTCompressionSessionEncodeFrame(
         vtctx->session,
         cv_img,
@@ -2528,11 +2591,12 @@ static int vtenc_send_frame(AVCodecContext *avctx,
         node,
         NULL
     );
+    /* The submitted list owns the node even when EncodeFrame() fails. */
+    node = NULL;
 
     if (status) {
         av_log(avctx, AV_LOG_ERROR, "Cannot encode frame: %d\n", status);
         status = AVERROR_EXTERNAL;
-        // Not necessary, just in case new code put after here
         goto out;
     }
 
@@ -2658,6 +2722,9 @@ static int vtenc_populate_extradata(AVCodecContext   *avctx,
     }
 
     time = CMTimeMake(0, avctx->time_base.den);
+
+    vtenc_submitted_add(vtctx, node);
+
     status = VTCompressionSessionEncodeFrame(vtctx->session,
                                              pix_buf,
                                              time,
@@ -2665,6 +2732,7 @@ static int vtenc_populate_extradata(AVCodecContext   *avctx,
                                              NULL,
                                              node,
                                              NULL);
+    node = NULL;
 
     if (status) {
         av_log(avctx,
@@ -2674,7 +2742,6 @@ static int vtenc_populate_extradata(AVCodecContext   *avctx,
         status = AVERROR_EXTERNAL;
         goto pe_cleanup;
     }
-    node = NULL;
 
     //Populates extradata - output frames are flushed and param sets are available.
     status = VTCompressionSessionCompleteFrames(vtctx->session,
@@ -2713,7 +2780,7 @@ pe_cleanup:
     vtctx->frame_ct_out = 0;
 
     av_assert0(status != 0 || (avctx->extradata && avctx->extradata_size > 0));
-    // NULL once ownership passed to VideoToolbox, so a set node must be freed.
+    // NULL once the node was submitted, so a set node must be freed.
     vtenc_free_buf_node(node);
 
     return status;
@@ -2723,19 +2790,18 @@ static av_cold int vtenc_close(AVCodecContext *avctx)
 {
     VTEncContext *vtctx = avctx->priv_data;
 
-    if(!vtctx->session) {
-        pthread_cond_destroy(&vtctx->cv_sample_sent);
-        pthread_mutex_destroy(&vtctx->lock);
-        return 0;
+    if (vtctx->session) {
+        /* Drain pending frames before reset discards their nodes. */
+        VTCompressionSessionCompleteFrames(vtctx->session,
+                                           kCMTimeIndefinite);
     }
 
-    VTCompressionSessionCompleteFrames(vtctx->session,
-                                       kCMTimeIndefinite);
+    vtenc_reset(vtctx);
+
     clear_frame_queue(vtctx);
+
     pthread_cond_destroy(&vtctx->cv_sample_sent);
     pthread_mutex_destroy(&vtctx->lock);
-
-    vtenc_reset(vtctx);
 
     return 0;
 }
