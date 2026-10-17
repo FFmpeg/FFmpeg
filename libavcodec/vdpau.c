@@ -349,6 +349,13 @@ int ff_vdpau_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
     return vdpau_error(status);
 }
 
+void ff_vdpau_free_frame_priv(AVRefStructOpaque hwctx, void *data)
+{
+    struct vdpau_picture_context *pic_ctx = data;
+
+    av_freep(&pic_ctx->bitstream_buffers);
+}
+
 #if CONFIG_MPEG1_VDPAU_HWACCEL || \
     CONFIG_MPEG2_VDPAU_HWACCEL || CONFIG_MPEG4_VDPAU_HWACCEL || \
     CONFIG_VC1_VDPAU_HWACCEL   || CONFIG_WMV3_VDPAU_HWACCEL
