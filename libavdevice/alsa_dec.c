@@ -106,7 +106,7 @@ fail:
 static int audio_read_packet(AVFormatContext *s1, AVPacket *pkt)
 {
     AlsaData *s  = s1->priv_data;
-    int res;
+    int res, frames;
     int64_t dts;
     snd_pcm_sframes_t delay = 0;
 
@@ -134,11 +134,13 @@ static int audio_read_packet(AVFormatContext *s1, AVPacket *pkt)
     } while (s->pkt->size < s->period_size * s->frame_size);
 
     av_packet_move_ref(pkt, s->pkt);
+    /* A packet may have been assembled from multiple short reads. */
+    frames = pkt->size / s->frame_size;
     dts = av_gettime();
     snd_pcm_delay(s->h, &delay);
-    dts -= av_rescale(delay + res, 1000000, s->sample_rate);
+    dts -= av_rescale(delay + frames, 1000000, s->sample_rate);
     pkt->pts = ff_timefilter_update(s->timefilter, dts, s->last_period);
-    s->last_period = res;
+    s->last_period = frames;
 
     return 0;
 }
