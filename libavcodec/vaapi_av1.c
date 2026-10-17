@@ -456,6 +456,7 @@ const FFHWAccel ff_av1_vaapi_hwaccel = {
     .end_frame            = vaapi_av1_end_frame,
     .decode_slice         = vaapi_av1_decode_slice,
     .frame_priv_data_size = sizeof(VAAPIDecodePicture),
+    .free_frame_priv      = ff_vaapi_decode_free_frame_priv,
     .init                 = vaapi_av1_decode_init,
     .uninit               = vaapi_av1_decode_uninit,
     .frame_params         = ff_vaapi_common_frame_params,

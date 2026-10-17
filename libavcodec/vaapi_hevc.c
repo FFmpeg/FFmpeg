@@ -665,6 +665,7 @@ const FFHWAccel ff_hevc_vaapi_hwaccel = {
     .end_frame            = vaapi_hevc_end_frame,
     .decode_slice         = vaapi_hevc_decode_slice,
     .frame_priv_data_size = sizeof(VAAPIDecodePictureHEVC),
+    .free_frame_priv      = ff_vaapi_decode_free_frame_priv,
     .init                 = ff_vaapi_decode_init,
     .uninit               = ff_vaapi_decode_uninit,
     .frame_params         = ff_vaapi_common_frame_params,

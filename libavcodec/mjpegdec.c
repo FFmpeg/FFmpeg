@@ -761,6 +761,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
                 s->avctx->pix_fmt,
                 AV_PIX_FMT_NONE,
             };
+            av_refstruct_unref(&s->hwaccel_picture_private);
             s->hwaccel_pix_fmt = ff_get_format(s->avctx, pix_fmts);
             if (s->hwaccel_pix_fmt < 0)
                 return AVERROR(EINVAL);

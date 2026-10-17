@@ -24,6 +24,7 @@
 #include "libavutil/frame.h"
 #include "libavutil/hwcontext.h"
 #include "libavutil/hwcontext_vaapi.h"
+#include "libavutil/refstruct.h"
 
 #include "avcodec.h"
 
@@ -79,6 +80,7 @@ int ff_vaapi_decode_issue(AVCodecContext *avctx,
                           VAAPIDecodePicture *pic);
 int ff_vaapi_decode_cancel(AVCodecContext *avctx,
                            VAAPIDecodePicture *pic);
+void ff_vaapi_decode_free_frame_priv(AVRefStructOpaque hwctx, void *data);
 
 int ff_vaapi_decode_init(AVCodecContext *avctx);
 int ff_vaapi_decode_uninit(AVCodecContext *avctx);
