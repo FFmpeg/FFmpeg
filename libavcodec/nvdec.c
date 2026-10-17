@@ -972,6 +972,7 @@ int ff_nvdec_start_frame(AVCodecContext *avctx, AVFrame *frame)
     NVDECFrame *cf = NULL;
     int ret;
 
+    ctx->bitstream     = NULL;
     ctx->bitstream_len = 0;
     ctx->nb_slices     = 0;
 
