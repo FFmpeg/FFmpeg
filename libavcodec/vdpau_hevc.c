@@ -551,6 +551,7 @@ const FFHWAccel ff_hevc_vdpau_hwaccel = {
     .end_frame      = vdpau_hevc_end_frame,
     .decode_slice   = vdpau_hevc_decode_slice,
     .frame_priv_data_size = sizeof(struct vdpau_picture_context),
+    .free_frame_priv = ff_vdpau_free_frame_priv,
     .init           = vdpau_hevc_init,
     .uninit         = ff_vdpau_common_uninit,
     .frame_params   = ff_vdpau_common_frame_params,
