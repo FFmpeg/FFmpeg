@@ -35,7 +35,7 @@ $(eval $(call FATE_PREROLL_TEST,mp3,MP3,MP3FLOAT,gapless/gapless.mp3))
 $(eval $(call FATE_PREROLL_TEST,mp3-itunes,MP3,MP3FLOAT,gapless/gapless-itunes.mp3))
 
 # A seek that lands inside the priming, which here spans the first three
-# packets: only the rest of the priming is to be skipped.
+# packets: the rest of the priming, or the pre-roll if longer, is skipped.
 FATE_PREROLL_FFMPEG-$(call FRAMECRC, CAF, AAC, PCM_S16LE_ENCODER ARESAMPLE_FILTER VOLUME_FILTER) += fate-preroll-aac-caf-decode-in-priming
 fate-preroll-aac-caf-decode-in-priming: CMD = framecrc -noaccurate_seek -ss 0.01 -t 0.1 -i $(TARGET_SAMPLES)/caf/aac.caf -af volume=0,aresample -c:a pcm_s16le
 

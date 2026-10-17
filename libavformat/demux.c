@@ -1566,11 +1566,44 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                 sample < sti->last_discard_sample)
                 discard_padding = FFMIN(end_sample - sti->first_discard_sample, duration);
         }
+        if (sti->seek_discard) {
+            const AVCodecParameters *par = st->codecpar;
+
+            if (par->codec_type == AVMEDIA_TYPE_AUDIO && par->sample_rate > 0) {
+                int first = pkt->dts != AV_NOPTS_VALUE && sti->first_dts != AV_NOPTS_VALUE &&
+                            pkt->dts <= sti->first_dts;
+                int in_priming = pkt->pts != AV_NOPTS_VALUE &&
+                                 st->start_time != AV_NOPTS_VALUE &&
+                                 pkt->pts < st->start_time;
+                int64_t skip = 0;
+
+                // The priming ends at the start time.
+                if (in_priming)
+                    skip = ts_to_samples(st, st->start_time - pkt->pts);
+                if (first) {
+                    if (par->initial_padding > 0)
+                        skip = par->initial_padding;
+                } else if (!(sti->seek_to_start && pkt->pts != AV_NOPTS_VALUE && !in_priming)) {
+                    // Past the first packet, the decoder also misses what
+                    // came before.
+                    skip = FFMAX(skip, par->seek_preroll);
+                }
+                sti->skip_samples = FFMAX(sti->skip_samples, FFMIN(skip, INT_MAX));
+            }
+            sti->seek_discard = 0;
+        }
         if (sti->start_skip_samples && (pkt->pts == 0 || pkt->pts == RELATIVE_TS_BASE))
             sti->skip_samples = sti->start_skip_samples;
         sti->skip_samples = FFMAX(0, sti->skip_samples);
         if (sti->skip_samples || discard_padding) {
-            uint8_t *p = av_packet_new_side_data(pkt, AV_PKT_DATA_SKIP_SAMPLES, 10);
+            size_t size;
+            uint8_t *p = av_packet_get_side_data(pkt, AV_PKT_DATA_SKIP_SAMPLES, &size);
+            // Keep what the demuxer set, such as the padding at the end.
+            if (p && size >= 10) {
+                sti->skip_samples = FFMAX(sti->skip_samples, (int)AV_RL32(p));
+                discard_padding   = FFMAX(discard_padding, AV_RL32(p + 4));
+            } else
+                p = av_packet_new_side_data(pkt, AV_PKT_DATA_SKIP_SAMPLES, 10);
             if (p) {
                 AV_WL32(p, sti->skip_samples);
                 AV_WL32(p + 4, discard_padding);

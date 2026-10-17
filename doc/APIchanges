@@ -2,6 +2,11 @@ The last version increases of all libraries were on 2026-06-23.
 
 API changes, most recent first:
 
+2026-10-xx - xxxxxxxxxx - lavf 63.14.102 - avformat.h
+  After avformat_seek_file(), the first packet of an audio stream carries
+  AV_PKT_DATA_SKIP_SAMPLES for the larger of the rest of the priming and the
+  seek pre-roll, or only the priming on the first packet of the stream.
+
 2026-10-xx - xxxxxxxxxx - lavf 63.14.101 - avformat.h
   avformat_seek_file() moves the target back by the largest
   AVCodecParameters.seek_preroll of the audio streams, within the requested

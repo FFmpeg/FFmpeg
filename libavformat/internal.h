@@ -244,6 +244,20 @@ typedef struct FFStream {
     int64_t last_discard_sample;
 
     /**
+     * Set by a seek, cleared on the next packet of the stream, which gets in
+     * skip_samples the rest of the priming if it is inside it, and unless it
+     * is the first packet of the stream, at least the seek pre-roll of the
+     * codec. After the priming, a seek to the start of the stream gets none.
+     */
+    int seek_discard;
+
+    /**
+     * Set with seek_discard when the target of the seek is at or before the
+     * start of this stream.
+     */
+    int seek_to_start;
+
+    /**
      * Number of internally decoded frames, used internally in libavformat, do not access
      * its lifetime differs from info which is why it is not in that structure.
      */

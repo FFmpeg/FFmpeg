@@ -18,7 +18,7 @@ ret:-1         st: 0 flags:0  ts: 2.153000
 ret: 0         st: 0 flags:1  ts: 1.048000
 ret: 0         st: 0 flags:1 dts: 0.960000 pts: 0.960000 pos: 292329 size: 27834
 ret: 0         st: 1 flags:0  ts:-0.058000
-ret: 0         st: 1 flags:1 dts:-0.011000 pts:-0.011000 pos:    697 size:   208
+ret: 0         st: 1 flags:1 dts:-0.011000 pts:-0.011000 pos:    697 size:   208 skip:481 discard:0
 ret: 0         st: 1 flags:1  ts: 2.836000
 ret: 0         st: 1 flags:1 dts: 0.982000 pts: 0.982000 pos: 320173 size:   209 skip:0 discard:347
 ret:-1         st:-1 flags:0  ts: 1.730004
@@ -30,7 +30,7 @@ ret: 0         st: 0 flags:1  ts: 2.413000
 ret: 0         st: 0 flags:1 dts: 0.960000 pts: 0.960000 pos: 292329 size: 27834
 ret:-1         st: 1 flags:0  ts: 1.307000
 ret: 0         st: 1 flags:1  ts: 0.201000
-ret: 0         st: 1 flags:1 dts:-0.011000 pts:-0.011000 pos:    697 size:   208
+ret: 0         st: 1 flags:1 dts:-0.011000 pts:-0.011000 pos:    697 size:   208 skip:481 discard:0
 ret: 0         st:-1 flags:0  ts:-0.904994
 ret: 0         st: 0 flags:1 dts: 0.000000 pts: 0.000000 pos:    913 size: 27837
 ret: 0         st:-1 flags:1  ts: 1.989173

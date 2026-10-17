@@ -696,6 +696,29 @@ static int64_t seek_preroll(const AVFormatContext *s, int stream_index)
     return preroll;
 }
 
+/**
+ * Ask the demuxer to discard the priming or the pre-roll from the first
+ * packet of each stream. A stream whose start the target does not pass
+ * is decoded from its start, which has no pre-roll to discard.
+ */
+static void request_seek_discard(AVFormatContext *s, int stream_index,
+                                 int64_t ts, int flags)
+{
+    AVRational time_base = stream_index >= 0 ? s->streams[stream_index]->time_base
+                                             : AV_TIME_BASE_Q;
+
+    for (unsigned i = 0; i < s->nb_streams; i++) {
+        AVStream *const st  = s->streams[i];
+        FFStream *const sti = ffstream(st);
+
+        sti->seek_discard  = 1;
+        sti->seek_to_start = !(flags & (AVSEEK_FLAG_BYTE | AVSEEK_FLAG_FRAME)) &&
+                             st->start_time != AV_NOPTS_VALUE &&
+                             av_compare_ts(ts, time_base, st->start_time,
+                                           st->time_base) <= 0;
+    }
+}
+
 static int seek_file(AVFormatContext *s, int stream_index, int64_t min_ts,
                      int64_t ts, int64_t max_ts, int flags)
 {
@@ -765,8 +788,12 @@ int avformat_seek_file(AVFormatContext *s, int stream_index, int64_t min_ts,
     ret = seek_file(s, stream_index, min_ts, target, target_max, flags);
     // Without a known start, the earlier target may come before the first
     // packet.
-    if (ret < 0 && target != ts)
+    if (ret < 0 && target != ts) {
+        target = ts;
         ret = seek_file(s, stream_index, min_ts, ts, max_ts, flags);
+    }
+    if (ret >= 0)
+        request_seek_discard(s, stream_index, target, flags);
     return ret;
 }
 
@@ -798,6 +825,7 @@ void ff_read_frame_flush(AVFormatContext *s)
             sti->pts_buffer[j] = AV_NOPTS_VALUE;
 
         sti->skip_samples = 0;
+        sti->seek_discard = 0;
     }
 }
 

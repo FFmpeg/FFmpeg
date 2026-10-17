@@ -2572,6 +2572,14 @@ int av_seek_frame(AVFormatContext *s, int stream_index, int64_t timestamp,
  * INT64_MAX. If that seek fails, the seek is done to ts. This also applies to
  * av_seek_frame() with a demuxer that only implements this function.
  *
+ * The first packet read after a seek from an audio stream carries
+ * AV_PKT_DATA_SKIP_SAMPLES side data to discard the larger of the rest of the
+ * priming (AVCodecParameters.initial_padding) and the seek pre-roll. The
+ * discard supplies the stream's declared pre-roll; recovery beyond that
+ * allowance depends on the codec and bitstream. Only the priming is discarded
+ * on the first packet of the stream, and no pre-roll after the priming of a
+ * stream whose start the seek targets.
+ *
  * @param s            media file handle
  * @param stream_index index of the stream which is used as time base reference
  * @param min_ts       smallest acceptable timestamp
