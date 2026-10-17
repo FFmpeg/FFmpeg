@@ -520,7 +520,7 @@ static char *iso88591_to_utf8(const char *in, size_t size_in)
         return NULL;
     for (i = 0; i < size_in; i++) {
         if (in[i] & 0x80) {
-            *(q++) = 0xC0 | (in[i] >> 6);
+            *(q++) = 0xC0 | ((in[i] >> 6) & 0x3);
             *(q++) = 0x80 | (in[i] & 0x3F);
         } else {
             *(q++) = in[i];
